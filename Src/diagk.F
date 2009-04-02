@@ -100,6 +100,7 @@ C
 #ifdef MPI
       use mpi_siesta
 #endif
+      use m_norm
 
       implicit          none
 
@@ -124,6 +125,7 @@ C
      .                  psi(2,nuotot,nuo), aux(2,nuotot*5)
       logical           getD, getPSI, fixspin
       external          cdiag
+      real(dp)          anorm
 
 C  Internal variables .............................................
       integer
@@ -184,12 +186,6 @@ C Find new Fermi energy and occupation weights ........................
      .             temp, qtot, qo, ef, Entropy )
       endif
 
-      if (Node .eq. 0) then
-         call io_assign(iu)
-         open(iu,file="OCCS",form="formatted",status="unknown",
-     $           action="write",position="rewind")
-      endif
-
 C Find weights for local density of states ............................
       if (e1 .lt. e2) then
 *       e1 = e1 - ef
@@ -212,6 +208,12 @@ C New density and energy-density matrices of unit-cell orbitals .......
       Enew(1:nd,1:nspin) = 0.0_dp
 
   10  continue
+
+      if (Node .eq. 0) then
+         call io_assign(iu)
+         open(iu,file="OCCS",form="formatted",status="unknown",
+     $           action="write",position="rewind")
+      endif
 
 C Loop over k points
       do ik = 1,nk
@@ -376,6 +378,8 @@ C Global operation to form new density matrix
         enddo
       enddo
 
+!      anorm =   compute_norm(Dnew,size(Dnew,dim=1),size(Dnew,dim=2))
+!      if (Node.eq.0) print *, "DM norm after diagk: ", anorm
       if (Node .eq. 0) then
          call io_close(iu)
       endif

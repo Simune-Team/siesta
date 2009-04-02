@@ -183,20 +183,12 @@
 
       rmax = max( 2._dp*rmaxv, 2._dp*rmaxo, rmaxo+rmaxkb)
 
-      ! AG: Why not use the largest range and be done with it?
       if (.not. negl) then
          rmax = max(rmax, 2.0_dp * (rmaxo+rmaxkb) )
       endif
 
       ! Check if any two atoms are unreasonably close
       call proximity_check(rmax)
-
-      if (istp==1) then 
-        nullify(Dscf,Dscfsave,Dold,Eold,Escf)
-        nullify(listhold,listh)
-        nullify(H,H0,S)
-        nullify(xijo)
-      endif
 
       ! List of nonzero Hamiltonian matrix elements
       ! and, if applicable,  vectors between orbital centers
@@ -205,6 +197,7 @@
       ! nh is set by the routine also
       ! Note: We always generate xijo now, for COOP and other
       !       analyses.
+
       nh = maxnh
       call hsparse( negl, scell, nsc, na_s, isa, xa, lasto, lastkb, 
      .                 iphorb, iphKB, nh, numh, listhptr, listh,
@@ -212,28 +205,19 @@
 
       maxnh = nh
 
-      !OBSOLETE: 
+      !OBSOLETE, but maybe not a bad idea after all, to
+      !allow reading of previous steps' DM even if the sparsity
+      !pattern has changed. The new logic in new_dm makes this
+      !unnecessary.
+
       !  safety margin for when atoms move 
       !!!!!!!!   if (nh > maxnh)  maxnh = 1.05 * nh + 40 
 
-      ! Use re_alloc regardless of whether nh is greater than 
-      ! the old maxnh or not, BUT DO NOT SHRINK, as some of
-      ! these arrays are later used in extrapol.
+
+      ! Copy = .true. means that we keep the information
 
       call re_alloc(Dscf,1,maxnh,1,nspin,name='Dscf',
-     .     routine='siesta',copy=.true.,SHRINK=.false.)
-      call re_alloc(Dscfsave,1,maxnh,1,nspin,name='Dscfsave',
-     .     routine='siesta',copy=.true.,SHRINK=.false.)
-      call re_alloc(listhold,1,maxnh,name='listhold',
-     .     routine='siesta',copy=.true.,SHRINK=.false.)
-!==============================================================
-
-      if (istp==1) then
-         ! Initialise Dscfsave to avoid problems in extrapol
-         ! This might be superfluous, as alloc fills array with zeroes
-         Dscfsave(1:maxnh,1:nspin) = 0.0_dp
-         listhold(1:maxnh) = 0
-      endif
+     .     routine='siesta',copy=.true.)
 
       call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',
      .     routine='siesta',copy=.false.)
@@ -244,11 +228,11 @@
 
       ! Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
       call re_alloc(H,1,maxnh,1,nspin,name='H',
-     .              routine='siesta',shrink=.false.,copy=.false.)
+     .              routine='siesta',shrink=.true.,copy=.false.)
       call re_alloc(H0,1,maxnh,name='H0',routine='siesta',
-     .              shrink=.false.,copy=.false.)
+     .              shrink=.true.,copy=.false.)
       call re_alloc(S,1,maxnh,name='S',routine='siesta',
-     .              shrink=.false.,copy=.false.)
+     .              copy=.false.)
 
 
 ! Some printout for debugging ........................................
@@ -268,16 +252,17 @@
 *     endif
 ! ..................
 
+      ! Find overlap matrix 
+      call overlap(na_u, na_s, no_s, scell, xa, indxua, rmaxo,
+     .             maxnh, lasto, iphorb, isa, 
+     .             numh, listhptr, listh, S)
+
       ! Initialize density matrix
       call new_dm( auxchanged )
 
       ! Check for size of Pulay auxiliary matrices
       call init_pulay_arrays()
 
-      ! Find overlap matrix 
-      call overlap(na_u, na_s, no_s, scell, xa, indxua, rmaxo,
-     .             maxnh, lasto, iphorb, isa, 
-     .             numh, listhptr, listh, S)
 
 #ifdef CDF
       if (writedm_cdf .or. writedm_cdf_history) then

@@ -1,5 +1,6 @@
 MODULE sparse_matrices
   use precision
+
   implicit none
 
   ! Max. nonzero elements in a row of the hamiltonian matrix
@@ -10,10 +11,9 @@ MODULE sparse_matrices
 
 
 
-  integer, pointer :: listh(:), listhold(:), listhptr(:), listhptrold(:),  &
-                      numh(:), numhold(:)
+  integer, pointer :: listh(:), listhptr(:),  numh(:)
 
-  real(dp), pointer :: Dold(:,:), Dscf(:,:), Dscfsave(:,:), Eold(:,:), &
+  real(dp), pointer :: Dold(:,:), Dscf(:,:), Eold(:,:), &
                        Escf(:,:), H(:,:)
   real(dp), pointer :: xijo(:,:)
 

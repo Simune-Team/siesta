@@ -1,5 +1,138 @@
 ------------------------------------------------------------------
 
+2009-04-02  20:00:00 GMT+1	Jose M Soler <jose.soler@uam.es>
+
+Summary: merged with trunk 2.6.14
+Keywords: merge
+
+Modified Files:
++N  Src/compute_norm.F                                                         
++N  Src/m_iodm.F
++N  Src/m_sparse.F
++N  Tests/Reference-xml/pb_filter_cutoff.xml
++N  Tests/Reference-xml/pb_filter_tol.xml
++N  Tests/Reference-xml/si64_coop.xml
++N  Tests/Reference/pb_filter_cutoff.out
++N  Tests/Reference/pb_filter_tol.out
++N  Tests/Reference/si64_coop.out
++N  Tests/fe_noncol_kp/
++N  Tests/fe_noncol_kp/fe_noncol_kp.fdf
++N  Tests/fe_noncol_kp/fe_noncol_kp.pseudos
++N  Tests/fe_noncol_kp/makefile
++N  Tests/pb_filter_tol/
++N  Tests/pb_filter_tol/makefile
++N  Tests/pb_filter_tol/pb_filter_tol.fdf
++N  Tests/pb_filter_tol/pb_filter_tol.pseudos
++N  Util/pseudo-xml/Fe.xml
++N  Util/pseudo-xml/io.f
++N  Util/pseudo-xml/makefile
++N  Util/pseudo-xml/pseudopotential.f
++N  Util/pseudo-xml/sys.f90
++N  Util/pseudo-xml/xml2psf.f90
++N  Util/pseudo-xml/xml2psf_helper.f
+ M  Docs/CHANGES
+ M  Docs/siesta.ind
+ M  Docs/siesta.tex
+ M  Pseudo/atom/pseudoXML.f
+ M  Src/Makefile
+ M  Src/alloc.F90
+ M  Src/atmfuncs.f
+ M  Src/atom.f
+ M  Src/atomlwf.F
+ M  Src/basis_io.F
+ M  Src/cdiag.F
+ M  Src/cgvc.F
+ M  Src/diag2g.F
+ M  Src/diag2k.F
+ M  Src/diagk.F
+ M  Src/diagon.F
+ M  Src/electrostatic.f
+-D  Src/extrapol.F
+ M  Src/fdf/fdf.f
+ M  Src/hsparse.f
+-D  Src/initdm.F
+ M  Src/iodm.F
+ M  Src/ioncat.f
+ M  Src/m_spin.F90
+ M  Src/m_ts_aux_rout.F
+ M  Src/m_ts_electrode.F90
+ M  Src/m_ts_in_siesta.F
+ M  Src/m_ts_scattering.F
+ M  Src/mixer.F
+ M  Src/mulliken.F
+ M  Src/new_dm.F
+  * Src/obj_setup.sh
+ M  Src/post_scf_work.F
+R   Src/pseudo-xml/ => Util/pseudo-xml/
+ M  Util/pseudo-xml/README
+ M  Src/radial.f
+ M  Src/siesta_init.F
+ M  Src/siesta_options.F90
+ M  Src/sparse_matrices.F90
+ M  Src/state_init.F
+ M  Src/version.F90
+-D  Tests/Reference-xml/pb_filter_all.xml
+-D  Tests/Reference-xml/pb_filter_basis.xml
+-D  Tests/Reference-xml/pb_filter_pcc.xml
+-D  Tests/Reference-xml/pb_filter_vna.xml
+-D  Tests/Reference/pb_filter_all.out
+-D  Tests/Reference/pb_filter_basis.out
+-D  Tests/Reference/pb_filter_nopcc.out
+-D  Tests/Reference/pb_filter_pcc.out
+-D  Tests/Reference/pb_filter_vna.out
+-D  Tests/Reference/var_cell_filter.out
+ M  Tests/benzene/benzene.fdf
+ M  Tests/fe_clust_noncollinear/fe_clust_noncollinear.fdf
+ M  Tests/fire_benzene/fire_benzene.fdf
+ M  Tests/h2oZ/h2oZ.fdf
+R   Tests/pb_filter_all/ => Tests/pb_filter_cutoff/
+ M  Tests/pb_filter_cutoff/makefile
+RM  Tests/pb_filter_all/pb_filter_all.fdf => Tests/pb_filter_cutoff/pb_filter_cutoff.fdf
+R   Tests/pb_filter_all/pb_filter_all.pseudos => Tests/pb_filter_cutoff/pb_filter_cutoff.pseudos
+-D  Tests/pb_filter_basis/
+-D  Tests/pb_filter_basis/makefile
+-D  Tests/pb_filter_basis/pb_filter_basis.fdf
+-D  Tests/pb_filter_basis/pb_filter_basis.pseudos
+-D  Tests/pb_filter_nopcc/
+-D  Tests/pb_filter_nopcc/makefile
+-D  Tests/pb_filter_nopcc/pb_filter_nopcc.fdf
+-D  Tests/pb_filter_nopcc/pb_filter_nopcc.pseudos
+-D  Tests/pb_filter_pcc/
+-D  Tests/pb_filter_pcc/makefile
+-D  Tests/pb_filter_pcc/pb_filter_pcc.fdf
+-D  Tests/pb_filter_pcc/pb_filter_pcc.pseudos
+-D  Tests/pb_filter_vna/
+-D  Tests/pb_filter_vna/makefile
+-D  Tests/pb_filter_vna/pb_filter_vna.fdf
+-D  Tests/pb_filter_vna/pb_filter_vna.pseudos
+ M  Tests/si64_coop/si64_coop.fdf
+ M  Tests/std-Makefile
+-D  Tests/var_cell_filter/
+-D  Tests/var_cell_filter/makefile
+-D  Tests/var_cell_filter/var_cell_filter.fdf
+-D  Tests/var_cell_filter/var_cell_filter.pseudos
+-D  Tests/var_cell_stress/
+-D  Tests/var_cell_stress/makefile
+-D  Tests/var_cell_stress/var_cell_stress.fdf
+-D  Tests/var_cell_stress/var_cell_stress.pseudos
+ M  Tests/zmatrix/zmatrix.fdf
+ M  Util/COOP/Makefile
+ M  Util/COOP/Tests/n_chain/coo.N-N.gplot
+ M  Util/COOP/io_hs.f90
+ M  Util/COOP/main_vars.f90
+ M  Util/COOP/mprop.f90
+ M  Util/COOP/read_curves.f90
+ M  Util/COOP/subs.f90
+ M  Util/Grid/cdf_fft.f90
+ M  Util/README
+ M  version.info
+Text conflict in Pseudo/atom/pseudoXML.f (resolved)
+Text conflict in Src/Makefile (resolved)
+Text conflict in Src/version.F90 (resolved)
+Text conflict in version.info (resolved)
+
+------------------------------------------------------------------
+
 2009-04-02  11:30:00 GMT+1	Jose M Soler <jose.soler@uam.es>
 
 Summary: *.mod added to make clean in Pseudo/atom/Makefile

@@ -74,6 +74,10 @@
           xcfuntype    = 'VDW'
           xcfunparam   = 'Dion-et-al'
 
+        case('wc') 
+          xcfuntype    = 'GGA'
+          xcfunparam   = 'Wu-Cohen'
+
       end select
 
 ! Digest and dump the information about the pseudopotential flavor
@@ -186,7 +190,9 @@
              call my_add_attribute(xf,"l",il(ivps))
              call my_add_attribute(xf,"cutoff",str(rc(ivps)))
              call my_add_attribute(xf,"occupation",str(zo(indd(ivps))))
-             call my_add_attribute(xf,"spin",str(int(-1)))
+! JMS/AG 2009/04/02: to be checked which one works better
+!             call my_add_attribute(xf,"spin",str(int(-1)))
+             call my_add_attribute(xf,"spin","-1")
 
              call xml_NewElement(xf,"radfunc")
                call xml_NewElement(xf,"grid")
@@ -213,7 +219,9 @@
              call my_add_attribute(xf,"l",il(ivps))
              call my_add_attribute(xf,"cutoff",str(rc(ivps)))
              call my_add_attribute(xf,"occupation",str(zo(indu(ivps))))
-             call my_add_attribute(xf,"spin",str(int(+1)))
+! JMS/AG 2009/04/02: to be checked which one works better
+!             call my_add_attribute(xf,"spin",str(int(+1)))
+             call my_add_attribute(xf,"spin","+1")
 
              call xml_NewElement(xf,"radfunc")
                call xml_NewElement(xf,"grid")
@@ -248,7 +256,7 @@
            call xml_NewElement(xf,"pswf")
              call my_add_attribute(xf,"principal-n",str(no(indd(ivps))))
              call my_add_attribute(xf,"l",il(ivps))
-             call my_add_attribute(xf,"spin",str(-1))
+             call my_add_attribute(xf,"spin","-1")
 
              call xml_NewElement(xf,"radfunc")
                call xml_NewElement(xf,"grid")
@@ -273,7 +281,7 @@
            call xml_NewElement(xf,"pswf")
              call my_add_attribute(xf,"principal-n",str(no(indu(ivps))))
              call my_add_attribute(xf,"l",il(ivps))
-             call my_add_attribute(xf,"spin",str(+1))
+             call my_add_attribute(xf,"spin","+1")
 
              call xml_NewElement(xf,"radfunc")
                call xml_NewElement(xf,"grid")

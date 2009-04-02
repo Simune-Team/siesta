@@ -15,10 +15,10 @@ NumberOfAtoms   12
 
 AtomicCoordinatesFormat NotScaledCartesianAng
 
-ZM.ForceTolLen 0.04 eV/Ang
-ZM.ForceTolAng 0.0001 eV/deg
-ZM.MaxDisplLen 0.1 Ang
-ZM.MaxDisplAng 20.0 deg
+ZM.ForceTolLength 0.04 eV/Ang
+ZM.ForceTolAngle 0.0001 eV/deg
+ZM.MaxDisplLength 0.1 Ang
+ZM.MaxDisplAngle 20.0 deg
 
 %block Zmatrix
 molecule

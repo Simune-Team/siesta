@@ -65,6 +65,8 @@
       integer :: neigmin     ! Min. number of eigenstates (per k point)
       integer :: ns          ! Number of species
 
+      logical :: user_wants_supercell
+
 !------------------------------------------------------------------------- BEGIN
 ! Initialise MPI and set processor number
 #ifdef MPI
@@ -102,8 +104,12 @@
 
 ! Nullify arrays
       nullify(Haux,Saux,psi)
-      nullify(listhptr,listhptrold)
-      nullify(numh,numhold)
+      nullify(listhptr)
+      nullify(numh)
+      nullify(Dscf,Dold,Eold,Escf)
+      nullify(listh)
+      nullify(H,H0,S)
+      nullify(xijo)
 
 ! Initialize some variables
       DUext = 0.0_dp
@@ -265,16 +271,10 @@
 ! Initialise arrays
       call re_alloc(listhptr,1,no_l,name='listhptr',routine='siesta',
      .              copy=.false.)
-      call re_alloc(listhptrold,1,no_l,name='listhptrold',
-     .              routine='siesta',copy=.false.)
       call re_alloc(numh,1,no_l,name='numh',routine='siesta',
      .              copy=.false.)
-      call re_alloc(numhold,1,no_l,name='numhold',routine='siesta',
-     .              copy=.false.)
       listhptr(1:no_l) = 0
-      listhptrold(:) = 0
       numh(:) = 0
-      numhold(:) = 0
 
 ! Get number of eigenstates that need to be calculated
 
@@ -320,6 +320,13 @@
       gamma = gamma .and. gamma_polarization
 !!      print *, "gamma, gamma_pol: ", gamma, gamma_polarization
 !
+!     User can request that the calculation is done with an explicit
+!     auxiliary supercell and hermitian version, even if using only
+!     the gamma point
+!
+      call fdf_global_get(user_wants_supercell,'ForceAuxCell',.false.)
+      if (user_wants_supercell) gamma = .false.
+
 
 ! Find required supercell
 ! 2*rmaxh is used to guarantee that two given orbitals in the

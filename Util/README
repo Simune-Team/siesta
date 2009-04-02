@@ -3,7 +3,7 @@ in connection with the program SIESTA:
 
 vpsa2bin:    Converts formatted pseudopotential files to unformatted form.
 vpsb2asc:    Converts unformatted pseudopotential files to formatted form.
-
+pseudo-xml:  Conversion of pseudo files in XML format to formatted form.
 Plrho/plrho: Plots in 3D the electron density and other functions 
              calculated by siesta (by Jose M. Soler)
 Denchar:     Produces 2D grid for maps, contour plots etc. of charge 

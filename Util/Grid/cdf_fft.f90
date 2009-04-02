@@ -15,12 +15,13 @@ program cdf_fft
 !
 !        The input file is called "GridFunc.nc"
 !
-!  The program gives as output the fourier components, scaled
-!  by the cell volume in Bohr^3, and tagged by the corresponding
-!  reciprocal lattice vectors.
+!  The program gives as output the fourier components
+!  tagged by the corresponding reciprocal lattice vectors.
 !
-!  If used on a density file, the first coefficient should give
-!  the number of electrons in the unit cell.
+!  If used on a density file, the first coefficient times the cell 
+!  volume should give the number of electrons in the unit cell.
+!  (As a convenience, this first element, scaled and un-scaled, is
+!  written to standard error).
 !
 !  Only the first spin component is processed in this prototype version.
 !
@@ -83,7 +84,7 @@ call check( nf90_open('GridFunc.nc',NF90_NOWRITE,ncid))
    
    aa = cmplx(gridfunc)
    call c3d_fft(n1,n2,n3,aa,+1,n1,n2)
-   aa = aa * cell_volume   ! To convert to number of electrons
+!!!   aa = aa * cell_volume   ! To convert to number of electrons
    do ip = 1, size(aa)
       i = modulo(ip-1,n1) + 1
       j = modulo( (ip - i)/n1, n2) + 1
@@ -102,6 +103,9 @@ call check( nf90_open('GridFunc.nc',NF90_NOWRITE,ncid))
    enddo
 
         call check( nf90_close(ncid) )
+
+write(0,*) "aa(1): ", aa(1)
+write(0,*) "Cell volume * aa(1): ", aa(1)*cell_volume
 
 CONTAINS
 

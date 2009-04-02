@@ -12,7 +12,7 @@ subroutine read_hs_file()
   real(sp), allocatable  :: hbuff(:)
   real(sp), allocatable  :: buff3(:,:)
 
-  integer numx
+  integer numx, ind
 
   write(6,"(1x,a,'.HS ...')",advance='no') trim(sflnm)
   open(hs_u,file=trim(sflnm)//'.HSX',status='old',form='unformatted')
@@ -42,9 +42,9 @@ subroutine read_hs_file()
   nsp=nspin
   allocate (numh(nao), listhptr(nao), listh(nh))
 
-!!$        allocate (hamilt(nh,nspin))
-!!$        allocate (Sover(nh))
-!!$        allocate (xij(3,nh))
+       allocate (hamilt(nh,nspin))
+       allocate (Sover(nh))
+       allocate (xij(3,nh),dij(nh))
 
   read(hs_u,iostat=iostat) (numh(io), io=1,no_u)         ! numhg
   if (iostat /= 0) STOP "numh(io)"
@@ -63,62 +63,34 @@ subroutine read_hs_file()
   enddo
   if (listhptr(no_u)+numh(no_u).gt.nh) STOP "nh overflow in HS"
 
-  allocate (nsr(no_u,no_u))
-  nsr(:,:)=0  
   do io=1,no_u
      read(hs_u,iostat=iostat) (ibuff(im), im=1,numh(io))
      if (iostat /= 0) STOP "listh"
      do im=1,numh(io)
         listh(listhptr(io)+im) = ibuff(im)
-        ii=listh(listhptr(io)+im)
-        io2=ii-(ii-1)/no_u*no_u
-        if (io2 /= indxuo(ii)) then
-           print *, "mismatch: ii, io2, indxuo(ii):", ii, io2, indxuo(ii)
-           stop
-        endif
-        nsr(io,io2)=nsr(io,io2)+1
         if (debug) print *, "listh ", io, im, listh(listhptr(io)+im)
      enddo
   enddo
 
-  nsrmx = maxval(nsr)
-  print *, "Maximum supercell multiplicity: ", nsrmx
-
-  allocate (sr(no_u,no_u,nsrmx))
-  allocate (hr(no_u,no_u,nsrmx,nspin))
-
   do is=1,nspin
-     nsr(:,:)=0   ! Wasteful to repeat this (and below), but the
-     ! structure of the HS file is crazy
      do io=1,no_u
         read(hs_u,iostat=iostat) (hbuff(im), im=1,numh(io))
         if (iostat /= 0) STOP "Hamilt"
         do im=1,numh(io)
-           ii=listh(listhptr(io)+im)
-           io2=ii-(ii-1)/no_u*no_u
-           nsr(io,io2)=nsr(io,io2)+1
-           if (nsr(io,io2).gt.nsrmx)  &
-                stop "* ERROR Cells in supercell limit exceeded."
-           hr(io,io2,nsr(io,io2),is) = hbuff(im)
-!!!             hamilt(listhptr(io)+im,is) = hr(io,io2,nsr(io,io2),is)
-           if (debug) print *, "Hamilt ", io, im, hr(io,io2,nsr(io,io2),is)
+           hamilt(listhptr(io)+im,is) = hbuff(im)
+           if (debug) print *, "Hamilt ", io, im, hbuff(im)
         enddo
      enddo
   enddo
   !
   !       Read overlap matrix
   !
-  nsr(:,:)=0
   do io=1,no_u
      read(hs_u,iostat=iostat) (hbuff(im), im=1,numh(io))
      if (iostat /= 0) STOP "Overlap matrix read error"
      do im=1,numh(io)
-        ii=listh(listhptr(io)+im)
-        io2=ii-(ii-1)/no_u*no_u
-        nsr(io,io2)=nsr(io,io2)+1
-        sr(io,io2,nsr(io,io2)) = hbuff(im)
-!!!            Sover(listhptr(io)+im) = sr(io,io2,nsr(io,io2)) 
-        if (debug) print *, "S ", io, im, sr(io,io2,nsr(io,io2))
+        Sover(listhptr(io)+im) = hbuff(im)
+        if (debug) print *, "S ", io, im, hbuff(im)
      enddo
   enddo
 
@@ -129,26 +101,17 @@ subroutine read_hs_file()
      STOP "qtot, temp"
   endif
 
-  mxsr=maxval(nsr(:no_u,:no_u))
-  allocate (rn(3,no_u,no_u,mxsr), dt(no_u,no_u,mxsr))
   !
   !        Always read xijk
   !
-  nsr(:,:)=0
   do io=1,no_u
      read(hs_u,iostat=iostat) ((buff3(k,im), k=1,3), im=1,numh(io))
      if (iostat /= 0) STOP "xij(k)"
      do im=1,numh(io)
-        ii=listh(listhptr(io)+im)
-        io2=ii-(ii-1)/no_u*no_u
-        nsr(io,io2)=nsr(io,io2)+1
-        rn(:,io,io2,nsr(io,io2))= buff3(:,im)
-
+        ind = listhptr(io)+im
         if (debug) print *, "xijk ", buff3(:,im)
-!!!            xij(1:3,listhptr(io)+im) = (/ ax, ay, az /)
-!!!        dt(io,io2,nsr(io,io2))= sqrt(ax*ax+ay*ay+az*az) / Ang
-        dt(io,io2,nsr(io,io2))=                 &
-               sqrt(dot_product(buff3(:,im),buff3(:,im))) / Ang
+        xij(1:3,ind) = buff3(1:3,im)
+        dij(ind) = sqrt(dot_product(buff3(:,im),buff3(:,im))) / Ang
      enddo
   enddo
   !
