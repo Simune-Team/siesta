@@ -5210,6 +5210,12 @@ contours. The information is written in file {\tt SystemLabel}.PLD.
  
 {\it Use:} File {\tt SystemLabel}.PLD is only written, not read, by siesta.
  
+Apart from the PLD file, you will need the Density-Matrix (DM) file
+and/or a wavefunction (WFS) file. For the latter, remember that Siesta
+now produces only a packed WFSX file. You will need to run the
+wfsx2wfs program to convert it to the WFS format. This will be fixed
+shortly.
+
 {\it Default value:} {\tt .false.}
 
 \end{description}
@@ -5432,9 +5438,9 @@ wavefunctions are output in single precision. The {\tt Util/wfsx2wfs}
 program can be used to convert to the old format.
 
 \noindent
-The READWF\index{READWF} postprocessing utility
-program (found in the Util/ directory) reads the {\it Systemlabel}.WFS
-file and generates a readable file.
+The readwf\index{readwf} and readwfsx\index{readwfsx} postprocessing
+utilities programs (found in the Util/ directory) read the WFS or WFSX
+files, respectively, and generate a readable file.
 
 \subsection{Eigenvalues}
 

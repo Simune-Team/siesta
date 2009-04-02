@@ -5,6 +5,55 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 -----------------------------------------------------------------------
+2009-04-02  12:50:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.19
+New version of denchar in Util/Denchar
+
+A new version of denchar, able to process complex wavefunctions and
+multiple k-points, has been put back in the Util/Denchar/Src directory.
+It can be compiled by re-using code in the top Src directory. 
+
+(Thanks to Pablo Ordejon)
+
+removed:
+  Src/denchar.F
+  Src/m_denchar_geom.f
+  Src/m_denchar_init.F
+  Src/m_denchar_io.F
+  Src/m_denchar_neighb.f
+  Src/m_denchar_work.f
+  Util/Denchar/README-Source
+added:
+  Util/Denchar/Src/
+  Util/Denchar/Src/Makefile
+  Util/Denchar/Src/README
+  Util/Denchar/Src/atompla.f
+  Util/Denchar/Src/colinear.f
+  Util/Denchar/Src/denchar.f
+  Util/Denchar/Src/fdf/
+  Util/Denchar/Src/fdf/makefile
+  Util/Denchar/Src/itochar.f
+  Util/Denchar/Src/length.f
+  Util/Denchar/Src/matvect.f
+  Util/Denchar/Src/neighb.f
+  Util/Denchar/Src/planed.f
+  Util/Denchar/Src/ranger.f
+  Util/Denchar/Src/readpla.f
+  Util/Denchar/Src/readsts.f
+  Util/Denchar/Src/readwaves.f
+  Util/Denchar/Src/redata_denchar.f
+  Util/Denchar/Src/reinit.f
+  Util/Denchar/Src/rhoofr.f
+  Util/Denchar/Src/stsofr.f
+  Util/Denchar/Src/wavofr.f
+  Util/Denchar/Src/wrout.f
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Util/Denchar/Docs/CHANGES
+  Util/Denchar/Docs/denchar.tex
+
+
+-----------------------------------------------------------------------
 2009-04-02  12:45:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.18
 Added general-purpose optimizer in Util/Optimizer
 

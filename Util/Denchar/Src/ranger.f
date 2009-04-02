@@ -1,185 +1,3 @@
-! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
-!
-      module m_denchar_neighb
-
-      use precision, only: dp
-      use sys,       only: die
-
-      public :: neighb
-      private
-
-      CONTAINS
-
-      SUBROUTINE NEIGHB( CELL, RANGE, NA, XA, XPO, IA, ISC,
-     .                   NNA, JAN, XIJ, R2IJ, FIRST )
-
-C ********************************************************************
-C Finds the neighbours of an atom in a cell with periodic boundary 
-C conditions. This is an interface to routine ranger, which has
-C extended functionalities.
-C Written by J.M.Soler. March 1997.
-C *********** INPUT **************************************************
-C REAL*8  CELL(3,3) : Unit cell vectors CELL(IXYZ,IVECT)
-C REAL*8  RANGE     : Maximum distance of neighbours required
-C INTEGER NA        : Number of atoms
-C REAL*8  XA(3,NA)  : Atomic positions in cartesian coordinates
-C REAL*8  XPO(3)    : Position of a point in real space (cartesian coor)
-C INTEGER IA        : Atom whose neighbours are needed.
-C                     A routine initialization must be done by
-C                     a first call with IA = 0
-C INTEGER ISC       : Single-counting switch (0=No, 1=Yes). If ISC=1,
-C                     only neighbours with JA.LE.IA are included in JAN
-C INTEGER NNA       : Size of arrays JAN, XIJ and R2IJ
-C *********** OUTPUT *************************************************
-C INTEGER NNA        : Number of neighbour atoms within RANGE of IA
-C INTEGER JAN(NNA)   : Atom-index of neighbours
-C REAL*8  XIJ(3,NNA) : Vectors from atom IA to neighbours
-C REAL*8  R2IJ(NNA)  : Squared distances to neighbours
-C *********** UNITS **************************************************
-C Units of CELL, RANGE and XA are arbitrary but must be equal
-C *********** SUBROUTINES USED ***************************************
-C CHKDIM, DISMIN, PRMEM, RECLAT
-C *********** BEHAVIOUR **********************************************
-C CPU time and memory scale linearly with the number of atoms, for
-C   sufficiently large numbers.
-C If internal dimension variables are too small, an include file named
-C   neighb.h is printed with the required dimensions and the routine
-C   stops, asking to be recompiled. Then, neighb.h is automatically
-C   included in the new compilation, if the source file is in the same 
-C   directory where the program has run. Initially, you can make all 
-C   the parameters in neighb.h equal to 1.
-C Different ranges can be used for different atoms, but for good 
-C   performance, the largest range should be used in the initial
-C   call (with IA=0).
-C There are no limitations regarding cell shape or size. The range may
-C   be larger than the cell size, in which case many 'images' of the
-C   same atom will be included in the neighbour list, with different
-C   interatomic vectors XIJ and distances R2IJ.
-C The atom IA itself is included in the neighbour list, with zero
-C   distance. You have to discard it if you want so.
-C If the number of neighbour atoms found is larger than the size of
-C   the arrays JAN, XIJ and R2IJ, i.e. if NNAout > NNAin, these arrays
-C   are filled only up to their size NNAin. With dynamic memory
-C   allocation, this allows to find first the required array sizes
-C   and then find the neighbours. Notice however that no warning is
-C   given, so that you should always check that NNAout.LE.NNAin.
-C *********** USAGE **************************************************
-C Sample usage for a molecular dynamics simulation:
-C    DIMENSION JAN(MAXNNA), XIJ(3,MAXNNA)
-C    Define CELL and initial positions XA
-C    DO ITER = 1,NITER                (Molecular dynamics iteration)
-C      NNA = MAXNNA
-C      CALL NEIGHB( CELL, RANGE, NA, XA, 0, 1, NNA, JAN, XIJ, R2IJ )
-C      IF (NNA .GT. MAXNNA) STOP 'MAXNNA too small'
-C      Initialize to zero all atomic forces FA(IX,IA)
-C      DO IA = 1,NA                   (Loop on atoms)
-C        NNA = MAXNNA
-C        CALL NEIGHB( CELL, RANGE, NA, XA, IA, 1, NNA, JAN, XIJ, R2IJ )
-C        IF (NNA .GT. MAXNNA) STOP 'MAXNNA too small'
-C        DO IN = 1,NNA                (Loop on neighbours of IA)
-C          JA = JAN(IN)               (Atomic index of neighbour)
-C          RIJ = SQRT(R2IJ(IN))       (Interatomic distance)
-C          IF (RIJ .GT. 1.D-12) THEN  (Discard atom itself)
-C            Find interatomic force FIJ( RIJ )
-C            DO IX = 1,3
-C              FA(IX,IA) = FA(IX,IA) - FIJ * XIJ(IX,IN) / RIJ
-C              FA(IX,JA) = FA(IX,JA) + FIJ * XIJ(IX,IN) / RIJ
-C            ENDDO
-C          ENDIF
-C        ENDDO
-C      ENDDO
-C      Move atomic positions XA       (Molecular dynamics step)
-C    ENDDO
-C ********************************************************************
-
-C Next line is non-standard but may be supressed
-      IMPLICIT NONE
-
-C Define space dimension
-      INTEGER NX
-      PARAMETER ( NX = 3 )
-
-C Argument types and dimensions
-      INTEGER           IA, ISC, JAN(*), NA, NNA
-      REAL(DP)  CELL(NX,NX), RANGE, R2IJ(*),
-     .                  XA(NX,NA), XIJ(NX,*)
-      REAL(DP)  XPO(3)
-
-C Internal variables
-      LOGICAL           FRSTME, SAMCEL
-      INTEGER           IAMOVE(1), IX, JX
-      REAL(DP)  CELAST(NX,NX), RGLAST, X0(NX)
-      LOGICAL FIRST
-      SAVE  
-      DATA FRSTME / .TRUE. /
-      DATA IAMOVE / 0 /
-      DATA X0 / NX*0.D0 /
-
-C Initialization section
-      IF ( FRSTME .OR. IA.LE.0 .OR. RANGE.GT.RGLAST ) THEN
-
-C       Find if cell or range have changed
-        SAMCEL = .TRUE.
-        DO 20 IX = 1,NX
-          DO 10 JX = 1,NX
-            IF (CELL(JX,IX) .NE. CELAST(JX,IX)) SAMCEL = .FALSE.
-   10     CONTINUE
-   20   CONTINUE
-        IF (RANGE .NE. RGLAST) SAMCEL = .FALSE.
-
-C       Cell initializations
-        IF (.NOT.SAMCEL) THEN
-
-C         Store cell and range for comparison in subsequent calls
-          DO 40 IX = 1,NX
-            DO 30 JX = 1,NX
-              CELAST(JX,IX) = CELL(JX,IX)
-   30       CONTINUE
-   40     CONTINUE
-          RGLAST = RANGE
-          FRSTME = .FALSE.
-
-C         Notify to RANGER that CELL has changed
-          CALL RANGER( 'CELL', NX, CELL, RANGE, NA, XA,
-     .                 NA, IAMOVE,
-     .                 IA, ISC, X0,
-     .                 NNA, JAN, XIJ, R2IJ )
-        ENDIF
-
-C       Notify to RANGER that atoms have moved
-        CALL RANGER( 'MOVE', NX, CELL, RANGE, NA, XA,
-     .               NA, IAMOVE,
-     .               IA, ISC, X0,
-     .               NNA, JAN, XIJ, R2IJ )
-
-      ENDIF
-
-C Find neighbours of atom IA
-      IF ( .NOT. FIRST ) THEN
-
-        DO IX = 1,NX
-          X0(IX) = XPO(IX)
-        ENDDO
-
-        CALL RANGER( 'FIND', NX, CELL, RANGE, NA, XA,
-     .               NA, IAMOVE,
-     .               IA, ISC, X0,
-     .               NNA, JAN, XIJ, R2IJ )
-
-      ENDIF
-
-      END subroutine neighb
-
-C!----------------------------------------------------------------------
-
       SUBROUTINE RANGER( MODE, NX, CELL, RANGE, NA, XA,
      .                   NAMOVE, IAMOVE,
      .                   IA0, ISC, X0,
@@ -231,7 +49,7 @@ C *********** UNITS **************************************************
 C Units of CELL, RANGE, XA and X0 are arbitrary but must be equal.
 C All vectors in cartesian coordinates.
 C *********** SUBROUTINES USED ***************************************
-C DISMIN, RECCEL, VOLCEL
+C DISMIN, DOT, RECCEL, VOLCEL
 C *********** BEHAVIOUR **********************************************
 C This is a 'remembering' routine, that saves a single copy of required 
 C   information on the system. Therefore, it cannot be used
@@ -391,7 +209,7 @@ C Argument types and dimensions
       CHARACTER         MODE*4
       INTEGER           NA, NAMOVE, NNA, NX
       INTEGER           IA0, IAMOVE(*), ISC, JAN(*)
-      REAL(DP)  CELL(*), RANGE, R2IJ(*),
+      real(dp)  CELL(*), RANGE, R2IJ(*),
      .                  X0(NX), XA(NX,NA), XIJ(NX,*)
 
 C NCR is the ratio between range radius and mesh-planes distance.
@@ -404,7 +222,7 @@ C DXMARG and DXRANG are used for automatic CELL generation
 C DXMARG is the minimum margin relative to coordinate range
 C DXRANG is the minimum margin relative to RANGE
 C EPS is a small number to be subtracted from 1
-      REAL(DP) DXMARG, DXRANG, EPS 
+      real(dp) DXMARG, DXRANG, EPS 
       PARAMETER ( DXMARG = 0.1D0  )
       PARAMETER ( DXRANG = 1.0D0  )
       PARAMETER ( EPS    = 1.D-14 )
@@ -426,6 +244,7 @@ C          2     upper bound or square
 C Internal functions, variables and arrays
 C REAL*8  CELMSH(MX*MX) Mesh-cell vectors
 C REAL*8  DMX(MX)       In-cell atomic position in mesh coordinates 
+C REAL*8  DOT()         Finds the scalar product of two vectors
 C REAL*8  DPLANE        Distance between lattice or mesh planes
 C REAL*8  DRM           Minimum distance between two mesh cells
 C REAL*8  DX(3)         Vector between two atoms
@@ -505,25 +324,25 @@ c
      .  IANEXT, IAPREV, IEMA, I1EMX, I2EMX, IMX, I1MX, I2MX,
      .  NEMX, NMX, NNX, IA1M, IMESH, IDNM
 
-      REAL(DP)
-     .  DISMIN, DDOT, DPLANE, 
+      real(dp)
+     .  DISMIN, DOT, DPLANE, 
      .  R2, RANGE2, RNGMAX, RRANGE,
      .  XDIFF, XMARG, XMAX, XMIN
 
-      real(dp), dimension(:), allocatable, save ::
+      double precision, dimension(:), allocatable, save ::
      .  DMX, DX, DX0M
 
-      real(dp), dimension(:), allocatable, save ::
+      double precision, dimension(:), allocatable, save ::
      .  CELMSH, RCELL, RMCELL
 
-      real(dp), dimension(:,:), allocatable, save ::
+      double precision, dimension(:,:), allocatable, save ::
      .  DXAM, DXNM
 
       LOGICAL
      .  FRSTME, INSIDE, MOVALL, NULCEL
 
       EXTERNAL
-     .  DISMIN, DDOT, memory
+     .  DISMIN, DOT, RECCEL, memory
 
       SAVE
      .  FRSTME, IAM, IEM, IM, 
@@ -668,7 +487,7 @@ C       Find number of mesh divisions
         NM = 1
         DO 50 IX = 1,NX
           IXX = 1 + NX * (IX-1)
-          DPLANE = 1.D0 / SQRT(DDOT(NX,RCELL(IXX),1,RCELL(IXX),1) )
+          DPLANE = 1.D0 / SQRT( DOT( RCELL(IXX), RCELL(IXX), NX ) )
           NMX(IX) = 0.999D0 * DPLANE / (RRANGE / NCR)
           IF (NMX(IX) .LE. 0) NMX(IX) = 1
           NM = NM * NMX(IX)
@@ -689,7 +508,7 @@ C       Find index-range of neighbour mesh cells and of extended mesh
         NEM = 1
         DO 80 IX = 1,NX
           IXX = 1 + NX * (IX-1)
-          DPLANE = 1.D0 / SQRT(DDOT(NX,RMCELL(IXX),1,RMCELL(IXX),1) )
+          DPLANE = 1.D0 / SQRT( DOT(RMCELL(IXX),RMCELL(IXX),NX) )
           NNX(IX) = RRANGE / DPLANE + 1
           J1NX(IX) = 0
           J2NX(IX) = 1
@@ -836,7 +655,7 @@ C           Supress atom from its previous mesh-cell
 C         Find mesh-cell in which atom is
           DO 220 IX = 1,NX
             IXX = 1 + NX * (IX-1)
-            DMX(IX) = DDOT(NX,RMCELL(IXX),1,XA(1,IA),1)
+            DMX(IX) = DOT( RMCELL(IXX), XA(1,IA), NX )
             IMX(IX) = INT( DMX(IX) + 1000.D0 ) - 1000
             DMX(IX) = DMX(IX) - IMX(IX)
             IMX(IX) = MOD( IMX(IX) + 1000 * NMX(IX), NMX(IX) )
@@ -877,7 +696,7 @@ C       Find the mesh cell of the center of the sphere
 C         Find mesh cell of position X0
           DO 250 IX = 1,NX
             IXX = 1 + NX * (IX-1)
-            DMX(IX) = DDOT(NX,RMCELL(IXX),1,X0,1)
+            DMX(IX) = DOT( RMCELL(IXX), X0, NX )
             IMX(IX) = INT( DMX(IX) + 1000.D0 ) - 1000
             DMX(IX) = DMX(IX) - IMX(IX)
             IMX(IX) = MOD( IMX(IX) + 1000 * NMX(IX), NMX(IX) )
@@ -960,8 +779,8 @@ C Deallocate local memory
 C This is the unique return point
       FRSTME = .FALSE.
 
-      END subroutine ranger
-
+      RETURN
+      END 
 
       SUBROUTINE RECCEL( N, A, B, IOPT )
 
@@ -970,14 +789,17 @@ C  THEIR PRODUCT WITH DIRECT LATTICE VECTORS A IS 1 (IF IOPT=0) OR
 C  2*PI (IF IOPT=1). N IS THE SPACE DIMENSION.
 C  WRITTEN BY J.M.SOLER.
 
+      use precision
       implicit none
-      integer :: n, iopt, i
-      real(dp) ::  A(N,N),B(N,N)
+
+      real(dp) A(N,N),B(N,N)
 
       real(dp) :: c, ci
+      integer iopt
+      integer n, i
 
-      C=1.0_dp
-      IF (IOPT.EQ.1) C=2.0_dp*ACOS(-1.0_dp)
+      C=1.D0
+      IF (IOPT.EQ.1) C=2.D0*ACOS(-1.D0)
 
       IF (N .EQ. 1) THEN
         B(1,1) = C / A(1,1)
@@ -1004,11 +826,12 @@ C  WRITTEN BY J.M.SOLER.
           B(3,I)=B(3,I)*CI
   20    CONTINUE
       ELSE
-         call die('RECCEL: NOT PREPARED FOR N>3')
+        WRITE(6,*) 'RECCEL: NOT PREPARED FOR N =', N
+        STOP
       ENDIF
-      END subroutine reccel
+      END
 
-C!---------------------------------------------------------------------
+
 
 
       SUBROUTINE INDARR( IOPT, ND, I1, I2, I, J1, J )
@@ -1066,6 +889,8 @@ C Illegal ANSI Fortran90 features used: none.
 C ********************************************************************
 
 C Next line is non-standard but may be supressed
+      use precision
+
       IMPLICIT NONE
       INTEGER  ND
       INTEGER  I(ND), I1(ND), I2(ND), ID, IOPT, J, J1, K, N
@@ -1088,10 +913,7 @@ C Next line is non-standard but may be supressed
    20   CONTINUE
       ENDIF
 
-      END subroutine indarr
-
-      end module m_denchar_neighb
-
+      END
 
 
 
