@@ -5,6 +5,70 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 -----------------------------------------------------------------------
+2009-04-02  12:45:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.18
+Added general-purpose optimizer in Util/Optimizer
+
+Alpha version of the general-purpose optimization program, useful,
+among other things, for pseudopotential and basis-set generation.
+
+added:
+
+  Util/Optimizer/
+  Util/Optimizer/Examples/
+  Util/Optimizer/Examples/Basis-Optim-Bond/
+  Util/Optimizer/Examples/Basis-Optim-Bond/H.psf
+  Util/Optimizer/Examples/Basis-Optim-Bond/O.psf
+  Util/Optimizer/Examples/Basis-Optim-Bond/SWARM_PARAMS
+  Util/Optimizer/Examples/Basis-Optim-Bond/TEMPLATE
+  Util/Optimizer/Examples/Basis-Optim-Bond/VARS
+  Util/Optimizer/Examples/Basis-Optim-Bond/run_script.sh
+  Util/Optimizer/Examples/Basis_Harris/
+  Util/Optimizer/Examples/Basis_Harris/DeltaRho.grid.nc
+  Util/Optimizer/Examples/Basis_Harris/H.psf
+  Util/Optimizer/Examples/Basis_Harris/O.psf
+  Util/Optimizer/Examples/Basis_Harris/PARAMS
+  Util/Optimizer/Examples/Basis_Harris/README
+  Util/Optimizer/Examples/Basis_Harris/TEMPLATE
+  Util/Optimizer/Examples/Basis_Harris/VARS
+  Util/Optimizer/Examples/Basis_Harris/run_script.sh
+  Util/Optimizer/Examples/Basis_Optim/
+  Util/Optimizer/Examples/Basis_Optim/H.psf
+  Util/Optimizer/Examples/Basis_Optim/O.psf
+  Util/Optimizer/Examples/Basis_Optim/PARAMS
+  Util/Optimizer/Examples/Basis_Optim/README
+  Util/Optimizer/Examples/Basis_Optim/TEMPLATE
+  Util/Optimizer/Examples/Basis_Optim/VARS
+  Util/Optimizer/Examples/Basis_Optim/run_script.sh
+  Util/Optimizer/Examples/Basis_Optim_Accel/
+  Util/Optimizer/Examples/Basis_Optim_Accel/DeltaRho.grid.nc
+  Util/Optimizer/Examples/Basis_Optim_Accel/H.psf
+  Util/Optimizer/Examples/Basis_Optim_Accel/O.psf
+  Util/Optimizer/Examples/Basis_Optim_Accel/PARAMS
+  Util/Optimizer/Examples/Basis_Optim_Accel/README
+  Util/Optimizer/Examples/Basis_Optim_Accel/TEMPLATE
+  Util/Optimizer/Examples/Basis_Optim_Accel/VARS
+  Util/Optimizer/Examples/Basis_Optim_Accel/run_script.sh
+  Util/Optimizer/Examples/Pseudo-Optim-Constrained/
+  Util/Optimizer/Examples/Pseudo-Optim-Constrained/PARAMS
+  Util/Optimizer/Examples/Pseudo-Optim-Constrained/PSGEN.TEMPLATE
+  Util/Optimizer/Examples/Pseudo-Optim-Constrained/README
+  Util/Optimizer/Examples/Pseudo-Optim-Constrained/SWARM_PARAMS
+  Util/Optimizer/Examples/Pseudo-Optim-Constrained/Test.inp
+  Util/Optimizer/Examples/Pseudo-Optim-Constrained/VARS
+  Util/Optimizer/Examples/Pseudo-Optim-Constrained/run_script.sh
+  Util/Optimizer/Makefile
+  Util/Optimizer/README
+  Util/Optimizer/amoeba.f
+  Util/Optimizer/io.f
+  Util/Optimizer/minimizer.f90
+  Util/Optimizer/parse.f
+  Util/Optimizer/precision.f90
+  Util/Optimizer/simplex.f90
+  Util/Optimizer/swarm.f90
+  Util/Optimizer/sys.f
+  Util/Optimizer/vars_module.f90
+
+-----------------------------------------------------------------------
 2009-04-02  12:40:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.17
 New utility programs and features 
 
