@@ -321,7 +321,6 @@
       call fdf_global_get(user_wants_supercell,'ForceAuxCell',.false.)
       if (user_wants_supercell) gamma = .false.
 
-
 ! Find required supercell
 ! 2*rmaxh is used to guarantee that two given orbitals in the
 ! supercell can only overlap once

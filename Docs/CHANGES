@@ -5,6 +5,63 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 -----------------------------------------------------------------------
+2009-04-02  11:00:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.16
+Assorted new (small) features
+
+* Write Neutral-atom potential on the grid
+
+If the fdf symbol SaveNeutralAtomPotential is set to 'True', the neutral-atom
+potential is written to file SystemLabel.VNA (and optionally to Vna.grid.nc)
+This feature is exercised in the h2o test.
+
+* Warnings for multiple images at Gamma, with optional forcing of supercell
+
+For a gamma-point calculation, it is still possible to have overlap of multiple
+images. This could be because the cell is not big enough, if the user wants
+to save CPU time and sacrifice a bit of accuracy.
+
+This is harmless for the calculation of the electronic structure, as the program
+just adds up all the relevant matrix elements, with phase factor 1.
+
+For a COOP/COHP calculation, the resulting xij array is *wrong*, as
+only the vector for one representative of the class of interactions is
+kept. Thus a warning is produced by hsparse.
+
+A new fdf symbol, "ForceAuxCell", has been introduced to allow the user to 
+request a (more expensive) "k-point" calculation with an auxiliary cell if
+needed. At this point, the very first iteration might give different results,
+since the initial normalization of the density-matrix is different.
+
+* Update the Src/ioncat.f program
+
+It can now process the core charge and the charge associated to the
+local pseudopotential
+
+* Write also a (new format) HSX file whenever an HS file is requested.
+
+* Add new .make files to Src/Sys
+
+* Show message from 'die' also on standard error
+
+* Disallow repeated species labels
+
+* Use species label instead of atomic symbol in dump files.
+
+* Set near-zero lattice vector components to zero
+
+If the LatticeParameters option is used, and due to roundoff error in the
+trigonometry, some components of the lattice vectors turned out very small
+but non-zero. Now they are set to zero for cosmetic reasons.
+
+* Disallow the use of non-diagonal supercells
+
+Their use is not well-defined in all cases.
+
+
+
+
+
+-----------------------------------------------------------------------
 2009-04-02  10:30:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.15
 Assorted fixes (hsparse warnings, xc_check...)
 
