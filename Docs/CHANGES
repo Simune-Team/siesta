@@ -5,6 +5,110 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 -----------------------------------------------------------------------
+2009-04-02  12:40:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.17
+New utility programs and features 
+
+* Orbital projection program
+
+Integrated a new version of the "orbmol" program, by Rurali and
+Lorente, including the k-points functionality later implemented by
+Tabares and Ordejon. The program is now called "orbmol_proj", and
+is more economical in memory and hopefully run-time. 
+
+The program uses the new WFSX wavefunction format (the new program
+wfs2wfsx.f can be used for legacy data).
+
+* New tool for creation of partial density matrices
+
+A new program 'dm_creator' has been created in Util/COOP.
+Given an HSX and a WFSX file, and an optional energy range, dm_creator
+computes a "partial density matrix" with only those states in the
+energy range. This density matrix can then be used with Denchar
+for plotting (or for other more or less devious applications...)
+
+* Scripting
+
+- New cutoff.py example script
+- Enhancements to the ASE interface:
+     - "copy" method for Atom class
+     - pseudopotential handler for ListOfAtoms
+
+* Enhanced WFS utilities
+
+The wavefunction-handling programs have been moved to Util/WFS. Added
+wfsnc2wfsx (useful for New-Diagk calculations) and wfs2wfsx.
+
+* Enhanced grid utilities in Util/Grid
+
+- Increase bounds of work array in Util/Grid/libfft.f
+- Added octave/matlab scripts for plane averages
+
+* New Util/HSX directory
+
+Up to now it only contains an experimental module hsx_m.f90 to process HSX files.
+
+* New program dm_filter in Util/DensityMatrix
+
+The DM filter program produces a new density-matrix in which only the
+contributions of specified orbitals are retained (with minor modifications it can
+delete those and keep the rest).
+
+added:
+  Util/COOP/dm_creator.F90
+  Util/COOP/iodm_netcdf.F90
+  Util/COOP/write_dm.f
+  Util/DensityMatrix/README
+  Util/DensityMatrix/dmfilter.f90
+  Util/Grid/average_x.m
+  Util/Grid/average_z.m
+  Util/HSX/
+  Util/HSX/hsx_m.f90
+  Util/Projections/
+  Util/Projections/Example/
+  Util/Projections/Example/Na-on-Na-4A/
+  Util/Projections/Example/Na-on-Na-4A/Na.psf
+  Util/Projections/Example/Na-on-Na-4A/coo.gplot
+  Util/Projections/Example/Na-on-Na-4A/coo.mpr
+  Util/Projections/Example/Na-on-Na-4A/molecule.fdf
+  Util/Projections/Example/Na-on-Na-4A/orbmol.gplot
+  Util/Projections/Example/Na-on-Na-4A/orbmol.input
+  Util/Projections/Example/Na-on-Na-4A/pdos.mpr
+  Util/Projections/Example/Na-on-Na-4A/system.fdf
+  Util/Projections/Example/Na-on-Na-6A/
+  Util/Projections/Example/Na-on-Na-6A/Na.psf
+  Util/Projections/Example/Na-on-Na-6A/coo.gplot
+  Util/Projections/Example/Na-on-Na-6A/coo.mpr
+  Util/Projections/Example/Na-on-Na-6A/molecule.fdf
+  Util/Projections/Example/Na-on-Na-6A/orbmol.gplot
+  Util/Projections/Example/Na-on-Na-6A/orbmol.input
+  Util/Projections/Example/Na-on-Na-6A/pdos.mpr
+  Util/Projections/Example/Na-on-Na-6A/system.fdf
+  Util/Projections/README
+  Util/Projections/orbmol_proj.f90
+  Util/Scripting/cutoff.py
+  Util/WFS/
+  Util/WFS/wfs2wfsx.f
+  Util/WFS/wfsnc2wfsx.f90
+renamed:
+  Util/readwf.f => Util/WFS/readwf.f
+  Util/readwfx.f => Util/WFS/readwfx.f
+  Util/wfsx2wfs.f => Util/WFS/wfsx2wfs.f
+modified:
+  Src/diagk_file.F
+  Src/iowfs_netcdf.F90
+  Util/COOP/Makefile
+  Util/COOP/README
+  Util/COOP/io_hs.f90
+  Util/COOP/mprop.f90
+  Util/COOP/subs.f90
+  Util/DensityMatrix/cdf2dm.f90
+  Util/DensityMatrix/dm2cdf.f90
+  Util/DensityMatrix/makefile
+  Util/Grid/libfft.f
+  Util/Scripting/Siesta/Interface.py
+
+
+-----------------------------------------------------------------------
 2009-04-02  11:00:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.16
 Assorted new (small) features
 

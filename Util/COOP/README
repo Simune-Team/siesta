@@ -1,17 +1,23 @@
-MPROP processes wave-functions, and the Hamiltonian and overlap-matrix from Siesta
-to produce COOP/COHP curves, and (partial) densities of states.
+MPROP processes wave-functions, and the Hamiltonian and overlap-matrix
+from Siesta to produce COOP/COHP curves, and (partial) densities of
+states.
 
 M. Llunell (U. Barcelona) prepared an early version.
 A. Garcia  (ICMAB-CSIC) made significant corrections and improvements to
-           make it work seamlessly with Siesta.
+           make it work seamlessly with Siesta, and optimized it.
 
 To use it, you first need to tell Siesta to produce the required information,
 by including the fdf directive
 
 COOP.Write  .true.
 
-in the input file. Copy the resulting .WFSX and .HFSX files.
+in the input file. Copy the resulting .WFSX and .HSX files.
 
 Then, prepare a .mpr file like those you can find in the Tests directory, and
 execute mprop (type 'mprop -h' for usage notes).
 
+----------------------------------------------------------------------
+
+DM_CREATOR selects the states in a given energy interval to prepare a
+"fake" density matrix that can be later used, for example, to plot the
+charge density associated to those states.

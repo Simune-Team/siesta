@@ -188,7 +188,7 @@ program mprop
   ! Will pick up atoms, zval, and thus the nominal number of electrons,
   ! but the total charge is read as qtot.
 
-  call read_hs_file()
+  call read_hs_file(trim(sflnm)//".HSX")
   if (gamma_wfsx .neqv. gamma) STOP "Gamma mismatch"
 
   ztot = 0.0_dp

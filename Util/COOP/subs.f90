@@ -2,7 +2,7 @@ module subs
 
 use precision
 
-public :: ival, manual, orbital, txt2wrd
+public :: ival, manual, manual_dm_creator, orbital, txt2wrd
 
 private
 
@@ -218,6 +218,39 @@ CONTAINS
       stop
 
       end subroutine manual
+
+      subroutine manual_dm_creator
+
+      write(6,"('* DM_CREATOR PROGRAM')")
+      write(6,"('  Alberto Garcia, ICMAB-CSIC, 2009')")
+      write(6,*)
+      write(6,"('    DM_CREATOR calculates a partial DM from a given energy interval,')")
+      write(6,"('    using output files obtained with SIESTA.')")
+      write(6,"('  ')")
+      write(6,*) "Usage: dm_creator [ options ] SIESTA_SYSTEM_LABEL"
+      write(6,*) "Options:"
+      write(6,*) "           -h:  print manual                    "
+      write(6,*) "           -d:  debug                    "
+      write(6,*) "           -l:  print summary of energy information         "
+      write(6,*) "   -s SMEAR  :  set value of smearing parameter (default 0.5 eV)"
+      write(6,*) "   -m Min_e  :  set lower bound of energy range                    "
+      write(6,*) "   -M Max_e  :  set upper bound of energy range                    "
+      write(6,*)
+      write(6,"('* INPUT FILES')")
+      write(6,"('    [output files from SIESTA >=  2.4.1]')")
+      write(6,"('    SLabel.WFSX and SLabel.HSX (new format)')")
+      write(6,*)
+      write(6,"('* OUTPUT FORMAT')")
+      write(6,*) 
+      write(6,*) " SLabel.alldos  :  full-range approximate DOS curve"
+      write(6,*) " SLabel.intdos  :  full-range integrated-DOS curve"
+      write(6,*) " DMOUT    :  Partial DM"
+      write(6,*) " DM.nc (optional)  :  Partial DM in netcdf form"
+      write(6,"('    [A control .stt file will always be generated]')")
+      write(6,*)
+      stop
+
+      end subroutine manual_dm_creator
 
 
 end module subs

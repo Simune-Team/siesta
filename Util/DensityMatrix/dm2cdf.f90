@@ -119,6 +119,7 @@ if (norbs /= no_s) then
    allocate(indxuo(1:no_s))
    do ios = 1, no_s
       indxuo(ios) = mod(ios,norbs)
+      if (indxuo(ios) == 0) indxuo(ios) = norbs
    enddo
    call check( nf90_put_var(ncid,indxuo_id,indxuo,count=(/no_s/)))
    deallocate(indxuo)
