@@ -1,0 +1,9 @@
+Denchar is back in its own Util directory.
+
+This version has been updated by Pablo Ordejon to deal with complex
+wavefunctions and multiple k-points.
+
+It could be streamlined to use less memory.
+
+
+Integrated by Alberto Garcia, April 1, 2009, really.

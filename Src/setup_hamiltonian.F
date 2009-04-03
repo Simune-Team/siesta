@@ -294,7 +294,7 @@
      $               maxnh, numh, listhptr, listh, H, S, qtot, temp,
      $               xijo )
         endif
-        if (write_coop) then
+        if (write_coop .or. savehs) then
           call write_hsx( gamma, no_u, no_s, nspin, indxuo,
      $               maxnh, numh, listhptr, listh, H, S, qtot, temp,
      $               xijo)

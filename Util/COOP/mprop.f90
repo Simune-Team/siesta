@@ -185,15 +185,19 @@ program mprop
 
 
   ! Read HSX file
-  ! Will pick up atoms, zval, and thus N_electrons
+  ! Will pick up atoms, zval, and thus the nominal number of electrons,
+  ! but the total charge is read as qtot.
 
-  call read_hs_file()
+  call read_hs_file(trim(sflnm)//".HSX")
   if (gamma_wfsx .neqv. gamma) STOP "Gamma mismatch"
 
   ztot = 0.0_dp
   do ia = 1, na_u
      ztot = ztot + zval(isa(ia))
   enddo
+  if (abs(qtot-ztot) > 1.0e-8_dp) then
+     print "(a,f14.4)", "Note: The system is charged: ", qtot-ztot
+  endif
 
   !
   !       Compute integrated total DOS
@@ -215,7 +219,7 @@ program mprop
 
   ! Look for Fermi Energy
   do i = 2, npts_energy
-     if (intdos(i) > ztot) then
+     if (intdos(i) > qtot) then
         ! Found fermi energy
         energy = low_e + e_step*(i-1)
         ! Correct overshoot, interpolating linearly

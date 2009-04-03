@@ -28,7 +28,7 @@ implicit none
 ! not all of them are really necessary
 !
 integer ncid, norbs_id, nspin_id, nk_id, ncomplex_id, nvectors_id
-integer wf_id    !  , eigval_id
+integer wf_id    , eigval_id
 
 public :: setup_wfs_netcdf_file, write_wfs_netcdf, get_wfs_netcdf
 public :: open_wfs_netcdf_file, close_wfs_netcdf_file
@@ -60,8 +60,8 @@ subroutine setup_wfs_netcdf_file( norbs, nk, nspin, nvectors)
 !
 !     Variables
 !
-!      call check( nf90_def_var(ncid,'eigval',nf90_float,(/nvectors_id,nk_id,nspin_id/),eigval_id))
-!      call check( nf90_put_att(ncid,eigval_id,'Description',"Eigenvalues in Ryd"))
+      call check( nf90_def_var(ncid,'eigval',nf90_float,(/nvectors_id,nk_id,nspin_id/),eigval_id))
+      call check( nf90_put_att(ncid,eigval_id,'Description',"Eigenvalues in Ryd"))
       call check( nf90_def_var(ncid,'wf',nf90_float,    &
                             (/ncomplex_id,norbs_id,nvectors_id,nk_id,nspin_id/),wf_id))
       call check( nf90_put_att(ncid,wf_id,'Description',"Wavefunctions"))
@@ -70,7 +70,7 @@ subroutine setup_wfs_netcdf_file( norbs, nk, nspin, nvectors)
 
 end subroutine setup_wfs_netcdf_file
 
-subroutine write_wfs_netcdf( norbs, no_l, ik, ispin, psi, nvectors )
+subroutine write_wfs_netcdf( norbs, no_l, ik, ispin, psi, nvectors, eigvals )
 
 use precision, only : dp
 
@@ -81,6 +81,7 @@ integer, intent(in)   ::    ispin  ! spin index
 integer, intent(in)   ::    nvectors ! total number of eigenvectors to be stored for this k-point and spin
 
 real(dp), intent(in)  :: psi(2,norbs,no_l)    ! wave-functions stored in this node
+real(dp), intent(in)  :: eigvals(nvectors)    ! wave-functions stored in this node
 
 #ifdef MPI
       real(dp), dimension(:,:), pointer  ::  psi_buf  => null()
@@ -94,6 +95,8 @@ real(dp), intent(in)  :: psi(2,norbs,no_l)    ! wave-functions stored in this no
 if (Node == 0) then
    nullify( psi_buf )
    call re_alloc( psi_buf, 1, 2, 1, norbs, name='psi_buf', routine='iowfs_netcdf' )
+   call check( nf90_put_var(ncid,eigval_id,eigvals(1:nvectors),         &
+                            start=(/1, ik, ispin/),  count=(/nvectors, 1, 1 /) ) )
 endif
 
     do ivec = 1, nvectors
@@ -125,6 +128,8 @@ endif
     call de_alloc(psi_buf,name="psi_buf", routine="iowfs_netcdf")
 
 #else
+    call check( nf90_put_var(ncid,eigval_id,eigvals(1:nvectors),         &
+                             start=(/1, ik, ispin/),  count=(/nvectors, 1, 1 /) ) )
     do ivec = 1, nvectors
        call check( nf90_put_var(ncid, wf_id, psi(1:2,1:norbs,ivec),  & 
                               start = (/1, 1, ivec, ik, ispin /), &

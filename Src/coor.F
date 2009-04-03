@@ -44,7 +44,7 @@ C Internal variables and arrays
       character             :: acf*22, acf_default*22
       character(len=150)    :: line
       logical               :: isdiag, leqi, readerr
-      integer               :: i, ia, ic, iscale, iua, iunit, ix,
+      integer               :: i, ia, ic, iscale, iua, iunit, ix, j,
      .                         coor_mscell(3,3), ncells, 
      &                         coor_nsc(3), nua, ierr
       real(dp)              :: alat, dcell(3,3), dscell(3,3), 
@@ -264,6 +264,25 @@ C Expand the coordinates to whole supercell
 C Find equivalent diagonal combination of cell/supercell
           call digcel( unit_cell, coor_mscell, dcell, dscell,  
      &                 coor_nsc, isdiag )
+          if ( .not. isdiag) then
+             !
+             ! Inform the user but terminate the program
+             !
+             if (Node == 0) then
+                write(6,*) "Supercell is not diagonal."
+                write(6,*) "Equiv. diagonal unit cell:"
+                do i=1,3
+                   write(6,"(3f12.6)") (dcell(j,i),j=1,3)
+                enddo
+                write(6,*) "Original unit cell:"
+                do i=1,3
+                   write(6,"(3f12.6)") (unit_cell(j,i),j=1,3)
+                enddo
+                write(6,*) "Supercell multipliers:", coor_nsc(:)
+!!                coor_nsc(:) = abs(coor_nsc(:))
+             endif
+             call die("Not safe to use non-diagonal supercells")
+          endif
 
 C Expand coordinates
           call superx_coor( dcell, coor_nsc, nua, na, xa, dscell )

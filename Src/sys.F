@@ -55,10 +55,15 @@
 !!                                       if (Node.eq.0) then
          if (present(str)) then
             write(6,'(a)') trim(str)
+            write(0,'(a)') trim(str)
          endif
          write(6,'(a,i4)') 'Stopping Program from Node: ', Node
+         write(0,'(a,i4)') 'Stopping Program from Node: ', Node
 !!                                       endif
-         if (Node .eq. 0) call pxfflush(6)
+         if (Node .eq. 0) then
+            call pxfflush(6)
+            call pxfflush(0)
+         endif
 
 #ifdef MPI
       call MPI_Abort(MPI_Comm_World,1,MPIerror)
