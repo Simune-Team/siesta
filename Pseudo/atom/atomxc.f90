@@ -156,6 +156,7 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
   use alloc,     only: allocDefaults ! Derived type for allocation defaults
 ! BEGIN DEBUG
 !  use m_debug,   only: udebug        ! Output file unit for debug info
+!  use m_vdwxc, only: qofrho        ! Returns q(rho,grad_rho)
 ! END DEBUG
   use precision, only: dp            ! Double precision real type
   use xcmod,     only: nXCfunc       ! Number of xc functional(s)
@@ -222,6 +223,9 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
     prevAllocDefaults
   external :: &
     ggaxc, ldaxc, timer
+! DEBUG
+!  real(dp):: q, dqdrho, dqdgrho(3)
+! END DEBUG
 
 ! Start time counter
 !  call timer( 'atomxc', 1 )
@@ -373,6 +377,33 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
       tk(0:nk,iq) = interpolation( nk+1, r(0:nk), nr, tr(1:nr,iq) )
     end do
 
+! DEBUG
+!    ! Write density
+!    open(1,file='d.out')
+!    do ir = 1,nr
+!      write(1,'(3f15.9)') rmesh(ir), D(:,ir)
+!    end do
+!    close(1)
+!    ! Write q(rho,grad_rho)
+!    open(1,file='q.out')
+!    do ir = 1,nr
+!      call qofrho( sum(d(:,ir)), sum(gd(:,:,ir),2), q, dqdrho, dqdgrho )
+!      write(1,'(3f15.9)') rmesh(ir), q
+!    end do
+!    close(1)
+!    ! Write theta
+!    open(1,file='trmesh.out')
+!    do ir = 1,nr
+!      write(1,'(30f15.9)') rmesh(ir), tr(ir,1:nq)
+!    end do
+!    close(1)
+!    open(1,file='tr.out')
+!    do ir = 0,nk
+!      write(1,'(30f15.9)') r(ir), tk(ir,1:nq)
+!    end do
+!    close(1)
+! END DEBUG
+
     ! Fourier-transform theta_iq(r) for each iq
     do iq = 1,nq
       call radfft( 0, nk, rmax, tk(0:nk,iq), tk(0:nk,iq) )
@@ -397,6 +428,20 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
     do iq = 1,nq
       ur(1:nr,iq) = interpolation( nr, rmesh(1:nr), nk+1, uk(0:nk,iq) )
     end do ! iq
+
+! DEBUG
+!    ! Write u
+!    open(1,file='ur.out')
+!    do ir = 0,nk
+!      write(1,'(30f15.9)') r(ir), uk(ir,1:nq)
+!    end do
+!    close(1)
+!    open(1,file='urmesh.out')
+!    do ir = 1,nr
+!      write(1,'(30f15.9)') rmesh(ir), ur(ir,1:nq)
+!    end do
+!    close(1)
+! END DEBUG
 
   end if ! (VDW)
 
@@ -531,6 +576,15 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
   Dx = Dx / Eunit
   Dc = Dc / Eunit
   Vxc(1:nr,1:nSpin) = Vxc(1:nr,1:nSpin) / Eunit
+
+! DEBUG
+!    ! Write potential
+!    open(1,file='v.out')
+!    do ir = 1,nr
+!      write(1,'(3f15.9)') rmesh(ir), Vxc(ir,1:nSpin)
+!    end do
+!    close(1)
+! END DEBUG
 
 ! Deallocate VDW-related arrays
   if (VDW) then

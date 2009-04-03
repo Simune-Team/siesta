@@ -1,5 +1,27 @@
 ------------------------------------------------------------------
 
+2009-04-03  20:00:00 GMT+1	Jose M Soler <jose.soler@uam.es>
+
+Summary: Parameter nq in vdwxc increased
+Keywords: nq
+
+It was observed that the selfconsistent vdW atomic xc potential in 
+the Al atom presented artificial oscillations, apparently due to an 
+instability created by poor interpolation between q values.
+To plase safe, parameter mq was incresed from 20 to 30, what cured
+the problem. More tests will be required to pinpoint the problem 
+and to determine the apropriate parameter value.
+
+Modified Files:
+Src/atomxc.f90 : Some debug lines added (commented out)
+Src/mesh1d.f90 : One line added to ensure that xmesh(nmesh)=xmax
+Src/vdwxc.f90  : Parameter mq increased to 30
+Pseudo/atom/atomxc.f90 : Copied from Src
+Pseudo/atom/mesh1d.f90 :  "
+Pseudo/atom/vdwxc.f90  :  "
+
+------------------------------------------------------------------
+
 2009-04-02  20:45:00 GMT+1	Jose M Soler <jose.soler@uam.es>
 
 Summary: merged with trunk 2.6.20

@@ -278,7 +278,7 @@ PRIVATE  ! Nothing is declared public beyond this point
 
   ! Mesh parameters for table of phi(q1,q2,r) and its Fourier transform
   integer, parameter:: nr = 1024             ! Radial mesh points (power of 2)
-  integer, parameter:: mq = 20               ! Total number of q mesh points
+  integer, parameter:: mq = 30               ! Total number of q mesh points
   integer, parameter:: nq = mq-1             ! Effective number of q mesh points
   real(dp),parameter:: qcut = 5.0_dp         ! Max. value of q mesh
   real(dp),parameter:: dqmaxdqmin = 20.0_dp  ! Last q mesh interval / first one

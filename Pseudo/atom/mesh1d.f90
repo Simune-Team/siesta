@@ -597,6 +597,9 @@ subroutine set_mesh( n, x, xmin, xmax, a, dxndx1 )
     stop 'set_mesh: ERROR: unknown mesh_type'
   endif ! (mesh_type=='numerical')
 
+! Make sure that last point is exactly right
+  if (present(xmax)) xi(n) = xmax
+
 ! Find auxiliary functions associated to the mesh
   sqrxp = abs(xp1)**0.5_dp
   s0 = abs(xp1)**1.5_dp
