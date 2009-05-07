@@ -5,6 +5,28 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 -----------------------------------------------------------------------
+2009-05-07  10:35:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.21
+Parallel fixes: Diag.ParallelOverK for wf generation; idle nodes
+
+* Patches in diagg and diagk for the corner case in which a node has no 
+assigned orbitals (Julian Gale).
+
+* The option to parallelize over k-points is only implemented for the
+SCF loop. The bands routine had already been coded to fall back on the
+standard parallelization over orbitals, but the wwave routine (used to
+generate wavefunctions for analysis) had not. This bug has been
+corrected, and now both routines print a warning to the user when the
+Diag.ParallelOverK option is used.
+
+modified:
+  Src/bands.F
+  Src/diagg.F
+  Src/diagk.F
+  Src/writewave.F
+  Docs/siesta.tex
+  Docs/siesta.ind
+
+-----------------------------------------------------------------------
 2009-04-02  12:55:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.20
 More flexible compilation of Util code
 
