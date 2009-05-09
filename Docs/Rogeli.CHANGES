@@ -1,3 +1,24 @@
+------------------------------------------------------------------------
+2009-03-25 (originally) Alberto Garcia      rogeli-lanczos-1
+2009-March-25 snapshot -- Lanczos method, some OpenMP
+
+State of the code sometime on March 25, 2009.
+
+Rogeli started a new SVN repository (!) with no
+commits so far. This was taken from the state
+of his directory
+
+/home/bsc21/bsc21017/siesta-BSC/
+
+* Initial implementation of the Lanczos-like method
+(actually the implicitly-restarted Arnoldi method).
+
+Note that the ARPACK, ParMetis, and SuperLU libraries
+are needed. 
+
+* Some OpenMP work.
+
+
 2008-09-29   13:50 GMT  Alberto Garcia      bsc-rogeli-r4
 (SVN) Fixed a bug with arrays listhptrold and numhold.
 ------------------------------------------------------------------------

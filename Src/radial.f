@@ -53,7 +53,7 @@
           fr = 0._dp
           dfdr = 0._dp
        else
-          call splint(func%delta,func%f,func%d2,func%n,r,fr,dfdr)
+          call SPLINT(func%delta,func%f,func%d2,func%n,r,fr,dfdr)
        endif
       
       end subroutine rad_get

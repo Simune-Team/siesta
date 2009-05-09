@@ -75,9 +75,10 @@ C     Passed arguments
       integer, intent(out) :: numphi(nmpl)
 C     Local variables
       integer              :: io, ia, iphi, is, iop, ip0, isp
-      real(dp)             :: r2o, dxsp(3,nsp), r2sp(nsp)
+      real(dp)             :: r2o
       logical              :: within
       integer,     pointer :: wload(:)
+      real(dp),    pointer :: dxsp(:,:), r2sp(:)
 
 !------------------------------------------------------------------------- BEGIN
 #if defined(MPI_TRACE) && defined(MPI)
@@ -86,6 +87,9 @@ C     Local variables
       call timer( 'REMESH', 1 )
 C     Allocate local scratch array
       numphi(1:nmpl) = 0
+
+      call re_alloc( dxsp, 1, 3, 1, nsp, 'dxsp', 'distriPhiOnMesh' )
+      call re_alloc( r2sp, 1, nsp, 'r2sp', 'distriPhiOnMesh' )
 
 C     Find number of atomic orbitals at mesh points
       do io = 1,norb
@@ -109,6 +113,9 @@ C           If within range, add one to number of point orbitals
           endif
         enddo
       enddo
+
+      call de_alloc( dxsp, 'dxsp', 'distriPhiOnMesh' )
+      call de_alloc( r2sp, 'r2sp', 'distriPhiOnMesh' )
 
 #ifdef MPI
       if (nodes.gt.1) then

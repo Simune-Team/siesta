@@ -44,80 +44,48 @@ C  Modules
       use atmfuncs,  only: rcut, all_phi
       use atm_types, only: nsmax=>nspecies
       use atomlist,  only: indxuo
-      use listsc_module, only: listsc
-      use mesh,      only: nsp, dxa, xdop, xdsp
-      use meshdscf
-      use meshphi
-      use parallel,  only: Node, Nodes
+      use listsc_module, only: LISTSC
+      use mesh,      only: nsp, dxa, xdop, xdsp, meshLim
+      use meshdscf,  only: nrowsDscfL, listdl, listdlptr, NeedDscfL,
+     &                     numdl, DscfL
+      use meshphi,   only: DirectPhi, endpht, lstpht, listp2, phi
+      use parallel,  only: Nodes
       use sys,       only: die
       use alloc,     only: re_alloc, de_alloc
 
       implicit none
 
 C Argument types and dimensions
-      integer
-     .   no, np, nspin, maxnd, nuo, nuotot, iaorb(*),
-     .   iphorb(*), isa(*), numd(nuo), listdptr(nuo), listd(maxnd)
-
-      real(grid_p), intent(out) ::   rhoscf(nsp,np,nspin)
-
-      real(dp)  ::  Dscf(maxnd,nspin)
-
-      external  ::   memory, timer
+      integer,       intent(in) :: no, np, maxnd, numd(nuo), nspin,
+     &                             nuo, nuotot, iaorb(*), iphorb(*), 
+     &                             isa(*), listdptr(nuo), listd(maxnd)
+      real(dp),      intent(in) :: Dscf(maxnd,nspin)
+      real(grid_p), intent(out) :: rhoscf(nsp,np,nspin)
+      external                  :: memory, timer
 
 C Internal variables and arrays
-      integer, parameter ::
-     .  minloc = 100,  ! Min buffer size for local copy of Dscf
-     .  maxoa  = 100   ! Max # of orbitals per atom
-
-      integer
-     .  i, ia, ic, ii, ijl, il, imp, ind, ispin, io,
-     .  iop, ip, iphi, is, isp, iu, iul, j, jc, jl, 
-     .  last, lasta, lastop, maxloc, maxloc2, maxndl, nc, nphiloc
-
-      integer, dimension(:), pointer :: ilc, ilocal, iorb
-
-      logical
-     .  ParallelLocal
-
-      real(dp)
-     .  Cij(nsp), Dij, dxsp(3), phia(maxoa,nsp), r2cut(nsmax), r2sp
-
-      real(dp), dimension(:,:), pointer :: Clocal, Dlocal
+      integer,        parameter :: minloc = 100,  ! Min buffer size for local copy of Dscf
+     &                             maxoa  = 100   ! Max # of orbitals per atom
+      logical                   :: ParallelLocal
+      integer                   :: i, ia, ic, ii, ijl, il, imp, ind,
+     &                             ispin, io, iop, ip, iphi, is,
+     &                             isp, iu, iul, j, jc, jl, last, lasta,
+     &                             lastop, maxloc, maxloc2, triang, nc,
+     &                             maxndl, nphiloc, lenx
+      real(dp)                  :: Dij, r2sp
+      integer,          pointer :: ilc(:), ilocal(:), iorb(:)
+      real(dp),         pointer :: Cij(:), r2cut(:), Clocal(:,:),
+     &                             Dlocal(:,:), phia(:,:), dxsp(:)
 
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 1 )
 #endif
 
-C  Start time counter
+C     Start time counter
       call timer('rhoofd',1)
 
-C  Set algorithm logical
+C     Set algorithm logical
       ParallelLocal = (Nodes.gt.1)
-
-C  Find size of buffers to store partial copies of Dscf and C
-      maxloc2 = maxval(endpht(1:np)-endpht(0:np-1))
-      maxloc = maxloc2 + minloc
-      maxloc = min( maxloc, no )
-
-C  Allocate local memory
-
-      nullify ( ilocal )
-      call re_alloc( ilocal, 1, no, 'ilocal', 'rhoofd' )
-
-      nullify ( ilc )
-      call re_alloc( ilc, 1, maxloc2, 'ilc', 'rhoofd' )
-
-      nullify (iorb )
-      call re_alloc( iorb, 0, maxloc, 'iorb', 'rhoofd' )
-
-      ijl = (maxloc+1)*(maxloc+2)/2
-
-      nullify( Dlocal )
-      call re_alloc( Dlocal, 1, ijl, 1, nspin, 'Dlocal', 'rhoofd' )
-
-      nullify( Clocal )
-      call re_alloc( Clocal, 1, nsp, 1, maxloc2, 'Clocal', 'rhoofd' )
 
       if (ParallelLocal) then
         if (nrowsDscfL.gt.0) then
@@ -126,13 +94,14 @@ C  Allocate local memory
           maxndl = 1
         endif
         call re_alloc( DscfL, 1, maxndl, 1, nspin, 'DscfL', 'rhoofd' )
-C Redistribute Dscf to DscfL form
+C       Redistribute Dscf to DscfL form
         call matrixOtoM( maxnd, numd, listdptr, maxndl, nuo,
      &                   nspin, Dscf, DscfL )
       endif
 
 C  Find atomic cutoff radii
-      r2cut(:) = 0.0_dp
+      call re_alloc( r2cut, 1, nsmax, 'r2cut', 'rhoofd' )
+      r2cut = 0.0
       do i = 1,nuotot
         ia = iaorb(i)
         is = isa(ia)
@@ -140,19 +109,52 @@ C  Find atomic cutoff radii
         r2cut(is) = max( r2cut(is), rcut(is,io)**2 )
       enddo
 
-C  Initializations
-      rhoscf(:,:,:) = 0.0_grid_p
-      Dlocal(:,:) = 0.0_dp
-      ilocal(:) = 0
-      iorb(:) = 0
-      last = 0
+C     Find size of buffers to store partial copies of Dscf and C
+      maxloc2 = maxval(endpht(1:np)-endpht(0:np-1))
+      maxloc = maxloc2 + minloc
+      maxloc = min( maxloc, no )
+      triang = (maxloc+1)*(maxloc+2)/2
 
-C  Loop over grid points
+      lenx  = meshLim(2,1) - meshLim(1,1) + 1
+!$OMP PARALLEL DEFAULT(NONE) SHARED(indxuo,nsp,dxa,xdop,xdsp,lenx,
+!$   &  listdl,listdlptr,NeedDscfL,numdl,DscfL,directphi,endpht,lstpht,
+!$   &  listp2,phi,no,np,nspin,iaorb,iphorb,isa,numd,listdptr,listd,
+!$   &  dscf,maxloc,maxloc2,triang,ParallelLocal,r2cut,rhoscf)
+!$   &  PRIVATE(i,ia,ic,ii,ijl,il,imp,ind,ispin,iop,iphi,is,isp,
+!$   &  iu,iul,j,jc,jl,last,lasta,lastop,nc,nphiloc,Dij,r2sp,ilc,ilocal,
+!$   &  iorb,Cij,Clocal,Dlocal,phia,dxsp)
+
+C     Allocate local memory
+      nullify ( ilocal, ilc, iorb, Cij, Dlocal, Clocal, phia, dxsp )
+!$OMP CRITICAL
+!      call re_alloc( ilocal, 1, no, 'ilocal', 'rhoofd' )
+!      call re_alloc( ilc, 1, maxloc2, 'ilc', 'rhoofd' )
+!      call re_alloc( iorb, 0, maxloc, 'iorb', 'rhoofd' )
+!      call re_alloc( Cij, 1, nsp, 'Cij', 'rhoofd' )
+!      call re_alloc( Dlocal, 1, triang, 1, nspin, 'Dlocal', 'rhoofd' )
+!      call re_alloc( Clocal, 1, nsp, 1, maxloc2, 'Clocal', 'rhoofd' )
+!      call re_alloc( phia, 1, , maxoa, 1, nsp, 'phia', 'rhoofd' )
+!      call re_alloc( dxsp, 1, , 3, 'dxsp', 'rhoofd' )
+      allocate( ilocal(no), ilc(maxloc2), iorb(0:maxloc),
+     &          Cij(nsp), Dlocal(triang,nspin), Clocal(nsp,maxloc2),
+     &          phia(maxoa,nsp), dxsp(3) )
+!$OMP END CRITICAL
+
+
+C  Initializations
+      Dlocal(:,:) = 0.0_dp
+      ilocal(:)   = 0
+      iorb(:)     = 0
+      last        = 0
+
+
+!$OMP DO SCHEDULE(GUIDED,LENX)
       do ip = 1,np
+C       Initializations
+        rhoscf(:,ip,:) = 0.0_grid_p
 
 C  Find number of nonzero orbitals at this point
         nc = endpht(ip) - endpht(ip-1)
-
 C  iorb(il)>0 means that row il of Dlocal must not be overwritten
 C  iorb(il)=0 means that row il of Dlocal is empty
 C  iorb(il)<0 means that row il of Dlocal contains a valid row of 
@@ -207,7 +209,7 @@ C  Copy row i of Dscf into row last of Dlocal
               else
                 do ii = 1, numdl(iul)
                   ind = listdlptr(iul)+ii
-                  j = listsc( i, iu, listdl(ind) )
+                  j = LISTSC( i, iu, listdl(ind) )
                   jl = ilocal(j)
                   if (il.gt.jl) then
                     ijl = il*(il+1)/2 + jl + 1
@@ -239,7 +241,7 @@ C  Copy row i of Dscf into row last of Dlocal
               else
                 do ii = 1, numd(iu)
                   ind = listdptr(iu)+ii
-                  j = listsc( i, iu, listd(ind) )
+                  j = LISTSC( i, iu, listd(ind) )
                   jl = ilocal(j)
                   if (il.gt.jl) then
                     ijl = il*(il+1)/2 + jl + 1
@@ -326,20 +328,31 @@ C  Restore iorb for next point
           il = ilocal(i)
           iorb(il) = -i
         enddo
-
       enddo
+!$OMP END DO
 
-C  Free local memory
+!$OMP CRITICAL
+C     Free local memory
+!      call de_alloc( phia, 'phia', 'rhoofd' )
+!      call de_alloc( Clocal, 'Clocal', 'rhoofd' )
+!      call de_alloc( Dlocal, 'Dlocal', 'rhoofd' )
+!      call de_alloc( iorb, 'iorb', 'rhoofd' )
+!      call de_alloc( Cij, 'Cij', 'rhoofd' )
+!      call de_alloc( ilc, 'ilc', 'rhoofd' )
+!      call de_alloc( ilocal, 'ilocal', 'rhoofd' )
+!      call de_alloc( dxsp, 'dxsp', 'rhoofd' )
+      deallocate( ilocal, ilc, iorb, Cij, Dlocal, Clocal, phia, dxsp )
+!$OMP END CRITICAL
+
+!$OMP END PARALLEL
+
+      call de_alloc( r2cut, 'r2cut', 'rhoofd' )
       if (ParallelLocal) then
         call de_alloc( DscfL, 'DscfL', 'rhoofd' )
       endif
-      call de_alloc( Clocal, 'Clocal', 'rhoofd' )
-      call de_alloc( Dlocal, 'Dlocal', 'rhoofd' )
-      call de_alloc( iorb, 'iorb', 'rhoofd' )
-      call de_alloc( ilc, 'ilc', 'rhoofd' )
-      call de_alloc( ilocal, 'ilocal', 'rhoofd' )
 
       call timer('rhoofd',2)
+      call timer('rhoofd',3)
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 0 )
 #endif

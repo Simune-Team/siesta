@@ -955,17 +955,17 @@ c
 !
 !
 !---------------------------------------------------------------------
-c$$$      subroutine xml_element_content(xf,name,content)
-c$$$      use flib_wxml
-c$$$      type(xmlf_t), intent(inout) :: xf            ! For new XML output
-c$$$      character(len=*), intent(in)  :: name
-c$$$      character(len=*), intent(in)  :: content
-c$$$
-c$$$      call xml_NewElement(xf,name)
-c$$$      call xml_AddPcdata(xf,content)
-c$$$      call xml_EndElement(xf,name)
-c$$$      end subroutine xml_element_content
-c$$$!---------------------------------------------------------------------
+c      subroutine xml_element_content(xf,name,content)
+c      use flib_wxml
+c      type(xmlf_t), intent(inout) :: xf            ! For new XML output
+c      character(len=*), intent(in)  :: name
+c      character(len=*), intent(in)  :: content
+c
+c      call xml_NewElement(xf,name)
+c      call xml_AddPcdata(xf,content)
+c      call xml_EndElement(xf,name)
+c      end subroutine xml_element_content
+!---------------------------------------------------------------------
 
       end module basis_io
 

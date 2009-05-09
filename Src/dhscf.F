@@ -955,6 +955,7 @@ C ----------------------------------------------------------------------
 #ifdef DEBUG
         call write_debug( '    PRE vmat' )
 #endif
+
       if (iHmat .eq. 1) then
         if (spiral) then
           call vmatsp( norb, nmpl, dvol, nspin, Vscf, maxnd,
@@ -966,6 +967,7 @@ C ----------------------------------------------------------------------
      &               nuotot, iaorb, iphorb, isa )
         endif
       endif
+
 #ifdef MPI
 C Global reduction of Uscf/DUscf/Uatm/Enaatm/Enascf
       sbuffer(1) = Uscf
@@ -990,6 +992,8 @@ C Global reduction of Uscf/DUscf/Uatm/Enaatm/Enascf
       Exc    = rbuffer(6)
       Dxc    = rbuffer(7)
 #endif
+      write(23,*) 'Energies:', rbuffer
+      flush(23)
 C Add contribution to stress from the derivative of the Jacobian of ---
 C r->r' (strained r) in the integral of Vna*(rhoscf-rhoatm)
       if (istr .eq. 1) then
@@ -1063,5 +1067,6 @@ C ----------------------------------------------------------------------
       call de_alloc( Vaux, name='Vaux', routine='dhscf' )
       call de_alloc( Vscf, name='Vscf', routine='dhscf' )
       call de_alloc( DRho, name='DRho', routine='dhscf' )
+
 !--------------------------------------------------------------------------- END
       end subroutine dhscf

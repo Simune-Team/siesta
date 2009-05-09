@@ -36,11 +36,11 @@ c
       ! avoid the non-master nodes aborting on another collective
       ! operation down the line and giving a confusing error message.
       ! There must be a better way to achieve this. -- removed
-c$$$
-c$$$#ifdef MPI
-c$$$      call MPI_Bcast(time_exceeded,1,MPI_logical,0,
-c$$$     $               MPI_Comm_World,MPIerror)
-c$$$#endif
+c
+c#ifdef MPI
+c      call MPI_Bcast(time_exceeded,1,MPI_logical,0,
+c     $               MPI_Comm_World,MPIerror)
+c#endif
       end subroutine timer
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

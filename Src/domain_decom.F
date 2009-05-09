@@ -8,7 +8,8 @@
       PUBLIC :: preSetOrbitLimits, domainDecom, gatherGlobalMatrix,
      &          use_dd, ulimit, llimit, use_dd_perm,
      &          dd_perm, dd_invp, dd_cperm, dd_nuo, dd_nnode,
-     &          dd_ncolum, dd_ncom, lni, lnb, dd_bsiz, dd_comm
+     &          dd_ncolum, dd_ncom, lni, lnb, dd_bsiz, dd_comm,
+     &          gperm
 
       PRIVATE
       logical          :: use_dd
@@ -62,9 +63,11 @@ C     Local variables
 #ifdef MPI
       use mpi_siesta
 #endif
+      use lu_factorization
       implicit none
 C     Input variables
       integer          :: nuotot, nuo, nnz
+      integer          :: MPIerror
 
       call reduceGlobalMatrix( nuotot, nuo, nnz )
 
@@ -81,15 +84,19 @@ C       Set orbitals to partitions
         call compuNeigh( )
 
         call compuComm( )
+
+C       compute distribution for LU
+        if (use_lu_fact) call compCommDD2LU( nodes, nuotot, ginde )
       endif
 
       call distriGlobalMatrix( nuotot, nuo, nnz )
+      if (use_lu_fact) call distCommDD2LU( node, nodes, nuotot )
 
       if (node.eq.0) then
 !       Free local memory
         call de_alloc( Gcomm%ind, 'comm%ind', 'domainDecom' )
         call de_alloc( partition, 'partition', 'domainDecom' )
-        call de_alloc( gperm, 'gperm', 'domainDecom' )
+!        call de_alloc( gperm, 'gperm', 'domainDecom' )
 !        call de_alloc( ginvp, 'ginvp', 'domainDecom' )
 !        call de_alloc( nnzBou, 'nnzBou', 'domainDecom' )
 !        call de_alloc( nnzInt, 'nnzInt', 'domainDecom' )
@@ -97,9 +104,15 @@ C       Set orbitals to partitions
         call de_alloc( listhTot, 'listhTot', 'domainDecom' )
         call de_alloc( listhPtrTot, 'listhPtrTot', 'domainDecom' )
         call de_alloc( DomNeigh, 'DomNeigh', 'domainDecom' )
+      else
+        nullify(gperm)
+        call re_alloc( gperm, 1, nuotot, 'gperm', 'createPerm' )
       endif
-      write(23,*) 'domainDecom END'
-      call pxfflush(23)
+
+#ifdef MPI
+      call Mpi_Bcast( gperm, nuotot, MPI_INTEGER, 0, MPI_Comm_world,
+     &                MPIerror )
+#endif
       end subroutine domainDecom
 
 
@@ -231,6 +244,7 @@ C     Local variables
      &                                 1, nparts, metis_options,
      &                                 edgecut, partition )
       endif
+
       call de_alloc( jja, 'jja', 'makePartitions' )
       call de_alloc( iia, 'iia', 'makePartitions' )
       end subroutine makePartitions
@@ -787,8 +801,6 @@ C      call de_alloc( listhptr, 'listhptr', 'distriGlobalMatrix' )
 
       use_dd_perm = .true.
       dd_nuo      = no
-      write(23,*) 'distriGlobalMatrix END'
-      call pxfflush(23)
       end subroutine distriGlobalMatrix
 
       subroutine gatherGlobalMatrix( nuotot, nuo, nnz, ML, filename )

@@ -6,6 +6,7 @@
       use precision
       use alloc
       use gmres
+      use cg
       implicit none
 
       PUBLIC :: jd_diag
@@ -44,7 +45,7 @@ C     Output variables
       real(dp), intent(out) :: ef, efs(nspin), Entropy
       real(dp), intent(out) :: Dnew(*), Enew(*)
 C     Local variables
-      integer              :: io, nnz
+      integer              :: io, nnz, i, j
       integer,     pointer :: ind(:), col(:)
       character*128        :: filename
       type(matrix_t)       :: A, B
@@ -94,19 +95,37 @@ C     Set jacobi options
       nullify( jd_opt%v0 )
       call re_alloc( jd_opt%v0, 1, nuo, 'v0', 'jd_diag' )
       tt          = nuotot
-      jd_opt%v0   = 1.0/sqrt(tt)
-      jd_opt%kmax = neig
-      jd_opt%mmax = neig
+      tt          = 1.0/sqrt(tt)
+      jd_opt%v0   = tt
+!      jd_opt%kmax = neig
+      jd_opt%kmax = (2*neig)/3+1
+      jd_opt%mmax = min(30,jd_opt%kmax)
       jd_opt%mmin = 5
-      jd_opt%eps  = 10e-4
+      jd_opt%eps  = 1.0e-4
+      write(23,*) 'jd_opt%kmax', jd_opt%kmax
+      flush(23)
 
-C     Set GMRES options and Preconditioner
+C     Set GMRES or CG options and Preconditioner
       gmres_maxiter = nuotot
       gmres_dim     = min(max(257,nuotot/2),nuotot)
+      cg_maxiter    = nuotot
       call setIdPrecond( PC, nuo )
 
       getD   = .true.
       getPSI = .false.
+
+      tt = 12.00835800
+      tt = 0.0
+      write(23,*) '      WARNING ADDING', tt, 'to the diagonal'
+      flush(23)
+      do i= 1, nuo
+        do j= ind(i), ind(i+1)-1
+          if (col(j).eq.i) then
+            A%val(j) = A%val(j) + tt
+            exit
+          endif
+        enddo
+      enddo
 
       call jd_diagg( nuo, nspin, neig, nnz, getD, getPSI, fixspin, temp,
      &               qtot, qs, occtol, A, B, ef, efs, Entropy,
@@ -150,6 +169,8 @@ C     Local variables
       call jd_solver( n, neig, A, B, w, Z )
       write(23,*) 'AUTOVALORES de salida', w
       call pxfflush(23)
+      call MPI_finalize( io )
+      STOP
 
 C Check if we are done
       if (.not.getD) return
@@ -282,14 +303,19 @@ C     Local variables
         write(23,*)'    JACOBI NEW ITER -> m=', m, ' k=', k, ' it=', it
         call pxfflush(23)
         ! (3)
+        write(23,*) '      JD pre GS t:', t
         do i = 1, m
           ! (4)
           vi  =>  V(:,i) 
           vib => Vb(:,i)
+        write(23,*) '               GS Vb:', Vb(:,i)
+        write(23,*) '               GS VV:', V(:,i)
           dotp = dvdot( n, vib, t )
+        write(23,*) '               GS rr:', dotp
           t = t - dotp*vi
         ! (5)  
         enddo
+        write(23,*) '      JD pos GS t:', t
 
         ! (6) 
         m = m + 1
@@ -303,22 +329,27 @@ C     Local variables
         vm = t/norm
         call dsmv( n, A, vm, vma )
         vmb = t_tilde/norm
+      write(23,*) '      JD vmb:', vmb
 
         ! (8) (9) (10)
         offset = (m-1)*m/2
         call ddmtv( n, m, V(1:n,1:m), vma, VAV(offset+1:offset+m) )
 
         ! (11)
+        write(23,*) '      JD MM(1:(m+1)*m/2):', VAV(1:(m+1)*m/2)
         call compute_eigenpairs( m, VAV, teta, S )
         write(23,*)'      compute_eigenpairs=', teta(1:m)
         call pxfflush(23)
 
         ! (12)
         s1 => S(1:m)
+        write(23,*)'      S1=', S(1:m)
+        write(23,*)'      Vb=', Vb(1:n,1:m)
         call ddmv( n, m, V, s1, u )
         call ddmv( n, m, Vb, s1, p )
         call ddmv( n, m, Va, s1, ua )
         r = ua - teta(1)*p
+      write(23,*) '      JD pp:', p
 
         ! (13) 
         tolerance = sqrt(dvdot( n, r, r )/dvdot( n, u, u ))
@@ -332,6 +363,8 @@ C     Local variables
           k             = k + 1
           
           ! (15)
+      write(23,*) 'k', k, ' kmax', kmax
+      flush(23)
           if ( k .eq. kmax ) goto 100
 
           ! (16)
@@ -364,13 +397,20 @@ C     Local variables
             Va(:,1:m)   = Vatmp(:,1:m)
             Vb(:,1:m)   = Vbtmp(:,1:m)
           endif
+          write(23,*) '      VV', V(1:n,1:m)
+          write(23,*) '      VA', VA(1:n,1:m)
+          write(23,*) '      VB', VB(1:n,1:m)
           ! (21)
           u = V(:,1)
           p = Vb(:,1)
           r = Va(:,1) - teta(1)*p
+      write(23,*) 'PRE tolerance'
+      flush(23)
 
+      write(23,*)'        ¿GOOD_EIG?', dvdot( n, r, r ), dvdot(n,u,u)
           tolerance = sqrt(dvdot( n, r, r )/dvdot( n, u, u ))
-
+      write(23,*) 'POs tolerance', tolerance, eps
+      flush(23)
         ! (22)  
         enddo
 
@@ -414,6 +454,7 @@ C     Local variables
         t  = 0.0
         write(23,*)'    PRE jd_correction'
         call pxfflush(23)
+        write(23,*) '       PRE CORRECTION p', p
         call jd_correction( n, k+1, Z, A, B, rteta, r, gm_it, t )
         write(23,*) '        POS  correction ||t gmres|| = ',
      &              SQRT(dvdot( n, t, t ))
@@ -425,7 +466,9 @@ C     Local variables
       ! (32)  
       end do
 
-100   call de_alloc( Z, 'Z', 'jd_solver' )
+100   continue
+      write(23,*) 'END jd_solver', k, kmax
+      call de_alloc( Z, 'Z', 'jd_solver' )
       call de_alloc( r, 'r', 'jd_solver' )
       call de_alloc( ua, 'ua', 'jd_solver' )
       call de_alloc( p, 'p', 'jd_solver' )
@@ -512,7 +555,10 @@ C     Allocate local memory
       call precond_solver_mat( n, ne, PC, Z, Z_hat )
 
       ! (2)
+      write(23,*) '      Z   :', Z
+      write(23,*) '      Z_  :', Z_hat
       call ddmtm( n, ne, Z, Z_hat, M )
+      write(23,*) '      Z*Z_:', M
 
       ! (3)
 C     GETRF computes an LU factorization of a general M-by-N matrix A
@@ -543,11 +589,13 @@ C     r_tilde = r_hat - r_tilde
 C     we compute -r_tilde
       r_tilde = r_tilde - r_hat
       ! (10)
-      write(23,*)'        PRE com_gmres'
+      write(23,*)'        PRE com_gmres/CG'
       call pxfflush(23)
       call com_gmres( n, ne, A, B, PC, teta, r_tilde, Z, Z_hat,
      &                M, ipiv, t, gm_it )
-      write(23,*)'        POS com_gmres'
+!      call com_cg( n, ne, A, B, PC, teta, r_tilde, Z, Z_hat,
+!     &                M, ipiv, t, gm_it )
+      write(23,*)'        POS com_gmres/CG'
       call pxfflush(23)
 
 C     Free local memory

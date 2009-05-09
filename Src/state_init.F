@@ -26,13 +26,13 @@
       use m_energies,        only: Emad
       use write_subs
       use m_steps
-      use parallel,          only: IOnode
+      use parallel,          only: IOnode, node, nodes
       use m_spin,            only: nspin
       use m_rmaxh
       use m_pulay,           only: init_pulay_arrays
       use m_eo
       use m_gamma
-      use files,          only : slabel
+      use files,             only: slabel
 #ifdef MPI
       use m_mpi_utils,       only: globalize_max
 #endif
@@ -40,6 +40,8 @@
       use iodm_netcdf, only: setup_dm_netcdf_file
       use iodmhs_netcdf, only: setup_dmhs_netcdf_file
 #endif
+      use domain_decom,       only: gperm
+      use lu_factorization
       implicit none
 
       integer            :: istep
@@ -274,6 +276,11 @@ C     Find overlap matrix
       call overlap(na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &             maxnh, lasto, iphorb, isa, 
      &             numh, listhptr, listh, S )
+
+!     Compute the LU factorization of the overlap matrix if needed
+      if (use_lu_fact)
+     &  call factOverlap( node, nodes, no_s, no_l, maxnh, numh,
+     &                    listhptr, listh, S, gperm )
 
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 0 )

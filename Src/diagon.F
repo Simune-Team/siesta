@@ -314,5 +314,4 @@ C Free local arrays
 
 C Stop time counter
       call timer( 'diagon', 2 )
-
       end
