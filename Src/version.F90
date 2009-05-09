@@ -25,7 +25,7 @@ implicit none
 
 ! After it is done, this file should be commited.
 
-integer, dimension(3), save  :: num_version = (/0,0,0/)
+integer, dimension(3), save  :: num_version = (/2,3,41/)
 character(len=*), parameter :: version_str =  &
 "SIESTA_VERSION"
 character(len=*), parameter :: siesta_arch= &

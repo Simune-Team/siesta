@@ -22,7 +22,7 @@ c
 c     Two-in-one: CPU plus elapsed times 
 c
 #ifdef MPI
-      integer MPIerror
+C      integer MPIerror
 #endif
       call timer1(prog,iopt)
       if (IOnode) then

@@ -1,4 +1,5 @@
       MODULE LU_FACTORIZATION
+#ifdef _LANCZOS_
       use alloc,         only : re_alloc, de_alloc
       use superlu
       use precision
@@ -146,7 +147,11 @@
 
       LUcomm%np = Nodes
 C     reschedule the communications in order to minimize the time
+      write(23,*) '         PRE scheduleComm'
+      flush(23)
       call scheduleComm( ncom, src, dst, LUcomm )
+      write(23,*) '         POS scheduleComm'
+      flush(23)
 
       nullify(LUnNeigh)
       call re_alloc( LUnNeigh, 1,Nodes, 'LUnNeigh', 'LU_FAC' )
@@ -205,7 +210,7 @@ C     reschedule the communications in order to minimize the time
 
       end subroutine compCommDD2LU
 
-      subroutine distCommDD2LU( NODE, NODES, N )
+      subroutine distCommDD2LU( NODE, NODES )
 !     Process 0 distributes the information computed in function
 !     compCommDD2LU to all the other processes.
 !
@@ -218,7 +223,7 @@ C     reschedule the communications in order to minimize the time
 #endif
       implicit none
 !     Input Variables
-      integer,        intent(in) :: NODE, NODES, N
+      integer,        intent(in) :: NODE, NODES
 !     Local Variables
       integer                    :: pp, ierr
       integer,            target :: tmp(1,1)
@@ -462,6 +467,5 @@ C     Local variables
         endif
       enddo
       end subroutine reduce_array_lu
-
-
+#endif
       END MODULE LU_FACTORIZATION

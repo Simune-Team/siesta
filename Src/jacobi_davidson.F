@@ -145,7 +145,7 @@ C     Set GMRES or CG options and Preconditioner
       subroutine jd_diagg( n, nspin, neig, nnz, getD, getPSI, fixspin,
      &                     temp, qtot, qs, occtol, A, B, ef, efs,
      &                     Entropy, w, Z, qo, Dnew, Enew )
-      use m_fermid,      only : fermid, fermispin, stepf
+      use m_fermid,      only : fermid, fermispin
       implicit none
 C     Input variables
       integer,        intent(in) :: n, nspin, neig, nnz
@@ -168,9 +168,8 @@ C     Local variables
 
       call jd_solver( n, neig, A, B, w, Z )
       write(23,*) 'AUTOVALORES de salida', w
+      write(23,*) 'AUTOVECTORES de salida', Z
       call pxfflush(23)
-      call MPI_finalize( io )
-      STOP
 
 C Check if we are done
       if (.not.getD) return
@@ -221,7 +220,7 @@ C     Count the number of usefull eigenvalues/vectors
       do ie = 1, uneig
         qe = qo(ie)
         ee = qe*w(ie)
-        do io = 1, n
+        do io = 1, nc
           qei = qe*ZZ(io,ie)
           eei = ee*ZZ(io,ie)
           do j = A%ind(io), A%ind(io+1)-1
@@ -232,9 +231,6 @@ C     Count the number of usefull eigenvalues/vectors
         enddo
       enddo
 
-      write(23,*) 'Dnew', Dnew
-      write(23,*) 'Enew', Enew
-      call pxfflush(23)
       call de_alloc( ZZ, 'ZZ', 'jd_diagg' )
       end subroutine jd_diagg
 

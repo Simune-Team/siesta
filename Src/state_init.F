@@ -16,7 +16,7 @@
      &                             no_s, rmaxkb, rmaxo, no_u, lastkb,
      &                             lasto, superc, rmaxv, indxuo
       use atomlist,          only: no_l
-      use alloc,             only: re_alloc, alloc_report
+      use alloc,             only: re_alloc, de_alloc, alloc_report
       use m_hsparse,         only: hsparse
       use m_overlap,         only: overlap
       use m_check_supercell, only: check_sc_factors
@@ -41,7 +41,9 @@
       use iodmhs_netcdf, only: setup_dmhs_netcdf_file
 #endif
       use domain_decom,       only: gperm
+#ifdef _LANCZOS_
       use lu_factorization
+#endif
       implicit none
 
       integer            :: istep
@@ -200,7 +202,7 @@ C     nh is set by the routine also
    
       nh = maxnh
 #ifdef DEBUG
-      call write_debug( '  PRE hsparse' )
+      call write_debug( '    PRE hsparse' )
 #endif
       call hsparse( negl, scell, nsc, na_s, isa, xa, lasto, lastkb,
      &              iphorb, iphKB, nh, gamma, xijo )
@@ -278,9 +280,14 @@ C     Find overlap matrix
      &             numh, listhptr, listh, S )
 
 !     Compute the LU factorization of the overlap matrix if needed
-      if (use_lu_fact)
-     &  call factOverlap( node, nodes, no_s, no_l, maxnh, numh,
+#ifdef _LANCZOS_
+      if (use_lu_fact) then
+        call factOverlap( node, nodes, no_s, no_l, maxnh, numh,
      &                    listhptr, listh, S, gperm )
+#endif
+        call de_alloc( gperm, 'gperm', 'domainDecom' )
+      endif
+
 
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 0 )

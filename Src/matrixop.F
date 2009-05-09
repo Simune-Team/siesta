@@ -51,13 +51,21 @@ C     Local variables
 #ifdef MPI
       integer                     :: nc
 
+      write(23,*) '         INI dsmv'
+      flush(23)
       nc = A%nc
+      write(23,*) '         PRE ALLOC'
+      flush(23)
       call re_alloc( xx, 1, nc, 'xx', 'dsmv' )
+      write(23,*) '         PRE reduce_array--> LOC(xx):', LOC(xx)
+      flush(23)
       call reduce_array( n, nc, x, xx )
 #else
       xx => x
 #endif
 
+      write(23,*) '         PRE OP'
+      flush(23)
       do ii= 1, n
         tt = 0.0
         do jj= A%ind(ii), A%ind(ii+1)-1
@@ -68,8 +76,12 @@ C     Local variables
       enddo
 
 #ifdef MPI
+      write(23,*) '         PRE de_alloc Y=', y(1:min(10,n))
+      flush(23)
       call de_alloc( xx, 'xx', 'dsmv' )
 #endif
+      write(23,*) '         end subroutine dsmv'
+      flush(23)
       end subroutine dsmv
 
 
@@ -94,6 +106,7 @@ C     Local variables
       integer                     :: nc
 
       nc = A%nc
+      nullify(xx)
       call re_alloc( xx, 1, nc, 'xx', 'dsmv' )
       call reduce_array( n, nc, x, xx )
 #else
@@ -130,25 +143,31 @@ C     Local variables
      &                               status(MPI_STATUS_SIZE)
       real(dp),           pointer :: myb(:)
 
+      write(23,*) 'reduce_array n:', n, ' ncom:', dd_ncom, ' lni:', lni,
+     &            ' lnb:', lnb, ' nc:', nc 
+      flush(23)
+
       xx(1:n) = x
-      myb => x(lni+1:n)
-      ind = n + 1
-      do icom= 1, dd_ncom
-        PP  = dd_comm(icom)-1
-        onb = dd_bsiz(icom)
-        if (PP.lt.node) then
-          call MPI_Send ( myb, lnb, MPI_DOUBLE_PRECISION, PP, 0,
-     &                    MPI_COMM_WORLD, ierror )
-          call MPI_Recv ( xx(ind), onb, MPI_DOUBLE_PRECISION, PP, 0,
-     &                    MPI_COMM_WORLD, status, ierror )
-        else
-          call MPI_Recv ( xx(ind), onb, MPI_DOUBLE_PRECISION, PP, 0,
-     &                    MPI_COMM_WORLD, status, ierror )
-          call MPI_Send ( myb, lnb, MPI_DOUBLE_PRECISION, PP, 0,
-     &                    MPI_COMM_WORLD, ierror )
-        endif
-        ind = ind + onb
-      enddo
+      if (dd_ncom.gt.0) then
+        myb => x(lni+1:n)
+        ind = n + 1
+        do icom= 1, dd_ncom
+          PP  = dd_comm(icom)-1
+          onb = dd_bsiz(icom)
+          if (PP.lt.node) then
+            call MPI_Send ( myb, lnb, MPI_DOUBLE_PRECISION, PP,
+     &                      0, MPI_COMM_WORLD, ierror )
+            call MPI_Recv ( xx(ind), onb, MPI_DOUBLE_PRECISION, PP,
+     &                      0, MPI_COMM_WORLD, status, ierror )
+          else
+            call MPI_Recv ( xx(ind), onb, MPI_DOUBLE_PRECISION, PP,
+     &                      0, MPI_COMM_WORLD, status, ierror )
+            call MPI_Send ( myb, lnb, MPI_DOUBLE_PRECISION, PP,
+     &                      0, MPI_COMM_WORLD, ierror )
+          endif
+          ind = ind + onb
+        enddo
+      endif
       end subroutine reduce_array
 
       subroutine reduce_matrix( n, nc, ne, Z, ZZ )
@@ -172,6 +191,7 @@ C     Local variables
       enddo
 
       maxbs = maxbs*ne
+      nullify(buff,myb)
       call re_alloc( buff, 1, maxbs, 'buff', 'matrixop' )
       call re_alloc( myb, 1, lnb, 1, ne, 'myb', 'matrixop' )
 
@@ -284,6 +304,7 @@ C     Local variables
         y(i) = tt
       enddo
 #ifdef MPI
+      nullify(yt)
       call re_alloc( yt, 1, m, 'yt', 'ddmtv' )
       call Globalize_sum( y, yt )
       y = yt
@@ -319,6 +340,7 @@ C     Local variables
       enddo
 
 #ifdef MPI
+      nullify( Ct )
       call re_alloc( Ct, 1, nc, 1, nc, 'ct', 'ddmtm' )
       call Globalize_sum( C, Ct )
       C = Ct

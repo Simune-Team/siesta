@@ -124,7 +124,6 @@ C Internal variables ...........................................................
       real(dp) :: xdum(3), xaold(3), suncdot(3), raux(3)
 
       real(dp), pointer :: s(:,:), sdot(:,:), snew(:,:), sunc(:,:)
-      real(dp), pointer :: saux(:)
       real(dp)          :: rr
 
       real(dp), pointer, save :: sold(:,:)

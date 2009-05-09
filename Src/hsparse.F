@@ -407,9 +407,12 @@ C           Restore conect array for next orbital io
 
       if (use_dd) then
 #ifdef DEBUG
-        call write_debug( '    PRE domainDecom' )
+        call write_debug( '      PRE domainDecom' )
 #endif
         call domainDecom( nuotot, nuo, nlhmax )
+#ifdef DEBUG
+        call write_debug( '      POS domainDecom' )
+#endif
         no_l = nuo
       endif
 

@@ -71,15 +71,18 @@ C Internal variables and arrays
      &                             ispin, io, iop, ip, iphi, is,
      &                             isp, iu, iul, j, jc, jl, last, lasta,
      &                             lastop, maxloc, maxloc2, triang, nc,
-     &                             maxndl, nphiloc, lenx
-      real(dp)                  :: Dij, r2sp
+     &                             maxndl, nphiloc, lenx, leny, lenxy,
+     &                             lenz
+      real(dp)                  :: Dij, r2sp, dxsp(3), Cij(nsp)
       integer,          pointer :: ilc(:), ilocal(:), iorb(:)
-      real(dp),         pointer :: Cij(:), r2cut(:), Clocal(:,:),
-     &                             Dlocal(:,:), phia(:,:), dxsp(:)
-
+      real(dp),         pointer :: r2cut(:), Clocal(:,:),
+     &                             Dlocal(:,:), phia(:,:)
+      integer  omp_get_thread_num, omp_get_num_threads
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 1 )
 #endif
+      write(23,*) 'lstpht:', lstpht
+      flush(23)
 
 C     Start time counter
       call timer('rhoofd',1)
@@ -87,19 +90,27 @@ C     Start time counter
 C     Set algorithm logical
       ParallelLocal = (Nodes.gt.1)
 
+      write(23,*) 'PRE alloc DscfL'
+      flush(23)
       if (ParallelLocal) then
         if (nrowsDscfL.gt.0) then
           maxndl = listdlptr(nrowsDscfL) + numdl(nrowsDscfL)
         else
           maxndl = 1
         endif
+        nullify(DscfL)
         call re_alloc( DscfL, 1, maxndl, 1, nspin, 'DscfL', 'rhoofd' )
 C       Redistribute Dscf to DscfL form
+      write(23,*) 'PRE matrixOtoM'
+      flush(23)
         call matrixOtoM( maxnd, numd, listdptr, maxndl, nuo,
      &                   nspin, Dscf, DscfL )
+      write(23,*) 'POS matrixOtoM'
+      flush(23)
       endif
 
 C  Find atomic cutoff radii
+      nullify(r2cut)
       call re_alloc( r2cut, 1, nsmax, 'r2cut', 'rhoofd' )
       r2cut = 0.0
       do i = 1,nuotot
@@ -116,44 +127,58 @@ C     Find size of buffers to store partial copies of Dscf and C
       triang = (maxloc+1)*(maxloc+2)/2
 
       lenx  = meshLim(2,1) - meshLim(1,1) + 1
-!$OMP PARALLEL DEFAULT(NONE) SHARED(indxuo,nsp,dxa,xdop,xdsp,lenx,
+      leny  = meshLim(2,2) - meshLim(1,2) + 1
+      lenz  = meshLim(2,3) - meshLim(1,3) + 1
+      lenxy = lenx*leny
+
+      write(23,*) 'PRE Loop'
+      flush(23)
+!$OMP PARALLEL DEFAULT(NONE) SHARED(indxuo,nsp,dxa,xdop,xdsp,lenxy,lenx,
 !$   &  listdl,listdlptr,NeedDscfL,numdl,DscfL,directphi,endpht,lstpht,
 !$   &  listp2,phi,no,np,nspin,iaorb,iphorb,isa,numd,listdptr,listd,
 !$   &  dscf,maxloc,maxloc2,triang,ParallelLocal,r2cut,rhoscf)
-!$   &  PRIVATE(i,ia,ic,ii,ijl,il,imp,ind,ispin,iop,iphi,is,isp,
+!$   &  PRIVATE(ip,i,ia,ic,ii,ijl,il,imp,ind,ispin,iop,iphi,is,isp,
 !$   &  iu,iul,j,jc,jl,last,lasta,lastop,nc,nphiloc,Dij,r2sp,ilc,ilocal,
 !$   &  iorb,Cij,Clocal,Dlocal,phia,dxsp)
 
+!$OMP CRITICAL(MEMORY_LOCK)
 C     Allocate local memory
-      nullify ( ilocal, ilc, iorb, Cij, Dlocal, Clocal, phia, dxsp )
-!$OMP CRITICAL
+      nullify ( ilocal, ilc, iorb, Dlocal, Clocal, phia )
 !      call re_alloc( ilocal, 1, no, 'ilocal', 'rhoofd' )
 !      call re_alloc( ilc, 1, maxloc2, 'ilc', 'rhoofd' )
-!      call re_alloc( iorb, 0, maxloc, 'iorb', 'rhoofd' )
+!      call re_alloc( iorb, 1, maxloc, 'iorb', 'rhoofd' )
 !      call re_alloc( Cij, 1, nsp, 'Cij', 'rhoofd' )
 !      call re_alloc( Dlocal, 1, triang, 1, nspin, 'Dlocal', 'rhoofd' )
 !      call re_alloc( Clocal, 1, nsp, 1, maxloc2, 'Clocal', 'rhoofd' )
 !      call re_alloc( phia, 1, , maxoa, 1, nsp, 'phia', 'rhoofd' )
 !      call re_alloc( dxsp, 1, , 3, 'dxsp', 'rhoofd' )
-      allocate( ilocal(no), ilc(maxloc2), iorb(0:maxloc),
-     &          Cij(nsp), Dlocal(triang,nspin), Clocal(nsp,maxloc2),
-     &          phia(maxoa,nsp), dxsp(3) )
-!$OMP END CRITICAL
+      write(23,*) '  PRE allocates', omp_get_num_threads(),
+     &            omp_get_thread_num()
+      flush(23)
+      allocate( ilocal(no), ilc(maxloc2), iorb(1:maxloc),
+     &          Dlocal(triang,nspin), Clocal(nsp,maxloc2),
+     &          phia(maxoa,nsp) )
+      write(23,*) '  POS allocates'
+      flush(23)
+!$OMP END CRITICAL(MEMORY_LOCK)
 
 
 C  Initializations
-      Dlocal(:,:) = 0.0_dp
-      ilocal(:)   = 0
-      iorb(:)     = 0
-      last        = 0
+      Dlocal = 0.0_dp
+      ilocal = 0
+      iorb   = 0
+      last   = 0
+      write(23,*) '  POS inits'
+      flush(23)
 
-
-!$OMP DO SCHEDULE(GUIDED,LENX)
+!$OMP DO SCHEDULE(STATIC,LENXY)
       do ip = 1,np
+      write(23,*) '  Loop ip:', ip, np
+      flush(23)
 C       Initializations
         rhoscf(:,ip,:) = 0.0_grid_p
 
-C  Find number of nonzero orbitals at this point
+C       Find number of nonzero orbitals at this point
         nc = endpht(ip) - endpht(ip-1)
 C  iorb(il)>0 means that row il of Dlocal must not be overwritten
 C  iorb(il)=0 means that row il of Dlocal is empty
@@ -166,10 +191,14 @@ C             Dscf, but which is not required at this point
           if (il.gt.0) iorb(il) = i
         enddo
 
+      write(23,*) '    Loop_2 nc:', nc
+      flush(23)
 C  Look for required rows of Dscf not yet stored in Dlocal
         do ic = 1,nc
           imp = endpht(ip-1) + ic
           i = lstpht(imp)
+      write(23,*) '             Orbital i:', i
+      flush(23)
           if (ilocal(i) .eq. 0) then
 
 C           Look for an available row in Dlocal
@@ -181,12 +210,18 @@ C             last runs circularly over rows of Dlocal
             enddo
             call die('rhoofd: no slot available in Dlocal')
    10       continue
+      write(23,*) '             last:', last
+      flush(23)
 
 C  Copy row i of Dscf into row last of Dlocal
             j = abs(iorb(last))
             if (j.ne.0) ilocal(j) = 0
             ilocal(i) = last
+      write(23,*) '             ilocal(i):', ilocal(i)
+      flush(23)
             iorb(last) = i
+      write(23,*) '             iorb(last):', iorb(last)
+      flush(23)
             il = last
             iu = indxuo(i)
             if (ParallelLocal) then
@@ -201,6 +236,8 @@ C  Copy row i of Dscf into row last of Dlocal
                   else
                     ijl = jl*(jl+1)/2 + il + 1
                   endif
+      write(23,*) '                  ijl:', ijl
+      flush(23)
                   do ispin = 1,nspin
                     Dij = DscfL(ind,ispin)
                     Dlocal(ijl,ispin) = Dij
@@ -261,10 +298,14 @@ C  Copy row i of Dscf into row last of Dlocal
 C  Loop on first orbital of mesh point
         lasta = 0
         lastop = 0
+      write(23,*) '    Loop_3 nc:', nc
+      flush(23)
         do ic = 1,nc
           imp = endpht(ip-1) + ic
           i = lstpht(imp)
           il = ilocal(i)
+      write(23,*) '      Loop_3 imp:', imp, ' i', i, ' il:', il
+      flush(23)
           iu = indxuo(i)
           ia = iaorb(i)
           is = isa(ia)
@@ -272,6 +313,8 @@ C  Loop on first orbital of mesh point
           ilc(ic) = il
 
 C  Generate or retrieve phi values
+      write(23,*) '      DirectPhi', DirectPhi
+      flush(23)
           if (DirectPhi) then
             if (ia.ne.lasta .or. iop.ne.lastop) then
               lasta = ia
@@ -280,7 +323,11 @@ C  Generate or retrieve phi values
                 dxsp(:) = xdsp(:,isp) + xdop(:,iop) - dxa(:,ia)
                 r2sp = sum(dxsp**2)
                 if (r2sp.lt.r2cut(is)) then
+      write(23,*) '      PRE all_phi isp:', isp
+      flush(23)
                   call all_phi( is, +1, dxsp, nphiloc, phia(:,isp) )
+      write(23,*) '      POS all_phi isp:', isp
+      flush(23)
                 else
                   phia(:,isp) = 0.0_dp
                 endif
@@ -293,25 +340,37 @@ C  Generate or retrieve phi values
           endif
 
 C  Loop on second orbital of mesh point
+      write(23,*) '        Loop_3.1    ic:', ic
+      flush(23)
           do jc = 1,ic
             jl = ilc(jc)
+      write(23,*) '          jl:', jl
+      flush(23)
             do isp = 1, nsp
               Cij(isp) = Clocal(isp,ic) * Clocal(isp,jc)
             enddo
+      write(23,*) '          Cij:', Cij
+      flush(23)
             if (il.gt.jl) then
               ijl = il*(il+1)/2 + jl + 1
             else
               ijl = jl*(jl+1)/2 + il + 1
             endif
+      write(23,*) '          ijl:', ijl
+      flush(23)
             do ispin = 1,nspin
               if (ic .eq. jc) then
                 Dij = Dlocal(ijl,ispin)
               else
                 Dij = 2*Dlocal(ijl,ispin)
               endif
+      write(23,*) '          ispin:', ispin, '  Dij:', Dij
+      flush(23)
 
 C  Loop over sub-points
               do isp = 1,nsp
+      write(23,*) '          Loop_3.1.1    isp:', isp, ip, ispin
+      flush(23)
                 rhoscf(isp,ip,ispin) = rhoscf(isp,ip,ispin) + 
      &            Dij*Cij(isp)
               enddo
@@ -323,15 +382,19 @@ C  Loop over sub-points
         enddo
 
 C  Restore iorb for next point
+      write(23,*) '    Loop_4 limits:', 1+endpht(ip-1), endpht(ip)
+      flush(23)
         do imp = 1+endpht(ip-1), endpht(ip)
           i = lstpht(imp)
           il = ilocal(i)
           iorb(il) = -i
         enddo
+      write(23,*) '  End loop---> ip:', ip
+      flush(23)
       enddo
 !$OMP END DO
 
-!$OMP CRITICAL
+!$OMP CRITICAL(MEMORY_LOCK)
 C     Free local memory
 !      call de_alloc( phia, 'phia', 'rhoofd' )
 !      call de_alloc( Clocal, 'Clocal', 'rhoofd' )
@@ -341,15 +404,23 @@ C     Free local memory
 !      call de_alloc( ilc, 'ilc', 'rhoofd' )
 !      call de_alloc( ilocal, 'ilocal', 'rhoofd' )
 !      call de_alloc( dxsp, 'dxsp', 'rhoofd' )
-      deallocate( ilocal, ilc, iorb, Cij, Dlocal, Clocal, phia, dxsp )
-!$OMP END CRITICAL
+      write(23,*) '  PRE deallocates'
+      flush(23)
+      deallocate( ilocal, ilc, iorb, Dlocal, Clocal, phia )
+      write(23,*) '  POS deallocates'
+      flush(23)
+!$OMP END CRITICAL(MEMORY_LOCK)
 
 !$OMP END PARALLEL
+      write(23,*) 'END LOOP'
+      flush(23)
 
       call de_alloc( r2cut, 'r2cut', 'rhoofd' )
       if (ParallelLocal) then
         call de_alloc( DscfL, 'DscfL', 'rhoofd' )
       endif
+      write(23,*) 'END rhoofd'
+      flush(23)
 
       call timer('rhoofd',2)
       call timer('rhoofd',3)

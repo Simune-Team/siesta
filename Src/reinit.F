@@ -41,7 +41,6 @@ C  Internal variables .................................................
       logical debug_input, file_exists
 
 C Print Welcome and Presentation .......................................
-
       filein = "should_not_matter"  ! For non-master nodes
 
       if (Node.eq.0) then

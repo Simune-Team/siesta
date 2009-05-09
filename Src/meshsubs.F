@@ -129,6 +129,24 @@ C ----------------------------------------------------------------------
       real(grid_p),     pointer, save :: phi(:,:)
       end module meshphi
 
+      subroutine resetMeshPhi( )
+      use meshphi
+      use alloc,         only : de_alloc
+      implicit none
+      if (associated(endpht))
+     &  call de_alloc( endpht, 'endpht',  'PhiOnMesh' )
+
+      if (associated(lstpht))
+     &  call de_alloc( lstpht, 'lstpht',  'PhiOnMesh' )
+
+      if (associated(listp2))
+     &  call de_alloc( listp2, 'listp2',  'PhiOnMesh' )
+
+      if (associated(phi))
+     &  call de_alloc( phi, 'phi',  'PhiOnMesh' )
+
+      end subroutine resetMeshPhi
+
       subroutine SameMeshAndAtoms(na, xa, ucell, rmax, G2max, G2mesh,
      &                            samesh, samexa)
 C

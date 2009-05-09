@@ -140,7 +140,7 @@ C Local variables
         integer                       :: k
         integer                       :: nStart
         integer                       :: nAtoms
-        logical                       :: eof
+!        logical                       :: eof
         logical,                 save :: firsttime = .true.
         integer                       :: input_type
         integer                       :: units_type
@@ -212,8 +212,10 @@ C Allocate Zmatrix arrays
      &                   'read_Zmatrix' )
           call re_alloc( lZmatVarsDef, 1, 3*na, 'lZmatVarsDef',
      &                   'read_Zmatrix' )
-          call re_alloc( ZmatVarNames, 1, 3*na, 'ZmatVarNames',
-     &                   'read_Zmatrix' )
+          nullify(ZmatVarNames)
+          allocate(ZmatVarNames(3*na))
+!          call re_alloc( ZmatVarNames, 1, 3*na, 'ZmatVarNames',
+!     &                   'read_Zmatrix' )
 
 C Read units for lengths and angles
           lengthunits = fdf_string('ZM.UnitsLength',unitslen_default)

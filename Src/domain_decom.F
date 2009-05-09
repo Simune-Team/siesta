@@ -6,7 +6,7 @@
       implicit none
 
       PUBLIC :: preSetOrbitLimits, domainDecom, gatherGlobalMatrix,
-     &          use_dd, ulimit, llimit, use_dd_perm,
+     &          resetDomainDecom, use_dd, ulimit, llimit, use_dd_perm,
      &          dd_perm, dd_invp, dd_cperm, dd_nuo, dd_nnode,
      &          dd_ncolum, dd_ncom, lni, lnb, dd_bsiz, dd_comm,
      &          gperm
@@ -43,6 +43,33 @@
       type(COMM_T)     :: Gcomm
 
       contains
+
+      subroutine resetDomainDecom(  )
+      implicit none
+
+      if (associated(dd_perm))
+     &  call de_alloc( dd_perm, 'dd_perm','domainDecom' )
+
+      if (associated(dd_invp))
+     &  call de_alloc( dd_invp, 'dd_invp','domainDecom' )
+
+      if (associated(dd_cperm))
+     &  call de_alloc( dd_cperm, 'dd_cperm','domainDecom' )
+
+      if (associated(dd_comm))
+     &  call de_alloc( dd_comm, 'dd_comm','domainDecom' )
+
+      if (associated(dd_bsiz))
+     &  call de_alloc( dd_bsiz, 'dd_bsiz','domainDecom' )
+
+      if (associated(dd_nnode))
+     &  call de_alloc( dd_nnode, 'dd_nnode','domainDecom' )
+
+      end subroutine resetDomainDecom
+
+
+
+
       subroutine preSetOrbitLimits( no )
       implicit none
 C     Input variables
@@ -63,7 +90,9 @@ C     Local variables
 #ifdef MPI
       use mpi_siesta
 #endif
+#ifdef _LANCZOS_
       use lu_factorization
+#endif
       implicit none
 C     Input variables
       integer          :: nuotot, nuo, nnz
@@ -85,36 +114,49 @@ C       Set orbitals to partitions
 
         call compuComm( )
 
+#ifdef _LANCZOS_
 C       compute distribution for LU
         if (use_lu_fact) call compCommDD2LU( nodes, nuotot, ginde )
+#endif
       endif
 
       call distriGlobalMatrix( nuotot, nuo, nnz )
-      if (use_lu_fact) call distCommDD2LU( node, nodes, nuotot )
+#ifdef _LANCZOS_
+      if (use_lu_fact) call distCommDD2LU( node, nodes )
+#endif
 
       if (node.eq.0) then
 !       Free local memory
-        call de_alloc( Gcomm%ind, 'comm%ind', 'domainDecom' )
+        if (associated(Gcomm%ind))
+     &    call de_alloc( Gcomm%ind, 'comm%ind', 'domainDecom' )
+        call de_alloc( DomNeigh, 'DomNeigh', 'domainDecom' )
+        call de_alloc( nNeigh, 'nNeigh', 'domainDecom' )
+        call de_alloc( nnzBou, 'nnzBou', 'domainDecom' )
+        call de_alloc( nnzInt, 'nnzInt', 'domainDecom' )
+        call de_alloc( ginvp, 'ginvp', 'domainDecom' )
+        call de_alloc( ginde, 'ginde', 'domainDecom' )
         call de_alloc( partition, 'partition', 'domainDecom' )
-!        call de_alloc( gperm, 'gperm', 'domainDecom' )
-!        call de_alloc( ginvp, 'ginvp', 'domainDecom' )
-!        call de_alloc( nnzBou, 'nnzBou', 'domainDecom' )
-!        call de_alloc( nnzInt, 'nnzInt', 'domainDecom' )
-!        call de_alloc( ginde, 'ginde', 'domainDecom' )
         call de_alloc( listhTot, 'listhTot', 'domainDecom' )
         call de_alloc( listhPtrTot, 'listhPtrTot', 'domainDecom' )
-        call de_alloc( DomNeigh, 'DomNeigh', 'domainDecom' )
-      else
-        nullify(gperm)
-        call re_alloc( gperm, 1, nuotot, 'gperm', 'createPerm' )
-      endif
-
+        if (use_lu_fact) then
 #ifdef MPI
-      call Mpi_Bcast( gperm, nuotot, MPI_INTEGER, 0, MPI_Comm_world,
-     &                MPIerror )
+          call Mpi_Bcast( gperm, nuotot, MPI_INTEGER, 0, MPI_Comm_world,
+     &                    MPIerror )
 #endif
+        else
+          call de_alloc( gperm, 'gperm', 'domainDecom' )
+        endif
+      else
+        if (use_lu_fact) then
+          nullify(gperm)
+          call re_alloc( gperm, 1, nuotot, 'gperm', 'domainDecom' )
+#ifdef MPI
+          call Mpi_Bcast( gperm, nuotot, MPI_INTEGER, 0, MPI_Comm_world,
+     &                    MPIerror )
+#endif
+        endif
+      endif
       end subroutine domainDecom
-
 
       subroutine reduceGlobalMatrix( nuotot, nuo, nnz )
       use sparse_matrices, only : numh, listh
@@ -134,7 +176,7 @@ C     Local variables
 
       if (node.eq.0) then
         nullify(nuos)
-        call re_alloc( nuos, 0, Nodes-1, 'nuos', 'reduceGlobalMatrix' )
+        call re_alloc( nuos, 0, Nodes-1, 'nuos', 'domainDecom' )
         blocks = nuotot/Nodes
         remain = nuotot - blocks*Nodes
         do PP= 0, Nodes-1
@@ -147,7 +189,7 @@ C     Local variables
 
         nullify(listhPtrTot)
         call re_alloc( listhPtrTot, 0, nuotot, 'listhPtrTot',
-     &                 'reduceGlobalMatrix' )
+     &                 'domainDecom' )
 
         listhPtrTot(1:nuo) = numh
         ind = nuo + 1
@@ -166,7 +208,7 @@ C     Local variables
 
         nullify(listhTot)
         call re_alloc( listhTot, 1, nnzG, 'listhTot',
-     &                 'reduceGlobalMatrix' )
+     &                 'domainDecom' )
 
         listhTot(1:nnz) = listh
         ind = nuo
@@ -179,9 +221,8 @@ C     Local variables
           ind = ind + nuos(PP)
         enddo
 #endif
-        call printMatrix( nuotot, nuotot, listhTot, listhPtrTot,
-     &                    'globmat1.ps', 'Global_matrix' )
-
+!        call printMatrix( nuotot, nuotot, listhTot, listhPtrTot,
+!     &                    'globmat1.ps', 'Global_matrix' )
         call de_alloc( nuos, 'nuos', 'domainDecom' )
       else
 #ifdef MPI
@@ -207,13 +248,13 @@ C     Local variables
       logical                       :: notfound
 
       nullify(partition)
-      call re_alloc( partition, 1, no, 'partition', 'makePartitions' )
+      call re_alloc( partition, 1, no, 'partition', 'domainDecom' )
 
 !     Drop diagonal nodes (autoconnection)
       nnz = listhPtrTot(no) - listhPtrTot(0) - no
       nullify(jja,iia)
-      call re_alloc( jja, 0, no, 'jja', 'makePartitions' )
-      call re_alloc( iia, 1, nnz, 'iia', 'makePartitions' )
+      call re_alloc( jja, 0, no, 'jja', 'domainDecom' )
+      call re_alloc( iia, 1, nnz, 'iia', 'domainDecom' )
 
       jja(0) = 1
       ind    = 1
@@ -231,8 +272,8 @@ C     Local variables
         jja(jj) = ind
       enddo
 
-      call printMatrix( no, no, iia, jja,
-     &                  'globmat2.ps', 'Global_matrix' )
+!      call printMatrix( no, no, iia, jja,
+!     &                  'globmat2.ps', 'Global_matrix' )
 
       metis_options(1) = 0
       if (nparts .gt. 8 ) then
@@ -245,8 +286,8 @@ C     Local variables
      &                                 edgecut, partition )
       endif
 
-      call de_alloc( jja, 'jja', 'makePartitions' )
-      call de_alloc( iia, 'iia', 'makePartitions' )
+      call de_alloc( jja, 'jja', 'domainDecom' )
+      call de_alloc( iia, 'iia', 'domainDecom' )
       end subroutine makePartitions
 
 
@@ -257,8 +298,8 @@ C     Local variables
       integer                       :: io, PP
 
       nullify(nnzInt,nnzBou)
-      call re_alloc( nnzInt, 1, Nodes, 'nnzInt', 'checkPartitionSize' )
-      call re_alloc( nnzBou, 1, Nodes, 'nnzBou', 'checkPartitionSize' )
+      call re_alloc( nnzInt, 1, Nodes, 'nnzInt', 'domainDecom' )
+      call re_alloc( nnzBou, 1, Nodes, 'nnzBou', 'domainDecom' )
       nnzInt = 0
       nnzBou = 0
       do io= 1, no
@@ -282,7 +323,7 @@ C     Local variables
       integer                       :: ii, jj
 
       nullify(ginde)
-      call re_alloc( ginde, 1, 4, 1, Nodes, 'ginde', 'boundaryNodes' )
+      call re_alloc( ginde, 1, 4, 1, Nodes, 'ginde', 'domainDecom' )
       ginde = 0
 
       do jj = 1, no
@@ -327,8 +368,8 @@ C     Local variables
      &                         perB(:), invB(:), perR(:), invR(:)
 
       nullify(gperm,ginvp)
-      call re_alloc( gperm, 1, no, 'gperm', 'createPerm' )
-      call re_alloc( ginvp, 1, no, 'ginvp', 'createPerm' )
+      call re_alloc( gperm, 1, no, 'gperm', 'domainDecom' )
+      call re_alloc( ginvp, 1, no, 'ginvp', 'domainDecom' )
 
       maxni = 1
       do dom= 1, Nodes
@@ -343,14 +384,14 @@ C     Local variables
         maxnz = max(maxnz,nnzInt(dom))
       enddo
       nullify(adj,xadj,perI,invI,perR,invR,perB,invB)
-      call re_alloc(  adj, 1, maxnz,  'adj', 'createPerm' )
-      call re_alloc( xadj, 0, maxni, 'xadj', 'createPerm' )
-      call re_alloc( perI, 1,    no, 'perI', 'createPerm' )
-      call re_alloc( invI, 1, maxni, 'invI', 'createPerm' )
-      call re_alloc( perR, 1, maxni, 'perR', 'createPerm' )
-      call re_alloc( invR, 1, maxni, 'invR', 'createPerm' )
-      call re_alloc( perB, 1,    no, 'perB', 'createPerm' )
-      call re_alloc( invB, 1, maxnb, 'invB', 'createPerm' )
+      call re_alloc(  adj, 1, maxnz,  'adj', 'domainDecom' )
+      call re_alloc( xadj, 0, maxni, 'xadj', 'domainDecom' )
+      call re_alloc( perI, 1,    no, 'perI', 'domainDecom' )
+      call re_alloc( invI, 1, maxni, 'invI', 'domainDecom' )
+      call re_alloc( perR, 1, maxni, 'perR', 'domainDecom' )
+      call re_alloc( invR, 1, maxni, 'invR', 'domainDecom' )
+      call re_alloc( perB, 1,    no, 'perB', 'domainDecom' )
+      call re_alloc( invB, 1, maxnb, 'invB', 'domainDecom' )
 
       metisOpt = 0
       offsetI  = 0
@@ -382,14 +423,14 @@ C     Local variables
         end do
         offsetB = offsetB + boloc
       enddo
-      call de_alloc(  adj,  'adj', 'createPerm' )
-      call de_alloc( xadj, 'xadj', 'createPerm' )
-      call de_alloc( perI, 'perI', 'createPerm' )
-      call de_alloc( invI, 'invI', 'createPerm' )
-      call de_alloc( perR, 'perR', 'createPerm' )
-      call de_alloc( invR, 'invR', 'createPerm' )
-      call de_alloc( perB, 'perB', 'createPerm' )
-      call de_alloc( invB, 'invB', 'createPerm' )
+      call de_alloc(  adj,  'adj', 'domainDecom' )
+      call de_alloc( xadj, 'xadj', 'domainDecom' )
+      call de_alloc( perI, 'perI', 'domainDecom' )
+      call de_alloc( invI, 'invI', 'domainDecom' )
+      call de_alloc( perR, 'perR', 'domainDecom' )
+      call de_alloc( invR, 'invR', 'domainDecom' )
+      call de_alloc( perB, 'perB', 'domainDecom' )
+      call de_alloc( invB, 'invB', 'domainDecom' )
 
 
       call printPermMatrix( no, listhTot, listhPtrTot, gperm, ginvp,
@@ -445,46 +486,55 @@ C     Local variables
         enddo
       enddo
 
-      nullify(src,dst)
-      call re_alloc( src, 1, ncom, 'src', 'compuComm' )
-      call re_alloc( dst, 1, ncom, 'dst', 'compuComm' )
-      ncom = 0
-      ind  = 0
-      do PP=2, Nodes
-        do QQ=1, PP-1
-          ind = ind + 1
-          if (DomNeigh(ind)) then
-            ncom = ncom + 1
-            src(ncom) = QQ
-            dst(ncom) = PP
-          endif
-        enddo
-      enddo
-
-      Gcomm%np = Nodes
-C     reschedule the communications in order to minimize the time
-      call scheduleComm( ncom, src, dst, Gcomm )
-
       nullify(nNeigh)
       call re_alloc( nNeigh, 1, Nodes, 'nNeigh', 'compuComm' )
-      do PP=1, Nodes
-        KK = 0
-        do QQ= 1, Gcomm%ncol
-          ind = Gcomm%ind(QQ,PP)
-          if (ind.ne.0) then
-            KK = KK + 1
-            if (src(ind).eq.PP) then
-              Gcomm%ind(KK,PP) = dst(ind)
-            else
-              Gcomm%ind(KK,PP) = src(ind)
-            endif
-          endif
-        enddo
-        nNeigh(PP) = KK
-      enddo
 
-      call de_alloc( dst, 'src', 'compuComm' )
-      call de_alloc( src, 'dst', 'compuComm' )
+      if (ncom.gt.0) then
+        nullify(src,dst)
+        call re_alloc( src, 1, ncom, 'src', 'compuComm' )
+        call re_alloc( dst, 1, ncom, 'dst', 'compuComm' )
+        ncom = 0
+        ind  = 0
+        do PP=2, Nodes
+          do QQ=1, PP-1
+            ind = ind + 1
+            if (DomNeigh(ind)) then
+              ncom = ncom + 1
+              src(ncom) = QQ
+              dst(ncom) = PP
+            endif
+          enddo
+        enddo
+
+        Gcomm%np = Nodes
+C       reschedule the communications in order to minimize the time
+        call scheduleComm( ncom, src, dst, Gcomm )
+
+        do PP=1, Nodes
+          KK = 0
+          do QQ= 1, Gcomm%ncol
+            ind = Gcomm%ind(QQ,PP)
+            if (ind.ne.0) then
+              KK = KK + 1
+              if (src(ind).eq.PP) then
+                Gcomm%ind(KK,PP) = dst(ind)
+              else
+                Gcomm%ind(KK,PP) = src(ind)
+              endif
+            endif
+          enddo
+          nNeigh(PP) = KK
+        enddo
+
+        call de_alloc( dst, 'src', 'compuComm' )
+        call de_alloc( src, 'dst', 'compuComm' )
+      else
+        nNeigh     = 0
+        Gcomm%np   = Nodes
+        Gcomm%ncol = 0
+        nullify(Gcomm%ind)
+      endif
+
       end subroutine compuComm
 
 
@@ -553,8 +603,7 @@ C     reschedule the communications in order to minimize the time
 #endif
 
       nullify(dd_nnode)
-      call re_alloc( dd_nnode, 1, notot, 'dd_nnode',
-     &               'distriGlobalMatrix' )
+      call re_alloc( dd_nnode, 1, notot, 'dd_nnode', 'domainDecom' )
       if (Node.eq.0) dd_nnode = abs(partition) - 1
 #ifdef MPI
       call MPI_BCast( dd_nnode, notot, MPI_INTEGER, 0,
@@ -573,15 +622,14 @@ C     reschedule the communications in order to minimize the time
           enddo
 
           nullify(linvp)
-          call re_alloc( linvp, 1, l_no, 'linvp', 'distriGlobalMatrix' )
+          call re_alloc( linvp, 1, l_no, 'linvp', 'domainDecom' )
           linvp(1:ginde(2,PP)) =
      &      ginvp(ginde(1,PP):ginde(1,PP)+ginde(2,PP)-1)
           linvp(ginde(2,PP)+1:l_no) =
      &      ginvp(ginde(3,PP):ginde(3,PP)+ginde(4,PP)-1)
 
           nullify(lbinvp)
-          call re_alloc( lbinvp, 1, l_bou, 'lbinvp',
-     &                   'distriGlobalMatrix' )
+          call re_alloc( lbinvp, 1, l_bou, 'lbinvp', 'domainDecom' )
           ind = 1
           do QQ= 1, l_nei
             RR = Gcomm%ind(QQ,PP)
@@ -592,15 +640,16 @@ C     reschedule the communications in order to minimize the time
           enddo
 
           nullify(lbsize)
-          call re_alloc( lbsize, 1, l_nei, 'lbsize',
-     &                   'distriGlobalMatrix' )
-          do QQ= 1, l_nei
-            lbsize(QQ) = ginde(4,Gcomm%ind(QQ,PP))
-          enddo
+          if (l_nei.gt.0) then
+            call re_alloc( lbsize, 1, l_nei, 'lbsize', 'domainDecom' )
+            do QQ= 1, l_nei
+              lbsize(QQ) = ginde(4,Gcomm%ind(QQ,PP))
+            enddo
+          endif
 
           nullify(jja,iia)
-          call re_alloc( jja, 1, l_no, 'jja', 'distriGlobalMatrix' )
-          call re_alloc( iia, 1, l_nnz, 'iia', 'distriGlobalMatrix' )
+          call re_alloc( jja, 1, l_no, 'jja', 'domainDecom' )
+          call re_alloc( iia, 1, l_nnz, 'iia', 'domainDecom' )
 
           ind = 1
           DO io= 1, l_no
@@ -628,11 +677,13 @@ C     reschedule the communications in order to minimize the time
           call MPI_Send( lbinvp, l_bou, MPI_INTEGER, PP-1, 0,
      &                   MPI_Comm_world, MPIerror )
 
-          call MPI_Send( Gcomm%ind(1,PP), l_nei, MPI_INTEGER, PP-1, 0,
-     &                   MPI_Comm_world, MPIerror )
+          if (l_nei.gt.0) then
+            call MPI_Send( Gcomm%ind(1,PP), l_nei, MPI_INTEGER, PP-1,
+     &                     0, MPI_Comm_world, MPIerror )
 
-          call MPI_Send( lbsize, l_nei, MPI_INTEGER, PP-1, 0,
-     &                   MPI_Comm_world, MPIerror )
+            call MPI_Send( lbsize, l_nei, MPI_INTEGER, PP-1, 0,
+     &                     MPI_Comm_world, MPIerror )
+         endif
 
           call MPI_Send( jja, l_no, MPI_INTEGER, PP-1, 0,
      &                   MPI_Comm_world, MPIerror )
@@ -641,11 +692,12 @@ C     reschedule the communications in order to minimize the time
      &                   MPI_Comm_world, MPIerror )
 #endif
 
-          call de_alloc( jja, 'jja', 'distriGlobalMatrix' )
-          call de_alloc( iia, 'iia', 'distriGlobalMatrix' )
-          call de_alloc( lbsize, 'lbsize', 'distriGlobalMatrix' )
-          call de_alloc( lbinvp, 'lbinvp', 'distriGlobalMatrix' )
-          call de_alloc( linvp, 'linvp', 'distriGlobalMatrix' )
+          call de_alloc( jja, 'jja', 'domainDecom' )
+          call de_alloc( iia, 'iia', 'domainDecom' )
+          if (l_nei.gt.0)
+     &      call de_alloc( lbsize, 'lbsize', 'domainDecom' )
+          call de_alloc( lbinvp, 'lbinvp', 'domainDecom' )
+          call de_alloc( linvp, 'linvp', 'domainDecom' )
         enddo
 C       Compute data for local Process
         l_lni = ginde(2,1)
@@ -659,16 +711,14 @@ C       Compute data for local Process
         enddo
 
         nullify(dd_invp)
-        call re_alloc( dd_invp, 1, l_no, 'dd_invp',
-     &                 'distriGlobalMatrix' )
+        call re_alloc( dd_invp, 1, l_no, 'dd_invp', 'domainDecom' )
         dd_invp(1:ginde(2,1)) =
      &    ginvp(ginde(1,1):ginde(1,1)+ginde(2,1)-1)
         dd_invp(ginde(2,1)+1:l_no) =
      &    ginvp(ginde(3,1):ginde(3,1)+ginde(4,1)-1)
 
         nullify(lbinvp)
-        call re_alloc( lbinvp, 1, l_bou, 'lbinvp',
-     &                 'distriGlobalMatrix' )
+        call re_alloc( lbinvp, 1, l_bou, 'lbinvp', 'domainDecom' )
         ind = 1
         do QQ= 1, l_nei
           RR = Gcomm%ind(QQ,1)
@@ -678,22 +728,21 @@ C       Compute data for local Process
           ind = ind + ll
         enddo
 
-        nullify(dd_comm)
-        call re_alloc( dd_comm, 1, l_nei, 'dd_comm',
-     &                 'distriGlobalMatrix' )
-        dd_comm = Gcomm%ind(1:l_nei,1)
+        nullify(dd_comm,dd_bsiz)
+        if (l_nei.gt.0) then
+          call re_alloc( dd_comm, 1, l_nei, 'dd_comm', 'domainDecom' )
+          dd_comm = Gcomm%ind(1:l_nei,1)
 
-        nullify(dd_bsiz)
-        call re_alloc( dd_bsiz, 1, l_nei, 'dd_bsiz',
-     &                 'distriGlobalMatrix' )
-        do QQ= 1, l_nei
-          dd_bsiz(QQ) = ginde(4,Gcomm%ind(QQ,1))
-        enddo
+          call re_alloc( dd_bsiz, 1, l_nei, 'dd_bsiz', 'domainDecom' )
+          do QQ= 1, l_nei
+            dd_bsiz(QQ) = ginde(4,Gcomm%ind(QQ,1))
+          enddo
+        endif
 
-C        call de_alloc( numh, 'numh', 'distriGlobalMatrix' )
-        call re_alloc( numh, 1, l_no, 'numh', 'distriGlobalMatrix' )
-C        call de_alloc( listh, 'listh', 'distriGlobalMatrix' )
-        call re_alloc( listh, 1, l_nnz, 'listh', 'distriGlobalMatrix' )
+C        call de_alloc( numh, 'numh', 'domainDecom' )
+        call re_alloc( numh, 1, l_no, 'numh', 'domainDecom' )
+C        call de_alloc( listh, 'listh', 'domainDecom' )
+        call re_alloc( listh, 1, l_nnz, 'listh', 'domainDecom' )
 
         ind = 1
         DO io= 1, l_no
@@ -719,41 +768,39 @@ C       Receive Data from process 0
         l_no  = l_lni + l_lnb
 
         nullify(dd_invp)
-        call re_alloc( dd_invp, 1, l_no, 'dd_invp',
-     &                 'distriGlobalMatrix' )
+        call re_alloc( dd_invp, 1, l_no, 'dd_invp', 'domainDecom' )
 #ifdef MPI
         call MPI_Recv( dd_invp, l_no, MPI_INTEGER, 0, 0,
      &                 MPI_Comm_world, Status, MPIerror )
 #endif
 
         nullify(lbinvp)
-        call re_alloc( lbinvp, 1, l_bou, 'lbinvp',
-     &                 'distriGlobalMatrix' )
+        call re_alloc( lbinvp, 1, l_bou, 'lbinvp', 'domainDecom' )
 #ifdef MPI
         call MPI_Recv( lbinvp, l_bou, MPI_INTEGER, 0, 0,
      &                 MPI_Comm_world, Status, MPIerror )
 #endif
 
-        nullify(dd_comm)
-        call re_alloc( dd_comm, 1, l_nei, 'dd_comm',
-     &                 'distriGlobalMatrix' )
+        nullify(dd_comm,dd_bsiz)
+        if (l_nei.gt.0) then
+
+          call re_alloc( dd_comm, 1, l_nei, 'dd_comm', 'domainDecom' )
 #ifdef MPI
-        call MPI_Recv( dd_comm, l_nei, MPI_INTEGER, 0, 0,
-     &                 MPI_Comm_world, Status, MPIerror )
+          call MPI_Recv( dd_comm, l_nei, MPI_INTEGER, 0, 0,
+     &                   MPI_Comm_world, Status, MPIerror )
 #endif
 
-        nullify(dd_bsiz)
-        call re_alloc( dd_bsiz, 1, l_nei, 'dd_bsiz',
-     &                 'distriGlobalMatrix' )
+          call re_alloc( dd_bsiz, 1, l_nei, 'dd_bsiz', 'domainDecom' )
 #ifdef MPI
-        call MPI_Recv( dd_bsiz, l_nei, MPI_INTEGER, 0, 0,
-     &                 MPI_Comm_world, Status, MPIerror )
+          call MPI_Recv( dd_bsiz, l_nei, MPI_INTEGER, 0, 0,
+     &                  MPI_Comm_world, Status, MPIerror )
 #endif
+        endif
 
-C        call de_alloc( numh, 'numh', 'distriGlobalMatrix' )
-        call re_alloc( numh, 1, l_no, 'numh', 'distriGlobalMatrix' )
-C        call de_alloc( listh, 'listh', 'distriGlobalMatrix' )
-        call re_alloc( listh, 1, l_nnz, 'listh', 'distriGlobalMatrix' )
+C        call de_alloc( numh, 'numh', 'domainDecom' )
+        call re_alloc( numh, 1, l_no, 'numh', 'domainDecom' )
+C        call de_alloc( listh, 'listh', 'domainDecom' )
+        call re_alloc( listh, 1, l_nnz, 'listh', 'domainDecom' )
 
 #ifdef MPI
         call MPI_Recv( numh, l_no, MPI_INTEGER, 0, 0,
@@ -770,8 +817,8 @@ C        call de_alloc( listh, 'listh', 'distriGlobalMatrix' )
       lnb       = l_lnb
       dd_ncom   = l_nei
       dd_ncolum = l_no + l_bou
-C      call de_alloc( listhptr, 'listhptr', 'distriGlobalMatrix' )
-      call re_alloc( listhptr, 1, no, 'listhptr', 'distriGlobalMatrix' )
+C      call de_alloc( listhptr, 'listhptr', 'domainDecom' )
+      call re_alloc( listhptr, 1, no, 'listhptr', 'domainDecom' )
       ind = 0
       do io= 1, no
         listhptr(io) = ind
@@ -779,7 +826,7 @@ C      call de_alloc( listhptr, 'listhptr', 'distriGlobalMatrix' )
       enddo
 
       nullify(dd_perm)
-      call re_alloc( dd_perm, 1, notot, 'dd_perm','distriGlobalMatrix' )
+      call re_alloc( dd_perm, 1, notot, 'dd_perm','domainDecom' )
       dd_perm = 0
       do io= 1, no
         ind          = dd_invp(io)
@@ -789,20 +836,24 @@ C      call de_alloc( listhptr, 'listhptr', 'distriGlobalMatrix' )
 
       nullify(dd_cperm)
       call re_alloc( dd_cperm, 1, notot, 'dd_cperm',
-     &               'distriGlobalMatrix' )
+     &               'domainDecom' )
       dd_cperm = dd_perm
       do io= 1, l_bou
         ind           = lbinvp(io)
         dd_cperm(ind) = io + l_no
       enddo
 
-      call de_alloc( lbinvp, 'lbinvp', 'distriGlobalMatrix' )
+      call de_alloc( lbinvp, 'lbinvp', 'domainDecom' )
 
 
       use_dd_perm = .true.
       dd_nuo      = no
       end subroutine distriGlobalMatrix
 
+!
+!     This is just a debug function to gather the global matrix into
+!     process 0 when the files are distributed using DomainDecomposition
+!
       subroutine gatherGlobalMatrix( nuotot, nuo, nnz, ML, filename )
 #ifdef MPI
       use mpi_siesta
@@ -828,7 +879,7 @@ C      call de_alloc( listhptr, 'listhptr', 'distriGlobalMatrix' )
       if (node.eq.0) then
         nullify(listhPtrTot)
         call re_alloc( listhPtrTot, 0, nuotot, 'listhPtrTot',
-     &                 'gatherGlobalMatrix' )
+     &                 'domainDecom' )
 
         do PP=1, Nodes
           nuo_l = ginde(2,PP) + ginde(4,PP)
@@ -836,7 +887,7 @@ C      call de_alloc( listhptr, 'listhptr', 'distriGlobalMatrix' )
             ja => numh
           else
             nullify(ja)
-            call re_alloc( ja, 1, nuo_l, 'ja', 'gatherGlobalMatrix' )
+            call re_alloc( ja, 1, nuo_l, 'ja', 'domainDecom' )
 #ifdef MPI
             call MPI_recv( ja, nuo_l, MPI_INTEGER,
      &                     PP-1, 1, MPI_Comm_world, Status, MPIerror )
@@ -857,7 +908,7 @@ C      call de_alloc( listhptr, 'listhptr', 'distriGlobalMatrix' )
           if (PP.eq.1) then
             ja => null()
           else
-            call de_alloc( ja, 'ja', 'gatherGlobalMatrix' )
+            call de_alloc( ja, 'ja', 'domainDecom' )
           endif
         enddo
         listhPtrTot(0) = 1
@@ -868,8 +919,8 @@ C      call de_alloc( listhptr, 'listhptr', 'distriGlobalMatrix' )
 
         nullify(listhTot,M)
         call re_alloc( listhTot, 1, nnzG, 'listhTot',
-     &                 'gatherGlobalMatrix' )
-        call re_alloc( M, 1, nnzG, 'M', 'gatherGlobalMatrix' )
+     &                 'domainDecom' )
+        call re_alloc( M, 1, nnzG, 'M', 'domainDecom' )
         do PP=1, Nodes
           nuo_l = ginde(2,PP) + ginde(4,PP)
           nnz_l = nnzInt(PP) + nnzBou(PP)
@@ -878,8 +929,8 @@ C      call de_alloc( listhptr, 'listhptr', 'distriGlobalMatrix' )
             an => ML
           else
             nullify(ia,an)
-            call re_alloc( ia, 1, nnz_l, 'ia', 'gatherGlobalMatrix' )
-            call re_alloc( an, 1, nnz_l, 'an', 'gatherGlobalMatrix' )
+            call re_alloc( ia, 1, nnz_l, 'ia', 'domainDecom' )
+            call re_alloc( an, 1, nnz_l, 'an', 'domainDecom' )
 #ifdef MPI
             call MPI_recv( ia, nnz_l, MPI_INTEGER,
      &                     PP-1, 1, MPI_Comm_world, Status, MPIerror )
@@ -914,8 +965,8 @@ C      call de_alloc( listhptr, 'listhptr', 'distriGlobalMatrix' )
             ia => null()
             an => null()
           else
-            call de_alloc( ia, 'ia', 'gatherGlobalMatrix' )
-            call de_alloc( an, 'an', 'gatherGlobalMatrix' )
+            call de_alloc( ia, 'ia', 'domainDecom' )
+            call de_alloc( an, 'an', 'domainDecom' )
           endif
         enddo
 
@@ -934,11 +985,11 @@ C      call de_alloc( listhptr, 'listhptr', 'distriGlobalMatrix' )
         call pxfflush(fd)
         call io_close( fd )
 
-        call de_alloc( ja, 'ja', 'gatherGlobalMatrix' )
-        call de_alloc( an, 'an', 'gatherGlobalMatrix' )
-        call de_alloc( M, 'M', 'gatherGlobalMatrix' )
-        call de_alloc( listhPtrTot, 'listhPtrTot','gatherGlobalMatrix' )
-        call de_alloc( listhTot, 'listhTot', 'gatherGlobalMatrix' )
+        call de_alloc( ja, 'ja', 'domainDecom' )
+        call de_alloc( an, 'an', 'domainDecom' )
+        call de_alloc( M, 'M', 'domainDecom' )
+        call de_alloc( listhPtrTot, 'listhPtrTot','domainDecom' )
+        call de_alloc( listhTot, 'listhTot', 'domainDecom' )
       else
 #ifdef MPI
         call MPI_send( numh, nuo, MPI_INTEGER, 0, 1,

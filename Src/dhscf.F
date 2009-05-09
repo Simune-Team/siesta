@@ -229,6 +229,7 @@ C       Calculate orbital values on mesh
         call write_debug( '      PRE PhiOnMesh' )
 #endif
 #ifdef MPI
+        nullify(numphi_par)
         call re_alloc( numphi_par, 1, nmpl, 'numphi_par', 'dhscf_init' )
         call distMeshData( 1, numphi, 2, numphi_par, 0 )
 #else
@@ -782,7 +783,7 @@ C     Solve Poisson's equation
       call re_alloc( Vscf_seq, 1, ntpl, name='Vscf_seq',
      &               routine='dhscf' )
 #ifdef DEBUG
-        call write_debug( '    PRE Poison' )
+      call write_debug( '    PRE Poison' )
 #endif
       call poison( cell, ntml(1), ntml(2), ntml(3), ntm, DRho_seq,
      &             DUscf, Vscf_seq, DStres, nsm )
@@ -983,7 +984,7 @@ C Global reduction of Uscf/DUscf/Uatm/Enaatm/Enascf
 #endif
       call MPI_AllReduce( sbuffer, rbuffer, 7, MPI_double_precision,
      &                     MPI_Sum, MPI_Comm_World, MPIerror )
-
+      write(23,*) 'Energies:', rbuffer
       Uscf   = rbuffer(1)
       DUscf  = rbuffer(2)
       Uatm   = rbuffer(3)
@@ -992,8 +993,6 @@ C Global reduction of Uscf/DUscf/Uatm/Enaatm/Enascf
       Exc    = rbuffer(6)
       Dxc    = rbuffer(7)
 #endif
-      write(23,*) 'Energies:', rbuffer
-      flush(23)
 C Add contribution to stress from the derivative of the Jacobian of ---
 C r->r' (strained r) in the integral of Vna*(rhoscf-rhoatm)
       if (istr .eq. 1) then
@@ -1067,6 +1066,5 @@ C ----------------------------------------------------------------------
       call de_alloc( Vaux, name='Vaux', routine='dhscf' )
       call de_alloc( Vscf, name='Vscf', routine='dhscf' )
       call de_alloc( DRho, name='DRho', routine='dhscf' )
-
 !--------------------------------------------------------------------------- END
       end subroutine dhscf

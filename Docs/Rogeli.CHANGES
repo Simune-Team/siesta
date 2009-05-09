@@ -1,4 +1,21 @@
 ------------------------------------------------------------------------
+2009-06-05 (originally) Alberto Garcia      rogeli-lanczos-2
+2009-May-6 snapshot -- More Lanczos and OpenMP
+
+State of the code sometime on May 6, 2009.
+
+This was taken from the state of his directory
+
+/home/bsc21/bsc21017/siesta-BSC/
+
+* More Lanczos and OpenMP changes.
+* Some extra cosmetic changes in a number of routines
+* Nullification of pointer in arw.
+
+NOTE that this snapshot does not compile cleanly.
+
+
+------------------------------------------------------------------------
 2009-03-25 (originally) Alberto Garcia      rogeli-lanczos-1
 2009-March-25 snapshot -- Lanczos method, some OpenMP
 

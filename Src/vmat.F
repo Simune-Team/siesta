@@ -49,7 +49,7 @@ C  Modules
       use mesh,          only: dxa, nsp, xdop, xdsp, meshLim
       use meshdscf,      only: needdscfl, listdl, numdl, nrowsdscfl,
      &                         listdlptr
-      use meshphi
+      use meshphi,       only: directphi, endpht, lstpht, listp2, phi
       use parallel,      only: Nodes
       use alloc,         only: re_alloc, de_alloc
 
@@ -69,20 +69,18 @@ C Internal variables and arrays
      &                            ip, iphi, io, is, isp, ispin, iu, iul,
      &                            ix, j, jc, jl, last, lasta, lastop,
      &                            maxloc, maxloc2, nc, nlocal, nphiloc,
-     &                            nvmaxl, triang, lenx
+     &                            nvmaxl, triang, lenx, leny, lenz,lenxy
       logical                  :: ParallelLocal
-      real(dp)                 :: Vij, r2sp
+      real(dp)                 :: Vij, r2sp, dxsp(3), VClocal(nsp)
 
       integer,         pointer :: ilc(:),    omp_ilc(:,:),
      &                            ilocal(:), omp_ilocal(:,:),
      &                            iorb(:),   omp_iorb(:,:)
       real(dp),        pointer :: DscfL(:,:), omp_DscfL(:,:,:),
      &                            Vss(:,:), omp_Vss(:,:,:),
-     &                            VClocal(:), omp_VClocal(:,:),
      &                            Clocal(:,:), omp_Clocal(:,:,:),
      &                            Vlocal(:,:), omp_Vlocal(:,:,:),
      &                            phia(:,:), omp_phia(:,:,:),
-     &                            dxsp(:), omp_dxsp(:,:),
      &                            r2cut(:)
       integer                  :: NTH, TID
 #ifdef _OMP_
@@ -97,8 +95,9 @@ C     Start time counter
       call timer('vmat',1)
 
 C     Find atomic cutoff radii
+      nullify(r2cut)
       call re_alloc( r2cut, 1, nsmax, 'r2cut', 'vmat' )
-      r2cut(:) = 0.0_dp
+      r2cut = 0.0_dp
       do i = 1,nuotot
         ia = iaorb(i)
         is = isa(ia)
@@ -109,6 +108,9 @@ C     Find atomic cutoff radii
 C     Set algorithm logical
       ParallelLocal = (Nodes.gt.1)
       lenx  = meshLim(2,1) - meshLim(1,1) + 1
+      leny  = meshLim(2,2) - meshLim(1,2) + 1
+      lenz  = meshLim(2,3) - meshLim(1,3) + 1
+      lenxy = lenx*leny
 
 C     Find value of maxloc
       maxloc2 = maxval(endpht(1:np)-endpht(0:np-1))
@@ -124,15 +126,16 @@ C     Find value of maxloc
       endif
 
 C     Allocate local memory
-!$OMP   PARALLEL DEFAULT(NONE) SHARED(no,maxloc,maxloc2,triang,nspin,
-!$   &    np,endpht,NeedDscfL,numdl,listdlptr,listdl,lenx,nvmaxl,
-!$   &    dxa,nsp,xdop,xdsp,listp2,directphi,phi,V,r2cut,listVsptr,
-!$   &    listVs,indxuo,lstpht,numVs,dVol,omp_ilocal,omp_DscfL,omp_ilc,
-!$   &    omp_iorb,omp_Vlocal,omp_Clocal,omp_VClocal,omp_phia,omp_dxsp,
-!$   &    omp_Vss,Vs,parallellocal,nvmax)
-!$   &    PRIVATE(ilocal,ilc,iorb,Vlocal,Clocal,VClocal,dxsp,last,ip,nc,
-!$   &    nlocal,ic,imp,i,j,il,jl,ijl,iu,iul,ii,ispin,r2sp,Vij,iphi,
-!$   &    nphiloc,lasta,lastop,is,iop,ia,phia,ind,tid,nth,DscfL,Vss)
+!$OMP   PARALLEL DEFAULT(NONE) SHARED(no,np,nvmax,iaorb,nspin,iphorb,
+!$   &    isa,numVs,listVsptr,listVs,V,dVol,Vs,maxloc,maxloc2,
+!$   &    nvmaxl,triang,lenx,leny,lenxy,parallellocal,omp_ilc,
+!$   &    omp_ilocal,omp_iorb,omp_DscfL,omp_Vss,omp_Clocal,omp_Vlocal,
+!$   &    omp_phia,r2cut,indxuo,dxa,nsp,xdop,xdsp,NeedDscfL,listdl,
+!$   &    numdl,listdlptr,directphi,endpht,lstpht,listp2,phi)
+!$   &    PRIVATE(i,ia,ic,ii,ijl,il,imp,ind,iop,ip,iphi,is,isp,ispin,
+!$   &    iu,iul,ix,j,jc,jl,last,lasta,lastop,nc,nlocal,nphiloc,Vij,
+!$   &    r2sp,dxsp,VClocal,ilc,ilocal,iorb,DscfL,Vss,Clocal,Vlocal,
+!$   &    phia,nth,tid)
 #ifdef _OMP_
       NTH = omp_get_num_threads( )
       TID = omp_get_thread_num( ) + 1
@@ -155,19 +158,16 @@ C     Allocate local memory
       endif
 
       nullify ( omp_ilocal, omp_ilc, omp_iorb, omp_Vlocal,
-     &          omp_Clocal, omp_VClocal, omp_phia, omp_dxsp )
+     &          omp_Clocal, omp_phia )
       call re_alloc( omp_ilocal, 1, no, 1, NTH, 'ilocal', 'vmat' )
       call re_alloc( omp_ilc, 1, maxloc2, 1, NTH, 'ilc', 'vmat' )
-      call re_alloc( omp_iorb, 0, maxloc, 1, NTH, 'iorb', 'vmat' )
+      call re_alloc( omp_iorb, 1, maxloc, 1, NTH, 'iorb', 'vmat' )
       call re_alloc( omp_Vlocal, 1, triang, 1, nspin, 1, NTH,
      &               'Vlocal', 'vmat' )
       call re_alloc( omp_Clocal, 1, nsp, 1, maxloc2, 1, NTH,
      &               'Clocal', 'vmat' )
-      call re_alloc( omp_VClocal, 1, max(nsp,16), 1, NTH,
-     &               'VClocal', 'vmat' )
       call re_alloc( omp_phia, 1, maxoa, 1, nsp, 1, NTH,
      &               'phia', 'vmat' )
-      call re_alloc( omp_dxsp, 1, 16, 1, NTH, 'dxsp', 'vmat' )
 !$OMP END SINGLE
 
       if (ParallelLocal) then
@@ -182,21 +182,21 @@ C     Allocate local memory
       endif
       ilocal   => omp_ilocal(1:no,TID)
       ilc      => omp_ilc(1:maxloc2,TID)
-      iorb     => omp_iorb(1:,TID)
+      iorb     => omp_iorb(1:maxloc,TID)
       Vlocal   => omp_Vlocal(1:triang,1:nspin,TID)
       Clocal   => omp_Clocal(1:nsp,1:maxloc2,TID)
-      VClocal  => omp_VClocal(1:nsp,TID)
       phia     => omp_phia(1:maxoa,1:nsp,TID)
-      dxsp     => omp_dxsp(1:3,TID)
 
 C     Full initializations done only once
-      ilocal(1:no)   = 0
-      iorb(0:maxloc) = 0
-      Vlocal(:,:)    = 0.0_dp
-      last           = 0
+      ilocal(1:no)             = 0
+      iorb(1:maxloc)           = 0
+      Vlocal(1:triang,1:nspin) = 0.0_dp
+      last                     = 0
+
+!$OMP BARRIER
 
 C     Loop over grid points
-!$OMP DO SCHEDULE(GUIDED,LENX)
+!$OMP DO SCHEDULE(STATIC,LENXY)
       do ip = 1,np
 C       Find number of nonzero orbitals at this point
         nc = endpht(ip) - endpht(ip-1)
@@ -280,7 +280,10 @@ C       If overflooded, add Vlocal to Vs and reinitialize it
               endif
             endif
           enddo
-          ilocal(iorb(1:last)) = 0
+!         Reset local arrays
+          do ii= 1, last
+            ilocal(iorb(ii)) = 0
+          enddo
           iorb(1:last) = 0
           ijl = (last+1)*(last+2)/2
           Vlocal(1:ijl,1:nspin) = 0.0_dp
@@ -471,9 +474,7 @@ C  Add final Vlocal to Vs
 !$OMP END PARALLEL
 
 C     Free memory
-      call de_alloc( omp_dxsp, 'dxsp', 'vmat' )
       call de_alloc( omp_phia, 'phia', 'vmat' )
-      call de_alloc( omp_VClocal, 'VClocal', 'vmat' )
       call de_alloc( omp_Clocal, 'Clocal', 'vmat' )
       call de_alloc( omp_Vlocal, 'Vlocal', 'vmat' )
       call de_alloc( omp_iorb, 'iorb', 'vmat' )

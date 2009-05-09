@@ -110,7 +110,7 @@ module molecularmechanics
           endif
           nMMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
           nMMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
-          write(6,"(a,i3,a,i3))") "C6 - two-body potential between ", &
+          write(6,"(a,i3,a,i3)") "C6 - two-body potential between ", &
                         fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
           if (nr .ge. 2) then
 ! C6 : Parameter one is C6 coefficient
@@ -133,7 +133,7 @@ module molecularmechanics
           endif
           nMMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
           nMMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
-          write(6,"(a,i3,a,i3))") "C8 - two-body potential between ", &
+          write(6,"(a,i3,a,i3)") "C8 - two-body potential between ", &
                         fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
           if (nr .ge. 2) then
 ! C8 : Parameter one is C8 coefficient
@@ -156,7 +156,7 @@ module molecularmechanics
           endif
           nMMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
           nMMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
-          write(6,"(a,i3,a,i3))") "C10 - two-body potential between ", &
+          write(6,"(a,i3,a,i3)") "C10 - two-body potential between ", &
                         fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
           if (nr .ge. 2) then
 ! C10 : Parameter one is C10 coefficient
@@ -179,7 +179,7 @@ module molecularmechanics
           endif
           nMMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
           nMMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
-          write(6,"(a,i3,a,i3))") "Harmonic two-body potential between ",   &
+          write(6,"(a,i3,a,i3)") "Harmonic two-body potential between ",   &
                         fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
           if (nr .ge. 2) then
 ! Harm : Parameter one is force constant
@@ -202,7 +202,7 @@ module molecularmechanics
           endif
           nMMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
           nMMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
-          write(6,"(a,i3,a,i3))") "Grimme two-body potential between ", &
+          write(6,"(a,i3,a,i3)") "Grimme two-body potential between ", &
                         fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
           if (nr.eq.2) then
 

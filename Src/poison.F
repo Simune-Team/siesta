@@ -207,7 +207,8 @@ C Copy potential to array V
       enddo
  
 C Stop time counter
-      call timer('POISON',2)
+      call timer( 'POISON', 2)
+      call timer( 'POISON', 3)
 
 C Free local memory
       call de_alloc( CG, 'CG', 'poison' )

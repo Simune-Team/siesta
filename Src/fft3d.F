@@ -46,26 +46,26 @@ C
 C  Passed arguments
 C
       real(grid_p)
-     .  f(*)
+     &  f(*)
       integer
-     .  Mesh(3), isn, nsm
+     &  Mesh(3), isn, nsm
 C
 C  Local variables
 C
       integer
-     .  maxmaxtrigs, ntrigs,
-     .  n1, n2, n3, n2l, n3l, CMeshG(3), CMeshL(3), i, n,
-     .  ng, nmeshl, ProcessorZ, IOffSet, OldMesh(3)
+     &  maxmaxtrigs, ntrigs,
+     &  n1, n2, n3, n2l, n3l, CMeshG(3), CMeshL(3), i, n,
+     &  ng, nmeshl, ProcessorZ, IOffSet, OldMesh(3)
       integer, save ::
-     .  maxtrigs
+     &  maxtrigs
       logical
-     .  LocalPoints, lredimension
+     &  LocalPoints, lredimension
       real(dp)
-     .  scale
+     &  scale
       real(dp), dimension(:,:), pointer, save ::   trigs => null()
 #ifdef MPI
       integer
-     .  n1lf, nrem, Py, Pz
+     &  n1lf, nrem, Py, Pz
       real(grid_p), dimension(:), pointer  ::   ft
 #endif
 
@@ -139,7 +139,19 @@ C
 C  FFT in X direction
 C
       if (LocalPoints) then
+#ifdef _OMP_
+!$OMP PARALLEL DO SCHEDULE(STATIC) DEFAULT(NONE)
+!$   &  SHARED(n2l,n3l,n1,f,trigs,isn)
+!$   &  PRIVATE(IOffSet)
+        do i= 0, n2l*n3l-1
+          IOffSet=2*n1*i
+          call gpfa(f(IOffSet+1),f(IOffSet+2),trigs(:,1),
+     &            2,2*n1,n1,1,-isn)
+        enddo
+!$OMP END PARALLEL DO
+#else
         call gpfa(f,f(2),trigs(:,1),2,2*n1,n1,n2l*n3l,-isn)
+#endif
       endif
 #ifdef MPI
 C***********************
@@ -163,11 +175,27 @@ C
 C  FFT in Y direction
 C
       if (LocalPoints) then
+#ifdef _OMP_
+!$OMP PARALLEL DO SCHEDULE(STATIC) DEFAULT(NONE)
+!$   &  SHARED(n1lf,n3l,n2,ft,trigs,isn)
+!$   &  PRIVATE(IOffSet)
+        do i=0,n1lf*n3l-1
+          if (mod(i,n1lf).eq.0) then
+            IOffSet=2*n2*i
+          else
+            IOffSet=IOffSet+2
+          endif
+          call gpfa(ft(IOffSet+1),ft(IOffSet+2),trigs(:,2),
+     &            2*n1lf,2,n2,1,-isn)
+        enddo
+!$OMP END PARALLEL DO
+#else
         do i=0,n3l-1
           IOffSet=2*n1lf*n2*i
           call gpfa(ft(IOffSet+1),ft(IOffSet+2),trigs(:,2),
-     .            2*n1lf,2,n2,n1lf,-isn)
+     &            2*n1lf,2,n2,n1lf,-isn)
         enddo
+#endif
       endif
 C
 C  Redistribute data back to original form
@@ -196,7 +224,31 @@ C
 C  FFT in Z direction
 C
       if (LocalPoints) then
+#ifdef _OMP_
+#ifdef KKKK
+!$OMP PARALLEL DO SCHEDULE(STATIC) DEFAULT(NONE)
+!$   &  SHARED(n1lf,n2l,n3,ft,trigs,isn)
+!$   &  PRIVATE(IOffSet)
+        do i= 0, n1lf*n2l-1
+          IOffSet=2*i
+          call gpfa(ft(IOffSet+1),ft(IOffSet+2),trigs(:,3),
+     &              2*n1lf*n2l,2,n3,1,-isn)
+        enddo
+#else
+!$OMP PARALLEL DO SCHEDULE(STATIC) DEFAULT(NONE)
+!$   &  SHARED(n1lf,n2l,n3,ft,trigs,isn)
+!$   &  PRIVATE(IOffSet)
+        do i= 0, n1lf-1
+          IOffSet=2*i*n2l
+          call gpfa(ft(IOffSet+1),ft(IOffSet+2),trigs(:,3),
+     &              2*n1lf*n2l,2,n3,n2l,-isn)
+        enddo
+
+#endif
+!$OMP END PARALLEL DO
+#else
         call gpfa(ft,ft(2),trigs(:,3),2*n1lf*n2l,2,n3,n1lf*n2l,-isn)
+#endif
       endif
 C
 C  Redistribute data to be distributed by Z again
@@ -213,7 +265,7 @@ C
       do i=0,n3-1
          IOffSet=2*n1*n2*i
          call gpfa(f(IOffSet+1),f(IOffSet+2),trigs(:,2),
-     .             2*n1,2,n2,n1,-isn)
+     &             2*n1,2,n2,n1,-isn)
       enddo
 C
 C  FFT in Z direction
@@ -236,7 +288,7 @@ C
 !-------------------------------------
 #ifdef MPI
       subroutine redistribXZ(f,n1,n2l,n3l,ft,n1lf,n2,idir,nsm,
-     .  Node,Nodes)
+     &  Node,Nodes)
 C
 C  This routine redistributes the data over the Nodes as needed
 C  for the FFT routines between the arrays f and ft
@@ -263,21 +315,21 @@ C
 C  Passed arguments
 C
       integer
-     .  n1, n2, n2l, n1lf, n3l, Node, Nodes, idir, nsm
+     &  n1, n2, n2l, n1lf, n3l, Node, Nodes, idir, nsm
       real(grid_p)
-     .  f(2,n1,n2l,n3l), ft(2,n1lf,n2,n3l)
+     &  f(2,n1,n2l,n3l), ft(2,n1lf,n2,n3l)
 C
 C  Local variables
 C
       integer
-     .  BlockSizeY, BlockSizeYMax, jmin, jmax, jloc, n1lmax, NRemY,
-     .  i, j, k, jl, kl, BNode, INode, SNode, jminS, jmaxS
+     &  BlockSizeY, BlockSizeYMax, jmin, jmax, jloc, n1lmax, NRemY,
+     &  i, j, k, jl, kl, BNode, INode, SNode, jminS, jmaxS
 
       integer
-     .  MPIerror, RequestR, RequestS, Status(MPI_Status_Size)
+     &  MPIerror, RequestR, RequestS, Status(MPI_Status_Size)
 
       integer, save ::
-     .  ProcessorZ, Py, Pz, ZCommunicator, ZNode, ZNodes
+     &  ProcessorZ, Py, Pz, ZCommunicator, ZNode, ZNodes
 
       logical, save :: firsttimeZ = .true.
 
@@ -297,7 +349,7 @@ C
 C  Group processors into subsets by Z
 C
         call MPI_Comm_Split(MPI_Comm_World, Pz, Py, ZCommunicator,
-     .    MPIerror)
+     &    MPIerror)
         call MPI_Comm_Rank(ZCommunicator,ZNode,MPIerror)
         call MPI_Comm_Size(ZCommunicator,ZNodes,MPIerror)
         firsttimeZ = .false.
@@ -383,9 +435,9 @@ C
 C  Exchange data - send to right and receive from left
 C
           call MPI_IRecv(ftmp2(1,1,1,1),2*n1lmax*BlockSizeYMax*n3l,
-     .      MPI_grid_real,SNode,1,ZCommunicator,RequestR,MPIerror)
+     &      MPI_grid_real,SNode,1,ZCommunicator,RequestR,MPIerror)
           call MPI_ISend(ftmp(1,1,1,1),2*n1lmax*BlockSizeYMax*n3l,
-     .      MPI_grid_real,BNode,1,ZCommunicator,RequestS,MPIerror)
+     &      MPI_grid_real,BNode,1,ZCommunicator,RequestS,MPIerror)
 C
 C  Wait for receive to complete
 C
@@ -461,9 +513,9 @@ C
 C  Exchange data - send to right and receive from left
 C
           call MPI_IRecv(ftmp2(1,1,1,1),2*n1lmax*BlockSizeYMax*n3l,
-     .      MPI_grid_real,BNode,1,ZCommunicator,RequestR,MPIerror)
+     &      MPI_grid_real,BNode,1,ZCommunicator,RequestR,MPIerror)
           call MPI_ISend(ftmp(1,1,1,1),2*n1lmax*BlockSizeYMax*n3l,
-     .      MPI_grid_real,SNode,1,ZCommunicator,RequestS,MPIerror)
+     &      MPI_grid_real,SNode,1,ZCommunicator,RequestS,MPIerror)
 C
 C  Wait for receive to complete
 C
@@ -496,7 +548,7 @@ C
       end
 
       subroutine redistribXY(f,n1,n2l,n3l,ft,n1lf,n3,idir,nsm,
-     .  Node,Nodes)
+     &  Node,Nodes)
 C
 C  This routine redistributes the data over the Nodes as needed
 C  for the FFT routines between the arrays f and ft
@@ -526,21 +578,21 @@ C
 C  Passed arguments
 C
       integer
-     .  n1, n3, n2l, n1lf, n3l, nsm, Node, Nodes, idir
+     &  n1, n3, n2l, n1lf, n3l, nsm, Node, Nodes, idir
       real(grid_p)
-     .  f(2,n1,n2l,n3l), ft(2,n1lf,n2l,n3)
+     &  f(2,n1,n2l,n3l), ft(2,n1lf,n2l,n3)
 C
 C  Local variables
 C
       integer
-     .  i, j, k, il, kl, BNode, BlockSizeZ, imin, imax, iloc,
-     .  INode, n1lmax, SNode, iminS, imaxS, NRemZ, BlockSizeZMax
+     &  i, j, k, il, kl, BNode, BlockSizeZ, imin, imax, iloc,
+     &  INode, n1lmax, SNode, iminS, imaxS, NRemZ, BlockSizeZMax
 
       integer
-     .  MPIerror, RequestR, RequestS, Status(MPI_Status_Size)
+     &  MPIerror, RequestR, RequestS, Status(MPI_Status_Size)
 
       integer, save ::
-     .  ProcessorZ, Py, Pz, YCommunicator, YNode, YNodes
+     &  ProcessorZ, Py, Pz, YCommunicator, YNode, YNodes
 
       logical, save :: firsttimeY = .true.
 
@@ -560,7 +612,7 @@ C
 C  Group processors into subsets by Y
 C
         call MPI_Comm_Split(MPI_Comm_World, Py, Pz, YCommunicator,
-     .    MPIerror)
+     &    MPIerror)
         call MPI_Comm_Rank(YCommunicator,YNode,MPIerror)
         call MPI_Comm_Size(YCommunicator,YNodes,MPIerror)
         firsttimeY = .false.
@@ -646,9 +698,9 @@ C
 C  Exchange data - send to right and receive from left
 C
           call MPI_IRecv(ftmp2(1,1,1,1),2*n1lmax*n2l*BlockSizeZMax,
-     .      MPI_grid_real,SNode,1,YCommunicator,RequestR,MPIerror)
+     &      MPI_grid_real,SNode,1,YCommunicator,RequestR,MPIerror)
           call MPI_ISend(ftmp(1,1,1,1),2*n1lmax*n2l*BlockSizeZMax,
-     .      MPI_grid_real,BNode,1,YCommunicator,RequestS,MPIerror)
+     &      MPI_grid_real,BNode,1,YCommunicator,RequestS,MPIerror)
 C
 C  Wait for receive to complete
 C
@@ -724,9 +776,9 @@ C
 C  Exchange data - send to right and receive from left
 C
           call MPI_IRecv(ftmp2(1,1,1,1),2*n1lmax*n2l*BlockSizeZMax,
-     .      MPI_grid_real,BNode,1,YCommunicator,RequestR,MPIerror)
+     &      MPI_grid_real,BNode,1,YCommunicator,RequestR,MPIerror)
           call MPI_ISend(ftmp(1,1,1,1),2*n1lmax*n2l*BlockSizeZMax,
-     .      MPI_grid_real,SNode,1,YCommunicator,RequestS,MPIerror)
+     &      MPI_grid_real,SNode,1,YCommunicator,RequestS,MPIerror)
 C
 C  Wait for receive to complete
 C
@@ -815,7 +867,7 @@ C
       INTEGER INC, JUMP, N, LOT, ISIGN
 C
       INTEGER 
-     .  NJ(3), NN, IFAC, LL, KK, IP, IQ, IR, I
+     &  NJ(3), NN, IFAC, LL, KK, IP, IQ, IR, I
 *
 *     DECOMPOSE N INTO FACTORS 2,3,5
 *     ------------------------------

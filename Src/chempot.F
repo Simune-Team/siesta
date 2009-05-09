@@ -141,9 +141,9 @@ C ipmax = maximum order the Chebyshev polynomial exp. of the Fermi operator
       real(dp),  parameter :: mu1=-1.2d0 , mu2=1.2d0
 
       integer
-     .  i, ia, ii, il, iil, imu, iorb, j, ja, ji, jj, jorb, 
+     .  i, ia, ii, il, iil, iorb, j, ja, ji, jj, jorb, 
      .  k, m, nna, norb, nu, num, numloc, numv, index, indexmax, 
-     .  nhbarmax, jo, jjn, phi, iphi, info
+     .  nhbarmax, jo, jjn, phi, iphi
 
       integer, dimension(:), allocatable, save ::
      .  listvt, numhp, ibuffer, listv,

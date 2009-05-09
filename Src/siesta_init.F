@@ -125,7 +125,13 @@ C     Initialize some variables
       FreeE   = 0.0_dp
 
 C     Initialise read
+#ifdef DEBUG
+      call write_debug( 'PRE reinit' )
+#endif
       call reinit(sname)
+#ifdef DEBUG
+      call write_debug( 'POS reinit' )
+#endif
 
 C     Initialize CML (relies on reinit)
       call siesta_cml_init()

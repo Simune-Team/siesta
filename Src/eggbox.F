@@ -63,7 +63,7 @@ C Internal variables
 
       logical, save :: frstme = .true.
 
-      integer  ia, ix, i, iu, a, b, c
+      integer  ia, ix, i, a, b, c
       real(dp) pi, xac(3), k(3), xa_frac(3,na), 
      .     celli(3,3), f(3,na), E, x, y, z, 
      .     fxyz(3,na), eV, escale,

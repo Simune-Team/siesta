@@ -23,7 +23,7 @@ C Modules
       use meshphi,   only : directphi, nphi, phi, lstpht, listp2, endpht
       use parallel,  only : Node
       use fdf,       only : fdf_boolean
-      use alloc,     only : re_alloc, de_alloc
+      use alloc,     only : re_alloc
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -41,8 +41,8 @@ C     Local variables
 #endif
       logical                :: within
       logical,          save :: firsttime = .true.
-      real(dp)               :: grphi(3), phip, r2o
-      real(dp),      pointer :: dxsp(:,:), r2sp(:)
+      real(dp)               :: dxsp(3,nsp), grphi(3), phip, r2o,
+     &                          r2sp(nsp)
 
 !------------------------------------------------------------------------- BEGIN
 #if defined(MPI_TRACE) && defined(MPI)
@@ -61,7 +61,7 @@ C     On first call set the logical DirectPhi
       endif
 
 C     Allocate memory related to nmpl
-      if (.not.associated(endpht)) nullify(endpht)
+      nullify(endpht,phi,lstpht,listp2)
       call re_alloc( endpht, 0, nmpl, 'endpht', 'PhiOnMesh' )
 
 C     Initialise pointer array
@@ -69,6 +69,9 @@ C     Initialise pointer array
       do ip = 1,nmpl
         endpht(ip) = endpht(ip-1) + numphi(ip)
       enddo
+      write(23,*) 'numphi:', numphi
+      write(23,*) 'endpht:', endpht
+      flush(23)
 
 C     Allocate phi if this is not a direct calculation
       nlist = endpht(nmpl)
@@ -92,13 +95,10 @@ C     Adjust dimensions of list arrays if necessary
       call re_alloc( lstpht, 1, nliste, 'lstpht', 'PhiOnMesh' )
       call re_alloc( listp2, 1, nliste, 'listp2', 'PhiOnMesh' )
 
-      call re_alloc( dxsp, 1, 3, 1, nsp, 'dxsp', 'PhiOnMesh' )
-      call re_alloc( r2sp, 1, nsp, 'r2sp', 'PhiOnMesh' )
-
 C     Find indexes and values of atomic orbitals at mesh points
       numphi = 0
       do io = 1,norb
-        ia   = iaorb(io)
+        ia = iaorb(io)
         iphi = iphorb(io)
         is = isa(ia)
         r2o = rcut(is,iphi)**2
@@ -119,7 +119,7 @@ C     Find indexes and values of atomic orbitals at mesh points
               if (.not.DirectPhi) then
                 do isp = 1,nsp
                   if (r2sp(isp) .lt. r2o) then
-                    call phiatm( is, iphi, dxsp(:,isp),
+                    call phiatm( is, iphi, dxsp(1,isp),
      &                           phip, grphi )
                     phi(isp,n) = phip
                   else
@@ -131,10 +131,8 @@ C     Find indexes and values of atomic orbitals at mesh points
           endif
         enddo
       enddo
-      call de_alloc( r2sp, 'r2sp', 'PhiOnMesh' )
-      call de_alloc( dxsp, 'dxsp', 'PhiOnMesh' )
-
-
+      write(23,*) 'lstpht:', lstpht
+      flush(23)
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 0 )
 #endif

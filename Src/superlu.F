@@ -1,6 +1,7 @@
       module SUPERLU
       use mpi
       implicit none
+#ifdef _LANCZOS_
 
       integer, parameter :: cptr = 8 ! 64-bit
       integer, parameter :: NO                      = 0
@@ -201,4 +202,5 @@
 
       end subroutine get_CompRowLoc_Matrix
 
+#endif
       end module SUPERLU

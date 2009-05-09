@@ -180,7 +180,7 @@
         endif
       endif
 
-      if (isolve.eq.0.and.IOnode)
+      if ((isolve.eq.0.or.isolve.eq.3).and.IOnode)
      .     call ioeig(eo,ef,neigwanted,nspin,nkpnt,no_u,nspin,maxk,
      .                kpoint, kweight)
 

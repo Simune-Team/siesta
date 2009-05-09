@@ -230,13 +230,14 @@
       use alloc,     only: re_alloc, de_alloc
       use precision, only: dp
       IMPLICIT NONE
-      INTEGER                   :: N
-      real(dp)                  :: G(N), S(N)
+      INTEGER           :: N
+      real(dp)          :: G(N), S(N)
 
-      INTEGER                   :: I
-      real(dp)                  :: NORM, SRNRM
-      real(dp)        , POINTER :: gaux(:)
+      INTEGER           :: I
+      real(dp)          :: NORM, SRNRM
+      real(dp), POINTER :: gaux(:)
 
+      nullify(gaux)
       call re_alloc( gaux, 1, N, name='gaux', routine='NRMLZG' )
       gaux = g*g
 
@@ -515,13 +516,13 @@
       use precision, only: dp
       use alloc,     only: re_alloc, de_alloc
       IMPLICIT NONE
-      INTEGER          :: NR
-      real(dp)         :: R2RHO(NR),V(NR),R(NR),DRDI(NR),SRDRDI(NR),A
+      INTEGER           :: NR
+      real(dp)          :: R2RHO(NR),V(NR),R(NR),DRDI(NR),SRDRDI(NR),A
 
-      INTEGER          :: IR
-      real(dp)         :: A2BY4, BETA, DV, DY, DZ, Q, QBYY, QPARTC, QT, 
-     .                    T, V0, Y, YBYQ
-      real(dp)        , POINTER :: gaux(:)
+      INTEGER           :: IR
+      real(dp)          :: A2BY4, BETA, DV, DY, DZ, Q, QBYY, QPARTC, QT,
+     .                     T, V0, Y, YBYQ
+      real(dp), POINTER :: gaux(:)
 
 
       ! Find some constants
@@ -536,9 +537,12 @@
 
       call integrator(r2rho(2),drdi(2),nr-1,QT)
 
+      nullify(gaux)
       call re_alloc( gaux, 2, NR, name='gaux', routine='VHRTRE' )
+
       gaux = r2rho(2:nr)/r(2:nr)
       call integrator( gaux, drdi(2), nr-1, V0 )
+
       call de_alloc( gaux, name='gaux', routine='VHRTRE' )
 
       ! Fix V(1) and V(2) to start Numerov integration. To find a 

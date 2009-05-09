@@ -10,7 +10,7 @@
       real(dp), intent(in) :: tp
       real(dp), intent(out) :: tstres(3,3)
 
-      integer  :: i, j, iu
+      integer  :: i, j
       real(dp) :: sxx, syy, szz, sxy, sxz, syz
       logical  :: tarstr
 

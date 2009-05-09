@@ -296,7 +296,7 @@ MODULE fdf
 !   Initialization for fdf. Simplified user interface using
 !   the io package.
 !
-    SUBROUTINE fdf_init(filein, fileout)
+      SUBROUTINE fdf_init(filein, fileout)
       implicit none
 !--------------------------------------------------------------- Input Variables
       character(*) :: filein, fileout
@@ -307,7 +307,7 @@ MODULE fdf
 #endif
 
 !------------------------------------------------------------------------- BEGIN
-!$OMP SINGLE OMP_init 
+!$OMP SINGLE
       ! Prevent the user from opening two head files
       if (fdf_started) then 
         call die('FDF module: fdf_init', 'Head file already set',       &
@@ -317,7 +317,6 @@ MODULE fdf
 #ifdef _MPI_
       call fdf_mpi_init()
 #endif
-
       call fdf_initdata()
 
       call io_geterr(fdf_err)
@@ -343,10 +342,9 @@ MODULE fdf
       call fdf_mpi_finalize()
 #endif
 !$OMP END SINGLE
-
       RETURN
 !--------------------------------------------------------------------------- END
-    END SUBROUTINE fdf_init
+      END SUBROUTINE fdf_init
 
 !
 !   Initialize MPI subsystem if the application calling/using FDF
@@ -452,13 +450,13 @@ MODULE fdf
       character(*)  :: filein
 
 !--------------------------------------------------------------- Local Variables
-      logical        :: file_exist
       character(80)  :: msg
       character(256) :: fileinTmp
       integer(ip)    :: ierr, texist_send, texist_recv
-
+#ifdef SOPHISTICATED_SEARCH
+      logical        :: file_exist
+#endif
 !------------------------------------------------------------------------- BEGIN
-
 !     Tests if the running node has the input file:
 !       If found: texist_send = rank
 !       Else    : texist_send = error_code (ntasks + 1)
@@ -495,16 +493,17 @@ MODULE fdf
         if (texist_recv .eq. rank) then
           call fdf_read(filein)
           call fdf_sendInput()
+          call MPI_Barrier( MPI_COMM_WORLD, ierr )
           write(fdf_out,*) '#FDF module: Node', rank, 'reading/sending', &
                            ' input file ', filein
         else
           call fdf_recvInput(texist_recv, filein, fileinTmp)
+          call MPI_Barrier( MPI_COMM_WORLD, ierr )
           call fdf_read(fileinTmp)
           write(fdf_out,*) '#FDF module: Node', rank, 'recieving input', &
                            ' file from', texist_recv, 'to ', TRIM(fileinTmp)
         endif
       endif
-
       RETURN
 !--------------------------------------------------------------------------- END
     END SUBROUTINE fdf_readcluster
@@ -520,11 +519,10 @@ MODULE fdf
       implicit none
 !--------------------------------------------------------------- Local Variables
       character, pointer        :: bufferFDF(:)
-      integer(ip)               :: i, ierr
+      integer(ip)               :: i, j, k, ierr
       type(line_dlist), pointer :: mark
 
 !------------------------------------------------------------------------- BEGIN
-
       ALLOCATE(bufferFDF(file_in%nlines*MAX_LENGTH), stat=ierr)
       if (ierr .ne. 0) then
         call die('FDF module: fdf_sendInput', 'Error allocating bufferFDF', &
@@ -533,12 +531,18 @@ MODULE fdf
 
       mark => file_in%first
       do i= 1, file_in%nlines*MAX_LENGTH, MAX_LENGTH
-        bufferFDF(i:) = s2arr(mark%str)
+!        bufferFDF(i:) = s2arr(mark%str)
+        k = i
+        do j= 1, MAX_LENGTH
+          bufferFDF(k) = mark%str(j:j)
+          k = k + 1
+        enddo
         mark => mark%next
       enddo
 
       call MPI_Bcast(file_in%nlines, 1,                                 &
                      MPI_INTEGER, rank, MPI_COMM_WORLD, ierr)
+
       if (ierr .ne. MPI_SUCCESS) then
         call die('FDF module: fdf_sendInput', 'Error Broadcasting nlines.' // &
                  'Terminating.', __FILE__, __LINE__, fdf_err, rc=ierr)
@@ -571,11 +575,10 @@ MODULE fdf
       integer(ip)        :: root
 
 !--------------------------------------------------------------- Local Variables
-      integer(ip)        :: i, lun, ierr, nlines
+      integer(ip)        :: i, j, lun, ierr, nlines
       character, pointer :: bufferFDF(:)
-
+      character(len=10)  :: fmt
 !------------------------------------------------------------------------- BEGIN
-
       call MPI_Bcast(nlines, 1,                                         &
                      MPI_INTEGER, root, MPI_COMM_WORLD, ierr)
       if (ierr .ne. MPI_SUCCESS) then
@@ -597,11 +600,22 @@ MODULE fdf
       endif
 
       call io_assign(lun)
-      fileinTmp = filein // '.' // i2s(rank)
+      fileinTmp = TRIM(filein) // '.' // i2s(rank)
       open(unit=lun, file=fileinTmp, form='formatted',                  &
            status='unknown')
+
+      if (MAX_LENGTH.lt.10) then
+        write(fmt,"(a1,I1,a2)") "(", MAX_LENGTH, "a)"
+      else if (MAX_LENGTH.lt.100) then
+        write(fmt,"(a1,I2,a2)") "(", MAX_LENGTH, "a)"
+      else if (MAX_LENGTH.lt.1000) then
+        write(fmt,"(a1,I3,a2)") "(", MAX_LENGTH, "a)"
+      else
+        write(fmt,"(a1,I4,a2)") "(", MAX_LENGTH, "a)"
+      endif
+
       do i= 1, nlines*MAX_LENGTH, MAX_LENGTH
-        write(lun,*) bufferFDF(i:i+MAX_LENGTH-1)
+        write(lun,fmt) (bufferFDF(j),j=i,i+MAX_LENGTH-1)
       enddo
       call io_close(lun)
 
@@ -674,7 +688,6 @@ MODULE fdf
       type(parsed_line), pointer :: pline
 
 !------------------------------------------------------------------------- BEGIN
-
 !     Open reading input file
       call fdf_open(filein)
 
@@ -821,7 +834,6 @@ MODULE fdf
 !             Search label(s) in Filename
               inc_file = tokens(pline, ind_less+1)
               ALLOCATE(found(ind_less-1), stat=ierr)
-              print *, "allocated found with size: ", ind_less - 1
               if (ierr .ne. 0) then
                 call die('FDF module: fdf_read', 'Error allocating found', &
                          __FILE__, __LINE__, fdf_err, rc=ierr)
@@ -895,7 +907,6 @@ MODULE fdf
       type(parsed_line), pointer :: pline
 
 !------------------------------------------------------------------------- BEGIN
-
 !     Open input file with labels
       call fdf_open(filein)
 
@@ -1387,12 +1398,12 @@ MODULE fdf
       call io_assign(fdf_out)
 
 #ifdef _MPI_
-      fileouttmp = fileout // '.' // i2s(rank)
+      fileouttmp = TRIM(fileout) // '.' // i2s(rank)
 #else
       fileouttmp = fileout
 #endif
-      open(unit=fdf_out, file=fileouttmp, form='formatted', status='unknown')
-      REWIND(fdf_out)
+      open( unit=fdf_out, file=TRIM(fileouttmp), form='formatted',       &
+            access='sequential', status='replace' )
 
       RETURN
 !--------------------------------------------------------------------------- END
@@ -1404,7 +1415,7 @@ MODULE fdf
     SUBROUTINE fdf_shutdown()
       implicit none
 !------------------------------------------------------------------------- BEGIN
-!$OMP SINGLE OMP_shutdown
+!$OMP SINGLE
       if (fdf_started) then
         call fdf_destroy(file_in)
         fdf_started = .FALSE.
@@ -1526,19 +1537,23 @@ MODULE fdf
     SUBROUTINE fdf_printfdf()
       implicit none
 !--------------------------------------------------------------- Local Variables
-      integer(ip)               :: i
+      integer(ip)               :: i, ntokens
+      character*1               :: id
       type(line_dlist), pointer :: dlp
+      character(len=MAX_LENGTH) :: tok
 
 !------------------------------------------------------------------------- BEGIN
       dlp => file_in%first
 
       write(fdf_log,*) '*** FDF Memory Structure Summary: ************'
       do while (ASSOCIATED(dlp))
+        ntokens = dlp%pline%ntokens
         write(fdf_log,*) 'Line:', TRIM(dlp%str)
-        write(fdf_log,*) 'Ntokens:', dlp%pline%ntokens
-        do i= 1, dlp%pline%ntokens
-          write(fdf_log,*) '  Token:', tokens(dlp%pline,i),        &
-                           '(', dlp%pline%id(i), ')'
+        write(fdf_log,*) 'Ntokens:', ntokens
+        do i= 1, ntokens
+          tok = tokens(dlp%pline,i)
+          id  = dlp%pline%id(i)
+          write(fdf_log,*) '  Token:', tok, '(', dlp%pline%id(i), ')'
         enddo
         dlp => dlp%next
       enddo
@@ -1609,7 +1624,6 @@ MODULE fdf
       type(line_dlist), pointer, optional :: line
 
 !--------------------------------------------------------------- Local Variables
-      character(80)                       :: msg
       type(line_dlist), pointer           :: mark
 
 !------------------------------------------------------------------------- BEGIN

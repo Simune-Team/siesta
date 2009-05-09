@@ -56,6 +56,7 @@ C
 C  Modules
 C
 
+      implicit none
 ! Subroutine arguments:
 
       real(dp), intent(in) :: tp,  strtol
@@ -69,8 +70,7 @@ c Internal variables and arrays
 
       real(dp)       :: volume, new_volume, trace
 
-      logical           found
-      integer           iu, ia, i, j, n, indi
+      integer           i, j, indi
 
       real(dp) ::  celli(3,3)
       real(dp) ::  stress_dif(3,3)

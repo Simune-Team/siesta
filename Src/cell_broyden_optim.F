@@ -77,9 +77,9 @@ C
 
 c Internal variables and arrays
       real(dp) :: volume, new_volume, trace
-      integer  :: iu, i, j, indi
-      real(dp) ::  celli(3,3), sxx, syy, szz, sxy, sxz, syz
-      real(dp) ::  stress_dif(3,3)
+      integer  :: i, j, indi
+      real(dp) :: celli(3,3), sxx, syy, szz, sxy, sxz, syz
+      real(dp) :: stress_dif(3,3)
 
       real(dp), pointer ::  rnew(:)
       real(dp), dimension(:), pointer  :: gxa, gfa, max_step

@@ -89,7 +89,8 @@ c     Alberto Garcia, Sep. 2005. Based on ioxv by J.M.Soler. July 1997.
 
 ! Construct references
       nullify(cisa)
-      call re_alloc(cisa,1,na,name="cisa",routine="read_struct")
+      allocate(cisa(na))
+!      call re_alloc(cisa,1,na,name="cisa",routine="read_struct")
       do ia = 1, na
          write(cisa(ia), '("siesta:e",i3.3)') isa(ia)
       enddo

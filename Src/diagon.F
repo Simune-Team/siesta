@@ -143,7 +143,6 @@ C
       integer,   pointer :: muo(:)
 
 C  ....................
-
 C First call initialisation
       if (frstme) then
 #ifdef MPI
@@ -196,6 +195,7 @@ C Check internal dimensions ..........................................
       endif
 
 C Allocate local arrays
+      nullify(aux,muo)
       call re_alloc( Haux, 1, nhs,  name='Haux', routine='diagon' )
       call re_alloc( Saux, 1, nhs,  name='Saux', routine='diagon' )
       call re_alloc( psi,  1, npsi, name='psi',  routine='diagon' )

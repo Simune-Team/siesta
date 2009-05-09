@@ -25,7 +25,6 @@ C     Output variables
       real(dp),       intent(out) :: xx(n)
       integer,        intent(out) :: iters
 C     Local variables
-      logical                     :: conv, FIN2
       integer                     :: i
       real(dp)                    :: vv, alpha, beta, norm, stopcri
       real(dp),           pointer :: rr(:), ww(:), zz(:)

@@ -31,7 +31,7 @@
       CHARACTER(LEN=*), PARAMETER :: MYNAME =  'resetFixedPointers'
 
       if (associated(ctype))
-     &  call de_alloc( ctype, name='ctype', routine=MYNAME )
+     &  deallocate( ctype )
 
       if (associated(iac))
      &  call de_alloc( iac, name='iac', routine=MYNAME )
@@ -140,6 +140,7 @@ c **********************************************************************
 
       integer   integs(maxw)
       real(dp)  ddot, fxc, xnorm
+      character(len=10), pointer :: ctype_tmp(:)
 
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline
@@ -150,7 +151,7 @@ c **********************************************************************
       if (frstme) then
 !        Allocate memory for constraints - Preserve contents
          nullify( ctype )
-         call re_alloc( ctype, 1, maxc, name='ctype', routine='fixed' )
+         allocate( ctype(maxc) )
 
         nullify( iac )
         call re_alloc( iac, 1, maxc, name='iac', routine='fixed' )
@@ -185,8 +186,12 @@ c **********************************************************************
               if (nc.eq.maxc) then
                 maxcnew = nc + nint(0.1*nc)
 
-                call re_alloc( ctype, 1, maxcnew, name='ctype',            
-     &                         routine='fixed', copy=.true. )
+                allocate(ctype_tmp(maxcnew))
+                ctype_tmp(1:maxc) = ctype
+                deallocate(ctype)
+                ctype => ctype_tmp
+!                call re_alloc( ctype, 1, maxcnew, name='ctype',            
+!     &                         routine='fixed', copy=.true. )
                 call re_alloc( iac, 1, maxcnew, name='iac',            
      &                          routine='fixed', copy=.true. )
                 call re_alloc( xc, 1, 3, 1, maxcnew, name='xc',            

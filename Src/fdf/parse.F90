@@ -849,7 +849,7 @@ MODULE parse
 
 !--------------------------------------------------------------- Local Variables
       character                    :: token_id(MAX_NTOKENS)
-      integer(ip)                  :: i, ntokens, ncharacters
+      integer(ip)                  :: i, ntokens
       integer(ip)                  :: first(MAX_NTOKENS), last(MAX_NTOKENS)
 
 !------------------------------------------------------------------------- BEGIN

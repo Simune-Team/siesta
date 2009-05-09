@@ -44,12 +44,11 @@
       subroutine phonon_setup()
 
       use fdf
-
+      implicit none
 
       integer ip, idum
       real(dp) xdum(3)
       character(len=1) lab
-      integer j
 
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline

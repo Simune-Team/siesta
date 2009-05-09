@@ -100,7 +100,6 @@ C -------------------------------------------------------------------
 C Internal variable types and dimensions ----------------------------
       INTEGER       ::  I, IQ, IR, JR, M, MQ, N, NQ
       real(dp)      ::  BESSPH, C, DQ, DR, FR, PI, R, RN, Q, QMAX
-      INTEGER       ::  MAX
       integer, save :: MAXL = -1, MAXNR = -1
 
       external bessph

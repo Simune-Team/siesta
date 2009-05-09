@@ -50,7 +50,8 @@ C
       use fdf
       use parallel,   only : Node, Nodes, BlockSize, ProcessorY
       use diagmemory, only : MemoryFactor
-      use alloc
+      use alloc,      only : re_alloc, de_alloc, allocdefaults,
+     &                       alloc_default
       use sys,        only : die
       use m_diagon,   only : saveeigenvectors, maxclustersize, i2d_ctxt,
      &                       serial, noexpert, divideconquer, use2d,
@@ -135,9 +136,8 @@ C Start time count
 
 C Nullify pointers
       if (FirstCall) then
-        nullify( ifail, iwork, work, Zsave )
+        nullify( Zsave )
 #ifdef MPI
-        nullify( gap, iclustr )
         nullify( h2d, s2d, z2d )
 #endif
       endif
@@ -313,10 +313,12 @@ C Scale memory by memory factor
       lwork = nint(MemoryFactor*dble(lwork))
 
 C Allocate workspace arrays
+      nullify(work,iwork,ifail)
       call re_alloc( work, 1, lwork, 'work', 'rdiag' )
       call re_alloc( iwork, 1, liwork, 'iwork', 'rdiag' )
       call re_alloc( ifail, 1, n, 'ifail', 'rdiag' )
 #ifdef MPI
+      nullify(gap,iclustr)
       call re_alloc( gap, 1, Nodes, 'gap', 'rdiag' )
       call re_alloc( iclustr, 1, 2*Nodes, 'iclustr', 'rdiag' )
 

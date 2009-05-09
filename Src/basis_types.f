@@ -469,11 +469,14 @@
       call re_alloc( smass, 1, nsp, name='smass',
      &               routine='basis_specs_transfer' )
       nullify( basistype )
-      call re_alloc( basistype, 1, nsp, name='basistype',
-     &               routine='basis_specs_transfer' )
+      allocate(basistype(nsp))
+!      call re_alloc( basistype, 1, nsp, name='basistype',
+!     &               routine='basis_specs_transfer' )
       nullify( atm_label )
-      call re_alloc( atm_label, 1, nsp, name='atm_label',
-     &               routine='basis_specs_transfer' )
+      allocate(atm_label(nsp))
+!      call re_alloc( atm_label, 1, nsp, name='atm_label',
+!     &               routine='basis_specs_transfer' )
+
 !
 !     Transfer
 !
@@ -623,8 +626,10 @@
       call de_alloc( rco, name='rco')
       call de_alloc( iz, name='iz')
       call de_alloc( smass, name='smass')
-      call de_alloc( basistype, name='basistype')
-      call de_alloc( atm_label, name='atm_label')
+      deallocate( basistype )
+      deallocate( atm_label )
+!      call de_alloc( basistype, name='basistype')
+!      call de_alloc( atm_label, name='atm_label')
 !
       end subroutine deallocate_spec_arrays
 

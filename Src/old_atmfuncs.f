@@ -253,11 +253,13 @@ C     chemical species present in the calculation.
      &                 routine = 'allocate_old_arrays' )
 !
         nullify (label_save)
-        call re_alloc(label_save,1,nsmax,name="label_save",
-     $                routine= "allocate_old_arrays")
+        allocate(label_save(nsmax))
+!        call re_alloc(label_save,1,nsmax,name="label_save",
+!     $                routine= "allocate_old_arrays")
         nullify (basistype_save)
-        call re_alloc(basistype_save,1,nsmax,name="basistype_save",
-     $                routine= "allocate_old_arrays")
+        allocate(basistype_save(nsmax))
+!        call re_alloc(basistype_save,1,nsmax,name="basistype_save",
+!     $                routine= "allocate_old_arrays")
         nullify (semicsave)
         call re_alloc(semicsave,1,nsmax,name="semicsave",
      $                routine= "allocate_old_arrays")
@@ -296,8 +298,10 @@ C     chemical species present in the calculation.
         call de_alloc( cnfigtb, name='cnfigtb' )
         call de_alloc( nkblsave, name='nkblsave' )
         call de_alloc( semicsave, name='semicsave' )
-        call de_alloc( label_save, name='label_save' )
-        call de_alloc( basistype_save, name='basistype_save' )
+        deallocate( label_save )
+!        call de_alloc( label_save, name='label_save' )
+        deallocate( basistype_save )
+!        call de_alloc( basistype_save, name='basistype_save' )
 
       end subroutine deallocate_old_arrays
 

@@ -21,7 +21,7 @@
       use sys, only : die
       use m_convergence, only: converger_t
       use m_convergence, only: reset, set_tolerance
-
+      use domain_decom,  only: resetDomainDecom
       implicit none
 
       integer, intent(in)  :: istep
@@ -35,16 +35,16 @@
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 10 )
 #endif
-C     Initialization tasks for a given geometry
 #ifdef DEBUG
       call write_debug( '  PRE state_init' )
 #endif
+!     Initialization tasks for a given geometry
       call state_init( istep )
 
-C     The current structure of the loop tries to reproduce the
-C     historical Siesta usage. It should be made more clear.
+!     The current structure of the loop tries to reproduce the
+!     historical Siesta usage. It should be made more clear.
 
-C     Start of SCF loop
+!     Start of SCF loop
       iscf  = 1
       first = .true.
       last  = .false.
@@ -58,8 +58,8 @@ C     Start of SCF loop
            call set_tolerance(conv_etot,energy_tolerance)
         endif
 
-C     The SCF loop is executed at least once, 
-C     except if nscf <= 0.
+!     The SCF loop is executed at least once, 
+!     except if nscf <= 0.
       if (nscf <= 0) then
          last = .true.
       endif
@@ -77,7 +77,7 @@ C     except if nscf <= 0.
 
           if (cml_p) 
      $         call cmlStartStep(xf=mainXML, type='SCF', index=iscf)
-C       Will use H0 computed above
+!       Will use H0 computed above
         call setup_hamiltonian( iscf )
 
 #ifdef DEBUG
@@ -98,8 +98,8 @@ C       Will use H0 computed above
 #endif
         call scfconvergence_test( first, iscf, last, dDmax,
      $                              conv_harris, conv_etot )
-        ! At this point last is true if SCF has converged. But this
-        ! changed below
+!       At this point last is true if SCF has converged. But this
+!       changed below
         SCFconverged = last
 
         call timer( 'IterSCF', 2 )
@@ -108,23 +108,23 @@ C       Will use H0 computed above
         iscf = iscf + 1
         first = .false.
 
-C       The last scheduled iteration is used to compute forces
-C       and stresses, hence the exit if iscf==nscf.
-C       The ">" clause catches the nscf==1 case. For this,
+!       The last scheduled iteration is used to compute forces
+!       and stresses, hence the exit if iscf==nscf.
+!       The ">" clause catches the nscf==1 case. For this,
         if (iscf >= nscf) then
           last = .true.
         endif
         if (cml_p) call cmlEndStep(mainXML)
       ENDDO
 
-        ! If we have not converged, but get to here, we are out
-        ! of steps. We may want to error out.
-        if ((SCFMustConverge).and.(.not.SCFconverged)) then
-          call die('SCF did not converge in maximum number of steps.')
-        endif
+!     If we have not converged, but get to here, we are out
+!     of steps. We may want to error out.
+      if ((SCFMustConverge).and.(.not.SCFconverged)) then
+        call die('SCF did not converge in maximum number of steps.')
+      endif
 
-C       End of standard SCF loop.
-C       Do one more pass to compute forces and stresses
+!     End of standard SCF loop.
+!     Do one more pass to compute forces and stresses
       if (last) then
 #ifdef DEBUG
         call write_debug( '  PRE post_scf_work' )
@@ -138,6 +138,10 @@ C       Do one more pass to compute forces and stresses
         call write_debug( '  PRE state_analysis' )
 #endif
       call state_analysis( istep )
+
+!     Free allocated memory
+      call resetDomainDecom( )
+      call resetMeshPhi( )
 
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 0 )

@@ -52,7 +52,7 @@ C
 
 C Internal variables ..................
 
-      integer  iseed, i, ix, iy, ntcon
+      integer  iseed, i, ix, ntcon
 
       real(dp)
      .  cell(3,3), stress(3,3), fa(3,nat), 
