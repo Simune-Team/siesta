@@ -1,5 +1,23 @@
 ------------------------------------------------------------------
 
+2009-05-11  18:45:00 GMT+1	Jose M Soler <jose.soler@uam.es>
+
+Summary: merged with trunk 2.6.21
+Keywords: merge
+
+Modified Files:
+ M  Docs/CHANGES                                                               
+ M  Docs/siesta.ind
+ M  Docs/siesta.tex
+ M  Src/bands.F
+ M  Src/diagg.F
+ M  Src/diagk.F
+ M  Src/version.F90
+ M  Src/writewave.F
+ M  version.info
+
+------------------------------------------------------------------
+
 2009-04-03  20:00:00 GMT+1	Jose M Soler <jose.soler@uam.es>
 
 Summary: Parameter nq in vdwxc increased

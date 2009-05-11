@@ -39,13 +39,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, 2.6.16}}
+{\Huge {\bf S I E S T A \, \, 2.6.21}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large April 2, 2009 }
+{\Large May 7, 2009 }
 
 \vspace{1.5cm}
 
@@ -4411,6 +4411,12 @@ processors and therefore orbital parallelisation is generally
 preferred. The exception is for metals where the unit cell is small,
 but the number of K points to be sampled is very large. In this last
 case it is recommend that this option be used.
+
+NOTE: This scheme is not used for the diagonalizations involved in the
+generation of the band-structure (as specified with {\bf BandLines} or
+{\bf BandPoints}) or in the generation of wave-function information
+(as specified with {\bf WaveFuncKpoints}). In these cases the program
+falls back to using parallelization over orbitals.
 
 {\it Use:} Controls whether the diagonalisation is parallelised with
 respect to orbitals or K points - not allowed for non-co-linear spin

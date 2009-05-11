@@ -540,6 +540,11 @@ C fixspin and qs are not used in diagk, since getD=.false. ...
 
 C Handle parallel over K points option which is not allowed for here
         SaveParallelOverK = ParallelOverK
+        if ((Node .eq. 0) .and. ParallelOverK) then
+           write(6,"(a)")
+     $          "*** Note: ParallelOverK option not used for Bands"
+        endif
+
         ParallelOverK = .false.
         ResetFirstCall = .true.
 
