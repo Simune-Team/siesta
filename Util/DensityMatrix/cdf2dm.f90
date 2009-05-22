@@ -25,20 +25,17 @@ implicit none
 integer, parameter  :: dp = selected_real_kind(14,100)
 
 integer ncid, norbs_id, nspin_id, nnzs_id, scf_step_id
-integer no_s_id, indxuo_id
 integer numd_id, row_pointer_id, column_id, dm_id
 
 integer   ::    norbs  ! Number of atomic orbitals
-integer   ::    no_s   ! Number of orbitals in interaction supercell
 integer   ::    nnzs   ! Total number of orbital interactions
 integer   ::    nspin  ! Number of spins 
 
-integer   ::    iog, ios, ispin, j, iostat, nsteps
+integer   ::    iog, ispin, j, iostat, nsteps
 
 integer, dimension(:), allocatable  :: numd
 integer, dimension(:), allocatable  :: row_pointer 
 integer, dimension(:), allocatable  :: column
-integer, dimension(:), allocatable  :: indxuo
 real(dp), dimension(:,:), allocatable :: dm
 
 !-----------------------------------------------------
@@ -57,8 +54,6 @@ call check( nf90_open('DM.nc',NF90_NOWRITE,ncid))
 
        call check( nf90_inq_dimid(ncid,'norbs',norbs_id) )
        call check( nf90_inquire_dimension(ncid, dimid=norbs_id, len=norbs) )
-       call check( nf90_inq_dimid(ncid,'no_s',no_s_id) )
-       call check( nf90_inquire_dimension(ncid, dimid=no_s_id, len=no_s) )
        call check( nf90_inq_dimid(ncid,'nnzs',nnzs_id) )
        call check( nf90_inquire_dimension(ncid, dimid=nnzs_id, len=nnzs) )
        call check( nf90_inq_dimid(ncid,'scf_step',scf_step_id) )

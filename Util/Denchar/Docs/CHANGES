@@ -1,6 +1,11 @@
 ========================================================================
                   DENCHAR CHANGES: TOP IS MOST RECENT
 =======================================================================
+April 1, 2009
+Denchar source is back in its own Util directory
+Author: Alberto Garcia <albertog@icmab.es>
+
+=======================================================================
 Version: 1.3
 Date: 2004/02/01 18:00
 Title: Denchar moved to top source directory !

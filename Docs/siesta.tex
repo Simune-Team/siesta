@@ -39,13 +39,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, 2.5.28}}
+{\Huge {\bf S I E S T A \, \, 2.6.21}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large June 29, 2008 }
+{\Large May 7, 2009 }
 
 \vspace{1.5cm}
 
@@ -68,7 +68,9 @@
    \Large{\it University of Illinois at Urbana-Champaign} \\ \\
 
 {\Large Pablo Ordej\'on} &
-   \Large{\it Institut de Ci\`encia de Materials, CSIC, Barcelona} \\ \\
+   \Large{\it Centre de Investigaci\'o en Nanoci\`encia} \\
+                                 &
+   \Large{\it   i Nanotecnologia, (CSIC-ICN), Barcelona} \\ \\
 
 {\Large Daniel S\'anchez-Portal} &
    \Large{\it Unidad de F\'{\i}sica de Materiales,} \\ 
@@ -82,17 +84,12 @@
 }
 
 \vspace{0.5cm}
-{\Large\bf Campeones, Ooeee!}
-
 {\Large {\tt http://www.uam.es/siesta} }
-
-\vspace{2mm}
-{\Large \tt siesta@uam.es}
 
 \vspace{1cm}
 Copyright \copyright\  Fundaci\'on General Universidad Aut\'onoma de Madrid:
 E.Artacho, J.D.Gale, A.Garc\'{\i}a, J.Junquera, P.Ordej\'on,
-D.S\'anchez-Portal and J.M.Soler, 1996-2006
+D.S\'anchez-Portal and J.M.Soler, 1996-2009
 
 \end{center}
 
@@ -463,6 +460,12 @@ siesta/Pseudo/atom. Remember that {\bf all pseudopotentials should be
 thoroughly tested} before using them. We refer you to the standard
 literature on pseudopotentials and to the {\sc ATOM} manual {\tt
 siesta/Pseudo/atom/atom.tex}.
+
+Siesta can also handle pseudopotential files in the XML format
+designed by Junquera, Garcia, and Verstraete (to be published), which
+enables interoperability with the ABINIT code. The directory
+{\tt Util/pseudo-xml} contains a program to translate the pseudo
+XML files to formatted ({\tt .psf}) form.
 
 
 \section{ATOMIC-ORBITAL BASES IMPLEMENTED IN SIESTA}
@@ -1515,6 +1518,64 @@ above.
 
 \end{description}
 
+\subsubsection{Filtering}
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+\item[{\bf FilterCutoff}] ({\it physical energy}):
+\index{FilterCutoff@{\bf
+    FilterCutoff}}\index{basis!filtering}
+Kinetic energy cutoff of plane waves used to filter all the 
+atomic basis functions, the pseudo-core densities 
+for partial core corrections, and the neutral-atom potentials. 
+The basis functions (which must be squared to obtain the
+valence density) are really filtered with a cutoff reduced by an
+empirical factor $0.7^2 \simeq 0.5$. The \textbf{FilterCutoff} should 
+be similar or lower than the \textbf{MeshCutoff} to avoid the
+{\it eggbox effect} on the atomic forces. 
+However, one should
+not try to converge \textbf{MeshCutoff} while simultaneously 
+changing \textbf{FilterCutoff}, since the latter in fact changes
+the used basis functions. Rather, fix a sufficiently large 
+\textbf{FilterCutoff} and converge only \textbf{MeshCutoff}.
+If \textbf{FilterCutoff} is not explicitly set, its value is 
+calculated from \textbf{FilterTol}.
+
+\item[{\bf FilterTol}] ({\it physical energy}):
+\index{FilterTol@{\bf
+    FilterTol}}\index{basis!filtering}
+Residual kinetic-energy leaked by filtering each basis function.
+While \textbf{FilterCutoff} sets a common reciprocal-space cutoff 
+for all the basis cunctions, \textbf{FilterTol} sets a specific 
+cutoff for each basis function, much as the \textbf{EnergyShift} 
+sets their real-space cutoff. Therefore,
+it is reasonable to use similar values for both parameters.
+The maximum cutoff required to meet the \textbf{FilterTol},
+among all the basis functions, is used (multiplied by the 
+empirical factor $1/0.7^2 \simeq 2$) to filter the pseudo-core 
+densities and the neutral-atom potentials. \textbf{FilterTol} is ignored if 
+\textbf{FilterCutoff} is present in the input file.
+If neither \textbf{FilterCutoff} nor \textbf{FilterTol} are
+present, no filtering is performed.
+See Soler and Anglada, arXiv:0807.5030, for details of the 
+filtering procedure.
+
+{\bf Warning:} If the value of \textbf{FilterCutoff} is
+made too small (or \textbf{FilterTol} too large) some of
+the filtered basis orbitals may be meaningless, leading to
+incorrect results or even a program crash.
+
+To be implemented: If \textbf{MeshCutoff} is not present in the input
+file, it can be set using the maximum filtering cutoff used for the
+given \textbf{FilterTol}. (You can use {\tt AtomSetupOnly T} to stop
+the program after basis generation, look at the maximum filtering
+cutoff used, and set the mesh-cutoff manually in a later run.)
+
+\end{description}
+
+
 
 \vspace{5pt}
 \subsection{Lattice, coordinates, $k$-sampling}
@@ -2509,8 +2570,8 @@ If {\tt .true.}, non-collinear spin is described using spinor wavefunctions
 and $(2 \times 2)$ spin density matrices at every grid point.
 Ref: T. Oda et al, PRL, {\bf 80}, 3622 (1998).
 Not compatible with GGA because non-collinear density functional
-theory has been developped only for a local functional.
-
+theory has been developed only for a local functional.
+Not compatible with the {\tt Diag.ParallelOverK} option
 {\it Default value:} {\tt .false.}
 
 
@@ -3500,6 +3561,13 @@ Choice of order-N minimization functionals:
 Functional of Kim, Mauri and Galli, PRB 52, 1640 (1995).
 \item {\tt Ordejon-Mauri}:\index{Ordejon-Mauri@{\tt Ordejon-Mauri}} 
 Functional of Ordej\'on et al, or Mauri et al, see PRB 51, 1456 (1995).
+The number of localized wave functions (LWFs) used must coincide with 
+$N_{el}/2$ (unless spin polarized). 
+For the initial assignment of LWF centers to atoms, atoms
+with even number of electrons, n, get n/2 LWFs. Odd atoms
+get (n+1)/2 and (n-1)/2 in an alternating sequence, ir order
+of appearance (controlled by the input in the atomic coordinates block).
+
 \item {\tt files}:\index{files (ON.functional)@{\tt files} (ON.functional)} 
 Reads localized-function information from a file and 
 chooses automatically the functional to be used. 
@@ -4333,6 +4401,12 @@ preferred. The exception is for metals where the unit cell is small,
 but the number of K points to be sampled is very large. In this last
 case it is recommend that this option be used.
 
+NOTE: This scheme is not used for the diagonalizations involved in the
+generation of the band-structure (as specified with {\bf BandLines} or
+{\bf BandPoints}) or in the generation of wave-function information
+(as specified with {\bf WaveFuncKpoints}). In these cases the program
+falls back to using parallelization over orbitals.
+
 {\it Use:} Controls whether the diagonalisation is parallelised with
 respect to orbitals or K points - not allowed for non-co-linear spin
 case.
@@ -4978,6 +5052,21 @@ If netCDF support is compiled in, the file {\tt
 ElectrostaticPotential.grid.nc} is produced.
 
 {\it Default value:} {\tt .false.}
+
+\item[{\bf SaveNeutralAtomPotential}] ({\it logical}): 
+\index{SaveNeutralAtomPotential@{\bf SaveNeutralAtomPotential}}
+\index{output!electrostatic potential} 
+Instructs to write the neutral-atom potential, defined as the
+sum of the hartree potential of a ``pseudo atomic valence charge'' 
+plus the local pseudopotential, at the mesh used by DHSCF,
+in file {\tt SystemLabel}.VNA. It is written at the start of the
+self-consistency cycle, as this potential does not change.
+
+{\it Use:} File {\tt SystemLabel}.VNA is only written, not read, by siesta.
+
+If netCDF support is compiled in, the file {\tt Vna.grid.nc} is produced.
+
+{\it Default value:} {\tt .false.}
         
 
 \item[{\bf SaveTotalPotential}] ({\it logical}): 
@@ -5127,6 +5216,12 @@ contours. The information is written in file {\tt SystemLabel}.PLD.
  
 {\it Use:} File {\tt SystemLabel}.PLD is only written, not read, by siesta.
  
+Apart from the PLD file, you will need the Density-Matrix (DM) file
+and/or a wavefunction (WFS) file. For the latter, remember that Siesta
+now produces only a packed WFSX file. You will need to run the
+wfsx2wfs program to convert it to the WFS format. This will be fixed
+shortly.
+
 {\it Default value:} {\tt .false.}
 
 \end{description}
@@ -5296,15 +5391,14 @@ See the {\bf WriteKpoints} data descriptor above.
 
 
 \subsection{Charge densities and potentials}
-(files {\it SystemLabel}.{\tt RHO}, {\it SystemLabel}.{\tt DRHO}, 
-{\it SystemLabel}.{\tt VH}, {\it SystemLabel}.{\tt VT}) 
-See {\bf SaveRho}, {\bf SaveDeltaRho}, {\bf SaveElectrostaticPotential},
-and {\bf SaveTotalPotential} data descriptors above.
-3D-plots of these files can be done using the pacakges
-{\sc Plrho}\index{Plrho@{\sc Plrho}} and {\sc Grid2cube}
-\index{Grid2cube@{\sc Grid2cube}} in the Util/
-\index{output!total charge}
-directory.
+(files {\it SystemLabel}.{\tt RHO}, {\it SystemLabel}.{\tt DRHO}, {\it
+SystemLabel}.{\tt VH}, {\it SystemLabel}.{\tt VT}, {\it
+SystemLabel}.{\tt VT}) See {\bf SaveRho}, {\bf SaveDeltaRho}, {\bf
+SaveElectrostaticPotential}, {\bf SaveTotalPotential}, and {\bf
+SaveNeutralAtomPotential} data descriptors above.  3D-plots of these
+files can be produced using the pacakges {\sc Plrho}\index{Plrho@{\sc
+Plrho}} and {\sc Grid2cube} \index{Grid2cube@{\sc Grid2cube}} in the
+Util/ \index{output!total charge} directory.
 
 
 \subsection{Energy bands}
@@ -5337,23 +5431,22 @@ See the {\bf BandLines} data descriptor above for more information.
 
 \subsection{Wavefunction coefficients}\label{subsec:wf}
 (file SystemLabel.WFSX) This unformatted file has the
-information of the k-points where wavefunctions coefficients
+information of the k-points for which wavefunctions coefficients
 are written, and the energies and coefficients of each
 wavefunction which was specified in the input file
 (see {\bf WaveFuncKPoints}\index{WaveFuncKPoints@{\bf WaveFuncKPoints}}
 descriptor above).
-It also writes information on the atomic species and
+It also contains information on the atomic species and
 the orbitals for postprocessing purposes.
 
-NOTE: The WFSX file is in a more compact form than the usual WFS, and the
+NOTE: The WFSX file is in a more compact form than the old WFS, and the
 wavefunctions are output in single precision. The {\tt Util/wfsx2wfs}
 program can be used to convert to the old format.
 
-
 \noindent
-The READWF\index{READWF} postprocessing utility
-program (found in the Util/ directory) reads the {\it Systemlabel}.WFS
-file and generates a readable file.
+The readwf\index{readwf} and readwfsx\index{readwfsx} postprocessing
+utilities programs (found in the Util/ directory) read the WFS or WFSX
+files, respectively, and generate a readable file.
 
 \subsection{Eigenvalues}
 

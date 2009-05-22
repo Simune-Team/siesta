@@ -20,4 +20,5 @@ AtomicCoordinatesFormat  Ang
 save-rho T
 save-delta-rho T
 save-total-potential T
+save-neutral-atom-potential T
 save-hs T

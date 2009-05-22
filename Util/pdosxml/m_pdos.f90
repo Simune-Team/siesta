@@ -177,6 +177,7 @@ if (in_energy_values) then
 
 endif
 
+ndata_spin = 0
 if (in_nspin) then
 !
 ! This is the only safe way to read the numeric element content

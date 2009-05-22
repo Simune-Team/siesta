@@ -13,17 +13,35 @@
 # Pablo Ordejon, August 1998
 # Modified by Alberto Garcia, February 2006
 #
+# Points to note, until we switch to a better building system:
+#
+#  The arch.make file is supposed to be in $(OBJDIR). This is normally
+#  the top Src, but if you are using architecture-dependent build directories
+#  you might want to change this. (If you do not understand this, you do not
+#  need to change anything. Power users can do "make OBJDIR=Whatever".)
+#
+#  If your main Siesta build used an mpi compiler, you might need to
+#  define an FC_SERIAL symbol in your top arch.make, to avoid linking
+#  in the mpi libraries even if we explicitly undefine MPI below.
+#  
+
 .SUFFIXES:
 .SUFFIXES: .f .o .a 
 #
 default: what copy_fdf fcbuild vibrator
 #
-# You should have compiled Siesta in the main Src directory before
-# attempting to compile the Vibra package.
+# You should have compiled Siesta in the main Src directory (or
+# in an architecture-specific object directory) before attempting 
+# to compile the Vibra package.
 #
-include ../../../Src/arch.make
+OBJDIR=Src
+include ../../../$(OBJDIR)/arch.make
 #
-# (Note: The following is needed only if INFLAGS is not included
+FC_DEFAULT:=$(FC)
+FC_SERIAL?=$(FC_DEFAULT)
+FC:=$(FC_SERIAL)         # Make it non-recursive
+#
+# (Note: The following is needed only if INCFLAGS is not included
 #  in the compilation rules in arch.make, but it is kept here in
 #  case a crippled version of arch.make is used.)
 #
@@ -32,7 +50,7 @@ include ../../../Src/arch.make
 # and so you might need to edit this. Should work for Intel and IBM compilers.
 #
 copy_fdf:
-	cp -fp ../../../Src/fdf.mod .
+	cp -fp ../../../$(OBJDIR)/fdf.mod .
 #
 # Uncomment the following line for debugging support
 #
@@ -56,8 +74,8 @@ VIBRA-OBJS=$(VIBRA-SRCS:.f=.o)
 #
 fcbuild.o vibrator.o:  vibra.h
 #
-FDF=../../../Src/libfdf.a         
-INCFLAGS=-I../../../Src           # To pick up fdf
+FDF=../../../$(OBJDIR)/libfdf.a         
+INCFLAGS:=$(INCFLAGS) -I../../../$(OBJDIR)           # To pick up fdf
 #
 fcbuild: $(BUILD-OBJS)
 	$(FC) -o fcbuild \
@@ -69,7 +87,7 @@ vibrator : $(VIBRA-OBJS)
 #
 clean: 
 	@echo "==> Cleaning object and executable files"
-	rm -f fcbuild vibrator *.o 
+	rm -f fcbuild vibrator *.o *.mod
 
 
 

@@ -33,6 +33,9 @@ dm2cdf: dm2cdf.o
 cdf2dm: cdf2dm.o
 	$(FC) $(LDFLAGS) -o $@ cdf2dm.o  $(LIBS)
 #
+dmfilter: dmfilter.o
+	$(FC) $(LDFLAGS) -o $@ dmfilter.o
+#
 clean: 
 	rm -f *.o dm2cdf cdf2dm *.o *.*d
 #

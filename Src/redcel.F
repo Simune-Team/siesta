@@ -69,6 +69,10 @@ C Lattice vectors
          xxx = (cos(alplp) - cos(betlp)*cos(gamlp))/sin(gamlp)
          cell(2,3) = clp * xxx
          cell(3,3) = clp * sqrt(sin(betlp)*sin(betlp) - xxx*xxx)
+
+         ! Make sure that we do not get very small numbers
+         where (abs(cell) < 1.0e-14) cell = 0.0_dp
+
       elseif ( fdf_block('LatticeVectors',iunit) ) then
         do i = 1,3
           read(iunit,*) (cell(j,i), j=1,3)

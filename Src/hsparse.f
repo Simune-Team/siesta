@@ -126,6 +126,7 @@ C
       integer, dimension(:),  pointer :: index => null()
       integer, dimension(:),  pointer :: knakb => null()
       integer, dimension(:),  pointer :: listhtmp
+      logical :: connected
 
 
 C -------------------------------------
@@ -247,7 +248,8 @@ C through a KB projector
                 rij = sqrt( r2ij(jnat) )
                 do jo = lasto(ja-1)+1,lasto(ja)
 
-C If not yet connected 
+                  !If not yet connected (we only allow one connection, and
+                  !reserve space for it)
                   if (.not.conect(jo)) then
                     js = isa(ja)
                     joa = iphorb(jo)
@@ -302,8 +304,9 @@ C Find optimum value for nlhmax
       ! (re)allocate listh, but do not shrink, as it might
       ! be used for DM extrapolation
       ! using information from different geometries.
+      ! CHANGED NOW
       call re_alloc(listh,1,nlhmax,name='listh',
-     $     routine='hsparse',SHRINK=.false.)
+     $     routine='hsparse',SHRINK=.true.)
       if (set_xijo) then
          call re_alloc(xijo,1,3,1,nlhmax,name='xijo',routine='hsparse')
       else
@@ -324,6 +327,7 @@ C Set up listhptr
 C---------------------------------
 C  Find full H sparsity pattern  -
 C---------------------------------
+
 C Loop on atoms in unit cell
         do ia = 1,nua
 
@@ -373,35 +377,14 @@ C through a KB projector
                 ja = jna(jnat)
                 rij = sqrt( r2ij(jnat) )
                 do jo = lasto(ja-1)+1,lasto(ja)
-
-                   if (conect(jo)) then
-
-                      if (set_xijo .and. .not. gamma) then
-                         ! If already connected and using supercell, 
-                         ! the latter might not be big enough...
-                         ! We warn the user and keep the first instance
-                         ! of xij (same behavior as the old xijorb, as
-                         ! earlier jnats are closer)
-                         ! Do not warn if Gamma-point calculation, as
-                         ! this is harmless
-                         if (.not.warn1) then
-                            if (Node.eq.0) then
-                               write(6,'(/,a,2i6,a,/)')
-     .                              'WARNING: orbital pair ',io,jo,
-     .                              ' is multiply connected'
-                            endif
-                            warn1 = .true.
-                         endif
-                      endif
-
-                   else         ! not conect(jo)
+                   connected = .false.
 
                     js = isa(ja)
                     joa = iphorb(jo)
                     rcj = rcut(js,joa)
 C Find if there is direct overlap
                     if (rci+rcj .gt. rij) then
-                      conect(jo) = .true.
+                      connected = .true.
                     elseif (.not.negl) then
 C Find if jo overlaps with a KB projector
                       do inkb = 1,nnkb
@@ -411,23 +394,68 @@ C Find if jo overlaps with a KB projector
      .                              (xij(2,kna)-xij(2,jnat))**2 +
      .                              (xij(3,kna)-xij(3,jnat))**2 )
                         if (rcj+rck .gt. rjk) then
-                          conect(jo) = .true.
+                          connected = .true.
                           goto 55
                         endif
                       enddo
    55                 continue
                     endif
-                    if (conect(jo)) then
+
+                   if (connected) then
+                     if (conect(jo)) then
+
+                       ! This test is now deferred to be able
+                       ! to catch multiple images while avoiding
+                       ! false positives (i.e., we test first
+                       ! whether there is indeed a connection).
+
+                      if (set_xijo) then
+                         ! If already connected and using supercell, 
+                         ! the latter might not be big enough...
+                         ! We warn the user and keep the first instance
+                         ! of xij (same behavior as the old xijorb, as
+                         ! earlier jnats are closer)
+                         ! Warn also if Gamma-point calculation, just
+                         ! in case
+                         if (.not.warn1) then
+                            if (Node.eq.0) then
+                              if (gamma) then
+                                write(6,'(/,a,2i6,a,/,a)')
+     .                           'NOTE: orbital pair ',io,jo,
+     .                           ' (at least) is multiply connected.',
+     .                           'NOTE: '
+     .                           // 'Harmless for Gamma calculations,'
+     .                           // ' except if a COHP analysis '
+     .                           // 'is intended.'
+                                write(0,'(/,a,2i6,a,/,a)')
+     .                           'NOTE: orbital pair ',io,jo,
+     .                           ' (at least) is multiply connected.',
+     .                           'NOTE: '
+     .                           // 'Harmless for Gamma calculations,'
+     .                           // ' except if a COHP analysis '
+     .                           // 'is intended.'
+                              else
+                                write(6,'(/,a,2i6,a,/,a)')
+     .                           'WARNING: orbital pair ',io,jo,
+     .                           ' is multiply connected'
+                              endif
+                            endif
+                            warn1 = .true.
+                         endif
+                      endif
+
+                   else
+                      conect(jo) = .true.
                       numh(iio) = numh(iio) + 1
                       ind = listhptr(iio)+numh(iio)
                       listh(ind) = jo
                       if (set_xijo) then
                          xijo(1:3,ind) = xij(1:3,jnat)
                       endif
-                    endif
                    endif
-                enddo
-              enddo
+                endif
+             enddo
+          enddo
 
 C Restore conect array for next orbital io
 

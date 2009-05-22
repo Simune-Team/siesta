@@ -98,6 +98,7 @@ c
 
       call fdf_refresh
       call io_close(fdf_in)
+      call io_close(fdf_out)
       fdf_started = .false.
 
       return

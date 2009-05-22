@@ -60,14 +60,11 @@
 !
 !     Set up second derivative in a radial function
 !
-      subroutine rad_setup_d2(func)
+      subroutine rad_setup_d2(func,yp1,ypn)
       type(rad_func), intent(inout) :: func
-
-      real(dp) yp1, ypn
+      real(dp), intent(in)          :: yp1, ypn
 
       if (func%n .eq. 0) return
-      yp1 = huge(1._dp)
-      ypn = huge(1._dp)
       call spline(func%delta,func%f,func%n,yp1,ypn,func%d2)
       
       end subroutine rad_setup_d2
@@ -176,8 +173,10 @@ C D. Sanchez-Portal, Oct. 1996.
 
       END subroutine spline
 
-      subroutine radial_read_ascii(op,lun)
-      type(rad_func)    :: op
+      subroutine radial_read_ascii(op,lun,yp1,ypn)
+      type(rad_func)    :: op 
+      real(dp), intent(in)          :: yp1, ypn
+
       integer lun
       integer j, npts
       real(dp) dummy
@@ -187,7 +186,7 @@ C D. Sanchez-Portal, Oct. 1996.
       do j=1,npts
          read(lun,*) dummy, op%f(j)
       enddo
-      call rad_setup_d2(op)
+      call rad_setup_d2(op,yp1,ypn)
       end subroutine radial_read_ascii
 !
 !--------------------------------------------------------------------

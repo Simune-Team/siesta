@@ -2,9 +2,1060 @@
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
 
+** CHANGES ALONG siesta-2.6 trunk branch 
+
+-----------------------------------------------------------------------
+2009-05-07  10:35:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.21
+Parallel fixes: Diag.ParallelOverK for wf generation; idle nodes
+
+* Patches in diagg and diagk for the corner case in which a node has no 
+assigned orbitals (Julian Gale).
+
+* The option to parallelize over k-points is only implemented for the
+SCF loop. The bands routine had already been coded to fall back on the
+standard parallelization over orbitals, but the wwave routine (used to
+generate wavefunctions for analysis) had not. This bug has been
+corrected, and now both routines print a warning to the user when the
+Diag.ParallelOverK option is used.
+
+modified:
+  Src/bands.F
+  Src/diagg.F
+  Src/diagk.F
+  Src/writewave.F
+  Docs/siesta.tex
+  Docs/siesta.ind
+
+-----------------------------------------------------------------------
+2009-04-02  12:55:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.20
+More flexible compilation of Util code
+
+By a simple change to the makefiles (involving an OBJDIR variable that
+can be set to "Src" or to the name of the optional compiler-dependent
+object directory), the code in Util can be compiled with multiple
+options.
+
+The use of VPATH within Util also allows the re-use of common utility
+files such as f2kcli.F90.
+
+Work in progress. Really a temporary solution util Util is integrated in
+the architecture-or-compiler-dependent object directories.
+
++ The pdos program in Util/pdosxml has been renamed to pdosxml.
+
+removed:
+  Util/COOP/f2kcli.F90
+  Util/pdosxml/f2kcli.F90
+added:
+  Util/Projections/makefile
+renamed:
+  Util/pdosxml/pdos.f90 => Util/pdosxml/pdosxml.f90
+modified:
+  Util/COOP/Makefile
+  Util/Grid/makefile
+  Util/Vibra/Vibra/Makefile
+  Util/Vibra/Vibra/vibrator.f
+  Util/pdosxml/README
+  Util/pdosxml/makefile
+  Util/pdosxml/pdosxml.f90
+
+-----------------------------------------------------------------------
+2009-04-02  12:50:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.19
+New version of denchar in Util/Denchar
+
+A new version of denchar, able to process complex wavefunctions and
+multiple k-points, has been put back in the Util/Denchar/Src directory.
+It can be compiled by re-using code in the top Src directory. 
+
+(Thanks to Pablo Ordejon)
+
+removed:
+  Src/denchar.F
+  Src/m_denchar_geom.f
+  Src/m_denchar_init.F
+  Src/m_denchar_io.F
+  Src/m_denchar_neighb.f
+  Src/m_denchar_work.f
+  Util/Denchar/README-Source
+added:
+  Util/Denchar/Src/
+  Util/Denchar/Src/Makefile
+  Util/Denchar/Src/README
+  Util/Denchar/Src/atompla.f
+  Util/Denchar/Src/colinear.f
+  Util/Denchar/Src/denchar.f
+  Util/Denchar/Src/fdf/
+  Util/Denchar/Src/fdf/makefile
+  Util/Denchar/Src/itochar.f
+  Util/Denchar/Src/length.f
+  Util/Denchar/Src/matvect.f
+  Util/Denchar/Src/neighb.f
+  Util/Denchar/Src/planed.f
+  Util/Denchar/Src/ranger.f
+  Util/Denchar/Src/readpla.f
+  Util/Denchar/Src/readsts.f
+  Util/Denchar/Src/readwaves.f
+  Util/Denchar/Src/redata_denchar.f
+  Util/Denchar/Src/reinit.f
+  Util/Denchar/Src/rhoofr.f
+  Util/Denchar/Src/stsofr.f
+  Util/Denchar/Src/wavofr.f
+  Util/Denchar/Src/wrout.f
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Util/Denchar/Docs/CHANGES
+  Util/Denchar/Docs/denchar.tex
+
+
+-----------------------------------------------------------------------
+2009-04-02  12:45:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.18
+Added general-purpose optimizer in Util/Optimizer
+
+Alpha version of the general-purpose optimization program, useful,
+among other things, for pseudopotential and basis-set generation.
+
+added:
+
+  Util/Optimizer/
+  Util/Optimizer/Examples/
+  Util/Optimizer/Examples/Basis-Optim-Bond/
+  Util/Optimizer/Examples/Basis-Optim-Bond/H.psf
+  Util/Optimizer/Examples/Basis-Optim-Bond/O.psf
+  Util/Optimizer/Examples/Basis-Optim-Bond/SWARM_PARAMS
+  Util/Optimizer/Examples/Basis-Optim-Bond/TEMPLATE
+  Util/Optimizer/Examples/Basis-Optim-Bond/VARS
+  Util/Optimizer/Examples/Basis-Optim-Bond/run_script.sh
+  Util/Optimizer/Examples/Basis_Harris/
+  Util/Optimizer/Examples/Basis_Harris/DeltaRho.grid.nc
+  Util/Optimizer/Examples/Basis_Harris/H.psf
+  Util/Optimizer/Examples/Basis_Harris/O.psf
+  Util/Optimizer/Examples/Basis_Harris/PARAMS
+  Util/Optimizer/Examples/Basis_Harris/README
+  Util/Optimizer/Examples/Basis_Harris/TEMPLATE
+  Util/Optimizer/Examples/Basis_Harris/VARS
+  Util/Optimizer/Examples/Basis_Harris/run_script.sh
+  Util/Optimizer/Examples/Basis_Optim/
+  Util/Optimizer/Examples/Basis_Optim/H.psf
+  Util/Optimizer/Examples/Basis_Optim/O.psf
+  Util/Optimizer/Examples/Basis_Optim/PARAMS
+  Util/Optimizer/Examples/Basis_Optim/README
+  Util/Optimizer/Examples/Basis_Optim/TEMPLATE
+  Util/Optimizer/Examples/Basis_Optim/VARS
+  Util/Optimizer/Examples/Basis_Optim/run_script.sh
+  Util/Optimizer/Examples/Basis_Optim_Accel/
+  Util/Optimizer/Examples/Basis_Optim_Accel/DeltaRho.grid.nc
+  Util/Optimizer/Examples/Basis_Optim_Accel/H.psf
+  Util/Optimizer/Examples/Basis_Optim_Accel/O.psf
+  Util/Optimizer/Examples/Basis_Optim_Accel/PARAMS
+  Util/Optimizer/Examples/Basis_Optim_Accel/README
+  Util/Optimizer/Examples/Basis_Optim_Accel/TEMPLATE
+  Util/Optimizer/Examples/Basis_Optim_Accel/VARS
+  Util/Optimizer/Examples/Basis_Optim_Accel/run_script.sh
+  Util/Optimizer/Examples/Pseudo-Optim-Constrained/
+  Util/Optimizer/Examples/Pseudo-Optim-Constrained/PARAMS
+  Util/Optimizer/Examples/Pseudo-Optim-Constrained/PSGEN.TEMPLATE
+  Util/Optimizer/Examples/Pseudo-Optim-Constrained/README
+  Util/Optimizer/Examples/Pseudo-Optim-Constrained/SWARM_PARAMS
+  Util/Optimizer/Examples/Pseudo-Optim-Constrained/Test.inp
+  Util/Optimizer/Examples/Pseudo-Optim-Constrained/VARS
+  Util/Optimizer/Examples/Pseudo-Optim-Constrained/run_script.sh
+  Util/Optimizer/Makefile
+  Util/Optimizer/README
+  Util/Optimizer/amoeba.f
+  Util/Optimizer/io.f
+  Util/Optimizer/minimizer.f90
+  Util/Optimizer/parse.f
+  Util/Optimizer/precision.f90
+  Util/Optimizer/simplex.f90
+  Util/Optimizer/swarm.f90
+  Util/Optimizer/sys.f
+  Util/Optimizer/vars_module.f90
+
+-----------------------------------------------------------------------
+2009-04-02  12:40:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.17
+New utility programs and features 
+
+* Orbital projection program
+
+Integrated a new version of the "orbmol" program, by Rurali and
+Lorente, including the k-points functionality later implemented by
+Tabares and Ordejon. The program is now called "orbmol_proj", and
+is more economical in memory and hopefully run-time. 
+
+The program uses the new WFSX wavefunction format (the new program
+wfs2wfsx.f can be used for legacy data).
+
+* New tool for creation of partial density matrices
+
+A new program 'dm_creator' has been created in Util/COOP.
+Given an HSX and a WFSX file, and an optional energy range, dm_creator
+computes a "partial density matrix" with only those states in the
+energy range. This density matrix can then be used with Denchar
+for plotting (or for other more or less devious applications...)
+
+* Scripting
+
+- New cutoff.py example script
+- Enhancements to the ASE interface:
+     - "copy" method for Atom class
+     - pseudopotential handler for ListOfAtoms
+
+* Enhanced WFS utilities
+
+The wavefunction-handling programs have been moved to Util/WFS. Added
+wfsnc2wfsx (useful for New-Diagk calculations) and wfs2wfsx.
+
+* Enhanced grid utilities in Util/Grid
+
+- Increase bounds of work array in Util/Grid/libfft.f
+- Added octave/matlab scripts for plane averages
+
+* New Util/HSX directory
+
+Up to now it only contains an experimental module hsx_m.f90 to process HSX files.
+
+* New program dm_filter in Util/DensityMatrix
+
+The DM filter program produces a new density-matrix in which only the
+contributions of specified orbitals are retained (with minor modifications it can
+delete those and keep the rest).
+
+added:
+  Util/COOP/dm_creator.F90
+  Util/COOP/iodm_netcdf.F90
+  Util/COOP/write_dm.f
+  Util/DensityMatrix/README
+  Util/DensityMatrix/dmfilter.f90
+  Util/Grid/average_x.m
+  Util/Grid/average_z.m
+  Util/HSX/
+  Util/HSX/hsx_m.f90
+  Util/Projections/
+  Util/Projections/Example/
+  Util/Projections/Example/Na-on-Na-4A/
+  Util/Projections/Example/Na-on-Na-4A/Na.psf
+  Util/Projections/Example/Na-on-Na-4A/coo.gplot
+  Util/Projections/Example/Na-on-Na-4A/coo.mpr
+  Util/Projections/Example/Na-on-Na-4A/molecule.fdf
+  Util/Projections/Example/Na-on-Na-4A/orbmol.gplot
+  Util/Projections/Example/Na-on-Na-4A/orbmol.input
+  Util/Projections/Example/Na-on-Na-4A/pdos.mpr
+  Util/Projections/Example/Na-on-Na-4A/system.fdf
+  Util/Projections/Example/Na-on-Na-6A/
+  Util/Projections/Example/Na-on-Na-6A/Na.psf
+  Util/Projections/Example/Na-on-Na-6A/coo.gplot
+  Util/Projections/Example/Na-on-Na-6A/coo.mpr
+  Util/Projections/Example/Na-on-Na-6A/molecule.fdf
+  Util/Projections/Example/Na-on-Na-6A/orbmol.gplot
+  Util/Projections/Example/Na-on-Na-6A/orbmol.input
+  Util/Projections/Example/Na-on-Na-6A/pdos.mpr
+  Util/Projections/Example/Na-on-Na-6A/system.fdf
+  Util/Projections/README
+  Util/Projections/orbmol_proj.f90
+  Util/Scripting/cutoff.py
+  Util/WFS/
+  Util/WFS/wfs2wfsx.f
+  Util/WFS/wfsnc2wfsx.f90
+renamed:
+  Util/readwf.f => Util/WFS/readwf.f
+  Util/readwfx.f => Util/WFS/readwfx.f
+  Util/wfsx2wfs.f => Util/WFS/wfsx2wfs.f
+modified:
+  Src/diagk_file.F
+  Src/iowfs_netcdf.F90
+  Util/COOP/Makefile
+  Util/COOP/README
+  Util/COOP/io_hs.f90
+  Util/COOP/mprop.f90
+  Util/COOP/subs.f90
+  Util/DensityMatrix/cdf2dm.f90
+  Util/DensityMatrix/dm2cdf.f90
+  Util/DensityMatrix/makefile
+  Util/Grid/libfft.f
+  Util/Scripting/Siesta/Interface.py
+
+
+-----------------------------------------------------------------------
+2009-04-02  11:00:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.16
+Assorted new (small) features
+
+* Write Neutral-atom potential on the grid
+
+If the fdf symbol SaveNeutralAtomPotential is set to 'True', the neutral-atom
+potential is written to file SystemLabel.VNA (and optionally to Vna.grid.nc)
+This feature is exercised in the h2o test.
+
+* Warnings for multiple images at Gamma, with optional forcing of supercell
+
+For a gamma-point calculation, it is still possible to have overlap of multiple
+images. This could be because the cell is not big enough, if the user wants
+to save CPU time and sacrifice a bit of accuracy.
+
+This is harmless for the calculation of the electronic structure, as the program
+just adds up all the relevant matrix elements, with phase factor 1.
+
+For a COOP/COHP calculation, the resulting xij array is *wrong*, as
+only the vector for one representative of the class of interactions is
+kept. Thus a warning is produced by hsparse.
+
+A new fdf symbol, "ForceAuxCell", has been introduced to allow the user to 
+request a (more expensive) "k-point" calculation with an auxiliary cell if
+needed. At this point, the very first iteration might give different results,
+since the initial normalization of the density-matrix is different.
+
+* Update the Src/ioncat.f program
+
+It can now process the core charge and the charge associated to the
+local pseudopotential
+
+* Write also a (new format) HSX file whenever an HS file is requested.
+
+* Add new .make files to Src/Sys
+
+* Show message from 'die' also on standard error
+
+* Disallow repeated species labels
+
+* Use species label instead of atomic symbol in dump files.
+
+* Set near-zero lattice vector components to zero
+
+If the LatticeParameters option is used, and due to roundoff error in the
+trigonometry, some components of the lattice vectors turned out very small
+but non-zero. Now they are set to zero for cosmetic reasons.
+
+* Disallow the use of non-diagonal supercells
+
+Their use is not well-defined in all cases.
+
+
+
+
+
+-----------------------------------------------------------------------
+2009-04-02  10:30:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.15
+Assorted fixes (hsparse warnings, xc_check...)
+
+* Fix for overzealous multiple-image detection in hsparse
+
+Hsparse raised a warning regarding connectivity of multiple images
+without actually checking that the currently considered neighbor did
+indeed overlap with the base atom.
+
+* Add missing line in Util/Grid/grid2cube.f
+  (P. Ordejon)
+
+* Initialize nspin_data in Util/pdosxml/m_pdos.f90. Update cli code.
+  (Reported by P. Ordejon)
+
+* Fix revPBE section in xc_check in atom.f
+
+* Fixed calculation of fermi level for charged systems in Util/COOP/mprop.f90
+  (Thanks to Manuel Cobian)
+
+* Fixed labels and file names in some tests.
+  (Reported by I. Silanes, IFCA)
+
+* Fix declarations in function numb in chempot
+  (Thanks to Manuel Cobian)
+
+* Increase the number of fields for energy differences in Pseudo/atom/prdiff.f
+  (Reported by V. Maslyuk)
+
+added:
+  Tests/pd_ice/pd_ice.pseudos
+renamed:
+  Tests/h3po4_atomlists_1 => Tests/h3po4_1
+  Tests/h3po4_atomlists_1/h3po4.fdf => Tests/h3po4_1/h3po4_1.fdf
+  Tests/h3po4_atomlists_1/h3po4.pseudos => Tests/h3po4_1/h3po4_1.pseudos
+  Tests/h3po4_atomlists_2 => Tests/h3po4_2
+  Tests/h3po4_atomlists_2/h3po4.fdf => Tests/h3po4_2/h3po4_2.fdf
+  Tests/h3po4_atomlists_2/h3po4.pseudos => Tests/h3po4_2/h3po4_2.pseudos
+  Tests/h3po4_atomlists_3 => Tests/h3po4_3
+  Tests/h3po4_atomlists_3/h3po4.fdf => Tests/h3po4_3/h3po4_3.fdf
+  Tests/h3po4_atomlists_3/h3po4.pseudos => Tests/h3po4_3/h3po4_3.pseudos
+  Tests/pd_h2o => Tests/pd_ice
+modified:
+  Pseudo/atom/prdiff.f
+  Src/atom.f
+  Src/chempot.F
+  Src/hsparse.f
+  Tests/h3po4_1/makefile
+  Tests/h3po4_2/makefile
+  Tests/h3po4_3/makefile
+  Tests/pd_ice/makefile
+  Tests/ptcda/ptcda.fdf
+  Util/COOP/io_hs.f90
+  Util/COOP/main_vars.f90
+  Util/COOP/mprop.f90
+  Util/Grid/grid2cube.f
+  Util/pdosxml/f2kcli.F90
+  Util/pdosxml/m_pdos.f90
+  Tests/h3po4_1/h3po4_1.fdf
+  Tests/h3po4_2/h3po4_2.fdf
+  Tests/h3po4_3/h3po4_3.fdf
+
+
+-----------------------------------------------------------------------
+2009-03-28  17:20:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.14
+Added a translator for pseudopotential files in XML format
+
+Directory Util/pseudo-xml contains code by J. Junquera and A. Garcia
+to convert pseudopotential files in the XML format designed by
+Junquera, Garcia, and Verstraete (to be published) to ".psf" format.
+  
+Also:
+ - Use of "force_underflow" to avoid very small numbers in output.
+ - Use exact traditional marker messages in psf file.
+
+added:
+  Util/pseudo-xml/Fe.xml
+  Util/pseudo-xml/io.f
+  Util/pseudo-xml/makefile
+  Util/pseudo-xml/pseudopotential.f
+  Util/pseudo-xml/sys.f90
+  Util/pseudo-xml/xml2psf.f90
+  Util/pseudo-xml/xml2psf_helper.f
+renamed:
+  Src/pseudo-xml => Util/pseudo-xml
+modified:
+  Docs/siesta.tex
+  Pseudo/atom/pseudoXML.f
+  Util/README
+  Util/pseudo-xml/README
+
+
+-----------------------------------------------------------------------
+2009-03-19  11:00:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.13
+Fix evaluation of atomic radial functions near r=0
+
+Spherical functions with l=0 must have a zero gradient at the
+origin. However, after a change somewhere between v0.9 and v0.11, the
+splines used have been constructed using the "natural" boundary
+condition of zero second derivative. This causes numerical problems
+stemming from the discontinuity of the gradient, notably extraneous
+forces when atoms move slightly away from exact grid-point positions.
+
+The problem has been fixed by specifying explicitly "yp1=0" in the
+construction of the splines. It has also been necessary to augment the
+rad_setup_d2 and radial_read_ascii functions with extra arguments, so
+that tables in .ion or .ion.nc files can be processed adequately.
+
+The changes affect the orbitals and the projectors (their tables
+contain R(r)/r**l, so they have zero derivative at zero for all l),
+the pseudocore charge, the local pseudopotential charge density, and
+Vna.  Only the "reduced Vlocal" function (which is not really used by
+Siesta) uses a natural spline, as it has a finite slope at r=0 (maybe
+because this is not a "volume function" but a synthetic one).
+
+A related problem is the extrapolation to r=0 of magnitudes computed
+on the radial grid. Typically the construction procedure starts or
+ends with the first non-zero value of the radius, and a final
+extrapolation is done. This can be linear, quadratic, or "flat"
+(involving just a copy of the value at the first nonzero
+radius...). In particular, a "flat" extrapolation was used for the
+pseudocore charge (which led again to extraneous contributions to
+forces) and for the effective charge density associated to the local
+pseudopotential (in this case there does not seem to be a sizable
+contribution to the forces).  A quadratic extrapolation is now used
+for those magnitudes.
+
+The gradient was not computed properly in a "danger area" with an
+approximate radius 2* r_c /500, where 500 is the number of points in
+the interpolation table and r_c is the cutoff of the function
+considered. Thus for a very localized pseudo-core charge (rc=1.5 bohr)
+the effects might be felt when the atoms move by up to around 0.006
+bohr from a grid point. 
+
+The bug might have affected phonon calculations starting from
+high-symmetry atomic positions, since a very small displacement might
+then give meaningless results. Other effects might be extra noise in
+molecular dynamics calculations when an atom falls by chance in the
+"danger area", and puzzlingly high residual forces for particular
+values of atomic coordinates, which might have complicated the analysis
+of the eggbox effect.
+
+Credits: D. Sanchez Portal found the spline issue. A. Garcia coded the
+         fix, found the extrapolation bug, and analyzed the issues involved.
+
++: The "ioncat" program has been updated to process the pseudo-core charge
+   and the local-pseudopotential charge density.
++: A new function rchlocal has been added to atmfuncs.f
+
+modified:
+  Src/atmfuncs.f
+  Src/atom.f
+  Src/basis_io.F
+  Src/electrostatic.f
+  Src/ioncat.f
+  Src/radial.f
+  Docs/siesta.tex
+
+-----------------------------------------------------------------------
+2009-03-19  10:00:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.12
+Fix of non-collinear-spin patch
+
+Due to an oversight, the patch leading to version 2.6.9 was missing
+two essential fdf calls relating to spin polarization in module m_spin.
+Requests for spin-polarized or non-collinear-spin calculations were
+silently ignored. 
+
+This has now been fixed and the documentation of the m_spin module
+improved.
+
+Thanks to Oswaldo Dieguez for reporting the bug.
+
+modified:
+  Src/m_spin.F90
+  Docs/siesta.tex
+
+-----------------------------------------------------------------------
+2009-03-16  16:30:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.11
+Re-design of DM re-use code plus reallocation bug fix
+
+* A redesigned m_new_dm module prepares a starting density matrix for a
+new geometry iteration. This DM can be:
+
+1. Synthesized directly from atomic occupations (not idempotent)
+2. Read from file
+3. Extrapolated from (two) previous steps
+3.a The DM of the previous iteration
+
+In cases 2 and 3, a check is done to guarantee that the structure
+of the read or extrapolated DM conforms to the current sparsity.
+If it does not, the information is re-arranged.
+
+Special cases:
+       Harris: The matrix is always initialized
+       Force calculation: The DM should be written to disk
+                          at the time of the "no displacement"
+                          calculation and read from file at
+                          every subsequent step.
+       Variable-cell calculation:
+         If the auxiliary cell changes, the DM is forced to be
+         initialized (conceivably one could rescue some important
+         information from an old DM, but it is too much trouble 
+         for now). NOTE that this is a change in policy with respect
+         to previous versions of the program, in which a (blind?)
+         re-use was allowed.
+
+
+* The physical dimensions of the DM array were not allowed to shrink
+upon reallocation, thus introducing mismatches between the actual size
+and what several subroutines expected. This bug, which affected with
+particular severity spin-polarized calculations, has now been fixed.
+
+* New symbols for control of DM reuse and extrapolation
+
+The FDF symbols:
+
+DM.AllowReuse          (default .TRUE.)
+DM.AllowExtrapolation  (default .TRUE.)
+
+control whether the DM can be re-used from one geometry step to another, and
+whether it can be extrapolated using information from the two previous steps.
+
+If DM.AllowReuse is .false., the DM is not read from file even if DM.UseSaveDM is .true.
+
+The default for ReinitialiseDM has been changed to ".true.". Hence the DM is
+reset (and not read from file) when the auxiliary supercell shape changes, as sanity
+dictates.
+
+* Re-design of new_dm and extrapol
+
+    * Use new functionality in module m_sparse to simplify the logic and
+    hide the ---old index arrays.
+    
+    * Initdm is now part of the new_dm module.
+    
+    (* While debugging a hard-to-track zeroth allocation of DMsaved made a
+    note in alloc.F90)
+
+* Split of read/write functionality in iodm. Sparsity module. Input check
+
+    * A new module m_iodm based in iodm has been added (the old code remains).
+      Reading and writing are now done by separate routines, read_dm and write_dm,   
+      respectively. 
+    
+    * New module m_sparse, containing code to check for sparsity changes and
+      to re-structure a sparse matrix to conform to a new pattern (inspired by
+      code in extrapol).
+    
+    * Initdm now calls read_dynamic_dm, which generates a completely fresh
+      DM.  Then the input sparsity pattern is compared to the current one,
+      and updated if needed. If the file cannot be used, perform a proper bailout
+      (supersedes a previous patch by Emilio and Andrew on iodm.f)
+
+
+removed:
+  Src/extrapol.F
+  Src/initdm.F
+added:
+  Src/compute_norm.F
+  Src/m_iodm.F
+  Src/m_sparse.F
+modified:
+  Docs/CHANGES
+  Src/Makefile
+  Src/alloc.F90
+  Src/diagk.F
+  Src/hsparse.f
+  Src/iodm.F
+  Src/mixer.F
+  Src/new_dm.F
+  Src/post_scf_work.F
+  Src/siesta_init.F
+  Src/siesta_options.F90
+  Src/sparse_matrices.F90
+  Src/state_init.F
+  Src/version.F90
+  version.info
+
+------------------------------------------------------------------
+2009-02-22  22:00:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.10
+Fixed non-collinear spin calculation in parallel
+  
+  * The diagonalization with mixed spins requires doubling
+  the effective blocksize for scalapack. This has been
+  fixed.
+    
+  Credits: Volodymyr Maslyuk, Alberto Garcia
+  
+  Note that the option Diag.ParallelOverK cannot yet
+  be used with non-collinear spin.
+  
+  Other fixes:
+  
+  * In non-collinear spin calculations there is no CML output.
+  Thus the relevant CML module should not be opened.
+
+  New test:  fe_noncol_kp  
+  
+added:
+  Tests/fe_noncol_kp/
+  Tests/fe_noncol_kp/fe_noncol_kp.fdf
+  Tests/fe_noncol_kp/fe_noncol_kp.pseudos
+  Tests/fe_noncol_kp/makefile
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/cdiag.F
+  Src/diag2g.F
+  Src/diag2k.F
+  Src/diagon.F
+  Src/m_spin.F90
+  Src/mulliken.F
+  Tests/fe_clust_noncollinear/fe_clust_noncollinear.fdf
+
+------------------------------------------------------------------
+2009-02-06  14:30:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.9
+Implementation of new filtering logic
+
+See the manual for instructions on how to use the new
+FDF symbols FilterCutoff and FilterTol.
+
+* Note that there are no safeguards for failures of the filtering
+routine. In particular, if FilterTol is set to a "large" value, some
+orbitals will not be filtered correctly, and the tables will be
+corrupted.
+
+* The implementation of automatic meshcutoff is not ready yet.
+
+* Updated the "filter" tests.
+
+* In atom, moved the call to 'comcore' after orbital setup.  This is
+needed to apply an orbital-determined cutoff to the partial-core
+charge. The orbitals themselves are generated with the "raw" core
+charge from the pseudopotential file, and then filtered. Then the PCC
+is filtered.
+
+* Apart from the fdf symbols discussed in the manual, the following
+undocumented ones can be used for now: (see the code)
+
+PCC.Filter
+PAO.Filter
+VNA.Filter
+
+(booleans). Fine-tune which things are filtered.
+(make sure other options and defaults are compatible)
+
+XXX.FilterFactor: fine-tune the default factors used
+
+XXX.FilterCutoff: fine-tune the cutoff
+
+XXX.FilterTol: set the diagnostic Kin Energy tolerance
+for an estimate of the hardness of the function. This
+defaults to 0.003 Ry.
+
+removed:
+  Tests/Reference-xml/pb_filter_all.xml
+  Tests/Reference-xml/pb_filter_basis.xml
+  Tests/Reference-xml/pb_filter_pcc.xml
+  Tests/Reference-xml/pb_filter_vna.xml
+  Tests/Reference/pb_filter_all.out
+  Tests/Reference/pb_filter_basis.out
+  Tests/Reference/pb_filter_nopcc.out
+  Tests/Reference/pb_filter_pcc.out
+  Tests/Reference/pb_filter_vna.out
+  Tests/Reference/var_cell_filter.out
+  Tests/pb_filter_basis/
+  Tests/pb_filter_basis/makefile
+  Tests/pb_filter_basis/pb_filter_basis.fdf
+  Tests/pb_filter_basis/pb_filter_basis.pseudos
+  Tests/pb_filter_nopcc/
+  Tests/pb_filter_nopcc/makefile
+  Tests/pb_filter_nopcc/pb_filter_nopcc.fdf
+  Tests/pb_filter_nopcc/pb_filter_nopcc.pseudos
+  Tests/pb_filter_pcc/
+  Tests/pb_filter_pcc/makefile
+  Tests/pb_filter_pcc/pb_filter_pcc.fdf
+  Tests/pb_filter_pcc/pb_filter_pcc.pseudos
+  Tests/pb_filter_vna/
+  Tests/pb_filter_vna/makefile
+  Tests/pb_filter_vna/pb_filter_vna.fdf
+  Tests/pb_filter_vna/pb_filter_vna.pseudos
+  Tests/var_cell_filter/
+  Tests/var_cell_filter/makefile
+  Tests/var_cell_filter/var_cell_filter.fdf
+  Tests/var_cell_filter/var_cell_filter.pseudos
+  Tests/var_cell_stress/
+  Tests/var_cell_stress/makefile
+  Tests/var_cell_stress/var_cell_stress.fdf
+  Tests/var_cell_stress/var_cell_stress.pseudos
+added:
+  Docs/filtering.CHANGES
+  Tests/Reference-xml/pb_filter_cutoff.xml
+  Tests/Reference-xml/pb_filter_tol.xml
+  Tests/Reference/pb_filter_cutoff.out
+  Tests/Reference/pb_filter_tol.out
+  Tests/pb_filter_tol/
+  Tests/pb_filter_tol/makefile
+  Tests/pb_filter_tol/pb_filter_tol.fdf
+  Tests/pb_filter_tol/pb_filter_tol.pseudos
+renamed:
+  Tests/pb_filter_all => Tests/pb_filter_cutoff
+  Tests/pb_filter_all/pb_filter_all.fdf => Tests/pb_filter_cutoff/pb_filter_cutoff.fdf
+  Tests/pb_filter_all/pb_filter_all.pseudos => Tests/pb_filter_cutoff/pb_filter_cutoff.pseudos
+modified:
+  Docs/CHANGES
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/atom.f
+  Tests/pb_filter_cutoff/makefile
+  Tests/std-Makefile
+  version.info
+  Tests/pb_filter_cutoff/pb_filter_cutoff.fdf
+
+------------------------------------------------------------------
+2008-12-06  17:50:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.8
+Optimize and fix COOP/COHP/PDOS analysis program
+
+The mprop program in Util/COOP has been revamped to decrease
+drastically the amount of memory needed and to speed up execution.
+Now it should be competitive with, and more flexible than, Siesta's
+built-in PDOS computation.
+
+In the process of optimization several bugs were found and fixed.
+Users are advised to revise the results of old calculations,
+particularly if k-points or multiple-zeta orbital were used.
+
+(+ The OCCS file needs to be opened at the right place in diagk)
+
+
+added:
+  Tests/Reference-xml/si64_coop.xml
+  Tests/Reference/si64_coop.out
+modified:
+  Src/diagk.F
+  Tests/si64_coop/si64_coop.fdf
+  Util/COOP/Makefile
+  Util/COOP/Tests/n_chain/coo.N-N.gplot
+  Util/COOP/io_hs.f90
+  Util/COOP/main_vars.f90
+  Util/COOP/mprop.f90
+  Util/COOP/read_curves.f90
+  Util/COOP/subs.f90
+
+------------------------------------------------------------------
+2008-11-28  16:15:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.7
+Assorted bug fixes: iodm, pdos, fdf, cdf_fft
+
+* Fix latest patch for iodm.F (formatting, messages)
+* Fix long-standing bug in pdos XML output
+* Cosmetic fix in experimental file Util/Grid/cdf_fft.f90
+* Fix obscure bug in fdf
+
+modified:
+  Src/fdf/fdf.f
+  Src/iodm.F
+  Src/wxml/m_wxml_text.F90
+  Util/Grid/cdf_fft.f90
+
+   	------------------------------------------------------------
+   	revno: 271
+   	committer: Alberto Garcia <albertog@icmab.es>
+   	branch nick: trunk-ag
+   	timestamp: Mon 2008-10-27 22:42:54 +0100
+   	message:
+   	  Do not use volume factor in cdf_fft
+   	  
+   	  The factor only makes sense for charge-density files.
+   	  
+   	  modified:
+   	    Util/Grid/cdf_fft.f90
+   	------------------------------------------------------------
+   	revno: 270
+   	committer: Alberto Garcia <albertog@icmab.es>
+   	branch nick: trunk-ag
+   	timestamp: Mon 2008-10-27 22:37:48 +0100
+   	message:
+   	  Close the output channel in fdf_shutdown 
+   	  
+   	  If fdf is re-invoked, an error was triggered because
+   	  fdf_shutdown did not close the previous run's output channel.
+   	  Bug spotted by Eduardo Hernandez.
+   	  
+   	  modified:
+   	    Src/fdf/fdf.f
+   	------------------------------------------------------------
+   	revno: 269
+   	committer: Alberto Garcia <albertog@icmab.es>
+   	branch nick: trunk-ag
+   	timestamp: Mon 2008-10-27 22:35:55 +0100
+   	message:
+   	  Fix a long-standing bug in pdos xml output
+   	  
+   	  In Src/wxml/m_wxml_text.F90, the arguments to the sign function were
+   	  reversed, causing badly formatted records in the pdos xml file.
+   	  Thanks to Rogeli Grima for spotting the bug.
+   	  
+   	  modified:
+   	    Src/wxml/m_wxml_text.F90
+
+
+------------------------------------------------------------------
+2008-11-28  14:25:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.6
+Avoid MPI deadlock when DM file is not acceptable (A. Walker)
+
+        Since r263.1.1 it was possible for the test 
+    
+         if ( maxnd .lt. ndmax ) then
+           okdim = .false.
+           ... skip DM reading ...
+    
+    
+        to be true on some nodes and false on others 
+        as ndmax was local to the node. This condition
+        leads to some nodes to wait at globalize_max
+        in m_pulay.F (near line 53) and the other to wait 
+        at the MPI_Wait in iodm.F (near line 293). Avoid 
+        this by detecting whether maxnd and ndmax are
+        different between nodes. The test is done on all nodes and 
+        all must be ok to use the .DM file.
+    
+        modified:
+          Src/iodm.F
+          version.info
+
+------------------------------------------------------------------
+2008-10-15  10:50:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.5
+Assorted fixes (deprecated constructs, zmatrix, cg restarts) (A. Walker)
+
+	-------------------------------------------------------------------------
+	2008-10-13	Andrew Walker	2.6.4--awalker-trunk-fixes-5
+	Remove use of features deleted in Fortran 95
+	
+	Specifically, one use of PAUSE and one GOTO an
+	ENDDO statment. GOTO now jumps to the next line
+	and the PAUSE is replaced to an (MPI safe) call
+	to die().
+	
+	modified:
+	  Docs/CHANGES.awalker-trunk-fixes
+	  Src/atomlwf.F
+	  Src/m_ts_aux_rout.F
+	  version.info
+	
+	-------------------------------------------------------------------------
+	2008-10-13	Andrew Walker	2.6.4--awalker-trunk-fixes-4
+	Simple bugfix for fixed cell restarts.
+	
+	In the case of a tightend ftol after a sucessful CG run, relaxed
+	is set to .true. by the read from iocg. This results in the test
+	for convergence being skipped within conjgr. Setting relaxed to
+	.false. here avoids this. In the case of a variable cell relaxed
+	is set below anyway and the converence test is always performed.
+	A better solution (moving the test out into a seperate routine)
+	will follow in a later version. 
+	
+	modified:
+	  Docs/CHANGES.awalker-trunk-fixes
+	  Src/cgvc.F
+	  version.info
+	
+	-------------------------------------------------------------------------
+	2008-10-13	Andrew Walker	2.6.4--awalker-trunk-fixes-3
+	NAG issues with transiesta
+	
+	Even with -dcfuns the NAG f95 compiler does not like the
+	"non-standard double precision complex intrinsic function"
+	dcexp. Use the generic exp instead.
+	
+	modified:
+	  Docs/CHANGES.awalker-trunk-fixes
+	  Src/m_ts_electrode.F90
+	  Src/m_ts_in_siesta.F
+	  Src/m_ts_scattering.F
+	
+	-------------------------------------------------------------------------
+	2008-10-13	Andrew Walker	2.6.4--awalker-trunk-fixes-2
+	Fix errors in some zmatrix tests
+	
+	According to the documentation and code in zmatrix.F the
+	fdf flags to control zmatrix force tolerance and optimizer
+	step size are ZM.ForceTolLength, ZM.ForceTolAngle,
+	ZM.MaxDisplLength and ZM.MaxDisplAngle - in some tests
+	they were shortened to ...Ang and ...Len. This patch
+	corrects this. The values in the tests were set to the 
+	defaults so test output is not changed.
+	
+	modified:
+	  Docs/CHANGES.awalker-trunk-fixes
+	  Tests/benzene/benzene.fdf
+	  Tests/fire_benzene/fire_benzene.fdf
+	  Tests/h2oZ/h2oZ.fdf
+	  Tests/zmatrix/zmatrix.fdf
+	
+	-------------------------------------------------------------------------
+	2008-10-13	Andrew Walker	2.6.4--awalker-trunk-fixes-1
+	Make obj_setup.sh executable.
+	
+	This needs to be executed in order to do VPATH make.
+	
+	added:
+	  Docs/CHANGES.awalker-trunk-fixes
+	modified:
+	  Src/obj_setup.sh*
+	  version.info
+	
+
+------------------------------------------------------------------
+2008-09-12  13:45:00 Alberto Garcia <albertog@icmab.es>	 2.6.4
+Extended Ordejon-Mauri ordern functional to atoms with odd number of electrons
+
+Patch by: Emilio Artacho <emilio@esc.cam.ac.uk>
+timestamp: Sat 2008-08-30 18:38:45 +0100
+  
+In the initial assigning of LWF centers to atoms, it assigns n/2 to
+atoms with n even, and (n+1)/2 or (n-1)/2 in an alternating sequence
+to atoms with odd number. The sequence runs in the order of input in
+the atomic coordinates block; the user can control the assignment by
+defining the order there.
+  
+modified:
+  Docs/siesta.tex
+  Src/atomlwf.F
+
+------------------------------------------------------------------
+2008-09-12  13:25:00 Alberto Garcia <albertog@icmab.es>	 2.6.3
+Siesta moves on with fresh DM instead of stopping when wrong DM file
+
+Patch by: Emilio Artacho <emilio@esc.cam.ac.uk>
+timestamp: Thu 2008-08-28 15:53:19 +0100
+  
+Simple patch removing chkdim calls in iodm.F and substituting them by
+if statements. If the dimensions are wrong it sends back found=.false.
+  
+There is a 'goto' statement introduced to minimise impact on present
+structure (pending the up-and-coming revision of DM handling)
+  
+modified:
+  Src/iodm.F
+
+------------------------------------------------------------------
+2008-09-11  11:50:00 Alberto Garcia <albertog@icmab.es>	 2.6.2
+Incorporate new filtering functionality
+
+Pending the merge of the new atom-clean structure, the new filtering
+functionality of Jose Soler and Eduardo Anglada has been incorporated
+temporarily into this branch.
+
+The filtering routines are in Src/m_filter.f90, a self-contained
+module with no dependencies. A new subdirectory Src/filter with
+the same code is meant to serve as a test framework for now.
+Eventually it would be turned into a "library" subdirectory, 
+and Src/m_filter.f90 removed.
+
+The old filtering routines have been removed.
+Minimal documentation has been added to Docs/siesta.tex.
+
+removed:
+  Src/filter.f90
+  Src/filter_subs.f
+added:
+  Src/filter/
+  Src/filter/README
+  Src/filter/ba-6s-orb.dat
+  Src/filter/core.dat
+  Src/filter/f2kcli.F90
+  Src/filter/m_filter.f90
+  Src/filter/m_getopts.f90
+  Src/filter/makefile
+  Src/filter/test_filter.f90
+  Src/filter/ti-3p-orb.dat
+  Src/filter/ti-4p-orb.dat
+  Src/m_filter.f90
+modified:
+  Docs/CHANGES
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/Makefile
+  Src/atom.f
+  Src/version.F90
+  version.info
+
+
+2008-09-11  11:10:00 GMT  Alberto Garcia <albertog@icmab.es>	2.6.1
+Fix bug related to vna introduced at a previous patch
+
+A patch introduced in 2.5.29 in meshsubs.F was wrong. Vna must
+be kept in "gradients" calculations. Its intent has been set 
+to "inout" and the extra initialization removed.
+
+The bug was spotted by Rogeli Grima.
+
+modified:
+  Src/meshsubs.F
+  Src/version.F90
+  version.info
+
 ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
+
+2008-07-18  08:30:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-33
+
+Summary: Fix in dhscf.F . Added OUT directories int Tests/transiesta 
+
+(F.D. Novaes) 
+
+* Corrected the position of MPI #endif in dhscf.
+
+* Added output files of transiesta runs in OUT directories
+and of tbtrans runs in OUT_TBT in the tests located in Tests/transiesta
+
+2008-07-16  15:30:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-32
+
+Summary: Added tests for Transiesta and /Util/TBTrans (F.D. Novaes)
+
+Tests/transiesta contains some (not quite automatic)
+tests for transiesta and tbtrans.
+
+Util/TBTrans contains the source code for tbtrans.
+
+README_TRANSIESTA in the top directory explains
+the basic features and organization for transiesta.
 
 2008-07-16  07:40:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-31
 

@@ -33,6 +33,11 @@
       Eharrs = Etot + DEharr
       FreeE  = Etot - Temp * Entropy
 
+!
+!     WHY IS THIS?? To make Dscf (which might be re-used in the next
+!     geometry iteration) equal to the last DM used to construct the
+!     hamiltonian, instead of the output DM.
+!
       Dscf(1:nh,1:nspin) = Dold(1:nh,1:nspin)
       Escf(1:nh,1:nspin) = Eold(1:nh,1:nspin)
 

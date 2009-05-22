@@ -8,7 +8,7 @@ import ASE.ListOfAtoms
 #-------------------
 class Atom(ASE.Atom):
 
-    """Atom object for Siesta. Includes label"""
+    """Atom object for Siesta. Includes label and gs valence config"""
 
     def __init__(self, symbol=None, position=(0, 0, 0),
                  Z=None, mass=None, tag=0,
@@ -37,10 +37,24 @@ class Atom(ASE.Atom):
         """Set label."""
         self.label = label
 
+    def Copy(self):
+        return Atom(position=self.position, Z=self.Z, mass=self.mass,
+                    tag=self.tag, momentum=self.momentum, magmom=self.magmom,
+                    label=self.label, valence_gs=self.valence_gs)
+
+
 #---------------------------------
 class Crystal(ASE.ListOfAtoms):
-       def dummy(self):
-          print "Just checking in"
+
+       """ Extension of ListOfAtoms to provide new functionality """
+
+       def SetPseudosInfo(self,func_pseudos):
+          """ Installs a function to get the pseudopotentials"""
+          self.get_pseudos = func_pseudos
+
+       def GetPseudos(self):
+          """ Gets the appropriate pseudopotentials"""
+          return self.get_pseudos()
 
 
 if __name__=="__main__":
@@ -49,7 +63,6 @@ if __name__=="__main__":
   c = Atom(Z=0,label="ON-0.50000",valence_gs=[[0,2],[1,3.5]])
   cryst = Crystal([a,b,c])
   print cryst
-  cryst.dummy()
 
   import siesta
 

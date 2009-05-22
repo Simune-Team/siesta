@@ -290,7 +290,7 @@ C Sanity checks on values
          endif
          if (reparametrize_pseudos)
      $       call pseudo_reparametrize(p=basp%pseudopotential,
-     $                             a=new_a, b=new_b)
+     $                             a=new_a, b=new_b,label=basp%label)
       enddo
 
       if (synthetic_atoms) then

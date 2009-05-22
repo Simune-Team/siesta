@@ -13,6 +13,8 @@ MODULE siesta_options
   logical :: fixspin       ! Keep the total spin fixed?
   logical :: inspn         ! Antiferro spin ordering in initdm?
   logical :: initdmaux     ! Re-initialize DM when auxiliary supercell changes?        
+  logical :: allow_dm_reuse! Allow re-use of the previous geometry DM ? (with possible extrapolation)
+  logical :: allow_dm_extrapolation ! Allow the extrapolation of previous geometries' DM ?
   logical :: change_kgrid_in_md ! Allow k-point grid to change in MD calculations
   logical :: naiveauxcell  ! Use naive recipe for auxiliary supercell?
   logical :: mix           ! Mix first SCF step? Used in broyden_mixing
@@ -25,6 +27,7 @@ MODULE siesta_options
   logical :: RemoveIntraMolecularPressure   ! Remove molecular virial contribution to p
   logical :: savehs        ! Write file with Hamiltonian electrostatic potential?
   logical :: savevh        ! Write file with Hartree electrostatic potential?
+  logical :: savevna       ! Write file with neutral-atom potential?
   logical :: savevt        ! Write file with total effective potential?
   logical :: savdrh        ! Write file with diff. between SCF and atomic density?
   logical :: savrho        ! Write file with electron density?
@@ -1427,7 +1430,9 @@ MODULE siesta_options
     call fdf_global_get(savehs, 'SaveHS'          , .false.)
     call fdf_global_get(fixauxcell, 'FixAuxiliaryCell', .false.)
     call fdf_global_get(naiveauxcell, 'NaiveAuxiliaryCell', .false.)
-    call fdf_global_get(initdmaux, 'ReInitialiseDM'  , .false.)
+    call fdf_global_get(initdmaux, 'ReInitialiseDM'  , .TRUE.)
+    call fdf_global_get(allow_dm_reuse, 'DM.AllowReuse'  , .TRUE.)
+    call fdf_global_get(allow_dm_extrapolation, 'DM.AllowExtrapolation'  , .TRUE.)
     call fdf_global_get(muldeb, 'MullikenInSCF'   , .false.)
     call fdf_global_get(rijmin, 'WarningMinimumAtomicDistance', 1.0_dp, 'Bohr' )
     call fdf_global_get(bornz,  'BornCharge'   , .false.)
@@ -1447,6 +1452,7 @@ MODULE siesta_options
     call fdf_global_get(savrho,'SaveRho', dumpcharge)
     call fdf_global_get(savdrh,'SaveDeltaRho',       .false.)
     call fdf_global_get(savevh,'SaveElectrostaticPotential', .false.)
+    call fdf_global_get(savevna,'SaveNeutralAtomPotential', .false.)
     call fdf_global_get(savevt,'SaveTotalPotential', .false.)
     call fdf_global_get(savepsch,'SaveIonicCharge',  .false.)
     call fdf_global_get(savetoch,'SaveTotalCharge',  .false.)

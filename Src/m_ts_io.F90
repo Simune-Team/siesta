@@ -896,12 +896,12 @@ MODULE m_ts_io
       implicit  none
 
       character task*(*), paste*33
-      logical   found
       integer   maxnd, nbasis, nspin
       integer   listd(maxnd), numd(nbasis), listdptr(nbasis)
       real*8    dm(maxnd,nspin)
       real*8    edm(maxnd,nspin)
       real*8    ef
+      logical, optional :: found
 
 ! Internal variables and arrays
       character fname*33, sname*30
@@ -1102,7 +1102,7 @@ MODULE m_ts_io
             call io_close(unit2)
           endif
 
-          found = .true.
+          if(present(found)) found = .true.
 
         elseif (exist3) then
 ! New-format files
@@ -1266,11 +1266,11 @@ MODULE m_ts_io
             call io_close(unit1)
           endif
 
-          found = .true.
+          if(present(found)) found = .true.
 
         else
 
-          found = .false.
+          if(present(found)) found = .false.
 
         endif
 

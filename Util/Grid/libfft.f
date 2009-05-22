@@ -97,7 +97,7 @@ C     .. Array Arguments ..
 c
 C     ..
       integer nmax
-      parameter (nmax=512)
+      parameter (nmax=1024)
 c
 c I/O  wrk(i)              i=1,4*max(n1,n2)+15
 c                          work array. Treated as complex here for
@@ -183,7 +183,7 @@ C     .. Array Arguments ..
 c
 C     ..
       integer nmax
-      parameter (nmax=256)
+      parameter (nmax=1024)
 c
 c I/O  wrk(i)              i=1,4*max(n1,n2,n3)+15
 c                          work array. Treated as complex here for
@@ -1785,7 +1785,7 @@ C     .. Array Arguments ..
 c
 C     ..
       integer nmax
-      parameter (nmax=512)
+      parameter (nmax=1024)
 c
 c I/O  wrk(i)              i=1,4*max(n1,n2)+15
 c                          work array. Treated as complex here for
@@ -1871,7 +1871,7 @@ C     .. Array Arguments ..
 c
 C     ..
       integer nmax
-      parameter (nmax=256)
+      parameter (nmax=1024)
 c
 c I/O  wrk(i)              i=1,4*max(n1,n2,n3)+15
 c                          work array. Treated as complex here for

@@ -213,8 +213,10 @@ C Check internal dimensions ..........................................
       endif
 
 C Allocate local arrays
-      call re_alloc(Haux,1,nhs,name='Haux',routine='diagon')
-      call re_alloc(Saux,1,nhs,name='Saux',routine='diagon')
+      if (nspin .ne. 4) then
+         call re_alloc(Haux,1,nhs,name='Haux',routine='diagon')
+         call re_alloc(Saux,1,nhs,name='Saux',routine='diagon')
+      endif
       call re_alloc(psi,1,npsi,name='psi',routine='diagon')
       allocate(aux(naux),stat=mem_stat)
       call memory('A','D',naux,'diagon',stat=mem_stat)
@@ -309,8 +311,8 @@ C Call apropriate routine
         call diag2g( nuo, no, maxuo, maxnh, maxnd, maxo, numh,
      .               listhptr, listh, numd, listdptr, listd,
      .               H, S, getD, qtot, temp, e1, e2, eo, qo, 
-     .               Dnew, Enew, ef, Entropy, Haux, Saux, psi,
-     .               aux, nuotot, occtol, iscf, neigwanted )
+     .               Dnew, Enew, ef, Entropy, psi, 
+     .               nuotot, occtol, iscf, neigwanted )
       elseif (nspin.eq.4 .and. spiral) then
         call diagsprl( nuo, no, maxuo, maxnh, maxnd, maxo,
      .               numh, listhptr, listh, numd, listdptr,
@@ -324,8 +326,8 @@ C Call apropriate routine
      .               listhptr, listh, numd, listdptr, listd,
      .               H, S, getD, qtot, temp, e1, e2, xij,
      .               indxuo, nk, kpoint, wk, eo, qo, Dnew,
-     .               Enew, ef, Entropy, Haux, Saux, psi, Haux, 
-     .               Saux, aux, nuotot, occtol, iscf )
+     .               Enew, ef, Entropy, psi, 
+     .               nuotot, occtol, iscf )
       endif
 
 C Free local arrays

@@ -1017,6 +1017,7 @@ c           2  for integral (a,inf) with 50% inside (a,b+2a)
 c     x, w     output grid points and weights.
 c
       subroutine gauss(npts,job,a,b,x,w) 
+      use sys,             only: die
       integer npts,job,m,i,j 
       real*8 x(npts),w(npts),a,b,xi
       real*8 t,t1,pp,p1,p2,p3,aj
@@ -1075,7 +1076,7 @@ c scale to (a,inf) with 50% points inside (a,b+2a)
             w(i)=w(i)*two*(a+b)/((one-xi)*(one-xi))
  1050    continue
       else
-         pause 'Wrong value of job'
+         call die('gauss: Wrong value of job for Gaussian quadrature')
       endif
 
 
