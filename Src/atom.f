@@ -2096,7 +2096,8 @@ C Loop over functionals
      .          'xc_check: WARNING: Pseudopotential generated with',
      $           trim(ps_string), " functional"
 
-          elseif((XCauth(nf).eq.'PBEsol').and.(XCfunc(nf).eq.'GGA')) then
+          elseif((XCauth(nf).eq.'PBEsol').and.(XCfunc(nf).eq.'GGA')) 
+     .        then
 
             write(6,'(a)')
      .       'xc_check: GGA PBEsol 2008'
