@@ -391,7 +391,7 @@ cag       Avoid negative densities
       ELSEIF (AUTHOR.EQ.'PW91' .OR. AUTHOR.EQ.'pw91') THEN
         CALL PW91XC( IREL, NS, DD, GDD,
      .               EPSX, EPSC, DEXDN, DECDN, DEXDGN, DECDGN )
-      IF (AUTHOR.EQ.'PBESOL' .OR. AUTHOR.EQ.'pbesol' .OR.
+      ELSEIF (AUTHOR.EQ.'PBESOL' .OR. AUTHOR.EQ.'pbesol' .OR.
      .    AUTHOR.EQ.'PBEsol') THEN
         CALL PBESOLXC( IREL, NS, DD, GDD,
      .              EPSX, EPSC, DEXDN, DECDN, DEXDGN, DECDGN )
