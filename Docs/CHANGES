@@ -5,6 +5,70 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 -----------------------------------------------------------------------
+2009-06-15  12:45:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.24
+Fixes: denchar, pathscale_mpi. DM(HS) history files. Makefiles
+
+* Added nano .make and script files. Fixed ag test.
+
+- The ag test had a very small MeshCutoff, and crashed.
+- Added netCDF-enabled .make file for nano.
+- Updated README file in Src/Sys
+- Added pbs and sh scripts for test execution on nano.
+
+* More complete DM and DMHS history files
+
+The DM and DMHS history files have now names of
+the form DM-NNNN.nc and DMHS-NNNN.nc, respectively,
+to hold information for all geometry steps. This
+expanded history option is turned off by default.
+
+(+ experimental analysis scripts in Util/SCF)
+
+* Better makefiles for some Util subdirectories
+
+The WFS, DensityMatrix, and pseudo-xml subdirectories
+of Util now have makefiles instrumented to use the
+new OBJDIR variable.
+
+* Cosmetic fix for Pathscale MPI
+
+File mpi.F was not processed correctly by the Pathscale compiler.
+
+* Fix double empty-line bug in denchar
+
+The 2D data files contained extra blank lines in between blocks.
+
+* Proper citation for ATOM in Pseudo/atom/README
+
+
+added:
+  Src/Sys/nano-intel-mpi-cdf.make
+  Tests/Scripts/nano.pbs
+  Tests/Scripts/nano4.sh
+  Util/SCF/README
+  Util/SCF/g_dm.py
+  Util/SCF/g_dm3.py
+  Util/SCF/g_els_out.py
+  Util/SCF/g_hh.py
+  Util/SCF/g_hist.py
+  Util/WFS/makefile
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Pseudo/atom/README
+  Src/MPI/mpi.F
+  Src/Sys/README
+  Src/iodm_netcdf.F90
+  Src/iodmhs_netcdf.F90
+  Src/state_init.F
+  Tests/ag/ag.fdf
+  Util/Denchar/Src/rhoofr.f
+  Util/DensityMatrix/makefile
+  Util/pseudo-xml/makefile
+  version.info
+
+
+-----------------------------------------------------------------------
 2009-06-15  11:00:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.23
 Implementation of PBEsol functional (J. Gale)
 

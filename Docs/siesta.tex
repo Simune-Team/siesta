@@ -39,7 +39,7 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, 2.6.23}}
+{\Huge {\bf S I E S T A \, \, 2.6.24}}
 
 \vspace{1cm}
 \hrulefill
@@ -4610,10 +4610,10 @@ is output as a {\it Systemlabel}.DM file or not.
 
 \item[{\bf WriteDM.NetCDF}] ({\it logical}): \index{WriteDM.NetCDF@{\bf WriteDM.NetCDF}}
 \index{output!density matrix} It determines whether the density matrix
-is output as a {\it Systemlabel}.DM.nc netCDF file or not.
+(after the mixing step) is output as a DM.nc netCDF file or not.
 
-The file is overwritten at every SCF step, unless the {\bf
-WriteDM.History.NetCDF} option is enabled.
+The file is overwritten at every SCF step. Use the {\bf
+WriteDM.History.NetCDF} option if a complete history is desired.
 
 The DM.nc and standard DM file formats can be converted at will with
 the programs in {\tt Util/DensityMatrix} directory. Note that the
@@ -4624,29 +4624,33 @@ DM values in the DM.nc file are in single precision.
 \item[{\bf WriteDMHS.NetCDF}] ({\it logical}): \index{WriteDMHS.NetCDF@{\bf WriteDMHS.NetCDF}}
 \index{output!density
   matrix}\index{output!hamiltonian}\index{output!overlap matrix} 
-It determines whether, at every SCF step, the input density matrix,
-hamiltonian, and output density matrix, are output as a {\it
-  Systemlabel}.DMHS.nc netCDF file or not.
-The file also contains the overlap matrix S. 
+If true, the input density matrix, hamiltonian, and output density matrix, are stored in a netCDF file
+named {\tt DMHS.nc}. The file also contains the overlap matrix S. 
 
-The file is overwritten at every SCF step, unless the {\bf
-WriteDMHS.History.NetCDF} option is enabled.
+The file is overwritten at every SCF step. Use the {\bf
+  WriteDMHS.History.NetCDF} option if a complete history is desired.
 
 {\it Default value:} {\tt .true.} if netCDF support is enabled (see Appendix).
 
-\item[{\bf WriteDM.History.NetCDF}] ({\it logical}): \index{WriteDM.History.NetCDF@{\bf WriteDM.History.NetCDF}}
-\index{output!density matrix}\index{output!density matrix history} It determines whether the 
-DM.nc file (see {\bf WriteDM.NetCDF}) contains information about all
-the steps of the (last) SCF cycle or not.
+\item[{\bf WriteDM.History.NetCDF}] ({\it logical}):
+\index{WriteDM.History.NetCDF@{\bf WriteDM.History.NetCDF}}
+\index{output!density matrix}\index{output!density matrix history} If
+true, a series of netCDF files with names of the form {\tt DM-NNNN.nc}
+is created to hold the complete history of the density matrix (after
+mixing).  (See also {\bf WriteDM.NetCDF}). Each file corresponds to a
+geometry step.
 
 {\it Default value:} {\tt .false.}
 
-\item[{\bf WriteDMHS.History.NetCDF}] ({\it logical}): \index{WriteDMHS.History.NetCDF@{\bf WriteDMHS.History.NetCDF}}
-\index{output!density
-  matrix history}\index{output!hamiltonian history}\index{output!overlap matrix} 
-It determines whether the 
-DMHS.nc file (see {\bf WriteDMHS.NetCDF}) contains information about all
-the steps of the (last) SCF cycle or not.
+\item[{\bf WriteDMHS.History.NetCDF}] ({\it logical}):
+\index{WriteDMHS.History.NetCDF@{\bf WriteDMHS.History.NetCDF}}
+\index{output!density matrix history}\index{output!hamiltonian
+history}\index{output!overlap matrix} If true, a series of netCDF
+files with names of the form {\tt DMHS-NNNN.nc} is created to hold the
+complete history of the input and output density matrix, and the
+hamiltonian.  (See also {\bf WriteDMHS.NetCDF}). Each file corresponds
+to a geometry step. The overlap matrix is stored only once per SCF
+cycle.
 
 {\it Default value:} {\tt .false.}
 

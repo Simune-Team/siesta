@@ -297,9 +297,8 @@
     \subitem charge density for DENCHAR code, 74
     \subitem customization, 75
     \subitem density   matrix, 66
-    \subitem density   matrix history, 67
     \subitem density matrix, 66
-    \subitem density matrix history, 66
+    \subitem density matrix history, 66, 67
     \subitem eigenvalues, 65, 66, 75, 77
     \subitem electrostatic potential, 71, 72
     \subitem forces, 65, 66, 75, 76

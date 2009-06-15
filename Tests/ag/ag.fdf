@@ -13,7 +13,9 @@ Restricted.Radial.Grid F
 
 XC.functional    GGA
 XC.authors       PBE
-Meshcutoff 50 Ry
+
+Meshcutoff 100 Ry
+
 %block ChemicalSpeciesLabel
 1  47 Ag
 %endblock ChemicalSpeciesLabel
