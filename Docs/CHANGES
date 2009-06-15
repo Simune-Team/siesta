@@ -5,6 +5,29 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 -----------------------------------------------------------------------
+2009-06-15  11:00:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.23
+Implementation of PBEsol functional (J. Gale)
+
+Implemented the PBE functional for solids of Perdew et al, PRL 100,
+136406 (2008).
+
+The xc_authors string in Siesta is 'PBEsol'.  In atom, the two-letter
+symbol is 'ps'
+
+The XML interface in Pseudo/atom and the converter in Util/pseudo-xml
+have been updated.
+
+  Docs/siesta.tex
+  Pseudo/atom/Docs/atom.tex
+  Pseudo/atom/makefile-xml
+  Pseudo/atom/pseudoXML.f
+  Pseudo/atom/velect.f
+  Pseudo/atom/xc.f
+  Src/atom.f
+  Src/xc.f
+  Util/pseudo-xml/xml2psf_helper.f
+
+-----------------------------------------------------------------------
 2009-06-15  11:00:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.22
 Optional k-point sampling for PDOS calculations (J. Gale)
 

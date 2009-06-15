@@ -74,6 +74,10 @@
           xcfuntype    = 'GGA'
           xcfunparam   = 'Wu-Cohen'
 
+        case('ps') 
+          xcfuntype    = 'GGA'
+          xcfunparam   = 'Perdew-Burke-Ernzerhof-solid'
+
       end select
 
 ! Digest and dump the information about the pseudopotential flavor
