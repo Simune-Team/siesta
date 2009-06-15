@@ -5,6 +5,43 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 -----------------------------------------------------------------------
+2009-06-15  11:00:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.22
+Optional k-point sampling for PDOS calculations (J. Gale)
+
+Separate grid of K-points introduced for PDOS so that greater
+resolution can be achieved.  To do this, a new module based on the SCF
+kpoint module has been introduced with separate data structures for
+the PDOS k-points. In the case that no PDOS grid is specified then the
+SCF grid is used as present.
+
+Handle the case where a gamma point calculation is performed for the
+SCF and then a non-gamma calculation is requested for the PDOS
+evaluation. Here the need for the auxiliary cell is trapped in
+siesta_init by a call to the new routine init_projected_dos.  If
+do_pdos is true, then the gamma flag is set to be false if gamma_pdos
+is false.
+
+Note added to the manual to suggest that PDOS evaluations be performed
+using a restart if the SCF case involves the gamma point while the
+PDOS grid involves general k-points.
+
+(AG added the si_pdos_kgrid test)
+
+added:
+  Src/kpoint_pdos.F90
+  Tests/Reference-xml/si_pdos_kgrid.xml
+  Tests/Reference/si_pdos_kgrid.out
+  Tests/si_pdos_kgrid/
+  Tests/si_pdos_kgrid/makefile
+  Tests/si_pdos_kgrid/si_pdos_kgrid.fdf
+  Tests/si_pdos_kgrid/si_pdos_kgrid.pseudos
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/projected_DOS.F
+  Src/siesta_init.F
+
+-----------------------------------------------------------------------
 2009-05-07  10:35:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.21
 Parallel fixes: Diag.ParallelOverK for wf generation; idle nodes
 
