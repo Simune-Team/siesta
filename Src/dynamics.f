@@ -1842,6 +1842,7 @@ C     if the time step is the first of the simulation ..........................
 
           endif             ! IONode
 
+          call broadcast(old_dt)
           call broadcast(accold(1:3,1:natoms))
           call broadcast(vold(1:3,1:natoms))
 

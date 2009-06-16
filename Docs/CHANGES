@@ -5,6 +5,23 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 -----------------------------------------------------------------------
+2009-06-15  12:45:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.25
+Fix bug in verlet restart in parallel (A. Aguado)
+
+The variable old_dt was read by Node zero from the VERLET_RESTART
+file, but was not broadcast to the other nodes.
+
+Symptoms of this bug were crashes with a Cholesky-type error, poor
+energy conservation, and bad self-consistency of the density matrix
+when running restarted microcanonical simulations in parallel.
+
+Thanks to Andres Aguado <aguado@metodos.fam.cie.uva.es>
+for diagnosing and fixing the bug.
+
+modified:
+  Src/dynamics.f
+
+-----------------------------------------------------------------------
 2009-06-15  12:45:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.24
 Fixes: denchar, pathscale_mpi. DM(HS) history files. Makefiles
 
