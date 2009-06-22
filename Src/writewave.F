@@ -603,6 +603,7 @@ C  Modules
 C
       use precision
       use parallel,    only : Node, Nodes
+      use parallel,    only : ParallelOverK, ResetFirstCall
       use fdf
       use files,       only : slabel
       use densematrix, only : Haux, Saux, psi
@@ -647,6 +648,8 @@ C Dynamic arrays
       parameter ( eV = 1.d0 / 13.60580d0 )
       save Dnew, Enew, e1, e2, qk, qtot, temp, wk
       data Dnew, Enew, e1, e2, qk, qtot, temp, wk /8*0.d0/
+
+      logical  SaveParallelOverK
 
 C Get local number of orbitals
 #ifdef MPI
@@ -768,6 +771,17 @@ C Call appropriate diagonalization routine
      .               e1, e2, ek, qk, Dnew, Enew, ef, efs, Entropy,
      .               Haux, Saux, psi, aux, nuotot, occtol, 1, nuotot )
       else
+C Handle parallel over K points option which is not allowed for here
+         SaveParallelOverK = ParallelOverK
+         if ((Node .eq. 0) .and. ParallelOverK) then
+            write(6,"(a)")
+     $           "*** Note: ParallelOverK option " //
+     $           "not used for WF info generation"
+         endif
+         ParallelOverK = .false.
+         ResetFirstCall = .true.
+
+            
          call diagk( nspin, nuo, no, maxspn, maxuo, maxnh, maxnh, 
      .               maxo, numh, listhptr, listh, numh, listhptr, 
      .               listh, H, S, getD, getPSI,
@@ -776,6 +790,9 @@ C Call appropriate diagonalization routine
      .               ek, qk, Dnew, Enew, ef, efs, Entropy,
      .               Haux, Saux, psi, Haux, Saux, aux, nuotot,
      .               occtol, 1 )
+         ParallelOverK = SaveParallelOverK
+         ResetFirstCall = .false.
+
       endif
 
 C Free local arrays 

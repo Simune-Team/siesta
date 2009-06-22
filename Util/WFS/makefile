@@ -8,8 +8,10 @@
 # Use of this software constitutes agreement with the full conditions
 # given in the SIESTA license, as signed by all legitimate users.
 #
+# Makefile for WFS utilities
 #
-# Makefile for DM to DM-netCDF converter
+# The VPATH directive below helps to re-use f2kcli.F90 from the top Src.
+# Other points to note, until we switch to a better building system:
 #
 #  The arch.make file is supposed to be in $(OBJDIR). This is normally
 #  the top Src, but if you are using architecture-dependent build directories
@@ -19,15 +21,28 @@
 #  If your main Siesta build used an mpi compiler, you might need to
 #  define an FC_SERIAL symbol in your top arch.make, to avoid linking
 #  in the mpi libraries even if we explicitly undefine MPI below.
+#  
 #
 .SUFFIXES: 
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
-default: dm2cdf cdf2dm
-all: dm2cdf cdf2dm dmfilter
+all: readwf readwfx wfs2wfsx wfsx2wfs wfsnc2wfsx
 #
 OBJDIR=Src
+VPATH=../../Src
+#
 include ../../$(OBJDIR)/arch.make
+#
+# This is needed on some systems to avoid loading the parallel libraries, which
+# sometimes force running on queuing systems
+#
+FC_DEFAULT:=$(FC)
+FC_SERIAL?=$(FC_DEFAULT)
+FC:=$(FC_SERIAL)         # Make it non-recursive
+#
+# This should be INCFLAGS...
+#
+FFLAGS=$(FFLAGS_DEBUG) -I../../$(OBJDIR)
 #
 # We assume that the top arch.make defines the relevant NetCDF symbols,
 # including the INCFLAGS line. If not, uncomment the following lines, 
@@ -38,19 +53,25 @@ include ../../$(OBJDIR)/arch.make
 #
 LIBS=-L$(NETCDF_ROOT)/lib -lnetcdf
 #
-#
-dm2cdf: dm2cdf.o
-	$(FC) $(LDFLAGS) -o $@ dm2cdf.o  $(LIBS)
-#
-cdf2dm: cdf2dm.o
-	$(FC) $(LDFLAGS) -o $@ cdf2dm.o  $(LIBS)
-#
-dmfilter: dmfilter.o
-	$(FC) $(LDFLAGS) -o $@ dmfilter.o
+readwf: readwf.o
+	$(FC) $(LDFLAGS) -o $@ $<  
+readwfx: readwfx.o
+	$(FC) $(LDFLAGS) -o $@ $<  
+wfs2wfsx: wfs2wfsx.o
+	$(FC) $(LDFLAGS) -o $@ $<  
+wfsx2wfs: wfsx2wfs.o
+	$(FC) $(LDFLAGS) -o $@ $<  
+wfsnc2wfsx: wfsnc2wfsx.o
+	$(FC) $(LDFLAGS) -o $@ $<  $(LIBS)
 #
 clean: 
-	rm -f *.o dm2cdf cdf2dm dmfilter *.o *.*d
+	rm -f *.o  *.*d readwf readwfx wfs2wfsx wfsx2wfs wfsnc2wfsx
 #
+
+
+
+
+
 
 
 

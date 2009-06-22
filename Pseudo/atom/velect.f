@@ -209,6 +209,7 @@ c
      $              .or. leqi(icorr,'bl')  ! BLYP
      $              .or. leqi(icorr,'rp')  ! RPBE
      $              .or. leqi(icorr,'wc')  ! WC (Wu-Cohen)
+     $              .or. leqi(icorr,'ps')  ! PBEsol
      $              .or. leqi(icorr,'rv')) ! revPBE
 
          if (icorr .eq. 'ca') then
@@ -231,6 +232,9 @@ c
      .           ex,ec,dx,dc,vxcarr)
          elseif(icorr .eq. 'bl') then
             call atomxc('GGA','lyp',relflag,nr,nrmax,r,nspin,dens,
+     .           ex,ec,dx,dc,vxcarr)
+         elseif(icorr .eq. 'ps') then
+            call atomxc('GGA','pbesol',relflag,nr,nrmax,r,nspin,dens,
      .           ex,ec,dx,dc,vxcarr)
          else
             stop 'XC'
