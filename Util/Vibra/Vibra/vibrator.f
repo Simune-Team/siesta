@@ -634,8 +634,10 @@ Cc =================================================================
       enddo
 
 c Finish computation of zero point energy (averaged across k points) and output
-      zpe = 0.5d0*planck*zpe/dble(nk)
-      write(*,'('' Zero point energy = '',f20.6,'' eV'')') zpe
+      if (nk.gt.0) then
+        zpe = 0.5d0*planck*zpe/dble(nk)
+        write(*,'('' Zero point energy = '',f20.6,'' eV'')') zpe
+      endif
 
 c Write eigenvalues ...
       if (nk .gt. 0) then
