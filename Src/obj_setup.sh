@@ -20,10 +20,13 @@ destdir=$(pwd)
 #
 # Replicate the hierarchy of makefiles
 #
-for i in wxml xmlparser MPI Libs fdf ; do
-    mkdir $i
-    cp ${srcdir}/$i/*akefile ${destdir}/$i
-done
+(cd $srcdir;
+  for i in $(find . -name \[mM\]akefile | grep -v \\./Makefile); do
+    relpath=${i%/*}
+    mkdir -p ${destdir}/$relpath
+    cp $relpath/*akefile ${destdir}/$relpath
+  done
+)
 #
 sed "s#VPATH=\.#VPATH=${srcdir}#g" ${srcdir}/Makefile > ${destdir}/Makefile
 

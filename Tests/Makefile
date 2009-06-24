@@ -35,7 +35,7 @@ ALL= h2o h2o_reparam h2o_basis h2o_dos h2o_orderN \
        h2oZ sih_op_broyden h2o_op_broyden zmatrix md_pr md_npr \
        md_anneal md_verlet md_nose si_bandpoints sih_fire \
        graphite_c6 oxyn partial h2o_findp_bug h2o_radialgrid ag ch4\
-       si_coop born pb_filter_cutoff pb_filter_tol fire_benzene fe_clust_noncollinear
+       si_coop born pb_filter_cutoff pb_filter_tol fire_benzene fe_clust_noncollinear 
 #
 #  Need to add the new tests and generate the reference outputs and xml files.
 #
@@ -45,17 +45,12 @@ FDF=h2o_findp_bug h2oZ pb_filter_cutoff oxyn ch4 \
 	  si2x1h born si_coop 
 all:
 	for dir in $(ALL); do\
-	 $(MAKE) -C $$dir xmlcheck; \
-	done
-
-fdf: 	
-	for dir in $(FDF) ; do \
-		$(MAKE) -C $$dir xmlcheck; \
+	 $(MAKE) -C $$dir completed; \
 	done
 
 batch:
 	@for i in ${tests} ; do \
-		(qsub $(HOME)/bin/sge_run.sh "make tests=$$i xmlcheck") ; \
+		(qsub $(HOME)/bin/sge_run.sh "make tests=$$i completed") ; \
 	done
 clean:
 	@for i in ${ALL} ; do \

@@ -1,7 +1,15 @@
 #
 # Single-test makefile template
 #
+# You can edit the SIESTA macro here, or pass it on the command line
+#
 SIESTA=../../../Src/siesta
+#
+# Example for BSC runs
+#
+#SIESTA= mpirun -np 4 -machinefile $(HOME)/siesta-test-hfile ../../../Src/siesta
+#
+#----------------------------------------------------------------------------
 XML-TESTER=../../Src/xmlparser/test-xml
 XML-REFERENCE=../../Tests/Reference-xml
 #
@@ -30,7 +38,7 @@ xmlcheck: completed
 	@echo "    ==> Running xmlcheck for system $(name)"
 	@ln -sf ../tolerances.dat ./tolerances.dat
 	$(XML-TESTER) $(XML-REFERENCE)/$(name).xml $(label)/$(name).xml | tee $(label).diff-xml
-# The following line erases the file if it is empty
+        # The following line erases the file if it is empty
 	@if [ ! -s $(label).diff-xml ] ; then rm -f $(label).diff-xml ; fi
 #
 clean:

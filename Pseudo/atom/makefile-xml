@@ -31,10 +31,44 @@ FC:=$(FC_SERIAL)         # Make it non-recursive
 # EDIT the following lines to suit your system
 #
 AUX_OBJS= auxf95.o
+LIBS= $(EXTRA_LIBS)
+INCFLAGS=
+#--------------------------------------------------------------
+# FoX whatnot
+#
+# FoX build targets:
+FoX_configured=../../$(OBJDIR)/FoX/.config
+FoX_built=../../$(OBJDIR)/FoX/.FoX
+#
+# This is how we pick up modules and libraries for FoX:
+FoX_FCFLAGS=`../../$(OBJDIR)/FoX/FoX-config --fcflags`
+FoX_LIBS=`../../$(OBJDIR)/FoX/FoX-config --libs --wxml`
+#
+# And add them to global compiler flags:
+INCFLAGS=$(FoX_FCFLAGS)
+#
+# First, it needs to be configured. This may have been done
+# by the main SIESTA configure, but in case not:
+$(FoX_configured):
+	(cd ../../$(OBJDIR)/FoX; if [ "$(VPATH)" = . ]; then CONFIGURE="./configure"; else CONFIGURE="$(VPATH)/FoX/configure"; fi; $$CONFIGURE VPATH="$(VPATH)/FoX" FC="$(FC)" FCFLAGS="$(FFLAGS)" --enable-wxml $(DUMMY_FOX); touch .config)
+# Note we have to make sure to use the same compiler as SIESTA,
+# and pick up all the same FFLAGS.
+# And also remember to maybe ask for a dummy library
+#
+# Then we want to make FoX itself. Like so:
+$(FoX_built): $(FoX_configured)
+	(cd ../../$(OBJDIR)/FoX; $(MAKE))
+#
+# Now ensure that building FoX is inserted into the dependency chain.
+# Routines using FoX:
+#
+pseudoXML.o: $(FoX_built)
+#
+#--------------------------------------------------------------
+
 #----------------------------------------------$$$$$
 #
 INCFLAGS:=$(INCFLAGS) -I../../$(OBJDIR)
-LIBS= ../../$(OBJDIR)/libwxml.a
 #
 #
 XC_OBJS= xc.o
@@ -65,8 +99,9 @@ provide_xml:
 #
 pseudoXML.o: provide_xml
 #
-atm:    $(OBJS) $(AUX_OBJS)
-	$(FC) $(LDFLAGS) -o atm $(OBJS) $(AUX_OBJS) $(LIBS)
+atm:	$(FoX_built) $(OBJS) $(AUX_OBJS)
+	$(FC) $(LDFLAGS) -o atm $(OBJS) $(AUX_OBJS) $(LIBS) $(FoX_LIBS)
+
 #
 clean:	
 	rm -f *.o atm

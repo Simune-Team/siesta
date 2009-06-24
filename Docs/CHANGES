@@ -5,6 +5,33 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 -----------------------------------------------------------------------
+2009-06-24  12:50:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.28
+Update of CMLComp output. Integration of FoX library (A. Walker, T. White)
+
+A subset of the FoX library has been integrated into the source tree.
+It is configured and built by the Siesta Makefile, and is compatible
+with the use of VPATH for multiple compilation.
+
+The XML output from Siesta now conforms to the CMLComp subset of
+version 2.2 of the Chemical Markup Language (CML).
+
+A new directory Util/CMLComp has been created to hold the ccViz tool
+to convert the XML output file into an XHTML file that can be opened
+with any browser.
+
+FoX is also used (optionally) by atm to produce pseudopotential files
+in XML format, replacing the older wxml library by A. Garcia.
+
+Thanks to Andrew Walker and Toby White for most of the technology
+involved in this patch. A. Garcia fixed a few issues of the
+interaction of FoX with the rest of the build process.
+
+NOTE: The output reference XML files in Tests/Reference-xml have
+been updated. A review of the test list and a final check is due
+before release.
+
+
+-----------------------------------------------------------------------
 2009-06-24  12:25:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.27
 Fix TranSiesta compilation issue after recent patches (F.D. Novaes)
 

@@ -39,13 +39,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, 2.6.25}}
+{\Huge {\bf S I E S T A \, \, 2.6.28}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large June 16, 2009 }
+{\Large June 24, 2009 }
 
 \vspace{1.5cm}
 
@@ -6313,16 +6313,22 @@ always worth tuning the BlockSize parameter.
 \index{CML}
 
 From version 2.0, {\sc Siesta} includes an option to write its output to an 
-XML file. The XML it produces is in accordance with the CML schema version 
-2.2 (see http://www.xml-cml.org).
+XML file. The XML it produces is in accordance with the CMLComp subset of 
+version 2.2 of the Chemical Markup Language. Further information
+and resources can be found at \url{http://cmlcomp.org/} and tools for working 
+with the XML file can be found in the \texttt{Util/CMLComp} directory.
+
+As of June 2009, the engine for CML output production is a subset of
+the FoX library\index{FoX XML library} (see {\tt
+  http://www.uszla.me.uk/FoX}).
 
 The main motivation for standarised XML (CML) output is as a step
 towards standarising formats for uses like the following.
 
 \begin{itemize}
 
-\item To have {\sc Siesta} communicating with other softwares, either
-usual postprocessing or as part of a larger workflow scheme. In such a
+\item To have {\sc Siesta} communicating with other software, either
+for postprocessing or as part of a larger workflow scheme. In such a
 scenario, the XML output of one {\sc Siesta} simulation may be easily parsed
 in order to direct further simulations. Detailed discussion of this is
 outwith the scope of this manual.
@@ -6332,50 +6338,32 @@ graphically rich, fashion. This section will explain how to do this.
 
 \end{itemize}
 
-Prerequisites:
+\subsection{Converting XML to XHTML}
 
 The translation of the {\sc Siesta} XML output to a HTML-based webpage is
 done using XSLT technology. The stylesheets conform to XSLT-1.0 plus
 EXSLT extensions; an xslt processor capable of dealing with this is
-necessary. The following processors have been tested and are known to
-work.
+necessary. However, in order to make the system easy to use, a script
+called ccViz is provided in \texttt{Util/CMLComp} that works on most Unix or 
+Mac OS X systems. It is run like so:
 
-\begin{itemize}
-  \item \texttt{xsltproc} from libxml2 (\url{http://xmlsoft.org})
-  \item \texttt{4xslt} from 4suite (\url{http://4suite.org})
-  \item \texttt{saxon} (\url{http://saxon.sourceforge.net/})
-\end{itemize}
+\texttt{./ccViz SystemLabel.xml}
+
+A new file will be produced. Point your web-browser at \texttt{SystemLabel.xhtml}
+to view the output.
 
 The generated webpages include support for viewing three-dimensional
 interactive images of the system. If you want to do this, you will
-also need jMol (\url{http://jmol.sourceforge.net}) installed; as this
+either need jMol (\url{http://jmol.sourceforge.net}) installed or access
+to the internet. As this
 is a Java applet, you will also need a working Java Runtime
 Environment and browser plugin - installation instructions for these
 are outside the scope of this manual, though. However, the webpages
 are still useful and may be viewed without this plugin.
 
-XSLT stylesheets are being developed within a CML project, and they
-are directly applicable to {\sc Siesta}. They can be found in
-
-{\tt http://www.eminerals.org/siesta/XSLT}
-
-To use these to produce the webpage, the
-output of a {\sc Siesta} run, \texttt{SystemLabel.xml} should be taken and
-placed in an empty directory. The XSLT processor should then be
-run. The necessary invocation differs according to the processor - the
-following are some examples; consult the documentation for your own
-processor.
-
-\texttt{xsltproc -o SystemLabel.xhtml \$SIESTA/XSLT/display.xsl
-SystemLabel.xml}\\ \texttt{4xslt -o SystemLabel.xhtml SystemLabel.xml
-\$SIESTA/XSLT/display.xsl}\\ \texttt{java /usr/share/java/saxon.jar -o
-SystemLabel.xhtml SystemLabel.xml \$SIESTA/XSLT/display.xsl}
-
-Note that when using saxon, the path to the saxon \.jar may be
-different on your system.
-
-After this is done, a set of html files will have been created. Point
-your web-browser at \texttt{SystemLabel.xhtml} to view this output.
+An online version of this tool is avalable from 
+\url{http://cmlcomp.org/ccViz/}, as are updated versions of
+the ccViz script.
 
 \newpage
 \section{APPENDIX: Selection of precision for storage}
