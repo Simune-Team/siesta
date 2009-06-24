@@ -5,6 +5,21 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 -----------------------------------------------------------------------
+2009-06-24  12:15:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.26
+Fix behavior of extra pdos sampling for gamma case
+
+The new "extra sampling" feature for the PDOS
+incorrectly changed the behavior of the program for
+gamma-only calculations. Now "gamma_pdos" is set to
+.true. if the user does not specify any extra
+sampling requirements.
+
+Thanks to Jaime Ferrer for spotting the bug.
+
+modified:
+  Src/kpoint_pdos.F90
+
+-----------------------------------------------------------------------
 2009-06-15  12:45:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.25
 Fix bug in verlet restart in parallel (A. Aguado)
 
