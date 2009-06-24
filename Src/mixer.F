@@ -152,11 +152,11 @@
                   if (istp .eq.1)
      .                 call TSiodm( 'write', maxnh, no_l, nspin,
      .                 numh, listhptr, listh, Dscf, Escf,
-     .                 ef, found)
+     .                 ef)
                   else
                        call TSiodm( 'write', maxnh, no_l, nspin,
      .                 numh, listhptr, listh, Dscf, Escf,
-     .                 ef, found)
+     .                 ef)
                endif            ! idyn.eq.6
              endif               ! tsdme
            endif
