@@ -27,7 +27,7 @@ C SIESTA Modules
       use m_spin, only : nspin
       use sys, only : die
 C  TS Modules
-      use m_ts_options, only : VIn, VOut, mixH, initH
+      use m_ts_options, only : VIn, VOut, mixH, initH, ts_istep
 C TSS End
 #endif /* TRANSIESTA */
 
@@ -44,6 +44,7 @@ C TSS End
       ! TSS Begin
       ! Internal Variables
       integer :: ts_alloc_stat
+      ts_istep = istep
       ! TSS End
 #endif /* TRANSIESTA */
 !------------------------------------------------------------------------- BEGIN
