@@ -5,6 +5,69 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 -----------------------------------------------------------------------
+2009-06-24  12:50:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.28
+Update of CMLComp output. Integration of FoX library (A. Walker, T. White)
+
+A subset of the FoX library has been integrated into the source tree.
+It is configured and built by the Siesta Makefile, and is compatible
+with the use of VPATH for multiple compilation.
+
+The XML output from Siesta now conforms to the CMLComp subset of
+version 2.2 of the Chemical Markup Language (CML).
+
+A new directory Util/CMLComp has been created to hold the ccViz tool
+to convert the XML output file into an XHTML file that can be opened
+with any browser.
+
+FoX is also used (optionally) by atm to produce pseudopotential files
+in XML format, replacing the older wxml library by A. Garcia.
+
+Thanks to Andrew Walker and Toby White for most of the technology
+involved in this patch. A. Garcia fixed a few issues of the
+interaction of FoX with the rest of the build process.
+
+NOTE: The output reference XML files in Tests/Reference-xml have
+been updated. A review of the test list and a final check is due
+before release.
+
+
+-----------------------------------------------------------------------
+2009-06-24  12:25:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.27
+Fix TranSiesta compilation issue after recent patches (F.D. Novaes)
+
+A compilation error occurred because "found" variable is no longer used
+in mixer.F (chages in io of density matrix)
+  
+Made "found" an optinal argument in TSiodm of the m_ts_io.F90 module.
+     
+In new_dm.F, in the call for TSiodm made explicit the use of the
+optional "found", since it is used to determine if it should start
+with a TS calculation, or a diagon calcualtion.
+ 
+In mixer.F, the call for TSiodm no longer uses the "found" variable.
+  
+modified:
+  Src/m_ts_io.F90
+  Src/mixer.F
+  Src/new_dm.F
+
+
+-----------------------------------------------------------------------
+2009-06-24  12:15:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.26
+Fix behavior of extra pdos sampling for gamma case
+
+The new "extra sampling" feature for the PDOS
+incorrectly changed the behavior of the program for
+gamma-only calculations. Now "gamma_pdos" is set to
+.true. if the user does not specify any extra
+sampling requirements.
+
+Thanks to Jaime Ferrer for spotting the bug.
+
+modified:
+  Src/kpoint_pdos.F90
+
+-----------------------------------------------------------------------
 2009-06-15  12:45:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.25
 Fix bug in verlet restart in parallel (A. Aguado)
 

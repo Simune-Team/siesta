@@ -374,12 +374,13 @@ C Output current mesh dimensions and cut-off
       endif
       if (cml_p) then
         call cmlStartPropertyList(mainXML)
-        call cmlAddProperty(xf=mainXML, property=ntm,
-     .       dictref='siesta:ntm', title='Mesh')
-        call cmlAddProperty(xf=mainXML, property=G2max,
+        call cmlAddProperty(xf=mainXML, value=ntm,
+     .       dictref='siesta:ntm', title='Mesh',
+     .       units='cmlUnits:countable')
+        call cmlAddProperty(xf=mainXML, value=G2max,
      .       units='siestaUnits:Ry',
      .       dictref='siesta:g2max', title='Requested Cut-Off')     
-        call cmlAddProperty(xf=mainXML, property=G2mesh,
+        call cmlAddProperty(xf=mainXML, value=G2mesh,
      .       units='siestaUnits:Ry',
      .       dictref='siesta:g2mesh', title='Actual Cut-Off')
         call cmlEndPropertyList(mainXML)
