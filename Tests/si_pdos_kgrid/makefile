@@ -1,6 +1,6 @@
 #
 # Single-test makefile
 #
-name=au-surface
+name=si_pdos_kgrid
 #
 include ../test.mk

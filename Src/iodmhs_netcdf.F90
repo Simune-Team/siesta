@@ -40,7 +40,7 @@ CONTAINS
 subroutine setup_dmhs_netcdf_file( maxnd, nbasis, nspin,    &
                                  no_s, indxuo,            &
                                  numd,  listdptr, listd,   &
-                                 overlap_matrix )
+                                 overlap_matrix, geom_step )
 
       integer, intent(in)   ::    maxnd  ! First dimension of listd and dm
       integer, intent(in)   ::    nbasis ! Number of atomic orbitals
@@ -55,7 +55,10 @@ subroutine setup_dmhs_netcdf_file( maxnd, nbasis, nspin,    &
 
       real(dp), intent(in)  :: overlap_matrix(maxnd)
 
+      integer, intent(in), optional   :: geom_step
+
       integer               :: norbs, nnzs
+      character(len=14)     :: fname
 
 #ifdef MPI
       integer, dimension(:), pointer  :: norbs_node => null()
@@ -90,7 +93,12 @@ subroutine setup_dmhs_netcdf_file( maxnd, nbasis, nspin,    &
 #endif
 
       if (Node == 0) then
-      call check( nf90_create('DMHS.nc',NF90_CLOBBER,ncid))
+         if (present(geom_step)) then
+            write(fname,"(a5,i4.4,a3)") "DMHS-", geom_step, ".nc"
+         else
+            write(fname,"(a)") "DMHS.nc"
+         endif
+      call check( nf90_create(fname,NF90_CLOBBER,ncid))
 !
 !     Dimensions
 !

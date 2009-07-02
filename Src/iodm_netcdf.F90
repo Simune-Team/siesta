@@ -38,7 +38,7 @@ CONTAINS
 
 subroutine setup_dm_netcdf_file( maxnd, nbasis, nspin,    &
                                  no_s, indxuo,            &
-                                 numd,  listdptr, listd)
+                                 numd,  listdptr, listd, geom_step)
 
       integer, intent(in)   ::    maxnd  ! First dimension of listd and dm
       integer, intent(in)   ::    nbasis ! Number of atomic orbitals
@@ -51,7 +51,10 @@ subroutine setup_dm_netcdf_file( maxnd, nbasis, nspin,    &
       integer, intent(in)   :: listdptr(nbasis)
       integer, intent(in)   :: listd(maxnd)
 
+      integer, intent(in), optional   :: geom_step
+
       integer               :: norbs, nnzs
+      character(len=12)     :: fname
 
 #ifdef MPI
       integer, dimension(:), pointer  :: norbs_node => null()
@@ -89,7 +92,12 @@ subroutine setup_dm_netcdf_file( maxnd, nbasis, nspin,    &
 #endif
 
       if (Node == 0) then
-      call check( nf90_create('DM.nc',NF90_CLOBBER,ncid))
+         if (present(geom_step)) then
+            write(fname,"(a3,i4.4,a3)") "DM-", geom_step, ".nc"
+         else
+            write(fname,"(a)") "DM.nc"
+         endif
+      call check( nf90_create(fname,NF90_CLOBBER,ncid))
 !
 !     Dimensions
 !

@@ -7,19 +7,68 @@
 #
 default: atm
 #
-include ../../Src/arch.make
+#  The arch.make file is supposed to be in $(OBJDIR). This is normally
+#  the top Src, but if you are using architecture-dependent build directories
+#  you might want to change this. (If you do not understand this, you do not
+#  need to change anything. Power users can do "make OBJDIR=Whatever".)
+#
+#  If your main Siesta build used an mpi compiler, you might need to
+#  define an FC_SERIAL symbol in your top arch.make, to avoid linking
+#  in the mpi libraries even if we explicitly undefine MPI below.
+#
+OBJDIR=Src
+#
+include ../../$(OBJDIR)/arch.make
+#
+# This is needed on some systems to avoid loading the parallel libraries, which
+# sometimes force running on queuing systems
+#
+FC_DEFAULT:=$(FC)
+FC_SERIAL?=$(FC_DEFAULT)
+FC:=$(FC_SERIAL)         # Make it non-recursive
 #
 #----------------------------------------------$$$$$
 # EDIT the following lines to suit your system
 #
 AUX_OBJS= auxf95.o
+LIBS= $(EXTRA_LIBS)
+INCFLAGS=
+#--------------------------------------------------------------
+# FoX whatnot
+#
+# FoX build targets:
+FoX_configured=../../$(OBJDIR)/FoX/.config
+FoX_built=../../$(OBJDIR)/FoX/.FoX
+#
+# This is how we pick up modules and libraries for FoX:
+FoX_FCFLAGS=`../../$(OBJDIR)/FoX/FoX-config --fcflags`
+FoX_LIBS=`../../$(OBJDIR)/FoX/FoX-config --libs --wxml`
+#
+# And add them to global compiler flags:
+INCFLAGS=$(FoX_FCFLAGS)
+#
+# First, it needs to be configured. This may have been done
+# by the main SIESTA configure, but in case not:
+$(FoX_configured):
+	(cd ../../$(OBJDIR)/FoX; if [ "$(VPATH)" = . ]; then CONFIGURE="./configure"; else CONFIGURE="$(VPATH)/FoX/configure"; fi; $$CONFIGURE VPATH="$(VPATH)/FoX" FC="$(FC)" FCFLAGS="$(FFLAGS)" --enable-wxml $(DUMMY_FOX); touch .config)
+# Note we have to make sure to use the same compiler as SIESTA,
+# and pick up all the same FFLAGS.
+# And also remember to maybe ask for a dummy library
+#
+# Then we want to make FoX itself. Like so:
+$(FoX_built): $(FoX_configured)
+	(cd ../../$(OBJDIR)/FoX; $(MAKE))
+#
+# Now ensure that building FoX is inserted into the dependency chain.
+# Routines using FoX:
+#
+pseudoXML.o: $(FoX_built)
+#
+#--------------------------------------------------------------
+
 #----------------------------------------------$$$$$
 #
-provide_wxml:
-	(cd ../../Src ; make libwxml.a)
-#
-LIBS=../../Src/libwxml.a $(EXTRA_LIBS)
-INCFLAGS=-I ../../Src
+INCFLAGS:=$(INCFLAGS) -I../../$(OBJDIR)
 #
 #
 XC_OBJS= xc.o
@@ -43,8 +92,16 @@ MAIN_OBJS= atm.o  nucl_z.o   difnrl.o   difrel.o   dmixp.o   dsolv1.o   \
 #
 OBJS= $(MAIN_OBJS) $(XC_OBJS) 
 #
-atm:  provide_wxml $(OBJS) $(AUX_OBJS)
-	$(FC) $(LDFLAGS) -o atm $(OBJS) $(AUX_OBJS) $(LIBS)
+provide_xml:
+	@echo "Make sure that the wxml library is already compiled."
+	@echo "Otherwise the following command might fail"
+	@echo
+#
+pseudoXML.o: provide_xml
+#
+atm:	$(FoX_built) $(OBJS) $(AUX_OBJS)
+	$(FC) $(LDFLAGS) -o atm $(OBJS) $(AUX_OBJS) $(LIBS) $(FoX_LIBS)
+
 #
 clean:	
 	rm -f *.o atm

@@ -47,7 +47,7 @@ include arch.make
 #
 # Uncomment the following line for debugging support
 #
-#FFLAGS=$(FFLAGS_DEBUG)
+##FFLAGS=$(FFLAGS_DEBUG)
 #
 what:
 	@echo
@@ -114,18 +114,48 @@ OBJS =  automatic_cell.o atom_options.o \
         cell_broyden_optim.o remove_intramol_pressure.o \
         m_ntm.o m_dipol.o  m_kinetic.o  m_rmaxh.o \
         m_forces.o m_stress.o m_eo.o m_spin.o m_gamma.o m_hsx.o m_fire.o \
-       get_target_stress.o fire_optim.o zm_fire_optim.o \
-       cell_fire_optim.o m_fire_para.o m_fire_mixing.o write_raw_efs.o \
-       m_iodm.o m_sparse.o
+        get_target_stress.o fire_optim.o zm_fire_optim.o \
+        cell_fire_optim.o m_fire_para.o m_fire_mixing.o write_raw_efs.o \
+        m_iodm.o m_sparse.o kpoint_pdos.o 
 #--------------------------------------------------------------
+# FoX whatnot
 #
-WXML=libwxml.a
-$(WXML): 
-	(cd wxml ; $(MAKE) "VPATH=$(VPATH)/wxml" module)
+# FoX build targets:
+FoX_configured=FoX/.config
+FoX_built=FoX/.FoX
 #
-# Routines using wxml calls.
+# This is how we pick up modules and libraries for FoX:
+FoX_FCFLAGS=`FoX/FoX-config --fcflags`
+FoX_LIBS=`FoX/FoX-config --libs --wcml`
 #
-pdos.o : $(WXML)
+# And add them to global compiler flags:
+INCFLAGS:=$(INCFLAGS) $(FoX_FCFLAGS)
+#
+# First, it needs to be configured. This may have been done
+# by the main SIESTA configure, but in case not:
+$(FoX_configured):
+	(cd FoX; if [ "$(VPATH)" = . ]; then CONFIGURE="./configure"; else CONFIGURE="$(VPATH)/FoX/configure"; fi; $$CONFIGURE VPATH="$(VPATH)/FoX" FC="$(FC)" FCFLAGS="$(FFLAGS)" --enable-wcml $(DUMMY_FOX); touch .config)
+# Note we have to make sure to use the same compiler as SIESTA,
+# and pick up all the same FFLAGS.
+# And also remember to maybe ask for a dummy library
+#
+# Then we want to make FoX itself. Like so:
+$(FoX_built): $(FoX_configured)
+	(cd FoX; $(MAKE))
+#
+# Now ensure that building FoX is inserted into the dependency chain.
+# Routines using FoX:
+# version (compinfo.o) does not actually need FoX, but making it build after
+# FoX is done avoids a warning as we use the FoX-config script everywhere.
+#
+version $(SYSOBJ) $(OBJS) \
+basis_io.o efield.o initatom.o ioeig.o kpoint_grid.o meshsubs.o \
+mulliken.o ordern.o outcell.o pdos.o post_scf_work.o radial.o   \
+scfconvergence_test.o setup_hamiltonian.o siesta_analysis.o     \
+siesta_cml.o siesta_cmlsubs.o siesta_end.o siesta_forces.o      \
+siesta_init.o siesta_move.o siesta_options.o state_analysis.o   \
+state_init.o struct_init.o write_subs.o xml.o: $(FoX_built)
+#
 #--------------------------------------------------------------
 XMLPARSER=libxmlparser.a
 $(XMLPARSER): 
@@ -188,7 +218,7 @@ siesta: version $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
                 $(COMP_LIBS) $(ALL_OBJS) 
 	$(FC) -o siesta \
 	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML) $(XMLPARSER) $(MPI_INTERFACE)\
-               $(COMP_LIBS) $(LIBS) 
+               $(COMP_LIBS) $(FoX_LIBS) $(LIBS) 
 #
 #------------------------------------------------------------------------
 GEN-BASIS_OBJS=alloc.o gen-basis.o basis_types.o precision.o recipes.o parallel.o \
@@ -235,7 +265,7 @@ transiesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML) $(XMLPAR
                     $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
 	$(FC) -o transiesta \
                $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(WXML) $(XMLPARSER)\
-               $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(COMP_LIBS) $(LIBS)
+               $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(COMP_LIBS) $(FoX_LIBS) $(LIBS)
 #
 # C FDN End: Makefile modifications for TranSIESTA
 #
@@ -274,7 +304,7 @@ clean:
 	rm -f *.bck *~
 	rm -f aux_*.f aux_*.f90
 	(cd fdf ; $(MAKE) clean)
-	(cd wxml ; $(MAKE) clean)
+	(cd FoX ; $(MAKE) distclean)
 	(cd xmlparser ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
 	(cd Libs ; $(MAKE) clean )
@@ -350,7 +380,6 @@ dfscf.o: meshsubs.o meshsubs.o parallel.o precision.o sys.o
 dhscf.o: alloc.o atmfuncs.o files.o forhar.o iogrid_netcdf.o m_iorho.o
 dhscf.o: m_ts_in_siesta.o m_ts_options.o meshsubs.o parallel.o parsing.o
 dhscf.o: precision.o siesta_options.o sys.o xcmod.o
-diag.o: alloc.o memoryinfo.o parallel.o precision.o sys.o
 diag2g.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
 diag2k.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
 diagg.o: fermid.o parallel.o parallelsubs.o precision.o sys.o writewave.o
@@ -423,6 +452,8 @@ kgridinit.o: minvec.o parallel.o precision.o units.o
 kinefsm.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
 kpoint_grid.o: find_kgrid.o minvec.o parallel.o precision.o siesta_cml.o
 kpoint_grid.o: siesta_options.o units.o
+kpoint_pdos.o: find_kgrid.o minvec.o parallel.o precision.o siesta_options.o
+kpoint_pdos.o: units.o
 ksv.o: alloc.o atmfuncs.o densematrix.o ksvinit.o parallel.o parsing.o
 ksv.o: precision.o sys.o
 ksvinit.o: alloc.o parallel.o parsing.o precision.o
@@ -535,9 +566,9 @@ plcharge.o: files.o old_atmfuncs.o parallel.o precision.o
 poison.o: alloc.o parallel.o precision.o sys.o
 post_scf_work.o: atomlist.o m_energies.o m_spin.o mneighb.o setup_hamiltonian.o
 post_scf_work.o: siesta_cml.o siesta_geom.o siesta_options.o sparse_matrices.o
-projected_DOS.o: atomlist.o kpoint_grid.o m_eo.o m_gamma.o m_mpi_utils.o
-projected_DOS.o: m_spin.o parallel.o precision.o siesta_options.o
-projected_DOS.o: sparse_matrices.o sys.o
+projected_DOS.o: alloc.o atomlist.o kpoint_grid.o kpoint_pdos.o m_eo.o
+projected_DOS.o: m_gamma.o m_mpi_utils.o m_spin.o parallel.o precision.o
+projected_DOS.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o
 propor.o: precision.o sys.o
 proximity_check.o: mneighb.o parallel.o precision.o siesta_geom.o
 proximity_check.o: siesta_options.o
@@ -590,13 +621,14 @@ siesta_forces.o: setup_hamiltonian.o siesta_cml.o siesta_options.o
 siesta_forces.o: sparse_matrices.o state_analysis.o state_init.o sys.o
 siesta_geom.o: precision.o
 siesta_init.o: alloc.o atomlist.o bands.o densematrix.o files.o ioxv.o
-siesta_init.o: kpoint_grid.o ksvinit.o m_check_supercell.o m_energies.o m_eo.o
-siesta_init.o: m_fdf_global.o m_forces.o m_gamma.o m_iostruct.o m_mpi_utils.o
-siesta_init.o: m_rmaxh.o m_spin.o m_steps.o m_ts_in_siesta.o m_ts_options.o
-siesta_init.o: m_wallclock.o metaforce.o molecularmechanics.o parallel.o
-siesta_init.o: parallelsubs.o phonon.o siesta_cmlsubs.o siesta_geom.o
-siesta_init.o: siesta_options.o sparse_matrices.o struct_init.o sys.o
-siesta_init.o: timestamp.o writewave.o xcmod.o zmatrix.o
+siesta_init.o: kpoint_grid.o kpoint_pdos.o ksvinit.o m_check_supercell.o
+siesta_init.o: m_energies.o m_eo.o m_fdf_global.o m_forces.o m_gamma.o
+siesta_init.o: m_iostruct.o m_mpi_utils.o m_rmaxh.o m_spin.o m_steps.o
+siesta_init.o: m_ts_in_siesta.o m_ts_options.o m_wallclock.o metaforce.o
+siesta_init.o: molecularmechanics.o parallel.o parallelsubs.o phonon.o
+siesta_init.o: projected_DOS.o siesta_cmlsubs.o siesta_geom.o siesta_options.o
+siesta_init.o: sparse_matrices.o struct_init.o sys.o timestamp.o writewave.o
+siesta_init.o: xcmod.o zmatrix.o
 siesta_move.o: atomlist.o broyden_optim.o cell_broyden_optim.o
 siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o iopipes.o ioxv.o
 siesta_move.o: m_energies.o m_forces.o m_kinetic.o m_steps.o m_stress.o

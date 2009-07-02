@@ -5,6 +5,210 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 -----------------------------------------------------------------------
+2009-06-24  12:50:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.28
+Update of CMLComp output. Integration of FoX library (A. Walker, T. White)
+
+A subset of the FoX library has been integrated into the source tree.
+It is configured and built by the Siesta Makefile, and is compatible
+with the use of VPATH for multiple compilation.
+
+The XML output from Siesta now conforms to the CMLComp subset of
+version 2.2 of the Chemical Markup Language (CML).
+
+A new directory Util/CMLComp has been created to hold the ccViz tool
+to convert the XML output file into an XHTML file that can be opened
+with any browser.
+
+FoX is also used (optionally) by atm to produce pseudopotential files
+in XML format, replacing the older wxml library by A. Garcia.
+
+Thanks to Andrew Walker and Toby White for most of the technology
+involved in this patch. A. Garcia fixed a few issues of the
+interaction of FoX with the rest of the build process.
+
+NOTE: The output reference XML files in Tests/Reference-xml have
+been updated. A review of the test list and a final check is due
+before release.
+
+
+-----------------------------------------------------------------------
+2009-06-24  12:25:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.27
+Fix TranSiesta compilation issue after recent patches (F.D. Novaes)
+
+A compilation error occurred because "found" variable is no longer used
+in mixer.F (chages in io of density matrix)
+  
+Made "found" an optinal argument in TSiodm of the m_ts_io.F90 module.
+     
+In new_dm.F, in the call for TSiodm made explicit the use of the
+optional "found", since it is used to determine if it should start
+with a TS calculation, or a diagon calcualtion.
+ 
+In mixer.F, the call for TSiodm no longer uses the "found" variable.
+  
+modified:
+  Src/m_ts_io.F90
+  Src/mixer.F
+  Src/new_dm.F
+
+
+-----------------------------------------------------------------------
+2009-06-24  12:15:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.26
+Fix behavior of extra pdos sampling for gamma case
+
+The new "extra sampling" feature for the PDOS
+incorrectly changed the behavior of the program for
+gamma-only calculations. Now "gamma_pdos" is set to
+.true. if the user does not specify any extra
+sampling requirements.
+
+Thanks to Jaime Ferrer for spotting the bug.
+
+modified:
+  Src/kpoint_pdos.F90
+
+-----------------------------------------------------------------------
+2009-06-15  12:45:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.25
+Fix bug in verlet restart in parallel (A. Aguado)
+
+The variable old_dt was read by Node zero from the VERLET_RESTART
+file, but was not broadcast to the other nodes.
+
+Symptoms of this bug were crashes with a Cholesky-type error, poor
+energy conservation, and bad self-consistency of the density matrix
+when running restarted microcanonical simulations in parallel.
+
+Thanks to Andres Aguado <aguado@metodos.fam.cie.uva.es>
+for diagnosing and fixing the bug.
+
+modified:
+  Src/dynamics.f
+
+-----------------------------------------------------------------------
+2009-06-15  12:45:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.24
+Fixes: denchar, pathscale_mpi. DM(HS) history files. Makefiles
+
+* Added nano .make and script files. Fixed ag test.
+
+- The ag test had a very small MeshCutoff, and crashed.
+- Added netCDF-enabled .make file for nano.
+- Updated README file in Src/Sys
+- Added pbs and sh scripts for test execution on nano.
+
+* More complete DM and DMHS history files
+
+The DM and DMHS history files have now names of
+the form DM-NNNN.nc and DMHS-NNNN.nc, respectively,
+to hold information for all geometry steps. This
+expanded history option is turned off by default.
+
+(+ experimental analysis scripts in Util/SCF)
+
+* Better makefiles for some Util subdirectories
+
+The WFS, DensityMatrix, and pseudo-xml subdirectories
+of Util now have makefiles instrumented to use the
+new OBJDIR variable.
+
+* Cosmetic fix for Pathscale MPI
+
+File mpi.F was not processed correctly by the Pathscale compiler.
+
+* Fix double empty-line bug in denchar
+
+The 2D data files contained extra blank lines in between blocks.
+
+* Proper citation for ATOM in Pseudo/atom/README
+
+
+added:
+  Src/Sys/nano-intel-mpi-cdf.make
+  Tests/Scripts/nano.pbs
+  Tests/Scripts/nano4.sh
+  Util/SCF/README
+  Util/SCF/g_dm.py
+  Util/SCF/g_dm3.py
+  Util/SCF/g_els_out.py
+  Util/SCF/g_hh.py
+  Util/SCF/g_hist.py
+  Util/WFS/makefile
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Pseudo/atom/README
+  Src/MPI/mpi.F
+  Src/Sys/README
+  Src/iodm_netcdf.F90
+  Src/iodmhs_netcdf.F90
+  Src/state_init.F
+  Tests/ag/ag.fdf
+  Util/Denchar/Src/rhoofr.f
+  Util/DensityMatrix/makefile
+  Util/pseudo-xml/makefile
+  version.info
+
+
+-----------------------------------------------------------------------
+2009-06-15  11:00:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.23
+Implementation of PBEsol functional (J. Gale)
+
+Implemented the PBE functional for solids of Perdew et al, PRL 100,
+136406 (2008).
+
+The xc_authors string in Siesta is 'PBEsol'.  In atom, the two-letter
+symbol is 'ps'
+
+The XML interface in Pseudo/atom and the converter in Util/pseudo-xml
+have been updated.
+
+  Docs/siesta.tex
+  Pseudo/atom/Docs/atom.tex
+  Pseudo/atom/makefile-xml
+  Pseudo/atom/pseudoXML.f
+  Pseudo/atom/velect.f
+  Pseudo/atom/xc.f
+  Src/atom.f
+  Src/xc.f
+  Util/pseudo-xml/xml2psf_helper.f
+
+-----------------------------------------------------------------------
+2009-06-15  11:00:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.22
+Optional k-point sampling for PDOS calculations (J. Gale)
+
+Separate grid of K-points introduced for PDOS so that greater
+resolution can be achieved.  To do this, a new module based on the SCF
+kpoint module has been introduced with separate data structures for
+the PDOS k-points. In the case that no PDOS grid is specified then the
+SCF grid is used as present.
+
+Handle the case where a gamma point calculation is performed for the
+SCF and then a non-gamma calculation is requested for the PDOS
+evaluation. Here the need for the auxiliary cell is trapped in
+siesta_init by a call to the new routine init_projected_dos.  If
+do_pdos is true, then the gamma flag is set to be false if gamma_pdos
+is false.
+
+Note added to the manual to suggest that PDOS evaluations be performed
+using a restart if the SCF case involves the gamma point while the
+PDOS grid involves general k-points.
+
+(AG added the si_pdos_kgrid test)
+
+added:
+  Src/kpoint_pdos.F90
+  Tests/Reference-xml/si_pdos_kgrid.xml
+  Tests/Reference/si_pdos_kgrid.out
+  Tests/si_pdos_kgrid/
+  Tests/si_pdos_kgrid/makefile
+  Tests/si_pdos_kgrid/si_pdos_kgrid.fdf
+  Tests/si_pdos_kgrid/si_pdos_kgrid.pseudos
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/projected_DOS.F
+  Src/siesta_init.F
+
+-----------------------------------------------------------------------
 2009-05-07  10:35:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.21
 Parallel fixes: Diag.ParallelOverK for wf generation; idle nodes
 
