@@ -5,6 +5,41 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 -----------------------------------------------------------------------
+2009-07-03  14:00:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.29
+TranSiesta: New saving options and file format (M. Paulsson, F.D. Novaes)
+
+  * Changed format and filenames for saved TSHS files.
+  * Enabled transiesta to save a TSHS file for each step in a FC run.
+  * Transiesta keyword TS.onlyS (T/F) to save overlap matrix in .TSHS
+  file format and quit without any SCF cycle.
+  * New "onlyS" option to stop after generating the overlap matrix.
+  * Disabled proximity check for onlyS run.
+
+(+ Fix a few glitches in FoX-enabled compilation of TranSiesta)
+
+Thanks to M. Paulsson and F.D. Novaes for this patch.
+
+** NOTE: The Intel compiler V. 11.{0,1} does not compile correctly
+         this version.
+         
+removed:
+  Util/TBTrans/TSiohs2.F
+modified:
+  Src/Makefile
+  Src/m_ts_electrode.F90
+  Src/m_ts_io.F90
+  Src/m_ts_options.F90
+  Src/proximity_check.F
+  Src/setup_hamiltonian.F
+  Src/siesta_forces.F
+  Src/state_init.F
+  Src/write_subs.F
+  Util/TBTrans/Makefile
+  Util/TBTrans/TSiohs.F
+  Util/TBTrans/work.pcl
+
+
+-----------------------------------------------------------------------
 2009-06-24  12:50:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.28
 Update of CMLComp output. Integration of FoX library (A. Walker, T. White)
 

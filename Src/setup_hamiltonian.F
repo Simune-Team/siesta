@@ -36,7 +36,7 @@
 ! SIESTA modules
       use files, only: slabel, label_length
 ! TRANSIESTA modules
-      use m_ts_options, only: TSrun, savetshs, initH
+      use m_ts_options, only: TSrun, savetshs, initH, ts_istep
       use m_ts_kpoints, only: ts_gamma_scf, ts_kscell, ts_kdispl
       use m_ts_io, only: ts_iohs
 ! TSS End
@@ -67,7 +67,8 @@
       real(dp) :: g2max
 #ifdef TRANSIESTA
 ! TSS Begin
-      character(len=label_length+5) :: fname
+      character(len=label_length+13) :: fname
+      character(8) :: numstring
       character(8) :: iotask
 ! TSS End
 #endif /* TRANSIESTA */
@@ -303,14 +304,27 @@
 #ifdef TRANSIESTA
 ! TSS Begin
         if (last.and.savetshs) then
-           fname = paste( slabel, '.TSHS' )
-           iotask='write'
-           call ts_iohs(iotask, gamma, no_u, no_s, nspin,
-     . indxuo, maxnh, numh, listhptr, listh, H, S, qtot, temp, xijo,
-     . label_length+5, fname, na_u, lasto, isa, ef, ucell,
-     . ts_kscell, ts_kdispl, ts_gamma_scf, xa)
-
-         endif
+           if (idyn.eq.6) then ! Force constants run
+              write(numstring,'(2i4)') ia1,ts_istep
+              fname = paste(slabel, numstring)
+              fname = paste(fname, '.TSHS')
+              iotask='write'
+              call ts_iohs(iotask, gamma, .false., no_u, no_s, nspin,
+     .             indxuo, maxnh, numh, listhptr, listh, H, S, qtot, 
+     .             temp, xijo,
+     .             label_length+5, fname, na_u, lasto, isa, ef, ucell,
+     .             ts_kscell, ts_kdispl, ts_gamma_scf, xa, 
+     .             ts_istep, ia1)
+           else
+              fname = paste( slabel, '.TSHS' )
+              iotask='write'
+              call ts_iohs(iotask, gamma, .false., no_u, no_s, nspin,
+     .             indxuo, maxnh, numh, listhptr, listh, H, S, qtot, 
+     .             temp, xijo,
+     .             label_length+5, fname, na_u, lasto, isa, ef, ucell,
+     .             ts_kscell, ts_kdispl, ts_gamma_scf, xa, 0, 0)
+           endif
+        endif
 ! TSS End
 #endif /* TRANSIESTA */
 

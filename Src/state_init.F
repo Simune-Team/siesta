@@ -16,7 +16,7 @@
      .                    rmaxo, no_u, lastkb, lasto, superc, rmaxv
       use atomlist, only: no_s, indxuo
       use atomlist, only: no_l
-      use alloc, only: re_alloc, alloc_report
+      use alloc, only: re_alloc, alloc_report, de_alloc
       use m_hsparse,    only: hsparse
       use m_overlap,    only: overlap
       use m_check_supercell, only: check_sc_factors
@@ -36,6 +36,12 @@
       use files,          only : slabel
 #ifdef MPI
       use m_mpi_utils, only : globalize_max
+#endif
+#ifdef TRANSIESTA
+      use m_ts_options, only : onlyS
+      use sys, only : bye
+      use m_ts_io, only : ts_iohs
+      use files, only: slabel, label_length
 #endif
 #ifdef CDF
       use iodm_netcdf, only: setup_dm_netcdf_file
@@ -60,6 +66,18 @@
       integer :: ntmp      ! Temporary to call an MPI routine
 #endif
       real(dp), external :: volcel
+#ifdef TRANSIESTA
+      integer, dimension(3,3) :: ts_kscell_file = 0
+      real(dp), dimension(3) :: ts_kdispl_file = 0.0
+      logical :: ts_gamma_scf_file = .true.
+      character(len=label_length+6) :: fname
+      integer :: fnlength
+      real(dp) :: dummyef=0.0, dummyqtot=0.0
+      real(dp), pointer :: dummyH(:,:)
+!     SIESTA External
+      character(len=label_length+5) PASTE
+#endif
+
 !------------------------------------------------------------------------- BEGIN
       call timer( 'IterMD', 1 )
       istp = istp + 1
@@ -263,6 +281,25 @@
       ! Check for size of Pulay auxiliary matrices
       call init_pulay_arrays()
 
+
+#ifdef TRANSIESTA !If onlyS, Save overlap matrix and exit          ! MPN
+      if (onlyS) then                                              ! MPN    
+         fname = paste( slabel, '.onlyS' )
+         fnlength = label_length+6
+         nullify(dummyH)
+         call re_alloc( dummyH, 1, maxnh, 1, 1, name='dummyH', 
+     .        routine='state_init' )
+
+         call ts_iohs('write   ', gamma, .true., no_u, no_s, 
+     .        1, indxuo, maxnh, numh, listhptr, listh, dummyH, 
+     .        S, dummyqtot, temp, xijo, fnlength, fname, na_u, 
+     .        lasto, isa, dummyef, 
+     .        ucell, ts_kscell_file, ts_kdispl_file,            
+     .        ts_gamma_scf_file, xa, 0, 0)
+         call de_alloc(dummyH, name='dummyH')
+         call bye('Save overlap matrix and exit') ! Exit siesta    ! MPN 
+      endif                                                        ! MPN    
+#endif TSS                                                         ! MPN        
 
 #ifdef CDF
       if (writedm_cdf) then

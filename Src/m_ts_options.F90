@@ -4,6 +4,7 @@
 !  involved in a TRANSIESTA calculation.                                   *
 !                                                                          *
 !  Written by F.D.Novaes, May'07                                           *
+!  onlyS option added by M.Paulsson May'09                                 *
 !==========================================================================*
 !  Contains the Subroutines:                                               *
 !                                                                          *
@@ -29,6 +30,7 @@ PUBLIC
 logical  :: savetshs     ! Saves the Hamiltonian and Overlap matrices if the 
                          ! the option TS.SaveHS is specified in the input file
 logical  :: tsdme        ! Uses TranSIESTA density matrix, obtained with NEGF            
+logical  :: onlyS	 ! Option to only save overlap matrix
 logical  :: mixH         ! Mixing of the Hamiltoninan instead of DM
 logical  :: USEBULK      ! Use Bulk Hamiltonian in Electrodes
 logical  :: TriDiag      ! true if tridiagonalization
@@ -50,7 +52,7 @@ integer  :: NBUFATR      ! Number of Right Buffer Atoms
 character(20) :: smethod ! GF Numerical Integration Methods 
 character(33) :: GFFileL ! Electrode Left GF File
 character(33) :: GFFileR ! Electrode Right GF File
-
+integer :: ts_istep      ! FC step in phonon calculation
 
 
 !==========================================================================*
@@ -59,6 +61,7 @@ character(33) :: GFFileR ! Electrode Right GF File
 !--------------------------------------------------------------------------*
 
 logical, parameter :: savetshs_def = .true.
+logical, parameter :: onlyS_def = .false.
 logical, parameter :: tsdme_def = .true.
 logical, parameter :: mixH_def = .false.
 logical, parameter :: USEBULK_def = .true.
@@ -141,8 +144,12 @@ if (IOnode) then
  write(*,'(2a)') 'ts_read_options: ', repeat('*', 62)
 end if
 
+!Set ts_istep default
+ts_istep=0
+
 ! Reading TS Options from fdf ...
 call fdf_global_get(savetshs,'TS.SaveHS',savetshs_def)
+call fdf_global_get(onlyS,'TS.onlyS',onlyS_def)
 call fdf_global_get(tsdme,'TS.UseEDM',tsdme_def)
 call fdf_global_get(mixH,'TS.MixH',mixH_def)
 call fdf_global_get(voltfdf,'TS.Voltage',voltfdf_def,'Ry') 
@@ -167,6 +174,7 @@ call fdf_global_get(UseVFix,'TS.UseVFix',UseVFix_def)
 ! Output Used Options in OUT file ....
 if (ionode) then
  write(*,1) 'ts_read_options: Save H and S matrices   =', savetshs
+ write(*,1) 'ts_read_options: Save S and quit (onlyS) =', onlyS
  write(*,1) 'ts_read_options: Use TS EDM              =', tsdme
  write(*,1) 'ts_read_options: Mixing Hamiltonian      =', mixH
  write(*,6) 'ts_read_options: TranSIESTA Voltage      =', voltfdf/eV,' Volts'

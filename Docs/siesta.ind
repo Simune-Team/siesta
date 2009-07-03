@@ -39,7 +39,7 @@
     \subitem split valence   for H, 19
     \subitem User basis, 17
     \subitem User basis (NetCDF format), 17
-  \item basis     \subitem PAO, 98
+  \item basis     \subitem PAO, 97
   \item {\bf     BasisPressure}, 81
   \item Berry phase, 44
   \item Bessel functions, 23
@@ -49,7 +49,7 @@
   \item BLYP, 38
   \item Born effective charges, 45
   \item {\bf BornCharge}, 45, 55
-  \item Broyden mixing, 40, 94
+  \item Broyden mixing, 40, 93
   \item Broyden optimization, 57
   \item bug reports, 83
   \item bulk polarization, 44
@@ -128,6 +128,7 @@
   \item {\bf FixSpin}, 39
   \item Force Constants Matrix, 55, 61
     \subitem using {\sc Phonon}, 55, 61
+  \item FoX XML library, 92
   \item fractional program, 16
 
   \indexspace
@@ -350,7 +351,7 @@
   \item {\sc Plrho}, 76
   \item polarization orbitals, 17
   \item {\bf PolarizationGrids}, 44
-  \item Precision selection, 94
+  \item Precision selection, 93
   \item {\bf ProcessorY}, 63, 89
   \item {\bf ProjectedDensityOfStates}, 73
   \item {\bf PS.KBprojectors} , 20
