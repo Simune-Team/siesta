@@ -10,13 +10,16 @@
       use parallel,  only: IOnode
       use neighbour, only: jna=>jan, r2ij, mneighb
 
+#ifdef TRANSIESTA
+      use m_ts_options, only: onlyS
+#endif
+
       implicit none
 
       real(dp), intent(in)  :: rmax
 
       integer :: ii, jj, jamin, idxneighJ, nneigbI, isel, nna
       real(dp):: rmin, r2min 
-
 
       ! Check if any two atoms are unreasonably close
 
@@ -39,9 +42,14 @@
         enddo
         rmin = sqrt( r2min )
         if (IOnode) then
-          if ( rmin .lt. rijmin ) write(6,'(a,2i6,a,f12.6,a)')
-     .      'siesta: WARNING: Atoms', ii, jamin, ' too close: rij =',
-     .       rmin/Ang, ' Ang'
+#ifdef TRANSIESTA
+          if (( rmin .lt. rijmin ) .and. (.not. onlyS)) write(6,
+#else
+          if ( rmin .lt. rijmin ) write(6,
+#endif
+     .          '(a,2i6,a,f12.6,a)')
+     .          'siesta: WARNING: Atoms', ii, jamin,' too close: rij =',
+     .          rmin/Ang, ' Ang'
         endif
       enddo
 

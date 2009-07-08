@@ -265,7 +265,7 @@ transiesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML) $(XMLPAR
                     $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
 	$(FC) -o transiesta \
                $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(WXML) $(XMLPARSER)\
-               $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(COMP_LIBS) $(LIBS)
+               $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(COMP_LIBS) $(FoX_LIBS) $(LIBS)
 #
 # C FDN End: Makefile modifications for TranSIESTA
 #

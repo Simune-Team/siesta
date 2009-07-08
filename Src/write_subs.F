@@ -447,20 +447,20 @@
 ! TSS Begin
         if (TSinit) then     !TSS
          if (cml_p)
-     .         call cmlAddProperty(xf=mainXML, property=FreeE/eV,
+     .         call cmlAddProperty(xf=mainXML, value=FreeE/eV,
      .         units="siestaUnits:eV",
-     .         dictRef="siesta:FreeE",  fmt="(f14.7)")
+     .         dictRef="siesta:FreeE",  fmt="r7")
          if (fixspin) then
             if (cml_p) then
-              call cmlAddProperty(xf=mainXML, property=Etot/eV,
+              call cmlAddProperty(xf=mainXML, value=Etot/eV,
      .             units="siestaUnits:eV",
-     .             dictRef="siesta:Etot",   fmt="(f14.7)")
-              call cmlAddProperty(xf=mainXML, property=FreeE/eV,
+     .             dictRef="siesta:Etot",   fmt="r7")
+              call cmlAddProperty(xf=mainXML, value=FreeE/eV,
      .             units="siestaUnits:eV",
-     .             dictRef="siesta:FreeE", fmt="(f14.7)")
-              call cmlAddProperty(xf=mainXML, property=dDmax/eV,
+     .             dictRef="siesta:FreeE", fmt="r7")
+              call cmlAddProperty(xf=mainXML, value=dDmax/eV,
      .             units="siestaUnits:eV",
-     .             dictRef="siesta:dDmax",  fmt="(f14.7)")
+     .             dictRef="siesta:dDmax",  fmt="r7")
             endif
             if ((iscf .eq. 1).or.muldeb)
      .           write(6,'(/,a12,3a14,a8,a7,a11)')
@@ -471,12 +471,12 @@
      .           'siesta: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV, dDmax,
      .           (Efs(i)/eV,i=1,2)
             if (cml_p) then
-              call cmlAddProperty(xf=mainXML, property=Efs(1)/eV,
+              call cmlAddProperty(xf=mainXML, value=Efs(1)/eV,
      .             units="siestaUnits:eV",
-     .             dictRef="siesta:Efs",    fmt="(f14.7)")
-              call cmlAddProperty(xf=mainXML, property=Efs(2)/eV,
+     .             dictRef="siesta:Efs",    fmt="r7")
+              call cmlAddProperty(xf=mainXML, value=Efs(2)/eV,
      .             units="siestaUnits:eV",
-     .             dictRef="siesta:Efs",    fmt="(f14.7)")
+     .             dictRef="siesta:Efs",    fmt="r7")
             endif
          else
           if (iscf .eq. 1) write(6,'(/,a12,3a14,2a8)')
