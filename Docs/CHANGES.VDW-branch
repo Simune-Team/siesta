@@ -1,5 +1,45 @@
 ------------------------------------------------------------------
 
+2009-07-09  18:00:00 GMT+1	Jose M Soler <jose.soler@uam.es>
+
+Summary: Update of timer routines
+Keywords: timer update
+
+The timer routine has been substituted by an interface to a 
+new timer_m module which handles in much greater detail the
+timing in parallel execution. Also, the explicit timing of MPI
+communication routines has been added by supplanting them in
+mpi_siesta with calls to the true MPI routines, wrapped by
+calls to time profiling routines. In parallel execution, the
+time-profile report is now writen in an independent file
+called (systemLabel).times, and it contains information on
+the communication times and on load balancing.
+
+Added files:
+  Src/MPI/mpi_siesta.f90    MPI calls wrapped in calls to timer
+  Src/MPI/timer_mpi.F90     Switchs on/off MPI_TIMING
+  Src/timer_m.F90           New module of time-profiling routines
+Renamed files:
+  Src/timer.F => Src/timer.f90   
+Modified files:
+  Docs/siesta.tex           Added timer_report_threshold label
+  Src/MPI/Makefile          Added mpi_siesta.o and timer_mpi..o
+  Src/MPI/mpi.F             Module MPI_SIESTA renamed MPI_INTERFACES
+  Src/MPI/mpi__type_s.f90   MPI calls wrapped in calls to timer
+  Src/MPI/mpi__type_sv.f90  MPI calls wrapped in calls to timer
+  Src/MPI/mpi__type_v.f90   MPI calls wrapped in calls to timer
+  Src/MPI/mpi__type_vs.f90  MPI calls wrapped in calls to timer
+  Src/Makefile              Added timer_m.o
+  Src/alloc.F90             Added 'only' to USE mpi
+  Src/cellxc.f90            Uses timer_get to exclude communic. time
+                            Writes density on non-local energy
+  Src/m_debug.f90           Removed routine myNodeString
+  Src/moreParallelSubs.F90  Added routines nodeString and copyFile
+  Src/siesta_init.F         Added call to timer_report
+  Src/timer.f90             Interface to timer_m module
+
+------------------------------------------------------------------
+
 2009-05-11  18:45:00 GMT+1	Jose M Soler <jose.soler@uam.es>
 
 Summary: merged with trunk 2.6.21

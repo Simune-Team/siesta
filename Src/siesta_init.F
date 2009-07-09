@@ -42,6 +42,7 @@
       use m_ioxv, only: xv_file_read
       USE writewave, only: gamma_wavefunctions, setup_wf_kpoints
       USE m_debug, only: setDebugOutputUnit, udebug
+      USE timer_m, only: timer_report  ! Sets options for report of CPU times
 #ifdef MPI
       use mpi_siesta, only: mpi_comm_world
 #endif
@@ -132,6 +133,11 @@
       call reinit(sname)
 
       call siesta_cml_init() ! Initialize CML (relies on reinit)
+
+! Set timer report file and threshold .................................
+      call fdf_global_get(threshold, 'timer_report_threshold', 0._dp)
+      call timer_report( file=trim(slabel)//'.times', 
+     .                   threshold=threshold )
 
 ! Set allocation report level .........................................
 ! variables level and threshold imported from module siesta_options

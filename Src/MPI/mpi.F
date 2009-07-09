@@ -1,4 +1,4 @@
-      MODULE MPI_SIESTA
+      MODULE MPI_INTERFACES
 !
 !
 !       Michael Hennecke
@@ -804,4 +804,4 @@
 
         public
 
-      END MODULE MPI_SIESTA
+      END MODULE MPI_INTERFACES

@@ -12,10 +12,10 @@ MODULE m_debug
 
 ! Initializes output files for debug info. J.M.Soler. Jan'2008
 
-  USE parallel, only: node, Nodes  ! This node number, Number of nodes
+USE parallel,         only: node, Nodes  ! This node number, Number of nodes
+USE moreParallelSubs, only: nodeString   ! Returns a string with a node number
 
 PUBLIC &
-  myNodeString,       &! Returns a string with my node number
   setDebugOutputUnit, &! Sets debug output unit and opens file for debug output
   udebug               ! Output file unit for debug info
 
@@ -24,38 +24,6 @@ PRIVATE ! Nothing is declared public beyond this point
   integer,save:: udebug=0  ! Output file unit for debug info
 
 CONTAINS
-
-character(len=6) function myNodeString()
-
-! Returns a string with my node number, or blank if Nodes<2
-
-  implicit none
-  character(len=20):: numName
-  integer:: fileLen, maxLen, numLen
-
-  if (Nodes<2) then
-    myNodeString = ' '
-  else
-
-    ! Find maximum name length of node numbers
-    write(numName,*) Nodes-1   ! 0 <= node <= Nodes-1
-    numName = adjustl(numName)
-    maxLen = len_trim(numName)
-
-    ! Find name of this node's number, and its name length
-    write(numName,*) node
-    numName = adjustl(numName)
-    numLen = len_trim(numName)
-
-    ! Set node number string, e.g. 00, 01, ... 63
-    myNodeString = '000000000'
-    myNodeString(maxLen-numLen+1:maxLen) = trim(numName)
-    myNodeString(maxLen+1:) = ' '
-
-  end if ! (Nodes<2)
-  
-end function myNodeString
-
 
 subroutine setDebugOutputUnit()
 
@@ -68,7 +36,7 @@ subroutine setDebugOutputUnit()
   fileName = 'debug.out'
 
   ! Append node number to file name
-  if (Nodes>1) fileName = trim(fileName)//myNodeString()
+  if (Nodes>1) fileName = trim(fileName)//nodeString()
 
   ! Find an available output unit
   call io_assign( udebug )
@@ -76,7 +44,7 @@ subroutine setDebugOutputUnit()
   ! Open file and write header on it
   open( udebug, file=fileName )
   if (Nodes>1) &
-    write(udebug,'(/,a)') 'Debug output for processor '//myNodeString()
+    write(udebug,'(/,a)') 'Debug output for processor '//nodeString()
 
 end subroutine setDebugOutputUnit
 

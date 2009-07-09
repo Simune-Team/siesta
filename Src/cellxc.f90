@@ -239,10 +239,16 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   use mesh3D,  only: freeMeshDistr ! Frees a mesh distribution ID
   use moreParallelSubs, only: miscAllReduce ! Adds variables from all processes
   use mesh3D,  only: myMeshBox     ! Returns the mesh box of my processor
+! BEGIN DEBUG
+  use moreParallelSubs, only: nodeString ! Returns a string with my node number
+! END DEBUG
   use m_vdwxc, only: qofrho        ! For debugging only
   use alloc,   only: re_alloc      ! Reallocates arrays
   use mesh3D,  only: sameMeshDistr ! Finds if two mesh distr. are equal
   use mesh3D,  only: setMeshDistr  ! Defines a new mesh distribution
+  use timer_m, only: timer_get     ! Returns counted times
+  use timer_m, only: timer_start   ! Starts counting time
+  use timer_m, only: timer_stop    ! Stops counting time
   use m_vdwxc, only: vdw_decusp    ! Cusp correction to VDW energy
   use m_vdwxc, only: vdw_get_qmesh ! Returns q-mesh for VDW integrals
   use m_vdwxc, only: vdw_phi       ! Returns VDW functional kernel
@@ -251,18 +257,17 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 
   ! Module types and variables
   use alloc,     only: allocDefaults ! Derived type for allocation defaults
-! BEGIN DEBUG
-  use m_debug,   only: myNodeString  ! Returns a string with my node number
-  use m_debug,   only: udebug        ! Output file unit for debug info
-! END DEBUG
   use precision, only: dp            ! Double precision real type
   use precision, only: gp=>grid_p    ! Real precision type of mesh arrays
+  use parallel,  only: nodes         ! Number of processor nodes
   use xcmod,     only: nXCfunc       ! Number of xc functional(s)
+! BEGIN DEBUG
+  use m_debug,   only: udebug        ! Output file unit for debug info
+! END DEBUG
   use xcmod,     only: XCauth        ! Authors of xc functional(s)
   use xcmod,     only: XCfunc        ! Type of xc functional(s)
   use xcmod,     only: XCweightC     ! Weight of correlation functional(s)
   use xcmod,     only: XCweightX     ! Weight of exchange functinals(s)
-  use parallel,  only: nodes         ! Number of processor nodes
 
   implicit none
 
@@ -364,15 +369,15 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
      ndSpin, nf, nonemptyPoints, nPoints, nq, ns, &
      r11, r12, r13, r21, r22, r23
   real(dp):: &
-     beginTime, D(nSpin), dedk, dEcdD(nSpin), dEcdGD(3,nSpin), dEcidDj, &
-     dEcuspdD(nSpin), dEcuspdGD(3,nSpin), dEdDaux(nSpin),  &
+     beginTime, comTime, D(nSpin), dedk, dEcdD(nSpin), dEcdGD(3,nSpin), &
+     dEcidDj, dEcuspdD(nSpin), dEcuspdGD(3,nSpin), dEdDaux(nSpin),  &
      dExdD(nSpin), dExdGD(3,nSpin), dExidDj, &
      dGdM(-nn:nn), dGidFj(3,3,-nn:nn), Dj(nSpin), &
      dMdX(3,3), DV, dVol, Dtot, dXdM(3,3), &
      dVcdD(nSpin*nSpin), dVxdD(nSpin*nSpin), &
      Eaux, EcuspVDW, endTime, Enl, epsC, epsCusp, epsNL, epsX, f1, f2, &  
      GD(3,nSpin), meshKcut, k, kcell(3,3), kcut, kvec(3),  &
-     sumTime, sumTime2, VDWweightC, volcel, volume
+     sumTime, sumTime2, totTime, VDWweightC, volcel, volume
 ! DEBUG
   integer :: iip, jjp, jq
   real(dp):: rmod, rvec(3)
@@ -390,10 +395,11 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 ! END DEBUG
 
   ! Start time counter
-  call timer( 'cellXC', 1 )
+!  call timer( 'cellXC', 1 )
+  call timer_start( 'cellXC' )
 
   ! Find initial CPU time 
-  call cpu_time( beginTime )
+!  call cpu_time( beginTime )
 
   ! Set routine name for allocations
   call alloc_default( old=prevAllocDefaults, routine=myName, &
@@ -832,8 +838,10 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
     end do ! i2
     end do ! i3  End of loop on k-mesh points
 
+! BEGIN DEBUG
     call timer( 'cellXC2.2', 2 )
     call timer( 'cellXC2.3', 1 )
+! END DEBUG
 
 ! BEGIN DEBUG
 !    print'(a,3f12.6)','cellxc: Ex,Ec,Enl (eV) =', &
@@ -882,6 +890,11 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 
 ! BEGIN DEBUG
   call timer( 'cellXC3', 1 )
+! END DEBUG
+
+! DEBUG
+  open( unit=33, file='epsNL'//trim(nodeString()), form='formatted' )
+  write(33,'(3f12.6,i6)') (cell(:,ix),nMesh(ix),ix=1,3)
 ! END DEBUG
 
   ! Loop on mesh points -------------------------------------------------------
@@ -963,6 +976,14 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
         ! Sum nonlocal VdW contributions for debugging
         EcuspVDW = EcuspVDW + dVol * Dtot * epsCusp
         Enl = Enl + dVol * Dtot * epsNL
+
+! DEBUG
+        write(33,'(3i6,3e15.6)') ii1, ii2, ii3, Dtot, epsNL, epsX+epsC
+!        write(33,'(3f12.6,2e15.6)') &  ! Write x,y,z instead of i1,i2,i3
+!          ii1*cell(:,1)/nMesh(1), &
+!          ii2*cell(:,2)/nMesh(2), &
+!          ii3*cell(:,3)/nMesh(3), Dtot, epsNL
+! END DEBUG
 
       else if (GGAfunctl) then
         call ggaxc( XCauth(nf), irel, nSpin, D, GD, &
@@ -1097,6 +1118,10 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   enddo ! i2
   enddo ! i3  (End of loop over mesh points)-----------------------------------
 
+! DEBUG
+  close( unit=33 )
+! END DEBUG
+
   ! If mesh arrays are distributed, add Vxc contribution from neighbor regions
   if (GGA .and. myDistr/=0) then ! Distributed Vxc data
     ! Add neighbor regions contribution to myVxc array
@@ -1170,24 +1195,6 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   stress = stress / Eunit
   if (present(dVxcdD)) dVxcdD = dVxcdD / Eunit
 
-  ! Measure local CPU time
-  call cpu_time( endTime )
-  myTime = endTime - beginTime
-  sumTime  = myTime
-  sumTime2 = myTime**2
-
-  ! Add integrated magnitudes from all processors
-  call miscAllReduce( 'sum', Ex, Ec, Dx, Dc, sumTime, sumTime2, a2=stress )
-
-  ! Find average and dispersion of CPU time
-  timeAvge = sumTime / nodes
-  timeDisp = sqrt( max( sumTime2/nodes - timeAvge**2, 0._dp ) )
-
-! BEGIN DEBUG
-  write(udebug,'(a,3f12.6)') &
-    myName//'My CPU time, unbalance =', myTime, myTime/timeAvge-1
-! END DEBUG
-
   ! Deallocate VDW-related arrays
   if (VDW) then
     call de_alloc( tq,       myName//'tq' )
@@ -1230,7 +1237,31 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   call alloc_default( restore=prevAllocDefaults )
 
   ! Stop time counter
-  call timer( 'cellXC', 2 )
+!  call timer( 'cellXC', 2 )
+  call timer_stop( 'cellXC' )
+
+  ! Get local calculation time (including communications)
+!  call cpu_time( endTime )
+!  myTime = endTime - beginTime
+
+  ! Get local calculation time (excluding communications)
+  call timer_get( 'cellXC', lastTime=totTime, lastCommTime=comTime )
+  myTime = totTime - comTime
+  sumTime  = myTime
+  sumTime2 = myTime**2
+
+  ! Add integrated magnitudes from all processors
+  call miscAllReduce( 'sum', Ex, Ec, Dx, Dc, sumTime, sumTime2, a2=stress )
+
+  ! Find average and dispersion of CPU time
+  timeAvge = sumTime / nodes
+  timeDisp = sqrt( max( sumTime2/nodes - timeAvge**2, 0._dp ) )
+
+! BEGIN DEBUG
+  write(udebug,'(a,3f12.6)') &
+    myName//'My CPU time, avge, rel.disp =', &
+    myTime, timeAvge, timeDisp/timeAvge
+! END DEBUG
 
 CONTAINS !---------------------------------------------------------------------
 

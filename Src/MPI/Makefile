@@ -29,8 +29,8 @@ kind_explorer: kind_explorer.o
 	$(FC) -o kind_explorer $(LDFLAGS) kind_explorer.o
 mpi.o: mpi__include.o Interfaces.o V_S.uses VS.uses
 #
-module_built: mpi.o mpi__include.o Interfaces.o
-	@ar $(ARFLAGS_EXTRA) cru libmpi_f90.a mpi.o mpi__include.o Interfaces.o
+module_built: mpi.o mpi_siesta.o mpi__include.o Interfaces.o timer_mpi.o 
+	@ar $(ARFLAGS_EXTRA) cru libmpi_f90.a mpi.o mpi_siesta.o mpi__include.o Interfaces.o timer_mpi.o 
 	-$(RANLIB) libmpi_f90.a
 	@mv libmpi_f90.a ..
 	@cp *.mod ..
@@ -78,6 +78,7 @@ clean:
 	@rm -f module_built *.uses kind_explorer
 	@rm -f pi3 blacs_prb pblas_prb
 
-
+mpi_siesta.o: timer_mpi.o
+Interfaces.o: timer_mpi.o
 
 

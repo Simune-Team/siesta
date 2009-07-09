@@ -180,7 +180,13 @@ MODULE alloc
   use parallel,  only: ionode ! Am I the I/O processor?
   use sys,       only: die    ! Termination routine
 #ifdef MPI
-  use mpi_siesta
+!  use mpi_siesta
+  use mpi_siesta, only: MPI_AllGather
+  use mpi_siesta, only: MPI_Barrier
+  use mpi_siesta, only: MPI_Bcast
+  use mpi_siesta, only: MPI_Comm_World
+  use mpi_siesta, only: MPI_double_precision
+  use mpi_siesta, only: MPI_integer
 #endif
 
   implicit none
