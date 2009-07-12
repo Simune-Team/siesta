@@ -25,6 +25,7 @@ include ../../$(OBJDIR)/arch.make
 FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
+INCFLAGS:=-UMPI $(INCFLAGS)
 #
 MPROP_OBJS=m_getopts.o f2kcli.o subs.o precision.o units.o \
            io.o sys.o read_curves.o io_hs.o orbital_set.o main_vars.o
