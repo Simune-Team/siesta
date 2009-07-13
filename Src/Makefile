@@ -74,7 +74,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	hsparse.o idiag.o  initatom.o inver.o iodm_netcdf.o \
 	iodmhs_netcdf.o iodm.o iogrid_netcdf.o iohs.o iolwf.o iozm.o ipack.o iopipes.o \
 	iowfs_netcdf.o kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o local_DOS.o\
-	kpoint_pdos.o madelung.o matel.o meshmatrix.o memory.o meshsubs.o metaforce.o \
+	madelung.o matel.o meshmatrix.o memory.o meshsubs.o metaforce.o \
         m_check_supercell.o m_filter.o mulliken.o minvec.o m_pulay.o naefs.o \
 	new_dm.o normalize_dm.o ordern.o outcell.o outcoor.o \
 	paste.o pdos.o pdosg.o pdosk.o pdoskp.o phirphi.o pixmol.o plcharge.o \
