@@ -628,7 +628,7 @@ program mprop
               write(tab_u,"(a1,14x,'ENERGY',4(16x,a1,i1))") '#', ("s",m, m=1,nsp)
               do i=1, npts_energy
                  energy = min_energy + e_step*(i-1)
-                 write(tab_u,"(f20.8,10(2f13.8,5x)))")  &           ! Spin in loop
+                 write(tab_u,"(f20.8,10(2f13.8,5x))")  &           ! Spin in loop
                       energy, (pdos_vals(i,is,ic),is=1,nspin)
               enddo
               close(tab_u)
@@ -642,7 +642,7 @@ program mprop
               write(tab_u,"(a1,14x,'ENERGY',4(16x,a1,i1))") '#', ("s",m, m=1,nsp)
               do i=1, npts_energy
                  energy = min_energy + e_step*(i-1)
-                 write(tab_u,"(f20.8,10(2f13.8,5x)))")  &           ! Spin in loop
+                 write(tab_u,"(f20.8,10(2f13.8,5x))")  &           ! Spin in loop
                       energy, (coop_vals(i,is,ic),is=1,nspin)
               enddo
               close(tab_u)
@@ -653,7 +653,7 @@ program mprop
               write(tab_u,"(a1,14x,'ENERGY',4(16x,a1,i1))") '#', ("s",m, m=1,nsp)
               do i=1, npts_energy
                  energy = min_energy + e_step*(i-1)
-                 write(tab_u,"(f20.8,10(2f13.8,5x)))")  &           ! Spin in loop
+                 write(tab_u,"(f20.8,10(2f13.8,5x))")  &           ! Spin in loop
                       energy, (cohp_vals(i,is,ic),is=1,nspin)
               enddo
               close(tab_u)
