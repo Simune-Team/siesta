@@ -15,7 +15,7 @@
 .SUFFIXES: .f .f90 .F .F90 .o
 #
 VPATH:=$(shell pwd)/../../Src
-OBJDIR=Src
+OBJDIR=Obj
 #
 all: mprop dm_creator
 #

@@ -16,7 +16,7 @@ default: atm
 #  define an FC_SERIAL symbol in your top arch.make, to avoid linking
 #  in the mpi libraries even if we explicitly undefine MPI below.
 #
-OBJDIR=Src
+OBJDIR=Obj
 #
 include ../../$(OBJDIR)/arch.make
 #
