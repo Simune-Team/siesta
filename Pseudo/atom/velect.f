@@ -211,10 +211,11 @@ c
          is_gga = (leqi(icorr,'pb')        ! PBE
      $              .or. leqi(icorr,'bl')  ! BLYP
      $              .or. leqi(icorr,'rp')  ! RPBE
+     $              .or. leqi(icorr,'rv')  ! revPBE
      $              .or. leqi(icorr,'wc')  ! WC (Wu-Cohen)
+     $              .or. leqi(icorr,'ps')  ! PBEsol
      $              .or. leqi(icorr,'vf')  ! VDW-DRSLL
-     $              .or. leqi(icorr,'vw')  ! Alias for VDW-DRSLL
-     $              .or. leqi(icorr,'rv')) ! revPBE
+     $              .or. leqi(icorr,'vw')) ! Alias for VDW-DRSLL
 
          if (icorr .eq. 'ca') then
             call setxc(1,(/'LDA'/), (/'CA'/), (/1._dp/), (/1._dp/))
@@ -228,6 +229,8 @@ c
             call setxc(1,(/'GGA'/), (/'revPBE'/), (/1._dp/), (/1._dp/))
          elseif(icorr .eq. 'wc') then
             call setxc(1,(/'GGA'/), (/'WC'/), (/1._dp/), (/1._dp/))
+         elseif(icorr .eq. 'ps') then
+            call setxc(1,(/'GGA'/), (/'PBEsol'/), (/1._dp/), (/1._dp/))
          elseif(icorr .eq. 'bl') then
             call setxc(1,(/'GGA'/), (/'LYP'/), (/1._dp/), (/1._dp/))
          elseif(icorr .eq. 'vf' .or. icorr .eq. 'vw') then

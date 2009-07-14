@@ -215,6 +215,7 @@
 !         'revPBE' => GGA Zhang & Yang, PRL 80,890(1998)
 !            'LYP' => GGA Becke-Lee-Yang-Parr (see subroutine blypxc)
 !             'WC' => GGA Wu-Cohen (see subroutine wcxc)
+!         'PBESOL' => GGA Perdew et al, PRL, 100, 136406 (2008)
 !          'DRSLL' => VDW Dion et al, PRL 92, 246401 (2004)
 ! *******************************************************************
 

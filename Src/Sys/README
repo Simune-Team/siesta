@@ -3,7 +3,10 @@ architectures and compilers, provided the following steps are taken:
 
 * Look for a .make file in this directory that might be appropriate for
   your particular configuration. If there is none, write your own using
-  the existing files as guides.
+  the existing files as guides. Note that some of these files are
+  retained for historical purposes, and they might be out of date. Some
+  files refer to computers of special interest to developers, and the
+  locations of installed libraries might differ from your own.
 
 * Copy or link the file to the Src directory, renaming it as "arch.make".
 
@@ -13,7 +16,7 @@ according to the architecture and compiler/library capabilities.
 
 NetCDF hooks:
 
-If you have netcdf V3.5 installed, you can set the macros NETCDF_XXX
+If you have netcdf installed, you can set the macros NETCDF_XXX
 (as in some of the example files) to use it.
 
 THINGS TO WATCH OUT FOR:
@@ -22,7 +25,8 @@ THINGS TO WATCH OUT FOR:
 does not recognize the .F90 suffix as a "in need of preprocessing, free
 form, source file". Then you need to do the preprocessing *before* invoking
 the compiler. This happens, to our knowledge, on Suns and Alphas. A quick
-way to fix it is to redefine the .F90 rule in the arch.make file:
+way to fix it is to redefine the .F90 rule in the arch.make file, along the
+lines:
 
 #
 .F90.o:
@@ -45,9 +49,10 @@ by inserting the line
 
 %.o : %.mod
 
-in arch.make. This works at least with GNU make.
+in arch.make. This works at least with GNU make. The "SUFFIXES" initialization
+should take care of this in most makefiles.
 
-* The Portland Group's pgf90 compiler (at least version 5.0-1) 
+* The Portland Group's pgf9X compiler (several versions) 
 produces bad code when compiling atom.f and electrostatic.f 
 with optimization. A special set of rules has been inserted in 
 some files so that no optimization is used. You might

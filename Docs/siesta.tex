@@ -39,13 +39,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, 2.6.21}}
+{\Huge {\bf S I E S T A \, \, 2.6.29}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large May 7, 2009 }
+{\Large July 3, 2009 }
 
 \vspace{1.5cm}
 
@@ -2513,6 +2513,9 @@ approximation.  Ref: Hammer, Hansen and Norskov PRB 59, 7413
 \item {\tt WC} (Wu-Cohen modification of PBE functional). Generalized gradients
 approximation.  Ref: Z. Wu and R.E. Cohen, PRB 73, 235116 (2006)
 \index{GGA} \index{WC}
+\item {\tt PBEsol} (Perdew-Burke-Ernzerhof for solids). Generalized gradients
+approximation.  Ref: Perdew et al, PRL 100, 136406
+(2008)\index{GGA} \index{PBEsol}
 \item {\tt LYP} Generalized gradients approximation \index{BLYP}
 that implements Becke gradient exchange functional (A. D.
 Becke, Phys. Rev. A {\bf 38}, 3098 (1988)) and Lee, Yang, Parr
@@ -4618,10 +4621,10 @@ is output as a {\it Systemlabel}.DM file or not.
 
 \item[{\bf WriteDM.NetCDF}] ({\it logical}): \index{WriteDM.NetCDF@{\bf WriteDM.NetCDF}}
 \index{output!density matrix} It determines whether the density matrix
-is output as a {\it Systemlabel}.DM.nc netCDF file or not.
+(after the mixing step) is output as a DM.nc netCDF file or not.
 
-The file is overwritten at every SCF step, unless the {\bf
-WriteDM.History.NetCDF} option is enabled.
+The file is overwritten at every SCF step. Use the {\bf
+WriteDM.History.NetCDF} option if a complete history is desired.
 
 The DM.nc and standard DM file formats can be converted at will with
 the programs in {\tt Util/DensityMatrix} directory. Note that the
@@ -4632,29 +4635,33 @@ DM values in the DM.nc file are in single precision.
 \item[{\bf WriteDMHS.NetCDF}] ({\it logical}): \index{WriteDMHS.NetCDF@{\bf WriteDMHS.NetCDF}}
 \index{output!density
   matrix}\index{output!hamiltonian}\index{output!overlap matrix} 
-It determines whether, at every SCF step, the input density matrix,
-hamiltonian, and output density matrix, are output as a {\it
-  Systemlabel}.DMHS.nc netCDF file or not.
-The file also contains the overlap matrix S. 
+If true, the input density matrix, hamiltonian, and output density matrix, are stored in a netCDF file
+named {\tt DMHS.nc}. The file also contains the overlap matrix S. 
 
-The file is overwritten at every SCF step, unless the {\bf
-WriteDMHS.History.NetCDF} option is enabled.
+The file is overwritten at every SCF step. Use the {\bf
+  WriteDMHS.History.NetCDF} option if a complete history is desired.
 
 {\it Default value:} {\tt .true.} if netCDF support is enabled (see Appendix).
 
-\item[{\bf WriteDM.History.NetCDF}] ({\it logical}): \index{WriteDM.History.NetCDF@{\bf WriteDM.History.NetCDF}}
-\index{output!density matrix}\index{output!density matrix history} It determines whether the 
-DM.nc file (see {\bf WriteDM.NetCDF}) contains information about all
-the steps of the (last) SCF cycle or not.
+\item[{\bf WriteDM.History.NetCDF}] ({\it logical}):
+\index{WriteDM.History.NetCDF@{\bf WriteDM.History.NetCDF}}
+\index{output!density matrix}\index{output!density matrix history} If
+true, a series of netCDF files with names of the form {\tt DM-NNNN.nc}
+is created to hold the complete history of the density matrix (after
+mixing).  (See also {\bf WriteDM.NetCDF}). Each file corresponds to a
+geometry step.
 
 {\it Default value:} {\tt .false.}
 
-\item[{\bf WriteDMHS.History.NetCDF}] ({\it logical}): \index{WriteDMHS.History.NetCDF@{\bf WriteDMHS.History.NetCDF}}
-\index{output!density
-  matrix history}\index{output!hamiltonian history}\index{output!overlap matrix} 
-It determines whether the 
-DMHS.nc file (see {\bf WriteDMHS.NetCDF}) contains information about all
-the steps of the (last) SCF cycle or not.
+\item[{\bf WriteDMHS.History.NetCDF}] ({\it logical}):
+\index{WriteDMHS.History.NetCDF@{\bf WriteDMHS.History.NetCDF}}
+\index{output!density matrix history}\index{output!hamiltonian
+history}\index{output!overlap matrix} If true, a series of netCDF
+files with names of the form {\tt DMHS-NNNN.nc} is created to hold the
+complete history of the input and output density matrix, and the
+hamiltonian.  (See also {\bf WriteDMHS.NetCDF}). Each file corresponds
+to a geometry step. The overlap matrix is stored only once per SCF
+cycle.
 
 {\it Default value:} {\tt .false.}
 
@@ -5210,6 +5217,19 @@ An example is:
         -20.00  10.00  0.200  500  eV
      %endblock ProjectedDensityOfStates
 \end{verbatim}
+
+By default the projected density of states is generated for the same
+grid of points in reciprocal space as used for the SCF calculation.
+However, a separate set of K-points, usually on a finer grid, can 
+be generated using one of the options \textbf{PDOS.kgrid\_cutoff} or
+\textbf{PDOS.kgrid\_Monkhorst\_Pack}. The format of these options is
+exactly the same as for \textbf{kgrid\_cutoff} and 
+\textbf{kgrid\_Monkhorst\_Pack}, respectively. Note that if a gamma
+point calculation is being used in the SCF part, especially as part
+of a geometry optimisation, and this is then to
+be run with a grid of K-points for the PDOS calculation it is more
+efficient to run the SCF phase first and then restart to perform the
+PDOS evaluation using the density matrix saved from the SCF phase. 
 
 {\it Use:} The two energies of the range must be ordered, with lowest
 first. 
@@ -6321,16 +6341,22 @@ always worth tuning the BlockSize parameter.
 \index{CML}
 
 From version 2.0, {\sc Siesta} includes an option to write its output to an 
-XML file. The XML it produces is in accordance with the CML schema version 
-2.2 (see http://www.xml-cml.org).
+XML file. The XML it produces is in accordance with the CMLComp subset of 
+version 2.2 of the Chemical Markup Language. Further information
+and resources can be found at \url{http://cmlcomp.org/} and tools for working 
+with the XML file can be found in the \texttt{Util/CMLComp} directory.
+
+As of June 2009, the engine for CML output production is a subset of
+the FoX library\index{FoX XML library} (see {\tt
+  http://www.uszla.me.uk/FoX}).
 
 The main motivation for standarised XML (CML) output is as a step
 towards standarising formats for uses like the following.
 
 \begin{itemize}
 
-\item To have {\sc Siesta} communicating with other softwares, either
-usual postprocessing or as part of a larger workflow scheme. In such a
+\item To have {\sc Siesta} communicating with other software, either
+for postprocessing or as part of a larger workflow scheme. In such a
 scenario, the XML output of one {\sc Siesta} simulation may be easily parsed
 in order to direct further simulations. Detailed discussion of this is
 outwith the scope of this manual.
@@ -6340,50 +6366,32 @@ graphically rich, fashion. This section will explain how to do this.
 
 \end{itemize}
 
-Prerequisites:
+\subsection{Converting XML to XHTML}
 
 The translation of the {\sc Siesta} XML output to a HTML-based webpage is
 done using XSLT technology. The stylesheets conform to XSLT-1.0 plus
 EXSLT extensions; an xslt processor capable of dealing with this is
-necessary. The following processors have been tested and are known to
-work.
+necessary. However, in order to make the system easy to use, a script
+called ccViz is provided in \texttt{Util/CMLComp} that works on most Unix or 
+Mac OS X systems. It is run like so:
 
-\begin{itemize}
-  \item \texttt{xsltproc} from libxml2 (\url{http://xmlsoft.org})
-  \item \texttt{4xslt} from 4suite (\url{http://4suite.org})
-  \item \texttt{saxon} (\url{http://saxon.sourceforge.net/})
-\end{itemize}
+\texttt{./ccViz SystemLabel.xml}
+
+A new file will be produced. Point your web-browser at \texttt{SystemLabel.xhtml}
+to view the output.
 
 The generated webpages include support for viewing three-dimensional
 interactive images of the system. If you want to do this, you will
-also need jMol (\url{http://jmol.sourceforge.net}) installed; as this
+either need jMol (\url{http://jmol.sourceforge.net}) installed or access
+to the internet. As this
 is a Java applet, you will also need a working Java Runtime
 Environment and browser plugin - installation instructions for these
 are outside the scope of this manual, though. However, the webpages
 are still useful and may be viewed without this plugin.
 
-XSLT stylesheets are being developed within a CML project, and they
-are directly applicable to {\sc Siesta}. They can be found in
-
-{\tt http://www.eminerals.org/siesta/XSLT}
-
-To use these to produce the webpage, the
-output of a {\sc Siesta} run, \texttt{SystemLabel.xml} should be taken and
-placed in an empty directory. The XSLT processor should then be
-run. The necessary invocation differs according to the processor - the
-following are some examples; consult the documentation for your own
-processor.
-
-\texttt{xsltproc -o SystemLabel.xhtml \$SIESTA/XSLT/display.xsl
-SystemLabel.xml}\\ \texttt{4xslt -o SystemLabel.xhtml SystemLabel.xml
-\$SIESTA/XSLT/display.xsl}\\ \texttt{java /usr/share/java/saxon.jar -o
-SystemLabel.xhtml SystemLabel.xml \$SIESTA/XSLT/display.xsl}
-
-Note that when using saxon, the path to the saxon \.jar may be
-different on your system.
-
-After this is done, a set of html files will have been created. Point
-your web-browser at \texttt{SystemLabel.xhtml} to view this output.
+An online version of this tool is avalable from 
+\url{http://cmlcomp.org/ccViz/}, as are updated versions of
+the ccViz script.
 
 \newpage
 \section{APPENDIX: Selection of precision for storage}

@@ -60,9 +60,9 @@
       if (IOnode) then
         if ( .not. harrisfun) 
      .    write(6,"(/a,f14.4)")  'siesta: E_KS(eV) =        ', Etot/eV
-        if (cml_p) call cmlAddProperty(xf=mainXML, property=Etot/eV,
+        if (cml_p) call cmlAddProperty(xf=mainXML, value=Etot/eV,
      .       dictref='siesta:E_KS', units='siestaUnits:eV', 
-     .       fmt='(f14.6)')
+     .       fmt='r6')
       endif
 
 ! Substract egg box effect form energy 
@@ -71,9 +71,9 @@
      .               eggbox_block)
         if (IOnode)
      .    write(6,"(/a,f14.4)") 'siesta: E_KS - E_eggbox = ',Etot/eV
-        if (cml_p) call cmlAddProperty(xf=mainXML, property=Etot/eV,
+        if (cml_p) call cmlAddProperty(xf=mainXML, value=Etot/eV,
      .         dictref='siesta:E_KS_egg', units='siestaUnits:eV', 
-     .         fmt='(f14.6)')
+     .         fmt='r6')
       endif
       if (cml_p) call cmlEndPropertyList(mainXML)
 

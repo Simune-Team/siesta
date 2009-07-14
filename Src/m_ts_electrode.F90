@@ -1085,6 +1085,7 @@ MODULE m_ts_electrode
       integer iprop,inn,it,in,ind
       real*8   xc      
       logical tinit,tlast
+      integer :: icrap1, icrap2 ! dummy variables
 ! FDN
       logical ts_gamma
 ! FDN
@@ -1130,10 +1131,10 @@ MODULE m_ts_electrode
 !                   kscell, kdispl)
 
        iotask='read'
-       call ts_iohs(iotask,gamma, nuotot, notot, Enspin, indxuo, &
+       call ts_iohs(iotask,gamma, .false., nuotot, notot, Enspin, indxuo, &
                     maxnh, numh, listhptr, listh, H, S, qtot, temp, xij, &
                     label_length+5, hsfile, nua, lasto, isa, ef, cell, &
-                    kscell, kdispl, ts_gamma, xa)  
+                    kscell, kdispl, ts_gamma, xa, icrap1, icrap2)  
 ! FDN
 
 ! FDN Check if electrode has the same spin

@@ -150,12 +150,11 @@
         enddo
 
         call cmlStartModule(xf=mainXML, title='Initial System')
-        call cmlAddMolecule(xf=mainXML, natoms=na_u, 
-     .       coords=xa/Ang, elements=elem, refs=cisa,
-     .       style='x3', fmt='(f12.6)')
+        call cmlAddMolecule(xf=mainXML, natoms=na_u,
+     .       coords=xa/Ang, elements=elem, atomRefs=cisa)
         call cmlAddLattice(xf=mainXML, cell=ucell, 
      .       units='siestaUnits:angstrom', dictref='siesta:ucell')
-        call cmlAddProperty(xf=mainXML, property=trim(shape), 
+        call cmlAddProperty(xf=mainXML, value=trim(shape), 
      .       dictref='siesta:shape')
         call cmlEndModule(xf=mainXML)
       endif

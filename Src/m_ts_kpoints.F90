@@ -190,12 +190,6 @@ MODULE m_ts_kpoints
          write(6,'(a,i4,3f12.6,3x,f12.6)')                          &
               ('transiesta: ', ik, (ts_kpoint(ix,ik),ix=1,3), ts_kweight(ik), &
               ik=1,ts_nkpnt)
-         if (cml_p) then
-            call cmlAddProperty(xf=mainXML, property=ts_kpoint,    &
-            dictref='transiesta:kpoint')
-            call cmlAddProperty(xf=mainXML, property=ts_kweight,         &
-                 dictref='transiesta:ts_kweight')
-         endif
       else
          call iokp( ts_nkpnt, ts_kpoint, ts_kweight )
       endif
@@ -209,11 +203,18 @@ MODULE m_ts_kpoints
 !           (ts_kscell(i,3),i=1,3), ts_kdispl(3)
       write(6,*)
       if (cml_p) then
-         call cmlStartPropertyList(mainXML, title='k-points')
-         call cmlAddProperty(xf=mainXML, property=ts_nkpnt,dictref='transiesta:ts_nkpnt')
-         call cmlEndPropertyList(mainXML)
-         call cmlAddProperty(xf=mainXML, property=ts_kscell,dictref='trasiesta:ts_kscell')
-         call cmlAddProperty(xf=mainXML, property=ts_kdispl,dictref='transiesta:ts_kdispl')
+          call cmlStartPropertyList(xf=mainXML, title="Transiesta k-points", &
+                 dictRef="siesta:ts_kpoints")
+          call cmlAddProperty(xf=mainXML, value=ts_nkpnt, dictref='siesta:ts_nkpnt', &
+                 units="cmlUnits:countable")
+          do ik=1, ts_nkpnt
+              call cmlAddKPoint(xf=mainXML, coords=ts_kpoint(:,ik), weight=ts_kweight(ik))
+          enddo
+          call cmlEndPropertyList(mainXML)
+          call cmlAddProperty(xf=mainXML, value=ts_kscell, dictref='siesta:ts_kscell', &
+                 units="siestaUnits:Ang")
+          call cmlAddProperty(xf=mainXML, value=ts_kdispl, dictref='siesta:ts_kdispl', &
+                 units="siestaUnits:Ang")
       endif
     end subroutine ts_write_k_points
 
