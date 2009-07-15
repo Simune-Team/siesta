@@ -324,7 +324,7 @@ C DSP, Orbitals with a 'P' belong to the polarization shell
                call cmlStartPropertyList(xf=mainXML,
      .              title=trim(atm_label))
                call cmlAddProperty(xf=mainXML,
-     .              title='Orbital list', property=orb_label)
+     .              title='Orbital list', value=orb_label)
              endif
              deallocate(orb_label)
              
@@ -367,9 +367,11 @@ C Global sum of values stored in qo
                    call cmlStartPropertyList(xf=mainXML,
      .                  title=trim(atomtitle))
                    call cmlAddProperty(xf=mainXML,
-     .                  title="Atomic Charge", property=qa)
+     .                  title="Atomic Charge", value=qa, 
+     .                  units="siestaUnits:e")
                    call cmlAddProperty(xf=mainXML,
-     .                  title="Orbital Charges", property=qo)
+     .                  title="Orbital Charges", value=qo,
+     .                  units="siestaUnits:e")
                    call cmlEndPropertyList(xf=mainXML) !atomtitle
                  endif 
                  deallocate(qo)
@@ -389,7 +391,8 @@ C Global sum of total charge
             endif
             if (cml_p) then
               call cmlAddProperty(xf=mainXML,
-     .             title="Total Charge", property=qtot)
+     .             title="Total Charge", value=qtot, 
+     .             units="siestaUnits:e")
               call cmlEndPropertyList(xf=mainXML) ! spins
             endif
           enddo

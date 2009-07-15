@@ -6,6 +6,7 @@
 
       subroutine siesta_init()
       USE Kpoint_grid, only: setup_Kpoint_grid, gamma_scf, maxk
+      USE Kpoint_pdos, only: gamma_pdos
       USE Band, only: gamma_bands, setup_bands
       USE m_ksvinit, only: gamma_polarization, estimate_pol_kpoints
       USE m_struct_init, only: struct_init
@@ -40,6 +41,7 @@
       use m_eo
       use m_gamma
       use m_ioxv, only: xv_file_read
+      use m_projected_DOS, only: init_projected_DOS
       USE writewave, only: gamma_wavefunctions, setup_wf_kpoints
       USE m_debug, only: setDebugOutputUnit, udebug
       USE timer_m, only: timer_report  ! Sets options for report of CPU times
@@ -303,6 +305,13 @@
 
       call setup_Kpoint_grid( ucell )
       gamma = gamma_scf
+
+      ! Call initialisation of PDOS here since we need to check if 
+      ! the auxiliary supercell is needed for a non-gamma calculation
+      call init_projected_DOS()
+      if (do_pdos) then
+        gamma = gamma .and. gamma_pdos
+      endif
 
 #ifdef TRANSIESTA
 ! TSS Begin

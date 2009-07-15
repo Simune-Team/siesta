@@ -197,7 +197,7 @@
 
       if (istp .eq. 1 .and. isolve .eq. 2) then ! try to read TSDM
          call TSiodm('read', maxnh, no_l, nspin,
-     .        numh, listhptr, listh, Dscf, Escf, ef, foundts)
+     .        numh, listhptr, listh, Dscf, Escf, ef, found = foundts)
 
          if(.not. foundts )  then ! not a TS continuation run
             TSinit = .true.     ! start to converge a diagon run

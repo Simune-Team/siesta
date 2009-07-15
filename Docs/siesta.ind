@@ -4,7 +4,7 @@
   \item animation, 68
   \item antiferromagnetic initial DM, 42
   \item architectures, 13
-  \item array sizes, 75
+  \item array sizes, 76
   \item {\bf AtomCoorFormatOut}, 27
   \item {\bf AtomicCoordinatesAndAtomicSpecies}, 14, 27
   \item {\bf AtomicCoordinatesFormat}, 27
@@ -17,7 +17,7 @@
   \item {\bf BandLines}, 36
   \item {\bf BandLinesScale}, 36
   \item {\bf BandPoints}, 37
-  \item basis, 75
+  \item basis, 76
     \subitem basis set superposition error (BSSE), 24
     \subitem Bessel functions, 23
     \subitem default   soft confinement potential, 20
@@ -26,20 +26,20 @@
     \subitem effective pressure, 81
     \subitem filtering, 24
     \subitem fix   split-valence table, 19
-    \subitem Gen-basis standalone program, 17, 75
+    \subitem Gen-basis standalone program, 17, 76
     \subitem ghost atoms, 24
     \subitem minimal, 18
     \subitem new   split-valence code, 19
     \subitem PAO, 17, 18, 21
-    \subitem point at infinity, 80
+    \subitem point at infinity, 81
     \subitem polarization, 18, 23
-    \subitem reparametrization of pseudopotential, 80
+    \subitem reparametrization of pseudopotential, 80, 81
     \subitem soft confinement potential, 23
     \subitem split valence, 19
     \subitem split valence   for H, 19
     \subitem User basis, 17
     \subitem User basis (NetCDF format), 17
-  \item basis     \subitem PAO, 98
+  \item basis     \subitem PAO, 97
   \item {\bf     BasisPressure}, 81
   \item Berry phase, 44
   \item Bessel functions, 23
@@ -49,16 +49,16 @@
   \item BLYP, 38
   \item Born effective charges, 45
   \item {\bf BornCharge}, 45, 55
-  \item Broyden mixing, 40, 94
+  \item Broyden mixing, 40, 93
   \item Broyden optimization, 57
-  \item bug reports, 82
+  \item bug reports, 83
   \item bulk polarization, 44
 
   \indexspace
 
   \item CA, 38
   \item cell relaxation, 56
-  \item {\sc Cerius2}, 68, 77
+  \item {\sc Cerius2}, 68, 78
   \item {\bf ChangeKgridInMD}, 36
   \item Charge of the system, 16
   \item Chebishev Polynomials, 54
@@ -128,6 +128,7 @@
   \item {\bf FixSpin}, 39
   \item Force Constants Matrix, 55, 61
     \subitem using {\sc Phonon}, 55, 61
+  \item FoX XML library, 92
   \item fractional program, 16
 
   \indexspace
@@ -217,9 +218,9 @@
   \item {\bf MD.UseSaveCG}, 70
   \item {\bf MD.UseSaveXV}, 28, 70, 71
   \item {\bf MD.UseSaveZM}, 71
-  \item {\bf MD.UseStructFile}, 77, 78
+  \item {\bf MD.UseStructFile}, 78
   \item {\bf MD.VariableCell}, 56
-  \item memory required, 75
+  \item memory required, 76
   \item mesh, 40
   \item {\bf MeshCutoff}, 40
   \item {\bf MeshSubDivisions}, 40
@@ -240,11 +241,11 @@
 
   \item {\bf NaiveAuxiliaryCell}, 29
   \item {\bf NeglNonOverlapInt}, 43
-  \item NetCDF format, 17, 75, 87
+  \item NetCDF format, 17, 76, 87
   \item NetCDF library, 87
   \item {\bf NetCharge}, 16
   \item {\bf     New.A.Parameter}, 80
-  \item {\bf     New.B.Parameter}, 80
+  \item {\bf     New.B.Parameter}, 81
   \item NEXT\_ITER.UCELL.ZMATRIX, 78
   \item {\tt nodes}, 18
   \item {\bf NonCollinearSpin}, 39
@@ -292,14 +293,13 @@
       \subsubitem initial, 65, 75
     \subitem band $\vec k$ points, 65, 67, 75
     \subitem band structure, 65, 67, 75
-    \subitem basis, 75
+    \subitem basis, 76
     \subitem charge density, 71
     \subitem charge density for DENCHAR code, 74
     \subitem customization, 75
     \subitem density   matrix, 66
-    \subitem density   matrix history, 67
     \subitem density matrix, 66
-    \subitem density matrix history, 66
+    \subitem density matrix history, 66, 67
     \subitem eigenvalues, 65, 66, 75, 77
     \subitem electrostatic potential, 71, 72
     \subitem forces, 65, 66, 75, 76
@@ -313,8 +313,8 @@
     \subitem long, 65
     \subitem main output file, 74
     \subitem molecular dynamics
-      \subsubitem Force Constants Matrix, 78
-      \subsubitem history, 68, 78
+      \subsubitem Force Constants Matrix, 79
+      \subsubitem history, 68, 79
       \subsubitem PHONON forces file, 79
     \subitem Mulliken analysis, 65, 67, 75
     \subitem overlap matrix, 66, 67
@@ -331,7 +331,7 @@
   \item {\bf PAO.BasisSizes}, 18
   \item {\bf PAO.BasisType}, 17
   \item {\bf PAO.FixSplitTable}, 19
-  \item {\bf PAO.Keep.Findp.Bug}, 80
+  \item {\bf PAO.Keep.Findp.Bug}, 81
   \item {\bf PAO.NewSplitCode}, 19
   \item {\bf PAO.SoftDefault}, 20
   \item {\bf     PAO.SoftInnerRadius}, 20
@@ -342,6 +342,7 @@
   \item Parallel {\sc Siesta}, 89
   \item {\bf ParallelOverK}, 89
   \item PBE, 38
+  \item PBEsol, 38
   \item perturbative polarization, 18, 23
   \item Phonon program, 55
   \item {\sc Phonon program}, 16
@@ -350,7 +351,7 @@
   \item {\sc Plrho}, 76
   \item polarization orbitals, 17
   \item {\bf PolarizationGrids}, 44
-  \item Precision selection, 94
+  \item Precision selection, 93
   \item {\bf ProcessorY}, 63, 89
   \item {\bf ProjectedDensityOfStates}, 73
   \item {\bf PS.KBprojectors} , 20
@@ -364,7 +365,7 @@
   \item Pseudopotentials, 76
   \item Pulay mixing, 40
   \item PW92, 38
-  \item Python language, 78, 88
+  \item Python language, 79, 88
   \item PZ, 38
 
   \indexspace
@@ -385,10 +386,10 @@
   \item relaxation of cell parameters only, 56
   \item removal of intramolecular pressure, 57
   \item {\bf Reparametrize.Pseudos}, 80
-  \item {\bf Restricted.Radial.Grid}, 80
+  \item {\bf Restricted.Radial.Grid}, 81
   \item revPBE, 38
   \item rippling, 47, 49, 50
-  \item {\bf     Rmax.Radial.Grid}, 80
+  \item {\bf     Rmax.Radial.Grid}, 81
   \item RPBE, 38
 
   \indexspace
@@ -414,10 +415,10 @@
   \item {\bf SCF.Read.Deformation.Charge.NetCDF}, 70
   \item {\bf SCFMustConverge}, 40
   \item Scripting, 56
-  \item {\sc Sies2arc}, 66, 68, 77
+  \item {\sc Sies2arc}, 66, 68, 78
   \item {\sc Siesta}, 4
   \item siesta, 15
-  \item {\tt siesta.size}, 75
+  \item {\tt siesta.size}, 76
   \item single-$\zeta$, 18
   \item {\bf SingleExcitation}, 39
   \item {\bf SolutionMethod}, 50
@@ -440,8 +441,8 @@
   \item {\it Systemlabel.}.FA, 8
   \item {\it Systemlabel.}out, 9
   \item {{\it Systemlabel}.STRUCT\_IN}, 28
-  \item {{\it Systemlabel}.STRUCT\_NEXT\_ITER}, 77
-  \item {{\it Systemlabel}.STRUCT\_OUT}, 8, 77
+  \item {{\it Systemlabel}.STRUCT\_NEXT\_ITER}, 78
+  \item {{\it Systemlabel}.STRUCT\_OUT}, 8, 78
   \item {\it Systemlabel.}xml, 9
   \item {\it Systemlabel.}XV, 8
   \item {\bf SystemName}, 14
@@ -499,7 +500,7 @@
   \item {\bf XC.functional}, 38
   \item {\bf XC.hybrid}, 39
   \item XML, 92
-  \item {\sc XMol}, 68, 77
+  \item {\sc XMol}, 68, 78
 
   \indexspace
 
