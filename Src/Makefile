@@ -68,7 +68,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	chempot.o coceri.o constr.o coxmol.o cross.o compute_norm.o \
 	denmat.o denmatlomem.o detover.o dfscf.o dhscf.o diagon.o digcel.o fft3d.o \
 	diagg.o diagk.o diagk_file.o diagkp.o diag2g.o diag2k.o diagpol.o \
-	diagsprl.o dipole.o dismin.o dnaefs.o dot.o  \
+	diagsprl.o dipole.o dismin.o dnaefs.o doping.o dot.o  \
 	efield.o egandd.o ener3.o ener3lomem.o extrapolon.o \
 	fixed.o flib_spline.o gradient.o gradientlomem.o grdsam.o \
 	hsparse.o idiag.o  initatom.o inver.o iodm_netcdf.o \
@@ -350,7 +350,6 @@ dfscf.o: meshsubs.o meshsubs.o parallel.o precision.o sys.o
 dhscf.o: alloc.o atmfuncs.o files.o forhar.o iogrid_netcdf.o m_iorho.o
 dhscf.o: m_ts_in_siesta.o m_ts_options.o meshsubs.o parallel.o parsing.o
 dhscf.o: precision.o siesta_options.o sys.o xcmod.o
-diag.o: alloc.o memoryinfo.o parallel.o precision.o sys.o
 diag2g.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
 diag2k.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
 diagg.o: fermid.o parallel.o parallelsubs.o precision.o sys.o writewave.o
@@ -366,6 +365,7 @@ diagsprl.o: atomlist.o fermid.o parallel.o parallelsubs.o precision.o
 diagsprl.o: siesta_geom.o sys.o
 dipole.o: parallel.o precision.o sys.o
 dnaefs.o: atmfuncs.o mneighb.o precision.o
+doping.o: meshsubs.o meshsubs.o parallel.o precision.o sys.o
 dynamics.o: atomlist.o files.o ioxv.o m_mpi_utils.o parallel.o precision.o
 dynamics.o: sys.o units.o
 efield.o: atmfuncs.o parallel.o parallelsubs.o parsing.o precision.o

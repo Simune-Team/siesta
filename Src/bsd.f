@@ -12,7 +12,7 @@
 
       DOUBLE PRECISION TIME
       REAL TIMES(2)
-      real, external :: etime
+c      real, external :: etime
 C
       TIME = ETIME(TIMES)
       END
