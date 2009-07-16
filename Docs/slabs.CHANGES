@@ -1,0 +1,76 @@
+-------------------------------------------------------------------------
+2009-07-16 Alberto Garcia <albertog@icmab.es> (For P.O.) 2.6.21--slabs-p1
+New features for asymmetric or charged slabs (P. Ordejon) 
+
+(Notes from Pablo Ordejon about the changes)
+
+Estos ultimos dias he estado haciendo algunas modificaciones en Siesta
+para tratar slabs que tienen dipolos netos (slabs asimetricos), y slabs
+cargados.
+
+Por una parte, he introducido la correccion que usa la gente habitualmente
+para corregir el efecto del dipolo del slab sobre el potencial electrostatico.
+El dipolo induce un campo electrico en el vacio, que se corrige
+introduciendo un dipolo opuesto en medio del vacio. De esta manera,
+se cancela el campo y se pueden definir correctamente las funciones
+de trabajo de las dos superficies del slab.
+
+Para programar esta correccion, me ha parecido que lo mas facil y menos
+intrusivo era utilizar tu rutina efield.F,  que hace justo eso: poner
+un campo constante, y con la discontinuidad en medio del vacio.
+Para ello, he tenido que introducir algunas modificaciones
+a tu rutina, porque el campo en este caso no es fijo, sino que
+depende del momento dipolar del slab.  Lo que he hecho
+es meter una nueva variable en el input FDF ("SlabDipoleCorrection"),
+que cuando es .true. hace que la rutina efield.F sume el 
+campo correspondiente para cancelar el dipolo
+(que ahora es una nueva variable de entrada de la rutina).
+
+Al hacer esto, ademas, me he dado cuenta de que en efield.F
+habia lo que creo que es un bug al hacer el calculo de la posicion del centro
+del vacio. Son las lineas:
+
+            xmin(ix) = min( xmin(ix), xfrac-rc/dplane(ix) )
+            xmax(ix) = max( xmax(ix), xfrac+rc/dplane(ix) )
+
+que creo que deberian ser:
+
+            xmin(ix) = min( xmin(ix), xfrac-rc*dplane(ix) )
+            xmax(ix) = max( xmax(ix), xfrac+rc*dplane(ix) )
+
+Por favor, revisalo y dime si el cambio es correcto.
+
+
+Por otro lado, he escrito una rutina (doping.F) para tratar
+slabs que estan cargadas por efecto de doping. En este caso,
+fisicamente la carga electronica extra viene de dopantes que quedan
+ionizados, por lo que el sistema realmente deberia ser neutro.
+En un cristal 3D, esto no es problema, porque poison.F añade
+el background de carga uniforme que compensa la carga
+del sistema. Pero en slabs, esta carga uniforme da resultados
+patologicos, como la forma parabolica del potencial en 
+la zona de vacio. Para corregir esto, lo que hago es poner
+solo el jelium en la parte del slab donde hay atomos.
+Esto esencialmente es lo que hace doping.F, y produce
+potenciales que son correctos en el vacio.
+
+Mi idea es incluir estos cambios en la nueva version de SIESTA
+antes de hacer el release. Pero me gustaria que le echases
+un vistazo, al menos efield.F y a dhscf.F, para ver si te parecen
+bien los cambios que he hecho, o si prefieres que se haga
+de alguna otra forma, o ves algun problema.
+
+added:
+  Src/doping.F
+  Tests_DipoleCorrSlab/
+  Tests_DipoleCorrSlab/C.psf
+  Tests_DipoleCorrSlab/H.psf
+  Tests_DipoleCorrSlab/H2.psf
+  Tests_DipoleCorrSlab/Si.psf
+  Tests_DipoleCorrSlab/SiC-slab.fdf
+modified:
+  Src/Makefile
+  Src/bsd.f
+  Src/dhscf.F
+  Src/efield.F
+
