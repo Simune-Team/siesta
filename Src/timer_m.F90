@@ -54,7 +54,7 @@
 !       call mySub2(i)
 !     end do
 !     call timer_stop('myProg')
-!     call timer_report()
+!     call timer_report(file='myProg.times',printNow=.true.)
 !   end program myProg
 !   subroutine mySub1()
 !     use timer_m: only timer_get, timer_start, timer_stop
@@ -132,14 +132,53 @@
 ! ALGORITHMS:
 !   Just copies the data stored for the prog name into the times argument
 !===============================================================================
-! SUBROUTINE timer_report( prog )   
+! SUBROUTINE timer_report( prog, unit, file, printNow, threshold )
 !   Writes a report file of CPU times stored for one prog, or for all progs if
-!   the prog argument is not present
-! INPUT:
-!   character(len=*):: prog   ! Name of program or code section
+!   the prog argument is not present. Program times include those spent in the
+!   subroutines that they call.
+! OPTIONAL INPUT:
+!   character(len=*):: prog      ! Name of program or code section
+!   integer,        :: unit      ! IO file unit (used only in parallel exec.)
+!   character(len=*):: file      ! IO file name (used only in parallel exec.)
+!   logical         :: printNow  ! Print report now?
+!   real(dp)        :: threshold ! Min. fractional time to be reported
 ! USAGE:
 !   See GENERAL USAGE section
+!   It can be called several times, with different arguments. In this case, 
+!   the last values prevail and get stored for future calls.
+! BEHAVIOUR:
+! - If prog is not present, or prog=='all', it prints a full report, in the 
+!   specified unit or file, of all the CPU times that have been profiled by 
+!   timer_start--timer_stop. Otherwise, it prints a single line, in the
+!   standard output, of the specified program or code section.
+! - In serial execution, to keep backwards compatibility, the report is written
+!   in the standard output, and arguments unit and file are not used.
+! - In parallel execution, successive reports are overwritten, i.e. only the
+!   last report remains written, unless different files are specified.
+! - If unit is present and unit>0, argument file is not used neither in that
+!   nor in future calls. If unit==0, the present or stored file is used.
+!   If unit is not present and file is present, that file is used in that and
+!   future calls.
+! - If neither unit nor file are present, the (parallel) report is written on
+!   file 'timer_report'
+! - If printNow is not present, the report is NOT written.
+! - If prog name is not found, it stops with an error message.
+! - In the full report, program times are written in the order of the first
+!   call to timer_start
+! - In parallel execution, the reported times are those spent in the node with
+!   the largest total CPU time, excluding communications.
 ! ALGORITHMS:
+! - In parallel execution, the total calculation time (excluding commun.) of 
+!   all nodes is first found using MPI_All_Gather, and the node with the 
+!   largest value is designed the busyNode that will write the report.
+! - Since the order in which prog times are stored may be different in 
+!   different nodes, the busyNode broadcasts the name(s) of the prog(s) 
+!   whose time(s) it wants to write. Each node then finds its time for that
+!   prog and sends it to the busyNode, so that it can determine and print
+!   the load balancing for that prog (specifically the min/max ratio of the
+!   calculation time spent in that prog by the different nodes).
+! - After the report is written by the busyNode, it is sent using copyFile to 
+!   the root node, that writes it in its file system.
 !===============================================================================
 
 MODULE timer_m
@@ -596,12 +635,11 @@ character(len=*), optional, intent(in) :: file      ! IO file name
 logical,          optional, intent(in) :: printNow  ! Print report now?
 real(dp),         optional, intent(in) :: threshold ! Min. fract. time to report
 
-if (present(unit)) then   ! Assume that unit has been open outside
+if (present(unit)) then
   reportUnit = unit
-  reportFile = 'unknown'
-else                      ! Store file name or let it remain the default one
+else if (present(file)) then 
   reportUnit = 0
-  if (present(file)) reportFile = file
+  reportFile = file
 end if
 
 if (present(threshold)) minRepTime = threshold

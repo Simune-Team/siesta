@@ -655,7 +655,8 @@ siesta_analysis.o: siesta_cml.o siesta_geom.o siesta_options.o
 siesta_analysis.o: sparse_matrices.o write_subs.o writewave.o zmatrix.o
 siesta_cml.o: siesta_cmlsubs.o
 siesta_cmlsubs.o: files.o parallel.o timestamp.o 
-siesta_end.o: alloc.o m_wallclock.o parallel.o siesta_cml.o timestamp.o
+siesta_end.o: alloc.o m_debug.o m_wallclock.o parallel.o siesta_cml.o
+siesta_end.o: timestamp.o
 siesta_forces.o: compute_dm.o m_convergence.o m_spin.o m_steps.o m_ts_options.o
 siesta_forces.o: mixer.o parallel.o post_scf_work.o scfconvergence_test.o
 siesta_forces.o: setup_hamiltonian.o siesta_cml.o siesta_options.o

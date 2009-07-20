@@ -7,6 +7,7 @@
       subroutine siesta_end()
       use alloc, only: alloc_report
       use siesta_cml
+      USE m_debug,     only : closeDebugOutputFile
       use m_timestamp, only : timestamp
       use m_wallclock, only : wallclock
       use parallel, only: IOnode
@@ -25,6 +26,9 @@
 
 ! Print allocation report
       call alloc_report( printNow=.true. )
+
+! Close debug outup file
+      call closeDebugOutputFile()
 
 ! Stop time counter
       call timer( 'siesta', 2 )

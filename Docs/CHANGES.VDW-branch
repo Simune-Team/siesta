@@ -1,5 +1,24 @@
 ------------------------------------------------------------------
 
+2009-07-20  16:15:00 GMT+1	Jose M Soler <jose.soler@uam.es>
+
+Summary: debug.out* files copied to root node
+Keywords: debug
+
+In some parallel systems with a distributed file system, the debug.out* files,
+writen by each node, might not be copied to the output file system. This is
+now forced by explicitly copying all files to the root node, using MPI.
+
+modified:
+  Src/Makefile               ! Dependencies updated
+  Src/m_debug.f90            ! Added routine closeDebugOutputFile
+  Src/moreParallelSubs.F90   ! Added check of file names in copyFile
+                             ! Header documentation completed
+  Src/siesta_end.F           ! Added call to closeDebugOutput
+  Src/timer_m.F90            ! Header documentation completed
+
+------------------------------------------------------------------
+
 2009-07-15  18:00:00 GMT+1	Jose M Soler <jose.soler@uam.es>
 
 Summary: merged with trunk 2.6.29

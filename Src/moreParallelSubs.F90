@@ -11,11 +11,13 @@
 !******************************************************************************
 ! MODULE moreParallelSubs
 ! Provides some utility routines for parallel execution
-! Written by J.M.Soler. Feb.2008
+! Written by J.M.Soler. Feb.2008-Jul.2009
 !******************************************************************************
 !
 !   PUBLIC procedures available from this module:
+! copyFile      : Copies a formatted file from one node to another
 ! miscAllReduce : Reduces a miscellaneous set of variables and arrays
+! nodeString    : Returns a string with a node number
 !
 !   PUBLIC parameters, types, and variables available from this module:
 ! none
@@ -260,8 +262,15 @@ SUBROUTINE copyFile( srcNode, srcFile, dstNode, dstFile, writeOption )
     lineEnd(0) = 0
     do il = 1,maxLines
 
-      ! Read one input line. Exit il loop at end of file.
-      read(iu,'(a)',end=1) line
+      ! Place source and destination file names in first two lines
+      if (il==1) then
+        line = srcFile
+      else if (il==2) then
+        line = dstFile
+      else
+        ! Read one input line. Exit il loop at end of file.
+        read(iu,'(a)',end=1) line
+      end if
       nLines = il
 
       ! Increase array sizes if necessary
@@ -403,10 +412,23 @@ SUBROUTINE copyFile( srcNode, srcFile, dstNode, dstFile, writeOption )
         lineBegin = 1
       end if
 
-      ! Copy line from buffer to destination file
+      ! Copy line from buffer
       lineLength = lineEnd(il) - lineBegin + 1
       line(1:lineLength) = buffer(lineBuf(il))(lineBegin:lineEnd(il))
-      write(iu,'(a)') line(1:lineLength)
+
+      ! Check that source and destination files are equal in both nodes
+      if (il==1) then
+        if (line(1:lineLength) /= trim(srcFile)) &
+          call die(errHead//'srcFile mismatch: ' &
+                   //line(1:lineLength)//' '//trim(srcFile))
+      else if (il==2) then
+        if (line(1:lineLength) /= trim(dstFile)) &
+          call die(errHead//'dstFile mismatch: ' &
+                   //line(1:lineLength)//' '//trim(dstFile))
+      else
+        ! Copy line from buffer to destination file
+        write(iu,'(a)') line(1:lineLength)
+      end if
 
     end do ! il
 
