@@ -504,7 +504,7 @@
 ! In serial execution (ID1=ID2=0), it returns .true.
 ! If ID1 and ID2 are equal, but not defined distributions, it returns .false.
 !--------------------------- ALGORITHMS ---------------------------------------
-! In parallel execution, it looks for the distribution that own the given IDs,
+! In parallel execution, it looks for the distributions that own the given IDs,
 !   then it checks whether all their mesh boxes are the same.
 !
 !******************************************************************************
@@ -657,20 +657,20 @@ MODULE mesh3D
   use m_debug,   only: udebug          ! Output file unit for debug info
 ! END DEBUG
 
-! Used MPI procedures and and types
+! Used MPI procedures and types
 #ifdef MPI
   use mpi_siesta, only: MPI_AllGather
   use mpi_siesta, only: MPI_AllReduce
   use mpi_siesta, only: MPI_Send
   use mpi_siesta, only: MPI_Recv
+  use mpi_siesta, only: MPI_COMM_WORLD
   use mpi_siesta, only: MPI_STATUS_SIZE
   use mpi_siesta, only: MPI_Integer
   use mpi_siesta, only: MPI_Max
-  use mpi_siesta, only: MPI_COMM_WORLD
   use mpi_siesta, only: MPI_grid_real
 #endif
 
-! All public procedures (there are no public types, parameters, or variables):
+! Public procedures
 PUBLIC:: &
   addMeshData,   &! Adds the data in a box array to the equiv. unit-cell points
   associateMeshTask, &! Associates a communication task to mesh distr.
@@ -683,6 +683,9 @@ PUBLIC:: &
   redistributeMeshData, &! Copies data between different mesh distributions
   sameMeshDistr, &! Finds if two mesh distributions are equal
   setMeshDistr    ! Defines a distribution of mesh points over parallel nodes
+
+! Public types, parameters, or variables:
+! none
 
 PRIVATE ! Nothing is declared public beyond this point
 
@@ -703,16 +706,16 @@ PRIVATE ! Nothing is declared public beyond this point
     private
     logical:: defined=.false.   ! Has this distribution been defined?
     integer:: ID(maxDistrID)=-1 ! ID numbers assigned to the distribution
-    integer:: nNodes            ! Number of nodes participating in the distrib.
-    integer:: firstNode         ! First of the consecutive nNodes in the distr.
-    integer:: nMesh(3)          ! Number of total mesh divisions in each axis
-    integer:: task(maxDistrTasks) ! Communication tasks associated to distr.
+    integer:: nNodes=-1         ! Number of nodes participating in the distrib.
+    integer:: firstNode=-1      ! First of the consecutive nNodes in the distr.
+    integer:: nMesh(3)=-1       ! Number of total mesh divisions in each axis
+    integer:: task(maxDistrTasks)=-1 ! Communic. tasks associated to distr.
     integer,pointer:: box(:,:,:)=>null() ! Mesh box bounds of each node:
                                          ! box(1,iAxis,iNode)=lower bounds
                                          ! box(2,iAxis,iNode)=upper bounds
   end type distrType
 
-  ! Private type to hold mesh task
+  ! Private type to hold a mesh communication task
   type taskType
     private
     logical:: defined=.false.    ! Has this task been defined?
@@ -2887,23 +2890,6 @@ subroutine setMeshDistr( distrID, nMesh, box, firstNode, nNodes, &
     return
   end if
 
-! Store input distribution ID for later comparison
-  oldDistrID = distrID
-
-! Initialize new distribution
-  call initDistr( newDistrID, nMesh, node0, meshNodes )
-  iDistr = indexDistr( newDistrID )
-  distr => storedMeshDistr(iDistr)  ! Just a shorter name
-
-! Handle box argument with priority
-  if (present(box)) then
-    ! Collect all node boxes and store them
-    allocate( nodeBoxes(2,3,0:totNodes-1) )
-    call gatherBoxes( box, nodeBoxes )
-    distr%box = nodeBoxes
-    goto 999  ! Exit, since no other arguments must be considered in this case
-  end if ! (present(box))
-
 ! Find number of mesh nodes
   if (present(nNodes)) then
     if (nNodes<1 .or. nNodes>totNodes) then
@@ -2923,11 +2909,11 @@ subroutine setMeshDistr( distrID, nMesh, box, firstNode, nNodes, &
     else 
       node0 = firstNode
     end if
-  else ! (.not.present(firstNode)) => use first nodes
+  else ! (.not.present(firstNode)) => use firstNode=0
     node0 = 0
   end if
 
-  ! Find size of blocks of points and check that nMesh is a multiple of it
+! Find size of blocks of points and check that nMesh is a multiple of it
   if (present(nBlock)) then
     blockSize = nBlock
   else
@@ -2935,6 +2921,23 @@ subroutine setMeshDistr( distrID, nMesh, box, firstNode, nNodes, &
   end if
   if (any(mod(nMesh,blockSize)/=0)) &
     call die(errHead//'nMesh inconsistent with nBlock')
+
+! Store input distribution ID for later comparison
+  oldDistrID = distrID
+
+! Initialize new distribution
+  call initDistr( newDistrID, nMesh, node0, meshNodes )
+  iDistr = indexDistr( newDistrID )
+  distr => storedMeshDistr(iDistr)  ! Just a shorter name
+
+! Handle box argument with priority
+  if (present(box)) then
+    ! Collect all node boxes and store them
+    allocate( nodeBoxes(2,3,0:totNodes-1) )
+    call gatherBoxes( box, nodeBoxes )
+    distr%box = nodeBoxes
+    goto 999  ! Exit, since no other arguments must be considered in this case
+  end if ! (present(box))
 
 ! Find box sizes
   if (present(workload)) then

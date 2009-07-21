@@ -1,5 +1,18 @@
 ------------------------------------------------------------------
 
+2009-07-21  17:15:00 GMT+1	Jose M Soler <jose.soler@uam.es>
+
+Summary: corrected bug in mesh3D:setMeshDistr
+Keywords: setMeshDistr
+
+Components nNodes and firstNode of distrType were not correctly initialized,
+what caused faulty comparisons and duplication of equivalent distributions.
+
+modified:
+  Src/mesh3D.F90
+
+------------------------------------------------------------------
+
 2009-07-20  16:15:00 GMT+1	Jose M Soler <jose.soler@uam.es>
 
 Summary: debug.out* files copied to root node
