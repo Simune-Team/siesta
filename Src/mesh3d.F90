@@ -3072,14 +3072,13 @@ subroutine setMeshDistr( distrID, nMesh, box, firstNode, nNodes, &
     ! Reset newDistrID if this distribution was already defined
     call reduceDistr( newDistrID )
     distrID = newDistrID
-  end if
-
 ! DEBUG
-  iDistr = indexDistr( distrID )
-  distr => storedMeshDistr(iDistr)
-  write(udebug,'(a,2i6,3(2x,2i4))') myName//'distrID,iDistr,myBox=', &
-    distrID, iDistr, distr%Box(:,:,myNode)
+    iDistr = indexDistr( distrID )
+    distr => storedMeshDistr(iDistr)
+    write(udebug,'(a,2i6,3(2x,2i4))') myName//'distrID,iDistr,myBox=', &
+      distrID, iDistr, distr%Box(:,:,myNode)
 ! END DEBUG
+  end if
 
 end subroutine setMeshDistr
 

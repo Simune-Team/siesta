@@ -1,5 +1,19 @@
 ------------------------------------------------------------------
 
+2009-07-22  15:30:00 GMT+1	Jose M Soler <jose.soler@uam.es>
+
+Summary: slightly modified format of timer report
+Keywords: timer report
+
+The report of CPU times has been slightly modified. Specifically, avge/max
+rather than min/max ratios for calculation times across nodes are now printed.
+
+modified:
+  Src/mesh3D.F90  ! Modified report
+  Src/timer_mF90  ! Small change in debug output, irrelevant to user
+
+------------------------------------------------------------------
+
 2009-07-21  17:15:00 GMT+1	Jose M Soler <jose.soler@uam.es>
 
 Summary: corrected bug in mesh3D:setMeshDistr

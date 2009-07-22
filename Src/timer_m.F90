@@ -391,22 +391,24 @@ subroutine print_report( prog )   ! Write a report of counted times
         write(iu,'(a)') &
          'timer: CPU times (sec):'
         write(iu,'(a,3f12.3,f8.3)') &
-          'Calc: Sum, Avge, myNode, Min/Max =', &
+          'Calc: Sum, Avge, myNode, Avg/Max =', &
           sum(nodeCalTime), sum(nodeCalTime)/nNodes, totalCalTime, &
-          minval(nodeCalTime) / maxval(nodeCalTime)
+          sum(nodeCalTime)/nNodes / maxval(nodeCalTime)
         write(iu,'(a,3f12.3,f8.3)') &
-          'Comm: Sum, Avge, myNode, Min/Max =', &
+          'Comm: Sum, Avge, myNode, Avg/Max =', &
           sum(nodeComTime), sum(nodeComTime)/nNodes, totalComTime, &
-          minval(nodeComTime) / maxval(nodeComTime)
+          sum(nodeComTime)/nNodes / maxval(nodeComTime)
         write(iu,'(a,3f12.3,f8.3)') &
-          'Tot:  Sum, Avge, myNode, Min/Max =', &
+          'Tot:  Sum, Avge, myNode, Avg/Max =', &
           sum(nodeTotTime), sum(nodeTotTime)/nNodes, totalTime, &
-          minval(nodeTotTime) / maxval(nodeTotTime)
-        write(iu,'(a,f10.6,a)') &
-          'Routine times printed if > ', minRepTime*100,'% of total'
-        write(iu,'(/,a15,a9,2(a12,a9),a8)') &
-          'Routine        ', 'Calls', 'Comm.time', '% Comm', &
-          'Prog.time', '% Tot', 'Min/Max'
+          sum(nodeTotTime)/nNodes / maxval(nodeTotTime)
+        write(iu,'(a,e10.3,a)') &
+          'Program times printed if > ', minRepTime,' of total'
+        write(iu,'(/,(a15,a9,2(a12,a9),a8))') &
+          'Program        ', 'Calls', 'Prg.com', ' Prg.com', &
+          'Prg.tot', ' Prg.tot', ' Nod.avg',                  &
+          '               ', '     ', '       ', '/Tot.com', &
+          '       ', '/Tot.tot', '/Nod.max'
       endif ! (myNode==writerNode)
 
       ! Write program times
@@ -439,14 +441,14 @@ subroutine print_report( prog )   ! Write a report of counted times
         progCalTime = progTotTime - progComTime
         if (myNode==writerNode .and. progTotTime/totalTime>minRepTime) then
           if (maxval(nodeCalTime(:))==0._dp) then ! Only comm. time
-            write(iu,'(a15,i9,2(f12.3,f9.2),f8.3)') &
-              progName, progCalls, progComTime, progComTime/totalComTime*100, &
-                        progTotTime, progTotTime/totalTime*100
+            write(iu,'(a15,i9,2(f12.3,f9.4),f8.3)') &
+              progName, progCalls, progComTime, progComTime/totalComTime, &
+                        progTotTime, progTotTime/totalTime
           else                                    ! Some calc. time
-            write(iu,'(a15,i9,2(f12.3,f9.2),f8.3)') &
-              progName, progCalls, progComTime, progComTime/totalComTime*100, &
-                        progTotTime, progTotTime/totalTime*100, &
-              minval(nodeCalTime(:)) / maxval(nodeCalTime(:))
+            write(iu,'(a15,i9,2(f12.3,f9.4),f8.3)') &
+              progName, progCalls, progComTime, progComTime/totalComTime, &
+                        progTotTime, progTotTime/totalTime, &
+              sum(nodeCalTime(:))/nNodes / maxval(nodeCalTime(:))
           endif ! (maxval(nodeCalTime(:))==0._dp)
         endif ! (myNode==writerNode)
 
@@ -454,9 +456,9 @@ subroutine print_report( prog )   ! Write a report of counted times
 
       ! Write total communications time
       if (myNode==writerNode) then
-        write(iu,'(a15,i9,2(f12.3,f9.2),/)') &
+        write(iu,'(a15,i9,2(f12.3,f9.4))') &
          'MPI total      ', totalComCalls, &
-          totalComTime, 100., totalComTime, totalComTime/totalTime*100
+          totalComTime, 1., totalComTime, totalComTime/totalTime
       endif ! (myNode==writerNode)
 
 ! DEBUG
@@ -467,6 +469,21 @@ subroutine print_report( prog )   ! Write a report of counted times
 !        'timer: Wall-clock and CPU times in final timer call =', &
 !        wallTime1-wallTime, treal-time
 ! END DEBUG
+
+      ! Write definitions
+      if (myNode==writerNode) then
+        write(iu,'(/,a)') 'Definitions:'
+        write(iu,'(a)') &
+          'Program: Name of a time-profiled routine (or code section)',     &
+          'Calls:   Number of profiled calls to a program',                 &
+          'Prg.com: CPU time in communications in one program in one node', &
+          'Tot.com: CPU time in communications in all progs. in one node',  &
+          'Prg.tot: total CPU time in one program in one node',             &
+          'Tot.tot: total CPU time in all programs in one node',            &
+          'Nod.avg: average calculation time in one program across nodes',  &
+          'Nod.max: maximum calculation time in one program across nodes',  &
+          'Calculation time: CPU time excluding communications', ' '
+      endif ! (myNode==writerNode)
 
       ! Copy report file to the file system of root node
       close( unit=iu )
