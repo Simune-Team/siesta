@@ -228,7 +228,7 @@ c=======================================================================
       allocate(ipvt(n)) 
       ipvt = 0
       ierr=0
-      call csolve(n,M,Mi,ipvt,ierr)
+      call csolveg(n,n,M,Mi,ipvt,ierr)
 
       deallocate(ipvt) 
 

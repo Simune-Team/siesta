@@ -71,10 +71,10 @@ C FDN
       use m_ts_io, only : read_green
       use m_ts_electrode, only : green
 #ifdef MPI
-      use m_ts_scattering, only : consHSp, getsfe, getGF, getGF_Tri, 
+      use m_ts_scattering, only : consHSp, getsfe, getGF_Tri, 
      .                            GFGammaGF, weightDM, weightDMC
 #else
-      use m_ts_scattering, only : consHS, getsfe, getGF, getGF_Tri,
+      use m_ts_scattering, only : consHS, getsfe, getGF_Tri,
      .                            GFGammaGF, weightDM, weightDMC
 #endif
       use sys
@@ -1213,11 +1213,9 @@ C FDN
 c Calculate Full GF at energy point
        ierr=0
 
-       if(TriDiag) then
-          call  getGF_Tri(USEBULK,nou,NGL,NGR,H,S,SFEL,SFER,Z,GF,ierr)
-       else
-          call  getGF(USEBULK,nou,H,S,NGL,SFEL,NGR,SFER,Z,GF,ierr) 
-       endif
+       call  getGF_Tri(USEBULK,nou,NGL,NGR,H,S,SFEL,SFER,Z,GF,ierr,
+     . TriDiag)
+ 
 #ifdef MPI
 C FDN
       if (Nodes.gt.1)  then
