@@ -404,7 +404,6 @@ c                                 z*S-H-Sigma for bulk is in sfe
 
       integer no                !no : no. states
       complex*16 Hi(0:(no*no)-1),Si(0:(no*no)-1)
-C      complex*16 Hi(no*no),Si(no*no)
       complex*16 ZEnergy 
       integer NGL,NGR
       complex*16 HLL(NGL,NGL)   ! Left electrode GF
@@ -441,7 +440,8 @@ C --------------------------------------------------------------------
      .                                           b21,b22,b23,
      .                                               b32,b33
       complex*16, dimension(:,:), allocatable::  x12,x32
-
+C FDN
+      complex*16, dimension(:,:), allocatable::  x21,x23      
 
 c----------------------------------------------------------------------
       
@@ -509,7 +509,6 @@ c
          end do                 !i
       end do                    !j
 
-C FDN 
       if ( .not. useTri) then
 ! Invert directly
          allocate(ipvt(no))
@@ -519,7 +518,7 @@ C FDN
          deallocate(H)
          deallocate(ipvt)
       else
-C FDN 
+
 ! Use the fact that H is tridiagonal       
 c ================================================================
   
@@ -539,7 +538,6 @@ c allocate:
       call splittri(n1,n2,n3,H,a11,a12,a21,a22,a23,a32,a33)
       deallocate(H)
      
-
       allocate(b11(1:n1,1:n1))
       allocate(b12(1:n1,1:n2))
       allocate(b21(1:n2,1:n1))
@@ -550,7 +548,9 @@ c allocate:
 
       allocate(x12(1:n1,1:n2))
       allocate(x32(1:n3,1:n2))
-
+C FDN
+      allocate(x21(1:n2,1:n1))
+      allocate(x23(1:n2,1:n3))
 
 c====================================================================
        
@@ -597,16 +597,42 @@ c  b12 = -x12.b22, b21 = b12^T:
       call zgemm('N','N', n1 , n2 , n2 ,a ,x12, n1, b22,
      &     n2, b, b12, n1)      ! got b12
 
-      call transpose(b12,n1,n2,b21) ! got b21
+C FDN
+C      call transpose(b12,n1,n2,b21) ! got b21
+C b21 = -b22.a21.inv(a11)
+C  a21.inv(a11) --> x21
+      a=dcmplx(1.d0,0.d0)
+      b=dcmplx(0.d0,0.d0) 
+      call zgemm('N','N', n2, n1, n1 ,a ,a21, n2, b11, 
+     &     n1, b, x21, n2)
+! b21 = -b22.x21
+      a=dcmplx(-1.d0,0.d0)
+      b=dcmplx(0.d0,0.d0) 
+      call zgemm('N','N', n2 , n2 , n1 ,a ,b22, n2, x21, 
+     &     n2, b, b21, n2)      ! got b21
+C FDN 
  
+
 c  b32 = -x32.b22, b23 = b32^T:
       a=dcmplx(-1.d0,0.d0)
       b=dcmplx(0.d0,0.d0) 
       call zgemm('N','N', n3 , n2 , n2 ,a ,x32, n3, b22,
      &     n2, b, b32, n3)      ! got b32  
 
-      call transpose(b32,n3,n2,b23) ! got b23
-
+C FDN
+C      call transpose(b32,n3,n2,b23) ! got b23
+C b23 = -b22.a23.inv(a33)
+C   a23.inv(a33) --> x23
+      a=dcmplx(1.d0,0.d0)
+      b=dcmplx(0.d0,0.d0) 
+      call zgemm('N','N', n2, n3, n3 ,a ,a23, n2, b33, 
+     &     n3, b, x23, n2)
+C b23 = -b22.x23
+      a=dcmplx(-1.d0,0.d0)
+      b=dcmplx(0.d0,0.d0) 
+      call zgemm('N','N', n2 , n2 , n3 ,a ,b22, n2, x23, 
+     &     n2, b, b23, n2)      ! got b23
+C FDN
 
 c  b11 = -x12.b21 + inv(a11)
       a=dcmplx(-1.d0,0.d0)
@@ -632,6 +658,9 @@ c  b33 = -x32.b23 + inv(a33)
 
       deallocate(x12)
       deallocate(x32)
+C FDN
+      deallocate(x21)
+      deallocate(x23)
 
 c
 c     now collect into GF
@@ -651,7 +680,7 @@ c
 
       
       end if ! .not. useTri
-      
+     
 C ====================================================================
       RETURN
       END subroutine getGF_Tri

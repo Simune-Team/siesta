@@ -64,9 +64,11 @@ c
       do j=1,n1
          do i=1,n2
             a21(i,j) = A(i+n1,j)
-            a12(j,i) = a21(i,j)
+            a12(j,i) = A(j,i+n1)
          end do
       end do
+
+
 
 c
 c   ---  22  ---
@@ -76,14 +78,14 @@ c
             a22(i,j) = A(i+n1, j+n1)
          end do
       end do
-
+     
 c
 c   ---  23  ---
 c
       do j=1,n3
          do i=1,n2
-            a23(i,j) = A(i+n1, j+n1+n2)
-            a32(j,i) = a23(i,j)
+            a23(i,j) = A(i+n1,j+n1+n2)
+            a32(j,i) = A(j+n1+n2,i+n1)
          end do
       end do
 
@@ -134,7 +136,7 @@ c   ---  11  ---
 c
       do j=1,n1
          do i=1,n1
-            A(i,j) = a11(i,j) 
+            A(i,j) = a11(i,j)
          end do
       end do
 

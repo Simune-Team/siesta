@@ -42,6 +42,12 @@ C The use of this program is allowed for not-for-profit research only.
 C Copy or disemination of all or part of this package is not
 C permitted without prior and explicit authorization by the authors.
 C
+C ================================================================
+C Modified by F. D. Novaes to allow calculations with k-point 
+C samplings other than gamma point.
+C ================================================================
+C
+C
 C Assumes listh and listd are the same
 C
 C
@@ -320,9 +326,9 @@ c Save
       save NGL2,NA1L,NA2L,nqL,nuaL
       save NGR2,NA1R,NA2R,nqR,nuaR
 
-C FDN Teste
+C FDN
       save NGL,NGR,kpargamma
-C FDN Teste
+C FDN
 
       save jout
       save NCONTOUR,NCONTOUR0
@@ -373,18 +379,6 @@ C Get Node number
       IONode=.false.
       if(Node.eq.1) IONode=.true.
 
-C FDN Teste
-C       nou=1474
-C       NGL=405
-C       NGR=405
-C       allocate(H(nou*nou) )
-C       allocate(S(nou*nou))
-C       allocate(SFEL(NGL,NGL))
-C       allocate(SFER(NGR,NGR))
-C       allocate(GF(nou*nou))
-C       call  getGF_Tri(USEBULK,nou,NGL,NGR,H,S,SFEL,SFER,Z,GF,ierr)
-C       stop
-C FDN Teste
 
 c ============================================================
 c       ----------- BEGIN: first time only ------------
@@ -701,16 +695,6 @@ c
          endif
 
 
-
-C FDN
-C         if(nspin.NE.1) then 
-C            if(Node.eq.0)
-C     .      write(6,*) 'ERROR: No spin polarization yet !!'
-C            call die( 'ERROR: No spin polarization yet !!')
-C         end if
-C FDN
-
-
 #ifdef MPI
          if(.not. gamma) then
          allocate(indxuo1(no))          
@@ -968,12 +952,7 @@ c
 c      end if                    !firsttime
       end if                    !TSiscf ==1
 
-c        if(Node.eq.0) then 
-c           write(jout,'(a,f8.3)') 'From SIESTA: Efermi=',ef/eV
-c           write(jout,'(a,f8.3)')'qc0 :',Qc0
-c           write(jout,'(a,f8.3)')'qcn0 :',Qcn0
-c           write(jout,*) 'nou,NGL,NGR:',nou,NGL,NGR
-c        end if    
+   
 
 c----------------------------------------------
 c Allocation
@@ -1090,16 +1069,12 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 
-
-c     TODO: THIS IS WHERE WE PUT THE k_||-POINT loop:
 C FDN kpar loop
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         do ikpar=1,nkpar           ! kpar loop
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
-C         k(1)=0d0
-C         k(2)=0d0
-C         k(3)=0d0
+
          k(:)=kpar(:,ikpar)
 
 
@@ -1203,19 +1178,19 @@ c RIGHT:
      &        Nodes,points2read(iPE),errorgs,ikpar)
 
 C FDN
-
+          
 #ifdef MPI
        call MPI_Bcast(errorgs,1,MPI_logical,0,MPI_Comm_World,MPIerror)
 #endif
        if(errorgs) call die('ERROR in getsfe') 
 
-
+       
 c Calculate Full GF at energy point
        ierr=0
 
        call  getGF_Tri(USEBULK,nou,NGL,NGR,H,S,SFEL,SFER,Z,GF,ierr,
      . TriDiag)
- 
+      
 #ifdef MPI
 C FDN
       if (Nodes.gt.1)  then
@@ -1230,7 +1205,6 @@ C FDN
             write(jout,*) 'ERROR: getGF MATRIX INVERSION FAILED'
          endif 
       END IF
-
 
 
 c -------------------------------------------------------------
@@ -1376,9 +1350,7 @@ C FDN kpargamma
        DMCplx = work1Cplx
 
        work1Cplx = 0.0d0
-C FDN Teste
-C       write(*,*) size(EDMCplx),Node 
-C FDN Teste
+
        call MPI_AllReduce(EDMCplx,work1Cplx,nou*nou,
      .     DAT_dcomplex,MPI_sum,MPI_Comm_World,MPIerror)
        EDMCplx = work1Cplx
@@ -1434,9 +1406,8 @@ c     The original Hamiltonian from SIESTA was shifted ef:
 c  -- thus we have a shift in EDM:
 
 C FDN
-C FDN Nao deveria ser ef simplesmente ??????
       if (kpargamma) then 
-       call daxpy(nou*nou,dcmplx(ef,0.d0),DM,1,EDM,1)
+       call daxpy(nou*nou,ef,DM,1,EDM,1)
       else 
 C FDN
        call zaxpy(nou*nou,dcmplx(ef,0.d0),DMCplx,1,EDMCplx,1)
