@@ -134,7 +134,7 @@ INCFLAGS:=$(INCFLAGS) $(FoX_FCFLAGS)
 # First, it needs to be configured. This may have been done
 # by the main SIESTA configure, but in case not:
 $(FoX_configured):
-	(cd FoX; if [ "$(VPATH)" = . ]; then CONFIGURE="./configure"; else CONFIGURE="$(VPATH)/FoX/configure"; fi; $$CONFIGURE VPATH="$(VPATH)/FoX" FC="$(FC)" FCFLAGS="$(FFLAGS)" --enable-wcml $(DUMMY_FOX); touch .config)
+	(cd FoX; if [ "$(VPATH)" = . ]; then CONFIGURE="./configure"; else CONFIGURE="$(VPATH)/FoX/configure"; fi; $$CONFIGURE VPATH="$(VPATH)/FoX" FC="$(FC)" FCFLAGS="$(FFLAGS)" --enable-wcml $(DUMMY_FOX) ; if (( $? )) ; then touch .config ; else false; fi )
 # Note we have to make sure to use the same compiler as SIESTA,
 # and pick up all the same FFLAGS.
 # And also remember to maybe ask for a dummy library
