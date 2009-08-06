@@ -9,11 +9,11 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
       subroutine grdsam(nspin, norb, iaorb, iphorb, 
-     .                  nuo, nuotot, nua, na, isa, xa, indxua,
-     .                  cell, ntm, ifa, istr, maxnd,
-     .                  maxnh, numh, listhptr, listh, Dscf, Datm, Hmat,
-     .                  Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
-     .                  Exc, Dxc, dipol, fa, stress, fal, stressl )
+     &                  nuo, nuotot, nua, na, isa, xa, indxua,
+     &                  cell, ntm, ifa, istr, maxnd,
+     &                  maxnh, numh, listhptr, listh, Dscf, Datm, Hmat,
+     &                  Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
+     &                  Exc, Dxc, dipol, fa, stress, fal, stressl )
 
 c ***************************************************************************
 c Final call to dhscf of the scf cycle + grid-cell sampling
@@ -93,24 +93,24 @@ C
       implicit          none
 
       integer           maxnh, maxnd, na, norb, nspin, nuo, nuotot, 
-     .                  nua, iaorb(norb), ifa, indxua(na), 
-     .                  iphorb(norb), isa(na), istr, listh(maxnh),
-     .                  listhptr(nuo), numh(nuo), ntm(3)
+     &                  nua, iaorb(norb), ifa, indxua(na), 
+     &                  iphorb(norb), isa(na), istr, listh(maxnh),
+     &                  listhptr(nuo), numh(nuo), ntm(3)
 
       real(dp)          cell(3,3), datm(norb), dipol(3), 
-     .                  dscf(maxnd,nspin), DUscf, DUext, Dxc, 
-     .                  enaatm, enascf, exc, fa(3,nua),
-     .                  Hmat(maxnh,nspin), stress(3,3),
-     .                  uatm, uscf, xa(3,na), fal(3,nua), stressl(3,3)
+     &                  dscf(maxnd,nspin), DUscf, DUext, Dxc, 
+     &                  enaatm, enascf, exc, fa(3,nua),
+     &                  Hmat(maxnh,nspin), stress(3,3),
+     &                  uatm, uscf, xa(3,na), fal(3,nua), stressl(3,3)
 
 C Internal variables and arrays
  
       logical           samesh
       integer           nr, ipt, maxpt, ia,
-     .                  ix, iv
+     &                  ix, iv
       real(dp)          avexc, strold(3,3), avdipo(3), avstre(3,3),
-     .                  avdxc, avenaa, avenas, avuatm, avuscf, avdusc,
-     .                  anpt, strold2(3,3), avstre2(3,3)
+     &                  avdxc, avenaa, avenas, avuatm, avuscf, avdusc,
+     &                  anpt, strold2(3,3), avstre2(3,3)
 
       parameter         (maxpt = 100)
 
@@ -191,13 +191,12 @@ c if sampling, store the forces and stresses prior to dhscf -----------------
 
 
 c first (normal) call to DHSCF, ihmat=1 --------------------------------------
-
       call dhscf( nspin, norb, iaorb, iphorb, nuo, nuotot, nua,
-     .            na, isa, xa, indxua, ntm,
-     .            ifa, istr, 1, ' ', ' ', ' ', ' ', ' ', ' ',
-     .            maxnd, numh, listhptr, listh, Dscf, Datm,
-     .            maxnh, Hmat, Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
-     .            Exc, Dxc, dipol, stress, fal, stressl)
+     &            na, isa, xa, indxua, ntm,
+     &            ifa, istr, 1, ' ', ' ', ' ', ' ', ' ', ' ',
+     &            maxnd, numh, listhptr, listh, Dscf, Datm,
+     &            maxnh, Hmat, Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
+     &            Exc, Dxc, dipol, stress, fal, stressl)
 
 c Sampling ------------------------------------------------------------------
 
@@ -220,14 +219,14 @@ c generate displacements (in Bohr cartesian) if first time or new mesh ------
         if (.not. samesh) then
           if (Node.eq.0) then
             write(6,'(a)') 
-     .       'grdsam: Generating displacements for grid-cell sampling'
+     &       'grdsam: Generating displacements for grid-cell sampling'
           endif
           do ipt = 1, npt
             do ix = 1, 3
               dpt(ix,ipt) = 0.0d0
               do iv = 1, 3
                 dpt(ix,ipt) = dpt(ix,ipt) + 
-     .                          cell(ix,iv)*pt(iv,ipt)/dble(ntm(iv))
+     &                          cell(ix,iv)*pt(iv,ipt)/dble(ntm(iv))
               enddo
             enddo
           enddo
@@ -267,11 +266,11 @@ c loop sampling on displacements making averages ----------------------------
           endif
 
           call dhscf( nspin, norb, iaorb, iphorb, nuo, nuotot, nua,
-     .                na, isa, xanew, indxua, ntm,
-     .                ifa, istr, 0, ' ', ' ', ' ', ' ', ' ', ' ',
-     .                maxnd, numh, listhptr, listh, Dscf, Datm,
-     .                maxnh, Hmat, Enaatm, Enascf, Uatm, Uscf, DUscf,
-     .                DUext, Exc, Dxc, dipol, stress, fal, stressl)
+     &                na, isa, xanew, indxua, ntm,
+     &                ifa, istr, 0, ' ', ' ', ' ', ' ', ' ', ' ',
+     &                maxnd, numh, listhptr, listh, Dscf, Datm,
+     &                maxnh, Hmat, Enaatm, Enascf, Uatm, Uscf, DUscf,
+     &                DUext, Exc, Dxc, dipol, stress, fal, stressl)
 
           avfa(1:3,1:nua) = avfa(1:3,1:nua) + fa(1:3,1:nua)
           avfa2(1:3,1:nua) = avfa2(1:3,1:nua) + fal(1:3,1:nua)

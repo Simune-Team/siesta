@@ -28,7 +28,7 @@
       subroutine resetFixedPointers( )
       use alloc, only : de_alloc
       implicit none
-      CHARACTER(LEN=*), PARAMETER :: MYNAME =  'resetFixedPointers'
+      CHARACTER(LEN=*), PARAMETER :: MYNAME =  'fixed'
 
       if (associated(ctype))
      &  deallocate( ctype )
@@ -149,15 +149,15 @@ c **********************************************************************
 
       ! Read constraint data only the first time
       if (frstme) then
-!        Allocate memory for constraints - Preserve contents
-         nullify( ctype )
-         allocate( ctype(maxc) )
+!       Allocate memory for constraints - Preserve contents
+        nullify( ctype )
+        allocate( ctype(maxc) )
 
         nullify( iac )
-        call re_alloc( iac, 1, maxc, name='iac', routine='fixed' )
+        call re_alloc( iac, 1, maxc, 'iac', 'fixed' )
 
         nullify( xc )
-        call re_alloc( xc, 1, 3, 1, maxc, name='xc', routine='fixed' )
+        call re_alloc( xc, 1, 3, 1, maxc, 'xc', 'fixed' )
 
         ! Initialise stress constraints to unconstrained state
         xs(1:6) = 0.0d0

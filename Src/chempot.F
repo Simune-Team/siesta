@@ -106,7 +106,8 @@ C
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GlobalToLocalOrb
       use sys,           only : die
-      use neighbour,     only : jan, r2ij, xij, mneighb, maxnna
+      use neighbour,     only : jan, r2ij, xij, mneighb, maxnna,
+     &                          reset_neighbour_arrays
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -735,7 +736,11 @@ C ...
 C      write(20,*) p,chpot*13.6d0
 C      enddo
 
+
 C Deallocate local arrays 
+      if (2.*rcoor .lt. rmax) then
+        call reset_neighbour_arrays( )
+      endif
       call memory('D','D',size(wr),'chempot')
       deallocate(wr)
       call memory('D','D',size(wi),'chempot')

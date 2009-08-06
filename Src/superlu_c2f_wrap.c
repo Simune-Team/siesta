@@ -1,6 +1,7 @@
+#ifdef _LANCZOS_
 #include "superlu_ddefs.h"
 #include "Cnames.h"
-
+#endif
 /* functions that create memory for a struct and return a handle */
 
 #if 0
@@ -10,6 +11,7 @@ typedef long int fptr;  /* 64-bit */
 #endif
 
 
+#ifdef _LANCZOS_
 /* functions that create memory for a struct and return a handle */
 void f_create_gridinfo_handle(fptr *handle)
 {
@@ -173,7 +175,6 @@ void f_set_default_options(fptr *options)
 
 void f_superlu_gridinit(int *Bcomm, int *nprow, int *npcol, fptr *grid)
 {
-  
    superlu_gridinit( (int_t) *Bcomm, (int_t) *nprow, (int_t) *npcol,
                     (gridinfo_t *) *grid);
 }
@@ -261,3 +262,4 @@ void f_pdgssvx(fptr *options, fptr *A, fptr *ScalePermstruct, double *B,
     PStatPrint((superlu_options_t *) *options, (SuperLUStat_t *) *stat,
 	       (gridinfo_t *) *grid);
 }
+#endif

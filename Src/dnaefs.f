@@ -44,7 +44,8 @@ C *********************************************************************
 
       use precision
       use atmfuncs,  only: izofis, psover
-      use neighbour, only: mneighb, jna=>jan, xij, r2ij
+      use neighbour, only: mneighb, jna=>jan, xij, r2ij,
+     &                     reset_neighbour_arrays
 
       implicit none
 
@@ -101,6 +102,6 @@ C Find neighbour atoms
           endif
         enddo
       enddo
-
+      call reset_neighbour_arrays( )
       end subroutine dnaefs
       end module m_dnaefs

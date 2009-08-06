@@ -28,6 +28,7 @@ C     Local variables
       integer                     :: i
       real(dp)                    :: vv, alpha, beta, norm, stopcri
       real(dp),           pointer :: rr(:), ww(:), zz(:)
+      real(dp)                    :: dvdot
 
       nullify( rr, ww, zz )
       call re_alloc( rr, 1, n, 'rr', 'com_cg' )

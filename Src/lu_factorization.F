@@ -1,12 +1,13 @@
       MODULE LU_FACTORIZATION
-#ifdef _LANCZOS_
       use alloc,         only : re_alloc, de_alloc
       use superlu
       use precision
       implicit none
 
+      logical           :: use_lu_fact = .false.
+#ifdef _LANCZOS_
       public :: compCommDD2LU, distCommDD2LU, use_lu_fact, factOverlap,
-     &          LU, reduce_array_lu
+     &          LU, lu_ncom, lu_comm
 
       private
       integer           :: lu_nn
@@ -17,7 +18,6 @@
       integer,  pointer :: lu_ia(:)
       integer,  pointer :: lu_ja(:)
       real(dp), pointer :: lu_an(:)
-      logical           :: use_lu_fact
       type(superlu_t)   :: LU
 
       contains
@@ -147,11 +147,7 @@
 
       LUcomm%np = Nodes
 C     reschedule the communications in order to minimize the time
-      write(23,*) '         PRE scheduleComm'
-      flush(23)
       call scheduleComm( ncom, src, dst, LUcomm )
-      write(23,*) '         POS scheduleComm'
-      flush(23)
 
       nullify(LUnNeigh)
       call re_alloc( LUnNeigh, 1,Nodes, 'LUnNeigh', 'LU_FAC' )
@@ -198,7 +194,7 @@ C     reschedule the communications in order to minimize the time
         enddo
       enddo
 
-      call de_alloc( LUcomm%ind, 'comm%ind', 'scheduleComm' )
+      call de_alloc( LUcomm%ind, 'comm%ind', 'scheComm' )
 
       call de_alloc( fin, 'fin', 'LU_FAC' )
       call de_alloc( ini, 'ini', 'LU_FAC' )
@@ -378,6 +374,7 @@ C     reschedule the communications in order to minimize the time
       call f_dCreate_CompRowLoc_Mat_dist( LU%A, nn, nn, lu_nnz, lu_nn,
      &                                    fsr, lu_an, lu_ja, lu_ia,
      &                                    stype, dtype, mtype )
+
       call f_ScalePermstructInit( nn, nn, LU%ScalePermstruct )
       call f_LUstructInit( nn, nn, LU%LUstruct )
       call f_PStatInit( LU%stat )
@@ -385,11 +382,19 @@ C     reschedule the communications in order to minimize the time
 !     Call the linear equation solver
       nullify(bb)
       call re_alloc( bb, 1, lu_nn, 'bb', 'LU_FAC' )
-      bb = 1.0
+      bb   = 1.0
+      berr = 0.0
+      ierr = 0
 
+#ifdef DEBUG
+      call write_debug( '      PRE f_pdgssvx' )
+#endif
       call f_pdgssvx( LU%options, LU%A, LU%ScalePermstruct, bb, lu_nn,
      &                1, LU%grid, LU%LUstruct, LU%SOLVEstruct, berr,
      &                LU%stat, ierr )
+#ifdef DEBUG
+      call write_debug( '      POS f_pdgssvx' )
+#endif
 
       if (ierr.eq.0) then
         write(23,*) 'Backward error: ', berr
@@ -423,8 +428,14 @@ C     reschedule the communications in order to minimize the time
       call de_alloc( LUnNeigh, 'LUnNeigh', 'LU_FAC' )
       end subroutine freeFactData
 
+#endif
+      END MODULE LU_FACTORIZATION
 
+
+#ifdef _LANCZOS_
       subroutine reduce_array_lu( dir, n1, x, n2, y )
+      use lu_factorization
+      use superlu
       use parallel,     only : node
       implicit none
 C     Input variables
@@ -435,7 +446,6 @@ C     Output variables
 C     Local variables
       integer                     :: icom, P1, P2, N, II, I1, I2,
      &                               ierror, status(MPI_STATUS_SIZE)
-
       do icom= 1, lu_ncom
         if (dir.eq.1) then
           P1 = lu_comm(1,icom)
@@ -458,14 +468,17 @@ C     Local variables
               I2 = I2 + 1
             enddo
           else
+#ifdef MPI
             call MPI_Send ( x(I1), N, MPI_DOUBLE_PRECISION, P2, 0,
      &                      MPI_COMM_WORLD, ierror )
+#endif
           endif
         else
+#ifdef MPI
           call MPI_Recv ( y(I2), N, MPI_DOUBLE_PRECISION, P1, 0,
      &                    MPI_COMM_WORLD, status, ierror )
+#endif
         endif
       enddo
       end subroutine reduce_array_lu
 #endif
-      END MODULE LU_FACTORIZATION

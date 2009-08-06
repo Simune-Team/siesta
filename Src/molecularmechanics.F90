@@ -727,7 +727,7 @@ subroutine twobody(na,xa,isa,cell,emm,ifa,fa,istr,stress)
 !
 ! Free workspace arrays
 !
-  call de_alloc( lvalidpot,' lvalidpot', 'twobody' )
+  call de_alloc( lvalidpot, 'lvalidpot', 'twobody' )
 !
 ! Stop timer
 !

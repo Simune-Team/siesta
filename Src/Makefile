@@ -615,11 +615,11 @@ siesta_cml.o: siesta_cmlsubs.o
 siesta_cmlsubs.o: files.o parallel.o timestamp.o 
 siesta_end.o: alloc.o densematrix.o fixed.o m_diagon.o m_pulay.o m_wallclock.o
 siesta_end.o: meshmatrix.o moremeshsubs.o parallel.o siesta_cml.o
-siesta_end.o: sparse_matrices.o timestamp.o
+siesta_end.o: sparse_matrices.o timestamp.o bands.o
 siesta_forces.o: compute_dm.o m_convergence.o m_steps.o mixer.o parallel.o
 siesta_forces.o: post_scf_work.o scfconvergence_test.o setup_H0.o
 siesta_forces.o: setup_hamiltonian.o siesta_cml.o siesta_options.o
-siesta_forces.o: state_analysis.o state_init.o sys.o
+siesta_forces.o: state_analysis.o state_init.o sys.o alloc.o
 siesta_geom.o: precision.o
 siesta_init.o: alloc.o atomlist.o bands.o densematrix.o files.o ioxv.o
 siesta_init.o: kpoint_grid.o ksvinit.o m_check_supercell.o m_energies.o m_eo.o
@@ -747,4 +747,5 @@ printmat.o: printmatrix.o
 version_info.o: version.o
 lu_factorization.o: alloc.o precision.o schecomm.o superlu.o
 modi_lanczos_m.o: precision.o alloc.o superlu.o lu_factorization.o sys.o
+modi_lanczos_m.o: matrixop.o
 

@@ -146,15 +146,12 @@ C Check internal dimensions --------------------------------------------
        endif
 
 C Allocate local arrays ------------------------------------------------
-      call re_alloc(Haux,1,nhs,name='Haux',routine='pdos')
-      call re_alloc(Saux,1,nhs,name='Saux',routine='pdos')
-      call re_alloc(psi,1,npsi,name='psi',routine='pdos')
-      nullify( dtot )
-      call re_alloc( dtot, 1, nhist, 1, 2, name='dtot',
-     &               routine='pdos' )
-      nullify( dpr )
-      call re_alloc( dpr, 1, nhist, 1, no_u, 1, 2, name='dpr',
-     &               routine='pdos' )
+      call re_alloc( Haux, 1, nhs,  'Haux', 'densematrix' )
+      call re_alloc( Saux, 1, nhs,  'Saux', 'densematrix' )
+      call re_alloc( psi,  1, npsi, 'psi',  'densematrix' )
+      nullify( dtot, dpr )
+      call re_alloc( dtot, 1, nhist, 1, 2, 'dtot', 'pdos' )
+      call re_alloc( dpr, 1, nhist, 1, no_u, 1, 2, 'dpr', 'pdos' )
 
 C Initialize the projected density of states ---------------------------
       do ispin = 1, 2
@@ -227,8 +224,7 @@ C New writing
         write(iunit2,'(a)') '<energy_values units="eV">'
 
         nullify( tmp )
-        call re_alloc( tmp, 1, 2*nhist, name='tmp',
-     &                 routine='pdos' )
+        call re_alloc( tmp, 1, 2*nhist, 'tmp', 'pdos' )
         do ihist = 1,nhist
            ENER = E1 + (ihist-1) * delta
            tmp(ihist) = ener/eV
@@ -299,13 +295,13 @@ C Close file
         call io_close(iunit2)
 
 C Free local workspace array
-        call de_alloc( tmp, name='tmp' )
+        call de_alloc( tmp, 'tmp', 'pdos' )
 
       endif
 
 C Free local arrays ----------------------------------------------------
-      call de_alloc( dpr, name='dpr' )
-      call de_alloc( dtot, name='dtot' )
+      call de_alloc( dpr, 'dpr', 'pdos' )
+      call de_alloc( dtot, 'dtot', 'pdos' )
 
       call timer( 'pdos', 2)
 

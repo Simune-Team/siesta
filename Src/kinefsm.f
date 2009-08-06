@@ -62,7 +62,8 @@ C
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GlobalToLocalOrb
       use atmfuncs,      only : rcut
-      use neighbour,     only : jna=>jan, r2ij, xij, mneighb
+      use neighbour,     only : jna=>jan, r2ij, xij, mneighb,
+     &                          reset_neighbour_arrays 
       use alloc,         only : re_alloc, de_alloc
 
       implicit none
@@ -174,6 +175,8 @@ C Valid orbital
       enddo
 
 C Deallocate local memory
+      call MATEL( 'T', 0, 0, 0, 0, xij, Tij, grTij )
+      call reset_neighbour_arrays( )
       call de_alloc( Ti, 'Ti', 'kinefsm' )
       call de_alloc( Di, 'Di', 'kinefsm' )
 

@@ -34,33 +34,21 @@ C ----------------------------------------------------------------------
       integer,  pointer :: listdl(:), listdlptr(:), NeedDscfL(:),
      &                     numdl(:)
       real(dp), pointer :: DscfL(:,:)
-      logical           :: nullified_pointers = .false.
+      logical           :: first_time = .true.
 
-      CONTAINS
-
+      end module meshdscf
 
       subroutine resetDscfPointers( )
       use alloc, only : de_alloc
+      use meshdscf
       implicit none
-      CHARACTER(LEN=*), PARAMETER :: MYNAME =  'resetDscfPointers'
-
-      if (associated(listdl))
-     &  call de_alloc( listdl, 'listdl', MYNAME )
-
-      if (associated(listdlptr))
-     &  call de_alloc( listdlptr, 'listdlptr', MYNAME )
-
-      if (associated(NeedDscfL))
-     &  call de_alloc( NeedDscfL, 'NeedDscfL', MYNAME )
-
-      if (associated(numdl))
-     &  call de_alloc( numdl, 'numdl', MYNAME )
-
-      if (associated(DscfL))
-     &  call de_alloc( DscfL, 'DscfL', MYNAME )
+      call resetdscfComm( )
+      call de_alloc( listdl,    'listdl',    'meshdscf' )
+      call de_alloc( listdlptr, 'listdlptr', 'meshdscf' )
+      call de_alloc( NeedDscfL, 'NeedDscfL', 'meshdscf' )
+      call de_alloc( numdl,     'numdl',     'meshdscf' )
+      call de_alloc( DscfL,     'DscfL',     'meshdscf' )
       end subroutine resetDscfPointers
-
-      end module meshdscf
 
       subroutine CreateLocalDscfPointers( nmpl, nuotot, numd,
      .                                    listdptr, listd )
@@ -90,7 +78,7 @@ C Modules
 C
       use atomlist,     only : indxuo
       use meshdscf,     only : listdl, listdlptr, NeedDscfL, 
-     .                         nrowsDscfL, numdl, nullified_pointers
+     .                         nrowsDscfL, numdl, first_time
       use meshphi,      only : endpht, lstpht
       use parallel,     only : Node, Nodes
       use parallelsubs, only : GlobalToLocalOrb, WhichNodeOrb
@@ -112,7 +100,6 @@ C
 C
 C Local variables
 C
-      CHARACTER(LEN=*), PARAMETER :: MYNAME =  'CreateLocalDscfPointers'
       integer          :: i, ii, io, iio, ip, imp, iu, numdele,
      &                    maxndmax, nsize, nn, mm 
       integer, pointer :: ibuffer(:)
@@ -124,20 +111,22 @@ C
       call mpitrace_eventandcounters( 1000, 16 )
 #endif
 
-      if (.not. nullified_pointers) then
-        nullify( NeedDscfL )
-        nullify( listdl )
-        nullify( listdlptr )
-        nullify( numdl )
-        nullified_pointers = .true.
+      if (first_time) then
+        first_time = .false.
+      else
+        call resetDscfPointers( )
       endif
 
-C Create pointer as to whether a given row of DscfL is needed in NeedDscfL
-C This pointer is never deallocated...
+      nullify( NeedDscfL, listdl, listdlptr, numdl )
 
-      call re_alloc( NeedDscfL, 1, nuotot, 'NeedDscfL', MYNAME )
+C     Create pointer as to whether a given row of DscfL is needed in NeedDscfL
+C     This pointer is never deallocated...
+      call re_alloc( NeedDscfL, 1, nuotot, 'NeedDscfL', 'meshdscf' )
 
-      NeedDscfL(1:nuotot) = 0
+      do io= 1, nuotot
+        NeedDscfL(io) = 0
+      enddo
+
       do ip = 1,nmpl
         do imp = 1+endpht(ip-1), endpht(ip)
           i = lstpht(imp)
@@ -158,13 +147,13 @@ C     by orbitals to data ordered by mesh.
       call dscfComm( nuotot, nrowsDscfL, NeedDscfL )
 
 C     Allocate/reallocate memory for numdl and listdlptr
-      call re_alloc( numdl, 1, max(1,nrowsDscfL), 'numdl', MYNAME )
+      call re_alloc( numdl, 1, max(1,nrowsDscfL), 'numdl', 'meshdscf' )
       call re_alloc( listdlptr, 1, max(1,nrowsDscfL), 
-     &               'listdlptr', MYNAME )
+     &               'listdlptr', 'meshdscf' )
 
 C Distribute information about numd globally
       nullify( ibuffer )
-      call re_alloc( ibuffer, 1, DCmax, 'ibuffer', MYNAME )
+      call re_alloc( ibuffer, 1, DCmax, 'ibuffer', 'meshdscf' )
 
       do ii= 1, DCself
         io = DCinvp(ii)
@@ -202,7 +191,7 @@ C Distribute information about numd globally
         if (numdele.gt.maxndmax) maxndmax = numdele
       enddo
 #endif
-      call de_alloc( ibuffer, 'ibuffer', MYNAME )
+      call de_alloc( ibuffer, 'ibuffer', 'meshdscf' )
       DCmaxnd = maxndmax
 
 C Create listdlptr using numdl
@@ -217,11 +206,11 @@ C Allocate/reallocate listdl
       else
         nsize = 1
       endif
-      call re_alloc( listdl, 1, nsize, 'listdl', MYNAME )
+      call re_alloc( listdl, 1, nsize, 'listdl', 'meshdscf' )
 
 C Distribute information about listd globally
       nullify( ibuffer )
-      call re_alloc( ibuffer, 1, DCmaxnd, 'ibuffer', MYNAME )
+      call re_alloc( ibuffer, 1, DCmaxnd, 'ibuffer', 'meshdscf' )
 
       do ii= 1, DCself
         io = DCinvp(ii)
@@ -266,7 +255,7 @@ C Distribute information about listd globally
         endif
       enddo
 #endif
-      call de_alloc( ibuffer, 'ibuffer', MYNAME )
+      call de_alloc( ibuffer, 'ibuffer', 'meshdscf' )
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 0 )
 #endif
@@ -317,7 +306,6 @@ C Argument types and dimensions
      &   memory
 
 C Internal variables and arrays
-      CHARACTER(LEN=*), PARAMETER :: MYNAME =  'matrixOtoM'
       integer   io, ispin
 
 #ifdef MPI
@@ -335,7 +323,7 @@ C***********************
 #ifdef MPI
 C Allocate local Dscf storage array
       nullify(buffer)
-      call re_alloc( buffer, 1, DCmaxnd*nspin, 'buffer', MYNAME )
+      call re_alloc( buffer, 1, DCmaxnd*nspin, 'buffer', 'meshdscf' )
 
 C     Copy the data that is in the current process
       do ii= 1, DCself
@@ -387,7 +375,7 @@ C     Send or receive the data from/to other processes
         endif
         nn = nn + DCsic(i)
       enddo
-      call de_alloc( buffer, 'buffer', MYNAME )
+      call de_alloc( buffer, 'buffer', 'meshdscf' )
 #else
 C*********************
 C  Serial execution  *
@@ -454,7 +442,6 @@ C Argument types and dimensions
      .   Vs(maxnv,nspin), VsL(maxnvl,nspin)
 
 C Internal variables and arrays
-      CHARACTER(LEN=*), PARAMETER :: MYNAME =  'matrixMtoO'
       integer
      .  i, iu, ispin
 
@@ -470,7 +457,7 @@ C***********************
 #ifdef MPI
 C     Allocate a buffer to Send/Receive data
       nullify(buffer)
-      call re_alloc( buffer, 1, DCmaxnd*nspin, 'buffer', MYNAME )
+      call re_alloc( buffer, 1, DCmaxnd*nspin, 'buffer', 'meshdscf' )
 
 C     Copy the data that is in the current process from VsL to Vs
       do ii= 1, DCself
@@ -526,7 +513,7 @@ C       The communication is from dst to src
         endif
         nn = nn + DCsic(i)
       enddo
-      call de_alloc( buffer, 'buffer', MYNAME )
+      call de_alloc( buffer, 'buffer', 'meshdscf' )
 #else
 C*********************
 C  Serial execution  *

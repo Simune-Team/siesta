@@ -49,19 +49,20 @@ C *********************************************************************
 C    6  10        20        30        40        50        60        7072
 
 C  Modules
-      use precision, only: dp, grid_p
-      use atmfuncs, only: rcut, all_phi
-      use atm_types, only: nsmax=>nspecies
-      use atomlist, only: indxuo
+      use precision,     only: dp, grid_p
+      use atmfuncs,      only: rcut, all_phi
+      use atm_types,     only: nsmax=>nspecies
+      use atomlist,      only: indxuo
       use listsc_module, only: listsc
-      use mesh, only: dxa, nsp, xdop, xdsp
-      use meshphi, only: endpht, lstpht, listp2
-      use meshdscf, only: DscfL, nrowsDscfL, needDscfL
-      use meshdscf, only: listDl, listDlPtr, numdL
-      use alloc,    only: re_alloc, de_alloc, alloc_default,
-     $                    allocDefaults
-      use parallel, only: Nodes
-      use sys,      only: die
+      use mesh,          only: dxa, nsp, xdop, xdsp
+      use meshphi,       only: endpht, lstpht, listp2
+      use meshdscf,      only: DscfL, nrowsDscfL, needDscfL
+      use meshdscf,      only: listDl, listDlPtr, numdL
+      use alloc,         only: re_alloc, de_alloc, alloc_default,
+     $                         allocDefaults
+      use parallel,      only: Nodes, Node
+      use sys,           only: die
+      use parallelsubs,  only: GlobalToLocalOrb
 
       implicit none
 
@@ -223,8 +224,9 @@ C  Copy row i of Dscf into row last of D
                 D(jb,ib,1:nspin) = DscfL(ind,1:nspin)
               enddo
             else
-              do ii = 1, numd(iu)
-                ind = listdptr(iu)+ii
+              call GlobalToLocalOrb( iu, Node, Nodes, iul )
+              do ii = 1, numd(iul)
+                ind = listdptr(iul)+ii
                 j = listd(ind)
                 if (i.ne.iu) j = listsc( i, iu, j )
                 jb = ibuff(j)

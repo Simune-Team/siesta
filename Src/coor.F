@@ -163,14 +163,14 @@ C Find origin with which to translate all coordinates
       endif
 
 C Set array dimensions
-      nullify(isa,cisa,xa)
-      call re_alloc(isa,1,na,name='isa',routine='coor')
-      call re_alloc(xa,1,3,1,na,name='xa',routine='coor')
+      nullify( isa, cisa, xa )
+      call re_alloc( isa, 1, na, 'isa', 'coor' )
+      call re_alloc( xa, 1, 3, 1, na, 'xa', 'coor' )
       allocate(cisa(na))
-!      call re_alloc(cisa,1,na,name="cisa",routine="coor")
+!      call re_alloc( cisa, 1, na, 'cisa', 'coor' )
 
 C Attempt to read a Z matrix
-      call read_Zmatrix(nua,isa,alat,unit_cell,lOrigin,origin)
+      call read_Zmatrix( nua, isa, alat, unit_cell, lOrigin, origin )
 
       if (lUseZmatrix) then
         

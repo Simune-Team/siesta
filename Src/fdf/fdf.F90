@@ -695,7 +695,7 @@ MODULE fdf
       if (PRESENT(blocklabel)) then
         label = blocklabel
       else
-        label = ''
+        label = ' '
       endif
       do while (fdf_readline(line))
 
@@ -757,7 +757,7 @@ MODULE fdf
 
 !               Dump included file to fileout
                 if (dump) call fdf_dump(label)
-                label = ''
+                label = ' '
 
 !             Filename not found in %block directive
               else
@@ -784,7 +784,7 @@ MODULE fdf
 !         %endblock directive
           elseif (search('%endblock', pline) .eq. 1) then
 !           Check if %block exists before %endblock
-            if (label .eq. '') then
+            if (label .eq. ' ') then
               write(msg,*) 'Bad %endblock found in ', TRIM(filein)
               call die('FDF module: fdf_read', msg,                     &
                        __FILE__, __LINE__, fdf_err)
@@ -802,7 +802,7 @@ MODULE fdf
               call setmorphol(1, 'e', pline)
               call setmorphol(2, 'l', pline)
               call fdf_addtoken(line, pline)
-              label = ''
+              label = ' '
             endif
 
 !         %include Filename directive
@@ -860,7 +860,7 @@ MODULE fdf
 
 !         Add remaining kind of tokens to dynamic list as labels
           else
-            if (label .eq. '') call setmorphol(1, 'l', pline)
+            if (label .eq. ' ') call setmorphol(1, 'l', pline)
             call fdf_addtoken(line, pline)
           endif
         else
@@ -870,7 +870,7 @@ MODULE fdf
       enddo
 
 !     Close one level of input file
-      if ((.not. PRESENT(blocklabel)) .and. (label .ne. '')) then
+      if ((.not. PRESENT(blocklabel)) .and. (label .ne. ' ')) then
         write(msg,*) '%endblock ', TRIM(label),                         &
                      ' not found in ', TRIM(filein)
         call die('FDF module: fdf_read', msg, __FILE__, __LINE__, fdf_err)
@@ -977,7 +977,7 @@ MODULE fdf
                   if (dump) call fdf_dump(label)
 
                   found(elem) = .TRUE.
-                  label = ''
+                  label = ' '
                 endif
 
 !             Filename not found in %block directive
@@ -1017,7 +1017,7 @@ MODULE fdf
                       pline => digest(line)
                       call setmorphol(1, 'e', pline)
                       call setmorphol(2, 'l', pline)
-                      label = ''
+                      label = ' '
 
                       found_elem  = .TRUE.
                       found(elem) = .TRUE.
@@ -1034,7 +1034,7 @@ MODULE fdf
                 do while (fdf_readline(line) .and. (.not. found_elem))
                   pline => digest(line)
                   if (search('%endblock', pline) .eq. 1) then
-                    label = ''
+                    label = ' '
                     found_elem = .TRUE.
                   endif
                   call destroy(pline)
@@ -1091,7 +1091,7 @@ MODULE fdf
                        __FILE__, __LINE__, fdf_err)
             else
 !             Search label(s) in Filename
-              line = ''
+              line = ' '
               nelem_loc = 0
               ALLOCATE(found_index(ind_less-1), stat=ierr)
               if (ierr .ne. 0) then
@@ -1524,7 +1524,7 @@ MODULE fdf
       if (ASSOCIATED(mark)) then
         fdf_getline = mark%str
       else
-        fdf_getline = ''
+        fdf_getline = ' '
       endif
 
       RETURN

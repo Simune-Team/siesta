@@ -204,19 +204,15 @@ C Check parameter maxkpol
 C Allocate local memory
       nhs = 2*nuotot*nuo
       npsi = 2*nuotot*nuo
-      call re_alloc(Haux,1,nhs,name='Haux',routine='KSV_pol')
-      call re_alloc(Saux,1,nhs,name='Saux',routine='KSV_pol')
-      call re_alloc(psi,1,npsi,name='psi',routine='KSV_pol')
+      call re_alloc( Haux, 1, nhs,  'Haux', 'densematrix' )
+      call re_alloc( Saux, 1, nhs,  'Saux', 'densematrix' )
+      call re_alloc( psi,  1, npsi, 'psi',  'densematrix' )
 
-      nullify( muo )
-      call re_alloc( muo, 1, nuotot, name='muo', routine='KSV_pol' )
-      nullify( ek )
-      call re_alloc( ek, 1, nuotot, name='ek', routine='KSV_pol' )
-      nullify( psi1 )
-      call re_alloc( psi1, 1, npsi, name='psi1', routine='KSV_pol' )
-      nullify( psiprev )
-      call re_alloc( psiprev, 1, npsi, name='psiprev',
-     &               routine='KSV_pol' )
+      nullify( muo, ek, psi1, psiprev )
+      call re_alloc( muo,     1, nuotot, 'muo',     'KSV_pol' )
+      call re_alloc( ek,      1, nuotot, 'ek',      'KSV_pol' )
+      call re_alloc( psi1,    1, npsi,   'psi1',    'KSV_pol' )
+      call re_alloc( psiprev, 1, npsi,   'psiprev', 'KSV_pol' )
 
 C Initialise psi
       do io = 1,npsi
@@ -575,10 +571,10 @@ C This is the only exit point
   999 continue
 
 C Deallocate local memory
-      call de_alloc( muo, name='muo' )
-      call de_alloc( ek, name='ek' )
-      call de_alloc( psi1, name='psi1' )
-      call de_alloc( psiprev, name='psiprev' )
+      call de_alloc( muo,     'muo',     'KSV_pol' )
+      call de_alloc( ek,      'ek',      'KSV_pol' )
+      call de_alloc( psi1,    'psi1',    'KSV_pol' )
+      call de_alloc( psiprev, 'psiprev', 'KSV_pol' )
 
       if (nkpol.gt.0.and.IOnode) then
         do ispin = 1,nspin

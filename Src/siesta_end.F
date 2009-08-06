@@ -4,7 +4,7 @@
 
       CONTAINS
 
-      subroutine siesta_end()
+      subroutine siesta_end( )
       use alloc,           only : alloc_report, de_alloc
       use siesta_cml
       use m_timestamp,     only : timestamp
@@ -18,10 +18,9 @@
       use moreMeshSubs,    only : resetMeshDistr
       use densematrix,     only : resetDenseMatrix
       use sparse_matrices, only : resetSparseMatrices
-      use meshdscf,        only : resetDscfPointers
-      use m_diagon,        only : resetDiagonPointers
       use m_fixed,         only : resetFixedPointers
-
+      use band,            only : reset_bands
+      use domain_decom,    only : resetDomainDecom
       implicit none
 
 #ifdef MPI
@@ -33,28 +32,30 @@
       call resetPulayArrays( )
       call resetMeshDistr( )
       call resetdscfComm( )
-      call resetDscfPointers( )
       call resetDenseMatrix( )
-      call resetDiagonPointers( )
       call resetFixedPointers( )
+      call reset_bands( )
+      call resetDomainDecom( )
+      call resetMeshPhi( )
+      call resetDscfPointers( )
 
-! Output memory use up to the end of the program
+!     Output memory use up to the end of the program
       call printmemory( 6, 1 )
 
-! Print allocation report
+!     Print allocation report
       call alloc_report( printNow=.true. )
 
-! Stop time counter
+!     Stop time counter
       call timer( 'siesta', 2 )
       call timer( 'all', 3 )
 
-! Print final date and time
+!     Print final date and time
       if (IOnode) then
         call timestamp('End of run')
         call wallclock('End of run')
       endif
 
-! Finalize MPI
+!     Finalize MPI
 #ifdef MPI
       call MPI_Finalize( MPIerror )
 #endif

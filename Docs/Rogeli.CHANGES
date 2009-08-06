@@ -1,4 +1,17 @@
 ------------------------------------------------------------------------
+2009-08-06 (originally) Alberto Garcia      rogeli-lanczos-3
+2009-Aug-6 snapshot -- Fixed JD plus more
+
+State of the code sometime on Aug 6, 2009.
+
+This was taken from the state of Rogeli's directory
+
+/home/bsc21/bsc21017/siesta-BSC/Src
+
+NOTE that this snapshot does not compile cleanly.
+
+
+------------------------------------------------------------------------
 2009-06-05 (originally) Alberto Garcia      rogeli-lanczos-2
 2009-May-6 snapshot -- More Lanczos and OpenMP
 

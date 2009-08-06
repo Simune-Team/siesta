@@ -21,7 +21,7 @@
       use sys, only : die
       use m_convergence, only: converger_t
       use m_convergence, only: reset, set_tolerance
-      use domain_decom,  only: resetDomainDecom
+      use mesh,          only: resetMesh
       implicit none
 
       integer, intent(in)  :: istep
@@ -48,15 +48,15 @@
       iscf  = 1
       first = .true.
       last  = .false.
-        SCFconverged = .false.
-        if (require_harris_convergence) then
-           call reset(conv_harris)
-           call set_tolerance(conv_harris,harris_tolerance)
-        endif
-        if (require_energy_convergence) then
-           call reset(conv_etot)
-           call set_tolerance(conv_etot,energy_tolerance)
-        endif
+      SCFconverged = .false.
+      if (require_harris_convergence) then
+        call reset(conv_harris)
+        call set_tolerance(conv_harris,harris_tolerance)
+      endif
+      if (require_energy_convergence) then
+        call reset(conv_etot)
+        call set_tolerance(conv_etot,energy_tolerance)
+      endif
 
 !     The SCF loop is executed at least once, 
 !     except if nscf <= 0.
@@ -78,7 +78,9 @@
           if (cml_p) 
      $         call cmlStartStep(xf=mainXML, type='SCF', index=iscf)
 !       Will use H0 computed above
+        call medirTiempo( 1, 1 )
         call setup_hamiltonian( iscf )
+        call medirTiempo( 2, 1 )
 
 #ifdef DEBUG
         call write_debug( '  PRE compute_dm' )
@@ -103,7 +105,6 @@
         SCFconverged = last
 
         call timer( 'IterSCF', 2 )
-        if (istep.eq.inicoor .and. first) call timer( 'IterSCF', 3 )
 
         iscf = iscf + 1
         first = .false.
@@ -139,13 +140,12 @@
 #endif
       call state_analysis( istep )
 
-!     Free allocated memory
-      call resetDomainDecom( )
-      call resetMeshPhi( )
+C     Free some memory
+      call resetMesh( )
 
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 0 )
 #endif
 !--------------------------------------------------------------------------- END
-        END subroutine siesta_forces
+      END subroutine siesta_forces
       END module m_siesta_forces

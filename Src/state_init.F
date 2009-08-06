@@ -126,10 +126,10 @@ C     Actualize things if variable cell
 C       Will print k-points also
         call setup_Kpoint_grid( ucell )
 
-        call re_alloc(eo,1,no_u,1,nspin,1,maxk,name="eo",
-     &                routine="state_init")
-        call re_alloc(qo,1,no_u,1,nspin,1,maxk,name="qo",
-     &                routine="state_init")
+        call re_alloc( eo, 1, no_u, 1, nspin, 1, maxk, 'eo',
+     &                 'state_init')
+        call re_alloc( qo, 1, no_u, 1, nspin, 1, maxk, 'qo',
+     &                 'state_init' )
 
 C       Find required supercell
         if (gamma) then
@@ -188,10 +188,10 @@ C     Check if any two atoms are unreasonably close
       call proximity_check(rmax)
 
       if (istp==1) then 
-        nullify(Dscf,Dscfsave,Dold,Eold,Escf)
-        nullify(listhold,listh)
-        nullify(H,H0,S)
-        nullify(xijo)
+        nullify( Dscf, Dscfsave, Dold, Eold, Escf )
+        nullify( listhold, listh )
+        nullify( H, H0, S )
+        nullify( xijo )
         nullify( listhptrold, numhold )
       endif
 
@@ -204,12 +204,15 @@ C     nh is set by the routine also
 #ifdef DEBUG
       call write_debug( '    PRE hsparse' )
 #endif
-      call hsparse( negl, scell, nsc, na_s, isa, xa, lasto, lastkb,
-     &              iphorb, iphKB, nh, gamma, xijo )
+      call hsparse( negl, scell, nsc, na_s, isa, xa, lasto,
+     &              lastkb, iphorb, iphKB, nh, gamma )
+#ifdef DEBUG
+      call write_debug( '    POS hsparse' )
+#endif
       maxnh = nh
 
-      call re_alloc( listhptrold, 1, no_l, 'listhptrold', 'state_init')
-      call re_alloc( numhold, 1, no_l, 'numhold', 'state_init' )
+      call re_alloc( listhptrold, 1, no_l, 'listhptrold', 'sparseMat')
+      call re_alloc( numhold, 1, no_l, 'numhold', 'sparseMat' )
       listhptrold = 0
       numhold     = 0
 
@@ -220,12 +223,12 @@ C       if (nh > maxnh)  maxnh = 1.05 * nh + 40
 C     Use re_alloc regardless of whether nh is greater than 
 C     the old maxnh or not, BUT DO NOT SHRINK, as some of
 C     these arrays are later used in extrapol.
-      call re_alloc( Dscf, 1, maxnh, 1, nspin, name='Dscf',
-     &               routine='state_init', copy=.true., SHRINK=.false.)
-      call re_alloc( Dscfsave,1,maxnh,1,nspin,name='Dscfsave',
-     &               routine='state_init', copy=.true., SHRINK=.false.)
-      call re_alloc( listhold, 1, maxnh, name='listhold',
-     &               routine='state_init', copy=.true., SHRINK=.false.)
+      call re_alloc( Dscf, 1, maxnh, 1, nspin, 'Dscf',
+     &               'sparseMat', .true., .false.)
+      call re_alloc( Dscfsave, 1, maxnh, 1, nspin, 'Dscfsave',
+     &               'sparseMat', .true., .false. )
+      call re_alloc( listhold, 1, maxnh, 'listhold',
+     &               'sparseMat', .true., .false. )
 
       if (istp==1) then
 C       Initialise Dscfsave to avoid problems in extrapol
@@ -234,20 +237,20 @@ C       This might be superfluous, as alloc fills array with zeroes
         listhold(1:maxnh)         = 0
       endif
 
-      call re_alloc( Dold, 1, maxnh, 1, nspin, name='Dold',
-     &               routine='state_init', copy=.false. )
-      call re_alloc( Eold, 1, maxnh, 1, nspin, name='Eold',
-     &               routine='state_init', copy=.false. )
-      call re_alloc( Escf, 1, maxnh, 1, nspin, name='Escf',
-     &               routine='state_init', copy=.false. )
+      call re_alloc( Dold, 1, maxnh, 1, nspin, 'Dold',
+     &               'sparseMat', copy=.false. )
+      call re_alloc( Eold, 1, maxnh, 1, nspin, 'Eold',
+     &               'sparseMat', copy=.false. )
+      call re_alloc( Escf, 1, maxnh, 1, nspin, 'Escf',
+     &               'sparseMat', copy=.false. )
 
 C     Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
-      call re_alloc( H, 1, maxnh, 1, nspin, name='H',
-     &               routine='state_init',shrink=.false.,copy=.false.)
-      call re_alloc( H0, 1, maxnh, name='H0', routine='state_init',
-     &               shrink=.false., copy=.false. )
-      call re_alloc( S, 1, maxnh, name='S', routine='state_init',
-     &               shrink=.false., copy=.false. )
+      call re_alloc( H, 1, maxnh, 1, nspin, 'H', 'sparseMat',
+     &               .false., .false.)
+      call re_alloc( H0, 1, maxnh, 'H0', 'sparseMat',
+     &               .false., .false. )
+      call re_alloc( S, 1, maxnh, 'S', 'sparseMat',
+     &               .false., .false. )
 
 C Some printout for debugging ........................................
 *     if (IOnode) then
@@ -273,17 +276,26 @@ C     Check for size of Pulay auxiliary matrices
 
 C     Find overlap matrix 
 #ifdef DEBUG
-      call write_debug( '  PRE overlap' )
+      call write_debug( '    PRE overlap' )
 #endif
       call overlap(na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &             maxnh, lasto, iphorb, isa, 
      &             numh, listhptr, listh, S )
+#ifdef DEBUG
+      call write_debug( '    POS overlap' )
+#endif
 
 !     Compute the LU factorization of the overlap matrix if needed
-#ifdef _LANCZOS_
       if (use_lu_fact) then
+#ifdef _LANCZOS_
+#ifdef DEBUG
+        call write_debug( '    PRE factOverlap' )
+#endif
         call factOverlap( node, nodes, no_s, no_l, maxnh, numh,
      &                    listhptr, listh, S, gperm )
+#ifdef DEBUG
+        call write_debug( '    POS factOverlap' )
+#endif
 #endif
         call de_alloc( gperm, 'gperm', 'domainDecom' )
       endif

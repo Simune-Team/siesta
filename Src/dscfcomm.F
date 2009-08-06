@@ -85,19 +85,12 @@ C     Local variables
       integer               :: MPIerror, Status(MPI_Status_Size)
 #endif
 !------------------------------------------------------------------------- BEGIN
-      call resetdscfComm( )
-
       nullify( neights, xneights, invpTmp, invp, procSrc )
-      call re_alloc( xneights, 0, NODES, name='xneights',
-     &               routine='dscfComm' )
-      call re_alloc( invp, 1, nrowsDscfL, name='invp',
-     &               routine='dscfComm' )
-      call re_alloc( neights, 0, NODES-1, name='neights',
-     &                 routine='dscfComm' )
-      call re_alloc( invpTmp, 1, nrowsDscfL, name='invpTmp',
-     &               routine='dscfComm' )
-      call re_alloc( procSrc, 1, nrowsDscfL, name='procSrc',
-     &               routine='dscfComm' )
+      call re_alloc( xneights, 0, NODES, 'xneights', 'dscfComm' )
+      call re_alloc( invp, 1, nrowsDscfL, 'invp', 'dscfComm' )
+      call re_alloc( neights, 0, NODES-1, 'neights', 'dscfComm' )
+      call re_alloc( invpTmp, 1, nrowsDscfL, 'invpTmp', 'dscfComm' )
+      call re_alloc( procSrc, 1, nrowsDscfL, 'procSrc', 'dscfComm' )
       neights = 0
       ii      = 0
 C     Count the number of rows of DSCFL that belongs to each domain
@@ -129,18 +122,18 @@ C     Reorder the permutation vector giving its PID
         xneights(BNode) = xneights(BNode-1) + neights(BNode-1)
       enddo
 
-      call de_alloc( invpTmp, name='invpTmp', routine='dscfComm' )
-      call de_alloc( procSrc, name='procSrc', routine='dscfComm' )
+      call de_alloc( invpTmp, 'invpTmp', 'dscfComm' )
+      call de_alloc( procSrc, 'procSrc', 'dscfComm' )
 
 C     Compute the communications needed. The master process will gather
 C     the vector "neights" from all the other processes
       nullify( Gneights )
       if (Node.eq.0) then
         call re_alloc( Gneights, 0, NODES-1, 0, NODES-1,
-     &                 name='Gneights', routine='dscfComm' )
+     &                 'Gneights', 'dscfComm' )
       else
         call re_alloc( Gneights, 0, 0, 0, 0,
-     &                 name='Gneights', routine='dscfComm' )
+     &                 'Gneights', 'dscfComm' )
       endif
 
 #ifdef MPI
@@ -150,7 +143,7 @@ C     the vector "neights" from all the other processes
 #else
       Gneights(0,0) = neights(0)
 #endif
-      call de_alloc( neights, name='neights', routine='dscfComm' )
+      call de_alloc( neights, 'neights', 'dscfComm' )
 
       if (Node.eq.0) then
 C       Count the number of communications
@@ -164,8 +157,8 @@ C       Count the number of communications
         enddo
 
         nullify( src, dst )
-        call re_alloc( src, 1, ncom, name='src', routine='dscfComm' )
-        call re_alloc( dst, 1, ncom, name='dst', routine='dscfComm' )
+        call re_alloc( src, 1, ncom, 'src', 'dscfComm' )
+        call re_alloc( dst, 1, ncom, 'dst', 'dscfComm' )
 
 C       Compute the communications
         ncom = 0
@@ -184,8 +177,7 @@ C       reschedule the communications in order to minimize the time
         call scheduleComm( ncom, src, dst, comm )
 
         nullify( sereBUF )
-        call re_alloc( sereBUF, 1, comm%ncol*3, name='sereBUF',
-     &                 routine='dscfComm' )
+        call re_alloc( sereBUF, 1, comm%ncol*3, 'sereBUF', 'dscfComm' )
 
 C       Send the communication scheduling to the other processes
         do PP=2, Nodes
@@ -214,7 +206,7 @@ C       Send the communication scheduling to the other processes
      &                   PP-1, 1, MPI_Comm_World, MPIerror )
 #endif
         enddo
-        call de_alloc( sereBUF, name='sereBUF', routine='dscfComm' )
+        call de_alloc( sereBUF, 'sereBUF', 'dscfComm' )
 
 C       Compute the master communication scheduling
         PP  = 1
@@ -224,8 +216,8 @@ C       Compute the master communication scheduling
         enddo
         DCsize = com
 
-        call re_alloc( DCBuffer, 1, DCsize*3, name='DCBuffer',
-     &                 routine='dscfComm' )
+        nullify(DCBuffer)
+        call re_alloc( DCBuffer, 1, DCsize*3, 'DCBuffer', 'dscfComm' )
 
         DCsrc => DCBuffer(         1:  DCsize)
         DCdst => DCBuffer(  DCsize+1:2*DCsize)
@@ -244,9 +236,9 @@ C       Compute the master communication scheduling
           endif
         enddo
 
-        call de_alloc( comm%ind, name='comm%ind', routine='dscfComm' )
-        call de_alloc( src, name='src', routine='dscfComm' )
-        call de_alloc( dst, name='dst', routine='dscfComm' )
+        call de_alloc( comm%ind, 'comm%ind', 'scheComm' )
+        call de_alloc( src, 'src', 'dscfComm' )
+        call de_alloc( dst, 'dst', 'dscfComm' )
       else
 C       Receive the communication scheduling computed by the master
 #ifdef MPI
@@ -255,8 +247,7 @@ C       Receive the communication scheduling computed by the master
 #endif
 
         nullify( DCBuffer )
-        call re_alloc( DCBuffer, 1, DCsize*3, name='DCBuffer',
-     &                 routine='dscfComm' )
+        call re_alloc( DCBuffer, 1, DCsize*3, 'DCBuffer', 'dscfComm' )
  
 #ifdef MPI
         call mpi_recv( DCBuffer, DCsize*3, MPI_integer, 0,  1,
@@ -266,7 +257,7 @@ C       Receive the communication scheduling computed by the master
         DCdst => DCBuffer(  DCsize+1:2*DCsize)
         DCsic => DCBuffer(2*DCsize+1:3*DCsize)
       endif
-      call de_alloc( Gneights, name='Gneights', routine='dscfComm' )
+      call de_alloc( Gneights, 'Gneights', 'dscfComm' )
 
 C     Compute the number of elements that we should copy from DSCF to
 C     DSCFL, including the data that is in the current process, the data
@@ -281,8 +272,7 @@ C     recieve from other processes.
 C     Create a permutation vector that allows us to know the original ID
 C     of every orbital that we should send, receive or copy.
       nullify( DCinvp )
-      call re_alloc( DCinvp, 1, DCtotal, name='DCinvp',
-     &               routine='dscfComm' )
+      call re_alloc( DCinvp, 1, DCtotal, 'DCinvp', 'dscfComm' )
       io               = xneights(Node)
       DCinvp(1:DCself) = invp(io:io+DCself-1)
       nn               = DCself+1
@@ -302,8 +292,8 @@ C     of every orbital that we should send, receive or copy.
       enddo
 #endif
 
-      call de_alloc( xneights, name='xneights', routine='dscfComm' )
-      call de_alloc( invp, name='invp', routine='dscfComm' )
+      call de_alloc( xneights, 'xneights', 'dscfComm' )
+      call de_alloc( invp, 'invp', 'dscfComm' )
 
       DCmax = 0
       do ii= 1, DCsize
@@ -317,9 +307,7 @@ C     of every orbital that we should send, receive or copy.
       use alloc,      only : de_alloc
       implicit none
 !------------------------------------------------------------------------- BEGIN
-      if (associated(DCBuffer))
-     &  call de_alloc( DCBuffer, name='DCBuffer', routine='dscfComm' )
-      if (associated(DCinvp))
-     &  call de_alloc( DCinvp, name='DCinvp', routine='dscfComm' )
+      call de_alloc( DCBuffer, 'DCBuffer', 'dscfComm' )
+      call de_alloc( DCinvp, 'DCinvp', 'dscfComm' )
 !--------------------------------------------------------------------------- END
       end subroutine resetdscfComm

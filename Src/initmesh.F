@@ -90,11 +90,11 @@ C     Local variables
       integer                 :: i, ia, i1, i2, i3, io, iphi, is, isp,
      &                           ity, j, ncells, nep, ntop, ntp, nty,
      &                           odistr
-      integer,  pointer, save :: iphty(:), isty(:), noty(:)
+      integer,        pointer :: iphty(:), isty(:), noty(:)
       real(dp)                :: dx(3), dxp(3), pldist, r,
      &                           rcell(3,3), vecmod, volume
-      real(dp),          save :: k0(3)
-      real(dp), pointer, save :: rcty(:)
+      real(dp)                :: k0(3)
+      real(dp),       pointer :: rcty(:)
 
       logical                 :: same, within
 C     Functions
@@ -110,9 +110,8 @@ C     Orbital type initialization
 C ----------------------------------------------------------------------
 C     Find number of orbital types
       nullify( isty, iphty )
-      call re_alloc( isty, 1, norb, name='isty', routine='InitMesh' )
-      call re_alloc( iphty, 1, norb, name='iphty', routine='InitMesh' )
-
+      call re_alloc( isty, 1, norb, 'isty', 'InitMesh' )
+      call re_alloc( iphty, 1, norb, 'iphty', 'InitMesh' )
 
       nty = 0
       do io = 1,norb
@@ -132,15 +131,15 @@ C     Find number of orbital types
         endif
       enddo
 
-      call de_alloc( iphty, name='iphty', routine='InitMesh' )
-      call de_alloc( isty, name='isty', routine='InitMesh' )
+      call de_alloc( iphty, 'iphty', 'InitMesh' )
+      call de_alloc( isty, 'isty', 'InitMesh' )
 
 C     Allocate local arrays dependent on nty
-      nullify( isty, iphty )
-      call re_alloc(  isty, 1, nty, name= 'isty', routine='InitMesh' )
-      call re_alloc( iphty, 1, nty, name='iphty', routine='InitMesh' )
-      call re_alloc(  noty, 1, nty, name= 'noty', routine='InitMesh' )
-      call re_alloc(  rcty, 1, nty, name= 'rcty', routine='InitMesh' )
+      nullify( isty, iphty, noty, rcty )
+      call re_alloc( noty,  1, nty, 'noty',  'InitMesh' )
+      call re_alloc( rcty,  1, nty, 'rcty',  'InitMesh' )
+      call re_alloc( isty,  1, nty, 'isty',  'InitMesh' )
+      call re_alloc( iphty, 1, nty, 'iphty', 'InitMesh' )
 
 C     Find number of orbital types, number of orbitals of each type,
 C     and cutoff radius of each type.
@@ -164,8 +163,8 @@ C     and cutoff radius of each type.
   160   continue
       enddo
 
-      call de_alloc( iphty, name='iphty', routine='InitMesh' )
-      call de_alloc( isty, name='isty', routine='InitMesh' )
+      call de_alloc( iphty, 'iphty', 'InitMesh' )
+      call de_alloc( isty,  'isty',  'InitMesh' )
 
 C ----------------------------------------------------------------------
 C     Mesh initialization 
@@ -330,9 +329,9 @@ C     Calculate ntopl
       ntopl = ((ntop/Nodes) + 1)
 
 C     Allocate local memory that depends on mop
-      call re_alloc( idop, 1, mop, name= 'idop', routine='InitMesh' )
-      call re_alloc( xdop, 1, 3, 1, mop, name= 'idop',
-     &               routine='InitMesh' )
+      nullify( idop, xdop )
+      call re_alloc( idop, 1, mop, 'idop', 'mesh' )
+      call re_alloc( xdop, 1, 3, 1, mop, 'xdop', 'mesh' )
 
 C     Find points within rmax (orbital points)
       mop = 0

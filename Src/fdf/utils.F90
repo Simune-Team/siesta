@@ -294,7 +294,7 @@ MODULE utils
       equivalence                  (str, str_arr)
 
 !------------------------------------------------------------------------- BEGIN
-      str = ''
+      str = ' '
       str_arr(1:string_size) = string_arr(1:string_size)
       arr2s = TRIM(str)
       RETURN
@@ -318,7 +318,7 @@ MODULE utils
       equivalence                  (str, str_arr)
 
 !------------------------------------------------------------------------- BEGIN
-      str = ''
+      str = ' '
       str(1:LEN_TRIM(string)) = string(1:LEN_TRIM(string))
       s2arr = str_arr
       RETURN

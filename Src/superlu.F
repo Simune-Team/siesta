@@ -1,7 +1,7 @@
       module SUPERLU
+#ifdef _LANCZOS_
       use mpi
       implicit none
-#ifdef _LANCZOS_
 
       integer, parameter :: cptr = 8 ! 64-bit
       integer, parameter :: NO                      = 0

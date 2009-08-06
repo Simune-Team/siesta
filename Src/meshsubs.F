@@ -47,9 +47,6 @@ C real*8  xdop(3,mop)   : Vector to mesh points within rmax
 C real*8  xdsp(3,nsp)   : Vector to mesh sub-points
 C ----------------------------------------------------------------------
       integer,  pointer,     save :: idop(:)
-#ifdef RGT
-      integer,  pointer,     save :: indexp2(:)
-#endif
       integer,  pointer,     save :: ipa(:)
       real(dp), pointer,     save :: dxa(:,:)
       real(dp), pointer,     save :: xdop(:,:)
@@ -65,6 +62,13 @@ C ----------------------------------------------------------------------
       real(dp),              save :: cmesh(3,3)
       real(dp),              save :: rcmesh(3,3)
       CONTAINS
+
+      subroutine resetMesh( )
+      use alloc, only: de_alloc
+      implicit none
+      call de_alloc( xdop, 'xdop', 'mesh' )
+      call de_alloc( idop, 'idop', 'mesh' )
+      end subroutine resetMesh
 
       function indexp( ind )
       implicit none

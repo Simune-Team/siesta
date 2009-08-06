@@ -90,16 +90,20 @@ C     Local variables
 #ifdef MPI
       use mpi_siesta
 #endif
-#ifdef _LANCZOS_
       use lu_factorization
-#endif
       implicit none
 C     Input variables
       integer          :: nuotot, nuo, nnz
       integer          :: MPIerror
+      logical,    save :: firsttime = .true.
+
+      if (firsttime) then
+        firsttime = .false.
+      else
+        call resetDomainDecom( )
+      endif
 
       call reduceGlobalMatrix( nuotot, nuo, nnz )
-
       if (node.eq.0) then
 C       Set orbitals to partitions
         call makePartitions( nuotot, nodes )
@@ -114,8 +118,8 @@ C       Set orbitals to partitions
 
         call compuComm( )
 
-#ifdef _LANCZOS_
 C       compute distribution for LU
+#ifdef _LANCZOS_
         if (use_lu_fact) call compCommDD2LU( nodes, nuotot, ginde )
 #endif
       endif
@@ -128,33 +132,42 @@ C       compute distribution for LU
       if (node.eq.0) then
 !       Free local memory
         if (associated(Gcomm%ind))
-     &    call de_alloc( Gcomm%ind, 'comm%ind', 'domainDecom' )
+     &    call de_alloc( Gcomm%ind, 'comm%ind', 'scheComm' )
         call de_alloc( DomNeigh, 'DomNeigh', 'domainDecom' )
         call de_alloc( nNeigh, 'nNeigh', 'domainDecom' )
-        call de_alloc( nnzBou, 'nnzBou', 'domainDecom' )
-        call de_alloc( nnzInt, 'nnzInt', 'domainDecom' )
-        call de_alloc( ginvp, 'ginvp', 'domainDecom' )
-        call de_alloc( ginde, 'ginde', 'domainDecom' )
+        write(23,*) '  ******* ginvp & ginde & ginvp & ginde *******'
+        write(23,*) '  *******        Not deallocated        *******'
+        flush(23)
+!        call de_alloc( nnzBou, 'nnzBou', 'domainDecom' )
+!        call de_alloc( nnzInt, 'nnzInt', 'domainDecom' )
+!        call de_alloc( ginvp, 'ginvp', 'domainDecom' )
+!        call de_alloc( ginde, 'ginde', 'domainDecom' )
         call de_alloc( partition, 'partition', 'domainDecom' )
         call de_alloc( listhTot, 'listhTot', 'domainDecom' )
         call de_alloc( listhPtrTot, 'listhPtrTot', 'domainDecom' )
+#ifdef _LANCZOS_
         if (use_lu_fact) then
-#ifdef MPI
+# ifdef MPI
           call Mpi_Bcast( gperm, nuotot, MPI_INTEGER, 0, MPI_Comm_world,
      &                    MPIerror )
-#endif
+# endif
         else
           call de_alloc( gperm, 'gperm', 'domainDecom' )
         endif
+#else
+        call de_alloc( gperm, 'gperm', 'domainDecom' )
+#endif
       else
+#ifdef _LANCZOS_
         if (use_lu_fact) then
           nullify(gperm)
           call re_alloc( gperm, 1, nuotot, 'gperm', 'domainDecom' )
-#ifdef MPI
+# ifdef MPI
           call Mpi_Bcast( gperm, nuotot, MPI_INTEGER, 0, MPI_Comm_world,
      &                    MPIerror )
-#endif
+# endif
         endif
+#endif
       endif
       end subroutine domainDecom
 
@@ -191,7 +204,9 @@ C     Local variables
         call re_alloc( listhPtrTot, 0, nuotot, 'listhPtrTot',
      &                 'domainDecom' )
 
-        listhPtrTot(1:nuo) = numh
+        do ii= 1, nuo
+          listhPtrTot(ii) = numh(ii)
+        enddo
         ind = nuo + 1
 #ifdef MPI
         do PP= 1, Nodes-1
@@ -210,7 +225,9 @@ C     Local variables
         call re_alloc( listhTot, 1, nnzG, 'listhTot',
      &                 'domainDecom' )
 
-        listhTot(1:nnz) = listh
+        do ii= 1, nnz
+          listhTot(ii) = listh(ii)
+        enddo
         ind = nuo
 #ifdef MPI
         do PP= 1, Nodes-1
@@ -250,44 +267,50 @@ C     Local variables
       nullify(partition)
       call re_alloc( partition, 1, no, 'partition', 'domainDecom' )
 
-!     Drop diagonal nodes (autoconnection)
-      nnz = listhPtrTot(no) - listhPtrTot(0) - no
-      nullify(jja,iia)
-      call re_alloc( jja, 0, no, 'jja', 'domainDecom' )
-      call re_alloc( iia, 1, nnz, 'iia', 'domainDecom' )
-
-      jja(0) = 1
-      ind    = 1
-      do jj= 1, no
-        notfound = .true.
-        DO ii= listhPtrTot(jj-1), listhPtrTot(jj)-1
-          if (listhTot(ii).eq.jj) then
-            notfound = .false.
-          else
-            iia(ind) = listhTot(ii)
-            ind = ind + 1
-          endif
-        ENDDO
-        if (notfound) call die( 'not diagonal element in this row' )
-        jja(jj) = ind
-      enddo
-
-!      call printMatrix( no, no, iia, jja,
-!     &                  'globmat2.ps', 'Global_matrix' )
-
-      metis_options(1) = 0
-      if (nparts .gt. 8 ) then
-        call METIS_PartGraphKway( no, jja, iia, dummy, dummy, 0,
-     &                            1, nparts, metis_options,
-     &                            edgecut, partition )
+      if (nodes.eq.1) then
+        do ii= 1, no
+          partition(ii) = 1
+        enddo
       else
-        call METIS_PartGraphRecursive( no, jja, iia, dummy, dummy, 0,
-     &                                 1, nparts, metis_options,
-     &                                 edgecut, partition )
-      endif
+!       Drop diagonal nodes (autoconnection)
+        nnz = listhPtrTot(no) - listhPtrTot(0) - no
+        nullify(jja,iia)
+        call re_alloc( jja, 0, no, 'jja', 'domainDecom' )
+        call re_alloc( iia, 1, nnz, 'iia', 'domainDecom' )
 
-      call de_alloc( jja, 'jja', 'domainDecom' )
-      call de_alloc( iia, 'iia', 'domainDecom' )
+        jja(0) = 1
+        ind    = 1
+        do jj= 1, no
+          notfound = .true.
+          DO ii= listhPtrTot(jj-1), listhPtrTot(jj)-1
+            if (listhTot(ii).eq.jj) then
+              notfound = .false.
+            else
+              iia(ind) = listhTot(ii)
+              ind = ind + 1
+            endif
+          ENDDO
+          if (notfound) call die( 'not diagonal element in this row' )
+          jja(jj) = ind
+        enddo
+
+!        call printMatrix( no, no, iia, jja,
+!       &                  'globmat2.ps', 'Global_matrix' )
+
+        metis_options(1) = 0
+        if (nparts .gt. 8 ) then
+          call METIS_PartGraphKway( no, jja, iia, dummy, dummy, 0,
+     &                              1, nparts, metis_options,
+     &                              edgecut, partition )
+        else
+          call METIS_PartGraphRecursive( no, jja, iia, dummy, dummy, 0,
+     &                                   1, nparts, metis_options,
+     &                                   edgecut, partition )
+        endif
+
+        call de_alloc( jja, 'jja', 'domainDecom' )
+        call de_alloc( iia, 'iia', 'domainDecom' )
+      endif
       end subroutine makePartitions
 
 
@@ -383,6 +406,7 @@ C     Local variables
       do dom= 1, Nodes
         maxnz = max(maxnz,nnzInt(dom))
       enddo
+
       nullify(adj,xadj,perI,invI,perR,invR,perB,invB)
       call re_alloc(  adj, 1, maxnz,  'adj', 'domainDecom' )
       call re_alloc( xadj, 0, maxni, 'xadj', 'domainDecom' )
@@ -432,9 +456,8 @@ C     Local variables
       call de_alloc( perB, 'perB', 'domainDecom' )
       call de_alloc( invB, 'invB', 'domainDecom' )
 
-
-      call printPermMatrix( no, listhTot, listhPtrTot, gperm, ginvp,
-     &                      'globmat3.ps', 'Global matrix' )
+!      call printPermMatrix( no, listhTot, listhPtrTot, gperm, ginvp,
+!     &                      'globmat3.ps', 'Global matrix' )
 
       end subroutine createPerm
 
@@ -446,7 +469,7 @@ C     Local variables
 
       tsize = (Nodes-1)*Nodes/2 
       nullify(DomNeigh)
-      call re_alloc( DomNeigh, 1, tsize, 'DomNeigh', 'compuNeigh' )
+      call re_alloc( DomNeigh, 1, tsize, 'DomNeigh', 'domainDecom' )
 
       DomNeigh = .false.
 
@@ -487,12 +510,12 @@ C     Local variables
       enddo
 
       nullify(nNeigh)
-      call re_alloc( nNeigh, 1, Nodes, 'nNeigh', 'compuComm' )
+      call re_alloc( nNeigh, 1, Nodes, 'nNeigh', 'domainDecom' )
 
       if (ncom.gt.0) then
         nullify(src,dst)
-        call re_alloc( src, 1, ncom, 'src', 'compuComm' )
-        call re_alloc( dst, 1, ncom, 'dst', 'compuComm' )
+        call re_alloc( src, 1, ncom, 'src', 'domainDecom' )
+        call re_alloc( dst, 1, ncom, 'dst', 'domainDecom' )
         ncom = 0
         ind  = 0
         do PP=2, Nodes
@@ -526,8 +549,8 @@ C       reschedule the communications in order to minimize the time
           nNeigh(PP) = KK
         enddo
 
-        call de_alloc( dst, 'src', 'compuComm' )
-        call de_alloc( src, 'dst', 'compuComm' )
+        call de_alloc( dst, 'src', 'domainDecom' )
+        call de_alloc( src, 'dst', 'domainDecom' )
       else
         nNeigh     = 0
         Gcomm%np   = Nodes
@@ -739,10 +762,8 @@ C       Compute data for local Process
           enddo
         endif
 
-C        call de_alloc( numh, 'numh', 'domainDecom' )
-        call re_alloc( numh, 1, l_no, 'numh', 'domainDecom' )
-C        call de_alloc( listh, 'listh', 'domainDecom' )
-        call re_alloc( listh, 1, l_nnz, 'listh', 'domainDecom' )
+        call re_alloc( numh, 1, l_no, 'numh', 'sparseMat' )
+        call re_alloc( listh, 1, l_nnz, 'listh', 'sparseMat' )
 
         ind = 1
         DO io= 1, l_no
@@ -797,10 +818,8 @@ C       Receive Data from process 0
 #endif
         endif
 
-C        call de_alloc( numh, 'numh', 'domainDecom' )
-        call re_alloc( numh, 1, l_no, 'numh', 'domainDecom' )
-C        call de_alloc( listh, 'listh', 'domainDecom' )
-        call re_alloc( listh, 1, l_nnz, 'listh', 'domainDecom' )
+        call re_alloc( numh, 1, l_no, 'numh', 'sparseMat' )
+        call re_alloc( listh, 1, l_nnz, 'listh', 'sparseMat' )
 
 #ifdef MPI
         call MPI_Recv( numh, l_no, MPI_INTEGER, 0, 0,
@@ -817,8 +836,7 @@ C        call de_alloc( listh, 'listh', 'domainDecom' )
       lnb       = l_lnb
       dd_ncom   = l_nei
       dd_ncolum = l_no + l_bou
-C      call de_alloc( listhptr, 'listhptr', 'domainDecom' )
-      call re_alloc( listhptr, 1, no, 'listhptr', 'domainDecom' )
+      call re_alloc( listhptr, 1, no, 'listhptr', 'sparseMat' )
       ind = 0
       do io= 1, no
         listhptr(io) = ind

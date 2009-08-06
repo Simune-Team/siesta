@@ -376,7 +376,7 @@ C Global reduction of qtot
       endif
 
 C Save LWF's to disk .................................................
-#ifdef RGT
+#ifdef RGT_
       call iolwf( 'write', nbasis, nbasisCloc, nbasisloc, maxnc, 
      .            found, nspin)
 #endif

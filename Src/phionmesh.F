@@ -58,10 +58,12 @@ C     On first call set the logical DirectPhi
      &                  MPIerror )
 #endif
         firsttime = .false.
+      else
+        call resetMeshPhi( )
       endif
 
 C     Allocate memory related to nmpl
-      nullify(endpht,phi,lstpht,listp2)
+      nullify( endpht, phi, lstpht, listp2 )
       call re_alloc( endpht, 0, nmpl, 'endpht', 'PhiOnMesh' )
 
 C     Initialise pointer array
@@ -69,9 +71,6 @@ C     Initialise pointer array
       do ip = 1,nmpl
         endpht(ip) = endpht(ip-1) + numphi(ip)
       enddo
-      write(23,*) 'numphi:', numphi
-      write(23,*) 'endpht:', endpht
-      flush(23)
 
 C     Allocate phi if this is not a direct calculation
       nlist = endpht(nmpl)
@@ -131,8 +130,6 @@ C     Find indexes and values of atomic orbitals at mesh points
           endif
         enddo
       enddo
-      write(23,*) 'lstpht:', lstpht
-      flush(23)
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 0 )
 #endif

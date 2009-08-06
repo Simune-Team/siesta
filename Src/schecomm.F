@@ -65,8 +65,7 @@ C     Local variables
       logical              :: found
 !------------------------------------------------------------------------- BEGIN
       nullify( neights, xadj, adj, perm, color )
-      call re_alloc( neights, 1, NCom, name='neights',
-     &               routine='scheduleComm' )
+      call re_alloc( neights, 1, NCom, 'neights', 'scheComm' )
       neights = 0
 
 C     Build the adjacency graph. In this new graph every node
@@ -87,8 +86,7 @@ C     neights(com) = number of neightbours of communication 'com'
       enddo
 
 C     nadj= size of the adjacency graph
-      call re_alloc( xadj, 1, NCom+1, name='xadj',
-     &               routine='scheduleComm' )
+      call re_alloc( xadj, 1, NCom+1, 'xadj', 'scheComm' )
       nadj = 1
       do com1= 1, Ncom
         xadj(com1) = nadj
@@ -98,8 +96,7 @@ C     nadj= size of the adjacency graph
       nadj         = nadj - 1
 
 C     Fill the adjacency graph
-      call re_alloc( adj, 1, nadj, name='adj',
-     &               routine='scheduleComm' )
+      call re_alloc( adj, 1, nadj, 'adj', 'scheComm' )
       do com1= 1, Ncom
         P1 = src(com1)
         P2 = dst(com1)
@@ -122,18 +119,16 @@ C     GRAPH COLORING: in order to optimize the communications
 C     we assign a color to every node. We want to minimize the
 C     number of colors. Two neightbours can't share the same
 C     color.
-      call re_alloc( perm, 1, NCom, name='perm',
-     &               routine='scheduleComm' )
+      call re_alloc( perm, 1, NCom, 'perm', 'scheComm' )
       do com1= 1, Ncom
         perm(com1) = com1
       enddo
 
 C     We order the nodes by its number of neightbours.
-      call Qsort( Ncom, neights, perm )
+      call myQsort( Ncom, neights, perm )
 
 
-      call re_alloc( color, 1, NCom, name='color',
-     &               routine='scheduleComm' )
+      call re_alloc( color, 1, NCom, 'color', 'scheComm' )
       do com1= 1, Ncom
         color(com1) = 0
       enddo
@@ -175,8 +170,8 @@ C         Create a new color
 C     Fill the communication structure with the new scheduling
       comm%ncol = Ncol
       nullify( comm%ind )
-      call re_alloc( comm%ind, 1, NCol, 1, comm%np, name='comm%ind',
-     &               routine='scheduleComm' )
+      call re_alloc( comm%ind, 1, NCol, 1, comm%np,
+     &              'comm%ind', 'scheComm' )
 
       comm%ind = 0
       do com1= 1, Ncom
@@ -187,11 +182,11 @@ C     Fill the communication structure with the new scheduling
         comm%ind(col,P2) = com1
       enddo
 
-      call de_alloc(   color, name=  'color', routine='scheduleComm' )
-      call de_alloc(    perm, name=   'perm', routine='scheduleComm' )
-      call de_alloc(     adj, name=    'adj', routine='scheduleComm' )
-      call de_alloc(    xadj, name=   'xadj', routine='scheduleComm' )
-      call de_alloc( neights, name='neights', routine='scheduleComm' )
+      call de_alloc(   color,   'color', 'scheComm' )
+      call de_alloc(    perm,    'perm', 'scheComm' )
+      call de_alloc(     adj,     'adj', 'scheComm' )
+      call de_alloc(    xadj,    'xadj', 'scheComm' )
+      call de_alloc( neights, 'neights', 'scheComm' )
 !--------------------------------------------------------------------------- END
       end subroutine scheduleComm
       end module scheComm

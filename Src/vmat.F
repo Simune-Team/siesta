@@ -50,8 +50,9 @@ C  Modules
       use meshdscf,      only: needdscfl, listdl, numdl, nrowsdscfl,
      &                         listdlptr
       use meshphi,       only: directphi, endpht, lstpht, listp2, phi
-      use parallel,      only: Nodes
+      use parallel,      only: Nodes, node
       use alloc,         only: re_alloc, de_alloc
+      use parallelsubs,  only: GlobalToLocalOrb
 
       implicit none
 
@@ -131,7 +132,7 @@ C     Allocate local memory
 !$   &    nvmaxl,triang,lenx,leny,lenxy,parallellocal,omp_ilc,
 !$   &    omp_ilocal,omp_iorb,omp_DscfL,omp_Vss,omp_Clocal,omp_Vlocal,
 !$   &    omp_phia,r2cut,indxuo,dxa,nsp,xdop,xdsp,NeedDscfL,listdl,
-!$   &    numdl,listdlptr,directphi,endpht,lstpht,listp2,phi)
+!$   &    numdl,listdlptr,directphi,endpht,lstpht,listp2,phi,nodes,node)
 !$   &    PRIVATE(i,ia,ic,ii,ijl,il,imp,ind,iop,ip,iphi,is,isp,ispin,
 !$   &    iu,iul,ix,j,jc,jl,last,lasta,lastop,nc,nlocal,nphiloc,Vij,
 !$   &    r2sp,dxsp,VClocal,ilc,ilocal,iorb,DscfL,Vss,Clocal,Vlocal,
@@ -193,10 +194,8 @@ C     Full initializations done only once
       Vlocal(1:triang,1:nspin) = 0.0_dp
       last                     = 0
 
-!$OMP BARRIER
-
 C     Loop over grid points
-!$OMP DO SCHEDULE(STATIC,LENXY)
+!$OMP DO SCHEDULE(GUIDED,LENXY)
       do ip = 1,np
 C       Find number of nonzero orbitals at this point
         nc = endpht(ip) - endpht(ip-1)
@@ -247,9 +246,10 @@ C       If overflooded, add Vlocal to Vs and reinitialize it
                 enddo
               endif
             else
+              call GlobalToLocalOrb( iu, Node, Nodes, iul )
               if (i .eq. iu) then
-                do ii = 1, numVs(iu)
-                  ind = listVsptr(iu)+ii
+                do ii = 1, numVs(iul)
+                  ind = listVsptr(iul)+ii
                   j = listVs(ind)
                   jl = ilocal(j)
                   if (il.gt.jl) then
@@ -263,8 +263,8 @@ C       If overflooded, add Vlocal to Vs and reinitialize it
                   enddo
                 enddo
               else
-                do ii = 1, numVs(iu)
-                  ind = listVsptr(iu)+ii
+                do ii = 1, numVs(iul)
+                  ind = listVsptr(iul)+ii
                   j = LISTSC( i, iu, listVs(ind) )
                   jl = ilocal(j)
                   if (il.gt.jl) then
@@ -448,6 +448,8 @@ C  Add final Vlocal to Vs
         endif
       enddo
 
+!$OMP BARRIER
+
       if (ParallelLocal) then
 !$OMP   DO SCHEDULE(STATIC)
         do ind = 1, nvmaxl
@@ -491,10 +493,9 @@ C       Redistribute Hamiltonian from mesh to orbital based distribution
         call de_alloc( omp_Vss, 'Vss', 'vmat' )
       endif
 
-      call de_alloc( r2cut, 'r2cut', 'rhoofd' )
+      call de_alloc( r2cut, 'r2cut', 'vmat' )
 
       call timer('vmat',2)
-      call timer('vmat',3)
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 0 )
 #endif

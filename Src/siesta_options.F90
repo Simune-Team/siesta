@@ -652,8 +652,6 @@ MODULE siesta_options
                             value=method, dictRef='siesta:SCFmethod' )
     endif
 
-    write(23,*) 'Solution Method: ', method
-    flush(23)
     if (leqi(method,'diagon')) then
       isolve = 0
       ! DivideAndConquer is now the default
@@ -695,8 +693,9 @@ MODULE siesta_options
       call die( 'redata: The method of solution must be either '//&
                 'OrderN, Diagon, Jacobi or Iterative' )
     endif
+
 #ifdef DEBUG
-    call write_debug('Method used for diagonalization: '//method )
+    call write_debug( '    Solution Method: ' // method )
 #endif
 
     if (cml_p) then

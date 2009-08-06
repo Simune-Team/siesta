@@ -75,7 +75,7 @@ C
       use parallelsubs,  only : GlobalToLocalOrb
       use atmfuncs,      only : rcut, epskb
       use neighbour,     only : iana=>jan, r2ki=>r2ij, xki=>xij
-      use neighbour,     only : mneighb
+      use neighbour,     only : mneighb, reset_neighbour_arrays
       use alloc,         only : re_alloc, de_alloc
 
       integer, intent(in) ::
@@ -346,7 +346,9 @@ C             Pick up contributions to H and restore Di and Vi
 
       enddo
 
-C Deallocate local memory
+C     Deallocate local memory
+      call MATEL( 'S', 0, 0, 0, 0, xki, Ski, grSki )
+      call reset_neighbour_arrays( )
       call de_alloc( grSki, 'grSki', 'nlefsm' )
       call de_alloc( Ski, 'Ski', 'nlefsm' )
       call de_alloc( xno, 'xno', 'nlefsm' )

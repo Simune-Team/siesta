@@ -15,15 +15,15 @@ C     Modules
 
 C     MODULE variables
 C     Arrays that hold data which do not change during the SCF loop
-      real(grid_p), dimension(:), pointer, save :: rhopcc, rhoatm, Vna
-      real(dp), save          :: Uharrs     ! Harris energy
-      logical, save           :: IsDiag, IsEfld, spiral
-      character(len=10), save :: shape
-      integer, save           :: nm(3), nml(3), ntml(3), npcc,
+      real(grid_p),   pointer :: rhopcc(:), rhoatm(:), Vna(:)
+      real(dp)                :: Uharrs     ! Harris energy
+      logical                 :: IsDiag, IsEfld, spiral
+      character(len=10)       :: shape
+      integer                 :: nm(3), nml(3), ntml(3), npcc,
      &                           nmpl, ntpl, ntopl
-      real(dp), save          :: qspiral(3), bcell(3,3), cell(3,3),
+      real(dp)                :: qspiral(3), bcell(3,3), cell(3,3),
      &                           dvol, field(3), rmax, scell(3,3)
-      real(dp), save          :: G2mesh =  0.0_dp
+      real(dp)                :: G2mesh =  0.0_dp
 
       interface
       subroutine dhscf_init(nspin, norb, iaorb, iphorb,

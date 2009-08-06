@@ -68,14 +68,12 @@
         Entrop = 0.0_dp
       elseif (isolve .eq. 2) then
         call write_debug( '    PRE Jacobi' )
-        call gatherGlobalMatrix( no_s, no_l, maxnh, S, 'S.matrix' )
-        call gatherGlobalMatrix( no_s, no_l, maxnh, H(1:maxnh,1),
-     &                           'H.matrix' )
-
+!        call gatherGlobalMatrix( no_s, no_l, maxnh, S, 'S.matrix' )
+!        call gatherGlobalMatrix( no_s, no_l, maxnh, H(1:maxnh,1),
+!     &                           'H.matrix' )
         call jd_diag( no_s, no_l, nspin, neigwanted, fixspin, temp,
      &                qtot, qs, occtol, numh, listh, H, S,
      &                ef, efs, Entrop, Dscf, Escf )
-
       elseif (isolve .eq. 3) then
 #ifdef _LANCZOS_
         call write_debug( '    PRE ITERATIVE' )
@@ -89,6 +87,8 @@
       else
         call die('siesta: ERROR: wrong solution method')
       endif
+      write(23,*) 'PRE Harris-functional energy'
+      flush(23)
 
 ! Harris-functional energy 
       DEharr = 0.0_dp

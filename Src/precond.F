@@ -53,7 +53,11 @@ C     Local variables
           enddo
         enddo
       else
-
+        do i= 1, ne
+          do j= 1, n
+            Z_hat(j,i) = Z(j,i)
+          enddo
+        enddo
       endif
       end subroutine precond_solver_mat
 
@@ -73,7 +77,9 @@ C     Local variables
           Z_hat(i) = Z(i)*PREC%ID(i)
         enddo
       else
-
+        do i= 1, n
+          Z_hat(i) = Z(i)
+        enddo
       endif
       end subroutine precond_solver_vec
 

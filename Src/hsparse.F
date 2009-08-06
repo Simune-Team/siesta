@@ -51,7 +51,7 @@ C  Modules
 C
       subroutine hsparse( negl, cell, nsc, na, isa, xa,
      &                    lasto, lastkb, iphorb, iphkb,
-     &                    nlhmax, gamma, xijo)
+     &                    nlhmax, gamma )
       use precision
       use parallel,        only : Node, Nodes
       use parallelsubs,    only : GetNodeOrbs, GlobalToLocalOrb
@@ -59,12 +59,12 @@ C
       use listsc_module,   only : listsc_init
       use sorting
       use neighbour,       only : jna=>jan, xij, r2ij, maxna=>maxnna
-      use neighbour,       only : mneighb
+      use neighbour,       only : mneighb, reset_neighbour_arrays
       use domain_decom,    only : use_dd, domainDecom
       use sys,             only : die
       use alloc,           only : re_alloc, de_alloc
       use atomlist,        only : no_l
-      use sparse_matrices, only : listhptr, numh, listh
+      use sparse_matrices, only : listhptr, numh, listh, xijo
       implicit none
 
       integer,           intent(in) :: na
@@ -76,7 +76,6 @@ C
       logical,           intent(in) :: negl
       integer,        intent(inout) :: nlhmax
       logical, intent(in)           :: gamma
-      real(dp),  pointer            :: xijo(:,:)
 
       external               timer
 
@@ -97,10 +96,10 @@ C
 
       logical, save :: warn1 = .false.
 
-      real(dp), dimension(:), pointer :: rckb => null()
+      real(dp), dimension(:), pointer :: rckb
       logical, dimension(:),  pointer :: conect
-      integer, dimension(:),  pointer :: index => null()
-      integer, dimension(:),  pointer :: knakb => null()
+      integer, dimension(:),  pointer :: index
+      integer, dimension(:),  pointer :: knakb
       integer, dimension(:),  pointer :: listhtmp
 
 C -------------------------------------
@@ -146,6 +145,7 @@ C     Find maximum range of basis orbitals and KB projectors
       endif
 
 C     Allocate local arrays that depend on parameters
+      nullify( knakb, rckb, index )
       call re_alloc( knakb, 1, maxnkb, 'knakb', 'hsparse' )
       call re_alloc( rckb, 1, maxnkb, 'rckb', 'hsparse' )
       call re_alloc( index, 1, maxna, 'index', 'hsparse' )
@@ -278,12 +278,12 @@ C     Find optimum value for nlhmax
 C     (re)allocate listh, but do not shrink, as it might
 C     be used for DM extrapolation
 C     using information from different geometries.
-      call re_alloc( listh, 1, nlhmax, 'listh', 'hsparse',
+      call re_alloc( listh, 1, nlhmax, 'listh', 'sparseMat',
      &               SHRINK=.false. )
       if (.not. gamma) then
-         call re_alloc( xijo, 1, 3, 1, nlhmax, 'xijo', 'hsparse' )
+         call re_alloc( xijo, 1, 3, 1, nlhmax, 'xijo', 'sparseMat' )
       else
-         call re_alloc( xijo, 1, 3, 1, 1, 'xijo', 'hsparse' )
+         call re_alloc( xijo, 1, 3, 1, 1, 'xijo', 'sparseMat' )
       endif
 
 C     Now fill in the arrays, including xijo if using k-points
@@ -420,6 +420,8 @@ C     Initialize listsc
       call LISTSC_INIT( nsc, nuotot )
 
 C     Deallocate local arrays
+      call reset_neighbour_arrays( )
+
       call de_alloc( listhtmp, 'listhtmp', 'hsparse' )
       call de_alloc( conect, 'conect', 'hsparse' )
       call de_alloc( index, 'index', 'hsparse' )

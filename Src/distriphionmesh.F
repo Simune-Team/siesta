@@ -61,7 +61,7 @@ C ==================================================================
      &                        indexp
       use precision,    only: dp, grid_p
       use atmfuncs,     only: rcut
-      use parallel,     only: Nodes
+      use parallel,     only: Nodes, node
 #ifdef MPI
       use moreMeshSubs, only: initMeshExtencil
 #endif
@@ -74,18 +74,19 @@ C     Passed arguments
      &                        iphorb(norb), isa(*)
       integer, intent(out) :: numphi(nmpl)
 C     Local variables
-      integer              :: io, ia, iphi, is, iop, ip0, isp
+      integer              :: ii, io, ia, iphi, is, iop, ip0, isp
       real(dp)             :: r2o, dxsp(3,nsp), r2sp(nsp)
       logical              :: within
       integer,     pointer :: wload(:)
-
 !------------------------------------------------------------------------- BEGIN
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 14 )
 #endif
       call timer( 'REMESH', 1 )
-C     Allocate local scratch array
-      numphi(1:nmpl) = 0
+
+      do ii= 1, nmpl
+        numphi(ii) = 0
+      enddo
 
 C     Find number of atomic orbitals at mesh points
       do io = 1,norb

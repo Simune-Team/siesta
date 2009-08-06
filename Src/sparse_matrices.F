@@ -19,55 +19,23 @@
       subroutine resetSparseMatrices( )
       use alloc,           only : de_alloc
       implicit none
-      CHARACTER(LEN=*), PARAMETER :: MYNAME =  'resetSparseMatrices'
 
-      if (associated(listh))
-     &  call de_alloc( listh, name='listh', routine=MYNAME )
+      call de_alloc( listh,       'listh',       'sparseMat' )
+      call de_alloc( listhold,    'listhold',    'sparseMat' )
+      call de_alloc( listhptr,    'listhptr',    'sparseMat' )
+      call de_alloc( listhptrold, 'listhptrold', 'sparseMat' )
+      call de_alloc( numh,        'numh',        'sparseMat' )
+      call de_alloc( numhold,     'numhold',     'sparseMat' )
 
-      if (associated(listhold))
-     &  call de_alloc( listhold, name='listhold', routine=MYNAME )
-
-      if (associated(listhptr))
-     &  call de_alloc( listhptr, name='listhptr', routine=MYNAME )
-
-      if (associated(listhold))
-     &  call de_alloc( listhold, name='listhold', routine=MYNAME )
-
-      if (associated(listhptrold))
-     &  call de_alloc( listhptrold, name='listhptrold', routine=MYNAME )
-
-      if (associated(numh))
-     &  call de_alloc( numh, name='numh', routine=MYNAME )
-
-      if (associated(numhold))
-     &  call de_alloc( numhold, name='numhold', routine=MYNAME )
-
-      if (associated(Dold))
-     &  call de_alloc( Dold, name='Dold', routine=MYNAME )
-
-      if (associated(Dscf))
-     &  call de_alloc( Dscf, name='Dscf', routine=MYNAME )
-
-      if (associated(Dscfsave))
-     &  call de_alloc( Dscfsave, name='Dscfsave', routine=MYNAME )
-
-      if (associated(Eold))
-     &  call de_alloc( Eold, name='Eold', routine=MYNAME )
-
-      if (associated(Escf))
-     &  call de_alloc( Escf, name='Escf', routine=MYNAME )
-
-      if (associated(H))
-     &  call de_alloc( H, name='H', routine=MYNAME )
-
-      if (associated(xijo))
-     &  call de_alloc( xijo, name='xijo', routine=MYNAME )
-
-      if (associated(H0))
-     &  call de_alloc( H0, name='H0', routine=MYNAME )
-
-      if (associated(S))
-     &  call de_alloc( S, name='S', routine=MYNAME )
+      call de_alloc( Dold,        'Dold',        'sparseMat' )
+      call de_alloc( Dscf,        'Dscf',        'sparseMat' )
+      call de_alloc( Dscfsave,    'Dscfsave',    'sparseMat' )
+      call de_alloc( Eold,        'Eold',        'sparseMat' )
+      call de_alloc( Escf,        'Escf',        'sparseMat' )
+      call de_alloc( H,           'H',           'sparseMat' )
+      call de_alloc( xijo,        'xijo',        'sparseMat' )
+      call de_alloc( H0,          'H0',          'sparseMat' )
+      call de_alloc( S,           'S',           'sparseMat' )
 
       end subroutine resetSparseMatrices
 
