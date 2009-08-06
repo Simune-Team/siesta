@@ -608,7 +608,7 @@ C  a21.inv(a11) --> x21
 ! b21 = -b22.x21
       a=dcmplx(-1.d0,0.d0)
       b=dcmplx(0.d0,0.d0) 
-      call zgemm('N','N', n2 , n2 , n1 ,a ,b22, n2, x21, 
+      call zgemm('N','N', n2 , n1 , n2 ,a ,b22, n2, x21, 
      &     n2, b, b21, n2)      ! got b21
 C FDN 
  
@@ -630,7 +630,7 @@ C   a23.inv(a33) --> x23
 C b23 = -b22.x23
       a=dcmplx(-1.d0,0.d0)
       b=dcmplx(0.d0,0.d0) 
-      call zgemm('N','N', n2 , n2 , n3 ,a ,b22, n2, x23, 
+      call zgemm('N','N', n2 , n3 , n2 ,a ,b22, n2, x23, 
      &     n2, b, b23, n2)      ! got b23
 C FDN
 
