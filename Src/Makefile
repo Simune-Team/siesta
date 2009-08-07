@@ -134,10 +134,11 @@ INCFLAGS:=$(INCFLAGS) $(FoX_FCFLAGS)
 # First, it needs to be configured. This may have been done
 # by the main SIESTA configure, but in case not:
 $(FoX_configured):
-	(cd FoX; if [ "$(VPATH)" = . ]; then CONFIGURE="./configure"; else CONFIGURE="$(VPATH)/FoX/configure"; fi; $$CONFIGURE VPATH="$(VPATH)/FoX" FC="$(FC)" FCFLAGS="$(FFLAGS)" --enable-wcml $(DUMMY_FOX) ; if (( $? )) ; then touch .config ; else false; fi )
+	(cd FoX; if [ "$(VPATH)" = . ]; then CONFIGURE="./configure"; else CONFIGURE="$(VPATH)/FoX/configure"; fi; $$CONFIGURE VPATH="$(VPATH)/FoX" FC="$(FC)" FCFLAGS="$(FFLAGS)" --enable-wcml $(DUMMY_FOX) || false )
+#
 # Note we have to make sure to use the same compiler as SIESTA,
-# and pick up all the same FFLAGS.
-# And also remember to maybe ask for a dummy library
+# and pick up all the same FFLAGS, and also remember to maybe ask for a dummy library.
+# Note also that the "false" clause will stop the 'make' process if the configuration fails.
 #
 # Then we want to make FoX itself. Like so:
 $(FoX_built): $(FoX_configured)
