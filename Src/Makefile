@@ -51,9 +51,14 @@ include arch.make
 #
 what:
 	@echo
+	@if [ "$(VPATH)" == . ]; then \
+              echo "** You can no longer build SIESTA in Src." ;\
+              echo "** Go to the Obj directory and see the README file." ;\
+              false ;\
+         fi
 	@echo "Compilation architecture to be used: ${SIESTA_ARCH}"
 	@echo "If this is not what you want, create the right"
-	@echo "arch.make file using the models in Sys"
+	@echo "arch.make file using the models in Src/Sys"
 	@echo
 	@echo "Hit ^C to abort..."
 	@sleep 2
