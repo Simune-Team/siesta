@@ -1,5 +1,6 @@
 #
-# Makefile for ATM -- No XML support
+# Traditional makefile for ATM -- No XML support
+# Make sure to edit the FC and FFLAGS symbols below.
 # ---------------------------------------------------------------
 #
 .SUFFIXES:

@@ -8,6 +8,7 @@ FFLAGS_parse=-qsuffix=f=f -qfree #-qfixed
 LDFLAGS= -q64
 COMP_LIBS=
 RANLIB=echo
+DEFS_PREFIX=-WF,
 #
 NETCDF_LIBS=
 NETCDF_INTERFACE=

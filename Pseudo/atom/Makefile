@@ -1,5 +1,9 @@
 #
-# Makefile for ATM
+# Modern Makefile for ATM
+# Supports the standard mechanisms in the SIESTA tree
+# For traditional compilation, needing only an f77 compiler,
+# and no CML support, see makefile-old.
+#
 # ---------------------------------------------------------------
 #
 .SUFFIXES:
@@ -45,15 +49,23 @@ FoX_FCFLAGS=`../../$(OBJDIR)/FoX/FoX-config --fcflags`
 FoX_LIBS=`../../$(OBJDIR)/FoX/FoX-config --libs --wxml`
 #
 # And add them to global compiler flags:
-INCFLAGS=$(FoX_FCFLAGS)
+INCFLAGS:=$(FoX_FCFLAGS) $(INCFLAGS)
 #
 # First, it needs to be configured. This may have been done
 # by the main SIESTA configure, but in case not:
+#
+FC_DEFAULT:=$(FC)
+FC_SERIAL?=$(FC_DEFAULT)
+#
+# Note that we hardwire the need to use the configure script in the main Src directory.
+#
+TOP_LEVEL=$(shell pwd)/../../Src
 $(FoX_configured):
-	(cd ../../$(OBJDIR)/FoX; if [ "$(VPATH)" = . ]; then CONFIGURE="./configure"; else CONFIGURE="$(VPATH)/FoX/configure"; fi; $$CONFIGURE VPATH="$(VPATH)/FoX" FC="$(FC)" FCFLAGS="$(FFLAGS)" --enable-wxml $(DUMMY_FOX); touch .config)
+	(cd ../../$(OBJDIR)/FoX; CONFIGURE="$(TOP_LEVEL)/FoX/configure"; $$CONFIGURE VPATH="$(TOP_LEVEL)/FoX" FC="$(FC_SERIAL)" FCFLAGS="$(FFLAGS)" --enable-wcml $(DUMMY_FOX) || false )
+#
 # Note we have to make sure to use the same compiler as SIESTA,
-# and pick up all the same FFLAGS.
-# And also remember to maybe ask for a dummy library
+# and pick up all the same FFLAGS, and also remember to maybe ask for a dummy library.
+# Note also that the "false" clause will stop the 'make' process if the configuration fails.
 #
 # Then we want to make FoX itself. Like so:
 $(FoX_built): $(FoX_configured)
@@ -68,7 +80,7 @@ pseudoXML.o: $(FoX_built)
 
 #----------------------------------------------$$$$$
 #
-INCFLAGS:=$(INCFLAGS) -I../../$(OBJDIR)
+INCFLAGS:=$(INCFLAGS)  ####         -I../../$(OBJDIR)
 #
 #
 XC_OBJS= xc.o
