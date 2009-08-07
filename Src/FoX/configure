@@ -7432,4 +7432,7 @@ fi
 
 chmod +x FoX-config
 touch .config
-touch */*.f90 */*.F90
+#
+# This statement will not work with VPATH...
+#
+### touch */*.f90 */*.F90

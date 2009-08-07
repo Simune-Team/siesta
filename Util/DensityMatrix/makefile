@@ -26,7 +26,7 @@
 default: dm2cdf cdf2dm
 all: dm2cdf cdf2dm dmfilter
 #
-OBJDIR=Src
+OBJDIR=Obj
 include ../../$(OBJDIR)/arch.make
 #
 # We assume that the top arch.make defines the relevant NetCDF symbols,

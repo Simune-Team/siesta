@@ -15,7 +15,7 @@
 .SUFFIXES: .f .f90 .F .F90 .o
 #
 VPATH:=$(shell pwd)/../../Src
-OBJDIR=Src
+OBJDIR=Obj
 #
 all: mprop dm_creator
 #
@@ -25,11 +25,12 @@ include ../../$(OBJDIR)/arch.make
 FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
+INCFLAGS:=$(DEFS_PREFIX)-UMPI $(INCFLAGS)
 #
 MPROP_OBJS=m_getopts.o f2kcli.o subs.o precision.o units.o \
-           io.o sys.o read_curves.o io_hs.o orbital_set.o main_vars.o
+           io.o sys_local.o read_curves.o io_hs.o orbital_set.o main_vars.o
 DM_OBJS=m_getopts.o f2kcli.o subs.o precision.o units.o \
-           io.o sys.o iodm_netcdf.o io_hs.o  main_vars.o write_dm.o
+           io.o sys_local.o iodm_netcdf.o io_hs.o  main_vars.o write_dm.o
 #
 default: mprop
 #
@@ -46,10 +47,10 @@ clean:
 
 # DO NOT DELETE THIS LINE - used by make depend
 dm_creator.o: io_hs.o iodm_netcdf.o main_vars.o
-io.o: sys.o
+io.o: sys_local.o
 io_hs.o: main_vars.o precision.o
-iodm.o: precision.o sys.o
-iodm_netcdf.o: precision.o sys.o
+iodm.o: precision.o sys_local.o
+iodm_netcdf.o: precision.o sys_local.o
 m_getopts.o: f2kcli.o
 main_vars.o: m_getopts.o precision.o subs.o units.o
 mprop.o: io_hs.o main_vars.o orbital_set.o read_curves.o
@@ -58,4 +59,4 @@ orbital_set.o: main_vars.o subs.o
 read_curves.o: orbital_set.o precision.o
 subs.o: precision.o
 units.o: precision.o
-write_dm.o: precision.o sys.o
+write_dm.o: precision.o sys_local.o

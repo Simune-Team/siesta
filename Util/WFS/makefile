@@ -28,7 +28,7 @@
 #
 all: readwf readwfx wfs2wfsx wfsx2wfs wfsnc2wfsx
 #
-OBJDIR=Src
+OBJDIR=Obj
 VPATH=../../Src
 #
 include ../../$(OBJDIR)/arch.make

@@ -13,7 +13,7 @@
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
 ##VPATH:=$(shell pwd)/../../Src
-OBJDIR=Src
+OBJDIR=Obj
 #
 all: orbmol_proj
 #

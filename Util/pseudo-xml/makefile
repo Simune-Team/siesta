@@ -21,7 +21,7 @@
 #  
 default: xml2psf
 #
-OBJDIR=Src
+OBJDIR=Obj
 VPATH=../../Src
 #
 include ../../$(OBJDIR)/arch.make
