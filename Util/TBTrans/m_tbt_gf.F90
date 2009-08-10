@@ -3,6 +3,8 @@ module m_tbt_gf
 ! ----------------------------------------------------------------------
 ! Module that contains the routines and variables used for to obtain 
 ! the electrodes surface green's functions and self energies
+!
+! F.D.Novaes, fdnovaes@icmab.es
 ! ----------------------------------------------------------------------
 ! CONTAINS:
 ! 1) alloc_gf_vars
@@ -329,22 +331,7 @@ end subroutine cp_gf_vars
         nullify(h01)
         nullify(s01)
         nullify(lasto)
-! FDN
-!        if (LFrstTime .and. tjob ) then
-!          nullify(Lh00)
-!          nullify(Ls00)
-!          nullify(Lh01)
-!          nullify(Ls01)
-!          nullify(Llasto) 
-!        end if        
-!        if (RFrstTime .and. (.not.tjob) ) then
-!          nullify(Rh00)
-!          nullify(Rs00)
-!          nullify(Rh01)
-!          nullify(Rs01)
-!          nullify(Rlasto)
-!        end if 
-! FDN
+
 
 ! initialize and get nspinin         
         tinit=.true.
@@ -358,9 +345,7 @@ end subroutine cp_gf_vars
 
         if (LJob) then
           Lng1=ng1
-! FDN Teste
-!          nuaL=nua
-! FDN Teste
+
           ngaa1=ng1*ng1
           allocate(LGS(ngaa1))
 
@@ -371,9 +356,9 @@ end subroutine cp_gf_vars
           else 
              nucuse=Lnucuse
           end if
-! FDN Teste
+
           nuaL=Lnucuse
-! FDN Teste          
+     
 !            write(*,*) "Used no. atoms:",nucuse,nua
 !     Truncate lasto to used atoms: lastou:
 
@@ -419,9 +404,7 @@ end subroutine cp_gf_vars
         end if
         if (RJob) then
           Rng1=ng1
-! FDN Teste
-!          nuaR=nua
-! FDN Teste
+
 
           ngaa1=ng1*ng1
           allocate(RGS(ngaa1))
@@ -432,9 +415,9 @@ end subroutine cp_gf_vars
           else
              nucuse=Rnucuse
           end if
-! FDN Teste
+
           nuaR=Rnucuse
-! FDN Teste
+
 !            write(*,*) "Used no. atoms:",nucuse,nua
 !     Truncate lasto to used atoms: lastou:
 
@@ -493,19 +476,7 @@ end subroutine cp_gf_vars
          if (LJob .and. (.not. LFrstTime)) then
 
             if ( iEn == 1 ) then
-!              Lh00 =0.0
-!              Ls00 =0.0
-!              Lh01 =0.0
-!              Ls01 =0.0
 
-!              if(.not.associated(Lh00))
-!     . call die('Problems with pointers in green !!')
-!              if(.not.associated(Ls00))
-!     . call die('Problems with pointers in green !!')
-!              if(.not.associated(Lh01))
-!     . call die('Problems with pointers in green !!')
-!              if(.not.associated(Ls01))
-!     . call die('Problems with pointers in green !!')
 
               tinit=.false.
               tkham=.false.
@@ -556,19 +527,7 @@ end subroutine cp_gf_vars
          if (RJob .and. .not.RFrstTime) then
 
             if ( iEn == 1 ) then
-!              Rh00 =0.0
-!              Rs00 =0.0
-!              Rh01 =0.0
-!              Rs01 =0.0
 
-!              if(.not.associated(Rh00))
-!     . call die('Problems with pointers in green !!')
-!              if(.not.associated(Rs00))
-!     . call die('Problems with pointers in green !!')
-!              if(.not.associated(Rh01))
-!     . call die('Problems with pointers in green !!')
-!              if(.not.associated(Rs01))
-!     . call die('Problems with pointers in green !!')
 
 
               tinit=.false.
@@ -605,9 +564,7 @@ end subroutine cp_gf_vars
 
              zsenergy = zenergy_fdf-efermi
 
-! FDN Teste
-!             write(*,*) size(Rh00),allocated(RGS)
-! FDN Teste
+
              call calc_green(Rng1,zsenergy,Rh00,Rs00,Rh01,Rs01, &
                    RGS,zdos,joutfile,tjob,tdos) 
 ! A Fazer .... wk
@@ -738,9 +695,6 @@ end subroutine cp_gf_vars
       complex*16 Hk(nuo*nuo), Sk(nuo*nuo)
       complex*16 Hk2(nuo*nuo), Sk2(nuo*nuo)
 
-! FDN Teste
-!      complex*16, dimension (:), pointer:: Hk, Sk, Hk2, Sk2
-! FDN Teste
 
 !      integer, dimension (:), pointer:: lasto
 !      integer lasto(0:maxua)   ! Index of last orbital of each atom
@@ -778,15 +732,7 @@ end subroutine cp_gf_vars
 
        if (.not. LFrstTime .and. LJob) then
 
-!        nullify(H)
-!        nullify(S)
-!        nullify(xij)
-!        nullify(indxuo)
-!        nullify(listh)
-!        nullify(listhptr)
-!        nullify(numh)
-!        nullify(efs)
-!        nullify(ix)
+
  
         H=>LH
         if (.not. Lgamma) xij=>Lxij
@@ -806,15 +752,7 @@ end subroutine cp_gf_vars
        end if
        if (.not. RFrstTime .and. RJob) then
 
-!        nullify(H)
-!        nullify(S)
-!        nullify(xij)
-!        nullify(indxuo)
-!        nullify(listh)
-!        nullify(listhptr)
-!        nullify(numh)
-!        nullify(efs)
-!        nullify(ix)
+
  
         H=>RH
         if (.not. Rgamma) xij=>Rxij
@@ -849,27 +787,6 @@ end subroutine cp_gf_vars
               nullify(efs)
               nullify(xa)
 
-!         if (LFrstTime .and. LJob) then
-!              nullify(LH)
-!              nullify(LS)
-!              nullify(Lxij)
-!              nullify(Lindxuo)
-!              nullify(Llisth)
-!              nullify(Llisthptr)
-!              nullify(Lnumh)
-!              nullify(Lefs)      
-!         end if
-
-!         if (RFrstTime .and. RJob) then
-!              nullify(RH)
-!              nullify(RS)
-!              nullify(Rxij)
-!              nullify(Rindxuo)
-!              nullify(Rlisth)
-!              nullify(Rlisthptr)
-!              nullify(Rnumh)
-!              nullify(Refs)      
-!         end if
 
 ! FDN kscell and kdispl added as dummys
 
@@ -883,12 +800,7 @@ end subroutine cp_gf_vars
 
            nuo = nuotot
 
-! FDN Teste       
-!              allocate(Hk(nuo*nuo))
-!              allocate(Sk(nuo*nuo))
-!              allocate(Hk2(nuo*nuo))
-!              allocate(Sk2(nuo*nuo))
-! FDN Teste
+
        
          if (LFrstTime .and. LJob) then
             allocate(LH00(nuo*nuo))
@@ -992,12 +904,7 @@ end subroutine cp_gf_vars
          end if                    !tinit
 !-----------------------------------------------------------------
          if(tlast) then
-!            deallocate(H)
-!            deallocate(S)
-!            deallocate(xij)
-!            deallocate(indxuo)
-!            deallocate(listh)
-!            deallocate(numh)
+
             return
          endif
          

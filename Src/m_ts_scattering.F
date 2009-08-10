@@ -647,7 +647,8 @@ c  b33 = -x32.b23 + inv(a33)
       call zgemm('N','N', n3 , n3 , n2 ,a ,x32, n3, b23,
      &     n2, b, b33, n3)      ! got b33
 
-      
+ 
+          
       deallocate(a11)
       deallocate(a12)
       deallocate(a21)
@@ -664,7 +665,8 @@ C FDN
 
 c
 c     now collect into GF
-c      
+c     
+
 
       call collectri(n1,n2,n3,b11,b12,b21,b22,b23,b32,b33,GF)
  

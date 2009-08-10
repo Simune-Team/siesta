@@ -3,20 +3,22 @@ C ## Driver subroutine for calculating the (ideal)                ##
 C ## Left surface Greens function.                                ##          
 C ##                            By                                ##
 C ##              Mads Brandbyge, mbr@mic.dtu.dk                  ##
+C ##                                                              ##
+C ## Modified by F. D. Novaes, fdnovaes@icmab.es                  ##
 C ##################################################################
 
-C FDN Added wq as dummy
+
       subroutine green(joutfile,nq,q,wq,
      &     NEn,contour,wgf,efermi,zbulk,tjob,tbtjob,
      &     ispin_fdf, k_fdf, zenergy_fdf,iEn_fdf)
       
 
       use greensub
-C FDN
+
       use m_tbt_gf
       use m_tbt_options, only : sppol, Lhsfile, Rhsfile, Lnucuse, 
      .             Rnucuse
-C FDN
+
 
 
 c======================================================================
@@ -32,9 +34,9 @@ c      parameter(PRINTALOT=.FALSE.)
 c=======================================================================
 c INPUT:
       integer nq                ! Number of surface q-points
-C FDN q may have a z component
+
       real*8 q(3,nq)         ! Surface q-point
-C FDN
+
       character*20 slabel       ! System Label (to name output files)
       character*20 llabel       ! Lead Label (to name output files)
       character*59 sname        ! System Name
@@ -54,9 +56,9 @@ c=======================================================================
 
 c   k_|| == q-points in simple (non-repeated) cell:
       real*8, pointer:: q1(:,:),wq1(:) ! k_|| and their weights 
-C FDN
+
       real*8, dimension(nq) :: wq
-C FDN
+
       real*8, pointer:: q2(:,:) ! shifted q1 points
       integer na1,na2           ! Replication of unitcell
       integer nq1                ! no. q1-points (<= na1*na2 for gamma) 
@@ -141,14 +143,14 @@ c      complex*16 ab(ngaa1),ba(ngaa1)
       complex*16 zdos
       integer iEn
 
-C FDN 
+
       real*8 cell(3,3)
       integer kscell(3,3),j
       real*8 kdispl(3),tol
       complex*16 zenergy_fdf
       integer ispin_fdf,iEn_fdf
       real*8 k_fdf(3)
-C FDN
+
 
       external io_assign,io_close
 
@@ -184,9 +186,9 @@ c!   left
 
 c output .GF files to this name
 
-C FDN
+
       if ( LFrstTime .or. RFrstTime ) then 
-C FDN
+
 
       if (LJob) hsfile = Lhsfile
       if (RJob) hsfile = Rhsfile 
@@ -201,7 +203,7 @@ c=======================================================================
         nullify(h01)
         nullify(s01)
         nullify(lasto)
-C FDN
+
         if (LFrstTime .and. tjob ) then
           nullify(Lh00)
           nullify(Ls00)
@@ -216,7 +218,7 @@ C FDN
           nullify(Rs01)
           nullify(Rlasto)
         end if 
-C FDN
+
 
 c initialize and get nspinin         
         tinit=.true.
@@ -276,7 +278,7 @@ C              zbulkdos(iEn)=dcmplx(0d0,0d0)
 C           end do
            
 
-C FDN Changing the dimensions
+
            allocate(LHAA(LNGAA,1))  
            allocate(LSAA(LNGAA,1))
            allocate(LGAAq(LNGAA,1))
@@ -327,10 +329,7 @@ c     No. used orbitals in uc:
           Rngaa=ngR2*ngR2       
           deallocate(lastou)
 
-C          do iEn=1,NEn
-C             zbulkdos(iEn)=dcmplx(0d0,0d0)
-C          end do
-C FDN Changing the dimensions
+
           allocate(RHAA(RNGAA,1))  
           allocate(RSAA(RNGAA,1))
           allocate(RGAAq(RNGAA,1)) 
@@ -346,7 +345,7 @@ C FDN Changing the dimensions
 
       end if ! LFirstTime .or. RFirstTime
 
-C FDN Added ....
+
 
 !      if (.not. WGFFiles ) then
          iEn=iEn_fdf
@@ -372,10 +371,10 @@ C FDN Added ....
                do l2 = 1,NGL2
                   do l1 = 1,NGL2
                      i=i+1
-C FDN iq1 ==> 1
+
           LHAA(i,1) = LH00(l1+(LNG1-NGL2)+LNG1*(l2+(LNG1-NGL2)-1))
           LSAA(i,1) = LS00(l1+(LNG1-NGL2)+LNG1*(l2+(LNG1-NGL2)-1))
-C FDN
+
                   end do  ! l1
                end do     ! l2
               
@@ -396,9 +395,9 @@ C A Fazer .... colocar wk ...
                   do l2 = 1,NGL2
                      do l1 = 1,NGL2
                         i=i+1
-C FDN iq1 ==> 1
+
            LGAAq(i,1) = Lgs(l1+(LNG1-NGL2)+ LNG1*(l2+(LNG1-NGL2)-1) )
-C FDN
+
                      end do     ! l1
                   end do        ! l2
 
@@ -427,29 +426,27 @@ C FDN
                      do l2 = 1,NGR2
                         do l1 = 1,NGR2
                            i=i+1
-C FDN iq1 ==> 1
+
                RHAA(i,1) = RH00(l1+RNG1*(l2-1))
                RSAA(i,1) = RS00(l1+RNG1*(l2-1))
-C FDN
+
                         end do  ! l1
                      end do     ! l2                  
          
 c
 c     Shift so efermi is energy zero
 c
-C FDN iq1 ==> 1
+
                   NGAA=ngR2*ngR2
                   call zaxpy(NGAA,dcmplx(efermi,0.d0),
      .                 RSAA(1,1),1,RHAA(1,1),1)
-C FDN
+
 
              end if ! iEn.eq.1 
 
              zsenergy = zenergy_fdf-efermi
 
-C FDN Teste
-C             write(*,*) size(Rh00),allocated(RGS)
-C FDN Teste
+
              call calc_green(Rng1,zsenergy,Rh00,Rs00,Rh01,Rs01,
      &              RGS,zdos,joutfile,tjob,tdos) 
 C A Fazer .... wk
@@ -458,9 +455,9 @@ C A Fazer .... wk
                   do l2 = 1,NGR2
                      do l1 = 1,NGR2
                         i=i+1
-C FDN iq1 ==> 1
+
                         RGAAq(i,1) = Rgs(l1+RNG1*(l2-1))
-C FDN
+
                      end do     ! l1
                   end do        ! l2           
 
@@ -468,16 +465,16 @@ C FDN
 
 !      end if ! .not. WGFFiles
 
-C FDN
+
       if (LFrstTime .and. tjob ) then
         LFrstTime=.false.     
-C Alcocar LH00, LS00, etc ..  
+
       end if
       if (RFrstTime .and. (.not.tjob) ) then
         RFrstTime=.false.
-C Alocar RH00, RS00, etc ...
+
       end if 
-C FDN     
+
 
 
 C ======================================================================
