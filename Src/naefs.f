@@ -44,7 +44,8 @@ C *********************************************************************
 
       use precision 
       use atmfuncs,  only: izofis
-      use neighbour, only: jna=>jan, xij, mneighb
+      use neighbour, only: jna=>jan, xij, mneighb,
+     &                     reset_neighbour_arrays
 
       implicit none
 
@@ -99,6 +100,9 @@ C Find neighbour atoms
         enddo
       enddo
 
+C     Free local memory
+      call MATEL( 'T', 0, 0, 0, 0, xij, vij, fij )
+      call reset_neighbour_arrays( )
       end subroutine naefs
       end module m_naefs
 

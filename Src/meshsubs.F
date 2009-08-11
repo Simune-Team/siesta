@@ -47,9 +47,6 @@ C real*8  xdop(3,mop)   : Vector to mesh points within rmax
 C real*8  xdsp(3,nsp)   : Vector to mesh sub-points
 C ----------------------------------------------------------------------
       integer,  pointer,     save :: idop(:)
-#ifdef RGT
-      integer,  pointer,     save :: indexp2(:)
-#endif
       integer,  pointer,     save :: ipa(:)
       real(dp), pointer,     save :: dxa(:,:)
       real(dp), pointer,     save :: xdop(:,:)
@@ -65,6 +62,13 @@ C ----------------------------------------------------------------------
       real(dp),              save :: cmesh(3,3)
       real(dp),              save :: rcmesh(3,3)
       CONTAINS
+
+      subroutine resetMesh( )
+      use alloc, only: de_alloc
+      implicit none
+      call de_alloc( xdop, 'xdop', 'mesh' )
+      call de_alloc( idop, 'idop', 'mesh' )
+      end subroutine resetMesh
 
       function indexp( ind )
       implicit none
@@ -128,6 +132,24 @@ C ----------------------------------------------------------------------
       integer,          pointer, save :: listp2(:)
       real(grid_p),     pointer, save :: phi(:,:)
       end module meshphi
+
+      subroutine resetMeshPhi( )
+      use meshphi
+      use alloc,         only : de_alloc
+      implicit none
+      if (associated(endpht))
+     &  call de_alloc( endpht, 'endpht',  'PhiOnMesh' )
+
+      if (associated(lstpht))
+     &  call de_alloc( lstpht, 'lstpht',  'PhiOnMesh' )
+
+      if (associated(listp2))
+     &  call de_alloc( listp2, 'listp2',  'PhiOnMesh' )
+
+      if (associated(phi))
+     &  call de_alloc( phi, 'phi',  'PhiOnMesh' )
+
+      end subroutine resetMeshPhi
 
       subroutine SameMeshAndAtoms(na, xa, ucell, rmax, G2max, G2mesh,
      &                            samesh, samexa)

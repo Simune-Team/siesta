@@ -41,11 +41,12 @@ C **********************************************************************
       INTEGER             :: NTPL, NML(3), NTML(3)
       INTEGER, INTENT(IN) :: NSPIN, NPCC
  
-      REAL(dp), DIMENSION(3,3), INTENT(IN) :: CELL(3,3)
-      REAL(grid_p), DIMENSION(NTPL), INTENT(IN) :: VNA, RHOATM, RHOPCC
-      REAL(grid_p), DIMENSION(NTPL,NSPIN), INTENT(INOUT) :: DRHOOUT
-      REAL(grid_p), DIMENSION(NTPL,NSPIN), INTENT(INOUT) :: VHARRIS1
-      REAL(grid_p), DIMENSION(NTPL), INTENT(INOUT) :: VHARRIS2
+      REAL(dp),                INTENT(IN) :: CELL(3,3)
+      REAL(grid_p),            INTENT(IN) :: VNA(NTPL), RHOATM(NTPL),
+     &                                       RHOPCC(NTPL)
+      REAL(grid_p),         INTENT(INOUT) :: DRHOOUT(NTPL,NSPIN)
+      REAL(grid_p), TARGET, INTENT(INOUT) :: VHARRIS1(NTPL,NSPIN)
+      REAL(grid_p),         INTENT(INOUT) :: VHARRIS2(NTPL)
       
       EXTERNAL REORD, CELLXC
 
@@ -86,7 +87,7 @@ C ----------------------------------------------------------------------
 
       real(grid_p),  pointer :: drhoin(:,:), drhoin_par(:,:),
      &                          dvxcdn(:,:,:), dvxcdn_par(:,:,:),
-     &                          vharris1_par(:,:)
+     &                          vharris1_par(:,:), fsrc(:), fdst(:)
       INTEGER                :: idistr, odistr, ntpl_2, ntpl_3
 
       nullify( drhoin )
@@ -136,8 +137,9 @@ C ----------------------------------------------------------------------
      &              name='dvxcdn_par', routine='forhar' )
 
       DO ISPIN = 1, NSPIN
-        call distMeshData( idistr, drhoin(1:ntpl_2,ispin),
-     &                     odistr, drhoin_par(1:ntpl_3,ispin), +1 )
+        fsrc => drhoin(:,ispin)
+        fdst => drhoin_par(:,ispin)
+        call distMeshData( idistr, fsrc, odistr, fdst, +1 )
       ENDDO
 
       CALL CELLXC( 0, 1, CELL, NTML, NTML, NTPL, 0, AUX3, NSPIN,
@@ -145,11 +147,13 @@ C ----------------------------------------------------------------------
      &             DVXCDN_PAR, STRESSL )
 
       DO ISPIN = 1, NSPIN
-        call distMeshData( odistr, VHARRIS1_PAR(1:ntpl_3,ISPIN),
-     &                     idistr, VHARRIS1(1:ntpl_2,ispin), -1 )
+        fsrc => VHARRIS1_PAR(:,ISPIN)
+        fdst => VHARRIS1(:,ispin)
+        call distMeshData( odistr, fsrc, idistr, fdst, -1 )
         DO ISPIN2 = 1, NSPIN
-          call distMeshData( odistr, DVXCDN_PAR(1:ntpl_3,ISPIN,ISPIN2),
-     &                       idistr, DVXCDN(1:ntpl_2,ISPIN,ISPIN2), -1 )
+          fsrc => DVXCDN_PAR(:,ISPIN,ISPIN2)
+          fdst => DVXCDN(:,ISPIN,ISPIN2)
+          call distMeshData( odistr, fsrc, idistr, fdst, -1)
         ENDDO
       ENDDO
 

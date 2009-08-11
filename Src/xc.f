@@ -138,7 +138,7 @@ C Initialize output
 C Set up workspace array
       if (GGA) then
         nullify( Aux )
-        call re_alloc( Aux, 1, NR, name='Aux', routine='atomxc' )
+        call re_alloc( AUX, 1, NR, 'AUX', 'atomxc' )
       endif
 
 C Get number pi
@@ -272,7 +272,7 @@ C Divide by volume element to obtain the potential (per electron)
             VXC(IR,IS) = VXC(IR,IS) / DVol
           enddo
         enddo
-        call de_alloc( aux,  name='aux' )
+        call de_alloc( AUX, 'AUX', 'atomxc' )
       endif
 
 C Divide by energy unit

@@ -135,7 +135,7 @@ C Passed arguments
 C Local arguments
       integer
      .  MaxMemory, n
-      integer, allocatable :: maxmemlist(:)
+      integer, pointer :: maxmemlist(:)
 
 #ifdef MPI
       integer
@@ -152,7 +152,7 @@ C Find peak memory use over all Nodes
 
 C Output memory use information
       if (Node.eq.0) then
-        write(Unit,'(a)') ''
+        write(Unit,'(a)') ' '
       endif
       if (Level.eq.0) then
         if (Node.eq.0) then
@@ -160,10 +160,11 @@ C Output memory use information
      .      '' MB'')') (MaxMemory/1000000)+1
         endif
       else
+	nullify(maxmemlist)
         if (node==0) then
           allocate(maxmemlist(nodes))
         else
-          allocate(maxmemlist(0))
+          allocate(maxmemlist(1))
         endif
 #ifdef MPI
         call mpi_gather(peakmemory,1,mpi_integer,
@@ -177,7 +178,7 @@ C Output memory use information
             write(Unit,'(''* Maximum dynamic memory allocated : Node ''
      .          ,i4,'' = '',i5,'' MB'')') n,(maxmemlist(n+1)/1000000)+1
           enddo
-          write(Unit,'(a)') ''
+          write(Unit,'(a)') ' '
           write(Unit,'(''* Maximum memory occured during '',a30)')
      .               PeakRoutine
         endif

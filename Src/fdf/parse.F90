@@ -681,7 +681,7 @@ MODULE parse
       if (match(pline, 'bl')) then
         blocks = tokens(pline, 2)
       else
-        blocks = ''
+        blocks = ' '
       endif
 
       RETURN
@@ -704,7 +704,7 @@ MODULE parse
       if (match(pline, 'el')) then
         endblocks = tokens(pline, 2)
       else
-        endblocks = ''
+        endblocks = ' '
       endif
 
       RETURN
@@ -727,7 +727,7 @@ MODULE parse
       if (match(pline, 'l')) then
         labels = tokens(pline, 1)
       else
-        labels = ''
+        labels = ' '
       endif
 
       RETURN
@@ -843,7 +843,7 @@ MODULE parse
 
 !--------------------------------------------------------------- Local Variables
       character                    :: token_id(MAX_NTOKENS)
-      integer(ip)                  :: i, ntokens, ncharacters
+      integer(ip)                  :: i, ntokens
       integer(ip)                  :: first(MAX_NTOKENS), last(MAX_NTOKENS)
 
 !------------------------------------------------------------------------- BEGIN
@@ -996,7 +996,7 @@ MODULE parse
         do i= 1, ntokens
           write(parse_log,*) '   Token:', '|',line(first(i):last(i)),'|'
         enddo
-        write(parse_log,*) ''
+        write(parse_log,*) ' '
       endif
 !--------------------------------------------------------------------------- END
     END SUBROUTINE parses
@@ -1048,7 +1048,7 @@ MODULE parse
         do i= 1, ntokens
           write(parse_log,*) '   Token:', '|', token_id(i), '|'
         enddo
-        write(parse_log,*) ''
+        write(parse_log,*) ' '
       endif
 !--------------------------------------------------------------------------- END
     END SUBROUTINE morphol

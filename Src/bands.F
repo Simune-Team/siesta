@@ -11,7 +11,7 @@
       module band
       use precision, only: dp
       use sys,       only: die
-      use alloc,     only: re_alloc
+      use alloc,     only: re_alloc, de_alloc
       implicit none
       private
 
@@ -25,18 +25,18 @@
       character, save :: label(maxlin)*8
       integer,   save :: lastk(maxlin), nlines
 
-      public  :: setup_bands, bands
+      public  :: setup_bands, bands, reset_bands
       
       contains
 
       subroutine setup_bands( )
         implicit none
         ! Find number of band k-points
-        nullify(bk)
         nbk = 0
         maxbk = 1
-        call re_alloc(bk,1,3,1,maxbk,name='bk',routine='siesta',
-     .                copy=.false.)
+        nullify(bk)
+        call re_alloc( bk, 1, 3, 1, maxbk, 'bk', 'band',
+     .                copy=.false. )
 
         call initbands( maxbk, nbk, bk )
 
@@ -44,8 +44,8 @@
           ! If there wasn't enough space to store bands on first call 
           ! correct the dimensions and repeat the initialisation
           maxbk = max(nbk,1)
-          call re_alloc(bk,1,3,1,maxbk,name='bk',routine='siesta',
-     .                  copy=.false.)
+          call re_alloc( bk, 1, 3, 1, maxbk, 'bk', 'band',
+     .                  copy=.false. )
           nbk = 0
           call initbands( maxbk, nbk, bk )
         endif
@@ -53,6 +53,11 @@
         gamma_bands = (nbk == 0)   ! Flag for use of auxiliary cell
 
       end subroutine setup_bands
+
+      subroutine reset_bands( )
+      implicit none
+      if (associated(bk)) call de_alloc( bk, 'bk', 'band' )
+      end subroutine reset_bands
 
       subroutine initbands( maxk, nk, kpoint )
 C *********************************************************************
@@ -462,14 +467,14 @@ C Check parameter maxk
 
 C Allocate local arrays - only aux is relevant here
       nhs = 2*nuotot*nuo
-      call re_alloc(Haux,1,nhs,name='Haux',routine='bands')
-      call re_alloc(Saux,1,nhs,name='Saux',routine='bands')
-      call re_alloc(psi,1,nhs,name='psi',routine='bands')
       naux  = nuotot*5
-      nullify( aux )
-      call re_alloc( aux, 1, naux, name='aux', routine='bands' )
-      nullify( muo )
-      call re_alloc( muo, 1, nuotot, name='muo', routine='bands' )
+      call re_alloc( Haux, 1, nhs, 'Haux', 'densematrix' )
+      call re_alloc( Saux, 1, nhs, 'Saux', 'densematrix' )
+      call re_alloc( psi,  1, nhs, 'psi',  'densematrix' )
+
+      nullify( aux, muo )
+      call re_alloc( aux, 1, naux, 'aux', 'bands' )
+      call re_alloc( muo, 1, nuotot, 'muo', 'bands' )
 
 C Check indxuo 
       do iuo = 1,nuotot
@@ -609,8 +614,8 @@ C Close output file
       endif
 
 C Free local arrays 
-      call de_alloc( muo, name='muo' )
-      call de_alloc( aux, name='aux' )
+      call de_alloc( muo, 'muo', 'band' )
+      call de_alloc( aux, 'aux', 'band' )
 
 C This is the only exit point 
   999 continue

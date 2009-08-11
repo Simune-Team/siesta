@@ -61,7 +61,6 @@
       integer :: i, is, ispin
       integer :: neigmin      ! Min. number of eigenstates (per k point)
       integer :: ns           ! Number of species
-
 !------------------------------------------------------------------------- BEGIN
 #ifdef MPI
 C     Initialise MPI and set processor number
@@ -80,6 +79,7 @@ C     Initialise MPI and set processor number
 #endif
 #ifdef DEBUG
       call debugMpiOn( )
+      call inicializar_tiempo( 20 )
 #endif
       IOnode = (Node .eq. 0)
 
@@ -125,14 +125,27 @@ C     Initialize some variables
       FreeE   = 0.0_dp
 
 C     Initialise read
+#ifdef DEBUG
+      call write_debug( '  PRE reinit' )
+#endif
       call reinit(sname)
+#ifdef DEBUG
+      call write_debug( '  POS reinit' )
+#endif
 
 C     Initialize CML (relies on reinit)
       call siesta_cml_init()
 
 C     Set allocation report level
       level = fdf_get( 'alloc_report_level', 0 )
-      call alloc_report( level=level, file=trim(slabel)//'.alloc' )
+#ifdef DEBUG
+      call write_debug( '  PRE alloc_report' )
+#endif
+      call alloc_report( level=level, file=trim(slabel)//'.alloc',
+     &                   printNow=.false. )
+#ifdef DEBUG
+      call write_debug( '  POS alloc_report' )
+#endif
 
 C     Initialise exchange-correlation functional information
       call setXC()
@@ -150,7 +163,13 @@ C     Initialize pseudopotentials and atomic orbitals
       if (atmonly) call bye("End of atom setup")
 
 C     Read geometry
+#ifdef DEBUG
+      call write_debug( '  PRE struct_init' )
+#endif
       call struct_init( )      ! Sets na_u, isa, ucell
+#ifdef DEBUG
+      call write_debug( '  POS struct_init' )
+#endif
 
 C     Initialize atom lists
       call initatomlists( )    ! Sets iza
@@ -189,7 +208,13 @@ C     Allocate other arrays based on read sizes
       call init_spin( )
 
 C     Read simulation data
+#ifdef DEBUG
+      call write_debug( '  PRE read_options' )
+#endif
       call read_options( na_u, ns, nspin )
+#ifdef DEBUG
+      call write_debug( '  POS read_options' )
+#endif
 
       qtot = qtot - charnet     ! qtot set in initatomlists
                                 ! charnet set in redata
@@ -241,7 +266,13 @@ C     Madelung correction for charged systems
       endif
 
 C     Parallel initialisation
+#ifdef DEBUG
+      call write_debug( '  PRE initparallel' )
+#endif
       call initparallel(no_u,na_u,lasto,xa,ucell,rmaxh,rcoor,isolve)
+#ifdef DEBUG
+      call write_debug( '  POS initparallel' )
+#endif
 C      if (IOnode) call show_distribution()
 
 C     Find number of locally stored orbitals and allocated related arrays
@@ -249,8 +280,8 @@ C     Find number of locally stored orbitals and allocated related arrays
 
 C     Initialise arrays
       nullify( listhptr, numh )
-      call re_alloc( listhptr, 1, no_l, 'listhptr', 'siesta_init' )
-      call re_alloc( numh, 1, no_l, 'numh', 'siesta' )
+      call re_alloc( listhptr, 1, no_l, 'listhptr', 'sparseMat' )
+      call re_alloc( numh, 1, no_l, 'numh', 'sparseMat' )
       listhptr    = 0
       numh        = 0
 

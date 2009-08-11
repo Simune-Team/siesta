@@ -323,6 +323,7 @@ if (node > 0) then
 end if
 #endif
 
+
 if (present(printNow)) then
   if (printNow) call print_report( )
 end if
@@ -388,7 +389,6 @@ if (NEEDS_COPY) then
   deallocate(old_array,stat=IERR)
   call alloc_err( IERR, name, routine, old_bounds )
 end if
-
 END SUBROUTINE realloc_i1
 
 ! ==================================================================
@@ -1641,7 +1641,7 @@ if (REPORT_LEVEL <= 0) return
 
 ! Compound routine+array name
 if (present(name)) then
-  aname = name
+  aname = TRIM(name) // '%' // rname
 else
   aname = DEFAULT_NAME
 end if

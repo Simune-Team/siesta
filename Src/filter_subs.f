@@ -108,8 +108,11 @@ C *******************************************************************
    40 CONTINUE
       END
       DOUBLE PRECISION FUNCTION PLGNDR(L,M,X)
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
-      PARAMETER (ONE=1.D0,TWO=2.D0)
+      IMPLICIT NONE
+      INTEGER                     :: I, M, L, LL
+      DOUBLE PRECISION            :: X, PMM, SOMX2, FACT, PMMP1, PLL
+      DOUBLE PRECISION, PARAMETER :: ONE=1.D0,TWO=2.D0
+
       IF(M.LT.0.OR.M.GT.L.OR.ABS(X).GT.ONE)STOP ' PLGNDR: bad arguments'
       PMM=ONE
       IF(M.GT.0) THEN
@@ -137,14 +140,18 @@ C *******************************************************************
       ENDIF
       RETURN
       END
+
       SUBROUTINE TQLI(D,E,N,NP,Z)
 C
 C  IN COMBINATION WITH TRED2 FINDS EIGENVALUES AND EIGENVECTORS OF
 C  A REAL SYMMETRIC MATRIX. REF: W.H.PRESS ET AL. NUMERICAL RECIPES.
 C
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
-      DIMENSION D(NP),E(NP),Z(NP,NP)
-      PARAMETER (ZERO=0.D0,ONE=1.D0,TWO=2.D0)
+      IMPLICIT NONE
+      INTEGER                     :: N, NP
+      DOUBLE PRECISION            :: D(NP),E(NP),Z(NP,NP)
+      DOUBLE PRECISION, PARAMETER :: ZERO=0.D0, ONE=1.D0, TWO=2.D0
+      INTEGER                     :: I, K, L, ITER, M
+      DOUBLE PRECISION            :: DD, G, R, S, C, P, F, B
       IF (N.GT.1) THEN
         DO 11 I=2,N
           E(I-1)=E(I)
@@ -207,110 +214,118 @@ C
 C HOUSEHOLDER REDUCTION OF A REAL SYMMETRIC MATRIX INTO TRIDIAGONAL FORM
 C REF: W.H.PRESS ET AL. NUMERICAL RECIPES. CAMBRIDGE U.P.
 C
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
-      DIMENSION A(NP,NP),D(NP),E(NP)
-      PARAMETER (ZERO=0.D0,ONE=1.D0)
-      IF(N.GT.1)THEN
-        DO 18 I=N,2,-1
-          L=I-1
-          H=ZERO
-          SCALE=ZERO
-          IF(L.GT.1)THEN
-            DO 11 K=1,L
-              SCALE=SCALE+ABS(A(I,K))
+      IMPLICIT NONE
+      INTEGER                     :: N, NP
+      DOUBLE PRECISION            :: A(NP,NP), D(NP), E(NP)
+      DOUBLE PRECISION, PARAMETER :: ZERO=0.D0, ONE=1.D0
+      INTEGER                     :: I, J, K, L
+      DOUBLE PRECISION            :: F, G, H, HH, SCALE
+
+      IF(N.GT.1) THEN
+        DO 18 I= N, 2, -1
+          L = I - 1
+          H = ZERO
+          SCALE = ZERO
+          IF(L.GT.1) THEN
+            DO 11 K= 1, L
+              SCALE = SCALE + ABS(A(I,K))
 11          CONTINUE
-            IF(SCALE.EQ.ZERO)THEN
+            IF(SCALE.EQ.ZERO) THEN
               E(I)=A(I,L)
             ELSE
               DO 12 K=1,L
-                A(I,K)=A(I,K)/SCALE
-                H=H+A(I,K)**2
+                A(I,K) = A(I,K)/SCALE
+                H = H+A(I,K)**2
 12            CONTINUE
-              F=A(I,L)
-              G=-SIGN(SQRT(H),F)
-              E(I)=SCALE*G
-              H=H-F*G
-              A(I,L)=F-G
-              F=ZERO
-              DO 15 J=1,L
-                A(J,I)=A(I,J)/H
-                G=ZERO
-                DO 13 K=1,J
-                  G=G+A(J,K)*A(I,K)
+              F      = A(I,L)
+              G      = -SIGN(SQRT(H),F)
+              E(I)   = SCALE*G
+              H      = H - F*G
+              A(I,L) = F - G
+              F      = ZERO
+              DO 15 J= 1, L
+                A(J,I) = A(I,J)/H
+                G = ZERO
+                DO 13 K= 1, J
+                  G = G + A(J,K)*A(I,K)
 13              CONTINUE
-                IF(L.GT.J)THEN
-                  DO 14 K=J+1,L
-                    G=G+A(K,J)*A(I,K)
+                IF(L.GT.J) THEN
+                  DO 14 K= J+1, L
+                    G = G + A(K,J)*A(I,K)
 14                CONTINUE
                 ENDIF
-                E(J)=G/H
-                F=F+E(J)*A(I,J)
+                E(J) = G/H
+                F    = F + E(J)*A(I,J)
 15            CONTINUE
-              HH=F/(H+H)
-              DO 17 J=1,L
-                F=A(I,J)
-                G=E(J)-HH*F
-                E(J)=G
-                DO 16 K=1,J
-                  A(J,K)=A(J,K)-F*E(K)-G*A(I,K)
+              HH = F/(H+H)
+              DO 17 J= 1, L
+                F    = A(I,J)
+                G    = E(J) - HH*F
+                E(J) = G
+                DO 16 K= 1, J
+                  A(J,K) = A(J,K) - F*E(K) - G*A(I,K)
 16              CONTINUE
 17            CONTINUE
             ENDIF
           ELSE
-            E(I)=A(I,L)
+            E(I) = A(I,L)
           ENDIF
-          D(I)=H
+          D(I) = H
 18      CONTINUE
       ENDIF
-      D(1)=ZERO
-      E(1)=ZERO
-      DO 23 I=1,N
-        L=I-1
-        IF(D(I).NE.ZERO)THEN
-          DO 21 J=1,L
-            G=ZERO
-            DO 19 K=1,L
-              G=G+A(I,K)*A(K,J)
+      D(1) = ZERO
+      E(1) = ZERO
+      DO 23 I= 1, N
+        L = I-1
+        IF (D(I).NE.ZERO) THEN
+          DO 21 J= 1, L
+            G = ZERO
+            DO 19 K= 1, L
+              G = G + A(I,K)*A(K,J)
 19          CONTINUE
-            DO 20 K=1,L
-              A(K,J)=A(K,J)-G*A(K,I)
+            DO 20 K= 1, L
+              A(K,J) = A(K,J) - G*A(K,I)
 20          CONTINUE
 21        CONTINUE
         ENDIF
-        D(I)=A(I,I)
-        A(I,I)=ONE
-        IF(L.GE.1)THEN
-          DO 22 J=1,L
-            A(I,J)=ZERO
-            A(J,I)=ZERO
+        D(I)   = A(I,I)
+        A(I,I) = ONE
+        IF (L.GE.1) THEN
+          DO 22 J= 1, L
+            A(I,J) = ZERO
+            A(J,I) = ZERO
 22        CONTINUE
         ENDIF
 23    CONTINUE
       RETURN
       END
+
       SUBROUTINE XLGNDR (X,W,N)
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
-      DOUBLE PRECISION X(N),W(N)
-      PARAMETER (EPS=3.D-14,PI=3.14159265358979D0)
-      M=(N+1)/2
-      DO 12 I=1,M
-        Z=COS(PI*(I-.25D0)/(N+.5D0))
+      IMPLICIT NONE
+      INTEGER                     :: N
+      DOUBLE PRECISION            :: X(N), W(N)
+      DOUBLE PRECISION, PARAMETER :: EPS=3.D-14, PI=3.14159265358979D0
+      INTEGER                     :: I, J, M
+      DOUBLE PRECISION            :: Z, Z1, PP, P1, P2, P3
+      M = (N+1)/2
+      DO 12 I= 1,M
+        Z = COS(PI*(I-.25D0)/(N+.5D0))
 1       CONTINUE
-          P1=1.D0
-          P2=0.D0
-          DO 11 J=1,N
-            P3=P2
-            P2=P1
-            P1=((2.D0*J-1.D0)*Z*P2-(J-1.D0)*P3)/J
+          P1 = 1.D0
+          P2 = 0.D0
+          DO 11 J= 1, N
+            P3 = P2
+            P2 = P1
+            P1 = ((2.D0*J-1.D0)*Z*P2-(J-1.D0)*P3)/J
 11        CONTINUE
-          PP=N*(Z*P1-P2)/(Z*Z-1.D0)
-          Z1=Z
-          Z=Z1-P1/PP
-        IF(ABS(Z-Z1).GT.EPS)GO TO 1
-        J=M+1-I
-        X(J)=Z
-        W(J)=2.D0/((1.D0-Z*Z)*PP*PP)
-        IF(ABS(Z).LT.EPS) W(J)=.5D0*W(J)
+          PP = N*(Z*P1-P2)/(Z*Z-1.D0)
+          Z1 = Z
+          Z  = Z1 - P1/PP
+        IF (ABS(Z-Z1).GT.EPS) GO TO 1
+        J    = M + 1 - I
+        X(J) = Z
+        W(J) = 2.D0/((1.D0-Z*Z)*PP*PP)
+        IF (ABS(Z).LT.EPS) W(J) = 0.5D0*W(J)
 12    CONTINUE
       RETURN
       END

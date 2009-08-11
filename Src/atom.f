@@ -2511,9 +2511,8 @@ C*Internal variables ****
 
            integer  
      .        nr, nodd, lmax, linput, npotd, npotu,
-     .        ndown, l, ir, i, itext
-           character 
-     .         orb*2,method(6)*10,text*70
+     .        ndown, l, ir, i
+           character method(6)*10,text*70
 
            type(pseudopotential_t), pointer :: vp
 
@@ -3075,11 +3074,11 @@ C***Internal variables**
      .           eigen(0:lmaxd), rc, split_table(nrmax),
      .           rnrm(nrmax), dnrm, phi,
      .           cons1, cons2, rnp, spln, eshift, 
-     .           g(nrmax), r, el, ekin, rdummy,
+     .           g(nrmax), r, el, ekin,
      .           r1, r2, dfdi, d2fdi2, d2fdr2, dr,
      .           epot, epot2, rh, dy, eorb, eps, 
      .           over(nsemx), vsoft(nrmax), vePAOsoft(nrmax),
-     $           exponent, dlt, d, dn, norm(nsemx), rcsan,
+     $           dlt, d, dn, norm(nsemx),
      $     kmax,grid,filterFactor,minnorm,
      $           spln_min
       real(dp),allocatable,dimension(:) :: forb !filtered orbital
@@ -3087,9 +3086,6 @@ C***Internal variables**
       logical :: new_split_code, fix_split_table, split_tail_norm
 
                parameter (dlt=0.60d0)
-
-               character  filename*80, paste*80
-
 
 C****NUMBER OF POINTS USED BY POLINT FOR THE INTERPOLATION***
 C 
@@ -4571,7 +4567,7 @@ C***Internal variables*
         real(dp)  qatm(0:3)
           
         integer noPAO, l, izeta, m, norb, noPol, lpop,
-     .     nsm, nvalence, config(0:lmaxd), i, j
+     .     nsm, nvalence, config(0:lmaxd), i
         character*70  line
 
         qatm(0:3) = basp%ground_state%occupation(0:3)
@@ -4949,7 +4945,7 @@ C
 
                integer
      .           l, nrc, nsp, ir,indx,
-     .           ipol, nsm, nrcomp
+     .           ipol, nsm
 
                real(dp)
      .           rc, rcpol(nzetmx,0:lmaxd,nsemx),
@@ -4959,7 +4955,7 @@ C
      .           g(nrmax), r, ekin, 
      .           r1, r2, dfdi, d2fdi2, d2fdr2, dr,
      .           epot, epot2, eorb, eps,
-     $           rcsan, exponent, vsoft(nrmax), vePAOsoft(nrmax)
+     $           vsoft(nrmax), vePAOsoft(nrmax)
 
       logical::filterorbitals, new_split_code, split_tail_norm
       logical :: fix_split_table

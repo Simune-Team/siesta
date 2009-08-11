@@ -13,6 +13,10 @@
       use sys
       use alloc, only: re_alloc, de_alloc
 
+      real(dp), pointer, private :: Y(:)
+      real(dp), pointer, private :: DYDR(:,:)
+      INTEGER,           private :: MAX_LM=-1
+
       implicit none
 
       CONTAINS
@@ -66,7 +70,7 @@ C Internal variables
      .  ZP(0:MAXLP1,0:MAXLP1), FAC, FOURPI, GY(3),
      .  P(0:MAXLP1,0:MAXLP1),
      .  RL(-1:MAXL), RSIZE, RX, RY, RZ, RXY,
-     .  SINM, SINMM1, SINPHI, Y
+     .  SINM, SINMM1, SINPHI, YY
       SAVE LMXMX, C
       DATA LMXMX /-1/
 
@@ -82,7 +86,7 @@ C Evaluate normalization constants once and for all
                   FAC=FAC/I
    10          CONTINUE
                C(ILM0+M)=SQRT(FAC)
-C              Next line because Y's are real combinations of M and -M
+C              Next line because YY's are real combinations of M and -M
                IF (M.NE.0) C(ILM0+M)=C(ILM0+M)*SQRT(TWO)
                C(ILM0-M)=C(ILM0+M)
    15       CONTINUE
@@ -195,13 +199,13 @@ C     Find spherical harmonics and their gradient
           DO 75 MS = -1,1,2
             IF (MS.EQ.-1) THEN
               ILM=L*L+L-M
-              Y=C(ILM)*P(L,M)*SINM
+              YY=C(ILM)*P(L,M)*SINM
               GY(1)=(-ZP(L,M))*RX *RZ *SINM - P(L,M)*M*COSM*SINPHI/RXY
               GY(2)=(-ZP(L,M))*RY *RZ *SINM + P(L,M)*M*COSM*COSPHI/RXY
               GY(3)= ZP(L,M)*RXY*RXY*SINM
             ELSE
               ILM=L*L+L+M
-              Y=C(ILM)*P(L,M)*COSM
+              YY=C(ILM)*P(L,M)*COSM
               GY(1)=(-ZP(L,M))*RX *RZ *COSM + P(L,M)*M*SINM*SINPHI/RXY
               GY(2)=(-ZP(L,M))*RY *RZ *COSM - P(L,M)*M*SINM*COSPHI/RXY
               GY(3)= ZP(L,M)*RXY*RXY*COSM
@@ -209,10 +213,10 @@ C     Find spherical harmonics and their gradient
             GY(1)= GY(1)*C(ILM)/RSIZE
             GY(2)= GY(2)*C(ILM)/RSIZE
             GY(3)= GY(3)*C(ILM)/RSIZE
-            RLY(ILM)=RL(L)*Y
-            GRLY(1,ILM)= RX*L*RL(L-1)*Y + RL(L)*GY(1)
-            GRLY(2,ILM)= RY*L*RL(L-1)*Y + RL(L)*GY(2)
-            GRLY(3,ILM)= RZ*L*RL(L-1)*Y + RL(L)*GY(3)
+            RLY(ILM)=RL(L)*YY
+            GRLY(1,ILM)= RX*L*RL(L-1)*YY + RL(L)*GY(1)
+            GRLY(2,ILM)= RY*L*RL(L-1)*YY + RL(L)*GY(2)
+            GRLY(3,ILM)= RZ*L*RL(L-1)*YY + RL(L)*GY(3)
    75     CONTINUE
    80   CONTINUE
         COSMM1=COSM
@@ -225,6 +229,7 @@ C     Find spherical harmonics and their gradient
       END SUBROUTINE RLYLM
 
       SUBROUTINE YLMYLM( ILM1, ILM2, R, YY, DYYDR )
+      implicit none
       INTEGER, intent(in)       ::       ILM1, ILM2
       REAL(DP), intent(in)      ::       R(3)
       REAL(DP), intent(out)     ::       YY, DYYDR(3)
@@ -240,22 +245,18 @@ C REAL*8  DYYDR(3) : Derivative (gradient) of YY with respect to R
 C *********************************************************************
 C Written by J.M.Soler. Feb' 96.
 C *********************************************************************
+      INTEGER           I, L, LM
 
+      L  = MAX( LOFILM(ILM1), LOFILM(ILM2) )
+      LM = (L+1)*(L+1)
 
-      INTEGER MAXLM
-      INTEGER           I, L
+      if (LM.gt.MAX_LM) then
 
-      real(dp), pointer  ::   Y(:)
-      real(dp), pointer  ::   DYDR(:,:)
-
-      L = MAX( LOFILM(ILM1), LOFILM(ILM2) )
-      MAXLM = (L+1)*(L+1)
-
-      nullify( y )
-      call re_alloc( y, 0, maxlm, name='y', routine='ylmylm' )
-      nullify( dydr )
-      call re_alloc( dydr, 1, 3, 0, maxlm, name='dydr',
-     &               routine='ylmylm' )
+        MAX_LM = LM
+        nullify( Y, DYDR )
+        call re_alloc( Y, 0, MAX_LM, 'Y', 'spher_harm' )
+        call re_alloc( DYDR, 1, 3, 0, MAX_LM, 'DYDR', 'spher_harm' )
+      endif
 
       CALL RLYLM( L, R, Y, DYDR )
 
@@ -264,10 +265,7 @@ C *********************************************************************
         DYYDR(I) = DYDR(I,ILM1-1)*Y(ILM2-1) + Y(ILM1-1)*DYDR(I,ILM2-1)
       enddo
 
-      call de_alloc( dydr,  name='dydr' )
-      call de_alloc( y,  name='y' )
-
-      END subroutine ylmylm
+      END SUBROUTINE YLMYLM
 
       INTEGER FUNCTION LOFILM( ILM )
       integer, intent(in) :: ilm
@@ -300,19 +298,19 @@ C Makes a radial times spherical-harmonic expansion of a function.
 
       integer, intent(in)          :: lmax
       interface
-         subroutine rlylm_f(lmax,rvec,y,grady)
+         subroutine rlylm_f(lmax,rvec,yy,grady)
          use precision, only: dp
          integer, intent(in)   :: lmax
          real(dp), intent(in)  :: rvec(3)
-         real(dp), intent(out) :: y(0:)
+         real(dp), intent(out) :: yy(0:)
          real(dp), intent(out) :: grady(1:,0:)
          end subroutine rlylm_f
 
-         subroutine func(i1,i2,rvec,y,grady)
+         subroutine func(i1,i2,rvec,yy,grady)
          use precision, only: dp
          integer, intent(in)   :: i1, i2
          real(dp), intent(in)  :: rvec(3)
-         real(dp), intent(out) :: y, grady(3)
+         real(dp), intent(out) :: yy, grady(3)
          end subroutine func
        end interface
 
@@ -327,7 +325,7 @@ C Makes a radial times spherical-harmonic expansion of a function.
 C Written by J.M.Soler. September 1995.
 C ************************* INPUT ***********************************
 C INTEGER  LMAX                     : Max. ang. momentum quantum number
-C EXTERNAL RLYLM_F(Lmax,Rvec,Y,GradY) : Returns spherical harmonics,
+C EXTERNAL RLYLM_F(Lmax,Rvec,yy,GradY) : Returns spherical harmonics,
 C                                     times r**l
 C EXTERNAL FUNC(IS,IO,Rvec,F,GradF) : Function to be expanded.
 C INTEGER  IS, IO                   : Indexes to call FUNC.
@@ -338,7 +336,7 @@ C ************************* OUTPUT **********************************
 C INTEGER  NY            : Number of spherical harmonics required.
 C INTEGER  ILM(NY)       : Spherical harmonics indexes: ILM=L*L+L+M+1.
 C REAL*8   FLM(IR1:NR,NY): Radial expansion for each spherical harmonic:
-C   F(Rvec) = Sum_iy( FLM(Rmod,iy) * Y(Rdir,ILM(iy)) ),
+C   F(Rvec) = Sum_iy( FLM(Rmod,iy) * YY(Rdir,ILM(iy)) ),
 C   with   Rmod = RMAX*IR/NR
 C ************************* UNITS ***********************************
 C RMAX must be in the same units of the argument Rvec in FUNC.
@@ -368,7 +366,7 @@ C Declare internal variables ----------------------------------------
      .  DFDX(3), DYDX(3,MAXLM), 
      .  F(MAXSP), FY, PHI, PI, R, RX(3), THETA, 
      .  W(MAXL+1), WSP,
-     .  X(3,MAXSP), Y(MAXLM), YSP(MAXSP,MAXLM),
+     .  X(3,MAXSP), YY(MAXLM), YSP(MAXSP,MAXLM),
      .  Z(MAXL+1)
       EXTERNAL CHKDIM
 *     EXTERNAL TIMER
@@ -398,10 +396,10 @@ C Find weighted spherical harmonics at special points ---------------
           X(1,NSP) = SIN(THETA) * COS(PHI)
           X(2,NSP) = SIN(THETA) * SIN(PHI)
           X(3,NSP) = COS(THETA)
-          CALL RLYLM_F( LMAX, X(1,NSP), Y, DYDX )
+          CALL RLYLM_F( LMAX, X(1,NSP), YY, DYDX )
           WSP = W(IZ) * (2._dp*PI) / (2*LMAX+1)
           DO 10 JLM = 1,NLM
-            YSP(NSP,JLM) = WSP * Y(JLM)
+            YSP(NSP,JLM) = WSP * YY(JLM)
    10     CONTINUE
    20   CONTINUE
    30 CONTINUE
@@ -502,5 +500,14 @@ C -------------------------------------------------------------------
 12    CONTINUE
 
       end subroutine gauleg
+
+      SUBROUTINE RESET_SPHER_HARM( )
+      implicit none
+      if (MAX_LM.gt.0) then
+        MAX_LM = -1
+        call de_alloc( Y,    'Y', 'spher_harm' )
+        call de_alloc( DYDR, 'DYDR', 'spher_harm' )
+      endif
+      END SUBROUTINE RESET_SPHER_HARM
 
       end module spher_harm

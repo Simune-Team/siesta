@@ -106,7 +106,8 @@ C
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GlobalToLocalOrb
       use sys,           only : die
-      use neighbour,     only : jan, r2ij, xij, mneighb, maxnna
+      use neighbour,     only : jan, r2ij, xij, mneighb, maxnna,
+     &                          reset_neighbour_arrays
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -141,9 +142,9 @@ C ipmax = maximum order the Chebyshev polynomial exp. of the Fermi operator
       real(dp),  parameter :: mu1=-1.2d0 , mu2=1.2d0
 
       integer
-     .  i, ia, ii, il, iil, imu, iorb, j, ja, ji, jj, jorb, 
+     .  i, ia, ii, il, iil, iorb, j, ja, ji, jj, jorb, 
      .  k, m, nna, norb, nu, num, numloc, numv, index, indexmax, 
-     .  nhbarmax, jo, jjn, phi, iphi, info
+     .  nhbarmax, jo, jjn, phi, iphi
 
       integer, dimension(:), allocatable, save ::
      .  listvt, numhp, ibuffer, listv,
@@ -735,7 +736,11 @@ C ...
 C      write(20,*) p,chpot*13.6d0
 C      enddo
 
+
 C Deallocate local arrays 
+      if (2.*rcoor .lt. rmax) then
+        call reset_neighbour_arrays( )
+      endif
       call memory('D','D',size(wr),'chempot')
       deallocate(wr)
       call memory('D','D',size(wi),'chempot')

@@ -252,13 +252,10 @@ C Bad syntax
 
 
 C Allocate nwflist, iwf and kpoints structures according to nk and nwf
-        call re_alloc(nwflist, 1, nk, name='nwflist',
-     $                routine='initwave')
-        call re_alloc(iwf, 1, nk, 1, nwf, name='iwf',
-     $                routine='initwave')
+        call re_alloc( nwflist, 1, nk, 'nwflist', 'initwave' )
+        call re_alloc( iwf, 1, nk, 1, nwf, 'iwf', 'initwave' )
 
-        call re_alloc(kpoint, 1, 3, 1, nk, name='kpoint',
-     $                routine='initwave')
+        call re_alloc( kpoint, 1, 3, 1, nk, 'kpoint', 'initwave' )
 
 C Fill nwflist, iwf and kpoints structures
 C Loop on data lines
@@ -425,11 +422,11 @@ C *********************************************************************
      .  temp, wk, Entropy
 
 C Dynamic arrays
-      integer,  pointer, save :: muo(:)
       logical,           save :: getD = .false.
       logical,           save :: getPSI = .true.
-      real(dp), pointer, save :: aux(:)
-      real(dp), pointer, save :: ek(:,:,:)
+      integer,        pointer :: muo(:)
+      real(dp),       pointer :: aux(:)
+      real(dp),       pointer :: ek(:,:,:)
 
       character(len=label_length+4) :: fname
       character(len=11)             :: fform
@@ -471,12 +468,14 @@ C Check spin
 
 C Allocate local arrays - only aux is relevant here
       naux = 10*nuotot
-      call re_alloc(Haux,1,2*nuotot*nuo,name='Haux',routine='writewave')
-      call re_alloc(Saux,1,2*nuotot*nuo,name='Saux',routine='writewave')
-      call re_alloc(psi,1,2*nuotot*nuo,name='psi',routine='writewave')
-      call re_alloc(ek,1,nspin,1,nuo,1,nuotot,'ek','writewave')
-      call re_alloc(aux,1,naux,'aux','writewave')
-      call re_alloc(muo,1,nuotot,'muo','writewave')
+      call re_alloc( Haux, 1, 2*nuotot*nuo, 'Haux', 'densematrix' )
+      call re_alloc( Saux, 1, 2*nuotot*nuo, 'Saux', 'densematrix' )
+      call re_alloc( psi,  1, 2*nuotot*nuo, 'psi',  'densematrix' )
+      nullify( ek, aux, muo )
+      call re_alloc( ek,  1, nspin, 1, nuo, 1, nuotot,
+     &              'ek', 'writewave')
+      call re_alloc( aux, 1, naux, 'aux', 'writewave' )
+      call re_alloc( muo, 1, nuotot, 'muo', 'writewave' )
 
 C Check indxuo 
       do iuo = 1,nuotot

@@ -50,12 +50,13 @@ C
       use fdf
       use parallel,   only : Node, Nodes, BlockSize, ProcessorY
       use diagmemory, only : MemoryFactor
-      use alloc
+      use alloc,      only : re_alloc, de_alloc, allocdefaults,
+     &                       alloc_default
       use sys,        only : die
       use m_diagon,   only : saveeigenvectors, maxclustersize, i2d_ctxt,
      &                       serial, noexpert, divideconquer, use2d,
      &                       prerotate, ictxt, allinone, doread,
-     &                       firstcall, Zsave, h2d, s2d, z2d
+     &                       firstcall
       implicit          none
 
 C Passed variables
@@ -110,39 +111,34 @@ C Additional variables for a 2D proc grid
 C Matrices for 2D
       integer ::  mat_2d_row, mat_2d_col
 #endif
-      character               :: jobz
-      character               :: range
-      integer                 :: ilaenv
-      integer                 :: info
-      integer                 :: liwork
-      integer                 :: lwork
-      integer                 :: nb
-      integer                 :: neigok
-      logical                 :: ChangeAlgorithm
-      real(dp)                :: vl
-      real(dp)                :: vu
+      character            :: jobz
+      character            :: range
+      integer              :: ilaenv
+      integer              :: info
+      integer              :: liwork
+      integer              :: lwork
+      integer              :: nb
+      integer              :: neigok
+      logical              :: ChangeAlgorithm
+      real(dp)             :: vl
+      real(dp)             :: vu
 
-      real(dp), parameter     :: abstol = 1.0e-8_dp
-      real(dp), parameter     :: orfac = 1.0e-3_dp
-      real(dp), parameter     :: zero = 0.0_dp
-      real(dp), parameter     :: one = 1.0_dp
+      real(dp),  parameter :: abstol = 1.0e-8_dp
+      real(dp),  parameter :: orfac = 1.0e-3_dp
+      real(dp),  parameter :: zero = 0.0_dp
+      real(dp),  parameter :: one = 1.0_dp
 
-      integer,        pointer :: iclustr(:), ifail(:), iwork(:)
-      real(dp),       pointer :: gap(:), work(:)
+      integer,     pointer :: iclustr(:), ifail(:), iwork(:)
+      real(dp),    pointer :: gap(:), work(:), Zsave(:,:),
+     &                        h2d(:,:), s2d(:,:), z2d(:,:)
 
-C Start time count
+C     Start time count
       call timer('rdiag',1)
 
-C Nullify pointers
-      if (FirstCall) then
-        nullify( ifail, iwork, work, Zsave )
-#ifdef MPI
-        nullify( gap, iclustr )
-        nullify( h2d, s2d, z2d )
-#endif
-      endif
+C     Nullify pointers
+      nullify( iclustr, ifail, iwork, gap, work, Zsave, h2d, s2d, z2d )
 
-C Get old allocation defaults and set new ones
+C     Get old allocation defaults and set new ones
       call alloc_default( old=oldDefaults, copy=.false., shrink=.true.,
      &                    imin=1, routine='rdiag' )
 
@@ -321,7 +317,7 @@ C Allocate workspace arrays
       call re_alloc( iclustr, 1, 2*Nodes, 'iclustr', 'rdiag' )
 
       if (Use2D) then
-C Set up workspace arrays for 2D versions of 1D arrays
+C       Set up workspace arrays for 2D versions of 1D arrays
         call re_alloc( h2d, 1, mat_2d_row, 1, mat_2d_col, 'h2d',
      &                 'rdiag' )
         call re_alloc( s2d, 1, mat_2d_row, 1, mat_2d_col, 's2d',
@@ -621,6 +617,12 @@ C Set first call flag to false
 
 C Deallocate workspace arrays
 #ifdef MPI
+      if (associated(Zsave)) call de_alloc( Zsave, 'Zsave', 'rdiag' )
+      if (Use2D) then
+        call de_alloc( h2d, 'h2d', 'rdiag' )
+        call de_alloc( s2d, 's2d', 'rdiag' )
+        call de_alloc( z2d, 'z2d', 'rdiag' )
+      endif
       call de_alloc( iclustr, 'iclustr', 'rdiag' )
       call de_alloc( gap, 'gap', 'rdiag' )
 #endif

@@ -321,23 +321,23 @@
 
         end subroutine pseudo_header_print
 
-c$$$        subroutine pseudo_header_string(p,s)
-c$$$        type(pseudopotential_t)  :: p
-c$$$        character(len=*), intent(inout) :: s
-c$$$
-c$$$        integer :: n, i
-c$$$
-c$$$ 8005   format(1x,a2,1x,a2,1x,a3,1x,a4)
-c$$$ 8010   format(1x,6a10,/,1x,a70)
-c$$$ 8015   format(1x,2i3,i5,3g20.12)
-c$$$        
-c$$$        write(s,8005) p%name, p%icorr, p%irel, p%nicore
-c$$$        n = len_trim(s) + 1
-c$$$        write(s(n:),fmt="(a1)") char(10)
-c$$$        n = len_trim(s) + 1
-c$$$        write(s(n:),8010) (p%method(i),i=1,6), p%text
-c$$$
-c$$$        end subroutine pseudo_header_string
+c        subroutine pseudo_header_string(p,s)
+c        type(pseudopotential_t)  :: p
+c        character(len=*), intent(inout) :: s
+c
+c        integer :: n, i
+c
+c 8005   format(1x,a2,1x,a2,1x,a3,1x,a4)
+c 8010   format(1x,6a10,/,1x,a70)
+c 8015   format(1x,2i3,i5,3g20.12)
+c        
+c        write(s,8005) p%name, p%icorr, p%irel, p%nicore
+c        n = len_trim(s) + 1
+c        write(s(n:),fmt="(a1)") char(10)
+c        n = len_trim(s) + 1
+c        write(s(n:),8010) (p%method(i),i=1,6), p%text
+c
+c        end subroutine pseudo_header_string
 !--------
 !
       subroutine read_ps_conf(irel,lmax,text,chgvps)

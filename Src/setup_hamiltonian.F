@@ -14,7 +14,6 @@
      .                    rmaxo, no_l
       use metaforce, only: lMetaForce, meta
       use molecularmechanics, only : twobody
-      use m_nlefsm,     only: nlefsm
       use m_dhscf,      only: dhscf
       use siesta_cml
       use m_stress
@@ -24,7 +23,6 @@
       use m_ntm
       use m_spin,         only: nspin
       use m_dipol
-      use m_forces,          only: fa
       use alloc, only: re_alloc, de_alloc
       use m_gamma
       use sys, only: die

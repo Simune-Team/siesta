@@ -14,9 +14,8 @@
 
       CONTAINS
 !
-      subroutine zm_fire_optimizer( na, xa, fa, cell,
-     .                 stress, dxmax, 
-     .                 tp, ftol, strtol, varcel, relaxd)
+      subroutine zm_fire_optimizer( na, xa, fa, cell, stress, dxmax,
+     .                              tp, ftol, strtol, varcel, relaxd )
 
 c ******************************** INPUT ************************************
 c integer na            : Number of atoms in the simulation cell
@@ -70,8 +69,7 @@ C Subroutine arguments:
       real(dp), intent(inout):: xa(3,na), stress(3,3), strtol, cell(3,3)
 
 C Internal variables and arrays
-      integer             :: iu, ia, i, j, n, indi,indi1,vi,k
-      logical             :: found
+      integer             :: ia, i, j, n, indi,indi1,vi,k
       real(dp)            :: volume, new_volume, trace
       real(dp)            :: celli(3,3)
       real(dp)            ::  stress_dif(3,3)
@@ -81,7 +79,6 @@ C Internal variables and arrays
 C Saved internal variables:
       integer,       save :: ndeg
       logical,       save :: frstme = .true.
-      logical,       save :: tarstr = .false.
       logical,       save :: constant_volume
       real(dp),      save :: initial_volume
 
@@ -94,7 +91,6 @@ C Saved internal variables:
       real(dp), dimension(:), allocatable    :: ftoln, dxmaxn
 
       type(fire_t), save  :: b
-      logical, save           :: initialization_done = .false.
 
       integer        :: ndegi, ndi
 

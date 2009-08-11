@@ -11,8 +11,8 @@
       use siesta_geom
       use atmfuncs, only: uion
       use atomlist, only: no_u, iaorb, iphkb, qtot, indxuo, datm, 
-     .                    lastkb, no_s, rmaxv, indxua, iphorb, lasto,
-     .                    rmaxo, no_l
+     &                    lastkb, no_s, rmaxv, indxua, iphorb, lasto,
+     &                    rmaxo, no_l
       use metaforce, only: lMetaForce, meta
       use molecularmechanics, only : twobody
       use m_nlefsm,     only: nlefsm
@@ -68,23 +68,24 @@
       nullify(fal)
       call re_alloc( fal, 1, 3, 1, na_u, 'fal', 'final_H_f_stress' )
 
-      fa(1:3,1:na_u) = 0.0_dp
-      stress(1:3,1:3) = 0.0_dp
+      fa(1:3,1:na_u)   = 0.0_dp
+      fal(1:3,1:na_u)  = 0.0_dp
+      stress(1:3,1:3)  = 0.0_dp
       stressl(1:3,1:3) = 0.0_dp  ! fal already initialized
 
 ! Neutral-atom: energy, forces and stress ............................
       call naefs( na_u, na_s, scell, xa, indxua, rmaxv,
-     .            isa, Ena, fa, stress, forces_and_stress=.true. )
+     &            isa, Ena, fa, stress, forces_and_stress=.true. )
       call dnaefs( na_u, na_s, scell, xa, indxua, rmaxv,
-     .            isa, DEna, fa, stress, forces_and_stress=.true. )
+     &            isa, DEna, fa, stress, forces_and_stress=.true. )
       Ena = Ena + DEna
 
 !     Kinetic: energy, forces, stress and matrix elements .................
       call kinefsm( na_u, na_s, no_s, scell, xa, indxua, rmaxo,
-     .              maxnh, maxnh, lasto, iphorb, isa, 
-     .              numh, listhptr, listh, numh, listhptr, listh, 
-     .              min(nspin,2), Dscf, Ekin, fal, stressl, H,
-     .              forces_and_stress=.true. ) 
+     &              maxnh, maxnh, lasto, iphorb, isa, 
+     &              numh, listhptr, listh, numh, listhptr, listh, 
+     &              min(nspin,2), Dscf, Ekin, fal, stressl, H,
+     &              forces_and_stress=.true. ) 
 #ifdef MPI
 ! Global reduction of energy terms
       call globalize_sum(Ekin,buffer1)
@@ -94,10 +95,10 @@
 
 ! Non-local-pseudop: energy, forces, stress and matrix elements .......
       call nlefsm( scell, na_u, na_s, isa, xa, indxua, 
-     .             maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
-     .             numh, listhptr, listh, numh, listhptr, listh, 
-     .             min(nspin,2), Dscf, Enl, fal, stressl, H,
-     .             forces_and_stress=.true. )
+     &             maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
+     &             numh, listhptr, listh, numh, listhptr, listh, 
+     &             min(nspin,2), Dscf, Enl, fal, stressl, H,
+     &             forces_and_stress=.true. )
         
 #ifdef MPI
 ! Global reduction of energy terms
@@ -115,17 +116,17 @@
       ifa  = 1
       istr = 1
       call grdsam( nspin, no_s, iaorb, iphorb, 
-     .             no_l, no_u, na_u, na_s, isa, xa, indxua,
-     .             ucell, ntm, ifa, istr, maxnh,
-     .             maxnh, numh, listhptr, listh, Dscf, Datm, H,
-     .             Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
-     .             Exc, Dxc, dipol, fa, stress, fal, stressl )
+     &             no_l, no_u, na_u, na_s, isa, xa, indxua,
+     &             ucell, ntm, ifa, istr, maxnh,
+     &             maxnh, numh, listhptr, listh, Dscf, Datm, H,
+     &             Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
+     &             Exc, Dxc, dipol, fa, stress, fal, stressl )
 
 !     Orthonormalization forces ...........................................
       call overfsm( na_u, na_s, no_s, scell, xa, indxua, rmaxo,
-     .              maxnh, maxnh, lasto, iphorb, isa, 
-     .              numh, listhptr, listh, numh, listhptr, listh, 
-     .              min(nspin,2), Escf, fal, stressl, S ) 
+     &              maxnh, maxnh, lasto, iphorb, isa, 
+     &              numh, listhptr, listh, numh, listhptr, listh, 
+     &              min(nspin,2), Escf, fal, stressl, S ) 
 
 !     Metadynamics forces
       if (lMetaForce) then
@@ -134,7 +135,7 @@
 
 !     Add on force field contribution if required
       call twobody( na_u, xa, isa, ucell, Emm,
-     $              ifa=1, fa=fa, istr=1, stress=stress )
+     &              ifa=1, fa=fa, istr=1, stress=stress )
 
 #ifdef MPI
 !     Global reduction of forces and stresses

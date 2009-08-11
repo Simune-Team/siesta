@@ -77,7 +77,6 @@ C Local variables
       integer                 :: anb
       integer                 :: clustersize
       integer                 :: desch(9)
-      integer                 :: MPIerror
       integer                 :: iacol
       integer                 :: iarow
       integer                 :: iceil
@@ -107,7 +106,6 @@ C Local variables
       real(dp), pointer, save :: gap(:)
       real(dp)                :: dscale
       logical                 :: BlacsOK
-      logical                 :: lBtmp(6)
 C Additional variables for a 2D proc grid
       integer                 :: np2d_row, np2d_col
       integer                 :: my2d_row, my2d_col

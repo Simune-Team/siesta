@@ -140,7 +140,8 @@
       if (cml_p) then
 ! We need the names of the elements on node 0
         nullify(elem)
-        call re_alloc( elem, 1, na_u, 'elem', 'struct_init' )
+        allocate( elem(na_u) )
+!        call re_alloc( elem, 1, na_u, 'elem', 'struct_init' )
         do i = 1, na_u
            elem(i) = symbol(izofis(isa(i)))
         enddo

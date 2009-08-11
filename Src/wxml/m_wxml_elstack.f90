@@ -158,7 +158,7 @@ type(elstack_t), intent(in)   :: elstack
 character(len=*), intent(out) :: string
 integer   :: i, length, j
 
-string = ""
+string = ' '
 j = 0
 do i = 1, elstack%n_items
    length = len_trim(elstack%stack(i)%data)

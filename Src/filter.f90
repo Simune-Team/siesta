@@ -37,7 +37,7 @@ subroutine filter( l, nr, r, f, kmax, norm_opt,emin )
 
 ! Internal variables and arrays
   integer :: i, j, ir, ix, jx, lp, m, n
-  real(dp):: fnorm, f0norm, krmax, p0, pi, rmax, y,tail,dnrm,aa,aamax
+  real(dp):: fnorm, f0norm, krmax, p0, pi, rmax, y,aa,aamax
   integer, allocatable:: indx(:)
   real(dp),allocatable:: a(:,:), ar(:,:), aux(:), e(:), &
                          f0(:), p(:,:), wx(:), x(:)

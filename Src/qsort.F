@@ -1,4 +1,4 @@
-      recursive subroutine Qsort( N, A, perm )
+      recursive subroutine myQsort( N, A, perm )
       implicit none
 C     Input variables
       integer       :: N, A(N), perm(N)
@@ -8,11 +8,11 @@ C     Local variables
 !------------------------------------------------------------------------- BEGIN
       if (N.gt.1) then
         call Partition( N, A, perm, iq )
-        call Qsort( iq-1, A, perm )
-        call Qsort( N-iq+1, A(iq), perm(iq) )
+        call myQsort( iq-1, A, perm )
+        call myQsort( N-iq+1, A(iq), perm(iq) )
       endif
 !--------------------------------------------------------------------------- END
-      end subroutine Qsort
+      end subroutine myQsort
 
       subroutine Partition( N, A, perm, marker )
 C     Input variables

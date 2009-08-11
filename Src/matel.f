@@ -176,50 +176,49 @@ C -------------------------------------------------------------------
 
 C Internal variable types and dimensions ----------------------------
       INTEGER ::
-     .  I, IF1, IF2, IFF, IFFY, IFLM1, IFLM2, 
-     .  IO, IOPER, IQ, IR, IS, IX,
-     .  JF1, JF2, JFF, JFFR, JFFY, JFLM1, JFLM2, JLM, 
-     .  JO1, JO2, JR,
-     .  L, L1, L2, L3, LMAX,
-     .  NILM, NILM1, NILM2, NJLM1, NJLM2
+     &  I, IF1, IF2, IFF, IFFY, IFLM1, IFLM2, 
+     &  IO, IOPER, IQ, IR, IS, IX,
+     &  JF1, JF2, JFF, JFFR, JFFY, JFLM1, JFLM2, JLM, 
+     &  JO1, JO2, JR,
+     &  L, L1, L2, L3, LMAX,
+     &  NILM, NILM1, NILM2, NJLM1, NJLM2
       INTEGER, SAVE ::
-     .  MF=0, MFF=0, MFFR=0, MFFY=0, 
-     .  NF=0, NFF=0, NFFR=0, NFFY=0, NR=NQ
+     &  MF=0, MFF=0, MFFR=0, MFFY=0, 
+     &  NF=0, NFF=0, NFFR=0, NFFY=0, NR=NQ
 
       INTEGER, POINTER, SAVE ::
-     .  IFFR(:), ILM(:), ILMFF(:), INDF(:,:,:), INDFF(:,:,:),
-     .  INDFFR(:), INDFFY(:), NLM(:,:,:)
+     &  IFFR(:), ILM(:), ILMFF(:), INDF(:,:,:), INDFF(:,:,:),
+     &  INDFFR(:), INDFFY(:), NLM(:,:,:)
 
       real(dp) ::
-     .  C, CH(2), CPROP, DFFR0, DFFRMX, DSRDR, ERRF,
-     .  FFL(0:NQ), FFQ(0:NQ), FR(0:NQ,2), FQ(0:NQ,2), GAUSS, 
-     .  Q, R, SR, VR(0:NQ,2), VQ(0:NQ,2), X12(3)
+     &  C, CH(2), CPROP, DFFR0, DFFRMX, DSRDR, ERRF,
+     &  FFL(0:NQ), FFQ(0:NQ), FR(0:NQ,2), FQ(0:NQ,2), GAUSS, 
+     &  Q, R, SR, VR(0:NQ,2), VQ(0:NQ,2), X12(3)
 
       real(dp), SAVE ::
-     .  DQ, DR, DRTAB, GWIDTH, PI, QMAX, RMAX
+     &  DQ, DR, DRTAB, GWIDTH, PI, QMAX, RMAX
 
       real(dp), POINTER, SAVE ::
-     .  CFFR(:), DYDR(:,:), F(:,:), FFR(:,:,:), FFY(:,:), Y(:)
+     &  CFFR(:), DYDR(:,:), F(:,:), FFR(:,:,:), FFY(:,:), Y(:)
 
       LOGICAL ::
-     .  FAR, FOUND, PROPOR
+     &  FAR, FOUND, PROPOR
 
       LOGICAL, SAVE ::
-     .  NULLIFIED=.FALSE.
+     &  NULLIFIED=.FALSE.
 
       TYPE(allocDefaults) ::
-     .  OLDEFS
+     &  OLDEFS
 
       EXTERNAL  PROPOR, TIMER
 C -------------------------------------------------------------------
-
 C Start time counter 
 *     CALL TIMER( MYNAME, 1 )
 
 C Nullify pointers 
       IF (.NOT.NULLIFIED) THEN
         NULLIFY( IFFR, ILM, ILMFF, INDF, INDFF, INDFFR, INDFFY, NLM,
-     .           CFFR, DYDR, F, FFR, FFY, Y )
+     &           CFFR, DYDR, F, FFR, FFY, Y )
         CALL RE_ALLOC( INDF, 1, 1, 1, 1, 1, 1, 'INDF', MYNAME )
         CALL RE_ALLOC( INDFFY, 0,MFF, 'INDFFY', MYNAME )
         INDFFY(0) = 0
@@ -228,10 +227,12 @@ C Nullify pointers
 
 C Set allocation defaults 
       CALL ALLOC_DEFAULT( OLD=OLDEFS, ROUTINE=MYNAME, 
-     .                    COPY=.TRUE., SHRINK=.FALSE. )
+     &                    COPY=.TRUE., SHRINK=.FALSE. )
 
 C Check if tables must be re-initialized 
       IF ( IS1.LE.0 .OR. IS2.LE.0 ) THEN
+        CALL RESET_SPHER_HARM( )
+        CALL RESET_RADFFT( )
         CALL DE_ALLOC( IFFR, 'IFFR', MYNAME )
         CALL DE_ALLOC( ILM, 'ILM', MYNAME )
         CALL DE_ALLOC( ILMFF, 'ILMFF', MYNAME )
@@ -246,9 +247,6 @@ C Check if tables must be re-initialized
         CALL DE_ALLOC( FFR, 'FFR', MYNAME )
         CALL DE_ALLOC( FFY, 'FFY', MYNAME )
         CALL DE_ALLOC( Y, 'Y', MYNAME )
-        NULLIFY( IFFR, ILM, ILMFF, INDF, INDFF, INDFFR, INDFFY, NLM,
-     .           CFFR, DYDR, F, FFR, FFY, Y )
-        CALL RE_ALLOC( INDF, 1, 1, 1, 1, 1, 1, 'INDF', MYNAME )
         MF   = 0
         MFF  = 0
         MFFR = 0
@@ -257,8 +255,7 @@ C Check if tables must be re-initialized
         NFF  = 0
         NFFR = 0
         NFFY = 0
-        CALL RE_ALLOC( INDFFY, 0, MFF, 'INDFFY', MYNAME )
-        INDFFY(0) = 0
+        NULLIFIED = .FALSE.
         GOTO 900
       ENDIF
 
@@ -281,17 +278,17 @@ C Check argument OPERAT
 
 C Check size of orbital index table
       IF ( MAX(IS1,IS2).GT.UBOUND(INDF,1)   .OR.
-     .     MIN(IO1,IO2).LT.LBOUND(INDF,2) .OR.
-     .     MAX(IO1,IO2).GT.UBOUND(INDF,2) .OR.
-     .     MAX(IOPER,3).GT.UBOUND(INDF,3) ) THEN
+     &     MIN(IO1,IO2).LT.LBOUND(INDF,2) .OR.
+     &     MAX(IO1,IO2).GT.UBOUND(INDF,2) .OR.
+     &     MAX(IOPER,3).GT.UBOUND(INDF,3) ) THEN
         CALL RE_ALLOC( INDF, 1, MAX(UBOUND(INDF,1),IS1,IS2),
-     .                MIN(LBOUND(INDF,2),IO1,IO2),MAX(UBOUND(INDF,2),
-     .                IO1,IO2),1,MAX(UBOUND(INDF,3),IOPER,3),
-     .                'INDF', MYNAME )
+     &                MIN(LBOUND(INDF,2),IO1,IO2),MAX(UBOUND(INDF,2),
+     &                IO1,IO2),1,MAX(UBOUND(INDF,3),IOPER,3),
+     &                'INDF', MYNAME )
         CALL RE_ALLOC( NLM,  1,MAX(UBOUND(INDF,1),IS1,IS2),
-     .                MIN(LBOUND(INDF,2),IO1,IO2),MAX(UBOUND(INDF,2),
-     .                IO1,IO2),1,MAX(UBOUND(INDF,3),IOPER,3),
-     .                'NLM', MYNAME )
+     &                MIN(LBOUND(INDF,2),IO1,IO2),MAX(UBOUND(INDF,2),
+     &                IO1,IO2),1,MAX(UBOUND(INDF,3),IOPER,3),
+     &                'NLM', MYNAME )
       ENDIF
 
 C Find radial expansion of each orbital -----------------------------
@@ -326,13 +323,13 @@ C         Reallocate arrays
           IF (NF+NILM .GT. MF) MF = EXPAND * (NF+NILM)
           CALL RE_ALLOC( F, 0,NQ, 1,MF, 'F', MYNAME )
           CALL RE_ALLOC( ILM,     1,MF, 'ILM', MYNAME )
-          CALL RE_ALLOC( INDFF,   1,MF, 1,MF, 1,MAX(IOPER,3),
-     .                   'INDFF', MYNAME )
+          CALL RE_ALLOC( INDFF,   1,MF, 1,MF, 1, MAX(IOPER,3),
+     &                   'INDFF', MYNAME )
 
 C         Expand orbital in spherical harmonics
           IF ((I.EQ.1) .OR. (IOPER.LE.3)) THEN
             CALL YLMEXP( L, RLYLM, PHIATM, IS, IO, 0, NQ, RMAX,
-     .                   NILM, ILM(NF+1:), F(:,NF+1:) )
+     &                   NILM, ILM(NF+1:), F(:,NF+1:) )
             INDF(IS,IO,1) = NF+1
             INDF(IS,IO,2) = NF+1
             INDF(IS,IO,3) = NF+1
@@ -342,13 +339,13 @@ C         Expand orbital in spherical harmonics
           ELSE
             IF(IOPER.EQ.4) THEN
               CALL YLMEXP( L+1, RLYLM, XPHIATM, IS, IO, 0, NQ, RMAX,
-     .                     NILM, ILM(NF+1:), F(:,NF+1:) )
+     &                     NILM, ILM(NF+1:), F(:,NF+1:) )
             ELSEIF(IOPER.EQ.5) THEN
               CALL YLMEXP( L+1, RLYLM, YPHIATM, IS, IO, 0, NQ, RMAX,
-     .                     NILM, ILM(NF+1:), F(:,NF+1:) )
+     &                     NILM, ILM(NF+1:), F(:,NF+1:) )
             ELSE
               CALL YLMEXP( L+1, RLYLM, ZPHIATM, IS, IO, 0, NQ, RMAX,
-     .                     NILM, ILM(NF+1:), F(:,NF+1:) )
+     &                     NILM, ILM(NF+1:), F(:,NF+1:) )
             ENDIF
             INDF(IS,IO,IOPER) = NF+1
             NLM(IS,IO,IOPER) = NILM
@@ -423,7 +420,7 @@ C           Subtract neutralizing charge
             DO IR = 0,NR
               R = IR * DR
               GAUSS = EXP(-0.5_dp*(R/GWIDTH)**2) / 
-     .                (2._dp*PI*GWIDTH**2)**1.5_dp
+     &                (2._dp*PI*GWIDTH**2)**1.5_dp
               IF (IR.EQ.0) THEN
                 ERRF = SQRT(2._dp/PI) / GWIDTH
               ELSE
@@ -491,7 +488,7 @@ C             Parabolic extrapolation to R=0
 
 C           Select NRTAB out of NR points
             IF (MOD(NR,NRTAB) .NE. 0)
-     .        CALL DIE('matel ERROR: NQ must be multiple of NRTAB')
+     &        CALL DIE('matel ERROR: NQ must be multiple of NRTAB')
             DO IR = 0,NRTAB
               JR = IR * NR / NRTAB
               FFL(IR) = FFL(JR)
@@ -513,7 +510,7 @@ C           Find if radial function is already in table
                     DO JFFY = INDFFY(JFF-1)+1, INDFFY(JFF)
                       JFFR = INDFFR(JFFY)
                       IF ( PROPOR(NRTAB,FFL(1),FFR(1,1,JFFR),
-     .                            FFTOL,CPROP)           ) THEN
+     &                            FFTOL,CPROP)           ) THEN
                         FOUND = .TRUE.
                         IFFR(L3) = JFFR
                         CFFR(L3) = CPROP
@@ -551,11 +548,11 @@ C             Add neutralizing-charge corrections
                     ERRF = DERF(0.5_dp*R/GWIDTH) / R
                   ENDIF
                   FFR(IR,1,NFFR) = 
-     .                FFR(IR,1,NFFR) 
-     .              - CH(1) * CH(2) * ERRF
-     .              + CH(1) * VR(IR,2) + CH(2) * VR(IR,1)
-     .              - 2._dp*PI*GWIDTH**2 * CH(1) * FR(IR,2)
-     .              - 2._dp*PI*GWIDTH**2 * CH(2) * FR(IR,1)
+     &                FFR(IR,1,NFFR) 
+     &              - CH(1) * CH(2) * ERRF
+     &              + CH(1) * VR(IR,2) + CH(2) * VR(IR,1)
+     &              - 2._dp*PI*GWIDTH**2 * CH(1) * FR(IR,2)
+     &              - 2._dp*PI*GWIDTH**2 * CH(2) * FR(IR,1)
                 ENDDO
               ENDIF
 
@@ -565,7 +562,7 @@ C             Setup spline interpolation
               DFFR0 = 0.0_dp
               DFFRMX = 0.0_dp
               CALL SPLINE( RMAX/NRTAB, FFR(0:NRTAB,1,NFFR), NRTAB+1, 
-     .                     DFFR0, DFFRMX, FFR(0:NRTAB,2,NFFR) )
+     &                     DFFR0, DFFRMX, FFR(0:NRTAB,2,NFFR) )
             ENDIF
           ENDDO
 
@@ -582,8 +579,8 @@ C         Reallocate some arrays
 
 C         Expand the product of two spherical harmonics (SH) also in SH
           CALL YLMEXP( L1+L2, RLYLM, YLMYLM, ILM(IFLM1), ILM(IFLM2),
-     .                 1, 1, 1.0_dp, NILM, ILMFF(NFFY+1:),
-     .                 FFY(:,NFFY+1:))
+     &                 1, 1, 1.0_dp, NILM, ILMFF(NFFY+1:),
+     &                 FFY(:,NFFY+1:))
 
 C         Loop on possible lm values of orbital product
           DO I = 1,NILM
@@ -665,13 +662,13 @@ C         Interpolate radial functions and obtain SH expansion
           DO IFFY = INDFFY(IFF-1)+1, INDFFY(IFF)
             JFFR = INDFFR(IFFY)
             CALL SPLINT( RMAX/NRTAB, FFR(0:NRTAB,1,JFFR),
-     .                   FFR(0:NRTAB,2,JFFR), NRTAB+1, R, SR, DSRDR )
+     &                   FFR(0:NRTAB,2,JFFR), NRTAB+1, R, SR, DSRDR )
             JLM = ILMFF(IFFY)
             S12 = S12 + SR * FFY(1,IFFY) * Y(JLM)
             DO IX = 1,3
               DSDR(IX) = DSDR(IX) +
-     .                   DSRDR * FFY(1,IFFY) * Y(JLM) * X12(IX) / R +
-     .                   SR * FFY(1,IFFY) * DYDR(IX,JLM)
+     &                   DSRDR * FFY(1,IFFY) * Y(JLM) * X12(IX) / R +
+     &                   SR * FFY(1,IFFY) * DYDR(IX,JLM)
             ENDDO
           ENDDO
         ENDDO

@@ -109,7 +109,7 @@ C Copy density to complex array
 
 C Find fourier transform of density
       call fft( CG, Mesh, -1, NSM )
- 
+
 C Initialize stress contribution
       do IX = 1,3
         do JX = 1,3
@@ -207,7 +207,7 @@ C Copy potential to array V
       enddo
  
 C Stop time counter
-      call timer('POISON',2)
+      call timer( 'POISON', 2)
 
 C Free local memory
       call de_alloc( CG, 'CG', 'poison' )

@@ -189,19 +189,23 @@ C       Check if we need extencils in cellxc
 C       Compute the number of orbitals on the mesh and recompute the
 C       partions for every processor in order to have a similar load
 C       in each of them.
-#ifdef MPI
-        call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
-#endif
+        if (nodes.gt.1)
+     &    call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
+
         nullify( numphi )
         call re_alloc( numphi, 1, nmpl, 'numphi', 'dhscf_init' )
+        do i= 1, nmpl
+          numphi(i) = 0
+        enddo
 #ifdef DEBUG
         call write_debug( '      PRE distriPhiOnMesh' )
 #endif
         call distriPhiOnMesh( nm, nmpl, norb, iaorb, iphorb,
      &                        isa, numphi )
-#ifdef MPI
-        call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
-#endif
+
+        if (nodes.gt.1)
+     &    call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
+
 C       Find if there are partial-core-corrections for any atom
         npcc = 0
         do ia = 1,na
@@ -228,15 +232,20 @@ C       Calculate orbital values on mesh
 #ifdef DEBUG
         call write_debug( '      PRE PhiOnMesh' )
 #endif
-#ifdef MPI
-        call re_alloc( numphi_par, 1, nmpl, 'numphi_par', 'dhscf_init' )
-        call distMeshData( 1, numphi, 2, numphi_par, 0 )
-#else
-        numphi_par => numphi
-#endif
+
+        if (nodes.eq.1) then
+          numphi_par => numphi
+        else
+          nullify(numphi_par)
+          call re_alloc( numphi_par, 1, nmpl, 'numphi_par',
+     &                   'dhscf_init' )
+          call distMeshData( 1, numphi, 2, numphi_par, 0 )
+        endif
+
         call PhiOnMesh( nmpl, norb, iaorb, iphorb, isa, numphi_par )
 #ifdef MPI
-        call de_alloc( numphi_par, 'numphi_par', 'dhscf_init' )
+        if (nodes.gt.1)
+     &     call de_alloc( numphi_par, 'numphi_par', 'dhscf_init' )
 #endif
         call de_alloc( numphi, 'numphi', 'dhscf_init' )
 C ----------------------------------------------------------------------
@@ -252,31 +261,34 @@ C       Calculate terms relating to the neutral atoms on the mesh
 C ----------------------------------------------------------------------
 C       Find Harris (sum of atomic) electron density
         call re_alloc( rhoatm, 1, ntpl, 'rhoatm', 'dhscf_init' )
+
         call rhooda( norb, nmpl, datm, rhoatm, iaorb, iphorb, isa )
 
 C       Routine Poison should use the uniform data distribution
-#ifdef MPI
-        call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
-#endif
+        if (nodes.gt.1)
+     &    call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
+
 C       Allocate Temporal array
         call re_alloc( Vscf, 1, ntpl, 1, nspin, 'Vscf', 'dhscf_init' )
-        call re_alloc( rhoatm_seq, 1, ntpl, 'rhoatm_seq', 'dhscf_init' )
 
 C       Vscf is filled here but not used later
 C       Uharrs is computed (and saved)
 C       DStres is computed but not used later
+        call re_alloc( rhoatm_seq, 1, ntpl, 'rhoatm_seq',
+     &                 'dhscf_init' )
         call distMeshData( 2, rhoatm, 1, rhoatm_seq, +1 )
+
 #ifdef DEBUG
         call write_debug( '      PRE poison' )
 #endif
         call poison( cell, ntml(1), ntml(2), ntml(3), ntm, rhoatm_seq,
      &               Uharrs, Vscf, DStres, nsm )
         call de_alloc( Vscf, 'Vscf', 'dhscf_init' )
-        call de_alloc( rhoatm_seq, 'rhoatm_seq', 'dhscf_init' )
 
-#ifdef MPI
-        call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
-#endif
+        if (nodes.gt.1) then
+         call de_alloc( rhoatm_seq, 'rhoatm_seq', 'dhscf_init' )
+         call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
+        endif
 
 C       Stop time counter for atomic initializations
         call timer( 'DHSCF2', 2 )
@@ -517,9 +529,7 @@ C ----------------------------------------------------------------------
 C
 C Internal variables
 C
-      integer  :: i, ia, ip, ispin, nsd,
-     &            ntpl_1, ntpl_2, ntpl_3
-
+      integer  :: i, ia, ip, ispin, nsd
       real(dp) :: b1Xb2(3), const, DEc, DEx, DStres(3,3),
      $            Ec, Ex, rhotot, x0(3),
      $            volume
@@ -548,8 +558,9 @@ C
       real(grid_p), pointer :: Vscf(:,:), Vscf_seq(:), Vscf_gga(:,:),
      &                         DRho(:,:), DRho_seq(:), DRho_gga(:,:),
      &                         Vaux(:), Chlocal(:), Totchar(:),
-     &                         IOBuff(:,:)
+     &                         IOBuff(:,:), fsrc(:), fdst(:)
       real(dp)              :: sbuffer(7), rbuffer(7)
+
 !------------------------------------------------------------------------- BEGIN
 C ----------------------------------------------------------------------
 C Start of SCF iteration part
@@ -560,7 +571,6 @@ C ----------------------------------------------------------------------
       call timer( 'DHSCF3', 1 )
 
       volume = volcel(cell)
-      ntpl_2 = ntpl
 C Allocate local memory -------------------------------------------------
       call re_alloc( DRho, 1, ntpl, 1, nspin, 'DRho','dhscf' )
 
@@ -595,7 +605,9 @@ C ----------------------------------------------------------------------
          call read_grid_netcdf(ntm(1:3),nspin,ntpl,DRho,"DeltaRho")
          do ispin = 1,nspin
             call reord( DRho(1,ispin), DRho(1,ispin), nml, nsm, -1)
-            DRho(:,ispin) = DRho(:,ispin) + rhoatm(:)
+            do ip= 1, ntpl
+              DRho(ip,ispin) = DRho(ip,ispin) + rhoatm(ip)
+            enddo
          enddo
          read_deformation_charge_cdf = .false.
       else
@@ -604,93 +616,93 @@ C ----------------------------------------------------------------------
      &                nspin, Dscf, DRho, nuo, nuotot, iaorb, iphorb,
      &                isa, qspiral)
          else
+        call medirTiempo( 1, 2 )
             call rhoofd( norb, nmpl, maxnd, numd, listdptr, listd,
-     &               nspin,
-     &               Dscf, DRho, nuo, nuotot, iaorb, iphorb, isa)
+     &                   nspin, Dscf, DRho, nuo, nuotot, iaorb,
+     &                   iphorb, isa )
+        call medirTiempo( 2, 2 )
          endif
       endif
+#ifdef DEBUG
+        call write_debug( '    POS rhoofd' )
+#endif
 
 C ----------------------------------------------------------------------
 C Save electron density
 C ----------------------------------------------------------------------
       if (filrho .ne. ' ') then
-#ifdef MPI
-        call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
-#endif
-        ntpl_1 = ntpl
+        if (nodes.gt.1)
+     &    call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
 
-        call re_alloc( IOBuff, 1, ntpl, 1, nspin, name='IOBuff',
-     &               routine='dhscf' )
+        call re_alloc( IOBuff, 1, ntpl, 1, nspin, 'IOBuff', 'dhscf' )
         do ispin = 1,nspin
-          call distMeshData( 2, DRho(:,ispin),
-     &                       1, IOBuff(:,ispin), +1 )
+          fsrc => DRho(:,ispin)
+          fdst => IOBuff(:,ispin)
+          call distMeshData( 2, fsrc, 1, fdst, +1 )
         enddo
 
         call write_rho( filrho, cell, ntm, nsm, ntpl, nspin, IOBuff )
         call write_grid_netcdf( cell, ntm, nspin, ntpl, IOBuff, "Rho")
 
-        call de_alloc( IOBuff, name='IOBuff', routine='dhscf' )
-#ifdef MPI
-        call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
-#endif
+        call de_alloc( IOBuff, 'IOBuff', 'dhscf' )
+        if (nodes.gt.1)
+     &    call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
       endif
 C ----------------------------------------------------------------------
 C Save the diffuse ionic charge and/or the total (ionic+electronic) charge
 C ----------------------------------------------------------------------
       if (filepsch .ne. ' ' .or. filetoch .ne. ' ') then
-        call re_alloc( Chlocal, 1, ntpl, name='Chlocal',
-     &                 routine='dhscf' )
+        call re_alloc( Chlocal, 1, ntpl, 'Chlocal', 'dhscf' )
 
 C Find diffuse ionic charge on mesh
         call LocalChargeOnMesh( na, isa, ntpl, Chlocal, indxua )
       
 C Save diffuse ionic charge 
         if (filepsch .ne. ' ') then
-#ifdef MPI
-          call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
-#endif
-          call re_alloc( IOBuff, 1, ntpl, 1, 1, name='IOBuff',
-     &                   routine='dhscf' )
-          call distMeshData( 2, Chlocal(:),
-     &                       1, IOBuff(:,1), +1 )
+          if (nodes.gt.1)
+     &      call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
+          call re_alloc( IOBuff, 1, ntpl, 1, 1, 'IOBuff', 'dhscf' )
+          fsrc => Chlocal(:)
+          fdst => IOBuff(:,1)
+          call distMeshData( 2, fsrc, 1,  fdst, +1 )
 
           call write_rho( filepsch, cell, ntm, nsm, ntpl, 1, IOBuff)
           call write_grid_netcdf( cell, ntm, 1, ntpl,
-     $                            IOBuff, "Chlocal")
-        call de_alloc( IOBuff, name='IOBuff', routine='dhscf' )
-#ifdef MPI
-        call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
-#endif
+     &                            IOBuff, "Chlocal")
+          call de_alloc( IOBuff, 'IOBuff', 'dhscf' )
+          if (nodes.gt.1)
+     &      call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
         endif
 
 C Save total (ionic+electronic) charge 
         if ( filetoch .ne. ' ') then
-           call re_alloc( Totchar, 1, ntpl, name='Totchar',
-     &          routine='dhscf' )
+           call re_alloc( Totchar, 1, ntpl, 'Totchar', 'dhscf' )
         
-          Totchar(:) = 0.0_grid_p
-          do ispin = 1,nsd
-            Totchar(1:ntpl) = Totchar(1:ntpl) + 
-     .                        Chlocal(1:ntpl)/nsd + DRho(1:ntpl,ispin)
+          do ip= 1, ntpl
+            Totchar(ip) = 0.0_grid_p
           enddo
-#ifdef MPI
-          call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
-#endif
-          call re_alloc( IOBuff, 1, ntpl, 1, 1, name='IOBuff',
-     &                   routine='dhscf' )
-          call distMeshData( 2, Totchar(:),
-     &                       1, IOBuff(:,1), +1 )
+          do ispin = 1,nsd
+            do ip= 1, ntpl
+              Totchar(ip) = Totchar(ip) +  Chlocal(ip)/nsd +
+     &                      DRho(ip,ispin)
+            enddo
+          enddo
+          if (nodes.gt.1)
+     &      call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
+          call re_alloc( IOBuff, 1, ntpl, 1, 1, 'IOBuff', 'dhscf' )
+          fsrc => Totchar(:)
+          fdst => IOBuff(:,1)
+          call distMeshData( 2, fsrc, 1, fdst, +1 )
           call write_rho( filetoch, cell, ntm, nsm, ntpl, 1, IOBuff )
           call write_grid_netcdf( cell, ntm, 1, ntpl,
      $                            IOBuff, "TotalCharge")
-          call de_alloc( IOBuff, name='IOBuff', routine='dhscf' )
-#ifdef MPI
-          call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
-#endif
-          call de_alloc( Totchar, name='Totchar', routine='dhscf' )
+          call de_alloc( IOBuff, 'IOBuff', 'dhscf' )
+          if (nodes.gt.1)
+     &      call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
+          call de_alloc( Totchar, 'Totchar', 'dhscf' )
         endif 
 
-        call de_alloc( Chlocal, name='Chlocal', routine='dhscf' )
+        call de_alloc( Chlocal, 'Chlocal', 'dhscf' )
       endif
 
 C Find difference between selfconsistent and atomic densities
@@ -706,23 +718,21 @@ C ----------------------------------------------------------------------
 C Save electron density difference
 C ----------------------------------------------------------------------
       if (fildrh .ne. ' ') then
-#ifdef MPI
-        call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
-#endif
-        call re_alloc( IOBuff, 1, ntpl, 1, nspin, name='IOBuff',
-     &               routine='dhscf' )
+        if (nodes.gt.1)
+     &    call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
+        call re_alloc( IOBuff, 1, ntpl, 1, nspin, 'IOBuff', 'dhscf' )
         do ispin = 1,nspin
-          call distMeshData( 2, DRho(:,ispin),
-     &                       1, IOBuff(:,ispin), +1 )
+          fsrc => DRho(:,ispin)
+          fdst => IOBuff(:,ispin)
+          call distMeshData( 2, fsrc, 1, fdst, +1 )
         enddo
 
         call write_rho( fildrh, cell, ntm, nsm, ntpl, nspin, IOBuff )
         call write_grid_netcdf( cell, ntm, nspin, ntpl,
-     $                          IOBuff, "DeltaRho")
-        call de_alloc( IOBuff, name='IOBuff', routine='dhscf' )
-#ifdef MPI
-        call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
-#endif
+     &                          IOBuff, "DeltaRho")
+        call de_alloc( IOBuff, 'IOBuff', 'dhscf' )
+        if (nodes.gt.1)
+     &    call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
       endif
 
 C Transform spin density into sum and difference
@@ -749,7 +759,7 @@ C Find dipole
         !! AG** Is this correct? Or do we need an extra transformation?
         call reord( DRho, DRho, nml, nsm, +1)
         call dipole( cell, ntm, ntml(1), ntml(2), ntml(3), nsm,
-     &    DRho, x0, dipol )
+     &               DRho, x0, dipol )
         call reord( DRho, DRho, nml, nsm, -1)
 
 C Orthogonalize dipole to bulk directions
@@ -765,28 +775,27 @@ C Orthogonalize dipole to bulk directions
 C ----------------------------------------------------------------------
 C     Set the uniform data distribution
 C ----------------------------------------------------------------------
-#ifdef MPI
-      call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
-#endif
-      ntpl_1 = ntpl
+      if (nodes.gt.1)
+     &  call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
 
-      call re_alloc( DRho_seq, 1, ntpl, name='DRho_seq',
-     &               routine='dhscf' )
-      call distMeshData( 2, DRho(:,1),
-     &                   1, DRho_seq, +1 )
+      call re_alloc( DRho_seq, 1, ntpl, 'DRho_seq', 'dhscf' )
+      fsrc => DRho(:,1)
+      fdst => DRho_seq
+      call distMeshData( 2, fsrc, 1, fdst, +1 )
 
 C ----------------------------------------------------------------------
 C     Find Hartree potential of DRho = rhoscf-rhoatm. Store it in Vscf
 C ----------------------------------------------------------------------
 C     Solve Poisson's equation
-      call re_alloc( Vscf_seq, 1, ntpl, name='Vscf_seq',
-     &               routine='dhscf' )
+      call re_alloc( Vscf_seq, 1, ntpl, 'Vscf_seq', 'dhscf' )
 #ifdef DEBUG
-        call write_debug( '    PRE Poison' )
+      call write_debug( '    PRE Poison' )
 #endif
+      call medirTiempo( 1, 3 )
       call poison( cell, ntml(1), ntml(2), ntml(3), ntm, DRho_seq,
      &             DUscf, Vscf_seq, DStres, nsm )
-      call de_alloc( DRho_seq,   name='DRho_seq', routine='dhscf' )
+      call medirTiempo( 2, 3 )
+      call de_alloc( DRho_seq, 'DRho_seq', 'dhscf' )
 
 C Add contribution to stress from electrostatic energy of rhoscf-rhoatm
       if (istr .eq. 1) then
@@ -796,14 +805,14 @@ C Add contribution to stress from electrostatic energy of rhoscf-rhoatm
 C ----------------------------------------------------------------------
 C     Move data to the nested disection distribution
 C ----------------------------------------------------------------------
-#ifdef MPI
-      call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
-#endif
-      call re_alloc( Vaux, 1, ntpl, name='Vaux', routine='dhscf' )
+      if (nodes.gt.1)
+     &  call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
+      call re_alloc( Vaux, 1, ntpl, 'Vaux', 'dhscf' )
 
-      call distMeshData( 1, Vscf_seq,
-     &                   2, Vaux, -1 )
-      call de_alloc( Vscf_seq, name='Vscf_seq', routine='dhscf' )
+      fsrc => Vscf_seq
+      fdst => Vaux
+      call distMeshData( 1, fsrc, 2, fdst, -1 )
+      call de_alloc( Vscf_seq, 'Vscf_seq', 'dhscf' )
 
 C ----------------------------------------------------------------------
 C     Find electrostatic (Hartree) energy of full SCF electron density
@@ -811,7 +820,7 @@ C     using the original data distribution
 C ----------------------------------------------------------------------
       Uatm = Uharrs
       Uscf = Uatm + DUscf
-      do ip = 1,ntpl
+      do ip = 1, ntpl
         Uscf = Uscf + dvol * Vaux(ip) * rhoatm(ip)
       enddo
 
@@ -820,7 +829,7 @@ C Add neutral-atom potential to Vscf
 C ----------------------------------------------------------------------
       Enaatm = 0.0_dp
       Enascf = 0.0_dp
-      do ip = 1,ntpl
+      do ip = 1, ntpl
         Enaatm         = Enaatm + dvol*Vna(ip)*rhoatm(ip)
         Enascf         = Enascf + dvol*Vna(ip)*
      &                   (rhoatm(ip) + DRho(ip,1))
@@ -843,27 +852,25 @@ C Save electrostatic potential
 C ----------------------------------------------------------------------
 
       if (filevh .ne. ' ') then
-#ifdef MPI
-        call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
-#endif
-        call re_alloc( IOBuff, 1, ntpl, 1, 1, name='IOBuff',
-     &               routine='dhscf' )
-        call distMeshData( 2, Vaux(:),
-     &                     1, IOBuff(:,1), +1 )
+        if (nodes.gt.1)
+     &    call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
+        call re_alloc( IOBuff, 1, ntpl, 1, 1, 'IOBuff', 'dhscf' )
+        fsrc => Vaux
+        fdst => IOBuff(:,1)
+        call distMeshData( 2, fsrc, 1, fdst, +1 )
 
         call write_rho( filevh, cell, ntm, nsm, ntpl, 1, IOBuff)
         call write_grid_netcdf( cell, ntm, 1, ntpl,
-     $                          IOBuff, "ElectrostaticPotential")
-        call de_alloc( IOBuff, name='IOBuff', routine='dhscf' )
-#ifdef MPI
-        call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
-#endif
+     &                          IOBuff, "ElectrostaticPotential")
+        call de_alloc( IOBuff, 'IOBuff', 'dhscf' )
+      if (nodes.gt.1)
+     &  call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
       endif
 
 C Get back spin density from sum and difference
       if (nsd .eq. 2) then
-        do ip = 1,ntpl
-          rhotot         = DRho(ip,1)
+        do ip = 1, ntpl
+          rhotot     = DRho(ip,1)
           DRho(ip,1) = 0.5_dp*(rhotot - DRho(ip,2))
           DRho(ip,2) = 0.5_dp*(rhotot + DRho(ip,2))
         enddo
@@ -873,47 +880,52 @@ C ----------------------------------------------------------------------
 C Exchange-correlation energy
 C ----------------------------------------------------------------------
       do ispin = 1,nsd
-        DRho(1:ntpl,ispin) = DRho(1:ntpl,ispin) +
-     &                       rhoatm(1:ntpl) / nsd
+        do ip= 1, ntpl
+          DRho(ip,ispin) = DRho(ip,ispin) +
+     &                     rhoatm(ip)/nsd
+        enddo
         if (npcc .eq. 1) then
-          DRho(1:ntpl,ispin) = DRho(1:ntpl,ispin) +
-     &                         rhopcc(1:ntpl)/nsd
+          do ip= 1, ntpl
+            DRho(ip,ispin) = DRho(ip,ispin) +
+     &                       rhopcc(ip)/nsd
+          enddo
         endif
       enddo
 
-#ifdef MPI
-      call setMeshDistr( 3, nsm, nsp, nml, nmpl, ntml, ntpl )
-      ntpl_3 = ntpl
-#endif
-      call re_alloc( Vscf_gga, 1, ntpl, 1, nspin, name='Vscf_gga',
-     &               routine='dhscf' )
-      call re_alloc( DRho_gga, 1, ntpl, 1, nspin, name='DRho_gga',
-     &               routine='dhscf' )
+      if (nodes.gt.1)
+     &  call setMeshDistr( 3, nsm, nsp, nml, nmpl, ntml, ntpl )
+
+      call re_alloc( Vscf_gga, 1, ntpl, 1, nspin, 'Vscf_gga', 'dhscf' )
+      call re_alloc( DRho_gga, 1, ntpl, 1, nspin, 'DRho_gga', 'dhscf' )
 
       do ispin = 1,nsd
-        call distMeshData( 2, DRho(:,ispin),
-     &                     3, DRho_gga(:,ispin), +1 )
+        fsrc => DRho(:,ispin)
+        fdst => DRho_gga(:,ispin)
+        call distMeshData( 2, fsrc, 3, fdst, +1 )
       enddo
 
 #ifdef DEBUG
-        call write_debug( '    PRE cellxc' )
+      call write_debug( '    PRE cellxc' )
 #endif
+      call medirTiempo( 1, 4 )
       call cellxc( 0, 0, cell, ntml, ntml, ntpl, 0, aux3, nspin,
      &             DRho_gga, Ex, Ec, DEx, DEc, Vscf_gga,
      &             dummy_DVxcdn, stressl )
-#ifdef MPI
-      call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
-#endif
+      call medirTiempo( 2, 4 )
+      write(23,*) '    POS cellxc'
+      flush(23)
+      if (nodes.gt.1)
+     &  call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
 
-      call re_alloc( Vscf, 1, ntpl, 1, nspin, name='Vscf',
-     &               routine='dhscf' )
+      call re_alloc( Vscf, 1, ntpl, 1, nspin, 'Vscf', 'dhscf' )
 
       do ispin = 1,nsd
-        call distMeshData( 3, Vscf_gga(:,ispin),
-     &                     2, Vscf(:,ispin), -1 )
+        fsrc => Vscf_gga(:,ispin)
+        fdst => Vscf(:,ispin)
+        call distMeshData( 3, fsrc, 2, fdst, -1 )
       enddo
-      call de_alloc( DRho_gga,   name='DRho_gga', routine='dhscf' )
-      call de_alloc( Vscf_gga,   name='Vscf_gga', routine='dhscf' )
+      call de_alloc( DRho_gga, 'DRho_gga', 'dhscf' )
+      call de_alloc( Vscf_gga, 'Vscf_gga', 'dhscf' )
       Exc = Ex + Ec
       Dxc = DEx + DEc
       do ispin = 1,nsd
@@ -930,23 +942,22 @@ C ----------------------------------------------------------------------
 C     Save total potential
 C ----------------------------------------------------------------------
       if (filevt .ne. ' ') then
-#ifdef MPI
-        call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
-#endif
-        call re_alloc( IOBuff, 1, ntpl, 1, nspin, name='IOBuff',
-     &               routine='dhscf' )
+        if (nodes.gt.1)
+     &    call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
+
+        call re_alloc( IOBuff, 1, ntpl, 1, nspin, 'IOBuff', 'dhscf' )
         do ispin = 1,nspin
-          call distMeshData( 2, Vscf(:,ispin),
-     &                       1, IOBuff(:,ispin), +1 )
+          fsrc => Vscf(:,ispin)
+          fdst => IOBuff(:,ispin)
+          call distMeshData( 2, fsrc, 1, fdst, +1 )
         enddo
 
         call write_rho( filevt, cell, ntm, nsm, ntpl, nspin, IOBuff )
         call write_grid_netcdf( cell, ntm, nspin, ntpl,
-     $                          IOBuff, "TotalPotential")
-        call de_alloc( IOBuff, name='IOBuff', routine='dhscf' )
-#ifdef MPI
-        call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
-#endif
+     &                          IOBuff, "TotalPotential")
+        call de_alloc( IOBuff, 'IOBuff', 'dhscf' )
+        if (nodes.gt.1)
+     &    call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
       endif
 
 C ----------------------------------------------------------------------
@@ -955,17 +966,21 @@ C ----------------------------------------------------------------------
 #ifdef DEBUG
         call write_debug( '    PRE vmat' )
 #endif
+
       if (iHmat .eq. 1) then
         if (spiral) then
           call vmatsp( norb, nmpl, dvol, nspin, Vscf, maxnd,
      &                 numd, listdptr, listd, Hmat, nuo,
      &                 nuotot, iaorb, iphorb, isa, qspiral )
         else
+          call medirTiempo( 1, 5 )
           call vmat( norb, nmpl, dvol, nspin, Vscf, maxnd,
      &               numd, listdptr, listd, Hmat, nuo,
      &               nuotot, iaorb, iphorb, isa )
+          call medirTiempo( 2, 5 )
         endif
       endif
+
 #ifdef MPI
 C Global reduction of Uscf/DUscf/Uatm/Enaatm/Enascf
       sbuffer(1) = Uscf
@@ -977,11 +992,10 @@ C Global reduction of Uscf/DUscf/Uatm/Enaatm/Enascf
       sbuffer(7) = Dxc
 
 #ifdef DEBUG
-        call write_debug( '    PRE reduce Energies' )
+      call write_debug( '    PRE reduce Energies' )
 #endif
       call MPI_AllReduce( sbuffer, rbuffer, 7, MPI_double_precision,
      &                     MPI_Sum, MPI_Comm_World, MPIerror )
-
       Uscf   = rbuffer(1)
       DUscf  = rbuffer(2)
       Uatm   = rbuffer(3)
@@ -990,6 +1004,7 @@ C Global reduction of Uscf/DUscf/Uatm/Enaatm/Enascf
       Exc    = rbuffer(6)
       Dxc    = rbuffer(7)
 #endif
+   
 C Add contribution to stress from the derivative of the Jacobian of ---
 C r->r' (strained r) in the integral of Vna*(rhoscf-rhoatm)
       if (istr .eq. 1) then
@@ -1060,8 +1075,8 @@ C Stop time counter
 C ----------------------------------------------------------------------
 C Free locally allocated memory
 C ----------------------------------------------------------------------
-      call de_alloc( Vaux, name='Vaux', routine='dhscf' )
-      call de_alloc( Vscf, name='Vscf', routine='dhscf' )
-      call de_alloc( DRho, name='DRho', routine='dhscf' )
+      call de_alloc( Vaux, 'Vaux', 'dhscf' )
+      call de_alloc( Vscf, 'Vscf', 'dhscf' )
+      call de_alloc( DRho, 'DRho', 'dhscf' )
 !--------------------------------------------------------------------------- END
       end subroutine dhscf

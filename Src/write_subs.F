@@ -307,7 +307,7 @@
       integer :: i 
       logical :: printEigVal
 
-      printEigVal = (isolve==0) .or. (isolve==2)
+      printEigVal = (isolve==0) .or. (isolve==2) .or. (isolve==3)
 
       ! Only print out full decomposition at very beginning and end.
       if ((istp==1.and.first).or.final) then

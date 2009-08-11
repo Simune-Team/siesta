@@ -23,7 +23,7 @@ C Modules
       use meshphi,   only : directphi, nphi, phi, lstpht, listp2, endpht
       use parallel,  only : Node
       use fdf,       only : fdf_boolean
-      use alloc,     only : re_alloc, de_alloc
+      use alloc,     only : re_alloc
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -58,10 +58,12 @@ C     On first call set the logical DirectPhi
      &                  MPIerror )
 #endif
         firsttime = .false.
+      else
+        call resetMeshPhi( )
       endif
 
 C     Allocate memory related to nmpl
-      if (.not.associated(endpht)) nullify(endpht)
+      nullify( endpht, phi, lstpht, listp2 )
       call re_alloc( endpht, 0, nmpl, 'endpht', 'PhiOnMesh' )
 
 C     Initialise pointer array
@@ -128,7 +130,6 @@ C     Find indexes and values of atomic orbitals at mesh points
           endif
         enddo
       enddo
-
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 0 )
 #endif

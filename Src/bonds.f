@@ -32,7 +32,7 @@ C **********************************************************************
       use sorting,   only : order, iorder
       use alloc,       only: re_alloc, de_alloc
       use neighbour,   only: jna=>jan, xij, r2ij, maxna=>maxnna
-      use neighbour,   only: mneighb
+      use neighbour,   only: mneighb, reset_neighbour_arrays
       implicit          none
 
       INTEGER,  intent(in) ::     NA, ISA(NA)
@@ -49,7 +49,6 @@ C **********************************************************************
       call re_alloc( index, 1, maxna, 'index', 'bonds' )
 
 C Initialize neighbour-locater routine
-
       CALL MNEIGHB( CELL, RMAX, NA, XA, 0, 0, NNA )
 
 C Main loop
@@ -61,7 +60,6 @@ C Main loop
       do IA = 1,NA
 
 C Find neighbours of atom IA
-
         CALL MNEIGHB( CELL, RMAX, NA, XA, IA, 0, NNA )
         ! This call will do nothing if the internal neighbor arrays
         ! did not grow. If tight size were important, one could
@@ -94,6 +92,7 @@ C Find neighbours of atom IA
 
       enddo
 
+      call reset_neighbour_arrays( )
       call de_alloc( index, 'index', 'bonds' )
       call io_close(iu)
 

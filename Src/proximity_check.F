@@ -3,25 +3,23 @@
       public :: proximity_check
       CONTAINS
 
-      subroutine proximity_check(rmax)
+      subroutine proximity_check( rmax )
       USE precision, only:dp
       USE siesta_options
       use siesta_geom
       use parallel,  only: IOnode
-      use neighbour, only: jna=>jan, r2ij, mneighb
-
+      use neighbour, only: jna=>jan, r2ij, mneighb,
+     &                     reset_neighbour_arrays
       implicit none
-
       real(dp), intent(in)  :: rmax
-
       integer :: ii, jj, jamin, idxneighJ, nneigbI, isel, nna
       real(dp):: rmin, r2min 
 
 
-      ! Check if any two atoms are unreasonably close
-
+!     Check if any two atoms are unreasonably close
       isel = 0   ! Get back all neighbors, regardless of whether ja>ia
-      ! Initialize neighb
+
+!     Initialize neighb
       call mneighb( scell, rmax, na_s, xa, 0, isel, nna )
       do ii = 1,na_s
         r2min = huge(1._dp)
@@ -39,11 +37,13 @@
         enddo
         rmin = sqrt( r2min )
         if (IOnode) then
-          if ( rmin .lt. rijmin ) write(6,'(a,2i6,a,f12.6,a)')
-     .      'siesta: WARNING: Atoms', ii, jamin, ' too close: rij =',
-     .       rmin/Ang, ' Ang'
+          if ( rmin .lt. rijmin )
+     &      write(6,'(a,2i6,a,f12.6,a)') 'siesta: WARNING: Atoms', ii,
+     &                    jamin, ' too close: rij =', rmin/Ang, ' Ang'
         endif
       enddo
+
+      call reset_neighbour_arrays( )
 
       end subroutine proximity_check
       end module m_proximity_check

@@ -45,3 +45,40 @@
       endif
 !--------------------------------------------------------------------------- END
       end subroutine write_debug
+
+      subroutine write_doublev( n, x )
+      use debugMpi
+      implicit none
+      integer        :: n
+      real*8         :: x(n)
+!------------------------------------------------------------------------- BEGIN
+      if (debugON) then
+        write(mpiUnit,*) x
+        call pxfflush(mpiUnit)
+      endif
+!--------------------------------------------------------------------------- END
+      end subroutine write_doublev
+
+      subroutine write_double( x )
+      use debugMpi
+      implicit none
+      real*8         :: x
+!------------------------------------------------------------------------- BEGIN
+      if (debugON) then
+        write(mpiUnit,*) x
+        call pxfflush(mpiUnit)
+      endif
+!--------------------------------------------------------------------------- END
+      end subroutine write_double
+
+      subroutine write_int( a )
+      use debugMpi
+      implicit none
+      integer         :: a
+!------------------------------------------------------------------------- BEGIN
+      if (debugON) then
+        write(mpiUnit,*) a
+        call pxfflush(mpiUnit)
+      endif
+!--------------------------------------------------------------------------- END
+      end subroutine write_int

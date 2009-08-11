@@ -5,6 +5,177 @@
 ** CHANGES ALONG bsc-2.8 branch (bsc-trunk)
 
 -------------------------------------------------------------------------
+2009-08-11  10:20 GMT Alberto Garcia <albertog@icmab.es>	bsc-2.8.6
+Update with Rogeli's code up to Aug 11 2009
+
+Assorted changes. Among them:
+
+* Use of 'reset' routines to deallocate arrays in certain modules.
+
+  RESET_NEIGHBOUR_ARRAYS()
+  RESET_SPHER_HARM( )
+  RESET_RADFFT( )
+ 
+  and also, (this is from siesta_end):
+
+      use m_pulay,         only : resetPulayArrays
+      use moreMeshSubs,    only : resetMeshDistr
+      use densematrix,     only : resetDenseMatrix
+      use sparse_matrices, only : resetSparseMatrices
+      use m_fixed,         only : resetFixedPointers
+      use band,            only : reset_bands
+      use domain_decom,    only : resetDomainDecom
+
+  It is not clear that these are harmless...
+
+* Change of name qsort --> myqsort (system conflict)
+
+* Cosmetic changes in several routines.
+
+* Changes in fdf.F90 to clean the filename production, and
+  to satisfy certain compilers.
+
+* Insertion of "nullify" statements in arw.f and several other routines.
+
+* Change of #ifdef MPI for tests on 'nodes' in several places (such as
+  dhscf). This was done to make sure that the code worked in all cases
+  (serial, MPI with np=1, parallel, etc).
+
+* Introduce extra pointers to array sections to help compilers avoid
+  the creation of temporary arrays. (eg, fsrc and fdat in dhscf).
+
+* Replace f90 array operations by explicit do loops in some places.
+ Eventually, these will be replaced by call to BLAS.
+
+NOTE: The Lanczos code is going to be abandoned. It will be removed in
+the next patch.
+
+added:
+  Src/Sys/marenostrum-lanczos.make
+  Src/Sys/mn-openmp.make
+  Src/cg.F
+  Src/lu_factorization.F
+  Src/modi_lanczos_m.F
+  Src/superlu.F
+  Src/superlu_c2f_wrap.c
+modified:
+  Docs/CHANGES
+  Src/Makefile
+  Src/alloc.F90
+  Src/arw.f
+  Src/atmfuncs.f
+  Src/atom.f
+  Src/atomlwf.F
+  Src/bands.F
+  Src/basis_io.F
+  Src/basis_types.f
+  Src/bonds.f
+  Src/cdiag.F
+  Src/cell_broyden_optim.F
+  Src/cell_fire_optim.F
+  Src/chempot.F
+  Src/compute_dm.F
+  Src/coor.F
+  Src/debugmpi.F
+  Src/densematrix.f
+  Src/dfscf.f
+  Src/dhscf.F
+  Src/diagon.F
+  Src/distriphionmesh.F
+  Src/dnaefs.f
+  Src/domain_decom.F
+  Src/dscfcomm.F
+  Src/dynamics.f
+  Src/eggbox.F
+  Src/electrostatic.f
+  Src/fdf/fdf.F90
+  Src/fdf/parse.F90
+  Src/fdf/utils.F90
+  Src/fft3d.F
+  Src/filter.f90
+  Src/filter_subs.f
+  Src/final_H_f_stress.F
+  Src/fire_optim.F
+  Src/fixed.F
+  Src/forhar.F
+  Src/get_target_stress.f
+  Src/gmres.F
+  Src/grdsam.F
+  Src/hsparse.F
+  Src/initmesh.F
+  Src/initparallel.F
+  Src/iogrid_netcdf.F90
+  Src/jacobi_davidson.F
+  Src/kinefsm.f
+  Src/ksv.f
+  Src/m_dhscf.F
+  Src/m_diagon.F
+  Src/m_iostruct.f
+  Src/matel.f
+  Src/matrixop.F
+  Src/memory.F
+  Src/meshmatrix.F
+  Src/meshsubs.F
+  Src/mneighb.f
+  Src/molecularmechanics.F90
+  Src/moremeshsubs.F
+  Src/naefs.f
+  Src/nlefsm.f
+  Src/old_atmfuncs.f
+  Src/optical.F
+  Src/ordern.F
+  Src/overfsm.f
+  Src/overlap.f
+  Src/pdos.F
+  Src/phionmesh.F
+  Src/phirphi.f
+  Src/phirphi_opt.f
+  Src/phonon.F
+  Src/poison.F
+  Src/post_scf_work.F
+  Src/precond.F
+  Src/printmatrix.F
+  Src/proximity_check.F
+  Src/pseudopotential.f
+  Src/pspltm1.F*
+  Src/qsort.F
+  Src/radfft.f
+  Src/radial.f
+  Src/rdiag.F
+  Src/redcel.F
+  Src/reinit.F
+  Src/reord.f
+  Src/rhoofd.F
+  Src/scfconvergence_test.F
+  Src/schecomm.F
+  Src/setup_hamiltonian.F
+  Src/shaper.f
+  Src/siesta.F
+  Src/siesta_analysis.F
+  Src/siesta_end.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/siesta_options.F90
+  Src/sparse_matrices.F
+  Src/spher_harm.f
+  Src/state_analysis.F
+  Src/state_init.F
+  Src/struct_init.F
+  Src/timer.F
+  Src/vmat.F
+  Src/vmb.F
+  Src/write_subs.F
+  Src/writewave.F
+  Src/wxml/m_wxml_array_str.f90
+  Src/wxml/m_wxml_buffer.f90
+  Src/wxml/m_wxml_core.f90
+  Src/wxml/m_wxml_dictionary.f90
+  Src/wxml/m_wxml_elstack.f90
+  Src/xc.f
+  Src/zm_fire_optim.F
+  Src/zmatrix.F
+
+-------------------------------------------------------------------------
 2008-10-12  17:50 GMT Alberto Garcia <albertog@icmab.es>	bsc-2.8.5
 Fix processing of InitSpin block. Avoid writing DM nc files by default
 

@@ -143,7 +143,6 @@ C
       integer,   pointer :: muo(:)
 
 C  ....................
-
 C First call initialisation
       if (frstme) then
 #ifdef MPI
@@ -195,12 +194,14 @@ C Check internal dimensions ..........................................
          call die('diagon: ERROR: incorrect value of nspin')
       endif
 
+      call re_alloc( Haux, 1, nhs,  'Haux', 'densematrix' )
+      call re_alloc( Saux, 1, nhs,  'Saux', 'densematrix' )
+      call re_alloc( psi,  1, npsi, 'psi',  'densematrix' )
+
 C Allocate local arrays
-      call re_alloc( Haux, 1, nhs,  name='Haux', routine='diagon' )
-      call re_alloc( Saux, 1, nhs,  name='Saux', routine='diagon' )
-      call re_alloc( psi,  1, npsi, name='psi',  routine='diagon' )
-      call re_alloc( aux,  1, naux, name='aux',  routine='diagon' )
-      call re_alloc( muo,  1, nuo,  name='muo',  routine='diagon' )
+      nullify(aux,muo)
+      call re_alloc( aux,  1, naux, 'aux',  'diagon' )
+      call re_alloc( muo,  1, nuo,  'muo',  'diagon' )
 
 C Check indxuo
       do iuo = 1,nuo
@@ -314,5 +315,4 @@ C Free local arrays
 
 C Stop time counter
       call timer( 'diagon', 2 )
-
       end

@@ -47,7 +47,7 @@
           ii      = ii + 1
         enddo
         nnzL = ja(jo) - ja(jo-1)
-        call Qsort( nnzL, adj(xadj(io-1)), auxx )
+        call myQsort( nnzL, adj(xadj(io-1)), auxx )
       enddo
       xadj(nuo) = ii
       call printMatrix( nuo, nuo, adj, xadj, filename, title )

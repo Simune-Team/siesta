@@ -78,10 +78,10 @@ C *********************************************************************
       use atmfuncs,     only : epskb, lofio, mofio, rcut, rphiatm
       use atm_types,    only : nspecies
       use parallelsubs, only : GlobalToLocalOrb, LocalToGlobalOrb
-      use alloc,        only : re_alloc
+      use alloc,        only : re_alloc, de_alloc
       use sys,          only : die
       use neighbour,    only : jna=>jan, xij, r2ij
-      use neighbour,    only : mneighb
+      use neighbour,    only : mneighb, reset_neighbour_arrays
 
       implicit none
 
@@ -121,7 +121,6 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
       integer,           save :: maxkba = 25
       integer,           save :: maxno = 1000
       logical,  pointer, save :: calculated(:,:,:)
-      logical,           save :: frstme = .true.
       logical,  pointer, save :: listed(:)
       logical,  pointer, save :: needed(:)
       logical                 :: within
@@ -142,27 +141,23 @@ C Check input matrix
      &   call die('phirphi_opt: matrix only can take values R or P')
  
 C Nullify pointers
-      if (frstme) then
-        nullify(Si,Vi,listed,needed)
-        nullify(Ski,iano,iono)
-        nullify(Pij,calculated)
-        frstme = .false.
-      endif
+      nullify( listed, needed, Si, Vi, iano,
+     &         iono, Ski, Pij, calculated )
 
 C Allocate arrays
-      call re_alloc(listed,1,no,name='listed',routine='phirphi_opt')
-      call re_alloc(needed,1,no,name='needed',routine='phirphi_opt')
-      call re_alloc(Si,1,no,name='Si',routine='phirphi_opt')
-      call re_alloc(Vi,1,no,name='Vi',routine='phirphi_opt')
-      call re_alloc(iano,1,maxno,name='iano',routine='phirphi_opt')
-      call re_alloc(iono,1,maxno,name='iono',routine='phirphi_opt')
-      call re_alloc(Ski,1,2,1,maxkba,1,maxno,name='Ski',
-     &              routine='phirphi_opt')
       norb = lmx2*nzetmx*nsemx
-      call re_alloc(Pij,1,norb,1,norb,1,nspecies,name='Pij',
-     &              routine='phirphi_opt')
-      call re_alloc(calculated,1,norb,1,norb,1,nspecies,
-     &              name='calculated',routine='phirphi_opt')
+      call re_alloc( listed, 1, no, 'listed', 'phirphi_opt' )
+      call re_alloc( needed, 1, no, 'needed', 'phirphi_opt' )
+      call re_alloc( Si,     1, no, 'Si',     'phirphi_opt' )
+      call re_alloc( Vi,     1, no, 'Vi',     'phirphi_opt' )
+      call re_alloc( iano, 1, maxno, 'iano', 'phirphi_opt' )
+      call re_alloc( iono, 1, maxno, 'iono', 'phirphi_opt' )
+      call re_alloc( Ski, 1, 2, 1, maxkba, 1, maxno,
+     &               'Ski', 'phirphi_opt' )
+      call re_alloc( Pij, 1, norb, 1, norb, 1, nspecies,
+     &               'Pij', 'phirphi_opt' )
+      call re_alloc( calculated, 1, norb, 1, norb, 1, nspecies,
+     &               'calculated', 'phirphi_opt' )
 
 C Initialise quantities
       do io = 1,maxnh
@@ -222,8 +217,8 @@ C Loop on atoms with KB projectors
           nkb = lastkb(ka) - lastkb(ka-1)
           if (nkb.gt.maxkba) then
             maxkba = nkb + 10
-            call re_alloc(Ski,1,2,1,maxkba,1,maxno,copy=.true.,
-     &        name='Ski',routine='phirphi_opt')
+            call re_alloc( Ski, 1, 2, 1, maxkba, 1, maxno, copy=.true.,
+     &                     name='Ski', routine='phirphi_opt' )
           endif
 
 C Find neighbour atoms
@@ -254,12 +249,13 @@ C Find overlap between neighbour orbitals and KB projectors
                   nno = nno + 1
                   if (nno.gt.maxno) then
                     maxno = nno + 500
-                    call re_alloc(iano,1,maxno,copy=.true.,
-     &                name='iano',routine='phirphi_opt')
-                    call re_alloc(iono,1,maxno,copy=.true.,
-     &                name='iono',routine='phirphi_opt')
-                    call re_alloc(Ski,1,2,1,maxkba,1,maxno,
-     &                copy=.true.,name='Ski',routine='phirphi_opt')
+                    call re_alloc( iano, 1, maxno, copy=.true.,
+     &                             name='iano', routine='phirphi_opt' )
+                    call re_alloc( iono, 1, maxno, copy=.true.,
+     &                             name='iono', routine='phirphi_opt' )
+                    call re_alloc( Ski, 1, 2, 1, maxkba, 1, maxno,
+     &                             copy=.true., name='Ski',
+     &                             routine='phirphi_opt' )
                   endif
                   iono(nno) = io
                   iano(nno) = ia
@@ -468,18 +464,18 @@ C The factor of two because we use Ry for the Hamiltonian
         enddo
       enddo
 
-C Reduce size of arrays
-      call re_alloc(calculated,1,1,1,1,1,1,name='calculated',
-     &              routine='phirphi_opt')
-      call re_alloc(Pij,1,1,1,1,1,1,name='Pij',
-     &              routine='phirphi_opt')
-      call re_alloc(Ski,1,2,1,1,1,1,name='Ski',routine='phirphi_opt')
-      call re_alloc(iono,1,1,name='iono',routine='phirphi_opt')
-      call re_alloc(iano,1,1,name='iano',routine='phirphi_opt')
-      call re_alloc(Vi,1,1,name='Vi',routine='phirphi_opt')
-      call re_alloc(Si,1,1,name='Si',routine='phirphi_opt')
-      call re_alloc(needed,1,1,name='needed',routine='phirphi_opt')
-      call re_alloc(listed,1,1,name='listed',routine='phirphi_opt')
+C     Free local memory
+      call matel( 'S', 0, 0, 0, 0, xij, Sij, grSij )
+      call reset_neighbour_arrays( )
+      call de_alloc( calculated, 'calculated', 'phirphi_opt' )
+      call de_alloc( Pij,        'Pij',        'phirphi_opt' )
+      call de_alloc( Ski,        'Ski',        'phirphi_opt' )
+      call de_alloc( iono,       'iono',       'phirphi_opt' )
+      call de_alloc( iano,       'iano',       'phirphi_opt' )
+      call de_alloc( Vi,         'Vi',         'phirphi_opt' )
+      call de_alloc( Si,         'Si',         'phirphi_opt' )
+      call de_alloc( needed,     'needed',     'phirphi_opt' )
+      call de_alloc( listed,     'listed',     'phirphi_opt' )
 
 C Stop timer
       call timer('phirphiopt',2)
@@ -488,7 +484,7 @@ C Stop timer
       end
 
 
-      subroutine Intgry( ilm1, ilm2, dintg)
+      subroutine Intgry( ilm1, ilm2, dintg )
 C *******************************************************************
 C Returns a vector with the value of the integral of a spherical 
 C harmonic with the gradient of another spherical harmonic.

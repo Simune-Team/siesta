@@ -647,7 +647,6 @@ MODULE siesta_options
 
     ! Method to Solve LDA Hamiltonian ...
     method = fdf_get('SolutionMethod','diagon')
-! RGT      method_default = 'jacobi'
     if (cml_p) then
       call cmlAddParameter( xf=mainXML, name='SolutionMethod',        &
                             value=method, dictRef='siesta:SCFmethod' )
@@ -682,13 +681,21 @@ MODULE siesta_options
         write(6,'(a,4x,a)') 'redata: Method of Calculation            = ', &
                             'Jacobi-Davidson'
       endif
+    else if (leqi(method,'iterat')) then
+      isolve = 3
+      DaC    = .false.
+      if (ionode) then
+        write(6,'(a,4x,a)') 'redata: Method of Calculation            = ', &
+                            'Iterative'
+      endif
 
     else
       call die( 'redata: The method of solution must be either '//&
-                'OrderN or Diagon' )
+                'OrderN, Diagon, Jacobi or Iterative' )
     endif
+
 #ifdef DEBUG
-    call write_debug('Method used for diagonalization: '//method )
+    call write_debug( '    Solution Method: ' // method )
 #endif
 
     if (cml_p) then

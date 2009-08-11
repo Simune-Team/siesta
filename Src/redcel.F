@@ -34,7 +34,7 @@ C
       real(dp), intent(out) ::      alat, scell(3,3), ucell(3,3)
 
 C Internal variables
-      integer           i, iunit, ix, j
+      integer           i, ix, j
       real(dp)          alp, alplp, betlp, blp, cell(3,3), clp,
      .                  gamlp, pi, xxx
 

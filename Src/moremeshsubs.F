@@ -10,6 +10,9 @@
 
       PUBLIC :: initMeshDistr, setMeshDistr
       PUBLIC :: distMeshData, resetMeshDistr
+      PUBLIC :: meshDisType, meshCommType
+      PUBLIC :: meshCommu, meshDistr
+      PUBLIC :: boxIntersection
 
 #ifdef MPI
       PUBLIC :: initMeshExtencil, distExtMeshData, gathExtMeshData
@@ -21,7 +24,6 @@
 
 !     Private type to hold mesh distribution data
       TYPE meshDisType
-      PRIVATE
       integer          :: nMesh(3)   ! Number of mesh div. in each axis
       integer, pointer :: box(:,:,:) ! Mesh box bounds of each node:
                                      ! box(1,iAxis,iNode)=lower bounds
@@ -29,7 +31,6 @@
       END TYPE meshDisType
 
       TYPE meshCommType
-      PRIVATE
       integer          :: ncom
       integer, pointer :: src(:), dst(:)
       END TYPE meshCommType
@@ -102,8 +103,8 @@ C     Reset data if necessay
 
 C     Allocate memory for the current distribution
       nullify( distr%box )
-      call re_alloc( distr%box, 1, 2, 1, 3, 1, Nodes, name='distr%box',
-     &               routine='initMeshDistr' )
+      call re_alloc( distr%box, 1, 2, 1, 3, 1, Nodes,
+     &               'distr%box', 'moreMeshSubs' )
 
 C     The first distribution should be the uniform distribution
       if (oDistr.eq.1) then
@@ -239,20 +240,17 @@ C     Local variables
         distr => meshDistr(idis)
 
         if (associated(distr%box)) then
-          call de_alloc( distr%box, name='distr%box',
-     &                   routine='resetMeshDistr' )
+          call de_alloc( distr%box, 'distr%box', 'moreMeshSubs' )
         endif
         distr%nMesh = 0
 
         do icom=1, 3
           mcomm => exteCommu(idis,icom)
           if (associated(mcomm%src)) then
-            call de_alloc( mcomm%src, name='mcomm%src',
-     &                     routine='resetMeshDistr' )
+            call de_alloc( mcomm%src, 'mcomm%src', 'moreMeshSubs' )
           endif
           if (associated(mcomm%dst)) then
-            call de_alloc( mcomm%dst, name='mcomm%dst',
-     &                    routine='resetMeshDistr' )
+            call de_alloc( mcomm%dst, 'mcomm%dst', 'moreMeshSubs' )
           endif
           mcomm%ncom = 0
         enddo
@@ -260,12 +258,10 @@ C     Local variables
         do icom= ((idis-2)*(idis-1))/2 + 1, ((idis-1)*idis)/2
           mcomm => meshCommu(icom)
           if (associated(mcomm%src)) then
-            call de_alloc( mcomm%src, name='mcomm%src',
-     &                     routine='resetMeshDistr' )
+            call de_alloc( mcomm%src, 'mcomm%src', 'moreMeshSubs' )
           endif
           if (associated(mcomm%dst)) then
-            call de_alloc( mcomm%dst, name='mcomm%dst',
-     &                    routine='resetMeshDistr' )
+            call de_alloc( mcomm%dst, 'mcomm%dst', 'moreMeshSubs' )
           endif
           mcomm%ncom = 0
         enddo
@@ -304,10 +300,9 @@ C
 C ==================================================================
       subroutine distMeshData_rea( iDistr, fsrc, oDistr, fdst, itr )
       use mesh,    only : nsm
+      use m_dhscf, only : nm
 #ifdef MPI
       use mpi_siesta
-#else
-      use m_dhscf, only : nm
 #endif
       implicit none
 C     Passed arguments
@@ -332,354 +327,365 @@ C     Local variables
       integer                     :: MPIerror, Status(MPI_Status_Size)
 #endif
 !------------------------------------------------------------------------- BEGIN
-#ifdef MPI
-C     The communications are stored in a triangular structure.
-      if (iDistr.gt.oDistr) then
-        ind  = ((iDistr-1)*(iDistr-2))/2 + oDistr
-        ncom = meshCommu(ind)%ncom
-        src => meshCommu(ind)%dst
-        dst => meshCommu(ind)%src
-      else
-        ind = ((oDistr-1)*(oDistr-2))/2 + iDistr
-        ncom = meshCommu(ind)%ncom
-        src => meshCommu(ind)%src
-        dst => meshCommu(ind)%dst
-      endif
-
-      idis => meshDistr(iDistr)
-      odis => meshDistr(oDistr)
-
-      NSP = NSM*NSM*NSM
-      ME  = Node + 1
-
-      nullify( JS )
-      call re_alloc( JS, 1, NSP, name='JS', routine='distMeshData' )
-
-C     Compute the maximum size of the buffer needed to transfer data
-C     among the several processes
-      maxSize = 0
-      do icom= 1, ncom
-        if (src(icom).ne.dst(icom)) then
-          Sbox => idis%box(:,:,src(icom))
-          Dbox => odis%box(:,:,dst(icom))
-          call boxIntersection( Sbox, Dbox, Lbox, inters )
-          Xsize = Lbox(2,1) - Lbox(1,1) + 1
-          Ysize = Lbox(2,2) - Lbox(1,2) + 1
-          Zsize = Lbox(2,3) - Lbox(1,3) + 1
-          MaxSize = max(MaxSize,Xsize*Ysize*Zsize)
+      if (nodes.gt.1) then
+C       The communications are stored in a triangular structure.
+        if (iDistr.gt.oDistr) then
+          ind  = ((iDistr-1)*(iDistr-2))/2 + oDistr
+          ncom = meshCommu(ind)%ncom
+          src => meshCommu(ind)%dst
+          dst => meshCommu(ind)%src
+        else
+          ind = ((oDistr-1)*(oDistr-2))/2 + iDistr
+          ncom = meshCommu(ind)%ncom
+          src => meshCommu(ind)%src
+          dst => meshCommu(ind)%dst
         endif
-      enddo
 
-      MaxSize = MaxSize*nsp
-      if (MaxSize.gt.0) then
-        nullify( TBUF )
-        call re_alloc( TBUF, 1, MaxSize, name='TBUF',
-     &                 routine='distMeshData' )
-      endif
+        idis => meshDistr(iDistr)
+        odis => meshDistr(oDistr)
 
-      Sbox => idis%box(:,:,ME)
-      NSRC(1) = (Sbox(2,1) - Sbox(1,1) + 1)*nsm
-      NSRC(2) = (Sbox(2,2) - Sbox(1,2) + 1)*nsm
-      NSRC(3) = (Sbox(2,3) - Sbox(1,3) + 1)*nsm
-      Dbox => odis%box(:,:,ME)
-      NDST(1) = (Dbox(2,1) - Dbox(1,1) + 1)*nsm
-      NDST(2) = (Dbox(2,2) - Dbox(1,2) + 1)*nsm
-      NDST(3) = (Dbox(2,3) - Dbox(1,3) + 1)*nsm
+        NSP = NSM*NSM*NSM
+        ME  = Node + 1
 
-      if (itr.eq.1) then
-C       From clustered to sequential
-        NN = 1
-        I3 = 0
-        DO N3=0, NSM-1
-          I2 = 0
-          DO N2= 0, NSM-1
-            I1 = I2 + I3
-            DO N1= 0, NSM-1
-              JS(NN) = I1
-              NN     = NN + 1
-              I1     = I1 + 1
-            ENDDO
-            I2 = I2 + NDST(1)
-          ENDDO
-          I3 = I3 + NDST(1)*NDST(2)
-        ENDDO
+        nullify( JS )
+        call re_alloc( JS, 1, NSP, 'JS', 'moreMeshSubs' )
+
+C       Compute the maximum size of the buffer needed to transfer data
+C       among the several processes
+        maxSize = 0
         do icom= 1, ncom
-          Sbox => idis%box(:,:,src(icom))
-          Dbox => odis%box(:,:,dst(icom))
-          call boxIntersection( Sbox, Dbox, Lbox, inters )
-          if (src(icom).eq.ME) then
-            if (dst(icom).eq.ME) then
-C             SRC and DST are the current process
-              J3 = (Lbox(1,3) - Sbox(1,3))*NSRC(1)*NSRC(2)*NSM
+          if (src(icom).ne.dst(icom)) then
+            Sbox => idis%box(:,:,src(icom))
+            Dbox => odis%box(:,:,dst(icom))
+            call boxIntersection( Sbox, Dbox, Lbox, inters )
+            Xsize = Lbox(2,1) - Lbox(1,1) + 1
+            Ysize = Lbox(2,2) - Lbox(1,2) + 1
+            Zsize = Lbox(2,3) - Lbox(1,3) + 1
+            MaxSize = max(MaxSize,Xsize*Ysize*Zsize)
+          endif
+        enddo
+
+        MaxSize = MaxSize*nsp
+        if (MaxSize.gt.0) then
+          nullify( TBUF )
+          call re_alloc( TBUF, 1, MaxSize, 'TBUF', 'moreMeshSubs' )
+        endif
+
+        Sbox => idis%box(:,:,ME)
+        NSRC(1) = (Sbox(2,1) - Sbox(1,1) + 1)*nsm
+        NSRC(2) = (Sbox(2,2) - Sbox(1,2) + 1)*nsm
+        NSRC(3) = (Sbox(2,3) - Sbox(1,3) + 1)*nsm
+        Dbox => odis%box(:,:,ME)
+        NDST(1) = (Dbox(2,1) - Dbox(1,1) + 1)*nsm
+        NDST(2) = (Dbox(2,2) - Dbox(1,2) + 1)*nsm
+        NDST(3) = (Dbox(2,3) - Dbox(1,3) + 1)*nsm
+
+        if (itr.eq.1) then
+C         From clustered to sequential
+          NN = 1
+          I3 = 0
+          DO N3=0, NSM-1
+            I2 = 0
+            DO N2= 0, NSM-1
+              I1 = I2 + I3
+              DO N1= 0, NSM-1
+                JS(NN) = I1
+                NN     = NN + 1
+                I1     = I1 + 1
+              ENDDO
+              I2 = I2 + NDST(1)
+            ENDDO
+            I3 = I3 + NDST(1)*NDST(2)
+          ENDDO
+          do icom= 1, ncom
+            Sbox => idis%box(:,:,src(icom))
+            Dbox => odis%box(:,:,dst(icom))
+            call boxIntersection( Sbox, Dbox, Lbox, inters )
+            if (src(icom).eq.ME) then
+              if (dst(icom).eq.ME) then
+C               SRC and DST are the current process
+                J3 = (Lbox(1,3) - Sbox(1,3))*NSRC(1)*NSRC(2)*NSM
+                K3 = (Lbox(1,3) - Dbox(1,3))*NDST(1)*NDST(2)*NSM
+                do I3 = Lbox(1,3), Lbox(2,3)
+                  J2 = (Lbox(1,2) - Sbox(1,2))*NSRC(1)*NSM*NSM
+                  K2 = (Lbox(1,2) - Dbox(1,2))*NDST(1)*NSM
+                  do I2 = Lbox(1,2), Lbox(2,2)
+                    J1 = (Lbox(1,1) - Sbox(1,1))*NSP + 1 + J2 + J3
+                    K1 = (Lbox(1,1) - Dbox(1,1))*NSM + 1 + K2 + K3
+                    do I1 = Lbox(1,1), Lbox(2,1)
+                      DO NN= 1, NSP
+                        fdst(K1+JS(NN)) = fsrc(J1)
+                        J1 = J1 + 1
+                      ENDDO
+                      K1 = K1 + NSM
+                    enddo
+                    J2 = J2 + NSRC(1)*NSM*NSM
+                    K2 = K2 + NDST(1)*NSM
+                  enddo
+                  J3 = J3 + NSRC(1)*NSRC(2)*NSM
+                  K3 = K3 + NDST(1)*NDST(2)*NSM
+                enddo
+              else
+C               We should send data to process dst(icom)-1
+                J3 = (Lbox(1,3) - Sbox(1,3))*NSRC(1)*NSRC(2)*NSM
+                K1 = 1
+                do I3 = Lbox(1,3), Lbox(2,3)
+                  J2 = (Lbox(1,2) - Sbox(1,2))*NSRC(1)*NSM*NSM
+                  do I2 = Lbox(1,2), Lbox(2,2)
+                    J1 = (Lbox(1,1) - Sbox(1,1))*NSP + 1 + J2 + J3
+                    do I1 = Lbox(1,1), Lbox(2,1)
+                      DO NN= 1, NSP
+                        TBUF(K1) = fsrc(J1)
+                        J1 = J1 + 1
+                        K1 = K1 + 1
+                      ENDDO
+                    enddo
+                    J2 = J2 + NSRC(1)*NSM*NSM
+                  enddo
+                  J3 = J3 + NSRC(1)*NSRC(2)*NSM
+                enddo
+
+                Xsize = Lbox(2,1) - Lbox(1,1) + 1
+                Ysize = Lbox(2,2) - Lbox(1,2) + 1
+                Zsize = Lbox(2,3) - Lbox(1,3) + 1
+#ifdef MPI
+                call MPI_Send( TBUF, Xsize*Ysize*Zsize*nsp,
+     &                         MPI_grid_real, dst(icom)-1, 1,
+     &                         MPI_Comm_world, MPIerror )
+#endif
+              endif
+            else
+C             We should receive data from process src(icom)-1
+              Xsize = Lbox(2,1) - Lbox(1,1) + 1
+              Ysize = Lbox(2,2) - Lbox(1,2) + 1
+              Zsize = Lbox(2,3) - Lbox(1,3) + 1
+#ifdef MPI
+              call mpi_recv( TBUF, Xsize*Ysize*Zsize*nsp,
+     &                       MPI_grid_real, src(icom)-1, 1,
+     &                       MPI_Comm_world, Status, MPIerror )
+#endif
+
+              J1 = 1
               K3 = (Lbox(1,3) - Dbox(1,3))*NDST(1)*NDST(2)*NSM
               do I3 = Lbox(1,3), Lbox(2,3)
-                J2 = (Lbox(1,2) - Sbox(1,2))*NSRC(1)*NSM*NSM
                 K2 = (Lbox(1,2) - Dbox(1,2))*NDST(1)*NSM
                 do I2 = Lbox(1,2), Lbox(2,2)
-                  J1 = (Lbox(1,1) - Sbox(1,1))*NSP + 1 + J2 + J3
                   K1 = (Lbox(1,1) - Dbox(1,1))*NSM + 1 + K2 + K3
                   do I1 = Lbox(1,1), Lbox(2,1)
                     DO NN= 1, NSP
-                      fdst(K1+JS(NN)) = fsrc(J1)
+                      fdst(K1+JS(NN)) = TBUF(J1)
                       J1 = J1 + 1
                     ENDDO
                     K1 = K1 + NSM
                   enddo
-                  J2 = J2 + NSRC(1)*NSM*NSM
                   K2 = K2 + NDST(1)*NSM
                 enddo
-                J3 = J3 + NSRC(1)*NSRC(2)*NSM
                 K3 = K3 + NDST(1)*NDST(2)*NSM
               enddo
-            else
-C             We should send data to process dst(icom)-1
-              J3 = (Lbox(1,3) - Sbox(1,3))*NSRC(1)*NSRC(2)*NSM
-              K1 = 1
-              do I3 = Lbox(1,3), Lbox(2,3)
-                J2 = (Lbox(1,2) - Sbox(1,2))*NSRC(1)*NSM*NSM
-                do I2 = Lbox(1,2), Lbox(2,2)
-                  J1 = (Lbox(1,1) - Sbox(1,1))*NSP + 1 + J2 + J3
-                  do I1 = Lbox(1,1), Lbox(2,1)
-                    DO NN= 1, NSP
-                      TBUF(K1) = fsrc(J1)
-                      J1 = J1 + 1
-                      K1 = K1 + 1
-                    ENDDO
+            endif
+          enddo
+        else if (itr.eq.-1) then
+C         From sequencial to clustered
+          NN = 1
+          I3 = 0
+          DO N3=0, NSM-1
+            I2 = 0
+            DO N2= 0, NSM-1
+              I1 = I2 + I3
+              DO N1= 0, NSM-1
+                JS(NN) = I1
+                NN     = NN + 1
+                I1     = I1 + 1
+              ENDDO
+              I2 = I2 + NSRC(1)
+            ENDDO
+            I3 = I3 + NSRC(1)*NSRC(2)
+          ENDDO
+          do icom= 1, ncom
+            Sbox => idis%box(:,:,src(icom))
+            Dbox => odis%box(:,:,dst(icom))
+            call boxIntersection( Sbox, Dbox, Lbox, inters )
+            if (src(icom).eq.ME) then
+              if (dst(icom).eq.ME) then
+C               SRC and DST are the current process
+                J3 = (Lbox(1,3) - Sbox(1,3))*NSRC(1)*NSRC(2)*NSM
+                K3 = (Lbox(1,3) - Dbox(1,3))*NDST(1)*NDST(2)*NSM
+                do I3 = Lbox(1,3), Lbox(2,3)
+                  J2 = (Lbox(1,2) - Sbox(1,2))*NSRC(1)*NSM
+                  K2 = (Lbox(1,2) - Dbox(1,2))*NDST(1)*NSM*NSM
+                  do I2 = Lbox(1,2), Lbox(2,2)
+                    J1 = (Lbox(1,1) - Sbox(1,1))*NSM + 1 + J2 + J3
+                    K1 = (Lbox(1,1) - Dbox(1,1))*NSP + 1 + K2 + K3
+                    do I1 = Lbox(1,1), Lbox(2,1)
+                      DO NN= 1, NSP
+                        fdst(K1) = fsrc(J1+JS(NN))
+                        K1 = K1 + 1
+                      ENDDO
+                      J1 = J1 + NSM
+                    enddo
+                    J2 = J2 + NSRC(1)*NSM
+                    K2 = K2 + NDST(1)*NSM*NSM
                   enddo
-                  J2 = J2 + NSRC(1)*NSM*NSM
+                  J3 = J3 + NSRC(1)*NSRC(2)*NSM
+                  K3 = K3 + NDST(1)*NDST(2)*NSM
                 enddo
-                J3 = J3 + NSRC(1)*NSRC(2)*NSM
-              enddo
+              else
+C               We should send data to process dst(icom)-1
+                J3 = (Lbox(1,3) - Sbox(1,3))*NSRC(1)*NSRC(2)*NSM
+                K1 = 1
+                do I3 = Lbox(1,3), Lbox(2,3)
+                  J2 = (Lbox(1,2) - Sbox(1,2))*NSRC(1)*NSM
+                  do I2 = Lbox(1,2), Lbox(2,2)
+                    J1 = (Lbox(1,1) - Sbox(1,1))*NSM + 1 + J2 + J3
+                    do I1 = Lbox(1,1), Lbox(2,1)
+                      DO NN= 1, NSP
+                        TBUF(K1) = fsrc(J1+JS(NN))
+                        K1 = K1 + 1
+                      ENDDO
+                      J1 = J1 + NSM
+                    enddo
+                    J2 = J2 + NSRC(1)*NSM
+                  enddo
+                  J3 = J3 + NSRC(1)*NSRC(2)*NSM
+                enddo
 
+                Xsize = Lbox(2,1) - Lbox(1,1) + 1
+                Ysize = Lbox(2,2) - Lbox(1,2) + 1
+                Zsize = Lbox(2,3) - Lbox(1,3) + 1
+#ifdef MPI
+                call MPI_Send( TBUF, Xsize*Ysize*Zsize*nsp,
+     &                         MPI_grid_real, dst(icom)-1, 1,
+     &                         MPI_Comm_world, MPIerror )
+              endif
+#endif
+            else
+C             We should receive data from process src(icom)-1
               Xsize = Lbox(2,1) - Lbox(1,1) + 1
               Ysize = Lbox(2,2) - Lbox(1,2) + 1
               Zsize = Lbox(2,3) - Lbox(1,3) + 1
-              call MPI_Send( TBUF, Xsize*Ysize*Zsize*nsp,
-     &                       MPI_grid_real, dst(icom)-1, 1,
-     &                       MPI_Comm_world, MPIerror )
-            endif
-          else
-C           We should receive data from process src(icom)-1
-            Xsize = Lbox(2,1) - Lbox(1,1) + 1
-            Ysize = Lbox(2,2) - Lbox(1,2) + 1
-            Zsize = Lbox(2,3) - Lbox(1,3) + 1
-            call mpi_recv( TBUF, Xsize*Ysize*Zsize*nsp,
-     &                     MPI_grid_real, src(icom)-1, 1,
-     &                     MPI_Comm_world, Status, MPIerror )
 
-            J1 = 1
-            K3 = (Lbox(1,3) - Dbox(1,3))*NDST(1)*NDST(2)*NSM
-            do I3 = Lbox(1,3), Lbox(2,3)
-              K2 = (Lbox(1,2) - Dbox(1,2))*NDST(1)*NSM
-              do I2 = Lbox(1,2), Lbox(2,2)
-                K1 = (Lbox(1,1) - Dbox(1,1))*NSM + 1 + K2 + K3
-                do I1 = Lbox(1,1), Lbox(2,1)
-                  DO NN= 1, NSP
-                    fdst(K1+JS(NN)) = TBUF(J1)
-                    J1 = J1 + 1
-                  ENDDO
-                  K1 = K1 + NSM
-                enddo
-                K2 = K2 + NDST(1)*NSM
-              enddo
-              K3 = K3 + NDST(1)*NDST(2)*NSM
-            enddo
-          endif
-        enddo
-      else if (itr.eq.-1) then
-C       From sequencial to clustered
-        NN = 1
-        I3 = 0
-        DO N3=0, NSM-1
-          I2 = 0
-          DO N2= 0, NSM-1
-            I1 = I2 + I3
-            DO N1= 0, NSM-1
-              JS(NN) = I1
-              NN     = NN + 1
-              I1     = I1 + 1
-            ENDDO
-            I2 = I2 + NSRC(1)
-          ENDDO
-          I3 = I3 + NSRC(1)*NSRC(2)
-        ENDDO
-        do icom= 1, ncom
-          Sbox => idis%box(:,:,src(icom))
-          Dbox => odis%box(:,:,dst(icom))
-          call boxIntersection( Sbox, Dbox, Lbox, inters )
-          if (src(icom).eq.ME) then
-            if (dst(icom).eq.ME) then
-C             SRC and DST are the current process
-              J3 = (Lbox(1,3) - Sbox(1,3))*NSRC(1)*NSRC(2)*NSM
+#ifdef MPI
+              call mpi_recv( TBUF, Xsize*Ysize*Zsize*nsp,
+     &                       MPI_grid_real, src(icom)-1, 1,
+     &                       MPI_Comm_world, Status, MPIerror )
+#endif
+
+              J1 = 1
               K3 = (Lbox(1,3) - Dbox(1,3))*NDST(1)*NDST(2)*NSM
               do I3 = Lbox(1,3), Lbox(2,3)
-                J2 = (Lbox(1,2) - Sbox(1,2))*NSRC(1)*NSM
                 K2 = (Lbox(1,2) - Dbox(1,2))*NDST(1)*NSM*NSM
                 do I2 = Lbox(1,2), Lbox(2,2)
-                  J1 = (Lbox(1,1) - Sbox(1,1))*NSM + 1 + J2 + J3
                   K1 = (Lbox(1,1) - Dbox(1,1))*NSP + 1 + K2 + K3
                   do I1 = Lbox(1,1), Lbox(2,1)
                     DO NN= 1, NSP
-                      fdst(K1) = fsrc(J1+JS(NN))
+                      fdst(K1) = TBUF(J1)
                       K1 = K1 + 1
+                      J1 = J1 + 1
                     ENDDO
-                    J1 = J1 + NSM
                   enddo
-                  J2 = J2 + NSRC(1)*NSM
                   K2 = K2 + NDST(1)*NSM*NSM
                 enddo
-                J3 = J3 + NSRC(1)*NSRC(2)*NSM
                 K3 = K3 + NDST(1)*NDST(2)*NSM
               enddo
-            else
-C             We should send data to process dst(icom)-1
-              J3 = (Lbox(1,3) - Sbox(1,3))*NSRC(1)*NSRC(2)*NSM
-              K1 = 1
-              do I3 = Lbox(1,3), Lbox(2,3)
-                J2 = (Lbox(1,2) - Sbox(1,2))*NSRC(1)*NSM
-                do I2 = Lbox(1,2), Lbox(2,2)
-                  J1 = (Lbox(1,1) - Sbox(1,1))*NSM + 1 + J2 + J3
-                  do I1 = Lbox(1,1), Lbox(2,1)
-                    DO NN= 1, NSP
-                      TBUF(K1) = fsrc(J1+JS(NN))
-                      K1 = K1 + 1
-                    ENDDO
-                    J1 = J1 + NSM
-                  enddo
-                  J2 = J2 + NSRC(1)*NSM
-                enddo
-                J3 = J3 + NSRC(1)*NSRC(2)*NSM
-              enddo
-
-              Xsize = Lbox(2,1) - Lbox(1,1) + 1
-              Ysize = Lbox(2,2) - Lbox(1,2) + 1
-              Zsize = Lbox(2,3) - Lbox(1,3) + 1
-              call MPI_Send( TBUF, Xsize*Ysize*Zsize*nsp,
-     &                       MPI_grid_real, dst(icom)-1, 1,
-     &                       MPI_Comm_world, MPIerror )
             endif
-          else
-C           We should receive data from process src(icom)-1
-            Xsize = Lbox(2,1) - Lbox(1,1) + 1
-            Ysize = Lbox(2,2) - Lbox(1,2) + 1
-            Zsize = Lbox(2,3) - Lbox(1,3) + 1
-
-            call mpi_recv( TBUF, Xsize*Ysize*Zsize*nsp,
-     &                     MPI_grid_real, src(icom)-1, 1,
-     &                     MPI_Comm_world, Status, MPIerror )
-
-            J1 = 1
-            K3 = (Lbox(1,3) - Dbox(1,3))*NDST(1)*NDST(2)*NSM
-            do I3 = Lbox(1,3), Lbox(2,3)
-              K2 = (Lbox(1,2) - Dbox(1,2))*NDST(1)*NSM*NSM
-              do I2 = Lbox(1,2), Lbox(2,2)
-                K1 = (Lbox(1,1) - Dbox(1,1))*NSP + 1 + K2 + K3
-                do I1 = Lbox(1,1), Lbox(2,1)
-                  DO NN= 1, NSP
+          enddo
+        else if (itr.eq.0) then
+C         From sequencial to sequencial or from clustered to clustered
+          do icom= 1, ncom
+            Sbox => idis%box(:,:,src(icom))
+            Dbox => odis%box(:,:,dst(icom))
+            call boxIntersection( Sbox, Dbox, Lbox, inters )
+            Xsize = (Lbox(2,1) - Lbox(1,1) + 1)*NSM
+            Ysize = (Lbox(2,2) - Lbox(1,2) + 1)*NSM
+            Zsize = (Lbox(2,3) - Lbox(1,3) + 1)*NSM
+            if (src(icom).eq.ME) then
+              if (dst(icom).eq.ME) then
+C               SRC and DST are the current process
+                J3 = (Lbox(1,3) - Sbox(1,3))*NSRC(1)*NSRC(2)*NSM
+                K3 = (Lbox(1,3) - Dbox(1,3))*NDST(1)*NDST(2)*NSM
+                do I3 = 1, Zsize
+                  J2 = (Lbox(1,2) - Sbox(1,2))*NSRC(1)*NSM
+                  K2 = (Lbox(1,2) - Dbox(1,2))*NDST(1)*NSM
+                  do I2 = 1, Ysize
+                    J1 = (Lbox(1,1) - Sbox(1,1))*NSM + 1 + J2 + J3
+                    K1 = (Lbox(1,1) - Dbox(1,1))*NSM + 1 + K2 + K3
+                    do I1 = 1, Xsize
+                      fdst(K1) = fsrc(J1)
+                      K1 = K1 + 1
+                      J1 = J1 + 1
+                    enddo
+                    J2 = J2 + NSRC(1)
+                    K2 = K2 + NDST(1)
+                  enddo
+                  J3 = J3 + NSRC(1)*NSRC(2)
+                  K3 = K3 + NDST(1)*NDST(2)
+                enddo
+              else
+C               We should send data to process dst(icom)-1
+                J3 = (Lbox(1,3) - Sbox(1,3))*NSRC(1)*NSRC(2)*NSM
+                K1 = 1
+                do I3 = 1, Zsize
+                  J2 = (Lbox(1,2) - Sbox(1,2))*NSRC(1)*NSM
+                  do I2 = 1, Ysize
+                    J1 = (Lbox(1,1) - Sbox(1,1))*NSM + 1 + J2 + J3
+                    do I1 = 1, Xsize
+                      TBUF(K1) = fsrc(J1)
+                      K1 = K1 + 1
+                      J1 = J1 + 1
+                    enddo
+                    J2 = J2 + NSRC(1)
+                  enddo
+                  J3 = J3 + NSRC(1)*NSRC(2)
+                enddo
+#ifdef MPI
+                call MPI_Send( TBUF, Xsize*Ysize*Zsize,
+     &                         MPI_grid_real, dst(icom)-1, 1,
+     &                         MPI_Comm_world, MPIerror )
+#endif
+              endif
+            else
+C             We should receive data from process src(icom)-1
+#ifdef MPI
+              call mpi_recv( TBUF, Xsize*Ysize*Zsize,
+     &                       MPI_grid_real, src(icom)-1, 1,
+     &                       MPI_Comm_world, Status, MPIerror )
+#endif
+              J1 = 1
+              K3 = (Lbox(1,3) - Dbox(1,3))*NDST(1)*NDST(2)*NSM
+              do I3 = 1, Zsize
+                K2 = (Lbox(1,2) - Dbox(1,2))*NDST(1)*NSM
+                do I2 = 1, Ysize
+                  K1 = (Lbox(1,1) - Dbox(1,1))*NSM + 1 + K2 + K3
+                  do I1 = 1, Xsize
                     fdst(K1) = TBUF(J1)
                     K1 = K1 + 1
                     J1 = J1 + 1
-                  ENDDO
-                enddo
-                K2 = K2 + NDST(1)*NSM*NSM
-              enddo
-              K3 = K3 + NDST(1)*NDST(2)*NSM
-            enddo
-          endif
-        enddo
-      else if (itr.eq.0) then
-C       From sequencial to sequencial or from clustered to clustered
-        do icom= 1, ncom
-          Sbox => idis%box(:,:,src(icom))
-          Dbox => odis%box(:,:,dst(icom))
-          call boxIntersection( Sbox, Dbox, Lbox, inters )
-          Xsize = (Lbox(2,1) - Lbox(1,1) + 1)*NSM
-          Ysize = (Lbox(2,2) - Lbox(1,2) + 1)*NSM
-          Zsize = (Lbox(2,3) - Lbox(1,3) + 1)*NSM
-          if (src(icom).eq.ME) then
-            if (dst(icom).eq.ME) then
-C             SRC and DST are the current process
-              J3 = (Lbox(1,3) - Sbox(1,3))*NSRC(1)*NSRC(2)*NSM
-              K3 = (Lbox(1,3) - Dbox(1,3))*NDST(1)*NDST(2)*NSM
-              do I3 = 1, Zsize
-                J2 = (Lbox(1,2) - Sbox(1,2))*NSRC(1)*NSM
-                K2 = (Lbox(1,2) - Dbox(1,2))*NDST(1)*NSM
-                do I2 = 1, Ysize
-                  J1 = (Lbox(1,1) - Sbox(1,1))*NSM + 1 + J2 + J3
-                  K1 = (Lbox(1,1) - Dbox(1,1))*NSM + 1 + K2 + K3
-                  do I1 = 1, Xsize
-                    fdst(K1) = fsrc(J1)
-                    K1 = K1 + 1
-                    J1 = J1 + 1
                   enddo
-                  J2 = J2 + NSRC(1)
                   K2 = K2 + NDST(1)
                 enddo
-                J3 = J3 + NSRC(1)*NSRC(2)
                 K3 = K3 + NDST(1)*NDST(2)
               enddo
-            else
-C             We should send data to process dst(icom)-1
-              J3 = (Lbox(1,3) - Sbox(1,3))*NSRC(1)*NSRC(2)*NSM
-              K1 = 1
-              do I3 = 1, Zsize
-                J2 = (Lbox(1,2) - Sbox(1,2))*NSRC(1)*NSM
-                do I2 = 1, Ysize
-                  J1 = (Lbox(1,1) - Sbox(1,1))*NSM + 1 + J2 + J3
-                  do I1 = 1, Xsize
-                    TBUF(K1) = fsrc(J1)
-                    K1 = K1 + 1
-                    J1 = J1 + 1
-                  enddo
-                  J2 = J2 + NSRC(1)
-                enddo
-                J3 = J3 + NSRC(1)*NSRC(2)
-              enddo
-              call MPI_Send( TBUF, Xsize*Ysize*Zsize,
-     &                       MPI_grid_real, dst(icom)-1, 1,
-     &                       MPI_Comm_world, MPIerror )
             endif
-          else
-C           We should receive data from process src(icom)-1
-            call mpi_recv( TBUF, Xsize*Ysize*Zsize,
-     &                     MPI_grid_real, src(icom)-1, 1,
-     &                     MPI_Comm_world, Status, MPIerror )
-            J1 = 1
-            K3 = (Lbox(1,3) - Dbox(1,3))*NDST(1)*NDST(2)*NSM
-            do I3 = 1, Zsize
-              K2 = (Lbox(1,2) - Dbox(1,2))*NDST(1)*NSM
-              do I2 = 1, Ysize
-                K1 = (Lbox(1,1) - Dbox(1,1))*NSM + 1 + K2 + K3
-                do I1 = 1, Xsize
-                  fdst(K1) = TBUF(J1)
-                  K1 = K1 + 1
-                  J1 = J1 + 1
-                enddo
-                K2 = K2 + NDST(1)
-              enddo
-              K3 = K3 + NDST(1)*NDST(2)
-            enddo
+          enddo
+        else
+          if (Node.eq.0) then
+            write(*,*)'ERROR: Wrong parameter for function distMeshData'
           endif
-        enddo
-      else
-        if (Node.eq.0) then
-          write(*,*)'ERROR: Wrong parameter for function distMeshData'
+          call die()
         endif
-        call die()
-      endif
 
-      if (MaxSize.gt.0) then
-        call de_alloc( TBUF, name='TBUF', routine='distMeshData' )
-      endif
+        if (MaxSize.gt.0) then
+          call de_alloc( TBUF, 'TBUF', 'moreMeshSubs' )
+        endif
 
-      call de_alloc( JS, name='JS', routine='distMeshData' )
-#else
-      if (itr.gt.0) then
-         call reord( fsrc, fdst, nm, nsm, itr )
+        call de_alloc( JS, 'JS', 'moreMeshSubs' )
       else
-        call reord( fdst, fsrc, nm, nsm, itr )
+        if (itr.gt.0) then
+           call reord( fsrc, fdst, nm, nsm, itr )
+        else
+          call reord( fdst, fsrc, nm, nsm, itr )
+        endif
       endif
-#endif
 !--------------------------------------------------------------------------- END
       end subroutine distMeshData_rea
 
@@ -712,140 +718,143 @@ C     Local variables
       integer                     :: MPIerror, Status(MPI_Status_Size)
 #endif
 !------------------------------------------------------------------------- BEGIN
-#ifdef MPI
-C     The communications are stored in a triangular structure.
-      if (iDistr.gt.oDistr) then
-        ind  = ((iDistr-1)*(iDistr-2))/2 + oDistr
-        ncom = meshCommu(ind)%ncom
-        src => meshCommu(ind)%dst
-        dst => meshCommu(ind)%src
-      else
-        ind = ((oDistr-1)*(oDistr-2))/2 + iDistr
-        ncom = meshCommu(ind)%ncom
-        src => meshCommu(ind)%src
-        dst => meshCommu(ind)%dst
-      endif
-
-      idis => meshDistr(iDistr)
-      odis => meshDistr(oDistr)
-
-      ME  = Node + 1
-
-C     Compute the maximum size of the buffer needed to transfer data
-C     among the several processes
-      maxSize = 0
-      do icom= 1, ncom
-        if (src(icom).ne.dst(icom)) then
-          Sbox => idis%box(:,:,src(icom))
-          Dbox => odis%box(:,:,dst(icom))
-          call boxIntersection( Sbox, Dbox, Lbox, inters )
-          Xsize = Lbox(2,1) - Lbox(1,1) + 1
-          Ysize = Lbox(2,2) - Lbox(1,2) + 1
-          Zsize = Lbox(2,3) - Lbox(1,3) + 1
-          MaxSize = max(MaxSize,Xsize*Ysize*Zsize)
+      if (nodes.gt.1) then
+C       The communications are stored in a triangular structure.
+        if (iDistr.gt.oDistr) then
+          ind  = ((iDistr-1)*(iDistr-2))/2 + oDistr
+          ncom = meshCommu(ind)%ncom
+          src => meshCommu(ind)%dst
+          dst => meshCommu(ind)%src
+        else
+          ind = ((oDistr-1)*(oDistr-2))/2 + iDistr
+          ncom = meshCommu(ind)%ncom
+          src => meshCommu(ind)%src
+          dst => meshCommu(ind)%dst
         endif
-      enddo
 
-      if (MaxSize.gt.0) then
-        nullify( TBUF )
-        call re_alloc( TBUF, 1, MaxSize, name='TBUF',
-     &                 routine='distMeshData' )
-      endif
+        idis => meshDistr(iDistr)
+        odis => meshDistr(oDistr)
 
-      Sbox => idis%box(:,:,ME)
-      NSRC(1) = Sbox(2,1) - Sbox(1,1) + 1
-      NSRC(2) = Sbox(2,2) - Sbox(1,2) + 1
-      NSRC(3) = Sbox(2,3) - Sbox(1,3) + 1
-      Dbox => odis%box(:,:,ME)
-      NDST(1) = Dbox(2,1) - Dbox(1,1) + 1
-      NDST(2) = Dbox(2,2) - Dbox(1,2) + 1
-      NDST(3) = Dbox(2,3) - Dbox(1,3) + 1
+        ME  = Node + 1
 
-      if (itr.eq.0) then
-C       From sequencial to sequencial
+C       Compute the maximum size of the buffer needed to transfer data
+C       among the several processes
+        maxSize = 0
         do icom= 1, ncom
-          Sbox => idis%box(:,:,src(icom))
-          Dbox => odis%box(:,:,dst(icom))
-          call boxIntersection( Sbox, Dbox, Lbox, inters )
-          Xsize = Lbox(2,1) - Lbox(1,1) + 1
-          Ysize = Lbox(2,2) - Lbox(1,2) + 1
-          Zsize = Lbox(2,3) - Lbox(1,3) + 1
-          if (src(icom).eq.ME) then
-            if (dst(icom).eq.ME) then
-C             SRC and DST are the current process
-              J3 = (Lbox(1,3) - Sbox(1,3))*NSRC(1)*NSRC(2)
-              K3 = (Lbox(1,3) - Dbox(1,3))*NDST(1)*NDST(2)
-              do I3 = 1, Zsize
-                J2 = (Lbox(1,2) - Sbox(1,2))*NSRC(1)
-                K2 = (Lbox(1,2) - Dbox(1,2))*NDST(1)
-                do I2 = 1, Ysize
-                  J1 = Lbox(1,1) - Sbox(1,1) + 1 + J2 + J3
-                  K1 = Lbox(1,1) - Dbox(1,1) + 1 + K2 + K3
-                  do I1 = 1, Xsize
-                    fdst(K1) = fsrc(J1)
-                    K1 = K1 + 1
-                    J1 = J1 + 1
-                  enddo
-                  J2 = J2 + NSRC(1)
-                  K2 = K2 + NDST(1)
-                enddo
-                J3 = J3 + NSRC(1)*NSRC(2)
-                K3 = K3 + NDST(1)*NDST(2)
-              enddo
-            else
-C             We should send data to process dst(icom)-1
-              J3 = (Lbox(1,3) - Sbox(1,3))*NSRC(1)*NSRC(2)
-              K1 = 1
-              do I3 = 1, Zsize
-                J2 = (Lbox(1,2) - Sbox(1,2))*NSRC(1)
-                do I2 = 1, Ysize
-                  J1 = Lbox(1,1) - Sbox(1,1) + 1 + J2 + J3
-                  do I1 = 1, Xsize
-                    TBUF(K1) = fsrc(J1)
-                    K1 = K1 + 1
-                    J1 = J1 + 1
-                  enddo
-                  J2 = J2 + NSRC(1)
-                enddo
-                J3 = J3 + NSRC(1)*NSRC(2)
-              enddo
-              call MPI_Send( TBUF, Xsize*Ysize*Zsize,
-     &                       MPI_Integer, dst(icom)-1, 1,
-     &                       MPI_Comm_world, MPIerror )
-            endif
-          else
-C           We should receive data from process src(icom)-1
-            call mpi_recv( TBUF, Xsize*Ysize*Zsize,
-     &                     MPI_Integer, src(icom)-1, 1,
-     &                     MPI_Comm_world, Status, MPIerror )
-            J1 = 1
-            K3 = (Lbox(1,3) - Dbox(1,3))*NDST(1)*NDST(2)
-            do I3 = 1, Zsize
-              K2 = (Lbox(1,2) - Dbox(1,2))*NDST(1)
-              do I2 = 1, Ysize
-                K1 = Lbox(1,1) - Dbox(1,1) + 1 + K2 + K3
-                do I1 = 1, Xsize
-                  fdst(K1) = TBUF(J1)
-                  K1 = K1 + 1
-                  J1 = J1 + 1
-                enddo
-                K2 = K2 + NDST(1)
-              enddo
-              K3 = K3 + NDST(1)*NDST(2)
-            enddo
+          if (src(icom).ne.dst(icom)) then
+            Sbox => idis%box(:,:,src(icom))
+            Dbox => odis%box(:,:,dst(icom))
+            call boxIntersection( Sbox, Dbox, Lbox, inters )
+            Xsize = Lbox(2,1) - Lbox(1,1) + 1
+            Ysize = Lbox(2,2) - Lbox(1,2) + 1
+            Zsize = Lbox(2,3) - Lbox(1,3) + 1
+            MaxSize = max(MaxSize,Xsize*Ysize*Zsize)
           endif
         enddo
-      else
-        if (Node.eq.0) then
-          write(*,*)'ERROR: Wrong parameter for function distMeshData'
-        endif
-        call die()
-      endif
 
-      if (MaxSize.gt.0) then
-        call de_alloc( TBUF, 'TBUF', 'distMeshData' )
-      endif
+        if (MaxSize.gt.0) then
+          nullify( TBUF )
+          call re_alloc( TBUF, 1, MaxSize, 'TBUF', 'moreMeshSubs' )
+        endif
+
+        Sbox => idis%box(:,:,ME)
+        NSRC(1) = Sbox(2,1) - Sbox(1,1) + 1
+        NSRC(2) = Sbox(2,2) - Sbox(1,2) + 1
+        NSRC(3) = Sbox(2,3) - Sbox(1,3) + 1
+        Dbox => odis%box(:,:,ME)
+        NDST(1) = Dbox(2,1) - Dbox(1,1) + 1
+        NDST(2) = Dbox(2,2) - Dbox(1,2) + 1
+        NDST(3) = Dbox(2,3) - Dbox(1,3) + 1
+
+        if (itr.eq.0) then
+C         From sequencial to sequencial
+          do icom= 1, ncom
+            Sbox => idis%box(:,:,src(icom))
+            Dbox => odis%box(:,:,dst(icom))
+            call boxIntersection( Sbox, Dbox, Lbox, inters )
+            Xsize = Lbox(2,1) - Lbox(1,1) + 1
+            Ysize = Lbox(2,2) - Lbox(1,2) + 1
+            Zsize = Lbox(2,3) - Lbox(1,3) + 1
+            if (src(icom).eq.ME) then
+              if (dst(icom).eq.ME) then
+C               SRC and DST are the current process
+                J3 = (Lbox(1,3) - Sbox(1,3))*NSRC(1)*NSRC(2)
+                K3 = (Lbox(1,3) - Dbox(1,3))*NDST(1)*NDST(2)
+                do I3 = 1, Zsize
+                  J2 = (Lbox(1,2) - Sbox(1,2))*NSRC(1)
+                  K2 = (Lbox(1,2) - Dbox(1,2))*NDST(1)
+                  do I2 = 1, Ysize
+                    J1 = Lbox(1,1) - Sbox(1,1) + 1 + J2 + J3
+                    K1 = Lbox(1,1) - Dbox(1,1) + 1 + K2 + K3
+                    do I1 = 1, Xsize
+                      fdst(K1) = fsrc(J1)
+                      K1 = K1 + 1
+                      J1 = J1 + 1
+                    enddo
+                    J2 = J2 + NSRC(1)
+                    K2 = K2 + NDST(1)
+                  enddo
+                  J3 = J3 + NSRC(1)*NSRC(2)
+                  K3 = K3 + NDST(1)*NDST(2)
+                enddo
+              else
+C               We should send data to process dst(icom)-1
+                J3 = (Lbox(1,3) - Sbox(1,3))*NSRC(1)*NSRC(2)
+                K1 = 1
+                do I3 = 1, Zsize
+                  J2 = (Lbox(1,2) - Sbox(1,2))*NSRC(1)
+                  do I2 = 1, Ysize
+                    J1 = Lbox(1,1) - Sbox(1,1) + 1 + J2 + J3
+                    do I1 = 1, Xsize
+                      TBUF(K1) = fsrc(J1)
+                      K1 = K1 + 1
+                      J1 = J1 + 1
+                    enddo
+                    J2 = J2 + NSRC(1)
+                  enddo
+                  J3 = J3 + NSRC(1)*NSRC(2)
+                enddo
+#ifdef MPI
+                call MPI_Send( TBUF, Xsize*Ysize*Zsize,
+     &                         MPI_Integer, dst(icom)-1, 1,
+     &                         MPI_Comm_world, MPIerror )
 #endif
+              endif
+            else
+C             We should receive data from process src(icom)-1
+#ifdef MPI
+              call mpi_recv( TBUF, Xsize*Ysize*Zsize,
+     &                       MPI_Integer, src(icom)-1, 1,
+     &                       MPI_Comm_world, Status, MPIerror )
+#endif
+              J1 = 1
+              K3 = (Lbox(1,3) - Dbox(1,3))*NDST(1)*NDST(2)
+              do I3 = 1, Zsize
+                K2 = (Lbox(1,2) - Dbox(1,2))*NDST(1)
+                do I2 = 1, Ysize
+                  K1 = Lbox(1,1) - Dbox(1,1) + 1 + K2 + K3
+                  do I1 = 1, Xsize
+                    fdst(K1) = TBUF(J1)
+                    K1 = K1 + 1
+                    J1 = J1 + 1
+                  enddo
+                  K2 = K2 + NDST(1)
+                enddo
+                K3 = K3 + NDST(1)*NDST(2)
+              enddo
+            endif
+          enddo
+        else
+          if (Node.eq.0) then
+            write(*,*)'ERROR: Wrong parameter for function distMeshData'
+          endif
+          call die()
+        endif
+
+        if (MaxSize.gt.0) then
+          call de_alloc( TBUF, 'TBUF', 'moreMeshSubs' )
+        endif
+      endif
 !--------------------------------------------------------------------------- END
       end subroutine distMeshData_int
 
@@ -926,10 +935,8 @@ C       Create a list of communications needed to send/receive
 C       the extencil
         if (Gcom.gt.0) then
           nullify( src, dst )
-          call re_alloc( src, 1, Gcom, name='src',
-     &                   routine='initMeshExtencil' )
-          call re_alloc( dst, 1, Gcom, name='dst',
-     &                   routine='initMeshExtencil' )
+          call re_alloc( src, 1, Gcom, 'src', 'moreMeshSubs' )
+          call re_alloc( dst, 1, Gcom, 'dst', 'moreMeshSubs' )
 
           ncom = 0
           do P1= 1, Nodes
@@ -976,10 +983,10 @@ C         Store the ordered list of communications needed by the current
 C         process to send/receive the extencil.
           if (Lcom.gt.0) then
             nullify( mcomm%src, mcomm%dst )
-            call re_alloc( mcomm%src, 1, Lcom, name='mcomm%src',
-     &                     routine='initMeshExtencil' )
-            call re_alloc( mcomm%dst, 1, Lcom, name='mcomm%dst',
-     &                     routine='initMeshExtencil' )
+            call re_alloc( mcomm%src, 1, Lcom, 'mcomm%src',
+     &                     'moreMeshSubs' )
+            call re_alloc( mcomm%dst, 1, Lcom, 'mcomm%dst',
+     &                     'moreMeshSubs' )
 
             ncom = 0
             do P1= 1, comm%ncol
@@ -992,12 +999,11 @@ C         process to send/receive the extencil.
             enddo
             mcomm%ncom = Lcom
 
-            call de_alloc( comm%ind, name='comm%ind',
-     &                     routine='initMeshExtencil' )
+            call de_alloc( comm%ind, 'comm%ind', 'scheComm' )
           endif
 
-          call de_alloc( dst, name='dst', routine='initMeshExtencil' )
-          call de_alloc( src, name='src', routine='initMeshExtencil' )
+          call de_alloc( dst, 'dst', 'moreMeshSubs' )
+          call de_alloc( src, 'src', 'moreMeshSubs' )
         endif
       enddo
 !--------------------------------------------------------------------------- END
@@ -1075,10 +1081,8 @@ C     Local variables
         call die()
       endif
 
-      call re_alloc( SBUF, 1, BS*NN*nspin, name='SBUF',
-     &               routine='distExtMeshData' )
-      call re_alloc( RBUF, 1, BS*NN*nspin, name='RBUF',
-     &               routine='distExtMeshData' )
+      call re_alloc( SBUF, 1, BS*NN*nspin, 'SBUF', 'moreMeshSubs' )
+      call re_alloc( RBUF, 1, BS*NN*nspin, 'RBUF', 'moreMeshSubs' )
 
       Ubox(1:2,1:3) = idis%box(1:2,1:3,Cnode)
       Ubox(1,iaxis) = Ubox(1,iaxis) - 1
@@ -1416,8 +1420,8 @@ C     Local variables
         endif
       enddo
 
-      call de_alloc( RBUF, name='RBUF', routine='distExtMeshData' )
-      call de_alloc( SBUF, name='SBUF', routine='distExtMeshData' )
+      call de_alloc( RBUF, 'RBUF', 'moreMeshSubs' )
+      call de_alloc( SBUF, 'SBUF', 'moreMeshSubs' )
 !--------------------------------------------------------------------------- END
       end subroutine distExtMeshData
 
@@ -1482,10 +1486,8 @@ C     Local variables
       dimB(2) = (idis%box(2,2,Cnode)-idis%box(1,2,Cnode)+1)*NSM
       dimB(3) = (idis%box(2,3,Cnode)-idis%box(1,3,Cnode)+1)*NSM
 
-      call re_alloc( SBUF, 1, BS*NN*nspin, name='SBUF',
-     &               routine='gathExtMeshData' )
-      call re_alloc( RBUF, 1, BS*NN*nspin, name='RBUF',
-     &               routine='gathExtMeshData' )
+      call re_alloc( SBUF, 1, BS*NN*nspin, 'SBUF', 'moreMeshSubs' )
+      call re_alloc( RBUF, 1, BS*NN*nspin, 'RBUF', 'moreMeshSubs' )
 
       Ubox(1:2,1:3) = idis%box(1:2,1:3,Cnode)
       Ubox(1,iaxis) = Ubox(1,iaxis) - 1
@@ -1821,8 +1823,8 @@ C     Local variables
         endif
       enddo
 
-      call de_alloc( RBUF, name='RBUF', routine='gathExtMeshData' )
-      call de_alloc( SBUF, name='SBUF', routine='gathExtMeshData' )
+      call de_alloc( RBUF, 'RBUF', 'moreMeshSubs' )
+      call de_alloc( SBUF, 'SBUF', 'moreMeshSubs' )
 !--------------------------------------------------------------------------- END
       end subroutine gathExtMeshData
 
@@ -1891,8 +1893,7 @@ C     Array PROCS will contain the number of processes that are associated to
 C     every box. At the begining all the mesh is assigned to process 1, then
 C     PROCS(1)=Nodes, while the rest are equal to zero
       nullify( PROCS, lwload, gwload, recvB )
-      call re_alloc( PROCS, 1, Nodes, name='PROCS',
-     &               routine='splitwload' )
+      call re_alloc( PROCS, 1, Nodes, 'PROCS', 'moreMeshSubs' )
       PROCS(1)       = Nodes
       PROCS(2:Nodes) = 0
 
@@ -1922,18 +1923,16 @@ C           mesh that we want to cut.
             if (Node.eq.PP) then
               mGdim = oDistr%box(2,nAxis,PP)-oDistr%box(1,nAxis,PP)+1
 
-              call re_alloc( gwload, 1, mGdim, name='gwload',
-     &                       routine='splitwload' )
-              call re_alloc( recvB, 1, mGdim, name='recvB',
-     &                       routine='splitwload' )
+              call re_alloc( gwload, 1, mGdim, 'gwload','moreMeshSubs' )
+              call re_alloc( recvB, 1, mGdim, 'recvB', 'moreMeshSubs' )
             endif
 
             if (inters) then
 C             If there is an intersection I should reduce the intersected part
 C             from a 3-D array to a 1-D array.
               mLdim = Lbox(2,nAxis) - Lbox(1,nAxis) + 1
-              call re_alloc( lwload, 1, mLdim, name='lwload',
-     &                       routine='splitwload' )
+              call re_alloc( lwload, 1, mLdim, 'lwload',
+     &                       'moreMeshSubs' )
               call reduce3Dto1D( nAxis, iDistr%box(:,:,Node), Lbox,
      &                           wload, lwload )
             endif
@@ -1959,12 +1958,12 @@ C             processes
                   endif
                 endif
               enddo
-              call de_alloc( recvB, name='recvB', routine='splitwload' )
+              call de_alloc( recvB, 'recvB', 'moreMeshSubs' )
 
 C             Process PP computes where to cut the mesh
               call vecBisec( mGdim, gwload(1:mGdim),
      &                        PROCS(PP), POS, h1, h2 )
-              call de_alloc(gwload, name='gwload', routine='splitwload')
+              call de_alloc(gwload, 'gwload', 'moreMeshSubs')
 
             else if (inters) then
 C             If, I'm not the process PP I should send the information to
@@ -1975,7 +1974,7 @@ C             the process PP
             endif
 
             if (associated(lwload))
-     &        call de_alloc(lwload, name='lwload', routine='splitwload')
+     &        call de_alloc(lwload, 'lwload', 'moreMeshSubs')
 
 C           Process PP send the position of the cut to the rest of processes
             call MPI_Bcast( pos, 1, MPI_integer, PP-1,
@@ -1996,7 +1995,7 @@ C           We should actualize the numbers of processes associated to PP and QQ
         enddo
       enddo
 
-      call de_alloc( PROCS, name='PROCS', routine='splitwload')
+      call de_alloc( PROCS, 'PROCS', 'moreMeshSubs')
 !--------------------------------------------------------------------------- END
       end subroutine splitwload
 
@@ -2265,8 +2264,8 @@ C     destiny distribution. Every intersection represents a communication.
 
 C     Allocate local arrays
       nullify( src, dst )
-      call re_alloc( src, 1, Gcom, name='src', routine='compMeshComm' )
-      call re_alloc( dst, 1, Gcom, name='dst', routine='compMeshComm' )
+      call re_alloc( src, 1, Gcom, 'src', 'moreMeshSubs' )
+      call re_alloc( dst, 1, Gcom, 'dst', 'moreMeshSubs' )
 
 C     Make a list of communications
       ncom = 0
@@ -2296,10 +2295,8 @@ C     Count the number of communications of the current process
 C     Allocate memory to store data of the communications of the
 C     current process.
       nullify( mcomm%src, mcomm%dst )
-      call re_alloc( mcomm%src, 1, Lcom, name='mcomm%src',
-     &               routine='compMeshComm' )
-      call re_alloc( mcomm%dst, 1, Lcom, name='mcomm%dst',
-     &               routine='compMeshComm' )
+      call re_alloc( mcomm%src, 1, Lcom, 'mcomm%src', 'moreMeshSubs' )
+      call re_alloc( mcomm%dst, 1, Lcom, 'mcomm%dst', 'moreMeshSubs' )
 
 C     Save the list of communications for the current process
       ncom = 0
@@ -2313,9 +2310,9 @@ C     Save the list of communications for the current process
       enddo
       mcomm%ncom = ncom
 
-      call de_alloc( comm%ind, name='comm%ind', routine='compMeshComm' )
-      call de_alloc( dst, name='dst', routine='compMeshComm' )
-      call de_alloc( src, name='src', routine='compMeshComm' )
+      call de_alloc( comm%ind, 'comm%ind', 'scheComm' )
+      call de_alloc( dst,      'dst',      'moreMeshSubs' )
+      call de_alloc( src,      'src',      'moreMeshSubs' )
 !--------------------------------------------------------------------------- END
       end subroutine compMeshComm
 #endif

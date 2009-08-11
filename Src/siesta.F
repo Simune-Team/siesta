@@ -6,6 +6,7 @@
       use m_siesta_end
       use m_siesta_forces
       USE m_steps, only: inicoor, fincoor
+      use alloc
 
       implicit none
 
@@ -14,6 +15,9 @@
 
 !------------------------------------------------------------------------- BEGIN
       call siesta_init()
+#ifdef DEBUG
+        call write_debug( 'POS siesta_init' )
+#endif
 
 C     Begin of coordinate relaxation iteration
       relaxd = .false.
@@ -36,12 +40,12 @@ C     Begin of coordinate relaxation iteration
 
 C     End of coordinate-relaxation loop 
 #ifdef DEBUG
-        call write_debug( 'PRE siesta_analysis' )
+      call write_debug( 'PRE siesta_analysis' )
 #endif
       call siesta_analysis( relaxd )
 
 #ifdef DEBUG
-        call write_debug( 'SIESTA END' )
+      call write_debug( 'SIESTA END' )
 #endif
       call siesta_end()
 !--------------------------------------------------------------------------- END

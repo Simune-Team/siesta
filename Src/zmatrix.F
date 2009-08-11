@@ -140,7 +140,7 @@ C Local variables
         integer                       :: k
         integer                       :: nStart
         integer                       :: nAtoms
-        logical                       :: eof
+!        logical                       :: eof
         logical,                 save :: firsttime = .true.
         integer                       :: input_type
         integer                       :: units_type
@@ -184,36 +184,33 @@ C Nullify pointers
           nullify(species)
 
 C Allocate Zmatrix arrays
-          call re_alloc( Zmat, 1, 3*na, 'Zmat', 'read_Zmatrix' )
-          call re_alloc( species, 1, 3*na, 'species', 'read_Zmatrix' )
-          call re_alloc( ZmatForce, 1, 3*na, 'ZmatForce',
-     &                   'read_Zmatrix' )
-          call re_alloc( iZmat, 1, 3*na, 'iZmat', 'read_Zmatrix' )
-          call re_alloc( VaryZmat, 1, 3*na, 'VaryZmat', 'read_Zmatrix' )
-          call re_alloc( nZmolAtoms, 1, na, 'nZmolAtoms',
-     &                   'read_Zmatrix' )
+          call re_alloc( Zmat,       1, 3*na, 'Zmat',      'zmatrix' )
+          call re_alloc( species,    1, 3*na, 'species',   'zmatrix' )
+          call re_alloc( ZmatForce,  1, 3*na, 'ZmatForce', 'zmatrix' )
+          call re_alloc( iZmat,      1, 3*na, 'iZmat',     'zmatrix' )
+          call re_alloc( VaryZmat,   1, 3*na, 'VaryZmat',  'zmatrix' )
+          call re_alloc( nZmolAtoms, 1, na, 'nZmolAtoms',  'zmatrix' )
           call re_alloc( nZmolStartAtom, 1, na, 'nZmolStartAtom',
-     &                   'read_Zmatrix' )
-          call re_alloc( nZcartAtoms, 1, na, 'nZcartAtoms',
-     &                   'read_Zmatrix' )
+     &                   'zmatrix' )
+          call re_alloc( nZcartAtoms, 1, na, 'nZcartAtoms', 'zmatrix' )
           call re_alloc( nZcartStartAtom, 1, na, 'nZcartStartAtom',
-     &                   'read_Zmatrix' )
-          call re_alloc( ZmatType, 1, 3*na, 'ZmatType',
-     &                   'read_Zmatrix' )
+     &                   'zmatrix' )
+          call re_alloc( ZmatType, 1, 3*na, 'ZmatType', 'zmatrix' )
           call re_alloc( iZmattoVars, 1, 3*na, 'iZmattoVars',
-     &                   'read_Zmatrix' )
-          call re_alloc( iNextDept, 1, 3*na, 'iNextDept',
-     &                   'read_Zmatrix' )
-          call re_alloc( coeffA, 1, 3*na, 'coeffA', 'read_Zmatrix' )
-          call re_alloc( coeffB, 1, 3*na, 'coeffB', 'read_Zmatrix' )
+     &                   'zmatrix' )
+          call re_alloc( iNextDept, 1, 3*na, 'iNextDept', 'zmatrix' )
+          call re_alloc( coeffA, 1, 3*na, 'coeffA', 'zmatrix' )
+          call re_alloc( coeffB, 1, 3*na, 'coeffB', 'zmatrix' )
           call re_alloc( ZmatForceVar, 1, 3*na, 'ZmatForceVar',
-     &                   'read_Zmatrix' )
+     &                   'zmatrix' )
           call re_alloc( iVarstoZmat, 1, 3*na, 'iVarstoZmat',
-     &                   'read_Zmatrix' )
+     &                   'zmatrix' )
           call re_alloc( lZmatVarsDef, 1, 3*na, 'lZmatVarsDef',
-     &                   'read_Zmatrix' )
-          call re_alloc( ZmatVarNames, 1, 3*na, 'ZmatVarNames',
-     &                   'read_Zmatrix' )
+     &                   'zmatrix' )
+          nullify(ZmatVarNames)
+          allocate(ZmatVarNames(3*na))
+!          call re_alloc( ZmatVarNames, 1, 3*na, 'ZmatVarNames',
+!     &                   'zmatrix' )
 
 C Read units for lengths and angles
           lengthunits = fdf_string('ZM.UnitsLength',unitslen_default)
@@ -952,13 +949,11 @@ C
       if (IOnode) then
 C       Allocate local workspace arrays
         call re_alloc( CartesianF, 1, 3, 1, na, 'CartesianF',
-     &                 'CartesianForce_to_ZmatForce' )
+     &                 'zmatrix' )
         call re_alloc( CartesianB, 1, 3, 1, na, 'CartesianB',
-     &                 'CartesianForce_to_ZmatForce' )
-        call re_alloc( ZmatF, 1, 3*na, 'ZmatF',
-     &                 'CartesianForce_to_ZmatForce' )
-        call re_alloc( ZmatB, 1, 3*na, 'ZmatB',
-     &                 'CartesianForce_to_ZmatForce' )
+     &                 'zmatrix' )
+        call re_alloc( ZmatF, 1, 3*na, 'ZmatF', 'zmatrix' )
+        call re_alloc( ZmatB, 1, 3*na, 'ZmatB', 'zmatrix' )
 
 C  Initialise forces & cartesian transformation matrices
         ZmatForce(1:3*na) = 0.0_dp
@@ -1036,12 +1031,10 @@ C  From now on the previous atoms will always be unchanged
 C  Done looping over all atoms
 
 C  Deallocate workspace arrays
-        call de_alloc( ZmatB, 'ZmatB', 'CartesianForce_to_ZmatForce' )
-        call de_alloc( ZmatF, 'ZmatF', 'CartesianForce_to_ZmatForce' )
-        call de_alloc( CartesianB, 'CartesianB',
-     &                 'CartesianForce_to_ZmatForce' )
-        call de_alloc( CartesianF, 'CartesianF',
-     &                 'CartesianForce_to_ZmatForce' )
+        call de_alloc( ZmatB, 'ZmatB', 'zmatrix' )
+        call de_alloc( ZmatF, 'ZmatF', 'zmatrix' )
+        call de_alloc( CartesianB, 'CartesianB', 'zmatrix' )
+        call de_alloc( CartesianF, 'CartesianF', 'zmatrix' )
       endif !IOnode
 
 #ifdef MPI

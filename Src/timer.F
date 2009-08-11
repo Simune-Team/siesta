@@ -22,7 +22,7 @@ c
 c     Two-in-one: CPU plus elapsed times 
 c
 #ifdef MPI
-      integer MPIerror
+C      integer MPIerror
 #endif
       call timer1(prog,iopt)
       if (IOnode) then
@@ -36,11 +36,11 @@ c
       ! avoid the non-master nodes aborting on another collective
       ! operation down the line and giving a confusing error message.
       ! There must be a better way to achieve this. -- removed
-c$$$
-c$$$#ifdef MPI
-c$$$      call MPI_Bcast(time_exceeded,1,MPI_logical,0,
-c$$$     $               MPI_Comm_World,MPIerror)
-c$$$#endif
+c
+c#ifdef MPI
+c      call MPI_Bcast(time_exceeded,1,MPI_logical,0,
+c     $               MPI_Comm_World,MPIerror)
+c#endif
       end subroutine timer
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -313,4 +313,88 @@ C  WRITTEN BY Alberto Garcia, Feb 2000, stealing code from J. Soler
 
       end subroutine elap1
 
+      MODULE tiempo
+      integer(4)          :: maxcont = 20
+      integer(8), pointer :: timer(:,:)
+      real(8),    pointer :: abs_time(:), neventos(:)
+      integer(8)          :: current_time
+      integer(8)          :: ref_time
+      END MODULE tiempo
+ 
+      subroutine inicializar_tiempo( mxcnt )
+      use tiempo
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      integer(4), optional :: mxcnt
+!--------------------------------------------------------------- Local Variables
+      integer(4):: ii, counter, rate, maxCounter
+      real(8)   :: tt
+!------------------------------------------------------------------------- BEGIN
+      if (present(mxcnt)) maxcont = mxcnt
+      nullify( timer, abs_time, neventos )
+      allocate( timer(2,maxcont), abs_time(maxcont), neventos(maxcont) )
 
+      do ii= 1, maxcont
+        timer(1,ii)  = 0
+        timer(2,ii)  = 0
+        neventos(ii) = 0.0
+        abs_time(ii) = 0.0
+      enddo
+
+      call system_clock( counter, rate, maxCounter )
+      current_time = counter
+      ref_time     = counter
+      tt = REAL(maxCounter)/REAL(rate)
+!--------------------------------------------------------------------------- END
+      end subroutine inicializar_tiempo
+
+      subroutine medirTiempo( job, cont )
+      use tiempo
+      use sys, only : die
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      integer(4) :: job, cont
+!--------------------------------------------------------------- Local Variables
+      integer(4) :: rate, contMax, counter
+      integer(8) :: itime
+
+!------------------------------------------------------------------------- BEGIN
+      if (cont < 1 .OR. cont > maxcont) then
+        call die( 'Wrong cont value' )
+      endif
+
+      call system_clock( counter, rate, contMax )
+      if (counter .ge. ref_time) then
+      	current_time = current_time + counter - ref_time
+      else
+        current_time = current_time + contMax - ref_time + counter + 1
+      endif
+      ref_time = counter
+
+      IF (job == 1) THEN
+      	timer(1,cont) = current_time
+      ELSE IF (job == 2) THEN
+      	timer(2,cont)  = current_time
+        itime          = timer(2,cont) - timer(1,cont)
+        abs_time(cont) = abs_time(cont) + (REAL(itime) / REAL(rate))
+        neventos(cont) = neventos(cont) + 1.0
+      ELSE
+        call die( 'Wrong job value' )
+      ENDIF
+!--------------------------------------------------------------------------- END
+      end subroutine medirTiempo
+
+      subroutine showTiempo( uf, cont, mess )
+      use tiempo
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      integer(4)    :: uf, cont
+      character(*)  :: mess
+!--------------------------------------------------------------- Local Variables
+      real(8)       :: tt
+!------------------------------------------------------------------------- BEGIN
+      tt = abs_time(cont)
+
+      write(uf,*) mess,  tt, neventos(cont), tt/neventos(cont)
+!--------------------------------------------------------------------------- END
+      end subroutine showTiempo

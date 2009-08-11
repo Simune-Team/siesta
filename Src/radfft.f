@@ -10,20 +10,24 @@
 !
       module m_radfft
       use precision, only : dp
-      use alloc,     only : re_alloc
+      use alloc,     only : re_alloc, de_alloc
       implicit none
       
-      public :: radfft
+      public :: radfft, reset_radfft
+
       private
-      real(dp), pointer ::  GG(:)
-      real(dp), pointer ::  FN(:,:)
-      real(dp), pointer ::  P(:,:,:)
-!
+      real(dp), pointer :: GG(:)
+      real(dp), pointer :: FN(:,:)
+      real(dp), pointer :: P(:,:,:)
+      integer           :: MAXL = -1
+      integer           :: MAXNR = -1
+
 !     Wrap the subroutine in a module to offer an explicit interface
 !     which simplifies the issue of the shape of F and G. Callers
 !     will need to pass a full array or an array section.
 !
       CONTAINS
+
       SUBROUTINE RADFFT( L, NR, RMAX, F, G )
 C *********************************************************************
 C Makes a fast Fourier transform of a radial function.
@@ -100,8 +104,6 @@ C -------------------------------------------------------------------
 C Internal variable types and dimensions ----------------------------
       INTEGER       ::  I, IQ, IR, JR, M, MQ, N, NQ
       real(dp)      ::  BESSPH, C, DQ, DR, FR, PI, R, RN, Q, QMAX
-      INTEGER       ::  MAX
-      integer, save :: MAXL = -1, MAXNR = -1
 
       external bessph
 *     external timer
@@ -111,7 +113,7 @@ C Start time counter ------------------------------------------------
 *     CALL TIMER( 'RADFFT', 1 )
 C -------------------------------------------------------------------
 
-C Allocate local memory ---------------------------------------------
+C     Allocate local memory ---------------------------------------------
       if (MAXL.eq.-1) nullify(P)
       if (L.GT.MAXL) then
         call re_alloc( P, 1, 2, 0, L, 0, L, 'P', 'RADFFT' )
@@ -259,5 +261,15 @@ C Stop time counter ------------------------------------------------
 *     CALL TIMER( 'RADFFT', 2 )
 C -------------------------------------------------------------------
 
-      end subroutine radfft
+      END SUBROUTINE RADFFT
+
+      SUBROUTINE RESET_RADFFT( )
+      implicit none
+      call de_alloc( P, 'P', 'RADFFT' )
+      call de_alloc( FN, 'FN', 'RADFFT' )
+      call de_alloc( GG, 'GG', 'RADFFT' )
+      MAXL  = -1
+      MAXNR = -1
+      END SUBROUTINE RESET_RADFFT
+
       end module m_radfft

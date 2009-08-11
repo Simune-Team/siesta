@@ -42,9 +42,9 @@ C Internal variables and arrays
 
       character             :: acf*22, acf_default*22
       logical               :: isdiag
-      integer               :: i, ia, ic, iscale, iua, ix,
+      integer               :: ia, ic, iscale, iua, ix,
      .                         coor_mscell(3,3), ncells, 
-     &                         coor_nsc(3), nua, ierr
+     &                         coor_nsc(3), nua
       real(dp)              :: alat, dcell(3,3), dscell(3,3), 
      .                         origin(3), unit_cell(3,3),
      .                         volcel, xac(3), super_cell(3,3)
@@ -163,13 +163,14 @@ C Find origin with which to translate all coordinates
       endif
 
 C Set array dimensions
-      nullify(isa,cisa,xa)
-      call re_alloc(isa,1,na,name='isa',routine='coor')
-      call re_alloc(xa,1,3,1,na,name='xa',routine='coor')
-      call re_alloc(cisa,1,na,name="cisa",routine="coor")
+      nullify( isa, cisa, xa )
+      call re_alloc( isa, 1, na, 'isa', 'coor' )
+      call re_alloc( xa, 1, 3, 1, na, 'xa', 'coor' )
+      allocate(cisa(na))
+!      call re_alloc( cisa, 1, na, 'cisa', 'coor' )
 
 C Attempt to read a Z matrix
-      call read_Zmatrix(nua,isa,alat,unit_cell,lOrigin,origin)
+      call read_Zmatrix( nua, isa, alat, unit_cell, lOrigin, origin )
 
       if (lUseZmatrix) then
         
