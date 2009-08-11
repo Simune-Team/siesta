@@ -5,6 +5,16 @@
 ** CHANGES ALONG bsc-2.8 branch (bsc-trunk)
 
 -------------------------------------------------------------------------
+2009-08-11  17:45 GMT Alberto Garcia <albertog@icmab.es>	bsc-2.8.8
+Fix initialization error for sparse indexes
+
+numhold and listhptrold were wrongly zeroed
+in state_init. They are managed in extrapol.
+
+modified:
+  Src/state_init.F
+
+-------------------------------------------------------------------------
 2009-08-11  14:05 GMT Alberto Garcia <albertog@icmab.es>	bsc-2.8.7
 Remove Lanczos code. Assorted fixes. Still problems
 

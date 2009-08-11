@@ -210,8 +210,9 @@ C     nh is set by the routine also
 
       call re_alloc( listhptrold, 1, no_l, 'listhptrold', 'sparseMat')
       call re_alloc( numhold, 1, no_l, 'numhold', 'sparseMat' )
-      listhptrold = 0
-      numhold     = 0
+!!    Do Not initialize here. These are managed in extrapol
+!!      listhptrold = 0
+!!      numhold     = 0
 
 C     OBSOLETE: 
 C       safety margin for when atoms move 
