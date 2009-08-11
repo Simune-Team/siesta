@@ -5,6 +5,43 @@
 ** CHANGES ALONG bsc-2.8 branch (bsc-trunk)
 
 -------------------------------------------------------------------------
+2009-08-11  14:05 GMT Alberto Garcia <albertog@icmab.es>	bsc-2.8.7
+Remove Lanczos code. Assorted fixes. Still problems
+
+Removed Lanczos code.
+
+Other changes:
+
+* resetMesh is now called just before the call to InitMesh
+* boxIntersection taken out of MPI #ifdefs.
+
+NOTES: 
+
+- Metis is needed even in serial compilations.
+- The code runs, except when doing geometry iterations with
+  full SCF (Harris is fine).
+
+removed:
+  Src/lu_factorization.F
+  Src/modi_lanczos_m.F
+  Src/superlu.F
+  Src/superlu_c2f_wrap.c
+modified:
+  Docs/CHANGES
+  Src/Makefile
+  Src/compute_dm.F
+  Src/dhscf.F
+  Src/domain_decom.F
+  Src/initparallel.F
+  Src/iogrid_netcdf.F90
+  Src/jacobi_davidson.F
+  Src/moremeshsubs.F
+  Src/siesta_end.F
+  Src/siesta_forces.F
+  Src/spher_harm.f
+  Src/state_init.F
+
+-------------------------------------------------------------------------
 2009-08-11  10:20 GMT Alberto Garcia <albertog@icmab.es>	bsc-2.8.6
 Update with Rogeli's code up to Aug 11 2009
 

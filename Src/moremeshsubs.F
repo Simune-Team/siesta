@@ -556,8 +556,8 @@ C               We should send data to process dst(icom)-1
                 call MPI_Send( TBUF, Xsize*Ysize*Zsize*nsp,
      &                         MPI_grid_real, dst(icom)-1, 1,
      &                         MPI_Comm_world, MPIerror )
-              endif
 #endif
+              endif
             else
 C             We should receive data from process src(icom)-1
               Xsize = Lbox(2,1) - Lbox(1,1) + 1
@@ -858,6 +858,43 @@ C             We should receive data from process src(icom)-1
 !--------------------------------------------------------------------------- END
       end subroutine distMeshData_int
 
+C ==================================================================
+C Checks if there is an intersection between 2 boxes and, if it exist
+C it returns the resulting box.
+C ==================================================================
+C SUBROUTINE boxIntersection( ibox1, ibox2, obox, inters )
+C
+C INPUT:
+C integer ibox1(2,3)       : Input box 1
+C integer ibox2(2,3)       : Input box 2
+C
+C OUTPUT:
+C integer obox(2,3)        : Intersection between ibox1 and ibox2
+C logical inters           : TRUE: There is intersection
+C                            FALSE: There is not intersection
+C
+C BEHAVIOR:
+C Checks the three axis of the input boxes to see if there is
+C intersection between the input boxes.
+C
+C ==================================================================
+      subroutine boxIntersection( ibox1, ibox2, obox, inters )
+      implicit none
+C     Passed arguments
+      integer,  intent(in) :: ibox1(2,3), ibox2(2,3)
+      integer, intent(out) :: obox(2,3)
+      logical, intent(out) :: inters
+C     Local variables
+      integer              :: iaxis
+!------------------------------------------------------------------------- BEGIN
+      inters = .true.
+      do iaxis= 1, 3
+        obox(1,iaxis) = max(ibox1(1,iaxis),ibox2(1,iaxis))
+        obox(2,iaxis) = min(ibox1(2,iaxis),ibox2(2,iaxis))
+        if (obox(2,iaxis).lt.obox(1,iaxis)) inters = .false.
+      enddo
+!--------------------------------------------------------------------------- END
+      end subroutine boxIntersection
 
 #ifdef MPI
 C ==================================================================
@@ -1857,9 +1894,8 @@ C this 3-D array to a 1-D array (according to the selected direction).
 C
 C ==================================================================
       subroutine splitwload( Nodes, Node, nm, wload, iDistr, oDistr )
-#ifdef MPI
       use mpi_siesta
-#endif
+
       implicit none
 C     Passed arguments
       integer,      intent(in)      :: Nodes, Node, nm(3), wload(*)
@@ -1999,43 +2035,6 @@ C           We should actualize the numbers of processes associated to PP and QQ
 !--------------------------------------------------------------------------- END
       end subroutine splitwload
 
-C ==================================================================
-C Checks if there is an intersection between 2 boxes and, if it exist
-C it returns the resulting box.
-C ==================================================================
-C SUBROUTINE boxIntersection( ibox1, ibox2, obox, inters )
-C
-C INPUT:
-C integer ibox1(2,3)       : Input box 1
-C integer ibox2(2,3)       : Input box 2
-C
-C OUTPUT:
-C integer obox(2,3)        : Intersection between ibox1 and ibox2
-C logical inters           : TRUE: There is intersection
-C                            FALSE: There is not intersection
-C
-C BEHAVIOR:
-C Checks the three axis of the input boxes to see if there is
-C intersection between the input boxes.
-C
-C ==================================================================
-      subroutine boxIntersection( ibox1, ibox2, obox, inters )
-      implicit none
-C     Passed arguments
-      integer,  intent(in) :: ibox1(2,3), ibox2(2,3)
-      integer, intent(out) :: obox(2,3)
-      logical, intent(out) :: inters
-C     Local variables
-      integer              :: iaxis
-!------------------------------------------------------------------------- BEGIN
-      inters = .true.
-      do iaxis= 1, 3
-        obox(1,iaxis) = max(ibox1(1,iaxis),ibox2(1,iaxis))
-        obox(2,iaxis) = min(ibox1(2,iaxis),ibox2(2,iaxis))
-        if (obox(2,iaxis).lt.obox(1,iaxis)) inters = .false.
-      enddo
-!--------------------------------------------------------------------------- END
-      end subroutine boxIntersection
 
 C ==================================================================
 C Given a 3-D array, "wload", we will make a reduction of its values

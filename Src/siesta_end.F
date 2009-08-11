@@ -21,6 +21,7 @@
       use m_fixed,         only : resetFixedPointers
       use band,            only : reset_bands
       use domain_decom,    only : resetDomainDecom
+      use mesh,            only : resetMesh
       implicit none
 
 #ifdef MPI
@@ -36,6 +37,7 @@
       call resetFixedPointers( )
       call reset_bands( )
       call resetDomainDecom( )
+      call resetMesh( )
       call resetMeshPhi( )
       call resetDscfPointers( )
 

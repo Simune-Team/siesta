@@ -29,7 +29,7 @@
       use m_spin,          only : nspin, qs, efs
       use domain_decom,    only : gatherGlobalMatrix
       use jacobi_davidson, only : jd_diag
-      use modi_lanczos_m
+
       implicit none
 
       integer, intent(in) :: iscf
@@ -74,16 +74,6 @@
         call jd_diag( no_s, no_l, nspin, neigwanted, fixspin, temp,
      &                qtot, qs, occtol, numh, listh, H, S,
      &                ef, efs, Entrop, Dscf, Escf )
-      elseif (isolve .eq. 3) then
-#ifdef _LANCZOS_
-        call write_debug( '    PRE ITERATIVE' )
-        write(23,*) 'no_s, no_l', no_s, no_l
-        flush(23)
-        call modi_lanczos( no_s, no_l, nspin, fixspin, temp, qtot,
-     &                     qs, occtol, numh, listh, H, S, neigwanted,
-     &                     ef, efs, Entrop, Dscf, Escf )
-        call write_debug( '    POS ITERATIVE' )
-#endif
       else
         call die('siesta: ERROR: wrong solution method')
       endif

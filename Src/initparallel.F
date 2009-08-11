@@ -22,7 +22,7 @@ C
       use parallelsubs, only : set_processorYdefault
       use spatial
       use domain_decom, only : use_dd, use_dd_perm, preSetOrbitLimits
-      use lu_factorization
+
       use sys
       use alloc,        only : re_alloc
 
@@ -90,25 +90,10 @@ C Set Domain decomposition flag according to SCF method
       if (isolve.eq.2) then
         use_dd      = .true.
         use_dd_perm = .false.
-      else if (isolve.eq.3) then
-#ifdef _LANCZOS_
-        use_dd      = .true.
-        use_dd_perm = .false.
-#else
-        call die('Please compile with _LANCZOS_ to use iterat')
-#endif
       else
         use_dd      = .false.
         use_dd_perm = .false.
       endif
-
-#ifdef _LANCZOS_
-      if (isolve.eq.3) then
-        use_lu_fact = .true.
-      else
-       use_lu_fact = .false.
-      endif
-#endif
 
 C Spatial decomposition flag
       rspatial = fdf_physical('RcSpatial',0.0d0,'Bohr')

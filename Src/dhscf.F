@@ -25,6 +25,7 @@ C     Modules
       use xcmod,          only : nXCfunc, XCauth
       use alloc,          only : re_alloc, de_alloc
       use siesta_options, only : harrisfun
+      use mesh,           only : resetMesh
       use moreMeshSubs,   only : setMeshDistr, distMeshData
       use m_dhscf,        only : rhopcc, rhoatm, Vna, spiral, rmax,
      &                           IsDiag, cell, ntopl, dvol, ntml, ntpl,
@@ -157,6 +158,7 @@ C ----------------------------------------------------------------------
 #ifdef DEBUG
         call write_debug( '      PRE InitMesh' )
 #endif
+        if (.not. frstme) call resetMesh() ! Deallocate arrays
         call InitMesh( na, cell, norb, iaorb, iphorb, isa, rmax, 
      &                 G2max, G2mesh, nsc, nmpl, nm,
      &                 nml, ntm, ntml, ntpl, ntopl, dvol )
@@ -912,8 +914,7 @@ C ----------------------------------------------------------------------
      &             DRho_gga, Ex, Ec, DEx, DEc, Vscf_gga,
      &             dummy_DVxcdn, stressl )
       call medirTiempo( 2, 4 )
-      write(23,*) '    POS cellxc'
-      flush(23)
+
       if (nodes.gt.1)
      &  call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
 

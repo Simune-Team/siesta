@@ -40,10 +40,7 @@
       use iodm_netcdf, only: setup_dm_netcdf_file
       use iodmhs_netcdf, only: setup_dmhs_netcdf_file
 #endif
-      use domain_decom,       only: gperm
-#ifdef _LANCZOS_
-      use lu_factorization
-#endif
+
       implicit none
 
       integer            :: istep
@@ -284,22 +281,6 @@ C     Find overlap matrix
 #ifdef DEBUG
       call write_debug( '    POS overlap' )
 #endif
-
-!     Compute the LU factorization of the overlap matrix if needed
-      if (use_lu_fact) then
-#ifdef _LANCZOS_
-#ifdef DEBUG
-        call write_debug( '    PRE factOverlap' )
-#endif
-        call factOverlap( node, nodes, no_s, no_l, maxnh, numh,
-     &                    listhptr, listh, S, gperm )
-#ifdef DEBUG
-        call write_debug( '    POS factOverlap' )
-#endif
-#endif
-        call de_alloc( gperm, 'gperm', 'domainDecom' )
-      endif
-
 
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 0 )

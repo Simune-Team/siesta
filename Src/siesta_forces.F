@@ -21,7 +21,6 @@
       use sys, only : die
       use m_convergence, only: converger_t
       use m_convergence, only: reset, set_tolerance
-      use mesh,          only: resetMesh
       implicit none
 
       integer, intent(in)  :: istep
@@ -139,9 +138,6 @@
         call write_debug( '  PRE state_analysis' )
 #endif
       call state_analysis( istep )
-
-C     Free some memory
-      call resetMesh( )
 
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 0 )

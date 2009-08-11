@@ -90,7 +90,6 @@ C     Local variables
 #ifdef MPI
       use mpi_siesta
 #endif
-      use lu_factorization
       implicit none
 C     Input variables
       integer          :: nuotot, nuo, nnz
@@ -118,16 +117,9 @@ C       Set orbitals to partitions
 
         call compuComm( )
 
-C       compute distribution for LU
-#ifdef _LANCZOS_
-        if (use_lu_fact) call compCommDD2LU( nodes, nuotot, ginde )
-#endif
       endif
 
       call distriGlobalMatrix( nuotot, nuo, nnz )
-#ifdef _LANCZOS_
-      if (use_lu_fact) call distCommDD2LU( node, nodes )
-#endif
 
       if (node.eq.0) then
 !       Free local memory
@@ -145,29 +137,9 @@ C       compute distribution for LU
         call de_alloc( partition, 'partition', 'domainDecom' )
         call de_alloc( listhTot, 'listhTot', 'domainDecom' )
         call de_alloc( listhPtrTot, 'listhPtrTot', 'domainDecom' )
-#ifdef _LANCZOS_
-        if (use_lu_fact) then
-# ifdef MPI
-          call Mpi_Bcast( gperm, nuotot, MPI_INTEGER, 0, MPI_Comm_world,
-     &                    MPIerror )
-# endif
-        else
-          call de_alloc( gperm, 'gperm', 'domainDecom' )
-        endif
-#else
+
         call de_alloc( gperm, 'gperm', 'domainDecom' )
-#endif
-      else
-#ifdef _LANCZOS_
-        if (use_lu_fact) then
-          nullify(gperm)
-          call re_alloc( gperm, 1, nuotot, 'gperm', 'domainDecom' )
-# ifdef MPI
-          call Mpi_Bcast( gperm, nuotot, MPI_INTEGER, 0, MPI_Comm_world,
-     &                    MPIerror )
-# endif
-        endif
-#endif
+
       endif
       end subroutine domainDecom
 

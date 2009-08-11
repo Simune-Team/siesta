@@ -600,7 +600,7 @@ C     Local variables
 
 100   continue
 
-      call MPI_Finalize( it )
+!!!      call MPI_Finalize( it )
       STOP
 
       call de_alloc( work, 'work', 'jd_solver' )
