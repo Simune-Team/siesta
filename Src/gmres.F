@@ -213,13 +213,11 @@ C     Local variables
 !     &            ' qrnorm:', qrnorm, ' Anorm*ynorm:', Anorm*ynorm
         end if
 
-
-      ! See if it is time to print something.
+!       See if it is time to print something.
       ENDDO
-#ifdef RGT
       write(23,*) 'FIN com_minres iters:', iters, ' istop:', istop,
      &            ' qrnorm:', qrnorm, ' epsr:', epsr
-#endif
+
       call de_alloc( work, 'work', 'minres' )
       call de_alloc( vv, 'vv', 'minres' )
       call de_alloc( r2, 'r2', 'minres' )

@@ -13,12 +13,11 @@
       use sys
       use alloc, only: re_alloc, de_alloc
 
-      implicit none
-
       real(dp), pointer, private :: Y(:)
       real(dp), pointer, private :: DYDR(:,:)
       INTEGER,           private :: MAX_LM=-1
 
+      implicit none
 
       CONTAINS
 

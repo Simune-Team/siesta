@@ -12,16 +12,14 @@
       PUBLIC :: jd_diag
       PRIVATE
 
-      type    :: jd_opt_t
-        real(dp),  pointer :: v0(:) 
-        integer            :: kmax
-        integer            :: mmin
-        integer            :: mmax
-        real               :: eps
-      end type jd_opt_t
+      real(dp),  pointer :: jd_v0(:) 
+      integer            :: jd_reorthogonalize
+      integer            :: jd_kmax
+      integer            :: jd_mmin
+      integer            :: jd_mmax
+      real               :: jd_eps
 
-      type(jd_opt_t)       :: jd_opt
-      type(precond_t)      :: PC
+      type(precond_t)    :: PC
 
 
       contains
@@ -102,19 +100,20 @@ C     Local variables
       call re_alloc( qo, 1, neig, 'qo', 'jd_diag' )
 
 C     Set jacobi options
-      nullify( jd_opt%v0 )
-      call re_alloc( jd_opt%v0, 1, nuo, 'v0', 'jd_diag' )
-      tt          = nuotot
-      tt          = 1.0/sqrt(tt)
-      jd_opt%v0   = tt
+      nullify( jd_v0 )
+      call re_alloc( jd_v0, 1, nuo, 'v0', 'jd_diag' )
+      tt    = nuotot
+      tt    = 1.0/sqrt(tt)
+      jd_v0 = tt
 
-      jd_opt%kmax = neig
-!      jd_opt%kmax = min(50,neig)
-      jd_opt%mmax = 50
-      jd_opt%mmin = 20
-      jd_opt%eps  = 1.0e-4
-      write(23,*) '     JD max krylov dim  :', jd_opt%mmax
-      write(23,*) '     JD min krylov dim  :', jd_opt%mmin
+      jd_kmax = neig
+!      jd_kmax = min(50,neig)
+      jd_mmax            = 50
+      jd_mmin            = 20
+      jd_eps             = 1.0e-4
+      jd_reorthogonalize = 2
+      write(23,*) '     JD max krylov dim  :', jd_mmax
+      write(23,*) '     JD min krylov dim  :', jd_mmin
       flush(23)
 
 C     Set MINRES, GMRES or CG options and Preconditioner
@@ -126,6 +125,9 @@ C     Set MINRES, GMRES or CG options and Preconditioner
 #else
       minres_eps     = 1.0e-4
       minres_maxiter = nuotot
+
+      minres_maxiter = 50
+
 #endif
       getD   = .true.
       getPSI = .false.
@@ -134,7 +136,7 @@ C     Set MINRES, GMRES or CG options and Preconditioner
      &               qtot, qs, occtol, A, B, ef, efs, Entropy,
      &               w, Z, qo, Dnew, Enew )
 
-      call de_alloc( jd_opt%v0, 'v0', 'jd_diag' )
+      call de_alloc( jd_v0, 'v0', 'jd_diag' )
 
       call de_alloc( qo, 'qo', 'jd_diag' )
       call de_alloc( Z, 'Z', 'jd_diag' )
@@ -284,16 +286,16 @@ C     Local variables
      &                        xx(:), work(:)
       real(dp)             :: dvdot, residual_norm
       real(dp),  parameter :: ONE=1.0, ZERO=0.0
-      logical              :: restart
+      integer              :: reorthogonalize, nreort
 #ifdef MPI
       integer              :: MPIerror
 #endif
 
-      t   => jd_opt%v0
-      kmax = jd_opt%kmax
-      mmin = jd_opt%mmin 
-      mmax = jd_opt%mmax 
-      eps  = jd_opt%eps
+      t   => jd_v0
+      kmax = jd_kmax
+      mmin = jd_mmin 
+      mmax = jd_mmax 
+      eps  = jd_eps
 
       k         = 0
       m         = 0
@@ -326,12 +328,13 @@ C     Local variables
       Vb      = 0.0
 
       it = 1
+      reorthogonalize = 0
+      nreort          = 0
       ! (2)
-      restart = .FALSE.
       do while ( k .lt. kmax .and. gm_it_tot.le.200*kmax )
         write(23,*) ' '
         write(23,*) '  NEW JD_ITER:', it, 'ITSOL_IT:', gm_it_tot,
-     &             'JD_dim:', m+1, '  EV found:', k
+     &             'JD_dim:', m+1, '  EV found:', k, ' nreort:', nreort
         flush(23)
 
 
@@ -387,7 +390,6 @@ C     Local variables
         do while ( residual_norm( n, r, u) .le. eps )
           write(23,*) '      GOOD EIGENVALUE(', k+1, ')=', teta(1)
           flush(23)
-!          restart = .TRUE.
 
           ! (14)
           call dcopy( n, u, 1, Q(1,k+1), 1 )
@@ -442,6 +444,8 @@ C     Local variables
             do i = 1, m
               teta(i)     = teta(i+1)
             enddo
+
+!            reorthogonalize = reorthogonalize + 1
           endif
           ! (21)
           call dcopy( n, V,  1, u, 1 )
@@ -474,7 +478,7 @@ C     Local variables
           write(23,*) '  Restart Krylov Space'
           flush(23)
 #endif
-          restart = .TRUE.
+          reorthogonalize = reorthogonalize + 1
 
           ! (24)
           VAV = 0.0
@@ -523,7 +527,8 @@ C     Local variables
         ! (29)
         endif
 
-        if (restart) then
+        if (reorthogonalize.ge.jd_reorthogonalize) then
+          nreort = nreort + 1
           write(23,*) '  Reorthogonalization of V & Vb'
           flush(23)
           do i= 1, m
@@ -566,7 +571,7 @@ C     Local variables
             enddo
           enddo
 #endif
-          restart = .FALSE.
+          reorthogonalize = 0
         endif
         ! (30)
         rteta = teta(1)
