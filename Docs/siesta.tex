@@ -3540,6 +3540,13 @@ Choice of order-N minimization functionals:
 Functional of Kim, Mauri and Galli, PRB 52, 1640 (1995).
 \item {\tt Ordejon-Mauri}:\index{Ordejon-Mauri@{\tt Ordejon-Mauri}} 
 Functional of Ordej\'on et al, or Mauri et al, see PRB 51, 1456 (1995).
+The number of localized wave functions (LWFs) used must coincide with 
+$N_{el}/2$ (unless spin polarized). 
+For the initial assignment of LWF centers to atoms, atoms
+with even number of electrons, n, get n/2 LWFs. Odd atoms
+get (n+1)/2 and (n-1)/2 in an alternating sequence, ir order
+of appearance (controlled by the input in the atomic coordinates block).
+
 \item {\tt files}:\index{files (ON.functional)@{\tt files} (ON.functional)} 
 Reads localized-function information from a file and 
 chooses automatically the functional to be used. 
