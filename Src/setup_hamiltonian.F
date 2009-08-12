@@ -139,6 +139,12 @@
      $             maxnh, numh, listhptr, listh, H, S, qtot, temp,
      $             xijo )
       endif
+!!!      if (savehs) then
+!!!          call write_hsx( gamma, no_u, no_s, nspin, indxuo,
+!!!     $               maxnh, numh, listhptr, listh, H, S, qtot, temp,
+!!!     $               xijo)
+!!!      endif
+
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 0 )
 #endif

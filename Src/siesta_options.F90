@@ -13,7 +13,7 @@ MODULE siesta_options
   logical :: fixspin       ! Keep the total spin fixed?
   logical :: inspn         ! Antiferro spin ordering in initdm?
   logical :: initdmaux     ! Re-initialize DM when auxiliary supercell changes?        
- logical :: allow_dm_reuse! Allow re-use of the previous geometry DM ? (with possible extrapolation)
+  logical :: allow_dm_reuse! Allow re-use of the previous geometry DM ? (with possible extrapolation)
   logical :: allow_dm_extrapolation ! Allow the extrapolation of previous geometries' DM ?
   logical :: change_kgrid_in_md ! Allow k-point grid to change in MD calculations
   logical :: naiveauxcell  ! Use naive recipe for auxiliary supercell?
@@ -27,6 +27,7 @@ MODULE siesta_options
   logical :: RemoveIntraMolecularPressure   ! Remove molecular virial contribution to p
   logical :: savehs        ! Write file with Hamiltonian electrostatic potential?
   logical :: savevh        ! Write file with Hartree electrostatic potential?
+  logical :: savevna       ! Write file with neutral-atom potential?
   logical :: savevt        ! Write file with total effective potential?
   logical :: savdrh        ! Write file with diff. between SCF and atomic density?
   logical :: savrho        ! Write file with electron density?
@@ -1445,6 +1446,7 @@ MODULE siesta_options
     savevt   = fdf_get('SaveTotalPotential', .false.)
     savepsch = fdf_get('SaveIonicCharge',  .false.)
     savetoch = fdf_get('SaveTotalCharge',  .false.)
+    savevna  = fdf_get('SaveNeutralAtomPotential', .false.)
     RETURN
     !----------------------------------------------------------------------- END
 1   format(a,4x,l1)

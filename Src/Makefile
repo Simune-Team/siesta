@@ -359,9 +359,9 @@ densematrix.o: alloc.o precision.o
 detover.o: alloc.o parallel.o parallelsubs.o precision.o
 dfscf.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o meshmatrix.o
 dfscf.o: meshsubs.o meshsubs.o parallel.o parallelsubs.o precision.o sys.o
-dhscf.o: alloc.o atmfuncs.o cellxc_mod.o forhar.o iogrid_netcdf.o m_dhscf.o
-dhscf.o: m_iorho.o meshsubs.o moremeshsubs.o parallel.o parsing.o precision.o
-dhscf.o: siesta_options.o sys.o xcmod.o
+dhscf.o: alloc.o atmfuncs.o cellxc_mod.o files.o forhar.o iogrid_netcdf.o
+dhscf.o: m_dhscf.o m_iorho.o meshsubs.o moremeshsubs.o parallel.o parsing.o
+dhscf.o: precision.o siesta_options.o sys.o xcmod.o
 diag2g.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
 diag2k.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
 diagg.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o

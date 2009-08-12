@@ -381,19 +381,36 @@ C Find if jo overlaps with a KB projector
                        ! false positives (i.e., we test first
                        ! whether there is indeed a connection).
 
-                      if (.not. gamma) then
+                      if (.true.) then
                          ! If already connected and using supercell, 
                          ! the latter might not be big enough...
                          ! We warn the user and keep the first instance
                          ! of xij (same behavior as the old xijorb, as
                          ! earlier jnats are closer)
-                         ! Do not warn if Gamma-point calculation, as
-                         ! this is harmless
+                   ! Warn also if Gamma-point calculation, just
+                         ! in case
                          if (.not.warn1) then
                             if (Node.eq.0) then
-                               write(6,'(/,a,2i6,a,/)')
-     .                              'WARNING: orbital pair ',io,jo,
-     .                              ' is multiply connected'
+                              if (gamma) then
+                                write(6,'(/,a,2i6,a,/,a)')
+     .                           'NOTE: orbital pair ',io,jo,
+     .                           ' (at least) is multiply connected.',
+     .                           'NOTE: '
+     .                           // 'Harmless for Gamma calculations,'
+     .                           // ' except if a COHP analysis '
+     .                           // 'is intended.'
+                                write(0,'(/,a,2i6,a,/,a)')
+     .                           'NOTE: orbital pair ',io,jo,
+     .                           ' (at least) is multiply connected.',
+     .                           'NOTE: '
+     .                           // 'Harmless for Gamma calculations,'
+     .                           // ' except if a COHP analysis '
+     .                           // 'is intended.'
+                              else
+                                write(6,'(/,a,2i6,a,/,a)')
+     .                           'WARNING: orbital pair ',io,jo,
+     .                           ' is multiply connected'
+                              endif
                             endif
                             warn1 = .true.
                          endif

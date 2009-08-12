@@ -81,7 +81,7 @@
            endif
         endif
         if (write_ion_plot_files)
-     $       call pseudo_dump(trim(p%name) // ".psdump",p)
+     $       call pseudo_dump(trim(label) // ".psdump",p)
         end subroutine pseudo_read
 !
         subroutine pseudo_read_unformatted(fname,p)
@@ -410,7 +410,7 @@ c        end subroutine pseudo_header_string
 !
 !***********---------------------------------------------
 !
-         subroutine pseudo_reparametrize(p,a,b)
+         subroutine pseudo_reparametrize(p,a,b,label)
          use alloc, only: re_alloc, de_alloc
 !
 !        Interpolate values into new grid, given by a and b
@@ -419,7 +419,7 @@ c        end subroutine pseudo_header_string
 
          type(pseudopotential_t)          :: p
          real(dp), intent(in)             :: a, b
-
+         character(len=*)                 :: label
 
          real(dp)  :: rmax, rpb, ea, ea2, rr
          integer   :: ir, new_nrval, i, j
@@ -529,7 +529,7 @@ c        end subroutine pseudo_header_string
 
         call pseudo_write_formatted(trim(p%name)// ".Reparam.psf",p)
         if (write_ion_plot_files)
-     $      call pseudo_dump(trim(p%name) // ".Reparam.psdump",p)
+     $      call pseudo_dump(trim(label) // ".Reparam.psdump",p)
 
       end subroutine pseudo_reparametrize
 
