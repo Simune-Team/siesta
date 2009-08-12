@@ -1,25 +1,25 @@
 SystemName          H3PO4 molecule
-SystemLabel         h3po4 
+SystemLabel         h3po4_3
 NumberOfAtoms       8
 NumberOfSpecies     3
 
 %block ChemicalSpeciesLabel
- 1 15  P      # Species index, atomic number, species label
- 2  8  O
- 3  1  H
+ 3 15  P      # Species index, atomic number, species label
+ 2  1  H
+ 1  8  O
 %endblock ChemicalSpeciesLabel
 
 
 AtomicCoordinatesFormat  Ang
 %block AtomicCoordinatesAndAtomicSpecies
-0.549093        2.155440        -0.338300  3 
-0.000046        0.000003        -0.000046  1
--1.526503       -0.441092       -0.288371  2
--1.720758       -1.263279       0.227476   3
-0.635084        -0.274540       1.296081   2
-0.844830        -0.588106       -1.248646  2
--0.252131       1.559335        -0.390172  2
-0.378031        -0.630812       -2.132000  3
+0.549093        2.155440        -0.338300  2
+0.000046        0.000003        -0.000046  3 
+-1.526503       -0.441092       -0.288371  1
+-1.720758       -1.263279       0.227476   2
+0.635084        -0.274540       1.296081   1
+0.844830        -0.588106       -1.248646  1
+-0.252131       1.559335        -0.390172  1
+0.378031        -0.630812       -2.132000  2
 %endblock AtomicCoordinatesAndAtomicSpecies
 
 PAO.BasisType split

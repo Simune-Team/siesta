@@ -1,7 +1,7 @@
-SystemName          ptcda-A_Au
+SystemName          ptcda
 SystemLabel         ptcda
 
-NumberOfAtoms      75
+NumberOfAtoms      76
 NumberOfSpecies       3
 
 %block ChemicalSpeciesLabel

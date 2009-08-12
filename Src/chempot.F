@@ -884,7 +884,7 @@ C
 C      return
       end  subroutine chempot
 
-      function numb(mu)
+      function numb(mu) result (diff_num)
 C **********************************************************************
 C This function calculates the difference between the true number of
 C electrons of the system, and the output number of electrons for a
@@ -896,7 +896,9 @@ C **********************************************************************
 
       implicit none
       real(dp), intent(in) :: mu
-      real(dp) Ne,numb
+      real(dp)             :: diff_num
+
+      real(dp) Ne
       integer k,n
 
       call chebfd(p,mu,c) 
@@ -912,7 +914,7 @@ c      x = -1. + 2.*(ix-1)/1000.
         enddo
       enddo
 
-      numb=qtot-2.0d0*Ne
+      diff_num = qtot-2.0d0*Ne
 
 c      Ne=Ne+0.5d0*c(1)+c(2)*x
 c      txm1 = 1

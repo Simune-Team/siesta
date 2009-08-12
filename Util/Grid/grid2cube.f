@@ -239,6 +239,7 @@ C translate cell
         iiy=iy+id(2)
         iiz=iz+id(3)
         if (iix .lt. 1) iix=iix+mesh(1)
+        if (iiy .lt. 1) iiy=iiy+mesh(2)
         if (iiz .lt. 1) iiz=iiz+mesh(3)
         if (iix .gt. mesh(1)) iix=iix-mesh(1)
         if (iiy .gt. mesh(2)) iiy=iiy-mesh(2)

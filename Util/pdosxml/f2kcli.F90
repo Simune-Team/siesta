@@ -1,6 +1,6 @@
 ! F2KCLI : Fortran 200x Command Line Interface
 ! copyright Interactive Software Services Ltd. 2001
-! For conditions of use see prefix-manual.txt
+! For conditions of use see f2kcli_manual.txt
 !
 ! Platform    : Unix/Linux
 ! Compiler    : Any Fortran 9x compiler supporting IARGC/GETARG
@@ -9,8 +9,6 @@
 !               (Excludes compilers which require a special USE
 !               statement to make IARGC/GETARG available).
 !AG
-!AG:            Ammended to add:
-!AG:            Prefix "f2kcli-" to "manual.txt".
 !AG:            Support for F through conditional compilation...
 !AG
 ! To compile  : f90 -c f2kcli.f90
@@ -19,11 +17,11 @@
 ! Date        : February 2001
 !
       MODULE F2KCLI
-!AG
+#ifndef GFORTRAN
+
 #ifdef __NAG__
       use f90_unix
 #else
-!AG
       interface 
          function iargc() result(count)
          integer :: count
@@ -224,7 +222,6 @@
       RETURN
       END SUBROUTINE GET_COMMAND_ARGUMENT
 !
+#endif
       END MODULE F2KCLI
-
-
 
