@@ -47,7 +47,7 @@ include arch.make
 #
 # Uncomment the following line for debugging support
 #
-#FFLAGS=$(FFLAGS_DEBUG)
+FFLAGS=$(FFLAGS_DEBUG)
 #
 what:
 	@echo
@@ -86,7 +86,7 @@ OBJS =  domain_decom.o automatic_cell.o atom_options.o \
 	vmb.o vmat.o vmatsp.o volcel.o xc.o \
 	cellxc.o cdiag.o rdiag.o \
         cgvc.o cgvc_zmatrix.o m_convergence.o \
-        iocg.o ioeig.o iofa.o iokp.o iomd.o typecell.o \
+        iocg.o ioeig.o iofa.o iokp.o iomd.o kpoint_pdos.o typecell.o \
         ofc.o poison.o readsp.o radfft.o \
 	write_md_record.o kpoint_grid.o find_kgrid.o proximity_check.o\
 	state_init.o siesta_move.o setup_hamiltonian.o compute_dm.o mixer.o\
@@ -429,6 +429,8 @@ kgridinit.o: minvec.o parallel.o precision.o sys.o units.o
 kinefsm.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
 kpoint_grid.o: find_kgrid.o minvec.o parallel.o precision.o siesta_cml.o
 kpoint_grid.o: siesta_options.o sys.o units.o
+kpoint_pdos.o: find_kgrid.o minvec.o parallel.o precision.o siesta_options.o
+kpoint_pdos.o: units.o
 ksv.o: alloc.o atmfuncs.o densematrix.o ksvinit.o parallel.o precision.o sys.o
 ksvinit.o: alloc.o parallel.o precision.o sys.o
 listsc.o: alloc.o
@@ -534,8 +536,9 @@ post_scf_work.o: atomlist.o final_H_f_stress.o m_energies.o m_spin.o mneighb.o
 post_scf_work.o: siesta_cml.o siesta_geom.o siesta_options.o sparse_matrices.o
 precond.o: alloc.o matrixop.o precision.o
 printmatrix.o: alloc.o
-projected_DOS.o: atomlist.o kpoint_grid.o m_eo.o m_gamma.o m_spin.o parallel.o
-projected_DOS.o: precision.o siesta_options.o sparse_matrices.o sys.o
+projected_DOS.o: alloc.o atomlist.o kpoint_grid.o kpoint_pdos.o m_eo.o
+projected_DOS.o: m_gamma.o m_spin.o parallel.o precision.o siesta_geom.o
+projected_DOS.o: siesta_options.o sparse_matrices.o sys.o
 propor.o: precision.o sys.o
 proximity_check.o: mneighb.o parallel.o precision.o siesta_geom.o
 proximity_check.o: siesta_options.o
@@ -593,13 +596,13 @@ siesta_forces.o: setup_hamiltonian.o siesta_cml.o siesta_options.o
 siesta_forces.o: state_analysis.o state_init.o sys.o
 siesta_geom.o: precision.o
 siesta_init.o: alloc.o atomlist.o bands.o densematrix.o files.o ioxv.o
-siesta_init.o: kpoint_grid.o ksvinit.o m_check_supercell.o m_energies.o m_eo.o
-siesta_init.o: m_forces.o m_gamma.o m_iostruct.o m_mpi_utils.o m_rmaxh.o
-siesta_init.o: m_spin.o m_steps.o m_wallclock.o metaforce.o
-siesta_init.o: molecularmechanics.o parallel.o parallelsubs.o phonon.o
-siesta_init.o: siesta_cmlsubs.o siesta_geom.o siesta_options.o
-siesta_init.o: sparse_matrices.o struct_init.o sys.o timestamp.o writewave.o
-siesta_init.o: xcmod.o zmatrix.o
+siesta_init.o: kpoint_grid.o kpoint_pdos.o ksvinit.o m_check_supercell.o
+siesta_init.o: m_energies.o m_eo.o m_forces.o m_gamma.o m_iostruct.o
+siesta_init.o: m_mpi_utils.o m_rmaxh.o m_spin.o m_steps.o m_wallclock.o
+siesta_init.o: metaforce.o molecularmechanics.o parallel.o parallelsubs.o
+siesta_init.o: phonon.o projected_DOS.o siesta_cmlsubs.o siesta_geom.o
+siesta_init.o: siesta_options.o sparse_matrices.o struct_init.o sys.o
+siesta_init.o: timestamp.o writewave.o xcmod.o zmatrix.o
 siesta_move.o: atomlist.o broyden_optim.o cell_broyden_optim.o
 siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o iopipes.o ioxv.o
 siesta_move.o: m_energies.o m_forces.o m_kinetic.o m_steps.o m_stress.o

@@ -45,7 +45,7 @@
 \hrulefill
 \vspace{1cm}
 
-{\Large May 7, 2009 }
+{\Large June 15, 2009 }
 
 \vspace{1.5cm}
 
@@ -5164,6 +5164,19 @@ An example is:
         -20.00  10.00  0.200  500  eV
      %endblock ProjectedDensityOfStates
 \end{verbatim}
+
+By default the projected density of states is generated for the same
+grid of points in reciprocal space as used for the SCF calculation.
+However, a separate set of K-points, usually on a finer grid, can 
+be generated using one of the options \textbf{PDOS.kgrid\_cutoff} or
+\textbf{PDOS.kgrid\_Monkhorst\_Pack}. The format of these options is
+exactly the same as for \textbf{kgrid\_cutoff} and 
+\textbf{kgrid\_Monkhorst\_Pack}, respectively. Note that if a gamma
+point calculation is being used in the SCF part, especially as part
+of a geometry optimisation, and this is then to
+be run with a grid of K-points for the PDOS calculation it is more
+efficient to run the SCF phase first and then restart to perform the
+PDOS evaluation using the density matrix saved from the SCF phase. 
 
 {\it Use:} The two energies of the range must be ordered, with lowest
 first. 

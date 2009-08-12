@@ -6,6 +6,7 @@
 
       subroutine siesta_init()
       use Kpoint_grid,        only: setup_Kpoint_grid, gamma_scf, maxk
+      USE Kpoint_pdos,        only: gamma_pdos
       use Band,               only: gamma_bands, setup_bands
       use m_ksvinit,          only: gamma_polarization,
      &                              estimate_pol_kpoints
@@ -43,10 +44,11 @@
       use m_eo
       use m_gamma
       use m_ioxv,             only: xv_file_read
+      use m_projected_DOS,    only: init_projected_DOS
       use writewave,          only: gamma_wavefunctions,
      &                              setup_wf_kpoints
 #ifdef MPI
-      use mpi_siesta
+      use mpi_siesta,         only: mpi_comm_world
 #endif
 
       implicit none
@@ -310,6 +312,13 @@ C     not early, in order to decide whether to use an
 C     auxiliary supercell for the calculation of matrix elements.
       call setup_Kpoint_grid( ucell )
       gamma = gamma_scf
+
+      ! Call initialisation of PDOS here since we need to check if 
+      ! the auxiliary supercell is needed for a non-gamma calculation
+      call init_projected_DOS()
+      if (do_pdos) then
+        gamma = gamma .and. gamma_pdos
+      endif
 
       nullify(eo,qo)
       call re_alloc(eo, 1, no_u, 1, nspin, 1, maxk, 'eo', 'siesta_init')

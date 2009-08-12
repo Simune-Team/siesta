@@ -23,7 +23,7 @@
     \subitem default   soft confinement potential, 20
     \subitem default soft   confinement, 20
     \subitem default soft confinement radius, 20
-    \subitem effective pressure, 80
+    \subitem effective pressure, 81
     \subitem filtering, 24
     \subitem fix   split-valence table, 19
     \subitem Gen-basis standalone program, 17, 75
@@ -39,16 +39,16 @@
     \subitem split valence   for H, 19
     \subitem User basis, 17
     \subitem User basis (NetCDF format), 17
-  \item {\bf     BasisPressure}, 80
+  \item {\bf     BasisPressure}, 81
   \item Berry phase, 44
   \item Bessel functions, 23
   \item \%block, 14
   \item {\bf BlockSize}, 63
-  \item {\bf Blocksize}, 88
+  \item {\bf Blocksize}, 89
   \item BLYP, 38
   \item Born effective charges, 45
   \item {\bf BornCharge}, 45, 55
-  \item Broyden mixing, 40, 93
+  \item Broyden mixing, 40, 94
   \item Broyden optimization, 57
   \item bug reports, 82
   \item bulk polarization, 44
@@ -63,7 +63,7 @@
   \item Chebishev Polynomials, 54
   \item Chemical Potential, 54
   \item {\bf ChemicalSpeciesLabel}, 9, 14, 15
-  \item CML, 91
+  \item CML, 92
   \item constant-volume cell relaxation, 56
   \item constraints in relaxations, 29
   \item cutoff radius, 22
@@ -136,7 +136,7 @@
   \item {\bf GeometryConstraints}, 29
   \item GGA, 38
   \item ghost atoms, 15, 24
-  \item {\sc Gnubands}, 67, 76
+  \item {\sc Gnubands}, 67, 77
   \item {\sc Gnuplot}, 67
   \item grid, 40
   \item {\sc Grid2cube}, 76
@@ -215,7 +215,7 @@
   \item {\bf MD.UseSaveCG}, 70
   \item {\bf MD.UseSaveXV}, 28, 70, 71
   \item {\bf MD.UseSaveZM}, 71
-  \item {\bf MD.UseStructFile}, 77
+  \item {\bf MD.UseStructFile}, 77, 78
   \item {\bf MD.VariableCell}, 56
   \item memory required, 75
   \item mesh, 40
@@ -238,8 +238,8 @@
 
   \item {\bf NaiveAuxiliaryCell}, 29
   \item {\bf NeglNonOverlapInt}, 43
-  \item NetCDF format, 17, 75, 86
-  \item NetCDF library, 86
+  \item NetCDF format, 17, 75, 87
+  \item NetCDF library, 87
   \item {\bf NetCharge}, 16
   \item {\bf     New.A.Parameter}, 80
   \item {\bf     New.B.Parameter}, 80
@@ -281,27 +281,27 @@
   \item {\tt Ordejon-Mauri}, 53
   \item out.fdf, 8
   \item {\tt out.fdf}, 75
-  \item OUT.UCELL.ZMATRIX, 77
+  \item OUT.UCELL.ZMATRIX, 78
   \item output
     \subitem $\delta \rho(\vec r)$, 71
     \subitem atomic coordinates
       \subsubitem history, 66
-      \subsubitem in a dynamics step, 65, 74
-      \subsubitem initial, 65, 74
-    \subitem band $\vec k$ points, 65, 67, 74
+      \subsubitem in a dynamics step, 65, 75
+      \subsubitem initial, 65, 75
+    \subitem band $\vec k$ points, 65, 67, 75
     \subitem band structure, 65, 67, 75
     \subitem basis, 75
     \subitem charge density, 71
-    \subitem charge density for DENCHAR code, 73
-    \subitem customization, 74
+    \subitem charge density for DENCHAR code, 74
+    \subitem customization, 75
     \subitem density   matrix, 66
     \subitem density   matrix history, 67
     \subitem density matrix, 66
     \subitem density matrix history, 66
-    \subitem eigenvalues, 65, 66, 74, 77
+    \subitem eigenvalues, 65, 66, 75, 77
     \subitem electrostatic potential, 71, 72
-    \subitem forces, 65, 66, 74, 76
-    \subitem grid $\vec k$ points, 65, 66, 74, 76
+    \subitem forces, 65, 66, 75, 76
+    \subitem grid $\vec k$ points, 65, 66, 75, 76
     \subitem hamiltonian, 66
     \subitem Hamiltonian \& overlap, 71
     \subitem hamiltonian history, 67
@@ -312,7 +312,7 @@
     \subitem molecular dynamics
       \subsubitem Force Constants Matrix, 78
       \subsubitem history, 68, 78
-      \subsubitem PHONON forces file, 78
+      \subsubitem PHONON forces file, 79
     \subitem Mulliken analysis, 65, 67, 75
     \subitem overlap matrix, 66, 67
     \subitem projected density of states, 73
@@ -336,8 +336,8 @@
   \item {\bf PAO.SplitNorm}, 19
   \item {\bf PAO.SplitNormH}, 19
   \item {\bf PAO.SplitTailNorm}, 19
-  \item Parallel {\sc Siesta}, 88
-  \item {\bf ParallelOverK}, 88
+  \item Parallel {\sc Siesta}, 89
+  \item {\bf ParallelOverK}, 89
   \item PBE, 38
   \item perturbative polarization, 18, 23
   \item Phonon program, 55
@@ -347,8 +347,8 @@
   \item {\sc Plrho}, 76
   \item polarization orbitals, 17
   \item {\bf PolarizationGrids}, 44
-  \item Precision selection, 93
-  \item {\bf ProcessorY}, 63, 88
+  \item Precision selection, 94
+  \item {\bf ProcessorY}, 63, 89
   \item {\bf ProjectedDensityOfStates}, 73
   \item {\bf PS.KBprojectors} , 20
   \item {\bf PS.lmax}, 20
@@ -356,12 +356,12 @@
     \subitem example generation, 7
     \subitem files, 74
     \subitem generation, 9
-    \subitem writing KB projectors, 75
-    \subitem writing vlocal, 75
-  \item Pseudopotentials, 75
+    \subitem writing KB projectors, 76
+    \subitem writing vlocal, 76
+  \item Pseudopotentials, 76
   \item Pulay mixing, 40
   \item PW92, 38
-  \item Python language, 78, 87
+  \item Python language, 78, 88
   \item PZ, 38
 
   \indexspace
@@ -472,19 +472,19 @@
   \item WC, 38
   \item {\bf WriteBands}, 65, 67, 75
   \item {\bf WriteCoorCerius}, 68
-  \item {\bf WriteCoorInitial}, 65, 74
-  \item {\bf WriteCoorStep}, 65, 74
+  \item {\bf WriteCoorInitial}, 65, 75
+  \item {\bf WriteCoorStep}, 65, 75
   \item {\bf WriteCoorXmol}, 68
-  \item {\bf WriteDenchar}, 73
+  \item {\bf WriteDenchar}, 74
   \item {\bf WriteDM}, 66
   \item {\bf WriteDM.History.NetCDF}, 66
   \item {\bf WriteDM.NetCDF}, 66
   \item {\bf WriteDMHS.History.NetCDF}, 67
   \item {\bf WriteDMHS.NetCDF}, 66
-  \item {\bf WriteEigenvalues}, 65, 66, 74
-  \item {\bf WriteForces}, 65, 66, 74
-  \item {\bf WriteKbands}, 65, 67, 74
-  \item {\bf WriteKpoints}, 65, 66, 74
+  \item {\bf WriteEigenvalues}, 65, 66, 75
+  \item {\bf WriteForces}, 65, 66, 75
+  \item {\bf WriteKbands}, 65, 67, 75
+  \item {\bf WriteKpoints}, 65, 66, 75
   \item {\bf WriteMDhistory}, 66, 68
   \item {\bf WriteMDXmol}, 68
   \item {\bf WriteMullikenPop}, 65, 67, 75
@@ -495,7 +495,7 @@
   \item {\bf XC.authors}, 38
   \item {\bf XC.functional}, 38
   \item {\bf XC.hybrid}, 39
-  \item XML, 91
+  \item XML, 92
   \item {\sc XMol}, 68, 77
 
   \indexspace
