@@ -8,7 +8,7 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-program pdos
+program pdosxml
 !
 ! Driver for Siesta PDOS processing
 !
@@ -50,7 +50,7 @@ do i=1, n_energies
 enddo
 
 
-end program pdos
+end program pdosxml
 
 
 

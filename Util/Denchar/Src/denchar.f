@@ -1,13 +1,4 @@
-! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
-!
+
       PROGRAM DENCHAR
 
 C **********************************************************************
@@ -16,75 +7,69 @@ C at the points of a plane in real space, or at a 3D grid of points
 C Coded by J. Junquera 11/98
 C Modified by J. Junquera 07/01 
 C 3D and wavefunction capabilities coded by P. Ordejon, June 2003
+C Modified to handle complex wavefunctions and multiple k-points
+C by P. Ordejon, July 2004
+C Modified to include the local density of states at a point
+C by P. Ordejon, July 2004
 C
-C Version: 1.2.0
+C Version: 2.0.1
 C **********************************************************************
 C
 C  Modules
 C
-      use f2kcli
-      use m_denchar_init
-      use m_denchar_io
-      use m_denchar_work
-      use m_denchar_geom
-
       USE PRECISION
       USE PARALLEL
       USE BASIS_IO
       USE LISTSC_MODULE, ONLY: LISTSC_INIT
       USE FDF
-      use sys, only: die
+      use parallel, only: nodes, node, ionode
 
-C     It has to be MPI-aware since it calls routines down the line...
-C
-#ifdef MPI
-      use mpi_siesta
-#endif
-
-      implicit none
-
-#ifdef MPI
-      integer  MPIerror
-#endif
+      IMPLICIT NONE
 
       INTEGER
      .   NO_U, NO_S, NA_S, NSPIN, MAXND, MAXNA,
-     .   NSC(3), NWF
+     .   NSC(3), NK, NUMWF, NE
+      integer :: ns_dummy
 
       INTEGER
-     .  IDIMEN, IOPTION, NPX, NPY, NPZ, IUNITCD, ISCALE 
+     .  IDIMEN, IOPTION, NPX, NPY, NPZ, IUNITCD, ISCALE, BFUNC
 
       INTEGER, DIMENSION(:), ALLOCATABLE ::
      .  ISA, LASTO, IPHORB, INDXUO, 
-     .  NUMD, LISTD, LISTDPTR, INDW
+     .  NUMD, LISTD, LISTDPTR, NWF
+
+      INTEGER, DIMENSION(:,:), ALLOCATABLE ::
+     .  INDW
 
 
-      DOUBLE PRECISION
+      real(dp)
      .   CELL(3,3), VOLUME, VOLCEL, RMAXO
 
-      DOUBLE PRECISION
+      real(dp)
      .  XMIN, XMAX, YMIN, YMAX, ZMIN, ZMAX,
      .  COORPO(3,3), NORMAL(3), DIRVER1(3),
-     .  DIRVER2(3), ARMUNI
+     .  DIRVER2(3), ARMUNI, EMIN, DELTAE, ETA, XSTS(3)
 
-      DOUBLE PRECISION, DIMENSION(:,:,:), ALLOCATABLE ::
-     .   PSI
+      real(dp), DIMENSION(:,:,:,:), ALLOCATABLE ::
+     .   RPSI,IPSI
 
-      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE ::
-     .   XA, DSCF, E
+      real(dp), DIMENSION(:,:,:), ALLOCATABLE ::
+     .   E
 
-      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE ::
-     .   DATM, DSCFNA
+      real(dp), DIMENSION(:,:), ALLOCATABLE ::
+     .   XA, DSCF, K
+
+      real(dp), DIMENSION(:), ALLOCATABLE ::
+     .   DATM
 
       CHARACTER
      .  FILEIN*20, FILEOUT*20
 
       LOGICAL 
-     .  FOUND, CHARGE, WAVES
+     .  FOUND, CHARGE, WAVES, STS
 
-      EXTERNAL  IODM, VOLCEL
-
-      integer narg, ns
+      EXTERNAL
+     .  IODM, READPLA, REDATA_DENCHAR, REINIT, RHOOFR, VOLCEL
 
       DATA NORMAL /0.D0,0.D0,1.D0/
       DATA COORPO /1.D0,0.D0,0.D0,0.D0,1.D0,0.D0,0.D0,0.D0,1.D0/
@@ -102,7 +87,8 @@ C                               of basis orbitals interacting, either directly
 C                               or through a KB projector, with any orbital
 C INTEGER MAXNA               : Maximum number of neighbours of any atom
 C INTEGER NSC(3)              : Num. of unit cells in each supercell direction
-C INTEGER NWF                 : Number of wavefunctions to print
+C INTEGER NUMWF               : Max num of wavefncts to print for a given k-po.
+C INTEGER NWF(NK)             : Num of wavefncts to print for each k-point
 C INTEGER ISA(MAXA)           : Species index of each atom in the supercell
 C INTEGER LASTO(0:MAXA)       : Last orbital of each atom in array iphorb
 C INTEGER IPHORB(MAXO)        : Orbital index (within atom) of each orbital
@@ -116,7 +102,8 @@ C                               The reason for pointing to the element before
 C                               the first one is so that when looping over the
 C                               elements of a row there is no need to shift by
 C                               minus one.
-C INTEGER INDW(NWF)           : Indices of wavefunctions to print
+C INTEGER NK                  : Number of k-points in wave functions file
+C INTEGER INDW(NK,NUMWF)      : Indices of wavefuncs to print for each k-point
 C REAL*8  CELL(3,3)           : Supercell vectors CELL(IXYZ,IVECT)
 C                               (units in bohrs)
 C REAL*8  VOLUME              : Volumen of unit cell (in bohr**3)
@@ -125,12 +112,15 @@ C REAL*8  XA(3,NA_S)          : Atomic coordinates in cartesian coordinates
 C                               (units in bohrs)
 C REAL*8  DATM(NO_S)          : Occupations of basis orbitals in free atom
 C REAL*8  DSCF(MAXND,NSPIN)   : Density Matrix (DM)
-C REAL*8  PSI(NO_U,NWF,NSPIN) : Wave function coefficients
-C REAL*8  E(NWF,NSPIN)        : Wave function energies
-C ****** INFORMATION OF THE PLANE OR 3D GRID ***************************
+C REAL*8  RPSI(NO_U,NK,NUMWF,NSPIN): Wave function coefficients (real part)
+C REAL*8  IPSI(NO_U,NK,NUMWF,NSPIN): Wave function coefficients (imag part)
+C REAL*8  E(NK,NUMWF,NSPIN)        : Wave function energies
+C REAL*8  K(NK,3)             : K-points
+C ****** INFORMATION OF THE POINT, PLANE OR 3D GRID ***********************
 C INTEGER IDIMEN              : Specifies 2D or 3D mode
 C LOGICAL CHARGE              : Should charge density be computed?
 C LOGICAL WAVES               : Should wave functions be computed?
+C LOGICAL STS                 : Should STS simulation be done?
 C INTEGER IOPTION             : Option to generate the plane or 3D grid
 C                               1 = Normal vector to xy plane (ie, z direction)
 C                               2 = Two vectors belonging to the xy plane
@@ -141,6 +131,10 @@ C                               (and z for 3D grids) directions in a system of
 C                               reference in which the third component of the 
 C                               points of the plane is zero 
 C                               (Plane Reference Frame; PRF)
+C INTEGER NE                  : Number of energies for STS curve
+C REAL*8 EMIN                 : Minimum energy of STS curve
+C REAL*8 DELTAE               : Step in STS curve
+C REAL*8 ETA                  : Lorenzian width used in STS curve
 C INTEGER IUNITCD             : Units of the charge density
 C INTEGER ISCALE              : Units of the points of the plane or 3D grid
 C REAL*8  XMIN, XMAX          : Limits of the plane in the PRF for x-axis
@@ -154,50 +148,28 @@ C REAL*8  DIRVER1(3)          : Components of the first vector contained
 C                               in the plane
 C REAL*8  DIRVER2(3)          : Components of the first vector contained 
 C                               in the plane
+C REAL*8 XSTS(3)              : Coordinates of points where STS spectrum
+C                               is calculated
+C INTEGER BFUNC               : Broadening function for STS spectra:
+C                               1 = Lorentzian, 2 = Gaussian
 C REAL*8  ARMUNI              : Conversion factors for the charge density
 C ****** INTERNAL VARIABLES ********************************************
-C REAL*8  DSCFNA(MAXND)       : Density Matrix for Neutral Atoms
 C LOGICAL FOUND               : Has DM been found in disk?
 C                               (Only when task = 'read')
 C **********************************************************************
-
-
-C Initialise MPI and set processor number
-#ifdef MPI
-      call MPI_Init( MPIerror )
-      call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
-      call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
-
-      if (.not. fdf_parallel()) then
-        call die('denchar: ERROR: FDF module doesn''t have ' //
-                 'parallel support')
-      endif
-#else
-      Node =  0
-      Nodes = 1
-#endif
-      if (Nodes /= 1)
-     $            print *, "You are running denchar on several nodes!"
-
-      IONode = (Node .eq. 0)
+C
+      nodes = 1
+      node = 0
+      ionode = .true.
 
 C Set up fdf -----------------------------------------------------------
-!      narg = command_argument_count()
-!      if (narg == 0) then
-!         FILEIN = "stdin"
-!      else if (narg == 1) then
-!         call get_command_argument(1,FILEIN)
-!      else
-!         stop "too many command-line arguments"
-!      endif
-      FILEIN='stdin'
-
+      FILEIN  = 'stdin'
       FILEOUT = 'out.fdf'
       CALL FDF_INIT(FILEIN,FILEOUT)
 
 C Read some variables from SIESTA to define the limits of some arrays --
       CALL REINIT( NO_S, NA_S, NO_U, MAXND, MAXNA, NSPIN, IDIMEN,
-     .            CHARGE, WAVES )
+     .            CHARGE, WAVES, STS )
 
 C Allocate some variables ----------------------------------------------
       ALLOCATE(XA(3,NA_S))
@@ -219,12 +191,12 @@ C Allocate some variables ----------------------------------------------
       CALL MEMORY('A','D',NO_S,'denchar')
 
 C Read some variables from SIESTA --------------------------------------
-      CALL REDATA( NO_S, NA_S, 
+      CALL REDATA_DENCHAR( NO_S, NA_S, NO_U, MAXND, NSPIN,
      .             ISA, IPHORB, INDXUO, LASTO,
      .             CELL, NSC, XA, RMAXO, DATM )
 
 C Read the information about the basis set -----------------------------
-      CALL READ_BASIS_ASCII(ns)
+      CALL READ_BASIS_ASCII(ns_dummy)
 
 C Initialize listsc ----------------------------------------------------
       CALL LISTSC_INIT( NSC, NO_U )
@@ -258,13 +230,6 @@ C Allocate some other variables ----------------------------------------
         ALLOCATE(DSCF(MAXND,NSPIN))
         CALL MEMORY('A','D',MAXND*NSPIN,'denchar')
 
-        IF (ALLOCATED(DSCFNA)) THEN
-          CALL MEMORY('D','D',SIZE(DSCFNA),'denchar')
-          DEALLOCATE(DSCFNA)
-        ENDIF
-        ALLOCATE(DSCFNA(MAXND))
-        CALL MEMORY('A','D',MAXND,'denchar')
-  
 C Read Density Matrix from files ---------------------------------------
         CALL IODM('READ', MAXND, NO_U, NSPIN,
      .            NUMD, LISTDPTR, LISTD, DSCF, FOUND )
@@ -272,60 +237,86 @@ C Read Density Matrix from files ---------------------------------------
           WRITE(6,*)' DENSITY MATRIX NOT FOUND              '
           WRITE(6,*)' CHECK YOU HAVE COPIED IT FROM THE       '
           WRITE(6,*)' DIRECTORY WHERE YOU HAVE RUN SIESTA   '
-          call die()
+          STOP
         ENDIF 
       ENDIF
 
-      IF (WAVES) THEN
-C call readwaves just to find out number of wavefunctions to print
-C allocate temporary space for eigenvalues and eigenfunctions
-        NWF = 1
-        ALLOCATE(INDW(NWF))
-        CALL MEMORY('A','I',NWF,'denchar')
-        ALLOCATE(E(NWF,NSPIN))
-        CALL MEMORY('A','D',NWF*NSPIN,'denchar')
-        ALLOCATE(PSI(NO_U,NWF,NSPIN))
-        CALL MEMORY('A','D',NO_U*NWF*NSPIN,'denchar')
+      IF (WAVES .OR. STS) THEN
 
-        CALL READWAVES(NSPIN,NO_U,0,NWF,PSI,E,INDW)
+C Call readwaves just to find out number of wavefunctions to print
+C or to calculate STS spectra.
+C Allocate temporary space for eigenvalues and eigenfunctions
+        NUMWF = 1
+        NK = 1
+
+        ALLOCATE(NWF(NK))
+        CALL MEMORY('A','I',NK,'denchar')
+        ALLOCATE(INDW(NK,NUMWF))
+        CALL MEMORY('A','I',NUMWF*NK,'denchar')
+        ALLOCATE(K(NK,3))
+        CALL MEMORY('A','D',NK*3,'denchar')
+        ALLOCATE(E(NK,NUMWF,NSPIN))
+        CALL MEMORY('A','D',NUMWF*NSPIN*NK,'denchar')
+        ALLOCATE(RPSI(NO_U,NK,NUMWF,NSPIN))
+        CALL MEMORY('A','D',NO_U*NUMWF*NSPIN*NK,'denchar')
+        ALLOCATE(IPSI(NO_U,NK,NUMWF,NSPIN))
+        CALL MEMORY('A','D',NO_U*NUMWF*NSPIN*NK,'denchar')
+
+        CALL READWAVES(NSPIN,NO_U,0,NWF,NUMWF,NK,RPSI,IPSI,E,K,INDW)
 
 C deallocate temporary space 
+        CALL MEMORY('D','I',SIZE(NWF),'denchar')
+        DEALLOCATE(NWF)
         CALL MEMORY('D','I',SIZE(INDW),'denchar')
         DEALLOCATE(INDW)
+        CALL MEMORY('D','D',SIZE(K),'denchar')
+        DEALLOCATE(K)
         CALL MEMORY('D','D',SIZE(E),'denchar')
         DEALLOCATE(E)
-        CALL MEMORY('D','D',SIZE(PSI),'denchar')
-        DEALLOCATE(PSI)
+        CALL MEMORY('D','D',SIZE(RPSI),'denchar')
+        DEALLOCATE(RPSI)
+        CALL MEMORY('D','D',SIZE(IPSI),'denchar')
+        DEALLOCATE(IPSI)
 
-C allocate space for eigenenergies and eigenfunctions, assumed to be real
-        ALLOCATE(INDW(NWF))
-        CALL MEMORY('A','I',NWF,'denchar')
-        ALLOCATE(E(NWF,NSPIN))
-        CALL MEMORY('A','D',NWF*NSPIN,'denchar')
-        ALLOCATE(PSI(NO_U,NWF,NSPIN))
-        CALL MEMORY('A','D',NO_U*NWF*NSPIN,'denchar')
+C allocate space for eigenenergies and (complex) eigenfunctions 
+        ALLOCATE(NWF(NK))
+        CALL MEMORY('A','I',NK,'denchar')
+        ALLOCATE(INDW(NK,NUMWF))
+        CALL MEMORY('A','I',NUMWF*NK,'denchar')
+        ALLOCATE(K(NK,3))
+        CALL MEMORY('A','D',NK*3,'denchar')
+        ALLOCATE(E(NK,NUMWF,NSPIN))
+        CALL MEMORY('A','D',NUMWF*NSPIN*NK,'denchar')
+        ALLOCATE(RPSI(NO_U,NK,NUMWF,NSPIN))
+        CALL MEMORY('A','D',NO_U*NUMWF*NSPIN*NK,'denchar')
+        ALLOCATE(IPSI(NO_U,NK,NUMWF,NSPIN))
+        CALL MEMORY('A','D',NO_U*NUMWF*NSPIN*NK,'denchar')
 
 C call readwaves again to actually read wavefunctions
-        CALL READWAVES(NSPIN,NO_U,1,NWF,PSI,E,INDW)
+        CALL READWAVES(NSPIN,NO_U,1,NWF,NUMWF,NK,RPSI,IPSI,E,K,INDW)
       ENDIF
 
+C Find out parameters of STS simulation
+      IF (STS) THEN
+        CALL READSTS(VOLUME, EMIN, NE, DELTAE, ETA, XSTS, BFUNC,
+     .               IUNITCD, ARMUNI)
+      ENDIF
 
-
+      IF (CHARGE .OR. WAVES) THEN
 C Read option to generate the plane or 3D-grid -------------------------
-      CALL READPLA( NA_S, XA, VOLUME, IDIMEN,
-     .              IOPTION, IUNITCD, ISCALE, NPX, NPY, NPZ,
-     .              XMIN, XMAX, YMIN, YMAX, ZMIN, ZMAX,
-     .              COORPO, NORMAL, DIRVER1, DIRVER2, 
-     .              ARMUNI )
+        CALL READPLA( NA_S, XA, VOLUME, IDIMEN,
+     .                IOPTION, IUNITCD, ISCALE, NPX, NPY, NPZ,
+     .                XMIN, XMAX, YMIN, YMAX, ZMIN, ZMAX,
+     .                COORPO, NORMAL, DIRVER1, DIRVER2, 
+     .                ARMUNI )
+      ENDIF
 
 C Form Density Matrix for Neutral and Isolated Atoms -------------------
       IF (CHARGE) THEN
-        CALL DMNA( NO_U, NO_S, MAXND, NUMD, LISTD, LISTDPTR,
-     .             DATM, DSCFNA )
       
         CALL RHOOFR( NA_S, NO_S, NO_U, MAXND, MAXNA, NSPIN, 
      .               ISA, IPHORB, INDXUO, LASTO,
-     .               XA, CELL, NUMD, LISTD, LISTDPTR, DSCF, DSCFNA,
+     .               XA, CELL, NUMD, LISTD, LISTDPTR, DSCF, DATM,
      .               IDIMEN, IOPTION, XMIN, XMAX, YMIN, YMAX, 
      .               ZMIN, ZMAX, NPX, NPY, NPZ, COORPO, NORMAL, 
      .               DIRVER1, DIRVER2, 
@@ -334,13 +325,20 @@ C Form Density Matrix for Neutral and Isolated Atoms -------------------
 
       IF (WAVES) THEN
         CALL WAVOFR( NA_S, NO_S, NO_U, MAXNA, NSPIN, 
-     .               ISA, IPHORB, INDXUO, LASTO,
-     .               XA, CELL, PSI, INDW, NWF,
+     .               ISA, IPHORB, INDXUO, LASTO, XA, CELL,
+     .               RPSI, IPSI, E, INDW, NWF, NUMWF, NK, K,
      .               IDIMEN, IOPTION, XMIN, XMAX, YMIN, YMAX, 
      .               ZMIN, ZMAX, NPX, NPY, NPZ, COORPO, NORMAL, 
      .               DIRVER1, DIRVER2, 
      .               ARMUNI, IUNITCD, ISCALE, RMAXO )
       ENDIF
 
+      IF (STS) THEN
+        CALL STSOFR( NA_S, NO_S, NO_U, MAXNA, NSPIN,
+     .               ISA, IPHORB, INDXUO, LASTO, XA, CELL,
+     .               RPSI, IPSI, E, INDW, NWF, NUMWF, NK, K,
+     .               ARMUNI, IUNITCD, RMAXO,
+     .               EMIN, NE, DELTAE, ETA, XSTS, BFUNC )
+      ENDIF
 
       END PROGRAM DENCHAR

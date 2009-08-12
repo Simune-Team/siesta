@@ -17,7 +17,7 @@
 #
 VPATH=.
 #
-default: what siesta # gen-basis denchar fsiesta.o
+default: what siesta # gen-basis fsiesta.o
 #
 configure: configure.ac aclocal.m4
 	autoconf ${<D}/configure.ac
@@ -228,27 +228,6 @@ ioncat: version $(MPI_INTERFACE) $(FDF) $(WXML) \
                $(COMP_LIBS) $(LIBS) 
 #
 #------------------------------------------------------------------------
-# Denchar is now at the main source level...
-#
-DENCHAR_OBJS = m_denchar_init.o m_denchar_geom.o m_denchar_io.o \
-               m_denchar_neighb.o m_denchar_work.o \
-               denchar.o 
-#
-m_denchar_io.o m_denchar_init.o denchar.o : $(FDF)
-#
-OTHER_DENCHAR_OBJS=  precision.o recipes.o alloc.o atom_options.o \
-        f2kcli.o bessph.o chkdim.o dismin.o  dot.o iodm.o memory.o \
-        paste.o  radfft.o io.o  spatial.o flib_spline.o\
-        volcel.o parallel.o parallelsubs.o memoryinfo.o sys.o listsc.o  \
-        atmparams.o atmfuncs.o atm_types.o m_memory.o \
-        radial.o spher_harm.o  basis_io.o basis_types.o \
-        pseudopotential.o chemical.o xml.o files.o $(SYSOBJ)
-
-denchar: $(MPI_INTERFACE) $(FDF) \
-         $(OTHER_DENCHAR_OBJS) $(DENCHAR_OBJS) $(COMP_LIBS)
-	$(FC) -o denchar \
-	   $(LDFLAGS) $(DENCHAR_OBJS) $(OTHER_DENCHAR_OBJS) \
-           $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(LIBS) 
 #
 # ---------------------------------------------------------------------------
 # Other auxiliary programs
@@ -278,7 +257,7 @@ fractional: $(FDF) $(MPI_INTERFACE)  $(FRACTIONAL_OBJS)
 #
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
-	rm -f siesta gen-basis ioncat denchar *.o  *.a *.pcl *.pc
+	rm -f siesta gen-basis ioncat  *.o  *.a *.pcl *.pc
 	rm -f mixps mpi_test
 	rm -f *.mod
 	rm -f *.bck *~
@@ -351,8 +330,6 @@ conjgr_old.o: precision.o
 coor.o: alloc.o parallel.o precision.o siesta_geom.o sys.o zmatrix.o
 coxmol.o: files.o periodic_table.o precision.o
 debugmpi.o: parallel.o
-denchar.o: basis_io.o f2kcli.o listsc.o m_denchar_geom.o m_denchar_init.o
-denchar.o: m_denchar_io.o m_denchar_work.o parallel.o precision.o sys.o
 denmat.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 denmatlomem.o: alloc.o globalise.o onmod.o precision.o
 densematrix.o: alloc.o precision.o
@@ -463,12 +440,6 @@ m_broyddj_nocomm.o: alloc.o m_fdf_global.o parallel.o precision.o sys.o
 m_broyden_mixing.o: alloc.o m_broyddj.o m_mpi_utils.o parallel.o precision.o
 m_cell.o: precision.o siesta_geom.o units.o
 m_check_supercell.o: minvec.o parallel.o precision.o
-m_denchar_geom.o: precision.o sys.o
-m_denchar_init.o: files.o
-m_denchar_io.o: m_denchar_geom.o
-m_denchar_neighb.o: precision.o sys.o
-m_denchar_work.o: atmfuncs.o chemical.o listsc.o m_denchar_geom.o
-m_denchar_work.o: m_denchar_io.o m_denchar_neighb.o parallel.o
 m_dhscf.o: precision.o
 m_diagon.o: precision.o
 m_dipol.o: precision.o
