@@ -111,7 +111,7 @@ OBJS =  domain_decom.o automatic_cell.o atom_options.o \
         units.o zmatrix.o m_broyden_mixing.o forhar.o m_walltime.o m_wallclock.o m_iostruct.o \
         nlefsm.o overfsm.o overlap.o conjgr.o conjgr_old.o m_energies.o m_steps.o\
         m_broyddj_nocomm.o broyden_optim.o ioxv.o dynamics.o md_out.o \
-        molecularmechanics.o filter.o filter_subs.o zm_broyden_optim.o \
+        molecularmechanics.o m_filter.o zm_broyden_optim.o \
         cell_broyden_optim.o remove_intramol_pressure.o \
         m_ntm.o m_dipol.o  m_kinetic.o  m_rmaxh.o \
         m_forces.o m_stress.o m_eo.o m_spin.o m_gamma.o m_fire.o setup_H0.o \
@@ -200,7 +200,7 @@ siesta: version $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
 GEN-BASIS_OBJS=alloc.o gen-basis.o basis_types.o precision.o recipes.o parallel.o \
           parsing.o xcmod.o basis_io.o  chemical.o atm_transfer.o atm_types.o\
           atmparams.o old_atmfuncs.o radial.o io.o \
-	  paste.o  flib_spline.o bessph.o filter.o filter_subs.o \
+	  paste.o  flib_spline.o bessph.o m_filter.o \
           basis_specs.o atom.o memoryinfo.o memory.o periodic_table.o\
           pseudopotential.o dot.o xc.o  atom_options.o arw.o  \
           sys.o timer.o  xml.o m_walltime.o $(SYSOBJ)
@@ -301,8 +301,9 @@ atm_transfer.o: atm_types.o atmparams.o old_atmfuncs.o periodic_table.o
 atm_transfer.o: radial.o sys.o
 atm_types.o: precision.o radial.o
 atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
-atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o old_atmfuncs.o
-atom.o: periodic_table.o precision.o pseudopotential.o recipes.o sys.o xcmod.o
+atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o m_filter.o
+atom.o: old_atmfuncs.o periodic_table.o precision.o pseudopotential.o recipes.o
+atom.o: sys.o xcmod.o
 atom_options.o: sys.o
 atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o siesta_geom.o
 atomlwf.o: alloc.o atmfuncs.o mneighb.o onmod.o precision.o spatial.o sys.o
@@ -610,10 +611,10 @@ siesta_analysis.o: sparse_matrices.o write_subs.o writewave.o zmatrix.o
 siesta_cml.o: siesta_cmlsubs.o
 siesta_cmlsubs.o: files.o parallel.o timestamp.o 
 siesta_end.o: alloc.o bands.o densematrix.o domain_decom.o fixed.o m_pulay.o
-siesta_end.o: m_wallclock.o moremeshsubs.o parallel.o siesta_cml.o
+siesta_end.o: m_wallclock.o meshsubs.o moremeshsubs.o parallel.o siesta_cml.o
 siesta_end.o: sparse_matrices.o timestamp.o
-siesta_forces.o: compute_dm.o m_convergence.o m_steps.o meshsubs.o mixer.o
-siesta_forces.o: parallel.o post_scf_work.o scfconvergence_test.o setup_H0.o
+siesta_forces.o: compute_dm.o m_convergence.o m_steps.o mixer.o parallel.o
+siesta_forces.o: post_scf_work.o scfconvergence_test.o setup_H0.o
 siesta_forces.o: setup_hamiltonian.o siesta_cml.o siesta_options.o
 siesta_forces.o: state_analysis.o state_init.o sys.o
 siesta_geom.o: precision.o

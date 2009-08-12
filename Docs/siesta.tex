@@ -1513,6 +1513,48 @@ above.
 
 \end{description}
 
+\subsubsection{Filtering}
+
+The boolean fdf keywords {\tt PCC.Filter}, {\tt PAO.Filter}, and {\tt
+  Vna.Filter}
+determine whether an extra filtering step is applied on, respectively,
+the partial core charge, the PAOs, and the neutral-atom potential.
+The procedure is explained in Soler and Anglada (fill in new
+  reference),
+and uses a few tuning parameters, which can be set by the
+  knowledgeable
+user by means of keywords of the form {\tt What.Parameter}, where
+{\tt What} is one of {\tt PCC}, {\tt PAO}, or {\tt Vna}, and {\tt
+  Parameter}
+represents the parameter. What follows uses the example of the
+  partial-core charge:
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+\item[{\bf PCC.FilterCutoff}] ({\it physical inverse length}):
+\index{FilterCutoff@{\bf
+    Filtercutoff}}\index{basis!filtering}
+An explicit cutoff in reciprocal space $k_c$
+
+If $k_c$ is not explicitly set, its value is estimated from a
+residual kinetic-energy tolerance set by
+
+\item[{\bf PCC.FilterTol}] ({\it physical energy}):
+\index{FilterTol@{\bf
+    FilterTol}}\index{basis!filtering}
+
+with a default of 0.003 Rydberg.
+
+\item[{\bf PCC.FilterFactor}] ({\it real}):
+\index{FilterFactor@{\bf
+    FilterFactor}}\index{basis!filtering}
+
+determines an extra factor for $k_c$ (more information??).
+
+\end{description}
+
 
 \vspace{5pt}
 \subsection{Lattice, coordinates, $k$-sampling}
