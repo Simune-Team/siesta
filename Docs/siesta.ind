@@ -339,6 +339,7 @@
   \item Parallel {\sc Siesta}, 89
   \item {\bf ParallelOverK}, 89
   \item PBE, 38
+  \item PBEsol, 38
   \item perturbative polarization, 18, 23
   \item Phonon program, 55
   \item {\sc Phonon program}, 16

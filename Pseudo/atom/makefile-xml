@@ -7,7 +7,25 @@
 #
 default: atm
 #
-include ../../Src/arch.make
+#  The arch.make file is supposed to be in $(OBJDIR). This is normally
+#  the top Src, but if you are using architecture-dependent build directories
+#  you might want to change this. (If you do not understand this, you do not
+#  need to change anything. Power users can do "make OBJDIR=Whatever".)
+#
+#  If your main Siesta build used an mpi compiler, you might need to
+#  define an FC_SERIAL symbol in your top arch.make, to avoid linking
+#  in the mpi libraries even if we explicitly undefine MPI below.
+#
+OBJDIR=Src
+#
+include ../../$(OBJDIR)/arch.make
+#
+# This is needed on some systems to avoid loading the parallel libraries, which
+# sometimes force running on queuing systems
+#
+FC_DEFAULT:=$(FC)
+FC_SERIAL?=$(FC_DEFAULT)
+FC:=$(FC_SERIAL)         # Make it non-recursive
 #
 #----------------------------------------------$$$$$
 # EDIT the following lines to suit your system
@@ -15,11 +33,8 @@ include ../../Src/arch.make
 AUX_OBJS= auxf95.o
 #----------------------------------------------$$$$$
 #
-provide_wxml:
-	(cd ../../Src ; make libwxml.a)
-#
-LIBS=../../Src/libwxml.a $(EXTRA_LIBS)
-INCFLAGS=-I ../../Src
+INCFLAGS:=$(INCFLAGS) -I../../$(OBJDIR)
+LIBS= ../../$(OBJDIR)/libwxml.a
 #
 #
 XC_OBJS= xc.o
@@ -43,7 +58,14 @@ MAIN_OBJS= atm.o  nucl_z.o   difnrl.o   difrel.o   dmixp.o   dsolv1.o   \
 #
 OBJS= $(MAIN_OBJS) $(XC_OBJS) 
 #
-atm:  provide_wxml $(OBJS) $(AUX_OBJS)
+provide_xml:
+	@echo "Make sure that the wxml library is already compiled."
+	@echo "Otherwise the following command might fail"
+	@echo
+#
+pseudoXML.o: provide_xml
+#
+atm:    $(OBJS) $(AUX_OBJS)
 	$(FC) $(LDFLAGS) -o atm $(OBJS) $(AUX_OBJS) $(LIBS)
 #
 clean:	
