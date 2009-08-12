@@ -75,6 +75,7 @@ MODULE Kpoint_pdos
   else
     nkpnt_pdos = 0
     maxk_pdos = nkpnt_pdos
+    gamma_pdos = .true.
   endif
 
   end subroutine setup_Kpoint_pdos

@@ -269,16 +269,29 @@ C     Check for size of Pulay auxiliary matrices
 #endif
 
 #ifdef CDF
-      if (writedm_cdf .or. writedm_cdf_history) then
+      if (writedm_cdf) then
          call setup_dm_netcdf_file( maxnh, no_l, nspin,
      $                              no_s, indxuo,
      $                              numh, listhptr, listh)
       endif
-      if (writedmhs_cdf .or. writedmhs_cdf_history) then
+      if (writedm_cdf_history) then
+         call setup_dm_netcdf_file( maxnh, no_l, nspin,
+     $                              no_s, indxuo,
+     $                              numh, listhptr, listh,
+     $                              istep)
+      endif
+      if (writedmhs_cdf) then
          call setup_dmhs_netcdf_file( maxnh, no_l, nspin,
      $                              no_s, indxuo,
      $                              numh, listhptr, listh,
-     $                              s )
+     $                              s)
+      endif
+      if(writedmhs_cdf_history) then
+         call setup_dmhs_netcdf_file( maxnh, no_l, nspin,
+     $                              no_s, indxuo,
+     $                              numh, listhptr, listh,
+     $                              s,
+     $                              istep)
       endif
 #endif
 !--------------------------------------------------------------------------- END
