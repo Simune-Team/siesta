@@ -17,7 +17,6 @@
 
       character(len=*) prog
       integer iopt
-      logical time_exceeded
 c
 c     Two-in-one: CPU plus elapsed times 
 c
@@ -26,21 +25,8 @@ C      integer MPIerror
 #endif
       call timer1(prog,iopt)
       if (IOnode) then
-         call elap1(prog,iopt,time_exceeded)
-         if (time_exceeded)
-     $   call die("** User-defined maximum wall-clock time exceeded.")
+         call elap1(prog,iopt)
       endif
-
-
-      ! The following broadcast is used for cosmetic reasons, to
-      ! avoid the non-master nodes aborting on another collective
-      ! operation down the line and giving a confusing error message.
-      ! There must be a better way to achieve this. -- removed
-c
-c#ifdef MPI
-c      call MPI_Bcast(time_exceeded,1,MPI_logical,0,
-c     $               MPI_Comm_World,MPIerror)
-c#endif
       end subroutine timer
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -195,7 +181,7 @@ C Sum values across Nodes
 C
 c-----------------------------------------------------------------
 C
-      SUBROUTINE elap1 (PROG,IOPT,TIME_EXCEEDED)
+      SUBROUTINE elap1 (PROG,IOPT)
 
 C  FINDS AND PRINTS THE WALL CLOCK SPENT IN DIFFERENT ROUTINES AND/OR
 C   PROGRAM SECTIONS. IT MUST BE CALLED WITH IOPT=0 AT THE BEGINNING
@@ -218,13 +204,11 @@ C  WRITTEN BY Alberto Garcia, Feb 2000, stealing code from J. Soler
       use m_walltime
       use parallel, only: node
       use sys, only : die
-      use siesta_options,  only : maximum_runtime
       
 
       implicit none
 
       integer :: iopt, iprog
-      logical, intent(out) :: time_exceeded
       integer, parameter :: NMAX=500
       real(dp), parameter :: ZERO=0.0_dp,HUNDRD=100.0_dp,
      $                       TIMMIN=1.0e-6_dp
@@ -299,17 +283,6 @@ C  WRITTEN BY Alberto Garcia, Feb 2000, stealing code from J. Soler
       ELSE
            WRITE(wt,*) 'elap: INVALID OPTION IOPT =',IOPT
       ENDIF
-
-
-!  Before we exit we can check if we have exceeded a user-defined 
-!  maximum wallclock time, and if we have, abort the job. Do it
-!  here to save us from getting the time more than once.
-
-      time_exceeded = .false.
-      if ((maximum_runtime.gt.ZERO).and. 
-     &         ((time - time0).gt.maximum_runtime)) then
-         time_exceeded = .true.
-      endif 
 
       end subroutine elap1
 

@@ -51,9 +51,14 @@ include arch.make
 #
 what:
 	@echo
+	@if [ "$(VPATH)" == . ]; then \
+              echo "** You can no longer build SIESTA in Src." ;\
+              echo "** Go to the Obj directory and see the README file." ;\
+              false ;\
+         fi
 	@echo "Compilation architecture to be used: ${SIESTA_ARCH}"
 	@echo "If this is not what you want, create the right"
-	@echo "arch.make file using the models in Sys"
+	@echo "arch.make file using the models in Src/Sys"
 	@echo
 	@echo "Hit ^C to abort..."
 	@sleep 2
@@ -138,11 +143,16 @@ INCFLAGS:=$(INCFLAGS) $(FoX_FCFLAGS)
 #
 # First, it needs to be configured. This may have been done
 # by the main SIESTA configure, but in case not:
+#
+FC_DEFAULT:=$(FC)
+FC_SERIAL?=$(FC_DEFAULT)
+#
 $(FoX_configured):
-	(cd FoX; if [ "$(VPATH)" = . ]; then CONFIGURE="./configure"; else CONFIGURE="$(VPATH)/FoX/configure"; fi; $$CONFIGURE VPATH="$(VPATH)/FoX" FC="$(FC)" FCFLAGS="$(FFLAGS)" --enable-wcml $(DUMMY_FOX); touch .config)
+	(cd FoX; if [ "$(VPATH)" = . ]; then CONFIGURE="./configure"; else CONFIGURE="$(VPATH)/FoX/configure"; fi; $$CONFIGURE VPATH="$(VPATH)/FoX" FC="$(FC_SERIAL)" FCFLAGS="$(FFLAGS)" --enable-wcml $(DUMMY_FOX) || false )
+#
 # Note we have to make sure to use the same compiler as SIESTA,
-# and pick up all the same FFLAGS.
-# And also remember to maybe ask for a dummy library
+# and pick up all the same FFLAGS, and also remember to maybe ask for a dummy library.
+# Note also that the "false" clause will stop the 'make' process if the configuration fails.
 #
 # Then we want to make FoX itself. Like so:
 $(FoX_built): $(FoX_configured)
@@ -657,7 +667,7 @@ struct_init.o: alloc.o atmfuncs.o atomlist.o files.o iopipes.o ioxv.o
 struct_init.o: m_iostruct.o parallel.o periodic_table.o siesta_cml.o
 struct_init.o: siesta_geom.o siesta_options.o zmatrix.o
 sys.o: parallel.o
-timer.o: m_walltime.o parallel.o precision.o siesta_options.o sys.o
+timer.o: m_walltime.o parallel.o precision.o sys.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
 typecell.o: precision.o
 uncell.o: precision.o

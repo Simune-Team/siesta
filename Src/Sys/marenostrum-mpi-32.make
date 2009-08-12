@@ -1,26 +1,30 @@
-SIESTA_ARCH=mn-xlf-32bits-PARALLEL-netcdf
+SIESTA_ARCH=XLF 32bits PARALLEL
 #
 FC= mpif90   #xlf90_r
 #
 FFLAGS_DEBUG= -g
 FFLAGS=-O3 -qstrict -qtune=ppc970 -qarch=ppc970 -q32
+#FFLAGS=-g -qfullpath -qstrict -qtune=ppc970 -qarch=ppc970 -q32
 FFLAGS_parse=-qsuffix=f=f -qfree #-qfixed
 LDFLAGS= -q32
 COMP_LIBS=
 RANLIB=echo
 DEFS_PREFIX=-WF,
 #
-NETCDF_ROOT=/gpfs/apps/NETCDF/3.6.2/32
-INCFLAGS=-I$(NETCDF_ROOT)/include
-#
-NETCDF_LIBS=-L$(NETCDF_ROOT)/lib -lnetcdf
+NETCDF_LIBS=
 NETCDF_INTERFACE=
-DEFS_CDF=-WF,-DCDF
+DEFS_CDF=
 #
 MPI_INTERFACE=    libmpi_f90.a
 MPI_INCLUDE=.
 MPI_LIBS=         #-lblacsgm
 DEFS_MPI=         -WF,-DMPI
+
+
+
+#BLAS = -L/gpfs/apps/LAPACK/lib32 -llapack \
+#	     -L/gpfs/apps/SCALAPACK/lib32 -lblas
+
 
 BLAS= -L/gpfs/apps/SCALAPACK/lib32 -lscalapack \
         /gpfs/apps/SCALAPACK/lib32/blacsF77init_MPI-PPC-0.a \
@@ -31,9 +35,8 @@ BLAS= -L/gpfs/apps/SCALAPACK/lib32 -lscalapack \
 
 ##MPITRACER= -L/gpfs/apps/CEPBATOOLS/lib/32 -lmpitrace
 #
-##LIBS=  $(MPITRACER) $(BLAS) $(NETCDF_LIBS)
-#
-LIBS=  $(BLAS) $(NETCDF_LIBS)
+##LIBS=  $(MPITRACER) $(BLAS)
+LIBS=  $(BLAS)
 SYS=xlf
 DEFS= $(DEFS_MPI) $(DEFS_CDF)
 FREE_F90=-qsuffix=f=f90
