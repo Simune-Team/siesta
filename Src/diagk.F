@@ -98,6 +98,7 @@ C
 #ifdef MPI
       use mpi_siesta
 #endif
+      use m_norm
 
       implicit          none
 
@@ -122,6 +123,7 @@ C
      .                  psi(2,nuotot,nuo), aux(2,nuotot*5)
       logical           getD, getPSI, fixspin
       external          cdiag
+      real(dp)          anorm
 
 C  Internal variables .............................................
       integer
@@ -370,6 +372,8 @@ C Global operation to form new density matrix
 
         enddo
       enddo
+!      anorm =   compute_norm(Dnew,size(Dnew,dim=1),size(Dnew,dim=2))
+!      if (Node.eq.0) print *, "DM norm after diagk: ", anorm
       if (Node .eq. 0) then
          call io_close(iu)
       endif

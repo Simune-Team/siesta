@@ -33,6 +33,11 @@
       Eharrs = Etot + DEharr
       FreeE  = Etot - Temp * Entropy
 
+!
+!     WHY IS THIS?? To make Dscf (which might be re-used in the next
+!     geometry iteration) equal to the last DM used to construct the
+!     hamiltonian, instead of the output DM.
+!
 !       We need the last D really computed from Wavefunctions,
 !       not the one guessed by mixer as the D_in for a hypothetical
 !       next iteration. BUT in the old version of the program

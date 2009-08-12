@@ -13,6 +13,8 @@ MODULE siesta_options
   logical :: fixspin       ! Keep the total spin fixed?
   logical :: inspn         ! Antiferro spin ordering in initdm?
   logical :: initdmaux     ! Re-initialize DM when auxiliary supercell changes?        
+ logical :: allow_dm_reuse! Allow re-use of the previous geometry DM ? (with possible extrapolation)
+  logical :: allow_dm_extrapolation ! Allow the extrapolation of previous geometries' DM ?
   logical :: change_kgrid_in_md ! Allow k-point grid to change in MD calculations
   logical :: naiveauxcell  ! Use naive recipe for auxiliary supercell?
   logical :: mix           ! Mix first SCF step? Used in broyden_mixing
@@ -1421,7 +1423,9 @@ MODULE siesta_options
     savehs =       fdf_get( 'SaveHS'          , .false.)
     fixauxcell =   fdf_get( 'FixAuxiliaryCell', .false.)
     naiveauxcell = fdf_get( 'NaiveAuxiliaryCell', .false.)
-    initdmaux =    fdf_get( 'ReInitialiseDM'  , .false.)
+    initdmaux =    fdf_get( 'ReInitialiseDM'  , .TRUE.)
+    allow_dm_reuse =         fdf_get('DM.AllowReuse'  , .TRUE.)
+    allow_dm_extrapolation = fdf_get('DM.AllowExtrapolation'  , .TRUE.)
     muldeb =       fdf_get( 'MullikenInSCF'   , .false.)
     rijmin =       fdf_get( 'WarningMinimumAtomicDistance', &
                             1.0_dp, 'Bohr' )

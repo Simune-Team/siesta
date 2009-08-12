@@ -61,6 +61,9 @@
       integer :: i, is, ispin
       integer :: neigmin      ! Min. number of eigenstates (per k point)
       integer :: ns           ! Number of species
+
+      logical :: user_wants_supercell
+
 !------------------------------------------------------------------------- BEGIN
 #ifdef MPI
 C     Initialise MPI and set processor number
@@ -109,6 +112,10 @@ C     Start time counter
 
 C     Nullify arrays
       nullify(Haux,Saux,psi)
+      nullify(Dscf,Dold,Eold,Escf)
+      nullify(listh)
+      nullify(H,H0,S)
+      nullify(xijo)
 
 C     Initialize some variables
       DUext   = 0.0_dp
@@ -317,6 +324,13 @@ C     auxiliary supercell for the calculation of matrix elements.
       call estimate_pol_kpoints(ucell)
       gamma = gamma .and. gamma_polarization
 C      print *, "gamma, gamma_pol: ", gamma, gamma_polarization
+!
+!     User can request that the calculation is done with an explicit
+!     auxiliary supercell and hermitian version, even if using only
+!     the gamma point
+!
+      user_wants_supercell = fdf_get('ForceAuxCell',.false.)
+      if (user_wants_supercell) gamma = .false.
 
 C     Find required supercell
 C     2*rmaxh is used to guarantee that two given orbitals in the

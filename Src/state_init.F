@@ -176,7 +176,6 @@ C     rmaxo + rmaxkb: Non-local KB action
 C     2.0_dp * (rmaxo+rmaxkb) : Orbital interaction through KB projectors
       rmax = max( 2._dp*rmaxv, 2._dp*rmaxo, rmaxo+rmaxkb)
 
-C     AG: Why not use the largest range and be done with it?
       if (.not. negl) then
         rmax = max(rmax, 2.0_dp * (rmaxo+rmaxkb) )
       endif
@@ -184,19 +183,15 @@ C     AG: Why not use the largest range and be done with it?
 C     Check if any two atoms are unreasonably close
       call proximity_check(rmax)
 
-      if (istp==1) then 
-        nullify( Dscf, Dscfsave, Dold, Eold, Escf )
-        nullify( listhold, listh )
-        nullify( H, H0, S )
-        nullify( xijo )
-        nullify( listhptrold, numhold )
-      endif
 
 C     List of nonzero Hamiltonian matrix elements
 C     and, if applicable,  vectors between orbital centers
-C     Listh (and xijo if .not. gamma) are allocated inside hsparse
-C     nh is set by the routine also
-   
+
+      ! Listh and xijo are allocated inside hsparse
+      ! nh is set by the routine also
+      ! Note: We always generate xijo now, for COOP and other
+      !       analyses.
+
       nh = maxnh
 #ifdef DEBUG
       call write_debug( '    PRE hsparse' )
@@ -208,32 +203,18 @@ C     nh is set by the routine also
 #endif
       maxnh = nh
 
-      call re_alloc( listhptrold, 1, no_l, 'listhptrold', 'sparseMat')
-      call re_alloc( numhold, 1, no_l, 'numhold', 'sparseMat' )
-!!    Do Not initialize here. These are managed in extrapol
-!!      listhptrold = 0
-!!      numhold     = 0
+      !OBSOLETE, but maybe not a bad idea after all, to
+      !allow reading of previous steps' DM even if the sparsity
+      !pattern has changed. The new logic in new_dm makes this
+      !unnecessary.
 
-C     OBSOLETE: 
-C       safety margin for when atoms move 
-C       if (nh > maxnh)  maxnh = 1.05 * nh + 40 
+      !  safety margin for when atoms move 
+      !!!!!!!!   if (nh > maxnh)  maxnh = 1.05 * nh + 40 
 
-C     Use re_alloc regardless of whether nh is greater than 
-C     the old maxnh or not, BUT DO NOT SHRINK, as some of
-C     these arrays are later used in extrapol.
-      call re_alloc( Dscf, 1, maxnh, 1, nspin, 'Dscf',
-     &               'sparseMat', .true., .false.)
-      call re_alloc( Dscfsave, 1, maxnh, 1, nspin, 'Dscfsave',
-     &               'sparseMat', .true., .false. )
-      call re_alloc( listhold, 1, maxnh, 'listhold',
-     &               'sparseMat', .true., .false. )
+      ! Copy = .true. means that we keep the information
 
-      if (istp==1) then
-C       Initialise Dscfsave to avoid problems in extrapol
-C       This might be superfluous, as alloc fills array with zeroes
-        Dscfsave(1:maxnh,1:nspin) = 0.0_dp
-        listhold(1:maxnh)         = 0
-      endif
+      call re_alloc(Dscf,1,maxnh,1,nspin,name='Dscf',
+     .     routine='siesta',copy=.true.)
 
       call re_alloc( Dold, 1, maxnh, 1, nspin, 'Dold',
      &               'sparseMat', copy=.false. )
@@ -243,12 +224,12 @@ C       This might be superfluous, as alloc fills array with zeroes
      &               'sparseMat', copy=.false. )
 
 C     Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
-      call re_alloc( H, 1, maxnh, 1, nspin, 'H', 'sparseMat',
-     &               .false., .false.)
-      call re_alloc( H0, 1, maxnh, 'H0', 'sparseMat',
-     &               .false., .false. )
-      call re_alloc( S, 1, maxnh, 'S', 'sparseMat',
-     &               .false., .false. )
+      call re_alloc( H, 1, maxnh, 1, nspin, 'H',
+     .              routine='state_init',shrink=.true.,copy=.false.)
+      call re_alloc( H0, 1, maxnh, 'H0', 'state_init',
+     .              shrink=.true.,copy=.false.)
+      call re_alloc( S, 1, maxnh, 'S', 'state_init',
+     .              copy=.false.)
 
 C Some printout for debugging ........................................
 *     if (IOnode) then
@@ -266,19 +247,19 @@ C Some printout for debugging ........................................
 *       write(6,*) ' '
 *     endif
 
-C     Initialize density matrix
+      ! Find overlap matrix 
+      call overlap(na_u, na_s, no_s, scell, xa, indxua, rmaxo,
+     .             maxnh, lasto, iphorb, isa, 
+     .             numh, listhptr, listh, S)
+
       call new_dm( auxchanged )
 
 C     Check for size of Pulay auxiliary matrices
       call init_pulay_arrays()
 
-C     Find overlap matrix 
 #ifdef DEBUG
       call write_debug( '    PRE overlap' )
 #endif
-      call overlap(na_u, na_s, no_s, scell, xa, indxua, rmaxo,
-     &             maxnh, lasto, iphorb, isa, 
-     &             numh, listhptr, listh, S )
 #ifdef DEBUG
       call write_debug( '    POS overlap' )
 #endif

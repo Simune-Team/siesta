@@ -278,8 +278,9 @@ C     Find optimum value for nlhmax
 C     (re)allocate listh, but do not shrink, as it might
 C     be used for DM extrapolation
 C     using information from different geometries.
-      call re_alloc( listh, 1, nlhmax, 'listh', 'sparseMat',
-     &               SHRINK=.false. )
+      ! CHANGED NOW
+      call re_alloc( listh, 1, nlhmax, 'listh',
+     $     routine='hsparse',SHRINK=.true.)
       if (.not. gamma) then
          call re_alloc( xijo, 1, 3, 1, nlhmax, 'xijo', 'sparseMat' )
       else
