@@ -5,6 +5,13 @@
 ** CHANGES ALONG bsc-2.8 branch (bsc-trunk)
 
 -------------------------------------------------------------------------
+2009-08-11  17:45 GMT Alberto Garcia <albertog@icmab.es>	bsc-2.8.9
+Do not stop after Jacobi-Davidson process
+
+modified:
+  Src/jacobi_davidson.F
+
+-------------------------------------------------------------------------
 2009-08-11  17:45 GMT Alberto Garcia <albertog@icmab.es>	bsc-2.8.8
 Fix initialization error for sparse indexes
 
