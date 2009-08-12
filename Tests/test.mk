@@ -1,8 +1,15 @@
 #
 # Single-test makefile template
 #
-SIESTA= mpirun -np 4 -machinefile $(HOME)/siesta-test-hfile ../../../Src/siesta
-#SIESTA=../../../Src/siesta
+# You can edit the SIESTA macro here, or pass it on the command line
+#
+SIESTA=../../../Src/siesta
+#
+# Example for BSC runs
+#
+#SIESTA= mpirun -np 4 -machinefile $(HOME)/siesta-test-hfile ../../../Src/siesta
+#
+#----------------------------------------------------------------------------
 XML-TESTER=../../Src/xmlparser/test-xml
 XML-REFERENCE=../../Tests/Reference-xml
 #
@@ -19,7 +26,7 @@ completed_$(label):
           ln ../Pseudos/$$i.psf $(label)/$$i.psf ;\
          done
 	@echo "    ==> Running SIESTA as ${SIESTA}"
-	@(cd $(label) ; ${SIESTA} 2>&1 > $(name).out < ../$(name).fdf ) \
+	@(cd $(label) ; ${SIESTA} 2>&1 > $(name).out < ../$(name).fdf) \
           && touch completed_$(label)
 	@if [ -f completed_$(label) ] ; then cp $(label)/$(name).out $(label)/$(name).xml .;\
            echo "    ===> SIESTA finished successfully";\

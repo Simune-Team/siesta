@@ -151,7 +151,7 @@ C Check that the field is orthogonal to the bulk directions
             if (orthog) then
               write(6,'(/,a,3f12.6,a)')
      &          'efield: Electric field =', e, ' Ry/Bohr/e'
-              if (cml_p) call cmlAddProperty(xf=mainXML, property=e, 
+              if (cml_p) call cmlAddProperty(xf=mainXML, value=e, 
      &             dictref='siesta:elfield', 
      &             units='siestaUnits:Ry_Bohr_e')
             else

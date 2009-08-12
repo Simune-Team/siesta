@@ -64,30 +64,36 @@ c -------------------------------------------------------------------
 
       if (cml_p) then
         call cmlStartPropertyList(xf=mainXML, title="Eigenvalues")
-        call cmlAddProperty(xf=mainXML, property=ef/eV, 
+        call cmlAddProperty(xf=mainXML, value=ef/eV, 
      .       title='Fermi Energy', dictref='siesta:E_Fermi', 
-     .       fmt='(f12.5)', units='siestaUnits:ev')
-        call cmlAddProperty(xf=mainXML, property=nk, 
-     .       title='Number of k-points', dictRef='siesta:nkpoints')
-        call cmlEndPropertyList(mainXML)
+     .       fmt='r5', units='siestaUnits:ev')
+        call cmlAddProperty(xf=mainXML, value=nk, 
+     .       title='Number of k-points', dictRef='siesta:nkpoints',
+     .       units='cmlUnits:countable')
         do is = 1,nspin
-          call cmlStartBandList(mainXML)
+          call cmlStartPropertyList(mainXML, dictRef='siesta:kpt_band')
           if (nspin.eq.2) then
             if (is.eq.1) then
-              call xml_addAttribute(xf=mainXML, 
-     .             name='Spin', value='Up')
+              call cmlAddProperty(xf=mainXML, value="up", 
+     .                            dictRef="siesta:spin")
             else
-              call xml_addAttribute(xf=mainXML, 
-     .             name='Spin', value='Down')
+              call cmlAddProperty(xf=mainXML, value="down", 
+     .                            dictRef="siesta:spin")
             endif
           endif
           do ik = 1, nk
-            call cmlAddBand(xf=mainXML, 
-     .           kpoint=kpoints(:, ik), kweight=kweights(ik), 
-     .           bands=eo(1:no,is,ik))
+            call cmlAddKPoint(xf=mainXML, coords=kpoints(:, ik), 
+     .                        weight=kweights(ik))
+            call cmlAddProperty(xf=mainXML, value=eo(1:no,is,ik), 
+     .                          dictRef='siesta:eigenenergies',
+     .                          units='siestaUnits:ev')
+!            call cmlAddBand(xf=mainXML, 
+!     .           kpoint=kpoints(:, ik), kweight=kweights(ik), 
+!     .           bands=eo(1:no,is,ik))
           enddo
-          call cmlEndBandList(mainXML)
+          call cmlEndPropertyList(mainXML)
         enddo
+        call cmlEndPropertyList(mainXML)
       endif
 
       end subroutine ioeig

@@ -215,7 +215,8 @@
      &       qspin(1) - qspin(2)
           endif
           if (cml_p) call cmlAddProperty(xf=mainXML,
-     &         property=qspin(1)-qspin(2), dictref='siesta:qspin')
+     .         value=qspin(1)-qspin(2), dictref='siesta:qspin',
+     .         units='siestaUnits:spin')
         elseif (nspin .eq. 4) then
           call spnvec( nspin, qspin, qaux, stot, svec )
           if (IOnode) then
@@ -223,10 +224,12 @@
      &       'siesta: Total spin polarization (Qup-Qdown) =', stot
             write(6,'(a,3f12.6)') 'siesta: Spin vector =', svec
             if (cml_p) then
-              call cmlAddProperty(xf=mainXML, property=stot,
-     &             dictref='siesta:stot')
-              call cmlAddProperty(xf=mainXML, property=svec,
-     &             dictref='siesta:svec')
+              call cmlAddProperty(xf=mainXML, value=stot,
+     .             dictref='siesta:stot',
+     .             units='siestaUnits:spin')
+              call cmlAddProperty(xf=mainXML, value=svec,
+     .             dictref='siesta:svec',
+     .             units='siestaUnits:spin')
             endif !cml_p
           endif
         endif
@@ -242,9 +245,9 @@
      &      (dipol(ix)/Debye,ix=1,3)
         endif
         if (cml_p) then
-          call cmlAddProperty(xf=mainXML, property=dipol,
+          call cmlAddProperty(xf=mainXML, value=dipol/Debye,
      &         title='Electric dipole', dictref='siesta:dipol',
-     &         units='siestaUnits:atomic')
+     .         units='siestaUnits:Debye')
         endif !cml_p
       endif
 

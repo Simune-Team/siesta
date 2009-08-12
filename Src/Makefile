@@ -47,7 +47,7 @@ include arch.make
 #
 # Uncomment the following line for debugging support
 #
-FFLAGS=$(FFLAGS_DEBUG)
+##FFLAGS=$(FFLAGS_DEBUG)
 #
 what:
 	@echo
@@ -123,14 +123,44 @@ OBJS =  domain_decom.o automatic_cell.o atom_options.o \
         cellxc_mod.o pspltm1.o lenstr.o printmatrix.o jacobi_davidson.o \
         matrixop.o precond.o gmres.o cg.o  m_iodm.o m_sparse.o
 #--------------------------------------------------------------
+# FoX whatnot
 #
-WXML=libwxml.a
-$(WXML): 
-	(cd wxml ; $(MAKE) "VPATH=$(VPATH)/wxml" module)
+# FoX build targets:
+FoX_configured=FoX/.config
+FoX_built=FoX/.FoX
 #
-# Routines using wxml calls.
+# This is how we pick up modules and libraries for FoX:
+FoX_FCFLAGS=`FoX/FoX-config --fcflags`
+FoX_LIBS=`FoX/FoX-config --libs --wcml`
 #
-pdos.o : $(WXML)
+# And add them to global compiler flags:
+INCFLAGS:=$(INCFLAGS) $(FoX_FCFLAGS)
+#
+# First, it needs to be configured. This may have been done
+# by the main SIESTA configure, but in case not:
+$(FoX_configured):
+	(cd FoX; if [ "$(VPATH)" = . ]; then CONFIGURE="./configure"; else CONFIGURE="$(VPATH)/FoX/configure"; fi; $$CONFIGURE VPATH="$(VPATH)/FoX" FC="$(FC)" FCFLAGS="$(FFLAGS)" --enable-wcml $(DUMMY_FOX); touch .config)
+# Note we have to make sure to use the same compiler as SIESTA,
+# and pick up all the same FFLAGS.
+# And also remember to maybe ask for a dummy library
+#
+# Then we want to make FoX itself. Like so:
+$(FoX_built): $(FoX_configured)
+	(cd FoX; $(MAKE))
+#
+# Now ensure that building FoX is inserted into the dependency chain.
+# Routines using FoX:
+# version (compinfo.o) does not actually need FoX, but making it build after
+# FoX is done avoids a warning as we use the FoX-config script everywhere.
+#
+version $(SYSOBJ) $(OBJS) \
+basis_io.o efield.o initatom.o ioeig.o kpoint_grid.o meshsubs.o \
+mulliken.o ordern.o outcell.o pdos.o post_scf_work.o radial.o   \
+scfconvergence_test.o setup_hamiltonian.o siesta_analysis.o     \
+siesta_cml.o siesta_cmlsubs.o siesta_end.o siesta_forces.o      \
+siesta_init.o siesta_move.o siesta_options.o state_analysis.o   \
+state_init.o struct_init.o write_subs.o xml.o: $(FoX_built)
+#
 #--------------------------------------------------------------
 XMLPARSER=libxmlparser.a
 $(XMLPARSER): 
@@ -193,7 +223,7 @@ siesta: version $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
                 $(COMP_LIBS) $(ALL_OBJS) 
 	$(FC) -o siesta \
 	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML) $(XMLPARSER) $(MPI_INTERFACE)\
-               $(COMP_LIBS) $(LIBS) 
+               $(COMP_LIBS) $(FoX_LIBS) $(LIBS) 
 #
 #------------------------------------------------------------------------
 GEN-BASIS_OBJS=alloc.o gen-basis.o basis_types.o precision.o recipes.o parallel.o \
@@ -263,7 +293,7 @@ clean:
 	rm -f *.bck *~
 	rm -f aux_*.f aux_*.f90
 	(cd fdf ; $(MAKE) clean)
-	(cd wxml ; $(MAKE) clean)
+	(cd FoX ; $(MAKE) distclean)
 	(cd xmlparser ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
 	(cd Libs ; $(MAKE) clean )
@@ -430,7 +460,7 @@ kinefsm.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
 kpoint_grid.o: find_kgrid.o minvec.o parallel.o precision.o siesta_cml.o
 kpoint_grid.o: siesta_options.o sys.o units.o
 kpoint_pdos.o: find_kgrid.o minvec.o parallel.o precision.o siesta_options.o
-kpoint_pdos.o: units.o
+kpoint_pdos.o: sys.o units.o
 ksv.o: alloc.o atmfuncs.o densematrix.o ksvinit.o parallel.o precision.o sys.o
 ksvinit.o: alloc.o parallel.o precision.o sys.o
 listsc.o: alloc.o
@@ -643,6 +673,13 @@ write_raw_efs.o: atmfuncs.o atomlist.o precision.o siesta_geom.o
 write_subs.o: alloc.o atomlist.o m_energies.o m_forces.o m_iostruct.o m_spin.o
 write_subs.o: m_steps.o m_stress.o parallel.o precision.o siesta_cml.o
 write_subs.o: siesta_geom.o siesta_options.o units.o zmatrix.o
+write_subs_energies.o: m_energies.o m_spin.o m_steps.o siesta_cml.o
+write_subs_energies.o: siesta_options.o units.o
+write_subs_positions.o: atomlist.o m_iostruct.o m_steps.o siesta_cml.o
+write_subs_positions.o: siesta_geom.o siesta_options.o units.o zmatrix.o
+write_subs_pressure.o: atomlist.o m_energies.o m_forces.o m_iostruct.o
+write_subs_pressure.o: m_steps.o m_stress.o parallel.o precision.o siesta_cml.o
+write_subs_pressure.o: siesta_geom.o siesta_options.o units.o
 writewave.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o parallel.o
 writewave.o: parallelsubs.o precision.o siesta_geom.o sys.o
 xc.o: alloc.o precision.o sys.o xcmod.o
