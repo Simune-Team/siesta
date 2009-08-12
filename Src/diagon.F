@@ -194,14 +194,19 @@ C Check internal dimensions ..........................................
          call die('diagon: ERROR: incorrect value of nspin')
       endif
 
-      call re_alloc( Haux, 1, nhs,  'Haux', 'densematrix' )
-      call re_alloc( Saux, 1, nhs,  'Saux', 'densematrix' )
-      call re_alloc( psi,  1, npsi, 'psi',  'densematrix' )
+      call re_alloc( psi,  1, npsi, 'psi',  'diagon' )
+      if (nspin .ne. 4) then
+         call re_alloc(Haux,1,nhs,name='Haux',routine='diagon')
+         call re_alloc(Saux,1,nhs,name='Saux',routine='diagon')
+      endif
+
 
 C Allocate local arrays
       nullify(aux,muo)
       call re_alloc( aux,  1, naux, 'aux',  'diagon' )
       call re_alloc( muo,  1, nuo,  'muo',  'diagon' )
+
+
 
 C Check indxuo
       do iuo = 1,nuo
@@ -290,8 +295,8 @@ C Call apropriate routine
         call diag2g( nuo, no, maxnh, maxnd, maxo, numh,
      .               listhptr, listh, numd, listdptr, listd,
      .               H, S, getD, qtot, temp, e1, e2, eo, qo, 
-     .               Dnew, Enew, ef, Entropy, Haux, Saux, psi,
-     .               aux, nuotot, occtol, iscf, neigwanted )
+     .               Dnew, Enew, ef, Entropy, psi, 
+     .               nuotot, occtol, iscf, neigwanted )
       elseif (nspin.eq.4 .and. spiral) then
         call diagsprl( nuo, no, maxnh, maxnd, maxo,
      .               numh, listhptr, listh, numd, listdptr,
@@ -305,8 +310,8 @@ C Call apropriate routine
      .               listhptr, listh, numd, listdptr, listd,
      .               H, S, getD, qtot, temp, e1, e2, xij,
      .               indxuo, nk, kpoint, wk, eo, qo, Dnew,
-     .               Enew, ef, Entropy, Haux, Saux, psi, Haux, 
-     .               Saux, aux, nuotot, occtol, iscf )
+     .               Enew, ef, Entropy, psi, 
+     .               nuotot, occtol, iscf )
       endif
 
 C Free local arrays

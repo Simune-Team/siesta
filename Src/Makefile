@@ -13,7 +13,7 @@
 #
 # Remove implicit rules (including for Modula-2, which just confuses matters)
 .SUFFIXES:
-.SUFFIXES: .c .f .F .o .a  .f90 .F90
+.SUFFIXES: .f .F .o .a  .f90 .F90
 #
 VPATH=.
 #
@@ -324,7 +324,7 @@ broadcast_basis.o: atm_types.o parallel.o radial.o
 broyden_optim.o: m_broyddj_nocomm.o m_memory.o parallel.o precision.o sys.o
 broyden_optim.o: units.o
 cart2frac.o: sys.o
-cdiag.o: alloc.o memoryinfo.o parallel.o precision.o sys.o
+cdiag.o: alloc.o m_spin.o memoryinfo.o parallel.o precision.o sys.o
 cell_broyden_optim.o: alloc.o m_broyddj_nocomm.o parallel.o precision.o sys.o
 cell_broyden_optim.o: units.o zmatrix.o
 cell_fire_optim.o: alloc.o m_fdf_global.o m_fire.o m_memory.o parallel.o
@@ -362,8 +362,8 @@ dfscf.o: meshsubs.o meshsubs.o parallel.o parallelsubs.o precision.o sys.o
 dhscf.o: alloc.o atmfuncs.o cellxc_mod.o forhar.o iogrid_netcdf.o m_dhscf.o
 dhscf.o: m_iorho.o meshsubs.o moremeshsubs.o parallel.o parsing.o precision.o
 dhscf.o: siesta_options.o sys.o xcmod.o
-diag2g.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
-diag2k.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
+diag2g.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
+diag2k.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
 diagg.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
 diagg.o: writewave.o
 diagk.o: fermid.o parallel.o parallelsubs.o precision.o sys.o writewave.o
