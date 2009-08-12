@@ -18,8 +18,8 @@ C Internal variables ...................................................
       integer, parameter :: n=1000
       real(dp) :: delta, rc, rmin, rmax, range
 
-      real(dp) :: x, val, grad
-
+      real(dp) :: x, val, grad, rlog
+      real(dp) :: gradv(3)
       type(species_info), pointer   :: spp
 
       character(len=200) :: opt_arg
@@ -31,16 +31,19 @@ C Internal variables ...................................................
      $           show_shells = .false.,
      $           show_kbshells = .false.,
      $           zoom        = .false.,
+     $           near_origin = .false.,
      $           process_orb = .false.,
      $           process_kbp = .false.,
-     $           process_vna = .false.
+     $           process_vna = .false.,
+     $           process_chlocal = .false.,
+     $           process_core = .false.
       character(len=1000) nameat
 !
 !     Process options
 !
       n_opts = 0
       do
-         call getopts('sijo:k:vZh',opt_name,opt_arg,n_opts,iostat)
+         call getopts('sijo:k:vclZO:h',opt_name,opt_arg,n_opts,iostat)
          if (iostat /= 0) exit
          select case(opt_name)
          case ('s', '+s')
@@ -58,12 +61,22 @@ C Internal variables ...................................................
             process_kbp = .true.
             write(0,*) "Will process KB proj ", trim(opt_arg)
             read(opt_arg,*) ikb
+         case ('c', '+c')
+            process_core = .true.
+            write(0,*) "Will process pseudo core charge "
+         case ('l', '+l')
+            process_chlocal = .true.
+            write(0,*) "Will process Vlocal charge density "
          case ('v', '+v')
             process_vna = .true.
             write(0,*) "Will process Vna "
          case ('Z', '+Z')
             zoom = .true.
             write(0,*) "Will use zoom around rc"
+         case ('O', '+O')
+            near_origin = .true.
+            read(opt_arg,*) rlog
+            write(0,*) "Will zoom near zero, up to ", 10.0_dp**(rlog)
          case ('h', '+h')
             call print_help()
          case ('?',':')
@@ -142,6 +155,10 @@ C Internal variables ...................................................
             rmin = 0.95_dp * rc
             rmax = 1.05_dp * rc
          endif
+         if (near_origin) then
+            rmin = 0.0_dp 
+            rmax = 10.0_dp**(rlog)
+         endif
          range = rmax - rmin
          delta = range/n
          do i=0,n
@@ -162,6 +179,10 @@ C Internal variables ...................................................
             rmin = 0.95_dp * rc
             rmax = 1.05_dp * rc
          endif
+         if (near_origin) then
+            rmin = 0.0_dp 
+            rmax = 10.0_dp**(rlog)
+         endif
          range = rmax - rmin
          delta = range/n
          do i=0,n
@@ -180,12 +201,60 @@ C Internal variables ...................................................
             rmin = 0.95_dp * rc
             rmax = 1.05_dp * rc
          endif
+         if (near_origin) then
+            rmin = 0.0_dp 
+            rmax = 10.0_dp**(rlog)
+         endif
          range = rmax - rmin
          delta = range/n
          do i=0,n
             x = rmin + delta*i
             call rphiatm(1,0,x,val,grad)
             write(*,"(3f14.8)") x, val, grad
+         enddo
+      endif
+
+      if (process_core) then
+         write(6,*) "# Core charge, rcut: ", rcore(1)
+         rc = rcore(1)
+         rmin = 0.0_dp
+         rmax = 1.05_dp * rc
+         if (zoom) then
+            rmin = 0.95_dp * rc
+            rmax = 1.05_dp * rc
+         endif
+         if (near_origin) then
+            rmin = 0.0_dp 
+            rmax = 10.0_dp**(rlog)
+         endif
+         range = rmax - rmin
+         delta = range/n
+         do i=0,n
+            x = rmin + delta*i
+            call chcore_sub(1,(/x,0.0_dp,0.0_dp/),val,gradv)
+            write(*,"(3f14.8)") x, val, gradv(1)
+         enddo
+      endif
+
+      if (process_chlocal) then
+         write(6,*) "# Core charge, rcut: ", rchlocal(1)
+         rc = rchlocal(1)
+         rmin = 0.0_dp
+         rmax = 1.05_dp * rc
+         if (zoom) then
+            rmin = 0.95_dp * rc
+            rmax = 1.05_dp * rc
+         endif
+         if (near_origin) then
+            rmin = 0.0_dp 
+            rmax = 10.0_dp**(rlog)
+         endif
+         range = rmax - rmin
+         delta = range/n
+         do i=0,n
+            x = rmin + delta*i
+            call psch(1,(/x,0.0_dp,0.0_dp/),val,gradv)
+            write(*,"(3f14.8)") x, val, gradv(1)
          enddo
       endif
 
@@ -201,7 +270,10 @@ C Internal variables ...................................................
          print *, " -o ORBINDEX : Generate table for orbital ORBINDEX"
          print *, " -k KBINDEX  : Generate table for KB proj KBINDEX"
          print *, " -v          : Generate table for Vna potential"
+         print *, " -c          : Generate table for pseudocore charge"
+         print *, " -l          : Generate table for Vlocal charge"
          print *, " -Z          : Zoom in near rc for table generation"
+         print *, " -O rlog     : Zoom near zero (up to 10^rlog)"
          print *, " -h          : Print this help message"
          print *, " "
       end subroutine print_help
