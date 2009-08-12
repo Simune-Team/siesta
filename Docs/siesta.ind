@@ -85,7 +85,7 @@
   \item {\bf DM.Broyden.Variable.Weight}, 41
   \item {\bf DM.EnergyTolerance}, 42
   \item {\bf DM.FormattedFiles}, 69
-  \item {\bf DM.FormattedInput}, 69
+  \item {\bf DM.FormattedInput}, 70
   \item {\bf DM.FormattedOutput}, 70
   \item {\bf DM.Harris.Tolerance}, 42
   \item {\bf DM.InitSpin}, 43
@@ -150,12 +150,12 @@
   \indexspace
 
   \item input file, 13
-  \item interatomic distances, 68
+  \item interatomic distances, 69
   \item isotopes, 16
 
   \indexspace
 
-  \item {\sc JMol}, 67
+  \item {\sc JMol}, 68
 
   \indexspace
 
@@ -180,7 +180,7 @@
   \indexspace
 
   \item Makefile, 13
-  \item {\bf MaxBondDistance}, 68
+  \item {\bf MaxBondDistance}, 69
   \item {\bf MaximumWallClockTime}, 17
   \item {\bf MaxSCFIterations}, 40
   \item {\bf MD.AnnealOption}, 60
@@ -285,26 +285,26 @@
   \item output
     \subitem $\delta \rho(\vec r)$, 71
     \subitem atomic coordinates
-      \subsubitem history, 65
+      \subsubitem history, 66
       \subsubitem in a dynamics step, 65, 74
       \subsubitem initial, 65, 74
     \subitem band $\vec k$ points, 65, 67, 74
-    \subitem band structure, 65, 67, 74
+    \subitem band structure, 65, 67, 75
     \subitem basis, 75
     \subitem charge density, 71
     \subitem charge density for DENCHAR code, 73
     \subitem customization, 74
     \subitem density   matrix, 66
-    \subitem density   matrix history, 66
+    \subitem density   matrix history, 67
     \subitem density matrix, 66
     \subitem density matrix history, 66
     \subitem eigenvalues, 65, 66, 74, 77
-    \subitem electrostatic potential, 71
+    \subitem electrostatic potential, 71, 72
     \subitem forces, 65, 66, 74, 76
     \subitem grid $\vec k$ points, 65, 66, 74, 76
     \subitem hamiltonian, 66
     \subitem Hamiltonian \& overlap, 71
-    \subitem hamiltonian history, 66
+    \subitem hamiltonian history, 67
     \subitem ionic charge, 72
     \subitem local density of states, 72
     \subitem long, 65
@@ -314,11 +314,11 @@
       \subsubitem history, 68, 78
       \subsubitem PHONON forces file, 78
     \subitem Mulliken analysis, 65, 67, 75
-    \subitem overlap matrix, 66
+    \subitem overlap matrix, 66, 67
     \subitem projected density of states, 73
     \subitem total charge, 72, 76
     \subitem total potential, 72
-    \subitem wave functions, 65, 67, 74
+    \subitem wave functions, 65, 67, 75
 
   \indexspace
 
@@ -376,7 +376,9 @@
     \subitem localized wave functions (order-$N$), 70
     \subitem XV, 70
     \subitem ZM, 71
-  \item READWF, 67, 77
+  \item READWF, 67
+  \item readwf, 77
+  \item readwfsx, 77
   \item relaxation of cell parameters only, 56
   \item removal of intramolecular pressure, 57
   \item {\bf Reparametrize.Pseudos}, 80
@@ -393,7 +395,7 @@
   \item {\bf SaveHS}, 71
   \item {\bf SaveIonicCharge}, 72
   \item {\bf SaveMemory}, 64
-  \item {\bf SaveNeutralAtomPotential}, 71
+  \item {\bf SaveNeutralAtomPotential}, 72
   \item {\bf SaveRho}, 71
   \item {\bf SaveTotalCharge}, 72
   \item {\bf SaveTotalPotential}, 72
@@ -409,7 +411,7 @@
   \item {\bf SCF.Read.Deformation.Charge.NetCDF}, 70
   \item {\bf SCFMustConverge}, 40
   \item Scripting, 56
-  \item {\sc Sies2arc}, 65, 68, 77
+  \item {\sc Sies2arc}, 66, 68, 77
   \item {\sc Siesta}, 4
   \item siesta, 15
   \item {\tt siesta.size}, 75
@@ -463,30 +465,30 @@
 
   \indexspace
 
-  \item {\bf WarningMinimumAtomicDistance}, 68
+  \item {\bf WarningMinimumAtomicDistance}, 69
   \item wave functions, 67
   \item {\bf WaveFuncKPoints}, 37, 67, 77
   \item {\bf WaveFuncKPointsScale}, 37
   \item WC, 38
-  \item {\bf WriteBands}, 65, 67, 74
+  \item {\bf WriteBands}, 65, 67, 75
   \item {\bf WriteCoorCerius}, 68
   \item {\bf WriteCoorInitial}, 65, 74
   \item {\bf WriteCoorStep}, 65, 74
-  \item {\bf WriteCoorXmol}, 67
+  \item {\bf WriteCoorXmol}, 68
   \item {\bf WriteDenchar}, 73
   \item {\bf WriteDM}, 66
   \item {\bf WriteDM.History.NetCDF}, 66
   \item {\bf WriteDM.NetCDF}, 66
-  \item {\bf WriteDMHS.History.NetCDF}, 66
+  \item {\bf WriteDMHS.History.NetCDF}, 67
   \item {\bf WriteDMHS.NetCDF}, 66
   \item {\bf WriteEigenvalues}, 65, 66, 74
   \item {\bf WriteForces}, 65, 66, 74
   \item {\bf WriteKbands}, 65, 67, 74
   \item {\bf WriteKpoints}, 65, 66, 74
-  \item {\bf WriteMDhistory}, 65, 68
+  \item {\bf WriteMDhistory}, 66, 68
   \item {\bf WriteMDXmol}, 68
   \item {\bf WriteMullikenPop}, 65, 67, 75
-  \item {\bf WriteWaveFunctions}, 65, 67, 74
+  \item {\bf WriteWaveFunctions}, 65, 67, 75
 
   \indexspace
 
@@ -494,7 +496,7 @@
   \item {\bf XC.functional}, 38
   \item {\bf XC.hybrid}, 39
   \item XML, 91
-  \item {\sc XMol}, 67, 68, 77
+  \item {\sc XMol}, 68, 77
 
   \indexspace
 
