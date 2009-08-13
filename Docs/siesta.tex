@@ -4683,13 +4683,14 @@ in the basis set orbitals expansion) corresponding to the $\vec k$ vectors
 defined by the {\bf WaveFuncKPoints}
 \index{WaveFuncKPoints@{\bf WaveFuncKPoints}}
 descriptor to the main output file.  Otherwise it does
-not, but they are dumped into the file {\it Systemlabel}.WFS
+not, but they are dumped into the file {\it Systemlabel}.WFSX
 to be used by postprocessing utilities for handling the 
 wave functions
-\index{wave functions}. The READWF\index{READWF} program
-(found in the Util/ directory) reads the {\it Systemlabel}.WFS from
-standard input and dumps to standard output a file readable
-by the user.
+\index{wave functions}. NOTE: The WFSX format is an enhanced one
+over the old WFS. You can use the {\tt Util/wfsx2wfs} program to
+convert to the old format. The {\tt Util/readwf} program\index{READWF}
+can then process the {\it Systemlabel}.WFS file and produce
+a file readable by the user.
 
 {\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
  
@@ -5114,8 +5115,25 @@ density is positive and the ionic charge density is negative.
 {\it Use:} File {\tt SystemLabel}.TOCH is only written, not read, by siesta.
 
 {\it Default value:} {\tt .false.}
-        
 
+\item[{\bf COOP.Write}] ({\it logical}): 
+\index{COOP.Write@{\bf COOP.Write}} 
+\index{output!Information for COOP/COHP curves}
+Instructs the program to generate  {\tt SystemLabel}.WFSX (packed
+wavefunction file) and  {\tt SystemLabel}.HSX (H, S and X\_~{ij} file),
+to be processed by {\tt Util/COOP/mprop} to generate COOP/COHP curves,
+(projected) densities of states, etc.
+
+The WFSX file is in a more compact form than the old WFS, and the
+wavefunctions are output in single precision. The {\tt Util/wfsx2wfs}
+program can be used to convert to the old format.
+The HSX file is in a more compact form than the usual HS, and the
+Hamiltonian, overlap matrix, and relative-positions array (which is
+always output, even for gamma-point only calculations) are in
+single precision.
+
+{\it Default value:} {\tt .false.}
+        
 \item[{\bf LocalDensityOfStates}] ({\it block}): 
 \index{LocalDensityOfStates@{\bf LocalDensityOfStates}} 
 \index{output!local density of states}
@@ -5425,7 +5443,7 @@ for plotting.
 See the {\bf BandLines} data descriptor above for more information.
 
 \subsection{Wavefunction coefficients}\label{subsec:wf}
-(file SystemLabel.WFS) This unformatted file has the
+(file SystemLabel.WFSX) This unformatted file has the
 information of the k-points for which wavefunctions coefficients
 are written, and the energies and coefficients of each
 wavefunction which was specified in the input file
@@ -5434,7 +5452,7 @@ descriptor above).
 It also contains information on the atomic species and
 the orbitals for postprocessing purposes.
 
-NOTE: The WFSX file is in a more compact form than the old WFS, and the
+NOTE: The WFSX file is in a more compact form than the usual WFS, and the
 wavefunctions are output in single precision. The {\tt Util/wfsx2wfs}
 program can be used to convert to the old format.
 

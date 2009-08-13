@@ -367,6 +367,15 @@ C Repeat diagonalisation with increased memory to handle clustering
             call cdiag(Haux,Saux,nuotot,nuotot,nuog,aux,psi,
      .                 neigneeded,iscf,ierror)
           endif
+!
+!         Here we could write the wavefunctions, taking care to
+!         use a suitable version of writew. There are also problems
+!         of ordering of the different functions...
+!
+!          if (getPSI) then
+!             call writew_one_node(nuotot,nuog,ik,kpoint(1,ik),ispin,
+!     .                 aux,psi,.false.)
+!          endif
 
 C Add contribution to density matrices of unit-cell orbitals
           Dk = 0.0d0

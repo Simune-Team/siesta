@@ -4,7 +4,7 @@ c     takes the sum of the absolute values.
 c     jack dongarra, linpack, 3/11/78.
 c     modified 3/93 to return if incx .le. 0.
 c
-      double precision dx(1),dtemp
+      double precision dx(*),dtemp
       integer i,incx,m,mp1,n,nincx
 c
       dasum = 0.0d0

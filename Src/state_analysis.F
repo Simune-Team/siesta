@@ -26,6 +26,7 @@
       use m_energies, only: Etot, FreeE, Eharrs, FreeEHarris, Entropy
       use m_ntm
       use m_forces
+      use m_intramol_pressure, only: remove_intramol_pressure
 
       implicit none
 

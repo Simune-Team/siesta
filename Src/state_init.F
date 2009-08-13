@@ -197,7 +197,8 @@ C     and, if applicable,  vectors between orbital centers
       call write_debug( '    PRE hsparse' )
 #endif
       call hsparse( negl, scell, nsc, na_s, isa, xa, lasto,
-     &              lastkb, iphorb, iphKB, nh, gamma )
+     &              lastkb, iphorb, iphKB, nh, gamma,
+     $                 set_xijo=.true.)
 #ifdef DEBUG
       call write_debug( '    POS hsparse' )
 #endif

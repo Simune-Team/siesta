@@ -183,11 +183,6 @@ C Find new Fermi energy and occupation weights ........................
      .             temp, qtot, qo, ef, Entropy )
       endif
 
-      if (Node .eq. 0) then
-         call io_assign(iu)
-         open(iu,file="OCCS",form="formatted",status="unknown",
-     $           action="write",position="rewind")
-      endif
 
 C Find weights for local density of states ............................
       if (e1 .lt. e2) then
@@ -213,6 +208,12 @@ C New density and energy-density matrices of unit-cell orbitals .......
       endif
 
   10  continue
+
+      if (Node .eq. 0) then
+         call io_assign(iu)
+         open(iu,file="OCCS",form="formatted",status="unknown",
+     $           action="write",position="rewind")
+      endif
 
 C Loop over k points
       do ik = 1,nk
@@ -294,9 +295,10 @@ C Repeat diagonalisation with increased memory to handle clustering
 
           call timer( 'c-eigvec', 2 )
 
-          if (getPSI) 
-     .     call writew(nuotot,nuo,ik,kpoint(1,ik),ispin,
+          if (getPSI) then
+             call writew(nuotot,nuo,ik,kpoint(1,ik),ispin,
      .                 aux,psi,.false.)
+          endif
 
           if (getD) then
              call timer( 'c-buildD', 1 )
