@@ -84,8 +84,8 @@ C     Initialise MPI and set processor number
 #endif
 #ifdef DEBUG
       call debugMpiOn( )
-      call inicializar_tiempo( 20 )
 #endif
+      call inicializar_tiempo( 20 )
       IOnode = (Node .eq. 0)
 
 C     Print version information
