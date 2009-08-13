@@ -189,8 +189,9 @@ C ............................
       if (IONode) then
         write(6,"(/a,f12.4)") 'ordern: enum =', enum
       endif
-      if (cml_p) call cmlAddProperty(xf=mainXML, property=enum, 
-     .     dictref='siesta:enum', title='Number of electrons')
+      if (cml_p) call cmlAddProperty(xf=mainXML, value=enum, 
+     .     dictref='siesta:enum', title='Number of electrons',
+     .     units='cmlUnits:countable')
 
 C  Check if options are compatible
       if (ioptlwf.eq.0.and.(.not.usesavelwf)) then
@@ -273,11 +274,11 @@ C and HOMO and LUMO levels ..........
      .                         emin/eV,' eV'
         endif
         if (cml_p) then
-          call cmlAddProperty(xf=mainXML, property=chpot/eV, 
+          call cmlAddProperty(xf=mainXML, value=chpot/eV, 
      .     units='siestaUnits:ev', title='Chemical potential')
-          call cmlAddProperty(xf=mainXML, property=emax/eV,
+          call cmlAddProperty(xf=mainXML, value=emax/eV,
      .     units='siestaUnits:ev', title='Maximum eigenvalue')
-          call cmlAddProperty(xf=mainXML, property=emin/eV, 
+          call cmlAddProperty(xf=mainXML, value=emin/eV, 
      .     units='siestaUnits:ev', title='Minimum eigenvalue')
         endif
 
@@ -371,8 +372,9 @@ C Global reduction of qtot
      .       'ordern: qtot (after  DM normalization) = ', sum(qtot)
       endif
       if (cml_p) then
-        call cmlAddProperty(xf=mainXML, property=sum(qtot), 
-     .       dictref='siesta:qtot', title='qtot')
+        call cmlAddProperty(xf=mainXML, value=sum(qtot), 
+     .       dictref='siesta:qtot', title='qtot',
+     .       units='siestaUnits:e')
       endif
 
 C Save LWF's to disk .................................................

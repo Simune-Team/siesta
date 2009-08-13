@@ -1,20 +1,62 @@
       module m_projected_DOS
+
+      use precision
+
       private
-      public :: projected_DOS
+
+      public :: init_projected_DOS, projected_DOS
+
+      logical  :: different_pdos_grid    ! Indicates if the grid is the same as the SCF one or not
 
       CONTAINS
       
+      subroutine init_projected_DOS()
+
+      USE siesta_options
+      use fdf,         only: fdf_block, block_fdf
+      use Kpoint_pdos
+      use parallel,    only: IOnode
+      use siesta_geom, only: ucell
+
+      implicit none
+
+      type(block_fdf)            :: bfdf
+
+!------------------------------------------------------------------------- BEGIN
+! Compute the projected density of states
+        do_pdos = fdf_block('ProjectedDensityOfStates',bfdf)
+        if (isolve.ne.0.and.do_pdos) then
+           if (IONode) then
+              write(6,*)
+     .         'siesta: ERROR: PDOS implemented only with diagon'
+           endif
+           do_pdos = .false.
+        endif
+
+      if (do_pdos) then
+
+! Determine whether the projected density of states is to be computed
+! on a different grid to the SCF calculation
+        call setup_Kpoint_pdos( ucell, different_pdos_grid )
+
+      endif
+!--------------------------------------------------------------------------- END
+
+      end subroutine init_projected_DOS
+
       subroutine projected_DOS()
-      use precision
+
       use sparse_matrices
       USE siesta_options
-      use atomlist, only: indxuo, no_s, no_u, no_l
+      use alloc,       only : re_alloc
+      use atomlist,    only : indxuo, no_s, no_u, no_l
       use fdf
-      use sys, only: die
+      use sys,         only : die
       use Kpoint_grid
-      use parallel, only: IOnode
+      use Kpoint_pdos
+      use parallel,    only: IOnode
       use m_eo
-      use m_spin,   only: nspin
+      use m_spin,      only: nspin
       use m_gamma
       implicit none
 
@@ -22,6 +64,7 @@
       type(parsed_line), pointer :: pline
 
       real(dp) :: factor
+      logical  :: dummy ! Logical to hold return value from call to fdf_block
       integer  :: nhist ! Number of histogram intervals in projected DOS
       real(dp) :: e1    ! Lower bound of energy range
       real(dp) :: e2    ! Upper bound of energy range
@@ -29,13 +72,11 @@
 
 !------------------------------------------------------------------------- BEGIN
 ! Compute the projected density of states
-      do_pdos = fdf_block('ProjectedDensityOfStates',bfdf)
-      if ((isolve .ne. 0) .and. do_pdos) then
-        write(6,*) 'siesta: ERROR: PDOS implemented only with diagon'
-        do_pdos = .false.
-      endif
+     
 
       if (do_pdos) then
+        ! Call fdf_block to get iu - presence has already been tested in init_projected_PDOS
+        dummy = fdf_block('ProjectedDensityOfStates',bfdf)
 ! Find the desired energy range
         if (.not. fdf_bline(bfdf,pline))
      $    call die('projected_DOS: ERROR in ' //
@@ -55,14 +96,32 @@
      $         e1/eV,' eV',e2/eV,' eV',sigma/eV,' eV', nhist
         endif
 
-        call pdos( no_s, nspin, nspin, no_l, maxnh,
-     .             no_u, numh, listhptr, listh, H, S,
-     .             e1, e2, sigma, nhist,
-     .             gamma, xijo, indxuo, nkpnt, kpoint, kweight, eo,
-     .             no_u)
+! If the k points have been set specifically for the PDOS then use this set
+        if (different_pdos_grid) then
+
+! If the number of k points has increased then reallocate eo and qo
+          if (maxk_pdos.gt.maxk) then
+            call re_alloc(eo,1,no_u,1,nspin,1,maxk_pdos,name="eo",
+     .                    routine="projected_dos")
+          endif
+
+          call pdos( no_s, nspin, nspin, no_l, maxnh,
+     .               no_u, numh, listhptr, listh, H, S,
+     .               e1, e2, sigma, nhist, gamma_pdos, xijo, indxuo, 
+     .               nkpnt_pdos, kpoints_pdos, kweight_pdos, eo,
+     .               no_u)
+        else
+! otherwise use the SCF grid 
+          call pdos( no_s, nspin, nspin, no_l, maxnh,
+     .               no_u, numh, listhptr, listh, H, S,
+     .               e1, e2, sigma, nhist,
+     .               gamma, xijo, indxuo, nkpnt, kpoint, kweight, eo,
+     .               no_u)
+        endif
 
       endif                     ! PDOS calc (do_pdos)
 !--------------------------------------------------------------------------- END
 
       end subroutine projected_DOS
+
       end module m_projected_DOS

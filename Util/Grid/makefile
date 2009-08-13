@@ -14,9 +14,12 @@
 .SUFFIXES: 
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
+VPATH:=$(shell pwd)/../../Src
+OBJDIR=Obj
+#
 all: grid2cdf cdf2xsf cdf2grid grid2val grid2cube
 #
-include ../../Src/arch.make
+include ../../$(OBJDIR)/arch.make
 #
 # This is needed on some systems to avoid loading the parallel libraries, which
 # sometimes force running on queuing systems
@@ -56,12 +59,8 @@ cdf_fft: cdf_fft.o libfft.o
 	$(FC) $(LDFLAGS) -o $@  cdf_fft.o  libfft.o $(LIBS)
 #
 #------------------
-get_f2kcli:
-	@echo " *** If this compilation fails, type 'make' again ***"
-	ln -sf ../../Src/f2kcli.F90 ./f2kcli.F90
-#
 grid2val.o: f2kcli.o
-grid2val: get_f2kcli grid2val.o
+grid2val: grid2val.o
 	$(FC) $(LDFLAGS) -o $@ f2kcli.o grid2val.o 
 #
 #------------------
@@ -71,7 +70,6 @@ grid2cube: grid2cube.o
 #------------------
 clean: 
 	rm -f *.o grid2cdf grid2val grid2cube cdf2grid cdf2xsf *.o *.*d
-	rm -f f2kcli.F90
 #
 
 

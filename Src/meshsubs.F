@@ -143,6 +143,7 @@ C ----------------------------------------------------------------------
       if (associated(lstpht))
      &  call de_alloc( lstpht, 'lstpht',  'PhiOnMesh' )
 
+
       if (associated(listp2))
      &  call de_alloc( listp2, 'listp2',  'PhiOnMesh' )
 
@@ -430,7 +431,7 @@ C real    drho(ntpl)    : SCF density difference
 C logical Forces        : Should the forces be calculated?
 C logical Stress        : Should the stress be calculated?
 C ----------------------------------------------------------------------
-C Output : (non-gradient call)
+C Input/Output : (Output for non-gradient call, must be kept otherwise)
 C ----------------------------------------------------------------------
 C real    vna(ntpl)     : Sum of neutral-atom potentials
 C ----------------------------------------------------------------------
@@ -461,8 +462,12 @@ C     Check whether forces and/or stress has been
 C     requested based on arguments
       Gradients = (Forces.or.Stress)
 
-C     Initialise array to zero
+C Initialise array to zero if not computing gradients
+C If we are computing gradients, the current value of vna
+C must be kept. This is particularly important for grid-cell sampling...
+
       if (.not.Gradients) vna(1:ntpl) = 0.0_dp
+
       do ia = 1,na
         iua = indxua(ia)
         is = isa(ia)

@@ -99,7 +99,7 @@
       type(parsed_line), pointer :: pline
 
       character(len=20) label
-      integer  z
+      integer  z, is
       logical floating, bessel, found, synthetic
 
       nsp = fdf_integer('Number_of_species',0)
@@ -144,6 +144,15 @@
           endif
         endif
 !
+        if (ns_read > 1) then
+          do is = 1, ns_read-1
+            if (trim(chemical_list%spec_label(is)) == trim(label)) then
+               call die("Species label " // trim(label) // " repeated."
+     $              // " Use a different one for hygienic reasons.")
+            endif
+         enddo
+        endif
+
         chemical_list%z(isp) = z
         chemical_list%spec_label(isp) = label
       enddo

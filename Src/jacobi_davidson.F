@@ -263,7 +263,9 @@ C     Count the number of usefull eigenvalues/vectors
         enddo
       enddo
 
+#ifdef MPI
       call de_alloc( ZZ, 'ZZ', 'jd_diagg' )
+#endif
       end subroutine jd_diagg
 
       subroutine jd_solver( n, neig, A, B, lambda, Q )

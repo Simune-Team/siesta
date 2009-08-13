@@ -150,14 +150,13 @@
         nullify(xang)
         call re_alloc( xang, 1, 3, 1, na_u, 'xang', 'struct_init' )
         xang = xa(1:3,1:na_u)/Ang
-        call cmlAddMolecule(xf=mainXML, natoms=na_u, 
-     .       coords=xang, elements=elem, refs=cisa,
-     .       style='x3', fmt='(f12.6)')
+        call cmlAddMolecule(xf=mainXML, natoms=na_u,
+     .       coords=xa/Ang, elements=elem, atomRefs=cisa)
         call de_alloc( xang, 'xang', 'struct_init' )
 
         call cmlAddLattice(xf=mainXML, cell=ucell, 
      .       units='siestaUnits:angstrom', dictref='siesta:ucell')
-        call cmlAddProperty(xf=mainXML, property=trim(shape), 
+        call cmlAddProperty(xf=mainXML, value=trim(shape), 
      .       dictref='siesta:shape')
         call cmlEndModule(xf=mainXML)
       endif

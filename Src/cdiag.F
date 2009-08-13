@@ -48,8 +48,12 @@ C  Modules
 C
       use precision
       use fdf
-      use parallel,   only : Node, Nodes, BlockSize, ProcessorY
+      use parallel,   only : Node, Nodes, ProcessorY
       use parallel,   only : ParallelOverK, ResetFirstCall
+!
+      use parallel,   only : BlockSize_orbs => BlockSize
+      use m_spin,     only : Mcoll              ! Mixed spins?
+!
       use diagmemory, only : MemoryFactor
 #ifdef MPI
       use mpi_siesta, only : mpi_bcast, mpi_logical, mpi_comm_world
@@ -74,6 +78,7 @@ C Passed variables
 C Local variables
       type(allocDefaults) oldDefaults
 #ifdef MPI
+      integer                 :: BlockSize
       integer                 :: anb
       integer                 :: clustersize
       integer                 :: desch(9)
@@ -151,6 +156,13 @@ C Matrices for 2D
      .           , one_z  = (1.0_dp, 0.0_dp)
 C Start time count
       call timer('cdiag',1)
+
+#ifdef MPI
+!
+! Adjust blocksize if we are dealing with mixed spins
+!
+      BlockSize = BlockSize_orbs * Mcoll
+#endif
 
 C Check whether first call needs to be reset due to a change of algorithm
       if (ResetFirstCall) then

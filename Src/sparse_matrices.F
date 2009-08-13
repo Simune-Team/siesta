@@ -7,10 +7,10 @@
 !     Max. number of nonzero H matrix elements    
       integer :: maxnh = 10 
 
-      integer, pointer :: listh(:), listhold(:), listhptr(:),
-     &                    listhptrold(:), numh(:), numhold(:)
+      integer, pointer :: listh(:), listhptr(:),
+     &                    numh(:), numhold(:)
 
-      real(dp), pointer :: Dold(:,:), Dscf(:,:), Dscfsave(:,:),
+      real(dp), pointer :: Dold(:,:), Dscf(:,:),
      &                     Eold(:,:), Escf(:,:), H(:,:), xijo(:,:),
      &                     H0(:), S(:)
 
@@ -21,15 +21,12 @@
       implicit none
 
       call de_alloc( listh,       'listh',       'sparseMat' )
-      call de_alloc( listhold,    'listhold',    'sparseMat' )
       call de_alloc( listhptr,    'listhptr',    'sparseMat' )
-      call de_alloc( listhptrold, 'listhptrold', 'sparseMat' )
       call de_alloc( numh,        'numh',        'sparseMat' )
       call de_alloc( numhold,     'numhold',     'sparseMat' )
 
       call de_alloc( Dold,        'Dold',        'sparseMat' )
       call de_alloc( Dscf,        'Dscf',        'sparseMat' )
-      call de_alloc( Dscfsave,    'Dscfsave',    'sparseMat' )
       call de_alloc( Eold,        'Eold',        'sparseMat' )
       call de_alloc( Escf,        'Escf',        'sparseMat' )
       call de_alloc( H,           'H',           'sparseMat' )

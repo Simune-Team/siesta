@@ -54,7 +54,7 @@
                func%cutoff = rchloc + rchloc2 + 0.2_dp
                func%delta =  func%cutoff / (NTBMAX - 1)
                call ch_overlap(is,is2,func%cutoff,func%f)
-               call rad_setup_d2(func)
+               call rad_setup_d2(func,yp1=0.0_dp,ypn=huge(1.0_dp))
             endif
          enddo
       enddo

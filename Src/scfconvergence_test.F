@@ -68,9 +68,9 @@
               write(6,"(/a,f14.6,/)") 'siesta: Eharris(eV) = ',Eharrs/eV
               if (cml_p) then
                 call cmlStartPropertyList(mainXML, title='SCF Cycle')
-                call cmlAddProperty(xf=mainXML, property=Eharrs/eV,
+                call cmlAddProperty(xf=mainXML, value=Eharrs/eV,
      .           units="siestaUnits:eV", dictRef="siesta:Eharrs", 
-     .           fmt="(f14.7)")
+     .           fmt="r7")
                 call cmlEndPropertyList(mainXML)
               endif
             endif

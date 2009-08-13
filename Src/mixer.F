@@ -14,6 +14,7 @@
       use m_steps
       use m_spin,   only: nspin
       use m_pulay
+      use m_iodm,   only: write_dm
       use parallel, only: IONode
 #ifdef MPI
       use m_mpi_utils, only: globalize_max
@@ -27,7 +28,6 @@
       real(dp), intent(out) :: dDmax   ! Max. change in dens. matrix
       integer               :: iiscf
       logical               :: mmix    ! Same as mix. Used in pulayx
-      logical               :: found   ! For call to iodm
 #ifdef MPI
       real(dp)              :: buffer1
 #endif
@@ -87,13 +87,13 @@
           if (writedm) then
             if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
               if (istp.eq.1)
-     .        call iodm( 'write', maxnh, no_l, nspin,
-     .                   numh, listhptr, listh, Dscf, found )
+     .        call write_dm (maxnh, no_l, nspin,
+     .                   numh, listhptr, listh, Dscf)
             else
-              call iodm( 'write', maxnh, no_l, nspin,
-     .                   numh, listhptr, listh, Dscf, found )
+              call write_dm (maxnh, no_l, nspin,
+     .                   numh, listhptr, listh, Dscf)
             endif
-          endif
+          endif ! writedm
 !--------------------------------------------------------------------------- END
       END subroutine mixer
 

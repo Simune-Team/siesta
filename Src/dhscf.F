@@ -433,6 +433,7 @@ C     Modules
       use m_forhar,      only  : forhar
       use xcmod,         only  : nXCfunc, XCauth
       use alloc,         only  : re_alloc, de_alloc
+      use files,         only  : slabel
       use siesta_options, only : harrisfun
       use m_dhscf,        only : rhopcc, rhoatm, Vna, uharrs, bcell,
      &                           ntml, dvol, npcc, field, isefld,
@@ -446,6 +447,7 @@ C     Modules
       use iogrid_netcdf, only: write_grid_netcdf
       use iogrid_netcdf, only: read_grid_netcdf
       use siesta_options, only: read_charge_cdf
+      use siesta_options, only: savevna
       use siesta_options, only: read_deformation_charge_cdf
       implicit none
       integer
@@ -577,6 +579,13 @@ C Allocate local memory -------------------------------------------------
       call re_alloc( DRho, 1, ntpl, 1, nspin, 'DRho','dhscf' )
 
 C-------------------------------------------------------------------------
+        if (savevna) then
+           call reord( Vna, Vna, nml, nsm, +1)
+           call write_rho( trim(slabel)// ".VNA",
+     $                     cell, ntm, nsm, ntpl, 1, Vna)
+           call write_grid_netcdf( cell, ntm, 1, ntpl, Vna, "Vna")
+           call reord( Vna, Vna, nml, nsm, -1)
+        endif
 
 
 C Find number of diagonal spin values
