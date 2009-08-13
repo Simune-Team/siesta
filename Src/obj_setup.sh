@@ -55,7 +55,7 @@ sed "s#VPATH=\.#VPATH=${srcdir}#g" ${srcdir}/Makefile > ${destdir}/Makefile
 #
 # Now make a symbolic link in the destination directory
 #
-ln -s ${destdir} ${destdir}/Src
+ln -sf ${destdir} ${destdir}/Src
 #
 echo " *** Compilation setup done. "
 echo " *** Remember to copy an arch.make file or run configure as:"

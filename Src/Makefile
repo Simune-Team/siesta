@@ -696,8 +696,7 @@ write_subs_pressure.o: atomlist.o m_energies.o m_forces.o m_iostruct.o
 write_subs_pressure.o: m_steps.o m_stress.o parallel.o precision.o siesta_cml.o
 write_subs_pressure.o: siesta_geom.o siesta_options.o units.o
 writewave.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o kpoint_grid.o
-writewave.o: m_fdf_global.o parallel.o parallelsubs.o parsing.o precision.o
-writewave.o: siesta_geom.o sys.o units.o
+writewave.o: parallel.o parallelsubs.o precision.o siesta_geom.o sys.o units.o
 xc.o: alloc.o precision.o sys.o xcmod.o
 xcmod.o: parallel.o precision.o sys.o
 xml.o: precision.o
