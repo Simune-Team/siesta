@@ -9,13 +9,14 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
       subroutine iohs( task, gamma, no_u, no_s, nspin, indxuo, maxnh, 
-     .                 numh, listhptr, listh, H, S, qtot, temp, xij )
+     .                 numh, listhptr, listh, H, S, qtot, temp, xij)
 C *********************************************************************
 C Saves the hamiltonian and overlap matrices, and other data required
 C to obtain the bands and density of states
 C Writen by J.Soler July 1997.
 C Note because of the new more compact method of storing H and S
 C this routine is NOT backwards compatible
+C This routine is deprecated. New version iohsx is more compact.
 C *************************** INPUT **********************************
 C character*(*) task          : 'read'/'READ' or 'write'/'WRITE'
 C logical       gamma         : Is only gamma point used?
@@ -49,6 +50,11 @@ C
       use parallel,     only : Node, Nodes
       use parallelsubs, only : WhichNodeOrb, LocalToGlobalOrb,
      .                         GlobalToLocalOrb, GetNodeOrbs
+      use atm_types,    only : nspecies
+      use atomlist,     only : iphorb, iaorb
+      use siesta_geom,  only : na_u, isa
+      use atmfuncs,     only : nofis, labelfis, zvalfis
+      use atmfuncs,     only : cnfigfio, lofio, zetafio
       use files,        only : slabel, label_length
       use sys,          only : die
       use alloc,        only : re_alloc, de_alloc
@@ -65,11 +71,12 @@ C
       integer           indxuo(no_s), listh(maxnh), numh(*), listhptr(*)
       real(dp)          H(maxnh,nspin), S(maxnh),
      .                  qtot, temp, xij(3,maxnh)
+
       external          io_assign, io_close, paste
 
 C Internal variables and arrays
       character(len=label_length+3) :: fname
-      integer    im, is, iu, ju, k, mnh, ns
+      integer    im, is, iu, ju, k, mnh, ns, ia, io
       integer    ih,hl,nuo,maxnhtot,maxhg
       integer, pointer :: numhg(:)
 #ifdef MPI
@@ -77,7 +84,7 @@ C Internal variables and arrays
       integer,  pointer :: ibuffer(:)
       real(dp), pointer :: buffer(:), buffer2(:,:)
 #endif
-      logical    baddim, found, frstme, gammaonfile
+      logical    baddim, found, frstme, gammaonfile, write_xijk
       save       frstme, fname
       data frstme /.true./
 C Find name of file
@@ -569,7 +576,10 @@ C Free buffer array
           write(iu) qtot,temp
         endif
 
-        if (.not.gamma) then
+        ! Write xij if requested
+        write_xijk = .not. gamma
+
+        if (write_xijk) then
 #ifdef MPI
 C Allocate buffer array
           if (Node .eq. 0) then
@@ -616,9 +626,24 @@ C Free buffer array
             call de_alloc( buffer2, 'buffer2', 'iohs' )
           endif
 #endif
-        endif   ! not gamma
+        endif   ! write_xijk
 
         if (Node.eq.0) then
+
+!
+!       Write other useful info
+!
+           write(iu) nspecies
+           write(iu) (labelfis(is), zvalfis(is),nofis(is),is=1,nspecies)
+           do is = 1, nspecies
+              do io=1,nofis(is)
+                 write(iu) cnfigfio(is,io), lofio(is,io), zetafio(is,io)
+              enddo
+           enddo
+           write(iu) na_u
+           write(iu) (isa(ia),ia=1,na_u)
+           write(iu) (iaorb(io), iphorb(io), io=1,no_u)
+
 C Deallocate local array for global numh
           call de_alloc( numhg, 'numhg', 'iohs' )
 C Close file

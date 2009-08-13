@@ -25,6 +25,7 @@
       use m_dipol
       use alloc, only: re_alloc, de_alloc
       use m_gamma
+      use m_hsx, only: write_hsx
       use sys, only: die
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
@@ -139,11 +140,12 @@
      $             maxnh, numh, listhptr, listh, H, S, qtot, temp,
      $             xijo )
       endif
-!!!      if (savehs) then
-!!!          call write_hsx( gamma, no_u, no_s, nspin, indxuo,
-!!!     $               maxnh, numh, listhptr, listh, H, S, qtot, temp,
-!!!     $               xijo)
-!!!      endif
+        if (savehs .or. write_coop) then
+          call write_hsx( gamma, no_u, no_s, nspin, indxuo,
+     $               maxnh, numh, listhptr, listh, H, S, qtot, temp,
+     $               xijo)
+        endif
+
 
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 0 )

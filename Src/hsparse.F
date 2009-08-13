@@ -37,7 +37,7 @@ C                 Output: Actual value needed for nlhmax (Maximum number
 C                         of basis orbitals interacting, either directly
 C                         or through a KB projector, with any orbital)
 C **************************** OUTPUT *********************************
-C gamma                 : logical
+C set_xijo              : logical
 C xijo                  : vectors between orbital centers
 C **************************** BEHAVIOR *******************************
 C Equivalent pairs of atoms are assigned the same sparse index, i.e.
@@ -50,8 +50,10 @@ C
 C  Modules
 C
       subroutine hsparse( negl, cell, nsc, na, isa, xa,
-     &                    lasto, lastkb, iphorb, iphkb,
-     &                    nlhmax, gamma )
+     &                    lasto, lastkb, iphorb, iphkb,     
+     &                    nlhmax, gamma,
+     $                    set_xijo)
+
       use precision
       use parallel,        only : Node, Nodes
       use parallelsubs,    only : GetNodeOrbs, GlobalToLocalOrb
@@ -76,6 +78,7 @@ C
       logical,           intent(in) :: negl
       integer,        intent(inout) :: nlhmax
       logical, intent(in)           :: gamma
+      logical, intent(in)     :: set_xijo
 
       external               timer
 
@@ -285,7 +288,7 @@ C     using information from different geometries.
       ! CHANGED NOW
       call re_alloc( listh, 1, nlhmax, 'listh',
      $     routine='hsparse',SHRINK=.true.)
-      if (.not. gamma) then
+      if (set_xijo) then
          call re_alloc( xijo, 1, 3, 1, nlhmax, 'xijo', 'sparseMat' )
       else
          call re_alloc( xijo, 1, 3, 1, 1, 'xijo', 'sparseMat' )
@@ -422,7 +425,7 @@ C Find if jo overlaps with a KB projector
                       numh(iio) = numh(iio) + 1
                       ind = listhptr(iio)+numh(iio)
                       listh(ind) = jo
-                      if (.not. gamma) then
+                      if (set_xijo) then
                          xijo(1:3,ind) = xij(1:3,jnat)
                       endif
                    endif

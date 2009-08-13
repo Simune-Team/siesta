@@ -8,7 +8,7 @@
 
       subroutine siesta_analysis( relaxd )
       USE band, only: nbk, bk, maxbk, bands
-      USE writewave, only: nwk, wfk, wwave
+      USE writewave, only: nwk, wfk, wwave, allocwave
       USE m_ksvinit, only: nkpol, kpol, wgthpol
       use m_ksv
       USE m_projected_DOS, only: projected_DOS
@@ -113,6 +113,14 @@
         call wwave( no_s, nspin, nspin, no_u, no_l, maxnh, maxwk,
      &              numh, listhptr, listh, H, S, Ef, xijo, indxuo,
      &              nwk, wfk, no_u, gamma, occtol )
+      endif
+
+      if (write_coop) then
+        ! Output the wavefunctions for the kpoints in the SCF set
+         call allocwave(nkpnt,no_u)
+         call wwave( no_s, nspin, nspin, no_u, no_l, maxnh, maxk,
+     .        numh, listhptr, listh, H, S, Ef, xijo, indxuo,
+     .        nkpnt, kpoint, no_u, gamma, occtol)
       endif
 
 !     Compute bands

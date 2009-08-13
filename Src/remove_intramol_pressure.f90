@@ -1,3 +1,5 @@
+module m_intramol_pressure
+CONTAINS
 subroutine remove_intramol_pressure(ucell,stress,na_u,xa,fa,mstress)
  use precision, only: dp
  use zmatrix, only: nZmol, nZmolStartAtom
@@ -8,7 +10,7 @@ subroutine remove_intramol_pressure(ucell,stress,na_u,xa,fa,mstress)
  real(dp), external :: volcel
 
  integer, intent(in)   :: na_u
- real(dp), intent(in)  :: ucell(3,3), xa(3,*), fa(3,*)
+ real(dp), intent(in)  :: ucell(3,3), xa(3,na_u), fa(3,na_u)
  real(dp), intent(in)  :: stress(3,3)
  real(dp), intent(out) :: mstress(3,3)
 
@@ -48,4 +50,4 @@ subroutine remove_intramol_pressure(ucell,stress,na_u,xa,fa,mstress)
         enddo
 
 end subroutine remove_intramol_pressure
-
+end module m_intramol_pressure
