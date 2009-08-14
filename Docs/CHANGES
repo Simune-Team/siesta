@@ -5,6 +5,22 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 -----------------------------------------------------------------------
+2009-08-14  16:20:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.31
+Speed-up of density-matrix building in diagk
+
+By computing only the products of eigenvector components which are
+really needed, the building of the density-matrix has been
+significantly speeded-up in diagk.  A similar idea can be applied in
+diagkp and diag2k (here saving in memory too), but these are not
+implemented yet.
+
+NOTE that the diagk_file version of the routine is still significantly
+faster, and should be the method of choice when NetCDF is compiled in.
+
+modified:
+  Src/diagk.F
+
+-----------------------------------------------------------------------
 2009-08-07  16:20:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.30
 Assorted fixes, dealing mostly with the building system
 
