@@ -1,13 +1,14 @@
-SIESTA_ARCH=XLF 32bits PARALLEL
+SIESTA_ARCH=XLF 64bits PARALLEL
 #
 FC= mpif90   #xlf90_r
 #
 FFLAGS_DEBUG= -g
-FFLAGS=-O3 -qstrict -qtune=ppc970 -qarch=ppc970 -q32
+FFLAGS=-O3 -qstrict -qtune=ppc970 -qarch=ppc970 -q64
 FFLAGS_parse=-qsuffix=f=f -qfree #-qfixed
-LDFLAGS= -q32
+LDFLAGS= -q64
 COMP_LIBS=
 RANLIB=echo
+DEFS_PREFIX=-WF,
 #
 NETCDF_LIBS=
 NETCDF_INTERFACE=
@@ -20,18 +21,18 @@ DEFS_MPI=         -WF,-DMPI
 
 
 
-#BLAS = -L/gpfs/apps/LAPACK/lib32 -llapack \
-#	     -L/gpfs/apps/SCALAPACK/lib32 -lblas
+#BLAS = -L/gpfs/apps/LAPACK/lib64 -llapack \
+#	     -L/gpfs/apps/SCALAPACK/lib64 -lblas
 
 
-BLAS= -L/gpfs/apps/SCALAPACK/lib32 -lscalapack \
-        /gpfs/apps/SCALAPACK/lib32/blacsF77init_MPI-PPC-0.a \
-        /gpfs/apps/SCALAPACK/lib32/blacsCinit_MPI-PPC-0.a \
-        /gpfs/apps/SCALAPACK/lib32/blacs_MPI-PPC-0.a \
-      -L/gpfs/apps/LAPACK/lib32 -llapack \
-      -L/gpfs/apps/SCALAPACK/lib32 -lblas
+BLAS= -L/gpfs/apps/SCALAPACK/lib64 -lscalapack \
+        /gpfs/apps/SCALAPACK/lib64/blacsF77init_MPI-PPC-0.a \
+        /gpfs/apps/SCALAPACK/lib64/blacsCinit_MPI-PPC-0.a \
+        /gpfs/apps/SCALAPACK/lib64/blacs_MPI-PPC-0.a \
+      -L/gpfs/apps/LAPACK/lib64 -llapack \
+      -L/gpfs/apps/SCALAPACK/lib64 -lblas
 
-##MPITRACER= -L/gpfs/apps/CEPBATOOLS/lib/32 -lmpitrace
+##MPITRACER= -L/gpfs/apps/CEPBATOOLS/lib/64 -lmpitrace
 #
 ##LIBS=  $(MPITRACER) $(BLAS)
 LIBS=  $(BLAS)

@@ -16,7 +16,7 @@
 #  
 #  The dependency list at the end is overly large, but harmless
 #
-OBJDIR=Src
+OBJDIR=Obj
 #
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #

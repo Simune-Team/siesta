@@ -34,7 +34,7 @@ default: what copy_fdf fcbuild vibrator
 # in an architecture-specific object directory) before attempting 
 # to compile the Vibra package.
 #
-OBJDIR=Src
+OBJDIR=Obj
 include ../../../$(OBJDIR)/arch.make
 #
 FC_DEFAULT:=$(FC)

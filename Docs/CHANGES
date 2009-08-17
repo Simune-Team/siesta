@@ -5,6 +5,96 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 -----------------------------------------------------------------------
+2009-08-07  16:20:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.30
+Assorted fixes, dealing mostly with the building system
+
+* (IMPORTANT) The default building directory is now Obj, instead of Src.
+  This change is necessary to support multiple compilation with the
+  same source. See Obj/README for more details.
+
+* Many fixes to smooth compilation in several systems, notably on IBM
+  computers. 
+
+* The default makefile in Pseudo/atom is now the 'modern' version with
+  CML support.
+
+* Clearer diagnostics in case of FoX configuration problems. 
+
+* Removed obsolete .make files from Src/Sys. Added 64bit versions of
+  the MareNostrum files.
+
+* The 'MaximumWallClockTime' option is no longer available.
+
+* Fixes in the NetCDF iodm* routines to properly handle a pointer.
+
+removed:
+  Src/Sys/eth-hreidar-mpi.make
+  Src/Sys/lahey-lam.make
+  Src/Sys/lahey-mpich.make
+  Src/Sys/lahey-nolibs.make
+  Src/Sys/lahey.make
+  Src/Sys/osfdxml-mpich.make
+  Src/Sys/osfdxml.make
+  Src/Sys/osfdxmlcdf.make
+  Src/Sys/pgf90-lam.make
+  Src/Sys/pgf90-mpich.make
+  Src/Sys/pgf90-nolibs.make
+  Src/Sys/pgf90.make
+  Src/Sys/sgi-altix.make
+  Src/Sys/sgi.make
+  Src/Sys/sgi64-cdf.make
+  Src/Sys/sgi64-lam-cdf.make
+  Src/Sys/sgi64-lam.make
+  Src/Sys/sgi64-mpi_fermat.make
+  Src/Sys/sgi64-mpich-cdf.make
+  Src/Sys/sgi64-mpich.make
+  Src/Sys/sgin32-mpi.make
+  Src/Sys/sun-nolibs.make
+  Src/Sys/t3e.make
+  Util/COOP/precision.f
+added:
+  Obj/
+  Obj/README
+  Src/Sys/marenostrum-mpi-64.make
+  Src/Sys/marenostrum-mpi-netcdf-64.make
+renamed:
+  Pseudo/atom/makefile => Pseudo/atom/makefile-old
+  Pseudo/atom/makefile-xml => Pseudo/atom/Makefile
+  Src/Sys/marenostrum-mpi.make => Src/Sys/marenostrum-mpi-32.make
+  Util/COOP/sys.f90 => Util/COOP/sys_local.f90
+  Util/Vibra/Vibra/ => Util/Vibra/Src/
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/FoX/configure
+  Src/Makefile
+  Src/Sys/README
+  Src/Sys/cscs-cray-mpi.make
+  Src/Sys/cscs-cray.make
+  Src/Sys/cscs-ibm-blanc.make
+  Src/Sys/finisterrae.make
+  Src/Sys/marenostrum-mpi-netcdf-32.make
+  Src/iodm_netcdf.F90
+  Src/iodmhs_netcdf.F90
+  Src/molecularmechanics.F90
+  Src/obj_setup.sh
+  Src/siesta_options.F90
+  Src/timer.F
+  Util/COOP/Makefile
+  Util/COOP/mprop.f90
+  Util/Denchar/Src/Makefile
+  Util/DensityMatrix/makefile
+  Util/Grid/makefile
+  Util/Projections/makefile
+  Util/Vibra/Src/Makefile
+  Util/WFS/makefile
+  Util/pdosxml/makefile
+  Util/pseudo-xml/makefile
+  Pseudo/atom/makefile-old
+  Pseudo/atom/Makefile
+  Src/Sys/marenostrum-mpi-32.make
+
+-----------------------------------------------------------------------
 2009-07-03  14:00:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.29
 TranSiesta: New saving options and file format (M. Paulsson, F.D. Novaes)
 

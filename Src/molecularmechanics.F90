@@ -148,7 +148,7 @@ module molecularmechanics
           endif
           nMMpotptr(1,nMMpot) = integs(1)
           nMMpotptr(2,nMMpot) = integs(2)
-          write(6,"(a,i3,a,i3))") "C6 - two-body potential between ", integs(1), " and ", integs(2)
+          write(6,"(a,i3,a,i3)") "C6 - two-body potential between ", integs(1), " and ", integs(2)
           if (nr.ge.2) then
 ! C6 : Parameter one is C6 coefficient
             MMpotpar(1,nMMpot) = reals(1)*Escale*(Dscale**6)
@@ -170,7 +170,7 @@ module molecularmechanics
           endif
           nMMpotptr(1,nMMpot) = integs(1)
           nMMpotptr(2,nMMpot) = integs(2)
-          write(6,"(a,i3,a,i3))") "C8 - two-body potential between ", integs(1), " and ", integs(2)
+          write(6,"(a,i3,a,i3)") "C8 - two-body potential between ", integs(1), " and ", integs(2)
           if (nr.ge.2) then
 ! C8 : Parameter one is C8 coefficient
             MMpotpar(1,nMMpot) = reals(1)*Escale*(Dscale**6)
@@ -192,7 +192,7 @@ module molecularmechanics
           endif
           nMMpotptr(1,nMMpot) = integs(1)
           nMMpotptr(2,nMMpot) = integs(2)
-          write(6,"(a,i3,a,i3))") "C10 - two-body potential between ", integs(1), " and ", integs(2)
+          write(6,"(a,i3,a,i3)") "C10 - two-body potential between ", integs(1), " and ", integs(2)
           if (nr.ge.2) then
 ! C10 : Parameter one is C10 coefficient
             MMpotpar(1,nMMpot) = reals(1)*Escale*(Dscale**6)
@@ -214,7 +214,7 @@ module molecularmechanics
           endif
           nMMpotptr(1,nMMpot) = integs(1)
           nMMpotptr(2,nMMpot) = integs(2)
-          write(6,"(a,i3,a,i3))") "Harmonic two-body potential between ", integs(1), " and ", integs(2)
+          write(6,"(a,i3,a,i3)") "Harmonic two-body potential between ", integs(1), " and ", integs(2)
           if (nr.ge.2) then
 ! Harm : Parameter one is force constant
             MMpotpar(1,nMMpot) = reals(1)*Escale/(Dscale**2)
@@ -236,7 +236,7 @@ module molecularmechanics
           endif
           nMMpotptr(1,nMMpot) = integs(1)
           nMMpotptr(2,nMMpot) = integs(2)
-          write(6,"(a,i3,a,i3))") "Grimme two-body potential between ", integs(1), " and ", integs(2)
+          write(6,"(a,i3,a,i3)") "Grimme two-body potential between ", integs(1), " and ", integs(2)
           if (nr.eq.2) then
 
 ! C6 : Parameter one is C6 coefficient
@@ -759,7 +759,7 @@ subroutine twobody(na,xa,isa,cell,emm,ifa,fa,istr,stress)
   if (istr.ne.0) then
 
      if (Node .eq. 0 .and. PotentialsPresent)  then
-        write(6,'(/,a,6f12.2))')  'MM-Stress (kbar):',   &
+        write(6,'(/,a,6f12.2)')  'MM-Stress (kbar):',   &
                 (mm_stress(jx,jx)/kbar,jx=1,3),       &
                  mm_stress(1,2)/kbar,                 &
                  mm_stress(2,3)/kbar,                 &

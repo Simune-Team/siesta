@@ -27,7 +27,7 @@
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
 default: pdosxml
-OBJDIR=Src
+OBJDIR=Obj
 VPATH=../../Src
 #
 include ../../$(OBJDIR)/arch.make

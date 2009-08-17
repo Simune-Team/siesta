@@ -69,11 +69,9 @@ subroutine setup_dm_netcdf_file( maxnd, nbasis, nspin,    &
       integer  :: MPIerror, stat(MPI_STATUS_SIZE), count, BNode
       integer  :: max_norbs, max_nnzs, ipt, io, iog
 
-      if (Node == 0) then
-         nullify ( norbs_node, nnzs_node)
-         call re_alloc( norbs_node, 0, Nodes-1, name='norbs_node', routine='iodm_netcdf' )
-         call re_alloc( nnzs_node, 0, Nodes-1,  name='nnzs_node', routine='iodm_netcdf' )
-      endif
+      nullify ( norbs_node, nnzs_node)
+      call re_alloc( norbs_node, 0, Nodes-1, name='norbs_node', routine='iodm_netcdf' )
+      call re_alloc( nnzs_node, 0, Nodes-1,  name='nnzs_node', routine='iodm_netcdf' )
       call mpi_gather(nbasis,1,MPI_Integer, norbs_node(:),1,MPI_integer,0,MPI_Comm_World, mpierror)
       if (Node == 0) then
          norbs = sum(norbs_node(0:Nodes-1))
@@ -259,11 +257,10 @@ integer               :: step_no, step_location
       integer  :: MPIerror, stat(MPI_STATUS_SIZE), count, BNode
       integer  :: max_norbs, max_nnzs, ipt, io, iog, ispin
 
-      if (Node == 0) then
-         nullify ( norbs_node, nnzs_node)
-         call re_alloc( norbs_node, 0, Nodes-1, name='norbs_node', routine='iodm_netcdf' )
-         call re_alloc( nnzs_node, 0, Nodes-1,  name='nnzs_node', routine='iodm_netcdf' )
-      endif
+      nullify ( norbs_node, nnzs_node)
+      call re_alloc( norbs_node, 0, Nodes-1, name='norbs_node', routine='iodm_netcdf' )
+      call re_alloc( nnzs_node, 0, Nodes-1,  name='nnzs_node', routine='iodm_netcdf' )
+
       call mpi_gather(nbasis,1,MPI_Integer, norbs_node(:),1,MPI_integer,0,MPI_Comm_World, mpierror)
       call mpi_gather(maxnd,1,MPI_Integer, nnzs_node(:) ,1,MPI_integer,0,MPI_Comm_World, mpierror)
       if (Node == 0) then

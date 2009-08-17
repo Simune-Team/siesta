@@ -39,13 +39,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, 2.6.29}}
+{\Huge {\bf S I E S T A \, \, 2.6.30}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large July 3, 2009 }
+{\Large August 7, 2009 }
 
 \vspace{1.5cm}
 
@@ -239,58 +239,62 @@ If you have a previous version of {\sc Siesta}, the update is simply
 replacing the old {\tt siesta} directory tree with the new one, saving
 the {\tt arch.make} file that you built to compile {\sc Siesta} for
 your architecture (the format of this file has changed slightly, but
-you should be able to translate the immportan fields, such as library
+you should be able to translate the important fields, such as library
 locations and compiler switches, to the new version).
 You also have the option of using the new {\tt configure} script
 (see below) to see whether the automatically generated {\tt arch.make} file
 provides anything new or interesting for your setup.
   If you have working files within the old {\sc Siesta} tree, including
-pseudopotential etc., you will have to fish them out. That is why we recommend
+pseudopotentials etc., you will have to fish them out. That is why we recommend
 working directories outside the package.
 
 \section{QUICK START}
 
 \subsection{Compilation}
-Unpack the {\sc Siesta} distribution. Go to the {\tt Src} directory, 
-where the source code resides together with the Makefile. You will
-need a file called {\tt arch.make} to suit your particular computer
-setup. The command {\tt ./configure}  will start an automatic scan of 
-your system and try to build
-an {\tt arch.make} for you. Please note that the configure script
-might need some help in order to find your Fortran compiler, and that
-the created arch.make may not be optimal, mostly in regard to compiler
-switches, but the process should provide a reasonable working
-file. Type {\tt ./configure --help} to see the flags understood by the
-script, and take a look at the {\tt Src/Confs} subdirectory for some
-examples of their explicit use. You can also create your own {\tt arch.make}
-by looking at the examples in the {\tt Src/Sys} subdirectory.
-If you intend to create a parallel version of {\sc
-Siesta}, make sure you have all the extra support libraries ({\tt MPI,
-scalapack, blacs...}). Type {\tt make}. The executable should work
-for any job (This is not exactly true, since some of the parameters in
-the atomic routines are still hardwired (see {\tt Src/atmparams.f}),
-but those would seldom need to be changed.)
+Unpack the {\sc Siesta} distribution. Go to the {\tt Obj} directory.
+As explained in the {\tt README} file there, you will need to run a
+shell script to do some minimum setup, and then to obtain an {\tt
+arch.make} file to suit your particular computer setup. Optionally,
+the command {\tt ../Src/configure} will start an automatic scan of
+your system and try to build an {\tt arch.make} for you. Please note
+that the configure script might need some help in order to find your
+Fortran compiler, and that the created arch.make may not be optimal,
+mostly in regard to compiler switches, but the process should provide
+a reasonable working file. Type {\tt ../Src/configure --help} to see
+the flags understood by the script, and take a look at the {\tt
+Src/Confs} subdirectory for some examples of their explicit use. You
+can also create your own {\tt arch.make} by looking at the examples in
+the {\tt Src/Sys} subdirectory.  If you intend to create a parallel
+version of {\sc Siesta}, make sure you have all the extra support
+libraries ({\tt MPI, scalapack, blacs...}). Once you have a proper
+{\tt arch.make}, type {\tt make}. The executable should work for any
+job (This is not exactly true, since some of the parameters in the
+atomic routines are still hardwired (see {\tt Src/atmparams.f}), but
+those would seldom need to be changed.)
 
 Multiple compilations: You can compile as many different versions of
 the {\sc Siesta} executable as you wish (for example, with different
-levels of optimization, serial, parallel, debug, etc) using the 
-VPATH feature of make. 
+levels of optimization, serial, parallel, debug, etc), by working in
+separate building directories. 
 
 For example, starting from the top Siesta directory:
 
 \begin{verbatim}
-mkdir Objs
-cd Objs
+cd Obj                  # The standard build directory
 sh ../Src/obj_setup.sh
 ../Src/configure --enable-fast
 make
 cd Tests
 make clean; make
-cd    #   ----------- Now a parallel version
+
+#
+#   ----------- Now a parallel version in a different directory
+#
+cd   
 mkdir ParaObjs
 cd ParaObjs
 sh ../Src/obj_setup.sh
-cp ../Src/Sys/parallel.make ./arch.make
+cp ../Src/Sys/some-suitable-parallel.make ./arch.make
 make
 cd Tests
 make clean; make
@@ -315,7 +319,7 @@ directory. A collection of reference output files can be found in {\tt
 formatting differences are to be expected, depending on the compiler.
 
 Other examples are provided in the {\tt Examples} directory. This
-directory contains basically the {\tt .fdf} files and the
+directory contains basically the {\tt .fdf} files and the appropriate
 pseudopotential generation input files. Since at some point you will
 have to generate your own pseudopotentials and run your own jobs, we
 describe here the whole process by means of the simple example of the
@@ -987,17 +991,6 @@ and the Na$^+$ ion would have {\bf NetCharge} = {\tt 1}.
 Fractional charges can also be used.
 
 {\it Default value:} {\tt 0.0} 
-
-
-\item[{\bf MaximumWallClockTime}] ({\it physical}):
-\index{MaximumWallClockTime@{\bf MaximumWallClockTime}}
-Defines the maximum duration of the SIESTA run. The system
-clock is checked on a regular basis in order to profile the 
-time taken by various procedures. If more than MaximumWallClockTime
-has elapsed then the job is aborted. If the maximum time is 0, or is
-negative, the time is unlimited.
-
-{\it Default value:} {\tt 0 s}
 
 
 \end{description}
@@ -4317,7 +4310,7 @@ molecular mechanics potentials.
 
 {\it Use:} Controls the units for energy in the molecular mechanics input.
 
-{\it Default value:}  {\tt eV} (Note: Currently this the {\em only} option)
+{\it Default value:}  {\tt eV} (Note: Currently this is the {\em only} option)
 
 \item[{\bf MM.UnitsDistance}] ({\it units}): \index{MM.UnitsDistance@{\bf
 MM.UnitsDistance}} Specifies the units to be used for distance in the 
@@ -4325,7 +4318,7 @@ molecular mechanics potentials.
 
 {\it Use:} Controls the units for distance in the molecular mechanics input.
 
-{\it Default value:}  {\tt Ang} (Note: Currently this the {\em only} option)
+{\it Default value:}  {\tt Ang} (Note: Currently this is the {\em only} option)
 
 \item[{\bf MM.Grimme.D}] : \index{MM.Grimme.D@{\bf
 MM.Grimme.D}} Specifies the scale factor $d$ for the scaling function
