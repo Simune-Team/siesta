@@ -216,7 +216,8 @@ c Internal representation of H,S,DM and other quantities:
 c                               !i.e. no. used orbitals
 
 c Full Green's function, H and S of contact:
-      complex*16, dimension(:), allocatable :: GF,H,S
+      complex*16, dimension(:), allocatable :: H,S
+      complex*16, dimension(:), pointer :: GF
 
 c     To save space we will save the temporary DML,EDML in DM,EDM. 
 c     contour part of DM integration 
@@ -378,7 +379,8 @@ C Get Node number
 #endif
       IONode=.false.
       if(Node.eq.1) IONode=.true.
-
+      
+      nullify(GF)
 
 c ============================================================
 c       ----------- BEGIN: first time only ------------
@@ -1127,12 +1129,13 @@ c setup hamiltonian
      .                k,nuo,H,S,ef,nou, NGL,NGR,NBUFL,NBUFR)
 #endif
 
-
+      
 C=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
       do 7913 iPE = 1, NPARACONTOUR ! loop over parallel contour points
 C=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
 
-         allocate(GF(nou*nou))
+C         allocate(GF(nou*nou))
+         
 
 c       if(Node.eq.0.and.iPE.eq.1) write(6,*)iPE
 
@@ -1288,6 +1291,7 @@ c -------------------------------------------------------------
      .      write(6,*) 'TRANSIESTA: ERROR in contour setup!'
            call die ('TRANSIESTA: ERROR in contour setup!')
          end if                 !which part of the contour ??
+! As a pointer it MUST be deallocated
          deallocate(GF)
 
 
@@ -1469,7 +1473,7 @@ C FDN
                end if
 C FDN
              end if             !update DM,EDM
-
+       
           end do                !j
        end do                   !io
 

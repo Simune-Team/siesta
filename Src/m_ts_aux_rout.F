@@ -19,6 +19,8 @@
 !         11) gaufermi10                                                   *
 !         13) gaufermi20                                                   *
 !         14) gauss                                                        *
+!         15) ts_alloc                                                     *
+!         16) ts_dealloc                                                   *
 !==========================================================================*
 
       module m_ts_aux_rout
@@ -27,6 +29,15 @@
 !      public :: splittri, collectri, invmat, transpose
 
 !      private
+
+      interface ts_alloc
+         module procedure ts_alloc_c2
+      end interface
+
+      interface ts_dealloc
+         module procedure ts_dealloc_c2
+      end interface
+
 
       CONTAINS
 
@@ -108,13 +119,16 @@ C ====================================================================
 
 
 C ====================================================================
-      subroutine collectri(n1,n2,n3,a11,a12,a21,a22,a23,a32,a33,A)
+      subroutine collectri(n1,n2,n3,a12,a21,a22,a23,a32,A)
 
 c  input:
       integer n1,n2,n3
-      complex*16 a11(n1,n1), a12(n1,n2)
-      complex*16 a21(n2,n1), a22(n2,n2), a23(n2,n3)
-      complex*16             a32(n3,n2), a33(n3,n3)
+C      complex*16 a11(n1,n1), a12(n1,n2)
+C      complex*16 a21(n2,n1), a22(n2,n2), a23(n2,n3)
+C      complex*16             a32(n3,n2), a33(n3,n3)
+      complex*16, pointer, dimension(:,:) :: a12,a21,
+     .                        a22,a23,a32,a33
+
 c output:
       complex*16 A(n1+n2+n3,n1+n2+n3)
 c help:
@@ -134,23 +148,25 @@ c init:
 c
 c   ---  11  ---    
 c
-      do j=1,n1
-         do i=1,n1
-            A(i,j) = a11(i,j)
-         end do
-      end do
+C FDN
+C      do j=1,n1
+C         do i=1,n1
+C            A(i,j) = a11(i,j)
+C         end do
+C      end do
 
 c
 c   ---  21  ---
 c
-      do j=1,n1
-         do i=1,n2
-            A(i+n1,j) = a21(i,j) 
+      if (associated(a21) .and. associated(a12)) then
+         do j=1,n1
+            do i=1,n2
+               A(i+n1,j) = a21(i,j) 
 C FDN Changed the order of arguments, it was a12(i,j)
-            A(j,i+n1) = a12(j,i)
+               A(j,i+n1) = a12(j,i)
+            end do
          end do
-      end do
-
+      end if
 c
 c   ---  22  ---
 c
@@ -163,21 +179,24 @@ c
 c
 c   ---  23  ---
 c
-      do j=1,n3
-         do i=1,n2
-            A(i+n1, j+n1+n2) = a23(i,j) 
-            A(j+n1+n2, i+n1) = a32(j,i) 
+      if (associated(a23) .and. associated(a32)) then
+         do j=1,n3
+            do i=1,n2
+               A(i+n1, j+n1+n2) = a23(i,j) 
+               A(j+n1+n2, i+n1) = a32(j,i) 
+            end do
          end do
-      end do
+      end if
 
 c
 c   ---  33  ---
 c
-      do j=1,n3
-         do i=1,n3
-            A(i+n1+n2, j+n1+n2) = a33(i,j)  
-         end do
-      end do
+C FDN
+C      do j=1,n3
+C         do i=1,n3
+C            A(i+n1+n2, j+n1+n2) = a33(i,j)  
+C         end do
+C      end do
 
 
 C ====================================================================
@@ -1088,6 +1107,62 @@ C =========================================================
       return
       end subroutine gauss
 C =========================================================
+
+
+
+C ====================================================================
+      subroutine ts_alloc_c2(array,d1,d2,routine)
+
+      use sys, only: die
+
+      complex*16,dimension(:,:), pointer :: array
+      integer :: d1, d2
+      character(len=*) :: routine
+
+C Internal
+      integer :: allocStat      
+
+      external memory
+     
+C BEGIN
+
+! Alloate         
+      allocate(array(1:d1,1:d2),stat=allocStat)
+      if(allocStat /= 0) call die("Could not allocate in "//routine)     
+  
+! Add to memory control
+      call memory('A','Z',size(array),routine)
+
+      end subroutine ts_alloc_c2  
+C ====================================================================
+
+
+
+C ====================================================================
+      subroutine ts_dealloc_c2(array,routine)
+
+      use sys, only: die
+
+      complex*16,dimension(:,:), pointer :: array
+      character(len=*) :: routine
+
+C Internal
+      integer :: allocStat      
+
+      external memory
+     
+C BEGIN
+
+! Subtract from memory control
+      call memory('D','Z',size(array),routine)
+! Dealloate         
+      deallocate(array,stat=allocStat)
+      if(allocStat /= 0) call die("Could not deallocate in "//routine)     
+  
+
+      end subroutine ts_dealloc_c2  
+C ====================================================================
+
 
 
       END MODULE m_ts_aux_rout

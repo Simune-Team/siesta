@@ -389,8 +389,10 @@ C ##################################################################
 
 
 C FDN
+      use sys, only: die
       use m_ts_aux_rout, only : splittri, collectri, invmat, transpose,
-     .                          csolveg
+     .                          csolveg, ts_alloc, ts_dealloc
+      use m_ts_options, only: updatedmcr
 C FDN
       implicit none                              
 
@@ -420,8 +422,8 @@ C INPUT/OUTPUT:
 
 C ======================================================================
 C OUTPUT:
-      complex*16 GF(0:(no*no)-1)  ! 1/(Sc*Energy - H)
-C      complex*16 GF(no*no)
+C      complex*16 GF(0:(no*no)-1)  ! 1/(Sc*Energy - H)
+      complex*16, dimension(:), pointer :: GF
       integer ierr              !inversion err
 C ======================================================================
 c Helpers, tempos ...
@@ -433,19 +435,21 @@ c Helpers, tempos ...
 C --------------------------------------------------------------------
 
       integer n1,n2,n3
-      complex*16, dimension(:,:), allocatable::  a11,a12,
+C FDN 
+      integer :: allocStat
+      complex*16, dimension(:,:), pointer ::  a11,a12,
      .                                           a21,a22,a23,
      .                                               a32,a33
-      complex*16, dimension(:,:), allocatable::  b11,b12,
+      complex*16, dimension(:,:), pointer ::  b11,b12,
      .                                           b21,b22,b23,
      .                                               b32,b33
-      complex*16, dimension(:,:), allocatable::  x12,x32
+      complex*16, dimension(:,:), pointer ::  x12,x32
 C FDN
-      complex*16, dimension(:,:), allocatable::  x21,x23      
+      complex*16, dimension(:,:), pointer ::  x21,x23      
 
 c----------------------------------------------------------------------
       
-      external timer
+      external timer, memory
 
       
     
@@ -456,39 +460,53 @@ c=======================================================================
 c      call timer1('GFT',1) 
       
 c ================================================================
-      
+      nullify(a11,a12,a21,a22,a23,a32,a33)
+      nullify(b11,b12,b21,b22,b23,b32,b33)
+      nullify(x12,x32,x21,x23)
       ierr=0
-
+      
       if(.not.USEBULK) write(6,*) 
      &  "WARNING: Tridiag only works for USEBULK for finite bias!"
 
 c Setup full H (this part will be changed later..)
 
-      allocate(H(0:no*no-1))
-
+      allocate(H(no*no),stat=allocStat)
+      if(allocStat /=0) call die("Could not allocate in getGF_Tri")
+      call memory('A','Z',size(H),"getGF_Tri")
+ 
 c
 c     Contact z*S-H without self-energies:
 c
-      do j = 0, no-1
-         do i = 0, no-1
-            H(i + j*no) = 
-     .           ZEnergy*Si(i+j*no)-Hi(i+j*no) 
-            GF(i + no*j) = dcmplx(0d0,0d0)
-         end do                 !i
-         GF(j + no*j) = dcmplx(1d0,0d0)
-      end do                    !j
-
+      if(useTri) then
+         do j = 0, no-1
+            do i = 0, no-1
+               H(i + 1 + j*no) = 
+     .              ZEnergy*Si(i+j*no)-Hi(i+j*no) 
+            end do                 !i
+         end do                    !j
+       else
+C GF not yet in memory control !!!
+         allocate(GF(no*no),stat=allocStat)
+         if(allocStat /=0) call die("Could not allocate in getGF_Tri")
+         do j = 0, no-1
+            do i = 0, no-1
+               H(i + 1 + j*no) = 
+     .              ZEnergy*Si(i+j*no)-Hi(i+j*no) 
+                GF(i + 1 + no*j) = dcmplx(0d0,0d0)
+            end do                 !i
+            GF(j + 1 + no*j) = dcmplx(1d0,0d0)
+         end do                    !j
+       end if 
+     
 c
 c     Add Left Self-energy
 c
-      do j = 0, NGL-1
-         jj=j+1
-         do i = 0, NGL-1
-            ii=i+1
+      do j = 1, NGL
+         do i = 1, NGL
             if(USEBULK) then 
-               H(i + j*no) = HLL(ii,jj)
+               H(i + (j-1)*no) = HLL(i,j)
             else
-               H(i + j*no) = H(i + j*no) - HLL(ii,jj)
+               H(i + (j-1)*no) = H(i + (j-1)*no) - HLL(i,j)
             end if              !USEBULK
          end do                 !i
       end do                    !j
@@ -497,26 +515,34 @@ c
 c     Add Right Self-energy
 c
 
-      do j = no-NGR,no-1
-         jj=j-(no-NGR)+1
-         do i = no-NGR,no-1
-            ii=i-(no-NGR)+1
+      do j = no-NGR+1,no
+         jj=j-(no-NGR)
+         do i = no-NGR+1,no
+            ii=i-(no-NGR)
             if(USEBULK) then 
-               H(i + j*no) = HRR(ii,jj)
+               H(i + (j-1)*no) = HRR(ii,jj)
             else
-               H(i + j*no) = H(i + j*no) - HRR(ii,jj)
+               H(i + (j-1)*no) = H(i + (j-1)*no) - HRR(ii,jj)
             end if              !USEBULK
          end do                 !i
       end do                    !j
 
       if ( .not. useTri) then
 ! Invert directly
-         allocate(ipvt(no))
-       
-         call csolveg(no,no,H,GF,ipvt,ierr)
+         allocate(ipvt(no),stat=allocStat)
+         if(allocStat /=0) call die("Could not allocate in getGF_Tri") 
+         call memory('A','I',size(ipvt),"getGF_Tri")      
 
-         deallocate(H)
-         deallocate(ipvt)
+         call csolveg(no,no,H,GF,ipvt,ierr)
+   
+         call memory('D','Z',size(H),"getGF_Tri")
+         deallocate(H,stat=allocStat)
+         if(allocStat /=0) call die("Could not deallocate in getGF_Tri")
+ 
+         call memory('D','I',size(ipvt),"getGF_Tri")
+         deallocate(ipvt,stat=allocStat)
+         if(allocStat /=0) call die("Could not deallocate in getGF_Tri")
+
       else
 
 ! Use the fact that H is tridiagonal       
@@ -527,159 +553,169 @@ c allocate:
       n2 = no - (NGL+NGR)
       n3 = NGR
               
-      allocate(a11(1:n1,1:n1))
-      allocate(a12(1:n1,1:n2))
-      allocate(a21(1:n2,1:n1))
-      allocate(a22(1:n2,1:n2))
-      allocate(a23(1:n2,1:n3))
-      allocate(a32(1:n3,1:n2))
-      allocate(a33(1:n3,1:n3))
+      call ts_alloc(a11,n1,n1,"getGF_Tri")
+      call ts_alloc(a12,n1,n2,"getGF_Tri")
+      call ts_alloc(a21,n2,n1,"getGF_Tri")      
+      call ts_alloc(a22,n2,n2,"getGF_Tri")
+      call ts_alloc(a23,n2,n3,"getGF_Tri")      
+      call ts_alloc(a32,n3,n2,"getGF_Tri")
+      call ts_alloc(a33,n3,n3,"getGF_Tri")
       
       call splittri(n1,n2,n3,H,a11,a12,a21,a22,a23,a32,a33)
-      deallocate(H)
+      call memory('D','Z',size(H),"getGF_Tri")
+      deallocate(H,stat=allocStat)
+      if(allocStat /=0) call die("Could not deallocate in getGF_Tri")
+      
+      
+
      
-      allocate(b11(1:n1,1:n1))
-      allocate(b12(1:n1,1:n2))
-      allocate(b21(1:n2,1:n1))
-      allocate(b22(1:n2,1:n2))
-      allocate(b23(1:n2,1:n3))
-      allocate(b32(1:n3,1:n2))
-      allocate(b33(1:n3,1:n3))
-
-      allocate(x12(1:n1,1:n2))
-      allocate(x32(1:n3,1:n2))
-C FDN
-      allocate(x21(1:n2,1:n1))
-      allocate(x23(1:n2,1:n3))
-
 c====================================================================
        
       
 
 c     inv(a11) -> store in b11
+      call ts_alloc(b11,n1,n1,"getGF_Tri")
       call invmat(n1,a11,b11,ierr)
+      call ts_dealloc(a11,"getGF_Tri")
+      
+
+c     inv(a33) -> store in b33
+      call ts_alloc(b33,n3,n3,"getGF_Tri")
+      call invmat(n3,a33,b33,ierr)
+      call ts_dealloc(a33,"getGF_Tri")
+      
 
 c     x12 = inv(a11).a12 
+      call ts_alloc(x12,n1,n2,"getGF_Tri")
       a=dcmplx(1.d0,0.d0)
       b=dcmplx(0.d0,0.d0) 
       call zgemm('N','N', n1, n2, n1 ,a ,b11, n1, a12,
      &     n1, b, x12, n1)     
+      call ts_dealloc(a12,"getGF_Tri")
+      if(updatedmcr) call ts_dealloc(b11,"getGF_Tri")
+      
 
 c     a22 - a21.x12 --> a22
       a=dcmplx(-1.d0,0.d0)
       b=dcmplx(1.d0,0.d0) 
       call zgemm('N','N', n2, n2, n1 ,a ,a21, n2, x12,
      &  n1, b, a22, n2)      
-
-c     inv(a33) -> store in b33
-      call invmat(n3,a33,b33,ierr)
-
-c     x32 = inv(a33).a32 
+      if(updatedmcr) then
+         call ts_dealloc(x12,"getGF_Tri")
+         call ts_dealloc(a21,"getGF_Tri")
+      end if
+      
+c     x32 = inv(a33).a32
+      call ts_alloc(x32,n3,n2,"getGF_Tri")
       a=dcmplx(1.d0,0.d0)
       b=dcmplx(0.d0,0.d0) 
       call zgemm('N','N', n3, n2, n3 ,a ,b33, n3, a32,
-     &     n3, b, x32, n3)      
+     &     n3, b, x32, n3)   
+      call ts_dealloc(a32,"getGF_Tri")
+      if(updatedmcr) call ts_dealloc(b33,"getGF_Tri")
+       
 
 c     a22 - a23.x32 --> a22
       a=dcmplx(-1.d0,0.d0)
       b=dcmplx(1.d0,0.d0) 
       call zgemm('N','N', n2, n2, n3 ,a ,a23, n2, x32,
-     &  n3, b, a22, n2)      
-
+     &  n3, b, a22, n2)
+      if(updatedmcr) then
+         call ts_dealloc(x32,"getGF_Tri")
+         call ts_dealloc(a23,"getGF_Tri")
+      end if      
+      
 c now a22 contains (a22 - a21.x12 - a23.x32) 
 
 c b22 = inv(a22 - a21.x12 - a23.x32) 
+      call ts_alloc(b22,n2,n2,"getGF_Tri")
       call invmat(n2,a22,b22,ierr)   ! now we've got b22
+      call ts_dealloc(a22,"getGF_Tri")
  
+      
+      
+      if(.not.updatedmcr) then
+         
 c  b12 = -x12.b22, b21 = b12^T:
-      a=dcmplx(-1.d0,0.d0)
-      b=dcmplx(0.d0,0.d0) 
-      call zgemm('N','N', n1 , n2 , n2 ,a ,x12, n1, b22,
+         call ts_alloc(b12,n1,n2,"getGF_Tri")
+         a=dcmplx(-1.d0,0.d0)
+         b=dcmplx(0.d0,0.d0) 
+         call zgemm('N','N', n1 , n2 , n2 ,a ,x12, n1, b22,
      &     n2, b, b12, n1)      ! got b12
-
+         call ts_dealloc(x12,"getGF_Tri")
+         
 C FDN
 C      call transpose(b12,n1,n2,b21) ! got b21
 C b21 = -b22.a21.inv(a11)
 C  a21.inv(a11) --> x21
-      a=dcmplx(1.d0,0.d0)
-      b=dcmplx(0.d0,0.d0) 
-      call zgemm('N','N', n2, n1, n1 ,a ,a21, n2, b11, 
+         call ts_alloc(x21,n2,n1,"getGF_Tri")
+         a=dcmplx(1.d0,0.d0)
+         b=dcmplx(0.d0,0.d0) 
+         call zgemm('N','N', n2, n1, n1 ,a ,a21, n2, b11, 
      &     n1, b, x21, n2)
+         call ts_dealloc(a21,"getGF_Tri")
+         call ts_dealloc(b11,"getGF_Tri")
+         
 ! b21 = -b22.x21
-      a=dcmplx(-1.d0,0.d0)
-      b=dcmplx(0.d0,0.d0) 
-      call zgemm('N','N', n2 , n1 , n2 ,a ,b22, n2, x21, 
+         call ts_alloc(b21,n2,n1,"getGF_Tri")
+         a=dcmplx(-1.d0,0.d0)
+         b=dcmplx(0.d0,0.d0) 
+         call zgemm('N','N', n2 , n1 , n2 ,a ,b22, n2, x21, 
      &     n2, b, b21, n2)      ! got b21
+         call ts_dealloc(x21,"getGF_Tri")
 C FDN 
  
 
 c  b32 = -x32.b22, b23 = b32^T:
-      a=dcmplx(-1.d0,0.d0)
-      b=dcmplx(0.d0,0.d0) 
-      call zgemm('N','N', n3 , n2 , n2 ,a ,x32, n3, b22,
+         call ts_alloc(b32,n3,n2,"getGF_Tri")
+         a=dcmplx(-1.d0,0.d0)
+         b=dcmplx(0.d0,0.d0) 
+         call zgemm('N','N', n3 , n2 , n2 ,a ,x32, n3, b22,
      &     n2, b, b32, n3)      ! got b32  
-
+         call ts_dealloc(x32,"getGF_Tri")
+     
 C FDN
 C      call transpose(b32,n3,n2,b23) ! got b23
 C b23 = -b22.a23.inv(a33)
 C   a23.inv(a33) --> x23
-      a=dcmplx(1.d0,0.d0)
-      b=dcmplx(0.d0,0.d0) 
-      call zgemm('N','N', n2, n3, n3 ,a ,a23, n2, b33, 
+         call ts_alloc(x23,n2,n3,"getGF_Tri")
+         a=dcmplx(1.d0,0.d0)
+         b=dcmplx(0.d0,0.d0) 
+         call zgemm('N','N', n2, n3, n3 ,a ,a23, n2, b33, 
      &     n3, b, x23, n2)
+         call ts_dealloc(a23,"getGF_Tri")
+         call ts_dealloc(b33,"getGF_Tri")
+         
 C b23 = -b22.x23
-      a=dcmplx(-1.d0,0.d0)
-      b=dcmplx(0.d0,0.d0) 
-      call zgemm('N','N', n2 , n3 , n2 ,a ,b22, n2, x23, 
+         call ts_alloc(b23,n2,n3,"getGF_Tri")
+         a=dcmplx(-1.d0,0.d0)
+         b=dcmplx(0.d0,0.d0) 
+         call zgemm('N','N', n2 , n3 , n2 ,a ,b22, n2, x23, 
      &     n2, b, b23, n2)      ! got b23
-C FDN
+         call ts_dealloc(x23,"getGF_Tri")
 
-c  b11 = -x12.b21 + inv(a11)
-      a=dcmplx(-1.d0,0.d0)
-      b=dcmplx(1.d0,0.d0) 
-      call zgemm('N','N', n1 , n1 , n2 ,a ,x12, n1, b21,
-     &     n2, b, b11, n1)      ! got b11
-
- 
-c  b33 = -x32.b23 + inv(a33)
-      a=dcmplx(-1.d0,0.d0)
-      b=dcmplx(1.d0,0.d0) 
-      call zgemm('N','N', n3 , n3 , n2 ,a ,x32, n3, b23,
-     &     n2, b, b33, n3)      ! got b33
-
- 
-          
-      deallocate(a11)
-      deallocate(a12)
-      deallocate(a21)
-      deallocate(a22)
-      deallocate(a23)
-      deallocate(a32)
-      deallocate(a33)
-
-      deallocate(x12)
-      deallocate(x32)
-C FDN
-      deallocate(x21)
-      deallocate(x23)
+      end if ! .not.updatedmcr
+         
 
 c
 c     now collect into GF
 c     
 
-
-      call collectri(n1,n2,n3,b11,b12,b21,b22,b23,b32,b33,GF)
  
-
-
-      deallocate(b11)
-      deallocate(b12)
-      deallocate(b21)
-      deallocate(b22)
-      deallocate(b23)
-      deallocate(b32)
-      deallocate(b33)
-
+C GF not yet in memory control !!!
+      allocate(GF(no*no),stat=allocStat)
+      if(allocStat /=0) call die("Could not allocate in getGF_Tri") 
+    
+      call collectri(n1,n2,n3,b12,b21,b22,b23,b32,GF)
+ 
+      call ts_dealloc(b22,"getGF_Tri")
+      
+      if(.not.updatedmcr) then
+         call ts_dealloc(b12,"getGF_Tri")
+         call ts_dealloc(b21,"getGF_Tri")
+         call ts_dealloc(b23,"getGF_Tri")
+         call ts_dealloc(b32,"getGF_Tri")
+      end if
       
       end if ! .not. useTri
      
