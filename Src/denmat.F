@@ -120,7 +120,7 @@ C *******************************************************************
      .  qs(nspin),eta(nspin),h(nhmax,nspin),s(nhmax)
      
       external
-     .  iodm, timer
+     .  timer
 
 C Internal variales ..................................................
 C   Notation hints:

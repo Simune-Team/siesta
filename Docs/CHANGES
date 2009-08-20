@@ -5,6 +5,73 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 -----------------------------------------------------------------------
+2009-08-20  09:25:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.32
+Documentation updates. Building and cosmetic fixes. Eggbox checker.
+
+* Added a draft of release_notes_3.0
+
+* New experimental directory Docs/ExtraDocs containing files with
+  information relevant to a specific feature. They should complement
+  the "manual", which is really a reference manual and not very useful
+  for feature discovery. This is work in progress and subject to major
+  changes.
+
+* Updated the content of a number of README files.
+
+* Updated several sections of Docs/siesta.tex.
+
+* Created new Util/test-xml directory to keep a separate version of
+  the XML checker.
+
+* New Util/Scripting/eggbox_checker.py script for eggbox diagnostics.
+
+* Added Src/Sys/DOCUMENTED-TEMPLATE.make to help users with the subtle
+  points of arch.make generation. More documentation about the
+  building process in several places.
+
+* Warn about deprecation of PHONON interface.
+
+* Update siesta.tex with DM reuse information. Better header
+  information in new_dm.F. Remove references to iodm in Siesta
+  files. It is still needed for some utility programs.
+
+* Clarify target of 'goto' in atomlwf (this was a bug introduced in
+  previous patches).
+
+* Give the Src/obj_setup.sh the ability to override the Src link in
+  the object directory. Now it should be possible to completely update
+  the object directory even if it moves.
+
+* Proper test for gfortran macros
+  
+  gfortran now defines the __GFORTRAN__ macro, so it is 
+  no longer necessary to define GFORTRAN in makefiles, but
+  it is still supported. The proper idiom for the gfortran 
+  test in f2kcli is now:
+  
+  #if  !defined(GFORTRAN) && !defined(__GFORTRAN__)
+
+* Removed the Src/filter debug directory.
+
+* Updates to some makefiles and many cosmetic fixes.
+
+-----------------------------------------------------------------------
+2009-08-14  16:20:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.31
+Speed-up of density-matrix building in diagk
+
+By computing only the products of eigenvector components which are
+really needed, the building of the density-matrix has been
+significantly speeded-up in diagk.  A similar idea can be applied in
+diagkp and diag2k (here saving in memory too), but these are not
+implemented yet.
+
+NOTE that the diagk_file version of the routine is still significantly
+faster, and should be the method of choice when NetCDF is compiled in.
+
+modified:
+  Src/diagk.F
+
+-----------------------------------------------------------------------
 2009-08-07  16:20:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.30
 Assorted fixes, dealing mostly with the building system
 

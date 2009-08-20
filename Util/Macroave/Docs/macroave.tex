@@ -168,44 +168,10 @@ Campus de la U.A.B.,
 
 \section{Compilation}
 
-\noindent
+Everything is automated within the Siesta distribution. 
+Just go to Macroave/Src and type 'make'. Optionally, compile
+the 'permute' program if needed.
 
- In this section we give all the steps required to install
- the program. 
- We assume that you use UNIX and you will install {\sc Macroave} in 
- $\sim$/Macroave/Src, where $\sim$ indicates your home directory.
- The commands you must type are in {\tt typewriter} font, 
- and {\tt \$} indicates the prompt.
-
- Uncompress and unpack the gzipped tar file macroave.tar.gz
-
- {\tt \$ gunzip macroave.tar.gz}
- 
- {\tt \$ tar -xvf macroave.tar}
-
- Now, we suppose you have a fortran-90 compiler and you want to compile
- the source files, included in the directory  {\tt Macroave/Src}. 
- Go into this subdirectory
-
- {\tt \$ cd Macroave/Src}
-
- The compilation of the program is done using a Makefile that is
- provided with the code. This Makefile is able to generate the
- executable file in several architectures by including
- information from the file {\tt arch.make} in the
- main Siesta {\tt Src} directory, which you should have generated in
- advance. It is extremely important that you use the same {\tt
- arch.make} file that you used for Siesta.
-
- You just need to run the `make' utility
- as usual, typing make in the source directory:
- 
- {\tt \$ make}
-
- Since {\sc Macroave} is written in fortran-90 and the memory 
- is allocated dynamically,
- the executable file, called macroave, should work for any job.
-   
 \section{Running the program}
 
  As it was mentionned in the introduction (Section ~\ref{sec:intro}),

@@ -89,6 +89,11 @@ C The auxiliary arrays are now no longer symmetry and so the order
 C of referencing has been changed in several places to reflect this.
 C *********************************************************************
 C
+C Optimization of Dscf building by Alberto Garcia (August 2009)
+C
+C NOTE that the diagk_file routine is still much more efficient in terms of
+C CPU time.
+C
 C  Modules
 C
       use precision
@@ -125,7 +130,6 @@ C
      .                  psi(2,nuotot,nuo), aux(2,nuotot*5)
       logical           getD, getPSI, fixspin
       external          cdiag
-      real(dp)          anorm
 
 C  Internal variables .............................................
       integer
@@ -134,8 +138,12 @@ C  Internal variables .............................................
 
       real(dp)
      .  ckxij, ee, kxij, pipj1, pipj2, qe, skxij, t
+
+      logical, allocatable :: done_juo(:)
 C  ....................
 
+
+      allocate(done_juo(nuotot))
 
 C Skip eigenvalues if DM is not required and WF's are required ....
       if (getPSI .and. .not. getD) goto 10
@@ -338,17 +346,26 @@ C Global operation to form new density matrix
 #endif
                 ee = qo(ie,ispin,ik) * eo(ie,ispin,ik)
                 do iuo = 1,nuo
-                  call LocalToGlobalOrb(iuo,Node,Nodes,iio)
-                  do juo = 1,nuotot
-                    pipj1 = aux(1,iio) * aux(1,juo) +
-     .                      aux(2,iio) * aux(2,juo)
-                    pipj2 = aux(1,iio) * aux(2,juo) -
-     .                      aux(2,iio) * aux(1,juo)
-                    Dk(1,juo,iuo) = Dk(1,juo,iuo) + qe * pipj1
-                    Dk(2,juo,iuo) = Dk(2,juo,iuo) + qe * pipj2
-                    Ek(1,juo,iuo) = Ek(1,juo,iuo) + ee * pipj1
-                    Ek(2,juo,iuo) = Ek(2,juo,iuo) + ee * pipj2
-                  enddo
+                   call LocalToGlobalOrb(iuo,Node,Nodes,iio)
+                   ! Process only the elements really needed
+                   ! Dk and Ek are re-used storage, so
+                   ! no memory is really wasted  [AG, Aug 2009]
+                   done_juo(1:nuotot) = .false.
+                   do j = 1,numd(iuo)
+                      ind = listdptr(iuo) + j
+                      jo = listd(ind)
+                      juo = indxuo(jo)
+                      if (done_juo(juo)) cycle
+                      pipj1 = aux(1,iio) * aux(1,juo) +
+     .                     aux(2,iio) * aux(2,juo)
+                      pipj2 = aux(1,iio) * aux(2,juo) -
+     .                     aux(2,iio) * aux(1,juo)
+                      Dk(1,juo,iuo) = Dk(1,juo,iuo) + qe * pipj1
+                      Dk(2,juo,iuo) = Dk(2,juo,iuo) + qe * pipj2
+                      Ek(1,juo,iuo) = Ek(1,juo,iuo) + ee * pipj1
+                      Ek(2,juo,iuo) = Ek(2,juo,iuo) + ee * pipj2
+                      done_juo(juo) = .true.
+                   enddo
                 enddo
               endif
               BTest = ie/BlockSize
@@ -357,6 +374,8 @@ C Global operation to form new density matrix
                 if (BNode .gt. Nodes-1) BNode = 0
               endif
             enddo
+
+
             do iuo = 1,nuo
               do j = 1,numd(iuo)
                 ind = listdptr(iuo) + j
@@ -380,8 +399,8 @@ C Global operation to form new density matrix
         enddo
       enddo
 
-!      anorm =   compute_norm(Dnew,size(Dnew,dim=1),size(Dnew,dim=2))
-!      if (Node.eq.0) print *, "DM norm after diagk: ", anorm
+      deallocate(done_juo)
+
       if (Node .eq. 0) then
          call io_close(iu)
       endif
