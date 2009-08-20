@@ -1,0 +1,56 @@
+****************
+
+Things to watch out for befor the release 
+(Please edit this file as you go along fixing and discovering things)
+
+--- POLITICAL
+
+* We have to give proper credit to Cela and the BSC in a prominent place (manual, README, ???)
+
+--- Code checks 
+
+* The file "periodic_table.f" seems to have some non-standard
+  info. For example, for Ce ([Xe]4f1 5d1 6s2 in WebElements, no 4f1
+  5d1 in the table.  The table should be checked.
+
+* The Chemical potential fix for O(N) by Pablo is still not done in parallel.
+  In general, what to do about the O(N) part? A bigger disclaimer?
+
+--- Cosmetic and updates of info:
+
+* We are still missing the TranSiesta Manual
+
+* "2006" date should be changed in many places. This will be done with a
+script at the last moment (in case the year changes :-) ... just
+joking)
+
+* README_TRANSIESTA should disappear from there as its contents
+have been added to siesta.tex
+
+* Src/README needs to be updated
+
+* Util/Plrho/README.pgplot 
+The web address given http://dulcinea.uc3m.es/new/Pgplot/ does not seem to be functional 
+
+------------------------------------------------------------------------------
+
+--- Support material
+
+* We have to regenerate all the .out and .xml files in Reference, with the proper version string.
+
+
+--- Documentation
+
+* At least two people need to go over siesta.tex and the
+  Docs/ExtraDocs to check for consistency. (In the case of the
+  ExtraDocs, to make sure that they are at least useful).
+
+* Siesta.tex is in dire need of a conceptual re-working. We have to
+  think about what to do.
+
+--- OTHERS
+
+.....
+
+
+

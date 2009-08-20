@@ -2,7 +2,18 @@
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
 
-** CHANGES ALONG siesta-2.6 trunk branch 
+
+** CHANGES ALONG siesta-3.0-beta branch
+
+------------------------------------------------------------------------
+2009-08-20  10:00:00 GMT Alberto Garcia <albertog@icmab.es>	 3.0-rc1
+Setup for 3.0-beta branch
+
+Update of version strings.
+
+
+
+** CHANGES ALONG siesta-2.6 branch 
 
 -----------------------------------------------------------------------
 2009-08-20  09:25:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.32

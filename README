@@ -1,6 +1,7 @@
-SIESTA 2.1.X
+SIESTA 3.0-beta-XX
 (see version.info for a more up-to-date version)
-December 2006---...
+
+*** UPDATE THIS ***
 
 www.uam.es/siesta
 
@@ -18,6 +19,5 @@ under Pseudo/.
 
 Please see the manual for compilation and other instructions.
 
-Please be sure to follow the terms and conditions stated in SIESTA_LICENCE,
-a hardcopy of which you should have signed.
+Please be sure to follow the terms and conditions stated in SIESTA_LICENCE.
 
