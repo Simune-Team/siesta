@@ -51,9 +51,14 @@ include arch.make
 #
 what:
 	@echo
+	@if [ "$(VPATH)" == . ]; then \
+              echo "** You can no longer build SIESTA in Src." ;\
+              echo "** Go to the Obj directory and see the README file." ;\
+              false ;\
+         fi
 	@echo "Compilation architecture to be used: ${SIESTA_ARCH}"
 	@echo "If this is not what you want, create the right"
-	@echo "arch.make file using the models in Sys"
+	@echo "arch.make file using the models in Src/Sys"
 	@echo
 	@echo "Hit ^C to abort..."
 	@sleep 2
@@ -72,7 +77,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	efield.o egandd.o ener3.o ener3lomem.o extrapolon.o \
 	fixed.o flib_spline.o gradient.o gradientlomem.o grdsam.o \
 	hsparse.o idiag.o  initatom.o inver.o iodm_netcdf.o \
-	iodmhs_netcdf.o iodm.o iogrid_netcdf.o iohs.o iolwf.o iozm.o ipack.o iopipes.o \
+	iodmhs_netcdf.o iogrid_netcdf.o iohs.o iolwf.o iozm.o ipack.o iopipes.o \
 	iowfs_netcdf.o kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o local_DOS.o\
 	madelung.o matel.o meshmatrix.o memory.o meshsubs.o metaforce.o \
         m_check_supercell.o m_filter.o mulliken.o minvec.o m_pulay.o naefs.o \
@@ -146,11 +151,16 @@ INCFLAGS:=$(INCFLAGS) $(FoX_FCFLAGS)
 #
 # First, it needs to be configured. This may have been done
 # by the main SIESTA configure, but in case not:
+#
+FC_DEFAULT:=$(FC)
+FC_SERIAL?=$(FC_DEFAULT)
+#
 $(FoX_configured):
-	(cd FoX; if [ "$(VPATH)" = . ]; then CONFIGURE="./configure"; else CONFIGURE="$(VPATH)/FoX/configure"; fi; $$CONFIGURE VPATH="$(VPATH)/FoX" FC="$(FC)" FCFLAGS="$(FFLAGS)" --enable-wcml $(DUMMY_FOX); touch .config)
+	(cd FoX; if [ "$(VPATH)" = . ]; then CONFIGURE="./configure"; else CONFIGURE="$(VPATH)/FoX/configure"; fi; $$CONFIGURE VPATH="$(VPATH)/FoX" FC="$(FC_SERIAL)" FCFLAGS="$(FFLAGS)" --enable-wcml $(DUMMY_FOX) || false )
+#
 # Note we have to make sure to use the same compiler as SIESTA,
-# and pick up all the same FFLAGS.
-# And also remember to maybe ask for a dummy library
+# and pick up all the same FFLAGS, and also remember to maybe ask for a dummy library.
+# Note also that the "false" clause will stop the 'make' process if the configuration fails.
 #
 # Then we want to make FoX itself. Like so:
 $(FoX_built): $(FoX_configured)
@@ -184,7 +194,7 @@ $(FDF):
 #
 # Routines using fdf calls.
 #
-dhscf.o iodm.o iohs.o iolwf.o  grdsam.o : $(FDF)
+dhscf.o iohs.o iolwf.o  grdsam.o : $(FDF)
 recoor.o outcoor.o ioxv.o m_iostruct.o kgrid.o kgridinit.o ksv.o : $(FDF)
 redata.o siesta.o diagon.o pdos.o plcharge.o: $(FDF)
 coor.o cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o  ofc.o : $(FDF)
@@ -791,3 +801,6 @@ neighbour.o: mneighb.o
 on_core.o: onmod.o
 on_main.o: onmod.o
 version_info.o: version.o
+write_subs_energies.o: write_subs.o
+write_subs_positions.o: write_subs.o
+write_subs_pressure.o: write_subs.o

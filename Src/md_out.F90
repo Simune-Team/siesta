@@ -14,6 +14,9 @@ use units, only: Ang
 use precision, only: dp
 use sys,      only: die
 use files,    only: slabel
+use m_energies, only: etot
+
+implicit none
 
 public :: md_v_format
 #ifdef CDF
@@ -280,14 +283,6 @@ integer, intent(in) :: code
 if (code /= nf90_noerr) call die("netCDF error: " // NF90_STRERROR(code))
 end subroutine check
 
-subroutine close_md_netcdf()
-use netcdf, only: nf90_close
-
-integer :: iret
-
- iret = nf90_close(ncid)
- call check(iret)
-end subroutine close_md_netcdf
 #endif
 
 end module md_out

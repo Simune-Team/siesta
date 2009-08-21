@@ -248,6 +248,8 @@
       endif
 
       ! Save last atomic positions and velocities 
+      ! NOTE that this means "the positions predicted for next step"
+      ! and "the current velocities"
       if (idyn.ne.6 .and. idyn.ne.7 .and. idyn.ne.8) then
         call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, 
      &             foundxv)

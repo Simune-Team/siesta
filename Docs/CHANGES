@@ -5,6 +5,163 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 -----------------------------------------------------------------------
+2009-08-20  09:25:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.32
+Documentation updates. Building and cosmetic fixes. Eggbox checker.
+
+* Added a draft of release_notes_3.0
+
+* New experimental directory Docs/ExtraDocs containing files with
+  information relevant to a specific feature. They should complement
+  the "manual", which is really a reference manual and not very useful
+  for feature discovery. This is work in progress and subject to major
+  changes.
+
+* Updated the content of a number of README files.
+
+* Updated several sections of Docs/siesta.tex.
+
+* Created new Util/test-xml directory to keep a separate version of
+  the XML checker.
+
+* New Util/Scripting/eggbox_checker.py script for eggbox diagnostics.
+
+* Added Src/Sys/DOCUMENTED-TEMPLATE.make to help users with the subtle
+  points of arch.make generation. More documentation about the
+  building process in several places.
+
+* Warn about deprecation of PHONON interface.
+
+* Update siesta.tex with DM reuse information. Better header
+  information in new_dm.F. Remove references to iodm in Siesta
+  files. It is still needed for some utility programs.
+
+* Clarify target of 'goto' in atomlwf (this was a bug introduced in
+  previous patches).
+
+* Give the Src/obj_setup.sh the ability to override the Src link in
+  the object directory. Now it should be possible to completely update
+  the object directory even if it moves.
+
+* Proper test for gfortran macros
+  
+  gfortran now defines the __GFORTRAN__ macro, so it is 
+  no longer necessary to define GFORTRAN in makefiles, but
+  it is still supported. The proper idiom for the gfortran 
+  test in f2kcli is now:
+  
+  #if  !defined(GFORTRAN) && !defined(__GFORTRAN__)
+
+* Removed the Src/filter debug directory.
+
+* Updates to some makefiles and many cosmetic fixes.
+
+-----------------------------------------------------------------------
+2009-08-14  16:20:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.31
+Speed-up of density-matrix building in diagk
+
+By computing only the products of eigenvector components which are
+really needed, the building of the density-matrix has been
+significantly speeded-up in diagk.  A similar idea can be applied in
+diagkp and diag2k (here saving in memory too), but these are not
+implemented yet.
+
+NOTE that the diagk_file version of the routine is still significantly
+faster, and should be the method of choice when NetCDF is compiled in.
+
+modified:
+  Src/diagk.F
+
+-----------------------------------------------------------------------
+2009-08-07  16:20:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.30
+Assorted fixes, dealing mostly with the building system
+
+* (IMPORTANT) The default building directory is now Obj, instead of Src.
+  This change is necessary to support multiple compilation with the
+  same source. See Obj/README for more details.
+
+* Many fixes to smooth compilation in several systems, notably on IBM
+  computers. 
+
+* The default makefile in Pseudo/atom is now the 'modern' version with
+  CML support.
+
+* Clearer diagnostics in case of FoX configuration problems. 
+
+* Removed obsolete .make files from Src/Sys. Added 64bit versions of
+  the MareNostrum files.
+
+* The 'MaximumWallClockTime' option is no longer available.
+
+* Fixes in the NetCDF iodm* routines to properly handle a pointer.
+
+removed:
+  Src/Sys/eth-hreidar-mpi.make
+  Src/Sys/lahey-lam.make
+  Src/Sys/lahey-mpich.make
+  Src/Sys/lahey-nolibs.make
+  Src/Sys/lahey.make
+  Src/Sys/osfdxml-mpich.make
+  Src/Sys/osfdxml.make
+  Src/Sys/osfdxmlcdf.make
+  Src/Sys/pgf90-lam.make
+  Src/Sys/pgf90-mpich.make
+  Src/Sys/pgf90-nolibs.make
+  Src/Sys/pgf90.make
+  Src/Sys/sgi-altix.make
+  Src/Sys/sgi.make
+  Src/Sys/sgi64-cdf.make
+  Src/Sys/sgi64-lam-cdf.make
+  Src/Sys/sgi64-lam.make
+  Src/Sys/sgi64-mpi_fermat.make
+  Src/Sys/sgi64-mpich-cdf.make
+  Src/Sys/sgi64-mpich.make
+  Src/Sys/sgin32-mpi.make
+  Src/Sys/sun-nolibs.make
+  Src/Sys/t3e.make
+  Util/COOP/precision.f
+added:
+  Obj/
+  Obj/README
+  Src/Sys/marenostrum-mpi-64.make
+  Src/Sys/marenostrum-mpi-netcdf-64.make
+renamed:
+  Pseudo/atom/makefile => Pseudo/atom/makefile-old
+  Pseudo/atom/makefile-xml => Pseudo/atom/Makefile
+  Src/Sys/marenostrum-mpi.make => Src/Sys/marenostrum-mpi-32.make
+  Util/COOP/sys.f90 => Util/COOP/sys_local.f90
+  Util/Vibra/Vibra/ => Util/Vibra/Src/
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/FoX/configure
+  Src/Makefile
+  Src/Sys/README
+  Src/Sys/cscs-cray-mpi.make
+  Src/Sys/cscs-cray.make
+  Src/Sys/cscs-ibm-blanc.make
+  Src/Sys/finisterrae.make
+  Src/Sys/marenostrum-mpi-netcdf-32.make
+  Src/iodm_netcdf.F90
+  Src/iodmhs_netcdf.F90
+  Src/molecularmechanics.F90
+  Src/obj_setup.sh
+  Src/siesta_options.F90
+  Src/timer.F
+  Util/COOP/Makefile
+  Util/COOP/mprop.f90
+  Util/Denchar/Src/Makefile
+  Util/DensityMatrix/makefile
+  Util/Grid/makefile
+  Util/Projections/makefile
+  Util/Vibra/Src/Makefile
+  Util/WFS/makefile
+  Util/pdosxml/makefile
+  Util/pseudo-xml/makefile
+  Pseudo/atom/makefile-old
+  Pseudo/atom/Makefile
+  Src/Sys/marenostrum-mpi-32.make
+
+-----------------------------------------------------------------------
 2009-07-03  14:00:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.29
 TranSiesta: New saving options and file format (M. Paulsson, F.D. Novaes)
 

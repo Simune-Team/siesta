@@ -94,11 +94,11 @@ CONTAINS
     call abort("")
 #else
     call abort()
-#endif ! FC_ABORT_TYPE
+#endif /* ! FC_ABORT_TYPE */
 #else
     i=>null()
     Print*,i
-#endif ! FC_HAVE_ABORT
+#endif  /* ! FC_HAVE_ABORT */
     stop
 
   end subroutine pxfabort

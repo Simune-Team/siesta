@@ -4,7 +4,9 @@
 #
 default: macroave
 #
-include ../../../Src/arch.make
+OBJDIR=Obj
+VPATH:=$(shell pwd)/../../../Src
+include ../../../$(OBJDIR)/arch.make
 #
 FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
@@ -27,11 +29,9 @@ $(COM_OBJS):
 #
 macroave:  $(ALL_OBJS)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o macroave $(ALL_OBJS) 
-get_f2kcli:
-	ln -sf ../../../Src/f2kcli.F90 .
 #
 permute.o: f2kcli.o
-permute: get_f2kcli f2kcli.o permute.o 
+permute:   f2kcli.o permute.o 
 	$(FC) $(FFLAGS) $(LDFLAGS) -o permute f2kcli.o permute.o
 #
 clean: 

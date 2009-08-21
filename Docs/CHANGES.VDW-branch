@@ -1,5 +1,158 @@
 ------------------------------------------------------------------
 
+2009-08-21  16:00:00 GMT+1	Jose M Soler <jose.soler@uam.es>
+
+Summary: merged with trunk 2.6.32
+Keywords: merge
+
+removed:
+  Src/Sys/eth-hreidar-mpi.make
+  Src/Sys/lahey-lam.make
+  Src/Sys/lahey-mpich.make
+  Src/Sys/lahey-nolibs.make
+  Src/Sys/lahey.make
+  Src/Sys/osfdxml-mpich.make
+  Src/Sys/osfdxml.make
+  Src/Sys/osfdxmlcdf.make
+  Src/Sys/pgf90-lam.make
+  Src/Sys/pgf90-mpich.make
+  Src/Sys/pgf90-nolibs.make
+  Src/Sys/pgf90.make
+  Src/Sys/sgi-altix.make
+  Src/Sys/sgi.make
+  Src/Sys/sgi64-cdf.make
+  Src/Sys/sgi64-lam-cdf.make
+  Src/Sys/sgi64-lam.make
+  Src/Sys/sgi64-mpi_fermat.make
+  Src/Sys/sgi64-mpich-cdf.make
+  Src/Sys/sgi64-mpich.make
+  Src/Sys/sgin32-mpi.make
+  Src/Sys/sun-nolibs.make
+  Src/Sys/t3e.make
+  Src/write_subs_energies.F
+  Src/write_subs_positions.F
+  Src/write_subs_pressure.F
+  Util/COOP/precision.f
+  Util/filter/
+  Util/filter/README
+  Util/filter/ba-6s-orb.dat
+  Util/filter/core.dat
+  Util/filter/f2kcli.F90
+  Util/filter/m_filter.f90
+  Util/filter/m_getopts.f90
+  Util/filter/makefile
+  Util/filter/test_filter.f90
+  Util/filter/ti-3p-orb.dat
+  Util/filter/ti-4p-orb.dat
+added:
+  Docs/ExtraDocs/
+  Docs/ExtraDocs/00_README_FIRST
+  Docs/ExtraDocs/Analysis_Tools
+  Docs/ExtraDocs/Basis_Generation
+  Docs/ExtraDocs/CML_Output
+  Docs/ExtraDocs/Code_RoadMap
+  Docs/ExtraDocs/Compilation
+  Docs/ExtraDocs/Eggbox_Effect
+  Docs/ExtraDocs/File_Formats
+  Docs/ExtraDocs/Geometry_Optimization
+  Docs/ExtraDocs/Molecular_Dynamics
+  Docs/ExtraDocs/OrderN_Operation
+  Docs/ExtraDocs/Parallel_Operation
+  Docs/ExtraDocs/SCF_Convergence
+  Docs/ExtraDocs/Scripting_Utilities
+  Docs/release.notes_3.0
+  Obj/
+  Obj/README
+  Src/Confs/README
+  Src/Sys/DOCUMENTED-TEMPLATE.make
+  Src/Sys/marenostrum-mpi-64.make
+  Src/Sys/marenostrum-mpi-netcdf-64.make
+  Util/DensityMatrix/read_dm.m
+  Util/DensityMatrix/read_dmhs.m
+  Util/Grid/README
+  Util/HSX/README
+  Util/MD/README
+  Util/Scripting/eggbox_checker.py
+  Util/test-xml/
+  Util/test-xml/README
+  Util/test-xml/compare_m.f90
+  Util/test-xml/corresponding_node.f90
+  Util/test-xml/flib_dom.f90
+  Util/test-xml/fox-makefile
+  Util/test-xml/m_compare_tol.f90
+  Util/test-xml/m_dom_attribute.f90
+  Util/test-xml/m_dom_debug.f90
+  Util/test-xml/m_dom_document.f90
+  Util/test-xml/m_dom_element.f90
+  Util/test-xml/m_dom_error.f90
+  Util/test-xml/m_dom_namednodemap.f90
+  Util/test-xml/m_dom_node.f90
+  Util/test-xml/m_dom_nodelist.f90
+  Util/test-xml/m_dom_parse.f90
+  Util/test-xml/m_dom_types.f90
+  Util/test-xml/m_dom_utils.FoX.f90
+  Util/test-xml/m_dom_utils.f90
+  Util/test-xml/m_strings.f90
+  Util/test-xml/makefile
+  Util/test-xml/string_utilities.f90
+  Util/test-xml/test.f90
+renamed:
+  Src/Sys/marenostrum-mpi.make => Src/Sys/marenostrum-mpi-32.make
+  Util/COOP/sys.f90 => Util/COOP/sys_local.f90
+  Util/Vibra/Vibra => Util/Vibra/Src
+modified:
+  Docs/CHANGES
+  Docs/CHANGES.VDW-branch
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/FoX/configure
+  Src/FoX/fsys/fox_m_fsys_abort_flush.F90
+  Src/FoX/wcml/m_wcml_molecule.F90
+  Src/Makefile
+  Src/Sys/README
+  Src/Sys/cscs-cray-mpi.make
+  Src/Sys/cscs-cray.make
+  Src/Sys/cscs-ibm-blanc.make
+  Src/Sys/finisterrae.make
+  Src/Sys/marenostrum-mpi-netcdf-32.make
+  Src/Sys/marenostrum-mpi-32.make
+  Src/Sys/nolibs.make
+  Src/atomlwf.F
+  Src/denmat.F
+  Src/denmatlomem.F
+  Src/diagk.F
+  Src/f2kcli.F90
+  Src/fdf/fdf.f
+  Src/iodm_netcdf.F90
+  Src/iodmhs_netcdf.F90
+  Src/m_filter.f90
+  Src/md_out.F90
+  Src/mixer.F
+  Src/molecularmechanics.F90
+  Src/new_dm.F
+  Src/obj_setup.sh
+  Src/siesta_move.F
+  Src/state_init.F
+  Src/xmlparser/f2kcli.F90
+  Util/COOP/Makefile
+  Util/COOP/mprop.f90
+  Util/Denchar/Src/Makefile
+  Util/DensityMatrix/README
+  Util/DensityMatrix/makefile
+  Util/Grid/makefile
+  Util/Macroave/Docs/macroave.tex
+  Util/Macroave/Src/Makefile
+  Util/Macroave/Src/permute.F
+  Util/Projections/makefile
+  Util/Scripting/README
+  Util/VCA/README
+  Util/Vibra/Src/Makefile
+  Util/WFS/makefile
+  Util/pdosxml/makefile
+  Util/pseudo-xml/makefile
+
+------------------------------------------------------------------
+
 2009-07-22  15:30:00 GMT+1	Jose M Soler <jose.soler@uam.es>
 
 Summary: slightly modified format of timer report
