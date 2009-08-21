@@ -253,9 +253,15 @@
 !         if (IONode) print *, "DM norm after extrapolation: ", anorm
 
       endif
-
+     
       ! Initialize energy-density matrix to zero for first call to overfsm
+#ifdef TRANSIESTA
+      ! Only part of Escf is updated in TS, so if it is put as zero here
+      ! a continuation run gives bad forces.
+      if(.not.TSrun) Escf(:,:) = 0.0_dp
+#else
       Escf(:,:) = 0.0_dp
+#endif /* TRANSIESTA */
 
       END subroutine new_dm
 

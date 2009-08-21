@@ -100,23 +100,17 @@ c======================================================================
       real*8 toPi
       parameter(toPi=2d0/Pi)
 c======================================================================
-c FROM FDF
+
 
       character*33 gffileLeft,gffileRight, gffile_default
-
-C Put in m_ts-options
-C      logical UseBulk           ! If true use bulk params. in L/R regions
-C      logical FixQ              ! Fix charge in Contact region to initial SIESTA value
 
 C From fdf read voltfdf, Volt=voltfdf/eV
       real*8 Volt               ! the bias voltage
 
 C      integer NBUFATL,NBUFATR   ! No. buffer atoms, L/R
       integer NBUFL,NBUFR       ! No. buffer states, L/R
-C      logical TriDiag           ! true if tridiagonalization
-C FDN Put in m_ts_options
-C      logical updatedmcr
-C FDN
+
+
 
 c =====================================================================
 c   FROM SIESTA:
@@ -902,8 +896,19 @@ c     Always fix bonds between Left/Right electrodes:
                if(UseBulk) then !update only where Ham is updated:
                   if(ic.gt.NGL .and. ic.lt.nou-NGR+1) ioinC=.true.
                   if(jc.gt.NGL .and. jc.lt.nou-NGR+1) joinC=.true.
-c                  updatedm = ioinC .or. joinC
-                  updatedm = ioinC .and. joinC
+C FDN From fdf Now
+                  if( .not. updatedmcr ) then                
+c
+c              update the cross DM terms between R,L and  C
+c
+                     updatedm = ioinC .or. joinC
+                  else
+c
+c              update DM only in C
+c
+                     updatedm = ioinC .and. joinC
+C FDN
+                  end if
                else
                   if(ic.ge.1 .and. ic.le.nou) ioinC=.true.
                   if(jc.ge.1 .and. jc.le.nou) joinC=.true.
@@ -1225,7 +1230,7 @@ C FDN Complex for k sampling
               end if
 C FDN
             end do              !i
-
+    
 
 c -------------------------------------------------------------
 c     Right Equilibrium Contour:
@@ -1243,7 +1248,7 @@ C FDN Complxe for k sampling
 C FDN
             enddo
 
-
+        
 c -------------------------------------------------------------
 c     Non-equilibrium part:
          else if(Part .eq. 'V') then
@@ -1267,7 +1272,6 @@ C FDN Complexe for k sampling
               end if
 C FDN
             end do
-
 c  Calculate rho^L(e) -> work2 ! NOTE L!!
 
         call GFGammaGF(jout,.true.,nou,NGL,GF,GAMMAL,work2)
@@ -1293,7 +1297,7 @@ c -------------------------------------------------------------
          end if                 !which part of the contour ??
 ! As a pointer it MUST be deallocated
          deallocate(GF)
-
+         
 
 C=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
  7913    continue               ! the loop over ALL contour points
@@ -1403,7 +1407,7 @@ C FDN
        end if
 C FDN
       endif
-         
+      
 c--------------------------------------------------------------------
 c
 c     The original Hamiltonian from SIESTA was shifted ef: 
@@ -1459,7 +1463,7 @@ C FDN
      .                 k(3)*xijg(3,ind) )
                 cphase =  exp( dcmplx(0d0,-1.0d0)*kxij )
                 ccphase = exp( dcmplx(0d0,+1.0d0)*kxij )
-
+      
         Dnewg(ind,ispin) = Dnewg(ind,ispin) + Dimag(
      . dcmplx(0.5d0*wkpar(ikpar),0d0)*(
      . cphase*DMCplx(ic+nou*(jc-1))+ccphase*DMCplx(jc+nou*(ic-1))
@@ -1476,7 +1480,8 @@ C FDN
        
           end do                !j
        end do                   !io
-
+! FDN Teste
+!      stop
 #else
 C FDN Initialized only once
         if ( ikpar == 1 ) then

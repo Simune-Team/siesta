@@ -119,7 +119,7 @@ C ====================================================================
 
 
 C ====================================================================
-      subroutine collectri(n1,n2,n3,a12,a21,a22,a23,a32,A)
+      subroutine collectri(n1,n2,n3,a11,a12,a21,a22,a23,a32,a33,A)
 
 c  input:
       integer n1,n2,n3
@@ -127,7 +127,7 @@ C      complex*16 a11(n1,n1), a12(n1,n2)
 C      complex*16 a21(n2,n1), a22(n2,n2), a23(n2,n3)
 C      complex*16             a32(n3,n2), a33(n3,n3)
       complex*16, pointer, dimension(:,:) :: a12,a21,
-     .                        a22,a23,a32,a33
+     .                        a22,a23,a32,a11,a33
 
 c output:
       complex*16 A(n1+n2+n3,n1+n2+n3)
@@ -148,12 +148,13 @@ c init:
 c
 c   ---  11  ---    
 c
-C FDN
-C      do j=1,n1
-C         do i=1,n1
-C            A(i,j) = a11(i,j)
-C         end do
-C      end do
+      if (associated(a11)) then
+         do j=1,n1
+            do i=1,n1
+               A(i,j) = a11(i,j)
+            end do
+         end do
+      end if
 
 c
 c   ---  21  ---
@@ -191,12 +192,13 @@ c
 c
 c   ---  33  ---
 c
-C FDN
-C      do j=1,n3
-C         do i=1,n3
-C            A(i+n1+n2, j+n1+n2) = a33(i,j)  
-C         end do
-C      end do
+      if (associated(a33)) then
+         do j=1,n3
+            do i=1,n3
+               A(i+n1+n2, j+n1+n2) = a33(i,j)  
+            end do
+         end do
+      end if
 
 
 C ====================================================================

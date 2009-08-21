@@ -392,7 +392,7 @@ C FDN
       use sys, only: die
       use m_ts_aux_rout, only : splittri, collectri, invmat, transpose,
      .                          csolveg, ts_alloc, ts_dealloc
-      use m_ts_options, only: updatedmcr
+      use m_ts_options, only: updatedmcr, voltfdf
 C FDN
       implicit none                              
 
@@ -445,7 +445,8 @@ C FDN
      .                                               b32,b33
       complex*16, dimension(:,:), pointer ::  x12,x32
 C FDN
-      complex*16, dimension(:,:), pointer ::  x21,x23      
+      complex*16, dimension(:,:), pointer ::  x21,x23   
+      logical :: contactGFonly   
 
 c----------------------------------------------------------------------
       
@@ -464,7 +465,13 @@ c ================================================================
       nullify(b11,b12,b21,b22,b23,b32,b33)
       nullify(x12,x32,x21,x23)
       ierr=0
-      
+! FDN
+! Compute only GF(2,2) ?
+! A difference could be made when updatedmcr(.false.) and volt=0.0 ...
+! b11 and b33 are needed only when there is a bias, and because of the
+! integration scheme, where both L and R electrodes are used as references.
+      contactGFonly = updatedmcr .and. (voltfdf == 0.d0)      
+
       if(.not.USEBULK) write(6,*) 
      &  "WARNING: Tridiag only works for USEBULK for finite bias!"
 
@@ -592,7 +599,7 @@ c     x12 = inv(a11).a12
       call zgemm('N','N', n1, n2, n1 ,a ,b11, n1, a12,
      &     n1, b, x12, n1)     
       call ts_dealloc(a12,"getGF_Tri")
-      if(updatedmcr) call ts_dealloc(b11,"getGF_Tri")
+      if(contactGFonly) call ts_dealloc(b11,"getGF_Tri")
       
 
 c     a22 - a21.x12 --> a22
@@ -600,7 +607,7 @@ c     a22 - a21.x12 --> a22
       b=dcmplx(1.d0,0.d0) 
       call zgemm('N','N', n2, n2, n1 ,a ,a21, n2, x12,
      &  n1, b, a22, n2)      
-      if(updatedmcr) then
+      if(contactGFonly) then
          call ts_dealloc(x12,"getGF_Tri")
          call ts_dealloc(a21,"getGF_Tri")
       end if
@@ -612,7 +619,7 @@ c     x32 = inv(a33).a32
       call zgemm('N','N', n3, n2, n3 ,a ,b33, n3, a32,
      &     n3, b, x32, n3)   
       call ts_dealloc(a32,"getGF_Tri")
-      if(updatedmcr) call ts_dealloc(b33,"getGF_Tri")
+      if(contactGFonly) call ts_dealloc(b33,"getGF_Tri")
        
 
 c     a22 - a23.x32 --> a22
@@ -620,7 +627,7 @@ c     a22 - a23.x32 --> a22
       b=dcmplx(1.d0,0.d0) 
       call zgemm('N','N', n2, n2, n3 ,a ,a23, n2, x32,
      &  n3, b, a22, n2)
-      if(updatedmcr) then
+      if(contactGFonly) then
          call ts_dealloc(x32,"getGF_Tri")
          call ts_dealloc(a23,"getGF_Tri")
       end if      
@@ -631,10 +638,9 @@ c b22 = inv(a22 - a21.x12 - a23.x32)
       call ts_alloc(b22,n2,n2,"getGF_Tri")
       call invmat(n2,a22,b22,ierr)   ! now we've got b22
       call ts_dealloc(a22,"getGF_Tri")
- 
+
       
-      
-      if(.not.updatedmcr) then
+      if(.not.contactGFonly) then
          
 c  b12 = -x12.b22, b21 = b12^T:
          call ts_alloc(b12,n1,n2,"getGF_Tri")
@@ -654,7 +660,6 @@ C  a21.inv(a11) --> x21
          call zgemm('N','N', n2, n1, n1 ,a ,a21, n2, b11, 
      &     n1, b, x21, n2)
          call ts_dealloc(a21,"getGF_Tri")
-         call ts_dealloc(b11,"getGF_Tri")
          
 ! b21 = -b22.x21
          call ts_alloc(b21,n2,n1,"getGF_Tri")
@@ -662,6 +667,14 @@ C  a21.inv(a11) --> x21
          b=dcmplx(0.d0,0.d0) 
          call zgemm('N','N', n2 , n1 , n2 ,a ,b22, n2, x21, 
      &     n2, b, b21, n2)      ! got b21
+
+
+! b11 is needed only when there is a bias.
+! b11 = inv(a11) - b12.x21
+         a=dcmplx(-1.d0,0.d0)
+         b=dcmplx(1.d0,0.d0) 
+         call zgemm('N','N', n1 , n1 , n2 ,a ,b12, n1, x21, 
+     &     n2, b, b11, n1)
          call ts_dealloc(x21,"getGF_Tri")
 C FDN 
  
@@ -684,7 +697,6 @@ C   a23.inv(a33) --> x23
          call zgemm('N','N', n2, n3, n3 ,a ,a23, n2, b33, 
      &     n3, b, x23, n2)
          call ts_dealloc(a23,"getGF_Tri")
-         call ts_dealloc(b33,"getGF_Tri")
          
 C b23 = -b22.x23
          call ts_alloc(b23,n2,n3,"getGF_Tri")
@@ -692,9 +704,17 @@ C b23 = -b22.x23
          b=dcmplx(0.d0,0.d0) 
          call zgemm('N','N', n2 , n3 , n2 ,a ,b22, n2, x23, 
      &     n2, b, b23, n2)      ! got b23
+
+
+! b33 is needed only when there is a bias.
+! b33 = inv(a33) - b32.x23
+         a=dcmplx(-1.d0,0.d0)
+         b=dcmplx(1.d0,0.d0) 
+         call zgemm('N','N', n3 , n3 , n2 ,a ,b32, n3, x23, 
+     &     n2, b, b33, n3)
          call ts_dealloc(x23,"getGF_Tri")
 
-      end if ! .not.updatedmcr
+      end if ! .not.contactGFonly
          
 
 c
@@ -706,18 +726,21 @@ C GF not yet in memory control !!!
       allocate(GF(no*no),stat=allocStat)
       if(allocStat /=0) call die("Could not allocate in getGF_Tri") 
     
-      call collectri(n1,n2,n3,b12,b21,b22,b23,b32,GF)
+      call collectri(n1,n2,n3,b11,b12,b21,b22,b23,b32,b33,GF)
  
       call ts_dealloc(b22,"getGF_Tri")
       
-      if(.not.updatedmcr) then
+      if(.not.contactGFonly) then
+         call ts_dealloc(b11,"getGF_Tri")
          call ts_dealloc(b12,"getGF_Tri")
          call ts_dealloc(b21,"getGF_Tri")
          call ts_dealloc(b23,"getGF_Tri")
          call ts_dealloc(b32,"getGF_Tri")
+         call ts_dealloc(b33,"getGF_Tri")
       end if
       
       end if ! .not. useTri
+ 
      
 C ====================================================================
       RETURN
@@ -1484,7 +1507,6 @@ C Get Node number
       Node = 0
 #endif
 
-
       if (nc.lt. (NGL+NGR))  then
          if(Node.eq.0)
      .   write(6,*) 'ERROR: weightDM: nc=',nc,'<=',NGL+NGR
@@ -1508,42 +1530,49 @@ c            write(*,*) i,j,DMneqR(i,j),DMneqL(i,j),DML(i,j),DMR(i,j)
 c  In the leads we always use either left or right integration scheme.
 
             if (i .le. NGL .or. j .le. NGL) then
-               w = 1.0d0
+! FDN With TriDiag, it must be the opposite !! 
+! GF(1,3) and GF(3,1) are not zero !, only in TriDiag ...
+!               w = 1.0d0
+               w = 0.d0
             endif
             if (i .gt. nc-NGR .or. j .gt. nc-NGR) then
-               w = 0.0d0
+! FDN With TriDiag, it must be the opposite !!
+!               w = 0.0d0
+               w = 1.d0
             endif
 c weight DM and DML
             DML(i,j) = w   *(DML(i,j)+DMneqR(i,j))
      .           +(1.0-w)*(DMR(i,j)+DMneqL(i,j))
             EDML(i,j) = w*EDML(i,j)+(1.0-w)*EDMR(i,j)
 C make an integration error estimate
-            dif=DML(i,j)+DMneqR(i,j)-(DMR(i,j)+DMneqL(i,j))
-            dif2=dif*dif
-            ndif2=dif2*wl*wr/(wsum*wsum)
-            if (dif2 .gt. maxdif2) then
-               maxdif2=dif2
-               idif2=i
-               jdif2=j
-            endif
-            if (ndif2 .gt. maxndif2) then
-               maxndif2=ndif2
-               indif2=i
-               jndif2=j
-            endif
+! FDN
+!            dif=DML(i,j)+DMneqR(i,j)-(DMR(i,j)+DMneqL(i,j))
+!            dif2=dif*dif
+!            ndif2=dif2*wl*wr/(wsum*wsum)
+!            if (dif2 .gt. maxdif2) then
+!               maxdif2=dif2
+!               idif2=i
+!               jdif2=j
+!            endif
+!            if (ndif2 .gt. maxndif2) then
+!               maxndif2=ndif2
+!               indif2=i
+!               jndif2=j
+!            endif
          enddo                  !i
       enddo                     !j
 
-      if(Node.eq.0) then
-
-      if (PRINTALOT) then
-         write(joutfile,*)
-     .    'Integration error estimate',indif2,jndif2, sqrt(maxndif2)
-         write(joutfile,*)
-     .    'unnormalized error ',idif2,jdif2, sqrt(maxdif2)
-      endif
-
-      endif
+! FDN
+!      if(Node.eq.0) then
+!
+!      if (PRINTALOT) then
+!         write(joutfile,*)
+!     .    'Integration error estimate',indif2,jndif2, sqrt(maxndif2)
+!         write(joutfile,*)
+!     .    'unnormalized error ',idif2,jdif2, sqrt(maxdif2)
+!      endif
+!
+!      endif
 
 C ====================================================================
       RETURN
@@ -1636,42 +1665,48 @@ c            write(*,*) i,j,DMneqR(i,j),DMneqL(i,j),DML(i,j),DMR(i,j)
 c  In the leads we always use either left or right integration scheme.
 
             if (i .le. NGL .or. j .le. NGL) then
-               w = 1.0d0
+! FDN With TriDiag, it must be the opposite !!
+!               w = 1.0d0
+               w = 0.d0
             endif
             if (i .gt. nc-NGR .or. j .gt. nc-NGR) then
-               w = 0.0d0
+! FDN With TriDiag, it must be the opposite !!
+!               w = 0.0d0
+               w = 1.d0
             endif
 c weight DM and DML
             DML(i,j) = w   *(DML(i,j)+DMneqR(i,j))
      .           +(1.0-w)*(DMR(i,j)+DMneqL(i,j))
             EDML(i,j) = w*EDML(i,j)+(1.0-w)*EDMR(i,j)
 C make an integration error estimate
-            dif=cdabs(DML(i,j)+DMneqR(i,j)-(DMR(i,j)+DMneqL(i,j)))
-            dif2=dif*dif
-            ndif2=dif2*wl*wr/(wsum*wsum)
-            if (dif2 .gt. maxdif2) then
-               maxdif2=dif2
-               idif2=i
-               jdif2=j
-            endif
-            if (ndif2 .gt. maxndif2) then
-               maxndif2=ndif2
-               indif2=i
-               jndif2=j
-            endif
+! FDN
+!            dif=cdabs(DML(i,j)+DMneqR(i,j)-(DMR(i,j)+DMneqL(i,j)))
+!            dif2=dif*dif
+!            ndif2=dif2*wl*wr/(wsum*wsum)
+!            if (dif2 .gt. maxdif2) then
+!               maxdif2=dif2
+!               idif2=i
+!               jdif2=j
+!            endif
+!            if (ndif2 .gt. maxndif2) then
+!               maxndif2=ndif2
+!               indif2=i
+!               jndif2=j
+!            endif
          enddo                  !i
       enddo                     !j
 
-      if(Node.eq.0) then
+! FDN
+!      if(Node.eq.0) then
 
-      if (PRINTALOT) then
-         write(joutfile,*)
-     .    'Integration error estimate',indif2,jndif2, sqrt(maxndif2)
-         write(joutfile,*)
-     .    'unnormalized error ',idif2,jdif2, sqrt(maxdif2)
-      endif
-
-      endif
+!      if (PRINTALOT) then
+!         write(joutfile,*)
+!     .    'Integration error estimate',indif2,jndif2, sqrt(maxndif2)
+!         write(joutfile,*)
+!     .    'unnormalized error ',idif2,jdif2, sqrt(maxdif2)
+!      endif
+!
+!      endif
 
 C ====================================================================
       RETURN
