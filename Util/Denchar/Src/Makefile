@@ -37,13 +37,15 @@ dep:
 #
 #
 #
-include ../../../$(OBJDIR)/arch.make
+ARCH_MAKE=../../../$(OBJDIR)/arch.make
+include $(ARCH_MAKE)
 #
 FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 #
-DEFS:=$(DEFS) -UMPI -UCDF
+DEFS:=$(DEFS) $(DEFS_PREFIX)-UMPI $(DEFS_PREFIX)-UCDF
+FPPFLAGS=$(DEFS)
 #
 # Uncomment the following line for debugging support
 #
@@ -74,9 +76,12 @@ OBJS_DENCHAR = atompla.o planed.o\
 	volcel.o wrout.o stsofr.o
 #
 FDF=libfdf.a
+FDF_MAKEFILE=$(VPATH)/fdf/makefile
+FDF_INCFLAGS:=-I $(VPATH)/fdf $(INCFLAGS)
 $(FDF): 
-	(cd fdf ; $(MAKE) "FC=$(FC)" "VPATH=$(VPATH)/fdf" \
-                          "OBJDIR=$(OBJDIR)" "FFLAGS=$(FFLAGS)" module)
+	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/fdf" \
+                          "ARCH_MAKE=../$(ARCH_MAKE)" \
+                          "OBJDIR=$(OBJDIR)" "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 #
 # This is crude but will have to do for now.
 # Note : precision must be the first module
