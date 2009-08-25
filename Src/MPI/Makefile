@@ -13,7 +13,14 @@
 #
 default: module_built 
 tests:   vpath_warning  pi3 blacs_prb pblas_prb
-include ../arch.make
+#
+# This makefile can also be used "remotely", so we allow
+# for an external specification of the (relative) location 
+# of the arch.make file.
+#
+ARCH_MAKE_DEFAULT=../arch.make
+ARCH_MAKE?=$(ARCH_MAKE_DEFAULT)
+include $(ARCH_MAKE)
 #
 #
 TEMPLATES= mpi__type_s.f90 mpi__type_sv.f90 mpi__type_v.f90 mpi__type_vs.f90
