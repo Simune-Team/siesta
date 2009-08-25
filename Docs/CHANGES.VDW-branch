@@ -1,5 +1,27 @@
 ------------------------------------------------------------------
 
+2009-08-25  11:05:00 GMT+2     Alberto Garcia <albertog@icmab.es>
+Fix makefile problems in Pseudo/atom after merge
+
+The makefile in Pseudo/atom was not correctly merged, due
+to a conflicting name change.
+
+* The name has been changed from makefile-xml to Makefile.  
+
+* Default OBJDIR set to "Obj" instead of "Src".
+
+* The section on FoX compilation has been updated, as in the trunk.
+
+* New "dep" target for dependency tracking.
+
+renamed:
+  Pseudo/atom/makefile-xml => Pseudo/atom/Makefile
+modified:
+  Pseudo/atom/Makefile
+
+
+------------------------------------------------------------------
+
 2009-08-21  16:00:00 GMT+1	Jose M Soler <jose.soler@uam.es>
 
 Summary: merged with trunk 2.6.32
