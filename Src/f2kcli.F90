@@ -17,7 +17,7 @@
 ! Date        : February 2001
 !
       MODULE F2KCLI
-#ifndef GFORTRAN
+#if  !defined(GFORTRAN) && !defined(__GFORTRAN__)
 
 #ifdef __NAG__
       use f90_unix
@@ -222,6 +222,7 @@
       RETURN
       END SUBROUTINE GET_COMMAND_ARGUMENT
 !
-#endif
+#endif  /* Gfortran already has everything */
+
       END MODULE F2KCLI
 
