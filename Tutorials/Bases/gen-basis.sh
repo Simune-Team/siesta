@@ -1,5 +1,4 @@
 #!/bin/sh
-set -x
 #
 # Script to run a basis generation calculation
 # Do not move directory from Siesta tree, or modify
