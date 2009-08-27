@@ -36,12 +36,13 @@ kind_explorer: kind_explorer.o
 	$(FC) -o kind_explorer $(LDFLAGS) kind_explorer.o
 mpi.o: mpi__include.o Interfaces.o V_S.uses VS.uses
 #
-module_built: mpi.o mpi__include.o Interfaces.o
-	@ar $(ARFLAGS_EXTRA) cru libmpi_f90.a mpi.o mpi__include.o Interfaces.o
-	-$(RANLIB) libmpi_f90.a
+module_built: libmpi_f90.a
 	@mv libmpi_f90.a ..
 	@cp *.mod ..
 	@touch module_built
+libmpi_f90.a: mpi.o mpi__include.o Interfaces.o
+	@ar $(ARFLAGS_EXTRA) cru libmpi_f90.a mpi.o mpi__include.o Interfaces.o
+	-$(RANLIB) libmpi_f90.a
 #
 #-----------------------------------------------------------------------
 # Tests of the MPI installation

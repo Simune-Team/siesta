@@ -3,6 +3,10 @@
 #
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
+#LINALG=linalg.a
+#EXTRA=zgeev.o
+#
+
 default: what  tbtrans90 
 #default: what  tbtrans90 gengf90 readTSHScdf
 #
@@ -45,19 +49,11 @@ MOD_TOBJS=  m_tbt_options.o m_tbt_gf.o m_tbt_kpts.o hamil2.o tsread2.o
 SIESTA_OBJS= precision.o pxf.o  m_mpi_utils.o m_fdf_global.o paste.o \
              parallel.o sys.o io.o files.o reinit.o
 
-TBTOBJS= $(SIESTA_OBJS) $(MOD_TOBJS) $(SYSOBJ) tbtrans.o transmission.o   \
+TBTOBJS= $(SIESTA_OBJS) $(MOD_TOBJS) $(SYSOBJ) $(EXTRA) tbtrans.o transmission.o   \
          calc_green.o getsfe.o \
          mkRealContour.o  setupkham2.o TSiohs.o atompdos.o coop.o \
          csolve.o cdiag.o teigchana.o helpers.o OutputRegionData.o \
          Lowdin.o netcdfwrite.o \
-
-
-# GF generator: gengf90
-#MOD_GOBJS= cont.o greensub.o tsread2.o
-#GENGFOBJS= $(MOD_GOBJS) $(SYSOBJ) gengf.o  \
-#setupcontour.o mkCplxContour.o mkRealContour.o \
-#green4.o  calc_green.o sethhm2.o TSiohs2.o \
-#mkqgrid.o csolve.o cdiag.o teigchana.o helpers.o \
 
 #
 # Interfaces to libraries
@@ -72,16 +68,22 @@ $(FDF):
 #
 INCFLAGS=$(FDF_INCFLAGS)
 #
-MPI_INTERFACE=libmpi_f90.a
 MPI_MAKEFILE=$(VPATH)/MPI/Makefile
 $(MPI_INTERFACE): 
 	(cd MPI ; $(MAKE) -f $(MPI_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/MPI" \
                           "MAKEFILES=$(MPI_MAKEFILE)" "ARCH_MAKE=../$(ARCH_MAKE)" \
                           "FFLAGS=$(FFLAGS)" module_built)
-
-tbtrans90: $(TBTOBJS) $(FDF) $(SYSOBJ) $(NETCDF_INTERFACE)
+#
+LINALG_MAKEFILE=$(VPATH)/Libs/makefile
+LINALG_INCFLAGS:=-I $(VPATH)/Libs $(INCFLAGS)
+$(LINALG): 
+	(cd Libs ; $(MAKE) -f $(LINALG_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/Libs" \
+                          "ARCH_MAKE=../$(ARCH_MAKE)" \
+                          "INCFLAGS=$(LINALG_INCFLAGS)" "FFLAGS=$(FFLAGS)" )
+#
+tbtrans90: $(TBTOBJS) $(FDF) $(SYSOBJ) $(NETCDF_INTERFACE) $(LINALG)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o tbtrans90 \
-              $(TBTOBJS) $(MPI_INTERFACE) $(NETCDF_INTERFACE)  $(FDF) $(LIBS)
+              $(TBTOBJS) $(MPI_INTERFACE) $(NETCDF_INTERFACE)  $(FDF) $(LIBS) $(LINALG)
 #	@(cd ../../bin ; rm -f tsScan ; ln -s tbtrans90 tsScan)
 
 
