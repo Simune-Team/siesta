@@ -271,7 +271,7 @@ TS_OBJS= m_ts_options.o m_ts_aux_rout.o m_ts_kpoints.o \
          m_ts_io.o m_ts_scattering.o m_ts_contour.o m_ts_electrode.o \
          m_ts_in_siesta.o
 #
-transiesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
+transiesta: what version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
                     $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
 	$(FC) -o transiesta \
                $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(WXML) $(XMLPARSER)\
