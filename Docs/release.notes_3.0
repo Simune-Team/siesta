@@ -8,12 +8,13 @@ MAJOR NEW FEATURES AND USER-INTERFACE CHANGES SINCE 2.0.2
 
 ------ Major additions ----------
 * The TranSiesta code is now part of the SIESTA package
-* Incorporation of the first stage of code cleanup at the BSC.
+* Modularization of main program (BSC)
 * New program to compute COOP/COHP/PDOS curves for chemical analysis
+* New general-purpose optimizer in Util/Optimizer for bases, pseudopotentials, etc.
+* New optional filtering procedure to reduce the eggbox effect
 
------- Utilities -----------
+------ New Utilities -----------
 * New version of denchar in Util/Denchar
-* New general-purpose optimizer in Util/Optimizer
 * New scripting framework with eggbox checker and other utilities. 
 * Other assorted utility programs and features 
 * Added a translator for pseudopotential files
@@ -32,15 +33,14 @@ MAJOR NEW FEATURES AND USER-INTERFACE CHANGES SINCE 2.0.2
 ------ New functionality -----------------
 * Changes to support synthetic atoms (VCA)
 * More flexible basis-generation options (see below)
-* New optional filtering procedure to reduce the eggbox effect
 * Charge-density restarts
 * Extended Ordejon-Mauri ordern functional to an odd number of electrons
 * Implementation of the PBEsol functional
 * Implementation of the Wu-Cohen functional
 * Optimization enhancements (fire algorithm, step control).
-* Generalized SCF convergence criteria. Optiona...
+* Generalized SCF convergence criteria. 
 * Remove residual (k,-k) pairs of k-points
-* Update of atom to 3.2.8: xml, optimization ho...
+* Update of atom to 3.2.8: xml, optimization hooks.
 * Implemented a new molecular-mechanics framework, including Grimme-type vdw.
 * Optional k-point sampling for PDOS calculations
 * New block BandPoints accepts arbitrary k-points
@@ -48,9 +48,9 @@ MAJOR NEW FEATURES AND USER-INTERFACE CHANGES SINCE 2.0.2
 * Optional stopping if self-consistency is not achieved.
 
 ------ Changes in defaults ----------
-* Make diagonalization the default solution method
-* Change handling of default charge for basis generation
 * Changes in the conditions of Density Matrix reuse 
+* Make diagonalization the default solution method for all system sizes
+* Change handling of default charge for basis generation
 
 ------ Changes in behavior ----------
 * The wavefunction file (formerly .WFS) is now in a packed format,
