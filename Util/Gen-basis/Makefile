@@ -1,37 +1,29 @@
-# 
-# This file is part of the SIESTA package.
 #
-# Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-# E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-# and J.M.Soler, 1996-2006.
-# 
-# Use of this software constitutes agreement with the full conditions
-# given in the SIESTA license, as signed by all legitimate users.
+# Makefile for stand-alone Gen-basis
 #
+# The idea is to use the code in the top Src directory as much as possible.
+# This is achieved by the VPATH directive below.
+# Other points to note, until we switch to a better building system:
 #
-# Makefile for siesta
+#  The arch.make file is supposed to be in $(OBJDIR). This is normally
+#  the top Obj, but if you are using architecture-dependent build directories
+#  you might want to change this. (If you do not understand this, you do not
+#  need to change anything. Power users can do "make OBJDIR=Whatever".)
 #
-# Remove implicit rules (including for Modula-2, which just confuses matters)
-.SUFFIXES:
+#  If your main Siesta build used an mpi compiler, you might need to
+#  define an FC_SERIAL symbol in your top arch.make, to avoid linking
+#  in the mpi libraries even if we explicitly undefine MPI below.
+#  
+#  The dependency list at the end is overly large, but harmless
+#
+OBJDIR=Obj
+#
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
-VPATH=.
+VPATH:=$(shell pwd)/../../Src
 #
-default: what siesta #  fsiesta.o
+default: what gen-basis
 #
-configure: configure.ac aclocal.m4
-	autoconf ${<D}/configure.ac
-#
-M4_FILES = m4/ac_config_aux_dirs.m4  m4/TW_CHECK_FC_FPP.m4      m4/TW_FC_ID_FLAGS.m4  \
- m4/ACX_MPI.m4             m4/TW_CHECK_FC_TR15580.m4  m4/TW_FC_ID.m4        \
- m4/fortran.m4             m4/TW_CHECK_FC_TR15581.m4  m4/TW_FIND_FC_BLAS.m4 \
- m4/TW_CHECK_BLACS.m4      m4/TW_CHECK_SCALAPACK.m4   m4/TW_FIND_LAPACK.m4  \
- m4/TW_CHECK_FC_90.m4      m4/TW_FC_CHECK_ABORT.m4    m4/TW_PATH_NETCDF.m4  \
- m4/TW_CHECK_FC_95.m4      m4/TW_FC_CHECK_DCFUNS.m4   m4/TW_TRY_DC_LAPACK.m4\
- m4/TW_CHECK_FC_FPP_90.m4  m4/TW_FC_CHECK_FLUSH.m4    m4/TW_FC_KINDS.m4
-#
-aclocal.m4: $(M4_FILES)
-	cat ${<D}/$(M4_FILES)  > aclocal.m4
 dep:
 	@if [ $(VPATH) == "." ] ; then \
 	sfmakedepend --depend=obj  --modext=o \
@@ -43,268 +35,69 @@ dep:
 	@sed '/^siesta_cmlsubs.o:/s/version.o//'  Makefile > tmp.Makefile
 	@mv tmp.Makefile Makefile
 #
-include arch.make
+#
+#
+ARCH_MAKE=../../$(OBJDIR)/arch.make
+include $(ARCH_MAKE)
+#
+FC_DEFAULT:=$(FC)
+FC_SERIAL?=$(FC_DEFAULT)
+FC:=$(FC_SERIAL)         # Make it non-recursive
+#
+DEFS:=$(DEFS) $(DEFS_PREFIX)-UMPI # $(DEFS_PREFIX)-UCDF
+FPPFLAGS=$(DEFS)
 #
 # Uncomment the following line for debugging support
 #
-##FFLAGS=$(FFLAGS_DEBUG)
+#FFLAGS=$(FFLAGS_DEBUG)
 #
 what:
 	@echo
-	@if [ "$(VPATH)" == . ]; then \
-              echo "** You can no longer build SIESTA in Src." ;\
-              echo "** Go to the Obj directory and see the README file." ;\
-              false ;\
-         fi
 	@echo "Compilation architecture to be used: ${SIESTA_ARCH}"
 	@echo "If this is not what you want, create the right"
-	@echo "arch.make file using the models in Src/Sys"
+	@echo "arch.make file using the models in Sys"
 	@echo
 	@echo "Hit ^C to abort..."
 	@sleep 2
 #
-SYSOBJ=$(SYS).o pxf.o
+SYSOBJ=$(SYS).o
 #
 # Note that machine-specific files are now in top Src directory.
 #
-OBJS =  automatic_cell.o atom_options.o \
-        arw.o  atomlwf.o bands.o basis_enthalpy.o bessph.o bonds.o \
-        born_charge.o cgwf.o chkdim.o chkgmx.o \
-	chempot.o coceri.o constr.o coxmol.o cross.o compute_norm.o \
-	denmat.o denmatlomem.o detover.o dfscf.o dhscf.o diagon.o digcel.o fft3d.o \
-	diagg.o diagk.o diagk_file.o diagkp.o diag2g.o diag2k.o diagpol.o \
-	diagsprl.o dipole.o dismin.o dnaefs.o dot.o  \
-	efield.o egandd.o ener3.o ener3lomem.o extrapolon.o \
-	fixed.o flib_spline.o gradient.o gradientlomem.o grdsam.o \
-	hsparse.o idiag.o  initatom.o inver.o iodm_netcdf.o \
-	iodmhs_netcdf.o iogrid_netcdf.o iohs.o iolwf.o iozm.o ipack.o iopipes.o \
-	iowfs_netcdf.o kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o local_DOS.o\
-	madelung.o matel.o meshmatrix.o memory.o meshsubs.o metaforce.o \
-        m_check_supercell.o m_filter.o mulliken.o minvec.o m_pulay.o naefs.o \
-	new_dm.o normalize_dm.o ordern.o outcell.o outcoor.o \
-	paste.o pdos.o pdosg.o pdosk.o pdoskp.o phirphi.o pixmol.o plcharge.o \
-	projected_DOS.o propor.o \
-	ran3.o reclat.o redcel.o \
-	reinit.o reord.o rhoofd.o rhoofdsp.o rhooda.o \
-	savepsi.o shaper.o timer.o \
-	vmb.o vmat.o vmatsp.o volcel.o xc.o \
-	cellxc.o cdiag.o rdiag.o \
-        cgvc.o cgvc_zmatrix.o m_convergence.o \
-        iocg.o ioeig.o iofa.o iokp.o iomd.o typecell.o \
-        ofc.o poison.o readsp.o radfft.o \
-	write_md_record.o kpoint_grid.o find_kgrid.o proximity_check.o\
-	state_init.o siesta_move.o setup_hamiltonian.o compute_dm.o mixer.o\
-	scfconvergence_test.o post_scf_work.o state_analysis.o write_subs.o \
-	siesta_init.o struct_init.o siesta_options.o siesta_geom.o \
-        siesta_analysis.o siesta_end.o siesta_forces.o \
-        siesta.o io.o sparse_matrices.o \
-        coor.o atm_transfer.o \
-        broadcast_basis.o eggbox.o dsyevds.o zheevds.o \
-        optical.o phirphi_opt.o reoptical.o transition_rate.o \
-        initparallel.o show_distribution.o setspatial.o setatomnodes.o uncell.o \
-        cart2frac.o obc.o \
-        precision.o sys.o m_cell.o recipes.o files.o \
-        spatial.o parallel.o parallelsubs.o  parsing.o chemical.o xcmod.o atom.o atmparams.o \
-        m_mpi_utils.o m_fdf_global.o m_history.o m_iorho.o  \
-        atmfuncs.o listsc.o memoryinfo.o m_memory.o sorting.o \
-        atomlist.o atm_types.o old_atmfuncs.o radial.o \
-        alloc.o phonon.o spher_harm.o periodic_table.o version.o timestamp.o \
-        basis_types.o xml.o pseudopotential.o basis_specs.o basis_io.o\
-        onmod.o densematrix.o writewave.o on_subs.o fermid.o m_broyddj.o \
-        electrostatic.o mneighb.o globalise.o siesta_cmlsubs.o siesta_cml.o \
-        units.o zmatrix.o m_broyden_mixing.o forhar.o m_walltime.o m_wallclock.o m_iostruct.o \
-        nlefsm.o overfsm.o overlap.o conjgr.o conjgr_old.o m_energies.o m_steps.o\
-        m_broyddj_nocomm.o broyden_optim.o ioxv.o dynamics.o md_out.o \
-        molecularmechanics.o  zm_broyden_optim.o \
-        cell_broyden_optim.o remove_intramol_pressure.o \
-        m_ntm.o m_dipol.o  m_kinetic.o  m_rmaxh.o \
-        m_forces.o m_stress.o m_eo.o m_spin.o m_gamma.o m_hsx.o m_fire.o \
-        get_target_stress.o fire_optim.o zm_fire_optim.o \
-        cell_fire_optim.o m_fire_para.o m_fire_mixing.o write_raw_efs.o \
-        m_iodm.o m_sparse.o kpoint_pdos.o 
-#--------------------------------------------------------------
-# FoX whatnot
-#
-# FoX build targets:
-FoX_configured=FoX/.config
-FoX_built=FoX/.FoX
-#
-# This is how we pick up modules and libraries for FoX:
-FoX_FCFLAGS=`FoX/FoX-config --fcflags`
-FoX_LIBS=`FoX/FoX-config --libs --wcml`
-#
-# And add them to global compiler flags:
-INCFLAGS:=$(INCFLAGS) $(FoX_FCFLAGS)
-#
-# First, it needs to be configured. This may have been done
-# by the main SIESTA configure, but in case not:
-#
-FC_DEFAULT:=$(FC)
-FC_SERIAL?=$(FC_DEFAULT)
-#
-$(FoX_configured):
-	(cd FoX; if [ "$(VPATH)" = . ]; then CONFIGURE="./configure"; else CONFIGURE="$(VPATH)/FoX/configure"; fi; $$CONFIGURE VPATH="$(VPATH)/FoX" FC="$(FC_SERIAL)" FCFLAGS="$(FFLAGS)" --enable-wcml $(DUMMY_FOX) || false )
-#
-# Note we have to make sure to use the same compiler as SIESTA,
-# and pick up all the same FFLAGS, and also remember to maybe ask for a dummy library.
-# Note also that the "false" clause will stop the 'make' process if the configuration fails.
-#
-# Then we want to make FoX itself. Like so:
-$(FoX_built): $(FoX_configured)
-	(cd FoX; $(MAKE))
-#
-# Now ensure that building FoX is inserted into the dependency chain.
-# Routines using FoX:
-# version (compinfo.o) does not actually need FoX, but making it build after
-# FoX is done avoids a warning as we use the FoX-config script everywhere.
-#
-version $(SYSOBJ) $(OBJS) \
-basis_io.o efield.o initatom.o ioeig.o kpoint_grid.o meshsubs.o \
-mulliken.o ordern.o outcell.o pdos.o post_scf_work.o radial.o   \
-scfconvergence_test.o setup_hamiltonian.o siesta_analysis.o     \
-siesta_cml.o siesta_cmlsubs.o siesta_end.o siesta_forces.o      \
-siesta_init.o siesta_move.o siesta_options.o state_analysis.o   \
-state_init.o struct_init.o write_subs.o xml.o: $(FoX_built)
-#
-#--------------------------------------------------------------
-XMLPARSER=libxmlparser.a
-$(XMLPARSER): 
-	(cd xmlparser ; $(MAKE) "VPATH=$(VPATH)/xmlparser" module)
-#
-# Routines using xmlparser calls.
-#
-######  somefile.o : $(WXML)
-#--------------------------------------------------------------
-FDF=libfdf.a
-$(FDF): 
-	(cd fdf ; $(MAKE) "VPATH=$(VPATH)/fdf" module)
-#
-# Routines using fdf calls.
-#
-dhscf.o iohs.o iolwf.o  grdsam.o : $(FDF)
-recoor.o outcoor.o ioxv.o m_iostruct.o kgrid.o kgridinit.o ksv.o : $(FDF)
-redata.o siesta.o diagon.o pdos.o plcharge.o: $(FDF)
-coor.o cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o  ofc.o : $(FDF)
-readsp.o eggbox.o iopipes.o : $(FDF)
-#
-atom.o basis_io.o basis_specs.o: $(FDF)
-#
-#
-ALL_OBJS=$(OBJS) $(SYSOBJ)
-#
-# Interfaces to libraries
-#
-libmpi_f90.a: 
-	@(cd MPI ; $(MAKE) "VPATH=$(VPATH)/MPI")
-#
-# Libraries that might need to be compiled
-#
-libblas.a: Libs/blas.f
-	@echo "==> Compiling libblas.a in Libs..."
-	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" libblas.a)
-liblapack.a: Libs/lapack.f
-	@echo "==> Compiling liblapack.a in Libs..."
-	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" liblapack.a)
-linalg.a: Libs/blas.f Libs/lapack.f
-	@echo "==> Compiling linalg.a in Libs..."
-	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" linalg.a)
-dc_lapack.a:  Libs/dc_lapack.f
-	@echo "==> Compiling dc_lapack.a in Libs..."
-	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" dc_lapack.a)
-#
-
-version: version.F90
-	@echo
-	@echo "==> Incorporating information about present compilation (compiler and flags)"
-	@sed "s'SIESTA_ARCH'${SIESTA_ARCH}'g;s'FFLAGS'${FC} ${FFLAGS}'g;s'SIESTA_VERSION'\
-                                       $$(cat ${<D}/../version.info)'g" $<  > compinfo.F90
-	@($(MAKE) compinfo.o)
-	@mv compinfo.o version.o
-	#@rm -f compinfo.F90
-	@echo
-
-siesta: version $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
-                $(COMP_LIBS) $(ALL_OBJS) 
-	$(FC) -o siesta \
-	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML) $(XMLPARSER) $(MPI_INTERFACE)\
-               $(COMP_LIBS) $(FoX_LIBS) $(LIBS) 
-#
-#------------------------------------------------------------------------
-IONCAT_OBJS=f2kcli.o m_getopts.o ioncat.o basis_types.o precision.o  parallel.o \
-          parsing.o xcmod.o alloc.o atom_options.o basis_io.o  atm_types.o\
-          atmparams.o radial.o io.o memory.o chkdim.o\
-	  paste.o pseudopotential.o chemical.o  alloc.o \
-          basis_specs.o memoryinfo.o  m_memory.o periodic_table.o\
-          xc.o flib_spline.o atmfuncs.o spher_harm.o\
+OBJS_GEN-BASIS=alloc.o gen-basis.o basis_types.o precision.o recipes.o parallel.o \
+          parsing.o xcmod.o basis_io.o  chemical.o atm_transfer.o atm_types.o\
+          atmparams.o old_atmfuncs.o radial.o io.o \
+	  paste.o  flib_spline.o bessph.o  m_filter.o \
+          basis_specs.o atom.o memoryinfo.o memory.o periodic_table.o\
+          pseudopotential.o pxf.o dot.o xc.o  atom_options.o arw.o  \
           sys.o timer.o  xml.o m_walltime.o $(SYSOBJ)
-# precision must be the first one here...
-ioncat.o: $(FDF)
-ioncat: version $(MPI_INTERFACE) $(FDF) $(WXML) \
-                 $(IONCAT_OBJS) $(COMP_LIBS)
-	$(FC) -o ioncat \
-	       $(LDFLAGS) $(IONCAT_OBJS) $(MPI_INTERFACE) $(FDF) $(WXML) \
-               $(COMP_LIBS) $(LIBS) 
 #
-#------------------------------------------------------------------------
-# C FDN Begin: Makefile modifications for TranSIESTA
-#----------------------------------------------------------------------------
-# TranSIESTA...
+# Use the makefile in Src/fdf and all the sources there.
 #
-TS_OBJS= m_ts_options.o m_ts_aux_rout.o m_ts_kpoints.o \
-         m_ts_io.o m_ts_scattering.o m_ts_contour.o m_ts_electrode.o \
-         m_ts_in_siesta.o
+FDF=libfdf.a
+FDF_MAKEFILE=$(VPATH)/fdf/makefile
+FDF_INCFLAGS:=-I $(VPATH)/fdf $(INCFLAGS)
+$(FDF): 
+	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/fdf" \
+                          "ARCH_MAKE=../$(ARCH_MAKE)" \
+                          "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 #
-transiesta: what version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
-                    $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
-	$(FC) -o transiesta \
-               $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(WXML) $(XMLPARSER)\
-               $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(COMP_LIBS) $(FoX_LIBS) $(LIBS)
+# This is crude but will have to do for now.
+# Note : precision must be the first module
 #
-# C FDN End: Makefile modifications for TranSIESTA
+ALL_OBJS_GEN-BASIS=$(OBJS_GEN-BASIS) 
 #
 
-# ---------------------------------------------------------------------------
-# Other auxiliary programs
-#----------------------------------------------------------------------------
-MT_OBJS=precision.o m_mpi_utils.o sys.o parallel.o 
-mpi_test: $(MPI_INTERFACE) $(MT_OBJS) mpi_test.o
-	$(FC) -o mpi_test \
-	       $(LDFLAGS) mpi_test.o $(MT_OBJS) $(MPI_INTERFACE) $(LIBS) 
-#----------------------------------------------------------------------------
-MIXPS_OBJS= f2kcli.o flib_spline.o mixps.o atom_options.o pseudopotential.o \
-            sys.o \
-            io.o pxf.o parallel.o periodic_table.o alloc.o memory.o memoryinfo.o
-
-mixps: $(MPI_INTERFACE)  $(FDF) $(MIXPS_OBJS)
-	$(FC) -o mixps \
-	       $(LDFLAGS) $(MIXPS_OBJS) $(FDF) $(MPI_INTERFACE) $(LIBS) 
-#----------------------------------------------------------------------------
-FRACTIONAL_OBJS= f2kcli.o alloc.o flib_spline.o fractional.o  atom_options.o \
-                 memory.o memoryinfo.o pseudopotential.o sys.o \
-            io.o pxf.o parallel.o periodic_table.o
-
-fractional: $(FDF) $(MPI_INTERFACE)  $(FRACTIONAL_OBJS)
-	$(FC) -o fractional \
-	       $(LDFLAGS) $(FRACTIONAL_OBJS) $(MPI_INTERFACE) $(FDF) $(LIBS) 
+gen-basis: $(FDF)  $(ALL_OBJS_GEN-BASIS)
+	$(FC) -o gen-basis \
+	       $(LDFLAGS) $(ALL_OBJS_GEN-BASIS) $(FDF) $(NETCDF_LIBS)
 #
-#------------------------------------------------------------------------
-#
-clean: 
+
+clean:
 	@echo "==> Cleaning object, library, and executable files"
-	rm -f siesta ioncat  *.o  *.a *.pcl *.pc
-	rm -f mixps mpi_test
+	rm -f gen-bsis *.o  *.a
 	rm -f *.mod
-	rm -f *.bck *~
-	rm -f aux_*.f aux_*.f90
-	(cd fdf ; $(MAKE) clean)
-	(cd FoX ; $(MAKE) distclean)
-	(cd xmlparser ; $(MAKE) clean)
-	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
-	(cd Libs ; $(MAKE) clean )
-#
-##pristine:  clean
-##	cp -fp Include/constr.f .
-#
+	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
 
 # DO NOT DELETE THIS LINE - used by make depend
 alloc.o: parallel.o precision.o sys.o
@@ -408,6 +201,8 @@ fixed.o: alloc.o parallel.o parsing.o precision.o
 flib_spline.o: precision.o
 forhar.o: alloc.o meshsubs.o precision.o
 fractional.o: f2kcli.o periodic_table.o precision.o pseudopotential.o sys.o
+gen-basis.o: atom.o atom_options.o basis_io.o basis_specs.o basis_types.o
+gen-basis.o: old_atmfuncs.o parallel.o precision.o sys.o xcmod.o
 get_target_stress.o: m_mpi_utils.o parallel.o precision.o units.o
 globalise.o: alloc.o onmod.o onmod.o precision.o spatial.o
 gradient.o: globalise.o m_mpi_utils.o onmod.o precision.o
@@ -500,7 +295,7 @@ m_ts_scattering.o: m_ts_aux_rout.o parallelsubs.o precision.o sys.o
 m_wallclock.o: m_walltime.o
 madelung.o: parallel.o precision.o sys.o
 matel.o: alloc.o atmfuncs.o precision.o radfft.o recipes.o spher_harm.o
-md_out.o: files.o precision.o sys.o units.o
+md_out.o: files.o m_energies.o precision.o sys.o units.o
 md_utils.o: precision.o
 memory.o: memoryinfo.o parallel.o precision.o
 memoryinfo.o: precision.o
@@ -672,64 +467,64 @@ zm_fire_optim.o: m_fdf_global.o m_fire.o parallel.o precision.o
 zm_fire_optim.o: siesta_options.o units.o zmatrix.o
 zmatrix.o: alloc.o m_cell.o parallel.o parsing.o precision.o siesta_geom.o
 zmatrix.o: sys.o units.o
-band.o: bands.o
-diagmemory.o: memoryinfo.o
-listsc_module.o: listsc.o
-m_born_charge.o: born_charge.o
-m_broyden_optim.o: broyden_optim.o
-m_cell_broyden_optim.o: cell_broyden_optim.o
-m_cell_fire_optim.o: cell_fire_optim.o
-m_chempot.o: chempot.o
-m_compute_dm.o: compute_dm.o
-m_conjgr.o: conjgr.o
-m_conjgr_old.o: conjgr_old.o
-m_dynamics.o: dynamics.o
-m_fermid.o: fermid.o
-m_find_kgrid.o: find_kgrid.o
-m_fire_optim.o: fire_optim.o
-m_forhar.o: forhar.o
-m_hsparse.o: hsparse.o
-m_intramol_pressure.o: remove_intramol_pressure.o
-m_ioxv.o: ioxv.o
-m_ksv.o: ksv.o
-m_ksvinit.o: ksvinit.o
-m_local_dos.o: local_DOS.o
-m_minvec.o: minvec.o
-m_mixer.o: mixer.o
-m_new_dm.o: new_dm.o
-m_nlefsm.o: nlefsm.o
-m_norm.o: compute_norm.o
-m_normalize_dm.o: normalize_dm.o
-m_ordern.o: ordern.o
-m_overfsm.o: overfsm.o
-m_overlap.o: overlap.o
-m_post_scf_work.o: post_scf_work.o
-m_projected_dos.o: projected_DOS.o
-m_proximity_check.o: proximity_check.o
-m_radfft.o: radfft.o
-m_recipes.o: recipes.o
-m_scf_options.o: m_options.o
-m_scfconvergence_test.o: scfconvergence_test.o
-m_setup_hamiltonian.o: setup_hamiltonian.o
-m_siesta_analysis.o: siesta_analysis.o
-m_siesta_end.o: siesta_end.o
-m_siesta_forces.o: siesta_forces.o
-m_siesta_init.o: siesta_init.o
-m_siesta_move.o: siesta_move.o
-m_state_analysis.o: state_analysis.o
-m_state_init.o: state_init.o
-m_struct_init.o: struct_init.o
-m_timestamp.o: timestamp.o
-m_xyz_phiatm.o: matel.o
-m_zm_broyden_optim.o: zm_broyden_optim.o
-m_zm_fire_optim.o: zm_fire_optim.o
-mesh.o: meshsubs.o
-meshdscf.o: meshmatrix.o
-meshphi.o: meshsubs.o
-neighbour.o: mneighb.o
-on_core.o: onmod.o
-on_main.o: onmod.o
-version_info.o: version.o
-write_subs_energies.o: write_subs.o
-write_subs_positions.o: write_subs.o
-write_subs_pressure.o: write_subs.o
+band.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/bands.o
+diagmemory.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/memoryinfo.o
+listsc_module.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/listsc.o
+m_born_charge.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/born_charge.o
+m_broyden_optim.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/broyden_optim.o
+m_cell_broyden_optim.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/cell_broyden_optim.o
+m_cell_fire_optim.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/cell_fire_optim.o
+m_chempot.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/chempot.o
+m_compute_dm.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/compute_dm.o
+m_conjgr.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/conjgr.o
+m_conjgr_old.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/conjgr_old.o
+m_dynamics.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/dynamics.o
+m_fermid.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/fermid.o
+m_find_kgrid.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/find_kgrid.o
+m_fire_optim.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/fire_optim.o
+m_forhar.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/forhar.o
+m_hsparse.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/hsparse.o
+m_intramol_pressure.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/remove_intramol_pressure.o
+m_ioxv.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/ioxv.o
+m_ksv.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/ksv.o
+m_ksvinit.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/ksvinit.o
+m_local_dos.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/local_DOS.o
+m_minvec.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/minvec.o
+m_mixer.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/mixer.o
+m_new_dm.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/new_dm.o
+m_nlefsm.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/nlefsm.o
+m_norm.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/compute_norm.o
+m_normalize_dm.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/normalize_dm.o
+m_ordern.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/ordern.o
+m_overfsm.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/overfsm.o
+m_overlap.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/overlap.o
+m_post_scf_work.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/post_scf_work.o
+m_projected_dos.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/projected_DOS.o
+m_proximity_check.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/proximity_check.o
+m_radfft.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/radfft.o
+m_recipes.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/recipes.o
+m_scf_options.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/m_options.o
+m_scfconvergence_test.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/scfconvergence_test.o
+m_setup_hamiltonian.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/setup_hamiltonian.o
+m_siesta_analysis.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/siesta_analysis.o
+m_siesta_end.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/siesta_end.o
+m_siesta_forces.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/siesta_forces.o
+m_siesta_init.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/siesta_init.o
+m_siesta_move.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/siesta_move.o
+m_state_analysis.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/state_analysis.o
+m_state_init.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/state_init.o
+m_struct_init.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/struct_init.o
+m_timestamp.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/timestamp.o
+m_xyz_phiatm.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/matel.o
+m_zm_broyden_optim.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/zm_broyden_optim.o
+m_zm_fire_optim.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/zm_fire_optim.o
+mesh.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/meshsubs.o
+meshdscf.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/meshmatrix.o
+meshphi.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/meshsubs.o
+neighbour.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/mneighb.o
+on_core.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/onmod.o
+on_main.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/onmod.o
+version_info.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/version.o
+write_subs_energies.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/write_subs.o
+write_subs_positions.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/write_subs.o
+write_subs_pressure.o: /Users/ag/code/SIESTA/S2.6/ag-beta-3.0/Util/Gen-basis/../../Src/write_subs.o

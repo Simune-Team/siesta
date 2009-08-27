@@ -41,7 +41,7 @@ C
       use atom,         only : atom_main, prinput
       use xcmod,        only : setXC
       use sys,          only : die
-      use atom_options, only : get_atom_options
+      use atom_options, only : get_atom_options, write_ion_plot_files
 C
 C     It has to be MPI-aware since it calls routines down the line...
 C
@@ -88,9 +88,10 @@ C Initialise MPI and set processor number
 !$$$         endif
 !
          filein = "stdin"
-         call fdf_init(filein,'gen-basis_out.fdf')
+         call fdf_init(filein,'gen-basis_fdf.log')
 
          call get_atom_options()
+         write_ion_plot_files = .true.  ! get them always
 
          call setXC
 
