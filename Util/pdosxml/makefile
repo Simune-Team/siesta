@@ -26,6 +26,8 @@
 .SUFFIXES: 
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
+.PHONY: xmlparser clean
+#
 default: pdosxml
 OBJDIR=Obj
 VPATH=../../Src
@@ -36,19 +38,21 @@ FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 #
-# This should be INCFLAGS...
-#
-FFLAGS=$(FFLAGS_DEBUG) -I../../$(OBJDIR)
+INCFLAGS:=$(INCFLAGS) -I../../$(OBJDIR)/xmlparser # To pick up mod files
 #
 LIBS= ../../$(OBJDIR)/libxmlparser.a
 #
 OBJS=  m_orbital_chooser.o m_pdos.o f2kcli.o pdosxml.o
-     
-pdosxml: $(OBJS)
+#     
+pdosxml: xmlparser $(OBJS)
 	$(FC) $(LDFLAGS) -o $@ $(OBJS)  $(LIBS)
 #
 clean: 
 	rm -f *.o pdosxml *.o *.*d
+#
+xmlparser:
+	@echo "Making sure that the xmlparser library is compiled..."
+	(cd ../../$(OBJDIR)/xmlparser ; make "VPATH=$(VPATH)/xmlparser")
 #
 
 
