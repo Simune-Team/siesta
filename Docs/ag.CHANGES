@@ -1,0 +1,13 @@
+#-- Changes to be applied to the beta-3.0 branch
+
+------------------------------------------------------------------------
+2009-08-27  08:45:00 GMT Alberto Garcia <albertog@icmab.es> 3.0-rc1-ag-3
+Generalize fdf and MPI makefiles. Denchar and TBTrans improvements
+
+fdf and MPI now accept an ARCH_MAKE parameter, so that they can
+be compiled in "private subdirectories" anywhere.
+
+The mechanism can be seen at work in Denchar, and TBTrans, which
+use dummy fdf (and MPI) directories.
+
+(+ cosmetic fix )

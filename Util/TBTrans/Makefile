@@ -11,7 +11,10 @@ default: what  tbtrans90
 #
 
 SIESTA_DIR=../../Src
-include arch.make
+VPATH:=$(shell pwd)/../../Src
+OBJDIR=Obj
+ARCH_MAKE=../../$(OBJDIR)/arch.make
+include $(ARCH_MAKE)
 
 SIESTA_SYS=${SIESTA_ARCH}
 
@@ -39,12 +42,14 @@ $(SYSOBJ): $(SIESTA_DIR)/$(SYS).f
 # Tbtrans:
 MOD_TOBJS=  m_tbt_options.o m_tbt_gf.o m_tbt_kpts.o hamil2.o tsread2.o
 
-SIESTA_OBJS=precision.o pxf.o  m_mpi_utils.o m_fdf_global.o paste.o parallel.o sys.o io.o files.o reinit.o
+SIESTA_OBJS= precision.o pxf.o  m_mpi_utils.o m_fdf_global.o paste.o \
+             parallel.o sys.o io.o files.o reinit.o
 
 TBTOBJS= $(SIESTA_OBJS) $(MOD_TOBJS) $(SYSOBJ) tbtrans.o transmission.o   \
-calc_green.o getsfe.o \
-mkRealContour.o  setupkham2.o TSiohs.o atompdos.o coop.o \
-csolve.o cdiag.o teigchana.o helpers.o OutputRegionData.o Lowdin.o netcdfwrite.o \
+         calc_green.o getsfe.o \
+         mkRealContour.o  setupkham2.o TSiohs.o atompdos.o coop.o \
+         csolve.o cdiag.o teigchana.o helpers.o OutputRegionData.o \
+         Lowdin.o netcdfwrite.o \
 
 
 # GF generator: gengf90
@@ -54,24 +59,29 @@ csolve.o cdiag.o teigchana.o helpers.o OutputRegionData.o Lowdin.o netcdfwrite.o
 #green4.o  calc_green.o sethhm2.o TSiohs2.o \
 #mkqgrid.o csolve.o cdiag.o teigchana.o helpers.o \
 
-
-# FDN New fdf
-# FDF:
-FDF=libfdf.a
-$(FDF):
-	(cd fdf ; $(MAKE) "VPATH=$(VPATH)/fdf" module)
-
 #
 # Interfaces to libraries
 #
-libmpi_f90.a:
-	@(cd MPI ; $(MAKE) "VPATH=$(VPATH)/MPI")
-#$(MPI_INTERFACE):
-#@(cd MPI ; $(MAKE) "VPATH=$(VPATH)/MPI")
-
+FDF=libfdf.a
+FDF_MAKEFILE=$(VPATH)/fdf/makefile
+FDF_INCFLAGS:=-I $(VPATH)/fdf $(INCFLAGS)
+$(FDF): 
+	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/fdf" \
+                          "ARCH_MAKE=../$(ARCH_MAKE)" \
+                          "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
+#
+INCFLAGS=$(FDF_INCFLAGS)
+#
+MPI_INTERFACE=libmpi_f90.a
+MPI_MAKEFILE=$(VPATH)/MPI/Makefile
+$(MPI_INTERFACE): 
+	(cd MPI ; $(MAKE) -f $(MPI_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/MPI" \
+                          "MAKEFILES=$(MPI_MAKEFILE)" "ARCH_MAKE=../$(ARCH_MAKE)" \
+                          "FFLAGS=$(FFLAGS)" module_built)
 
 tbtrans90: $(TBTOBJS) $(FDF) $(SYSOBJ) $(NETCDF_INTERFACE)
-	$(FC) $(FFLAGS) $(LDFLAGS) -o tbtrans90 $(TBTOBJS) $(MPI_INTERFACE) $(NETCDF_INTERFACE)  $(FDF) $(LIBS)
+	$(FC) $(FFLAGS) $(LDFLAGS) -o tbtrans90 \
+              $(TBTOBJS) $(MPI_INTERFACE) $(NETCDF_INTERFACE)  $(FDF) $(LIBS)
 #	@(cd ../../bin ; rm -f tsScan ; ln -s tbtrans90 tsScan)
 
 
@@ -117,6 +127,6 @@ tbtrans.o	: hamil2.o
 green4.o        : greensub.o
 #gengf.o         : cont.o
 m_tbt_gf.o       : tsread2.o
-atompdos.o      : fdf/fdfdefs.h
+##atompdos.o      : fdf/fdfdefs.h
 netcdfwrite.o   : $(NETCDF_INTERFACE)
 OutputRegionData.o: Lowdin.F $(NETCDF_INTERFACE)
