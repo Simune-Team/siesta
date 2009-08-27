@@ -803,11 +803,12 @@ MODULE m_ts_electrode
 !
 ! FDN Second variable put as one
 ! Commented since it does not shift, as it is ... shifted in sethhm2
+! efermi is already  zero here !
 !            call zaxpy(NGAA,dcmplx(efermi,0.d0),
 !     .           SAA(1,1),1,HAA(1,1),1)
 ! FDN
 
-        end if                
+       end if             
 
         zsenergy = zenergy-efermi
 
@@ -1105,7 +1106,7 @@ MODULE m_ts_electrode
                     label_length+5, hsfile, nua, lasto, isa, ef, cell, &
                     kscell, kdispl, ts_gamma, xa, icrap1, icrap2)  
 ! FDN
-
+    
 ! FDN Check if electrode has the same spin
       if( nspin.ne.Enspin ) then
        write(*,*) 'Differente spin in Electrode !!'
@@ -1360,7 +1361,6 @@ MODULE m_ts_electrode
          enddo
       enddo
 
-        
 !-----------------------------------------------------------------
        endif                      !tkham
 !-----------------------------------------------------------------

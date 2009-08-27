@@ -286,8 +286,7 @@ end subroutine cp_gf_vars
       character*33 paste,header,itemfdf     
       real*8 fdf_convfac
       external paste
-! Define FDF calls ....................................................
-!      include 'fdf/fdfdefs.h'
+
 
 !=======================================================================
 ! BEGIN:

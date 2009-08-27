@@ -158,8 +158,6 @@ c FDF-stuff:
       character*33 paste,header,itemfdf     
       real*8 fdf_convfac
       external paste
-C Define FDF calls ....................................................
-      include 'fdf/fdfdefs.h'
 
 c=======================================================================
 c BEGIN:
