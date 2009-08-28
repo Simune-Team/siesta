@@ -230,8 +230,6 @@ siesta: version $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
                $(COMP_LIBS) $(FoX_LIBS) $(LIBS) 
 #
 #------------------------------------------------------------------------
-#------------------------------------------------------------------------
-# C FDN Begin: Makefile modifications for TranSIESTA
 #----------------------------------------------------------------------------
 # TranSIESTA...
 #
@@ -245,11 +243,8 @@ transiesta: what version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML) $(X
                $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(WXML) $(XMLPARSER)\
                $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(COMP_LIBS) $(FoX_LIBS) $(LIBS)
 #
-# C FDN End: Makefile modifications for TranSIESTA
-#
-
 # ---------------------------------------------------------------------------
-# Other auxiliary programs
+# Other auxiliary programs (to be moved)
 #----------------------------------------------------------------------------
 MT_OBJS=precision.o m_mpi_utils.o sys.o parallel.o 
 mpi_test: $(MPI_INTERFACE) $(MT_OBJS) mpi_test.o
