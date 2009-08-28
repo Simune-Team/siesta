@@ -230,21 +230,6 @@ siesta: version $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
                $(COMP_LIBS) $(FoX_LIBS) $(LIBS) 
 #
 #------------------------------------------------------------------------
-IONCAT_OBJS=f2kcli.o m_getopts.o ioncat.o basis_types.o precision.o  parallel.o \
-          parsing.o xcmod.o alloc.o atom_options.o basis_io.o  atm_types.o\
-          atmparams.o radial.o io.o memory.o chkdim.o\
-	  paste.o pseudopotential.o chemical.o  alloc.o \
-          basis_specs.o memoryinfo.o  m_memory.o periodic_table.o\
-          xc.o flib_spline.o atmfuncs.o spher_harm.o\
-          sys.o timer.o  xml.o m_walltime.o $(SYSOBJ)
-# precision must be the first one here...
-ioncat.o: $(FDF)
-ioncat: version $(MPI_INTERFACE) $(FDF) $(WXML) \
-                 $(IONCAT_OBJS) $(COMP_LIBS)
-	$(FC) -o ioncat \
-	       $(LDFLAGS) $(IONCAT_OBJS) $(MPI_INTERFACE) $(FDF) $(WXML) \
-               $(COMP_LIBS) $(LIBS) 
-#
 #------------------------------------------------------------------------
 # C FDN Begin: Makefile modifications for TranSIESTA
 #----------------------------------------------------------------------------
@@ -291,7 +276,7 @@ fractional: $(FDF) $(MPI_INTERFACE)  $(FRACTIONAL_OBJS)
 #
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
-	rm -f siesta ioncat  *.o  *.a *.pcl *.pc
+	rm -f siesta  *.o  *.a *.pcl *.pc
 	rm -f mixps mpi_test
 	rm -f *.mod
 	rm -f *.bck *~
@@ -432,7 +417,6 @@ iohs.o: precision.o siesta_geom.o sys.o
 iokp.o: files.o precision.o
 iolwf.o: alloc.o files.o onmod.o parallel.o parallelsubs.o precision.o sys.o
 iomd.o: files.o precision.o
-ioncat.o: atm_types.o atmfuncs.o basis_io.o m_getopts.o precision.o
 iopipes.o: parallel.o precision.o sys.o
 iowfs_netcdf.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
 ioxv.o: files.o parallel.o precision.o
