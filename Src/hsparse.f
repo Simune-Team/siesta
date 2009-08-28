@@ -72,7 +72,7 @@ C
       use precision
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GetNodeOrbs, GlobalToLocalOrb
-      use atmfuncs,      only : rcut, nkbfis
+      use atmfuncs,      only : rcut, nofis, nkbfis
       use atm_types,     only : nspecies
       use listsc_module, only : listsc_init
       use sorting
@@ -107,6 +107,7 @@ C
       real(dp), parameter        :: tol = 1.0d-8   ! tolerance for comparing vector-coordinates
 
       real(dp), allocatable     :: rkbmax(:) ! maximum KB radius of each species
+      real(dp), allocatable     :: rorbmax(:) ! maximum ORB radius of each species
       integer      :: maxnkb  = 500          ! max no. of neighboring atoms with
                                              ! overlapping KB projectors
 
@@ -172,14 +173,20 @@ C Find maximum range of basis orbitals and KB projectors
 !
 !     Find maximum radius of the KB projectors of each species
 !     
-      allocate(rkbmax(nspecies))
+      allocate(rkbmax(nspecies), rorbmax(nspecies))
       do is = 1, nspecies
          rkbmax(is) = 0.0_dp
          do ikb = 1, nkbfis(is)
             rkbmax(is) = max(rkbmax(is),rcut(is,-ikb))
          enddo
+         rorbmax(is) = 0.0_dp
+         do io = 1, nofis(is)
+            rorbmax(is) = max(rorbmax(is),rcut(is,io))
+         enddo
          print *, "Largest KB radius for species ",
      $        is, " : ", rkbmax(is)
+         print *, "Largest ORB radius for species ",
+     $        is, " : ", rorbmax(is)
       enddo
 
       ! Allocate local arrays that depend on parameters
@@ -250,6 +257,7 @@ C Find overlaping KB projectors
                       nnkb = nnkb + 1
                       knakb(nnkb) = kna
                       rckb(nnkb) = rck
+                      !! dkb_max = max(dkb_max, 2 * rkbmax(ks))
                    endif
                 enddo
              endif
@@ -258,13 +266,18 @@ C Find orbitals connected by direct overlap or
 C through a KB projector
               do jnat = 1,nna
                 ja = jna(jnat)
+                js = isa(ja)
                 rij = sqrt( r2ij(jnat) )
+                ! Possible early exit when applying
+                ! per-atom criterion -- to be analyzed
+                !! if (rij > (rci + rorbmax(js) + dkb_max)) CYCLE
+!!                if (rij > (rci + rorbmax(js)
+!!     $                     + 2.0_dp * rmaxkb)) CYCLE
                 do jo = lasto(ja-1)+1,lasto(ja)
 
                   !If not yet connected (we only allow one connection, and
                   !reserve space for it)
                   if (.not.conect(jo)) then
-                    js = isa(ja)
                     joa = iphorb(jo)
                     rcj = rcut(js,joa)
 C Find if there is direct overlap
