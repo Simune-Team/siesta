@@ -1,7 +1,7 @@
 #
 #  Makefile for fdf example and fdf module.
 #  
-INCFLAGS:=-I${<D} $(INCFLAGS)    # For VPATH operation
+.PHONY: check_flags
 #
 # This makefile can also be used "remotely", so we allow
 # for an external specification of the (relative) location 
@@ -11,14 +11,20 @@ ARCH_MAKE_DEFAULT=../arch.make
 ARCH_MAKE?=$(ARCH_MAKE_DEFAULT)
 include $(ARCH_MAKE)
 #
+INCFLAGS:=-I$(VPATH) $(INCFLAGS)    # For VPATH operation
+#
 # Include copying operations in rule to make sure that
 # they are always performed.
 #
+default: module
 module:  libfdf.a
 	cp libfdf.a ..
 	@cp -p *.*d ..
+
+check_flags:
+	@echo "In fdf, INCFLAGS is: $(INCFLAGS)"
 #
-libfdf.a:	fdf.o fdf_mod.o parse.o
+libfdf.a: check_flags fdf.o fdf_mod.o parse.o
 	ar $(ARFLAGS_EXTRA) cru libfdf.a fdf.o fdf_mod.o parse.o
 	-$(RANLIB) libfdf.a
 #
