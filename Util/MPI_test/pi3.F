@@ -81,21 +81,14 @@ c
 
 c                                 collect all the partial sums
       call system_clock(count,rate,max)
-#ifndef NODAT
-      call MPI_REDUCE(mypi,pi,1,DAT_double,MPI_SUM,0,           
-     &     MPI_COMM_WORLD,ierr)
-      call MPI_REDUCE(elapsed,tot_time,1,DAT_single,MPI_SUM,0,  
-     &     MPI_COMM_WORLD,ierr)
-      call MPI_REDUCE(n,ntotal,1,MPI_INTEGER,MPI_SUM,0,         
-     &     MPI_COMM_WORLD,ierr)
-#else
+
       call MPI_REDUCE(mypi,pi,1,mpi_double_precision,MPI_SUM,0,           
      &     MPI_COMM_WORLD,ierr)
       call MPI_REDUCE(elapsed,tot_time,1,mpi_real,MPI_SUM,0,  
      &     MPI_COMM_WORLD,ierr)
       call MPI_REDUCE(n,ntotal,1,MPI_INTEGER,MPI_SUM,0,         
      &     MPI_COMM_WORLD,ierr)
-#endif
+
       call system_clock(count2,rate,max)
       print *, 'Process ', myid,                                
      &         ' Took ', count2-count, ' ticks to complete reduces.'
