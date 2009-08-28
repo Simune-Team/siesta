@@ -19,9 +19,9 @@
 # You must set these symbols properly, either here or in your
 # top arch.make
 #
-#FFTW_ROOT=$(HOME)/lib/fftw-ifort
-#FFTW_INCFLAGS= -I$(FFTW_ROOT)/include
-#FFTW_LIBS = -L$(FFTW_ROOT)/lib -lfftw3
+FFTW_ROOT=$(HOME)/lib/fftw-ifort
+FFTW_INCFLAGS= -I$(FFTW_ROOT)/include
+FFTW_LIBS = -L$(FFTW_ROOT)/lib -lfftw3
 #-----------------------------------------
 #
 OBJDIR=Obj
@@ -103,9 +103,9 @@ MOD_OBJS=precision.o parallel.o alloc.o memoryinfo.o sys.o listsc.o  \
 COM_OBJS_STM=$(OBJS_STM) $(SYSOBJ)
 ALL_OBJS_STM=$(MOD_OBJS) $(COM_OBJS_STM)
 #
-stm: $(FDF)  $(COMP_LIBS) $(ALL_OBJS_STM)
+stm: $(FDF)  $(ALL_OBJS_STM)
 	$(FC) -o stm \
-	       $(LDFLAGS) $(ALL_OBJS_STM) $(FDF)  $(COMP_LIBS) $(FFTW_LIBS) 
+	       $(LDFLAGS) $(ALL_OBJS_STM) $(FDF) $(FFTW_LIBS) 
 #
 clean:
 	@echo "==> Cleaning object, library, and executable files"
@@ -478,7 +478,6 @@ zmatrix.o: alloc.o m_cell.o parallel.o parsing.o precision.o siesta_geom.o
 zmatrix.o: sys.o units.o
 atompla.o: sys.o
 extrapolate.o: fftw3_mymod.o precision.o
-fftw3_mymod.o: fftw3.f
 mainstm.o: basis_io.o listsc.o parallel.o precision.o
 ranger.o: precision.o
 stm.o: atmfuncs.o chemical.o precision.o
