@@ -256,28 +256,11 @@ mpi_test: $(MPI_INTERFACE) $(MT_OBJS) mpi_test.o
 	$(FC) -o mpi_test \
 	       $(LDFLAGS) mpi_test.o $(MT_OBJS) $(MPI_INTERFACE) $(LIBS) 
 #----------------------------------------------------------------------------
-MIXPS_OBJS= f2kcli.o flib_spline.o mixps.o atom_options.o pseudopotential.o \
-            sys.o \
-            io.o pxf.o parallel.o periodic_table.o alloc.o memory.o memoryinfo.o
-
-mixps: $(MPI_INTERFACE)  $(FDF) $(MIXPS_OBJS)
-	$(FC) -o mixps \
-	       $(LDFLAGS) $(MIXPS_OBJS) $(FDF) $(MPI_INTERFACE) $(LIBS) 
-#----------------------------------------------------------------------------
-FRACTIONAL_OBJS= f2kcli.o alloc.o flib_spline.o fractional.o  atom_options.o \
-                 memory.o memoryinfo.o pseudopotential.o sys.o \
-            io.o pxf.o parallel.o periodic_table.o
-
-fractional: $(FDF) $(MPI_INTERFACE)  $(FRACTIONAL_OBJS)
-	$(FC) -o fractional \
-	       $(LDFLAGS) $(FRACTIONAL_OBJS) $(MPI_INTERFACE) $(FDF) $(LIBS) 
-#
-#------------------------------------------------------------------------
 #
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
 	rm -f siesta  *.o  *.a *.pcl *.pc
-	rm -f mixps mpi_test
+	rm -f mpi_test
 	rm -f *.mod
 	rm -f *.bck *~
 	rm -f aux_*.f aux_*.f90
@@ -392,7 +375,6 @@ fire_optim.o: precision.o siesta_options.o units.o
 fixed.o: alloc.o parallel.o parsing.o precision.o
 flib_spline.o: precision.o
 forhar.o: alloc.o meshsubs.o precision.o
-fractional.o: f2kcli.o periodic_table.o precision.o pseudopotential.o sys.o
 get_target_stress.o: m_mpi_utils.o parallel.o precision.o units.o
 globalise.o: alloc.o onmod.o onmod.o precision.o spatial.o
 gradient.o: globalise.o m_mpi_utils.o onmod.o precision.o
@@ -498,8 +480,6 @@ mixer.o: atomlist.o iodm_netcdf.o m_broyden_mixing.o m_energies.o
 mixer.o: m_fire_mixing.o m_iodm.o m_mpi_utils.o m_pulay.o m_spin.o m_steps.o
 mixer.o: m_ts_io.o m_ts_options.o parallel.o siesta_geom.o siesta_options.o
 mixer.o: sparse_matrices.o
-mixps.o: f2kcli.o flib_spline.o periodic_table.o precision.o pseudopotential.o
-mixps.o: sys.o
 mneighb.o: alloc.o precision.o sys.o
 molecularmechanics.o: alloc.o parallel.o parsing.o precision.o sys.o units.o
 mpi_test.o: m_mpi_utils.o parallel.o precision.o

@@ -1,30 +1,34 @@
-      program fractional
+      program mixps
+
 !
-!     Program to multiply the Pseudopotential strength by a given
-!     fraction to simulate "fractional occupation" in the VCA
+!     Pseudopotential mixer
 !
       use precision,       only: dp
       use pseudopotential, only: pseudopotential_t,
      $                           pseudo_read, pseudo_write_formatted
       use periodic_table,  only: cnfig, qvlofz
       use sys,             only: die
+      use flib_spline
       use f2kcli
 
       implicit none
 
-      type(pseudopotential_t), target :: pot1, pmix
-      type(pseudopotential_t), pointer :: p1,  p
+      type(pseudopotential_t), target :: pot1, pot2, pmix
+      type(pseudopotential_t), pointer :: p1, p2, p
       
-      real(dp) :: xfraction, z1
+      real(dp) :: xmix, z1, z2
       integer  :: i, iostat, nargs, l
-      character(len=200) :: name, name1, xmixstr
-      integer, dimension(0:3) :: cnfig1, config
-      real(dp), dimension(0:3) :: occup, occup1
+      character(len=200) :: name, name1, name2, xmixstr
+      logical  :: mix_potu
+      integer, dimension(0:3) :: cnfig1, cnfig2, config
+      real(dp), dimension(0:3) :: occup, occup1, occup2
 
 
       nargs = command_argument_count()
-      if (nargs /= 2)
-     $     call die("Usage: fractional ps1 xfraction (no .psf)")
+      if (nargs /= 3) then 
+        write(0,*) "Usage: mixps ps1  ps2 xmix  (no .psf)"
+        stop
+      endif
 
       call get_command_argument(1,value=name1,status=iostat)
       if (iostat == 0) then
@@ -32,83 +36,108 @@
       else
          call die("Cannot get first argument")
       endif
-
-      call get_command_argument(2,value=xmixstr,status=iostat)
+      call get_command_argument(2,value=name2,status=iostat)
       if (iostat == 0) then
-         read(xmixstr,fmt=*,iostat=iostat) xfraction
-         if (iostat /= 0) call die("Cannot parse xfraction")
+         call pseudo_read(trim(name2), pot2)
       else
-         call die("Cannot get xfraction")
+         call die("Cannot get second argument")
+      endif
+
+      call get_command_argument(3,value=xmixstr,status=iostat)
+      if (iostat == 0) then
+         read(xmixstr,fmt=*,iostat=iostat) xmix
+         if (iostat /= 0) call die("Cannot parse xmix")
+      else
+         call die("Cannot get xmix")
       endif
 
       p1 => pot1
+      p2 => pot2
       p => pmix
 
-      print *, "Generation valence: ", p1%gen_zval
+      print *, "Generation valences: ", p1%gen_zval, p2%gen_zval
+
+      mix_potu =  (p1%npotu == p2%npotu) 
+      if (p1%npotd /= p2%npotd) call die("npotd")
 
       z1 = nucl_z(p1%name)
+      z2 = nucl_z(p2%name)
 
       call cnfig(int(z1),cnfig1(0:3))
+      call cnfig(int(z2),cnfig2(0:3))
       print *, "Cnfig1: ", cnfig1
+      print *, "Cnfig2: ", cnfig2
 
       call qvlofz(int(z1),occup1(0:3))
+      call qvlofz(int(z2),occup2(0:3))
       print *, "Occup1: ", occup1
+      print *, "Occup2: ", occup2
 
       do l = 0, 3
-         config(l) = cnfig1(l)
-         occup(l) = occup1(l)*xfraction
+         config(l) = max(cnfig1(l), cnfig2(l))
+         occup(l) = occup1(l)*xmix + occup2(l)*(1.0_dp - xmix)
       enddo
 !
 
       p%name = "SX"
       p%nr = p1%nr
       p%nrval = p1%nrval
-      p%zval = xfraction*p1%zval 
-      p%gen_zval = xfraction*p1%gen_zval
+      p%zval = xmix*p1%zval + (1.0_dp-xmix)*p2%zval
+      p%gen_zval = xmix*p1%gen_zval + (1.0_dp-xmix)*p2%gen_zval
       p%relativistic = p1%relativistic
       p%correlation = p1%correlation
       p%icorr = p1%icorr
       p%irel = p1%irel
-      p%nicore = p1%nicore
+      if ((p1%nicore == "pcec") .or.
+     $     (p2%nicore == "pcec") ) then
+         p%nicore = "pcec"
+      else
+         p%nicore = "nc"
+      endif
       p%a = p1%a            ! Use p1's grid
       p%b = p1%b
 
-      p%method(1) = "FRACT"
+      p%method(1) = "MIXPS"
       p%method(2:3) = p1%method(1:2)
       p%method(4) = " --- "
-      p%method(5:6) = " fraction "
+      p%method(5:6) = p2%method(1:2)
 
       write(p%text,"(f8.5,a)")
-     $             xfraction, " fraction of " // p1%name
+     $             xmix, " mix of " // p1%name // " and " // p2%name
 
-      p%npotu = p1%npotu
+      if (mix_potu) then
+         p%npotu = p1%npotu
+      else
+         write(6,*) "No up potentials will be present in mix"
+         p%npotu = 0
+      endif
       p%npotd = p1%npotd
       allocate(p%r(size(p1%r)))
       p%r = p1%r
       allocate(p%chcore(size(p1%r)))
       allocate(p%chval(size(p1%r)))
-      p%chcore = xfraction * p1%chcore
-      p%chval = xfraction * p1%chval
+      call mix(p1%chcore, p2%chcore, p%chcore, xmix)
+      call mix(p1%chval, p2%chval, p%chval, xmix)
       allocate(p%vdown(p%npotd,size(p1%r)))
       allocate(p%ldown(p%npotd))
       do i = 1, p%npotd
-         p%vdown(i,:) = xfraction*p1%vdown(i,:)
+         call mix(p1%vdown(i,:), p2%vdown(i,:), p%vdown(i,:), xmix)
          p%ldown(i) = p1%ldown(i)
       enddo
       if (p%npotu /= 0) then
          allocate(p%vup(p%npotu,size(p1%r)))
          allocate(p%lup(p%npotu))
          do i = 1, p%npotu
-            p%vup(i,:) = xfraction*p1%vup(i,:)
+            call mix(p1%vup(i,:), p2%vup(i,:), p%vup(i,:), xmix)
             p%lup(i) = p1%lup(i)
          enddo
       endif
 
-      write(name,"(a,a,f7.5,a)")
-     $        trim(name1), "-Fraction-", xfraction, ".psf"
+      write(name,"(a,a,a,f7.5,a)")
+     $        trim(name1), trim(name2), "-", xmix, ".psf"
       call pseudo_write_formatted(name,p)
-      write(name,"(a,a,f7.5,a)")
-     $        trim(name1), "-Fraction-", xfraction, ".synth"
+      write(name,"(a,a,a,f7.5,a)")
+     $        trim(name1), trim(name2), "-", xmix, ".synth"
       open (unit=4,file=name, form="formatted", status="unknown",
      $      action="write", position="rewind")
       write(4,"(a)") "%block SyntheticAtoms"
@@ -122,14 +151,54 @@
 !     They can pick up the label from this file inmediately after
 !     invocation of mixps
 !
-      open (unit=5,file="FRACTLABEL",
-     $     form="formatted", status="unknown",
+      open (unit=5,file="MIXLABEL", form="formatted", status="unknown",
      $      action="write", position="rewind")
-      write(5,"(a,a,f7.5,a)")
-     $        trim(name1), "-Fraction-", xfraction
+      write(5,"(a,a,a,f7.5)")
+     $        trim(name1), trim(name2), "-", xmix
       close(5)
 
       CONTAINS
+
+      subroutine mix(a1,a2,a,xmix)
+      real(dp), dimension(:), intent(in)  :: a1, a2
+      real(dp), dimension(:), intent(out) :: a
+      real(dp), intent(in)                :: xmix
+
+      real(dp), dimension(:), pointer :: r1, r2
+      real(dp), dimension(size(a2)) :: x
+      real(dp), dimension(size(a2)) :: y, y2
+
+      integer nr2, j
+      real(dp) :: val2, coeff
+
+      nr2 = size(a2)
+
+      r1 => p1%r        ! Host association from main routine
+      r2 => p2%r
+
+!     Extrapolate linearly values at r = 0
+
+      x(1) = 0.0_dp
+      x(2:) = r2(2:)
+
+      coeff = r2(2)/(r2(3)-r2(2))
+      y(1) = a2(2) - coeff*(a2(3)-a2(2))
+      y(2:) = a2(2:)
+!
+!     We have now the data for the second pseudo in x and y, of
+!     length nrval. Now use spline interpolation
+!     Natural spline for now
+
+      call generate_spline(x,y,nr2,y2,0.0_dp,0.0_dp)
+!
+!     Interpolate into the grid of the first pseudo
+!      
+      do j = 1, size(a1)
+         call evaluate_spline(x,y,y2,nr2,r1(j),val2)
+         a(j) = xmix * a1(j) + (1.0_dp - xmix) * val2
+      enddo
+      
+      end subroutine mix
 
       function nucl_z(name)
       character(len=2), intent(in) ::  name
@@ -359,6 +428,6 @@ c
       end function nucl_z
 
 
-      end program fractional
+      end program mixps
 
 
