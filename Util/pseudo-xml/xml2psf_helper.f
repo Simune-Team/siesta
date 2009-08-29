@@ -46,6 +46,8 @@
              p%icorr = 'vw'
           case('Wu-Cohen')
              p%icorr = 'wc'
+          case('Perdew-Burke-Ernzerhof-solid')
+             p%icorr = 'ps'
         end select
 
         select case(psxml%header%relativistic)

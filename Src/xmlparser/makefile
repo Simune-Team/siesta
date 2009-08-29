@@ -23,7 +23,7 @@ libxmlparser.a: $(OBJFILES)
 #
 #         (Note trick for Intel Fortran Compiler)
 #
-INCFLAGS=-I../wxml
+INCFLAGS:= $(INCFLAGS) -I../wxml
 #
 #
 PARENT_VPATH=`grep '^VPATH' ../Makefile`
@@ -56,6 +56,9 @@ test-xml: vpath_warning  \
                            compare_m.o m_compare_tol.o corresponding_node.o string_utilities.o \
                            $(DOM_OBJ_FILES) libxmlparser.a ../libwxml.a $(OTHER_OBJS)
 
+wxml: ../wxml/flib_wcml.f90
+	(cd ../wxml ; make "$(PARENT_VPATH)/wxml")
+
 list: vpath_warning \
        list_nodes.o $(DOM_OBJ_FILES) libxmlparser.a ../libwxml.a $(OTHER_OBJS)
 	$(FC) $(FFLAGS)  -o list list_nodes.o \
@@ -85,11 +88,12 @@ m_dom_element.o: m_dom_types.o m_dom_nodelist.o m_dom_namednodemap.o \
 m_dom_parse.o: m_dom_types.o m_dom_element.o m_dom_document.o m_dom_node.o \
                m_dom_debug.o
 m_dom_utils.o: m_dom_types.o m_dom_element.o m_dom_document.o m_dom_node.o \
-                m_dom_namednodemap.o m_dom_debug.o
+                m_dom_namednodemap.o m_dom_debug.o wxml
 m_dom_types.o:m_strings.o
 flib_dom.o:  m_dom_types.o m_dom_nodelist.o m_dom_namednodemap.o \
              m_dom_attribute.o m_dom_document.o m_dom_node.o \
              m_dom_node.o m_dom_element.o m_dom_parse.o m_dom_utils.o
+flib_sax.o:  m_dictionary.o m_xml_parser.o m_converters.o m_xml_error.o
 compare_m.o: m_compare_tol.o
 test.o: compare_m.o
 

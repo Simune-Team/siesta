@@ -39,13 +39,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, 2.6.21}}
+{\Huge {\bf S I E S T A \, \, 2.6.32}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large May 7, 2009 }
+{\Large August 20, 2009 }
 
 \vspace{1.5cm}
 
@@ -139,10 +139,9 @@ time and memory scale linearly with the number of atoms.
 Simulations with several hundred atoms are feasible with
 modest workstations.
 \item
-It is written in Fortran 90 and memory is allocated dynamically.  
+It is written in Fortran 95 and memory is allocated dynamically.  
 \item
 It may be compiled for serial or parallel execution (under MPI).
-(Note: This feature might not be available in all distributions.)
 
 \end{itemize}
 
@@ -239,64 +238,72 @@ If you have a previous version of {\sc Siesta}, the update is simply
 replacing the old {\tt siesta} directory tree with the new one, saving
 the {\tt arch.make} file that you built to compile {\sc Siesta} for
 your architecture (the format of this file has changed slightly, but
-you should be able to translate the immportan fields, such as library
+you should be able to translate the important fields, such as library
 locations and compiler switches, to the new version).
-You also have the option of using the new {\tt configure} script
+You also have the option of using the {\tt configure} script
 (see below) to see whether the automatically generated {\tt arch.make} file
 provides anything new or interesting for your setup.
   If you have working files within the old {\sc Siesta} tree, including
-pseudopotential etc., you will have to fish them out. That is why we recommend
+pseudopotentials etc., you will have to fish them out. That is why we recommend
 working directories outside the package.
 
 \section{QUICK START}
 
 \subsection{Compilation}
-Unpack the {\sc Siesta} distribution. Go to the {\tt Src} directory, 
-where the source code resides together with the Makefile. You will
-need a file called {\tt arch.make} to suit your particular computer
-setup. The command {\tt ./configure}  will start an automatic scan of 
-your system and try to build
-an {\tt arch.make} for you. Please note that the configure script
-might need some help in order to find your Fortran compiler, and that
-the created arch.make may not be optimal, mostly in regard to compiler
-switches, but the process should provide a reasonable working
-file. Type {\tt ./configure --help} to see the flags understood by the
-script, and take a look at the {\tt Src/Confs} subdirectory for some
-examples of their explicit use. You can also create your own {\tt arch.make}
-by looking at the examples in the {\tt Src/Sys} subdirectory.
-If you intend to create a parallel version of {\sc
-Siesta}, make sure you have all the extra support libraries ({\tt MPI,
-scalapack, blacs...}). Type {\tt make}. The executable should work
-for any job (This is not exactly true, since some of the parameters in
-the atomic routines are still hardwired (see {\tt Src/atmparams.f}),
-but those would seldom need to be changed.)
+Unpack the {\sc Siesta} distribution. Go to the {\tt Obj} directory.
+As explained in the {\tt README} file there, you will need to run a
+shell script to do some minimum setup, and then to obtain an {\tt
+  arch.make} file to suit your particular computer setup. Optionally,
+the command {\tt ../Src/configure} will start an automatic scan of
+your system and try to build an {\tt arch.make} for you. Please note
+that the configure script might need some help in order to find your
+Fortran compiler, and that the created arch.make may not be optimal,
+mostly in regard to compiler switches, but the process should provide
+a reasonable first version. Type {\tt ../Src/configure --help} to see
+the flags understood by the script, and take a look at the {\tt
+  Src/Confs} subdirectory for some examples of their explicit use. You
+are strongly encouraged to look at {\tt
+  Src/Sys/DOCUMENTED-TEMPLATE.make} for information about the fine
+points of the {\tt arch.make} file. You can also get inspiration by
+looking at the actual {\tt arch.make} examples in the {\tt Src/Sys}
+subdirectory. If you intend to create a parallel version of {\sc
+  Siesta}, make sure you have all the extra support libraries ({\tt
+  MPI, scalapack, blacs...}). Once you have a proper {\tt arch.make},
+type {\tt make}. The executable should work for any job (This is not
+exactly true, since some of the parameters in the atomic routines are
+still hardwired (see {\tt Src/atmparams.f}), but those would seldom
+need to be changed.)
 
 Multiple compilations: You can compile as many different versions of
 the {\sc Siesta} executable as you wish (for example, with different
-levels of optimization, serial, parallel, debug, etc) using the 
-VPATH feature of make. 
+levels of optimization, serial, parallel, debug, etc), by working in
+separate building directories. 
 
 For example, starting from the top Siesta directory:
 
 \begin{verbatim}
-mkdir Objs
-cd Objs
+cd Obj                  # The standard build directory
 sh ../Src/obj_setup.sh
 ../Src/configure --enable-fast
 make
 cd Tests
 make clean; make
-cd    #   ----------- Now a parallel version
+
+#
+#   ----------- Now a parallel version in a different directory
+#
+cd   
 mkdir ParaObjs
 cd ParaObjs
 sh ../Src/obj_setup.sh
-cp ../Src/Sys/parallel.make ./arch.make
+cp ../Src/Sys/some-suitable-parallel.make ./arch.make
+  (... fine-tune and adapt the arch.make to your system ...)
 make
 cd Tests
 make clean; make
 \end{verbatim}
 
-(The pristine Src directory should be "clean", without objects, or else
+(The pristine Src directory should be kept "clean", without objects, or else
 the compilation in the build directories will get confused)
 
 
@@ -313,9 +320,11 @@ files. For convenience, the output file is copied to the parent
 directory. A collection of reference output files can be found in {\tt
   Tests/Reference}. Please note that small numerical and
 formatting differences are to be expected, depending on the compiler.
+(For non-standard execution environments, including queuing systems,
+so can have a look at the Scripts in Tests/Scripts).
 
 Other examples are provided in the {\tt Examples} directory. This
-directory contains basically the {\tt .fdf} files and the
+directory contains basically the {\tt .fdf} files and the appropriate
 pseudopotential generation input files. Since at some point you will
 have to generate your own pseudopotentials and run your own jobs, we
 describe here the whole process by means of the simple example of the
@@ -987,17 +996,6 @@ and the Na$^+$ ion would have {\bf NetCharge} = {\tt 1}.
 Fractional charges can also be used.
 
 {\it Default value:} {\tt 0.0} 
-
-
-\item[{\bf MaximumWallClockTime}] ({\it physical}):
-\index{MaximumWallClockTime@{\bf MaximumWallClockTime}}
-Defines the maximum duration of the SIESTA run. The system
-clock is checked on a regular basis in order to profile the 
-time taken by various procedures. If more than MaximumWallClockTime
-has elapsed then the job is aborted. If the maximum time is 0, or is
-negative, the time is unlimited.
-
-{\it Default value:} {\tt 0 s}
 
 
 \end{description}
@@ -2512,6 +2510,9 @@ approximation.  Ref: Hammer, Hansen and Norskov PRB 59, 7413
 \item {\tt WC} (Wu-Cohen modification of PBE functional). Generalized gradients
 approximation.  Ref: Z. Wu and R.E. Cohen, PRB 73, 235116 (2006)
 \index{GGA} \index{WC}
+\item {\tt PBEsol} (Perdew-Burke-Ernzerhof for solids). Generalized gradients
+approximation.  Ref: Perdew et al, PRL 100, 136406
+(2008)\index{GGA} \index{PBEsol}
 \item {\tt LYP} Generalized gradients approximation \index{BLYP}
 that implements Becke gradient exchange functional (A. D.
 Becke, Phys. Rev. A {\bf 38}, 3098 (1988)) and Lee, Yang, Parr
@@ -2887,6 +2888,31 @@ Example:
 
 {\it Default value:} If present but empty, all atoms are not polarized. 
 If absent, {\bf DM.InitSpinAF} defines the polarization.
+
+\item[{\bf DM.AllowReuse}] ({\it logical}):
+\index{DM.AllowReuse@{\bf DM.AllowReuse}}
+Controls whether density matrix information from previous geometry 
+iterations is re-used to start the new geometry's SCF cycle.
+
+{\it Default value:} {\tt .true.}
+
+\item[{\bf DM.AllowExtrapolation}] ({\it logical}):
+\index{DM.AllowExtrapolation@{\bf DM.AllowExtrapolation}}
+Controls whether density matrix information from two previous geometry 
+iterations is (linearly) extrapolated to start the new geometry's SCF cycle.
+
+{\it Default value:} {\tt .true.}
+
+Further information regarding the density-matrix re-use can be found
+in the header of routine {\tt Src/new\_dm.F}.
+
+\item[{\bf MullikenInSCF}] ({\it logical}):
+\index{MullikenInSCF@{\bf MullikenInSCF}}
+If true, the Mulliken populations will be written for every SCF step
+at the level of detail specified in {\bf WriteMullikenPop}. Useful
+when dealing with SCF problems, otherwise too verbose.
+
+{\it Default value:} {\tt .false.}
 
 \item[{\bf MullikenInSCF}] ({\it logical}):
 \index{MullikenInSCF@{\bf MullikenInSCF}}
@@ -3278,6 +3304,10 @@ However, it can affect substantially the process of relaxation, by
 increasing the number of steps considerably, and can also spoil the
 calculation of vibrations, usually much more demanding than relaxations.
 
+The Util/Scripting/eggbox_checker.py script can be used to diagnose
+the eggbox effect to be expected for a particular
+pseudopotential/basis-set combination.
+
 It works by substracting from Kohn-Sham's total energy (and forces) an
 approximation to the eggbox energy, sum of atomic contributions. 
 Each atom has a predefined eggbox energy depending on where it sits on
@@ -3285,7 +3315,8 @@ the cell. This atomic contribution is species dependent and is
 obviously invariant under grid-cell translations. Each species
 contribution is thus expanded in the appropriate Fourier series.
 It is important to have a smooth eggbox, for it to  
-be represented by a few Fourier components. A jagged egg-box is often an
+be represented by a few Fourier components. A jagged egg-box (unless
+very small, which is then unimportant) is often an
 indication of a problem with the pseudo.
 
 In the block there is one line per Fourier component. The first integer
@@ -3347,10 +3378,11 @@ core or semicore electrons.
 calculations. 
 
 For the time being, it is up to the user to obtain the Fourier
-components to be introduced. They can be obtrained by moving one
+components to be introduced. They can be obtained by moving one
 isolated atom through the cell to be used in the calculation
 (for a give cell size, shape and mesh), once for each species. 
-There is a utility program that does it, calling siesta (Tom Archer).
+The Util/Scripting/eggbox_checker.py script can be used as a starting
+point for this.
 
 {\it Default value:} Empty.
 
@@ -3795,8 +3827,9 @@ displacements. These are choosen with the help of the program {\sc
 Phonon} \footnote{{\sc Phonon} is \copyright\ copyright by Krzysztof
 Parlinski}  \index{Phonon program} \index{Force Constants
 Matrix!using phonon@using {\sc Phonon}} for phonon calculations). See
-also {\tt MD.ATforPhonon} block. (Deprecated feature which might be
-removed in future versions.)
+also {\tt MD.ATforPhonon} block. (This feature is not well tested, and
+might be removed in future versions. It is suggested that a script
+driving Siesta be written instead. See {\tt Util/Scripting} )
 
 \item {\tt Forces} (Receive coordinates from, and return forces to,
 an external driver program, using Unix pipes for communication.
@@ -4607,10 +4640,10 @@ is output as a {\it Systemlabel}.DM file or not.
 
 \item[{\bf WriteDM.NetCDF}] ({\it logical}): \index{WriteDM.NetCDF@{\bf WriteDM.NetCDF}}
 \index{output!density matrix} It determines whether the density matrix
-is output as a {\it Systemlabel}.DM.nc netCDF file or not.
+(after the mixing step) is output as a DM.nc netCDF file or not.
 
-The file is overwritten at every SCF step, unless the {\bf
-WriteDM.History.NetCDF} option is enabled.
+The file is overwritten at every SCF step. Use the {\bf
+WriteDM.History.NetCDF} option if a complete history is desired.
 
 The DM.nc and standard DM file formats can be converted at will with
 the programs in {\tt Util/DensityMatrix} directory. Note that the
@@ -4621,29 +4654,33 @@ DM values in the DM.nc file are in single precision.
 \item[{\bf WriteDMHS.NetCDF}] ({\it logical}): \index{WriteDMHS.NetCDF@{\bf WriteDMHS.NetCDF}}
 \index{output!density
   matrix}\index{output!hamiltonian}\index{output!overlap matrix} 
-It determines whether, at every SCF step, the input density matrix,
-hamiltonian, and output density matrix, are output as a {\it
-  Systemlabel}.DMHS.nc netCDF file or not.
-The file also contains the overlap matrix S. 
+If true, the input density matrix, hamiltonian, and output density matrix, are stored in a netCDF file
+named {\tt DMHS.nc}. The file also contains the overlap matrix S. 
 
-The file is overwritten at every SCF step, unless the {\bf
-WriteDMHS.History.NetCDF} option is enabled.
+The file is overwritten at every SCF step. Use the {\bf
+  WriteDMHS.History.NetCDF} option if a complete history is desired.
 
 {\it Default value:} {\tt .true.} if netCDF support is enabled (see Appendix).
 
-\item[{\bf WriteDM.History.NetCDF}] ({\it logical}): \index{WriteDM.History.NetCDF@{\bf WriteDM.History.NetCDF}}
-\index{output!density matrix}\index{output!density matrix history} It determines whether the 
-DM.nc file (see {\bf WriteDM.NetCDF}) contains information about all
-the steps of the (last) SCF cycle or not.
+\item[{\bf WriteDM.History.NetCDF}] ({\it logical}):
+\index{WriteDM.History.NetCDF@{\bf WriteDM.History.NetCDF}}
+\index{output!density matrix}\index{output!density matrix history} If
+true, a series of netCDF files with names of the form {\tt DM-NNNN.nc}
+is created to hold the complete history of the density matrix (after
+mixing).  (See also {\bf WriteDM.NetCDF}). Each file corresponds to a
+geometry step.
 
 {\it Default value:} {\tt .false.}
 
-\item[{\bf WriteDMHS.History.NetCDF}] ({\it logical}): \index{WriteDMHS.History.NetCDF@{\bf WriteDMHS.History.NetCDF}}
-\index{output!density
-  matrix history}\index{output!hamiltonian history}\index{output!overlap matrix} 
-It determines whether the 
-DMHS.nc file (see {\bf WriteDMHS.NetCDF}) contains information about all
-the steps of the (last) SCF cycle or not.
+\item[{\bf WriteDMHS.History.NetCDF}] ({\it logical}):
+\index{WriteDMHS.History.NetCDF@{\bf WriteDMHS.History.NetCDF}}
+\index{output!density matrix history}\index{output!hamiltonian
+history}\index{output!overlap matrix} If true, a series of netCDF
+files with names of the form {\tt DMHS-NNNN.nc} is created to hold the
+complete history of the input and output density matrix, and the
+hamiltonian.  (See also {\bf WriteDMHS.NetCDF}). Each file corresponds
+to a geometry step. The overlap matrix is stored only once per SCF
+cycle.
 
 {\it Default value:} {\tt .false.}
 
@@ -5183,6 +5220,19 @@ An example is:
      %endblock ProjectedDensityOfStates
 \end{verbatim}
 
+By default the projected density of states is generated for the same
+grid of points in reciprocal space as used for the SCF calculation.
+However, a separate set of K-points, usually on a finer grid, can 
+be generated using one of the options \textbf{PDOS.kgrid\_cutoff} or
+\textbf{PDOS.kgrid\_Monkhorst\_Pack}. The format of these options is
+exactly the same as for \textbf{kgrid\_cutoff} and 
+\textbf{kgrid\_Monkhorst\_Pack}, respectively. Note that if a gamma
+point calculation is being used in the SCF part, especially as part
+of a geometry optimisation, and this is then to
+be run with a grid of K-points for the PDOS calculation it is more
+efficient to run the SCF phase first and then restart to perform the
+PDOS evaluation using the density matrix saved from the SCF phase. 
+
 {\it Use:} The two energies of the range must be ordered, with lowest
 first. 
 
@@ -5535,13 +5585,16 @@ a possibly updated geometry.
 \index{output!molecular dynamics!history}
 The trajectory of a molecular dynamics run (or a conjugate gradient
 minimization) can be accumulated in different files: SystemLabel.MD,
-SystemLabel.MDE, and SystemLabel.ANI. The first keeps the whole trajectory
-information, meaning updated positions and velocities at every time step, 
-including lattice vectors if the cell varies.
-The second gives global infomation (energy, temperature, etc),
+SystemLabel.MDE, and SystemLabel.ANI. The first file keeps the whole trajectory
+information, meaning positions and velocities at every time step, 
+including lattice vectors if the cell varies. NOTE that the positions
+(and maybe the cell vectors) stored at each time step are the {\bf
+  predicted} values for the next step. Care should be taken if joint
+position-velocity correlations need to be computed from this file.
+The second gives global information (energy, temperature, etc),
 and the third has the coordinates in a form suited for XMol animation.
 See the {\bf WriteMDhistory} and {\bf WriteMDXmol} data descriptors 
-above for information. {\sc Siesta} always append new information on these
+above for information. {\sc Siesta} always appends new information on these
 files, making them accumulative even for different runs.
 
 The {\tt iomd} subroutine can generate both
@@ -5587,9 +5640,10 @@ of eV/\AA.
 \item {\bf Positions and velocities:}
 
 Every time the atoms move, either during coordinate relaxation or
-molecular dynamics, their updated positions and current velocities are
+molecular dynamics, their positions {\bf predicted for next step} and
+{\bf current} velocities are
 stored in file SystemLabel.XV, where SystemLabel is the value of that
-FDF descriptor (or siesta by default).  The shape of the unit cell and
+FDF descriptor (or 'siesta' by default).  The shape of the unit cell and
 its associated 'velocity' (in Parrinello-Rahman dynamics) are also
 stored in this file. For MD runs of type Verlet, Parrinello-Rahman,
 Nose, or Nose-Parrinello-Rahman, a file named
@@ -5625,7 +5679,7 @@ to save it periodically during the
 simulation, in case a mid-run restart is necessary.
 
 \item {\bf Density Matrix:} At the end of each SCF cycle
-the Density Matrix is stored
+the Density Matrix is stored on
 disk. These can be used as an input for
 the same system in a restart, or in case something goes
 wrong.  The DM is stored in sparse form in files
@@ -6293,16 +6347,22 @@ always worth tuning the BlockSize parameter.
 \index{CML}
 
 From version 2.0, {\sc Siesta} includes an option to write its output to an 
-XML file. The XML it produces is in accordance with the CML schema version 
-2.2 (see http://www.xml-cml.org).
+XML file. The XML it produces is in accordance with the CMLComp subset of 
+version 2.2 of the Chemical Markup Language. Further information
+and resources can be found at \url{http://cmlcomp.org/} and tools for working 
+with the XML file can be found in the \texttt{Util/CMLComp} directory.
+
+As of June 2009, the engine for CML output production is a subset of
+the FoX library\index{FoX XML library} (see {\tt
+  http://www.uszla.me.uk/FoX}).
 
 The main motivation for standarised XML (CML) output is as a step
 towards standarising formats for uses like the following.
 
 \begin{itemize}
 
-\item To have {\sc Siesta} communicating with other softwares, either
-usual postprocessing or as part of a larger workflow scheme. In such a
+\item To have {\sc Siesta} communicating with other software, either
+for postprocessing or as part of a larger workflow scheme. In such a
 scenario, the XML output of one {\sc Siesta} simulation may be easily parsed
 in order to direct further simulations. Detailed discussion of this is
 outwith the scope of this manual.
@@ -6312,50 +6372,32 @@ graphically rich, fashion. This section will explain how to do this.
 
 \end{itemize}
 
-Prerequisites:
+\subsection{Converting XML to XHTML}
 
 The translation of the {\sc Siesta} XML output to a HTML-based webpage is
 done using XSLT technology. The stylesheets conform to XSLT-1.0 plus
 EXSLT extensions; an xslt processor capable of dealing with this is
-necessary. The following processors have been tested and are known to
-work.
+necessary. However, in order to make the system easy to use, a script
+called ccViz is provided in \texttt{Util/CMLComp} that works on most Unix or 
+Mac OS X systems. It is run like so:
 
-\begin{itemize}
-  \item \texttt{xsltproc} from libxml2 (\url{http://xmlsoft.org})
-  \item \texttt{4xslt} from 4suite (\url{http://4suite.org})
-  \item \texttt{saxon} (\url{http://saxon.sourceforge.net/})
-\end{itemize}
+\texttt{./ccViz SystemLabel.xml}
+
+A new file will be produced. Point your web-browser at \texttt{SystemLabel.xhtml}
+to view the output.
 
 The generated webpages include support for viewing three-dimensional
 interactive images of the system. If you want to do this, you will
-also need jMol (\url{http://jmol.sourceforge.net}) installed; as this
+either need jMol (\url{http://jmol.sourceforge.net}) installed or access
+to the internet. As this
 is a Java applet, you will also need a working Java Runtime
 Environment and browser plugin - installation instructions for these
 are outside the scope of this manual, though. However, the webpages
 are still useful and may be viewed without this plugin.
 
-XSLT stylesheets are being developed within a CML project, and they
-are directly applicable to {\sc Siesta}. They can be found in
-
-{\tt http://www.eminerals.org/siesta/XSLT}
-
-To use these to produce the webpage, the
-output of a {\sc Siesta} run, \texttt{SystemLabel.xml} should be taken and
-placed in an empty directory. The XSLT processor should then be
-run. The necessary invocation differs according to the processor - the
-following are some examples; consult the documentation for your own
-processor.
-
-\texttt{xsltproc -o SystemLabel.xhtml \$SIESTA/XSLT/display.xsl
-SystemLabel.xml}\\ \texttt{4xslt -o SystemLabel.xhtml SystemLabel.xml
-\$SIESTA/XSLT/display.xsl}\\ \texttt{java /usr/share/java/saxon.jar -o
-SystemLabel.xhtml SystemLabel.xml \$SIESTA/XSLT/display.xsl}
-
-Note that when using saxon, the path to the saxon \.jar may be
-different on your system.
-
-After this is done, a set of html files will have been created. Point
-your web-browser at \texttt{SystemLabel.xhtml} to view this output.
+An online version of this tool is avalable from 
+\url{http://cmlcomp.org/ccViz/}, as are updated versions of
+the ccViz script.
 
 \newpage
 \section{APPENDIX: Selection of precision for storage}

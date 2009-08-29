@@ -15,7 +15,7 @@
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
 VPATH:=$(shell pwd)/../../Src
-OBJDIR=Src
+OBJDIR=Obj
 #
 all: grid2cdf cdf2xsf cdf2grid grid2val grid2cube
 #

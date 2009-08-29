@@ -43,7 +43,7 @@ SIESTA_OBJS=precision.o pxf.o  m_mpi_utils.o m_fdf_global.o paste.o parallel.o s
 
 TBTOBJS= $(SIESTA_OBJS) $(MOD_TOBJS) $(SYSOBJ) tbtrans.o transmission.o   \
 calc_green.o getsfe.o \
-mkRealContour.o  setupkham2.o TSiohs.o TSiohs2.o atompdos.o coop.o \
+mkRealContour.o  setupkham2.o TSiohs.o atompdos.o coop.o \
 csolve.o cdiag.o teigchana.o helpers.o OutputRegionData.o Lowdin.o netcdfwrite.o \
 
 

@@ -10,7 +10,7 @@
 #
 SIESTA_ARCH=cscs-cray-mpi
 #
-# For Cray XT-3 at CSCS
+# For Cray XT-3 at CSCS (Palu)
 #
 FC=ftn -target=catamount
 FPP=linux-pgf90 -F
@@ -38,11 +38,14 @@ DEFS= $(DEFS_CDF) $(DEFS_MPI)
 #
 # Important 
 # Compile atom.f and electrostatic.f without optimization.
+# Make sure that the dependency is explicit, so that these
+# lines work with VPATH
 #
-atom.o:
-	$(FC) -c $(FFLAGS_DEBUG) atom.f
-electrostatic.o:
-	$(FC) -c $(FFLAGS_DEBUG) electrostatic.f
+atom.o: atom.f
+	$(FC) -c $(FFLAGS_DEBUG) $<
+#
+electrostatic.o: electrostatic.f
+	$(FC) -c $(FFLAGS_DEBUG) $<
 #
 .F.o:
 	$(FPP) $(DEFS) $<  ; mv $*.f aux_$*.f

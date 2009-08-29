@@ -1,0 +1,8 @@
+Description.
+
+A rather accurate diagnosis of the eggbox effect to be expected from a
+given pseudopotential/basis-set combination can be carried out using
+the Util/Scripting/eggbox_checker.py script.
+
+Ways to lessen it, including filtering. ** Does anybody have a good
+"filtering success story"??

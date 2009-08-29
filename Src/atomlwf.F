@@ -410,8 +410,10 @@ C Assign ramdom guess for orbitals in atom ia if iopt = 0
                 endif
               endif
             enddo
-          enddo
-30        continue
+ 30      continue
+      enddo
+!! Note that the target of the 'goto 30' is such that a "cycle" statement
+!! is emulated.
 
 C Normalize LWF's if iopt = 0  .............................................
 C  (normalize to one if functions are expected to be occupied, 0.5 if half

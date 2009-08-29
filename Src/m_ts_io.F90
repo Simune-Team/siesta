@@ -165,12 +165,11 @@ MODULE m_ts_io
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine ts_iohs(task, gamma, no_u, no_s, Enspin, indxuo, &
-                maxnh, numh, listhptr, listh, H, S, qtot, temp, xij, &
-                fnlength, fname, na_u, lasto, isa, ef, ucell, &
-                ts_kscell_file, ts_kdispl_file, ts_gamma_scf_file, xa)
-
-
+      subroutine ts_iohs(task, gamma, onlyS, no_u, no_s, Enspin,   &
+      		 indxuo, maxnh, numh, listhptr, listh, H, S, qtot, &
+		 temp, xij, fnlength, fname, na_u, lasto, isa, ef, &
+		 ucell, ts_kscell_file, ts_kdispl_file,        	   &
+		 ts_gamma_scf_file, xa, istep, ia1)
 
 ! *********************************************************************
 ! Saves the hamiltonian and overlap matrices, and other data required
@@ -178,13 +177,20 @@ MODULE m_ts_io
 ! Writen by J.Soler July 1997.
 ! Note because of the new more compact method of storing H and S
 ! this routine is NOT backwards compatible
+! Modified by M.Paulsson 2009 to:
+! 1: To include information of which FC step for phonon calculations
+! 2: To only save the overlap matrix if onlyS flag is set
+!    (Used for e-ph coupling calculations)
+! 3: File format changed to unify Copenhagen/Barcelona Transiesta vers.
+! 4: Smaller files by writing arrays directly instead of element wise
 ! *************************** INPUT **********************************
 ! character*(*) task          : 'read'/'READ' or 'write'/'WRITE'
 ! logical       gamma         : Is only gamma point used?
+! logical       onlyS         : Should only overlap matrix be saved?
 ! ******************** INPUT or OUTPUT (depending on task) ***********
 ! integer no_u                : Number of basis orbitals per unit cell
 ! integer no_s                : Number of basis orbitals per supercell
-! integer Enspin               : Spin polarization (1 or 2)
+! integer Enspin              : Spin polarization (1 or 2)
 ! integer indxuo(no_s)        : Index of orbitals in supercell
 ! integer maxnh               : First dimension of listh, H, S and
 !                               second of xij
@@ -194,7 +200,7 @@ MODULE m_ts_io
 !                               of hamiltonian matrix
 ! integer listh(maxnh)        : Nonzero hamiltonian-matrix element column
 !                               indexes for each matrix row
-! real*8  H(maxnh,Enspin)      : Hamiltonian in sparse form
+! real*8  H(maxnh,Enspin)     : Hamiltonian in sparse form
 ! real*8  S(maxnh)            : Overlap in sparse form
 ! real*8  qtot                : Total number of electrons
 ! real*8  temp                : Electronic temperature for Fermi smearing
@@ -205,6 +211,7 @@ MODULE m_ts_io
 ! integer fnlength            : file name length
 ! character(fnlength)  fname  : file nema for input or output
 ! integer na_u                : Number of atoms per unit cell
+! integer istep, ia1          : Force constant step and atom number
 ! TSS End
 ! *************************** UNITS ***********************************
 ! Units should be consistent between task='read' and 'write'
@@ -240,7 +247,7 @@ MODULE m_ts_io
 
       character(8) :: task
       character(len=label_length+3) :: paste
-      logical           gamma
+      logical           gamma, onlyS, onlySfile
       integer           maxnh, no_u, no_s, Enspin
 ! TSS
 !      integer           indxuo(no_s), listh(maxnh), numh(*), listhptr(*)
@@ -251,6 +258,7 @@ MODULE m_ts_io
       real(dp), dimension(:,:), pointer :: H, xij
       real(dp), dimension(:), pointer :: S
       real(dp) :: qtot, temp 
+      integer :: istep, ia1
       external          io_assign, io_close, paste
 ! TSS Begin
 ! Added arguments for TRANSIESTA
@@ -282,21 +290,17 @@ MODULE m_ts_io
 ! TSS End
 
 
+
+! #################### READ ######################################
 ! Choose between read or write
       if (task.eq.'read' .or. task.eq.'READ') then
     
 
 ! Check if input file exists
-        if (Node.eq.0) then
           inquire( file=fname, exist=found)
-        endif
 
-!#ifdef MPI
-!        call MPI_Bcast(found,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-!#endif
         if (found) then
 
-          if (Node.eq.0) then
 ! Open file
             call io_assign( iu )
             open( iu, file=fname, form='unformatted', status='old' )      
@@ -307,17 +311,6 @@ MODULE m_ts_io
 ! Allocations
 
 
-          endif
-!#ifdef MPI
-!          call MPI_Bcast(na_u,1,MPI_integer,0,MPI_Comm_World, &
-!           MPIerror)
-!          call MPI_Bcast(no_u,1,MPI_integer,0,MPI_Comm_World, &
-!           MPIerror)
-!          call MPI_Bcast(no_s,1,MPI_integer,0,MPI_Comm_World, &
-!           MPIerror)
-!          call MPI_Bcast(Enspin,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-!          call MPI_Bcast(maxnh,1,MPI_integer,0,MPI_Comm_World,MPIerror)          
-!#endif
 
 ! Check dimensions
           baddim = .false.
@@ -342,19 +335,24 @@ MODULE m_ts_io
           allocate(xa(3,na_u))
           allocate(isa(na_u)) 
 
-          if ( Node == 0 ) then 
 ! Read Geometry information
            read(iu) xa
-           read(iu) isa          
-           read(iu) ucell  
+           read(iu) isa   
+       	   read(iu) ucell  
 
 ! Read k-point sampling information
            read(iu) gammaonfile   
+	   read(iu) onlySfile
            read(iu) ts_gamma_scf_file       
            read(iu) ts_kscell_file
            read(iu) ts_kdispl_file  
+	   read(iu) istep, ia1
 
 ! Check whether file is compatible from a gamma point of view
+           if (onlySfile) then
+             write(*,*) 'TSHS file does not contain Hamiltonian'
+             call die('ts_iohs: onlyS flag, no H in file')
+           endif
            if (.not.gamma.and.gammaonfile) then
              write(*,*) 'System Gamma:',gamma
              write(*,*) 'Electrode Gamma:',gammaonfile
@@ -386,51 +384,19 @@ MODULE m_ts_io
              enddo
            enddo
 
-          end if ! Node 0
-
-!#ifdef MPI
-!! Broadcast Geometry Information
-!          call MPI_Bcast(xa(1,1),3*na_u,MPI_double_precision,0, &
-!           MPI_Comm_World,MPIerror) 
-!          call MPI_Bcast(isa(1),na_u,MPI_integer,0, &
-!           MPI_Comm_World,MPIerror)
-!          call MPI_Bcast(ucell(1,1),3*3,MPI_double_precision,0, &
-!           MPI_Comm_World,MPIerror)
-!! Broadcast k-point sampling information
-!          call MPI_Bcast(gammaonfile,1,MPI_logical,0,MPI_Comm_World, &
-!           MPIerror)
-!          call MPI_Bcast(ts_gamma_scf_file,1,MPI_logical,0,MPI_Comm_World, &
-!           MPIerror)
-!          call MPI_Bcast(ts_kscell_file(1,1),3*3,MPI_INTEGER,0, &
-!           MPI_Comm_World,MPIerror)
-!          call MPI_Bcast(ts_kdispl_file(1),3,MPI_double_precision,0, &
-!           MPI_Comm_World,MPIerror)
-!#endif
-! TSS End
-
 
 ! Read sparse listings
           nullify(lasto)
           allocate(lasto(0:na_u))
-          if (Node.eq.0) then
             read(iu) lasto
-          end if
-!#ifdef MPI
-!          call MPI_Bcast(lasto(0),na_u,MPI_integer,0,MPI_Comm_World, &
-!              MPIerror)
-!#endif 
+
+
           if (.not.gamma) then
 ! Allocate arrays that are going to be read now
             nullify(indxuo)
             allocate(indxuo(1:no_s))
-            if (Node.eq.0) then
               read(iu) (indxuo(ih),ih=1,no_s)
-            endif
 
-!#ifdef MPI
-!            call MPI_Bcast(indxuo,no_s,MPI_integer,0,MPI_Comm_World, &
-!              MPIerror)
-!#endif
           endif
 
 ! Allocate local array for global numh
@@ -439,41 +405,13 @@ MODULE m_ts_io
           call memory('A','I',no_u,'iohs')
 
 ! Read numh and send to appropriate Node
-          if (Node.eq.0) then
-            do ih = 1,no_u
-              read(iu) numh(ih)
-            enddo
-          endif
+	    read(iu) numh(1:no_u)
 
 
-!#ifdef MPI
-!          call MPI_Bcast(numh,no_u,MPI_integer,0,MPI_Comm_World, &
-!            MPIerror)
-!#endif
 
 ! Read Electronic Structure Information
-          if (Node.eq.0) then
             read(iu) qtot,temp
             read(iu) ef
-          end if
-
-
-!#ifdef MPI
-!! FDN Temp : Se utilizadas levam o um problema .... verificar depois ....
-!! Modificados: Colocados fora do if node == 0 !!!!
-!          call MPI_Bcast(qtot,1,MPI_double_precision,0, &
-!              MPI_Comm_World,MPIerror)
-!          call MPI_Bcast(temp,1,MPI_double_precision,0, &
-!              MPI_Comm_World,MPIerror)
-!! FDN Temp Fim.
-!          if(Enspin <= 1) then
-!            call MPI_Bcast(ef,1,MPI_double_precision,0, &
-!              MPI_Comm_World,MPIerror)
-!          else
-!            call MPI_Bcast(efs(1),Enspin,MPI_double_precision,0, &
-!              MPI_Comm_World,MPIerror) 
-!          end if
-!#endif
 
 
 ! Create listhptr
@@ -491,89 +429,49 @@ MODULE m_ts_io
           nullify(listh)
           allocate(listh(maxnh))
 
-          if (Node==0) then
            do ih = 1,no_u
-             do im = 1,numh(ih)
-               read(iu) listh(listhptr(ih)+im)
-             enddo
+             read(iu) listh(listhptr(ih)+1:listhptr(ih)+numh(ih))
            enddo
-          end if
-
-!#ifdef MPI
-!          call MPI_Bcast(listh(1),maxnh,MPI_integer,0,MPI_Comm_World, &
-!           MPIerror)
-!#endif
-
-! Read Hamiltonian
-! Allocate H
-          nullify(H)
-          allocate(H(maxnh,Enspin))
-          if (Node==0) then
-           do is = 1,Enspin
-             do ih = 1,no_u
-               do im = 1,numh(ih)
-                 read(iu) H(listhptr(ih)+im,is)
-               enddo
-             enddo
-           enddo
-          end if
-!#ifdef MPI
-!          call MPI_Bcast(H(1,1),maxnh*Enspin,MPI_double_precision,0, &
-!          MPI_Comm_World, MPIerror)
-!#endif          
 
 ! Read Overlap matrix
 ! Allocate S
           nullify(S)
           allocate(S(maxnh))
-          if (Node==0) then
            do ih = 1,no_u
-             do im = 1,numh(ih)
-               read(iu) S(listhptr(ih)+im)
+             read(iu) S(listhptr(ih)+1:listhptr(ih)+numh(ih))
+           enddo
+
+! Read Hamiltonian
+! Allocate H
+          nullify(H)
+          allocate(H(maxnh,Enspin))
+           do is = 1,Enspin
+             do ih = 1,no_u
+               read(iu) H(listhptr(ih)+1:listhptr(ih)+numh(ih),is)
              enddo
            enddo
-          end if
-
-!#ifdef MPI
-!          call MPI_Bcast(S(1),maxnh,MPI_double_precision,0, &
-!          MPI_Comm_World, MPIerror)
-!#endif
-          
-
 
           if (.not.gamma) then
 ! Read interorbital vectors for K point phasing
 ! Allocate xij
             nullify(xij)
             allocate(xij(3,maxnh))
-            if (Node==0) then
              do ih = 1,no_u
-               do im = 1,numh(ih)
-                 read(iu) (xij(k,listhptr(ih)+im),k=1,3)
-               enddo
+               read(iu) (xij(k,listhptr(ih)+1:listhptr(ih)+numh(ih)),k=1,3)
              enddo
-            end if
-!#ifdef MPI
-!          call MPI_Bcast(xij(1,1),3*maxnh,MPI_double_precision,0, &
-!          MPI_Comm_World, MPIerror)
-!#endif
+
           endif
 
 
 ! Close file
-          if (Node .eq. 0) then
              call io_close( iu )
-          endif
 
         else
-          if (Node.eq.0) then
             write(*,*) 'iohs: ERROR: file not found: ', fname
             call die('iohs: ERROR: file not found')
-          else
-            call die()
-          endif
         endif
 ! FDN Temp Fim
+! #################### WRITE ######################################
       elseif (task.eq.'write' .or. task.eq.'WRITE') then
 
 ! Find total numbers over all Nodes
@@ -592,24 +490,25 @@ MODULE m_ts_io
           write(iu) na_u, no_u, no_s, Enspin, maxnhtot
 
 ! Write Geometry information
-          write(iu) xa
-          write(iu) isa          
+          write(iu) xa(1:3,1:na_u)
+          write(iu) isa(1:na_u)          
           write(iu) ucell
 
 ! Write k-point samplung information
           write(iu) gamma
+          write(iu) onlyS
           write(iu) ts_gamma_scf_file
           write(iu) ts_kscell_file
           write(iu) ts_kdispl_file
+	  write(iu) istep, ia1
 
 ! Allocate local array for global numh
           allocate(numhg(no_u))
           call memory('A','I',no_u,'iohs')
 
 ! Write sparse listings
-! TSS Begin
-            write(iu) lasto
-! TSS End          
+            write(iu) lasto(0:na_u)
+
           if (.not.gamma) then
             write(iu) (indxuo(ih),ih=1,no_s)
           endif
@@ -649,9 +548,7 @@ MODULE m_ts_io
           do ih = 1,no_u
             maxhg = max(maxhg,numhg(ih))
           enddo
-          do ih = 1,no_u
-            write(iu) numhg(ih)
-          enddo
+	  write(iu) numhg(1:no_u)
 #ifdef MPI
           allocate(buffer(maxhg))
           call memory('A','D',maxhg,'iohs')
@@ -674,9 +571,7 @@ MODULE m_ts_io
 #else
             hl = ih
 #endif
-            do im = 1,numh(hl)
-              write(iu) listh(listhptr(hl)+im)
-            enddo
+	    write(iu) listh(listhptr(hl)+1:listhptr(hl)+numh(hl))
 #ifdef MPI
           elseif (Node.eq.0) then
             call MPI_IRecv(ibuffer,numhg(ih),MPI_integer,BNode,1, &
@@ -691,9 +586,7 @@ MODULE m_ts_io
           if (BNode.ne.0) then
             call MPI_Barrier(MPI_Comm_World,MPIerror)
             if (Node.eq.0) then
-              do im = 1,numhg(ih)
-                write(iu) ibuffer(im)
-              enddo
+                write(iu) ibuffer(1:numhg(ih))
             endif
           endif
 #endif
@@ -705,42 +598,6 @@ MODULE m_ts_io
         endif
 #endif
 
-! Write Hamiltonian
-        do is=1,Enspin
-          do ih=1,no_u
-#ifdef MPI
-            call WhichNodeOrb(ih,Nodes,BNode)
-            if (BNode.eq.0.and.Node.eq.BNode) then
-              call GlobalToLocalOrb(ih,Node,Nodes,hl)
-#else
-              hl = ih
-#endif
-              do im=1,numh(hl)
-                write(iu) H(listhptr(hl)+im,is)
-              enddo
-#ifdef MPI
-            elseif (Node.eq.0) then
-              call MPI_IRecv(buffer,numhg(ih),MPI_double_precision, &
-                BNode,1,MPI_Comm_World,Request,MPIerror)
-              call MPI_Wait(Request,Status,MPIerror)
-            elseif (Node.eq.BNode) then
-              call GlobalToLocalOrb(ih,Node,Nodes,hl)
-              call MPI_ISend(H(listhptr(hl)+1,is),numh(hl), &
-               MPI_double_precision,0,1,MPI_Comm_World, &
-               Request,MPIerror)
-              call MPI_Wait(Request,Status,MPIerror)
-            endif
-            if (BNode.ne.0) then
-              call MPI_Barrier(MPI_Comm_World,MPIerror)
-              if (Node.eq.0) then
-                do im=1,numhg(ih)
-                  write(iu) buffer(im)
-                enddo
-              endif
-            endif
-#endif
-          enddo
-        enddo
 ! Write Overlap matrix
         do ih = 1,no_u
 #ifdef MPI
@@ -750,9 +607,7 @@ MODULE m_ts_io
 #else
             hl = ih
 #endif
-            do im = 1,numh(hl)
-              write(iu) S(listhptr(hl)+im)
-            enddo
+	    write(iu) S(listhptr(hl)+1:listhptr(hl)+numh(hl))
 #ifdef MPI
           elseif (Node.eq.0) then
             call MPI_IRecv(buffer,numhg(ih),MPI_double_precision, &
@@ -768,13 +623,46 @@ MODULE m_ts_io
           if (BNode.ne.0) then
             call MPI_Barrier(MPI_Comm_World,MPIerror)
             if (Node.eq.0) then
-              do im = 1,numhg(ih)
-                write(iu) buffer(im)
-              enddo
+	      write(iu) buffer(1:numhg(ih))
             endif
           endif
 #endif
         enddo
+
+	if (.not. onlyS) then
+! Write Hamiltonian	 
+        do is=1,Enspin	 
+          do ih=1,no_u	 
+#ifdef MPI
+            call WhichNodeOrb(ih,Nodes,BNode)
+            if (BNode.eq.0.and.Node.eq.BNode) then
+              call GlobalToLocalOrb(ih,Node,Nodes,hl)
+#else
+              hl = ih
+#endif
+              write(iu) H(listhptr(hl)+1:listhptr(hl)+numh(hl),is)
+#ifdef MPI
+            elseif (Node.eq.0) then
+              call MPI_IRecv(buffer,numhg(ih),MPI_double_precision, &
+                BNode,1,MPI_Comm_World,Request,MPIerror)
+              call MPI_Wait(Request,Status,MPIerror)
+            elseif (Node.eq.BNode) then
+              call GlobalToLocalOrb(ih,Node,Nodes,hl)
+              call MPI_ISend(H(listhptr(hl)+1,is),numh(hl), &
+               MPI_double_precision,0,1,MPI_Comm_World, &
+               Request,MPIerror)
+              call MPI_Wait(Request,Status,MPIerror)
+            endif
+            if (BNode.ne.0) then
+              call MPI_Barrier(MPI_Comm_World,MPIerror)
+              if (Node.eq.0) then
+	        write(iu) buffer(1:numhg(ih))
+              endif
+            endif
+#endif
+          enddo
+        enddo
+	endif  ! onlyS
 
 #ifdef MPI
           if (Node .eq. 0) then
@@ -801,9 +689,7 @@ MODULE m_ts_io
 #else
               hl = ih
 #endif
-              do im = 1,numh(hl)
-                write(iu) (xij(k,listhptr(hl)+im),k=1,3)
-              enddo
+              write(iu) (xij(k,listhptr(hl)+1:listhptr(hl)+numh(hl)),k=1,3)
 #ifdef MPI
             elseif (Node.eq.0) then
               call MPI_IRecv(buffer2(1,1),3*numhg(ih), &
@@ -820,9 +706,7 @@ MODULE m_ts_io
             if (BNode.ne.0) then
               call MPI_Barrier(MPI_Comm_World,MPIerror)
               if (Node.eq.0) then
-                do im=1,numhg(ih)
-                  write(iu) (buffer2(k,im),k=1,3)
-                enddo
+                write(iu) (buffer2(k,1:numhg(ih)),k=1,3)
               endif
             endif
 #endif
@@ -896,12 +780,12 @@ MODULE m_ts_io
       implicit  none
 
       character task*(*), paste*33
-      logical   found
       integer   maxnd, nbasis, nspin
       integer   listd(maxnd), numd(nbasis), listdptr(nbasis)
       real*8    dm(maxnd,nspin)
       real*8    edm(maxnd,nspin)
       real*8    ef
+      logical, optional :: found
 
 ! Internal variables and arrays
       character fname*33, sname*30
@@ -1102,7 +986,7 @@ MODULE m_ts_io
             call io_close(unit2)
           endif
 
-          found = .true.
+          if(present(found)) found = .true.
 
         elseif (exist3) then
 ! New-format files
@@ -1266,11 +1150,11 @@ MODULE m_ts_io
             call io_close(unit1)
           endif
 
-          found = .true.
+          if(present(found)) found = .true.
 
         else
 
-          found = .false.
+          if(present(found)) found = .false.
 
         endif
 

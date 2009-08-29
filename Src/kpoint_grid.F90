@@ -198,12 +198,6 @@ MODULE Kpoint_grid
          write(6,'(a,i4,3f12.6,3x,f12.6)')                          &
               ('siesta: ', ik, (kpoint(ix,ik),ix=1,3), kweight(ik), &
               ik=1,nkpnt)
-         if (cml_p) then
-            call cmlAddProperty(xf=mainXML, property=kpoint,    &
-            dictref='siesta:kpoint')
-            call cmlAddProperty(xf=mainXML, property=kweight,         &
-                 dictref='siesta:kweight')
-         endif
       endif
       ! Always write KP file
       call iokp( nkpnt, kpoint, kweight )
@@ -218,13 +212,20 @@ MODULE Kpoint_grid
       write(6,'(a,3i4,3x,f8.3)') 'siesta: k-grid: ',        &
            (kscell(i,3),i=1,3), kdispl(3)
       if (cml_p) then
-         call cmlStartPropertyList(mainXML, title='k-points')
-         call cmlAddProperty(xf=mainXML, property=nkpnt,dictref='siesta:nkpnt')
-         call cmlAddProperty(xf=mainXML, property=eff_kgrid_cutoff/Ang,     & 
+         call cmlStartPropertyList(xf=mainXML, title="k-points", &
+                                      dictRef="siesta:kpoints")
+         call cmlAddProperty(xf=mainXML, value=nkpnt, dictref='siesta:nkpnt', &
+                             units="cmlUnits:countable")
+         do ik=1, nkpnt
+           call cmlAddKPoint(xf=mainXML, coords=kpoint(:,ik), weight=kweight(ik))
+         enddo
+         call cmlAddProperty(xf=mainXML, value=eff_kgrid_cutoff/Ang,     & 
               dictref='siesta:kcutof', units='siestaUnits:angstrom')
          call cmlEndPropertyList(mainXML)
-         call cmlAddProperty(xf=mainXML, property=kscell,dictref='siesta:kscell')
-         call cmlAddProperty(xf=mainXML, property=kdispl,dictref='siesta:kdispl')
+         call cmlAddProperty(xf=mainXML, value=kscell, dictref='siesta:kscell', &
+                             units="siestaUnits:Ang")
+         call cmlAddProperty(xf=mainXML, value=kdispl, dictref='siesta:kdispl', &
+                             units="siestaUnits:Ang")
       endif
     end subroutine siesta_write_k_points
 

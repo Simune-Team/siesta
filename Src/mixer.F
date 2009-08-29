@@ -44,7 +44,7 @@
 #ifdef MPI
       real(dp):: buffer1   ! Temporary for the result of a globalize operation
 #endif
-      external ::  iodm, mulliken
+      external ::  mulliken
 
 !------------------------------------------------------------------------- BEGIN
 ! Mix input and output energy-density and density matrices ............
@@ -152,11 +152,11 @@
                   if (istp .eq.1)
      .                 call TSiodm( 'write', maxnh, no_l, nspin,
      .                 numh, listhptr, listh, Dscf, Escf,
-     .                 ef, found)
+     .                 ef)
                   else
                        call TSiodm( 'write', maxnh, no_l, nspin,
      .                 numh, listhptr, listh, Dscf, Escf,
-     .                 ef, found)
+     .                 ef)
                endif            ! idyn.eq.6
              endif               ! tsdme
            endif

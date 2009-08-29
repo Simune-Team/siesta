@@ -1,4 +1,14 @@
 -------------------------------------------------------------------------
+2009-08-30 Alberto Garcia <albertog@icmab.es>  2.6.32--slabs-p1
+Synch to trunk (2.6.32)
+
+A conflict appeared regarding the writing of the value of the
+electric field to the CML file. For now it is only written once.
+Perhaps a record of the use of the "slab-dipole-correction" option
+should be written to the CML file, too.
+
+
+-------------------------------------------------------------------------
 2009-07-16 Alberto Garcia <albertog@icmab.es> (For P.O.) 2.6.21--slabs-p1
 New features for asymmetric or charged slabs (P. Ordejon) 
 
