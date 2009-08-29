@@ -243,19 +243,10 @@ transiesta: what version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML) $(X
                $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(WXML) $(XMLPARSER)\
                $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(COMP_LIBS) $(FoX_LIBS) $(LIBS)
 #
-# ---------------------------------------------------------------------------
-# Other auxiliary programs (to be moved)
-#----------------------------------------------------------------------------
-MT_OBJS=precision.o m_mpi_utils.o sys.o parallel.o 
-mpi_test: $(MPI_INTERFACE) $(MT_OBJS) mpi_test.o
-	$(FC) -o mpi_test \
-	       $(LDFLAGS) mpi_test.o $(MT_OBJS) $(MPI_INTERFACE) $(LIBS) 
-#----------------------------------------------------------------------------
 #
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
 	rm -f siesta  *.o  *.a *.pcl *.pc
-	rm -f mpi_test
 	rm -f *.mod
 	rm -f *.bck *~
 	rm -f aux_*.f aux_*.f90
@@ -477,7 +468,6 @@ mixer.o: m_ts_io.o m_ts_options.o parallel.o siesta_geom.o siesta_options.o
 mixer.o: sparse_matrices.o
 mneighb.o: alloc.o precision.o sys.o
 molecularmechanics.o: alloc.o parallel.o parsing.o precision.o sys.o units.o
-mpi_test.o: m_mpi_utils.o parallel.o precision.o
 mulliken.o: atmfuncs.o parallel.o parallelsubs.o precision.o siesta_cml.o
 naefs.o: atmfuncs.o mneighb.o precision.o
 new_dm.o: alloc.o atomlist.o compute_norm.o m_energies.o m_iodm.o m_sparse.o

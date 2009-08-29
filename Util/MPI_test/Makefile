@@ -15,7 +15,7 @@
 #
 .PHONY: MPI clean
 #
-default: pi3 blacs_prb pblas_prb
+default: pi3 blacs_prb pblas_prb # mpi_test
 #
 OBJDIR=Obj
 VPATH=../../Src
@@ -49,6 +49,14 @@ pblas_prb:   pblas_prb.o $(EXTRA_ROUTINE)
 	@echo
 	$(FC) -o pblas_prb $(LDFLAGS) pblas_prb.o $(EXTRA_ROUTINE) $(LIBS) 
 #
+# Siesta-specific MPI test --- iffy on some systems
+#----------------------------------------------------------------------------
+MT_OBJS=precision.o m_mpi_utils.o sys.o parallel.o pxf.o
+mpi_test: MPI $(MT_OBJS) mpi_test.o
+	$(FC) -o mpi_test \
+	       $(LDFLAGS) mpi_test.o $(MT_OBJS) $(MPI_INTERFACE_LIB) $(LIBS) 
+#----------------------------------------------------------------------------
+#
 clean:
 	rm -f *.o *.*d  
 	rm -f pi3 blacs_prb pblas_prb
@@ -58,7 +66,7 @@ MPI:
 	@echo "Making sure that the MPI interface is compiled..."
 	(cd ../../$(OBJDIR)/MPI ; make "VPATH=$(VPATH)/MPI")
 #
-dep:
-	sfmakedepend --depend=obj --modext=o *.f *.f90 *.F *.F90 
-#
 # DO NOT DELETE THIS LINE - used by make depend
+#
+m_mpi_utils.o: sys.o
+sys.o: parallel.o

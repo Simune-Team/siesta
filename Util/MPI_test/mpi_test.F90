@@ -24,7 +24,7 @@ use m_mpi_utils, only: broadcast, globalize_sum
 integer :: mpierror
 #endif
 
-real(dp) :: a(1:3,0:2), b(0:2,0:2)
+real(dp) :: a(1:3,0:2), b(1:3,0:2)
 
 #ifdef MPI
       call MPI_Init( MPIerror )
