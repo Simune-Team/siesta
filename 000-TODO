@@ -1,11 +1,32 @@
 ****************
 
-Things to watch out for befor the release 
+Things to watch out for before the release 
 (Please edit this file as you go along fixing and discovering things)
 
 --- POLITICAL
 
-* We have to give proper credit to Cela and the BSC in a prominent place (manual, README, ???)
+* JM Cela now appears in the front page of the manual -- Any more credit??
+
+* Approval of choice of symbolic names for the public branches:  
+
+    - DEVELOPMENT : Always the tip of the trunk -- changes frequently
+    - BETA        : Now the tip of siesta-3.0 -- mainly fixes and doc updates
+    - STABLE      : Currently the tip of siesta-2.0 -- only important fixes.
+
+    These symbols will point to the appropriate branches in the archives
+    (it is done with symbolic links).
+
+* Siesta-2.0.3 should be released at the same time as 3.0-beta.
+
+* Names of released packages:
+
+  The beta version should go out as siesta-3.0-b
+  Further updates while still in beta will have an extra number: siesta-3.0-b-1
+  
+  When turned into STABLE, siesta-3.0   (with further 3.0.1, 3.0.2, etc)
+
+  The "DEVELOPMENT" releases might be called siesta-3.5-d-314, where 314 is
+  the bzr revision number of the trunk.
 
 --- Code checks 
 
@@ -16,27 +37,30 @@ Things to watch out for befor the release
 * The Chemical potential fix for O(N) by Pablo is still not done in parallel.
   In general, what to do about the O(N) part? A bigger disclaimer?
 
+--- Building test
+
+* For as many compilers as possible, we should check that there are no
+  obvious gotchas in the building, including utilities.
+
 --- Cosmetic and updates of info:
 
-* We are still missing the TranSiesta Manual
-
 * "2006" date should be changed in many places. This will be done with a
-script at the last moment (in case the year changes :-) ... just
-joking)
+script at the last moment.
 
 * README_TRANSIESTA should disappear from there as its contents
-have been added to siesta.tex
+have been added to siesta.tex.
 
 * Src/README needs to be updated
 
-* Util/Plrho/README.pgplot 
-The web address given http://dulcinea.uc3m.es/new/Pgplot/ does not seem to be functional 
+* Util/README needs to be updated.
 
-------------------------------------------------------------------------------
+* Util/Plrho/README.pgplot:  The web address given,
+  http://dulcinea.uc3m.es/new/Pgplot/ does not seem to be functional
 
 --- Support material
 
-* We have to regenerate all the .out and .xml files in Reference, with the proper version string.
+* We have to regenerate all the .out and .xml files in Reference, with
+  the proper version string.
 
 
 --- Documentation
@@ -46,11 +70,18 @@ The web address given http://dulcinea.uc3m.es/new/Pgplot/ does not seem to be fu
   ExtraDocs, to make sure that they are at least useful).
 
 * Siesta.tex is in dire need of a conceptual re-working. We have to
-  think about what to do.
+  think about what to do. Emilio suggests turning it into a proper
+  Reference Manual, with the introductory material moved to another
+  document, possibly merging it with some of the material now in
+  Docs/ExtraDocs.  He is going to try.
 
 --- OTHERS
 
-.....
+* Pablo suggests including his patches for dynamic slab dipole
+  correction and charged slabs. They are not fully tested yet.
+  They are in:
+
+  bzr+ssh://USER@siesta.icmab.es/home/siesta-archives/pordejon/bzr-repo/slabs/
 
 
 
