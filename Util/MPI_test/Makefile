@@ -45,7 +45,7 @@ pblas_prb:   pblas_prb.o $(EXTRA_ROUTINE)
 	@echo --Attempting to build Pblas test. 
 	@echo --You might need to enable compilation of pdlaprnt.f in the Makefile
 	@echo --if that routine is not in the standard library on your system...
-	@echo --..or if its interface is not compatible (i.e., segfaults)
+	@echo --..or if its interface is not compatible, i.e., segfaults
 	@echo
 	$(FC) -o pblas_prb $(LDFLAGS) pblas_prb.o $(EXTRA_ROUTINE) $(LIBS) 
 #
