@@ -8,7 +8,7 @@
 # Use of this software constitutes agreement with the full conditions
 # given in the SIESTA license, as signed by all legitimate users.
 #
-# Makefile for PDOS XML processing
+# Makefile for test-xml CML-file diffing tool
 #
 # The VPATH directive below helps to re-use f2kcli.F90 from the top Src.
 # Other points to note, until we switch to a better building system:

@@ -3,8 +3,55 @@
 =======================================================================
 
 
-** CHANGES ALONG siesta-3.0-beta branch
+** CHANGES ALONG siesta-3.0 branch before the beta release
 
+------------------------------------------------------------------------
+2009-08-30  17:00:00 GMT Alberto Garcia <albertog@icmab.es>	 3.0-rc2
+TS manual and updates. Building rationalization. Hsparse speedup
+
+* Added TranSIESTA sections to the manual (Docs/siesta.tex) (by
+  J.A. Torres).
+
+* TranSIESTA and TBTrans updates (by F.D. Novaes):
+
+- Reimplementation of getGF_Tri, that obtains the Green's Function
+ using the fact that the Hamiltonian is tridiagonal.
+
+- Fixed the generation of listudg in the transiesta routine
+ (m_ts_in_siesta.F).  Now, when the TS.UpdateDMCR is set to
+ .false. the cross terms between the electrodes and the contact region
+ of the density matrix are also updated in the TS iteration
+ process. If set to .true., only the elements of the contact region
+ are changed during the self consistent cycle.
+
+- In weightDM and weightDMC (m_ts_scattering.F), changed the weights
+ of the cross terms elements, since when using Tri_Diag the
+ non-equilibrium contributions are zero the way it used to be.
+
+- In new_dm.F, added a condition that does not sets the energy-density
+ matrix to zero in the first iteration of the SCF cycle.
+
+- (with A. Garcia) New building scheme for TBTrans.
+
+* Building rationalization (by A. Garcia):
+
+- Move auxiliary programs from Src to individual directories in Util
+
+ -- gen-basis and ioncat now live in Util/Gen-basis
+ -- mixps and fractional have been moved to Util/VCA
+ -- The programs to test the MPI installation are now in Util/MPI_test
+
+- Update building mechanisms in Util/STM
+
+(Some of the above building improvements use new functionality in
+the fdf and MPI makefiles that allows these modules to be compiled in
+"private subdirectories" anywhere: see Denchar and TBTrans for examples.)
+
+* Hsparse has been dramatically speeded-up by removing a superfluous
+  inner loop (by A. Garcia).
+
+* Other updates to the manual by A. Garcia
+ 
 ------------------------------------------------------------------------
 2009-08-20  10:00:00 GMT Alberto Garcia <albertog@icmab.es>	 3.0-rc1
 Setup for 3.0-beta branch

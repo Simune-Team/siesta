@@ -45,7 +45,7 @@
 \hrulefill
 \vspace{1cm}
 
-{\Large August 20, 2009 }
+{\Large August 30, 2009 }
 
 \vspace{1.5cm}
 
@@ -54,6 +54,9 @@
 
 {\Large Emilio Artacho} &
    \Large{\it University of Cambridge} \\ \\
+
+{\Large Jos\'e Mar\'{\i}a Cela} &
+   \Large{\it Barcelona Supercomputing Center} \\ \\
 
 {\Large Julian D. Gale} &
    \Large{\it Curtin University of Technology, Perth} \\ \\
@@ -86,7 +89,7 @@
 \vspace{0.5cm}
 {\Large {\tt http://www.uam.es/siesta} }
 
-\vspace{1cm}
+\vspace{0.5cm}
 Copyright \copyright\  Fundaci\'on General Universidad Aut\'onoma de Madrid:
 E.Artacho, J.D.Gale, A.Garc\'{\i}a, J.Junquera, P.Ordej\'on,
 D.S\'anchez-Portal and J.M.Soler, 1996-2009
@@ -166,6 +169,27 @@ And also (though not all options are compatible):
 \item Band structure.
 \end{itemize}
 
+\subsection{ {\sc TranSiesta} }
+
+Starting from version 3.0, the {\sc Siesta} software includes the 
+{\sc TranSiesta}\index{TranSIESTA@{\sc TranSiesta}}
+package. {\sc TranSiesta} provides the ability to model open-boundary systems 
+where ballistic electron transport is taking place.
+Using {\sc TranSiesta} one can predict electronic properties,
+such as the zero bias conductance and the I-V characteristics, of a nanoscale system 
+in contact with two electrodes with different electrochemical potentials. 
+It does so by solving for the selfconsistent electronic structure within density 
+functional theory, and using non equilibrium Green's functions techniques (NEGF).
+The current implementation of {\sc TranSiesta} within {\sc Siesta} is mainly 
+due to F.D. Novaes and is based on the implementation of 
+mainly M. Brandbyge of {\sc TranSiesta} Version 0.9 (see 
+complete reference below). 
+The use of the {\sc TranSiesta} package requires good knowledge 
+of standard {\sc Siesta} calculations, this is why the descriptions
+correspondent to the use of {\sc TranSiesta}, including compilation
+directives etc,  have been grouped at the end of this manual.
+
+\vspace{0.5cm}
 {\large {\bf References:} }
 
 \begin{itemize}
@@ -225,6 +249,14 @@ and E. Canadell, Structure and Bonding {\bf 113},
 103-170 (2004).
 
 Extensive review of applications as of summer 2003.
+
+\item
+ ``Density-functional method for nonequilibrium electron transport'', 
+ Mads Brandbyge, Jose-Luis Mozos, Pablo Ordej\'on, Jeremy Taylor, 
+ and Kurt Stokbro, Phys. Rev. B {\bf 65}, 165401 (2002).
+
+ Description of the {\sc TranSiesta} method.
+ 
 \end{itemize}
 
 For more information you can visit the web page 
@@ -477,7 +509,7 @@ enables interoperability with the ABINIT code. The directory
 XML files to formatted ({\tt .psf}) form.
 
 
-\section{ATOMIC-ORBITAL BASES IMPLEMENTED IN SIESTA}
+\section{ATOMIC-ORBITAL BASES IMPLEMENTED IN {\sc Siesta}}
 
 The main advantage of atomic orbitals is their efficiency (fewer orbitals 
 needed per electron for similar precision) 
@@ -529,8 +561,8 @@ J. M. Soler, Phys. Stat. Sol. (b) {\bf 215}, 809 (1999).
 In addition to {\sc Siesta} we provide the program {\sc
 Gen-basis}\index{Gen-basis@{\sc Gen-basis}}, which reads {\sc
 Siesta}'s input and generates basis files for later use. {\sc
-Gen-basis} is compiled automatically at the same time as {\sc
-Siesta}. It should be run from the {\tt Tutorials/Bases} directory, 
+Gen-basis} can be found in {\tt Util/Gen-basis}.
+It should be run from the {\tt Tutorials/Bases} directory, 
 using the {\tt gen-basis.sh} script. It is limited to a single species.
 
 In the following we give some clues on the basics of the basis sets
@@ -3304,7 +3336,7 @@ However, it can affect substantially the process of relaxation, by
 increasing the number of steps considerably, and can also spoil the
 calculation of vibrations, usually much more demanding than relaxations.
 
-The Util/Scripting/eggbox_checker.py script can be used to diagnose
+The Util/Scripting/eggbox\_checker.py script can be used to diagnose
 the eggbox effect to be expected for a particular
 pseudopotential/basis-set combination.
 
@@ -3381,7 +3413,7 @@ For the time being, it is up to the user to obtain the Fourier
 components to be introduced. They can be obtained by moving one
 isolated atom through the cell to be used in the calculation
 (for a give cell size, shape and mesh), once for each species. 
-The Util/Scripting/eggbox_checker.py script can be used as a starting
+The Util/Scripting/eggbox\_checker.py script can be used as a starting
 point for this.
 
 {\it Default value:} Empty.
@@ -6010,12 +6042,417 @@ project.
 The {\sc Siesta} project has been supported by Spanish DGES
 through project PB95-0202 and by the Fundaci\'on Ram\'on Areces.
 
+\section{ The {\sc TranSiesta} package}
 
+The {\sc TranSiesta} package has the full functionality of the 
+{\sc Siesta} package and users are referred to the {\sc Siesta} 
+user guide (above) for a description of all relevant FDF options. 
+This section describes how to compile  {\sc TranSiesta}, 
+and provides a reference 
+guide to the relevant FDF options. 
+
+
+\subsection{Brief Description}
+
+The {\sc TranSiesta} code consists of a set of additional 
+routines for the {\sc Siesta} package for the computation of 
+electronic transport properties. It was originally developed by 
+Mads Brandbyge, Jose-Luis Mozos, Pablo Ordej\'on, Jeremy Taylor 
+and Kurt Stokbro [Phys. Rev. B {\bf 65}, 165401 (2002)], and first 
+implemented in the {\sc Siesta}1.3p version.  The present distribution 
+was adapted to the {\sc Siesta}2.5 structure. With respect to the 
+first implementation, it has the additional feature of allowing 
+for the use of a {\bf k}-point sampling other than the gamma point 
+(for the 2D Brillouin zone perpendicular to the transport direction). 
+These modifications were done by F. D. Novaes (fdnovaes@icmab.es).
+
+\subsection{Source code Structure}
+
+In this implementation, the original {\sc TranSiesta} routines have 
+been grouped in a set of modules whose file names begin with {\tt m\_ts} 
+(such as in e.g. {\tt m\_ts\_electrode.F90} ). 
+Several new subroutines have been also added. 
+These modules are located in the {\tt Src} directory.  
+The inclusion of {\sc TranSiesta} has also required the modification 
+of some of the {\sc Siesta} routines. Presently, these modifications 
+are controlled by pre-processor compilation directives (such as 
+in {\tt \#ifdef TRANSIESTA} ). So that only when one compiles 
+using the preprocessor flag {\tt -DTRANSIESTA} the compiled object 
+files will contain the {\sc TranSiesta} modifications.
+
+\subsection{Compiling}
+
+Add {\tt -DTRANSIESTA} to the {\tt FPPFLAGS} (or {\tt DEFS}, depending
+on your setup) variable in the {\tt arch.make} file, and type {\tt
+  make transiesta}.  The {\tt Makefile} has been modified in such a
+way to link the {\tt m\_ts} modules and create a binary called {\tt
+  transiesta}.
+
+\subsection{Brief Explanation}
+
+\begin{itemize}
+\item 
+Transport calculations involve Electrodes (EL) calculations, and
+then the Scattering Region (SR) calculation.  
+The Electrodes calculations are usual {\sc Siesta} calculations, 
+but where a file {\tt <SystemLabel>.TSHS} is generated.  
+These files contain necessary information for the SR calculation. 
+If both electrodes are identical structures (with the only difference
+that one is semi-infinite extending to the right, and the other is 
+semi-infinite extending to the left) the same file {\tt .TSHS}
+can be used to described both.
+In general, however, both Electrodes can be different and therefore 
+two different files {\tt .TSHS} must be generated. 
+The location of the these Electrode files must be specified 
+in the file {\tt .fdf} of the SR calculation (they are usually copied to the 
+same directory where the SR calculation is performed).
+
+\item
+For the SR, {\sc TranSiesta} starts with the usual {\sc Siesta} procedure,
+converging a Density Matrix (DM) with the usual Kohn-Sham scheme for
+periodic systems. It uses this solution as an input for the Green's
+Functions procedure. As it is known, {\sc Siesta} stores the DM in a file
+with extension {\tt .DM}. In the case of {\sc TranSiesta}, this is done 
+in a file named {\tt <SystemLabel>.TSDE}. 
+In a rerun of the same system, if the code finds a {\tt.TSDE} file in 
+the directory, it will take this DM as initial input and
+this is then considered a continuation run.
+
+\item
+As in the case of {\sc Siesta} calculations, what {\sc TranSiesta}
+does is to obtain a converged DM, but for open boundary conditions and
+maybe finite bias applied between the Electrodes. The corresponding
+Hamiltonian matrix (once self consistency is achieved) of the SR is
+also stored in a {\tt <SystemLabel>.TSHS} file. The transport
+properties are obtained in a post-processing procedure using the {\tt
+  tbtrans} code (located in the {\tt Util/TBTrans} directory). What
+{\tt tbtrans} does is, using the {\tt .TSHS} file of the SR obtained
+with {\sc TranSiesta} (and the Electrode's {\tt .TSHS} files), to
+calculate the transmission spectrum and the electron current. The {\tt
+  tbtrans} input file is typically the same as the one that was used
+for {\sc TranSiesta}, with the additional {\tt tbtrans} options.
+
+\item
+{\sc TranSiesta} defines the Left Electrode as the first atoms specified
+in the SR {\tt .fdf} file, and the Right Electrode for the last ones. It is
+possible however, to use buffer atoms. This is mostly useful for
+simulations with different Electrodes. In this case, {\sc TranSiesta} will
+not consider these atoms, and the buffer atoms are considered only for
+the initial {\sc Siesta} calculation, to get a better ``bulk-like''
+environment at the electrodes.
+
+\item
+An important parameter is:  {\tt TS.ComplexContour.Emin}
+It specifies the starting energy for the contour integration. It is a
+good practice, to start with a {\sc Siesta} calculation for the SR and look
+at the eigenvalues of the system. The value of
+{\tt TS.ComplexContour.Emin} must be (considerably) lower than the
+smallest eigenvalue obtained with {\sc Siesta}. This ensures that all the
+states are considered in the contour integration.
+\end{itemize}
+
+\subsection{Electrode Setup}
+
+In order to calculate the electronic structure of a system under 
+external bias, {\sc TranSiesta} attaches the system to semi-infinite 
+electrodes which extend to the left and right of the contact region. Examples 
+of electrodes would include surfaces, nanowires, nanotubes or even atomic 
+chains. The electrode must be oriented along the z-axis and the unit cell 
+along the z-direction must be large enough so that orbitals within the 
+unit cell only interact with a single nearest neighbour cell (the size 
+of the unit cell can thus be derived from the range of support for the 
+orbital basis functions). The electrode description is also used in {\tt tbtrans}.
+The electrodes are generated by a separate transiesta run on a bulk system. 
+The results are saved in a file with extension {\tt .TSHS} which contains a 
+description of the electrode unit cell, the position of the atoms within 
+the unit cell, as well as the Hamiltonian and overlap matrices that describe 
+the electronic structure of the lead. Using the commands below, one can 
+generate a variety of electrodes based upon this initial run. Typical 
+use of transiesta would involve reusing the same electrode for several 
+transiesta runs. 
+In this version of {\sc TranSiesta} , one must manually provide a valid 
+description of the electrode and the atomic coordinates input to transiesta 
+must conform with this description. At runtime, the transiesta coordinates 
+are checked against the electrode coordinates and the program stops if 
+there is a mismatch.
+
+\subsubsection{Electrode Setup Options}
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+\item[{\bf TS.SaveHS}] ({\it logical}): 
+\index{TS.SaveHS@{\bf TS.SaveHS}}
+Save the Hamiltonian in the file with extension .TSHS. 
+Must be set to true when calculating the electrode Hamiltonian. 
+The .TSHS file must also be generated in transiesta calculations 
+if tbtrans is to be used after the run. Must be true during an 
+electrode calculation. 
+
+{\it Default value:} true
+
+\item[{\bf TS.HSFileLeft }] ({\it string}): 
+\index{TS.HSFileLeft@{\bf TS.HSFileLeft}}
+Name of the .TSHS file output from the initial electrode run. 
+N.B.: The program will stop if this file is not found.
+
+{\it Default value: \_NONE\_} 
+
+\item[{\bf TS.HSFileRight }] ({\it string}): 
+\index{TS.HSFileRight@{\bf TS.HSFileRight}}
+Name of .TSHS file describing right electrode. See TS.HSFileLeft. 
+
+{\it Default value: \_NONE\_ } 
+
+\item[{\bf TS.NumUsedAtomsLeft}] ({\it integer}): 
+\index{TS.NumUsedAtomsLeft@{\bf TS.NumUsedAtomsLeft}}
+The number of electrode atoms to include in the left lead (for example 
+it could be 2 if only the Greens function of the first two layers of a 
+fcc(111) surface is needed and in which case you need 3 atoms in the 
+bulk unit cell to represent the A,B,C,A,.. stacking). Must be less 
+than the number of atoms in the simple unit cell of the left electrode. 
+If it is less than the number of atoms in the simple unit cell, the last 
+TS.NumUsedAtomsLeft atoms are taken. If it is less than the number of atoms 
+in the simple unit cell, the atoms in the left electrode must be ordered 
+according to their coordinate along the z-direction, from smallest 
+to largest.
+
+{\it Default value: Number of atoms in the simple unit cell of the Left electrode } 
+
+\item[{\bf TS.NumUsedAtomsRight}] ({\it integer}): 
+\index{TS.NumUsedAtomsRight@{\bf TS.NumUsedAtomsRight}}
+The number of electrode atoms to include in the right lead. Must be less than the number of 
+atoms in the simple unit cell of the right electrode. If it is less than the number of atoms 
+in the simple unit cell, the first TS.NumUsedAtomsRight atoms are taken. If it is less than 
+the number of atoms in the simple unit cell, the atoms in the right electrode must be ordered 
+according to their coordinate along the z-direction, from smallest to largest.
+
+{\it Default value: Number of atoms in the simple unit cell of the Right electrode} 
+
+\item[{\bf TS.BufferAtomsLeft}] ({\it integer}): 
+\index{TS.BufferAtomsLeft@{\bf TS.BufferAtomsLeft}}
+Number of atoms starting from the first atom to neglect in the  
+{\sc TranSiesta} run (their density matrix will be fixed).
+
+{\it Default value: 0} 
+
+\item[{\bf TS.BufferAtomsRight}] ({\it integer}): 
+\index{TS.BufferAtomsRight@{\bf TS.BufferAtomsRight}}
+Number of atoms starting from the last atom to neglect in the  
+{\sc TranSiesta} run (their density matrix will be fixed).
+
+{\it Default value: 0} 
+
+\item[{\bf TS.SurfaceAtomsLeft}] ({\it integer}): 
+\index{TS.SurfaceAtomsLeft@{\bf TS.SurfaceAtomsLeft}}
+Used to subdivide the contact region into a left surface, a molecular region, 
+and a right surface (for post-processing purposes only). If nonzero, the first 
+TS.SurfaceAtomsLeft atoms after the last atom in the left lead are counted 
+as part of the surface.
+
+\item[{\bf TS.SurfaceAtomsRight}] ({\it integer}): 
+\index{TS.SurfaceAtomsRight@{\bf TS.SurfaceAtomsRight}}
+If nonzero, the first TS.SurfaceAtomsRight atoms before the first atom in the right 
+lead are counted as part of the surface.
+
+\end{description}
+
+\subsection{  Matching   {\sc TranSiesta} Coordinates}
+Once an electrode description has been chosen, one must set up the atomic coordinates 
+for use in {\sc TranSiesta}. It is important to note that the positions of the electrode atoms 
+in the {\sc TranSiesta} unit-cell must be set up according to the following rules:
+\begin{itemize}
+\item
+The first TS.BufferAtomsLeft atoms correspond to buffer atoms that will not be used in the  
+{\sc TranSiesta} calculation, but which are used in the  {\sc Siesta} calculation.
+\item The next TS.NumUsedAtomsLeft correspond to 
+replications of the used atoms of the electrode. Starting with the first used atom in the 
+primitive electrode, each atom in the unit cell is replicated in the A1-direction and then in 
+the A2-direction. The vectors (A1, A2) correspond to vectors in the xy plane and A3 must be in 
+the z-direction. If for example (A1, A2) = (x, y) the x will change fastest, then comes y, 
+and then comes z.
+\item  The next atoms correspond to the contact region.
+\item  The next TS.NumUsedAtomsRight to replications of the used atoms of the right electrode.
+\item  The next TS.BufferAtomsRight correspond to atoms that are neglected in the transiesta part of 
+the calculation and whose density is fixed by a  {\sc Siesta} calculation.
+\end{itemize}
+
+During a {\sc TranSiesta} run, several checks of the atomic coordinates will be carried out to validate 
+that they are consistent with the description of the electrode. This is the most common problem 
+when running {\sc TranSiesta} and thus much care should be taken when setting up a calculation.
+
+\subsection{General Options}
+
+\begin{description}
+    \itemsep 10pt
+    \parsep 0pt
+
+    \item[{\bf SolutionMethod}] ({\it string}): 
+        \index{SolutionMethod@{\bf SolutionMethod}}
+        Must be set to transiesta in order to perform a {\sc TranSiesta} calculation
+
+        {\it Default value:} diagon
+
+    \item[{\bf TS.Voltage}] ({\it physical }): 
+        The voltage applied along the z-direction of the unit cell.
+        The Poisson equation is solved with the boundary condition that the 
+        bulk potentials are shifted with the applied voltage.
+
+        {\it Default value:} 0.0 eV
+
+\end{description}
+
+\subsection{Complex Contour Integration Options}
+
+\begin{description}
+    \itemsep 10pt
+    \parsep 0pt
+
+    \item[{\bf TS.ComplexContour.Emin}] ({\it physical}): 
+        \index{TS.ComplexContour.Emin@{\bf TS.ComplexContour.Emin}}
+        The starting point of the complex energy contour. In a {\sc TranSiesta} 
+        run this value should be below the lowest energy in the energy spectrum
+        otherwise some charge will be missing in the integration.
+
+        {\it Default value:} -3 Ry
+
+    \item[{\bf TS.ComplexContour.NumCircle}] ({\it integer}): 
+        \index{TS.ComplexContour.NumCircle@{\bf TS.ComplexContour.NumCircle}}
+        Number of points along the arc part of the con-tour (starting at 
+        TS.ComplexContour.Emin and ending at E$_F$ = 0).
+
+        {\it Default value:} 24
+        
+    \item[{\bf TS.ComplexContour.NumLine}] ({\it integer}): 
+        \index{TS.ComplexContour.NumLine@{\bf TS.ComplexContour.NumLine}}
+        Number of points on the line part of the contour.
+
+        {\it Default value:} 4
+ 
+    \item[{\bf TS.ComplexContour.NumPoles}] ({\it integer}): 
+        \index{TS.ComplexContour.NumPoles@{\bf TS.ComplexContour.NumPoles}}
+        Number of Fermi poles that the complex contour should include.
+
+        {\it Default value:} 6 
+ 
+\end{description}
+
+\subsection{Bias Contour Integration Options}
+
+\begin{description}
+    \itemsep 10pt
+    \parsep 0pt
+    
+    \item[{\bf TS.BiasContour.Eta}] ({\it real}): 
+        \index{TS.BiasContour.Eta@{\bf TS.BiasContour.Eta}}
+        Small finite complex part of the real energy contour.
+
+        {\it Default value:} 10$^{-5}$ Ry  
+        
+    \item[{\bf TS.BiasContour.Method}] ({\it string}): 
+        \index{TS.BiasContour.Method@{\bf TS.BiasContour.Method}}
+        This describes how the points on the real axis contour are chosen. 
+        Options are: \begin{itemize} 
+                       \item {\tt Sommerfeld}: equally spaced points with Sommerfeld 
+                       expansion for including the electron temperature. 
+                       \item {\tt GaussFermi}: Gaussian quadrature weighted with 
+                       the Fermi distribution function.
+                    \end{itemize}
+                    
+        {\it Default value:} {\tt GaussFermi}
+        
+    \item[{\bf TS.BiasContour.NumPoints}] ({\it integer}): 
+        \index{TS.BiasContour.NumPoints@{\bf TS.BiasContour.NumPoints}}
+        Number of contour points on the close-to-real axis part of the contour in the voltage bias window.
+
+        {\it Default value:} 10
+        
+\end{description}    
+
+\subsection{Output}
+
+{\sc TranSiesta} generates several output files. 
+The output files are named Label.ext, where Label is defined using the 
+SystemLabel FDF command , and .ext depends on the type of the output. 
+Below we list the .ext files which are specific to transiesta. 
+For a description of the other output files, we refer the user to 
+the  {\sc Siesta} manual.
+
+
+\begin{description}
+    \itemsep 10pt
+    \parsep 0pt
+    
+    \item[{\bf .DM }]: 
+        \index{.DM@{\bf .DM}}
+        The {\sc Siesta} density matrix. {\sc Siesta} initially performs a calculation 
+        at zero bias as-suming periodic boundary conditions, which is used 
+        as a starting point for the transiesta calculation. During a transiesta 
+        run, the .DM values are used for the density matrix in the regions 
+        where .TSDM is not valid.
+
+    \item[{\bf .TSDE }]: 
+        \index{.TSDE@{\bf .TSDE}}
+        The  {\sc TranSiesta} density matrix and energy density matrix.
+
+    \item[{\bf .TSHS }]: 
+        \index{.TSDE@{\bf .TSDE}}
+        The Hamiltonian corresponding to .TSDM.
+
+\end{description} 
+
+\subsection{Utilities for analysis: {\tt TBTrans}.}
+\index{TBTrans@{\bf TBTrans}}
+
+The tbtrans code can be found in the directory {\tt Util/TBTrans}. 
+It is used in order to obtain, in a post-processing way, the transport properties after 
+a {\sc TranSiesta}. It was developed by M. Brandbyge, and the present 
+version contains some modifications made by F. D. Novaes.
+
+In order to run it, it requires the electrode's TSHS files (may be just one file if the 
+left and right electrodes are equal), and the scattering region's TSHS file. 
+These  are generated in a {\sc TranSiesta} run. 
+The location of these files are specified by the (fdf) input options:
+\begin{itemize}
+\item TS.HSFileLeft  
+\item TS.HSFileRight
+\item TS.TBT.HSFile
+\end{itemize}
+respectively for the left and right electrodes and the scattering region (for the latter one, 
+if nothing is  specified, it is assumed that the file name is is {\tt <SystemLabel>.TSHS} file, 
+and located in the same directory from where the calculation is being launched).
+
+The energy window and number of points for the computation of the 
+transmission function is specified by
+\begin{itemize}
+\item TS.TBT.Emin 
+\item TS.TBT.Emax 
+\item TS.TBT.NPoints
+\end{itemize}
+The current will be computed using the resulting transmission function, 
+so be sure to make it suited for the integration in the bias window. 
+
+The averaged (over k-points) transmission function is printed in 
+the file {\tt <SystemLabel>.AVTRANS}.
+
+The present version of the code is only parallelized over 
+k-points, so the number of nodes should not be bigger than 
+the number of k-points.
+
+\subsubsection{Compiling TBTtrans}
+
+In the {\tt Util/TBTrans} directory, simply type {\tt make} if your
+main {\sc Siesta} compilation directory is the top {\tt Obj}
+directory. If you have used another object directory {\tt MyObjDir},
+type {\tt make OBJDIR=MyObjDir}.
+
+ 
 \section{APPENDIX: Physical unit names recognized by FDF}
 
 \begin{center}
 \begin{tabular}{llr}
-Magnitude & Unit name & MKS value \\
+Magnitude & Unit name & MKS value \\ 
 \hline  
 mass     & Kg         & 1.E0 \\
 mass     & g          & 1.E-3 \\
@@ -6162,7 +6599,7 @@ DEFS_CDF=-DCDF
 {\tt \$(NETCDF\_LIBS)} must be added to the {\tt LIBS} list and
 {\tt \$(NETCDF\_INCLUDE)} must be added to the {\tt INCFLAGS} list (or
 {\tt INCFLAGS} may be set directly). See examples in the Src/Sys
-directory, particularly {\tt gfortran-netcdf.make}.
+directory, and {\tt Src/Sys/COMMENTED-TEMPLATE.make}.
 
 
 ({\sc Siesta} used to include an old f90 interface to NetCDF in the
@@ -6170,21 +6607,14 @@ Src/NetCDF directory. Current versions of NetCDF now come with their
 own, so that directory has dissappeared.
 
 While it might seem a hassle to install the library, the added
-functionality is quite large, and it is set to grow in future releases
-of {\sc Siesta}. The area in which this is already beginning to be
-felt is in the visualization of atomic and molecular dynamics
-information. When a NetCDF file is accessed by means of a scripting
-language with the proper interface (Python, {\tt
-http://www.python.org} is highly recommended in this regard), one can
-explore and plot its contents very easily.  See the Utils/PyAtom, Utils/MD
-Utils/SCF, and Util/DensityMatrix directories for some example scripts.  \index{Python language}
+functionality is significant: speedup in diagonalization with k-points
+by storing the eigenvectors, optional restarts with charge density
+information instead of a density-matrix,  new analysis tools, etc.
 
 
 \newpage
 \section{APPENDIX: Parallel {\sc Siesta}}
 \index{Parallel {\sc Siesta}}
-
-(Note: This feature might not be available in all distributions.)
 
 At present, {\sc Siesta} has been parallelised with moderate system sizes
 in mind and is suitable for comensurately moderate parallel computing
@@ -6247,7 +6677,7 @@ been distributed to each Node. This mode is selected using the
 {\bf ParallelOverK} \index{ParallelOverk@{\bf ParallelOverK}}
 option.
 
-The order-N facility of SIESTA has been rewritten for the present version 
+The order-N facility of {\sc Siesta} was rewritten as of version 2.0
 to parallelise over spatial regions with a domain decomposition. In the 
 ideal situation, each domain interacts with only the neighbouring domains
 if the size of the domains is greater than the Wannier function radius and
@@ -6301,7 +6731,8 @@ libraries installed on your computer :
 Parallel versions of the files for {\tt arch.make} suitable for a
 number of systems are provided in the {\tt Src/Sys} directory. Should
 there be no suitable file there for your system, then the following
-are the key variables to be set in the {\tt arch.make} file:
+are the key variables to be set in the {\tt arch.make} file (see also
+the commented {\tt arch.make} file in {\tt Src/Sys/COMMENTED-TEMPLATE.make}):
 
 \begin{verbatim}
 MPI_INTERFACE=libmpi_f90.a

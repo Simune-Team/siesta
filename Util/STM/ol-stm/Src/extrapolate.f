@@ -23,7 +23,7 @@ C                            Wave Function extrapolated at all heights
 C ***********************************************************************
 
       use precision, only: dp
-      USE fftw3_mod
+      USE fftw3_mymod
 
       IMPLICIT NONE
 
