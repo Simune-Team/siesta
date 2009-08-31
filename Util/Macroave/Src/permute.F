@@ -28,18 +28,7 @@ c             y              x
 c             z              y
 c
 c
-c     Compilation
-c
-c        You need to use the f2kcli.F90 file located in the main Src
-c        directory:
-c
-c        $(FC) $(FFLAGS) -o permute ../Src/f2kcli.F90 permute.F
-c
-c      If you use GFORTRAN, use instead:
-c
-c        $(FC) $(FFLAGS) -DGFORTRAN -o permute ../Src/f2kcli.F90 permute.F
-c
-c      FC and FFLAGS should be compatible with those you used to
+c      The compiler flags should be compatible with those you used to
 c      compile Siesta, as permute reads a binary file whose data
 c      layout can change. This includes 32bit vs 64 bit flags, if any.
 c

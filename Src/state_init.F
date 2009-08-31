@@ -282,7 +282,8 @@
       call init_pulay_arrays()
 
 
-#ifdef TRANSIESTA !If onlyS, Save overlap matrix and exit          ! MPN
+#ifdef TRANSIESTA  
+      !If onlyS, Save overlap matrix and exit                      ! MPN 
       if (onlyS) then                                              ! MPN    
          fname = paste( slabel, '.onlyS' )
          fnlength = label_length+6
@@ -299,7 +300,7 @@
          call de_alloc(dummyH, name='dummyH')
          call bye('Save overlap matrix and exit') ! Exit siesta    ! MPN 
       endif                                                        ! MPN    
-#endif TSS                                                         ! MPN        
+#endif /* TSS     ! MPN    */
 
 #ifdef CDF
       if (writedm_cdf) then

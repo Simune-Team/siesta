@@ -10,8 +10,7 @@ where 0.xxxxx is the mixing parameter (to five decimal places) specified.
 It outputs also a SyntheticAtoms block suitable for use by Siesta, and
 a MIXLABEL file which contains the final label used (useful for scripts).
 
-This program is located in the top directory to ease compilation. Just
-type "make mixps" to compile.
+Just type "make mixps" to compile.
 
 Program 'fractional' simply multiplies the strength of a pseudopotential
 by a given fraction, to simulate fractional occupation of a site (note
@@ -19,8 +18,7 @@ that it might be necessary to subtract electrostatic interaction energies
 of the relevant ions if total energies are desired -- this is still
 not implemented in a general manner).
 
-This program is located in the top directory to ease compilation. Just
-type "make fractional" to compile.
+Just type "make fractional" to compile.
 
 NOTES:
 
@@ -42,5 +40,20 @@ the local pseudopotentials of the individual atoms.
 - Once Siesta reads the "neutral-atom configuration" from the
 SyntheticAtoms block, it generates the appropriate neutral-atom potential
 using the local pseudopotential and the atomic charge density.
+
+
+- For each atom, mixps takes the ground-state configuration from the
+Siesta built-in tables. The hybrid atom has, for each angular momentum
+channel, a principal quantum number which is the maximum of the two
+mixed atoms, and an occupation that is a linear mix of the individual
+occupations.
+
+- Siesta reads from the fourth line in the .psf file for the hybrid the
+total number of valence electrons (which possibly includes semicore
+states), and the number of "standard valence electrons" from the
+SyntheticAtoms block. By comparing the two pieces of information,
+Siesta can detect whether semicore electrons are being considered. It
+is responsibility of the user to prepare an appropriate PAO.Basis
+block that accounts for those semicore electrons.
 
 

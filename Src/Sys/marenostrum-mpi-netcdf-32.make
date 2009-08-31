@@ -8,8 +8,9 @@ FFLAGS_parse=-qsuffix=f=f -qfree #-qfixed
 LDFLAGS= -q32
 COMP_LIBS=
 RANLIB=echo
+DEFS_PREFIX=-WF,
 #
-NETCDF_ROOT=/gpfs/apps/NETCDF/3.6.1/32
+NETCDF_ROOT=/gpfs/apps/NETCDF/3.6.2/32
 INCFLAGS=-I$(NETCDF_ROOT)/include
 #
 NETCDF_LIBS=-L$(NETCDF_ROOT)/lib -lnetcdf
@@ -38,11 +39,11 @@ DEFS= $(DEFS_MPI) $(DEFS_CDF)
 FREE_F90=-qsuffix=f=f90
 #
 .F90.o:
-        $(FC) -qsuffix=cpp=F90 -c $(INCFLAGS) $(FFLAGS) $(DEFS) $<
+	$(FC) -qsuffix=cpp=F90 -c $(INCFLAGS) $(FFLAGS) $(DEFS) $<
 .f90.o:
-        $(FC) -qsuffix=f=f90 -c $(INCFLAGS) $(FFLAGS)   $<
+	$(FC) -qsuffix=f=f90 -c $(INCFLAGS) $(FFLAGS)   $<
 .F.o:
-        $(FC) -qsuffix=cpp=F -c $(INCFLAGS) -qfixed $(FFLAGS) $(DEFS) $<
+	$(FC) -qsuffix=cpp=F -c $(INCFLAGS) -qfixed $(FFLAGS) $(DEFS) $<
 .f.o:
-        $(FC) -qsuffix=f=f -qfixed -c $(INCFLAGS) $(FFLAGS)   $<
+	$(FC) -qsuffix=f=f -qfixed -c $(INCFLAGS) $(FFLAGS)   $<
 #

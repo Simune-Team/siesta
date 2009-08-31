@@ -6,7 +6,7 @@
 # (note also re-definition of prog further down)
 #
 BASIS_TUTORIAL_DIR=`dirname $0`
-EXEC_DIR=${BASIS_TUTORIAL_DIR}/../../Src
+EXEC_DIR=${BASIS_TUTORIAL_DIR}/../../Util/Gen-basis
 GEN_BASIS_PROGRAM=${EXEC_DIR}/gen-basis
 prog=${GEN_BASIS_PROGRAM} 
 #

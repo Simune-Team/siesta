@@ -14,9 +14,10 @@
 SIESTA_ARCH=cscs-ibm-blanc-mpi
 
 FPP=/opt/ibmcmp/xlf/10.1/exe/cpp
-FPP_OUTPUT= 
+
 FC=mpfort -m64 -compiler xlf95_r
 FC_SERIAL=xlf95_r -q64
+#
 FFLAGS=-O3 -qstrict -qarch=pwr5 -qtune=pwr5 -qcache=auto -qessl   #-I/apps/netcdf/64/include
 # For debugging pourposes
 #FC=mpfort -m64 -compiler xlf95_r -qfullpath -qlinedebug -g 
@@ -28,7 +29,7 @@ SP_KIND=1
 DP_KIND=8
 KINDS=$(SP_KIND) $(DP_KIND)
 
-FPPFLAGS= -WF,-DMPI -WF,-DFC_HAVE_ABORT -WF,-DCDF
+DEFS_PREFIX=-WF,
 LDFLAGS=
 
 ARFLAGS_EXTRA=
@@ -39,7 +40,7 @@ FPPFLAGS_fixed_F=-qfixed -qsuffix=cpp=F
 FPPFLAGS_free_F90=
 
 BLAS_LIBS=-lessl
-LAPACK_LIBS=-L/apps/lapack-3/64/lib -llapack_ppc64 -lessl
+LAPACK_LIBS=/apps/lapack/3.1.1/XL/lib/liblapack_ppc64.a -lessl
 BLACS_LIBS=/apps/scalapack/64/lib/blacsCinit_MPI-ppc64-0.a /apps/scalapack/64/lib/blacsF77init_MPI-ppc64-0.a /apps/scalapack/64/lib/blacs_MPI-ppc64-0.a
 SCALAPACK_LIBS=/apps/scalapack/64/lib/blacsCinit_MPI-ppc64-0.a /apps/scalapack/64/lib/blacs_MPI-ppc64-0.a -L/apps/scalapack/64/lib -lscalapack
 
@@ -48,15 +49,14 @@ COMP_LIBS=dc_lapack.a
 NETCDF_ROOT=/apps/netcdf/64
 INCFLAGS=-I$(NETCDF_ROOT)/include
 NETCDF_LIBS=-L$(NETCDF_ROOT)/lib -lnetcdf
-DEFS_CDF=-DCDF
-NETCDF_INTERFACE=
+#
+FFTW_ROOT=/apps/fftw3/64
+FFTW_INCFLAGS= -I$(FFTW_ROOT)/include
+FFTW_LIBS = -L$(FFTW_ROOT)/lib -lfftw3
 
+FPPFLAGS= -WF,-DMPI -WF,-DFC_HAVE_ABORT -WF,-DCDF
 LIBS=$(NETCDF_LIBS) $(SCALAPACK_LIBS) $(BLACS_LIBS) $(LAPACK_LIBS) 
 
-#SIESTA needs an F90 interface to MPI
-#This will give you SIESTA's own implementation
-#If your compiler vendor offers an alternative, you may change
-#to it here.
 MPI_INTERFACE=libmpi_f90.a
 MPI_INCLUDE=.
 

@@ -2,7 +2,250 @@
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
 
-** CHANGES ALONG siesta-2.6 trunk branch 
+
+** CHANGES ALONG trunk 
+
+------------------------------------------------------------------------
+2009-08-30  17:15:00 GMT Alberto Garcia <albertog@icmab.es>    trunk-296
+TS manual and updates. Building rationalization. Hsparse speedup
+
+* Added TranSIESTA sections to the manual (Docs/siesta.tex) (by
+  J.A. Torres).
+
+* TranSIESTA and TBTrans updates (by F.D. Novaes):
+
+- Reimplementation of getGF_Tri, that obtains the Green's Function
+ using the fact that the Hamiltonian is tridiagonal.
+
+- Fixed the generation of listudg in the transiesta routine
+ (m_ts_in_siesta.F).  Now, when the TS.UpdateDMCR is set to
+ .false. the cross terms between the electrodes and the contact region
+ of the density matrix are also updated in the TS iteration
+ process. If set to .true., only the elements of the contact region
+ are changed during the self consistent cycle.
+
+- In weightDM and weightDMC (m_ts_scattering.F), changed the weights
+ of the cross terms elements, since when using Tri_Diag the
+ non-equilibrium contributions are zero the way it used to be.
+
+- In new_dm.F, added a condition that does not sets the energy-density
+ matrix to zero in the first iteration of the SCF cycle.
+
+- (with A. Garcia) New building scheme for TBTrans.
+
+* Building rationalization (by A. Garcia):
+
+- Move auxiliary programs from Src to individual directories in Util
+
+ -- gen-basis and ioncat now live in Util/Gen-basis
+ -- mixps and fractional have been moved to Util/VCA
+ -- The programs to test the MPI installation are now in Util/MPI_test
+
+- Update building mechanisms in Util/STM
+
+(Some of the above building improvements use new functionality in
+the fdf and MPI makefiles that allows these modules to be compiled in
+"private subdirectories" anywhere: see Denchar and TBTrans for examples.)
+
+* Hsparse has been dramatically speeded-up by removing a superfluous
+  inner loop (by A. Garcia).
+
+* Other updates to the manual by A. Garcia
+ 
+
+** CHANGES ALONG siesta-2.6 series of trunk
+
+-----------------------------------------------------------------------
+2009-08-20  09:25:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.32
+Documentation updates. Building and cosmetic fixes. Eggbox checker.
+
+* Added a draft of release_notes_3.0
+
+* New experimental directory Docs/ExtraDocs containing files with
+  information relevant to a specific feature. They should complement
+  the "manual", which is really a reference manual and not very useful
+  for feature discovery. This is work in progress and subject to major
+  changes.
+
+* Updated the content of a number of README files.
+
+* Updated several sections of Docs/siesta.tex.
+
+* Created new Util/test-xml directory to keep a separate version of
+  the XML checker.
+
+* New Util/Scripting/eggbox_checker.py script for eggbox diagnostics.
+
+* Added Src/Sys/DOCUMENTED-TEMPLATE.make to help users with the subtle
+  points of arch.make generation. More documentation about the
+  building process in several places.
+
+* Warn about deprecation of PHONON interface.
+
+* Update siesta.tex with DM reuse information. Better header
+  information in new_dm.F. Remove references to iodm in Siesta
+  files. It is still needed for some utility programs.
+
+* Clarify target of 'goto' in atomlwf (this was a bug introduced in
+  previous patches).
+
+* Give the Src/obj_setup.sh the ability to override the Src link in
+  the object directory. Now it should be possible to completely update
+  the object directory even if it moves.
+
+* Proper test for gfortran macros
+  
+  gfortran now defines the __GFORTRAN__ macro, so it is 
+  no longer necessary to define GFORTRAN in makefiles, but
+  it is still supported. The proper idiom for the gfortran 
+  test in f2kcli is now:
+  
+  #if  !defined(GFORTRAN) && !defined(__GFORTRAN__)
+
+* Removed the Src/filter debug directory.
+
+* Updates to some makefiles and many cosmetic fixes.
+
+-----------------------------------------------------------------------
+2009-08-14  16:20:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.31
+Speed-up of density-matrix building in diagk
+
+By computing only the products of eigenvector components which are
+really needed, the building of the density-matrix has been
+significantly speeded-up in diagk.  A similar idea can be applied in
+diagkp and diag2k (here saving in memory too), but these are not
+implemented yet.
+
+NOTE that the diagk_file version of the routine is still significantly
+faster, and should be the method of choice when NetCDF is compiled in.
+
+modified:
+  Src/diagk.F
+
+-----------------------------------------------------------------------
+2009-08-07  16:20:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.30
+Assorted fixes, dealing mostly with the building system
+
+* (IMPORTANT) The default building directory is now Obj, instead of Src.
+  This change is necessary to support multiple compilation with the
+  same source. See Obj/README for more details.
+
+* Many fixes to smooth compilation in several systems, notably on IBM
+  computers. 
+
+* The default makefile in Pseudo/atom is now the 'modern' version with
+  CML support.
+
+* Clearer diagnostics in case of FoX configuration problems. 
+
+* Removed obsolete .make files from Src/Sys. Added 64bit versions of
+  the MareNostrum files.
+
+* The 'MaximumWallClockTime' option is no longer available.
+
+* Fixes in the NetCDF iodm* routines to properly handle a pointer.
+
+removed:
+  Src/Sys/eth-hreidar-mpi.make
+  Src/Sys/lahey-lam.make
+  Src/Sys/lahey-mpich.make
+  Src/Sys/lahey-nolibs.make
+  Src/Sys/lahey.make
+  Src/Sys/osfdxml-mpich.make
+  Src/Sys/osfdxml.make
+  Src/Sys/osfdxmlcdf.make
+  Src/Sys/pgf90-lam.make
+  Src/Sys/pgf90-mpich.make
+  Src/Sys/pgf90-nolibs.make
+  Src/Sys/pgf90.make
+  Src/Sys/sgi-altix.make
+  Src/Sys/sgi.make
+  Src/Sys/sgi64-cdf.make
+  Src/Sys/sgi64-lam-cdf.make
+  Src/Sys/sgi64-lam.make
+  Src/Sys/sgi64-mpi_fermat.make
+  Src/Sys/sgi64-mpich-cdf.make
+  Src/Sys/sgi64-mpich.make
+  Src/Sys/sgin32-mpi.make
+  Src/Sys/sun-nolibs.make
+  Src/Sys/t3e.make
+  Util/COOP/precision.f
+added:
+  Obj/
+  Obj/README
+  Src/Sys/marenostrum-mpi-64.make
+  Src/Sys/marenostrum-mpi-netcdf-64.make
+renamed:
+  Pseudo/atom/makefile => Pseudo/atom/makefile-old
+  Pseudo/atom/makefile-xml => Pseudo/atom/Makefile
+  Src/Sys/marenostrum-mpi.make => Src/Sys/marenostrum-mpi-32.make
+  Util/COOP/sys.f90 => Util/COOP/sys_local.f90
+  Util/Vibra/Vibra/ => Util/Vibra/Src/
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/FoX/configure
+  Src/Makefile
+  Src/Sys/README
+  Src/Sys/cscs-cray-mpi.make
+  Src/Sys/cscs-cray.make
+  Src/Sys/cscs-ibm-blanc.make
+  Src/Sys/finisterrae.make
+  Src/Sys/marenostrum-mpi-netcdf-32.make
+  Src/iodm_netcdf.F90
+  Src/iodmhs_netcdf.F90
+  Src/molecularmechanics.F90
+  Src/obj_setup.sh
+  Src/siesta_options.F90
+  Src/timer.F
+  Util/COOP/Makefile
+  Util/COOP/mprop.f90
+  Util/Denchar/Src/Makefile
+  Util/DensityMatrix/makefile
+  Util/Grid/makefile
+  Util/Projections/makefile
+  Util/Vibra/Src/Makefile
+  Util/WFS/makefile
+  Util/pdosxml/makefile
+  Util/pseudo-xml/makefile
+  Pseudo/atom/makefile-old
+  Pseudo/atom/Makefile
+  Src/Sys/marenostrum-mpi-32.make
+
+-----------------------------------------------------------------------
+2009-07-03  14:00:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.29
+TranSiesta: New saving options and file format (M. Paulsson, F.D. Novaes)
+
+  * Changed format and filenames for saved TSHS files.
+  * Enabled transiesta to save a TSHS file for each step in a FC run.
+  * Transiesta keyword TS.onlyS (T/F) to save overlap matrix in .TSHS
+  file format and quit without any SCF cycle.
+  * New "onlyS" option to stop after generating the overlap matrix.
+  * Disabled proximity check for onlyS run.
+
+(+ Fix a few glitches in FoX-enabled compilation of TranSiesta)
+
+Thanks to M. Paulsson and F.D. Novaes for this patch.
+
+** NOTE: The Intel compiler V. 11.{0,1} does not compile correctly
+         this version.
+         
+removed:
+  Util/TBTrans/TSiohs2.F
+modified:
+  Src/Makefile
+  Src/m_ts_electrode.F90
+  Src/m_ts_io.F90
+  Src/m_ts_options.F90
+  Src/proximity_check.F
+  Src/setup_hamiltonian.F
+  Src/siesta_forces.F
+  Src/state_init.F
+  Src/write_subs.F
+  Util/TBTrans/Makefile
+  Util/TBTrans/TSiohs.F
+  Util/TBTrans/work.pcl
+
 
 -----------------------------------------------------------------------
 2009-06-24  12:50:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.28

@@ -27,6 +27,17 @@ destdir=$(pwd)
     cp $relpath/*akefile ${destdir}/$relpath
   done
 )
+# Replicate any .h files
+# This is needed in some systems with broken include file import heuristics
+# (e.g., CSCS blanc)
+#
+(cd $srcdir;
+  for i in $(find . -name '*.h' ); do
+    relpath=${i%/*}
+    mkdir -p ${destdir}/$relpath
+    cp -f $relpath/*.h ${destdir}/$relpath
+  done
+)
 #
 sed "s#VPATH=\.#VPATH=${srcdir}#g" ${srcdir}/Makefile > ${destdir}/Makefile
 
@@ -44,7 +55,7 @@ sed "s#VPATH=\.#VPATH=${srcdir}#g" ${srcdir}/Makefile > ${destdir}/Makefile
 #
 # Now make a symbolic link in the destination directory
 #
-ln -s ${destdir} ${destdir}/Src
+ln -sf ${destdir} ${destdir}/Src
 #
 echo " *** Compilation setup done. "
 echo " *** Remember to copy an arch.make file or run configure as:"
