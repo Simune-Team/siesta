@@ -226,14 +226,15 @@ C Check that the field is orthogonal to the bulk directions
         endif
       endif
 
-C Find the origin of a shited cell, with the system centered in it
+C Find the origin of a shifted cell, with the system centered in it
 C This is done at every call, because of possible atomic movements
       if (isfield) then
 
 C Find reciprocal unit cell and distance between lattice planes
         call reclat( cell, rcell, 0 )
         do ix = 1,3
-          dplane(ix) = sqrt(ddot(3,rcell(1,ix),1,rcell(1,ix),1))
+          dplane(ix) = 1.0_dp /
+     $                   sqrt(ddot(3,rcell(1,ix),1,rcell(1,ix),1))
         enddo
 
 C Find the geometric center of the system
@@ -246,10 +247,8 @@ C Find the geometric center of the system
           rc = rcut(is,0)
           do ix = 1,3
             xfrac = ddot(3,xa(1,ia),1,rcell(1,ix),1)
-C            xmin(ix) = min( xmin(ix), xfrac-rc/dplane(ix) )
-C            xmax(ix) = max( xmax(ix), xfrac+rc/dplane(ix) )
-            xmin(ix) = min( xmin(ix), xfrac-rc*dplane(ix) )
-            xmax(ix) = max( xmax(ix), xfrac+rc*dplane(ix) )
+            xmin(ix) = min( xmin(ix), xfrac-rc/dplane(ix) )
+            xmax(ix) = max( xmax(ix), xfrac+rc/dplane(ix) )
           enddo
         enddo
 
