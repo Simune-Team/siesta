@@ -1,15 +1,21 @@
 
-* PDOS/COOP/COHP offline generator 
+\section{ANALYSIS TOOLS}
 
+\begin{itemize}
+
+\item PDOS/COOP/COHP offline generator.
+%
 Uses WFSX and HSX files to provide an alternative, more flexible
 method of computing the PDOS curves, offering also COOP and COHP
 curves. See Util/COOP
 
-* Projections
-
+\item Projections.
+%
 See Util/Projections
 
-* DM filter
+\item DM filter
 
-* DM creator
+\item DM creator
+
+\end{itemize}
 

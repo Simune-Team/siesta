@@ -1,3 +1,8 @@
+
+\section{FILE FORMATS}
+
+\begin{verbatim}
+
 The file formats in Siesta are in a state of flux. On the one hand,
 some of the legacy formats were inefficient or incomplete, so new ones
 have been devised, and appropriate translators provided when
@@ -102,3 +107,6 @@ Util/Grid:
                                average_z.m  cdf_diff, cdf2grid, cdf_fft
 
 Util/Contrib/APostnikov:       rho2xsf, etc.
+
+\end{verbatim}
+

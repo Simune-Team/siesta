@@ -1,3 +1,6 @@
+
+\section{PARALLEL OPERATION}
+
 Compilation tips
 When not to use the parallel version (very small systems)
 Normal vs ParallelOverK (missing bands and writewave implementation)
