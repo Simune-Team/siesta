@@ -237,6 +237,12 @@ TS_OBJS= m_ts_options.o m_ts_aux_rout.o m_ts_kpoints.o \
          m_ts_io.o m_ts_scattering.o m_ts_contour.o m_ts_electrode.o \
          m_ts_in_siesta.o
 #
+# Libraries that might need to be compiled
+#
+zgesv_lapack.a: Libs/zgesv_lapack.f
+	@echo "==> Compiling zgesv_lapack.a in Libs..."
+	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" zgesv_lapack.a)
+#
 transiesta: what version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
                     $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
 	$(FC) -o transiesta \

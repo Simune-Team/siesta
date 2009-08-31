@@ -31,10 +31,3 @@ The present version of the code is only parallelized over k-points, so the numbe
 be bigger than the number of k-points.
 
 
-
-Compiling:
-
-Similar to SIESTA (and TranSIESTA), an arch.make file has to be put in the main directory of TBTrans. 
-It is also necessay to indicate wher the SIESTA Src directory is located. By default it is assumed 
-to be ../../Src from the Util directory. If this is not the case, change the SIESTA_DIR variable value 
-in the Makefile. To compile, type “make”

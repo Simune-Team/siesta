@@ -44,7 +44,7 @@ SIESTA_OBJS= precision.o alloc.o  memoryinfo.o memory.o pxf.o \
 TBTOBJS= $(SIESTA_OBJS) $(MOD_TOBJS) $(SYSOBJ) $(EXTRA) tbtrans.o transmission.o   \
          calc_green.o cdiag_local.o getsfe.o \
          mkRealContour.o reinit_tb.o setupkham2.o TSiohs.o atompdos.o coop.o \
-         csolve.o teigchana.o helpers.o OutputRegionData.o \
+         csolve.o teigchana.o helpers.o #OutputRegionData.o \
          Lowdin.o netcdfwrite.o \
 
 #
@@ -90,6 +90,7 @@ clean:
 	rm -f tbtrans90 *.o *.a *.mod
 	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
 	(cd MPI ; $(MAKE) -f $(MPI_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
+	(cd Libs ; $(MAKE) -f $(MPI_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
 
 readTSHScdf: readTSHScdf.F $(NETCDF_INTERFACE)
 	$(FC) -o readTSHScdf readTSHScdf.F $(NETCDF_INTERFACE) $(NETCDF_LIBS)
