@@ -17,6 +17,7 @@
 C *********************************************************************
 C Routine to find nonzero hamiltonian matrix elements.
 C Writen by J.Soler and P.Ordejon, June 1997
+C Optimized by A. Garcia, August 2009
 C **************************** INPUT **********************************
 C logical negl         : Working option: Neglect interactions
 C                        between non-overlaping orbitals
@@ -72,7 +73,8 @@ C
       use precision
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GetNodeOrbs, GlobalToLocalOrb
-      use atmfuncs,      only : rcut
+      use atmfuncs,      only : rcut, nofis, nkbfis
+      use atm_types,     only : nspecies
       use listsc_module, only : listsc_init
       use sorting
       use neighbour,   only: jna=>jan, xij, r2ij, maxna=>maxnna
@@ -106,7 +108,12 @@ C
       real(dp), parameter        :: tol = 1.0d-8   ! tolerance for comparing vector-coordinates
 
 
-      integer      :: maxnkb  = 1000         ! max no. of neighboring KB projectors
+      real(dp), allocatable     :: rkbmax(:) ! maximum KB radius of each species
+      real(dp), allocatable     :: rorbmax(:) ! maximum ORB radius of each species
+      integer      :: maxnkb  = 500          ! max no. of atoms with
+                                             ! KB projectors which 
+                                             ! overlap another
+                                             ! atom's orbitals.
 
       integer
      .  ia, iio, ikb, ind, inkb, io, ioa, is, isel, 
@@ -167,6 +174,22 @@ C Find maximum range of basis orbitals and KB projectors
         rmax = 2.0d0 * (rmaxo+rmaxkb)
       endif
 
+!
+!     Find maximum radius of the KB projectors of each species
+!     Also for orbitals (for possible future extra optimizations)
+!     
+      allocate(rkbmax(nspecies), rorbmax(nspecies))
+      do is = 1, nspecies
+         rkbmax(is) = 0.0_dp
+         do ikb = 1, nkbfis(is)
+            rkbmax(is) = max(rkbmax(is),rcut(is,-ikb))
+         enddo
+         rorbmax(is) = 0.0_dp
+         do io = 1, nofis(is)
+            rorbmax(is) = max(rorbmax(is),rcut(is,io))
+         enddo
+      enddo
+
       ! Allocate local arrays that depend on parameters
       call re_alloc(knakb,1,maxnkb, name="knakb")
       call re_alloc(rckb,1,maxnkb, name="rckb")
@@ -218,16 +241,15 @@ C Find overlaping KB projectors
               if (.not.negl) then
                 nnkb = 0
                 do kna = 1,nna
-                  ka = jna(kna)
-                  rik = sqrt( r2ij(kna) )
-                  do ko = lastkb(ka-1)+1,lastkb(ka)
-                    ks = isa(ka)
-                    koa = iphkb(ko)
-                    rck = rcut(ks,koa)
-                    if (rci+rck .gt. rik) then
-C Check maxnkb - if too small then increase array sizes
+                   ka = jna(kna)
+                   rik = sqrt( r2ij(kna) )
+                   ks = isa(ka)
+                                ! It is only necessary to check with
+                                ! the *largest* KB projector
+                   rck = rkbmax(ks)
+                   if ((rci + rck) .gt. rik) then
                       if (nnkb.eq.maxnkb) then
-                         maxnkb = maxnkb + 100
+                         maxnkb = maxnkb + 10
                          call re_alloc(knakb,1,maxnkb,
      $                        name="knakb",copy=.true.)
                          call re_alloc(rckb,1,maxnkb,
@@ -236,22 +258,21 @@ C Check maxnkb - if too small then increase array sizes
                       nnkb = nnkb + 1
                       knakb(nnkb) = kna
                       rckb(nnkb) = rck
-                    endif
-                  enddo
+                   endif
                 enddo
-              endif
+             endif
 
 C Find orbitals connected by direct overlap or
 C through a KB projector
               do jnat = 1,nna
                 ja = jna(jnat)
+                js = isa(ja)
                 rij = sqrt( r2ij(jnat) )
                 do jo = lasto(ja-1)+1,lasto(ja)
 
                   !If not yet connected (we only allow one connection, and
                   !reserve space for it)
                   if (.not.conect(jo)) then
-                    js = isa(ja)
                     joa = iphorb(jo)
                     rcj = rcut(js,joa)
 C Find if there is direct overlap
@@ -354,32 +375,31 @@ C Loop on orbitals of atom ia
 
 C Find overlaping KB projectors
               if (.not.negl) then
-                nnkb = 0 
-                do kna = 1,nna
-                  ka = jna(kna)
-                  rik = sqrt( r2ij(kna) )
-                  do ko = lastkb(ka-1)+1,lastkb(ka)
+                 nnkb = 0
+                 do kna = 1,nna
+                    ka = jna(kna)
+                    rik = sqrt( r2ij(kna) )
                     ks = isa(ka)
-                    koa = iphkb(ko)
-                    rck = rcut(ks,koa)
-                    if (rci+rck .gt. rik) then
-                      nnkb = nnkb + 1
-                      knakb(nnkb) = kna
-                      rckb(nnkb) = rck
+                                ! It is only necessary to check with
+                                ! the *largest* KB projector
+                    rck = rkbmax(ks)
+                    if ((rci + rck) .gt. rik) then
+                       nnkb = nnkb + 1
+                       knakb(nnkb) = kna
+                       rckb(nnkb) = rck
                     endif
-                  enddo
-                enddo
+                 enddo
               endif
           
 C Find orbitals connected by direct overlap or
 C through a KB projector
               do jnat = 1,nna
                 ja = jna(jnat)
+                js = isa(ja)
                 rij = sqrt( r2ij(jnat) )
                 do jo = lasto(ja-1)+1,lasto(ja)
                    connected = .false.
 
-                    js = isa(ja)
                     joa = iphorb(jo)
                     rcj = rcut(js,joa)
 C Find if there is direct overlap

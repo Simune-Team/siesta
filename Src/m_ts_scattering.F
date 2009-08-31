@@ -6,20 +6,19 @@
 ! CONTAINS:
 !          1) consHS
 !          2) consHSp
-!          3) getGF
-!          4) getGF_Tri
-!          5) getsfe
-!          6) GFGammaGF
-!          7) weightDM
-!          8) weightDMC
+!          3) getGF_Tri
+!          4) getsfe
+!          5) GFGammaGF
+!          6) weightDM
+!          7) weightDMC
 
       implicit none
 
 #ifdef MPI 
-      public :: consHSp, getsfe, getGF, getGF_Tri, GFGammaGF,
+      public :: consHSp, getsfe, getGF_Tri, GFGammaGF,
      .          weightDM, weightDMC
 #else
-      public :: consHS, getsfe, getGF, getGF_Tri, GFGammaGF, 
+      public :: consHS, getsfe, getGF_Tri, GFGammaGF, 
      .          weightDM, weightDMC
 #endif
 
@@ -162,17 +161,6 @@ c     Shift Energy-zero to ef (initially from SIESTA) :
 c
       call zaxpy(nou*nou,dcmplx(-ef,0.d0),Sa,1,Ha,1)
 
-C FDN Teste
-C      do io=1,nou
-C        write(*,'(12F8.3)') (dreal(Ha(io,jo)),jo=1,nou)
-C      enddo
-C      write(*,*)
-C      do io=1,nou
-C        write(*,'(12F8.3)') (dimag(Ha(io,jo)),jo=1,nou)
-C      enddo
-C      write(*,*) 'Stop consHSb'
-C      stop 
-C FDN Teste
 
       return
       end subroutine consHS
@@ -376,151 +364,9 @@ c     Shift Energy-zero to ef (initially from SIESTA) :
 c
       call zaxpy(nou*nou,dcmplx(-ef,0.d0),Sa,1,Ha,1)
 
-C FDN Teste
-C      do io=1,nou
-C        write(*,'(6F8.3)') (dreal(Ha(io,jo)),jo=1,nou)
-C      enddo
-C      write(*,*)
-C      do io=1,nou
-C        write(*,'(6F8.3)') (dimag(Ha(io,jo)),jo=1,nou)
-C      enddo
-C      write(*,*) 'Stop consHSbp'
-C      stop 
-C FDN Teste
-
-
       end subroutine consHSp
 #endif
 
-!-------------------------------------------------------------------------
-!*************************************************************************
-!-------------------------------------------------------------------------
-
-
-C ##################################################################
-C ## Calculating Full Greens functions of                         ## 
-C ## contact coupled to electrodes                                ##
-C ##                                                              ##          
-C ##                            By                                ##
-C ##              Mads Brandbyge, mbr@mic.dtu.dk                  ##
-C ##                                                              ##
-C ## Changed to F90 by Jose-Luis Mozos, jlm@kanigo.icmab.es       ##
-C ##################################################################
-
-
-      subroutine getGF(USEBULK,no,Hi,Si,
-     &     NGL,HLL,NGR,HRR,ZEnergy,GF,ierr)
-C FDN     
-      use m_ts_aux_rout, only : csolve  
-C FDN
-
-C
-C     The k-point list for this structure must only contain Gamma.
-C
-      implicit none
-
-
-C ======================================================================
-c     Note: Indices are starting at 0 in this routine
-C ======================================================================
-C INPUT:
-      logical USEBULK           ! if true self-energy only is input else
-c                                 z*S-H-Sigma for bulk is in sfe
-
-      integer no                !no : no. states
-      complex*16 Hi(0:no*no-1),Si(0:no*no-1)
-      complex*16 ZEnergy 
-      integer NGL,NGR
-      complex*16 HLL(NGL,NGL)   ! Left electrode GF
-      complex*16 HRR(NGR,NGR)   ! Right electrode GF
-C ======================================================================
-C INPUT/OUTPUT:
-
-
-C ======================================================================
-C OUTPUT:
-      complex*16 GF(0:no*no-1)  ! 1/(Sc*Energy - H)
-      integer ierr              ! error in inversion
-C ======================================================================
-c Helpers, tempos ...
-      complex*16, allocatable:: H(:)
-   
-      integer i,j,ii,jj
-
-C --------------------------------------------------------------------
-      integer,dimension(:), allocatable :: ipvt
-c                                   ! pivoting vector for matrix inv.
-c----------------------------------------------------------------------
-
-      external timer
-c=======================================================================
-C BEGIN
-c=======================================================================
-
-      allocate(H(0:no*no-1))
-c
-c     Contact z*S-H without self-energies:
-c
-      do j = 0, no-1
-         do i = 0, no-1
-            H(i + j*no) = 
-     .           ZEnergy*Si(i+j*no)-Hi(i+j*no) 
-            GF(i + no*j) = dcmplx(0d0,0d0)
-         end do                 !i
-         GF(j + no*j) = dcmplx(1d0,0d0)
-      end do                    !j
-
-c
-c     Add Left Self-energy
-c
-      do j = 0, NGL-1
-         jj=j+1
-         do i = 0, NGL-1
-            ii=i+1
-            if(USEBULK) then 
-               H(i + j*no) = HLL(ii,jj)
-            else
-               H(i + j*no) = H(i + j*no) - HLL(ii,jj)
-            end if              !USEBULK
-         end do                 !i
-      end do                    !j
-
-c
-c     Add Right Self-energy
-c
-
-      do j = no-NGR,no-1
-         jj=j-(no-NGR)+1
-         do i = no-NGR,no-1
-            ii=i-(no-NGR)+1
-            if(USEBULK) then 
-               H(i + j*no) = HRR(ii,jj)
-            else
-               H(i + j*no) = H(i + j*no) - HRR(ii,jj)
-            end if              !USEBULK
-         end do                 !i
-      end do                    !j
-      
-
-
-
-c     call timer('TRANS1',1)
-
-       allocate(ipvt(no)) 
-       ipvt = 0
-       
-       ierr=0
-       call csolve(no,H,GF,ipvt,ierr)
-
-       deallocate(H) 
-       deallocate(ipvt) 
-       
-c       call timer('TRANS1',2)
-
-C ====================================================================
-      RETURN
-      END subroutine getGF
-C ====================================================================
 
 
 !------------------------------------------------------------------------
@@ -535,17 +381,18 @@ C ##                                                              ##
 C ##                            By                                ##
 C ##              Mads Brandbyge, mbr@mic.dtu.dk                  ##
 C ##                                                              ##
+C ##  Modified by F. D. Novaes                                    ##
 C ##################################################################
 
       subroutine getGF_Tri(USEBULK,no,NGL,NGR,Hi,Si,
-     &     HLL,HRR,ZEnergy,GF,ierr)
-C FDN Teste
-C Variavvel ik iE temporariamente adicionada
-C FDN
+     &     HLL,HRR,ZEnergy,GF,ierr,useTri)
+
 
 C FDN
+      use sys, only: die
       use m_ts_aux_rout, only : splittri, collectri, invmat, transpose,
-     .                          csolveg
+     .                          csolveg, ts_alloc, ts_dealloc
+      use m_ts_options, only: updatedmcr, voltfdf
 C FDN
       implicit none                              
 
@@ -559,17 +406,14 @@ c                                 z*S-H-Sigma for bulk is in sfe
 
       integer no                !no : no. states
       complex*16 Hi(0:(no*no)-1),Si(0:(no*no)-1)
-C      complex*16 Hi(no*no),Si(no*no)
       complex*16 ZEnergy 
       integer NGL,NGR
       complex*16 HLL(NGL,NGL)   ! Left electrode GF
       complex*16 HRR(NGR,NGR)   ! Right electrode GF
-
-C FDN Teste
-C      complex*16 tmp1(0:no*no-1),tmp2(0:no*no-1)
-      integer, dimension (:), allocatable:: ipvt
-C FDN Teste
-
+C FDN 
+C Use the tridiagonality ?
+      logical :: useTri
+C FDN 
       
 
 C ======================================================================
@@ -578,37 +422,35 @@ C INPUT/OUTPUT:
 
 C ======================================================================
 C OUTPUT:
-      complex*16 GF(0:(no*no)-1)  ! 1/(Sc*Energy - H)
-C      complex*16 GF(no*no)
+C      complex*16 GF(0:(no*no)-1)  ! 1/(Sc*Energy - H)
+      complex*16, dimension(:), pointer :: GF
       integer ierr              !inversion err
 C ======================================================================
 c Helpers, tempos ...
-C      complex*16, allocatable:: H(:)
-C FDN Teste 
-C      complex*16, dimension(0:(no*no)-1) :: Htmp
-      complex*16, dimension(:), allocatable :: Htmp 
-C FDN Teste
+      complex*16, dimension(:), allocatable :: H
+      integer, dimension (:), allocatable:: ipvt
+
       integer i,j,ii,jj
       complex*16 a,b
 C --------------------------------------------------------------------
 
       integer n1,n2,n3
-      complex*16, dimension(:,:), allocatable::  a11,a12,
+C FDN 
+      integer :: allocStat
+      complex*16, dimension(:,:), pointer ::  a11,a12,
      .                                           a21,a22,a23,
      .                                               a32,a33
-      complex*16, dimension(:,:), allocatable::  b11,b12,
+      complex*16, dimension(:,:), pointer ::  b11,b12,
      .                                           b21,b22,b23,
      .                                               b32,b33
-      complex*16, dimension(:,:), allocatable::  x12,x32
-
-
-C FDN Teste
-      integer ik,iE
+      complex*16, dimension(:,:), pointer ::  x12,x32
 C FDN
+      complex*16, dimension(:,:), pointer ::  x21,x23   
+      logical :: contactGFonly   
 
 c----------------------------------------------------------------------
       
-      external timer
+      external timer, memory
 
       
     
@@ -619,42 +461,59 @@ c=======================================================================
 c      call timer1('GFT',1) 
       
 c ================================================================
-
+      nullify(a11,a12,a21,a22,a23,a32,a33)
+      nullify(b11,b12,b21,b22,b23,b32,b33)
+      nullify(x12,x32,x21,x23)
       ierr=0
+! FDN
+! Compute only GF(2,2) ?
+! A difference could be made when updatedmcr(.false.) and volt=0.0 ...
+! b11 and b33 are needed only when there is a bias, and because of the
+! integration scheme, where both L and R electrodes are used as references.
+      contactGFonly = updatedmcr .and. (voltfdf == 0.d0)      
 
       if(.not.USEBULK) write(6,*) 
      &  "WARNING: Tridiag only works for USEBULK for finite bias!"
 
 c Setup full H (this part will be changed later..)
 
-C FDN Teste
-C      allocate(H(0:no*no-1))
-      allocate(Htmp(0:no*no-1))
-C FDN Teste
-
+      allocate(H(no*no),stat=allocStat)
+      if(allocStat /=0) call die("Could not allocate in getGF_Tri")
+      call memory('A','Z',size(H),"getGF_Tri")
+ 
 c
 c     Contact z*S-H without self-energies:
 c
-      do j = 0, no-1
-         do i = 0, no-1
-            Htmp(i + j*no) = 
-     .           ZEnergy*Si(i+j*no)-Hi(i+j*no) 
-            GF(i + no*j) = dcmplx(0d0,0d0)
-         end do                 !i
-         GF(j + no*j) = dcmplx(1d0,0d0)
-      end do                    !j
-
+      if(useTri) then
+         do j = 0, no-1
+            do i = 0, no-1
+               H(i + 1 + j*no) = 
+     .              ZEnergy*Si(i+j*no)-Hi(i+j*no) 
+            end do                 !i
+         end do                    !j
+       else
+C GF not yet in memory control !!!
+         allocate(GF(no*no),stat=allocStat)
+         if(allocStat /=0) call die("Could not allocate in getGF_Tri")
+         do j = 0, no-1
+            do i = 0, no-1
+               H(i + 1 + j*no) = 
+     .              ZEnergy*Si(i+j*no)-Hi(i+j*no) 
+                GF(i + 1 + no*j) = dcmplx(0d0,0d0)
+            end do                 !i
+            GF(j + 1 + no*j) = dcmplx(1d0,0d0)
+         end do                    !j
+       end if 
+     
 c
 c     Add Left Self-energy
 c
-      do j = 0, NGL-1
-         jj=j+1
-         do i = 0, NGL-1
-            ii=i+1
+      do j = 1, NGL
+         do i = 1, NGL
             if(USEBULK) then 
-               Htmp(i + j*no) = HLL(ii,jj)
+               H(i + (j-1)*no) = HLL(i,j)
             else
-               Htmp(i + j*no) = Htmp(i + j*no) - HLL(ii,jj)
+               H(i + (j-1)*no) = H(i + (j-1)*no) - HLL(i,j)
             end if              !USEBULK
          end do                 !i
       end do                    !j
@@ -663,215 +522,226 @@ c
 c     Add Right Self-energy
 c
 
-      do j = no-NGR,no-1
-         jj=j-(no-NGR)+1
-         do i = no-NGR,no-1
-            ii=i-(no-NGR)+1
+      do j = no-NGR+1,no
+         jj=j-(no-NGR)
+         do i = no-NGR+1,no
+            ii=i-(no-NGR)
             if(USEBULK) then 
-               Htmp(i + j*no) = HRR(ii,jj)
+               H(i + (j-1)*no) = HRR(ii,jj)
             else
-               Htmp(i + j*no) = Htmp(i + j*no) - HRR(ii,jj)
+               H(i + (j-1)*no) = H(i + (j-1)*no) - HRR(ii,jj)
             end if              !USEBULK
          end do                 !i
       end do                    !j
 
-C FDN Teste
-      allocate(ipvt(no))
-      call csolveg(no,no,Htmp,GF,ipvt,ierr)
-      deallocate(Htmp)
-      deallocate(ipvt)
-C FDN Teste
-      
+      if ( .not. useTri) then
+! Invert directly
+         allocate(ipvt(no),stat=allocStat)
+         if(allocStat /=0) call die("Could not allocate in getGF_Tri") 
+         call memory('A','I',size(ipvt),"getGF_Tri")      
+
+         call csolveg(no,no,H,GF,ipvt,ierr)
+   
+         call memory('D','Z',size(H),"getGF_Tri")
+         deallocate(H,stat=allocStat)
+         if(allocStat /=0) call die("Could not deallocate in getGF_Tri")
+ 
+         call memory('D','I',size(ipvt),"getGF_Tri")
+         deallocate(ipvt,stat=allocStat)
+         if(allocStat /=0) call die("Could not deallocate in getGF_Tri")
+
+      else
+
+! Use the fact that H is tridiagonal       
 c ================================================================
-c     call timer1('GFT',2) 
-c     call timer1('GFT',3) ! 1
-c     call timer1('GFT',1)   
-
+  
 c allocate:
-
-C FDN Currently not used
-C      n1 = NGL
-C      n2 = no - (NGL+NGR)
-C      n3 = NGR
+      n1 = NGL
+      n2 = no - (NGL+NGR)
+      n3 = NGR
+              
+      call ts_alloc(a11,n1,n1,"getGF_Tri")
+      call ts_alloc(a12,n1,n2,"getGF_Tri")
+      call ts_alloc(a21,n2,n1,"getGF_Tri")      
+      call ts_alloc(a22,n2,n2,"getGF_Tri")
+      call ts_alloc(a23,n2,n3,"getGF_Tri")      
+      call ts_alloc(a32,n3,n2,"getGF_Tri")
+      call ts_alloc(a33,n3,n3,"getGF_Tri")
       
-C      allocate(a11(1:n1,1:n1))
-C      allocate(a12(1:n1,1:n2))
-C      allocate(a21(1:n2,1:n1))
-C      allocate(a22(1:n2,1:n2))
-C      allocate(a23(1:n2,1:n3))
-C      allocate(a32(1:n3,1:n2))
-C      allocate(a33(1:n3,1:n3))
+      call splittri(n1,n2,n3,H,a11,a12,a21,a22,a23,a32,a33)
+      call memory('D','Z',size(H),"getGF_Tri")
+      deallocate(H,stat=allocStat)
+      if(allocStat /=0) call die("Could not deallocate in getGF_Tri")
       
-C      call splittri(n1,n2,n3,H,a11,a12,a21,a22,a23,a32,a33)
-C      deallocate(H)
+      
 
-C      allocate(b11(1:n1,1:n1))
-C      allocate(b12(1:n1,1:n2))
-C      allocate(b21(1:n2,1:n1))
-C      allocate(b22(1:n2,1:n2))
-C      allocate(b23(1:n2,1:n3))
-C      allocate(b32(1:n3,1:n2))
-C      allocate(b33(1:n3,1:n3))
-
-C      allocate(x12(1:n1,1:n2))
-C      allocate(x32(1:n3,1:n2))
-
-C FDN Aqui estava comentado !!!!!!!!!
-c     call timer1('GFT',2) 
-c     call timer1('GFT',3) ! 2
-c     call timer1('GFT',1) 
+     
 c====================================================================
-c      write(*,*) 'a11'
-c      call matprn(a11,n1,n1)
-c      write(*,*) 'a12'
-c      call matprn(a12,n1,n2)
-c      write(*,*) 'a21'
-c      call matprn(a21,n2,n1)
-c      write(*,*) 'a22'
-c      call matprn(a22,n2,n2)
-c      write(*,*) 'a23'
-c      call matprn(a23,n2,n3)
-c      write(*,*) 'a32'
-c      call matprn(a32,n3,n2)
-c      write(*,*) 'a33'
-c      call matprn(a33,n3,n3)
-
+       
+      
 
 c     inv(a11) -> store in b11
-C      call invmat(n1,a11,b11,ierr)
-c     call timer1('GFT',2) 
-c     call timer1('GFT',3) !3
-c     call timer1('GFT',1) 
+      call ts_alloc(b11,n1,n1,"getGF_Tri")
+      call invmat(n1,a11,b11,ierr)
+      call ts_dealloc(a11,"getGF_Tri")
+      
+
+c     inv(a33) -> store in b33
+      call ts_alloc(b33,n3,n3,"getGF_Tri")
+      call invmat(n3,a33,b33,ierr)
+      call ts_dealloc(a33,"getGF_Tri")
+      
+
 c     x12 = inv(a11).a12 
-C      a=dcmplx(1.d0,0.d0)
-C      b=dcmplx(0.d0,0.d0) 
-C      call zgemm('N','N', n1, n2, n1 ,a ,b11, n1, a12,
-C     &     n1, b, x12, n1)     
-c     call timer1('GFT',2) 
-c     call timer1('GFT',3)  !4
-c     call timer1('GFT',1) 
+      call ts_alloc(x12,n1,n2,"getGF_Tri")
+      a=dcmplx(1.d0,0.d0)
+      b=dcmplx(0.d0,0.d0) 
+      call zgemm('N','N', n1, n2, n1 ,a ,b11, n1, a12,
+     &     n1, b, x12, n1)     
+      call ts_dealloc(a12,"getGF_Tri")
+      if(contactGFonly) call ts_dealloc(b11,"getGF_Tri")
+      
 
 c     a22 - a21.x12 --> a22
-C      a=dcmplx(-1.d0,0.d0)
-C      b=dcmplx(1.d0,0.d0) 
-C      call zgemm('N','N', n2, n2, n1 ,a ,a21, n2, x12,
-C     &  n1, b, a22, n2)      
-c     call timer1('GFT',2) 
-c     call timer1('GFT',3) !5
-c     call timer1('GFT',1) 
-c     inv(a33) -> store in b33
-C      call invmat(n3,a33,b33,ierr)
-c     x32 = inv(a33).a32 
-c     call timer1('GFT',2) 
-c     call timer1('GFT',3)!6
-c     call timer1('GFT',1) 
-C      a=dcmplx(1.d0,0.d0)
-C      b=dcmplx(0.d0,0.d0) 
-C      call zgemm('N','N', n3, n2, n3 ,a ,b33, n3, a32,
-C     &     n3, b, x32, n3)      
-c     call timer1('GFT',2) 
-c     call timer1('GFT',3)!7
-c     call timer1('GFT',1) 
+      a=dcmplx(-1.d0,0.d0)
+      b=dcmplx(1.d0,0.d0) 
+      call zgemm('N','N', n2, n2, n1 ,a ,a21, n2, x12,
+     &  n1, b, a22, n2)      
+      if(contactGFonly) then
+         call ts_dealloc(x12,"getGF_Tri")
+         call ts_dealloc(a21,"getGF_Tri")
+      end if
+      
+c     x32 = inv(a33).a32
+      call ts_alloc(x32,n3,n2,"getGF_Tri")
+      a=dcmplx(1.d0,0.d0)
+      b=dcmplx(0.d0,0.d0) 
+      call zgemm('N','N', n3, n2, n3 ,a ,b33, n3, a32,
+     &     n3, b, x32, n3)   
+      call ts_dealloc(a32,"getGF_Tri")
+      if(contactGFonly) call ts_dealloc(b33,"getGF_Tri")
+       
+
 c     a22 - a23.x32 --> a22
-C      a=dcmplx(-1.d0,0.d0)
-C      b=dcmplx(1.d0,0.d0) 
-C      call zgemm('N','N', n2, n2, n3 ,a ,a23, n2, x32,
-C     &  n3, b, a22, n2)      
-c      call timer1('GFT',2) 
-c      call timer1('GFT',3) !8
-c      call timer1('GFT',1) 
+      a=dcmplx(-1.d0,0.d0)
+      b=dcmplx(1.d0,0.d0) 
+      call zgemm('N','N', n2, n2, n3 ,a ,a23, n2, x32,
+     &  n3, b, a22, n2)
+      if(contactGFonly) then
+         call ts_dealloc(x32,"getGF_Tri")
+         call ts_dealloc(a23,"getGF_Tri")
+      end if      
+      
 c now a22 contains (a22 - a21.x12 - a23.x32) 
 
-
 c b22 = inv(a22 - a21.x12 - a23.x32) 
-C      call invmat(n2,a22,b22,ierr)   ! now we've got b22
-c      call timer1('GFT',2) 
-c      call timer1('GFT',3) !9
-c      call timer1('GFT',1) 
+      call ts_alloc(b22,n2,n2,"getGF_Tri")
+      call invmat(n2,a22,b22,ierr)   ! now we've got b22
+      call ts_dealloc(a22,"getGF_Tri")
+
+      
+      if(.not.contactGFonly) then
+         
 c  b12 = -x12.b22, b21 = b12^T:
-C      a=dcmplx(-1.d0,0.d0)
-C      b=dcmplx(0.d0,0.d0) 
-C      call zgemm('N','N', n1 , n2 , n2 ,a ,x12, n1, b22,
-C     &     n2, b, b12, n1)      ! got b12
-c      call timer1('GFT',2) 
-c      call timer1('GFT',3) !10
-c      call timer1('GFT',1) 
+         call ts_alloc(b12,n1,n2,"getGF_Tri")
+         a=dcmplx(-1.d0,0.d0)
+         b=dcmplx(0.d0,0.d0) 
+         call zgemm('N','N', n1 , n2 , n2 ,a ,x12, n1, b22,
+     &     n2, b, b12, n1)      ! got b12
+         call ts_dealloc(x12,"getGF_Tri")
+         
+C FDN
 C      call transpose(b12,n1,n2,b21) ! got b21
-c      call timer1('GFT',2) 
-c      call timer1('GFT',3) !11
-c      call timer1('GFT',1) 
+C b21 = -b22.a21.inv(a11)
+C  a21.inv(a11) --> x21
+         call ts_alloc(x21,n2,n1,"getGF_Tri")
+         a=dcmplx(1.d0,0.d0)
+         b=dcmplx(0.d0,0.d0) 
+         call zgemm('N','N', n2, n1, n1 ,a ,a21, n2, b11, 
+     &     n1, b, x21, n2)
+         call ts_dealloc(a21,"getGF_Tri")
+         
+! b21 = -b22.x21
+         call ts_alloc(b21,n2,n1,"getGF_Tri")
+         a=dcmplx(-1.d0,0.d0)
+         b=dcmplx(0.d0,0.d0) 
+         call zgemm('N','N', n2 , n1 , n2 ,a ,b22, n2, x21, 
+     &     n2, b, b21, n2)      ! got b21
+
+
+! b11 is needed only when there is a bias.
+! b11 = inv(a11) - b12.x21
+         a=dcmplx(-1.d0,0.d0)
+         b=dcmplx(1.d0,0.d0) 
+         call zgemm('N','N', n1 , n1 , n2 ,a ,b12, n1, x21, 
+     &     n2, b, b11, n1)
+         call ts_dealloc(x21,"getGF_Tri")
+C FDN 
+ 
+
 c  b32 = -x32.b22, b23 = b32^T:
-C      a=dcmplx(-1.d0,0.d0)
-C      b=dcmplx(0.d0,0.d0) 
-C      call zgemm('N','N', n3 , n2 , n2 ,a ,x32, n3, b22,
-C     &     n2, b, b32, n3)      ! got b32  
-
-c      call timer1('GFT',2) 
-c      call timer1('GFT',3) !12
-c      call timer1('GFT',1) 
+         call ts_alloc(b32,n3,n2,"getGF_Tri")
+         a=dcmplx(-1.d0,0.d0)
+         b=dcmplx(0.d0,0.d0) 
+         call zgemm('N','N', n3 , n2 , n2 ,a ,x32, n3, b22,
+     &     n2, b, b32, n3)      ! got b32  
+         call ts_dealloc(x32,"getGF_Tri")
+     
+C FDN
 C      call transpose(b32,n3,n2,b23) ! got b23
+C b23 = -b22.a23.inv(a33)
+C   a23.inv(a33) --> x23
+         call ts_alloc(x23,n2,n3,"getGF_Tri")
+         a=dcmplx(1.d0,0.d0)
+         b=dcmplx(0.d0,0.d0) 
+         call zgemm('N','N', n2, n3, n3 ,a ,a23, n2, b33, 
+     &     n3, b, x23, n2)
+         call ts_dealloc(a23,"getGF_Tri")
+         
+C b23 = -b22.x23
+         call ts_alloc(b23,n2,n3,"getGF_Tri")
+         a=dcmplx(-1.d0,0.d0)
+         b=dcmplx(0.d0,0.d0) 
+         call zgemm('N','N', n2 , n3 , n2 ,a ,b22, n2, x23, 
+     &     n2, b, b23, n2)      ! got b23
 
-c      call timer1('GFT',2) 
-c      call timer1('GFT',3) !13
-c      call timer1('GFT',1) 
-c  b11 = -x12.b21 + inv(a11)
-C      a=dcmplx(-1.d0,0.d0)
-C      b=dcmplx(1.d0,0.d0) 
-C      call zgemm('N','N', n1 , n1 , n2 ,a ,x12, n1, b21,
-C     &     n2, b, b11, n1)      ! got b11
 
-c      call timer1('GFT',2) 
-c      call timer1('GFT',3) !14
-c      call timer1('GFT',1) 
-c  b33 = -x32.b23 + inv(a33)
-C      a=dcmplx(-1.d0,0.d0)
-C      b=dcmplx(1.d0,0.d0) 
-C      call zgemm('N','N', n3 , n3 , n2 ,a ,x32, n3, b23,
-C     &     n2, b, b33, n3)      ! got b33
-c      call timer1('GFT',2) 
-c      call timer1('GFT',3) !15
-c      call timer1('GFT',1) 
+! b33 is needed only when there is a bias.
+! b33 = inv(a33) - b32.x23
+         a=dcmplx(-1.d0,0.d0)
+         b=dcmplx(1.d0,0.d0) 
+         call zgemm('N','N', n3 , n3 , n2 ,a ,b32, n3, x23, 
+     &     n2, b, b33, n3)
+         call ts_dealloc(x23,"getGF_Tri")
 
-C      deallocate(a11)
-C      deallocate(a12)
-C      deallocate(a21)
-C      deallocate(a22)
-C      deallocate(a23)
-C      deallocate(a32)
-C      deallocate(a33)
-
-C      deallocate(x12)
-C      deallocate(x32)
-c      call timer1('GFT',2) 
-c      call timer1('GFT',3) !16
-c      call timer1('GFT',1) 
+      end if ! .not.contactGFonly
+         
 
 c
 c     now collect into GF
-c      
+c     
 
-C      call collectri(n1,n2,n3,b11,b12,b21,b22,b23,b32,b33,GF)
-c      call timer1('GFT',2) 
-c      call timer1('GFT',3) !17
-c      call timer1('GFT',1) 
-
-C FDN Teste
-C      GF=tmp2 
-C FDN Teste
-
-C      deallocate(b11)
-C      deallocate(b12)
-C      deallocate(b21)
-C      deallocate(b22)
-C      deallocate(b23)
-C      deallocate(b32)
-C      deallocate(b33)
-
-c      call timer1('GFT',2) 
-c      call timer1('GFT',3) !18
-c      call timer1('GFT',1)  
-c       call timer('TRINV1',2)
-
+ 
+C GF not yet in memory control !!!
+      allocate(GF(no*no),stat=allocStat)
+      if(allocStat /=0) call die("Could not allocate in getGF_Tri") 
+    
+      call collectri(n1,n2,n3,b11,b12,b21,b22,b23,b32,b33,GF)
+ 
+      call ts_dealloc(b22,"getGF_Tri")
+      
+      if(.not.contactGFonly) then
+         call ts_dealloc(b11,"getGF_Tri")
+         call ts_dealloc(b12,"getGF_Tri")
+         call ts_dealloc(b21,"getGF_Tri")
+         call ts_dealloc(b23,"getGF_Tri")
+         call ts_dealloc(b32,"getGF_Tri")
+         call ts_dealloc(b33,"getGF_Tri")
+      end if
+      
+      end if ! .not. useTri
+ 
+     
 C ====================================================================
       RETURN
       END subroutine getGF_Tri
@@ -1198,75 +1068,79 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccc
        deallocate(cbuffer)
 #endif
 
+C FDN : CUrrently not used
+Cc
+Cc     Expansion of unit-cell: (1 x 1) -> (NA1 x NA2) 
+Cc     Layer-wise ordering!
+Cc
+Cc----------------------------------------------
+C      do iq=1,nq                !q-points
+Cc----------------------------------------------
+C
+C         io=0
+C         do iau=1,nua
+C            do ia2=0,NA2-1
+C               do ia1=0,NA1-1
+C                  do iuo=1+lasto(iau-1),lasto(iau)  
+C                     
+C                     io=io+1
+C
+C                     jo=0
+C                     do jau=1,nua
+C                        do ja2=0,NA2-1
+C                           do ja1=0,NA1-1
+C                              do juo=1+lasto(jau-1),lasto(jau)  
+C                                 
+C                                 jo=jo+1
+C
+C                     
+C          cphase  =  exp(dcmplx(0d0,-2d0*Pi)  *  
+C     .      ( (ia1-ja1)*q(1,iq) + (ia2-ja2)*q(2,iq)) )    
+C
+C          ccphase  =  exp(dcmplx(0d0,2d0*Pi)  *  
+C     .      ( (ia1-ja1)*q(1,iq) + (ia2-ja2)*q(2,iq)) )    
+C
+C
+Cc
+Cc     Here we employ the time-reversal symmetry: 
+Cc     GF(1x1)(q)(i,j) = GF(1x1)(-q)(j,i)  
+Cc     Note: wq*0.5 since wq already sums up to 1!
+C
+C
+C          WRK1(jo,io) = WRK1(jo,io) + dcmplx(0.5d0*wq(iq),0d0)*
+C     .       (cphase*GAA(juo,iuo,iq)+ccphase*GAA(iuo,juo,iq))
+C
+C          WRK2(jo,io) = WRK2(jo,io) + dcmplx(0.5d0*wq(iq),0d0)*
+C     .       (cphase*(ZEnergy*SAA(juo,iuo,iq)-HAA(juo,iuo,iq))
+C     .     + ccphase*(ZEnergy*SAA(iuo,juo,iq)-HAA(iuo,juo,iq)))
+C             
+Cc debug
+Cc          WRK2(jo,io) = WRK2(jo,io) + 
+Cc     .         dcmplx(0.5d0*wq(iq),0d0)*
+Cc     .         (cphase*SAA(juo,iuo,iq)+ccphase*SAA(iuo,juo,iq))
+C
+C                              
+C                              enddo !iuo
+C                           enddo !ia1
+C                        enddo    !ia2
+C                     enddo    !iau
+C                     
+C                  enddo !juo
+C               enddo !ja1
+C            enddo    !ja2
+C         enddo    !jau
+Cc----------------------------------------------
+C      enddo                     !q-points
+Cc----------------------------------------------
+C FDN
 
-c
-c     Expansion of unit-cell: (1 x 1) -> (NA1 x NA2) 
-c     Layer-wise ordering!
-c
-c----------------------------------------------
-      do iq=1,nq                !q-points
-c----------------------------------------------
-
-         io=0
-         do iau=1,nua
-            do ia2=0,NA2-1
-               do ia1=0,NA1-1
-                  do iuo=1+lasto(iau-1),lasto(iau)  
-                     
-                     io=io+1
-
-                     jo=0
-                     do jau=1,nua
-                        do ja2=0,NA2-1
-                           do ja1=0,NA1-1
-                              do juo=1+lasto(jau-1),lasto(jau)  
-                                 
-                                 jo=jo+1
-
-                     
-          cphase  =  exp(dcmplx(0d0,-2d0*Pi)  *  
-     .      ( (ia1-ja1)*q(1,iq) + (ia2-ja2)*q(2,iq)) )    
-
-          ccphase  =  exp(dcmplx(0d0,2d0*Pi)  *  
-     .      ( (ia1-ja1)*q(1,iq) + (ia2-ja2)*q(2,iq)) )    
-
-
-c
-c     Here we employ the time-reversal symmetry: 
-c     GF(1x1)(q)(i,j) = GF(1x1)(-q)(j,i)  
-c     Note: wq*0.5 since wq already sums up to 1!
-
-
-          WRK1(jo,io) = WRK1(jo,io) + dcmplx(0.5d0*wq(iq),0d0)*
-     .       (cphase*GAA(juo,iuo,iq)+ccphase*GAA(iuo,juo,iq))
-
-          WRK2(jo,io) = WRK2(jo,io) + dcmplx(0.5d0*wq(iq),0d0)*
-     .       (cphase*(ZEnergy*SAA(juo,iuo,iq)-HAA(juo,iuo,iq))
-     .     + ccphase*(ZEnergy*SAA(iuo,juo,iq)-HAA(iuo,juo,iq)))
-             
-c debug
-c          WRK2(jo,io) = WRK2(jo,io) + 
-c     .         dcmplx(0.5d0*wq(iq),0d0)*
-c     .         (cphase*SAA(juo,iuo,iq)+ccphase*SAA(iuo,juo,iq))
-
-                              
-                              enddo !iuo
-                           enddo !ia1
-                        enddo    !ia2
-                     enddo    !iau
-                     
-                  enddo !juo
-               enddo !ja1
-            enddo    !ja2
-         enddo    !jau
-c----------------------------------------------
-      enddo                     !q-points
-c----------------------------------------------
-
-
-C FDN Teste
-       WRK1(:,:)=GAA(:,:,1)
-       WRK2(:,:)=ZEnergy*SAA(:,:,1)-HAA(:,:,1)
+C FDN  
+       do io = 1,NG
+          do jo = 1,NG
+             WRK1(io,jo)=GAA(io,jo,1)
+             WRK2(io,jo)=ZEnergy*SAA(io,jo,1)-HAA(io,jo,1)
+          enddo
+       enddo
 C FDN
 
          
@@ -1633,7 +1507,6 @@ C Get Node number
       Node = 0
 #endif
 
-
       if (nc.lt. (NGL+NGR))  then
          if(Node.eq.0)
      .   write(6,*) 'ERROR: weightDM: nc=',nc,'<=',NGL+NGR
@@ -1657,42 +1530,49 @@ c            write(*,*) i,j,DMneqR(i,j),DMneqL(i,j),DML(i,j),DMR(i,j)
 c  In the leads we always use either left or right integration scheme.
 
             if (i .le. NGL .or. j .le. NGL) then
-               w = 1.0d0
+! FDN With TriDiag, it must be the opposite !! 
+! GF(1,3) and GF(3,1) are not zero !, only in TriDiag ...
+!               w = 1.0d0
+               w = 0.d0
             endif
             if (i .gt. nc-NGR .or. j .gt. nc-NGR) then
-               w = 0.0d0
+! FDN With TriDiag, it must be the opposite !!
+!               w = 0.0d0
+               w = 1.d0
             endif
 c weight DM and DML
             DML(i,j) = w   *(DML(i,j)+DMneqR(i,j))
      .           +(1.0-w)*(DMR(i,j)+DMneqL(i,j))
             EDML(i,j) = w*EDML(i,j)+(1.0-w)*EDMR(i,j)
 C make an integration error estimate
-            dif=DML(i,j)+DMneqR(i,j)-(DMR(i,j)+DMneqL(i,j))
-            dif2=dif*dif
-            ndif2=dif2*wl*wr/(wsum*wsum)
-            if (dif2 .gt. maxdif2) then
-               maxdif2=dif2
-               idif2=i
-               jdif2=j
-            endif
-            if (ndif2 .gt. maxndif2) then
-               maxndif2=ndif2
-               indif2=i
-               jndif2=j
-            endif
+! FDN
+!            dif=DML(i,j)+DMneqR(i,j)-(DMR(i,j)+DMneqL(i,j))
+!            dif2=dif*dif
+!            ndif2=dif2*wl*wr/(wsum*wsum)
+!            if (dif2 .gt. maxdif2) then
+!               maxdif2=dif2
+!               idif2=i
+!               jdif2=j
+!            endif
+!            if (ndif2 .gt. maxndif2) then
+!               maxndif2=ndif2
+!               indif2=i
+!               jndif2=j
+!            endif
          enddo                  !i
       enddo                     !j
 
-      if(Node.eq.0) then
-
-      if (PRINTALOT) then
-         write(joutfile,*)
-     .    'Integration error estimate',indif2,jndif2, sqrt(maxndif2)
-         write(joutfile,*)
-     .    'unnormalized error ',idif2,jdif2, sqrt(maxdif2)
-      endif
-
-      endif
+! FDN
+!      if(Node.eq.0) then
+!
+!      if (PRINTALOT) then
+!         write(joutfile,*)
+!     .    'Integration error estimate',indif2,jndif2, sqrt(maxndif2)
+!         write(joutfile,*)
+!     .    'unnormalized error ',idif2,jdif2, sqrt(maxdif2)
+!      endif
+!
+!      endif
 
 C ====================================================================
       RETURN
@@ -1785,42 +1665,48 @@ c            write(*,*) i,j,DMneqR(i,j),DMneqL(i,j),DML(i,j),DMR(i,j)
 c  In the leads we always use either left or right integration scheme.
 
             if (i .le. NGL .or. j .le. NGL) then
-               w = 1.0d0
+! FDN With TriDiag, it must be the opposite !!
+!               w = 1.0d0
+               w = 0.d0
             endif
             if (i .gt. nc-NGR .or. j .gt. nc-NGR) then
-               w = 0.0d0
+! FDN With TriDiag, it must be the opposite !!
+!               w = 0.0d0
+               w = 1.d0
             endif
 c weight DM and DML
             DML(i,j) = w   *(DML(i,j)+DMneqR(i,j))
      .           +(1.0-w)*(DMR(i,j)+DMneqL(i,j))
             EDML(i,j) = w*EDML(i,j)+(1.0-w)*EDMR(i,j)
 C make an integration error estimate
-            dif=cdabs(DML(i,j)+DMneqR(i,j)-(DMR(i,j)+DMneqL(i,j)))
-            dif2=dif*dif
-            ndif2=dif2*wl*wr/(wsum*wsum)
-            if (dif2 .gt. maxdif2) then
-               maxdif2=dif2
-               idif2=i
-               jdif2=j
-            endif
-            if (ndif2 .gt. maxndif2) then
-               maxndif2=ndif2
-               indif2=i
-               jndif2=j
-            endif
+! FDN
+!            dif=cdabs(DML(i,j)+DMneqR(i,j)-(DMR(i,j)+DMneqL(i,j)))
+!            dif2=dif*dif
+!            ndif2=dif2*wl*wr/(wsum*wsum)
+!            if (dif2 .gt. maxdif2) then
+!               maxdif2=dif2
+!               idif2=i
+!               jdif2=j
+!            endif
+!            if (ndif2 .gt. maxndif2) then
+!               maxndif2=ndif2
+!               indif2=i
+!               jndif2=j
+!            endif
          enddo                  !i
       enddo                     !j
 
-      if(Node.eq.0) then
+! FDN
+!      if(Node.eq.0) then
 
-      if (PRINTALOT) then
-         write(joutfile,*)
-     .    'Integration error estimate',indif2,jndif2, sqrt(maxndif2)
-         write(joutfile,*)
-     .    'unnormalized error ',idif2,jdif2, sqrt(maxdif2)
-      endif
-
-      endif
+!      if (PRINTALOT) then
+!         write(joutfile,*)
+!     .    'Integration error estimate',indif2,jndif2, sqrt(maxndif2)
+!         write(joutfile,*)
+!     .    'unnormalized error ',idif2,jdif2, sqrt(maxdif2)
+!      endif
+!
+!      endif
 
 C ====================================================================
       RETURN

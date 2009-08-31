@@ -232,16 +232,6 @@ c      ----      DOS     -----
         gs(i) =  gs2(i) 
        end do
 
-C FDN Teste
-C      do i=0,nv-1 
-C       write(*,'(12F8.3)') (dreal(gs(i+j*nv)),j=0,nv-1)
-C      enddo
-C      write(*,*)
-C      do i=0,nv-1 
-C       write(*,'(12F8.3)') (dimag(gs(i+j*nv)),j=0,nv-1)
-C      enddo
-C      stop
-C FDN Teste 
       
 
       endif

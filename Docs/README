@@ -7,7 +7,3 @@ makeindex siesta
 (pdf)latex siesta
  [+ dvips siesta  if you use plain latex]
 
-Alternatively, you can download a PDF version as:
-
-http://fisica.ehu.es/ag/siesta-extra/siesta.pdf
-
