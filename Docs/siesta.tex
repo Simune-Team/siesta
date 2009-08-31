@@ -39,7 +39,7 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, trunk-296}}
+{\Huge {\bf S I E S T A \, \, 3.0-beta}}
 
 \vspace{1cm}
 \hrulefill
@@ -115,14 +115,14 @@ to perform electronic structure calculations and {\it ab initio} molecular
 dynamics simulations of molecules and solids. Its main characteristics are:
 \begin{itemize}
 \item
-It uses the standard Kohn-Sham selfconsistent density functional
+It uses the standard Kohn-Sham self-consistent density functional
 method in the local density (LDA-LSD) or generalized gradient (GGA)
 approximations.
 \item
-It uses norm-conserving pseudopotentials in its fully nonlocal
+It uses norm-conserving pseudopotentials in their fully nonlocal
 (Kleinman-Bylander) form.
 \item
-It uses atomic orbitals as basis set, allowing unlimited multiple-zeta
+It uses atomic orbitals as a basis set, allowing unlimited multiple-zeta
 and angular momenta, polarization and off-site orbitals. The radial
 shape of every orbital is numerical and any shape can be used and provided 
 by the user, with the only condition that it has to be of finite support,
@@ -178,14 +178,14 @@ where ballistic electron transport is taking place.
 Using {\sc TranSiesta} one can predict electronic properties,
 such as the zero bias conductance and the I-V characteristics, of a nanoscale system 
 in contact with two electrodes with different electrochemical potentials. 
-It does so by solving for the selfconsistent electronic structure within density 
-functional theory, and using non equilibrium Green's functions techniques (NEGF).
+It does so by solving for the self-consistent electronic structure within density 
+functional theory, and using non-equilibrium Green's functions techniques (NEGF).
 The current implementation of {\sc TranSiesta} within {\sc Siesta} is mainly 
 due to F.D. Novaes and is based on the implementation of 
 mainly M. Brandbyge of {\sc TranSiesta} Version 0.9 (see 
 complete reference below). 
-The use of the {\sc TranSiesta} package requires good knowledge 
-of standard {\sc Siesta} calculations, this is why the descriptions
+The use of the {\sc TranSiesta} package requires a good knowledge 
+of standard {\sc Siesta} calculations; this is why the descriptions
 correspondent to the use of {\sc TranSiesta}, including compilation
 directives etc,  have been grouped at the end of this manual.
 
@@ -284,7 +284,7 @@ working directories outside the package.
 \subsection{Compilation}
 Unpack the {\sc Siesta} distribution. Go to the {\tt Obj} directory.
 As explained in the {\tt README} file there, you will need to run a
-shell script to do some minimum setup, and then to obtain an {\tt
+shell script to do some minimum setup, and then obtain an {\tt
   arch.make} file to suit your particular computer setup. Optionally,
 the command {\tt ../Src/configure} will start an automatic scan of
 your system and try to build an {\tt arch.make} for you. Please note
@@ -324,7 +324,8 @@ make clean; make
 #
 #   ----------- Now a parallel version in a different directory
 #
-cd   
+# cd back to the top Siesta directory and then:
+
 mkdir ParaObjs
 cd ParaObjs
 sh ../Src/obj_setup.sh
@@ -370,7 +371,7 @@ and:
 
 {\tt \$ cd h2o}
 
-{\tt \$ cp $\sim$/siesta/Examples/H20/h2o.fdf .}
+{\tt \$ cp $\sim$/siesta/Examples/H2O/h2o.fdf .}
 
 \noindent
 We need to generate the required pseudopotentials
@@ -391,7 +392,7 @@ Now the pseudopotential-generation program, called {\tt atm},
 should be compiled (you might want to change the definition of
 the compiler in the makefile).
 
-{\tt \$ cd Tutorial/O}
+{\tt \$ cd Tutorial/PS_Generation/O}
 
 {\tt \$ cat O.tm2.inp}
 
@@ -417,7 +418,7 @@ you will need to understand in the future:
 
 To generate the pseudopotential do the following;
 
-{\tt \$ sh ../pg.sh O.tm2.inp}
+{\tt \$ sh ../../Utils/pg.sh O.tm2.inp}
 
 \noindent
 Now there should be a new subdirectory called O.tm2 (O for oxygen)
@@ -447,7 +448,7 @@ After a successful run of the program, you should have many
 files in your directory including the following:
 \begin{itemize}
 
-\item out.fdf\index{out.fdf}
+\item fdf.log\index{fdf.log}
  (contains all the data used, explicit or default-ed) 
 \item O.ion and H.ion\index{species.ionl@{\it species.}ion}
  (complete information about the basis and KB projectors)
@@ -474,7 +475,7 @@ files in your directory including the following:
 The Systemlabel.out is the standard output of the program, that you
 have already seen passing on the screen. Have a look at it
 and refer to the output-explanation section if necessary.
-You may also want to look at the out.fdf file to see all
+You may also want to look at the fdf.log file to see all
 the default values that siesta has chosen for you, before
 studying the input-explanation section and start changing them.
 
@@ -551,7 +552,7 @@ We have also devised a quite simple and systematic way of generating
 basis sets based on specifying only one main parameter (the energy shift)
 besides the basis size. It does not offer the best NAO results one can get 
 for a given basis size but it has the important advantages mentioned above. 
-More about it in:
+More information can be found about it in:
 
 \noindent
 ``Linear-scaling ab-initio calculations for large and complex systems"
@@ -594,8 +595,8 @@ requiring both radial and angular flexibilization.
   Starting by the radial flexibilization of SZ, a better basis is obtained 
 by adding a second function per channel: double-$\zeta$ (DZ).
   In Quantum Chemistry, the {\it split valence} scheme
-is widely used: starting from the expansion in Gaussians of one atomic 
-orbital, the most contracted gaussians are used to define the first
+is widely used; starting from the expansion in Gaussians of one atomic 
+orbital, the most contracted Gaussians are used to define the first
 orbital of the double-$\zeta$ and the most extended ones for the second.
   For strictly localized functions there was a first proposal
 of using the excited states of the confined atoms, but it would work only 
@@ -612,11 +613,11 @@ Phys. Rev. B {\bf 69}, 195113 (2004)].
 
   We then proposed an extension of the split valence idea of Quantum Chemistry 
 to strictly localized NAO which has become the standard and has been used
-quite succesfully in many systems (see {\bf PAO.BasisType} {\tt split} below).
+quite successfully in many systems (see {\bf PAO.BasisType} {\tt split} below).
   It is based on the idea of suplementing the first $\zeta$ with, instead of
-a gaussian, a numerical orbital that reproduces the tail of the original PAO 
+a Gaussian, a numerical orbital that reproduces the tail of the original PAO 
 outside a matching radius $r_{m}$, and continues smoothly towards the origin as 
-$r^l(a-br^2)$, with $a$ and $b$ ensuring continuity and differenciability 
+$r^l(a-br^2)$, with $a$ and $b$ ensuring continuity and differentiability 
 at $r_{m}$. 
   Within exactly the same
 Hilbert space, the second orbital can be chosen to be the difference between
@@ -648,7 +649,7 @@ suitable confinement, and $(ii)$ solve the pseudoatom in the presence
 of an electric field and obtain the $l+1$ orbitals from the perturbation
 of the $l$ orbitals by the field.
 
-  Finally, the method allows the inclusion of offsite orbitals (not centered
+  Finally, the method allows the inclusion of off-site orbitals (not centered
 around any specific atom). The orbitals again can be of any shape, including
 atomic orbitals as if an atom would be there (useful for calculating the
 counterpoise correction for basis-set superposition errors). 
@@ -663,7 +664,7 @@ scaling. One cutoff radius per angular momentum channel has to be
 given for each species. 
   A balanced and systematic starting point for defining all the different 
 radii is achieved by giving one single parameter, the energy shift, i.e., 
-the energy raise suffered by the orbital when confined.
+the energy increase experienced by the orbital when confined.
 Allowing for system and physical-quantity variablity, as a rule of thumb
 $\Delta E_{\small \rm PAO} \approx 100$ meV gives 
 typical precisions within the accuracy of current GGA functionals.
@@ -680,8 +681,8 @@ is enforced.
 
   The first proposal (and quite a standard among {\sc Siesta}
 users) uses an infinite square-well potential.
-  It was oroginally proposed and has been widely and succesfully used 
-by Otto Sankey and collaborators, for minimal bases within 
+  It was originally proposed, and has been widely and successfully used 
+by, Otto Sankey and collaborators, for minimal bases within 
 the ab initio tight-binding scheme, using the {\sc Fireball } program, 
 but also for more flexible bases using the methodology of {\sc Siesta}.
   This scheme has the disadavantage, however, of generating 
@@ -690,36 +691,36 @@ orbitals with a discontinuous derivative at $r_c$.
 tends to disappear for long enough values of this cutoff.
   It does remain, however, appreciable for sensible values of
 $r_c$ for those orbitals that would be very wide in the free atom.
-  It is surprising how small an effect such kink produces in the
+  It is surprising how small an effect such a kink produces in the
 total energy of condensed systems.
   It is, on the other hand, a problem for forces and stresses,
 especially if they are calculated using a (coarse) finite 
 three-dimensional grid.
 
   Another problem of this scheme is related to its defining the
-basis considering the free atoms. 
+basis based on the free atoms. 
   Free atoms can present extremely
 extended orbitals, their extension being, besides problematic,
 of no practical use for the calculation in condensed systems:
 the electrons far away from the atom can be described by the
 basis functions of other atoms.
  
-  A traditional scheme to deal with this is the one based on the radial 
+  A traditional scheme to deal with this is one based on the radial 
 scaling of the orbitals by suitable scale factors.
   In addition to very basic bonding arguments, it is
-soundly based on restoring virial's theorem for finite bases, in the case
-of coulombic potentials (all-electron calculations).
+soundly based on restoring the virial's theorem for finite bases, in the case
+of Coulombic potentials (all-electron calculations).
   The use of pseudopotentials limits its applicability, allowing only for
 extremely small deviations from unity ($\sim 1\%$) in the scale factors 
 obtained variationally (with the exception of hydrogen that can contract 
 up to 25\%). This possiblity is available to the user.
 
-  Another way of dealing with that problem and that of the kink at the
+  Another way of dealing with the above problem and that of the kink at the
 same time is adding a soft confinement potential to the atomic Hamiltonian 
 used to generate the basis orbitals: it smoothens
 the kink and contracts the orbital as suited. Two additional parameters
 are introduced for the purpose, which can be defined again variationally.
-  The confining potential  is flat (zero) in the core region, starts off at
+  The confining potential is flat (zero) in the core region, starts off at
 some internal radius $r_i$ with all derivatives continuous
 and diverges at $r_c$ ensuring the strict localization there.
   It is
@@ -858,7 +859,7 @@ Note that there is a lot of information that can be
 passed to {\sc Siesta} in the input file via fdf tags
 (see most of the manual). Almost all of the tags are
 optional: {\sc Siesta} will assign a default if a given tag
-is not found when needed (see {\tt out.fdf}).
+is not found when needed (see {\tt fdf.log}).
 The only tags that are mandatory in any input file are
 {\bf NumberOfSpecies}, \index{NumberOfSpecies@{\bf NumberOfSpecies}}
 {\bf NumberOfAtoms}, \index{NumberOfAtoms@{\bf NumberOfAtoms}}
@@ -1038,7 +1039,7 @@ Fractional charges can also be used.
 
 \noindent 
 The format for the input of the basis described in this manual
-has experienced important changes respect to 
+has experienced important changes with respect to 
 previous versions of the program. Although old fashioned 
 input files are
 still readable by {\sc Siesta}, we highly recommend the use of this
@@ -1094,7 +1095,7 @@ polarization [see S\'anchez-Portal, Artacho, and Soler, JPCM {\bf 8},
 \item[-] Multiple-$\zeta$ in the spirit of split valence,\index{split
 valence} decomposing the original PAO in several pieces of different
 range, either defining more (and smaller) confining radii, or
-introducing gaussians\index{gaussians} from known bases (Huzinaga's
+introducing Gaussians\index{Gaussians} from known bases (Huzinaga's
 book).
 \end{itemize}
 
@@ -1109,8 +1110,8 @@ The different options and their FDF descriptors are the following:
 The split is based on different radii. 
 
 \item {\tt splitgauss:}\index{splitgauss@{\tt splitgauss}}
-Same as {\tt split} but using gaussian functions
-$e^{-(x/\alpha_i)^2}$. The gaussian widths $\alpha_i$ are read instead 
+Same as {\tt split} but using Gaussian functions
+$e^{-(x/\alpha_i)^2}$. The Gaussian widths $\alpha_i$ are read instead 
 of the scale factors (see below). There is no cutting algorithm, so that
 a large enough $r_c$ should be defined for the gaussian to have decayed
 sufficiently.
@@ -1186,7 +1187,7 @@ orbital-confining cutoff radii. It is the excitation energy
 of the PAO's due to the confinement to a finite-range. It offers a
 general procedure for defining the confining radii of the original
 (first-zeta) PAO's for all the species guaranteeing the compensation 
-of the basis. It has only effect when the block
+of the basis. It only has an effect when the block
 {\bf PAO.Basis} is not present or when the radii
 specified in that block are zero for the first zeta.
 
@@ -1203,7 +1204,7 @@ the second-$\zeta$ split-off piece has to carry. The split radius is defined
 accordingly. If multiple-$\zeta$\index{multiple-$\zeta$} 
 is used, the corresponding radii are obtained
 by imposing smaller fractions of the SplitNorm (1/2, 1/4 ...) value as
-norm carried by the higher zetas. It has effect only when the block
+norm carried by the higher zetas. It only has an effect when the block
 {\bf PAO.Basis} is not present or when the radii
 specified in that block are zero for zetas higher than one.
 
@@ -1215,8 +1216,7 @@ specified in that block are zero for zetas higher than one.
 This option is as per {\bf PAO.SplitNorm} but allows a separate
 default to be
 specified for hydrogen which typically needs larger values than those
-for other
-elements.
+for other elements.
 
 \item[{\bf PAO.NewSplitCode}] ({\it boolean}): 
 \index{PAO.NewSplitCode@{\bf PAO.NewSplitCode}}\index{basis!new
@@ -1288,8 +1288,7 @@ are set by the commands given below.
 For default soft confinement, the inner radius is set at a fraction of
 the outer
 confinement radius determined by the energy shift. This option
-controls the fraction
-of the confinement radius to be used.
+controls the fraction of the confinement radius to be used.
 
 {\it Default value:} {\tt 0.9}
 
@@ -1297,8 +1296,7 @@ of the confinement radius to be used.
 \index{PAO.SoftPotential@{\bf PAO.SoftPotential}}\index{basis!default
   soft confinement potential}
 For default soft confinement, this option controls the value of the
-potential used
-for all orbitals.
+potential used for all orbitals.
 
 {\it Default value:} {\tt 40.0 Ry}
 
@@ -1360,8 +1358,7 @@ read from the block {\bf PS.lmax}.
 \end{verbatim}
 
 The reading is done this way (those variables in brackets are optional,
-therefore they are only read if
-present):
+therefore they are only read if present):
 
 \begin{verbatim}
     From is = 1 to  nspecies
@@ -1514,9 +1511,9 @@ polarization}\index{basis!polarization} are generated by solving the
 atomic problem in the presence of a polarizing electric field. The
 orbitals are generated applying perturbation theory to the first-zeta
 orbital of lower angular momentum.  They have the same cutoff radius
-than the orbitals from which they are constructed.
+as the orbitals from which they are constructed.
 
-There is a different possibility of generating polarization orbitals:
+There is a different possibility for generating polarization orbitals
 by introducing them explicitly in the {\bf PAO.Basis} block.
 It has to be remembered, however, that they sometimes correspond to 
 unbound states of the atom, their shape depending very much on the
@@ -1611,10 +1608,10 @@ cutoff used, and set the mesh-cutoff manually in a later run.)
 \subsection{Lattice, coordinates, $k$-sampling}
 
 The position types, and behaviours of the atoms in the simulation
-must be specified using the flags described in this section.
+must be specified using the options described in this section.
 
 Firstly, the size of the cell itself should be specified, using
-some combination of the flags
+some combination of the options
 \textbf{LatticeConstant}, \textbf{LatticeParameters},
 and \textbf{LatticeVectors}, and \textbf{SuperCell}.
 If nothing is specified, {\sc Siesta} will construct a cubic
@@ -2139,7 +2136,7 @@ cartesian} block are variables and others are not (i.e.,
 \texttt{ix iy iz} above must all be 0 or 1). This will be fixed in
 future versions of the program.
 
-A zmatrix block may also contain the following, additional, sections, which
+A Zmatrix block may also contain the following, additional, sections, which
 are designed to make it easier to read.
 
 \item \texttt{constants}: Instead of specifying a numerical value, it is possible to specify a symbol
@@ -2401,7 +2398,7 @@ An example for an FCC lattice is:
      %endblock BandLines
 \end{verbatim}
 
-where the last column is an optional LaTex label for use in the band plot.
+where the last column is an optional LaTeX label for use in the band plot.
 If only given points (not lines) are required, simply specify 1 in the
 first column of each line. The first column of the first line must be 
 always 1.
@@ -2409,7 +2406,7 @@ always 1.
 {\it Use:} Used only if {\bf SolutionMethod} = {\tt diagon}.
 The band k points are unrelated and compatible with any k-grid used
 to calculate the total energy and charge density.
-This block is superseded by {\bf BandPoints} if both are present.
+This block is overriden by {\bf BandPoints} if both are present.
 
 {\it Default value:} No band energies calculated.
 
@@ -2442,7 +2439,7 @@ Specifies the scale of the k vectors given in
 {\bf WaveFuncKPoints} below.
 The options are:
 \begin{itemize}
-\item {\tt pi/a} (k-vector coordinates are given in cartesian 
+\item {\tt pi/a} (k-vector coordinates are given in Cartesian 
 coordinates, in units of $\pi/a$, where $a$ is the lattice constant)
 \item {\tt ReciprocalLatticeVectors} (k vectors are given in
 reciprocal-lattice-vector coordinates)
@@ -2492,7 +2489,7 @@ Logical variable to choose between self-consistent Kohn-Sham functional or
  non self-consistent Harris functional to calculate energies and forces. 
 \begin{itemize}
 \item {\tt .false.} : Fully self-consistent Kohn-Sham functional. 
-\item {\tt .true.} : Non self consistent Harris functional. Cheap but
+\item {\tt .true.} : Non self-consistent Harris functional. Cheap but
 pretty crude for some systems. The forces are computed within the
 Harris functional in the first SCF step. Only implemented for LDA in
 the Perdew-Zunger parametrization.
@@ -3833,7 +3830,7 @@ available dynamics option.
 
 \item {\tt Verlet} (Standard Verlet algorithm MD)
 
-\item {\tt Nose}  (MD with temperature controlled  by means of a Nos\'e 
+\item {\tt Nose}  (MD with temperature controlled by means of a Nos\'e 
 thermostat)
 
 \item {\tt ParrinelloRahman}  (MD with pressure controlled by 
@@ -5345,7 +5342,7 @@ it digests. It is important to note that it is only part of it,
 some other information being accessed by the different subroutines
 when they need it during the run (in the spirit of FDF input).
 A complete list of the input used by the code can be found at the
-end in the file {\tt out.fdf}, including defaults used by the code
+end in the file {\tt fdf.log}, including defaults used by the code
 in the run.
 
 After that, the program reads the pseudopotentials, factorizes them
@@ -5415,12 +5412,12 @@ Of course, the explicit setting of any of these options overrides the
 
 
 
-\subsection{Used parameters}\index{out.fdf@{\tt out.fdf}}
-The file {\it out.fdf} contains all the parameters used by {\sc Siesta}
+\subsection{Used parameters}\index{fdf.log@{\tt fdf.log}}
+The file {\it fdf.log} contains all the parameters used by {\sc Siesta}
 in a given run, both those specified in the input fdf file and
 those taken by default. They are written in fdf format, so that
 you may reuse them as input directly. Input data blocks are 
-copied to the out.fdf file only if you specify the {\it dump} option
+copied to the fdf.log file only if you specify the {\it dump} option
 for them.
 
 
