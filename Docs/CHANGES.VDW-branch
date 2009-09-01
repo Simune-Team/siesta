@@ -1,5 +1,26 @@
 ------------------------------------------------------------------
 
+2009-09-01  14:45:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-15-263
+
+Summary: Split of fft and fft3d modules
+Keywords: fft fft3d
+
+Subroutines fft (old version of J.D.Gale) has been moved out of module m_ff3d
+into its own module (and file) m_fft, in order to decrease dependencies.
+
+renamed:
+  Src/fft3d.F  => Src/fft3d.f90
+
+modified:
+  Src/fft3d.f90  ! Removed subroutine fft
+  Src/poison.F   ! Statement use m_fft3d changed to use m_fft
+  Src/Makefile   ! Added fft.o. Updated dependencies.
+
+added:
+  Src/fft.F      ! Contains subroutine fft, previously in fft3d.F
+
+------------------------------------------------------------------
+
 2009-08-25  11:05:00 GMT+2     Alberto Garcia <albertog@icmab.es>
 Fix makefile problems in Pseudo/atom after merge
 
@@ -18,7 +39,6 @@ renamed:
   Pseudo/atom/makefile-xml => Pseudo/atom/Makefile
 modified:
   Pseudo/atom/Makefile
-
 
 ------------------------------------------------------------------
 

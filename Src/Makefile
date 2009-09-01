@@ -123,6 +123,7 @@ OBJS =  automatic_cell.o atom_options.o \
        cell_fire_optim.o m_fire_para.o m_fire_mixing.o write_raw_efs.o \
        m_iodm.o m_sparse.o  kpoint_pdos.o \
 	atomxc.o \
+	fft.o \
 	fft1d.o \
 	fftr.o \
 	ggaxc.o \
@@ -448,9 +449,9 @@ ener3.o: globalise.o m_mpi_utils.o onmod.o precision.o
 ener3lomem.o: globalise.o m_mpi_utils.o onmod.o precision.o
 extrapolon.o: parallel.o precision.o sys.o
 fermid.o: m_recipes.o parallel.o precision.o sys.o
+fft.o: alloc.o meshsubs.o parallel.o parallelsubs.o precision.o sys.o
 fft1d.o: parallel.o precision.o sys.o
-fft3d.o: alloc.o m_debug.o mesh3d.o meshsubs.o parallel.o parallelsubs.o
-fft3d.o: precision.o sys.o
+fft3d.o: alloc.o m_debug.o mesh3d.o precision.o sys.o
 fftr.o: alloc.o fft3d.o mesh3d.o precision.o sys.o
 find_kgrid.o: alloc.o minvec.o parallel.o precision.o units.o
 fire_optim.o: alloc.o m_fdf_global.o m_fire.o m_mpi_utils.o parallel.o
@@ -557,7 +558,7 @@ m_ts_scattering.o: m_ts_aux_rout.o parallelsubs.o precision.o sys.o
 m_wallclock.o: m_walltime.o
 madelung.o: parallel.o precision.o sys.o
 matel.o: alloc.o atmfuncs.o m_recipes.o precision.o radfft.o spher_harm.o
-md_out.o: files.o precision.o sys.o units.o
+md_out.o: files.o m_energies.o precision.o sys.o units.o
 md_utils.o: precision.o
 memory.o: memoryinfo.o parallel.o precision.o
 memoryinfo.o: precision.o
@@ -614,7 +615,7 @@ phirphi_opt.o: parallelsubs.o precision.o spher_harm.o sys.o
 phonon.o: files.o parallel.o precision.o sys.o
 pixmol.o: files.o periodic_table.o precision.o
 plcharge.o: files.o old_atmfuncs.o parallel.o precision.o
-poison.o: alloc.o fft3d.o parallel.o precision.o sys.o
+poison.o: alloc.o fft.o parallel.o precision.o sys.o
 post_scf_work.o: atomlist.o m_energies.o m_spin.o mneighb.o setup_hamiltonian.o
 post_scf_work.o: siesta_cml.o siesta_geom.o siesta_options.o sparse_matrices.o
 projected_DOS.o: alloc.o atomlist.o kpoint_grid.o kpoint_pdos.o m_eo.o
@@ -723,13 +724,6 @@ write_raw_efs.o: atmfuncs.o atomlist.o precision.o siesta_geom.o
 write_subs.o: atomlist.o m_energies.o m_forces.o m_iostruct.o m_spin.o
 write_subs.o: m_steps.o m_stress.o m_ts_options.o parallel.o precision.o
 write_subs.o: siesta_cml.o siesta_geom.o siesta_options.o units.o zmatrix.o
-write_subs_energies.o: m_energies.o m_spin.o m_steps.o m_ts_options.o
-write_subs_energies.o: siesta_cml.o siesta_options.o units.o
-write_subs_positions.o: atomlist.o m_iostruct.o m_steps.o siesta_cml.o
-write_subs_positions.o: siesta_geom.o siesta_options.o units.o zmatrix.o
-write_subs_pressure.o: atomlist.o m_energies.o m_forces.o m_iostruct.o
-write_subs_pressure.o: m_steps.o m_stress.o parallel.o precision.o siesta_cml.o
-write_subs_pressure.o: siesta_geom.o siesta_options.o units.o
 writewave.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o kpoint_grid.o
 writewave.o: m_fdf_global.o parallel.o parallelsubs.o parsing.o precision.o
 writewave.o: siesta_geom.o sys.o units.o
@@ -755,6 +749,7 @@ m_conjgr.o: conjgr.o
 m_conjgr_old.o: conjgr_old.o
 m_dynamics.o: dynamics.o
 m_fermid.o: fermid.o
+m_fft.o: fft.o
 m_fft3d.o: fft3d.o
 m_find_kgrid.o: find_kgrid.o
 m_fire_optim.o: fire_optim.o

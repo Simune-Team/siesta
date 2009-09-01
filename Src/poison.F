@@ -44,7 +44,8 @@ C
       use parallel,    only : Node, Nodes, ProcessorY
       use sys,         only : die
       use alloc,       only : re_alloc, de_alloc
-      use m_fft3d,     only : fft
+!      use m_fft3d,     only : fft
+      use m_fft,       only : fft
 #ifdef MPI
       use mpi_siesta
 #endif
