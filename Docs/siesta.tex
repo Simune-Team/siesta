@@ -278,226 +278,6 @@ Extensive review of applications as of summer 2003.
 For more information you can visit the web page 
 {\tt http://www.uam.es/siesta}.
 
-The following is a short description of the compilation procedures
-and of the datafile format for the {\sc Siesta} code.
-
-\section{VERSION UPDATE}
-If you have a previous version of {\sc Siesta}, the update is simply
-replacing the old {\tt siesta} directory tree with the new one, saving
-the {\tt arch.make} file that you built to compile {\sc Siesta} for
-your architecture (the format of this file has changed slightly, but
-you should be able to translate the important fields, such as library
-locations and compiler switches, to the new version).
-You also have the option of using the {\tt configure} script
-(see below) to see whether the automatically generated {\tt arch.make} file
-provides anything new or interesting for your setup.
-  If you have working files within the old {\sc Siesta} tree, including
-pseudopotentials etc., you will have to fish them out. That is why we recommend
-working directories outside the package.
-
-\section{QUICK START}
-
-\subsection{Compilation}
-Unpack the {\sc Siesta} distribution. Go to the {\tt Obj} directory.
-As explained in the {\tt README} file there, you will need to run a
-shell script to do some minimum setup, and then to obtain an {\tt
-  arch.make} file to suit your particular computer setup. Optionally,
-the command {\tt ../Src/configure} will start an automatic scan of
-your system and try to build an {\tt arch.make} for you. Please note
-that the configure script might need some help in order to find your
-Fortran compiler, and that the created arch.make may not be optimal,
-mostly in regard to compiler switches, but the process should provide
-a reasonable first version. Type {\tt ../Src/configure --help} to see
-the flags understood by the script, and take a look at the {\tt
-  Src/Confs} subdirectory for some examples of their explicit use. You
-are strongly encouraged to look at {\tt
-  Src/Sys/DOCUMENTED-TEMPLATE.make} for information about the fine
-points of the {\tt arch.make} file. You can also get inspiration by
-looking at the actual {\tt arch.make} examples in the {\tt Src/Sys}
-subdirectory. If you intend to create a parallel version of {\sc
-  Siesta}, make sure you have all the extra support libraries ({\tt
-  MPI, scalapack, blacs...}). Once you have a proper {\tt arch.make},
-type {\tt make}. The executable should work for any job (This is not
-exactly true, since some of the parameters in the atomic routines are
-still hardwired (see {\tt Src/atmparams.f}), but those would seldom
-need to be changed.)
-
-Multiple compilations: You can compile as many different versions of
-the {\sc Siesta} executable as you wish (for example, with different
-levels of optimization, serial, parallel, debug, etc), by working in
-separate building directories. 
-
-For example, starting from the top Siesta directory:
-
-\begin{verbatim}
-cd Obj                  # The standard build directory
-sh ../Src/obj_setup.sh
-../Src/configure --enable-fast
-make
-cd Tests
-make clean; make
-
-#
-#   ----------- Now a parallel version in a different directory
-#
-cd   
-mkdir ParaObjs
-cd ParaObjs
-sh ../Src/obj_setup.sh
-cp ../Src/Sys/some-suitable-parallel.make ./arch.make
-  (... fine-tune and adapt the arch.make to your system ...)
-make
-cd Tests
-make clean; make
-\end{verbatim}
-
-(The pristine Src directory should be kept "clean", without objects, or else
-the compilation in the build directories will get confused)
-
-
-\subsection{Running the program}
-
-A fast way to test your installation of {\sc Siesta} and get a feeling
-for the workings of the program is implemented in directory
-{\tt Tests}\index{Tests}. In it you can find several subdirectories
-with pre-packaged FDF files and pseudopotential references. Everything
-is automated: after compiling {\sc Siesta} you can just go into any
-subdirectory and type {\tt make}. The program does its work in
-subdirectory {\tt work}, and there you can find all the resulting
-files. For convenience, the output file is copied to the parent
-directory. A collection of reference output files can be found in {\tt
-  Tests/Reference}. Please note that small numerical and
-formatting differences are to be expected, depending on the compiler.
-(For non-standard execution environments, including queuing systems,
-so can have a look at the Scripts in Tests/Scripts).
-
-Other examples are provided in the {\tt Examples} directory. This
-directory contains basically the {\tt .fdf} files and the appropriate
-pseudopotential generation input files. Since at some point you will
-have to generate your own pseudopotentials and run your own jobs, we
-describe here the whole process by means of the simple example of the
-water-molecule. It is advisable to create independent directories for
-each job, so that everything is clean and neat, and out of the {\tt
-siesta} directory, so that one can easily update version by replacing
-the whole {\tt siesta} tree. Go to your favorite working directory
-and:
-
-{\tt \$ mkdir h2o}
-
-{\tt \$ cd h2o}
-
-{\tt \$ cp $\sim$/siesta/Examples/H20/h2o.fdf .}
-
-\noindent
-We need to generate the required pseudopotentials
-\index{pseudopotential!example generation}
-(We are going to streamline this process for this time, but
-you must realize that this is a tricky business that you 
-must master before using {\sc Siesta} responsibly. Every 
-pseudopotential must be thoroughly checked before use. Please refer to
-the {\sc ATOM} program manual in {\tt $\sim$/siesta/Pseudo/atom/Docs}
-for details regarding what follows.)
-
-{\tt \$ cd $\sim$/siesta/Pseudo/atom}
-
-{\tt \$ make}
-
-\noindent
-Now the pseudopotential-generation program, called {\tt atm}, 
-should be compiled (you might want to change the definition of
-the compiler in the makefile).
-
-{\tt \$ cd Tutorial/O}
-
-{\tt \$ cat O.tm2.inp}
-
-\noindent
-This is the input file, for the oxygen pseudopotential, 
-that we have prepared for you. 
-It is in a standard (but obscure) format that
-you will need to understand in the future:
-\begin{verbatim}
-------------------------------------------------------------
-   pg      Oxygen
-        tm2  2.0
- n=O  c=ca 
-       0.0       0.0       0.0       0.0       0.0       0.0
-    1    4
-    2    0     2.00      0.00
-    2    1     4.00      0.00
-    3    2     0.00      0.00
-    4    3     0.00      0.00
-   1.15     1.15     1.15     1.15
-------------------------------------------------------------
-\end{verbatim}
-
-To generate the pseudopotential do the following;
-
-{\tt \$ sh ../pg.sh O.tm2.inp}
-
-\noindent
-Now there should be a new subdirectory called O.tm2 (O for oxygen)
-and {\tt O.tm2.vps} (unformatted) and {\tt O.tm2.psf} (ASCII) files.
-
-{\tt \$ cp O.tm2.psf $\sim$/whateveryourworkingdir/h2o/O.psf}
-
-\noindent
-copies the generated pseudopotential file to your working directory. 
-(The unformatted and ASCII files are functionally equivalent, but
-the latter is more transportable and easier to look at, if you so
-desire.) The same could be repeated for the pseudopotential for H,
-but you may as well copy {\tt H.psf} from {\tt siesta/Examples/Vps/}
-to your {\tt h2o} working directory.
-
-\noindent
-Now you are ready to run the program:
-
-{\tt siesta < h2o.fdf | tee h2o.out}
-
-\noindent
-(If you are running the parallel version you should use some other 
-invocation, such as {\tt mpirun -np 2 siesta ...}, but we cannot 
-go into that here.)
-
-After a successful run of the program, you should have many
-files in your directory including the following:
-\begin{itemize}
-
-\item out.fdf\index{out.fdf}
- (contains all the data used, explicit or default-ed) 
-\item O.ion and H.ion\index{species.ionl@{\it species.}ion}
- (complete information about the basis and KB projectors)
-\item h2o.XV\index{Systemlabel.XV@{\it Systemlabel.}XV}
- (contains the final positions and velocities)
-\item h2o.STRUCT\_OUT
-\index{Systemlabel.STRUCT\_OUT@{{\it Systemlabel}.STRUCT\_OUT}}
- (contains the final cell vectors and positions in
- ``crystallographic'' format)
-\item h2o.DM\index{Systemlabel.DM@{\it Systemlabel.}DM}
- (contains the density matrix to allow a restart)
-\item h2o.ANI\index{Systemlabel.ANI@{\it Systemlabel.}.ANI}
- (contains the coordinates of every MD step, in this case only one)
-\item h2o.FA\index{Systemlabel.FA@{\it Systemlabel.}.FA}
- (contains the forces on the atoms)
-\item h2o.EIG\index{Systemlabel.EIG@{\it Systemlabel.}.EIG}
- (contains the eigenvalues of the Kohn-Sham Hamiltonian)
-\item h2o.out\index{Systemlabel.out@{\it Systemlabel.}out}
- (standard output)
-\item h2o.xml\index{Systemlabel.xml@{\it Systemlabel.}xml}
- (XML marked-up output)
-\end{itemize}
-
-The Systemlabel.out is the standard output of the program, that you
-have already seen passing on the screen. Have a look at it
-and refer to the output-explanation section if necessary.
-You may also want to look at the out.fdf file to see all
-the default values that siesta has chosen for you, before
-studying the input-explanation section and start changing them.
-
-Now look at the other data files in {\tt Examples}
-(all with an .fdf suffix) choose one and repeat the process for it.
-
-
 \section{PSEUDOPOTENTIAL HANDLING}
 
 \index{pseudopotential!generation}
@@ -759,43 +539,217 @@ The directory {\tt Tutorials/Bases} in the main {\sc Siesta
   distribution} contains some tutorial material for the generation of
 basis sets and KB projectors.
 
-\section{COMPILING THE PROGRAM}
+\section{COMPILATION}
 
-The compilation of the program is done using a {\tt Makefile}
-that is provided with the code.\index{Makefile}
-This {\tt Makefile} will generate the executable for any of several
-architectures, with a  minimum of tuning required from the
-user in a separate file called {\tt arch.make} to reside in
-the {\tt Src/} directory. 
-The instructions are in directory {\tt siesta/Src/Sys}, where 
-there are also a number of {\tt .make} files
-already prepared for several architectures and
-operating sistems.\index{platforms}\index{architectures}
-If none of these fit your needs, you will have to prepare
-one on your own. 
-The command
+The compilation of the program is done using a {\tt Makefile} that is
+provided with the code.\index{Makefile} This {\tt Makefile} will
+generate the executable for any of several architectures, with a
+minimum of tuning required from the user and encapsulated in a
+separate file called {\tt arch.make}.
 
-\noindent 
-{\tt \$ ./configure} 
+Unpack the {\sc Siesta} distribution. Go to the {\tt Obj} directory.
+As explained in the {\tt README} file there, you will need to run a
+shell script to do some minimum setup, and then to obtain an {\tt
+  arch.make} file to suit your particular computer and compiler
+installation. 
+
+You are strongly encouraged to look at {\tt
+  Src/Sys/DOCUMENTED-TEMPLATE.make} for information about the fine
+points of the {\tt arch.make} file. You can also get inspiration by
+looking at the actual {\tt arch.make} examples in the {\tt Src/Sys}
+subdirectory. If you intend to create a parallel version of {\sc
+  Siesta}, make sure you have all the extra support libraries ({\tt
+  MPI, scalapack, blacs...}(see the Parallel section ***). 
+
+Optionally, the command {\tt ../Src/configure} will
+start an automatic scan of your system and try to build an {\tt
+  arch.make} for you. Please note that the configure script might need
+some help in order to find your Fortran compiler, and that the created
+{\tt arch.make} may not be optimal, mostly in regard to compiler
+switches and preprocessor definitions, but the process should provide
+a reasonable first version. Type {\tt ../Src/configure --help} to see
+the flags understood by the script, and take a look at the {\tt
+  Src/Confs} subdirectory for some examples of their explicit use.
+
+Once you have a proper {\tt arch.make}, type {\tt make}. The
+executable should work for any job (This is not exactly true, since
+some of the parameters in the atomic routines are still hardwired (see
+{\tt Src/atmparams.f}), but those would seldom need to be changed.)
+
+Multiple compilations: You can compile as many different versions of
+the {\sc Siesta} executable as you wish (for example, with different
+levels of optimization, serial, parallel, debug, etc), by working in
+separate building directories. 
+
+For example, starting from the top Siesta directory:
+
+\begin{verbatim}
+cd Obj                  # The standard build directory
+sh ../Src/obj_setup.sh
+../Src/configure --enable-fast
+make
+cd Tests
+make clean; make
+
+#
+#   ----------- Now a parallel version in a different directory
+#
+cd   
+mkdir ParaObjs
+cd ParaObjs
+sh ../Src/obj_setup.sh
+cp ../Src/Sys/some-suitable-parallel.make ./arch.make
+  (... fine-tune and adapt the arch.make to your system ...)
+make
+cd Tests
+make clean; make
+\end{verbatim}
+
+(The pristine Src directory should be kept "clean", without objects, or else
+the compilation in the build directories will get confused)
+
+
+\section{EXECUTION OF THE PROGRAM}
+
+A fast way to test your installation of {\sc Siesta} and get a feeling
+for the workings of the program is implemented in directory
+{\tt Tests}\index{Tests}. In it you can find several subdirectories
+with pre-packaged FDF files and pseudopotential references. Everything
+is automated: after compiling {\sc Siesta} you can just go into any
+subdirectory and type {\tt make}. The program does its work in
+subdirectory {\tt work}, and there you can find all the resulting
+files. For convenience, the output file is copied to the parent
+directory. A collection of reference output files can be found in {\tt
+  Tests/Reference}. Please note that small numerical and
+formatting differences are to be expected, depending on the compiler.
+(For non-standard execution environments, including queuing systems,
+so can have a look at the Scripts in Tests/Scripts, and see also Parallel***)
+
+Other examples are provided in the {\tt Examples} directory. This
+directory contains basically {\tt .fdf} files and the appropriate
+pseudopotential generation input files. Since at some point you will
+have to generate your own pseudopotentials and run your own jobs, we
+describe here the whole process by means of the simple example of the
+water-molecule. It is advisable to create independent directories for
+each job, so that everything is clean and neat, and out of the {\tt
+siesta} directory, so that one can easily update version by replacing
+the whole {\tt siesta} tree. Go to your favorite working directory
+and:
+
+{\tt \$ mkdir h2o}
+
+{\tt \$ cd h2o}
+
+{\tt \$ cp $\sim$/siesta/Examples/H20/h2o.fdf .}
 
 \noindent
- will start an automatic scan of your system and try to build
-an {\tt arch.make} for you. Please note that the configure script
-might need some help in order to find your Fortran compiler, and that
-the created arch.make may not be optimal, mostly in regard to compiler
-switches, but the process should provide a reasonable working
-file. Type {\tt ./configure --help} to see the flags understood by the
-script, and take a look at the {\tt Src/Confs} subdirectory for some
-examples of their explicit use. You can fine tune {\tt arch.make}
-by looking at the examples in the {\tt Src/Sys} subdirectory.
-If you intend to create a parallel version of {\sc
-Siesta}, make sure you have all the extra support libraries ({\tt MPI,
-scalapack, blacs...}). 
+We need to generate the required pseudopotentials
+\index{pseudopotential!example generation}
+(We are going to streamline this process for this time, but
+you must realize that this is a tricky business that you 
+must master before using {\sc Siesta} responsibly. Every 
+pseudopotential must be thoroughly checked before use. Please refer to
+the {\sc ATOM} program manual in {\tt $\sim$/siesta/Pseudo/atom/Docs}
+for details regarding what follows.)
 
-After {\tt arch.make} is ready, ype {\tt make}. The executable should work
-for any job (This is not exactly true, since some of the parameters in
-the atomic routines are still hardwired (see {\tt Src/atmparams.f}) ,
-but those would seldom need to be changed.)
+{\tt \$ cd $\sim$/siesta/Pseudo/atom}
+
+{\tt \$ make}
+
+\noindent
+Now the pseudopotential-generation program, called {\tt atm}, 
+should be compiled (you might want to change the definition of
+the compiler in the makefile).
+
+{\tt \$ cd Tutorial/O}
+
+{\tt \$ cat O.tm2.inp}
+
+\noindent
+This is the input file, for the oxygen pseudopotential, 
+that we have prepared for you. 
+It is in a standard (but obscure) format that
+you will need to understand in the future:
+\begin{verbatim}
+------------------------------------------------------------
+   pg      Oxygen
+        tm2  2.0
+ n=O  c=ca 
+       0.0       0.0       0.0       0.0       0.0       0.0
+    1    4
+    2    0     2.00      0.00
+    2    1     4.00      0.00
+    3    2     0.00      0.00
+    4    3     0.00      0.00
+   1.15     1.15     1.15     1.15
+------------------------------------------------------------
+\end{verbatim}
+
+To generate the pseudopotential do the following;
+
+{\tt \$ sh ../pg.sh O.tm2.inp}
+
+\noindent
+Now there should be a new subdirectory called O.tm2 (O for oxygen)
+and {\tt O.tm2.vps} (unformatted) and {\tt O.tm2.psf} (ASCII) files.
+
+{\tt \$ cp O.tm2.psf $\sim$/whateveryourworkingdir/h2o/O.psf}
+
+\noindent
+copies the generated pseudopotential file to your working directory. 
+(The unformatted and ASCII files are functionally equivalent, but
+the latter is more transportable and easier to look at, if you so
+desire.) The same could be repeated for the pseudopotential for H,
+but you may as well copy {\tt H.psf} from {\tt siesta/Examples/Vps/}
+to your {\tt h2o} working directory.
+
+\noindent
+Now you are ready to run the program:
+
+{\tt siesta < h2o.fdf | tee h2o.out}
+
+\noindent
+(If you are running the parallel version you should use some other 
+invocation, such as {\tt mpirun -np 2 siesta ...}, but we cannot 
+go into that here.)
+
+After a successful run of the program, you should have many
+files in your directory including the following:
+\begin{itemize}
+
+\item out.fdf\index{out.fdf}
+ (contains all the data used, explicit or default-ed) 
+\item O.ion and H.ion\index{species.ionl@{\it species.}ion}
+ (complete information about the basis and KB projectors)
+\item h2o.XV\index{Systemlabel.XV@{\it Systemlabel.}XV}
+ (contains the final positions and velocities)
+\item h2o.STRUCT\_OUT
+\index{Systemlabel.STRUCT\_OUT@{{\it Systemlabel}.STRUCT\_OUT}}
+ (contains the final cell vectors and positions in
+ ``crystallographic'' format)
+\item h2o.DM\index{Systemlabel.DM@{\it Systemlabel.}DM}
+ (contains the density matrix to allow a restart)
+\item h2o.ANI\index{Systemlabel.ANI@{\it Systemlabel.}.ANI}
+ (contains the coordinates of every MD step, in this case only one)
+\item h2o.FA\index{Systemlabel.FA@{\it Systemlabel.}.FA}
+ (contains the forces on the atoms)
+\item h2o.EIG\index{Systemlabel.EIG@{\it Systemlabel.}.EIG}
+ (contains the eigenvalues of the Kohn-Sham Hamiltonian)
+\item h2o.out\index{Systemlabel.out@{\it Systemlabel.}out}
+ (standard output)
+\item h2o.xml\index{Systemlabel.xml@{\it Systemlabel.}xml}
+ (XML marked-up output)
+\end{itemize}
+
+The Systemlabel.out is the standard output of the program, that you
+have already seen passing on the screen. Have a look at it
+and refer to the output-explanation section if necessary.
+You may also want to look at the out.fdf file to see all
+the default values that siesta has chosen for you, before
+studying the input-explanation section and start changing them.
+
+Now look at the other data files in {\tt Examples}
+(all with an .fdf suffix) choose one and repeat the process for it.
 
 \section{INPUT}
 
