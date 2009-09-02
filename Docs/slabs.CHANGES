@@ -1,5 +1,13 @@
 -------------------------------------------------------------------------
-2009-08-30 Alberto Garcia <albertog@icmab.es>  2.6.32--slabs-p1
+2009-09-02 Alberto Garcia <albertog@icmab.es>  trunk-296--slabs-p3
+Synch to trunk-296
+
+-------------------------------------------------------------------------
+2009-08-31 Alberto Garcia <albertog@icmab.es>  2.6.32--slabs-p3
+Modify efield bug fix as suggested by Jose
+
+-------------------------------------------------------------------------
+2009-08-30 Alberto Garcia <albertog@icmab.es>  2.6.32--slabs-p2
 Synch to trunk (2.6.32)
 
 A conflict appeared regarding the writing of the value of the
