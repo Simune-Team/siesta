@@ -1,7 +1,7 @@
 \begin{theindex}
 
-  \item {\bf .DM}, 87, 95
-  \item {\bf .TSDE}, 87, 95
+  \item {\bf .DM}, 87
+  \item {\bf .TSDE}, 87
 
   \indexspace
 
@@ -42,17 +42,17 @@
     \subitem split valence   for H, 19
     \subitem User basis, 17
     \subitem User basis (NetCDF format), 17
-  \item basis     \subitem PAO, 112
+  \item basis     \subitem PAO, 106
   \item {\bf     BasisPressure}, 81
   \item Berry phase, 44
   \item Bessel functions, 23
   \item \%block, 14
   \item {\bf BlockSize}, 63
-  \item {\bf Blocksize}, 101
+  \item {\bf Blocksize}, 95
   \item BLYP, 38
   \item Born effective charges, 45
   \item {\bf BornCharge}, 45, 56
-  \item Broyden mixing, 40, 108
+  \item Broyden mixing, 40, 102
   \item Broyden optimization, 58
   \item bug reports, 89
   \item bulk polarization, 44
@@ -67,7 +67,7 @@
   \item Chebishev Polynomials, 54
   \item Chemical Potential, 54, 55
   \item {\bf ChemicalSpeciesLabel}, 14, 15
-  \item CML, 107
+  \item CML, 101
   \item constant-volume cell relaxation, 56
   \item constraints in relaxations, 29
   \item {\bf COOP.Write}, 73
@@ -135,7 +135,7 @@
   \item {\bf FixSpin}, 39
   \item Force Constants Matrix, 56, 61
     \subitem using {\sc Phonon}, 56, 62
-  \item FoX XML library, 107
+  \item FoX XML library, 101
   \item fractional program, 16
 
   \indexspace
@@ -246,8 +246,8 @@
 
   \item {\bf NaiveAuxiliaryCell}, 29
   \item {\bf NeglNonOverlapInt}, 44
-  \item NetCDF format, 17, 76, 99
-  \item NetCDF library, 99
+  \item NetCDF format, 17, 76, 93
+  \item NetCDF library, 93
   \item {\bf NetCharge}, 16
   \item {\bf     New.A.Parameter}, 81
   \item {\bf     New.B.Parameter}, 81
@@ -342,8 +342,8 @@
   \item {\bf PAO.SplitNorm}, 19
   \item {\bf PAO.SplitNormH}, 19
   \item {\bf PAO.SplitTailNorm}, 19
-  \item Parallel {\sc Siesta}, 101
-  \item {\bf ParallelOverK}, 101
+  \item Parallel {\sc Siesta}, 95
+  \item {\bf ParallelOverK}, 95
   \item PBE, 38
   \item PBEsol, 38
   \item perturbative polarization, 18, 23
@@ -353,8 +353,8 @@
   \item {\sc Plrho}, 77
   \item polarization orbitals, 17
   \item {\bf PolarizationGrids}, 44
-  \item Precision selection, 108
-  \item {\bf ProcessorY}, 64, 101
+  \item Precision selection, 102
+  \item {\bf ProcessorY}, 64, 95
   \item {\bf ProjectedDensityOfStates}, 73
   \item {\bf PS.KBprojectors} , 20
   \item {\bf PS.lmax}, 20
@@ -421,7 +421,7 @@
   \item siesta, 15
   \item single-$\zeta$, 18
   \item {\bf SingleExcitation}, 39
-  \item {\bf SolutionMethod}, 51, 85, 94
+  \item {\bf SolutionMethod}, 51, 85
   \item species, 15
   \item {\it species.}ion, 13
   \item spin, 39, 42
@@ -451,26 +451,26 @@
 
   \indexspace
 
-  \item {\bf TBTrans}, 87, 95
+  \item {\bf TBTrans}, 87
   \item Tests, 11
   \item {\bf TotalSpin}, 39
   \item {\sc TranSiesta}, 5
-  \item {\bf TS.BiasContour.Eta}, 86, 95
-  \item {\bf TS.BiasContour.Method}, 86, 95
-  \item {\bf TS.BiasContour.NumPoints}, 86, 95
-  \item {\bf TS.BufferAtomsLeft}, 84, 93
-  \item {\bf TS.BufferAtomsRight}, 84, 93
-  \item {\bf TS.ComplexContour.Emin}, 86, 94
-  \item {\bf TS.ComplexContour.NumCircle}, 86, 94
-  \item {\bf TS.ComplexContour.NumLine}, 86, 94
-  \item {\bf TS.ComplexContour.NumPoles}, 86, 95
-  \item {\bf TS.HSFileLeft}, 84, 92
-  \item {\bf TS.HSFileRight}, 84, 93
-  \item {\bf TS.NumUsedAtomsLeft}, 84, 93
-  \item {\bf TS.NumUsedAtomsRight}, 84, 93
-  \item {\bf TS.SaveHS}, 84, 92
-  \item {\bf TS.SurfaceAtomsLeft}, 85, 93
-  \item {\bf TS.SurfaceAtomsRight}, 85, 93
+  \item {\bf TS.BiasContour.Eta}, 86
+  \item {\bf TS.BiasContour.Method}, 86
+  \item {\bf TS.BiasContour.NumPoints}, 86
+  \item {\bf TS.BufferAtomsLeft}, 84
+  \item {\bf TS.BufferAtomsRight}, 84
+  \item {\bf TS.ComplexContour.Emin}, 86
+  \item {\bf TS.ComplexContour.NumCircle}, 86
+  \item {\bf TS.ComplexContour.NumLine}, 86
+  \item {\bf TS.ComplexContour.NumPoles}, 86
+  \item {\bf TS.HSFileLeft}, 84
+  \item {\bf TS.HSFileRight}, 84
+  \item {\bf TS.NumUsedAtomsLeft}, 84
+  \item {\bf TS.NumUsedAtomsRight}, 84
+  \item {\bf TS.SaveHS}, 84
+  \item {\bf TS.SurfaceAtomsLeft}, 85
+  \item {\bf TS.SurfaceAtomsRight}, 85
 
   \indexspace
 
@@ -517,7 +517,7 @@
   \item {\bf XC.authors}, 38
   \item {\bf XC.functional}, 38
   \item {\bf XC.hybrid}, 39
-  \item XML, 107
+  \item XML, 101
   \item {\sc XMol}, 68, 69, 78
 
   \indexspace
