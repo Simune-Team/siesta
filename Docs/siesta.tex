@@ -1469,6 +1469,7 @@ above.
 \end{description}
 
 \subsubsection{Filtering}
+\label{sec:filtering}
 
 \begin{description}
 \itemsep 10pt
@@ -2884,6 +2885,330 @@ the Order-N calculation faster.  USE WITH CARE!!!
 
 {\it Default value:} {\tt .false.}
         
+
+\item[{\bf OpticalCalculation}] ({\it logical}):\index{Dielectric function,
+optical absorption} 
+If specified, the imaginary part of the dielectric function
+will be calculated and stored in a file called {\it Systemlabel}.{\bf EPSIMG}.
+The calculation is performed using the simplest approach based on the
+dipolar transition matrix elements between different eigenfunctions
+of the self-consistent Hamiltonian. For molecules the calculation 
+is performed using the position operator matrix elements, while
+for solids the calculation is carried out in the momentum space
+formulation.
+Corrections due to the non-locality of the pseudopotentials
+are introduced in the usual way. 
+
+{\it Default value:} {\tt false}
+
+\item[{\bf Optical.EnergyMinimum}] ({\it real energy}):
+\index{Optical.EnergyMinimum@{\bf Optical.EnergyMinimum}}
+This specifies the minimum of the energy range in which
+the frequency spectrum will be calculated.
+
+{\it Default value:} 0 Ry.
+
+\item[{\bf Optical.EnergyMaximum}] ({\it real energy}):
+\index{Optical.EnergyMaximum@{\bf Optical.EnergyMaximum}}
+This specifies the maximum of the energy range in which
+the frequency spectrum will be calculated.
+
+{\it Default value:} 10 Ry.
+
+\item[{\bf Optical.Broaden}] ({\it real energy}):
+\index{Optical.Broaden@{\bf Optical.Broaden}}
+If this is value is set then a Gaussian broadening will be
+applied to the frequency values.
+
+{\it Default value:} 0 Ry.
+
+\item[{\bf Optical.Scissor}] ({\it real energy}):
+\index{Optical.Scissor@{\bf Optical.Scissor}}
+Because of the tendency of DFT calculations to under estimate
+the band gap, a rigid shift of the unoccupied states, known as 
+the scissor operator, can be added to correct the gap and
+thereby improve the calculated results. This shift is only
+applied to the optical calculation and no where else within
+the calculation.
+
+{\it Default value:} 0 Ry.
+
+\item[{\bf Optical.NumberOfBands}] ({\it integer}):
+\index{Optical.NumberOfBands@{\bf Optical.NumberOfBands}}
+This option controls the number of bands that are included in
+the optical property calculation. Clearly this number must be
+larger than the number of occupied bands and less than or
+equal to the number of basis functions (which determines the
+number of unoccupied bands available). Note, while including
+all the bands may be the most accurate choice this will also
+be the most expensive!
+
+{\it Default value:} All bands.
+
+\item[{\bf Optical.Mesh}] ({\it data block}):
+\index{Optical.Mesh@{\bf Optical.Mesh}}
+This block contains 3 numbers that determine the mesh size
+used for the integration across the Brillouin zone. For
+example:
+
+\begin{verbatim}
+        %block  Optical.Mesh
+          5 5 5
+        %endblock  Optical.Mesh
+\end{verbatim}
+
+The three values represent the number of mesh points in
+the direction of each reciprocal lattice vector.
+
+{\it Default value:} Empty in general. For atoms 
+or molecules a k-sampling of only one point is assumed.
+
+\item[{\bf Optical.OffsetMesh}] ({\it logical}):
+\index{Optical.OffsetMesh@{\bf Optical.OffsetMesh}}
+If set to true, then the mesh is offset away from the
+gamma point for odd numbers of points.
+
+{\it Default value:} {\tt false}
+
+\item[{\bf Optical.PolarizationType}] ({\it string}):
+\index{Optical.PolarizationType@{\bf Optical.PolarizationType}}
+This option has three possible values that represent the
+type of polarization to be used in the calculation. The options
+are {\bf polarized}, which implies the application of an electric
+field in a given direction, {\bf unpolarized}, which implies the
+propagation of light in a given direction, and {\bf polycrystal}.
+In the case of the first two options a direction in space must
+be specified for the electric field or propagation using the
+{\it Optical.Vector} data block.
+
+{\it Default value:} {\tt polycrystal}
+
+\item[{\bf Optical.Vector}] ({\it data block}):
+\index{Optical.Vector@{\bf Optical.Vector}}
+This block contains 3 numbers that specify the vector direction
+for either the electric field or light propagation, for a polarized
+or unpolarized calculation, respectively. A typical block might look
+like:
+
+\begin{verbatim}
+        %block  Optical.Vector
+          1.0 0.0 0.5
+        %endblock  Optical.Vector
+\end{verbatim}
+
+{\it Default value:} Empty.
+
+
+
+\end{description}
+
+\vspace{5pt}
+\subsection{Dealing with the eggbox-effect}
+
+The introduction of a finite 3D grid for the calculation of integrals
+causes the breaking of translational symmetry (the egg-box effect). 
+This symmetry breaking is clear when
+moving one single atom in an otherwise empty simulation cell. The total
+energy and the forces oscillate with the grid periodicity when the
+atom is moved, as if the atom were moving on an eggbox. In the limit of
+infinitely fine grid (large mesh cutoff) this effect disappears.
+
+For reasonable values of the mesh cutoff, the effect of the eggbox 
+on the total energy or on the relaxed structure is normally unimportant.
+However, it can affect substantially the process of relaxation, by 
+increasing the number of steps considerably, and can also spoil the
+calculation of vibrations, usually much more demanding than relaxations.
+
+The Util/Scripting/eggbox\_checker.py script can be used to diagnose
+the eggbox effect to be expected for a particular
+pseudopotential/basis-set combination.
+
+Apart from increasing the mesh cutoff (see the {\bf MeshCutoff} option),
+the following options might help in lessening a given eggbox problem. But
+note also that a filtering of the orbitals and the relevant parts of
+the pseudopotential and the pseudocore charge might be enough to solve
+the issue (see Sect.~\ref{sec:filtering}).
+
+\begin{description}
+
+\item[{\bf GridCellSampling}] ({\it data block}):\index{egg-box effect} 
+\index{GridCellSampling@{\bf GridCellSampling}}\index{rippling}
+
+It specifies points within the grid cell for a symmetrization sampling.
+
+For a given grid the grid-cutoff convergence can be improved (and the
+eggbox lessened) by recovering the lost symmetry: by symmetrizing the
+sensitive quantities. The full symmetrization implies an integration
+(averaging) over the grid cell. Instead, a finite sampling can be
+performed.
+
+It is a sampling of rigid displacements of the system with respect
+to the grid. The original grid-system setup (one point of the grid
+at the origin) is always calculated. It is the (0,0,0) displacement. 
+The block {\bf GridCellSampling} gives the additional displacements
+wanted for the sampling. They are given relative to the grid-cell 
+vectors, i.e., (1,1,1) would displace to the next grid point across
+the body diagonal, giving an equivalent grid-system situation
+(a useless displacement for a sampling).
+
+Examples: Assume a cubic cell, and therefore a (smaller) cubic grid cell.
+If there is no block or the block is empty, then the original (0,0,0)
+will be used only. The block: 
+
+\begin{verbatim}
+     %block GridCellSampling
+        0.5    0.5    0.5
+     %endblock GridCellSampling
+\end{verbatim}
+
+would use the body center as a second point in the sampling. Or:
+
+
+\begin{verbatim}
+     %block GridCellSampling
+        0.5    0.5    0.0
+        0.5    0.0    0.5
+        0.0    0.5    0.5
+     %endblock GridCellSampling
+\end{verbatim}
+
+gives an fcc kind of sampling, and
+
+\begin{verbatim}
+     %block GridCellSampling
+        0.5    0.0    0.0
+        0.0    0.5    0.0
+        0.0    0.0    0.5
+        0.0    0.5    0.5
+        0.5    0.0    0.5
+        0.5    0.5    0.0
+        0.5    0.5    0.5
+     %endblock GridCellSampling
+\end{verbatim}
+
+gives again a cubic sampling with half the original side length.
+It is not trivial to choose a right set of displacements so as
+to maximize the new 'effective' cutoff. It depends on the 
+kind of cell. It may be automatized in the future, but it 
+is now left to the user, who introduces the displacements
+manually through this block.
+
+The quantities which are symmetrized are: ($i$) energy terms
+that depend on the grid, ($ii$) forces, ($iii$) stress
+tensor, and ($iv$) electric dipole.
+
+The symmetrization is performed at the end of every SCF cycle. The 
+whole cycle is done for the (0,0,0) displacement, and, when the
+density matrix is converged, the same (now fixed)
+density matrix is used to obtain the desired quantities at the 
+other displacements (the density matrix itself is {\it not}
+symmetrized as it gives a much smaller egg-box effect).
+The CPU time needed for each displacement
+in the {\bf GridCellSampling} block
+is of the order of one extra SCF iteration.
+
+{\it Default value:} Empty.
+
+
+\item[{\bf EggboxRemove}] ({\it data block}):\index{egg-box effect}
+\index{EggboxRemove@{\bf EggboxRemove}}\index{rippling}
+
+For recovering translational invariance in an approximate way.
+
+It works by substracting from Kohn-Sham's total energy (and forces) an
+approximation to the eggbox energy, sum of atomic contributions. 
+Each atom has a predefined eggbox energy depending on where it sits on
+the cell. This atomic contribution is species dependent and is 
+obviously invariant under grid-cell translations. Each species
+contribution is thus expanded in the appropriate Fourier series.
+It is important to have a smooth eggbox, for it to  
+be represented by a few Fourier components. A jagged egg-box (unless
+very small, which is then unimportant) is often an
+indication of a problem with the pseudo.
+
+In the block there is one line per Fourier component. The first integer
+is for the atomic species it is associated with. The other three
+represent the reciprocal lattice vector of the grid cell (in units
+of the basis vectors of the reciprocal cell). The real number is
+the Fourier coefficient in units of the energy scale given in 
+{\bf EggboxScale} (see below), normally 1 eV.
+
+The number and choice of Fourier components is free, as well as their
+order in the block. One can choose to correct only some species and not
+others if, for instance, there is a substantial difference in hardness
+of the cores. The 0 0 0 components will add a species-dependent
+constant energy per atom. It is thus irrelevant except if comparing
+total energies of different calculations, in which case they 
+have to be considered with care (for instance by putting them all to zero,
+i.e. by not introducing them in the list). 
+The other components average to zero representing no bias in the
+total energy comparisons. 
+
+If the total
+energies of the free atoms are put as 0 0 0 coefficients (with
+spin polarisation if adequate etc.) the corrected total energy
+will be the cohesive energy of the system (per unit cell).
+
+{\it Example:} For a two species system, this example would give a quite
+sufficent set in many instances (the actual values of the Fourier 
+coefficients are not realistic).
+
+\begin{verbatim}
+     %block EggBoxRemove
+       1   0   0   0 -143.86904
+       1   0   0   1    0.00031
+       1   0   1   0    0.00016
+       1   0   1   1   -0.00015
+       1   1   0   0    0.00035
+       1   1   0   1   -0.00017
+       2   0   0   0 -270.81903
+       2   0   0   1    0.00015
+       2   0   1   0    0.00024
+       2   1   0   0    0.00035
+       2   1   0   1   -0.00077
+       2   1   1   0   -0.00075
+       2   1   1   1   -0.00002
+     %endblock EggBoxRemove
+\end{verbatim}
+
+It represents an alternative to grid-cell sampling (above).
+It is only approximate, but once the Fourier components for each 
+species are given, it does not represent any computational 
+effort (neither memory nor time), while the grid-cell sampling
+requires CPU time (roughly one extra SCF step per point every
+MD step).
+
+It will be particularly helpful in atoms with substantial partial
+core or semicore electrons.
+
+{\it Use:} This technique as it stands should only be used for fixed cell 
+calculations. 
+
+For the time being, it is up to the user to obtain the Fourier
+components to be introduced. They can be obtained by moving one
+isolated atom through the cell to be used in the calculation
+(for a give cell size, shape and mesh), once for each species. 
+The Util/Scripting/eggbox\_checker.py script can be used as a starting
+point for this.
+
+{\it Default value:} Empty.
+
+
+\item[{\bf EggboxScale}] ({\it real energy}):\index{egg-box effect}
+\index{EggboxScale@{\bf EggboxScale}}\index{rippling}
+
+Defines the scale in which the Fourier components of the 
+egg-box energy are given in the {\bf EggboxRemove} block.
+
+{\it Default value:} 1 eV.
+
+\end{description}
+
+\vspace{5pt}
+\subsection{Macroscopic polarization}
+
+\begin{description}
+
 \item[{\bf PolarizationGrids}] ({\it data block}):
 \index{PolarizationGrids@{\bf PolarizationGrids}}
 \index{bulk polarization}\index{Berry phase}
@@ -3025,313 +3350,7 @@ obtained form Tom Archer (archert@tcd.ie).
 
 {\it Default value:} {\tt false}
 
-\item[{\bf OpticalCalculation}] ({\it logical}):\index{Dielectric function,
-optical absorption} 
-If specified, the imaginary part of the dielectric function
-will be calculated and stored in a file called {\it Systemlabel}.{\bf EPSIMG}.
-The calculation is performed using the simplest approach based on the
-dipolar transition matrix elements between different eigenfunctions
-of the self-consistent Hamiltonian. For molecules the calculation 
-is performed using the position operator matrix elements, while
-for solids the calculation is carried out in the momentum space
-formulation.
-Corrections due to the non-locality of the pseudopotentials
-are introduced in the usual way. 
-
-{\it Default value:} {\tt false}
-
-\item[{\bf Optical.EnergyMinimum}] ({\it real energy}):
-\index{Optical.EnergyMinimum@{\bf Optical.EnergyMinimum}}
-This specifies the minimum of the energy range in which
-the frequency spectrum will be calculated.
-
-{\it Default value:} 0 Ry.
-
-\item[{\bf Optical.EnergyMaximum}] ({\it real energy}):
-\index{Optical.EnergyMaximum@{\bf Optical.EnergyMaximum}}
-This specifies the maximum of the energy range in which
-the frequency spectrum will be calculated.
-
-{\it Default value:} 10 Ry.
-
-\item[{\bf Optical.Broaden}] ({\it real energy}):
-\index{Optical.Broaden@{\bf Optical.Broaden}}
-If this is value is set then a Gaussian broadening will be
-applied to the frequency values.
-
-{\it Default value:} 0 Ry.
-
-\item[{\bf Optical.Scissor}] ({\it real energy}):
-\index{Optical.Scissor@{\bf Optical.Scissor}}
-Because of the tendency of DFT calculations to under estimate
-the band gap, a rigid shift of the unoccupied states, known as 
-the scissor operator, can be added to correct the gap and
-thereby improve the calculated results. This shift is only
-applied to the optical calculation and no where else within
-the calculation.
-
-{\it Default value:} 0 Ry.
-
-\item[{\bf Optical.NumberOfBands}] ({\it integer}):
-\index{Optical.NumberOfBands@{\bf Optical.NumberOfBands}}
-This option controls the number of bands that are included in
-the optical property calculation. Clearly this number must be
-larger than the number of occupied bands and less than or
-equal to the number of basis functions (which determines the
-number of unoccupied bands available). Note, while including
-all the bands may be the most accurate choice this will also
-be the most expensive!
-
-{\it Default value:} All bands.
-
-\item[{\bf Optical.Mesh}] ({\it data block}):
-\index{Optical.Mesh@{\bf Optical.Mesh}}
-This block contains 3 numbers that determine the mesh size
-used for the integration across the Brillouin zone. For
-example:
-
-\begin{verbatim}
-        %block  Optical.Mesh
-          5 5 5
-        %endblock  Optical.Mesh
-\end{verbatim}
-
-The three values represent the number of mesh points in
-the direction of each reciprocal lattice vector.
-
-{\it Default value:} Empty in general. For atoms 
-or molecules a k-sampling of only one point is assumed.
-
-\item[{\bf Optical.OffsetMesh}] ({\it logical}):
-\index{Optical.OffsetMesh@{\bf Optical.OffsetMesh}}
-If set to true, then the mesh is offset away from the
-gamma point for odd numbers of points.
-
-{\it Default value:} {\tt false}
-
-\item[{\bf Optical.PolarizationType}] ({\it string}):
-\index{Optical.PolarizationType@{\bf Optical.PolarizationType}}
-This option has three possible values that represent the
-type of polarization to be used in the calculation. The options
-are {\bf polarized}, which implies the application of an electric
-field in a given direction, {\bf unpolarized}, which implies the
-propagation of light in a given direction, and {\bf polycrystal}.
-In the case of the first two options a direction in space must
-be specified for the electric field or propagation using the
-{\it Optical.Vector} data block.
-
-{\it Default value:} {\tt polycrystal}
-
-\item[{\bf Optical.Vector}] ({\it data block}):
-\index{Optical.Vector@{\bf Optical.Vector}}
-This block contains 3 numbers that specify the vector direction
-for either the electric field or light propagation, for a polarized
-or unpolarized calculation, respectively. A typical block might look
-like:
-
-\begin{verbatim}
-        %block  Optical.Vector
-          1.0 0.0 0.5
-        %endblock  Optical.Vector
-\end{verbatim}
-
-{\it Default value:} Empty.
-
-
-\item[{\bf GridCellSampling}] ({\it data block}):\index{egg-box effect} 
-\index{GridCellSampling@{\bf GridCellSampling}}\index{rippling}
-For improving grid-cutoff convergence. It specifies points within
-the grid cell for a symmetrization sampling: the space 
-homogeneity (traslational invariance)
-is broken by the grid. This symmetry breaking is clear
-when moving one single atom in an otherwise empty simulation cell.
-The total energy oscillates with the grid periodicity when moving
-it around, like on an egg-box. This effect tends to disappear with 
-finer grids. For a given grid it can be eliminated
-by recovering the lost symmetry: by symmetrizing the sensitive
-quantities. The full symmetrization implies an integration (averaging)
-over the grid cell. Instead, a finite sampling can be performed.
-
-It is a sampling of rigid displacements of the system with respect
-to the grid. The original grid-system setup (one point of the grid
-at the origin) is always calculated. It is the (0,0,0) displacement. 
-The block {\bf GridCellSampling} gives the additional displacements
-wanted for the sampling. They are given relative to the grid-cell 
-vectors, i.e., (1,1,1) would displace to the next grid point across
-the body diagonal, giving an equivalent grid-system situation
-(a useless displacement for a sampling).
-
-Examples: Assume a cubic cell, and therefore a (smaller) cubic grid cell.
-If there is no block or the block is empty, then the original (0,0,0)
-will be used only. The block: 
-
-\begin{verbatim}
-     %block GridCellSampling
-        0.5    0.5    0.5
-     %endblock GridCellSampling
-\end{verbatim}
-
-would use the body center as a second point in the sampling. Or:
-
-
-\begin{verbatim}
-     %block GridCellSampling
-        0.5    0.5    0.0
-        0.5    0.0    0.5
-        0.0    0.5    0.5
-     %endblock GridCellSampling
-\end{verbatim}
-
-gives an fcc kind of sampling, and
-
-\begin{verbatim}
-     %block GridCellSampling
-        0.5    0.0    0.0
-        0.0    0.5    0.0
-        0.0    0.0    0.5
-        0.0    0.5    0.5
-        0.5    0.0    0.5
-        0.5    0.5    0.0
-        0.5    0.5    0.5
-     %endblock GridCellSampling
-\end{verbatim}
-
-gives again a cubic sampling with half the original side length.
-It is not trivial to choose a right set of displacements so as
-to maximize the new 'effective' cutoff. It depends on the 
-kind of cell. It may be automatized in the future, but it 
-is now left to the user, who introduces the displacements
-manually through this block.
-
-The quantities which are symmetrized are: ($i$) energy terms
-that depend on the grid, ($ii$) forces, ($iii$) stress
-tensor, and ($iv$) electric dipole.
-
-The symmetrization is performed at the end of every SCF cycle. The 
-whole cycle is done for the (0,0,0) displacement, and, when the
-density matrix is converged, the same (now fixed)
-density matrix is used to obtain the desired quantities at the 
-other displacements (the density matrix itself is {\it not}
-symmetrized as it gives a much smaller egg-box effect).
-The CPU time needed for each displacement
-in the {\bf GridCellSampling} block
-is of the order of one extra SCF iteration.
-
-{\it Default value:} Empty.
-
-
-\item[{\bf EggboxRemove}] ({\it data block}):\index{egg-box effect}
-\index{EggboxRemove@{\bf EggboxRemove}}\index{rippling}
-
-For recovering translational invariance in an approximate way.
-The introduction of a finite 3D grid for the calculation of integrals
-causes the breaking of translational symmetry (the egg-box effect). 
-This symmetry breaking is clear when
-moving one single atom in an otherwise empty simulation cell. The total
-energy and the forces oscillate with the grid periodicity when the
-atom is moved, as if the atom were moving on an eggbox. In the limit of
-infinitely fine grid (large mesh cutoff) this effect disappears.
-
-For reasonable values of the mesh cutoff, the effect of the eggbox 
-on the total energy or on the relaxed structure is normally unimportant.
-However, it can affect substantially the process of relaxation, by 
-increasing the number of steps considerably, and can also spoil the
-calculation of vibrations, usually much more demanding than relaxations.
-
-The Util/Scripting/eggbox\_checker.py script can be used to diagnose
-the eggbox effect to be expected for a particular
-pseudopotential/basis-set combination.
-
-It works by substracting from Kohn-Sham's total energy (and forces) an
-approximation to the eggbox energy, sum of atomic contributions. 
-Each atom has a predefined eggbox energy depending on where it sits on
-the cell. This atomic contribution is species dependent and is 
-obviously invariant under grid-cell translations. Each species
-contribution is thus expanded in the appropriate Fourier series.
-It is important to have a smooth eggbox, for it to  
-be represented by a few Fourier components. A jagged egg-box (unless
-very small, which is then unimportant) is often an
-indication of a problem with the pseudo.
-
-In the block there is one line per Fourier component. The first integer
-is for the atomic species it is associated with. The other three
-represent the reciprocal lattice vector of the grid cell (in units
-of the basis vectors of the reciprocal cell). The real number is
-the Fourier coefficient in units of the energy scale given in 
-{\bf EggboxScale} (see below), normally 1 eV.
-
-The number and choice of Fourier components is free, as well as their
-order in the block. One can choose to correct only some species and not
-others if, for instance, there is a substantial difference in hardness
-of the cores. The 0 0 0 components will add a species-dependent
-constant energy per atom. It is thus irrelevant except if comparing
-total energies of different calculations, in which case they 
-have to be considered with care (for instance by putting them all to zero,
-i.e. by not introducing them in the list). 
-The other components average to zero representing no bias in the
-total energy comparisons. 
-
-If the total
-energies of the free atoms are put as 0 0 0 coefficients (with
-spin polarisation if adequate etc.) the corrected total energy
-will be the cohesive energy of the system (per unit cell).
-
-{\it Example:} For a two species system, this example would give a quite
-sufficent set in many instances (the actual values of the Fourier 
-coefficients are not realistic).
-
-\begin{verbatim}
-     %block EggBoxRemove
-       1   0   0   0 -143.86904
-       1   0   0   1    0.00031
-       1   0   1   0    0.00016
-       1   0   1   1   -0.00015
-       1   1   0   0    0.00035
-       1   1   0   1   -0.00017
-       2   0   0   0 -270.81903
-       2   0   0   1    0.00015
-       2   0   1   0    0.00024
-       2   1   0   0    0.00035
-       2   1   0   1   -0.00077
-       2   1   1   0   -0.00075
-       2   1   1   1   -0.00002
-     %endblock EggBoxRemove
-\end{verbatim}
-
-It represents an alternative to grid-cell sampling (above).
-It is only approximate, but once the Fourier components for each 
-species are given, it does not represent any computational 
-effort (neither memory nor time), while the grid-cell sampling
-requires CPU time (roughly one extra SCF step per point every
-MD step).
-
-It will be particularly helpful in atoms with substantial partial
-core or semicore electrons.
-
-{\it Use:} This technique as it stands should only be used for fixed cell 
-calculations. 
-
-For the time being, it is up to the user to obtain the Fourier
-components to be introduced. They can be obtained by moving one
-isolated atom through the cell to be used in the calculation
-(for a give cell size, shape and mesh), once for each species. 
-The Util/Scripting/eggbox\_checker.py script can be used as a starting
-point for this.
-
-{\it Default value:} Empty.
-
-
-\item[{\bf EggboxScale}] ({\it real energy}):\index{egg-box effect}
-\index{EggboxScale@{\bf EggboxScale}}\index{rippling}
-
-Defines the scale in which the Fourier components of the 
-egg-box energy are given in the {\bf EggboxRemove} block.
-
-{\it Default value:} 1 eV.
-
 \end{description}
-
-
 
 \vspace{5pt}
 \subsection{Systems with net charge or dipole, and electric fields}
