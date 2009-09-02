@@ -1,6 +1,34 @@
 ------------------------------------------------------------------
 
-2009-09-02  12:00:00 GMT+1	Jose M Soler	siesta-2.6.33-vdw-16-264
+2009-09-02  18:00:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-17-265
+
+Summary: Initialization of parallel and debug
+Keywords: parallel debug initialization
+
+The initialization of public variables in modules parallel and debug
+is enforced within XC routines. The use of the external timer routine
+(outside m_timer) has been avoided within XC routines. Plus some renamings.
+
+renamed and modified:
+  Src/m_debug.f90 => Src/debugxc.f90  ! Avoid reinitialization of udebug
+  Src/parallel.f => Src/parallel.F    ! Added routine parallel_init
+  Src/timer_m.F90 => Src/m_timer.F90  ! Just renamed to fit majority rule
+
+modified:
+  Src/Makefile       
+  Src/atomxc.f90     ! Just adapted to new names
+  Src/cellxc.f90     ! Added calls to parallel_init and setDebugOutputUnit
+  Src/fft3d.f90      ! Just adapted to new names
+  Src/fftr.f90       ! Just adapted to new names
+  Src/mesh3d.F90     ! Adapted to new names. Some debugging removed
+  Src/siesta_end.F   ! Just adapted to new names
+  Src/siesta_init.F  ! Just adapted to new names
+  Src/timer.f90      ! Just adapted to new names
+  Src/vdwxc.f90      ! Just adapted to new names
+
+------------------------------------------------------------------
+
+2009-09-02  12:00:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-16-264
 
 Summary: XC routines wrapped in modules
 Keywords: siestaXC

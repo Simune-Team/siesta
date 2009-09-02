@@ -1,15 +1,7 @@
-! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+!!@LICENSE
 !
 !===============================================================================
-! MODULE timer_m
+! MODULE m_timer
 ! Provides utility routines for CPU timing
 ! Written by J.M.Soler. July 2009
 !===============================================================================
@@ -46,7 +38,7 @@
 !===============================================================================
 ! GENERAL USAGE:
 !   program myProg
-!     use timer_m: only timer_init, timer_start, timer_stop, timer_report
+!     use m_timer: only timer_init, timer_start, timer_stop, timer_report
 !     call timer_init()
 !     call timer_start('myProg')
 !     call mySub1()
@@ -57,7 +49,7 @@
 !     call timer_report(file='myProg.times',printNow=.true.)
 !   end program myProg
 !   subroutine mySub1()
-!     use timer_m: only timer_get, timer_start, timer_stop
+!     use m_timer: only timer_get, timer_start, timer_stop
 !     real*8:: myTime
 !     call timer_start('mySub1')
 !     do something
@@ -66,7 +58,7 @@
 !     print*, 'mySub1: my CPU time was ', myTime
 !   end subroutine mySub1
 !   subroutine mySub2(i)
-!     use timer_m: only timer_start, timer_stop
+!     use m_timer: only timer_start, timer_stop
 !     call timer_start('mySub2')
 !     do something
 !     call timer_stop('mySub2')
@@ -181,7 +173,7 @@
 !   the root node, that writes it in its file system.
 !===============================================================================
 
-MODULE timer_m
+MODULE m_timer
 
 ! Used module procedures
   use sys,        only: die             ! Termination routine
@@ -767,5 +759,5 @@ subroutine timer_stop( prog )   ! Stop counting time for a program
 
 end subroutine timer_stop
 
-END MODULE timer_m
+END MODULE m_timer
 

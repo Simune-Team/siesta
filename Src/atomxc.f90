@@ -1,15 +1,7 @@
-! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2008.
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+!!@LICENSE
 !
 ! *******************************************************************
-! subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
+! subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 ! *******************************************************************
 ! Finds total exchange-correlation energy and potential for a
 ! spherical electron density distribution.
@@ -57,7 +49,7 @@
 !   allocate( dens(nr,nSpin), rMesh(nr), Vxc(nr,nSpin) )
 !     Find rMesh(:) and dens(:,:) at all mesh points
 !   call setXC( 1, (/'GGA'/), (/'PBE'/), (/1._dp/), (/1._dp/) )
-!   call atomxc( 0, nr, nr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
+!   call atomXC( 0, nr, nr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 !
 ! ********* BEHAVIOUR ***********************************************
 ! Stops and prints an error message if maxr<nr
@@ -113,8 +105,8 @@
 ! Sample usage:
 !   use precision, only: dp
 !   use xcmod, only: setxc
-!   call setxc( 1, (/'GGA'/), (/'PBE'/), (/1._dp/), (/1._dp/) )
-!   call atomxc( ... )
+!   call setXC( 1, (/'GGA'/), (/'PBE'/), (/1._dp/), (/1._dp/) )
+!   call atomXC( ... )
 !
 ! Allowed functional/author values:
 ! XCfunc: 
@@ -135,17 +127,17 @@
 !          'DRSLL' => VDW Dion et al, PRL 92, 246401 (2004)
 ! *******************************************************************
 
-MODULE m_atomxc
+MODULE m_atomXC
 
   implicit none
 
-  PUBLIC:: atomxc  ! Exchange and correlation of a spherical density
+  PUBLIC:: atomXC  ! Exchange and correlation of a spherical density
 
   PRIVATE ! Nothing is declared public beyond this point
 
 CONTAINS
 
-subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
+subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 
 ! Module routines
   use alloc,   only: alloc_default ! Sets (re)allocation defaults
@@ -171,10 +163,10 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
   use precision, only: dp          ! Double precision real type
   use alloc,   only: allocDefaults ! Derived type for allocation defaults
 ! BEGIN DEBUG
-!  use timer_m, only: timer_start   ! Start CPU time counter
-!  use timer_m, only: timer_stop    ! Stop CPU time counter
-!  use m_debug, only: udebug        ! Output file unit for debug info
 !  use m_vdwxc, only: qofrho        ! Returns q(rho,grad_rho)
+!  use m_timer, only: timer_start   ! Start CPU time counter
+!  use m_timer, only: timer_stop    ! Stop CPU time counter
+!  use debugXC, only: udebug        ! Output file unit for debug info
 ! END DEBUG
 
   implicit none
@@ -193,7 +185,7 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
   real(dp),intent(out):: Vxc(maxr,nSpin)  ! (spin) xc potential
 
 ! Subroutine name
-  character(len=*),parameter :: myName = 'atomxc '
+  character(len=*),parameter :: myName = 'atomXC '
   character(len=*),parameter :: errHead = myName//'ERROR: '
 
 ! Fix energy unit:  Eunit=1.0 => Hartrees,
@@ -244,8 +236,10 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 !  real(dp):: q, dqdrho, dqdgrho(3)
 ! END DEBUG
 
-! Start time counter
-!  call timer_start( 'atomxc' )
+! DEBUG
+!  call setDebugOutputUnit()   ! Initialize udebug variable
+!  call timer_start( myName )  ! Start time counter
+! END DEBUG
 
 ! Check dimension of arrays Dens and Vxc
   if (maxr<nr) call die(errHead//'maxr<nr')
@@ -609,11 +603,12 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 ! Restore previous allocation defaults
   call alloc_default( restore=prevAllocDefaults )
 
-! Stop time counter
-!  call timer_stop( 'atomxc' )
+! DEBUG
+!  call timer_stop( myName )   ! Stop time counter
+! END DEBUG
 
-end subroutine atomxc
+end subroutine atomXC
 
-END MODULE m_atomxc
+END MODULE m_atomXC
 
 

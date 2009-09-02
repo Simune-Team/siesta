@@ -1,12 +1,4 @@
-! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+!!@LICENSE
 !
 !******************************************************************************
 ! MODULE m_fft3d
@@ -109,7 +101,7 @@ MODULE m_fft3d
   use precision,    only: dp           ! Real double precision type
   use precision,    only: gp=>grid_p   ! Real type of mesh array data
 ! DEBUG
-  use m_debug,      only: udebug    ! File unit for debug output
+  use debugXC,      only: udebug    ! File unit for debug output
 ! END DEBUG
 
 PUBLIC:: &

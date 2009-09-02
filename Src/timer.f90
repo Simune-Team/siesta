@@ -29,10 +29,10 @@ subroutine timer( prog, iOpt )
 
 ! Module procedures used
   use sys,     only: die           ! Termination routine
-  use timer_m, only: timer_init    ! Initialize all times
-  use timer_m, only: timer_start   ! Start counting time
-  use timer_m, only: timer_stop    ! Stop counting time
-  use timer_m, only: timer_report  ! Write all times
+  use m_timer, only: timer_init    ! Initialize all times
+  use m_timer, only: timer_start   ! Start counting time
+  use m_timer, only: timer_stop    ! Stop counting time
+  use m_timer, only: timer_report  ! Write all times
 
 ! Arguments
   implicit none

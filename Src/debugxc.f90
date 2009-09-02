@@ -1,14 +1,6 @@
-! 
-! This file is part of the SIESTA package.
+!!@LICENSE
 !
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2008.
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
-!
-MODULE m_debug
+MODULE debugXC
 
 ! Initializes output files for debug info. J.M.Soler. Jan'2008
 
@@ -23,7 +15,7 @@ PUBLIC &
 
 PRIVATE ! Nothing is declared public beyond this point
 
-  character(len=*),parameter:: filePrefix = 'debug.out' ! Prefix of file name
+  character(len=*),parameter:: filePrefix = 'debugXC.' ! Prefix of file name
   character(len=32),    save:: fileName  ! Output file name
   integer,              save:: udebug=0  ! Output file unit for debug info
 
@@ -36,6 +28,9 @@ subroutine setDebugOutputUnit()
   ! Sets debug output unit and opens file for debug output
 
   implicit none
+
+  ! If already initialized, do nothing
+  if (udebug>0) return
 
   ! Set output file name, except node number, and find its name length
   fileName = filePrefix
@@ -76,4 +71,4 @@ subroutine closeDebugOutputFile()
 
 end subroutine closeDebugOutputFile
 
-END MODULE m_debug
+END MODULE debugXC

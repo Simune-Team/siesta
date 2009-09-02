@@ -240,6 +240,7 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   use m_ggaxc, only: ggaxc         ! General GGA XC routine
   use m_ldaxc, only: ldaxc         ! General LDA XC routine
   use mesh3D,  only: myMeshBox     ! Returns the mesh box of my processor
+  use parallel,only: parallel_init ! Initializes nodes variables
 ! BEGIN DEBUG
   use moreParallelSubs, only: nodeString ! Returns a string with my node number
 ! END DEBUG
@@ -247,9 +248,10 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   use alloc,   only: re_alloc      ! Reallocates arrays
   use mesh3D,  only: sameMeshDistr ! Finds if two mesh distr. are equal
   use mesh3D,  only: setMeshDistr  ! Defines a new mesh distribution
-  use timer_m, only: timer_get     ! Returns counted times
-  use timer_m, only: timer_start   ! Starts counting time
-  use timer_m, only: timer_stop    ! Stops counting time
+  use debugXC, only: setDebugOutputUnit ! Sets udebug variable
+  use m_timer, only: timer_get     ! Returns counted times
+  use m_timer, only: timer_start   ! Starts counting time
+  use m_timer, only: timer_stop    ! Stops counting time
   use m_vdwxc, only: vdw_decusp    ! Cusp correction to VDW energy
   use m_vdwxc, only: vdw_get_qmesh ! Returns q-mesh for VDW integrals
   use m_vdwxc, only: vdw_phi       ! Returns VDW functional kernel
@@ -262,7 +264,7 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   use precision, only: gp=>grid_p    ! Real precision type of mesh arrays
   use parallel,  only: nodes         ! Number of processor nodes
 ! BEGIN DEBUG
-  use m_debug,   only: udebug        ! Output file unit for debug info
+  use debugXC,   only: udebug        ! Output file unit for debug info
 ! END DEBUG
 
   implicit none
@@ -334,6 +336,8 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
      myTime=1,     &! CPU time in this routine and processor in last iteration
      timeAvge=1,   &! Average over processors of CPU time
      timeDisp=huge(timeDisp)  ! Dispersion over processors of CPU time
+  logical,save::   &
+     parallelInitialized=.false. ! Has module parallel been initialized?
 
   ! Internal pointers for dynamical allocation
   real(dp), pointer:: &
@@ -365,13 +369,13 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
      ndSpin, nf, nonemptyPoints, nPoints, nq, ns, nXCfunc, &
      r11, r12, r13, r21, r22, r23
   real(dp):: &
-     beginTime, comTime, D(nSpin), dedk, dEcdD(nSpin), dEcdGD(3,nSpin), &
+     comTime, D(nSpin), dedk, dEcdD(nSpin), dEcdGD(3,nSpin), &
      dEcidDj, dEcuspdD(nSpin), dEcuspdGD(3,nSpin), dEdDaux(nSpin),  &
      dExdD(nSpin), dExdGD(3,nSpin), dExidDj, &
      dGdM(-nn:nn), dGidFj(3,3,-nn:nn), Dj(nSpin), &
      dMdX(3,3), DV, dVol, Dtot, dXdM(3,3), &
      dVcdD(nSpin*nSpin), dVxdD(nSpin*nSpin), &
-     Eaux, EcuspVDW, endTime, Enl, epsC, epsCusp, epsNL, epsX, f1, f2, &  
+     Eaux, EcuspVDW, Enl, epsC, epsCusp, epsNL, epsX, f1, f2, &  
      GD(3,nSpin), meshKcut, k, kcell(3,3), kcut, kvec(3),  &
      sumTime, sumTime2, totTime, VDWweightC, volcel, volume, &
      XCweightC(maxFunc), XCweightX(maxFunc)
@@ -393,11 +397,17 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   real(dp):: GDtot(3), q, dqdD, dqdGD(3)
 ! END DEBUG
 
+  ! Initialize variables in parallel module
+  if (.not.parallelInitialized) then
+    call parallel_init()
+    parallelInitialized = .true.
+  end if
+
   ! Start time counter
   call timer_start( myName )
 
-  ! Find initial CPU time 
-!  call cpu_time( beginTime )
+  ! Initialize udebug variable
+  call setDebugOutputUnit()
 
   ! Get the functional(s) to be used
   call getXC( nXCfunc, XCfunc, XCauth, XCweightX, XCweightC )
@@ -1239,10 +1249,6 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 
   ! Stop time counter
   call timer_stop( myName )
-
-  ! Get local calculation time (including communications)
-!  call cpu_time( endTime )
-!  myTime = endTime - beginTime
 
   ! Get local calculation time (excluding communications)
   call timer_get( myName, lastTime=totTime, lastCommTime=comTime )

@@ -7,7 +7,7 @@
       subroutine siesta_end()
       use alloc, only: alloc_report
       use siesta_cml
-      USE m_debug,     only : closeDebugOutputFile
+      USE debugXC,     only : closeDebugOutputFile
       use m_timestamp, only : timestamp
       use m_wallclock, only : wallclock
       use parallel, only: IOnode

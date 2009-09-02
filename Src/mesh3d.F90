@@ -1,12 +1,4 @@
-! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2008.
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+!!@LICENSE
 !
 !******************************************************************************
 ! MODULE mesh3D
@@ -654,7 +646,7 @@ MODULE mesh3D
   use parallel,  only: myNode=>node    ! This process node
   use parallel,  only: totNodes=>nodes ! Total number of processor nodes
 ! BEGIN DEBUG
-  use m_debug,   only: udebug          ! Output file unit for debug info
+  use debugXC,   only: udebug          ! Output file unit for debug info
 ! END DEBUG
 
 ! Used MPI procedures and types
@@ -945,13 +937,13 @@ subroutine associateMeshTask( taskID, distrID1, distrID2 )
   task%associated = .true.
 
 ! DEBUG
-  if (present(distrID2)) then
-    write(udebug,'(a,3(2x,2i4))') myName//'taskID,iTask,distrID,iDistr=', &
-      taskID, iTask, distrID1, iDistr1, distrID2, iDistr2
-  else
-    write(udebug,'(a,3(2x,2i4))') myName//'taskID,iTask,distrID,iDistr=', &
-      taskID, iTask, distrID1, iDistr1
-  end if
+!  if (present(distrID2)) then
+!    write(udebug,'(a,3(2x,2i4))') myName//'taskID,iTask,distrID,iDistr=', &
+!      taskID, iTask, distrID1, iDistr1, distrID2, iDistr2
+!  else
+!    write(udebug,'(a,3(2x,2i4))') myName//'taskID,iTask,distrID,iDistr=', &
+!      taskID, iTask, distrID1, iDistr1
+!  end if
 ! END DEBUG
 
 end subroutine associateMeshTask
@@ -1350,7 +1342,7 @@ subroutine fftMeshDistr( nMesh, fftDistr, axisDistr )
 
 ! Create homogeneous 3D distribution
 ! DEBUG
-  write(udebug,*) myName//'calling setMeshDistr with fftDistr'
+!  write(udebug,*) myName//'calling setMeshDistr with fftDistr'
 ! END DEBUG
   call setMeshDistr( fftDistr, nMesh, nNodesX=axisNodes(1), &
                      nNodesY=axisNodes(2), nNodesZ=axisNodes(3) )
@@ -1545,8 +1537,8 @@ subroutine freeMeshTask( taskID )
   if (.not.task%defined) return
 
 ! DEBUG
-  write(udebug,'(a,4i6)') &
-    myName//'taskID,iTask,task%distr=', taskID, iTask, task%distr
+!  write(udebug,'(a,4i6)') &
+!    myName//'taskID,iTask,task%distr=', taskID, iTask, task%distr
 ! END DEBUG
 
 ! Erase ID from the task ID list
@@ -1994,11 +1986,6 @@ subroutine optimizeTransferOrder( nNodes, node, nTrsf, trsfNode, trsfDir )
 ! In serial execution, do nothing
 #ifdef MPI
 
-! DEBUG
-! Do nothing for the time being
-!  return
-! END DEBUG
-
 ! Find the maximun number of transfers of any node
   call MPI_AllReduce( nTrsf, maxTrsf, 1, MPI_Integer, &
                       MPI_Max, MPI_Comm_World, MPIerror )
@@ -2007,8 +1994,8 @@ subroutine optimizeTransferOrder( nNodes, node, nTrsf, trsfNode, trsfDir )
   if (maxTrsf < 2) return
 
 ! DEBUG
-  write(udebug,'(a,2i6)') myName//'nTrsf,maxTrsf=', nTrsf, maxTrsf
-  if (maxTrsf > 2*nNodes) call die(errHead//'too many transfers per node')
+!  write(udebug,'(a,2i6)') myName//'nTrsf,maxTrsf=', nTrsf, maxTrsf
+!  if (maxTrsf > 2*nNodes) call die(errHead//'too many transfers per node')
 ! END DEBUG
 
 ! Allocate arrays for the input transfer sequences of all nodes
@@ -2095,8 +2082,8 @@ subroutine optimizeTransferOrder( nNodes, node, nTrsf, trsfNode, trsfDir )
       trsfNode = abs( myTrsf(1:nTrsf) ) - 1
       trsfDir = sign( 1, myTrsf(1:nTrsf) )
 ! DEBUG
-      write(udebug,'(a,20i4)') myName//' inTrsf=', inTrsf(1:nTrsf,myNode)
-      write(udebug,'(a,20i4)') myName//'outTrsf=', myTrsf(1:nTrsf)
+!      write(udebug,'(a,20i4)') myName//' inTrsf=', inTrsf(1:nTrsf,myNode)
+!      write(udebug,'(a,20i4)') myName//'outTrsf=', myTrsf(1:nTrsf)
 ! END DEBUG
       exit ! i1 loop
     end if
