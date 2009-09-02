@@ -538,17 +538,76 @@ basis sets and KB projectors.
 
 \section{COMPILATION}
 
+\subsection{The building directory}
+
+Rather than using the top-level Src directory as building directory,
+the user has to use an ad-hoc building directory (by default the
+top-level {\tt Obj} directory, but it can be any (new) directory in
+the top level.  The building directory will hold the object files,
+module files, and libraries resulting from the compilation of the
+sources in {\tt Src}.  The {\tt VPATH} mechanism of modern {\tt make}
+programs is used. This scheme has many advantages. Among them:
+
+\begin{itemize}
+\item The Src directory is kept pristine.
+\item Many different object directories can be used concurrently to
+  compile the program with different compilers or optimization levels.
+\end{itemize}
+
+If you just want to compile the program, go to {\tt Obj} and issue the
+command:
+
+\begin{verbatim}
+  sh ../Src/obj_setup.sh
+\end{verbatim}
+
+to populate this directory with the minimal scaffolding of makefiles,
+and then make sure that you create or generate an appropriate {\tt arch.make}
+file (see below, in Sect.~\ref{sec:arch-make}). Then, type
+
+\begin{verbatim}
+  make
+\end{verbatim}
+
+The executable should work for any job. (This is not exactly true,
+since some of the parameters in the atomic routines are still
+hardwired (see {\tt Src/atmparams.f}), but those would seldom need to
+be changed.)
+
+To compile utility programs (those living in {\tt Util}), you can just
+simply use the provided makefiles, typing ``make'' as appropriate.
+
+\subsubsection{Multiple-target compilation}
+
+The mechanism described here can be repeated in other directories at
+the same level as Obj, with different names. In this way one can
+compile as many different versions of the {\sc Siesta} executable as
+needed (for example, with different levels of optimization, serial,
+parallel, debug, etc), by working in separate building directories.
+
+Simply provide the appropriate arch.make, and issue the setup command
+above. To compile utility programs, you need to use the form:
+
+\begin{verbatim}
+   make OBJDIR=ObjName
+\end{verbatim}
+
+where {\tt ObjName} is the name of the object directory of your
+choice. Be sure to type {\tt make clean} before attempting to
+re-compile a utility program.
+
+(The pristine Src directory should be kept "clean", without objects, or else
+the compilation in the build directories will get confused)
+
+
+\subsection{The arch.make file}
+\label{sec:arch-make}
+
 The compilation of the program is done using a {\tt Makefile} that is
 provided with the code.\index{Makefile} This {\tt Makefile} will
 generate the executable for any of several architectures, with a
 minimum of tuning required from the user and encapsulated in a
 separate file called {\tt arch.make}.
-
-Unpack the {\sc Siesta} distribution. Go to the {\tt Obj} directory.
-As explained in the {\tt README} file there, you will need to run a
-shell script to do some minimum setup, and then to obtain an {\tt
-  arch.make} file to suit your particular computer and compiler
-installation. 
 
 You are strongly encouraged to look at {\tt
   Src/Sys/DOCUMENTED-TEMPLATE.make} for information about the fine
@@ -556,7 +615,7 @@ points of the {\tt arch.make} file. You can also get inspiration by
 looking at the actual {\tt arch.make} examples in the {\tt Src/Sys}
 subdirectory. If you intend to create a parallel version of {\sc
   Siesta}, make sure you have all the extra support libraries ({\tt
-  MPI, scalapack, blacs...}(see the Parallel section ***). 
+  MPI, scalapack, blacs...} (see Sect.~\ref{sec:parallel}).
 
 Optionally, the command {\tt ../Src/configure} will
 start an automatic scan of your system and try to build an {\tt
@@ -567,43 +626,6 @@ switches and preprocessor definitions, but the process should provide
 a reasonable first version. Type {\tt ../Src/configure --help} to see
 the flags understood by the script, and take a look at the {\tt
   Src/Confs} subdirectory for some examples of their explicit use.
-
-Once you have a proper {\tt arch.make}, type {\tt make}. The
-executable should work for any job (This is not exactly true, since
-some of the parameters in the atomic routines are still hardwired (see
-{\tt Src/atmparams.f}), but those would seldom need to be changed.)
-
-Multiple compilations: You can compile as many different versions of
-the {\sc Siesta} executable as you wish (for example, with different
-levels of optimization, serial, parallel, debug, etc), by working in
-separate building directories. 
-
-For example, starting from the top Siesta directory:
-
-\begin{verbatim}
-cd Obj                  # The standard build directory
-sh ../Src/obj_setup.sh
-../Src/configure --enable-fast
-make
-cd Tests
-make clean; make
-
-#
-#   ----------- Now a parallel version in a different directory
-#
-cd   
-mkdir ParaObjs
-cd ParaObjs
-sh ../Src/obj_setup.sh
-cp ../Src/Sys/some-suitable-parallel.make ./arch.make
-  (... fine-tune and adapt the arch.make to your system ...)
-make
-cd Tests
-make clean; make
-\end{verbatim}
-
-(The pristine Src directory should be kept "clean", without objects, or else
-the compilation in the build directories will get confused)
 
 
 \section{EXECUTION OF THE PROGRAM}
@@ -620,7 +642,7 @@ directory. A collection of reference output files can be found in {\tt
   Tests/Reference}. Please note that small numerical and
 formatting differences are to be expected, depending on the compiler.
 (For non-standard execution environments, including queuing systems,
-so can have a look at the Scripts in Tests/Scripts, and see also Parallel***)
+so can have a look at the Scripts in Tests/Scripts, and see also Sect.~\ref{sec:parallel}.)
 
 Other examples are provided in the {\tt Examples} directory. This
 directory contains basically {\tt .fdf} files and the appropriate
@@ -703,7 +725,7 @@ Now you are ready to run the program:
 \noindent
 (If you are running the parallel version you should use some other 
 invocation, such as {\tt mpirun -np 2 siesta ...}, but we cannot 
-go into that here --- see the Parallel section ***)
+go into that here --- see Sect.~\ref{sec:parallel}).
 
 After a successful run of the program, you should have several
 files in your directory including the following:
@@ -954,15 +976,35 @@ assigned.
 
 
 \vspace{5pt}
-\subsection{Basis definition}
+\subsection{Basis set and KB projectors} 
 
 \noindent 
-The format for the input of the basis described in this manual
-has experienced important changes respect to 
-previous versions of the program. Although old fashioned 
-input files are
-still readable by {\sc Siesta}, we highly recommend the use of this
-new format, which allows a much more flexible input.
+There are quite a number of options for the input of the basis-set and
+KB projector specification, and they are all optional! By default,
+{\sc Siesta} will use a DZP basis set with appropriate choices for the
+determination of the range, etc. Of course, the more you experiment
+with the different options, the better your basis set can get. To aid
+in this process we offer an auxiliary program for optimization which
+can be used in particular to obtain variationally optimal basis sets
+(within a chosen basis size). See {\tt Util/Optimizer}
+for general information, and {\tt Util/Optimizer/Examples/Basis\_Optim}
+for an example.
+
+\subsubsection{Saving and reading basis-set information}
+
+
+\index{basis}\index{output!basis}
+{\sc Siesta} (and the standalone program {\sc Gen-basis}) 
+\index{basis!Gen-basis standalone program}
+always generate the files
+{\it Atomlabel}{\tt .ion}, where {\it Atomlabel} is the atomic label
+specified in block {\it ChemicalSpeciesLabel}.  Optionally, if
+NetCDF support is compiled in, the programs generate
+NetCDF files \index{NetCDF format}
+{\it Atomlabel}{\tt .ion.nc}.
+See an Appendix for information on the optional NetCDF package.
+
+These files can be used to read back information into {\sc Siesta}.
 
 \begin{description}
 \itemsep 10pt
@@ -989,8 +1031,13 @@ the atomic label specified in block {\it ChemicalSpeciesLabel}. These
 files can be generated by a previous {\sc Siesta} run or by the
 standalone program {\sc Gen-basis}.\index{Gen-basis program@{\sc
 Gen-basis}}\index{basis!Gen-basis standalone program} No pseudopotential
-files are necessary.
+files are necessary. NetCDF support is needed.
 
+\end{description}
+
+\subsubsection{Type of basis sets}
+
+\begin{description}
 
 \item[{\bf PAO.BasisType}] ({\it string}): 
 \index{PAO.BasisType@{\bf PAO.BasisType}}
@@ -1052,6 +1099,10 @@ required. {\sc Siesta} will use default values as defined in the following
 
 {\it Default value:} {\tt split}
 
+\end{description}
+
+\subsubsection{Size of the basis set}
+\begin{description}
 
 \item[{\bf PAO.BasisSize}] ({\it string}): 
 \index{PAO.BasisSize@{\bf PAO.BasisSize}}\index{basis!PAO} 
@@ -1100,7 +1151,11 @@ PAO.BasisSize for each species.
           %endblock PAO.BasisSizes
 \end{verbatim} 
 
+\end{description}
 
+\subsubsection{Range of the orbitals}
+
+\begin{description}
 \item[{\bf PAO.EnergyShift}] ({\it real energy}): A standard for 
 orbital-confining cutoff radii. It is the excitation energy
 of the PAO's due to the confinement to a finite-range. It offers a
@@ -1114,6 +1169,10 @@ specified in that block are zero for the first zeta.
 
 {\it Default value:} {\tt 0.02 Ry}
 
+\end{description}
+
+\subsubsection{Generation of multiple-zeta orbitals}
+\begin{description}
 
 \item[{\bf PAO.SplitNorm}] ({\it real}): 
 \index{PAO.SplitNorm@{\bf PAO.SplitNorm}}\index{basis!split valence} 
@@ -1191,6 +1250,10 @@ only a robust way of mapping split-norms to radii is needed), set
 automatically).
 \end{itemize}
 
+\end{description}
+\subsubsection{Soft-confinement options}
+\begin{description}
+
 \item[{\bf PAO.SoftDefault}] ({\it boolean}):
 \index{PAO.SoftDefault@{\bf PAO.SoftDefault}}\index{basis!default soft
   confinement}
@@ -1222,6 +1285,17 @@ for all orbitals.
 
 {\it Default value:} {\tt 40.0 Ry}
 
+
+Note: Soft-confinement options (inner radius, prefactor) have been
+traditionally used to optimize the basis set, even though formally
+they are just a technical necessity to soften the decay of the
+orbitals at rc. To achieve this, it might be enough to use the above
+global options.
+
+\end{description}
+
+\subsubsection{Kleinman-Bylander projectors}
+\begin{description}
 
 \item[{\bf PS.lmax}]  ({\it data block}): 
 \index{PS.lmax@{\bf PS.lmax}}
@@ -1317,6 +1391,10 @@ constructed from the nodeless eigenfunction, used for each angular
 momentum.
 \noindent
 
+\end{description}
+
+\subsubsection{The PAO.Basis block}
+\begin{description}
      
 \item[{\bf PAO.Basis}] ({\it data block}): \index{PAO.Basis@{\bf
 PAO.Basis}\index{basis!PAO}} 
@@ -1403,7 +1481,7 @@ from the first-zeta orbital of angular momentum $l$. {\it Default value}: ' '
 'zetas' for the 
 polarization shell (generated automatically in a split-valence fashion). 
 Only active if {\tt PolOrb = P}. {\it Default value}: {\tt 1} 
-\item[-] {\tt SplitNormFlag(lsh,is)}:\index{basis!soft confinement potential}
+\item[-] {\tt SplitNormFlag(lsh,is)}:\index{basis!per-shell split norm}
 {\it Optional input}. If set equal to 
 {\tt S}, the following number sets the split-norm parameter for that shell.
 \item[-] {\tt SoftConfFlag(l,is)}:\index{basis!soft confinement potential}
@@ -1525,7 +1603,6 @@ the program after basis generation, look at the maximum filtering
 cutoff used, and set the mesh-cutoff manually in a later run.)
 
 \end{description}
-
 
 
 \vspace{5pt}
@@ -5281,10 +5358,6 @@ shortly.
 \end{description}
         
 
-\subsection{User-provided basis orbitals}
-
-See {\it User.Basis} and {\it User.Basis.NetCDF} descriptors.
-
 \subsection{Pseudopotentials}
 
 The pseudopotentials will be read by {\sc Siesta} from different files, one
@@ -5396,17 +5469,6 @@ copied to the fdf.log file only if you specify the {\it dump} option
 for them.
 
 
-\subsection{Basis orbitals, KB projectors and Vna (.ion files)}
-\index{basis}\index{output!basis}
-{\sc Siesta} (and the standalone program {\sc Gen-basis}) 
-\index{basis!Gen-basis standalone program}
-always generate the files
-{\it Atomlabel}{\tt .ion}, where {\it Atomlabel} is the atomic label
-specified in block {\it ChemicalSpeciesLabel}.  Optionally, if
-the NetCDF support subsystem is compiled in, the programs generate
-NetCDF files \index{NetCDF format}
-{\it Atomlabel}{\tt .ion.nc}.
-See an Appendix for information on the optional NetCDF package.
 
 \subsection{Pseudopotentials}
 \index{Pseudopotentials} {\sc Siesta} uses as local pseudopotential a smooth
@@ -6244,6 +6306,32 @@ main {\sc Siesta} compilation directory is the top {\tt Obj}
 directory. If you have used another object directory {\tt MyObjDir},
 type {\tt make OBJDIR=MyObjDir}.
 
+\section{ANALYSIS TOOLS}
+\section{ANALYSIS TOOLS}
+
+\begin{itemize}
+
+\item PDOS/COOP/COHP offline generator.
+%
+Uses WFSX and HSX files to provide an alternative, more flexible
+method of computing the PDOS curves, offering also COOP and COHP
+curves. See {\tt Util/COOP}
+
+\item Projections.
+%
+See Util/Projections
+
+\item DM filter
+
+\item DM creator
+
+\end{itemize}
+
+\subsection{COOP/COHP/PDOS curves}
+\subsection{Grid utilities}
+
+\section{SCRIPTING}
+
 \section{PROBLEM HANDLING}
 
 \subsection{Error and warning messages}
@@ -6598,7 +6686,7 @@ DEFS_CDF=-DCDF
 {\tt \$(NETCDF\_LIBS)} must be added to the {\tt LIBS} list and
 {\tt \$(NETCDF\_INCLUDE)} must be added to the {\tt INCFLAGS} list (or
 {\tt INCFLAGS} may be set directly). See examples in the Src/Sys
-directory, and {\tt Src/Sys/COMMENTED-TEMPLATE.make}.
+directory, and {\tt Src/Sys/DOCUMENTED-TEMPLATE.make}.
 
 
 ({\sc Siesta} used to include an old f90 interface to NetCDF in the
@@ -6614,6 +6702,7 @@ information instead of a density-matrix,  new analysis tools, etc.
 \newpage
 \section{APPENDIX: Parallel {\sc Siesta}}
 \index{Parallel {\sc Siesta}}
+\label{sec:parallel}
 
 At present, {\sc Siesta} has been parallelised with moderate system sizes
 in mind and is suitable for comensurately moderate parallel computing
@@ -6731,7 +6820,7 @@ Parallel versions of the files for {\tt arch.make} suitable for a
 number of systems are provided in the {\tt Src/Sys} directory. Should
 there be no suitable file there for your system, then the following
 are the key variables to be set in the {\tt arch.make} file (see also
-the commented {\tt arch.make} file in {\tt Src/Sys/COMMENTED-TEMPLATE.make}):
+the commented {\tt arch.make} file in {\tt Src/Sys/DOCUMENTED-TEMPLATE.make}):
 
 \begin{verbatim}
 MPI_INTERFACE=libmpi_f90.a
