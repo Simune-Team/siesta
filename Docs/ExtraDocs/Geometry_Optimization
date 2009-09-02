@@ -1,3 +1,8 @@
+
+\section{GEOMETRY OPTIMIZATION}
+
+\begin{verbatim}
+
 The different options
 
 (with and without zmatrix)
@@ -9,4 +14,6 @@ The different options
 
 Influence of the eggbox.
 New algorithms: BFGS??
+
+\end{verbatim}
 

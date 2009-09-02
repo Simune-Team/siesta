@@ -1,8 +1,13 @@
+
+\section{CODE ROADMAP}
+
 Explanation of what and "when" to expect regarding:
 
-- BSC optimizations
-- New features coming in
-- Refactoring and modularization 
+\begin{itemize}
+\item BSC optimizations
+\item New features coming in
+\item Refactoring and modularization 
+\end{itemize}
 
 and the new approach to code distribution (stable, beta, and development).
 
