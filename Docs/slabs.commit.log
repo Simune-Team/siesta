@@ -1,0 +1,24 @@
+Code to treat slabs with net dipole and charged slabs (P. Ordejon)
+
+If the FDF option 'SlabDipoleCorrection' is set to "true", Siesta
+calculates the electric field required to compensate the dipole of the
+system. The potential added to the grid corresponds to that of a
+dipole layer at the middle of the vacuum layer. For slabs, this
+exactly compensates the electric field at the vacuum, created by the
+dipole moment of the system, thus allowing to deal with asymmetric
+slabs (including systems with an adsorbate on one surface) and compute
+properties such as the work funcion of each of the surfaces.
+
+The FDF option SimulateDoping, if "true", instructs the program to add
+a background charge density to simulate doping.  The new "doping"
+routine calculates the net charge of the system, and adds a
+compensating background charge that makes the system neutral. This
+background charge is constant at points of the mesh near the atoms,
+and zero at points far from the atoms.  This simulates situations like
+doped slabs, where the extra electrons (holes) are compensated by
+oposite charges at the material (the ionized dopant impurities), but
+not at the vacuum.  This serves to simulate properly doped systems in
+which there are large portions of vacuum, such as doped slabs.
+
+New test: sic-slab
+

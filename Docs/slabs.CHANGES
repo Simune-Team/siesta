@@ -1,4 +1,12 @@
 -------------------------------------------------------------------------
+2009-09-02 Alberto Garcia <albertog@icmab.es>  trunk-296--slabs-p4
+Integrated sic-slab test. Updated documentation
+
+New test (sic-slab).
+Updated siesta.tex
+Put an advertisement for the averaging octave scripts in Macroave.
+
+-------------------------------------------------------------------------
 2009-09-02 Alberto Garcia <albertog@icmab.es>  trunk-296--slabs-p3
 Synch to trunk-296
 
