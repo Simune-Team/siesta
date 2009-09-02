@@ -41,6 +41,8 @@
       use basis_types, only: basis_def_t
       use fdf
       use pseudopotential, only: pseudopotential_t
+      use siestaXC, only: atomXC  ! XC for a spherical charge
+      use siestaXC, only: getXC   ! Returns the XC functional to be used
 
       implicit none      
 
@@ -2009,14 +2011,13 @@ C It will display a warning if Rc>4.5 a.u.or Rc < 0.5a.u.!!!!!!!!!!!!
 C Checking the functional used for exchange-correlation energy.
 C Written by D. Sanchez-Portal, Aug. 1998
 
-        use xcmod, only : nXCfunc, XCfunc, XCauth
-
 C Passed variable
         character(len=2), intent(in) :: icorr
 
 C Local variables
-        integer                      :: nf
+        integer                      :: nf, nXCfunc
         character(len=40)            :: ps_string
+        character(len=20)            :: XCauth(10), XCfunc(10)
 
         ps_string = "Unknown atomic XC code"
         if (icorr .eq. "ca") ps_string ="Ceperley-Alder"
@@ -2030,6 +2031,9 @@ C Local variables
         if (icorr .eq. "ps") ps_string ="GGA PBEsol"
         if (icorr .eq. "vf" .or. icorr .eq. "vw") 
      $    ps_string ="VDW Dion-Rydberg-Schroeder-Langreth-Lundqvist"
+
+C Get functional(s) being used
+        call getXC( nXCfunc, XCfunc, XCauth )
 
 C Loop over functionals
         do nf = 1,nXCfunc

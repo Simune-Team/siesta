@@ -141,13 +141,13 @@ C
       use parsing
       use m_iorho,  only : write_rho
       use m_forhar, only : forhar
-      use xcmod,    only : nXCfunc, XCauth
+      use siestaXC, only : getXC        ! Returns the XC functional used
       use alloc,    only : re_alloc, de_alloc
       use files,    only : slabel
       use mesh3D,   only : myMeshBox    ! Returns my processor mesh box
       use mesh3D,   only : setMeshDistr ! Sets a distribution of mesh
                                         ! points over parallel processors
-      use m_cellxc, only : cellxc       ! Finds xc energy and potential
+      use siestaXC, only : cellXC       ! Finds xc energy and potential
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -188,7 +188,7 @@ C
 C ----------------------------------------------------------------------
 C Routines called internally:
 C ----------------------------------------------------------------------
-C        cellxc(...)    : Finds total exch-corr energy and potential
+C        cellXC(...)    : Finds total exch-corr energy and potential
 C        cross(a,b,c)   : Finds the cross product of two vectors
 C        dfscf(...)     : Finds SCF contribution to atomic forces
 C        dipole(...)    : Finds electric dipole moment
@@ -211,8 +211,8 @@ C ----------------------------------------------------------------------
 C real*8  bcell(3,3)    : Bulk lattice vectors
 C real*8  cell(3,3)     : Auxiliary lattice vectors (same as ucell)
 C real*8  const         : Auxiliary variable (constant within a loop)
-C real*8  DEc           : Auxiliary variable to call cellxc
-C real*8  DEx           : Auxiliary variable to call cellxc
+C real*8  DEc           : Auxiliary variable to call cellXC
+C real*8  DEx           : Auxiliary variable to call cellXC
 C real*8  dvol          : Mesh-cell volume
 C real*8  Ec            : Correlation energy
 C real*8  Ex            : Exchange energy
@@ -262,7 +262,7 @@ C
       integer
      .  i, ia, io, ip, iphi, is, ispin, j, ifor,
      .  n, nbcell, nm(3), npcc, nsd, nv, nzero(3), 
-     .  ntopl, nmpl, nsc(3), ntpl, nml(3), ntml(3)
+     .  ntopl, nmpl, nsc(3), ntpl, nml(3), ntml(3), nXCfunc
       integer
      .  iNode, myBox(2,3)
       integer, save::
@@ -291,6 +291,8 @@ C
 #endif
 
       logical :: leqi
+
+      character(len=20):: XCauth(10), XCfunc(10)
 
       logical, save :: 
      .  frstme, harrisfun, IsDiag, IsEfld, samesh, samexa, spiral
@@ -371,6 +373,9 @@ C Read spin-spiral wavevector (if defined)
      $    call die('dhscf: ERROR: spiral defined but nspin < 4')
 
       endif
+
+C Get functional(s) being used
+      call getXC( nXCfunc, XCfunc, XCauth )
 
       if (.not.harrisfun) then
         ifor = 0
@@ -872,7 +877,7 @@ C ----------------------------------------------------------------------
         call reord(DRho(1,ispin),DRho(1,ispin),nml,nsm,+1)
       enddo
 
-      call cellxc( 0, cell, ntm, myBox(1,1), myBox(2,1),
+      call cellXC( 0, cell, ntm, myBox(1,1), myBox(2,1),
      .                           myBox(1,2), myBox(2,2),
      .                           myBox(1,3), myBox(2,3), nspin,
      .             DRho, Ex, Ec, DEx, DEc, stressXC, Vscf )

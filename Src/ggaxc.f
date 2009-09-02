@@ -1,14 +1,58 @@
-! 
-! This file is part of the SIESTA package.
+!!@LICENSE
 !
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+!******************************************************************************
+! MODULE m_ggaxc
+! Provides routines for GGA XC functional evaluation
+!******************************************************************************
 !
+!   PUBLIC procedures available from this module:
+! ggaxc,    ! General subroutine for all coded GGA XC functionals
+! blypxc,   ! Becke-Lee-Yang-Parr (see subroutine blypxc)
+! pbexc,    ! Perdew, Burke & Ernzerhof, PRL 77, 3865 (1996)
+! pbesolxc, ! Perdew et al, PRL, 100, 136406 (2008)
+! pw91xc,   ! Perdew & Wang, JCP, 100, 1290 (1994)
+! revpbexc, ! GGA Zhang & Yang, PRL 80,890(1998)
+! rpbexc,   ! Hammer, Hansen & Norskov, PRB 59, 7413 (1999)
+! wcxc      ! Wu-Cohen (see subroutine wcxc)
+!
+!   PUBLIC parameters, types, and variables available from this module:
+! none
+!
+!******************************************************************************
+!
+!   USED module procedures:
+! use sys,     only: die     ! Termination routine
+! use m_ldaxc, only: exchng  ! Local exchange
+! use m_ldaxc, only: pw92c   ! Perdew & Wang, PRB, 45, 13244 (1992) (Corr. only)
+!
+!   USED module parameters:
+! use precision,  only: dp   ! Real double precision type
+!
+!   EXTERNAL procedures used:
+! none
+!
+!******************************************************************************
 
+      MODULE m_ggaxc
+
+      USE m_ldaxc, only: exchng  ! Local exchange
+      USE m_ldaxc, only: pw92c   ! Perdew & Wang, PRB, 45, 13244 (1992) correl
+
+      implicit none
+
+      PUBLIC::  
+     .  ggaxc,    ! General subroutine for all coded GGA XC functionals
+     .  blypxc,   ! Becke-Lee-Yang-Parr (see subroutine blypxc)
+     .  pbexc,    ! Perdew, Burke & Ernzerhof, PRL 77, 3865 (1996)
+     .  pbesolxc, ! Perdew et al, PRL, 100, 136406 (2008)
+     .  pw91xc,   ! Perdew & Wang, JCP, 100, 1290 (1994)
+     .  revpbexc, ! GGA Zhang & Yang, PRL 80,890(1998)
+     .  rpbexc,   ! Hammer, Hansen & Norskov, PRB 59, 7413 (1999)
+     .  wcxc      ! Wu-Cohen (see subroutine wcxc)
+
+      PRIVATE  ! Nothing is declared public beyond this point
+
+      CONTAINS
 
       SUBROUTINE GGAXC( AUTHOR, IREL, nspin, D, GD,
      .                  EPSX, EPSC, DEXDD, DECDD, DEXDGD, DECDGD )
@@ -140,7 +184,7 @@ C Gradient terms
    60   CONTINUE
       ENDIF
 
-      END
+      END SUBROUTINE GGAXC
 
 
 
@@ -339,7 +383,7 @@ C Set output arguments
    80   CONTINUE
    90 CONTINUE
 
-      END
+      END SUBROUTINE PBEXC
 
 
 
@@ -540,7 +584,7 @@ C Set output arguments
    80   CONTINUE
    90 CONTINUE
 
-      END
+      END SUBROUTINE REVPBEXC
 
 
 
@@ -764,7 +808,7 @@ C Set output arguments
    80   CONTINUE
    90 CONTINUE
 
-      END
+      END SUBROUTINE PW91XC
 
 
 
@@ -1011,7 +1055,7 @@ c second derivatives with respect to the density gradient
          dECdgd(ix,is)=dLYPgd(ix,is)
         enddo
        enddo
-       end 
+       end subroutine blypxc
 
 
 
@@ -1231,7 +1275,7 @@ C Set output arguments
    80   CONTINUE
    90 CONTINUE
 
-      END
+      END SUBROUTINE RPBEXC
 
 
 
@@ -1451,7 +1495,7 @@ C Set output arguments
    80   CONTINUE
    90 CONTINUE
 
-      END
+      END SUBROUTINE WCXC
 
 
 
@@ -1650,5 +1694,8 @@ C Set output arguments
    80   CONTINUE
    90 CONTINUE
 
-      END
+      END SUBROUTINE PBESOLXC
+
+      END MODULE m_ggaxc
+
 

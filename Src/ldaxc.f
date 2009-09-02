@@ -1,13 +1,47 @@
-! 
-! This file is part of the SIESTA package.
+!!@LICENSE
 !
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+!******************************************************************************
+! MODULE m_ldaxc
+! Provides routines for LDA XC functional evaluation
+!******************************************************************************
 !
+!   PUBLIC procedures available from this module:
+! ldaxc   ! General subroutine for all coded LDA XC functionals
+! exchng  ! Local exchange
+! pw92c   ! Perdew & Wang, PRB, 45, 13244 (1992) (Correlation only)
+! pw92xc  ! Perdew & Wang, PRB, 45, 13244 (1992)
+! pzxc    ! Perdew & Zunger, PRB 23, 5075 (1981)
+!
+!   PUBLIC parameters, types, and variables available from this module:
+! none
+!
+!******************************************************************************
+!
+!   USED module procedures:
+! use sys,        only: die             ! Termination routine
+!
+!   USED module parameters:
+! use precision,  only: dp              ! Real double precision type
+!
+!   EXTERNAL procedures used:
+! none
+!
+!******************************************************************************
+
+      MODULE m_ldaxc
+
+      implicit none
+
+      PUBLIC::
+     .  ldaxc,   ! General subroutine for all coded LDA XC functionals
+     .  exchng,  ! Local exchange
+     .  pw92c,   ! Perdew & Wang, PRB, 45, 13244 (1992) (Correlation only)
+     .  pw92xc,  ! Perdew & Wang, PRB, 45, 13244 (1992)
+     .  pzxc     ! Perdew & Zunger, PRB 23, 5075 (1981)
+
+      PRIVATE ! Nothing is declared public beyond this point
+
+      CONTAINS
 
       subroutine exchng( IREL, NSP, DS, EX, VX )
 
@@ -96,7 +130,7 @@ C X-alpha parameter:
         VX(1) = VXP
         EX    = EXP_VAR
       ENDIF
-      END
+      END subroutine exchng
 
 
 
@@ -201,7 +235,7 @@ C                     dE/dDdown * dDown/dD(ispin)
           VC(IS) = VCD(IS)
    20   CONTINUE
       ENDIF
-      END
+      END SUBROUTINE LDAXC
 
 
 
@@ -319,7 +353,7 @@ C Find correlation potential
         VC(2) = EC + DTOT * DECDD(2)
       ENDIF
 
-      END
+      END SUBROUTINE PW92C
 
 
 
@@ -353,7 +387,7 @@ C ********************************************************************
 
       CALL EXCHNG( IREL, nspin, Dens, EPSX, VX )
       CALL PW92C( nspin, Dens, EPSC, VC )
-      END
+      END SUBROUTINE PW92XC
 
 
 
@@ -612,4 +646,7 @@ C      Change from Rydbergs to Hartrees
            DVCDN(ISP,ISP2) = HALF * DVCDN(ISP,ISP2)
     5    CONTINUE
    10  CONTINUE
-      END
+      END SUBROUTINE PZXC
+
+      END MODULE m_ldaxc
+

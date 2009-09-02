@@ -1,15 +1,7 @@
-! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2008.
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+!!@LICENSE
 !
 ! *******************************************************************
-! subroutine cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, 
+! subroutine cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, 
 !    .               nSpin, dens, Ex, Ec, Dx, Dc, stress, Vxc, dVxcdD )
 ! *******************************************************************
 ! Finds total exchange-correlation energy and potential in a
@@ -25,7 +17,8 @@
 ! Parallel version written by J.Gale. June 1999.
 ! Argument dVxcdD added by J.Junquera. November 2000.
 ! Adapted for multiple functionals in the same run by J.Gale 2005
-! Van der Waals functional added by J.M.Soler, Jan.2008
+! Van der Waals functional added by J.M.Soler, Jan.2008, as explained in
+!   G.Roman-Perez and J.M.Soler, PRL 103, 096102 (2009)
 ! ************************* INPUT ***********************************
 ! integer  irel        : Relativistic exchange? (0=>no, 1=>yes)
 ! real(dp) cell(3,3)   : Unit cell vectors cell(ixyz,ivector)
@@ -130,12 +123,12 @@
 !   end do
 !   end do
 !   end do
-! but the call to cellxc must still be as given above, i.e. the
+! but the call to cellXC must still be as given above, i.e. the
 ! arguments lb1,ub1,... must be the lower and upper bounds of the
 ! mesh box stored by each processor (not the allocated array bounds).
 ! However, the arrays size MUST be (ub1-lb1+1)*(ub2-lb2+1)*(ub3-lb3+1)
 ! The processor mesh boxes must not overlap, and they must cover the 
-! entire unit cell mesh. This is NOT checked inside cellxc.
+! entire unit cell mesh. This is NOT checked inside cellXC.
 !
 ! ********* BEHAVIOUR ***********************************************
 ! - Stops and prints a warning if functl is not one of LDA, GGA, or VDW
@@ -150,8 +143,7 @@
 !   GGAXC, LDAXC, meshKcut, RECLAT, TIMER, VOLCEL
 ! Modules used in serial:
 !   precision : defines parameters 'dp' and 'grid_p' for real kinds
-!   xcmod     : reads from datafile and exports the arrays XCfunc 
-!               and XCauth, that fix xc functional(s) to be used
+!   xcmod     : sets and gets the xc functional(s) used
 !   vdW       : povides routines for the Van der Waals functional
 !   mesh3D    : provides routines to handle mesh arrays distributed
 !               among processors
@@ -197,8 +189,8 @@
 ! Sample usage:
 !   use precision, only: dp
 !   use xcmod, only: setxc
-!   call setxc( 1, (/'GGA'/), (/'PBE'/), (/1._dp/), (/1._dp/) )
-!   call cellxc( ... )
+!   call setXC( 1, (/'GGA'/), (/'PBE'/), (/1._dp/), (/1._dp/) )
+!   call cellXC( ... )
 !
 ! Allowed functional/author values:
 ! XCfunc: 
@@ -219,12 +211,17 @@
 !          'DRSLL' => VDW Dion et al, PRL 92, 246401 (2004)
 ! *******************************************************************
 
-! Wrap cellxc within a module to allow for interface checking by the compiler
-MODULE m_cellxc
+MODULE m_cellXC
 
-CONTAINS ! nothing else but public routine cellxc
+  implicit none
 
-SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
+  PUBLIC:: cellXC  ! Exchange and correlation in a periodic unit cell
+
+  PRIVATE ! Nothing is declared public beyond this point
+
+CONTAINS ! nothing else but public routine cellXC
+
+SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
                    nSpin, dens, Ex, Ec, Dx, Dc, stress, Vxc, dVxcdD )
 
   ! Module routines
@@ -239,6 +236,9 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   use mesh3D,  only: fftMeshDistr  ! Sets/gets distribution for FFTs
   use mesh3D,  only: freeMeshDistr ! Frees a mesh distribution ID
   use moreParallelSubs, only: miscAllReduce ! Adds variables from all processes
+  use xcmod,   only: getXC         ! Returns the XC functional to be used
+  use m_ggaxc, only: ggaxc         ! General GGA XC routine
+  use m_ldaxc, only: ldaxc         ! General LDA XC routine
   use mesh3D,  only: myMeshBox     ! Returns the mesh box of my processor
 ! BEGIN DEBUG
   use moreParallelSubs, only: nodeString ! Returns a string with my node number
@@ -261,14 +261,9 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   use precision, only: dp            ! Double precision real type
   use precision, only: gp=>grid_p    ! Real precision type of mesh arrays
   use parallel,  only: nodes         ! Number of processor nodes
-  use xcmod,     only: nXCfunc       ! Number of xc functional(s)
 ! BEGIN DEBUG
   use m_debug,   only: udebug        ! Output file unit for debug info
 ! END DEBUG
-  use xcmod,     only: XCauth        ! Authors of xc functional(s)
-  use xcmod,     only: XCfunc        ! Type of xc functional(s)
-  use xcmod,     only: XCweightC     ! Weight of correlation functional(s)
-  use xcmod,     only: XCweightX     ! Weight of exchange functinals(s)
 
   implicit none
 
@@ -310,17 +305,17 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   ! Fix a minimum value of k vectors to avoid division by zero
   real(dp),parameter :: kmin = 1.0e-15_dp
 
+  ! Fix the maximum number of functionals to be combined
+  integer, parameter :: maxFunc = 10
+
   ! Subroutine name
-  character(len=*),parameter :: myName = 'cellxc '
+  character(len=*),parameter :: myName = 'cellXC '
   character(len=*),parameter :: errHead = myName//'ERROR: '
 
   ! External procedures used, not contained in modules
   external :: &
-    ggaxc,    &! Finds GGA xc energy and potential at one point
-    ldaxc,    &! Finds LDA xc energy and potential at one point
     meshKcut, &! Finds wavevector cutoff of a uniform mesh
     reclat,   &! Finds reciprocal unit vectors
-    timer,    &! Counts and stores CPU time
     volcel     ! Finds unit cell volume
 
   ! Static internal variables
@@ -367,7 +362,7 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
      l11, l12, l13, l21, l22, l23, &
      m11, m12, m13, m21, m22, m23, maxPoints, mesh(3), &
      myBox(2,3), myMesh(3), myOldDistr, myPoints, &
-     ndSpin, nf, nonemptyPoints, nPoints, nq, ns, &
+     ndSpin, nf, nonemptyPoints, nPoints, nq, ns, nXCfunc, &
      r11, r12, r13, r21, r22, r23
   real(dp):: &
      beginTime, comTime, D(nSpin), dedk, dEcdD(nSpin), dEcdGD(3,nSpin), &
@@ -378,13 +373,16 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
      dVcdD(nSpin*nSpin), dVxdD(nSpin*nSpin), &
      Eaux, EcuspVDW, endTime, Enl, epsC, epsCusp, epsNL, epsX, f1, f2, &  
      GD(3,nSpin), meshKcut, k, kcell(3,3), kcut, kvec(3),  &
-     sumTime, sumTime2, totTime, VDWweightC, volcel, volume
+     sumTime, sumTime2, totTime, VDWweightC, volcel, volume, &
+     XCweightC(maxFunc), XCweightX(maxFunc)
 ! DEBUG
   integer :: iip, jjp, jq
   real(dp):: rmod, rvec(3)
 ! END DEBUG
   logical :: &
      GGA, GGAfunctl, VDW, VDWfunctl
+  character(len=20):: &
+     XCauth(maxFunc), XCfunc(maxFunc)
   character(len=80):: &
      errMsg
   type(allocDefaults):: &
@@ -396,11 +394,13 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 ! END DEBUG
 
   ! Start time counter
-!  call timer( 'cellXC', 1 )
-  call timer_start( 'cellXC' )
+  call timer_start( myName )
 
   ! Find initial CPU time 
 !  call cpu_time( beginTime )
+
+  ! Get the functional(s) to be used
+  call getXC( nXCfunc, XCfunc, XCauth, XCweightX, XCweightC )
 
   ! Set routine name for allocations
   call alloc_default( old=prevAllocDefaults, routine=myName, &
@@ -671,7 +671,7 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
     tvac = tr
 
 ! BEGIN DEBUG
-    call timer( 'cellXC1', 1 )
+!    call timer_start( 'cellXC1' )
 ! END DEBUG
 
     ! Loop on mesh points to find theta_q(r)
@@ -730,9 +730,9 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
     enddo ! i3  (End of loop on mesh points to find theta_q(r))
 
 ! BEGIN DEBUG
-    call timer( 'cellXC1', 2 )
-    call timer( 'cellXC2', 1 )
-    call timer( 'cellXC2.1', 1 )
+!    call timer_stop( 'cellXC1' )
+!    call timer_start( 'cellXC2' )
+!    call timer_start( 'cellXC2.1' )
 ! END DEBUG
 
     ! Fourier-tranform theta_iq(r)
@@ -771,8 +771,8 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
     end do ! iq
 
 ! BEGIN DEBUG
-    call timer( 'cellXC2.1', 2 )
-    call timer( 'cellXC2.2', 1 )
+!    call timer_stop( 'cellXC2.1' )
+!    call timer_start( 'cellXC2.2' )
 ! END DEBUG
 
 ! BEGIN DEBUG
@@ -840,12 +840,12 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
     end do ! i3  End of loop on k-mesh points
 
 ! BEGIN DEBUG
-    call timer( 'cellXC2.2', 2 )
-    call timer( 'cellXC2.3', 1 )
+!    call timer_stop( 'cellXC2.2' )
+!    call timer_start( 'cellXC2.3' )
 ! END DEBUG
 
 ! BEGIN DEBUG
-!    print'(a,3f12.6)','cellxc: Ex,Ec,Enl (eV) =', &
+!    print'(a,3f12.6)','cellXC: Ex,Ec,Enl (eV) =', &
 !      Ex/0.03674903_dp, Ec/0.03674903_dp, Enl/0.03674903_dp
 ! END DEBUG
 
@@ -879,8 +879,8 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
     end do
 
 ! BEGIN DEBUG
-    call timer( 'cellXC2.3', 2 )
-    call timer( 'cellXC2', 2 )
+!    call timer_stop( 'cellXC2.3' )
+!    call timer_stop( 'cellXC2' )
 ! END DEBUG
 
     ! Initialize nonlocal parts of VdW correlation energy
@@ -890,7 +890,7 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   end if ! (VDW) End of VdW initializations------------------------------------
 
 ! BEGIN DEBUG
-  call timer( 'cellXC3', 1 )
+!  call timer_start( 'cellXC3' )
 ! END DEBUG
 
 ! DEBUG
@@ -1169,15 +1169,15 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   end if ! (associated(myVxc))
 
 ! BEGIN DEBUG
-  call timer( 'cellXC3', 2 )
+!  call timer_stop( 'cellXC3' )
 ! END DEBUG
 
 ! BEGIN DEBUG
 !  ! Some printout for debugging
 !  if (VDW) then
 !    print'(a,f12.6)', &
-!         'cellxc: EcuspVDW (eV) =', EcuspVDW/0.03674903_dp
-!    print'(a,3f12.6)','cellxc: Ex,Ecl,Ecnl (eV) =', &
+!         'cellXC: EcuspVDW (eV) =', EcuspVDW/0.03674903_dp
+!    print'(a,3f12.6)','cellXC: Ex,Ecl,Ecnl (eV) =', &
 !         Ex/0.03674903_dp, (Ec-Enl)/0.03674903_dp, Enl/0.03674903_dp
 !  end if
 ! END DEBUG
@@ -1238,15 +1238,14 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   call alloc_default( restore=prevAllocDefaults )
 
   ! Stop time counter
-!  call timer( 'cellXC', 2 )
-  call timer_stop( 'cellXC' )
+  call timer_stop( myName )
 
   ! Get local calculation time (including communications)
 !  call cpu_time( endTime )
 !  myTime = endTime - beginTime
 
   ! Get local calculation time (excluding communications)
-  call timer_get( 'cellXC', lastTime=totTime, lastCommTime=comTime )
+  call timer_get( myName, lastTime=totTime, lastCommTime=comTime )
   myTime = totTime - comTime
   sumTime  = myTime
   sumTime2 = myTime**2
@@ -1340,6 +1339,6 @@ CONTAINS !---------------------------------------------------------------------
 
   end subroutine getGradDens
 
-END SUBROUTINE cellxc
+END SUBROUTINE cellXC
 
-END MODULE m_cellxc
+END MODULE m_cellXC

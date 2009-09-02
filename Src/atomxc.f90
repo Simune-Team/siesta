@@ -21,7 +21,8 @@
 ! Ref: L.C.Balbas et al, PRB 64, 165110 (2001)
 ! Written by J.M.Soler using algorithms developed by 
 !   L.C.Balbas, J.L.Martins and J.M.Soler, Dec.1996
-! Van der Waals functional added by J.M.Soler, Jul.2008
+! Van der Waals functional added by J.M.Soler, Jul.2008, as explained in
+!   G.Roman-Perez and J.M.Soler, PRL 103, 096102 (2009)
 ! ************************* INPUT ***********************************
 ! INTEGER irel         : Relativistic exchange? (0=>no, 1=>yes)
 ! INTEGER nr           : Number of radial mesh points
@@ -63,17 +64,17 @@
 ! Stops and prints an error message if functl is not one of LDA, GGA, or VDW
 !
 ! ********* DEPENDENCIES ********************************************
-! Routines called: 
-!   ggaxc, ldaxc
 ! Modules used:
 !   alloc     : provides (re)allocation utility routines
+!   m_filter  : provides a routine to find planewave cutoff of a radial func.
+!   m_ggaxc   : provides GGA XC routine
+!   m_ldaxc   : provides LDA XC routine
 !   m_radfft  : provides radial fast Fourier transform
 !   m_vdwxc   : povides routines for the Van der Waals functional
 !   mesh1D    : provides utilities to manipulate 1D meshes
 !   precision : defines parameters 'dp' and 'grid_p' for real kinds
 !   sys       : provides the stopping subroutine 'die'
-!   xcmod     : reads from datafile and exports the arrays XCfunc 
-!               and XCauth, that fix xc functional(s) to be used
+!   xcmod     : provides routines to fix and get the xc functional(s) used
 ! ********* PRECISION MODULE PROTOTYPE ******************************
 ! The following module will set the required real types
 !
@@ -134,6 +135,16 @@
 !          'DRSLL' => VDW Dion et al, PRL 92, 246401 (2004)
 ! *******************************************************************
 
+MODULE m_atomxc
+
+  implicit none
+
+  PUBLIC:: atomxc  ! Exchange and correlation of a spherical density
+
+  PRIVATE ! Nothing is declared public beyond this point
+
+CONTAINS
+
 subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 
 ! Module routines
@@ -141,7 +152,10 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
   use alloc,   only: de_alloc      ! Deallocates arrays
   use mesh1d,  only: derivative    ! Performs numerical derivative
   use sys,     only: die           ! Termination routine
+  use xcmod,   only: getXC         ! Returns the XC functional to be used
+  use m_ggaxc, only: ggaxc         ! General GGA XC routine
   use mesh1d,  only: interpolation ! Interpolation routine
+  use m_ldaxc, only: ldaxc         ! General LDA XC routine
   use m_filter,only: kcPhi         ! Finds planewave cutoff of a radial func.
   use m_radfft,only: radfft        ! Radial fast Fourier transform
   use alloc,   only: re_alloc      ! Reallocates arrays
@@ -154,17 +168,14 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
   use m_vdwxc, only: vdw_theta     ! Returns VDW theta function
 
 ! Module types and variables
-  use alloc,     only: allocDefaults ! Derived type for allocation defaults
+  use precision, only: dp          ! Double precision real type
+  use alloc,   only: allocDefaults ! Derived type for allocation defaults
 ! BEGIN DEBUG
-!  use m_debug,   only: udebug        ! Output file unit for debug info
+!  use timer_m, only: timer_start   ! Start CPU time counter
+!  use timer_m, only: timer_stop    ! Stop CPU time counter
+!  use m_debug, only: udebug        ! Output file unit for debug info
 !  use m_vdwxc, only: qofrho        ! Returns q(rho,grad_rho)
 ! END DEBUG
-  use precision, only: dp            ! Double precision real type
-  use xcmod,     only: nXCfunc       ! Number of xc functional(s)
-  use xcmod,     only: XCauth        ! Authors of xc functional(s)
-  use xcmod,     only: XCfunc        ! Type of xc functional(s)
-  use xcmod,     only: XCweightC     ! Weight of correlation functional(s)
-  use xcmod,     only: XCweightX     ! Weight of exchange functinals(s)
 
   implicit none
 
@@ -203,17 +214,24 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
   real(dp), parameter :: EtolKc = 0.003_dp ! Ry
   real(dp), parameter :: kcmax  = 20._dp   ! Bohr^-1
 
+! Fix the maximum number of functionals to be combined
+  integer, parameter :: maxFunc = 10
+
 ! Local variables and arrays
   logical :: &
     GGA, GGAfunc, VDW, VDWfunc
   integer :: &
-    ik, in, in1, in2, iq, ir, is, ix, jn, ndSpin, nf, nq
+    ik, in, in1, in2, iq, ir, is, ix, jn, ndSpin, nf, nq, nXCfunc
   real(dp) :: &
     dEcdD(nSpin), dEcdGD(3,nSpin), dEcuspdD(nSpin), dEcuspdGD(3,nSpin), &
     dExdD(nSpin), dExdGD(3,nSpin), dEdDaux(nSpin), dGdm(-nn:nn), &
     dk, dr, drdm(nr), Dtot, dVcdD(nSpin,nSpin), dVxdD(nSpin,nSpin), &
     Eaux, epsC, epsCusp, epsNL, epsX, f1, f2, &  
-    k(0:nk), kc, kmax, pi, r(0:nk), rmax
+    k(0:nk), kc, kmax, pi, r(0:nk), rmax, &
+    XCweightC(maxFunc), XCweightX(maxFunc)
+  character(len=20):: &
+    XCauth(maxFunc), XCfunc(maxFunc)
+
   real(dp), pointer :: &
     D(:,:)=>null(), dGDdD(:,:)=>null(), dVol(:)=>null(), GD(:,:,:)=>null()
   real(dp), pointer:: &
@@ -222,14 +240,12 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
     uk(:,:)=>null(), ur(:,:)=>null()
   type(allocDefaults):: &
     prevAllocDefaults
-  external :: &
-    ggaxc, ldaxc, timer
 ! DEBUG
 !  real(dp):: q, dqdrho, dqdgrho(3)
 ! END DEBUG
 
 ! Start time counter
-!  call timer( 'atomxc', 1 )
+!  call timer_start( 'atomxc' )
 
 ! Check dimension of arrays Dens and Vxc
   if (maxr<nr) call die(errHead//'maxr<nr')
@@ -237,15 +253,14 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 ! Find number of diagonal spin components
   ndSpin = min( nSpin, 2 )
 
+! Get the functional(s) to be used
+  call getXC( nXCfunc, XCfunc, XCauth, XCweightX, XCweightC )
+
 ! Set GGA and VDW switches
   GGA = .false.
   VDW = .false.
   do nf = 1,nXCfunc
     if ( XCfunc(nf).eq.'VDW' .or. XCfunc(nf).eq.'vdw') then
-! DEBUG
-!      Deactivate VDW
-!      VDW = .false.
-! END DEBUG
       VDW = .true.
       GGA = .true.
     else if ( XCfunc(nf).eq.'GGA' .or. XCfunc(nf).eq.'gga') then
@@ -465,10 +480,6 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 
       ! Is this a GGA or VDW?
       if (XCfunc(nf).eq.'VDW' .or. XCfunc(nf).eq.'vdw') then
-! DEBUG
-!        Deactivate VDW
-!        VDWfunc = .false.
-! END DEBUG
         VDWfunc = .true.
         GGAfunc = .true.
       else if (XCfunc(nf).eq.'GGA' .or. XCfunc(nf).eq.'gga') then
@@ -514,16 +525,6 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
         end do ! is
 
       else if (GGAfunc) then
-! DEBUG
-!       Deactivate VdW functional and substitute it by revPBE
-!        if (XCfunc(nf)=='VDW' .and. XCauth(nf)=='DRSLL') then
-!          call ggaxc( 'revPBE', irel, nSpin, D(:,ir), GD(:,:,ir),  &
-!                      epsX, epsC, dExdD, dEcdD, dExdGD, dEcdGD )
-!        else
-!          call ggaxc( XCauth(nf), irel, nSpin, D(:,ir), GD(:,:,ir),  &
-!                      epsX, epsC, dExdD, dEcdD, dExdGD, dEcdGD )
-!        end if
-! END DEBUG
         call ggaxc( XCauth(nf), irel, nSpin, D(:,ir), GD(:,:,ir),  &
                     epsX, epsC, dExdD, dEcdD, dExdGD, dEcdGD )
       else
@@ -609,7 +610,10 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
   call alloc_default( restore=prevAllocDefaults )
 
 ! Stop time counter
-!  call timer( 'atomxc', 2 )
+!  call timer_stop( 'atomxc' )
 
 end subroutine atomxc
+
+END MODULE m_atomxc
+
 

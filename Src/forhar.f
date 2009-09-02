@@ -16,7 +16,7 @@
       use mesh3D,    only : myMeshBox    ! Returns my processor mesh box
       use mesh3D,    only : setMeshDistr ! Sets a distribution of mesh
                                          ! points over parallel processors
-      use m_cellxc,  only : cellxc       ! Finds xc energy and potential
+      use siestaXC,  only : cellXC       ! Finds xc energy and potential
 
       implicit none
 
@@ -55,7 +55,6 @@ C **********************************************************************
       REAL(grid_p), DIMENSION(NTPL,NSPIN), INTENT(INOUT) :: VHARRIS1
       REAL(grid_p), DIMENSION(NTPL), INTENT(INOUT) :: VHARRIS2
       
-!      EXTERNAL REORD, CELLXC
       EXTERNAL REORD
 
 ! AG: Note:  REAL*4 variables are really REAL(kind=grid_p)

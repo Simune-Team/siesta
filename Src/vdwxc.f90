@@ -17,6 +17,7 @@
 ! where rho(r) is the electron density at point r, grad_rho(r) its gradient,
 ! and q0(rho,grad_rho) and phi(d1,d2) are universal functions defined in 
 ! Eqs.(11-12) and (14-16) of Dion et al.
+! Ref: G.Roman-Perez and J.M.Soler, PRL 103, 096102 (2009)
 ! Written by J.M.Soler. July 2007 - July 2008.
 !------------------------------------------------------------------------------
 ! Used module procedures:
@@ -205,6 +206,7 @@ MODULE m_vdwxc
   use mesh1D,      only: integral          ! Integral of a function in a mesh
   use mesh1D,      only: get_mesh          ! Returns the mesh points
   use mesh1D,      only: get_n             ! Returns the number of mesh points
+  use m_ldaxc,     only: ldaxc             ! General LDA XC routine
   use m_radfft,    only: radfft            ! Radial fast Fourier transform
   use mesh1D,      only: set_interpolation ! Sets interpolation method
   use mesh1D,      only: set_mesh          ! Sets a 1D mesh
@@ -913,7 +915,8 @@ subroutine qofrho( rho, grho, q, dqdrho, dqdgrho )
   integer,         parameter :: nspin  = 1       ! Unpolarized electron gas
   real(dp),parameter :: zab = -0.8491_dp         ! See Dion et al
   real(dp):: decdrho, dexdrho, dkfdrho, dq0dgrho(3), dq0dgrho2, dq0drho, &
-             dqdq0, dvxdrho, dvcdrho, ex, ec, grho2, kf, pi, q0, vx, vc
+             dqdq0, dvxdrho(nspin), dvcdrho(nspin), ex, ec, grho2, &
+             kf, pi, q0, rhos(nspin), vx(nspin), vc(nspin)
 
 ! Trap exception for zero density
   if (rho <= 1.e-15_dp) then
@@ -927,7 +930,8 @@ subroutine qofrho( rho, grho, q, dqdrho, dqdgrho )
   kf = (3*pi**2 * rho)**(1._dp/3)
 
 ! Find exchange and correlation energy densities
-  call ldaxc( author, irel, nspin, rho, ex, ec, vx, vc, dvxdrho, dvcdrho )
+  rhos(1) = rho
+  call ldaxc( author, irel, nspin, rhos, ex, ec, vx, vc, dvxdrho, dvcdrho )
 
 ! Find q
   grho2 = sum(grho**2)
@@ -935,8 +939,8 @@ subroutine qofrho( rho, grho, q, dqdrho, dqdgrho )
 
 ! Find derivatives
   dkfdrho = kf / (3*rho)
-  dexdrho = (vx - ex) / rho  ! Since vx = d(rho*ex)/d_rho = ex + rho*dexdrho
-  decdrho = (vc - ec) / rho
+  dexdrho = (vx(1) - ex) / rho  ! Since vx = d(rho*ex)/d_rho = ex + rho*dexdrho
+  decdrho = (vc(1) - ec) / rho
   dq0drho = ( decdrho/ex - ec/ex**2*dexdrho + 2 * zab/9 * grho2 / &
               (2*kf*rho)**3 * (2*dkfdrho*rho + 2*kf) ) * kf &
             + q0/kf * dkfdrho

@@ -1,5 +1,31 @@
 ------------------------------------------------------------------
 
+2009-09-02  12:00:00 GMT+1	Jose M Soler	siesta-2.6.33-vdw-16-264
+
+Summary: XC routines wrapped in modules
+Keywords: siestaXC
+
+Module siestaXC has been added to wrap setXC, getXC, atomXC, and cellXC.
+LDA and GGA XC routines have been wrapped in modules m_ldaxc and m_ggxc
+Routine getXC has been added in xcmod, to access the module variables.
+
+added:
+  Src/siestaxc.f90  ! Wraps setXC, getXC, atomXC, and cellXC
+
+modified:
+  Src/Makefile      ! Added siestaxc.o + updated dependencies
+  Src/atom.f        ! Added use siestaXC
+  Src/atomxc.f90    ! Added use m_ldaxc and m_ggaxc + call to getXC
+  Src/cellxc.f90    ! Added use m_ldaxc and m_ggaxc + call to getXC
+  Src/dhscf.F       ! Added use siestaXC
+  Src/forhar.f      ! Added use siestaXC
+  Src/ggaxc.f       ! Wrapped in module m_ggaxc
+  Src/ldaxc.f       ! Wrapped in module m_ldaxc
+  Src/vdwxc.f90     ! Added use m_ldaxc and m_ggaxc
+  Src/xcmod.f90     ! Added getXC routine
+
+------------------------------------------------------------------
+
 2009-09-01  14:45:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-15-263
 
 Summary: Split of fft and fft3d modules
