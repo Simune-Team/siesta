@@ -1,7 +1,118 @@
-      subroutine nfft( N )
 
-      use sys, only: die
-      use parallel, only: ionode
+!*********************************************************************
+!        MODULE fft1d
+!        Just a wrapper for routines nfft, gpfa, and setgpfa
+!
+!*********************************************************************
+!
+!        subroutine nfft( N )
+!
+!        CHANGES N INTO THE NEXT INTEGER ALLOWED BY THE GPFA ROUTINE
+!        WRITTEN BY J.M.SOLER. MAY/95.
+!
+!        Input and output:
+!        integer:: N    ! Candidate FFT vector size, increased to
+!                         next allowed value, if necessary
+!
+!*********************************************************************
+!
+!        SUBROUTINE 'GPFA'
+!        SELF-SORTING IN-PLACE GENERALIZED PRIME FACTOR (COMPLEX) FFT
+!
+!        *** THIS IS THE ALL-FORTRAN VERSION ***
+!            -------------------------------
+!
+!        CALL GPFA(A,B,TRIGS,INC,JUMP,N,LOT,ISIGN)
+!
+!        A IS FIRST REAL INPUT/OUTPUT VECTOR
+!        B IS FIRST IMAGINARY INPUT/OUTPUT VECTOR
+!        TRIGS IS A TABLE OF TWIDDLE FACTORS, PRECALCULATED
+!              BY CALLING SUBROUTINE 'SETGPFA'
+!        INC IS THE INCREMENT WITHIN EACH DATA VECTOR
+!        JUMP IS THE INCREMENT BETWEEN DATA VECTORS
+!        N IS THE LENGTH OF THE TRANSFORMS:
+!          -----------------------------------
+!            N = (2**IP) * (3**IQ) * (5**IR)
+!          -----------------------------------
+!        LOT IS THE NUMBER OF TRANSFORMS
+!        ISIGN = +1 FOR FORWARD TRANSFORM
+!              = -1 FOR INVERSE TRANSFORM
+!
+!        WRITTEN BY CLIVE TEMPERTON
+!        RECHERCHE EN PREVISION NUMERIQUE
+!        ATMOSPHERIC ENVIRONMENT SERVICE, CANADA
+!
+!----------------------------------------------------------------------
+!
+!        DEFINITION OF TRANSFORM
+!        -----------------------
+!
+!        X(J) = SUM(K=0,...,N-1)(C(K)*EXP(ISIGN*2*I*J*K*PI/N))
+!
+!---------------------------------------------------------------------
+!
+!        FOR A MATHEMATICAL DEVELOPMENT OF THE ALGORITHM USED,
+!        SEE:
+!
+!        C TEMPERTON : "A GENERALIZED PRIME FACTOR FFT ALGORITHM
+!          FOR ANY N = (2**P)(3**Q)(5**R)",
+!          SIAM J. SCI. STAT. COMP., MAY 1992.
+!
+!*********************************************************************
+!
+!        SUBROUTINE 'SETGPFA'
+!        SETUP ROUTINE FOR SELF-SORTING IN-PLACE
+!            GENERALIZED PRIME FACTOR (COMPLEX) FFT [GPFA]
+!
+!        CALL SETGPFA(TRIGS,N)
+!
+!        INPUT :
+!        -----
+!        N IS THE LENGTH OF THE TRANSFORMS. N MUST BE OF THE FORM:
+!          -----------------------------------
+!            N = (2**IP) * (3**IQ) * (5**IR)
+!          -----------------------------------
+!
+!        OUTPUT:
+!        ------
+!        TRIGS IS A TABLE OF TWIDDLE FACTORS,
+!          OF LENGTH 2*IPQR (REAL) WORDS, WHERE:
+!          --------------------------------------
+!            IPQR = (2**IP) + (3**IQ) + (5**IR)
+!          --------------------------------------
+!
+!        WRITTEN BY CLIVE TEMPERTON 1990
+!
+!*********************************************************************
+
+      MODULE fft1d
+
+! Used module procedures:
+      USE sys,       only: die     ! Termination routine
+
+! Used module parameters, variables, and arrays:
+      USE precision, only: dp      ! Double precision real kind
+      USE precision, only: grid_p  ! Real kind used in grid arrays
+      USE parallel,  only: ionode  ! Is this the IO processor?
+
+      implicit none
+
+! Public module procedures:
+      PUBLIC::
+     .  nfft,    ! Finds the next integer allowed by the FFT routine
+     .  gpfa,    ! 1D FFT
+     .  setgpfa  ! Initializes gpfa routine
+
+! Public module parameters, variables, and arrays:
+!     none
+
+      PRIVATE ! Nothing is declared public below this point
+
+      CONTAINS
+
+!*********************************************************************
+
+      SUBROUTINE nfft( N )
 
 C CHANGES N INTO THE NEXT INTEGER ALLOWED BY THE FFT ROUTINE
 C WRITTEN BY J.M.SOLER. MAY/95.
@@ -26,56 +137,12 @@ C WRITTEN BY J.M.SOLER. MAY/95.
       if (Ionode)
      $    write(6,*) 'NFFT: NO SUITABLE INTEGER FOUND FOR N =', NMIN
       call die()
-      END
+      END SUBROUTINE nfft
 
 
-*        SUBROUTINE 'GPFA'
-*        SELF-SORTING IN-PLACE GENERALIZED PRIME FACTOR (COMPLEX) FFT
-*
-*        *** THIS IS THE ALL-FORTRAN VERSION ***
-*            -------------------------------
-*
-*        CALL GPFA(A,B,TRIGS,INC,JUMP,N,LOT,ISIGN)
-*
-*        A IS FIRST REAL INPUT/OUTPUT VECTOR
-*        B IS FIRST IMAGINARY INPUT/OUTPUT VECTOR
-*        TRIGS IS A TABLE OF TWIDDLE FACTORS, PRECALCULATED
-*              BY CALLING SUBROUTINE 'SETGPFA'
-*        INC IS THE INCREMENT WITHIN EACH DATA VECTOR
-*        JUMP IS THE INCREMENT BETWEEN DATA VECTORS
-*        N IS THE LENGTH OF THE TRANSFORMS:
-*          -----------------------------------
-*            N = (2**IP) * (3**IQ) * (5**IR)
-*          -----------------------------------
-*        LOT IS THE NUMBER OF TRANSFORMS
-*        ISIGN = +1 FOR FORWARD TRANSFORM
-*              = -1 FOR INVERSE TRANSFORM
-*
-*        WRITTEN BY CLIVE TEMPERTON
-*        RECHERCHE EN PREVISION NUMERIQUE
-*        ATMOSPHERIC ENVIRONMENT SERVICE, CANADA
-*
-*----------------------------------------------------------------------
-*
-*        DEFINITION OF TRANSFORM
-*        -----------------------
-*
-*        X(J) = SUM(K=0,...,N-1)(C(K)*EXP(ISIGN*2*I*J*K*PI/N))
-*
-*---------------------------------------------------------------------
-*
-*        FOR A MATHEMATICAL DEVELOPMENT OF THE ALGORITHM USED,
-*        SEE:
-*
-*        C TEMPERTON : "A GENERALIZED PRIME FACTOR FFT ALGORITHM
-*          FOR ANY N = (2**P)(3**Q)(5**R)",
-*          SIAM J. SCI. STAT. COMP., MAY 1992.
-*
-*----------------------------------------------------------------------
-*
+!*********************************************************************
+
       SUBROUTINE GPFA(A,B,TRIGS,INC,JUMP,N,LOT,ISIGN)
-
-      use precision, only: dp, grid_p
 
       IMPLICIT NONE
 *
@@ -129,18 +196,18 @@ C
       ENDIF
 *
       RETURN
-      END
+      END SUBROUTINE GPFA
 
+
+!*********************************************************************
 
 *     fortran version of *gpfa2* -
 *     radix-2 section of self-sorting, in-place, generalized pfa
 *     central radix-2 and radix-8 passes included
 *      so that transform length can be any power of 2
 *
-*-------------------------------------------------------------------
-*
+
       subroutine gpfa2f(a,b,trigs,inc,jump,n,mm,lot,isign)
-      use precision, only: dp, grid_p
 
       real(grid_p) ::     a(*), b(*)
       real(dp)     ::     trigs(*)
@@ -1142,7 +1209,10 @@ cdir$ ivdep, shortloop
 *-----( end of loop on blocks of transforms )
 *
       return
-      end
+      end subroutine gpfa2f
+
+!******************************************************************
+
 *     fortran version of *gpfa3* -
 *     radix-3 section of self-sorting, in-place
 *        generalized PFA
@@ -1150,7 +1220,6 @@ cdir$ ivdep, shortloop
 *-------------------------------------------------------------------
 *
       subroutine gpfa3f(a,b,trigs,inc,jump,n,mm,lot,isign)
-      use precision, only: dp, grid_p
 
       real(grid_p) ::     a(*), b(*)
       real(dp)     ::     trigs(*)
@@ -1583,7 +1652,10 @@ cdir$ ivdep, shortloop
 *-----( end of loop on blocks of transforms )
 *
       return
-      end
+      end subroutine gpfa3f
+
+!*******************************************************************
+
 *     fortran version of *gpfa5* -
 *     radix-5 section of self-sorting, in-place,
 *        generalized pfa
@@ -2438,33 +2510,10 @@ cdir$ ivdep, shortloop
 *-----( end of loop on blocks of transforms )
 *
       return
-      end
+      end subroutine gpfa5f
 
-*        SUBROUTINE 'SETGPFA'
-*        SETUP ROUTINE FOR SELF-SORTING IN-PLACE
-*            GENERALIZED PRIME FACTOR (COMPLEX) FFT [GPFA]
-*
-*        CALL SETGPFA(TRIGS,N)
-*
-*        INPUT :
-*        -----
-*        N IS THE LENGTH OF THE TRANSFORMS. N MUST BE OF THE FORM:
-*          -----------------------------------
-*            N = (2**IP) * (3**IQ) * (5**IR)
-*          -----------------------------------
-*
-*        OUTPUT:
-*        ------
-*        TRIGS IS A TABLE OF TWIDDLE FACTORS,
-*          OF LENGTH 2*IPQR (REAL) WORDS, WHERE:
-*          --------------------------------------
-*            IPQR = (2**IP) + (3**IQ) + (5**IR)
-*          --------------------------------------
-*
-*        WRITTEN BY CLIVE TEMPERTON 1990
-*
-*----------------------------------------------------------------------
-*
+!*********************************************************************
+
       SUBROUTINE SETGPFA(TRIGS,maxtrigs,ntrigs,N)
 *
       use precision, only : dp
@@ -2535,4 +2584,7 @@ cdir$ ivdep, shortloop
       ntrigs = i
 *
       RETURN
-      END
+      END SUBROUTINE SETGPFA
+
+      END MODULE fft1d
+

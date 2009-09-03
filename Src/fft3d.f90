@@ -18,6 +18,8 @@
 ! use sys,    only: die           ! Termination routine
 ! use alloc,  only: de_alloc      ! De-allocation routine
 ! use alloc,  only: re_alloc      ! Re-allocation routine
+! use fft1d,  only: gpfa          ! 1-D fast Fourier transform
+! use fft1d,  only: setgpfa       ! Initializes gpfa routine
 ! use mesh3D, only: copyMeshData  ! Copies data in a box of mesh points
 ! use mesh3D, only: fftMeshDistr  ! Sets a mesh distr. for FFTs
 ! use mesh3D, only: myMeshBox     ! Returns the mesh box of my processor
@@ -91,11 +93,15 @@ MODULE m_fft3d
   use sys,    only: die          ! Terminates execution
   use alloc,  only: de_alloc     ! Deallocates arrays
   use alloc,  only: re_alloc     ! (Re)allocates arrays
+  use fft1d,  only: gpfa         ! 1-D fast Fourier transform
+  use fft1d,  only: setgpfa      ! Initializes gpfa routine
   use mesh3D, only: associateMeshTask ! Associates commun. tasks to distr.
   use mesh3D, only: copyMeshData ! Copies a box of mesh data
   use mesh3D, only: fftMeshDistr ! Sets mesh distributions for FFTs
   use mesh3D, only: myMeshBox    ! Returns the mesh box of my node
   use mesh3D, only: redistributeMeshData ! Changes data distribution
+  use m_timer,only: timer_start  ! Start counting CPU time
+  use m_timer,only: timer_stop   ! Stop counting CPU time
 
   ! Used module parameters
   use precision,    only: dp           ! Real double precision type
@@ -104,15 +110,12 @@ MODULE m_fft3d
   use debugXC,      only: udebug    ! File unit for debug output
 ! END DEBUG
 
+  implicit none
+
 PUBLIC:: &
   fft3d   ! 3D complex FFT
 
 PRIVATE ! Nothing is declared public beyond this point
-
-  external:: &
-    gpfa,    &! 1D complex FFT
-    setgpfa, &! Initializes gpfa
-    timer     ! CPU time counter
 
 CONTAINS
 
@@ -144,7 +147,7 @@ subroutine fft3d( dat, meshDistr, nMesh, r2k )
   real(gp),pointer:: myDat(:,:,:,:)=>null(), aDat(:,:,:,:)=>null()
 
   ! Start time counter
-  call timer( 'fft3d', 1 )
+  call timer_start( myName )
 
   ! Get my node's mesh box in input mesh distribution
   call myMeshBox( nMesh, meshDistr, meshBox )
@@ -258,7 +261,7 @@ subroutine fft3d( dat, meshDistr, nMesh, r2k )
   end if
         
   ! Stop time counter
-  call timer( 'fft3d', 2 )
+  call timer_stop( myName )
 
 end subroutine fft3d
 

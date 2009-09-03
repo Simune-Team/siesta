@@ -1,5 +1,19 @@
 ------------------------------------------------------------------
 
+2009-09-03  20:30:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-19-267
+
+Summary: 1-D FFT routines wrapped in module fft1d
+Keywords: fft1d nfft gpfa
+
+modified:
+  Src/Makefile    ! Updated dependencies
+  Src/fft.F       ! Added use fft1d
+  Src/fft1d.F     ! Routines wrapped in module fft1d
+  Src/fft3d.f90   ! Added use fft1d
+  Src/meshsubs.F  ! Added use fft1d
+
+------------------------------------------------------------------
+
 2009-09-03  19:00:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-18-266
 
 Summary: bessph, chkgmx, meshKcut, reclat, and volcel put in modules

@@ -185,6 +185,7 @@ C
       use cellsubs,      only : reclat  ! Finds reciprocal unit cell
       use cellsubs,      only : volcel  ! Finds unit cell volume
       use m_chkgmx,      only : chkgmx  ! Checks planewave cutoff of a mesh
+      use fft1d,         only : nfft    ! Finds allowed value for 1-D FFT
 
       implicit none
 
@@ -227,7 +228,7 @@ C
      .  dismin
 
       external
-     .  dismin, nfft, timer, memory
+     .  dismin, timer, memory
 
       data
      .  k0 / 3*0.0_dp /

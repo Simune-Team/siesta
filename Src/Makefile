@@ -447,9 +447,10 @@ ener3.o: globalise.o m_mpi_utils.o onmod.o precision.o
 ener3lomem.o: globalise.o m_mpi_utils.o onmod.o precision.o
 extrapolon.o: parallel.o precision.o sys.o
 fermid.o: m_recipes.o parallel.o precision.o sys.o
-fft.o: alloc.o meshsubs.o parallel.o parallelsubs.o precision.o sys.o
+fft.o: alloc.o fft1d.o m_timer.o meshsubs.o parallel.o parallelsubs.o
+fft.o: precision.o sys.o
 fft1d.o: parallel.o precision.o sys.o
-fft3d.o: alloc.o debugxc.o mesh3d.o precision.o sys.o
+fft3d.o: alloc.o debugxc.o fft1d.o m_timer.o mesh3d.o precision.o sys.o
 fftr.o: alloc.o fft3d.o mesh3d.o precision.o sys.o
 find_kgrid.o: alloc.o minvec.o parallel.o precision.o units.o
 fire_optim.o: alloc.o m_fdf_global.o m_fire.o m_mpi_utils.o parallel.o
@@ -564,7 +565,7 @@ mesh1d.o: m_recipes.o precision.o
 mesh3d.o: alloc.o debugxc.o parallel.o precision.o sorting.o sys.o
 meshmatrix.o: alloc.o atomlist.o meshsubs.o parallel.o parallelsubs.o
 meshmatrix.o: precision.o
-meshsubs.o: atm_types.o atmfuncs.o cellsubs.o chkgmx.o parallel.o
+meshsubs.o: atm_types.o atmfuncs.o cellsubs.o chkgmx.o fft1d.o parallel.o
 meshsubs.o: parallelsubs.o precision.o radial.o siesta_cml.o
 metaforce.o: parallel.o parsing.o precision.o
 minvec.o: cellsubs.o precision.o sorting.o sys.o

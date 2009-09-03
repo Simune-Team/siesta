@@ -27,6 +27,10 @@
 ! use alloc,        only: de_alloc      ! De-allocation routine
 ! use alloc,        only: re_alloc      ! Re-allocation routine
 ! use parallelsubs, only: HowManyMeshPerNode
+! use fft1d,        only: gpfa          ! 1-D FFT routine
+! use fft1d,        only: setgpfa       ! Sets gpfa routine
+! use m_timer,      only: timer_start   ! Start counting CPU time
+! use m_timer,      only: timer_stop    ! Stop counting CPU time
 !
 !   USED MPI procedures
 ! use mpi_siesta
@@ -34,8 +38,8 @@
 !   USED module parameters:
 ! use precision,    only: dp            ! Real double precision type
 ! use precision,    only: gp=>grid_p    ! Real precision type of mesh arrays
-! use parallel,     only : Node, Nodes, ProcessorY
-! use mesh,         only : nsm
+! use parallel,     only: Node, Nodes, ProcessorY
+! use mesh,         only: nsm
 !
 !   EXTERNAL procedures used:
 ! gpfa    : 1D complex FFT
@@ -46,15 +50,26 @@
 
       MODULE m_fft
 
+      use precision,    only : dp, grid_p
+      use parallel,     only : Node, Nodes, ProcessorY
+      use parallelsubs, only : HowManyMeshPerNode
+      use sys,          only : die
+      use alloc,        only : re_alloc, de_alloc
+      use mesh,         only : nsm
+      use fft1d,        only : gpfa        ! 1-D FFT routine
+      use fft1d,        only : setgpfa     ! Sets gpfa routine
+      use m_timer,      only : timer_start ! Start counting CPU time
+      use m_timer,      only : timer_stop  ! Stop counting CPU time
+#ifdef MPI
+      use mpi_siesta
+#endif
+
+      implicit none
+
       PUBLIC:: 
      .  fft      ! 3D complex FFT
 
       PRIVATE ! Nothing is declared public beyond this point
-
-      external:: 
-     .  gpfa,    ! 1D complex FFT
-     .  setgpfa, ! Initializes gpfa
-     .  timer    ! CPU time counter
 
       CONTAINS
 
@@ -76,22 +91,7 @@ C  real*8 f()      : contains data Fourier transformed
 C
 C  Julian Gale, July 1999
 C
-
-C
-C  Modules
-C
-      use precision,    only : dp, grid_p
-      use parallel,     only : Node, Nodes, ProcessorY
-      use parallelsubs, only : HowManyMeshPerNode
-      use sys,          only : die
-      use alloc,        only : re_alloc, de_alloc
-      use mesh,         only : nsm
-#ifdef MPI
-      use mpi_siesta
-#endif
-
       implicit none
-
 C
 C  Passed arguments
 C
@@ -125,7 +125,7 @@ C
 C
 C  Start time counter
 C
-      call timer( 'fft', 1 )
+      call timer_start( 'fft' )
 
 C
 C  Set mesh size variables
@@ -172,7 +172,7 @@ C
       maxmaxtrigs = maxtrigs
       do i=1,3
         if (OldMesh(i).ne.nMesh(i)) then
-          call setgpfa(trigs(1,i), maxtrigs, ntrigs, nMesh(i))
+          call setgpfa(trigs(:,i), maxtrigs, ntrigs, nMesh(i))
           if (ntrigs.gt.maxmaxtrigs) then
             lredimension = .true.
             maxmaxtrigs = ntrigs
@@ -222,7 +222,7 @@ C
       if (LocalPoints) then
         do i=0,n3l-1
           IOffSet=2*n1lf*n2*i
-          call gpfa(ft(IOffSet+1),ft(IOffSet+2),trigs(:,2),
+          call gpfa(ft(IOffSet+1:),ft(IOffSet+2:),trigs(:,2),
      .            2*n1lf,2,n2,n1lf,-isn)
         enddo
       endif
@@ -253,7 +253,7 @@ C
 C  FFT in Z direction
 C
       if (LocalPoints) then
-        call gpfa(ft,ft(2),trigs(:,3),2*n1lf*n2l,2,n3,n1lf*n2l,-isn)
+        call gpfa(ft,ft(2:),trigs(:,3),2*n1lf*n2l,2,n3,n1lf*n2l,-isn)
       endif
 C
 C  Redistribute data to be distributed by Z again
@@ -269,13 +269,13 @@ C  FFT in Y direction
 C
       do i=0,n3-1
          IOffSet=2*n1*n2*i
-         call gpfa(f(IOffSet+1),f(IOffSet+2),trigs(:,2),
+         call gpfa(f(IOffSet+1:),f(IOffSet+2:),trigs(:,2),
      .             2*n1,2,n2,n1,-isn)
       enddo
 C
 C  FFT in Z direction
 C
-      call gpfa(f,f(2),trigs(:,3),2*n1*n2,2,n3,n1*n2,-isn)
+      call gpfa(f,f(2:),trigs(:,3),2*n1*n2,2,n3,n1*n2,-isn)
 #endif
 
 C
@@ -291,7 +291,7 @@ C
 C
 C  Stop time counter
 C
-      call timer( 'fft', 2 )
+      call timer_stop( 'fft' )
 
       return
       end subroutine fft
@@ -316,11 +316,6 @@ C  Use the processor grid to divide communicator according to Z
 C
 C  Julian Gale, July 1999
 C
-      use precision,   only : dp, grid_p
-      use mpi_siesta
-      use parallel,    only : ProcessorY
-      use sys,         only : die
-      use alloc,       only : re_alloc, de_alloc
 
       implicit none
 
@@ -581,11 +576,6 @@ C  Need to improve communication later.
 C
 C  Julian Gale, July 1999
 C
-      use precision,   only: dp, grid_p
-      use mpi_siesta
-      use parallel,    only : ProcessorY
-      use sys,         only : die
-      use alloc,       only : re_alloc, de_alloc
 
       implicit none
 
