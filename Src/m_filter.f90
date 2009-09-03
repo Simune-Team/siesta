@@ -21,6 +21,15 @@
 !   PUBLIC parameters, types, and variables available from this module:
 ! none
 !
+!   USED module routines:
+! use m_bessph,  only bessph  ! Spherical bessel functions
+! use m_radfft,  only radfft  ! Radial fast Fourier transform
+! use m_recipes, only four1   ! 1D Fast Fourier transform
+! use m_recipes, only tqli    ! Eigvals and eigvecs. of a tridiagonal matrix
+! use m_recipes, only tred2   ! Matrix reduction to tridiagonal form
+! use m_sorting, only order   ! Orders a vector by increasing values
+! use m_sorting, only ordix   ! Index of a vector by increasing values
+!
 !******************************************************************************
 !! subroutine filter( l, nr, r, f, kc, norm_opt, n_eigen )
 !
@@ -60,6 +69,15 @@
 !******************************************************************************
 
 MODULE m_filter
+
+! Used module routines (presently contained within the module, to be moved out):
+! USE m_bessph, only bessph  ! Spherical bessel functions
+! USE m_radfft,  only radfft  ! Radial fast Fourier transform
+! USE m_recipes, only four1   ! 1D Fast Fourier transform
+! USE m_recipes, only tqli    ! Eigvals and eigvecs. of a tridiagonal matrix
+! USE m_recipes, only tred2   ! Matrix reduction to tridiagonal form
+! USE m_sorting, only order   ! Orders a vector by increasing values
+! USE m_sorting, only ordix   ! Index of a vector by increasing values
 
 implicit none
 

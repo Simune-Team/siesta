@@ -1,5 +1,31 @@
 ------------------------------------------------------------------
 
+2009-09-03  19:00:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-18-266
+
+Summary: bessph, chkgmx, meshKcut, reclat, and volcel put in modules
+Keywords: bessph chkgmx meshKcut reclat volcel
+
+Several routines placed in modules, so that they are not seen when
+using siestaXC library. However, reclat and volcel are kept in Src
+also as external routines, to minimize the number of files changed.
+
+added:
+  Src/cellsubs.f       ! New, to contain reclat and volcel
+
+modified:
+  Src/Makefile         ! Added cellsubs.o. Dependencies updated.
+  Src/bessph.f         ! Wrapped by module m_bessph
+  Src/cellxc.f90       ! Added use statements for new modules
+  Src/chkgmx.f         ! Wrapped by module m_chkgmx
+  Src/electrostatic.f  ! Added use statements for new modules
+  Src/m_filter.f90     ! Prepared to remove redundant routines
+  Src/meshsubs.F       ! Added use statements for new modules
+  Src/minvec.f         ! Added use statements for new modules
+  Src/poison.F         ! Added use statements for new modules
+  Src/radfft.f         ! Added use statements for new modules
+
+------------------------------------------------------------------
+
 2009-09-02  18:00:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-17-265
 
 Summary: Initialization of parallel and debug

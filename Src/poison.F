@@ -46,6 +46,9 @@ C
       use alloc,       only : re_alloc, de_alloc
 !      use m_fft3d,     only : fft
       use m_fft,       only : fft
+      use cellsubs,    only : reclat  ! Finds reciprocal lattice vectors
+      use cellsubs,    only : volcel  ! Finds unit cell volume
+      use m_chkgmx,    only : chkgmx  ! Checks planewave cutoff of a mesh
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -68,8 +71,7 @@ C
      .                  J3min, J3max, J2L, J3L, NRemY, NRemZ,
      .                  BlockSizeY, BlockSizeZ
       real(dp)          C, B(3,3), DU, G(3), G2, G2MAX, 
-     .                  K0(3), PI, TINY, VG, VOLUME, VOLCEL
-      external          CHKGMX, RECLAT, VOLCEL
+     .                  K0(3), PI, TINY, VG, VOLUME
       save              K0, TINY
 
       data K0   /3*0.0_dp/

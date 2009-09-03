@@ -239,6 +239,7 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   use xcmod,   only: getXC         ! Returns the XC functional to be used
   use m_ggaxc, only: ggaxc         ! General GGA XC routine
   use m_ldaxc, only: ldaxc         ! General LDA XC routine
+  use m_chkgmx,only: meshKcut      ! Returns the planewave cutoff of a mesh
   use mesh3D,  only: myMeshBox     ! Returns the mesh box of my processor
   use parallel,only: parallel_init ! Initializes nodes variables
 ! BEGIN DEBUG
@@ -246,6 +247,7 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 ! END DEBUG
   use m_vdwxc, only: qofrho        ! For debugging only
   use alloc,   only: re_alloc      ! Reallocates arrays
+  use cellsubs,only: reclat        ! Finds reciprocal unit cell vectors
   use mesh3D,  only: sameMeshDistr ! Finds if two mesh distr. are equal
   use mesh3D,  only: setMeshDistr  ! Defines a new mesh distribution
   use debugXC, only: setDebugOutputUnit ! Sets udebug variable
@@ -257,6 +259,7 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   use m_vdwxc, only: vdw_phi       ! Returns VDW functional kernel
   use m_vdwxc, only: vdw_set_kcut  ! Fixes k-cutoff in VDW integrals
   use m_vdwxc, only: vdw_theta     ! Returns VDW theta function
+  use cellsubs,only: volcel        ! Finds volume of unit cell
 
   ! Module types and variables
   use alloc,     only: allocDefaults ! Derived type for allocation defaults
@@ -314,12 +317,6 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   character(len=*),parameter :: myName = 'cellXC '
   character(len=*),parameter :: errHead = myName//'ERROR: '
 
-  ! External procedures used, not contained in modules
-  external :: &
-    meshKcut, &! Finds wavevector cutoff of a uniform mesh
-    reclat,   &! Finds reciprocal unit vectors
-    volcel     ! Finds unit cell volume
-
   ! Static internal variables
   integer,save::   &
      io2my=-1,     &! ID of communications task between ioDistr and myDistr
@@ -376,8 +373,8 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
      dMdX(3,3), DV, dVol, Dtot, dXdM(3,3), &
      dVcdD(nSpin*nSpin), dVxdD(nSpin*nSpin), &
      Eaux, EcuspVDW, Enl, epsC, epsCusp, epsNL, epsX, f1, f2, &  
-     GD(3,nSpin), meshKcut, k, kcell(3,3), kcut, kvec(3),  &
-     sumTime, sumTime2, totTime, VDWweightC, volcel, volume, &
+     GD(3,nSpin), k, kcell(3,3), kcut, kvec(3),  &
+     sumTime, sumTime2, totTime, VDWweightC, volume, &
      XCweightC(maxFunc), XCweightX(maxFunc)
 ! DEBUG
   integer :: iip, jjp, jq

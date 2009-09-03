@@ -1,24 +1,25 @@
-!     
-! This file is part of the SIESTA package.
+!!@LICENSE
 !
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
-!
-      module m_radfft
-
-      private
-      public :: radfft
-!
-!     Wrap the subroutine in a module to offer an explicit interface
-!     which simplifies the issue of the shape of F and G. Callers
-!     will need to pass a full array or an array section.
-!
-      CONTAINS
-      SUBROUTINE RADFFT( L, NR, RMAX, F, G )
+C *********************************************************************
+C MODULE m_radfft
+C
+C   Public procedures provided:
+C subroutine radfft              ! Radial fast Fourier transform
+C 
+C   Public parameters, variables, and arrays:
+C none
+C
+C   Used module procedures:
+C use m_bessph,  only: bessph    ! Spherical Bessel functions
+C use m_recipes, only: four1     ! 1D fast Fourier transform
+C use alloc,     only: de_alloc  ! Deallocation routines
+C use alloc,     only: re_alloc  ! (Re)allocation routines
+C
+C   Used module parameters:
+C use precision, only: dp        ! Double precision real kind
+C
+C *********************************************************************
+C SUBROUTINE RADFFT( L, NR, RMAX, F, G )
 C *********************************************************************
 C Makes a fast Fourier transform of a radial function.
 C If function f is of the form
@@ -77,9 +78,23 @@ C *********************************************************************
 C Written by J.M.Soler. August 1996.
 C *********************************************************************
 
-      use precision, only : dp
-      use m_recipes, only : four1
-      use alloc,     only : re_alloc, de_alloc
+      MODULE m_radfft
+
+      USE precision, only: dp        ! Double precision real kind
+      USE m_bessph,  only: bessph    ! Spherical Bessel functions
+      USE m_recipes, only: four1     ! 1D fast Fourier transform
+      USE alloc,     only: de_alloc  ! Deallocation routines
+      USE alloc,     only: re_alloc  ! (Re)allocation routines
+!      USE m_timer,   only: timer_start  ! Start counting CPU time
+!      USE m_timer,   only: timer_stop   ! Stop counting CPU time
+
+      PUBLIC :: radfft               ! Radial fast Fourier transform
+
+      PRIVATE
+
+      CONTAINS
+
+      SUBROUTINE RADFFT( L, NR, RMAX, F, G )
 
 C Next line is non-standard and may be suppressed -------------------
       IMPLICIT NONE
@@ -97,16 +112,13 @@ C -------------------------------------------------------------------
 C Internal variable types and dimensions ----------------------------
 
       INTEGER  ::  I, IQ, IR, JR, M, MQ, N, NQ
-      real(dp) ::  BESSPH, C, DQ, DR, FR, PI, R, RN, Q, QMAX
+      real(dp) ::  C, DQ, DR, FR, PI, R, RN, Q, QMAX
 
       real(dp), pointer      ::  GG(:), FN(:,:), P(:,:,:)
-
-      external bessph
-*     external timer
 C -------------------------------------------------------------------
 
 C Start time counter ------------------------------------------------
-*     CALL TIMER( 'RADFFT', 1 )
+*     CALL TIMER_START( 'RADFFT' )
 C -------------------------------------------------------------------
 
 C Allocate local memory ---------------------------------------------
@@ -256,8 +268,10 @@ C Deallocate local memory -------------------------------------------
       call de_alloc( FN,  name = 'FN')
 
 C Stop time counter ------------------------------------------------
-*     CALL TIMER( 'RADFFT', 2 )
+*     CALL TIMER_STOP( 'RADFFT' )
 C -------------------------------------------------------------------
 
-      end subroutine radfft
-      end module m_radfft
+      END SUBROUTINE radfft
+
+      END MODULE m_radfft
+

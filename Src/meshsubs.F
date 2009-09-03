@@ -182,6 +182,9 @@ C
       use mesh
       use meshphi,       only : endpht
       use siesta_cml
+      use cellsubs,      only : reclat  ! Finds reciprocal unit cell
+      use cellsubs,      only : volcel  ! Finds unit cell volume
+      use m_chkgmx,      only : chkgmx  ! Checks planewave cutoff of a mesh
 
       implicit none
 
@@ -221,11 +224,10 @@ C
 C Functions
 C
       real(dp)
-     .  dismin, volcel
+     .  dismin
 
       external
-     .  chkgmx, dismin, nfft, reclat, 
-     .  timer, volcel, memory
+     .  dismin, nfft, timer, memory
 
       data
      .  k0 / 3*0.0_dp /
