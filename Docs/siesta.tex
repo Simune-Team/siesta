@@ -1707,10 +1707,22 @@ setting this parameter to {\tt .false.}
 
 
 \vspace{5pt}
-\subsection{Lattice, coordinates}
+\subsection{Structural information}
 
-The position types, and behaviours of the atoms in the simulation
-must be specified using the flags described in this section.
+There are too many ways to give {\sc Siesta} structural information.
+
+\begin{itemize}
+\item Directly from the fdf file in traditional format.
+\item Directly from the fdf file in the newer Z-Matrix format, using 
+a \textbf{ZMatrix} block.
+\item From an external data file
+\item From a FIFO file, when working in ``server'' mode.
+\end{itemize}
+
+In the following sections we document the different ways, and provide
+a guide to precedence.
+
+\subsubsection{Traditional structure input in the fdf file}
 
 Firstly, the size of the cell itself should be specified, using
 some combination of the flags
@@ -1723,41 +1735,11 @@ Secondly, the positions of the atoms within the cells
 must be specified, using either the traditional {\sc Siesta}
 input format (a modified xyz format) which must be described 
 within
-a \textbf{AtomicCoordinatesAndAtomicSpecies} block, or 
-(from version 1.4) the newer Z-Matrix format, using a
-\textbf{ZMatrix} block. The two formats cannot and
-should not be mixed, but one of them must be used: 
-this is one of the few pieces of information {\sc Siesta}
-needs to find in the input (for which there is no default).
-
-The advantage of the traditional format is that it is
-much easier to set up a system. However, when working
-on systems with constraints, there are only a limited
-number of (very simple) constraints that may be expressed
-within this format, and recompilation is needed for each
-new constraint. 
-
-For any more involved set of constraints, a 
-full \textbf{ZMatrix} formulation should be used - this
-offers much more control, and may be specified fully at
-run time (thus not requiring recompilation) - but
-it is more work to generate the input files for this form.
-
-When using the traditional format, the following additional
-flags may be used: \textbf{AtomicCoordinatesFormat} and
-\textbf{AtomicCoordinatesOrigin}, and constraints should
-be specified with a \textbf{GeometryConstraints} block.
-
-When using the ZMatrix format, the following additional flags
-may be used: \textbf{ZM.UnitsLength}, \textbf{ZM.UnitsAngle},
-\textbf{ZM.ForceTolLength}, \textbf{ZM.ForceTolAngle}, 
-\textbf{ZM.MaxDisplLength}, \textbf{ZM.MaxDisplAngle}
+a \textbf{AtomicCoordinatesAndAtomicSpecies} block. 
 
 \begin{description}
 \itemsep 10pt
 \parsep 0pt
-
-
 \item[{\bf LatticeConstant}] ({\it real length}): 
 \index{LatticeConstant@{\bf LatticeConstant}} 
 Lattice constant. This is just to define the scale of the lattice vectors.
@@ -1973,29 +1955,9 @@ with the supercell given as a normal unit cell.
 
 {\it Default value:} No supercell (supercell equal to unit cell).
 
-\item[{\bf FixAuxiliaryCell}] ({\it logical}): 
-\index{FixAuxiliaryCell@{\bf FixAuxiliaryCell}} 
-
-Logical variable to control whether the auxiliary cell is changed
-during a variable cell optimisation.
-
-\item[{\bf NaiveAuxiliaryCell}] ({\it logical}): 
-\index{NaiveAuxiliaryCell@{\bf NaiveAuxiliaryCell}} 
-
-If true, the program does not check whether the auxiliary cell
-constructed with a naive algorithm is appropriate. This variable
-is only useful if one wishes to reproduce calculations done with
-previous versions in which the auxiliary cell was not large enough, 
-as indicated by warnings such as:\\
-\texttt{xijorb: WARNING: orbital pair 1  341 is multiply connected}
-
-Only small numerical differences in the results are to be expected.
-
-{\it Default value:} {\tt .false.}
-
 \end{description}
 
-\subsubsection{Use of constraints}
+\subsubsection{Use of general constraints}
 \begin{description}
 \itemsep 10pt
 \parsep 0pt
@@ -2112,7 +2074,22 @@ constrained magnitude, unless the displacement steps are very small.
 
 \end{description}
 
-\subsubsection{Z-matrix format}
+\subsubsection{Z-matrix format and constraints}
+
+The advantage of the traditional format is that it is
+much easier to set up a system. However, when working
+on systems with constraints, there are only a limited
+number of (very simple) constraints that may be expressed
+within this format, and recompilation is needed for each
+new constraint. 
+
+For any more involved set of constraints, a 
+full \textbf{ZMatrix} formulation should be used - this
+offers much more control, and may be specified fully at
+run time (thus not requiring recompilation) - but
+it is more work to generate the input files for this form.
+
+
 \begin{description}
 \itemsep 10pt
 \parsep 0pt
@@ -2378,14 +2355,13 @@ optimisation step.
 
 \end{description}
 
-\subsubsection{Saving and reading geometry information}
 
+
+\subsubsection{Output of structural information}
 
 {\sc Siesta} is able to generate several kinds of files containing
-structural information, and can also read its structural input from
-file in different ways.
+structural information (maybe too many).
 
-\subsubsection{Output in several formats}
 \begin{itemize}
 
 \item{\bf STRUCT\_OUT file:}
@@ -2409,7 +2385,8 @@ as the {\tt XV} file.
 
 See {\bf MD.UseStructFile}\index{MD.UseStructFile@{\bf MD.UseStructFile}}.
 
-\item{\bf XV file:}
+\item{\bf XV file:} The coordinates are always written in the {\it
+  Systemlabel}.XV file, and overriden at every step.
 
 \item{\bf OUT.UCELL.ZMATRIX file:}
 \index{OUT.UCELL.ZMATRIX}@{{\it OUT.UCELL.ZMATRIX}}
@@ -2439,6 +2416,10 @@ stresses were computed.
 
 A file with the same format as {\tt OUT.UCELL.ZMATRIX} but with
 a possibly updated geometry.
+
+\item The coordinates can be also accumulated
+in the {\it Systemlabel}.MD or {\it Systemlabel}.MDX files
+depending on {\bf WriteMDhistory}.
 
 \item Additionally, several optional formats are supported:
 
@@ -2482,18 +2463,19 @@ directory for generating .arc files for CERIUS animation.
  
 \item[{\bf WriteMDXmol}] ({\it logical}):
 \index{WriteMDXmol@{\bf WriteMDXmol}}\index{XMol@{\sc XMol}}
-If {\tt .true.} it originates the writing of an extra file
+If {\tt .true.} it causes the writing of an extra file
 named {\it SystemLabel}{\tt .ANI} containing all the atomic
 coordinates of the simulation in a format directly readable by 
 {\sc XMol} for animation.\index{animation} Coordinates come out in 
-{\AA}ngstr\"om independently of what specified in 
+{\AA}ngstr\"om independently of what is specified in 
 {\bf AtomicCoordinatesFormat} and in {\bf AtomCoorFormatOut}.
 This file is accumulative even for different runs.
-There is the alternative for animation by generating a .arc file for 
-CERIUS. It is through the {\sc Sies2arc}\index{Sies2arc@{\sc Sies2arc}} 
-postprocessing utility 
-in the Util/ directory, and it requires the coordinates to be
-accumulated in the output file, i.e., WriteCoorStep = {\tt .true.}
+
+There is an alternative for animation by generating a .arc file for
+CERIUS. It is through the {\sc Sies2arc}\index{Sies2arc@{\sc
+    Sies2arc}} postprocessing utility in the Util/ directory, and it
+requires the coordinates to be accumulated in the output file, i.e.,
+WriteCoorStep = {\tt .true.}
  
 {\it Default value:} {\tt .false.} if WriteCoorStep is {\tt .true.}
 and vice-versa.
@@ -2502,34 +2484,34 @@ and vice-versa.
 
 \end{itemize}
 
-\subsubsection{Input of structural information and precedence issues}
+\subsubsection{Input of structural information from external files}
 
-The structural information can be read from
+The structural information can be also read from external files. Note
+that the NumberOfAtoms, NumberOfSpecies, and ChemicalSpeciesLabel
+options are still mandatory in the fdf file.
 
 \begin{itemize}
-\item The fdf file. The options are those in Secs.~\ref{sec:fdf-geom}
-and~\ref{sec:fdf-zmatrix}
 
 \item The XV file.
-\item[{\bf MD.UseSaveXV}] ({\it logical}):
-\index{MD.UseSaveXV@{\bf MD.UseSaveXV}}
-\index{reading saved data!XV}
-Instructs to read the atomic positions and velocities stored
-in file {\tt SystemLabel}.XV by a previous run.
+\index{MD.UseSaveXV@{\bf MD.UseSaveXV}} \index{reading saved data!XV}
+The logical variable {\bf MD.UseSaveXV}] instructs {\sc Siesta} to
+read the atomic positions and velocities stored in file {\tt
+SystemLabel.XV} by a previous run.
  
-{\it Use:} If the required file does not exist, a warning is
-printed but the program does not stop. Overrides {\bf UseSaveData},
-but can be implicitly set by it.
+If the required file does not exist, a warning is printed but the
+program does not stop. Overrides {\bf UseSaveData}, but can be
+implicitly set by it.
  
 {\it Default value:} {\tt .false.}
 
-\item A .STRUCT\_IN file. The logical fdf variable {\bf
-  UseStructFile} controls whether the structural information is read
-  from an external file of name {\it SystemLabel}.STRUCT\_IN.  If
-  \texttt{.true.}, all other structural information in the fdf file
-  will be ignored.\index{UseStructFile@{\bf
-    UseStructFile}} \index{Systemlabel.STRUCT\_IN@{{\it
-      Systemlabel}.STRUCT\_IN}} 
+\item A .STRUCT\_IN file. The logical fdf variable {\bf UseStructFile}
+  (for historical reasons, {\bf MD.UseStructFile} is also accepted,
+  but deprecated)
+  controls whether the structural information is read from an external
+  file of name {\it SystemLabel}.STRUCT\_IN.  If \texttt{.true.}, all
+  other structural information in the fdf file will be
+  ignored.\index{UseStructFile@{\bf UseStructFile}}
+  \index{Systemlabel.STRUCT\_IN@{{\it Systemlabel}.STRUCT\_IN}}
 
 The format of the file is implied by the following code:
 
@@ -2554,7 +2536,7 @@ any XV files.\index{MD.UseSaveXV@{\bf MD.UseSaveXV}}.
 {\bf MD.UseSaveZM} ({\it logical}): 
 \index{MD.UseSaveZM@{\bf MD.UseSaveZM}} 
 \index{reading saved data!ZM}
-Instructs the program to read the zmatrix information stored
+instructs the program to read the zmatrix information stored
 in file {\tt SystemLabel}.ZM by a previous run.
 
 {\it Use:} If the required file does not exist, a warning is
@@ -2566,6 +2548,32 @@ an XV file is read after this file. It is up to the user to remove
 any XV files.\index{MD.UseSaveXV@{\bf MD.UseSaveXV}}.
 
 {\it Default value:} {\tt .false.}
+\end{itemize}
+
+\subsubsection{Input from a FIFO file}
+
+See the ``Forces'' option in {\bf MD.TypeOfRun}.
+Note that the NumberOfAtoms, NumberOfSpecies, and ChemicalSpeciesLabel
+options are still mandatory in the fdf file.
+
+\subsubsection{Precedence issues in structural input}
+\index{structure input precedence issues}
+
+\begin{itemize}
+\item If the ``server'' option is active, it takes precedence over
+everything (it will overwrite all other input with the information it
+gets from the FIFO file).
+
+\item If MD.UseSaveXV is active, it takes precedence over the options below.
+
+\item If UseStructFile (or MD.UseStructFile) is active, it takes precedence
+over the options below.
+
+\item For atomic coordinates, the traditional and zmatrix formats in
+  the fdf file are mutually exclusive. If {\bf MD.UseSaveZM} is
+  active, the contents of the ZM file, if found, take precedence over
+  the Zmatrix information in the fdf file.
+
 \end{itemize}
 
 \subsection{$k$-point sampling}
@@ -3114,6 +3122,44 @@ for restarts of selfconsistency runs.
 
 \subsubsection{Initialization of the density-matrix}
 
+The Density matrix can be:
+
+\begin{verbatim}
+    1. Synthesized directly from atomic occupations.
+       (See the options below for spin considerations)
+    2. Read from a .DM file
+    3. Extrapolated from (two) previous geometry steps
+    3.a The DM of the previous geometry iteration
+
+    In cases 2 and 3, a check is done to guarantee that the structure
+    of the read or extrapolated DM conforms to the current sparsity.
+    If it does not, the information is re-arranged.
+
+    Special cases:
+           Harris functional: The matrix is always initialized
+           Force calculation: The DM should be written to disk
+                              at the time of the "no displacement"
+                              calculation and read from file at
+                              every subsequent step.
+           Variable-cell calculation:
+             If the auxiliary cell changes, the DM is forced to be
+             initialized (conceivably one could rescue some important
+             information from an old DM, but it is too much trouble 
+             for now). NOTE that this is a change in policy with respect
+             to previous versions of the program, in which a (blind?)
+             re-use was allowed, except if 'ReInitialiseDM' was 'true'.
+             Now 'ReInitialiseDM' is 'true' by default. Setting it to
+             'false' is not recommended.
+
+             In all other cases (including "server operation"), the 
+             default is to allow DM re-use (with possible extrapolation) 
+             from previous geometry steps.
+             The fdf variables 'DM.AllowReuse' and 'DM.AllowExtrapolation'
+             can be used to change this behavior.
+             
+\end{verbatim}
+
+
 \begin{description}
 
 \item[{\bf DM.InitSpinAF}] ({\it logical}):\index{spin}
@@ -3187,6 +3233,65 @@ in the header of routine {\tt Src/new\_dm.F}.
 
 \end{description}
 
+
+
+\subsubsection{Output of density matrix}
+\index{output!density matrix}
+
+\begin{description}
+\item[{\bf WriteDM}] ({\it logical}): \index{WriteDM@{\bf WriteDM}}
+\index{output!density matrix} It determines whether the density matrix
+is output as a binary {\it Systemlabel}.DM file or not.
+
+{\it Default value:} {\tt .true.}
+
+\item[{\bf WriteDM.NetCDF}] ({\it logical}): \index{WriteDM.NetCDF@{\bf WriteDM.NetCDF}}
+\index{output!density matrix} It determines whether the density matrix
+(after the mixing step) is output as a DM.nc netCDF file or not.
+
+The file is overwritten at every SCF step. Use the {\bf
+WriteDM.History.NetCDF} option if a complete history is desired.
+
+The DM.nc and standard DM file formats can be converted at will with
+the programs in {\tt Util/DensityMatrix} directory. Note that the
+DM values in the DM.nc file are in single precision.
+
+{\it Default value:} {\tt .true.} if netCDF support is enabled (see Appendix).
+
+\item[{\bf WriteDMHS.NetCDF}] ({\it logical}): \index{WriteDMHS.NetCDF@{\bf WriteDMHS.NetCDF}}
+\index{output!density
+  matrix}\index{output!hamiltonian}\index{output!overlap matrix} 
+If true, the input density matrix, hamiltonian, and output density matrix, are stored in a netCDF file
+named {\tt DMHS.nc}. The file also contains the overlap matrix S. 
+
+The file is overwritten at every SCF step. Use the {\bf
+  WriteDMHS.History.NetCDF} option if a complete history is desired.
+
+{\it Default value:} {\tt .true.} if netCDF support is enabled (see Appendix).
+
+\item[{\bf WriteDM.History.NetCDF}] ({\it logical}):
+\index{WriteDM.History.NetCDF@{\bf WriteDM.History.NetCDF}}
+\index{output!density matrix}\index{output!density matrix history} If
+true, a series of netCDF files with names of the form {\tt DM-NNNN.nc}
+is created to hold the complete history of the density matrix (after
+mixing).  (See also {\bf WriteDM.NetCDF}). Each file corresponds to a
+geometry step.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf WriteDMHS.History.NetCDF}] ({\it logical}):
+\index{WriteDMHS.History.NetCDF@{\bf WriteDMHS.History.NetCDF}}
+\index{output!density matrix history}\index{output!hamiltonian
+history}\index{output!overlap matrix} If true, a series of netCDF
+files with names of the form {\tt DMHS-NNNN.nc} is created to hold the
+complete history of the input and output density matrix, and the
+hamiltonian.  (See also {\bf WriteDMHS.NetCDF}). Each file corresponds
+to a geometry step. The overlap matrix is stored only once per SCF
+cycle.
+
+{\it Default value:} {\tt .false.}
+
+\end{description}
 \subsubsection{Convergence criteria}
 \index{SCF convergence criteria}
 
@@ -3875,8 +3980,44 @@ even for gamma-point only calculations) are in single precision.
 
 {\it Default value:} {\tt .false.}
         
+See also the {\bf WriteDMHS.NetCDF} and {\bf WriteDMHS.History.NetCDF}
+options.
+\end{description}
+
+\subsubsection{The auxiliary supercell}
+
+When using k-points, this auxiliary supercell is needed to compute properly
+the matrix elements involving orbitals in different unit cells. 
+It is computed automatically by the program at every geometry step. 
+
+\begin{description}
+
+\item[{\bf FixAuxiliaryCell}] ({\it logical}): 
+\index{FixAuxiliaryCell@{\bf FixAuxiliaryCell}} 
+
+Logical variable to control whether the auxiliary cell is changed
+during a variable cell optimization.
+
+\item[{\bf NaiveAuxiliaryCell}] ({\it logical}): 
+\index{NaiveAuxiliaryCell@{\bf NaiveAuxiliaryCell}} 
+
+If true, the program does not check whether the auxiliary cell
+constructed with a naive algorithm is appropriate. This variable is
+only useful if one wishes to reproduce calculations done with previous
+versions of the program in which the auxiliary cell was not large
+enough, as indicated by warnings such as:\\ \texttt{xijorb: WARNING:
+  orbital pair 1 341 is multiply connected}
+
+Only small numerical differences in the results are to be expected.
+
+Note that the warning is harmless for gamma-only calculations, except
+if one pretends to use information about the relative coordinates
+of interacting orbitals (see the COOP.write option).
+
+{\it Default value:} {\tt .false.}
 
 \end{description}
+
 
 \subsection{Calculation of the electronic structure}
 
@@ -5185,7 +5326,7 @@ flag.
 \index{WriteCoorStep@{\bf WriteCoorStep}}
 \index{output!atomic coordinates!in a dynamics step}
 If {\tt .true.} it writes the atomic coordinates at every 
-time or relaxation step. Otherwise it does not. They are
+time or relaxation step. The coordinates are
 always written in the {\it Systemlabel}.XV file, but
 overriden at every step. They can be also accumulated
 in the {\it Systemlabel}.MD or {\it Systemlabel}.MDX files
@@ -5231,58 +5372,6 @@ states.\index{density of states}
 {\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
  
 {\it Default value:} {\tt .false.} (see {\bf LongOutput})
-
-\item[{\bf WriteDM}] ({\it logical}): \index{WriteDM@{\bf WriteDM}}
-\index{output!density matrix} It determines whether the density matrix
-is output as a {\it Systemlabel}.DM file or not.
-
-{\it Default value:} {\tt .true.}
-
-\item[{\bf WriteDM.NetCDF}] ({\it logical}): \index{WriteDM.NetCDF@{\bf WriteDM.NetCDF}}
-\index{output!density matrix} It determines whether the density matrix
-(after the mixing step) is output as a DM.nc netCDF file or not.
-
-The file is overwritten at every SCF step. Use the {\bf
-WriteDM.History.NetCDF} option if a complete history is desired.
-
-The DM.nc and standard DM file formats can be converted at will with
-the programs in {\tt Util/DensityMatrix} directory. Note that the
-DM values in the DM.nc file are in single precision.
-
-{\it Default value:} {\tt .true.} if netCDF support is enabled (see Appendix).
-
-\item[{\bf WriteDMHS.NetCDF}] ({\it logical}): \index{WriteDMHS.NetCDF@{\bf WriteDMHS.NetCDF}}
-\index{output!density
-  matrix}\index{output!hamiltonian}\index{output!overlap matrix} 
-If true, the input density matrix, hamiltonian, and output density matrix, are stored in a netCDF file
-named {\tt DMHS.nc}. The file also contains the overlap matrix S. 
-
-The file is overwritten at every SCF step. Use the {\bf
-  WriteDMHS.History.NetCDF} option if a complete history is desired.
-
-{\it Default value:} {\tt .true.} if netCDF support is enabled (see Appendix).
-
-\item[{\bf WriteDM.History.NetCDF}] ({\it logical}):
-\index{WriteDM.History.NetCDF@{\bf WriteDM.History.NetCDF}}
-\index{output!density matrix}\index{output!density matrix history} If
-true, a series of netCDF files with names of the form {\tt DM-NNNN.nc}
-is created to hold the complete history of the density matrix (after
-mixing).  (See also {\bf WriteDM.NetCDF}). Each file corresponds to a
-geometry step.
-
-{\it Default value:} {\tt .false.}
-
-\item[{\bf WriteDMHS.History.NetCDF}] ({\it logical}):
-\index{WriteDMHS.History.NetCDF@{\bf WriteDMHS.History.NetCDF}}
-\index{output!density matrix history}\index{output!hamiltonian
-history}\index{output!overlap matrix} If true, a series of netCDF
-files with names of the form {\tt DMHS-NNNN.nc} is created to hold the
-complete history of the input and output density matrix, and the
-hamiltonian.  (See also {\bf WriteDMHS.NetCDF}). Each file corresponds
-to a geometry step. The overlap matrix is stored only once per SCF
-cycle.
-
-{\it Default value:} {\tt .false.}
 
 \item[{\bf WriteKbands}] ({\it logical}):
 \index{WriteKbands@{\bf WriteKbands}}\index{output!band $\vec k$ points} 
@@ -5780,10 +5869,6 @@ for them.
 
 
 
-\subsection{Hamiltonian and overlap matrices}
-(file SystemLabel.HS (and .HSX)) See the {\bf SaveHS} data descriptor above.
-
-
 \subsection{Forces on the atoms}
 \index{output!forces}
 The atomic forces of the last step are stored in the file
@@ -5796,9 +5881,6 @@ See the {\bf WriteForces} data descriptor above.
 The coordinates of the $\vec k$ points used in the sampling
 are stored in the file SystemLabel.KP .
 See the {\bf WriteKpoints} data descriptor above.
-
-
-\subsection{Charge densities and potentials}
 
 
 \subsection{Energy bands}
@@ -5945,21 +6027,6 @@ whole minimization again. It is also a good practice
 to save it periodically during the
 simulation, in case a mid-run restart is necessary.
 
-\item {\bf Density Matrix:} At the end of each SCF cycle
-the Density Matrix is stored on
-disk. These can be used as an input for
-the same system in a restart, or in case something goes
-wrong.  The DM is stored in sparse form in files
-SystemLabel.DM
-If the file does not exist, the initial density
-matrix is build from the neutral atom charges.
-
-It is important NOT to use a saved DM as an starting
-point for a run if the conjugate gradients minimization
-which produced the DM file was not highly converged.
-Otherwise, the charge density represented by it
-could be far from the actual charge density, and
-the calculation would most probably not converge.
 \end{itemize}
 
 
