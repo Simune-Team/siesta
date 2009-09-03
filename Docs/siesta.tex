@@ -3857,6 +3857,25 @@ the Order-N calculation faster.  USE WITH CARE!!!
 
 {\it Default value:} {\tt .false.}
 
+\item[{\bf SaveHS}] ({\it logical}): 
+\index{SaveHS@{\bf SaveHS}}\index{output!Hamiltonian \& overlap} 
+Instructs to write the hamiltonian and overlap matrices, as well
+as other data required to generate bands and density of states,
+in file {\tt SystemLabel}.HS. This file can be read by routine IOHS,
+which may be used by an application program in later versions.
+
+In some cases, {\sc Siesta} produces also an HSX file, which is in a
+more compact form than the usual HS, and in which the Hamiltonian,
+overlap matrix, and relative-positions array (which is always output,
+even for gamma-point only calculations) are in single precision.
+(See COOP.Write option)
+\index{output!HSX file} 
+
+{\it Use:} File {\tt SystemLabel}.HS is only written, not read, by siesta.
+
+{\it Default value:} {\tt .false.}
+        
+
 \end{description}
 
 \subsection{Calculation of the electronic structure}
@@ -4745,7 +4764,13 @@ matrix\index{Force Constants Matrix} for phonon calculations.
 \end{description}
 
 \vspace{5pt}
-\subsection{Output of charge densities and potentials}
+\subsection{Output of charge densities and potentials on the grid}
+
+{\sc Siesta} represents these magnitudes on the real-space grid. The
+following options control the generation of the appropriate files,
+which can be processed by the programs in the {\tt Util/Grid}
+directory, and also by Andrei Postnikov's utilities in {\tt
+  Util/Contrib/APostnikov}. See also the Denchar section.
 
 \begin{description}
 \itemsep 10pt
@@ -4754,10 +4779,11 @@ matrix\index{Force Constants Matrix} for phonon calculations.
 \item[{\bf SaveRho}] ({\it logical}): \index{SaveRho@{\bf
     SaveRho}}\index{output!charge density} Instructs to write the
   valence pseudocharge density at the mesh used by DHSCF, in file {\tt
-    SystemLabel}.RHO. This file can be read by routine IORHO, which
-  may be used by an application program in later versions.
+    SystemLabel}.RHO. 
 
 {\it Use:} File {\tt SystemLabel}.RHO is only written, not read, by siesta.
+This file can be read by routine IORHO, which may be used by other
+application programs.
 
 If netCDF support is compiled in, the file {\tt Rho.grid.nc} is produced.
 
@@ -5532,17 +5558,6 @@ printed but the program does not stop. Overrides {\bf UseSaveData}.
 
         
 
-\item[{\bf SaveHS}] ({\it logical}): 
-\index{SaveHS@{\bf SaveHS}}\index{output!Hamiltonian \& overlap} 
-Instructs to write the hamiltonian and overlap matrices, as well
-as other data required to generate bands and density of states,
-in file {\tt SystemLabel}.HS. This file can be read by routine IOHS,
-which may be used by an application program in later versions.
-
-{\it Use:} File {\tt SystemLabel}.HS is only written, not read, by siesta.
-
-{\it Default value:} {\tt .false.}
-        
 \item[{\bf COOP.Write}] ({\it logical}): 
 \index{COOP.Write@{\bf COOP.Write}} 
 \index{output!Information for COOP/COHP curves}
@@ -5765,16 +5780,6 @@ for them.
 
 
 
-\subsection{Pseudopotentials}
-\index{Pseudopotentials} {\sc Siesta} uses as local pseudopotential a smooth
-function up to the core cutoff radius (normally the potential generated
-by the core positive charge spread with a gaussian form). The
-Kleinman-Bylander pseudopotentials are generated
-accordingly. They appear in the {\tt .ion} files.
-\index{pseudopotential!writing vlocal} 
-\index{pseudopotential!writing KB projectors} 
-
-
 \subsection{Hamiltonian and overlap matrices}
 (file SystemLabel.HS (and .HSX)) See the {\bf SaveHS} data descriptor above.
 
@@ -5794,14 +5799,6 @@ See the {\bf WriteKpoints} data descriptor above.
 
 
 \subsection{Charge densities and potentials}
-(files {\it SystemLabel}.{\tt RHO}, {\it SystemLabel}.{\tt DRHO}, {\it
-SystemLabel}.{\tt VH}, {\it SystemLabel}.{\tt VT}, {\it
-SystemLabel}.{\tt VT}) See {\bf SaveRho}, {\bf SaveDeltaRho}, {\bf
-SaveElectrostaticPotential}, {\bf SaveTotalPotential}, and {\bf
-SaveNeutralAtomPotential} data descriptors above.  3D-plots of these
-files can be produced using the pacakges {\sc Plrho}\index{Plrho@{\sc
-Plrho}} and {\sc Grid2cube} \index{Grid2cube@{\sc Grid2cube}} in the
-Util/ \index{output!total charge} directory.
 
 
 \subsection{Energy bands}
@@ -7008,8 +7005,6 @@ always worth tuning the BlockSize parameter.
 \newpage
 \section{APPENDIX: File Formats}
 
-\begin{verbatim}
-
 The file formats in Siesta are in a state of flux. On the one hand,
 some of the legacy formats were inefficient or incomplete, so new ones
 have been devised, and appropriate translators provided when
@@ -7022,56 +7017,55 @@ in Siesta. Examples are the DM.nc and the .Grid.nc files.
 Here we provide an overview of some of the most important files and their
 associated tools.
 
-
-** DENSITY MATRIX ---------------------------------------------------
+\begin{itemize}
+\item{Density matrix}
 
 DM 
 
 Traditional Density Matrix (DM) file. The DM is written by default at
-the end of each SCF step, *after mixing*, so it can be directly used
+the end of each SCF step, {\em after mixing}, so it can be directly used
 in a restart. It is a binary file.
 
 DM.nc
 
 DM in netCDF format. It contains the same information as DM, plus the
-number of orbitals in the auxiliary supercell and the array 'indxuo'
-which maps the orbitals in the supercell to the unit cell.  If the fdf
-option XXXX is used, this file will store all the DMs in an SCF cycle.
+number of orbitals in the auxiliary supercell and the array {\tt indxuo}
+which maps the orbitals in the supercell to the unit cell.  If the history
+option is used, this file will store all the DMs in an SCF cycle.
 
 DMHS.nc
 
 DMin, DMout, Hamiltonian, and Overlap matrix in netCDF format. If the
-fdf option XXXX is used, this file will store the corresponding
-information for all the steps in an SCF cycle.
+appropriate fdf history option is used, this file will store the
+corresponding information for all the steps in an SCF cycle.
 
 Associated tools:
 
+\begin{verbatim}
 Util/DensityMatrix:  cdf2dm, dm2cdf: DM <--> DM.nc conversion
                      experimental octave/matlab scripts to process DM .nc files
 Util/SCF:            experimental python scripts to process DM .nc files
-------------------------------------------------------------------
+\end{verbatim}
 
-** HAMILTONIAN AND OVERLAP MATRICES  -----------------------------
+\item{Hamiltonian and overlap matrices}
 
 HS
 
 The old format, very inefficient in terms of space used. It contains
-also the xij array and information about the atomic species and orbitals.
+also the $x_ij$ array and information about the atomic species and orbitals.
 
 HSX 
 
 The new format, with better packing of binary records.
 
-The two formats coexist for now. Some utilities read HS, and others (notably the
-mprop program in Util/COOP), HSX.
+The two formats coexist for now. Some utilities read HS, and others
+(notably the mprop program in Util/COOP), HSX.
 
 DMHS
 
 See above
 
-------------------------------------------------------------------
-
-** WAVEFUNCTIONS -------------------------------------------------
+\item{Wavefunctions}
 
 WFS
 
@@ -7083,30 +7077,31 @@ New format, without redundant information, and in single precision.
 
 WFS.nc
 
-A netCDF file to store the eigenvectors (in routine diagk_file) as they
+A netCDF file to store the eigenvectors (in routine diagk\_file) as they
 are computed, thus saving a second round of diagonalization after the
 calculation of the Fermi level.
 
 Associated tools:
-
+\begin{verbatim}
 Util/WFS: readwfx, wfsnc2wfsx, readwf,  wfs2wfsx, wfsx2wfs
+\end{verbatim}
 
-------------------------------------------------------------------
+\item{Grid magnitudes}
 
-GRID MAGNITUDES --------------------------------------------------
+RHO, VT, DRHO, VH...
 
-RHO, VT, DRHO, VH....
-
-These are binary files, read directly by (for example) Andrei Postnikov's utilities.
+These are binary files, read directly by (for example) Andrei
+Postnikov's utilities.
 
 ...Grid.nc 
 
-netCDF files which can be directly processed by a number of programs and scripts.
-The Rho.Grid.nc and DeltaRho.Grid.nc files can also be read by Siesta to start
-a new SCF cycle.
+netCDF files which can be directly processed by a number of programs
+and scripts.  The Rho.Grid.nc and DeltaRho.Grid.nc files can also be
+read by Siesta to start a new SCF cycle.
 
 Associated tools:
 
+\begin{verbatim}
 Util/Grid:   
 
  Operating on old-style files: grid2val, grid2cube, grid2cdf
@@ -7116,7 +7111,7 @@ Util/Grid:
 Util/Contrib/APostnikov:       rho2xsf, etc.
 
 \end{verbatim}
-
+\end{itemize}
 
 \newpage
 \section{APPENDIX: XML Output}
