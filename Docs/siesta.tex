@@ -1606,7 +1606,7 @@ cutoff used, and set the mesh-cutoff manually in a later run.)
 
 
 \vspace{5pt}
-\subsection{Lattice, coordinates, $k$-sampling}
+\subsection{Lattice, coordinates}
 
 The position types, and behaviours of the atoms in the simulation
 must be specified using the flags described in this section.
@@ -1652,13 +1652,6 @@ may be used: \textbf{ZM.UnitsLength}, \textbf{ZM.UnitsAngle},
 \textbf{ZM.ForceTolLength}, \textbf{ZM.ForceTolAngle}, 
 \textbf{ZM.MaxDisplLength}, \textbf{ZM.MaxDisplAngle}
 
-In addition, this section also shows the flags used to control
-the calculation of $k$-points; \textbf{kgrid\_cutoff},
-\textbf{kgrid\_Monkhorst\_Pack}, \textbf{BandLinesScale},
-\textbf{BandLines}, \textbf{BandPoints},
-\textbf{WaveFuncKPointsScale}, \textbf{WaveFuncKPoints}.
-
-
 \begin{description}
 \itemsep 10pt
 \parsep 0pt
@@ -1670,6 +1663,11 @@ Lattice constant. This is just to define the scale of the lattice vectors.
 
 {\it Default value:} Minimum size to include the system (assumed to be a 
 molecule) without intercell interactions, plus 10\%. 
+
+NOTE: A LatticeConstant value, even if redundant, might be needed for
+other options, such as the units of the k-points used for
+band-structure calculations. This mis-feature will be corrected in
+future versions.
 
 \item[{\bf LatticeParameters}] ({\it data block}): 
 \index{LatticeParameters@{\bf LatticeParameters}}
@@ -1764,18 +1762,17 @@ specifies one supercell vector.
 the XV file, which can happen unadvertedly.
 
 {\it Use:} The atomic positions must be given only for the unit cell,
-and they are 'cloned' automatically in the rest of the supercell.
-The {\bf NumberOfAtoms} given must also be that in a single unit cell.
-However, all values in the output are given for the entire supercell. 
-In fact, CELL is inmediately redefined as the whole supercell and the 
-program no longer knows the existence of an underlying unit cell.
-All other input (apart from NumberOfAtoms and atomic positions), 
-including {\bf kgridMonkhorstPack} must refer to the supercell 
-(this is a change over the previous version). Therefore, to avoid
-confusions, we recommend to use {\bf SuperCell} only to
-generate atomic positions, and then to copy them from the output
-to a new input file with all the atoms specified explicitly and
-with the supercell given as a normal unit cell.
+and they are 'cloned' automatically in the rest of the supercell.  The
+{\bf NumberOfAtoms} given must also be that in a single unit cell.
+However, all values in the output are given for the entire supercell.
+In fact, CELL is inmediately redefined as the whole supercell and the
+program no longer knows the existence of an underlying unit cell.  All
+other input (apart from NumberOfAtoms and atomic positions), including
+k-point sampling information, must refer to the supercell. Therefore,
+to avoid confusions, we recommend to use {\bf SuperCell} only to
+generate atomic positions, and then to copy them from the output to a
+new input file with all the atoms specified explicitly and with the
+supercell given as a normal unit cell.
 
 {\it Default value:} No supercell (supercell equal to unit cell).
 
@@ -1838,32 +1835,6 @@ index of atom {\tt ia}.
 {\it Default:} There is no default. The positions must be introduced
 either using this block or the $Z$ matrix (see {\bf Zmatrix}).
 
-\item[{\bf UseStructFile}] ({\it logical}): 
-\index{UseStructFile@{\bf UseStructFile}}
-\index{Systemlabel.STRUCT\_IN@{{\it Systemlabel}.STRUCT\_IN}}
-Logical variable to control whether the structural information
-is read from an external file of name {\it SystemLabel}.STRUCT\_IN.
-If \texttt{.true.}, all other structural information in the fdf file
-will be ignored. 
-
-The format of the file is implied by the following code:
-
-\begin{verbatim}
-read(*,*) ((cell(ixyz,ivec),ixyz=1,3),ivec=1,3)  ! Cell vectors, in Angstroms
-read(*,*) na
-do ia = 1,na
-   read(iu,*) isa(ia), dummy, xfrac(1:3,ia)  ! Species number
-                                             ! Dummy numerical column
-                                             ! Fractional coordinates
-enddo
-\end{verbatim}
-
-{\it Warning:} Note that the resulting geometry could be clobbered if
-an XV file is read after this file. It is up to the user to remove
-any XV files.\index{MD.UseSaveXV@{\bf MD.UseSaveXV}}.
-
-{\it Default value:} {\tt .false.}
-
 
 \item[{\bf SuperCell}] ({\it data block}): 
 \index{SuperCell@{\bf SuperCell}} 
@@ -1921,6 +1892,12 @@ Only small numerical differences in the results are to be expected.
 
 {\it Default value:} {\tt .false.}
 
+\end{description}
+
+\subsubsection{Use of constraints}
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
 
 \item[{\bf GeometryConstraints}] ({\it data block}) 
 \index{GeometryConstraints@{\bf GeometryConstraints}}
@@ -2032,6 +2009,13 @@ constrained magnitude, unless the displacement steps are very small.
 
 {\it Default value:} No constraints
 
+\end{description}
+
+\subsubsection{Z-matrix format}
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
 \item[{\bf Zmatrix}] ({\it data block}): 
 \index{Zmatrix@{\bf Zmatrix}} 
 This block provides a means for inputting the system geometry using a Z-matrix
@@ -2140,28 +2124,33 @@ future versions of the program.
 A zmatrix block may also contain the following, additional, sections, which
 are designed to make it easier to read.
 
-\item \texttt{constants}: Instead of specifying a numerical value, it is possible to specify a symbol
-within the above geometry definitions. This section allows the user to define the value
-of the symbol as a constant. The format is just a symbol followed by the value:
+\item \texttt{constants}: Instead of specifying a numerical value, it
+  is possible to specify a symbol within the above geometry
+  definitions. This section allows the user to define the value of the
+  symbol as a constant. The format is just a symbol followed by the
+  value:
 
 \noindent\texttt{      HOH 104.4}
 
-\item \texttt{variables}: Instead of specifying a numerical value, it is possible to specify a symbol
-within the above geometry definitions. This section allows the user to define the value
-of the symbol as a variable. The format is just a symbol followed by the value:
+\item \texttt{variables}: Instead of specifying a numerical value, it
+  is possible to specify a symbol within the above geometry
+  definitions. This section allows the user to define the value of the
+  symbol as a variable. The format is just a symbol followed by the
+  value:
 
 \noindent\texttt{      HO1 0.956997}
 
 Finally, constraints must be specified in a \texttt{constraints} block.
 
-\item \texttt{constraint} This sub-section allows the user to create constraints between symbols used
-in a Z-matrix:
+\item \texttt{constraint} This sub-section allows the user to create
+  constraints between symbols used in a Z-matrix:
 \begin{verbatim}
     constraint
       var1 var2 A B
 \end{verbatim}
-Here var1 and var2 are text symbols for two quantities in the Z-matrix definition, and A
-and B are real numbers. The variables are related by $var1 = A*var2 + B$.
+Here var1 and var2 are text symbols for two quantities in the Z-matrix
+definition, and A and B are real numbers. The variables are related by
+$var1 = A*var2 + B$.
 
 An example of a Z-matrix input for a benzene molecule over a metal surface is:
 \begin{verbatim}
@@ -2286,6 +2275,202 @@ optimisation step.
 
 {\it Default value:} {\tt 0.003 rad }
 
+\end{description}
+
+\subsubsection{Saving and reading geometry information}
+
+
+{\sc Siesta} is able to generate several kinds of files containing
+structural information, and can also read its structural input from
+file in different ways.
+
+\subsubsection{Output in several formats}
+\begin{itemize}
+
+\item{\bf STRUCT\_OUT file:}
+\index{Systemlabel.STRUCT\_OUT@{{\it Systemlabel}.STRUCT\_OUT}}
+Siesta always produces a {\tt .STRUCT\_OUT} file with cell vectors in {\AA}
+and atomic positions in fractional coordinates. This file, renamed to
+{\it SystemLabel}.STRUCT\_IN can be used for crystal-structure input.
+Note that the geometry reported is the last one for which forces and
+stresses were computed.
+See {\bf MD.UseStructFile}\index{MD.UseStructFile@{\bf MD.UseStructFile}}.
+
+\item{\bf STRUCT\_NEXT\_ITER file:}
+\index{Systemlabel.STRUCT\_NEXT\_ITER@{{\it Systemlabel}.STRUCT\_NEXT\_ITER}}
+This file is always written, in the same format as {\tt .STRUCT\_OUT}
+file. The only difference is that it contains the structural
+information {\em after} it has been updated by the relaxation or the
+molecular-dynamics
+algorithms, and thus it could be used as input (renamed as
+{\it SystemLabel}.STRUCT\_IN) for a continuation run, in the same way
+as the {\tt XV} file.
+
+See {\bf MD.UseStructFile}\index{MD.UseStructFile@{\bf MD.UseStructFile}}.
+
+\item{\bf XV file:}
+
+\item{\bf OUT.UCELL.ZMATRIX file:}
+\index{OUT.UCELL.ZMATRIX}@{{\it OUT.UCELL.ZMATRIX}}
+
+This file is produced if the Zmatrix format is being used for
+input. (Please note that {\it SystemLabel} is not used as a prefix.)
+It contains the structural information in fdf form, with
+blocks for unit-cell vectors and for Zmatrix coordinates. The
+Zmatrix block is in a ``canonical'' form with the following
+characteristics:
+
+\begin{verbatim}
+1. No symbolic variables or constants are used.
+2. The position coordinates of the first atom in each molecule
+   are absolute cartesian coordinates.
+3. Any coordinates in ``cartesian'' blocks are also absolute cartesians.
+4. There is no provision for output of constraints.
+5. The units used are those initially specified by the user, and are
+   noted also in fdf form.
+\end{verbatim}
+
+Note that the geometry reported is the last one for which forces and
+stresses were computed.
+
+\item{\bf NEXT\_ITER.UCELL.ZMATRIX file:}
+\index{NEXT\_ITER.UCELL.ZMATRIX}@{{\it NEXT\_ITER.UCELL.ZMATRIX}}
+
+A file with the same format as {\tt OUT.UCELL.ZMATRIX} but with
+a possibly updated geometry.
+
+\item Additionally, several optional formats are supported:
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+\item[{\bf WriteCoorXmol}] ({\it logical}): 
+\index{WriteCoorXmol@{\bf WriteCoorXmol}}\index{XMol@{\sc XMol}}
+\index{JMol@{\sc JMol}}
+If {\tt .true.} it originates the writing of an extra file
+named {\it SystemLabel}{\tt .xyz} containing the final atomic
+coordinates in a format directly readable by {\sc XMol}.\footnote{XMol
+is under \copyright\ copyright of Research Equipment Inc., dba Minnesota
+Supercomputer Center Inc.} Coordinates come out in {\AA}ngstr\"om
+independently of what specified in {\bf AtomicCoordinatesFormat} and
+in {\bf AtomCoorFormatOut}. There is a present {\sc Java} implementation 
+of {\sc XMol} called {\sc JMol}.
+
+{\it Default value:} {\tt .false.}
+        
+
+\item[{\bf WriteCoorCerius}] ({\it logical}): 
+\index{WriteCoorCerius@{\bf WriteCoorCerius}}\index{Cerius2@{\sc Cerius2}}
+If {\tt .true.} it originates the writing of an extra file
+named {\it SystemLabel}{\tt .xtl} containing the final atomic
+coordinates in a format directly readable by {\sc Cerius}.\footnote{{\sc 
+Cerius} is under \copyright\ copyright of Molecular Simulations Inc.} 
+Coordinates come out in 
+{\tt Fractional} format (the same as {\tt ScaledByLatticeVectors})
+independently of what specified in {\bf AtomicCoordinatesFormat} and
+in {\bf AtomCoorFormatOut}.
+If negative coordinates are to be avoided, it has to be 
+done from the start by shifting all the coordinates rigidly
+to have them positive, by using {\bf AtomicCoordinatesOrigin}.
+See the {\sc Sies2arc}\index{Sies2arc@{\sc Sies2arc}} utility in the Util/
+directory for generating .arc files for CERIUS animation.
+
+{\it Default value:} {\tt .false.}
+
+ 
+\item[{\bf WriteMDXmol}] ({\it logical}):
+\index{WriteMDXmol@{\bf WriteMDXmol}}\index{XMol@{\sc XMol}}
+If {\tt .true.} it originates the writing of an extra file
+named {\it SystemLabel}{\tt .ANI} containing all the atomic
+coordinates of the simulation in a format directly readable by 
+{\sc XMol} for animation.\index{animation} Coordinates come out in 
+{\AA}ngstr\"om independently of what specified in 
+{\bf AtomicCoordinatesFormat} and in {\bf AtomCoorFormatOut}.
+This file is accumulative even for different runs.
+There is the alternative for animation by generating a .arc file for 
+CERIUS. It is through the {\sc Sies2arc}\index{Sies2arc@{\sc Sies2arc}} 
+postprocessing utility 
+in the Util/ directory, and it requires the coordinates to be
+accumulated in the output file, i.e., WriteCoorStep = {\tt .true.}
+ 
+{\it Default value:} {\tt .false.} if WriteCoorStep is {\tt .true.}
+and vice-versa.
+
+\end{description}
+
+\end{itemize}
+
+\subsubsection{Input of structural information and precedence issues}
+
+The structural information can be read from
+
+\begin{itemize}
+\item The fdf file. The options are those in Secs.~\ref{sec:fdf-geom}
+and~\ref{sec:fdf-zmatrix}
+
+\item The XV file.
+\item[{\bf MD.UseSaveXV}] ({\it logical}):
+\index{MD.UseSaveXV@{\bf MD.UseSaveXV}}
+\index{reading saved data!XV}
+Instructs to read the atomic positions and velocities stored
+in file {\tt SystemLabel}.XV by a previous run.
+ 
+{\it Use:} If the required file does not exist, a warning is
+printed but the program does not stop. Overrides {\bf UseSaveData},
+but can be implicitly set by it.
+ 
+{\it Default value:} {\tt .false.}
+
+\item A .STRUCT\_IN file. The logical fdf variable {\bf
+  UseStructFile} controls whether the structural information is read
+  from an external file of name {\it SystemLabel}.STRUCT\_IN.  If
+  \texttt{.true.}, all other structural information in the fdf file
+  will be ignored.\index{UseStructFile@{\bf
+    UseStructFile}} \index{Systemlabel.STRUCT\_IN@{{\it
+      Systemlabel}.STRUCT\_IN}} 
+
+The format of the file is implied by the following code:
+
+\begin{verbatim}
+read(*,*) ((cell(ixyz,ivec),ixyz=1,3),ivec=1,3)  ! Cell vectors, in Angstroms
+read(*,*) na
+do ia = 1,na
+   read(iu,*) isa(ia), dummy, xfrac(1:3,ia)  ! Species number
+                                             ! Dummy numerical column
+                                             ! Fractional coordinates
+enddo
+\end{verbatim}
+
+{\it Warning:} Note that the resulting geometry could be clobbered if
+an XV file is read after this file. It is up to the user to remove
+any XV files.\index{MD.UseSaveXV@{\bf MD.UseSaveXV}}.
+
+{\it Default value:} {\tt .false.}
+
+
+\item A zmatrix input file
+{\bf MD.UseSaveZM} ({\it logical}): 
+\index{MD.UseSaveZM@{\bf MD.UseSaveZM}} 
+\index{reading saved data!ZM}
+Instructs the program to read the zmatrix information stored
+in file {\tt SystemLabel}.ZM by a previous run.
+
+{\it Use:} If the required file does not exist, a warning is
+printed but the program does not stop. Overrides {\bf UseSaveData},
+but can be implicitly set by it.
+
+{\it Warning:} Note that the resulting geometry could be clobbered if
+an XV file is read after this file. It is up to the user to remove
+any XV files.\index{MD.UseSaveXV@{\bf MD.UseSaveXV}}.
+
+{\it Default value:} {\tt .false.}
+\end{itemize}
+
+\subsection{$k$-point sampling}
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
 
 
 \item[{\bf kgrid\_cutoff}] ({\it real length}): 
@@ -2368,6 +2553,13 @@ and after each step in a ``siesta-as-server'' run.
 rationale was to avoid sudden jumps in some properties when the
 sampling changes, but if the calculation is well-converged there
 should be no problems if the update is enabled.
+
+\end{description}
+
+\subsection{Band-structure analysis}
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
 
 \item[{\bf BandLinesScale}] ({\it string}): 
 \index{BandLinesScale@{\bf BandLinesScale}} 
@@ -2478,30 +2670,11 @@ to calculate the total energy,  charge density and band structure.
 
 
 \vspace{5pt}
-\subsection{DFT, Grid, SCF}
+\subsection{Exchange-correlation functionals}
 
 \begin{description}
 \itemsep 10pt
 \parsep 0pt
-
-\item[{\bf Harris\_functional}] ({\it logical}): 
-\index{Harris\_functional@{\bf Harris\_functional}} 
-Logical variable to choose between self-consistent Kohn-Sham functional or
- non self-consistent Harris functional to calculate energies and forces. 
-\begin{itemize}
-\item {\tt .false.} : Fully self-consistent Kohn-Sham functional. 
-\item {\tt .true.} : Non self consistent Harris functional. Cheap but
-pretty crude for some systems. The forces are computed within the
-Harris functional in the first SCF step. Only implemented for LDA in
-the Perdew-Zunger parametrization.
-
-When this option is choosen, the values of DM.UseSaveDM,
-MaxSCFIterations, SCFMustConverge and DM.MixSCF1 are automatically set up to False, 1, False
-and False respectively, no matter whatever other specification are in
-the INPUT file.
-\end{itemize}
-    
-{\it Default value:} {\tt .false.} 
 
 \item[{\bf XC.functional}] ({\it string}): 
 \index{XC.functional@{\bf XC.functional}} 
@@ -2586,6 +2759,15 @@ energy:
 {\it Default value:} {\tt not hybrid}
 
 
+\end{description}
+
+\vspace{5pt}
+\subsection{Spin polarization}
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
 \item[{\bf SpinPolarized}] ({\it logical}): 
 \index{SpinPolarized@{\bf SpinPolarized}} 
 Logical variable to choose between spin unpolarized ({\tt .false.}) 
@@ -2635,18 +2817,35 @@ It is done for the first spin component (up) and first k vector.
 
 {\it Default value:} {\tt .false.}
 
-\item[{\bf MeshCutoff}] ({\it real energy}): 
-\index{MeshCutoff@{\bf MeshCutoff}}\index{grid}\index{mesh}  
-Defines the equivalent plane wave cutoff for the grid.
 
-{\it Default value:} {\tt 100 Ry}
+\end{description}
 
-\item[{\bf MeshSubDivisions}] ({\it integer}): 
-\index{MeshSubDivisions@{\bf MeshSubDivisions}}\index{grid}\index{mesh}
-Defines the number of sub-mesh points in each direction used
-to save index storage on the mesh.
+\vspace{5pt}
+\subsection{The self-consistent-field loop}
 
-{\it Default value:} {\tt 2}
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+\item[{\bf Harris\_functional}] ({\it logical}): 
+\index{Harris\_functional@{\bf Harris\_functional}} 
+Logical variable to choose between self-consistent Kohn-Sham functional or
+ non self-consistent Harris functional to calculate energies and forces. 
+\begin{itemize}
+\item {\tt .false.} : Fully self-consistent Kohn-Sham functional. 
+\item {\tt .true.} : Non self consistent Harris functional. Cheap but
+pretty crude for some systems. The forces are computed within the
+Harris functional in the first SCF step. Only implemented for LDA in
+the Perdew-Zunger parametrization.
+
+When this option is choosen, the values of DM.UseSaveDM,
+MaxSCFIterations, SCFMustConverge and DM.MixSCF1 are automatically set up to False, 1, False
+and False respectively, no matter whatever other specification are in
+the INPUT file.
+\end{itemize}
+    
+{\it Default value:} {\tt .false.} 
+
 
 \item[{\bf MaxSCFIterations}] ({\it integer}): 
 \index{MaxSCFIterations@{\bf MaxSCFIterations}}
@@ -2662,6 +2861,10 @@ an MD or geometry optimisation step and carry on. When set to true
 the calculation will stop on the first SCF convergence failure.
 
 {\it Default value:} {\tt .false.}
+
+\subsubsection{Mixing options}
+
+\begin{description}
 
 \item[{\bf DM.MixingWeight}] ({\it real}):\index{SCF!mixing}
 \index{DM.MixingWeight@{\bf DM.MixingWeight}}\index{SCF!mixing!linear} 
@@ -2806,66 +3009,11 @@ for restarts of selfconsistency runs.
 
 {\it Default value:} {\tt .false.}
 
+\end{description}
 
-\item[{\bf DM.Tolerance}] ({\it real}): 
-\index{DM.Tolerance@{\bf DM.Tolerance}} 
-Tolerance of Density Matrix.
-When the maximum difference between the output and the
-input on each element of the DM 
-in a SCF cycle is smaller than DM.Tolerance,
-the selfconsistency has been achieved.
+\subsubsection{Initialization of the density-matrix}
 
-{\it Default value:} {${\tt 10^{-4}}$}
-
-
-\item[{\bf DM.Require.Energy.Convergence}] ({\it logical}):
-\index{SCF!mixing!energy convergence}
-\index{DM.Require.Energy.Convergence@{\bf DM.Require.Energy.Convergence}}
-Logical variable to request an additional requirement for
-self-consistency: it is considered achieved when the change in the total energy between cycles
-of the SCF procedure is below {\bf DM.EnergyTolerance} and the
-density matrix change criterion is also satisfied.
-
-{\it Default value:} {\tt .false.}
-
-\item[{\bf DM.Energy.Tolerance}] ({\it real}): 
-\index{DM.EnergyTolerance@{\bf DM.EnergyTolerance}} 
-If {\bf DM.Require.Energy.Convergence} is {\tt .true.}, then
-self-consistency is achieved when the change in the total energy between cycles
-of the SCF procedure is below this value and the
-density matrix change criterion is also satisfied.
-
-{\it Default value:} {${\tt 10^{-4}}$}
-
-\item[{\bf DM.Require.Harris.Convergence}] ({\it logical}):
-\index{SCF!mixing!harris energy convergence}
-\index{DM.Require.Harris.Convergence@{\bf DM.Require.Harris.Convergence}}
-Logical variable to use the Harris energy as monitor of
-self-consistency: this is considered achieved when the change in the Harris energy between cycles
-of the SCF procedure is below {\bf DM.Harris.Tolerance}. No density
-matrix change criterion is used.
-This is useful if only energies are needed, as the Harris energy tends
-to converge faster than the Kohn-Sham energy.
-The user is responsible for using the correct energies in further
-processing, e.g., the Harris energy if the Harris criterion is used.
-
-To help in basis-optimization tasks, a new file BASIS\_HARRIS\_ENTHALPY
-is provided, holding the same information as BASIS\_ENTHALPY but using
-the Harris energy instead of the Kohn-Sham energy. 
-
-{\it Default value:} {\tt .false.}
-
-
-\item[{\bf DM.Harris.Tolerance}] ({\it real}): 
-\index{DM.Harris.Tolerance@{\bf DM.Harris.Tolerance}} 
-If {\bf DM.Require.Harris.Convergence} is {\tt .true.}, then
-self-consistency is achieved when the change in the Harris energy between cycles
-of the SCF procedure is below this value.
-This is useful if only energies are needed, as the Harris energy tends
-to converge faster than the Kohn-Sham energy.
-
-{\it Default value:} {${\tt 10^{-4}}$}
-
+\begin{description}
 
 \item[{\bf DM.InitSpinAF}] ({\it logical}):\index{spin}
 \index{spin!initialization}\index{ferromagnetic initial DM}
@@ -2936,6 +3084,74 @@ iterations is (linearly) extrapolated to start the new geometry's SCF cycle.
 Further information regarding the density-matrix re-use can be found
 in the header of routine {\tt Src/new\_dm.F}.
 
+\end{description}
+
+\subsubsection{Convergence criteria}
+\index{SCF convergence criteria}
+
+\begin{description}
+\item[{\bf DM.Tolerance}] ({\it real}): 
+\index{DM.Tolerance@{\bf DM.Tolerance}} 
+Tolerance of Density Matrix.
+When the maximum difference between the output and the
+input on each element of the DM 
+in a SCF cycle is smaller than DM.Tolerance,
+the selfconsistency has been achieved.
+
+{\it Default value:} {${\tt 10^{-4}}$}
+
+
+
+\item[{\bf DM.Require.Energy.Convergence}] ({\it logical}):
+\index{SCF!mixing!energy convergence}
+\index{DM.Require.Energy.Convergence@{\bf DM.Require.Energy.Convergence}}
+Logical variable to request an additional requirement for
+self-consistency: it is considered achieved when the change in the total energy between cycles
+of the SCF procedure is below {\bf DM.EnergyTolerance} and the
+density matrix change criterion is also satisfied.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf DM.Energy.Tolerance}] ({\it real}): 
+\index{DM.EnergyTolerance@{\bf DM.EnergyTolerance}} 
+If {\bf DM.Require.Energy.Convergence} is {\tt .true.}, then
+self-consistency is achieved when the change in the total energy between cycles
+of the SCF procedure is below this value and the
+density matrix change criterion is also satisfied.
+
+{\it Default value:} {${\tt 10^{-4}}$}
+
+\item[{\bf DM.Require.Harris.Convergence}] ({\it logical}):
+\index{SCF!mixing!harris energy convergence}
+\index{DM.Require.Harris.Convergence@{\bf DM.Require.Harris.Convergence}}
+Logical variable to use the Harris energy as monitor of
+self-consistency: this is considered achieved when the change in the Harris energy between cycles
+of the SCF procedure is below {\bf DM.Harris.Tolerance}. No density
+matrix change criterion is used.
+This is useful if only energies are needed, as the Harris energy tends
+to converge faster than the Kohn-Sham energy.
+The user is responsible for using the correct energies in further
+processing, e.g., the Harris energy if the Harris criterion is used.
+
+To help in basis-optimization tasks, a new file BASIS\_HARRIS\_ENTHALPY
+is provided, holding the same information as BASIS\_ENTHALPY but using
+the Harris energy instead of the Kohn-Sham energy. 
+
+{\it Default value:} {\tt .false.}
+
+
+\item[{\bf DM.Harris.Tolerance}] ({\it real}): 
+\index{DM.Harris.Tolerance@{\bf DM.Harris.Tolerance}} 
+If {\bf DM.Require.Harris.Convergence} is {\tt .true.}, then
+self-consistency is achieved when the change in the Harris energy between cycles
+of the SCF procedure is below this value.
+This is useful if only energies are needed, as the Harris energy tends
+to converge faster than the Kohn-Sham energy.
+
+{\it Default value:} {${\tt 10^{-4}}$}
+
+\end{description}
+
 \item[{\bf MullikenInSCF}] ({\it logical}):
 \index{MullikenInSCF@{\bf MullikenInSCF}}
 If true, the Mulliken populations will be written for every SCF step
@@ -2953,15 +3169,15 @@ when dealing with SCF problems, otherwise too verbose.
 {\it Default value:} {\tt .false.}
 
 
-\item[{\bf NeglNonOverlapInt}] ({\it logical}): 
-\index{NeglNonOverlapInt@{\bf NeglNonOverlapInt}} 
-Logical variable to neglect or compute interactions between orbitals
-which do not overlap. These come from the KB projectors.
-Neglecting them makes the Hamiltonian more sparse, and
-the Order-N calculation faster.  USE WITH CARE!!!
 
-{\it Default value:} {\tt .false.}
-        
+\end{description}
+
+\vspace{5pt}
+\subsection{Optical properties}
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
 
 \item[{\bf OpticalCalculation}] ({\it logical}):\index{Dielectric function,
 optical absorption} 
@@ -3075,20 +3291,23 @@ like:
 
 {\it Default value:} Empty.
 
-
-
 \end{description}
 
 \vspace{5pt}
-\subsection{Dealing with the eggbox-effect}
+\subsection{The real-space grid and the eggbox-effect}
 
-The introduction of a finite 3D grid for the calculation of integrals
-causes the breaking of translational symmetry (the egg-box effect). 
-This symmetry breaking is clear when
-moving one single atom in an otherwise empty simulation cell. The total
-energy and the forces oscillate with the grid periodicity when the
-atom is moved, as if the atom were moving on an eggbox. In the limit of
-infinitely fine grid (large mesh cutoff) this effect disappears.
+{\sc Siesta} uses a finite 3D grid for the calculation of some
+integrals and the representation of charge densities and potentials. 
+Its fineness is determined by an equivalent plane-wave cutoff, as
+given by the {\bf MeshCutoff} option.
+
+The existence of the grid causes the breaking of translational
+symmetry (the egg-box effect).  This symmetry breaking is clear when
+moving one single atom in an otherwise empty simulation cell. The
+total energy and the forces oscillate with the grid periodicity when
+the atom is moved, as if the atom were moving on an eggbox. In the
+limit of infinitely fine grid (large mesh cutoff) this effect
+disappears.
 
 For reasonable values of the mesh cutoff, the effect of the eggbox 
 on the total energy or on the relaxed structure is normally unimportant.
@@ -3107,6 +3326,19 @@ the pseudopotential and the pseudocore charge might be enough to solve
 the issue (see Sect.~\ref{sec:filtering}).
 
 \begin{description}
+
+\item[{\bf MeshCutoff}] ({\it real energy}): 
+\index{MeshCutoff@{\bf MeshCutoff}}\index{grid}\index{mesh}  
+Defines the equivalent plane wave cutoff for the grid.
+
+{\it Default value:} {\tt 100 Ry}
+
+\item[{\bf MeshSubDivisions}] ({\it integer}): 
+\index{MeshSubDivisions@{\bf MeshSubDivisions}}\index{grid}\index{mesh}
+Defines the number of sub-mesh points in each direction used
+to save index storage on the mesh. 
+
+{\it Default value:} {\tt 2}
 
 \item[{\bf GridCellSampling}] ({\it data block}):\index{egg-box effect} 
 \index{GridCellSampling@{\bf GridCellSampling}}\index{rippling}
@@ -3509,7 +3741,32 @@ properties such as the work funcion of each of the surfaces.
 
 \end{description}
 
-\subsection{Eigenvalue problem: order-$N$ or diagonalization}
+\subsection{Evaluation of matrix elements}
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+\item[{\bf NeglNonOverlapInt}] ({\it logical}): 
+\index{NeglNonOverlapInt@{\bf NeglNonOverlapInt}} 
+Logical variable to neglect or compute interactions between orbitals
+which do not overlap. These come from the KB projectors.
+Neglecting them makes the Hamiltonian more sparse, and
+the Order-N calculation faster.  USE WITH CARE!!!
+
+{\it Default value:} {\tt .false.}
+
+\end{description}
+
+\subsection{Calculation of the electronic structure}
+
+{\sc Siesta} can use two methods to determine the electronic structure
+of the system. One is standard diagonalization, which works for all
+systems. The other is based on the direct minimization of a special
+functional over a set of localized functions. The latter scales in
+principle linearly with the size of the system, but is quite fragile
+and only works for systems with clearly separated occupied and empty
+states.  The default is to use diagonalization.
 
 \begin{description}
 \itemsep 10pt
@@ -3523,7 +3780,14 @@ of the LDA Hamiltonian.
 
 {\it Default value:} {\tt diagon}
 
-%Diagonalisation options
+        
+
+\end{description}
+
+\subsubsection{Diagonalization options}
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
 
 \item[{\bf NumberOfEigenStates}] ({\it integer}): 
 \index{NumberOfEigenStates@{\bf NumberOfEigenStates}} 
@@ -3611,7 +3875,12 @@ only influences the parallel performance.
 
 {\it Default value:} {\tt true}
 
-%End diagonalisation options
+\end{description}
+
+\subsubsection{Occupation of electronic states and Fermi level}
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
 
 \item[{\bf OccupationFunction}]({\it string}):
 \index{OccupationFunction@{\bf OccupationFunction}}
@@ -3693,6 +3962,13 @@ metals, and to accelerate selfconsistency in some cases.
 
 {\it Default value:} {\tt 300.0 K}
 pp
+
+\end{description}
+
+\subsubsection{Order(N) options}
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
 
 \item[{\bf ON.functional}] ({\it string}): 
 \index{ON.functional@{\bf ON.functional}} 
@@ -4368,6 +4644,122 @@ matrix\index{Force Constants Matrix} for phonon calculations.
 \end{description}
 
 \vspace{5pt}
+\subsection{Output of charge densities and potentials}
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+\item[{\bf SaveRho}] ({\it logical}): \index{SaveRho@{\bf
+    SaveRho}}\index{output!charge density} Instructs to write the
+  valence pseudocharge density at the mesh used by DHSCF, in file {\tt
+    SystemLabel}.RHO. This file can be read by routine IORHO, which
+  may be used by an application program in later versions.
+
+{\it Use:} File {\tt SystemLabel}.RHO is only written, not read, by siesta.
+
+If netCDF support is compiled in, the file {\tt Rho.grid.nc} is produced.
+
+{\it Default value:} {\tt .false.}
+        
+
+\item[{\bf SaveDeltaRho}] ({\it logical}): 
+\index{SaveDeltaRho@{\bf SaveDeltaRho}}\index{output!$\delta \rho(\vec r)$} 
+Instructs to write $\delta \rho(\vec r) = \rho(\vec r) - \rho_{atm}(\vec r)$,
+i.e., the valence pseudocharge density minus the sum of atomic valence
+pseudocharge densities. It is done for the mesh points used by DHSCF and it
+comes in file {\tt SystemLabel}.DRHO. This file can be read by routine IORHO,
+which may be used by an application program in later versions.
+
+{\it Use:} File {\tt SystemLabel}.DRHO is only written, not read, by siesta.
+
+If netCDF support is compiled in, the file {\tt DeltaRho.grid.nc} is produced.
+
+{\it Default value:} {\tt .false.}
+        
+
+\item[{\bf SaveElectrostaticPotential}] ({\it logical}): 
+\index{SaveElectrostaticPotential@{\bf SaveElectrostaticPotential}}
+\index{output!electrostatic potential} 
+Instructs to write the total electrostatic potential, defined as the
+sum of the hartree potential plus the local pseudopotential, at the
+mesh used by DHSCF,
+in file {\tt SystemLabel}.VH. This file can be read by routine IORHO,
+which may be used by an application program in later versions.
+
+{\it Use:} File {\tt SystemLabel}.VH is only written, not read, by siesta.
+
+If netCDF support is compiled in, the file {\tt
+ElectrostaticPotential.grid.nc} is produced.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf SaveNeutralAtomPotential}] ({\it logical}): 
+\index{SaveNeutralAtomPotential@{\bf SaveNeutralAtomPotential}}
+\index{output!electrostatic potential} 
+Instructs to write the neutral-atom potential, defined as the
+sum of the hartree potential of a ``pseudo atomic valence charge'' 
+plus the local pseudopotential, at the mesh used by DHSCF,
+in file {\tt SystemLabel}.VNA. It is written at the start of the
+self-consistency cycle, as this potential does not change.
+
+{\it Use:} File {\tt SystemLabel}.VNA is only written, not read, by siesta.
+
+If netCDF support is compiled in, the file {\tt Vna.grid.nc} is produced.
+
+{\it Default value:} {\tt .false.}
+        
+
+\item[{\bf SaveTotalPotential}] ({\it logical}): 
+\index{SaveTotalPotential@{\bf SaveTotalPotential}} 
+\index{output!total potential}
+Instructs to write the valence total effective local potential
+(local pseudopotential + Hartree + Vxc), at the
+mesh used by DHSCF,
+in file {\tt SystemLabel}.VT. This file can be read by routine IORHO,
+which may be used by an application program in later versions.
+
+{\it Use:} File {\tt SystemLabel}.VT is only written, not read, by siesta.
+
+If netCDF support is compiled in, the file {\tt TotalPotential.grid.nc} is produced.
+
+{\it Default value:} {\tt .false.}
+        
+
+\item[{\bf SaveIonicCharge}] ({\it logical}): 
+\index{SaveIonicCharge@{\bf SaveIonicCharge}} 
+\index{output!ionic charge}
+Instructs to write the soft diffuse ionic charge at the
+mesh used by DHSCF,
+in file {\tt SystemLabel}.IOCH. This file can be read by routine IORHO,
+which may be used by an application program in later versions.
+Remember that, within the {\sc Siesta} sign convention, the electron charge
+density is positive and the ionic charge density is negative. 
+
+
+{\it Use:} File {\tt SystemLabel}.IOCH is only written, not read, by siesta.
+
+If netCDF support is compiled in, the file {\tt Chlocal.grid.nc} is produced.
+
+{\it Default value:} {\tt .false.}
+        
+\item[{\bf SaveTotalCharge}] ({\it logical}): 
+\index{SaveTotalCharge@{\bf SaveTotalCharge}} 
+\index{output!total charge}
+Instructs to write the total charge density (ionic+electronic) at the
+mesh used by DHSCF,
+in file {\tt SystemLabel}.TOCH. This file can be read by routine IORHO,
+which may be used by an application program in later versions.
+Remember that, within the {\sc Siesta} sign convention, the electron charge
+density is positive and the ionic charge density is negative. 
+
+{\it Use:} File {\tt SystemLabel}.TOCH is only written, not read, by siesta.
+
+{\it Default value:} {\tt .false.}
+
+\end{description}
+
+\vspace{5pt}
 \subsection{Force field options}
 
 \begin{description}
@@ -4837,56 +5229,6 @@ $xy$, $yz$, $z^2$, $xz$, and $x^2-y^2$ for $d$ orbitals.
 {\it Default value:} {\tt 0} (see {\bf LongOutput})
 
 
-\item[{\bf WriteCoorXmol}] ({\it logical}): 
-\index{WriteCoorXmol@{\bf WriteCoorXmol}}\index{XMol@{\sc XMol}}
-\index{JMol@{\sc JMol}}
-If {\tt .true.} it originates the writing of an extra file
-named {\it SystemLabel}{\tt .xyz} containing the final atomic
-coordinates in a format directly readable by {\sc XMol}.\footnote{XMol
-is under \copyright\ copyright of Research Equipment Inc., dba Minnesota
-Supercomputer Center Inc.} Coordinates come out in {\AA}ngstr\"om
-independently of what specified in {\bf AtomicCoordinatesFormat} and
-in {\bf AtomCoorFormatOut}. There is a present {\sc Java} implementation 
-of {\sc XMol} called {\sc JMol}.
-
-{\it Default value:} {\tt .false.}
-        
-
-\item[{\bf WriteCoorCerius}] ({\it logical}): 
-\index{WriteCoorCerius@{\bf WriteCoorCerius}}\index{Cerius2@{\sc Cerius2}}
-If {\tt .true.} it originates the writing of an extra file
-named {\it SystemLabel}{\tt .xtl} containing the final atomic
-coordinates in a format directly readable by {\sc Cerius}.\footnote{{\sc 
-Cerius} is under \copyright\ copyright of Molecular Simulations Inc.} 
-Coordinates come out in 
-{\tt Fractional} format (the same as {\tt ScaledByLatticeVectors})
-independently of what specified in {\bf AtomicCoordinatesFormat} and
-in {\bf AtomCoorFormatOut}.
-If negative coordinates are to be avoided, it has to be 
-done from the start by shifting all the coordinates rigidly
-to have them positive, by using {\bf AtomicCoordinatesOrigin}.
-
-{\it Default value:} {\tt .false.}
-
- 
-\item[{\bf WriteMDXmol}] ({\it logical}):
-\index{WriteMDXmol@{\bf WriteMDXmol}}\index{XMol@{\sc XMol}}
-If {\tt .true.} it originates the writing of an extra file
-named {\it SystemLabel}{\tt .ANI} containing all the atomic
-coordinates of the simulation in a format directly readable by 
-{\sc XMol} for animation.\index{animation} Coordinates come out in 
-{\AA}ngstr\"om independently of what specified in 
-{\bf AtomicCoordinatesFormat} and in {\bf AtomCoorFormatOut}.
-This file is accumulative even for different runs.
-There is the alternative for animation by generating a .arc file for 
-CERIUS. It is through the {\sc Sies2arc}\index{Sies2arc@{\sc Sies2arc}} 
-postprocessing utility 
-in the Util/ directory, and it requires the coordinates to be
-accumulated in the output file, i.e., WriteCoorStep = {\tt .true.}
- 
-{\it Default value:} {\tt .false.} if WriteCoorStep is {\tt .true.}
-and vice-versa.
-
  
 \item[{\bf WriteMDhistory}] ({\it logical}):
 \index{WriteMDhistory@{\bf WriteMDhistory}}
@@ -5071,17 +5413,6 @@ printed but the program does not stop. Overrides {\bf UseSaveData}.
 {\it Default value:} {\tt .false.}
 
  
-\item[{\bf MD.UseSaveXV}] ({\it logical}):
-\index{MD.UseSaveXV@{\bf MD.UseSaveXV}}
-\index{reading saved data!XV}
-Instructs to read the atomic positions and velocities stored
-in file {\tt SystemLabel}.XV by a previous run.
- 
-{\it Use:} If the required file does not exist, a warning is
-printed but the program does not stop. Overrides {\bf UseSaveData}.
- 
-{\it Default value:} {\tt .false.}
-
 
 \item[{\bf MD.UseSaveCG}] ({\it logical}): 
 \index{MD.UseSaveCG@{\bf MD.UseSaveCG}} 
@@ -5098,20 +5429,6 @@ printed but the program does not stop. Overrides {\bf UseSaveData}.
 {\it Default value:} {\tt .false.}
         
 
-\item[{\bf MD.UseSaveZM}] ({\it logical}): 
-\index{MD.UseSaveZM@{\bf MD.UseSaveZM}} 
-\index{reading saved data!ZM}
-Instructs the program to read the zmatrix information stored
-in file {\tt SystemLabel}.ZM by a previous run.
-
-{\it Use:} If the required file does not exist, a warning is
-printed but the program does not stop. Overrides {\bf UseSaveData}.
-
-{\it Warning:} Note that the resulting geometry could be clobbered if
-an XV file is read after this file. It is up to the user to remove
-any XV files.\index{MD.UseSaveXV@{\bf MD.UseSaveXV}}.
-
-{\it Default value:} {\tt .false.}
         
 
 \item[{\bf SaveHS}] ({\it logical}): 
@@ -5125,115 +5442,6 @@ which may be used by an application program in later versions.
 
 {\it Default value:} {\tt .false.}
         
-
-\item[{\bf SaveRho}] ({\it logical}): 
-\index{SaveRho@{\bf SaveRho}}\index{output!charge density} 
-Instructs to write the valence pseudocharge density at the
-mesh used by DHSCF,
-in file {\tt SystemLabel}.RHO. This file can be read by routine IORHO,
-which may be used by an application program in later versions.
-
-{\it Use:} File {\tt SystemLabel}.RHO is only written, not read, by siesta.
-
-If netCDF support is compiled in, the file {\tt Rho.grid.nc} is produced.
-
-{\it Default value:} {\tt .false.}
-        
-
-\item[{\bf SaveDeltaRho}] ({\it logical}): 
-\index{SaveDeltaRho@{\bf SaveDeltaRho}}\index{output!$\delta \rho(\vec r)$} 
-Instructs to write $\delta \rho(\vec r) = \rho(\vec r) - \rho_{atm}(\vec r)$,
-i.e., the valence pseudocharge density minus the sum of atomic valence
-pseudocharge densities. It is done for the mesh points used by DHSCF and it
-comes in file {\tt SystemLabel}.DRHO. This file can be read by routine IORHO,
-which may be used by an application program in later versions.
-
-{\it Use:} File {\tt SystemLabel}.DRHO is only written, not read, by siesta.
-
-If netCDF support is compiled in, the file {\tt DeltaRho.grid.nc} is produced.
-
-{\it Default value:} {\tt .false.}
-        
-
-\item[{\bf SaveElectrostaticPotential}] ({\it logical}): 
-\index{SaveElectrostaticPotential@{\bf SaveElectrostaticPotential}}
-\index{output!electrostatic potential} 
-Instructs to write the total electrostatic potential, defined as the
-sum of the hartree potential plus the local pseudopotential, at the
-mesh used by DHSCF,
-in file {\tt SystemLabel}.VH. This file can be read by routine IORHO,
-which may be used by an application program in later versions.
-
-{\it Use:} File {\tt SystemLabel}.VH is only written, not read, by siesta.
-
-If netCDF support is compiled in, the file {\tt
-ElectrostaticPotential.grid.nc} is produced.
-
-{\it Default value:} {\tt .false.}
-
-\item[{\bf SaveNeutralAtomPotential}] ({\it logical}): 
-\index{SaveNeutralAtomPotential@{\bf SaveNeutralAtomPotential}}
-\index{output!electrostatic potential} 
-Instructs to write the neutral-atom potential, defined as the
-sum of the hartree potential of a ``pseudo atomic valence charge'' 
-plus the local pseudopotential, at the mesh used by DHSCF,
-in file {\tt SystemLabel}.VNA. It is written at the start of the
-self-consistency cycle, as this potential does not change.
-
-{\it Use:} File {\tt SystemLabel}.VNA is only written, not read, by siesta.
-
-If netCDF support is compiled in, the file {\tt Vna.grid.nc} is produced.
-
-{\it Default value:} {\tt .false.}
-        
-
-\item[{\bf SaveTotalPotential}] ({\it logical}): 
-\index{SaveTotalPotential@{\bf SaveTotalPotential}} 
-\index{output!total potential}
-Instructs to write the valence total effective local potential
-(local pseudopotential + Hartree + Vxc), at the
-mesh used by DHSCF,
-in file {\tt SystemLabel}.VT. This file can be read by routine IORHO,
-which may be used by an application program in later versions.
-
-{\it Use:} File {\tt SystemLabel}.VT is only written, not read, by siesta.
-
-If netCDF support is compiled in, the file {\tt TotalPotential.grid.nc} is produced.
-
-{\it Default value:} {\tt .false.}
-        
-
-\item[{\bf SaveIonicCharge}] ({\it logical}): 
-\index{SaveIonicCharge@{\bf SaveIonicCharge}} 
-\index{output!ionic charge}
-Instructs to write the soft diffuse ionic charge at the
-mesh used by DHSCF,
-in file {\tt SystemLabel}.IOCH. This file can be read by routine IORHO,
-which may be used by an application program in later versions.
-Remember that, within the {\sc Siesta} sign convention, the electron charge
-density is positive and the ionic charge density is negative. 
-
-
-{\it Use:} File {\tt SystemLabel}.IOCH is only written, not read, by siesta.
-
-If netCDF support is compiled in, the file {\tt Chlocal.grid.nc} is produced.
-
-{\it Default value:} {\tt .false.}
-        
-\item[{\bf SaveTotalCharge}] ({\it logical}): 
-\index{SaveTotalCharge@{\bf SaveTotalCharge}} 
-\index{output!total charge}
-Instructs to write the total charge density (ionic+electronic) at the
-mesh used by DHSCF,
-in file {\tt SystemLabel}.TOCH. This file can be read by routine IORHO,
-which may be used by an application program in later versions.
-Remember that, within the {\sc Siesta} sign convention, the electron charge
-density is positive and the ionic charge density is negative. 
-
-{\it Use:} File {\tt SystemLabel}.TOCH is only written, not read, by siesta.
-
-{\it Default value:} {\tt .false.}
-
 \item[{\bf COOP.Write}] ({\it logical}): 
 \index{COOP.Write@{\bf COOP.Write}} 
 \index{output!Information for COOP/COHP curves}
@@ -5567,76 +5775,6 @@ postprocessing utility can be then used to obtain the density of
 states.\index{density of states} 
 See the {\bf WriteEigenvalues} descriptor above.
 
-
-\subsection{Coordinates in specific formats}
-
-\begin{itemize}
-\item{\bf XMol:}\footnote[1]{XMol is under \copyright\ copyright of Research 
-Equipment Inc., dba Minnesota Supercomputer Center Inc.}
-\index{XMol@{\sc XMol}}
-See {\bf WriteCoorXmol} data descriptor in subsection {\bf Output options}
-above for obtaining a {\tt .xyz} file with coordinates in 
-XMol-readable format.
-
-\item{\bf CERIUS:}\footnote[2]{CERIUS is under \copyright\ copyright of 
-Molecular Simulations Inc.}\index{Cerius2@{\sc Cerius2}}
-See {\bf WriteCoorCerius} data descriptor in subsection {\bf Output options}
-above for obtaining a {\tt .xtl} file with coordinates in 
-CERIUS-readable format. See the {\sc Sies2arc}\index{Sies2arc@{\sc Sies2arc}}
-utility in Util/ directory
-for generating .arc files for CERIUS animation.
-
-\item{\bf STRUCT\_OUT file:}
-\index{Systemlabel.STRUCT\_OUT@{{\it Systemlabel}.STRUCT\_OUT}}
-Siesta always produces a {\tt .STRUCT\_OUT} file with cell vectors in {\AA}
-and atomic positions in fractional coordinates. This file, renamed to
-{\it SystemLabel}.STRUCT\_IN can be used for crystal-structure input.
-Note that the geometry reported is the last one for which forces and
-stresses were computed.
-See {\bf MD.UseStructFile}\index{MD.UseStructFile@{\bf MD.UseStructFile}}.
-
-\item{\bf STRUCT\_NEXT\_ITER file:}
-\index{Systemlabel.STRUCT\_NEXT\_ITER@{{\it Systemlabel}.STRUCT\_NEXT\_ITER}}
-This file is always written, in the same format as {\tt .STRUCT\_OUT}
-file. The only difference is that it contains the structural
-information {\em after} it has been updated by the relaxation or the
-molecular-dynamics
-algorithms, and thus it could be used as input (renamed as
-{\it SystemLabel}.STRUCT\_IN) for a continuation run, in the same way
-as the {\tt XV} file.
-
-See {\bf MD.UseStructFile}\index{MD.UseStructFile@{\bf MD.UseStructFile}}.
-
-\item{\bf OUT.UCELL.ZMATRIX file:}
-\index{OUT.UCELL.ZMATRIX}@{{\it OUT.UCELL.ZMATRIX}}
-
-This file is produced if the Zmatrix format is being used for
-input. (Please note that {\it SystemLabel} is not used as a prefix.)
-It contains the structural information in fdf form, with
-blocks for unit-cell vectors and for Zmatrix coordinates. The
-Zmatrix block is in a ``canonical'' form with the following
-characteristics:
-
-\begin{verbatim}
-1. No symbolic variables or constants are used.
-2. The position coordinates of the first atom in each molecule
-   are absolute cartesian coordinates.
-3. Any coordinates in ``cartesian'' blocks are also absolute cartesians.
-4. There is no provision for output of constraints.
-5. The units used are those initially specified by the user, and are
-   noted also in fdf form.
-\end{verbatim}
-
-Note that the geometry reported is the last one for which forces and
-stresses were computed.
-
-\item{\bf NEXT\_ITER.UCELL.ZMATRIX file:}
-\index{NEXT\_ITER.UCELL.ZMATRIX}@{{\it NEXT\_ITER.UCELL.ZMATRIX}}
-
-A file with the same format as {\tt OUT.UCELL.ZMATRIX} but with
-a possibly updated geometry.
-
-\end{itemize}
 
 
 \subsection{Dynamics history files}
