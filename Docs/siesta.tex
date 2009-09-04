@@ -828,8 +828,101 @@ for them.
   internal list of ``accepted'' tags in the program).
 \end{itemize}
 
+\section{PROGRAM OUTPUT}
 
-\section{DETAILED DECRIPTION OF INPUT OPTIONS}
+\subsection{Standard output} \index{output!main output file}
+
+{\sc Siesta} writes its main output to standard output. 
+
+A brief description follows. See the example cases in the 
+siesta/Tests directory for illustration. 
+
+The program starts writing the version of
+the code which is used. Then, the input FDF file is dumped into
+the output file as is (except for empty lines). The program does
+part of the reading and digesting of the data at the beginning
+within the {\tt redata} subroutine. It prints some of the information
+it digests. It is important to note that it is only part of it,
+some other information being accessed by the different subroutines
+when they need it during the run (in the spirit of FDF input).
+A complete list of the input used by the code can be found at the
+end in the file {\tt fdf.log}, including defaults used by the code
+in the run.
+
+After that, the program reads the pseudopotentials, factorizes them
+into Kleinman-Bylander form, and generates (or reads) the atomic basis
+set to be used in the simulation. These stages are documented in the
+output file.
+
+The simulation begins after that, the output showing information of
+the MD (or CG) steps and the SCF cycles within.  Basic descriptions of
+the process and results are presented. The user has the option to
+customize it, however,\index{output!customization} by defining
+different options that control the printing of informations like
+coordinates, forces, $\vec k$ points, etc.  The options are discussed
+in the appropriate sections.
+
+\begin{itemize}
+\item
+{\bf WriteCoorInitial}\index{WriteCoorInitial@{\bf WriteCoorInitial}}
+\index{output!atomic coordinates!initial}
+for writing the initial atomic coordinates,
+\item
+{\bf WriteCoorStep}\index{WriteCoorStep@{\bf WriteCoorStep}}
+\index{output!atomic coordinates!in a dynamics step}
+for writing the atomic coordinates at every step,
+\item
+{\bf WriteForces}\index{WriteForces@{\bf WriteForces}}
+\index{output!forces}
+for writing the forces on the atoms at every step,
+\item
+{\bf WriteKpoints}\index{WriteKpoints@{\bf WriteKpoints}}
+\index{output!grid $\vec k$ points}
+for writing the coordinates of the $\vec k$ points used for the sampling,
+\item
+{\bf WriteEigenvalues}\index{WriteEigenvalues@{\bf WriteEigenvalues}}
+\index{output!eigenvalues}
+for writing the eigenvalues of the Hamiltonian at those $\vec k$ points,
+\item
+{\bf WriteKbands}\index{WriteKbands@{\bf WriteKbands}}
+\index{output!band $\vec k$ points}
+for writing the $\vec k$ points used to band-structure plots,
+\item
+{\bf WriteBands}\index{WriteBands@{\bf WriteBands}}
+\index{output!band structure} 
+for writing the band structure at those $\vec k$ points,
+\item
+{\bf WriteWaveFunctions}\index{WriteWaveFunctions@{\bf WriteWaveFunctions}}
+\index{output!wave functions} 
+for writing the coefficients of the wave functions at
+certain $\vec k$ points,
+\item
+{\bf WriteMullikenPop}\index{WriteMullikenPop@{\bf WriteMullikenPop}}
+\index{output!Mulliken analysis}\index{Mulliken population analysis} 
+for writing the Mulliken population analysis at different levels of detail.
+\end{itemize}
+
+Except for the first one, which is {\tt .true.} by default, the
+default of {\sc Siesta} for this options is {\tt .false.} (or 0 for the last)
+which means no writing. That gives the short output format.
+
+There is a long output possibility (verbose) defined in {\sc Siesta}, which is
+obtained by setting {\bf LongOutput} to {\tt .true.} . It changes 
+the default of the previous flags to {\tt .true.} (to 1 for 
+Mulliken), with the consequent appearance of the 
+corresponding information in the output file.
+Of course, the explicit setting of any of these options overrides the
+{\bf LongOutput} setting of it.
+
+
+
+\subsection{Output to dedicated files} \index{output!dedicated files}
+
+{\sc Siesta} can produce a wealth of information in dedicated files,
+with specific formats, that can be used for further analysis. See the
+appropriate sections, and the appendix on file formats.
+
+\section{DETAILED DECRIPTION OF PROGRAM OPTIONS}
 
 
 Here follows a description of the variables that you can define in
@@ -1623,7 +1716,7 @@ files are necessary. NetCDF support is needed.
 
 \end{description}
 
-\subsection{Tools to inspect the orbitals and KB projectors}
+\subsubsection{Tools to inspect the orbitals and KB projectors}
 
 The program {\tt ioncat} in {\tt Util/Gen-basis} can be used to
 extract orbital, KB projector, and other information contained in the
@@ -2685,7 +2778,119 @@ to calculate the total energy,  charge density and band structure.
 
 \end{description}
 
+\vspace{5pt}
+\subsection{Densities of states and COOP/COHP curves}
 
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+
+\item[{\bf LocalDensityOfStates}] ({\it block}): 
+\index{LocalDensityOfStates@{\bf LocalDensityOfStates}} 
+\index{output!local density of states}
+Instructs to write the LDOS, integrated between two given energies,
+at the mesh used by DHSCF,
+in file {\tt SystemLabel}.LDOS. This file can be read by routine IORHO,
+which may be used by an application program in later versions.
+The block must be a single line with the energies of the range for 
+LDOS integration
+(relative to the program's zero, i.e. the same as the eigenvalues
+printed by the program) and their units.
+An example is:
+
+\begin{verbatim}
+     %block LocalDensityOfStates
+        -3.50  0.00   eV
+     %endblock LocalDensityOfStates
+\end{verbatim}
+
+{\it Use:} The two energies of the range must be ordered,
+with lowest first.
+File {\tt SystemLabel}.LDOS is only written, not read, by siesta.
+
+{\it Default value:} LDOS not calculated nor written.
+        
+
+\item[{\bf ProjectedDensityOfStates}] ({\it block}):
+\index{ProjectedDensityOfStates@{\bf ProjectedDensityOfStates}}
+\index{output!projected density of states}
+
+Instructs to write the Total Density Of States (Total DOS) and the 
+Projected Density Of States (PDOS) on the basis orbitals,
+between two given energies,
+in files {\tt SystemLabel}.DOS and 
+{\tt SystemLabel}.PDOS, respectively. 
+The block must be a single line with the energies of the range for 
+PDOS projection,
+(relative to the program's zero, i.e. the same as the eigenvalues
+printed by the program), the peak width (an energy) for broadening
+the eigenvalues, the number of points in the energy window, 
+and the energy units.
+An example is:
+
+\begin{verbatim}
+     %block ProjectedDensityOfStates
+        -20.00  10.00  0.200  500  eV
+     %endblock ProjectedDensityOfStates
+\end{verbatim}
+
+By default the projected density of states is generated for the same
+grid of points in reciprocal space as used for the SCF calculation.
+However, a separate set of K-points, usually on a finer grid, can 
+be generated using one of the options \textbf{PDOS.kgrid\_cutoff} or
+\textbf{PDOS.kgrid\_Monkhorst\_Pack}. The format of these options is
+exactly the same as for \textbf{kgrid\_cutoff} and 
+\textbf{kgrid\_Monkhorst\_Pack}, respectively. Note that if a gamma
+point calculation is being used in the SCF part, especially as part
+of a geometry optimisation, and this is then to
+be run with a grid of K-points for the PDOS calculation it is more
+efficient to run the SCF phase first and then restart to perform the
+PDOS evaluation using the density matrix saved from the SCF phase. 
+
+{\it Use:} The two energies of the range must be ordered, with lowest
+first. 
+
+{\it Output:} The Total DOS is dumped into a file
+called {\tt SystemLabel}.DOS. The format of this file is:
+
+Energy value, Total DOS (spin up), Total DOS (spin down)
+
+The Projected Density Of States for all the orbitals in the unit cell
+is dumped sequentially into a file called {\tt SystemLabel}.PDOS. This
+file is more structured, so auxiliary tools can process it easily.
+
+In all cases, the units for the DOS are (number of states/eV), and the
+Total DOS, $g \left(\epsilon\right)$, is normalized as follows:
+
+\begin{eqnarray}
+   \int_{-\infty}^{+\infty} g \left(\epsilon\right) d\epsilon = 
+   number \;\; of \;\; basis \;\; orbitals \;\; in \;\;  unit \;\; cell \;\;
+   \nonumber \\
+\end{eqnarray}
+
+
+{\it Default value:} PDOS not calculated nor written.
+
+\item[{\bf COOP.Write}] ({\it logical}): 
+\index{COOP.Write@{\bf COOP.Write}} 
+\index{output!Information for COOP/COHP curves}
+Instructs the program to generate  {\tt SystemLabel}.WFSX (packed
+wavefunction file) and  {\tt SystemLabel}.HSX (H, S and X\_~{ij} file),
+to be processed by {\tt Util/COOP/mprop} to generate COOP/COHP curves,
+(projected) densities of states, etc.
+
+The WFSX file is in a more compact form than the usual WFS, and the
+wavefunctions are output in single precision. The {\tt Util/wfsx2wfs}
+program can be used to convert to the old format.
+The HSX file is in a more compact form than the usual HS, and the
+Hamiltonian, overlap matrix, and relative-positions array (which is
+always output, even for gamma-point only calculations) are in
+single precision.
+
+{\it Default value:} {\tt .false.}
+        
+\end{description}
 
 \vspace{5pt}
 \subsection{Exchange-correlation functionals}
@@ -3036,7 +3241,7 @@ The Density matrix can be:
 \begin{verbatim}
     1. Synthesized directly from atomic occupations.
        (See the options below for spin considerations)
-    2. Read from a .DM file
+    2. Read from a .DM file (if the appropriate options are set)
     3. Extrapolated from (two) previous geometry steps
     3.a The DM of the previous geometry iteration
 
@@ -3070,6 +3275,54 @@ The Density matrix can be:
 
 
 \begin{description}
+
+\item[{\bf DM.UseSaveDM}] ({\it logical}): 
+\index{DM.UseSaveDM@{\bf DM.UseSaveDM}} 
+\index{reading saved data!density matrix}
+Instructs to read the density matrix stored in file
+{\tt SystemLabel}.DM by a previous run.
+
+{\it Use:} If the required file does not exist, a warning is
+printed but the program does not stop. Overrides {\bf UseSaveData}.
+
+{\it Default value:} {\tt .false.}
+
+
+\item[{\bf DM.FormattedFiles}] ({\it logical}): 
+\index{DM.FormattedFiles@{\bf DM.FormattedFiles}} 
+\index{reading saved data!density matrix}
+Instructs to use formatted files for reading and writing
+the density matrix. In this case, the files are labelled
+{\tt SystemLabel}.DMF.
+
+{\it Use:} This makes for much larger files, and slower i/o. However, the
+files are transferable between different computers, which is
+not the case normally.
+
+{\it Default value:} {\tt .false.}
+
+
+\item[{\bf DM.FormattedInput}] ({\it logical}): 
+\index{DM.FormattedInput@{\bf DM.FormattedInput}} 
+\index{reading saved data!density matrix}
+Instructs to use formatted files for reading the density
+matrix.
+
+{\it Use:} Overrides the value of {\bf DM.FormattedFiles}.
+
+{\it Default value:} {\tt .false.}
+
+
+\item[{\bf DM.FormattedOutput}] ({\it logical}): 
+\index{DM.FormattedInput@{\bf DM.FormattedOutput}} 
+\index{reading saved data!density matrix}
+Instructs to use formatted files for writing the density
+matrix.
+
+{\it Use:} Overrides the value of {\bf DM.FormattedFiles}.
+
+{\it Default value:} {\tt .false.}
+
 
 \item[{\bf DM.InitSpinAF}] ({\it logical}):\index{spin}
 \index{spin!initialization}\index{ferromagnetic initial DM}
@@ -3139,6 +3392,44 @@ iterations is (linearly) extrapolated to start the new geometry's SCF cycle.
 
 Further information regarding the density-matrix re-use can be found
 in the header of routine {\tt Src/new\_dm.F}.
+
+\end{description}
+
+\subsubsection{Initialization of the SCF cycle with charge densities}
+
+\begin{description}
+\item[{\bf SCF.Read.Charge.NetCDF}] ({\it logical}):
+  \index{SCF.Read.Charge.NetCDF@{\bf SCF.Read.Charge.NetCDF}}
+  \index{reading saved data!charge density} Instructs Siesta to read
+  the charge density stored in the netCDF file {\tt
+    Rho.IN.grid.nc}. This feature allows the easier re-use of
+  electronic-structure information from a previous run. It is not
+  necessary that the basis sets are ``similar'' (a requirement if
+  density-matrices are to be read in).
+
+{\it Use:} This is an experimental feature.  Until robust checks are
+implemented, care must be taken to make sure that the FFT grids in the
+.grid.nc file and in Siesta are the same.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf SCF.Read.Deformation.Charge.NetCDF}] ({\it logical}):
+  \index{SCF.Read.Deformation.Charge.NetCDF@{\bf
+      SCF.Read.Deformation.Charge.NetCDF}} \index{reading saved
+    data!deformation charge density} Instructs Siesta to read the
+  deformation charge density stored in the netCDF file {\tt
+    DeltaRho.IN.grid.nc}. This feature allows the easier re-use of
+  electronic-structure information from a previous run. It is not
+  necessary that the basis sets are ``similar'' (a requirement if
+  density-matrices are to be read in). The deformation charge is
+  particularly useful to give a good starting point for slightly
+  different geometries.
+
+{\it Use:} This is an experimental feature.  Until robust checks are
+implemented, care must be taken to make sure that the FFT grids in the
+.grid.nc file and in Siesta are the same.
+
+{\it Default value:} {\tt .false.}
 
 \end{description}
 
@@ -4318,11 +4609,40 @@ parallel runs.
 {\it Use:} Used only if  {\bf SolutionMethod} = {\tt OrderN}
 
 {\it Default value:} {\tt .false.}
+
         
 \end{description}
 
+{\bf Output of localized wavefunctions}
 
+\index{Localized Wave Functions} 
+At the end of each conjugate gradient minimization of the energy
+functional, the LWF's are stored on disk. These can be used as an
+input for the same system in a restart, or in case something goes
+wrong.  The LWF's are stored in sparse form in file SystemLabel.LWF
 
+It is important to keep very good care of this file, since the first
+minimizations can take MANY steps. Loosing them will mean performing
+the whole minimization again. It is also a good practice to save it
+periodically during the simulation, in case a mid-run restart is
+necessary.
+
+\begin{description}
+
+\item[{\bf ON.UseSaveLWF}] ({\it logical}): 
+\index{ON.UseSaveLWF@{\bf ON.UseSaveLWF}} 
+\index{reading saved data!localized wave functions (order-$N$)}
+\index{Restart of O(N) calculations}
+Instructs to read the localized wave functions stored in file
+{\tt SystemLabel}.LWF by a previous run.
+
+{\it Use:} Used only if {\bf SolutionMethod} is {\tt OrderN}.
+If the required file does not exist, a warning is
+printed but the program does not stop. Overrides {\bf UseSaveData}.
+
+{\it Default value:} {\tt .false.}
+
+\end{description}
 
 \vspace{5pt}
 \subsection{Output of charge densities and potentials on the grid}
@@ -4730,47 +5050,6 @@ The specific changing of any of these options overrides the
 {\it Default value:} {\tt .false.}
 
 
-\item[{\bf WriteCoorInitial}] ({\it logical}):
-\index{WriteCoorInitial@{\bf WriteCoorInitial}}
-\index{output!atomic coordinates!initial}
-It determines whether the initial atomic coordinates of the simulation are
-dumped into the main output file. These coordinates correspond to the
-ones actually used in the first step, i.e., after reading (if pertinent)
-the {\it Systemlabel}.XV file. It is not affected by the {\bf LongOutput}
-flag.
-
-{\it Default value:} {\tt .true.}
-
- 
-\item[{\bf WriteCoorStep}] ({\it logical}):
-\index{WriteCoorStep@{\bf WriteCoorStep}}
-\index{output!atomic coordinates!in a dynamics step}
-If {\tt .true.} it writes the atomic coordinates at every 
-time or relaxation step. The coordinates are
-always written in the {\it Systemlabel}.XV file, but
-overriden at every step. They can be also accumulated
-in the {\it Systemlabel}.MD or {\it Systemlabel}.MDX files
-depending on {\bf WriteMDhistory}. Unless the contrary is specified
-(see {\bf WriteMDXmol}), if {\bf WriteCoorStep} is {\tt .false.}, 
-the coordinates are accumulated in {\sc XMol} {\tt xyz} format in the
-{\it Systemlabel}.ANI file.
-\index{WriteMDhistory@{\bf WriteMDhistory}}
-\index{output!atomic coordinates!history}
-For using the {\sc Sies2arc} utility\index{Sies2arc@{\sc Sies2arc}}
-for generating a CERIUS .arc animation file,
-WriteCoorStep should be {\tt .true.}
-
-{\it Default value:} {\tt .false.} (see {\bf LongOutput})
- 
- 
-\item[{\bf WriteForces}] ({\it logical}):
-\index{WriteForces@{\bf WriteForces}}\index{output!forces}
-If {\tt .true.} it writes the atomic forces at every
-time or relaxation step. Otherwise it does not. In this case,
-the forces of the last step can be found in the file {\it Systemlabel}.FA .
- 
-{\it Default value:} {\tt .false.} (see {\bf LongOutput})
-
 \item[{\bf WriteKpoints}] ({\it logical}):
 \index{WriteKpoints@{\bf WriteKpoints}}\index{output!grid $\vec k$ points}
 If {\tt .true.} it writes the coordinates of the $\vec k$ vectors
@@ -4866,25 +5145,6 @@ $xy$, $yz$, $z^2$, $xz$, and $x^2-y^2$ for $d$ orbitals.
 
 
  
-\item[{\bf WriteMDhistory}] ({\it logical}):
-\index{WriteMDhistory@{\bf WriteMDhistory}}
-\index{output!molecular dynamics!history}
-If {\tt .true.} {\sc Siesta} accumulates the molecular dynamics
-trajectory in the following files:
-\begin{itemize}
-\item
-{\it Systemlabel}.MD : atomic coordinates and velocities (and
-lattice vectors and their time derivatives, if the dynamics implies
-variable cell). The information is stored unformatted for postprocessing
-with utility programs to analyze the MD trajectory. 
-\item
-{\it Systemlabel}.MDE : shorter description of the run, with energy,
-temperature, etc., per time step.
-\end{itemize}
-These files are accumulative even for different runs.
- 
-{\it Default value:} {\tt .false.}
-
 \item[{\bf WarningMinimumAtomicDistance}] ({\it physical}): 
 \index{WarningMinimumAtomicDistance@{\bf WarningMinimumAtomicDistance}}
 Fixes a threshold interatomic distance below which a warning
@@ -4954,222 +5214,9 @@ printed but the program does not stop.
 {\it Default value:} {\tt .false.}
 
 
-\item[{\bf DM.UseSaveDM}] ({\it logical}): 
-\index{DM.UseSaveDM@{\bf DM.UseSaveDM}} 
-\index{reading saved data!density matrix}
-Instructs to read the density matrix stored in file
-{\tt SystemLabel}.DM by a previous run.
-
-{\it Use:} If the required file does not exist, a warning is
-printed but the program does not stop. Overrides {\bf UseSaveData}.
-
-{\it Default value:} {\tt .false.}
-
-
-\item[{\bf DM.FormattedFiles}] ({\it logical}): 
-\index{DM.FormattedFiles@{\bf DM.FormattedFiles}} 
-\index{reading saved data!density matrix}
-Instructs to use formatted files for reading and writing
-the density matrix. In this case, the files are labelled
-{\tt SystemLabel}.DMF.
-
-{\it Use:} This makes for much larger files, and slower i/o. However, the
-files are transferable between different computers, which is
-not the case normally.
-
-{\it Default value:} {\tt .false.}
-
-
-\item[{\bf DM.FormattedInput}] ({\it logical}): 
-\index{DM.FormattedInput@{\bf DM.FormattedInput}} 
-\index{reading saved data!density matrix}
-Instructs to use formatted files for reading the density
-matrix.
-
-{\it Use:} Overrides the value of {\bf DM.FormattedFiles}.
-
-{\it Default value:} {\tt .false.}
-
-
-\item[{\bf DM.FormattedOutput}] ({\it logical}): 
-\index{DM.FormattedInput@{\bf DM.FormattedOutput}} 
-\index{reading saved data!density matrix}
-Instructs to use formatted files for writing the density
-matrix.
-
-{\it Use:} Overrides the value of {\bf DM.FormattedFiles}.
-
-{\it Default value:} {\tt .false.}
-
-
-\item[{\bf SCF.Read.Charge.NetCDF}] ({\it logical}): 
-\index{SCF.Read.Charge.NetCDF@{\bf SCF.Read.Charge.NetCDF}} 
-\index{reading saved data!charge density}
-Instructs Siesta to read the charge density stored in the
-netCDF file
-{\tt Rho.IN.grid.nc}. This feature allows the easier re-use of electronic-structure
-information from a previous run. It is not necessary that the basis
-sets are ``similar'' (a requirement if density-matrices are to be read
-in). 
-
-{\it Use:} This is an experimental feature.  Until robust checks are
-implemented, care must be taken to make sure that the FFT grids in the
-.grid.nc file and in Siesta are the same.
-
-{\it Default value:} {\tt .false.}
-
-\item[{\bf SCF.Read.Deformation.Charge.NetCDF}] ({\it logical}): 
-\index{SCF.Read.Deformation.Charge.NetCDF@{\bf SCF.Read.Deformation.Charge.NetCDF}} 
-\index{reading saved data!deformation charge density}
-Instructs Siesta to read the deformation charge density stored in the
-netCDF file
-{\tt DeltaRho.IN.grid.nc}. This feature allows the easier re-use of electronic-structure
-information from a previous run. It is not necessary that the basis
-sets are ``similar'' (a requirement if density-matrices are to be read
-in). The deformation charge is particularly useful to give a good
-starting point for slightly different geometries.
-
-{\it Use:} This is an experimental feature.  Until robust checks are
-implemented, care must be taken to make sure that the FFT grids in the
-.grid.nc file and in Siesta are the same.
-
-{\it Default value:} {\tt .false.}
-
-
-\item[{\bf ON.UseSaveLWF}] ({\it logical}): 
-\index{ON.UseSaveLWF@{\bf ON.UseSaveLWF}} 
-\index{reading saved data!localized wave functions (order-$N$)}
-Instructs to read the localized wave functions stored in file
-{\tt SystemLabel}.LWF by a previous run.
-
-{\it Use:} Used only if {\bf SolutionMethod} is {\tt OrderN}.
-If the required file does not exist, a warning is
-printed but the program does not stop. Overrides {\bf UseSaveData}.
-
-{\it Default value:} {\tt .false.}
 
  
 
-\item[{\bf MD.UseSaveCG}] ({\it logical}): 
-\index{MD.UseSaveCG@{\bf MD.UseSaveCG}} 
-\index{reading saved data!CG}
-Instructs to read the conjugate-gradient hystory information stored
-in file {\tt SystemLabel}.CG by a previous run.
-
-{\it Use:} To get actual continuation of iterrupted CG runs, use
-together with {\bf MD.UseSaveXV} = {\tt .true.} with the XV
-file generated in the same run as the CG file.
-If the required file does not exist, a warning is
-printed but the program does not stop. Overrides {\bf UseSaveData}.
-
-{\it Default value:} {\tt .false.}
-        
-
-        
-
-\item[{\bf COOP.Write}] ({\it logical}): 
-\index{COOP.Write@{\bf COOP.Write}} 
-\index{output!Information for COOP/COHP curves}
-Instructs the program to generate  {\tt SystemLabel}.WFSX (packed
-wavefunction file) and  {\tt SystemLabel}.HSX (H, S and X\_~{ij} file),
-to be processed by {\tt Util/COOP/mprop} to generate COOP/COHP curves,
-(projected) densities of states, etc.
-
-The WFSX file is in a more compact form than the usual WFS, and the
-wavefunctions are output in single precision. The {\tt Util/wfsx2wfs}
-program can be used to convert to the old format.
-The HSX file is in a more compact form than the usual HS, and the
-Hamiltonian, overlap matrix, and relative-positions array (which is
-always output, even for gamma-point only calculations) are in
-single precision.
-
-{\it Default value:} {\tt .false.}
-        
-\item[{\bf LocalDensityOfStates}] ({\it block}): 
-\index{LocalDensityOfStates@{\bf LocalDensityOfStates}} 
-\index{output!local density of states}
-Instructs to write the LDOS, integrated between two given energies,
-at the mesh used by DHSCF,
-in file {\tt SystemLabel}.LDOS. This file can be read by routine IORHO,
-which may be used by an application program in later versions.
-The block must be a single line with the energies of the range for 
-LDOS integration
-(relative to the program's zero, i.e. the same as the eigenvalues
-printed by the program) and their units.
-An example is:
-
-\begin{verbatim}
-     %block LocalDensityOfStates
-        -3.50  0.00   eV
-     %endblock LocalDensityOfStates
-\end{verbatim}
-
-{\it Use:} The two energies of the range must be ordered,
-with lowest first.
-File {\tt SystemLabel}.LDOS is only written, not read, by siesta.
-
-{\it Default value:} LDOS not calculated nor written.
-        
-
-\item[{\bf ProjectedDensityOfStates}] ({\it block}):
-\index{ProjectedDensityOfStates@{\bf ProjectedDensityOfStates}}
-\index{output!projected density of states}
-
-Instructs to write the Total Density Of States (Total DOS) and the 
-Projected Density Of States (PDOS) on the basis orbitals,
-between two given energies,
-in files {\tt SystemLabel}.DOS and 
-{\tt SystemLabel}.PDOS, respectively. 
-The block must be a single line with the energies of the range for 
-PDOS projection,
-(relative to the program's zero, i.e. the same as the eigenvalues
-printed by the program), the peak width (an energy) for broadening
-the eigenvalues, the number of points in the energy window, 
-and the energy units.
-An example is:
-
-\begin{verbatim}
-     %block ProjectedDensityOfStates
-        -20.00  10.00  0.200  500  eV
-     %endblock ProjectedDensityOfStates
-\end{verbatim}
-
-By default the projected density of states is generated for the same
-grid of points in reciprocal space as used for the SCF calculation.
-However, a separate set of K-points, usually on a finer grid, can 
-be generated using one of the options \textbf{PDOS.kgrid\_cutoff} or
-\textbf{PDOS.kgrid\_Monkhorst\_Pack}. The format of these options is
-exactly the same as for \textbf{kgrid\_cutoff} and 
-\textbf{kgrid\_Monkhorst\_Pack}, respectively. Note that if a gamma
-point calculation is being used in the SCF part, especially as part
-of a geometry optimisation, and this is then to
-be run with a grid of K-points for the PDOS calculation it is more
-efficient to run the SCF phase first and then restart to perform the
-PDOS evaluation using the density matrix saved from the SCF phase. 
-
-{\it Use:} The two energies of the range must be ordered, with lowest
-first. 
-
-{\it Output:} The Total DOS is dumped into a file
-called {\tt SystemLabel}.DOS. The format of this file is:
-
-Energy value, Total DOS (spin up), Total DOS (spin down)
-
-The Projected Density Of States for all the orbitals in the unit cell
-is dumped sequentially into a file called {\tt SystemLabel}.PDOS. This
-file is more structured, so auxiliary tools can process it easily.
-
-In all cases, the units for the DOS are (number of states/eV), and the
-Total DOS, $g \left(\epsilon\right)$, is normalized as follows:
-
-\begin{eqnarray}
-   \int_{-\infty}^{+\infty} g \left(\epsilon\right) d\epsilon = 
-   number \;\; of \;\; basis \;\; orbitals \;\; in \;\;  unit \;\; cell \;\;
-   \nonumber \\
-\end{eqnarray}
-
-
-{\it Default value:} PDOS not calculated nor written.
 
 \item[{\bf WriteDenchar}] ({\it logical}):
 \index{WriteDenchar@{\bf WriteDenchar}}
@@ -5193,99 +5240,7 @@ shortly.
 
 \section{OUTPUT AND CONTINUATION FILES}
 
-\subsection{Standard output} \index{output!main output file}
 
-{\sc Siesta} writes its main output to standard output. 
-
-A brief description follows. See the example cases in the 
-siesta/Examples directory for illustration. 
-
-The program starts writing the version of
-the code which is used. Then, the input FDF file is dumped into
-the output file as is (except for empty lines). The program does
-part of the reading and digesting of the data at the beginning
-within the {\tt redata} subroutine. It prints some of the information
-it digests. It is important to note that it is only part of it,
-some other information being accessed by the different subroutines
-when they need it during the run (in the spirit of FDF input).
-A complete list of the input used by the code can be found at the
-end in the file {\tt out.fdf}, including defaults used by the code
-in the run.
-
-After that, the program reads the pseudopotentials, factorizes them
-into Kleinman-Bylander form, and generates (or reads) the atomic basis
-set to be used in the simulation. These stages are documented in the
-output file.
-
-The simulation begins after that, the output showing information of
-the MD (or CG) steps and the SCF cycles within.  Basic descriptions of
-the process and results are presented. The user has the option to
-customize it, however,\index{output!customization} by defining
-different options that control the printing of informations like
-coordinates, forces, $\vec k$ points, etc.  Here is a list of useful
-options:
- 
-\begin{itemize}
-\item
-{\bf WriteCoorInitial}\index{WriteCoorInitial@{\bf WriteCoorInitial}}
-\index{output!atomic coordinates!initial}
-for writing the initial atomic coordinates,
-\item
-{\bf WriteCoorStep}\index{WriteCoorStep@{\bf WriteCoorStep}}
-\index{output!atomic coordinates!in a dynamics step}
-for writing the atomic coordinates at every step,
-\item
-{\bf WriteForces}\index{WriteForces@{\bf WriteForces}}
-\index{output!forces}
-for writing the forces on the atoms at every step,
-\item
-{\bf WriteKpoints}\index{WriteKpoints@{\bf WriteKpoints}}
-\index{output!grid $\vec k$ points}
-for writing the coordinates of the $\vec k$ points used for the sampling,
-\item
-{\bf WriteEigenvalues}\index{WriteEigenvalues@{\bf WriteEigenvalues}}
-\index{output!eigenvalues}
-for writing the eigenvalues of the Hamiltonian at those $\vec k$ points,
-\item
-{\bf WriteKbands}\index{WriteKbands@{\bf WriteKbands}}
-\index{output!band $\vec k$ points}
-for writing the $\vec k$ points used to band-structure plots,
-\item
-{\bf WriteBands}\index{WriteBands@{\bf WriteBands}}
-\index{output!band structure} 
-for writing the band structure at those $\vec k$ points,
-\item
-{\bf WriteWaveFunctions}\index{WriteWaveFunctions@{\bf WriteWaveFunctions}}
-\index{output!wave functions} 
-for writing the coefficients of the wave functions at
-certain $\vec k$ points,
-\item
-{\bf WriteMullikenPop}\index{WriteMullikenPop@{\bf WriteMullikenPop}}
-\index{output!Mulliken analysis}\index{Mulliken population analysis} 
-for writing the Mulliken population analysis at different levels of detail.
-\end{itemize}
-
-Except for the first one, which is {\tt .true.} by default, the
-default of {\sc Siesta} for this options is {\tt .false.} (or 0 for the last)
-which means no writing. That gives the short output format.
-
-There is a long output possibility (verbose) defined in {\sc Siesta}, which is
-obtained by setting {\bf LongOutput} to {\tt .true.} . It changes 
-the default of the previous flags to {\tt .true.} (to 1 for 
-Mulliken), with the consequent appearance of the 
-corresponding information in the output file.
-Of course, the explicit setting of any of these options overrides the
-{\bf LongOutput} setting of it.
-
-
-
-
-
-\subsection{Forces on the atoms}
-\index{output!forces}
-The atomic forces of the last step are stored in the file
-SystemLabel.FA if they are not written to the main output.
-See the {\bf WriteForces} data descriptor above.
 
 
 \subsection{Sampling $\vec k$ points}
@@ -5354,73 +5309,6 @@ states.\index{density of states}
 See the {\bf WriteEigenvalues} descriptor above.
 
 
-
-\subsection{Dynamics history files}
-\index{output!molecular dynamics!history}
-The trajectory of a molecular dynamics run (or a conjugate gradient
-minimization) can be accumulated in different files: SystemLabel.MD,
-SystemLabel.MDE, and SystemLabel.ANI. The first file keeps the whole trajectory
-information, meaning positions and velocities at every time step, 
-including lattice vectors if the cell varies. NOTE that the positions
-(and maybe the cell vectors) stored at each time step are the {\bf
-  predicted} values for the next step. Care should be taken if joint
-position-velocity correlations need to be computed from this file.
-The second gives global information (energy, temperature, etc),
-and the third has the coordinates in a form suited for XMol animation.
-See the {\bf WriteMDhistory} and {\bf WriteMDXmol} data descriptors 
-above for information. {\sc Siesta} always appends new information on these
-files, making them accumulative even for different runs.
-
-The {\tt iomd} subroutine can generate both
-an unformatted file SystemLabel.MD (default) or  ASCII formatted files
-SystemLabel.MDX and SystemLabel.MDC containing the atomic and lattice
-trajectories, respectively. Edit the file to change the settings if desired.
-
-\subsection{Intermediate and restart files}
-
-\begin{itemize}
-\item {\bf Positions and velocities:}
-
-Every time the atoms move, either during coordinate relaxation or
-molecular dynamics, their positions {\bf predicted for next step} and
-{\bf current} velocities are
-stored in file SystemLabel.XV, where SystemLabel is the value of that
-FDF descriptor (or 'siesta' by default).  The shape of the unit cell and
-its associated 'velocity' (in Parrinello-Rahman dynamics) are also
-stored in this file. For MD runs of type Verlet, Parrinello-Rahman,
-Nose, or Nose-Parrinello-Rahman, a file named
-SystemLabel.VERLET\_RESTART, SystemLabel.PR\_RESTART,
-SystemLabel.NOSE\_RESTART, or SystemLabel.NPR\_RESTART, respectively, is
-created to hold the values of auxiliary variables needed for a
-completely seamless continuation. Due to the introduction of this
-enhanced continuation feature in Siesta 2.0, an MD run made with
-Siesta 1.3 cannot be directly restarted with later versions of Siesta: the user
-would need to create the right kind of restart file in addition to
-setting the MD.UseSaveXV flag in the FDF file. 
-
-This restart fix is not complete in all cases nor satisfactory from a
-fundamental point of view, so the MD subsystem in Siesta will have to
-be redesigned. In the meantime, users are reminded that the scripting
-hooks being steadily introduced (see Util/Scripting) might be used to
-create custom-made MD scripts.
-
-
-\item {\bf Localized Wave Functions:} 
-At the end of each conjugate gradient
-minimization of the energy functional, the LWF's are
-stored on disk. These can be used as an input for
-the same system in a restart, or in case something goes
-wrong.  The LWF's are stored in sparse form in
-file SystemLabel.LWF
-
-It is important to keep very good care of this file,
-since the first minimizations can take MANY
-steps. Loosing them will mean performing the 
-whole minimization again. It is also a good practice 
-to save it periodically during the
-simulation, in case a mid-run restart is necessary.
-
-\end{itemize}
 
 \vspace{5pt}
 \section{STRUCTURAL RELAXATION, PHONONS, AND MOLECULAR DYNAMICS}
@@ -5498,12 +5386,7 @@ available dynamics option.
 
 \subsection{Structural relaxation}
 
-{\bf Conjugate-gradient history information:}
-Together with the SystemLabel.XV file, the information
-stored in the SystemLabel.CG file allows a smooth
-continuation of an interrupted conjugate-gradient relaxation
-process. (No such feature exists yet for a Broyden-based relaxation.)
-
+These are the options common to all relaxation methods.
 
 \begin{description}
 \item[{\bf MD.VariableCell}] ({\it logical}):
@@ -5512,7 +5395,7 @@ If true, the lattice is relaxed together with the atomic coordinates
 in the conjugate gradient (or Broyden) minimization. It allows to target
 hydrostatic pressures or arbitrary stress tensors.  See {\bf
 MD.MaxStressTol}, {\bf MD.TargetPressure}, {\bf MD.TargetStress}, {\bf
-  MD.ConstantVolume}, {\bf MD.PreconditionVariableCell}, and {\bf Optim.Broyden}.
+  MD.ConstantVolume}, and {\bf MD.PreconditionVariableCell}.
 
 {\it Use:} Used only if MD.TypeOfRun is {\tt CG} or {\tt Broyden}
 
@@ -5551,6 +5434,37 @@ distances or angles.
 
 {\it Default value:} {\tt .false.}
 
+\item[{\bf MD.MaxForceTol}] ({\it real force}): 
+\index{MD.MaxForceTol@{\bf MD.MaxForceTol}} 
+Force tolerance in coordinate optimization.  
+Run stops if the maximum atomic force is
+smaller than {\bf MD.MaxForceTol} (see {\bf MD.MaxStressTol}
+for variable cell).
+
+{\it Use:} Used only if MD.TypeOfRun is {\tt CG} or {\tt Broyden} (***)
+    
+{\it Default value:} {\tt 0.04 eV/Ang}
+
+
+\item[{\bf MD.MaxStressTol}] ({\it real pressure}):
+\index{MD.MaxStressTol@{\bf MD.MaxStressTol}}
+Stress tolerance in variable-cell CG optimization. Run stops
+if the maximum atomic force is smaller than {\bf MD.MaxForceTol}
+and the maximum stress component is smaller than {\bf MD.MaxStressTol}.
+
+{\it Use:} Used only if MD.TypeOfRun is {\tt CG} or {\tt Broyden} and
+Md.VariableCell is {\tt .true.}
+
+Special consideration is needed if used with Sankey-type basis sets, since 
+the combination of orbital kinks at the cutoff radii and the finite-grid
+integration originate discontinuities in the
+stress components, whose magnitude depends on the cutoff radii (or 
+energy shift) and the mesh cutoff. The tolerance has to be larger
+than the discontinuities to avoid endless optimizations if the target
+stress happens to be in a discontinuity.
+   
+{\it Default value:} {\tt 1.0 GPa}
+ 
 
 \item[{\bf MD.NumCGsteps}] ({\it integer}): 
 \index{MD.NumCGsteps@{\bf MD.NumCGsteps}} 
@@ -5567,8 +5481,9 @@ if tolerance is reached before; see MD.MaxForceTol below).
 Maximum atomic displacements on a {\tt CG} optimization move.
 
 {\it Use:} Used only if MD.TypeOfRun is {\tt CG}. (For the Broyden
-optimization method, it is only possible to limit indirectly the {\it initial\/}
-atomic displacements using {\bf MD.Broyden.Initial.Inverse.Jacobian}.)
+optimization method, it is only possible to limit indirectly the {\it
+  initial\/} atomic displacements using {\bf
+  MD.Broyden.Initial.Inverse.Jacobian}.)  ***true?
     
 {\it Default value:} {\tt 0.2 Bohr}
 
@@ -5591,6 +5506,32 @@ Md.VariableCell is {\tt .true.}
 
 
 \end{description}
+
+\subsubsection{Conjugate-gradients optimization}
+
+This was historically the default geometry-optimization method, and
+all the above options were introduced specifically for it, hence their
+names. The following pertains only to this method:
+
+\index{Conjugate-gradient history information}
+\begin{description}
+\item[{\bf MD.UseSaveCG}] ({\it logical}): 
+\index{MD.UseSaveCG@{\bf MD.UseSaveCG}} 
+\index{reading saved data!CG}
+Instructs to read the conjugate-gradient hystory information stored
+in file {\tt SystemLabel}.CG by a previous run.
+
+{\it Use:} To get actual continuation of iterrupted CG runs, use
+together with {\bf MD.UseSaveXV} = {\tt .true.} with the XV
+file generated in the same run as the CG file.
+If the required file does not exist, a warning is
+printed but the program does not stop. Overrides {\bf UseSaveData}.
+
+{\it Default value:} {\tt .false.}
+
+(No such feature exists yet for a Broyden-based relaxation.)
+
+\end{description}        
 
 \subsubsection{Broyden optimization}
 \begin{description}
@@ -5701,43 +5642,12 @@ option {\tt FIRE} for {\tt MD.TypeOfRun}
 
 \end{description}
 
-\subsection{Target stress and stress and force tolerance options}
+\subsection{Target stress options}
 
 Useful for structural optimizations and constant-pressure molecular
 dynamics.
 
 \begin{description}
- 
-\item[{\bf MD.MaxForceTol}] ({\it real force}): 
-\index{MD.MaxForceTol@{\bf MD.MaxForceTol}} 
-Force tolerance in coordinate optimization.  
-Run stops if the maximum atomic force is
-smaller than {\bf MD.MaxForceTol} (see {\bf MD.MaxStressTol}
-for variable cell).
-
-{\it Use:} Used only if MD.TypeOfRun is {\tt CG} or {\tt Broyden} (***)
-    
-{\it Default value:} {\tt 0.04 eV/Ang}
-
-
-\item[{\bf MD.MaxStressTol}] ({\it real pressure}):
-\index{MD.MaxStressTol@{\bf MD.MaxStressTol}}
-Stress tolerance in variable-cell CG optimization. Run stops
-if the maximum atomic force is smaller than {\bf MD.MaxForceTol}
-and the maximum stress component is smaller than {\bf MD.MaxStressTol}.
-
-{\it Use:} Used only if MD.TypeOfRun is {\tt CG} or {\tt Broyden} and
-Md.VariableCell is {\tt .true.}
-
-Special consideration is needed if used with Sankey-type basis sets, since 
-the combination of orbital kinks at the cutoff radii and the finite-grid
-integration originate discontinuities in the
-stress components, whose magnitude depends on the cutoff radii (or 
-energy shift) and the mesh cutoff. The tolerance has to be larger
-than the discontinuities to avoid endless optimizations if the target
-stress happens to be in a discontinuity.
-   
-{\it Default value:} {\tt 1.0 GPa}
  
 
 \item[{\bf MD.TargetPressure}] ({\it real pressure}): 
@@ -5962,6 +5872,127 @@ to reach target pressure in annealing MD.
 
 \end{description}
 
+\subsection{Output options}
+
+Every time the atoms move, either during coordinate relaxation or
+molecular dynamics, their positions {\bf predicted for next step} and
+{\bf current} velocities are stored in file SystemLabel.XV. The shape
+of the unit cell and its associated 'velocity' (in Parrinello-Rahman
+dynamics) are also stored in this file.
+
+Other options follow. 
+        
+\begin{description}
+\item[{\bf WriteCoorInitial}] ({\it logical}):
+\index{WriteCoorInitial@{\bf WriteCoorInitial}}
+\index{output!atomic coordinates!initial}
+It determines whether the initial atomic coordinates of the simulation are
+dumped into the main output file. These coordinates correspond to the
+ones actually used in the first step, i.e., after reading (if pertinent)
+the {\it Systemlabel}.XV file. *** check precedences. 
+It is not affected by the {\bf LongOutput} flag.
+
+{\it Default value:} {\tt .true.}
+
+ 
+\item[{\bf WriteCoorStep}] ({\it logical}):
+\index{WriteCoorStep@{\bf WriteCoorStep}}
+\index{output!atomic coordinates!in a dynamics step}
+If {\tt .true.} it writes the atomic coordinates at every 
+time or relaxation step. The coordinates are
+always written in the {\it Systemlabel}.XV file, but
+overriden at every step. They can be also accumulated
+in the {\it Systemlabel}.MD or {\it Systemlabel}.MDX files
+depending on {\bf WriteMDhistory}. Unless the contrary is specified
+(see {\bf WriteMDXmol}), if {\bf WriteCoorStep} is {\tt .false.}, 
+the coordinates are accumulated in {\sc XMol} {\tt xyz} format in the
+{\it Systemlabel}.ANI file.
+\index{WriteMDhistory@{\bf WriteMDhistory}}
+\index{output!atomic coordinates!history}
+For using the {\sc Sies2arc} utility\index{Sies2arc@{\sc Sies2arc}}
+for generating a CERIUS .arc animation file,
+WriteCoorStep should be {\tt .true.}
+
+{\it Default value:} {\tt .false.} (see {\bf LongOutput})
+ 
+ 
+\item[{\bf WriteForces}] ({\it logical}):
+\index{WriteForces@{\bf WriteForces}}\index{output!forces}
+If {\tt .true.} it writes the atomic forces to the output file at every
+time or relaxation step. Otherwise it does not. In this case,
+the forces of the last step can be found in the file {\it Systemlabel}.FA .
+ 
+{\it Default value:} {\tt .false.} (see {\bf LongOutput})
+
+\item[{\bf WriteMDhistory}] ({\it logical}):
+\index{WriteMDhistory@{\bf WriteMDhistory}}
+\index{output!molecular dynamics!history}
+If {\tt .true.} {\sc Siesta} accumulates the molecular dynamics
+trajectory in the following files:
+\begin{itemize}
+\item
+{\it Systemlabel}.MD : atomic coordinates and velocities (and
+lattice vectors and their time derivatives, if the dynamics implies
+variable cell). The information is stored unformatted for postprocessing
+with utility programs to analyze the MD trajectory. 
+\item
+{\it Systemlabel}.MDE : shorter description of the run, with energy,
+temperature, etc., per time step.
+\end{itemize}
+These files are accumulative even for different runs.
+ 
+{\it Default value:} {\tt .false.}
+
+\index{output!molecular dynamics!history}
+
+The trajectory of a molecular dynamics run (or a conjugate gradient
+minimization) can be accumulated in different files: SystemLabel.MD,
+SystemLabel.MDE, and SystemLabel.ANI. The first file keeps the whole trajectory
+information, meaning positions and velocities at every time step, 
+including lattice vectors if the cell varies. NOTE that the positions
+(and maybe the cell vectors) stored at each time step are the {\bf
+  predicted} values for the next step. Care should be taken if joint
+position-velocity correlations need to be computed from this file.
+The second gives global information (energy, temperature, etc),
+and the third has the coordinates in a form suited for XMol animation.
+See the {\bf WriteMDhistory} and {\bf WriteMDXmol} data descriptors 
+above for information. {\sc Siesta} always appends new information on these
+files, making them accumulative even for different runs.
+
+The {\tt iomd} subroutine can generate both
+an unformatted file SystemLabel.MD (default) or  ASCII formatted files
+SystemLabel.MDX and SystemLabel.MDC containing the atomic and lattice
+trajectories, respectively. Edit the file to change the settings if desired.
+
+
+\end{description}
+
+\subsection{Restarting geometry optimizations and MD runs}
+
+Every time the atoms move, either during coordinate relaxation or
+molecular dynamics, their positions {\bf predicted for next step} and
+{\bf current} velocities are stored in file SystemLabel.XV, where
+SystemLabel is the value of that FDF descriptor (or 'siesta' by
+default).  The shape of the unit cell and its associated 'velocity'
+(in Parrinello-Rahman dynamics) are also stored in this file. For MD
+runs of type Verlet, Parrinello-Rahman, Nose, or
+Nose-Parrinello-Rahman, a file named SystemLabel.VERLET\_RESTART,
+SystemLabel.PR\_RESTART, SystemLabel.NOSE\_RESTART, or
+SystemLabel.NPR\_RESTART, respectively, is created to hold the values
+of auxiliary variables needed for a completely seamless
+continuation. Due to the introduction of this enhanced continuation
+feature in Siesta 2.0, an MD run made with Siesta 1.3 cannot be
+directly restarted with later versions of Siesta: the user would need
+to create the right kind of restart file in addition to setting the
+MD.UseSaveXV flag in the FDF file.
+
+This restart fix is not complete in all cases nor satisfactory from a
+fundamental point of view, so the MD subsystem in Siesta will have to
+be redesigned. In the meantime, users are reminded that the scripting
+hooks being steadily introduced (see Util/Scripting) might be used to
+create custom-made MD scripts.
+
+
 \subsection{Use of general constraints}
 \begin{description}
 \itemsep 10pt
@@ -6078,6 +6109,7 @@ constrained magnitude, unless the displacement steps are very small.
 {\it Default value:} No constraints
 
 \end{description}
+
 
 \section{SPECIALIZED OPTIONS}
 
