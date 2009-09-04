@@ -1,5 +1,32 @@
 ------------------------------------------------------------------
 
+2009-09-04  17:30:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-22-270
+
+Summary: Added private and implicit none to all modules in siestaXC
+Keywords: private implicit_none !!@LICENSE
+
+Added private and implicit none statements to all modules of siestaXC
+License header substituted by !!@LICENSE in all files of siestaXC
+
+modified:
+  Src/alloc.F90
+  Src/chkgmx.f
+  Src/debugxc.f90
+  Src/fftr.f90
+  Src/flib_spline.f90
+  Src/m_filter.f90
+  Src/m_recipes.f
+  Src/m_walltime.f90
+  Src/mesh3d.F90
+  Src/minvec.f
+  Src/moreParallelSubs.F90
+  Src/precision.F
+  Src/radfft.f
+  Src/sorting.f
+  Src/sys.F
+
+------------------------------------------------------------------
+
 2009-09-04  16:00:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-21-269
 
 Summary: alloc_count called from memory rather than viceversa

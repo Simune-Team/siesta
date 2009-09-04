@@ -9,6 +9,8 @@ USE moreParallelSubs, only: nodeString   ! Returns a string with a node number
 USE moreParallelSubs, only: copyFile     ! Copies a file to another node
 USE m_io,             only: io_assign    ! Get and reserve an available IO unit
 
+  implicit none
+
 PUBLIC &
   setDebugOutputUnit,   &! Sets debug output unit and opens it for debug output
   closeDebugOutputFile, &! Close debug output file and copies it to node 0

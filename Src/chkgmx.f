@@ -11,6 +11,8 @@
       use precision, only: dp      ! Double precision real kind
 !      use parallel,  only: Node    ! My processor index
 
+      implicit none
+
 ! Public procedures provided:
       PUBLIC::
      .  chkgmx,  ! Checks that a given cutoff is consistent with a mesh

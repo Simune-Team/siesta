@@ -4,19 +4,22 @@
 !    The Art of Scientific Computing' by W.H. Press, S.A. Teukolsky, 
 !    W.T. Veterling and B.P. Flannery, Cambridge U.P. 1987 and 1992.
 !**********************************************************************
-! The routines contained in this file are:
-!     SUBROUTINE DERF
-!     SUBROUTINE DERFC
-!     SUBROUTINE FOUR1
-!     SUBROUTINE POLINT
-!     SUBROUTINE SPLINE
-!     SUBROUTINE SPLINT
-!**********************************************************************
 
-      use sys, only: die
+! Used module procedures
+      use sys, only: die  ! Termination routine
 
-      public :: derf, derfc, four1, polint, spline, splint
-      public :: sort
+      implicit none
+
+! Public procedures provided by this module
+      public :: derf    ! Error function
+      public :: derfc   ! Complementary error function
+      public :: four1   ! 1-D fast Fourier transform
+      public :: polint  ! Polynomial interpolation
+      public :: spline  ! Set up spline interpolation
+      public :: splint  ! Perform spline interpolation
+      public :: sort    ! Sort an array by heapsort method
+
+      private ! Nothing is declared public below this point
 
       contains
 

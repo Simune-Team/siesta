@@ -88,6 +88,8 @@ C *********************************************************************
 !      USE m_timer,   only: timer_start  ! Start counting CPU time
 !      USE m_timer,   only: timer_stop   ! Stop counting CPU time
 
+      implicit none
+
       PUBLIC :: radfft               ! Radial fast Fourier transform
 
       PRIVATE

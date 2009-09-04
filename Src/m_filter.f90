@@ -1,12 +1,4 @@
-! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2008.
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+!!@LICENSE
 !
 !******************************************************************************
 ! MODULE m_filter
@@ -79,7 +71,7 @@ MODULE m_filter
 ! USE m_sorting, only order   ! Orders a vector by increasing values
 ! USE m_sorting, only ordix   ! Index of a vector by increasing values
 
-implicit none
+  implicit none
 
 ! All public procedures (there are no public types, parameters, or variables):
 PUBLIC:: &

@@ -1,12 +1,4 @@
-! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2008.
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+!!@LICENSE
 !
 !******************************************************************************
 ! MODULE moreParallelSubs
@@ -181,12 +173,13 @@ MODULE moreParallelSubs
   use mpi_siesta, only: MPI_STATUS_SIZE
 #endif
 
+  implicit none
+
 ! All public procedures (there are no public types, parameters, or variables):
 PUBLIC:: &
   copyFile,      &! Copies a formatted file from one node to another
   miscAllReduce, &! Reduces a miscellaneous set of variables and arrays
   nodeString      ! Returns a character string with a node index
-
 
 PRIVATE ! Nothing is declared public beyond this point
 

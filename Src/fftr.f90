@@ -152,6 +152,8 @@ MODULE fftr
 !  use debugXC,   only: udebug        ! File unit for debug output
 ! END DEBUG
 
+  implicit none
+
 PUBLIC::    &
   fftk2r,   &! k->r (inverse) Fourier transform
   fftr2k     ! r->k (direct) Fourier transform

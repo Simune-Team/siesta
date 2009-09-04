@@ -27,7 +27,7 @@ C *******************************************************************
 ! Module parameters:
       USE precision, only: dp   ! Double precision real kind
 
-      implicit         none
+      implicit none
 
 ! Public module procedures:
       PUBLIC :: minvec          ! Lattice vectors of minimal length
@@ -35,7 +35,7 @@ C *******************************************************************
 ! Public parameters, variables, and arrays:
 !     none
 
-      PRIVATE
+      PRIVATE  ! Nothing is declared public below this point
 
       CONTAINS
 !-------------------------------------------------------------------

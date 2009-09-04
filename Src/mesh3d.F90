@@ -662,6 +662,8 @@ MODULE mesh3D
   use mpi_siesta, only: MPI_grid_real
 #endif
 
+  implicit none
+
 ! Public procedures
 PUBLIC:: &
   addMeshData,   &! Adds the data in a box array to the equiv. unit-cell points

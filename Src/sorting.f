@@ -1,14 +1,16 @@
-! 
-! This file is part of the SIESTA package.
+!!@LICENSE
 !
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+!**********************************************************************
+! module sorting
 !
-      module sorting
+! Provides the following public procedures:
+!   iorder  ! Orders elements of an integer array according to some index
+!   ordix   ! Finds an order index of increasing array elements
+!   order   ! Orders elements of a real array according to some index
+!   ordvec  ! Orders a set of vectors in a well defined order
+!**********************************************************************
+
+      MODULE sorting
 
       CONTAINS
 
@@ -213,4 +215,4 @@ C *******************************************************************
    40 CONTINUE
       END subroutine iorder
 
-      end module sorting
+      END MODULE sorting
