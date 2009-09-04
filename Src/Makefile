@@ -123,6 +123,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	ggaxc.o \
 	ldaxc.o \
 	m_filter.o \
+        m_io.o \
 	m_recipes.o \
 	m_timer.o \
 	mesh1d.o \
@@ -349,7 +350,7 @@ clean:
 #
 
 # DO NOT DELETE THIS LINE - used by make depend
-alloc.o: parallel.o precision.o sys.o
+alloc.o: m_io.o parallel.o precision.o sys.o
 arw.o: parallel.o sys.o
 atm_transfer.o: atm_types.o atmparams.o old_atmfuncs.o periodic_table.o
 atm_transfer.o: radial.o sys.o
@@ -410,7 +411,7 @@ conjgr_old.o: precision.o
 coor.o: alloc.o m_mpi_utils.o parallel.o precision.o siesta_geom.o sys.o
 coor.o: zmatrix.o
 coxmol.o: files.o periodic_table.o precision.o
-debugxc.o: moreParallelSubs.o parallel.o
+debugxc.o: m_io.o moreParallelSubs.o parallel.o
 denmat.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 denmatlomem.o: alloc.o globalise.o onmod.o precision.o
 densematrix.o: precision.o
@@ -524,6 +525,7 @@ m_forces.o: precision.o
 m_getopts.o: f2kcli.o
 m_hsx.o: atm_types.o atmfuncs.o atomlist.o files.o parallel.o parallelsubs.o
 m_hsx.o: precision.o siesta_geom.o sys.o
+m_io.o: sys.o
 m_iodm.o: alloc.o files.o m_mpi_utils.o parallel.o parallelsubs.o precision.o
 m_iodm.o: sys.o
 m_iorho.o: parallel.o parallelsubs.o precision.o sys.o
@@ -540,7 +542,7 @@ m_rmaxh.o: precision.o
 m_sparse.o: alloc.o precision.o
 m_spin.o: alloc.o m_fdf_global.o parallel.o precision.o
 m_stress.o: precision.o
-m_timer.o: m_walltime.o moreParallelSubs.o parallel.o precision.o sys.o
+m_timer.o: m_io.o m_walltime.o moreParallelSubs.o parallel.o precision.o sys.o
 m_ts_aux_rout.o: sys.o
 m_ts_contour.o: files.o m_ts_aux_rout.o m_ts_options.o precision.o sys.o
 m_ts_electrode.o: files.o m_ts_aux_rout.o m_ts_io.o m_ts_kpoints.o
@@ -577,7 +579,7 @@ mixps.o: f2kcli.o flib_spline.o periodic_table.o precision.o pseudopotential.o
 mixps.o: sys.o
 mneighb.o: alloc.o precision.o sys.o
 molecularmechanics.o: alloc.o parallel.o parsing.o precision.o sys.o units.o
-moreParallelSubs.o: alloc.o parallel.o precision.o sys.o
+moreParallelSubs.o: alloc.o m_io.o parallel.o precision.o sys.o
 mpi_test.o: m_mpi_utils.o parallel.o precision.o
 mulliken.o: atmfuncs.o parallel.o parallelsubs.o precision.o siesta_cml.o
 naefs.o: atmfuncs.o mneighb.o precision.o

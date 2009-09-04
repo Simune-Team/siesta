@@ -28,6 +28,7 @@
 ! use alloc,      only: de_alloc        ! De-allocation routine
 ! use alloc,      only: re_alloc        ! Re-allocation routine
 ! use sys,        only: die             ! Termination routine
+! use m_io,       only: io_assign       ! Get and reserve an available IO unit
 !
 !   USED module parameters:
 ! use precision,  only: dp              ! Real double precision type
@@ -158,6 +159,7 @@ MODULE moreParallelSubs
   use alloc,     only: de_alloc  ! De-allocation routine
   use alloc,     only: re_alloc  ! Re-allocation routine
   use sys,       only: die       ! Termination routine
+  use m_io,      only: io_assign ! Get and reserve an available IO unit
 
 ! Used module parameters
   use precision, only: dp              ! Real double precision type

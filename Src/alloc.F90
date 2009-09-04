@@ -173,12 +173,13 @@
 
 MODULE alloc
 
-  use precision, only: sp     ! Single precision real type
-  use precision, only: dp     ! Double precision real type
-  use parallel,  only: Node   ! My processor node index
-  use parallel,  only: Nodes  ! Number of parallel processors
-  use parallel,  only: ionode ! Am I the I/O processor?
-  use sys,       only: die    ! Termination routine
+  use precision, only: sp        ! Single precision real type
+  use precision, only: dp        ! Double precision real type
+  use parallel,  only: Node      ! My processor node index
+  use parallel,  only: Nodes     ! Number of parallel processors
+  use parallel,  only: ionode    ! Am I the I/O processor?
+  use sys,       only: die       ! Termination routine
+  use m_io,      only: io_assign ! Get and reserve an available IO unit
 #ifdef MPI
 !  use mpi_siesta
   use mpi_siesta, only: MPI_AllGather

@@ -16,6 +16,7 @@
 ! Other used module procedures
 !  use sys,        only: die             ! Termination routine
 !  use m_walltime, only: wall_time       ! Wall time routine
+!  use m_io,       only: io_assign       ! Get and reserve an available IO unit
 !  use moreParallelSubs, only: copyFile  ! Copies a file across nodes
 !
 ! Used module parameters and variables
@@ -177,6 +178,7 @@ MODULE m_timer
 
 ! Used module procedures
   use sys,        only: die             ! Termination routine
+  use m_io,       only: io_assign       ! Get and reserve an available IO unit
   use m_walltime, only: wall_time       ! Wall time routine
   use moreParallelSubs, only: copyFile  ! Copies a file across nodes
 #ifdef MPI

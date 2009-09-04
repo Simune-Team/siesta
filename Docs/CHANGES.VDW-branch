@@ -1,5 +1,26 @@
 ------------------------------------------------------------------
 
+2009-09-04  12:30:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-20-268
+
+Summary: io.f converted to a module in m_io.f
+Keywords: io io_assign m_io
+
+Routines in io.f (most notably io_assign and io_close) have been placed
+in the new module m_io. But io.f has been conserved to decrease the number
+of files changed at this time.
+
+added:
+  Src/m_io.f                ! New module containing routines in io.f
+
+modified:
+  Src/Makefile              ! Added m_io.o. Dependencies updated.
+  Src/alloc.F90             ! Added use m_io
+  Src/debugxc.f90           ! Added use m_io
+  Src/m_timer.F90           ! Added use m_io
+  Src/moreParallelSubs.F90  ! Added use m_io
+
+------------------------------------------------------------------
+
 2009-09-03  20:30:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-19-267
 
 Summary: 1-D FFT routines wrapped in module fft1d
