@@ -4922,7 +4922,8 @@ printed but the program does not stop. Overrides {\bf UseSaveData}.
 following options control the generation of the appropriate files,
 which can be processed by the programs in the {\tt Util/Grid}
 directory, and also by Andrei Postnikov's utilities in {\tt
-  Util/Contrib/APostnikov}. See also the Denchar section.
+  Util/Contrib/APostnikov}. See also {\tt /Util/Denchar} for an
+alternative way to plot the charge density (and wavefunctions).
 
 \begin{description}
 \itemsep 10pt
@@ -5039,7 +5040,13 @@ density is positive and the ionic charge density is negative.
 \end{description}
 
 \vspace{5pt}
-\subsection{Force field options}
+\subsection{Auxiliary Force field}
+
+It is possible to supplement the DFT interactions with a limited
+set of force-field options, typically useful to simulate dispersion
+interactions. It is not yet possible to turn off DFT and base the
+dynamics only on the force field. The {\tt GULP} program should be
+used for that.
 
 \begin{description}
 \itemsep 10pt
@@ -5059,16 +5066,16 @@ potentials are currently implemented:
   MM.Grimme.D} and {\tt MM.Grimme.S6} below.
 \end{itemize}
 
-The format of the input is the two species
-numbers that are to interact, the potential name (C6, C8, C10, harm,
-or Grimme), followed by the potential parameters. For the damped dispersion
-potentials the first number is the coefficient and the second is the
-exponent of the damping term (i.e., a reciprocal length). A value of
-zero for the latter term implies no damping. For the harmonic
-potential the force constant is given first, followed by r0. For the
-Grimme potential C6 is given first, followed by the (corrected) sum of
-the van der Waals radii for the interacting species (a real length). Positive
-values of the C6, C8, and C10 coefficients imply attractive potentials.
+The format of the input is the two species numbers that are to
+interact, the potential name (C6, C8, C10, harm, or Grimme), followed
+by the potential parameters. For the damped dispersion potentials the
+first number is the coefficient and the second is the exponent of the
+damping term (i.e., a reciprocal length). A value of zero for the
+latter term implies no damping. For the harmonic potential the force
+constant is given first, followed by r0. For the Grimme potential C6
+is given first, followed by the (corrected) sum of the van der Waals
+radii for the interacting species (a real length). Positive values of
+the C6, C8, and C10 coefficients imply attractive potentials.
 
 {\it Use:} Gives the input for the molecular mechanics potentials.
 
@@ -5264,43 +5271,49 @@ Sets the level of the allocation report, printed in file
 {\it Default value:} {\tt 0}
 
 \end{description}
-
  
 
-
 \vspace{5pt}
-\subsection{Options for saving/reading information}
+\subsection{The catch-all option UseSaveData}
 \index{reading saved data}
+
+This is a dangerous feature, and is deprecated, but retained for
+historical compatibility. Use the individual options instead.
 
 \begin{description}
 \itemsep 10pt
 \parsep 0pt
 
 
-\item[{\bf UseSaveData}] ({\it logical}): 
-\index{UseSaveData@{\bf UseSaveData}} 
-\index{reading saved data!all}
-Instructs to use as much information as possible stored from
-previous runs in files {\tt SystemLabel}.XV, {\tt SystemLabel}.DM and
-{\tt SystemLabel}.LWF, where SystemLabel is the name associated
-to parameter {\tt SystemLabel}.
+\item[{\bf UseSaveData}] ({\it logical}): \index{UseSaveData@{\bf
+    UseSaveData}} \index{reading saved data!all} Instructs to use as
+  much information as possible stored from previous runs in files {\tt
+    SystemLabel}.XV, {\tt SystemLabel}.DM and {\tt SystemLabel}.LWF,
+  where SystemLabel is the name associated to parameter {\tt
+    SystemLabel}.
 
 {\it Use:} If the required files do not exist, warnings are
 printed but the program does not stop.
 
 {\it Default value:} {\tt .false.}
 
+\end{description}
 
+\vspace{5pt}
+\subsection{Output of information for Denchar}
+\index{denchar}
 
- 
+The program {\tt denchar} in {\tt Util/Denchar} can generate
+charge-density and wavefunction contours.
 
+\begin{description}
 
-\item[{\bf WriteDenchar}] ({\it logical}):
-\index{WriteDenchar@{\bf WriteDenchar}}
-\index{output!charge density for DENCHAR code}
-Instructs to write information needed by the utility program
-DENCHAR (by J. Junquera and P. Ordej\'on) to plot the valence charge density
-contours (see {\tt Util/Denchar}). The information is written in file {\tt SystemLabel}.PLD.
+\item[{\bf WriteDenchar}] ({\it logical}): \index{WriteDenchar@{\bf
+    WriteDenchar}} \index{output!charge density and/or wfs for DENCHAR code}
+  Instructs to write information needed by the utility program DENCHAR
+  (by J. Junquera and P. Ordej\'on) to plot the valence charge density
+  contours (see {\tt Util/Denchar}). The information is written in
+  file {\tt SystemLabel}.PLD.
  
 {\it Use:} File {\tt SystemLabel}.PLD is only written, not read, by siesta.
  
