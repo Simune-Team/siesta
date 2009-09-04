@@ -170,6 +170,31 @@
 ! Equally, arrays allocated or reallocated by re_alloc should be 
 ! deallocated by dealloc.
 ! ==================================================================---
+! SUBROUTINE alloc_count( delta_size, type, name, routine )
+! INPUT:
+!   integer         :: delta_size : +/-size(array)
+!                                   + => allocation
+!                                   - => deallocation
+!   character       :: type       : 'I' => integer
+!                                   'R' => real*4
+!                                   'D' => real*8
+!                                   'L' => logical
+!                                   'S' => character (string)
+! INPUT (optional):
+!   character(len=*) :: name      : Actual array name or a label for it
+!   character(len=*) :: routine   : Name of the calling routine
+!                                   or routine section
+! USAGE:
+!   integer,         allocatable:: intArray(:)
+!   double precision,allocatable:: realArray(:)
+!   allocate( intArray(n), realArray(n) )
+!   call alloc_count( +n, 'I', 'intArray',  programName )
+!   call alloc_count( +n, 'D', 'realArray', programName )
+!   deallocate( intArray, realArray )
+!   call alloc_count( -n, 'I', 'intArray',  programName )
+!   call alloc_count( -n, 'D', 'realArray', programName )
+!
+! ==================================================================---
 
 MODULE alloc
 
@@ -198,6 +223,7 @@ PUBLIC ::             &
   alloc_report,       &! Sets log report defaults
   re_alloc,           &! Allocation/reallocation
   de_alloc,           &! Deallocation
+  alloc_count,        &! Memory counting for external allocs
   allocDefaults        ! Derived type to hold allocation defaults
 
 PRIVATE      ! Nothing is declared public beyond this point
@@ -510,7 +536,7 @@ if (NEEDS_COPY) then
 end if
 END SUBROUTINE realloc_i3
 ! ==================================================================
-! Single precision array reallocs
+! Single precision real array reallocs
 ! ==================================================================
 SUBROUTINE realloc_r1( array, i1min, i1max,        &
                        name, routine, copy, shrink )
@@ -663,7 +689,7 @@ if (NEEDS_COPY) then
 end if
 END SUBROUTINE realloc_r4
 ! ==================================================================
-! Double precision array reallocs
+! Double precision real array reallocs
 ! ==================================================================
 SUBROUTINE realloc_d1( array, i1min, i1max,        &
                        name, routine, copy, shrink )
@@ -830,7 +856,7 @@ if (NEEDS_COPY) then
 end if
 END SUBROUTINE realloc_d4
 ! ==================================================================
-! Complex array reallocs
+! Double precision complex array reallocs
 ! ==================================================================
 SUBROUTINE realloc_z1( array, i1min, i1max,        &
                        name, routine, copy, shrink )
@@ -1556,23 +1582,24 @@ else
 end if
 
 ! Call siesta counting routine 'memory'
-if (delta_size > 0) then
-  task = 'A'
-else
-  task = 'D'
-end if
-select case( type )
-case ('R')         ! Real --> single
-  memType = 'S'
-  memSize = abs(delta_size)
-case ('S')         ! Character (string) --> integer/4
-  memType = 'I'
-  memSize = abs(delta_size) / type_mem('I')
-case default
-  memType = type
-  memSize = abs(delta_size)
-end select
-call memory( task, memType, memSize, trim(rname) )
+! Switched off in Aug.2009, and made 'memory' call alloc_count instead
+! if (delta_size > 0) then
+!   task = 'A'
+! else
+!   task = 'D'
+! end if
+! select case( type )
+! case ('R')         ! Real --> single
+!   memType = 'S'
+!   memSize = abs(delta_size)
+! case ('S')         ! Character (string) --> integer/4
+!   memType = 'I'
+!   memSize = abs(delta_size) / type_mem('I')
+! case default
+!   memType = type
+!   memSize = abs(delta_size)
+! end select
+! call memory( task, memType, memSize, trim(rname) )
 
 if (REPORT_LEVEL <= 0) return
 

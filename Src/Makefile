@@ -561,7 +561,7 @@ madelung.o: parallel.o precision.o sys.o
 matel.o: alloc.o atmfuncs.o m_recipes.o precision.o radfft.o spher_harm.o
 md_out.o: files.o m_energies.o precision.o sys.o units.o
 md_utils.o: precision.o
-memory.o: memoryinfo.o parallel.o precision.o
+memory.o: alloc.o memoryinfo.o parallel.o precision.o
 memoryinfo.o: precision.o
 mesh1d.o: m_recipes.o precision.o
 mesh3d.o: alloc.o debugxc.o parallel.o precision.o sorting.o sys.o

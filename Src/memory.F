@@ -34,6 +34,7 @@ C Created by J.D. Gale, October 1999
 C
       use memoryinfo
       use parallel, only: Node
+      use alloc,    only: alloc_count
 
       implicit none
 
@@ -43,6 +44,8 @@ C
 
 C Local variables
       integer    Sign
+      integer         :: allocSize
+      character(len=1):: allocType
 CAG
 !      if (Node.eq.0) then
 !        write(66,'(a,a,a,a,i10)') "---memory: ", CallingRoutine // " ",
@@ -99,6 +102,32 @@ C Check whether memory is greater than peak memory so far
         PeakMemory = CurrentMemory
         PeakRoutine = CallingRoutine
       endif
+
+C Call alloc_count routine
+      select case(Type)
+      case('S')
+        allocType = 'R'
+        allocSize = NElements
+      case('C')
+        allocType = 'R'
+        allocSize = NElements*2
+      case('Z')
+        allocType = 'D'
+        allocSize = NElements*2
+      case('X')
+#ifdef GRID_DP
+        allocType = 'D'
+#else
+        allocType = 'R'
+#endif
+        allocSize = NElements
+      case default
+        allocType = Type
+        allocSize = NElements
+      end select
+      if (Task=='D') allocSize = -allocSize
+      call alloc_count( allocSize, allocType, 
+     .                  name=trim(CallingRoutine)//' unknown' )
 
       end subroutine memory
 

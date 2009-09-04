@@ -1,5 +1,22 @@
 ------------------------------------------------------------------
 
+2009-09-04  16:00:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-21-269
+
+Summary: alloc_count called from memory rather than viceversa
+Keywords: alloc_count memory
+
+Routine alloc_count, of module alloc, has been made public for counting
+allocations made outside the module. Memory routine now calls alloc_count, 
+rather than viceversa. This makes alloc report include all allocations in 
+siesta, while memory report will include only calls made to memory itself.
+
+modified:
+  Src/Makefile   ! Updated dependencies
+  Src/alloc.F90  ! alloc_count made public. Call to memory commented out
+  Src/memory.F   ! Added call to alloc_count
+
+------------------------------------------------------------------
+
 2009-09-04  12:30:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-20-268
 
 Summary: io.f converted to a module in m_io.f
