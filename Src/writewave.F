@@ -908,7 +908,7 @@ C First print the index and value of k-point
           write(6,'(a22,2x,i6,2x,3f10.6)') 'k-point = ',ik, k(1:3)
           write(6,'(a22,2x,i6)') 'Spin component = ',ispin
           write(6,'(a22,2x,i6)') 'Num. wavefunctions = ',nwflist(ik)
-          write(6,'(a)') 'Use readwf utility to print '
+          write(6,'(a)') 'Use readwfsx utility to print '
      $                   // "wavefunction coefficients from WFSX file"
         endif
         if (scf_set) then
