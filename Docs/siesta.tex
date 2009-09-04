@@ -667,6 +667,8 @@ The specific changing of any of these options overrides the
 
 {\it Default value:} {\tt .false.}
 
+It can be argued that this is a dangerous feature, and it is deprecated.
+
 \end{description}
 
 \subsection{Output to dedicated files} \index{output!dedicated files}
@@ -5386,7 +5388,7 @@ temperature and/or pressure (see variable MD.AnnealOption below)
   external driver program, using Unix pipes for communication.  The
   routines in module fsiesta.f90 allow the user's program to perform
   this communication transparently, as if siesta were a conventional
-  force-field subroutine. See file README in that directory for
+  force-field subroutine. See {\tt Util/SiestaSubroutine/README} for
   details. WARNING: if this option is specified without a driver
   program sending data, siesta may hang without any notice).
 
@@ -6696,30 +6698,34 @@ directory. If you have used another object directory {\tt MyObjDir},
 type {\tt make OBJDIR=MyObjDir}.
 
 \section{ANALYSIS TOOLS}
-\section{ANALYSIS TOOLS}
 
-\begin{itemize}
-
-\item PDOS/COOP/COHP offline generator.
-%
-Uses WFSX and HSX files to provide an alternative, more flexible
-method of computing the PDOS curves, offering also COOP and COHP
-curves. See {\tt Util/COOP}
-
-\item Projections.
-%
-See Util/Projections
-
-\item DM filter
-
-\item DM creator
-
-\end{itemize}
-
-\subsection{COOP/COHP/PDOS curves}
-\subsection{Grid utilities}
+There are a number of analysis tools and programs in the {\tt Util}
+directory. Some of them have been directly or indirectly mentioned in
+this manual. Their documentation is the appropriate sub-directory of
+{\tt Util}. See {\tt Util/README}.
 
 \section{SCRIPTING}
+
+In the {\tt Util/Scripting} directory we provide an experimental
+python scripting framework built on top of the 'Atomic Simulation
+Environment' (see {\tt https://wiki.fysik.dtu.dk/ase2}) by the Campos
+group at DTU, Denmark.
+
+(NOTE: "ASE version 2", not the new version 3, is needed)
+
+There are objects implementing the "Siesta as server/subroutine" feature, and
+also hooks for file-oriented-communication usage. This interface is
+different from the {\sc Siesta}-specific functionality already
+contained in the ASE framework.
+
+Users can create their own scripts to customize the "outer geometry loop"
+in Siesta, or to perform various repetitive calculations in compact form.
+
+Note that the interfaces in this framework are still evolving and are 
+subject to change. 
+
+Suggestions for improvements can be sent to Alberto Garcia
+(albertog@icmab.es)
 
 \section{PROBLEM HANDLING}
 
@@ -6734,21 +6740,19 @@ See Util/Projections
 
 And other similar messages.
 
-{\it Description:}
-Some array dimensions which change infrequently, and do not lead to
-much memory use, are fixed to oversized values. This message means that
-one of this parameters is too small and neads to be increased.
-However, if this occurs and your system is not very large, or unusual in
-some sense, you should suspect first of a mistake in the data file (incorrect
-atomic positions or cell dimensions, too large cutoff radii, etc).
+{\it Description:} Some array dimensions which change infrequently,
+and do not lead to much memory use, are fixed to oversized
+values. This message means that one of this parameters is too small
+and neads to be increased.  However, if this occurs and your system is
+not very large, or unusual in some sense, you should suspect first of
+a mistake in the data file (incorrect atomic positions or cell
+dimensions, too large cutoff radii, etc).
 
-{\it Fix:}
-Check again the data file. 
-Look for previous warnings or suspicious values in the output.
-If you find nothing unusual, edit the specified routine and change the 
-corresponding parameter.
-After running the program, look at the siesta.size file to check that
-the memory use is still acceptable.
+{\it Fix:} Check again the data file.  Look for previous warnings or
+suspicious values in the output.  If you find nothing unusual, edit
+the specified routine and change the corresponding parameter.  After
+running the program, look at the siesta.size file to check that the
+memory use is still acceptable.
 
 \end{description}
 
@@ -6787,30 +6791,10 @@ diagonalisation.
 
 \end{itemize}
 
-The following are known problems of the order-{\it N} methods used:
-
-\begin{itemize}
-
-\item
-The convergence of the conjugate-gradient minimization of the
-electronic energy in the first selfconsistency step (with
-{\bf SolutionMethod} = {\tt orderN}) may be extremely slow 
-(up to 2000 CG iterations, compared to 20 in further 
-selfconsistency steps).
-
-\item
-Adjusting the {\bf ON.eta} parameter, so that the total charge
-is conserved, may be notably difficult for small-gap systems.
-
-\end{itemize}
-
-
 \section{REPORTING BUGS}
-\index{bug reports}
-Your assistance is essential to help improve the program. If you find
-any problem, please report it back to us through the {\sc Siesta} mailing
-list (details in {\tt www.uam.es/siesta}). Please keep in mind
-the following guidelines:
+\index{bug reports} Your assistance is essential to help improve the
+program. If you find any problem, please report it back to us by email
+to {\tt siesta@uam.es}. Please keep in mind the following guidelines:
 
 \begin{itemize}
 
@@ -6818,14 +6802,14 @@ the following guidelines:
 concise and to the point.
 
 \item Describe the exact steps you followed to see the problem. You
-might want to include a copy of the fdf file you used in the
-calculation, details about the pseudopotentials, etc, or provide a
-means for us to download the information. (It might be unwise to swamp
-all the list users with huge files. State the problem in the most
-concise form possible and we will request more info from you.)
+  might want to include a copy of the fdf file you used in the
+  calculation, details about the pseudopotentials, etc, or provide a
+  means for us to download the information. If in doubt, do not send large
+  files. State the problem in the most concise form possible and we
+  will request more info from you.
 
 \item Be specific. Describe what happened and how it differs from what
-should have happened.
+  should have happened.
 
 \item If you have any idea about how to fix the problem, by all means
 tell us!
@@ -6839,18 +6823,15 @@ followup of the problem.
 
 \item A brief one-line synopsis of the problem.
 
-\item The {\sc Siesta} version in which the problem was found. We can't
-assume that you have the very latest version, and a problem that exists in
-one version may not exist in another. Use the version number printed
-at the top of any output file (also found in file Src/version.F).
+\item The {\sc Siesta} version in which the problem was found. We
+  can't assume that you have the very latest version, and a problem
+  that exists in one version may not exist in another. Use the version
+  number printed at the top of any output file (also found in file
+  Src/version.F).
 
 \item The platform on which the problem was found, and the operating
-system and compiler version.
-
-\item The {\sc Siesta} mailing list is an open forum.
-If for some reason you do not want your report
-to be seen by others, please arrange with a developer to look into the
-matter directly.
+  system and compiler version. State whether the problem appears in a
+  serial and/or parallel run.
 
 \end{itemize}
 
@@ -6862,7 +6843,7 @@ matter directly.
 
 We want to acknowledge the use of a small number of routines,
 written by other authors, in developing the siesta code.
-In most cases, these routines were acquired from now-forgotten 
+In most cases, these routines were acquired by now-forgotten 
 routes, and the reported authorships are based on their headings.
 If you detect any incorrect or incomplete attribution, or suspect
 that other routines may be due to different authors, please
@@ -6870,13 +6851,13 @@ let us know.
 
 \begin{itemize}
 \item
-The main nonpublic contribution, that we thank thoroughly, are modified
-versions of a number of routines, originally written by {\bf A. R.\ Williams} 
-around 1985, for the solution of the radial Schr\"odinger and Poisson 
-equations in the APW code of Soler and Williams (PRB {\bf 42}, 9728 (1990)).
-Within {\sc Siesta}, they are kept in files arw.f and periodic\_table.f, 
-and they are used for the generation of the basis orbitals and the screened
-pseudopotentials.
+The main nonpublic contribution, that we thank thoroughly, are
+modified versions of a number of routines, originally written by {\bf
+  A. R.\ Williams} around 1985, for the solution of the radial
+Schr\"odinger and Poisson equations in the APW code of Soler and
+Williams (PRB {\bf 42}, 9728 (1990)).  Within {\sc Siesta}, they are
+kept in files arw.f and periodic\_table.f, and they are used for the
+generation of the basis orbitals and the screened pseudopotentials.
 
 \item
 Routine pulayx, used for the SCF mixing, was originally written by
@@ -6884,43 +6865,44 @@ Routine pulayx, used for the SCF mixing, was originally written by
 
 \item
 The exchange-correlation routines contained in file xc.f were written
-by J.M.Soler in 1996 and 1997, in collaboration with {\bf C.\ Balb\'as} 
-and {\bf J. L.\ Martins}.
-Routine pzxc (in the same file), which implements the Perdew-Zunger
-LDA parametrization of xc, is based on routine velect, written by
-{\bf S.\ Froyen}.
+by J.M.Soler in 1996 and 1997, in collaboration with {\bf
+  C.\ Balb\'as} and {\bf J. L.\ Martins}.  Routine pzxc (in the same
+file), which implements the Perdew-Zunger LDA parametrization of xc,
+is based on routine velect, written by {\bf S.\ Froyen}.
 
 \item
-A small number of routines are modified versions of those from 
-{\em Numerical Recipes. The Art of Scientific Computing}
-by {\bf W. H.\ Press, S. A.\ Teukolsky, W. T.\ Veterling and B. P.\ Flannery}
-(Cambridge U.P. 1987-1992), and are kept in file recipes.f
+A small number of routines are modified versions of those from {\em
+  Numerical Recipes. The Art of Scientific Computing} by {\bf
+  W. H.\ Press, S. A.\ Teukolsky, W. T.\ Veterling and
+  B. P.\ Flannery} (Cambridge U.P. 1987-1992), and are kept in file
+recipes.f
 
 \item
-Some standard diagonalization routines by {\bf B. S. Garbow} are kept
-in files rdiag.f and cdiag.f. Other diagonalization routines from
-the {\bf EISPACK} package are in file eispack.f
+Some standard linear-algebra routines from the {\bf EISPACK}, {\bf
+  BLAS}, and {\bf LAPACK}  packages are in files eispack.F, and in
+several files in Libs.
 
 \item
-The multivariate fast fourier transform in cft.f was written by
-{\bf R. C. Singleton} in 1968. It is used to solve Poisson's equation.
+The serial version of the multivariate fast fourier transform used to
+solve Poisson's equation was written by {\bf R. C. Singleton} in 1968.
 
 \item
-Subroutine iomd.f for writing MD history in files was originally written
-by {\bf J. Kohanoff}.
+Subroutine iomd.f for writing MD history in files was originally
+written by {\bf J. Kohanoff}.
 \end{itemize}
 
-We want to thank very specially {\bf O. F.\ Sankey, D. J.\ Niklewski} and 
-{\bf D. A.\ Drabold} for making the FIREBALL code available to P.\ Ordej\'on. 
-Although we no longer use the routines in that code, it 
-was essential in the initial development of the {\sc Siesta} project,
-which still uses many of the algorithms developed by them.
+We want to thank very specially {\bf O. F.\ Sankey, D. J.\ Niklewski}
+and {\bf D. A.\ Drabold} for making the FIREBALL code available to
+P.\ Ordej\'on.  Although we no longer use the routines in that code,
+it was essential in the initial development of the {\sc Siesta}
+project, which still uses many of the algorithms developed by them.
 
 We thank {\bf V. Heine} for his supporting and encouraging us in this
 project. 
 
-The {\sc Siesta} project has been supported by Spanish DGES
-through project PB95-0202 and by the Fundaci\'on Ram\'on Areces.
+The {\sc Siesta} project is supported by the Spanish DGES through
+several contracts. We also acknowledge past support by the Fundaci\'on
+Ram\'on Areces.
 
 
  
