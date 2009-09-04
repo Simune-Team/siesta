@@ -2579,6 +2579,11 @@ over the options below.
 \end{itemize}
 
 \subsection{$k$-point sampling}
+
+These are options for the k-point grid used in the SCF cycle. For
+other specialized grids, see the Macroscopic Polarization and Density
+of States sections.
+
 \begin{description}
 \itemsep 10pt
 \parsep 0pt
@@ -2667,7 +2672,31 @@ should be no problems if the update is enabled.
 
 \end{description}
 
+\subsubsection{Output of k-point information}
+
+\index{output!grid $\vec k$ points}
+The coordinates of the $\vec k$ points used in the sampling
+are always stored in the file SystemLabel.KP.
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+\item[{\bf WriteKpoints}] ({\it logical}):
+\index{WriteKpoints@{\bf WriteKpoints}}\index{output!grid $\vec k$ points}
+If {\tt .true.} it writes the coordinates of the $\vec k$ vectors
+used in the grid for $k$-sampling, into the main output file.
+Otherwise, it does not.
+
+{\it Default value:} {\tt .false.} (see {\bf LongOutput})
+
+\end{description}
+
 \subsection{Band-structure analysis}
+
+This calculation of the band structure is performed optionally after
+the geometry loop finishes, and the output information written to the
+SystemLabel.bands file (see below for the format).
+
 \begin{description}
 \itemsep 10pt
 \parsep 0pt
@@ -2686,6 +2715,8 @@ reciprocal-lattice-vector coordinates)
 
 {\it Default value:} {\tt pi/a}
 
+{\bf Note:} You might need to define explicitly a LatticeConstant tag
+in your fdf file.
 
 \item[{\bf BandLines}] ({\it data block}): 
 \index{BandLines@{\bf BandLines}} 
@@ -2732,10 +2763,62 @@ band energies (in eV). Example:
 
 {\it Use:} Used only if {\bf SolutionMethod} = {\tt diagon}.
 The band $k$ points are unrelated and compatible with any k-grid used
-to calculate the total energy and charge density. If both present, this 
+to calculate the total energy and charge density. If both are present, this 
 block supersedes {\bf BandLines}.
 
 {\it Default value:} No band energies calculated.
+
+\end{description}
+
+\subsubsection{Format of the .bands file}
+
+\begin{verbatim}
+
+FermiEnergy (all energies in eV) \\
+kmin, kmax (along the k-lines path, i.e. range of k in the band plot) \\
+Emin, Emax (range of all eigenvalues) \\
+NumberOfBands, NumberOfSpins (1 or 2), NumberOfkPoints \\
+k1, ((ek(iband,ispin,1),iband=1,NumberOfBands),ispin=1,NumberOfSpins) \\
+k2, ek \\
+ . \\
+ . \\
+ . \\
+klast, ek \\
+NumberOfkLines \\
+kAtBegOfLine1, kPointLabel \\
+kAtEndOfLine1, kPointLabel \\
+  . \\
+  . \\
+  . \\
+kAtEndOfLastLine, kPointLabel \\
+\end{verbatim}
+
+\noindent
+The {\sc Gnubands}\index{Gnubands@{\sc Gnubands}} postprocessing
+utility program (found in the Util/ directory) reads the {\it
+  Systemlabel}.bands for plotting.  See the {\bf BandLines} data
+descriptor above for more information.
+
+\subsection{Output of wavefunctions}
+\label{sec:wf-output-user}
+
+The user can optionally request that specific wavefunctions are
+written to file. These wavefunctions are re-computed after the
+geometry loop (if any) finishes, using the last (presumably converged)
+density matrix produced during the last self-consistent field loop. ***mixed??
+They are written to the SystemLabel.WFSX file (see below for the
+format).
+
+Note that the complete set of wavefunctions obtained during the last
+iteration of the SCF loop will be written to SystemLabel.WFSX 
+if the {\bf COOP.write} option is in effect (but they might be
+overwritten by the options below).
+
+Note that the complete set of wavefunctions obtained during the last
+iteration of the SCF loop will be written to a NetCDF file
+{\tt WFS.nc} if the {\bf Diag.UseNewDiagk} option is in effect.
+
+\begin{description}
 
 \item[{\bf WaveFuncKPointsScale}] ({\it string}): 
 \index{WaveFuncKPointsScale@{\bf WaveFuncKPointsScale}} 
@@ -2778,40 +2861,62 @@ to calculate the total energy,  charge density and band structure.
 
 \end{description}
 
+The unformatted file SystemLabel.WFSX contains the information of the
+k-points for which wavefunctions coefficients are written, and the
+energies and coefficients of each wavefunction which was specified in
+the input file (see {\bf WaveFuncKPoints}\index{WaveFuncKPoints@{\bf
+    WaveFuncKPoints}} descriptor above). It also contains information
+on the atomic species and the orbitals for postprocessing purposes.
+
+{\bf NOTE:} The WFSX file is in a more compact form than the old WFS,
+and the wavefunctions are output in single precision. The {\tt
+  Util/WFS/wfsx2wfs} program can be used to convert to the old format.
+See also the appendix on File Formats.
+
+\noindent
+The readwf\index{readwf} and readwfsx\index{readwfsx} postprocessing
+utilities programs (found in the Util/WFS directory) read the WFS or WFSX
+files, respectively, and generate a readable file.
+
+
 \vspace{5pt}
 \subsection{Densities of states and COOP/COHP curves}
+
+\subsubsection{Total density of states}
+There are several options to obtain the 
+total density of states:
+\begin{itemize}
+\index{output!eigenvalues}
+\item The Hamiltonian eigenvalues for the SCF sampling $\vec k$ points can be
+dumped into SystemLabel.EIG in a format analogous to SystemLabel.bands,
+but without the kmin, kmax, emin, emax information, and without
+the abscissa. The {\sc Eig2dos}\index{Eig2dos@{\sc Eig2dos}}
+postprocessing utility can be then used to obtain the density of
+states.\index{density of states} 
+See the {\bf WriteEigenvalues} descriptor.
+%
+\item As a side-product of a partial-density-of-states calculation
+  (see below)
+\item As one of the files produced by the {\tt Util/COOP/mprop} during
+  the off-line analysis of the electronic structure. This method
+  allows the flexibility of specifying energy ranges and resolutions
+  at will. 
+\end{itemize}
+
+\subsubsection{Partial (projected) density of states}
+
+There are two options to obtain the partial density of states
+\begin{itemize}
+\item Using the options below
+\item Using the {\tt Util/COOP/mprop} program the off-line analysis of
+  the electronic structure in PDOS mode. This method allows the
+  flexibility of specifying energy ranges, orbitals, and resolutions
+  at will, without re-running {\sc Siesta}.
+\end{itemize}
 
 \begin{description}
 \itemsep 10pt
 \parsep 0pt
-
-
-\item[{\bf LocalDensityOfStates}] ({\it block}): 
-\index{LocalDensityOfStates@{\bf LocalDensityOfStates}} 
-\index{output!local density of states}
-Instructs to write the LDOS, integrated between two given energies,
-at the mesh used by DHSCF,
-in file {\tt SystemLabel}.LDOS. This file can be read by routine IORHO,
-which may be used by an application program in later versions.
-The block must be a single line with the energies of the range for 
-LDOS integration
-(relative to the program's zero, i.e. the same as the eigenvalues
-printed by the program) and their units.
-An example is:
-
-\begin{verbatim}
-     %block LocalDensityOfStates
-        -3.50  0.00   eV
-     %endblock LocalDensityOfStates
-\end{verbatim}
-
-{\it Use:} The two energies of the range must be ordered,
-with lowest first.
-File {\tt SystemLabel}.LDOS is only written, not read, by siesta.
-
-{\it Default value:} LDOS not calculated nor written.
-        
-
 \item[{\bf ProjectedDensityOfStates}] ({\it block}):
 \index{ProjectedDensityOfStates@{\bf ProjectedDensityOfStates}}
 \index{output!projected density of states}
@@ -2858,7 +2963,11 @@ Energy value, Total DOS (spin up), Total DOS (spin down)
 
 The Projected Density Of States for all the orbitals in the unit cell
 is dumped sequentially into a file called {\tt SystemLabel}.PDOS. This
-file is more structured, so auxiliary tools can process it easily.
+file is structured using spacing and xml tags. A machine-readable (but
+not very human readable) xml file {\tt pdos.xml} is also
+produced. Both can be processed by the program in {\tt
+  Util/pdosxml}. The .PDOS file can be processed by utilites in {\tt
+  Util/Contrib/APostnikov}.
 
 In all cases, the units for the DOS are (number of states/eV), and the
 Total DOS, $g \left(\epsilon\right)$, is normalized as follows:
@@ -2871,6 +2980,17 @@ Total DOS, $g \left(\epsilon\right)$, is normalized as follows:
 
 
 {\it Default value:} PDOS not calculated nor written.
+\end{description}
+
+\subsubsection{COOP and COHP curves (optional PDOS)}
+
+These curves are quite useful to analyze the electronic structure to
+get insight about bonding characteristics. See the {\tt Util/COOP}
+directory for more details.
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
 
 \item[{\bf COOP.Write}] ({\it logical}): 
 \index{COOP.Write@{\bf COOP.Write}} 
@@ -2889,6 +3009,43 @@ always output, even for gamma-point only calculations) are in
 single precision.
 
 {\it Default value:} {\tt .false.}
+        
+\end{description}
+
+\subsubsection{Local density of states}
+
+The LDOS is formally  DOS weighted by the amplitude of the corresponding
+wavefunctions at different points in space, and is then a function of
+energy and position. {\sc Siesta} can output the LDOS integrated over
+a range of energies.  This information can be used to obtain simple
+STM
+images (See {\tt Util/STM/stm}).
+
+\begin{description}
+\item[{\bf LocalDensityOfStates}] ({\it block}): 
+\index{LocalDensityOfStates@{\bf LocalDensityOfStates}} 
+\index{output!local density of states}
+Instructs to write the LDOS, integrated between two given energies,
+at the mesh used by DHSCF,
+in file {\tt SystemLabel}.LDOS. This file can be read by routine IORHO,
+which may be used by an application program in later versions.
+The block must be a single line with the energies of the range for 
+LDOS integration
+(relative to the program's zero, i.e. the same as the eigenvalues
+printed by the program) and their units.
+An example is:
+
+\begin{verbatim}
+     %block LocalDensityOfStates
+        -3.50  0.00   eV
+     %endblock LocalDensityOfStates
+\end{verbatim}
+
+{\it Use:} The two energies of the range must be ordered,
+with lowest first.
+File {\tt SystemLabel}.LDOS is only written, not read, by siesta.
+
+{\it Default value:} LDOS not calculated nor written.
         
 \end{description}
 
@@ -3971,18 +4128,17 @@ line integrals along the different directions. The other numbers
 specifie the mesh used in the surface integrals.  The last column
 specifies if the bidimensional grids are going to be diplaced from the
 origin or not, as in the Monkhorst-Pack algorithm (PRB {\bf 13}, 5188
-(1976)).  This last column is optional.  If the number of point in one
-of the grids is zero, the calculation will not be performed for this
-particular direction.
+(1976)).  This last column is optional.  If the number of points in
+one of the grids is zero, the calculation will not be performed for
+this particular direction.
 
 For example, in the given example, for the computation in the
-direction of the first lattice vector, 15 points will be used
-for the line integrals, while a 3$\times$4 mesh will be used
-for the surface integration. This last grid will be displaced 
-from the origin, so $\Gamma$ will not be included in the 
-bidimensional integral. For the directions of the second
-and third lattice vectors, the number of points will be
-20 and 2$\times$2, and 15 and 4$\times$4, respectively. 
+direction of the first lattice vector, 15 points will be used for the
+line integrals, while a 3$\times$4 mesh will be used for the surface
+integration. This last grid will be displaced from the origin, so
+$\Gamma$ will not be included in the bidimensional integral. For the
+directions of the second and third lattice vectors, the number of
+points will be 20 and 2$\times$2, and 15 and 4$\times$4, respectively.
 
 It has to be stressed that the macroscopic polarization can only be
 meaningfully calculated using this approach for insulators.
@@ -4147,7 +4303,7 @@ properties such as the work funcion of each of the surfaces.
 
 \end{description}
 
-\subsection{Evaluation of matrix elements}
+\subsection{Matrix elements of the hamiltonian and overlap}
 
 \begin{description}
 \itemsep 10pt
@@ -4338,6 +4494,41 @@ only influences the parallel performance.
 
 \end{description}
 
+\subsubsection{Output of eigenvalues and wavefunctions}
+
+This section focuses on the output of eigenvalues and wavefunctions
+produced during the (last) iteration of the self-consistent cycle, 
+and associated to the appropriate k-point sampling.
+
+For band-structure calculations (which typically use a different set
+of k-points) and specific requests for wavefunctions, see
+Secs.~\ref{sec:band-structure} and~\ref{sec:wf-output-user}, respectively.
+
+The complete set of wavefunctions obtained during the last
+iteration of the SCF loop will be written to a NetCDF file
+{\tt WFS.nc} if the {\bf Diag.UseNewDiagk} option is in effect.
+
+The complete set of wavefunctions obtained during the last
+iteration of the SCF loop will be written to SystemLabel.WFSX 
+if the {\bf COOP.write} option is in effect (but they might be
+overwritten by the options in Sec~\ref{sec:wf-output-user})
+
+\begin{description}
+\item[{\bf WriteEigenvalues}] ({\it logical}):
+\index{WriteEigenvalues@{\bf WriteEigenvalues}}\index{output!eigenvalues}
+If {\tt .true.} it writes the Hamiltonian eigenvalues for the sampling
+$\vec k$ points, in the main output file.
+If {\tt .false.}, it writes them in the file {\it Systemlabel}.EIG,
+which can be used by the {\sc Eig2dos}\index{Eig2dos@{\sc Eig2dos}} postprocessing 
+utility (in the Util/ directory) for obtaining the density of
+states.\index{density of states}
+
+{\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
+ 
+{\it Default value:} {\tt .false.} (see {\bf LongOutput})
+
+\end{description}
+
 \subsubsection{Occupation of electronic states and Fermi level}
 \begin{description}
 \itemsep 10pt
@@ -4426,11 +4617,16 @@ pp
 
 \end{description}
 
-\subsubsection{Order(N) options}
+\subsubsection{Order(N) calculations}
+
+The Ordern(N) subsystem is quite fragile and only works for systems
+with clearly separated occupied and empty states. Note also that the
+option to compute the chemical potential automatically does not yet
+work in parallel.
+
 \begin{description}
 \itemsep 10pt
 \parsep 0pt
-
 \item[{\bf ON.functional}] ({\it string}): 
 \index{ON.functional@{\bf ON.functional}} 
 Choice of order-N minimization functionals: 
@@ -4522,13 +4718,13 @@ Localization redius for the Localized Wave Functions (LWF's).
 \index{ON.ChemicalPotential@{\bf ON.ChemicalPotential}}
 \index{Chemical Potential} 
 Specifies whether to calculate an order-{\it N} estimate of the
-Chemical Potential, by the projetion method 
+Chemical Potential, by the projection method 
 (Goedecker and Teter, PRB {\bf 51}, 9455 (1995); 
 Stephan, Drabold and Martin, PRB {\bf 58}, 13472 
 (1998)). This is
 done by expanding the Fermi function (or density matrix)
-at a given temperature, by means of Chebishev
-polynomials\index{Chebishev Polynomials}, and imposing a
+at a given temperature, by means of Chebyshev
+polynomials\index{Chebyshev Polynomials}, and imposing a
 real space truncation on the density matrix.
 To obtain a realistic estimate, the temperature 
 should be small enough (typically, smaller than
@@ -4538,9 +4734,14 @@ Functions), and the order of the polynomial expansion
 sufficiently large (how large depends on the temperature; 
 typically, 50-100).
 
-{\it Use:} Used only if {\bf SolutionMethod} = {\tt OrderN}
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OrderN}.
 
 {\it Default value:} {\tt .false.}
+
+{\bf Note:} This option does not work in parallel. An alternative
+is to obtain the approximate value of the chemical potential using
+an initial diagonalization.
+
 
 \item[{\bf ON.ChemicalPotentialUse}] ({\it logical}): 
 \index{ON.ChemicalPotentialUse@{\bf ON.ChemicalPotentialUse}}
@@ -5050,28 +5251,7 @@ The specific changing of any of these options overrides the
 {\it Default value:} {\tt .false.}
 
 
-\item[{\bf WriteKpoints}] ({\it logical}):
-\index{WriteKpoints@{\bf WriteKpoints}}\index{output!grid $\vec k$ points}
-If {\tt .true.} it writes the coordinates of the $\vec k$ vectors
-used in the grid for $k$-sampling, into the main output file.
-Otherwise, it does not.
-
-{\it Default value:} {\tt .false.} (see {\bf LongOutput})
-
  
-\item[{\bf WriteEigenvalues}] ({\it logical}):
-\index{WriteEigenvalues@{\bf WriteEigenvalues}}\index{output!eigenvalues}
-If {\tt .true.} it writes the Hamiltonian eigenvalues for the sampling
-$\vec k$ points, in the main output file.
-Otherwise it does not, but writes them in the file {\it Systemlabel}.EIG
-to be used by the {\sc Eig2dos}\index{Eig2dos@{\sc Eig2dos}} postprocessing 
-utility (in the Util/ directory) for obtaining the density of
-states.\index{density of states}
-
-{\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
- 
-{\it Default value:} {\tt .false.} (see {\bf LongOutput})
-
 \item[{\bf WriteKbands}] ({\it logical}):
 \index{WriteKbands@{\bf WriteKbands}}\index{output!band $\vec k$ points} 
 If {\tt .true.} it writes the coordinates of the $\vec k$ vectors
@@ -5241,72 +5421,8 @@ shortly.
 \section{OUTPUT AND CONTINUATION FILES}
 
 
-
-
-\subsection{Sampling $\vec k$ points}
-\index{output!grid $\vec k$ points}
-The coordinates of the $\vec k$ points used in the sampling
-are stored in the file SystemLabel.KP .
-See the {\bf WriteKpoints} data descriptor above.
-
-
-\subsection{Energy bands}
-(file SystemLabel.bands) The format of this file is:
-
-\noindent
-FermiEnergy (all energies in eV) \\
-kmin, kmax (along the k-lines path, i.e. range of k in the band plot) \\
-Emin, Emax (range of all eigenvalues) \\
-NumberOfBands, NumberOfSpins (1 or 2), NumberOfkPoints \\
-k1, ((ek(iband,ispin,1),iband=1,NumberOfBands),ispin=1,NumberOfSpins) \\
-k2, ek \\
- . \\
- . \\
- . \\
-klast, ek \\
-NumberOfkLines \\
-kAtBegOfLine1, kPointLabel \\
-kAtEndOfLine1, kPointLabel \\
-  . \\
-  . \\
-  . \\
-kAtEndOfLastLine, kPointLabel \\
-
-\noindent
-The {\sc Gnubands}\index{Gnubands@{\sc Gnubands}} postprocessing utility
-program (found in the Util/ directory) reads the {\it Systemlabel}.bands
-for plotting.
-See the {\bf BandLines} data descriptor above for more information.
-
-\subsection{Wavefunction coefficients}\label{subsec:wf}
-(file SystemLabel.WFSX) This unformatted file has the
-information of the k-points for which wavefunctions coefficients
-are written, and the energies and coefficients of each
-wavefunction which was specified in the input file
-(see {\bf WaveFuncKPoints}\index{WaveFuncKPoints@{\bf WaveFuncKPoints}}
-descriptor above).
-It also contains information on the atomic species and
-the orbitals for postprocessing purposes.
-
-NOTE: The WFSX file is in a more compact form than the old WFS, and the
-wavefunctions are output in single precision. The {\tt Util/wfsx2wfs}
-program can be used to convert to the old format.
-
-\noindent
-The readwf\index{readwf} and readwfsx\index{readwfsx} postprocessing
-utilities programs (found in the Util/ directory) read the WFS or WFSX
-files, respectively, and generate a readable file.
-
 \subsection{Eigenvalues}
 
-\index{output!eigenvalues}
-The Hamiltonian eigenvalues for the sampling $\vec k$ points are
-dumped into SystemLabel.EIG in a format analogous to SystemLabel.bands,
-but without the kmin, kmax, emin, emax information, and without
-the abscissa. The {\sc Eig2dos}\index{Eig2dos@{\sc Eig2dos}}
-postprocessing utility can be then used to obtain the density of
-states.\index{density of states} 
-See the {\bf WriteEigenvalues} descriptor above.
 
 
 
