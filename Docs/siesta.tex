@@ -634,7 +634,7 @@ large for large systems (coordinates, eigenvalues, forces, etc.)
 and, if written to standard output, they accumulate for all the steps of 
 the dynamics. {\sc Siesta} writes the information in other files
 (see Output Files) in addition to the standard output, and these
-can be accumulative or not.
+can be cumulative or not.
 
 Setting {\bf LongOutput} to {\tt .true.} changes the default of
 some options, obtaining more information in the output (verbose).
@@ -643,29 +643,34 @@ In particular, it redefines the defaults for the following:
 \begin{itemize}
 
 \item
+{\bf WriteKpoints}\index{WriteKpoints@{\bf WriteKpoints}}
+\index{output!grid $\vec k$ points}
+\item
+{\bf WriteKbands}]\index{WriteKbands@{\bf WriteKbands}}
+\index{output!band $\vec k$ points} 
+\item
 {\bf WriteCoorStep}\index{WriteCoorStep@{\bf WriteCoorStep}}:
-\index{output!atomic coordinates!in a dynamics step} {\tt .true.}
+\index{output!atomic coordinates!in a dynamics step}
 \item
 {\bf WriteForces}\index{WriteForces@{\bf WriteForces}}:
-\index{output!forces} {\tt .true.}
+\index{output!forces} 
 \item
 {\bf WriteEigenvalues}\index{WriteEigenvalues@{\bf WriteEigenvalues}}:
-\index{output!eigenvalues} {\tt .true.}
+\index{output!eigenvalues}
 \item
 {\bf WriteWaveFunctions}
 \index{WriteWaveFunctions@{\bf WriteWaveFunctions}}:
-\index{output!wave functions} {\tt .true.}
+\index{output!wave functions}
 \item
 {\bf WriteMullikenPop}\index{WriteMullikenPop@{\bf WriteMullikenPop}} 
-\index{output!Mulliken analysis}\index{Mulliken population analysis} 1
+\index{output!Mulliken analysis}\index{Mulliken population analysis}
+(it sets it to 1)
 \end{itemize}
 
 The specific changing of any of these options overrides the
 {\bf LongOutput} setting for it.
 
 {\it Default value:} {\tt .false.}
-
-It can be argued that this is a dangerous feature, and it is deprecated.
 
 \end{description}
 
@@ -2429,8 +2434,10 @@ CERIUS. It is through the {\sc Sies2arc}\index{Sies2arc@{\sc
 requires the coordinates to be accumulated in the output file, i.e.,
 WriteCoorStep = {\tt .true.}
  
-{\it Default value:} {\tt .false.} if WriteCoorStep is {\tt .true.}
-and vice-versa.
+{\it Default value:} {\tt .false.}
+
+Note change with respect to previous versions. This option is no
+longer coupled to {\bf WriteCoorStep}.
 
 \end{description}
 
@@ -4100,8 +4107,7 @@ printed but the program does not stop. Overrides {\bf UseSaveData}.
 
 This calculation of the band structure is performed optionally after
 the geometry loop finishes, and the output information written
-optionally (see {\bf WriteBands} below, confusing***) to the
-SystemLabel.bands file (see below for the format).
+to the SystemLabel.bands file (see below for the format).
 
 \begin{description}
 \itemsep 10pt
@@ -4188,9 +4194,7 @@ defined for band plotting, to the main output file.
     WriteBands}}\index{output!band structure} If {\tt .true.} it
   writes the Hamiltonian eigenvalues corresponding to the $\vec k$
   vectors defined for band plotting, in the main output file.
-  Otherwise it does not. They are, however, dumped into the file {\it
-    Systemlabel}.bands to be used by postprocessing utilities for
-  plotting the band structure.\index{band structure}
+  \index{band structure}
 
 {\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
  
@@ -4234,9 +4238,9 @@ descriptor above for more information.
 The user can optionally request that specific wavefunctions are
 written to file. These wavefunctions are re-computed after the
 geometry loop (if any) finishes, using the last (presumably converged)
-density matrix produced during the last self-consistent field loop. ***mixed??
-They are written to the SystemLabel.WFSX file (see below for the
-format).
+density matrix produced during the last self-consistent field loop
+(after a final mixing). They are written to the SystemLabel.WFSX file
+(see below for the format).
 
 Note that the complete set of wavefunctions obtained during the last
 iteration of the SCF loop will be written to SystemLabel.WFSX 
@@ -4288,21 +4292,11 @@ to calculate the total energy,  charge density and band structure.
 
 {\it Default value:} No wavefunctions are written.
 
-\item[{\bf WriteWaveFunctions}] ({\it logical}), (***confusing):
+\item[{\bf WriteWaveFunctions}] ({\it logical}):
   \index{WriteWaveFunctions@{\bf WriteWaveFunctions}}
-  \index{output!wave functions} If {\tt .true.} it writes the
-  Hamiltonian eigenvectors (coefficients of the wavefunctions in the
-  basis set orbitals expansion) corresponding to the $\vec k$ vectors
-  defined by the {\bf WaveFuncKPoints} \index{WaveFuncKPoints@{\bf
-      WaveFuncKPoints}} descriptor to the main output file.  If {\tt
-    .false.}, they are not written to the main output, but they are
-  dumped to the file {\it Systemlabel}.WFSX to be used by
-  postprocessing utilities for handling the wave functions \index{wave
-    functions}. NOTE: The WFSX format is an enhanced one over the old
-  WFS. You can use the {\tt Util/wfsx2wfs} program to convert to the
-  old format. The {\tt Util/readwf} program\index{READWF} can then
-  process the {\it Systemlabel}.WFS file and produce a file readable
-  by the user.
+  \index{output!wave functions} If {\tt .true.} it writes to the
+  output file a list of the wavefunctions actually written to the 
+{\it Systemlabel}.WFSX file, which is always produced.
 
 {\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
  
@@ -4318,10 +4312,10 @@ the input file (see {\bf WaveFuncKPoints}\index{WaveFuncKPoints@{\bf
     WaveFuncKPoints}} descriptor above). It also contains information
 on the atomic species and the orbitals for postprocessing purposes.
 
+\index{WFSX file}
 {\bf NOTE:} The WFSX file is in a more compact form than the old WFS,
 and the wavefunctions are output in single precision. The {\tt
   Util/WFS/wfsx2wfs} program can be used to convert to the old format.
-See also the appendix on File Formats.
 
 \noindent
 The readwf\index{readwf} and readwfsx\index{readwfsx} postprocessing
@@ -5956,23 +5950,17 @@ It is not affected by the setting of {\bf LongOutput}.
   always written in the {\it Systemlabel}.XV file, but overriden at
   every step. They can be also accumulated in the {\it Systemlabel}.MD
   or {\it Systemlabel}.MDX files depending on {\bf
-    WriteMDhistory}. Unless the contrary is specified (see {\bf
-    WriteMDXmol}), if {\bf WriteCoorStep} is {\tt .false.}, the
-  coordinates are accumulated in {\sc XMol} {\tt xyz} format in the
-  {\it Systemlabel}.ANI file.  \index{WriteMDhistory@{\bf
-      WriteMDhistory}} \index{output!atomic coordinates!history} For
-  using the {\sc Sies2arc} utility\index{Sies2arc@{\sc Sies2arc}} for
-  generating a CERIUS .arc animation file, WriteCoorStep should be
-  {\tt .true.}
+    WriteMDhistory}. 
+
 
 {\it Default value:} {\tt .false.} (see {\bf LongOutput})
  
  
 \item[{\bf WriteForces}] ({\it logical}): \index{WriteForces@{\bf
     WriteForces}}\index{output!forces} If {\tt .true.} it writes the
-  atomic forces to the output file at every time or relaxation
-  step. If not, the forces of the last step can be found in the file
-  {\it Systemlabel}.FA .
+  atomic forces to the output file at every MD time step or relaxation
+  step.  Note that the forces of the last step can be found in the
+  file {\it Systemlabel}.FA .
  
 {\it Default value:} {\tt .false.} (see {\bf LongOutput})
 
