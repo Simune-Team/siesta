@@ -52,7 +52,8 @@
   \item {\bf Blocksize}, 100
   \item BLYP, 44
   \item Born effective charges, 59
-  \item {\bf BornCharge}, 59, 73
+  \item {\bf     BornCharge}, 84
+  \item {\bf BornCharge}, 59
   \item Broyden mixing, 46, 106
   \item Broyden optimization, 76
   \item bug reports, 93
@@ -61,7 +62,7 @@
   \indexspace
 
   \item CA, 43
-  \item cell relaxation, 74
+  \item cell     relaxation, 74
   \item {\sc Cerius2}, 34
   \item {\bf ChangeKgridInMD}, 37
   \item Charge of the system, 60
@@ -135,9 +136,9 @@
   \item fixed spin state, 45
   \item {\bf FixSpin}, 45
   \item Force Constants     Matrix
-    \subitem using {\sc Phonon}, 74
+    \subitem using {\sc Phonon}, 73
   \item Force Constants   Matrix, 73
-  \item Force Constants Matrix, 84
+  \item Force Constants Matrix, 84, 85
     \subitem using {\sc Phonon}, 85
   \item FoX XML library, 105
   \item fractional program, 11
@@ -202,26 +203,26 @@
   \item {\bf MD.ConstantVolume}, 74
   \item {\bf MD.FCDispl}, 84
   \item {\bf MD.FCfirst}, 84
-  \item {\bf MD.FClast}, 84
+  \item {\bf MD.FClast}, 85
   \item {\bf MD.FinalTimeStep}, 79
   \item {\bf MD.FIRE.TimeStep}, 77
-  \item {\bf MD.FireQuench}, 77
+  \item {\bf MD.FireQuench}, 78
   \item {\bf MD.InitialTemperature}, 79
   \item {\bf MD.InitialTimeStep}, 79
   \item {\bf MD.LengthTimeStep}, 79
   \item {\bf MD.MaxCGDispl}, 75
   \item {\bf MD.MaxForceTol}, 75
   \item {\bf MD.MaxStressTol}, 75
-  \item {\bf MD.NoseMass}, 79
+  \item {\bf MD.NoseMass}, 80
   \item {\bf MD.NumCGsteps}, 75
   \item {\bf MD.ParrinelloRahmanMass}, 80
-  \item {\bf MD.PreconditionVariableCell}, 75
+  \item {\bf       MD.PreconditionVariableCell}, 75
   \item {\bf MD.Quench}, 77
   \item {\bf MD.RelaxCellOnly}, 74
-  \item {\bf MD.RemoveIntramolecularPressure}, 78
+  \item {\bf MD.RemoveIntramolecularPressure}, 79
   \item {\bf MD.TargetPressure}, 78
-  \item {\bf MD.TargetTemperature}, 79
-  \item {\bf MD.TauRelax}, 80
+  \item {\bf MD.TargetTemperature}, 80
+  \item {\bf     MD.TauRelax}, 80
   \item {\bf MD.TypeOfRun}, 73
   \item {\bf MD.UseSaveCG}, 76
   \item {\bf MD.UseSaveXV}, 35
@@ -294,8 +295,9 @@
     \subitem $\delta \rho(\vec r)$, 68
     \subitem atomic coordinates
       \subsubitem history, 81
-      \subsubitem in a dynamics step, 10, 81
-      \subsubitem initial, 80
+      \subsubitem in a dynamics   step, 81
+      \subsubitem in a dynamics step, 10
+      \subsubitem initial, 81
     \subitem band $\vec k$ points, 39
     \subitem band structure, 39
     \subitem basis, 24
@@ -319,10 +321,12 @@
     \subitem local density of states, 43
     \subitem long, 9
     \subitem main output file, 9
+    \subitem molecular     dynamics
+      \subsubitem history, 81
     \subitem molecular dynamics
       \subsubitem Force Constants Matrix, 84
       \subsubitem history, 81
-      \subsubitem PHONON forces file, 85
+      \subsubitem PHONON forces file, 86
     \subitem Mulliken analysis, 10, 51
     \subitem overlap matrix, 50
     \subitem projected density of states, 42
@@ -350,7 +354,7 @@
   \item PBE, 43
   \item PBEsol, 44
   \item perturbative polarization, 17, 22
-  \item Phonon program, 74
+  \item Phonon program, 73
   \item {\sc Phonon program}, 85
   \item {\bf PhononLabels}, 85
   \item polarization orbitals, 16
@@ -385,7 +389,7 @@
   \item readwf, 41
   \item readwfsx, 41
   \item relaxation of cell parameters only, 74
-  \item removal of intramolecular pressure, 78
+  \item removal of intramolecular pressure, 79
   \item {\bf Reparametrize.Pseudos}, 25
   \item Restart of O(N) calculations, 68
   \item {\bf Restricted.Radial.Grid}, 25
@@ -426,7 +430,7 @@
   \item {\bf SingleExcitation}, 45
   \item {\bf SlabDipoleCorrection}, 61
   \item Slabs with net charge, 60
-  \item {\bf SolutionMethod}, 62, 89
+  \item {\bf SolutionMethod}, 62, 90
   \item species, 11
   \item {\it species.}ion, 7
   \item spin, 44, 45, 48
@@ -463,9 +467,9 @@
   \item {\sc TranSiesta}, 3
   \item {\bf TS.BiasContour.Eta}, 90
   \item {\bf TS.BiasContour.Method}, 90
-  \item {\bf TS.BiasContour.NumPoints}, 90
-  \item {\bf TS.BufferAtomsLeft}, 88
-  \item {\bf TS.BufferAtomsRight}, 88
+  \item {\bf TS.BiasContour.NumPoints}, 91
+  \item {\bf TS.BufferAtomsLeft}, 89
+  \item {\bf TS.BufferAtomsRight}, 89
   \item {\bf TS.ComplexContour.Emin}, 90
   \item {\bf TS.ComplexContour.NumCircle}, 90
   \item {\bf TS.ComplexContour.NumLine}, 90
@@ -473,9 +477,9 @@
   \item {\bf TS.HSFileLeft}, 88
   \item {\bf TS.HSFileRight}, 88
   \item {\bf TS.NumUsedAtomsLeft}, 88
-  \item {\bf TS.NumUsedAtomsRight}, 88
+  \item {\bf TS.NumUsedAtomsRight}, 89
   \item {\bf TS.SaveHS}, 88
-  \item {\bf TS.SurfaceAtomsLeft}, 88
+  \item {\bf TS.SurfaceAtomsLeft}, 89
   \item {\bf TS.SurfaceAtomsRight}, 89
 
   \indexspace
@@ -489,7 +493,7 @@
   \indexspace
 
   \item VCA, 11
-  \item VIBRA, 73
+  \item VIBRA, 84
 
   \indexspace
 
@@ -502,8 +506,9 @@
   \item WC, 44
   \item {\bf     WriteBands}, 39
   \item {\bf WriteCoorCerius}, 34
-  \item {\bf WriteCoorInitial}, 80
-  \item {\bf WriteCoorStep}, 10, 81
+  \item {\bf WriteCoorInitial}, 81
+  \item {\bf     WriteCoorStep}, 81
+  \item {\bf WriteCoorStep}, 10
   \item {\bf WriteCoorXmol}, 34
   \item {\bf WriteDenchar}, 73
   \item {\bf WriteDM}, 50
@@ -516,6 +521,7 @@
   \item {\bf WriteForces}, 10
   \item {\bf WriteKbands}, 39
   \item {\bf WriteKpoints}, 38
+  \item {\bf       WriteMDhistory}, 81
   \item {\bf WriteMDhistory}, 81
   \item {\bf WriteMDXmol}, 34
   \item {\bf WriteMullikenPop}, 10, 51
