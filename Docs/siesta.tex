@@ -180,7 +180,6 @@ And also (though not all options are compatible):
 \item Ballistic electron transport (through {\sc TranSiesta})
 \end{itemize}
 
-%\subsection{ {\sc TranSiesta} }
 
 Starting from version 3.0, {\sc Siesta} includes the {\sc
   TranSiesta}\index{TranSIESTA@{\sc TranSiesta}} utility.  {\sc
@@ -591,7 +590,8 @@ for them.
 
 \subsection{Standard output} \index{output!main output file}
 
-{\sc Siesta} writes its main output to standard output. ***
+{\sc Siesta} writes a log of its workings to standard output (unit 6),
+which is usually redirected to an ``output file''.
 
 A brief description follows. See the example cases in the 
 siesta/Tests directory for illustration. 
@@ -771,9 +771,8 @@ atom.
 \end{verbatim}
 
 Pseudopotentials for synthetic atoms can be created using the {\tt
-  mixps} and  {\tt fractional} programs
-\index{mixps program}\index{fractional program} in the main source directory
-  ({\tt make mixps; make fractional}). See also the {\tt Util/VCA} directory.
+  mixps} and {\tt fractional} programs \index{mixps
+  program}\index{fractional program} in the {\tt Util/VCA} directory.
 
 {\it Use:} This block is mandatory.
 
@@ -2667,380 +2666,6 @@ used in the grid for $k$-sampling, into the main output file.
 
 \end{description}
 
-\subsection{Band-structure analysis}
-
-This calculation of the band structure is performed optionally after
-the geometry loop finishes, and the output information written
-optionally (see {\bf WriteBands} below, confusing***) to the
-SystemLabel.bands file (see below for the format).
-
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
-
-\item[{\bf BandLinesScale}] ({\it string}): 
-\index{BandLinesScale@{\bf BandLinesScale}} 
-Specifies the scale of the k vectors given in {\bf BandLines} 
-and {\bf BandPoints} below.
-The options are:
-\begin{itemize}
-\item {\tt pi/a} (k-vector coordinates are given in cartesian 
-coordinates, in units of $\pi/a$, where $a$ is the lattice constant)
-\item {\tt ReciprocalLatticeVectors} (k vectors are given in
-reciprocal-lattice-vector coordinates)
-\end{itemize}
-
-{\it Default value:} {\tt pi/a}
-
-{\bf Note:} You might need to define explicitly a LatticeConstant tag
-in your fdf file.
-
-\item[{\bf BandLines}] ({\it data block}): 
-\index{BandLines@{\bf BandLines}} 
-Specifies the lines along which band energies are calculated
-(usually along high-symmetry directions).
-An example for an FCC lattice is:
-
-\begin{verbatim}
-     %block BandLines
-       1  1.000  1.000  1.000  L        # Begin at L
-      20  0.000  0.000  0.000  \Gamma   # 20 points from L to gamma
-      25  2.000  0.000  0.000  X        # 25 points from gamma to X
-      30  2.000  2.000  2.000  \Gamma   # 30 points from X to gamma
-     %endblock BandLines
-\end{verbatim}
-
-where the last column is an optional LaTex label for use in the band plot.
-If only given points (not lines) are required, simply specify 1 in the
-first column of each line. The first column of the first line must be 
-always 1.
-
-{\it Use:} Used only if {\bf SolutionMethod} = {\tt diagon}.
-The band k points are unrelated and compatible with any k-grid used
-to calculate the total energy and charge density.
-This block is superseded by {\bf BandPoints} if both are present.
-
-{\it Default value:} No band energies calculated.
-
-\item[{\bf BandPoints}] ({\it data block}): 
-\index{BandPoints@{\bf BandPoints}} 
-Band energies are calculated for the list of arbitrary $k$ points 
-given in the block. Units defined by {\bf BandLinesScale} as 
-for {\bf BandLines}. The generated {\it Systemlabel}.{\tt bands} file
-will contain the $k$ point coordinates (in a.u.) and the corresponding
-band energies (in eV). Example:
-
-\begin{verbatim}
-     %block BandPoints
-        0.000  0.000  0.000   # This is a comment. eg this is gamma
-        1.000  0.000  0.000 
-        0.500  0.500  0.500   
-     %endblock BandPoints
-\end{verbatim}
-
-{\it Use:} Used only if {\bf SolutionMethod} = {\tt diagon}.
-The band $k$ points are unrelated and compatible with any k-grid used
-to calculate the total energy and charge density. If both are present, this 
-block supersedes {\bf BandLines}.
-
-{\it Default value:} No band energies calculated.
-
-\item[{\bf WriteKbands}] ({\it logical}):
-\index{WriteKbands@{\bf WriteKbands}}\index{output!band $\vec k$ points} 
-If {\tt .true.} it writes the coordinates of the $\vec k$ vectors
-defined for band plotting, to the main output file.
-
-{\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
-
-{\it Default value:} {\tt .false.} (see {\bf LongOutput})
-
-
-\item[{\bf WriteBands}] ({\it logical}): \index{WriteBands@{\bf
-    WriteBands}}\index{output!band structure} If {\tt .true.} it
-  writes the Hamiltonian eigenvalues corresponding to the $\vec k$
-  vectors defined for band plotting, in the main output file.
-  Otherwise it does not. They are, however, dumped into the file {\it
-    Systemlabel}.bands to be used by postprocessing utilities for
-  plotting the band structure.\index{band structure}
-
-{\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
- 
-{\it Default value:} {\tt .false.} (see {\bf LongOutput})
-
-
-\end{description}
-
-\subsubsection{Format of the .bands file}
-
-\begin{verbatim}
-
-FermiEnergy (all energies in eV) \\
-kmin, kmax (along the k-lines path, i.e. range of k in the band plot) \\
-Emin, Emax (range of all eigenvalues) \\
-NumberOfBands, NumberOfSpins (1 or 2), NumberOfkPoints \\
-k1, ((ek(iband,ispin,1),iband=1,NumberOfBands),ispin=1,NumberOfSpins) \\
-k2, ek \\
- . \\
- . \\
- . \\
-klast, ek \\
-NumberOfkLines \\
-kAtBegOfLine1, kPointLabel \\
-kAtEndOfLine1, kPointLabel \\
-  . \\
-  . \\
-  . \\
-kAtEndOfLastLine, kPointLabel \\
-\end{verbatim}
-
-\noindent
-The {\sc Gnubands}\index{Gnubands@{\sc Gnubands}} postprocessing
-utility program (found in the Util/ directory) reads the {\it
-  Systemlabel}.bands for plotting.  See the {\bf BandLines} data
-descriptor above for more information.
-
-\subsection{Output of wavefunctions}
-\label{sec:wf-output-user}
-
-The user can optionally request that specific wavefunctions are
-written to file. These wavefunctions are re-computed after the
-geometry loop (if any) finishes, using the last (presumably converged)
-density matrix produced during the last self-consistent field loop. ***mixed??
-They are written to the SystemLabel.WFSX file (see below for the
-format).
-
-Note that the complete set of wavefunctions obtained during the last
-iteration of the SCF loop will be written to SystemLabel.WFSX 
-if the {\bf COOP.write} option is in effect (but they might be
-overwritten by the options below).
-
-Note that the complete set of wavefunctions obtained during the last
-iteration of the SCF loop will be written to a NetCDF file
-{\tt WFS.nc} if the {\bf Diag.UseNewDiagk} option is in effect.
-
-\begin{description}
-
-\item[{\bf WaveFuncKPointsScale}] ({\it string}): 
-\index{WaveFuncKPointsScale@{\bf WaveFuncKPointsScale}} 
-Specifies the scale of the k vectors given in 
-{\bf WaveFuncKPoints} below.
-The options are:
-\begin{itemize}
-\item {\tt pi/a} (k-vector coordinates are given in cartesian 
-coordinates, in units of $\pi/a$, where $a$ is the lattice constant)
-\item {\tt ReciprocalLatticeVectors} (k vectors are given in
-reciprocal-lattice-vector coordinates)
-\end{itemize}
-
-{\it Default value:} {\tt pi/a}
-
-
-\item[{\bf WaveFuncKPoints}] ({\it data block}): 
-\index{WaveFuncKPoints@{\bf WaveFuncKPoints}} 
-Specifies the k-points at which the electronic wavefunction
-coefficients are written. 
-An example for an FCC lattice is:
-
-\begin{verbatim}
-     %block WaveFuncKPoints              
-     0.000  0.000  0.000  from 1 to 10   # Gamma wavefuncs 1 to 10
-     2.000  0.000  0.000  1 3 5          # X wavefuncs 1,3 and 5
-     1.500  1.500  1.500                 # K wavefuncs, all
-     %endblock WaveFuncKPoints
-\end{verbatim}
-
-The number of wavefunction is defined by its energy, so that the
-first one has lowest energy.
-The output of the wavefunctions in described in Section \ref{subsec:wf}
-
-{\it Use:} Used only if {\bf SolutionMethod} = {\tt diagon}.
-These k points are unrelated and compatible with any k-grid used
-to calculate the total energy,  charge density and band structure.
-
-{\it Default value:} No wavefunctions are written.
-
-\item[{\bf WriteWaveFunctions}] ({\it logical}), (***confusing):
-  \index{WriteWaveFunctions@{\bf WriteWaveFunctions}}
-  \index{output!wave functions} If {\tt .true.} it writes the
-  Hamiltonian eigenvectors (coefficients of the wavefunctions in the
-  basis set orbitals expansion) corresponding to the $\vec k$ vectors
-  defined by the {\bf WaveFuncKPoints} \index{WaveFuncKPoints@{\bf
-      WaveFuncKPoints}} descriptor to the main output file.  If {\tt
-    .false.}, they are not written to the main output, but they are
-  dumped to the file {\it Systemlabel}.WFSX to be used by
-  postprocessing utilities for handling the wave functions \index{wave
-    functions}. NOTE: The WFSX format is an enhanced one over the old
-  WFS. You can use the {\tt Util/wfsx2wfs} program to convert to the
-  old format. The {\tt Util/readwf} program\index{READWF} can then
-  process the {\it Systemlabel}.WFS file and produce a file readable
-  by the user.
-
-{\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
- 
-{\it Default value:} {\tt .false.} (see {\bf LongOutput})
-
-
-\end{description}
-
-The unformatted file SystemLabel.WFSX contains the information of the
-k-points for which wavefunctions coefficients are written, and the
-energies and coefficients of each wavefunction which was specified in
-the input file (see {\bf WaveFuncKPoints}\index{WaveFuncKPoints@{\bf
-    WaveFuncKPoints}} descriptor above). It also contains information
-on the atomic species and the orbitals for postprocessing purposes.
-
-{\bf NOTE:} The WFSX file is in a more compact form than the old WFS,
-and the wavefunctions are output in single precision. The {\tt
-  Util/WFS/wfsx2wfs} program can be used to convert to the old format.
-See also the appendix on File Formats.
-
-\noindent
-The readwf\index{readwf} and readwfsx\index{readwfsx} postprocessing
-utilities programs (found in the Util/WFS directory) read the WFS or WFSX
-files, respectively, and generate a readable file.
-
-
-\vspace{5pt}
-\subsection{Densities of states}
-
-\subsubsection{Total density of states}
-There are several options to obtain the 
-total density of states:
-\begin{itemize}
-\index{output!eigenvalues}
-\item The Hamiltonian eigenvalues for the SCF sampling $\vec k$ points can be
-dumped into SystemLabel.EIG in a format analogous to SystemLabel.bands,
-but without the kmin, kmax, emin, emax information, and without
-the abscissa. The {\sc Eig2dos}\index{Eig2dos@{\sc Eig2dos}}
-postprocessing utility can be then used to obtain the density of
-states.\index{density of states} 
-See the {\bf WriteEigenvalues} descriptor.
-%
-\item As a side-product of a partial-density-of-states calculation
-  (see below)
-\item As one of the files produced by the {\tt Util/COOP/mprop} during
-  the off-line analysis of the electronic structure. This method
-  allows the flexibility of specifying energy ranges and resolutions
-  at will, without re-running {\sc Siesta} See Sec.~\ref{sec:coop}.
-\end{itemize}
-
-\subsubsection{Partial (projected) density of states}
-
-There are two options to obtain the partial density of states
-\begin{itemize}
-\item Using the options below
-\item Using the {\tt Util/COOP/mprop} program the off-line analysis of
-  the electronic structure in PDOS mode. This method allows the
-  flexibility of specifying energy ranges, orbitals, and resolutions
-  at will, without re-running {\sc Siesta}. See Sec.~\ref{sec:coop}.
-\end{itemize}
-
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
-\item[{\bf ProjectedDensityOfStates}] ({\it block}):
-\index{ProjectedDensityOfStates@{\bf ProjectedDensityOfStates}}
-\index{output!projected density of states}
-
-Instructs to write the Total Density Of States (Total DOS) and the 
-Projected Density Of States (PDOS) on the basis orbitals,
-between two given energies,
-in files {\tt SystemLabel}.DOS and 
-{\tt SystemLabel}.PDOS, respectively. 
-The block must be a single line with the energies of the range for 
-PDOS projection,
-(relative to the program's zero, i.e. the same as the eigenvalues
-printed by the program), the peak width (an energy) for broadening
-the eigenvalues, the number of points in the energy window, 
-and the energy units.
-An example is:
-
-\begin{verbatim}
-     %block ProjectedDensityOfStates
-        -20.00  10.00  0.200  500  eV
-     %endblock ProjectedDensityOfStates
-\end{verbatim}
-
-By default the projected density of states is generated for the same
-grid of points in reciprocal space as used for the SCF calculation.
-However, a separate set of K-points, usually on a finer grid, can 
-be generated using one of the options \textbf{PDOS.kgrid\_cutoff} or
-\textbf{PDOS.kgrid\_Monkhorst\_Pack}. The format of these options is
-exactly the same as for \textbf{kgrid\_cutoff} and 
-\textbf{kgrid\_Monkhorst\_Pack}, respectively. Note that if a gamma
-point calculation is being used in the SCF part, especially as part
-of a geometry optimisation, and this is then to
-be run with a grid of K-points for the PDOS calculation it is more
-efficient to run the SCF phase first and then restart to perform the
-PDOS evaluation using the density matrix saved from the SCF phase. 
-
-{\it Use:} The two energies of the range must be ordered, with lowest
-first. 
-
-{\it Output:} The Total DOS is dumped into a file
-called {\tt SystemLabel}.DOS. The format of this file is:
-
-Energy value, Total DOS (spin up), Total DOS (spin down)
-
-The Projected Density Of States for all the orbitals in the unit cell
-is dumped sequentially into a file called {\tt SystemLabel}.PDOS. This
-file is structured using spacing and xml tags. A machine-readable (but
-not very human readable) xml file {\tt pdos.xml} is also
-produced. Both can be processed by the program in {\tt
-  Util/pdosxml}. The .PDOS file can be processed by utilites in {\tt
-  Util/Contrib/APostnikov}.
-
-In all cases, the units for the DOS are (number of states/eV), and the
-Total DOS, $g \left(\epsilon\right)$, is normalized as follows:
-
-\begin{eqnarray}
-   \int_{-\infty}^{+\infty} g \left(\epsilon\right) d\epsilon = 
-   number \;\; of \;\; basis \;\; orbitals \;\; in \;\;  unit \;\; cell \;\;
-   \nonumber \\
-\end{eqnarray}
-
-
-{\it Default value:} PDOS not calculated nor written.
-\end{description}
-
-
-\subsubsection{Local density of states}
-
-The LDOS is formally the DOS weighted by the amplitude of the
-corresponding wavefunctions at different points in space, and is then
-a function of energy and position. {\sc Siesta} can output the LDOS
-integrated over a range of energies.  This information can be used to
-obtain simple STM images in the Tersoff-Hamann approximation (See {\tt
-  Util/STM/simple-stm}).
-
-\begin{description}
-\item[{\bf LocalDensityOfStates}] ({\it block}): 
-\index{LocalDensityOfStates@{\bf LocalDensityOfStates}} 
-\index{output!local density of states}
-Instructs to write the LDOS, integrated between two given energies,
-at the mesh used by DHSCF,
-in file {\tt SystemLabel}.LDOS. This file can be read by routine IORHO,
-which may be used by an application program in later versions.
-The block must be a single line with the energies of the range for 
-LDOS integration
-(relative to the program's zero, i.e. the same as the eigenvalues
-printed by the program) and their units.
-An example is:
-
-\begin{verbatim}
-     %block LocalDensityOfStates
-        -3.50  0.00   eV
-     %endblock LocalDensityOfStates
-\end{verbatim}
-
-{\it Use:} The two energies of the range must be ordered,
-with lowest first.
-File {\tt SystemLabel}.LDOS is only written, not read, by siesta.
-
-{\it Default value:} LDOS not calculated nor written.
-        
-\end{description}
-
 \vspace{5pt}
 \subsection{Exchange-correlation functionals}
 
@@ -3709,223 +3334,6 @@ to converge faster than the Kohn-Sham energy.
 
 \end{description}
 
-
-\subsection{Options for chemical analysis}
-
-\subsubsection{Mulliken charges and overlap populations}
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
-
-\item[{\bf WriteMullikenPop}] ({\it integer}): 
-\index{WriteMullikenPop@{\bf WriteMullikenPop}}\index{Mulliken population
-analysis}\index{output!Mulliken analysis} 
-It determines the level of Mulliken population analysis printed:
-\begin{itemize}
-\item 0 = None
-\item 1 = atomic and orbital charges
-\item 2 = 1 + atomic overlap pop.
-\item 3 = 2 + orbital overlap pop.
-\end{itemize}
-The order of the orbitals in the population lists is defined
-by the order of atoms. For each atom, populations for PAO orbitals and
-double-$z$, triple-$z$, etc... derived from them are displayed first for 
-all the angular momenta. Then, populations for perturbative polarization
-orbitals are written.
-Within a $l$-shell be aware that the order is not
-conventional, being $y$, $z$, $x$ for $p$ orbitals, and
-$xy$, $yz$, $z^2$, $xz$, and $x^2-y^2$ for $d$ orbitals. 
-
-{\it Default value:} {\tt 0} (see {\bf LongOutput})
-
-
-\item[{\bf MullikenInSCF}] ({\it logical}):
-\index{MullikenInSCF@{\bf MullikenInSCF}}
-If true, the Mulliken populations will be written for every SCF step
-at the level of detail specified in {\bf WriteMullikenPop}. Useful
-when dealing with SCF problems, otherwise too verbose.
-
-{\it Default value:} {\tt .false.}
-
-\item[{\bf MullikenInSCF}] ({\it logical}):
-\index{MullikenInSCF@{\bf MullikenInSCF}}
-If true, the Mulliken populations will be written for every SCF step
-at the level of detail specified in {\bf WriteMullikenPop}. Useful
-when dealing with SCF problems, otherwise too verbose.
-
-{\it Default value:} {\tt .false.}
-
-\end{description}
-
-\subsubsection{Crystal-Orbital overlap and hamilton populations (COOP/COHP)}
-\label{sec:coop}
-
-These curves are quite useful to analyze the electronic structure to
-get insight about bonding characteristics. See the {\tt Util/COOP}
-directory for more details. The {\bf COOP.Write} option must be
-activated to get the information needed.
-
-References:
-
-\begin{itemize}
-\item Original COOP reference:
-Hughbanks, T.; Hoffmann, R., J. Am. Chem. Soc., 1983, 105, 3528. 
-\item Original COHP reference: Dronskowski, R.; Blöchl, P. E., J. Phys. Chem., 1993, 97, 8617. 
-\item A tutorial introduction: Dronskowski, R. Computational Chemistry of Solid State
-Materials; Wiley-VCH: Weinheim, 2005.  
-\item Online material maintained by R. Dronskowski's group: {\tt http://www.cohp.de/}
-\end{itemize}
-
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
-
-\item[{\bf COOP.Write}] ({\it logical}): 
-\index{COOP.Write@{\bf COOP.Write}} 
-\index{output!Information for COOP/COHP curves}
-Instructs the program to generate  {\tt SystemLabel}.WFSX (packed
-wavefunction file) and  {\tt SystemLabel}.HSX (H, S and X\_~{ij} file),
-to be processed by {\tt Util/COOP/mprop} to generate COOP/COHP curves,
-(projected) densities of states, etc.
-
-The WFSX file is in a more compact form than the usual WFS, and the
-wavefunctions are output in single precision. The {\tt Util/wfsx2wfs}
-program can be used to convert to the old format.
-The HSX file is in a more compact form than the usual HS, and the
-Hamiltonian, overlap matrix, and relative-positions array (which is
-always output, even for gamma-point only calculations) are in
-single precision.
-
-{\it Default value:} {\tt .false.}
-
-The user can narrow the energy-range used (and save some file space)
-by using the {\bf WFS.EnergyMin} and {\bf WFS.EnergyMax} options (both take an
-energy (with units) as extra argument).
-
-\end{description}
-
-
-\vspace{5pt}
-\subsection{Optical properties}
-
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
-
-\item[{\bf OpticalCalculation}] ({\it logical}):\index{Dielectric function,
-optical absorption} 
-If specified, the imaginary part of the dielectric function
-will be calculated and stored in a file called {\it Systemlabel}.{\bf EPSIMG}.
-The calculation is performed using the simplest approach based on the
-dipolar transition matrix elements between different eigenfunctions
-of the self-consistent Hamiltonian. For molecules the calculation 
-is performed using the position operator matrix elements, while
-for solids the calculation is carried out in the momentum space
-formulation.
-Corrections due to the non-locality of the pseudopotentials
-are introduced in the usual way. 
-
-{\it Default value:} {\tt false}
-
-\item[{\bf Optical.EnergyMinimum}] ({\it real energy}):
-\index{Optical.EnergyMinimum@{\bf Optical.EnergyMinimum}}
-This specifies the minimum of the energy range in which
-the frequency spectrum will be calculated.
-
-{\it Default value:} 0 Ry.
-
-\item[{\bf Optical.EnergyMaximum}] ({\it real energy}):
-\index{Optical.EnergyMaximum@{\bf Optical.EnergyMaximum}}
-This specifies the maximum of the energy range in which
-the frequency spectrum will be calculated.
-
-{\it Default value:} 10 Ry.
-
-\item[{\bf Optical.Broaden}] ({\it real energy}):
-\index{Optical.Broaden@{\bf Optical.Broaden}}
-If this is value is set then a Gaussian broadening will be
-applied to the frequency values.
-
-{\it Default value:} 0 Ry.
-
-\item[{\bf Optical.Scissor}] ({\it real energy}):
-\index{Optical.Scissor@{\bf Optical.Scissor}}
-Because of the tendency of DFT calculations to under estimate
-the band gap, a rigid shift of the unoccupied states, known as 
-the scissor operator, can be added to correct the gap and
-thereby improve the calculated results. This shift is only
-applied to the optical calculation and no where else within
-the calculation.
-
-{\it Default value:} 0 Ry.
-
-\item[{\bf Optical.NumberOfBands}] ({\it integer}):
-\index{Optical.NumberOfBands@{\bf Optical.NumberOfBands}}
-This option controls the number of bands that are included in
-the optical property calculation. Clearly this number must be
-larger than the number of occupied bands and less than or
-equal to the number of basis functions (which determines the
-number of unoccupied bands available). Note, while including
-all the bands may be the most accurate choice this will also
-be the most expensive!
-
-{\it Default value:} All bands.
-
-\item[{\bf Optical.Mesh}] ({\it data block}):
-\index{Optical.Mesh@{\bf Optical.Mesh}}
-This block contains 3 numbers that determine the mesh size
-used for the integration across the Brillouin zone. For
-example:
-
-\begin{verbatim}
-        %block  Optical.Mesh
-          5 5 5
-        %endblock  Optical.Mesh
-\end{verbatim}
-
-The three values represent the number of mesh points in
-the direction of each reciprocal lattice vector.
-
-{\it Default value:} Empty in general. For atoms 
-or molecules a k-sampling of only one point is assumed.
-
-\item[{\bf Optical.OffsetMesh}] ({\it logical}):
-\index{Optical.OffsetMesh@{\bf Optical.OffsetMesh}}
-If set to true, then the mesh is offset away from the
-gamma point for odd numbers of points.
-
-{\it Default value:} {\tt false}
-
-\item[{\bf Optical.PolarizationType}] ({\it string}):
-\index{Optical.PolarizationType@{\bf Optical.PolarizationType}}
-This option has three possible values that represent the
-type of polarization to be used in the calculation. The options
-are {\bf polarized}, which implies the application of an electric
-field in a given direction, {\bf unpolarized}, which implies the
-propagation of light in a given direction, and {\bf polycrystal}.
-In the case of the first two options a direction in space must
-be specified for the electric field or propagation using the
-{\it Optical.Vector} data block.
-
-{\it Default value:} {\tt polycrystal}
-
-\item[{\bf Optical.Vector}] ({\it data block}):
-\index{Optical.Vector@{\bf Optical.Vector}}
-This block contains 3 numbers that specify the vector direction
-for either the electric field or light propagation, for a polarized
-or unpolarized calculation, respectively. A typical block might look
-like:
-
-\begin{verbatim}
-        %block  Optical.Vector
-          1.0 0.0 0.5
-        %endblock  Optical.Vector
-\end{verbatim}
-
-{\it Default value:} Empty.
-
-\end{description}
-
 \vspace{5pt}
 \subsection{The real-space grid and the eggbox-effect}
 
@@ -4143,233 +3551,6 @@ Defines the scale in which the Fourier components of the
 egg-box energy are given in the {\bf EggboxRemove} block.
 
 {\it Default value:} 1 eV.
-
-\end{description}
-
-\vspace{5pt}
-\subsection{Macroscopic polarization}
-
-\begin{description}
-
-\item[{\bf PolarizationGrids}] ({\it data block}):
-\index{PolarizationGrids@{\bf PolarizationGrids}}
-\index{bulk polarization}\index{Berry phase}
-If specified, the macroscopic polarization will be calculated using the
-geometric Berry phase approach (R.D. King-Smith, and D. Vanderbilt,
-PRB {\bf 47}, 1651 (1993)). In this method the electronic 
-contribution to the macroscopic polarization, along a given direction, 
-is calculated using
-a discretized version of the formula
-\begin{equation}
-\label{pol_formula}
-    P_{e,\parallel}={ifq_e \over 8\pi^3} \int_A d{\bf k}_\perp
-    \sum_{n=1}^M \int_0^{|G_\parallel|} dk_{\parallel}
-     \langle u_{{\bf k} n} |{\delta \over \delta k_{\parallel}} |
-      u_{{\bf k} n} \rangle
-\end{equation}
-where $f$ is the occupation (2 for a non-magnetic system), 
-$q_e$ the electron charge, $M$ is the number of occupied bands (the
-system {\bf must} be an insulator), and $u_{{\bf k} n}$ are
-the periodic Bloch functions. ${\bf G}_\parallel$ is the shortest
-reciprocal vector along the chosen direction. 
-
-As it can be seen in formula (\ref{pol_formula}), to compute each 
-component of the polarization we must perform a surface integration
-of the result of a 1-D integral in the selected direction. 
-The grids for the calculation along the direction of each of the
-three lattice vectors are specified in the block
-{\bf PolarizationGrids}. 
-\begin{verbatim}
-     %block PolarizationGrids
-        10   3  4      yes
-         2  20  2       no
-         4   4 15
-     %endblock PolarizationGrids
-\end{verbatim}      
-
-All three grids must be specified, therefore a 3$\times$3 matrix of
-integer numbers must be given: the first row specifies the grid that
-will be used to calculate the polarization along the direction of the
-first lattice vector, the second row will be used for the calculation
-along the the direction of the second lattice vector, and the third
-row for the third lattice vector.  The numbers in the diagonal of the
-matrix specifie the number of points to be used in the one dimensional
-line integrals along the different directions. The other numbers
-specifie the mesh used in the surface integrals.  The last column
-specifies if the bidimensional grids are going to be diplaced from the
-origin or not, as in the Monkhorst-Pack algorithm (PRB {\bf 13}, 5188
-(1976)).  This last column is optional.  If the number of points in
-one of the grids is zero, the calculation will not be performed for
-this particular direction.
-
-For example, in the given example, for the computation in the
-direction of the first lattice vector, 15 points will be used for the
-line integrals, while a 3$\times$4 mesh will be used for the surface
-integration. This last grid will be displaced from the origin, so
-$\Gamma$ will not be included in the bidimensional integral. For the
-directions of the second and third lattice vectors, the number of
-points will be 20 and 2$\times$2, and 15 and 4$\times$4, respectively.
-
-It has to be stressed that the macroscopic polarization can only be
-meaningfully calculated using this approach for insulators.
-Therefore, the presence of an energy gap is necessary, and no band can
-cross the Fermi level. The program performs a simple check of this
-condition, just by counting the electrons in the unit cell ( the
-number must be even for a non-magnetic system, and the total spin
-polarization must have an integer value for spin polarized systems),
-however is the responsability of the user to check that the system
-under study is actually an insulator (for both spin components if spin
-polarized).
-
-The total macroscopic polarization, given in the output of the
-program, is the sum of the electronic contribution (calculated as the
-Berry phase of the valence bands), and the ionic contribution, which
-is simply defined as the sum of the atomic positions within the unit
-cell multiply by the ionic charges ($\sum_i^{N_a} Z_i {\bf r}_i$).  In
-the case of the magnetic systems, the bulk polarization for each spin
-component has been defined as
-\begin{equation}
-       {\bf P}^\sigma = {\bf P}_e^\sigma + 
-   {1 \over 2} \sum_i^{N_a}  Z_i {\bf r}_i
-\end{equation}
-$N_a$ is the number of atoms in the unit cell, and ${\bf r}_i$ and
-$Z_i$ 
-are the positions and charges of the ions.
-
-It is also worth noting, that the macroscopic polarization given by
-formula (\ref{pol_formula}) is only defined modulo a ``quantum" of
-polarization (the bulk polarization per unit cell is only well defined
-modulo $fq_e${\bf R}, being {\bf R} an arbitrary lattice
-vector). However, the experimentally observable quantities are
-associated to changes in the polarization induced by changes on the
-atomic positions (dynamical charges), strains (piezoelectric tensor),
-etc... The calculation of those changes, between different
-configurations of the solid, will be well defined as long as they are
-smaller than the ``quantum", i.e. the perturbations are small enough
-to create small changes in the polarization.
-
-{\it Use:} Only compatible with {\bf SolutionMethod} = diagon.\\
-{\it Default value:} Empty. No calculation performed.
-
-\item[{\bf BornCharge}] ({\it logical}):\index{Born effective charges}
-\index{BornCharge@{\bf BornCharge}}
-If true, the Born effective charge tensor is calculated for each atom
-by finite differences, by calculating the change in electric polarization 
-(see {\bf PolarizationGrids}) induced by the small displacements generated 
-for the force constants calculation (see {\bf MD.TypeOfRun} = {\tt FC}):
-\begin{equation}\label {eq:effective_charge}
-Z^*_{i,\alpha,\beta}=\frac{\Omega_0}{e} \left. {\frac{\partial{P_\alpha}}
-{\partial{u_{i,\beta}}}}\right|_{q=0}
-\end{equation}
-where e is the charge of an electron and $\Omega_0$ is the unit cell volume.
-
-To calculate the Born charges it is necessary to specify both the Born 
-charge flag and the mesh used to calculate the polarization, for example:
-\begin{verbatim}
-%block PolarizationGrids
-7  3  3
-3  7  3
-3  3  7
-%endblock PolarizationGrids
-BornCharge True
-\end{verbatim}
-
-The Born effective charge matrix is then written to the file 
-{\it SystemLabel}.{\tt BC}.
-
-The method by which the polarization is calculated may introduce an arbitrary 
-phase (poalrization quantum), which in general is far larger than the change 
-in polarization which results from the atomic displacement. It is removed 
-during the calculation of the Born effective charge tensor. 
-
-The Born effective charges allow the calculation of LO-TO splittings and 
-infrared activities. The version of the Vibra utility code in which these
-magnitudes are calculated is not yet distributed with {\sc Siesta}, but can be 
-obtained form Tom Archer (archert@tcd.ie).
-
-{\it Use:} Only used if {\bf MD.TypeOfRun} is {\tt FC}.
-
-{\it Default value:} {\tt false}
-
-\end{description}
-
-\vspace{5pt}
-\subsection{Systems with net charge or dipole, and electric fields}
-
-\begin{description}
-
-\item[{\bf NetCharge}] ({\it real}): 
-\index{NetCharge@{\bf NetCharge}}\index{Charge of the system}
-Specify the net charge of the system (in units of $|e|$). 
-For charged systems, the energy converges very slowly
-versus cell size. For molecules or atoms, a Madelung
-correction term is applied to the energy to make it converge
-much faster with cell size (this is done only if
-the cell is SC, FCC or BCC). For other cells, or for 
-periodic systems (chains, slabs or bulk), this energy
-correction term can not be applied, and the user is warned
-by the program.   It is not advised to do charged systems
-other than atoms and molecules in SC, FCC or BCC cells,
-unless you know what you are doing.
-
-{\it Use:} 
-For example, the F$^-$ ion would have {\bf NetCharge} = {\tt -1},
-and the Na$^+$ ion would have {\bf NetCharge} = {\tt 1}.
-Fractional charges can also be used.
-
-{\it Default value:} {\tt 0.0} 
-
-\item[{\bf SimulateDoping}] ({\it boolean}): 
-\index{SimulateDoping@{\bf SimulateDoping}}\index{Slabs with net charge}
-
-This option instructs the program to add a background charge density
-to simulate doping.  The new ``doping'' routine calculates the net
-charge of the system, and adds a compensating background charge that
-makes the system neutral. This background charge is constant at points
-of the mesh near the atoms, and zero at points far from the atoms.
-This simulates situations like doped slabs, where the extra electrons
-(holes) are compensated by oposite charges at the material (the
-ionized dopant impurities), but not at the vacuum.  This serves to
-simulate properly doped systems in which there are large portions of
-vacuum, such as doped slabs.
-
-(See {\tt Tests/sic-slab})
-
-{\it Default value:} {\tt .false.}
-
-\item[{\bf ExternalElectricField}] ({\it data block}): 
-\index{ExternalElectricField@{\bf ExternalElectricField}}
-It specifies an external electric field for molecules, chains and slabs.
-The electric field should be orthogonal to `bulk directions', like
-those parallel to a slab (bulk electric fields, like in
-dielectrics or ferroelectrics, are not allowed). If it is not, an
-error message is issued and the components of the field in bulk
-directions are suppressed automatically. The input is a
-vector in cartesian coordinates, in the specified units. Example:
-
-\begin{verbatim}
-     %block ExternalElectricField
-        0.000  0.000  0.500  V/Ang
-     %endblock ExternalElectricField
-\end{verbatim}
-
-{\it Default value:} zero field
-
-\item[{\bf SlabDipoleCorrection}] ({\it boolean}): 
-\index{SlabDipoleCorrection@{\bf SlabDipoleCorrection}}
-
-If {\tt true}, {\sc Siesta} calculates the electric field required to
-compensate the dipole of the system at every iteration of the
-self-consistent cycle. The potential added to the grid corresponds to
-that of a dipole layer at the middle of the vacuum layer. For slabs,
-this exactly compensates the electric field at the vacuum created by
-the dipole moment of the system, thus allowing to treat asymmetric
-slabs (including systems with an adsorbate on one surface) and compute
-properties such as the work funcion of each of the surfaces.
-
-(See {\tt Tests/sic-slab})
-
-{\it Default value:} {\tt false}
 
 \end{description}
 
@@ -4914,6 +4095,825 @@ printed but the program does not stop. Overrides {\bf UseSaveData}.
 {\it Default value:} {\tt .false.}
 
 \end{description}
+
+\subsection{Band-structure analysis}
+
+This calculation of the band structure is performed optionally after
+the geometry loop finishes, and the output information written
+optionally (see {\bf WriteBands} below, confusing***) to the
+SystemLabel.bands file (see below for the format).
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+\item[{\bf BandLinesScale}] ({\it string}): 
+\index{BandLinesScale@{\bf BandLinesScale}} 
+Specifies the scale of the k vectors given in {\bf BandLines} 
+and {\bf BandPoints} below.
+The options are:
+\begin{itemize}
+\item {\tt pi/a} (k-vector coordinates are given in cartesian 
+coordinates, in units of $\pi/a$, where $a$ is the lattice constant)
+\item {\tt ReciprocalLatticeVectors} (k vectors are given in
+reciprocal-lattice-vector coordinates)
+\end{itemize}
+
+{\it Default value:} {\tt pi/a}
+
+{\bf Note:} You might need to define explicitly a LatticeConstant tag
+in your fdf file.
+
+\item[{\bf BandLines}] ({\it data block}): 
+\index{BandLines@{\bf BandLines}} 
+Specifies the lines along which band energies are calculated
+(usually along high-symmetry directions).
+An example for an FCC lattice is:
+
+\begin{verbatim}
+     %block BandLines
+       1  1.000  1.000  1.000  L        # Begin at L
+      20  0.000  0.000  0.000  \Gamma   # 20 points from L to gamma
+      25  2.000  0.000  0.000  X        # 25 points from gamma to X
+      30  2.000  2.000  2.000  \Gamma   # 30 points from X to gamma
+     %endblock BandLines
+\end{verbatim}
+
+where the last column is an optional LaTex label for use in the band plot.
+If only given points (not lines) are required, simply specify 1 in the
+first column of each line. The first column of the first line must be 
+always 1.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt diagon}.
+The band k points are unrelated and compatible with any k-grid used
+to calculate the total energy and charge density.
+This block is superseded by {\bf BandPoints} if both are present.
+
+{\it Default value:} No band energies calculated.
+
+\item[{\bf BandPoints}] ({\it data block}): 
+\index{BandPoints@{\bf BandPoints}} 
+Band energies are calculated for the list of arbitrary $k$ points 
+given in the block. Units defined by {\bf BandLinesScale} as 
+for {\bf BandLines}. The generated {\it Systemlabel}.{\tt bands} file
+will contain the $k$ point coordinates (in a.u.) and the corresponding
+band energies (in eV). Example:
+
+\begin{verbatim}
+     %block BandPoints
+        0.000  0.000  0.000   # This is a comment. eg this is gamma
+        1.000  0.000  0.000 
+        0.500  0.500  0.500   
+     %endblock BandPoints
+\end{verbatim}
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt diagon}.
+The band $k$ points are unrelated and compatible with any k-grid used
+to calculate the total energy and charge density. If both are present, this 
+block supersedes {\bf BandLines}.
+
+{\it Default value:} No band energies calculated.
+
+\item[{\bf WriteKbands}] ({\it logical}):
+\index{WriteKbands@{\bf WriteKbands}}\index{output!band $\vec k$ points} 
+If {\tt .true.} it writes the coordinates of the $\vec k$ vectors
+defined for band plotting, to the main output file.
+
+{\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
+
+{\it Default value:} {\tt .false.} (see {\bf LongOutput})
+
+
+\item[{\bf WriteBands}] ({\it logical}): \index{WriteBands@{\bf
+    WriteBands}}\index{output!band structure} If {\tt .true.} it
+  writes the Hamiltonian eigenvalues corresponding to the $\vec k$
+  vectors defined for band plotting, in the main output file.
+  Otherwise it does not. They are, however, dumped into the file {\it
+    Systemlabel}.bands to be used by postprocessing utilities for
+  plotting the band structure.\index{band structure}
+
+{\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
+ 
+{\it Default value:} {\tt .false.} (see {\bf LongOutput})
+
+
+\end{description}
+
+\subsubsection{Format of the .bands file}
+
+\begin{verbatim}
+
+FermiEnergy (all energies in eV) \\
+kmin, kmax (along the k-lines path, i.e. range of k in the band plot) \\
+Emin, Emax (range of all eigenvalues) \\
+NumberOfBands, NumberOfSpins (1 or 2), NumberOfkPoints \\
+k1, ((ek(iband,ispin,1),iband=1,NumberOfBands),ispin=1,NumberOfSpins) \\
+k2, ek \\
+ . \\
+ . \\
+ . \\
+klast, ek \\
+NumberOfkLines \\
+kAtBegOfLine1, kPointLabel \\
+kAtEndOfLine1, kPointLabel \\
+  . \\
+  . \\
+  . \\
+kAtEndOfLastLine, kPointLabel \\
+\end{verbatim}
+
+\noindent
+The {\sc Gnubands}\index{Gnubands@{\sc Gnubands}} postprocessing
+utility program (found in the Util/ directory) reads the {\it
+  Systemlabel}.bands for plotting.  See the {\bf BandLines} data
+descriptor above for more information.
+
+\subsection{Output of wavefunctions}
+\label{sec:wf-output-user}
+
+The user can optionally request that specific wavefunctions are
+written to file. These wavefunctions are re-computed after the
+geometry loop (if any) finishes, using the last (presumably converged)
+density matrix produced during the last self-consistent field loop. ***mixed??
+They are written to the SystemLabel.WFSX file (see below for the
+format).
+
+Note that the complete set of wavefunctions obtained during the last
+iteration of the SCF loop will be written to SystemLabel.WFSX 
+if the {\bf COOP.write} option is in effect (but they might be
+overwritten by the options below).
+
+Note that the complete set of wavefunctions obtained during the last
+iteration of the SCF loop will be written to a NetCDF file
+{\tt WFS.nc} if the {\bf Diag.UseNewDiagk} option is in effect.
+
+\begin{description}
+
+\item[{\bf WaveFuncKPointsScale}] ({\it string}): 
+\index{WaveFuncKPointsScale@{\bf WaveFuncKPointsScale}} 
+Specifies the scale of the k vectors given in 
+{\bf WaveFuncKPoints} below.
+The options are:
+\begin{itemize}
+\item {\tt pi/a} (k-vector coordinates are given in cartesian 
+coordinates, in units of $\pi/a$, where $a$ is the lattice constant)
+\item {\tt ReciprocalLatticeVectors} (k vectors are given in
+reciprocal-lattice-vector coordinates)
+\end{itemize}
+
+{\it Default value:} {\tt pi/a}
+
+
+\item[{\bf WaveFuncKPoints}] ({\it data block}): 
+\index{WaveFuncKPoints@{\bf WaveFuncKPoints}} 
+Specifies the k-points at which the electronic wavefunction
+coefficients are written. 
+An example for an FCC lattice is:
+
+\begin{verbatim}
+     %block WaveFuncKPoints              
+     0.000  0.000  0.000  from 1 to 10   # Gamma wavefuncs 1 to 10
+     2.000  0.000  0.000  1 3 5          # X wavefuncs 1,3 and 5
+     1.500  1.500  1.500                 # K wavefuncs, all
+     %endblock WaveFuncKPoints
+\end{verbatim}
+
+The number of wavefunction is defined by its energy, so that the
+first one has lowest energy.
+The output of the wavefunctions in described in Section \ref{subsec:wf}
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt diagon}.
+These k points are unrelated and compatible with any k-grid used
+to calculate the total energy,  charge density and band structure.
+
+{\it Default value:} No wavefunctions are written.
+
+\item[{\bf WriteWaveFunctions}] ({\it logical}), (***confusing):
+  \index{WriteWaveFunctions@{\bf WriteWaveFunctions}}
+  \index{output!wave functions} If {\tt .true.} it writes the
+  Hamiltonian eigenvectors (coefficients of the wavefunctions in the
+  basis set orbitals expansion) corresponding to the $\vec k$ vectors
+  defined by the {\bf WaveFuncKPoints} \index{WaveFuncKPoints@{\bf
+      WaveFuncKPoints}} descriptor to the main output file.  If {\tt
+    .false.}, they are not written to the main output, but they are
+  dumped to the file {\it Systemlabel}.WFSX to be used by
+  postprocessing utilities for handling the wave functions \index{wave
+    functions}. NOTE: The WFSX format is an enhanced one over the old
+  WFS. You can use the {\tt Util/wfsx2wfs} program to convert to the
+  old format. The {\tt Util/readwf} program\index{READWF} can then
+  process the {\it Systemlabel}.WFS file and produce a file readable
+  by the user.
+
+{\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
+ 
+{\it Default value:} {\tt .false.} (see {\bf LongOutput})
+
+
+\end{description}
+
+The unformatted file SystemLabel.WFSX contains the information of the
+k-points for which wavefunctions coefficients are written, and the
+energies and coefficients of each wavefunction which was specified in
+the input file (see {\bf WaveFuncKPoints}\index{WaveFuncKPoints@{\bf
+    WaveFuncKPoints}} descriptor above). It also contains information
+on the atomic species and the orbitals for postprocessing purposes.
+
+{\bf NOTE:} The WFSX file is in a more compact form than the old WFS,
+and the wavefunctions are output in single precision. The {\tt
+  Util/WFS/wfsx2wfs} program can be used to convert to the old format.
+See also the appendix on File Formats.
+
+\noindent
+The readwf\index{readwf} and readwfsx\index{readwfsx} postprocessing
+utilities programs (found in the Util/WFS directory) read the WFS or WFSX
+files, respectively, and generate a readable file.
+
+
+\vspace{5pt}
+\subsection{Densities of states}
+
+\subsubsection{Total density of states}
+There are several options to obtain the 
+total density of states:
+\begin{itemize}
+\index{output!eigenvalues}
+\item The Hamiltonian eigenvalues for the SCF sampling $\vec k$ points can be
+dumped into SystemLabel.EIG in a format analogous to SystemLabel.bands,
+but without the kmin, kmax, emin, emax information, and without
+the abscissa. The {\sc Eig2dos}\index{Eig2dos@{\sc Eig2dos}}
+postprocessing utility can be then used to obtain the density of
+states.\index{density of states} 
+See the {\bf WriteEigenvalues} descriptor.
+%
+\item As a side-product of a partial-density-of-states calculation
+  (see below)
+\item As one of the files produced by the {\tt Util/COOP/mprop} during
+  the off-line analysis of the electronic structure. This method
+  allows the flexibility of specifying energy ranges and resolutions
+  at will, without re-running {\sc Siesta} See Sec.~\ref{sec:coop}.
+\end{itemize}
+
+\subsubsection{Partial (projected) density of states}
+
+There are two options to obtain the partial density of states
+\begin{itemize}
+\item Using the options below
+\item Using the {\tt Util/COOP/mprop} program the off-line analysis of
+  the electronic structure in PDOS mode. This method allows the
+  flexibility of specifying energy ranges, orbitals, and resolutions
+  at will, without re-running {\sc Siesta}. See Sec.~\ref{sec:coop}.
+\end{itemize}
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+\item[{\bf ProjectedDensityOfStates}] ({\it block}):
+\index{ProjectedDensityOfStates@{\bf ProjectedDensityOfStates}}
+\index{output!projected density of states}
+
+Instructs to write the Total Density Of States (Total DOS) and the 
+Projected Density Of States (PDOS) on the basis orbitals,
+between two given energies,
+in files {\tt SystemLabel}.DOS and 
+{\tt SystemLabel}.PDOS, respectively. 
+The block must be a single line with the energies of the range for 
+PDOS projection,
+(relative to the program's zero, i.e. the same as the eigenvalues
+printed by the program), the peak width (an energy) for broadening
+the eigenvalues, the number of points in the energy window, 
+and the energy units.
+An example is:
+
+\begin{verbatim}
+     %block ProjectedDensityOfStates
+        -20.00  10.00  0.200  500  eV
+     %endblock ProjectedDensityOfStates
+\end{verbatim}
+
+By default the projected density of states is generated for the same
+grid of points in reciprocal space as used for the SCF calculation.
+However, a separate set of K-points, usually on a finer grid, can 
+be generated using one of the options \textbf{PDOS.kgrid\_cutoff} or
+\textbf{PDOS.kgrid\_Monkhorst\_Pack}. The format of these options is
+exactly the same as for \textbf{kgrid\_cutoff} and 
+\textbf{kgrid\_Monkhorst\_Pack}, respectively. Note that if a gamma
+point calculation is being used in the SCF part, especially as part
+of a geometry optimisation, and this is then to
+be run with a grid of K-points for the PDOS calculation it is more
+efficient to run the SCF phase first and then restart to perform the
+PDOS evaluation using the density matrix saved from the SCF phase. 
+
+{\it Use:} The two energies of the range must be ordered, with lowest
+first. 
+
+{\it Output:} The Total DOS is dumped into a file
+called {\tt SystemLabel}.DOS. The format of this file is:
+
+Energy value, Total DOS (spin up), Total DOS (spin down)
+
+The Projected Density Of States for all the orbitals in the unit cell
+is dumped sequentially into a file called {\tt SystemLabel}.PDOS. This
+file is structured using spacing and xml tags. A machine-readable (but
+not very human readable) xml file {\tt pdos.xml} is also
+produced. Both can be processed by the program in {\tt
+  Util/pdosxml}. The .PDOS file can be processed by utilites in {\tt
+  Util/Contrib/APostnikov}.
+
+In all cases, the units for the DOS are (number of states/eV), and the
+Total DOS, $g \left(\epsilon\right)$, is normalized as follows:
+
+\begin{eqnarray}
+   \int_{-\infty}^{+\infty} g \left(\epsilon\right) d\epsilon = 
+   number \;\; of \;\; basis \;\; orbitals \;\; in \;\;  unit \;\; cell \;\;
+   \nonumber \\
+\end{eqnarray}
+
+
+{\it Default value:} PDOS not calculated nor written.
+\end{description}
+
+
+\subsubsection{Local density of states}
+
+The LDOS is formally the DOS weighted by the amplitude of the
+corresponding wavefunctions at different points in space, and is then
+a function of energy and position. {\sc Siesta} can output the LDOS
+integrated over a range of energies.  This information can be used to
+obtain simple STM images in the Tersoff-Hamann approximation (See {\tt
+  Util/STM/simple-stm}).
+
+\begin{description}
+\item[{\bf LocalDensityOfStates}] ({\it block}): 
+\index{LocalDensityOfStates@{\bf LocalDensityOfStates}} 
+\index{output!local density of states}
+Instructs to write the LDOS, integrated between two given energies,
+at the mesh used by DHSCF,
+in file {\tt SystemLabel}.LDOS. This file can be read by routine IORHO,
+which may be used by an application program in later versions.
+The block must be a single line with the energies of the range for 
+LDOS integration
+(relative to the program's zero, i.e. the same as the eigenvalues
+printed by the program) and their units.
+An example is:
+
+\begin{verbatim}
+     %block LocalDensityOfStates
+        -3.50  0.00   eV
+     %endblock LocalDensityOfStates
+\end{verbatim}
+
+{\it Use:} The two energies of the range must be ordered,
+with lowest first.
+File {\tt SystemLabel}.LDOS is only written, not read, by siesta.
+
+{\it Default value:} LDOS not calculated nor written.
+        
+\end{description}
+
+
+\subsection{Options for chemical analysis}
+
+\subsubsection{Mulliken charges and overlap populations}
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+\item[{\bf WriteMullikenPop}] ({\it integer}): 
+\index{WriteMullikenPop@{\bf WriteMullikenPop}}\index{Mulliken population
+analysis}\index{output!Mulliken analysis} 
+It determines the level of Mulliken population analysis printed:
+\begin{itemize}
+\item 0 = None
+\item 1 = atomic and orbital charges
+\item 2 = 1 + atomic overlap pop.
+\item 3 = 2 + orbital overlap pop.
+\end{itemize}
+The order of the orbitals in the population lists is defined
+by the order of atoms. For each atom, populations for PAO orbitals and
+double-$z$, triple-$z$, etc... derived from them are displayed first for 
+all the angular momenta. Then, populations for perturbative polarization
+orbitals are written.
+Within a $l$-shell be aware that the order is not
+conventional, being $y$, $z$, $x$ for $p$ orbitals, and
+$xy$, $yz$, $z^2$, $xz$, and $x^2-y^2$ for $d$ orbitals. 
+
+{\it Default value:} {\tt 0} (see {\bf LongOutput})
+
+
+\item[{\bf MullikenInSCF}] ({\it logical}):
+\index{MullikenInSCF@{\bf MullikenInSCF}}
+If true, the Mulliken populations will be written for every SCF step
+at the level of detail specified in {\bf WriteMullikenPop}. Useful
+when dealing with SCF problems, otherwise too verbose.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf MullikenInSCF}] ({\it logical}):
+\index{MullikenInSCF@{\bf MullikenInSCF}}
+If true, the Mulliken populations will be written for every SCF step
+at the level of detail specified in {\bf WriteMullikenPop}. Useful
+when dealing with SCF problems, otherwise too verbose.
+
+{\it Default value:} {\tt .false.}
+
+\end{description}
+
+\subsubsection{Crystal-Orbital overlap and hamilton populations (COOP/COHP)}
+\label{sec:coop}
+
+These curves are quite useful to analyze the electronic structure to
+get insight about bonding characteristics. See the {\tt Util/COOP}
+directory for more details. The {\bf COOP.Write} option must be
+activated to get the information needed.
+
+References:
+
+\begin{itemize}
+\item Original COOP reference:
+Hughbanks, T.; Hoffmann, R., J. Am. Chem. Soc., 1983, 105, 3528. 
+\item Original COHP reference: Dronskowski, R.; Blöchl, P. E., J. Phys. Chem., 1993, 97, 8617. 
+\item A tutorial introduction: Dronskowski, R. Computational Chemistry of Solid State
+Materials; Wiley-VCH: Weinheim, 2005.  
+\item Online material maintained by R. Dronskowski's group: {\tt http://www.cohp.de/}
+\end{itemize}
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+\item[{\bf COOP.Write}] ({\it logical}): 
+\index{COOP.Write@{\bf COOP.Write}} 
+\index{output!Information for COOP/COHP curves}
+Instructs the program to generate  {\tt SystemLabel}.WFSX (packed
+wavefunction file) and  {\tt SystemLabel}.HSX (H, S and X\_~{ij} file),
+to be processed by {\tt Util/COOP/mprop} to generate COOP/COHP curves,
+(projected) densities of states, etc.
+
+The WFSX file is in a more compact form than the usual WFS, and the
+wavefunctions are output in single precision. The {\tt Util/wfsx2wfs}
+program can be used to convert to the old format.
+The HSX file is in a more compact form than the usual HS, and the
+Hamiltonian, overlap matrix, and relative-positions array (which is
+always output, even for gamma-point only calculations) are in
+single precision.
+
+{\it Default value:} {\tt .false.}
+
+The user can narrow the energy-range used (and save some file space)
+by using the {\bf WFS.EnergyMin} and {\bf WFS.EnergyMax} options (both take an
+energy (with units) as extra argument).
+
+\end{description}
+
+
+\vspace{5pt}
+\subsection{Optical properties}
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+\item[{\bf OpticalCalculation}] ({\it logical}):\index{Dielectric function,
+optical absorption} 
+If specified, the imaginary part of the dielectric function
+will be calculated and stored in a file called {\it Systemlabel}.{\bf EPSIMG}.
+The calculation is performed using the simplest approach based on the
+dipolar transition matrix elements between different eigenfunctions
+of the self-consistent Hamiltonian. For molecules the calculation 
+is performed using the position operator matrix elements, while
+for solids the calculation is carried out in the momentum space
+formulation.
+Corrections due to the non-locality of the pseudopotentials
+are introduced in the usual way. 
+
+{\it Default value:} {\tt false}
+
+\item[{\bf Optical.EnergyMinimum}] ({\it real energy}):
+\index{Optical.EnergyMinimum@{\bf Optical.EnergyMinimum}}
+This specifies the minimum of the energy range in which
+the frequency spectrum will be calculated.
+
+{\it Default value:} 0 Ry.
+
+\item[{\bf Optical.EnergyMaximum}] ({\it real energy}):
+\index{Optical.EnergyMaximum@{\bf Optical.EnergyMaximum}}
+This specifies the maximum of the energy range in which
+the frequency spectrum will be calculated.
+
+{\it Default value:} 10 Ry.
+
+\item[{\bf Optical.Broaden}] ({\it real energy}):
+\index{Optical.Broaden@{\bf Optical.Broaden}}
+If this is value is set then a Gaussian broadening will be
+applied to the frequency values.
+
+{\it Default value:} 0 Ry.
+
+\item[{\bf Optical.Scissor}] ({\it real energy}):
+\index{Optical.Scissor@{\bf Optical.Scissor}}
+Because of the tendency of DFT calculations to under estimate
+the band gap, a rigid shift of the unoccupied states, known as 
+the scissor operator, can be added to correct the gap and
+thereby improve the calculated results. This shift is only
+applied to the optical calculation and no where else within
+the calculation.
+
+{\it Default value:} 0 Ry.
+
+\item[{\bf Optical.NumberOfBands}] ({\it integer}):
+\index{Optical.NumberOfBands@{\bf Optical.NumberOfBands}}
+This option controls the number of bands that are included in
+the optical property calculation. Clearly this number must be
+larger than the number of occupied bands and less than or
+equal to the number of basis functions (which determines the
+number of unoccupied bands available). Note, while including
+all the bands may be the most accurate choice this will also
+be the most expensive!
+
+{\it Default value:} All bands.
+
+\item[{\bf Optical.Mesh}] ({\it data block}):
+\index{Optical.Mesh@{\bf Optical.Mesh}}
+This block contains 3 numbers that determine the mesh size
+used for the integration across the Brillouin zone. For
+example:
+
+\begin{verbatim}
+        %block  Optical.Mesh
+          5 5 5
+        %endblock  Optical.Mesh
+\end{verbatim}
+
+The three values represent the number of mesh points in
+the direction of each reciprocal lattice vector.
+
+{\it Default value:} Empty in general. For atoms 
+or molecules a k-sampling of only one point is assumed.
+
+\item[{\bf Optical.OffsetMesh}] ({\it logical}):
+\index{Optical.OffsetMesh@{\bf Optical.OffsetMesh}}
+If set to true, then the mesh is offset away from the
+gamma point for odd numbers of points.
+
+{\it Default value:} {\tt false}
+
+\item[{\bf Optical.PolarizationType}] ({\it string}):
+\index{Optical.PolarizationType@{\bf Optical.PolarizationType}}
+This option has three possible values that represent the
+type of polarization to be used in the calculation. The options
+are {\bf polarized}, which implies the application of an electric
+field in a given direction, {\bf unpolarized}, which implies the
+propagation of light in a given direction, and {\bf polycrystal}.
+In the case of the first two options a direction in space must
+be specified for the electric field or propagation using the
+{\it Optical.Vector} data block.
+
+{\it Default value:} {\tt polycrystal}
+
+\item[{\bf Optical.Vector}] ({\it data block}):
+\index{Optical.Vector@{\bf Optical.Vector}}
+This block contains 3 numbers that specify the vector direction
+for either the electric field or light propagation, for a polarized
+or unpolarized calculation, respectively. A typical block might look
+like:
+
+\begin{verbatim}
+        %block  Optical.Vector
+          1.0 0.0 0.5
+        %endblock  Optical.Vector
+\end{verbatim}
+
+{\it Default value:} Empty.
+
+\end{description}
+
+\vspace{5pt}
+\subsection{Macroscopic polarization}
+
+\begin{description}
+
+\item[{\bf PolarizationGrids}] ({\it data block}):
+\index{PolarizationGrids@{\bf PolarizationGrids}}
+\index{bulk polarization}\index{Berry phase}
+If specified, the macroscopic polarization will be calculated using the
+geometric Berry phase approach (R.D. King-Smith, and D. Vanderbilt,
+PRB {\bf 47}, 1651 (1993)). In this method the electronic 
+contribution to the macroscopic polarization, along a given direction, 
+is calculated using
+a discretized version of the formula
+\begin{equation}
+\label{pol_formula}
+    P_{e,\parallel}={ifq_e \over 8\pi^3} \int_A d{\bf k}_\perp
+    \sum_{n=1}^M \int_0^{|G_\parallel|} dk_{\parallel}
+     \langle u_{{\bf k} n} |{\delta \over \delta k_{\parallel}} |
+      u_{{\bf k} n} \rangle
+\end{equation}
+where $f$ is the occupation (2 for a non-magnetic system), 
+$q_e$ the electron charge, $M$ is the number of occupied bands (the
+system {\bf must} be an insulator), and $u_{{\bf k} n}$ are
+the periodic Bloch functions. ${\bf G}_\parallel$ is the shortest
+reciprocal vector along the chosen direction. 
+
+As it can be seen in formula (\ref{pol_formula}), to compute each 
+component of the polarization we must perform a surface integration
+of the result of a 1-D integral in the selected direction. 
+The grids for the calculation along the direction of each of the
+three lattice vectors are specified in the block
+{\bf PolarizationGrids}. 
+\begin{verbatim}
+     %block PolarizationGrids
+        10   3  4      yes
+         2  20  2       no
+         4   4 15
+     %endblock PolarizationGrids
+\end{verbatim}      
+
+All three grids must be specified, therefore a 3$\times$3 matrix of
+integer numbers must be given: the first row specifies the grid that
+will be used to calculate the polarization along the direction of the
+first lattice vector, the second row will be used for the calculation
+along the the direction of the second lattice vector, and the third
+row for the third lattice vector.  The numbers in the diagonal of the
+matrix specifie the number of points to be used in the one dimensional
+line integrals along the different directions. The other numbers
+specifie the mesh used in the surface integrals.  The last column
+specifies if the bidimensional grids are going to be diplaced from the
+origin or not, as in the Monkhorst-Pack algorithm (PRB {\bf 13}, 5188
+(1976)).  This last column is optional.  If the number of points in
+one of the grids is zero, the calculation will not be performed for
+this particular direction.
+
+For example, in the given example, for the computation in the
+direction of the first lattice vector, 15 points will be used for the
+line integrals, while a 3$\times$4 mesh will be used for the surface
+integration. This last grid will be displaced from the origin, so
+$\Gamma$ will not be included in the bidimensional integral. For the
+directions of the second and third lattice vectors, the number of
+points will be 20 and 2$\times$2, and 15 and 4$\times$4, respectively.
+
+It has to be stressed that the macroscopic polarization can only be
+meaningfully calculated using this approach for insulators.
+Therefore, the presence of an energy gap is necessary, and no band can
+cross the Fermi level. The program performs a simple check of this
+condition, just by counting the electrons in the unit cell ( the
+number must be even for a non-magnetic system, and the total spin
+polarization must have an integer value for spin polarized systems),
+however is the responsability of the user to check that the system
+under study is actually an insulator (for both spin components if spin
+polarized).
+
+The total macroscopic polarization, given in the output of the
+program, is the sum of the electronic contribution (calculated as the
+Berry phase of the valence bands), and the ionic contribution, which
+is simply defined as the sum of the atomic positions within the unit
+cell multiply by the ionic charges ($\sum_i^{N_a} Z_i {\bf r}_i$).  In
+the case of the magnetic systems, the bulk polarization for each spin
+component has been defined as
+\begin{equation}
+       {\bf P}^\sigma = {\bf P}_e^\sigma + 
+   {1 \over 2} \sum_i^{N_a}  Z_i {\bf r}_i
+\end{equation}
+$N_a$ is the number of atoms in the unit cell, and ${\bf r}_i$ and
+$Z_i$ 
+are the positions and charges of the ions.
+
+It is also worth noting, that the macroscopic polarization given by
+formula (\ref{pol_formula}) is only defined modulo a ``quantum" of
+polarization (the bulk polarization per unit cell is only well defined
+modulo $fq_e${\bf R}, being {\bf R} an arbitrary lattice
+vector). However, the experimentally observable quantities are
+associated to changes in the polarization induced by changes on the
+atomic positions (dynamical charges), strains (piezoelectric tensor),
+etc... The calculation of those changes, between different
+configurations of the solid, will be well defined as long as they are
+smaller than the ``quantum", i.e. the perturbations are small enough
+to create small changes in the polarization.
+
+{\it Use:} Only compatible with {\bf SolutionMethod} = diagon.\\
+{\it Default value:} Empty. No calculation performed.
+
+\item[{\bf BornCharge}] ({\it logical}):\index{Born effective charges}
+\index{BornCharge@{\bf BornCharge}}
+If true, the Born effective charge tensor is calculated for each atom
+by finite differences, by calculating the change in electric polarization 
+(see {\bf PolarizationGrids}) induced by the small displacements generated 
+for the force constants calculation (see {\bf MD.TypeOfRun} = {\tt FC}):
+\begin{equation}\label {eq:effective_charge}
+Z^*_{i,\alpha,\beta}=\frac{\Omega_0}{e} \left. {\frac{\partial{P_\alpha}}
+{\partial{u_{i,\beta}}}}\right|_{q=0}
+\end{equation}
+where e is the charge of an electron and $\Omega_0$ is the unit cell volume.
+
+To calculate the Born charges it is necessary to specify both the Born 
+charge flag and the mesh used to calculate the polarization, for example:
+\begin{verbatim}
+%block PolarizationGrids
+7  3  3
+3  7  3
+3  3  7
+%endblock PolarizationGrids
+BornCharge True
+\end{verbatim}
+
+The Born effective charge matrix is then written to the file 
+{\it SystemLabel}.{\tt BC}.
+
+The method by which the polarization is calculated may introduce an arbitrary 
+phase (poalrization quantum), which in general is far larger than the change 
+in polarization which results from the atomic displacement. It is removed 
+during the calculation of the Born effective charge tensor. 
+
+The Born effective charges allow the calculation of LO-TO splittings and 
+infrared activities. The version of the Vibra utility code in which these
+magnitudes are calculated is not yet distributed with {\sc Siesta}, but can be 
+obtained form Tom Archer (archert@tcd.ie).
+
+{\it Use:} Only used if {\bf MD.TypeOfRun} is {\tt FC}.
+
+{\it Default value:} {\tt false}
+
+\end{description}
+
+\vspace{5pt}
+\subsection{Systems with net charge or dipole, and electric fields}
+
+\begin{description}
+
+\item[{\bf NetCharge}] ({\it real}): 
+\index{NetCharge@{\bf NetCharge}}\index{Charge of the system}
+Specify the net charge of the system (in units of $|e|$). 
+For charged systems, the energy converges very slowly
+versus cell size. For molecules or atoms, a Madelung
+correction term is applied to the energy to make it converge
+much faster with cell size (this is done only if
+the cell is SC, FCC or BCC). For other cells, or for 
+periodic systems (chains, slabs or bulk), this energy
+correction term can not be applied, and the user is warned
+by the program.   It is not advised to do charged systems
+other than atoms and molecules in SC, FCC or BCC cells,
+unless you know what you are doing.
+
+{\it Use:} 
+For example, the F$^-$ ion would have {\bf NetCharge} = {\tt -1},
+and the Na$^+$ ion would have {\bf NetCharge} = {\tt 1}.
+Fractional charges can also be used.
+
+{\it Default value:} {\tt 0.0} 
+
+\item[{\bf SimulateDoping}] ({\it boolean}): 
+\index{SimulateDoping@{\bf SimulateDoping}}\index{Slabs with net charge}
+
+This option instructs the program to add a background charge density
+to simulate doping.  The new ``doping'' routine calculates the net
+charge of the system, and adds a compensating background charge that
+makes the system neutral. This background charge is constant at points
+of the mesh near the atoms, and zero at points far from the atoms.
+This simulates situations like doped slabs, where the extra electrons
+(holes) are compensated by oposite charges at the material (the
+ionized dopant impurities), but not at the vacuum.  This serves to
+simulate properly doped systems in which there are large portions of
+vacuum, such as doped slabs.
+
+(See {\tt Tests/sic-slab})
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf ExternalElectricField}] ({\it data block}): 
+\index{ExternalElectricField@{\bf ExternalElectricField}}
+It specifies an external electric field for molecules, chains and slabs.
+The electric field should be orthogonal to `bulk directions', like
+those parallel to a slab (bulk electric fields, like in
+dielectrics or ferroelectrics, are not allowed). If it is not, an
+error message is issued and the components of the field in bulk
+directions are suppressed automatically. The input is a
+vector in cartesian coordinates, in the specified units. Example:
+
+\begin{verbatim}
+     %block ExternalElectricField
+        0.000  0.000  0.500  V/Ang
+     %endblock ExternalElectricField
+\end{verbatim}
+
+{\it Default value:} zero field
+
+\item[{\bf SlabDipoleCorrection}] ({\it boolean}): 
+\index{SlabDipoleCorrection@{\bf SlabDipoleCorrection}}
+
+If {\tt true}, {\sc Siesta} calculates the electric field required to
+compensate the dipole of the system at every iteration of the
+self-consistent cycle. The potential added to the grid corresponds to
+that of a dipole layer at the middle of the vacuum layer. For slabs,
+this exactly compensates the electric field at the vacuum created by
+the dipole moment of the system, thus allowing to treat asymmetric
+slabs (including systems with an adsorbate on one surface) and compute
+properties such as the work funcion of each of the surfaces.
+
+(See {\tt Tests/sic-slab})
+
+{\it Default value:} {\tt false}
+
+\end{description}
+
 
 \vspace{5pt}
 \subsection{Output of charge densities and potentials on the grid}
