@@ -26,6 +26,7 @@
 !   precision : defines parameters 'dp' and 'grid_p' for real kinds
 !   sys       : provides the stopping subroutine 'die'
 !   xcmod     : provides setxc routine
+!   TO BE COMPLETED...
 ! Additional modules used in parallel:
 !   mpi_siesta
 !
@@ -294,10 +295,20 @@
 
 MODULE siestaXC
 
+! Entry routines of siestaXC library
   USE m_atomXC, only: atomXC   ! XC for a spherical charge distribution
   USE m_cellXC, only: cellXC   ! XC for a periodic unit cell
   USE xcmod,    only: getXC    ! Returns XC functional(s)
   USE xcmod,    only: setXC    ! Sets XC functional(s)
+
+! Extra utilities placed here for non-siesta users
+! See correspondig modules for usage documentation
+  USE alloc,    only: alloc_report         ! Set and print allocation report
+  USE debugXC,  only: setDebugOutputUnit   ! Set debug report
+  USE debugXC,  only: closeDebugOutputFile ! Print debug report
+  USE m_timer,  only: timer_report         ! Print CPU time report
+
+  PUBLIC
 
 END MODULE siestaXC
   

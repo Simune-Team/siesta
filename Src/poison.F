@@ -44,8 +44,7 @@ C
       use parallel,    only : Node, Nodes, ProcessorY
       use sys,         only : die
       use alloc,       only : re_alloc, de_alloc
-!      use m_fft3d,     only : fft
-      use m_fft,       only : fft
+      use m_fft,       only : fft     ! 3-D fast Fourier transform
       use cellsubs,    only : reclat  ! Finds reciprocal lattice vectors
       use cellsubs,    only : volcel  ! Finds unit cell volume
       use m_chkgmx,    only : chkgmx  ! Checks planewave cutoff of a mesh
