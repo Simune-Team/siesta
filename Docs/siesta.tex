@@ -1191,7 +1191,7 @@ standard one.\index{Ground-state atomic configuration}.
 
 \end{itemize}
 
-{\it Default value:} {\tt STANDARD}
+{\it Default value:} {\tt DZP}
 
 \item[{\bf PAO.BasisSizes}]({\it data block}): 
 \index{PAO.BasisSizes@{\bf PAO.BasisSizes}}\index{basis!PAO}
@@ -1569,6 +1569,12 @@ atomic problem in the presence of a polarizing electric field. The
 orbitals are generated applying perturbation theory to the first-zeta
 orbital of lower angular momentum.  They have the same cutoff radius
 than the orbitals from which they are constructed.
+
+Note: The perturbative method has traditionally used the 'l' component
+of the pseudopotential. It can be argued that it should use the 'l+1'
+component. By default, for backwards compatibility, the traditional
+method is used, but the alternative one can be activated by setting
+the logical {\bf PAO.OldStylePolOrbs} variable to {\tt .false.}
 
 There is a different possibility of generating polarization orbitals:
 by introducing them explicitly in the {\bf PAO.Basis} block.
