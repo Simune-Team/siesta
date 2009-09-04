@@ -828,22 +828,21 @@ for them.
 
 \subsection{Standard output} \index{output!main output file}
 
-{\sc Siesta} writes its main output to standard output. 
+{\sc Siesta} writes its main output to standard output. ***
 
 A brief description follows. See the example cases in the 
 siesta/Tests directory for illustration. 
 
-The program starts writing the version of
-the code which is used. Then, the input FDF file is dumped into
-the output file as is (except for empty lines). The program does
-part of the reading and digesting of the data at the beginning
-within the {\tt redata} subroutine. It prints some of the information
-it digests. It is important to note that it is only part of it,
-some other information being accessed by the different subroutines
-when they need it during the run (in the spirit of FDF input).
-A complete list of the input used by the code can be found at the
-end in the file {\tt fdf.log}, including defaults used by the code
-in the run.
+The program starts writing the version of the code which is
+used. Then, the input FDF file is dumped into the output file as is
+(except for empty lines). The program does part of the reading and
+digesting of the data at the beginning within the {\tt redata}
+subroutine. It prints some of the information it digests. It is
+important to note that it is only part of it, some other information
+being accessed by the different subroutines when they need it during
+the run (in the spirit of FDF input).  A complete list of the input
+used by the code can be found at the end in the file {\tt fdf.log},
+including defaults used by the code in the run.
 
 After that, the program reads the pseudopotentials, factorizes them
 into Kleinman-Bylander form, and generates (or reads) the atomic basis
@@ -856,67 +855,64 @@ the process and results are presented. The user has the option to
 customize it, however,\index{output!customization} by defining
 different options that control the printing of informations like
 coordinates, forces, $\vec k$ points, etc.  The options are discussed
-in the appropriate sections.
+in the appropriate sections, but take into account the behavior of the
+legacy {\bf LongOutput} option, as in the current implementation might
+silently activate output to the main .out file at the expense of
+auxiliary files.
+
+\begin{description}
+
+\item[{\bf LongOutput}] ({\it logical}):
+\index{LongOutput@{\bf LongOutput}}\index{output!long}
+{\sc Siesta} can write to standard output different data sets
+depending on the values for output options described below.
+By default {\sc Siesta} will not write most of them. They can be
+large for large systems (coordinates, eigenvalues, forces, etc.)
+and, if written to standard output, they accumulate for all the steps of 
+the dynamics. {\sc Siesta} writes the information in other files
+(see Output Files) in addition to the standard output, and these
+can be accumulative or not.
+
+Setting {\bf LongOutput} to {\tt .true.} changes the default of
+some options, obtaining more information in the output (verbose).
+In particular, it redefines the defaults for the following:
 
 \begin{itemize}
+
 \item
-{\bf WriteCoorInitial}\index{WriteCoorInitial@{\bf WriteCoorInitial}}
-\index{output!atomic coordinates!initial}
-for writing the initial atomic coordinates,
+{\bf WriteCoorStep}\index{WriteCoorStep@{\bf WriteCoorStep}}:
+\index{output!atomic coordinates!in a dynamics step} {\tt .true.}
 \item
-{\bf WriteCoorStep}\index{WriteCoorStep@{\bf WriteCoorStep}}
-\index{output!atomic coordinates!in a dynamics step}
-for writing the atomic coordinates at every step,
+{\bf WriteForces}\index{WriteForces@{\bf WriteForces}}:
+\index{output!forces} {\tt .true.}
 \item
-{\bf WriteForces}\index{WriteForces@{\bf WriteForces}}
-\index{output!forces}
-for writing the forces on the atoms at every step,
+{\bf WriteEigenvalues}\index{WriteEigenvalues@{\bf WriteEigenvalues}}:
+\index{output!eigenvalues} {\tt .true.}
 \item
-{\bf WriteKpoints}\index{WriteKpoints@{\bf WriteKpoints}}
-\index{output!grid $\vec k$ points}
-for writing the coordinates of the $\vec k$ points used for the sampling,
+{\bf WriteWaveFunctions}
+\index{WriteWaveFunctions@{\bf WriteWaveFunctions}}:
+\index{output!wave functions} {\tt .true.}
 \item
-{\bf WriteEigenvalues}\index{WriteEigenvalues@{\bf WriteEigenvalues}}
-\index{output!eigenvalues}
-for writing the eigenvalues of the Hamiltonian at those $\vec k$ points,
-\item
-{\bf WriteKbands}\index{WriteKbands@{\bf WriteKbands}}
-\index{output!band $\vec k$ points}
-for writing the $\vec k$ points used to band-structure plots,
-\item
-{\bf WriteBands}\index{WriteBands@{\bf WriteBands}}
-\index{output!band structure} 
-for writing the band structure at those $\vec k$ points,
-\item
-{\bf WriteWaveFunctions}\index{WriteWaveFunctions@{\bf WriteWaveFunctions}}
-\index{output!wave functions} 
-for writing the coefficients of the wave functions at
-certain $\vec k$ points,
-\item
-{\bf WriteMullikenPop}\index{WriteMullikenPop@{\bf WriteMullikenPop}}
-\index{output!Mulliken analysis}\index{Mulliken population analysis} 
-for writing the Mulliken population analysis at different levels of detail.
+{\bf WriteMullikenPop}\index{WriteMullikenPop@{\bf WriteMullikenPop}} 
+\index{output!Mulliken analysis}\index{Mulliken population analysis} 1
 \end{itemize}
 
-Except for the first one, which is {\tt .true.} by default, the
-default of {\sc Siesta} for this options is {\tt .false.} (or 0 for the last)
-which means no writing. That gives the short output format.
+The specific changing of any of these options overrides the
+{\bf LongOutput} setting for it.
 
-There is a long output possibility (verbose) defined in {\sc Siesta}, which is
-obtained by setting {\bf LongOutput} to {\tt .true.} . It changes 
-the default of the previous flags to {\tt .true.} (to 1 for 
-Mulliken), with the consequent appearance of the 
-corresponding information in the output file.
-Of course, the explicit setting of any of these options overrides the
-{\bf LongOutput} setting of it.
+{\it Default value:} {\tt .false.}
 
-
+\end{description}
 
 \subsection{Output to dedicated files} \index{output!dedicated files}
 
 {\sc Siesta} can produce a wealth of information in dedicated files,
 with specific formats, that can be used for further analysis. See the
 appropriate sections, and the appendix on file formats.
+Please take into account the behavior of
+{\bf LongOutput}, as in the current implementation might silently
+activate output to the main .out file at the expense of auxiliary
+files.
 
 \section{DETAILED DECRIPTION OF PROGRAM OPTIONS}
 
@@ -2574,6 +2570,32 @@ over the options below.
 
 \end{itemize}
 
+\subsubsection{Interatomic distances}
+
+\begin{description}
+\item[{\bf WarningMinimumAtomicDistance}] ({\it physical}): 
+\index{WarningMinimumAtomicDistance@{\bf WarningMinimumAtomicDistance}}
+Fixes a threshold interatomic distance below which a warning
+message is printed.
+
+{\it Default value:} {\tt 1.0 Bohr}
+
+\item[{\bf MaxBondDistance}] ({\it physical}): 
+\index{MaxBondDistance@{\bf MaxBondDistance}}
+{\sc Siesta} prints the interatomic
+distances\index{interatomic distances}, up to
+a range of {\tt MaxBondDistance}, to file 
+{\tt SystemLabel.BONDS} upon first
+reading the structural information, and to file
+{\tt SystemLabel.BONDS\_FINAL}
+after the last geometry iteration. The neighbors are identified by
+atom number and symbol, but the positions reported are those of the
+equivalent atom in the unit cell. This is an experimental feature.
+
+{\it Default value:} {\tt 6.0 Bohr}
+
+\end{description}
+
 \subsection{$k$-point sampling}
 
 These are options for the k-point grid used in the SCF cycle. For
@@ -2681,7 +2703,6 @@ are always stored in the file SystemLabel.KP.
 \index{WriteKpoints@{\bf WriteKpoints}}\index{output!grid $\vec k$ points}
 If {\tt .true.} it writes the coordinates of the $\vec k$ vectors
 used in the grid for $k$-sampling, into the main output file.
-Otherwise, it does not.
 
 {\it Default value:} {\tt .false.} (see {\bf LongOutput})
 
@@ -2878,6 +2899,27 @@ These k points are unrelated and compatible with any k-grid used
 to calculate the total energy,  charge density and band structure.
 
 {\it Default value:} No wavefunctions are written.
+
+\item[{\bf WriteWaveFunctions}] ({\it logical}), (***confusing):
+  \index{WriteWaveFunctions@{\bf WriteWaveFunctions}}
+  \index{output!wave functions} If {\tt .true.} it writes the
+  Hamiltonian eigenvectors (coefficients of the wavefunctions in the
+  basis set orbitals expansion) corresponding to the $\vec k$ vectors
+  defined by the {\bf WaveFuncKPoints} \index{WaveFuncKPoints@{\bf
+      WaveFuncKPoints}} descriptor to the main output file.  If {\tt
+    .false.}, they are not written to the main output, but they are
+  dumped to the file {\it Systemlabel}.WFSX to be used by
+  postprocessing utilities for handling the wave functions \index{wave
+    functions}. NOTE: The WFSX format is an enhanced one over the old
+  WFS. You can use the {\tt Util/wfsx2wfs} program to convert to the
+  old format. The {\tt Util/readwf} program\index{READWF} can then
+  process the {\it Systemlabel}.WFS file and produce a file readable
+  by the user.
+
+{\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
+ 
+{\it Default value:} {\tt .false.} (see {\bf LongOutput})
+
 
 \end{description}
 
@@ -3715,6 +3757,28 @@ to converge faster than the Kohn-Sham energy.
 \begin{description}
 \itemsep 10pt
 \parsep 0pt
+
+\item[{\bf WriteMullikenPop}] ({\it integer}): 
+\index{WriteMullikenPop@{\bf WriteMullikenPop}}\index{Mulliken population
+analysis}\index{output!Mulliken analysis} 
+It determines the level of Mulliken population analysis printed:
+\begin{itemize}
+\item 0 = None
+\item 1 = atomic and orbital charges
+\item 2 = 1 + atomic overlap pop.
+\item 3 = 2 + orbital overlap pop.
+\end{itemize}
+The order of the orbitals in the population lists is defined
+by the order of atoms. For each atom, populations for PAO orbitals and
+double-$z$, triple-$z$, etc... derived from them are displayed first for 
+all the angular momenta. Then, populations for perturbative polarization
+orbitals are written.
+Within a $l$-shell be aware that the order is not
+conventional, being $y$, $z$, $x$ for $p$ orbitals, and
+$xy$, $yz$, $z^2$, $xz$, and $x^2-y^2$ for $d$ orbitals. 
+
+{\it Default value:} {\tt 0} (see {\bf LongOutput})
+
 
 \item[{\bf MullikenInSCF}] ({\it logical}):
 \index{MullikenInSCF@{\bf MullikenInSCF}}
@@ -5094,8 +5158,6 @@ fitting set.
 \vspace{5pt}
 \subsection{Parallel options}
 
-(Note: These features are not available in all distributions.)
-
 \begin{description}
 \itemsep 10pt
 \parsep 0pt
@@ -5206,155 +5268,11 @@ make it possible to run larger jobs where memory is the limiting factor.,
 
 {\it Default value:}  false
 
-\item[{\bf SaveMemory}] ({\it logical}):
-\index{SaveMemory@{\bf SaveMemory}}
-
-When calculating values that are stored in arrays whose dimensions
-cannot be accurately predicted ahead of time, there are two choices
-as to what to do when an array bound is exceeded. Firstly, the
-contents can be copied into buffer arrays while the dimensions
-are increased and then copied back (which is the default for
-expensive operations) or secondly, the arrays can be re-initialised
-and filled from scratch after re-dimensioning. The first approach
-is the fastest but requires larger amounts of memory, particular
-in {\bf dhscf}, whereas the second uses the minimum memory at the
-expense of re-calculating a number of quantities.
-
-{\it Use:} Controls whether the program uses algorithms which save memory
-  at the expense of CPU time by not preserving the contents of arrays
-  when re-initialising the dimensions due to bounds being exceeded. 
-
-{\it Default value:}  false
-
 \end{description}
 
-
-\vspace{5pt}
-\subsection{Output options}
-
+\subsection{Accounting Options}
 \begin{description}
-\itemsep 10pt
-\parsep 0pt
 
-\item[{\bf LongOutput}] ({\it logical}):
-\index{LongOutput@{\bf LongOutput}}\index{output!long}
-{\sc Siesta} can write to standard output different data sets
-depending on the values for output options described below.
-By default {\sc Siesta} will not write most of them. They can be
-large for large systems (coordinates, eigenvalues, forces, etc.)
-and, if written to standard output, they accumulate for all the steps of 
-the dynamics. {\sc Siesta} writes the information in other files
-(see Output Files) in addition to the standard output, and these
-can be accumulative or not.
-
-Setting {\bf LongOutput} to {\tt .true.} changes the default of
-some options, obtaining more information in the output (verbose).
-In particular, it redefines the defaults for the following:
-
-\begin{itemize}
-
-\item
-{\bf WriteCoorStep}\index{WriteCoorStep@{\bf WriteCoorStep}}:
-\index{output!atomic coordinates!in a dynamics step} {\tt .true.}
-\item
-{\bf WriteForces}\index{WriteForces@{\bf WriteForces}}:
-\index{output!forces} {\tt .true.}
-\item
-{\bf WriteKpoints}\index{WriteKpoints@{\bf WriteKpoints}}:
-\index{output!grid $\vec k$ points} {\tt .true.}
-\item
-{\bf WriteEigenvalues}\index{WriteEigenvalues@{\bf WriteEigenvalues}}:
-\index{output!eigenvalues} {\tt .true.}
-\item
-{\bf WriteKbands}\index{WriteKbands@{\bf WriteKbands}}:
-\index{output!band $\vec k$ points} {\tt .true.}
-\item
-{\bf WriteBands}\index{WriteBands@{\bf WriteBands}}:
-\index{output!band structure} {\tt .true.}
-\item
-{\bf WriteWaveFunctions}
-\index{WriteWaveFunctions@{\bf WriteWaveFunctions}}:
-\index{output!wave functions} {\tt .true.}
-\item
-{\bf WriteMullikenPop}\index{WriteMullikenPop@{\bf WriteMullikenPop}} 
-\index{output!Mulliken analysis}\index{Mulliken population analysis} 1
-
-\end{itemize}
-
-The specific changing of any of these options overrides the
-{\bf LongOutput} setting for it.
-
-{\it Default value:} {\tt .false.}
-
-
- 
-\item[{\bf WriteWaveFunctions}] ({\it logical}): 
-\index{WriteWaveFunctions@{\bf WriteWaveFunctions}}
-\index{output!wave functions} If {\tt .true.} it writes
-the Hamiltonian eigenvectors (coefficients of the wavefunctions
-in the basis set orbitals expansion) corresponding to the $\vec k$ vectors
-defined by the {\bf WaveFuncKPoints}
-\index{WaveFuncKPoints@{\bf WaveFuncKPoints}}
-descriptor to the main output file.  Otherwise it does
-not, but they are dumped into the file {\it Systemlabel}.WFSX
-to be used by postprocessing utilities for handling the 
-wave functions
-\index{wave functions}. NOTE: The WFSX format is an enhanced one
-over the old WFS. You can use the {\tt Util/wfsx2wfs} program to
-convert to the old format. The {\tt Util/readwf} program\index{READWF}
-can then process the {\it Systemlabel}.WFS file and produce
-a file readable by the user.
-
-{\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
- 
-{\it Default value:} {\tt .false.} (see {\bf LongOutput})
-
-
-\item[{\bf WriteMullikenPop}] ({\it integer}): 
-\index{WriteMullikenPop@{\bf WriteMullikenPop}}\index{Mulliken population
-analysis}\index{output!Mulliken analysis} 
-It determines the level of Mulliken population analysis printed:
-\begin{itemize}
-\item 0 = None
-\item 1 = atomic and orbital charges
-\item 2 = 1 + atomic overlap pop.
-\item 3 = 2 + orbital overlap pop.
-\end{itemize}
-The order of the orbitals in the population lists is defined
-by the order of atoms. For each atom, populations for PAO orbitals and
-double-$z$, triple-$z$, etc... derived from them are displayed first for 
-all the angular momenta. Then, populations for perturbative polarization
-orbitals are written.
-Within a $l$-shell be aware that the order is not
-conventional, being $y$, $z$, $x$ for $p$ orbitals, and
-$xy$, $yz$, $z^2$, $xz$, and $x^2-y^2$ for $d$ orbitals. 
-
-{\it Default value:} {\tt 0} (see {\bf LongOutput})
-
-
- 
-\item[{\bf WarningMinimumAtomicDistance}] ({\it physical}): 
-\index{WarningMinimumAtomicDistance@{\bf WarningMinimumAtomicDistance}}
-Fixes a threshold interatomic distance below which a warning
-message is printed.
-
-{\it Default value:} {\tt 1.0 Bohr}
-
-\item[{\bf MaxBondDistance}] ({\it physical}): 
-\index{MaxBondDistance@{\bf MaxBondDistance}}
-{\sc Siesta} prints the interatomic
-distances\index{interatomic distances}, up to
-a range of {\tt MaxBondDistance}, to file 
-{\tt SystemLabel.BONDS} upon first
-reading the structural information, and to file
-{\tt SystemLabel.BONDS\_FINAL}
-after the last geometry iteration. The neighbors are identified by
-atom number and symbol, but the positions reported are those of the
-equivalent atom in the unit cell.
-
-{\it Default value:} {\tt 6.0 Bohr}
-
-        
 \item[{\bf AllocReportLevel}] ({\it integer}): 
 \index{AllocReportLevel@{\bf AllocReportLevel}}
 Sets the level of the allocation report, printed in file 
@@ -5377,6 +5295,7 @@ Sets the level of the allocation report, printed in file
 
 \end{description}
 
+ 
 
 
 \vspace{5pt}
@@ -6032,11 +5951,11 @@ WriteCoorStep should be {\tt .true.}
 {\it Default value:} {\tt .false.} (see {\bf LongOutput})
  
  
-\item[{\bf WriteForces}] ({\it logical}):
-\index{WriteForces@{\bf WriteForces}}\index{output!forces}
-If {\tt .true.} it writes the atomic forces to the output file at every
-time or relaxation step. Otherwise it does not. In this case,
-the forces of the last step can be found in the file {\it Systemlabel}.FA .
+\item[{\bf WriteForces}] ({\it logical}): \index{WriteForces@{\bf
+    WriteForces}}\index{output!forces} If {\tt .true.} it writes the
+  atomic forces to the output file at every time or relaxation
+  step. If not, the forces of the last step can be found in the file
+  {\it Systemlabel}.FA .
  
 {\it Default value:} {\tt .false.} (see {\bf LongOutput})
 
