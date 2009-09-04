@@ -175,6 +175,7 @@ And also (though not all options are compatible):
 \item Spin polarized calculations (collinear or not).
 \item k-sampling of the Brillouin zone.
 \item Local and orbital-projected density of states.
+\item COOP and COHP curves for chemical bonding analysis.
 \item Dielectric polarization.
 \item Vibrations (phonons).
 \item Band structure.
@@ -183,26 +184,21 @@ And also (though not all options are compatible):
 
 %\subsection{ {\sc TranSiesta} }
 
-Starting from version 3.0, {\sc Siesta} includes the 
-{\sc TranSiesta}\index{TranSIESTA@{\sc TranSiesta}} utility. 
-{\sc TranSiesta} provides the ability to model open-boundary systems 
-where ballistic electron transport is taking place.
-Using {\sc TranSiesta} one can predict electronic properties,
-such as the zero bias conductance and the I-V characteristics, 
-of a nanoscale system in contact with two electrodes with different 
-electrochemical potentials. 
-It does so by solving for the selfconsistent electronic structure within 
-density functioual theory, and using non equilibrium Green's functions 
-techniques (NEGF).
+Starting from version 3.0, {\sc Siesta} includes the {\sc
+  TranSiesta}\index{TranSIESTA@{\sc TranSiesta}} utility.  {\sc
+  TranSiesta} provides the ability to model open-boundary systems
+where ballistic electron transport is taking place.  Using {\sc
+  TranSiesta} one can predict electronic properties, such as the zero
+bias conductance and the I-V characteristics, of a nanoscale system in
+contact with two electrodes with different electrochemical potentials.
+It does so by solving for the selfconsistent electronic structure
+within density functioual theory, and using non equilibrium Green's
+functions techniques (NEGF).
 
 The current implementation of {\sc TranSiesta} within {\sc Siesta} is mainly 
 due to F. D. Novaes and is based on the implementation of 
 mainly M. Brandbyge of {\sc TranSiesta} Version 0.9 (see 
 complete reference below). 
-% The use of the {\sc TranSiesta} package requires good knowledge 
-% of standard {\sc Siesta} calculations, this is why the descriptions
-% correspondent to the use of {\sc TranSiesta}, including compilation
-% directives etc,  have been grouped at the end of this manual.
 
 
 \vspace{0.5cm}
@@ -2694,7 +2690,8 @@ Otherwise, it does not.
 \subsection{Band-structure analysis}
 
 This calculation of the band structure is performed optionally after
-the geometry loop finishes, and the output information written to the
+the geometry loop finishes, and the output information written
+optionally (see {\bf WriteBands} below, confusing***) to the
 SystemLabel.bands file (see below for the format).
 
 \begin{description}
@@ -2767,6 +2764,29 @@ to calculate the total energy and charge density. If both are present, this
 block supersedes {\bf BandLines}.
 
 {\it Default value:} No band energies calculated.
+
+\item[{\bf WriteKbands}] ({\it logical}):
+\index{WriteKbands@{\bf WriteKbands}}\index{output!band $\vec k$ points} 
+If {\tt .true.} it writes the coordinates of the $\vec k$ vectors
+defined for band plotting, to the main output file.
+
+{\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
+
+{\it Default value:} {\tt .false.} (see {\bf LongOutput})
+
+
+\item[{\bf WriteBands}] ({\it logical}): \index{WriteBands@{\bf
+    WriteBands}}\index{output!band structure} If {\tt .true.} it
+  writes the Hamiltonian eigenvalues corresponding to the $\vec k$
+  vectors defined for band plotting, in the main output file.
+  Otherwise it does not. They are, however, dumped into the file {\it
+    Systemlabel}.bands to be used by postprocessing utilities for
+  plotting the band structure.\index{band structure}
+
+{\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
+ 
+{\it Default value:} {\tt .false.} (see {\bf LongOutput})
+
 
 \end{description}
 
@@ -2880,7 +2900,7 @@ files, respectively, and generate a readable file.
 
 
 \vspace{5pt}
-\subsection{Densities of states and COOP/COHP curves}
+\subsection{Densities of states}
 
 \subsubsection{Total density of states}
 There are several options to obtain the 
@@ -2900,7 +2920,7 @@ See the {\bf WriteEigenvalues} descriptor.
 \item As one of the files produced by the {\tt Util/COOP/mprop} during
   the off-line analysis of the electronic structure. This method
   allows the flexibility of specifying energy ranges and resolutions
-  at will. 
+  at will, without re-running {\sc Siesta} See Sec.~\ref{sec:coop}.
 \end{itemize}
 
 \subsubsection{Partial (projected) density of states}
@@ -2911,7 +2931,7 @@ There are two options to obtain the partial density of states
 \item Using the {\tt Util/COOP/mprop} program the off-line analysis of
   the electronic structure in PDOS mode. This method allows the
   flexibility of specifying energy ranges, orbitals, and resolutions
-  at will, without re-running {\sc Siesta}.
+  at will, without re-running {\sc Siesta}. See Sec.~\ref{sec:coop}.
 \end{itemize}
 
 \begin{description}
@@ -2982,44 +3002,15 @@ Total DOS, $g \left(\epsilon\right)$, is normalized as follows:
 {\it Default value:} PDOS not calculated nor written.
 \end{description}
 
-\subsubsection{COOP and COHP curves (optional PDOS)}
-
-These curves are quite useful to analyze the electronic structure to
-get insight about bonding characteristics. See the {\tt Util/COOP}
-directory for more details.
-
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
-
-\item[{\bf COOP.Write}] ({\it logical}): 
-\index{COOP.Write@{\bf COOP.Write}} 
-\index{output!Information for COOP/COHP curves}
-Instructs the program to generate  {\tt SystemLabel}.WFSX (packed
-wavefunction file) and  {\tt SystemLabel}.HSX (H, S and X\_~{ij} file),
-to be processed by {\tt Util/COOP/mprop} to generate COOP/COHP curves,
-(projected) densities of states, etc.
-
-The WFSX file is in a more compact form than the usual WFS, and the
-wavefunctions are output in single precision. The {\tt Util/wfsx2wfs}
-program can be used to convert to the old format.
-The HSX file is in a more compact form than the usual HS, and the
-Hamiltonian, overlap matrix, and relative-positions array (which is
-always output, even for gamma-point only calculations) are in
-single precision.
-
-{\it Default value:} {\tt .false.}
-        
-\end{description}
 
 \subsubsection{Local density of states}
 
-The LDOS is formally  DOS weighted by the amplitude of the corresponding
-wavefunctions at different points in space, and is then a function of
-energy and position. {\sc Siesta} can output the LDOS integrated over
-a range of energies.  This information can be used to obtain simple
-STM
-images (See {\tt Util/STM/stm}).
+The LDOS is formally the DOS weighted by the amplitude of the
+corresponding wavefunctions at different points in space, and is then
+a function of energy and position. {\sc Siesta} can output the LDOS
+integrated over a range of energies.  This information can be used to
+obtain simple STM images in the Tersoff-Hamann approximation (See {\tt
+  Util/STM/simple-stm}).
 
 \begin{description}
 \item[{\bf LocalDensityOfStates}] ({\it block}): 
@@ -3241,6 +3232,8 @@ an MD or geometry optimisation step and carry on. When set to true
 the calculation will stop on the first SCF convergence failure.
 
 {\it Default value:} {\tt .false.}
+
+\end{description}
 
 \subsubsection{Mixing options}
 
@@ -3715,6 +3708,14 @@ to converge faster than the Kohn-Sham energy.
 
 \end{description}
 
+
+\subsection{Options for chemical analysis}
+
+\subsubsection{Mulliken charges and overlap populations}
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
 \item[{\bf MullikenInSCF}] ({\it logical}):
 \index{MullikenInSCF@{\bf MullikenInSCF}}
 If true, the Mulliken populations will be written for every SCF step
@@ -3730,10 +3731,45 @@ at the level of detail specified in {\bf WriteMullikenPop}. Useful
 when dealing with SCF problems, otherwise too verbose.
 
 {\it Default value:} {\tt .false.}
-
-
 
 \end{description}
+
+\subsubsection{Crystal-Orbital overlap and hamilton populations (COOP/COHP)}
+\label{sec:coop}
+
+These curves are quite useful to analyze the electronic structure to
+get insight about bonding characteristics. See the {\tt Util/COOP}
+directory for more details. The {\bf COOP.Write} option must be
+activated to get the information needed.
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+\item[{\bf COOP.Write}] ({\it logical}): 
+\index{COOP.Write@{\bf COOP.Write}} 
+\index{output!Information for COOP/COHP curves}
+Instructs the program to generate  {\tt SystemLabel}.WFSX (packed
+wavefunction file) and  {\tt SystemLabel}.HSX (H, S and X\_~{ij} file),
+to be processed by {\tt Util/COOP/mprop} to generate COOP/COHP curves,
+(projected) densities of states, etc.
+
+The WFSX file is in a more compact form than the usual WFS, and the
+wavefunctions are output in single precision. The {\tt Util/wfsx2wfs}
+program can be used to convert to the old format.
+The HSX file is in a more compact form than the usual HS, and the
+Hamiltonian, overlap matrix, and relative-positions array (which is
+always output, even for gamma-point only calculations) are in
+single precision.
+
+{\it Default value:} {\tt .false.}
+
+The user can narrow the energy-range used (and save some file space)
+by using the {\bf WFS.EnergyMin} and {\bf WFS.EnergyMax} options (both take an
+energy (with units) as extra argument).
+        
+\end{description}
+
 
 \vspace{5pt}
 \subsection{Optical properties}
@@ -5252,34 +5288,6 @@ The specific changing of any of these options overrides the
 
 
  
-\item[{\bf WriteKbands}] ({\it logical}):
-\index{WriteKbands@{\bf WriteKbands}}\index{output!band $\vec k$ points} 
-If {\tt .true.} it writes the coordinates of the $\vec k$ vectors
-defined for band plotting, into the main output file.
-Otherwise, it does not.
-
-{\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
-
-{\it Default value:} {\tt .false.} (see {\bf LongOutput})
-
-
-\item[{\bf WriteBands}] ({\it logical}): \index{WriteBands@{\bf
-WriteBands}}\index{output!band structure} If {\tt .true.} it writes
-the Hamiltonian eigenvalues corresponding to the $\vec k$ vectors
-defined for band plotting, in the main output file.  Otherwise it does
-not. They are, however, dumped into the file {\it Systemlabel}.bands
-to be used by postprocessing utilities for plotting the band
-structure.\index{band structure} The {\sc Gnubands}\index{Gnubands@{\sc 
-Gnubands}} program
-(found in the Util/ directory) reads the {\it Systemlabel}.bands from
-standard input and dumps to standard output a file directly plotable
-by {\sc Gnuplot}.\index{Gnuplot@{\sc Gnuplot}}
-\footnote{{\sc Gnuplot} is under \copyright\ copyright of GNU software}
-
-{\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
- 
-{\it Default value:} {\tt .false.} (see {\bf LongOutput})
-
 \item[{\bf WriteWaveFunctions}] ({\it logical}): 
 \index{WriteWaveFunctions@{\bf WriteWaveFunctions}}
 \index{output!wave functions} If {\tt .true.} it writes
@@ -5417,14 +5425,6 @@ shortly.
 
 \end{description}
         
-
-\section{OUTPUT AND CONTINUATION FILES}
-
-
-\subsection{Eigenvalues}
-
-
-
 
 \vspace{5pt}
 \section{STRUCTURAL RELAXATION, PHONONS, AND MOLECULAR DYNAMICS}
