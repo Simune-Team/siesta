@@ -274,241 +274,6 @@ Extensive review of applications as of summer 2003.
 For more information you can visit the web page 
 {\tt http://www.uam.es/siesta}.
 
-
-\section{ATOMIC-ORBITAL BASES IMPLEMENTED IN {\sc Siesta}}
-
-The main advantage of atomic orbitals is their efficiency (fewer orbitals 
-needed per electron for similar precision) 
-and their main disadvantage is the lack of systematics for optimal 
-convergence, an issue that quantum chemists have been working on for
-many years. They have also clearly shown that there
-is no limitation on precision intrinsic to LCAO.
-This section provides some information about how basis sets can be
-generated for {\sc Siesta}.
-
-It is important to stress at this point that neither the {\sc Siesta} 
-method nor the program
-are bound to the use of any particular kind of atomic orbitals. The
-user can feed into {\sc Siesta} the atomic basis set he/she choses by
-means of radial tables (see {\bf User.Basis} below), the
-only limitations being: $(i)$ the functions have to be atomic-like (radial 
-functions mutiplied by spherical harmonics), and $(ii)$ they have to be
-of finite support, i.e., each orbital becomes strictly zero beyond some
-cutoff radius chosen by the user.
-
-Most users, however, do not have their own basis sets. For these users
-we have devised some schemes to generate reasonable basis sets within
-the program. These bases depend on several parameters per atomic
-species that are for the user to choose, and can be important for both
-quality and efficiency. A description of these bases and some
-performance tests can be found in
-
-\noindent
-``Numerical atomic orbitals for linear-scaling calculations"
-J. Junquera, O. Paz, D. S\'anchez-Portal, and E. Artacho, Phys. Rev. B
-{\bf 64} 235111, (2001)
-
-An important point here is that the basis set selection is a 
-variational problem and, therefore, minimizing the energy with respect
-to any parameters defining the basis is an ``ab initio" way to 
-define them.
-
-We have also devised a quite simple and systematic way of generating 
-basis sets based on specifying only one main parameter (the energy shift)
-besides the basis size. It does not offer the best NAO results one can get 
-for a given basis size but it has the important advantages mentioned above. 
-More about it in:
-
-\noindent
-``Linear-scaling ab-initio calculations for large and complex systems"
-E. Artacho, D. S\'anchez-Portal, P. Ordej\'on, A. Garc\'{\i}a and
-J. M. Soler, Phys. Stat. Sol. (b) {\bf 215}, 809 (1999).
-
-In addition to {\sc Siesta} we provide the program {\sc
-Gen-basis}\index{Gen-basis@{\sc Gen-basis}}, which reads {\sc
-Siesta}'s input and generates basis files for later use. {\sc
-Gen-basis} can be found in {\tt Util/Gen-basis}.
-It should be run from the {\tt Tutorials/Bases} directory, 
-using the {\tt gen-basis.sh} script. It is limited to a single species.
-
-In the following we give some clues on the basics of the basis sets
-that {\sc Siesta} generates. 
-  The starting point is always the solution of Kohn-Sham's Hamiltonian
-for the isolated pseudo-atoms, solved in a radial grid,
-with the same approximations as for the solid or molecule 
-(the same exchange-correlation functional and  pseudopotential),
-plus some way of confinement (see below).
-  We describe in the following three main features of a
-basis set of atomic orbitals: size, range, and radial shape.
-
-\subsection{Size: number of orbitals per atom}
-
-  Following the nomenclature of Quantum Chemistry, we establish
-a hierarchy of basis sets, from single-$\zeta$ to multiple-$\zeta$ 
-with polarization and diffuse orbitals, covering from quick calculations
-of low quality to high precision, as high as the finest obtained in
-Quantum Chemistry. 
-  A single-$\zeta$ (also called minimal) basis set (SZ in the following)
-has one single radial function per angular momentum channel, and only for 
-those angular momenta with substantial electronic population in the valence of
-the free atom.
-  It offers quick calculations and some insight on qualitative trends 
-in the chemical bonding and other properties. 
-  It remains too rigid, however, for more quantitative calculations
-requiring both radial and angular flexibilization.
-
-  Starting by the radial flexibilization of SZ, a better basis is obtained 
-by adding a second function per channel: double-$\zeta$ (DZ).
-  In Quantum Chemistry, the {\it split valence} scheme
-is widely used: starting from the expansion in Gaussians of one atomic 
-orbital, the most contracted gaussians are used to define the first
-orbital of the double-$\zeta$ and the most extended ones for the second.
-  For strictly localized functions there was a first proposal
-of using the excited states of the confined atoms, but it would work only 
-for tight confinement (see {\bf PAO.BasisType} {\tt nodes} below).
-  This construction was proposed and tested in D. S\'anchez-Portal 
-{\it et al.}, J. Phys.: Condens. Matter {\bf 8}, 3859-3880 (1996).
- 
-  We found that the basis set convergence is slow, requiring high levels
-of multiple-$\zeta$ to achieve what other schemes do at the double-$\zeta$
-level. 
-  This scheme is related with the basis sets used in the OpenMX project
-[see T. Ozaki, Phys. Rev. B {\bf 67}, 155108 (2003); T. Ozaki and H. Kino, 
-Phys. Rev. B {\bf 69}, 195113 (2004)]. 
-
-  We then proposed an extension of the split valence idea of Quantum Chemistry 
-to strictly localized NAO which has become the standard and has been used
-quite succesfully in many systems (see {\bf PAO.BasisType} {\tt split} below).
-  It is based on the idea of suplementing the first $\zeta$ with, instead of
-a gaussian, a numerical orbital that reproduces the tail of the original PAO 
-outside a matching radius $r_{m}$, and continues smoothly towards the origin as 
-$r^l(a-br^2)$, with $a$ and $b$ ensuring continuity and differenciability 
-at $r_{m}$. 
-  Within exactly the same
-Hilbert space, the second orbital can be chosen to be the difference between
-the smooth one and the original PAO, which gives a basis orbital strictly
-confined within the matching radius $r_{m}$ (smaller than the
-original PAO!) continuously differenciable throughout. 
-
-  Extra parameters have thus appeared: one $r_m$ per orbital to be doubled. 
-The user can again introduce them by hand (see {\bf PAO.Basis} below).
-Alternatively, all the $r_m$'s can be defined at once by specifying
-the value of the tail of the original PAO beyond $r_m$, the so-called
-split norm. Variational optimization
-of this split norm performed on different systems
-shows a very general and stable performance for values around
-15\% (except for the $\sim 50\%$ for hydrogen). 
-  It generalizes to multiple-$\zeta$ trivially by adding an additional
-matching radius per new zeta.
-
-Note: What is actually used is the norm of the tail {\em plus} the
-norm of the parabola-like inner function.
-
-  Angular flexibility is obtained by adding shells of higher angular 
-momentum.
-  Ways to generate these so-called polarization orbitals have been
-described in the literature for Gaussians. 
-  For NAOs there are two ways for {\sc Siesta} and {\sc Gen-basis} to
-generate them: $(i)$ Use atomic PAO's of higher angular momentum with
-suitable confinement, and $(ii)$ solve the pseudoatom in the presence
-of an electric field and obtain the $l+1$ orbitals from the perturbation
-of the $l$ orbitals by the field.
-
-  Finally, the method allows the inclusion of offsite orbitals (not centered
-around any specific atom). The orbitals again can be of any shape, including
-atomic orbitals as if an atom would be there (useful for calculating the
-counterpoise correction for basis-set superposition errors). 
-Bessel functions for any radius and any excitation level can also be 
-added anywhere to the basis set.
-
-\subsection{Range: cutoff radii of orbitals}
-
-  Strictly localized orbitals (zero beyond a cutoff radius) are used
-in order to obtain sparse Hamiltonian and overlap matrices for linear 
-scaling. One cutoff radius per angular momentum channel has to be
-given for each species. 
-  A balanced and systematic starting point for defining all the different 
-radii is achieved by giving one single parameter, the energy shift, i.e., 
-the energy raise suffered by the orbital when confined.
-Allowing for system and physical-quantity variablity, as a rule of thumb
-$\Delta E_{\small \rm PAO} \approx 100$ meV gives 
-typical precisions within the accuracy of current GGA functionals.
-The user can, nevertheless, change the cutoff radii at will.
-
-\subsection{Shape}
-
-  Within the pseudopotential framework it is important to keep 
-the consistency between the pseudopotential and
-the form of the pseudoatomic orbitals in the core region.
-  The shape of the orbitals at larger radii depends on the
-cutoff radius (see above) and on the way the localization 
-is enforced.
-
-  The first proposal (and quite a standard among {\sc Siesta}
-users) uses an infinite square-well potential.
-  It was oroginally proposed and has been widely and succesfully used 
-by Otto Sankey and collaborators, for minimal bases within 
-the ab initio tight-binding scheme, using the {\sc Fireball } program, 
-but also for more flexible bases using the methodology of {\sc Siesta}.
-  This scheme has the disadavantage, however, of generating 
-orbitals with a discontinuous derivative at $r_c$. 
-  This discontinuity is more pronounced for smaller $r_c$'s and
-tends to disappear for long enough values of this cutoff.
-  It does remain, however, appreciable for sensible values of
-$r_c$ for those orbitals that would be very wide in the free atom.
-  It is surprising how small an effect such kink produces in the
-total energy of condensed systems.
-  It is, on the other hand, a problem for forces and stresses,
-especially if they are calculated using a (coarse) finite 
-three-dimensional grid.
-
-  Another problem of this scheme is related to its defining the
-basis considering the free atoms. 
-  Free atoms can present extremely
-extended orbitals, their extension being, besides problematic,
-of no practical use for the calculation in condensed systems:
-the electrons far away from the atom can be described by the
-basis functions of other atoms.
- 
-  A traditional scheme to deal with this is the one based on the radial 
-scaling of the orbitals by suitable scale factors.
-  In addition to very basic bonding arguments, it is
-soundly based on restoring virial's theorem for finite bases, in the case
-of coulombic potentials (all-electron calculations).
-  The use of pseudopotentials limits its applicability, allowing only for
-extremely small deviations from unity ($\sim 1\%$) in the scale factors 
-obtained variationally (with the exception of hydrogen that can contract 
-up to 25\%). This possiblity is available to the user.
-
-  Another way of dealing with that problem and that of the kink at the
-same time is adding a soft confinement potential to the atomic Hamiltonian 
-used to generate the basis orbitals: it smoothens
-the kink and contracts the orbital as suited. Two additional parameters
-are introduced for the purpose, which can be defined again variationally.
-  The confining potential  is flat (zero) in the core region, starts off at
-some internal radius $r_i$ with all derivatives continuous
-and diverges at $r_c$ ensuring the strict localization there.
-  It is
-\begin{equation}
-  V(r) = V_{\rm o} { e^{- { {r_c - r_i} \over {r - r_i} } } \over {r_c -r} } 
-\end{equation}
-and both $r_i$ and $V_{\rm o}$ can be given to {\sc Siesta} together
-with $r_c$ in the input (see {\bf PAO.Basis} below).
-
-  Finally, the shape of an orbital is also changed by the ionic character 
-of the atom. 
-  Orbitals in cations tend to shrink, and they swell in anions.
-  Introducing a $\delta Q$ in the basis-generating free-atom calculations
-gives orbitals better adapted to ionic situations in the condensed
-systems.
-
-  More information about basis sets can be found in the proposed
-  literature.
-
-The directory {\tt Tutorials/Bases} in the main {\sc Siesta
-  distribution} contains some tutorial material for the generation of
-basis sets and KB projectors.
-
 \section{COMPILATION}
 
 \subsection{The building directory}
@@ -1080,6 +845,230 @@ XML files to the {\tt .psf} form.
 \vspace{5pt}
 \subsection{Basis set and KB projectors} 
 
+\subsubsection{Overview of atomic-orbital bases implemented in {\sc Siesta}}
+
+The main advantage of atomic orbitals is their efficiency (fewer orbitals 
+needed per electron for similar precision) 
+and their main disadvantage is the lack of systematics for optimal 
+convergence, an issue that quantum chemists have been working on for
+many years. They have also clearly shown that there
+is no limitation on precision intrinsic to LCAO.
+This section provides some information about how basis sets can be
+generated for {\sc Siesta}.
+
+It is important to stress at this point that neither the {\sc Siesta} 
+method nor the program
+are bound to the use of any particular kind of atomic orbitals. The
+user can feed into {\sc Siesta} the atomic basis set he/she choses by
+means of radial tables (see {\bf User.Basis} below), the
+only limitations being: $(i)$ the functions have to be atomic-like (radial 
+functions mutiplied by spherical harmonics), and $(ii)$ they have to be
+of finite support, i.e., each orbital becomes strictly zero beyond some
+cutoff radius chosen by the user.
+
+Most users, however, do not have their own basis sets. For these users
+we have devised some schemes to generate reasonable basis sets within
+the program. These bases depend on several parameters per atomic
+species that are for the user to choose, and can be important for both
+quality and efficiency. A description of these bases and some
+performance tests can be found in
+
+\noindent
+``Numerical atomic orbitals for linear-scaling calculations"
+J. Junquera, O. Paz, D. S\'anchez-Portal, and E. Artacho, Phys. Rev. B
+{\bf 64} 235111, (2001)
+
+An important point here is that the basis set selection is a 
+variational problem and, therefore, minimizing the energy with respect
+to any parameters defining the basis is an ``ab initio" way to 
+define them.
+
+We have also devised a quite simple and systematic way of generating 
+basis sets based on specifying only one main parameter (the energy shift)
+besides the basis size. It does not offer the best NAO results one can get 
+for a given basis size but it has the important advantages mentioned above. 
+More about it in:
+
+\noindent
+``Linear-scaling ab-initio calculations for large and complex systems"
+E. Artacho, D. S\'anchez-Portal, P. Ordej\'on, A. Garc\'{\i}a and
+J. M. Soler, Phys. Stat. Sol. (b) {\bf 215}, 809 (1999).
+
+In addition to {\sc Siesta} we provide the program {\sc
+Gen-basis}\index{Gen-basis@{\sc Gen-basis}}, which reads {\sc
+Siesta}'s input and generates basis files for later use. {\sc
+Gen-basis} can be found in {\tt Util/Gen-basis}.
+It should be run from the {\tt Tutorials/Bases} directory, 
+using the {\tt gen-basis.sh} script. It is limited to a single species.
+
+In the following we give some clues on the basics of the basis sets
+that {\sc Siesta} generates. 
+  The starting point is always the solution of Kohn-Sham's Hamiltonian
+for the isolated pseudo-atoms, solved in a radial grid,
+with the same approximations as for the solid or molecule 
+(the same exchange-correlation functional and  pseudopotential),
+plus some way of confinement (see below).
+  We describe in the following three main features of a
+basis set of atomic orbitals: size, range, and radial shape.
+
+{\bf Size:} number of orbitals per atom
+
+  Following the nomenclature of Quantum Chemistry, we establish
+a hierarchy of basis sets, from single-$\zeta$ to multiple-$\zeta$ 
+with polarization and diffuse orbitals, covering from quick calculations
+of low quality to high precision, as high as the finest obtained in
+Quantum Chemistry. 
+  A single-$\zeta$ (also called minimal) basis set (SZ in the following)
+has one single radial function per angular momentum channel, and only for 
+those angular momenta with substantial electronic population in the valence of
+the free atom.
+  It offers quick calculations and some insight on qualitative trends 
+in the chemical bonding and other properties. 
+  It remains too rigid, however, for more quantitative calculations
+requiring both radial and angular flexibilization.
+
+  Starting by the radial flexibilization of SZ, a better basis is obtained 
+by adding a second function per channel: double-$\zeta$ (DZ).
+  In Quantum Chemistry, the {\it split valence} scheme
+is widely used: starting from the expansion in Gaussians of one atomic 
+orbital, the most contracted gaussians are used to define the first
+orbital of the double-$\zeta$ and the most extended ones for the second.
+  For strictly localized functions there was a first proposal
+of using the excited states of the confined atoms, but it would work only 
+for tight confinement (see {\bf PAO.BasisType} {\tt nodes} below).
+  This construction was proposed and tested in D. S\'anchez-Portal 
+{\it et al.}, J. Phys.: Condens. Matter {\bf 8}, 3859-3880 (1996).
+ 
+  We found that the basis set convergence is slow, requiring high levels
+of multiple-$\zeta$ to achieve what other schemes do at the double-$\zeta$
+level. 
+  This scheme is related with the basis sets used in the OpenMX project
+[see T. Ozaki, Phys. Rev. B {\bf 67}, 155108 (2003); T. Ozaki and H. Kino, 
+Phys. Rev. B {\bf 69}, 195113 (2004)]. 
+
+  We then proposed an extension of the split valence idea of Quantum Chemistry 
+to strictly localized NAO which has become the standard and has been used
+quite succesfully in many systems (see {\bf PAO.BasisType} {\tt split} below).
+  It is based on the idea of suplementing the first $\zeta$ with, instead of
+a gaussian, a numerical orbital that reproduces the tail of the original PAO 
+outside a matching radius $r_{m}$, and continues smoothly towards the origin as 
+$r^l(a-br^2)$, with $a$ and $b$ ensuring continuity and differenciability 
+at $r_{m}$. 
+  Within exactly the same
+Hilbert space, the second orbital can be chosen to be the difference between
+the smooth one and the original PAO, which gives a basis orbital strictly
+confined within the matching radius $r_{m}$ (smaller than the
+original PAO!) continuously differenciable throughout. 
+
+  Extra parameters have thus appeared: one $r_m$ per orbital to be doubled. 
+The user can again introduce them by hand (see {\bf PAO.Basis} below).
+Alternatively, all the $r_m$'s can be defined at once by specifying
+the value of the tail of the original PAO beyond $r_m$, the so-called
+split norm. Variational optimization
+of this split norm performed on different systems
+shows a very general and stable performance for values around
+15\% (except for the $\sim 50\%$ for hydrogen). 
+  It generalizes to multiple-$\zeta$ trivially by adding an additional
+matching radius per new zeta.
+
+Note: What is actually used is the norm of the tail {\em plus} the
+norm of the parabola-like inner function.
+
+Angular flexibility is obtained by adding shells of higher angular
+momentum.  Ways to generate these so-called polarization orbitals have
+been described in the literature for Gaussians.  For NAOs there are
+two ways for {\sc Siesta} and {\sc Gen-basis} to generate them: $(i)$
+Use atomic PAO's of higher angular momentum with suitable confinement,
+and $(ii)$ solve the pseudoatom in the presence of an electric field
+and obtain the $l+1$ orbitals from the perturbation of the $l$
+orbitals by the field.
+
+Finally, the method allows the inclusion of offsite (ghost) orbitals
+(not centered around any specific atom). The orbitals again can be of
+any shape, including atomic orbitals as if an atom would be there
+(useful for calculating the counterpoise correction for basis-set
+superposition errors).  Bessel functions for any radius and any
+excitation level can also be added anywhere to the basis set.
+
+{\bf Range:} cutoff radii of orbitals.
+
+Strictly localized orbitals (zero beyond a cutoff radius) are used in
+order to obtain sparse Hamiltonian and overlap matrices for linear
+scaling. One cutoff radius per angular momentum channel has to be
+given for each species.
+
+A balanced and systematic starting point for defining all the
+different radii is achieved by giving one single parameter, the energy
+shift, i.e., the energy raise suffered by the orbital when confined.
+Allowing for system and physical-quantity variablity, as a rule of
+thumb $\Delta E_{\small \rm PAO} \approx 100$ meV gives typical
+precisions within the accuracy of current GGA functionals.  The user
+can, nevertheless, change the cutoff radii at will.
+
+{\bf Shape}
+
+Within the pseudopotential framework it is important to keep the
+consistency between the pseudopotential and the form of the
+pseudoatomic orbitals in the core region.  The shape of the orbitals
+at larger radii depends on the cutoff radius (see above) and on the
+way the localization is enforced.
+
+The first proposal (and quite a standard among {\sc Siesta} users)
+uses an infinite square-well potential.  It was originally proposed
+and has been widely and succesfully used by Otto Sankey and
+collaborators, for minimal bases within the ab initio tight-binding
+scheme, using the {\sc Fireball } program, but also for more flexible
+bases using the methodology of {\sc Siesta}.  This scheme has the
+disadavantage, however, of generating orbitals with a discontinuous
+derivative at $r_c$.  This discontinuity is more pronounced for
+smaller $r_c$'s and tends to disappear for long enough values of this
+cutoff.  It does remain, however, appreciable for sensible values of
+$r_c$ for those orbitals that would be very wide in the free atom.  It
+is surprising how small an effect such a kink produces in the total
+energy of condensed systems.  It is, on the other hand, a problem for
+forces and stresses, especially if they are calculated using a
+(coarse) finite three-dimensional grid.
+
+Another problem of this scheme is related to its defining the basis
+considering the free atoms.  Free atoms can present extremely extended
+orbitals, their extension being, besides problematic, of no practical
+use for the calculation in condensed systems: the electrons far away
+from the atom can be described by the basis functions of other atoms.
+ 
+A traditional scheme to deal with this is the one based on the radial
+scaling of the orbitals by suitable scale factors.  In addition to
+very basic bonding arguments, it is soundly based on restoring
+virial's theorem for finite bases, in the case of coulombic potentials
+(all-electron calculations).  The use of pseudopotentials limits its
+applicability, allowing only for extremely small deviations from unity
+($\sim 1\%$) in the scale factors obtained variationally (with the
+exception of hydrogen that can contract up to 25\%). This possiblity
+is available to the user.
+
+Another way of dealing with that problem and that of the kink at the
+same time is adding a soft confinement potential to the atomic
+Hamiltonian used to generate the basis orbitals: it smoothens the kink
+and contracts the orbital as suited. Two additional parameters are
+introduced for the purpose, which can be defined again variationally.
+The confining potential is flat (zero) in the core region, starts off
+at some internal radius $r_i$ with all derivatives continuous and
+diverges at $r_c$ ensuring the strict localization there.  It is
+\begin{equation}
+  V(r) = V_{\rm o} { e^{- { {r_c - r_i} \over {r - r_i} } } \over {r_c -r} } 
+\end{equation}
+and both $r_i$ and $V_{\rm o}$ can be given to {\sc Siesta} together
+with $r_c$ in the input (see {\bf PAO.Basis} below).
+
+Finally, the shape of an orbital is also changed by the ionic
+character of the atom.  Orbitals in cations tend to shrink, and they
+swell in anions.  Introducing a $\delta Q$ in the basis-generating
+free-atom calculations gives orbitals better adapted to ionic
+situations in the condensed systems.
+
+More information about basis sets can be found in the proposed
+literature.
+
+
 \noindent 
 
 There are quite a number of options for the input of the basis-set and
@@ -1091,7 +1080,10 @@ in this process we offer an auxiliary program for optimization which
 can be used in particular to obtain variationally optimal basis sets
 (within a chosen basis size). See {\tt Util/Optimizer}
 for general information, and {\tt Util/Optimizer/Examples/Basis\_Optim}
-for an example.
+for an example. The directory {\tt Tutorials/Bases} in the main {\sc Siesta
+distribution} contains some tutorial material for the generation of
+basis sets and KB projectors.
+
 
 \subsubsection{Type of basis sets}
 
