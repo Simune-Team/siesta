@@ -2061,6 +2061,7 @@ with the supercell given as a normal unit cell.
 \end{description}
 
 \subsubsection{Z-matrix format and constraints}
+\label{sec:zmatrix}
 
 The advantage of the traditional format is that it is
 much easier to set up a system. However, when working
@@ -2080,17 +2081,17 @@ it is more work to generate the input files for this form.
 \itemsep 10pt
 \parsep 0pt
 
-\item[{\bf Zmatrix}] ({\it data block}): 
-\index{Zmatrix@{\bf Zmatrix}} 
-This block provides a means for inputting the system geometry using a Z-matrix
-format, as well as controlling the optimization variables. This is particularly
-useful when working with molecular systems or restricted optimizations (such
-as locating transition states or rigid unit movements). The format also
-allows for hybrid use of Z-matrices and Cartesian or fractional blocks, as
-is convenient for the study of a molecule on a surface.
-As is always the case for a Z-matrix, the responsibility falls to the user to
-chose a sensible relationship between the variables to avoid triads of atoms
-that become linear. 
+\item[{\bf Zmatrix}] ({\it data block}): \index{Zmatrix@{\bf Zmatrix}}
+  This block provides a means for inputting the system geometry using
+  a Z-matrix format, as well as controlling the optimization
+  variables. This is particularly useful when working with molecular
+  systems or restricted optimizations (such as locating transition
+  states or rigid unit movements). The format also allows for hybrid
+  use of Z-matrices and Cartesian or fractional blocks, as is
+  convenient for the study of a molecule on a surface.  As is always
+  the case for a Z-matrix, the responsibility falls to the user to
+  chose a sensible relationship between the variables to avoid triads
+  of atoms that become linear.
 
 Below is an example of a Z-matrix input for a water molecule:
 \begin{verbatim}
@@ -2109,11 +2110,11 @@ Below is an example of a Z-matrix input for a water molecule:
 
 The sections that can be used within the Zmatrix block are as follows:
 
-Firstly, all atomic positions must be specified within either a 
-``\texttt{molecule}'' block or a ``\texttt{cartesian}'' block. 
-Any atoms subject to
-constraints more complicated than ``do not change this coordinate
-of this atom'' must be specified within a ``\texttt{molecule}'' block.
+Firstly, all atomic positions must be specified within either a
+``\texttt{molecule}'' block or a ``\texttt{cartesian}'' block.  Any
+atoms subject to constraints more complicated than ``do not change
+this coordinate of this atom'' must be specified within a
+``\texttt{molecule}'' block.
 
 \item \texttt{molecule}: 
 
@@ -2121,12 +2122,14 @@ There must be one of these blocks for each independent set of
 constrained atoms within the simulation.
 
 This specifies the atoms that make up each molecule and their
-geometry. In addition, an option of ``\texttt{fractional}'' or ``\texttt{scaled}''
-may be passed, which indicates that distances are specified
-in scaled or fractional units. In the absence of such an option, the 
-distance units are taken to be the value of ``\texttt{ZM.UnitsLength}''.
+geometry. In addition, an option of ``\texttt{fractional}'' or
+``\texttt{scaled}'' may be passed, which indicates that distances are
+specified in scaled or fractional units. In the absence of such an
+option, the distance units are taken to be the value of
+``\texttt{ZM.UnitsLength}''.
  
-A line is needed for each atom in the molecule; the format of each line should be:
+A line is needed for each atom in the molecule; the format of each
+line should be:
 
 \noindent\texttt{    Nspecies i j k r a t ifr ifa ift}
 
@@ -2154,9 +2157,9 @@ first. Finally, for the third atom, the numbers take their normal
 form, but the torsional angle is defined relative to a notional atom 1
 unit in the z-direction above the atom \texttt{j}.
 
-Secondly. blocks of atoms all of which are subject to the simplest of constraints
-may be specified in one of the following three ways, according to the units used
-to specify their coordinates:
+Secondly. blocks of atoms all of which are subject to the simplest of
+constraints may be specified in one of the following three ways,
+according to the units used to specify their coordinates:
 
 
 \item \texttt{cartesian}: This section specifies a block of atoms
@@ -2302,42 +2305,6 @@ Parameter that specifies the units of angles used during Z-matrix input.
 in radians or degrees within the Z-matrix data block.
 
 {\it Default value:} {\tt rad}
-
-\item[{\bf ZM.ForceTolLength}] ({\it real force}):
-\index{ZM.ForceTolLength@{\bf ZM.ForceTolLength}}
-Parameter that controls the convergence with respect to forces on Z-matrix lengths
-
-{\it Use:} This option sets the convergence criteria for the forces that
-act on Z-matrix components with units of length.
-
-{\it Default value:} {\tt $0.00155574$ Ry/Bohr}
-
-\item[{\bf ZM.ForceTolAngle}] ({\it torque}):
-\index{ZM.ForceTolAngle@{\bf ZM.ForceTolAngle}}
-Parameter that controls the convergence with respect to forces on Z-matrix angles
-
-{\it Use:} This option sets the convergence criteria for the forces that
-act on Z-matrix components with units of angle.
-
-{\it Default value:} {\tt $0.00356549$ Ry/rad}
-
-\item[{\bf ZM.MaxDisplLength}] ({\it real length}):
-\index{ZM.MaxDisplLength@{\bf ZM.MaxDisplLength}}
-Parameter that controls the maximum change in a Z-matrix length during an 
-optimisation step.
-
-{\it Use:} This option sets the maximum displacement for a Z-matrix length
-
-{\it Default value:} {\tt 0.2 Bohr}
-
-\item[{\bf ZM.MaxDisplAngle}] ({\it real angle}):
-\index{ZM.MaxDisplAngle@{\bf ZM.MaxDisplAngle}}
-Parameter that controls the maximum change in a Z-matrix angle during an 
-optimisation step.
-
-{\it Use:} This option sets the maximum displacement for a Z-matrix angle
-
-{\it Default value:} {\tt 0.003 rad }
 
 \end{description}
 
@@ -3798,6 +3765,17 @@ get insight about bonding characteristics. See the {\tt Util/COOP}
 directory for more details. The {\bf COOP.Write} option must be
 activated to get the information needed.
 
+References:
+
+\begin{itemize}
+\item Original COOP reference:
+Hughbanks, T.; Hoffmann, R., J. Am. Chem. Soc., 1983, 105, 3528. 
+\item Original COHP reference: Dronskowski, R.; Blöchl, P. E., J. Phys. Chem., 1993, 97, 8617. 
+\item A tutorial introduction: Dronskowski, R. Computational Chemistry of Solid State
+Materials; Wiley-VCH: Weinheim, 2005.  
+\item Online material maintained by R. Dronskowski's group: {\tt http://www.cohp.de/}
+\end{itemize}
+
 \begin{description}
 \itemsep 10pt
 \parsep 0pt
@@ -3823,7 +3801,7 @@ single precision.
 The user can narrow the energy-range used (and save some file space)
 by using the {\bf WFS.EnergyMin} and {\bf WFS.EnergyMax} options (both take an
 energy (with units) as extra argument).
-        
+
 \end{description}
 
 
@@ -5340,8 +5318,15 @@ shortly.
 \vspace{5pt}
 \section{STRUCTURAL RELAXATION, PHONONS, AND MOLECULAR DYNAMICS}
 
+This functionality is not {\sc Siesta}-specific, but is implemented to
+provide a more complete simulation package. The program has an outer
+geometry loop: it computes the electronic structure (and
+thus the forces and stresses) for a given geometry, updates the
+atomic positions (and maybe the cell vectors) accordingly and moves on
+to the next cycle.
+
 Several options for MD and structural optimizations are 
-implemented, and selected by 
+implemented, selected by 
 {\bf MD.TypeOfRun} ({\it string}): 
 \index{MD.TypeOfRun@{\bf MD.TypeOfRun}} 
 
@@ -5413,7 +5398,13 @@ available dynamics option.
 
 \subsection{Structural relaxation}
 
-These are the options common to all relaxation methods.
+In this mode of operation, the program moves the atoms (and optionally
+the cell vectors) trying to minimize the forces (and stresses) on
+them. 
+
+These are the options common to all relaxation methods. If the Zmatrix
+input option is in effect (see Sec.~\ref{sec:zmatrix}) the
+Zmatrix-specific options take precedence.
 
 \begin{description}
 \item[{\bf MD.VariableCell}] ({\it logical}):
@@ -5531,6 +5522,41 @@ Md.VariableCell is {\tt .true.}
    
 {\it Default value:} {\tt 5.0 Ang}
 
+\item[{\bf ZM.ForceTolLength}] ({\it real force}):
+\index{ZM.ForceTolLength@{\bf ZM.ForceTolLength}}
+Parameter that controls the convergence with respect to forces on Z-matrix lengths
+
+{\it Use:} This option sets the convergence criteria for the forces that
+act on Z-matrix components with units of length.
+
+{\it Default value:} {\tt $0.00155574$ Ry/Bohr}
+
+\item[{\bf ZM.ForceTolAngle}] ({\it torque}):
+\index{ZM.ForceTolAngle@{\bf ZM.ForceTolAngle}}
+Parameter that controls the convergence with respect to forces on Z-matrix angles
+
+{\it Use:} This option sets the convergence criteria for the forces that
+act on Z-matrix components with units of angle.
+
+{\it Default value:} {\tt $0.00356549$ Ry/rad}
+
+\item[{\bf ZM.MaxDisplLength}] ({\it real length}):
+\index{ZM.MaxDisplLength@{\bf ZM.MaxDisplLength}}
+Parameter that controls the maximum change in a Z-matrix length during an 
+optimisation step.
+
+{\it Use:} This option sets the maximum displacement for a Z-matrix length
+
+{\it Default value:} {\tt 0.2 Bohr}
+
+\item[{\bf ZM.MaxDisplAngle}] ({\it real angle}):
+\index{ZM.MaxDisplAngle@{\bf ZM.MaxDisplAngle}}
+Parameter that controls the maximum change in a Z-matrix angle during an 
+optimisation step.
+
+{\it Use:} This option sets the maximum displacement for a Z-matrix angle
+
+{\it Default value:} {\tt 0.003 rad }
 
 \end{description}
 
@@ -5606,8 +5632,12 @@ Ry for energies). The default value seems to work well for most systems.
 
 \subsubsection{Quenched MD and FIRE relaxation}
 
-These options are really within the domain of molecular dynamics, but
+These methods are really within the domain of molecular dynamics, but
 are used for structural relaxation.
+Note that the Zmatrix input option (see Sec.~\ref{sec:zmatrix}) is not
+compatible with molecular dynamics. The initial geometry can be
+specified using the Zmatrix format, but the Zmatrix generalized
+coordinates will not be updated.
 
 \begin{description}
 \item[{\bf MD.Quench}] ({\it logical}): 
@@ -5731,49 +5761,20 @@ The corrected Voigt form is also printed.
 {\it Default value:} {\tt .false.}
 \end{description}
 
-\subsection{Phonon calculations}
-\begin{description}
-\item[{\bf MD.FCDispl}] ({\it real length}): 
-\index{MD.FCDispl@{\bf MD.FCDispl}} 
-Displacement to use for the computation of the force constant
-matrix\index{Force Constants Matrix} for phonon calculations.
-
-{\it Use:} Used only if {\bf MD.TypeOfRun} = {\tt FC}.
-
-{\it Default value:}  {\tt 0.04 Bohr}
-
-\item[{\bf MD.FCfirst}] ({\it integer}): 
-\index{MD.FCfirst@{\bf MD.FCfirst}} 
-Index of first atom to displace for the computation of the force constant
-matrix\index{Force Constants Matrix} for phonon calculations.
-
-{\it Use:} Used only if {\bf MD.TypeOfRun} = {\tt FC}.
-
-{\it Default value:}  {\tt 1}
-
-\item[{\bf MD.FClast}] ({\it integer}): 
-\index{MD.FClast@{\bf MD.FClast}} 
-Index of last atom to displace for the computation of the force constant
-matrix\index{Force Constants Matrix} for phonon calculations.
-
-{\it Use:} Used only if {\bf MD.TypeOfRun} = {\tt FC}.
-\end{description}
-
-\subsection{Force Constant Matrix file}
-\index{output!molecular dynamics!Force Constants Matrix}
-
-The force constants matrix is written in file {\it SystemLabel}.{\tt FC}.
-The format is the following: for the displacement of
-each atom in each direction, the forces on each of the other
-atoms is writen (divided by the value of the displacement),
-in units of eV/\AA$^2$. Each line has the forces in the $x$, $y$
-and $z$ direction for one of the atoms.
-
 
 
 \subsection{Molecular dynamics}
-\begin{description}
 
+In this mode of operation, the program moves the atoms (and optionally
+the cell vectors) in response to the forces (and stresses), using the
+classical equations of motion.
+
+Note that the Zmatrix input option (see Sec.~\ref{sec:zmatrix}) is not
+compatible with molecular dynamics. The initial geometry can be
+specified using the Zmatrix format, but the Zmatrix generalized
+coordinates will not be updated.
+
+\begin{description}
 \item[{\bf MD.InitialTimeStep}] ({\it integer}): 
 \index{MD.InitialTimeStep@{\bf MD.InitialTimeStep}} 
 Initial time step of the MD simulation.
@@ -6021,6 +6022,11 @@ create custom-made MD scripts.
 
 
 \subsection{Use of general constraints}
+
+{\bf Note:} The Zmatrix format (see Sec.~\ref{sec:zmatrix}) provides
+an alternative constraint formulation which can be useful for system
+involving molecules.
+
 \begin{description}
 \itemsep 10pt
 \parsep 0pt
@@ -6137,10 +6143,43 @@ constrained magnitude, unless the displacement steps are very small.
 
 \end{description}
 
+\subsection{Phonon calculations}
+\begin{description}
+\item[{\bf MD.FCDispl}] ({\it real length}): 
+\index{MD.FCDispl@{\bf MD.FCDispl}} 
+Displacement to use for the computation of the force constant
+matrix\index{Force Constants Matrix} for phonon calculations.
 
-\section{SPECIALIZED OPTIONS}
+{\it Use:} Used only if {\bf MD.TypeOfRun} = {\tt FC}.
 
-\subsection{Interface to the PHONON program}
+{\it Default value:}  {\tt 0.04 Bohr}
+
+\item[{\bf MD.FCfirst}] ({\it integer}): 
+\index{MD.FCfirst@{\bf MD.FCfirst}} 
+Index of first atom to displace for the computation of the force constant
+matrix\index{Force Constants Matrix} for phonon calculations.
+
+{\it Use:} Used only if {\bf MD.TypeOfRun} = {\tt FC}.
+
+{\it Default value:}  {\tt 1}
+
+\item[{\bf MD.FClast}] ({\it integer}): 
+\index{MD.FClast@{\bf MD.FClast}} 
+Index of last atom to displace for the computation of the force constant
+matrix\index{Force Constants Matrix} for phonon calculations.
+
+{\it Use:} Used only if {\bf MD.TypeOfRun} = {\tt FC}.
+\end{description}
+
+\index{output!molecular dynamics!Force Constants Matrix}
+The force constants matrix is written in file {\it SystemLabel}.{\tt FC}.
+The format is the following: for the displacement of
+each atom in each direction, the forces on each of the other
+atoms is writen (divided by the value of the displacement),
+in units of eV/\AA$^2$. Each line has the forces in the $x$, $y$
+and $z$ direction for one of the atoms.
+
+\subsection{Interface to the {\sc PHONON} program}
 \label{sec:phonon-interface}
 
 The interface was prepared for an earlier version of {\sc Siesta}, but
@@ -6149,7 +6188,7 @@ use the program. We would appreciate help with testing and improving
 this interface. Alternatively, a script driving Siesta can be written
 instead. See {\tt Util/Scripting} )
 
-Here are the relevant options, relevant when {\bf MD.TypeOfRun}={\tt Phonon}.
+Here are the relevant options, active when {\bf MD.TypeOfRun}={\tt Phonon}.
 
 \begin{description}
 \itemsep 10pt
@@ -6214,8 +6253,6 @@ following: Comment line, cell vectors in {\AA}, and for each
 displacement: atom displaced and its coordinates plus fractional
 displacement, cartesian components of forces on all the atoms in units
 of eV/\AA. 
-
-
 
 
 \section{TRANSIESTA}
