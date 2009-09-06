@@ -1,24 +1,25 @@
 .SUFFIXES: 
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
+SIESTA_OBJS= alloc.o bessph.o cellsubs.o  \
+             chkgmx.o fft1d.o  flib_spline.o  \
+             m_filter.o minvec.o m_io.o moreParallelSubs.o \
+             m_recipes.o m_timer.o m_walltime.o parallel.o \
+	     precision.o radfft.o sorting.o sys.o 
+
+LOCAL_OBJS= atomxc.o cellxc.o debugxc.o ggaxc.o ldaxc.o \
+            siestaxc.o vdwxc.o xcmod.o fft3d.o fftr.o \
+            mesh1d.o mesh3d.o
+
 module:  libSiestaXC.a
-include ../arch.make
 #
-OBJFILES= alloc.o atomxc.o bessph.o cellsubs.o cellxc.o chkgmx.o \
-          debugxc.o fft1d.o fft3d.o fftr.o flib_spline.o \
-          ggaxc.o ldaxc.o mesh1d.o mesh3d.o minvec.o moreParallelSubs.o \
-          m_filter.o m_io.o m_recipes.o m_timer.o m_walltime.o \
-          parallel.o precision.o radfft.o siestaxc.o sorting.o sys.o \
-          vdwxc.o xcmod.o
+OBJFILES=$(SIESTA_OBJS) $(LOCAL_OBJS)
 #
-libSiestaXC.a: $(OBJFILES)
+libSiestaXC.a: $(SIESTA_OBJS) $(LOCAL_OBJS)
 	ar $(ARFLAGS_EXTRA) cru libSiestaXC.a $(OBJFILES)
 	-$(RANLIB) libSiestaXC.a
 	cp libSiestaXC.a ..
 	@cp -p *.*d ..
-	@echo "siestaXC/work.pc" >> ../work.pcl
-#
-#         (Note trick for Intel Fortran Compiler)
 #
 clean:
 	rm -f *.o *.*d *.a
