@@ -1,4 +1,39 @@
 ------------------------------------------------------------------
+2009-09-07  23:15:00 GMT+2	Alberto Garcia	siesta-2.6.32-vdw-25-273
+
+Population of Src/SiestaXC directory. Working serial makefile
+
+(documents also previous patch)
+
+Some routines, used only in SiestaXC, have been moved from Src
+to Src/SiestaXC.
+
+The makefile has been updated to comply more or less with the
+standard Siesta usage (serial only so far, for a proof of concept
+of the library approach).
+
+Src/Makefile has been modified to remove the SiestaXC objects, and
+to build and use libSiestaXC.a
+
+Src/fft.F: Array sections of the type a(low:) cannot be used if arrays
+are assumed size.
+
+renamed:
+  Src/atomxc.f90 => Src/SiestaXC/atomxc.f90
+  Src/cellxc.f90 => Src/SiestaXC/cellxc.f90
+  Src/debugxc.f90 => Src/SiestaXC/debugxc.f90
+  Src/fftr.f90 => Src/SiestaXC/fftr.f90
+  Src/ggaxc.f => Src/SiestaXC/ggaxc.f
+  Src/ldaxc.f => Src/SiestaXC/ldaxc.f
+  Src/mesh1d.f90 => Src/SiestaXC/mesh1d.f90
+  Src/mesh3d.F90 => Src/SiestaXC/mesh3d.F90
+  Src/siestaxc.f90 => Src/SiestaXC/siestaxc.f90
+  Src/vdwxc.f90 => Src/SiestaXC/vdwxc.f90
+  Src/xcmod.f90 => Src/SiestaXC/xcmod.f90
+modified:
+  Src/Makefile
+  Src/SiestaXC/makefile
+  Src/fft.F
 
 2009-09-04  20:00:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-23-271
 

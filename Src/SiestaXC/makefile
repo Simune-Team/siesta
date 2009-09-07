@@ -1,5 +1,13 @@
-.SUFFIXES: 
+OBJDIR=Obj
+#
+.SUFFIXES:
 .SUFFIXES: .f .F .o .a  .f90 .F90
+#
+include ../../$(OBJDIR)/arch.make
+#
+VPATH:=$(VPATH_ROOT)/SiestaXC:$(VPATH_ROOT)
+#
+default: libSiestaXC.a
 #
 SIESTA_OBJS= alloc.o bessph.o cellsubs.o  \
              chkgmx.o fft1d.o  flib_spline.o  \
@@ -8,18 +16,17 @@ SIESTA_OBJS= alloc.o bessph.o cellsubs.o  \
 	     precision.o radfft.o sorting.o sys.o 
 
 LOCAL_OBJS= atomxc.o cellxc.o debugxc.o ggaxc.o ldaxc.o \
-            siestaxc.o vdwxc.o xcmod.o fft3d.o fftr.o \
-            mesh1d.o mesh3d.o
+            siestaxc.o vdwxc.o xcmod.o  fftr.o \
+            mesh1d.o mesh3d.o 
 
 module:  libSiestaXC.a
+	cp *.mod *.a ..
 #
-OBJFILES=$(SIESTA_OBJS) $(LOCAL_OBJS)
+ALL_FILES=$(SIESTA_OBJS) $(LOCAL_OBJS)
 #
-libSiestaXC.a: $(SIESTA_OBJS) $(LOCAL_OBJS)
-	ar $(ARFLAGS_EXTRA) cru libSiestaXC.a $(OBJFILES)
+libSiestaXC.a: $(ALL_FILES)
+	ar $(ARFLAGS_EXTRA) cru libSiestaXC.a $(ALL_FILES)
 	-$(RANLIB) libSiestaXC.a
-	cp libSiestaXC.a ..
-	@cp -p *.*d ..
 #
 clean:
 	rm -f *.o *.*d *.a
@@ -53,13 +60,4 @@ sys.o: parallel.o
 vdwxc.o: debugxc.o flib_spline.o ldaxc.o m_recipes.o mesh1d.o precision.o
 vdwxc.o: radfft.o
 xcmod.o: precision.o sys.o
-m_atomxc.mod: atomxc.o
-m_bessph.mod: bessph.o
-m_cellxc.mod: cellxc.o
-m_chkgmx.mod: chkgmx.o
-m_fft3d.mod: fft3d.o
-m_ggaxc.mod: ggaxc.o
-m_ldaxc.mod: ldaxc.o
-m_minvec.mod: minvec.o
-m_radfft.mod: radfft.o
-m_vdwxc.mod: vdwxc.o
+

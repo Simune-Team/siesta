@@ -269,13 +269,13 @@ C  FFT in Y direction
 C
       do i=0,n3-1
          IOffSet=2*n1*n2*i
-         call gpfa(f(IOffSet+1:),f(IOffSet+2:),trigs(:,2),
+         call gpfa(f(IOffSet+1),f(IOffSet+2),trigs(:,2),
      .             2*n1,2,n2,n1,-isn)
       enddo
 C
 C  FFT in Z direction
 C
-      call gpfa(f,f(2:),trigs(:,3),2*n1*n2,2,n3,n1*n2,-isn)
+      call gpfa(f,f(2),trigs(:,3),2*n1*n2,2,n3,n1*n2,-isn)
 #endif
 
 C

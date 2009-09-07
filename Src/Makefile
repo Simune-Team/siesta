@@ -62,7 +62,8 @@ OBJS =  automatic_cell.o atom_options.o \
         arw.o  atomlwf.o bands.o basis_enthalpy.o bessph.o bonds.o \
         born_charge.o cgwf.o chkdim.o chkgmx.o \
 	chempot.o coceri.o constr.o coxmol.o cross.o compute_norm.o \
-	denmat.o denmatlomem.o detover.o dfscf.o dhscf.o diagon.o digcel.o fft3d.o \
+	denmat.o denmatlomem.o detover.o dfscf.o dhscf.o diagon.o digcel.o \
+        fft.o  fft3d.o \
 	diagg.o diagk.o diagk_file.o diagkp.o diag2g.o diag2k.o diagpol.o \
 	diagsprl.o dipole.o dismin.o dnaefs.o dot.o  \
 	efield.o egandd.o ener3.o ener3lomem.o extrapolon.o \
@@ -95,7 +96,7 @@ OBJS =  automatic_cell.o atom_options.o \
         initparallel.o show_distribution.o setspatial.o setatomnodes.o uncell.o \
         cart2frac.o obc.o \
         precision.o sys.o m_cell.o files.o \
-        spatial.o parallel.o parallelsubs.o  parsing.o chemical.o xcmod.o atom.o atmparams.o \
+        spatial.o parallel.o parallelsubs.o  parsing.o chemical.o  atom.o atmparams.o \
         m_mpi_utils.o m_fdf_global.o m_history.o m_iorho.o  \
         atmfuncs.o listsc.o memoryinfo.o m_memory.o sorting.o \
         atomlist.o atm_types.o old_atmfuncs.o radial.o \
@@ -113,25 +114,12 @@ OBJS =  automatic_cell.o atom_options.o \
        get_target_stress.o fire_optim.o zm_fire_optim.o \
        cell_fire_optim.o m_fire_para.o m_fire_mixing.o write_raw_efs.o \
        m_iodm.o m_sparse.o  kpoint_pdos.o \
-	atomxc.o \
-	debugxc.o \
-        cellsubs.o \
-        cellxc.o \
-	fft.o \
-	fft1d.o \
-	fftr.o \
-	ggaxc.o \
-	ldaxc.o \
 	m_filter.o \
         m_io.o \
 	m_recipes.o \
 	m_timer.o \
-	mesh1d.o \
-	mesh3d.o \
 	moreParallelSubs.o \
 	read_xc_info.o \
-	siestaxc.o \
-	vdwxc.o 
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -180,6 +168,14 @@ state_init.o struct_init.o write_subs.o xml.o: $(FoX_built)
 XMLPARSER=libxmlparser.a
 $(XMLPARSER): 
 	(cd xmlparser ; $(MAKE) "VPATH=$(VPATH)/xmlparser" module)
+#
+# Routines using xmlparser calls.
+#
+######  somefile.o : $(WXML)
+#--------------------------------------------------------------
+XC=libSiestaXC.a
+$(XC): 
+	(cd SiestaXC ; $(MAKE) "VPATH_ROOT=$(VPATH)" module)
 #
 # Routines using xmlparser calls.
 #
@@ -234,26 +230,20 @@ version: version.F90
 	#@rm -f compinfo.F90
 	@echo
 
-siesta: version $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
+siesta: version $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) $(XC)\
                 $(COMP_LIBS) $(ALL_OBJS) 
 	$(FC) -o siesta \
-	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML) $(XMLPARSER) $(MPI_INTERFACE)\
+	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML) $(XMLPARSER) $(XC) $(MPI_INTERFACE)\
                $(COMP_LIBS) $(FoX_LIBS) $(LIBS) 
 #
 #------------------------------------------------------------------------
 GEN-BASIS_OBJS=alloc.o gen-basis.o basis_types.o precision.o parallel.o \
-          parsing.o xcmod.o basis_io.o  chemical.o atm_transfer.o atm_types.o\
+          parsing.o basis_io.o  chemical.o atm_transfer.o atm_types.o\
           atmparams.o old_atmfuncs.o radial.o io.o \
 	  paste.o  flib_spline.o bessph.o  m_filter.o \
           basis_specs.o atom.o memoryinfo.o memory.o periodic_table.o\
           pseudopotential.o dot.o  atom_options.o arw.o  \
-	atomxc.o \
-	ggaxc.o \
-	ldaxc.o \
 	read_xc_info.o \
-	vdwxc.o \
-	mesh1d.o \
-	debugxc.o \
 	m_recipes.o \
           sys.o timer.o  xml.o m_walltime.o $(SYSOBJ)
 # precision must be the first one here...
