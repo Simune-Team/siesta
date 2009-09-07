@@ -40,10 +40,14 @@ C
       subroutine parallel_init()  ! Initializes Node, Nodes, and IOnode
 #ifdef MPI
       use mpi_siesta, only: MPI_Comm_World
+      logical,save:: initialized=.false.
       integer :: MPIerror
-      call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
-      call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
-      IOnode = (Node==0)
+      if (.not.initialized) then
+        call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
+        call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
+        IOnode = (Node==0)
+        initialized = .true.
+      end if
 #endif
       end subroutine parallel_init
 

@@ -181,6 +181,7 @@ MODULE m_timer
   use m_io,       only: io_assign       ! Get and reserve an available IO unit
   use m_walltime, only: wall_time       ! Wall time routine
   use moreParallelSubs, only: copyFile  ! Copies a file across nodes
+  use parallel,   only: parallel_init   ! Initialize parallel variables
 #ifdef MPI
   use mpi_siesta, only: MPI_AllGather
   use mpi_siesta, only: MPI_Bcast
@@ -282,6 +283,9 @@ subroutine print_report( prog )   ! Write a report of counted times
 
 ! Do nothing if total time is too small
   if (totalTime<minTotTime) go to 999  ! Go to exit point
+
+! Make sure that parallel variables are set
+  call parallel_init()
 
 ! Select what program's time is to be written
   if (prog=='ALL' .or. prog=='all') then  ! Write all times
@@ -726,6 +730,7 @@ subroutine timer_stop( prog )   ! Stop counting time for a program
 
 ! DEBUG
   if (.not.found) then
+    call parallel_init()  ! Make sure that myNode is defined
     if (myNode==0) then
       do jProg = 1,nProgs
         print'(a,i6,2x,a)', 'timer_stop: iProg, prog =', &

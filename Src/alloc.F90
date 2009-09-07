@@ -198,6 +198,7 @@ MODULE alloc
   use parallel,  only: Node      ! My processor node index
   use parallel,  only: Nodes     ! Number of parallel processors
   use parallel,  only: ionode    ! Am I the I/O processor?
+  use parallel,  only: parallel_init  ! Initialize parallel variables
   use sys,       only: die       ! Termination routine
   use m_io,      only: io_assign ! Get and reserve an available IO unit
 #ifdef MPI
@@ -1721,14 +1722,17 @@ else
   call tree_add( t%right, name, delta_mem )
 end if
 
-if (warn_negative .and. t%mem<0._dp .and. Node==0) then
-  write(6,'(/,a,/,2a,/,a,f18.0,a)')  &
-    'WARNING: alloc-realloc-dealloc name mismatch',  &
-    '         Name: ', trim(name),                   &
-    '         Size: ', t%mem, ' Bytes'
-  if (Nodes>1) write(6,'(9x,a,i6)') 'Node:', Node
-  write(6,'(9x,a)') 'Subsequent mismatches will not be reported'
-  warn_negative = .false.  ! Print this warning only once
+if (warn_negative .and. t%mem<0._dp) then
+  call parallel_init()   ! Make sure that node and Nodes are initialized
+  if (Node==0) then
+    write(6,'(/,a,/,2a,/,a,f18.0,a)')  &
+      'WARNING: alloc-realloc-dealloc name mismatch',  &
+      '         Name: ', trim(name),                   &
+      '         Size: ', t%mem, ' Bytes'
+    if (Nodes>1) write(6,'(9x,a,i6)') 'Node:', Node
+    write(6,'(9x,a)') 'Subsequent mismatches will not be reported'
+    warn_negative = .false.  ! Print this warning only once
+  end if
 end if
 
 END SUBROUTINE tree_add
@@ -1784,6 +1788,9 @@ real(dp),allocatable:: nodeMem(:), nodePeak(:)
 #ifdef MPI
 integer           :: MPIerror
 #endif
+
+! Make sure that variables node and Nodes are initialized
+call parallel_init()
 
 ! Allocate and initialize two small arrays
 allocate( nodeMem(0:Nodes-1), nodePeak(0:Nodes-1) )
