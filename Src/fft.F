@@ -105,7 +105,7 @@ C
       integer
      .  maxmaxtrigs, ntrigs,
      .  n1, n2, n3, n2l, n3l, CMeshG(3), CMeshL(3), i, n,
-     .  ng, nmeshl, ProcessorZ, IOffSet, OldMesh(3)
+     .  nf, nft, ng, nmeshl, ProcessorZ, IOffSet, OldMesh(3)
       integer, save ::
      .  maxtrigs
       logical
@@ -142,6 +142,7 @@ C
 
       n = n1*n2l*n3l
       ng = n1*n2*n3
+      nf = 2*ng   ! size(f)
 
 C
 C  Set logical as to whether there are any locally stored points
@@ -196,7 +197,7 @@ C
 C  FFT in X direction
 C
       if (LocalPoints) then
-        call gpfa(f,f(2),trigs(:,1),2,2*n1,n1,n2l*n3l,-isn)
+        call gpfa(f,f(2:nf),trigs(:,1),2,2*n1,n1,n2l*n3l,-isn)
       endif
 #ifdef MPI
 C***********************
@@ -220,9 +221,10 @@ C
 C  FFT in Y direction
 C
       if (LocalPoints) then
+        nft = size(ft)
         do i=0,n3l-1
           IOffSet=2*n1lf*n2*i
-          call gpfa(ft(IOffSet+1:),ft(IOffSet+2:),trigs(:,2),
+          call gpfa(ft(IOffSet+1:nft),ft(IOffSet+2:nft),trigs(:,2),
      .            2*n1lf,2,n2,n1lf,-isn)
         enddo
       endif
@@ -253,7 +255,8 @@ C
 C  FFT in Z direction
 C
       if (LocalPoints) then
-        call gpfa(ft,ft(2:),trigs(:,3),2*n1lf*n2l,2,n3,n1lf*n2l,-isn)
+        nft = size(ft)
+        call gpfa(ft,ft(2:nft),trigs(:,3),2*n1lf*n2l,2,n3,n1lf*n2l,-isn)
       endif
 C
 C  Redistribute data to be distributed by Z again
@@ -269,13 +272,13 @@ C  FFT in Y direction
 C
       do i=0,n3-1
          IOffSet=2*n1*n2*i
-         call gpfa(f(IOffSet+1),f(IOffSet+2),trigs(:,2),
+         call gpfa(f(IOffSet+1:nf),f(IOffSet+2:nf),trigs(:,2),
      .             2*n1,2,n2,n1,-isn)
       enddo
 C
 C  FFT in Z direction
 C
-      call gpfa(f,f(2),trigs(:,3),2*n1*n2,2,n3,n1*n2,-isn)
+      call gpfa(f,f(2:nf),trigs(:,3),2*n1*n2,2,n3,n1*n2,-isn)
 #endif
 
 C

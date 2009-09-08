@@ -1,4 +1,22 @@
 ------------------------------------------------------------------
+2009-09-08  10:05:00 GMT+2	Alberto Garcia	siesta-2.6.32-vdw-26-274
+Merged changes in fft.F + parallel_init-related from JMS's branch
+
+The changes file was perfectly merged, but I added a new
+version id and log entry.
+
+modified:
+  Docs/CHANGES.VDW-branch
+  Src/SiestaXC/cellxc.f90
+  Src/SiestaXC/debugxc.f90
+  Src/alloc.F90
+  Src/fft.F
+  Src/m_timer.F90
+  Src/parallel.F
+  version.info
+
+
+------------------------------------------------------------------
 2009-09-07  23:15:00 GMT+2	Alberto Garcia	siesta-2.6.32-vdw-25-273
 
 Population of Src/SiestaXC directory. Working serial makefile
@@ -34,6 +52,26 @@ modified:
   Src/Makefile
   Src/SiestaXC/makefile
   Src/fft.F
+
+2009-09-07  11:00:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-24-272
+
+Summary: Added calls to parallel_init
+Keywords: parallel_init
+
+For non-siesta users of libSiestaXC, calls to parallel_init have been added
+in all its entry points, to make sure that node and Nodes are initialized.
+Unrelated to this, upper array bounds have been added in calls to gpfa,
+to avoid complaint by gfortran.
+
+modified:
+  Src/alloc.F90     ! Added calls to parallel_init
+  Src/cellxc.f90    ! Call to parallel_init made unconditional
+  Src/debugxc.f90   ! Added calls to parallel_init
+  Src/fft.F         ! Upper array bounds added in calls to gpfa
+  Src/m_timer.F90   ! Added calls to parallel_init
+  Src/parallel.F    ! Re-initialization avoided
+
+------------------------------------------------------------------
 
 2009-09-04  20:00:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-23-271
 

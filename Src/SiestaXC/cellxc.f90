@@ -333,8 +333,6 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
      myTime=1,     &! CPU time in this routine and processor in last iteration
      timeAvge=1,   &! Average over processors of CPU time
      timeDisp=huge(timeDisp)  ! Dispersion over processors of CPU time
-  logical,save::   &
-     parallelInitialized=.false. ! Has module parallel been initialized?
 
   ! Internal pointers for dynamical allocation
   real(dp), pointer:: &
@@ -394,11 +392,8 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   real(dp):: GDtot(3), q, dqdD, dqdGD(3)
 ! END DEBUG
 
-  ! Initialize variables in parallel module
-  if (.not.parallelInitialized) then
-    call parallel_init()
-    parallelInitialized = .true.
-  end if
+  ! Make sure that variables in parallel module are set
+  call parallel_init()
 
   ! Start time counter
   call timer_start( myName )

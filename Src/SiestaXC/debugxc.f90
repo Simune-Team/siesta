@@ -4,10 +4,11 @@ MODULE debugXC
 
 ! Initializes output files for debug info. J.M.Soler. Jan'2008
 
-USE parallel,         only: node, Nodes  ! This node number, Number of nodes
-USE moreParallelSubs, only: nodeString   ! Returns a string with a node number
-USE moreParallelSubs, only: copyFile     ! Copies a file to another node
-USE m_io,             only: io_assign    ! Get and reserve an available IO unit
+USE parallel,         only: node, Nodes   ! This node number, Number of nodes
+USE parallel,         only: parallel_init ! Initializes parallel variables
+USE moreParallelSubs, only: nodeString    ! Returns a string with a node number
+USE moreParallelSubs, only: copyFile      ! Copies a file to another node
+USE m_io,             only: io_assign     ! Get and reserve an available IO unit
 
   implicit none
 
@@ -38,6 +39,9 @@ subroutine setDebugOutputUnit()
   ! Set output file name, except node number, and find its name length
   fileName = filePrefix
 
+  ! Make sure that node and Nodes are set
+  call parallel_init()
+
   ! Append node number to file name
   if (Nodes>1) fileName = filePrefix//nodeString()
 
@@ -63,8 +67,11 @@ subroutine closeDebugOutputFile()
 
   close( unit=udebug )
 
-! Copy all debug.out* files to root node. Notice that in each call to
-! copyFile, only node iNode will actually send its file to node=0
+  ! Make sure that node and Nodes are set
+  call parallel_init()
+
+  ! Copy all debug.out* files to root node. Notice that in each call to
+  ! copyFile, only node iNode will actually send its file to node=0
   do iNode = 1,Nodes-1
     nodeFileName = filePrefix//nodeString(iNode)
     call copyFile( srcNode=iNode, srcFile=nodeFileName, &
