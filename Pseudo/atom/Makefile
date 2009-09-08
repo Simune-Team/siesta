@@ -12,10 +12,6 @@ default: atm
 #  you might want to change this. (If you do not understand this, you do not
 #  need to change anything. Power users can do "make OBJDIR=Whatever".)
 #
-#  If your main Siesta build used an mpi compiler, you might need to
-#  define an FC_SERIAL symbol in your top arch.make, to avoid linking
-#  in the mpi libraries even if we explicitly undefine MPI below.
-#
 OBJDIR=Obj
 #
 #
@@ -25,9 +21,17 @@ include $(ARCH_MAKE)
 # This is needed on some systems to avoid loading the parallel libraries, which
 # sometimes force running on queuing systems
 #
+#  If your main Siesta build used an mpi compiler, you might need to
+#  define an FC_SERIAL symbol in your top arch.make, to avoid linking
+#  in the mpi libraries even if we explicitly undefine MPI below.
+#
 FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
+#
+# We support both DEFS and FPPFLAGS (crazy -- deprecate DEFS soon)
+DEFS:=$(DEFS_PREFIX)-UMPI $(DEFS) $(DEFS_PREFIX)-UMPI 
+FPPFLAGS:=$(DEFS_PREFIX)-UMPI $(FPPFLAGS) $(DEFS_PREFIX)-UMPI 
 #
 #----------------------------------------------$$$$$
 # EDIT the following lines to suit your system
@@ -89,6 +93,8 @@ $(XC):
                           "FC=$(FC)" "VPATH_ROOT=$(TOP_LEVEL)" \
                           "ARCH_MAKE=../$(ARCH_MAKE)" \
                           "INCFLAGS=$(XC_INCFLAGS)" \
+                          "DEFS=$(DEFS)" \
+                          "FPPFLAGS=$(FPPFLAGS)" \
                           "FFLAGS=$(FFLAGS)"  module )
 #
 #

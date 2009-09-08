@@ -1,14 +1,17 @@
-OBJDIR=Obj
 #
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
-ARCH_MAKE?=../../$(OBJDIR)/arch.make
+ARCH_MAKE_DEFAULT=../arch.make
+ARCH_MAKE?=$(ARCH_MAKE_DEFAULT)
 include $(ARCH_MAKE)
 #
+# Use first sources here, then in the top level
 VPATH:=$(VPATH_ROOT)/SiestaXC:$(VPATH_ROOT)
 #
-default: libSiestaXC.a
+default: module
+module:  libSiestaXC.a
+	cp siestaxc.mod *.a ..
 #
 SIESTA_OBJS= alloc.o bessph.o cellsubs.o  \
              chkgmx.o fft1d.o  flib_spline.o  \
@@ -19,9 +22,6 @@ SIESTA_OBJS= alloc.o bessph.o cellsubs.o  \
 LOCAL_OBJS= atomxc.o cellxc.o debugxc.o ggaxc.o ldaxc.o \
             siestaxc.o vdwxc.o xcmod.o  fft3d.o fftr.o \
             mesh1d.o 
-
-module:  libSiestaXC.a
-	cp *.mod *.a ..
 #
 ALL_FILES=$(SIESTA_OBJS) $(LOCAL_OBJS)
 #

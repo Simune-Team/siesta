@@ -175,7 +175,10 @@ $(XMLPARSER):
 #--------------------------------------------------------------
 XC=libSiestaXC.a
 $(XC): 
-	(cd SiestaXC ; $(MAKE) "VPATH_ROOT=$(VPATH)" module)
+	(cd SiestaXC ; $(MAKE) \
+                    "VPATH_ROOT=$(VPATH)"  \
+	            "INCFLAGS=-I../MPI" \
+                    "FFLAGS=$(FFLAGS)"  module )
 #
 # Routines using xmlparser calls.
 #
@@ -334,6 +337,7 @@ clean:
 	(cd xmlparser ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
 	(cd Libs ; $(MAKE) clean )
+	(cd SiestaXC ; $(MAKE) clean )
 #
 ##pristine:  clean
 ##	cp -fp Include/constr.f .
