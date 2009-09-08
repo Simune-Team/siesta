@@ -1,10 +1,11 @@
 c
       subroutine velect(iter,iconv,id,zelec)
 c
-      use precision, only: dp
-      use xcmod, only: setxc
+      use siestaXC, only: atomXC, setXC
 
       implicit none
+
+      integer, parameter :: dp = selected_real_kind(14,100)
 c
       include 'radial.h'
       include 'orbital.h'
