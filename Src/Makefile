@@ -49,6 +49,8 @@ include arch.make
 #
 ##FFLAGS=$(FFLAGS_DEBUG)
 #
+.PHONY: .siesta .transiesta what version
+#
 what:
 	@echo
 	@if [ "$(VPATH)" == . ]; then \
@@ -222,8 +224,16 @@ version: version.F90
 	@mv compinfo.o version.o
 	#@rm -f compinfo.F90
 	@echo
-
-siesta: version $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
+#
+check-siesta:
+	@if [ -f .transiesta ]; then \
+              echo "** You were building transiesta in this directory." ;\
+              echo "** Please type 'make clean' first " ;\
+              false ;\
+	fi
+	@touch .siesta
+#
+siesta: check-siesta what version $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
                 $(COMP_LIBS) $(ALL_OBJS) 
 	$(FC) -o siesta \
 	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML) $(XMLPARSER) $(MPI_INTERFACE)\
@@ -237,16 +247,29 @@ TS_OBJS= m_ts_options.o m_ts_aux_rout.o m_ts_kpoints.o \
          m_ts_io.o m_ts_scattering.o m_ts_contour.o m_ts_electrode.o \
          m_ts_in_siesta.o
 #
-transiesta: what version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
+transiesta: FPPFLAGS+=$(DEFS_PREFIX)-DTRANSIESTA 
+transiesta: DEFS+=$(DEFS_PREFIX)-DTRANSIESTA
+check-ts:
+	@if [ -f .siesta ]; then \
+              echo "** You were building plain siesta in this directory." ;\
+              echo "** Please type 'make clean' first" ;\
+              false ;\
+	fi
+	@touch .transiesta
+#
+#
+transiesta: check-ts what version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF)  \
                     $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
 	$(FC) -o transiesta \
-               $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(WXML) $(XMLPARSER)\
-               $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(COMP_LIBS) $(FoX_LIBS) $(LIBS)
+               $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) \
+               $(MPI_INTERFACE) $(NETCDF_INTERFACE) \
+               $(COMP_LIBS) $(FoX_LIBS) $(LIBS)
 #
 #
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
-	rm -f siesta  *.o  *.a *.pcl *.pc
+	rm -f siesta transiesta *.o  *.a *.pcl *.pc
+	rm -f .siesta .transiesta
 	rm -f *.mod
 	rm -f *.bck *~
 	rm -f aux_*.f aux_*.f90
