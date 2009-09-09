@@ -2,12 +2,9 @@
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
-ARCH_MAKE_DEFAULT=../arch.make
+ARCH_MAKE_DEFAULT=lib-arch.make
 ARCH_MAKE?=$(ARCH_MAKE_DEFAULT)
 include $(ARCH_MAKE)
-#
-# Use first sources here, then in the top level
-VPATH:=$(VPATH_ROOT)/SiestaXC:$(VPATH_ROOT)
 #
 default: module
 module:  libSiestaXC.a
@@ -23,8 +20,6 @@ SIESTA_OBJS:= $(SIESTA_OBJS:.F=.o)
 SIESTA_OBJS:= $(SIESTA_OBJS:.f90=.o)
 SIESTA_OBJS:= $(SIESTA_OBJS:.F90=.o)
 #
-SIESTA_SOURCES:=$(addprefix ../, $(SIESTA_SRCS))
-
 LOCAL_SRCS= atomxc.f90 cellxc.f90 debugxc.f90 ggaxc.f ldaxc.f \
             siestaxc.f90 vdwxc.f90 xcmod.f90  fft3d.f90 fftr.f90 \
             mesh1d.f90 mesh3d.F90
@@ -34,26 +29,18 @@ LOCAL_OBJS:= $(LOCAL_OBJS:.f90=.o)
 LOCAL_OBJS:= $(LOCAL_OBJS:.F90=.o)
 #
 ALL_OBJS=$(SIESTA_OBJS) $(LOCAL_OBJS)
-ALL_SOURCES=$(SIESTA_SOURCES) $(LOCAL_SRCS)
 #
-libSiestaXC.a: $(ALL_OBJS)
-	ar $(ARFLAGS_EXTRA) cru libSiestaXC.a $(ALL_OBJS)
+libmpi_f90.a: 
+	@(cd MPI ; $(MAKE) )
+#
+libSiestaXC.a: $(MPI_INTERFACE) $(ALL_OBJS)
+	ar $(ARFLAGS_EXTRA) cru libSiestaXC.a $(ALL_OBJS) MPI/*.o
 	-$(RANLIB) libSiestaXC.a
-#
-OTHER_FILES=lib-makefile lib-arch.make mpi-makefile
-#
-.PHONY: dist
-dist: siestaXC-dist
-siestaXC-dist: $(ALL_SOURCES) $(OTHER_FILES) 
-	mkdir -p siestaXC-dist
-	cp -fp $(ALL_SOURCES) siestaXC-dist
-	cp -fp lib-makefile siestaXC-dist/makefile
-	cp -fp lib-arch.make siestaXC-dist
-	cp -frp ../MPI siestaXC-dist
-	cp -fp mpi-makefile siestaXC-dist/MPI/Makefile
 #
 clean:
 	rm -f *.o *.*d *.a
+	(cd MPI ; $(MAKE) clean)
+
 # DO NOT DELETE THIS LINE - used by make depend
 alloc.o: m_io.o parallel.o precision.o sys.o
 atomxc.o: alloc.o ggaxc.o ldaxc.o m_filter.o mesh1d.o precision.o radfft.o
