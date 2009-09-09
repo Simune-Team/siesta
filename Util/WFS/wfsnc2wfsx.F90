@@ -11,7 +11,11 @@
 
 
         program wfsnc2wfsx
-        use netcdf
+#ifndef CDF
+        print *, "netCDF not enabled"
+#else
+    
+    use netcdf
 
 !
 !       Converts  a WFS.nc file (new_diagk intermediate file) to a WFSX file 
@@ -151,6 +155,6 @@ if (code /= nf90_noerr) then
   STOP
 endif
 end subroutine check
-
+#endif
       end program wfsnc2wfsx
 
