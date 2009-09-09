@@ -29,25 +29,25 @@ RANLIB=echo
 NETCDF_ROOT=$(HOME)/lib/netcdf-3.6.2-ifort
 INCFLAGS=-I$(NETCDF_ROOT)/include
 NETCDF_LIBS= -L$(NETCDF_ROOT)/lib -lnetcdf
-DEFS_CDF= -DCDF
+FPPFLAGS_CDF= -DCDF
 #
 MPI_INTERFACE=
 MPI_INCLUDE=
-DEFS_MPI=
+FPPFLAGS_MPI=
 #
 GUIDE=/opt/intel/mkl/8.0.1/lib/32/libguide.a
 LAPACK=/opt/intel/mkl/8.0.1/lib/32/libmkl_lapack.a
 BLAS=/opt/intel/mkl/8.0.1/lib/32/libmkl_ia32.a
 LIBS=$(LAPACK) $(BLAS)  $(GUIDE) $(EXTRA_LIBS) $(NETCDF_LIBS)
 SYS=nag
-DEFS= $(DEFS_CDF) $(DEFS_MPI)
+FPPFLAGS= $(FPPFLAGS_CDF) $(FPPFLAGS_MPI)
 #
 .F.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 .F90.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f90.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 #

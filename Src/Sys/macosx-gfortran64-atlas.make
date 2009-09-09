@@ -27,7 +27,7 @@ SYS=nag
 #NETCDF_ROOT=$(HOME)/lib/netcdf-3.6.2-gfortran
 #INCFLAGS=-I$(NETCDF_ROOT)/include
 #
-DEFS=-DGFORTRAN  -DFC_HAVE_FLUSH -DFC_HAVE_ABORT     # Note this !!
+FPPFLAGS=-DGFORTRAN  -DFC_HAVE_FLUSH -DFC_HAVE_ABORT     # Note this !!
 COMP_LIBS=
 #
 #NETCDF_LIBS= -L$(NETCDF_ROOT)/lib -lnetcdf
@@ -44,11 +44,11 @@ LIBS= $(LAPACK) $(BLAS) $(NETCDF_LIBS)
 
 #
 .F.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 .F90.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f90.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 #

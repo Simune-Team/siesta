@@ -30,15 +30,15 @@ MPILIB=
 SYS=ibm
 RANLIB=ranlib
 MPI_INCLUDE=/usr/local/include
-DEFS=
+FPPFLAGS=
 FREE_F90=-qsuffix=f=f90 -qfree=f90
 FREE_F90_CPP=-qsuffix=cpp=F90 -qfree=f90
 #
 .F.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS) $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS) $(FPPFLAGS) $<
 .f.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS) $<
 .f90.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS) $(FREE_F90) $<
 .F90.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS) $(DEFS) $(FREE_F90_CPP) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS) $(FPPFLAGS) $(FREE_F90_CPP) $<

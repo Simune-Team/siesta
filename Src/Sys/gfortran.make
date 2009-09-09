@@ -22,15 +22,15 @@ LDFLAGS=
 RANLIB=echo
 LIBS=  
 SYS=nag
-DEFS=-DGFORTRAN -DFC_HAVE_FLUSH -DFC_HAVE_ABORT          # Note this !!
+FPPFLAGS=-DGFORTRAN -DFC_HAVE_FLUSH -DFC_HAVE_ABORT          # Note this !!
 COMP_LIBS=linalg.a
 #
 .F.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 .F90.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f90.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 #

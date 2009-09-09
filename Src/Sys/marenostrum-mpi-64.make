@@ -8,16 +8,16 @@ FFLAGS_parse=-qsuffix=f=f -qfree #-qfixed
 LDFLAGS= -q64
 COMP_LIBS=
 RANLIB=echo
-DEFS_PREFIX=-WF,
+FPPFLAGS_PREFIX=-WF,
 #
 NETCDF_LIBS=
 NETCDF_INTERFACE=
-DEFS_CDF=
+FPPFLAGS_CDF=
 #
 MPI_INTERFACE=    libmpi_f90.a
 MPI_INCLUDE=.
 MPI_LIBS=         #-lblacsgm
-DEFS_MPI=         -WF,-DMPI
+FPPFLAGS_MPI=         -WF,-DMPI
 
 
 
@@ -37,15 +37,15 @@ BLAS= -L/gpfs/apps/SCALAPACK/lib64 -lscalapack \
 ##LIBS=  $(MPITRACER) $(BLAS)
 LIBS=  $(BLAS)
 SYS=xlf
-DEFS= $(DEFS_MPI) $(DEFS_CDF)
+FPPFLAGS= $(FPPFLAGS_MPI) $(FPPFLAGS_CDF)
 FREE_F90=-qsuffix=f=f90
 #
 .F90.o:
-	$(FC) -qsuffix=cpp=F90 -c $(INCFLAGS) $(FFLAGS) $(DEFS) $<
+	$(FC) -qsuffix=cpp=F90 -c $(INCFLAGS) $(FFLAGS) $(FPPFLAGS) $<
 .f90.o:
 	$(FC) -qsuffix=f=f90 -c $(INCFLAGS) $(FFLAGS)   $<
 .F.o:
-	$(FC) -qsuffix=cpp=F -c $(INCFLAGS) -qfixed $(FFLAGS) $(DEFS) $<
+	$(FC) -qsuffix=cpp=F -c $(INCFLAGS) -qfixed $(FFLAGS) $(FPPFLAGS) $<
 .f.o:
 	$(FC) -qsuffix=f=f -qfixed -c $(INCFLAGS) $(FFLAGS)   $<
 #
