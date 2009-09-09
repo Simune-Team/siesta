@@ -43,7 +43,7 @@
       use m_ioxv, only: xv_file_read
       use m_projected_DOS, only: init_projected_DOS
       USE writewave, only: gamma_wavefunctions, setup_wf_kpoints
-      USE debugXC, only: setDebugOutputUnit
+      USE siestaXC, only: setDebugOutputUnit
       USE m_timer, only: timer_report  ! Sets options for report of CPU times
 #ifdef MPI
       use mpi_siesta, only: mpi_comm_world

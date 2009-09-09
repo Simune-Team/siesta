@@ -307,6 +307,11 @@ MODULE siestaXC
   USE debugXC,  only: setDebugOutputUnit   ! Set debug report
   USE debugXC,  only: closeDebugOutputFile ! Print debug report
   USE m_timer,  only: timer_report         ! Print CPU time report
+  USE mesh3d,  only : myMeshBox    ! Returns my processor mesh box
+  USE mesh3d,  only : setMeshDistr ! Sets a distribution of mesh
+                                   ! points over parallel processors
+  USE precision, only: siestaXC_std_p  => dp     ! Working precision
+  USE precision, only: siestaXC_grid_p => grid_p ! Precision for grid arrays
 
   PUBLIC
 

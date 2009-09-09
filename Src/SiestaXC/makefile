@@ -17,11 +17,11 @@ SIESTA_OBJS= alloc.o bessph.o cellsubs.o  \
              chkgmx.o fft1d.o  flib_spline.o  \
              m_filter.o minvec.o m_io.o moreParallelSubs.o \
              m_recipes.o m_timer.o m_walltime.o parallel.o \
-	     precision.o radfft.o sorting.o sys.o mesh3d.o
+	     precision.o radfft.o sorting.o sys.o
 
 LOCAL_OBJS= atomxc.o cellxc.o debugxc.o ggaxc.o ldaxc.o \
             siestaxc.o vdwxc.o xcmod.o  fft3d.o fftr.o \
-            mesh1d.o 
+            mesh1d.o mesh3d.o
 #
 ALL_FILES=$(SIESTA_OBJS) $(LOCAL_OBJS)
 #

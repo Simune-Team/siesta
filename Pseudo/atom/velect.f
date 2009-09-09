@@ -2,10 +2,10 @@ c
       subroutine velect(iter,iconv,id,zelec)
 c
       use siestaXC, only: atomXC, setXC
+      use siestaXC, only: dp => siestaXC_std_p
 
       implicit none
 
-      integer, parameter :: dp = selected_real_kind(14,100)
 c
       include 'radial.h'
       include 'orbital.h'
