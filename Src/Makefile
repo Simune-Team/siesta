@@ -44,6 +44,7 @@ dep:
 	@mv tmp.Makefile Makefile
 #
 include arch.make
+INCFLAGS:= $(NETCDF_INCFLAGS) $(INCFLAGS)
 #
 # Uncomment the following line for debugging support
 #

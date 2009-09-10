@@ -120,7 +120,7 @@ MPI_LIBS=
 # to set -DCDF below.
 #
 NETCDF_ROOT=/apps/netcdf/64
-INCFLAGS=-I$(NETCDF_ROOT)/include
+NETCDF_INCFLAGS=-I$(NETCDF_ROOT)/include
 NETCDF_LIBS=-L$(NETCDF_ROOT)/lib -lnetcdf
 
 #

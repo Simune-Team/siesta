@@ -32,7 +32,7 @@ COMP_LIBS=
 RANLIB=echo
 #
 NETCDF_ROOT=/share/apps/netcdf-3.6.2-ifort
-INCFLAGS=-I$(NETCDF_ROOT)/include
+NETCDF_INCFLAGS=-I$(NETCDF_ROOT)/include
 FPPFLAGS_CDF=-DCDF
 #
 MPI_INTERFACE=libmpi_f90.a

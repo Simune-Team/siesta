@@ -41,7 +41,7 @@ MKL_LIBS=$(SCALAPACK) $(LAPACK) $(BLAS)  $(GUIDE)  -lpthread
 SYS=nag
 
 NETCDF_ROOT=/opt/cesga/netcdf-3.6.2
-INCFLAGS=-I$(NETCDF_ROOT)/include
+NETCDF_INCFLAGS=-I$(NETCDF_ROOT)/include
 NETCDF_LIBS=-L$(NETCDF_ROOT)/lib -lnetcdf
 FPPFLAGS_CDF=-DCDF
 

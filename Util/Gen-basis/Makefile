@@ -37,6 +37,7 @@ FC:=$(FC_SERIAL)         # Make it non-recursive
 #
 DEFS:=$(DEFS_PREFIX)-UMPI $(DEFS) 
 FPPFLAGS:=$(DEFS_PREFIX)-UMPI $(FPPFLAGS) 
+INCFLAGS:=$(NETCDF_INCFLAGS) $(INCFLAGS)
 #
 # Uncomment the following line for debugging support
 #

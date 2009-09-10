@@ -25,7 +25,7 @@ SYS=nag
 # --- Edit the location of your netcdf files
 #
 NETCDF_ROOT=$(HOME)/lib/netcdf-3.6.2-gfortran
-INCFLAGS=-I$(NETCDF_ROOT)/include
+NETCDF_INCFLAGS=-I$(NETCDF_ROOT)/include
 #
 FPPFLAGS=-DGFORTRAN -DCDF -DFC_HAVE_FLUSH -DFC_HAVE_ABORT     # Note this !!
 COMP_LIBS=linalg.a

@@ -80,7 +80,7 @@ OBJS_STM = atompla.o  \
         redata.o  reinitstm.o stm.o \
 	vacpot.o volcel.o wrout.o 
 #
-INCFLAGS:= $(FFTW_INCFLAGS) $(INCFLAGS)
+INCFLAGS:= $(FFTW_INCFLAGS) $(NETCDF_INCFLAGS) $(INCFLAGS)
 #
 # Use the makefile in Src/fdf and all the sources there.
 #

@@ -39,6 +39,8 @@ include ../../$(OBJDIR)/arch.make
 LIBS=-L$(NETCDF_ROOT)/lib -lnetcdf
 #
 #
+INCFLAGS:= $(NETCDF_INCFLAGS) $(INCFLAGS)
+#
 dm2cdf: dm2cdf.o
 	$(FC) $(LDFLAGS) -o $@ dm2cdf.o  $(LIBS)
 #

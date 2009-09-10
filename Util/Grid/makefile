@@ -35,28 +35,28 @@ FC:=$(FC_SERIAL)         # Make it non-recursive
 # using appropriate information
 #
 # NETCDF_ROOT=/some/path
-# INCFLAGS=-I$(NETCDF_ROOT)/include
+# NETCDF_INCFLAGS=-I$(NETCDF_ROOT)/include
+# NETCDF_LIBS=-L$(NETCDF_ROOT)/lib -lnetcdf
 #
-LIBS=-L$(NETCDF_ROOT)/lib -lnetcdf
-#
+INCFLAGS:= $(NETCDF_INCFLAGS) $(INCFLAGS)
 #------------------
 grid2cdf: grid2cdf.o
-	$(FC) $(LDFLAGS) -o $@  grid2cdf.o  $(LIBS)
+	$(FC) $(LDFLAGS) -o $@  grid2cdf.o  $(NETCDF_LIBS)
 #
 cdf2grid: cdf2grid.o
-	$(FC) $(LDFLAGS) -o $@  cdf2grid.o  $(LIBS)
+	$(FC) $(LDFLAGS) -o $@  cdf2grid.o  $(NETCDF_LIBS)
 #
 cdf2xsf: cdf2xsf.o
-	$(FC) $(LDFLAGS) -o $@  cdf2xsf.o  $(LIBS)
+	$(FC) $(LDFLAGS) -o $@  cdf2xsf.o  $(NETCDF_LIBS)
 #
 cdfget: cdfget.o
-	$(FC) $(LDFLAGS) -o $@  cdfget.o  $(LIBS)
+	$(FC) $(LDFLAGS) -o $@  cdfget.o  $(NETCDF_LIBS)
 cdf_diff: m_grid.o cdf_diff.o 
-	$(FC) $(LDFLAGS) -o $@  m_grid.o cdf_diff.o  $(LIBS)
+	$(FC) $(LDFLAGS) -o $@  m_grid.o cdf_diff.o  $(NETCDF_LIBS)
 cdf_diff.o: m_grid.o
 #------------------
 cdf_fft: cdf_fft.o libfft.o
-	$(FC) $(LDFLAGS) -o $@  cdf_fft.o  libfft.o $(LIBS)
+	$(FC) $(LDFLAGS) -o $@  cdf_fft.o  libfft.o $(NETCDF_LIBS)
 #
 #------------------
 grid2val.o: f2kcli.o

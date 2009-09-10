@@ -16,7 +16,7 @@ MPI_INTERFACE=libmpi_f90.a
 FPPFLAGS_MPI=-DMPI
 #
 NETCDF_ROOT=$(HOME)/lib/netcdf-3.6.2-ifort
-INCFLAGS=-I$(NETCDF_ROOT)/include
+NETCDF_INCFLAGS=-I$(NETCDF_ROOT)/include
 FPPFLAGS_CDF=-DCDF         # Note this !!
 #
 NETCDF_LIBS= -L$(NETCDF_ROOT)/lib -lnetcdf

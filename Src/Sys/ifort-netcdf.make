@@ -27,7 +27,7 @@ COMP_LIBS=
 RANLIB=echo
 #
 NETCDF_ROOT=$(HOME)/lib/netcdf-3.6.2-ifort
-INCFLAGS=-I$(NETCDF_ROOT)/include
+NETCDF_INCFLAGS=-I$(NETCDF_ROOT)/include
 NETCDF_LIBS= -L$(NETCDF_ROOT)/lib -lnetcdf
 FPPFLAGS_CDF= -DCDF
 #
