@@ -4,7 +4,7 @@ C             the Fermi surface) from siesta KP and EIG files.
 C             The k-mesh must be generated without shift
 C             (requirement of the BXSF format).
 C
-C             Written by Andrei Postnikov, Nov 2005   Vers_0.2
+C             Written by Andrei Postnikov, Mar 2006   Vers_0.3
 C             apostnik@uos.de   
 C
       program ene2bxsf
@@ -20,10 +20,12 @@ C
       double precision,  allocatable :: relk(:,:), eneb(:,:), enek(:)
       integer,           allocatable :: ndiv(:,:),irrek(:)
       parameter (small=1.0d-04)
+      external inver3,opnout
 C
 C     string manipulation functions in Fortran used below:
 C     len_trim(string): returns the length of string 
 C                       without trailing blank characters,
+C     trim(string)    : returns the string with railing blanks removed
 C     char(integer)   : returns the character in the specified position
 C                       of computer's ASCII table, i.e. char(49)=1
 C
@@ -32,10 +34,12 @@ C
   701 format(" Specify  SystemLabel (or 'siesta' if none): ")
       read (5,*) syslab
 C --- open .XV and .EIG : 
-      inpfil = syslab(1:len_trim(syslab))//'.XV'
+C     inpfil = syslab(1:len_trim(syslab))//'.XV'
+      inpfil = trim(syslab)//'.XV'
       open (ii1,file=inpfil,form='formatted',status='old',err=801)
       write (6,*) 'Found and opened: ',inpfil
-      inpfil = syslab(1:len_trim(syslab))//'.EIG'
+C     inpfil = syslab(1:len_trim(syslab))//'.EIG'
+      inpfil = trim(syslab)//'.EIG'
       open (ii2,file=inpfil,form='formatted',status='old',err=801)
       write (6,*) 'Found and opened: ',inpfil
 C --- read Fermi energy and total number of bands from .EIG :
@@ -86,7 +90,8 @@ C --- read cell vectors from .XV, convert to Ang, find reciprocal:
       call inver3(cell,rcell)
 
 C --- open .KP as old:
-      inpfil = syslab(1:len_trim(syslab))//'.KP'
+C     inpfil = syslab(1:len_trim(syslab))//'.KP'
+      inpfil = trim(syslab)//'.KP'
       open (ii3,file=inpfil,form='formatted',status='old',err=801)
       write (6,*) 'Found and opened: ',inpfil
 C --- read k-points from the .KP file and recover their fractional
@@ -179,13 +184,14 @@ C ---   haven't try anything with inversion as well;
 C --- The writing sequence (into two BXSF files if two spins)
       do is=1,nspin
         if (nspin.eq.1) then
-          outfil = syslab(1:len_trim(syslab))//'.BXSF'
+C         outfil = syslab(1:len_trim(syslab))//'.BXSF'
+          outfil = trim(syslab)//'.BXSF'
         else
-          outfil = 
-     .    syslab(1:len_trim(syslab))//'_spin_'//char(48+is)//'.BXSF'
+C         outfil = 
+C    .    syslab(1:len_trim(syslab))//'_spin_'//char(48+is)//'.BXSF'
+          outfil = trim(syslab)//'_spin_'//char(48+is)//'.BXSF'
         endif
-        open (io1,file=outfil,form='formatted',status='new',err=802)
-        write (6,*) 'Opened as new:    ',outfil
+        call opnout(io1,outfil)
         write (io1, "(a10)") 'BEGIN_INFO'
         write (io1, "(a5)")  '  #  '
         write (io1, "(a33)") '  #  Band-XCRYSDEN-Structure-File'
@@ -193,7 +199,8 @@ C --- The writing sequence (into two BXSF files if two spins)
         write (io1, "(a16,f10.4)")  '  Fermi energy: ',efermi
         write (io1, "(a8,/)")  'END_INFO'
         write (io1, "(a23)") 'BEGIN_BLOCK_BANDGRID_3D'
-        write (io1, *)  ' ',syslab(1:len_trim(syslab))
+C       write (io1, *)  ' ',syslab(1:len_trim(syslab))
+        write (io1, *)  ' ',trim(syslab)
         write (io1, "(a19,a1)") '  BANDGRID_3D_spin_',char(48+is)
         write (io1, "(i5)")     homo(is)-lumo(is)+1  !  No. of bands 
         write (io1, "(3i5)")    mdiv(1)+1, mdiv(2)+1, mdiv(3)+1
@@ -235,10 +242,8 @@ C 205 format (1p,8e10.3)
      .        ' at ix,iy,iz=',3i4)
 
   801 write (6,*) ' Error opening file ',
-     .            inpfil(1:len_trim(inpfil)),' as old formatted'
-      stop
-  802 write (6,*) ' Error opening file ',
-     .            outfil(1:len_trim(outfil)),' as new formatted'
+C    .            inpfil(1:len_trim(inpfil)),' as old formatted'
+     .            trim(inpfil),' as old formatted'
       stop
   803 write (6,*) ' End/Error reading XV for cell vector ',ii
       stop

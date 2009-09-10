@@ -12,7 +12,7 @@ C              written by iorho.F  might be spoiled.
 C                Don't say you haven't been warned.
 C                                !!!
 C
-C             Written by Andrei Postnikov, Nov 2005   Vers_0.2
+C             Written by Andrei Postnikov, Mar 2006   Vers_0.3
 C             apostnik@uos.de
 C
       program rho2xsf
@@ -26,8 +26,8 @@ C
       integer limit,maxa,maxo,maxuo,maxnh,maxna,il,ia,nrela(3),idim
       parameter (limit=5)  !  tried translations along each lattice vector
       character inpfil*60,outfil*60,syslab*30,suffix*6,
-     .          unitlab*1,labunit*9
-      logical unitb,charge,waves
+     .          unitlab*1,labunit*9,labbox*1,owrite*1
+      logical unitb,charge,waves,filexist
       double precision b2ang,cc_bohr(3,3),cc_ang(3,3),cc_inv(3,3),
      .                 coort(3),obox(3),rbox(3,3),rinv(3,3),
      .                 cell(3,3),dum,rmaxo,rela,modu,rmesh(3),drela(3)
@@ -42,13 +42,15 @@ C
 C     string manipulation functions in Fortran used below:
 C     len_trim(string): returns the length of string 
 C                       without trailing blank characters,
+C     trim(string)    : returns the string with railing blanks removed
 C     char(integer)   : returns the character in the specified position
 C                       of computer's ASCII table, i.e. char(49)=1
       
       write (6,701,advance="no")
   701 format(" Specify  SystemLabel (or 'siesta' if none): ")
       read (5,*) syslab
-      inpfil = syslab(1:len_trim(syslab))//'.XV'
+C     inpfil = syslab(1:len_trim(syslab))//'.XV'
+      inpfil = trim(syslab)//'.XV'
       open (ii1,file=inpfil,form='formatted',status='old',err=801)
       call test_xv(ii1,nat)
       allocate (ityp(nat))
@@ -70,19 +72,50 @@ C --- invert the box vectors; will need it in a minute...
 C --- write selected atoms first into a scratch file (is1), for the case
 C     there are zero. Then the label 'ATOMS' with no  atoms following
 C     will crash XCrySDen.
-      open (is1, form='formatted',status='scratch')
+      open (is1, file='tmpfil',form='formatted',status='scratch')
       call fillbox(is1,obox,rbox,rinv,cc_ang,nat,coor_ang,nbox)
 
-      outfil = syslab(1:len_trim(syslab))//'.XSF'
-      open (io1,file=outfil,form='formatted',status='new',err=802)
-      write (6,*) 'Opened as new:    ',outfil
+C --- open output file:
+C     outfil = syslab(1:len_trim(syslab))//'.XSF'
+      outfil = trim(syslab)//'.XSF'
+      inquire (file=outfil, exist=filexist)
+      if (filexist) then
+        write (6,*) ' File ',trim(outfil),' exists. Overwrite? (Y/N)'
+        read (5,*) owrite
+        if (owrite.eq.'Y'.or.owrite.eq.'y') then
+          open (io1,file=outfil,form='formatted',status='REPLACE')
+        else
+          write (6,*) ' Then rename is first. Bye...'
+          stop
+        endif
+      else
+        open (io1,file=outfil,form='formatted',status='NEW')
+      endif
+C
       write (6,*) ' The box contains ',nbox,' atoms.'
       if (nbox.gt.0) then
-        write (io1,'(a5)') 'ATOMS'
+C --- add atoms to XSF; either as periodic cell or as for molecule
+C       write (6,702)
+C 101   write (6,703,advance="no")
+C       read (5,*) labbox
+C       if (labbox.eq.'Y'.or.labbox.eq.'y') then        
+C         write (io1,'(a7)') 'CRYSTAL'
+C         write (io1,'(a7)') 'PRIMVEC'
+C         write (io1,201) (rbox(ii,1),ii=1,3)
+C         write (io1,201) (rbox(ii,2),ii=1,3)
+C         write (io1,201) (rbox(ii,3),ii=1,3)
+C         write (io1,'(a9)') 'PRIMCOORD'
+C         write (io1,'(i5,i2)') nbox,1
+C       else if (labbox.eq.'N'.or.labbox.eq.'n') then
+          write (io1,'(a5)') 'ATOMS'
+C       else
+C         write (6,*) "I do not understand:"
+C         goto 101
+C       endif
         rewind (is1)
         do ibox = 1,nbox
-          read  (is1,201) iat,     (coort(jj),jj=1,3)
-          write (io1,201) iz(iat), (coort(jj),jj=1,3)
+          read  (is1,202) iat,     (coort(jj),jj=1,3)
+          write (io1,202) iz(iat), (coort(jj),jj=1,3)
         enddo
       else
         write (6,*) ' This is OK, just be warned that your XSF file',
@@ -91,10 +124,7 @@ C     will crash XCrySDen.
       close (is1)
 
       write (6,704) 
-  704 format (" Now define the grid. If you want it two-dimensional,",/
-     .   " give 1 as number of grid points along one spanning vector.") 
   102 write (6,705,advance="no") 
-  705 format (" Enter number of grid points along three vectors: ")
       read (5,*) n1,n2,n3
       if (n1.le.0.or.n2.le.0.or.n3.le.0) then
         write (6,*) ' Numbers must be positive, try again.'
@@ -107,13 +137,12 @@ C     will crash XCrySDen.
 
 C --- Look for grid data files to include:
   103 write (6,706,advance="no")
-  706 format (' Add grid property (LDOS, RHO, ...;',
-     .        ' or BYE if none): ')
       read (5,*) suffix
-      inpfil = syslab(1:len_trim(syslab))//
-     .      '.'//suffix(1:len_trim(suffix))
+C     inpfil = syslab(1:len_trim(syslab))//
+C    .      '.'//suffix(1:len_trim(suffix))
+      inpfil = trim(syslab)//'.'//trim(suffix)
       open (ii2,file=inpfil,form='unformatted',status='old',err=806)
-      write (6,*) 'Found and opened: ',inpfil(1:len_trim(inpfil))
+      write (6,*) 'Found and opened: ',trim(inpfil)
       read (ii2,err=807) cell
       read (ii2,err=808) mesh0, nspin
       allocate (func(1:mesh0(1)*mesh0(2)*mesh0(3)),STAT=ialloc)
@@ -128,8 +157,10 @@ C --- Look for grid data files to include:
       do is=1,nspin
         fmax= -9.999E+10
         fmin=  9.999E+10
+C       write (io1,*) 'BEGIN_DATAGRID_'//char(48+idim)//'D_'//
+C    .        suffix(1:len_trim(suffix))//':spin_'//char(48+is)
         write (io1,*) 'BEGIN_DATAGRID_'//char(48+idim)//'D_'//
-     .        suffix(1:len_trim(suffix))//':spin_'//char(48+is)
+     .        trim(suffix)//':spin_'//char(48+is)
         if (n1.ne.1) write (io1,'(i6)',advance="no") n1
         if (n2.ne.1) write (io1,'(i6)',advance="no") n2
         if (n3.ne.1) write (io1,'(i6)',advance="no") n3
@@ -210,7 +241,8 @@ C             Select neighboring grid points and make the interpolation:
       close (ii2)
       goto 103                                                                  
 
-  201 format (i4,3f20.8)
+  201 format (3f20.8)
+  202 format (i4,3f20.8)
   203 format (3i6)
   204 format (3f12.7)
   205 format (1p,6e13.6)
@@ -218,14 +250,26 @@ C 205 format (1p,8e10.3)
   206 format (' For is=',i1,': ',a3,'. grid value =',1p,e12.5,
      .        ' at iix,iiy,iiz=',3i4)
 
+  702 format(" The atom section may appear in the XSF file",
+     .       " as for periodic structure, that will allow you",
+     .       " to replicate the units within the XCrySDen.",
+     .       " This only makes sense if your selected box",
+     .       " coincides with the true periodic cell. Otherwise",
+     .       " the atoms will be written non-periodically, as for",
+     .       " molecule. ")
+  703 format(" Do you want atom section as for periodic ",
+     .       " structure, Y or N ? ")
+  704 format (" Now define the grid. If you want it two-dimensional,",/
+     .   " give 1 as number of grid points along one spanning vector.") 
+  705 format (" Enter number of grid points along three vectors: ")
+  706 format (' Add grid property (LDOS, RHO, ...;',
+     .        ' or BYE if none): ')
+
   801 write (6,*) ' Error opening file ',
-     .            inpfil(1:len_trim(inpfil)),' as old formatted'
-      stop
-  802 write (6,*) ' Error opening file ',
-     .            outfil(1:len_trim(outfil)),' as new formatted'
+     .              trim(inpfil),' as old formatted'
       stop
   806 write (6,*) ' A wild guess! There is no file ',
-     .              inpfil(1:len_trim(inpfil)),'; close XSF and quit.'
+     .              trim(inpfil),'; close XSF and quit.'
       close (io1)
       stop
   807 write (6,*) ' Error reading cell vectors'
@@ -238,6 +282,6 @@ C 205 format (1p,8e10.3)
      .            ' iiz=',iiz,'  is=',is
       stop
   811 write (6,*) ' Error opening file ',
-     .            outfil(1:len_trim(outfil)),' as new unformatted'
+     .              trim(outfil),' as new unformatted'
       stop
       end

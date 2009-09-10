@@ -1,7 +1,7 @@
 README to the Sies2xsf selection of routines
 written by Andrei Postnikov (apostnik@uos.de)
 
-This is  Version_0.2 as of November 2005, 
+This is  Version_0.3 as of March 2006, 
 including the Makefile and a bunch of Fortran90 sources
 to build the following executables:
   eig2bxsf   : to plot Fermi surfaces;
@@ -205,57 +205,46 @@ xcrysden --axsf < AXSF file >
 The AXSF format has different flavours depending on whether the structure
 is periodic or not, variable cell or not. The script md2axsf offers
 (interactively) several options to design the AXSF file:
-i) read unformatted MD file; if the Siesta calculation was done with
-MD.VariableCell option, the AXSF output will be as for periodic structure
-with variable cell;
-ii) the same, but after a Siesta calculation without MD.VariableCell.
-Then the AXSF output will be as for periodic structure with fixed cell
-(read in from the .XV file);
-iii) read ANI instead of MD; there will be no information about the cell
-stored, but just a sequence of atom coordinates as for a molecule.
-In addition to this, a possibility is provided to select atoms
-for the output file, defining the "output box" by its origin 
+reading from unformatted .MD file or from formatted .ANI file, and
+plotting the atoms within the native Siesta simulation box (variable
+or fixed), or within an arbitrary user-defined output box.
+With respect to reading, the options are:
+i) read unformatted .MD file; md2axsf will (hopefully) recognize
+whether it contains variable cell or not, and accordingly the AXSF
+will be written as for periodic structure, either for fixed cell
+(as read in from the .XV file) or variable one (as read in from the .MD file);
+ii) read formatted .ANI file; it does not contain information about
+the cell, therefore the periodicity is assumed with the fixed cell,
+as read in from the .XV file.
+With respect to writing, the arbitrary "output box" is defined by its origin 
 and three spanning vectors (not necessarily orthogonal), similarly to
 how his is done for rho2xsf and vib2xsf. The idea behind this is that
 one may wish to show more atoms in the animation than there are in
-the nit cell, or, on the contrary, to select just a small portion of
+the unit cell, or, on the contrary, to select just a small portion of
 a large unit cell. If one chooses the output box, all information
 about the original unit cell is lost in the output AXSF file, so that
-the resulting animation would look like one for a finite "molecule".
+the resulting animation would look like one for a finite "molecule",
+even if - technically - the output box is preserved in AXSF, as if
+it would be for a periodic structure. Of course a user-chosen
+output box does not necessarily possess true lattice periodicity.
 
-Let me summarize again the possible modes of operation of md2axsf:
-i) read the .MD file; the program finds out automatically whether
-it was written in the variable cell modus of not. If you won't select
-output box, the AXSF will contain information on the unit cell (ether
-variable or not) and the coordinates of atoms. Consequently the unit cell
-can be vizualised in XCrySDen, multipled etc. If you would select the
-output box, the program will dump into the AXSF file only atom coordinates, 
-leaving out the lattice vectors. It has to be noted that in the case
-of variable cell, the replication of atom positions over the output box
-is done in each step using the "correct" (i.e., variable) lattice vectors.
-ii) read the .ANI file; a possible problem in this case is that
-the .ANI bears no information about whether the calculation was done
-with variable cell, or not. When the output box is defined, the atom
-coordinates are replicated assuming that the cell was fixed, with the
-vectors as in the .XV file. If this assumption is wrong (i.e., the .ANI file
-originates from a calculation with variable cell), the coordinates of atoms
-replicated beyond the original unit cell will be wrong.
+Each MD record bears a step number, so that cumulative MD file can be 
+an agglomerate of several MS runs.
+Therefore md2axsf asks the user to select the first and last step
+and the increment of those present in MD to be passed to AXSF. 
+This is necessary because the AXSF format demands a throughout numeration 
+of MD steps. After reading in all MD information, the program asks:
 
-Some additional notes:
-The ANI file (created by Siesta if 
-WriteMDXmol = T, i.e. also when  WriteCoorStep = F as by default)
-is read in and (after some conformity checks) is fully
-transmitted into the resulting AXSF file.
-The MD file (created by Siesta if WriteMDhistory = T)
-might contain more information than needed. The atomic velocities
-are read in but not passed to AXSF. In fact they can be written in each
-MD step as forces, which is supported by AXSF, and be shown as arrows
-during the animation. Moreover each MD record bears a step number,
-so that cumulative MD file can be an agglomerate of several MS runs.
-Therefore md2axsf asks the user to select the first and last step from those
-present in MD to cut and pass them to AXSF. This is necessary because
-the AXSF format demands a throughout numeration of MD steps, and 
-subsequent merging/cutting in the AXSF file is inconvenient.
+   Cleanly read in          NNN   MD steps
+ You may wish to keep only some of these steps,
+ MDfirst, MDfirst+MDstep, MDfirst+2*MDstep etc. till (not exceeding) MDlast
+ from the list above. Specify three numbers MDfirst, MDlast, MDstep -
+ or 0 for any of them as default : 
+
+and if you pass e.g. 10 0 3
+this would mean that you want the MD records from 10 to the last available one,
+with the step 3. That is, the MD records 10, 13, 16, 19 etc. will be
+extracted and written into AXSF numbered as 1, 2, 3, 4 etc.
 
 -----------------  TASK 6 (Vizualization of phonons) ----------------------
 The "vibrator" package dumps phonon eigenvalues and eigenvectors

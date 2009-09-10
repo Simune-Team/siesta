@@ -12,7 +12,6 @@ C
       do ii=1,3
          read (ii1,'(3x,3f18.9)',end=801,err=801) (dummy,jj=1,3)
       enddo
-C     read (ii1,'(i12)',end=802,err=802) nat
       read (ii1,*,end=802,err=802) nat
       return
 
@@ -81,7 +80,6 @@ C --  read in translation vectors, convert into Ang:
       cc_ang = cc_bohr*b2ang
 
   101 format(3x,3f18.9)
-C     read (ii1,'(i12)') nat1
       read (ii1,*) nat1
       if (nat1.ne.nat) then
 C       check if the same as returned by test_xv :

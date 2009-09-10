@@ -1,23 +1,16 @@
 #
 #  Makefile for Sies2xcf set of tools
 #
-# --------------------------------- proper interface to Siesta building system
-OBJDIR=Obj
+# Compiler and options:
+   FC     = ifort
+   FFLAGS = -mp1 -O3 -pc80 -prec_div -w
+#  FC=f95
+#  FFLAGS=-g -C=all -C=undefined
+  LFLAGS = $(FFLAGS)
 #
-.SUFFIXES:
-.SUFFIXES: .f .F .o .a  .f90 .F90
-#
-ARCH_MAKE=../../../$(OBJDIR)/arch.make
-include $(ARCH_MAKE)
-#
-FC_DEFAULT:=$(FC)
-FC_SERIAL?=$(FC_DEFAULT)
-FC:=$(FC_SERIAL)         # Make it non-recursive
-#
-LFLAGS=$(FFLAGS)
-# --------------------------------- 
-#
-EXECS = eig2bxsf xv2xsf md2axsf rho2xsf vib2xsf
+  EXECS = eig2bxsf xv2xsf md2axsf rho2xsf vib2xsf
+  .f.o      : $(FC) -c $(FFLAGS) $<
+
 all: $(EXECS)
    eig_obj = eig2bxsf.o inver3.o opnout.o 
    xv_obj  = xv2xsf.o  opnout.o
