@@ -13,10 +13,10 @@
       use alloc,     only : re_alloc, de_alloc
       use parallel,  only : ProcessorY
       use mesh,      only : NSM
-      use mesh3D,    only : myMeshBox    ! Returns my processor mesh box
-      use mesh3D,    only : setMeshDistr ! Sets a distribution of mesh
-                                         ! points over parallel processors
       use siestaXC,  only : cellXC       ! Finds xc energy and potential
+      use siestaXC,  only : myMeshBox    ! Returns my processor mesh box
+      use siestaXC,  only : setMeshDistr ! Sets a distribution of mesh
+                                         ! points over parallel processors
 
       implicit none
 

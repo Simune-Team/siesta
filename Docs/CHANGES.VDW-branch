@@ -1,5 +1,91 @@
 ------------------------------------------------------------------
 
+2009-09-10  12:15:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-25-273
+
+Summary: Merged with siesta-xc sub-branch of A.Garcia
+Keywords: merge
+
+  Add support for creation of XC library distribution
+
+  Moved mesh3d to lib. New exports. Fixed module leaks
+  
+  Moved mesh3d from Src to SiestaXC, as a "user utility" exported
+  by the library. Dhscf and Forhar now use it through SiestaXC.
+  
+  Also, dp and grid_p are exported (with suitable prefixes). An
+  example of use is in Pseudo/atom/velect.f
+  
+  Fixed some namespace leaks (direct imports of setXC, debugXC routines,
+  etc).
+ 
+  Support MPI for xc. Atom always compiles without MPI
+
+  Used siestaXC in the compilation of Pseudo/atom
+
+  Some routines, used only in SiestaXC, have been moved from Src
+  to Src/SiestaXC.
+  
+  The makefile has been updated to comply more or less with the
+  standard Siesta usage (serial only so far, for a proof of concept
+  of the library approach).
+  
+  Src/Makefile has been modified to remove the SiestaXC objects, and
+  to build and use libSiestaXC.a
+   
+removed:
+  Pseudo/atom/alloc.F90
+  Pseudo/atom/atomxc.f90
+  Pseudo/atom/bessph.f
+  Pseudo/atom/flib_spline.f90
+  Pseudo/atom/io.f
+  Pseudo/atom/m_debug.f90
+  Pseudo/atom/m_filter.f90
+  Pseudo/atom/m_recipes.f
+  Pseudo/atom/memory.F
+  Pseudo/atom/memoryinfo.F
+  Pseudo/atom/mesh1d.f90
+  Pseudo/atom/parallel.f
+  Pseudo/atom/precision.F
+  Pseudo/atom/radfft.f
+  Pseudo/atom/sys.F
+  Pseudo/atom/timer.f90
+  Pseudo/atom/vdwxc.f90
+  Pseudo/atom/xcmod.f90
+added:
+  Pseudo/atom/SiestaXC/
+  Pseudo/atom/SiestaXC/.dummy_directory
+  Src/SiestaXC/lib-arch.make
+  Src/SiestaXC/lib-makefile
+  Src/SiestaXC/mpi-makefile
+renamed:
+  Src/atomxc.f90 => Src/SiestaXC/atomxc.f90
+  Src/cellxc.f90 => Src/SiestaXC/cellxc.f90
+  Src/debugxc.f90 => Src/SiestaXC/debugxc.f90
+  Src/fft3d.f90 => Src/SiestaXC/fft3d.f90
+  Src/fftr.f90 => Src/SiestaXC/fftr.f90
+  Src/ggaxc.f => Src/SiestaXC/ggaxc.f
+  Src/ldaxc.f => Src/SiestaXC/ldaxc.f
+  Src/mesh1d.f90 => Src/SiestaXC/mesh1d.f90
+  Src/mesh3d.F90 => Src/SiestaXC/mesh3d.F90
+  Src/siestaxc.f90 => Src/SiestaXC/siestaxc.f90
+  Src/vdwxc.f90 => Src/SiestaXC/vdwxc.f90
+  Src/xcmod.f90 => Src/SiestaXC/xcmod.f90
+modified:
+  Docs/CHANGES.VDW-branch
+  Pseudo/atom/Makefile
+  Pseudo/atom/velect.f
+  Src/Makefile
+  Src/SiestaXC/makefile
+  Src/dhscf.F
+  Src/forhar.f
+  Src/read_xc_info.F
+  Src/siesta_end.F
+  Src/siesta_init.F
+  version.info
+  Src/SiestaXC/siestaxc.f90
+
+------------------------------------------------------------------
+
 2009-09-07  11:00:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-24-272
 
 Summary: Added calls to parallel_init

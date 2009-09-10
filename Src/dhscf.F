@@ -144,10 +144,10 @@ C
       use siestaXC, only : getXC        ! Returns the XC functional used
       use alloc,    only : re_alloc, de_alloc
       use files,    only : slabel
-      use mesh3D,   only : myMeshBox    ! Returns my processor mesh box
-      use mesh3D,   only : setMeshDistr ! Sets a distribution of mesh
-                                        ! points over parallel processors
       use siestaXC, only : cellXC       ! Finds xc energy and potential
+      use siestaXC, only : myMeshBox    ! Returns my processor mesh box
+      use siestaXC, only : setMeshDistr ! Sets a distribution of mesh
+                                        ! points over parallel processors
 #ifdef MPI
       use mpi_siesta
 #endif

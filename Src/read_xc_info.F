@@ -14,7 +14,7 @@ C     Reads the exchange-correlation functional information
 C     and calls xcmod::setXC to store it for the use of
 C     atomxc and cellxc.
 C
-      use xcmod, only: setXC
+      use SiestaXC, only: setXC
 
       use precision, only : dp
       use parsing, only: parse

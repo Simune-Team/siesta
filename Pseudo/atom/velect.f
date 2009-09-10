@@ -1,10 +1,11 @@
 c
       subroutine velect(iter,iconv,id,zelec)
 c
-      use precision, only: dp
-      use xcmod, only: setxc
+      use siestaXC, only: atomXC, setXC
+      use siestaXC, only: dp => siestaXC_std_p
 
       implicit none
+
 c
       include 'radial.h'
       include 'orbital.h'
