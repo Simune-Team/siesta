@@ -27,7 +27,7 @@ C
 C --- write selected atoms first into a scratch file (is1), for the case
 C     there are zero. Then the label 'ATOMS' with no  atoms following
 C     will crash XCrySDen.
-      open (is1, file='tmpfil',form='formatted',status='scratch')
+      open (is1,form='formatted',status='scratch')
 C
       write (io1,"('ANIMSTEPS',i6)") (mdlast-mdfirst)/mdstep+1
       write (io1,"('CRYSTAL')")

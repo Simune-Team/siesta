@@ -61,7 +61,7 @@ C --- invert the box vectors; will need it in a minute...
 C --- write selected atoms first into a scratch file (is1), for the case
 C     there are zero. Then the label 'ATOMS' with no  atoms following
 C     will crash XCrySDen.
-      open (is1, file='tmpfil',form='formatted',status='scratch')
+      open (is1, form='formatted',status='scratch')
       call fillbox(is1,obox,rbox,rinv,cc_ang,nat,coor_ang,nbox)
       
       write (6,702,advance="no")
