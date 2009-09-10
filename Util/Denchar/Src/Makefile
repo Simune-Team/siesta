@@ -18,6 +18,7 @@
 #
 OBJDIR=Obj
 #
+.SUFFIXES:
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
 VPATH:=$(shell pwd)/../../../Src
