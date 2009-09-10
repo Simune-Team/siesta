@@ -97,9 +97,15 @@
           ENDIF
           GETCMD = .FALSE.
       ENDIF
-      IF (PRESENT(COMMAND)) COMMAND = ARGSTR
-      IF (PRESENT(LENGTH))  LENGTH  = LENARG
-      IF (PRESENT(STATUS))  STATUS  = 0
+      IF (PRESENT(COMMAND)) then
+      COMMAND = ARGSTR
+      endif   
+      IF (PRESENT(LENGTH)) then
+           LENGTH  = LENARG
+      endif
+      IF (PRESENT(STATUS)) then
+           STATUS  = 0
+      endif
       RETURN
       END SUBROUTINE GET_COMMAND
 !

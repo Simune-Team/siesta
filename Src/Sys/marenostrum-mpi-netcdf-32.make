@@ -8,7 +8,7 @@ FFLAGS_parse=-qsuffix=f=f -qfree #-qfixed
 LDFLAGS= -q32
 COMP_LIBS=
 RANLIB=echo
-FPPFLAGS_PREFIX=-WF,
+DEFS_PREFIX=-WF,
 #
 NETCDF_ROOT=/gpfs/apps/NETCDF/3.6.2/32
 INCFLAGS=-I$(NETCDF_ROOT)/include
