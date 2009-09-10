@@ -5,7 +5,7 @@
 # Optimization flags are not really necessary, but do include
 # the OpenMP compiler flag if your system supports it and it is worth it.
 #
-FC=ifort -openmp    # -g -O1 -CB -ftrapuv
+##FC=ifort -openmp    # -g -O1 -CB -ftrapuv
 #
 ##FC=gfortran  -fopenmp 
 #
