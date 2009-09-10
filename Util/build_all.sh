@@ -21,11 +21,12 @@ if [ -z "$OBJDIR" ] ; then
     OBJDIR=Obj
 fi
 echo ${OBJDIR}
-set -x
-for i in $(find . -name \[mM\]akefile | grep -v \\./Makefile); do
+
+for i in $(find . -name \[mM\]akefile | grep -v \\./Makefile ); do
       relpath=${i%/*}
+      sleep 1 ; echo "====> Processing $relpath ..." ; echo
       cd $relpath
-      make OBJDIR=${OBJDIR} clean
-      make OBJDIR=${OBJDIR} 
+      make OBJDIR=${OBJDIR} clean 
+      make OBJDIR=${OBJDIR} || echo "*** COMPILATION FAILED in $relpath ***"
       cd $topdir
 done

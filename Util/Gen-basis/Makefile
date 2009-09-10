@@ -22,7 +22,7 @@ OBJDIR=Obj
 #
 VPATH:=$(shell pwd)/../../Src
 #
-default: what gen-basis ioncat
+default: gen-basis ioncat
 #
 dep:
 	sfmakedepend --depend=obj  --modext=o \
@@ -42,26 +42,17 @@ FPPFLAGS:=$(DEFS_PREFIX)-UMPI $(FPPFLAGS)
 #
 #FFLAGS=$(FFLAGS_DEBUG)
 #
-what:
-	@echo
-	@echo "Compilation architecture to be used: ${SIESTA_ARCH}"
-	@echo "If this is not what you want, create the right"
-	@echo "arch.make file using the models in Sys"
-	@echo
-	@echo "Hit ^C to abort..."
-	@sleep 2
-#
 SYSOBJ=$(SYS).o
 #
 # Note that machine-specific files are now in top Src directory.
 #
-OBJS_GEN-BASIS=alloc.o gen-basis.o basis_types.o precision.o recipes.o parallel.o \
+OBJS_GEN-BASIS=alloc.o basis_types.o precision.o recipes.o parallel.o \
           parsing.o xcmod.o basis_io.o  chemical.o atm_transfer.o atm_types.o\
           atmparams.o old_atmfuncs.o radial.o io.o \
 	  paste.o  flib_spline.o bessph.o  m_filter.o \
           basis_specs.o atom.o memoryinfo.o memory.o periodic_table.o\
           pseudopotential.o pxf.o dot.o xc.o  atom_options.o arw.o  \
-          sys.o timer.o  xml.o m_walltime.o $(SYSOBJ)
+          sys.o timer.o  xml.o m_walltime.o gen-basis.o $(SYSOBJ)
 #
 IONCAT_OBJS=f2kcli.o m_getopts.o ioncat.o basis_types.o precision.o  parallel.o \
           parsing.o xcmod.o alloc.o atom_options.o basis_io.o  atm_types.o\

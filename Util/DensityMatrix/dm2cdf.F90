@@ -9,6 +9,9 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
 program dm2cdf
+#ifndef CDF
+  print *, "No netCDF support at compile time"
+#else
 
 !
 ! Converts a DM (binary) file to netCDF format
@@ -156,4 +159,5 @@ if (code /= nf90_noerr) then
 endif
 end subroutine check
 
+#endif /* CDF */
 end program dm2cdf
