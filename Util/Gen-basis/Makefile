@@ -57,7 +57,7 @@ OBJS_GEN-BASIS=alloc.o basis_types.o precision.o recipes.o parallel.o \
 IONCAT_OBJS=f2kcli.o m_getopts.o ioncat.o basis_types.o precision.o  parallel.o \
           parsing.o xcmod.o alloc.o atom_options.o basis_io.o  atm_types.o\
           atmparams.o radial.o io.o memory.o chkdim.o\
-	  paste.o pseudopotential.o chemical.o  alloc.o \
+	  paste.o pseudopotential.o chemical.o \
           basis_specs.o memoryinfo.o  m_memory.o periodic_table.o pxf.o \
           xc.o flib_spline.o atmfuncs.o spher_harm.o\
           sys.o timer.o  xml.o m_walltime.o $(SYSOBJ)
@@ -75,7 +75,7 @@ $(FDF):
 #
 gen-basis: $(FDF)  $(OBJS_GEN-BASIS)
 	$(FC) -o gen-basis \
-	       $(LDFLAGS) $(OBJS_GEN-BASIS) $(FDF) $(NETCDF_LIBS)
+	       $(LDFLAGS) $(OBJS_GEN-BASIS) $(FDF) $(NETCDF_LIBS) $(LIBS)
 #
 ioncat:  $(FDF) $(IONCAT_OBJS)
 	$(FC) -o ioncat \
