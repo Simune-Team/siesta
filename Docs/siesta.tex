@@ -884,11 +884,15 @@ of finite support, i.e., each orbital becomes strictly zero beyond some
 cutoff radius chosen by the user.
 
 Most users, however, do not have their own basis sets. For these users
-we have devised some schemes to generate reasonable basis sets within
-the program. These bases depend on several parameters per atomic
-species that are for the user to choose, and can be important for both
-quality and efficiency. A description of these bases and some
-performance tests can be found in
+we have devised some schemes to generate basis sets within the program
+with a minimum input from the user.  If nothing is specified in the
+input file, Siesta generates a default basis set of a reasonable
+quality that might constitute a good starting point.  Of course,
+depending on the accuracy required in the particular problem, the user
+has the degree of freedom to tune several parameters that can be
+important for quality and efficiency. A description of these basis
+sets and some performance tests can be found in the references quoted
+below.
 
 \noindent
 ``Numerical atomic orbitals for linear-scaling calculations",
@@ -917,6 +921,11 @@ Siesta}'s input and generates basis files for later use. {\sc
 Gen-basis} can be found in {\tt Util/Gen-basis}.
 It should be run from the {\tt Tutorials/Bases} directory,
 using the {\tt gen-basis.sh} script. It is limited to a single species.
+
+Of course, as it happens for the pseudopotential, it is the
+responsibility of the user to check that the physical results obtained
+are converged with respect the basis set used before starting any
+production run.
 
 In the following we give some clues on the basics of the basis sets
 that {\sc Siesta} generates.
@@ -1000,12 +1009,16 @@ and $(ii)$ solve the pseudoatom in the presence of an electric field
 and obtain the $l+1$ orbitals from the perturbation of the $l$
 orbitals by the field.
 
+So-called diffuse orbitals, that might be important in the description
+of open systems such as surfaces, can be simply added by specifying
+extra ``n'' shells. [See S. Garcia-Gil, A. Garcia, N. Lorente,
+  P. Ordejon, Phys. Rev. B {\bf 79}, 075441 (2009)]
+
 Finally, the method allows the inclusion of offsite (ghost) orbitals
-(not centered around any specific atom). The orbitals again can be of
-any shape, including atomic orbitals as if an atom would be there
-(useful for calculating the counterpoise correction for basis-set
-superposition errors).  Bessel functions for any radius and any
-excitation level can also be added anywhere to the basis set.
+(not centered around any specific atom), useful for example in the
+calculation of the counterpoise correction for basis-set superposition
+errors.  Bessel functions for any radius and any excitation level can
+also be added anywhere to the basis set.
 
 {\bf Range:} cutoff radii of orbitals.
 
@@ -1100,6 +1113,11 @@ for general information, and {\tt Util/Optimizer/Examples/Basis\_Optim}
 for an example. The directory {\tt Tutorials/Bases} in the main {\sc Siesta
 distribution} contains some tutorial material for the generation of
 basis sets and KB projectors.
+
+Finally, some optimized basis sets for particular elements are
+available at the {\sc Siesta} web page.  Again, it is the
+responsability of the users to test the transferability of the basis
+set to their problem under consideration.
 
 
 \subsubsection{Type of basis sets}
