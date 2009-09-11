@@ -9,6 +9,9 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
 program cdf_fft
+#ifndef CDF
+  print *, "No netCDF support at compile time"
+#else
 
 !
 ! Computes the Fourier Transform of a grid function in netCDF format
@@ -130,4 +133,5 @@ real(dp) :: volcel
       VOLCEL = ABS( VOLCEL )
 END function volcel
 
+#endif /* CDF */
 end program cdf_fft

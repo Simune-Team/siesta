@@ -9,6 +9,9 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
 module m_grid
+#ifndef CDF
+  print *, "No netCDF support at compile time"
+#else
 
 implicit none
 
@@ -153,6 +156,7 @@ if (code /= nf90_noerr) then
 endif
 end subroutine check
 
+#endif /* CDF */
 
 end module m_grid
 

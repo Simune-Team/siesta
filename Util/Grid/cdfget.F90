@@ -9,6 +9,9 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
 module m_grid
+#ifndef CDF
+  print *, "No netCDF support at compile time"
+#else
 
 implicit none
 
@@ -153,11 +156,14 @@ if (code /= nf90_noerr) then
 endif
 end subroutine check
 
-
+#endif /* CDF */
 end module m_grid
 
 !--------------------
 program test
+#ifndef CDF
+  print *, "No netCDF support at compile time"
+#else
 
 use m_grid
 
@@ -171,5 +177,6 @@ print *, gp%grid(1,1,1)
 
 call put_cdf_grid(gp,"Copy.Of.Rho.grid.nc")
 
+#endif /* CDF */
 end program test
 
