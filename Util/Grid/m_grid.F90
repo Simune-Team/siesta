@@ -9,9 +9,7 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
 module m_grid
-#ifndef CDF
-  print *, "No netCDF support at compile time"
-#else
+#ifdef CDF
 
 implicit none
 
