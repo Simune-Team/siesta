@@ -38,32 +38,32 @@ COMP_LIBS=
 #
 NETCDF_LIBS=            # -L/opt/lib -lnetcdf
 NETCDF_INTERFACE=       # libnetcdf_f90.a
-DEFS_CDF= -D__NAG__     # -DCDF
+FPPFLAGS_CDF= -D__NAG__     # -DCDF
 FFLAGS_NETCDF=-mismatch_all -w=unused          # Relax module checks...
 FFLAGS_MPI=-mismatch_all -w=unused          # Relax module checks...
 #
 MPI_INTERFACE=libmpi_f90.a
 MPI_INCLUDE=/opt/lam705/include
-DEFS_MPI= -DMPI -DNODAT
+FPPFLAGS_MPI= -DMPI -DNODAT
 #
 LIBS=  $(MPI_LIBS)  $(NETCDF_LIBS) #-framework veclib  (maybe for G5's)
 COMP_LIBS=linalg.a
 SYS=nag
-DEFS= $(DEFS_CDF) $(DEFS_MPI)
+FPPFLAGS= $(FPPFLAGS_CDF) $(FPPFLAGS_MPI)
 #
 CPP=/usr/local/lib/NAGWare/fpp -P
 #
 %.o : %.mod
 #
 .F.o:
-	$(CPP) -fixed $(DEFS) $*.F > aux_$*.f
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) aux_$*.f 
+	$(CPP) -fixed $(FPPFLAGS) $*.F > aux_$*.f
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) aux_$*.f 
 	@rm -f aux_$*.f
 	@mv aux_$*.o $*.o
 .f.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 .F90.o:
-	$(CPP) -free $(DEFS) $*.F90 > aux_$*.f90
+	$(CPP) -free $(FPPFLAGS) $*.F90 > aux_$*.f90
 	$(FC) -c $(FFLAGS) $(INCFLAGS) aux_$*.f90
 	@rm -f aux_$*.f90
 	@mv aux_$*.o $*.o

@@ -24,7 +24,7 @@ COMP_LIBS=
 LIBS= -L/opt/pgi/osx86/7.2-5/lib -llapack -lblas \
        $(MPI_LIBS)  $(NETCDF_LIBS)
 SYS=cpu_time
-DEFS= $(DEFS_CDF) $(DEFS_MPI)
+FPPFLAGS= $(FPPFLAGS_CDF) $(FPPFLAGS_MPI)
 #
 #
 # Important (at least for V5.0-1 of the pgf90 compiler...)
@@ -39,11 +39,11 @@ electrostatic.o: electrostatic.f
 	$(FC) -c $(FFLAGS_DEBUG) $<
 #
 .F.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 .F90.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f90.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 #

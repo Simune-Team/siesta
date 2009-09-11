@@ -53,10 +53,6 @@ sed "s#VPATH=\.#VPATH=${srcdir}#g" ${srcdir}/Makefile > ${destdir}/Makefile
               -path *.arch-ids  -prune -o -print \
               | tar -cf - --no-recursion -T- )   | ( cd ${destdir} ; tar xf -)
 #
-# Now make a symbolic link in the destination directory
-#
-ln -sf ${destdir} ${destdir}/Src
-#
 echo " *** Compilation setup done. "
 echo " *** Remember to copy an arch.make file or run configure as:"
 echo "    ${user_specified_dir}/configure [configure_options]"

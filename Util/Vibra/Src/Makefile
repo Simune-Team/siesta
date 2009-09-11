@@ -24,43 +24,42 @@
 #  define an FC_SERIAL symbol in your top arch.make, to avoid linking
 #  in the mpi libraries even if we explicitly undefine MPI below.
 #  
-
 .SUFFIXES:
 .SUFFIXES: .f .o .a 
 #
-default: what copy_fdf fcbuild vibrator
+default: fcbuild vibrator
 #
 # You should have compiled Siesta in the main Src directory (or
 # in an architecture-specific object directory) before attempting 
 # to compile the Vibra package.
 #
 OBJDIR=Obj
-include ../../../$(OBJDIR)/arch.make
+ARCH_MAKE=../../../$(OBJDIR)/arch.make
+include $(ARCH_MAKE)
+#
+.SUFFIXES: .f .F .o .a  .f90 .F90
+#
+TOPSRC:=$(shell pwd)/../../../Src
 #
 FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 #
-# (Note: The following is needed only if INCFLAGS is not included
-#  in the compilation rules in arch.make, but it is kept here in
-#  case a crippled version of arch.make is used.)
+DEFS:=$(DEFS) $(DEFS_PREFIX)-UMPI $(DEFS_PREFIX)-UCDF
+FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX)-UMPI $(DEFS_PREFIX)-UCDF
 #
-# The fdf module file also needs to be present in the current directory
-# Unfortunately the naming convention for the fdf module is compiler specific
-# and so you might need to edit this. Should work for Intel and IBM compilers.
-#
-copy_fdf:
-	cp -fp ../../../$(OBJDIR)/fdf.mod .
+FDF=libfdf.a
+FDF_MAKEFILE=$(TOPSRC)/fdf/makefile
+FDF_INCFLAGS:=-I $(TOPSRC)/fdf $(INCFLAGS)
+$(FDF): 
+	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC_SERIAL)" \
+                          "VPATH=$(TOPSRC)/fdf" \
+                          "ARCH_MAKE=../$(ARCH_MAKE)" \
+                          "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 #
 # Uncomment the following line for debugging support
 #
-FFLAGS=$(FFLAGS_DEBUG)
-#
-what:   
-	@echo
-	@echo "Compilation architecture to be used:  $(SIESTA_ARCH)"
-	@echo
-#
+#FFLAGS=$(FFLAGS_DEBUG)
 #
 BUILD-SRCS= fcbuild.f chkdim.f recoor.f io.f
 BUILD-OBJS=$(BUILD-SRCS:.f=.o)
@@ -70,24 +69,20 @@ VIBRA-SRCS= vibrator.f chkdim.f recoor.f hermdp.f paste.f klines.f outbands.f \
 VIBRA-OBJS=$(VIBRA-SRCS:.f=.o)
 
 #
-# Routines using vibra.h
-#
 fcbuild.o vibrator.o:  vibra.h
 #
-FDF=../../../$(OBJDIR)/libfdf.a         
-INCFLAGS:=$(INCFLAGS) -I../../../$(OBJDIR)           # To pick up fdf
-#
-fcbuild: $(BUILD-OBJS)
+fcbuild: $(FDF) $(BUILD-OBJS)
 	$(FC) -o fcbuild \
 	       $(LDFLAGS) $(BUILD-OBJS) $(FDF)
 
-vibrator : $(VIBRA-OBJS) 
+vibrator : $(FDF) $(VIBRA-OBJS) 
 	$(FC) -o vibrator \
 	       $(LDFLAGS) $(VIBRA-OBJS) $(FDF)
 #
 clean: 
 	@echo "==> Cleaning object and executable files"
-	rm -f fcbuild vibrator *.o *.mod
+	rm -f fcbuild vibrator *.o *.mod libfdf.a
+	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
 
 
 

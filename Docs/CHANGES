@@ -6,6 +6,57 @@
 ** CHANGES ALONG trunk 
 
 ------------------------------------------------------------------------
+2009-09-11  11:30:00 GMT Alberto Garcia <albertog@icmab.es>    trunk-298
+Re-organization of the manual. Building fixes. Update of Contrib utils
+
+* The manual has been thoroughy re-sectioned, and some obscure points
+clarified.
+
+* In some cases, it has been necessary to make minor changes to the
+code to be consistent with the behavior implied by the manual:
+
+-- The forces file (.FA) is always created.  
+
+-- There is no longer a coupling of the WriteCoorStep and WriteMDXMol
+   options.
+
+* Fix of the long-standing "mis-feature/bug" in the generation of
+  perturbative polarization orbitals. The fix is turned off by
+  default, unless the variable PAO.OldStylePolOrbs is set to
+  ".false.".  (See manual.)
+
+* Changes to streamline compilation, and new version of
+  the arch.make template in Src/Sys/DOCUMENTED_TEMPLATE.make
+  There are minor changes needed in arch.make files:
+
+  -  Use of NETCDF_INCFLAGS instead of simply INCFLAGS
+  -  Deprecation of the use of DEFS instead of FPPFLAGS
+
+  A new Util/build_all.sh script automates the building
+  of all the utility programs.
+
+* Simplification of TranSiesta compilation:
+
+      The target "transiesta" in the makefile defines its
+      own -DTRANSIESTA pre-processor flag, so the user does
+      not need to worry about it.
+      
+      Additionally, the makefile checks whether the last
+      compilation taking place in the building directory
+      was a "plain siesta", or a "transiesta", and complains
+      in case of a mismatch. 
+
+* Removal of all remaining mentions to the "Src" directory in the
+  automated tests in Tests.
+
+* Update of Andrei Postnikov's utilities in Util/Contrib/APostnikov to
+  V. 0.3, and integration into the standard building mechanism.
+
+(Alberto Garcia, with help from E. Artacho, J. Soler, O. Dieguez, and
+J. Junquera.  The polarization-orbital fix is due to E. Anglada.)
+
+
+------------------------------------------------------------------------
 2009-09-02  13:50:00 GMT Alberto Garcia <albertog@icmab.es>    trunk-297
 Code to treat slabs with net dipole and charged slabs (P. Ordejon)
 

@@ -27,15 +27,15 @@ LDFLAGS=-Vaxlib
 RANLIB=echo
 LIBS=  
 SYS=bsd
-DEFS=
+FPPFLAGS=
 COMP_LIBS=linalg.a
 #
 .F.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 .F90.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f90.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 #

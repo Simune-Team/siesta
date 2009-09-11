@@ -619,12 +619,14 @@
      .         dictref='siesta:cfmax', units='siestaUnits:evpa')
           call cmlEndPropertyList(mainXML)
         endif
+
         write(6,'(/,a)') 'siesta: Atomic forces (eV/Ang):'
         if (writef) then
           write(6,'(i6,3f12.6)')(ia,(fa(ix,ia)*Ang/eV,ix=1,3),ia=1,na_u)
-        else
-          call iofa( na_u, fa )
         endif
+        ! Always write forces to .FA file
+        call iofa( na_u, fa )
+
         write(6,'(40("-"),/,a6,3f12.6)') 'Tot',(ftot(ix)*Ang/eV,ix=1,3)
         write(6,'(40("-"),/,a6, f12.6)') 'Max',fmax*Ang/eV
         write(6,'(a6,f12.6,a)')'Res',fres*Ang/eV,
