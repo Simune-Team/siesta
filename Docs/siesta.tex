@@ -124,14 +124,14 @@ to perform electronic structure calculations and {\it ab initio} molecular
 dynamics simulations of molecules and solids. Its main characteristics are:
 \begin{itemize}
 \item
-It uses the standard Kohn-Sham selfconsistent density functional
+It uses the standard Kohn-Sham self-consistent density functional
 method in the local density (LDA-LSD) or generalized gradient (GGA)
 approximations.
 \item
-It uses norm-conserving pseudopotentials in its fully nonlocal
+It uses norm-conserving pseudopotentials in their fully nonlocal
 (Kleinman-Bylander) form.
 \item
-It uses atomic orbitals as basis set, allowing unlimited multiple-zeta
+It uses atomic orbitals as a basis set, allowing unlimited multiple-zeta
 and angular momenta, polarization and off-site orbitals. The radial
 shape of every orbital is numerical and any shape can be used and provided
 by the user, with the only condition that it has to be of finite support,
@@ -190,7 +190,7 @@ where ballistic electron transport is taking place.  Using {\sc
   TranSiesta} one can predict electronic properties, such as the zero
 bias conductance and the I-V characteristics, of a nanoscale system in
 contact with two electrodes with different electrochemical potentials.
-It does so by solving for the selfconsistent electronic structure
+It does so by solving for the self-consistent electronic structure
 within density functioual theory, and using non equilibrium Green's
 functions techniques (NEGF).
 
@@ -924,7 +924,7 @@ using the {\tt gen-basis.sh} script. It is limited to a single species.
 
 Of course, as it happens for the pseudopotential, it is the
 responsibility of the user to check that the physical results obtained
-are converged with respect the basis set used before starting any
+are converged with respect to the basis set used before starting any
 production run.
 
 In the following we give some clues on the basics of the basis sets
@@ -957,7 +957,7 @@ requiring both radial and angular flexibilization.
 by adding a second function per channel: double-$\zeta$ (DZ).
   In Quantum Chemistry, the {\it split valence} scheme
 is widely used: starting from the expansion in Gaussians of one atomic
-orbital, the most contracted gaussians are used to define the first
+orbital, the most contracted Gaussians are used to define the first
 orbital of the double-$\zeta$ and the most extended ones for the second.
   For strictly localized functions there was a first proposal
 of using the excited states of the confined atoms, but it would work only
@@ -974,17 +974,17 @@ Phys. Rev. B {\bf 69}, 195113 (2004)].
 
   We then proposed an extension of the split valence idea of Quantum Chemistry
 to strictly localized NAO which has become the standard and has been used
-quite succesfully in many systems (see {\bf PAO.BasisType} {\tt split} below).
+quite successfully in many systems (see {\bf PAO.BasisType} {\tt split} below).
   It is based on the idea of suplementing the first $\zeta$ with, instead of
 a gaussian, a numerical orbital that reproduces the tail of the original PAO
 outside a matching radius $r_{m}$, and continues smoothly towards the origin as
-$r^l(a-br^2)$, with $a$ and $b$ ensuring continuity and differenciability
+$r^l(a-br^2)$, with $a$ and $b$ ensuring continuity and differentiability
 at $r_{m}$.
   Within exactly the same
 Hilbert space, the second orbital can be chosen to be the difference between
 the smooth one and the original PAO, which gives a basis orbital strictly
 confined within the matching radius $r_{m}$ (smaller than the
-original PAO!) continuously differenciable throughout.
+original PAO!) continuously differentiable throughout.
 
   Extra parameters have thus appeared: one $r_m$ per orbital to be doubled.
 The user can again introduce them by hand (see {\bf PAO.Basis} below).
@@ -1014,7 +1014,7 @@ of open systems such as surfaces, can be simply added by specifying
 extra ``n'' shells. [See S. Garcia-Gil, A. Garcia, N. Lorente,
   P. Ordejon, Phys. Rev. B {\bf 79}, 075441 (2009)]
 
-Finally, the method allows the inclusion of offsite (ghost) orbitals
+Finally, the method allows the inclusion of off-site (ghost) orbitals
 (not centered around any specific atom), useful for example in the
 calculation of the counterpoise correction for basis-set superposition
 errors.  Bessel functions for any radius and any excitation level can
@@ -1029,7 +1029,7 @@ given for each species.
 
 A balanced and systematic starting point for defining all the
 different radii is achieved by giving one single parameter, the energy
-shift, i.e., the energy raise suffered by the orbital when confined.
+shift, i.e., the energy increase experienced by the orbital when confined.
 Allowing for system and physical-quantity variablity, as a rule of
 thumb $\Delta E_{\small \rm PAO} \approx 100$ meV gives typical
 precisions within the accuracy of current GGA functionals.  The user
@@ -1045,7 +1045,7 @@ way the localization is enforced.
 
 The first proposal (and quite a standard among {\sc Siesta} users)
 uses an infinite square-well potential.  It was originally proposed
-and has been widely and succesfully used by Otto Sankey and
+and has been widely and successfully used by Otto Sankey and
 collaborators, for minimal bases within the ab initio tight-binding
 scheme, using the {\sc Fireball } program, but also for more flexible
 bases using the methodology of {\sc Siesta}.  This scheme has the
@@ -1060,22 +1060,22 @@ forces and stresses, especially if they are calculated using a
 (coarse) finite three-dimensional grid.
 
 Another problem of this scheme is related to its defining the basis
-considering the free atoms.  Free atoms can present extremely extended
+starting from the free atoms.  Free atoms can present extremely extended
 orbitals, their extension being, besides problematic, of no practical
 use for the calculation in condensed systems: the electrons far away
 from the atom can be described by the basis functions of other atoms.
 
-A traditional scheme to deal with this is the one based on the radial
+A traditional scheme to deal with this is one based on the radial
 scaling of the orbitals by suitable scale factors.  In addition to
 very basic bonding arguments, it is soundly based on restoring
-virial's theorem for finite bases, in the case of coulombic potentials
+the virial's theorem for finite bases, in the case of Coulombic potentials
 (all-electron calculations).  The use of pseudopotentials limits its
 applicability, allowing only for extremely small deviations from unity
 ($\sim 1\%$) in the scale factors obtained variationally (with the
 exception of hydrogen that can contract up to 25\%). This possiblity
 is available to the user.
 
-Another way of dealing with that problem and that of the kink at the
+Another way of dealing with the above problem and that of the kink at the
 same time is adding a soft confinement potential to the atomic
 Hamiltonian used to generate the basis orbitals: it smoothens the kink
 and contracts the orbital as suited. Two additional parameters are
@@ -1146,7 +1146,7 @@ polarization [see S\'anchez-Portal, Artacho, and Soler, JPCM {\bf 8},
 \item[-] Multiple-$\zeta$ in the spirit of split valence,\index{split
 valence} decomposing the original PAO in several pieces of different
 range, either defining more (and smaller) confining radii, or
-introducing gaussians\index{gaussians} from known bases (Huzinaga's
+introducing Gaussians\index{Gaussians} from known bases (Huzinaga's
 book).
 \end{itemize}
 
@@ -1246,7 +1246,7 @@ orbital-confining cutoff radii. It is the excitation energy
 of the PAO's due to the confinement to a finite-range. It offers a
 general procedure for defining the confining radii of the original
 (first-zeta) PAO's for all the species guaranteeing the compensation
-of the basis. It has only effect when the block
+of the basis. It only has an effect when the block
 {\bf PAO.Basis} is not present or when the radii
 specified in that block are zero for the first zeta.
 
@@ -1267,7 +1267,7 @@ the second-$\zeta$ split-off piece has to carry. The split radius is defined
 accordingly. If multiple-$\zeta$\index{multiple-$\zeta$}
 is used, the corresponding radii are obtained
 by imposing smaller fractions of the SplitNorm (1/2, 1/4 ...) value as
-norm carried by the higher zetas. It has effect only when the block
+norm carried by the higher zetas. It only has an effect when the block
 {\bf PAO.Basis} is not present or when the radii
 specified in that block are zero for zetas higher than one.
 
@@ -1599,7 +1599,7 @@ polarization}\index{basis!polarization} are generated by solving the
 atomic problem in the presence of a polarizing electric field. The
 orbitals are generated applying perturbation theory to the first-zeta
 orbital of lower angular momentum.  They have the same cutoff radius
-than the orbitals from which they are constructed.
+as the orbitals from which they are constructed.
 
 Note: The perturbative method has traditionally used the 'l' component
 of the pseudopotential. It can be argued that it should use the 'l+1'
@@ -1607,7 +1607,7 @@ component. By default, for backwards compatibility, the traditional
 method is used, but the alternative one can be activated by setting
 the logical {\bf PAO.OldStylePolOrbs} variable to {\tt .false.}
 
-There is a different possibility of generating polarization orbitals:
+There is a different possibility for generating polarization orbitals:
 by introducing them explicitly in the {\bf PAO.Basis} block.
 It has to be remembered, however, that they sometimes correspond to
 unbound states of the atom, their shape depending very much on the
@@ -1851,7 +1851,7 @@ There are many ways to give {\sc Siesta} structural information.
 \begin{itemize}
 \item Directly from the fdf file in traditional format.
 \item Directly from the fdf file in the newer Z-Matrix format, using
-a \textbf{ZMatrix} block.
+a \textbf{Zmatrix} block.
 \item From an external data file
 \item From a FIFO file, when working in ``server'' mode.
 \end{itemize}
@@ -1869,7 +1869,7 @@ methods, and provide a guide to their precedence.
 \subsubsection{Traditional structure input in the fdf file}
 
 Firstly, the size of the cell itself should be specified, using
-some combination of the flags
+some combination of the options
 \textbf{LatticeConstant}, \textbf{LatticeParameters},
 and \textbf{LatticeVectors}, and \textbf{SuperCell}.
 If nothing is specified, {\sc Siesta} will construct a cubic
@@ -1938,11 +1938,11 @@ Character string to specify the format of the atomic positions in
 input. These can be expressed in four forms:
 \begin{itemize}
 \item {\tt Bohr} or {\tt NotScaledCartesianBohr} (atomic positions
-are given directly in Bohr, in cartesian coordinates)
+are given directly in Bohr, in Cartesian coordinates)
 \item {\tt Ang} or {\tt NotScaledCartesianAng} (atomic positions
-are given directly in {\AA}ngstr\"om, in cartesian coordinates)
+are given directly in {\AA}ngstr\"om, in Cartesian coordinates)
 \item {\tt ScaledCartesian} (atomic positions are given
-in cartesian coordinates, in units of the lattice constant)
+in Cartesian coordinates, in units of the lattice constant)
 \item {\tt Fractional} or {\tt ScaledByLatticeVectors} (atomic positions
 are given referred to the lattice vectors)
 \end{itemize}
@@ -1992,7 +1992,7 @@ either using this block or the $Z$ matrix (see {\bf Zmatrix}).
 
 \end{description}
 \subsubsection{Z-matrix format and constraints}
-\label{sec:zmatrix}
+\label{sec:Zmatrix}
 
 The advantage of the traditional format is that it is
 much easier to set up a system. However, when working
@@ -2002,7 +2002,7 @@ within this format, and recompilation is needed for each
 new constraint.
 
 For any more involved set of constraints, a
-full \textbf{ZMatrix} formulation should be used - this
+full \textbf{Zmatrix} formulation should be used - this
 offers much more control, and may be specified fully at
 run time (thus not requiring recompilation) - but
 it is more work to generate the input files for this form.
@@ -2113,13 +2113,13 @@ flags that indicate whether the \texttt{x}, \texttt{y}, and \texttt{z}
 coordinates, respectively, should be varied or not. A value of 0
 implies that the coordinate is fixed, while 1 implies that it should
 be varied.  {\bf NOTE}: When performing ``variable cell''
-optimization while using a zmatrix format for input, the algorithm
+optimization while using a Zmatrix format for input, the algorithm
 will not work if some of the coordinates of an atom in a {\tt
 cartesian} block are variables and others are not (i.e.,
 \texttt{ix iy iz} above must all be 0 or 1). This will be fixed in
 future versions of the program.
 
-A zmatrix block may also contain the following, additional, sections, which
+A Zmatrix block may also contain the following, additional, sections, which
 are designed to make it easier to read.
 
 \item \texttt{constants}: Instead of specifying a numerical value, it
@@ -2211,7 +2211,7 @@ surface, respectively.
 for the relevant coordinates, in particular for those which are
 allowed to vary. The current output options for Zmatrix information
 work best when this approach is taken. By using a ``fixed'' symbolic
-zmatrix block and specifying the actual coordinates in a ``variables''
+Zmatrix block and specifying the actual coordinates in a ``variables''
 section, one can monitor the progress of the optimization and
 easily reconstruct the coordinates of intermediate steps in the
 original format.)
@@ -2285,8 +2285,8 @@ characteristics:
 \begin{verbatim}
 1. No symbolic variables or constants are used.
 2. The position coordinates of the first atom in each molecule
-   are absolute cartesian coordinates.
-3. Any coordinates in ``cartesian'' blocks are also absolute cartesians.
+   are absolute Cartesian coordinates.
+3. Any coordinates in ``cartesian'' blocks are also absolute Cartesians.
 4. There is no provision for output of constraints.
 5. The units used are those initially specified by the user, and are
    noted also in fdf form.
@@ -2418,11 +2418,11 @@ any XV files.\index{MD.UseSaveXV@{\bf MD.UseSaveXV}}.
 {\it Default value:} {\tt .false.}
 
 
-\item A zmatrix input file
+\item A Zmatrix input file
 {\bf MD.UseSaveZM} ({\it logical}):
 \index{MD.UseSaveZM@{\bf MD.UseSaveZM}}
 \index{reading saved data!ZM}
-instructs the program to read the zmatrix information stored
+instructs the program to read the Zmatrix information stored
 in file {\tt SystemLabel}.ZM by a previous run.
 
 {\it Use:} If the required file does not exist, a warning is
@@ -2455,7 +2455,7 @@ gets from the FIFO file).
 \item If UseStructFile (or MD.UseStructFile) is active, it takes precedence
 over the options below.
 
-\item For atomic coordinates, the traditional and zmatrix formats in
+\item For atomic coordinates, the traditional and Zmatrix formats in
   the fdf file are mutually exclusive. If {\bf MD.UseSaveZM} is
   active, the contents of the ZM file, if found, take precedence over
   the Zmatrix information in the fdf file.
@@ -4057,7 +4057,7 @@ Specifies the scale of the k vectors given in {\bf BandLines}
 and {\bf BandPoints} below.
 The options are:
 \begin{itemize}
-\item {\tt pi/a} (k-vector coordinates are given in cartesian
+\item {\tt pi/a} (k-vector coordinates are given in Cartesian
 coordinates, in units of $\pi/a$, where $a$ is the lattice constant)
 \item {\tt ReciprocalLatticeVectors} (k vectors are given in
 reciprocal-lattice-vector coordinates)
@@ -4083,7 +4083,7 @@ An example for an FCC lattice is:
      %endblock BandLines
 \end{verbatim}
 
-where the last column is an optional LaTex label for use in the band plot.
+where the last column is an optional LaTeX label for use in the band plot.
 If only given points (not lines) are required, simply specify 1 in the
 first column of each line. The first column of the first line must be
 always 1.
@@ -4091,7 +4091,7 @@ always 1.
 {\it Use:} Used only if {\bf SolutionMethod} = {\tt diagon}.
 The band k points are unrelated and compatible with any k-grid used
 to calculate the total energy and charge density.
-This block is superseded by {\bf BandPoints} if both are present.
+This block is overriden by {\bf BandPoints} if both are present.
 
 {\it Default value:} No band energies calculated.
 
@@ -4197,7 +4197,7 @@ Specifies the scale of the k vectors given in
 {\bf WaveFuncKPoints} below.
 The options are:
 \begin{itemize}
-\item {\tt pi/a} (k-vector coordinates are given in cartesian
+\item {\tt pi/a} (k-vector coordinates are given in Cartesian
 coordinates, in units of $\pi/a$, where $a$ is the lattice constant)
 \item {\tt ReciprocalLatticeVectors} (k vectors are given in
 reciprocal-lattice-vector coordinates)
@@ -4818,7 +4818,7 @@ those parallel to a slab (bulk electric fields, like in
 dielectrics or ferroelectrics, are not allowed). If it is not, an
 error message is issued and the components of the field in bulk
 directions are suppressed automatically. The input is a
-vector in cartesian coordinates, in the specified units. Example:
+vector in Cartesian coordinates, in the specified units. Example:
 
 \begin{verbatim}
      %block ExternalElectricField
@@ -5343,7 +5343,7 @@ the cell vectors) trying to minimize the forces (and stresses) on
 them.
 
 These are the options common to all relaxation methods. If the Zmatrix
-input option is in effect (see Sec.~\ref{sec:zmatrix}) the
+input option is in effect (see Sec.~\ref{sec:Zmatrix}) the
 Zmatrix-specific options take precedence.  The 'MD' prefix is
 misleading but kept for historical reasons.
 
@@ -5606,7 +5606,7 @@ These methods are really based on molecular dynamics, but are used for
 structural relaxation.
 
 Note that the Zmatrix input option (see
-Sec.~\ref{sec:zmatrix}) is not compatible with molecular dynamics. The
+Sec.~\ref{sec:Zmatrix}) is not compatible with molecular dynamics. The
 initial geometry can be specified using the Zmatrix format, but the
 Zmatrix generalized coordinates will not be updated.
 
@@ -5735,7 +5735,7 @@ In this mode of operation, the program moves the atoms (and optionally
 the cell vectors) in response to the forces (and stresses), using the
 classical equations of motion.
 
-Note that the Zmatrix input option (see Sec.~\ref{sec:zmatrix}) is not
+Note that the Zmatrix input option (see Sec.~\ref{sec:Zmatrix}) is not
 compatible with molecular dynamics. The initial geometry can be
 specified using the Zmatrix format, but the Zmatrix generalized
 coordinates will not be updated.
@@ -5875,7 +5875,7 @@ Other options follow.
 It determines whether the initial atomic coordinates of the simulation are
 dumped into the main output file. These coordinates correspond to the
 ones actually used in the first step (see the section on precedence
-issues in structural input) and are output in cartesian coordinates in
+issues in structural input) and are output in Cartesian coordinates in
 Bohr units.
 
 It is not affected by the setting of {\bf LongOutput}.
@@ -5974,7 +5974,7 @@ create custom-made MD scripts.
 
 \subsection{Use of general constraints}
 
-{\bf Note:} The Zmatrix format (see Sec.~\ref{sec:zmatrix}) provides
+{\bf Note:} The Zmatrix format (see Sec.~\ref{sec:Zmatrix}) provides
 an alternative constraint formulation which can be useful for system
 involving molecules.
 
@@ -6014,7 +6014,7 @@ c real*8  cell(3,3)    : input lattice vectors (Bohr)
 c integer na           : input number of atoms
 c integer isa(na)      : input species indexes
 c real*8  amass(na)    : input atomic masses
-c real*8  xa(3,na)     : input atomic cartesian coordinates (Bohr)
+c real*8  xa(3,na)     : input atomic Cartesian coordinates (Bohr)
 c real*8  stress( 3,3) : input/output stress tensor (Ry/Bohr**3)
 c real*8  fa(3,na)     : input/output atomic forces (Ry/Bohr)
 c integer ntcon        : output total number of position constraints
@@ -6066,7 +6066,7 @@ all three coordinates of atoms 1 to 10, counted backwards from the
 last one (you may also specify a given direction, like in center).
 The fourth line specifies that atoms 1 and 2 form a rigid unit.  The
 fifth line fixes the center of the molecule (atoms 1 and 2), in the z
-direction (0.,0.,1.). This vector is given in cartesian coordinates
+direction (0.,0.,1.). This vector is given in Cartesian coordinates
 and, without it, all three coordinates will be fixed (to fix a center,
 or a position, in the $x$ and $y$ directions, but not in the $z$
 direction, two lines are required, one for each direction).  The sixth
@@ -6214,7 +6214,7 @@ block {\tt MD.ATforPhonon} exists), the forces
 are written in file {\it SystemLabel}.{\tt PHONON}.  The format is the
 following: Comment line, cell vectors in {\AA}, and for each
 displacement: atom displaced and its coordinates plus fractional
-displacement, cartesian components of forces on all the atoms in units
+displacement, Cartesian components of forces on all the atoms in units
 of eV/\AA.
 
 
