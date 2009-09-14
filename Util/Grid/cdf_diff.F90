@@ -1,5 +1,8 @@
 !--------------------
 program cdf_diff
+#ifndef CDF
+  print *, "No netCDF support at compile time"
+#else
 
 use m_grid
 
@@ -28,5 +31,6 @@ print *, gp%grid(1,1,1)
 
 call put_cdf_grid(gp,"Diff.Rho.grid.nc")
 
+#endif /* CDF */
 end program cdf_diff
 

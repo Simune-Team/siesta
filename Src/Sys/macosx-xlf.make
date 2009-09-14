@@ -37,21 +37,21 @@ COMP_LIBS=
 #
 NETCDF_LIBS=          #-L/opt/lib -lnetcdf
 NETCDF_INTERFACE=     # libnetcdf_f90.a
-DEFS_CDF=             # -WF,-DCDF
+FPPFLAGS_CDF=             # -WF,-DCDF
 FFLAGS_NETCDF= -qsuffix=f=f90:cpp=F90 
 #
 MPI_INTERFACE=
 MPI_INCLUDE=
-DEFS_MPI=
+FPPFLAGS_MPI=
 #
-DEFS_EXTRA= -WF,-DFC_HAVE_ABORT
+FPPFLAGS_EXTRA= -WF,-DFC_HAVE_ABORT
 #
 LINEAR_ALGEBRA_LIBS=-Wl,-framework -Wl,vecLib
 #
 LIBS=  $(MPI_LIBS)  $(LINEAR_ALGEBRA_LIBS) $(NETCDF_LIBS) 
 COMP_LIBS=dc_lapack.a
 SYS=xlf
-DEFS= $(DEFS_CDF) $(DEFS_MPI) $(DEFS_EXTRA)
+FPPFLAGS= $(FPPFLAGS_CDF) $(FPPFLAGS_MPI) $(FPPFLAGS_EXTRA)
 #
 FCFLAGS_fixed_f=-qfixed -qsuffix=cpp=f
 FCFLAGS_free_f90=-qfree=f90 -qsuffix=f=f90
@@ -63,12 +63,12 @@ FPPFLAGS_free_F90=-qfree=f90 -qsuffix=cpp=F90
 parsing.o:
 	$(FC) -c $(FFLAGS_DEBUG)  $(FCFLAGS_fixed_f) parsing.f
 siesta.o:
-	$(FC) -c  $(FFLAGS_DEBUG)  $(DEFS) $(FPPFLAGS_fixed_F) siesta.F
+	$(FC) -c  $(FFLAGS_DEBUG)  $(FPPFLAGS) $(FPPFLAGS_fixed_F) siesta.F
 #
 .F.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS) $(DEFS) $(FPPFLAGS_fixed_F)  $< 
+	$(FC) -c $(FFLAGS) $(INCFLAGS) $(FPPFLAGS) $(FPPFLAGS_fixed_F)  $< 
 .F90.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS) $(DEFS) $(FPPFLAGS_free_F90) $< 
+	$(FC) -c $(FFLAGS) $(INCFLAGS) $(FPPFLAGS) $(FPPFLAGS_free_F90) $< 
 .f.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS) $(FCFLAGS_fixed_f)  $<
 .f90.o:

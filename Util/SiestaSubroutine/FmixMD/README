@@ -12,7 +12,8 @@ To run the examples:
    provided.
 2) Install and compile the siesta program.
 
-(The following steps can be done automatically using the 'test.sh' script)
+(The following steps can be done automatically using the 'test.sh' script,
+ but make sure it is setup correctly)
 
 3) Create a new subdirectory and copy the files driver.dat, 
    h2o.fast.fdf, and h2o.conv.fdf from this directory to it.

@@ -31,24 +31,24 @@ RANLIB=echo
 #
 NETCDF_LIBS=
 NETCDF_INTERFACE=
-DEFS_CDF=
+FPPFLAGS_CDF=
 #
 MPI_INTERFACE=libmpi_f90.a
 MPI_INCLUDE=/apl/INTEL/ICT3/mpi/3.0/include64
-DEFS_MPI=-DMPI
+FPPFLAGS_MPI=-DMPI
 #
 MKLPATH=/apl/INTEL/ICT3/cmkl/9.0
 LIBS=-L$(MKLPATH)/lib/em64t -lmkl_scalapack -lmkl_blacs_intelmpi20 -lmkl_lapack -lmkl_em64t -lguide -lpthread -lsvml
 #LIBS=-L$(MKLPATH)/lib/32 -lmkl_scalapack -lmkl_blacs_intelmpi20 -lmkl_lapack -lmkl -lguide -lpthread -lsvml
 SYS=nag
-DEFS= $(DEFS_CDF) $(DEFS_MPI) -DWXML_INIT_FIX
+FPPFLAGS= $(FPPFLAGS_CDF) $(FPPFLAGS_MPI) -DWXML_INIT_FIX
 #
 .F.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 .F90.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f90.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 #

@@ -9,6 +9,7 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
 module m_grid
+#ifdef CDF
 
 implicit none
 
@@ -153,23 +154,7 @@ if (code /= nf90_noerr) then
 endif
 end subroutine check
 
+#endif /* CDF */
 
 end module m_grid
-
-!--------------------
-program test
-
-use m_grid
-
-type(grid_t)   :: gp
-
-call get_cdf_grid("Rho.grid.nc",gp)
-
-print *, gp%cell
-print *, gp%n
-print *, gp%grid(1,1,1)
-
-call put_cdf_grid(gp,"Copy.Of.Rho.grid.nc")
-
-end program test
 

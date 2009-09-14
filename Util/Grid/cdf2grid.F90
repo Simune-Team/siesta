@@ -8,7 +8,10 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-program cdf2xsf
+program cdf2grid
+#ifndef CDF
+  print *, "No netCDF support at compile time"
+#else
 
 !
 ! Converts a Grid (binary) file to netCDF format
@@ -32,17 +35,17 @@ integer  :: cell_id, n1_id, n2_id, n3_id, gridfunc_id
 integer   ::    nspin  ! Number of spins 
 integer   ::    mesh(3)
 
-integer   ::   ispin, iostat, ix, iy, iz, iret, ind, i
+integer   ::   ispin, iostat, ix, iy, iz, iret
 
 real(dp)  ::    cell(3,3)
 real(sp), dimension(:), allocatable :: gridfunc
 
 !-----------------------------------------------------
 
-open(unit=1,file="XSF",form="formatted",status="unknown",action="write", &
+open(unit=1,file="GRIDFUNC",form="unformatted",status="unknown",action="write", &
             position="rewind",iostat=iostat)
 if (iostat /= 0) then
-  print *, "File XSF cannot be opened"
+  print *, "File GRIDFUNC cannot be opened"
   STOP
 endif
 
@@ -64,36 +67,21 @@ call check( nf90_open('GridFunc.nc',NF90_NOWRITE,ncid))
        iret = nf90_get_var(ncid, cell_id, cell, start = (/1, 1 /), count = (/3, 3/) )
        call check(iret)
 
-write(1,"(a)") "BEGIN_BLOCK_DATAGRID_3D"
-write(1,"(a)") "Some title"
-write(1,"(a)") "BEGIN_DATAGRID_3D_Test"
-write(1,*)  mesh(1:3)
+write(1) cell(1:3,1:3)
+write(1) mesh(1:3), nspin
 
-write(1,*) 0.0_dp, 0.0_dp,  0.0_dp
-do i=1, 3
-   write(1,*) cell(1:3,i)
-enddo
-
-allocate(gridfunc(mesh(1)))
+allocate(gridfunc(1:mesh(1)))
 !
-ispin = 1
-          ind = 0
+       do ispin=1,nspin
           do iz=1,mesh(3)
              do iy=1,mesh(2)
                 iret = nf90_get_var(ncid, gridfunc_id, gridfunc(1:mesh(1)), start = (/1, iy, iz, ispin /), &
                                                                             count = (/mesh(1), 1, 1, 1/) )
                 call check(iret)
-                do ix = 1, mesh(1)
-                   ind = ind + 1
-                   write (1,'(1p,e13.5)',advance="no") gridfunc(ix)      ! write without linebreak
-                   if (mod(ind,6).eq.0) write (1,'()') ! linebreak after 6 numbers
-                enddo
+                write(1) (gridfunc(ix),ix=1,mesh(1))
              enddo
           enddo
-
-write(1,"()") 
-write(1,"(a)") "END_DATAGRID_3D"
-write(1,"(a)") "END_BLOCK_DATAGRID_3D"
+       enddo
 
        close(1)
        call check( nf90_close(ncid) )
@@ -109,4 +97,5 @@ if (code /= nf90_noerr) then
 endif
 end subroutine check
 
-end program cdf2xsf
+#endif /* CDF */
+end program cdf2grid

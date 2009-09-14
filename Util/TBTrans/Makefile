@@ -58,7 +58,7 @@ $(FDF):
                           "ARCH_MAKE=../$(ARCH_MAKE)" \
                           "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 #
-INCFLAGS=$(FDF_INCFLAGS)
+INCFLAGS:=$(NETCDF_INCFLAGS) $(INCFLAGS)
 #
 MPI_MAKEFILE=$(VPATH)/MPI/Makefile
 $(MPI_INTERFACE): 

@@ -44,10 +44,13 @@ dep:
 	@mv tmp.Makefile Makefile
 #
 include arch.make
+INCFLAGS:= $(NETCDF_INCFLAGS) $(INCFLAGS)
 #
 # Uncomment the following line for debugging support
 #
 ##FFLAGS=$(FFLAGS_DEBUG)
+#
+.PHONY: .siesta .transiesta what version
 #
 what:
 	@echo
@@ -73,7 +76,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	chempot.o coceri.o constr.o coxmol.o cross.o compute_norm.o \
 	denmat.o denmatlomem.o detover.o dfscf.o dhscf.o diagon.o digcel.o fft3d.o \
 	diagg.o diagk.o diagk_file.o diagkp.o diag2g.o diag2k.o diagpol.o \
-	diagsprl.o dipole.o dismin.o dnaefs.o dot.o  \
+	diagsprl.o dipole.o dismin.o dnaefs.o doping.o dot.o  \
 	efield.o egandd.o ener3.o ener3lomem.o extrapolon.o \
 	fixed.o flib_spline.o gradient.o gradientlomem.o grdsam.o \
 	hsparse.o idiag.o  initatom.o inver.o iodm_netcdf.o \
@@ -222,8 +225,16 @@ version: version.F90
 	@mv compinfo.o version.o
 	#@rm -f compinfo.F90
 	@echo
-
-siesta: version $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
+#
+check-siesta:
+	@if [ -f .transiesta ]; then \
+              echo "** You were building transiesta in this directory." ;\
+              echo "** Please type 'make clean' first " ;\
+              false ;\
+	fi
+	@touch .siesta
+#
+siesta: check-siesta what version $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
                 $(COMP_LIBS) $(ALL_OBJS) 
 	$(FC) -o siesta \
 	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML) $(XMLPARSER) $(MPI_INTERFACE)\
@@ -237,16 +248,29 @@ TS_OBJS= m_ts_options.o m_ts_aux_rout.o m_ts_kpoints.o \
          m_ts_io.o m_ts_scattering.o m_ts_contour.o m_ts_electrode.o \
          m_ts_in_siesta.o
 #
-transiesta: what version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
+transiesta: FPPFLAGS+=$(DEFS_PREFIX)-DTRANSIESTA 
+transiesta: DEFS+=$(DEFS_PREFIX)-DTRANSIESTA
+check-ts:
+	@if [ -f .siesta ]; then \
+              echo "** You were building plain siesta in this directory." ;\
+              echo "** Please type 'make clean' first" ;\
+              false ;\
+	fi
+	@touch .transiesta
+#
+#
+transiesta: check-ts what version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF)  \
                     $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
 	$(FC) -o transiesta \
-               $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(WXML) $(XMLPARSER)\
-               $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(COMP_LIBS) $(FoX_LIBS) $(LIBS)
+               $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) \
+               $(MPI_INTERFACE) $(NETCDF_INTERFACE) \
+               $(COMP_LIBS) $(FoX_LIBS) $(LIBS)
 #
 #
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
-	rm -f siesta  *.o  *.a *.pcl *.pc
+	rm -f siesta transiesta *.o  *.a *.pcl *.pc
+	rm -f .siesta .transiesta
 	rm -f *.mod
 	rm -f *.bck *~
 	rm -f aux_*.f aux_*.f90
@@ -342,6 +366,7 @@ diagsprl.o: atomlist.o fermid.o parallel.o parallelsubs.o precision.o
 diagsprl.o: siesta_geom.o sys.o
 dipole.o: parallel.o precision.o sys.o
 dnaefs.o: atmfuncs.o mneighb.o precision.o
+doping.o: meshsubs.o meshsubs.o parallel.o precision.o sys.o
 dynamics.o: atomlist.o files.o ioxv.o m_mpi_utils.o parallel.o precision.o
 dynamics.o: sys.o units.o
 efield.o: atmfuncs.o parallel.o parallelsubs.o parsing.o precision.o
