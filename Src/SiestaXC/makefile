@@ -17,7 +17,7 @@ SIESTA_SRCS= alloc.F90 bessph.f cellsubs.f  \
              chkgmx.f fft1d.F  flib_spline.f90  \
              m_filter.f90 minvec.f m_io.f moreParallelSubs.F90 \
              m_recipes.f m_timer.F90 m_walltime.f90 parallel.F \
-	     precision.F radfft.f sorting.f sys.F
+	     precision.F pxf.F90 radfft.f sorting.f sys.F
 SIESTA_OBJS:= $(SIESTA_SRCS:.f=.o)
 SIESTA_OBJS:= $(SIESTA_OBJS:.F=.o)
 SIESTA_OBJS:= $(SIESTA_OBJS:.f90=.o)

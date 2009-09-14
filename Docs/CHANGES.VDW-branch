@@ -1,5 +1,32 @@
 ------------------------------------------------------------------
 
+2009-09-14  10:00:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-26-274
+
+Summary: Added SiestaXC/Testers directory and programs
+Keywords: SiestaXC/Testers
+
+  Three tester programs of the siestaXC library have been added.
+
+  Plus a few minor unrelated corrections and additions.
+
+added:
+  Src/SiestaXC/Testers/
+  Src/SiestaXC/Testers/makefile
+  Src/SiestaXC/Testers/test1.F90  ! Tests ldaxc and ggaxc
+  Src/SiestaXC/Testers/test2.F90  ! Tests cellxc
+  Src/SiestaXC/Testers/test3.F90  ! Tests atomxc and cellxc
+
+modified:
+  Src/Makefile                ! Removed leftout comments
+  Src/SiestaXC/atomxc.f90     ! Added initializtion of debugXC 
+  Src/SiestaXC/cellxc.f90     ! Added some comments
+  Src/SiestaXC/debugxc.f90    ! Changed name of output files
+  Src/SiestaXC/makefile       ! Added pxf.F90 to source files
+  Src/SiestaXC/mesh3d.F90     ! Added initialization of parallel
+  Src/SiestaXC/siestaxc.f90   ! Added use of ldaxc and ggaxc
+
+------------------------------------------------------------------
+
 2009-09-10  12:15:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-25-273
 
 Summary: Merged with siesta-xc sub-branch of A.Garcia

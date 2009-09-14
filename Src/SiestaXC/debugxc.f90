@@ -19,7 +19,7 @@ PUBLIC &
 
 PRIVATE ! Nothing is declared public beyond this point
 
-  character(len=*),parameter:: filePrefix = 'debugXC.' ! Prefix of file name
+  character(len=*),parameter:: filePrefix = 'debugXC' ! Prefix of file name
   character(len=32),    save:: fileName  ! Output file name
   integer,              save:: udebug=0  ! Output file unit for debug info
 
@@ -36,14 +36,15 @@ subroutine setDebugOutputUnit()
   ! If already initialized, do nothing
   if (udebug>0) return
 
-  ! Set output file name, except node number, and find its name length
-  fileName = filePrefix
-
   ! Make sure that node and Nodes are set
   call parallel_init()
 
-  ! Append node number to file name
-  if (Nodes>1) fileName = filePrefix//nodeString()
+  ! Set output file name
+  if (Nodes==1) then
+    fileName = filePrefix//'.out'
+  else
+    fileName = filePrefix//'.node'//nodeString()
+  end if
 
   ! Find an available output unit
   call io_assign( udebug )

@@ -166,7 +166,8 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 !  use m_vdwxc, only: qofrho        ! Returns q(rho,grad_rho)
 !  use m_timer, only: timer_start   ! Start CPU time counter
 !  use m_timer, only: timer_stop    ! Stop CPU time counter
-!  use debugXC, only: udebug        ! Output file unit for debug info
+  use debugXC, only: udebug        ! Output file unit for debug info
+  use debugXC, only: setDebugOutputUnit  ! Sets udebug
 ! END DEBUG
 
   implicit none
@@ -237,7 +238,7 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 ! END DEBUG
 
 ! DEBUG
-!  call setDebugOutputUnit()   ! Initialize udebug variable
+  call setDebugOutputUnit()   ! Initialize udebug variable
 !  call timer_start( myName )  ! Start time counter
 ! END DEBUG
 

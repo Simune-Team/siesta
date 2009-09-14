@@ -250,7 +250,9 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   use cellsubs,only: reclat        ! Finds reciprocal unit cell vectors
   use mesh3D,  only: sameMeshDistr ! Finds if two mesh distr. are equal
   use mesh3D,  only: setMeshDistr  ! Defines a new mesh distribution
+! BEGIN DEBUG
   use debugXC, only: setDebugOutputUnit ! Sets udebug variable
+! END DEBUG
   use m_timer, only: timer_get     ! Returns counted times
   use m_timer, only: timer_start   ! Starts counting time
   use m_timer, only: timer_stop    ! Stops counting time
@@ -398,8 +400,10 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   ! Start time counter
   call timer_start( myName )
 
+! DEBUG
   ! Initialize udebug variable
   call setDebugOutputUnit()
+! END DEBUG
 
   ! Get the functional(s) to be used
   call getXC( nXCfunc, XCfunc, XCauth, XCweightX, XCweightC )

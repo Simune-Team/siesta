@@ -179,10 +179,6 @@ $(XC):
                     "VPATH_ROOT=$(VPATH)"  \
 	            "INCFLAGS=-I../MPI" \
                     "FFLAGS=$(FFLAGS)"  module )
-#
-# Routines using xmlparser calls.
-#
-######  somefile.o : $(WXML)
 #--------------------------------------------------------------
 FDF=libfdf.a
 $(FDF): 
