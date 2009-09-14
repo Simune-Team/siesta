@@ -1,5 +1,8 @@
 #!!@LICENSE
 #
+.SUFFIXES:
+.SUFFIXES: .f .F .o .a  .f90 .F90
+#
 ARCH_MAKE_DEFAULT=../../arch.make
 ARCH_MAKE?=$(ARCH_MAKE_DEFAULT)
 include $(ARCH_MAKE)

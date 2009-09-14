@@ -62,7 +62,8 @@ PROGRAM siestaXCtest3
 
 #ifdef MPI
   ! MPI-related variables
-  integer:: MPIerror
+  integer :: MPIerror
+  integer :: nLarger, nxNode
 #endif
 
   ! Initialize hybrid XC functional

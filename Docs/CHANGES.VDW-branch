@@ -1,5 +1,18 @@
 ------------------------------------------------------------------
 
+2009-09-14  15:15:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-27-275
+
+Summary: Merged with A.Garcia's siesta-xc
+Keywords: SiestaXC/makefile Testers/makefile
+
+modified:
+  Src/SiestaXC/Testers/makefile   ! Add SUFFIXES clause
+  Src/SiestaXC/Testers/test3.F90  ! Fix declarations
+  Src/SiestaXC/lib-makefile       ! Add pxf.F90 to source files
+  Src/SiestaXC/makefile           ! siestaXc-dist fixes
+
+------------------------------------------------------------------
+
 2009-09-14  10:00:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-26-274
 
 Summary: Added SiestaXC/Testers directory and programs

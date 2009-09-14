@@ -51,9 +51,12 @@ siestaXC-dist: $(ALL_SOURCES) $(OTHER_FILES)
 	cp -fp lib-arch.make siestaXC-dist
 	cp -frp ../MPI siestaXC-dist
 	cp -fp mpi-makefile siestaXC-dist/MPI/Makefile
+	cp -frp Testers siestaXC-dist
+	cp -fp test-makefile siestaXC-dist/Testers/makefile
 #
 clean:
-	rm -f *.o *.*d *.a
+	rm -fr *.o *.*d *.a siestaXC-dist
+#
 # DO NOT DELETE THIS LINE - used by make depend
 alloc.o: m_io.o parallel.o precision.o sys.o
 atomxc.o: alloc.o ggaxc.o ldaxc.o m_filter.o mesh1d.o precision.o radfft.o
