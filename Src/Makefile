@@ -146,7 +146,11 @@ FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 #
 $(FoX_configured):
-	(cd FoX; if [ "$(VPATH)" = . ]; then CONFIGURE="./configure"; else CONFIGURE="$(VPATH)/FoX/configure"; fi; $$CONFIGURE VPATH="$(VPATH)/FoX" FC="$(FC_SERIAL)" FCFLAGS="$(FFLAGS)" --enable-wcml $(DUMMY_FOX) || false )
+	(cd FoX; touch arch.make ; \
+         CONFIGURE="$(VPATH)/FoX/configure"; \
+         $$CONFIGURE VPATH="$(VPATH)/FoX" \
+         FC="$(FC_SERIAL)" FCFLAGS="$(FFLAGS)" \
+         --enable-wcml $(DUMMY_FOX) || false )
 #
 # Note we have to make sure to use the same compiler as SIESTA,
 # and pick up all the same FFLAGS, and also remember to maybe ask for a dummy library.
@@ -174,9 +178,6 @@ XMLPARSER=libxmlparser.a
 $(XMLPARSER): 
 	(cd xmlparser ; $(MAKE) "VPATH=$(VPATH)/xmlparser" module)
 #
-# Routines using xmlparser calls.
-#
-######  somefile.o : $(WXML)
 #--------------------------------------------------------------
 FDF=libfdf.a
 $(FDF): 
