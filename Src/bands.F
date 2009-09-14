@@ -208,7 +208,7 @@ C Find scale used in k point data
             scale = fdf_string( 'BandLinesScale', 'pi/a' )
           endif
 #ifdef MPI
-          call MPI_Bcast(scale,30,MPI_double_precision,0,
+          call MPI_Bcast(scale,30,MPI_character,0,
      .      MPI_Comm_World,MPIerror)
 #endif
           if (scale .eq. 'pi/a') then
