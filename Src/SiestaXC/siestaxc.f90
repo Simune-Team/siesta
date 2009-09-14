@@ -295,24 +295,30 @@
 
 MODULE siestaXC
 
-! Entry routines of siestaXC library
+! Real kinds (precision) of arguments
+  USE precision, only: siestaXC_std_p  => dp     ! Standard real-kind precision
+  USE precision, only: siestaXC_grid_p => grid_p ! Precision for grid arrays
+
+! Main entry routines of siestaXC library
   USE m_atomXC, only: atomXC   ! XC for a spherical charge distribution
   USE m_cellXC, only: cellXC   ! XC for a periodic unit cell
   USE xcmod,    only: getXC    ! Returns XC functional(s)
   USE xcmod,    only: setXC    ! Sets XC functional(s)
 
+! Secondary entry points for testers and lower-level programming
+  USE m_ldaxc,  only: ldaxc    ! LDA-XC functionals
+  USE m_ggaxc,  only: ggaxc    ! GGA-XC functionals
+
 ! Extra utilities placed here for non-siesta users
 ! See correspondig modules for usage documentation
+  USE fft1d,    only: nfft                 ! Get allowed sizes for FFTs
   USE alloc,    only: alloc_report         ! Set and print allocation report
   USE debugXC,  only: setDebugOutputUnit   ! Set debug report
   USE debugXC,  only: closeDebugOutputFile ! Print debug report
   USE m_timer,  only: timer_report         ! Print CPU time report
-  USE mesh3d,  only : myMeshBox    ! Returns my processor mesh box
-  USE mesh3d,  only : setMeshDistr ! Sets a distribution of mesh
-                                   ! points over parallel processors
-  USE precision, only: siestaXC_std_p  => dp     ! Working precision
-  USE precision, only: siestaXC_grid_p => grid_p ! Precision for grid arrays
-
+  USE mesh3d,   only: myMeshBox            ! Get my processor mesh box
+  USE mesh3d,   only: setMeshDistr         ! Set a distribution of mesh
+                                           ! points over parallel processors
   PUBLIC
 
 END MODULE siestaXC

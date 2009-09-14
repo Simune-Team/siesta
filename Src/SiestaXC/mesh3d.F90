@@ -29,6 +29,7 @@
 ! use alloc,      only: re_alloc        ! Re-allocation routine
 ! use sys,        only: die             ! Termination routine
 ! use sorting,    only: ordix           ! Finds the sorting index of a vector
+! use parallel,  only: parallel_init    ! Sets node and nodes variables
 !
 !   USED module parameters:
 ! use precision,  only: dp              ! Real double precision type
@@ -639,6 +640,7 @@ MODULE mesh3D
   use alloc,     only: re_alloc        ! Re-allocation routine
   use sys,       only: die             ! Termination routine
   use sorting,   only: ordix           ! Sorting routine
+  use parallel,  only: parallel_init   ! Sets node and nodes variables
 
 ! Used module parameters
   use precision, only: dp              ! Real double precision type
@@ -2872,6 +2874,9 @@ subroutine setMeshDistr( distrID, nMesh, box, firstNode, nNodes, &
             nFactors, node0, nParts, nRem, nBlocks, newDistrID, &
             oldDistrID, partSize, power(maxFactors)
   logical:: found
+
+! Make sure that myNode and totNodes are defined
+  call parallel_init()
 
 ! Trap the serial case (totNodes available from module parallel)
   if (totNodes==1) then

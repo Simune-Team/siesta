@@ -1,45 +1,94 @@
 ------------------------------------------------------------------
-2009-09-08  10:05:00 GMT+2	Alberto Garcia	siesta-2.6.32-vdw-26-274
-Merged changes in fft.F + parallel_init-related from JMS's branch
 
-The changes file was perfectly merged, but I added a new
-version id and log entry.
+2009-09-14  10:00:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-26-274
+
+Summary: Added SiestaXC/Testers directory and programs
+Keywords: SiestaXC/Testers
+
+  Three tester programs of the siestaXC library have been added.
+
+  Plus a few minor unrelated corrections and additions.
+
+added:
+  Src/SiestaXC/Testers/
+  Src/SiestaXC/Testers/makefile
+  Src/SiestaXC/Testers/test1.F90  ! Tests ldaxc and ggaxc
+  Src/SiestaXC/Testers/test2.F90  ! Tests cellxc
+  Src/SiestaXC/Testers/test3.F90  ! Tests atomxc and cellxc
 
 modified:
-  Docs/CHANGES.VDW-branch
-  Src/SiestaXC/cellxc.f90
-  Src/SiestaXC/debugxc.f90
-  Src/alloc.F90
-  Src/fft.F
-  Src/m_timer.F90
-  Src/parallel.F
-  version.info
-
+  Src/Makefile                ! Removed leftout comments
+  Src/SiestaXC/atomxc.f90     ! Added initializtion of debugXC 
+  Src/SiestaXC/cellxc.f90     ! Added some comments
+  Src/SiestaXC/debugxc.f90    ! Changed name of output files
+  Src/SiestaXC/makefile       ! Added pxf.F90 to source files
+  Src/SiestaXC/mesh3d.F90     ! Added initialization of parallel
+  Src/SiestaXC/siestaxc.f90   ! Added use of ldaxc and ggaxc
 
 ------------------------------------------------------------------
-2009-09-07  23:15:00 GMT+2	Alberto Garcia	siesta-2.6.32-vdw-25-273
 
-Population of Src/SiestaXC directory. Working serial makefile
+2009-09-10  12:15:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-25-273
 
-(documents also previous patch)
+Summary: Merged with siesta-xc sub-branch of A.Garcia
+Keywords: merge
 
-Some routines, used only in SiestaXC, have been moved from Src
-to Src/SiestaXC.
+  Add support for creation of XC library distribution
 
-The makefile has been updated to comply more or less with the
-standard Siesta usage (serial only so far, for a proof of concept
-of the library approach).
+  Moved mesh3d to lib. New exports. Fixed module leaks
+  
+  Moved mesh3d from Src to SiestaXC, as a "user utility" exported
+  by the library. Dhscf and Forhar now use it through SiestaXC.
+  
+  Also, dp and grid_p are exported (with suitable prefixes). An
+  example of use is in Pseudo/atom/velect.f
+  
+  Fixed some namespace leaks (direct imports of setXC, debugXC routines,
+  etc).
+ 
+  Support MPI for xc. Atom always compiles without MPI
 
-Src/Makefile has been modified to remove the SiestaXC objects, and
-to build and use libSiestaXC.a
+  Used siestaXC in the compilation of Pseudo/atom
 
-Src/fft.F: Array sections of the type a(low:) cannot be used if arrays
-are assumed size.
-
+  Some routines, used only in SiestaXC, have been moved from Src
+  to Src/SiestaXC.
+  
+  The makefile has been updated to comply more or less with the
+  standard Siesta usage (serial only so far, for a proof of concept
+  of the library approach).
+  
+  Src/Makefile has been modified to remove the SiestaXC objects, and
+  to build and use libSiestaXC.a
+   
+removed:
+  Pseudo/atom/alloc.F90
+  Pseudo/atom/atomxc.f90
+  Pseudo/atom/bessph.f
+  Pseudo/atom/flib_spline.f90
+  Pseudo/atom/io.f
+  Pseudo/atom/m_debug.f90
+  Pseudo/atom/m_filter.f90
+  Pseudo/atom/m_recipes.f
+  Pseudo/atom/memory.F
+  Pseudo/atom/memoryinfo.F
+  Pseudo/atom/mesh1d.f90
+  Pseudo/atom/parallel.f
+  Pseudo/atom/precision.F
+  Pseudo/atom/radfft.f
+  Pseudo/atom/sys.F
+  Pseudo/atom/timer.f90
+  Pseudo/atom/vdwxc.f90
+  Pseudo/atom/xcmod.f90
+added:
+  Pseudo/atom/SiestaXC/
+  Pseudo/atom/SiestaXC/.dummy_directory
+  Src/SiestaXC/lib-arch.make
+  Src/SiestaXC/lib-makefile
+  Src/SiestaXC/mpi-makefile
 renamed:
   Src/atomxc.f90 => Src/SiestaXC/atomxc.f90
   Src/cellxc.f90 => Src/SiestaXC/cellxc.f90
   Src/debugxc.f90 => Src/SiestaXC/debugxc.f90
+  Src/fft3d.f90 => Src/SiestaXC/fft3d.f90
   Src/fftr.f90 => Src/SiestaXC/fftr.f90
   Src/ggaxc.f => Src/SiestaXC/ggaxc.f
   Src/ldaxc.f => Src/SiestaXC/ldaxc.f
@@ -49,9 +98,20 @@ renamed:
   Src/vdwxc.f90 => Src/SiestaXC/vdwxc.f90
   Src/xcmod.f90 => Src/SiestaXC/xcmod.f90
 modified:
+  Docs/CHANGES.VDW-branch
+  Pseudo/atom/Makefile
+  Pseudo/atom/velect.f
   Src/Makefile
   Src/SiestaXC/makefile
-  Src/fft.F
+  Src/dhscf.F
+  Src/forhar.f
+  Src/read_xc_info.F
+  Src/siesta_end.F
+  Src/siesta_init.F
+  version.info
+  Src/SiestaXC/siestaxc.f90
+
+------------------------------------------------------------------
 
 2009-09-07  11:00:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-24-272
 
