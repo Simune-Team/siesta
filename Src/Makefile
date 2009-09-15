@@ -259,6 +259,7 @@ clean:
 	(cd fdf ; $(MAKE) clean)
 	(cd FoX ; $(MAKE) distclean)
 	(cd xmlparser ; $(MAKE) clean)
+	(cd wxml ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
 	(cd Libs ; $(MAKE) clean )
 #
