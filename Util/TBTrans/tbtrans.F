@@ -793,11 +793,11 @@ c on return GFRGF contains GF^dagger.GammaR.GF
 
 #ifdef CDF
 c write datafile with hamiltonian, overlap, self-energies to netcdf-file
-      if(OutputRegionData)  then
-         CALL OutputRegion(USEBULK,RDORTHO,joutfile,Volt,NEn,
-     .        ispin,nspin,isobegin,isoend,nou,
-     .        H,S,NGL,SFEL,NGR,SFER,ZEnergy)
-      end if !OutputRegionData
+C      if(OutputRegionData)  then
+C         CALL OutputRegion(USEBULK,RDORTHO,joutfile,Volt,NEn,
+C     .        ispin,nspin,isobegin,isoend,nou,
+C     .        H,S,NGL,SFEL,NGR,SFER,ZEnergy)
+C      end if !OutputRegionData
 #endif !CDF
 
       

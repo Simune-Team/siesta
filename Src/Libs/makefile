@@ -18,10 +18,13 @@ default: linalg.a
 ARCH_MAKE?=../arch.make
 include $(ARCH_MAKE)
 #
-ALL_OBJS= lapack.o dc_lapack.o zgesv_lapack.o blas.o machine.o
+ALL_OBJS= lapack.o dc_lapack.o zgesv_lapack.o zgeev_lapack.o blas.o machine.o
 # Add machine.o here only if needed...
 DC_OBJS=  dc_lapack.o   # machine.o
+# Used in TranSIESTA
 ZGESV_OBJS=  zgesv_lapack.o   # machine.o
+# Used in TBTrans
+ZGEEV_OBJS= zgeev_lapack.o
 #
 default: linalg.a
 #
@@ -46,6 +49,11 @@ zgesv_lapack.a: $(ZGESV_OBJS)
 	ar $(ARFLAGS_EXTRA) cru zgesv_lapack.a $(ZGESV_OBJS)
 	$(RANLIB) zgesv_lapack.a
 	mv zgesv_lapack.a ..
+#
+zgeev_lapack.a: $(ZGEEV_OBJS)
+	ar $(ARFLAGS_EXTRA) cru zgeev_lapack.a $(ZGEEV_OBJS)
+	$(RANLIB) zgeev_lapack.a
+	mv zgeev_lapack.a ..
 #
 clean:
 	rm -f $(ALL_OBJS) *.a

@@ -3,12 +3,8 @@
 #
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
-# If compiling without system lapack, you might need something like this
-# (to be fixed)
-#LINALG=linalg.a
-#EXTRA=zgeev.o
+# Please see note about Linear-Algebra libraries below
 #
-
 default: what  tbtrans90 
 #default: what  tbtrans90 gengf90 readTSHScdf
 #
@@ -17,6 +13,11 @@ VPATH:=$(shell pwd)/../../Src
 OBJDIR=Obj
 ARCH_MAKE=../../$(OBJDIR)/arch.make
 include $(ARCH_MAKE)
+
+# If compiling without system lapack, you might need something like this
+# 
+#TBTRANS_LINALG=linalg.a # Or maybe only: zgeev_lapack.a zgesv_lapack.a
+LINALG:= $(TBTRANS_LINALG) $(LINALG)
 
 SIESTA_SYS=${SIESTA_ARCH}
 
@@ -44,7 +45,7 @@ SIESTA_OBJS= precision.o alloc.o  memoryinfo.o memory.o pxf.o \
 TBTOBJS= $(SIESTA_OBJS) $(MOD_TOBJS) $(SYSOBJ) $(EXTRA) tbtrans.o transmission.o   \
          calc_green.o cdiag_local.o getsfe.o \
          mkRealContour.o reinit_tb.o setupkham2.o TSiohs.o atompdos.o coop.o \
-         csolve.o teigchana.o helpers.o OutputRegionData.o \
+         csolve.o teigchana.o helpers.o #OutputRegionData.o \
          Lowdin.o netcdfwrite.o \
 
 #
@@ -71,11 +72,12 @@ LINALG_INCFLAGS:=-I $(VPATH)/Libs $(INCFLAGS)
 $(LINALG): 
 	(cd Libs ; $(MAKE) -f $(LINALG_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/Libs" \
                           "ARCH_MAKE=../$(ARCH_MAKE)" \
-                          "INCFLAGS=$(LINALG_INCFLAGS)" "FFLAGS=$(FFLAGS)" )
+                          "INCFLAGS=$(LINALG_INCFLAGS)" "FFLAGS=$(FFLAGS)" $(LINALG))
 #
 tbtrans90: $(TBTOBJS) $(FDF) $(SYSOBJ) $(NETCDF_INTERFACE) $(LINALG)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o tbtrans90 \
-              $(TBTOBJS) $(MPI_INTERFACE) $(NETCDF_INTERFACE)  $(FDF) $(LIBS) $(LINALG)
+              $(TBTOBJS) $(MPI_INTERFACE) $(NETCDF_INTERFACE) \
+              $(FDF) $(LIBS) $(LINALG)  || echo "***Please see top of Makefile"
 #	@(cd ../../bin ; rm -f tsScan ; ln -s tbtrans90 tsScan)
 
 
@@ -90,6 +92,7 @@ clean:
 	rm -f tbtrans90 *.o *.a *.mod
 	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
 	(cd MPI ; $(MAKE) -f $(MPI_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
+	(cd Libs ; $(MAKE) -f $(MPI_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
 
 readTSHScdf: readTSHScdf.F $(NETCDF_INTERFACE)
 	$(FC) -o readTSHScdf readTSHScdf.F $(NETCDF_INTERFACE) $(NETCDF_LIBS)

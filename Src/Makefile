@@ -259,6 +259,11 @@ check-ts:
 	fi
 	@touch .transiesta
 #
+# Library that might need to be compiled
+#
+zgesv_lapack.a: Libs/zgesv_lapack.f
+	@echo "==> Compiling zgesv_lapack.a in Libs..."
+	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" zgesv_lapack.a)
 #
 transiesta: check-ts what version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF)  \
                     $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
@@ -278,6 +283,7 @@ clean:
 	(cd fdf ; $(MAKE) clean)
 	(cd FoX ; $(MAKE) distclean)
 	(cd xmlparser ; $(MAKE) clean)
+	(cd wxml ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
 	(cd Libs ; $(MAKE) clean )
 #
