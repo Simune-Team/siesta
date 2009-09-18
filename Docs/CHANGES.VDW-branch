@@ -1,5 +1,38 @@
 ------------------------------------------------------------------
 
+2009-09-18  20:45:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-28-276
+
+Summary: m_filter.f90 removed from libSiestaXC. Tests upgraded. 
+Keywords: tests m_filter
+
+  The use of kcPhi, from m_filter, was introducing an artificial dependence
+  of the non-local VDW energy with small density changes. To avoid this,
+  the planewave cutoff kc is now fixed, in most cases, to a fixed value.
+  A new test2 has been added to check the consistency of Ex+Ec with Vxc
+  in atomXC.
+
+added:
+  Src/SiestaXC/Testers/test2.f90  ! New test of atomXC
+
+renamed:
+  Src/SiestaXC/Testers/test1.F90 => Src/SiestaXC/Testers/test1.f90
+  Src/SiestaXC/Testers/test2.F90 => Src/SiestaXC/Testers/test3.F90
+  Src/SiestaXC/Testers/test3.F90 => Src/SiestaXC/Testers/test4.F90
+
+modified:
+  Src/SiestaXC/Testers/makefile   ! Added test4
+  Src/SiestaXC/atomxc.f90         ! Removed use of m_filter
+  Src/SiestaXC/cellxc.f90         ! Corrected a bug for hybrids with VDW
+  Src/SiestaXC/lib-makefile       ! Removed m_filter.f90 from sources
+  Src/SiestaXC/makefile           ! Removed m_filter.f90 from sources
+  Src/SiestaXC/vdwxc.f90          ! Writing of file phi.out commented out
+  Src/m_filter.f90                ! Just a modified comment line
+  Src/SiestaXC/Testers/test1.f90  ! Only cosmetic changes
+  Src/SiestaXC/Testers/test3.F90  ! Added function DensOfR + more
+  Src/SiestaXC/Testers/test4.F90  ! Added function DensOfR + more
+
+------------------------------------------------------------------
+
 2009-09-14  15:15:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-27-275
 
 Summary: Merged with A.Garcia's siesta-xc

@@ -374,8 +374,8 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
      dVcdD(nSpin*nSpin), dVxdD(nSpin*nSpin), &
      Eaux, EcuspVDW, Enl, epsC, epsCusp, epsNL, epsX, f1, f2, &  
      GD(3,nSpin), k, kcell(3,3), kcut, kvec(3),  &
-     sumTime, sumTime2, totTime, VDWweightC, volume, &
-     XCweightC(maxFunc), XCweightX(maxFunc)
+     stressVDW(3,3), sumTime, sumTime2, totTime, VDWweightC, volume, &
+     XCweightC(maxFunc), XCweightVDW, XCweightX(maxFunc)
 ! DEBUG
   integer :: iip, jjp, jq
   real(dp):: rmod, rvec(3)
@@ -429,6 +429,7 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   ! Set GGA and VDW switches
   GGA = .false.
   VDW = .false.
+  XCweightVDW = 0
   do nf = 1,nXCfunc
     if ( XCfunc(nf).eq.'LDA' .or. XCfunc(nf).eq.'lda' .or. &
          XCfunc(nf).eq.'LSD' .or. XCfunc(nf).eq.'lsd' ) then
@@ -438,6 +439,7 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
     else if ( XCfunc(nf).eq.'VDW' .or. XCfunc(nf).eq.'vdw') then
       GGA = .true.
       VDW = .true.
+      XCweightVDW = XCweightVDW + XCweightC(nf)
     else
       write(errMsg,*) errHead//'Unknown functional ', XCfunc(nf)
       call die( trim(errMsg) )
@@ -781,13 +783,13 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 !    call timer_start( 'cellXC2.2' )
 ! END DEBUG
 
-! BEGIN DEBUG
-!    ! Initialize nonlocal correlation energy
-!    Enl = 0.0_dp
-! END DEBUG
-
     ! Find reciprocal unit vectors
     call reclat( cell, kcell, 1 )
+
+    ! Initialize nonlocal parts of VdW correlation energy and stress
+    Enl = 0.0_dp
+    EcuspVDW = 0.0_dp
+    stressVDW = 0.0_dp
 
     ! Loop on k-mesh points
     ik = 0
@@ -826,13 +828,13 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 ! END DEBUG
 
         ! Find contribution to stress from change of k vectors with strain
-        if (k > kmin) then
+        if (k > kmin) then  ! Avoid k=0 (whose contribution is zero)
           dudk(1:nq) = matmul( tk(1:nq), dphidk(1:nq,1:nq) )
           ! See note above on cancelation of factors 0.5 and 2 in Enl
           dedk = sum(dudk*tk) * (volume / k)
           do jx = 1,3
             do ix = 1,3
-              stress(ix,jx) = stress(ix,jx) - dedk * kvec(ix) * kvec(jx)
+              stressVDW(ix,jx) = stressVDW(ix,jx) - dedk * kvec(ix) * kvec(jx)
             end do
           end do
         end if ! (k>kmin)
@@ -889,19 +891,15 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 !    call timer_stop( 'cellXC2' )
 ! END DEBUG
 
-    ! Initialize nonlocal parts of VdW correlation energy
-    EcuspVDW = 0.0_dp
-    Enl = 0.0_dp
+! BEGIN DEBUG
+!    ! Re-initialize Enl if it has been calculated in reciprocal space
+!    Enl = 0.0_dp
+! END DEBUG
 
   end if ! (VDW) End of VdW initializations------------------------------------
 
 ! BEGIN DEBUG
 !  call timer_start( 'cellXC3' )
-! END DEBUG
-
-! DEBUG
-  open( unit=33, file='epsNL'//trim(nodeString()), form='formatted' )
-  write(33,'(3f12.6,i6)') (cell(:,ix),nMesh(ix),ix=1,3)
 ! END DEBUG
 
   ! Loop on mesh points -------------------------------------------------------
@@ -961,8 +959,25 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
                     dEdDaux, dEcdD, dVxdD, dVcdD )
         dEcdGD = 0.0_dp
 
+! DEBUG
+!        ! Select only non local correlation energy and potential
+!        epsX = 0
+!        epsC = 0
+!        dExdD = 0
+!        dEcdD = 0
+!        dExdGD = 0
+!        dEcdGD = 0
+! END DEBUG
+
         ! Local cusp correction to nonlocal VdW energy integral
         call vdw_decusp( nSpin, D, GD, epsCusp, dEcuspdD, dEcuspdGD )
+
+! DEBUG
+!        ! Select only non local correlation energy and potential
+!        epsCusp = 0
+!        dEcuspdD = 0
+!        dEcuspdGD = 0
+! END DEBUG
 
         ! Find expansion of theta(q(r)) for VdW
         call vdw_theta( nSpin, D, GD, tr, dtdd, dtdgd )
@@ -985,8 +1000,13 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
         Enl = Enl + dVol * Dtot * epsNL
 
 ! DEBUG
-        write(33,'(3i6,3e15.6)') ii1, ii2, ii3, Dtot, epsNL, epsX+epsC
-!        write(33,'(3f12.6,2e15.6)') &  ! Write x,y,z instead of i1,i2,i3
+!        if (i1==0 .and. i2==0 .and. i3==0) then
+!          open( unit=33, file='epsNL'//trim(nodeString()), form='formatted' )
+!          write(33,'(3f12.6,i6)') (cell(:,ix),nMesh(ix),ix=1,3)
+!        end if
+!        write(33,'(3i6,3e15.6)') ii1, ii2, ii3, Dtot, epsNL, epsX+epsC
+!        ! Alternatively, write x,y,z instead of i1,i2,i3
+!        write(33,'(3f12.6,2e15.6)') &
 !          ii1*cell(:,1)/nMesh(1), &
 !          ii2*cell(:,2)/nMesh(2), &
 !          ii3*cell(:,3)/nMesh(3), Dtot, epsNL
@@ -1188,9 +1208,13 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 !  end if
 ! END DEBUG
 
-  ! Add contribution to stress from the change of volume with strain and
-  ! divide by volume to get correct stress definition (dE/dStrain)/Vol
+  ! Add contribution to stress from the change of volume with strain
   forall(ix=1:3) stress(ix,ix) = stress(ix,ix) + Ex + Ec
+
+  ! Add contribution to stress from change of k vectors with strain
+  if (VDW) stress = stress + stressVDW * XCweightVDW
+
+  ! Divide by volume to get correct stress definition (dE/dStrain)/Vol
   stress = stress / volume
 
   ! Divide by energy unit

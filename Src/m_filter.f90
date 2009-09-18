@@ -42,7 +42,7 @@
 !  integer  n_eigen: Number of eigenvectors of the filtering kernel
 !
 !******************************************************************************
-! function kcPhi( l, nr, r, phi, etol, kexp )
+! function kcPhi( l, nr, r, phi, etol )
 !
 ! Returns planewave cutoff of a radial function
 !

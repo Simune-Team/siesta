@@ -1,113 +1,99 @@
 PROGRAM siestaXCtest3
 
-  ! Compares the energy and potential calculated by atomXC and cellXC.
-  ! J.M.Soler. Sept.2009
+  ! Tester of cellXC. Compares the potential and stress with the numerical
+  ! (finite-difference) derivatives of the energy. J.M.Soler. Sept.2009
 
   ! Used module procedures
-  USE siestaXC, only: atomXC
   USE siestaXC, only: cellXC
+  USE siestaXC, only: myMeshBox
+  USE siestaXC, only: nfft
+  USE siestaXC, only: setMeshDistr
   USE siestaXC, only: setXC
 
   ! Used module parameters
   USE siestaXC, only: dp => siestaXC_std_p
   USE siestaXC, only: gp => siestaXC_grid_p
 
-! Used MPI types
+! Used MPI procedures and types
 #ifdef MPI
-  USE mpi_siesta, only: MPI_Double_Precision
-  USE mpi_siesta, only: MPI_Max
-  USE mpi_siesta, only: MPI_Sum
+  USE mpi_siesta, only: MPI_AllReduce
   USE mpi_siesta, only: MPI_Comm_World
+  USE mpi_siesta, only: MPI_Double_Precision
+  USE mpi_siesta, only: MPI_Sum
 #endif
 
   implicit none
 
   ! Tester parameters
-  integer, parameter:: irel  =  0 ! Relativistic? 0=>no, 1=>yes
-  integer, parameter:: nSpin =  2 ! Number of spin components
-  integer, parameter:: nfTot = 10 ! Number of functionals
-  integer, parameter:: jf1 =  10  ! First functional tested
-  integer, parameter:: jf2 =  10  ! Last functional tested
-  integer, parameter:: nr = 501   ! Number of radial points
-  integer, parameter:: nx = 60    ! Number of grid points per lattice vector
-  integer, parameter:: n1cut = 8  ! Cutoff parameter
-  integer, parameter:: n2cut = 2  ! Cutoff parameter:
-                                  !    fCut(r)=(1-(r/rMax)**n1cut)**n2cut
-  real(dp),parameter:: dWidth = 2._dp ! Width of density distribution, in Bohr
-  real(dp),parameter:: Qtot = 10._dp  ! Integral of density distribution
-  real(dp),parameter:: spinPol= 2._dp ! Integral of densUp - densDown
-  real(dp),parameter:: rMax = 12._dp  ! Cutoff radius, in Bohr
-  real(dp),parameter:: rBuff = 3._dp  ! Radial buffer of zero density, in Bohr
+  integer, parameter:: irel  = 0         ! Relativistic? 0=>no, 1=>yes
+  integer, parameter:: nSpin = 2         ! Number of spin components
+  integer, parameter:: nfTot = 10        ! Number of functionals available
+  integer, parameter:: nRan =  6         ! Number of random points for test
+  real(dp),parameter:: latConst = 10._dp ! Lattice constant, in Bohr
+  real(dp),parameter:: Ecut = 30._dp     ! Planewave cutoff of the mesh
+  real(dp),parameter:: Qtot = 10._dp     ! Integral of density distribution
+  real(dp),parameter:: D1byD0 = 0.99_dp  ! Fractional change of density
+  real(dp),parameter:: spinPol= 2._dp    ! Integral of densUp - densDown
+  real(dp),parameter:: latCons= 10._dp   ! Lattice constant in Bohr
+  real(dp),parameter:: asym = 0.5_dp     ! Orthorhombic asymetry 
+  real(dp),parameter:: deltaDens = 1.e-6_dp ! Used for numerical derivatives
+  real(dp),parameter:: deltaStrain = 1.e-4_dp ! Used for numerical derivatives
 
-  ! Functionals to be tested
-  character(len=3):: func(nfTot) = (/'LDA',   'LDA',   'GGA',   'GGA',    &
-                                     'GGA',   'GGA',   'GGA',   'GGA',    &
-                                     'GGA',   'VDW'/)
-  character(len=6):: auth(nfTot) = (/'PZ    ','PW92  ','PW91  ','PBE   ', &
-                                     'RPBE  ','revPBE','LYP   ','WC    ', &
-                                     'PBESOL','DRSLL '/)
+  ! List of functionals to be tested (avoid those not passing test1)
+  integer, parameter:: nf = 8            ! Number of tested functionals
+  integer:: indexf(nf) = (/1,2,  4,5,6,  8,9,10/)  ! Indexes from list below
+
+  ! All functionals available
+  !                  1,       2,       3,       4,       5,   
+  !                  6,       7,       8,       9,      10,   
+  character(len=3):: &
+    func(nfTot) = (/'LDA',   'LDA',   'GGA',   'GGA',   'GGA',    &
+                    'GGA',   'GGA',   'GGA',   'GGA',   'VDW'    /)
+  character(len=6):: &
+    auth(nfTot) = (/'PZ    ','PW92  ','PW91  ','PBE   ','RPBE  ', &
+                    'revPBE','LYP   ','WC    ','PBESOL','DRSLL ' /) 
+                                     
+
+  ! A few random numbers
+  real(dp):: ran(nRan) = (/0.749218032_dp, 0.928517579_dp, 0.043866380_dp, &
+                           0.669289084_dp, 0.392851044_dp, 0.502184791_dp /)
 
   ! Tester variables and arrays
-  integer :: cellMesh(3) = (/nx,nx,nx/)
-  integer :: i1, i1max, i2, i2max, i3, i3max, ir, irmax, &
-             lb1, lb2, lb3, myNode, nf, nNodes, ub1, ub2, ub3
-  real(dp):: atomDens(nr,nSpin), atomEc, atomEx, atomDc, atomDx, &
-             atomVxc(nr,nSpin), avgDeltaVxc, &
-             cell(3,3), cellEc, cellEx, cellDc, cellDx, &
-             d0, d0s(nSpin), deltaVxc(nSpin), dr, dx, Ecut, kCut, &
-             latConst, maxDeltaVxc, pi, r, r2, recCell(3,3), rMesh(nr), &
-             stress(3,3), sumDeltaVxc, Vxc(nSpin), &
-             wc(nfTot), wr, wx(nfTot), x(3), x0(3)
-  real(gp),allocatable:: cellDens(:,:,:,:), cellVxc(:,:,:,:)
+  logical :: pointIsMine
+  integer :: i, i1, i2, i3, ic, iDelta, ip, iRan, iSpin, lb1, lb2, lb3, &
+             myBox(2,3), myDistr, myNode, &
+             nMesh(3), nNodes, np, ub1, ub2, ub3
+  real(dp):: cell(3,3), cell0(3,3), d0(nSpin), Dc, Dc0, &
+             dEdDens, dEdStrain(3,3), dVol, Dx, Dx0, dxMax, &
+             Ec, Ec0, Ex, Ex0, kCut, pi, &
+             strain(3,3), stress(3,3), stress0(3,3), &
+             tmp, volume, VxcSpin, wc(nfTot), wx(nfTot), x(3)
+  real(gp),allocatable:: dens(:,:,:,:), dens0(:,:,:,:), &
+                         Vxc(:,:,:,:), Vxc0(:,:,:,:)
 
 #ifdef MPI
   ! MPI-related variables
-  integer :: MPIerror
-  integer :: nLarger, nxNode
+  integer:: MPIerror
 #endif
 
-  ! Initialize hybrid XC functional
-  nf = jf2-jf1+1
-  wx(jf1:jf2) = 1._dp / nf
-  wc(jf1:jf2) = 1._dp / nf
-  call setXC( nf, func(jf1:jf2), auth(jf1:jf2), wx(jf1:jf2), wc(jf1:jf2) )
+  ! Initialize hybrid XC functional with all tested functionals
+  wx = 1._dp / nf
+  wc = 1._dp / nf
+  call setXC( nf, func(indexf), auth(indexf), wx(indexf), wc(indexf) )
 
-  ! Find radial mesh points and gaussian density
-  pi = acos(-1._dp)
-  d0 = Qtot / (2*pi*dWidth**2)**1.5_dp    ! Total density at origin
-  d0s(1) = d0 * (Qtot + spinPol/2) / Qtot ! Spin up density at origin
-  d0s(2) = d0 * (Qtot - spinPol/2) / Qtot ! Spin down density at origin
-  dr = rmax / (nr-1)                      ! Interval between radial points
-  do ir = 1,nr
-    rMesh(ir) = dr * (ir-1)               ! Radial point values
-    atomDens(ir,:) = d0s(:) * exp(-rMesh(ir)**2/2/dWidth**2)
-  end do
-
-  ! Impose a smooth radial cutoff
-  do ir = 1,nr
-    atomDens(ir,:) = atomDens(ir,:) * ( 1 - (rMesh(ir)/rMax)**n1cut )**n2cut
-  end do
-
-
-  ! Find exchange and correlation energy and potential from radial density
-  call atomXC( irel, nr, nr, rMesh, nSpin, atomDens, &
-               atomEx, atomEc, atomDx, atomDc, atomVxc )
-
-  ! Define fcc unit cell, such that a sphere of radius rMax+rBuff fits in it
-  latConst = (rMax+rBuff) * 2*sqrt(2._dp)
-  cell(:,1) = (/ 0.0_dp, 0.5_dp, 0.5_dp /)
-  cell(:,2) = (/ 0.5_dp, 0.0_dp, 0.5_dp /)
-  cell(:,3) = (/ 0.5_dp, 0.5_dp, 0.0_dp /)
-  cell(:,:) = cell(:,:) * latConst
-
-  ! Define reciprocal unit cell
-  recCell(:,1) = (/-1.0_dp, 1.0_dp, 1.0_dp /)
-  recCell(:,2) = (/ 1.0_dp,-1.0_dp, 1.0_dp /)
-  recCell(:,3) = (/ 1.0_dp, 1.0_dp,-1.0_dp /)
-  recCell(:,:) = recCell(:,:) * 2*pi/latConst
-  kCut = cellMesh(1) * sqrt(sum(recCell(:,1)**2)) / 2  ! Max. wave vector
-  Ecut = kCut**2                                       ! Mesh cutoff, in Ry
-  dx = pi / kCut                                 ! Dist. between mesh planes
+  ! Define a near-orthorhombic unit cell
+  ! This is just to assume orthorhombicity in calculating nMesh from Ecut
+  cell(:,:) = 0
+  cell(1,1) = 1 - asym
+  cell(2,2) = 1
+  cell(3,3) = 1 + asym
+  cell(:,1) = cell(:,1) + (/ 0.000_dp,  0.120_dp, -0.175_dp /)
+  cell(:,2) = cell(:,2) + (/ 0.221_dp,  0.000_dp,  0.030_dp /)
+  cell(:,3) = cell(:,3) + (/ 0.116_dp, -0.231_dp,  0.000_dp /)
+  cell = cell * latConst
+  volume = ( cell(2,1)*cell(3,2) - cell(3,1)*cell(2,2) ) * cell(1,3)  &
+         + ( cell(3,1)*cell(1,2) - cell(1,1)*cell(3,2) ) * cell(2,3)  &
+         + ( cell(1,1)*cell(2,2) - cell(2,1)*cell(1,2) ) * cell(3,3)
 
 #ifdef MPI
   ! Initialize MPI and get myNode and nNodes
@@ -119,100 +105,153 @@ PROGRAM siestaXCtest3
   nNodes = 1
 #endif
 
-  ! Find the box of mesh points own by my processor
-#ifdef MPI
-  ! Do simplest thing: divide only along first axis
-  nxNode = Nx / nNodes          ! Points per node along first vector
-  nLarger = nx - nxNode*nNodes  ! Number of nodes with one more point
-  if (myNode<nLarger) then      ! My node has nx+1 points
-    lb1 = (nxNode+1)*(myNode-1)
-    ub1 = (nxNode+1)*(myNode-1) - 1
-  else                          ! My node has nx points
-    lb1 = (nxNode+1)*nLarger + nxNode*(myNode-nLarger)
-    ub1 = (nxNode+1)*nLarger + nxNode*(myNode-nLarger+1) - 1
+  ! Find the number of mesh points in each direction
+  pi = acos(-1._dp)
+  kCut = sqrt(Ecut)
+  dxMax = pi / kCut
+  do ic = 1,3
+    nMesh(ic) = ceiling( cell(ic,ic) / dxMax )
+    call nfft( nMesh(ic) )
+  end do
+
+  ! Print parameters
+  if (myNode==0) then
+    print'(/,a,10(a3,4x))', 'funcs= ', func(indexf)
+    print  '(a,10(a6,1x))', 'auths= ', auth(indexf)
+    print'(a,3i6,f12.6)', 'nMesh, Ecut =', nMesh, Ecut
   end if
-#else
-  ! All points belong to the only processor
-  lb1 = 0
-  ub1 = nx-1
-#endif
-  lb2 = 0
-  lb3 = 0
-  ub2 = nx-1
-  ub3 = nx-1
+
+  ! Find the box of mesh points own by my processor
+  call setMeshDistr( myDistr, nMesh )
+  call myMeshBox( nMesh, myDistr, myBox )
+  lb1 = myBox(1,1)
+  ub1 = myBox(2,1)
+  lb2 = myBox(1,2)
+  ub2 = myBox(2,2)
+  lb3 = myBox(1,3)
+  ub3 = myBox(2,3)
 
   ! Allocate arrays for density and potential
-  allocate( cellDens(lb1:ub1,lb2:ub2,lb3:ub3,nSpin), &
-             cellVxc(lb1:ub1,lb2:ub2,lb3:ub3,nSpin) )
+  allocate( dens(lb1:ub1,lb2:ub2,lb3:ub3,nSpin), &
+           dens0(lb1:ub1,lb2:ub2,lb3:ub3,nSpin), &
+             Vxc(lb1:ub1,lb2:ub2,lb3:ub3,nSpin), &
+            Vxc0(lb1:ub1,lb2:ub2,lb3:ub3,nSpin) )
 
   ! Find density at mesh points
-  x0(:) = sum(cell,2) / 2     ! Center of cell
+  np = product(nMesh)
+  dVol = volume / np
+  if (nSpin==1) then
+    d0(1) = Qtot / volume
+  else
+    d0(1) = (Qtot+spinPol) / 2 / volume
+    d0(2) = (Qtot-spinPol) / 2 / volume
+  end if
   do i3 = lb3,ub3
   do i2 = lb2,ub2
   do i1 = lb1,ub1
-    x(:) = i1*cell(:,1)/cellMesh(1) &   ! Mesh point position
-         + i2*cell(:,2)/cellMesh(2) &
-         + i3*cell(:,3)/cellMesh(3)
-    r2 = sum((x-x0)**2)                 ! Distance to center of cell squared
-    cellDens(i1,i2,i3,:) = d0s(:) * exp(-r2/2/dWidth**2)
+    x(:) = cell(:,1)*i1/nMesh(1) &   ! Mesh point position
+         + cell(:,2)*i2/nMesh(2) &
+         + cell(:,3)*i3/nMesh(3)
+    dens(i1,i2,i3,:) = d0(:) * (1 + D1byD0 * cos( 2*pi*x(1)/cell(1,1) ) &
+                                           * cos( 2*pi*x(2)/cell(2,2) ) &
+                                           * cos( 2*pi*x(3)/cell(3,3) ) )
   end do ! i1
   end do ! i2
   end do ! i3
 
   ! Find exchange and correlation energy and potential from density in cell
-  call cellXC( irel, cell, cellMesh, lb1, ub1, lb2, ub2, lb3, ub3, nSpin, &
-               cellDens, cellEx, cellEc, cellDx, cellDc, stress, cellVxc )
+  call cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, nSpin, &
+               dens, Ex, Ec, Dx, Dc, stress, Vxc )
 
-  ! Print parameters
-  print'(a,2i6)', 'jf1, jf2 = ', jf1, jf2
-  print'(a,3f12.6)', 'dr, dx, Ecut = ', dr, dx, Ecut
-  print'(a,2f12.6)', 'rMax, rBuff = ', rMax, rBuff
-
-  ! Compare energies
+  ! Print total energies
   if (myNode==0) then
-    print'(a,3f12.6)', 'atomEx, cellEx, diff =', atomEx, cellEx, atomEx-cellEx
-    print'(a,3f12.6)', 'atomEc, cellEc, diff =', atomEc, cellEc, atomEc-cellEc
-    print'(a,3f12.6)', 'atomDx, cellDx, diff =', atomDx, cellDx, atomDx-cellDx
-    print'(a,3f12.6)', 'atomDc, cellDc, diff =', atomDc, cellDc, atomDc-cellDc
+    print'(a,2f15.9)', 'Ex, Ec =', Ex, Ec
+    print'(a,2f15.9)', 'Dx, Dc =', Dx, Dc
   end if
 
-  ! Compare potentials
-  sumDeltaVxc = 0
-  maxDeltaVxc = 0
-  do i3 = lb3,ub3
-  do i2 = lb2,ub2
-  do i1 = lb1,ub1
-    x(:) = cell(:,1)*i1/cellMesh(1) &
-         + cell(:,2)*i2/cellMesh(2) &
-         + cell(:,3)*i3/cellMesh(3)
-    r = sqrt(sum((x-x0)**2))
-    if (r>=rMax) cycle
-    ! Simplest thing: a linear interpolation of atomVxc (requires large nr)
-    ir = r/dr + 1
-    wr = (r - ir*dr) / dr
-    Vxc(:) = atomVxc(ir,:)*(1-wr) + atomVxc(ir+1,:)*wr
-    deltaVxc(:) = abs(cellVxc(i1,i2,i3,:)-Vxc(:))
-    if (maxval(DeltaVxc(:)) > maxDeltaVxc) then
-      i1max = i1
-      i2max = i2
-      i3max = i3
-      irmax = ir
-    end if
-    sumDeltaVxc = sumDeltaVxc + sum(deltaVxc(:)**2)
-    maxDeltaVxc = max( maxDeltaVxc, maxval(deltaVxc(:)) )
-  end do ! i1
-  end do ! i2
-  end do ! i3
+  ! Store unperturbed magnitudes
+  cell0 = cell
+  dens0 = dens
+  Ex0 = Ex
+  Ec0 = Ec
+  Dx0 = Dx
+  Dc0 = Dc
+  stress0 = stress
+  Vxc0 = Vxc
+
+  ! Compare Vxc with numerical derivative of d(Ex+Ec)/dDens
+  do iRan = 1,nRan
+
+    ! Choose one spin component
+    if (ran(iRan)< 0.5_dp) iSpin = 1
+    if (ran(iRan)>=0.5_dp) iSpin = 2
+    ran(iRan) = 2*mod(ran(iRan),0.5_dp)  ! ran(iRan) again in range (0:1)
+
+    ! Choose one mesh point. Notice that index ranges are (0:nMesh-1)
+    ip = np * ran(iRan)
+    i3 = ip / nMesh(1) / nMesh(2)  ! Undo ip=i1+nMesh(1)*i2+nMesh(1)*nMesh(2)*i3
+    ip = ip - nMesh(1) * nMesh(2) * i3
+    i2 = ip / nMesh(1)
+    i1 = ip - nMesh(1) * i2
+    ! Find if point i1,i2,i3 is in my box
+    pointIsMine = (lb1<=i1 .and. i1<=ub1 .and. &
+                   lb2<=i2 .and. i2<=ub2 .and. &
+                   lb3<=i3 .and. i3<=ub3)
+
+    ! Find energies with dens(i1,i2,i3,iSpin)+/-delta
+    dEdDens = 0
+    do iDelta = -1,1,2
+      dens = dens0
+      if (pointIsMine) &
+        dens(i1,i2,i3,iSpin) = dens0(i1,i2,i3,iSpin) + iDelta*deltaDens
+      call cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, nSpin, &
+                   dens, Ex, Ec, Dx, Dc, stress, Vxc )
+      dEdDens = dEdDens + iDelta*(Ex+Ec)/(2*deltaDens)
+    end do ! iDelta
+
 #ifdef MPI
-  ! Find sumDeltaVxc and maxDeltaVxc accross all processor nodes
-  call MPI_AllReduce( sumDeltaVxc, sumDeltaVxc, 1, MPI_double_precision, &
-                      MPI_Sum, MPI_Comm_World, MPIerror )
-  call MPI_AllReduce( maxDeltaVxc, maxDeltaVxc, 1, MPI_double_precision, &
-                      MPI_Max, MPI_Comm_World, MPIerror )
+    ! Send Vxc(i1,i2,i3,iSpin) to other nodes
+    if (pointIsMine) then
+      VxcSpin = Vxc0(i1,i2,i3,iSpin)
+    else
+      VxcSpin = 0
+    end if
+    tmp = VxcSpin
+    call MPI_AllReduce( tmp, VxcSpin, 1, MPI_double_precision, &
+                        MPI_Sum, MPI_Comm_World, MPIerror )
+#else
+    VxcSpin = Vxc0(i1,i2,i3,iSpin)
 #endif
-  avgDeltaVxc = sumDeltaVxc / nSpin / nx**3
-  print'(a,2f15.9)', 'avgDeltaVxc, maxDeltaVxc = ', avgDeltaVxc, maxDeltaVxc
-  print'(a,4i6)', 'i1max,i2max,i3max, irmax = ', i1max, i2max, i3max, irmax
+    if (myNode==0) then
+      if (iRan==1) print'(4a6,3a15)', &
+        'i1','i2','i3','iSpin','Vxc','dExc/dDens','diff'
+      print'(4i6,3f15.9)', &
+        i1, i2, i3, iSpin, VxcSpin, dEdDens/dVol, VxcSpin-dEdDens/dVol
+    end if
+
+  end do ! iRan
+
+  ! Compare stress with numerical derivative of dE/dStrain
+  dens = dens0
+  do i2 = 1,3
+    do i1 = 1,3
+      dEdStrain(i1,i2) = 0
+      do iDelta = -1,1,2
+        strain(:,:) = 0
+        forall(i=1:3) strain(i,i) = 1
+        strain(i1,i2) = strain(i1,i2) + iDelta*deltaStrain
+        cell = matmul( strain, cell0 )
+        call cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, nSpin, &
+                     dens, Ex, Ec, Dx, Dc, stress, Vxc )
+        dEdStrain(i1,i2) = dEdStrain(i1,i2) + iDelta*(Ex+Ec)/(2*deltaStrain)
+      end do ! iDelta
+    end do ! i1
+  end do ! i2
+  if (myNode==0) then
+    print'(a,/,(3f15.9))', 'xc stress * volume =', stress0*volume
+    print'(a,/,(3f15.9))', 'dExc/dStrain =', dEdStrain
+    print'(a,/,(3f15.9))', 'diff =', (stress0*volume-dEdStrain)
+  end if
 
 END PROGRAM siestaXCtest3
 

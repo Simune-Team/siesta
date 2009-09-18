@@ -1081,11 +1081,13 @@ subroutine set_phi_table()
     end do ! id2
   end do ! id1
 
-  open( unit=4, file='phi.out' )
-  do id2 = 1,nd
-    write(4,'(/,(f12.6))') phi(:,id2)
-  end do
-  close( unit=4 )
+! DEBUG
+!  open( unit=44, file='phi.out' )
+!  do id2 = 1,nd
+!    write(44,'(/,(f12.6))') phi(:,id2)
+!  end do
+!  close( unit=44 )
+! END DEBUG
 
   if (deriv_method == 'numeric') then
 !    print*, 'set_phi_table: Using numerical derivatives'

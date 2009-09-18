@@ -148,7 +148,7 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
   use m_ggaxc, only: ggaxc         ! General GGA XC routine
   use mesh1d,  only: interpolation ! Interpolation routine
   use m_ldaxc, only: ldaxc         ! General LDA XC routine
-  use m_filter,only: kcPhi         ! Finds planewave cutoff of a radial func.
+!  use m_filter,only: kcPhi         ! Finds planewave cutoff of a radial func.
   use m_radfft,only: radfft        ! Radial fast Fourier transform
   use alloc,   only: re_alloc      ! Reallocates arrays
   use mesh1d,  only: set_mesh      ! Sets a one-dimensional mesh
@@ -204,8 +204,12 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
   character(len=*),parameter:: interp_method = 'lagrange' !('lagrange'|'spline')
 
 ! Fix kin. energy leak to find the planewave cutoff of the radial density (VDW)
-  real(dp), parameter :: EtolKc = 0.003_dp ! Ry
-  real(dp), parameter :: kcmax  = 20._dp   ! Bohr^-1
+!  real(dp), parameter :: EtolKc = 0.003_dp ! Ry
+
+! Fix limits to the planewave cutoff of the radial density (VDW only)
+  real(dp), parameter :: kcMin  = 20._dp   ! Bohr^-1
+  real(dp), parameter :: kcMax  = 50._dp   ! Bohr^-1
+  real(dp), parameter :: Dmin   = 1.e-9_dp ! Min density when estimating kc
 
 ! Fix the maximum number of functionals to be combined
   integer, parameter :: maxFunc = 10
@@ -215,12 +219,12 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
     GGA, GGAfunc, VDW, VDWfunc
   integer :: &
     ik, in, in1, in2, iq, ir, is, ix, jn, ndSpin, nf, nq, nXCfunc
-  real(dp) :: &
+  real(dp) :: & 
     dEcdD(nSpin), dEcdGD(3,nSpin), dEcuspdD(nSpin), dEcuspdGD(3,nSpin), &
     dExdD(nSpin), dExdGD(3,nSpin), dEdDaux(nSpin), dGdm(-nn:nn), &
-    dk, dr, drdm(nr), Dtot, dVcdD(nSpin,nSpin), dVxdD(nSpin,nSpin), &
-    Eaux, epsC, epsCusp, epsNL, epsX, f1, f2, &  
-    k(0:nk), kc, kmax, pi, r(0:nk), rmax, &
+    d2ydx2, dk, dr, drdm(nr), Dtot, dVcdD(nSpin,nSpin), dVxdD(nSpin,nSpin), &
+    Eaux, Ecut, epsC, epsCusp, epsNL, epsX, f1, f2, &  
+    k(0:nk), kc, kmax, pi, r(0:nk), rmax, x0, xm, xp, y0, ym, yp, &
     XCweightC(maxFunc), XCweightX(maxFunc)
   character(len=20):: &
     XCauth(maxFunc), XCfunc(maxFunc)
@@ -235,6 +239,7 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
     prevAllocDefaults
 ! DEBUG
 !  real(dp):: q, dqdrho, dqdgrho(3)
+!  real(dp):: epsCtmp, dEcdDtmp(nSpin), dEcdGDtmp(3,nSpin)
 ! END DEBUG
 
 ! DEBUG
@@ -360,13 +365,31 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
     call re_alloc( ur,     1,nr, 1,nq,          myName//'ur'    )
 
     ! Find planewave cutoff of density
-    kc = 0
-    do is = 1,nSpin
-      kc = max( kc, kcPhi(0,nr,rmesh,dens(1:nr,is),EtolKc) )
-    end do
-    kc = min( kc, kcmax )
+!    kc = kcPhi( 0, nr, rmesh(:), sum(dens(:,1:ndSpin),2), EtolKc )
+!    kc = min( kc, kcmax )
 ! DEBUG
-!    write(udebug,'(a,f12.6)') myName//'kc =', kc
+!   write(udebug,'(a,f12.6)') myName//'kc =', kc
+! END DEBUG
+
+    ! Estimate the planewave cutoff of the density
+    Ecut = 0
+    do ir = 2,nr-1
+      Dtot = sum(dens(ir,1:ndSpin))
+      if (Dtot < Dmin) cycle
+      xm = rmesh(ir-1)
+      x0 = rmesh(ir)
+      xp = rmesh(ir+1)
+      ym = rmesh(ir-1)*sum(dens(ir-1,1:ndSpin))
+      y0 = rmesh(ir)  *sum(dens(ir  ,1:ndSpin))
+      yp = rmesh(ir+1)*sum(dens(ir+1,1:ndSpin))
+      d2ydx2 = ( (yp-y0)/(xp-x0) - (y0-ym)/(x0-xm) ) * 2 / (xp-xm)
+      Ecut = max( Ecut, abs(d2ydx2/y0) )
+    end do ! ir
+    kc = sqrt(Ecut)
+    kc = max( kc, kcMin )
+    kc = min( kc, kcMax )
+! DEBUG
+!   write(udebug,'(a,f12.6)') myName//'kc =', kc
 ! END DEBUG
 
     ! Set mesh cutoff to filter VdW kernel
@@ -429,7 +452,7 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
       uk(ik,1:nq) = matmul( tk(ik,1:nq), phi(1:nq,1:nq) )
     end do ! ik
 
-    ! Inverse Fourier tranform of u_iq(r) for each iq
+    ! Inverse Fourier transform of u_iq(r) for each iq
     do iq = 1,nq
       call radfft( 0, nk, kmax, uk(0:nk,iq), uk(0:nk,iq) )
     end do ! iq
@@ -499,9 +522,26 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
                     dEdDaux, dEcdD, dVxdD, dVcdD )
         dEcdGD = 0.0_dp
 
+! DEBUG
+!        ! Select only non local correlation energy and potential
+!        epsX = 0
+!        epsC = 0
+!        dExdD = 0
+!        dEcdD = 0
+!        dExdGD = 0
+!        dEcdGD = 0
+! END DEBUG
+
         ! Local cusp correction to nonlocal VdW energy integral
         call vdw_decusp( nSpin, D(:,ir), GD(:,:,ir), &
                          epsCusp, dEcuspdD, dEcuspdGD )
+
+! DEBUG
+!        ! Select only non local correlation energy and potential
+!        epsCusp = 0
+!        dEcuspdD = 0
+!        dEcuspdGD = 0
+! END DEBUG
 
         ! Find expansion of theta(q(r)) for VdW
         call vdw_theta( nSpin, D(:,ir), GD(:,:,ir), tr(ir,1:nq), dtdd, dtdgd )
@@ -522,6 +562,12 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
       else if (GGAfunc) then
         call ggaxc( XCauth(nf), irel, nSpin, D(:,ir), GD(:,:,ir),  &
                     epsX, epsC, dExdD, dEcdD, dExdGD, dEcdGD )
+! DEBUG
+!        call ldaxc( 'PW92', irel, nSpin, D(:,ir), Eaux, epsC,  &
+!                    dEdDaux, dEcdD, dVxdD, dVcdD )
+!        call ggaxc( XCauth(nf), irel, nSpin, D(:,ir), GD(:,:,ir),  &
+!                    epsX, epsCtmp, dExdD, dEcdDtmp, dExdGD, dEcdGDtmp )
+! END DEBUG
       else
         call ldaxc( XCauth(nf), irel, nSpin, D(:,ir), epsX, epsC, &
                     dExdD, dEcdD, dVxdD, dVcdD )

@@ -19,21 +19,23 @@ PROGRAM siestaXCtest1
   integer, parameter:: irel    =  1      ! Relativistic? 0=>no, 1=>yes
   integer, parameter:: nCalls  = 20      ! Number of calls to each routine
   integer, parameter:: nfTot   =  9      ! Total number of functionals
-  integer, parameter:: nSpin   =  4      ! Number of spin components
+  integer, parameter:: nSpin   =  2      ! Number of spin components
   real(dp),parameter:: densMax = 0.1_dp  ! Upper limit to density value
   real(dp),parameter:: gradMax = 0.5_dp  ! Upper limit to density gradient
-  real(dp),parameter:: deltaDens  = 1.e-6_dp  ! Density change for numerical derivs.
-  real(dp),parameter:: deltaGrad  = 1.e-6_dp  ! Change of grad(dens) for num. derivs
+  real(dp),parameter:: deltaDens  = 1.e-6_dp  ! Finite diff. change
+  real(dp),parameter:: deltaGrad  = 1.e-6_dp  ! Finite diff. change
   real(dp),parameter:: dEdDensTol = 1.e-6_dp  ! Tolerance for dE/dDens
   real(dp),parameter:: dEdGradTol = 1.e-6_dp  ! Tolerance for dE/dGadDens
 
   ! Functionals to be tested
-  character(len=3):: func(nfTot) = (/'LDA',   'LDA',   'GGA',   'GGA',    &
-                                     'GGA',   'GGA',   'GGA',   'GGA',    &
-                                     'GGA'   /)
-  character(len=6):: auth(nfTot) = (/'PZ    ','PW92  ','PW91  ','PBE   ', &
-                                     'RPBE  ','revPBE','LYP   ','WC    ', &
-                                     'PBESOL'/)
+  !                  1,       2,       3,       4,       5,   
+  !                  6,       7,       8,       9   
+  character(len=3):: &
+    func(nfTot) = (/'LDA',   'LDA',   'GGA',   'GGA',   'GGA',    &
+                    'GGA',   'GGA',   'GGA',   'GGA'             /)
+  character(len=6):: &
+    auth(nfTot) = (/'PZ    ','PW92  ','PW91  ','PBE   ','RPBE  ', &
+                    'revPBE','LYP   ','WC    ','PBESOL'          /) 
 
   ! Tester variables and arrays
   integer :: errorC, errorX, iCall, iDelta, iDeriv, iSpin, ix, &
@@ -52,7 +54,8 @@ PROGRAM siestaXCtest1
 
   ! Print header
   print'(a4,a7,a3,2a6,3a15,a4)', &
-    'func','auth  ','xyz','iSpin','Ex|Ec','deriv(anal)','deriv(num)','diff  ','err'
+    'func', 'auth  ', 'xyz', 'iSpin', 'Ex|Ec', &
+    'deriv(anal)', 'deriv(num)', 'diff  ', 'err'
 
   ! Loop on calls with different densities
   do iCall = 1,nCalls
@@ -109,7 +112,7 @@ PROGRAM siestaXCtest1
 
         ! Select magnitude to change
         iSpin = iDeriv/4 + 1 ! Spin index: iSpin=1,...,nSpin
-        ix = mod(iDeriv,4)   ! Cartesian component of grad(dens) (0 for dens itself)
+        ix = mod(iDeriv,4)   ! Cartes. comp. of grad(dens) (0 for dens itself)
 
         ! For LDA, do not perform derivative with respect to gradient
         if (ix>0 .and. func(jf)=='LDA') cycle
@@ -169,8 +172,8 @@ PROGRAM siestaXCtest1
           if (iSpin<=2 .and. dExdDens0(iSpin)>0._dp) errorX = 1
           if (iSpin<=2 .and. dEcdDens0(iSpin)>0._dp) errorC = 1
         else
-          if (abs(dExdGrad0(ix,iSpin)-dExdGradN(ix,iSpin)) > dEdGradTol) errorX=3
-          if (abs(dEcdGrad0(ix,iSpin)-dEcdGradN(ix,iSpin)) > dEdGradTol) errorX=3
+          if (abs(dExdGrad0(ix,iSpin)-dExdGradN(ix,iSpin))>dEdGradTol) errorX=3
+          if (abs(dEcdGrad0(ix,iSpin)-dEcdGradN(ix,iSpin))>dEdGradTol) errorC=3
         end if
         if (errorX/=0 .or. errorC/=0) errorsFound = .true.
 
@@ -210,7 +213,8 @@ PROGRAM siestaXCtest1
     print'(/,a)', 'Some errors found. Error codes:'
     print'(a)', 'error 1 => V=dE/dDens is positive'
     print'(a)', 'error 2 => analytical and numerical value of dE/dDens differ'
-    print'(a)', 'error 3 => analytical and numerical value of dE/dGradDens differ'
+    print'(a)', &
+      'error 3 => analytical and numerical value of dE/dGradDens differ'
   else
     print'(/,a)', 'No errors found.'
   end if

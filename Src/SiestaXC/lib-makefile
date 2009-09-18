@@ -12,7 +12,7 @@ module:  libSiestaXC.a
 #
 SIESTA_SRCS= alloc.F90 bessph.f cellsubs.f  \
              chkgmx.f fft1d.F  flib_spline.f90  \
-             m_filter.f90 minvec.f m_io.f moreParallelSubs.F90 \
+             minvec.f m_io.f moreParallelSubs.F90 \
              m_recipes.f m_timer.F90 m_walltime.f90 parallel.F \
 	     precision.F pxf.F90 radfft.f sorting.f sys.F
 SIESTA_OBJS:= $(SIESTA_SRCS:.f=.o)
@@ -43,7 +43,7 @@ clean:
 
 # DO NOT DELETE THIS LINE - used by make depend
 alloc.o: m_io.o parallel.o precision.o sys.o
-atomxc.o: alloc.o ggaxc.o ldaxc.o m_filter.o mesh1d.o precision.o radfft.o
+atomxc.o: alloc.o ggaxc.o ldaxc.o mesh1d.o precision.o radfft.o
 atomxc.o: sys.o vdwxc.o xcmod.o
 bessph.o: precision.o sys.o
 cellsubs.o: precision.o
