@@ -20,18 +20,18 @@ COMP_LIBS=dc_lapack.a
 #
 NETCDF_LIBS=         #  /usr/local/netcdf-3.5/lib/pgi/libnetcdf.a
 NETCDF_INTERFACE=    #  libnetcdf_f90.a
-DEFS_CDF=            #  -DCDF
+FPPFLAGS_CDF=            #  -DCDF
 #
 #
 MPI_INTERFACE=
 MPI_INCLUDE=
-DEFS_MPI=
+FPPFLAGS_MPI=
 #
 
 LIBS= -L/opt/64/acml-2.5.0/pgi64/lib -llapack -lblas \
        $(MPI_LIBS)  $(NETCDF_LIBS)
 SYS=cpu_time
-DEFS= $(DEFS_CDF) $(DEFS_MPI)
+FPPFLAGS= $(FPPFLAGS_CDF) $(FPPFLAGS_MPI)
 #
 #
 # Important (at least for V5.0-1 of the pgf90 compiler...)
@@ -46,11 +46,11 @@ electrostatic.o: electrostatic.f
 	$(FC) -c $(FFLAGS_DEBUG) $<
 #
 .F.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 .F90.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f90.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 #

@@ -192,6 +192,7 @@ C        cellXC(...)    : Finds total exch-corr energy and potential
 C        cross(a,b,c)   : Finds the cross product of two vectors
 C        dfscf(...)     : Finds SCF contribution to atomic forces
 C        dipole(...)    : Finds electric dipole moment
+C        doping(...)    : Adds a background charge for doped systems
 C        efield(...)    : Adds potential of an external electric field
 C        write_rho(...)     : Saves electron density on a file
 C        poison(...)    : Solves Poisson equation
@@ -301,7 +302,7 @@ C
      .  shape
 
       external
-     .  cross, dfscf,  dipole, ddot,  
+     .  cross, dfscf,  dipole, ddot, doping,
      .  efield, poison, 
      .  reord, rhooda, rhoofd, rhoofdsp, 
      .  timer, vmat, vmatsp, volcel,
@@ -684,6 +685,12 @@ C Find center of system
           x0(1:3) = x0(1:3) + xa(1:3,ia) / nua
         enddo
 
+C Add a background charge to neutralize the net charge, to
+C model doped systems. It only adds the charge at points
+C where there are atoms (i.e., not in vacuum).          
+C First, call with 'task=0' to add background charge    
+        call doping(cell,nmpl,0,DRho)                     
+
 C Find dipole
         call reord( DRho, DRho, nml, nsm, +1)
         call dipole( cell, ntm, ntml(1), ntml(2), ntml(3), nsm,
@@ -722,6 +729,9 @@ C Solve Poisson's equation
 #endif /* TRANSIESTA */
       call reord( DRho, DRho, nml, nsm, -1)
       call reord( Vscf, Vscf, nml, nsm, -1)
+
+C Call doping with 'task=1' to remove background charge added previously
+      call doping(cell,nmpl,1,DRho) 
 
 C Add contribution to stress from electrostatic energy of rhoscf-rhoatm
       if (istr .eq. 1) then
@@ -777,13 +787,15 @@ C Add potential from external electric field (if present)
 C ----------------------------------------------------------------------
 
       if (frstme) then
-        call efield( cell, nua, isa, xa, nzero, nsm, Vscf, field )
+        call efield( cell, nua, isa, xa, nzero, nsm, dipol,
+     .               Vscf, field )
         IsEfld = .false.
         if (sqrt(ddot(3,field,1,field,1)) .gt. tiny) IsEfld = .true.
       endif
       if (IsEfld) then
         call reord( Vscf, Vscf, nml, nsm, +1)
-        call efield( cell, nua, isa, xa, ntm, nsm, Vscf, field )
+        call efield( cell, nua, isa, xa, ntm, nsm, dipol,
+     .               Vscf, field )
         call reord( Vscf, Vscf, nml, nsm, -1)
         DUext = - ddot(3,field,1,dipol,1)
       endif

@@ -22,7 +22,7 @@
 default: xml2psf
 #
 OBJDIR=Obj
-VPATH=../../Src
+TOPSRC=../../Src
 #
 include ../../$(OBJDIR)/arch.make
 #
@@ -41,7 +41,7 @@ xml2psf: xml $(OBJS)
 xml:
 	@echo "Make sure that the xmlparser library is already compiled"
 	@echo "The following command might fail if you are using VPATH"
-	(cd ../../$(OBJDIR)/xmlparser ; make)
+	(cd ../../$(OBJDIR)/xmlparser ; $(MAKE) "VPATH=$(TOPSRC)/xmlparser")
 #
 dep:
 	sfmakedepend --depend=obj --modext=o *.f *.f90 *.F *.F90 

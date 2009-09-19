@@ -20,11 +20,11 @@ FFLAGS_DEBUG= -g -Rabc -ei
 
 NETCDF_LIBS=
 NETCDF_INTERFACE=
-DEFS_CDF=
+FPPFLAGS_CDF=
 
 MPI_INTERFACE=libmpi_f90.a
 MPI_INCLUDE=/usr/local/include
-DEFS_MPI=-DMPI
+FPPFLAGS_MPI=-DMPI
 
 LIBS = -L/usr/local/lib/scalapack -lscalapack -lpblas -ltools -lblacsF77 \
         -lblacs -lblacsF77 \
@@ -32,16 +32,16 @@ LIBS = -L/usr/local/lib/scalapack -lscalapack -lpblas -ltools -lblacsF77 \
 
 SYS=bsd
 RANLIB=echo
-DEFS= $(DEFS_CDF) $(DEFS_MPI) 
+FPPFLAGS= $(FPPFLAGS_CDF) $(FPPFLAGS_MPI) 
 
 # Actual compilation recipes for siesta code.
 
 .F.o:
-        $(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+        $(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f.o:
         $(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 .F90.o:
-        $(FC) -c $(FFLAGS) $(INCFLAGS)   $(DEFS) $<
+        $(FC) -c $(FFLAGS) $(INCFLAGS)   $(FPPFLAGS) $<
 .f90.o:
         $(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 

@@ -49,8 +49,7 @@ c     real*8 pdosR(100),pdosL(100)
       save firsttime,iu,iu1,iastart,iaend
       character paste*33,filename*33
       external paste
-C Define FDF calls ....................................................
-      include 'fdf/fdfdefs.h'
+
 c BEGIN
 
 c     Open file

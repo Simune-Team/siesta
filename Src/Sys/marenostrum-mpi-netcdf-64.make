@@ -11,16 +11,16 @@ RANLIB=echo
 DEFS_PREFIX=-WF,
 #
 NETCDF_ROOT=/gpfs/apps/NETCDF/3.6.2/64
-INCFLAGS=-I$(NETCDF_ROOT)/include
+NETCDF_INCFLAGS=-I$(NETCDF_ROOT)/include
 #
 NETCDF_LIBS=-L$(NETCDF_ROOT)/lib -lnetcdf
 NETCDF_INTERFACE=
-DEFS_CDF=-WF,-DCDF
+FPPFLAGS_CDF=-WF,-DCDF
 #
 MPI_INTERFACE=    libmpi_f90.a
 MPI_INCLUDE=.
 MPI_LIBS=         #-lblacsgm
-DEFS_MPI=         -WF,-DMPI
+FPPFLAGS_MPI=         -WF,-DMPI
 
 BLAS= -L/gpfs/apps/SCALAPACK/lib64 -lscalapack \
         /gpfs/apps/SCALAPACK/lib64/blacsF77init_MPI-PPC-0.a \
@@ -35,15 +35,15 @@ BLAS= -L/gpfs/apps/SCALAPACK/lib64 -lscalapack \
 #
 LIBS=  $(BLAS) $(NETCDF_LIBS)
 SYS=xlf
-DEFS= $(DEFS_MPI) $(DEFS_CDF)
+FPPFLAGS= $(FPPFLAGS_MPI) $(FPPFLAGS_CDF)
 FREE_F90=-qsuffix=f=f90
 #
 .F90.o:
-	$(FC) -qsuffix=cpp=F90 -c $(INCFLAGS) $(FFLAGS) $(DEFS) $<
+	$(FC) -qsuffix=cpp=F90 -c $(INCFLAGS) $(FFLAGS) $(FPPFLAGS) $<
 .f90.o:
 	$(FC) -qsuffix=f=f90 -c $(INCFLAGS) $(FFLAGS)   $<
 .F.o:
-	$(FC) -qsuffix=cpp=F -c $(INCFLAGS) -qfixed $(FFLAGS) $(DEFS) $<
+	$(FC) -qsuffix=cpp=F -c $(INCFLAGS) -qfixed $(FFLAGS) $(FPPFLAGS) $<
 .f.o:
 	$(FC) -qsuffix=f=f -qfixed -c $(INCFLAGS) $(FFLAGS)   $<
 #

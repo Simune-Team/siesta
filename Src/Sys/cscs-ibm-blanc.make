@@ -47,8 +47,12 @@ SCALAPACK_LIBS=/apps/scalapack/64/lib/blacsCinit_MPI-ppc64-0.a /apps/scalapack/6
 COMP_LIBS=dc_lapack.a 
 
 NETCDF_ROOT=/apps/netcdf/64
-INCFLAGS=-I$(NETCDF_ROOT)/include
+NETCDF_INCFLAGS=-I$(NETCDF_ROOT)/include
 NETCDF_LIBS=-L$(NETCDF_ROOT)/lib -lnetcdf
+#
+FFTW_ROOT=/apps/fftw3/64
+FFTW_INCFLAGS= -I$(FFTW_ROOT)/include
+FFTW_LIBS = -L$(FFTW_ROOT)/lib -lfftw3
 
 FPPFLAGS= -WF,-DMPI -WF,-DFC_HAVE_ABORT -WF,-DCDF
 LIBS=$(NETCDF_LIBS) $(SCALAPACK_LIBS) $(BLACS_LIBS) $(LAPACK_LIBS) 

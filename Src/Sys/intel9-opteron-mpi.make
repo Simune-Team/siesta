@@ -14,7 +14,7 @@ FFLAGS_DEBUG= -g -O0
 RANLIB=echo 
 MPI_INCLUDE=/apl/INTEL/ICT3/mpi/3.0/include64
 MPI_INTERFACE=libmpi_f90.a
-DEFS_MPI=-DMPI
+FPPFLAGS_MPI=-DMPI
 #
 # MPI_LIBS not needed if a "mpiXXX" form of the compiler is used
 # (make sure to source the 
@@ -36,14 +36,14 @@ LAPACK=-L/apl/OPTERON/ACML3.6.0/ifort64/lib -lacml
 LIBS=$(SCALAPACK) $(BLACS)  $(LAPACK)  $(MPI_LIBS)
 
 SYS=nag
-DEFS= $(DEFS_MPI) $(DEFS_CDF)
+FPPFLAGS= $(FPPFLAGS_MPI) $(FPPFLAGS_CDF)
 #
 .F.o:
-	$(FC) -c $(INCFLAGS) $(FFLAGS)  $(DEFS) $<
+	$(FC) -c $(INCFLAGS) $(FFLAGS)  $(FPPFLAGS) $<
 .f.o:
 	$(FC) -c $(INCFLAGS) $(FFLAGS)   $<
 .F90.o:
-	$(FC) -c $(INCFLAGS) $(FFLAGS)  $(DEFS) $<
+	$(FC) -c $(INCFLAGS) $(FFLAGS)  $(FPPFLAGS) $<
 .f90.o:
 	$(FC) -c $(INCFLAGS) $(FFLAGS)   $<
 #

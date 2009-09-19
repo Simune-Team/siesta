@@ -22,7 +22,7 @@ LDFLAG=#-Vaxlib
 RANLIB=echo
 LIBS=  
 SYS=scalapack_extra
-DEFS=-DMPI -DNODAT -DWXML_INIT_FIX -DHAS_DLAMC3 -DALLOC_SAVE_BUG
+FPPFLAGS=-DMPI -DNODAT -DWXML_INIT_FIX -DHAS_DLAMC3 -DALLOC_SAVE_BUG
 MPI_INTERFACE=libmpi_f90.a
 #
 MPIROOT=/usr/local/mpich
@@ -50,11 +50,11 @@ LIBS=  $(SCALAPACK_LIBS) $(BLACS_LIBS) $(LAPACK) \
 COMP_LIBS=
 #
 .F.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 .F90.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f90.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 #

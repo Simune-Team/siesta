@@ -1,5 +1,282 @@
 ------------------------------------------------------------------
 
+2009-09-19  20:45:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-29-277
+
+Summary: merged with trunk revno 298
+Keywords: merge
+
+removed:
+  Docs/BSC-Issues
+  Docs/ExtraDocs/
+  Docs/ExtraDocs/00_README_FIRST
+  Docs/ExtraDocs/Analysis_Tools
+  Docs/ExtraDocs/Basis_Generation
+  Docs/ExtraDocs/CML_Output
+  Docs/ExtraDocs/Code_RoadMap
+  Docs/ExtraDocs/Compilation
+  Docs/ExtraDocs/Eggbox_Effect
+  Docs/ExtraDocs/File_Formats
+  Docs/ExtraDocs/Geometry_Optimization
+  Docs/ExtraDocs/Molecular_Dynamics
+  Docs/ExtraDocs/OrderN_Operation
+  Docs/ExtraDocs/Parallel_Operation
+  Docs/ExtraDocs/SCF_Convergence
+  Docs/ExtraDocs/Scripting_Utilities
+  Docs/release.notes_3.0
+  Util/Denchar/Src/fdf/makefile
+  Util/STM/ol-stm/Src/arch.make.gfortran
+  Util/STM/ol-stm/Src/arch.make.intel
+  Util/STM/ol-stm/Src/fdf/makefile
+  Util/TBTrans/MPI/Makefile
+  Util/TBTrans/MPI/blacs_prb.f90
+  Util/TBTrans/MPI/generate.sh
+  Util/TBTrans/MPI/kind_explorer.f90
+  Util/TBTrans/MPI/mpi.F
+  Util/TBTrans/MPI/mpi__include.f90
+  Util/TBTrans/MPI/mpi__type_s.f90
+  Util/TBTrans/MPI/mpi__type_sv.f90
+  Util/TBTrans/MPI/mpi__type_v.f90
+  Util/TBTrans/MPI/mpi__type_vs.f90
+  Util/TBTrans/MPI/mpif2sane.f90
+  Util/TBTrans/MPI/pblas.dat
+  Util/TBTrans/MPI/pblas_prb.f90
+  Util/TBTrans/MPI/pdlaprnt.f
+  Util/TBTrans/MPI/pi3.F
+  Util/TBTrans/fdf.Standard
+  Util/TBTrans/fdf/Coords.dat
+  Util/TBTrans/fdf/Otherfile
+  Util/TBTrans/fdf/README
+  Util/TBTrans/fdf/TODO
+  Util/TBTrans/fdf/coords.fdf
+  Util/TBTrans/fdf/fdf.Standard
+  Util/TBTrans/fdf/fdf.f
+  Util/TBTrans/fdf/fdf.f90
+  Util/TBTrans/fdf/fdf.h
+  Util/TBTrans/fdf/fdf_mod.f
+  Util/TBTrans/fdf/fdf_mpi.F
+  Util/TBTrans/fdf/fdfdefs.h
+  Util/TBTrans/fdf/io.f
+  Util/TBTrans/fdf/io_sample.f
+  Util/TBTrans/fdf/makefile
+  Util/TBTrans/fdf/makefile_mpi
+  Util/TBTrans/fdf/parse.f
+  Util/TBTrans/fdf/sample.f
+  Util/TBTrans/fdf/sample.f90
+  Util/TBTrans/fdf/sample.fdf
+  Util/TBTrans/fdf/sample_mpi.F90
+  Util/TBTrans/files.f
+  Util/TBTrans/gengf.F
+  Util/TBTrans/io.f
+  Util/TBTrans/m_fdf_global.F90
+  Util/TBTrans/m_mpi_utils.F
+  Util/TBTrans/parallel.f
+  Util/TBTrans/paste.f
+  Util/TBTrans/precision.F
+  Util/TBTrans/pxf.F90
+  Util/TBTrans/sys.F
+  Util/TBTrans/work.pcl
+
+added:
+  Src/doping.F
+  Tests/Pseudos/Si.pbe.psf
+  Tests/Reference-xml/sic-slab.xml
+  Tests/Reference/sic-slab.out
+  Tests/dipole_correction/
+  Tests/dipole_correction/README
+  Tests/dipole_correction/dipole_correction.fdf
+  Tests/dipole_correction/dipole_correction.pseudos
+  Tests/dipole_correction/h2o_dipole_layer_field.fdf
+  Tests/dipole_correction/makefile
+  Tests/sic-slab/
+  Tests/sic-slab/makefile
+  Tests/sic-slab/sic-slab.fdf
+  Tests/sic-slab/sic-slab.pseudos
+  Util/Contrib/APostnikov/opnout.f
+  Util/Contrib/APostnikov/orig.Makefile
+  Util/Contrib/APostnikov/read_fc.f
+  Util/Contrib/APostnikov/test_ani.f
+  Util/Contrib/APostnikov/test_xv.f
+  Util/Denchar/Src/fdf/.dummy_dir
+  Util/Gen-basis/
+  Util/Gen-basis/Examples/
+  Util/Gen-basis/Examples/O.psf
+  Util/Gen-basis/Examples/o-basis.fdf
+  Util/Gen-basis/Makefile
+  Util/Gen-basis/fdf/
+  Util/Gen-basis/fdf/.dummy_directory
+  Util/MPI_test/
+  Util/MPI_test/Makefile
+  Util/Macroave/README
+  Util/STM/ol-stm/Src/fdf/.dummy_directory
+  Util/STM/ol-stm/Src/fftw3_mymod.f90
+  Util/STM/simple-stm/Makefile
+  Util/TBTrans/MPI/.dummy_dir
+  Util/VCA/Makefile
+  Util/VCA/fdf/
+  Util/VCA/fdf/.dummy_directory
+  Util/Vibra/Src/fdf/
+  Util/Vibra/Src/fdf/.dummy_directory
+  Util/build_all.sh
+
+renamed:
+  Src/MPI/blacs_prb.f90 => Util/MPI_test/blacs_prb.f90
+  Src/MPI/pblas.dat => Util/MPI_test/pblas.dat
+  Src/MPI/pblas_prb.f90 => Util/MPI_test/pblas_prb.f90
+  Src/MPI/pdlaprnt.f => Util/MPI_test/pdlaprnt.f
+  Src/MPI/pi3.F => Util/MPI_test/pi3.F
+  Src/fractional.f => Util/VCA/fractional.f
+  Src/gen-basis.F => Util/Gen-basis/gen-basis.F
+  Src/ioncat.f => Util/Gen-basis/ioncat.f
+  Src/mixps.f => Util/VCA/mixps.f
+  Src/mpi_test.F90 => Util/MPI_test/mpi_test.F90
+  Util/DensityMatrix/cdf2dm.f90 => Util/DensityMatrix/cdf2dm.F90
+  Util/DensityMatrix/dm2cdf.f90 => Util/DensityMatrix/dm2cdf.F90
+  Util/Grid/cdf2grid.f90 => Util/Grid/cdf2grid.F90
+  Util/Grid/cdf2xsf.f90 => Util/Grid/cdf2xsf.F90
+  Util/Grid/cdf_diff.f90 => Util/Grid/cdf_diff.F90
+  Util/Grid/cdf_fft.f90 => Util/Grid/cdf_fft.F90
+  Util/Grid/cdfget.f90 => Util/Grid/cdfget.F90
+  Util/Grid/grid2cdf.f90 => Util/Grid/grid2cdf.F90
+  Util/Grid/m_grid.f90 => Util/Grid/m_grid.F90
+  Util/TBTrans/cdiag.f => Util/TBTrans/cdiag_local.f
+  Util/TBTrans/reinit.F => Util/TBTrans/reinit_tb.F
+  Util/WFS/wfsnc2wfsx.f90 => Util/WFS/wfsnc2wfsx.F90
+
+modified:
+  Docs/CHANGES
+  Docs/README
+  Docs/siesta.ind
+  Docs/siesta.tex
+  README
+  README_TRANSIESTA
+  SIESTA_LICENCE
+  Src/Libs/makefile
+  Src/MPI/Makefile
+  Src/Makefile
+  Src/Sys/DOCUMENTED-TEMPLATE.make
+  Src/Sys/compaq-mpi.make
+  Src/Sys/cscs-cray-mpi.make
+  Src/Sys/cscs-cray.make
+  Src/Sys/cscs-ibm-blanc.make
+  Src/Sys/darwin.make
+  Src/Sys/finisterrae.make*
+  Src/Sys/g95-nolibs.make
+  Src/Sys/gfortran-netcdf.make
+  Src/Sys/gfortran.make
+  Src/Sys/hpcx.make
+  Src/Sys/ibm-regatta-p4.make
+  Src/Sys/ibmp3-mpi.make
+  Src/Sys/ibmp3.make
+  Src/Sys/icmab-snake-mpi.make
+  Src/Sys/ifort-netcdf.make
+  Src/Sys/intel-checks.make
+  Src/Sys/intel-mkl.make
+  Src/Sys/intel-nolibs.make
+  Src/Sys/intel9-cmkl8-mpi-netcdf.make
+  Src/Sys/intel9-cmkl8-mpi.make
+  Src/Sys/intel9-mkl8.make
+  Src/Sys/intel9-opteron-mpi.make
+  Src/Sys/itanium2-mpi.make
+  Src/Sys/itanium2.make
+  Src/Sys/macosx-gfortran64-atlas.make
+  Src/Sys/macosx-nag-mpi.make
+  Src/Sys/macosx-nag.make
+  Src/Sys/macosx-xlf.make
+  Src/Sys/marenostrum-mpi-32.make
+  Src/Sys/marenostrum-mpi-64.make
+  Src/Sys/marenostrum-mpi-netcdf-32.make
+  Src/Sys/marenostrum-mpi-netcdf-64.make
+  Src/Sys/matgas-lam.make
+  Src/Sys/nano-intel-mpi-cdf.make
+  Src/Sys/nano-intel-mpi.make
+  Src/Sys/nano-intel-serial.make
+  Src/Sys/nano-pgf95-serial.make
+  Src/Sys/nolibs.make
+  Src/Sys/pathscale-mpi.make
+  Src/Sys/pathscale.make
+  Src/Sys/pgf95-macosx32.make
+  Src/Sys/pgf95-matterhorn-gm.make
+  Src/Sys/pgf95-matterhorn-mpich.make
+  Src/Sys/pgf95-matterhorn-serial.make
+  Src/atom.f
+  Src/dhscf.F
+  Src/efield.F
+  Src/f2kcli.F90
+  Src/fdf/makefile
+  Src/hsparse.f
+  Src/iofa.f
+  Src/m_ts_aux_rout.F
+  Src/m_ts_electrode.F90
+  Src/m_ts_in_siesta.F
+  Src/m_ts_scattering.F
+  Src/new_dm.F
+  Src/obj_setup.sh
+  Src/siesta_options.F90
+  Src/version.F90
+  Src/write_subs.F
+  Src/writewave.F
+  Tests/test.mk
+  Tutorials/Bases/gen-basis.sh
+  Util/COOP/Makefile
+  Util/Contrib/APostnikov/Makefile
+  Util/Contrib/APostnikov/README
+  Util/Contrib/APostnikov/eig2bxsf.f
+  Util/Contrib/APostnikov/makebox.f
+  Util/Contrib/APostnikov/md2axsf.f
+  Util/Contrib/APostnikov/read_ev.f
+  Util/Contrib/APostnikov/read_xv.f
+  Util/Contrib/APostnikov/rho2xsf.f
+  Util/Contrib/APostnikov/test_md.f
+  Util/Contrib/APostnikov/vib2xsf.f
+  Util/Contrib/APostnikov/wraxsf1.f
+  Util/Contrib/APostnikov/wraxsf2.f
+  Util/Contrib/APostnikov/xv2xsf.f
+  Util/Denchar/Src/Makefile
+  Util/DensityMatrix/makefile
+  Util/Grid/makefile
+  Util/Optimizer/Makefile
+  Util/README
+  Util/STM/ol-stm/Docs/stm.tex
+  Util/STM/ol-stm/Src/Makefile
+  Util/STM/ol-stm/Src/extrapolate.f
+  Util/SiestaSubroutine/FmixMD/README
+  Util/SiestaSubroutine/FmixMD/Src/Makefile
+  Util/SiestaSubroutine/FmixMD/test.sh
+  Util/TBTrans/Makefile
+  Util/TBTrans/atompdos.F
+  Util/TBTrans/calc_green.F
+  Util/TBTrans/green4.F
+  Util/TBTrans/m_tbt_gf.F90
+  Util/TBTrans/setupcontour.F
+  Util/TBTrans/setupkham2.F
+  Util/TBTrans/tbtrans.F
+  Util/TBTrans/transmission.F
+  Util/VCA/README
+  Util/Vibra/Src/Makefile
+  Util/WFS/makefile
+  Util/pdosxml/makefile
+  Util/pseudo-xml/makefile
+  Util/test-xml/makefile
+  Util/test-xml/string_utilities.f90
+  version.info
+  Util/MPI_test/pi3.F
+  Util/VCA/fractional.f
+  Util/Gen-basis/gen-basis.F
+  Util/VCA/mixps.f
+  Util/MPI_test/mpi_test.F90
+  Util/DensityMatrix/cdf2dm.F90
+  Util/DensityMatrix/dm2cdf.F90
+  Util/Grid/cdf2grid.F90
+  Util/Grid/cdf2xsf.F90
+  Util/Grid/cdf_diff.F90
+  Util/Grid/cdf_fft.F90
+  Util/Grid/cdfget.F90
+  Util/Grid/grid2cdf.F90
+  Util/Grid/m_grid.F90
+  Util/WFS/wfsnc2wfsx.F90
+
+------------------------------------------------------------------
+
 2009-09-18  20:45:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-28-276
 
 Summary: m_filter.f90 removed from libSiestaXC. Tests upgraded. 

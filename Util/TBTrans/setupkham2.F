@@ -2,6 +2,8 @@ C ##################################################################
 C ##               Setup Hamiltonian in k-space                   ##
 C ##                            By                                ##
 C ##              Mads Brandbyge, mbr@mic.dtu.dk                  ##
+C ##                                                              ##
+C ## Modified by F.D.Novaes, fdnovaes@icmab.es                    ##
 C ##################################################################
 c
 
@@ -202,37 +204,12 @@ c-----------------------------------------------------------------
 c-----------------------------------------------------------------
 
 
-c       if(tlast) then
-c          deallocate(H)
-c          deallocate(S)
-c          deallocate(xij)
-c          deallocate(indxuo)
-c          deallocate(listh)
-c          deallocate(numh)
-c          deallocate(efs)
-c          return
-c       endif
 
 
-C FDN
-Cc
-Cc Express kpoint so i matches xij which is in cartesian
-Cc this expression may be wrong .. need further checking :
-C         do i=1,3
-C            k(i)=0
-C            do j=1,3
-C               k(i) = k(i) + rcell(i,j)*kpoint(j)
-C            end do              !j
-C         end do                 !i
-C
-C         if(Gamma) then
-C            do i=1,3
-C               if(dabs(k(i)) .GT. EPS) 
-C     .              stop 'setupkham: ERROR: Only Gamma is OK'
-C            end do
-C         end if                 !Gamma
+
+
        k=kpoint
-C FDN
+
 
 c
 c Setup H,S for this k-point:
@@ -260,15 +237,7 @@ c
               Sk(inn) = Sk(inn)+S(ind)*cphase
             enddo
           enddo
-C FDN Teste    
-C      do iuo = 1,nuo
-C        do juo = 1,nuo
-C          inn = iuo+(juo-1)*nuo
-C          write(*,*) Hk(inn),inn
-C        enddo
-C      enddo
-C      stop
-C FDN Teste
+
 
       else !Gamma!
 
@@ -283,15 +252,7 @@ C FDN Teste
         enddo
 
       end if                    !Gamma or not
-C FDN Teste
-C      do iuo = 1,nuo
-C        do juo = 1,nuo
-C          inn = iuo+(juo-1)*nuo
-C          write(*,*) Hk(inn),inn
-C        enddo
-C      enddo
-C      stop
-C FDN Teste 
+
 
 c
 c     Symmetrize and *make EF the energy-zero*!!!
@@ -317,15 +278,6 @@ c
       enddo
 
 
-C FDN Teste
-C      do iuo = 1,nuo
-C        do juo = 1,nuo
-C          inn = iuo+(juo-1)*nuo
-C          write(*,*) Hk(inn),inn
-C        enddo
-C      enddo
-C      stop
-C FDN Teste 
 
 c ===============================================================
        return

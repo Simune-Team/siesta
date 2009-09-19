@@ -28,25 +28,25 @@ RANLIB=echo
 #
 NETCDF_LIBS=
 NETCDF_INTERFACE=
-DEFS_CDF=
+FPPFLAGS_CDF=
 #
 MPI_INTERFACE=
 MPI_INCLUDE=
-DEFS_MPI=
+FPPFLAGS_MPI=
 #
 GUIDE=/opt/intel/mkl/8.0.1/lib/32/libguide.a
 LAPACK=/opt/intel/mkl/8.0.1/lib/32/libmkl_lapack.a
 BLAS=/opt/intel/mkl/8.0.1/lib/32/libmkl_ia32.a
 LIBS=$(LAPACK) $(BLAS)  $(GUIDE) $(EXTRA_LIBS)
 SYS=nag
-DEFS= $(DEFS_CDF) $(DEFS_MPI)
+FPPFLAGS= $(FPPFLAGS_CDF) $(FPPFLAGS_MPI)
 #
 .F.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 .F90.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f90.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 #

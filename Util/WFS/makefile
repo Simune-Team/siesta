@@ -40,18 +40,15 @@ FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 #
-# This should be INCFLAGS...
-#
-FFLAGS=$(FFLAGS_DEBUG) -I../../$(OBJDIR)
+INCFLAGS:=$(NETCDF_INCFLAGS) $(INCFLAGS) # -I../../$(OBJDIR)
 #
 # We assume that the top arch.make defines the relevant NetCDF symbols,
-# including the INCFLAGS line. If not, uncomment the following lines, 
+# including the NETCDF_INCFLAGS line. If not, uncomment the following lines, 
 # using appropriate information
 #
 # NETCDF_ROOT=/some/path
 # INCFLAGS=-I$(NETCDF_ROOT)/include
-#
-LIBS=-L$(NETCDF_ROOT)/lib -lnetcdf
+# NETCDF_LIBS=-L$(NETCDF_ROOT)/lib -lnetcdf
 #
 readwf: readwf.o
 	$(FC) $(LDFLAGS) -o $@ $<  
@@ -62,7 +59,7 @@ wfs2wfsx: wfs2wfsx.o
 wfsx2wfs: wfsx2wfs.o
 	$(FC) $(LDFLAGS) -o $@ $<  
 wfsnc2wfsx: wfsnc2wfsx.o
-	$(FC) $(LDFLAGS) -o $@ $<  $(LIBS)
+	$(FC) $(LDFLAGS) -o $@ $<  $(NETCDF_LIBS)
 #
 clean: 
 	rm -f *.o  *.*d readwf readwfx wfs2wfsx wfsx2wfs wfsnc2wfsx

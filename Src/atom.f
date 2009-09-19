@@ -5125,7 +5125,7 @@ C
 
                integer
      .           l, nrc, nsp, ir,indx,
-     .           ipol, nsm, nrcomp
+     .           ipol, nsm, nrcomp, lpol
 
                real(dp)
      .           rc, rcpol(nzetmx,0:lmaxd,nsemx),
@@ -5139,10 +5139,12 @@ C
 
       logical::filterorbitals, new_split_code, split_tail_norm
       logical :: fix_split_table
+      logical :: old_style_pol
       real(dp)::kmax, kmax_tol, etol, paofilterFactor, spln_min
       integer :: n_eigen
       real(dp),allocatable,dimension(:) :: forb !filtered orbital
       
+           old_style_pol = fdf_boolean('PAO.OldStylePolorbs',.true.)
            split_tail_norm=fdf_boolean('PAO.SplitTailNorm',.false.)
            fix_split_table=fdf_boolean('PAO.FixSplitTable',.false.)
            if (split_tail_norm .or. fix_split_table) then
@@ -5193,7 +5195,13 @@ C Calculate the soft-confinement potential for the polarization orbitals
 !                 Generate the polarization function perturbatively 
 !                 from the original PAO**
 
-                  call polarization(a,rofi,rphi(1,l,nsm),vps(1,l),
+                  ! Use the correct l for the pseudo, unless prevented
+                  if (old_style_pol) then
+                     lpol = l
+                  else
+                     lpol = l+1
+                  endif
+                  call polarization(a,rofi,rphi(1,l,nsm),vps(1,lpol),
      .                 vePAOsoft,drdi,nrc,l,ePAO(l,nsm),g,nrc)
 
                        dnrm=0.0d0

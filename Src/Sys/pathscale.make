@@ -23,23 +23,23 @@ COMP_LIBS=
 #
 NETCDF_LIBS=         #  /usr/local/netcdf-3.5/lib/pgi/libnetcdf.a
 NETCDF_INTERFACE=    #  libnetcdf_f90.a
-DEFS_CDF=            #  -DCDF
+FPPFLAGS_CDF=            #  -DCDF
 #
 MPI_INTERFACE=
 MPI_INCLUDE=
-DEFS_MPI=
+FPPFLAGS_MPI=
 #
 LIBS=/opt/PathScale/lib/2.0/libpathfortran.a \
 	/localhome/jjunquer/acml2.5.1/pathscale64/lib/libacml.a 
 SYS=cpu_time
-DEFS= $(DEFS_CDF) $(DEFS_MPI)  # -DGRID_DP
+FPPFLAGS= $(FPPFLAGS_CDF) $(FPPFLAGS_MPI)  # -DGRID_DP
 #
 .F.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 .F90.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f90.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 
