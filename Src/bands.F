@@ -208,7 +208,7 @@ C Find scale used in k point data
             scale = fdf_string( 'BandLinesScale', 'pi/a' )
           endif
 #ifdef MPI
-          call MPI_Bcast(scale,30,MPI_double_precision,0,
+          call MPI_Bcast(scale,30,MPI_character,0,
      .      MPI_Comm_World,MPIerror)
 #endif
           if (scale .eq. 'pi/a') then
@@ -540,6 +540,11 @@ C fixspin and qs are not used in diagk, since getD=.false. ...
 
 C Handle parallel over K points option which is not allowed for here
         SaveParallelOverK = ParallelOverK
+        if ((Node .eq. 0) .and. ParallelOverK) then
+           write(6,"(a)")
+     $          "*** Note: ParallelOverK option not used for Bands"
+        endif
+
         ParallelOverK = .false.
         ResetFirstCall = .true.
 

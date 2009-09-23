@@ -69,9 +69,6 @@ c      complex*16 contmp(NCONTOUR),WGFtmp(NCONTOUR)
       character paste*33,fname*33
 C
 
-C Define FDF calls ....................................................
-      include 'fdf/fdfdefs.h'
-
 
 c=======================================================================
 c BEGIN:

@@ -11,11 +11,18 @@
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a .f90 .F90
 
+#
+# .make file for Finisterrae at CESGA
+# NOTES:
+#       The location of the system libraries is implicitly determined
+#       by the modules loaded by the user (except netcdf)
+#
+#
 SIESTA_ARCH=intel-mkl-ia64-netcdf-mpi.make
 
 FPP=cp
 FPP_OUTPUT=
-FC=/opt/hpmpi/bin/mpif90.mpich
+FC=mpif90.mpich
 RANLIB=ranlib
 
 SYS=nag
@@ -30,16 +37,16 @@ GUIDE=-lguide
 LAPACK=-lmkl_lapack
 BLAS=-lmkl_ipf 
 SCALAPACK=-lmkl_scalapack -lmkl_blacs
-MKL_LIBS=-L/opt/intel/cmkl/9.1.021/lib/64 $(SCALAPACK) $(LAPACK) $(BLAS)  $(GUIDE)  -lpthread 
+MKL_LIBS=$(SCALAPACK) $(LAPACK) $(BLAS)  $(GUIDE)  -lpthread 
 SYS=nag
 
 NETCDF_ROOT=/opt/cesga/netcdf-3.6.2
-INCFLAGS=-I$(NETCDF_ROOT)/include
+NETCDF_INCFLAGS=-I$(NETCDF_ROOT)/include
 NETCDF_LIBS=-L$(NETCDF_ROOT)/lib -lnetcdf
-DEFS_CDF=-DCDF
+FPPFLAGS_CDF=-DCDF
 
-FPPFLAGS= -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT $(DEFS_CDF)
-DEFS= -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT $(DEFS_CDF)
+FPPFLAGS= -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT $(FPPFLAGS_CDF)
+FPPFLAGS= -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT $(FPPFLAGS_CDF)
 
 LIBS=$(MKL_LIBS) $(NETCDF_LIBS)
 

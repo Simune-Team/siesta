@@ -10,9 +10,9 @@
 !
 Module siesta_cmlsubs
 
-  Use flib_wxml, only: xmlf_t      ! help pgf95...
-  Use flib_wxml
-  Use flib_wcml
+  Use FoX_common, only: str
+  Use FoX_wxml, only: xmlf_t      ! help pgf95...
+  Use FoX_wcml
 
   Implicit None
   Private
@@ -20,7 +20,7 @@ Module siesta_cmlsubs
   public :: siesta_cml_init, siesta_cml_exit
 
   Logical, public      :: cml_p = .False.
-  Type(xmlf_t), public :: mainXML
+  Type(xmlf_t), public, save :: mainXML
 
   Contains
 
@@ -42,19 +42,11 @@ Module siesta_cmlsubs
       Endif !IOnode
 
       If (cml_p) Then
-         Write(fname,'(a,a)') Trim(slabel),'.xml'
-         Call xml_OpenFile(trim(fname), mainXML, .True.)
-         Call xml_AddXMLDeclaration(mainxml, 'UTF-8')
-         Call xml_AddXMLStylesheet(mainXML, 'http://www.eminerals.org/XSLT/display.xsl', 'text/xsl')
-         Call xml_NewElement(mainXML, 'cml')
-         Call xml_AddAttribute(mainXML, 'xmlns', 'http://www.xml-cml.org/schema')
-         call xml_AddAttribute(mainXML, 'xmlns:xsd', 'http://www.w3.org/2001/XMLSchema')
-         call xml_AddAttribute(mainXML, 'xmlns:dc', 'http://purl.org/dc/elements/1.1/title') 
-         Call xml_AddAttribute(mainXML, 'xmlns:siesta', 'http://www.uam.es/siesta/namespace')
-         Call xml_AddAttribute(mainXML, 'xmlns:siestaUnits', 'http://www.uam.es/siesta/namespace/units')
-         Call xml_AddAttribute(mainXML, 'xmlns:eMinerals', 'http://www.eminerals.org/namespace') 
-         Call cmlAddMetadata(mainXML, name='eMinerals:cmlSubsetVersion', content='0.9') 
-         Call cmlAddMetadata(mainXML, name='dc:contributor', content='xmlf90 v1.99')
+         Write(fname,'(a)') Trim(slabel)//'.xml'
+         Call cmlBeginFile(mainXML, trim(fname), unit=-1)
+         Call cmlAddNamespace(mainXML, 'siesta', 'http://www.uam.es/siesta/namespace')
+         Call cmlAddNamespace(mainXML, 'siestaUnits', 'http://www.uam.es/siesta/namespace/units')
+         Call cmlStartCml(mainXML, convention="CMLComp")
          Call cmlStartMetadataList(mainXML)
          Call cmlAddMetadata(mainXML, name='siesta:Program', content='Siesta')
          Call cmlAddMetadata(mainXML, name='siesta:Version', content=version_str)
@@ -66,7 +58,7 @@ Module siesta_cmlsubs
          Else
            Call cmlAddMetadata(mainXML, name='siesta:Mode', content='Serial')
          Endif
-         Call cmlAddMetadata(mainXML, name='siesta:Nodes', content=nodes)
+         Call cmlAddMetadata(mainXML, name='siesta:Nodes', content=str(nodes))
 #ifdef CDF
          Call cmlAddMetadata(mainXML, name='siesta:NetCDF',  content='true')
 #else
@@ -84,8 +76,8 @@ Module siesta_cmlsubs
 
       If (cml_p) Then
         Call cmlAddMetadata(mainXML, name='siesta:EndTime',content=datestring())
-        Call xml_EndElement(mainXML, 'cml')
-        Call xml_Close(mainXML)
+        Call cmlEndCml(mainXML)
+        Call cmlFinishFile(mainXML)
       Endif !cml_p
 
     End Subroutine siesta_cml_exit

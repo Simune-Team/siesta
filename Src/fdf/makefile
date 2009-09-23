@@ -1,19 +1,32 @@
 #
 #  Makefile for fdf example and fdf module.
+#  
+.PHONY: check_flags
 #
-INCFLAGS=-I${<D}        # For VPATH operation
+# This makefile can also be used "remotely", so we allow
+# for an external specification of the (relative) location 
+# of the arch.make file.
 #
-include ../arch.make
+ARCH_MAKE_DEFAULT=../arch.make
+ARCH_MAKE?=$(ARCH_MAKE_DEFAULT)
+include $(ARCH_MAKE)
 #
+INCFLAGS:=-I$(VPATH) $(INCFLAGS)    # For VPATH operation
+#
+# Include copying operations in rule to make sure that
+# they are always performed.
+#
+default: module
 module:  libfdf.a
-libfdf.a:	fdf.o fdf_mod.o parse.o
-	ar $(ARFLAGS_EXTRA) cru libfdf.a fdf.o fdf_mod.o parse.o
-	-$(RANLIB) libfdf.a
 	cp libfdf.a ..
 	@cp -p *.*d ..
-	@echo "fdf/work.pc" >> ../work.pcl
+
+check_flags:
+	@echo "In fdf, INCFLAGS is: $(INCFLAGS)"
 #
-# Note trick for Intel Fortran Compiler
+libfdf.a: check_flags fdf.o fdf_mod.o parse.o
+	ar $(ARFLAGS_EXTRA) cru libfdf.a fdf.o fdf_mod.o parse.o
+	-$(RANLIB) libfdf.a
 #
 fdf_mod.o: fdf_mod.f parse.o
 fdf.o:		fdf.h

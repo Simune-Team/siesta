@@ -20,18 +20,18 @@ FFLAGS= -O
 FFLAGS_DEBUG= -g -O0
 RANLIB=echo "do we need to ranlib this? : "
 LIBS=  
-SYS=bsd
-DEFS=
+SYS=nag
+FPPFLAGS=
 MPILIB=
 COMP_LIBS=linalg.a
 MPI_INCLUDE=/usr/local/include
 #
 .F.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 .F90.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f90.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 #

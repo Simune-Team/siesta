@@ -23,9 +23,22 @@
 !              information from an old DM, but it is too much trouble 
 !              for now). NOTE that this is a change in policy with respect
 !              to previous versions of the program, in which a (blind?)
-!              re-use was allowed.
+!              re-use was allowed, except if 'ReInitialiseDM' was 'true'.
+!              Now 'ReInitialiseDM' is 'true' by default. Setting it to
+!              'false' is not recommended. (This fdf variable maps to the
+!              'initdmaux' module variable)
 !
-!      For the purposes of extrapolation, this module keeps DMsaved.
+!              In all other cases (including "server operation"), the 
+!              default is to allow DM re-use (with possible extrapolation) 
+!              from previous geometry steps.
+!              The fdf variables 'DM.AllowReuse' and 'DM.AllowExtrapolation'
+!              (mapped to 'allow_dm_reuse' and 'allow_dm_extrapolation', and 
+!              both 'true' by default) can be used to change this behavior.
+!              
+!
+!      For the purposes of extrapolation, this module keeps DMsaved, which
+!      holds the DM from a previous geometry step (used, together with the
+!      current DM to extrapolate).
 !      The module also keeps the sparsity at the time of initialization,
 !      so that it can be compared to the current one. If restructuring is
 !      needed, the saved sparsity is updated.
@@ -52,7 +65,7 @@
 
       private
       public :: new_dm
-      real(dp) :: anorm
+!      real(dp) :: anorm
 
       CONTAINS
 
@@ -197,7 +210,7 @@
 
       if (istp .eq. 1 .and. isolve .eq. 2) then ! try to read TSDM
          call TSiodm('read', maxnh, no_l, nspin,
-     .        numh, listhptr, listh, Dscf, Escf, ef, foundts)
+     .        numh, listhptr, listh, Dscf, Escf, ef, found = foundts)
 
          if(.not. foundts )  then ! not a TS continuation run
             TSinit = .true.     ! start to converge a diagon run
@@ -253,9 +266,15 @@
 !         if (IONode) print *, "DM norm after extrapolation: ", anorm
 
       endif
-
+     
       ! Initialize energy-density matrix to zero for first call to overfsm
+#ifdef TRANSIESTA
+      ! Only part of Escf is updated in TS, so if it is put as zero here
+      ! a continuation run gives bad forces.
+      if(.not.TSrun) Escf(:,:) = 0.0_dp
+#else
       Escf(:,:) = 0.0_dp
+#endif /* TRANSIESTA */
 
       END subroutine new_dm
 

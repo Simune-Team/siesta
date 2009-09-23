@@ -15,7 +15,8 @@
 #
 default: linalg.a
 #
-include ../arch.make
+ARCH_MAKE?=../arch.make
+include $(ARCH_MAKE)
 #
 ALL_OBJS= lapack.o dc_lapack.o zgesv_lapack.o blas.o machine.o
 # Add machine.o here only if needed...

@@ -20,10 +20,24 @@ destdir=$(pwd)
 #
 # Replicate the hierarchy of makefiles
 #
-for i in wxml xmlparser MPI Libs fdf ; do
-    mkdir $i
-    cp ${srcdir}/$i/*akefile ${destdir}/$i
-done
+(cd $srcdir;
+  for i in $(find . -name \[mM\]akefile | grep -v \\./Makefile); do
+    relpath=${i%/*}
+    mkdir -p ${destdir}/$relpath
+    cp $relpath/*akefile ${destdir}/$relpath
+  done
+)
+# Replicate any .h files
+# This is needed in some systems with broken include file import heuristics
+# (e.g., CSCS blanc)
+#
+(cd $srcdir;
+  for i in $(find . -name '*.h' ); do
+    relpath=${i%/*}
+    mkdir -p ${destdir}/$relpath
+    cp -f $relpath/*.h ${destdir}/$relpath
+  done
+)
 #
 sed "s#VPATH=\.#VPATH=${srcdir}#g" ${srcdir}/Makefile > ${destdir}/Makefile
 
@@ -38,10 +52,6 @@ sed "s#VPATH=\.#VPATH=${srcdir}#g" ${srcdir}/Makefile > ${destdir}/Makefile
               -path *work -prune      -o  \
               -path *.arch-ids  -prune -o -print \
               | tar -cf - --no-recursion -T- )   | ( cd ${destdir} ; tar xf -)
-#
-# Now make a symbolic link in the destination directory
-#
-ln -s ${destdir} ${destdir}/Src
 #
 echo " *** Compilation setup done. "
 echo " *** Remember to copy an arch.make file or run configure as:"

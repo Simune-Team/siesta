@@ -2,7 +2,557 @@
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
 
-** CHANGES ALONG siesta-2.6 trunk branch 
+
+** CHANGES ALONG trunk 
+
+------------------------------------------------------------------------
+2009-09-11  11:30:00 GMT Alberto Garcia <albertog@icmab.es>    trunk-298
+Re-organization of the manual. Building fixes. Update of Contrib utils
+
+* The manual has been thoroughy re-sectioned, and some obscure points
+clarified.
+
+* In some cases, it has been necessary to make minor changes to the
+code to be consistent with the behavior implied by the manual:
+
+-- The forces file (.FA) is always created.  
+
+-- There is no longer a coupling of the WriteCoorStep and WriteMDXMol
+   options.
+
+* Fix of the long-standing "mis-feature/bug" in the generation of
+  perturbative polarization orbitals. The fix is turned off by
+  default, unless the variable PAO.OldStylePolOrbs is set to
+  ".false.".  (See manual.)
+
+* Changes to streamline compilation, and new version of
+  the arch.make template in Src/Sys/DOCUMENTED_TEMPLATE.make
+  There are minor changes needed in arch.make files:
+
+  -  Use of NETCDF_INCFLAGS instead of simply INCFLAGS
+  -  Deprecation of the use of DEFS instead of FPPFLAGS
+
+  A new Util/build_all.sh script automates the building
+  of all the utility programs.
+
+* Simplification of TranSiesta compilation:
+
+      The target "transiesta" in the makefile defines its
+      own -DTRANSIESTA pre-processor flag, so the user does
+      not need to worry about it.
+      
+      Additionally, the makefile checks whether the last
+      compilation taking place in the building directory
+      was a "plain siesta", or a "transiesta", and complains
+      in case of a mismatch. 
+
+* Removal of all remaining mentions to the "Src" directory in the
+  automated tests in Tests.
+
+* Update of Andrei Postnikov's utilities in Util/Contrib/APostnikov to
+  V. 0.3, and integration into the standard building mechanism.
+
+(Alberto Garcia, with help from E. Artacho, J. Soler, O. Dieguez, and
+J. Junquera.  The polarization-orbital fix is due to E. Anglada.)
+
+
+------------------------------------------------------------------------
+2009-09-02  13:50:00 GMT Alberto Garcia <albertog@icmab.es>    trunk-297
+Code to treat slabs with net dipole and charged slabs (P. Ordejon)
+
+If the FDF option 'SlabDipoleCorrection' is set to "true", Siesta
+calculates the electric field required to compensate the dipole of the
+system. The potential added to the grid corresponds to that of a
+dipole layer at the middle of the vacuum layer. For slabs, this
+exactly compensates the electric field at the vacuum, created by the
+dipole moment of the system, thus allowing to deal with asymmetric
+slabs (including systems with an adsorbate on one surface) and compute
+properties such as the work funcion of each of the surfaces.
+
+The FDF option SimulateDoping, if "true", instructs the program to add
+a background charge density to simulate doping.  The new "doping"
+routine calculates the net charge of the system, and adds a
+compensating background charge that makes the system neutral. This
+background charge is constant at points of the mesh near the atoms,
+and zero at points far from the atoms.  This simulates situations like
+doped slabs, where the extra electrons (holes) are compensated by
+oposite charges at the material (the ionized dopant impurities), but
+not at the vacuum.  This serves to simulate properly doped systems in
+which there are large portions of vacuum, such as doped slabs.
+
+New test: sic-slab
+
+During the implementation of these features, a bug related to the 
+calculation of the distance between Bravais planes was discovered
+and fixed in efield.
+
+------------------------------------------------------------------------
+2009-08-30  17:15:00 GMT Alberto Garcia <albertog@icmab.es>    trunk-296
+TS manual and updates. Building rationalization. Hsparse speedup
+
+* Added TranSIESTA sections to the manual (Docs/siesta.tex) (by
+  J.A. Torres).
+
+* TranSIESTA and TBTrans updates (by F.D. Novaes):
+
+- Reimplementation of getGF_Tri, that obtains the Green's Function
+ using the fact that the Hamiltonian is tridiagonal.
+
+- Fixed the generation of listudg in the transiesta routine
+ (m_ts_in_siesta.F).  Now, when the TS.UpdateDMCR is set to
+ .false. the cross terms between the electrodes and the contact region
+ of the density matrix are also updated in the TS iteration
+ process. If set to .true., only the elements of the contact region
+ are changed during the self consistent cycle.
+
+- In weightDM and weightDMC (m_ts_scattering.F), changed the weights
+ of the cross terms elements, since when using Tri_Diag the
+ non-equilibrium contributions are zero the way it used to be.
+
+- In new_dm.F, added a condition that does not sets the energy-density
+ matrix to zero in the first iteration of the SCF cycle.
+
+- (with A. Garcia) New building scheme for TBTrans.
+
+* Building rationalization (by A. Garcia):
+
+- Move auxiliary programs from Src to individual directories in Util
+
+ -- gen-basis and ioncat now live in Util/Gen-basis
+ -- mixps and fractional have been moved to Util/VCA
+ -- The programs to test the MPI installation are now in Util/MPI_test
+
+- Update building mechanisms in Util/STM
+
+(Some of the above building improvements use new functionality in
+the fdf and MPI makefiles that allows these modules to be compiled in
+"private subdirectories" anywhere: see Denchar and TBTrans for examples.)
+
+* Hsparse has been dramatically speeded-up by removing a superfluous
+  inner loop (by A. Garcia).
+
+* Other updates to the manual by A. Garcia
+ 
+
+** CHANGES ALONG siesta-2.6 series of trunk
+
+-----------------------------------------------------------------------
+2009-08-20  09:25:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.32
+Documentation updates. Building and cosmetic fixes. Eggbox checker.
+
+* Added a draft of release_notes_3.0
+
+* New experimental directory Docs/ExtraDocs containing files with
+  information relevant to a specific feature. They should complement
+  the "manual", which is really a reference manual and not very useful
+  for feature discovery. This is work in progress and subject to major
+  changes.
+
+* Updated the content of a number of README files.
+
+* Updated several sections of Docs/siesta.tex.
+
+* Created new Util/test-xml directory to keep a separate version of
+  the XML checker.
+
+* New Util/Scripting/eggbox_checker.py script for eggbox diagnostics.
+
+* Added Src/Sys/DOCUMENTED-TEMPLATE.make to help users with the subtle
+  points of arch.make generation. More documentation about the
+  building process in several places.
+
+* Warn about deprecation of PHONON interface.
+
+* Update siesta.tex with DM reuse information. Better header
+  information in new_dm.F. Remove references to iodm in Siesta
+  files. It is still needed for some utility programs.
+
+* Clarify target of 'goto' in atomlwf (this was a bug introduced in
+  previous patches).
+
+* Give the Src/obj_setup.sh the ability to override the Src link in
+  the object directory. Now it should be possible to completely update
+  the object directory even if it moves.
+
+* Proper test for gfortran macros
+  
+  gfortran now defines the __GFORTRAN__ macro, so it is 
+  no longer necessary to define GFORTRAN in makefiles, but
+  it is still supported. The proper idiom for the gfortran 
+  test in f2kcli is now:
+  
+  #if  !defined(GFORTRAN) && !defined(__GFORTRAN__)
+
+* Removed the Src/filter debug directory.
+
+* Updates to some makefiles and many cosmetic fixes.
+
+-----------------------------------------------------------------------
+2009-08-14  16:20:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.31
+Speed-up of density-matrix building in diagk
+
+By computing only the products of eigenvector components which are
+really needed, the building of the density-matrix has been
+significantly speeded-up in diagk.  A similar idea can be applied in
+diagkp and diag2k (here saving in memory too), but these are not
+implemented yet.
+
+NOTE that the diagk_file version of the routine is still significantly
+faster, and should be the method of choice when NetCDF is compiled in.
+
+modified:
+  Src/diagk.F
+
+-----------------------------------------------------------------------
+2009-08-07  16:20:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.30
+Assorted fixes, dealing mostly with the building system
+
+* (IMPORTANT) The default building directory is now Obj, instead of Src.
+  This change is necessary to support multiple compilation with the
+  same source. See Obj/README for more details.
+
+* Many fixes to smooth compilation in several systems, notably on IBM
+  computers. 
+
+* The default makefile in Pseudo/atom is now the 'modern' version with
+  CML support.
+
+* Clearer diagnostics in case of FoX configuration problems. 
+
+* Removed obsolete .make files from Src/Sys. Added 64bit versions of
+  the MareNostrum files.
+
+* The 'MaximumWallClockTime' option is no longer available.
+
+* Fixes in the NetCDF iodm* routines to properly handle a pointer.
+
+removed:
+  Src/Sys/eth-hreidar-mpi.make
+  Src/Sys/lahey-lam.make
+  Src/Sys/lahey-mpich.make
+  Src/Sys/lahey-nolibs.make
+  Src/Sys/lahey.make
+  Src/Sys/osfdxml-mpich.make
+  Src/Sys/osfdxml.make
+  Src/Sys/osfdxmlcdf.make
+  Src/Sys/pgf90-lam.make
+  Src/Sys/pgf90-mpich.make
+  Src/Sys/pgf90-nolibs.make
+  Src/Sys/pgf90.make
+  Src/Sys/sgi-altix.make
+  Src/Sys/sgi.make
+  Src/Sys/sgi64-cdf.make
+  Src/Sys/sgi64-lam-cdf.make
+  Src/Sys/sgi64-lam.make
+  Src/Sys/sgi64-mpi_fermat.make
+  Src/Sys/sgi64-mpich-cdf.make
+  Src/Sys/sgi64-mpich.make
+  Src/Sys/sgin32-mpi.make
+  Src/Sys/sun-nolibs.make
+  Src/Sys/t3e.make
+  Util/COOP/precision.f
+added:
+  Obj/
+  Obj/README
+  Src/Sys/marenostrum-mpi-64.make
+  Src/Sys/marenostrum-mpi-netcdf-64.make
+renamed:
+  Pseudo/atom/makefile => Pseudo/atom/makefile-old
+  Pseudo/atom/makefile-xml => Pseudo/atom/Makefile
+  Src/Sys/marenostrum-mpi.make => Src/Sys/marenostrum-mpi-32.make
+  Util/COOP/sys.f90 => Util/COOP/sys_local.f90
+  Util/Vibra/Vibra/ => Util/Vibra/Src/
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/FoX/configure
+  Src/Makefile
+  Src/Sys/README
+  Src/Sys/cscs-cray-mpi.make
+  Src/Sys/cscs-cray.make
+  Src/Sys/cscs-ibm-blanc.make
+  Src/Sys/finisterrae.make
+  Src/Sys/marenostrum-mpi-netcdf-32.make
+  Src/iodm_netcdf.F90
+  Src/iodmhs_netcdf.F90
+  Src/molecularmechanics.F90
+  Src/obj_setup.sh
+  Src/siesta_options.F90
+  Src/timer.F
+  Util/COOP/Makefile
+  Util/COOP/mprop.f90
+  Util/Denchar/Src/Makefile
+  Util/DensityMatrix/makefile
+  Util/Grid/makefile
+  Util/Projections/makefile
+  Util/Vibra/Src/Makefile
+  Util/WFS/makefile
+  Util/pdosxml/makefile
+  Util/pseudo-xml/makefile
+  Pseudo/atom/makefile-old
+  Pseudo/atom/Makefile
+  Src/Sys/marenostrum-mpi-32.make
+
+-----------------------------------------------------------------------
+2009-07-03  14:00:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.29
+TranSiesta: New saving options and file format (M. Paulsson, F.D. Novaes)
+
+  * Changed format and filenames for saved TSHS files.
+  * Enabled transiesta to save a TSHS file for each step in a FC run.
+  * Transiesta keyword TS.onlyS (T/F) to save overlap matrix in .TSHS
+  file format and quit without any SCF cycle.
+  * New "onlyS" option to stop after generating the overlap matrix.
+  * Disabled proximity check for onlyS run.
+
+(+ Fix a few glitches in FoX-enabled compilation of TranSiesta)
+
+Thanks to M. Paulsson and F.D. Novaes for this patch.
+
+** NOTE: The Intel compiler V. 11.{0,1} does not compile correctly
+         this version.
+         
+removed:
+  Util/TBTrans/TSiohs2.F
+modified:
+  Src/Makefile
+  Src/m_ts_electrode.F90
+  Src/m_ts_io.F90
+  Src/m_ts_options.F90
+  Src/proximity_check.F
+  Src/setup_hamiltonian.F
+  Src/siesta_forces.F
+  Src/state_init.F
+  Src/write_subs.F
+  Util/TBTrans/Makefile
+  Util/TBTrans/TSiohs.F
+  Util/TBTrans/work.pcl
+
+
+-----------------------------------------------------------------------
+2009-06-24  12:50:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.28
+Update of CMLComp output. Integration of FoX library (A. Walker, T. White)
+
+A subset of the FoX library has been integrated into the source tree.
+It is configured and built by the Siesta Makefile, and is compatible
+with the use of VPATH for multiple compilation.
+
+The XML output from Siesta now conforms to the CMLComp subset of
+version 2.2 of the Chemical Markup Language (CML).
+
+A new directory Util/CMLComp has been created to hold the ccViz tool
+to convert the XML output file into an XHTML file that can be opened
+with any browser.
+
+FoX is also used (optionally) by atm to produce pseudopotential files
+in XML format, replacing the older wxml library by A. Garcia.
+
+Thanks to Andrew Walker and Toby White for most of the technology
+involved in this patch. A. Garcia fixed a few issues of the
+interaction of FoX with the rest of the build process.
+
+NOTE: The output reference XML files in Tests/Reference-xml have
+been updated. A review of the test list and a final check is due
+before release.
+
+
+-----------------------------------------------------------------------
+2009-06-24  12:25:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.27
+Fix TranSiesta compilation issue after recent patches (F.D. Novaes)
+
+A compilation error occurred because "found" variable is no longer used
+in mixer.F (chages in io of density matrix)
+  
+Made "found" an optinal argument in TSiodm of the m_ts_io.F90 module.
+     
+In new_dm.F, in the call for TSiodm made explicit the use of the
+optional "found", since it is used to determine if it should start
+with a TS calculation, or a diagon calcualtion.
+ 
+In mixer.F, the call for TSiodm no longer uses the "found" variable.
+  
+modified:
+  Src/m_ts_io.F90
+  Src/mixer.F
+  Src/new_dm.F
+
+
+-----------------------------------------------------------------------
+2009-06-24  12:15:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.26
+Fix behavior of extra pdos sampling for gamma case
+
+The new "extra sampling" feature for the PDOS
+incorrectly changed the behavior of the program for
+gamma-only calculations. Now "gamma_pdos" is set to
+.true. if the user does not specify any extra
+sampling requirements.
+
+Thanks to Jaime Ferrer for spotting the bug.
+
+modified:
+  Src/kpoint_pdos.F90
+
+-----------------------------------------------------------------------
+2009-06-15  12:45:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.25
+Fix bug in verlet restart in parallel (A. Aguado)
+
+The variable old_dt was read by Node zero from the VERLET_RESTART
+file, but was not broadcast to the other nodes.
+
+Symptoms of this bug were crashes with a Cholesky-type error, poor
+energy conservation, and bad self-consistency of the density matrix
+when running restarted microcanonical simulations in parallel.
+
+Thanks to Andres Aguado <aguado@metodos.fam.cie.uva.es>
+for diagnosing and fixing the bug.
+
+modified:
+  Src/dynamics.f
+
+-----------------------------------------------------------------------
+2009-06-15  12:45:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.24
+Fixes: denchar, pathscale_mpi. DM(HS) history files. Makefiles
+
+* Added nano .make and script files. Fixed ag test.
+
+- The ag test had a very small MeshCutoff, and crashed.
+- Added netCDF-enabled .make file for nano.
+- Updated README file in Src/Sys
+- Added pbs and sh scripts for test execution on nano.
+
+* More complete DM and DMHS history files
+
+The DM and DMHS history files have now names of
+the form DM-NNNN.nc and DMHS-NNNN.nc, respectively,
+to hold information for all geometry steps. This
+expanded history option is turned off by default.
+
+(+ experimental analysis scripts in Util/SCF)
+
+* Better makefiles for some Util subdirectories
+
+The WFS, DensityMatrix, and pseudo-xml subdirectories
+of Util now have makefiles instrumented to use the
+new OBJDIR variable.
+
+* Cosmetic fix for Pathscale MPI
+
+File mpi.F was not processed correctly by the Pathscale compiler.
+
+* Fix double empty-line bug in denchar
+
+The 2D data files contained extra blank lines in between blocks.
+
+* Proper citation for ATOM in Pseudo/atom/README
+
+
+added:
+  Src/Sys/nano-intel-mpi-cdf.make
+  Tests/Scripts/nano.pbs
+  Tests/Scripts/nano4.sh
+  Util/SCF/README
+  Util/SCF/g_dm.py
+  Util/SCF/g_dm3.py
+  Util/SCF/g_els_out.py
+  Util/SCF/g_hh.py
+  Util/SCF/g_hist.py
+  Util/WFS/makefile
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Pseudo/atom/README
+  Src/MPI/mpi.F
+  Src/Sys/README
+  Src/iodm_netcdf.F90
+  Src/iodmhs_netcdf.F90
+  Src/state_init.F
+  Tests/ag/ag.fdf
+  Util/Denchar/Src/rhoofr.f
+  Util/DensityMatrix/makefile
+  Util/pseudo-xml/makefile
+  version.info
+
+
+-----------------------------------------------------------------------
+2009-06-15  11:00:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.23
+Implementation of PBEsol functional (J. Gale)
+
+Implemented the PBE functional for solids of Perdew et al, PRL 100,
+136406 (2008).
+
+The xc_authors string in Siesta is 'PBEsol'.  In atom, the two-letter
+symbol is 'ps'
+
+The XML interface in Pseudo/atom and the converter in Util/pseudo-xml
+have been updated.
+
+  Docs/siesta.tex
+  Pseudo/atom/Docs/atom.tex
+  Pseudo/atom/makefile-xml
+  Pseudo/atom/pseudoXML.f
+  Pseudo/atom/velect.f
+  Pseudo/atom/xc.f
+  Src/atom.f
+  Src/xc.f
+  Util/pseudo-xml/xml2psf_helper.f
+
+-----------------------------------------------------------------------
+2009-06-15  11:00:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.22
+Optional k-point sampling for PDOS calculations (J. Gale)
+
+Separate grid of K-points introduced for PDOS so that greater
+resolution can be achieved.  To do this, a new module based on the SCF
+kpoint module has been introduced with separate data structures for
+the PDOS k-points. In the case that no PDOS grid is specified then the
+SCF grid is used as present.
+
+Handle the case where a gamma point calculation is performed for the
+SCF and then a non-gamma calculation is requested for the PDOS
+evaluation. Here the need for the auxiliary cell is trapped in
+siesta_init by a call to the new routine init_projected_dos.  If
+do_pdos is true, then the gamma flag is set to be false if gamma_pdos
+is false.
+
+Note added to the manual to suggest that PDOS evaluations be performed
+using a restart if the SCF case involves the gamma point while the
+PDOS grid involves general k-points.
+
+(AG added the si_pdos_kgrid test)
+
+added:
+  Src/kpoint_pdos.F90
+  Tests/Reference-xml/si_pdos_kgrid.xml
+  Tests/Reference/si_pdos_kgrid.out
+  Tests/si_pdos_kgrid/
+  Tests/si_pdos_kgrid/makefile
+  Tests/si_pdos_kgrid/si_pdos_kgrid.fdf
+  Tests/si_pdos_kgrid/si_pdos_kgrid.pseudos
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/projected_DOS.F
+  Src/siesta_init.F
+
+-----------------------------------------------------------------------
+2009-05-07  10:35:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.21
+Parallel fixes: Diag.ParallelOverK for wf generation; idle nodes
+
+* Patches in diagg and diagk for the corner case in which a node has no 
+assigned orbitals (Julian Gale).
+
+* The option to parallelize over k-points is only implemented for the
+SCF loop. The bands routine had already been coded to fall back on the
+standard parallelization over orbitals, but the wwave routine (used to
+generate wavefunctions for analysis) had not. This bug has been
+corrected, and now both routines print a warning to the user when the
+Diag.ParallelOverK option is used.
+
+modified:
+  Src/bands.F
+  Src/diagg.F
+  Src/diagk.F
+  Src/writewave.F
+  Docs/siesta.tex
+  Docs/siesta.ind
 
 -----------------------------------------------------------------------
 2009-04-02  12:55:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.20

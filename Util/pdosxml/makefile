@@ -14,7 +14,7 @@
 # Other points to note, until we switch to a better building system:
 #
 #  The arch.make file is supposed to be in $(OBJDIR). This is normally
-#  the top Src, but if you are using architecture-dependent build directories
+#  the top Obj, but if you are using architecture-dependent build directories
 #  you might want to change this. (If you do not understand this, you do not
 #  need to change anything. Power users can do "make OBJDIR=Whatever".)
 #
@@ -26,8 +26,10 @@
 .SUFFIXES: 
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
+.PHONY: xmlparser clean
+#
 default: pdosxml
-OBJDIR=Src
+OBJDIR=Obj
 VPATH=../../Src
 #
 include ../../$(OBJDIR)/arch.make
@@ -36,19 +38,21 @@ FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 #
-# This should be INCFLAGS...
-#
-FFLAGS=$(FFLAGS_DEBUG) -I../../$(OBJDIR)
+INCFLAGS:=$(INCFLAGS) -I../../$(OBJDIR)/xmlparser # To pick up mod files
 #
 LIBS= ../../$(OBJDIR)/libxmlparser.a
 #
 OBJS=  m_orbital_chooser.o m_pdos.o f2kcli.o pdosxml.o
-     
-pdosxml: $(OBJS)
+#     
+pdosxml: xmlparser $(OBJS)
 	$(FC) $(LDFLAGS) -o $@ $(OBJS)  $(LIBS)
 #
 clean: 
 	rm -f *.o pdosxml *.o *.*d
+#
+xmlparser:
+	@echo "Making sure that the xmlparser library is compiled..."
+	(cd ../../$(OBJDIR)/xmlparser ; make "VPATH=$(VPATH)/xmlparser")
 #
 
 

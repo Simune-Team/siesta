@@ -442,7 +442,7 @@ c
       character*(*) label
       logical default
 
-      character valstr*40
+      character valstr*128
 
       include 'fdf.h'
 
@@ -630,7 +630,7 @@ c
       character*(*) label, defunit
       double precision default
 
-      character unitstr*10
+      character unitstr*64
       double precision value
 
       include 'fdf.h'
@@ -690,7 +690,7 @@ c
       integer unit
       include 'fdf.h'
       
-      character*50 token1, filename
+      character*256 token1, filename
       integer iless
 
       logical fdf_locate, leqi
@@ -773,7 +773,7 @@ c
       
       character*(*) label
 
-      character*60 token1, filename
+      character*256 token1, filename
       integer ilabel, iless
 c
       include 'fdf.h'
@@ -1039,7 +1039,7 @@ c
       include 'fdf.h'
 
       integer i, lblock
-      character*60 token1
+      character*128 token1
 
       logical fdf_getline, leqi
       integer fdf_search
@@ -1131,7 +1131,7 @@ c
       include 'fdf.h'
 
       character*(*) s1, s2
-      character*80 n1, n2
+      character*256 n1, n2
       logical leqi
 
       call fdf_pack(s1,n1)

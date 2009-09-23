@@ -84,6 +84,9 @@ C FDN
       real*8  ucell(3,3)
       real*8  kdispl(3)
       double precision   ef
+! Added to TSHS file by MPN
+      logical onlyS
+      integer istep, ia1
 C FDN
 
 #ifdef MPI
@@ -140,6 +143,8 @@ C Open file
             
 
             if (IOnode) read(iu) gamma
+! Variable added by MPN to be used by Phonons codes, not used by tbtrans
+            if (IOnode) read(iu) onlyS
             if (IOnode) read(iu) ts_gamma_scf_file
 #ifdef MPI
             call broadcast(gamma)
@@ -152,6 +157,8 @@ C Open file
             call broadcast(kscell)
             call broadcast(kdispl)
 #endif MPI
+! Variable added by MPN to be used by Phonons codes, not used by tbtrans
+            if (IOnode) read(iu) istep, ia1
 
 
             nullify(lasto)
@@ -175,9 +182,7 @@ C Open file
            nullify(numh)
            allocate(numh(nuotot))
            if (IOnode) then
-              do ih = 1,nuotot
-                 read(iu) numh(ih)
-              enddo
+              read(iu) numh(1:nuotot)
            end if ! IOnode
 #ifdef MPI
            call broadcast(numh)
@@ -197,13 +202,6 @@ C Open file
 #endif MPI
            efs(nspin)=efs(1)
 
-C FDN Teste
-C       write(*,*) efs,Node
-C       call MPI_Barrier(MPI_Comm_World,MPIerror)
-C       call die('aqui')
-C FDN Teste
-
-
 C Create listhptr
            nullify(listhptr)
            allocate(listhptr(nuotot))
@@ -220,9 +218,7 @@ C Allocate lish
 
            if (IOnode) then
               do ih = 1,nuotot
-                 do im = 1,numh(ih)
-                    read(iu) listh(listhptr(ih)+im)
-                 enddo
+                 read(iu) listh(listhptr(ih)+1:listhptr(ih)+numh(ih)) 
               enddo
            end if ! IOnode
 #ifdef MPI
@@ -230,38 +226,33 @@ C Allocate lish
 #endif MPI
 
 
+           nullify(S)
+           allocate(S(maxnh))
+
+           if (IOnode) then
+              do ih = 1,nuotot
+                 read(iu) S(listhptr(ih)+1:listhptr(ih)+numh(ih))
+              enddo
+           end if ! IOnode
+#ifdef MPI
+           call broadcast(S)
+#endif MPI
+
+
            nullify(H)
            allocate(H(maxnh,nspin))
-
 
            if (IOnode) then
               do is = 1,nspin
                  do ih = 1,nuotot
-                    do im = 1,numh(ih)
-                       read(iu) H(listhptr(ih)+im,is)
-                    enddo
+                    read(iu) H(listhptr(ih)+1:listhptr(ih)+numh(ih),is)
                  enddo
               enddo
            end if ! IOnode
 #ifdef MPI
            call broadcast(H)
 #endif MPI
- 
 
-           nullify(S)
-           allocate(S(maxnh))
-
-           if (IOnode) then
-              do ih = 1,nuotot
-                 do im = 1,numh(ih)
-                    read(iu) S(listhptr(ih)+im)
-                  enddo
-              enddo
-           end if ! IOnode
-#ifdef MPI
-           call broadcast(S)
-#endif MPI
-     
 
            if (.not.gamma) then
 
@@ -269,9 +260,8 @@ C Allocate lish
              allocate(xij(3,maxnh))
              if (IOnode) then
                 do ih = 1,nuotot
-                   do im = 1,numh(ih)
-                      read(iu) (xij(k,listhptr(ih)+im),k=1,3)
-                   enddo
+                   read(iu) 
+     . (xij(k,listhptr(ih)+1:listhptr(ih)+numh(ih)),k=1,3)
                 enddo
              end if ! IOnode
 #ifdef MPI

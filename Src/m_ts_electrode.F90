@@ -40,9 +40,6 @@ MODULE m_ts_electrode
        complex*16 h01(0:nv*nv-1),s01(0:nv*nv-1)
        complex*16 gs(0:nv*nv-1)
 
-! FDN Teste
-       complex*16 tmp1(0:nv*nv-1),tmp2(0:nv*nv-1)
-! FDN Teste
 
        integer, dimension (:), allocatable:: ipvt
        complex*16, dimension (:), allocatable:: &
@@ -678,22 +675,13 @@ MODULE m_ts_electrode
       end if
 ! FDN
 
-!     note that there is an added "ierror" in the new version 
-! FDN Teste
-!      write(joutfile,*) 'NG1_green', NG1, size(H00), size(S00)
-!      write(joutfile,*) (H00(ia+(ia-1)*NG1),ia=1,NG1)
-! FDN Teste comentando ...
-!      call ts_cdiag (H00,NG1,S00,NG1,NG1,eig,ab,NG1,ba, ierror)
+
 
 ! FDN
       deallocate(ab)
       deallocate(ba)
 ! FDN
 
-! FDN Teste
-!       write(joutfile,'(a,F6.2,a)')'Valence Band Bottom:  ', &
-!            eig(1)*factor,' eV'
-! FDN Teste
 
       deallocate(eig)
 
@@ -765,24 +753,6 @@ MODULE m_ts_electrode
 ! FDN
 
 
-!
-! FDN Loop over outside energy loop
-!C ==========================================================================
-!c     Loop over q=k_|| - points:
-!      do iqpt=1,nq
-!
-!
-!        kpoint(1) = q(1,iqpt)    !in (xy)
-!        kpoint(2) = q(2,iqpt)    !in (xy)
-!C FDN In general k// may have z component
-!        kpoint(3) = q(3,iqpt)
-!C FDN
-!
-!C ==========================================================================
-!
-! FDN
-
-
 
             h00 =0.0
             s00 =0.0
@@ -833,12 +803,12 @@ MODULE m_ts_electrode
 !
 ! FDN Second variable put as one
 ! Commented since it does not shift, as it is ... shifted in sethhm2
-! Should be uncommented, shift due to the potencial
+! efermi is already  zero here !
 !            call zaxpy(NGAA,dcmplx(efermi,0.d0),
 !     .           SAA(1,1),1,HAA(1,1),1)
 ! FDN
 
-        end if                
+       end if             
 
         zsenergy = zenergy-efermi
 
@@ -1085,6 +1055,7 @@ MODULE m_ts_electrode
       integer iprop,inn,it,in,ind
       real*8   xc      
       logical tinit,tlast
+      integer :: icrap1, icrap2 ! dummy variables
 ! FDN
       logical ts_gamma
 ! FDN
@@ -1130,12 +1101,12 @@ MODULE m_ts_electrode
 !                   kscell, kdispl)
 
        iotask='read'
-       call ts_iohs(iotask,gamma, nuotot, notot, Enspin, indxuo, &
+       call ts_iohs(iotask,gamma, .false., nuotot, notot, Enspin, indxuo, &
                     maxnh, numh, listhptr, listh, H, S, qtot, temp, xij, &
                     label_length+5, hsfile, nua, lasto, isa, ef, cell, &
-                    kscell, kdispl, ts_gamma, xa)  
+                    kscell, kdispl, ts_gamma, xa, icrap1, icrap2)  
 ! FDN
-
+    
 ! FDN Check if electrode has the same spin
       if( nspin.ne.Enspin ) then
        write(*,*) 'Differente spin in Electrode !!'
@@ -1390,7 +1361,6 @@ MODULE m_ts_electrode
          enddo
       enddo
 
-        
 !-----------------------------------------------------------------
        endif                      !tkham
 !-----------------------------------------------------------------

@@ -61,6 +61,8 @@
 
 MODULE m_filter
 
+implicit none
+
 ! All public procedures (there are no public types, parameters, or variables):
 PUBLIC:: &
   kcPhi, &! Returns planewave cutoff of a radial function
@@ -977,9 +979,17 @@ end subroutine filter_rdiag
 ! IN COMBINATION WITH TRED2 FINDS EIGENVALUES AND EIGENVECTORS OF
 ! A REAL SYMMETRIC MATRIX. REF: W.H.PRESS ET AL. NUMERICAL RECIPES.
 
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
-      DIMENSION D(NP),E(NP),Z(NP,NP)
-      PARAMETER (ZERO=0.D0,ONE=1.D0,TWO=2.D0)
+      implicit none
+
+      integer, intent(in) :: np, n
+      real(dp) D(NP),E(NP),Z(NP,NP)
+      
+      real(dp) :: zero, one, two
+      PARAMETER (ZERO=0.0_dp,ONE=1.0_dp,TWO=2.0_dp)
+
+      integer  :: iter, i, k, l, m
+      real(dp) :: dd, g, r, s, c, p, f, b
+
       IF (N.GT.1) THEN
         DO 11 I=2,N
           E(I-1)=E(I)
@@ -1044,9 +1054,17 @@ end subroutine filter_rdiag
 !HOUSEHOLDER REDUCTION OF A REAL SYMMETRIC MATRIX INTO TRIDIAGONAL FORM
 !REF: W.H.PRESS ET AL. NUMERICAL RECIPES. CAMBRIDGE U.P.
 
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
-      DIMENSION A(NP,NP),D(NP),E(NP)
-      PARAMETER (ZERO=0.D0,ONE=1.D0)
+      implicit none
+
+      integer  ::  n, np
+      real(dp) ::  A(NP,NP),D(NP),E(NP)
+
+      real(dp) ::  zero, one
+      PARAMETER (ZERO=0.0_dp,ONE=1.0_dp)
+
+      integer  :: l, i, k, j
+      real(dp) :: f, g, h, hh, scale
+
       IF(N.GT.1)THEN
         DO 18 I=N,2,-1
           L=I-1

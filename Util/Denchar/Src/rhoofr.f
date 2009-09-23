@@ -549,8 +549,10 @@ C Loop again over neighbours -------------------------------------------
 
          IF (IDIMEN .EQ. 2) THEN
            IF ( MOD(NPO,NPX) .EQ. 0 ) THEN
-             WRITE(UNIT1,'(/)')
-             WRITE(UNIT2,'(/)')
+CC-AG             WRITE(UNIT1,'(/)')
+CC-AG             WRITE(UNIT2,'(/)')
+                  WRITE(UNIT1,*)
+                  WRITE(UNIT2,*)
              IF ( NSPIN .EQ. 2 ) THEN
                WRITE(UNIT3,'(/)')
                WRITE(UNIT4,'(/)')

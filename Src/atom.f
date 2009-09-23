@@ -2027,7 +2027,6 @@ C Local variables
         if (icorr .eq. "rv") ps_string ="GGA revPBE"
         if (icorr .eq. "wc") ps_string ="GGA Wu-Cohen"
         if (icorr .eq. "bl") ps_string ="GGA Becke-Lee-Yang-Parr"
-        if (icorr .eq. "ps") ps_string ="GGA PBEsol"
 
 C Loop over functionals
         do nf = 1,nXCfunc
@@ -2092,16 +2091,6 @@ C Loop over functionals
 
             write(6,'(a)')  'xc_check: GGA Wu-Cohen'
             if (icorr.ne.'wc'.and.nXCfunc.eq.1) 
-     $          write(6,'(a,1x,2a)')
-     .          'xc_check: WARNING: Pseudopotential generated with',
-     $           trim(ps_string), " functional"
-
-          elseif((XCauth(nf).eq.'PBEsol').and.(XCfunc(nf).eq.'GGA')) 
-     .        then
-
-            write(6,'(a)')
-     .       'xc_check: GGA PBEsol 2008'
-            if (icorr.ne.'ps'.and.nXCfunc.eq.1) 
      $          write(6,'(a,1x,2a)')
      .          'xc_check: WARNING: Pseudopotential generated with',
      $           trim(ps_string), " functional"
@@ -3264,7 +3253,7 @@ C
      .       'SPLIT: ERROR Orbital with angular momentum L=',l,
      .       ' not bound in the atom'
                          write(6,'(A)')
-     .       'SPLIT: ERROR a cut off radius must be explicitely given' 
+     .       'SPLIT: ERROR a cut off radius must be explicitly given' 
            call die
                        endif 
                        if(abs(eshift).gt.1.0d-5) then
@@ -3824,7 +3813,7 @@ C
      .       'NODES: ERROR Orbital with angular momentum L=',l,
      .       ' not bound in the atom'
                          write(6,'(A)')
-     .       'NODES: ERROR a cut off radius must be explicitely given' 
+     .       'NODES: ERROR a cut off radius must be explicitly given' 
           call die
                        endif 
  
@@ -4069,7 +4058,7 @@ C
      .       'NONODES: ERROR Orbital with angular momentum L=',l,
      .       ' not bound in the atom'
                          write(6,'(A)')
-     .       'NONODES: ERROR a cut off radius must be explicitely given'
+     .       'NONODES: ERROR a cut off radius must be explicitly given'
                          call die
                        endif 
  
@@ -4407,7 +4396,7 @@ C
      .  'SPLITGAUSS: ERROR Orbital with angular momentum L=',l,
      .       ' not bound in the atom'
                          write(6,'(A)')
-     .  'SPLITGAUSS: ERROR a cut off radius must be explicitely given' 
+     .  'SPLITGAUSS: ERROR a cut off radius must be explicitly given' 
           call die
                        endif 
  
@@ -4443,7 +4432,7 @@ Cas the gaussian exponent
                     write(6,'(/a,/a,a)')
      .'SPLITGAUSS: ERROR: with SPLITGAUSS option the compression ',
      .'SPLITGAUSS: ERROR: factors for all the augmentation functions',
-     .   ' must be explicitely specified' 
+     .   ' must be explicitly specified' 
                     call die
                   endif
                   gexp=abs(lambda(izeta,l,nsm))
@@ -5574,7 +5563,7 @@ C
                     write(6,'(a)')
      .     'Bessel: ERROR Zero cut-off radius with Z=-100 option'
                     write(6,'(a)')
-     .     'Bessel: ERROR Cut-off radius must be explicitely specified'
+     .     'Bessel: ERROR Cut-off radius must be explicitly specified'
                     write(6,'(a)')
      .     'Bessel: ERROR using Z=-100 (Floating Bessel functions)'
                   call die

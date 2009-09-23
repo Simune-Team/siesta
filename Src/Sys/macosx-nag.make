@@ -37,28 +37,28 @@ COMP_LIBS=
 #
 NETCDF_LIBS=            # -L/opt/lib -lnetcdf
 NETCDF_INTERFACE=       # libnetcdf_f90.a
-DEFS_CDF= -D__NAG__     # -DCDF
+FPPFLAGS_CDF= -D__NAG__     # -DCDF
 FFLAGS_NETCDF=-mismatch_all -w=unused          # Relax module checks...
 #
 MPI_INTERFACE=
 MPI_INCLUDE=
-DEFS_MPI=
+FPPFLAGS_MPI=
 #
 LIBS=  $(MPI_LIBS)  $(NETCDF_LIBS) #-framework veclib  (maybe for G5's)
 COMP_LIBS=linalg.a
 SYS=nag
-DEFS= $(DEFS_CDF) $(DEFS_MPI)
+FPPFLAGS= $(FPPFLAGS_CDF) $(FPPFLAGS_MPI)
 #
 CPP=/usr/local/lib/NAGWare/fpp -P
 #
 %.o : %.mod
 #
 .F.o:
-	$(FC) -fpp -fixed $(DEFS) -c $(FFLAGS) $<
+	$(FC) -fpp -fixed $(FPPFLAGS) -c $(FFLAGS) $<
 .f.o:
 	$(FC) -c $(FFLAGS)   $<
 .F90.o:
-	$(FC) -fpp -free $(DEFS) -c $(FFLAGS)  $<
+	$(FC) -fpp -free $(FPPFLAGS) -c $(FFLAGS)  $<
 .f90.o:
 	$(FC) -c $(FFLAGS)   $<
 #

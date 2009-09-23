@@ -15,7 +15,7 @@ RANLIB=echo
 MPI_INTERFACE=libmpi_f90.a
 MPI_INCLUDE=/apl/lam/include
 MPI_LIBS=-L/apl/lam/lib -llamf77mpi -lmpi -llam -lguide -lpthread -lsvml
-DEFS_MPI=-DMPI 
+FPPFLAGS_MPI=-DMPI 
 #
 MKLPATH=/apl/INTEL/ICT3/cmkl/9.0/lib/32
 GUIDE=$(MKLPATH)/libguide.a
@@ -25,14 +25,14 @@ BLAS=$(MKLPATH)/libmkl_ia32.a
 LIBS=-L$(MKLPATH) -lmkl_scalapack -lmkl_blacs_intelmpi -lmkl_lapack -lmkl_ia32 $(MPI_LIBS)
 
 SYS=nag
-DEFS= $(DEFS_MPI) $(DEFS_CDF)
+FPPFLAGS= $(FPPFLAGS_MPI) $(FPPFLAGS_CDF)
 #
 .F.o:
-	$(FC) -c $(INCFLAGS) $(FFLAGS)  $(DEFS) $<
+	$(FC) -c $(INCFLAGS) $(FFLAGS)  $(FPPFLAGS) $<
 .f.o:
 	$(FC) -c $(INCFLAGS) $(FFLAGS)   $<
 .F90.o:
-	$(FC) -c $(INCFLAGS) $(FFLAGS)  $(DEFS) $<
+	$(FC) -c $(INCFLAGS) $(FFLAGS)  $(FPPFLAGS) $<
 .f90.o:
 	$(FC) -c $(INCFLAGS) $(FFLAGS)   $<
 #

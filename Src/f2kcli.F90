@@ -17,7 +17,7 @@
 ! Date        : February 2001
 !
       MODULE F2KCLI
-#ifndef GFORTRAN
+#if  !defined(GFORTRAN) && !defined(__GFORTRAN__)
 
 #ifdef __NAG__
       use f90_unix
@@ -97,9 +97,15 @@
           ENDIF
           GETCMD = .FALSE.
       ENDIF
-      IF (PRESENT(COMMAND)) COMMAND = ARGSTR
-      IF (PRESENT(LENGTH))  LENGTH  = LENARG
-      IF (PRESENT(STATUS))  STATUS  = 0
+      IF (PRESENT(COMMAND)) then
+      COMMAND = ARGSTR
+      endif   
+      IF (PRESENT(LENGTH)) then
+           LENGTH  = LENARG
+      endif
+      IF (PRESENT(STATUS)) then
+           STATUS  = 0
+      endif
       RETURN
       END SUBROUTINE GET_COMMAND
 !
@@ -222,6 +228,7 @@
       RETURN
       END SUBROUTINE GET_COMMAND_ARGUMENT
 !
-#endif
+#endif  /* Gfortran already has everything */
+
       END MODULE F2KCLI
 

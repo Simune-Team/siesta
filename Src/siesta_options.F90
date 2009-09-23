@@ -21,7 +21,7 @@ MODULE siesta_options
   logical :: negl          ! Neglect hamiltonian matrix elements without overlap?
   logical :: noeta         ! Use computed chemical potential instead of eta in ordern?
   logical :: new_diagk     ! Use new diagk routine with file storage of eigenvectors?
-  logical :: outlng        ! Long output?
+  logical :: outlng        ! Long output in the output file?
   logical :: pulfile       ! Use file to store Pulay info in pulayx?
   logical :: RelaxCellOnly ! Relax only lattice vectors, not atomic coordinates
   logical :: RemoveIntraMolecularPressure   ! Remove molecular virial contribution to p
@@ -119,9 +119,6 @@ MODULE siesta_options
   real(dp) :: tt            ! Target temperature. Read in redata. Used in dynamics rout.
   real(dp) :: wmix          ! Mixing weight for DM in SCF iteration
   real(dp) :: wmixkick       ! Mixing weight for DM in special 'kick' SCF steps
-  real(dp) :: maximum_runtime = 0.0_dp ! Maximum wall clock time of the run.
-                                      ! Set a default here for any checks before
-                                      ! fdf file is read.
 
   character(len=150) :: sname   ! System name, used to initialise read
 
@@ -330,16 +327,6 @@ MODULE siesta_options
       write(6,1) 'redata: Long output                      = ', outlng
     endif
 
-    ! Does the user want us to bomb out after some time? 
-    call fdf_global_get(maximum_runtime, 'MaximumWallClockTime', 0.0_dp, 's')
-    if (ionode) then
-      if (maximum_runtime.le.0.0_dp) then
-        write(6,'(A)') 'redata: Maximum wall-clock time          = unlimited'
-      else
-        write(6,'(A,F10.0)') 'redata: Maximum wall-clock time (s)      = ', maximum_runtime
-      endif
-    endif
-
     if (cml_p) then
       call cmlAddParameter( xf=mainXML, name='LongOutput',            &
                             value=outlng, dictRef='siesta:verbosity' )
@@ -355,8 +342,8 @@ MODULE siesta_options
     endif
 
     if (cml_p) then
-      call cmlAddParameter( xf=mainXML, name='NumberOfSpecies', &
-                            value=ns, dictRef='siesta:ns' )
+      call cmlAddParameter( xf=mainXML, title='NumberOfSpecies', &
+                            value=ns, dictRef='siesta:ns', units="cmlUnits:countable" )
     endif
 
     ! Dump information to plot charge contours
@@ -398,7 +385,8 @@ MODULE siesta_options
     endif
 
     if (cml_p) then
-      call cmlAddParameter( xf=mainXML, name='WriteMullikenPop', value=mullipop )
+      call cmlAddParameter( xf=mainXML, name='WriteMullikenPop', value=mullipop, &
+                            units="cmlUnits:dimensionless" )
     endif
 
     ! Planewave cutoff of the real space mesh ...
@@ -436,7 +424,8 @@ MODULE siesta_options
 
     if (cml_p) then
       call cmlAddParameter( xf=mainXML, name='MaxSCFIterations',  &
-                            value=nscf, dictRef='siesta:maxscf')
+                            value=nscf, dictRef='siesta:maxscf',  &
+                            units="cmlUnits:countable")
     endif
 
     ! Pulay mixing, number of iterations for one Pulay mixing (maxsav)
@@ -467,9 +456,11 @@ MODULE siesta_options
 
     if (cml_p) then
       call cmlAddParameter( xf=mainXML, name='DM.NumberPulay',     &
-                            value=maxsav, dictRef='siesta:maxsav' )
-      call cmlAddParameter(xf=mainXML, name='DM.NumberBroyden',    &
-                           value=broyden_maxit, dictRef='siesta:broyden_maxit')
+                            value=maxsav, dictRef='siesta:maxsav', &
+                            units="cmlUnits:countable" )
+      call cmlAddParameter( xf=mainXML, name='DM.NumberBroyden',    &
+                            value=broyden_maxit, dictRef='siesta:broyden_maxit', &
+                            units="cmlUnits:countable" )
     endif
 
     ! Mix density matrix on first SCF step
@@ -508,7 +499,8 @@ MODULE siesta_options
 
     if (cml_p) then
       call cmlAddParameter( xf=mainXML,name='DM.MixingWeight', &
-                            value=wmix, dictRef='siesta:wmix' )
+                            value=wmix, dictRef='siesta:wmix', &
+                            units="cmlUnits:dimensionless" )
     endif
 
     ! Density Matrix occupancy tolerance
@@ -519,7 +511,8 @@ MODULE siesta_options
 
     if (cml_p) then
       call cmlAddParameter( xf=mainXML,name='DM.OccupancyTolerance', &
-                            value=occtol,dictRef='siesta:occtol' )
+                            value=occtol, dictRef='siesta:occtol' ,  &
+                            units="cmlUnits:dimensionless" )
     endif
 
     ! Perform linear mixing each nkick SCF iterations (to kick system
@@ -536,7 +529,8 @@ MODULE siesta_options
 
     if (cml_p) then
       call cmlAddParameter( xf=mainXML,name='DM.NumberKick',     &
-                            value=nkick, dictRef='siesta:nkick' )
+                            value=nkick, dictRef='siesta:nkick', &
+                            units="cmlUnits:countable" )
     endif
 
     ! Density Matrix Mixing each nkick SCF iterations
@@ -547,7 +541,8 @@ MODULE siesta_options
 
     if (cml_p) then
       call cmlAddParameter( xf=mainXML,name='DM.KickMixingWeight',    &
-                            value=wmixkick,dictRef='siesta:wmixkick' )
+                            value=wmixkick, dictRef='siesta:wmixkick',&
+                            units="cmlUnits:dimensionless" )
     endif
 
     ! Density Matrix Tolerance for achieving Self-Consistency
@@ -558,7 +553,8 @@ MODULE siesta_options
 
     if (cml_p) then
       call cmlAddParameter( xf=mainXML, name='DM.Tolerance',     &
-                            value=dDtol, dictRef='siesta:dDtol' )
+                            value=dDtol, dictRef='siesta:dDtol', &
+                            units='siestaUnits:eAng_3' )
     endif
 !--------------------------------------
 
@@ -585,7 +581,8 @@ MODULE siesta_options
 
     if (cml_p) then
       call cmlAddParameter( xf=mainXML, name='DM.EnergyTolerance', &
-                            value=Energy_tolerance, dictRef='siesta:Energy_tolerance')
+                            value=Energy_tolerance/eV, dictRef='siesta:dEtol', &
+                            units="siestaUnits:eV" )
     endif
 
 !--------------------------------------
@@ -611,7 +608,7 @@ MODULE siesta_options
     endif
 
     if (cml_p) then
-      call cmlAddParameter( xf=mainXML, name='DM.HarrisTolerance', &
+      call cmlAddParameter( xf=mainXML, name='DM.HarrisTolerance', units='siestaUnits:eV', &
                             value=Harris_tolerance, dictRef='siesta:Harris_tolerance')
     endif
 !--------------------------------------
@@ -714,8 +711,10 @@ MODULE siesta_options
     call fdf_global_get(MemoryFactor,'Diag.Memory', 1.0_dp )
     MemoryFactor = max(MemoryFactor,1.0_dp)
     if (cml_p) then
-      call cmlAddParameter( xf=mainXML, name='Diag.Memory',                    &
-                            value=MemoryFactor, dictRef='siesta:MemoryFactor' )
+      call cmlAddParameter( xf=mainXML, name='Diag.Memory', &
+                            value=MemoryFactor,             &
+                            dictRef='siesta:MemoryFactor',  &
+                            units="cmlUnits:dimensionless" )
     endif
 
     ! Electronic temperature for Fermi Smearing ...
@@ -751,10 +750,11 @@ MODULE siesta_options
     endif
 
     if (cml_p) then 
-      call cmlAddParameter( xf=mainXML, name='FixSpin',               &
+      call cmlAddParameter( xf=mainXML, name='FixSpin', &
                             value=fixspin, dictref='siesta:fixspin' )
       call cmlAddParameter( xf=mainXML, name='TotalSpin', &
-                            value=ts, dictref='siesta:ts' )
+                            value=ts, dictref='siesta:ts',&
+                            units='siestaUnits:eSpin' )
     endif
 
     ! Order-N solution parameters ...
@@ -852,12 +852,14 @@ MODULE siesta_options
         call cmlAddParameter( xf      = mainXML,        &
                               name    = 'ON.MaxNumIter',&
                               value   = ncgmax,         &
-                              dictref = 'siesta:ncgmax' )
+                              dictref = 'siesta:ncgmax', &
+                              units   = "cmlUnits:countable" )
 
         call cmlAddParameter( xf      = mainXML,       &
                               name    = 'ON.etol',     &
                               value   = etol,          &
-                              dictref = 'siesta:etol' )
+                              dictref = 'siesta:etol', &
+                              units   = "siestaUnits:eV" )
         if (nspin==2) then
           call cmlAddParameter( xf      = mainXML,          &
                                 name    = 'ON.eta_alpha',   &
@@ -917,7 +919,8 @@ MODULE siesta_options
           call cmlAddParameter( xf      = mainXML,                     &
                                 name    = 'ON.ChemicalPotentialOrder', &
                                 value   = pmax,                        &
-                                dictref = 'siesta:pmax')
+                                dictref = 'siesta:pmax',               &
+                                units   = 'cmlUnits:dimensionless')
         endif 
       endif
     endif
@@ -1026,7 +1029,8 @@ MODULE siesta_options
 
           call cmlAddParameter( xf    = mainXML,         &
                                 name  = 'MD.NumCGSteps', &
-                                value = nmove )
+                                value = nmove,           &
+                                units = "cmlUnits:countable" )
 
           call cmlAddParameter( xf    = mainXML,           &
                                 name  = 'MD.MaxCGDispl',   &
@@ -1162,11 +1166,13 @@ MODULE siesta_options
       if (cml_p) then
         call cmlAddParameter( xf    = mainXML,             &
                               name  = 'MD.InitialTimeStep',&
-                              value = istart )
+                              value = istart,              &
+                              units = 'cmlUnits:countable' )
 
-        call cmlAddParameter( xf    = mainXML,           &
-                              name  = 'MD.FinalTimeStep',&
-                              value = ifinal )
+        call cmlAddParameter( xf    = mainXML,             &
+                              name  = 'MD.FinalTimeStep',  &
+                              value = ifinal,              &
+                              units = 'cmlUnits:countable' )
 
         call cmlAddParameter( xf=mainXML,              &
                               name='MD.LengthTimeStep',&
@@ -1356,11 +1362,13 @@ MODULE siesta_options
 
         call cmlAddParameter( xf= mainXML,        &
                               name= 'MD.FCFirst', &
-                              value= ia1 )
+                              value= ia1,         &
+                              units= 'cmlUnits:countable' )
 
         call cmlAddParameter( xf= mainXML,       &
                               name= 'MD.FCLast', &
-                              value= ia2 )
+                              value= ia2,        &
+                              units= 'cmlUnits:countable' )
 
       endif
     endif
@@ -1425,7 +1433,7 @@ MODULE siesta_options
     call fdf_global_get(writeig,'WriteEigenvalues', outlng )
     call fdf_global_get(writec, 'WriteCoorStep'   , outlng )
     call fdf_global_get(writmd, 'WriteMDhistory'  , .false.)
-    call fdf_global_get(writpx, 'WriteMDXmol'     , .not. writec)
+    call fdf_global_get(writpx, 'WriteMDXmol'     , .false.)
     call fdf_global_get(default, 'UseSaveData'     , .false.)
     call fdf_global_get(savehs, 'SaveHS'          , .false.)
     call fdf_global_get(fixauxcell, 'FixAuxiliaryCell', .false.)

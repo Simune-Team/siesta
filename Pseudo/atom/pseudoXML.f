@@ -2,7 +2,8 @@
 
       subroutine pseudoXML( ray, npotd, npotu, zion, zratio )
 
-      use flib_wxml
+      use FoX_wxml
+      use FoX_common
 
       implicit none
 
@@ -146,9 +147,9 @@
 
 ! ---------------------------------------------------------------------
                                                                                 
-      call xml_OpenFile("VPSXML",xf, indent=.true.)
+      call xml_OpenFile("VPSXML",xf, pretty_print=.true.)
 
-      call xml_AddXMLDeclaration(xf,"UTF-8")
+!     call xml_AddXMLDeclaration(xf,"UTF-8")
 
       call xml_NewElement(xf,"pseudo")
 
@@ -202,7 +203,7 @@
                call xml_EndElement(xf,"grid")
 
                call xml_NewElement(xf,"data")
-                 call xml_AddArray(xf,viod(ivps,2:nr),fmt_rad)
+                 call xml_AddCharacters(xf,viod(ivps,2:nr))
                call xml_EndElement(xf,"data")
              call xml_EndElement(xf,"radfunc")
            call xml_EndElement(xf,"vps")
@@ -229,7 +230,7 @@
                call xml_EndElement(xf,"grid")
 
                call xml_NewElement(xf,"data")
-                 call xml_AddArray(xf,viou(ivps,2:nr),fmt_rad)
+                 call xml_AddCharacters(xf,viou(ivps,2:nr))
                call xml_EndElement(xf,"data")
              call xml_EndElement(xf,"radfunc")
            call xml_EndElement(xf,"vps")
@@ -264,7 +265,7 @@
                call xml_EndElement(xf,"grid")
 
                call xml_NewElement(xf,"data")
-                 call xml_AddArray(xf,pswfnrd(ivps,2:nr),fmt_rad)
+                 call xml_AddCharacters(xf,pswfnrd(ivps,2:nr))
                call xml_EndElement(xf,"data")
              call xml_EndElement(xf,"radfunc")
            call xml_EndElement(xf,"pswf")
@@ -289,7 +290,7 @@
                call xml_EndElement(xf,"grid")
 
                call xml_NewElement(xf,"data")
-                 call xml_AddArray(xf,pswfnru(ivps,2:nr),fmt_rad)
+                 call xml_AddCharacters(xf,pswfnru(ivps,2:nr))
                call xml_EndElement(xf,"data")
              call xml_EndElement(xf,"radfunc")
            call xml_EndElement(xf,"pswf")
@@ -307,7 +308,7 @@
             call xml_EndElement(xf,"grid")
 
             call xml_NewElement(xf,"data")
-              call xml_AddArray(xf,chval(2:nr),fmt_rad)
+              call xml_AddCharacters(xf,chval(2:nr))
             call xml_EndElement(xf,"data")
           call xml_EndElement(xf,"radfunc")
         call xml_EndElement(xf,"valence-charge")
@@ -323,7 +324,7 @@
             call xml_EndElement(xf,"grid")
 
             call xml_NewElement(xf,"data")
-              call xml_AddArray(xf,cdc(2:nr),fmt_rad)
+              call xml_AddCharacters(xf,cdc(2:nr))
             call xml_EndElement(xf,"data")
           call xml_EndElement(xf,"radfunc")
         call xml_EndElement(xf,"pseudocore-charge")
