@@ -35,7 +35,7 @@ FC:=$(FC_SERIAL)         # Make it non-recursive
 # EDIT the following lines to suit your system
 #
 AUX_OBJS= auxf95.o
-LIBS= $(EXTRA_LIBS)
+LIBS= $(EXTRA_LIBS) 
 INCFLAGS=
 #--------------------------------------------------------------
 # FoX whatnot
@@ -83,7 +83,7 @@ pseudoXML.o: $(FoX_built)
 INCFLAGS:=$(INCFLAGS)  ####         -I../../$(OBJDIR)
 #
 #
-XC_OBJS= xc.o
+XC_OBJS= xc.o am05.o
 #
 # Replace definition above with line below to use the 
 # old Soler-Balbas XC routines.
