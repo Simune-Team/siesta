@@ -136,8 +136,10 @@ C
 #endif
       implicit          none
 
-      integer           maxk, nk
-      real(dp)          kpoint(3,maxk)
+      integer, intent(in) :: maxk
+      integer, intent(out) :: nk
+      real(dp), pointer ::  kpoint(:,:)
+
       character         paste*30
       external          paste, redcel
 C *********************************************************************
