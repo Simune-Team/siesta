@@ -480,7 +480,7 @@ m_ts_io.o: precision.o sys.o
 m_ts_kpoints.o: minvec.o parallel.o precision.o siesta_cml.o siesta_options.o
 m_ts_kpoints.o: sys.o units.o
 m_ts_options.o: m_fdf_global.o parallel.o precision.o siesta_options.o sys.o
-m_ts_scattering.o: m_ts_aux_rout.o parallelsubs.o precision.o sys.o
+m_ts_scattering.o: m_ts_aux_rout.o parallelsubs.o precision.o sys.o m_ts_options.o
 m_wallclock.o: m_walltime.o
 madelung.o: parallel.o precision.o sys.o
 matel.o: alloc.o atmfuncs.o precision.o radfft.o recipes.o spher_harm.o
