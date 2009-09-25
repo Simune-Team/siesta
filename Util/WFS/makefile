@@ -26,7 +26,7 @@
 .SUFFIXES: 
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
-all: readwf readwfx wfs2wfsx wfsx2wfs wfsnc2wfsx
+all: readwf readwfx info_wfsx wfs2wfsx wfsx2wfs wfsnc2wfsx
 #
 OBJDIR=Obj
 VPATH=../../Src
@@ -53,6 +53,8 @@ INCFLAGS:=$(NETCDF_INCFLAGS) $(INCFLAGS) # -I../../$(OBJDIR)
 readwf: readwf.o
 	$(FC) $(LDFLAGS) -o $@ $<  
 readwfx: readwfx.o
+	$(FC) $(LDFLAGS) -o $@ $<  
+info_wfsx: info_wfsx.o
 	$(FC) $(LDFLAGS) -o $@ $<  
 wfs2wfsx: wfs2wfsx.o
 	$(FC) $(LDFLAGS) -o $@ $<  
