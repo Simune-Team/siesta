@@ -41,7 +41,7 @@ module_built: libmpi_f90.a
 	@cp *.mod ..
 	@touch module_built
 #
-libmpi_f90.a: mpi.o mpi__include.o Interfaces.o
+libmpi_f90.a: mpi.o mpi__include.o Interfaces.o mpi_siesta.o timer_mpi.o
 	@ar $(ARFLAGS_EXTRA) cru libmpi_f90.a mpi.o mpi_siesta.o mpi__include.o Interfaces.o timer_mpi.o
 	-$(RANLIB) libmpi_f90.a
 #

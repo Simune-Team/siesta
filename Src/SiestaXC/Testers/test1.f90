@@ -17,17 +17,25 @@ PROGRAM siestaXCtest1
 
   ! Tester parameters
   integer, parameter:: irel    =  1      ! Relativistic? 0=>no, 1=>yes
-  integer, parameter:: nCalls  = 20      ! Number of calls to each routine
+  integer, parameter:: nCalls  =  1      ! Number of calls to each routine
   integer, parameter:: nfTot   =  9      ! Total number of functionals
-  integer, parameter:: nSpin   =  2      ! Number of spin components
+  integer, parameter:: nSpin   =  4      ! Number of spin components
   real(dp),parameter:: densMax = 0.1_dp  ! Upper limit to density value
   real(dp),parameter:: gradMax = 0.5_dp  ! Upper limit to density gradient
   real(dp),parameter:: deltaDens  = 1.e-6_dp  ! Finite diff. change
   real(dp),parameter:: deltaGrad  = 1.e-6_dp  ! Finite diff. change
   real(dp),parameter:: dEdDensTol = 1.e-6_dp  ! Tolerance for dE/dDens
   real(dp),parameter:: dEdGradTol = 1.e-6_dp  ! Tolerance for dE/dGadDens
+  logical, parameter:: collinear  = .false.   ! Make grad(dens) collinear
+                                              ! with density?
 
-  ! Functionals to be tested
+  ! List of functionals to be tested
+!  integer, parameter:: nf = 9         ! Number of tested functionals
+!  integer:: indexf(nf) = (/1,2,3,4,5,6,7,8,9/)  ! Indexes from list below
+  integer, parameter:: nf = 7         ! Skip problematic functionals
+  integer:: indexf(nf) = (/1,2,  4,5,6,  8,9/)  ! Indexes from list below
+
+  ! All functionals available
   !                  1,       2,       3,       4,       5,   
   !                  6,       7,       8,       9   
   character(len=3):: &
@@ -38,19 +46,47 @@ PROGRAM siestaXCtest1
                     'revPBE','LYP   ','WC    ','PBESOL'          /) 
 
   ! Tester variables and arrays
-  integer :: errorC, errorX, iCall, iDelta, iDeriv, iSpin, ix, &
-             jf, mSpin, one, two, three, four
+  complex(dp),parameter:: c0 = (0._dp,0._dp)  ! Complex zero
+  complex(dp),parameter:: c1 = (1._dp,0._dp)  ! Complex one
+  complex(dp),parameter:: ci = (0._dp,1._dp)  ! Complex i
+  complex(dp):: densMat(2,2), gradDensMat(3,2,2), Imat(2,2), &
+                pauli(3,2,2), polDirMat(2,2)
   real(dp):: epsC, epsX, dens(nSpin), &
              dEcdDens(nSpin), dEcdGrad(3,nSpin), &
              dExdDens(nSpin), dExdGrad(3,nSpin), densPol, densTot, &
              dVxdDens(nSpin,nSpin), dVcdDens(nSpin,nSpin), &
-             Ec, Ex, gradDens(3,nSpin), ran(4)
+             Ec, Ex, gradDens(3,nSpin), gradDensPol(3), gradDensTot(3)
+  real(dp):: cosTheta, phi, pi, ran(6), sinTheta, theta
   real(dp):: epsC0, epsX0, dens0(nSpin), gradDens0(3,nSpin)
   real(dp):: dEcdDens0(nSpin), dEcdGrad0(3,nSpin), &
              dExdDens0(nSpin), dExdGrad0(3,nSpin)
   real(dp):: dEcdDensN(nSpin), dEcdGradN(3,nSpin), &
              dExdDensN(nSpin), dExdGradN(3,nSpin)
-  logical :: errorsFound = .false.
+  integer :: errorC, errorX, iCall, iDelta, iDeriv, iSpin, ix, &
+             jf, kf, mSpin, one, two, three, four
+  logical :: errorsFound
+!  integer :: mySeed(8) = (/39302655,65443109,09887367,99836827, &
+!                           70376268,32727926,46717826,35271017/)
+
+  ! Initialize random seed
+!  call random_seed( put=mySeed )
+
+  ! Set Pauli matrices
+  Imat(1,:)    = (/c1, c0/)  ! Identity matrix
+  Imat(2,:)    = (/c0, c1/)
+  pauli(1,1,:) = (/c0, c1/)  ! PauliX
+  pauli(1,2,:) = (/c1, c0/)
+  pauli(2,1,:) = (/c0,-ci/)  ! PauliY
+  pauli(2,2,:) = (/ci, c0/)
+  pauli(3,1,:) = (/c1, c0/)  ! PauliZ
+  pauli(3,2,:) = (/c0,-c1/)
+
+  ! A silly trick to satisfy the compiler when nSpin<4
+  one   = 1
+  two   = 2
+  three = 3
+  four  = 4
+  pi = acos(-1._dp)
 
   ! Print header
   print'(a4,a7,a3,2a6,3a15,a4)', &
@@ -58,43 +94,71 @@ PROGRAM siestaXCtest1
     'deriv(anal)', 'deriv(num)', 'diff  ', 'err'
 
   ! Loop on calls with different densities
+  errorsFound = .false.
   do iCall = 1,nCalls
 
-    ! Choose random density and gradient
-    trial: do
-      do iSpin = 1,nSpin
-        call random_number( ran(1:4) )
-        dens0(iSpin) = densMax * ran(4)
-        dens0(iSpin) = dens0(iSpin) + 2*deltaDens  ! Avoid dens0-deltaDens<0
-        gradDens0(1:3,iSpin) = gradMax * (2*ran(1:3)-1)
-      end do
-      if (nSpin==4) then           ! Non-collinear spin
-        one   = 1   ! A silly thing to satisfy the compiler when nSpin<4
-        two   = 2
-        three = 3
-        four  = 4
-        densTot = dens0(one) + dens0(two)
-        densPol = sqrt( (dens0(one)-dens0(two))**2 &
-                      + 4*(dens0(three)**2+dens0(four)**2) )
-        if (densTot<densPol) then  ! Invalid density matrix => try again
-          cycle trial
-        else                       ! Valid density matrix => accept it
-          exit trial
-        end if
-      else                         ! Collinear spin => no check needed
-        exit trial
-      end if
-    end do trial
+    ! Choose random density
+    call random_number( ran(1:2) )
+    densTot = densMax * ran(1)
+    densPol = densTot * ran(2)
+!    densPol = 0                 ! Unpolarized, to compare with nSpin=1
+    if (nSpin==1) then                   ! Non spin polarized
+      dens0(one) = densTot
+    else if (nSpin==2) then              ! Spin polarized
+      dens0(one) = (densTot+densPol)/2
+      dens0(two) = (densTot-densPol)/2
+    else                                 ! Non collinear spin
+      call random_number( ran(1:2) )
+      cosTheta = 2*ran(1) - 1            ! Random spin direction
+!      cosTheta = 0                      ! Point spin along x-y
+!      cosTheta = 1                      ! Point spin along z
+      sinTheta = sqrt(1-cosTheta**2)
+      phi = 2*pi * ran(2)                ! Random spin direction
+!      phi = 0                           ! Point spin along x
+!      phi = pi/2                        ! Point spin along y
+      polDirMat(:,:) = sinTheta*cos(phi)*pauli(1,:,:) &
+                     + sinTheta*sin(phi)*pauli(2,:,:) &
+                     + cosTheta*         pauli(3,:,:)
+      densMat(:,:) = densTot/2 * Imat(:,:) + densPol/2 * polDirMat(:,:)
+      dens0(one)   = real(densMat(1,1))
+      dens0(two)   = real(densMat(2,2))
+      dens0(three) = real(densMat(1,2))
+      dens0(four)  = imag(densMat(1,2))
+    end if
 
-    ! Make density constant, to check that GGAs reproduce LDA
-!    gradDens0(:,:) = 0
+    ! Choose random gradient of density
+    do iSpin = 1,nSpin
+      call random_number( ran(1:3) )
+      gradDens0(1:3,iSpin) = gradMax * (2*ran(1:3)-1)
+    end do
 
-    ! Make spin collinear to check that nSpin=4 reproduces nSpin=2
-!    dens0(3:4) = 0
-!    gradDens0(:,3:4) = 0
+    ! Choose density gradient collinear with density itself
+    if (nSpin==4 .and. collinear) then
+      call random_number( ran(1:6) )
+      gradDensTot(1:3) = gradMax * (2*ran(1:3)-1)
+      gradDensPol(1:3) = gradMax * (2*ran(4:6)-1)
+      do ix = 1,3
+        gradDensMat(ix,:,:) = gradDensTot(ix)/2 * Imat(:,:) &
+                            + gradDensPol(ix)/2 * polDirMat(:,:)
+        gradDens0(ix,one)   = real(gradDensMat(ix,1,1))
+        gradDens0(ix,two)   = real(gradDensMat(ix,2,2))
+        gradDens0(ix,three) = real(gradDensMat(ix,1,2))
+        gradDens0(ix,four)  = imag(gradDensMat(ix,1,2))
+      end do ! ix
+    end if ! (nSpin==4)
+
+    ! Print density (matrix)
+!    if (nSpin==4) then
+!      print'(a,/,(2f15.9,3x,2f15.9))', 'Density matrix =', &
+!        complex(dens0(one),0._dp), complex(dens0(three),dens0(four)), &
+!        complex(dens0(three),-dens0(four)), complex(dens0(two),0._dp)
+!    else
+!      print'(a,/,(2f15.9,3x,2f15.9))', 'Density =', dens0(1:nSpin)
+!    end if
 
     ! Loop on functionals
-    do jf = 1,nfTot
+    do kf = 1,nf
+      jf = indexf(kf)
 
       ! Find energy density and its derivatives
       if (func(jf)=='LDA') then
@@ -107,7 +171,7 @@ PROGRAM siestaXCtest1
         stop 'ERROR: unknown functional'
       end if
 
-      ! Loop on numerical derivative and finite-difference delta
+      ! Loop on variable with respect to which derivate
       do iDeriv = 0,4*nSpin-1
 
         ! Select magnitude to change
@@ -157,7 +221,8 @@ PROGRAM siestaXCtest1
 
         end do ! iDelta
 
-        ! Divide by 2 the non-diagonal components for non-collinear spin (why?)
+        ! Divide by 2 the iSpin=3,4 components for non-collinear spin because 
+        ! the two nondiagonal elements of density matrix depend on them
         dExdDensN(mSpin+1:nSpin) = dExdDensN(mSpin+1:nSpin) / 2
         dEcdDensN(mSpin+1:nSpin) = dEcdDensN(mSpin+1:nSpin) / 2
         dExdGradN(:,mSpin+1:nSpin) = dExdGradN(:,mSpin+1:nSpin) / 2
@@ -184,27 +249,27 @@ PROGRAM siestaXCtest1
             print'(a4,a7,i3,i6,a6,3f15.9,i4)', &
               func(jf), auth(jf), ix, iSpin, 'Ex', &
               dExdDens0(iSpin), dExdDensN(iSpin), &
-              dExdDens0(iSpin)-dExdDensN(iSpin), errorX
+              abs(dExdDens0(iSpin)-dExdDensN(iSpin)), errorX
           if (iCall==1 .or. errorC/=0) &
             print'(a4,a7,i3,i6,a6,3f15.9,i4)', &
               func(jf), auth(jf), ix, iSpin, 'Ec', &
               dEcdDens0(iSpin), dEcdDensN(iSpin), &
-              dEcdDens0(iSpin)-dEcdDensN(iSpin), errorC
+              abs(dEcdDens0(iSpin)-dEcdDensN(iSpin)), errorC
         else
           if (iCall==1 .or. errorX/=0) &
             print'(a4,a7,i3,i6,a6,3f15.9,i4)', &
               func(jf), auth(jf), ix, iSpin, 'Ex', &
               dExdGrad0(ix,iSpin), dExdGradN(ix,iSpin), &
-              dExdGrad0(ix,iSpin)-dExdGradN(ix,iSpin), errorX
+              abs(dExdGrad0(ix,iSpin)-dExdGradN(ix,iSpin)), errorX
           if (iCall==1 .or. errorC/=0) &
             print'(a4,a7,i3,i6,a6,3f15.9,i4)', &
               func(jf), auth(jf), ix, iSpin, 'Ec', &
               dEcdGrad0(ix,iSpin), dEcdGradN(ix,iSpin), &
-              dEcdGrad0(ix,iSpin)-dEcdGradN(ix,iSpin), errorC
+              abs(dEcdGrad0(ix,iSpin)-dEcdGradN(ix,iSpin)), errorC
         end if
 
       end do ! iDeriv
-      if (iCall==1) print*, ' '  ! Separate functionals for better visualization
+      if (iCall==1) print*, ' ' ! Separate functionals for better visualization
     end do ! jf
   end do ! iCall
 

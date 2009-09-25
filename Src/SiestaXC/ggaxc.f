@@ -35,8 +35,13 @@
 
       MODULE m_ggaxc
 
+      ! Used module procedures
+      use sys,     only: die     ! Termination routine
       USE m_ldaxc, only: exchng  ! Local exchange
       USE m_ldaxc, only: pw92c   ! Perdew & Wang, PRB, 45, 13244 (1992) correl
+
+      ! Used module parameters
+      use precision, only : dp   ! Double precision real kind
 
       implicit none
 
@@ -54,135 +59,178 @@
 
       CONTAINS
 
-      SUBROUTINE GGAXC( AUTHOR, IREL, nspin, D, GD,
-     .                  EPSX, EPSC, DEXDD, DECDD, DEXDGD, DECDGD )
+      SUBROUTINE GGAXC( AUTHOR, IREL, nSpin, D, GD,
+     .                  EPSX, EPSC, dEXdD, dECdD, dEXdGD, dECdGD )
 
 C Finds the exchange and correlation energies at a point, and their
 C derivatives with respect to density and density gradient, in the
 C Generalized Gradient Correction approximation.
 C Lengths in Bohr, energies in Hartrees
-C Written by L.C.Balbas and J.M.Soler, Dec'96. Version 0.5.
+C Written by L.C.Balbas and J.M.Soler, Dec'96. myVersion 0.5.
 C Modified by V.M.Garcia-Suarez to include non-collinear spin. June 2002
+C Non collinear part rewritten by J.M.Soler. Sept. 2009
 
-      use precision, only : dp
-      use sys,       only : die
+      implicit none
 
-      implicit          none
+      ! Input
+      character(len=*),intent(in):: AUTHOR  ! GGA flavour (author initials)
+      integer, intent(in) :: IREL           ! Relativistic exchange? 0=no, 1=yes
+      integer, intent(in) :: nSpin          ! Number of spin components
+      real(dp),intent(in) :: D(nSpin)       ! Local electron (spin) density
+      real(dp),intent(in) :: GD(3,nSpin)    ! Gradient of electron density
 
-      CHARACTER*(*)     AUTHOR
-      INTEGER           IREL, nspin, NS, IS, IX
-      real(dp)          THETA, PHI, D(nspin), DECDD(nspin),
-     .                  DECDGD(3,nspin), DEXDD(nspin), DEXDGD(3,nspin),
-     .                  EPSC, EPSX, GD(3,nspin),
-     .                  DD(2), DTOT, DPOL,
-     .                  GDD(3,2), TINY, DECDN(2), DEXDN(2),
-     .                  VPOL, DECDGN(3,2), DEXDGN(3,2),
-     .                  C2, S2, ST, CP, SP
+      ! Output
+      real(dp),intent(out):: EPSX           ! Exchange energy per electron
+      real(dp),intent(out):: EPSC           ! Correlation energy per electron
+      real(dp),intent(out):: dEXdD(nSpin)   ! dEx/dDens, Ex=Int(dens*epsX)
+      real(dp),intent(out):: dECdD(nSpin)   ! dEc/dDens
+      real(dp),intent(out):: dEXdGD(3,nSpin) ! dEx/dGrad(Dens)
+      real(dp),intent(out):: dECdGD(3,nSpin) ! dEc/dGrad(Dens)
 
-      PARAMETER ( TINY = 1.D-12 )
+      ! Internal variables and arrays
+      integer    :: NS, is, ix
+      real(dp)   :: DD(2), dECdDD(2), dEXdDD(2),
+     .              dDDdD(2,4), dDTOTdD(4), dDPOLdD(4),
+     .              dECdGDD(3,2), dEXdGDD(3,2),
+     .              dGDDdD(3,2,4), dGDDdGD(2,4),
+     .              dGDTOTdD(3,4), dGDPOLdD(3,4),
+     .              dGDTOTdGD(4), dGDPOLdGD(4),
+     .              DPOL, DTOT, GDD(3,2), GDTOT(3), GDPOL(3)
 
-      IF (nspin .EQ. 4) THEN
-C Find eigenvalues of density matrix (up and down densities
-C along the spin direction)
-C Note: D(1)=D11, D(2)=D22, D(3)=Real(D12), D(4)=Im(D12)
-        NS = 2
-        DTOT = D(1) + D(2)
-        DPOL = SQRT( (D(1)-D(2))**2 + 4.D0*(D(3)**2+D(4)**2) )
-        DD(1) = 0.5D0 * ( DTOT + DPOL ) 
-        DD(2) = 0.5D0 * ( DTOT - DPOL )
-        THETA = ACOS((D(1)-D(2))/(DPOL+TINY))
-        C2 = COS(THETA/2)
-        S2 = SIN(THETA/2)
-        ST = SIN(THETA)
-        PHI = ATAN(-D(4)/(D(3)+TINY))
-        CP = COS(PHI)
-        SP = SIN(PHI)
-C Find diagonal elements of the gradient
-        DO IX = 1,3
-          GDD(IX,1) = GD(IX,1)*C2**2 + GD(IX,2)*S2**2 +
-     .                2.d0*C2*S2*(GD(IX,3)*CP - GD(IX,4)*SP)
-          GDD(IX,2) = GD(IX,1)*S2**2 + GD(IX,2)*C2**2 -
-     .                2.d0*C2*S2*(GD(IX,3)*CP - GD(IX,4)*SP)
-        ENDDO
-      ELSE
-        NS = nspin
-        DO 20 IS = 1,nspin
-cag       Avoid negative densities
-          DD(IS) = max(D(IS),0.0d0)
-          DO 30 IX = 1,3
-            GDD(IX,IS) = GD(IX,IS)
-   30     CONTINUE
-   20   CONTINUE
-      ENDIF
+      ! Handle non-collinear spin case
+      if (nSpin==4) then
+        NS = 2             ! Diagonal spin components
 
+        ! Find eigenvalues of density matrix Dij (diagonal densities DD, i.e.
+        ! up and down densities along the spin direction). Note convention: 
+        ! D(1)=D11, D(2)=D22, D(3)=Re(D12)=Re(D21), D(4)=Im(D12)=-Im(D21)
+        DTOT = D(1) + D(2)                           ! DensTot (DensUp+DensDn)
+        DPOL = SQRT( (D(1)-D(2))**2                  ! DensPol (DensUp-DensDn)
+     .              + 4*(D(3)**2+D(4)**2) )
+        DPOL = DPOL + tiny(DPOL)                     ! Avoid division by zero
+        DD(1) = ( DTOT + DPOL ) / 2                  ! DensUp
+        DD(2) = ( DTOT - DPOL ) / 2                  ! DensDn
+
+        ! Find gradients of up and down densities
+        GDTOT(:) = GD(:,1) + GD(:,2)                 ! Grad(DensTot)
+        GDPOL(:) = ( (D(1)-D(2))*(GD(:,1)-GD(:,2))   ! Grad(DensPol)
+     .             + 4*(D(3)*GD(:,3)+D(4)*GD(:,4)) )
+     .             / DPOL
+        GDD(:,1) = ( GDTOT(:) + GDPOL(:) ) / 2       ! Grad(DensUp)
+        GDD(:,2) = ( GDTOT(:) - GDPOL(:) ) / 2       ! Grad(DensDn)
+
+        ! Derivatives of Dup and Ddn with respect to input density matrix
+        dDTOTdD(1:2) = 1                             ! dDensTot/dD(i)
+        dDTOTdD(3:4) = 0
+        dDPOLdD(1) = +( D(1) - D(2) ) / DPOL         ! dDensPol/dD(i)
+        dDPOLdD(2) = -( D(1) - D(2) ) / DPOL
+        dDPOLdD(3) = 4 * D(3) / DPOL
+        dDPOLdD(4) = 4 * D(4) / DPOL
+        dDDdD(1,:) = ( dDTOTdD(:) + dDPOLdD(:) ) / 2 ! dDensUp/dD(i)
+        dDDdD(2,:) = ( dDTOTdD(:) - dDPOLdD(:) ) / 2 ! dDensDn/dD(i)
+
+        ! Derivatives of grad(Dup) and grad(Ddn) with respect to D(i)
+        dGDTOTdD(1:3,1:4) = 0                        ! dGradDensTot/dD(i)
+        dGDPOLdD(:,1) = + (GD(:,1)-GD(:,2))/DPOL     ! dGradDensPol/dD(i)
+     .                  - GDPOL(:) * dDPOLdD(1)/DPOL
+        dGDPOLdD(:,2) = - (GD(:,1)-GD(:,2))/DPOL
+     .                  - GDPOL(:) * dDPOLdD(2)/DPOL
+        dGDPOLdD(:,3) = 4*GD(:,3)/DPOL
+     .                  - GDPOL(:) * dDPOLdD(3)/DPOL
+        dGDPOLdD(:,4) = 4*GD(:,4)/DPOL
+     .                  - GDPOL(:) * dDPOLdD(4)/DPOL
+        dGDDdD(:,1,:) = ( dGDTOTdD(:,:)              ! dGradDensUp/dD(i)
+     .                  + dGDPOLdD(:,:) ) / 2
+        dGDDdD(:,2,:) = ( dGDTOTdD(:,:)              ! dGradDensDn/dD(i)
+     .                  - dGDPOLdD(:,:) ) / 2
+
+        ! Derivatives of grad(Dup) and grad(Ddn) with respect to grad(D(i))
+        dGDTOTdGD(1:2) = 1                           ! dGradDensTot/dGradD(i)
+        dGDTOTdGD(3:4) = 0
+        dGDPOLdGD(1) = +(D(1)-D(2))/DPOL             ! dGradDensPol/dGradD(i)
+        dGDPOLdGD(2) = -(D(1)-D(2))/DPOL
+        dGDPOLdGD(3) = 4*D(3)/DPOL
+        dGDPOLdGD(4) = 4*D(4)/DPOL
+        dGDDdGD(1,:) = ( dGDTOTdGD(:)                ! dGradDensUp/dGradD(i)
+     .                 + dGDPOLdGD(:) ) / 2
+        dGDDdGD(2,:) = ( dGDTOTdGD(:)                ! dGradDensDn/dGradD(i)
+     .                 - dGDPOLdGD(:) ) / 2
+        
+      else if (nSpin==1 .or. nSpin==2) then ! Normal (collinear) spin
+        NS = nSpin
+        DD(1:NS) = max( D(1:NS), 0.0_dp ) ! ag: Avoid negative densities
+        GDD(1:3,1:NS) = GD(1:3,1:NS)
+      else
+        call die('ggaxc: ERROR: invalid value of nSpin')
+      end if ! (nSpin==4)
+
+      ! Select functional to find energy density and its derivatives
       IF (AUTHOR.EQ.'PBE' .OR. AUTHOR.EQ.'pbe') THEN
-        CALL PBEXC( IREL, NS, DD, GDD,
-     .              EPSX, EPSC, DEXDN, DECDN, DEXDGN, DECDGN )
-cmvfs
+        CALL PBEXC( IREL, NS, DD, GDD,                  ! JMS
+     .              EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
+
       ELSE IF (AUTHOR.EQ.'RPBE'.OR.AUTHOR.EQ.'rpbe') THEN
-        CALL RPBEXC( IREL, NS, DD, GDD,
-     .               EPSX, EPSC, DEXDN, DECDN, DEXDGN, DECDGN )
-cmvfs
+        CALL RPBEXC( IREL, NS, DD, GDD,                 ! MVFS
+     .               EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
+
       ELSE IF (AUTHOR.EQ.'WC'.OR.AUTHOR.EQ.'wc') THEN
-        CALL WCXC( IREL, NS, DD, GDD,
-     .               EPSX, EPSC, DEXDN, DECDN, DEXDGN, DECDGN )
-cea
+        CALL WCXC( IREL, NS, DD, GDD,                   ! MVFS
+     .               EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
+
       ELSE IF (AUTHOR.EQ.'REVPBE'.OR.AUTHOR.EQ.'revpbe'
      .                           .OR.AUTHOR.EQ.'revPBE') THEN
-        CALL REVPBEXC( IREL, NS, DD, GDD,
-     .               EPSX, EPSC, DEXDN, DECDN, DEXDGN, DECDGN )
-cag
+        CALL REVPBEXC( IREL, NS, DD, GDD,               ! EA
+     .               EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
+
       ELSE IF (AUTHOR.EQ.'LYP'.OR.AUTHOR.EQ.'lyp') THEN
-        CALL BLYPXC( NS, DD, GDD, EPSX, EPSC, dEXdn, dECdn,
-     .               DEXDGN, DECDGN)
-cag
+        CALL BLYPXC( NS, DD, GDD,                       ! AG
+     .               EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
+
       ELSEIF (AUTHOR.EQ.'PW91' .OR. AUTHOR.EQ.'pw91') THEN
-        CALL PW91XC( IREL, NS, DD, GDD,
-     .               EPSX, EPSC, DEXDN, DECDN, DEXDGN, DECDGN )
+        CALL PW91XC( IREL, NS, DD, GDD,                 ! AG
+     .               EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
 
       ELSEIF (AUTHOR.EQ.'PBESOL' .OR. AUTHOR.EQ.'pbesol' .OR.
      .        AUTHOR.EQ.'PBEsol') THEN
         CALL PBESOLXC( IREL, NS, DD, GDD,
-     .                 EPSX, EPSC, DEXDN, DECDN, DEXDGN, DECDGN )
+     .                 EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
 
       ELSE
         call die('GGAXC: Unknown author ' // trim(AUTHOR))
       ENDIF
 
-      IF (nspin .EQ. 4) THEN
-C Find dE/dD(ispin) = dE/dDup * dDup/dD(ispin) +
-C                     dE/dDdown * dDown/dD(ispin)
-        VPOL  = (DEXDN(1)-DEXDN(2)) * (D(1)-D(2)) / (DPOL+TINY)
-        DEXDD(1) = 0.5D0 * ( DEXDN(1) + DEXDN(2) + VPOL )
-        DEXDD(2) = 0.5D0 * ( DEXDN(1) + DEXDN(2) - VPOL )
-        DEXDD(3) = (DEXDN(1)-DEXDN(2)) * D(3) / (DPOL+TINY)
-        DEXDD(4) = (DEXDN(1)-DEXDN(2)) * D(4) / (DPOL+TINY)
-        VPOL  = (DECDN(1)-DECDN(2)) * (D(1)-D(2)) / (DPOL+TINY)
-        DECDD(1) = 0.5D0 * ( DECDN(1) + DECDN(2) + VPOL )
-        DECDD(2) = 0.5D0 * ( DECDN(1) + DECDN(2) - VPOL )
-        DECDD(3) = (DECDN(1)-DECDN(2)) * D(3) / (DPOL+TINY)
-        DECDD(4) = (DECDN(1)-DECDN(2)) * D(4) / (DPOL+TINY)
-C Gradient terms
-        DO 40 IX = 1,3
-          DEXDGD(IX,1) = DEXDGN(IX,1)*C2**2 + DEXDGN(IX,2)*S2**2
-          DEXDGD(IX,2) = DEXDGN(IX,1)*S2**2 + DEXDGN(IX,2)*C2**2
-          DEXDGD(IX,3) = 0.5D0*(DEXDGN(IX,1) - DEXDGN(IX,2))*ST*CP
-          DEXDGD(IX,4) = 0.5D0*(DEXDGN(IX,2) - DEXDGN(IX,1))*ST*SP
-          DECDGD(IX,1) = DECDGN(IX,1)*C2**2 + DECDGN(IX,2)*S2**2
-          DECDGD(IX,2) = DECDGN(IX,1)*S2**2 + DECDGN(IX,2)*C2**2
-          DECDGD(IX,3) = 0.5D0*(DECDGN(IX,1) - DECDGN(IX,2))*ST*CP
-          DECDGD(IX,4) = 0.5D0*(DECDGN(IX,2) - DECDGN(IX,1))*ST*SP
-   40   CONTINUE
-      ELSE
-        DO 60 IS = 1,nspin
-          DEXDD(IS) = DEXDN(IS)
-          DECDD(IS) = DECDN(IS)
-          DO 50 IX = 1,3
-            DEXDGD(IX,IS) = DEXDGN(IX,IS)
-            DECDGD(IX,IS) = DECDGN(IX,IS)
-   50     CONTINUE
-   60   CONTINUE
-      ENDIF
+      ! Find dE/dD(i) and dE/dGradD(i). Note convention:
+      ! DEDD(1)=dE/dD11, DEDD(2)=dE/dD22, DEDD(3)=Re(dE/dD12)=Re(dE/dD21),
+      ! DEDD(4)=Im(dE/dD12)=-Im(dE/D21)
+      if (nSpin==4) then  ! Non colinear spin
+        ! dE/dD(i) = dE/dDup * dDup/dD(i) + dE/dDdn * dDdn/dD(i)
+        !          + dE/dGDup * dGDup/dD(i) + dE/dGDdn * dGDdn/dD(i)
+        ! dE/dGradD(i) = dE/dGDup * dGDup/dGD(i) + dE/dGDdn * dGDdn/dGD(i)
+        do is = 1,4
+          dEXdD(is) = sum( dEXdDD(:) * dDDdD(:,is) )
+     .              + sum( dEXdGDD(:,:) * dGDDdD(:,:,is) )
+          dECdD(is) = sum( dECdDD(:) * dDDdD(:,is) )
+     .              + sum( dECdGDD(:,:) * dGDDdD(:,:,is) )
+          do ix = 1,3
+            dEXdGD(ix,is) = sum( dEXdGDD(ix,:) * dGDDdGD(:,is) )
+            dECdGD(ix,is) = sum( dECdGDD(ix,:) * dGDDdGD(:,is) )
+          end do
+        end do
+        ! Divide by two the non-diagonal derivatives. This is necessary
+        ! because DEDD(3:4) intend to be Re(dE/dD12)=Re(dE/dD21) and 
+        ! Im(dE/dD12)=-Im(dE/dD21), respectively. However, both D12 and D21
+        ! depend on D(3) and D(4), and we have derived directly dE/dD(3) and
+        ! dE/dD(4). Although less trivially, the same applies to dE/dGD(3:4).
+        dEXdD(3:4) = dEXdD(3:4) / 2
+        dECdD(3:4) = dECdD(3:4) / 2
+        dEXdGD(:,3:4) = dEXdGD(:,3:4) / 2
+        dECdGD(:,3:4) = dECdGD(:,3:4) / 2
+      else   ! Collinear spin => just copy derivatives to output arrays
+        dEXdD = dEXdDD
+        dECdD = dECdDD
+        dEXdGD = dEXdGDD
+        dECdGD = dECdGDD
+      end if ! (nSpin==4)
 
       END SUBROUTINE GGAXC
 
@@ -194,7 +242,7 @@ C Gradient terms
 C *********************************************************************
 C Implements Perdew-Burke-Ernzerhof Generalized-Gradient-Approximation.
 C Ref: J.P.Perdew, K.Burke & M.Ernzerhof, PRL 77, 3865 (1996)
-C Written by L.C.Balbas and J.M.Soler. December 1996. Version 0.5.
+C Written by L.C.Balbas and J.M.Soler. December 1996. myVersion 0.5.
 C ******** INPUT ******************************************************
 C INTEGER IREL           : Relativistic-exchange switch (0=No, 1=Yes)
 C INTEGER nspin          : Number of spin polarizations (1 or 2)
@@ -394,7 +442,7 @@ C *********************************************************************
 C Implements revPBE: revised Perdew-Burke-Ernzerhof GGA.
 C Ref: Y. Zhang & W. Yang, Phys. Rev. Lett. 80, 890 (1998).
 C Written by E. Artacho in January 2006 by modifying the PBE routine of 
-C L.C.Balbas and J.M.Soler. December 1996. Version 0.5.
+C L.C.Balbas and J.M.Soler. December 1996. myVersion 0.5.
 C ******** INPUT ******************************************************
 C INTEGER IREL           : Relativistic-exchange switch (0=No, 1=Yes)
 C INTEGER nspin          : Number of spin polarizations (1 or 2)
@@ -662,6 +710,9 @@ C Fix some numerical parameters
      .            THD=1.D0/3.D0, THRHLF=1.5D0,
      .            TWO=2.D0, TWOTHD=2.D0/3.D0 )
 
+C JMS: disconnected until bug correction (inconsistent energy and derivatives)
+      call die('PW91XC: STOP: sorry, PW91 temporarily out of order')
+
 C Fix some more numerical constants
       PI = 4.0_dp * ATAN(1.0_dp)
       BETA = 15.75592_dp * 0.004235_dp
@@ -892,8 +943,10 @@ c Empirical parameter for Becke exchange functional (a.u.)
 c Constants for LYP functional (a.u.) 
       parameter(a=0.04918d0, b=0.132d0, c=0.2533d0, dd=0.349d0)
 
-       pi= 4*atan(1.d0)
-       
+C JMS: disconnected until bug correction (positive XC energy/potential)
+      call die('blypxc: STOP: sorry, BLYP temporarily out of order')
+
+      pi= 4*atan(1.d0)
 
 c Translate density and its gradient to new variables
       if (nspin .eq. 1) then
@@ -1069,7 +1122,7 @@ C Ref: Hammer, Hansen & Norskov, PRB 59, 7413 (1999) and
 C J.P.Perdew, K.Burke & M.Ernzerhof, PRL 77, 3865 (1996)
 C
 C Written by M.V. Fernandez-Serra. March 2004. On the PBE routine of
-C L.C.Balbas and J.M.Soler. December 1996. Version 0.5.
+C L.C.Balbas and J.M.Soler. December 1996. myVersion 0.5.
 C ******** INPUT ******************************************************
 C INTEGER IREL           : Relativistic-exchange switch (0=No, 1=Yes)
 C INTEGER nspin          : Number of spin polarizations (1 or 2)

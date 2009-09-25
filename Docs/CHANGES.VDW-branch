@@ -1,5 +1,24 @@
 ------------------------------------------------------------------
 
+2009-09-25  22:00:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-30-278
+
+Summary: bug corrected for non collinear GGA
+Keywords: non-collinear GGA
+
+A missing term in the XC potential, for non collinear GGA, was added.
+The availability of non-collinear GGA was documented in the manual.
+Also, test1 and makefile, in SiestaXC/Testers were improved.
+Finally, an incorrectly-resolved conflict in previous merge was correted.
+
+modified:
+  Docs/siesta.tex                ! Documented non collinear GGA
+  Src/MPI/Makefile               ! Corrected conflict resolution of prev. merge
+  Src/SiestaXC/Testers/makefile  ! Improved dependencies
+  Src/SiestaXC/Testers/test1.f90 ! Improved density matrix initialization
+  Src/SiestaXC/ggaxc.f           ! Rewritten code for non collinear GGA
+
+------------------------------------------------------------------
+
 2009-09-19  20:45:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-29-277
 
 Summary: merged with trunk revno 298

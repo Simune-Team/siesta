@@ -2715,11 +2715,14 @@ or spin polarized ({\tt .true.}) calculation.
 \item[{\bf NonCollinearSpin}] ({\it logical}):
 \index{NonCollinearSpin@{\bf NonCollinearSpin}}\index{spin}
 \index{spin!non-collinear}\index{LSD}
-If {\tt .true.}, non-collinear spin is described using spinor wavefunctions
+If {\tt .true.}, non-collinear spin (i.e. with variable orientation)
+is described using spinor wavefunctions
 and $(2 \times 2)$ spin density matrices at every grid point.
 Ref: T. Oda et al, PRL, {\bf 80}, 3622 (1998).
-Not compatible with GGA because non-collinear density functional
-theory has been developed only for a local functional.
+Notice that no GGA functionals have been derived specifically for non
+collinear spin. Therefore, only the gradient of the spin polarization
+magnitude, and not the gradient of its orientation, are considered
+to calculate the local xc energy density.
 Not compatible with the {\tt Diag.ParallelOverK} option
 {\it Default value:} {\tt .false.}
 
