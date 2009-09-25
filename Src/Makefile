@@ -33,7 +33,7 @@ M4_FILES = m4/ac_config_aux_dirs.m4  m4/TW_CHECK_FC_FPP.m4      m4/TW_FC_ID_FLAG
 aclocal.m4: $(M4_FILES)
 	cat ${<D}/$(M4_FILES)  > aclocal.m4
 dep:
-	@if [ $(VPATH) == "." ] ; then \
+	@if [ $(VPATH) = "." ] ; then \
 	sfmakedepend --depend=obj  --modext=o \
                               *.f *.f90 *.F *.F90 ; \
         else \
@@ -54,7 +54,7 @@ INCFLAGS:= $(NETCDF_INCFLAGS) $(INCFLAGS)
 #
 what:
 	@echo
-	@if [ "$(VPATH)" == . ]; then \
+	@if [ "$(VPATH)" = . ]; then \
               echo "** You can no longer build SIESTA in Src." ;\
               echo "** Go to the Obj directory and see the README file." ;\
               false ;\
@@ -281,7 +281,7 @@ clean:
 	rm -f *.bck *~
 	rm -f aux_*.f aux_*.f90
 	(cd fdf ; $(MAKE) clean)
-	(cd FoX ; $(MAKE) distclean)
+	(cd FoX ; touch arch.make ; $(MAKE) distclean)
 	(cd xmlparser ; $(MAKE) clean)
 	(cd wxml ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
