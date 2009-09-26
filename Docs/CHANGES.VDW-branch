@@ -1,14 +1,31 @@
 ------------------------------------------------------------------
 
+2009-09-26  13:45:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-31-279
+
+Summary: module m_filter stripped of duplicated external routines
+Keywords: m_filter m_recipes
+
+  Some external routines had been duplicated inside m_filter to facilitate
+  its compilation in Pseudo/atom. With the siestaXC library, this is no longer
+  necessary and they have been by USE statements.
+
+modified:
+  Src/Makefile     ! Dependencies updated
+  Src/m_filter.f90 ! Removed duplicated (plus tqli and tred2) external routines
+  Src/m_recipes.f  ! Numerical Recipes routines tqli and tred2 moved here
+                   ! Added use of dp parameter from precision
+
+------------------------------------------------------------------
+
 2009-09-25  22:00:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-30-278
 
 Summary: bug corrected for non collinear GGA
 Keywords: non-collinear GGA
 
-A missing term in the XC potential, for non collinear GGA, was added.
-The availability of non-collinear GGA was documented in the manual.
-Also, test1 and makefile, in SiestaXC/Testers were improved.
-Finally, an incorrectly-resolved conflict in previous merge was correted.
+  A missing term in the XC potential, for non collinear GGA, was added.
+  The availability of non-collinear GGA was documented in the manual.
+  Also, test1 and makefile, in SiestaXC/Testers were improved.
+  Finally, an incorrectly-resolved conflict in previous merge was correted.
 
 modified:
   Docs/siesta.tex                ! Documented non collinear GGA
