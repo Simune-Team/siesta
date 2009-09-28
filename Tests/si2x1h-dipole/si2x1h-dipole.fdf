@@ -62,14 +62,8 @@ WriteForces             .true.
 
 WriteMullikenPop        1
 
-WriteCoorXmol           .true.
-WriteMDXmol             .true.
-WriteMDhistory          .true.
-
 DM.UseSaveDM            .true.
-MD.UseSaveXV            .true.
 
-MD.UseSaveCG            .true.
 SaveRho                 .true.
 SaveDeltaRho            .true.
 SaveIonicCharge         .true.

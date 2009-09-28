@@ -100,7 +100,8 @@ C tol : tolerance for bulk components of the electric field
       real(dp), save :: tol = 1.0d-12
 
 C Internal variables
-      logical           found1, found2, found, isfield, orthog
+      logical,  save :: found1   
+      logical           found2, found, isfield, orthog
       logical,  save :: frstme = .true., lwrite
       character         eunits*10, shape*8, line*130, names*20
       integer           i0(3), i1, i2, i3, ia, imesh, int(1),
