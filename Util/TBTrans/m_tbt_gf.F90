@@ -79,6 +79,8 @@ end subroutine alloc_gf_vars
 subroutine cp_gf_vars(H,S,xij,indxuo,listh,listhptr,numh,efs,ix,rcell,&
          nuotot, gamma)
 
+use sys, only : die
+
 double precision, dimension (:,:), pointer :: H, xij
 double precision, dimension (:), pointer :: S,efs
 integer, dimension (:), pointer :: listh, listhptr, numh, indxuo
@@ -121,8 +123,7 @@ else if (RJob) then
 
 else
 
-write(*,*) 'In routine cp_gf_vars: It should be either LJob or RJob !!'
-stop
+call die("In routine cp_gf_vars: It should be either LJob or RJob !!")
 
 end if
 
@@ -691,8 +692,8 @@ end subroutine cp_gf_vars
 
 !-----------------------------------------------------------------------
 ! OUTPUT
-      complex*16 Hk(nuo*nuo), Sk(nuo*nuo)
-      complex*16 Hk2(nuo*nuo), Sk2(nuo*nuo)
+      complex*16 Hk(:), Sk(:)
+      complex*16 Hk2(:), Sk2(:)
 
 
 !      integer, dimension (:), pointer:: lasto

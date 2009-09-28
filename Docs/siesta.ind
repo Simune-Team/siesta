@@ -476,10 +476,10 @@
   \item {\bf TS.ComplexContour.NumLine}, 95
   \item {\bf TS.ComplexContour.NumPoles}, 96
   \item {\bf TS.GFFileLeft}, 94
-  \item {\bf TS.GFFileRight}, 94
+  \item {\bf TS.GFFileRight}, 95
   \item {\bf TS.HSFileLeft}, 94, 97
   \item {\bf TS.HSFileRight}, 94
-  \item {\bf TS.MixH}, 93
+  \item {\bf TS.MixH}, 94
   \item {\bf TS.NumUsedAtomsLeft}, 95
   \item {\bf TS.NumUsedAtomsRight}, 95
   \item {\bf TS.SaveHS}, 93
