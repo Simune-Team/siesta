@@ -42,11 +42,12 @@ SIESTA_OBJS= precision.o alloc.o  memoryinfo.o memory.o pxf.o \
              timer.o m_mpi_utils.o m_fdf_global.o paste.o \
              parallel.o sys.o io.o files.o  m_walltime.o zheevds.o
 
-TBTOBJS= $(SIESTA_OBJS) $(MOD_TOBJS) $(SYSOBJ) $(EXTRA) tbtrans.o transmission.o   \
+TBTOBJS= $(SIESTA_OBJS) $(MOD_TOBJS) $(SYSOBJ) $(EXTRA) \
+         tbtrans.o transmission.o   \
          calc_green.o cdiag_local.o getsfe.o \
          mkRealContour.o reinit_tb.o setupkham2.o TSiohs.o atompdos.o coop.o \
-         csolve.o teigchana.o helpers.o #OutputRegionData.o \
-         Lowdin.o netcdfwrite.o \
+         csolve.o teigchana.o helpers.o \
+         Lowdin.o netcdfwrite.o 
 
 #
 # Interfaces to libraries
