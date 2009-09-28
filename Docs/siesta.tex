@@ -6267,15 +6267,20 @@ charge density for the open system. These routines are packed in a set
 of modules, and we will refer to it as the '{\sc TranSIESTA} module'
 in what follows.
 
-{\sc TranSiesta} was originally developed by Mads Brandbyge, Jose-Luis
-Mozos, Pablo Ordej\'on, Jeremy Taylor and Kurt Stokbro (see
-references), and was first implemented in the {\sc Siesta}1.3p
-version.  The present distribution was adapted to the new {\sc Siesta}
-code structure. With respect to the first implementation, it has the
-additional feature of allowing for the use of a {\bf k}-point sampling
-other than the gamma point (for the 2D Brillouin zone perpendicular to
-the transport direction).  These modifications, among others, were
-done by Frederico D. Novaes.
+{\sc TranSiesta} was originally developed by Mads Brandbyge,
+Jos\'e-Luis Mozos, Pablo Ordej\'on, Jeremy Taylor and Kurt Stokbro
+(see references). It consisted, mainly, in setting up an interface
+between {\sc Siesta} and the (tight-binding) transport codes developed
+by M. Brandbyge and K. Stokbro. Initially everything was written in
+Fortran-77. As {\sc Siesta} started to be translated to Fortran-90, so
+were the {\sc TranSiesta} parts of the code. This was accomplished by
+Jos\'e-Luis Mozos, who also worked on the parallelization of {\sc
+  TranSiesta}.  The present distribution has been adapted to the new
+{\sc Siesta} code structure. With respect to the previous
+implementations, it has the additional feature of allowing for the use
+of a {\bf k}-point sampling other than the gamma point (for the 2D
+Brillouin zone perpendicular to the transport direction).  These
+modifications, among others, were done by Frederico D. Novaes.
 
 \subsection{Source code structure}
 

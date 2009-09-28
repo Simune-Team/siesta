@@ -44,6 +44,7 @@
     \subitem split valence   for H, 21
     \subitem User basis, 27
     \subitem User basis (NetCDF format), 27
+  \item basis     \subitem PAO, 115
   \item {\bf     BasisPressure}, 28
   \item Berry phase, 67
   \item Bessel functions, 26
@@ -474,10 +475,10 @@
   \item {\bf TS.ComplexContour.NumLine}, 94
   \item {\bf TS.ComplexContour.NumPoles}, 95
   \item {\bf TS.GFFileLeft}, 93
-  \item {\bf TS.GFFileRight}, 93
+  \item {\bf TS.GFFileRight}, 94
   \item {\bf TS.HSFileLeft}, 93, 96
   \item {\bf TS.HSFileRight}, 93
-  \item {\bf TS.MixH}, 92
+  \item {\bf TS.MixH}, 93
   \item {\bf TS.NumUsedAtomsLeft}, 94
   \item {\bf TS.NumUsedAtomsRight}, 94
   \item {\bf     TS.SaveHS}, 92
