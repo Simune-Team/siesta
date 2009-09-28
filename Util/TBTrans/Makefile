@@ -1,5 +1,5 @@
 #
-# Makefile for tbtrans90 gengf90
+# Makefile for tbtrans gengf90
 #
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
@@ -9,8 +9,7 @@
 #EXTRA=zgeev.o
 #
 
-default: what  tbtrans90 
-#default: what  tbtrans90 gengf90 readTSHScdf
+default: what  tbtrans 
 #
 SIESTA_DIR=../../Src
 VPATH:=$(shell pwd)/../../Src
@@ -73,10 +72,9 @@ $(LINALG):
                           "ARCH_MAKE=../$(ARCH_MAKE)" \
                           "INCFLAGS=$(LINALG_INCFLAGS)" "FFLAGS=$(FFLAGS)" )
 #
-tbtrans90: $(TBTOBJS) $(FDF) $(SYSOBJ) $(NETCDF_INTERFACE) $(LINALG)
-	$(FC) $(FFLAGS) $(LDFLAGS) -o tbtrans90 \
+tbtrans: $(TBTOBJS) $(FDF) $(SYSOBJ) $(NETCDF_INTERFACE) $(LINALG)
+	$(FC) $(FFLAGS) $(LDFLAGS) -o tbtrans \
               $(TBTOBJS) $(MPI_INTERFACE) $(NETCDF_INTERFACE)  $(FDF) $(LIBS) $(LINALG)
-#	@(cd ../../bin ; rm -f tsScan ; ln -s tbtrans90 tsScan)
 
 
 #gengf90: $(GENGFOBJS) $(FDF) $(SYSOBJ)
@@ -87,7 +85,7 @@ tbtrans90: $(TBTOBJS) $(FDF) $(SYSOBJ) $(NETCDF_INTERFACE) $(LINALG)
 #
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
-	rm -f tbtrans90 *.o *.a *.mod
+	rm -f tbtrans *.o *.a *.mod
 	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
 	(cd MPI ; $(MAKE) -f $(MPI_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
 	(cd Libs ; $(MAKE) -f $(MPI_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)

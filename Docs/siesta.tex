@@ -6288,7 +6288,7 @@ of eV/\AA.
 
 \section{TRANSIESTA}
 
-The present {\sc Siesta} release includes the possibility of performing calculations of electronic transport properties using the {\sc TranSiesta} method (Reference). This Section describes how to compile the code to be able to use these capabilities, and a reference guide to the relevant FDF options. We describe here only the additional options available for TranSiesta calculations, while the rest of the Siesta functionalities and variables are described in the previous sections of this User's Guide.
+The present {\sc Siesta} release includes the possibility of performing calculations of electronic transport properties using the {\sc TranSiesta} method. This Section describes how to compile the code to be able to use these capabilities, and a reference guide to the relevant FDF options. We describe here only the additional options available for TranSiesta calculations, while the rest of the Siesta functionalities and variables are described in the previous sections of this User's Guide.
 
 \subsection{Brief description}
 
@@ -6321,10 +6321,10 @@ in {\tt \#ifdef TRANSIESTA} ). See the next section for compilation instructions
 The standard {\sc Siesta} executable (obtained as described in Section 2) does not include the {\sc TranSiesta} modules. In order to use the {\sc TranSiesta} capabilities, you must compile the {\sc Siesta} package as indicated in this Section. In this way, the compilation is done using the appropriate preprocessor flags needed to include the {\sc TranSiesta} modules in the binary file. To generate a binary of {\sc Siesta} which includes the {\sc TranSiesta} capabilities, just type: 
 
 \begin{verbatim}
-$ make siesta-ts
+$ make transiesta
 \end{verbatim}
 
-using the appropriate arch.make file for your system (note that you do not need to make any modification on your arch.make file: you can use the same one that you have used to make a standard {\sc Siesta} compilation in your system).  The Makefile takes care of defining the appropriate preprocessor flag -DTRANSIESTA so that the {\sc TranSiesta} modules and modifications are compiled and incorporated into the binary. Upon successful compilation, the binary file {\tt siesta-ts} will be generated, containing the executable of {\sc Siesta} with {\sc TranSiesta} capabilities.
+using the appropriate arch.make file for your system (note that you do not need to make any modification on your arch.make file: you can use the same one that you have used to make a standard {\sc Siesta} compilation in your system).  The Makefile takes care of defining the appropriate preprocessor flag -DTRANSIESTA so that the {\sc TranSiesta} modules and modifications are compiled and incorporated into the binary. Upon successful compilation, the binary file {\tt transiesta} will be generated, containing the executable of {\sc Siesta} with {\sc TranSiesta} capabilities.
 
 \subsection{Running a fast example}
 
@@ -6492,7 +6492,7 @@ must conform with this description.
 \subsection{{\sc TranSiesta} Options}
 
 The FDF options shown here are only to be used at the input file for the scattering region. 
-When using {\tt siesta-ts} for electrode calculations, only the usual {\sc Siesta} options
+When using {\tt transiesta} for electrode calculations, only the usual {\sc Siesta} options
 are relevant.
 
 \subsubsection{General options}
@@ -6640,7 +6640,7 @@ Number of atoms starting from the last atom to neglect in the
 \end{description}
 
 
-\subsection{Complex Contour Integration Options}
+\subsubsection{Complex contour integration options}
 
 \begin{description}
     \itemsep 10pt
@@ -6675,7 +6675,7 @@ Number of atoms starting from the last atom to neglect in the
  
 \end{description}
 
-\subsection{Bias Contour Integration Options}
+\subsubsection{Bias contour integration options}
 
 \begin{description}
     \itemsep 10pt
