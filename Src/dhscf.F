@@ -679,7 +679,7 @@ C Add a background charge to neutralize the net charge, to
 C model doped systems. It only adds the charge at points
 C where there are atoms (i.e., not in vacuum).          
 C First, call with 'task=0' to add background charge    
-        call doping(cell,nmpl,0,DRho)                     
+        call doping(cell,nmpl,0,(samexa.and.samesh),DRho,rhoatm,nsd)
 
 C Find dipole
         call reord( DRho, DRho, nml, nsm, +1)
@@ -721,7 +721,7 @@ C Solve Poisson's equation
       call reord( Vscf, Vscf, nml, nsm, -1)
 
 C Call doping with 'task=1' to remove background charge added previously
-      call doping(cell,nmpl,1,DRho) 
+      call doping(cell,nmpl,1,(samexa.and.samesh),DRho,rhoatm,nsd)
 
 C Add contribution to stress from electrostatic energy of rhoscf-rhoatm
       if (istr .eq. 1) then
