@@ -43,6 +43,117 @@
 
       CONTAINS
 
+      SUBROUTINE LDAXC( AUTHOR, IREL, nspin, D, EPSX, EPSC, VX, VC,
+     .                  DVXDN, DVCDN )
+
+C ******************************************************************
+C Finds the exchange and correlation energies and potentials, in the
+C Local (spin) Density Approximation.
+C Written by L.C.Balbas and J.M.Soler, Dec'96.
+C Non-collinear spin added by J.M.Soler, May'98
+C *********** INPUT ************************************************
+C CHARACTER*(*) AUTHOR : Parametrization desired:
+C     'CA' or 'PZ' => LSD Perdew & Zunger, PRB 23, 5075 (1981)
+C           'PW92' => LSD Perdew & Wang, PRB, 45, 13244 (1992)
+C                     Uppercase is optional
+C INTEGER IREL     : Relativistic exchange? (0=>no, 1=>yes)
+C INTEGER nspin    : nspin=1 => unpolarized; nspin=2 => polarized;
+C                    nspin=4 => non-collinear polarization
+C REAL*8  D(nspin) : Local (spin) density. For non-collinear
+C                    polarization, the density matrix is given by:
+C                    D(1)=D11, D(2)=D22, D(3)=Real(D12), D(4)=Im(D12)
+C *********** OUTPUT ***********************************************
+C REAL*8 EPSX, EPSC : Exchange and correlation energy densities
+C REAL*8 VX(nspin), VC(nspin) : Exchange and correlation potentials,
+C                               defined as dExc/dD(ispin)
+C REAL*8 DVXDN(nspin,nspin)  :  Derivative of exchange potential with
+C                               respect the charge density, defined 
+C                               as DVx(spin1)/Dn(spin2)
+C REAL*8 DVCDN(nspin,nspin)  :  Derivative of correlation potential
+C                               respect the charge density, defined 
+C                               as DVc(spin1)/Dn(spin2)
+C *********** UNITS ************************************************
+C Lengths in Bohr, energies in Hartrees
+C ******************************************************************
+
+      use precision, only : dp
+      use sys,       only : die
+
+      implicit          none
+
+      CHARACTER*(*),intent(in) :: AUTHOR ! LDA flavour ('PZ'|'PW92')
+      INTEGER, intent(in) :: IREL        ! Relativistic exchange? 0=>no, 1=>yes
+      INTEGER, intent(in) :: nspin       ! Number of spin components
+      real(dp),intent(in) :: D(nspin)    ! Electron density (matrix)
+      real(dp),intent(out):: EPSX        ! Exchange energy per electron
+      real(dp),intent(out):: EPSC        ! Correlation energy per electron
+      real(dp),intent(out):: VX(nspin)   ! Exchange potential
+      real(dp),intent(out):: VC(nspin)   ! Correlation potential
+      real(dp),intent(out):: DVXDN(nspin,nspin) ! dVX(spin1)/dDens(spin2)
+      real(dp),intent(out):: DVCDN(nspin,nspin) ! dVC(spin1)/dDens(spin2)
+
+      INTEGER           IS, NS, ISPIN1, ISPIN2
+      real(dp)          DD(2), DPOL, DTOT, TINY, VCD(2), VPOL, VXD(2)
+
+      PARAMETER ( TINY = 1.D-12 )
+
+      IF (nspin .EQ. 4) THEN
+C Find eigenvalues of density matrix (up and down densities
+C along the spin direction)
+C Note: D(1)=D11, D(2)=D22, D(3)=Real(D12), D(4)=Im(D12)
+        NS = 2
+        DTOT = D(1) + D(2)
+        DPOL = SQRT( (D(1)-D(2))**2 + 4.D0*(D(3)**2+D(4)**2) )
+        DD(1) = 0.5D0 * ( DTOT + DPOL )
+        DD(2) = 0.5D0 * ( DTOT - DPOL )
+      ELSE
+        NS = nspin
+        DO 10 IS = 1,nspin
+cag       Avoid negative densities
+          DD(IS) = max(D(IS),0.0d0)
+   10   CONTINUE
+      ENDIF
+
+
+      DO ISPIN2 = 1, nspin
+        DO ISPIN1 = 1, nspin
+          DVXDN(ISPIN1,ISPIN2) = 0.D0
+          DVCDN(ISPIN1,ISPIN2) = 0.D0
+        ENDDO
+      ENDDO
+
+      IF ( AUTHOR.EQ.'CA' .OR. AUTHOR.EQ.'ca' .OR.
+     .     AUTHOR.EQ.'PZ' .OR. AUTHOR.EQ.'pz') THEN
+        CALL PZXC( IREL, NS, DD, EPSX, EPSC, VXD, VCD, DVXDN, DVCDN )
+      ELSEIF ( AUTHOR.EQ.'PW92' .OR. AUTHOR.EQ.'pw92' ) THEN
+        CALL PW92XC( IREL, NS, DD, EPSX, EPSC, VXD, VCD )
+      ELSE
+        call die('LDAXC: Unknown author ' // trim(AUTHOR))
+      ENDIF
+
+      IF (nspin .EQ. 4) THEN
+C Find dE/dD(ispin) = dE/dDup * dDup/dD(ispin) +
+C                     dE/dDdown * dDown/dD(ispin)
+        VPOL  = (VXD(1)-VXD(2)) * (D(1)-D(2)) / (DPOL+TINY)
+        VX(1) = 0.5D0 * ( VXD(1) + VXD(2) + VPOL )
+        VX(2) = 0.5D0 * ( VXD(1) + VXD(2) - VPOL )
+        VX(3) = (VXD(1)-VXD(2)) * D(3) / (DPOL+TINY)
+        VX(4) = (VXD(1)-VXD(2)) * D(4) / (DPOL+TINY)
+        VPOL  = (VCD(1)-VCD(2)) * (D(1)-D(2)) / (DPOL+TINY)
+        VC(1) = 0.5D0 * ( VCD(1) + VCD(2) + VPOL )
+        VC(2) = 0.5D0 * ( VCD(1) + VCD(2) - VPOL )
+        VC(3) = (VCD(1)-VCD(2)) * D(3) / (DPOL+TINY)
+        VC(4) = (VCD(1)-VCD(2)) * D(4) / (DPOL+TINY)
+      ELSE
+        DO 20 IS = 1,nspin
+          VX(IS) = VXD(IS)
+          VC(IS) = VCD(IS)
+   20   CONTINUE
+      ENDIF
+      END SUBROUTINE LDAXC
+
+
+
       subroutine exchng( IREL, NSP, DS, EX, VX )
 
 C *****************************************************************
@@ -131,111 +242,6 @@ C X-alpha parameter:
         EX    = EXP_VAR
       ENDIF
       END subroutine exchng
-
-
-
-      SUBROUTINE LDAXC( AUTHOR, IREL, nspin, D, EPSX, EPSC, VX, VC,
-     .                  DVXDN, DVCDN )
-
-C ******************************************************************
-C Finds the exchange and correlation energies and potentials, in the
-C Local (spin) Density Approximation.
-C Written by L.C.Balbas and J.M.Soler, Dec'96.
-C Non-collinear spin added by J.M.Soler, May'98
-C *********** INPUT ************************************************
-C CHARACTER*(*) AUTHOR : Parametrization desired:
-C     'CA' or 'PZ' => LSD Perdew & Zunger, PRB 23, 5075 (1981)
-C           'PW92' => LSD Perdew & Wang, PRB, 45, 13244 (1992)
-C                     Uppercase is optional
-C INTEGER IREL     : Relativistic exchange? (0=>no, 1=>yes)
-C INTEGER nspin    : nspin=1 => unpolarized; nspin=2 => polarized;
-C                    nspin=4 => non-collinear polarization
-C REAL*8  D(nspin) : Local (spin) density. For non-collinear
-C                    polarization, the density matrix is given by:
-C                    D(1)=D11, D(2)=D22, D(3)=Real(D12), D(4)=Im(D12)
-C *********** OUTPUT ***********************************************
-C REAL*8 EPSX, EPSC : Exchange and correlation energy densities
-C REAL*8 VX(nspin), VC(nspin) : Exchange and correlation potentials,
-C                               defined as dExc/dD(ispin)
-C REAL*8 DVXDN(nspin,nspin)  :  Derivative of exchange potential with
-C                               respect the charge density, defined 
-C                               as DVx(spin1)/Dn(spin2)
-C REAL*8 DVCDN(nspin,nspin)  :  Derivative of correlation potential
-C                               respect the charge density, defined 
-C                               as DVc(spin1)/Dn(spin2)
-C *********** UNITS ************************************************
-C Lengths in Bohr, energies in Hartrees
-C ******************************************************************
-
-      use precision, only : dp
-      use sys,       only : die
-
-      implicit          none
-
-      CHARACTER*(*)     AUTHOR
-      INTEGER           IREL, nspin
-      real(dp)          D(nspin), EPSC, EPSX, VX(nspin), VC(nspin),
-     .                  DVXDN(nspin,nspin), DVCDN(nspin,nspin)
-
-      INTEGER           IS, NS, ISPIN1, ISPIN2
-      real(dp)          DD(2), DPOL, DTOT, TINY, VCD(2), VPOL, VXD(2)
-
-      PARAMETER ( TINY = 1.D-12 )
-
-      IF (nspin .EQ. 4) THEN
-C Find eigenvalues of density matrix (up and down densities
-C along the spin direction)
-C Note: D(1)=D11, D(2)=D22, D(3)=Real(D12), D(4)=Im(D12)
-        NS = 2
-        DTOT = D(1) + D(2)
-        DPOL = SQRT( (D(1)-D(2))**2 + 4.D0*(D(3)**2+D(4)**2) )
-        DD(1) = 0.5D0 * ( DTOT + DPOL )
-        DD(2) = 0.5D0 * ( DTOT - DPOL )
-      ELSE
-        NS = nspin
-        DO 10 IS = 1,nspin
-cag       Avoid negative densities
-          DD(IS) = max(D(IS),0.0d0)
-   10   CONTINUE
-      ENDIF
-
-
-      DO ISPIN2 = 1, nspin
-        DO ISPIN1 = 1, nspin
-          DVXDN(ISPIN1,ISPIN2) = 0.D0
-          DVCDN(ISPIN1,ISPIN2) = 0.D0
-        ENDDO
-      ENDDO
-
-      IF ( AUTHOR.EQ.'CA' .OR. AUTHOR.EQ.'ca' .OR.
-     .     AUTHOR.EQ.'PZ' .OR. AUTHOR.EQ.'pz') THEN
-        CALL PZXC( IREL, NS, DD, EPSX, EPSC, VXD, VCD, DVXDN, DVCDN )
-      ELSEIF ( AUTHOR.EQ.'PW92' .OR. AUTHOR.EQ.'pw92' ) THEN
-        CALL PW92XC( IREL, NS, DD, EPSX, EPSC, VXD, VCD )
-      ELSE
-        call die('LDAXC: Unknown author ' // trim(AUTHOR))
-      ENDIF
-
-      IF (nspin .EQ. 4) THEN
-C Find dE/dD(ispin) = dE/dDup * dDup/dD(ispin) +
-C                     dE/dDdown * dDown/dD(ispin)
-        VPOL  = (VXD(1)-VXD(2)) * (D(1)-D(2)) / (DPOL+TINY)
-        VX(1) = 0.5D0 * ( VXD(1) + VXD(2) + VPOL )
-        VX(2) = 0.5D0 * ( VXD(1) + VXD(2) - VPOL )
-        VX(3) = (VXD(1)-VXD(2)) * D(3) / (DPOL+TINY)
-        VX(4) = (VXD(1)-VXD(2)) * D(4) / (DPOL+TINY)
-        VPOL  = (VCD(1)-VCD(2)) * (D(1)-D(2)) / (DPOL+TINY)
-        VC(1) = 0.5D0 * ( VCD(1) + VCD(2) + VPOL )
-        VC(2) = 0.5D0 * ( VCD(1) + VCD(2) - VPOL )
-        VC(3) = (VCD(1)-VCD(2)) * D(3) / (DPOL+TINY)
-        VC(4) = (VCD(1)-VCD(2)) * D(4) / (DPOL+TINY)
-      ELSE
-        DO 20 IS = 1,nspin
-          VX(IS) = VXD(IS)
-          VC(IS) = VCD(IS)
-   20   CONTINUE
-      ENDIF
-      END SUBROUTINE LDAXC
 
 
 

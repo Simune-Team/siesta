@@ -1,5 +1,33 @@
 ------------------------------------------------------------------
 
+2009-09-28  17:15:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-32-280
+
+Summary: siestaXC header + other documentation
+Keywords: siestaXC header documentation
+
+  The explnations on how to use the siestaXC library routines has been
+  completed in the header of siestaXC.f90. Also a SiestaXC/00_README file
+  has been written, explaining how to compile and use the library.
+
+  The headers and/or interface comments of other files have been improved.
+
+  The names of real kinds in the siestaXC module have been reverted to
+  dp and grid_p, to avoid confusions with other siesta parts.
+
+added:
+  Src/SIESTA_LICENSE         ! Will replace !!@LICENSE in source files
+  Src/SiestaXC/00_README     ! Explains compilation issues
+  Src/SiestaXC/BSD_LICENSE   ! To be included in siestaxc-dist
+
+modified:
+  Pseudo/atom/velect.f       ! Use of siestaXC real kind dp
+  Src/SiestaXC/ldaxc.f       ! Explicit interface of ldaxc
+  Src/SiestaXC/siestaxc.f90  ! Header documentation completed
+  Src/m_timer.F90            ! A few corrections in comments
+  Src/radfft.f               ! Explicit interface. Removed re_allocs
+
+------------------------------------------------------------------
+
 2009-09-26  13:45:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-31-279
 
 Summary: module m_filter stripped of duplicated external routines

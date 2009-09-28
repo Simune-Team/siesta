@@ -2,7 +2,7 @@ c
       subroutine velect(iter,iconv,id,zelec)
 c
       use siestaXC, only: atomXC, setXC
-      use siestaXC, only: dp => siestaXC_std_p
+      use siestaXC, only: dp
 
       implicit none
 

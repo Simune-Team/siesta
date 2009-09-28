@@ -1,0 +1,49 @@
+SiestaXC library
+
+This directory contains, as a self-contained package the source code of the 
+siestaXC library, used by the SIESTA program. It provides routines to calculate 
+the exchange and correlation energy and potential in spherical (i.e. an atom) 
+and periodic systems, using a variety of LDA and GGA functionals, as well as
+the van der Waals DFT functional of Dion et al (PRL 92, 246401 (2004)), 
+implemented as described by Roman-Perez and Soler (PRL 103, 096102 (2009))
+
+See siestaXC.f90 for how to call the siestaXC library routines
+
+To compile the library:
+
+- Place the SiestaXC directory hanging from your main-program's directory.
+
+- In your main-program's directory, write a file called arch.make, specifying 
+  your compiler options, e.g.
+#--------------------
+FC=g95 -O3 -DGRID_DP
+#
+.F.o:
+	$(FC) -c $<
+.f.o:
+	$(FC) -c $<
+.F90.o:
+	$(FC) -c $<
+.f90.o:
+	$(FC) -c $<
+#--------------------
+
+- Type "make" in the SiestaXC subdirectory. This will create the library and
+  copy files libSiestaXC.a and siestaxc.mod to your main-program's directory.
+
+- Compile the rest of the program.
+
+Some f90 compilers (notably Intel's) require all the .mod files (and not only
+siestaxc.mod) to be present when compiling your main program. In this case,
+substitute the following lines in makefile:
+
+module:  libSiestaXC.a
+	cp siestaxc.mod *.a ..
+
+by
+
+module:  libSiestaXC.a
+	cp *.mod *.a ..
+
+Notice that this may lead to some name conflicts with your main program.
+

@@ -83,8 +83,6 @@ C *********************************************************************
       USE precision, only: dp        ! Double precision real kind
       USE m_bessph,  only: bessph    ! Spherical Bessel functions
       USE m_recipes, only: four1     ! 1D fast Fourier transform
-      USE alloc,     only: de_alloc  ! Deallocation routines
-      USE alloc,     only: re_alloc  ! (Re)allocation routines
 !      USE m_timer,   only: timer_start  ! Start counting CPU time
 !      USE m_timer,   only: timer_stop   ! Stop counting CPU time
 
@@ -98,13 +96,14 @@ C *********************************************************************
 
       SUBROUTINE RADFFT( L, NR, RMAX, F, G )
 
-C Next line is non-standard and may be suppressed -------------------
       IMPLICIT NONE
-C -------------------------------------------------------------------
 
 C Declare argument types and dimensions -----------------------------
-      INTEGER           L, NR
-      real(dp)          F(0:), G(0:), RMAX
+      INTEGER, intent(in) :: L       ! Angular momentum of function
+      INTEGER, intent(in) :: NR      ! Number of radial points
+      real(dp),intent(in) :: RMAX    ! Radius of last point
+      real(dp),intent(in) :: F(0:NR) ! Function to Fourier-transform
+      real(dp),intent(out):: G(0:NR) ! Fourier transform of F(r)
 C -------------------------------------------------------------------
 
 C ERRFFT is the typical truncation error in the FFT routine ---------
@@ -112,25 +111,14 @@ C ERRFFT is the typical truncation error in the FFT routine ---------
 C -------------------------------------------------------------------
 
 C Internal variable types and dimensions ----------------------------
-
       INTEGER  ::  I, IQ, IR, JR, M, MQ, N, NQ
       real(dp) ::  C, DQ, DR, FR, PI, R, RN, Q, QMAX
-
-      real(dp), pointer      ::  GG(:), FN(:,:), P(:,:,:)
+      real(dp) ::  GG(0:2*NR), FN(2,0:2*NR), P(2,0:L,0:L)
 C -------------------------------------------------------------------
 
 C Start time counter ------------------------------------------------
 *     CALL TIMER_START( 'RADFFT' )
 C -------------------------------------------------------------------
-
-C Allocate local memory ---------------------------------------------
-
-      nullify( P )
-      call re_alloc( P, 1,2, 0,L, 0,L, name='P', routine='RADFFT' )
-      nullify( FN )
-      call re_alloc( FN, 1, 2, 0, 2*NR, name='FN', routine='RADFFT' )
-      nullify( GG )
-      call re_alloc( GG, 0, 2*NR, name='GG', routine='RADFFT' )
 
 C Find some constants -----------------------------------------------
       PI = 4.D0 * ATAN( 1.D0 )
@@ -140,7 +128,6 @@ C Find some constants -----------------------------------------------
       QMAX = NQ * DQ
       C = DR / SQRT( 2.D0*PI )
 C -------------------------------------------------------------------
-
 
 C Set up a complex polynomial such that the spherical Bessel function:
 C   j_l(x) = Real( Sum_n( P(n,l) * x**n ) * exp(i*x) ) / x**(l+1)
@@ -263,11 +250,6 @@ C Copy from local to output array -----------------------------------
         G(IQ) = GG(IQ)
       ENDDO
 C -------------------------------------------------------------------
-
-C Deallocate local memory -------------------------------------------
-      call de_alloc( P,  name  = 'P' )
-      call de_alloc( GG,  name = 'GG')
-      call de_alloc( FN,  name = 'FN')
 
 C Stop time counter ------------------------------------------------
 *     CALL TIMER_STOP( 'RADFFT' )

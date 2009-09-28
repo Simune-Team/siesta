@@ -39,7 +39,7 @@
 !===============================================================================
 ! GENERAL USAGE:
 !   program myProg
-!     use m_timer: only timer_init, timer_start, timer_stop, timer_report
+!     use m_timer, only: timer_init, timer_start, timer_stop, timer_report
 !     call timer_init()
 !     call timer_start('myProg')
 !     call mySub1()
@@ -50,7 +50,7 @@
 !     call timer_report(file='myProg.times',printNow=.true.)
 !   end program myProg
 !   subroutine mySub1()
-!     use m_timer: only timer_get, timer_start, timer_stop
+!     use m_timer, only: timer_get, timer_start, timer_stop
 !     real*8:: myTime
 !     call timer_start('mySub1')
 !     do something
@@ -59,11 +59,13 @@
 !     print*, 'mySub1: my CPU time was ', myTime
 !   end subroutine mySub1
 !   subroutine mySub2(i)
-!     use m_timer: only timer_start, timer_stop
+!     use m_timer, only: timer_start, timer_stop
 !     call timer_start('mySub2')
 !     do something
 !     call timer_stop('mySub2')
 !   end subroutine mySub2
+! - To obtain communication times in parallel execution, 
+!   compile with -DMPI_TIMING
 !===============================================================================
 ! SUBROUTINE timer_init()   
 !   Initializes timing
