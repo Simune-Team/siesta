@@ -10,8 +10,8 @@
 !   setXC    ! Sets XC functional(s) to be used by atomXC and/or cellXC
 !
 ! Real kinds (precision) of arguments to call atomxc and cellxc
-!   dp       ! Standard real-kind (double) precision
-!   grid_p   ! Precision for grid arrays to call cellxc
+!   siestaXC_std_p  ! Standard real-kind (double) precision
+!   siestaXC_grid_p ! Precision for grid arrays to call cellxc
 
 ! Secondary entry points for testers and lower-level programming
 !   ldaxc    ! LDA-XC functionals
@@ -361,8 +361,8 @@
 !                                 respect the charge density, defined 
 !                                 as DVx(spin1)/Dn(spin2)
 !   real(dp) DVCDN(nspin,nspin) ! Derivative of correlation potential
-C                                 respect the charge density, defined 
-C                                 as DVc(spin1)/Dn(spin2)
+!                                 respect the charge density, defined 
+!                                 as DVc(spin1)/Dn(spin2)
 ! ------------------------ UNITS ----------------------------------------------
 ! Distances in atomic units (Bohr).
 ! Densities in atomic units (electrons/Bohr**3)
@@ -683,8 +683,9 @@ C                                 as DVc(spin1)/Dn(spin2)
 MODULE siestaXC
 
 ! Real kinds (precision) of arguments
-  USE precision, only: dp      ! Standard real-kind precision
-  USE precision, only: grid_p  ! Precision for grid arrays
+
+  USE precision, only: siestaXC_std_p => dp  ! Standard real-kind precision
+  USE precision, only: siestaXC_grid_p => grid_p  ! Precision for grid arrays
 
 ! Main entry routines of siestaXC library
   USE m_atomXC, only: atomXC   ! XC for a spherical charge distribution
