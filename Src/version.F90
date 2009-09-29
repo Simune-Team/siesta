@@ -25,6 +25,10 @@ implicit none
 
 ! After it is done, this file should be commited.
 
+! Note that the version triplet is not updated until a release is
+! done. The version string in Src/version.info holds the relevant
+! information.
+
 integer, dimension(3), save  :: num_version = (/0,0,0/)
 character(len=*), parameter :: version_str =  &
 "SIESTA_VERSION"
@@ -50,8 +54,7 @@ subroutine prversion
 use version_info
 implicit none
 
-write(6,'(2a)') "Siesta Version: ", &
-                    trim(version_str)
+write(6,'(2a)') "Siesta Version: ", trim(version_str)
 write(6,'(2a)') 'Architecture  : ', siesta_arch
 write(6,'(2a)') 'Compiler flags: ', fflags
 
@@ -61,8 +64,11 @@ write(6,'(a)') 'PARALLEL version'
 write(6,'(a)') 'SERIAL version'
 #endif
 
+#ifdef TRANSIESTA
+write(6,'(a)') 'TRANSIESTA support'
+#endif
 #ifdef CDF
-write(6,'(a)') 'NetCDF-capable'
+write(6,'(a)') 'NetCDF support'
 #endif
 
 end subroutine prversion

@@ -3,14 +3,14 @@
 #
 # You can edit the SIESTA macro here, or pass it on the command line
 #
-SIESTA=../../../Src/siesta
+SIESTA=../../../siesta
 #
 # Example for BSC runs
 #
-#SIESTA= mpirun -np 4 -machinefile $(HOME)/siesta-test-hfile ../../../Src/siesta
+#SIESTA= mpirun -np 4 -machinefile $(HOME)/siesta-test-hfile ../../../siesta
 #
 #----------------------------------------------------------------------------
-XML-TESTER=../../Src/xmlparser/test-xml
+XML-TESTER=../../Util/test-xml/test-xml
 XML-REFERENCE=../../Tests/Reference-xml
 #
 label=work

@@ -140,8 +140,8 @@ c
 c
 c     Read-in GF(q)'s
 c
-      real*8, dimension (:,:), pointer:: qL,qR
-      real*8, dimension (:), pointer:: wqL,wqR
+C      real*8, dimension (:,:), pointer:: qL,qR
+C      real*8, dimension (:), pointer:: wqL,wqR
 
        integer,dimension(:), allocatable ::
      . lastoL,! L uc. atoms (from read-in superc)
@@ -734,7 +734,7 @@ c LEFT:
      & ispin,kpoint,zenergy,iEn)     
     
          call getsfe(USEBULK,joutfile,jgfL,
-     &        HAAL,SAAL,ZEnergy,nqL,qL,wqL,
+     &        HAAL,SAAL,ZEnergy,nqL,
      &        ngL2,nuaL,lastoL,NA1L,NA2L,
      &        NGL,SFEL,GAMMAL)
 
@@ -764,7 +764,7 @@ c RIGHT:
 
 
          call getsfe(USEBULK,joutfile,jgfR,
-     &        HAAR,SAAR,ZEnergy,nqR,qR,wqR,
+     &        HAAR,SAAR,ZEnergy,nqR,
      &        ngR2,nuaR,lastoR,NA1R,NA2R,
      &        NGR,SFER,GAMMAR)
 

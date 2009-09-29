@@ -25,11 +25,11 @@ RANLIB=echo
 #
 NETCDF_LIBS=
 NETCDF_INTERFACE=
-DEFS_CDF=
+FPPFLAGS_CDF=
 #
 MPI_INTERFACE=
 MPI_INCLUDE=
-DEFS_MPI=
+FPPFLAGS_MPI=
 #
 GUIDE=/opt/intel/mkl/lib/32/libguide.a
 LAPACK=/opt/intel/mkl/lib/32/libmkl_lapack.a
@@ -37,14 +37,14 @@ BLAS=/opt/intel/mkl/lib/32/libmkl_p3.a
 #G2C=/usr/lib/gcc-lib/i386-redhat-linux/2.96/libg2c.a
 LIBS=$(LAPACK) $(BLAS) $(G2C) $(GUIDE)  -lpthread 
 SYS=bsd
-DEFS= $(DEFS_CDF) $(DEFS_MPI)
+FPPFLAGS= $(FPPFLAGS_CDF) $(FPPFLAGS_MPI)
 #
 .F.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 .F90.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f90.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 #

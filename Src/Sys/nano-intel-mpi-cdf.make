@@ -32,26 +32,26 @@ COMP_LIBS=
 RANLIB=echo
 #
 NETCDF_ROOT=/share/apps/netcdf-3.6.2-ifort
-INCFLAGS=-I$(NETCDF_ROOT)/include
-DEFS_CDF=-DCDF
+NETCDF_INCFLAGS=-I$(NETCDF_ROOT)/include
+FPPFLAGS_CDF=-DCDF
 #
 MPI_INTERFACE=libmpi_f90.a
 MPI_INCLUDE=.      # Note . for no-op
-DEFS_MPI=-DMPI
+FPPFLAGS_MPI=-DMPI
 #
 NETCDF_LIBS= -L$(NETCDF_ROOT)/lib -lnetcdf
 LIBS=-L/opt/intel/mkl/10.0.3.020/lib/em64t \
      -lmkl_scalapack -lmkl_blacs_intelmpi20_lp64 \
      -lmkl_lapack -lmkl_em64t -lguide $(EXTRA_LIBS) $(NETCDF_LIBS)
 SYS=nag
-DEFS= $(DEFS_CDF) $(DEFS_MPI)
+FPPFLAGS= $(FPPFLAGS_CDF) $(FPPFLAGS_MPI)
 #
 .F.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 .F90.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f90.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 #

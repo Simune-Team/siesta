@@ -5,7 +5,7 @@ C             either in XBS file with arrows,
 C             or into animated AXBS file vizualizing vibration modes,
 C             to be further worked on with XCrySDen
 C
-C             Written by Andrei Postnikov, Nov 2005   Vers_0.2
+C             Written by Andrei Postnikov, Mar 2006   Vers_0.3
 C             apostnik@uos.de
 C
       program vib2xsf
@@ -21,12 +21,13 @@ C
       character inpfil*60,outfil*60,syslab*30,alab*1,
      .          itochar*10,modlab*10
       character(len=2), allocatable :: label(:)
-      external test_xv,read_xv,read_ev,itochar,inver3
+      external test_xv,read_xv,read_ev,itochar,inver3,opnout
 
       write (6,701,advance="no")
   701 format(" Specify  SystemLabel (or 'siesta' if none): ")
       read (5,*) syslab
-      inpfil = syslab(1:len_trim(syslab))//'.XV'
+C     inpfil = syslab(1:len_trim(syslab))//'.XV'
+      inpfil = trim(syslab)//'.XV'
       open (ii1,file=inpfil,form='formatted',status='old',err=801)
       call test_xv(ii1,nat)
       allocate (ityp(nat))
@@ -67,7 +68,8 @@ C     will crash XCrySDen.
   702 format(' Specify SystemLabel of vibrator calculation ',
      .       "(or 'siesta' if none): ")
       read (5,*) syslab
-      inpfil = syslab(1:len_trim(syslab))//'.vectors'
+C     inpfil = syslab(1:len_trim(syslab))//'.vectors'
+      inpfil = trim(syslab)//'.vectors'
       open (ii2,file=inpfil,form='formatted',status='old',err=801)
       write (6,703) nat*3
   703 format(' select first and last modes (out of ',i5,
@@ -99,16 +101,17 @@ C --- recover atom displacements within each mode with convenient scaling:
 C --- write each pattern into a separate file:
       do iev=ivmin,ivmax
         modlab = itochar(iev)  
-        outfil = syslab(1:len_trim(syslab))//'.Mode_'//
-     .           modlab(1:len_trim(modlab))//'.XSF'
-        open (io1,file=outfil,form='formatted',status='new',err=802)
+C       outfil = syslab(1:len_trim(syslab))//'.Mode_'//
+C    .           modlab(1:len_trim(modlab))//'.XSF'
+        outfil = trim(syslab)//'.Mode_'//trim(modlab)//'.XSF'
+        call opnout(io1,outfil)
         call write_arrow(io1,is1,nbox,ivmin,ivmax,iev,
      .                   cc_ang,nat,iz,freq,disp)
         close (io1)
- 
-        outfil = syslab(1:len_trim(syslab))//'.Mode_'//
-     .           modlab(1:len_trim(modlab))//'.AXSF'
-        open (io2,file=outfil,form='formatted',status='new',err=802)
+C       outfil = syslab(1:len_trim(syslab))//'.Mode_'//
+C    .           modlab(1:len_trim(modlab))//'.AXSF'
+        outfil = trim(syslab)//'.Mode_'//trim(modlab)//'.AXSF'
+        call opnout(io2,outfil)
         call write_movie(io2,is1,nbox,ivmin,ivmax,iev,
      .                   cc_ang,nat,iz,freq,disp,nsteps)
         close (io2)
@@ -117,10 +120,7 @@ C --- write each pattern into a separate file:
       stop
 
   801 write (6,*) ' Error opening file ',
-     .            inpfil(1:len_trim(inpfil)),' as old formatted'
-      stop
-  802 write (6,*) ' Error opening file ',
-     .            outfil(1:len_trim(outfil)),' as new'
+     .              trim(inpfil),' as old formatted'
       stop
 
       end

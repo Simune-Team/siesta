@@ -1,44 +1,96 @@
-This directory contains programs or scripts that can be helpful
-in connection with the program SIESTA:
+This directory contains programs or scripts that can be helpful to
+process SIESTA output, or to supplement the functionality of the
+program.  Some of them are experimental. See the individual
+directories for documentation.
 
-vpsa2bin:    Converts formatted pseudopotential files to unformatted form.
-vpsb2asc:    Converts unformatted pseudopotential files to formatted form.
-pseudo-xml:  Conversion of pseudo files in XML format to formatted form.
-Plrho/plrho: Plots in 3D the electron density and other functions 
+COOP: Generation of COOP/COHP/PDOS curves for chemical analysis.
+
+Optimizer: General-purpose optimizer. Useful for basis-set and
+	   pseudopotential optimization (by A. Garcia)
+
+Projections: Compute projections of electronic structure of a system
+	     over the orbitals of a subsystem.
+
+MPI_test:    Tests to help diagonose the interface to MPI.
+
+pseudo-xml:  Converts pseudopotential files in XML format to .psf form.
+	     (by J. Junquera and A. Garcia)
+
+test-xml:    Experimental tool to compare two CML files.
+
+pseudo-xml: Conversion of pseudo files in XML format to formatted
+	    form.	    
+
+Plrho/plrho: Plots in 3D the electron density and other functions
              calculated by siesta (by Jose M. Soler)
-Denchar:     Produces 2D grid for maps, contour plots etc. of charge 
-             and spin density, and of wave-functions. 
-             Based on the density matrix and basis orbitals (by J. Junquera and
-             P. Ordejon).
-Contour:     grid2d: As Denchar but for any function defined in the 3D grid.
-             grid1d: Extracts a 1D line of data out of the 3D grid.
-             Based on the 3D grid (by E. Artacho)
-Contrib:     Code contributed by Siesta users (expanding collection). See
-             the individual documentation materials.
-MD:          Some sample scripts for the extraction of some MD information from
-             the output file (by A. Garcia)
-Vibra:       Package to compute phonon frequencies and modes (by P. Ordejon)
-Optical:     Calculation of optical properties (by D. Sanchez-Portal)
-PyAtom:      Some Python scripts for plotting and data extraction (by A. Garcia)
-pdosxml:     Utility to process the PDOS file (in XML format). (by A. Garcia)
-WFS:         Utilities for wavefunction-file manipulation
+
+Denchar: Produces 2D and 3D plots of charge and spin density, and of
+         wave-functions. Uses the density matrix and basis orbital
+         information (by J. Junquera and P. Ordejon).
+
+DensityMatrix: Utilities to process and convert density-matrix files.
+
+Gen-basis : Stand-alone program 'gen-basis' to generate basis sets and
+            KB projectors, and 'ioncat' program for extraction of
+            information from .ion files.
+
+Contour: grid2d: As Denchar but for any function defined in the 3D
+         grid.  grid1d: Extracts a 1D line of data out of the 3D grid.
+         Based on the 3D grid (by E. Artacho)
+
+Contrib: Code contributed by Siesta users (expanding collection). See
+	 the individual documentation materials.
+
+MD: Some sample scripts for the extraction of some MD information from
+    the output file (by A. Garcia)
+
+Vibra: Package to compute phonon frequencies and modes (by P. Ordejon)
+
+Optical: Calculation of optical properties (by D. Sanchez-Portal)
+
+PyAtom: Python scripts for plotting and data extraction (by A. Garcia)
+
+pdosxml: Utility to process the PDOS file (in XML format). (by
+	 A. Garcia)
+
+WFS: Utilities for wavefunction-file manipulation
+
 STM/plstm:   Simple program for STM simulations (by P. Ordejon)
+
 STM/ol-stm:  Ordejon-Lorente STM image simulator
-gnubands:    Utility for simple band structure (and phonon dispersion) plots.
-Grid:        Utilities for the manipulation of grid files.
-sies2arc:    Converts output coordinates to the arc movie format (by J. Gale)
-Macroave:    Macroscopic averaging for interfaces and surfaces (by J. Junquera)
 
-SiestaSubroutine: Code and examples of the driving of Siesta by an external
-                  agent (by J. Soler and A. Garcia)
-Scripting:   Experimental scripting modules in Python (by A. Garcia)
+gnubands: Utility for simple band structure (and phonon dispersion)
+	  plots.
 
-VCA:         Utilities to help in Virtual-Crystal calculations (by A. Garcia)
+Grid: Utilities for the manipulation of grid files.
+
+sies2arc: Converts output coordinates to the arc movie format (by
+	  J. Gale)
+
+CMLComp: Tools to use the information contained in the CML file
+         produced by the program (by Toby White, Andrew Walker,
+         and others)
+
+Macroave: Macroscopic averaging for interfaces and surfaces (by
+	  J. Junquera)
+
+SiestaSubroutine: Code and examples of the driving of Siesta by an
+                  external agent (by J. Soler and A. Garcia)
+
+Scripting: Experimental scripting modules in Python (by A. Garcia)
+
+VCA: Utilities to help in Virtual-Crystal calculations (by A. Garcia)
+
+MM_Examples: Force-field examples
+
+vpsa2bin: Converts formatted pseudopotential files to unformatted
+	  form.
+
+vpsb2asc: Converts unformatted pseudopotential files to formatted
+	  form.
 
 Other useful resources:
 
 Directory Tutorials/Bases contains examples and scripts to help
 in the generation of basis sets and KB projectors.
 
-Forthcoming: Scripts and other tools to use the information in XML format
-             produced by the program.

@@ -332,6 +332,11 @@ end subroutine cp_gf_vars
         nullify(s01)
         nullify(lasto)
 
+! FDN To be changed !!!
+        allocate(h00(1))
+        allocate(s00(1))
+        allocate(h01(1))
+        allocate(s01(1))
 
 ! initialize and get nspinin         
         tinit=.true.
@@ -342,6 +347,13 @@ end subroutine cp_gf_vars
         call sethhm2(joutfile,tinit,tkham,tlast,kpoint,ispin, &
           hsfile, nua,lasto,ng1,nspin,cell,kscell,kdispl, &
           H00,s00,h01,s01) ! ->
+
+! FDN To be changed !!!
+        deallocate(h00)
+        deallocate(s00)
+        deallocate(h01)
+        deallocate(s01)
+
 
         if (LJob) then
           Lng1=ng1

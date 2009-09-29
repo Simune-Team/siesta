@@ -3264,7 +3264,7 @@ C
      .       'SPLIT: ERROR Orbital with angular momentum L=',l,
      .       ' not bound in the atom'
                          write(6,'(A)')
-     .       'SPLIT: ERROR a cut off radius must be explicitely given' 
+     .       'SPLIT: ERROR a cut off radius must be explicitly given' 
            call die
                        endif 
                        if(abs(eshift).gt.1.0d-5) then
@@ -3824,7 +3824,7 @@ C
      .       'NODES: ERROR Orbital with angular momentum L=',l,
      .       ' not bound in the atom'
                          write(6,'(A)')
-     .       'NODES: ERROR a cut off radius must be explicitely given' 
+     .       'NODES: ERROR a cut off radius must be explicitly given' 
           call die
                        endif 
  
@@ -4069,7 +4069,7 @@ C
      .       'NONODES: ERROR Orbital with angular momentum L=',l,
      .       ' not bound in the atom'
                          write(6,'(A)')
-     .       'NONODES: ERROR a cut off radius must be explicitely given'
+     .       'NONODES: ERROR a cut off radius must be explicitly given'
                          call die
                        endif 
  
@@ -4407,7 +4407,7 @@ C
      .  'SPLITGAUSS: ERROR Orbital with angular momentum L=',l,
      .       ' not bound in the atom'
                          write(6,'(A)')
-     .  'SPLITGAUSS: ERROR a cut off radius must be explicitely given' 
+     .  'SPLITGAUSS: ERROR a cut off radius must be explicitly given' 
           call die
                        endif 
  
@@ -4443,7 +4443,7 @@ Cas the gaussian exponent
                     write(6,'(/a,/a,a)')
      .'SPLITGAUSS: ERROR: with SPLITGAUSS option the compression ',
      .'SPLITGAUSS: ERROR: factors for all the augmentation functions',
-     .   ' must be explicitely specified' 
+     .   ' must be explicitly specified' 
                     call die
                   endif
                   gexp=abs(lambda(izeta,l,nsm))
@@ -5109,7 +5109,7 @@ C
 
                integer
      .           l, nrc, nsp, ir,indx,
-     .           ipol, nsm, nrcomp
+     .           ipol, nsm, nrcomp, lpol
 
                real(dp)
      .           rc, rcpol(nzetmx,0:lmaxd,nsemx),
@@ -5123,10 +5123,12 @@ C
 
       logical::filterorbitals, new_split_code, split_tail_norm
       logical :: fix_split_table
+      logical :: old_style_pol
       real(dp)::kmax, kmax_tol, etol, paofilterFactor, spln_min
       integer :: n_eigen
       real(dp),allocatable,dimension(:) :: forb !filtered orbital
       
+           old_style_pol = fdf_boolean('PAO.OldStylePolorbs',.true.)
            split_tail_norm=fdf_boolean('PAO.SplitTailNorm',.false.)
            fix_split_table=fdf_boolean('PAO.FixSplitTable',.false.)
            if (split_tail_norm .or. fix_split_table) then
@@ -5177,7 +5179,13 @@ C Calculate the soft-confinement potential for the polarization orbitals
 !                 Generate the polarization function perturbatively 
 !                 from the original PAO**
 
-                  call polarization(a,rofi,rphi(1,l,nsm),vps(1,l),
+                  ! Use the correct l for the pseudo, unless prevented
+                  if (old_style_pol) then
+                     lpol = l
+                  else
+                     lpol = l+1
+                  endif
+                  call polarization(a,rofi,rphi(1,l,nsm),vps(1,lpol),
      .                 vePAOsoft,drdi,nrc,l,ePAO(l,nsm),g,nrc)
 
                        dnrm=0.0d0
@@ -5574,7 +5582,7 @@ C
                     write(6,'(a)')
      .     'Bessel: ERROR Zero cut-off radius with Z=-100 option'
                     write(6,'(a)')
-     .     'Bessel: ERROR Cut-off radius must be explicitely specified'
+     .     'Bessel: ERROR Cut-off radius must be explicitly specified'
                     write(6,'(a)')
      .     'Bessel: ERROR using Z=-100 (Floating Bessel functions)'
                   call die

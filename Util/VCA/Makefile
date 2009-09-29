@@ -36,7 +36,7 @@ FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 #
 DEFS:=$(DEFS) $(DEFS_PREFIX)-UMPI
-FPPFLAGS=$(DEFS)
+FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX)-UMPI
 #
 # Uncomment the following line for debugging support
 #

@@ -33,7 +33,7 @@ M4_FILES = m4/ac_config_aux_dirs.m4  m4/TW_CHECK_FC_FPP.m4      m4/TW_FC_ID_FLAG
 aclocal.m4: $(M4_FILES)
 	cat ${<D}/$(M4_FILES)  > aclocal.m4
 dep:
-	@if [ $(VPATH) == "." ] ; then \
+	@if [ $(VPATH) = "." ] ; then \
 	sfmakedepend --depend=obj  --modext=o \
                               *.f *.f90 *.F *.F90 ; \
         else \
@@ -44,14 +44,17 @@ dep:
 	@mv tmp.Makefile Makefile
 #
 include arch.make
+INCFLAGS:= $(NETCDF_INCFLAGS) $(INCFLAGS)
 #
 # Uncomment the following line for debugging support
 #
 ##FFLAGS=$(FFLAGS_DEBUG)
 #
+.PHONY: .siesta .transiesta what version
+#
 what:
 	@echo
-	@if [ "$(VPATH)" == . ]; then \
+	@if [ "$(VPATH)" = . ]; then \
               echo "** You can no longer build SIESTA in Src." ;\
               echo "** Go to the Obj directory and see the README file." ;\
               false ;\
@@ -73,7 +76,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	chempot.o coceri.o constr.o coxmol.o cross.o compute_norm.o \
 	denmat.o denmatlomem.o detover.o dfscf.o dhscf.o diagon.o digcel.o fft3d.o \
 	diagg.o diagk.o diagk_file.o diagkp.o diag2g.o diag2k.o diagpol.o \
-	diagsprl.o dipole.o dismin.o dnaefs.o dot.o  \
+	diagsprl.o dipole.o dismin.o dnaefs.o doping.o dot.o  \
 	efield.o egandd.o ener3.o ener3lomem.o extrapolon.o \
 	fixed.o flib_spline.o gradient.o gradientlomem.o grdsam.o \
 	hsparse.o idiag.o  initatom.o inver.o iodm_netcdf.o \
@@ -143,7 +146,11 @@ FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 #
 $(FoX_configured):
-	(cd FoX; if [ "$(VPATH)" = . ]; then CONFIGURE="./configure"; else CONFIGURE="$(VPATH)/FoX/configure"; fi; $$CONFIGURE VPATH="$(VPATH)/FoX" FC="$(FC_SERIAL)" FCFLAGS="$(FFLAGS)" --enable-wcml $(DUMMY_FOX) || false )
+	(cd FoX; touch arch.make ; \
+         CONFIGURE="$(VPATH)/FoX/configure"; \
+         $$CONFIGURE VPATH="$(VPATH)/FoX" \
+         FC="$(FC_SERIAL)" FCFLAGS="$(FFLAGS)" \
+         --enable-wcml $(DUMMY_FOX) || false )
 #
 # Note we have to make sure to use the same compiler as SIESTA,
 # and pick up all the same FFLAGS, and also remember to maybe ask for a dummy library.
@@ -171,9 +178,6 @@ XMLPARSER=libxmlparser.a
 $(XMLPARSER): 
 	(cd xmlparser ; $(MAKE) "VPATH=$(VPATH)/xmlparser" module)
 #
-# Routines using xmlparser calls.
-#
-######  somefile.o : $(WXML)
 #--------------------------------------------------------------
 FDF=libfdf.a
 $(FDF): 
@@ -222,8 +226,16 @@ version: version.F90
 	@mv compinfo.o version.o
 	#@rm -f compinfo.F90
 	@echo
-
-siesta: version $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
+#
+check-siesta:
+	@if [ -f .transiesta ]; then \
+              echo "** You were building transiesta in this directory." ;\
+              echo "** Please type 'make clean' first " ;\
+              false ;\
+	fi
+	@touch .siesta
+#
+siesta: check-siesta what version $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
                 $(COMP_LIBS) $(ALL_OBJS) 
 	$(FC) -o siesta \
 	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML) $(XMLPARSER) $(MPI_INTERFACE)\
@@ -237,28 +249,41 @@ TS_OBJS= m_ts_options.o m_ts_aux_rout.o m_ts_kpoints.o \
          m_ts_io.o m_ts_scattering.o m_ts_contour.o m_ts_electrode.o \
          m_ts_in_siesta.o
 #
-# Libraries that might need to be compiled
+transiesta: FPPFLAGS+=$(DEFS_PREFIX)-DTRANSIESTA 
+transiesta: DEFS+=$(DEFS_PREFIX)-DTRANSIESTA
+check-ts:
+	@if [ -f .siesta ]; then \
+              echo "** You were building plain siesta in this directory." ;\
+              echo "** Please type 'make clean' first" ;\
+              false ;\
+	fi
+	@touch .transiesta
+#
+# Library that might need to be compiled
 #
 zgesv_lapack.a: Libs/zgesv_lapack.f
 	@echo "==> Compiling zgesv_lapack.a in Libs..."
 	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" zgesv_lapack.a)
 #
-transiesta: what version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
+transiesta: check-ts what version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF)  \
                     $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
 	$(FC) -o transiesta \
-               $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(WXML) $(XMLPARSER)\
-               $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(COMP_LIBS) $(FoX_LIBS) $(LIBS)
+               $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) \
+               $(MPI_INTERFACE) $(NETCDF_INTERFACE) \
+               $(COMP_LIBS) $(FoX_LIBS) $(LIBS)
 #
 #
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
-	rm -f siesta  *.o  *.a *.pcl *.pc
+	rm -f siesta transiesta *.o  *.a *.pcl *.pc
+	rm -f .siesta .transiesta
 	rm -f *.mod
 	rm -f *.bck *~
 	rm -f aux_*.f aux_*.f90
 	(cd fdf ; $(MAKE) clean)
-	(cd FoX ; $(MAKE) distclean)
+	(cd FoX ; touch arch.make ; $(MAKE) distclean)
 	(cd xmlparser ; $(MAKE) clean)
+	(cd wxml ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
 	(cd Libs ; $(MAKE) clean )
 #
@@ -348,6 +373,7 @@ diagsprl.o: atomlist.o fermid.o parallel.o parallelsubs.o precision.o
 diagsprl.o: siesta_geom.o sys.o
 dipole.o: parallel.o precision.o sys.o
 dnaefs.o: atmfuncs.o mneighb.o precision.o
+doping.o: meshsubs.o meshsubs.o parallel.o precision.o sys.o
 dynamics.o: atomlist.o files.o ioxv.o m_mpi_utils.o parallel.o precision.o
 dynamics.o: sys.o units.o
 efield.o: atmfuncs.o parallel.o parallelsubs.o parsing.o precision.o
@@ -454,7 +480,7 @@ m_ts_io.o: precision.o sys.o
 m_ts_kpoints.o: minvec.o parallel.o precision.o siesta_cml.o siesta_options.o
 m_ts_kpoints.o: sys.o units.o
 m_ts_options.o: m_fdf_global.o parallel.o precision.o siesta_options.o sys.o
-m_ts_scattering.o: m_ts_aux_rout.o parallelsubs.o precision.o sys.o
+m_ts_scattering.o: m_ts_aux_rout.o parallelsubs.o precision.o sys.o m_ts_options.o
 m_wallclock.o: m_walltime.o
 madelung.o: parallel.o precision.o sys.o
 matel.o: alloc.o atmfuncs.o precision.o radfft.o recipes.o spher_harm.o

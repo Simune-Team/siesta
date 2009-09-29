@@ -33,24 +33,24 @@ RANLIB=echo
 #
 NETCDF_LIBS=
 NETCDF_INTERFACE=
-DEFS_CDF=
+FPPFLAGS_CDF=
 #
 MPI_INTERFACE=libmpi_f90.a
 MPI_INCLUDE=.      # Note . for no-op
-DEFS_MPI=-DMPI
+FPPFLAGS_MPI=-DMPI
 #
 LIBS=-L/opt/intel/mkl/10.0.3.020/lib/em64t \
      -lmkl_scalapack -lmkl_blacs_intelmpi20_lp64 \
      -lmkl_lapack -lmkl_em64t -lguide $(EXTRA_LIBS)
 SYS=nag
-DEFS= $(DEFS_CDF) $(DEFS_MPI)
+FPPFLAGS= $(FPPFLAGS_CDF) $(FPPFLAGS_MPI)
 #
 .F.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 .F90.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f90.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 #
