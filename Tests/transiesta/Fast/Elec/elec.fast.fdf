@@ -64,7 +64,6 @@ SolutionMethod Diagon
 
 DM.MixSCF1   T
 MaxSCFIterations      300           # Maximum number of SCF iter
-DM.MixH               T
 DM.MixingWeight       0.03          # New DM amount for next SCF cycle
 DM.Tolerance          1.d-4         # Tolerance in maximum difference
 DM.UseSaveDM          true          # to use continuation files
