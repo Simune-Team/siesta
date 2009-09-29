@@ -140,8 +140,8 @@ c
 c
 c     Read-in GF(q)'s
 c
-      real*8, dimension (:,:), pointer:: qL,qR
-      real*8, dimension (:), pointer:: wqL,wqR
+C      real*8, dimension (:,:), pointer:: qL,qR
+C      real*8, dimension (:), pointer:: wqL,wqR
 
        integer,dimension(:), allocatable ::
      . lastoL,! L uc. atoms (from read-in superc)
@@ -734,7 +734,7 @@ c LEFT:
      & ispin,kpoint,zenergy,iEn)     
     
          call getsfe(USEBULK,joutfile,jgfL,
-     &        HAAL,SAAL,ZEnergy,nqL,qL,wqL,
+     &        HAAL,SAAL,ZEnergy,nqL,
      &        ngL2,nuaL,lastoL,NA1L,NA2L,
      &        NGL,SFEL,GAMMAL)
 
@@ -764,7 +764,7 @@ c RIGHT:
 
 
          call getsfe(USEBULK,joutfile,jgfR,
-     &        HAAR,SAAR,ZEnergy,nqR,qR,wqR,
+     &        HAAR,SAAR,ZEnergy,nqR,
      &        ngR2,nuaR,lastoR,NA1R,NA2R,
      &        NGR,SFER,GAMMAR)
 
@@ -793,11 +793,11 @@ c on return GFRGF contains GF^dagger.GammaR.GF
 
 #ifdef CDF
 c write datafile with hamiltonian, overlap, self-energies to netcdf-file
-      if(OutputRegionData)  then
-         CALL OutputRegion(USEBULK,RDORTHO,joutfile,Volt,NEn,
-     .        ispin,nspin,isobegin,isoend,nou,
-     .        H,S,NGL,SFEL,NGR,SFER,ZEnergy)
-      end if !OutputRegionData
+C      if(OutputRegionData)  then
+C         CALL OutputRegion(USEBULK,RDORTHO,joutfile,Volt,NEn,
+C     .        ispin,nspin,isobegin,isoend,nou,
+C     .        H,S,NGL,SFEL,NGR,SFER,ZEnergy)
+C      end if !OutputRegionData
 #endif !CDF
 
       

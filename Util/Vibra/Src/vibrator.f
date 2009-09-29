@@ -65,6 +65,9 @@ c Internal variables ...
       real*8 
      .  dx, alat, alp, blp, clp, alplp, betlp, gamlp, pi, xxx
 
+      real*8
+     .  zpe, planck
+
       real*8 phi0(3,maxa,3,maxa,-maxx:maxx,-maxy:maxy,-maxz:maxz),
      .        phi(3,maxa,3,maxa,-maxx:maxx,-maxy:maxy,-maxz:maxz)
       real*8 pp(3,maxa,-maxx:maxx,-maxy:maxy,-maxz:maxz),
@@ -90,12 +93,18 @@ c Conversion factor from dsqrt(K/M) in eV and Ang to cm**-1 is 519.6
       parameter (xmagic=519.6d0)
 
       external
-     .  io_assign, io_close, paste
+     .  paste
+c     .  io_assign, io_close, paste
 
       data pi / 3.1415926d0 /
       data overflow /.false./
       data nk / 0 /
 
+c ZPE contains the zero point energy of the system
+      zpe = 0.0d0
+
+c Planck contains planck's constant in eV.cm
+      planck = 6.62618d-5*2.997925d0/1.602189d0
 c ...
      
 
@@ -551,7 +560,7 @@ c Loop over modes
 c Mass weight eigenvectors
               rmass = 1.0d0/sqrt(xmass(j))
               do ii = 1,3
-                vecmw(ii) = dcmplx(zr(ind+ii,i),zi(ind+ii,i))
+                vecmw(ii) = cmplx(zr(ind+ii,i),zi(ind+ii,i))
                 vecmw(ii) = vecmw(ii)*rmass
               enddo
 
@@ -578,9 +587,15 @@ c convert to cm**-1. the conversion factor is xmagic (511**2)
             omega(i)=-omega(i)
             omega(i)=-dsqrt(omega(i))
 c        write(*,*)' Caution: omega**2 .lt.0.0 .....',
-c     1 ' sqrt(abs(omega2))=',omega(i)
+c     1	' sqrt(abs(omega2))=',omega(i)
           end if
           write(*,*)' eigenvalue #',i,' omega=',omega(i)
+
+c Add zero point energy contribution for positive modes
+          if (omega(i).gt.0.0d0) then
+            zpe = zpe + omega(i)
+          endif
+
           ek(i,ik) = omega(i)
 5       continue
 
@@ -591,8 +606,8 @@ c write the eigenvalues and eigenvectors to output data file.
           fname = paste(slabel,'.vectors')
           open(iunit3,file=fname,status='unknown')
           if (ik.eq.1) then
-            write(6,'(/,a)')' Writing eigenvalues and eigenvectors'
-            write(6,'(2a,/)')' to output file ', fname
+	    write(6,'(/,a)')' Writing eigenvalues and eigenvectors'
+	    write(6,'(2a,/)')' to output file ', fname
           else
 c         go to end of file
 18          read(iunit3,*,end=28)
@@ -601,23 +616,28 @@ c         go to end of file
 28        continue
           write(iunit3,'(/,a,3f12.6)') 'k            = ',
      .                                  q(1),q(2),q(3)
-          do 20 i=1,3*natoms
-            write(iunit3,'(a,i5)')     'Eigenvector  = ',i
-            write(iunit3,'(a,f12.6)')  'Frequency    = ',omega(i)
+	  do 20 i=1,3*natoms
+	    write(iunit3,'(a,i5)')     'Eigenvector  = ',i
+	    write(iunit3,'(a,f12.6)')  'Frequency    = ',omega(i)
             if (intensity) then
-              write(iunit3,'(a,f12.6)')  'IR Intensity = ',IRinten(i)
+	      write(iunit3,'(a,f12.6)')  'IR Intensity = ',IRinten(i)
             endif
-            write(iunit3,'(a)')        'Eigenmode (real part)'
-            write(iunit3,'(3e12.4)') (zr(j,i),j=1,3*natoms)
-            write(iunit3,'(a)')        'Eigenmode (imaginary part)'
-            write(iunit3,'(3e12.4)') (zi(j,i),j=1,3*natoms)
-20        continue
-          call io_close(iunit3)
+	    write(iunit3,'(a)')        'Eigenmode (real part)'
+	    write(iunit3,'(3e12.4)') (zr(j,i),j=1,3*natoms)
+	    write(iunit3,'(a)')        'Eigenmode (imaginary part)'
+	    write(iunit3,'(3e12.4)') (zi(j,i),j=1,3*natoms)
+20	  continue
+	  call io_close(iunit3)
         endif
 Cc =================================================================
 
       enddo
 
+c Finish computation of zero point energy (averaged across k points) and output
+      if (nk.gt.0) then
+        zpe = 0.5d0*planck*zpe/dble(nk)
+        write(*,'('' Zero point energy = '',f20.6,'' eV'')') zpe
+      endif
 
 c Write eigenvalues ...
       if (nk .gt. 0) then
@@ -631,5 +651,3 @@ C ...
 Cc
       stop
       end
-
-

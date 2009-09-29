@@ -136,8 +136,10 @@ C
 #endif
       implicit          none
 
-      integer           maxk, nk
-      real(dp)          kpoint(3,maxk)
+      integer, intent(in) :: maxk
+      integer, intent(out) :: nk
+      real(dp), pointer ::  kpoint(:,:)
+
       character         paste*30
       external          paste, redcel
 C *********************************************************************
@@ -208,7 +210,7 @@ C Find scale used in k point data
             scale = fdf_string( 'BandLinesScale', 'pi/a' )
           endif
 #ifdef MPI
-          call MPI_Bcast(scale,30,MPI_double_precision,0,
+          call MPI_Bcast(scale,30,MPI_character,0,
      .      MPI_Comm_World,MPIerror)
 #endif
           if (scale .eq. 'pi/a') then

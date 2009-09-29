@@ -54,8 +54,7 @@ subroutine prversion
 use version_info
 implicit none
 
-write(6,'(2a)') "Siesta Version: ", &
-                    trim(version_str)
+write(6,'(2a)') "Siesta Version: ", trim(version_str)
 write(6,'(2a)') 'Architecture  : ', siesta_arch
 write(6,'(2a)') 'Compiler flags: ', fflags
 
@@ -65,8 +64,11 @@ write(6,'(a)') 'PARALLEL version'
 write(6,'(a)') 'SERIAL version'
 #endif
 
+#ifdef TRANSIESTA
+write(6,'(a)') 'TRANSIESTA support'
+#endif
 #ifdef CDF
-write(6,'(a)') 'NetCDF-capable'
+write(6,'(a)') 'NetCDF support'
 #endif
 
 end subroutine prversion

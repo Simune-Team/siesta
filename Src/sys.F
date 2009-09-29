@@ -57,8 +57,8 @@
             write(6,'(a)') trim(str)
             write(0,'(a)') trim(str)
          endif
-         write(6,'(a,i4)') 'Stopping Program from Node: ', Node
-         write(0,'(a,i4)') 'Stopping Program from Node: ', Node
+         write(6,'(a,i4)') 'ERROR STOP from Node: ', Node
+         write(0,'(a,i4)') 'ERROR STOP from Node: ', Node
 !!                                       endif
          if (Node .eq. 0) then
             call pxfflush(6)
@@ -96,7 +96,7 @@
          if (present(str)) then
             write(6,'(a)') trim(str)
          endif
-         write(6,'(a)') 'Requested End of Run. Bye!!'
+         write(6,'(a)') 'User-Requested End of Run. Bye!!'
 !!                                       endif
 
          if (Node .eq. 0) call pxfflush(6)

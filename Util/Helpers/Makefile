@@ -1,56 +1,45 @@
 #
-# Makefile for tbtrans
+# Makefile for stand-alone get_chem_labels
 #
-.SUFFIXES:
+OBJDIR=Obj
+#
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
-# Please see note about Linear-Algebra libraries below
-#
-default: what  tbtrans 
-#
-SIESTA_DIR=../../Src
 VPATH:=$(shell pwd)/../../Src
-OBJDIR=Obj
+#
+default: get_chem_labels
+#
+dep:
+	sfmakedepend --depend=obj  --modext=o \
+          $(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90 
+#
 ARCH_MAKE=../../$(OBJDIR)/arch.make
 include $(ARCH_MAKE)
-
-# If compiling without system lapack, you might need something like this
-# 
-#TBTRANS_LINALG=linalg.a # Or maybe only: zgeev_lapack.a zgesv_lapack.a
-LINALG:= $(TBTRANS_LINALG) $(LINALG)
-
-SIESTA_SYS=${SIESTA_ARCH}
-
+#
+FC_DEFAULT:=$(FC)
+FC_SERIAL?=$(FC_DEFAULT)
+FC:=$(FC_SERIAL)         # Make it non-recursive
+#
+DEFS:=$(DEFS_PREFIX)-UMPI $(DEFS) 
+FPPFLAGS:=$(DEFS_PREFIX)-UMPI $(FPPFLAGS) 
+INCFLAGS:=$(NETCDF_INCFLAGS) $(INCFLAGS)
 #
 # Uncomment the following line for debugging support
 #
-#FFLAGS=$(FFLAGS_DEBUG) -g
+#FFLAGS=$(FFLAGS_DEBUG)
 #
-what:
-	@echo
-	@echo "Compilation architecture to be used:  $(SIESTA_SYS)"
-	@echo "If that is not what you want, give the correct"
-	@echo "value to the variable SIESTA_SYS in your shell environment."
-	@echo $(COMMENTS)
-	@echo
-
 SYSOBJ=$(SYS).o
-# Tbtrans:
-MOD_TOBJS=  m_tbt_options.o m_tbt_gf.o m_tbt_kpts.o hamil2.o tsread2.o
-
-SIESTA_OBJS= precision.o alloc.o  memoryinfo.o memory.o pxf.o \
-             timer.o m_mpi_utils.o m_fdf_global.o paste.o \
-             parallel.o sys.o io.o files.o  m_walltime.o zheevds.o
-
-TBTOBJS= $(SIESTA_OBJS) $(MOD_TOBJS) $(SYSOBJ) $(EXTRA) \
-         tbtrans.o transmission.o   \
-         calc_green.o cdiag_local.o getsfe.o \
-         mkRealContour.o reinit_tb.o setupkham2.o TSiohs.o atompdos.o coop.o \
-         csolve.o teigchana.o helpers.o \
-         Lowdin.o netcdfwrite.o 
-
 #
-# Interfaces to libraries
+# Note that machine-specific files are now in top Src directory.
+#
+OBJS_GET_CHEM_LABELS=precision.o f2kcli.o parallel.o \
+          chemical.o io.o \
+          memoryinfo.o memory.o periodic_table.o\
+          pxf.o atom_options.o  \
+          sys.o get_chem_labels.o $(SYSOBJ)
+#
+#
+# Use the makefile in Src/fdf and all the sources there.
 #
 FDF=libfdf.a
 FDF_MAKEFILE=$(VPATH)/fdf/makefile
@@ -60,58 +49,16 @@ $(FDF):
                           "ARCH_MAKE=../$(ARCH_MAKE)" \
                           "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 #
-INCFLAGS:=$(NETCDF_INCFLAGS) $(INCFLAGS)
+get_chem_labels: $(FDF)  $(OBJS_GET_CHEM_LABELS)
+	$(FC) -o get_chem_labels \
+	       $(LDFLAGS) $(OBJS_GET_CHEM_LABELS) $(FDF) $(LIBS)
 #
-MPI_MAKEFILE=$(VPATH)/MPI/Makefile
-$(MPI_INTERFACE): 
-	(cd MPI ; $(MAKE) -f $(MPI_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/MPI" \
-                          "MAKEFILES=$(MPI_MAKEFILE)" "ARCH_MAKE=../$(ARCH_MAKE)" \
-                          "FFLAGS=$(FFLAGS)" module_built)
-#
-LINALG_MAKEFILE=$(VPATH)/Libs/makefile
-LINALG_INCFLAGS:=-I $(VPATH)/Libs $(INCFLAGS)
-$(LINALG): 
-	(cd Libs ; $(MAKE) -f $(LINALG_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/Libs" \
-                          "ARCH_MAKE=../$(ARCH_MAKE)" \
-                          "INCFLAGS=$(LINALG_INCFLAGS)" "FFLAGS=$(FFLAGS)" $(LINALG))
-#
-tbtrans: $(TBTOBJS) $(FDF) $(SYSOBJ) $(NETCDF_INTERFACE) $(LINALG)
-	$(FC) $(FFLAGS) $(LDFLAGS) -o tbtrans \
-              $(TBTOBJS) $(MPI_INTERFACE) $(NETCDF_INTERFACE) \
-              $(FDF) $(LIBS) $(LINALG)  || echo "***Please see top of Makefile"
-#	@(cd ../../bin ; rm -f tsScan ; ln -s tbtrans tsScan)
-
-#
-clean: 
+clean:
 	@echo "==> Cleaning object, library, and executable files"
-	rm -f tbtrans *.o *.a *.mod
+	rm -f get_chem_labels ioncat *.o  *.a
+	rm -f *.mod .tmp_fdflog
 	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
-	(cd MPI ; $(MAKE) -f $(MPI_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
-	(cd Libs ; $(MAKE) -f $(MPI_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
 
-readTSHScdf: readTSHScdf.F $(NETCDF_INTERFACE)
-	$(FC) -o readTSHScdf readTSHScdf.F $(NETCDF_INTERFACE) $(NETCDF_LIBS)
-
-#
-# Dependencies
-# 
-dep:
-	sfmakedepend --depend=obj  --modext=o \
-          $(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90 
-#
-$(TBTOBJS)      : $(FDF)
-reinit.o        : $(MPI_INTERFACE)
-sys.o           : $(MPI_INTERFACE) parallel.o
-m_mpi_utils.o   : sys.o
-m_tbt_gf.o      : m_tbt_kpts.o
-m_tbt_kpts      : m_tbt_options.o $(MPI_INTERFACE)
-TSprversion.o   : TSversion.h
-setupkham2.o	: tsread2.o
-tbtrans.o	: hamil2.o 
-green4.o        : greensub.o
-m_tbt_gf.o       : tsread2.o
-netcdfwrite.o   : $(NETCDF_INTERFACE)
-OutputRegionData.o: Lowdin.F $(NETCDF_INTERFACE)
 # DO NOT DELETE THIS LINE - used by make depend
 alloc.o: parallel.o precision.o sys.o
 arw.o: parallel.o sys.o
@@ -194,6 +141,7 @@ diagsprl.o: atomlist.o fermid.o parallel.o parallelsubs.o precision.o
 diagsprl.o: siesta_geom.o sys.o
 dipole.o: parallel.o precision.o sys.o
 dnaefs.o: atmfuncs.o mneighb.o precision.o
+doping.o: meshsubs.o meshsubs.o parallel.o precision.o sys.o
 dynamics.o: atomlist.o files.o ioxv.o m_mpi_utils.o parallel.o precision.o
 dynamics.o: sys.o units.o
 efield.o: atmfuncs.o parallel.o parallelsubs.o parsing.o precision.o
@@ -213,14 +161,13 @@ fire_optim.o: precision.o siesta_options.o units.o
 fixed.o: alloc.o parallel.o parsing.o precision.o
 flib_spline.o: precision.o
 forhar.o: alloc.o meshsubs.o precision.o
-fractional.o: f2kcli.o periodic_table.o precision.o pseudopotential.o sys.o
 get_target_stress.o: m_mpi_utils.o parallel.o precision.o units.o
 globalise.o: alloc.o onmod.o onmod.o precision.o spatial.o
 gradient.o: globalise.o m_mpi_utils.o onmod.o precision.o
 gradientlomem.o: globalise.o onmod.o precision.o
 grdsam.o: parallel.o parsing.o precision.o sys.o
-hsparse.o: alloc.o atmfuncs.o listsc.o mneighb.o parallel.o parallelsubs.o
-hsparse.o: precision.o sorting.o sys.o
+hsparse.o: alloc.o atm_types.o atmfuncs.o listsc.o mneighb.o parallel.o
+hsparse.o: parallelsubs.o precision.o sorting.o sys.o
 idiag.o: parallel.o sys.o
 initatom.o: atom.o atom_options.o basis_io.o basis_specs.o basis_types.o
 initatom.o: electrostatic.o old_atmfuncs.o precision.o
@@ -238,7 +185,6 @@ iohs.o: precision.o siesta_geom.o sys.o
 iokp.o: files.o precision.o
 iolwf.o: alloc.o files.o onmod.o parallel.o parallelsubs.o precision.o sys.o
 iomd.o: files.o precision.o
-ioncat.o: atm_types.o atmfuncs.o basis_io.o m_getopts.o precision.o
 iopipes.o: parallel.o precision.o sys.o
 iowfs_netcdf.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
 ioxv.o: files.o parallel.o precision.o
@@ -321,11 +267,8 @@ mixer.o: atomlist.o iodm_netcdf.o m_broyden_mixing.o m_energies.o
 mixer.o: m_fire_mixing.o m_iodm.o m_mpi_utils.o m_pulay.o m_spin.o m_steps.o
 mixer.o: m_ts_io.o m_ts_options.o parallel.o siesta_geom.o siesta_options.o
 mixer.o: sparse_matrices.o
-mixps.o: f2kcli.o flib_spline.o periodic_table.o precision.o pseudopotential.o
-mixps.o: sys.o
 mneighb.o: alloc.o precision.o sys.o
 molecularmechanics.o: alloc.o parallel.o parsing.o precision.o sys.o units.o
-mpi_test.o: m_mpi_utils.o parallel.o precision.o
 mulliken.o: atmfuncs.o parallel.o parallelsubs.o precision.o siesta_cml.o
 naefs.o: atmfuncs.o mneighb.o precision.o
 new_dm.o: alloc.o atomlist.o compute_norm.o m_energies.o m_iodm.o m_sparse.o
@@ -479,3 +422,64 @@ zm_fire_optim.o: m_fdf_global.o m_fire.o parallel.o precision.o
 zm_fire_optim.o: siesta_options.o units.o zmatrix.o
 zmatrix.o: alloc.o m_cell.o parallel.o parsing.o precision.o siesta_geom.o
 zmatrix.o: sys.o units.o
+band.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/bands.o
+diagmemory.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/memoryinfo.o
+listsc_module.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/listsc.o
+m_born_charge.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/born_charge.o
+m_broyden_optim.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/broyden_optim.o
+m_cell_broyden_optim.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/cell_broyden_optim.o
+m_cell_fire_optim.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/cell_fire_optim.o
+m_chempot.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/chempot.o
+m_compute_dm.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/compute_dm.o
+m_conjgr.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/conjgr.o
+m_conjgr_old.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/conjgr_old.o
+m_dynamics.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/dynamics.o
+m_fermid.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/fermid.o
+m_find_kgrid.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/find_kgrid.o
+m_fire_optim.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/fire_optim.o
+m_forhar.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/forhar.o
+m_hsparse.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/hsparse.o
+m_intramol_pressure.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/remove_intramol_pressure.o
+m_ioxv.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/ioxv.o
+m_ksv.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/ksv.o
+m_ksvinit.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/ksvinit.o
+m_local_dos.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/local_DOS.o
+m_minvec.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/minvec.o
+m_mixer.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/mixer.o
+m_new_dm.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/new_dm.o
+m_nlefsm.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/nlefsm.o
+m_norm.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/compute_norm.o
+m_normalize_dm.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/normalize_dm.o
+m_ordern.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/ordern.o
+m_overfsm.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/overfsm.o
+m_overlap.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/overlap.o
+m_post_scf_work.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/post_scf_work.o
+m_projected_dos.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/projected_DOS.o
+m_proximity_check.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/proximity_check.o
+m_radfft.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/radfft.o
+m_recipes.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/recipes.o
+m_scf_options.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/m_options.o
+m_scfconvergence_test.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/scfconvergence_test.o
+m_setup_hamiltonian.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/setup_hamiltonian.o
+m_siesta_analysis.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/siesta_analysis.o
+m_siesta_end.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/siesta_end.o
+m_siesta_forces.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/siesta_forces.o
+m_siesta_init.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/siesta_init.o
+m_siesta_move.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/siesta_move.o
+m_state_analysis.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/state_analysis.o
+m_state_init.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/state_init.o
+m_struct_init.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/struct_init.o
+m_timestamp.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/timestamp.o
+m_xyz_phiatm.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/matel.o
+m_zm_broyden_optim.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/zm_broyden_optim.o
+m_zm_fire_optim.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/zm_fire_optim.o
+mesh.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/meshsubs.o
+meshdscf.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/meshmatrix.o
+meshphi.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/meshsubs.o
+neighbour.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/mneighb.o
+on_core.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/onmod.o
+on_main.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/onmod.o
+version_info.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/version.o
+write_subs_energies.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/write_subs.o
+write_subs_positions.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/write_subs.o
+write_subs_pressure.o: /Users/ag/code/SIESTA/S2.6/ag-trunk-docs/Util/Helpers/../../Src/write_subs.o

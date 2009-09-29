@@ -33,7 +33,7 @@ M4_FILES = m4/ac_config_aux_dirs.m4  m4/TW_CHECK_FC_FPP.m4      m4/TW_FC_ID_FLAG
 aclocal.m4: $(M4_FILES)
 	cat ${<D}/$(M4_FILES)  > aclocal.m4
 dep:
-	@if [ $(VPATH) == "." ] ; then \
+	@if [ $(VPATH) = "." ] ; then \
 	sfmakedepend --depend=obj  --modext=o \
                               *.f *.f90 *.F *.F90 ; \
         else \
@@ -54,7 +54,7 @@ INCFLAGS:= $(NETCDF_INCFLAGS) $(INCFLAGS)
 #
 what:
 	@echo
-	@if [ "$(VPATH)" == . ]; then \
+	@if [ "$(VPATH)" = . ]; then \
               echo "** You can no longer build SIESTA in Src." ;\
               echo "** Go to the Obj directory and see the README file." ;\
               false ;\
@@ -146,7 +146,11 @@ FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 #
 $(FoX_configured):
-	(cd FoX; if [ "$(VPATH)" = . ]; then CONFIGURE="./configure"; else CONFIGURE="$(VPATH)/FoX/configure"; fi; $$CONFIGURE VPATH="$(VPATH)/FoX" FC="$(FC_SERIAL)" FCFLAGS="$(FFLAGS)" --enable-wcml $(DUMMY_FOX) || false )
+	(cd FoX; touch arch.make ; \
+         CONFIGURE="$(VPATH)/FoX/configure"; \
+         $$CONFIGURE VPATH="$(VPATH)/FoX" \
+         FC="$(FC_SERIAL)" FCFLAGS="$(FFLAGS)" \
+         --enable-wcml $(DUMMY_FOX) || false )
 #
 # Note we have to make sure to use the same compiler as SIESTA,
 # and pick up all the same FFLAGS, and also remember to maybe ask for a dummy library.
@@ -174,9 +178,6 @@ XMLPARSER=libxmlparser.a
 $(XMLPARSER): 
 	(cd xmlparser ; $(MAKE) "VPATH=$(VPATH)/xmlparser" module)
 #
-# Routines using xmlparser calls.
-#
-######  somefile.o : $(WXML)
 #--------------------------------------------------------------
 FDF=libfdf.a
 $(FDF): 
@@ -258,6 +259,11 @@ check-ts:
 	fi
 	@touch .transiesta
 #
+# Library that might need to be compiled
+#
+zgesv_lapack.a: Libs/zgesv_lapack.f
+	@echo "==> Compiling zgesv_lapack.a in Libs..."
+	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" zgesv_lapack.a)
 #
 transiesta: check-ts what version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF)  \
                     $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
@@ -275,8 +281,9 @@ clean:
 	rm -f *.bck *~
 	rm -f aux_*.f aux_*.f90
 	(cd fdf ; $(MAKE) clean)
-	(cd FoX ; $(MAKE) distclean)
+	(cd FoX ; touch arch.make ; $(MAKE) distclean)
 	(cd xmlparser ; $(MAKE) clean)
+	(cd wxml ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
 	(cd Libs ; $(MAKE) clean )
 #
@@ -473,7 +480,7 @@ m_ts_io.o: precision.o sys.o
 m_ts_kpoints.o: minvec.o parallel.o precision.o siesta_cml.o siesta_options.o
 m_ts_kpoints.o: sys.o units.o
 m_ts_options.o: m_fdf_global.o parallel.o precision.o siesta_options.o sys.o
-m_ts_scattering.o: m_ts_aux_rout.o parallelsubs.o precision.o sys.o
+m_ts_scattering.o: m_ts_aux_rout.o parallelsubs.o precision.o sys.o m_ts_options.o
 m_wallclock.o: m_walltime.o
 madelung.o: parallel.o precision.o sys.o
 matel.o: alloc.o atmfuncs.o precision.o radfft.o recipes.o spher_harm.o

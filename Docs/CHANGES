@@ -6,6 +6,34 @@
 ** CHANGES ALONG trunk 
 
 ------------------------------------------------------------------------
+2009-09-29  10:30:00 GMT Alberto Garcia <albertog@icmab.es>    trunk-299
+Update of TS section of manual. Assorted fixes.
+
+* Update of the TranSiesta section of the manual (P. Ordejon, F. Novaes)
+
+* Fixes and streamlined compilation of tbtrans program in Util/TBTrans
+  (F. Novaes, A. Garcia)
+
+* Update of 'doping' routine for doped slabs (P. Ordejon)
+
+* New 'si2x1h-dipole' test for the dipole correction feature (P. Ordejon)
+
+* Fixes to the building system (A. Walker, A. Garcia)
+
+* Fixes in 'bands.F' routine (A. Walker, J. Gale)
+
+* Added Util/WFS/info_wfsx.f program (A. Garcia)
+
+* New utility Util/Helpers/get_chem_labels (A. Garcia)
+
+* Added zero-point-motion to Util/Vibra/Src/vibrator.f (J. Gale)
+
+* Fix to avoid the handling of 'reduced_vlocal' when reading .ion files.
+  (A. Garcia)
+
+* Remove obsolete files from Src/fdf and clarify usage (A. Garcia)
+ 
+------------------------------------------------------------------------
 2009-09-11  11:30:00 GMT Alberto Garcia <albertog@icmab.es>    trunk-298
 Re-organization of the manual. Building fixes. Update of Contrib utils
 
