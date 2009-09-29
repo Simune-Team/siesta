@@ -1088,12 +1088,15 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
       call MPI_AllReduce(Current,Currentbuff,1,MPI_double_precision,
      .            MPI_sum,MPI_Comm_World,MPIerror)
 
+C Convert to Ampere
+      Currentbuff = Currentbuff*13.6058*38.73*1E-06
+
       if (IOnode) then
          write(joutfile,*) repeat('=',62)
          write(joutfile,*) 
          write(joutfile,*) 'Results:'
          write(joutfile,*) 
-         write(joutfile,'(a17,2ES16.8)') ' Volt, Current = ',
+         write(joutfile,'(a,2ES16.8)') ' Voltage, Current(A) = ',
      .                                Volt,Currentbuff
          write(joutfile,*)
          write(joutfile,*) repeat('=',62)
@@ -1101,11 +1104,14 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
       end if
 
 #else
+C Convert to Ampere
+         Current = Current*13.6058*38.73*1E-06
+
          write(joutfile,*) repeat('=',62)
          write(joutfile,*) 
          write(joutfile,*) 'Results:'
          write(joutfile,*)
-         write(joutfile,'(a17,2ES16.8)') 'Volt, Current = ',Volt,Current
+         write(joutfile,'(a,2ES16.8)') 'Voltage, Current(A) = ',Volt,Current
          write(joutfile,*)
          write(joutfile,*) repeat('=',62)
 
