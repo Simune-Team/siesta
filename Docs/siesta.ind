@@ -44,34 +44,34 @@
     \subitem split valence   for H, 21
     \subitem User basis, 27
     \subitem User basis (NetCDF format), 27
-  \item basis     \subitem PAO, 115
+  \item basis     \subitem PAO, 116
   \item {\bf     BasisPressure}, 28
   \item Berry phase, 67
   \item Bessel functions, 26
   \item \%block, 11
   \item {\bf BlockSize}, 73
-  \item {\bf Blocksize}, 105
+  \item {\bf Blocksize}, 106
   \item BLYP, 41
   \item Born effective charges, 68
   \item {\bf     BornCharge}, 87
   \item {\bf BornCharge}, 68
-  \item Broyden mixing, 43, 111
+  \item Broyden mixing, 43, 112
   \item Broyden optimization, 79
-  \item bug reports, 99
+  \item bug reports, 100
   \item bulk polarization, 67
 
   \indexspace
 
   \item CA, 40
-  \item cell     relaxation, 76
+  \item cell     relaxation, 77
   \item {\sc Cerius2}, 36
   \item {\bf ChangeKgridInMD}, 39
   \item Charge of the system, 69
   \item Chebyshev Polynomials, 57
   \item Chemical Potential, 57, 58
   \item {\bf ChemicalSpeciesLabel}, 14, 29
-  \item CML, 110
-  \item Conjugate-gradient history information, 78
+  \item CML, 111
+  \item Conjugate-gradient history information, 79
   \item constant-volume cell relaxation, 77
   \item constraints in relaxations, 85
   \item {\bf COOP.Write}, 65
@@ -85,7 +85,7 @@
   \item {\bf Diag.DivideAndConquer}, 54
   \item {\bf Diag.Memory}, 73
   \item {\bf Diag.NoExpert}, 54
-  \item {\bf Diag.ParallelOverK}, 73
+  \item {\bf Diag.ParallelOverK}, 74
   \item {\bf Diag.PreRotate}, 54
   \item {\bf Diag.Use2D}, 54
   \item Dielectric function, optical absorption, 65
@@ -142,7 +142,7 @@
   \item Force Constants   Matrix, 76
   \item Force Constants Matrix, 87
     \subitem using {\sc Phonon}, 88
-  \item FoX XML library, 110
+  \item FoX XML library, 111
   \item fractional program, 15
 
   \indexspace
@@ -197,7 +197,7 @@
   \item Makefile, 8
   \item {\bf MaxBondDistance}, 38
   \item {\bf MaxSCFIterations}, 42
-  \item {\bf MD.AnnealOption}, 82
+  \item {\bf MD.AnnealOption}, 83
   \item {\bf MD.Broyden.Cycle.On.Maxit}, 79
   \item {\bf MD.Broyden.History.Steps}, 79
   \item  {\bf MD.Broyden.Initial.Inverse.Jacobian}, 79
@@ -207,17 +207,17 @@
   \item {\bf MD.FCfirst}, 87
   \item {\bf MD.FClast}, 87
   \item {\bf MD.FinalTimeStep}, 82
-  \item {\bf MD.FIRE.TimeStep}, 79
+  \item {\bf MD.FIRE.TimeStep}, 80
   \item {\bf MD.FireQuench}, 80
   \item {\bf MD.InitialTemperature}, 82
   \item {\bf MD.InitialTimeStep}, 82
   \item {\bf MD.LengthTimeStep}, 82
-  \item {\bf MD.MaxCGDispl}, 77
+  \item {\bf MD.MaxCGDispl}, 78
   \item {\bf MD.MaxForceTol}, 77
   \item {\bf MD.MaxStressTol}, 77
   \item {\bf MD.NoseMass}, 82
-  \item {\bf MD.NumCGsteps}, 77
-  \item {\bf MD.ParrinelloRahmanMass}, 82
+  \item {\bf MD.NumCGsteps}, 78
+  \item {\bf MD.ParrinelloRahmanMass}, 83
   \item {\bf       MD.PreconditionVariableCell}, 78
   \item {\bf MD.Quench}, 80
   \item {\bf MD.RelaxCellOnly}, 77
@@ -225,23 +225,23 @@
   \item {\bf MD.TargetPressure}, 81
   \item {\bf MD.TargetTemperature}, 82
   \item {\bf     MD.TauRelax}, 83
-  \item {\bf MD.TypeOfRun}, 75
-  \item {\bf MD.UseSaveCG}, 78
+  \item {\bf MD.TypeOfRun}, 76
+  \item {\bf MD.UseSaveCG}, 79
   \item {\bf MD.UseSaveXV}, 37, 38
   \item {\bf MD.UseSaveZM}, 37
   \item {\bf MD.UseStructFile}, 35
-  \item {\bf MD.VariableCell}, 76
+  \item {\bf MD.VariableCell}, 77
   \item mesh, 49
   \item {\bf MeshCutoff}, 49
-  \item {\bf MeshSubDivisions}, 49
+  \item {\bf       MeshSubDivisions}, 49
   \item {\tt MINIMAL}, 20
   \item minimal basis, 20
   \item mixps   program, 15
   \item {\bf MM.Cutoff}, 72
-  \item {\bf MM.Grimme.D}, 72
+  \item {\bf MM.Grimme.D}, 73
   \item {\bf MM.Grimme.S6}, 73
-  \item {\bf MM.Potentials}, 71
-  \item {\bf MM.UnitsDistance}, 72
+  \item {\bf MM.Potentials}, 72
+  \item {\bf MM.UnitsDistance}, 73
   \item {\bf MM.UnitsEnergy}, 72
   \item Mulliken population analysis, 13, 64
   \item {\bf MullikenInSCF}, 64
@@ -251,8 +251,8 @@
 
   \item {\bf NaiveAuxiliaryCell}, 52
   \item {\bf NeglNonOverlapInt}, 52
-  \item NetCDF format, 27, 103
-  \item NetCDF library, 103
+  \item NetCDF format, 27, 104
+  \item NetCDF library, 104
   \item {\bf NetCharge}, 69
   \item {\bf     New.A.Parameter}, 29
   \item {\bf     New.B.Parameter}, 29
@@ -270,7 +270,7 @@
   \item {\bf OccupationMPOrder}, 55
   \item {\bf ON.ChemicalPotential}, 57
   \item {\bf ON.ChemicalPotentialOrder}, 58
-  \item {\bf ON.ChemicalPotentialRc}, 57
+  \item {\bf ON.ChemicalPotentialRc}, 58
   \item {\bf ON.ChemicalPotentialTemperature}, 58
   \item {\bf ON.ChemicalPotentialUse}, 57
   \item {\bf ON.eta}, 56, 57
@@ -289,14 +289,14 @@
   \item {\bf Optical.NumberOfBands}, 66
   \item {\bf Optical.OffsetMesh}, 66
   \item {\bf Optical.PolarizationType}, 66
-  \item {\bf Optical.Scissor}, 65
+  \item {\bf Optical.Scissor}, 66
   \item {\bf Optical.Vector}, 66
   \item {\tt Ordejon-Mauri}, 56
   \item OUT.UCELL.ZMATRIX, 36
   \item output
     \subitem $\delta \rho(\vec r)$, 70
     \subitem atomic coordinates
-      \subsubitem in a dynamics   step, 83
+      \subsubitem in a dynamics   step, 84
       \subsubitem in a dynamics step, 13
       \subsubitem initial, 83
     \subitem band $\vec k$ points, 13, 60
@@ -309,9 +309,9 @@
     \subitem density   matrix, 47
     \subitem density matrix, 47
     \subitem density matrix history, 47
-    \subitem eigenvalues, 13, 54, 62
+    \subitem eigenvalues, 13, 55, 62
     \subitem electrostatic potential, 70, 71
-    \subitem forces, 13, 83
+    \subitem forces, 13, 84
     \subitem grid $\vec k$ points, 13, 40
     \subitem Hamiltonian, 47
     \subitem Hamiltonian \& overlap, 52
@@ -350,18 +350,18 @@
   \item {\bf PAO.SplitNorm}, 21
   \item {\bf PAO.SplitNormH}, 21
   \item {\bf PAO.SplitTailNorm}, 22
-  \item Parallel {\sc Siesta}, 105
-  \item {\bf ParallelOverK}, 105
+  \item Parallel {\sc Siesta}, 106
+  \item {\bf ParallelOverK}, 106
   \item PBE, 40
   \item PBEsol, 40
   \item perturbative polarization, 20, 26
   \item Phonon program, 76
-  \item {\sc Phonon program}, 87
-  \item {\bf PhononLabels}, 87
+  \item {\sc Phonon program}, 88
+  \item {\bf PhononLabels}, 88
   \item polarization orbitals, 20
   \item {\bf PolarizationGrids}, 67
-  \item Precision selection, 111
-  \item {\bf ProcessorY}, 73, 105
+  \item Precision selection, 112
+  \item {\bf ProcessorY}, 73, 106
   \item {\bf ProjectedDensityOfStates}, 62
   \item {\bf PS.KBprojectors} , 23
   \item {\bf PS.lmax}, 23
@@ -380,14 +380,14 @@
     \subitem deformation charge density, 47
   \item reading saved data, 75
     \subitem all, 75
-    \subitem CG, 78
+    \subitem CG, 79
     \subitem charge density, 46
     \subitem density matrix, 45
     \subitem localized wave functions (order-$N$), 58
     \subitem XV, 37
     \subitem ZM, 37
-  \item readwf, 61
-  \item readwfsx, 61
+  \item readwf, 62
+  \item readwfsx, 62
   \item relaxation of cell parameters only, 77
   \item removal of intramolecular pressure, 81
   \item {\bf Reparametrize.Pseudos}, 28
@@ -430,7 +430,7 @@
   \item {\bf SingleExcitation}, 42
   \item {\bf SlabDipoleCorrection}, 70
   \item Slabs with net charge, 69
-  \item {\bf SolutionMethod}, 53, 92
+  \item {\bf SolutionMethod}, 53, 93
   \item species, 14
   \item {\it species.}ion, 10
   \item spin, 41, 42, 45
@@ -460,30 +460,30 @@
 
   \indexspace
 
-  \item {\bf tbtrans}, 96
+  \item {\bf tbtrans}, 97
   \item Tests, 9
   \item {\bf TotalSpin}, 42
   \item {\sc TranSiesta}, 6
   \item {\bf TS.BiasContour.Eta}, 95
   \item {\bf TS.BiasContour.Method}, 95
   \item {\bf TS.BiasContour.NumPoints}, 95
-  \item {\bf TS.BufferAtomsLeft}, 94
-  \item {\bf TS.BufferAtomsRight}, 94
+  \item {\bf TS.BufferAtomsLeft}, 95
+  \item {\bf TS.BufferAtomsRight}, 95
   \item {\bf TS.CalcGF}, 93
-  \item {\bf TS.ComplexContour.Emin}, 94
-  \item {\bf TS.ComplexContour.NumCircle}, 94
-  \item {\bf TS.ComplexContour.NumLine}, 94
+  \item {\bf TS.ComplexContour.Emin}, 95
+  \item {\bf TS.ComplexContour.NumCircle}, 95
+  \item {\bf TS.ComplexContour.NumLine}, 95
   \item {\bf TS.ComplexContour.NumPoles}, 95
-  \item {\bf TS.GFFileLeft}, 93
+  \item {\bf TS.GFFileLeft}, 94
   \item {\bf TS.GFFileRight}, 94
-  \item {\bf TS.HSFileLeft}, 93, 96
-  \item {\bf TS.HSFileRight}, 93
+  \item {\bf TS.HSFileLeft}, 94, 97
+  \item {\bf TS.HSFileRight}, 94
   \item {\bf TS.MixH}, 93
   \item {\bf TS.NumUsedAtomsLeft}, 94
   \item {\bf TS.NumUsedAtomsRight}, 94
-  \item {\bf     TS.SaveHS}, 92
-  \item {\bf       TS.TBT.Emax}, 96
-  \item {\bf       TS.TBT.Emin}, 96
+  \item {\bf     TS.SaveHS}, 93
+  \item {\bf       TS.TBT.Emax}, 97
+  \item {\bf       TS.TBT.Emin}, 97
   \item {\bf        TS.TBT.NEigen}, 97
   \item {\bf TS.TBT.NPoints}, 97
   \item {\bf     TS.TriDiag}, 93
@@ -513,7 +513,7 @@
   \item {\bf     WriteBands}, 60
   \item {\bf WriteCoorCerius}, 36
   \item {\bf WriteCoorInitial}, 83
-  \item {\bf     WriteCoorStep}, 83
+  \item {\bf     WriteCoorStep}, 84
   \item {\bf WriteCoorStep}, 13
   \item {\bf WriteCoorXmol}, 36
   \item {\bf     WriteDenchar}, 75
@@ -522,8 +522,8 @@
   \item {\bf WriteDM.NetCDF}, 47
   \item {\bf WriteDMHS.History.NetCDF}, 47
   \item {\bf WriteDMHS.NetCDF}, 47
-  \item {\bf WriteEigenvalues}, 13, 54
-  \item {\bf     WriteForces}, 83
+  \item {\bf WriteEigenvalues}, 13, 55
+  \item {\bf     WriteForces}, 84
   \item {\bf WriteForces}, 13
   \item {\bf WriteKbands}, 13, 60
   \item {\bf WriteKpoints}, 13, 40
@@ -537,14 +537,14 @@
   \item {\bf XC.authors}, 40
   \item {\bf XC.functional}, 40
   \item {\bf XC.hybrid}, 41
-  \item XML, 110
+  \item XML, 111
   \item {\sc XMol}, 36, 37
 
   \indexspace
 
   \item {\bf ZM.ForceTolAngle}, 78
   \item {\bf ZM.ForceTolLength}, 78
-  \item {\bf ZM.MaxDisplAngle}, 78
+  \item {\bf ZM.MaxDisplAngle}, 79
   \item {\bf ZM.MaxDisplLength}, 78
   \item {\bf ZM.UnitsAngle}, 35
   \item {\bf ZM.UnitsLength}, 35

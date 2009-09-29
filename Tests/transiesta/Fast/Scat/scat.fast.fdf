@@ -69,7 +69,6 @@ SolutionMethod Transiesta
 
 DM.MixSCF1   T
 MaxSCFIterations      300           # Maximum number of SCF iter
-DM.MixH               T
 DM.MixingWeight       0.03          # New DM amount for next SCF cycle
 DM.Tolerance          1.d-4         # Tolerance in maximum difference
 DM.UseSaveDM          true          # to use continuation files
@@ -107,7 +106,7 @@ WriteEigenvalues                yes
 
 # Transiesta information
 
-# GENGF OPTIONS
+# GF OPTIONS
 TS.ComplexContour.Emin    -30.0 eV 
 TS.ComplexContour.NPoles       03
 TS.ComplexContour.NCircle      30
@@ -126,11 +125,8 @@ TS.TBT.NPoints 100
 TS.TBT.NEigen 3
 TS.TBT.Eta        0.000001 Ry
 
-# Write electrode hamiltonian
+# Write hamiltonian
 TS.SaveHS   .true.
-TS.SaveLead .true.
-
-
 
 # LEFT ELECTRODE
 TS.HSFileLeft  ./elec.fast.TSHS 

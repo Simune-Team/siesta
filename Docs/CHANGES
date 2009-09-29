@@ -6,6 +6,19 @@
 ** CHANGES ALONG trunk 
 
 ------------------------------------------------------------------------
+2009-09-29  10:30:00 GMT Alberto Garcia <albertog@icmab.es>    trunk-300
+TranSiesta updates. Assorted fixes and cleanup. Update outputs and banner.
+
+* Make local copy of reinit in Util/Denchar
+* Add comment to the manual re: MeshSubDivisions
+* Put unit of current in tbtrans. Updated outputs in Tests/transiesta
+* Merge changes to TS code by F. Novaes
+* Change Copyright dates. Now they are of the form 1996- 
+* Remove xmlparser/Test directory. Remove test-xml fossils
+* Update out and xml reference files. Update Tests/Makefile
+* Fix script.mk and Tests/partial/script.sh
+
+------------------------------------------------------------------------
 2009-09-29  10:30:00 GMT Alberto Garcia <albertog@icmab.es>    trunk-299
 Update of TS section of manual. Assorted fixes.
 
