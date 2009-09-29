@@ -34,7 +34,9 @@ libmpi_f90.a:
 	@(cd MPI ; $(MAKE) )
 #
 libSiestaXC.a: $(MPI_INTERFACE) $(ALL_OBJS)
-	ar $(ARFLAGS_EXTRA) cru libSiestaXC.a $(ALL_OBJS) MPI/*.o
+	ar $(ARFLAGS_EXTRA) cru libSiestaXC.a $(ALL_OBJS) 
+	@if [ ! -z "$(MPI_INTERFACE)" ] ; then \
+            ar $(ARFLAGS_EXTRA) cru libSiestaXC.a MPI/*.o ; fi
 	-$(RANLIB) libSiestaXC.a
 #
 clean:

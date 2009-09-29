@@ -37,14 +37,17 @@ ALL_OBJS=$(SIESTA_OBJS) $(LOCAL_OBJS)
 ALL_SOURCES=$(SIESTA_SOURCES) $(LOCAL_SRCS)
 #
 libSiestaXC.a: $(ALL_OBJS)
-	ar $(ARFLAGS_EXTRA) cru libSiestaXC.a $(ALL_OBJS)
+	ar $(ARFLAGS_EXTRA) cru libSiestaXC.a $(ALL_OBJS) 
+	@if [ ! -z "$(MPI_INTERFACE)" ] ; then \
+            ar $(ARFLAGS_EXTRA) cru libSiestaXC.a MPI/*.o ; fi
 	-$(RANLIB) libSiestaXC.a
 #
-OTHER_FILES=lib-makefile lib-arch.make mpi-makefile
+OTHER_FILES=lib-makefile lib-arch.make mpi-makefile lib-00-README test-makefile
 #
 .PHONY: dist
 dist: siestaXC-dist
 siestaXC-dist: $(ALL_SOURCES) $(OTHER_FILES) 
+	rm -rf siestaXC-dist
 	mkdir -p siestaXC-dist
 	cp -fp $(ALL_SOURCES) siestaXC-dist
 	cp -fp lib-makefile siestaXC-dist/makefile
@@ -53,6 +56,9 @@ siestaXC-dist: $(ALL_SOURCES) $(OTHER_FILES)
 	cp -fp mpi-makefile siestaXC-dist/MPI/Makefile
 	cp -frp Testers siestaXC-dist
 	cp -fp test-makefile siestaXC-dist/Testers/makefile
+	cp BSD_LICENSE siestaXC-dist
+	cp lib-00-README siestaXC-dist/00_README
+
 #
 clean:
 	rm -fr *.o *.*d *.a siestaXC-dist
