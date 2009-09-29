@@ -1111,7 +1111,8 @@ C Convert to Ampere
          write(joutfile,*) 
          write(joutfile,*) 'Results:'
          write(joutfile,*)
-         write(joutfile,'(a,2ES16.8)') 'Voltage, Current(A) = ',Volt,Current
+         write(joutfile,'(a,2ES16.8)') 'Voltage, Current(A) = ',
+     $                                  Volt,Current
          write(joutfile,*)
          write(joutfile,*) repeat('=',62)
 
