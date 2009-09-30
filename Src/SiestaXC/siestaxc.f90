@@ -361,8 +361,8 @@
 !                                 respect the charge density, defined 
 !                                 as DVx(spin1)/Dn(spin2)
 !   real(dp) DVCDN(nspin,nspin) ! Derivative of correlation potential
-C                                 respect the charge density, defined 
-C                                 as DVc(spin1)/Dn(spin2)
+!                                 respect the charge density, defined 
+!                                 as DVc(spin1)/Dn(spin2)
 ! ------------------------ UNITS ----------------------------------------------
 ! Distances in atomic units (Bohr).
 ! Densities in atomic units (electrons/Bohr**3)

@@ -9,7 +9,7 @@ PROGRAM siestaXCtest1
   ! J.M.Soler. Sept.2009
 
   ! Used module procedures and parameters
-  USE siestaXC, only: dp => siestaXC_std_p
+  USE siestaXC, only: dp
   USE siestaXC, only: ggaxc
   USE siestaXC, only: ldaxc
 

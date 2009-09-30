@@ -9,8 +9,8 @@ PROGRAM siestaXCtest4
   USE siestaXC, only: setXC
 
   ! Used module parameters
-  USE siestaXC, only: dp => siestaXC_std_p
-  USE siestaXC, only: gp => siestaXC_grid_p
+  USE siestaXC, only: dp
+  USE siestaXC, only: gp => grid_p
 
 ! Used MPI types
 #ifdef MPI

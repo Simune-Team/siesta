@@ -1,5 +1,23 @@
 ------------------------------------------------------------------
 
+2009-09-30  10:45:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-33-281
+
+Summary: used types dp and grid_p in test*
+Keywords: dp grid_p
+
+  The types dp and grid_p had been recovered in siestaxc by not in test*
+  Two leading C's for comments changed to !'s in siestaxc.f90
+
+modified:
+  Src/Makefile                     ! Updated dependencies
+  Src/SiestaXC/Testers/test1.f90   ! Use dp and grid_p
+  Src/SiestaXC/Testers/test2.f90   ! Use dp and grid_p
+  Src/SiestaXC/Testers/test3.F90   ! Use dp and grid_p
+  Src/SiestaXC/Testers/test4.F90   ! Use dp and grid_p
+  Src/SiestaXC/siestaxc.f90        ! Leading C's changed to !'s
+ 
+------------------------------------------------------------------
+
 2009-09-28  17:15:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-32-280
 
 Summary: siestaXC header + other documentation
