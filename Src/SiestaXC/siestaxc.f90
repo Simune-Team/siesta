@@ -10,8 +10,8 @@
 !   setXC    ! Sets XC functional(s) to be used by atomXC and/or cellXC
 !
 ! Real kinds (precision) of arguments to call atomxc and cellxc
-!   dp       ! Standard real-kind (double) precision
-!   grid_p   ! Precision for grid arrays to call cellxc
+!   siestaXC_std_p  ! Standard real-kind (double) precision
+!   siestaXC_grid_p ! Precision for grid arrays to call cellxc
 
 ! Secondary entry points for testers and lower-level programming
 !   ldaxc    ! LDA-XC functionals
@@ -683,7 +683,8 @@
 MODULE siestaXC
 
 ! Real kinds (precision) of arguments
-  USE precision, only: dp      ! Standard real-kind precision
+
+  USE precision, only: dp      ! Standard real-kind (double) precision
   USE precision, only: grid_p  ! Precision for grid arrays
 
 ! Main entry routines of siestaXC library

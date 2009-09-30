@@ -1,5 +1,31 @@
 ------------------------------------------------------------------
 
+2009-09-30  11:30:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-34-282
+
+Summary: merged with AG's siesta-xc, but reverting to dp and grid_p in siestaxc
+Keywords: makefile
+
+  -- Add -I ../ to the Testers makefile to pick up all modules.
+  -- Keep libSiestaXC.a in the main XC directory during test compilation.
+  -- Add lib-00-README to distribution. Modify 00_README to refer only to
+     the Siesta-in-house version.
+  -- Add test4 to test-makefile.
+  -- Add MPI objects to library only if needed.
+  -- Added test-makefile. 
+
+added:
+  Src/SiestaXC/lib-00-README
+  Src/SiestaXC/test-makefile
+
+modified:
+  Src/Makefile                ! Dependencies updated
+  Src/SiestaXC/00_README
+  Src/SiestaXC/lib-makefile
+  Src/SiestaXC/makefile
+  Src/SiestaXC/siestaxc.f90   ! Use of dp and grid_p reverted again
+
+------------------------------------------------------------------
+
 2009-09-30  10:45:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-33-281
 
 Summary: used types dp and grid_p in test*
