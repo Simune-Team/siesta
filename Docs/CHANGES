@@ -2,7 +2,16 @@
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
 
+** CHANGES ALONG siesta-3.0 branch
 
+------------------------------------------------------------------------
+2009-09-30  14:00:00 GMT Alberto Garcia <albertog@icmab.es> siesta-3.0-b
+Siesta-3.0-beta release
+
+* Added release notes
+* Changed version string
+
+========================================================================
 ** CHANGES ALONG trunk 
 
 ------------------------------------------------------------------------
