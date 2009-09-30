@@ -39,7 +39,7 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, trunk-299}}
+{\Huge {\bf S I E S T A \, \, trunk-300}}
 
 \vspace{1cm}
 \hrulefill
@@ -3340,13 +3340,17 @@ Defines the plane wave cutoff for the grid.
 {\it Default value:} {\tt 100 Ry}
 
 \item[{\bf MeshSubDivisions}] ({\it integer}):
-\index{MeshSubDivisions@{\bf MeshSubDivisions}}\index{grid}\index{mesh}
-Defines the number of sub-mesh points in each direction used
-to save index storage on the mesh. It affects the memory
-requirements and (slightly) the CPU time, but not the results. 
-Values other than the default are not recommended.
+  \index{MeshSubDivisions@{\bf
+      MeshSubDivisions}}\index{grid}\index{mesh} Defines the number of
+  sub-mesh points in each direction used to save index storage on the
+  mesh. It affects the memory requirements and in some cases the CPU
+  time, but should not affect the results.
 
 {\it Default value:} {\tt 2}
+
+NOTE: The default value might be a bit conservative. Users might
+experiment with higher values (4, 6) to lower the memory and cputime
+usage.
 
 \item[{\bf GridCellSampling}] ({\it data block}):\index{egg-box effect}
 \index{GridCellSampling@{\bf GridCellSampling}}\index{rippling}
