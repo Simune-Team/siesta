@@ -17,7 +17,7 @@ SIESTA_SRCS= alloc.F90 bessph.f cellsubs.f  \
              chkgmx.f fft1d.F  flib_spline.f90  \
              minvec.f m_io.f moreParallelSubs.F90 \
              m_recipes.f m_timer.F90 m_walltime.f90 parallel.F \
-	     precision.F pxf.F90 radfft.f sorting.f sys.F
+	     precision.F pxf.F90 radfft.f sorting.f sys.F timer.f90
 SIESTA_OBJS:= $(SIESTA_SRCS:.f=.o)
 SIESTA_OBJS:= $(SIESTA_OBJS:.F=.o)
 SIESTA_OBJS:= $(SIESTA_OBJS:.f90=.o)
@@ -39,7 +39,7 @@ ALL_SOURCES=$(SIESTA_SOURCES) $(LOCAL_SRCS)
 libSiestaXC.a: $(ALL_OBJS)
 	ar $(ARFLAGS_EXTRA) cru libSiestaXC.a $(ALL_OBJS) 
 	@if [ ! -z "$(MPI_INTERFACE)" ] ; then \
-            ar $(ARFLAGS_EXTRA) cru libSiestaXC.a MPI/*.o ; fi
+            ar $(ARFLAGS_EXTRA) cru libSiestaXC.a ../MPI/*.o ; fi
 	-$(RANLIB) libSiestaXC.a
 #
 OTHER_FILES=lib-makefile lib-arch.make mpi-makefile lib-00-README test-makefile
@@ -58,7 +58,6 @@ siestaXC-dist: $(ALL_SOURCES) $(OTHER_FILES)
 	cp -fp test-makefile siestaXC-dist/Testers/makefile
 	cp BSD_LICENSE siestaXC-dist
 	cp lib-00-README siestaXC-dist/00_README
-
 #
 clean:
 	rm -fr *.o *.*d *.a siestaXC-dist

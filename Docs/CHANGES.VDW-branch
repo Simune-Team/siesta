@@ -1,5 +1,39 @@
 ------------------------------------------------------------------
 
+2009-10-01  20:30:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-35-283
+
+Summary: Added two tests
+Keywords: ar2_vdw graphite_vdw_df
+
+  Test graphite_vdw_df has been added anew in Tests/ while test ar_vdw
+  has been renamed as ar2_vdw, completing its reference outputs.
+
+added:
+  Tests/Pseudos/C.vdw.inp
+  Tests/Pseudos/C.vdw.psf
+  Tests/Reference-xml/ar2_vdw.xml
+  Tests/Reference-xml/graphite_vdw_df.xml
+  Tests/Reference/ar2_vdw.out
+  Tests/Reference/graphite_vdw_df.out
+  Tests/graphite_vdw_df/
+  Tests/graphite_vdw_df/graphite_vdw_df.fdf
+  Tests/graphite_vdw_df/graphite_vdw_df.pseudos
+  Tests/graphite_vdw_df/makefile
+
+renamed:
+  Tests/ar_vdw => Tests/ar2_vdw
+  Tests/ar_vdw/ar_vdw.fdf => Tests/ar2_vdw/ar2_vdw.fdf
+  Tests/ar_vdw/ar_vdw.pseudos => Tests/ar2_vdw/ar2_vdw.pseudos
+
+modified:
+  Src/SiestaXC/makefile      ! timer.f90 added to library
+  Src/m_filter.f90           ! Removed a leftout debug printout
+  Tests/README               ! Added a warning
+  Tests/test.mk              ! Changed path of siesta to ../../../Obj
+  Tests/ar2_vdw/ar2_vdw.fdf  ! Precision (and CPU time) reduced
+
+------------------------------------------------------------------
+
 2009-09-30  11:30:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-34-282
 
 Summary: merged with AG's siesta-xc, but reverting to dp and grid_p in siestaxc

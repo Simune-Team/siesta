@@ -299,7 +299,7 @@ subroutine filter( l, nr, r, f, kc, norm_opt, n_eigen)
 !        integral( nmesh+1, k4j1(:)*jlk(:,ij2), x=kmesh(:) )
       ! Symmetrize
       h(ij2,ij1) = h(ij1,ij2)
-      write(33,*) ij1,ij2,h(ij1,ij2)
+!      write(33,*) ij1,ij2,h(ij1,ij2)
     end do ! ij2
   end do ! ij1
 
@@ -321,6 +321,7 @@ subroutine filter( l, nr, r, f, kc, norm_opt, n_eigen)
 !    h(ij,ij) = ( h(ij,ij) - k2mix * kj(ij)**2 ) / (1-k2mix)
 !  end do
 
+! DEBUG
 ! Print eigenvalues for debugging
 !  print'(a,i4,e15.6)', ('filter: i,eigval/k2 =',i,e(i)/kj(i)**2-k2mix,i=1,n)
 
@@ -331,6 +332,7 @@ subroutine filter( l, nr, r, f, kc, norm_opt, n_eigen)
 !      sum(c(:,i)*matmul(h(:,:),c(:,i))) / kj(i)**2, e(i)/kj(i)**2
 !  end do
 !  close( unit=1 )
+! END DEBUG
 
 ! Find how many eigenvalues are within filter tolerance
   m = 0
@@ -348,6 +350,7 @@ subroutine filter( l, nr, r, f, kc, norm_opt, n_eigen)
 ! Find eigenvectors at integration mesh points
   g(0:nmesh,1:n) = matmul( jl(0:nmesh,1:n), c(1:n,1:n) )
 
+! DEBUG
 ! Write eigenvectors and Bessel functions
 !  open( unit=1, file='bessel_k.out' )
 !  do ik = 0,2*nmesh
@@ -360,6 +363,7 @@ subroutine filter( l, nr, r, f, kc, norm_opt, n_eigen)
 !                         (kmesh(ik)**2*sum(jlk(ik,:)*c(:,i))**2,i=1,15)
 !  end do
 !  close( unit=1 )
+! END DEBUG
 
 ! Find function to be filtered at integration mesh points
   fm(0:nmesh) = interpolation( f, r, rmesh(0:nmesh) )
