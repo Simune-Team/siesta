@@ -1,5 +1,97 @@
 ------------------------------------------------------------------
 
+2009-10-02  21:00:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-38-286
+
+Summary: Merged vith trunk revno 300
+Keywords: merge
+
+removed:
+  Src/fdf/TODO
+  Src/fdf/fdf.f90
+  Src/fdf/fdf_mpi.F
+  Src/fdf/makefile_mpi
+  Src/fdf/sample.f90
+  Src/fdf/sample_mpi.F90
+  Src/xmlparser/Test/
+  Src/xmlparser/Test/compare.sh
+  Src/xmlparser/Test/h2o-1.xml
+  Src/xmlparser/Test/h2o-10.xml
+  Src/xmlparser/Test/h2o-11.xml
+  Src/xmlparser/Test/h2o-12.xml
+  Src/xmlparser/Test/h2o-13.xml
+  Src/xmlparser/Test/h2o-14.xml
+  Src/xmlparser/Test/h2o-15.xml
+  Src/xmlparser/Test/h2o-16.xml
+  Src/xmlparser/Test/h2o-2.xml
+  Src/xmlparser/Test/h2o-3.xml
+  Src/xmlparser/Test/h2o-4.xml
+  Src/xmlparser/Test/h2o-5.xml
+  Src/xmlparser/Test/h2o-6.xml
+  Src/xmlparser/Test/h2o-6.xml-save
+  Src/xmlparser/Test/h2o-7.xml
+  Src/xmlparser/Test/h2o-8.xml
+  Src/xmlparser/Test/h2o-9.xml
+  Src/xmlparser/Test/h2o-mod.xml
+  Src/xmlparser/Test/h2o.xml
+  Src/xmlparser/Test/input.dat
+  Tests/Reference-xml/32_h2o.xml
+  Tests/Reference-xml/carbon_nanoscroll.xml
+  Tests/Reference-xml/graphite_c6_full.xml
+  Tests/Reference-xml/h2o_2.xml
+  Tests/Reference-xml/h3po4.xml
+  Tests/Reference-xml/oxypartial.xml
+  Tests/Reference-xml/pb_bulk.xml
+  Tests/Reference-xml/pdos.xml
+  Tests/Reference-xml/ptcda.xml
+  Tests/Reference-xml/si001.xml
+  Tests/Reference-xml/si111-spinpol.xml
+  Tests/Reference-xml/sinw.xml
+  Tests/Reference-xml/sinw_2.xml
+  Tests/Reference/force_constants.out
+  Tests/Reference/graphite_c6_full.out
+  Tests/Reference/pb_bulk.out
+  Tests/Reference/pb_bulk_1000.out
+
+added:
+  Src/Libs/zgeev_lapack.f
+  Src/arch.make
+  Tests/Reference-xml/h_chain.xml
+  Tests/Reference-xml/n_chain.xml
+  Tests/Reference-xml/si2x1h-dipole.xml
+  Tests/Reference/ag.out
+  Tests/Reference/born.out
+  Tests/Reference/born_spin.out
+  Tests/Reference/fe_clust_noncollinear.out
+  Tests/Reference/fire_benzene.out
+  Tests/Reference/si2x1h-dipole.out
+  Tests/si2x1h-dipole/
+  Tests/si2x1h-dipole/makefile
+  Tests/si2x1h-dipole/si2x1h-dipole.fdf
+  Tests/si2x1h-dipole/si2x1h-dipole.pseudos
+  Tests/transiesta/Fast/Scat/OUT_TBT/scat.fast.TEIG
+  Tests/transiesta/au_111_capacitor/1.0V/OUT/au_111_capacitor.MAV
+  Tests/transiesta/au_111_capacitor/1.0V/OUT_TBT/au_111_capacitor.TEIG
+  Tests/transiesta/bulk_au_111/OUT_TBT/bulk_au_111.TEIG
+  Util/Helpers/
+  Util/Helpers/Makefile
+  Util/Helpers/README
+  Util/Helpers/fdf/
+  Util/Helpers/fdf/.dummy_directory
+  Util/Helpers/get_chem_labels.f90
+  Util/TBTrans/Libs/
+  Util/TBTrans/Libs/.dummy_directory
+  Util/WFS/info_wfsx.f
+
+renamed:
+  Src/fdf/io.f => Src/fdf/io_for_fdf_tests.f
+  Src/ionplot.sh => Util/Gen-basis/ionplot.sh
+  Util/Denchar/Src/reinit.f => Util/Denchar/Src/local_reinit.f
+
+modified:
+  too many... 
+
+------------------------------------------------------------------
+
 2009-10-02  18:45:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-37-285
 
 Summary: Distribution building + name changes

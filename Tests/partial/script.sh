@@ -3,13 +3,13 @@
 SIESTA="$1"
 echo "Running script with SIESTA=$SIESTA"
 #
-fractional=../../../Src/fractional
+fractional=../../../../Util/VCA/fractional
 #
 cp ../../Pseudos/O.psf .
 
 if [ ! -x $fractional ] ; then
   echo "Compiling $fractional..."
-  (cd ../../../Src ; make fractional)
+  (cd ../../../../Util/VCA ; make fractional)
 fi
 
 $fractional O  0.5

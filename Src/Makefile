@@ -1,4 +1,13 @@
-#!!@LICENSE
+# 
+# This file is part of the SIESTA package.
+#
+# Copyright (c) Fundacion General Universidad Autonoma de Madrid:
+# E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
+# and J.M.Soler, 1996- .
+# 
+# Use of this software constitutes agreement with the full conditions
+# given in the SIESTA license, as signed by all legitimate users.
+#
 #
 # Makefile for siesta
 #
@@ -24,7 +33,7 @@ M4_FILES = m4/ac_config_aux_dirs.m4  m4/TW_CHECK_FC_FPP.m4      m4/TW_FC_ID_FLAG
 aclocal.m4: $(M4_FILES)
 	cat ${<D}/$(M4_FILES)  > aclocal.m4
 dep:
-	@if [ $(VPATH) == "." ] ; then \
+	@if [ $(VPATH) = "." ] ; then \
 	sfmakedepend --depend=obj  --modext=o \
                               *.f *.f90 *.F *.F90 ; \
         else \
@@ -45,7 +54,7 @@ INCFLAGS:= $(NETCDF_INCFLAGS) $(INCFLAGS)
 #
 what:
 	@echo
-	@if [ "$(VPATH)" == . ]; then \
+	@if [ "$(VPATH)" = . ]; then \
               echo "** You can no longer build SIESTA in Src." ;\
               echo "** Go to the Obj directory and see the README file." ;\
               false ;\
@@ -144,7 +153,11 @@ FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 #
 $(FoX_configured):
-	(cd FoX; if [ "$(VPATH)" = . ]; then CONFIGURE="./configure"; else CONFIGURE="$(VPATH)/FoX/configure"; fi; $$CONFIGURE VPATH="$(VPATH)/FoX" FC="$(FC_SERIAL)" FCFLAGS="$(FFLAGS)" --enable-wcml $(DUMMY_FOX) || false )
+	(cd FoX; touch arch.make ; \
+         CONFIGURE="$(VPATH)/FoX/configure"; \
+         $$CONFIGURE VPATH="$(VPATH)/FoX" \
+         FC="$(FC_SERIAL)" FCFLAGS="$(FFLAGS)" \
+         --enable-wcml $(DUMMY_FOX) || false )
 #
 # Note we have to make sure to use the same compiler as SIESTA,
 # and pick up all the same FFLAGS, and also remember to maybe ask for a dummy library.
@@ -172,9 +185,6 @@ XMLPARSER=libxmlparser.a
 $(XMLPARSER): 
 	(cd xmlparser ; $(MAKE) "VPATH=$(VPATH)/xmlparser" module)
 #
-# Routines using xmlparser calls.
-#
-######  somefile.o : $(WXML)
 #--------------------------------------------------------------
 XC=libSiestaXC.a
 $(XC): 
@@ -262,6 +272,11 @@ check-ts:
 	fi
 	@touch .transiesta
 #
+# Library that might need to be compiled
+#
+zgesv_lapack.a: Libs/zgesv_lapack.f
+	@echo "==> Compiling zgesv_lapack.a in Libs..."
+	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" zgesv_lapack.a)
 #
 transiesta: check-ts what version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF)  \
                     $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
@@ -279,8 +294,9 @@ clean:
 	rm -f *.bck *~
 	rm -f aux_*.f aux_*.f90
 	(cd fdf ; $(MAKE) clean)
-	(cd FoX ; $(MAKE) distclean)
+	(cd FoX ; touch arch.make ; $(MAKE) distclean)
 	(cd xmlparser ; $(MAKE) clean)
+	(cd wxml ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
 	(cd Libs ; $(MAKE) clean )
 	(cd SiestaXC ; $(MAKE) clean )

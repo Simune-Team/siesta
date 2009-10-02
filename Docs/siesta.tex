@@ -39,13 +39,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, trunk-298}}
+{\Huge {\bf S I E S T A \, \, trunk-300}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large September 11, 2009 }
+{\Large September 29, 2009 }
 
 \vspace{1.5cm}
 
@@ -129,10 +129,10 @@ method in the local density (LDA-LSD) and generalized gradient (GGA)
 approximations, as well as in a non local functional that includes
 van der Waals interactions (VDW-DF).
 \item
-It uses norm-conserving pseudopotentials in its fully nonlocal
+It uses norm-conserving pseudopotentials in their fully nonlocal
 (Kleinman-Bylander) form.
 \item
-It uses atomic orbitals as basis set, allowing unlimited multiple-zeta
+It uses atomic orbitals as a basis set, allowing unlimited multiple-zeta
 and angular momenta, polarization and off-site orbitals. The radial
 shape of every orbital is numerical and any shape can be used and provided
 by the user, with the only condition that it has to be of finite support,
@@ -185,21 +185,22 @@ And also (though not all options are compatible):
 
 
 Starting from version 3.0, {\sc Siesta} includes the {\sc
-  TranSiesta}\index{TranSIESTA@{\sc TranSiesta}} utility.  {\sc
+  TranSiesta}\index{TranSIESTA@{\sc TranSiesta}} module.  {\sc
   TranSiesta} provides the ability to model open-boundary systems
 where ballistic electron transport is taking place.  Using {\sc
-  TranSiesta} one can predict electronic properties, such as the zero
-bias conductance and the I-V characteristics, of a nanoscale system in
-contact with two electrodes with different electrochemical potentials.
-It does so by solving for the selfconsistent electronic structure
-within density functioual theory, and using non equilibrium Green's
-functions techniques (NEGF).
+  TranSiesta} one can compute electronic transport properties, such as
+the zero bias conductance and the I-V characteristic, of a nanoscale
+system in contact with two electrodes at different electrochemical
+potentials.  The method is based on using non equilibrium Green's
+functions (NEGF), that are constructed using the density functional
+theory Hamiltonian obtained from a given electron density. A new
+density is computed using the NEGF formalism, which closes the
+DFT-NEGF self consistent cycle.
 
-The current implementation of {\sc TranSiesta} within {\sc Siesta} is mainly
-due to F. D. Novaes and is based on the implementation of
-mainly M. Brandbyge of {\sc TranSiesta} Version 0.9 (see
-complete reference below).
-
+For more details on the formalism, see the main {\sc TranSiesta}
+reference cited below. A section has been added to this User's Guide,
+that describes the necessary steps involved in doing transport
+calculations, together with the currently implemented input options.
 
 \vspace{0.5cm}
 {\large {\bf References:} }
@@ -925,7 +926,7 @@ using the {\tt gen-basis.sh} script. It is limited to a single species.
 
 Of course, as it happens for the pseudopotential, it is the
 responsibility of the user to check that the physical results obtained
-are converged with respect the basis set used before starting any
+are converged with respect to the basis set used before starting any
 production run.
 
 In the following we give some clues on the basics of the basis sets
@@ -958,7 +959,7 @@ requiring both radial and angular flexibilization.
 by adding a second function per channel: double-$\zeta$ (DZ).
   In Quantum Chemistry, the {\it split valence} scheme
 is widely used: starting from the expansion in Gaussians of one atomic
-orbital, the most contracted gaussians are used to define the first
+orbital, the most contracted Gaussians are used to define the first
 orbital of the double-$\zeta$ and the most extended ones for the second.
   For strictly localized functions there was a first proposal
 of using the excited states of the confined atoms, but it would work only
@@ -975,17 +976,17 @@ Phys. Rev. B {\bf 69}, 195113 (2004)].
 
   We then proposed an extension of the split valence idea of Quantum Chemistry
 to strictly localized NAO which has become the standard and has been used
-quite succesfully in many systems (see {\bf PAO.BasisType} {\tt split} below).
+quite successfully in many systems (see {\bf PAO.BasisType} {\tt split} below).
   It is based on the idea of suplementing the first $\zeta$ with, instead of
 a gaussian, a numerical orbital that reproduces the tail of the original PAO
 outside a matching radius $r_{m}$, and continues smoothly towards the origin as
-$r^l(a-br^2)$, with $a$ and $b$ ensuring continuity and differenciability
+$r^l(a-br^2)$, with $a$ and $b$ ensuring continuity and differentiability
 at $r_{m}$.
   Within exactly the same
 Hilbert space, the second orbital can be chosen to be the difference between
 the smooth one and the original PAO, which gives a basis orbital strictly
 confined within the matching radius $r_{m}$ (smaller than the
-original PAO!) continuously differenciable throughout.
+original PAO!) continuously differentiable throughout.
 
   Extra parameters have thus appeared: one $r_m$ per orbital to be doubled.
 The user can again introduce them by hand (see {\bf PAO.Basis} below).
@@ -1015,7 +1016,7 @@ of open systems such as surfaces, can be simply added by specifying
 extra ``n'' shells. [See S. Garcia-Gil, A. Garcia, N. Lorente,
   P. Ordejon, Phys. Rev. B {\bf 79}, 075441 (2009)]
 
-Finally, the method allows the inclusion of offsite (ghost) orbitals
+Finally, the method allows the inclusion of off-site (ghost) orbitals
 (not centered around any specific atom), useful for example in the
 calculation of the counterpoise correction for basis-set superposition
 errors.  Bessel functions for any radius and any excitation level can
@@ -1030,7 +1031,7 @@ given for each species.
 
 A balanced and systematic starting point for defining all the
 different radii is achieved by giving one single parameter, the energy
-shift, i.e., the energy raise suffered by the orbital when confined.
+shift, i.e., the energy increase experienced by the orbital when confined.
 Allowing for system and physical-quantity variablity, as a rule of
 thumb $\Delta E_{\small \rm PAO} \approx 100$ meV gives typical
 precisions within the accuracy of current GGA functionals.  The user
@@ -1046,7 +1047,7 @@ way the localization is enforced.
 
 The first proposal (and quite a standard among {\sc Siesta} users)
 uses an infinite square-well potential.  It was originally proposed
-and has been widely and succesfully used by Otto Sankey and
+and has been widely and successfully used by Otto Sankey and
 collaborators, for minimal bases within the ab initio tight-binding
 scheme, using the {\sc Fireball } program, but also for more flexible
 bases using the methodology of {\sc Siesta}.  This scheme has the
@@ -1061,22 +1062,22 @@ forces and stresses, especially if they are calculated using a
 (coarse) finite three-dimensional grid.
 
 Another problem of this scheme is related to its defining the basis
-considering the free atoms.  Free atoms can present extremely extended
+starting from the free atoms.  Free atoms can present extremely extended
 orbitals, their extension being, besides problematic, of no practical
 use for the calculation in condensed systems: the electrons far away
 from the atom can be described by the basis functions of other atoms.
 
-A traditional scheme to deal with this is the one based on the radial
+A traditional scheme to deal with this is one based on the radial
 scaling of the orbitals by suitable scale factors.  In addition to
 very basic bonding arguments, it is soundly based on restoring
-virial's theorem for finite bases, in the case of coulombic potentials
+the virial's theorem for finite bases, in the case of Coulombic potentials
 (all-electron calculations).  The use of pseudopotentials limits its
 applicability, allowing only for extremely small deviations from unity
 ($\sim 1\%$) in the scale factors obtained variationally (with the
 exception of hydrogen that can contract up to 25\%). This possiblity
 is available to the user.
 
-Another way of dealing with that problem and that of the kink at the
+Another way of dealing with the above problem and that of the kink at the
 same time is adding a soft confinement potential to the atomic
 Hamiltonian used to generate the basis orbitals: it smoothens the kink
 and contracts the orbital as suited. Two additional parameters are
@@ -1147,7 +1148,7 @@ polarization [see S\'anchez-Portal, Artacho, and Soler, JPCM {\bf 8},
 \item[-] Multiple-$\zeta$ in the spirit of split valence,\index{split
 valence} decomposing the original PAO in several pieces of different
 range, either defining more (and smaller) confining radii, or
-introducing gaussians\index{gaussians} from known bases (Huzinaga's
+introducing Gaussians\index{Gaussians} from known bases (Huzinaga's
 book).
 \end{itemize}
 
@@ -1247,7 +1248,7 @@ orbital-confining cutoff radii. It is the excitation energy
 of the PAO's due to the confinement to a finite-range. It offers a
 general procedure for defining the confining radii of the original
 (first-zeta) PAO's for all the species guaranteeing the compensation
-of the basis. It has only effect when the block
+of the basis. It only has an effect when the block
 {\bf PAO.Basis} is not present or when the radii
 specified in that block are zero for the first zeta.
 
@@ -1268,7 +1269,7 @@ the second-$\zeta$ split-off piece has to carry. The split radius is defined
 accordingly. If multiple-$\zeta$\index{multiple-$\zeta$}
 is used, the corresponding radii are obtained
 by imposing smaller fractions of the SplitNorm (1/2, 1/4 ...) value as
-norm carried by the higher zetas. It has effect only when the block
+norm carried by the higher zetas. It only has an effect when the block
 {\bf PAO.Basis} is not present or when the radii
 specified in that block are zero for zetas higher than one.
 
@@ -1600,7 +1601,7 @@ polarization}\index{basis!polarization} are generated by solving the
 atomic problem in the presence of a polarizing electric field. The
 orbitals are generated applying perturbation theory to the first-zeta
 orbital of lower angular momentum.  They have the same cutoff radius
-than the orbitals from which they are constructed.
+as the orbitals from which they are constructed.
 
 Note: The perturbative method has traditionally used the 'l' component
 of the pseudopotential. It can be argued that it should use the 'l+1'
@@ -1608,7 +1609,7 @@ component. By default, for backwards compatibility, the traditional
 method is used, but the alternative one can be activated by setting
 the logical {\bf PAO.OldStylePolOrbs} variable to {\tt .false.}
 
-There is a different possibility of generating polarization orbitals:
+There is a different possibility for generating polarization orbitals:
 by introducing them explicitly in the {\bf PAO.Basis} block.
 It has to be remembered, however, that they sometimes correspond to
 unbound states of the atom, their shape depending very much on the
@@ -1789,6 +1790,22 @@ the ASCII file {\tt BASIS\_ENTHALPY}.
 
 \subsubsection{Low-level options regarding the radial grid}
 
+For historical reasons, the basis-set and KB projector code in {\sc
+  Siesta} uses a logarithmic radial grid, which is taken from the
+pseudopotential file. Any ``interesting'' radii have to fall on a grid
+point, which introduces a certain degree of coarseness that can limit
+the accuracy of the results and the faithfulness of the mapping of
+input parameters to actual operating parameters. For example, the same
+orbital will be produced by a finite range of {\bf PAO.EnergyShift}
+values, and any user-defined cutoffs will not be exactly reflected in
+the actual cutoffs. This is particularly troublesome for automatic
+optimization procedures (such as those implemented in {\tt
+  Util/Optimizer}), as the engine might be confused by the extra level
+of indirection. The following options can be used to fine-tune the mapping.
+They are not enabled by default, as they change the numerical results
+apreciably (in effect, they lead to different basis orbitals and
+projectors). 
+
 \begin{description}
 \itemsep 10pt
 \parsep 0pt
@@ -1796,12 +1813,18 @@ the ASCII file {\tt BASIS\_ENTHALPY}.
 \item[{\bf Reparametrize.Pseudos}] ({\it logical}):
 \index{Reparametrize.Pseudos@{\bf Reparametrize.Pseudos}}
 
-By changing the $a$ and $b$ parameters of the logarithmic grid, a new one
-with a more homogeneous overall grid-point separation can be used for
-the generation of basis sets and projectors. For example, by using
-$a=5x10^{-4}$ and $b=10$, the grid point separations at $r=0$ and 10 bohrs are
-0.005 and 0.01 bohrs, respectively. More points are needed to reach r's of
-the order of a hundred bohrs, but the extra computational effort is negligible.
+By changing the $a$ and $b$ parameters of the logarithmic grid, a new
+one with a more homogeneous overall grid-point separation can be used
+for the generation of basis sets and projectors. For example, by using
+$a=5x10^{-4}$ and $b=10$, the grid point separations at $r=0$ and 10
+bohrs are 0.005 and 0.01 bohrs, respectively. More points are needed
+to reach r's of the order of a hundred bohrs, but the extra
+computational effort is negligible.  The net effect of this option
+(notably when coupled to {\bf Restricted.Radial.Grid} {\tt .false.})
+is a closer mapping of any user-specified cutoff radii and of the
+radii implicitly resulting from other input parameters to the actual
+values used by the program.
+
 
 {\it Default value:} { \tt .false.}
 
@@ -1837,7 +1860,7 @@ file is used).
 
 In normal operation of the basis-set and projector generation code the
 radial grid is restricted to having an odd number of points, and the
-cutoffs are shifted accordingly. Thisrestriction can be lifted by
+cutoffs are shifted accordingly. This restriction can be lifted by
 setting this parameter to {\tt .false.}
 
 {\it Default value:} { \tt .true.}
@@ -1852,7 +1875,7 @@ There are many ways to give {\sc Siesta} structural information.
 \begin{itemize}
 \item Directly from the fdf file in traditional format.
 \item Directly from the fdf file in the newer Z-Matrix format, using
-a \textbf{ZMatrix} block.
+a \textbf{Zmatrix} block.
 \item From an external data file
 \item From a FIFO file, when working in ``server'' mode.
 \end{itemize}
@@ -1870,7 +1893,7 @@ methods, and provide a guide to their precedence.
 \subsubsection{Traditional structure input in the fdf file}
 
 Firstly, the size of the cell itself should be specified, using
-some combination of the flags
+some combination of the options
 \textbf{LatticeConstant}, \textbf{LatticeParameters},
 and \textbf{LatticeVectors}, and \textbf{SuperCell}.
 If nothing is specified, {\sc Siesta} will construct a cubic
@@ -1939,11 +1962,11 @@ Character string to specify the format of the atomic positions in
 input. These can be expressed in four forms:
 \begin{itemize}
 \item {\tt Bohr} or {\tt NotScaledCartesianBohr} (atomic positions
-are given directly in Bohr, in cartesian coordinates)
+are given directly in Bohr, in Cartesian coordinates)
 \item {\tt Ang} or {\tt NotScaledCartesianAng} (atomic positions
-are given directly in {\AA}ngstr\"om, in cartesian coordinates)
+are given directly in {\AA}ngstr\"om, in Cartesian coordinates)
 \item {\tt ScaledCartesian} (atomic positions are given
-in cartesian coordinates, in units of the lattice constant)
+in Cartesian coordinates, in units of the lattice constant)
 \item {\tt Fractional} or {\tt ScaledByLatticeVectors} (atomic positions
 are given referred to the lattice vectors)
 \end{itemize}
@@ -1993,7 +2016,7 @@ either using this block or the $Z$ matrix (see {\bf Zmatrix}).
 
 \end{description}
 \subsubsection{Z-matrix format and constraints}
-\label{sec:zmatrix}
+\label{sec:Zmatrix}
 
 The advantage of the traditional format is that it is
 much easier to set up a system. However, when working
@@ -2003,7 +2026,7 @@ within this format, and recompilation is needed for each
 new constraint.
 
 For any more involved set of constraints, a
-full \textbf{ZMatrix} formulation should be used - this
+full \textbf{Zmatrix} formulation should be used - this
 offers much more control, and may be specified fully at
 run time (thus not requiring recompilation) - but
 it is more work to generate the input files for this form.
@@ -2114,13 +2137,13 @@ flags that indicate whether the \texttt{x}, \texttt{y}, and \texttt{z}
 coordinates, respectively, should be varied or not. A value of 0
 implies that the coordinate is fixed, while 1 implies that it should
 be varied.  {\bf NOTE}: When performing ``variable cell''
-optimization while using a zmatrix format for input, the algorithm
+optimization while using a Zmatrix format for input, the algorithm
 will not work if some of the coordinates of an atom in a {\tt
 cartesian} block are variables and others are not (i.e.,
 \texttt{ix iy iz} above must all be 0 or 1). This will be fixed in
 future versions of the program.
 
-A zmatrix block may also contain the following, additional, sections, which
+A Zmatrix block may also contain the following, additional, sections, which
 are designed to make it easier to read.
 
 \item \texttt{constants}: Instead of specifying a numerical value, it
@@ -2212,7 +2235,7 @@ surface, respectively.
 for the relevant coordinates, in particular for those which are
 allowed to vary. The current output options for Zmatrix information
 work best when this approach is taken. By using a ``fixed'' symbolic
-zmatrix block and specifying the actual coordinates in a ``variables''
+Zmatrix block and specifying the actual coordinates in a ``variables''
 section, one can monitor the progress of the optimization and
 easily reconstruct the coordinates of intermediate steps in the
 original format.)
@@ -2286,8 +2309,8 @@ characteristics:
 \begin{verbatim}
 1. No symbolic variables or constants are used.
 2. The position coordinates of the first atom in each molecule
-   are absolute cartesian coordinates.
-3. Any coordinates in ``cartesian'' blocks are also absolute cartesians.
+   are absolute Cartesian coordinates.
+3. Any coordinates in ``cartesian'' blocks are also absolute Cartesians.
 4. There is no provision for output of constraints.
 5. The units used are those initially specified by the user, and are
    noted also in fdf form.
@@ -2419,11 +2442,11 @@ any XV files.\index{MD.UseSaveXV@{\bf MD.UseSaveXV}}.
 {\it Default value:} {\tt .false.}
 
 
-\item A zmatrix input file
+\item A Zmatrix input file
 {\bf MD.UseSaveZM} ({\it logical}):
 \index{MD.UseSaveZM@{\bf MD.UseSaveZM}}
 \index{reading saved data!ZM}
-instructs the program to read the zmatrix information stored
+instructs the program to read the Zmatrix information stored
 in file {\tt SystemLabel}.ZM by a previous run.
 
 {\it Use:} If the required file does not exist, a warning is
@@ -2456,7 +2479,7 @@ gets from the FIFO file).
 \item If UseStructFile (or MD.UseStructFile) is active, it takes precedence
 over the options below.
 
-\item For atomic coordinates, the traditional and zmatrix formats in
+\item For atomic coordinates, the traditional and Zmatrix formats in
   the fdf file are mutually exclusive. If {\bf MD.UseSaveZM} is
   active, the contents of the ZM file, if found, take precedence over
   the Zmatrix information in the fdf file.
@@ -3340,6 +3363,10 @@ requirements and the CPU time, but not the results.
 
 {\it Default value:} {\tt 2}
 
+NOTE: The default value might be a bit conservative. Users might
+experiment with higher values (4, 6) to lower the memory and cputime
+usage.
+
 \item[{\bf GridCellSampling}] ({\it data block}):\index{egg-box effect}
 \index{GridCellSampling@{\bf GridCellSampling}}\index{rippling}
 
@@ -4072,7 +4099,7 @@ Specifies the scale of the k vectors given in {\bf BandLines}
 and {\bf BandPoints} below.
 The options are:
 \begin{itemize}
-\item {\tt pi/a} (k-vector coordinates are given in cartesian
+\item {\tt pi/a} (k-vector coordinates are given in Cartesian
 coordinates, in units of $\pi/a$, where $a$ is the lattice constant)
 \item {\tt ReciprocalLatticeVectors} (k vectors are given in
 reciprocal-lattice-vector coordinates)
@@ -4098,7 +4125,7 @@ An example for an FCC lattice is:
      %endblock BandLines
 \end{verbatim}
 
-where the last column is an optional LaTex label for use in the band plot.
+where the last column is an optional LaTeX label for use in the band plot.
 If only given points (not lines) are required, simply specify 1 in the
 first column of each line. The first column of the first line must be
 always 1.
@@ -4106,7 +4133,7 @@ always 1.
 {\it Use:} Used only if {\bf SolutionMethod} = {\tt diagon}.
 The band k points are unrelated and compatible with any k-grid used
 to calculate the total energy and charge density.
-This block is superseded by {\bf BandPoints} if both are present.
+This block is overriden by {\bf BandPoints} if both are present.
 
 {\it Default value:} No band energies calculated.
 
@@ -4212,7 +4239,7 @@ Specifies the scale of the k vectors given in
 {\bf WaveFuncKPoints} below.
 The options are:
 \begin{itemize}
-\item {\tt pi/a} (k-vector coordinates are given in cartesian
+\item {\tt pi/a} (k-vector coordinates are given in Cartesian
 coordinates, in units of $\pi/a$, where $a$ is the lattice constant)
 \item {\tt ReciprocalLatticeVectors} (k vectors are given in
 reciprocal-lattice-vector coordinates)
@@ -4833,7 +4860,7 @@ those parallel to a slab (bulk electric fields, like in
 dielectrics or ferroelectrics, are not allowed). If it is not, an
 error message is issued and the components of the field in bulk
 directions are suppressed automatically. The input is a
-vector in cartesian coordinates, in the specified units. Example:
+vector in Cartesian coordinates, in the specified units. Example:
 
 \begin{verbatim}
      %block ExternalElectricField
@@ -5379,7 +5406,7 @@ the cell vectors) trying to minimize the forces (and stresses) on
 them.
 
 These are the options common to all relaxation methods. If the Zmatrix
-input option is in effect (see Sec.~\ref{sec:zmatrix}) the
+input option is in effect (see Sec.~\ref{sec:Zmatrix}) the
 Zmatrix-specific options take precedence.  The 'MD' prefix is
 misleading but kept for historical reasons.
 
@@ -5642,7 +5669,7 @@ These methods are really based on molecular dynamics, but are used for
 structural relaxation.
 
 Note that the Zmatrix input option (see
-Sec.~\ref{sec:zmatrix}) is not compatible with molecular dynamics. The
+Sec.~\ref{sec:Zmatrix}) is not compatible with molecular dynamics. The
 initial geometry can be specified using the Zmatrix format, but the
 Zmatrix generalized coordinates will not be updated.
 
@@ -5771,7 +5798,7 @@ In this mode of operation, the program moves the atoms (and optionally
 the cell vectors) in response to the forces (and stresses), using the
 classical equations of motion.
 
-Note that the Zmatrix input option (see Sec.~\ref{sec:zmatrix}) is not
+Note that the Zmatrix input option (see Sec.~\ref{sec:Zmatrix}) is not
 compatible with molecular dynamics. The initial geometry can be
 specified using the Zmatrix format, but the Zmatrix generalized
 coordinates will not be updated.
@@ -5911,7 +5938,7 @@ Other options follow.
 It determines whether the initial atomic coordinates of the simulation are
 dumped into the main output file. These coordinates correspond to the
 ones actually used in the first step (see the section on precedence
-issues in structural input) and are output in cartesian coordinates in
+issues in structural input) and are output in Cartesian coordinates in
 Bohr units.
 
 It is not affected by the setting of {\bf LongOutput}.
@@ -6010,7 +6037,7 @@ create custom-made MD scripts.
 
 \subsection{Use of general constraints}
 
-{\bf Note:} The Zmatrix format (see Sec.~\ref{sec:zmatrix}) provides
+{\bf Note:} The Zmatrix format (see Sec.~\ref{sec:Zmatrix}) provides
 an alternative constraint formulation which can be useful for system
 involving molecules.
 
@@ -6050,7 +6077,7 @@ c real*8  cell(3,3)    : input lattice vectors (Bohr)
 c integer na           : input number of atoms
 c integer isa(na)      : input species indexes
 c real*8  amass(na)    : input atomic masses
-c real*8  xa(3,na)     : input atomic cartesian coordinates (Bohr)
+c real*8  xa(3,na)     : input atomic Cartesian coordinates (Bohr)
 c real*8  stress( 3,3) : input/output stress tensor (Ry/Bohr**3)
 c real*8  fa(3,na)     : input/output atomic forces (Ry/Bohr)
 c integer ntcon        : output total number of position constraints
@@ -6102,7 +6129,7 @@ all three coordinates of atoms 1 to 10, counted backwards from the
 last one (you may also specify a given direction, like in center).
 The fourth line specifies that atoms 1 and 2 form a rigid unit.  The
 fifth line fixes the center of the molecule (atoms 1 and 2), in the z
-direction (0.,0.,1.). This vector is given in cartesian coordinates
+direction (0.,0.,1.). This vector is given in Cartesian coordinates
 and, without it, all three coordinates will be fixed (to fix a center,
 or a position, in the $x$ and $y$ directions, but not in the $z$
 direction, two lines are required, one for each direction).  The sixth
@@ -6250,411 +6277,652 @@ block {\tt MD.ATforPhonon} exists), the forces
 are written in file {\it SystemLabel}.{\tt PHONON}.  The format is the
 following: Comment line, cell vectors in {\AA}, and for each
 displacement: atom displaced and its coordinates plus fractional
-displacement, cartesian components of forces on all the atoms in units
+displacement, Cartesian components of forces on all the atoms in units
 of eV/\AA.
-
 
 \section{TRANSIESTA}
 
-{\em NOTE: This section is not in final form yet, pending some
-  clarifications by Pablo and Frederico, which might extend also to
-  the discussion of TranSiesta in the introduction to the manual}
+The present {\sc Siesta} release includes the possibility of
+performing calculations of electronic transport properties using the
+{\sc TranSiesta} method. This Section describes how to compile the
+code to be able to use these capabilities, and a reference guide to
+the relevant FDF options. We describe here only the additional options
+available for TranSiesta calculations, while the rest of the Siesta
+functionalities and variables are described in the previous sections
+of this User's Guide.
 
-{\sc TranSiesta} has the full functionality of
-{\sc Siesta} and users are referred to the {\sc Siesta}
-user guide (above) for a description of all relevant FDF options.
-This section describes how to compile  {\sc TranSiesta},
-and provides a reference
-guide to the relevant FDF options.
+\subsection{Brief description}
 
+The {\sc TranSiesta} method is a procedure to solve the electronic
+structure of an open system formed by a finite structure sandwiched
+between two semi-infinite metallic leads. A finite bias can be applied
+between both leads, to drive a finite current. The method is described
+in detail in Phys. Rev. B {\bf 65}, 165401 (2002). In practical terms,
+calculations using {\sc TranSiesta} involve the solution of the
+electronic density from the DFT Hamiltonian using Green's functions
+techniques, instead of the usual diagonalization procedure. Therefore,
+{\sc TranSiesta} calculations involve a {\sc Siesta} run, in which a
+set of routines are invoked to solve the Green's functions and the
+charge density for the open system. These routines are packed in a set
+of modules, and we will refer to it as the '{\sc TranSIESTA} module'
+in what follows.
 
-\subsection{Brief Description}
+{\sc TranSiesta} was originally developed by Mads Brandbyge,
+Jos\'e-Luis Mozos, Pablo Ordej\'on, Jeremy Taylor and Kurt Stokbro
+(see references). It consisted, mainly, in setting up an interface
+between {\sc Siesta} and the (tight-binding) transport codes developed
+by M. Brandbyge and K. Stokbro. Initially everything was written in
+Fortran-77. As {\sc Siesta} started to be translated to Fortran-90, so
+were the {\sc TranSiesta} parts of the code. This was accomplished by
+Jos\'e-Luis Mozos, who also worked on the parallelization of {\sc
+  TranSiesta}.  The present distribution has been adapted to the new
+{\sc Siesta} code structure. With respect to the previous
+implementations, it has the additional feature of allowing for the use
+of a {\bf k}-point sampling other than the gamma point (for the 2D
+Brillouin zone perpendicular to the transport direction).  These
+modifications, among others, were done by Frederico D. Novaes.
 
-The {\sc TranSiesta} code consists of a set of additional
-routines for the {\sc Siesta} package for the computation of
-electronic transport properties. It was originally developed by
-Mads Brandbyge, Jose-Luis Mozos, Pablo Ordej\'on, Jeremy Taylor
-and Kurt Stokbro [Phys. Rev. B {\bf 65}, 165401 (2002)], and first
-implemented in the {\sc Siesta}1.3p version.  The present distribution
-was adapted to the {\sc Siesta}2.5 structure. With respect to the
-first implementation, it has the additional feature of allowing
-for the use of a {\bf k}-point sampling other than the gamma point
-(for the 2D Brillouin zone perpendicular to the transport direction).
-These modifications were done by F. D. Novaes (fdnovaes@icmab.es).
-
-\subsection{Source code Structure}
+\subsection{Source code structure}
 
 In this implementation, the original {\sc TranSiesta} routines have
-been grouped in a set of modules whose file names begin with {\tt m\_ts}
-(such as in e.g. {\tt m\_ts\_electrode.F90} ).
-Several new subroutines have been also added.
-These modules are located in the {\tt Src} directory.
-The inclusion of {\sc TranSiesta} has also required the modification
-of some of the {\sc Siesta} routines. Presently, these modifications
-are controlled by pre-processor compilation directives (such as
-in {\tt \#ifdef TRANSIESTA} ). So that only when one compiles
-using the preprocessor flag {\tt -DTRANSIESTA} the compiled object
-files will contain the {\sc TranSiesta} modifications.
+been grouped in a set of modules whose file names begin with {\tt
+  m\_ts} (such as in e.g. {\tt m\_ts\_electrode.F90} ).  Several new
+subroutines have been added.  These modules are located in the {\tt
+  Src} directory.  The inclusion of {\sc TranSiesta} has also required
+the modification of some of the {\sc Siesta} routines. Presently,
+these modifications are controlled by pre-processor compilation
+directives (such as in {\tt \#ifdef TRANSIESTA} ). See the next
+section for compilation instructions.
 
-\subsection{Compiling}
+\subsection{Compilation}
 
-Simply type {\tt make transiesta}.  The {\tt Makefile} has been
-modified to use the proper preprocessor definition and to link the
-{\tt m\_ts} modules and create a binary called {\tt transiesta}. Note
-that you might need to type {\tt make clean} if you had compiled a
-``plain'' version of {\sc Siesta} in the same directory.
+The standard {\sc Siesta} executable (obtained as described in Section
+2) does not include the {\sc TranSiesta} modules. In order to use the
+{\sc TranSiesta} capabilities, you must compile the {\sc Siesta}
+package as indicated in this Section. In this way, the compilation is
+done using the appropriate preprocessor flags needed to include the
+{\sc TranSiesta} modules in the binary file. To generate a binary of
+{\sc Siesta} which includes the {\sc TranSiesta} capabilities, just
+type:
 
-\subsection{Brief Explanation}
+\begin{verbatim}
+$ make transiesta
+\end{verbatim}
+
+using the appropriate arch.make file for your system (note that you do
+not need to make any modification on your arch.make file: you can use
+the same one that you have used to make a standard {\sc Siesta}
+compilation in your system).  The Makefile takes care of defining the
+appropriate preprocessor flag -DTRANSIESTA so that the {\sc
+  TranSiesta} modules and modifications are compiled and incorporated
+into the binary. Upon successful compilation, the binary file {\tt
+  transiesta} will be generated, containing an executable version of
+{\sc Siesta} with {\sc TranSiesta} capabilities.
+
+\subsection{Running a fast example}
+
+Before giving more detailed explanations about {\sc TranSiesta}, let
+us start with an example to show the basic operations of a transport
+calculation.  Starting from the top {\sc Siesta} directory:
+
+\begin{verbatim}
+$ cd Tests/transiesta/Fast
+\end{verbatim}
+
+First it is necessary to do the electrode calculation (see below for
+details),
+
+\begin{verbatim}
+$ cd Elec
+$ mkdir OUT_Test
+$ cd OUT_Test
+$ cp ../* .
+$ transiesta < elec.fast.fdf > elec.fast.out
+\end{verbatim}
+
+Note that apart from the usual files generated by {\sc Siesta}, now you will 
+find the {\tt elec.fast.TSHS} file (in general {\tt <SystemLabel>.TSHS}). 
+This file contains the real-space Hamiltonian and Overlap matrices, together 
+with some other information, that will be used, in the case of electrodes, to 
+calculate the surface Green's functions. 
+
+Once the electrode file has been generated, we can perform the {\sc
+  TranSiesta} calculation (where the {\bf SolutionMethod} flag is set
+to {\tt transiesta}).
+
+\begin{verbatim}
+$ cd ../../Scat
+$ mkdir OUT_TS_Test
+$ cd OUT_TS_Test
+$ cp ../* .
+$ cp ../../Elec/OUT_Test/elec.fast.TSHS .
+$ transiesta < scat.fast.fdf > scat.fast.out
+\end{verbatim}
+
+Now the two following files should have been generated, {\tt scat.fast.TSHS} 
+and {\tt scat.fast.TSDE}. The first one contains, as previously mentioned, 
+essentially the Hamiltonian and Overlap matrices, and the {\tt .TSDE} file 
+has the {\sc TranSiesta} density matrix, the equivalent to the {\tt .DM} 
+file of {\sc Siesta}. The transmission function and the current are calculated 
+using the {\tt tbtrans} postprocessing (bellow).
+
+\subsection{Brief explanation}
 
 \begin{itemize}
-\item
-Transport calculations involve Electrodes (EL) calculations, and
-then the Scattering Region (SR) calculation.
-The Electrodes calculations are usual {\sc Siesta} calculations,
-but where a file {\tt <SystemLabel>.TSHS} is generated.
-These files contain necessary information for the SR calculation.
-If both electrodes are identical structures (with the only difference
-that one is semi-infinite extending to the right, and the other is
-semi-infinite extending to the left) the same file {\tt .TSHS}
-can be used to described both.
-In general, however, both Electrodes can be different and therefore
-two different files {\tt .TSHS} must be generated.
-The location of the these Electrode files must be specified
-in the file {\tt .fdf} of the SR calculation (they are usually copied to the
-same directory where the SR calculation is performed).
+\item 
+Transport calculations involve Electrodes (EL) calculations, and then
+the Scattering Region (SR) calculation.  The Electrodes calculations
+are usual {\sc Siesta} calculations, but where a file {\tt
+  <SystemLabel>.TSHS} is generated.  These files contain the
+information necessary for the SR calculation.  If both electrodes are
+identical structures (see below) the same {\tt .TSHS} file can be used
+to describe both.  In general, however, both Electrodes can be
+different and therefore two different {\tt .TSHS} files must be
+generated.  The location of these Electrode files must be specified in
+the file FDF input file of the SR calculation (they are usually copied
+to the same directory where the SR calculation is performed).
 
 \item
-For the SR, {\sc TranSiesta} starts with the usual {\sc Siesta} procedure,
-converging a Density Matrix (DM) with the usual Kohn-Sham scheme for
-periodic systems. It uses this solution as an input for the Green's
-Functions procedure. As it is known, {\sc Siesta} stores the DM in a file
-with extension {\tt .DM}. In the case of {\sc TranSiesta}, this is done
-in a file named {\tt <SystemLabel>.TSDE}.
-In a rerun of the same system, if the code finds a {\tt.TSDE} file in
-the directory, it will take this DM as initial input and
-this is then considered a continuation run.
+For the SR, {\sc TranSiesta} starts with the usual {\sc Siesta}
+procedure, converging a Density Matrix (DM) with the usual Kohn-Sham
+scheme for periodic systems. It uses this solution as an initial input
+for the Green's functions self consistent cycle. As it is known, {\sc
+  Siesta} stores the DM in a file with extension {\tt .DM}. In the
+case of {\sc TranSiesta}, this is done in a file named {\tt
+  <SystemLabel>.TSDE}.  In a rerun of the same system (meaning the
+same {\tt <SystemLabel>}), if the code finds a {\tt.TSDE} file in the
+directory, it will take this DM as the initial input and this is then
+considered a continuation run. In this case it does not perform an
+initial {\sc Siesta} run. It must be clear that when starting a
+calculation from scratch, in the end one will find both files, {\tt
+  <SystemLabel>.DM} and {\tt <SystemLabel>.TSDE}.  The first one
+stores the {\sc Siesta} density matrix (periodic boundary conditions
+in all directions and no voltage), and the latter the {\sc TranSiesta}
+solution. It is a good practice to, when increasing the bias, use as
+an initial DM a {\tt .TSDE} that had been obtained for a lower
+voltage. It is also usefull to point out here that the {\tt
+  <SystemLabel>.TSDE} file has the same format as the {\tt
+  <SystemLabel>.DM} file (with extra information appendend in the
+end). Being so, one can for example use DENCHAR to analyse the non
+equilibrium charge density.
 
 \item
 As in the case of {\sc Siesta} calculations, what {\sc TranSiesta}
 does is to obtain a converged DM, but for open boundary conditions and
-maybe finite bias applied between the Electrodes. The corresponding
-Hamiltonian matrix (once self consistency is achieved) of the SR is
-also stored in a {\tt <SystemLabel>.TSHS} file. The transport
-properties are obtained in a post-processing procedure using the {\tt
-  tbtrans} code (located in the {\tt Util/TBTrans} directory). What
-{\tt tbtrans} does is, using the {\tt .TSHS} file of the SR obtained
-with {\sc TranSiesta} (and the Electrode's {\tt .TSHS} files), to
-calculate the transmission spectrum and the electron current. The {\tt
-  tbtrans} input file is typically the same as the one that was used
-for {\sc TranSiesta}, with the additional {\tt tbtrans} options.
+possibly a finite bias applied between the Electrodes. The
+corresponding Hamiltonian matrix (once self consistency is achieved)
+of the SR is also stored in a {\tt <SystemLabel>.TSHS} file. The
+transport properties are obtained in a post-processing procedure using
+the {\tt tbtrans} code (located in the {\tt Util/TBTrans}
+directory). What {\tt tbtrans} does is, using the {\tt .TSHS} file of
+the SR obtained with {\sc TranSiesta}, {\bf and} the Electrode's {\tt
+  .TSHS} files, to calculate the transmission spectrum and the
+electronic current. The {\tt tbtrans} input file is typically the same
+as the one that was used for {\sc TranSiesta}, with the additional
+{\tt tbtrans} options. It is to be noted that the {\tt .TSHS} files
+contain all the needed structural information (atomic positions,
+matrix elements, \ldots), and so this kind of parameters will not be
+changed by input (fdf) flags once they are read a {\tt .TSHS} file.
 
 \item
-{\sc TranSiesta} defines the Left Electrode as the first atoms specified
-in the SR {\tt .fdf} file, and the Right Electrode for the last ones. It is
-possible however, to use buffer atoms. This is mostly useful for
-simulations with different Electrodes. In this case, {\sc TranSiesta} will
-not consider these atoms, and the buffer atoms are considered only for
-the initial {\sc Siesta} calculation, to get a better ``bulk-like''
-environment at the electrodes.
+{\sc TranSiesta} defines the Left Electrode to be the first atoms
+specified in the SR {\tt .fdf} file, and the Right Electrode to be the
+last ones. The transport direction has to be considered to be the the
+third cartesian axis, the {\tt z} axis. The Left Electrode atoms must
+have smaller {\tt z} components than the Right Electrode atoms. It is
+also crucial that the atomic positions specified at the left (right)
+EL calculation must be equivalent to the left (right) electrode part
+of the SR setup. Here, equivalent means that they can be made equal by
+a simple translation in space. It is also possible to use buffer
+atoms. This is mostly useful for simulations with different
+Electrodes.  In this case, {\sc TranSiesta} will not consider these
+atoms, and the buffer atoms are considered only for the initial {\sc
+  Siesta} calculation, to get a better ``bulk-like'' environment at
+the electrodes.
 
 \item
-An important parameter is:  {\tt TS.ComplexContour.Emin}
-It specifies the starting energy for the contour integration. It is a
-good practice, to start with a {\sc Siesta} calculation for the SR and look
-at the eigenvalues of the system. The value of
-{\tt TS.ComplexContour.Emin} must be (considerably) lower than the
-smallest eigenvalue obtained with {\sc Siesta}. This ensures that all the
-states are considered in the contour integration.
+An important parameter is: {\tt TS.ComplexContour.Emin} It specifies
+the starting energy for the contour integration. It is a good
+practice, to start with a {\sc Siesta} calculation for the SR and look
+at the eigenvalues of the system. The value of {\tt
+  TS.ComplexContour.Emin} must be (considerably) lower than the
+smallest eigenvalue obtained with {\sc Siesta}. This ensures that all
+the states are considered in the contour integration.
+
+\item
+{\sc TranSiesta} still assumes periodic boundary conditions in the
+{\tt xy} directions.  For {\sc TranSiesta}, the specified k-point
+sampling (of this 2-dimensional Brillouin zone) used in a SR
+calculation must be the same as the one that was used for the
+electrodes, if they are different the code will stop. In practice this
+means that the first and the second lines of the {\bf
+  kgrid\_Monkhorst\_Pack} block must be the same.  In the case of {\bf
+  tbtrans}, the k-point sampling has to be specified also using a {\bf
+  kgrid\_Monkhorst\_Pack} block, and can differ from the sampling that
+was used in the {\sc TranSiesta} calculation. The convergence of the
+transmission function with respect to the k sampling can be slower
+than the one for the density matrix. This means that one may have to
+increase the number of k-points used in {\bf tbtrans}.
 \end{itemize}
 
-\subsection{Electrode Setup}
+\subsection{Electrodes}
 
 In order to calculate the electronic structure of a system under
 external bias, {\sc TranSiesta} attaches the system to semi-infinite
-electrodes which extend to the left and right of the contact region. Examples
-of electrodes would include surfaces, nanowires, nanotubes or even atomic
-chains. The electrode must be oriented along the z-axis and the unit cell
-along the z-direction must be large enough so that orbitals within the
-unit cell only interact with a single nearest neighbour cell (the size
-of the unit cell can thus be derived from the range of support for the
-orbital basis functions). The electrode description is also used in {\tt tbtrans}.
-The electrodes are generated by a separate transiesta run on a bulk system.
-The results are saved in a file with extension {\tt .TSHS} which contains a
-description of the electrode unit cell, the position of the atoms within
-the unit cell, as well as the Hamiltonian and overlap matrices that describe
-the electronic structure of the lead. Using the commands below, one can
-generate a variety of electrodes based upon this initial run. Typical
-use of transiesta would involve reusing the same electrode for several
-transiesta runs.
-In this version of {\sc TranSiesta} , one must manually provide a valid
-description of the electrode and the atomic coordinates input to transiesta
-must conform with this description. At runtime, the transiesta coordinates
-are checked against the electrode coordinates and the program stops if
-there is a mismatch.
+electrodes which extend to the left and right of the contact
+region. Examples of electrodes would include surfaces, nanowires,
+nanotubes or even atomic chains. The electrode must be oriented along
+the z-axis and the unit cell along the z-direction must be large
+enough so that orbitals within the unit cell only interact with a
+single nearest neighbor cell (the size of the unit cell can thus be
+derived from the range of support for the orbital basis
+functions). The electrode description is also used in {\bf tbtrans}.
+The electrodes are generated by a separate transiesta run on a bulk
+system.  The results are saved in a file with extension {\tt .TSHS}
+which contains a description of the electrode unit cell, the position
+of the atoms within the unit cell, as well as the Hamiltonian and
+overlap matrices that describe the electronic structure of the
+lead. One can generate a variety of electrodes and the typical use of
+transiesta would involve reusing the same electrode for several
+setups.  In this version of {\sc TranSiesta}, one must manually
+provide a valid description of the electrode and the atomic
+coordinates input to must conform with this description.
+%At runtime, the transiesta coordinates 
+%are checked against the electrode coordinates and the program stops if 
+%there is a mismatch.
 
-\subsubsection{Electrode Setup Options}
+\subsection{{\sc TranSiesta} Options}
 
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
+The FDF options shown here are only to be used at the input file for
+the scattering region.  When using {\tt transiesta} for electrode
+calculations, only the usual {\sc Siesta} options are relevant.
 
-\item[{\bf TS.SaveHS}] ({\it logical}):
-\index{TS.SaveHS@{\bf TS.SaveHS}}
-Save the Hamiltonian in the file with extension .TSHS.
-Must be set to true when calculating the electrode Hamiltonian.
-The .TSHS file must also be generated in transiesta calculations
-if tbtrans is to be used after the run. Must be true during an
-electrode calculation.
-
-{\it Default value:} true
-
-\item[{\bf TS.HSFileLeft }] ({\it string}):
-\index{TS.HSFileLeft@{\bf TS.HSFileLeft}}
-Name of the .TSHS file output from the initial electrode run.
-N.B.: The program will stop if this file is not found.
-
-{\it Default value: \_NONE\_}
-
-\item[{\bf TS.HSFileRight }] ({\it string}):
-\index{TS.HSFileRight@{\bf TS.HSFileRight}}
-Name of .TSHS file describing right electrode. See TS.HSFileLeft.
-
-{\it Default value: \_NONE\_ }
-
-\item[{\bf TS.NumUsedAtomsLeft}] ({\it integer}):
-\index{TS.NumUsedAtomsLeft@{\bf TS.NumUsedAtomsLeft}}
-The number of electrode atoms to include in the left lead (for example
-it could be 2 if only the Greens function of the first two layers of a
-fcc(111) surface is needed and in which case you need 3 atoms in the
-bulk unit cell to represent the A,B,C,A,.. stacking). Must be less
-than the number of atoms in the simple unit cell of the left electrode.
-If it is less than the number of atoms in the simple unit cell, the last
-TS.NumUsedAtomsLeft atoms are taken. If it is less than the number of atoms
-in the simple unit cell, the atoms in the left electrode must be ordered
-according to their coordinate along the z-direction, from smallest
-to largest.
-
-{\it Default value: Number of atoms in the simple unit cell of the Left electrode }
-
-\item[{\bf TS.NumUsedAtomsRight}] ({\it integer}):
-\index{TS.NumUsedAtomsRight@{\bf TS.NumUsedAtomsRight}}
-The number of electrode atoms to include in the right lead. Must be less than the number of
-atoms in the simple unit cell of the right electrode. If it is less than the number of atoms
-in the simple unit cell, the first TS.NumUsedAtomsRight atoms are taken. If it is less than
-the number of atoms in the simple unit cell, the atoms in the right electrode must be ordered
-according to their coordinate along the z-direction, from smallest to largest.
-
-{\it Default value: Number of atoms in the simple unit cell of the Right electrode}
-
-\item[{\bf TS.BufferAtomsLeft}] ({\it integer}):
-\index{TS.BufferAtomsLeft@{\bf TS.BufferAtomsLeft}}
-Number of atoms starting from the first atom to neglect in the
-{\sc TranSiesta} run (their density matrix will be fixed).
-
-{\it Default value: 0}
-
-\item[{\bf TS.BufferAtomsRight}] ({\it integer}):
-\index{TS.BufferAtomsRight@{\bf TS.BufferAtomsRight}}
-Number of atoms starting from the last atom to neglect in the
-{\sc TranSiesta} run (their density matrix will be fixed).
-
-{\it Default value: 0}
-
-\item[{\bf TS.SurfaceAtomsLeft}] ({\it integer}):
-\index{TS.SurfaceAtomsLeft@{\bf TS.SurfaceAtomsLeft}}
-Used to subdivide the contact region into a left surface, a molecular region,
-and a right surface (for post-processing purposes only). If nonzero, the first
-TS.SurfaceAtomsLeft atoms after the last atom in the left lead are counted
-as part of the surface.
-
-\item[{\bf TS.SurfaceAtomsRight}] ({\it integer}):
-\index{TS.SurfaceAtomsRight@{\bf TS.SurfaceAtomsRight}}
-If nonzero, the first TS.SurfaceAtomsRight atoms before the first atom in the right
-lead are counted as part of the surface.
-
-\end{description}
-
-\subsection{  Matching   {\sc TranSiesta} Coordinates}
-Once an electrode description has been chosen, one must set up the atomic coordinates
-for use in {\sc TranSiesta}. It is important to note that the positions of the electrode atoms
-in the {\sc TranSiesta} unit-cell must be set up according to the following rules:
-\begin{itemize}
-\item
-The first TS.BufferAtomsLeft atoms correspond to buffer atoms that will not be used in the
-{\sc TranSiesta} calculation, but which are used in the  {\sc Siesta} calculation.
-\item The next TS.NumUsedAtomsLeft correspond to
-replications of the used atoms of the electrode. Starting with the first used atom in the
-primitive electrode, each atom in the unit cell is replicated in the A1-direction and then in
-the A2-direction. The vectors (A1, A2) correspond to vectors in the xy plane and A3 must be in
-the z-direction. If for example (A1, A2) = (x, y) the x will change fastest, then comes y,
-and then comes z.
-\item  The next atoms correspond to the contact region.
-\item  The next TS.NumUsedAtomsRight to replications of the used atoms of the right electrode.
-\item  The next TS.BufferAtomsRight correspond to atoms that are neglected in the transiesta part of
-the calculation and whose density is fixed by a  {\sc Siesta} calculation.
-\end{itemize}
-
-During a {\sc TranSiesta} run, several checks of the atomic coordinates will be carried out to validate
-that they are consistent with the description of the electrode. This is the most common problem
-when running {\sc TranSiesta} and thus much care should be taken when setting up a calculation.
-
-\subsection{General Options}
+\subsubsection{General options}
 
 \begin{description}
     \itemsep 10pt
     \parsep 0pt
 
     \item[{\bf SolutionMethod}] ({\it string}):
-        \index{SolutionMethod@{\bf SolutionMethod}}
-        Must be set to transiesta in order to perform a {\sc TranSiesta} calculation
+      \index{SolutionMethod@{\bf SolutionMethod}} Must be set to {\tt
+        transiesta} in order to perform a {\sc TranSiesta} calculation
 
-        {\it Default value:} diagon
+        {\it Default value:} {\tt diagon}
 
-    \item[{\bf TS.Voltage}] ({\it physical }):
-        The voltage applied along the z-direction of the unit cell.
-        The Poisson equation is solved with the boundary condition that the
-        bulk potentials are shifted with the applied voltage.
+\item[{\bf TS.SaveHS}] ({\it logical}): \index{TS.SaveHS@{\bf
+    TS.SaveHS}} Save the Hamiltonian in the file with extension .TSHS.
+  Must be {\tt true} when calculating the electrode Hamiltonian (it is
+  by default).  The .TSHS file must also be generated in {\sc
+    TranSiesta} calculations if tbtrans is to be used after the run.
 
-        {\it Default value:} 0.0 eV
+{\it Default value:} {\tt true}
+
+    \item[{\bf TS.Voltage}] ({\it physical }): The voltage applied
+      along the z-direction of the unit cell between the two
+      electrodes.
+
+        {\it Default value:} {\tt 0.0 eV}
+
+\item[{\bf TS.MixH}] ({\it logical}): \index{TS.MixH@{\bf TS.MixH}}
+  During the self consisten cycle, usually the density matrix of
+  previous steps are mixed to give the next density matrix. This flag
+  represents the possibility of mixing the Hamiltonian instead. If
+  used, it may result in faster convergence.
+
+{\it Default value:} {\tt false}
+
+\item[{\bf TS.UpdateDMCROnly}] ({\it logical}):
+  \index{TS.UpdateDMCROnly@{\bf TS.UpdateDMCROnly}} During the {\sc
+    TranSiesta} (Green's functions) self consistent cycle, it updates
+  only the density matrix elements of the contact region, if set to
+  {\tt true}. The electrodes and coupling terms are kept as the ones
+  obtained in a first {\sc Siesta} run. If set as {\tt false}, the
+  coupling terms are also updated by the Green's functions density
+  matrix. If a larger number of electrode layers (metallic systems)
+  are included in the contact region, the coupling terms may not need
+  to be updated. If set to {\tt false}, however, may result in larger
+  number of iterations to converge.
+
+{\it Default value:} {\tt true}
+
+\item[{\bf TS.CalcGF}] ({\it logical}): 
+\index{TS.CalcGF@{\bf TS.CalcGF}}
+The generated surface Green's functions of the electrodes depend on the atomic structure,
+but also on the energy points of the contour (that will dependend on the voltage). 
+It is possible to use previously generated .GF files, but care must be taken.
+If it is just a rerun of the same system, this flag can safely be set as {\tt false}. 
+This will save computing time.
+
+{\it Default value:} {\tt true}
+
+\item[{\bf TS.TriDiag}] ({\it logical}): \index{TS.TriDiag@{\bf
+    TS.TriDiag}} If represented in terms of the left electrode, the
+  contact region and the right electrode, the Hamiltonian is
+  tridiagonal (no interactions between the electrodes). To obtain the
+  Green's function used to compute the density matrix, the essential
+  operation is an inversion of a tridiagonal matrix. This matrix can
+  be inverted directly or by using smaller matrices (due to the
+  tridiagonality). If set to {\tt true}, it is done in this way.
+  Different memory uses and times for the inversion operation can be
+  obtained when using one or the other.
+
+{\it Default value:} {\tt false}
 
 \end{description}
 
-\subsection{Complex Contour Integration Options}
+\subsubsection{Electrode description options}
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+\item[{\bf TS.HSFileLeft }] ({\it string}): 
+\index{TS.HSFileLeft@{\bf TS.HSFileLeft}}
+Name of the .TSHS file output from the initial electrode run. 
+N.B.: The program will stop if this file is not found.
+
+{\it Default value:} {\tt \_NONE\_} 
+
+\item[{\bf TS.GFFileLeft }] ({\it string}): 
+\index{TS.GFFileLeft@{\bf TS.GFFileLeft}}
+Name of the .GF file of the left electrode. 
+N.B.: The program will generate a new one if not found.
+
+{\it Default value:} {\tt Left.GF} 
+
+\item[{\bf TS.HSFileRight }] ({\it string}): 
+\index{TS.HSFileRight@{\bf TS.HSFileRight}}
+Name of .TSHS file describing right electrode. See TS.HSFileLeft. 
+
+{\it Default value:} {\tt \_NONE\_} 
+
+\item[{\bf TS.GFFileRight }] ({\it string}): 
+\index{TS.GFFileRight@{\bf TS.GFFileRight}}
+Name of the .GF file of the left electrode. 
+N.B.: The program will generate a new one if not found.
+
+{\it Default value:} {\tt Right.GF}
+
+\item[{\bf TS.NumUsedAtomsLeft}] ({\it integer}):
+  \index{TS.NumUsedAtomsLeft@{\bf TS.NumUsedAtomsLeft}} The number of
+  electrode atoms to include in the left lead (for example it could be
+  2 if only the Greens function of the first two layers of a fcc(111)
+  surface is needed and in which case you need 3 atoms in the bulk
+  unit cell to represent the A,B,C,A,.. stacking). Must be less than
+  or equal to the number of atoms in the simple unit cell of the left
+  electrode.  If it is less than the number of atoms in the simple
+  unit cell, the last {\bf TS.NumUsedAtomsLeft} atoms are taken. If it
+  is less than the number of atoms in the simple unit cell, the atoms
+  in the left electrode must be ordered according to their coordinate
+  along the z-direction, from smallest to largest.
+
+{\it Default value:} {\tt Number of atoms in the simple unit cell of
+  the Left electrode}
+
+\item[{\bf TS.NumUsedAtomsRight}] ({\it integer}):
+  \index{TS.NumUsedAtomsRight@{\bf TS.NumUsedAtomsRight}} The number
+  of electrode atoms to include in the right lead. Must be less than
+  or equal to the number of atoms in the simple unit cell of the right
+  electrode. If it is less than the number of atoms in the simple unit
+  cell, the first {\bf TS.NumUsedAtomsRight} atoms are taken. If it is
+  less than the number of atoms in the simple unit cell, the atoms in
+  the right electrode must be ordered according to their coordinate
+  along the z-direction, from smallest to largest.
+
+{\it Default value:} {\tt Number of atoms in the simple unit cell of
+  the Right electrode}
+
+\item[{\bf TS.BufferAtomsLeft}] ({\it integer}): 
+\index{TS.BufferAtomsLeft@{\bf TS.BufferAtomsLeft}}
+Number of atoms starting from the first atom to neglect in the  
+{\sc TranSiesta} run. %(their density matrix will be fixed).
+
+{\it Default value:} {\tt 0} 
+
+\item[{\bf TS.BufferAtomsRight}] ({\it integer}): 
+\index{TS.BufferAtomsRight@{\bf TS.BufferAtomsRight}}
+Number of atoms starting from the last atom to neglect in the  
+{\sc TranSiesta} run.%(their density matrix will be fixed).
+
+{\it Default value:} {\tt 0} 
+
+\end{description}
+
+
+\subsubsection{Complex contour integration options}
 
 \begin{description}
     \itemsep 10pt
     \parsep 0pt
 
     \item[{\bf TS.ComplexContour.Emin}] ({\it physical}):
-        \index{TS.ComplexContour.Emin@{\bf TS.ComplexContour.Emin}}
-        The starting point of the complex energy contour. In a {\sc TranSiesta}
-        run this value should be below the lowest energy in the energy spectrum
-        otherwise some charge will be missing in the integration.
+      \index{TS.ComplexContour.Emin@{\bf TS.ComplexContour.Emin}} The
+      starting point of the complex energy contour. In a {\sc
+        TranSiesta} run this value should be below the lowest energy
+      in the energy spectrum otherwise some charge will be missing in
+      the integration.
 
-        {\it Default value:} -3 Ry
+        {\it Default value:} {\tt -3.0 Ry}
 
-    \item[{\bf TS.ComplexContour.NumCircle}] ({\it integer}):
+    \item[{\bf TS.ComplexContour.NumCircle}] ({\it integer}): 
         \index{TS.ComplexContour.NumCircle@{\bf TS.ComplexContour.NumCircle}}
-        Number of points along the arc part of the con-tour (starting at
-        TS.ComplexContour.Emin and ending at E$_F$ = 0).
+        Number of points along the arc part of the contour (starting at 
+        {\bf TS.ComplexContour.Emin} and ending at E$_F$ = 0).
 
-        {\it Default value:} 24
-
-    \item[{\bf TS.ComplexContour.NumLine}] ({\it integer}):
+        {\it Default value:} {\tt 24}
+        
+    \item[{\bf TS.ComplexContour.NumLine}] ({\it integer}): 
         \index{TS.ComplexContour.NumLine@{\bf TS.ComplexContour.NumLine}}
         Number of points on the line part of the contour.
 
-        {\it Default value:} 4
-
-    \item[{\bf TS.ComplexContour.NumPoles}] ({\it integer}):
+        {\it Default value:} {\tt 6}
+ 
+    \item[{\bf TS.ComplexContour.NumPoles}] ({\it integer}): 
         \index{TS.ComplexContour.NumPoles@{\bf TS.ComplexContour.NumPoles}}
         Number of Fermi poles that the complex contour should include.
 
-        {\it Default value:} 6
-
+        {\it Default value:} {\tt 6} 
+ 
 \end{description}
 
-\subsection{Bias Contour Integration Options}
+\subsubsection{Bias contour integration options}
 
 \begin{description}
     \itemsep 10pt
     \parsep 0pt
-
-    \item[{\bf TS.BiasContour.Eta}] ({\it real}):
+    
+    \item[{\bf TS.BiasContour.Eta}] ({\it physical}): 
         \index{TS.BiasContour.Eta@{\bf TS.BiasContour.Eta}}
         Small finite complex part of the real energy contour.
 
-        {\it Default value:} 10$^{-5}$ Ry
-
+        {\it Default value:} {\tt 10$^{-6}$ Ry}
+        
     \item[{\bf TS.BiasContour.Method}] ({\it string}):
-        \index{TS.BiasContour.Method@{\bf TS.BiasContour.Method}}
-        This describes how the points on the real axis contour are chosen.
-        Options are: \begin{itemize}
-                       \item {\tt Sommerfeld}: equally spaced points with Sommerfeld
-                       expansion for including the electron temperature.
-                       \item {\tt GaussFermi}: Gaussian quadrature weighted with
-                       the Fermi distribution function.
+      \index{TS.BiasContour.Method@{\bf TS.BiasContour.Method}} This
+      describes how the points on the real axis contour are chosen.
+      Options are: \begin{itemize}
+                       \item {\tt Sommerfeld}: equally spaced points
+                         with Sommerfeld expansion for including the
+                         electron temperature.
+                       \item {\tt GaussFermi}: Gaussian quadrature
+                         weighted with the Fermi distribution
+                         function.
                     \end{itemize}
-
+                    
         {\it Default value:} {\tt GaussFermi}
-
+        
     \item[{\bf TS.BiasContour.NumPoints}] ({\it integer}):
-        \index{TS.BiasContour.NumPoints@{\bf TS.BiasContour.NumPoints}}
-        Number of contour points on the close-to-real axis part of the contour in the voltage bias window.
+      \index{TS.BiasContour.NumPoints@{\bf TS.BiasContour.NumPoints}}
+      Number of contour points on the close-to-real axis part of the
+      contour in the voltage bias window.
 
-        {\it Default value:} 10
+        {\it Default value:} {\tt 5}
+        
+\end{description}    
 
-\end{description}
+\subsection{  Matching   {\sc TranSiesta} coordinates: basic rules}
+Having discussed the possible input options of {\sc TranSiesta} here
+we just list a set of rules to construct the appropriate coordinates
+of the scattering region.  The order of atoms be such that:
+\begin{itemize}
+\item
+The first {\bf TS.BufferAtomsLeft} atoms will be considered buffer
+atoms that will not be used in the {\sc TranSiesta} calculation, but
+which are used in the {\sc Siesta} calculation. This number can, of
+course, be zero.
+\item The next {\bf TS.NumUsedAtomsLeft} correspond to the left
+  electrode atoms.
+
+\item  The next atoms correspond to the contact region.
+\item  The next {\bf TS.NumUsedAtomsRight} are the right electrode atoms.
+\item The next {\bf TS.BufferAtomsRight} correspond to atoms that are
+  neglected in the transiesta part of the calculation, only take part
+  in the first {\sc Siesta} run (only occurs if it is not a
+  continuation run)
+\end{itemize}
+
+The order shown here must also correspond to increasing values of the
+{\tt z} coordinates of the atoms, in the sense that the left buffer
+atoms must all have smaller {\tt z} components than the left electrode
+atoms, and so on. But, within each {\it ``block''}(buffer atoms, or
+electrode atoms, etc \ldots), the coordinates do not have to be
+ordered in any special way (except when using for the electrodes a
+number smaller than what was used in the electrode's unit cell).
 
 \subsection{Output}
 
-{\sc TranSiesta} generates several output files.
-The output files are named Label.ext, where Label is defined using the
-SystemLabel FDF command , and .ext depends on the type of the output.
-Below we list the .ext files which are specific to transiesta.
-For a description of the other output files, we refer the user to
-the  {\sc Siesta} manual.
+{\sc TranSiesta} generates several output files.  The output files are
+named {\tt <SystemLabel>.ext}, defined using the SystemLabel FDF
+command , and .ext depends on the type of the output.  Below we list
+the .ext files which are specific to transiesta.  For a description of
+the other output files, we refer the user to the {\sc Siesta} manual.
 
 
 \begin{description}
     \itemsep 10pt
     \parsep 0pt
+    
+    \item[{\bf .DM }]: \index{.DM@{\bf .DM}} The {\sc Siesta} density
+      matrix. {\sc Siesta} initially performs a calculation at zero
+      bias assuming periodic boundary conditions in all directions,
+      and no voltage, which is used as a starting point for the
+      transiesta calculation.
 
-    \item[{\bf .DM }]:
-        \index{.DM@{\bf .DM}}
-        The {\sc Siesta} density matrix. {\sc Siesta} initially performs a calculation
-        at zero bias as-suming periodic boundary conditions, which is used
-        as a starting point for the transiesta calculation. During a transiesta
-        run, the .DM values are used for the density matrix in the regions
-        where .TSDM is not valid.
+    \item[{\bf .TSDE }]: \index{.TSDE@{\bf .TSDE}} The {\sc
+      TranSiesta} density matrix and energy density matrix. During a
+      transiesta run, the .DM values are used for the density matrix
+      in the buffer (if used) and electrode regions. The coupling
+      terms may o may no be updated in a {\sc TranSiesta} run (see
+      {\bf TS.UpdateDMCROnly}).
 
-    \item[{\bf .TSDE }]:
-        \index{.TSDE@{\bf .TSDE}}
-        The  {\sc TranSiesta} density matrix and energy density matrix.
+    \item[{\bf .TSHS }]: \index{.TSHS@{\bf .TSHS}} The Hamiltonian
+      corresponding to .TSDE, and other information needed by {\sc
+        TranSiesta} and {\tt tbtrans}.
 
-    \item[{\bf .TSHS }]:
-        \index{.TSDE@{\bf .TSDE}}
-        The Hamiltonian corresponding to .TSDM.
+\end{description} 
 
+\subsection{Utilities for analysis: {\tt tbtrans}.}
+\index{tbtrans@{\bf tbtrans}}
+
+The {\tt tbtrans} code can be found in the directory {\tt
+  Util/TBTrans}.  It is used in order to obtain, in a post-processing
+way, the transport properties after a {\sc TranSiesta} run. It was
+developed by M. Brandbyge, and the present version contains
+modifications made by Frederico D. Novaes.
+
+In order to run it, it requires the electrode's .TSHS files (may be
+just one file if the left and right electrodes are equal), and the
+scattering region's .TSHS file.  These are generated as explained
+above.  The location of these files are specified by the (already
+discussed) {\bf TS.HSFileLeft}, {\bf TS.HSFileRight} input options,
+and by:
+\begin{description}
+    \itemsep 10pt
+    \parsep 0pt
+
+\item [{\bf TS.TBT.HSFile}]({\it string}): Scattering region .TSHS file.
+\index{TS.HSFileLeft@{\bf TS.HSFileLeft}}
+
+{\it Default value:} {\tt {\it SystemLabel}.TSHS}
+\end{description}
+respectively for the left and right electrodes and the scattering
+region .TSHS file.
+
+The energy scale in {\tt tbtrans} is shifted so that the Fermi level
+of the system, if no voltage were applied, is zero. When computing the
+transmission function of a zero bias calculation, the transmission at
+the Fermi level is then given by T(E=0). When there is a finite bias,
+the Fermi energy of the left electrode is placed at V/2, and that of
+the right electrode at -V/2.
+
+The voltage is specified by {\bf TS.Voltage}. The energy window and
+number of points for the computation of the transmission function is
+specified by
+\begin{description}
+    \itemsep 10pt
+    \parsep 0pt
+
+\item [{\bf TS.TBT.Emin}]({\it physical}): Lowest energy value of the
+  computed transmission function.  \index{TS.TBT.Emin@{\bf
+      TS.TBT.Emin}}
+
+{\it Default value:} {\tt -2.0 eV}
+
+\item [{\bf TS.TBT.Emax}]({\it physical}): Highest energy value of the
+  computed transmission function.  \index{TS.TBT.Emax@{\bf
+      TS.TBT.Emax}}
+
+{\it Default value:} {\tt 2.0 eV}
+
+\item [{\bf TS.TBT.NPoints}]({\it integer}): Number of energy points
+  of the transmission function between {\bf TS.TBT.Emin} and {\bf
+    TS.TBT.Emax}.  \index{TS.TBT.NPoints@{\bf TS.TBT.NPoints}}
+
+{\it Default value:} {\tt 100}
+\end{description}
+Note that it is important to specify the voltage, since this
+information is not stored in the .TSHS files. The current will be
+computed using the resulting transmission function, so be sure to make
+it suited for the integration in the bias window (the energy window
+defined by {\bf TS.TBT.Emin} and {\bf TS.TBT.Emax} being bigger than
+or equal to the applied bias).
+
+The k-point sampling is defined by the {\bf kgrid\_Monkhorst\_Pack}
+block. The averaged (over k-points) transmission function is printed
+in the file {\tt <SystemLabel>.AVTRANS}.
+
+The present version of the code is only parallelized over 
+k-points, so the number of nodes should not be bigger than 
+the number of k-points.
+
+An additional options is:
+\begin{description}
+ \item [{\bf TS.TBT.NEigen}]({\it integer}): Number of eigenvalues of
+   the transmission matrix to be computed.  \index{TS.TBT.NEigen@{\bf
+       TS.TBT.NEigen}}
+
+{\it Default value:} {\tt 0}
 \end{description}
 
-\subsection{Utilities for analysis: {\tt TBTrans}.}
-\index{TBTrans@{\bf TBTrans}}
 
-The tbtrans code can be found in the directory {\tt Util/TBTrans}.
-It is used in order to obtain, in a post-processing way, the transport properties after
-a {\sc TranSiesta}. It was developed by M. Brandbyge, and the present
-version contains some modifications made by F. D. Novaes.
-
-In order to run it, it requires the electrode's TSHS files (may be just one file if the
-left and right electrodes are equal), and the scattering region's TSHS file.
-These  are generated in a {\sc TranSiesta} run.
-The location of these files are specified by the (fdf) input options:
+To summarize, here we give a list of the parameters read by {\tt
+  tbtrans} from the input file (the fdf flags):
 \begin{itemize}
-\item TS.HSFileLeft
-\item TS.HSFileRight
-\item TS.TBT.HSFile
+ \item {\bf TS.Voltage}
+ \item {\bf kgrid\_Monkhorst\_Pack} (block)
+ \item {\bf TS.HSFileLeft}
+ \item {\bf TS.HSFileRight}
+ \item {\bf TS.TBT.HSFile}
+ \item {\bf TS.TBT.Emin} 
+ \item {\bf TS.TBT.Emax} 
+ \item {\bf TS.TBT.NPoints}
+ \item {\bf TS.TBT.NEigen}
+ \item {\bf TS.BufferAtomsLeft}
+ \item {\bf TS.BufferAtomsRight}
+ \item {\bf TS.NumUsedAtomsLeft}
+ \item {\bf TS.NumUsedAtomsRight}
+ \item {\bf SpinPolarized}
 \end{itemize}
-respectively for the left and right electrodes and the scattering region (for the latter one,
-if nothing is  specified, it is assumed that the file name is is {\tt <SystemLabel>.TSHS} file,
-and located in the same directory from where the calculation is being launched).
-
-The energy window and number of points for the computation of the
-transmission function is specified by
-\begin{itemize}
-\item TS.TBT.Emin
-\item TS.TBT.Emax
-\item TS.TBT.NPoints
-\end{itemize}
-The current will be computed using the resulting transmission function,
-so be sure to make it suited for the integration in the bias window.
-
-The averaged (over k-points) transmission function is printed in
-the file {\tt <SystemLabel>.AVTRANS}.
-
-The present version of the code is only parallelized over
-k-points, so the number of nodes should not be bigger than
-the number of k-points.
 
 \subsubsection{Compiling TBTtrans}
 
