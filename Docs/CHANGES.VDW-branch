@@ -1,5 +1,19 @@
 ------------------------------------------------------------------
 
+2009-10-02  11:45:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-36-284
+
+Summary: Update of siesta.tex and atom.tex
+Keywords: siesta.tex atom.tex
+
+  Some minor changes to the siesta and atom manuals, mostly related to
+  the vdW xc functional.
+
+modified:
+  Docs/siesta.tex
+  Pseudo/atom/Docs/atom.tex
+
+------------------------------------------------------------------
+
 2009-10-01  20:30:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-35-283
 
 Summary: Added two tests

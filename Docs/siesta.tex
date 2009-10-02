@@ -125,8 +125,9 @@ dynamics simulations of molecules and solids. Its main characteristics are:
 \begin{itemize}
 \item
 It uses the standard Kohn-Sham selfconsistent density functional
-method in the local density (LDA-LSD) or generalized gradient (GGA)
-approximations.
+method in the local density (LDA-LSD) and generalized gradient (GGA)
+approximations, as well as in a non local functional that includes
+van der Waals interactions (VDW-DF).
 \item
 It uses norm-conserving pseudopotentials in its fully nonlocal
 (Kleinman-Bylander) form.
@@ -2658,9 +2659,10 @@ Chem. Phys. Lett. {\bf 157}, 200 (1989). See also Johnson, Gill and Pople,
 J. Chem. Phys. {\bf 98}, 5612 (1993). (Some errors were detected in this
 last paper, so not all of their expressions correspond exactly to those
 implemented in {\sc Siesta})
-\item {\tt DRSLL} Van der Waals exchange-correlation density functional of
+\item {\tt DRSLL} van der Waals exchange-correlation density functional of
 M. Dion, H. Rydberg, E. Schr\"{o}der, D. C. Langreth, and B. I. Lundqvist,
-Phys. Rev. Lett. {\bf 92}, 246401 (2004).
+Phys. Rev. Lett. {\bf 92}, 246401 (2004), with the efficient implementation of 
+G. Rom\'an-P\'erez and J. M. Soler, Phys. Rev. Lett. {\bf 103},  096102 (2009).
 
 \end{itemize}
 
@@ -5192,7 +5194,7 @@ make it possible to run larger jobs where memory is the limiting factor.
 
 \end{description}
 
-\subsection{Memory accounting options}
+\subsection{Memory and CPU-time accounting options}
 \begin{description}
 
 \item[{\bf AllocReportLevel}] ({\it integer}):
@@ -5230,7 +5232,11 @@ and peaks, which always include all arrays.
 \index{TimerReportThreshold@{\bf TimerReportThreshold}}
 Sets the minimum fraction, of total CPU time, of the subroutines or
 code sections whose CPU time is individually printed in the detailed 
-timer reports.
+timer reports. To obtain the accounting of MPI communication times
+in parallel executions, you must compile with option {\tt -DMPI\_TIMING}.
+In serial execution, the CPU times are printed at the end of the
+output file. In parallel execution, they are reported in a separated
+file named {\tt SystemLabel}.times.
 
 {\it Default value:} {\tt 0.0}
 
