@@ -10,4 +10,4 @@ the needed Src files), do
 
    make dist      (you might need to 'touch ../arch.make' if you are under Src)
 
-and package appropriately the resulting siestaXC-dist directory.
+and package appropriately the resulting SiestaXC directory.

@@ -11,7 +11,7 @@ VPATH:=$(VPATH_ROOT)/SiestaXC:$(VPATH_ROOT)
 #
 default: module
 module:  libSiestaXC.a
-	cp siestaxc.mod *.a ..
+	cp siestaXC.mod *.a ..
 #
 SIESTA_SRCS= alloc.F90 bessph.f cellsubs.f  \
              chkgmx.f fft1d.F  flib_spline.f90  \
@@ -26,7 +26,7 @@ SIESTA_OBJS:= $(SIESTA_OBJS:.F90=.o)
 SIESTA_SOURCES:=$(addprefix ../, $(SIESTA_SRCS))
 
 LOCAL_SRCS= atomxc.f90 cellxc.f90 debugxc.f90 ggaxc.f ldaxc.f \
-            siestaxc.f90 vdwxc.f90 xcmod.f90  fft3d.f90 fftr.f90 \
+            siestaXC.f90 vdwxc.f90 xcmod.f90  fft3d.f90 fftr.f90 \
             mesh1d.f90 mesh3d.F90
 LOCAL_OBJS:= $(LOCAL_SRCS:.f=.o)
 LOCAL_OBJS:= $(LOCAL_OBJS:.F=.o)
@@ -45,22 +45,24 @@ libSiestaXC.a: $(ALL_OBJS)
 OTHER_FILES=lib-makefile lib-arch.make mpi-makefile lib-00-README test-makefile
 #
 .PHONY: dist
-dist: siestaXC-dist
-siestaXC-dist: $(ALL_SOURCES) $(OTHER_FILES) 
-	rm -rf siestaXC-dist
-	mkdir -p siestaXC-dist
-	cp -fp $(ALL_SOURCES) siestaXC-dist
-	cp -fp lib-makefile siestaXC-dist/makefile
-	cp -fp lib-arch.make siestaXC-dist
-	cp -frp ../MPI siestaXC-dist
-	cp -fp mpi-makefile siestaXC-dist/MPI/Makefile
-	cp -frp Testers siestaXC-dist
-	cp -fp test-makefile siestaXC-dist/Testers/makefile
-	cp BSD_LICENSE siestaXC-dist
-	cp lib-00-README siestaXC-dist/00_README
+dist: siestaXC.tgz
+siestaXC.tgz: $(ALL_SOURCES) $(OTHER_FILES) 
+	rm -rf SiestaXC
+	mkdir -p SiestaXC
+	cp -fp $(ALL_SOURCES) SiestaXC
+	cp -fp lib-makefile SiestaXC/makefile
+	cp -fp lib-arch.make SiestaXC/arch.make
+	cp -frp ../MPI SiestaXC
+	cp -fp mpi-makefile SiestaXC/MPI/Makefile
+	cp -frp Testers SiestaXC
+	cp -fp test-makefile SiestaXC/Testers/makefile
+	cp BSD_LICENSE SiestaXC
+	cp lib-00-README SiestaXC/00_README
+	tar -cvzf siestaXC.tgz SiestaXC
+	rm -rf SiestaXC
 #
 clean:
-	rm -fr *.o *.*d *.a siestaXC-dist
+	rm -fr *.o *.*d *.a siestaXC.tgz
 #
 # DO NOT DELETE THIS LINE - used by make depend
 alloc.o: m_io.o parallel.o precision.o sys.o
@@ -87,7 +89,7 @@ mesh3d.o: alloc.o debugxc.o parallel.o precision.o sorting.o sys.o
 minvec.o: cellsubs.o precision.o sorting.o sys.o
 moreParallelSubs.o: alloc.o m_io.o parallel.o precision.o sys.o
 radfft.o: alloc.o bessph.o m_recipes.o precision.o
-siestaxc.o: atomxc.o cellxc.o mesh3d.o precision.o xcmod.o
+siestaXC.o: atomxc.o cellxc.o mesh3d.o precision.o xcmod.o
 sys.o: parallel.o
 vdwxc.o: debugxc.o flib_spline.o ldaxc.o m_recipes.o mesh1d.o precision.o
 vdwxc.o: radfft.o

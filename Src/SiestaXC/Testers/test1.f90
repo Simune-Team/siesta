@@ -65,11 +65,11 @@ PROGRAM siestaXCtest1
   integer :: errorC, errorX, iCall, iDelta, iDeriv, iSpin, ix, &
              jf, kf, mSpin, one, two, three, four
   logical :: errorsFound
-!  integer :: mySeed(8) = (/39302655,65443109,09887367,99836827, &
-!                           70376268,32727926,46717826,35271017/)
+  integer :: mySeed(8) = (/39302655,65443109,09887367,99836827, &
+                           70376268,32727926,46717826,35271017/)
 
   ! Initialize random seed
-!  call random_seed( put=mySeed )
+  call random_seed( put=mySeed )
 
   ! Set Pauli matrices
   Imat(1,:)    = (/c1, c0/)  ! Identity matrix

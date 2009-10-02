@@ -75,6 +75,17 @@ PROGRAM siestaXCtest4
   integer :: nLarger, nxNode
 #endif
 
+#ifdef MPI
+  ! Initialize MPI and get myNode and nNodes
+  print*,'test4: entering MPI_Init'
+  call MPI_Init( MPIerror )
+  call MPI_Comm_Rank( MPI_Comm_World, myNode, MPIerror )
+  call MPI_Comm_Size( MPI_Comm_World, nNodes, MPIerror )
+#else
+  myNode = 0
+  nNodes = 1
+#endif
+
   ! Initialize hybrid XC functional with all tested functionals
   mSpin = min( nSpin, 2 )
   wx = 1._dp / nf
@@ -117,16 +128,6 @@ PROGRAM siestaXCtest4
   kCut = cellMesh(1) * sqrt(sum(recCell(:,1)**2)) / 2  ! Max. wave vector
   Ecut = kCut**2                                       ! Mesh cutoff, in Ry
   dx = pi / kCut                                 ! Dist. between mesh planes
-
-#ifdef MPI
-  ! Initialize MPI and get myNode and nNodes
-  call MPI_Init( MPIerror )
-  call MPI_Comm_Rank( MPI_Comm_World, myNode, MPIerror )
-  call MPI_Comm_Size( MPI_Comm_World, nNodes, MPIerror )
-#else
-  myNode = 0
-  nNodes = 1
-#endif
 
   ! Find the box of mesh points own by my processor
 #ifdef MPI

@@ -1,5 +1,40 @@
 ------------------------------------------------------------------
 
+2009-10-02  18:45:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-37-285
+
+Summary: Distribution building + name changes
+Keywords: makefile
+
+  - Name siestaxc.f90 has been changed to siestaXC.f90 for consistency.
+
+  - Directory name siestaXC-dist has been changed to SiestaXC. Also,
+    when making the distribution library, a siestaXC.tgz file,
+    containing a SiestaXC directory, is made directly.
+
+  - Name lib-arch.make has been changed to arch.make
+
+  - test1 and test4 in SiestaXC/Testers have been updated to avoid 
+    compilation errors with the ifort and mpif90 compilers.
+
+  - timer.f90 has been added to the library
+
+renamed:
+  Src/SiestaXC/siestaxc.f90 => Src/SiestaXC/siestaXC.f90
+
+modified:
+  Src/Makefile                    Dependencies updated
+  Src/SiestaXC/00_README          Name siestaXC-dist -> SiestaXC
+  Src/SiestaXC/Testers/makefile   Name siestaxc.mod -> siestaXC.mod
+  Src/SiestaXC/Testers/test1.f90  Added call to random_seed
+  Src/SiestaXC/Testers/test4.F90  Call to MPI_Init moved upwards
+  Src/SiestaXC/lib-00-README      Extended explanations + name changes
+  Src/SiestaXC/lib-makefile       Changed names of siestaxc and siestaXC-dist
+                                  timer.f90 added to SIESTA_SRCS
+  Src/SiestaXC/makefile           siestaXC.tgz made directly
+                                  Changed names of siestaxc and siestaXC-dist
+
+------------------------------------------------------------------
+
 2009-10-02  11:45:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-36-284
 
 Summary: Update of siesta.tex and atom.tex

@@ -550,7 +550,7 @@ propor.o: precision.o sys.o
 proximity_check.o: m_ts_options.o mneighb.o parallel.o precision.o
 proximity_check.o: siesta_geom.o siesta_options.o
 pseudopotential.o: alloc.o atom_options.o flib_spline.o precision.o sys.o
-radfft.o: alloc.o bessph.o m_recipes.o precision.o
+radfft.o: bessph.o m_recipes.o precision.o
 radial.o: precision.o xml.o
 rdiag.o: alloc.o memoryinfo.o parallel.o precision.o sys.o
 read_xc_info.o: parallel.o parsing.o precision.o sys.o

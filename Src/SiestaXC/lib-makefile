@@ -2,26 +2,26 @@
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
-ARCH_MAKE_DEFAULT=lib-arch.make
+ARCH_MAKE_DEFAULT=arch.make
 ARCH_MAKE?=$(ARCH_MAKE_DEFAULT)
 include $(ARCH_MAKE)
 #
 default: module
 module:  libSiestaXC.a
-	cp siestaxc.mod *.a ..
+	cp siestaXC.mod *.a ..
 #
 SIESTA_SRCS= alloc.F90 bessph.f cellsubs.f  \
              chkgmx.f fft1d.F  flib_spline.f90  \
              minvec.f m_io.f moreParallelSubs.F90 \
              m_recipes.f m_timer.F90 m_walltime.f90 parallel.F \
-	     precision.F pxf.F90 radfft.f sorting.f sys.F
+	     precision.F pxf.F90 radfft.f sorting.f sys.F timer.f90
 SIESTA_OBJS:= $(SIESTA_SRCS:.f=.o)
 SIESTA_OBJS:= $(SIESTA_OBJS:.F=.o)
 SIESTA_OBJS:= $(SIESTA_OBJS:.f90=.o)
 SIESTA_OBJS:= $(SIESTA_OBJS:.F90=.o)
 #
 LOCAL_SRCS= atomxc.f90 cellxc.f90 debugxc.f90 ggaxc.f ldaxc.f \
-            siestaxc.f90 vdwxc.f90 xcmod.f90  fft3d.f90 fftr.f90 \
+            siestaXC.f90 vdwxc.f90 xcmod.f90  fft3d.f90 fftr.f90 \
             mesh1d.f90 mesh3d.F90
 LOCAL_OBJS:= $(LOCAL_SRCS:.f=.o)
 LOCAL_OBJS:= $(LOCAL_OBJS:.F=.o)
@@ -68,7 +68,7 @@ mesh3d.o: alloc.o debugxc.o parallel.o precision.o sorting.o sys.o
 minvec.o: cellsubs.o precision.o sorting.o sys.o
 moreParallelSubs.o: alloc.o m_io.o parallel.o precision.o sys.o
 radfft.o: alloc.o bessph.o m_recipes.o precision.o
-siestaxc.o: atomxc.o cellxc.o xcmod.o
+siestaXC.o: atomxc.o cellxc.o xcmod.o
 sys.o: parallel.o
 vdwxc.o: debugxc.o flib_spline.o ldaxc.o m_recipes.o mesh1d.o precision.o
 vdwxc.o: radfft.o
