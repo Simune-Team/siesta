@@ -132,17 +132,22 @@ C
 C  Modules
 C
       use precision
-      use parallel,      only : Node, Nodes
-      use atmfuncs,      only : rcut, rcore
+      use parallel, only : Node, Nodes
+      use parallel, only : ProcessorY
+      use atmfuncs, only : rcut, rcore
       use fdf
-      use sys,           only : die
-      use mesh,          only : xdsp, nsm, nsp
+      use sys,      only : die
+      use mesh,     only : xdsp, nsm, nsp
       use parsing
-      use m_iorho,       only : write_rho
-      use m_forhar,      only : forhar
-      use xcmod,         only : nXCfunc, XCauth
-      use alloc,         only : re_alloc, de_alloc
-      use files,         only : slabel
+      use m_iorho,  only : write_rho
+      use m_forhar, only : forhar
+      use siestaXC, only : getXC        ! Returns the XC functional used
+      use alloc,    only : re_alloc, de_alloc
+      use files,    only : slabel
+      use siestaXC, only : cellXC       ! Finds xc energy and potential
+      use siestaXC, only : myMeshBox    ! Returns my processor mesh box
+      use siestaXC, only : setMeshDistr ! Sets a distribution of mesh
+                                        ! points over parallel processors
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -183,7 +188,7 @@ C
 C ----------------------------------------------------------------------
 C Routines called internally:
 C ----------------------------------------------------------------------
-C        cellxc(...)    : Finds total exch-corr energy and potential
+C        cellXC(...)    : Finds total exch-corr energy and potential
 C        cross(a,b,c)   : Finds the cross product of two vectors
 C        dfscf(...)     : Finds SCF contribution to atomic forces
 C        dipole(...)    : Finds electric dipole moment
@@ -207,8 +212,8 @@ C ----------------------------------------------------------------------
 C real*8  bcell(3,3)    : Bulk lattice vectors
 C real*8  cell(3,3)     : Auxiliary lattice vectors (same as ucell)
 C real*8  const         : Auxiliary variable (constant within a loop)
-C real*8  DEc           : Auxiliary variable to call cellxc
-C real*8  DEx           : Auxiliary variable to call cellxc
+C real*8  DEc           : Auxiliary variable to call cellXC
+C real*8  DEx           : Auxiliary variable to call cellXC
 C real*8  dvol          : Mesh-cell volume
 C real*8  Ec            : Correlation energy
 C real*8  Ex            : Exchange energy
@@ -223,6 +228,8 @@ C logical IsDiag        : Is supercell diagonal?
 C logical IsEfld        : Is there an external electric field?
 C integer ispin         : Spin index
 C integer j             : General-purpose index
+C integer JDGdistr      : J.D.Gale's parallel distribution of mesh points
+C integer myBox(2,3)    : My processor's mesh box
 C integer nbcell        : Number of independent bulk lattice vectors
 C integer nm(3)         : Number of Mesh divisions of each cell vector
 C integer npcc          : Partial core corrections? (0=no, 1=yes)
@@ -256,7 +263,11 @@ C
       integer
      .  i, ia, io, ip, iphi, is, ispin, j, ifor,
      .  n, nbcell, nm(3), npcc, nsd, nv, nzero(3), 
-     .  ntopl, nmpl, nsc(3), ntpl, nml(3), ntml(3)
+     .  ntopl, nmpl, nsc(3), ntpl, nml(3), ntml(3), nXCfunc
+      integer
+     .  iNode, myBox(2,3)
+      integer, save::
+     .  JDGdistr=-1
 
 #ifdef MPI
       integer
@@ -267,16 +278,11 @@ C
       real(grid_p), dimension(:),     pointer, save   :: Vaux
       real(grid_p), dimension(:,:),   pointer, save   :: DRho, Vscf
       real(grid_p), dimension(:), pointer, save   :: Chlocal, Totchar
-!
-!     Dummy arrays for cellxc call
-!
-      real(grid_p) ::  aux3(3,1)
-      real(grid_p), dimension(1,1,1)  :: DVxcdn_dummy
 
       real(dp)
      .  bcell(3,3), b1Xb2(3), cell(3,3), const,
      .  DEc, DEx, ddot, DStres(3,3), dvol, Ec, Ex, field(3),
-     .  rhotot, rmax, scell(3,3), tiny, 
+     .  rhotot, rmax, scell(3,3), stressXC(3,3), tiny, 
      .  Uharrs, volume, volcel, x0(3)
 
       real(dp), save ::  qspiral(3)
@@ -287,6 +293,8 @@ C
 
       logical :: leqi
 
+      character(len=20):: XCauth(10), XCfunc(10)
+
       logical, save :: 
      .  frstme, harrisfun, IsDiag, IsEfld, samesh, samexa, spiral
 
@@ -294,8 +302,7 @@ C
      .  shape
 
       external
-     .  cellxc, cross,
-     .  dfscf,  dipole, ddot, doping,
+     .  cross, dfscf,  dipole, ddot, doping,
      .  efield, poison, 
      .  reord, rhooda, rhoofd, rhoofdsp, 
      .  timer, vmat, vmatsp, volcel,
@@ -367,6 +374,9 @@ C Read spin-spiral wavevector (if defined)
      $    call die('dhscf: ERROR: spiral defined but nspin < 4')
 
       endif
+
+C Get functional(s) being used
+      call getXC( nXCfunc, XCfunc, XCauth )
 
       if (.not.harrisfun) then
         ifor = 0
@@ -855,6 +865,15 @@ C Get back spin density from sum and difference
         enddo
       endif
 
+
+C ----------------------------------------------------------------------
+C Set uniform distribution of mesh points and find my processor mesh box
+C ----------------------------------------------------------------------
+
+      call setMeshDistr( distrID=JDGdistr, nMesh=ntm, 
+     .                   nNodesX=1, nNodesY=ProcessorY, nBlock=nsm )
+      call myMeshBox( ntm, JDGdistr, myBox )
+
 C ----------------------------------------------------------------------
 C Exchange-correlation energy
 C ----------------------------------------------------------------------
@@ -870,8 +889,10 @@ C ----------------------------------------------------------------------
         call reord(DRho(1,ispin),DRho(1,ispin),nml,nsm,+1)
       enddo
 
-      call cellxc( 0, 0, cell, ntml, ntml, ntpl, 0, aux3, nspin, DRho, 
-     .             Ex, Ec, DEx, DEc, Vscf, DVxcdn_dummy, stressl )
+      call cellXC( 0, cell, ntm, myBox(1,1), myBox(2,1),
+     .                           myBox(1,2), myBox(2,2),
+     .                           myBox(1,3), myBox(2,3), nspin,
+     .             DRho, Ex, Ec, DEx, DEc, stressXC, Vscf )
 
       do ispin = 1,nspin
         call reord(DRho(1,ispin),DRho(1,ispin),nml,nsm,-1)
@@ -888,6 +909,7 @@ C ----------------------------------------------------------------------
           Vscf(ip,ispin) = Vscf(ip,ispin) + Vaux(ip)
         enddo
       enddo
+      stress = stress + stressXC
 
 C ----------------------------------------------------------------------
 C Save total potential

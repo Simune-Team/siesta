@@ -6,6 +6,61 @@
 ** CHANGES ALONG trunk 
 
 ------------------------------------------------------------------------
+2009-10-05  14:15:00 GMT Alberto Garcia <albertog@icmab.es>    trunk-301
+New siestaXC library including van der Waals functional
+
+Implementation of the non local van der Waals density functional 
+of Dion et al (PRL 92, 246401 (2004), PRL 103, 096102 (2009)).
+
+The codes for the new functional are 
+
+XC.functional           VDW
+XC.authors              DRSLL
+
+in Siesta and 'vw' (or 'vf') in Atom.
+
+All the exchange-correlation routines have been placed in a library
+called siestaXC, whose unique entry point is module m_siestaXC. The
+sources are in subdirectory Src/SiestaXC, whose makefile allows to
+create a self-contained distribution in file siestaXC.tgz, that can
+be used in programs other than siesta. The library sources that are
+used by siesta also outside the library (like alloc.F90) remain in
+Src, and are copied by SiestaXC/makefile into siestaXC.tgz.
+
+The library is used to compile siesta itself, with a scheme similar
+to that used for MPI, fdf and FoX. Pseudo/atom has been also adapted
+to use the siestaXC library.
+
+The implementation of the non local van der Waals density functional
+has led to a whole rewritting of cellxc and a major one of atomxc.
+File xc has been splitted in m_atomxc, m_ldaxc, and m_ggaxc, which
+are now modules. The VDW-specific routines are in module m_vdwxc.
+
+The new parallelization of cellxc has led to several new modules, of
+which mesh3d is the largest one. It allows new distributions of mesh
+points among processors, that can change dynamically. Other relevant
+modules are fftr, for 3-D FFTs of real functions. fft3d has changed
+to allow (complex) 3-D FFTs using the new distributions of mesh points.
+Module mesh1d provides radial (1-D) mesh utilities. Module m_debugXC
+writes reports debugXC.node$$ with details of mesh distributions.
+
+The new m_timer module, together with changes in MPI/mpi_siesta, allows
+the profiling of MPI communication times, for each routine that calls 
+timer, after compiling with -DMPI_TIMING. Routine timer itself remains 
+external, but it uses m_timer operationally.
+
+The full accounting and reporting of allocated arrays is now done in
+module alloc, and printed in (SystemLabel).alloc. The old 'memory'
+routine now passes information to alloc for this accounting, rather
+than the other way around. Therefore, the 'total' allocation sizes
+given by memory routine are no longer complete, though they are still
+printed.
+
+(Jose Soler (UAM), with help by Alberto Garcia (ICMAB), Rogeli Grima
+(BSC) , and Jose Maria Cela (BSC))
+
+
+------------------------------------------------------------------------
 2009-09-29  10:30:00 GMT Alberto Garcia <albertog@icmab.es>    trunk-300
 TranSiesta updates. Assorted fixes and cleanup. Update outputs and banner.
 
