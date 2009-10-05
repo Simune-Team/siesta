@@ -1,6 +1,6 @@
 #
 # Single-test makefile
 #
-name=ar_vdw
+name=ar2_vdw
 #
 include ../test.mk

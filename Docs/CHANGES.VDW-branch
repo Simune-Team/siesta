@@ -1,5 +1,25 @@
 ------------------------------------------------------------------
 
+2009-10-05  00:45:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-39-287
+
+Summary: Two bugs corrected
+Keywords: atomxc diagg
+
+  Two bugs that appeared with gfortran+MacOSX have been corrected:
+  - implicit arrays in atomxc are now allocated explicitly (this was 
+    not a real bug but it was producing errors with gfortran)
+  - calls to timer in diagg were placed correctly within loop
+  - Additionally, an error (not corrected) appears in iomd when
+    writting un unformatted .MD file (with MacOSX gfortran)
+
+modified:
+  Src/SiestaXC/atomxc.f90  ! Arrays allocated explicitly
+  Src/diagg.F              ! Calls to timer moved within do loop
+  Tests/Makefile           ! Added tests ar2_vdw and graphite_vdw_df
+  Tests/ar2_vdw/makefile   ! Corrected test name
+
+------------------------------------------------------------------
+
 2009-10-02  21:00:00 GMT+1	Jose M Soler	siesta-2.6.32-vdw-38-286
 
 Summary: Merged vith trunk revno 300

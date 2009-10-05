@@ -37,7 +37,7 @@ ALL= h2o h2o_reparam h2o_basis h2o_dos h2o_orderN			\
        graphite_c6 oxyn partial h2o_findp_bug h2o_radialgrid ag ch4	\
        si_coop born pb_filter_cutoff pb_filter_tol fire_benzene		\
        fe_clust_noncollinear h_chain n_chain si64_coop si_pdos_kgrid    \
-       si2x1h-dipole
+       si2x1h-dipole ar2_vdw graphite_vdw_df 
 #
 #  Need to add the new tests and generate the reference outputs and xml files.
 #

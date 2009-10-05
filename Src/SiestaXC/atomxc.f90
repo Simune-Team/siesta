@@ -214,15 +214,20 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 ! Fix the maximum number of functionals to be combined
   integer, parameter :: maxFunc = 10
 
+! Max number of spin components
+  integer, parameter :: maxSpin = 4
+
 ! Local variables and arrays
   logical :: &
     GGA, GGAfunc, VDW, VDWfunc
   integer :: &
     ik, in, in1, in2, iq, ir, is, ix, jn, ndSpin, nf, nq, nXCfunc
   real(dp) :: & 
-    dEcdD(nSpin), dEcdGD(3,nSpin), dEcuspdD(nSpin), dEcuspdGD(3,nSpin), &
-    dExdD(nSpin), dExdGD(3,nSpin), dEdDaux(nSpin), dGdm(-nn:nn), &
-    d2ydx2, dk, dr, drdm(nr), Dtot, dVcdD(nSpin,nSpin), dVxdD(nSpin,nSpin), &
+    dEcdD(maxSpin), dEcdGD(3,maxSpin), dEcuspdD(maxSpin), &
+    dExdD(maxSpin), dExdGD(3,maxSpin), dEdDaux(maxSpin),  &
+    dEcuspdGD(3,maxSpin), dVcdD(maxSpin,maxSpin), dVxdD(maxSpin,maxSpin)
+  real(dp) :: & 
+    dGdm(-nn:nn), d2ydx2, dk, dr, Dtot, &
     Eaux, Ecut, epsC, epsCusp, epsNL, epsX, f1, f2, &  
     k(0:nk), kc, kmax, pi, r(0:nk), rmax, x0, xm, xp, y0, ym, yp, &
     XCweightC(maxFunc), XCweightX(maxFunc)
@@ -230,7 +235,8 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
     XCauth(maxFunc), XCfunc(maxFunc)
 
   real(dp), pointer :: &
-    D(:,:)=>null(), dGDdD(:,:)=>null(), dVol(:)=>null(), GD(:,:,:)=>null()
+    D(:,:)=>null(), dGDdD(:,:)=>null(), drdm(:)=>null(), dVol(:)=>null(), &
+    GD(:,:,:)=>null()
   real(dp), pointer:: &
     dphidk(:,:)=>null(), dtdgd(:,:,:)=>null(), dtdd(:,:)=>null(), &
     phi(:,:)=>null(), tk(:,:)=>null(), tr(:,:)=>null(), &
@@ -277,7 +283,8 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 ! Allocate temporary arrays
   call re_alloc( D,       1,nSpin, 1,nr, myName//'D' )
   call re_alloc( dGDdD,    -nn,nn, 1,nr, myName//'dGDdD' )
-  call re_alloc( dVol,             1,nr, myName//'dVol'   )
+  call re_alloc( drdm,             1,nr, myName//'drdm'  )
+  call re_alloc( dVol,             1,nr, myName//'dVol'  )
   call re_alloc( GD, 1,3, 1,nSpin, 1,nr, myName//'GD' )
 
 ! Find some parameters for the FFT mesh
@@ -644,6 +651,7 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 ! Deallocate temporary arrays
   call de_alloc( GD,    myName//'GD' )
   call de_alloc( dVol,  myName//'dVol' )
+  call de_alloc( drdm,  myName//'drdm' )
   call de_alloc( dGDdD, myName//'dGDdD' )
   call de_alloc( D,     myName//'D' )
 
