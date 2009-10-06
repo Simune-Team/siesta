@@ -36,6 +36,8 @@ subroutine pxfflush(unit)
 
 #if defined(F2003)
   flush(unit)
+#elif defined(GFORTRAN)
+  call flush(unit)
 #elif defined(xlC)
   call flush_(unit)
 #elif defined (FC_HAVE_FLUSH)
@@ -69,6 +71,8 @@ subroutine pxfabort()
     subroutine abort(), bind(c)
     end subroutine abort
   end interface
+  call abort()
+#elif defined(GFORTRAN)
   call abort()
 #elif defined(xlC)
   call abort_()

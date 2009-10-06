@@ -1,12 +1,4 @@
-! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+!!@LICENSE
 !
 module m_walltime
 !
@@ -14,6 +6,8 @@ module m_walltime
 ! the cpu time. It tries to deal with possible wraparounds of the system
 ! clock's counter.
 !
+implicit none
+
 public :: wall_time
 
 integer, parameter, private :: dp = selected_real_kind(14,200)

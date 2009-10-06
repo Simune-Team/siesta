@@ -1,13 +1,10 @@
-For a simple compilation, edit the FC and FFLAGS symbols in file "makefile", and
-type "make".
 
-If you need XML support, make sure that you have compiled the wxml library in the main
-Siesta directory, and type "make -f makefile.xml".
+* This version of ATOM depends significantly on some Siesta
+routines. If you got this ATOM package as a stand-alone unit,
+please request an older version. This situation will not
+be resolved until the XC package, including the
+van-der-Waals support,  is made self-contained.
 
-
-Special notes for Alpha computers:
-
-If you run into trouble with arithmetic errors, edit
-makefile and toggle the XC_OBJS lines (to use the old
-version of the Soler-Balbas routines).
+* Compilation is now done using the top-level arch.make
+* You get everything, including XML support.
 

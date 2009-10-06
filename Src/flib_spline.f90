@@ -3,6 +3,7 @@ module flib_spline
 ! Spline interpolation, based on code in "Numerical Recipes"
 !
 use precision, only: dp, sp
+implicit none
 private
 
 public :: generate_spline

@@ -3,7 +3,7 @@
 !
 ! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
 ! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
+! and J.M.Soler, 1996- .
 ! 
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
@@ -134,8 +134,15 @@
          func=>spp%chlocal
          call broadcast_radial(func,Node)
 
-         func=>spp%reduced_vlocal
-         call broadcast_radial(func,Node)
+!!       !! Note that reduced_vlocal might not be initialized
+!!       !! if we have read the basis information from a .ion file.
+!!       !! reduced_vlocal is not needed by Siesta, anyway, and
+!!       !! at this point is has already been written out to
+!!       !! any plotting files (or ion.nc files, which for some 
+!!       !! historical reason are more complete
+!!
+!!         func=>spp%reduced_vlocal
+!!         call broadcast_radial(func,Node)
 
          call MPI_Bcast(spp%there_is_core,1,MPI_logical,
      $                  0,MPI_Comm_World,MPIerror)

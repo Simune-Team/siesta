@@ -3,7 +3,7 @@
 !
 ! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
 ! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
+! and J.M.Soler, 1996- .
 ! 
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
@@ -182,6 +182,10 @@ C
       use mesh
       use meshphi,       only : endpht
       use siesta_cml
+      use cellsubs,      only : reclat  ! Finds reciprocal unit cell
+      use cellsubs,      only : volcel  ! Finds unit cell volume
+      use m_chkgmx,      only : chkgmx  ! Checks planewave cutoff of a mesh
+      use fft1d,         only : nfft    ! Finds allowed value for 1-D FFT
 
       implicit none
 
@@ -221,11 +225,10 @@ C
 C Functions
 C
       real(dp)
-     .  dismin, volcel
+     .  dismin
 
       external
-     .  chkgmx, dismin, nfft, reclat, 
-     .  timer, volcel, memory
+     .  dismin, timer, memory
 
       data
      .  k0 / 3*0.0_dp /

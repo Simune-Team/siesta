@@ -140,8 +140,8 @@ c
 c
 c     Read-in GF(q)'s
 c
-      real*8, dimension (:,:), pointer:: qL,qR
-      real*8, dimension (:), pointer:: wqL,wqR
+C      real*8, dimension (:,:), pointer:: qL,qR
+C      real*8, dimension (:), pointer:: wqL,wqR
 
        integer,dimension(:), allocatable ::
      . lastoL,! L uc. atoms (from read-in superc)
@@ -734,7 +734,7 @@ c LEFT:
      & ispin,kpoint,zenergy,iEn)     
     
          call getsfe(USEBULK,joutfile,jgfL,
-     &        HAAL,SAAL,ZEnergy,nqL,qL,wqL,
+     &        HAAL,SAAL,ZEnergy,nqL,
      &        ngL2,nuaL,lastoL,NA1L,NA2L,
      &        NGL,SFEL,GAMMAL)
 
@@ -764,7 +764,7 @@ c RIGHT:
 
 
          call getsfe(USEBULK,joutfile,jgfR,
-     &        HAAR,SAAR,ZEnergy,nqR,qR,wqR,
+     &        HAAR,SAAR,ZEnergy,nqR,
      &        ngR2,nuaR,lastoR,NA1R,NA2R,
      &        NGR,SFER,GAMMAR)
 
@@ -793,11 +793,11 @@ c on return GFRGF contains GF^dagger.GammaR.GF
 
 #ifdef CDF
 c write datafile with hamiltonian, overlap, self-energies to netcdf-file
-      if(OutputRegionData)  then
-         CALL OutputRegion(USEBULK,RDORTHO,joutfile,Volt,NEn,
-     .        ispin,nspin,isobegin,isoend,nou,
-     .        H,S,NGL,SFEL,NGR,SFER,ZEnergy)
-      end if !OutputRegionData
+C      if(OutputRegionData)  then
+C         CALL OutputRegion(USEBULK,RDORTHO,joutfile,Volt,NEn,
+C     .        ispin,nspin,isobegin,isoend,nou,
+C     .        H,S,NGL,SFEL,NGR,SFER,ZEnergy)
+C      end if !OutputRegionData
 #endif !CDF
 
       
@@ -1088,12 +1088,15 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
       call MPI_AllReduce(Current,Currentbuff,1,MPI_double_precision,
      .            MPI_sum,MPI_Comm_World,MPIerror)
 
+C Convert to Ampere
+      Currentbuff = Currentbuff*13.6058*38.73*1E-06
+
       if (IOnode) then
          write(joutfile,*) repeat('=',62)
          write(joutfile,*) 
          write(joutfile,*) 'Results:'
          write(joutfile,*) 
-         write(joutfile,'(a17,2ES16.8)') ' Volt, Current = ',
+         write(joutfile,'(a,2ES16.8)') ' Voltage, Current(A) = ',
      .                                Volt,Currentbuff
          write(joutfile,*)
          write(joutfile,*) repeat('=',62)
@@ -1101,11 +1104,15 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
       end if
 
 #else
+C Convert to Ampere
+         Current = Current*13.6058*38.73*1E-06
+
          write(joutfile,*) repeat('=',62)
          write(joutfile,*) 
          write(joutfile,*) 'Results:'
          write(joutfile,*)
-         write(joutfile,'(a17,2ES16.8)') 'Volt, Current = ',Volt,Current
+         write(joutfile,'(a,2ES16.8)') 'Voltage, Current(A) = ',
+     $                                  Volt,Current
          write(joutfile,*)
          write(joutfile,*) repeat('=',62)
 

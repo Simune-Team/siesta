@@ -32,7 +32,7 @@ fdf_mod.o: fdf_mod.f parse.o
 fdf.o:		fdf.h
 #
 #---------------------------------------------------
-OBJS=	sample.o fdf.o io.o
+OBJS=	sample.o fdf.o io_for_fdf_tests.o
 #
 sample: $(OBJS)
 	$(FC) $(LDFLAGS) -o sample $(OBJS)
@@ -40,7 +40,7 @@ sample: $(OBJS)
 check:	sample sample.fdf
 	sample < sample.fdf
 #
-io_sample: io_sample.o io.o
+io_sample: io_sample.o io_for_fdf_tests.o
 	$(FC) $(LDFLAGS) -o io_sample io_sample.o io.o
 #
 io_check: io_sample

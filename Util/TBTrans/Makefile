@@ -1,22 +1,23 @@
 #
-# Makefile for tbtrans90 gengf90
+# Makefile for tbtrans
 #
+.SUFFIXES:
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
-# If compiling without system lapack, you might need something like this
-# (to be fixed)
-#LINALG=linalg.a
-#EXTRA=zgeev.o
+# Please see note about Linear-Algebra libraries below
 #
-
-default: what  tbtrans90 
-#default: what  tbtrans90 gengf90 readTSHScdf
+default: what  tbtrans 
 #
 SIESTA_DIR=../../Src
 VPATH:=$(shell pwd)/../../Src
 OBJDIR=Obj
 ARCH_MAKE=../../$(OBJDIR)/arch.make
 include $(ARCH_MAKE)
+
+# If compiling without system lapack, you might need something like this
+# 
+#TBTRANS_LINALG=linalg.a # Or maybe only: zgeev_lapack.a zgesv_lapack.a
+LINALG:= $(TBTRANS_LINALG) $(LINALG)
 
 SIESTA_SYS=${SIESTA_ARCH}
 
@@ -41,11 +42,12 @@ SIESTA_OBJS= precision.o alloc.o  memoryinfo.o memory.o pxf.o \
              timer.o m_mpi_utils.o m_fdf_global.o paste.o \
              parallel.o sys.o io.o files.o  m_walltime.o zheevds.o
 
-TBTOBJS= $(SIESTA_OBJS) $(MOD_TOBJS) $(SYSOBJ) $(EXTRA) tbtrans.o transmission.o   \
+TBTOBJS= $(SIESTA_OBJS) $(MOD_TOBJS) $(SYSOBJ) $(EXTRA) \
+         tbtrans.o transmission.o   \
          calc_green.o cdiag_local.o getsfe.o \
          mkRealContour.o reinit_tb.o setupkham2.o TSiohs.o atompdos.o coop.o \
-         csolve.o teigchana.o helpers.o OutputRegionData.o \
-         Lowdin.o netcdfwrite.o \
+         csolve.o teigchana.o helpers.o \
+         Lowdin.o netcdfwrite.o 
 
 #
 # Interfaces to libraries
@@ -71,35 +73,24 @@ LINALG_INCFLAGS:=-I $(VPATH)/Libs $(INCFLAGS)
 $(LINALG): 
 	(cd Libs ; $(MAKE) -f $(LINALG_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/Libs" \
                           "ARCH_MAKE=../$(ARCH_MAKE)" \
-                          "INCFLAGS=$(LINALG_INCFLAGS)" "FFLAGS=$(FFLAGS)" )
+                          "INCFLAGS=$(LINALG_INCFLAGS)" "FFLAGS=$(FFLAGS)" $(LINALG))
 #
-tbtrans90: $(TBTOBJS) $(FDF) $(SYSOBJ) $(NETCDF_INTERFACE) $(LINALG)
-	$(FC) $(FFLAGS) $(LDFLAGS) -o tbtrans90 \
-              $(TBTOBJS) $(MPI_INTERFACE) $(NETCDF_INTERFACE)  $(FDF) $(LIBS) $(LINALG)
-#	@(cd ../../bin ; rm -f tsScan ; ln -s tbtrans90 tsScan)
-
-
-#gengf90: $(GENGFOBJS) $(FDF) $(SYSOBJ)
-#	$(FC) -o gengf90 \
-#	$(FFLAGS) $(LDFLAGS) $(GENGFOBJS)  $(FDF) $(LIBS)  
-
+tbtrans: $(TBTOBJS) $(FDF) $(SYSOBJ) $(NETCDF_INTERFACE) $(LINALG)
+	$(FC) $(FFLAGS) $(LDFLAGS) -o tbtrans \
+              $(TBTOBJS) $(MPI_INTERFACE) $(NETCDF_INTERFACE) \
+              $(FDF) $(LIBS) $(LINALG)  || echo "***Please see top of Makefile"
+#	@(cd ../../bin ; rm -f tsScan ; ln -s tbtrans tsScan)
 
 #
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
-	rm -f tbtrans90 *.o *.a *.mod
+	rm -f tbtrans *.o *.a *.mod
 	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
 	(cd MPI ; $(MAKE) -f $(MPI_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
+	(cd Libs ; $(MAKE) -f $(MPI_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
 
 readTSHScdf: readTSHScdf.F $(NETCDF_INTERFACE)
 	$(FC) -o readTSHScdf readTSHScdf.F $(NETCDF_INTERFACE) $(NETCDF_LIBS)
-
-
-#gengf90: $(GENGFOBJS) $(FDF) $(SYS)
-#	$(FC) -o gengf90 \
-#	$(FFLAGS) $(LDFLAGS) $(GENGFOBJS)  $(FDF) $(LIBS)  
-
-
 
 #
 # Dependencies
@@ -117,11 +108,8 @@ m_tbt_kpts      : m_tbt_options.o $(MPI_INTERFACE)
 TSprversion.o   : TSversion.h
 setupkham2.o	: tsread2.o
 tbtrans.o	: hamil2.o 
-#gengf.o  setupcontour.o green4.o : fdf/fdfdefs.h
 green4.o        : greensub.o
-#gengf.o         : cont.o
 m_tbt_gf.o       : tsread2.o
-##atompdos.o      : fdf/fdfdefs.h
 netcdfwrite.o   : $(NETCDF_INTERFACE)
 OutputRegionData.o: Lowdin.F $(NETCDF_INTERFACE)
 # DO NOT DELETE THIS LINE - used by make depend
@@ -491,64 +479,3 @@ zm_fire_optim.o: m_fdf_global.o m_fire.o parallel.o precision.o
 zm_fire_optim.o: siesta_options.o units.o zmatrix.o
 zmatrix.o: alloc.o m_cell.o parallel.o parsing.o precision.o siesta_geom.o
 zmatrix.o: sys.o units.o
-band.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/bands.o
-diagmemory.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/memoryinfo.o
-listsc_module.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/listsc.o
-m_born_charge.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/born_charge.o
-m_broyden_optim.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/broyden_optim.o
-m_cell_broyden_optim.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/cell_broyden_optim.o
-m_cell_fire_optim.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/cell_fire_optim.o
-m_chempot.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/chempot.o
-m_compute_dm.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/compute_dm.o
-m_conjgr.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/conjgr.o
-m_conjgr_old.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/conjgr_old.o
-m_dynamics.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/dynamics.o
-m_fermid.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/fermid.o
-m_find_kgrid.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/find_kgrid.o
-m_fire_optim.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/fire_optim.o
-m_forhar.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/forhar.o
-m_hsparse.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/hsparse.o
-m_intramol_pressure.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/remove_intramol_pressure.o
-m_ioxv.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/ioxv.o
-m_ksv.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/ksv.o
-m_ksvinit.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/ksvinit.o
-m_local_dos.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/local_DOS.o
-m_minvec.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/minvec.o
-m_mixer.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/mixer.o
-m_new_dm.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/new_dm.o
-m_nlefsm.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/nlefsm.o
-m_norm.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/compute_norm.o
-m_normalize_dm.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/normalize_dm.o
-m_ordern.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/ordern.o
-m_overfsm.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/overfsm.o
-m_overlap.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/overlap.o
-m_post_scf_work.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/post_scf_work.o
-m_projected_dos.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/projected_DOS.o
-m_proximity_check.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/proximity_check.o
-m_radfft.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/radfft.o
-m_recipes.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/recipes.o
-m_scf_options.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/m_options.o
-m_scfconvergence_test.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/scfconvergence_test.o
-m_setup_hamiltonian.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/setup_hamiltonian.o
-m_siesta_analysis.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/siesta_analysis.o
-m_siesta_end.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/siesta_end.o
-m_siesta_forces.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/siesta_forces.o
-m_siesta_init.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/siesta_init.o
-m_siesta_move.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/siesta_move.o
-m_state_analysis.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/state_analysis.o
-m_state_init.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/state_init.o
-m_struct_init.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/struct_init.o
-m_timestamp.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/timestamp.o
-m_xyz_phiatm.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/matel.o
-m_zm_broyden_optim.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/zm_broyden_optim.o
-m_zm_fire_optim.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/zm_fire_optim.o
-mesh.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/meshsubs.o
-meshdscf.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/meshmatrix.o
-meshphi.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/meshsubs.o
-neighbour.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/mneighb.o
-on_core.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/onmod.o
-on_main.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/onmod.o
-version_info.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/version.o
-write_subs_energies.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/write_subs.o
-write_subs_positions.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/write_subs.o
-write_subs_pressure.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/TBTrans/../../Src/write_subs.o

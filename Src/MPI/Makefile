@@ -3,7 +3,7 @@
 #
 # Copyright (c) Fundacion General Universidad Autonoma de Madrid:
 # E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-# and J.M.Soler, 1996-2006.
+# and J.M.Soler, 1996- .
 # 
 # Use of this software constitutes agreement with the full conditions
 # given in the SIESTA license, as signed by all legitimate users.
@@ -41,14 +41,15 @@ module_built: libmpi_f90.a
 	@cp *.mod ..
 	@touch module_built
 #
-libmpi_f90.a: mpi.o mpi__include.o Interfaces.o
-	@ar $(ARFLAGS_EXTRA) cru libmpi_f90.a mpi.o mpi__include.o Interfaces.o
+libmpi_f90.a: mpi.o mpi__include.o Interfaces.o mpi_siesta.o timer_mpi.o
+	@ar $(ARFLAGS_EXTRA) cru libmpi_f90.a mpi.o mpi_siesta.o mpi__include.o Interfaces.o timer_mpi.o
 	-$(RANLIB) libmpi_f90.a
 #
 clean:
 	@rm -f Interfaces.f90 *.o *.mod
 	@rm -f module_built *.uses kind_explorer
 
-
+mpi_siesta.o: timer_mpi.o
+Interfaces.o: timer_mpi.o
 
 

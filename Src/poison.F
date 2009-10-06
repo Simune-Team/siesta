@@ -3,7 +3,7 @@
 !
 ! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
 ! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
+! and J.M.Soler, 1996- .
 ! 
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
@@ -44,6 +44,10 @@ C
       use parallel,    only : Node, Nodes, ProcessorY
       use sys,         only : die
       use alloc,       only : re_alloc, de_alloc
+      use m_fft,       only : fft     ! 3-D fast Fourier transform
+      use cellsubs,    only : reclat  ! Finds reciprocal lattice vectors
+      use cellsubs,    only : volcel  ! Finds unit cell volume
+      use m_chkgmx,    only : chkgmx  ! Checks planewave cutoff of a mesh
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -66,8 +70,7 @@ C
      .                  J3min, J3max, J2L, J3L, NRemY, NRemZ,
      .                  BlockSizeY, BlockSizeZ
       real(dp)          C, B(3,3), DU, G(3), G2, G2MAX, 
-     .                  K0(3), PI, TINY, VG, VOLUME, VOLCEL
-      externaL          CHKGMX, FFT, RECLAT, VOLCEL
+     .                  K0(3), PI, TINY, VG, VOLUME
       save              K0, TINY
 
       data K0   /3*0.0_dp/
@@ -106,7 +109,7 @@ C Copy density to complex array
       enddo
 
 C Find fourier transform of density
-      call fft( CG, Mesh, -1, NSM )
+      call fft( CG, Mesh, -1 )
  
 C Initialize stress contribution
       do IX = 1,3
@@ -197,7 +200,7 @@ C Multiply by 8*PI/G2 to get the potential
       enddo
  
 C Go back to real space
-      call fft( CG, Mesh, +1, NSM )
+      call fft( CG, Mesh, +1 )
 
 C Copy potential to array V
       do I = 1, NP
@@ -213,33 +216,3 @@ C Free local memory
 
       return
       end
-
-      subroutine nfft( N )
-
-      use sys, only: die
-      use parallel, only: ionode
-
-C CHANGES N INTO THE NEXT INTEGER ALLOWED BY THE FFT ROUTINE
-C WRITTEN BY J.M.SOLER. MAY/95.
-
-      integer :: np, nmax, nmin, n, nrem, ip
-      parameter (NP = 3, NMAX = 1000000)
-      integer :: IPRIME(NP)
-      data IPRIME / 2, 3, 5 /
-
-      NMIN = N
-      DO N = NMIN, NMAX
-        NREM = N
-        DO IP = 1,NP
-   10     CONTINUE 
-          IF ( MODULO( NREM, IPRIME(IP) ) .EQ. 0 ) THEN
-            NREM = NREM / IPRIME(IP)
-            GOTO 10
-          ENDIF
-        ENDDO
-        IF (NREM .EQ. 1) RETURN
-      ENDDO
-      if (Ionode)
-     $    write(6,*) 'NFFT: NO SUITABLE INTEGER FOUND FOR N =', NMIN
-      call die()
-      END
