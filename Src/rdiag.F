@@ -186,11 +186,13 @@ C Set algorithm logicals
           Use2D         = fdf_boolean('Diag.Use2D',.true.)
         endif
 #ifdef MPI
-        lBtmp(1) = AllInOne
-        lBtmp(2) = DivideConquer
-        lBtmp(3) = NoExpert
-        lBtmp(4) = PreRotate
-        lBtmp(5) = Use2D
+        if (Node.eq.0) then
+          lBtmp(1) = AllInOne
+          lBtmp(2) = DivideConquer
+          lBtmp(3) = NoExpert
+          lBtmp(4) = PreRotate
+          lBtmp(5) = Use2D
+        endif
         call MPI_Bcast(lBtmp,5,MPI_logical,0,MPI_Comm_World,MPIerror)
         AllInOne = lBtmp(1)
         DivideConquer = lBtmp(2)
