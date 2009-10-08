@@ -93,6 +93,7 @@
 !   Stops counting time for a program or code section
 ! INPUT:
 !   character(len=*) prog  ! Name of program of code section to be timed
+!                          ! prog ideally should be at least of length 4.
 ! USAGE:
 !   See GENERAL USAGE section
 ! BEHAVIOUR:
@@ -709,10 +710,10 @@ end subroutine timer_start
 
 !===============================================================================
 
-subroutine timer_stop( prog )   ! Stop counting time for a program
+subroutine timer_stop( prog, len_prog )   ! Stop counting time for a program
 
   implicit none
-  character(len=*),intent(in):: prog  ! Name of program of code section
+  character(len=*),intent(in):: prog     ! Name of program of code section
 
 ! Internal variables
   integer :: iProg, jProg
@@ -754,16 +755,18 @@ subroutine timer_stop( prog )   ! Stop counting time for a program
   progData(iProg)%totTime  = progData(iProg)%totTime + deltaTime
 
 ! Add communication time to all active programs
-  if (prog(1:4)=='MPI_' .or. prog(1:4)=='mpi_') then  ! Communication routine
-    do jProg = 1,nProgs
-      if (progData(jProg)%active) then
-        progData(jProg)%comTime = progData(jProg)%comTime + deltaTime
-        progData(jProg)%lastComTime = progData(jProg)%lastComTime + deltaTime
-      end if
-    end do
-    ! Add comm. time also to iProg, since progData(iProg)%active=.false. by now
-    progData(iProg)%comTime = progData(iProg)%comTime + deltaTime
-    progData(iProg)%lastComTime = progData(iProg)%lastComTime + deltaTime
+  if (len(prog).ge.4) then
+    if (prog(1:4)=='MPI_' .or. prog(1:4)=='mpi_') then  ! Communication routine
+      do jProg = 1,nProgs
+        if (progData(jProg)%active) then
+          progData(jProg)%comTime = progData(jProg)%comTime + deltaTime
+          progData(jProg)%lastComTime = progData(jProg)%lastComTime + deltaTime
+        end if
+      end do
+      ! Add comm. time also to iProg, since progData(iProg)%active=.false. by now
+      progData(iProg)%comTime = progData(iProg)%comTime + deltaTime
+      progData(iProg)%lastComTime = progData(iProg)%lastComTime + deltaTime
+    end if
   end if
 
 end subroutine timer_stop
