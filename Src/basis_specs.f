@@ -43,7 +43,7 @@
 !   1st:   Species_label number_of_l_shells [basis_type] [ionic_charge] 
 ! 
 !   For each l_shell:
-!          [n= n] l nzeta [P [ nzeta_pol]] [E vcte rinn]
+!          [n= n] l nzeta [P [ nzeta_pol]] [E vcte rinn] [F cutoff]
 !   where 'n= n' is *mandatory* if the species has any semicore states,
 !   and the 'P' (polarization) and 'E' (soft confinement potential)
 !   sections are optional and can appear in any order after nzeta. 
@@ -254,104 +254,104 @@ C Sanity checks on values
 
       allocate(basis_parameters(nsp))
       do isp=1,nsp
-         call initialize(basis_parameters(isp))
+        call initialize(basis_parameters(isp))
       enddo
 
       synthetic_atoms = .false.
 
       do isp=1,nsp
-         basp=>basis_parameters(isp)
+        basp=>basis_parameters(isp)
 
-         basp%label = species_label(isp)
-         basp%z = atomic_number(isp)
-         basp%floating = is_floating(isp)
-         basp%bessel = is_bessel(isp)
-         basp%synthetic = is_synthetic(isp)
+        basp%label = species_label(isp)
+        basp%z = atomic_number(isp)
+        basp%floating = is_floating(isp)
+        basp%bessel = is_bessel(isp)
+        basp%synthetic = is_synthetic(isp)
 
-         basp%basis_size = basis_size
-         basp%basis_type = basistype_generic
-         if (basp%floating) then
-            basp%mass = 1.d40   ! big but not too big, as it is used
-                                ! later in computations
-         else if (basp%synthetic) then
-            basp%mass = -1.0_dp      ! Signal -- Set later
-         else
-            basp%mass = atmass(abs(int(basp%z)))
-         endif
-         if (basp%bessel) then
-            ! do nothing here
-         else if (basp%synthetic) then
-            synthetic_atoms = .true.
-            ! Will set gs later
-            call pseudo_read(basp%label,basp%pseudopotential)
-         else
-            call ground_state(abs(int(basp%z)),basp%ground_state)
-            call pseudo_read(basp%label,basp%pseudopotential)
-         endif
-         if (reparametrize_pseudos)
-     $       call pseudo_reparametrize(p=basp%pseudopotential,
-     $                             a=new_a, b=new_b,label=basp%label)
+        basp%basis_size = basis_size
+        basp%basis_type = basistype_generic
+        if (basp%floating) then
+          basp%mass = 1.d40   ! big but not too big, as it is used
+                              ! later in computations
+        else if (basp%synthetic) then
+          basp%mass = -1.0_dp      ! Signal -- Set later
+        else
+          basp%mass = atmass(abs(int(basp%z)))
+        endif
+        if (basp%bessel) then
+          ! do nothing here
+        else if (basp%synthetic) then
+          synthetic_atoms = .true.
+          ! Will set gs later
+          call pseudo_read(basp%label,basp%pseudopotential)
+        else
+          call ground_state(abs(int(basp%z)),basp%ground_state)
+          call pseudo_read(basp%label,basp%pseudopotential)
+        endif
+        if (reparametrize_pseudos)
+     .    call pseudo_reparametrize(p=basp%pseudopotential,
+     .                             a=new_a, b=new_b,label=basp%label)
       enddo
 
       if (synthetic_atoms) then
 
-         nullify(bp)
-         found = fdf_block('SyntheticAtoms',bp)
-         if (.not. found )
-     $        call die("Block SyntheticAtoms does not exist.")
-         ns_read = 0
-         loop: DO
-           if (.not. fdf_bline(bp,line)) exit loop
-           ns_read = ns_read + 1
-           p => digest(line)
-           if (.not. match(p,"i"))
-     $       call die("Wrong format in SyntheticAtoms")
-           isp = integers(p,1)
-           if (isp .gt. nsp .or. isp .lt. 1)
-     $       call die("Wrong specnum in SyntheticAtoms")
-           basp=>basis_parameters(isp)
-           gs => basp%ground_state
-           call destroy(p)
-           if (.not. fdf_bline(bp,line)) call die("No n info")
-           p => digest(line)
-           nns = nintegers(p)
-           if (nns .lt. 4)
-     $       call die("Please give all valence n's " //
-     $                 "in SyntheticAtoms block")
-           gs%n = 0
-           do i = 1, nns
-              gs%n(i-1) = integers(p,i)
-           enddo
-           call destroy(p)
-           if (.not. fdf_bline(bp,line))
-     $          call die("No occupation info")
-           p => digest(line)
-           noccs = nvalues(p)
-           if (noccs .lt. nns) call die("Need more occupations")
-           gs%occupation(:) = 0.0_dp
-           do i = 1, noccs
-              gs%occupation(i-1) = values(p,i)
-           enddo
-           ! Determine the last occupied state in the atom
-           do i = nns, 1, -1
-              if (gs%occupation(i-1) /=0) then
-                 gs%lmax_valence = i-1
-                 exit
-              endif
-           enddo
-           gs%occupied(0:3) = (gs%occupation .gt. 0.0_dp)
-           gs%occupied(4) = .false.
-           gs%z_valence = sum(gs%occupation(0:noccs-1))
-           write(6,'(a,i2)',advance='no')
-     $          'Ground state valence configuration (synthetic): '
-           do l=0,3
-              if (gs%occupied(l))
-     $             write(6,'(2x,i1,a1,f8.5)',advance='no')
-     $             gs%n(l),sym(l), gs%occupation(l)
-           enddo
-           write(6,'(a)') ''
+        nullify(bp)
+        found = fdf_block('SyntheticAtoms',bp)
+        if (.not. found )
+     .        call die("Block SyntheticAtoms does not exist.")
+        ns_read = 0
+        loop: DO
+          if (.not. fdf_bline(bp,line)) exit loop
+          ns_read = ns_read + 1
+          p => digest(line)
+          if (.not. match(p,"i"))
+     .      call die("Wrong format in SyntheticAtoms")
+          isp = integers(p,1)
+          if (isp .gt. nsp .or. isp .lt. 1)
+     .      call die("Wrong specnum in SyntheticAtoms")
+          basp=>basis_parameters(isp)
+          gs => basp%ground_state
+          call destroy(p)
+          if (.not. fdf_bline(bp,line)) call die("No n info")
+          p => digest(line)
+          nns = nintegers(p)
+          if (nns .lt. 4)
+     .      call die("Please give all valence n's " //
+     .               "in SyntheticAtoms block")
+          gs%n = 0
+          do i = 1, nns
+            gs%n(i-1) = integers(p,i)
+          enddo
+          call destroy(p)
+          if (.not. fdf_bline(bp,line))
+     .      call die("No occupation info")
+          p => digest(line)
+          noccs = nvalues(p)
+          if (noccs .lt. nns) call die("Need more occupations")
+          gs%occupation(:) = 0.0_dp
+          do i = 1, noccs
+            gs%occupation(i-1) = values(p,i)
+          enddo
+          ! Determine the last occupied state in the atom
+          do i = nns, 1, -1
+            if (gs%occupation(i-1) /=0) then
+              gs%lmax_valence = i-1
+              exit
+            endif
+          enddo
+          gs%occupied(0:3) = (gs%occupation .gt. 0.0_dp)
+          gs%occupied(4) = .false.
+          gs%z_valence = sum(gs%occupation(0:noccs-1))
+          write(6,'(a,i2)',advance='no')
+     .      'Ground state valence configuration (synthetic): '
+          do l=0,3
+            if (gs%occupied(l))
+     .        write(6,'(2x,i1,a1,f8.5)',advance='no')
+     .          gs%n(l),sym(l), gs%occupation(l)
+          enddo
+          write(6,'(a)') ''
 
-           call destroy(p)
+          call destroy(p)
         enddo loop
         write(6,"(a,i2)") "Number of synthetic species: ", ns_read
 
@@ -359,11 +359,11 @@ C Sanity checks on values
 !
 !  Defer this here in case there are synthetic atoms
       do isp=1,nsp
-         basp=>basis_parameters(isp)
-         if (basp%synthetic) then
-            gs => basp%ground_state
-            if (gs%z_valence .lt. 0.001)
-     $           call die("Synthetic species not detailed")
+        basp=>basis_parameters(isp)
+        if (basp%synthetic) then
+          gs => basp%ground_state
+          if (gs%z_valence .lt. 0.001)
+     .      call die("Synthetic species not detailed")
          endif
          call semicore_check(isp)
       enddo
@@ -376,7 +376,7 @@ C Sanity checks on values
       call readkb
 
 !      do isp=1,nsp
-!         call print_basis_def(basis_parameters(isp))
+!        call print_basis_def(basis_parameters(isp))
 !      enddo
 
       end subroutine read_basis_specs
@@ -390,7 +390,7 @@ C Sanity checks on values
 
       index = 0
       do i=1,nsp
-         if(leqi(basis_parameters(i)%label,str)) index = i
+        if(leqi(basis_parameters(i)%label,str)) index = i
       enddo
       end function label2species
 !-----------------------------------------------------------------------
@@ -405,24 +405,24 @@ C Sanity checks on values
 
       gs%z_valence = 0.d0
       do l=0,3
-         gs%occupation(l)=0.0d0
+        gs%occupation(l)=0.0d0
       enddo
 
       call lmxofz(z,gs%lmax_valence,latm)
       call qvlofz(z,gs%occupation(:))
       do l=0,gs%lmax_valence
-         gs%z_valence = gs%z_valence + gs%occupation(l)
+        gs%z_valence = gs%z_valence + gs%occupation(l)
       enddo
       call cnfig(z,gs%n(0:3))
 
       write(6,'(a,i2)',advance='no')
-     $     'Ground state valence configuration: '
+     .     'Ground state valence configuration: '
       gs%occupied(4) = .false.         !! always
       do l=0,3
         gs%occupied(l) =  (gs%occupation(l).gt.0.1d0)
         if (gs%occupied(l))
-     $   write(6,'(2x,i1,a1,i2.2)',advance='no')
-     $       gs%n(l),sym(l),nint(gs%occupation(l))
+     .    write(6,'(2x,i1,a1,i2.2)',advance='no')
+     .       gs%n(l),sym(l),nint(gs%occupation(l))
       enddo
       write(6,'(a)') ''
 
@@ -441,169 +441,168 @@ C Sanity checks on values
 ! First pass to find out about lmxkb and set any defaults.
 
       loop: DO     !! over species
-         if (.not. fdf_bline(bp,line)) exit loop
-         p => digest(line)
-         if (.not. match(p,"ni"))
-     $        call die("Wrong format in PS.KBprojectors")
-         isp = label2species(names(p,1))
-         if (isp .eq. 0) then
+        if (.not. fdf_bline(bp,line)) exit loop
+        p => digest(line)
+        if (.not. match(p,"ni"))
+     .        call die("Wrong format in PS.KBprojectors")
+        isp = label2species(names(p,1))
+        if (isp .eq. 0) then
             write(6,'(a,1x,a)')
-     $        "WRONG species symbol in PS.KBprojectors:",
-     $                          trim(names(p,1))
+     .        "WRONG species symbol in PS.KBprojectors:",
+     .                          trim(names(p,1))
             call die
-         endif
-         basp=>basis_parameters(isp)
-         basp%nkbshells = integers(p,1)
-         call destroy(p)
-         do ish=1,basp%nkbshells
-            if (.not. fdf_bline(bp,line)) call die("No l nkbl")
+        endif
+        basp=>basis_parameters(isp)
+        basp%nkbshells = integers(p,1)
+        call destroy(p)
+        do ish=1,basp%nkbshells
+          if (.not. fdf_bline(bp,line)) call die("No l nkbl")
+          p => digest(line)
+          if (.not. match(p,"ii")) call die("Wrong format l nkbl")
+          l = integers(p,1)
+          if (l .gt. basp%lmxkb) basp%lmxkb = l
+          call destroy(p)
+          if (.not. fdf_bline(bp,line)) then
+            if (ish .ne. basp%nkbshells)
+     .        call die("Not enough shells for this species...")
+              ! There is no line with ref energies
+          else 
             p => digest(line)
-            if (.not. match(p,"ii")) call die("Wrong format l nkbl")
-            l = integers(p,1)
-            if (l .gt. basp%lmxkb) basp%lmxkb = l
-            call destroy(p)
-            if (.not. fdf_bline(bp,line)) then
-                   if (ish .ne. basp%nkbshells)
-     $              call die("Not enough shells for this species...")
-                   ! There is no line with ref energies
-            else 
-               p => digest(line)
-               if (match(p,"ni")) then
-                  ! We are seeing the next species' section
-                  if (ish .ne. basp%nkbshells)
-     $              call die("Not enough shells for this species...")
-                  call backspace(bp)
-                  call destroy(p)
-               else
-                  ! would set erefs
-                  call destroy(p)
-               endif
+            if (match(p,"ni")) then
+              ! We are seeing the next species' section
+              if (ish .ne. basp%nkbshells)
+     .          call die("Not enough shells for this species...")
+              call backspace(bp)
+              call destroy(p)
+            else
+              ! would set erefs
+              call destroy(p)
             endif
-         enddo       ! end of loop over shells for species isp
+          endif
+        enddo       ! end of loop over shells for species isp
 
       enddo loop
       call destroy(bp)
 
  2000 CONTINUE
 
-      do isp=1, nsp
+      do isp=1,nsp
 !
 !      Fix defaults and allocate kbshells
 !
-         basp=>basis_parameters(isp)
-         if (basp%lmxkb .eq. -1) then ! not set in KBprojectors 
-            if(basp%lmxkb_requested.eq.-1) then ! not set in PS.lmax
-               basp%lmxkb = set_default_lmxkb(isp) ! Use PAO info
-            else
-               basp%lmxkb = basp%lmxkb_requested
+        basp=>basis_parameters(isp)
+        if (basp%lmxkb .eq. -1) then ! not set in KBprojectors 
+          if (basp%lmxkb_requested.eq.-1) then ! not set in PS.lmax
+            basp%lmxkb = set_default_lmxkb(isp) ! Use PAO info
+          else
+            basp%lmxkb = basp%lmxkb_requested
+          endif
+          allocate(basp%kbshell(0:basp%lmxkb))
+          do l=0,basp%lmxkb
+            call initialize(basp%kbshell(l))
+            k=>basp%kbshell(l)
+            k%l = l
+            if (l.gt.basp%lmxo) then
+              k%nkbl = 1
+            else           ! Set equal to the number of PAO shells
+              k%nkbl = basp%lshell(l)%nn
+              if (k%nkbl.eq.0) then
+                write(6,*) 'Warning: Empty PAO shell. l =', l
+                write(6,*) 'Will have a KB projector anyway...'
+                k%nkbl = 1
+              endif
             endif
-            allocate(basp%kbshell(0:basp%lmxkb))
-            do l=0,basp%lmxkb
-               call initialize(basp%kbshell(l))
-               k=>basp%kbshell(l)
-               k%l = l
-               if (l.gt.basp%lmxo) then
-                  k%nkbl = 1
-               else           ! Set equal to the number of PAO shells
-                  k%nkbl = basp%lshell(l)%nn
-                  if (k%nkbl.eq.0) then
-                     write(6,*) 'Warning: Empty PAO shell. l =', l
-                     write(6,*) 'Will have a KB projector anyway...'
-                     k%nkbl = 1
-                  endif
-               endif
-               allocate(k%erefkb(1:k%nkbl))
-               k%erefkb(1:k%nkbl) = huge(1.d0)
-            enddo
-         else          ! Set in KBprojectors
-            if(basp%lmxkb_requested.ne.-1) then ! set in PS.lmax
-               if (basp%lmxkb.ne.basp%lmxkb_requested) then
-                  call die("LmaxKB conflict")
-               endif
+            allocate(k%erefkb(1:k%nkbl))
+            k%erefkb(1:k%nkbl) = huge(1.d0)
+          enddo
+        else          ! Set in KBprojectors
+          if (basp%lmxkb_requested.ne.-1) then ! set in PS.lmax
+            if (basp%lmxkb.ne.basp%lmxkb_requested) then
+              call die("LmaxKB conflict")
             endif
-            !! OK, we have a genuine lmxkb
-            allocate(basp%kbshell(0:basp%lmxkb))
-            do l=0,basp%lmxkb
-               call initialize(basp%kbshell(l))
-            enddo
-         endif
-         if (basp%z .le. 0) then
-            if (basp%lmxkb .ne. -1)
-     $        call die("Floating orbs cannot have KB projectors...")
-         endif
+          endif
+          !! OK, we have a genuine lmxkb
+          allocate(basp%kbshell(0:basp%lmxkb))
+          do l=0,basp%lmxkb
+            call initialize(basp%kbshell(l))
+          enddo
+        endif
+        if (basp%z .le. 0) then
+          if (basp%lmxkb .ne. -1)
+     .      call die("Floating orbs cannot have KB projectors...")
+        endif
       enddo
-
 !
 !     Now re-scan the block (if it exists) and fill in as instructed
 !            
       if (.not. fdf_block('PS.KBprojectors',bp) ) return
 
       loopkb: DO     !! over species
-         if (.not. fdf_bline(bp,line)) exit loopkb
-         p => digest(line)
-         if (.not. match(p,"ni"))
-     $        call die("Wrong format in PS.KBprojectors")
-         isp = label2species(names(p,1))
-         if (isp .eq. 0) then
-            write(6,'(a,1x,a)')
-     $        "WRONG species symbol in PS.KBprojectors:",
-     $                          trim(names(p,1))
-            call die
-         endif
-         basp=>basis_parameters(isp)
-         basp%nkbshells = integers(p,1)
-         call destroy(p)
-         do ish=1,basp%nkbshells
-            if (.not. fdf_bline(bp,line)) call die("No l nkbl")
+        if (.not. fdf_bline(bp,line)) exit loopkb
+        p => digest(line)
+        if (.not. match(p,"ni"))
+     .    call die("Wrong format in PS.KBprojectors")
+        isp = label2species(names(p,1))
+        if (isp .eq. 0) then
+          write(6,'(a,1x,a)')
+     .        "WRONG species symbol in PS.KBprojectors:",
+     .                          trim(names(p,1))
+          call die
+        endif
+        basp=>basis_parameters(isp)
+        basp%nkbshells = integers(p,1)
+        call destroy(p)
+        do ish=1,basp%nkbshells
+          if (.not. fdf_bline(bp,line)) call die("No l nkbl")
+          p => digest(line)
+          if (.not. match(p,"ii")) call die("Wrong format l nkbl")
+          l = integers(p,1)
+          k=>basp%kbshell(l)
+          k%l = l
+          k%nkbl = integers(p,2)
+          call destroy(p)
+          allocate(k%erefkb(k%nkbl))
+          if (.not. fdf_bline(bp,line)) then
+            if (ish .ne. basp%nkbshells)
+     .        call die("Not enough shells for this species...")
+            ! There is no line with ref energies
+            ! Use default values
+            k%erefKB(1:k%nkbl)=huge(1.d0)
+          else 
             p => digest(line)
-            if (.not. match(p,"ii")) call die("Wrong format l nkbl")
-            l = integers(p,1)
-            k=>basp%kbshell(l)
-            k%l = l
-            k%nkbl = integers(p,2)
-            call destroy(p)
-            allocate(k%erefkb(k%nkbl))
-            if (.not. fdf_bline(bp,line)) then
-                   if (ish .ne. basp%nkbshells)
-     $              call die("Not enough shells for this species...")
-                   ! There is no line with ref energies
-                   ! Use default values
-                   k%erefKB(1:k%nkbl)=huge(1.d0)
-            else 
-               p => digest(line)
-               if (match(p,"ni")) then
-                  ! We are seeing the next species' section
-                  if (ish .ne. basp%nkbshells)
-     $              call die("Not enough shells for this species...")
-                   ! Use default values for ref energies
-                  k%erefKB(1:k%nkbl)=huge(1.d0)
-                  call backspace(bp)
-                  call destroy(p)
-               else
-                  if (nvalues(p) .ne. k%nkbl)
-     $                 call die("Wrong number of energies")
-                  unitstr = defunit
-                  if (nnames(p) .eq. 1) unitstr = names(p,1)
-                  ! Insert ref energies in erefkb
-                  do i=1,k%nkbl
-                     k%erefKB(i) =
-     $                    values(p,i)*fdf_convfac(unitstr,defunit)
-                  enddo
-                  call destroy(p)
-               endif
+            if (match(p,"ni")) then
+              ! We are seeing the next species' section
+              if (ish .ne. basp%nkbshells)
+     .          call die("Not enough shells for this species...")
+              ! Use default values for ref energies
+              k%erefKB(1:k%nkbl)=huge(1.d0)
+              call backspace(bp)
+              call destroy(p)
+            else
+              if (nvalues(p) .ne. k%nkbl)
+     .          call die("Wrong number of energies")
+              unitstr = defunit
+              if (nnames(p) .eq. 1) unitstr = names(p,1)
+              ! Insert ref energies in erefkb
+              do i=1,k%nkbl
+                k%erefKB(i) =
+     .            values(p,i)*fdf_convfac(unitstr,defunit)
+              enddo
+              call destroy(p)
             endif
-         enddo            ! end of loop over shells for species isp
+          endif
+        enddo            ! end of loop over shells for species isp
 
-         ! For those l's not specified in block, use default values
-         do l=0, basp%lmxkb
-            k=>basp%kbshell(l)
-            if (k%l.eq.-1) then
-               k%l = l
-               k%nkbl = 1
-               allocate(k%erefkb(1))
-               k%erefkb(1) = huge(1.d0)
-            endif
-         enddo
+        ! For those l's not specified in block, use default values
+        do l=0, basp%lmxkb
+          k=>basp%kbshell(l)
+          if (k%l.eq.-1) then
+            k%l = l
+            k%nkbl = 1
+            allocate(k%erefkb(1))
+            k%erefkb(1) = huge(1.d0)
+          endif
+        enddo
       enddo loopkb   !! Over species
 
       end subroutine readkb
@@ -617,192 +616,210 @@ C Sanity checks on values
       If (.not.fdf_block('PAO.Basis',bp)) RETURN
 
       loop: DO     !! over species
-         if (.not. fdf_bline(bp,line)) exit loop
-         p => digest(line)
-         if (.not. match(p,"ni"))
-     $        call die("Wrong format in PAO.Basis")
-         isp = label2species(names(p,1))
-         if (isp .eq. 0) then
-            write(6,'(a,1x,a)')
-     $        "WRONG species symbol in PAO.Basis:",
-     $                          trim(names(p,1))
-            call die
-         endif
+        if (.not. fdf_bline(bp,line)) exit loop
+        p => digest(line)
+        if (.not. match(p,"ni"))
+     .        call die("Wrong format in PAO.Basis")
+        isp = label2species(names(p,1))
+        if (isp .eq. 0) then
+          write(6,'(a,1x,a)')
+     .      "WRONG species symbol in PAO.Basis:",
+     .                          trim(names(p,1))
+          call die
+        endif
 
-         basp=>basis_parameters(isp)
-         basp%label=names(p,1)
-         basp%nshells_tmp = integers(p,1)
-         basp%lmxo = 0
-         !! Check whether there are optional type and ionic charge
-         if (nnames(p).eq.2) basp%basis_type=names(p,2)
-         if (nvalues(p).eq.2) basp%ionic_charge=values(p,2)
-         call destroy(p)
-         allocate(basp%tmp_shell(basp%nshells_tmp))
+        basp=>basis_parameters(isp)
+        basp%label=names(p,1)
+        basp%nshells_tmp = integers(p,1)
+        basp%lmxo = 0
+        !! Check whether there are optional type and ionic charge
+        if (nnames(p).eq.2) basp%basis_type=names(p,2)
+        if (nvalues(p).eq.2) basp%ionic_charge=values(p,2)
+        call destroy(p)
+        allocate(basp%tmp_shell(basp%nshells_tmp))
 
-         shells: do ish=1,basp%nshells_tmp
-            s=>basp%tmp_shell(ish)
-            call initialize(s)
-            if (.not. fdf_bline(bp,line)) call die("No l nzeta, etc")
+        shells: do ish=1,basp%nshells_tmp
+          s=>basp%tmp_shell(ish)
+          call initialize(s)
+          if (.not. fdf_bline(bp,line)) call die("No l nzeta, etc")
 
-            p => digest(line)
-            if (match(p,"niii")) then
-              s%n = integers(p,1)
-              s%l = integers(p,2)
-              basp%lmxo = max(basp%lmxo,s%l)
-              s%nzeta = integers(p,3)
-            else if (match(p,"ii")) then
-              !    l, nzeta
+          p => digest(line)
+          if (match(p,"niii")) then
+            s%n = integers(p,1)
+            s%l = integers(p,2)
+            basp%lmxo = max(basp%lmxo,s%l)
+            s%nzeta = integers(p,3)
+          elseif (match(p,"ii")) then
+            !    l, nzeta
 
-              if (basp%semic)
-     $        call die("Please specify n if there are semicore states")
+            if (basp%semic)
+     .        call die("Please specify n if there are semicore states")
 
-              s%l = integers(p,1)
-              s%n = basp%ground_state%n(s%l)
-              s%nzeta = integers(p,2)
-              basp%lmxo = max(basp%lmxo,s%l)
+            s%l = integers(p,1)
+            s%n = basp%ground_state%n(s%l)
+            s%nzeta = integers(p,2)
+            basp%lmxo = max(basp%lmxo,s%l)
+          else
+            call die("Bad format of (n), l, nzeta line in PAO.Basis")
+          endif
+          ! Optional stuff: Polarization and Soft-confinement Potential
+!
+! Split norm
+!
+          if (search(p,"S",index_splnorm)) then
+            if (match(p,"v",after=index_splnorm)) then
+              s%split_norm = values(p,ind=1,after=index_splnorm)
+              if (s%split_norm == 0.0_dp)
+     .          write(6,"(a)")
+     .          "WARNING: zero split_norm after S in PAO.Basis"
+                s%split_norm_specified = .true.
             else
-               call die("Bad format of (n), l, nzeta line in PAO.Basis")
+              call die("Specify split_norm after S in PAO.Basis")
             endif
-            ! Optional stuff: Polarization and Soft-confinement Potential
-
-            if (search(p,"S",index_splnorm)) then
-               if (match(p,"v",after=index_splnorm)) then
-                  s%split_norm = values(p,ind=1,after=index_splnorm)
-                  if (s%split_norm == 0.0_dp)
-     $               write(6,"(a)")
-     $               "WARNING: zero split_norm after S in PAO.Basis"
-                  s%split_norm_specified = .true.
-               else
-                  call die("Specify split_norm after S in PAO.Basis")
-               endif
+          else
+            if (abs(basp%z).eq.1) then
+              s%split_norm = global_splnorm_H
             else
-               if (abs(basp%z).eq.1) then
-                  s%split_norm = global_splnorm_H
-               else
-                  s%split_norm = global_splnorm
-               endif
+              s%split_norm = global_splnorm
             endif
-
-            if (search(p,"P",indexp)) then
-               s%polarized = .true.
-               if (match(p,"i",after=indexp)) then
-                  s%nzeta_pol=integers(p,ind=1,after=indexp)
-               else
-                  s%nzeta_pol = 1
-               endif
-            endif
-
-            if (search(p,"E",indexp)) then
-               if (match(p,"vv",after=indexp)) then
-                  s%vcte = values(p,ind=1,after=indexp)
-                  s%rinn = values(p,ind=2,after=indexp)
-               else
-                  call die("Need vcte and rinn after E in PAO.Basis")
-               endif
-            elseif (lsoft) then
-               s%vcte = softPt 
-               s%rinn = -softRc
+          endif
+!
+! Polarization functions
+!
+          if (search(p,"P",indexp)) then
+            s%polarized = .true.
+            if (match(p,"i",after=indexp)) then
+              s%nzeta_pol=integers(p,ind=1,after=indexp)
             else
-               s%vcte = 0.0_dp
-               s%rinn = 0.0_dp
+              s%nzeta_pol = 1
             endif
+          endif
+!
+! Soft-confinement
+!
+          if (search(p,"E",indexp)) then
+            if (match(p,"vv",after=indexp)) then
+              s%vcte = values(p,ind=1,after=indexp)
+              s%rinn = values(p,ind=2,after=indexp)
+            else
+              call die("Need vcte and rinn after E in PAO.Basis")
+            endif
+          elseif (lsoft) then
+            s%vcte = softPt 
+            s%rinn = -softRc
+          else
+            s%vcte = 0.0_dp
+            s%rinn = 0.0_dp
+          endif
+!
+! Filteret basis
+!
+          if (search(p,"F",indexp)) then
+            s%filteret = .true.
+            if (match(p,"v",after=indexp)) then
+              s%filteretcutoff = values(p,ind=1,after=indexp)
+              if (s%filteretcutoff.le.0.0_dp) then
+             call die("Filteret cutoff must be positive in PAO.Basis")
+              endif
+            endif
+          endif
 
-            call destroy(p)
+          call destroy(p)
 
-            allocate(s%rc(s%nzeta),s%lambda(s%nzeta))
-            s%rc(:) = 0.d0
-            s%lambda(:) = 1.d0
-            if (.not. fdf_bline(bp,line)) call die("No rc's")
-            p => digest(line)
-            if (nvalues(p).ne.s%nzeta) call die("Wrong number of rc's")
-            do i=1,s%nzeta
-               s%rc(i) = values(p,i)
+          allocate(s%rc(s%nzeta),s%lambda(s%nzeta))
+          s%rc(:) = 0.d0
+          s%lambda(:) = 1.d0
+          if (.not. fdf_bline(bp,line)) call die("No rc's")
+          p => digest(line)
+          if (nvalues(p).ne.s%nzeta) call die("Wrong number of rc's")
+          do i=1,s%nzeta
+            s%rc(i) = values(p,i)
+          enddo
+          if (s%split_norm_specified) then
+            do i = 2,s%nzeta
+              if (s%rc(i) /= 0.0_dp) then
+                write(6,"(/,a,i1,a,f8.4,/)")
+     $            "*Warning: Per-shell split_norm parameter " //
+     $            "will not apply to zeta-", i, ". rc=", s%rc(i)
+              endif
             enddo
-            if (s%split_norm_specified) then
-               do i = 2, s%nzeta
-                  if (s%rc(i) /= 0.0_dp) then
-                     write(6,"(/,a,i1,a,f8.4,/)")
-     $                "*Warning: Per-shell split_norm parameter " //
-     $                "will not apply to zeta-", i, ". rc=", s%rc(i)
-                  endif
-               enddo
+          endif
+          call destroy(p)
+
+          ! Optional scale factors. They MUST be reals, or else...
+          if (.not. fdf_bline(bp,line)) then
+            if (ish.ne.basp%nshells_tmp)
+     $        call die("Not enough shells")
+            ! Default values for scale factors
+          else
+            p => digest(line)
+            if (.not.match(p,"r")) then
+              ! New shell or species
+              ! Default values for the scale factors
+              call backspace(bp)
+              cycle shells
+            else
+              if (nreals(p).ne.s%nzeta)
+     $          call die("Wrong number of lambda's")
+              do i=1,s%nzeta
+                s%lambda(i) = reals(p,i)
+              enddo
             endif
             call destroy(p)
+          endif
 
-            ! Optional scale factors. They MUST be reals, or else...
-            if (.not. fdf_bline(bp,line)) then
-               if (ish.ne.basp%nshells_tmp)
-     $                    call die("Not enough shells")
-               ! Default values for scale factors
-            else
-               p => digest(line)
-               if (.not.match(p,"r")) then
-                  ! New shell or species
-                  ! Default values for the scale factors
-                  call backspace(bp)
-                  cycle shells
-               else
-                  if (nreals(p).ne.s%nzeta)
-     $                 call die("Wrong number of lambda's")
-                  do i=1,s%nzeta
-                     s%lambda(i) = reals(p,i)
-                  enddo
-               endif
-               call destroy(p)
-            endif
-
-         enddo shells
-         ! Clean up for this species
+        enddo shells
+        ! Clean up for this species
       enddo loop
 !
 !        OK, now classify the states by l-shells
 !
-         do isp = 1, nsp
-            basp=>basis_parameters(isp)
-            if (basp%lmxo.eq.-1) cycle !! Species not in block
+      do isp = 1, nsp
+        basp=>basis_parameters(isp)
+        if (basp%lmxo.eq.-1) cycle !! Species not in block
                                        !! 
-            allocate (basp%lshell(0:basp%lmxo))
-            loop_l: do l=0,basp%lmxo
-               ls=>basp%lshell(l)
-               call initialize(ls)
-               ls%l = l
-               ! Search for tmp_shells with given l
-               nn = 0
-               do ish=1, basp%nshells_tmp
-                  s=>basp%tmp_shell(ish)
-                  if (s%l .eq. l) nn=nn+1
-               enddo
-               ls%nn = nn
-               if (nn.eq.0) then
-                  !! What else do we do here?
-                  cycle loop_l  
-               endif
+        allocate (basp%lshell(0:basp%lmxo))
+        loop_l: do l=0,basp%lmxo
+          ls=>basp%lshell(l)
+          call initialize(ls)
+          ls%l = l
+          ! Search for tmp_shells with given l
+          nn = 0
+          do ish=1, basp%nshells_tmp
+            s=>basp%tmp_shell(ish)
+            if (s%l .eq. l) nn=nn+1
+          enddo
+          ls%nn = nn
+          if (nn.eq.0) then
+            !! What else do we do here?
+            cycle loop_l  
+          endif
                                           !! 
-               allocate(ls%shell(1:nn))
-               ! Collect previously allocated shells
-               ind = 0
-               do ish=1, basp%nshells_tmp
-                  s=>basp%tmp_shell(ish)
-                  if (s%l .eq. l) then
-                     ind = ind+1
-                     call copy_shell(source=s,target=ls%shell(ind))
-                  endif
-               enddo
-               if (nn.eq.1) then
-                  ! If n was not specified, set it to ground state n
-                  if (ls%shell(1)%n.eq.-1)
-     $                 ls%shell(1)%n=basp%ground_state%n(l)
-               endif
-               !! Do we have to sort by n value????
-               !!
-            enddo loop_l
-            !! Destroy temporary shells in basp
-            !! Warning: This does seem to destroy information!!
-            call destroy(basp%tmp_shell)
-         enddo
-         call destroy(bp)
+          allocate(ls%shell(1:nn))
+          ! Collect previously allocated shells
+          ind = 0
+          do ish=1, basp%nshells_tmp
+            s=>basp%tmp_shell(ish)
+            if (s%l .eq. l) then
+              ind = ind+1
+              call copy_shell(source=s,target=ls%shell(ind))
+            endif
+          enddo
+          if (nn.eq.1) then
+            ! If n was not specified, set it to ground state n
+            if (ls%shell(1)%n.eq.-1)
+     $        ls%shell(1)%n=basp%ground_state%n(l)
+          endif
+          !! Do we have to sort by n value????
+          !!
+        enddo loop_l
+        !! Destroy temporary shells in basp
+        !! Warning: This does seem to destroy information!!
+        call destroy(basp%tmp_shell)
+      enddo
+      call destroy(bp)
 
-         end subroutine repaobasis
+      end subroutine repaobasis
 !_______________________________________________________________________
 
 
@@ -1029,68 +1046,71 @@ c (according to atmass subroutine).
       end subroutine size_name
 !-----------------------------------------------------------------------
 
-        subroutine type_name(basistype)
+      subroutine type_name(basistype)
 
-         character basistype*(*)
+      character basistype*(*)
 
-         if(leqi(basistype,'NODES')) then
-               basistype='nodes'
-         elseif(leqi(basistype,'NONODES')) then
-               basistype='nonodes'
-         elseif(leqi(basistype,'SPLIT')) then
-               basistype='split'
-         elseif(leqi(basistype,'SPLITGAUSS')) then
-               basistype='splitgauss'
-         else
-              write(6,'(/,2a,(/,5(3x,a)),(/,2(3x,a)))')
-     .        'type_name: Incorrect basis-type option specified,',
-     .        ' active options are:',
-     .        'NODES','SPLIT','SPLITGAUSS','NONODES'
-              call die
-         endif
+      if (leqi(basistype,'NODES')) then
+        basistype='nodes'
+      elseif (leqi(basistype,'NONODES')) then
+        basistype='nonodes'
+      elseif (leqi(basistype,'SPLIT')) then
+        basistype='split'
+      elseif (leqi(basistype,'SPLITGAUSS')) then
+        basistype='splitgauss'
+      elseif (leqi(basistype,'FILTERET')) then
+        basistype='filteret'
+      else
+        write(6,'(/,2a,(/,5(3x,a)),(/,2(3x,a)))')
+     .    'type_name: Incorrect basis-type option specified,',
+     .    ' active options are:',
+     .    'NODES','SPLIT','SPLITGAUSS','NONODES','FILTERET'
+         call die
+      endif
 
-        end subroutine type_name
+      end subroutine type_name
 !-----------------------------------------------------------------------
 !
-!       Find out whether semicore states are implied by the valence
-!       charge density in the pseudopotential file.
+!     Find out whether semicore states are implied by the valence
+!     charge density in the pseudopotential file.
 !
-        subroutine semicore_check(is)
-        integer, intent(in)  :: is
+      subroutine semicore_check(is)
+      integer, intent(in)  :: is
 
-        real*8, parameter :: tiny = 1.d-5
-        integer ndiff
-        real*8 zval, zval_vps, charge_loc
+      real*8, parameter :: tiny = 1.d-5
+      integer ndiff
+      real*8 zval, zval_vps, charge_loc
 
-        basp => basis_parameters(is)
+      basp => basis_parameters(is)
 
-        basp%semic = .false.
-        if (basp%bessel) return
+      basp%semic = .false.
+      if (basp%bessel) return
 
-        zval_vps = basp%pseudopotential%zval
-        zval = basp%ground_state%z_valence
+      zval_vps = basp%pseudopotential%zval
+      zval = basp%ground_state%z_valence
         
-        if(abs(Zval-zval_vps).lt.tiny) return
+      if (abs(Zval-zval_vps).lt.tiny) return
 
-        ndiff=nint(abs(Zval-zval_vps))
-        if(abs(ndiff-abs(Zval-zval_vps)).gt.tiny) then
-              write(6,'(2a)')
-     .   'ERROR expected valence charge for species ',
-     .        basp%label
-              write(6,'(a)')
-     .  'ERROR and the value read from the vps file'
-              write(6,'(a,f6.3,a,f6.3)')
-     .  'ERROR differ:  Zval(expected)= ', Zval,' Zval(vps)= ',zval_vps
-              call die
-        endif
+      ndiff=nint(abs(Zval-zval_vps))
+      if (abs(ndiff-abs(Zval-zval_vps)).gt.tiny) then
+        write(6,'(2a)')
+     .    'ERROR expected valence charge for species ',
+     .    basp%label
+        write(6,'(a)')
+     .    'ERROR and the value read from the vps file'
+        write(6,'(a,f6.3,a,f6.3)')
+     .    'ERROR differ:  Zval(expected)= ', Zval,' Zval(vps)= ',
+     .    zval_vps
+        call die
+      endif
 
-        basp%semic=.true.
-        charge_loc=Zval_vps-Zval
-        write(6,'(a,i2,a)')
-     .       'Semicore shell(s) with ', nint(charge_loc),
-     $       ' electrons included in the valence for', trim(basp%label)
+      basp%semic=.true.
+      charge_loc=Zval_vps-Zval
+      write(6,'(a,i2,a)')
+     .  'Semicore shell(s) with ', nint(charge_loc),
+     .  ' electrons included in the valence for', trim(basp%label)
 
-        end subroutine semicore_check
+      end subroutine semicore_check
 !----------------------------------------------------------------------
       subroutine autobasis
 
