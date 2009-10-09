@@ -10,8 +10,12 @@ include $(ARCH_MAKE)
 VPATH:=$(VPATH_ROOT)/SiestaXC:$(VPATH_ROOT)
 #
 default: module
+#
+# Note: The copy operation below is only a possible way to
+#       make the module and library files accessible.
+#
 module:  libSiestaXC.a
-	cp siestaXC.mod *.a ..
+	cp *.mod *.a ..
 #
 SIESTA_SRCS= alloc.F90 bessph.f cellsubs.f  \
              chkgmx.f fft1d.F  flib_spline.f90  \

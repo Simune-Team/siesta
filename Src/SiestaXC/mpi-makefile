@@ -6,7 +6,7 @@
 # and J.M.Soler, 1996-2006.
 # 
 # Use of this software constitutes agreement with the full conditions
-# given in the SIESTA license, as signed by all legitimate users.
+# given in BSD_LICENSE
 #
 .SUFFIXES:
 .SUFFIXES: .o .F90 .f90 .F .f .a 
@@ -38,11 +38,13 @@ kind_explorer: kind_explorer.o
 mpi.o: mpi__include.o Interfaces.o V_S.uses VS.uses
 mpi_siesta.o: timer_mpi.o
 Interfaces.o: timer_mpi.o
-
+#
+# Note: The copy operation below is only a possible way to
+#       make the module files accessible.
 #
 module_built: libmpi_f90.a
 	@touch module_built
-	@cp mpi_siesta.mod ..
+	@cp *.mod ..
 #
 libmpi_f90.a: mpi.o mpi__include.o Interfaces.o timer_mpi.o mpi_siesta.o
 	@ar $(ARFLAGS_EXTRA) cru libmpi_f90.a mpi.o mpi__include.o \
