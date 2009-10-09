@@ -710,7 +710,7 @@ end subroutine timer_start
 
 !===============================================================================
 
-subroutine timer_stop( prog, len_prog )   ! Stop counting time for a program
+subroutine timer_stop( prog )   ! Stop counting time for a program
 
   implicit none
   character(len=*),intent(in):: prog     ! Name of program of code section
