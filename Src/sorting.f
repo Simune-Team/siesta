@@ -1,14 +1,16 @@
-! 
-! This file is part of the SIESTA package.
+!!@LICENSE
 !
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+!**********************************************************************
+! module sorting
 !
-      module sorting
+! Provides the following public procedures:
+!   iorder  ! Orders elements of an integer array according to some index
+!   ordix   ! Finds an order index of increasing array elements
+!   order   ! Orders elements of a real array according to some index
+!   ordvec  ! Orders a set of vectors in a well defined order
+!**********************************************************************
+
+      MODULE sorting
 
       CONTAINS
 
@@ -51,7 +53,9 @@ C **********************************************************************
           IV1 = NV
   60      CONTINUE
           IF (IV1 .GT. IV0+1) THEN
-            CALL ORDIX(  V(IX:IX,IV0+1:), NX, IV1-IV0, IAUX )
+!JMS 2008_03_02
+!            CALL ORDIX(  V(IX:IX,IV0+1:), NX, IV1-IV0, IAUX )
+            CALL ORDIX(  V(IX,IV0+1), NX, IV1-IV0, IAUX )
             CALL ORDER(  V(1,IV0+1),  NX, IV1-IV0, IAUX )
             CALL IORDER( INDEX(IV0+1), 1, IV1-IV0, IAUX )
           ENDIF
@@ -79,8 +83,10 @@ C    CALL ORDIX( X(3,1), 3, NA, INDEX )
 C    CALL ORDER( X(1,1), 3, NA, INDEX )
 C *******************************************************************
       IMPLICIT          NONE
-      INTEGER           I, N, INDX(:), INDXT, IR, J, L, M
-      DOUBLE PRECISION  X(:,:), Q
+      INTEGER           I, N, INDX(N), INDXT, IR, J, L, M
+!JMS 2008_03_02
+!      DOUBLE PRECISION  X(:,:), Q
+      DOUBLE PRECISION  X(M,N), Q
 
 !
 !     Important: avoid instabilities leading to compiler-dependent
@@ -209,4 +215,4 @@ C *******************************************************************
    40 CONTINUE
       END subroutine iorder
 
-      end module sorting
+      END MODULE sorting

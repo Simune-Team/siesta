@@ -133,9 +133,9 @@ C  Internal variables .............................................
       real(dp)          ee, eei, qe, qei, rt, t, k(3)
 
 C Solve eigenvalue problem
-      call timer( 'r-eigvec', 1 )
-      call timer( 'r-buildHS', 1 )
       do ispin = 1,nspin
+        call timer( 'r-eigvec', 1 )
+        call timer( 'r-buildHS', 1 )
         do io = 1,nuo
           do jo = 1,nuotot
             Saux(jo,io) = 0.0d0
