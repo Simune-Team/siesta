@@ -6,6 +6,16 @@
 ** CHANGES ALONG trunk 
 
 ------------------------------------------------------------------------
+2009-10-12  16:05:00 GMT Alberto Garcia <albertog@icmab.es>    trunk-303
+Add dependency line in SiestaXC. Add missing Supercell docs
+
+* A dependency for timer.o was missing in the SiestaXC makefile, thus
+breaking the multithreaded compilation ("make -j N") feature. (A. Walker)
+
+* The documentation for the Supercell option had been inadvertently
+  left out of the manual after the reorganization.
+
+------------------------------------------------------------------------
 2009-10-12  13:35:00 GMT Alberto Garcia <albertog@icmab.es>    trunk-302
 Assorted fixes after vdw merge
 

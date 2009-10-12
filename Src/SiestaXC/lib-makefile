@@ -74,6 +74,7 @@ moreParallelSubs.o: alloc.o m_io.o parallel.o precision.o sys.o
 radfft.o: alloc.o bessph.o m_recipes.o precision.o
 siestaXC.o: atomxc.o cellxc.o xcmod.o
 sys.o: parallel.o
+timer.o: sys.o m_timer.o
 vdwxc.o: debugxc.o flib_spline.o ldaxc.o m_recipes.o mesh1d.o precision.o
 vdwxc.o: radfft.o
 xcmod.o: precision.o sys.o
