@@ -80,6 +80,7 @@
 !   Start counting time for a program or code section
 ! INPUT:
 !   character(len=*) prog  ! Name of program of code section to be timed
+!                          ! prog ideally should be at least of length 4.
 ! USAGE:
 !   See GENERAL USAGE section
 ! BEHAVIOUR:
@@ -754,7 +755,10 @@ subroutine timer_stop( prog )   ! Stop counting time for a program
   progData(iProg)%totTime  = progData(iProg)%totTime + deltaTime
 
 ! Add communication time to all active programs
-  if (prog(1:4)=='MPI_' .or. prog(1:4)=='mpi_') then  ! Communication routine
+  if (len(prog) < 4) then
+     ! Do nothing -- maybe warn the user that prog is not very meaningful
+  else if (prog(1:4)=='MPI_' .or. prog(1:4)=='mpi_') then  
+    ! We are dealing with a communication routine
     do jProg = 1,nProgs
       if (progData(jProg)%active) then
         progData(jProg)%comTime = progData(jProg)%comTime + deltaTime

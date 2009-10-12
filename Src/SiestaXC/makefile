@@ -10,8 +10,12 @@ include $(ARCH_MAKE)
 VPATH:=$(VPATH_ROOT)/SiestaXC:$(VPATH_ROOT)
 #
 default: module
+#
+# Note: The copy operation below is only a possible way to
+#       make the module and library files accessible.
+#
 module:  libSiestaXC.a
-	cp siestaXC.mod *.a ..
+	cp *.mod *.a ..
 #
 SIESTA_SRCS= alloc.F90 bessph.f cellsubs.f  \
              chkgmx.f fft1d.F  flib_spline.f90  \
@@ -51,7 +55,7 @@ siestaXC.tgz: $(ALL_SOURCES) $(OTHER_FILES)
 	mkdir -p SiestaXC
 	cp -fp $(ALL_SOURCES) SiestaXC
 	cp -fp lib-makefile SiestaXC/makefile
-	cp -fp lib-arch.make SiestaXC/arch.make
+	cp -fp lib-arch.make SiestaXC
 	cp -frp ../MPI SiestaXC
 	cp -fp mpi-makefile SiestaXC/MPI/Makefile
 	cp -frp Testers SiestaXC
