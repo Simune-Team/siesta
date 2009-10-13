@@ -6,7 +6,7 @@
 # and J.M.Soler, 1996-2006.
 # 
 # Use of this software constitutes agreement with the full conditions
-# given in the SIESTA license, as signed by all legitimate users.
+# given in BSD_LICENSE
 #
 SIESTA_ARCH=macosx-openmpi
 #

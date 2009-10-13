@@ -14,9 +14,9 @@ depending on the building system used for your code:
 
 1) Make SiestaXC a subdirectory of your main-program's directory.
 
-2) Edit the arch.make file in the SiestaXC directory, or substitute it for your 
+2) Edit the lib-arch.make file in the SiestaXC directory, or create your 
    own version. If you need MPI operation, make sure to define MPI_INTERFACE 
-   and DEFS_MPI. A minimal arch.make could be:
+   and DEFS_MPI. A minimal lib-arch.make could be:
 #--------------------
 FC=g95 -O3 -DGRID_DP
 #
@@ -34,7 +34,7 @@ FC=g95 -O3 -DGRID_DP
    copy files libSiestaXC.a and siestaXC.mod to your main-program's directory.
 
 4) Compile the rest of the program with the same compiler and compilation
-   options specified in arch.make
+   options specified in lib-arch.make
 
 Some f90 compilers (notably Intel's) require all the .mod files (and not only
 siestaXC.mod) to be present when compiling your main program. In this case,

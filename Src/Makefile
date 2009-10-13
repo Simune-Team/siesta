@@ -278,10 +278,11 @@ zgesv_lapack.a: Libs/zgesv_lapack.f
 	@echo "==> Compiling zgesv_lapack.a in Libs..."
 	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" zgesv_lapack.a)
 #
-transiesta: check-ts what version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF)  \
-                    $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
+transiesta: check-ts what version $(MPI_INTERFACE) $(NETCDF_INTERFACE) \
+                                  $(FDF) $(XC) \
+                                  $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
 	$(FC) -o transiesta \
-               $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) \
+               $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(XC) \
                $(MPI_INTERFACE) $(NETCDF_INTERFACE) \
                $(COMP_LIBS) $(FoX_LIBS) $(LIBS)
 #
@@ -510,8 +511,8 @@ memory.o: alloc.o memoryinfo.o parallel.o precision.o
 memoryinfo.o: precision.o
 meshmatrix.o: alloc.o atomlist.o meshsubs.o parallel.o parallelsubs.o
 meshmatrix.o: precision.o
-meshsubs.o: atm_types.o atmfuncs.o cellsubs.o chkgmx.o fft1d.o parallel.o
-meshsubs.o: parallelsubs.o precision.o radial.o siesta_cml.o
+meshsubs.o: alloc.o atm_types.o atmfuncs.o cellsubs.o chkgmx.o fft1d.o
+meshsubs.o: parallel.o parallelsubs.o precision.o radial.o siesta_cml.o
 metaforce.o: parallel.o parsing.o precision.o
 minvec.o: cellsubs.o precision.o sorting.o sys.o
 mixer.o: atomlist.o iodm_netcdf.o m_broyden_mixing.o m_energies.o
