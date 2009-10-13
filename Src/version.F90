@@ -3,7 +3,7 @@
 !
 ! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
 ! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
+! and J.M.Soler, 1996- .
 ! 
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
@@ -54,8 +54,7 @@ subroutine prversion
 use version_info
 implicit none
 
-write(6,'(2a)') "Siesta Version: ", &
-                    trim(version_str)
+write(6,'(2a)') "Siesta Version: ", trim(version_str)
 write(6,'(2a)') 'Architecture  : ', siesta_arch
 write(6,'(2a)') 'Compiler flags: ', fflags
 
@@ -65,8 +64,11 @@ write(6,'(a)') 'PARALLEL version'
 write(6,'(a)') 'SERIAL version'
 #endif
 
+#ifdef TRANSIESTA
+write(6,'(a)') 'TRANSIESTA support'
+#endif
 #ifdef CDF
-write(6,'(a)') 'NetCDF-capable'
+write(6,'(a)') 'NetCDF support'
 #endif
 
 end subroutine prversion

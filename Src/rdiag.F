@@ -3,7 +3,7 @@
 !
 ! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
 ! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
+! and J.M.Soler, 1996- .
 ! 
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
@@ -186,11 +186,13 @@ C Set algorithm logicals
           Use2D         = fdf_boolean('Diag.Use2D',.true.)
         endif
 #ifdef MPI
-        lBtmp(1) = AllInOne
-        lBtmp(2) = DivideConquer
-        lBtmp(3) = NoExpert
-        lBtmp(4) = PreRotate
-        lBtmp(5) = Use2D
+        if (Node.eq.0) then
+           lBtmp(1) = AllInOne
+           lBtmp(2) = DivideConquer
+           lBtmp(3) = NoExpert
+           lBtmp(4) = PreRotate
+           lBtmp(5) = Use2D
+        endif
         call MPI_Bcast(lBtmp,5,MPI_logical,0,MPI_Comm_World,MPIerror)
         AllInOne = lBtmp(1)
         DivideConquer = lBtmp(2)

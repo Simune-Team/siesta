@@ -3,7 +3,7 @@
 !
 ! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
 ! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
+! and J.M.Soler, 1996- .
 ! 
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
@@ -133,9 +133,9 @@ C  Internal variables .............................................
       real(dp)          ee, eei, qe, qei, rt, t, k(3)
 
 C Solve eigenvalue problem
-      call timer( 'r-eigvec', 1 )
-      call timer( 'r-buildHS', 1 )
       do ispin = 1,nspin
+        call timer( 'r-eigvec', 1 )
+        call timer( 'r-buildHS', 1 )
         do io = 1,nuo
           do jo = 1,nuotot
             Saux(jo,io) = 0.0d0

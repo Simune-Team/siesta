@@ -774,8 +774,12 @@ The file itself is:
           {\tt bl} selects the BLYP (Becke-Lee-Yang-Parr) scheme,
           and {\tt ps} selects the PBEsol scheme by Perdew et al (PRL 100, 136406 (2008))
           (see source file {\tt xc.f} for more details).
+          To use the van der Waals functional of M. Dion et al, PRL 92, 246401
+          (2004) (as implemented by G. Rom\'an-P\'erez and J. M. Soler,
+          PRL 103, 096102 (2009)), set the string to {\tt vw} or {\tt vf}.
 	  By default, the exchange-correlation energy and potential
-	  are computed using the Soler-Balb\'as package, except for
+	  are computed using the Balb\'as-Martins-Soler package 
+	  (PRB 64, 165110 (2001)), except for
 	  the {\tt wi}, {\tt hl}, {\tt gl}, and {\tt bh} flavors. 
    
 	\item The character {\tt r} next to {\tt ca} is a flag to perform the

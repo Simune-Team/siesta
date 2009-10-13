@@ -3,7 +3,7 @@
 !
 ! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
 ! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
+! and J.M.Soler, 1996- .
 ! 
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
@@ -41,6 +41,8 @@
       use basis_types, only: basis_def_t
       use fdf
       use pseudopotential, only: pseudopotential_t
+      use siestaXC, only: atomXC  ! XC for a spherical charge
+      use siestaXC, only: getXC   ! Returns the XC functional to be used
 
       implicit none      
 
@@ -1967,14 +1969,13 @@ C
 C Checking the functional used for exchange-correlation energy.
 C Written by D. Sanchez-Portal, Aug. 1998
 
-        use xcmod, only : nXCfunc, XCfunc, XCauth
-
 C Passed variable
         character(len=2), intent(in) :: icorr
 
 C Local variables
-        integer                      :: nf
+        integer                      :: nf, nXCfunc
         character(len=40)            :: ps_string
+        character(len=20)            :: XCauth(10), XCfunc(10)
 
         ps_string = "Unknown atomic XC code"
         if (icorr .eq. "ca") ps_string ="Ceperley-Alder"
@@ -1986,6 +1987,11 @@ C Local variables
         if (icorr .eq. "wc") ps_string ="GGA Wu-Cohen"
         if (icorr .eq. "bl") ps_string ="GGA Becke-Lee-Yang-Parr"
         if (icorr .eq. "ps") ps_string ="GGA PBEsol"
+        if (icorr .eq. "vf" .or. icorr .eq. "vw") 
+     $    ps_string ="VDW Dion-Rydberg-Schroeder-Langreth-Lundqvist"
+
+C Get functional(s) being used
+        call getXC( nXCfunc, XCfunc, XCauth )
 
 C Loop over functionals
         do nf = 1,nXCfunc
@@ -2064,7 +2070,17 @@ C Loop over functionals
      .          'xc_check: WARNING: Pseudopotential generated with',
      .           trim(ps_string), " functional"
 
-          else
+          elseif ((XCauth(nf).eq.'DRSLL')
+     $                  .and.(XCfunc(nf).eq.'VDW')) then
+
+            write(6,'(a)')  
+     $        'xc_check: VDW Dion-Rydberg-Schroeder-Langreth-Lundqvist'
+            if ((icorr.ne.'vf' .and. icorr.ne.'vw') .and.nXCfunc.eq.1) 
+     $          write(6,'(a,1x,2a)')
+     .          'xc_check: WARNING: Pseudopotential generated with',
+     $           trim(ps_string), " functional"
+
+         else
 
            write(6,'(a)')
      . 'xc_check: ERROR: Exchange-correlation functional not allowed'
@@ -3612,8 +3628,8 @@ C
                   rco(1,l,nsm)=rofi(nrval-2)
                 endif
                 write(6,'(/,A,/,A,f10.6,A)')
-     .        'SPLIT: PAO cut-off radius determined from an',
-     .        'SPLIT: energy shift=',eshift,' Ry'
+     .            'SPLIT: PAO cut-off radius determined from an',
+     .            'SPLIT: energy shift=',eshift,' Ry'
 
               endif  
 C
@@ -3759,7 +3775,6 @@ C**
 !!            Maybe fix on the fly in the future?
 !!            if (spln < minval(split_table(1:nrc))
 !!                ...  ! maybe fix split_table
-
                     if (new_split_code) then
                       call find_split_location(nrc,rofi,drdi,
      .                  rphi(1:,l,nsm),split_table,
@@ -3771,7 +3786,7 @@ C**
      .            "WARNING: Minimum split_norm parameter: ",
      .            spln_min, ". Will not be able to generate "
      .            // "orbital with split_norm = ", spln
-                        call die("See manual for new split options")
+                        !call die("See manual for new split options")
                       endif
                       call parabola(a,b,nrc,rphi(1,l,nsm),rnrm,
      .                              l,spln,cons1,cons2,nsp)

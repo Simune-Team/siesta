@@ -3,7 +3,7 @@
 !
 ! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
 ! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
+! and J.M.Soler, 1996- .
 ! 
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
@@ -20,6 +20,7 @@
       use m_recipes, only: polint
       use m_radfft
       use sys, only: die
+      use m_bessph, only: bessph   ! Spherical Bessel functions
 !-----------------------------------------------
       
       public :: elec_corr_setup
@@ -106,7 +107,7 @@ C     integration.
 
 
       REAL(DP) cons, qmax, rmax, delt, c, dlt, z1, z2, ch1, ch2, pi
-      REAL(DP) r, vd, vv1, vv2, energ1, energ2, bessph
+      REAL(DP) r, vd, vv1, vv2, energ1, energ2
       integer itb, nr, nmin, nmax, nn, iq, ir
       real(dp) zval1, zval2
 

@@ -342,7 +342,7 @@ MODULE m_ts_electrode
       use fdf
 ! FDN
       use m_ts_kpoints, only : ts_nkpnt, ts_kpoint, ts_kweight
-      use m_ts_options, only : GFFileL, GFFileR
+      use m_ts_options, only : GFFileL, GFFileR, calcGF
       use files, only: label_length
 ! FDN
 
@@ -617,8 +617,13 @@ MODULE m_ts_electrode
 ! FDN
 !      write(joutfile,*) 'GF: Spin number -> ',ispin
 ! FDN
-
+    
       inquire(file=gffile,exist=exist1)
+
+! If it does not find the file, calculate the GF
+      if(.not.calcGF .and. .not.exist1) calcGF = .true.
+
+      if (calcGF) then
       if(exist1) then
        write(joutfile,*) gffile,' already exist, will be overwritten!'
       end if
@@ -627,7 +632,7 @@ MODULE m_ts_electrode
       OPEN(FILE=gffile,UNIT=jgfu, &
           FORM='UNFORMATTED')
 
-
+       
       gftitle = fdf_string('TS.GFTitle','genGF')
 !
 
@@ -635,7 +640,7 @@ MODULE m_ts_electrode
 !
          write(jgfu) gftitle
          write(jgfu) EFermi,NEn
-          write(joutfile,*)'Efermi: ',EFermi
+         write(joutfile,*)'Efermi: ',EFermi
          write(jgfu) nucuse,NA1,NA2,nq
          write(jgfu) contour,wgf,q,wq
          write(jgfu) NG2
@@ -889,22 +894,23 @@ MODULE m_ts_electrode
           nua,lasto,NG1tmp,nspin,cell,kscell,kdispl, &
           H00,s00,h01,s01)    ! ->
 ! FDN
-      deallocate(H00)
-      deallocate(s00)
-      deallocate(H01)
-      deallocate(s01)
-      deallocate(lasto)
 
       deallocate(HAA)
       deallocate(SAA)
       deallocate(GAAq)
-      deallocate(GS)
+      end if ! calcGF
+
       
       deallocate(q)
       deallocate(wq)
-
-      deallocate(lastou)  
-
+      deallocate(GS)
+      deallocate(lastou)
+      deallocate(H00)
+      deallocate(s00)
+      deallocate(H01)
+      deallocate(s01)
+      deallocate(lasto)  
+      
       
 ! ======================================================================
       return

@@ -1,10 +1,11 @@
-Siesta Version: siesta@uam.es--2006/siesta-devel--reference--2.1--patch-28
-Architecture  : i686-pc-linux-gnu--Intel
-Compiler flags: ifort -O2 -mp
-SERIAL version
+Siesta Version:                                        siesta-trunk-300
+Architecture  : nano-intel-mpi
+Compiler flags: /opt/intel/impi/3.1/bin64/mpiifort -w  -O3 -mp
+PARALLEL version
+NetCDF support
 
-* Running in serial mode
->> Start of run:  17-DEC-2006  20:06:37
+* Running on    4 nodes in parallel
+>> Start of run:  29-SEP-2009  17:22:00
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -42,6 +43,12 @@ BandLinesScale  pi/a
   2. 0. 0.            # X
   2. 1. 0.            # W       (Note units set by BandLinesScale)
 %endblock BandPoints
+WaveFuncKPointsScale  pi/a
+%block WaveFuncKPoints              # These are comments
+0.000  0.000  0.000  from 1 to 10   # eigenstates 1-10 of Gamma
+2.000  0.000  0.000  1 3 5          # eigenstates 1,3,5 of X
+1.500  1.500  1.500                 # all eigenstates of K
+%endblock WaveFuncKPoints
 AtomicCoordinatesFormat  Fractional
 %block AtomicCoordinatesAndAtomicSpecies
     0.    0.    0.     1  Si        1
@@ -50,7 +57,7 @@ AtomicCoordinatesFormat  Fractional
 ************************** End of input data file *****************************
 
 reinit: -----------------------------------------------------------------------
-reinit: System Name: bulk silicon  with test of BandPoints                      
+reinit: System Name: bulk silicon  with test of BandPoints
 reinit: -----------------------------------------------------------------------
 reinit: System Label: si_bandpoints                                               
 reinit: -----------------------------------------------------------------------
@@ -65,7 +72,6 @@ Valence configuration for pseudopotential generation:
 3p( 2.00) rc: 1.89
 3d( 0.00) rc: 1.89
 4f( 0.00) rc: 1.89
-Dumping pseudopotential information in formatted form in Si.psdump
 For Si, standard SIESTA heuristics set lmxkb to 3
  (one more than the basis l, including polarization orbitals).
 Use PS.lmax or PS.KBprojectors blocks to override.
@@ -222,6 +228,16 @@ Si                    2                    # Species label, number of l-shells
 
 prinput: ----------------------------------------------------------------------
 
+Dumping basis to NetCDF file Si.ion.nc
+coor:   Atomic-coordinates input format  =     Fractional
+
+siesta: Atomic coordinates (Bohr) and species
+siesta:      0.00000   0.00000   0.00000  1        1
+siesta:      2.56530   2.56530   2.56530  1        2
+
+siesta: System type = bulk      
+
+initatomlists: Number of atoms, orbitals, and projectors:      2    26    32
 
 siesta: ******************** Simulation parameters ****************************
 siesta:
@@ -229,15 +245,16 @@ siesta: The following are some of the parameters of the simulation.
 siesta: A complete list of the parameters used, including default values,
 siesta: can be found in file out.fdf
 siesta:
-coor:   Atomic-coordinates input format  =     Fractional
+redata: Non-Collinear-spin run           =     F
+redata: SpinPolarized (Up/Down) run      =     F
 redata: Number of spin components        =     1
 redata: Long output                      =     F
-redata: Number of Atomic Species         =     1
+redata: Number of Atomic Species         =        1
 redata: Charge density info will appear in .RHO file
 redata: Write Mulliken Pop.              =     NO
 redata: Mesh Cutoff                      =    90.0000  Ry
 redata: Net charge of the system         =     0.0000 |e|
-redata: Max. number of SCF Iter          =    50
+redata: Max. number of SCF Iter          =       50
 redata: Performing Pulay mixing using    =     3 iterations
 redata: Mix DM in first SCF step ?       =     F
 redata: Write Pulay info on disk?        =     F
@@ -248,6 +265,8 @@ redata: DM Mixing Weight for Kicks       =     0.5000
 redata: DM Tolerance for SCF             =     0.000100
 redata: Require Energy convergence for SCF =     F
 redata: DM Energy tolerance for SCF      =     0.000100 eV
+redata: Require Harris convergence for SCF =     F
+redata: DM Harris energy tolerance for SCF =     0.000100 eV
 redata: Using Saved Data (generic)   =     F
 redata: Use continuation files for DM    =     F
 redata: Neglect nonoverlap interactions  =     F
@@ -256,22 +275,18 @@ redata: Divide and Conquer               =     T
 redata: Electronic Temperature           =     0.0018  Ry
 redata: Fix the spin of the system       =     F
 redata: Dynamics option                  =     Verlet MD run
-redata: Initial MD time step             =     1
-redata:   Final MD time step             =     1
+redata: Initial MD time step             =        1
+redata:   Final MD time step             =        1
 redata: Length of MD time step           =     1.0000  fs
 redata: Initial Temperature of MD run    =     0.0000  K
 redata: Perform a MD quench              =     F
 redata: ***********************************************************************
-
-siesta: Atomic coordinates (Bohr) and species
-siesta:      0.00000   0.00000   0.00000  1        1
-siesta:      2.56530   2.56530   2.56530  1        2
-
-initatomlists: Number of atoms, orbitals, and projectors:      2    26    32
 Total number of electrons:     8.000000
 Total ionic charge:     8.000000
 
-siesta: System type = bulk      
+* ProcessorY, Blocksize:    2   7
+
+ Kpoints in:           32 . Kpoints trimmed:           32
 
 siesta: k-grid: Number of k-points =    32
 siesta: k-grid: Cutoff (effective) =     7.679 Ang
@@ -301,11 +316,13 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
+New_DM. Step:     1
+Initializing Density Matrix...
 
 InitMesh: MESH =    18 x    18 x    18 =        5832
 InitMesh: Mesh cutoff (required, used) =    90.000    91.110 Ry
 
-* Maximum dynamic memory allocated =     9 MB
+* Maximum dynamic memory allocated =     5 MB
 
 stepf: Fermi-Dirac step function
 
@@ -329,8 +346,8 @@ siesta: FreeEng =      -214.209336
 
 siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
 siesta:    1     -215.4707     -214.2093     -214.2093  1.8176 -3.8996
-timer: Routine,Calls,Time,% = IterSCF        1       4.551  78.39
-elaps: Routine,Calls,Wall,% = IterSCF        1       4.598  77.99
+timer: Routine,Calls,Time,% = IterSCF        1       7.496  84.33
+elaps: Routine,Calls,Wall,% = IterSCF        1       1.876  84.17
 siesta:    2     -215.4379     -215.4358     -215.4358  0.0097 -3.8091
 siesta:    3     -215.4376     -215.4313     -215.4313  0.0048 -3.8162
 siesta:    4     -215.4375     -215.4375     -215.4375  0.0004 -3.8267
@@ -344,7 +361,7 @@ siesta: E_KS - E_eggbox =      -215.4375
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000223    0.000224    0.000223
+   Tot    0.000223    0.000224    0.000222
 ----------------------------------------
    Max    0.021329
    Res    0.021218    sqrt( Sum f_i^2 / 3N )
@@ -352,6 +369,7 @@ siesta: Atomic forces (eV/Ang):
    Max    0.021329    constrained
 
 Stress-tensor-Voigt (kbar):       13.89       13.89       13.89       10.73       10.73       10.73
+(Free)E + p*V (eV/cell)     -215.7844
 Target enthalpy (eV/cell)     -215.4375
 
 siesta: Stress tensor (static) (eV/Ang**3):
@@ -359,25 +377,25 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.006698    0.008668    0.006698
          0.006698    0.006698    0.008668
 
-siesta: Pressure (static):        -13.88737507  kBar
+siesta: Pressure (static):        -13.88739357  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.008668    0.006698    0.006698
          0.006698    0.008668    0.006698
          0.006698    0.006698    0.008668
 
-siesta: Pressure (total):        -13.88737507  kBar
+siesta: Pressure (total):        -13.88739357  kBar
 
 siesta: Temp_ion =       0.000 K
 
-* Maximum dynamic memory allocated =     9 MB
+* Maximum dynamic memory allocated =     5 MB
 
 siesta: Program's energy decomposition (eV):
 siesta: Eions   =       380.802124
 siesta: Ena     =       114.848182
 siesta: Ekin    =        81.649032
 siesta: Enl     =        29.319506
-siesta: DEna    =         4.385830
+siesta: DEna    =         4.385831
 siesta: DUscf   =         0.252732
 siesta: DUext   =         0.000000
 siesta: Exc     =       -65.090627
@@ -410,78 +428,93 @@ siesta: Cell volume =         40.025752 Ang**3
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:          -0.00009440         -0.00010224  Ry/Bohr**3
-siesta:          -0.00866772         -0.00938733  eV/Ang**3
-siesta:         -13.88737507        -15.04031971  kBar
+siesta:          -0.00866774         -0.00938734  eV/Ang**3
+siesta:         -13.88739357        -15.04033712  kBar
+(Free)E+ p_basis*V_orbitals  =        -214.226794
+(Free)Eharris+ p_basis*V_orbitals  =        -214.226748
 
-* Maximum dynamic memory allocated : Node    0 =     9 MB
+* Maximum dynamic memory allocated : Node    0 =     5 MB
+* Maximum dynamic memory allocated : Node    1 =     5 MB
+* Maximum dynamic memory allocated : Node    2 =     5 MB
+* Maximum dynamic memory allocated : Node    3 =     5 MB
 
 * Maximum memory occured during ranger                        
 
 timer: CPU execution times:
 timer:  Routine       Calls   Time/call    Tot.time        %
-timer:  siesta            1      12.914      12.914   100.00
-timer:  Setup             1       0.293       0.293     2.27
-timer:  bands             3       0.003       0.010     0.08
-timer:  writewave         1       0.001       0.001     0.01
-timer:  KSV_init          1       0.000       0.000     0.00
-timer:  IterMD            1      12.600      12.600    97.57
-timer:  hsparse           2       0.153       0.307     2.38
-timer:  overfsm           2       0.290       0.580     4.49
-timer:  IterSCF           8       1.454      11.632    90.07
-timer:  kinefsm           2       0.270       0.541     4.19
-timer:  nlefsm            2       2.138       4.276    33.11
-timer:  DHSCF             8       0.574       4.589    35.54
-timer:  DHSCF1            1       0.108       0.108     0.84
-timer:  DHSCF2            1       0.414       0.414     3.21
-timer:  REORD            50       0.000       0.001     0.01
-timer:  POISON            9       0.002       0.018     0.14
-timer:  DHSCF3            8       0.452       3.619    28.03
-timer:  rhoofd            8       0.209       1.671    12.94
-timer:  cellXC            8       0.005       0.038     0.29
-timer:  vmat              8       0.236       1.892    14.65
-timer:  diagon            7       0.297       2.080    16.10
-timer:  cdiag           451       0.001       0.281     2.18
-timer:  cdiag1          451       0.000       0.018     0.14
-timer:  cdiag2          451       0.000       0.051     0.39
-timer:  cdiag3          451       0.000       0.184     1.42
-timer:  cdiag4          451       0.000       0.005     0.04
+timer:  siesta            1      18.616      18.616   100.00
+timer:  Setup             1       0.500       0.500     2.69
+timer:  bands             3       0.011       0.032     0.17
+timer:  writewave         3       0.015       0.044     0.24
+timer:  KSV_init          1       0.004       0.004     0.02
+timer:  IterMD            1      18.017      18.017    96.78
+timer:  hsparse           1       0.013       0.013     0.07
+timer:  overlap           1       0.632       0.632     3.39
+timer:  IterSCF           7       2.043      14.301    76.82
+timer:  kinefsm           2       0.294       0.589     3.16
+timer:  nlefsm            2       3.471       6.942    37.29
+timer:  DHSCF             8       0.502       4.018    21.59
+timer:  DHSCF1            1       0.131       0.131     0.70
+timer:  DHSCF2            1       0.449       0.449     2.41
+timer:  REORD            50       0.000       0.000     0.00
+timer:  POISON            9       0.001       0.012     0.06
+timer:  DHSCF3            8       0.398       3.184    17.10
+timer:  rhoofd            8       0.164       1.315     7.06
+timer:  cellXC            8       0.003       0.028     0.15
+timer:  vmat              8       0.212       1.698     9.12
 timer:  MolMec            2       0.000       0.000     0.00
-timer:  DHSCF4            1       0.446       0.446     3.45
-timer:  dfscf             1       0.419       0.419     3.24
-timer:  optical           1       0.000       0.000     0.00
+timer:  diagon            7       0.719       5.032    27.03
+timer:  c-eigval        227       0.010       2.335    12.54
+timer:  c-buildHS       227       0.001       0.215     1.15
+timer:  cdiag           454       0.009       4.156    22.33
+timer:  cdiag1          454       0.000       0.215     1.15
+timer:  cdiag2          454       0.001       0.373     2.00
+timer:  cdiag3          454       0.008       3.413    18.34
+timer:  cdiag4          454       0.000       0.030     0.16
+timer:  c-eigvec        227       0.010       2.369    12.72
+timer:  c-buildD        224       0.002       0.368     1.98
+timer:  DHSCF4            1       0.249       0.249     1.34
+timer:  dfscf             1       0.222       0.222     1.19
+timer:  overfsm           1       0.022       0.022     0.12
+timer:  optical           1       0.023       0.023     0.12
   
 
 elaps: ELAPSED times:
 elaps:  Routine       Calls   Time/call    Tot.time        %
-elaps:  siesta            1      13.279      13.279   100.00
-elaps:  Setup             1       0.336       0.336     2.53
-elaps:  bands             3       0.004       0.012     0.09
-elaps:  writewave         1       0.001       0.001     0.00
+elaps:  siesta            1       4.663       4.663    99.97
+elaps:  Setup             1       0.127       0.127     2.73
+elaps:  bands             3       0.003       0.009     0.19
+elaps:  writewave         3       0.004       0.011     0.24
 elaps:  KSV_init          1       0.000       0.000     0.00
-elaps:  IterMD            1      12.918      12.918    97.28
-elaps:  hsparse           2       0.154       0.308     2.32
-elaps:  overfsm           2       0.290       0.579     4.36
-elaps:  IterSCF           8       1.493      11.948    89.97
-elaps:  kinefsm           2       0.271       0.541     4.08
-elaps:  nlefsm            2       2.138       4.275    32.19
-elaps:  DHSCF             8       0.574       4.590    34.57
-elaps:  DHSCF1            1       0.109       0.109     0.82
-elaps:  DHSCF2            1       0.414       0.414     3.12
+elaps:  IterMD            1       4.510       4.510    96.69
+elaps:  hsparse           1       0.003       0.003     0.07
+elaps:  overlap           1       0.115       0.115     2.47
+elaps:  IterSCF           7       0.511       3.579    76.74
+elaps:  kinefsm           2       0.051       0.102     2.18
+elaps:  nlefsm            2       0.861       1.722    36.93
+elaps:  DHSCF             8       0.126       1.009    21.65
+elaps:  DHSCF1            1       0.033       0.033     0.70
+elaps:  DHSCF2            1       0.112       0.112     2.41
 elaps:  REORD            50       0.000       0.001     0.01
-elaps:  POISON            9       0.002       0.019     0.14
-elaps:  DHSCF3            8       0.452       3.617    27.24
-elaps:  rhoofd            8       0.209       1.668    12.56
-elaps:  cellXC            8       0.005       0.036     0.27
-elaps:  vmat              8       0.236       1.891    14.24
-elaps:  diagon            7       0.297       2.079    15.66
-elaps:  cdiag           451       0.001       0.283     2.13
-elaps:  cdiag1          451       0.000       0.017     0.13
-elaps:  cdiag2          451       0.000       0.053     0.40
-elaps:  cdiag3          451       0.000       0.190     1.43
-elaps:  cdiag4          451       0.000       0.005     0.04
+elaps:  POISON            9       0.001       0.006     0.12
+elaps:  DHSCF3            8       0.099       0.796    17.06
+elaps:  rhoofd            8       0.043       0.348     7.46
+elaps:  cellXC            8       0.001       0.006     0.13
+elaps:  vmat              8       0.053       0.423     9.07
 elaps:  MolMec            2       0.000       0.000     0.00
-elaps:  DHSCF4            1       0.447       0.447     3.36
-elaps:  dfscf             1       0.419       0.419     3.15
+elaps:  diagon            7       0.180       1.263    27.07
+elaps:  c-eigval        227       0.003       0.586    12.57
+elaps:  c-buildHS       227       0.000       0.056     1.20
+elaps:  cdiag           454       0.002       1.088    23.33
+elaps:  cdiag1          454       0.000       0.060     1.30
+elaps:  cdiag2          454       0.000       0.123     2.65
+elaps:  cdiag3          454       0.002       0.836    17.93
+elaps:  cdiag4          454       0.000       0.018     0.39
+elaps:  c-eigvec        227       0.003       0.615    13.19
+elaps:  c-buildD        224       0.000       0.067     1.43
+elaps:  DHSCF4            1       0.067       0.067     1.45
+elaps:  dfscf             1       0.060       0.060     1.28
+elaps:  overfsm           1       0.003       0.003     0.08
 elaps:  optical           1       0.000       0.000     0.00
   
->> End of run:  17-DEC-2006  20:06:51
+>> End of run:  29-SEP-2009  17:22:05

@@ -3,7 +3,7 @@
 !
 ! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
 ! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
+! and J.M.Soler, 1996- .
 ! 
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
@@ -39,7 +39,6 @@ C
       use old_atmfuncs, only : clear_tables, allocate_old_arrays
 
       use atom,         only : atom_main, prinput
-      use xcmod,        only : setXC
       use sys,          only : die
       use atom_options, only : get_atom_options, write_ion_plot_files
 C
@@ -93,7 +92,7 @@ C Initialise MPI and set processor number
          call get_atom_options()
          write_ion_plot_files = .true.  ! get them always
 
-         call setXC
+         call read_xc_info()
 
          call read_basis_specs()
          call basis_specs_transfer()
