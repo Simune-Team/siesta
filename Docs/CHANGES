@@ -6,6 +6,19 @@
 ** CHANGES ALONG trunk 
 
 ------------------------------------------------------------------------
+2009-10-13  08:05:00 GMT Alberto Garcia <albertog@icmab.es>    trunk-304
+Array indexp distributed among parallel processors (J. Soler)
+
+* Array indexp translates the mesh index from the extended supercell
+  to the part of unit cell stored locally by each node. It has been 
+  distributed, so that now it translated to myBox from myExtBox, which
+  are my processor's mesh box and the same box extended by lateral 
+  'wings'.
+
+* Documentation of meshsubs has been considerably extended
+
+
+------------------------------------------------------------------------
 2009-10-12  16:05:00 GMT Alberto Garcia <albertog@icmab.es>    trunk-303
 Add dependency line in SiestaXC. Add missing Supercell docs
 
