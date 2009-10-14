@@ -271,7 +271,6 @@ subroutine filter( l, nr, r, f, kc, norm_opt, n_eigen)
   do ij = 1,n
     cij = (-1._dp)**ij * 2*sqrt(rc/pi) * kj(ij)
     do ik = 0,nmesh
-!    do ik = 0,2*nmesh
       k = kmesh(ik)
       if (abs(k-kj(ij)) > 100*krtol) then
         jlk(ik,ij) = cij * bessph(l,k*rc) / (k**2 - kj(ij)**2)
@@ -303,7 +302,6 @@ subroutine filter( l, nr, r, f, kc, norm_opt, n_eigen)
 !        integral( nmesh+1, k4j1(:)*jlk(:,ij2), x=kmesh(:) )
       ! Symmetrize
       h(ij2,ij1) = h(ij1,ij2)
-!      write(33,*) ij1,ij2,h(ij1,ij2)
     end do ! ij2
   end do ! ij1
 
@@ -529,7 +527,6 @@ subroutine gen_filteret( l, nr, maxfilteret, r, f, kc, norm_opt, nfilteret, filt
                 k4j1(nmesh)      *jlk(nmesh,ij2)          ) * dk/3
       ! Symmetrize
       h(ij2,ij1) = h(ij1,ij2)
-      write(33,*) ij1,ij2,h(ij1,ij2)
     end do ! ij2
   end do ! ij1
 
@@ -740,7 +737,6 @@ subroutine gen_pol_filteret( l, nr, maxfilteret, r, kc, nfilteret, filteret )
                 k4j1(nmesh)      *jlk(nmesh,ij2)          ) * dk/3
       ! Symmetrize
       h(ij2,ij1) = h(ij1,ij2)
-      write(33,*) ij1,ij2,h(ij1,ij2)
     end do ! ij2
   end do ! ij1
 

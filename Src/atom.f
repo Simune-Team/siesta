@@ -31,7 +31,7 @@
       use old_atmfuncs, only: semicsave, izsave, cnfigtb
       use old_atmfuncs, only: nzetasave, nsemicsave, nkblsave
       use old_atmfuncs, only: npolorbsave, basistype_save
-      use old_atmfuncs, only: lambdatb, rcotb, rctb
+      use old_atmfuncs, only: lambdatb, rcotb, rctb, filtercuttb
 !
 !     old_atmfuncs procedures
 !
@@ -87,7 +87,8 @@
         subroutine atom_main(izin,lmxkb_in,nkbl,erefkb,lmxo, nzeta, 
      .                       rco,lambda_in,atm_label,npolorb,semic,
      .                       nsemic,cnfigmx,charge_in,smass,basistype, 
-     .                       isin,rinn,vcte,split_norm,basp)
+     .                       isin,rinn,vcte,split_norm,filtercut_in,
+     .                       basp)
 
         implicit none
 
@@ -121,6 +122,10 @@
 !       Scaling factor for the atomic orbital,  for the 'SPLIT' type 
 !       of basis it is interpreted as the exponent (in Bohr-2)
 !       of the gaussian orbitals for the double-Z, triple-Z, etc.. 
+
+        real(dp), intent(IN) :: filtercut_in(0:lmaxd,nsemx)
+!       For a filteret basis set this is the shell specific cutoff
+!       Not used for other basis sets
 
         character(len=20), intent(in) :: atm_label
 !       Label used to name all the atom related files (i.e. pseudopotential
@@ -158,6 +163,7 @@
 
         real(dp), intent(in) :: split_norm(0:lmaxd,nsemx)
 !       User-defined split_norm values
+
 !
 !     Former arguments, no longer used
 !
@@ -168,6 +174,7 @@
         integer lmxkb
         real(dp) charge
         real(dp) :: lambda(nzetmx,0:lmaxd,nsemx)
+        real(dp) :: filtercut(0:lmaxd,nsemx)
 
 !-----------------------------------------------------------------------
 !   Initializes Kleinman-Bylander pseudopotential and atomic orbitals.
@@ -233,11 +240,6 @@
 
         character
      .    icorr*2, irel*3, nicore*4 
-!
-! Type of augmentation procedure for the construction of the 
-! polarization functions
-!
-        character(len=10) :: basistype_polarization
 
         integer 
      .    iz, nrval, ir , nrgauss, nchloc, nzcontr, l, nVna,
@@ -259,11 +261,8 @@
         lmxkb = lmxkb_in
         charge = charge_in
         lambda(:,:,:) = lambda_in(:,:,:)
+        filtercut(:,:) = filtercut_in(:,:)
         global_label = atm_label
-!
-! Set the type of polarization functions to be used
-!
-        basistype_polarization = fdf_string('PAO.PolarizationType','old')
       
 !!** AG: Symbol is not adequate. Should use the label
 
@@ -585,9 +584,8 @@ c    .          'atom: The above configuration will be used ',
             call Basis_gen(Zval,is, iz, a,b,rofi,drdi,s,
      .                     vps, ve, vePAO, nrval, lmxo,nsemic,
      .                     nzeta, rco, lambda, npolorb,
-     .                     basistype, basistype_polarization, 
-     .                     rphi, no, rinn, vcte, split_norm,
-     .                     atm_label)
+     .                     basistype, rphi, no, rinn, vcte, 
+     .                     split_norm, filtercut, atm_label)
  
           else
             if (abs(charge-zval+chgvps).gt.1.0d-3) then 
@@ -605,9 +603,8 @@ c    .          'atom: The above configuration will be used ',
             call Basis_gen(Zval,is, iz, a,b,rofi,drdi,s,
      .                     vps, vePAO, vePAO, nrval, lmxo,nsemic,
      .                     nzeta, rco, lambda, npolorb,
-     .                     basistype, basistype_polarization, 
-     .                     rphi, no, rinn, vcte,
-     .                     split_norm,atm_label)
+     .                     basistype, rphi, no, rinn, vcte,
+     .                     split_norm, filtercut, atm_label)
           endif
           write(6,'(a,i3)')
      .      'atom: Total number of Sankey-type orbitals:', no
@@ -681,7 +678,7 @@ c    .          'atom: The above configuration will be used ',
           slfe(is) = 0.0d0
 ! Calculate Bessel functions
           call Bessel(is,a,b,rofi,drdi,s,
-     .                lmxo,nzeta,rco,lambda,no)
+     .                lmxo,nzeta,rco,lambda,filtercut,no)
  
           write(6,'(/a,i3)')
      .      'atom: Total number of floating Bessel orbitals:', no
@@ -3013,9 +3010,8 @@ C
         subroutine Basis_gen(Zval,is, iz, a,b,rofi,drdi,s,
      .                       vps, ve, vePAO, nrval, lmxo,nsemic, 
      .                       nzeta, rco, lambda, polorb,
-     .                       basis_type, basis_type_polarization,
-     .                       rphi, notot,
-     .                       rinn, vcte, split_norm,atm_label)
+     .                       basis_type, rphi, notot, rinn, vcte, 
+     .                       split_norm, filtercut, atm_label)
 
 C
 C Generates the basis set and stores all the information in the 
@@ -3034,7 +3030,7 @@ C
      .    rphi(nrmax,0:lmaxd,nsemx), rco(nzetmx,0:lmaxd,nsemx),
      .    lambda(nzetmx, 0:lmaxd,nsemx), vePAO(nrmax),
      .    Zval,rinn(0:lmaxd,nsemx),vcte(0:lmaxd,nsemx),
-     .    split_norm(0:lmaxd,nsemx)
+     .    split_norm(0:lmaxd,nsemx), filtercut(0:lmaxd,nsemx)
         character(len=*) 
      .    atm_label
         integer
@@ -3042,7 +3038,7 @@ C
      .    polorb(0:lmaxd,nsemx),nsemic(0:lmaxd)
 
         character(len=10)
-     .    basis_type, basis_type_polarization
+     .    basis_type
 C
 C Internal variables
 C
@@ -3059,7 +3055,8 @@ C
      .               nrval, lmxo, nsemic,
      .               nzeta, rco, lambda, 
      .               rphi, ePAO, noPAO,
-     .               rinn, vcte, split_norm,atm_label)
+     .               rinn, vcte, split_norm,
+     .               filtercut, atm_label)
          
         elseif (basis_type.eq.'nodes') then 
  
@@ -3067,7 +3064,8 @@ C
      .               vps, ve, vePAO,
      .               nrval, lmxo, nsemic,
      .               nzeta, rco, lambda, 
-     .               rphi, ePAO, noPAO)
+     .               rphi, ePAO, noPAO,
+     .               filtercut)
 
         elseif (basis_type.eq.'nonodes') then 
  
@@ -3075,7 +3073,8 @@ C
      .                 vps, ve, vePAO,
      .                 nrval, lmxo, nsemic,
      .                 nzeta, rco, lambda, 
-     .                 rphi, ePAO, noPAO)
+     .                 rphi, ePAO, noPAO,
+     .                 filtercut)
           
         elseif (basis_type.eq.'splitgauss') then 
       
@@ -3083,7 +3082,8 @@ C
      .                    vps, ve, vePAO,
      .                    nrval, lmxo, nsemic,
      .                    nzeta, rco, lambda, 
-     .                    rphi, ePAO, noPAO)
+     .                    rphi, ePAO, noPAO,
+     .                    filtercut)
 
         elseif (basis_type.eq.'filteret') then  
 
@@ -3093,7 +3093,7 @@ C
      .                  nzeta, rco, lambda, 
      .                  rphi, ePAO, noPAO,
      .                  rinn, vcte, split_norm,
-     .                  atm_label )
+     .                  filtercut, atm_label )
          
         endif            
  
@@ -3104,12 +3104,14 @@ C
           call POLgen_filteret(is, iz, a,b,rofi,drdi,
      .                ePAO,rphi,rco,vps,vePAO,
      .                polorb,lmxo,nsemic,noPOL,
-     .                rinn,vcte,nrval,split_norm,atm_label) 
+     .                rinn,vcte,nrval,split_norm,
+     .                filtercut,atm_label) 
         else
           call POLgen(is, iz, a,b,rofi,drdi,
      .                ePAO,rphi,rco,vps,vePAO,
      .                polorb,lmxo,nsemic,noPOL,
-     .                rinn,vcte,nrval,split_norm,atm_label) 
+     .                rinn,vcte,nrval,split_norm,
+     .                filtercut,atm_label) 
         endif
 C
 C Total number of orbitals
@@ -3124,7 +3126,7 @@ C
      .                      nzeta,rco,lambda, 
      .                      rphi, ePAO, norb,
      .                      rinn,vcte,split_norm,
-     .                      atm_label) 
+     .                      filtercut,atm_label) 
 
         use basis_specs, only:  restricted_grid
 C
@@ -3143,7 +3145,7 @@ C
      .    lambda(nzetmx,0:lmaxd,nsemx), Zval,vePAO(nrmax),
      .    ePAO(0:lmaxd,nsemx),
      .    rinn(0:lmaxd,nsemx),vcte(0:lmaxd,nsemx),
-     .    split_norm(0:lmaxd,nsemx)
+     .    split_norm(0:lmaxd,nsemx), filtercut(0:lmaxd,nsemx)
           character(len=*) atm_label
 
 
@@ -3166,6 +3168,7 @@ C Internal variables
      .    g(nrmax), r, el, ekin, rdummy,
      .    r1, r2, dfdi, d2fdi2, d2fdr2, dr,
      .    epot, epot2, rh, dy, eorb, eps, 
+     .    filter_shell,
      .    over(nsemx), vsoft(nrmax), vePAOsoft(nrmax),
      .    exponent, d, dn, norm(nsemx), rcsan,
      .    kmax, kmax_tol, etol, paofilterFactor,
@@ -3212,6 +3215,7 @@ C
      .          cnfigtb(l,nsm,is), sym(l)
 
               if (rco(1,l,nsm).lt.1.0d-5) then
+C
 C Automatic determination of the cut off radius for the PAOs
 C Atomic eigenvalues
 C
@@ -3331,7 +3335,28 @@ C
 C  Construct filterets
 C
               ! Allow re-setting by user
-              if (filter_cutoff_specified) then
+              filter_shell = filtercut(l,nsm)
+              if (filter_shell.ne.0.0_dp) then
+                paoFilterFactor = fdf_double("PAO.FilterFactor",
+     .                (0.7_dp)**2.0_dp)
+                kmax = sqrt(filter_shell * paoFilterFactor)
+                write(6,'(a,f8.2,a)') "PAO Filter: Cutoff used:",
+     .                 kmax**2,' Ry'
+
+                ! For diagnostic only --------------
+                etol = fdf_physical('PAO.FilterTol',
+     .                EkinTolDefault,'Ry')
+                write(6,'(a,f12.6,a)')
+     .                "PAO Filter: diagnostic kin energy tol:",
+     .                etol,' Ry'
+                kmax_tol = kcPhi(l=l,nr=nrc,r=rofi(1:nrc),
+     .                phi=forb(1:nrc),etol=etol)
+                write(6,'(a,f8.2,a)')
+     .                "PAO Filter: Nominal cutoff (before filtering):",
+     .                kmax_tol**2,' Ry'
+                ! ----------------------------------
+              elseif (filter_cutoff_specified) then
+                filter_shell = filter_cutoff
                 paoFilterFactor = fdf_double("PAO.FilterFactor",
      .                (0.7_dp)**2.0_dp)
                 kmax = sqrt(filter_cutoff * paoFilterFactor)
@@ -3413,6 +3438,7 @@ C
                 g(1) = g(2)
 
                 ! Copy some parameters to this zeta
+                filtercut(l,nsm) = filter_shell
                 lambda(izeta,l,nsm) = lambda(1,l,nsm)
                 rco(izeta,l,nsm) = rc*lambda(1,l,nsm)
 
@@ -3458,15 +3484,14 @@ C
                 if (izeta.eq.1) then
                   write(6,'(/,(3x,a,i2),3(/,a25,f12.6))')
      .              'izeta =',izeta,
-     .              'lambda =',lambda(izeta,l,nsm),
+     .              'cutoff =',filtercut(l,nsm),
      .              'rc =',rco(izeta,l,nsm),
      .              'energy =',eorb
                   ePAO(l,nsm) = eorb
                 elseif (izeta.gt.1) then
-                  write(6,'(/,(3x,a,i2),3(/,a25,f12.6))')
+                  write(6,'(/,(3x,a,i2),2(/,a25,f12.6))')
      .              'izeta =',izeta,
      .              'rmatch =',rco(izeta,l,nsm),
-     .              'splitnorm =',spln,
      .              'energy =',eorb
                 endif
                 write(6,'(a25,f12.6)') 'kinetic =',ekin
@@ -3477,8 +3502,8 @@ C
                 indx = indx + 1
 
                 call comBasis(is,a,b,rofi,g,l,rco(izeta,l,nsm),
-     .                        lambda(izeta,l,nsm), izeta,
-     .                        nsm,nrc,indx)
+     .                        lambda(izeta,l,nsm),filtercut(l,nsm),
+     .                        izeta,nsm,nrc,indx)
               enddo
 
 !
@@ -3499,7 +3524,8 @@ C
         subroutine SPLIT(Zval,is, iz, a,b,rofi,drdi,s,
      .                   vps,ve,vePAO,nrval,lmxo, nsemic,
      .                   nzeta,rco,lambda, rphi, ePAO, norb,
-     .                   rinn,vcte,split_norm,atm_label) 
+     .                   rinn,vcte,split_norm,
+     .                   filtercut,atm_label) 
 
         use basis_specs, only:  restricted_grid
 C
@@ -3520,7 +3546,7 @@ C
      .    lambda(nzetmx,0:lmaxd,nsemx), Zval,vePAO(nrmax),
      .    ePAO(0:lmaxd,nsemx),
      .    rinn(0:lmaxd,nsemx),vcte(0:lmaxd,nsemx),
-     .    split_norm(0:lmaxd,nsemx)
+     .    split_norm(0:lmaxd,nsemx), filtercut(0:lmaxd,nsemx)
           character(len=*) atm_label
 
 
@@ -3528,9 +3554,9 @@ C
      .    nrval, lmxo, is, iz, nzeta(0:lmaxd,nsemx),
      .    norb, nsemic(0:lmaxd)
 
-
-C***Internal variables**
-
+C
+C Internal variables
+C
         integer
      .    l,nprin, nnodes, nodd, nrc, nsp, i, ir,indx,
      .    izeta, nmax, nmin, nn, nr, nrcomp, nsm, nrc1, 
@@ -3693,7 +3719,8 @@ C
 !
 !AG**    Soft-confinement setup might need to go here
 !
-C****Generate PAO orbitals for the first shell of the basis set***
+C
+C Generate PAO orbitals for the first shell of the basis set
 C 
                   nnodes=nsm
                   nprin=l+nsm
@@ -3716,22 +3743,22 @@ C
                     !(use the actual math norm (sqrt(int(f^2)))
 
                     split_table(1:nrc) =
-     $                     sqrt(max(1.0_dp-rnrm(1:nrc),0.0_dp))
+     .                     sqrt(max(1.0_dp-rnrm(1:nrc),0.0_dp))
 
                   else
                      !  Do a full scan of the old method
                      !  (norm of tail+parabola)
                      call split_scan(nrc, rofi, drdi, l,
-     $                        rphi(1:,l,nsm),rnrm,atm_label,
-     $                        split_table,fix_split_table)
+     .                        rphi(1:,l,nsm),rnrm,atm_label,
+     .                        split_table,fix_split_table)
                   endif
 
                 else              ! izeta > 1...
-       
-C***Cut-off radius for double-Z, triple-Z,..., if it is set to**** 
-C***zero in the input then it is calculated from the splitnorm**** 
-C*** parameter *
-
+C
+C Cut-off radius for double-Z, triple-Z,..., if it is set to
+C zero in the input then it is calculated from the splitnorm
+C parameter
+C
                   if (rco(izeta,l,nsm).gt.rco(1,l,nsm)) then
                     write(6,'(/,A)') 
      . 'SPLIT: ERROR: SPLIT OPTION FOR BASIS SET '
@@ -3750,7 +3777,6 @@ C*** parameter *
                     call fit_parabola(nrc,rofi,drdi,rphi(1:,l,nsm),
      .                   l, cons1, cons2, rnp)
                     spln=split_table(nrc)
-C**
                     do i=1,izeta-1
                       if (abs(rco(izeta,l,nsm)-rco(i,l,nsm))
      .                    .lt.1.0d-5) then
@@ -3791,8 +3817,9 @@ C**
                       call parabola(a,b,nrc,rphi(1,l,nsm),rnrm,
      .                              l,spln,cons1,cons2,nsp)
                     endif
-
-C***Cut-off radius for the split orbital with a desired norm*
+C
+C Cut-off radius for the split orbital with a desired norm
+C
                     nrc=nsp
                     rco(izeta,l,nsm)=rofi(nsp)*lambda(izeta,l,nsm)
 C
@@ -3809,7 +3836,9 @@ C
                   endif
 
                   do ir=1,nrval
-C***parabolic split***
+C
+C Parabolic split
+C
                     r=rofi(ir)
                     if (ir.ge.nrc) then
                       g(ir)=0.0d0
@@ -3817,12 +3846,12 @@ C***parabolic split***
                  ! Store first-zeta minus second-zeta in g
                       g(ir)=-(cons1*r**2+cons2)*r**(l+1)+rphi(ir,l,nsm) 
                     endif
-C*
                   enddo 
-
-C***Orthogonalize to the inner shells if present***
-C***In some cases we have to use a "smooth" version of the orginal
-C***PAO orbitals in this orthogonalization process***************
+C
+C Orthogonalize to the inner shells if present
+C In some cases we have to use a "smooth" version of the orginal
+C PAO orbitals in this orthogonalization process
+C
                   if (nsm.gt.1) then
                     do ism=1,nsm-1
                       rc=rco(1,l,ism)/lambda(1,l,ism)
@@ -3897,10 +3926,10 @@ c                        write(68,*) r,rh,rphi(ir,l,ism)
                   dnrm=0.0d0
                   do ir=2,nrc-1
                     r=rofi(ir)
-C***parabolic split***
+C
+C Parabolic split
+C
                     phi=g(ir)/(r**(l+1))
-C*
-
                     dnrm=dnrm+drdi(ir)*(phi*r**(l+1))**2
                     g(ir)=phi
                   enddo
@@ -3908,8 +3937,9 @@ C*
                   g(nrc)=0.0d0
 
                 endif
-              
-C****Normalization of basis functions***
+C
+C Normalization of basis functions
+C
                 eps=1.0d-4
                 if (abs(dnrm-1.0d0).gt.eps) then
                   do ir=1,nrc
@@ -3920,11 +3950,10 @@ C****Normalization of basis functions***
                     endif
                   enddo
                 endif
-C****  
-
-C*Calculation of the mean value of kinetic and potential energy**
-C    Potential and kinetic energy of the orbital before compression
-
+C
+C Calculation of the mean value of kinetic and potential energy
+C Potential and kinetic energy of the orbital before compression
+C
                 ekin=0.0d0
                 do ir=2,nrc-1
                   r=rofi(ir)
@@ -3939,13 +3968,13 @@ C    Potential and kinetic energy of the orbital before compression
      .              dr*g(ir)*r**(l+1)*(-d2fdr2)
      .             +dr*l*(l+1)*(g(ir)*r**l)**2
                 enddo
-
+C
 C Kinetic energy after compression
-
+C
                 ekin=ekin/(lambda(izeta,l,nsm)**2)
-
+C
 C Potential energy after compression
-
+C
                 nrcomp=nint(log(rco(izeta,l,nsm)/b+1.0d0)/a)+1
                 epot=0.0d0
                 epot2=0.0d0
@@ -4064,14 +4093,13 @@ C Potential energy after compression
 
                 call comBasis(is,a,b,rofi,g,l,
      .                rco(izeta,l,nsm),lambda(izeta,l,nsm),
-     .                izeta,nsm,nrc,indx)
+     .                filtercut(l,nsm),izeta,nsm,nrc,indx)
                
               enddo 
         
               call compress_PAO(a,b,rofi,rphi(1,l,nsm),
      .                          rco(1,l,nsm),lambda(1,l,nsm))
                        
-
             endif    
           enddo 
         enddo 
@@ -4082,14 +4110,16 @@ C Potential energy after compression
      .                   vps,ve,vePAO,
      .                   nrval,lmxo,nsemic,
      .                   nzeta,rco,lambda, 
-     .                   rphi, ePAO, norb) 
+     .                   rphi, ePAO, norb,
+     .                   filtercut) 
 
         use basis_specs, only: restricted_grid
 C
 C Calculates the atomic orbitals basis set, using the option NODES
 C for the generation of the augmentation orbitals.
-C  Written by D. Sanchez-Portal, Aug. 1998
-C   Modified by DSP, July 1999
+C
+C Written by D. Sanchez-Portal, Aug. 1998
+C Modified by DSP, July 1999
 C
 
         implicit none
@@ -4100,7 +4130,7 @@ C
      .    rphi(nrmax,0:lmaxd,nsemx), 
      .    rco(nzetmx,0:lmaxd,nsemx),
      .    lambda(nzetmx, 0:lmaxd,nsemx), Zval,vePAO(nrmax),
-     .    ePAO(0:lmaxd,nsemx)
+     .    ePAO(0:lmaxd,nsemx), filtercut(0:lmaxd,nsemx)
 
         integer
      .    nrval, lmxo, is, nzeta(0:lmaxd,nsemx),
@@ -4193,7 +4223,6 @@ C
 C If the compression factor is negative or zero the orbitals are untouched
                 if (lambda(izeta,l,nsm).le.0.0d0) 
      .            lambda(izeta,l,nsm)=1.0d0 
-C*
                 if (abs(rco(izeta,l,nsm)).le.1.0d-5) then 
                   rco(izeta,l,nsm)=rco(1,l,nsm)
                 endif 
@@ -4238,11 +4267,10 @@ C
                     endif
                   enddo
                 endif
-C****
-
-C*Calculation of the mean value of kinetic and potential energy**
-C    Potential and kinetic energy of the orbital before compression
-
+C
+C Calculation of the mean value of kinetic and potential energy
+C Potential and kinetic energy of the orbital before compression
+C
                 ekin=0.0d0
                 do ir=2,nrc-1
                   r=rofi(ir)
@@ -4257,13 +4285,13 @@ C    Potential and kinetic energy of the orbital before compression
      .                dr*g(ir)*r**(l+1)*(-d2fdr2)
      .               +dr*l*(l+1)*(g(ir)*r**l)**2
                 enddo
-
+C
 C Kinetic energy after compression
-
+C
                 ekin=ekin/(lambda(izeta,l,nsm)**2)
-
+C
 C Potential energy after compression
-
+C
                 nrcomp=nint(log(rco(izeta,l,nsm)/b+1.0d0)/a)+1
                 epot=0.0d0
                 epot2=0.0d0
@@ -4300,7 +4328,7 @@ C Potential energy after compression
                 indx=indx+1
                 call comBasis(is,a,b,rofi,g,l,
      .                rco(izeta,l,nsm),lambda(izeta,l,nsm),
-     .                izeta,nsm,nrc,indx)
+     .                filtercut(l,nsm),izeta,nsm,nrc,indx)
 
 
               enddo 
@@ -4319,7 +4347,8 @@ C Potential energy after compression
      .                     vps,ve,vePAO,
      .                     nrval,lmxo,nsemic,
      .                     nzeta,rco,lambda, 
-     .                     rphi, ePAO, norb) 
+     .                     rphi, ePAO, norb,
+     .                     filtercut) 
 
         use basis_specs, only: restricted_grid
 
@@ -4337,7 +4366,7 @@ C
      .    rphi(nrmax,0:lmaxd,nsemx), 
      .    rco(nzetmx,0:lmaxd,nsemx),
      .    lambda(nzetmx, 0:lmaxd,nsemx), Zval,vePAO(nrmax),
-     .    ePAO(0:lmaxd,nsemx)
+     .    ePAO(0:lmaxd,nsemx), filtercut(0:lmaxd,nsemx)
 
         integer
      .    nrval, lmxo,  is, nzeta(0:lmaxd,nsemx),
@@ -4428,7 +4457,6 @@ C
 C If the compression factor is negative or zero the orbitals are untouched
                 if (lambda(izeta,l,nsm).le.0.0d0) 
      .            lambda(izeta,l,nsm)=1.0d0 
-C* 
                 if (abs(rco(izeta,l,nsm)).lt.1.0d-5) 
      .            rco(izeta,l,nsm)=rco(1,l,nsm)
                 do i=1,izeta-1
@@ -4502,13 +4530,13 @@ C    Potential and kinetic energy of the orbital before compression
      .              dr*g(ir)*r**(l+1)*(-d2fdr2)
      .             +dr*l*(l+1)*(g(ir)*r**l)**2
                 enddo
-
+C
 C Kinetic energy after compression
-
+C
                 ekin=ekin/(lambda(izeta,l,nsm)**2)
-
+C
 C Potential energy after compression
-
+C
                 nrcomp=nint(log(rco(izeta,l,nsm)/b+1.0d0)/a)+1
                 epot=0.0d0
                 epot2=0.0d0
@@ -4536,14 +4564,14 @@ C Potential energy after compression
 
                 if (izeta.eq.1) ePAO(l,nsm)=eorb
 
-          write(6,'(a25,f12.6)') 'kinetic =',ekin
-          write(6,'(a25,f12.6)') 'potential(screened) =',epot
-          write(6,'(a25,f12.6)') 'potential(ionic) =',epot2 
+                write(6,'(a25,f12.6)') 'kinetic =',ekin
+                write(6,'(a25,f12.6)') 'potential(screened) =',epot
+                write(6,'(a25,f12.6)') 'potential(ionic) =',epot2 
 
                 norb=norb+(2*l+1)
                 indx=indx+1
                 call comBasis(is,a,b,rofi,g,l,rco(izeta,l,nsm),
-     .                        lambda(izeta,l,nsm),
+     .                        lambda(izeta,l,nsm),filtercut(l,nsm),
      .                        izeta,nsm,nrc,indx)
 
               enddo 
@@ -4559,7 +4587,8 @@ C Potential energy after compression
 
 !
         subroutine comBasis(is,a,b,rofi,rphi,l,rc,
-     .                      lambda,nzeta,nsemic,nrc,norb)
+     .                      lambda,filtercut,nzeta,
+     .                      nsemic,nrc,norb)
 C 
 C  Generates the common blocks for the storage of the information 
 C  about the basis set orbitals.
@@ -4571,7 +4600,7 @@ C
 
         integer l, is, norb, nrc, nzeta, nsemic
 
-        real(dp) rc, lambda, rphi(nrmax), a, b, rofi(nrmax)  
+        real(dp) rc, lambda, filtercut, rphi(nrmax), a, b, rofi(nrmax)  
 C
 C  Internal variables
 C
@@ -4585,8 +4614,9 @@ C
         integer npoint
         parameter(npoint=4)
 C
-        rcotb(nzeta,l,nsemic,is)=rc
-        lambdatb(nzeta,l,nsemic,is)=lambda
+        rcotb(nzeta,l,nsemic,is) = rc
+        lambdatb(nzeta,l,nsemic,is) = lambda
+        filtercuttb(l,nsemic,is) = filtercut
 C
 C  Interpolation to generate tables
 C
@@ -4639,7 +4669,8 @@ C
 !
         subroutine SPLITGAUSS(Zval,is,a,b,rofi,drdi,s,
      .                        vps,ve,vePAO,nrval,lmxo,nsemic,
-     .                        nzeta,rco,lambda, rphi, ePAO, norb) 
+     .                        nzeta,rco,lambda,rphi,ePAO,norb,
+     .                        filtercut) 
 
         use basis_specs, only: restricted_grid
 C
@@ -4655,7 +4686,7 @@ C
      .    drdi(nrmax), s(nrmax), ve(nrmax),
      .    rphi(nrmax,0:lmaxd,nsemx), rco(nzetmx,0:lmaxd,nsemx),
      .    lambda(nzetmx, 0:lmaxd,nsemx), Zval,vePAO(nrmax),
-     .    ePAO(0:lmaxd,nsemx)
+     .    ePAO(0:lmaxd,nsemx), filtercut(0:lmaxd,nsemx)
 
         integer
      .    nrval, lmxo, is, nzeta(0:lmaxd,nsemx),
@@ -4753,8 +4784,10 @@ C
 
                 if (abs(rco(izeta,l,nsm)).lt.1.0d-5) 
      .            rco(izeta,l,nsm)=rco(1,l,nsm)
-CWith spligauss option, compression factor must be taken****
-Cas the gaussian exponent
+C
+C With splitgauss option, compression factor must be taken
+C as the gaussian exponent
+C
                 if (izeta.gt.1) then 
                   if (lambda(izeta,l,nsm).le.0.0d0) then 
                     write(6,'(/a,/a,a)')
@@ -4828,8 +4861,8 @@ C
                 endif
 C
 C Calculation of the mean value of kinetic and potential energy
-C    Potential and kinetic energy of the orbital before compression
-
+C Potential and kinetic energy of the orbital before compression
+C
                 if (izeta.eq.1) then 
 
                   ekin=0.0d0
@@ -4846,13 +4879,13 @@ C    Potential and kinetic energy of the orbital before compression
      .                dr*g(ir)*r**(l+1)*(-d2fdr2)
      .                +dr*l*(l+1)*(g(ir)*r**l)**2
                   enddo
-
+C
 C Kinetic energy after compression
-
+C
                   ekin=ekin/(lambda(izeta,l,nsm)**2)
-
+C
 C Potential energy after compression
-
+C
                   nrcomp=nint(log(rco(izeta,l,nsm)/b+1.0d0)/a)+1
                   epot=0.0d0
                   epot2=0.0d0
@@ -4920,7 +4953,7 @@ C Potential energy after compression
                 indx=indx+1
                 call comBasis(is,a,b,rofi,g,l,
      .                        rco(izeta,l,nsm),lambda(izeta,l,nsm),
-     .                        izeta,nsm,nrc,indx)
+     .                        filtercut(l,nsm),izeta,nsm,nrc,indx)
 
               enddo 
                
@@ -5388,7 +5421,7 @@ C
 !
         subroutine POLgen(is,iz,a,b,rofi,drdi,ePAO,rphi,rco,vps,ve,
      .                    polorb,lmxo, nsemic,norb,rinn,vcte,nrval,
-     .                    split_norm,atm_label)
+     .                    split_norm,filtercut,atm_label)
 C
 C Calculates the polarization  orbitals for the basis set augmentation.
 C Written by D. Sanchez-Portal, Aug. 1998.
@@ -5403,7 +5436,8 @@ C
      .    rco(nzetmx,0:lmaxd,nsemx),
      .    ePAO(0:lmaxd,nsemx),
      .    rinn(0:lmaxd,nsemx), vcte(0:lmaxd,nsemx),
-     .    split_norm(0:lmaxd,nsemx)
+     .    split_norm(0:lmaxd,nsemx),
+     .    filtercut(0:lmaxd,nsemx)
 
         character(len=*) atm_label
 
@@ -5711,7 +5745,7 @@ C
         subroutine POLgen_filteret(is,iz,a,b,rofi,drdi,ePAO,rphi,
      .                             rco,vps,ve,polorb,lmxo,nsemic,
      .                             norb,rinn,vcte,nrval,
-     .                             split_norm,atm_label)
+     .                             split_norm,filtercut,atm_label)
 C
 C Calculates the polarization orbitals for the basis set augmentation.
 C This version uses filterets to create the basis functions. In this
@@ -5728,7 +5762,8 @@ C
      .    rco(nzetmx,0:lmaxd,nsemx),
      .    ePAO(0:lmaxd,nsemx),
      .    rinn(0:lmaxd,nsemx), vcte(0:lmaxd,nsemx),
-     .    split_norm(0:lmaxd,nsemx)
+     .    split_norm(0:lmaxd,nsemx),
+     .    filtercut(0:lmaxd,nsemx)
 
         character(len=*) atm_label
 
@@ -5754,7 +5789,7 @@ C
         real(dp),allocatable,dimension(:,:) :: filterets !filtered orbitals
 
         logical :: filterorbitals
-        real(dp):: kmax, kmax_tol, etol, paofilterFactor
+        real(dp):: kmax, kmax_tol, etol, paofilterFactor, filter_shell
       
         norb = 0 
         indx = 0
@@ -5789,11 +5824,17 @@ C Construct Filteret polarization functions
 C
               ! Note that the real angular momentum is l+1... ??
 
+              filter_shell = filtercut(l,nsm)
               ! Allow re-setting by user
-              if (filter_cutoff_specified) then
+              if (filter_shell.gt.0.0d0) then
+                paoFilterFactor = fdf_double("PAO.FilterFactor",
+     .            (0.7_dp)**2.0_dp)
+                kmax = sqrt(filter_shell * paoFilterFactor)
+              elseif (filter_cutoff_specified) then
                 paoFilterFactor = fdf_double("PAO.FilterFactor",
      .            (0.7_dp)**2.0_dp)
                 kmax = sqrt(filter_cutoff * paoFilterFactor)
+                filter_shell = filter_cutoff
               else
                 call die("cut-off needed for poln filter")
               endif
@@ -5825,6 +5866,7 @@ C
 
               filter_cutoff_orbitals = max(filter_cutoff_orbitals,
      .                                   kmax**2)
+              filtercut(l,nsm) = filter_shell
 
 C
 C  Loop over the filterets using them to create new polarization zetas
@@ -6006,19 +6048,18 @@ C
         end subroutine compol
 !
         subroutine set_mesh(a,b,rofi,drdi,s)
-
-C**
-C    Setting up mesh points an its derivatives from standard
-C    values
-C    D. Sanchez-Portal, Aug. 98
- 
+C
+C Setting up mesh points an its derivatives from standard values
+C D. Sanchez-Portal, Aug. 98
+C
         implicit none
 
         real(dp) 
      .     rofi(nrmax), drdi(nrmax), s(nrmax), a, b
 
-
-C**** Internal variables**
+C
+C Internal variables
+C
         real(dp) 
      .     aa, bb, zt, rpb, ea, ea2
         integer ir
@@ -6026,249 +6067,231 @@ C**** Internal variables**
         parameter(zt=1.0d0)
         parameter(aa=80.0d0)
         parameter(bb=6.0d0) 
-
-
-C*STANDART VALUES FOR MESH PARAMETERS
-
-          b=exp(-bb)/zt
-          a=1.0d0/aa
-
-C*SET UP THE MESH POINTS AND ITS DERIVATIVE***
-
-          rpb=b
-          ea=exp(a)
-          ea2=1.0d0
-          do ir=1,nrmax
-            drdi(ir)=a*rpb
-            rofi(ir)=b*(ea2-1.0d0)
-            s(ir)=(a*rpb)**2
-            rpb=rpb*ea
-            ea2=ea2*ea
-          enddo
-          end subroutine set_mesh
+C
+C Standard values for mesh parameters
+C
+        b=exp(-bb)/zt
+        a=1.0d0/aa
+C
+C Set up the mesh points and its derivative
+C
+        rpb=b
+        ea=exp(a)
+        ea2=1.0d0
+        do ir=1,nrmax
+          drdi(ir)=a*rpb
+          rofi(ir)=b*(ea2-1.0d0)
+          s(ir)=(a*rpb)**2
+          rpb=rpb*ea
+          ea2=ea2*ea
+        enddo
+        end subroutine set_mesh
 !
-          subroutine BESSEL(is,a,b,rofi,drdi,s,
-     .             lmxo,
-     .             nzeta,rco,lambda,norb) 
+        subroutine BESSEL(is,a,b,rofi,drdi,s,lmxo,
+     .                    nzeta,rco,lambda,filtercut,
+     .                    norb) 
 
-           use basis_specs, only: restricted_grid
-
-C****
-C  Caculates Bessel functions as a floating basis
+        use basis_specs, only: restricted_grid
+C
+C  Calculates Bessel functions as a floating basis
 C  Written by D. Sanchez-Portal, Aug. 1998.
-C  Modify by DSP, July 1999
+C  Modified by DSP, July 1999
+C
+        implicit none
 
-               implicit none
-
-               real(dp)
-     .         a, b, rofi(nrmax),
-     .         drdi(nrmax), s(nrmax), 
-     .         rco(nzetmx,0:lmaxd,nsemx),
-     .         lambda(nzetmx, 0:lmaxd,nsemx)
-
-
-               integer
-     .           lmxo, is, nzeta(0:lmaxd,nsemx),
-     .           norb
+        real(dp)
+     .    a, b, rofi(nrmax),
+     .    drdi(nrmax), s(nrmax), 
+     .    rco(nzetmx,0:lmaxd,nsemx),
+     .    lambda(nzetmx, 0:lmaxd,nsemx),
+     .    filtercut(0:lmaxd,nsemx)
 
 
-C***Internal variables**
+        integer
+     .    lmxo, is, nzeta(0:lmaxd,nsemx), norb
+C
+C Internal variables
+C
+        integer
+     .    l,nprin, nnodes, nodd, nrc, ir, indx, izeta
 
-               integer
-     .           l,nprin, nnodes, nodd, nrc, ir,indx,
-     .           izeta
+        real(dp)
+     .    rc, dnrm, phi,
+     .    g(nrmax), eorb, eps
 
-               real(dp)
-     .           rc, 
-     .           dnrm, phi,
-     .           g(nrmax), eorb, eps
+        real(dp) :: v(nrmax)=0.0d0
 
-               real(dp) :: v(nrmax)=0.0d0
+        norb=0 
+        indx=0
+        do l=0,lmxo 
 
-             norb=0 
-             indx=0
-             do l=0,lmxo 
-
-               if(nzeta(l,1).gt.0) then
+          if (nzeta(l,1).gt.0) then
 
             write(6,'(/2A,I2)')
-     .       'Bessel: floating Bessel functions ',
-     .           'with angular momentum L=',l
+     .        'Bessel: floating Bessel functions ',
+     .        'with angular momentum L=',l
 
-              do izeta=1, nzeta(l,1) 
-
-C**Cut-off radius for Bessel functions must be an explicit input***
+            do izeta=1, nzeta(l,1) 
 C
-                if (rco(izeta,l,1).lt.1.0d-5) then 
-                    write(6,'(a)')
+C Cut-off radius for Bessel functions must be an explicit input
+C
+              if (rco(izeta,l,1).lt.1.0d-5) then 
+                write(6,'(a)')
      .     'Bessel: ERROR Zero cut-off radius with Z=-100 option'
-                    write(6,'(a)')
+                write(6,'(a)')
      .     'Bessel: ERROR Cut-off radius must be explicitly specified'
-                    write(6,'(a)')
+                write(6,'(a)')
      .     'Bessel: ERROR using Z=-100 (Floating Bessel functions)'
-                  call die
- 
-                endif
+                call die
+              endif
 C
-C***
-
-          if(abs(lambda(izeta,l,1)).lt.1.0d-3) lambda(izeta,l,1)=1.0d0
-C*
-           if(abs(lambda(izeta,l,1)-1.0d0).gt.1.0d-3) 
-     .         then
-             write(6,'(/,a)')
+              if (abs(lambda(izeta,l,1)).lt.1.0d-3) 
+     .          lambda(izeta,l,1)=1.0d0
+              if (abs(lambda(izeta,l,1)-1.0d0).gt.1.0d-3) then
+                write(6,'(/,a)')
      . 'Bessel: WARNING Scale factor is not active with Z=-100 option' 
-           endif 
-           lambda(izeta,l,1)=1.0d0
-C*
+              endif 
+              lambda(izeta,l,1)=1.0d0
 
-                  rc=rco(izeta,l,1)
-                  nrc=nint(log(rc/b+1.0d0)/a)+1
-                  if (restricted_grid) then
-                     nodd=mod(nrc,2)
-                     if(nodd.eq.0) then
-                        nrc=nrc+1
-                     endif
-                  endif
-                  rc=b*(exp(a*(nrc-1))-1.0d0)
-                  rco(izeta,l,1)=rc
-                  
+              rc=rco(izeta,l,1)
+              nrc=nint(log(rc/b+1.0d0)/a)+1
+              if (restricted_grid) then
+                nodd=mod(nrc,2)
+                if (nodd.eq.0) then
+                  nrc=nrc+1
+                endif
+              endif
+              rc=b*(exp(a*(nrc-1))-1.0d0)
+              rco(izeta,l,1)=rc
 
-                      nnodes=izeta
-                      nprin=l+1
-                      call schro_eq(1.0d0,rofi,v,v,s,drdi,
-     .                  nrc,l,a,b,nnodes,nprin,
-     .                  eorb,g) 
-                       dnrm=0.0d0
-                       do ir=2,nrc
-                          phi=g(ir)
-                          dnrm=dnrm+drdi(ir)*phi*phi
-                          g(ir)=phi/(rofi(ir)**(l+1))
-                       enddo 
-                       g(1)=g(2)        
+              nnodes=izeta
+              nprin=l+1
+              call schro_eq(1.0d0,rofi,v,v,s,drdi,
+     .                      nrc,l,a,b,nnodes,nprin,
+     .                      eorb,g) 
+              dnrm=0.0d0
+              do ir=2,nrc
+                phi=g(ir)
+                dnrm=dnrm+drdi(ir)*phi*phi
+                g(ir)=phi/(rofi(ir)**(l+1))
+              enddo 
+              g(1)=g(2)        
+C
+C Check normalization of the wavefunctions
+C
+              eps=1.0d-4
+              if (abs(dnrm-1.0d0).gt.eps) then
+                do ir=1,nrc
+                  g(ir)=g(ir)/sqrt(dnrm)
+                enddo
+              endif
 
-C****Checking normalization of the wavefunctions**
-                 eps=1.0d-4
-                 if(abs(dnrm-1.0d0).gt.eps) then
-                   do ir=1,nrc
-                   g(ir)=g(ir)/sqrt(dnrm)
-                  enddo
-                 endif
-C****  
-
-
-
-             write(6,'(/,(3x,a,i2),2(/,a25,f12.6))')
+              write(6,'(/,(3x,a,i2),2(/,a25,f12.6))')
      .          'izeta =',izeta,
      .          'rc =',rco(izeta,l,1),
      .          'energy =',eorb  
 
-            norb=norb+(2*l+1)
-            indx=indx+1
-            call comBasis(is,a,b,rofi,g,l,
+              norb=norb+(2*l+1)
+              indx=indx+1
+              call comBasis(is,a,b,rofi,g,l,
      .           rco(izeta,l,1),lambda(izeta,l,1),
-     .           izeta,1,nrc,indx)
+     .           filtercut(l,1),izeta,1,nrc,indx)
 
-
-              enddo 
+            enddo 
         
-              endif  
+          endif  
 
-             enddo 
+        enddo 
 
-            end subroutine bessel
+        end subroutine bessel
 !
 !
         subroutine energ_deriv(a,r,psi,vps,
      .      ve,drdi,nrc,l,el,psidev,nrval)
       
         implicit none
-
-C*
-C      This routine calculate the energy derivative of 
-C      a given wavefunction.
-C      The routine solve and inhomogeneus version of 
-C      Schrodinger eqn.  
-C      It is not an optimized algorithm!!!!!!!!!!!!!!!!!
-C       Written by Daniel Sanchez-Portal, July 1999
+C
+C  This routine calculate the energy derivative of 
+C  a given wavefunction.
+C  The routine solve and inhomogeneus version of 
+C  Schrodinger eqn.  
+C  It is not an optimized algorithm!!!!!!!!!!!!!!!!!
+C  Written by Daniel Sanchez-Portal, July 1999
 C 
         integer  l, nrmin, nrval, ir, nrc   
 
         real(dp)  r(nrval),psi(nrval),psidev(nrval),
-     .   el,vps(nrval),g(nrmax),drdi(nrmax),h(nrmax),ve(nrval), 
-     .   hi, dnrm, cons, a, ortog, dnrm2
+     .    el,vps(nrval),g(nrmax),drdi(nrmax),h(nrmax),ve(nrval), 
+     .    hi, dnrm, cons, a, ortog, dnrm2
         
-         parameter(nrmin=1) 
+        parameter(nrmin=1) 
 
 C
-
-          
-          nrc=min(nrc,nrval)
+        nrc=min(nrc,nrval)
  
 C Solving the inhomogeneus Schrodinger equation
-          do ir=2,nrc
-            hi=vps(ir)+ve(ir)+l*(l+1)/r(ir)**2-el
-            hi=hi*(drdi(ir)**2)
-            hi=hi+0.25d0*a**2
-            h(ir)=hi
-          enddo 
-          h(1)=h(2)
+        do ir=2,nrc
+          hi=vps(ir)+ve(ir)+l*(l+1)/r(ir)**2-el
+          hi=hi*(drdi(ir)**2)
+          hi=hi+0.25d0*a**2
+          h(ir)=hi
+        enddo 
+        h(1)=h(2)
           
-          cons=psi(nrmin+1)/(vps(nrmin+1)+ve(nrmin+1)-el)
-          cons=cons/r(nrmin+1)**(l+1) 
-          g(1)=0.0d0
-          do ir=1,nrmin+1
-            g(ir)=cons*(r(ir)**(l+1))/sqrt(drdi(ir))
-          enddo 
+        cons=psi(nrmin+1)/(vps(nrmin+1)+ve(nrmin+1)-el)
+        cons=cons/r(nrmin+1)**(l+1) 
+        g(1)=0.0d0
+        do ir=1,nrmin+1
+          g(ir)=cons*(r(ir)**(l+1))/sqrt(drdi(ir))
+        enddo 
 
-          do ir=nrmin+2,nrc
-            hi=-((psi(ir)+10.0d0*psi(ir-1)
+        do ir=nrmin+2,nrc
+          hi=-((psi(ir)+10.0d0*psi(ir-1)
      .         +psi(ir-2))/12.0d0)
 
-            hi=hi+(10.0d0*h(ir-1)*g(ir-1)+h(ir-2)*g(ir-2))/12.0d0
+          hi=hi+(10.0d0*h(ir-1)*g(ir-1)+h(ir-2)*g(ir-2))/12.0d0
  
-            hi=hi+2.0d0*g(ir-1)-g(ir-2)
+          hi=hi+2.0d0*g(ir-1)-g(ir-2)
 
-            g(ir)=hi/(1.0d0-h(ir)/12.0d0)
+          g(ir)=hi/(1.0d0-h(ir)/12.0d0)
 
-
-          enddo 
-
+        enddo 
+C
 C Orthogonalize the energy derivative to the original wavefunction
 C and normalize
-          dnrm2=0.0d0
-          ortog=0.0d0
-          do ir=1, nrc
-            g(ir)=g(ir)*sqrt(drdi(ir))
-            dnrm2=dnrm2+drdi(ir)*(psi(ir)**2)
-            ortog=ortog+drdi(ir)*g(ir)*psi(ir)
-          enddo
-          dnrm=0.0d0
-          do ir=1, nrc
-             g(ir)=g(ir)-ortog*psi(ir)/dnrm2
-             dnrm=dnrm+drdi(ir)*(g(ir)**2)
-          enddo 
-          dnrm=sqrt(dnrm)
-          do ir=1,nrc
-             psidev(ir)=g(ir)/dnrm
-          enddo
+C
+        dnrm2=0.0d0
+        ortog=0.0d0
+        do ir=1, nrc
+          g(ir)=g(ir)*sqrt(drdi(ir))
+          dnrm2=dnrm2+drdi(ir)*(psi(ir)**2)
+          ortog=ortog+drdi(ir)*g(ir)*psi(ir)
+        enddo
+        dnrm=0.0d0
+        do ir=1, nrc
+          g(ir)=g(ir)-ortog*psi(ir)/dnrm2
+          dnrm=dnrm+drdi(ir)*(g(ir)**2)
+        enddo 
+        dnrm=sqrt(dnrm)
+        do ir=1,nrc
+          psidev(ir)=g(ir)/dnrm
+        enddo
 
-          end subroutine energ_deriv
+        end subroutine energ_deriv
 !
         subroutine rphi_vs_e(a,b,r,vps,
      .      ve,nrval,l,el,rphi,rmax)
 
-           use basis_specs, only: restricted_grid
+        use basis_specs, only: restricted_grid
 
-C**
+C
 C   Calculate the atomic 
 C   radial wavefunction of the pseudopotential Vps, with angular
 C   momentum  l, and energy el, inside r<Rmax
 C   The Schrodinger equation is solved using a simple Numerov 
 C   scheme. Rmax should not be taken too big. 
 C   D. Sanchez-Portal, July 1999.
-C**
-
+C
         real(dp) a, b
         integer nrval
         real(dp) r(nrval),
@@ -6279,63 +6302,61 @@ C**
         parameter (big=1.0d6)
         integer  l, nrc, jr, ir
 
-
         dexpa=exp(a)
         ab=a*b
         do ir=1,nrval
-           drdi(ir)=ab
-           ab=dexpa*ab
+          drdi(ir)=ab
+          ab=dexpa*ab
         enddo
 
         
-          do ir=2,nrval
-            hi=vps(ir)+ve(ir)+dble(l*(l+1))/r(ir)**2-el
-            hi=hi*(drdi(ir)**2)
-            hi=hi+0.25d0*a**2
-            h(ir)=hi
-          enddo
-          h(1)=h(2)
+        do ir=2,nrval
+          hi=vps(ir)+ve(ir)+dble(l*(l+1))/r(ir)**2-el
+          hi=hi*(drdi(ir)**2)
+          hi=hi+0.25d0*a**2
+          h(ir)=hi
+        enddo
+        h(1)=h(2)
 
          
-          g(1)=0.0d0
-          g(2)=1.0d0
-          nrc=nint(log(rmax/b+1.0d0)/a)+1
-          nrc=min(nrc,nrval)
-          if (restricted_grid) nrc=nrc+1-mod(nrc,2)
-          do ir=3,nrc
+        g(1)=0.0d0
+        g(2)=1.0d0
+        nrc=nint(log(rmax/b+1.0d0)/a)+1
+        nrc=min(nrc,nrval)
+        if (restricted_grid) nrc=nrc+1-mod(nrc,2)
+        do ir=3,nrc
 
-            hi=(10.0d0*h(ir-1)*g(ir-1)+h(ir-2)*g(ir-2))/12.0d0
+          hi=(10.0d0*h(ir-1)*g(ir-1)+h(ir-2)*g(ir-2))/12.0d0
 
-            hi=hi+2.0d0*g(ir-1)-g(ir-2)
+          hi=hi+2.0d0*g(ir-1)-g(ir-2)
 
-            g(ir)=hi/(1.0d0-h(ir)/12.0d0)
+          g(ir)=hi/(1.0d0-h(ir)/12.0d0)
             
-            if(abs(g(ir)).gt.big) then 
-             dnrm=0.0d0
-             do jr=1,ir
-               dnrm=dnrm+drdi(jr)*(g(jr)*sqrt(drdi(jr)))**2
-             enddo 
-             dnrm=sqrt(dnrm)
-             do jr=1,ir
-               g(jr)=g(jr)/dnrm
-             enddo 
-            endif 
-          enddo
-
-
+          if (abs(g(ir)).gt.big) then 
+            dnrm=0.0d0
+            do jr=1,ir
+              dnrm=dnrm+drdi(jr)*(g(jr)*sqrt(drdi(jr)))**2
+            enddo 
+            dnrm=sqrt(dnrm)
+            do jr=1,ir
+              g(jr)=g(jr)/dnrm
+            enddo 
+          endif 
+        enddo
+C
 C Normalize the wavefunction
-          dnrm=0.0d0
-          do ir=1, nrc
-             g(ir)=g(ir)*sqrt(drdi(ir))
-             dnrm=dnrm+drdi(ir)*(g(ir)**2)
-          enddo
-          dnrm=sqrt(dnrm)
-          do ir=1, nrc
-             rphi(ir)=g(ir)/dnrm
-          enddo
+C
+        dnrm=0.0d0
+        do ir=1, nrc
+          g(ir)=g(ir)*sqrt(drdi(ir))
+          dnrm=dnrm+drdi(ir)*(g(ir)**2)
+        enddo
+        dnrm=sqrt(dnrm)
+        do ir=1, nrc
+          rphi(ir)=g(ir)/dnrm
+        enddo
           
-          end subroutine rphi_vs_e
-
+        end subroutine rphi_vs_e
 !
 !   This is duplicate with redbasis.F...
 !
@@ -6343,188 +6364,208 @@ C Normalize the wavefunction
 
 C Written by D. Sanchez-Portal, Aug. 1998.
 
-         character basistype*(*)
+        character basistype*(*)
 
-         if(basistype.eq.'NODES') then
-               basistype='nodes'
-         elseif(basistype.eq.'nodes') then
-         elseif(basistype.eq.'NONODES') then
-              basistype='nonodes'
-         elseif(basistype.eq.'nonodes') then
-         elseif(basistype.eq.'SPLIT') then
-              basistype='split'
-         elseif(basistype.eq.'split') then
-         elseif(basistype.eq.'SPLITGAUSS') then
-              basistype='splitgauss'
-         elseif(basistype.eq.'splitgauss') then
-         elseif(basistype.eq.'FILTERET') then
-              basistype='filteret'
-         elseif(basistype.eq.'filteret') then
-         elseif(basistype.eq.'USER') then
-              basistype='user'
-         elseif(basistype.eq.'user') then
-         else
+        if (basistype.eq.'NODES') then
+          basistype='nodes'
+        elseif (basistype.eq.'nodes') then
+        elseif (basistype.eq.'NONODES') then
+          basistype='nonodes'
+        elseif (basistype.eq.'nonodes') then
+        elseif (basistype.eq.'SPLIT') then
+          basistype='split'
+        elseif (basistype.eq.'split') then
+        elseif (basistype.eq.'SPLITGAUSS') then
+          basistype='splitgauss'
+        elseif (basistype.eq.'splitgauss') then
+        elseif (basistype.eq.'FILTERET') then
+          basistype='filteret'
+        elseif (basistype.eq.'filteret') then
+        elseif (basistype.eq.'USER') then
+          basistype='user'
+        elseif (basistype.eq.'user') then
+        else
+          write(6,'(/,2a,(/,5(3x,a)),(/,2(3x,a)))')
+     .      'type_name: Incorrect basis-type option specified,',
+     .      ' active options are:',
+     .      'NODES','SPLIT','USER','SPLITGAUSS',
+     .      'NONODES','FILTERET'
 
-              write(6,'(/,2a,(/,5(3x,a)),(/,2(3x,a)))')
-     .        'type_name: Incorrect basis-type option specified,',
-     .        ' active options are:',
-     .        'NODES','SPLIT','USER','SPLITGAUSS',
-     .        'NONODES','FILTERET'
+          call die
 
-              call die
-
-         endif
+        endif
 
         end subroutine type_name
 !
         subroutine prinput(ntotsp)
 
-C**
+C
 C Prints the values of the parameters which have been actually 
 C used in the generation of the basis (cut-off radius, contraction
 C factors, and BasisType option to augment the basis set).
 C The information is written in the same format as required for the 
 C input file.
 C Written by D. Sanchez-Portal, Oct. 1998.
-C**
+C
+        implicit none 
+        integer ntotsp
 
-          implicit none 
-          integer ntotsp
-
-         character(len=10), parameter  :: basistype_default='split'
-
-C***Internal variables
-          integer is, nshell, l, lo, nzt, izt, nsm, i
-          logical :: synthetic_atoms = .false.
+        character(len=10), parameter  :: basistype_default='split'
+C
+C Internal variables
+C
+        integer :: is, nshell, l, lo, nzt, izt, nsm, i
+        logical :: synthetic_atoms = .false.
           
-          character basistype*10
-          character(len=11) rcchar(nzetmx), lambdachar(nzetmx)
+        character(len=10) basistype
+        character(len=11) rcchar(nzetmx), lambdachar(nzetmx)
 
-          type(ground_state_t), pointer ::  gs
+        type(ground_state_t), pointer ::  gs
 
-          write(6,'(/a,58("-"))')
-     .            'prinput: Basis input '
+        write(6,'(/a,58("-"))') 'prinput: Basis input '
 
-          basistype = fdf_string('PAO.BasisType',basistype_default)
-          call type_name(basistype) 
+        basistype = fdf_string('PAO.BasisType',basistype_default)
+        call type_name(basistype) 
 
-          write(6,'(/2a)')'PAO.BasisType ',basistype
+        write(6,'(/2a)')'PAO.BasisType ',basistype
 
-          write(6,'(/a)')
-     .                   '%block ChemicalSpeciesLabel' 
-             do is=1,ntotsp
-                write(6,'(2(1x,i4),1x,2a)')
-     .                  is,izofis(is),labelfis(is), 
-     .              '    # Species index, atomic number, species label' 
-                if (izofis(is) > 200) synthetic_atoms = .true.
-             enddo 
-             write(6,'(a)')
-     .                  '%endblock ChemicalSpeciesLabel' 
+        write(6,'(/a)') '%block ChemicalSpeciesLabel' 
+        do is=1,ntotsp
+          write(6,'(2(1x,i4),1x,2a)')
+     .      is,izofis(is),labelfis(is), 
+     .      '    # Species index, atomic number, species label' 
+            if (izofis(is) > 200) synthetic_atoms = .true.
+        enddo 
+        write(6,'(a)')
+     .    '%endblock ChemicalSpeciesLabel' 
 
 !
-!            Possible SyntheticAtoms block here
+!       Possible SyntheticAtoms block here
 !
-             if (synthetic_atoms) then
-                write(6,'(/a)')        
-     .               '%block SyntheticAtoms   # Valence config'
+        if (synthetic_atoms) then
+          write(6,'(/a)')        
+     .      '%block SyntheticAtoms   # Valence config'
 
-                do is=1,ntotsp
-                   if (izofis(is) < 200) cycle
-                   gs => basis_parameters(is)%ground_state
-                   write(6,"(i3)") is
-                   do i = 0, 3
-                      write(6,fmt="(i3)",advance="no") gs%n(i)
-                   enddo
-                   write(6,*)
-                   do i = 0, 3
-                      write(6,fmt="(f9.5)",advance="no")
-     $                      gs%occupation(i)
-                   enddo
-                   write(6,*)
-                enddo 
-                write(6,'(a)') "%endblock SyntheticAtoms"
-             endif     ! synthetic_atoms
+          do is=1,ntotsp
+            if (izofis(is) < 200) cycle
+            gs => basis_parameters(is)%ground_state
+            write(6,"(i3)") is
+            do i = 0, 3
+              write(6,fmt="(i3)",advance="no") gs%n(i)
+            enddo
+            write(6,*)
+            do i = 0, 3
+              write(6,fmt="(f9.5)",advance="no")
+     .          gs%occupation(i)
+            enddo
+            write(6,*)
+          enddo 
+          write(6,'(a)') "%endblock SyntheticAtoms"
+        endif     ! synthetic_atoms
 !
 !
                 
-             write(6,'(/a)')        
+        write(6,'(/a)')        
      .   '%block PAO.Basis                 # Define Basis set'
-             do is=1, ntotsp  
-                
-                nshell=0 
-                lo=lmxosave(is)
-                do l=0,lo
-                   do nsm=1,nsemicsave(l,is)+1
-                    if(nzetasave(l,nsm,is).ne.0) nshell=nshell+1
-                   enddo 
-                enddo 
-               if(basistype_save(is).eq.basistype) then  
-
-                if(abs(chargesave(is)).lt.1.0d-4) then 
-                     write(6,'(a,1x,i2,20x,a)')
-     .                labelfis(is), nshell,
-     .                 '# Species label, number of l-shells'
-                else
-                    write(6,'(a,1x,i2,1x,f7.3,12x,2a)')
-     .                labelfis(is), nshell, chargesave(is),
-     .                  '# Label, l-shells,',
-     .              ' ionic net charge'
-                endif 
+        do is = 1,ntotsp  
+          nshell = 0 
+          lo = lmxosave(is)
+          do l = 0,lo
+            do nsm = 1,nsemicsave(l,is)+1
+              if (nzetasave(l,nsm,is).ne.0) nshell=nshell+1
+            enddo 
+          enddo 
+          if (basistype_save(is).eq.basistype) then  
+            if (abs(chargesave(is)).lt.1.0d-4) then 
+              write(6,'(a,1x,i2,20x,a)')
+     .          labelfis(is), nshell,
+     .          '# Species label, number of l-shells'
+            else
+              write(6,'(a,1x,i2,1x,f7.3,12x,2a)')
+     .          labelfis(is), nshell, chargesave(is),
+     .          '# Label, l-shells,',
+     .          ' ionic net charge'
+            endif 
          
-               else 
+          else 
 
-               if(abs(chargesave(is)).lt.1.0d-4) then
-                     write(6,'(a,1x,i2,1x,a,10x,2a)')
-     .             labelfis(is), nshell, basistype_save(is), 
-     .                  '# Species label, l-shells,',
-     .                  ' basis type '
-                else
-                    write(6,'(a,1x,i2,1x,a,1x,f7.3,1x,2a)')
-     .              labelfis(is), nshell, basistype_save(is),
-     .              chargesave(is),
-     .                  '# Label, l-shells, type,',
-     .              ' ionic net charge'
-                endif 
+            if (abs(chargesave(is)).lt.1.0d-4) then
+              write(6,'(a,1x,i2,1x,a,10x,2a)')
+     .          labelfis(is), nshell, basistype_save(is), 
+     .          '# Species label, l-shells,',
+     .          ' basis type '
+            else
+              write(6,'(a,1x,i2,1x,a,1x,f7.3,1x,2a)')
+     .          labelfis(is), nshell, basistype_save(is),
+     .          chargesave(is),
+     .          '# Label, l-shells, type,',
+     .          ' ionic net charge'
+            endif 
            
-               endif 
+          endif 
  
-                   do l=0,lo
-                     do nsm=1,nsemicsave(l,is)+1
-                      nzt=nzetasave(l,nsm,is)
-                      if(nzt.ne.0) then  
-                        if(npolorbsave(l,nsm,is).gt.0)then
-                          write(6,'(1x,a,i1,2(1x,i3),a,i3,19x,2a)') 
-     .                       'n=',cnfigtb(l,nsm,is),
-     .                       l, nzt, ' P ',npolorbsave(l,nsm,is),
-     .                       '# n, l, Nzeta, ','Polarization, NzetaPol'
-                        else
-                          write(6,'(1x,a,i1,2(1x,i3),25x,a)')
-     .                           'n=',cnfigtb(l,nsm,is),
-     .                           l, nzt, '# n, l, Nzeta '
-                        endif  
-                        do izt=1, nzt
-                           write(rcchar(izt),'(1x,f7.3)') 
-     .                                          rcotb(izt,l,nsm,is)
-                           write(lambdachar(izt),'(1x,f7.3)') 
-     .                                       lambdatb(izt,l,nsm,is)
-                        enddo
-                        write(6,'(20a)')
-     .                               (rcchar(izt), izt=1,nzt)
-c    .                     ,'        # rc(izeta=1,Nzeta)(Bohr)'
-                        write(6,'(20a)') 
-     .                               (lambdachar(izt), izt=1,nzt)
-c    .                     ,'        # scaleFactor(izeta=1,Nzeta)'
-                     endif 
-                    enddo
-                   enddo  
-                  enddo 
-             write(6,'(a)')
-     .                       '%endblock PAO.Basis' 
+          if (basistype_save(is).eq.'filteret') then
+            do l = 0,lo
+              do nsm = 1,nsemicsave(l,is)+1
+                nzt = nzetasave(l,nsm,is)
+                if (nzt.ne.0) then
+                  if (npolorbsave(l,nsm,is).gt.0)then
+                    write(6,'(1x,a,i1,2(1x,i3),a,i3,a,f7.3,9x,2a)')
+     .                'n=',cnfigtb(l,nsm,is),
+     .                l, nzt, ' P ',npolorbsave(l,nsm,is),
+     .                ' F ',filtercuttb(l,nsm,is),
+     .                '# n, l, Nzeta, ','Polarization, NzetaPol, cutoff'
+                  else
+                    write(6,'(1x,a,i1,2(1x,i3),a,f7.3,15x,a)')
+     .                'n=',cnfigtb(l,nsm,is),
+     .                l, nzt, ' F ',filtercuttb(l,nsm,is),
+     .                '# n, l, Nzeta, cut-off'
+                  endif
+                  write(6,'(1x,f7.3)')
+     .              rcotb(1,l,nsm,is)
+                  write(6,'(1x,f7.3)')
+     .              lambdatb(1,l,nsm,is)
+                endif
+              enddo
+            enddo
+          else
+            do l = 0,lo
+              do nsm = 1,nsemicsave(l,is)+1
+                nzt = nzetasave(l,nsm,is)
+                if (nzt.ne.0) then  
+                  if (npolorbsave(l,nsm,is).gt.0)then
+                    write(6,'(1x,a,i1,2(1x,i3),a,i3,19x,2a)') 
+     .                'n=',cnfigtb(l,nsm,is),
+     .                l, nzt, ' P ',npolorbsave(l,nsm,is),
+     .                '# n, l, Nzeta, ','Polarization, NzetaPol'
+                  else
+                    write(6,'(1x,a,i1,2(1x,i3),25x,a)')
+     .                'n=',cnfigtb(l,nsm,is),
+     .                l, nzt, '# n, l, Nzeta '
+                  endif  
+                  do izt=1,nzt
+                    write(rcchar(izt),'(1x,f7.3)') 
+     .                rcotb(izt,l,nsm,is)
+                    write(lambdachar(izt),'(1x,f7.3)') 
+     .                lambdatb(izt,l,nsm,is)
+                  enddo
+                  write(6,'(20a)')
+     .              (rcchar(izt), izt=1,nzt)
+c    .              ,'        # rc(izeta=1,Nzeta)(Bohr)'
+                  write(6,'(20a)') 
+     .              (lambdachar(izt), izt=1,nzt)
+c    .              ,'        # scaleFactor(izeta=1,Nzeta)'
+                endif 
+              enddo
+            enddo  
+          endif
+        enddo 
+        write(6,'(a)')
+     .    '%endblock PAO.Basis' 
 
+        write(6,'(/a,70("-")/)') 'prinput: '
 
-             write(6,'(/a,70("-")/)') 'prinput: '
-
-             end subroutine prinput
+        end subroutine prinput
 
 !--------------------------------------------------------------
 !
@@ -6538,7 +6579,7 @@ c    .                     ,'        # scaleFactor(izeta=1,Nzeta)'
        real(dp), parameter :: log10_e = 0.4343
        real(dp), parameter :: exp_range = (range(1.0_dp)-1)/log10_e
 
-!!       real(dp), parameter :: exp_range = 40.0_dp
+!!     real(dp), parameter :: exp_range = 40.0_dp
        real(dp)   :: gexp
 
        gexp = sinh(a*x)/sinh(a)

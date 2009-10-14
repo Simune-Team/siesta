@@ -34,10 +34,10 @@
       use basis_types, only: deallocate_spec_arrays
       use basis_types, only: iz, lmxkb, nkbl, 
      .           erefkb, lmxo, nzeta, rco, 
-     .           lambda,
+     .           lambda, filtercut,
      .           atm_label, polorb, semic, nsemic,
      .           cnfigmx, charge, smass, basistype,
-     $           rinn, vcte, split_norm
+     .           rinn, vcte, split_norm
       use basis_types, only: write_basis_specs
       use basis_types, only: basis_def_t, basis_parameters
       use basis_specs, only: read_basis_specs
@@ -110,7 +110,8 @@ c Reading input for the pseudopotentials and atomic orbitals
      $           cnfigmx(0:,is),charge(is),
      $           smass(is), basistype(is), is,
      $           rinn(0:,1:,is), vcte(0:,1:,is),
-     $           split_norm(0:,1:,is), basp)
+     $           split_norm(0:,1:,is), filtercut(0:,1:,is),
+     $           basp)
          enddo 
 
          call prinput(nsp)

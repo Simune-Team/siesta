@@ -19,7 +19,7 @@ C INTEGER  NZETMX   : Maximum number of PAOs or polarization orbitals
 C                     with the same angular  momentum and 
 C                     for the same species.       
 
-         integer, parameter, public  :: nzetmx =    3  
+         integer, parameter, public  :: nzetmx =  200  
 
 C INTEGER  NKBMX    : Maximum number of Kleinman-Bylander projectors
 C                     for each angular momentum

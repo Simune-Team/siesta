@@ -662,7 +662,14 @@ C Sanity checks on values
           else
             call die("Bad format of (n), l, nzeta line in PAO.Basis")
           endif
-          ! Optional stuff: Polarization and Soft-confinement Potential
+!
+! If this is a filteret basis then the number of zetas input must be one
+!
+          if (basp%basis_type.eq.'filteret') then
+            s%nzeta = 1
+          endif
+!
+! Optional stuff: Polarization, Soft-confinement Potential and Filteret Cutoff
 !
 ! Split norm
 !
@@ -712,23 +719,24 @@ C Sanity checks on values
             s%rinn = 0.0_dp
           endif
 !
-! Filteret basis
+! Filteret cutoff
 !
           if (search(p,"F",indexp)) then
-            s%filteret = .true.
             if (match(p,"v",after=indexp)) then
-              s%filteretcutoff = values(p,ind=1,after=indexp)
-              if (s%filteretcutoff.le.0.0_dp) then
-             call die("Filteret cutoff must be positive in PAO.Basis")
-              endif
+              s%filtercut = values(p,ind=1,after=indexp)
+            else
+              call die("Need cut-off after F in PAO.Basis")
             endif
+          else
+            s%filtercut = 0.0_dp
           endif
 
           call destroy(p)
 
           allocate(s%rc(s%nzeta),s%lambda(s%nzeta))
           s%rc(:) = 0.d0
-          s%lambda(:) = 1.d0
+          s%lambda(:) = 1.0d0
+
           if (.not. fdf_bline(bp,line)) call die("No rc's")
           p => digest(line)
           if (nvalues(p).ne.s%nzeta) call die("Wrong number of rc's")
@@ -1175,11 +1183,14 @@ c (according to atmass subroutine).
                s%vcte = 0.d0
             endif
 
+            ! Default filteret cutoff for shell
+            s%filtercut = 0.0d0
+
             if (s%nzeta .ne.0) then
                allocate(s%rc(1:s%nzeta))
                allocate(s%lambda(1:s%nzeta))
-               s%rc(1:s%nzeta) = 0.d0
-               s%lambda(1:s%nzeta) = 1.d0
+               s%rc(1:s%nzeta) = 0.0d0
+               s%lambda(1:s%nzeta) = 1.0d0
             endif
          enddo loop_l
 
@@ -1213,14 +1224,17 @@ c (according to atmass subroutine).
               ! If it is not, mark it for PAO generation anyway.
               ! This will happen for confs of the type s0 p0 dn
 
+                  ! Default filter cutoff for shell
+                  s%filtercut = 0.0d0
+
                   if (s%nzeta == 0) then
                      write(6,"(a,i2,a)") "Marking shell with l=",
-     $                l-1, " for PAO generation and polarization."
+     .                l-1, " for PAO generation and polarization."
                      s%nzeta = nzeta
                      allocate(s%rc(1:s%nzeta))
                      allocate(s%lambda(1:s%nzeta))
-                     s%rc(1:s%nzeta) = 0.d0
-                     s%lambda(1:s%nzeta) = 1.d0
+                     s%rc(1:s%nzeta) = 0.0d0
+                     s%lambda(1:s%nzeta) = 1.0d0
                   endif
                   s%polarized = .true.
                   s%nzeta_pol = nzeta_pol
@@ -1236,13 +1250,3 @@ c (according to atmass subroutine).
       end subroutine autobasis
 
       End module basis_specs
-
-
-
-
-
-
-
-
-
-

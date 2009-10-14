@@ -52,11 +52,10 @@
                                                              ! construct
           real(dp)                  ::  rinn       ! Soft confinement
           real(dp)                  ::  vcte       ! Soft confinement
+          real(dp)                  ::  filtercut  ! Filter cutoff
           real(dp), pointer         ::  rc(:)      ! rc's for PAOs
           real(dp), pointer         ::  lambda(:)  ! Contraction factors
           !!! type(rad_func), pointer   ::  orb(:) ! Actual orbitals 
-          logical                   ::  filteret       ! If this is true use filterets
-          real(dp)                  ::  filteretcutoff ! Shell-specific cutoff for filterets
       end type shell_t
 
       type, public :: lshell_t
@@ -109,7 +108,6 @@
 !=====================================================================
 !
       logical      ,save, public, pointer :: semic(:)
-      logical      ,save, public, pointer :: filteret(:,:,:)
       integer      ,save, public, pointer :: lmxkb(:), lmxo(:)
       integer      ,save, public, pointer :: nsemic(:,:), nkbl(:,:)
       integer      ,save, public, pointer :: cnfigmx(:,:)
@@ -121,8 +119,8 @@
       real(dp)     ,save, public, pointer :: erefkb(:,:,:)
       real(dp)     ,save, public, pointer :: charge(:)
       real(dp)     ,save, public, pointer :: lambda(:,:,:,:)
+      real(dp)     ,save, public, pointer :: filtercut(:,:,:)
       real(dp)     ,save, public, pointer :: rco(:,:,:,:)
-      real(dp)     ,save, public, pointer :: filteretcutoff(:,:,:)
       integer      ,save, public, pointer :: iz(:)
       real(dp)     ,save, public, pointer :: smass(:)
       character(len=10), save, public, pointer :: basistype(:)
@@ -167,8 +165,7 @@
       target%rinn = source%rinn
       target%vcte = source%vcte
       target%split_norm = source%split_norm
-      target%filteret = source%filteret
-      target%filteretcutoff = source%filteretcutoff
+      target%filtercut = source%filtercut
 
       allocate(target%rc(1:size(source%rc)))
       allocate(target%lambda(1:size(source%lambda)))
@@ -189,8 +186,7 @@
       p%vcte = 0._dp
       p%split_norm = 0.0_dp
       p%split_norm_specified = .false.
-      p%filteret = .false.
-      p%filteretcutoff = -1.0_dp
+      p%filtercut = 0.0_dp
       nullify(p%rc,p%lambda)
       end subroutine init_shell
 
@@ -278,13 +274,10 @@
       write(6,'(5x,a20,i20)') 'Angular momentum',     p%l
       write(6,'(5x,a20,i20)') 'n quantum number',     p%n
       write(6,'(5x,a20,i20)') 'Nzeta'           ,     p%nzeta
-      write(6,'(5x,a20,l20)') 'Filteret?        ',    p%filteret
-      if (p%filteret) then
-        write(6,'(5x,a20,g20.10)') '  cut-off '     , p%filteretcutoff
-      endif
       write(6,'(5x,a20,l20)') 'Polarized?       ',    p%polarized
       write(6,'(5x,a20,i20)') 'Nzeta pol'           , p%nzeta_pol
       write(6,'(5x,a20,g20.10)') 'split_norm'     , p%split_norm
+      write(6,'(5x,a20,g20.10)') 'filter cutoff'  , p%filtercut
       write(6,'(5x,a20,g20.10)') 'rinn'           , p%rinn
       write(6,'(5x,a20,g20.10)') 'vcte'           , p%vcte
       write(6,'(5x,a)') 'rc and lambda for each nzeta:'
@@ -454,16 +447,12 @@
       call re_alloc( split_norm, 0, lmaxd, 1, nsemx, 1, nsp,
      &               name='split_norm',
      &               routine='basis_specs_transfer' )
+      nullify( filtercut )
+      call re_alloc( filtercut, 0, lmaxd, 1, nsemx, 1, nsp,
+     &               name='filtercut',
+     &               routine='basis_specs_transfer' )
       nullify( vcte )
       call re_alloc( vcte, 0, lmaxd, 1, nsemx, 1, nsp, name='vcte',
-     &               routine='basis_specs_transfer' )
-      nullify( filteret )
-      call re_alloc( filteret, 0, lmaxd, 1, nsemx, 1, nsp,
-     &               name='filteret',
-     &               routine='basis_specs_transfer' )
-      nullify( filteretcutoff )
-      call re_alloc( filteretcutoff, 0, lmaxd, 1, nsemx, 1, nsp,
-     &               name='filteretcutoff',
      &               routine='basis_specs_transfer' )
       nullify( rinn )
       call re_alloc( rinn, 0, lmaxd, 1, nsemx, 1, nsp, name='rinn',
@@ -501,6 +490,7 @@
       nkbl(:,:) = 0
       nzeta(:,:,:) = 0
       split_norm(:,:,:) = 0.d0
+      filtercut(:,:,:) = 0.d0
       vcte(:,:,:) = 0.d0
       rinn(:,:,:) = 0.d0
       polorb(:,:,:) = 0
@@ -510,8 +500,6 @@
       semic(:) = .false.
       nsemic(:,:) = 0
       cnfigmx(:,:) = 0
-      filteret(:,:,:) = .false.
-      filteretcutoff(:,:,:) = -1.0d0
       
       do isp=1,nsp
 
@@ -541,10 +529,9 @@
                nzeta(l,n,isp) = s%nzeta
                polorb(l,n,isp) = s%nzeta_pol
                split_norm(l,n,isp) = s%split_norm
+               filtercut(l,n,isp) = s%filtercut
                vcte(l,n,isp) = s%vcte
                rinn(l,n,isp) = s%rinn
-               filteret(l,n,isp) = s%filteret
-               filteretcutoff(l,n,isp) = s%filteretcutoff
 !
 !              This would make the code act in the same way as
 !              siesta 0.X, but it does not seem to be necessary...
@@ -603,8 +590,13 @@
                write(lun,'(10x,a2,i1,2x,a6,i1,2x,a7,i1)')
      $                         'n=', n, 'nzeta=',nzeta(l,n,is),
      $                         'polorb=', polorb(l,n,is)
-               write(lun,'(10x,a10,2x,g12.5)') 
+               if (basistype(is).eq.'filteret') then
+                 write(lun,'(10x,a10,2x,g12.5)') 
+     $                         'fcutoff:', filtercut(l,n,is)
+               else
+                 write(lun,'(10x,a10,2x,g12.5)') 
      $                         'splnorm:', split_norm(l,n,is)
+               endif
                write(lun,'(10x,a10,2x,g12.5)') 
      $                         'vcte:', vcte(l,n,is)
                write(lun,'(10x,a10,2x,g12.5)') 
@@ -639,6 +631,7 @@
       call de_alloc( polorb, name='polorb')
       call de_alloc( nzeta, name='nzeta')
       call de_alloc( split_norm, name='split_norm')
+      call de_alloc( filtercut, name='filtercut')
       call de_alloc( vcte, name='vcte')
       call de_alloc( rinn, name='rinn')
       call de_alloc( erefkb, name='erefkb')
@@ -649,8 +642,6 @@
       call de_alloc( smass, name='smass')
       call de_alloc( basistype, name='basistype')
       call de_alloc( atm_label, name='atm_label')
-      call de_alloc( filteret, name='filteret')
-      call de_alloc( filteretcutoff, name='filteretcutoff')
 !
       end subroutine deallocate_spec_arrays
 

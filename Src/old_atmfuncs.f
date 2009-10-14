@@ -45,6 +45,7 @@ C     chemical species present in the calculation.
       real(dp), public, pointer  :: chargesave(:)
       real(dp), public, pointer  :: slfe(:)
       real(dp), public, pointer  :: lambdatb(:,:,:,:)
+      real(dp), public, pointer  :: filtercuttb(:,:,:)
 
       real(dp), public, pointer  :: qtb(:,:)
 
@@ -95,6 +96,12 @@ C     chemical species present in the calculation.
         call re_alloc( lambdatb, 1, nzetmx, 0, lmaxd, 1, nsemx,
      &                 1, nsmax,
      &                 name    = 'lambdatb', 
+     &                 routine = 'allocate_old_arrays' )
+        !allocate(filtercuttb(0:lmaxd,nsemx,nsmax))
+        nullify( filtercuttb )
+        call re_alloc( filtercuttb, 0, lmaxd, 1, nsemx,
+     &                 1, nsmax,
+     &                 name    = 'filtercuttb', 
      &                 routine = 'allocate_old_arrays' )
         !allocate(qtb(maxos,nsmax))
         nullify( qtb )
@@ -268,6 +275,7 @@ C     chemical species present in the calculation.
         call de_alloc( rcotb, name='rcotb' )
         call de_alloc( rcpoltb, name='rcpoltb' )
         call de_alloc( lambdatb, name='lambdatb' )
+        call de_alloc( filtercuttb, name='filtercuttb' )
         call de_alloc( qtb, name='qtb' )
         call de_alloc( slfe, name='slfe' )
         call de_alloc( rctb, name='rctb' )
@@ -304,30 +312,31 @@ C     chemical species present in the calculation.
 
       integer is
 
-           do is=1,nsmax
-              izsave(is)=0
-              lmxosave(is)=0
-              lmxkbsave(is)=0
-              label_save(is)='  '
-              nkbmax(is)=0
-              nomax(is)=0  
-              semicsave(is)=.false.
+      do is=1,nsmax
+        izsave(is)=0
+        lmxosave(is)=0
+        lmxkbsave(is)=0
+        label_save(is)='  '
+        nkbmax(is)=0
+        nomax(is)=0  
+        semicsave(is)=.false.
               
-              nsemicsave(:,is) = 0
-              nzetasave(:,:,is) = 0
-              rcotb(:,:,:,is) = 0.0_dp
-              lambdatb(:,:,:,is) = 0.0_dp
-              rcpoltb(:,:,:,is) = 0.0_dp
+        nsemicsave(:,is) = 0
+        nzetasave(:,:,is) = 0
+        rcotb(:,:,:,is) = 0.0_dp
+        lambdatb(:,:,:,is) = 0.0_dp
+        filtercuttb(:,:,is) = 0.0_dp
+        rcpoltb(:,:,:,is) = 0.0_dp
 
-              table(:,:,is) = 0.0_dp
-              tab2(:,:,is) = 0.0_dp
-             tabpol(:,:,is) = 0.0_dp
-             tab2pol(:,:,is) = 0.0_dp
+        table(:,:,is) = 0.0_dp
+        tab2(:,:,is) = 0.0_dp
+        tabpol(:,:,is) = 0.0_dp
+        tab2pol(:,:,is) = 0.0_dp
 
-             qtb(1:maxos,is)=0.00_dp
+        qtb(1:maxos,is)=0.00_dp
 
-           enddo 
-       end subroutine clear_tables
+      enddo 
+      end subroutine clear_tables
 
       subroutine check_is(name,is)
       character(len=*), intent(in) :: name
