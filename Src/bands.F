@@ -651,8 +651,8 @@ C Close output file
       endif
 
 C Free local arrays 
-      call de_alloc( muo, name='muo' )
-      call de_alloc( aux, name='aux' )
+      call de_alloc( muo, name='muo', routine='bands' )
+      call de_alloc( aux, name='aux', routine='bands' )
 
 C This is the only exit point 
   999 continue

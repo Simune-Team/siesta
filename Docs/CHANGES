@@ -6,6 +6,98 @@
 ** CHANGES ALONG trunk 
 
 ------------------------------------------------------------------------
+2009-10-15  21:00:00 GMT Jose M Soler <jose.soler@uam.es>      trunk-305
+Match arguments between re_alloc and de_alloc calls
+
+For a correct accounting of array allocations, both the 'name' and
+'routine' arguments should be identical (including case sensitivity)
+in the corresponding calls to re_alloc and de_alloc of an array.
+The two arguments are combined into an internal name as 
+trim(routine)//' '//name, so that (name='rho',routine='dhscf') 
+is equivalent to (name='dhscf rho'). This is the name printed in
+the allocation report.
+
+When the array is allocated and deallocated in different subroutines, 
+it is clearer not to use the 'routine' argument, or give it the value 
+of the array 'owner' (for example its module name). 
+
+Our most complicated case is that of arrays declared in one or more 
+subroutines and allocated in a subroutine called by them (as done in
+find_kgrid). In this case, the 'routine' name must be that of the
+allocating subroutine, but the arrays of the different calling
+routines will be reported as a single array. Thus, array kpoint of 
+routine kpoint_grid and array kpoints_pdos of routine kpoint_pdos 
+will be reported together as array points of routine find_kgrid.
+
+I see no solution if more than one called subroutine (not in the 
+same module) were allocating or deallocating an array, but there
+is no such a case in siesta.
+
+For the previous reasons, until now, only the 'name' argument was used.
+But this made it difficult to identify the siesta routines allocating
+many arrays. So from now on, the whole routine+name will be used.
+
+The calls to printmemory have been commented out: its output has
+become unrealistic, since most allocations occur in re_alloc and
+they are no longer transmitted to routine memory.
+
+modified:
+  Src/SiestaXC/fft3d.f90
+  Src/SiestaXC/mesh3d.F90
+  Src/alloc.F90
+  Src/atomlwf.F
+  Src/bands.F
+  Src/basis_types.f
+  Src/bonds.f
+  Src/cgvc_zmatrix.F
+  Src/detover.F
+  Src/dhscf.F
+  Src/fft.F
+  Src/find_kgrid.F
+  Src/fire_optim.F
+  Src/forhar.f
+  Src/hsparse.f
+  Src/kinefsm.f
+  Src/ksv.f
+  Src/m_broyden_mixing.f
+  Src/m_fire_mixing.f
+  Src/m_iodm.F
+  Src/m_pulay.F
+  Src/m_sparse.F
+  Src/memory.F
+  Src/meshmatrix.F
+  Src/molecularmechanics.F90
+  Src/moreParallelSubs.F90
+  Src/new_dm.F
+  Src/nlefsm.f
+  Src/old_atmfuncs.f
+  Src/outcoor.f
+  Src/overfsm.f
+  Src/pdos.F
+  Src/pdosg.F
+  Src/pdosk.F
+  Src/pdoskp.F
+  Src/phirphi.f
+  Src/poison.F
+  Src/pseudopotential.f
+  Src/reord.f
+  Src/rhoofd.f
+  Src/rhoofdsp.f
+  Src/savepsi.F
+  Src/setup_hamiltonian.F
+  Src/siesta_analysis.F
+  Src/siesta_end.F
+  Src/siesta_init.F
+  Src/siesta_move.F
+  Src/spher_harm.f
+  Src/state_init.F
+  Src/vmat.f
+  Src/vmatsp.f
+  Src/zm_broyden_optim.F
+  Src/zm_fire_optim.F
+  Src/zmatrix.F
+
+------------------------------------------------------------------------
 2009-10-13  08:05:00 GMT Alberto Garcia <albertog@icmab.es>    trunk-304
 Array indexp distributed among parallel processors (J. Soler)
 

@@ -206,8 +206,8 @@ C                              input and output
              enddo
            enddo
 
-           call de_alloc( rold, name='rold' )
-           call de_alloc( rdiff, name='rdiff' )
+           call de_alloc( rold, name='rold', routine='fire_mixing' )
+           call de_alloc( rdiff, name='rdiff', routine='fire_mixing' )
 
       end subroutine fire_mixing
 

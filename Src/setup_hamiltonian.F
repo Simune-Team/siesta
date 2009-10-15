@@ -223,7 +223,9 @@
         endif
             
 ! Output memory use after first call to dhscf
-        if (istp.eq.1 .and. iscf.eq.1) call printmemory( 6, 0 )
+! Commented out since it is no longer realistic because most 
+! allocations occur in re_alloc. JMS. 2009/10/15
+*        if (istp.eq.1 .and. iscf.eq.1) call printmemory( 6, 0 )
 
 *       if (istp.eq.1 .and. iscf.eq.1) write(6,'(/,a,f10.3,a)')
 *    .    'siesta: dhscf mesh cutoff =', g2max, ' Ry'
@@ -260,14 +262,15 @@
            call globalize_sum(fal(1:3,1:na_u),fatmp(1:3,1:na_u))
            stress(1:3,1:3) = stress(1:3,1:3) + stresstmp(1:3,1:3)
            fa(1:3,1:na_u) = fa(1:3,1:na_u) + fatmp(1:3,1:na_u)
-           call de_alloc(fatmp,routine="setup_hamiltonian")
+           call de_alloc(fatmp, name='fatmp',
+     $                   routine="setup_hamiltonian")
 #else
            stress(1:3,1:3) = stress(1:3,1:3) + stressl(1:3,1:3)
            fa(1:3,1:na_u) = fa(1:3,1:na_u) + fal(1:3,1:na_u)
 #endif
         endif
 
-        call de_alloc(fal,routine="setup_hamiltonian")
+        call de_alloc(fal, name='fal', routine="setup_hamiltonian")
 
 ! Find entropy ........................................................
 ! Entropy is returned from the call to diagon. To add to the energy

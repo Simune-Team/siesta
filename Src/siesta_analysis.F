@@ -320,7 +320,7 @@
 ! Find local density of states
       call local_DOS()
 
-      call de_alloc( ebk, name="ebk")
+      call de_alloc( ebk, name='ebk', routine = 'siesta_analysis')
 
 !--------------------------------------------------------------------------- END
       END subroutine siesta_analysis

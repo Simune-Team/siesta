@@ -181,8 +181,8 @@ C ----------------------------------------------------------------------
         VHARRIS2(IP) = VNA(IP) - VHARRIS2(IP)
       ENDDO
 
-      call de_alloc( dvxcdn, name='dvxcdn' )
-      call de_alloc( drhoin, name='drhoin' )
+      call de_alloc( dvxcdn, name='dvxcdn', routine='forhar' )
+      call de_alloc( drhoin, name='drhoin', routine='forhar' )
 
       END SUBROUTINE FORHAR
       end module m_forhar

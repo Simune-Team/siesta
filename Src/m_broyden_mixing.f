@@ -255,9 +255,10 @@ C                              input and output
              enddo
            enddo
 
-           call de_alloc( rold, name='rold' )
-           call de_alloc( rnew, name='rnew' )
-           call de_alloc( rdiff, name='rdiff' )
+           call de_alloc( rold, name='rold', routine='broyden_mixing' )
+           call de_alloc( rnew, name='rnew', routine='broyden_mixing' )
+           call de_alloc( rdiff, name='rdiff',
+     $                    routine='broyden_mixing' )
 
       end subroutine broyden_mixing
 

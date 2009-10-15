@@ -93,7 +93,7 @@ C Allocate local memory
       call re_alloc( Aux2, 1, nuotot, 1, nuo, name='Aux2',
      &               routine='detover' )
       nullify( Auxint )
-      call re_alloc( Auxint, 1, nocc, name='Aux', routine='detover' )
+      call re_alloc( Auxint, 1, nocc, name='Auxint', routine='detover')
 
       do iuo = 1,nuo
         do j = 1,numh(iuo)
@@ -158,7 +158,7 @@ C Broadcast copy of psi on node n to all other nodes
 
       enddo
 
-      call de_alloc( psitmp, name='psitmp' )
+      call de_alloc( psitmp, name='psitmp', routine='detover' )
 #else
       do ie = 1,nocc
         do je = 1, nocc
@@ -199,8 +199,8 @@ C Resize Aux2 for re-use
       detr=real(determ)   
 
 C Deallocate local memory
-      call de_alloc( Auxint, name='Auxint' )
-      call de_alloc( Aux2, name='Aux2' )
-      call de_alloc( Aux, name='Aux' )
+      call de_alloc( Auxint, name='Auxint', routine='detover' )
+      call de_alloc( Aux2, name='Aux2', routine='detover' )
+      call de_alloc( Aux, name='Aux', routine='detover' )
 
       end

@@ -165,8 +165,8 @@ C Valid orbital
       enddo
 
 C Deallocate local memory
-      call de_alloc( Ti, name='Ti' )
-      call de_alloc( Di, name='Di' )
+      call de_alloc( Ti, name='Ti', routine='kinefsm' )
+      call de_alloc( Di, name='Di', routine='kinefsm' )
 
 C Finish timer
       call timer( 'kinefsm', 2 )

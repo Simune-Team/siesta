@@ -249,24 +249,11 @@ PRIVATE      ! Nothing is declared public beyond this point
 !      realloc_l1s, realloc_l2s, realloc_l3s
   end interface
 
-  ! Derived type to hold allocation default options
-  type allocDefaults
-    private
-    logical           copy
-    logical           shrink
-    integer           imin
-    character(len=32) routine
-  end type allocDefaults
-
   ! Initial default values
-  type(allocDefaults), save ::   &
-    DEFAULT = allocDefaults(     &
-      .true.,                    &! Copy default
-      .true.,                    &! Shrink default
-       1,                        &! Imin default
-      'unknown' )                 ! Routine name default
   character(len=*), parameter :: &
-    DEFAULT_NAME = 'unknown'      ! Array name default
+    DEFAULT_NAME = 'unknown_name'         ! Array name default
+  character(len=*), parameter :: &
+    DEFAULT_ROUTINE = 'unknown_routine'   ! Routine name default
   integer, save ::               &
     REPORT_LEVEL = 0,            &! Level (detail) of allocation report
     REPORT_UNIT  = 0              ! Output file unit for report
@@ -275,7 +262,19 @@ PRIVATE      ! Nothing is declared public beyond this point
   real(dp), save ::              &
     REPORT_THRESHOLD = 0          ! Memory threshold (in bytes) to print
                                   ! the memory use of any given array 
-  
+
+  ! Derived type to hold allocation default options
+  type allocDefaults
+    private
+    logical ::          copy = .true.              ! Copy default
+    logical ::          shrink = .true.            ! Shrink default
+    integer ::          imin = 1                   ! Imin default
+    character(len=32):: routine = DEFAULT_ROUTINE  ! Routine name default
+  end type allocDefaults
+
+  ! Object to hold present allocation default options
+  type(allocDefaults), save :: DEFAULT
+
   ! Internal auxiliary type for a binary tree
   type TREE
     character(len=80)   :: name  ! Name of an allocated array
@@ -322,6 +321,7 @@ if (present(shrink))  DEFAULT%shrink = shrink
 if (present(imin))    DEFAULT%imin   = imin
 if (present(routine)) DEFAULT%routine = routine
 if (present(new))     new = DEFAULT
+
 END SUBROUTINE alloc_default
 
 ! ==================================================================
@@ -1600,10 +1600,18 @@ end if
 if (REPORT_LEVEL <= 0) return
 
 ! Compound routine+array name
-if (present(name)) then
+if (present(name) .and. present(routine)) then
+  aname = trim(routine)//' '//name
+else if (present(name) .and. DEFAULT%routine/=DEFAULT_ROUTINE) then
+  aname = trim(DEFAULT%routine)//' '//name
+else if (present(name)) then
   aname = name
+else if (present(routine)) then
+  aname = trim(routine)//' '//DEFAULT_NAME
+else if (DEFAULT%routine/=DEFAULT_ROUTINE) then
+  aname = trim(DEFAULT%routine)//' '//DEFAULT_NAME
 else
-  aname = DEFAULT_NAME
+  aname = DEFAULT_ROUTINE//' '//DEFAULT_NAME
 end if
 MAX_LEN = max( MAX_LEN, len(trim(aname)) )
 
@@ -1715,7 +1723,9 @@ if (.not.associated(t)) then
   nullify( t%left, t%right )
 else if (name == t%name) then
   t%mem = t%mem + delta_mem
-  t%max = max( t%max, t%mem )
+  ! The abs is to handle the case of apparent de_allocs without re_allocs,
+  ! caused by routine/name argument mismatches
+  if (abs(t%mem) > abs(t%max)) t%max = t%mem
 else if ( llt(name,t%name) ) then
   call tree_add( t%left, name, delta_mem )
 else
@@ -1725,7 +1735,7 @@ end if
 if (warn_negative .and. t%mem<0._dp) then
   call parallel_init()   ! Make sure that node and Nodes are initialized
   if (Node==0) then
-    write(6,'(/,a,/,2a,/,a,f18.0,a)')  &
+   write(6,'(/,a,/,2a,/,a,f18.0,a)')  &
       'WARNING: alloc-realloc-dealloc name mismatch',  &
       '         Name: ', trim(name),                   &
       '         Size: ', t%mem, ' Bytes'
@@ -1763,7 +1773,7 @@ if (.not.associated(t)) return
 
 call tree_print( t%left )
 
-if (t%max > REPORT_THRESHOLD) then
+if (abs(t%max) >= REPORT_THRESHOLD) then
   write(REPORT_UNIT,'(a,1x,3f15.6,f9.2)') &
     t%name(1:MAX_LEN), t%mem/MBYTE, t%max/MBYTE, t%peak/MBYTE, &
     100._dp * t%peak / (PEAK_MEM + tiny(PEAK_MEM) )

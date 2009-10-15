@@ -399,7 +399,9 @@
       call timer( 'Setup', 2 )
 
 ! Output memory use before main loop
-      call printmemory( 6, 0 )
+! Commented out since it is no longer realistic because most 
+! allocations occur in re_alloc. JMS. 2009/10/15
+!      call printmemory( 6, 0 )
 
 ! Initialization now complete. Flush stdout.
       if (ionode) call pxfflush(6)

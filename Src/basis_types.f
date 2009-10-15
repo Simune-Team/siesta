@@ -32,6 +32,8 @@
 
       Implicit None
 
+      character(len=*),parameter,private:: myName = 'basis_types'
+
       type, public ::  ground_state_t
           integer                   ::  lmax_valence
           integer                   ::  n(0:3)
@@ -416,64 +418,64 @@
 !
       nullify( semic )
       call re_alloc( semic, 1, nsp, name='semic',
-     &               routine='basis_specs_transfer' )
+     &               routine=myName )
       nullify( lmxkb )
       call re_alloc( lmxkb, 1, nsp, name='lmxkb',
-     &               routine='basis_specs_transfer' )
+     &               routine=myName )
       nullify( lmxo )
       call re_alloc( lmxo, 1, nsp, name='lmxo',
-     &               routine='basis_specs_transfer' )
+     &               routine=myName )
       nullify( nsemic )
       call re_alloc( nsemic, 0, lmaxd, 1, nsp, name='nsemic',
-     &               routine='basis_specs_transfer' )
+     &               routine=myName )
       nullify( cnfigmx )
       call re_alloc( cnfigmx, 0, lmaxd, 1, nsp, name='cnfigmx',
-     &               routine='basis_specs_transfer' )
+     &               routine=myName )
       nullify( nkbl )
       call re_alloc( nkbl, 0, lmaxd, 1, nsp, name='nkbl',
-     &               routine='basis_specs_transfer' )
+     &               routine=myName )
       nullify( polorb )
       call re_alloc( polorb, 0, lmaxd, 1, nsemx, 1, nsp, name='polorb',
-     &               routine='basis_specs_transfer' )
+     &               routine=myName )
       nullify( nzeta )
       call re_alloc( nzeta, 0, lmaxd, 1, nsemx, 1, nsp, name='nzeta',
-     &               routine='basis_specs_transfer' )
+     &               routine=myName )
       nullify( split_norm )
       call re_alloc( split_norm, 0, lmaxd, 1, nsemx, 1, nsp,
      &               name='split_norm',
-     &               routine='basis_specs_transfer' )
+     &               routine=myName )
       nullify( vcte )
       call re_alloc( vcte, 0, lmaxd, 1, nsemx, 1, nsp, name='vcte',
-     &               routine='basis_specs_transfer' )
+     &               routine=myName )
       nullify( rinn )
       call re_alloc( rinn, 0, lmaxd, 1, nsemx, 1, nsp, name='rinn',
-     &               routine='basis_specs_transfer' )
+     &               routine=myName )
       nullify( erefkb )
       call re_alloc( erefkb, 1, nkbmx, 0, lmaxd, 1, nsp, name='erefkb',
-     &               routine='basis_specs_transfer' )
+     &               routine=myName )
       nullify( charge )
       call re_alloc( charge, 1, nsp, name='charge',
-     &               routine='basis_specs_transfer' )
+     &               routine=myName )
       nullify( lambda )
       call re_alloc( lambda, 1, nzetmx, 0, lmaxd, 1, nsemx, 1, nsp,
      &               name='lambda',
-     &               routine='basis_specs_transfer' )
+     &               routine=myName )
       nullify( rco )
       call re_alloc( rco, 1, nzetmx, 0, lmaxd, 1, nsemx, 1, nsp,
      &               name='rco',
-     &               routine='basis_specs_transfer' )
+     &               routine=myName )
       nullify( iz )
       call re_alloc( iz, 1, nsp, name='iz',
-     &               routine='basis_specs_transfer' )
+     &               routine=myName )
       nullify( smass )
       call re_alloc( smass, 1, nsp, name='smass',
-     &               routine='basis_specs_transfer' )
+     &               routine=myName )
       nullify( basistype )
       call re_alloc( basistype, 1, nsp, name='basistype',
-     &               routine='basis_specs_transfer' )
+     &               routine=myName )
       nullify( atm_label )
       call re_alloc( atm_label, 1, nsp, name='atm_label',
-     &               routine='basis_specs_transfer' )
+     &               routine=myName )
 !
 !     Transfer
 !
@@ -606,25 +608,25 @@
 !
       use alloc, only: de_alloc
 
-      call de_alloc( semic, name='semic')
-      call de_alloc( lmxkb, name='lmxkb')
-      call de_alloc( lmxo, name='lmxo')
-      call de_alloc( nsemic, name='nsemic')
-      call de_alloc( cnfigmx, name='cnfigmx')
-      call de_alloc( nkbl, name='nkbl')
-      call de_alloc( polorb, name='polorb')
-      call de_alloc( nzeta, name='nzeta')
-      call de_alloc( split_norm, name='split_norm')
-      call de_alloc( vcte, name='vcte')
-      call de_alloc( rinn, name='rinn')
-      call de_alloc( erefkb, name='erefkb')
-      call de_alloc( charge, name='charge')
-      call de_alloc( lambda, name='lambda')
-      call de_alloc( rco, name='rco')
-      call de_alloc( iz, name='iz')
-      call de_alloc( smass, name='smass')
-      call de_alloc( basistype, name='basistype')
-      call de_alloc( atm_label, name='atm_label')
+      call de_alloc( semic, name='semic', routine=myName )
+      call de_alloc( lmxkb, name='lmxkb', routine=myName )
+      call de_alloc( lmxo, name='lmxo', routine=myName )
+      call de_alloc( nsemic, name='nsemic', routine=myName )
+      call de_alloc( cnfigmx, name='cnfigmx', routine=myName )
+      call de_alloc( nkbl, name='nkbl', routine=myName )
+      call de_alloc( polorb, name='polorb', routine=myName )
+      call de_alloc( nzeta, name='nzeta', routine=myName )
+      call de_alloc( split_norm, name='split_norm', routine=myName )
+      call de_alloc( vcte, name='vcte', routine=myName )
+      call de_alloc( rinn, name='rinn', routine=myName )
+      call de_alloc( erefkb, name='erefkb', routine=myName )
+      call de_alloc( charge, name='charge', routine=myName )
+      call de_alloc( lambda, name='lambda', routine=myName )
+      call de_alloc( rco, name='rco', routine=myName )
+      call de_alloc( iz, name='iz', routine=myName )
+      call de_alloc( smass, name='smass', routine=myName )
+      call de_alloc( basistype, name='basistype', routine=myName )
+      call de_alloc( atm_label, name='atm_label', routine=myName )
 !
       end subroutine deallocate_spec_arrays
 
