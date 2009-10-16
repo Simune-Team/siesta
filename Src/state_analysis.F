@@ -85,7 +85,7 @@
         call eggbox('forces',ucell,na_u,isa,ntm,xa,fa,Etot,eggbox_block)
       endif
 
-      call write_raw_efs(stress,na_u,fa,FreeE)
+      if (IOnode) call write_raw_efs(stress,na_u,fa,FreeE)
 
       !  Compute stress without internal molecular pressure
       call remove_intramol_pressure(ucell,stress,na_u,xa,fa,mstress)
