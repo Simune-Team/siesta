@@ -6,8 +6,8 @@
       CONTAINS
 
       subroutine state_init( istep )
-      use m_new_dm,          only: new_dm
       use Kpoint_grid,       only: setup_Kpoint_grid, maxk
+      use m_new_dm,          only: new_dm
       use m_proximity_check, only: proximity_check
       use siesta_options
       use sparse_matrices
@@ -36,6 +36,12 @@
 #ifdef MPI
       use m_mpi_utils,       only: globalize_max
 #endif
+#ifdef TRANSIESTA
+      use m_ts_options, only : onlyS
+      use sys, only : bye
+      use m_ts_io, only : ts_iohs
+      use files, only: slabel, label_length
+#endif
 #ifdef CDF
       use iodm_netcdf, only: setup_dm_netcdf_file
       use iodmhs_netcdf, only: setup_dmhs_netcdf_file
@@ -51,11 +57,22 @@
       logical            :: auxchanged   ! Auxiliary supercell changed?
       external           ::  madelung, timer
       real(dp), external :: volcel
-!------------------------------------------------------------------------- BEGIN
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 11 )
+#ifdef TRANSIESTA
+      integer                       :: ts_kscell_file(3,3) = 0
+      real(dp)                      :: ts_kdispl_file(3) = 0.0
+      logical                       :: ts_gamma_scf_file = .true.
+      character(len=label_length+6) :: fname
+      integer                       :: fnlength
+      real(dp)                      :: dummyef=0.0, dummyqtot=0.0
+      real(dp),             pointer :: dummyH(:,:)
+!     SIESTA External
+      character(len=label_length+5) :: PASTE
 #endif
+!------------------------------------------------------------------------- BEGIN
       call timer( 'IterMD', 1 )
+#ifdef DEBUG
+      call write_debug( '  PRE state_init' )
+#endif
 
       istp = istp + 1
 
@@ -66,7 +83,7 @@
         case (0)
           write(6,'(28(" "),a,i6)') 'Begin CG move = ',istep
           if (cml_p) call cmlStartStep(mainXML, type='CG', index=istp)
-          ! Print Z-matrix coordinates
+!         Print Z-matrix coordinates
           if (lUseZmatrix) then
              call write_Zmatrix()
           endif
@@ -91,21 +108,20 @@
         case (8)
           write(6,'(28(" "),a,i6)') 'Begin Server step = ',istep
           if (cml_p) call cmlStartStep(mainXML, type='FS', index=istep)
-          ! Find interatomic distances (output in file BONDS)
+!         Find interatomic distances (output in file BONDS)
           call bonds( ucell, na_u, isa, xa,
-     $                rmax_bonds, trim(slabel)// ".BONDS" )
+     &                rmax_bonds, trim(slabel)// ".BONDS" )
 
         end select
         write(6,'(2a)') '                        ',
      &                    '=============================='
 
-
-C       Print atomic coordinates
+!       Print atomic coordinates
         call outcoor( ucell, xa, na_u, ' ', writec )
         call siesta_write_positions()
       endif
 
-C     Actualize things if variable cell 
+!     Actualize things if variable cell 
       auxchanged = .false.
       cell_can_change = ( varcel .or.
      &                    (idyn .eq. 8)  ! Force/stress evaluation
@@ -120,7 +136,7 @@ C     Actualize things if variable cell
       if ( cell_can_change .and.
      &     (istep.ne.inicoor) .and. (.not.gamma) ) then
 
-C       Will print k-points also
+!       Will print k-points also
         call setup_Kpoint_grid( ucell )
 
         call re_alloc( eo, 1, no_u, 1, nspin, 1, maxk, 'eo',
@@ -128,7 +144,7 @@ C       Will print k-points also
         call re_alloc( qo, 1, no_u, 1, nspin, 1, maxk, 'qo',
      &                 'state_init' )
 
-C       Find required supercell
+!       Find required supercell
         if (gamma) then
            nsc(1:3) = 1
         else if (fixauxcell) then
@@ -149,74 +165,64 @@ C       Find required supercell
            nscold(i) = nsc(i)
         enddo
 
-C       Madelung correction for charged systems 
+!       Madelung correction for charged systems 
         if (charnet .ne. 0.0_dp) then
           call madelung(ucell, shape, charnet, Emad)
         endif
 
       endif
-C     End variable cell actualization
+!     End variable cell actualization
 
-C     Auxiliary supercell
-C     Do not move from here, as the coordinates might have changed
-C     even if not the unit cell
+!     Auxiliary supercell
+!     Do not move from here, as the coordinates might have changed
+!     even if not the unit cell
       call superc(ucell, scell, nsc)
 
-C     Print unit cell and compute cell volume
-C     Possible BUG: 
-C     Note that this volume is later used in write_subs and the md output
-C     routines, even if the cell later changes.
+!     Print unit cell and compute cell volume
+!     Possible BUG: 
+!     Note that this volume is later used in write_subs and the md output
+!     routines, even if the cell later changes.
       if (IOnode) call outcell(ucell)
       volume_of_some_cell = volcel(ucell)
 
-C     Use largest possible range in program, except hsparse...
-C     2 * rmaxv: Vna overlap
-C     2 * rmaxo: orbital overlap
-C     rmaxo + rmaxkb: Non-local KB action
-C     2.0_dp * (rmaxo+rmaxkb) : Orbital interaction through KB projectors
+!     Use largest possible range in program, except hsparse...
+!     2 * rmaxv: Vna overlap
+!     2 * rmaxo: orbital overlap
+!     rmaxo + rmaxkb: Non-local KB action
+!     2.0_dp * (rmaxo+rmaxkb) : Orbital interaction through KB projectors
       rmax = max( 2._dp*rmaxv, 2._dp*rmaxo, rmaxo+rmaxkb)
 
       if (.not. negl) then
         rmax = max(rmax, 2.0_dp * (rmaxo+rmaxkb) )
       endif
 
-C     Check if any two atoms are unreasonably close
+!     Check if any two atoms are unreasonably close
       call proximity_check(rmax)
 
+!     List of nonzero Hamiltonian matrix elements
+!     and, if applicable,  vectors between orbital centers
 
-C     List of nonzero Hamiltonian matrix elements
-C     and, if applicable,  vectors between orbital centers
-
-      ! Listh and xijo are allocated inside hsparse
-      ! nh is set by the routine also
-      ! Note: We always generate xijo now, for COOP and other
-      !       analyses.
-
+!     Listh and xijo are allocated inside hsparse
+!     nh is set by the routine also
+!     Note: We always generate xijo now, for COOP and other
+!           analyses.
       nh = maxnh
-#ifdef DEBUG
-      call write_debug( '    PRE hsparse' )
-#endif
       call hsparse( negl, scell, nsc, na_s, isa, xa, lasto,
      &              lastkb, iphorb, iphKB, nh, gamma,
      $                 set_xijo=.true.)
-#ifdef DEBUG
-      call write_debug( '    POS hsparse' )
-#endif
       maxnh = nh
 
-      !OBSOLETE, but maybe not a bad idea after all, to
-      !allow reading of previous steps' DM even if the sparsity
-      !pattern has changed. The new logic in new_dm makes this
-      !unnecessary.
+!     OBSOLETE, but maybe not a bad idea after all, to
+!     allow reading of previous steps' DM even if the sparsity
+!     pattern has changed. The new logic in new_dm makes this
+!     unnecessary.
 
       !  safety margin for when atoms move 
       !!!!!!!!   if (nh > maxnh)  maxnh = 1.05 * nh + 40 
 
-      ! Copy = .true. means that we keep the information
-
-      call re_alloc(Dscf,1,maxnh,1,nspin,name='Dscf',
-     .     routine='siesta',copy=.true.)
-
+!     Copy = .true. means that we keep the information
+      call re_alloc( Dscf, 1, maxnh, 1, nspin, 'Dscf',
+     &               'siesta', copy=.true. )
       call re_alloc( Dold, 1, maxnh, 1, nspin, 'Dold',
      &               'sparseMat', copy=.false. )
       call re_alloc( Eold, 1, maxnh, 1, nspin, 'Eold',
@@ -224,22 +230,22 @@ C     and, if applicable,  vectors between orbital centers
       call re_alloc( Escf, 1, maxnh, 1, nspin, 'Escf',
      &               'sparseMat', copy=.false. )
 
-C     Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
+!     Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
       call re_alloc( H, 1, maxnh, 1, nspin, 'H',
-     .              routine='state_init',shrink=.true.,copy=.false.)
+     &              'state_init',shrink=.true.,copy=.false.)
       call re_alloc( H0, 1, maxnh, 'H0', 'state_init',
-     .              shrink=.true.,copy=.false.)
+     &              shrink=.true., copy=.false.)
       call re_alloc( S, 1, maxnh, 'S', 'state_init',
-     .              copy=.false.)
+     &              copy=.false. )
 
-C Some printout for debugging ........................................
+! Some printout for debugging ........................................
 *     if (IOnode) then
 *       write(6,'(/,a)') 'siesta: connected orbitals'
 *       do io = 1,no_u
 *         call GlobalToLocalOrb(io,Node,Nodes,iio)
 *         if (iio.gt.0) then
 *           write(6,'(i6,4x,15i4)') 
-*    .        io, (listh(listhptr(iio)+j),j=1,numh(iio))
+*    &        io, (listh(listhptr(iio)+j),j=1,numh(iio))
 *         endif
 *#ifdef MPI
 *         call MPI_Barrier(MPI_Comm_World,MPIerror)
@@ -248,52 +254,63 @@ C Some printout for debugging ........................................
 *       write(6,*) ' '
 *     endif
 
-      ! Find overlap matrix 
-      call overlap(na_u, na_s, no_s, scell, xa, indxua, rmaxo,
-     .             maxnh, lasto, iphorb, isa, 
-     .             numh, listhptr, listh, S)
+!     Find overlap matrix 
+      call overlap( na_u, na_s, no_s, scell, xa, indxua, rmaxo, maxnh,
+     &              lasto, iphorb, isa, numh, listhptr, listh, S )
 
+!     Initialize density matrix
       call new_dm( auxchanged )
 
-C     Check for size of Pulay auxiliary matrices
+!     Check for size of Pulay auxiliary matrices
       call init_pulay_arrays()
 
-#ifdef DEBUG
-      call write_debug( '    PRE overlap' )
-#endif
-#ifdef DEBUG
-      call write_debug( '    POS overlap' )
-#endif
+#ifdef TRANSIESTA
+!     If onlyS, Save overlap matrix and exit                       ! MPN
+      if (onlyS) then                                              ! MPN    
+        fname = paste( slabel, '.onlyS' )
+        fnlength = label_length+6
+        nullify(dummyH)
+        call re_alloc( dummyH, 1, maxnh, 1, 1, 'dummyH', 'state_init' )
 
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 0 )
-#endif
+        call ts_iohs('write   ', gamma, .true., no_u, no_s, 
+     &       1, indxuo, maxnh, numh, listhptr, listh, dummyH, 
+     &       S, dummyqtot, temp, xijo, fnlength, fname, na_u, 
+     &       lasto, isa, dummyef, 
+     &       ucell, ts_kscell_file, ts_kdispl_file,            
+     &       ts_gamma_scf_file, xa, 0, 0 )
+        call de_alloc( dummyH, 'dummyH', 'state_init' )
+        call bye( 'Save overlap matrix and exit' ) ! Exit siesta   ! MPN 
+      endif                                                        ! MPN    
+#endif /* TRANSIESTA */
 
 #ifdef CDF
       if (writedm_cdf) then
          call setup_dm_netcdf_file( maxnh, no_l, nspin,
-     $                              no_s, indxuo,
-     $                              numh, listhptr, listh)
+     &                              no_s, indxuo,
+     &                              numh, listhptr, listh)
       endif
       if (writedm_cdf_history) then
          call setup_dm_netcdf_file( maxnh, no_l, nspin,
-     $                              no_s, indxuo,
-     $                              numh, listhptr, listh,
-     $                              istep)
+     &                              no_s, indxuo,
+     &                              numh, listhptr, listh,
+     &                              istep)
       endif
       if (writedmhs_cdf) then
          call setup_dmhs_netcdf_file( maxnh, no_l, nspin,
-     $                              no_s, indxuo,
-     $                              numh, listhptr, listh,
-     $                              s)
+     &                              no_s, indxuo,
+     &                              numh, listhptr, listh,
+     &                              s)
       endif
       if(writedmhs_cdf_history) then
          call setup_dmhs_netcdf_file( maxnh, no_l, nspin,
-     $                              no_s, indxuo,
-     $                              numh, listhptr, listh,
-     $                              s,
-     $                              istep)
+     &                              no_s, indxuo,
+     &                              numh, listhptr, listh,
+     &                              s,
+     &                              istep)
       endif
+#endif
+#ifdef DEBUG
+      call write_debug( '  POS state_init' )
 #endif
 !--------------------------------------------------------------------------- END
       END subroutine state_init

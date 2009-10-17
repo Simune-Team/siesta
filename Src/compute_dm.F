@@ -27,100 +27,156 @@
       use m_ordern,        only : ordern
       use m_steps,         only : istp
       use m_spin,          only : nspin, qs, efs
-      use domain_decom,    only : gatherGlobalMatrix
+!      use domain_decom,    only : gatherGlobalMatrix
       use jacobi_davidson, only : jd_diag
-
+#ifdef TRANSIESTA
+! TSS Begin
+! Transiesta Modules
+      use m_ts_options,   only : TSmode, TSiscf, TSinit, TSrun, dDmaxRho
+      use m_ts_in_siesta, only : transiesta
+! TSS End
+#endif /* TRANSIESTA */
       implicit none
-
+!     Input variables
       integer, intent(in) :: iscf
-
-      integer :: io, ispin
-      real(dp):: const  ! Temporary factor used in calculation of
-      ! Harris forces 
-      ! e1>e2 To signal that we do not want DOS weights
-      real(dp), parameter  :: e1 = 1.0_dp, e2 = -1.0_dp
+!     Local variables
+      integer             :: io, ispin
+      real(dp)            :: const ! Temporary factor used in
+                             ! calculation of Harris forces. e1>e2 to
+                             ! signal that we do not want DOS weights
+      real(dp), parameter :: e1 = 1.0_dp, e2 = -1.0_dp
 #ifdef MPI
-      real(dp):: buffer1
+      real(dp)            :: buffer1
 #endif
+
+#ifdef TRANSIESTA
+! TSS Begin
+      integer             :: i,j
+! TSS End
+#endif /* TRANSIESTA */
 !------------------------------------------------------------------------- BEGIN
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 6 )
+#ifdef DEBUG
+      call write_debug( '  PRE compute_dm' )
 #endif
-! Solve eigenvalue problem 
-      if (isolve .eq. 0) then
+      call timer( 'compute_dm', 1 )
+!     Solve eigenvalue problem 
+      if (isolve .eq. SOLVE_DIAGON) then
         call write_debug( '    PRE diagon' )
         call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
-     .              numh, listhptr, listh, numh, listhptr, listh, 
-     .              H, S, qtot, fixspin, qs, temp, e1, e2,
-     .              gamma, xijo, indxuo, nkpnt, kpoint, kweight,
-     .              eo, qo, Dscf, Escf, ef, efs, Entrop, no_u,
-     .              occtol, iscf, neigwanted)
+     &              numh, listhptr, listh, numh, listhptr, listh, 
+     &              H, S, qtot, fixspin, qs, temp, e1, e2,
+     &              gamma, xijo, indxuo, nkpnt, kpoint, kweight,
+     &              eo, qo, Dscf, Escf, ef, efs, Entrop, no_u,
+     &              occtol, iscf, neigwanted)
+        call write_debug( '    POS diagon' )
         Ecorrec = 0.0_dp
-!
-      elseif (isolve .eq. 1) then
+      elseif (isolve .eq. SOLVE_ORDERN) then
         if (.not. gamma) call die("Cannot do O(N) with k-points.")
         call write_debug( '    PRE ordern' )
-            call ordern(usesavelwf,ioptlwf,na_u,no_u,no_l,lasto,iaorb,
-     .                  isa,qa,rcoor,rmaxh,ucell,xa,iscf,istp,ncgmax,
-     .                  etol,eta,qtot,maxnh,numh,listhptr,listh,H,S,
-     .              chebef,noeta,rcoorcp,beta,pmax,Dscf,Escf,
-     .              Ecorrec,nspin,qs)
+        call ordern( usesavelwf, ioptlwf, na_u, no_u, no_l, lasto,
+     &               iaorb, isa, qa, rcoor, rmaxh, ucell, xa, iscf,
+     &               istp, ncgmax, etol, eta, qtot, maxnh, numh,
+     &               listhptr, listh, H, S, chebef, noeta, rcoorcp,
+     &               beta, pmax, Dscf, Escf, Ecorrec, nspin, qs )
+        call write_debug( '    POS ordern' )
         Entrop = 0.0_dp
-      elseif (isolve .eq. 2) then
-        call write_debug( '    PRE Jacobi' )
+#ifdef TRANSIESTA
+! TSS Begin
+      elseif (TSmode .and. TSinit) then
+        call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
+     &              numh, listhptr, listh, numh, listhptr, listh,
+     &              H, S, qtot, fixspin, qs, temp, e1, e2,
+     &              gamma, xijo, indxuo, nkpnt, kpoint, kweight,
+     &              eo, qo, Dscf, Escf, ef, efs, Entrop, no_u,
+     &              occtol, iscf, neigwanted)
+
+        Ecorrec = 0._dp
+
+      else if (TSrun) then
+        call timer('TS',1)
+        TSiscf=TSiscf+1
+
+        call transiesta(gamma,nsc,nkpnt,kpoint,kweight,lasto,
+     &    no_l, no_s, nspin, na_u, xa, maxnh, numh, listhptr,
+     &    listh, xijo, indxuo, H, S, Dscf, Escf, ef, no_u,
+     &    TSiscf,qtot)
+        call timer('TS',2)
+
+        Ecorrec = 0._dp
+! TSS End
+#endif /* TRANSIESTA */
+      elseif (isolve .eq. SOLVE_JACOBI) then
 !        call gatherGlobalMatrix( no_s, no_l, maxnh, S, 'S.matrix' )
 !        call gatherGlobalMatrix( no_s, no_l, maxnh, H(1:maxnh,1),
 !     &                           'H.matrix' )
+        call write_debug( '    PRE Jacobi' )
         call jd_diag( no_s, no_l, nspin, neigwanted, fixspin, temp,
      &                qtot, qs, occtol, numh, listh, H, S,
      &                ef, efs, Entrop, Dscf, Escf )
+        call write_debug( '    POS Jacobi' )
       else
         call die('siesta: ERROR: wrong solution method')
       endif
-      write(23,*) 'PRE Harris-functional energy'
-      flush(23)
 
-! Harris-functional energy 
+#ifdef TRANSIESTA
+! TSS Begin
+! ----------------------------------------------------
+! TSS
+! ----------------------------------------------------
+! CHECK CONVERGENCE OF DENSITY MATRIX
+! ----------------------------------------------------
+         dDmaxRho = -1.
+         do j = 1,nspin
+            do i = 1,nh
+              dDmaxRho = max(dDmaxRho,
+     &     abs(Dscf(i,j)-Dold(i,j)))
+            enddo
+         enddo
+! TSS End
+
+
+#endif /* TRANSIESTA */
+
+!     Harris-functional energy 
       DEharr = 0.0_dp
       do ispin = 1,nspin
-! const factor takes into account that there are two nondiagonal
-! elements in non-collinear spin density matrix, stored as
-! ispin=1 => D11; ispin=2 => D22, ispin=3 => Real(D12);
-! ispin=4 => Imag(D12)
+!       const factor takes into account that there are two nondiagonal
+!       elements in non-collinear spin density matrix, stored as
+!       ispin=1 => D11; ispin=2 => D22, ispin=3 => Real(D12);
+!       ispin=4 => Imag(D12)
         const = 1._dp
         if (ispin .gt. 2) const = 2._dp
         do io = 1,nh
           DEharr = DEharr + H(io,ispin) * const * 
-     .                 ( Dscf(io,ispin) - Dold(io,ispin) )
+     &                 ( Dscf(io,ispin) - Dold(io,ispin) )
         enddo
       enddo
 #ifdef MPI
-! Global reduction of DEharr
-      call globalize_sum(DEharr,buffer1)
+!     Global reduction of DEharr
+      call globalize_sum( DEharr, buffer1 )
       DEharr = buffer1
 #endif
 ! ..................
 #ifdef CDF
           if ( writedmhs_cdf_history) then
+            call write_dmh_netcdf( no_l, nh, nspin, Dold, H, Dscf )
+          else if (writedmhs_cdf) then
              call write_dmh_netcdf( no_l, nh, nspin,
-     $                              Dold, H, Dscf)
-          else if ( writedmhs_cdf) then
-             call write_dmh_netcdf( no_l, nh, nspin,
-     $                              Dold, H, Dscf, overwrite=.true.)
+     &                              Dold, H, Dscf, overwrite=.true.)
           endif
 #endif
 
-! Print populations at each SCF step if requested before mixing ......
-
+!     Print populations at each SCF step if requested before mixing ......
       if (muldeb) then
          write (6,"(/a)")
-     .         'siesta: Mulliken populations before mixing'
+     &         'siesta: Mulliken populations before mixing'
          call mulliken( mullipop, nspin, na_u, no_u, maxnh,
-     .                  numh, listhptr, listh, S, Dscf, isa,
-     .                  lasto, iaorb, iphorb )
+     &                  numh, listhptr, listh, S, Dscf, isa,
+     &                  lasto, iaorb, iphorb )
       endif
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 0 )
+      call timer( 'compute_dm', 2 )
+#ifdef DEBUG
+      call write_debug( '  POS compute_dm' )
 #endif
 !--------------------------------------------------------------------------- END
       END subroutine compute_dm

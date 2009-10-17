@@ -2,7 +2,26 @@
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
 
-** CHANGES ALONG bsc-2.8 branch (bsc-trunk)
+** CHANGES ALONG bsc-trunk
+
+-------------------------------------------------------------------------
+2009-10-17  13:45 GMT Alberto Garcia <albertog@icmab.es>    bsc-trunk-290
+Merged transiesta code, pending complete tests (re-done)
+
+Merged TS code in Src (Rogeli, with some help from Frederico and Alberto)
+
+(This is a re-commit, with preservation of original file ids. 
+in following copies (now  "bzr add"'ed with the --ids-from option))
+
+Tests (copied by AG from latest trunk)
+TBTrans (copied by AG from trunk-292)
+
+Some cosmetic changes by AG (zgesv_lapack addition, etc)
+
+Note that actual testing of the transiesta module has been minimal.
+A subsequent patch will probably be needed.
+
+(+ Added g95 macosx .make file)
 
 -------------------------------------------------------------------------
 2009-08-26  10:45 GMT Alberto Garcia <albertog@icmab.es>      bsc-2.8.11

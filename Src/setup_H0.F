@@ -38,6 +38,11 @@ C     and initializes data structures on the grid.
       use m_mpi_utils, only: globalize_sum
       use mpi_siesta
 #endif
+#ifdef TRANSIESTA
+!     TSS Begin
+      use m_ts_options, only: TSrun
+!     TSS End
+#endif /* TRANSIESTA */
 
       implicit none
       real(dp) :: stressl(3,3), dummy(1,1)
@@ -48,11 +53,15 @@ C     and initializes data structures on the grid.
 #endif
 
 !------------------------------------------------------------------------- BEGIN
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 12 )
+#ifdef DEBUG
+        call write_debug( '  PRE setup_H0' )
 #endif
-C     Normalize density matrix to exact charge
-      call normalize_dm(first=.true.)
+!     Normalize density matrix to exact charge
+#ifdef TRANSIESTA      
+      if (.not.TSrun ) call normalize_dm( first=.true. )
+#else
+      call normalize_dm( first=.true. )
+#endif  /* TRANSIESTA */
 
 C     Initialize Hamiltonian
       H = 0.0_dp
@@ -133,8 +142,8 @@ C     mesh structures for geometry changes
      &                 maxnh, numh, listhptr, listh, datm,
      &                 dummy, stressl)
 
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 0 )
+#ifdef DEBUG
+        call write_debug( '  POS setup_H0' )
 #endif
 !--------------------------------------------------------------------------- END
       END subroutine setup_H0

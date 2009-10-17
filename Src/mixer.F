@@ -22,6 +22,13 @@
 #ifdef CDF
       use iodm_netcdf, only: write_dm_netcdf
 #endif
+#ifdef TRANSIESTA
+! TSS Begin
+      use m_energies,   only : ef
+      use m_ts_io,      only : TSiodm
+      use m_ts_options, only : VIn, VOut, TSrun, tsdme, TSiscf
+! TSS End
+#endif /* TRANSIESTA */
       implicit none
 
       integer,  intent(in)  :: iscf
@@ -34,6 +41,9 @@
       external ::  mulliken
 
 !------------------------------------------------------------------------- BEGIN
+#ifdef DEBUG
+      call write_debug( '  PRE mixer' )
+#endif
 ! Mix input and output energy-density and density matrices ............
 ! Following line for using and saving the density matrix without mix ..
       if (wmix.ne.0._dp) then
@@ -44,18 +54,39 @@
           iiscf = 1
           if (iscf .ne. 1) mmix = .true.
         endif
-            if (fire_mix) then
-               call fire_mixing(iscf, mix, no_l, maxnh,
-     .                 numh(1:no_l), listhptr(1:no_l), nspin,
-     $                 wmix, nkick, wmixkick, Dscf, Dold, dDmax)
-            else if (broyden_maxit == 0) then
-           call pulayx( pulfile, iiscf, mmix, no_l, maxnh,
-     .                  numh, listhptr, nspin, maxsav, wmix, nkick, 
-     .                  wmixkick, Dscf, Dold, dDmax)
+#ifdef TRANSIESTA
+        if ( TSrun ) then
+           iiscf=TSiscf
+           if (maxsav .le. 0) then
+             iiscf = 1
+             if (TSiscf .ne. 1) mmix = .true.
+           endif
+        end if
+#endif /* TRANSIESTA */
+        if (fire_mix) then
+          call fire_mixing( iscf, mix, no_l, maxnh,
+     &                      numh(1:no_l), listhptr(1:no_l), nspin,
+#ifdef TRANSIESTA
+     &                      wmix, nkick, wmixkick, VOut, VIn, dDmax )
+#else /* TRANSIESTA */
+     &                      wmix, nkick, wmixkick, Dscf, Dold, dDmax )
+#endif /* TRANSIESTA */
+        else if (broyden_maxit == 0) then
+          call pulayx( pulfile, iiscf, mmix, no_l, maxnh,
+     &                 numh, listhptr, nspin, maxsav, wmix, nkick, 
+#ifdef TRANSIESTA
+     &                 wmixkick, VOut, VIn, dDmax)
+#else /* TRANSIESTA */
+     &                 wmixkick, Dscf, Dold, dDmax)
+#endif /* TRANSIESTA */
         else
           call broyden_mixing( iscf, mix, no_l, maxnh, numh, listhptr,
-     &                         nspin, wmix, nkick, wmixkick, Dscf,
-     &                         Dold, dDmax )
+     &                         nspin, wmix, nkick, wmixkick,
+#ifdef TRANSIESTA
+     &                         VOut, VIn, dDmax )
+#else /* TRANSIESTA */
+     &                         Dscf, Dold, dDmax )
+#endif /* TRANSIESTA */
         endif
       endif
 
@@ -67,33 +98,65 @@
 !     Print populations at each SCF step, if requested, after mixing ......
       if (muldeb) then 
         write (6,"(/a)")
-     .    'siesta: Mulliken populations after mixing'
+     &    'siesta: Mulliken populations after mixing'
         call mulliken( mullipop, nspin, na_u, no_u, maxnh,
-     .                 numh, listhptr, listh, S, Dscf, isa,
-     .                 lasto, iaorb, iphorb )
+     &                 numh, listhptr, listh, S, Dscf, isa,
+     &                 lasto, iaorb, iphorb )
       endif
 
-!         Save density matrix on disk, after mixing ...........................
 #ifdef CDF
-          if (writedm_cdf_history) then
-             call write_dm_netcdf( no_l, maxnh, nspin, Dscf,
-     $                             overwrite=.false.)
-          else if (writedm_cdf) then
-             call write_dm_netcdf( no_l, maxnh, nspin, Dscf,
-     $                             overwrite=.true. )
-          endif
+!     Save density matrix on disk, after mixing ...........................
+      if (writedm_cdf_history) then
+         call write_dm_netcdf( no_l, maxnh, nspin, Dscf,
+     &                         overwrite=.false. )
+      else if (writedm_cdf) then
+         call write_dm_netcdf( no_l, maxnh, nspin, Dscf,
+     &                         overwrite=.true. )
+      endif
 #endif
     
-          if (writedm) then
+#ifndef TRANSIESTA
+      if (writedm) then
+        if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
+          if (istp.eq.1)
+     &    call write_dm (maxnh, no_l, nspin,
+     &               numh, listhptr, listh, Dscf)
+        else
+          call write_dm (maxnh, no_l, nspin,
+     &               numh, listhptr, listh, Dscf)
+        endif
+      endif ! writedm
+#else /* TRANSIESTA */
+! TSS Begin
+      if (writedm) then
+        if (.not.TSrun) then   !TSS save DM
+          if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
+            if (istp.eq.1)
+     &        call write_dm( maxnh, no_l, nspin, numh,
+     &                       listhptr, listh, Dscf )
+          else
+            call write_dm( maxnh, no_l, nspin, numh,
+     &                     listhptr, listh, Dscf)
+          endif
+        else
+!         TSS write DME
+          if(tsdme) then
             if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
-              if (istp.eq.1)
-     .        call write_dm (maxnh, no_l, nspin,
-     .                   numh, listhptr, listh, Dscf)
+               if (istp .eq.1)
+     &           call TSiodm( 'write', maxnh, no_l, nspin, numh,
+     &                        listhptr, listh, Dscf, Escf, ef )
             else
-              call write_dm (maxnh, no_l, nspin,
-     .                   numh, listhptr, listh, Dscf)
-            endif
-          endif ! writedm
+              call TSiodm( 'write', maxnh, no_l, nspin, numh,
+     &                     listhptr, listh, Dscf, Escf, ef )
+            endif            ! idyn.eq.6
+          endif               ! tsdme
+        endif ! TSrun
+      endif ! writedm
+#endif /* TRANSIESTA */
+
+#ifdef DEBUG
+      call write_debug( '  POS mixer' )
+#endif
 !--------------------------------------------------------------------------- END
       END subroutine mixer
 

@@ -8,8 +8,8 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine initparallel(no_u,na_u,lasto,xa,ucell,rmaxh,rcoor,
-     .                        isolve)
+      subroutine initparallel( no_u, na_u, lasto, xa,
+     &                         ucell, rmaxh )
 C
 C  Initialises parallel parameters
 C
@@ -22,9 +22,9 @@ C
       use parallelsubs, only : set_processorYdefault
       use spatial
       use domain_decom, only : use_dd, use_dd_perm, preSetOrbitLimits
-
       use sys
       use alloc,        only : re_alloc
+      use siesta_options
 
       implicit none
 C
@@ -32,11 +32,9 @@ C  Passed variables
 C
       integer       :: no_u
       integer       :: na_u
-      integer       :: isolve
       integer       :: lasto(0:na_u)
       real(dp)      :: xa(3,na_u)
       real(dp)      :: ucell(3,3)
-      real(dp)      :: rcoor
       real(dp)      :: rmaxh
 C
 C  Local variables
@@ -58,7 +56,7 @@ C
       real(dp)      :: cellmin
       real(dp)      :: cscale
       real(dp)      :: alpha
-      real(dp)      :: beta
+      real(dp)      :: bbeta
       real(dp)      :: gamma
       real(dp)      :: degtorad
       real(dp)      :: rcmax
@@ -80,14 +78,14 @@ C  Initialise on first call
       endif
 
 C Set spatial decomposition flag according to SCF method
-      if (isolve.eq.1) then
+      if (isolve.eq.SOLVE_ORDERN) then
         lspatial = .true.
       else
         lspatial = .false.
       endif
 
 C Set Domain decomposition flag according to SCF method
-      if (isolve.eq.2) then
+      if (isolve.eq.SOLVE_JACOBI) then
         use_dd      = .true.
         use_dd_perm = .false.
       else
@@ -140,7 +138,7 @@ C number of processors and if not then modify
 
 C Find cell parameters
       degtorad = 4.0d0*atan(1.0d0)/180.0d0
-      call uncell(ucell,acell,bcell,ccell,alpha,beta,gamma,degtorad)
+      call uncell(ucell,acell,bcell,ccell,alpha,bbeta,gamma,degtorad)
 
 C Check that cut-off is less than cell parameter
       cellmin = min(acell, bcell, ccell)
@@ -165,7 +163,7 @@ C Check that cut-off is less than cell parameter
         endif
       endif
 
-      if (isolve.eq.0) then
+      if (isolve.eq.SOLVE_DIAGON) then
 C Set BlockSize
 #ifdef MPI
         call set_blocksizedefault(Nodes,no_u,blocksizedefault)
@@ -178,10 +176,10 @@ C Set BlockSize
 #ifdef MPI
 C Output indication of parallel parameters
       if (Node.eq.0) then
-        if (isolve.eq.0) then
+        if (isolve.eq.SOLVE_DIAGON) then
           write(6,'(/,a,2i4,/)')
      .        '* ProcessorY, Blocksize: ', procYval, Blocksize
-        else if (isolve.eq.1) then
+        else if (isolve.eq.SOLVE_ORDERN) then
           write(6,'(/,a,f8.4,/)')
      .        '* Spatial decomposition: Cutoff = ',rcmax
         else

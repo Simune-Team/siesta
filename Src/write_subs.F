@@ -272,17 +272,23 @@
       use units
       use m_energies 
       use m_spin
+#ifdef TRANSIESTA
+! TSS Begin
+! Transiesta Modules
+      use m_ts_options, only: TSinit, TSrun, TSiscf
+! TSS End
+#endif /* TRANSIESTA */
       implicit none
 
-      logical :: first
-      integer :: iscf
+      logical              :: first
+      integer              :: iscf
       real(dp), intent(in) :: dDmax ! Max. change in dens. matrix elem.
-
-
-      integer :: i 
-      logical :: printEigVal
-
-      printEigVal = (isolve==0) .or. (isolve==2) .or. (isolve==3)
+      integer              :: i 
+#ifdef TRANSIESTA
+! TSS Begin
+      character(11) :: tmpname
+! TSS End
+#endif /* TRANSIESTA */
 
       ! Only print out full decomposition at very beginning and end.
       if ((istp==1.and.first).or.final) then
@@ -358,21 +364,21 @@
           call cmlEndPropertyList(mainXML)
         endif
       endif
-      ! On all SCF steps, print out the current energy
+!     On all SCF steps, print out the current energy
       if (.not.final) then
-        ! Print total energy and density matrix error 
+!       Print total energy and density matrix error 
         if (cml_p) then
           call cmlStartPropertyList(mainXML, title='SCF Cycle')
-          ! Eharrs is always output
+!         Eharrs is always output
           call cmlAddProperty(xf=mainXML, value=Eharrs/eV, 
      .         units="siestaUnits:eV", 
      .         dictRef="siesta:Eharrs", fmt="r7")
         endif
-        ! Determines which properties are output.
+!       Determines which properties are output.
         if (harrisfun) then 
           write(6,"(/a,f14.6,/)") 'siesta: Eharris(eV) = ', Eharrs/eV
-            ! No need for further cml output
-        elseif (printEigVal) then
+!         No need for further cml output
+        elseif (isolve==SOLVE_DIAGON) then
           if (cml_p) 
      .         call cmlAddProperty(xf=mainXML, value=FreeE/eV, 
      .         units="siestaUnits:eV", 
@@ -420,7 +426,7 @@
      .             dictRef="siesta:Ef", fmt="r7")
             endif !cml_p
           endif !fixspin
-        elseif (isolve==1) then
+        elseif (isolve==SOLVE_ORDERN) then
           write(6,'(/,a15,i4)') 'siesta: iscf = ',iscf
           write(6,'(a14,f15.4,a13,f15.4,a10,f7.4/)') 
      .         'Eharris(eV) = ',Eharrs/eV,
@@ -434,14 +440,82 @@
      .           dictRef="siesta:dDmax", fmt="r7")
           endif
         endif !harrisfun/isolve
-        
+
+#ifdef TRANSIESTA
+! TSS Begin
+        if (TSinit) then     !TSS
+         if (cml_p)
+     .         call cmlAddProperty(xf=mainXML, value=FreeE/eV,
+     .         units="siestaUnits:eV",
+     .         dictRef="siesta:FreeE",  fmt="r7")
+         if (fixspin) then
+            if (cml_p) then
+              call cmlAddProperty(xf=mainXML, value=Etot/eV,
+     .             units="siestaUnits:eV",
+     .             dictRef="siesta:Etot",   fmt="r7")
+              call cmlAddProperty(xf=mainXML, value=FreeE/eV,
+     .             units="siestaUnits:eV",
+     .             dictRef="siesta:FreeE", fmt="r7")
+              call cmlAddProperty(xf=mainXML, value=dDmax/eV,
+     .             units="siestaUnits:eV",
+     .             dictRef="siesta:dDmax",  fmt="r7")
+            endif
+            if ((iscf .eq. 1).or.muldeb)
+     .           write(6,'(/,a12,3a14,a8,a7,a11)')
+     .           'siesta: iscf', '   Eharris(eV)',
+     .           '      E_KS(eV)', '   FreeEng(eV)',
+     .           '   dDmax', '  Ef_up', '  Ef_dn(eV)'
+            write(6,'(a8,i4,3f14.4,f8.4,2f9.4)')
+     .           'siesta: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV, dDmax,
+     .           (Efs(i)/eV,i=1,2)
+            if (cml_p) then
+              call cmlAddProperty(xf=mainXML, value=Efs(1)/eV,
+     .             units="siestaUnits:eV",
+     .             dictRef="siesta:Efs",    fmt="r7")
+              call cmlAddProperty(xf=mainXML, value=Efs(2)/eV,
+     .             units="siestaUnits:eV",
+     .             dictRef="siesta:Efs",    fmt="r7")
+            endif
+         else
+          if (iscf .eq. 1) write(6,'(/,a12,3a14,2a8)')
+     .             'siesta: iscf', '   Eharris(eV)',
+     .             '      E_KS(eV)', '   FreeEng(eV)',
+     .             '   dDmax', '  Ef(eV)'
+          write(6,'(a8,i4,3f14.4,2f8.4)')
+     .             'siesta: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV,
+     .             dDmax, Ef/eV
+         end if !fixspin
+        endif                !TSinit
+        if (TSrun) then      !TSS
+              tmpname = 'transiesta:'
+              if (fixspin) then
+                 if (TSiscf .eq. 1)
+     .                write(6,'(/,a11,a7,3a14,a8,a7,a11)')
+     .                tmpname,' TSiscf', '   Eharris(eV)',
+     .                '      E_KS(eV)', '   FreeEng(eV)',
+     .                '   dDmax', '  Ef_up', '  Ef_dn(eV)'
+                 write(6,'(a11,i4,3f14.4,f8.4,2f9.4)')
+     .                tmpname,TSiscf, Eharrs/eV, Etot/eV, FreeE/eV,
+     .                dDmax, (Efs(i)/eV,i=1,2)
+              else
+                 if (TSiscf .eq. 1) write(6,'(/,a11,a7,3a14,2a8)')
+     .                tmpname,' TSiscf', '   Eharris(eV)',
+     .                '      E_KS(eV)', '   FreeEng(eV)',
+     .                '   dDmax', '  Ef(eV)'
+                 write(6,'(a11,i4,3f14.4,2f8.4)')
+     .                tmpname,TSiscf, Eharrs/eV, Etot/eV,
+     .                FreeE/eV, dDmax, Ef/eV
+              endif             !fixspin
+        endif                !TSrun
+! TSS End
+#endif /* TRANSIESTA */
+
         if (cml_p) then
           call cmlEndPropertyList(mainXML)
         endif
         
       else !final
-      ! Print out additional information in finalization.
-
+!       Print out additional information in finalization.
         write(6,'(/,a)') 'siesta: Final energy (eV):'
         write(6,'(a,a15,f15.6)')
      .    'siesta: ',      'Kinetic =', Ekin/eV,
@@ -509,9 +583,7 @@
       use units,      only : Ang
       use m_forces
       use alloc,      only : re_alloc, de_alloc
-
       implicit none
-      real(dp), pointer   :: xang(:,:)    ! Auxiliary array
       integer :: ia, ix
       real(dp) :: cfmax, fmax, fres
       real(dp) :: ftot(3), cftot(3)

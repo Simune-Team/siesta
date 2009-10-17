@@ -17,7 +17,7 @@ C     MODULE variables
 C     Arrays that hold data which do not change during the SCF loop
       real(grid_p),   pointer :: rhopcc(:), rhoatm(:), Vna(:)
       real(dp)                :: Uharrs     ! Harris energy
-      logical                 :: IsDiag, IsEfld, spiral
+      logical                 :: IsDiag, IsEfld, IsVolt, spiral
       character(len=10)       :: shape
       integer                 :: nm(3), nml(3), ntml(3), npcc,
      &                           nmpl, ntpl, ntopl

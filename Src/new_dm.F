@@ -45,23 +45,19 @@
 !
 !     Alberto Garcia, September 2007
 !
-      use m_sparse, only: same_sparsity, change_sparsity_inplace
-      use sys, only: die
-      use precision, only: dp
-      use alloc, only: re_alloc, de_alloc
-      use parallel,  only: IOnode
+      use m_sparse,  only : same_sparsity, change_sparsity_inplace
+      use sys,       only : die
+      use precision, only : dp
+      use alloc,     only : re_alloc, de_alloc
+      use parallel,  only : IOnode
       use m_norm
-
-
 #ifdef MPI
       use mpi_siesta
 #endif
-
       implicit none
-
       real(dp), pointer, private :: DMsaved(:,:)
       integer, pointer, private  ::
-     $                   listold(:), listptrold(:), numold(:)
+     &                   listold(:), listptrold(:), numold(:)
 
       private
       public :: new_dm
@@ -71,28 +67,37 @@
 
       subroutine new_dm( auxchanged )
       ! We should probably pass it Dscf and the rest....
-
       use sparse_matrices
       USE siesta_options
       use siesta_geom
-      use atomlist, only: datm, no_s, iaorb, lasto, no_u, no_l
-      use m_spin,   only: nspin
-      use m_steps, only: istp
-
+      use atomlist, only : datm, no_s, iaorb, lasto, no_u, no_l
+      use m_spin,   only : nspin
+      use m_steps,  only : istp
+#ifdef TRANSIESTA
+!      TSS Begin
+      use m_energies,   only : ef
+      use sys,          only : die
+      use m_ts_options, only : VIn, VOut, TSinit, TSrun, foundts, TSmode
+      use m_ts_io,      only : TSiodm 
+!     TSS End 
+#endif /* TRANSIESTA */
       implicit none
-
       logical, intent(in) :: auxchanged ! Has auxiliary supercell changed?
+      logical             :: dminit     ! Initialize density matrix?
+      logical             :: found, try_to_read_from_file
 
-      logical:: dminit     ! Initialize density matrix?
-      logical :: found, try_to_read_from_file
-
+#ifdef TRANSIESTA
+!     TSS Begin
+      integer         :: ts_alloc_stat
+      logical, save   :: first_time = .true.
+!     TSS End
+#endif /* TRANSIESTA */
 
       if (IOnode) then
          write(6,"(a,i5)") "New_DM. Step: ", istp
       endif
 
-      ! Initialize density matrix
-
+!     Initialize density matrix
       if (istp == 1) then
          nullify(numold,listold,listptrold)
          nullify(DMsaved)
@@ -143,6 +148,17 @@
         endif
       endif
 
+#ifdef TRANSIESTA
+!     TSS Begin: Mixing arrays
+      if (first_time) then
+        nullify(VIn,VOut)
+        first_time = .false.
+      endif
+      call re_alloc( VIn,  1, maxnh, 1, nspin, 'Vin',  'new_dm' )
+      call re_alloc( Vout, 1, maxnh, 1, nspin, 'Vout', 'new_dm' )
+!     TSS End
+#endif /* TRANSIESTA */
+
       if (dminit) then
          if (IOnode) then
             write(6,"(a)") "Initializing Density Matrix..."
@@ -170,6 +186,45 @@
 !         anorm = compute_norm(Dscf,maxnh,nspin)
 !         if (IONode) print *, "DM norm after initdm: ", anorm
 
+#ifdef TRANSIESTA
+!     TSS Begin
+!     TSS check of TSDM stuff
+      if (istp .eq. 1 .and. TSmode) then
+!       try to read TSDM
+        call TSiodm( 'read', maxnh, no_l, nspin, numh, listhptr,
+     &              listh, Dscf, Escf, ef, found=foundts )
+
+        if(.not. foundts )  then ! not a TS continuation run
+          TSinit = .true.     ! start to converge a diagon run
+          TSrun = .false.
+
+          if(IONode) then
+             write(6,'(a)')
+     &            'TRANSIESTA: No TS-DensityMatrix file found'
+             write(6,'(a)')
+     &            'TRANSIESTA: Initialization runs using diagon'
+          endif
+        else
+          TSinit = .false.
+          TSrun = .true.
+
+          if(IONode) then
+             write(6,'(a)') 'TRANSIESTA: Continuation run'
+             write(6,'(/a)')
+     &            '                     ************************  '
+             write(6,'(a)')
+     &            '                     *   TRANSIESTA BEGIN   *  '
+             write(6,'(a)')
+     &            '                     ************************  '
+          endif
+
+!   copy Dsfc -> Dold
+          Dold(1:nh,1:nspin) = Dscf(1:nh,1:nspin)
+          Eold(1:nh,1:nspin) = Escf(1:nh,1:nspin)
+        end if ! found TSDM-file
+      end if ! istp == 1  and TSmode
+!     TSS End
+#endif /* TRANSIESTA */
       else
 
          if (IOnode) then

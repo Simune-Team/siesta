@@ -89,6 +89,9 @@ C Internal variables and arrays
      &                            omp_get_thread_num
 #endif
 
+#ifdef DEBUG
+        call write_debug( '    PRE vmat' )
+#endif
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 4 )
 #endif
@@ -498,6 +501,9 @@ C       Redistribute Hamiltonian from mesh to orbital based distribution
       call timer('vmat',2)
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 0 )
+#endif
+#ifdef DEBUG
+        call write_debug( '    POS vmat' )
 #endif
       return
       end

@@ -37,7 +37,6 @@ C *********************************************************************
 
       INTEGER I1, I2, I3, IC, J1, J2, J3, JC,
      .        KUO, LASTIO, LASTJO, NCELLS, NO
-      
       NCELLS = NSC(1) * NSC(2) * NSC(3)
       NO = NUO * NCELLS
 
@@ -84,7 +83,6 @@ C       IND2 inserts the single supercell into the extended supercell
       ENDDO
       ENDDO
       ENDDO
-
       END SUBROUTINE LISTSC_INIT
 
 

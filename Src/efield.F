@@ -206,22 +206,21 @@ C     the potential is zero at the center of the cell
          v0 = (-0.5_dp)*(f(1)*meshG(1) + f(2)*meshG(2) + f(3)*meshG(3))
       endif        
 
-      if (all(meshG .eq. 0)) then
+      if (isfield  .and. .not.(all(meshG.eq.0))) then
          ! do nothing now
       else
 
-         if (isfield) then
             meshl(1) = (meshLim(2,1) - meshLim(1,1)+1)*nsm
             meshl(2) = (meshLim(2,2) - meshLim(1,2)+1)*nsm
             meshl(3) = (meshLim(2,3) - meshLim(1,3)+1)*nsm
 
-C     Calculate starting point for grid
+C       Calculate starting point for grid
             Xoffset = (meshLim(1,1)-1)*nsm
             Yoffset = (meshLim(1,2)-1)*nsm
             Zoffset = (meshLim(1,3)-1)*nsm
 
             
-C     Add the electric field potential to the input potential
+C       Add the electric field potential to the input potential
             imesh = 0
             i30 = Zoffset - 1
             do i3 = 0,meshl(3)-1
@@ -229,20 +228,19 @@ C     Add the electric field potential to the input potential
                i20 = Yoffset - 1
                do i2 = 0,meshl(2)-1
                   i20 = i20 + 1
-                  i10 = Xoffset - 1
+            i10 = Xoffset - 1
                   do i1 = 0,meshl(1)-1
                      i10 = i10 + 1
                      imesh = imesh + 1
                      j1 = mod( i10-i0(1)+10*meshG(1), meshG(1) )
                      j2 = mod( i20-i0(2)+10*meshG(2), meshG(2) )
                      j3 = mod( i30-i0(3)+10*meshG(3), meshG(3) )
-                     v(imesh) = v(imesh) +
-     $                    v0 + f(1)*j1 + f(2)*j2 + f(3)*j3
+              v(imesh) = v(imesh) +
+     &             v0 + f(1)*j1 + f(2)*j2 + f(3)*j3
                   enddo
                enddo
             enddo
          endif
-      endif
 
 C     Copy the electric field to the output array
       do ix = 1,3

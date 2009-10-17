@@ -89,6 +89,7 @@ C     Local variables
      &                               iniY, iniZ, dimY, dimZ
       type(meshDisType),  pointer :: distr
 !------------------------------------------------------------------------- BEGIN
+      call timer( 'INIME', 1 )
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 7 )
 #endif
@@ -161,6 +162,7 @@ C       distribution and the previous ones.
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 0 )
 #endif
+      call timer( 'INIME', 2 )
 !--------------------------------------------------------------------------- END
       end subroutine initMeshDistr
 
@@ -1913,6 +1915,7 @@ C     Local variables
       integer,            pointer :: PROCS(:)
       integer                     :: MPIerror, Status(MPI_Status_Size)
 !------------------------------------------------------------------------- BEGIN
+      call timer( 'SPLOAD', 1 )
 C     At the begining of the algorithm all the mesh is assigned to the
 C     first node:  oDistr%box(*,*,1) = nm
       oDistr%box(1,1,1) = 1
@@ -2032,6 +2035,7 @@ C           We should actualize the numbers of processes associated to PP and QQ
       enddo
 
       call de_alloc( PROCS, 'PROCS', 'moreMeshSubs')
+      call timer( 'SPLOAD', 2 )
 !--------------------------------------------------------------------------- END
       end subroutine splitwload
 

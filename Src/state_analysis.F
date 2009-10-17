@@ -39,6 +39,9 @@
       real(dp), external :: volcel
 
 !------------------------------------------------------------------------- BEGIN
+#ifdef DEBUG
+      call write_debug( '  PRE state_analysis' )
+#endif
 !     Save structural information in crystallographic format,
 !     and canonical Zmatrix (if applicable) before moving the atoms
       if (cml_p) then
@@ -141,6 +144,9 @@
       if (cml_p) then
          call cmlEndModule(mainXML)         
       endif 
+#ifdef DEBUG
+      call write_debug( '  POS state_analysis' )
+#endif
 !--------------------------------------------------------------------------- END
       END subroutine state_analysis
 

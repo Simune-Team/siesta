@@ -45,6 +45,7 @@ C     Local variables
      &                          r2sp(nsp)
 
 !------------------------------------------------------------------------- BEGIN
+      call timer( 'PHION', 1 )
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 15 )
 #endif
@@ -133,5 +134,6 @@ C     Find indexes and values of atomic orbitals at mesh points
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 0 )
 #endif
+      call timer( 'PHION', 2 )
 !--------------------------------------------------------------------------- END
       end subroutine PhiOnMesh

@@ -72,10 +72,9 @@ C
 
       data K0   /3*0.0_dp/
       data TINY /1.0e-15_dp/
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 2 )
+#ifdef DEBUG
+        call write_debug( '    PRE poison' )
 #endif
-
 #ifdef MPI
 C Place MPI barrier here so that any waiting time for all
 C nodes to reach this point isn't included in the time for
@@ -212,8 +211,8 @@ C Stop time counter
 C Free local memory
       call de_alloc( CG, 'CG', 'poison' )
 
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 0 )
+#ifdef DEBUG
+        call write_debug( '    POS poison' )
 #endif
       end
 
