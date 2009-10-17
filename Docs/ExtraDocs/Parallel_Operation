@@ -1,0 +1,6 @@
+Compilation tips
+When not to use the parallel version (very small systems)
+Normal vs ParallelOverK (missing bands and writewave implementation)
+Choice of x-direction for load-balancing (pre-BSC)
+What kind of scalability to expect.
+

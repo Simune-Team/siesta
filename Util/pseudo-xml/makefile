@@ -11,7 +11,7 @@
 .PHONY: xml clean
 #
 #  The arch.make file is supposed to be in $(OBJDIR). This is normally
-#  the top Src, but if you are using architecture-dependent build directories
+#  the top Obj, but if you are using architecture-dependent build directories
 #  you might want to change this. (If you do not understand this, you do not
 #  need to change anything. Power users can do "make OBJDIR=Whatever".)
 #

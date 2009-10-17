@@ -78,7 +78,7 @@ OBJS =  domain_decom.o automatic_cell.o atom_options.o \
 	efield.o egandd.o ener3.o ener3lomem.o extrapolon.o \
 	fixed.o flib_spline.o gradient.o gradientlomem.o grdsam.o \
 	hsparse.o idiag.o  initatom.o inver.o iodm_netcdf.o \
-	iodmhs_netcdf.o iodm.o iogrid_netcdf.o iohs.o iolwf.o iozm.o ipack.o iopipes.o \
+	iodmhs_netcdf.o iogrid_netcdf.o iohs.o iolwf.o iozm.o ipack.o iopipes.o \
 	iowfs_netcdf.o kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o local_DOS.o\
 	madelung.o matel.o meshmatrix.o memory.o meshsubs.o metaforce.o \
         m_check_supercell.o m_filter.o mulliken.o minvec.o m_pulay.o naefs.o \
@@ -186,7 +186,7 @@ $(FDF):
 #
 # Routines using fdf calls.
 #
-dhscf.o iodm.o iohs.o iolwf.o  grdsam.o : $(FDF)
+dhscf.o iohs.o iolwf.o  grdsam.o : $(FDF)
 recoor.o outcoor.o ioxv.o m_iostruct.o kgrid.o kgridinit.o ksv.o : $(FDF)
 redata.o siesta.o diagon.o pdos.o plcharge.o: $(FDF)
 coor.o cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o  ofc.o : $(FDF)
@@ -688,13 +688,6 @@ write_raw_efs.o: atmfuncs.o atomlist.o precision.o siesta_geom.o
 write_subs.o: alloc.o atomlist.o m_energies.o m_forces.o m_iostruct.o m_spin.o
 write_subs.o: m_steps.o m_stress.o parallel.o precision.o siesta_cml.o
 write_subs.o: siesta_geom.o siesta_options.o units.o zmatrix.o
-write_subs_energies.o: m_energies.o m_spin.o m_steps.o siesta_cml.o
-write_subs_energies.o: siesta_options.o units.o
-write_subs_positions.o: atomlist.o m_iostruct.o m_steps.o siesta_cml.o
-write_subs_positions.o: siesta_geom.o siesta_options.o units.o zmatrix.o
-write_subs_pressure.o: atomlist.o m_energies.o m_forces.o m_iostruct.o
-write_subs_pressure.o: m_steps.o m_stress.o parallel.o precision.o siesta_cml.o
-write_subs_pressure.o: siesta_geom.o siesta_options.o units.o
 writewave.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o kpoint_grid.o
 writewave.o: parallel.o parallelsubs.o precision.o siesta_geom.o sys.o units.o
 xc.o: alloc.o precision.o sys.o xcmod.o
@@ -772,3 +765,5 @@ on_main.o: onmod.o
 printmat.o: printmatrix.o
 tiempo.o: timer.o
 version_info.o: version.o
+write_subs_positions.o: write_subs.o
+write_subs_pressure.o: write_subs.o

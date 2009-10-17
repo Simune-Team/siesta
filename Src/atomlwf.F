@@ -406,8 +406,8 @@ C Assign ramdom guess for orbitals in atom ia if iopt = 0
                 endif
               endif
             enddo
-30					continue
-	        enddo
+ 30      continue
+      enddo
 !! Note that the target of the 'goto 30' is such that a "cycle" statement
 !! is emulated.
 

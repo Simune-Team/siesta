@@ -5,6 +5,110 @@
 ** CHANGES ALONG bsc-2.8 branch (bsc-trunk)
 
 -------------------------------------------------------------------------
+2009-08-26  10:45 GMT Alberto Garcia <albertog@icmab.es>      bsc-289
+Synch with trunk (2.6.32)
+
+* Documentation updates. Building and cosmetic fixes
+* Speed-up of density-matrix building in diagk
+
+removed:
+  Src/filter/
+  Src/filter/README
+  Src/filter/ba-6s-orb.dat
+  Src/filter/core.dat
+  Src/filter/f2kcli.F90
+  Src/filter/m_filter.f90
+  Src/filter/m_getopts.f90
+  Src/filter/makefile
+  Src/filter/test_filter.f90
+  Src/filter/ti-3p-orb.dat
+  Src/filter/ti-4p-orb.dat
+  Src/write_subs_energies.F
+  Src/write_subs_positions.F
+  Src/write_subs_pressure.F
+added:
+  Docs/ExtraDocs/
+  Docs/ExtraDocs/00_README_FIRST
+  Docs/ExtraDocs/Analysis_Tools
+  Docs/ExtraDocs/Basis_Generation
+  Docs/ExtraDocs/CML_Output
+  Docs/ExtraDocs/Code_RoadMap
+  Docs/ExtraDocs/Compilation
+  Docs/ExtraDocs/Eggbox_Effect
+  Docs/ExtraDocs/File_Formats
+  Docs/ExtraDocs/Geometry_Optimization
+  Docs/ExtraDocs/Molecular_Dynamics
+  Docs/ExtraDocs/OrderN_Operation
+  Docs/ExtraDocs/Parallel_Operation
+  Docs/ExtraDocs/SCF_Convergence
+  Docs/ExtraDocs/Scripting_Utilities
+  Docs/release.notes_3.0
+  Src/Confs/README
+  Src/Sys/DOCUMENTED-TEMPLATE.make
+  Util/DensityMatrix/read_dm.m
+  Util/DensityMatrix/read_dmhs.m
+  Util/Grid/README
+  Util/HSX/README
+  Util/MD/README
+  Util/Scripting/eggbox_checker.py
+  Util/test-xml/
+  Util/test-xml/README
+  Util/test-xml/compare_m.f90
+  Util/test-xml/corresponding_node.f90
+  Util/test-xml/flib_dom.f90
+  Util/test-xml/fox-makefile
+  Util/test-xml/m_compare_tol.f90
+  Util/test-xml/m_dom_attribute.f90
+  Util/test-xml/m_dom_debug.f90
+  Util/test-xml/m_dom_document.f90
+  Util/test-xml/m_dom_element.f90
+  Util/test-xml/m_dom_error.f90
+  Util/test-xml/m_dom_namednodemap.f90
+  Util/test-xml/m_dom_node.f90
+  Util/test-xml/m_dom_nodelist.f90
+  Util/test-xml/m_dom_parse.f90
+  Util/test-xml/m_dom_types.f90
+  Util/test-xml/m_dom_utils.FoX.f90
+  Util/test-xml/m_dom_utils.f90
+  Util/test-xml/m_strings.f90
+  Util/test-xml/makefile
+  Util/test-xml/string_utilities.f90
+  Util/test-xml/test.f90
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/FoX/fsys/fox_m_fsys_abort_flush.F90
+  Src/FoX/wcml/m_wcml_molecule.F90
+  Src/Makefile
+  Src/Sys/README
+  Src/Sys/nolibs.make
+  Src/atomlwf.F
+  Src/denmat.F
+  Src/denmatlomem.F
+  Src/diagk.F
+  Src/f2kcli.F90
+  Src/m_filter.f90
+  Src/md_out.F90
+  Src/mixer.F
+  Src/new_dm.F
+  Src/siesta_move.F
+  Src/xmlparser/f2kcli.F90
+  Util/COOP/Makefile
+  Util/Denchar/Src/Makefile
+  Util/DensityMatrix/README
+  Util/DensityMatrix/makefile
+  Util/Macroave/Docs/macroave.tex
+  Util/Macroave/Src/Makefile
+  Util/Macroave/Src/permute.F
+  Util/Scripting/README
+  Util/VCA/README
+  Util/Vibra/Src/Makefile
+  Util/WFS/makefile
+  Util/pdosxml/makefile
+  Util/pseudo-xml/makefile
+  version.info
+
+-------------------------------------------------------------------------
 2009-08-13  16:45 GMT Alberto Garcia <albertog@icmab.es>	bsc-288
 Synch with trunk (except TranSiesta) (redone)
 

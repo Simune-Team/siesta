@@ -31,7 +31,7 @@
 #ifdef MPI
       real(dp)              :: buffer1
 #endif
-      external              :: iodm, mulliken
+      external ::  mulliken
 
 !------------------------------------------------------------------------- BEGIN
 ! Mix input and output energy-density and density matrices ............
