@@ -188,10 +188,10 @@ c_str = char(str)
 !print*, "string:","|",char(str),"|"
 if (is_integer(str)) then
    if (string_utilities_debug) print *,"          str_to_scalar: string is integer:",c_str
-   read(c_str,"(i3)"),int
+   read(c_str,"(i3)") int
    scal = real(int)
 else
-   read(c_str,"(f16.6)"),scal
+   read(c_str,"(f16.6)") scal
 endif
 if (string_utilities_debug) print *,"          str_to_scalar: Scalar:|",scal,"|"
 end function str_to_scalar

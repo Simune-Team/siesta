@@ -66,16 +66,7 @@ C BEGIN
 c=======================================================================
 
 
-C FDN Teste
-C      do i=0,nc-1 
-C       write(*,'(12F8.3)') (dreal(Hbig(i+j*no)),j=0,nc-1)
-C      enddo
-C      write(*,*)
-C      do i=0,nc-1 
-C       write(*,'(12F8.3)') (dimag(Hbig(i+j*no)),j=0,nc-1)
-C      enddo
-C      stop
-C FDN Teste 
+
 
 
 
@@ -128,16 +119,7 @@ c
          end do                 !i
       end do                    !j
 
-C FDN Teste
-C      do i=0,nc-1 
-C       write(*,'(12F8.3)') (dreal(U(i+j*no)),j=0,nc-1)
-C      enddo
-C      write(*,*)
-C      do i=0,nc-1 
-C       write(*,'(12F8.3)') (dimag(U(i+j*no)),j=0,nc-1)
-C      enddo
-C      stop
-C FDN Teste 
+
 
 
 
@@ -151,16 +133,7 @@ C FDN Teste
          end do                 !i
       end do                    !j
 
-C FDN Teste
-C      do i=0,nc-1 
-C       write(*,'(12F8.3)') (dreal(iU(i+j*nc)),j=0,nc-1)
-C      enddo
-C      write(*,*)
-C      do i=0,nc-1 
-C       write(*,'(12F8.3)') (dimag(iU(i+j*nc)),j=0,nc-1)
-C      enddo
-C      stop
-C FDN Teste 
+
 
 
 
@@ -172,16 +145,7 @@ C FDN Teste
       call zgemm('N','N',nc,nc,ngl,b,U,nc,iU,
      &  ngl,a,sigmaL,nc)      
 
-C FDN Teste
-C      do i=0,nc-1 
-C       write(*,'(12F8.3)') (dreal(sigmaL(i+j*nc)),j=0,nc-1)
-C      enddo
-C      write(*,*)
-C      do i=0,nc-1 
-C       write(*,'(12F8.3)') (dimag(sigmaL(i+j*nc)),j=0,nc-1)
-C      enddo
-C      stop
-C FDN Teste 
+
 
 
 
@@ -245,16 +209,7 @@ c
       call zgemm('N','N',nc,nc,ngr,b,U,nc,iU,
      &  ngr,a,sigmar,nc)     
 
-C FDN Teste
-C      do i=0,nc-1 
-C       write(*,'(12F8.3)') (dreal(sigmaR(i+j*nc)),j=0,nc-1)
-C      enddo
-C      write(*,*)
-C      do i=0,nc-1 
-C       write(*,'(12F8.3)') (dimag(sigmaR(i+j*nc)),j=0,nc-1)
-C      enddo
-C      stop
-C FDN Teste 
+
 
 
 c
@@ -276,32 +231,13 @@ c
       end do                    !j
 
 
-C FDN Teste
-C      do i=0,nc-1 
-C       write(*,'(12F8.3)') (dreal(Hc(i+j*nc)),j=0,nc-1)
-C      enddo
-C      write(*,*) 'Hc'
-C      do i=0,nc-1 
-C       write(*,'(12F8.3)') (dimag(Hc(i+j*nc)),j=0,nc-1)
-C      enddo
-C      stop
-C FDN Teste 
+
 
 
       call csolve(nc,Hc,GF,ipvt,joutfile)
 
 
-C FDN Teste
-C      write(*,*)
-C      do i=0,nc-1 
-C       write(*,'(12F8.3)') (dreal(GF(i+j*nc)),j=0,nc-1)
-C      enddo
-C      write(*,*) nc
-C      do i=0,nc-1 
-C       write(*,'(12F8.3)') (dimag(GF(i+j*nc)),j=0,nc-1)
-C      enddo
-C      stop
-C FDN Teste 
+
 
 
 
@@ -325,16 +261,7 @@ c GammaL -> [U], GammaR -> [iU]
 
 
 
-C FDN Teste
-C      do i=0,nc-1 
-C       write(*,'(12F8.3)') (dreal(iU(i+j*nc)),j=0,nc-1)
-C      enddo
-C      write(*,*) 'gamar'
-C      do i=0,nc-1 
-C       write(*,'(12F8.3)') (dimag(iU(i+j*nc)),j=0,nc-1)
-C      enddo
-C      stop
-C FDN Teste 
+ 
 
 
 
@@ -366,16 +293,7 @@ c     GF*.GammaR.GF == GF*.[Hc] -> [iU]
       CALL zgemm('C','N',nc,nc,nc,dcmplx(1d0,0d0),
      &     GF,nc,Hc,nc,dcmplx(0d0,0d0),iU,nc) 
 
-C FDN Teste
-C      do i=0,nc-1 
-C       write(*,'(12F8.3)') (dreal(iU(i+j*nc)),j=0,nc-1)
-C      enddo
-C      write(*,*) 'iu' 
-C      do i=0,nc-1 
-C       write(*,'(12F8.3)') (dimag(iU(i+j*nc)),j=0,nc-1)
-C      enddo
-C      stop
-C FDN Teste 
+
 
 
 
@@ -384,39 +302,13 @@ C FDN Teste
 
 c     GammaL.GF*.GammaR.GF == [U].[iU] -> tt
 
-C FDN Teste
-C      do i=0,nc-1 
-C       write(*,'(12F8.3)') (dreal(U(i+j*nc)),j=0,nc-1)
-C      enddo
-C      write(*,*)
-C      do i=0,nc-1 
-C       write(*,'(12F8.3)') (dimag(U(i+j*nc)),j=0,nc-1)
-C      enddo
-C      write(*,*)
-C      do i=0,nc-1 
-C       write(*,'(12F8.3)') (dreal(iU(i+j*nc)),j=0,nc-1)
-C      enddo
-C      write(*,*)
-C      do i=0,nc-1 
-C       write(*,'(12F8.3)') (dimag(iU(i+j*nc)),j=0,nc-1)
-C      enddo
-C      stop
-C FDN Teste 
+
 
 
        CALL zgemm('N','N',nc,nc,nc,dcmplx(1d0,0d0),
      &      U,nc,iU,nc,dcmplx(0d0,0d0),tt,nc)
 
-C FDN Teste
-C      do i=0,nc-1 
-C       write(*,'(12F8.3)') (dreal(tt(i+j*nc)),j=0,nc-1)
-C      enddo
-C      write(*,*)
-C      do i=0,nc-1
-C       write(*,'(12F8.3)') (dimag(tt(i+j*nc)),j=0,nc-1)
-C      enddo
-C      stop
-C FDN Teste 
+
 
 
       do i=0,nc*nc - 1

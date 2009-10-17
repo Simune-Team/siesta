@@ -42,6 +42,12 @@ C The use of this program is allowed for not-for-profit research only.
 C Copy or disemination of all or part of this package is not
 C permitted without prior and explicit authorization by the authors.
 C
+C ================================================================
+C Modified by F. D. Novaes to allow calculations with k-point 
+C samplings other than gamma point.
+C ================================================================
+C
+C
 C Assumes listh and listd are the same
 C
 C
@@ -71,10 +77,10 @@ C FDN
       use m_ts_io, only : read_green
       use m_ts_electrode, only : green
 #ifdef MPI
-      use m_ts_scattering, only : consHSp, getsfe, getGF, getGF_Tri, 
+      use m_ts_scattering, only : consHSp, getsfe, getGF_Tri, 
      .                            GFGammaGF, weightDM, weightDMC
 #else
-      use m_ts_scattering, only : consHS, getsfe, getGF, getGF_Tri,
+      use m_ts_scattering, only : consHS, getsfe, getGF_Tri,
      .                            GFGammaGF, weightDM, weightDMC
 #endif
       use sys
@@ -94,23 +100,17 @@ c======================================================================
       real*8 toPi
       parameter(toPi=2d0/Pi)
 c======================================================================
-c FROM FDF
+
 
       character*33 gffileLeft,gffileRight, gffile_default
-
-C Put in m_ts-options
-C      logical UseBulk           ! If true use bulk params. in L/R regions
-C      logical FixQ              ! Fix charge in Contact region to initial SIESTA value
 
 C From fdf read voltfdf, Volt=voltfdf/eV
       real*8 Volt               ! the bias voltage
 
 C      integer NBUFATL,NBUFATR   ! No. buffer atoms, L/R
       integer NBUFL,NBUFR       ! No. buffer states, L/R
-C      logical TriDiag           ! true if tridiagonalization
-C FDN Put in m_ts_options
-C      logical updatedmcr
-C FDN
+
+
 
 c =====================================================================
 c   FROM SIESTA:
@@ -210,7 +210,8 @@ c Internal representation of H,S,DM and other quantities:
 c                               !i.e. no. used orbitals
 
 c Full Green's function, H and S of contact:
-      complex*16, dimension(:), allocatable :: GF,H,S
+      complex*16, dimension(:), allocatable :: H,S
+      complex*16, dimension(:), pointer :: GF
 
 c     To save space we will save the temporary DML,EDML in DM,EDM. 
 c     contour part of DM integration 
@@ -320,9 +321,9 @@ c Save
       save NGL2,NA1L,NA2L,nqL,nuaL
       save NGR2,NA1R,NA2R,nqR,nuaR
 
-C FDN Teste
+C FDN
       save NGL,NGR,kpargamma
-C FDN Teste
+C FDN
 
       save jout
       save NCONTOUR,NCONTOUR0
@@ -372,19 +373,8 @@ C Get Node number
 #endif
       IONode=.false.
       if(Node.eq.1) IONode=.true.
-
-C FDN Teste
-C       nou=1474
-C       NGL=405
-C       NGR=405
-C       allocate(H(nou*nou) )
-C       allocate(S(nou*nou))
-C       allocate(SFEL(NGL,NGL))
-C       allocate(SFER(NGR,NGR))
-C       allocate(GF(nou*nou))
-C       call  getGF_Tri(USEBULK,nou,NGL,NGR,H,S,SFEL,SFER,Z,GF,ierr)
-C       stop
-C FDN Teste
+      
+      nullify(GF)
 
 c ============================================================
 c       ----------- BEGIN: first time only ------------
@@ -701,16 +691,6 @@ c
          endif
 
 
-
-C FDN
-C         if(nspin.NE.1) then 
-C            if(Node.eq.0)
-C     .      write(6,*) 'ERROR: No spin polarization yet !!'
-C            call die( 'ERROR: No spin polarization yet !!')
-C         end if
-C FDN
-
-
 #ifdef MPI
          if(.not. gamma) then
          allocate(indxuo1(no))          
@@ -916,8 +896,19 @@ c     Always fix bonds between Left/Right electrodes:
                if(UseBulk) then !update only where Ham is updated:
                   if(ic.gt.NGL .and. ic.lt.nou-NGR+1) ioinC=.true.
                   if(jc.gt.NGL .and. jc.lt.nou-NGR+1) joinC=.true.
-c                  updatedm = ioinC .or. joinC
-                  updatedm = ioinC .and. joinC
+C FDN From fdf Now
+                  if( .not. updatedmcr ) then                
+c
+c              update the cross DM terms between R,L and  C
+c
+                     updatedm = ioinC .or. joinC
+                  else
+c
+c              update DM only in C
+c
+                     updatedm = ioinC .and. joinC
+C FDN
+                  end if
                else
                   if(ic.ge.1 .and. ic.le.nou) ioinC=.true.
                   if(jc.ge.1 .and. jc.le.nou) joinC=.true.
@@ -968,12 +959,7 @@ c
 c      end if                    !firsttime
       end if                    !TSiscf ==1
 
-c        if(Node.eq.0) then 
-c           write(jout,'(a,f8.3)') 'From SIESTA: Efermi=',ef/eV
-c           write(jout,'(a,f8.3)')'qc0 :',Qc0
-c           write(jout,'(a,f8.3)')'qcn0 :',Qcn0
-c           write(jout,*) 'nou,NGL,NGR:',nou,NGL,NGR
-c        end if    
+   
 
 c----------------------------------------------
 c Allocation
@@ -1090,16 +1076,12 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 
-
-c     TODO: THIS IS WHERE WE PUT THE k_||-POINT loop:
 C FDN kpar loop
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         do ikpar=1,nkpar           ! kpar loop
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
-C         k(1)=0d0
-C         k(2)=0d0
-C         k(3)=0d0
+
          k(:)=kpar(:,ikpar)
 
 
@@ -1152,12 +1134,13 @@ c setup hamiltonian
      .                k,nuo,H,S,ef,nou, NGL,NGR,NBUFL,NBUFR)
 #endif
 
-
+      
 C=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
       do 7913 iPE = 1, NPARACONTOUR ! loop over parallel contour points
 C=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
 
-         allocate(GF(nou*nou))
+C         allocate(GF(nou*nou))
+         
 
 c       if(Node.eq.0.and.iPE.eq.1) write(6,*)iPE
 
@@ -1203,21 +1186,19 @@ c RIGHT:
      &        Nodes,points2read(iPE),errorgs,ikpar)
 
 C FDN
-
+          
 #ifdef MPI
        call MPI_Bcast(errorgs,1,MPI_logical,0,MPI_Comm_World,MPIerror)
 #endif
        if(errorgs) call die('ERROR in getsfe') 
 
-
+       
 c Calculate Full GF at energy point
        ierr=0
 
-       if(TriDiag) then
-          call  getGF_Tri(USEBULK,nou,NGL,NGR,H,S,SFEL,SFER,Z,GF,ierr)
-       else
-          call  getGF(USEBULK,nou,H,S,NGL,SFEL,NGR,SFER,Z,GF,ierr) 
-       endif
+       call  getGF_Tri(USEBULK,nou,NGL,NGR,H,S,SFEL,SFER,Z,GF,ierr,
+     . TriDiag)
+      
 #ifdef MPI
 C FDN
       if (Nodes.gt.1)  then
@@ -1232,7 +1213,6 @@ C FDN
             write(jout,*) 'ERROR: getGF MATRIX INVERSION FAILED'
          endif 
       END IF
-
 
 
 c -------------------------------------------------------------
@@ -1250,7 +1230,7 @@ C FDN Complex for k sampling
               end if
 C FDN
             end do              !i
-
+    
 
 c -------------------------------------------------------------
 c     Right Equilibrium Contour:
@@ -1268,7 +1248,7 @@ C FDN Complxe for k sampling
 C FDN
             enddo
 
-
+        
 c -------------------------------------------------------------
 c     Non-equilibrium part:
          else if(Part .eq. 'V') then
@@ -1292,7 +1272,6 @@ C FDN Complexe for k sampling
               end if
 C FDN
             end do
-
 c  Calculate rho^L(e) -> work2 ! NOTE L!!
 
         call GFGammaGF(jout,.true.,nou,NGL,GF,GAMMAL,work2)
@@ -1316,8 +1295,9 @@ c -------------------------------------------------------------
      .      write(6,*) 'TRANSIESTA: ERROR in contour setup!'
            call die ('TRANSIESTA: ERROR in contour setup!')
          end if                 !which part of the contour ??
+! As a pointer it MUST be deallocated
          deallocate(GF)
-
+         
 
 C=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
  7913    continue               ! the loop over ALL contour points
@@ -1378,9 +1358,7 @@ C FDN kpargamma
        DMCplx = work1Cplx
 
        work1Cplx = 0.0d0
-C FDN Teste
-C       write(*,*) size(EDMCplx),Node 
-C FDN Teste
+
        call MPI_AllReduce(EDMCplx,work1Cplx,nou*nou,
      .     DAT_dcomplex,MPI_sum,MPI_Comm_World,MPIerror)
        EDMCplx = work1Cplx
@@ -1429,16 +1407,15 @@ C FDN
        end if
 C FDN
       endif
-         
+      
 c--------------------------------------------------------------------
 c
 c     The original Hamiltonian from SIESTA was shifted ef: 
 c  -- thus we have a shift in EDM:
 
 C FDN
-C FDN Nao deveria ser ef simplesmente ??????
       if (kpargamma) then 
-       call daxpy(nou*nou,dcmplx(ef,0.d0),DM,1,EDM,1)
+       call daxpy(nou*nou,ef,DM,1,EDM,1)
       else 
 C FDN
        call zaxpy(nou*nou,dcmplx(ef,0.d0),DMCplx,1,EDMCplx,1)
@@ -1486,7 +1463,7 @@ C FDN
      .                 k(3)*xijg(3,ind) )
                 cphase =  exp( dcmplx(0d0,-1.0d0)*kxij )
                 ccphase = exp( dcmplx(0d0,+1.0d0)*kxij )
-
+      
         Dnewg(ind,ispin) = Dnewg(ind,ispin) + Dimag(
      . dcmplx(0.5d0*wkpar(ikpar),0d0)*(
      . cphase*DMCplx(ic+nou*(jc-1))+ccphase*DMCplx(jc+nou*(ic-1))
@@ -1500,10 +1477,11 @@ C FDN
                end if
 C FDN
              end if             !update DM,EDM
-
+       
           end do                !j
        end do                   !io
-
+! FDN Teste
+!      stop
 #else
 C FDN Initialized only once
         if ( ikpar == 1 ) then

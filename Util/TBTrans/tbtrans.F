@@ -26,7 +26,6 @@ C
 C------------------------------------------------------------------
  
       use hamil2
-C FDN New fdf
       use fdf
 C Module Routines 
       use m_tbt_options, only : tbt_read_options
@@ -86,8 +85,6 @@ c FROM FDF
 #ifdef MPI
       real*8, pointer :: kxybuff(:,:),wkxybuff(:)
 #endif MPI
-C FDN Now read from fdf
-C      integer NKxyA1,NKxyA2         ! Number of k-points in A1,A2 directions
       integer nkxy                ! Number of surface kxy-points
 #ifdef MPI
       integer nkxybuff
@@ -98,13 +95,13 @@ C      integer NKxyA1,NKxyA2         ! Number of k-points in A1,A2 directions
       integer NBUFL,NBUFR       ! No. buffer states, L/R
 
 
-C FDN Cell, kscell and kdisp for kpoints
+
       integer kscell(3,3)
       real*8  kdispl(3)
-C Added to read kpoint from fdf
+
       logical genlogic
       integer  iukp,lkp,jkp
-C FDN
+
 
 
 
@@ -229,26 +226,17 @@ c FDF-stuff:
       character*75 fname
      
      
-C FDN Not used
-C      character  slabel_default*59, sname_default*20
-
-     
-
+ 
       character paste*33
-C FDN Below
-C      external paste
-C FDN
-C Define FDF calls ....................................................
-C FDN Now module
-C      include 'fdf/fdfdefs.h'
-      external io_assign, io_close, paste
-C FDN      
 
-C FDN MPI
+      external io_assign, io_close, paste
+  
+
+
 #ifdef MPI
       integer :: MPIerror, Status(MPI_Status_Size),SendNode
 #endif MPI
-C FDN
+
 
 
 
@@ -515,8 +503,7 @@ c
             end if
 
 
-C FDN
-        
+       
             Current = 0.d0 
             bulkdosL=0.d0
             bulkdosR=0.d0
@@ -715,7 +702,7 @@ c ============================================================================
 #else
        write(joutfile,'(a22,1X,i2,1X,a16,i3)') 
      .      'Transport for spin ->',ispin,', kxy-point -> ', ikxy
-C FDN z component
+
        write(joutfile,'(a16,f5.3,1X,f5.3,1X,f5.3,a6,f6.4)') 
      . '         kxy=(',
      .      kxy(1,ikxy),kxy(2,ikxy),kxy(3,ikxy), '),w= ' ,wkxy(ikxy)
@@ -737,7 +724,7 @@ c SFEL/SFER  <------ GAAL/GAAR
 c----------------------------------------------------------------------
 c LEFT:  
          allocate(GAMMAL(NGL,NGL))        
-C FDN
+
 
  
          LJob=.true.
@@ -753,9 +740,9 @@ C FDN
 
          deallocate(GAMMAL) 
 
-C FDN Teste
+
          bulkdosL(iEn)=bulkdosL(iEn)-(dimag(zbulk)/Pi)*wkxy(ikxy)
-C FDN Teste       
+
 
 c debug
 c         if(iEn .eq.1) write(*,*) 
@@ -764,18 +751,18 @@ c     .        'hola: tbt H(1,28)=',H(1+nou*(28-1))
 
 c RIGHT:  
          allocate(GAMMAR(NGR,NGR))
-C FDN
+
          LJob=.false.
          RJob=.true.
          call green(joutfile,nkxy,kxy,wkxy,
      &        NEn,contour,WGF,EFermiR,zbulk,.false.,.true., 
      &  ispin, kpoint, zenergy,iEn)
 
-C FDN Teste
-         bulkdosR(iEn)=bulkdosR(iEn)-(dimag(zbulk)/Pi)*wkxy(ikxy)
-C FDN Teste
 
-C FDN 
+         bulkdosR(iEn)=bulkdosR(iEn)-(dimag(zbulk)/Pi)*wkxy(ikxy)
+
+
+
          call getsfe(USEBULK,joutfile,jgfR,
      &        HAAR,SAAR,ZEnergy,nqR,qR,wqR,
      &        ngR2,nuaR,lastoR,NA1R,NA2R,
@@ -894,26 +881,6 @@ C=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
  7913    continue               ! the loop over ALL Energies
 C =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
 
-C#ifdef MPI
-
-C#else       
-C         write(joutfile,*) 'Results:'
-C         write(joutfile,*) 'Volt, Current = ',Volt,Current
-C         write(joutfile,*) 
-C     .        '=================================
-C     .        ================================='
-C#endif
-
-
-!      deallocate(HAAL)
-!      deallocate(SAAL)
-!      deallocate(SFEL)
-!      deallocate(lastoL)
-     
-!      deallocate(HAAR)
-!      deallocate(SAAR)
-!      deallocate(SFER)
-!      deallocate(lastoR)
    
       deallocate(H)
       deallocate(S)
@@ -996,6 +963,10 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
             enddo
          end if ! nkxy > 0 
       end if  ! IOnode
+
+#ifdef MPI
+      call MPI_Barrier(MPI_Comm_World,MPIerror)
+#endif MPI
 
       if (.not. IOnode) then
          call MPI_Send(nkxy,1,MPI_integer,

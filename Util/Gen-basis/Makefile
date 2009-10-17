@@ -1,5 +1,5 @@
 #
-# Makefile for Ordejon-Lorente STM program
+# Makefile for stand-alone Gen-basis and ioncat
 #
 # The idea is to use the code in the top Src directory as much as possible.
 # This is achieved by the VPATH directive below.
@@ -14,38 +14,28 @@
 #  define an FC_SERIAL symbol in your top arch.make, to avoid linking
 #  in the mpi libraries even if we explicitly undefine MPI below.
 #  
-#------------- NOTE
-# Special needs for the use of FFTW
-# You must set these symbols properly, either here or in your
-# top arch.make
-#
-#FFTW_ROOT=$(HOME)/lib/fftw-ifort
-#FFTW_INCFLAGS= -I$(FFTW_ROOT)/include
-#FFTW_LIBS = -L$(FFTW_ROOT)/lib -lfftw3
-#-----------------------------------------
+#  The dependency list at the end is overly large, but harmless
 #
 OBJDIR=Obj
 #
-.SUFFIXES:
-.SUFFIXES: .f .F .o .a .f90 .F90
+.SUFFIXES: .f .F .o .a  .f90 .F90
 #
-VPATH:=$(shell pwd)/../../../../Src
+VPATH:=$(shell pwd)/../../Src
 #
-default: what stm
+default: what gen-basis ioncat
 #
 dep:
-	sfmakedepend --depend=obj  --modext=o *.f *.f90 *.F *.F90 \
-             $(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90 
-
+	sfmakedepend --depend=obj  --modext=o \
+          $(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90 
 #
-ARCH_MAKE=../../../../$(OBJDIR)/arch.make
+ARCH_MAKE=../../$(OBJDIR)/arch.make
 include $(ARCH_MAKE)
 #
 FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 #
-DEFS:=$(DEFS) $(DEFS_PREFIX)-UMPI $(DEFS_PREFIX)-UCDF
+DEFS:=$(DEFS) $(DEFS_PREFIX)-UMPI
 FPPFLAGS=$(DEFS)
 #
 # Uncomment the following line for debugging support
@@ -59,28 +49,29 @@ what:
 	@echo "arch.make file using the models in Sys"
 	@echo
 	@echo "Hit ^C to abort..."
-	@if [ -z "$(FFTW_LIBS)" ] ; then \
-           echo "You must set the FFTW symbols in Makefile" ; \
-           false ; \
-        fi
 	@sleep 2
 #
 SYSOBJ=$(SYS).o
 #
 # Note that machine-specific files are now in top Src directory.
 #
-OBJS_STM = atompla.o  \
-        bessph.o chkdim.o dismin.o \
-	dot.o fftw3_mymod.o extrapolate.o \
-        io.o iodm.o itochar.o length.o \
-        mainstm.o matvect.o memory.o \
-	neighb.o paste.o pxf.o \
-	radfft.o ranger.o recipes.o\
-        readstm.o readwaves.o \
-        redata.o  reinitstm.o stm.o \
-	vacpot.o volcel.o wrout.o 
+OBJS_GEN-BASIS=debugmpi.o \
+          precision.o alloc.o basis_types.o basis_specs.o recipes.o parallel.o \
+          parsing.o xcmod.o basis_io.o  chemical.o atm_transfer.o atm_types.o\
+          atmparams.o old_atmfuncs.o radial.o io.o \
+	  paste.o  flib_spline.o bessph.o  m_filter.o \
+          atom.o memoryinfo.o memory.o periodic_table.o\
+          pseudopotential.o pxf.o dot.o xc.o  atom_options.o arw.o  \
+          sys.o timer.o  xml.o m_walltime.o $(SYSOBJ) gen-basis.o
 #
-INCFLAGS:= $(FFTW_INCFLAGS) $(INCFLAGS)
+IONCAT_OBJS=f2kcli.o m_getopts.o ioncat.o basis_types.o precision.o  parallel.o \
+          parsing.o xcmod.o alloc.o atom_options.o basis_io.o  atm_types.o\
+          atmparams.o radial.o io.o memory.o chkdim.o\
+	  paste.o pseudopotential.o chemical.o  alloc.o \
+          basis_specs.o memoryinfo.o  m_memory.o periodic_table.o pxf.o \
+          xc.o flib_spline.o atmfuncs.o spher_harm.o\
+          sys.o timer.o  xml.o m_walltime.o $(SYSOBJ)
+
 #
 # Use the makefile in Src/fdf and all the sources there.
 #
@@ -92,24 +83,17 @@ $(FDF):
                           "ARCH_MAKE=../$(ARCH_MAKE)" \
                           "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 #
-# This is crude but will have to do for now.
-# Note : precision must be the first module
+gen-basis: $(FDF)  $(OBJS_GEN-BASIS)
+	$(FC) -o gen-basis \
+	       $(LDFLAGS) $(OBJS_GEN-BASIS) $(FDF) $(NETCDF_LIBS)
 #
-MOD_OBJS=precision.o parallel.o alloc.o memoryinfo.o sys.o listsc.o  \
-         atmparams.o atom_options.o atmfuncs.o   atm_types.o \
-         radial.o spher_harm.o  basis_io.o basis_types.o \
-         files.o flib_spline.o pseudopotential.o chemical.o xml.o
-#
-COM_OBJS_STM=$(OBJS_STM) $(SYSOBJ)
-ALL_OBJS_STM=$(MOD_OBJS) $(COM_OBJS_STM)
-#
-stm: $(FDF)  $(ALL_OBJS_STM)
-	$(FC) -o stm \
-	       $(LDFLAGS) $(ALL_OBJS_STM) $(FDF) $(FFTW_LIBS) 
+ioncat:  $(FDF) $(IONCAT_OBJS)
+	$(FC) -o ioncat \
+	       $(LDFLAGS) $(IONCAT_OBJS) $(FDF) $(NETCDF_LIBS)
 #
 clean:
 	@echo "==> Cleaning object, library, and executable files"
-	rm -f stm *.o  *.a
+	rm -f gen-basis ioncat *.o  *.a
 	rm -f *.mod
 	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
 
@@ -214,6 +198,7 @@ fire_optim.o: precision.o siesta_options.o units.o
 fixed.o: alloc.o parallel.o parsing.o precision.o
 flib_spline.o: precision.o
 forhar.o: alloc.o meshsubs.o precision.o
+fractional.o: f2kcli.o periodic_table.o precision.o pseudopotential.o sys.o
 get_target_stress.o: m_mpi_utils.o parallel.o precision.o units.o
 globalise.o: alloc.o onmod.o onmod.o precision.o spatial.o
 gradient.o: globalise.o m_mpi_utils.o onmod.o precision.o
@@ -238,6 +223,7 @@ iohs.o: precision.o siesta_geom.o sys.o
 iokp.o: files.o precision.o
 iolwf.o: alloc.o files.o onmod.o parallel.o parallelsubs.o precision.o sys.o
 iomd.o: files.o precision.o
+ioncat.o: atm_types.o atmfuncs.o basis_io.o m_getopts.o precision.o
 iopipes.o: parallel.o precision.o sys.o
 iowfs_netcdf.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
 ioxv.o: files.o parallel.o precision.o
@@ -320,6 +306,8 @@ mixer.o: atomlist.o iodm_netcdf.o m_broyden_mixing.o m_energies.o
 mixer.o: m_fire_mixing.o m_iodm.o m_mpi_utils.o m_pulay.o m_spin.o m_steps.o
 mixer.o: m_ts_io.o m_ts_options.o parallel.o siesta_geom.o siesta_options.o
 mixer.o: sparse_matrices.o
+mixps.o: f2kcli.o flib_spline.o periodic_table.o precision.o pseudopotential.o
+mixps.o: sys.o
 mneighb.o: alloc.o precision.o sys.o
 molecularmechanics.o: alloc.o parallel.o parsing.o precision.o sys.o units.o
 mpi_test.o: m_mpi_utils.o parallel.o precision.o
@@ -476,70 +464,3 @@ zm_fire_optim.o: m_fdf_global.o m_fire.o parallel.o precision.o
 zm_fire_optim.o: siesta_options.o units.o zmatrix.o
 zmatrix.o: alloc.o m_cell.o parallel.o parsing.o precision.o siesta_geom.o
 zmatrix.o: sys.o units.o
-atompla.o: sys.o
-extrapolate.o: fftw3_mymod.o precision.o
-mainstm.o: basis_io.o listsc.o parallel.o precision.o
-ranger.o: precision.o
-stm.o: atmfuncs.o chemical.o precision.o
-vacpot.o: precision.o
-band.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/bands.o
-diagmemory.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/memoryinfo.o
-listsc_module.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/listsc.o
-m_born_charge.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/born_charge.o
-m_broyden_optim.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/broyden_optim.o
-m_cell_broyden_optim.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/cell_broyden_optim.o
-m_cell_fire_optim.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/cell_fire_optim.o
-m_chempot.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/chempot.o
-m_compute_dm.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/compute_dm.o
-m_conjgr.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/conjgr.o
-m_conjgr_old.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/conjgr_old.o
-m_dynamics.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/dynamics.o
-m_fermid.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/fermid.o
-m_find_kgrid.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/find_kgrid.o
-m_fire_optim.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/fire_optim.o
-m_forhar.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/forhar.o
-m_hsparse.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/hsparse.o
-m_intramol_pressure.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/remove_intramol_pressure.o
-m_ioxv.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/ioxv.o
-m_ksv.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/ksv.o
-m_ksvinit.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/ksvinit.o
-m_local_dos.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/local_DOS.o
-m_minvec.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/minvec.o
-m_mixer.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/mixer.o
-m_new_dm.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/new_dm.o
-m_nlefsm.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/nlefsm.o
-m_norm.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/compute_norm.o
-m_normalize_dm.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/normalize_dm.o
-m_ordern.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/ordern.o
-m_overfsm.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/overfsm.o
-m_overlap.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/overlap.o
-m_post_scf_work.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/post_scf_work.o
-m_projected_dos.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/projected_DOS.o
-m_proximity_check.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/proximity_check.o
-m_radfft.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/radfft.o
-m_recipes.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/recipes.o
-m_scf_options.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/m_options.o
-m_scfconvergence_test.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/scfconvergence_test.o
-m_setup_hamiltonian.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/setup_hamiltonian.o
-m_siesta_analysis.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/siesta_analysis.o
-m_siesta_end.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/siesta_end.o
-m_siesta_forces.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/siesta_forces.o
-m_siesta_init.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/siesta_init.o
-m_siesta_move.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/siesta_move.o
-m_state_analysis.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/state_analysis.o
-m_state_init.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/state_init.o
-m_struct_init.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/struct_init.o
-m_timestamp.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/timestamp.o
-m_xyz_phiatm.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/matel.o
-m_zm_broyden_optim.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/zm_broyden_optim.o
-m_zm_fire_optim.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/zm_fire_optim.o
-mesh.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/meshsubs.o
-meshdscf.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/meshmatrix.o
-meshphi.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/meshsubs.o
-neighbour.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/mneighb.o
-on_core.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/onmod.o
-on_main.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/onmod.o
-version_info.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/version.o
-write_subs_energies.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/write_subs.o
-write_subs_positions.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/write_subs.o
-write_subs_pressure.o: /home/albertog/code/SIESTA/ag-beta-3.0/Util/STM/ol-stm/Src/../../../../Src/write_subs.o

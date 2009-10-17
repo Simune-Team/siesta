@@ -17,7 +17,7 @@
 #
 VPATH=.
 #
-default: what siesta # gen-basis fsiesta.o
+default: what siesta #  fsiesta.o
 #
 configure: configure.ac aclocal.m4
 	autoconf ${<D}/configure.ac
@@ -193,7 +193,6 @@ coor.o cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o  ofc.o : $(FDF)
 readsp.o eggbox.o iopipes.o : $(FDF)
 #
 atom.o basis_io.o basis_specs.o: $(FDF)
-gen-basis.o: $(FDF)
 #
 #
 ALL_OBJS=$(OBJS) $(SYSOBJ)
@@ -239,39 +238,6 @@ siesta: version $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
                $(COMP_LIBS) $(FoX_LIBS) $(LIBS) 
 #
 #------------------------------------------------------------------------
-GEN-BASIS_OBJS=alloc.o gen-basis.o basis_types.o precision.o recipes.o parallel.o \
-          parsing.o xcmod.o basis_io.o  chemical.o atm_transfer.o atm_types.o\
-          atmparams.o old_atmfuncs.o radial.o io.o \
-	  paste.o  flib_spline.o bessph.o m_filter.o \
-          basis_specs.o atom.o memoryinfo.o memory.o periodic_table.o\
-          pseudopotential.o dot.o xc.o  atom_options.o arw.o  \
-          sys.o timer.o  xml.o m_walltime.o $(SYSOBJ)
-# precision must be the first one here...
-gen-basis.o: $(FDF)
-gen-basis: version $(MPI_INTERFACE) $(FDF) $(WXML) \
-                 $(GEN-BASIS_OBJS) 
-	$(FC) -o gen-basis \
-	       $(LDFLAGS) $(GEN-BASIS_OBJS) $(MPI_INTERFACE) $(FDF) $(WXML) \
-               $(LIBS) 
-#
-#------------------------------------------------------------------------
-IONCAT_OBJS=f2kcli.o m_getopts.o ioncat.o basis_types.o precision.o  parallel.o \
-          parsing.o xcmod.o alloc.o atom_options.o basis_io.o  atm_types.o\
-          atmparams.o radial.o io.o memory.o chkdim.o\
-	  paste.o pseudopotential.o chemical.o  alloc.o \
-          basis_specs.o memoryinfo.o  m_memory.o periodic_table.o\
-          xc.o flib_spline.o atmfuncs.o spher_harm.o\
-          sys.o timer.o  xml.o m_walltime.o $(SYSOBJ)
-# precision must be the first one here...
-ioncat.o: $(FDF)
-ioncat: version $(MPI_INTERFACE) $(FDF) $(WXML) \
-                 $(IONCAT_OBJS) $(COMP_LIBS)
-	$(FC) -o ioncat \
-	       $(LDFLAGS) $(IONCAT_OBJS) $(MPI_INTERFACE) $(FDF) $(WXML) \
-               $(COMP_LIBS) $(LIBS) 
-#
-#------------------------------------------------------------------------
-# C FDN Begin: Makefile modifications for TranSIESTA
 #----------------------------------------------------------------------------
 # TranSIESTA...
 #
@@ -279,45 +245,16 @@ TS_OBJS= m_ts_options.o m_ts_aux_rout.o m_ts_kpoints.o \
          m_ts_io.o m_ts_scattering.o m_ts_contour.o m_ts_electrode.o \
          m_ts_in_siesta.o
 #
-transiesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
+transiesta: what version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
                     $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
 	$(FC) -o transiesta \
                $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(WXML) $(XMLPARSER)\
                $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(COMP_LIBS) $(FoX_LIBS) $(LIBS)
 #
-# C FDN End: Makefile modifications for TranSIESTA
-#
-
-# ---------------------------------------------------------------------------
-# Other auxiliary programs
-#----------------------------------------------------------------------------
-MT_OBJS=precision.o m_mpi_utils.o sys.o parallel.o 
-mpi_test: $(MPI_INTERFACE) $(MT_OBJS) mpi_test.o
-	$(FC) -o mpi_test \
-	       $(LDFLAGS) mpi_test.o $(MT_OBJS) $(MPI_INTERFACE) $(LIBS) 
-#----------------------------------------------------------------------------
-MIXPS_OBJS= f2kcli.o flib_spline.o mixps.o atom_options.o pseudopotential.o \
-            sys.o \
-            io.o pxf.o parallel.o periodic_table.o alloc.o memory.o memoryinfo.o
-
-mixps: $(MPI_INTERFACE)  $(FDF) $(MIXPS_OBJS)
-	$(FC) -o mixps \
-	       $(LDFLAGS) $(MIXPS_OBJS) $(FDF) $(MPI_INTERFACE) $(LIBS) 
-#----------------------------------------------------------------------------
-FRACTIONAL_OBJS= f2kcli.o alloc.o flib_spline.o fractional.o  atom_options.o \
-                 memory.o memoryinfo.o pseudopotential.o sys.o \
-            io.o pxf.o parallel.o periodic_table.o
-
-fractional: $(FDF) $(MPI_INTERFACE)  $(FRACTIONAL_OBJS)
-	$(FC) -o fractional \
-	       $(LDFLAGS) $(FRACTIONAL_OBJS) $(MPI_INTERFACE) $(FDF) $(LIBS) 
-#
-#------------------------------------------------------------------------
 #
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
-	rm -f siesta gen-basis ioncat  *.o  *.a *.pcl *.pc
-	rm -f mixps mpi_test
+	rm -f siesta  *.o  *.a *.pcl *.pc
 	rm -f *.mod
 	rm -f *.bck *~
 	rm -f aux_*.f aux_*.f90
@@ -447,9 +384,6 @@ fire_optim.o: precision.o siesta_options.o units.o
 fixed.o: alloc.o parallel.o precision.o
 flib_spline.o: precision.o
 forhar.o: alloc.o meshsubs.o moremeshsubs.o precision.o
-fractional.o: f2kcli.o periodic_table.o precision.o pseudopotential.o sys.o
-gen-basis.o: atom.o atom_options.o basis_io.o basis_specs.o basis_types.o
-gen-basis.o: old_atmfuncs.o parallel.o precision.o sys.o xcmod.o
 get_target_stress.o: parallel.o precision.o sys.o units.o
 globalise.o: alloc.o onmod.o onmod.o precision.o spatial.o
 gmres.o: alloc.o matrixop.o precision.o precond.o sys.o
@@ -479,7 +413,6 @@ iohs.o: parallelsubs.o precision.o siesta_geom.o sys.o
 iokp.o: files.o precision.o
 iolwf.o: alloc.o files.o onmod.o parallel.o parallelsubs.o precision.o sys.o
 iomd.o: files.o precision.o
-ioncat.o: atm_types.o atmfuncs.o basis_io.o m_getopts.o precision.o
 iopipes.o: parallel.o precision.o sys.o
 iowfs_netcdf.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
 ioxv.o: files.o parallel.o precision.o
@@ -567,13 +500,10 @@ mixer.o: atomlist.o iodm_netcdf.o m_broyden_mixing.o m_energies.o
 mixer.o: m_fire_mixing.o m_iodm.o m_mpi_utils.o m_pulay.o m_spin.o m_steps.o
 mixer.o: m_ts_io.o m_ts_options.o parallel.o siesta_geom.o siesta_options.o
 mixer.o: sparse_matrices.o
-mixps.o: f2kcli.o flib_spline.o periodic_table.o precision.o pseudopotential.o
-mixps.o: sys.o
 mneighb.o: alloc.o precision.o sys.o
 molecularmechanics.o: alloc.o parallel.o precision.o sys.o units.o
 moremeshsubs.o: alloc.o m_dhscf.o meshsubs.o parallel.o precision.o schecomm.o
 moremeshsubs.o: sys.o
-mpi_test.o: m_mpi_utils.o parallel.o precision.o
 mulliken.o: alloc.o atmfuncs.o parallel.o parallelsubs.o precision.o
 mulliken.o: siesta_cml.o
 naefs.o: atmfuncs.o mneighb.o precision.o

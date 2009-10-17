@@ -5,6 +5,13 @@
 ** CHANGES ALONG bsc-trunk
 
 -------------------------------------------------------------------------
+2009-10-17  16:50 GMT Alberto Garcia <albertog@icmab.es>    bsc-trunk-291
+Synch to trunk-296
+
+NOTES: Utils such as Denchar do not compile yet, as they still use
+the old fdf block interface.
+
+-------------------------------------------------------------------------
 2009-10-17  13:45 GMT Alberto Garcia <albertog@icmab.es>    bsc-trunk-290
 Merged transiesta code, pending complete tests (re-done)
 
