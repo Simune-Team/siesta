@@ -9,8 +9,7 @@
       use m_energies
 
       use sparse_matrices
-      USE siesta_options, only :occtol, g2cut, isolve, 
-     &                          fixspin, temp, neigwanted 
+      USE siesta_options
       use siesta_geom
       use atomlist,       only: indxuo, indxua           
       use atomlist,       only: qtot, no_u, no_l
@@ -63,7 +62,7 @@
         e2 = fdf_bvalues(pline,2)*factor
 
         !Find the density matrix for states between e1 and e2
-        if (isolve .eq. 0) then
+        if (isolve .eq. SOLVE_DIAGON) then
           call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
      .                numh, listhptr, listh, numh, listhptr, listh, 
      .                H, S, qtot, fixspin, qs, temp, e1, e2,

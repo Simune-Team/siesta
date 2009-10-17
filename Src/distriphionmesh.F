@@ -84,6 +84,7 @@ C     Local variables
 #endif
       call timer( 'REMESH', 1 )
 
+      call timer( 'RMSH.1', 1 )
       do ii= 1, nmpl
         numphi(ii) = 0
       enddo
@@ -110,8 +111,10 @@ C           If within range, add one to number of point orbitals
           endif
         enddo
       enddo
+      call timer( 'RMSH.1', 2 )
 
 #ifdef MPI
+      call timer( 'RMSH.2', 1 )
       if (nodes.gt.1) then
         nullify( wload )
         call re_alloc( wload, 1, nmpl, 'wload', 'distriPhiOnMesh' )
@@ -130,6 +133,7 @@ C       Free local memory
         call de_alloc( wload, 'wload', 'distriPhiOnMesh' )
 
       endif
+      call timer( 'RMSH.2', 2 )
       call timer( 'REMESH', 2 )
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 0 )

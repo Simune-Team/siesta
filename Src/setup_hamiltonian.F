@@ -30,7 +30,11 @@
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
-
+#ifdef TRANSIESTA
+!     TSS Begin
+      use m_ts_options, only: TSrun
+!     TSS End
+#endif /* TRANSIESTA */
       implicit none
       integer, intent(in) :: iscf
       real(dp)            :: stressl(3,3)
@@ -45,15 +49,21 @@
       real(dp)            :: g2max
 
 !------------------------------------------------------------------------- BEGIN
+#ifdef DEBUG
+      call write_debug( '  PRE setup_hamiltonian' )
+#endif
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 13 )
 #endif
       
-      ! Normalize density matrix to exact charge
-      ! In the first iteration we have the D already normalized
-      ! by setup_H0 ... ***
-      call normalize_dm(first=.false.)
-
+!     Normalize density matrix to exact charge
+!     In the first iteration we have the D already normalized
+!     by setup_H0 ... ***
+#ifdef TRANSIESTA      
+      if (.not.TSrun ) call normalize_dm( first=.false. )
+#else
+      call normalize_dm( first=.false. )
+#endif  /* TRANSIESTA */
       ! Initialize Hamiltonian with the non-SCF part...................
 
       do ispin = 1,nspin
@@ -118,7 +128,7 @@
 
 !** Can we trust the Entropy if iscf == 1 ??
       Entropy = 0.0_dp
-      if (isolve .eq. 0) then
+      if (isolve .eq. SOLVE_DIAGON) then
         if (istp.gt.1 .or. iscf.gt.1) then
           Entropy = Entrop
         endif
@@ -149,6 +159,9 @@
 
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 0 )
+#endif
+#ifdef DEBUG
+      call write_debug( '  POS setup_hamiltonian' )
 #endif
 !--------------------------------------------------------------------------- END
       END subroutine setup_hamiltonian

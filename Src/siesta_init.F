@@ -50,13 +50,17 @@
 #ifdef MPI
       use mpi_siesta,         only: mpi_comm_world
 #endif
-
+#ifdef TRANSIESTA
+! TSS Begin
+      use m_ts_options, only: read_ts_options
+      use m_ts_in_siesta, only: setup_ts_kpoint_grid
+! TSS End
+#endif /* TRANSIESTA */
       implicit none
 
 #ifdef MPI
       integer :: MPIerror  ! Return error code in MPI routines
 #endif
-
       real(dp):: veclen       ! Length of a unit-cell vector
 
 
@@ -68,7 +72,7 @@
 
 !------------------------------------------------------------------------- BEGIN
 #ifdef MPI
-C     Initialise MPI and set processor number
+!     Initialise MPI and set processor number
       call MPI_Init( MPIerror )
       call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
       call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
@@ -77,18 +81,17 @@ C     Initialise MPI and set processor number
         call die('siesta_init: ERROR: FDF module ' //
      .           'doesn''t have parallel support')
       endif
-
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 9 )
-#endif
 #endif
 #ifdef DEBUG
+!     Generates a debug file for every process to track the execution.
+!     The file is called debug.$(PID) Where PID is the process number.
+!     It also works in secuencial mode.
       call debugMpiOn( )
 #endif
       call inicializar_tiempo( 20 )
       IOnode = (Node .eq. 0)
 
-C     Print version information
+!     Print version information
       if (IOnode) then
         call prversion()
 #ifdef MPI
@@ -107,19 +110,19 @@ C     Print version information
          call wallclock('Start of run')
       endif
 
-C     Start time counter
+!     Start time counter
       call timer( 'siesta', 0 )
       call timer( 'siesta', 1 )
       call timer( 'Setup', 1 )
 
-C     Nullify arrays
+!     Nullify arrays
       nullify(Haux,Saux,psi)
       nullify(Dscf,Dold,Eold,Escf)
       nullify(listh)
       nullify(H,H0,S)
       nullify(xijo)
 
-C     Initialize some variables
+!     Initialize some variables
       DUext   = 0.0_dp
       Eharrs  = 0.0_dp
       Eharrs1 = 0.0_dp
@@ -133,45 +136,39 @@ C     Initialize some variables
       Entropy = 0.0_dp
       FreeE   = 0.0_dp
 
-C     Initialise read
+!     Initialise read
 #ifdef DEBUG
       call write_debug( '  PRE reinit' )
 #endif
-      call reinit(sname)
+      call reinit( sname )
 #ifdef DEBUG
       call write_debug( '  POS reinit' )
 #endif
 
-C     Initialize CML (relies on reinit)
-      call siesta_cml_init()
+!     Initialize CML (relies on reinit)
+      call siesta_cml_init( )
 
-C     Set allocation report level
+!     Set allocation report level
       level = fdf_get( 'alloc_report_level', 0 )
-#ifdef DEBUG
-      call write_debug( '  PRE alloc_report' )
-#endif
       call alloc_report( level=level, file=trim(slabel)//'.alloc',
      &                   printNow=.false. )
-#ifdef DEBUG
-      call write_debug( '  POS alloc_report' )
-#endif
 
-C     Initialise exchange-correlation functional information
-      call setXC()
+!     Initialise exchange-correlation functional information
+      call setXC( )
 
-C     Initialise force field component
-      call inittwobody()
+!     Initialise force field component
+      call inittwobody( )
 
-C     Initialize pseudopotentials and atomic orbitals
-      if (IOnode) call initatom(ns)
-      call broadcast(ns)
+!     Initialize pseudopotentials and atomic orbitals
+      if (IOnode) call initatom( ns )
+      call broadcast( ns )
 
-      call broadcast_basis()
+      call broadcast_basis( )
 
-      atmonly = fdf_get('Atom-Setup-Only',.false.)
-      if (atmonly) call bye("End of atom setup")
+      atmonly = fdf_get( 'Atom-Setup-Only', .false. )
+      if (atmonly) call bye( 'End of atom setup' )
 
-C     Read geometry
+!     Read geometry
 #ifdef DEBUG
       call write_debug( '  PRE struct_init' )
 #endif
@@ -180,23 +177,23 @@ C     Read geometry
       call write_debug( '  POS struct_init' )
 #endif
 
-C     Initialize atom lists
+!     Initialize atom lists
       call initatomlists( )    ! Sets iza
 
-C     early exit if only checking the structure
-      struct_only = fdf_get('Output-Structure-Only',.false.)
+!     early exit if only checking the structure
+      struct_only = fdf_get( 'Output-Structure-Only', .false. )
       if (IONode) then
          call write_struct( ucell, na_u, isa, iza, xa )
          if (lUseZmatrix) then
             call write_canonical_ucell_and_Zmatrix(
-     $                        filename="OUT.UCELL.ZMATRIX.INITIAL")
+     &                        filename="OUT.UCELL.ZMATRIX.INITIAL")
          endif
       endif
       if (struct_only) then
-         call bye("End of structure processing")
+         call bye( 'End of structure processing' )
       endif
       
-C     End of Initial Structure Processing
+!     End of Initial Structure Processing
       if (Node.eq.0) then
         write(6,'(/,a,20("*"),a,28("*"))')
      &    'siesta: ', ' Simulation parameters '
@@ -209,20 +206,20 @@ C     End of Initial Structure Processing
         write(6,'(a)')  'siesta:'
       endif
 
-C     Allocate other arrays based on read sizes
+!     Allocate other arrays based on read sizes
       nullify(fa,cfa)
       call re_alloc( fa, 1, 3, 1, na_u, 'fa', 'siesta_init' )
       call re_alloc( cfa, 1, 3, 1, na_u, 'cfa', 'siesta_init' )
 
       call init_spin( )
 
-C     Read simulation data
-#ifdef DEBUG
-      call write_debug( '  PRE read_options' )
-#endif
+!     Read simulation data
       call read_options( na_u, ns, nspin )
-#ifdef DEBUG
-      call write_debug( '  POS read_options' )
+
+#ifdef TRANSIESTA
+!     Read TS Input options
+      call read_ts_options( )
+!     TSS End
 #endif
 
       qtot = qtot - charnet     ! qtot set in initatomlists
@@ -238,9 +235,9 @@ C     Read simulation data
       if (lUseZmatrix) then
          if (idyn .ne. 0) then
             write(6,"(a)")
-     $      " *** WARNING: Zmatrix form will be used only for input !!"
+     &      " *** WARNING: Zmatrix form will be used only for input !!"
             write(0,"(a)")
-     $      " *** WARNING: Zmatrix form will be used only for input !!"
+     &      " *** WARNING: Zmatrix form will be used only for input !!"
          endif
       endif
 
@@ -262,63 +259,69 @@ C     Read simulation data
         endif
       endif
 
-C     Find maximum interaction range
+!     Find maximum interaction range
       if (negl) then
         rmaxh = 2.0_dp*rmaxo
       else
         rmaxh = 2.0_dp*rmaxo + 2.0_dp*rmaxkb
       endif
 
-C     Madelung correction for charged systems
+!     Madelung correction for charged systems
       if (charnet .ne. 0.0_dp) then
         call madelung(ucell, shape, charnet, Emad)
       endif
 
-C     Parallel initialisation
+!     Parallel initialisation
 #ifdef DEBUG
       call write_debug( '  PRE initparallel' )
 #endif
-      call initparallel(no_u,na_u,lasto,xa,ucell,rmaxh,rcoor,isolve)
+      call initparallel( no_u, na_u, lasto, xa, ucell, rmaxh )
 #ifdef DEBUG
       call write_debug( '  POS initparallel' )
 #endif
-C      if (IOnode) call show_distribution()
+!      if (IOnode) call show_distribution( )
 
-C     Find number of locally stored orbitals and allocated related arrays
+!     Find number of locally stored orbitals and allocated related arrays
       call GetNodeOrbs(no_u,Node,Nodes,no_l)
 
-C     Initialise arrays
+!     Initialise arrays
       nullify( listhptr, numh )
-      call re_alloc( listhptr, 1, no_l, 'listhptr', 'sparseMat' )
-      call re_alloc( numh, 1, no_l, 'numh', 'sparseMat' )
+      call re_alloc( listhptr, 1, max(1,no_l), 'listhptr', 'sparseMat' )
+      call re_alloc( numh,     1, max(1,no_l), 'numh',     'sparseMat' )
       listhptr    = 0
       numh        = 0
 
-C     Get number of eigenstates that need to be calculated
+!     Get number of eigenstates that need to be calculated
       neigwanted = fdf_get('NumberOfEigenStates',no_u)
 
-C     Check number of eigenstates - cannot be larger than number of
-C     basis functions or smaller than number of occupied states + 1
-C     so that the Fermi level can be estimated
+!     Check number of eigenstates - cannot be larger than number of
+!     basis functions or smaller than number of occupied states + 1
+!     so that the Fermi level can be estimated
       do is = 1,nspin
         neigmin = nint(qs(is)/real(3 - min(nspin,2), kind=dp)) + 1
         neigwanted = max(neigwanted,neigmin)
       enddo
       neigwanted = min(neigwanted,no_u)
 
-C     Find k-grid for Brillouin zone integration 
-C     NOTE: We need to know whether gamma is .true. or
-C     not early, in order to decide whether to use an 
-C     auxiliary supercell for the calculation of matrix elements.
+!     Find k-grid for Brillouin zone integration 
+!     NOTE: We need to know whether gamma is .true. or
+!     not early, in order to decide whether to use an 
+!     auxiliary supercell for the calculation of matrix elements.
       call setup_Kpoint_grid( ucell )
       gamma = gamma_scf
 
-      ! Call initialisation of PDOS here since we need to check if 
-      ! the auxiliary supercell is needed for a non-gamma calculation
-      call init_projected_DOS()
+!     Call initialisation of PDOS here since we need to check if 
+!     the auxiliary supercell is needed for a non-gamma calculation
+      call init_projected_DOS( )
       if (do_pdos) then
         gamma = gamma .and. gamma_pdos
       endif
+
+#ifdef TRANSIESTA
+!     TSS Begin
+      call setup_ts_kpoint_grid( ucell )
+!     TSS End
+#endif
 
       nullify(eo,qo)
       call re_alloc(eo, 1, no_u, 1, nspin, 1, maxk, 'eo', 'siesta_init')
@@ -327,23 +330,23 @@ C     auxiliary supercell for the calculation of matrix elements.
       call setup_bands( )
       gamma = gamma .and. gamma_bands
 
-      call setup_wf_kpoints()
+      call setup_wf_kpoints( )
       gamma = gamma .and. gamma_wavefunctions
 
-      call estimate_pol_kpoints(ucell)
+      call estimate_pol_kpoints( ucell )
       gamma = gamma .and. gamma_polarization
-C      print *, "gamma, gamma_pol: ", gamma, gamma_polarization
+!      print *, "gamma, gamma_pol: ", gamma, gamma_polarization
 !
 !     User can request that the calculation is done with an explicit
 !     auxiliary supercell and hermitian version, even if using only
 !     the gamma point
 !
-      user_wants_supercell = fdf_get('ForceAuxCell',.false.)
+      user_wants_supercell = fdf_get( 'ForceAuxCell', .false. )
       if (user_wants_supercell) gamma = .false.
 
-C     Find required supercell
-C     2*rmaxh is used to guarantee that two given orbitals in the
-C     supercell can only overlap once
+!     Find required supercell
+!     2*rmaxh is used to guarantee that two given orbitals in the
+!     supercell can only overlap once
       if (gamma) then
         nsc(1:3) = 1
       else
@@ -352,7 +355,7 @@ C     supercell can only overlap once
           nsc(i) = ceiling( 2 * rmaxh / veclen )
         enddo
         if (.not. naiveauxcell)
-     &    call check_sc_factors(ucell,nsc,2*rmaxh)
+     &    call check_sc_factors( ucell, nsc, 2*rmaxh )
       endif
 
       mscell = 0.0_dp
@@ -361,11 +364,11 @@ C     supercell can only overlap once
         nscold(i)   = nsc(i)
       enddo
 
-C     Find auxiliary supercell (required only for k sampling)
-      call superc( ucell, scell, nsc)
+!     Find auxiliary supercell (required only for k sampling)
+      call superc( ucell, scell, nsc )
 
-C     Initialise metadynamic forces if required
-      call initmeta()
+!     Initialise metadynamic forces if required
+      call initmeta( )
 
       if (idyn .eq. 0) then
         inicoor = 0
@@ -387,23 +390,19 @@ C     Initialise metadynamic forces if required
         call die( 'siesta: wrong idyn' )
       endif
 
-C     Build initial velocities according to Maxwell-Bolzmann distribution....
+!     Build initial velocities according to Maxwell-Bolzmann distribution....
       if (idyn .ne. 0 .and. idyn .ne. 6 .and. (.not. xv_file_read)) 
-     &    call vmb(na_u,tempinit,amass,xa,isa,va)
+     &    call vmb( na_u, tempinit, amass, xa, isa, va )
 
       istp = 0
 
-C     Output memory use before main loop
+!     Output memory use before main loop
       call printmemory( 6, 0 )
 
-C     Initialization now complete. Flush stdout.
-      if (ionode) call pxfflush(6)
+!     Initialization now complete. Flush stdout.
+      if (ionode) call pxfflush( 6 )
 
       call timer( 'Setup', 2 )
-      call timer( 'Setup', 3 )
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 0 )
-#endif
 !--------------------------------------------------------------------------- END
       END subroutine siesta_init
 

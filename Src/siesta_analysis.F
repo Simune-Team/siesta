@@ -161,7 +161,7 @@
 
 !     Print eigenvalues
       if (IOnode .and. writeig) then
-        if (isolve.eq.0 .and. no_l.lt.1000) then
+        if (isolve.eq.SOLVE_DIAGON .and. no_l.lt.1000) then
           if (nspin .le. 2) then
             write(6,'(/,a,/,a4,a3,a7)')
      &       'siesta: Eigenvalues (eV):', 'ik', 'is', 'eps'
@@ -185,7 +185,7 @@
         endif
       endif
 
-      if ((isolve.eq.0.or.isolve.eq.3).and.IOnode)
+      if ((isolve.eq.SOLVE_DIAGON).and.IOnode)
      &     call ioeig(eo,ef,neigwanted,nspin,nkpnt,no_u,nspin,maxk,
      &                kpoint, kweight)
 

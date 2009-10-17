@@ -20,6 +20,9 @@
       external :: plcharge
 
 !------------------------------------------------------------------------- BEGIN
+#ifdef DEBUG
+      call write_debug( '  PRE post_scf_work' )
+#endif
 !     If converged, make one last iteration to find forces and
 !     stress
 !     Note that here we are using the Dscf guessed by mixer,
@@ -53,6 +56,9 @@
      &       scell, nsc, xa, rmaxo, datm )
       endif
 
+#ifdef DEBUG
+      call write_debug( '  POS post_scf_work' )
+#endif
 !--------------------------------------------------------------------------- END
       END subroutine post_scf_work
 

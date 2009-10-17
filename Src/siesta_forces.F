@@ -21,22 +21,28 @@
       use sys, only : die
       use m_convergence, only: converger_t
       use m_convergence, only: reset, set_tolerance
+#ifdef TRANSIESTA
+!     TSS Begin
+      use sparse_matrices, only : nh, Dscf, H, S
+      use m_spin,          only : nspin
+      use sys,             only : die
+      use m_ts_options,    only : VIn, VOut, mixH, ts_istep
+!     TSS End
+#endif /* TRANSIESTA */
       implicit none
-
       integer, intent(in)  :: istep
-
       integer  :: iscf
       logical  :: first, last, SCFconverged
       real(dp) :: dDmax     ! Max. change in density matrix elements
       type(converger_t)  ::  conv_harris, conv_etot
+#ifdef TRANSIESTA
+!     TSS Begin
+      integer :: ts_alloc_stat
+      ts_istep = istep
+!     TSS End
+#endif /* TRANSIESTA */
       
 !---------------------------------------------------------------------- BEGIN
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 10 )
-#endif
-#ifdef DEBUG
-      call write_debug( '  PRE state_init' )
-#endif
 !     Initialization tasks for a given geometry
       call state_init( istep )
 
@@ -63,42 +69,64 @@
          last = .true.
       endif
 
-#ifdef DEBUG
-        call write_debug( '  PRE setup_H0' )
-#endif
       call setup_H0()
 
       DO WHILE (.not. last)
         call timer( 'IterSCF', 1 )
-#ifdef DEBUG
-        call write_debug( '  PRE setup_hamiltonian' )
-#endif
 
-          if (cml_p) 
-     $         call cmlStartStep(xf=mainXML, type='SCF', index=iscf)
+#ifndef TRANSIESTA
+        if (cml_p) 
+     &    call cmlStartStep(xf=mainXML, type='SCF', index=iscf)
+
 !       Will use H0 computed above
-        call medirTiempo( 1, 1 )
         call setup_hamiltonian( iscf )
-        call medirTiempo( 2, 1 )
 
-#ifdef DEBUG
-        call write_debug( '  PRE compute_dm' )
-#endif
-        call timer( 'compute_dm', 1 )
         call compute_dm( iscf )
-        call timer( 'compute_dm', 2 )
-
-#ifdef DEBUG
-        call write_debug( '  PRE mixer' )
-#endif
 
         call mixer( iscf, dDmax )
+#else /* TRANSIESTA */
+!       TSS Begin: Mixing H or DM
+!       Resize arrays if necessary????
+!        call re_alloc( Vin, 1, nh, 1, nspin, 'Vin', 'siesta_forces' )
+!        call re_alloc( Vout, 1, nh, 1, nspin, 'Vout', 'siesta_forces' )
 
-#ifdef DEBUG
-        call write_debug( '  PRE scfconvergence_test' )
-#endif
+! Adding the possibility of Mixinh H
+        if (mixH) then
+          if ( first ) call setup_hamiltonian( iscf )
+          if (cml_p)
+     &      call cmlStartStep( xf=mainXML, type='SCF', index=iscf )
+
+          VIn(1:nh,1:nspin)=H(1:nh,1:nspin)
+
+          call compute_dm( iscf )
+
+          call setup_hamiltonian( iscf )
+
+          VOut(1:nh,1:nspin)=H(1:nh,1:nspin)
+
+          call mixer( iscf, dDmax )
+
+          H(1:nh,1:nspin) = VIn(1:nh,1:nspin)
+        else
+          VIn(1:nh,1:nspin)=Dscf(1:nh,1:nspin)
+          if (cml_p)
+     &      call cmlStartStep(xf=mainXML, type='SCF', index=iscf)
+
+          call setup_hamiltonian( iscf )
+
+          call compute_dm( iscf )
+
+          VOut(1:nh,1:nspin)=Dscf(1:nh,1:nspin)
+
+          call mixer( iscf, dDmax )
+
+          Dscf(1:nh,1:nspin)=VIn(1:nh,1:nspin)
+        end if ! mixH
+!     TSS End
+#endif /* TRANSIESTA */
+
         call scfconvergence_test( first, iscf, last, dDmax,
-     $                              conv_harris, conv_etot )
+     &                            conv_harris, conv_etot )
 !       At this point last is true if SCF has converged. But this
 !       changed below
         SCFconverged = last
@@ -126,22 +154,12 @@
 !     End of standard SCF loop.
 !     Do one more pass to compute forces and stresses
       if (last) then
-#ifdef DEBUG
-        call write_debug( '  PRE post_scf_work' )
-#endif
         call post_scf_work( iscf )
       else
         STOP 'Bad logic in SCF loop'
       endif
 
-#ifdef DEBUG
-        call write_debug( '  PRE state_analysis' )
-#endif
       call state_analysis( istep )
-
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 0 )
-#endif
 !--------------------------------------------------------------------------- END
       END subroutine siesta_forces
       END module m_siesta_forces

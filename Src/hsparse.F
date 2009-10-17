@@ -108,6 +108,9 @@ C
       logical :: connected
 
 C -------------------------------------
+#ifdef DEBUG
+      call write_debug( '    PRE hsparse' )
+#endif
 C     Start time counter
       call timer( 'hsparse', 1 )
 
@@ -286,10 +289,11 @@ C     (re)allocate listh, but do not shrink, as it might
 C     be used for DM extrapolation
 C     using information from different geometries.
       ! CHANGED NOW
-      call re_alloc( listh, 1, nlhmax, 'listh',
-     $     routine='hsparse',SHRINK=.true.)
+      call re_alloc( listh, 1, max(1,nlhmax), 'listh',
+     &     routine='hsparse',SHRINK=.true.)
       if (set_xijo) then
-         call re_alloc( xijo, 1, 3, 1, nlhmax, 'xijo', 'sparseMat' )
+         call re_alloc( xijo, 1, 3, 1, max(1,nlhmax),
+     &   'xijo', 'sparseMat' )
       else
          call re_alloc( xijo, 1, 3, 1, 1, 'xijo', 'sparseMat' )
       endif
@@ -443,13 +447,7 @@ C           Restore conect array for next orbital io
       enddo         ! ia
 
       if (use_dd) then
-#ifdef DEBUG
-        call write_debug( '      PRE domainDecom' )
-#endif
         call domainDecom( nuotot, nuo, nlhmax )
-#ifdef DEBUG
-        call write_debug( '      POS domainDecom' )
-#endif
         no_l = nuo
       endif
 
@@ -466,7 +464,9 @@ C     Deallocate local arrays
       call de_alloc( rckb, 'rckb', 'hsparse' )
 
       call timer( 'hsparse', 2 )
-      call timer( 'hsparse', 3 )
+#ifdef DEBUG
+      call write_debug( '    POS hsparse' )
+#endif
       end subroutine hsparse
 
       end module m_hsparse

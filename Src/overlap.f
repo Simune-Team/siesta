@@ -121,6 +121,5 @@ C     Deallocate local memory
 
 C     Finish timer
       call timer( 'overlap', 2 )
-      call timer( 'overlap', 3 )
       end subroutine overlap
       end module m_overlap

@@ -106,21 +106,21 @@ C
       implicit          none
 
       integer 
-     .  MPIerror
+     &  MPIerror
 
       integer           maxnd, maxnh, maxspn, maxo, nk, no,
-     .                  nspin, nuo, nuotot, iscf
+     &                  nspin, nuo, nuotot, iscf
       integer           indxuo(no), listh(maxnh), numh(nuo),
-     .                  listhptr(nuo)
+     &                  listhptr(nuo)
       real(dp)          Dnew(maxnd,nspin), 
-     .                  e1, e2, ef, efs(nspin), Enew(maxnd,nspin),
-     .                  Entropy, eo(maxo,maxspn,nk), H(maxnh,nspin),
-     .                  kpoint(3,nk), qo(maxo,maxspn,nk), qtot, 
-     .                  S(maxnh), temp, wk(nk), occtol,
-     .                  xij(3,maxnh), qs(nspin)
+     &                  e1, e2, ef, efs(nspin), Enew(maxnd,nspin),
+     &                  Entropy, eo(maxo,maxspn,nk), H(maxnh,nspin),
+     &                  kpoint(3,nk), qo(maxo,maxspn,nk), qtot, 
+     &                  S(maxnh), temp, wk(nk), occtol,
+     &                  xij(3,maxnh), qs(nspin)
       real(dp)          Dk(2,nuotot,nuotot), Ek(2,nuotot,nuotot),
-     .                  Haux(2,nuotot,nuotot), Saux(2,nuotot,nuotot),
-     .                  psi(2,nuotot,nuotot), aux(2,nuotot*5)
+     &                  Haux(2,nuotot,nuotot), Saux(2,nuotot,nuotot),
+     &                  psi(2,nuotot,nuotot), aux(2,nuotot*5)
       logical           getD, fixspin
       external          cdiag, memory
 
@@ -132,7 +132,7 @@ C  Internal variables .............................................
       real(dp)          :: ckxij, ee, kxij, pipj1, pipj2, qe, skxij, t
       real(dp), pointer :: Snew(:), Dloc(:), Hnew(:,:), Dnewloc(:,:),
      &                     Enewloc(:,:), xijloc(:,:)
-C  ....................
+C  ..&.................
 
 C Globalise list arrays - assumes listh and listd are the same
 
@@ -158,7 +158,7 @@ C Globalise numh
           numhg(io) = numh(iio)
         endif
         call MPI_Bcast(numhg(io),1,MPI_integer,BNode,
-     .    MPI_Comm_World,MPIerror)
+     &    MPI_Comm_World,MPIerror)
       enddo
 
 C Build global listhptr
@@ -178,14 +178,14 @@ C Globalse listh
           call GlobalToLocalOrb(io,Node,Nodes,iio)
           do jo = 1,numhg(io)
             listhg(listhptrg(io)+1:listhptrg(io)+numhg(io)) = 
-     .        listh(listhptr(iio)+1:listhptr(iio)+numh(iio))
+     &        listh(listhptr(iio)+1:listhptr(iio)+numh(iio))
           enddo
         endif
         call MPI_Bcast(listhg(listhptrg(io)+1),numhg(io),MPI_integer,
-     .    BNode,MPI_Comm_World,MPIerror)
+     &    BNode,MPI_Comm_World,MPIerror)
       enddo
 
-C Create new distribution of H and S
+C     Create new distribution of H and S
       nuog = nuotot
 
       call re_alloc( Snew, 1, maxnhg, name='listhg',
@@ -213,12 +213,12 @@ C Create new distribution of H and S
         endif
         do is = 1,nspin
           call MPI_Bcast(Hnew(listhptrg(io)+1,is),numhg(io),
-     .      MPI_double_precision,BNode,MPI_Comm_World,MPIerror)
+     &      MPI_double_precision,BNode,MPI_Comm_World,MPIerror)
         enddo
         call MPI_Bcast(Snew(listhptrg(io)+1),numhg(io),
-     .    MPI_double_precision,BNode,MPI_Comm_World,MPIerror)
+     &    MPI_double_precision,BNode,MPI_Comm_World,MPIerror)
         call MPI_Bcast(xijloc(1,listhptrg(io)+1),3*numhg(io),
-     .    MPI_double_precision,BNode,MPI_Comm_World,MPIerror)
+     &    MPI_double_precision,BNode,MPI_Comm_World,MPIerror)
       enddo
 
 C Find eigenvalues .........................................
@@ -239,8 +239,8 @@ C Find eigenvalues .........................................
               iuo = indxuo(io)
               juo = indxuo(jo)
               kxij = kpoint(1,ik) * xijloc(1,ind) +
-     .               kpoint(2,ik) * xijloc(2,ind) +
-     .               kpoint(3,ik) * xijloc(3,ind)
+     &               kpoint(2,ik) * xijloc(2,ind) +
+     &               kpoint(3,ik) * xijloc(3,ind)
               ckxij = cos(kxij)
               skxij = sin(kxij)
 C Note : sign of complex part changed to match change in order of iuo/juo
@@ -251,7 +251,7 @@ C Note : sign of complex part changed to match change in order of iuo/juo
             enddo
           enddo
           call cdiag(Haux,Saux,nuotot,nuotot,nuog,eo(1,ispin,ik),psi,
-     .               0,iscf,ierror)
+     &               0,iscf,ierror)
           if (ierror.ne.0) then
             call die('Terminating due to failed diagonalisation')
           endif
@@ -264,7 +264,7 @@ C Globalise eigenvalues
         BNode = BNode + 1
         if (BNode.eq.Nodes) BNode = 0
         call MPI_Bcast(eo(1,1,ik),nuotot*nspin,MPI_double_precision,
-     .    BNode,MPI_Comm_World,MPIerror)
+     &    BNode,MPI_Comm_World,MPIerror)
       enddo
 
 C Check if we are done ................................................
@@ -279,10 +279,10 @@ C Allocate local copies of Dk and Ek for building matrices
 C Find new Fermi energy and occupation weights ........................
       if (fixspin) then
         call fermispin( nspin, nspin, nk, wk, maxo, nuotot, eo,
-     .               temp, qs, qo, efs, Entropy )
+     &               temp, qs, qo, efs, Entropy )
       else
         call fermid( nspin, maxspn, nk, wk, maxo, nuotot, eo, 
-     .             temp, qtot, qo, ef, Entropy )
+     &             temp, qtot, qo, ef, Entropy )
       endif
 
 C Find weights for local density of states ............................
@@ -294,8 +294,8 @@ C Find weights for local density of states ............................
           do ispin = 1,nspin
             do io = 1,nuotot
               qo(io,ispin,ik) = wk(ik) * 
-     .             ( stepf((eo(io,ispin,ik)-e2)/t) -
-     .               stepf((eo(io,ispin,ik)-e1)/t)) * 2.0d0 / nspin
+     &             ( stepf((eo(io,ispin,ik)-e2)/t) -
+     &               stepf((eo(io,ispin,ik)-e1)/t)) * 2.0d0 / nspin
             enddo
           enddo
         enddo
@@ -327,8 +327,8 @@ C Find eigenvectors
               iuo = indxuo(io)
               juo = indxuo(jo)
               kxij = kpoint(1,ik) * xijloc(1,ind) +
-     .               kpoint(2,ik) * xijloc(2,ind) +
-     .               kpoint(3,ik) * xijloc(3,ind)
+     &               kpoint(2,ik) * xijloc(2,ind) +
+     &               kpoint(3,ik) * xijloc(3,ind)
               ckxij = cos(kxij)
               skxij = sin(kxij)
               Saux(1,juo,iuo) = Saux(1,juo,iuo) + Snew(ind)*ckxij
@@ -338,7 +338,7 @@ C Find eigenvectors
             enddo
           enddo
           call cdiag(Haux,Saux,nuotot,nuotot,nuog,aux,psi,
-     .               neigneeded,iscf,ierror)
+     &               neigneeded,iscf,ierror)
 
 C Check error flag and take appropriate action
           if (ierror.gt.0) then
@@ -354,8 +354,8 @@ C Repeat diagonalisation with increased memory to handle clustering
                 iuo = indxuo(io)
                 juo = indxuo(jo)
                 kxij = kpoint(1,ik) * xijloc(1,ind) +
-     .                 kpoint(2,ik) * xijloc(2,ind) +
-     .                 kpoint(3,ik) * xijloc(3,ind)
+     &                 kpoint(2,ik) * xijloc(2,ind) +
+     &                 kpoint(3,ik) * xijloc(3,ind)
                 ckxij = cos(kxij)
                 skxij = sin(kxij)
                 Saux(1,juo,iuo) = Saux(1,juo,iuo) +Snew(ind)*ckxij
@@ -365,7 +365,7 @@ C Repeat diagonalisation with increased memory to handle clustering
               enddo
             enddo
             call cdiag(Haux,Saux,nuotot,nuotot,nuog,aux,psi,
-     .                 neigneeded,iscf,ierror)
+     &                 neigneeded,iscf,ierror)
           endif
 !
 !         Here we could write the wavefunctions, taking care to
@@ -393,9 +393,9 @@ C Global operation to form new density matrix
               do iuo = 1,nuog
                 do juo = 1,nuotot
                   pipj1 = aux(1,iuo) * aux(1,juo) +
-     .                    aux(2,iuo) * aux(2,juo)
+     &                    aux(2,iuo) * aux(2,juo)
                   pipj2 = aux(1,iuo) * aux(2,juo) -
-     .                    aux(2,iuo) * aux(1,juo)
+     &                    aux(2,iuo) * aux(1,juo)
                   Dk(1,juo,iuo) = Dk(1,juo,iuo) + qe * pipj1
                   Dk(2,juo,iuo) = Dk(2,juo,iuo) + qe * pipj2
                   Ek(1,juo,iuo) = Ek(1,juo,iuo) + ee * pipj1
@@ -411,14 +411,14 @@ C Global operation to form new density matrix
               jo = listhg(ind)
               juo = indxuo(jo)
               kxij = kpoint(1,ik) * xijloc(1,ind) +
-     .               kpoint(2,ik) * xijloc(2,ind) +
-     .               kpoint(3,ik) * xijloc(3,ind)
+     &               kpoint(2,ik) * xijloc(2,ind) +
+     &               kpoint(3,ik) * xijloc(3,ind)
               ckxij = cos(kxij)
               skxij = sin(kxij)
               Dnewloc(ind,ispin) = Dnewloc(ind,ispin) + 
-     .          Dk(1,juo,iuo)*ckxij - Dk(2,juo,iuo)*skxij
+     &          Dk(1,juo,iuo)*ckxij - Dk(2,juo,iuo)*skxij
               Enewloc(ind,ispin) = Enewloc(ind,ispin) + 
-     .          Ek(1,juo,iuo)*ckxij - Ek(2,juo,iuo)*skxij
+     &          Ek(1,juo,iuo)*ckxij - Ek(2,juo,iuo)*skxij
             enddo
           enddo
 
@@ -430,16 +430,16 @@ C Global operation to form new density matrix
         call GlobalToLocalOrb(io,BNode,Nodes,iio)
         do ispin = 1,nspin
           call MPI_Reduce(Dnewloc(listhptrg(io)+1,ispin),
-     .      Dloc(1),numhg(io),MPI_double_precision,
-     .      MPI_sum,BNode,MPI_Comm_World,MPIerror)
+     &      Dloc(1),numhg(io),MPI_double_precision,
+     &      MPI_sum,BNode,MPI_Comm_World,MPIerror)
           if (Node.eq.BNode) then
             do j = 1,numh(iio)
               Dnew(listhptr(iio)+j,ispin) = Dloc(j)
             enddo
           endif
           call MPI_Reduce(Enewloc(listhptrg(io)+1,ispin),
-     .      Dloc(1),numhg(io),MPI_double_precision,
-     .      MPI_sum,BNode,MPI_Comm_World,MPIerror)
+     &      Dloc(1),numhg(io),MPI_double_precision,
+     &      MPI_sum,BNode,MPI_Comm_World,MPIerror)
           if (Node.eq.BNode) then
             do j = 1,numh(iio)
               Enew(listhptr(iio)+j,ispin) = Dloc(j)

@@ -25,7 +25,7 @@
 !------------------------------------------------------------------------- BEGIN
 ! Compute the projected density of states
         do_pdos = fdf_block('ProjectedDensityOfStates',bfdf)
-        if (isolve.ne.0.and.do_pdos) then
+        if (isolve.ne.SOLVE_DIAGON.and.do_pdos) then
            if (IONode) then
               write(6,*)
      .         'siesta: ERROR: PDOS implemented only with diagon'

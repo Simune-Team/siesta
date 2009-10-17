@@ -78,6 +78,9 @@ C Internal variables and arrays
       real(dp),         pointer :: r2cut(:), Clocal(:,:),
      &                             Dlocal(:,:), phia(:,:)
 
+#ifdef DEBUG
+      call write_debug( '    PRE rhoofd' )
+#endif
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 1 )
 #endif
@@ -360,5 +363,8 @@ C     Free local memory
       call timer('rhoofd',2)
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 0 )
+#endif
+#ifdef DEBUG
+      call write_debug( '    POS rhoofd' )
 #endif
       end

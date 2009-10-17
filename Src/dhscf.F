@@ -29,14 +29,20 @@ C     Modules
       use moreMeshSubs,   only : setMeshDistr, distMeshData
       use m_dhscf,        only : rhopcc, rhoatm, Vna, spiral, rmax,
      &                           IsDiag, cell, ntopl, dvol, ntml, ntpl,
-     &                           field, isefld, npcc, uharrs, scell,
+     &                           field, IsEfld, npcc, uharrs, scell,
      &                           shape, qspiral, g2mesh, nm, nml,
-     &                           bcell, nmpl
+     &                           bcell, nmpl, IsVolt
       use iogrid_netcdf, only: set_box_limits
       use cellxc_mod,     only : setGGA
 #ifdef MPI
       use mpi_siesta
 #endif
+#ifdef TRANSIESTA
+!     TSS Begin
+      use m_ts_options,   only : TSmode
+      use m_ts_in_siesta, only : TSVoltage2
+!     TSS End
+#endif /* TRANSIESTA */
       implicit none
       integer, intent(in)     :: nspin, norb, iaorb(norb), iphorb(norb),
      &                           nuo, nuotot, nua, na, isa(na),
@@ -280,9 +286,6 @@ C       DStres is computed but not used later
      &                 'dhscf_init' )
         call distMeshData( 2, rhoatm, 1, rhoatm_seq, +1 )
 
-#ifdef DEBUG
-        call write_debug( '      PRE poison' )
-#endif
         call poison( cell, ntml(1), ntml(2), ntml(3), ntm, rhoatm_seq,
      &               Uharrs, Vscf, DStres, nsm )
         call de_alloc( Vscf, 'Vscf', 'dhscf_init' )
@@ -306,6 +309,27 @@ C       Vscf is not used here because we pass "0,0,0" as mesh
      &               dummy_Vscf, field )
         IsEfld = .false.
         if (sqrt(ddot(3,field,1,field,1)) .gt. tiny) IsEfld = .true.
+
+
+
+#ifdef TRANSIESTA
+c     TSS Begin
+c ---------------------------------------------------------------------
+c transiesta:
+c Check if we need to add the potential corresponding to the voltage-drop.
+c ---------------------------------------------------------------------
+        if (TSmode) then
+          call TSvoltage2( cell, ntm, nsm, dummy_Vscf, IsVolt )
+          if(IsVolt .and. IsEfld) then
+            isvolt = .false.
+            if(Node.eq.0) then
+              write(6,*) 'WARNING: both ext. voltage and field !!'
+              write(6,*) 'WARNING: will neglect voltage !!       '
+            end if
+          end if
+        endif
+c     TSS End
+#endif /* TRANSIESTA */
       endif
       frstme = .false.
 
@@ -436,9 +460,9 @@ C     Modules
       use files,         only  : slabel
       use siesta_options, only : harrisfun
       use m_dhscf,        only : rhopcc, rhoatm, Vna, uharrs, bcell,
-     &                           ntml, dvol, npcc, field, isefld,
+     &                           ntml, dvol, npcc, field, IsEfld,
      &                           spiral, ntpl, cell, nmpl, shape, nml,
-     &                           qspiral
+     &                           qspiral, IsVolt
       use moreMeshSubs,   only : setMeshDistr, distMeshData
       use cellxc_mod,     only : GGA
 #ifdef MPI
@@ -449,6 +473,12 @@ C     Modules
       use siesta_options, only: read_charge_cdf
       use siesta_options, only: savevna
       use siesta_options, only: read_deformation_charge_cdf
+#ifdef TRANSIESTA
+!     TSS Begin
+      use m_ts_options, only: TSmode, TSrun, UseVFix
+      use m_ts_in_siesta, only: TSVHFix, TSVoltage2
+!     TSS End
+#endif /* TRANSIESTA */
       implicit none
       integer
      &  maxnd, maxnh, nua, na, norb, nspin, nuo, nuotot,
@@ -594,9 +624,6 @@ C Find number of diagonal spin values
 C ----------------------------------------------------------------------
 C Find SCF electron density at mesh points. Store it in array DRho
 C ----------------------------------------------------------------------
-#ifdef DEBUG
-        call write_debug( '    PRE rhoofd' )
-#endif
 !
 !     We are now in distribution "2". We need to expand the capabilities
 !     of the reading routine to handle arbitrary distributions.
@@ -634,9 +661,6 @@ C ----------------------------------------------------------------------
         call medirTiempo( 2, 2 )
          endif
       endif
-#ifdef DEBUG
-        call write_debug( '    POS rhoofd' )
-#endif
 
 C ----------------------------------------------------------------------
 C Save electron density
@@ -799,14 +823,17 @@ C     Find Hartree potential of DRho = rhoscf-rhoatm. Store it in Vscf
 C ----------------------------------------------------------------------
 C     Solve Poisson's equation
       call re_alloc( Vscf_seq, 1, ntpl, 'Vscf_seq', 'dhscf' )
-#ifdef DEBUG
-      call write_debug( '    PRE Poison' )
-#endif
       call medirTiempo( 1, 3 )
       call poison( cell, ntml(1), ntml(2), ntml(3), ntm, DRho_seq,
      &             DUscf, Vscf_seq, DStres, nsm )
       call medirTiempo( 2, 3 )
       call de_alloc( DRho_seq, 'DRho_seq', 'dhscf' )
+
+#ifdef TRANSIESTA
+! TSS BEgin
+      if (TSmode .and. UseVFix) call TSVHFix( ntm, nsm, Vscf_seq )
+! TSS End
+#endif /* TRANSIESTA */
 
 C Add contribution to stress from electrostatic energy of rhoscf-rhoatm
       if (istr .eq. 1) then
@@ -857,6 +884,22 @@ C ----------------------------------------------------------------------
         call reord( Vaux, Vaux, nml, nsm, -1)
         DUext = - ddot(3,field,1,dipol,1)
       endif
+
+#ifdef TRANSIESTA
+!     TSS Begin
+! ---------------------------------------------------------------------
+!     transiesta:
+!     add the potential corresponding to the (possible) voltage-drop.
+!     note that tsvoltage is not sharing the reord wih efield since
+!     we should not encounter both at the same time.
+! ---------------------------------------------------------------------
+      if (TSmode.and.IsVolt.and.TSrun) then
+        call reord( Vscf, Vscf, nml, nsm, +1)
+        call tsvoltage2(cell, ntm, nsm, Vscf, IsVolt )
+        call reord( Vscf, Vscf, nml, nsm, -1)
+      endif
+!    TSS End
+#endif /* TRANSIESTA */
 
 C ----------------------------------------------------------------------
 C Save electrostatic potential
@@ -973,9 +1016,6 @@ C ----------------------------------------------------------------------
 C ----------------------------------------------------------------------
 C     Find SCF contribution to hamiltonian matrix elements
 C ----------------------------------------------------------------------
-#ifdef DEBUG
-        call write_debug( '    PRE vmat' )
-#endif
 
       if (iHmat .eq. 1) then
         if (spiral) then
@@ -1000,10 +1040,6 @@ C Global reduction of Uscf/DUscf/Uatm/Enaatm/Enascf
       sbuffer(5) = Enascf
       sbuffer(6) = Exc
       sbuffer(7) = Dxc
-
-#ifdef DEBUG
-      call write_debug( '    PRE reduce Energies' )
-#endif
       call MPI_AllReduce( sbuffer, rbuffer, 7, MPI_double_precision,
      &                     MPI_Sum, MPI_Comm_World, MPIerror )
       Uscf   = rbuffer(1)

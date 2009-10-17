@@ -4,7 +4,6 @@
       CONTAINS
 
       subroutine final_H_f_stress( iscf )
-      
       USE m_normalize_dm, only: normalize_dm
       USE siesta_options
       use sparse_matrices
@@ -33,33 +32,45 @@
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
-
+#ifdef TRANSIESTA
+! TSS Begin
+      use files,        only : slabel, label_length
+      use m_ts_options, only : TSrun, savetshs, ts_istep
+      use m_ts_kpoints, only : ts_gamma_scf, ts_kscell, ts_kdispl
+      use m_ts_io,      only : ts_iohs
+! TSS End
+#endif /* TRANSIESTA */
       implicit none
 
-      integer, intent(in) :: iscf
-
+      integer,   intent(in) :: iscf
       real(dp)              :: stressl(3,3)
       real(dp), pointer     :: fal(:,:)   ! Local-node part of atomic F
-
+      integer               :: io, is
+      integer               :: ifa     ! Calculate forces? 0=>no, 1=>yes
+      integer               :: istr    ! Calculate stress? 0=>no, 1=>yes
+      real(dp)              :: g2max
 #ifdef MPI
       real(dp)              :: stresstmp(3,3)
       real(dp), pointer     :: fatmp(:,:)
       real(dp)              :: buffer1
 #endif
-
-      integer :: io, is
-
-      integer:: ifa     ! Calculate forces? 0=>no, 1=>yes
-      integer:: istr    ! Calculate stress? 0=>no, 1=>yes
-
-      real(dp) :: g2max
-
-
-
+#ifdef TRANSIESTA
+!     TSS Begin
+      character(len=label_length+13) :: fname
+      character(8)                   :: numstring
+      character(8)                   :: iotask
+!     SIESTA External
+      character(len=label_length+5)  :: PASTE
+!     TSS End
+#endif /* TRANSIESTA */
 !------------------------------------------------------------------------- BEGIN
 
 !     Normalize density matrix to exact charge
-      call normalize_dm(first=.false.)
+#ifdef TRANSIESTA      
+      if (.not.TSrun ) call normalize_dm( first=.false. )
+#else
+      call normalize_dm( first=.false. )
+#endif  /* TRANSIESTA */
 
 !     Initialize Hamiltonian ........................................
       H = 0.0_dp
@@ -158,7 +169,7 @@
 !     the entropy computed from the input charge, here it is assigned to the one
 !     of the former SCF step
       Entropy = 0.0_dp
-      if (isolve .eq. 0) then
+      if (isolve .eq. SOLVE_DIAGON) then
         if (istp.gt.1 .or. iscf.gt.1) then
           Entropy = Entrop
         endif
@@ -176,9 +187,34 @@
 ! Save Hamiltonian and overlap matrices ............................
       if (savehs) then
         call iohs( 'write', gamma, no_u, no_s, nspin, indxuo,
-     $             maxnh, numh, listhptr, listh, H, S, qtot, temp,
-     $             xijo )
+     &             maxnh, numh, listhptr, listh, H, S, qtot, temp,
+     &             xijo )
       endif
+#ifdef TRANSIESTA
+! TSS Begin
+      if (savetshs) then
+         if (idyn.eq.6) then ! Force constants run
+            write(numstring,'(2i4)') ia1, ts_istep
+            fname = paste( slabel, numstring )
+            fname = paste( fname, '.TSHS' )
+            iotask='write'
+            call ts_iohs( iotask, gamma, .false., no_u, no_s, nspin,
+     &                    indxuo, maxnh, numh, listhptr, listh, H, S, 
+     &                    qtot, temp, xijo, label_length+5, fname, na_u,
+     &                    lasto, isa, ef, ucell, ts_kscell, ts_kdispl,
+     &                    ts_gamma_scf, xa, ts_istep, ia1)
+         else
+            fname  = paste( slabel, '.TSHS' )
+            iotask ='write'
+            call ts_iohs( iotask, gamma, .false., no_u, no_s, nspin,
+     &                    indxuo, maxnh, numh, listhptr, listh, H, S,
+     &                    qtot, temp, xijo, label_length+5, fname, na_u,
+     &                    lasto, isa, ef, ucell,ts_kscell, ts_kdispl,
+     &                    ts_gamma_scf, xa, 0, 0 )
+         endif
+      endif
+! TSS End
+#endif /* TRANSIESTA */
 !--------------------------------------------------------------------------- END
       END subroutine final_H_f_stress
       END module m_final_H_f_stress

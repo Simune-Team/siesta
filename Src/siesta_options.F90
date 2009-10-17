@@ -156,6 +156,10 @@ MODULE siesta_options
   real(dp), parameter :: bulkm_default = 100*6.79773e-5_dp  ! 100 GPa
   real(dp), parameter :: dx_default = 0.04_dp               ! Bohr
 
+  integer,  parameter :: SOLVE_DIAGON = 0
+  integer,  parameter :: SOLVE_ORDERN = 1
+  integer,  parameter :: SOLVE_TRANSI = 2
+  integer,  parameter :: SOLVE_JACOBI = 101
 
       CONTAINS
 
@@ -186,8 +190,10 @@ MODULE siesta_options
 ! real*8 Harris_tolerance  : Maximum Harris energy tolerance in SCF
 ! logical mix              : Perform mix in first SCF step
 ! real*8 wmix              : Amount of output DM for new DM
-! integer isolve           : Method of solution.  0 = Diagonalization
-!                                                 1 = Order-N
+! integer isolve           : Method of solution.  0   = Diagonalization
+!                                                 1   = Order-N
+!                                                 2   = Transiesta
+!                                                 101 = Jacobi-Davidson
 ! real*8 temp              : Temperature for Fermi smearing (Ry)
 ! logical fixspin          : Fix the spin of the system?
 ! real*8  ts               : Total spin of the system
@@ -277,7 +283,7 @@ MODULE siesta_options
     use files,     only : slabel
     use sys
     use units,     only : eV
-    use diagmemory, only: memoryfactor
+    use diagmemory,   only: memoryfactor
     use siesta_cml
     implicit none
     !----------------------------------------------------------- Input Variables
@@ -654,7 +660,7 @@ MODULE siesta_options
     endif
 
     if (leqi(method,'diagon')) then
-      isolve = 0
+      isolve = SOLVE_DIAGON
       ! DivideAndConquer is now the default
       DaC = fdf_get('Diag.DivideAndConquer',.true.)
       if (ionode)  then
@@ -664,7 +670,7 @@ MODULE siesta_options
       endif
 
     else if (leqi(method,'ordern')) then
-      isolve = 1
+      isolve = SOLVE_ORDERN
       DaC    = .false.
       if (ionode) then
         write(6,'(a,4x,a)') 'redata: Method of Calculation            = ', &
@@ -675,24 +681,30 @@ MODULE siesta_options
                   'together with nspin>2.  This is not allowed in '//&
                   'this version of siesta' )
       endif
+#ifdef TRANSIESTA
+! TSS Begin
+    else if (leqi(method,'transi')) then
+      isolve = SOLVE_TRANSI
+      if (ionode) then
+        write(*,'(a,4x,a)')                                &
+           'redata: Method of Calculation            = ',  &
+           '    Transiesta'
+      endif
+#endif /* TRANSIESTA */
     else if (leqi(method,'jacobi')) then
-      isolve = 2
+      isolve = SOLVE_JACOBI
       DaC    = .false.
       if (ionode) then
         write(6,'(a,4x,a)') 'redata: Method of Calculation            = ', &
                             'Jacobi-Davidson'
       endif
-    else if (leqi(method,'iterat')) then
-      isolve = 3
-      DaC    = .false.
-      if (ionode) then
-        write(6,'(a,4x,a)') 'redata: Method of Calculation            = ', &
-                            'Iterative'
-      endif
-
     else
       call die( 'redata: The method of solution must be either '//&
-                'OrderN, Diagon, Jacobi or Iterative' )
+#ifdef TRANSIESTA
+                'OrderN, Diagon, Jacobi or Transiesta' )
+#else
+                'OrderN, Diagon or Jacobi' )
+#endif
     endif
 
 #ifdef DEBUG
@@ -716,7 +728,7 @@ MODULE siesta_options
 
     ! Electronic temperature for Fermi Smearing ...
     temp = fdf_get('ElectronicTemperature',temp_default,'Ry')
-    if (ionode .and. isolve == 0) then
+    if (ionode .and. isolve.eq.SOLVE_TRANSI) then
       write(6,6) 'redata: Electronic Temperature           = ',temp,'  Ry'
     endif
 
@@ -819,7 +831,7 @@ MODULE siesta_options
     pmax = fdf_get('ON.ChemicalPotentialOrder',pmax_default)
 
 
-    if (isolve==1) then
+    if (isolve==SOLVE_ORDERN) then
       if (ionode) then
         write(6,4) 'redata: Maximum number of iterations     = ',ncgmax
         write(6,'(a,d12.2)') 'redata: Relative tolerance               = ',etol
@@ -1407,39 +1419,39 @@ MODULE siesta_options
 
 
     ! Find some switches 
-    writek =       fdf_get( 'WriteKpoints'    , outlng )
-    writef =       fdf_get( 'WriteForces'     , outlng )
-    writedm =      fdf_get( 'WriteDM'     , .true.)
-    writedm_cdf = fdf_get('WriteDM.NetCDF' , .false.)
-    writedm_cdf_history = fdf_get('WriteDM.History.NetCDF' , .false.)
-    writedmhs_cdf = fdf_get('WriteDMHS.NetCDF' , .false.)
-    writedmhs_cdf_history = fdf_get('WriteDMHS.History.NetCDF' , .false.)
-    read_charge_cdf = fdf_get('SCF.Read.Charge.NetCDF' , .false.)
-    read_deformation_charge_cdf = fdf_get('SCF.Read.Deformation.Charge.NetCDF' , .false.)
+    writek                = fdf_get( 'WriteKpoints', outlng )
+    writef                = fdf_get( 'WriteForces', outlng )
+    writedm               = fdf_get( 'WriteDM', .true. )
+    writedm_cdf           = fdf_get('WriteDM.NetCDF', .false. )
+    writedm_cdf_history   = fdf_get('WriteDM.History.NetCDF', .false. )
+    writedmhs_cdf         = fdf_get('WriteDMHS.NetCDF', .false. )
+    writedmhs_cdf_history = fdf_get('WriteDMHS.History.NetCDF', .false.)
+    read_charge_cdf       = fdf_get('SCF.Read.Charge.NetCDF' , .false. )
+    read_deformation_charge_cdf = &
+    fdf_get('SCF.Read.Deformation.Charge.NetCDF', .false. )
 
     if (read_charge_cdf .or. read_deformation_charge_cdf) then
        mix = .false.
     endif
 
-    new_diagk =    fdf_get( 'UseNewDiagk'      , .false. )
-
-    writb =        fdf_get( 'WriteBands'      , outlng )
-    writbk =       fdf_get( 'WriteKbands'     , outlng )
-    writeig =      fdf_get('WriteEigenvalues', outlng )
-    writec =       fdf_get( 'WriteCoorStep'   , outlng )
-    writmd =       fdf_get( 'WriteMDhistory'  , .false.)
-    writpx =       fdf_get( 'WriteMDXmol'     , .not. writec)
-    default =      fdf_get( 'UseSaveData'     , .false.)
-    savehs =       fdf_get( 'SaveHS'          , .false.)
-    fixauxcell =   fdf_get( 'FixAuxiliaryCell', .false.)
-    naiveauxcell = fdf_get( 'NaiveAuxiliaryCell', .false.)
-    initdmaux =    fdf_get( 'ReInitialiseDM'  , .TRUE.)
-    allow_dm_reuse =         fdf_get('DM.AllowReuse'  , .TRUE.)
-    allow_dm_extrapolation = fdf_get('DM.AllowExtrapolation'  , .TRUE.)
-    muldeb =       fdf_get( 'MullikenInSCF'   , .false.)
-    rijmin =       fdf_get( 'WarningMinimumAtomicDistance', &
-                            1.0_dp, 'Bohr' )
-    bornz =        fdf_get( 'BornCharge'   , .false.)
+    new_diagk              = fdf_get( 'UseNewDiagk', .false. )
+    writb                  = fdf_get( 'WriteBands', outlng )
+    writbk                 = fdf_get( 'WriteKbands', outlng )
+    writeig                = fdf_get('WriteEigenvalues', outlng )
+    writec                 = fdf_get( 'WriteCoorStep', outlng )
+    writmd                 = fdf_get( 'WriteMDhistory', .false. )
+    writpx                 = fdf_get( 'WriteMDXmol', .not. writec )
+    default                = fdf_get( 'UseSaveData', .false. )
+    savehs                 = fdf_get( 'SaveHS', .false. )
+    fixauxcell             = fdf_get( 'FixAuxiliaryCell', .false. )
+    naiveauxcell           = fdf_get( 'NaiveAuxiliaryCell', .false. )
+    initdmaux              = fdf_get( 'ReInitialiseDM', .TRUE. )
+    allow_dm_reuse         = fdf_get( 'DM.AllowReuse', .TRUE. )
+    allow_dm_extrapolation = fdf_get( 'DM.AllowExtrapolation', .TRUE. )
+    muldeb                 = fdf_get( 'MullikenInSCF'   , .false.)
+    rijmin                 = fdf_get( 'WarningMinimumAtomicDistance', &
+                                      1.0_dp, 'Bohr' )
+    bornz                  = fdf_get( 'BornCharge'   , .false. )
     if (idyn.ne.6) then
       bornz = .false.
     endif
@@ -1449,17 +1461,17 @@ MODULE siesta_options
     RemoveIntraMolecularPressure = fdf_get( &
                             'MD.RemoveIntraMolecularPressure', .false.)
 !
-!     COOP-related flags
+!   COOP-related flags
 !
     write_coop = fdf_get('COOP.Write', .false.)
 !
-    savrho   = fdf_get('SaveRho', dumpcharge)
-    savdrh   = fdf_get('SaveDeltaRho',       .false.)
-    savevh   = fdf_get('SaveElectrostaticPotential', .false.)
-    savevt   = fdf_get('SaveTotalPotential', .false.)
-    savepsch = fdf_get('SaveIonicCharge',  .false.)
-    savetoch = fdf_get('SaveTotalCharge',  .false.)
-    savevna  = fdf_get('SaveNeutralAtomPotential', .false.)
+    savrho   = fdf_get( 'SaveRho', dumpcharge)
+    savdrh   = fdf_get( 'SaveDeltaRho',       .false. )
+    savevh   = fdf_get( 'SaveElectrostaticPotential', .false. )
+    savevna  = fdf_get( 'SaveNeutralAtomPotential', .false. )
+    savevt   = fdf_get( 'SaveTotalPotential', .false. )
+    savepsch = fdf_get( 'SaveIonicCharge', .false. )
+    savetoch = fdf_get( 'SaveTotalCharge', .false. )
     RETURN
     !----------------------------------------------------------------------- END
 1   format(a,4x,l1)
