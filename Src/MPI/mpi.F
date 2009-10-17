@@ -24,8 +24,8 @@
 !       as symbolic datatypes, and have them point to the appropriate
 !       data type.
 !
-      USE MPI__INCLUDE ,
 #ifdef OLD_CRAY
+      USE MPI__INCLUDE ,
      &     DAT_single => MPI_real,                                      &
      &     DAT_2single => MPI_2real,                                    &
      &     DAT_double => MPI_real,                                      &
@@ -33,6 +33,7 @@
      &     DAT_complex => MPI_complex,                                  &
      &     DAT_dcomplex => MPI_complex                                  &
 #else
+      USE MPI__INCLUDE ,
      &     DAT_single => MPI_real,                                      &
      &     DAT_2single => MPI_2real,                                    &
      &     DAT_double => MPI_double_precision,                          &

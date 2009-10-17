@@ -12,19 +12,6 @@
 !
 !     Broyden geometry optimization
 !      
-      use precision, only : dp
-      use sys,       only : die
-      use fdf
-      use units, only: kBar
-!
-      use m_broyddj_nocomm, only: broyden_t
-      use m_broyddj_nocomm, only: broyden_reset, broyden_step,
-     $                     broyden_destroy, broyden_init,
-     $                     broyden_is_setup
-
-      use m_memory, only: memory, mem_stat
-      use parallel, only : ionode
-
       implicit none
 
       public :: broyden_optimizer
@@ -73,6 +60,19 @@ c ***************************************************************************
 C
 C  Modules
 C
+      use precision, only : dp
+      use sys,       only : die
+      use fdf
+      use units, only: kBar
+      use siesta_options, only: dxmax
+!
+      use m_broyddj_nocomm, only: broyden_t
+      use m_broyddj_nocomm, only: broyden_reset, broyden_step,
+     $                     broyden_destroy, broyden_init,
+     $                     broyden_is_setup
+
+      use m_memory, only: memory, mem_stat
+      use parallel, only : ionode
 
 ! Subroutine arguments:
 
@@ -85,7 +85,6 @@ C
 c Internal variables and arrays
       real(dp)            :: volume, new_volume, trace
       real(dp)            :: Max_step_strain, Max_step_coordinates
-      real(dp)            :: dxmax
       integer             :: i, ia, indi, j, n
 
       real(dp) ::  celli(3,3), sxx, syy, szz, sxy, sxz, syz

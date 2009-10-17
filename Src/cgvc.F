@@ -239,6 +239,14 @@ C Initialize and read cgaux and cgcntr if present and wanted ---------------
 
           if ( found ) then
             linmin = cgcntr(1)
+! Simple bugfix for fixed cell restarts. In the case of a tightend ftol
+! after a sucessful CG run, relaxed is set to .true. by the read from
+! iocg. This results in the test for convergence being skipped within
+! conjgr. Setting relaxed to .false. here avoids this. In the case of 
+! a variable cell relaxed is set below anyway and the converence test
+! is always performed. A better solution (moving the test out into a
+! seperate routine) will follow in a later version.  -- AMW 8/7/2008
+            relaxd = .false.
           else
             if (Node.eq.0) then
               write(6,'(/,a)') 'cgvc: WARNING: CG file not found'

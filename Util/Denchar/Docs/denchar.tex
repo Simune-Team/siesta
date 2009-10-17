@@ -8,6 +8,7 @@
 %
 %   Javier Junquera  Feb 04, 2002
 %   Pablo Ordejon    Jul 02, 2003
+%   Pablo Ordejon    2004  -- multiple k-points
 %
 
 
@@ -37,7 +38,7 @@
 
 \vspace{4cm}
 
-{\Huge {\bf {\sc Denchar} 1.2.1} }
+{\Huge {\bf {\sc Denchar} 1.4} }
 
 \vspace{0.5 cm}
 
@@ -47,7 +48,7 @@ in real space -}}
 
 \vspace{3cm}
 
-{\Large {\it July 2, 2003} }
+{\Large {\it April 1, 2009} }
 
 \vspace{3cm}
 {\Large Javier Junquera}
@@ -147,13 +148,8 @@ the charge density for spin up and down) is calculated.
 \item
 When wavefunctions are computed, each wavefunction present in the
 file produced by {\sc Siesta} is printed on a different file, 
-so that they can be plotted individually.
-
-\item
-So far, only $\Gamma$-point wavefunctions  can be plotted
-using {\sc Denchar}. Wavefunctions with other $k$-points
-are not implemented (they have complex values, which
-makes it difficult to represent.
+so that they can be plotted individually. Real and imaginary
+parts are written independently.
 
 \end{itemize}
 
@@ -209,7 +205,7 @@ type {\tt make denchar} there to compile it.
  where you intend to run  {\sc Denchar}, and that
  contains the files described above:
 
- {\tt \# ln -s $\sim$/siesta/Src/denchar . }
+ {\tt \# ln -s $\sim$/siesta/Util/Denchar/Src/denchar . }
 
  Edit an input file for {\sc Denchar}, {\it input}.fdf, following the 
  instructions given in Section \ref{cap:input}. Then,

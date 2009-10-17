@@ -16,7 +16,7 @@ c
       end
 c
 #ifdef MPI
-      subroutine diagkp( nspin, nuo, no, maxspn, maxuo, maxnh, maxnd, 
+      subroutine diagkp( nspin, nuo, no, maxspn, maxnh, maxnd, 
      &                   maxo, numh, listhptr, listh, H, S, getD,
      &                   fixspin, qtot, qs, temp, e1, e2, xij, indxuo,
      &                   nk, kpoint, wk, eo, qo, Dnew, Enew, ef, efs,
@@ -37,8 +37,6 @@ C integer nuo                 : Number of basis orbitals in unit cell
 C                               local to this processor
 C integer no                  : Number of basis orbitals in supercell
 C integer maxspn              : Second dimension of eo and qo
-C integer maxuo               : Last dimension of xij
-C                               Must be at least max(indxuo)
 C integer maxo                : First dimension of eo and qo
 C integer maxnh               : Maximum number of orbitals interacting  
 C integer maxnd               : First dimension of listd / DM
@@ -110,10 +108,10 @@ C
       integer 
      .  MPIerror
 
-      integer           maxnd, maxnh, maxspn, maxuo, maxo, nk, no,
+      integer           maxnd, maxnh, maxspn, maxo, nk, no,
      .                  nspin, nuo, nuotot, iscf
-      integer           indxuo(no), listh(maxnh), numh(maxuo),
-     .                  listhptr(maxuo)
+      integer           indxuo(no), listh(maxnh), numh(nuo),
+     .                  listhptr(nuo)
       real(dp)          Dnew(maxnd,nspin), 
      .                  e1, e2, ef, efs(nspin), Enew(maxnd,nspin),
      .                  Entropy, eo(maxo,maxspn,nk), H(maxnh,nspin),
@@ -139,7 +137,7 @@ C  ....................
 C Globalise list arrays - assumes listh and listd are the same
 
 C Allocate local memory for global list arrays
-      call re_alloc( numhg, 1, nuotot, name='diagkp',
+      call re_alloc( numhg, 1, nuotot, name='numhg',
      &               routine= 'diagkp' )
       call re_alloc( listhptrg, 1, nuotot, name='listhptrg',
      &               routine= 'diagkp' )
@@ -369,6 +367,15 @@ C Repeat diagonalisation with increased memory to handle clustering
             call cdiag(Haux,Saux,nuotot,nuotot,nuog,aux,psi,
      .                 neigneeded,iscf,ierror)
           endif
+!
+!         Here we could write the wavefunctions, taking care to
+!         use a suitable version of writew. There are also problems
+!         of ordering of the different functions...
+!
+!          if (getPSI) then
+!             call writew_one_node(nuotot,nuog,ik,kpoint(1,ik),ispin,
+!     .                 aux,psi,.false.)
+!          endif
 
 C Add contribution to density matrices of unit-cell orbitals
           Dk = 0.0d0

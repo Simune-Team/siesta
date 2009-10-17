@@ -11,6 +11,13 @@ version while at Berkeley and elsewhere.
 Jose Luis Martins (JLM) is maintaining his own version of the
 code. 
 
+If you want to cite this program, you can use the following:
+
+ATOM, a program for DFT calculations in atoms and pseudopotential
+generation, maintained by Alberto Garcia and distributed as part of
+the Siesta package. See http://www.icmab.es/siesta/atom.
+
+
 This version can be run in two 'compatibility modes' (see Samples
 directory for examples).
 

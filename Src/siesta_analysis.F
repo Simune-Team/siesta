@@ -8,7 +8,7 @@
 
       subroutine siesta_analysis( relaxd )
       USE band, only: nbk, bk, maxbk, bands
-      USE writewave, only: nwk, wfk, wwave
+      USE writewave, only: nwk, wfk, wwave, allocwave
       USE m_ksvinit, only: nkpol, kpol, wgthpol
       use m_ksv
       USE m_projected_DOS, only: projected_DOS
@@ -115,6 +115,14 @@
      &              nwk, wfk, no_u, gamma, occtol )
       endif
 
+      if (write_coop) then
+        ! Output the wavefunctions for the kpoints in the SCF set
+         call allocwave(nkpnt,no_u)
+         call wwave( no_s, nspin, nspin, no_u, no_l, maxnh, maxk,
+     .        numh, listhptr, listh, H, S, Ef, xijo, indxuo,
+     .        nkpnt, kpoint, no_u, gamma, occtol)
+      endif
+
 !     Compute bands
       nullify( ebk )
       call re_alloc( ebk, 1, no_u, 1, nspin, 1, maxbk,
@@ -215,7 +223,8 @@
      &       qspin(1) - qspin(2)
           endif
           if (cml_p) call cmlAddProperty(xf=mainXML,
-     &         property=qspin(1)-qspin(2), dictref='siesta:qspin')
+     .         value=qspin(1)-qspin(2), dictref='siesta:qspin',
+     .         units='siestaUnits:spin')
         elseif (nspin .eq. 4) then
           call spnvec( nspin, qspin, qaux, stot, svec )
           if (IOnode) then
@@ -223,10 +232,12 @@
      &       'siesta: Total spin polarization (Qup-Qdown) =', stot
             write(6,'(a,3f12.6)') 'siesta: Spin vector =', svec
             if (cml_p) then
-              call cmlAddProperty(xf=mainXML, property=stot,
-     &             dictref='siesta:stot')
-              call cmlAddProperty(xf=mainXML, property=svec,
-     &             dictref='siesta:svec')
+              call cmlAddProperty(xf=mainXML, value=stot,
+     .             dictref='siesta:stot',
+     .             units='siestaUnits:spin')
+              call cmlAddProperty(xf=mainXML, value=svec,
+     .             dictref='siesta:svec',
+     .             units='siestaUnits:spin')
             endif !cml_p
           endif
         endif
@@ -242,9 +253,9 @@
      &      (dipol(ix)/Debye,ix=1,3)
         endif
         if (cml_p) then
-          call cmlAddProperty(xf=mainXML, property=dipol,
+          call cmlAddProperty(xf=mainXML, value=dipol/Debye,
      &         title='Electric dipole', dictref='siesta:dipol',
-     &         units='siestaUnits:atomic')
+     .         units='siestaUnits:Debye')
         endif !cml_p
       endif
 

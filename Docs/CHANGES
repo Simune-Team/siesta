@@ -5,6 +5,430 @@
 ** CHANGES ALONG bsc-2.8 branch (bsc-trunk)
 
 -------------------------------------------------------------------------
+2009-08-13  16:45 GMT Alberto Garcia <albertog@icmab.es>	bsc-288
+Synch with trunk (except TranSiesta) (redone)
+
+Merged all the missing patchlogs from the trunk as of Aug 11, except
+those dealing with TranSiesta and COOP. The COOP funcionality was
+merged by hand afterwards. [fixed file-ids on Oct 17]
+
+Comments:
+
+* Remaining bugs and shortcomings:
+
+- The Jacobi-Davidson subsystem is still not completely finished.
+  The metis library is needed to compile the program even for the
+  serial version (See Src/Sys/nano-intel-mpi-cdf.make for an example
+  of how to include it).
+
+- Exc for non-collinear spin shows differences.
+- fdf update in Zmatrix does not work well.
+- The old fdf is still used in some of the Util programs
+- A temporary array is produced in fermid for non-coll spin calculations.
+- Some references to Rogeli's debugging scaffolding might
+  not be completely resolved for all programs.
+- CML: the mesh-cutoff info might be out of order in the XML file.
+
+removed:
+  Src/Sys/eth-hreidar-mpi.make
+  Src/Sys/lahey-lam.make
+  Src/Sys/lahey-mpich.make
+  Src/Sys/lahey-nolibs.make
+  Src/Sys/lahey.make
+  Src/Sys/osfdxml-mpich.make
+  Src/Sys/osfdxml.make
+  Src/Sys/osfdxmlcdf.make
+  Src/Sys/pgf90-lam.make
+  Src/Sys/pgf90-mpich.make
+  Src/Sys/pgf90-nolibs.make
+  Src/Sys/pgf90.make
+  Src/Sys/sgi-altix.make
+  Src/Sys/sgi.make
+  Src/Sys/sgi64-cdf.make
+  Src/Sys/sgi64-lam-cdf.make
+  Src/Sys/sgi64-lam.make
+  Src/Sys/sgi64-mpi_fermat.make
+  Src/Sys/sgi64-mpich-cdf.make
+  Src/Sys/sgi64-mpich.make
+  Src/Sys/sgin32-mpi.make
+  Src/Sys/sun-nolibs.make
+  Src/Sys/t3e.make
+  Src/denchar.F
+  Src/extrapol.F
+  Src/filter.f90
+  Src/filter_subs.f
+  Src/initdm.F
+  Src/m_denchar_geom.f
+  Src/m_denchar_init.F
+  Src/m_denchar_io.F
+  Src/m_denchar_neighb.f
+  Src/m_denchar_work.f
+  Tests/Reference-xml/pb_filter_all.xml
+  Tests/Reference-xml/pb_filter_basis.xml
+  Tests/Reference-xml/pb_filter_pcc.xml
+  Tests/Reference-xml/pb_filter_vna.xml
+  Tests/Reference/pb_filter_all.out
+  Tests/Reference/pb_filter_basis.out
+  Tests/Reference/pb_filter_nopcc.out
+  Tests/Reference/pb_filter_pcc.out
+  Tests/Reference/pb_filter_vna.out
+  Tests/Reference/var_cell_filter.out
+  Tests/au-surface/
+  Tests/au-surface/au-surface.fdf
+  Tests/au-surface/au-surface.pseudos
+  Tests/au-surface/makefile
+  Tests/bsc-Makefile
+  Tests/bsc-compare.sh
+  Tests/bsc-test.mk
+  Tests/pb_filter_basis/
+  Tests/pb_filter_basis/makefile
+  Tests/pb_filter_basis/pb_filter_basis.fdf
+  Tests/pb_filter_basis/pb_filter_basis.pseudos
+  Tests/pb_filter_nopcc/
+  Tests/pb_filter_nopcc/makefile
+  Tests/pb_filter_nopcc/pb_filter_nopcc.fdf
+  Tests/pb_filter_nopcc/pb_filter_nopcc.pseudos
+  Tests/pb_filter_pcc/
+  Tests/pb_filter_pcc/makefile
+  Tests/pb_filter_pcc/pb_filter_pcc.fdf
+  Tests/pb_filter_pcc/pb_filter_pcc.pseudos
+  Tests/pb_filter_vna/
+  Tests/pb_filter_vna/makefile
+  Tests/pb_filter_vna/pb_filter_vna.fdf
+  Tests/pb_filter_vna/pb_filter_vna.pseudos
+  Tests/std-Makefile
+  Tests/std-compare.sh
+  Tests/std-test.mk
+  Tests/var_cell_filter/
+  Tests/var_cell_filter/makefile
+  Tests/var_cell_filter/var_cell_filter.fdf
+  Tests/var_cell_filter/var_cell_filter.pseudos
+  Tests/var_cell_stress/
+  Tests/var_cell_stress/makefile
+  Tests/var_cell_stress/var_cell_stress.fdf
+  Tests/var_cell_stress/var_cell_stress.pseudos
+  Util/Denchar/README-Source
+  Util/pdosxml/f2kcli.F90
+added:
+  Obj/
+  Obj/README
+  Src/FoX/ *Dir
+  Src/Sys/macosx-gfortran64-atlas.make
+  Src/Sys/macosx-openmpi.make
+  Src/Sys/marenostrum-mpi-64.make
+  Src/Sys/marenostrum-mpi-netcdf-64.make
+  Src/Sys/nano-intel-mpi-cdf.make
+  Src/Sys/nano-intel-mpi.make
+  Src/Sys/nano-intel-serial.make
+  Src/Sys/nano-pgf95-serial.make
+  Src/Sys/pgf95-macosx32.make
+  Src/compute_norm.F
+  Src/filter/
+  Src/filter/README
+  Src/filter/ba-6s-orb.dat
+  Src/filter/core.dat
+  Src/filter/f2kcli.F90
+  Src/filter/m_filter.f90
+  Src/filter/m_getopts.f90
+  Src/filter/makefile
+  Src/filter/test_filter.f90
+  Src/filter/ti-3p-orb.dat
+  Src/filter/ti-4p-orb.dat
+  Src/kpoint_pdos.F90
+  Src/m_filter.f90
+  Src/m_hsx.F
+  Src/m_iodm.F
+  Src/m_sparse.F
+  Src/write_subs_energies.F
+  Src/write_subs_positions.F
+  Src/write_subs_pressure.F
+  Tests/Makefile
+  Tests/Pseudos/N.psf
+  Tests/Reference-xml/pb_filter_cutoff.xml
+  Tests/Reference-xml/pb_filter_tol.xml
+  Tests/Reference-xml/si64_coop.xml
+  Tests/Reference-xml/si_pdos_kgrid.xml
+  Tests/Reference/h_chain.out
+  Tests/Reference/n_chain.out
+  Tests/Reference/pb_filter_cutoff.out
+  Tests/Reference/pb_filter_tol.out
+  Tests/Reference/si64_coop.out
+  Tests/Reference/si_coop.out
+  Tests/Reference/si_pdos_kgrid.out
+  Tests/Scripts/nano.pbs
+  Tests/Scripts/nano4.sh
+  Tests/fe_cohp/
+  Tests/fe_cohp/fe_cohp.fdf
+  Tests/fe_cohp/fe_cohp.pseudos
+  Tests/fe_cohp/makefile
+  Tests/fe_noncol_kp/
+  Tests/fe_noncol_kp/fe_noncol_kp.fdf
+  Tests/fe_noncol_kp/fe_noncol_kp.pseudos
+  Tests/fe_noncol_kp/makefile
+  Tests/fen/
+  Tests/fen/fen.fdf
+  Tests/fen/fen.pseudos
+  Tests/fen/makefile
+  Tests/h2o_coop/
+  Tests/h2o_coop/h2o_coop.fdf
+  Tests/h2o_coop/h2o_coop.pseudos
+  Tests/h2o_coop/makefile
+  Tests/h_chain/
+  Tests/h_chain/h_chain.fdf
+  Tests/h_chain/h_chain.pseudos
+  Tests/h_chain/makefile
+  Tests/h_chain2/
+  Tests/h_chain2/h_chain2.fdf
+  Tests/h_chain2/h_chain2.pseudos
+  Tests/h_chain2/makefile
+  Tests/n_chain/
+  Tests/n_chain/makefile
+  Tests/n_chain/n_chain.fdf
+  Tests/n_chain/n_chain.pseudos
+  Tests/pb_filter_tol/
+  Tests/pb_filter_tol/makefile
+  Tests/pb_filter_tol/pb_filter_tol.fdf
+  Tests/pb_filter_tol/pb_filter_tol.pseudos
+  Tests/pd_ice/pd_ice.pseudos
+  Tests/si64_coop/
+  Tests/si64_coop/makefile
+  Tests/si64_coop/si64_coop.fdf
+  Tests/si64_coop/si64_coop.pseudos
+  Tests/si_coop/
+  Tests/si_coop/makefile
+  Tests/si_coop/si_coop.fdf
+  Tests/si_coop/si_coop.pseudos
+  Tests/si_pdos_kgrid/
+  Tests/si_pdos_kgrid/makefile
+  Tests/si_pdos_kgrid/si_pdos_kgrid.fdf
+  Tests/si_pdos_kgrid/si_pdos_kgrid.pseudos
+  Tests/test.mk
+  Util/CMLComp/
+  Util/CMLComp/README
+  Util/CMLComp/ccViz
+  Util/COOP/    *Dir
+  Util/Denchar/Src/   *Dir
+  Util/DensityMatrix/README
+  Util/DensityMatrix/dmfilter.f90
+  Util/Grid/average_x.m
+  Util/Grid/average_z.m
+  Util/HSX/
+  Util/HSX/hsx_m.f90
+  Util/Optimizer/  *Dir
+  Util/Projections/  *Dir
+  Util/SCF/README
+  Util/SCF/g_dm.py
+  Util/SCF/g_dm3.py
+  Util/SCF/g_els_out.py
+  Util/SCF/g_hh.py
+  Util/SCF/g_hist.py
+  Util/Scripting/cutoff.py
+  Util/WFS/
+  Util/WFS/makefile
+  Util/WFS/readwfx.f
+  Util/WFS/wfs2wfsx.f
+  Util/WFS/wfsnc2wfsx.f90
+  Util/WFS/wfsx2wfs.f
+  Util/pseudo-xml/Fe.xml
+  Util/pseudo-xml/io.f
+  Util/pseudo-xml/makefile
+  Util/pseudo-xml/pseudopotential.f
+  Util/pseudo-xml/sys.f90
+  Util/pseudo-xml/xml2psf.f90
+  Util/pseudo-xml/xml2psf_helper.f
+renamed:
+  Pseudo/atom/makefile => Pseudo/atom/makefile-old
+  Pseudo/atom/makefile-xml => Pseudo/atom/Makefile
+  Src/Sys/marenostrum-mpi.make => Src/Sys/marenostrum-mpi-32.make
+  Src/pseudo-xml => Util/pseudo-xml
+  Tests/h3po4_atomlists_1 => Tests/h3po4_1
+  Tests/h3po4_atomlists_1/h3po4.fdf => Tests/h3po4_1/h3po4_1.fdf
+  Tests/h3po4_atomlists_1/h3po4.pseudos => Tests/h3po4_1/h3po4_1.pseudos
+  Tests/h3po4_atomlists_2 => Tests/h3po4_2
+  Tests/h3po4_atomlists_2/h3po4.fdf => Tests/h3po4_2/h3po4_2.fdf
+  Tests/h3po4_atomlists_2/h3po4.pseudos => Tests/h3po4_2/h3po4_2.pseudos
+  Tests/h3po4_atomlists_3 => Tests/h3po4_3
+  Tests/h3po4_atomlists_3/h3po4.fdf => Tests/h3po4_3/h3po4_3.fdf
+  Tests/h3po4_atomlists_3/h3po4.pseudos => Tests/h3po4_3/h3po4_3.pseudos
+  Tests/pb_filter_all => Tests/pb_filter_cutoff
+  Tests/pb_filter_all/pb_filter_all.fdf => Tests/pb_filter_cutoff/pb_filter_cutoff.fdf
+  Tests/pb_filter_all/pb_filter_all.pseudos => Tests/pb_filter_cutoff/pb_filter_cutoff.pseudos
+  Tests/pd_h2o => Tests/pd_ice
+  Util/Vibra/Vibra => Util/Vibra/Src
+  Util/pdosxml/pdos.f90 => Util/pdosxml/pdosxml.f90
+  Util/readwf.f => Util/WFS/readwf.f
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Pseudo/atom/Docs/atom.tex
+  Pseudo/atom/README
+  Pseudo/atom/prdiff.f
+  Pseudo/atom/pseudoXML.f
+  Pseudo/atom/velect.f
+  Pseudo/atom/xc.f
+  Src/Libs/blas.f
+  Src/MPI/mpi.F
+  Src/Makefile
+  Src/Sys/README
+  Src/Sys/cscs-cray-mpi.make
+  Src/Sys/cscs-cray.make
+  Src/Sys/cscs-ibm-blanc.make
+  Src/Sys/finisterrae.make
+  Src/Sys/gfortran-netcdf.make
+  Src/Sys/marenostrum-mpi-netcdf-32.make
+  Src/alloc.F90
+  Src/atmfuncs.f
+  Src/atom.f
+  Src/atomlwf.F
+  Src/bands.F
+  Src/basis_io.F
+  Src/basis_specs.f
+  Src/broyden_optim.F
+  Src/cdiag.F
+  Src/cgvc.F
+  Src/chemical.f
+  Src/chempot.F
+  Src/coor.F
+  Src/dhscf.F
+  Src/diag2g.F
+  Src/diag2k.F
+  Src/diagg.F
+  Src/diagk.F
+  Src/diagk_file.F
+  Src/diagkp.F
+  Src/diagon.F
+  Src/dynamics.f
+  Src/efield.F
+  Src/electrostatic.f
+  Src/hsparse.F
+  Src/initmesh.F
+  Src/iodm_netcdf.F90
+  Src/iodmhs_netcdf.F90
+  Src/ioeig.f
+  Src/iohs.F
+  Src/ioncat.f
+  Src/iowfs_netcdf.F90
+  Src/jacobi_davidson.F
+  Src/kpoint_grid.F90
+  Src/m_spin.F90
+  Src/meshsubs.F
+  Src/mixer.F
+  Src/mulliken.F
+  Src/new_dm.F
+  Src/obj_setup.sh*
+  Src/ordern.F
+  Src/outcell.f
+  Src/pdos.F
+  Src/post_scf_work.F
+  Src/projected_DOS.F
+  Src/pseudopotential.f
+  Src/radial.f
+  Src/redcel.F
+  Src/remove_intramol_pressure.f90
+  Src/scfconvergence_test.F
+  Src/setup_hamiltonian.F
+  Src/siesta_analysis.F
+  Src/siesta_cml.f90
+  Src/siesta_cmlsubs.F90
+  Src/siesta_init.F
+  Src/siesta_options.F90
+  Src/sparse_matrices.F
+  Src/state_analysis.F
+  Src/state_init.F
+  Src/struct_init.F
+  Src/sys.F
+  Src/timer.F
+  Src/version.F90
+  Src/write_subs.F
+  Src/writewave.F
+  Src/xc.f
+  Src/xmlparser/makefile
+  Tests/Reference-xml/ag.xml
+  Tests/Reference-xml/batio3.xml
+  Tests/Reference-xml/benzene.xml
+  Tests/Reference-xml/bessel.xml
+  Tests/Reference-xml/born.xml
+  Tests/Reference-xml/born_spin.xml
+  Tests/Reference-xml/ch4.xml
+  Tests/Reference-xml/constant_volume.xml
+  Tests/Reference-xml/fe.xml
+  Tests/Reference-xml/fe_broyden.xml
+  Tests/Reference-xml/fe_clust_noncollinear.xml
+  Tests/Reference-xml/fire_benzene.xml
+  Tests/Reference-xml/floating.xml
+  Tests/Reference-xml/force_2.xml
+  Tests/Reference-xml/graphite_c6.xml
+  Tests/Reference-xml/h2o.xml
+  Tests/Reference-xml/h2oZ.xml
+  Tests/Reference-xml/h2o_basis.xml
+  Tests/Reference-xml/h2o_dos.xml
+  Tests/Reference-xml/h2o_findp_bug.xml
+  Tests/Reference-xml/h2o_op_broyden.xml
+  Tests/Reference-xml/h2o_orderN.xml
+  Tests/Reference-xml/h2o_radialgrid.xml
+  Tests/Reference-xml/h2o_reparam.xml
+  Tests/Reference-xml/md_anneal.xml
+  Tests/Reference-xml/md_nose.xml
+  Tests/Reference-xml/md_npr.xml
+  Tests/Reference-xml/md_pr.xml
+  Tests/Reference-xml/md_verlet.xml
+  Tests/Reference-xml/mgco3.xml
+  Tests/Reference-xml/oxyn.xml
+  Tests/Reference-xml/ptcda.xml
+  Tests/Reference-xml/si2x1h.xml
+  Tests/Reference-xml/si64.xml
+  Tests/Reference-xml/si_bandpoints.xml
+  Tests/Reference-xml/si_coop.xml
+  Tests/Reference-xml/sih.xml
+  Tests/Reference-xml/sih_fire.xml
+  Tests/Reference-xml/sih_op_broyden.xml
+  Tests/Reference-xml/sinw.xml
+  Tests/Reference-xml/var_cell.xml
+  Tests/Reference-xml/zmatrix.xml
+  Tests/ag/ag.fdf
+  Tests/benzene/benzene.fdf
+  Tests/fe_clust_noncollinear/fe_clust_noncollinear.fdf
+  Tests/fire_benzene/fire_benzene.fdf
+  Tests/h2o/h2o.fdf
+  Tests/h2oZ/h2oZ.fdf
+  Tests/h3po4_1/makefile
+  Tests/h3po4_2/makefile
+  Tests/h3po4_3/makefile
+  Tests/pb_filter_cutoff/makefile
+  Tests/pd_ice/makefile
+  Tests/ptcda/ptcda.fdf
+  Tests/si_bandpoints/si_bandpoints.fdf
+  Tests/zmatrix/zmatrix.fdf
+  Util/Denchar/Docs/CHANGES
+  Util/Denchar/Docs/denchar.tex
+  Util/DensityMatrix/cdf2dm.f90
+  Util/DensityMatrix/dm2cdf.f90
+  Util/DensityMatrix/makefile
+  Util/Grid/cdf_fft.f90
+  Util/Grid/grid2cube.f
+  Util/Grid/libfft.f
+  Util/Grid/makefile
+  Util/README
+  Util/Scripting/Siesta/Interface.py
+  Util/Vibra/Src/Makefile
+  Util/Vibra/Src/vibrator.f
+  Util/pdosxml/README
+  Util/pdosxml/m_pdos.f90
+  Util/pdosxml/makefile
+  Util/pseudo-xml/README
+  version.info
+  Pseudo/atom/makefile-old
+  Pseudo/atom/Makefile
+  Src/Sys/marenostrum-mpi-32.make
+  Tests/h3po4_1/h3po4_1.fdf
+  Tests/h3po4_2/h3po4_2.fdf
+  Tests/h3po4_3/h3po4_3.fdf
+  Tests/pb_filter_cutoff/pb_filter_cutoff.fdf
+  Util/pdosxml/pdosxml.f90
+
+
+
+-------------------------------------------------------------------------
 2009-08-11  17:45 GMT Alberto Garcia <albertog@icmab.es>	bsc-2.8.9
 Do not stop after Jacobi-Davidson process
 

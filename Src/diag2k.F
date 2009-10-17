@@ -1,4 +1,4 @@
-! 
+      
 ! This file is part of the SIESTA package.
 !
 ! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
@@ -13,8 +13,21 @@
      .                   listd, H, S, getD, qtot, temp, e1, e2,
      .                   xij, indxuo, nk, kpoint, wk,
      .                   eo, qo, Dnew, Enew, ef, Entropy,
-     .                   Haux, Saux, psi, Dk, Ek, aux, nuotot,
-     .                   occtol, iscf )
+     .                   psi, nuotot, occtol, iscf)
+
+!
+!     Contributed by Volodymyr Maslyuk
+!      
+      use precision
+      use sys
+      use parallel,      only : Node, Nodes, BlockSize
+      use parallelsubs,  only : LocalToGlobalOrb
+      use m_fermid,      only : fermid, stepf
+      use m_spin,        only : MColl
+#ifdef MPI
+      use mpi_siesta
+#endif
+      implicit           none
 C *********************************************************************
 C Calculates the eigenvalues and eigenvectors, density
 C and energy-density matrices, and occupation weights of each 
@@ -25,6 +38,7 @@ C Written by J.Soler, August 1998.
 C Modified by V.M.Garcia, June 2002.
 C Density matrix build and computation of eigenvectors restricted
 C by J.D. Gale November 2004.
+C Corrected by V.V. Maslyuk for parallel case, Mai 2007
 C **************************** INPUT **********************************
 C integer nuo                 : Number of basis orbitals in unit cell
 C integer no                  : Number of basis orbitals in supercell
@@ -72,12 +86,11 @@ C real*8 Enew(maxnd,4)        : Output Energy-Density Matrix
 C real*8 ef                   : Fermi energy
 C real*8 Entropy              : Electronic entropy
 C *************************** AUXILIARY *******************************
-C real*8 Haux(2,2,nuotot,2,nuo) : Aux. space for the hamiltonian matrix
-C real*8 Saux(2,2,nuotot,2,nuo) : Aux. space for the overlap matrix
+C real*8 Haux(2,nuotot,2,nuo) : Aux. space for the hamiltonian matrix
+C real*8 Saux(2,nuotot,2,nuo) : Aux. space for the overlap matrix
 C real*8 psi(2,2,nuotot,2*nuo)  : Aux. space for the eigenvectors
-C real*8 aux(5,2*nuotot)        : Extra auxiliary space
-C real*8 Dk(2,2,nuotot,2,nuo)   : Aux. space that may be the same as Haux
-C real*8 Ek(2,2,nuotot,2,nuo)   : Aux. space that may be the same as Saux
+C real*8 Dk(2,nuotot,2,nuo)   : Aux. space that may be the same as Haux
+C real*8 Ek(2,nuotot,2,nuo)   : Aux. space that may be the same as Saux
 C *************************** UNITS ***********************************
 C xij and kpoint must be in reciprocal coordinates of each other.
 C temp and H must be in the same energy units.
@@ -86,71 +99,76 @@ C *************************** PARALLEL ********************************
 C The auxiliary arrays are now no longer symmetry and so the order
 C of referencing has been changed in several places to reflect this.
 C *********************************************************************
-C
-C  Modules
-C
-      use precision
-      use sys
-      use parallel,      only : Node, Nodes, BlockSize
-      use parallelsubs,  only : LocalToGlobalOrb
-      use m_fermid,      only : fermid, stepf
+!
+!     INPUT / OUTPUT
+      
+      integer maxuo, maxnd, maxnh, maxo, nk, no, nuo, nuotot, iscf
+      
+      integer indxuo(no), numh(nuo), numd(nuo)
+      integer listh(maxnh), listd(maxnd)
+      integer listhptr(*), listdptr(*)
+      
+      real(dp) Dnew(maxnd,4), Enew(maxnd,4), H(maxnh,4), S(maxnh)
+      real(dp) kpoint(3,nk), wk(nk), xij(3,maxnh)
+      real(dp) e1, e2, ef, eo(maxo*4,nk), qo(maxo*4,nk)
+      real(dp) occtol, qtot, temp, Entropy
+      
+      logical               getD
+      
+!     TEMPOS, INTERNAL VARIABLES etc.
+      
+      real(dp) psi(2,2,nuotot,nuo*2)
+      
+      integer  BNode, BTest, ie, ierror, iie, ik, ind, io, iio
+      integer  iuo, j, jo, juo, neigneeded
+      real(dp) ee, qe, t
+      
+!     Haux(js,juo,is,iuo) = <js,juo|H|is,iuo>
+!     Indices is and js are for spin components
+!     Indices iuo and juo are for orbital components
+      complex(dp),dimension(:,:,:,:), allocatable :: Haux, Saux
+      
+      complex(dp),dimension(:,:,:,:), allocatable :: Dkc, Ekc
+      complex(dp)                                 :: cicj
+      complex(dp)                                 :: D11, D22, D12, D21
+      complex(dp),dimension(:,:),     allocatable :: caux
+      complex(dp)                                 :: kphs
+      real(dp)                                    :: kxij
 #ifdef MPI
-      use mpi_siesta
+      integer            :: MPIerror
 #endif
 
-      implicit none
-
-#ifdef MPI
-      integer 
-     .  MPIerror
-#endif
-
-      integer
-     .  maxnd, maxnh, maxo, nk, no, nuo, nuotot, iscf
-
-      integer 
-     .  indxuo(no), listh(maxnh), numh(nuo), listd(maxnd), numd(nuo),
-     .  listhptr(*), listdptr(*)
-
-      real(dp)
-     .  Dnew(maxnd,4), occtol,
-     .  e1, e2, ef, Enew(maxnd,4), eo(maxo*4,nk), Entropy,
-     .  H(maxnh,4), kpoint(3,nk), qo(maxo*4,nk), qtot,
-     .  S(maxnh), temp, wk(nk), xij(3,maxnh)
-     
-      real(dp)
-     .  aux(5,2*nuotot), Dk(2,2,nuotot,2,nuo), Ek(2,2,nuotot,2,nuo), 
-     .  Haux(2,2,nuotot,2,nuo), psi(2,2,nuotot,nuo*2), 
-     .  Saux(2,2,nuotot,2,nuo)
-
-      logical
-     .  getD
-
-      external    cdiag
-
-C  Internal variables .............................................
-      integer
-     .  BNode, BTest, ie, ierror, iie, ik, ind, io, iio,
-     .  iuo, j, jo, juo, nd, neigneeded
-      real(dp)
-     .  ckx, ee, kxij, pipj1, pipj2, qe, skx, t
-C  ....................
-
-C Find eigenvalues at every k point ...............................
+      external              cdiag, memory
+!***********************************************************************
+!     B E G I N
+!***********************************************************************
+!     define the arrays
+      allocate(Haux(MColl,nuotot,MColl,nuo))
+      call memory('A','Z',MColl*nuotot*MColl*nuo,'diag2k')
+      allocate(Saux(MColl,nuotot,MColl,nuo))
+      call memory('A','Z',MColl*nuotot*MColl*nuo,'diag2k')
+      allocate(Dkc(MColl,nuotot,MColl,nuo))
+      call memory('A','Z',MColl*nuotot*MColl*nuo,'diag2k')
+      allocate(Ekc(MColl,nuotot,MColl,nuo))
+      call memory('A','Z',MColl*nuotot*MColl*nuo,'diag2k')
+      allocate(caux(MColl,MColl*nuotot))
+      call memory('A','Z',MColl*MColl*nuotot,'diag2k')
+      
+      eo = 0.0_dp
+      
+!     Find eigenvalues at every k point
       do ik = 1,nk
-
-C       Initialize Hamiltonian and overlap matrices in full format
-C       Index i is for real/imag parts
-C       Indices is and js are for spin components
-C       Indices iuo and juo are for orbital components:
-C       Haux(i,js,juo,is,iuo) = <js,juo|H|is,iuo>
-        Saux = 0.0d0
-        Haux = 0.0d0
-
-C       Transfer S,H matrices from sparse format in supercell to
-C       full format in unit cell
-C       Convention: ispin=1 => H11, ispin=2 => H22, 
-C                   ispin=3 => Real(H12), ispin=4 => Imag(H12)
+      
+        Saux = dcmplx(0.0_dp,0.0_dp)
+        Haux = dcmplx(0.0_dp,0.0_dp)
+      
+!
+!       Transfer S,H matrices from sparse format in supercell to
+!                                       full format in unit cell
+!
+!       Convention: ispin=1 => H11,       ispin=2 => H22,
+!                   ispin=3 => Real(H12), ispin=4 => Imag(H12)
+      
         do iuo = 1,nuo
           do j = 1,numh(iuo)
             ind = listhptr(iuo) + j
@@ -159,76 +177,56 @@ C                   ispin=3 => Real(H12), ispin=4 => Imag(H12)
             kxij = kpoint(1,ik) * xij(1,ind) +
      .             kpoint(2,ik) * xij(2,ind) +
      .             kpoint(3,ik) * xij(3,ind)
-            ckx = cos(kxij)
-            skx = sin(kxij)
-            Saux(1,1,juo,1,iuo) = Saux(1,1,juo,1,iuo) + S(ind)*ckx
-            Saux(2,1,juo,1,iuo) = Saux(2,1,juo,1,iuo) + S(ind)*skx
-            Saux(1,2,juo,2,iuo) = Saux(1,2,juo,2,iuo) + S(ind)*ckx
-            Saux(2,2,juo,2,iuo) = Saux(2,2,juo,2,iuo) + S(ind)*skx
-            Haux(1,1,juo,1,iuo) = Haux(1,1,juo,1,iuo) + H(ind,1)*ckx
-            Haux(2,1,juo,1,iuo) = Haux(2,1,juo,1,iuo) + H(ind,1)*skx
-            Haux(1,2,juo,2,iuo) = Haux(1,2,juo,2,iuo) + H(ind,2)*ckx
-            Haux(2,2,juo,2,iuo) = Haux(2,2,juo,2,iuo) + H(ind,2)*skx
-            Haux(1,1,juo,2,iuo) = Haux(1,1,juo,2,iuo) + H(ind,3)*ckx
-     .                                                + H(ind,4)*skx
-            Haux(2,1,juo,2,iuo) = Haux(2,1,juo,2,iuo) - H(ind,4)*ckx
-     .                                                + H(ind,3)*skx
+            kphs = cdexp(dcmplx(0.0_dp, 1.0_dp)*kxij)
+      
+            Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
+            Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
+            Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + H(ind,1) * kphs
+            Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + H(ind,2) * kphs
+            Haux(1,juo,2,iuo) = Haux(1,juo,2,iuo)
+     .                        + dcmplx(H(ind,3), - H(ind,4)) * kphs
+            Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
+     .                        + dcmplx(H(ind,3), + H(ind,4)) * kphs
           enddo
         enddo
-
-C Hermiticity
-        do iuo = 1,nuo
-          do juo = 1,nuo
-            Haux(1,2,juo,1,iuo) =   Haux(1,1,iuo,2,juo)
-            Haux(2,2,juo,1,iuo) = - Haux(2,1,iuo,2,juo)
-          enddo
-        enddo
-
-C Find eigenvalues
-C Possible memory optimization: equivalence Haux and psi
-        call cdiag(Haux,Saux,2*nuotot,2*nuotot,2*nuo,eo(1,ik),psi,
+      
+!       Find eigenvalues
+        call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,eo(1,ik),psi,
      .             0,iscf,ierror)
+      
         if (ierror.ne.0) then
           call die('Terminating due to failed diagonalisation')
         endif
       enddo
-
-C Check if we are done ................................................
+      
+!-----------------------------------------------------------------------
+!     Check if we are done
+!-----------------------------------------------------------------------
       if (.not.getD) return
-
-C Find new Fermi energy and occupation weights ........................
-      call fermid( 2, 4, nk, wk, maxo, nuotot, eo, 
-     .             temp, qtot, qo, ef, Entropy )
-
-*     write(6,'(/,a,/,(10f7.2))') 'diag2k: eo =',(eo(ie,1),ie=1,nuo*2)
-*     write(6,'(/,a,/,(10f7.2))') 'diag2k: qo =',(qo(ie,1),ie=1,nuo*2)
-*     write(6,'(/,a)') 'diag2k: eo ='
-*     do ik = 1,nk
-*       write(6,'(a,i6,/,(10f7.2))') 'ik=',ik,(eo(ie,ik),ie=1,nuo*2)
-*     enddo
-
-C Find weights for local density of states ............................
+!-----------------------------------------------------------------------
+      
+!     Find new Fermi energy and occupation weights
+      call fermid(2,4,nk,wk,maxo,nuotot,eo,temp,qtot,qo,ef,Entropy)
+      
+!     Find weights for local density of states
       if (e1 .lt. e2) then
 *       e1 = e1 - ef
 *       e2 = e2 - ef
         t = max( temp, 1.d-6 )
         do ik = 1,nk
           do io = 1,nuotot*2
-            qo(io,ik) = wk(ik) * 
-     .           ( stepf( (eo(io,ik)-e2)/t ) -
-     .             stepf( (eo(io,ik)-e1)/t ) ) 
+            qo(io,ik) = wk(ik) * ( stepf( (eo(io,ik)-e2)/t ) -
+     .                             stepf( (eo(io,ik)-e1)/t ) )
           enddo
         enddo
       endif
       
-C New density and energy-density matrices of unit-cell orbitals .......
-      nd = listdptr(nuo) + numd(nuo)
-      Dnew(1:nd,1:4) = 0.0d0
-      Enew(1:nd,1:4) = 0.0d0
-
+!     New density and energy-density matrices of unit-cell orbitals
+      Dnew(:,:) = 0.0_dp
+      Enew(:,:) = 0.0_dp
+      
+!     Find maximum eigenvector that is required for this k point 
       do ik = 1,nk
-
-C Find maximum eigenvector that is required for this k point 
         neigneeded = 0
         ie = nuotot
         do while (ie.gt.0.and.neigneeded.eq.0)
@@ -236,10 +234,10 @@ C Find maximum eigenvector that is required for this k point
           if (abs(qe).gt.occtol) neigneeded = ie
           ie = ie - 1
         enddo
-
-C Find eigenvectors 
-        Saux = 0.0d0
-        Haux = 0.0d0
+      
+!       Find eigenvectors 
+        Saux = dcmplx(0.0_dp,0.0_dp)
+        Haux = dcmplx(0.0_dp,0.0_dp)
         do iuo = 1,nuo
           do j = 1,numh(iuo)
             ind = listhptr(iuo) + j
@@ -248,41 +246,29 @@ C Find eigenvectors
             kxij = kpoint(1,ik) * xij(1,ind) +
      .             kpoint(2,ik) * xij(2,ind) +
      .             kpoint(3,ik) * xij(3,ind)
-            ckx = cos(kxij)
-            skx = sin(kxij)
-            Saux(1,1,juo,1,iuo) = Saux(1,1,juo,1,iuo) + S(ind)*ckx
-            Saux(2,1,juo,1,iuo) = Saux(2,1,juo,1,iuo) + S(ind)*skx
-            Saux(1,2,juo,2,iuo) = Saux(1,2,juo,2,iuo) + S(ind)*ckx
-            Saux(2,2,juo,2,iuo) = Saux(2,2,juo,2,iuo) + S(ind)*skx
-            Haux(1,1,juo,1,iuo) = Haux(1,1,juo,1,iuo) + H(ind,1)*ckx
-            Haux(2,1,juo,1,iuo) = Haux(2,1,juo,1,iuo) + H(ind,1)*skx
-            Haux(1,2,juo,2,iuo) = Haux(1,2,juo,2,iuo) + H(ind,2)*ckx
-            Haux(2,2,juo,2,iuo) = Haux(2,2,juo,2,iuo) + H(ind,2)*skx
-            Haux(1,1,juo,2,iuo) = Haux(1,1,juo,2,iuo) + H(ind,3)*ckx
-     .                                                + H(ind,4)*skx
-            Haux(2,1,juo,2,iuo) = Haux(2,1,juo,2,iuo) - H(ind,4)*ckx
-     .                                                + H(ind,3)*skx
+            kphs = cdexp(dcmplx(0.0_dp, 1.0_dp)*kxij)
+      
+            Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
+            Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
+            Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + H(ind,1) * kphs
+            Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + H(ind,2) * kphs
+            Haux(1,juo,2,iuo) = Haux(1,juo,2,iuo)
+     .                        + dcmplx(H(ind,3), - H(ind,4)) * kphs
+            Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
+     .                        + dcmplx(H(ind,3), + H(ind,4)) * kphs
           enddo
         enddo
-
-C Hermiticity
-        do iuo = 1,nuo
-          do juo = 1,nuo
-            Haux(1,2,juo,1,iuo) =   Haux(1,1,iuo,2,juo)
-            Haux(2,2,juo,1,iuo) = - Haux(2,1,iuo,2,juo)
-          enddo
-        enddo
-
-        call cdiag(Haux,Saux,2*nuotot,2*nuotot,2*nuo,aux,psi,
+      
+        call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,caux,psi,
      .             neigneeded,iscf,ierror)
-
-C Check error flag and take appropriate action
+      
+!       Check error flag and take appropriate action
         if (ierror.gt.0) then
           call die('Terminating due to failed diagonalisation')
         elseif (ierror.lt.0) then
-C Repeat diagonalisation with increased memory to handle clustering
-          Saux = 0.0d0
-          Haux = 0.0d0
+!         Repeat diagonalisation with increased memory to handle clustering
+          Saux = dcmplx(0.0_dp,0.0_dp)
+          Haux = dcmplx(0.0_dp,0.0_dp)
           do iuo = 1,nuo
             do j = 1,numh(iuo)
               ind = listhptr(iuo) + j
@@ -291,139 +277,190 @@ C Repeat diagonalisation with increased memory to handle clustering
               kxij = kpoint(1,ik) * xij(1,ind) +
      .               kpoint(2,ik) * xij(2,ind) +
      .               kpoint(3,ik) * xij(3,ind)
-              ckx = cos(kxij)
-              skx = sin(kxij)
-              Saux(1,1,juo,1,iuo) = Saux(1,1,juo,1,iuo) + S(ind)*ckx
-              Saux(2,1,juo,1,iuo) = Saux(2,1,juo,1,iuo) + S(ind)*skx
-              Saux(1,2,juo,2,iuo) = Saux(1,2,juo,2,iuo) + S(ind)*ckx
-              Saux(2,2,juo,2,iuo) = Saux(2,2,juo,2,iuo) + S(ind)*skx
-              Haux(1,1,juo,1,iuo) = Haux(1,1,juo,1,iuo) + H(ind,1)*ckx
-              Haux(2,1,juo,1,iuo) = Haux(2,1,juo,1,iuo) + H(ind,1)*skx
-              Haux(1,2,juo,2,iuo) = Haux(1,2,juo,2,iuo) + H(ind,2)*ckx
-              Haux(2,2,juo,2,iuo) = Haux(2,2,juo,2,iuo) + H(ind,2)*skx
-              Haux(1,1,juo,2,iuo) = Haux(1,1,juo,2,iuo) + H(ind,3)*ckx
-     .                                                  + H(ind,4)*skx
-              Haux(2,1,juo,2,iuo) = Haux(2,1,juo,2,iuo) - H(ind,4)*ckx
-     .                                                  + H(ind,3)*skx
+              kphs = cdexp(dcmplx(0.0_dp, 1.0_dp)*kxij)
+      
+              Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
+              Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
+              Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + H(ind,1) * kphs
+              Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + H(ind,2) * kphs
+              Haux(1,juo,2,iuo) = Haux(1,juo,2,iuo)
+     .                          + dcmplx(H(ind,3), - H(ind,4)) * kphs
+              Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
+     .                          + dcmplx(H(ind,3), + H(ind,4)) * kphs
             enddo
           enddo
-          do iuo = 1,nuo
-            do juo = 1,nuo
-              Haux(1,2,juo,1,iuo) =  Haux(1,1,iuo,2,juo)
-              Haux(2,2,juo,1,iuo) = -Haux(2,1,iuo,2,juo)
-            enddo
-          enddo
-          call cdiag(Haux,Saux,2*nuotot,2*nuotot,2*nuo,aux,psi,
+          call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,caux,psi,
      .               neigneeded,iscf,ierror)
         endif
-
-C Store the products of eigenvectors in matrices Dk and Ek
-C WARNING: Dk and Ek may be EQUIVALENCE'd to Haux and Saux
-        Dk = 0.0d0
-        Ek = 0.0d0
-
+      
+!-----------------------------------------------------------------------	     
+!     Store the products of eigenvectors in matrices Dk and Ek
+!     WARNING: Dk and Ek may be EQUIVALENCE'd to Haux and Saux
+!-----------------------------------------------------------------------	     
+      
+        Dkc  = dcmplx(0.0_dp,0.0_dp)
+        Ekc  = dcmplx(0.0_dp,0.0_dp)
+        caux = dcmplx(0.0_dp,0.0_dp)
+      
         BNode = 0
         iie = 0
-        do ie = 1,nuotot
+        do ie = 1,MColl*nuotot
+          qe = qo(ie,ik)
           if (Node.eq.BNode) then
             iie = iie + 1
           endif
-          qe = qo(ie,ik)
-          if (abs(qe).gt.occtol) then
+      
+          caux(:,:) = dcmplx(0.0_dp,0.0_dp)
+          if (qe.gt.occtol) then
             if (Node.eq.BNode) then
               do j = 1,nuotot
-                aux(1,j) = psi(1,1,j,iie)
-                aux(2,j) = psi(2,1,j,iie)
-                aux(3,j) = psi(1,2,j,iie)
-                aux(4,j) = psi(2,2,j,iie)
+                caux(1,j)=dcmplx(psi(1,1,j,iie),psi(2,1,j,iie)) ! c_{i,up}
+                caux(2,j)=dcmplx(psi(1,2,j,iie),psi(2,2,j,iie)) ! c_{i,dn}
               enddo
             endif
 #ifdef MPI
-            call MPI_Bcast(aux(1,1),4*nuotot,MPI_double_precision,BNode,
-     .        MPI_Comm_World,MPIerror)
+            call MPI_Bcast(caux(1,1),2*nuotot,MPI_double_complex,BNode,
+     .           MPI_Comm_World,MPIerror)
 #endif
             ee = qo(ie,ik) * eo(ie,ik)
             do iuo = 1,nuo
               call LocalToGlobalOrb(iuo,Node,Nodes,iio)
               do juo = 1,nuotot
-
-                pipj1 = aux(1,iio) * aux(1,juo) +
-     .                  aux(2,iio) * aux(2,juo)
-                pipj2 = aux(1,iio) * aux(2,juo) -
-     .                  aux(2,iio) * aux(1,juo)
-                Dk(1,1,juo,1,iuo) = Dk(1,1,juo,1,iuo) + qe * pipj1
-                Dk(2,1,juo,1,iuo) = Dk(2,1,juo,1,iuo) + qe * pipj2
-                Ek(1,1,juo,1,iuo) = Ek(1,1,juo,1,iuo) + ee * pipj1
-                Ek(2,1,juo,1,iuo) = Ek(2,1,juo,1,iuo) + ee * pipj2
-
-                pipj1 = aux(3,iio) * aux(3,juo) +
-     .                  aux(4,iio) * aux(4,juo)
-                pipj2 = aux(3,iio) * aux(4,juo) -
-     .                  aux(4,iio) * aux(3,juo)
-                Dk(1,2,juo,2,iuo) = Dk(1,2,juo,2,iuo) + qe * pipj1
-                Dk(2,2,juo,2,iuo) = Dk(2,2,juo,2,iuo) + qe * pipj2
-                Ek(1,2,juo,2,iuo) = Ek(1,2,juo,2,iuo) + ee * pipj1
-                Ek(2,2,juo,2,iuo) = Ek(2,2,juo,2,iuo) + ee * pipj2
-
-                pipj1 = aux(1,iio) * aux(3,juo) +
-     .                  aux(2,iio) * aux(4,juo)
-                pipj2 = aux(1,iio) * aux(4,juo) -
-     .                  aux(2,iio) * aux(3,juo)
-                Dk(1,1,juo,2,iuo) = Dk(1,1,juo,2,iuo) + qe * pipj1
-                Dk(2,1,juo,2,iuo) = Dk(2,1,juo,2,iuo) + qe * pipj2
-                Ek(1,1,juo,2,iuo) = Ek(1,1,juo,2,iuo) + ee * pipj1
-                Ek(2,1,juo,2,iuo) = Ek(2,1,juo,2,iuo) + ee * pipj2
-
+      
+!     Relation:      c_{i,up} = caux(1,i)
+!                    c_{i,dn} = caux(2,i)
+!
+!                 | ----- 1,1 -------     ----- 2,1 ------- |
+!                 | c_{j,u} c_{i,u}^*     c_{j,u} c_{i,d)^* |
+!     D_{j,i} =   |                                         |
+!                 | ----- 1,2 -------     ----- 2,2 ------- |
+!                 | c_{j,d} c_{i,u}^*     c_{j,d} c_{i,d)^* |
+!
+!
+!                 | ----- 1,1 -------          ----- 2,1 -------       |
+!                 | D_{j,i}(1)                 D_{j,i}(3)+i D_{j,i}(4) |
+!             =   |                                                    |
+!                 | ----- 1,2 -------          ----- 2,2 -------       |
+!                 | D_{i,j}(3)-i D_{i,j}(4)    D_{j,i}(2)              |
+!
+      
+!------- 1,1 -----------------------------------------------------------
+               cicj = dconjg(caux(1,iio)) * caux(1,juo)
+               Dkc(1,juo,1,iuo) = Dkc(1,juo,1,iuo) + qe * cicj
+               Ekc(1,juo,1,iuo) = Ekc(1,juo,1,iuo) + ee * cicj
+!------- 2,2 -----------------------------------------------------------
+               cicj = dconjg(caux(2,iio)) * caux(2,juo)
+               Dkc(2,juo,2,iuo) = Dkc(2,juo,2,iuo) + qe * cicj
+               Ekc(2,juo,2,iuo) = Ekc(2,juo,2,iuo) + ee * cicj
+!------- 2,1 -----------------------------------------------------------
+               cicj = dconjg(caux(1,iio)) * caux(2,juo)
+               Dkc(1,juo,2,iuo) = Dkc(1,juo,2,iuo) + qe * cicj
+               Ekc(1,juo,2,iuo) = Ekc(1,juo,2,iuo) + ee * cicj
+!------- 1,2 -----------------------------------------------------------
+               cicj = dconjg(caux(2,iio)) * caux(1,juo)
+               Dkc(2,juo,1,iuo) = Dkc(2,juo,1,iuo) + qe * cicj
+               Ekc(2,juo,1,iuo) = Ekc(2,juo,1,iuo) + ee * cicj
               enddo
             enddo
           endif
-          BTest = ie/BlockSize
-          if (BTest*BlockSize.eq.ie) then
+          BTest = ie/(MColl*BlockSize)
+          if (BTest*MColl*BlockSize.eq.ie) then
             BNode = BNode + 1
             if (BNode .gt. Nodes-1) BNode = 0
           endif
         enddo
-
-C Add contribution to density matrices of unit-cell orbitals
+      
+!       Add contribution to density matrices of unit-cell orbitals
+!       ------------------------------------------------------
+!       | D_{j,i}(1)                 D_{j,i}(3)-i D_{j,i}(4) |
+!       | D_{i,j}(3)+i D_{i,j}(4)    D_{j,i}(2)              |
+!       ------------------------------------------------------
+      
         do iuo = 1,nuo
-          do j = 1,numd(iuo)
-            ind = listdptr(iuo) + j
-            jo = listd(ind)
-            juo = indxuo(jo)
-            kxij = kpoint(1,ik) * xij(1,ind) +
-     .             kpoint(2,ik) * xij(2,ind) +
-     .             kpoint(3,ik) * xij(3,ind)
-            ckx = cos(kxij)
-            skx = sin(kxij)
-
-            Dnew(ind,1) = Dnew(ind,1) + Dk(1,1,juo,1,iuo) * ckx
-     .                                + Dk(2,1,juo,1,iuo) * skx
-            Enew(ind,1) = Enew(ind,1) + Ek(1,1,juo,1,iuo) * ckx
-     .                                + Ek(2,1,juo,1,iuo) * skx
-
-            Dnew(ind,2) = Dnew(ind,2) + Dk(1,2,juo,2,iuo) * ckx
-     .                                + Dk(2,2,juo,2,iuo) * skx
-            Enew(ind,2) = Enew(ind,2) + Ek(1,2,juo,2,iuo) * ckx
-     .                                + Ek(2,2,juo,2,iuo) * skx
-
-C Average k and -k solutions because time-reversal sym
-            Dnew(ind,3) = Dnew(ind,3) + 0.5d0 * 
-     .       ((Dk(1,1,juo,2,iuo) + Dk(1,1,iuo,2,juo)) * ckx
-     .       +(Dk(2,1,juo,2,iuo) - Dk(2,1,iuo,2,juo)) * skx)
-            Enew(ind,3) = Enew(ind,3) + 0.5d0 * 
-     .       ((Ek(1,1,juo,2,iuo) + Ek(1,1,iuo,2,juo)) * ckx
-     .       +(Ek(2,1,juo,2,iuo) - Ek(2,1,iuo,2,juo)) * skx)
-
-            Dnew(ind,4) = Dnew(ind,4) + 0.5d0 * 
-     .       ((Dk(2,1,juo,2,iuo) + Dk(2,1,iuo,2,juo)) * ckx
-     .       -(Dk(1,1,juo,2,iuo) - Dk(1,1,iuo,2,juo)) * skx)
-            Enew(ind,4) = Enew(ind,4) + 0.5d0 * 
-     .       ((Ek(2,1,juo,2,iuo) + Ek(2,1,iuo,2,juo)) * ckx
-     .       -(Ek(1,1,juo,2,iuo) - Ek(1,1,iuo,2,juo)) * skx)
-
-          enddo
+        do j = 1,numd(iuo)
+          ind = listdptr(iuo) + j
+          jo = listd(ind)
+          juo = indxuo(jo)
+          kxij = kpoint(1,ik) * xij(1,ind) +
+     .           kpoint(2,ik) * xij(2,ind) +
+     .           kpoint(3,ik) * xij(3,ind)
+          kphs = cdexp(dcmplx(0.0_dp,-1.0_dp)*kxij)
+      
+!         Average k and -k solutions because time-reversal symetry
+          D11 = 0.5_dp * (Dkc(1,juo,1,iuo) * kphs
+     .        +    dconjg(Dkc(1,juo,1,iuo) * kphs))
+      
+          D22 = 0.5_dp * (Dkc(2,juo,2,iuo) * kphs
+     .        +    dconjg(Dkc(2,juo,2,iuo) * kphs))
+          
+          D12 = 0.5_dp * (Dkc(1,juo,2,iuo) * kphs
+     .        +    dconjg(Dkc(2,juo,1,iuo) * kphs))
+      
+          D21 = 0.5_dp * (Dkc(2,juo,1,iuo) * kphs
+     .        +    dconjg(Dkc(1,juo,2,iuo) * kphs))
+      
+          D12 = 0.5_dp * (D12 + dconjg(D21))
+          D21 = dconjg(D12)
+      
+          Dnew(ind,1) = Dnew(ind,1) + dreal(D11)
+          Dnew(ind,2) = Dnew(ind,2) + dreal(D22)
+          Dnew(ind,3) = Dnew(ind,3) + dreal(D12)
+          Dnew(ind,4) = Dnew(ind,4) + dimag(D12)
+      
+!         Average k and -k solutions because time-reversal symetry
+          D11 = 0.5_dp * (Ekc(1,juo,1,iuo) * kphs
+     .        +    dconjg(Ekc(1,juo,1,iuo) * kphs))
+      
+          D22 = 0.5_dp * (Ekc(2,juo,2,iuo) * kphs
+     .        +    dconjg(Ekc(2,juo,2,iuo) * kphs))
+          
+          D12 = 0.5_dp * (Ekc(1,juo,2,iuo) * kphs
+     .        +    dconjg(Ekc(2,juo,1,iuo) * kphs))
+      
+          D21 = 0.5_dp * (Ekc(2,juo,1,iuo) * kphs
+     .        +    dconjg(Ekc(1,juo,2,iuo) * kphs))
+      
+          D12 = 0.5_dp * (D12 + dconjg(D21))
+          D21 = dconjg(D12)
+      
+          Enew(ind,1) = Enew(ind,1) + dreal(D11)
+          Enew(ind,2) = Enew(ind,2) + dreal(D22)
+          Enew(ind,3) = Enew(ind,3) + dreal(D12) 
+          Enew(ind,4) = Enew(ind,4) + dimag(D12) 
+      
         enddo
-
+        enddo
       enddo
-
-      end
+      
+!     deallocate the arrays
+      call memory('D','Z',MColl*nuotot*MColl*nuo,'diag2k')
+      deallocate(Haux)
+      call memory('D','Z',MColl*nuotot*MColl*nuo,'diag2k')
+      deallocate(Saux)
+      call memory('D','Z',MColl*nuotot*MColl*nuo,'diag2k')
+      deallocate(Dkc)
+      call memory('D','Z',MColl*nuotot*MColl*nuo,'diag2k')
+      deallocate(Ekc)
+      call memory('D','Z',MColl*MColl*nuotot,'diag2k')
+      deallocate(caux)
+      
+!        write(160+node,*)'ITERATION'
+!        write(170+node,*)'ITERATION'
+!        do iuo = 1,nuo
+!          do j = 1,numd(iuo)
+!            ind = listdptr(iuo) + j
+!            jo = listd(ind)
+!            juo = indxuo(jo)
+!             write(160+node,'(3i5,4f15.9)')iuo,juo,jo,Dnew(ind,1:4)
+!             write(170+node,'(3i5,4f15.9)')iuo,juo,jo,
+!     .    (Dnew(ind,1)+Dnew(ind,2))*0.5,
+!     .    (Dnew(ind,1)-Dnew(ind,2))*0.5,Dnew(ind,3:4)
+!          enddo
+!        enddo
+!      
+!      call die('maslyuk')
+!***********************************************************************      
+      return
+      end subroutine diag2k
+!***********************************************************************      
+      

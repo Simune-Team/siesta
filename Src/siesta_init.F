@@ -6,6 +6,7 @@
 
       subroutine siesta_init()
       use Kpoint_grid,        only: setup_Kpoint_grid, gamma_scf, maxk
+      USE Kpoint_pdos,        only: gamma_pdos
       use Band,               only: gamma_bands, setup_bands
       use m_ksvinit,          only: gamma_polarization,
      &                              estimate_pol_kpoints
@@ -43,10 +44,11 @@
       use m_eo
       use m_gamma
       use m_ioxv,             only: xv_file_read
+      use m_projected_DOS,    only: init_projected_DOS
       use writewave,          only: gamma_wavefunctions,
      &                              setup_wf_kpoints
 #ifdef MPI
-      use mpi_siesta
+      use mpi_siesta,         only: mpi_comm_world
 #endif
 
       implicit none
@@ -61,6 +63,9 @@
       integer :: i, is, ispin
       integer :: neigmin      ! Min. number of eigenstates (per k point)
       integer :: ns           ! Number of species
+
+      logical :: user_wants_supercell
+
 !------------------------------------------------------------------------- BEGIN
 #ifdef MPI
 C     Initialise MPI and set processor number
@@ -79,8 +84,8 @@ C     Initialise MPI and set processor number
 #endif
 #ifdef DEBUG
       call debugMpiOn( )
-      call inicializar_tiempo( 20 )
 #endif
+      call inicializar_tiempo( 20 )
       IOnode = (Node .eq. 0)
 
 C     Print version information
@@ -109,6 +114,10 @@ C     Start time counter
 
 C     Nullify arrays
       nullify(Haux,Saux,psi)
+      nullify(Dscf,Dold,Eold,Escf)
+      nullify(listh)
+      nullify(H,H0,S)
+      nullify(xijo)
 
 C     Initialize some variables
       DUext   = 0.0_dp
@@ -304,6 +313,13 @@ C     auxiliary supercell for the calculation of matrix elements.
       call setup_Kpoint_grid( ucell )
       gamma = gamma_scf
 
+      ! Call initialisation of PDOS here since we need to check if 
+      ! the auxiliary supercell is needed for a non-gamma calculation
+      call init_projected_DOS()
+      if (do_pdos) then
+        gamma = gamma .and. gamma_pdos
+      endif
+
       nullify(eo,qo)
       call re_alloc(eo, 1, no_u, 1, nspin, 1, maxk, 'eo', 'siesta_init')
       call re_alloc(qo, 1, no_u, 1, nspin, 1, maxk, 'qo', 'siesta_init')
@@ -317,6 +333,13 @@ C     auxiliary supercell for the calculation of matrix elements.
       call estimate_pol_kpoints(ucell)
       gamma = gamma .and. gamma_polarization
 C      print *, "gamma, gamma_pol: ", gamma, gamma_polarization
+!
+!     User can request that the calculation is done with an explicit
+!     auxiliary supercell and hermitian version, even if using only
+!     the gamma point
+!
+      user_wants_supercell = fdf_get('ForceAuxCell',.false.)
+      if (user_wants_supercell) gamma = .false.
 
 C     Find required supercell
 C     2*rmaxh is used to guarantee that two given orbitals in the

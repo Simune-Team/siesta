@@ -10,8 +10,7 @@
 !
 Module siesta_cml
 
-  Use flib_wxml
-  Use flib_wcml
+  Use FoX_wcml
   Use siesta_cmlsubs
 
   Implicit None

@@ -98,6 +98,7 @@ C
 #ifdef MPI
       use mpi_siesta
 #endif
+      use m_norm
 
       implicit          none
 
@@ -122,6 +123,7 @@ C
      .                  psi(2,nuotot,nuo), aux(2,nuotot*5)
       logical           getD, getPSI, fixspin
       external          cdiag
+      real(dp)          anorm
 
 C  Internal variables .............................................
       integer
@@ -181,11 +183,6 @@ C Find new Fermi energy and occupation weights ........................
      .             temp, qtot, qo, ef, Entropy )
       endif
 
-      if (Node .eq. 0) then
-         call io_assign(iu)
-         open(iu,file="OCCS",form="formatted",status="unknown",
-     $           action="write",position="rewind")
-      endif
 
 C Find weights for local density of states ............................
       if (e1 .lt. e2) then
@@ -204,11 +201,19 @@ C Find weights for local density of states ............................
       endif
 
 C New density and energy-density matrices of unit-cell orbitals .......
-      nd = listdptr(nuo) + numd(nuo)
-      Dnew(1:nd,1:nspin) = 0.0_dp
-      Enew(1:nd,1:nspin) = 0.0_dp
+      if (nuo.gt.0) then
+        nd = listdptr(nuo) + numd(nuo)
+        Dnew(1:nd,1:nspin) = 0.0_dp
+        Enew(1:nd,1:nspin) = 0.0_dp
+      endif
 
   10  continue
+
+      if (Node .eq. 0) then
+         call io_assign(iu)
+         open(iu,file="OCCS",form="formatted",status="unknown",
+     $           action="write",position="rewind")
+      endif
 
 C Loop over k points
       do ik = 1,nk
@@ -290,9 +295,10 @@ C Repeat diagonalisation with increased memory to handle clustering
 
           call timer( 'c-eigvec', 2 )
 
-          if (getPSI) 
-     .     call writew(nuotot,nuo,ik,kpoint(1,ik),ispin,
+          if (getPSI) then
+             call writew(nuotot,nuo,ik,kpoint(1,ik),ispin,
      .                 aux,psi,.false.)
+          endif
 
           if (getD) then
              call timer( 'c-buildD', 1 )
@@ -370,6 +376,8 @@ C Global operation to form new density matrix
 
         enddo
       enddo
+!      anorm =   compute_norm(Dnew,size(Dnew,dim=1),size(Dnew,dim=2))
+!      if (Node.eq.0) print *, "DM norm after diagk: ", anorm
       if (Node .eq. 0) then
          call io_close(iu)
       endif

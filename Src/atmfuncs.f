@@ -41,7 +41,7 @@ C     different chemical species in the calculation:
       private :: chk, max_l, max_ilm, message
 
       public  :: nofis, nkbfis, izofis, massfis
-      public  :: rcore, rcut, chcore_sub, epskb, uion
+      public  :: rcore, rchlocal, rcut, chcore_sub, epskb, uion
       public  :: atmpopfio, psch, zvalfis, floating, psover
       public  :: lofio, symfio, cnfigfio, zetafio, mofio
       public  :: labelfis, lomaxfis, nztfl, rphiatm, lmxkbfis
@@ -162,6 +162,18 @@ C  Distances in Bohr
       rcore = species(is)%core%cutoff
 
       end function rcore
+
+      FUNCTION RCHLOCAL(is)
+      real(dp) rchlocal
+      integer, intent(in) :: is    ! Species index
+
+C  Returns cutoff radius of the Vlocal charge density
+C  Distances in Bohr
+
+      call chk('rchlocal',is)
+      rchlocal = species(is)%Chlocal%cutoff
+
+      end function rchlocal
 
 !         AMENOFIS
 !
