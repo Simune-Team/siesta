@@ -28,8 +28,8 @@
 
       subroutine consHS( nuo, no,  maxnh,  
      .                  gamma, numh, listhptr, listh, 
-     .                  H, S, xij, indxuo,  kpoint, nuotot,
-     .                  Ha,Sa,ef,nou,NGL,NGR,NBUFL,NBUFR)
+     .                  H, S, xij, indxuo,  kpoint,
+     .                  Ha,Sa,ef,nou,NGL,NGR,NBUFL)
 
 C *********************************************************************
 C integer nuo                 : Number of basis orbitals in unit cell
@@ -59,7 +59,7 @@ C                               over all processors
 C
       implicit          none
 
-      integer           maxnh, no, nuo, nuotot, nou,nbufl,nbufr,ngl,ngr
+      integer           maxnh, no, nuo, nou,nbufl,ngl,ngr
 
       integer           indxuo(no), listh(maxnh), numh(nuo), 
      .                  listhptr(nuo)
@@ -75,8 +75,8 @@ C
 
 C  Internal variables .............................................
       integer
-     .  ie, ierror, ik, io, iio, ind, is,  iuo,
-     .  j, jo, juo, maxnhg,  io1,jo1
+     .  io, ind, iuo,
+     .  j, jo, juo, io1,jo1
       double precision   kxij
       complex*16 cphase
       complex*16, dimension (:,:), allocatable :: Hw,Sw
@@ -179,11 +179,11 @@ C      end
 c
 #ifdef MPI
       subroutine consHSp(nuo, no,   maxnh,  maxnhg,
-     .                  gamma, numh, listhptr, listh, 
+     .                  gamma, numh, listhptr, 
      .                  numhg, listhptrg,listhg,
      .                  H, S, xijg, indxuo,  kpoint, nuotot,
      .                  Ha,Sa,
-     .                  Node, Nodes,ef,nou,NGL,NGR,NBUFL,NBUFR)
+     .                  Node, Nodes,ef,nou,NGL,NGR,NBUFL)
 C *********************************************************************
 C integer nuo                 : Number of basis orbitals in unit cell
 C                               local to this processor
@@ -226,9 +226,9 @@ C FDN
 
       integer           maxnh, maxnhg, no,
      .                  nuo, nuotot, Node, Nodes,
-     .                  nou,nbufl,nbufr,ngl,ngr
+     .                  nou,nbufl,ngl,ngr
 
-      integer           listh(maxnh), 
+      integer         
      .                  numh(nuo), listhptr(nuo)
       integer           indxuo(no), listhg(maxnhg), 
      .                  numhg(nuotot), listhptrg(nuotot)
@@ -244,10 +244,10 @@ C FDN
 
 C  Internal variables .............................................
       integer
-     .  BNode, ie, ierror, ik, io, iio, ind, is, iuo,
+     .  BNode, io, iio, ind, iuo,
      .  j, jo, juo,  nuog , io1,jo1
       double precision
-     .  ckxij,  kxij, t
+     .  kxij
       double precision, dimension(:), allocatable, save ::
      .  Snew,Hnew
       complex*16 cphase
@@ -775,7 +775,7 @@ C     &     NG2,nua,lasto,NA1,NA2,NG,SFE,GAMMA,Nodes,points2read,
 C     &     errorgs)
 
       subroutine getsfe(USEBULK,jgfu,HAA,SAA,ZEnergy,
-     &     NG2,nua,lasto,NA1,NA2,NG,SFE,GAMMA,Nodes,points2read,
+     &     NG2,NG,SFE,GAMMA,Nodes,points2read,
      &     errorgs,ikinp)
 
 C FDN
@@ -786,7 +786,10 @@ C FDN
 ! FDN
 
 #ifdef MPI
-      use mpi_siesta
+      use mpi_siesta, only : MPI_Bcast, MPI_Comm_Rank, MPI_AllReduce, 
+     . MPI_Sum, DAT_dcomplex, MPI_Integer, MPI_Status_Size, 
+     . MPI_Comm_World
+               
 #endif
 
 
@@ -820,11 +823,11 @@ c                                 return z*S-H-Sigma for bulk
 
       integer jgfu              !fileunit from which we read GF
 
-      integer NA1,NA2           ! repetitions of surface UC.
+      
       integer NG                ! size of GF in NA1xNA2 supercell
 
-      integer nua               ! no. uc (1x1) atoms
-      integer lasto(0:nua)      ! index of last orbitals of uc atoms.
+     
+      
 
       complex*16 ZEnergy 
 
@@ -867,9 +870,9 @@ c Helpers, tempos etc...
       complex*16 ZEi, wgfi
       integer iEni
       integer iq,inode
-      integer io,ia1,ia2,iau,iuo
-      integer jo,ja1,ja2,jau,juo
-      complex*16 cphase,ccphase,zenloc
+      integer io
+      integer jo
+      complex*16 zenloc
 
       complex*16, allocatable :: WRK1(:,:),WRK2(:,:),GAA(:,:,:)
       integer,dimension(:), allocatable :: ipvt
@@ -1240,7 +1243,7 @@ c======================================================================
 
 
 
-      subroutine GFGammaGF(joutfile,LEFTFLAG,nc,ng,GF,Gamma,GGG)
+      subroutine GFGammaGF(LEFTFLAG,nc,ng,GF,Gamma,GGG)
 
 C ======================================================================
 c  This routine returns GGG=(-i)*GF.Gamma.GF, where GF is a (nc)x(nc)
@@ -1259,7 +1262,7 @@ c
 C ======================================================================
 C INPUT:
 
-      integer joutfile          ! unit-number of out-file, OUT
+      
       logical LEFTFLAG          !True if LEFT
       integer nc                !no. states in contact region
       integer ng                !if LeftFLAG the ng first states of nc
@@ -1447,7 +1450,7 @@ C ##  Version 011200  Kurt Stokbro, ks@mic.dtu.dk                 ##
 C ##################################################################
 
 
-      subroutine weightDM(joutfile,nc,NGL,NGR,DML,DMR,DMneqL,DMneqR,
+      subroutine weightDM(nc,NGL,NGR,DML,DMR,DMneqL,DMneqR,
      .     EDML,EDMR)
 C ======================================================================
 c  This routine find weight for the DM integral. On output
@@ -1457,7 +1460,7 @@ C  In left electrode w=1 and in right electrode w=0
 C ======================================================================
 
 #ifdef MPI
-      use mpi_siesta
+      use mpi_siesta, only: MPI_Comm_Rank, MPI_Comm_World
 #endif
       use sys
 
@@ -1471,7 +1474,7 @@ c
 C ======================================================================
 C INPUT:
 
-      integer joutfile          ! unit-number of out-file, OUT
+      
       integer nc                !no. states in density matrix
       integer NGL               !no. states in left electrode
       integer NGR               !no. states in right electrode
@@ -1481,10 +1484,10 @@ C INPUT:
 
 C ======================================================================
 c Helpers, tempos ...
-      real*8 w,wl,wr,wsum,dif,dif2,ndif2
+      real*8 w,wl,wr,wsum
       real*8 maxdif2            !largest integration error
       real*8 maxndif2           !largest normalized integration error
-      integer idif2, jdif2,indif2,jndif2 ! indisis of max errors
+      
       integer i,j
 
       integer Node
@@ -1581,7 +1584,7 @@ C ====================================================================
 
 
 C FDN Routine for complex matrices
-      subroutine weightDMC(joutfile,nc,NGL,NGR,DML,DMR,DMneqL,DMneqR,
+      subroutine weightDMC(nc,NGL,NGR,DML,DMR,DMneqL,DMneqR,
      .     EDML,EDMR)
 C ======================================================================
 c  This routine find weight for the DM integral. On output
@@ -1591,7 +1594,7 @@ C  In left electrode w=1 and in right electrode w=0
 C ======================================================================
 
 #ifdef MPI
-      use mpi_siesta
+      use mpi_siesta, only: MPI_Comm_Rank, MPI_Comm_World
 #endif
       use sys
 
@@ -1605,7 +1608,7 @@ c
 C ======================================================================
 C INPUT:
 
-      integer joutfile          ! unit-number of out-file, OUT
+      
       integer nc                !no. states in density matrix
       integer NGL               !no. states in left electrode
       integer NGR               !no. states in right electrode
@@ -1615,10 +1618,10 @@ C INPUT:
 
 C ======================================================================
 c Helpers, tempos ...
-      real*8 w,wl,wr,wsum,dif,dif2,ndif2
+      real*8 w,wl,wr,wsum
       real*8 maxdif2            !largest integration error
       real*8 maxndif2           !largest normalized integration error
-      integer idif2, jdif2,indif2,jndif2 ! indisis of max errors
+      
       integer i,j
 
       integer Node

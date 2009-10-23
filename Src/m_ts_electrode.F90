@@ -19,7 +19,7 @@ MODULE m_ts_electrode
 
 
        subroutine calc_green(nv,zenergy,h00,s00,h01,s01, &
-       gs,zdos,joutfile,tleft,tdos)
+       gs,zdos,joutfile,tleft)
 
        use m_ts_aux_rout, only : csolveg
 
@@ -30,7 +30,7 @@ MODULE m_ts_electrode
        integer ierr             !error in inversion
        integer i,j,ic,ic2
        integer joutfile
-       logical tleft,tdos
+       logical tleft
 
        complex*16 a,b,zdos
        double precision ro
@@ -336,10 +336,10 @@ MODULE m_ts_electrode
 ! ##################################################################
 ! FDN nspin added as dummy
       subroutine green(joutfile, &
-         NEn,contour,wgf,efermi,zbulkdos,tjob,tbtjob,nspin)
+         NEn,contour,wgf,efermi,zbulkdos,tjob,nspin)
 ! FDN      
 
-      use fdf
+      use fdf, only : fdf_convfac, fdf_integer, fdf_string
 ! FDN
       use m_ts_kpoints, only : ts_nkpnt, ts_kpoint, ts_kweight
       use m_ts_options, only : GFFileL, GFFileR, calcGF
@@ -359,12 +359,12 @@ MODULE m_ts_electrode
 !=======================================================================
 ! INPUT:      
       character*20 slabel       ! System Label (to name output files)
-      character*20 llabel       ! Lead Label (to name output files)
+      
 
-      character*59 sname        ! System Name
+      
 
       logical tjob !True if Left, False if Right
-      logical tbtjob 
+      
       integer joutfile          !unit-number of out-file
 
       character(len=label_length+5) hsfile        !name of HS-input file
@@ -377,7 +377,7 @@ MODULE m_ts_electrode
 
 !   k_|| == q-points:
       real*8, pointer:: q(:,:),wq(:) ! k_|| and their weights 
-      integer na1,na2           ! Replication of unitcell
+      integer na1,na2           ! Replication of unitcell33
       integer nq                ! no. q-points (<= na1*na2 for gamma) 
       real*8 kpoint(3)          !3D k-point (q,kz)
       data kpoint /0d0, 0d0, 0d0/
@@ -418,7 +418,7 @@ MODULE m_ts_electrode
 !     Helpers, workspace, tempos etc...
 
       character*70 gftitle      !title of gf
-      character*33 paramfile    !parameter file with this "tag"
+      
 
       logical tinit,tlast
 
@@ -428,7 +428,6 @@ MODULE m_ts_electrode
       character*5 tag
       character stag
       character*6  gfjob
-      character*33 gffile_default
 
       logical exist1
       logical tdos,tkham
@@ -443,8 +442,8 @@ MODULE m_ts_electrode
 
       integer i,l1,l2,ia,ia2
       integer iqpt,iq
-      integer ju,ng1tmp
-      integer ierror
+      integer ng1tmp
+      
 
       integer ngaa,ngaa1
       integer NG1      ! Number of basis  orbitals
@@ -469,7 +468,7 @@ MODULE m_ts_electrode
       external io_assign,io_close
 
 ! FDF-stuff:
-      character*33 paste,header,itemfdf     
+      character*33 paste,itemfdf     
 !      real*8 fdf_convfac
       external paste
 
@@ -820,7 +819,7 @@ MODULE m_ts_electrode
 
 
          call calc_green(ng1,zsenergy,h00,s00,h01,s01, &
-       gs,zdos,joutfile,tjob,tdos)
+       gs,zdos,joutfile,tjob)
 
 
 ! FDN In case of spin, this sum must be checked
@@ -978,9 +977,7 @@ MODULE m_ts_electrode
 
 
       integer nua               ! No. atoms in unitcell
-      integer mo             ! Number of orbitals in supercell
       integer nuo            ! Number of basis  orbitals
-      integer mno             ! Number of orbitals interacting
       integer nspin          ! Spin polarization (1 or 2)
 ! FDN Electrode spin
       integer Enspin
@@ -1044,13 +1041,12 @@ MODULE m_ts_electrode
 !      integer lasto(0:maxua)   ! Index of last orbital of each atom
 !-----------------------------------------------------------------------
 ! Helpers
-      integer nb           ! No. basis orbitals on atoms (the same on all..)
 !      real*8 xo(3,maxuo)        ! Atomic coordinates (Bohr)
       real*8, allocatable ::   xo(:,:) 
 
       integer nuotot,notot,maxnh
       integer ia
-      integer i,j,io,jo,iuo,juo,j2
+      integer i,j,io,jo,iuo,juo
       real*8 k(3),kxij,rcell(3,3)
       real*8 recell(3,3)
       complex*16 cphase

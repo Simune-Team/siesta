@@ -35,7 +35,7 @@ C ##################################################################
      .     contourpart,points2read)
 
 #ifdef MPI
-       use mpi_siesta
+       use mpi_siesta, only: MPI_Comm_Rank, MPI_Comm_World
 #endif
 
 
@@ -275,7 +275,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      .     ncircle,nline,npol)
 
 #ifdef MPI
-      use mpi_siesta
+      use mpi_siesta, only: MPI_Comm_Rank, MPI_Comm_World
 #endif
       use sys
 
@@ -684,7 +684,7 @@ C ##################################################################
 
 
 #ifdef MPI
-      use mpi_siesta
+      use mpi_siesta, only: MPI_Comm_Rank, MPI_Comm_World
 #endif
 
 
@@ -782,7 +782,7 @@ C ##################################################################
       use files, only : slabel
 C FDN
 #ifdef MPI
-      use mpi_siesta
+      use mpi_siesta, only: MPI_Comm_Rank, MPI_Comm_World
 #endif
 C FDN
       use m_ts_options, only :  EMin=>CCEmin, GFEta, kT, smethod,
@@ -797,7 +797,7 @@ c INPUT
       real*8 EFermiL,EFermiR    !Left/Right Fermi energies (finite voltage)
 
 c     Read from FDF:
-      real*8 Emax
+      
       integer ncontour, ncontour0
 
 c OUTPUT
@@ -816,7 +816,7 @@ c PARAMS
 c Helpers etc.
       logical isvolt            !True if finite voltage
 
-      logical baddim
+      
 
 
       integer imethod           ! Complex contour method
