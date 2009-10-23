@@ -139,6 +139,7 @@ C Passed variables
         real(dp), intent(in)                :: origin(3)
 
 C Local variables
+        character(len=*), parameter   :: myName = 'read_Zmatrix '
         logical                       :: leqi
         character(len=130)            :: line
         character(len= 80)            :: names
@@ -208,24 +209,25 @@ C Nullify pointers
           nullify(species)
 
 C Allocate Zmatrix arrays
-          call re_alloc(Zmat,1,3*na)
-          call re_alloc(species,1,3*na)
-          call re_alloc(ZmatForce,1,3*na)
-          call re_alloc(iZmat,1,3*na)
-          call re_alloc(VaryZmat,1,3*na)
-          call re_alloc(nZmolAtoms,1,na)
-          call re_alloc(nZmolStartAtom,1,na)
-          call re_alloc(nZcartAtoms,1,na)
-          call re_alloc(nZcartStartAtom,1,na)
-          call re_alloc(ZmatType,1,3*na)
-          call re_alloc(iZmattoVars,1,3*na)
-          call re_alloc(iNextDept,1,3*na)
-          call re_alloc(coeffA,1,3*na)
-
-          call re_alloc(coeffB,1,3*na)
-          call re_alloc(ZmatForceVar,1,3*na)
-          call re_alloc(iVarstoZmat,1,3*na)
-          call re_alloc(lZmatVarsDef,1,3*na)
+          call re_alloc(Zmat,            1,3*na, myName//'Zmat')
+          call re_alloc(species,         1,3*na, myName//'species')
+          call re_alloc(ZmatForce,       1,3*na, myName//'ZmatForce')
+          call re_alloc(iZmat,           1,3*na, myName//'iZmat')
+          call re_alloc(VaryZmat,        1,3*na, myName//'VaryZmat')
+          call re_alloc(nZmolAtoms,      1,  na, myName//'nZmolAtoms')
+          call re_alloc(nZmolStartAtom,  1,  na,
+     .                                       myName//'nZmolStartAtom')
+          call re_alloc(nZcartAtoms,     1,  na, myName//'nZcartAtoms')
+          call re_alloc(nZcartStartAtom, 1,  na,
+     .                                       myName//'nZcartStartAtom')
+          call re_alloc(ZmatType,        1,3*na, myName//'ZmatType')
+          call re_alloc(iZmattoVars,     1,3*na, myName//'iZmattoVars')
+          call re_alloc(iNextDept,       1,3*na, myName//'iNextDept')
+          call re_alloc(coeffA,          1,3*na, myName//'coeffA')
+          call re_alloc(coeffB,          1,3*na, myName//'coeffB')
+          call re_alloc(ZmatForceVar,    1,3*na, myName//'ZmatForceVar')
+          call re_alloc(iVarstoZmat,     1,3*na, myName//'iVarstoZmat')
+          call re_alloc(lZmatVarsDef,    1,3*na, myName//'lZmatVarsDef')
           allocate(ZmatVarNames(3*na))
 
 C Read units for lengths and angles
@@ -1087,9 +1089,13 @@ C
       if (IOnode) then
 C  Allocate local workspace arrays
         allocate(CartesianF(3,na))
+        call memory('A','D',size(CartesianF),'read_Zmatrix')
         allocate(CartesianB(3,na))
+        call memory('A','D',size(CartesianB),'read_Zmatrix')
         allocate(ZmatF(3*na))
+        call memory('A','D',size(ZmatF),'read_Zmatrix')
         allocate(ZmatB(3*na))
+        call memory('A','D',size(ZmatB),'read_Zmatrix')
 
 C  Initialise forces & cartesian transformation matrices
         ZmatForce(1:3*na) = 0.0_dp

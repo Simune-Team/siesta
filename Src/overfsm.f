@@ -167,8 +167,8 @@ C Valid orbital
 
 C Deallocate local memory
 
-      call de_alloc( Si, name='Si' )
-      call de_alloc( Di, name='Di' )
+      call de_alloc( Si, name='Si', routine='overfsm' )
+      call de_alloc( Di, name='Di', routine='overfsm' )
 
 C Finish timer
       call timer( 'overfsm', 2 )

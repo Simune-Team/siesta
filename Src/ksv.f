@@ -577,10 +577,10 @@ C This is the only exit point
   999 continue
 
 C Deallocate local memory
-      call de_alloc( muo, name='muo' )
-      call de_alloc( ek, name='ek' )
-      call de_alloc( psi1, name='psi1' )
-      call de_alloc( psiprev, name='psiprev' )
+      call de_alloc( muo, name='muo', routine='KSV_pol' )
+      call de_alloc( ek, name='ek', routine='KSV_pol' )
+      call de_alloc( psi1, name='psi1', routine='KSV_pol' )
+      call de_alloc( psiprev, name='psiprev', routine='KSV_pol' )
 
       if (nkpol.gt.0.and.IOnode) then
         do ispin = 1,nspin

@@ -98,7 +98,7 @@ C Find neighbours of atom IA
 
       enddo
 
-      call de_alloc(index, name="index")
+      call de_alloc(index, name="index",routine="bonds")
       call io_close(iu)
 
       end

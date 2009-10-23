@@ -38,6 +38,7 @@
       integer, intent(in) :: list_old(:), list_new(:)
       real(dp), pointer   :: matrix(:,:)
 
+      character(len=*),parameter:: myName = 'change_sparsity_inplace '
       integer :: size_old, size_new, i, in, ind, j, second_dim
       integer :: maxval_j_old, maxval_j_new, max_col, first_dim
 
@@ -49,8 +50,9 @@
       first_dim = size(matrix,dim=1)
       second_dim = size(matrix,dim=2)
 
+      ! Notice that matrix=>m_tmp later on. Therefore the name.
       nullify(m_tmp)
-      call re_alloc(m_tmp,1,size_new,1,second_dim)
+      call re_alloc(m_tmp,1,size_new,1,second_dim,myName//'matrix')
 
 !     Maximum value of column index 
       maxval_j_old = maxval(list_old(1:size_old))
@@ -59,7 +61,7 @@
       max_col = max(maxval_j_old, maxval_j_new)
 
       nullify(aux)
-      call re_alloc(aux,1,max_col,1,second_dim)
+      call re_alloc(aux,1,max_col,1,second_dim,myName//'aux')
 
       do i=1,nrows
          aux(1:max_col,:) = 0.0_dp
@@ -76,8 +78,8 @@
          enddo
       enddo
 
-      call de_alloc(aux)
-      call de_alloc(matrix)
+      call de_alloc(aux,myName//'aux')
+      call de_alloc(matrix,myName//'matrix')
       matrix => m_tmp
 
       end subroutine change_sparsity_inplace
@@ -115,6 +117,7 @@
 
       real(dp), pointer, optional :: work(:)
 
+      character(len=*),parameter:: myName = 'change_sparsity '
       integer :: size_old, size_new, i, in, ind, j
       integer :: maxval_j_old, maxval_j_new, max_col
 
@@ -129,11 +132,11 @@
       max_col = max(maxval_j_old, maxval_j_new)
 
       if (present(work)) then
-         call re_alloc(work,1,max_col)
+         call re_alloc(work,1,max_col,myName//'work')
          aux => work
       else
          nullify(aux)
-         call re_alloc(aux,1,max_col)
+         call re_alloc(aux,1,max_col,myName//'aux')
       endif
 
       do i=1,nrows
@@ -151,7 +154,7 @@
       enddo
 
       if (.not. present(work)) then
-         call de_alloc(aux)
+         call de_alloc(aux,myName//'aux')
       endif
 
       end subroutine change_sparsity

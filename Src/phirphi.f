@@ -150,6 +150,6 @@ C Allocate local memory
       enddo
 
 C Deallocate local memory
-      call de_alloc( Si, name='Si' )
+      call de_alloc( Si, name='Si', routine='subroutine phirphi' )
 
       end

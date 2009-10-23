@@ -638,10 +638,10 @@ C Save total (ionic+electronic) charge
      $                            Totchar, "TotalCharge")
           call reord( Totchar, Totchar, nml, nsm, -1)
 
-          call de_alloc( Totchar, name='Totchar' )
+          call de_alloc( Totchar, name='Totchar', routine='dhscf' )
         endif 
 
-        call de_alloc( Chlocal, name='Chlocal' )
+        call de_alloc( Chlocal, name='Chlocal', routine='dhscf' )
       endif
 
 C Find difference between selfconsistent and atomic densities
@@ -1007,9 +1007,9 @@ C Stop time counter
 C ----------------------------------------------------------------------
 C Free locally allocated memory
 C ----------------------------------------------------------------------
-      call de_alloc( Vaux, name='Vaux' )
-      call de_alloc( Vscf, name='Vscf' )
-      call de_alloc( DRho, name='DRho' )
+      call de_alloc( Vaux, name='Vaux', routine='dhscf' )
+      call de_alloc( Vscf, name='Vscf', routine='dhscf' )
+      call de_alloc( DRho, name='DRho', routine='dhscf' )
 
       frstme = .false.
 

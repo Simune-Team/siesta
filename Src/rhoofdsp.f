@@ -397,15 +397,15 @@ C  Restore iorb for next point
       enddo
 
 C  Free local memory
-      call de_alloc( ilocal,  name='ilocal' )
-      call de_alloc( ilc,  name='ilc' )
-      call de_alloc( iorb,  name='iorb' )
-      call de_alloc( Clocal,  name='Clocal' )
-      call de_alloc( Dlocal,  name='Dlocal' )
-      call de_alloc( DlocalSp,  name='DlocalSp' )
+      call de_alloc( ilocal,  name='ilocal', routine='rhoofdsp' )
+      call de_alloc( ilc,  name='ilc', routine='rhoofdsp' )
+      call de_alloc( iorb,  name='iorb', routine='rhoofdsp' )
+      call de_alloc( Clocal,  name='Clocal', routine='rhoofdsp' )
+      call de_alloc( Dlocal,  name='Dlocal', routine='rhoofdsp' )
+      call de_alloc( DlocalSp,  name='DlocalSp', routine='rhoofdsp' )
      
       if (Parallel_Flag) then
-         call de_alloc( DscfL,  name='DscfL' )
+         call de_alloc( DscfL,  name='DscfL', routine='rhoofdsp' )
       endif
 
       call timer('rhoofdsp',2)

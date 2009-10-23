@@ -212,7 +212,7 @@ C Stop time counter
       call timer('POISON',2)
 
 C Free local memory
-      call de_alloc( CG, name='CG' )
+      call de_alloc( CG, name='CG', routine='poison' )
 
       return
       end

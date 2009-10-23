@@ -257,6 +257,7 @@ C Allocate local memory
       allocate(gxa(ndeg))
       call memory('A','D',ndeg,'cgvc_zmatrix')
       allocate(ftoln(ndeg))
+      call memory('A','D',ndeg,'cgvc_zmatrix')
       allocate(ftoln_tmp(ndeg))
       call memory('A','D',ndeg,'cgvc_zmatrix')
       allocate(dxmaxn(ndeg))

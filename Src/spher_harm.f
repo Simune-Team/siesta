@@ -264,8 +264,8 @@ C *********************************************************************
         DYYDR(I) = DYDR(I,ILM1-1)*Y(ILM2-1) + Y(ILM1-1)*DYDR(I,ILM2-1)
       enddo
 
-      call de_alloc( dydr,  name='dydr' )
-      call de_alloc( y,  name='y' )
+      call de_alloc( dydr,  name='dydr', routine='ylmylm' )
+      call de_alloc( y,  name='y', routine='ylmylm' )
 
       END subroutine ylmylm
 

@@ -269,7 +269,9 @@
       if (cml_p) then
          call cmlEndStep(mainXML)
       endif
-      call printmemory( 6, 0 )
+! Commented out since it is no longer realistic because most 
+! allocations occur in re_alloc. JMS. 2009/10/15
+!      call printmemory( 6, 0 )
       call timer( 'IterMD', 2 )
 
 ! End of one MD step - flush stdout
