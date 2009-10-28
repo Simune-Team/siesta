@@ -38,13 +38,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, 1.3}}
+{\Huge {\bf S I E S T A \, \, 1.4.18-vorhirsh}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large 30 July 2003 }
+{\Large Aug 2004 -- Oct 2009 }
 
 \vspace{1.5cm}
 
@@ -149,7 +149,7 @@ It routinely provides:
 \item Atomic forces.
 \item Stress tensor.
 \item Electric dipole moment.
-\item Atomic, orbital and bond populations (Mulliken).
+\item Atomic, orbital and bond populations.
 \item Electron density.
 \end{itemize}
 
@@ -3148,6 +3148,14 @@ In particular, it redefines the defaults for the following:
 \item
 {\bf WriteMullikenPop}\index{WriteMullikenPop@{\bf WriteMullikenPop}} 
 \index{output!Mulliken analysis}\index{Mulliken population analysis} 1
+\item
+{\bf WriteHirshfeldPop}\index{WriteHirshfeldPop@{\bf WriteHirshfeldPop}} 
+\index{output!Hirshfeld analysis}\index{Hirshfeld population analysis}
+{\tt .true.} 
+\item
+{\bf WriteVoronoiPop}\index{WriteVoronoiPop@{\bf WriteVoronoiPop}} 
+\index{output!Voronoi analysis}\index{Voronoi population analysis}
+{\tt .true.} 
 
 \end{itemize}
 
@@ -3296,6 +3304,39 @@ conventional, being $y$, $z$, $x$ for $p$ orbitals, and
 $xy$, $yz$, $z^2$, $xz$, and $x^2-y^2$ for $d$ orbitals. 
 
 {\it Default value:} {\tt 0} (see {\bf LongOutput})
+
+
+\item[{\bf WriteHirshfeldPop}] ({\it logical}): 
+\index{WriteHirshfeldPop@{\bf WriteHirshfeldPop}}\index{Hirshfeld population
+analysis}\index{output!Hirshfeld analysis} 
+If {\tt .true.}, it calculates and prints the Hirshfeld net atomic
+populations on each atom in the system. For a definition of
+the Hirshfeld charges, see Hirshfeld, Theo Chem Acta {\bf 44}, 129 (1977)
+and Fonseca et al, J. Comp. Chem. {\bf 25}, 189 (2003).
+Hirshfeld charges are more reliable than Mulliken charges,
+specially for large basis sets.
+The number printed is the total net charge of the atom: the variation
+from the neutral charge, in units of $|e|$: positive (negative)
+values indicate deficiency (excess) of electrons in the atom.
+
+{\it Default value:} {\tt .false.} (see {\bf LongOutput})
+
+
+\item[{\bf WriteVoronoiPop}] ({\it logical}): 
+\index{WriteVoronoiPop@{\bf WriteVoronoiPop}}\index{Voronoi population
+analysis}\index{output!Voronoi analysis} 
+If {\tt .true.}, it calculates and prints the Voronoi net atomic
+populations on each atom in the system. For a definition of
+the Voronoi charges, see Bickelhaupt et al, Organometallics 
+{\bf 15}, 2923 (1996)
+and Fonseca et al, J. Comp. Chem. {\bf 25}, 189 (2003).
+Voronoi charges are more reliable than Mulliken charges,
+specially for large basis sets.
+The number printed is the total net charge of the atom: the variation
+from the neutral charge, in units of $|e|$: positive (negative)
+values indicate deficiency (excess) of electrons in the atom.
+
+{\it Default value:} {\tt .false.} (see {\bf LongOutput})
 
 
 \item[{\bf WriteCoorXmol}] ({\it logical}): 
@@ -3752,6 +3793,14 @@ certain $\vec k$ points,
 {\bf WriteMullikenPop}\index{WriteMullikenPop@{\bf WriteMullikenPop}}
 \index{output!Mulliken analysis}\index{Mulliken population analysis} 
 for writing the Mulliken population analysis at different levels of detail.
+\item
+{\bf WriteHirshfeldPop}\index{WriteHirshfeldPop@{\bf WriteHirshfeldPop}}
+\index{output!Hirshfeld analysis}\index{Hirshfeld population analysis} 
+for writing the Hirshfeld net atomic population analysis.
+\item
+{\bf WriteVoronoiPop}\index{WriteVoronoiPop@{\bf WriteVoronoiPop}}
+\index{output!Voronoi analysis}\index{Voronoi population analysis} 
+for writing the Voronoi net atomic population analysis.
 \end{itemize}
 
 Except for the first one, which is {\tt .true.} by default, the

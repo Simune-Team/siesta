@@ -24,7 +24,7 @@ SYSOBJ=$(SYS).o
 #
 # Note that machine-specific files are now in top Src directory.
 #
-OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
+OBJS = arw.o  atomlwf.o atompop.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
 	chempot.o coceri.o conjgr.o constr.o coxmol.o cross.o \
 	denmat.o detover.o dfscf.o dhscf.o diagon.o digcel.o fft3d.o \
 	diagg.o diagk.o diagkp.o diag2g.o diag2k.o diagpol.o \
@@ -140,6 +140,7 @@ siesta.o atomlist.o coor.o dfscf.o matel.o: alloc.o
 #
 broadcast_basis.o: atm_types.o 
 atom.o basis_specs.o: periodic_table.o
+atompop.o:  dhscf.o
 #
 $(COM_OBJS): precision.o parallel.o $(MPI_INTERFACE)
 #

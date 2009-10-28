@@ -136,7 +136,7 @@ C  Modules
      .  usesavecg, usesavelwf, usesavedm, usesavedmloc, usesavexv, 
      .  writbk, writmd, writpx, writb, writec, writef, 
      .  writek, writic, varcel, genlogic, do_pdos, writedm, atmonly,
-     .  harrisfun, signat, muldeb, eggbox_block
+     .  harrisfun, signat, muldeb, eggbox_block, hirshpop, voropop
 
       logical  :: printeigen = .false.       ! AG: Initialize
 
@@ -347,7 +347,8 @@ C Read simulation data ................................................
      .            dt, ia1, ia2, dx, dxmax, tt, tp, mn, mpr, 
      .            bulkm, taurelax,
      .            usesavelwf, usesavedm, usesavecg,
-     .            mullipop, inspn, maxsav, nkick, wmixkick, 
+     .            mullipop, hirshpop, voropop,
+     .            inspn, maxsav, nkick, wmixkick, 
      .            pulfile, tempinit, dumpcharge, varcel, harrisfun)
 
 
@@ -1826,6 +1827,15 @@ C Mulliken population analysis .......................................
      .               numh, listhptr, listh, S, Dscf, isa, 
      .               lasto, iaorb, iphorb )
 
+C ...................
+
+C Hirshfeld and Voronoi population analysis ..........................
+      if (hirshpop .or. voropop)
+     .      call atompop( hirshpop, voropop,
+     .                  nspin, no_s, iaorb, iphorb, indxuo, no_l,
+     .                  no_u, na_u, na_s, isa, xa, indxua, ntm, ucell,
+     .                  maxnh, numh, listhptr, listh,
+     .                  Dscf, Datm )
 C ...................
 
 C Move atoms ..........................................................

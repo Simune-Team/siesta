@@ -1,6 +1,25 @@
 =======================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
+
+-------------------------------------------------------------------------
+2009-10-28 11:45 GMT  Alberto Garcia <albertog@icmab.es>  1.4.18-vorhirsh
+Implementation of Hirshfeld and Voronoi charges (P. Ordejon)
+
+(Included here for reference for a future merge into trunk)
+
+Notes by Pablo Ordejon (see also Manual):
+
+Relevant routines:
+
+atompop.F (new)
+redata.F  (modified to read input variables)
+siesta.F  (calls atompop)
+
+atompop.F has a section of computation on the grid, which could perhaps
+be included in dhscf.
+
+-------------------------------------------------------------------------
 Version: 1.4.17
 Date: 2004/07/19 12:00 GMT
 Title: More code cleanup after optical props import

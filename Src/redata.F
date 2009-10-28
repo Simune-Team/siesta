@@ -7,7 +7,8 @@
      .                  dt, ia1, ia2, dx, dxmax, tt, tp, mn, mpr, 
      .                  bulkm, taurelax, 
      .                  usesavelwf, usesavedm, usesavecg,
-     .                  mullipop, inspn, maxsav, nkick, wmixkick, 
+     .                  mullipop, hirshpop, voropop,
+     .                  inspn, maxsav, nkick, wmixkick, 
      .                  pulfile, tempinit, dumpcharge, varcel, 
      .                  harrisfun )
 C *********************************************************************
@@ -92,6 +93,8 @@ C                              from disk
 C logical usesavecg        : True = try to use continuation CG files
 C                              from disk
 C integer mullipop         : Option for Mulliken Pop. analysis
+C logical hirshpop         : Option for Hirshfeld Pop. analysis
+C logical voropop          : Option for Voronoi Pop. analysis
 C logical inspn            : Spin initialization for spin-polarized
 C                              .true.  -> Antiferro
 C                              .false. -> Ferro
@@ -145,7 +148,7 @@ C
       logical
      .  chebef, dumpcharge, fixspin, inspn, mix, negl, noeta, 
      .  outlng, pulfile, usesavecg, usesavelwf, usesavedm, varcel,
-     .  harrisfun, phonon_calculation
+     .  harrisfun, phonon_calculation, hirshpop, voropop
 
 C Internal parameters ................................................
 C na_diag      : maximum number of atoms with diagon as default method
@@ -192,7 +195,8 @@ C  Internal variables .................................................
       logical
      .  chebef_default, dc_default, fs_default, inspn_default, 
      .  negl_default, mix_default, noeta_default, pul_default, 
-     .  qnch_default, usdm_default, uslwf_default, uscg_default
+     .  qnch_default, usdm_default, uslwf_default, uscg_default,
+     .  hpop_default, vpop_default
 
 C Start of code
       ns = 1
@@ -284,6 +288,32 @@ C Global broadcast of values
         if (mullipop.lt.0.or.mullipop.gt.3) then
           stop
         endif
+      endif
+C ..................
+
+C Perform Hirshfeld and/or Voronoi Population Analysis
+      hpop_default = .false.
+      if ( outlng ) hpop_default = .true.
+      if (Node.eq.0) then
+        hirshpop = fdf_boolean('WriteHirshfeldPop',hpop_default)
+      endif
+      vpop_default = .false.
+      if ( outlng ) vpop_default = .true.
+      if (Node.eq.0) then
+        voropop = fdf_boolean('WriteVoronoiPop',vpop_default)
+      endif
+C Global broadcast of values
+#ifdef MPI
+      call MPI_Bcast(hirshpop,1,MPI_logical,0,MPI_Comm_World,
+     .  MPIerror)
+      call MPI_Bcast(voropop,1,MPI_logical,0,MPI_Comm_World,
+     .  MPIerror)
+#endif
+      if (Node.eq.0) then
+      write(6,'(a,4x,l1)')
+     . 'redata: Write Hirshfeld Pop.             = ',hirshpop
+      write(6,'(a,4x,l1)')
+     . 'redata: Write Voronoi Pop.               = ',voropop
       endif
 C ..................
 

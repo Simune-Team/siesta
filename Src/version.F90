@@ -17,7 +17,7 @@ implicit none
 
 integer, dimension(3), save  :: num_version = (/1,4,17/)
 character(len=80), parameter :: version_str =  &
-"SIESTA 1.4.17  -- [cleanup post optical] (19 Jul 2004)" 
+"SIESTA 1.4.18-vorhirsh -- [Voronoi-Hirshfeld] (Aug 2004-Oct 2009)" 
 
 end module version_info
 !================================================================
