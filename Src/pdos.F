@@ -308,13 +308,13 @@ C Close file
         call io_close(iunit2)
 
 C Free local workspace array
-        call de_alloc( tmp, name='tmp' )
+        call de_alloc( tmp, name='tmp',routine='pdos' )
 
       endif
 
 C Free local arrays ----------------------------------------------------
-      call de_alloc( dpr, name='dpr' )
-      call de_alloc( dtot, name='dtot' )
+      call de_alloc( dpr, name='dpr',routine='pdos' )
+      call de_alloc( dtot, name='dtot',routine='pdos' )
 
       call timer( 'pdos', 2)
 

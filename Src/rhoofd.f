@@ -332,13 +332,13 @@ C  Restore iorb for next point
 
 C  Free local memory
       if (ParallelLocal) then
-        call de_alloc( DscfL,  name='DscfL' )
+        call de_alloc( DscfL,  name='DscfL', routine='rhoofd' )
       endif
-      call de_alloc( Clocal,  name='Clocal' )
-      call de_alloc( Dlocal,  name='Dlocal' )
-      call de_alloc( iorb,  name='iorb' )
-      call de_alloc( ilc,  name='ilc' )
-      call de_alloc( ilocal,  name='ilocal' )
+      call de_alloc( Clocal,  name='Clocal', routine='rhoofd' )
+      call de_alloc( Dlocal,  name='Dlocal', routine='rhoofd' )
+      call de_alloc( iorb,  name='iorb', routine='rhoofd' )
+      call de_alloc( ilc,  name='ilc', routine='rhoofd' )
+      call de_alloc( ilocal,  name='ilocal', routine='rhoofd' )
 
       call timer('rhoofd',2)
       end

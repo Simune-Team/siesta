@@ -2299,7 +2299,7 @@ subroutine redistributeMeshData( srcDistr, srcData, dstDistr, dstData, task )
 ! Allocate destination data array
   nData = size(srcData,4)
   call re_alloc( dstData, 0,dstMesh(1)-1, 0,dstMesh(2)-1, 0,dstMesh(3)-1, &
-                 1,nData, routine=myName, copy=.false., shrink=.true. )
+                 1,nData, name=myName//'dstData', copy=.false., shrink=.true. )
 
 ! Copy srcData to dstData
   if ( sameMeshDistr(srcDistr,dstDistr) ) then

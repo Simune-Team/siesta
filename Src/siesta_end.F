@@ -22,7 +22,9 @@
 
 !------------------------------------------------------------------------- BEGIN
 ! Output memory use up to the end of the program
-      call printmemory( 6, 1 )
+! Commented out since it is no longer realistic because most 
+! allocations occur in re_alloc. JMS. 2009/10/15
+!      call printmemory( 6, 1 )
 
 ! Print allocation report
       call alloc_report( printNow=.true. )

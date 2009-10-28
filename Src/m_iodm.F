@@ -542,7 +542,7 @@ C     Find total number of basis functions over all Nodes
       endif
 
       nullify(numdg)
-      call re_alloc(numdg, 1, no_u, name="numdg", routine="read_dm")
+      call re_alloc(numdg, 1, no_u, name="numdg", routine="write_dm")
 
 C     Create globalised numd
       do m = 1,no_u

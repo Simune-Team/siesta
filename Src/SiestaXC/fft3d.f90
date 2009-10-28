@@ -211,35 +211,42 @@ subroutine fft3d( dat, meshDistr, nMesh, r2k )
   ! Redistribute data over myDistr
   ! Notice: if (meshDistr==myDistr) redistributeMeshData may
   ! just direct pointer myDat=>dat, without reallocating it
-  call redistributeMeshData( meshDistr, dat, myDistr, myDat, io2my)
+  call redistributeMeshData( meshDistr, dat, myDistr, &
+                             dstData=myDat, task=io2my)
 
   ! FFT in first axis. Arguments of gpfa are:
   ! gpfa( realData(*), imagData(*), trigs(*),  
   !       dataSpan, vectorSpan, vectorSize, numVectors, fftDir )
   call myMeshBox( nMesh, aDistr(1), aBox )
   aMesh(:) = aBox(2,:) - aBox(1,:) + 1
-  call redistributeMeshData( myDistr, myDat, aDistr(1), aDat, my2a(1) )
+  call redistributeMeshData( myDistr, myDat, aDistr(1), &
+                             dstData=aDat, task=my2a(1) )
   call gpfa( aDat(:,:,:,1), aDat(:,:,:,2), trigs(:,1), &
              1, aMesh(1), aMesh(1), aMesh(2)*aMesh(3), -r2k )
-  call redistributeMeshData( aDistr(1), aDat, myDistr, myDat, a2my(1) )
+  call redistributeMeshData( aDistr(1), aDat, myDistr, &
+                             dstData=myDat, task=a2my(1) )
       
   ! FFT in second axis
   call myMeshBox( nMesh, aDistr(2), aBox )
   aMesh(:) = aBox(2,:) - aBox(1,:) + 1
-  call redistributeMeshData( myDistr, myDat, aDistr(2), aDat, my2a(2) )
+  call redistributeMeshData( myDistr, myDat, aDistr(2), &
+                             dstData=aDat, task=my2a(2) )
   do i3 = 0,aMesh(3)-1
     call gpfa( aDat(:,:,i3,1), aDat(:,:,i3,2), trigs(:,2), &
                aMesh(1), 1, aMesh(2), aMesh(1), -r2k )
   end do ! i3
-  call redistributeMeshData( aDistr(2), aDat, myDistr, myDat, a2my(2) )
+  call redistributeMeshData( aDistr(2), aDat, myDistr, &
+                             dstData=myDat, task=a2my(2) )
       
   ! FFT in third axis
   call myMeshBox( nMesh, aDistr(3), aBox )
   aMesh(:) = aBox(2,:) - aBox(1,:) + 1
-  call redistributeMeshData( myDistr, myDat, aDistr(3), aDat, my2a(3) )
+  call redistributeMeshData( myDistr, myDat, aDistr(3), &
+                             dstData=aDat, task=my2a(3) )
   call gpfa( aDat(:,:,:,1), aDat(:,:,:,2), trigs(:,3), &
              aMesh(1)*aMesh(2), 1, aMesh(3), aMesh(1)*aMesh(2), -r2k )
-  call redistributeMeshData( aDistr(3), aDat, myDistr, myDat, a2my(3) )
+  call redistributeMeshData( aDistr(3), aDat, myDistr, &
+                             dstData=myDat, task=a2my(3) )
       
   ! Copy data to output distr. (unless myDat and dat are the same array)
   if (.not.associated(myDat,dat)) &
@@ -252,12 +259,12 @@ subroutine fft3d( dat, meshDistr, nMesh, r2k )
   if (associated(aDat,myDat)) then
     nullify(aDat)
   else
-    call de_alloc( aDat,  routine='redistributeMeshData' )
+    call de_alloc( aDat,  name='redistributeMeshData dstData' )
   end if
   if (associated(myDat,dat)) then
     nullify(myDat)
   else
-    call de_alloc( myDat, routine='redistributeMeshData' )
+    call de_alloc( myDat, name='redistributeMeshData dstData' )
   end if
         
   ! Stop time counter

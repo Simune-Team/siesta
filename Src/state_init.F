@@ -297,7 +297,7 @@
      .        lasto, isa, dummyef, 
      .        ucell, ts_kscell_file, ts_kdispl_file,            
      .        ts_gamma_scf_file, xa, 0, 0)
-         call de_alloc(dummyH, name='dummyH')
+         call de_alloc(dummyH, name='dummyH', routine='state_init')
          call bye('Save overlap matrix and exit') ! Exit siesta    ! MPN 
       endif                                                        ! MPN    
 #endif /* TSS     ! MPN    */

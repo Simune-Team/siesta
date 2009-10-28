@@ -127,7 +127,7 @@ C Call alloc_count routine
       end select
       if (Task=='D') allocSize = -allocSize
       call alloc_count( allocSize, allocType, 
-     .                  name=trim(CallingRoutine)//' unknown' )
+     .                  name=trim(CallingRoutine)//' unknown_array' )
 
       end subroutine memory
 

@@ -59,6 +59,7 @@
 
       implicit none
 
+      character(len=*),parameter:: modName = 'm_new_dm '
       real(dp), pointer, private :: DMsaved(:,:)
       integer, pointer, private  ::
      $                   listold(:), listptrold(:), numold(:)
@@ -181,8 +182,9 @@
             write(6,"(a)") "Initializing Density Matrix..."
          endif
 
-         ! Reset DMsaved to null
-         call de_alloc(DMsaved)
+         ! Reset DMsaved to null. Same routine/name used in allocation
+         call de_alloc(DMsaved,name='matrix', 
+     .                 routine='change_sparsity_inplace')
          nullify(DMsaved)
          !
          call initdm(Datm, Dscf, lasto, na_s,
@@ -191,11 +193,12 @@
      .               try_to_read_from_file)
          !
          ! Store sparsity
-         call re_alloc(numold,1,no_l)
-         call re_alloc(listptrold,1,no_l)
+         call re_alloc(numold,1,no_l,modName//'numold')
+         call re_alloc(listptrold,1,no_l,modName//'listptrold')
          ! NOTE possible shrinking, as the test for changed
          ! sparsity might involve the length of the listh array
-         call re_alloc(listold,1,size(listh),shrink=.true.)  
+         call re_alloc(listold,1,size(listh),modName//'listold',
+     .                 shrink=.true.)  
          numold = numh
          listold = listh
          listptrold = listhptr
@@ -340,7 +343,7 @@
             call change_sparsity_inplace(nrows,
      $                                numold,listptrold,listold,
      $                                num, listptr, list,
-     $                                DMsaved )
+     $                                matrix=DMsaved )
          endif
 
          ! Extrapolate DM
@@ -365,7 +368,9 @@
          ! being larger than DM 
 
          if (allow_dm_extrapolation) then
-            call re_alloc(DMsaved,1,nnz,1,nspin)
+            ! Use same routine/name in all (re)allocations
+            call re_alloc(DMsaved,1,nnz,1,nspin,name='matrix', 
+     .                    routine='change_sparsity_inplace')
             DMsaved(1:nnz,1:nspin) = DM(1:nnz,1:nspin)
          else
             if (IOnode) then
@@ -381,9 +386,12 @@
          endif
 
          ! Store sparsity
-         call re_alloc(numold,1,size(num),shrink=.true.)
-         call re_alloc(listptrold,1,size(listptr),shrink=.true.)
-         call re_alloc(listold,1,size(list),shrink=.true.)
+         call re_alloc(numold,1,size(num),
+     .                 modName//'numold',shrink=.true.)
+         call re_alloc(listptrold,1,size(listptr),
+     .                 modName//'listptrold',shrink=.true.)
+         call re_alloc(listold,1,size(list),
+     .                 modName//'listold',shrink=.true.)
          numold = num
          listold = list
          listptrold = listptr
@@ -473,7 +481,7 @@ C
 c ---------------------------------------------------------------------
 
 C Internal variables and arrays
- 
+      character(len=*),parameter:: myName = 'initdm'
       character         updo*1, line*130, names*80
       logical           noncol, peratm
       integer           nh, ni, nn, nr, nv, iat, nat, ia, iu,
@@ -511,11 +519,12 @@ C Try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
       if (try_dm_from_file) then
 
          nullify(list_tmp,D_tmp,num_tmp,listptr_tmp)
-         call re_alloc(num_tmp,1,no_l)
-         call re_alloc(listptr_tmp,1,no_l)
+         call re_alloc(num_tmp,1,no_l,name='num_tmp',routine=myName)
+         call re_alloc(listptr_tmp,1,no_l,name='listptr_tmp',
+     .                 routine=myName)
 
          call read_dynamic_dm(nh_tmp, no_l, nspin_read, num_tmp, 
-     .             listptr_tmp, list_tmp, D_tmp, found )
+     .             listptr_tmp, listd=list_tmp, dm=D_tmp, found=found )
       else
         found = .false.
       endif
@@ -557,17 +566,18 @@ C If found, check and update, otherwise initialize with neutral atoms
            nullify(work)
            do is= 1, nspin
               call change_sparsity (no_l,num_tmp,listptr_tmp,list_tmp,
-     $                                  numh,listhptr,listh,
-     $                                  D_tmp(:,is), Dscf(:,is),
-     $                            work)          
+     $                              numh,listhptr,listh,
+     $                              D_tmp(:,is), Dscf(:,is),
+     $                              work=work)          
            enddo
-           call de_alloc(num_tmp)
-           call de_alloc(listptr_tmp)
-           call de_alloc(list_tmp)
-           call de_alloc(D_tmp)
-           call de_alloc(work)  ! Allocated by change_sparsity
+           ! Deallocate with same routine/name used in allocations
+           call de_alloc(num_tmp,name='num_tmp',routine=myName)
+           call de_alloc(listptr_tmp,name='listptr_tmp',routine=myName)
+           call de_alloc(list_tmp,name='listd',
+     .                   routine='read_dynamic_dm')
+           call de_alloc(D_tmp,name='dm',routine='read_dynamic_dm')
+           call de_alloc(work,name='work',routine='change_sparsity')
         endif
-
 
       else
 

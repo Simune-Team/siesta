@@ -72,6 +72,7 @@ C Subroutine arguments:
       real(dp), intent(inout):: xa(3,na), stress(3,3), strtol, cell(3,3)
 
 C Internal variables and arrays
+      character(len=*),parameter:: myName = 'zm_broyden_optimizer'
       integer             :: iu, ia, i, j, n, indi,indi1,vi,k
       logical             :: found
       real(dp)            :: volume, new_volume, trace
@@ -176,7 +177,7 @@ c ---------------------------------------------------------------------------
             ! otherwise generate it
             if (tarstr) then
               write(6,'(/a,a)')
-     $              'cgvc_zmatrix: Reading %block MD.TargetStress',
+     $              myName//': Reading %block MD.TargetStress',
      .                       ' (units of MD.TargetPressure).'
               read(iu,*, end=50) sxx, syy, szz, sxy, sxz, syz
               tstres(1,1) = - sxx * tp
@@ -191,7 +192,7 @@ c ---------------------------------------------------------------------------
    50         continue
             else
               write(6,'(/a,a)')
-     $              'cgvc_zmatrix: No target stress found, ',
+     $              myName//': No target stress found, ',
      .              'assuming hydrostatic MD.TargetPressure.'
               do i = 1, 3
                 do j = 1, 3
@@ -206,10 +207,10 @@ c ---------------------------------------------------------------------------
                write(6,"(a)") "***Target stress set to zero " //
      $              "for constant-volume calculation"
             endif
-            write(6,"(/a)") 'cgvc_zmatrix: Target stress (kBar)'
+            write(6,"(/a)") myName//': Target stress (kBar)'
             do i=1, 3
                write(6,"(a,2x,3f12.3)") 
-     .              'cgvc_zmatrix:', (tstres(i,j)/kBar,j=1,3)
+     .              myName//':', (tstres(i,j)/kBar,j=1,3)
             enddo
           endif
 
@@ -247,13 +248,13 @@ C Initialization to 1 for numerical reasons, later substracted
 C Allocate local memory
 
       allocate(gfa(ndeg))
-      call memory('A','D',ndeg,'cgvc_zmatrix')
+      call memory('A','D',ndeg,myName)
       allocate(gxa(ndeg))
-      call memory('A','D',ndeg,'cgvc_zmatrix')
+      call memory('A','D',ndeg,myName)
       allocate(ftoln(ndeg))
-      call memory('A','D',ndeg,'cgvc_zmatrix')
+      call memory('A','D',ndeg,myName)
       allocate(dxmaxn(ndeg))
-      call memory('A','D',ndeg,'cgvc_zmatrix')
+      call memory('A','D',ndeg,myName)
 
 !      print *, "zm_broyden: cell in : ", cell
 !      print *, "zm_broyden: strain in : ", strain
@@ -395,7 +396,7 @@ C Set number of degrees of freedom & variables
      $        jinv0,0.01_dp,dxmaxn)
       endif
       allocate (rnew(ndeg))
-      call memory('A','D',ndeg,'zm_broyden_optimizer')
+      call memory('A','D',ndeg,myName)
       weight = 1.0_dp
       call broyden_step(br,gxa,gfa,w=weight,newx=rnew)
 
@@ -475,15 +476,15 @@ C Return coordinates to correct arrays
 
 C Deallocate local memory
 
-      call memory('D','D',size(dxmaxn),'cgvc_zmatrix')
+      call memory('D','D',size(dxmaxn),myName)
       deallocate(dxmaxn)
-      call memory('D','D',size(ftoln),'cgvc_zmatrix')
+      call memory('D','D',size(ftoln),myName)
       deallocate(ftoln)
-      call memory('D','D',size(gxa),'cgvc_zmatrix')
+      call memory('D','D',size(gxa),myName)
       deallocate(gxa)
-      call memory('D','D',size(gfa),'cgvc_zmatrix')
+      call memory('D','D',size(gfa),myName)
       deallocate(gfa)
-      call memory('D','D',size(rnew),'cgvc_zmatrix')
+      call memory('D','D',size(rnew),myName)
       deallocate(rnew)
 
       end subroutine zm_broyden_optimizer

@@ -262,7 +262,7 @@ C End loop over broadcast nodes
           enddo
 
 C Free workspace array for overlap
-          call de_alloc( Sloc, name='Sloc' )
+          call de_alloc( Sloc, name='Sloc', routine='pdosk' )
 
 #else
 C Loop over all the energy range
@@ -317,7 +317,7 @@ C Global reduction of dtot matrix
       dtot(1:nhist,1:nspin) = Sloc(1:nhist,1:nspin,1)
 
 C Free workspace array for global reduction
-      call de_alloc( Sloc, name='Sloc' )
+      call de_alloc( Sloc, name='Sloc', routine='pdosk' )
 #endif
 
       wksum = 0.0d0

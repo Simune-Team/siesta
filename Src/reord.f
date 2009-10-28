@@ -108,8 +108,8 @@ C
 C
 C  Free local memory
 C
-      call de_alloc( JS,  name='JS' )
-      call de_alloc( AUX,  name='AUX' )
+      call de_alloc( JS,  name='JS', routine='reord' )
+      call de_alloc( AUX,  name='AUX', routine='reord' )
 
       CALL TIMER('REORD',2)
       END

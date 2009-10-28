@@ -344,14 +344,15 @@ C Output fractional coordinates to cartesian Bohr, and copy to xa -----------
 
       ! Deallocate local memory
 
-        call de_alloc( gxa, name='gxa' )
-        call de_alloc( gfa, name='gfa' )
-        call de_alloc( deltamax, name='deltamax' )
+        call de_alloc( gxa, name='gxa', routine='fire_optimizer' )
+        call de_alloc( gfa, name='gfa', routine='fire_optimizer' )
+        call de_alloc( deltamax, name='deltamax',
+     .                 routine='fire_optimizer' )
 
       else
 
-        call de_alloc( rold, name='rold' )
-        call de_alloc( rdiff, name='rdiff' )
+        call de_alloc( rold, name='rold', routine='fire_optimizer' )
+        call de_alloc( rdiff, name='rdiff', routine='fire_optimizer' )
 
       endif ! variable cell
 
