@@ -187,11 +187,11 @@ C Set algorithm logicals
         endif
 #ifdef MPI
         if (Node.eq.0) then
-           lBtmp(1) = AllInOne
-           lBtmp(2) = DivideConquer
-           lBtmp(3) = NoExpert
-           lBtmp(4) = PreRotate
-           lBtmp(5) = Use2D
+          lBtmp(1) = AllInOne
+          lBtmp(2) = DivideConquer
+          lBtmp(3) = NoExpert
+          lBtmp(4) = PreRotate
+          lBtmp(5) = Use2D
         endif
         call MPI_Bcast(lBtmp,5,MPI_logical,0,MPI_Comm_World,MPIerror)
         AllInOne = lBtmp(1)
@@ -504,8 +504,8 @@ C Rotate according to eigenvectors from previous cycle
 C*******************************************************************************
 C Solve standard eigenvalue problem                                            *
 C*******************************************************************************
-        call timer('rdiag3',1)
         if (Serial) then
+          call timer('rdiag3',1)
           if (DivideConquer) then
             call dsyevds(jobz,'U',n,H,n,w,Z,n,work,lwork,iwork,liwork,
      .                   info)
@@ -514,9 +514,11 @@ C*******************************************************************************
             call dsyevx(jobz,range,'U',n,H,n,vl,vu,1,neigvec,abstol,
      .                  neigok,w,Z,n,work,lwork,iwork,ifail,info)
           endif
+          call timer('rdiag3',2)
 #ifdef MPI
         else
           if (DivideConquer) then
+            call timer('rdiag3',1)
             if (Use2D) then
               call pdsyevd(jobz,'U',n,h2d,1,1,desc_h2d,w,z2d,1,1,
      .                     desc_h2d,work,lwork,iwork,liwork,info)
@@ -524,8 +526,10 @@ C*******************************************************************************
               call pdsyevd(jobz,'U',n,H,1,1,desch,w,Z,1,1,desch,work,
      .                     lwork,iwork,liwork,info)
             endif
+            call timer('rdiag3',2)
             neigok = n
           else
+            call timer('rdiag3',1)
             if (Use2D) then
               call pdsyevx(jobz,range,'U',n,h2d,1,1,desc_h2d,vl,vu,1,
      .                     neigvec,abstol,neigok,nz,w,orfac,z2d,1,1,
@@ -536,6 +540,7 @@ C*******************************************************************************
      .                     abstol,neigok,nz,w,orfac,Z,1,1,desch,work,
      .                     lwork,iwork,liwork,ifail,iclustr,gap,info)
             endif
+            call timer('rdiag3',2)
 
 C If there is insufficient memory due to eigenvalue clustering increase memory
             if (info.eq.2) then
@@ -573,8 +578,6 @@ C Check error flag
         if (neigok.lt.neigvec) then
           call die('Insufficient eigenvalues converged in rdiag')
         endif
-
-        call timer('rdiag3',2)
 
 C*******************************************************************************
 C Post-rotate using trial eigenvectors                                         *

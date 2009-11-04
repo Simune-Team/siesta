@@ -94,6 +94,7 @@
 !   Stops counting time for a program or code section
 ! INPUT:
 !   character(len=*) prog  ! Name of program of code section to be timed
+!                          ! prog ideally should be at least of length 4.
 ! USAGE:
 !   See GENERAL USAGE section
 ! BEHAVIOUR:
@@ -713,7 +714,7 @@ end subroutine timer_start
 subroutine timer_stop( prog )   ! Stop counting time for a program
 
   implicit none
-  character(len=*),intent(in):: prog  ! Name of program of code section
+  character(len=*),intent(in):: prog     ! Name of program of code section
 
 ! Internal variables
   integer :: iProg, jProg
