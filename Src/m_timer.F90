@@ -299,7 +299,7 @@ subroutine print_report( prog )   ! Write a report of counted times
       ! Write header
       write(6,'(/,a,f12.3)') 'timer: Elapsed wall time (sec) =', wallTime
       write(6,'(a)') 'timer: CPU execution times (sec):'
-      write(6,'(/,a15,a9,3a12,2a9)') &
+      write(6,'(/,a15,a9,2a12,a9)') &
         'Routine        ', 'Calls', 'Time/call', 'Tot.time', '%'
 
       ! Write program times
@@ -307,7 +307,7 @@ subroutine print_report( prog )   ! Write a report of counted times
         progName    = progData(iProg)%name
         progCalls   = progData(iProg)%nCalls
         progTotTime = progData(iProg)%totTime
-        write(6,'(a15,i9,2f12.3,2f9.2)') &
+        write(6,'(a15,i9,2f12.3,f9.2)') &
           progName, progCalls, progTotTime/progCalls, &
                     progTotTime, progTotTime/totalTime*100
       end do ! iProg

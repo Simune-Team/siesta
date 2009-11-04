@@ -6,6 +6,22 @@
 ** CHANGES ALONG trunk 
 
 ------------------------------------------------------------------------
+2009-11-03  11:15:00 GMT Jose M Soler <jose.soler@uam.es>      trunk-306
+Correct number of orbital nodes with 'nodes' option
+
+The (mainly obsolete) 'nodes' option for basis orbital generation was
+producing orbitals with one excess radial node (i.e. one and two nodes
+for double zeta, instead of zero and one node). Corrected.
+
+A goto statement, out of a start-stop-timer piece of code, lead to
+a program die within timer in some cases. Corrected.
+
+modified:
+  Src/atom.f        ! Radial nodes decresed for 'nodes' option
+  Src/m_timer.F90   ! A small correction of output format
+  Src/rdiag.F       ! Added call to stop_timer within rdiag3 section
+
+------------------------------------------------------------------------
 2009-10-15  21:00:00 GMT Jose M Soler <jose.soler@uam.es>      trunk-305
 Match arguments between re_alloc and de_alloc calls
 
