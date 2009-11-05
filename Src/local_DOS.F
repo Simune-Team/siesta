@@ -85,7 +85,7 @@
           fildos = paste( slabel, '.LDOS' )
           g2max = g2cut
           call dhscf( nspin, no_s, iaorb, iphorb, no_l,
-     .              no_u, na_u, na_s, isa, xalast, indxua, 
+     .              no_u, na_u, na_s, isa, xa, indxua, 
      .              ucell, mscell, g2max, ntm,
      .              0, 0, 0, fildos, ' ', ' ', ' ', ' ', ' ',
      .              maxnh, numh, listhptr, listh, Dscf, Datm,
