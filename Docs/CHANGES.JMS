@@ -1,0 +1,12 @@
+2009-11-06  17:30:00 GMT Jose M Soler <jose.soler@uam.es>      trunk-306-JMS-1
+Increased parameter nr in vdwxc, to avoid an out-of-bounds condition
+
+An out of bounds condition was occurring in vdwxc when called by atom
+pseudopotential generation program. With ifort, this lead to program
+crash or to an overflow of the system memory. To solve this, parameter 
+nr been increased from 1024 to 2048, and a check has been added.
+
+modified:
+  Src/SiestaXC/vdwxc.f90   ! Parameter nr increased
+
+
