@@ -1,0 +1,16 @@
+Post-SCF property calculation bug fix:
+
+There was a problem in several routines where the following variables
+were being used:
+
+xalast
+ucell_last 
+scell_last
+
+These variables are only set under particular circumstances relating to
+the state of the geometry optimization number of steps. Hence, the
+optical properties and DOS were being called with these variables undefined.
+To correct this, the above variables have been replaced by xa, ucell and
+scell, respectively, which are always defined. Even when the "last"
+variables are defined, it appears that they will have the same values 
+as the non-last variables.
