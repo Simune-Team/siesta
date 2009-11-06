@@ -6,6 +6,34 @@
 ** CHANGES ALONG trunk 
 
 ------------------------------------------------------------------------
+2009-11-06  19:34 GMT Jose A. Torres <jtorres.sp@gmail.com>     trunk-307
+
+Error fixed for MPI_Waitall, Call to write_raw_efs limited to I/O node (J.Gale)
+
+Introduced some patches from J.Gale's branch:
+
+* Error in mpi_siesta.f90 fixed for MPI_Waitall. The interface had 
+  the wrong set of arguments passed through.
+
+    +     call MPI_WAITALL(COUNT, ARRAY_OF_REQUESTS, ARRAY_OF_STATUSES, IERROR)
+    ---
+    -     call MPI_WAITALL(COUNT, ARRAY_OF_REQUESTS, INDEX, STATUS, IERROR)
+
+* Call to write_raw_efs from state_analysis now limited to I/O node only.
+
+    +       if (IOnode) call write_raw_efs(stress,na_u,fa,FreeE)
+    ---
+    -       call write_raw_efs(stress,na_u,fa,FreeE)
+
+* Some comments changed in Src/m_timer.F90
+
+
+modified:
+  Src/MPI/mpi_siesta.f90   !  
+  Src/m_timer.F90
+  Src/state_analysis.F
+
+------------------------------------------------------------------------
 2009-11-03  11:15:00 GMT Jose M Soler <jose.soler@uam.es>      trunk-306
 Correct number of orbital nodes with 'nodes' option
 
