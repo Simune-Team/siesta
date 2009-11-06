@@ -2112,7 +2112,7 @@ C Loop over functionals
 
             write(6,'(a)')
      .       'xc_check: GGA AM05'
-            if (icorr.ne.'ps'.and.nXCfunc.eq.1) 
+            if (icorr.ne.'am'.and.nXCfunc.eq.1) 
      $          write(6,'(a,1x,2a)')
      .          'xc_check: WARNING: Pseudopotential generated with',
      $           trim(ps_string), " functional"
