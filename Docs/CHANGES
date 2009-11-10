@@ -5,6 +5,17 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2009-11-10  14:00:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-b-1
+Correct number of orbital nodes with 'nodes' option (J. Soler)
+
+The (mainly obsolete) 'nodes' option for basis orbital generation was
+producing orbitals with one excess radial node (i.e. one and two nodes
+for double zeta, instead of zero and one node). Corrected.
+
+modified:
+  Src/atom.f
+
+------------------------------------------------------------------------
 2009-09-30  14:00:00 GMT Alberto Garcia <albertog@icmab.es> siesta-3.0-b
 Siesta-3.0-beta release
 
