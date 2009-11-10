@@ -5,6 +5,18 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2009-11-10  14:30:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-b-3
+Fix bug in electric field initialization (J. Junquera)
+
+When using the ExternalElectricField option (block), a bug prevented
+the actual use of the field to generate the potential ramp on the grid
+(but not the calculation of an extra contribution to the energy).
+
+
+modified:
+  Src/efield.F
+
+------------------------------------------------------------------------
 2009-11-10  14:15:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-b-2
 Assorted fixes: mpi wrapping, format changes, manual
 

@@ -143,6 +143,7 @@ C Read the electric field block from the fdf input file
             cfactor = fdf_convfac(eunits,'Ry/Bohr/e')
             do ix = 1,3
               e(ix) = e(ix) * cfactor
+              if (e(ix) .ne. 0.0_dp) isfield = .true.
               e0(ix) = e(ix)
               esave(ix) = e(ix)
             enddo
