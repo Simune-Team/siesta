@@ -1,0 +1,14 @@
+2009-11-10  20:30:00 GMT Jose M Soler <jose.soler@uam.es>      trunk-310-JMS-1
+Avoid repetition of routine name in allocation report
+
+Since the introduction of the routine name in the allocation report, in
+revno 301, some arrays appeared with a repeated routine name, since this
+is also given in the array name. Also, the module name has been added in
+calls to re_alloc, within module neighbour.
+
+modified:
+  Src/SiestaXC/atomxc.f90   ! Call to alloc_default commented out
+  Src/SiestaXC/cellxc.f90   ! 'routine' removed from call to alloc_default
+  Src/matel.f               ! 'routine' removed from call to alloc_default
+  Src/mneighb.f             ! Module name used in calls to re_alloc
+ 
