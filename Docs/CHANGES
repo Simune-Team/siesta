@@ -4,6 +4,18 @@
 
 
 ** CHANGES ALONG trunk
+------------------------------------------------------------------------
+2009-11-10 18:25:00 GMT Jose A. Torres <jtorres.sp@gmail.com>   trunk-310
+
+Increased parameter nr in vdwxc, to avoid an out-of-bounds condition(J. Soler)
+
+An out of bounds condition was occurring in vdwxc when called by atom
+pseudopotential generation program. With ifort, this lead to program
+crash or to an overflow of the system memory. To solve this, parameter 
+nr been increased from 1024 to 2048, and a check has been added.
+
+modified:
+  Src/SiestaXC/vdwxc.f90   ! Parameter nr increased
 
 ------------------------------------------------------------------------
 2009-11-10 17:59:00 GMT Jose A. Torres <jtorres.sp@gmail.com>   trunk-309
