@@ -16,7 +16,7 @@
       use  atmfuncs, only: nofis, nkbfis, izofis, massfis,
      $                     rcut, atmpopfio, zvalfis
       use atm_types, only: species
-      use siesta_geom, only: na_u, na_s, xa, isa, xalast
+      use siesta_geom, only: na_u, na_s, xa, isa, xa_last
       implicit none
 
       private
@@ -92,12 +92,12 @@ C Routine to initialize the atomic lists.
 C
       integer  ia, io, is, nkba, noa, nol, nokbl, ioa, ikb
 
-      nullify(indxua,lastkb,lasto,qa,amass,xalast)
+      nullify(indxua,lastkb,lasto,qa,amass,xa_last)
       call re_alloc(indxua,1,na_u,name='indxua',routine='siesta')
       call re_alloc(lastkb,0,na_u,name='lastkb',routine='siesta')
       call re_alloc(lasto,0,na_u,name='lasto',routine='siesta')
       call re_alloc(qa,1,na_u,name='qa',routine='siesta')
-      call re_alloc(xalast,1,3,1,na_u,name='xalast',routine='siesta')
+      call re_alloc(xa_last,1,3,1,na_u,name='xa_last',routine='siesta')
       call re_alloc(amass,1,na_u,name='amass',routine='siesta')
 
 !
@@ -224,7 +224,7 @@ C Internal variables
         call re_alloc(lasto, 0, na, routine='superc',copy=.true.)
         call re_alloc(qa, 1, na, routine='superc',copy=.true.)
         call re_alloc(xa, 1,3, 1,na, routine='superc',copy=.true.)
-        call re_alloc(xalast, 1,3, 1,na, routine='superc',copy=.true.)
+        call re_alloc(xa_last, 1,3, 1,na, routine='superc',copy=.true.)
       endif
 
       na_s  = na

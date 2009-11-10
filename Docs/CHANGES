@@ -3,7 +3,48 @@
 =======================================================================
 
 
-** CHANGES ALONG trunk 
+** CHANGES ALONG trunk
+
+------------------------------------------------------------------------
+2009-11-10 17:59:00 GMT Jose A. Torres <jtorres.sp@gmail.com>   trunk-309
+
+Clarification of the use of *_last geometry information (A. Garcia)
+
+The variables xa_last (formerly xalast), ucell_last, and scell_last
+are used to hold the information related to the last geometry for
+which the electronic structure has been computed. This is necessary
+since the "siesta_move" routine updates the geometry after every step.
+By using the "*_last" variables instead of "xa", "ucell", and "scell",
+we make sure that "siesta_analysis", when calculating the
+polarization, optical properties, etc, uses the coordinates actually
+used to compute the electronic structure.
+
+The *_last variables are set at the beginning of "siesta_move", before
+the actual displacements. Due to a bug in the program, however, this
+was being done only at the final scheduled step ('fincoor'), instead
+of inconditionally after every step. Thus they could be used undefined
+if, for example, a relaxation finishes before the scheduled number of
+steps (which is typical).
+
+While fixing this bug, it became apparent that some other sections of
+"siesta_analysis" are using the "predicted" coordinates (the output of
+coordinates in various formats) instead of the last "used"
+coordinates. This can be considered a feature or a bug.
+
+Similarly, the computation of the spin polarization uses a density
+matrix that is actually the result of a mixing after the last SCF
+step.
+
+(Fix prepared by A. Garcia after the discovery of the bug by J. Gale)
+
+modified:
+  Src/atomlist.f
+  Src/born_charge.F
+  Src/local_DOS.F
+  Src/siesta_analysis.F
+  Src/siesta_geom.F90
+  Src/siesta_move.F
+ 
 ------------------------------------------------------------------------
 2009-11-10  17:53:00 GMT Jose A. Torres <jtorres.sp@gmail.com> trunk-308
 
