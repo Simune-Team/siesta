@@ -4,6 +4,18 @@
 
 
 ** CHANGES ALONG trunk 
+------------------------------------------------------------------------
+2009-11-10  17:53:00 GMT Jose A. Torres <jtorres.sp@gmail.com> trunk-308
+
+Fix bug in electric field initialization (J. Junquera)
+
+When using the ExternalElectricField option (block), a bug prevented
+the actual use of the field to generate the potential ramp on the grid
+(but not the calculation of an extra contribution to the energy).
+
+
+modified:
+  Src/efield.F
 
 ------------------------------------------------------------------------
 2009-11-06  19:34 GMT Jose A. Torres <jtorres.sp@gmail.com>     trunk-307
