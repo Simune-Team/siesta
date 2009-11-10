@@ -5,6 +5,25 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2009-11-10  14:15:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-b-2
+Assorted fixes: mpi wrapping, format changes, manual
+
+* Wrapping of pre-broadcast section in rdiag.
+* Wrapping of writing of EFS file in state_analysis.
+* Format change in atomlist to accomodate large numbers
+  of orbitals and projectors.
+* Missing supercell section re-instated in Docs/siesta.tex.
+* Add timer call in rdiag.
+
+Thanks to J. Gale and J. Soler
+
+modified:
+  Docs/siesta.tex
+  Src/atomlist.f
+  Src/rdiag.F
+  Src/state_analysis.F
+
+------------------------------------------------------------------------
 2009-11-10  14:00:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-b-1
 Correct number of orbital nodes with 'nodes' option (J. Soler)
 
