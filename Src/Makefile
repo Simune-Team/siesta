@@ -78,7 +78,7 @@ OBJS =  automatic_cell.o atom_options.o \
         fft.o \
 	diagg.o diagk.o diagk_file.o diagkp.o diag2g.o diag2k.o diagpol.o \
 	diagsprl.o dipole.o dismin.o dnaefs.o doping.o dot.o  \
-	efield.o egandd.o ener3.o ener3lomem.o extrapolon.o \
+	m_efield.o egandd.o ener3.o ener3lomem.o extrapolon.o \
 	fixed.o flib_spline.o gradient.o gradientlomem.o grdsam.o \
 	hsparse.o idiag.o  initatom.o inver.o iodm_netcdf.o \
 	iodmhs_netcdf.o iogrid_netcdf.o iohs.o iolwf.o iozm.o ipack.o iopipes.o \
@@ -173,7 +173,7 @@ $(FoX_built): $(FoX_configured)
 # FoX is done avoids a warning as we use the FoX-config script everywhere.
 #
 version $(SYSOBJ) $(OBJS) \
-basis_io.o efield.o initatom.o ioeig.o kpoint_grid.o meshsubs.o \
+basis_io.o m_efield.o initatom.o ioeig.o kpoint_grid.o meshsubs.o \
 mulliken.o ordern.o outcell.o pdos.o post_scf_work.o radial.o   \
 scfconvergence_test.o setup_hamiltonian.o siesta_analysis.o     \
 siesta_cml.o siesta_cmlsubs.o siesta_end.o siesta_forces.o      \
@@ -369,9 +369,9 @@ densematrix.o: precision.o
 detover.o: alloc.o parallel.o parallelsubs.o precision.o
 dfscf.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o meshmatrix.o
 dfscf.o: meshsubs.o meshsubs.o parallel.o precision.o sys.o
-dhscf.o: alloc.o atmfuncs.o files.o forhar.o iogrid_netcdf.o m_iorho.o
-dhscf.o: m_ts_in_siesta.o m_ts_options.o meshsubs.o parallel.o parsing.o
-dhscf.o: precision.o siesta_options.o sys.o
+dhscf.o: alloc.o atmfuncs.o files.o forhar.o iogrid_netcdf.o m_efield.o
+dhscf.o: m_iorho.o m_ts_in_siesta.o m_ts_options.o meshsubs.o parallel.o
+dhscf.o: parsing.o precision.o siesta_options.o sys.o
 diag2g.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
 diag2k.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
 diagg.o: fermid.o parallel.o parallelsubs.o precision.o sys.o writewave.o
@@ -458,6 +458,8 @@ m_broyden_mixing.o: alloc.o m_broyddj.o m_mpi_utils.o parallel.o precision.o
 m_cell.o: precision.o siesta_geom.o units.o
 m_check_supercell.o: minvec.o parallel.o precision.o
 m_dipol.o: precision.o
+m_efield.o: atmfuncs.o m_fdf_global.o m_mpi_utils.o parallel.o parallelsubs.o
+m_efield.o: precision.o siesta_cml.o siesta_geom.o sys.o units.o
 m_energies.o: precision.o
 m_eo.o: precision.o
 m_fdf_global.o: m_mpi_utils.o parallel.o precision.o
