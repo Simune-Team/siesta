@@ -14,3 +14,18 @@ To correct this, the above variables have been replaced by xa, ucell and
 scell, respectively, which are always defined. Even when the "last"
 variables are defined, it appears that they will have the same values 
 as the non-last variables.
+
+Functionals branch:
+
+Support for the AM05 functional has been added to routines in SiestaXC and Pseudo.
+This is done using the AM05 subroutines distributed by Armiento and Mattson, under
+the terms of the conditions contained within the header to their software allowing
+modification and redistribution provider the original copyright header remains. 
+
+A new module, am05, contained within the file SiestaXC/am05.f90, has been added
+containing the code from Armiento and Mattsson. Within ggaxc.f90 a wrapper has
+been added, am05xc, to pass the variables from ggaxc to am05 subroutines and
+handle the return arguments appropriately. 
+
+In the atom program the two-letter symbol "am" has been added for AM05.
+In SIESTA the GGA Authors are "AM05".
