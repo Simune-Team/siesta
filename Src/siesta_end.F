@@ -7,6 +7,7 @@
       subroutine siesta_end()
       use alloc, only: alloc_report
       use siesta_cml
+      USE siestaXC,    only : closeDebugOutputFile
       use m_timestamp, only : timestamp
       use m_wallclock, only : wallclock
       use parallel, only: IOnode
@@ -21,10 +22,15 @@
 
 !------------------------------------------------------------------------- BEGIN
 ! Output memory use up to the end of the program
-      call printmemory( 6, 1 )
+! Commented out since it is no longer realistic because most 
+! allocations occur in re_alloc. JMS. 2009/10/15
+!      call printmemory( 6, 1 )
 
 ! Print allocation report
       call alloc_report( printNow=.true. )
+
+! Close debug outup file
+      call closeDebugOutputFile()
 
 ! Stop time counter
       call timer( 'siesta', 2 )

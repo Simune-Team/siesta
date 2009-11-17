@@ -3,7 +3,7 @@
 !
 ! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
 ! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
+! and J.M.Soler, 1996- .
 ! 
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
@@ -198,7 +198,8 @@ C Distribute information about listd globally
           enddo
         endif
       enddo
-      call de_alloc( ibuffer, name='ibuffer' )
+      call de_alloc( ibuffer, name='ibuffer', 
+     .               routine='CreateLocalDscfPointers' )
 
       end subroutine CreateLocalDscfPointers
 
@@ -308,7 +309,7 @@ C Get pointer for this row of Dscf and see if it is needed for DscfL
       enddo
 
 C Deallocate buffer memory
-      call de_alloc(buffer, name="buffer")
+      call de_alloc(buffer, name='buffer', routine='matrixOtoM' )
 #else
 C*********************
 C  Serial execution  *
@@ -465,9 +466,9 @@ C stored in the orbital oriented array
       enddo
 
 C Deallocate buffer and pointer memory
-      call de_alloc(listViptr, name="listViptr")
-      call de_alloc(nVsLPtr, name="nVsLPtr")
-      call de_alloc(Vi, name="Vi")
+      call de_alloc(listViptr, name='listViptr', routine='matrixMtoO')
+      call de_alloc(nVsLPtr, name='nVsLPtr', routine='matrixMtoO')
+      call de_alloc(Vi, name='Vi', routine='matrixMtoO')
 #else
 C*********************
 C  Serial execution  *

@@ -3,7 +3,7 @@
 !
 ! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
 ! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
+! and J.M.Soler, 1996- .
 ! 
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
@@ -191,9 +191,9 @@ C Find maximum range of basis orbitals and KB projectors
       enddo
 
       ! Allocate local arrays that depend on parameters
-      call re_alloc(knakb,1,maxnkb, name="knakb")
-      call re_alloc(rckb,1,maxnkb, name="rckb")
-      call re_alloc(index,1,maxna, name="index")
+      call re_alloc(knakb,1,maxnkb, name="knakb",routine="hsparse")
+      call re_alloc(rckb,1,maxnkb, name="rckb",routine="hsparse")
+      call re_alloc(index,1,maxna, name="index",routine="hsparse")
 
       isel = 0
       ! Initialize internal data structures in neighb
@@ -251,9 +251,11 @@ C Find overlaping KB projectors
                       if (nnkb.eq.maxnkb) then
                          maxnkb = maxnkb + 10
                          call re_alloc(knakb,1,maxnkb,
-     $                        name="knakb",copy=.true.)
+     $                                 name="knakb",copy=.true.,
+     $                                 routine="hsparse")
                          call re_alloc(rckb,1,maxnkb,
-     $                        name="rckb",copy=.true.)
+     $                                 name="rckb",copy=.true.,
+     $                                 routine="hsparse")
                       endif
                       nnkb = nnkb + 1
                       knakb(nnkb) = kna
@@ -493,11 +495,11 @@ C Initialize listsc
 
 C Deallocate local arrays
 
-      call de_alloc(listhtmp,name="listhtmp")
-      call de_alloc(conect,name="conect")
-      call de_alloc(index,name="index")
-      call de_alloc(knakb,name="knakb")
-      call de_alloc(rckb,name="rckb")
+      call de_alloc(listhtmp,name="listhtmp",routine="hsparse")
+      call de_alloc(conect,name="conect",routine="hsparse")
+      call de_alloc(index,name="index",routine="hsparse")
+      call de_alloc(knakb,name="knakb",routine="hsparse")
+      call de_alloc(rckb,name="rckb",routine="hsparse")
 
       call timer( 'hsparse', 2 )
 

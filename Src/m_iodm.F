@@ -3,7 +3,7 @@
 !     
 !     Copyright (c) Fundacion General Universidad Autonoma de Madrid:
 !     E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-!     and J.M.Soler, 1996-2006.
+!     and J.M.Soler, 1996- .
 !     
 !     Use of this software constitutes agreement with the full conditions
 !     given in the SIESTA license, as signed by all legitimate users.
@@ -542,7 +542,7 @@ C     Find total number of basis functions over all Nodes
       endif
 
       nullify(numdg)
-      call re_alloc(numdg, 1, no_u, name="numdg", routine="read_dm")
+      call re_alloc(numdg, 1, no_u, name="numdg", routine="write_dm")
 
 C     Create globalised numd
       do m = 1,no_u

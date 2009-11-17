@@ -3,7 +3,7 @@
 !
 ! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
 ! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
+! and J.M.Soler, 1996- .
 ! 
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
@@ -311,9 +311,9 @@ C Check that weight is normalised
       endif
 
       call re_alloc(kpin,1,3,1,nkout,name='points',
-     $              routine='trim_kpoint_list',copy=.false.)
+     $              routine='find_kgrid',copy=.false.)
       call re_alloc(win,1,nkout,name='weight',
-     $              routine='trim_kpoint_list',copy=.false.)
+     $              routine='find_kgrid',copy=.false.)
 
       kpin(:,1:nkout) = kpout(:,1:nkout)
       win(1:nkout) = wout(1:nkout)

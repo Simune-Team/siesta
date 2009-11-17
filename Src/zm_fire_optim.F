@@ -3,7 +3,7 @@
 !
 ! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
 ! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
+! and J.M.Soler, 1996- .
 ! 
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
@@ -70,6 +70,7 @@ C Subroutine arguments:
       real(dp), intent(inout):: xa(3,na), stress(3,3), strtol, cell(3,3)
 
 C Internal variables and arrays
+      character(len=*),parameter:: myName = 'zm_fire_optimizer'
       integer             :: iu, ia, i, j, n, indi,indi1,vi,k
       logical             :: found
       real(dp)            :: volume, new_volume, trace
@@ -200,13 +201,13 @@ C Initialization to 1 for numerical reasons, later substracted
 C Allocate local memory
 
       allocate(gfa(ndeg))
-      call memory('A','D',ndeg,'cgvc_zmatrix')
+      call memory('A','D',ndeg,myName)
       allocate(gxa(ndeg))
-      call memory('A','D',ndeg,'cgvc_zmatrix')
+      call memory('A','D',ndeg,myName)
       allocate(ftoln(ndeg))
-      call memory('A','D',ndeg,'cgvc_zmatrix')
+      call memory('A','D',ndeg,myName)
       allocate(dxmaxn(ndeg))
-      call memory('A','D',ndeg,'cgvc_zmatrix')
+      call memory('A','D',ndeg,myName)
 
       if ( varcel ) then
 
@@ -416,13 +417,13 @@ C Return coordinates to correct arrays
 
 C Deallocate local memory
 
-      call memory('D','D',size(dxmaxn),'cgvc_zmatrix')
+      call memory('D','D',size(dxmaxn),myName)
       deallocate(dxmaxn)
-      call memory('D','D',size(ftoln),'cgvc_zmatrix')
+      call memory('D','D',size(ftoln),myName)
       deallocate(ftoln)
-      call memory('D','D',size(gxa),'cgvc_zmatrix')
+      call memory('D','D',size(gxa),myName)
       deallocate(gxa)
-      call memory('D','D',size(gfa),'cgvc_zmatrix')
+      call memory('D','D',size(gfa),myName)
       deallocate(gfa)
 
       end subroutine zm_fire_optimizer

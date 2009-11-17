@@ -3,7 +3,7 @@
 !
 ! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
 ! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
+! and J.M.Soler, 1996- .
 ! 
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
@@ -339,13 +339,13 @@ C Solo para los Juo que satisfagan el criterio del record...
       enddo
 
 C Free local memory from computation of dpr
-      call de_alloc( xijloc, name='xijloc' )
-      call de_alloc( Hnew, name='Hnew' )
-      call de_alloc( Snew, name='Snew' )
-      call de_alloc( Dloc, name='Dloc' )
-      call de_alloc( listhg, name='listhg' )
-      call de_alloc( listhptrg, name='listhptrg' )
-      call de_alloc( numhg, name='numhg' )
+      call de_alloc( xijloc, name='xijloc', routine='pdoskp' )
+      call de_alloc( Hnew, name='Hnew', routine='pdoskp' )
+      call de_alloc( Snew, name='Snew', routine='pdoskp' )
+      call de_alloc( Dloc, name='Dloc', routine='pdoskp' )
+      call de_alloc( listhg, name='listhg', routine='pdoskp' )
+      call de_alloc( listhptrg, name='listhptrg', routine='pdoskp' )
+      call de_alloc( numhg, name='numhg', routine='pdoskp' )
 
 #ifdef MPI
 C Allocate workspace array for global reduction
@@ -366,7 +366,7 @@ C Global reduction of dtot matrix
       dtot(1:nhist,1:nspin) = Sloc(1:nhist,1:nspin,1)
 
 C Free workspace array for global reduction
-      call de_alloc( Sloc, name='Sloc' )
+      call de_alloc( Sloc, name='Sloc', routine='pdoskp' )
 #endif
 
       wksum = 0.0d0

@@ -3,7 +3,7 @@
 !
 ! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
 ! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
+! and J.M.Soler, 1996- .
 ! 
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
@@ -186,13 +186,13 @@ C Work out which basis functions are required in local C copy
 
 C Resize arrays that depend on nbasisCloc
       call re_alloc(listc,1,maxnc,1,nbasisCloc,
-     .              shrink=.false.,name='listc')
+     .              shrink=.false.,name='on_main listc')
       call re_alloc(listcold,1,maxnc,1,nbasisloc,
-     .              shrink=.false.,name='listcold')
+     .              shrink=.false.,name='on_main listcold')
       call re_alloc(c,1,maxnc,1,nbasisCloc,1,nspin,
-     .              shrink=.false.,name='c')
+     .              shrink=.false.,name='on_main c')
       call re_alloc(cold,1,maxnc,1,nbasisloc,1,nspin,
-     .              shrink=.false.,name='cold')
+     .              shrink=.false.,name='on_main cold')
 
 C Initialize some stuff
 
@@ -264,7 +264,8 @@ C Initialize routine for neighbour search
       call mneighb(cell,rcoor,natoms,xa,0,0,nna) 
 
 C Allocate local memory
-      call re_alloc(indexloc,1,max(maxnna,natoms),name='indexloc')
+      call re_alloc(indexloc,1,max(maxnna,natoms),name='indexloc',
+     .              routine='cspa')
 
       index = 0
       do ia = 1,natoms
@@ -273,13 +274,14 @@ C Allocate local memory
 C Look for neighbours of atom ia
           call mneighb(cell,rcoor,natoms,xa,ia,0,nna)
           ! Reallocate in case nna has increased  (Tight form)
-          call re_alloc(indexloc,1,nna,name='indexloc',routine="cspa")
+          call re_alloc(indexloc,1,nna,name='indexloc',routine='cspa')
         else
           ! Make sure we have enough space
           ! (Cleaner alternative to initial allocation with  
           ! max(maxnna,natoms)
           !call sizeup_neighbour_arrays(natoms)
-          !call re_alloc( indexloc, 1, natoms, name='indexloc')
+          !call re_alloc( indexloc, 1, natoms, name='indexloc',
+          !               routine='cspa')
           nna = natoms
           do  jj = 1,natoms
             jan(jj) = jj
@@ -375,8 +377,10 @@ C Get random number here for reproducability over numbers of processors
                 if (numc(mul) .gt. maxnc) then
 C Reallocate all arrays that depend on maxnc
                   maxnc = maxnc + 50
-                  call re_alloc(listc,1,maxnc,1,nbasisCloc,name='listc')
-                  call re_alloc(c,1,maxnc,1,nbasisCloc,1,nspin,name='c')
+                  call re_alloc(listc,1,maxnc,1,nbasisCloc,
+     .                          name='on_main listc')
+                  call re_alloc(c,1,maxnc,1,nbasisCloc,1,nspin,
+     .                          name='on_main c')
                 endif
 
                 listc(nm+1,mul) = index
@@ -533,11 +537,11 @@ C  (or the number of electrons)
 
 C Deallocate local memory
 
-      call de_alloc( lneeded, name='lneeded' )
-      call de_alloc( numft, name='numft' )
-      call de_alloc( ilist, name='ilist' )
-      call de_alloc( alist, name='alist' )
-      call de_alloc( indexloc, name='indexloc' )
+      call de_alloc( indexloc, name='indexloc', routine='cspa' )
+      call de_alloc( lneeded, name='lneeded', routine='cspa' )
+      call de_alloc( numft, name='numft', routine='cspa' )
+      call de_alloc( ilist, name='ilist', routine='cspa' )
+      call de_alloc( alist, name='alist', routine='cspa' )
 
       end subroutine cspa
 

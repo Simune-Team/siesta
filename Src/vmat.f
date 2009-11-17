@@ -3,7 +3,7 @@
 !
 ! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
 ! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
+! and J.M.Soler, 1996- .
 ! 
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
@@ -400,17 +400,17 @@ C Redistribute Hamiltonian from mesh to orbital based distribution
         call matrixMtoO( nvmaxl, nvmax, numVs, listVsptr, nuo, 
      .      nuotot, nspin, DscfL, Vs )
 C Free memory 
-        call de_alloc( DscfL,  name='DscfL' )
+        call de_alloc( DscfL,  name='DscfL', routine='vmat' )
       endif
 
       !  Free local memory
 
-      call de_alloc( VClocal,  name='VClocal' )
-      call de_alloc( Clocal,  name='Clocal' )
-      call de_alloc( Vlocal,  name='Vlocal' )
-      call de_alloc( iorb,  name='iorb' )
-      call de_alloc( ilc,  name='ilc' )
-      call de_alloc( ilocal,  name='ilocal' )
+      call de_alloc( VClocal,  name='VClocal', routine='vmat' )
+      call de_alloc( Clocal,  name='Clocal', routine='vmat' )
+      call de_alloc( Vlocal,  name='Vlocal', routine='vmat' )
+      call de_alloc( iorb,  name='iorb', routine='vmat' )
+      call de_alloc( ilc,  name='ilc', routine='vmat' )
+      call de_alloc( ilocal,  name='ilocal', routine='vmat' )
 
       call timer('vmat',2)
       return

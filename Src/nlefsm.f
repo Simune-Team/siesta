@@ -3,7 +3,7 @@
 !
 ! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
 ! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
+! and J.M.Soler, 1996- .
 ! 
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
@@ -350,16 +350,16 @@ C Pick up contributions to H and restore Di and Vi
 
 C Deallocate local memory
 
-      call de_alloc( grSki, name='grSki' )
-      call de_alloc( Ski, name='Ski' )
-      call de_alloc( xno, name='xno' )
-      call de_alloc( iono, name='iono' )
-      call de_alloc( iano, name='iano' )
+      call de_alloc( grSki, name='grSki', routine='nlefsm' )
+      call de_alloc( Ski, name='Ski', routine='nlefsm' )
+      call de_alloc( xno, name='xno', routine='nlefsm' )
+      call de_alloc( iono, name='iono', routine='nlefsm' )
+      call de_alloc( iano, name='iano', routine='nlefsm' )
 
-      call de_alloc( listedall, name='listedall' )
-      call de_alloc( listed, name='listed' )
-      call de_alloc( Vi, name='Vi' )
-      call de_alloc( Di, name='Di' )
+      call de_alloc( listedall, name='listedall', routine='nlefsm' )
+      call de_alloc( listed, name='listed', routine='nlefsm' )
+      call de_alloc( Vi, name='Vi', routine='nlefsm' )
+      call de_alloc( Di, name='Di', routine='nlefsm' )
 
       call timer( 'nlefsm', 2 )
 

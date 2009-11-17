@@ -72,7 +72,8 @@ C      use parallel
 C FDN
 #endif
       use m_ts_options, only : voltfdf, USEBULK, TriDiag, updatedmcr, 
-     .                         FixQ, NBUFATL, NBUFATR, nvolt
+     .                         FixQ, NBUFATL, NBUFATR, nvolt, GFFileL, 
+     .                         GFFileR
       use m_ts_contour, only : setupcontour, distrcontour
       use m_ts_io, only : read_green
       use m_ts_electrode, only : green
@@ -471,10 +472,8 @@ C FDN nspin added as variable
      .           nspin )
 C FDN
             
-            gffileLeft=
-     .           fdf_string('TS.GENGF.GFFileLeft','Left.GF')
-            gffileRight=
-     .           fdf_string('TS.GENGF.GFFileRight','Right.GF')
+            gffileLeft=GFFileL
+            gffileRight=GFFileR
 
             inquire(file=gffileLeft,exist=existgf)
             if(.not.existgf) 

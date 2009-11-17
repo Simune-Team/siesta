@@ -29,64 +29,28 @@ REFERENCE=../../ref-version/Tests
 #
 label=work
 #
-ALL= h2o h2o_reparam h2o_basis h2o_dos h2o_orderN \
-       floating benzene bessel mgco3 si2x1h force_2 born born_spin\
-       var_cell constant_volume batio3 fe fe_broyden sih si64 \
-       h2oZ sih_op_broyden h2o_op_broyden zmatrix md_pr md_npr \
-       md_anneal md_verlet md_nose si_bandpoints sih_fire \
-       graphite_c6 oxyn partial h2o_findp_bug h2o_radialgrid ag ch4\
-       si_coop born pb_filter_cutoff pb_filter_tol fire_benzene fe_clust_noncollinear 
+ALL= h2o h2o_reparam h2o_basis h2o_dos h2o_orderN			\
+       floating benzene bessel mgco3 si2x1h force_2 born born_spin	\
+       var_cell constant_volume batio3 fe fe_broyden sih si64		\
+       h2oZ sih_op_broyden h2o_op_broyden zmatrix md_pr md_npr		\
+       md_anneal md_verlet md_nose si_bandpoints sih_fire		\
+       graphite_c6 oxyn partial h2o_findp_bug h2o_radialgrid ag ch4	\
+       si_coop born pb_filter_cutoff pb_filter_tol fire_benzene		\
+       fe_clust_noncollinear h_chain n_chain si64_coop si_pdos_kgrid    \
+       si2x1h-dipole ar2_vdw graphite_vdw_df 
 #
 #  Need to add the new tests and generate the reference outputs and xml files.
 #
 #
-FDF=h2o_findp_bug h2oZ pb_filter_cutoff oxyn ch4 \
-          h2o_op_broyden batio3 si_bandpoints fire_benzene var_cell \
-	  si2x1h born si_coop 
 all:
 	for dir in $(ALL); do\
 	 $(MAKE) -C $$dir completed; \
 	done
 
-batch:
-	@for i in ${tests} ; do \
-		(qsub $(HOME)/bin/sge_run.sh "make tests=$$i completed") ; \
-	done
 clean:
-	@for i in ${ALL} ; do \
+	@for i in $(ALL) ; do \
 		(cd $$i ; make clean) ; \
 	done
 #
-#   Global comparisons with other Tests directories
-#
-compare:
-	@for i in ${tests} ;do \
-             echo "---------$$i start" ;  \
-             diff $$i/$$i.out ${REFERENCE}/$$i/$$i.out ; \
-             echo "****---------$$i done" ; \
-     done | grep -v " timer: " | grep -v " elaps: " | grep -v " of run"
-
-compare-xml:    # Needs more work
-	for i in ${tests} ;do \
-             echo "---------$$i start of xml comparison" ;  \
-             $(XML-TESTER) $$i/$$i.xml ${REFERENCE}/$$i/$$i.xml ; \
-             echo "****---------$$i xml comparison done" ; done 
-
-update-xml:
-	for i in ${tests};\
-        do \
-             echo "---------Updating $$i xml files" ;   \
-             cp $$i/$(label)/$$i.xml Reference-xml/$$i.xml ; \
-        done
-
-xmllint:
-	for i in ${tests} ;\
-        do \
-            echo "---------$$i Check xml file" ;  \
-            xmllint $$i/$$i.xml >/dev/null ; \
-        done 
-
-
-
 
 

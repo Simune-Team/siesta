@@ -3,7 +3,7 @@
 !
 ! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
 ! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
+! and J.M.Soler, 1996- .
 ! 
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
@@ -525,7 +525,7 @@ c$$$        end subroutine pseudo_header_string
         p%a     = a
         p%b     = b
 
-        call de_alloc( y2, name='y2' )
+        call de_alloc( y2, name='y2', routine='pseudo_reparametrize' )
 
         call pseudo_write_formatted(trim(p%name)// ".Reparam.psf",p)
         if (write_ion_plot_files)

@@ -3,7 +3,7 @@
 !
 ! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
 ! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
+! and J.M.Soler, 1996- .
 ! 
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
@@ -527,10 +527,10 @@ C ........
 
 C Deallocate local arrays
 
-       call de_alloc( b, name='b' )
-       call de_alloc( bi, name="bi" )
-       call de_alloc( coeff, name="coeff" )
-       call de_alloc( buffer, name="buffer" )
+       call de_alloc( b, name='b', routine='pulayx' )
+       call de_alloc( bi, name='bi', routine='pulayx' )
+       call de_alloc( coeff, name='coeff', routine='pulayx' )
+       call de_alloc( buffer, name='buffer', routine='pulayx' )
 
        end subroutine pulayx
 

@@ -6,6 +6,240 @@
 ** CHANGES ALONG trunk 
 
 ------------------------------------------------------------------------
+2009-10-15  21:00:00 GMT Jose M Soler <jose.soler@uam.es>      trunk-305
+Match arguments between re_alloc and de_alloc calls
+
+For a correct accounting of array allocations, both the 'name' and
+'routine' arguments should be identical (including case sensitivity)
+in the corresponding calls to re_alloc and de_alloc of an array.
+The two arguments are combined into an internal name as 
+trim(routine)//' '//name, so that (name='rho',routine='dhscf') 
+is equivalent to (name='dhscf rho'). This is the name printed in
+the allocation report.
+
+When the array is allocated and deallocated in different subroutines, 
+it is clearer not to use the 'routine' argument, or give it the value 
+of the array 'owner' (for example its module name). 
+
+Our most complicated case is that of arrays declared in one or more 
+subroutines and allocated in a subroutine called by them (as done in
+find_kgrid). In this case, the 'routine' name must be that of the
+allocating subroutine, but the arrays of the different calling
+routines will be reported as a single array. Thus, array kpoint of 
+routine kpoint_grid and array kpoints_pdos of routine kpoint_pdos 
+will be reported together as array points of routine find_kgrid.
+
+I see no solution if more than one called subroutine (not in the 
+same module) were allocating or deallocating an array, but there
+is no such a case in siesta.
+
+For the previous reasons, until now, only the 'name' argument was used.
+But this made it difficult to identify the siesta routines allocating
+many arrays. So from now on, the whole routine+name will be used.
+
+The calls to printmemory have been commented out: its output has
+become unrealistic, since most allocations occur in re_alloc and
+they are no longer transmitted to routine memory.
+
+modified:
+  Src/SiestaXC/fft3d.f90
+  Src/SiestaXC/mesh3d.F90
+  Src/alloc.F90
+  Src/atomlwf.F
+  Src/bands.F
+  Src/basis_types.f
+  Src/bonds.f
+  Src/cgvc_zmatrix.F
+  Src/detover.F
+  Src/dhscf.F
+  Src/fft.F
+  Src/find_kgrid.F
+  Src/fire_optim.F
+  Src/forhar.f
+  Src/hsparse.f
+  Src/kinefsm.f
+  Src/ksv.f
+  Src/m_broyden_mixing.f
+  Src/m_fire_mixing.f
+  Src/m_iodm.F
+  Src/m_pulay.F
+  Src/m_sparse.F
+  Src/memory.F
+  Src/meshmatrix.F
+  Src/molecularmechanics.F90
+  Src/moreParallelSubs.F90
+  Src/new_dm.F
+  Src/nlefsm.f
+  Src/old_atmfuncs.f
+  Src/outcoor.f
+  Src/overfsm.f
+  Src/pdos.F
+  Src/pdosg.F
+  Src/pdosk.F
+  Src/pdoskp.F
+  Src/phirphi.f
+  Src/poison.F
+  Src/pseudopotential.f
+  Src/reord.f
+  Src/rhoofd.f
+  Src/rhoofdsp.f
+  Src/savepsi.F
+  Src/setup_hamiltonian.F
+  Src/siesta_analysis.F
+  Src/siesta_end.F
+  Src/siesta_init.F
+  Src/siesta_move.F
+  Src/spher_harm.f
+  Src/state_init.F
+  Src/vmat.f
+  Src/vmatsp.f
+  Src/zm_broyden_optim.F
+  Src/zm_fire_optim.F
+  Src/zmatrix.F
+
+------------------------------------------------------------------------
+2009-10-13  08:05:00 GMT Alberto Garcia <albertog@icmab.es>    trunk-304
+Array indexp distributed among parallel processors (J. Soler)
+
+* Array indexp translates the mesh index from the extended supercell
+  to the part of unit cell stored locally by each node. It has been 
+  distributed, so that now it translated to myBox from myExtBox, which
+  are my processor's mesh box and the same box extended by lateral 
+  'wings'.
+
+* Documentation of meshsubs has been considerably extended
+
+
+------------------------------------------------------------------------
+2009-10-12  16:05:00 GMT Alberto Garcia <albertog@icmab.es>    trunk-303
+Add dependency line in SiestaXC. Add missing Supercell docs
+
+* A dependency for timer.o was missing in the SiestaXC makefile, thus
+breaking the multithreaded compilation ("make -j N") feature. (A. Walker)
+
+* The documentation for the Supercell option had been inadvertently
+  left out of the manual after the reorganization.
+
+------------------------------------------------------------------------
+2009-10-12  13:35:00 GMT Alberto Garcia <albertog@icmab.es>    trunk-302
+Assorted fixes after vdw merge
+
+* Fix copy operation for modules in SiestaXC, to work around down-casing
+  by Intel compiler and the possible need of visibility of included modules
+  for other compilers.  (Thanks to A. Walker)
+
+* Add XC dependency to TranSiesta compilation (F.D. Novaes)
+
+* Wrap pre-broadcast section in rdiag (J. Gale)
+
+* Trap for potential out of bounds access to string in m_timer.F90 (J. Gale)
+
+* Format change in atomlist (J. Gale)
+      
+  Format of write statement modified to allow for the fact that the 
+  number of orbitals and projectors is much larger than the number of
+  atoms, often leading to overflow.
+
+* License header update in SiestaXC directory.
+* Use lib-arch.make to compile stand-alone library, for clarity.
+
+------------------------------------------------------------------------
+2009-10-05  14:15:00 GMT Alberto Garcia <albertog@icmab.es>    trunk-301
+New siestaXC library including van der Waals functional
+
+Implementation of the non local van der Waals density functional 
+of Dion et al (PRL 92, 246401 (2004), PRL 103, 096102 (2009)).
+
+The codes for the new functional are 
+
+XC.functional           VDW
+XC.authors              DRSLL
+
+in Siesta and 'vw' (or 'vf') in Atom.
+
+All the exchange-correlation routines have been placed in a library
+called siestaXC, whose unique entry point is module m_siestaXC. The
+sources are in subdirectory Src/SiestaXC, whose makefile allows to
+create a self-contained distribution in file siestaXC.tgz, that can
+be used in programs other than siesta. The library sources that are
+used by siesta also outside the library (like alloc.F90) remain in
+Src, and are copied by SiestaXC/makefile into siestaXC.tgz.
+
+The library is used to compile siesta itself, with a scheme similar
+to that used for MPI, fdf and FoX. Pseudo/atom has been also adapted
+to use the siestaXC library.
+
+The implementation of the non local van der Waals density functional
+has led to a whole rewritting of cellxc and a major one of atomxc.
+File xc has been splitted in m_atomxc, m_ldaxc, and m_ggaxc, which
+are now modules. The VDW-specific routines are in module m_vdwxc.
+
+The new parallelization of cellxc has led to several new modules, of
+which mesh3d is the largest one. It allows new distributions of mesh
+points among processors, that can change dynamically. Other relevant
+modules are fftr, for 3-D FFTs of real functions. fft3d has changed
+to allow (complex) 3-D FFTs using the new distributions of mesh points.
+Module mesh1d provides radial (1-D) mesh utilities. Module m_debugXC
+writes reports debugXC.node$$ with details of mesh distributions.
+
+The new m_timer module, together with changes in MPI/mpi_siesta, allows
+the profiling of MPI communication times, for each routine that calls 
+timer, after compiling with -DMPI_TIMING. Routine timer itself remains 
+external, but it uses m_timer operationally.
+
+The full accounting and reporting of allocated arrays is now done in
+module alloc, and printed in (SystemLabel).alloc. The old 'memory'
+routine now passes information to alloc for this accounting, rather
+than the other way around. Therefore, the 'total' allocation sizes
+given by memory routine are no longer complete, though they are still
+printed.
+
+(Jose Soler (UAM), with help by Alberto Garcia (ICMAB), Rogeli Grima
+(BSC) , and Jose Maria Cela (BSC))
+
+
+------------------------------------------------------------------------
+2009-09-29  10:30:00 GMT Alberto Garcia <albertog@icmab.es>    trunk-300
+TranSiesta updates. Assorted fixes and cleanup. Update outputs and banner.
+
+* Make local copy of reinit in Util/Denchar
+* Add comment to the manual re: MeshSubDivisions
+* Put unit of current in tbtrans. Updated outputs in Tests/transiesta
+* Merge changes to TS code by F. Novaes
+* Change Copyright dates. Now they are of the form 1996- 
+* Remove xmlparser/Test directory. Remove test-xml fossils
+* Update out and xml reference files. Update Tests/Makefile
+* Fix script.mk and Tests/partial/script.sh
+
+------------------------------------------------------------------------
+2009-09-29  10:30:00 GMT Alberto Garcia <albertog@icmab.es>    trunk-299
+Update of TS section of manual. Assorted fixes.
+
+* Update of the TranSiesta section of the manual (P. Ordejon, F. Novaes)
+
+* Fixes and streamlined compilation of tbtrans program in Util/TBTrans
+  (F. Novaes, A. Garcia)
+
+* Update of 'doping' routine for doped slabs (P. Ordejon)
+
+* New 'si2x1h-dipole' test for the dipole correction feature (P. Ordejon)
+
+* Fixes to the building system (A. Walker, A. Garcia)
+
+* Fixes in 'bands.F' routine (A. Walker, J. Gale)
+
+* Added Util/WFS/info_wfsx.f program (A. Garcia)
+
+* New utility Util/Helpers/get_chem_labels (A. Garcia)
+
+* Added zero-point-motion to Util/Vibra/Src/vibrator.f (J. Gale)
+
+* Fix to avoid the handling of 'reduced_vlocal' when reading .ion files.
+  (A. Garcia)
+
+* Remove obsolete files from Src/fdf and clarify usage (A. Garcia)
+ 
+------------------------------------------------------------------------
 2009-09-11  11:30:00 GMT Alberto Garcia <albertog@icmab.es>    trunk-298
 Re-organization of the manual. Building fixes. Update of Contrib utils
 

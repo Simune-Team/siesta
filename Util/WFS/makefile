@@ -3,7 +3,7 @@
 #
 # Copyright (c) Fundacion General Universidad Autonoma de Madrid:
 # E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-# and J.M.Soler, 1996-2006.
+# and J.M.Soler, 1996- .
 # 
 # Use of this software constitutes agreement with the full conditions
 # given in the SIESTA license, as signed by all legitimate users.
@@ -26,7 +26,7 @@
 .SUFFIXES: 
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
-all: readwf readwfx wfs2wfsx wfsx2wfs wfsnc2wfsx
+all: readwf readwfx info_wfsx wfs2wfsx wfsx2wfs wfsnc2wfsx
 #
 OBJDIR=Obj
 VPATH=../../Src
@@ -53,6 +53,8 @@ INCFLAGS:=$(NETCDF_INCFLAGS) $(INCFLAGS) # -I../../$(OBJDIR)
 readwf: readwf.o
 	$(FC) $(LDFLAGS) -o $@ $<  
 readwfx: readwfx.o
+	$(FC) $(LDFLAGS) -o $@ $<  
+info_wfsx: info_wfsx.o
 	$(FC) $(LDFLAGS) -o $@ $<  
 wfs2wfsx: wfs2wfsx.o
 	$(FC) $(LDFLAGS) -o $@ $<  

@@ -3,7 +3,7 @@
 !
 ! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
 ! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
+! and J.M.Soler, 1996- .
 ! 
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
@@ -264,8 +264,8 @@ C *********************************************************************
         DYYDR(I) = DYDR(I,ILM1-1)*Y(ILM2-1) + Y(ILM1-1)*DYDR(I,ILM2-1)
       enddo
 
-      call de_alloc( dydr,  name='dydr' )
-      call de_alloc( y,  name='y' )
+      call de_alloc( dydr,  name='dydr', routine='ylmylm' )
+      call de_alloc( y,  name='y', routine='ylmylm' )
 
       END subroutine ylmylm
 

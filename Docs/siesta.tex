@@ -39,13 +39,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, trunk-298}}
+{\Huge {\bf S I E S T A \, \, trunk-303}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large September 11, 2009 }
+{\Large October 12, 2009 }
 
 \vspace{1.5cm}
 
@@ -124,14 +124,14 @@ to perform electronic structure calculations and {\it ab initio} molecular
 dynamics simulations of molecules and solids. Its main characteristics are:
 \begin{itemize}
 \item
-It uses the standard Kohn-Sham self-consistent density functional
+It uses the standard Kohn-Sham selfconsistent density functional
 method in the local density (LDA-LSD) or generalized gradient (GGA)
 approximations.
 \item
-It uses norm-conserving pseudopotentials in their fully nonlocal
+It uses norm-conserving pseudopotentials in its fully nonlocal
 (Kleinman-Bylander) form.
 \item
-It uses atomic orbitals as a basis set, allowing unlimited multiple-zeta
+It uses atomic orbitals as basis set, allowing unlimited multiple-zeta
 and angular momenta, polarization and off-site orbitals. The radial
 shape of every orbital is numerical and any shape can be used and provided
 by the user, with the only condition that it has to be of finite support,
@@ -182,6 +182,7 @@ And also (though not all options are compatible):
 \item Ballistic electron transport (through {\sc TranSiesta})
 \end{itemize}
 
+
 Starting from version 3.0, {\sc Siesta} includes the {\sc
   TranSiesta}\index{TranSIESTA@{\sc TranSiesta}} utility.  {\sc
   TranSiesta} provides the ability to model open-boundary systems
@@ -197,6 +198,7 @@ The current implementation of {\sc TranSiesta} within {\sc Siesta} is mainly
 due to F. D. Novaes and is based on the implementation of
 mainly M. Brandbyge of {\sc TranSiesta} Version 0.9 (see
 complete reference below).
+
 
 \vspace{0.5cm}
 {\large {\bf References:} }
@@ -706,6 +708,7 @@ uniform structure, and can be confusing at times.
 Almost all of the tags are optional: {\sc Siesta} will assign a
 default if a given tag is not found when needed (see {\tt fdf.log}).
 
+
 \vspace{5pt}
 \subsection{General system descriptors}
 
@@ -1143,7 +1146,7 @@ polarization [see S\'anchez-Portal, Artacho, and Soler, JPCM {\bf 8},
 \item[-] Multiple-$\zeta$ in the spirit of split valence,\index{split
 valence} decomposing the original PAO in several pieces of different
 range, either defining more (and smaller) confining radii, or
-introducing Gaussians\index{Gaussians} from known bases (Huzinaga's
+introducing gaussians\index{gaussians} from known bases (Huzinaga's
 book).
 \end{itemize}
 
@@ -1158,8 +1161,8 @@ The different options and their FDF descriptors are the following:
 The split is based on different radii.
 
 \item {\tt splitgauss:}\index{splitgauss@{\tt splitgauss}}
-Same as {\tt split} but using Gaussian functions
-$e^{-(x/\alpha_i)^2}$. The Gaussian widths $\alpha_i$ are read instead 
+Same as {\tt split} but using gaussian functions
+$e^{-(x/\alpha_i)^2}$. The gaussian widths $\alpha_i$ are read instead
 of the scale factors (see below). There is no cutting algorithm, so that
 a large enough $r_c$ should be defined for the gaussian to have decayed
 sufficiently.
@@ -1242,8 +1245,8 @@ PAO.BasisSize for each species. For example,
 orbital-confining cutoff radii. It is the excitation energy
 of the PAO's due to the confinement to a finite-range. It offers a
 general procedure for defining the confining radii of the original
-(first-zeta) PAO's for all the species guaranteeing the compensation 
-of the basis. It only has an effect when the block
+(first-zeta) PAO's for all the species guaranteeing the compensation
+of the basis. It has only effect when the block
 {\bf PAO.Basis} is not present or when the radii
 specified in that block are zero for the first zeta.
 
@@ -1264,7 +1267,7 @@ the second-$\zeta$ split-off piece has to carry. The split radius is defined
 accordingly. If multiple-$\zeta$\index{multiple-$\zeta$}
 is used, the corresponding radii are obtained
 by imposing smaller fractions of the SplitNorm (1/2, 1/4 ...) value as
-norm carried by the higher zetas. It only has an effect when the block
+norm carried by the higher zetas. It has effect only when the block
 {\bf PAO.Basis} is not present or when the radii
 specified in that block are zero for zetas higher than one.
 
@@ -1276,7 +1279,8 @@ specified in that block are zero for zetas higher than one.
 This option is as per {\bf PAO.SplitNorm} but allows a separate
 default to be
 specified for hydrogen which typically needs larger values than those
-for other elements.
+for other
+elements.
 
 \item[{\bf PAO.NewSplitCode}] ({\it boolean}):
 \index{PAO.NewSplitCode@{\bf PAO.NewSplitCode}}\index{basis!new
@@ -1352,7 +1356,8 @@ are set by the commands given below.
 For default soft confinement, the inner radius is set at a fraction of
 the outer
 confinement radius determined by the energy shift. This option
-controls the fraction of the confinement radius to be used.
+controls the fraction
+of the confinement radius to be used.
 
 {\it Default value:} {\tt 0.9}
 
@@ -1360,7 +1365,8 @@ controls the fraction of the confinement radius to be used.
 \index{PAO.SoftPotential@{\bf PAO.SoftPotential}}\index{basis!default
   soft confinement potential}
 For default soft confinement, this option controls the value of the
-potential used for all orbitals.
+potential used
+for all orbitals.
 
 {\it Default value:} {\tt 40.0 Ry}
 
@@ -1435,7 +1441,8 @@ read from the block {\bf PS.lmax}. For example,
 \end{verbatim}
 
 The reading is done this way (those variables in brackets are optional,
-therefore they are only read if present):
+therefore they are only read if
+present):
 
 \begin{verbatim}
     From is = 1 to  nspecies
@@ -1592,7 +1599,7 @@ polarization}\index{basis!polarization} are generated by solving the
 atomic problem in the presence of a polarizing electric field. The
 orbitals are generated applying perturbation theory to the first-zeta
 orbital of lower angular momentum.  They have the same cutoff radius
-as the orbitals from which they are constructed.
+than the orbitals from which they are constructed.
 
 Note: The perturbative method has traditionally used the 'l' component
 of the pseudopotential. It can be argued that it should use the 'l+1'
@@ -1862,7 +1869,7 @@ methods, and provide a guide to their precedence.
 \subsubsection{Traditional structure input in the fdf file}
 
 Firstly, the size of the cell itself should be specified, using
-some combination of the options
+some combination of the flags
 \textbf{LatticeConstant}, \textbf{LatticeParameters},
 and \textbf{LatticeVectors}, and \textbf{SuperCell}.
 If nothing is specified, {\sc Siesta} will construct a cubic
@@ -1923,6 +1930,43 @@ one line.
 \noindent
 If the {\bf LatticeConstant} default is used, the default of
 {\bf LatticeVectors} is still diagonal but not necessarily cubic.
+
+
+\item[{\bf SuperCell}] ({\it data block}): 
+\index{SuperCell@{\bf SuperCell}} 
+Integer 3x3 matrix defining a supercell in terms of the unit cell: 
+
+\begin{verbatim}
+     %block SuperCell
+        M(1,1)  M(2,1)  M(3,1) 
+        M(1,2)  M(2,2)  M(3,2) 
+        M(1,3)  M(2,3)  M(3,3) 
+     %endblock SuperCell
+\end{verbatim}
+
+and the supercell is defined as
+$SuperCell(ix,i) = \sum_j CELL(ix,j)*M(j,i)$.
+Notice that the matrix indexes are inverted: each input line 
+specifies one supercell vector.
+
+{\it Warning:} {\bf SuperCell} is disregarded if the geometry is read from
+the XV file, which can happen unadvertedly.
+
+{\it Use:} The atomic positions must be given only for the unit cell,
+and they are 'cloned' automatically in the rest of the supercell.
+The {\bf NumberOfAtoms} given must also be that in a single unit cell.
+However, all values in the output are given for the entire supercell. 
+In fact, CELL is inmediately redefined as the whole supercell and the 
+program no longer knows the existence of an underlying unit cell.
+All other input (apart from NumberOfAtoms and atomic positions), 
+including {\bf kgridMonkhorstPack} must refer to the supercell 
+(this is a change over previous versions). Therefore, to avoid
+confusions, we recommend to use {\bf SuperCell} only to
+generate atomic positions, and then to copy them from the output
+to a new input file with all the atoms specified explicitly and
+with the supercell given as a normal unit cell.
+
+{\it Default value:} No supercell (supercell equal to unit cell).
 
 
 \item[{\bf AtomicCoordinatesFormat}] ({\it string}):
@@ -2112,7 +2156,7 @@ cartesian} block are variables and others are not (i.e.,
 \texttt{ix iy iz} above must all be 0 or 1). This will be fixed in
 future versions of the program.
 
-A Zmatrix block may also contain the following, additional, sections, which
+A zmatrix block may also contain the following, additional, sections, which
 are designed to make it easier to read.
 
 \item \texttt{constants}: Instead of specifying a numerical value, it
@@ -5034,7 +5078,7 @@ molecular mechanics potentials.
 
 {\it Use:} Controls the units for energy in the molecular mechanics input.
 
-{\it Default value:}  {\tt eV} (Note: Currently this is the {\em only} option)
+{\it Default value:}  {\tt eV} (Note: Currently this the {\em only} option)
 
 \item[{\bf MM.UnitsDistance}] ({\it units}): \index{MM.UnitsDistance@{\bf
 MM.UnitsDistance}} Specifies the units to be used for distance in the
@@ -5042,7 +5086,7 @@ molecular mechanics potentials.
 
 {\it Use:} Controls the units for distance in the molecular mechanics input.
 
-{\it Default value:}  {\tt Ang} (Note: Currently this is the {\em only} option)
+{\it Default value:}  {\tt Ang} (Note: Currently this the {\em only} option)
 
 \item[{\bf MM.Grimme.D}] : \index{MM.Grimme.D@{\bf
 MM.Grimme.D}} Specifies the scale factor $d$ for the scaling function
@@ -5519,7 +5563,7 @@ If the required file does not exist, a warning is
 printed but the program does not stop. Overrides {\bf UseSaveData}.
 
 {\it Default value:} {\tt .false.}
-        
+
 (No such feature exists yet for a Broyden-based relaxation.)
 
 \end{description}

@@ -17,7 +17,6 @@
      .                    zvaltot, superc, initatomlists, no_l
       use m_fdf_global, only: fdf_global_get
       use sys, only: die, bye
-      use xcmod, only: setXC
       use molecularmechanics, only : inittwobody
       use metaforce, only: initmeta
       use m_mpi_utils, only : broadcast
@@ -44,6 +43,8 @@
       use m_ioxv, only: xv_file_read
       use m_projected_DOS, only: init_projected_DOS
       USE writewave, only: gamma_wavefunctions, setup_wf_kpoints
+      USE siestaXC, only: setDebugOutputUnit
+      USE m_timer, only: timer_report  ! Sets options for report of CPU times
 #ifdef MPI
       use mpi_siesta, only: mpi_comm_world
 #endif
@@ -127,18 +128,29 @@
       Entropy = 0.0_dp
       FreeE = 0.0_dp
 
+! Set output file unit for debug info
+      call setDebugOutputUnit()
+
 ! Initialise read .....................................................
       call reinit(sname)
 
       call siesta_cml_init() ! Initialize CML (relies on reinit)
 
+! Set timer report file and threshold .................................
+      call fdf_global_get(threshold, 'timer_report_threshold', 0._dp)
+      call timer_report( file=trim(slabel)//'.times', 
+     .                   threshold=threshold )
+
 ! Set allocation report level .........................................
-      call fdf_global_get(level, 'alloc_report_level', 0 )
-      call alloc_report( level=level, file=trim(slabel)//'.alloc' )
+! variables level and threshold imported from module siesta_options
+      call fdf_global_get(level, 'alloc_report_level', 0)
+      call fdf_global_get(threshold, 'alloc_report_threshold', 0._dp)
+      call alloc_report( level=level, file=trim(slabel)//'.alloc',
+     .                   threshold=threshold )
 ! ..................
 
 ! Initialise exchange-correlation functional information
-      call setXC()
+      call read_xc_info()
 
 ! Initialise force field component
       call inittwobody()
@@ -387,7 +399,9 @@
       call timer( 'Setup', 2 )
 
 ! Output memory use before main loop
-      call printmemory( 6, 0 )
+! Commented out since it is no longer realistic because most 
+! allocations occur in re_alloc. JMS. 2009/10/15
+!      call printmemory( 6, 0 )
 
 ! Initialization now complete. Flush stdout.
       if (ionode) call pxfflush(6)

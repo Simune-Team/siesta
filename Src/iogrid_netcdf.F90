@@ -108,12 +108,13 @@ subroutine set_box_limits(mesh,nsm)
         call die()
      endif
 
-     if (Node == 0) then
-        do iNode= 1, Nodes
-           write(6,"(a,i4,a,i12,3x,3(i4,a1,i4))") "-- Node ", iNode, " :", npt_node(iNode), &
-                           (distr%box(1,j,iNode), ":", distr%box(2,j,iNode), j=1,3)
-        enddo
-     endif
+! JMS: commented out. 2009/02/06
+!     if (Node == 0) then
+!        do iNode= 1, Nodes
+!           write(6,"(a,i4,a,i12,3x,3(i4,a1,i4))") "iogrid_netcdf: -- Node ", iNode, " :", npt_node(iNode), &
+!                           (distr%box(1,j,iNode), ":", distr%box(2,j,iNode), j=1,3)
+!        enddo
+!     endif
 
      deallocate(npt_node)
 

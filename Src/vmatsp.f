@@ -3,7 +3,7 @@
 !
 ! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
 ! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
+! and J.M.Soler, 1996- .
 ! 
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
@@ -485,24 +485,24 @@ C  Add final Vlocal to Vs
 
       !  Free local memory
 
-      call de_alloc( Vlocal,  name='Vlocal' )
-      call de_alloc( VlocalSp,  name='VlocalSp' )
-      call de_alloc( iorb,  name='iorb' )
-      call de_alloc( ilocal,  name='ilocal' )
-      call de_alloc( ilc,  name='ilc' )
-      call de_alloc( Clocal,  name='Clocal' )
-      call de_alloc( VClocal,  name='VClocal' )
-      call de_alloc( VClocal1,  name='VClocal1' )
-      call de_alloc( VClocal2,  name='VClocal2' )
-      call de_alloc( VClocal3,  name='VClocal3' )
-      call de_alloc( VClocal4,  name='VClocal4' )
+      call de_alloc( Vlocal,  name='Vlocal', routine='vmatsp' )
+      call de_alloc( VlocalSp,  name='VlocalSp', routine='vmatsp' )
+      call de_alloc( iorb,  name='iorb', routine='vmatsp' )
+      call de_alloc( ilocal,  name='ilocal', routine='vmatsp' )
+      call de_alloc( ilc,  name='ilc', routine='vmatsp' )
+      call de_alloc( Clocal,  name='Clocal', routine='vmatsp' )
+      call de_alloc( VClocal,  name='VClocal', routine='vmatsp' )
+      call de_alloc( VClocal1,  name='VClocal1', routine='vmatsp' )
+      call de_alloc( VClocal2,  name='VClocal2', routine='vmatsp' )
+      call de_alloc( VClocal3,  name='VClocal3', routine='vmatsp' )
+      call de_alloc( VClocal4,  name='VClocal4', routine='vmatsp' )
 
       if (Parallel_Flag) then
 C Redistribute Hamiltonian from mesh to orbital based distribution
         call matrixMtoO( nvmaxl, nvmax, numVs, listVsptr, nuo, 
      .      nuotot, nspin, DscfL, Vs )
 C Free memory 
-        call de_alloc( DscfL,  name='DscfL' )
+        call de_alloc( DscfL,  name='DscfL', routine='vmatsp' )
       endif
 
       call timer('vmatsp',2)

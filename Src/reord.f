@@ -3,7 +3,7 @@
 !
 ! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
 ! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
+! and J.M.Soler, 1996- .
 ! 
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
@@ -108,8 +108,8 @@ C
 C
 C  Free local memory
 C
-      call de_alloc( JS,  name='JS' )
-      call de_alloc( AUX,  name='AUX' )
+      call de_alloc( JS,  name='JS', routine='reord' )
+      call de_alloc( AUX,  name='AUX', routine='reord' )
 
       CALL TIMER('REORD',2)
       END
