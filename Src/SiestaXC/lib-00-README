@@ -7,7 +7,7 @@ or periodic systems, using a variety of LDA and GGA functionals, as well as
 the van der Waals DFT functional of Dion et al (PRL 92, 246401 (2004)), 
 implemented as described by Roman-Perez and Soler (PRL 103, 096102 (2009))
 
-See siestaXC.f90 for how to call the siestaXC library routines
+See siestaxc.f90 for how to call the siestaXC library routines
 
 To compile the library you might do something similar to the following, 
 depending on the building system used for your code:
@@ -31,17 +31,17 @@ FC=g95 -O3 -DGRID_DP
 #--------------------
 
 3) Do "make" in the SiestaXC subdirectory. This will create the library and 
-   copy files libSiestaXC.a and siestaXC.mod to your main-program's directory.
+   copy files libSiestaXC.a and siestaxc.mod to your main-program's directory.
 
 4) Compile the rest of the program with the same compiler and compilation
    options specified in lib-arch.make
 
 Some f90 compilers (notably Intel's) require all the .mod files (and not only
-siestaXC.mod) to be present when compiling your main program. In this case,
+siestaxc.mod) to be present when compiling your main program. In this case,
 substitute the following lines (notice: tabulators, not spaces, are required):
 In SiestaXC/makefile:
 < module:  libSiestaXC.a
-< 	cp siestaXC.mod *.a ..
+< 	cp siestaxc.mod *.a ..
 -------
 > module:  libSiestaXC.a
 >	cp *.mod *.a ..

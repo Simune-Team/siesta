@@ -1,3 +1,18 @@
+2009-11-19  11:15:00 GMT Jose M Soler <jose.soler@uam.es>      trunk-310-JMS-2
+siestaXC.f90 renamed siestaxc.f90
+
+To avoid case ambiguities, that cause compilation problems, the name of file
+siestaXC.f90 has been renamed as siestaxc.f90
+
+renamed:
+  Src/SiestaXC/siestaXC.f90 => Src/SiestaXC/siestaxc.f90
+modified:
+  Src/SiestaXC/lib-00-README  ! siestaXC.mod -> siestaxc.mod
+  Src/SiestaXC/lib-makefile   ! siestaXC.f90,o -> siestaxc.f90,o
+  Src/SiestaXC/makefile       ! siestaXC.f90,o -> siestaxc.f90,o
+
+------------------------------------------------------------------------------
+
 2009-11-10  20:30:00 GMT Jose M Soler <jose.soler@uam.es>      trunk-310-JMS-1
 Avoid repetition of routine name in allocation report
 
