@@ -138,7 +138,7 @@ c       SlabDipoleCorrection   .true.
       subroutine initialize_efield()
 
       use parallel,     only: ionode
-!!      use siesta_cml,   only: cml_p, cmlAddProperty, mainXML
+      use siesta_cml,   only: cml_p, cmlAddProperty, mainXML
       use m_fdf_global, only: fdf_global_get
 
       real(dp) :: input_field(3), orthog_field(3)
@@ -156,10 +156,10 @@ c       SlabDipoleCorrection   .true.
                write(6,'(/,a,3f12.6,a)')
      $              'efield: External electric field =',
      $              input_field, ' Ry/Bohr/e'
-c$$$               if (cml_p) call cmlAddProperty(xf=mainXML,
-c$$$     $              value=input_field, 
-c$$$     .              dictref='siesta:elfield', 
-c$$$     .              units='siestaUnits:Ry_Bohr_e')
+               if (cml_p) call cmlAddProperty(xf=mainXML,
+     $              value=input_field, 
+     .              dictref='siesta:elfield', 
+     .              units='siestaUnits:Ry_Bohr_e')
                user_specified_field(1:3) = input_field(1:3)
             else
                write(6,'(a,(/,a,3f12.6))')
