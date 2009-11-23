@@ -10,17 +10,16 @@
 !
 Module siesta_cmlsubs
 
-  Use FoX_common, only: str
-  Use FoX_wxml, only: xmlf_t      ! help pgf95...
-  Use FoX_wcml
+  use siesta_cml, only:   cml_p, mainXML
 
-  Implicit None
-  Private
-  
+  Use siesta_cml, only: str_fox
+  Use siesta_cml, only: cmlBeginFile, cmlAddNamespace, cmlStartCml
+  Use siesta_cml, only: cmlStartMetadataList, cmlAddMetadata
+  Use siesta_cml, only: cmlEndMetadataList, cmlEndCml, cmlFinishFile
+
   public :: siesta_cml_init, siesta_cml_exit
 
-  Logical, public      :: cml_p = .False.
-  Type(xmlf_t), public, save :: mainXML
+  Private
 
   Contains
 
@@ -58,7 +57,7 @@ Module siesta_cmlsubs
          Else
            Call cmlAddMetadata(mainXML, name='siesta:Mode', content='Serial')
          Endif
-         Call cmlAddMetadata(mainXML, name='siesta:Nodes', content=str(nodes))
+         Call cmlAddMetadata(mainXML, name='siesta:Nodes', content=str_fox(nodes))
 #ifdef CDF
          Call cmlAddMetadata(mainXML, name='siesta:NetCDF',  content='true')
 #else
