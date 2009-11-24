@@ -8,7 +8,7 @@ C ##              Mads Brandbyge, mbr@mic.dtu.dk                  ##
 C ##################################################################
 
       subroutine getsfe(USEBULK,joutfile,jgfu,
-     &     HAA,SAA,ZEnergy,nq1,q1,wq1,
+     &     HAA,SAA,ZEnergy,nq1,
      &     NG2,nua,lasto,NA1,NA2,
      &     NG,SFE,GAMMA)
 
@@ -42,7 +42,6 @@ c                                 return z*S-H-Sigma for bulk
       complex*16 ZEnergy 
 
       integer nq1                !no. q1-points <= NA1*NA2
-      real*8 q1(2,nq1),wq1(nq1)     !q1-points and weights 
 
 c ----------- 
 c 1x1 surface cell

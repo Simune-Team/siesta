@@ -18,7 +18,7 @@
       private
       public number_of_species, atomic_number, species_label
       public is_floating, is_bessel, is_synthetic
-      public read_chemical_types
+      public read_chemical_types, print_chemical_type
 !
 !     Species information
 !
@@ -87,10 +87,12 @@
       is_synthetic = (chemical_list%z(i) .gt. 200)
       end function is_synthetic
 !---
-      subroutine read_chemical_types()
+      subroutine read_chemical_types(silent)
 
       use parallel,    only : Node
       use fdf
+
+      logical, intent(in), optional :: silent
 
       integer nsp, isp
       integer ns_read
@@ -101,6 +103,12 @@
       character(len=20) label
       integer  z, is
       logical floating, bessel, found, synthetic
+      logical printing_allowed
+
+      printing_allowed = .true.
+      if (present(silent)) then
+         if (silent) printing_allowed = .false.
+      endif
 
       nsp = fdf_integer('Number_of_species',0)
       if (nsp.eq.0) call die("No species found!!!")
@@ -127,21 +135,21 @@
         bessel = (z.eq.-100)
         synthetic = (z.gt.200)
 
-        if (Node .eq. 0) then
-          if (.not.floating) then
-            write(6,*) 'Species number: ', isp,
+        if (printing_allowed) then
+           if (.not.floating) then
+              write(6,*) 'Species number: ', isp,
      $                 ' Label: ', trim(label),
      $                 ' Atomic number:',  z
-          elseif (bessel) then
-            write(6,*) 'Species number: ', isp,
+           elseif (bessel) then
+              write(6,*) 'Species number: ', isp,
      $                 ' Label: ', trim(label),
      $                 ' (floating Bessel functions)'
-          else
-            write(6,*) 'Species number: ', isp,
+           else
+              write(6,*) 'Species number: ', isp,
      $                 ' Label: ', trim(label),
      $                 ' Atomic number:',  z,
      $                 ' (floating PAOs)'
-          endif
+           endif
         endif
 !
         if (ns_read > 1) then
@@ -159,5 +167,35 @@
       if (ns_read .ne. nsp) call die("Not enough species in block")
 
       end subroutine read_chemical_types
+
+      subroutine print_chemical_type(isp)
+      integer, intent(in)  :: isp
+      
+      character(len=256) :: label
+      real(dp)           :: z
+      logical            :: floating, bessel, synthetic
+
+      label = species_label(isp)
+      z = atomic_number(isp)
+
+        floating = (z.le.0)
+        bessel = (z.eq.-100)
+        synthetic = (z.gt.200)
+
+        if (.not.floating) then
+              write(6,*) 'Species number: ', isp,
+     $             ' Label: ', trim(label),
+     $             ' Atomic number:',  z
+           elseif (bessel) then
+              write(6,*) 'Species number: ', isp,
+     $             ' Label: ', trim(label),
+     $             ' (floating Bessel functions)'
+           else
+              write(6,*) 'Species number: ', isp,
+     $             ' Label: ', trim(label),
+     $             ' Atomic number:',  z,
+     $             ' (floating PAOs)'
+       endif
+      end subroutine print_chemical_type
 
       end module chemical

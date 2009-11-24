@@ -42,7 +42,8 @@ c -------------------------------------------------------------------
       endif
 
       call io_assign( iu )
-      open( iu, file=fname, form='formatted', status='unknown' )      
+      open( iu, file=fname, form='formatted', status='unknown',
+     $      position='rewind')      
 
       write(iu,'(i6)') na
       write(iu,'(i6,3f12.6)') (ia, (fa(ix,ia)*Ang/eV,ix=1,3), ia=1,na)

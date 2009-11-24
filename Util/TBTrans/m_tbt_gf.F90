@@ -146,6 +146,7 @@ end subroutine cp_gf_vars
       use m_tbt_options, only : sppol, Lhsfile, Rhsfile, Lnucuse, &
                   Rnucuse
       use sys, only : die
+      use fdf
 ! FDN
 
 
@@ -284,7 +285,6 @@ end subroutine cp_gf_vars
 
 ! FDF-stuff:
       character*33 paste,header,itemfdf     
-      real*8 fdf_convfac
       external paste
 
 
@@ -331,6 +331,11 @@ end subroutine cp_gf_vars
         nullify(s01)
         nullify(lasto)
 
+! FDN To be changed !!!
+        allocate(h00(1))
+        allocate(s00(1))
+        allocate(h01(1))
+        allocate(s01(1))
 
 ! initialize and get nspinin         
         tinit=.true.
@@ -341,6 +346,13 @@ end subroutine cp_gf_vars
         call sethhm2(joutfile,tinit,tkham,tlast,kpoint,ispin, &
           hsfile, nua,lasto,ng1,nspin,cell,kscell,kdispl, &
           H00,s00,h01,s01) ! ->
+
+! FDN To be changed !!!
+        deallocate(h00)
+        deallocate(s00)
+        deallocate(h01)
+        deallocate(s01)
+
 
         if (LJob) then
           Lng1=ng1

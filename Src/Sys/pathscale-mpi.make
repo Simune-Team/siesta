@@ -23,13 +23,13 @@ COMP_LIBS=
 #
 NETCDF_LIBS=         #  /usr/local/netcdf-3.5/lib/pgi/libnetcdf.a
 NETCDF_INTERFACE=    #  libnetcdf_f90.a
-DEFS_CDF=            #  -DCDF
+FPPFLAGS_CDF=            #  -DCDF
 #
 KINDS=4 8
 MPI_INTERFACE=libmpi_f90.a
 MPI_INCLUDE=
 MPI_LIBS=
-DEFS_MPI=-DMPI
+FPPFLAGS_MPI=-DMPI
 #
 LIBS=/localhome/jjunquer/Libraries/SCALAPACK/LIB/libscalapack.a \
 	/localhome/jjunquer/Libraries/BLACS/LIB/blacsF77init_MPI-LINUX-0.a \
@@ -37,13 +37,13 @@ LIBS=/localhome/jjunquer/Libraries/SCALAPACK/LIB/libscalapack.a \
 	/localhome/jjunquer/Libraries/BLACS/LIB/blacsCinit_MPI-LINUX-0.a \
 	/localhome/jjunquer/acml2.5.1/pathscale64/lib/libacml.a 
 SYS=nag
-DEFS= $(DEFS_CDF) $(DEFS_MPI) # -DGRID_DP
+FPPFLAGS= $(FPPFLAGS_CDF) $(FPPFLAGS_MPI) # -DGRID_DP
 #
 .F.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 .F90.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
 .f90.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<

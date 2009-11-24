@@ -46,7 +46,7 @@ FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 #
 DEFS:=$(DEFS) $(DEFS_PREFIX)-UMPI $(DEFS_PREFIX)-UCDF
-FPPFLAGS=$(DEFS)
+FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX)-UMPI $(DEFS_PREFIX)-UCDF
 #
 # Uncomment the following line for debugging support
 #
@@ -80,7 +80,7 @@ OBJS_STM = atompla.o  \
         redata.o  reinitstm.o stm.o \
 	vacpot.o volcel.o wrout.o 
 #
-INCFLAGS:= $(FFTW_INCFLAGS) $(INCFLAGS)
+INCFLAGS:= $(FFTW_INCFLAGS) $(NETCDF_INCFLAGS) $(INCFLAGS)
 #
 # Use the makefile in Src/fdf and all the sources there.
 #

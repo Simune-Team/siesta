@@ -35,15 +35,16 @@ include ../../$(OBJDIR)/arch.make
 #
 # NETCDF_ROOT=/some/path
 # INCFLAGS=-I$(NETCDF_ROOT)/include
+# NETCDF_LIBS=-L$(NETCDF_ROOT)/lib -lnetcdf
 #
-LIBS=-L$(NETCDF_ROOT)/lib -lnetcdf
 #
+INCFLAGS:= $(NETCDF_INCFLAGS) $(INCFLAGS)
 #
 dm2cdf: dm2cdf.o
-	$(FC) $(LDFLAGS) -o $@ dm2cdf.o  $(LIBS)
+	$(FC) $(LDFLAGS) -o $@ dm2cdf.o  $(NETCDF_LIBS)
 #
 cdf2dm: cdf2dm.o
-	$(FC) $(LDFLAGS) -o $@ cdf2dm.o  $(LIBS)
+	$(FC) $(LDFLAGS) -o $@ cdf2dm.o  $(NETCDF_LIBS)
 #
 dmfilter: dmfilter.o
 	$(FC) $(LDFLAGS) -o $@ dmfilter.o

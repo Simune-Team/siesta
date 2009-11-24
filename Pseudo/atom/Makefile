@@ -61,7 +61,11 @@ FC_SERIAL?=$(FC_DEFAULT)
 #
 TOP_LEVEL=$(shell pwd)/../../Src
 $(FoX_configured):
-	(cd ../../$(OBJDIR)/FoX; CONFIGURE="$(TOP_LEVEL)/FoX/configure"; $$CONFIGURE VPATH="$(TOP_LEVEL)/FoX" FC="$(FC_SERIAL)" FCFLAGS="$(FFLAGS)" --enable-wcml $(DUMMY_FOX) || false )
+	(cd ../../$(OBJDIR)/FoX; touch arch.make ; \
+         CONFIGURE="$(TOP_LEVEL)/FoX/configure"; \
+         $$CONFIGURE VPATH="$(TOP_LEVEL)/FoX" \
+         FC="$(FC_SERIAL)" FCFLAGS="$(FFLAGS)" \
+         --enable-wcml $(DUMMY_FOX) || false )
 #
 # Note we have to make sure to use the same compiler as SIESTA,
 # and pick up all the same FFLAGS, and also remember to maybe ask for a dummy library.

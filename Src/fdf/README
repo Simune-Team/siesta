@@ -1,9 +1,11 @@
-The FDF package, by Alberto Garcia and Jose Soler, is in the second
-stage development. At this time the library is memory-side, and works
-better and faster than before. Supports MPI executions (outputs have
+The FDF package, designed by Alberto Garcia and Jose Soler, has been
+reimplemented by Raul de la Cruz (Barcelona Supercomputer Center).
+
+The library is memory-side instead of file-oriented, and works better
+and faster than before. Supports MPI executions (outputs have
 different names for each node), Cluster mode (at least one node only
 has access to the input file) and Blocking mode (reading phase is
-split in several steps for huge execution in shared-filesystems). 
+split in several steps for huge execution in shared-filesystems).
 
 We request that the copyright notices in the code be kept if the package
 is eventually used as part of another program.

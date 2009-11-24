@@ -33,7 +33,7 @@ M4_FILES = m4/ac_config_aux_dirs.m4  m4/TW_CHECK_FC_FPP.m4      m4/TW_FC_ID_FLAG
 aclocal.m4: $(M4_FILES)
 	cat ${<D}/$(M4_FILES)  > aclocal.m4
 dep:
-	@if [ $(VPATH) == "." ] ; then \
+	@if [ $(VPATH) = "." ] ; then \
 	sfmakedepend --depend=obj  --modext=o \
                               *.f *.f90 *.F *.F90 ; \
         else \
@@ -44,14 +44,17 @@ dep:
 	@mv tmp.Makefile Makefile
 #
 include arch.make
+INCFLAGS:= $(NETCDF_INCFLAGS) $(INCFLAGS)
 #
 # Uncomment the following line for debugging support
 #
 ##FFLAGS=$(FFLAGS_DEBUG)
 #
+.PHONY: .siesta .transiesta what version
+#
 what:
 	@echo
-	@if [ "$(VPATH)" == . ]; then \
+	@if [ "$(VPATH)" = . ]; then \
               echo "** You can no longer build SIESTA in Src." ;\
               echo "** Go to the Obj directory and see the README file." ;\
               false ;\
@@ -74,8 +77,8 @@ OBJS =  domain_decom.o automatic_cell.o atom_options.o \
 	denmat.o denmatlomem.o detover.o dfscf.o m_diagon.o diagon.o digcel.o \
         fft3d.o dhscf.o m_dhscf.o constr.o diagk_file.o \
 	diagg.o diagk.o diagkp.o diag2g.o diag2k.o diagpol.o \
-	diagsprl.o dipole.o dismin.o dnaefs.o dot.o  \
-	efield.o egandd.o ener3.o ener3lomem.o extrapolon.o \
+	diagsprl.o dipole.o dismin.o dnaefs.o doping.o dot.o  \
+	m_efield.o egandd.o ener3.o ener3lomem.o extrapolon.o \
 	fixed.o flib_spline.o gradient.o gradientlomem.o grdsam.o \
 	hsparse.o idiag.o  initatom.o inver.o iodm_netcdf.o \
 	iodmhs_netcdf.o iogrid_netcdf.o iohs.o iolwf.o iozm.o ipack.o iopipes.o \
@@ -148,7 +151,11 @@ FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 #
 $(FoX_configured):
-	(cd FoX; if [ "$(VPATH)" = . ]; then CONFIGURE="./configure"; else CONFIGURE="$(VPATH)/FoX/configure"; fi; $$CONFIGURE VPATH="$(VPATH)/FoX" FC="$(FC_SERIAL)" FCFLAGS="$(FFLAGS)" --enable-wcml $(DUMMY_FOX) || false )
+	(cd FoX; touch arch.make ; \
+         CONFIGURE="$(VPATH)/FoX/configure"; \
+         $$CONFIGURE VPATH="$(VPATH)/FoX" \
+         FC="$(FC_SERIAL)" FCFLAGS="$(FFLAGS)" \
+         --enable-wcml $(DUMMY_FOX) || false )
 #
 # Note we have to make sure to use the same compiler as SIESTA,
 # and pick up all the same FFLAGS, and also remember to maybe ask for a dummy library.
@@ -176,9 +183,6 @@ XMLPARSER=libxmlparser.a
 $(XMLPARSER): 
 	(cd xmlparser ; $(MAKE) "VPATH=$(VPATH)/xmlparser" module)
 #
-# Routines using xmlparser calls.
-#
-######  somefile.o : $(WXML)
 #--------------------------------------------------------------
 FDF=libfdf.a
 $(FDF): 
@@ -230,8 +234,16 @@ version: version.F90
 	@mv compinfo.o version.o
 	#@rm -f compinfo.F90
 	@echo
-
-siesta: version $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
+#
+check-siesta:
+	@if [ -f .transiesta ]; then \
+              echo "** You were building transiesta in this directory." ;\
+              echo "** Please type 'make clean' first " ;\
+              false ;\
+	fi
+	@touch .siesta
+#
+siesta: check-siesta what version $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
                 $(COMP_LIBS) $(ALL_OBJS) 
 	$(FC) -o siesta \
 	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML) $(XMLPARSER) $(MPI_INTERFACE)\
@@ -245,22 +257,35 @@ TS_OBJS= m_ts_options.o m_ts_aux_rout.o m_ts_kpoints.o \
          m_ts_io.o m_ts_scattering.o m_ts_contour.o m_ts_electrode.o \
          m_ts_in_siesta.o
 #
-transiesta: what version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
+transiesta: FPPFLAGS+=$(DEFS_PREFIX)-DTRANSIESTA 
+transiesta: DEFS+=$(DEFS_PREFIX)-DTRANSIESTA
+check-ts:
+	@if [ -f .siesta ]; then \
+              echo "** You were building plain siesta in this directory." ;\
+              echo "** Please type 'make clean' first" ;\
+              false ;\
+	fi
+	@touch .transiesta
+#
+transiesta: check-ts what version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF)  \
                     $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
 	$(FC) -o transiesta \
-               $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(WXML) $(XMLPARSER)\
-               $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(COMP_LIBS) $(FoX_LIBS) $(LIBS)
+               $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) \
+               $(MPI_INTERFACE) $(NETCDF_INTERFACE) \
+               $(COMP_LIBS) $(FoX_LIBS) $(LIBS)
 #
 #
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
-	rm -f siesta  *.o  *.a *.pcl *.pc
+	rm -f siesta transiesta *.o  *.a *.pcl *.pc
+	rm -f .siesta .transiesta
 	rm -f *.mod
 	rm -f *.bck *~
 	rm -f aux_*.f aux_*.f90
 	(cd fdf ; $(MAKE) clean)
-	(cd FoX ; $(MAKE) distclean)
+	(cd FoX ; touch arch.make ; $(MAKE) distclean)
 	(cd xmlparser ; $(MAKE) clean)
+	(cd wxml ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
 	(cd Libs ; $(MAKE) clean )
 #
@@ -333,10 +358,10 @@ densematrix.o: alloc.o precision.o
 detover.o: alloc.o parallel.o parallelsubs.o precision.o
 dfscf.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o meshmatrix.o
 dfscf.o: meshsubs.o meshsubs.o parallel.o parallelsubs.o precision.o sys.o
-dhscf.o: alloc.o atmfuncs.o cellxc_mod.o files.o forhar.o iogrid_netcdf.o
-dhscf.o: m_dhscf.o m_iorho.o m_ts_in_siesta.o m_ts_options.o meshsubs.o
-dhscf.o: moremeshsubs.o parallel.o parsing.o precision.o siesta_options.o sys.o
-dhscf.o: xcmod.o
+dhscf.o: alloc.o atmfuncs.o cellxc_mod.o doping.o files.o forhar.o
+dhscf.o: iogrid_netcdf.o m_dhscf.o m_efield.o m_iorho.o m_ts_in_siesta.o
+dhscf.o: m_ts_options.o meshsubs.o moremeshsubs.o parallel.o parsing.o
+dhscf.o: precision.o siesta_options.o sys.o xcmod.o
 diag2g.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
 diag2k.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
 diagg.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
@@ -357,6 +382,7 @@ distriphionmesh.o: parallel.o precision.o
 dnaefs.o: atmfuncs.o mneighb.o precision.o
 domain_decom.o: alloc.o parallel.o precision.o printmatrix.o schecomm.o
 domain_decom.o: sparse_matrices.o sys.o
+doping.o: alloc.o meshsubs.o meshsubs.o parallel.o precision.o sys.o
 dscfcomm.o: alloc.o parallel.o parallelsubs.o precision.o schecomm.o
 dynamics.o: alloc.o atomlist.o files.o ioxv.o m_mpi_utils.o parallel.o
 dynamics.o: precision.o sys.o units.o
@@ -390,9 +416,9 @@ gmres.o: alloc.o matrixop.o precision.o precond.o sys.o
 gradient.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 gradientlomem.o: alloc.o globalise.o onmod.o precision.o
 grdsam.o: alloc.o m_dhscf.o parallel.o precision.o sys.o
-hsparse.o: alloc.o atmfuncs.o atomlist.o domain_decom.o listsc.o mneighb.o
-hsparse.o: parallel.o parallelsubs.o precision.o sorting.o sparse_matrices.o
-hsparse.o: sys.o
+hsparse.o: alloc.o atm_types.o atmfuncs.o atomlist.o domain_decom.o listsc.o
+hsparse.o: mneighb.o parallel.o parallelsubs.o precision.o sorting.o
+hsparse.o: sparse_matrices.o sys.o
 idiag.o: parallel.o sys.o
 initatom.o: atmparams.o atom.o atom_options.o basis_io.o basis_specs.o
 initatom.o: basis_types.o electrostatic.o old_atmfuncs.o precision.o
@@ -441,6 +467,8 @@ m_check_supercell.o: minvec.o parallel.o precision.o
 m_dhscf.o: precision.o
 m_diagon.o: precision.o
 m_dipol.o: precision.o
+m_efield.o: atmfuncs.o meshsubs.o parallel.o precision.o siesta_cml.o
+m_efield.o: siesta_geom.o sys.o units.o
 m_energies.o: precision.o
 m_eo.o: precision.o
 m_fdf_global.o: m_mpi_utils.o parallel.o precision.o
@@ -480,7 +508,8 @@ m_ts_io.o: precision.o sys.o
 m_ts_kpoints.o: minvec.o parallel.o precision.o siesta_cml.o siesta_options.o
 m_ts_kpoints.o: sys.o units.o
 m_ts_options.o: m_fdf_global.o parallel.o precision.o siesta_options.o sys.o
-m_ts_scattering.o: m_ts_aux_rout.o parallelsubs.o precision.o sys.o
+m_ts_scattering.o: m_ts_aux_rout.o m_ts_options.o parallelsubs.o precision.o
+m_ts_scattering.o: sys.o
 m_wallclock.o: m_walltime.o
 madelung.o: parallel.o precision.o sys.o
 matel.o: alloc.o atmfuncs.o parallel.o precision.o radfft.o recipes.o
@@ -679,6 +708,7 @@ m_compute_dm.o: compute_dm.o
 m_conjgr.o: conjgr.o
 m_conjgr_old.o: conjgr_old.o
 m_dnaefs.o: dnaefs.o
+m_doping.o: doping.o
 m_dscfcomm.o: dscfcomm.o
 m_dynamics.o: dynamics.o
 m_fermid.o: fermid.o
@@ -734,3 +764,6 @@ on_main.o: onmod.o
 printmat.o: printmatrix.o
 tiempo.o: timer.o
 version_info.o: version.o
+write_subs_energies.o: write_subs.o
+write_subs_positions.o: write_subs.o
+write_subs_pressure.o: write_subs.o

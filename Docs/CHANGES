@@ -5,6 +5,56 @@
 ** CHANGES ALONG bsc-trunk
 
 -------------------------------------------------------------------------
+2009-11-24  17:10 GMT Alberto Garcia <albertog@icmab.es>    bsc-trunk-292
+Synch to trunk-299
+
+Other bug fixes:  
+
+- Variable nsd was used without initialization in dhscf_init.
+- Assorted changes in tbtrans to move it closer to new fdf compliance.
+- Changes in TOPSRC macro in Vibra and TBtrans makefiles to avoid
+  long lines in the __FILE__ macro in the new fdf module.
+
+- Durint the introduction of the new code by P. Ordejon to treat slabs
+  with net dipole and charged slabs, new, more modular,
+  implementations of "efield" and "doping" have been prepared by
+  A. Garcia.
+
+- Note that the fdf calls in the Utils are still not completely up to date.
+  (Notably, the fdf_block calls and the MPI unwrapping)
+
+Other noteworthy changes from the merge:
+
+* The manual has been thoroughy re-sectioned, and some obscure points
+clarified.
+
+* Fix of the long-standing "mis-feature/bug" in the generation of
+  perturbative polarization orbitals. The fix is turned off by
+  default, unless the variable PAO.OldStylePolOrbs is set to
+  ".false.".  (See manual.)
+
+* Changes to streamline compilation, and new version of
+  the arch.make template in Src/Sys/DOCUMENTED_TEMPLATE.make
+  There are minor changes needed in arch.make files:
+
+  -  Use of NETCDF_INCFLAGS instead of simply INCFLAGS
+  -  Deprecation of the use of DEFS in favor of FPPFLAGS
+
+* Simplification of TranSiesta compilation:
+
+      The target "transiesta" in the makefile defines its
+      own -DTRANSIESTA pre-processor flag, so the user does
+      not need to worry about it.
+      
+      Additionally, the makefile checks whether the last
+      compilation taking place in the building directory
+      was a "plain siesta", or a "transiesta", and complains
+      in case of a mismatch. 
+
+* Removal of all remaining mentions to the "Src" directory in the
+  automated tests in Tests.
+
+-------------------------------------------------------------------------
 2009-10-17  16:50 GMT Alberto Garcia <albertog@icmab.es>    bsc-trunk-291
 Synch to trunk-296
 
@@ -3902,7 +3952,6 @@ m_rmaxh.F90         : Hamiltonian maximum range. Should be clarified.
      Src/sparse_matrices.F90 Src/state_init.F Src/struct_init.F
      Src/zheevds.F90 Tests/bsc-Makefile Tests/bsc-compare.sh
      Tests/bsc-test.mk Tests/h2oZ/h2oZ.fdf version.info
-
     new patches:
      mq@bsc--2007/mq--feb16--1.0--patch-1
 

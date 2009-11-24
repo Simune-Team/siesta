@@ -18,6 +18,7 @@
 #
 OBJDIR=Obj
 #
+.SUFFIXES:
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
 VPATH:=$(shell pwd)/../../../Src
@@ -45,7 +46,8 @@ FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 #
 DEFS:=$(DEFS) $(DEFS_PREFIX)-UMPI $(DEFS_PREFIX)-UCDF
-FPPFLAGS=$(DEFS)
+FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX)-UMPI $(DEFS_PREFIX)-UCDF
+
 #
 # Uncomment the following line for debugging support
 #

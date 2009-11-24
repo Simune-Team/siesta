@@ -34,6 +34,10 @@ C     Modules
      &                           bcell, nmpl, IsVolt
       use iogrid_netcdf, only: set_box_limits
       use cellxc_mod,     only : setGGA
+      use m_efield,       only : initialize_efield, acting_efield
+
+      use m_doping,       only: initialize_doping
+      use m_doping,       only: compute_doping_structs, doping_active
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -65,7 +69,7 @@ C     Modules
       real(grid_p),   pointer :: Vscf(:,:), rhoatm_seq(:)
       integer,        pointer :: numphi(:), numphi_par(:)
 
-!------------------------------------------------------------------------- BEGIN
+!--------------------------------------------------------------------- BEGIN
 #ifdef DEBUG
       call write_debug( '    PRE dhscf_init' )
 #endif
@@ -74,6 +78,8 @@ C     General initialisation
 C ----------------------------------------------------------------------
 C     Start time counter
       call timer( 'DHSCF', 1 )
+
+      nsd = min(nspin,2)
 
       nullify(Vscf,rhoatm_seq)
       if (frstme) then
@@ -303,14 +309,14 @@ C     End of atomic initializations
 C ----------------------------------------------------------------------
       endif
 
+      if (frstme) call initialize_doping()
+      if (doping_active .and. (.not. (samexa.and.samesh))) then
+         call compute_doping_structs(nmpl,rhoatm,nsd)
+      endif
+
       if (frstme) then
-C       Vscf is not used here because we pass "0,0,0" as mesh
-        call efield( cell, nua, isa, xa, vzero, nsm,
-     &               dummy_Vscf, field )
-        IsEfld = .false.
-        if (sqrt(ddot(3,field,1,field,1)) .gt. tiny) IsEfld = .true.
 
-
+         call initialize_efield()
 
 #ifdef TRANSIESTA
 c     TSS Begin
@@ -320,7 +326,7 @@ c Check if we need to add the potential corresponding to the voltage-drop.
 c ---------------------------------------------------------------------
         if (TSmode) then
           call TSvoltage2( cell, ntm, nsm, dummy_Vscf, IsVolt )
-          if(IsVolt .and. IsEfld) then
+          if(IsVolt .and. acting_efield) then
             isvolt = .false.
             if(Node.eq.0) then
               write(6,*) 'WARNING: both ext. voltage and field !!'
@@ -337,7 +343,7 @@ c     TSS End
 #ifdef DEBUG
       call write_debug( '    POS dhscf_init' )
 #endif
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------------------- END
       end subroutine dhscf_init
 
       subroutine dhscf( nspin, norb, iaorb, iphorb, nuo,
@@ -473,6 +479,13 @@ C     Modules
       use siesta_options, only: read_charge_cdf
       use siesta_options, only: savevna
       use siesta_options, only: read_deformation_charge_cdf
+
+      use m_efield,       only: get_field_from_dipole, dipole_correction
+      use m_efield,       only: add_potential_from_field
+      use m_efield,       only: user_specified_field, acting_efield
+
+      use m_doping,       only: doping_active, doping
+
 #ifdef TRANSIESTA
 !     TSS Begin
       use m_ts_options, only: TSmode, TSrun, UseVFix
@@ -502,7 +515,7 @@ C        cellxc(...)    : Finds total exch-corr energy and potential
 C        cross(a,b,c)   : Finds the cross product of two vectors
 C        dfscf(...)     : Finds SCF contribution to atomic forces
 C        dipole(...)    : Finds electric dipole moment
-C        efield(...)    : Adds potential of an external electric field
+C        doping(...)    : Adds a background charge for doped systems
 C        write_rho(...)     : Saves electron density on a file
 C        poison(...)    : Solves Poisson equation
 C        reord(...)     : Reorders electron density and potential arrays
@@ -582,8 +595,8 @@ C
 
       external
      &  cellxc, cross,
-     &  dfscf,  dipole,
-     &  efield, poison, 
+     &  dfscf,  dipole, 
+     &  poison, 
      &  reord, rhooda, rhoofd, rhoofdsp, 
      &  timer, vmat, vmatsp, 
      &  readsp
@@ -790,6 +803,12 @@ C Find center of system
           x0(1:3) = x0(1:3) + xa(1:3,ia) / nua
         enddo
 
+C Add a background charge to neutralize the net charge, to
+C model doped systems. It only adds the charge at points
+C where there are atoms (i.e., not in vacuum).          
+C First, call with 'task=0' to add background charge    
+        if (doping_active) call doping(cell,nmpl,0,DRho)
+
 C Find dipole
         !! AG** Is this correct? Or do we need an extra transformation?
         call reord( DRho, DRho, nml, nsm, +1)
@@ -835,6 +854,9 @@ C     Solve Poisson's equation
 ! TSS End
 #endif /* TRANSIESTA */
 
+C Call doping with 'task=1' to remove background charge added previously
+      if (doping_active) call doping(cell,nmpl,1,DRho)
+
 C Add contribution to stress from electrostatic energy of rhoscf-rhoatm
       if (istr .eq. 1) then
         stressl(1:3,1:3) = stressl(1:3,1:3) + DStres(1:3,1:3)
@@ -877,12 +899,21 @@ C ----------------------------------------------------------------------
 C ----------------------------------------------------------------------
 C Add potential from external electric field (if present)
 C ----------------------------------------------------------------------
-      !! ** AG: Is the Efield treatment correct?
-      if (IsEfld) then
-        call reord( Vaux, Vaux, nml, nsm, +1)
-        call efield( cell, nua, isa, xa, ntm, nsm, Vaux, field )
-        call reord( Vaux, Vaux, nml, nsm, -1)
-        DUext = - ddot(3,field,1,dipol,1)
+
+      if (acting_efield) then
+         if (dipole_correction) then
+            field = get_field_from_dipole(dipol,cell)
+            if (Node == 0) write(6,'(a,3f12.6,a)')
+     $           'Electric field for dipole correction =',
+     $           field, ' Ry/Bohr/e'
+         else
+            field = user_specified_field
+         endif
+         call reord( Vaux, Vaux, nml, nsm, +1)
+         call add_potential_from_field( field, cell, nua, isa, xa,
+     $                                  ntm, nsm, Vaux )
+         call reord( Vaux, Vaux, nml, nsm, -1)
+         DUext = - ddot(3,field,1,dipol,1)
       endif
 
 #ifdef TRANSIESTA

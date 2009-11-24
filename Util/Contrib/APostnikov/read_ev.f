@@ -77,7 +77,7 @@ C
       stop
   100 format()
   101 format(15x,3f12.6)
-  102 format('Eigenvector  =',i6)
-  103 format('Frequency    =',f13.6)
+  102 format(14x,i6)
+  103 format(14x,f13.6)
   104 format(3e12.4)
       end
