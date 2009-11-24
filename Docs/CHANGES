@@ -5,6 +5,28 @@
 ** CHANGES ALONG bsc-trunk
 
 -------------------------------------------------------------------------
+2009-11-24  17:35 GMT Alberto Garcia <albertog@icmab.es>    bsc-trunk-293
+Synch to trunk-300
+
+Other bugfixes:
+
+- Correction in TBTrans makefile to restore the main VPATH
+- Makefile for Genbasis needed some work.
+
+Main changes from merge:
+
+TranSiesta updates. Assorted fixes and cleanup. Update outputs and banner.
+
+* Make local copy of reinit in Util/Denchar
+* Add comment to the manual re: MeshSubDivisions
+* Put unit of current in tbtrans. Updated outputs in Tests/transiesta
+* Merge changes to TS code by F. Novaes
+* Change Copyright dates. Now they are of the form 1996- 
+* Remove xmlparser/Test directory. Remove test-xml fossils
+* Update out and xml reference files. Update Tests/Makefile
+* Fix script.mk and Tests/partial/script.sh
+
+-------------------------------------------------------------------------
 2009-11-24  17:10 GMT Alberto Garcia <albertog@icmab.es>    bsc-trunk-292
 Synch to trunk-299
 

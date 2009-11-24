@@ -74,7 +74,7 @@ OBJS_DENCHAR = atompla.o planed.o\
 	neighb.o paste.o pxf.o \
 	radfft.o ranger.o recipes.o\
         readwaves.o rhoofr.o wavofr.o \
-        redata_denchar.o  reinit.o denchar.o \
+        redata_denchar.o  local_reinit.o denchar.o \
 	volcel.o wrout.o stsofr.o
 #
 # Use the makefile in Src/fdf and all the sources there.
@@ -359,7 +359,7 @@ rdiag.o: alloc.o memoryinfo.o parallel.o precision.o sys.o
 readsp.o: parallel.o precision.o sys.o
 recipes.o: sys.o
 redcel.o: precision.o sys.o
-reinit.o: files.o parallel.o precision.o
+local_reinit.o: files.o parallel.o precision.o
 remove_intramol_pressure.o: precision.o zmatrix.o
 reoptical.o: parallel.o parsing.o precision.o sys.o
 reord.o: alloc.o precision.o

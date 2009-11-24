@@ -12,6 +12,7 @@ SIESTA_DIR=../../Src
 ABS_TOPSRC:=$(shell pwd)/../../Src
 # path as seen from subdirectories
 TOPSRC:=../../../Src
+VPATH=$(ABS_TOPSRC)
 #
 OBJDIR=Obj
 ARCH_MAKE=../../$(OBJDIR)/arch.make

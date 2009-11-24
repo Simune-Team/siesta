@@ -52,6 +52,7 @@ integer  :: NBUFATR      ! Number of Right Buffer Atoms
 character(20) :: smethod ! GF Numerical Integration Methods 
 character(33) :: GFFileL ! Electrode Left GF File
 character(33) :: GFFileR ! Electrode Right GF File
+logical :: calcGF        ! Calculate the electrodes GF
 integer :: ts_istep      ! FC step in phonon calculation
 
 
@@ -65,23 +66,24 @@ logical,  parameter :: onlyS_def = .false.
 logical,  parameter :: tsdme_def = .true.
 logical,  parameter :: mixH_def = .false.
 logical,  parameter :: USEBULK_def = .true.
-logical,  parameter :: TriDiag_def = .true.
+logical, parameter :: TriDiag_def = .false.
 logical,  parameter :: updatedmcr_def = .true.
 logical,  parameter :: FixQ_def = .false.
 logical,  parameter :: UseVFix_def = .true.
 real(dp), parameter :: voltfdf_def = 0._dp   ! in Ry
-real(dp), parameter :: CCEmin_def = -2.0_dp  ! in Ry
+real(dp), parameter :: CCEmin_def = -3.0_dp  ! in Ry
 real(dp), parameter :: GFEta_def = 0.000001_dp  ! in Ry
 real(dp), parameter :: kT_def = 0.0019_dp  ! in Ry
-integer,  parameter :: nline_def = 3
-integer,  parameter :: ncircle_def = 12
-integer,  parameter :: npol_def = 5
+integer, parameter :: nline_def = 6
+integer, parameter :: ncircle_def = 24
+integer, parameter :: npol_def = 6
 integer,  parameter :: nvolt_def = 5
 integer,  parameter :: NBUFATL_def = 0
 integer,  parameter :: NBUFATR_def = 0
 character(20), parameter :: smethod_def = 'gaussfermi'
 character(33), parameter :: GFFileL_def = 'Left.GF'
 character(33), parameter :: GFFileR_def = 'Right.GF'
+logical, parameter :: calcGF_def = .true.
 
 
 
@@ -155,7 +157,7 @@ call fdf_global_get(mixH,'TS.MixH',mixH_def)
 call fdf_global_get(voltfdf,'TS.Voltage',voltfdf_def,'Ry') 
 call fdf_global_get(USEBULK,'TS.UseBulkInElectrodes',USEBULK_def)
 call fdf_global_get(TriDiag,'TS.TriDiag',TriDiag_def)
-call fdf_global_get(updatedmcr,'TS.UpdateDMCR',updatedmcr_def)
+call fdf_global_get(updatedmcr,'TS.UpdateDMCROnly',updatedmcr_def)
 call fdf_global_get(FixQ,'TS.FixContactCharge',FixQ_def)
 call fdf_global_get(NBUFATL,'TS.BufferAtomsLeft',NBUFATL_def)
 call fdf_global_get(NBUFATR,'TS.BufferAtomsRight',NBUFATR_def)
@@ -167,34 +169,36 @@ call fdf_global_get(npol,'TS.ComplexContour.NPoles',npol_def)
 call fdf_global_get(ncircle,'TS.ComplexContour.NCircle',ncircle_def)
 call fdf_global_get(nline,'TS.ComplexContour.NLine',nline_def)
 call fdf_global_get(nvolt,'TS.biasContour.NumPoints',nvolt_def)
-call fdf_global_get(GFFIleL,'TS.GENGF.GFFileLeft',GFFileL_def)
-call fdf_global_get(GFFileR,'TS.GENGF.GFFileRight',GFFileR_def)
+call fdf_global_get(GFFIleL,'TS.GFFileLeft',GFFileL_def)
+call fdf_global_get(GFFileR,'TS.GFFileRight',GFFileR_def)
+call fdf_global_get(calcGF,'TS.calcGF',calcGF_def)
 call fdf_global_get(UseVFix,'TS.UseVFix',UseVFix_def)
 
 ! Output Used Options in OUT file ....
 if (ionode) then
- write(*,1) 'ts_read_options: Save H and S matrices   =', savetshs
- write(*,1) 'ts_read_options: Save S and quit (onlyS) =', onlyS
- write(*,1) 'ts_read_options: Use TS EDM              =', tsdme
- write(*,1) 'ts_read_options: Mixing Hamiltonian      =', mixH
- write(*,6) 'ts_read_options: TranSIESTA Voltage      =', voltfdf/eV,' Volts'
- write(*,1) 'ts_read_options: Bulk Values in Elecs    =', USEBULK
- write(*,1) 'ts_read_options: TriDiag                 =', TriDiag 
- write(*,1) 'ts_read_options: Update DM CR            =', updatedmcr
- write(*,1) 'ts_read_options: Use VFix                =', UseVFix
- write(*,1) 'ts_read_options: Fix Contact Charge      =', FixQ
- write(*,5) 'ts_read_options: N. Buffer At. Left      =', NBUFATL
- write(*,5) 'ts_read_options: N. Buffer At. Right     =', NBUFATR
- write(*,5) 'ts_read_options: N. Pts. Circle          =', ncircle
- write(*,5) 'ts_read_options: N. Pts. Line            =', nline
- write(*,5) 'ts_read_options: N. Poles in Contour     =', npol
- write(*,5) 'ts_read_options: N. Pts. Bias Contour    =', nvolt
- write(*,6) 'ts_read_options: Contour E Min.          =', CCEmin,' Ry'
- write(*,7) 'ts_read_options: GFEta                   =', GFEta,' Ry'
- write(*,6) 'ts_read_options: Electronic Temperature  =', kT, ' Ry'
- write(*,10) 'ts_read_options: Bias Contour Method     =', smethod
- write(*,10) 'ts_read_options: Left GF File            =', GFFileL
- write(*,10) 'ts_read_options: Right GF File           =', GFFileR
+ write(*,1) 'ts_read_options: Save H and S matrices        =', savetshs
+! write(*,1) 'ts_read_options: Save S and quit (onlyS) =', onlyS
+! write(*,1) 'ts_read_options: Use TS EDM              =', tsdme
+ write(*,1) 'ts_read_options: Mixing Hamiltonian           =', mixH
+ write(*,6) 'ts_read_options: TranSIESTA Voltage           =', voltfdf/eV,' Volts'
+! write(*,1) 'ts_read_options: Bulk Values in Elecs    =', USEBULK
+ write(*,1) 'ts_read_options: TriDiag                      =', TriDiag 
+ write(*,1) 'ts_read_options: Update DM Contact Reg. only  =', updatedmcr
+! write(*,1) 'ts_read_options: Use VFix                =', UseVFix
+! write(*,1) 'ts_read_options: Fix Contact Charge      =', FixQ
+ write(*,5) 'ts_read_options: N. Buffer At. Left           =', NBUFATL
+ write(*,5) 'ts_read_options: N. Buffer At. Right          =', NBUFATR
+ write(*,5) 'ts_read_options: N. Pts. Circle               =', ncircle
+ write(*,5) 'ts_read_options: N. Pts. Line                 =', nline
+ write(*,5) 'ts_read_options: N. Poles in Contour          =', npol
+ write(*,5) 'ts_read_options: N. Pts. Bias Contour         =', nvolt
+ write(*,6) 'ts_read_options: Contour E Min.               =', CCEmin,' Ry'
+ write(*,7) 'ts_read_options: GFEta                        =', GFEta,' Ry'
+ write(*,6) 'ts_read_options: Electronic Temperature       =', kT, ' Ry'
+ write(*,10) 'ts_read_options: Bias Contour Method          =', smethod
+ write(*,10) 'ts_read_options: Left GF File                 =', GFFileL
+ write(*,10) 'ts_read_options: Right GF File                =', GFFileR
+ write(*,1) 'ts_read_options: Calculate GF                 =', calcGF
 end if
 
 if (IOnode) then
