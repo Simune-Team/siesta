@@ -5,6 +5,21 @@
 ** CHANGES ALONG bsc-trunk
 
 -------------------------------------------------------------------------
+2009-11-24  17:55 GMT Alberto Garcia <albertog@icmab.es>    bsc-trunk-294
+Restructuring of CML modules  + test script fixes
+
+* After the modularization of efield and doping, the CML subsystem
+caused strange compiler errors. They have been resolved by explicit
+use of "public" qualifiers and the "private" statement in siesta_cml
+(which now contains the interface to all the low-level routines, and
+wraps FoX completely) and by a simplification of siesta_cmlsubs.
+
+* Some scripts in Tests/Scripts still referred to the old "Src"-style
+siesta executable.
+
+(Some work still to be done on the new fdf module)
+
+-------------------------------------------------------------------------
 2009-11-24  17:35 GMT Alberto Garcia <albertog@icmab.es>    bsc-trunk-293
 Synch to trunk-300
 

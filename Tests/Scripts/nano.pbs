@@ -21,7 +21,7 @@ pwd
 date
 echo "-----------"
 
-prog=../../../Src/siesta
+prog=../../../siesta
 PATH=/opt/intel/impi/3.1/bin64:$PATH
 make SIESTA="mpirun -r ssh -np $NSLOTS --mpd=/opt/intel/impi/3.1/bin64/mpd  $prog"
 

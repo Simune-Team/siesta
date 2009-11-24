@@ -386,8 +386,6 @@ doping.o: alloc.o meshsubs.o meshsubs.o parallel.o precision.o sys.o
 dscfcomm.o: alloc.o parallel.o parallelsubs.o precision.o schecomm.o
 dynamics.o: alloc.o atomlist.o files.o ioxv.o m_mpi_utils.o parallel.o
 dynamics.o: precision.o sys.o units.o
-efield.o: atmfuncs.o meshsubs.o parallel.o parallelsubs.o parsing.o precision.o
-efield.o: siesta_cml.o sys.o
 egandd.o: alloc.o globalise.o onmod.o onmod.o precision.o sys.o
 eggbox.o: parallel.o precision.o
 electrostatic.o: atm_types.o atmfuncs.o atmparams.o precision.o radfft.o
@@ -626,8 +624,7 @@ siesta_analysis.o: m_dipol.o m_energies.o m_eo.o m_forces.o m_gamma.o
 siesta_analysis.o: m_mpi_utils.o m_ntm.o m_spin.o m_steps.o parallel.o
 siesta_analysis.o: projected_DOS.o siesta_cml.o siesta_geom.o siesta_options.o
 siesta_analysis.o: sparse_matrices.o write_subs.o writewave.o zmatrix.o
-siesta_cml.o: siesta_cmlsubs.o
-siesta_cmlsubs.o: files.o parallel.o timestamp.o 
+siesta_cmlsubs.o: files.o parallel.o siesta_cml.o timestamp.o 
 siesta_end.o: alloc.o bands.o densematrix.o domain_decom.o fixed.o m_pulay.o
 siesta_end.o: m_wallclock.o meshsubs.o moremeshsubs.o parallel.o siesta_cml.o
 siesta_end.o: sparse_matrices.o timestamp.o

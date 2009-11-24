@@ -6,7 +6,8 @@
 
       subroutine siesta_end( )
       use alloc,           only : alloc_report, de_alloc
-      use siesta_cml
+      use siesta_cml,      only : cml_p, mainXML, cmlEndModule
+      use siesta_cmlsubs,  only : siesta_cml_exit
       use m_timestamp,     only : timestamp
       use m_wallclock,     only : wallclock
       use parallel,        only : IOnode
