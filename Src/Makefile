@@ -369,9 +369,9 @@ densematrix.o: precision.o
 detover.o: alloc.o parallel.o parallelsubs.o precision.o
 dfscf.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o meshmatrix.o
 dfscf.o: meshsubs.o meshsubs.o parallel.o precision.o sys.o
-dhscf.o: alloc.o atmfuncs.o files.o forhar.o iogrid_netcdf.o m_efield.o
-dhscf.o: m_iorho.o m_ts_in_siesta.o m_ts_options.o meshsubs.o parallel.o
-dhscf.o: parsing.o precision.o siesta_options.o sys.o
+dhscf.o: alloc.o atmfuncs.o doping.o files.o forhar.o iogrid_netcdf.o
+dhscf.o: m_efield.o m_iorho.o m_ts_in_siesta.o m_ts_options.o meshsubs.o
+dhscf.o: parallel.o parsing.o precision.o siesta_options.o sys.o
 diag2g.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
 diag2k.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
 diagg.o: fermid.o parallel.o parallelsubs.o precision.o sys.o writewave.o
@@ -387,7 +387,7 @@ diagsprl.o: atomlist.o fermid.o parallel.o parallelsubs.o precision.o
 diagsprl.o: siesta_geom.o sys.o
 dipole.o: parallel.o precision.o sys.o
 dnaefs.o: atmfuncs.o mneighb.o precision.o
-doping.o: meshsubs.o meshsubs.o parallel.o precision.o sys.o
+doping.o: alloc.o meshsubs.o meshsubs.o parallel.o precision.o sys.o
 dynamics.o: atomlist.o files.o ioxv.o m_mpi_utils.o parallel.o precision.o
 dynamics.o: sys.o units.o
 efield.o: atmfuncs.o parallel.o parallelsubs.o parsing.o precision.o
@@ -459,7 +459,7 @@ m_cell.o: precision.o siesta_geom.o units.o
 m_check_supercell.o: minvec.o parallel.o precision.o
 m_dipol.o: precision.o
 m_efield.o: atmfuncs.o m_fdf_global.o m_mpi_utils.o parallel.o parallelsubs.o
-m_efield.o: precision.o siesta_geom.o sys.o units.o
+m_efield.o: precision.o siesta_cml.o siesta_geom.o sys.o units.o
 m_energies.o: precision.o
 m_eo.o: precision.o
 m_fdf_global.o: m_mpi_utils.o parallel.o precision.o
@@ -687,6 +687,7 @@ m_chkgmx.o: chkgmx.o
 m_compute_dm.o: compute_dm.o
 m_conjgr.o: conjgr.o
 m_conjgr_old.o: conjgr_old.o
+m_doping.o: doping.o
 m_dynamics.o: dynamics.o
 m_fermid.o: fermid.o
 m_fft.o: fft.o

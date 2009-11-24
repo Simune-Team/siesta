@@ -162,6 +162,10 @@ C
       use m_efield,       only: get_field_from_dipole, dipole_correction
       use m_efield,       only: add_potential_from_field
       use m_efield,       only: user_specified_field
+
+      use m_doping,       only: initialize_doping, doping
+      use m_doping,       only: compute_doping_structs
+
 #ifdef TRANSIESTA
 ! TSS Begin
 ! SIESTA Modules
@@ -303,7 +307,7 @@ C
      .  shape
 
       external
-     .  cross, dfscf,  dipole, ddot, doping,
+     .  cross, dfscf,  dipole, ddot,
      .  poison, 
      .  reord, rhooda, rhoofd, rhoofdsp, 
      .  timer, vmat, vmatsp, volcel,
@@ -690,7 +694,12 @@ C Add a background charge to neutralize the net charge, to
 C model doped systems. It only adds the charge at points
 C where there are atoms (i.e., not in vacuum).          
 C First, call with 'task=0' to add background charge    
-        call doping(cell,nmpl,0,(samexa.and.samesh),DRho,rhoatm,nsd)
+
+        if (frstme) call initialize_doping()
+        if (.not. (samexa.and.samesh)) then
+           call compute_doping_structs(nmpl,rhoatm,nsd)
+        endif
+        call doping(cell,nmpl,0,DRho)
 
 C Find dipole
         call reord( DRho, DRho, nml, nsm, +1)
@@ -732,7 +741,7 @@ C Solve Poisson's equation
       call reord( Vscf, Vscf, nml, nsm, -1)
 
 C Call doping with 'task=1' to remove background charge added previously
-      call doping(cell,nmpl,1,(samexa.and.samesh),DRho,rhoatm,nsd)
+      call doping(cell,nmpl,1,DRho)
 
 C Add contribution to stress from electrostatic energy of rhoscf-rhoatm
       if (istr .eq. 1) then
