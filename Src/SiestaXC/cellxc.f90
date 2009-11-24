@@ -409,8 +409,7 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   call getXC( nXCfunc, XCfunc, XCauth, XCweightX, XCweightC )
 
   ! Set routine name for allocations
-  call alloc_default( old=prevAllocDefaults, routine=myName, &
-                      copy=.true., shrink=.true. )
+  call alloc_default( old=prevAllocDefaults, copy=.true., shrink=.true. )
 
   ! Check argument dVxcdD
   if (present(dVxcdD) .and. GGA) &

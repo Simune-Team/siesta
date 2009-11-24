@@ -16,6 +16,7 @@
 
         private
 
+        character(len=*), parameter      :: myName = 'neighbour '
         integer,  save, public           :: maxnna = 200
         integer,  pointer, save, public  :: jan(:)
         real(dp), pointer, save, public  :: r2ij(:)
@@ -135,9 +136,9 @@ C Nullify pointers
         nullify(r2ij)
         nullify(xij)
       !  Dimension arrays to initial size MAXNNA
-        call re_alloc(jan,1,maxnna,name='jan')
-        call re_alloc(r2ij,1,maxnna,name='r2ij')
-        call re_alloc(xij,1,3,1,maxnna,name='xij')
+        call re_alloc(jan,1,maxnna,name=myName//'jan')
+        call re_alloc(r2ij,1,maxnna,name=myName//'r2ij')
+        call re_alloc(xij,1,3,1,maxnna,name=myName//'xij')
         pointers_allocated = .true.
       endif
 
@@ -931,12 +932,9 @@ C             Check if atom JA is within range
 C               Check that array arguments are not overflooded
                 IF (NNA .GT. MAXNNA) THEN
                   MAXNNA = MAXNNA + NA
-                  call re_alloc(jan,1,maxnna,name='jan',
-     .              routine='mranger')
-                  call re_alloc(r2ij,1,maxnna,name='jan',
-     .              routine='mranger')
-                  call re_alloc(xij,1,nx,1,maxnna,name='jan',
-     .              routine='mranger')
+                  call re_alloc(jan,1,maxnna,name=myName//'jan')
+                  call re_alloc(r2ij,1,maxnna,name=myName//'r2ij')
+                  call re_alloc(xij,1,nx,1,maxnna,name=myName//'xij')
                 ENDIF
                 JAN(NNA) = JA
                 do IX = 1,NX
@@ -1112,16 +1110,16 @@ C Next line is non-standard but may be supressed
         nullify(xij)
         !  Dimension arrays to initial size n
         maxnna = n
-        call re_alloc(jan,1,maxnna,name='jan')
-        call re_alloc(r2ij,1,maxnna,name='r2ij')
-        call re_alloc(xij,1,3,1,maxnna,name='xij')
+        call re_alloc(jan,1,maxnna,name=myName//'jan')
+        call re_alloc(r2ij,1,maxnna,name=myName//'r2ij')
+        call re_alloc(xij,1,3,1,maxnna,name=myName//'xij')
         pointers_allocated = .true.
       else
          if (n > maxnna) then
             maxnna = n
-            call re_alloc(jan,1,maxnna,name='jan')
-            call re_alloc(r2ij,1,maxnna,name='r2ij')
-            call re_alloc(xij,1,3,1,maxnna,name='xij')
+            call re_alloc(jan,1,maxnna,name=myName//'jan')
+            call re_alloc(r2ij,1,maxnna,name=myName//'r2ij')
+            call re_alloc(xij,1,3,1,maxnna,name=myName//'xij')
          endif
       endif
 

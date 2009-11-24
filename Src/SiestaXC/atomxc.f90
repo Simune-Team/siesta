@@ -278,7 +278,7 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
   enddo ! nf
 
 ! Set routine name for allocations
-  call alloc_default( old=prevAllocDefaults, routine=myName )
+!  call alloc_default( old=prevAllocDefaults, routine=myName )
 
 ! Allocate temporary arrays
   call re_alloc( D,       1,nSpin, 1,nr, myName//'D' )
@@ -656,7 +656,7 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
   call de_alloc( D,     myName//'D' )
 
 ! Restore previous allocation defaults
-  call alloc_default( restore=prevAllocDefaults )
+!  call alloc_default( restore=prevAllocDefaults )
 
 ! DEBUG
 !  call timer_stop( myName )   ! Stop time counter
