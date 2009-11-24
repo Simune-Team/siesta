@@ -123,9 +123,9 @@ OBJS =  automatic_cell.o atom_options.o \
         cell_broyden_optim.o remove_intramol_pressure.o \
         m_ntm.o m_dipol.o  m_kinetic.o  m_rmaxh.o \
         m_forces.o m_stress.o m_eo.o m_spin.o m_gamma.o m_hsx.o m_fire.o \
-       get_target_stress.o fire_optim.o zm_fire_optim.o \
-       cell_fire_optim.o m_fire_para.o m_fire_mixing.o write_raw_efs.o \
-       m_iodm.o m_sparse.o  kpoint_pdos.o \
+        get_target_stress.o fire_optim.o zm_fire_optim.o \
+        cell_fire_optim.o m_fire_para.o m_fire_mixing.o write_raw_efs.o \
+        m_iodm.o m_sparse.o  kpoint_pdos.o \
 	m_filter.o \
         m_io.o \
 	m_recipes.o \

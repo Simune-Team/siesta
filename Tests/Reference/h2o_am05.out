@@ -1,0 +1,160 @@
+Siesta Version:                                        siesta-trunk-305
+Architecture  : x86_64-unknown-linux-gnu--Intel
+Compiler flags: mpif90 -mp -O3 -xP
+PARALLEL version
+
+* Running in serial mode with MPI
+>> Start of run:  18-NOV-2009  19:50:26
+
+                           ***********************       
+                           *  WELCOME TO SIESTA  *       
+                           ***********************       
+
+reinit: Reading from standard input
+************************** Dump of input data file ****************************
+NumberOfAtoms        3
+NumberOfSpecies      2
+%block ChemicalSpeciesLabel
+    1   8 O_am05
+    2   1 H_am05
+%endblock ChemicalSpeciesLabel
+LatticeConstant 1.0 Ang
+%block LatticeParameters
+    8.0000    8.0000    8.0000   90.0000   90.0000   90.0000
+%endblock LatticeParameters
+AtomicCoordinatesFormat Fractional
+%block AtomicCoordinatesAndAtomicSpecies
+    0.000000000    0.000000000    0.000000000     1
+    0.937500000    0.107500000    0.000000000     2
+    0.937500000    0.892500000    0.000000000     2
+%endblock AtomicCoordinatesAndAtomicSpecies
+MD.TypeOfRun CG
+MD.NumCGSteps 0
+MD.VariableCell false
+MD.MaxStressTol 200 bar
+SolutionMethod diagon
+DM.NumberPulay 3
+MeshCutoff 200 Ry
+PAO.SplitNorm    0.15
+PAO.BasisType    split
+PAO.SplitNormH   0.50
+PAO.SoftDefault true
+PAO.SoftPotential 100.0 Ry
+PAO.SoftInnerRadius 0.95
+%block PAO.Basis
+O_am05     3
+ n=2    0    2
+   7.0 0.0
+   1.0 1.0
+ n=2    1    2
+   7.0 0.0
+   1.0 1.0
+ n=3    2    1 E 120.0 0.00
+   7.0
+   1.0
+H_am05  2
+ n=1 0 2
+   7.0 0.0
+   1.0 1.0
+ n=2 1 1  E 70.0 0.0
+   3.5
+   1.0
+%endblock PAO.Basis
+xc.functional         GGA
+xc.authors            AM05
+LongOutput true
+UseSaveData false
+************************** End of input data file *****************************
+
+reinit: -----------------------------------------------------------------------
+reinit: System Name: 
+reinit: -----------------------------------------------------------------------
+reinit: System Label: siesta                                                      
+reinit: -----------------------------------------------------------------------
+
+initatom: Reading input for the pseudopotentials and atomic orbitals ----------
+ Species number:            1  Label: O_am05 Atomic number:           8
+ Species number:            2  Label: H_am05 Atomic number:           1
+Ground state valence configuration:   2s02  2p04
+Reading pseudopotential information in formatted form from O_am05.psf
+
+Valence configuration for pseudopotential generation:
+2s( 2.00) rc: 1.14
+2p( 4.00) rc: 1.14
+3d( 0.00) rc: 1.14
+4f( 0.00) rc: 1.14
+Ground state valence configuration:   1s01
+Reading pseudopotential information in formatted form from H_am05.psf
+
+Valence configuration for pseudopotential generation:
+1s( 1.00) rc: 1.00
+2p( 0.00) rc: 1.00
+3d( 0.00) rc: 1.00
+For O_am05, standard SIESTA heuristics set lmxkb to 3
+ (one more than the basis l, including polarization orbitals).
+Use PS.lmax or PS.KBprojectors blocks to override.
+For H_am05, standard SIESTA heuristics set lmxkb to 2
+ (one more than the basis l, including polarization orbitals).
+Use PS.lmax or PS.KBprojectors blocks to override.
+
+<basis_specs>
+===============================================================================
+O_am05               Z=   8    Mass=  16.000        Charge= 0.17977+309
+Lmxo=2 Lmxkb=3     BasisType=split      Semic=F
+L=0  Nsemic=0  Cnfigmx=2
+          n=1  nzeta=2  polorb=0
+            splnorm:   0.15000    
+               vcte:    100.00    
+               rinn:  -0.95000    
+                rcs:    7.0000      0.0000    
+            lambdas:    1.0000      1.0000    
+L=1  Nsemic=0  Cnfigmx=2
+          n=1  nzeta=2  polorb=0
+            splnorm:   0.15000    
+               vcte:    100.00    
+               rinn:  -0.95000    
+                rcs:    7.0000      0.0000    
+            lambdas:    1.0000      1.0000    
+L=2  Nsemic=0  Cnfigmx=3
+          n=1  nzeta=1  polorb=0
+            splnorm:   0.15000    
+               vcte:    120.00    
+               rinn:    0.0000    
+                rcs:    7.0000    
+            lambdas:    1.0000    
+-------------------------------------------------------------------------------
+L=0  Nkbl=1  erefs: 0.17977+309
+L=1  Nkbl=1  erefs: 0.17977+309
+L=2  Nkbl=1  erefs: 0.17977+309
+L=3  Nkbl=1  erefs: 0.17977+309
+===============================================================================
+</basis_specs>
+
+atom: Called for O_am05                (Z =   8)
+
+read_vps: Pseudopotential generation method:
+read_vps: ATM3      Troullier-Martins                       
+Total valence charge:    6.00000
+
+xc_check: Exchange-correlation functional:
+xc_check: ERROR: Exchange-correlation functional not allowed
+xc_check: ERROR: xc.functional= 
+GGA                 
+xc_check: ERROR: xc.authors= 
+AM05                
+Stopping Program from Node:    0
+Stopping Program from Node:    0
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD 
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpirun has exited due to process rank 0 with PID 31629 on
+node vayu1 exiting without calling "finalize". This may
+have caused other processes in the application to be
+terminated by signals sent by mpirun (as reported here).
+--------------------------------------------------------------------------
