@@ -8,7 +8,7 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine doping(cell,np,task,samestruc,rho,rhoatm,nspin)
+      subroutine doping(cell,np,task,samestruc,rho,rhoatm,nsd)
 
 c **********************************************************************
 c Adds a background charge density to simulate doping.
@@ -25,12 +25,12 @@ c
 c Written by P. Ordejon, July 2009
 c ********* Input ******************************************************
 c real*8  cell(3,3) : Unit cell vectors
-c integer np        : Number of mesh points locally
+c integer np        : Number of (main) mesh points locally
 c integer task      : 0 = add background;   1 = remove background added
 c                     in a previous call
 c logical samestruc : same mesh and atomic positions as in last call?
 c real rhoatm(*)    : Sum of atomic charge densities
-c integer nspin     : Number of spins (1 or 2)
+c integer nsd     : Number of spins (1 or 2)
 c ********* Input and output *******************************************
 c real    rho(*)    : Charge density, to which the background charge is
 c                     added.
@@ -67,10 +67,16 @@ C
 
       implicit          none
 
-      integer           np, task, nspin
+      integer           np, task, nsd
 
       logical           samestruc
 
+!
+!     Note that these arrays are shaped in such a way that the
+!     first index is the "fine point" corresponding to a given main point
+!     The second is the "main-point" index. There is no spin index as
+!     the charges involved are the total ones.
+!
       real(grid_p)  ::  rho(nsp, np), rhoatm(nsp,np), charge
       real(dp)          cell(3,3)
 
@@ -137,7 +143,7 @@ C  Check if there is a nonzero orbital at that point
             do isp = 1,nsp
               it = .false.
 C  Check if charge at that point is larger than thresshold
-              charge = rhoatm(isp,ip)*nspin
+              charge = rhoatm(isp,ip)*nsd
               if(abs(charge).ge.thress) it = .true.
               if (it) then
                 ntloc = ntloc+1
