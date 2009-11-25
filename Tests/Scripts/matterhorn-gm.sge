@@ -5,7 +5,7 @@
 #$ -S /bin/sh
 #$ -V
 #           qsub /path/to/sge_run.sh  command
-prog=../../../Src/siesta
+prog=../../../siesta
 #
 echo This job runs on the following nodes:
 echo `cat $TMP/machines`

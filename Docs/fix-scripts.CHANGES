@@ -1,0 +1,8 @@
+Fix test scripts for correct executable path
+
+* Some scripts in Tests/Scripts still referred to the old "Src"-style
+  siesta executable.
+
+* Tests/test.mk had a path to the executable which assumed that it ran
+  under the default Obj directory.
+
