@@ -9,6 +9,14 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
       module m_doping
+! Adds a background charge density to simulate doping.
+! This routine calculates the net charge of the system, and
+! adds a compensating background charge that makes the system 
+! neutral. This background charge is constant at points of
+! the mesh near the atoms, and zero at points far from the atoms.
+! This simulates situations like doped slabs, where the extra
+! electrons (holes) are compensated by oposite charges at the
+! material (the ionized dopant impurities), but not at the vacuum.
 
       use precision, only : dp
 
@@ -45,6 +53,13 @@
 
       subroutine compute_doping_structs(np,rhoatm,nsd)
 
+!     Determines in which mesh points the compensating charge will be
+!     placed.  The points in which the background charge is removed are
+!     those for which the absolute value of the atomic charge rhoatm is
+!     larger than a threshold value, defined in this subroutine as
+!     thres=0.005 (empirically found to work well). The user can
+!     experiment with this at will...
+
       use alloc,        only : re_alloc
       use precision,    only : dp, grid_p
       use mesh,         only : nsp
@@ -56,7 +71,7 @@
       integer      ::  np, nsd
       real(grid_p) ::  rhoatm(nsp,np)
 
-C     Threshold charge for points where background is added
+!     Threshold charge for points where background is added
       real(dp), parameter  ::   thres = 0.005_dp
 
       integer :: ip, nc, isp
@@ -71,15 +86,15 @@ C     Threshold charge for points where background is added
       call re_alloc(indisp,1,np*nsp, name="indisp",routine="doping")
 
       ntloc = 0
-C  Loop over grid points
+!  Loop over grid points
       do ip = 1,np
-C  Find number of nonzero orbitals at this point
+!  Find number of nonzero orbitals at this point
          nc = endpht(ip) - endpht(ip-1)
-C  Check if there is a nonzero orbital at that point
+!  Check if there is a nonzero orbital at that point
          if (nc .ne. 0) then
             do isp = 1,nsp
                it = .false.
-C  Check if charge at that point is larger than threshold
+!  Check if charge at that point is larger than threshold
                charge = rhoatm(isp,ip)*nsd
                if(abs(charge).ge.thres) it = .true.
                if (it) then
@@ -106,54 +121,39 @@ C  Check if charge at that point is larger than threshold
 
       subroutine doping(cell,np,task,rho)
 
-c Adds a background charge density to simulate doping.
-c This routine calculates the net charge of the system, and
-c adds a compensating background charge that makes the system 
-c neutral. This background charge is constant at points of
-c the mesh near the atoms, and zero at points far from the atoms.
-c This simulates situations like doped slabs, where the extra
-c electrons (holes) are compensated by oposite charges at the
-c material (the ionized dopant impurities), but not at the vacuum.
-c This serves to simulate properly doped systems in which there
-c are large portions of vacuum, such as doped slabs.
-c
-c Written by P. Ordejon, July 2009
-c ********* Input ******************************************************
-c real*8  cell(3,3) : Unit cell vectors
-c integer np        : Number of (main) mesh points locally
-c integer task      : 0 = add background;   1 = remove background added
-c                     in a previous call
-c ********* Input and output *******************************************
-c real    rho(*)    : Charge density, to which the background charge is
-c                     added.
-c ********* Units ******************************************************
-c Charges in electros/borh**3
-c Energies in Rydbergs
-c ********* Behaviour **************************************************
-c The routine must be first called with 'task=0', and later with 'task=1'
-c - 'task=0':  the routine calculates the net charge of the system 
-c   determines in which mesh points the compensating charge will be 
-c   placed.  Then, it adds the background charge to these points.
-c - 'task=1':  the background charge added in a previous call with task=0
-c   is now removed.
-c The points in which the background charge is removed are those for
-c which the absolute value of the atomic charge rhoatm is larger than a 
-c threshold value, defined in this subroutine as thres=0.005  (empirically 
-c found to work well). The user can experiment with this at will...
+! Adds a background charge density to simulate doping.  This routine
+! adds a compensating background charge that makes the system
+! neutral. This background charge is constant at points of the mesh near
+! the atoms, and zero at points far from the atoms.  This simulates
+! situations like doped slabs, where the extra electrons (holes) are
+! compensated by oposite charges at the material (the ionized dopant
+! impurities), but not at the vacuum.
+! The routine must be first called with 'task=0', and later with
+! 'task=1' 
+!
+! Written by P. Ordejon, July 2009
+!
+! Charges in electrons/borh**3
+! Energies in Rydbergs
 
       use precision,    only : dp, grid_p
       use mesh,         only : nsp
       use sys,          only : die
-
 !
 !     Note that the rho array is shaped in such a way that the
 !     first index is the "fine point" corresponding to a given main point
 !     The second is the "main-point" index. There is no spin index as
 !     the charges involved are the total ones.
 !
-      integer, intent(in)          ::  np, task
-      real(grid_p), intent(inout)  ::  rho(nsp, np)
+!     Unit cell vectors
       real(dp), intent(in)         ::  cell(3,3)
+      ! Number of "big" mesh points in this MPI process
+      integer, intent(in)          ::  np
+!     ! Task :   0 = add background
+!                1 = remove background added in a previous call
+      integer, intent(in)          ::  task
+!     Charge density, to which the background charge is added.
+      real(grid_p), intent(inout)  ::  rho(nsp, np)
 
       integer           i,ip, isp
       real(dp)          fact
@@ -167,7 +167,7 @@ c found to work well). The user can experiment with this at will...
         call die('ERROR: wrong task in doping.F')
       endif
 
-C  Loop over grid points where charge has to be added/removed
+!  Loop over grid points where charge has to be added/removed
       do i=1,ntloc
         ip = indip(i)
         isp = indisp(i)
