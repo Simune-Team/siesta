@@ -320,7 +320,7 @@
 
       module meshphi
 
-      use precision, only : grid_p
+      use precision, only : grid_p, phi_grid_p
 
       implicit none
 
@@ -332,7 +332,7 @@
       integer,pointer,save:: lstpht(:)=>null()
       integer,pointer,save:: listp2(:)=>null()
 
-      real(grid_p),pointer,save:: 
+      real(phi_grid_p),pointer,save:: 
      .  phi(:,:)=>null() ! Basis orbitals at mesh points (sparse format)
 
       end module meshphi
