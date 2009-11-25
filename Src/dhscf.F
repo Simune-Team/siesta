@@ -164,7 +164,7 @@ C
       use m_efield,       only: user_specified_field
 
       use m_doping,       only: initialize_doping, doping
-      use m_doping,       only: compute_doping_structs
+      use m_doping,       only: compute_doping_structs, doping_active
 
 #ifdef TRANSIESTA
 ! TSS Begin
@@ -696,10 +696,10 @@ C where there are atoms (i.e., not in vacuum).
 C First, call with 'task=0' to add background charge    
 
         if (frstme) call initialize_doping()
-        if (.not. (samexa.and.samesh)) then
+        if (doping_active .and. (.not. (samexa.and.samesh))) then
            call compute_doping_structs(nmpl,rhoatm,nsd)
         endif
-        call doping(cell,nmpl,0,DRho)
+        if (doping_active) call doping(cell,nmpl,0,DRho)
 
 C Find dipole
         call reord( DRho, DRho, nml, nsm, +1)
@@ -741,7 +741,7 @@ C Solve Poisson's equation
       call reord( Vscf, Vscf, nml, nsm, -1)
 
 C Call doping with 'task=1' to remove background charge added previously
-      call doping(cell,nmpl,1,DRho)
+      if (doping_active) call doping(cell,nmpl,1,DRho)
 
 C Add contribution to stress from electrostatic energy of rhoscf-rhoatm
       if (istr .eq. 1) then
