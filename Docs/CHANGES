@@ -4,6 +4,70 @@
 
 
 ** CHANGES ALONG trunk
+
+------------------------------------------------------------------------
+2009-11-23  09:54:00 GMT Jose A Torres <jtorres.sp@gmail.com>    trunk-312
+
+Support for the Armiento and Mattson's  functional added (From J. Gale)
+
+Support for the AM05 functional has been added to routines in SiestaXC 
+and Pseudo. This is done using the AM05 subroutines distributed by 
+Armiento and Mattson, under the terms of the conditions contained within 
+the header to their software allowing modification and redistribution 
+provider the original copyright header remains. 
+
+A new module, am05, contained within the file SiestaXC/am05.f90, has been 
+added containing the code from Armiento and Mattsson. Within ggaxc.f90 
+a wrapper has been added, am05xc, to pass the variables from ggaxc to 
+am05 subroutines and handle the return arguments appropriately. 
+
+In the atom program the two-letter symbol "am" has been added for AM05.
+In SIESTA the GGA Authors are "AM05".
+
+A test of the AM05 functional added in h2o_am05.
+
+added:
+  Pseudo/atom/am05.f
+  Src/SiestaXC/am05.f90
+  Tests/Pseudos/H_am05.psf
+  Tests/Pseudos/O_am05.psf
+  Tests/Reference/h2o_am05.out
+  Tests/h2o_am05/
+  Tests/h2o_am05/README
+  Tests/h2o_am05/h2o_am05.fdf
+  Tests/h2o_am05/h2o_am05.pseudos
+  Tests/h2o_am05/makefile
+modified:
+  Docs/siesta.tex
+  Pseudo/atom/Docs/atom.tex
+  Pseudo/atom/pseudoXML.f
+  Pseudo/atom/velect.f
+  Src/Makefile
+  Src/SiestaXC/atomxc.f90
+  Src/SiestaXC/cellxc.f90
+  Src/SiestaXC/ggaxc.f
+  Src/SiestaXC/makefile
+  Src/SiestaXC/siestaXC.f90
+  Src/SiestaXC/xcmod.f90
+  Src/atom.f
+  
+------------------------------------------------------------------------
+2009-11-10  20:30:00 GMT Jose M Soler <jose.soler@uam.es>      trunk-311
+
+Avoid repetition of routine name in allocation report
+
+Since the introduction of the routine name in the allocation report, in
+revno 301, some arrays appeared with a repeated routine name, since this
+is also given in the array name. Also, the module name has been added in
+calls to re_alloc, within module neighbour.
+
+modified:
+  Src/SiestaXC/atomxc.f90   ! Call to alloc_default commented out
+  Src/SiestaXC/cellxc.f90   ! 'routine' removed from call to alloc_default
+  Src/matel.f               ! 'routine' removed from call to alloc_default
+  Src/mneighb.f             ! Module name used in calls to re_alloc
+ 
+
 ------------------------------------------------------------------------
 2009-11-10 18:25:00 GMT Jose A. Torres <jtorres.sp@gmail.com>   trunk-310
 

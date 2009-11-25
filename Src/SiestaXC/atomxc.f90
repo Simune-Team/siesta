@@ -124,6 +124,7 @@
 !            'LYP' => GGA Becke-Lee-Yang-Parr (see subroutine blypxc)
 !             'WC' => GGA Wu-Cohen (see subroutine wcxc)
 !         'PBESOL' => GGA Perdew et al, PRL, 100, 136406 (2008)
+!           'AM05' => GGA Mattsson & Armiento, PRB, 79, 155101 (2009)
 !          'DRSLL' => VDW Dion et al, PRL 92, 246401 (2004)
 ! *******************************************************************
 
@@ -278,7 +279,7 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
   enddo ! nf
 
 ! Set routine name for allocations
-  call alloc_default( old=prevAllocDefaults, routine=myName )
+!  call alloc_default( old=prevAllocDefaults, routine=myName )
 
 ! Allocate temporary arrays
   call re_alloc( D,       1,nSpin, 1,nr, myName//'D' )
@@ -656,7 +657,7 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
   call de_alloc( D,     myName//'D' )
 
 ! Restore previous allocation defaults
-  call alloc_default( restore=prevAllocDefaults )
+!  call alloc_default( restore=prevAllocDefaults )
 
 ! DEBUG
 !  call timer_stop( myName )   ! Stop time counter

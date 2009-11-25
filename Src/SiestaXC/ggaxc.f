@@ -13,6 +13,7 @@
 ! pw91xc,   ! Perdew & Wang, JCP, 100, 1290 (1994)
 ! revpbexc, ! GGA Zhang & Yang, PRL 80,890(1998)
 ! rpbexc,   ! Hammer, Hansen & Norskov, PRB 59, 7413 (1999)
+! am05xc,   ! Mattsson & Armiento, PRB, 79, 155101 (2009)
 ! wcxc      ! Wu-Cohen (see subroutine wcxc)
 !
 !   PUBLIC parameters, types, and variables available from this module:
@@ -53,6 +54,7 @@
      .  pw91xc,   ! Perdew & Wang, JCP, 100, 1290 (1994)
      .  revpbexc, ! GGA Zhang & Yang, PRL 80,890(1998)
      .  rpbexc,   ! Hammer, Hansen & Norskov, PRB 59, 7413 (1999)
+     .  am05xc,   ! Mattsson & Armiento, PRB, 79, 155101 (2009)
      .  wcxc      ! Wu-Cohen (see subroutine wcxc)
 
       PRIVATE  ! Nothing is declared public beyond this point
@@ -194,6 +196,10 @@ C Non collinear part rewritten by J.M.Soler. Sept. 2009
      .        AUTHOR.EQ.'PBEsol') THEN
         CALL PBESOLXC( IREL, NS, DD, GDD,
      .                 EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
+
+      ELSEIF (AUTHOR.EQ.'AM05'.OR.AUTHOR.EQ.'am05') THEN
+        CALL AM05XC( IREL, NS, DD, GDD,
+     .               EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
 
       ELSE
         call die('GGAXC: Unknown author ' // trim(AUTHOR))
@@ -1749,6 +1755,126 @@ C Set output arguments
 
       END SUBROUTINE PBESOLXC
 
+      SUBROUTINE AM05XC( IREL, nspin, Dens, GDens,
+     .                   EX, EC, DEXDD, DECDD, DEXDGD, DECDGD )
+
+C *********************************************************************
+C Implements Perdew-Burke-Ernzerhof Generalized-Gradient-Approximation.
+C with the revised parameters for solids (PBEsol).
+C Ref: J.P.Perdew et al, PRL 100, 136406 (2008)
+C Written by L.C.Balbas and J.M.Soler for PBE. December 1996. 
+C Modified by J.D. Gale for PBEsol. May 2009.
+C ******** INPUT ******************************************************
+C INTEGER IREL           : Relativistic-exchange switch (0=No, 1=Yes)
+C INTEGER nspin          : Number of spin polarizations (1 or 2)
+C REAL*8  Dens(nspin)    : Total electron density (if nspin=1) or
+C                           spin electron density (if nspin=2)
+C REAL*8  GDens(3,nspin) : Total or spin density gradient
+C ******** OUTPUT *****************************************************
+C REAL*8  EX             : Exchange energy density
+C REAL*8  EC             : Correlation energy density
+C REAL*8  DEXDD(nspin)   : Partial derivative
+C                           d(DensTot*Ex)/dDens(ispin),
+C                           where DensTot = Sum_ispin( Dens(ispin) )
+C                          For a constant density, this is the
+C                          exchange potential
+C REAL*8  DECDD(nspin)   : Partial derivative
+C                           d(DensTot*Ec)/dDens(ispin),
+C                           where DensTot = Sum_ispin( Dens(ispin) )
+C                          For a constant density, this is the
+C                          correlation potential
+C REAL*8  DEXDGD(3,nspin): Partial derivative
+C                           d(DensTot*Ex)/d(GradDens(i,ispin))
+C REAL*8  DECDGD(3,nspin): Partial derivative
+C                           d(DensTot*Ec)/d(GradDens(i,ispin))
+C ********* UNITS ****************************************************
+C Lengths in Bohr
+C Densities in electrons per Bohr**3
+C Energies in Hartrees
+C Gradient vectors in cartesian coordinates
+C ********* ROUTINES CALLED ******************************************
+C EXCHNG, PW92C
+C ********************************************************************
+
+      use precision, only : dp
+      use am05,      only : am05wbs
+
+      implicit          none
+      integer           irel, nspin
+      real(dp)          Dens(nspin), DECDD(nspin), DECDGD(3,nspin),
+     .                  DEXDD(nspin), DEXDGD(3,nspin), GDens(3,nspin)
+
+C Internal variables
+      integer
+     .  is, ix
+
+      real(dp)
+     .  D(2), DENMIN, DFXDD(2), DFCDD(2), DFCDGD(3,2), 
+     .  DFXDGD(3,2), DFXDG(2), DFCDG(2),
+     .  DS(2), DT, EC, EX, FX, FC,
+     .  GD(3,2), GDM(2), GDMIN, GDMS, GDMT, GDS, GDT(3)
+
+C Lower bounds of density and its gradient to avoid divisions by zero
+      parameter ( DENMIN = 1.D-12 )
+      parameter ( GDMIN  = 1.D-12 )
+
+C Translate density and its gradient to new variables
+      if (nspin .eq. 1) then
+        D(1) = 0.5_dp*Dens(1)
+        D(2) = D(1)
+        DT = max( DENMIN, Dens(1) )
+        do ix = 1,3
+          GD(ix,1) = 0.5_dp*GDens(ix,1)
+          GD(ix,2) = GD(ix,1)
+          GDT(ix) = GDens(ix,1)
+        enddo
+      else
+        D(1) = Dens(1)
+        D(2) = Dens(2)
+        DT = max( DENMIN, Dens(1)+Dens(2) )
+        do ix = 1,3
+          GD(ix,1) = GDens(ix,1)
+          GD(ix,2) = GDens(ix,2)
+          GDT(ix) = GDens(ix,1) + GDens(ix,2)
+        enddo
+      endif
+      GDM(1) = sqrt( GD(1,1)**2 + GD(2,1)**2 + GD(3,1)**2 )
+      GDM(2) = sqrt( GD(1,2)**2 + GD(2,2)**2 + GD(3,2)**2 )
+      GDMT   = sqrt( GDT(1)**2  + GDT(2)**2  + GDT(3)**2  )
+      GDMT = max( GDMIN, GDMT )
+
+      D(1) = max(D(1),denmin)
+      D(2) = max(D(2),denmin)
+
+C Call AM05 subroutine
+      call am05wbs(D(1), D(2), GDM(1), GDM(1), FX, FC,
+     .             DFXDD(1), DFXDD(2), DFCDD(1), DFCDD(2), 
+     .             DFXDG(1), DFXDG(2), DFCDG(1), DFCDG(2))
+
+C Convert gradient terms into vectors
+      do is = 1,nspin
+        do ix = 1,3
+          DFXDGD(ix,is) = DFXDG(is)*GD(ix,is)
+          DFCDGD(ix,is) = DFCDG(is)*GD(ix,is)
+        enddo
+      enddo
+
+C Convert FX to form required by SIESTA - note factor of 1/2
+C is already applied in am05 code.
+      FX = FX / DT
+
+C Set output arguments
+      EX = FX
+      EC = FC
+      do is = 1,nspin
+        DEXDD(is) = DFXDD(is)
+        DECDD(is) = DFCDD(is)
+        do ix = 1,3
+          DEXDGD(ix,is) = DFXDGD(ix,is)
+          DECDGD(ix,is) = DFCDGD(ix,is)
+        enddo
+      enddo
+
+      END SUBROUTINE AM05XC
+
       END MODULE m_ggaxc
-
-
