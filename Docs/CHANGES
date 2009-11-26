@@ -5,6 +5,13 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2009-11-26  10:10:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-b-5
+Fix test scripts for correct executable path
+
+* Some scripts in Tests/Scripts still referred to the old "Src"-style
+  siesta executable.
+
+------------------------------------------------------------------------
 2009-11-10  15:30:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-b-4
 Clarification of the use of *_last geometry information
 
