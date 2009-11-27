@@ -6,6 +6,42 @@
 ** CHANGES ALONG trunk
 
 ------------------------------------------------------------------------------
+2009-11-27  18:56:00 GMT  Jose A Torres <jtorres.sp@gmail.com>      trunk-315
+
+Modularize efield and doping modules. Restructure CML interfaces. (From A. Garcia)
+
+* The code in efield.F (now m_efield.F) has been split in several
+  routines. 
+
+* The code in doping.F has been split in several routines.
+
+* Siesta_cml is now the main interface to CML in Siesta.
+  Siesta_cmlsubs is a client of siesta_cml and only exports
+  siesta_cml_init and siesta_cml_exit.
+  
+  For unknown reasons, it has been necessary to declare all the
+  symbols in siesta_cml explicitly "public" and add the "private"
+  global statement to avoid compiler crashes (intel V10) upon
+  compiling several modules.  A number of explicit "only" clauses have
+  been added to a few CML import statements in several modules.
+
+removed:
+  Src/efield.F
+added:
+  Src/m_efield.F
+modified:
+  Src/Makefile
+  Src/dhscf.F
+  Src/doping.F
+  Src/post_scf_work.F
+  Src/setup_hamiltonian.F
+  Src/siesta_cml.f90
+  Src/siesta_cmlsubs.F90
+  Src/siesta_end.F
+  Src/siesta_move.F
+  Src/state_init.F
+  
+------------------------------------------------------------------------------
 2009-11-27  18:45:00 GMT  Jose A Torres <jtorres.sp@gmail.com>      trunk-314
 
 Fix test scripts for correct executable path (From A. Garcia)

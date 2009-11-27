@@ -10,7 +10,6 @@
       use sparse_matrices
       use siesta_geom
       use atomlist, only: lasto, rmaxo, datm, indxuo, no_s, no_u, iphorb
-      use siesta_cml
       use m_energies
       use neighbour,   only: maxna=>maxnna   ! For plcharge...
       use m_spin,         only: nspin
