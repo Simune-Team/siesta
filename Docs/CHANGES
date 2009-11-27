@@ -4,6 +4,21 @@
 
 
 ** CHANGES ALONG trunk
+------------------------------------------------------------------------------
+2009-11-27  19:35:00 GMT  Jose A Torres <jtorres.sp@gmail.com>      trunk-316
+
+Position of checking statement corrected in cellxc.f90 
+
+The variable GGA was being used before being defined in 
+SiestaXC/cellxc.f90. This modification fixes that bug. 
+The following block:
+"  if (present(dVxcdD) .and. GGA) &
+    call die(errHead//'dVxcdD available only for LDA')
+"
+Has been moved to a new position, just after GGA has been defined.
+ 
+modified:
+  Src/SiestaXC/cellxc.f90 
 
 ------------------------------------------------------------------------------
 2009-11-27  18:56:00 GMT  Jose A Torres <jtorres.sp@gmail.com>      trunk-315
