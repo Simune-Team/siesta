@@ -4,6 +4,22 @@
 
 
 ** CHANGES ALONG trunk
+
+------------------------------------------------------------------------------
+2009-11-27  19:56:00 GMT  Jose A Torres <jtorres.sp@gmail.com>      trunk-317
+
+Minor change in cellxc.f90 to make it compatible with xlf
+
+In cellxc.f90 
+The code:
+timeDisp=huge(timeDisp)  
+Seems to give compilation problems when using xlf
+It has been replaced by
+timeDisp=huge(1.0_dp)  
+ 
+modified:
+  Src/SiestaXC/cellxc.f90 
+
 ------------------------------------------------------------------------------
 2009-11-27  19:35:00 GMT  Jose A Torres <jtorres.sp@gmail.com>      trunk-316
 

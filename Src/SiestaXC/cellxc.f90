@@ -335,7 +335,7 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   real(dp),save::  &
      myTime=1,     &! CPU time in this routine and processor in last iteration
      timeAvge=1,   &! Average over processors of CPU time
-     timeDisp=huge(timeDisp)  ! Dispersion over processors of CPU time
+     timeDisp=huge(1.0_dp)  ! Dispersion over processors of CPU time
 
   ! Internal pointers for dynamical allocation
   real(dp), pointer:: &
