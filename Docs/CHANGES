@@ -6,6 +6,25 @@
 ** CHANGES ALONG trunk
 
 ------------------------------------------------------------------------------
+2009-11-27  18:45:00 GMT  Jose A Torres <jtorres.sp@gmail.com>      trunk-314
+
+Fix test scripts for correct executable path (From A. Garcia)
+
+* Some scripts in Tests/Scripts still referred to the old "Src"-style
+  siesta executable.
+
+* Tests/test.mk had a path to the executable which assumed that it ran
+  under the default Obj directory.
+
+modified:
+  Tests/Scripts/matterhorn-gm.sge
+  Tests/Scripts/matterhorn-mpich.sge
+  Tests/Scripts/nano.pbs
+  Tests/Scripts/nano4.sh
+  Tests/Scripts/simple_parallel.sh
+  Tests/test.mk
+  
+------------------------------------------------------------------------------
 2009-11-25  09:34:00 GMT  Jose A Torres <jtorres.sp@gmail.com>      trunk-313
 
 siestaXC.f90 renamed siestaxc.f90 (From J. Soler)

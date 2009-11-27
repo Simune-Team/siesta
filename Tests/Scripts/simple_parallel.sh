@@ -28,7 +28,7 @@ mpdrun -l -n $NSLOTS hostname
 #
 # Execute your MPI program.
 #
-prog_default="../../../Src/siesta"
+prog_default="../../../siesta"
 prog=${SIESTA:-${prog_default}}
 #
 make SIESTA="mpiexec -n $NSLOTS $prog"
