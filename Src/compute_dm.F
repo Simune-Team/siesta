@@ -6,6 +6,7 @@
 
       subroutine compute_dm( iscf )
       use precision
+      use units, only: eV
       USE siesta_options
       use sparse_matrices
       use siesta_geom
@@ -14,7 +15,7 @@
       use sys, only: die
       use m_ordern,     only: ordern
       use Kpoint_grid
-      use m_energies
+      use m_energies,   only: Ebs, DEHarr, Ecorrec, Ef, Entrop
       use m_steps, only: istp
       use m_rmaxh
       use m_eo
@@ -124,6 +125,7 @@
 
 ! Harris-functional energy 
           DEharr = 0.0_dp
+          Ebs = 0.0_dp
           do ispin = 1,nspin
 ! const factor takes into account that there are two nondiagonal
 ! elements in non-collinear spin density matrix, stored as
@@ -134,12 +136,15 @@
             do io = 1,nh
               DEharr = DEharr + H(io,ispin) * const * 
      .                     ( Dscf(io,ispin) - Dold(io,ispin) )
+              Ebs = Ebs + H(io,ispin) * const * Dscf(io,ispin)
             enddo
           enddo
 #ifdef MPI
 ! Global reduction of DEharr
           call globalize_sum(DEharr,buffer1)
           DEharr = buffer1
+          call globalize_sum(Ebs,buffer1)
+          Ebs = buffer1
 #endif
 ! ..................
 #ifdef CDF
@@ -154,8 +159,8 @@
 
 ! Print populations at each SCF step if requested before mixing ......
 
-          if (muldeb) then
-             write (6,"(/a)")
+          if (muldeb ) then
+             if (ionode) write (6,"(/a)")
      .             'siesta: Mulliken populations before mixing'
              call mulliken( mullipop, nspin, na_u, no_u, maxnh,
      .                      numh, listhptr, listh, S, Dscf, isa,

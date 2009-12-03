@@ -149,7 +149,7 @@ CONTAINS
 
       write(6,"('* MPROP PROGRAM')")
       write(6,"('  Miquel Llunell, Universitat de Barcelona, 2005')")
-      write(6,"('  Alberto Garcia, ICMAB-CSIC, 2007')")
+      write(6,"('  Alberto Garcia, ICMAB-CSIC, 2007- ')")
       write(6,*)
       write(6,"('    MPROP calculates both DOS projections and COOP curves')")
       write(6,"('    using output files obtained with SIESTA. The atomic orbital (AO)')")
@@ -161,6 +161,7 @@ CONTAINS
       write(6,*) "           -d:  debug                    "
       write(6,*) "           -l:  print summary of energy information         "
       write(6,*) "   -s SMEAR  :  set value of smearing parameter (default 0.5 eV)"
+      write(6,*) "   -n NPTS   :  set number of sampling points (default 200)"
       write(6,*) "   -m Min_e  :  set lower bound of energy range                    "
       write(6,*) "   -M Max_e  :  set upper bound of energy range                    "
       write(6,*)

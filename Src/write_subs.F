@@ -296,6 +296,7 @@
       if ((istp==1.and.first).or.final) then
         write(6,'(/,a,/,(a,f17.6))')
      .     'siesta: Program''s energy decomposition (eV):',
+     .     'siesta: Ebs     =', Ebs/eV, 
      .     'siesta: Eions   =', Eions/eV,
      .     'siesta: Ena     =', Ena/eV,
      .     'siesta: Ekin    =', Ekin/eV,
@@ -315,6 +316,9 @@
         if (cml_p) then
           call cmlStartPropertyList(mainXML,
      .         title='Energy Decomposition')
+          call cmlAddProperty(xf=mainXML, value=Ebs/eV, 
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:Ebs', fmt='r6')
           call cmlAddProperty(xf=mainXML, value=Eions/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:Eions', fmt='r6')
@@ -521,6 +525,7 @@
 
         write(6,'(/,a)') 'siesta: Final energy (eV):'
         write(6,'(a,a15,f15.6)')
+     .    'siesta: ', 'Band Struct. =', Ebs/eV,
      .    'siesta: ',      'Kinetic =', Ekin/eV,
      .    'siesta: ',      'Hartree =', Uscf/eV,
      .    'siesta: ',   'Ext. field =', DUext/eV,
@@ -531,6 +536,9 @@
      .    'siesta: ',        'Total =', (Etot+Ekinion)/eV
         if (cml_p) then
           call cmlStartPropertyList(xf=mainXML, title='Final Energy')
+          call cmlAddProperty(xf=mainXML, value=Ebs/eV,  
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:Ebs', fmt='r7')
           call cmlAddProperty(xf=mainXML, value=Ekin/eV,  
      .         units='siestaUnits:eV', 
      .         dictref='siesta:Ekin', fmt='r7')
