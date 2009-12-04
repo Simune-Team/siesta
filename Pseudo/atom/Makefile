@@ -99,6 +99,7 @@ $(XC):
                           "INCFLAGS=$(XC_INCFLAGS)" \
                           "DEFS=$(DEFS)" \
                           "FPPFLAGS=$(FPPFLAGS)" \
+                          "MPI_INTERFACE= " \
                           "FFLAGS=$(FFLAGS)"  module )
 #
 #

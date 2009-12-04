@@ -443,6 +443,7 @@ C CONCATENATES THE STRINGS STR1 AND STR2 REMOVING BLANKS IN BETWEEN
 C Written by Jose M. Soler
 
        CHARACTER*(*) STR1, STR2
+       integer L
        DO 10 L = LEN( STR1 ), 1, -1
           IF (STR1(L:L) .NE. ' ') GOTO 20
    10  CONTINUE
@@ -456,6 +457,8 @@ C RETURNS THE SIZE IF STRING STR1 WITH BLANKS REMOVED
 C Writen by P. Ordejon from Soler's paste.f
 
        CHARACTER*(*) STR1
+
+       integer L
        DO 10 L = LEN( STR1 ), 1, -1
           IF (STR1(L:L) .NE. ' ') GOTO 20
    10  CONTINUE

@@ -4,6 +4,25 @@
 
 
 ** CHANGES ALONG trunk
+------------------------------------------------------------------------------
+2009-12-04  16:21:00 GMT  Jose A Torres <jtorres.sp@gmail.com>      trunk-318
+
+Fixes to compilation of Utils (From A. Garcia)
+
+After the merge of SiestaXC the building of many Util programs was broken.
+The problems have been fixed.
+
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/atom/divdif.f
+  Util/Denchar/Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/Helpers/Makefile
+  Util/Optimizer/Makefile
+  Util/STM/ol-stm/Src/Makefile
+  Util/STM/simple-stm/plstm.f
+  Util/TBTrans/Makefile
+  Util/VCA/Makefile
 
 ------------------------------------------------------------------------------
 2009-11-27  19:56:00 GMT  Jose A Torres <jtorres.sp@gmail.com>      trunk-317
