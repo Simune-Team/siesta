@@ -1,0 +1,18 @@
+Fixes to compilation of Utils
+
+After the merge of SiestaXC the building of many Util programs was broken.
+The problems have been fixed.
+
+added:
+  Docs/utils-fixes.CHANGES
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/atom/divdif.f
+  Util/Denchar/Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/Helpers/Makefile
+  Util/Optimizer/Makefile
+  Util/STM/ol-stm/Src/Makefile
+  Util/STM/simple-stm/plstm.f
+  Util/TBTrans/Makefile
+  Util/VCA/Makefile
