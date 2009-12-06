@@ -7645,6 +7645,47 @@ graphically rich, fashion. This section will explain how to do this.
 
 \end{itemize}
 
+\subsection{Controlling XML output}
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+
+\item[{\bf XML.Write}] ({\it logical}): 
+\index{XML.Write@{\bf XML.Write}} 
+Determine if the main XML file should be created for this run.
+
+{\it Default value:} {\tt true}
+
+\item[{\bf XML.AbortOnErrors}] ({\it logical}): 
+\index{XML.AbortOnErrors@{\bf XML.AbortOnErrors}} 
+This controls the behaviour of the XML output library when it detects 
+internal errors or erroneous use of the API and is intended to aid debugging.
+When this option is false, the library will emit a diagnostic message to 
+standard error before stopping execution with a Fortran stop statement.
+When this option is true, the message is generated but execution will be 
+terminated by generating a runtime exception leading to an abort signal. 
+Depending on the execution environment and compiler options, this can lead 
+to the generation of a core file or stack trace. 
+
+{\it Default value:} {\tt false}
+
+\item[{\bf XML.AbortOnWarnings}] ({\it logical}): 
+\index{XML.AbortOnWarnings@{\bf XML.AbortOnWarnings}} 
+This controls the behaviour of the XML output library when it detects 
+minor errors and is intended to aid debugging.  When this option is false,
+the library will emit a diagnostic message to standard error before 
+continuing execution. When this option is true, the message is generated 
+but execution will also be terminated by generating a runtime exception 
+leading to an abort signal. Depending on the execution environment and 
+compiler options, this can lead to the generation of a core file or 
+stack trace.
+
+{\it Default value:} {\tt false}
+
+\end{description}
+
 \subsection{Converting XML to XHTML}
 
 The translation of the {\sc Siesta} XML output to a HTML-based webpage is

@@ -36,7 +36,7 @@ Module siesta_cmlsubs
       fname = ' '
 
       If (IOnode) Then
-         cml_p = fdf_boolean( 'WriteXML', .True. )
+         cml_p = fdf_boolean( 'XML.Write', .True. )
          call FoX_set_fatal_errors(fdf_boolean('XML.AbortOnErrors', .false.))
          call FoX_set_fatal_warnings(fdf_boolean('XML.AbortOnWarnings', .false.))
       Else
