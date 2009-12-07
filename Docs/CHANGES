@@ -4,7 +4,22 @@
 
 
 ** CHANGES ALONG trunk
+---------------------------------------------------------------------
+2009-12-07  18:43:00 GMT  Jose A Torres <jtorres.sp@gmail.com>     trunk-320
 
+ Make WriteXML option consistent (XML.Write) and document (From A. Walker)
+
+ Document the two new XML options: XML.AbortOnErrors and
+ XML.AbortOnWarnings in siesta.tex (documentation is in the
+ XML appendix).
+
+ Rename undocumented WriteXML option to XML.Write for
+ consistancy. Document this option in siesta.tex.
+ 
+ modified:
+  Docs/siesta.tex
+  Src/siesta_cmlsubs.F90
+ 
 ---------------------------------------------------------------------
 2009-12-07  18:28:00 GMT  Jose A Torres <jtorres.sp@gmail.com>     trunk-319
 
