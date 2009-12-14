@@ -21,6 +21,7 @@ Module siesta_cml
   Use FoX_wcml, only: cmlBeginFile, cmlAddNamespace, cmlStartCml
   Use FoX_wcml, only: cmlStartMetadataList, cmlAddMetadata
   Use FoX_wcml, only: cmlEndMetadataList, cmlEndCml, cmlFinishFile
+  Use FoX_common, only: FoX_set_fatal_warnings, FoX_set_fatal_errors
 
   Implicit None
   Logical, public      :: cml_p = .False.
@@ -36,6 +37,7 @@ Module siesta_cml
   public :: cmlBeginFile, cmlAddNamespace, cmlStartCml
   public :: cmlStartMetadataList, cmlAddMetadata
   public :: cmlEndMetadataList, cmlEndCml, cmlFinishFile
+  public :: FoX_set_fatal_warnings, FoX_set_fatal_errors
 
   private
   

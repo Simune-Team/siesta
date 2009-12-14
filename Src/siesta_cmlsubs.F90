@@ -16,6 +16,7 @@ Module siesta_cmlsubs
   Use siesta_cml, only: cmlBeginFile, cmlAddNamespace, cmlStartCml
   Use siesta_cml, only: cmlStartMetadataList, cmlAddMetadata
   Use siesta_cml, only: cmlEndMetadataList, cmlEndCml, cmlFinishFile
+  Use siesta_cml, only: FoX_set_fatal_warnings, FoX_set_fatal_errors
 
   public :: siesta_cml_init, siesta_cml_exit
 
@@ -35,7 +36,10 @@ Module siesta_cmlsubs
       fname = ' '
 
       If (IOnode) Then
-         cml_p = fdf_boolean( 'WriteXML', .True. )
+         cml_p = fdf_boolean( 'XML.Write', .True. )
+         cml_p = fdf_boolean( 'Write.XML', cml_p ) ! For legacy symbol
+         call FoX_set_fatal_errors(fdf_boolean('XML.AbortOnErrors', .false.))
+         call FoX_set_fatal_warnings(fdf_boolean('XML.AbortOnWarnings', .false.))
       Else
          cml_p = .False.
       Endif !IOnode
