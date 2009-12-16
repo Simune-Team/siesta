@@ -132,6 +132,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	m_timer.o \
 	moreParallelSubs.o \
 	read_xc_info.o \
+	write_orb_indx.o \
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -390,8 +391,6 @@ dnaefs.o: atmfuncs.o mneighb.o precision.o
 doping.o: alloc.o meshsubs.o meshsubs.o parallel.o precision.o sys.o
 dynamics.o: atomlist.o files.o ioxv.o m_mpi_utils.o parallel.o precision.o
 dynamics.o: sys.o units.o
-efield.o: atmfuncs.o parallel.o parallelsubs.o parsing.o precision.o
-efield.o: siesta_cml.o sys.o
 egandd.o: alloc.o globalise.o m_mpi_utils.o onmod.o onmod.o precision.o sys.o
 eggbox.o: parallel.o parsing.o precision.o
 electrostatic.o: atm_types.o atmfuncs.o atmparams.o bessph.o m_recipes.o
@@ -660,6 +659,7 @@ vmatsp.o: meshsubs.o meshsubs.o precision.o
 vmb.o: parallel.o precision.o sys.o
 write_md_record.o: atomlist.o m_energies.o m_kinetic.o m_steps.o m_stress.o
 write_md_record.o: md_out.o parallel.o siesta_geom.o siesta_options.o
+write_orb_indx.o: atmfuncs.o cellsubs.o files.o precision.o
 write_raw_efs.o: atmfuncs.o atomlist.o precision.o siesta_geom.o
 write_subs.o: atomlist.o m_energies.o m_forces.o m_iostruct.o m_spin.o
 write_subs.o: m_steps.o m_stress.o m_ts_options.o parallel.o precision.o
