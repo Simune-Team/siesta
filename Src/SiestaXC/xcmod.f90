@@ -83,7 +83,7 @@ private ! Nothing is declared public beyond this point
 
   integer, parameter :: maxFunc = 10
   integer,           save :: nXCfunc=0
-  character(len=10), save :: XCauth(MaxFunc), XCfunc(MaxFunc)
+  character(len=20), save :: XCauth(MaxFunc), XCfunc(MaxFunc)
   real(dp),          save :: XCweightX(MaxFunc), XCweightC(MaxFunc)
 
 contains
