@@ -69,8 +69,8 @@
       input_field(1:3) = 0.0_dp
 
       if (ionode) then
-         found = fdf_block('ExternalElectricField',bp)
-         if (.not. found ) RETURN
+       found = fdf_block('ExternalElectricField',bp)
+       if (found) then
          loop: DO
            if (.not. fdf_bline(bp,line)) exit loop
            p => digest(line)
@@ -81,8 +81,9 @@
            do ix = 1,3
               input_field(ix) = values(p,ix) * cfactor
            enddo
-        enddo loop
-      endif
+         enddo loop
+       endif ! (found)
+      endif ! (ionode)
       call broadcast(input_field)
 
       end subroutine get_user_specified_field
