@@ -34,7 +34,9 @@
 !              The fdf variables 'DM.AllowReuse' and 'DM.AllowExtrapolation'
 !              (mapped to 'allow_dm_reuse' and 'allow_dm_extrapolation', and 
 !              both 'true' by default) can be used to change this behavior.
-!              
+!
+!              There is no extrapolation for "CG", "Forces", and "Phonon"
+!              dynamics types.              
 !
 !      For the purposes of extrapolation, this module keeps DMsaved, which
 !      holds the DM from a previous geometry step (used, together with the
@@ -253,8 +255,12 @@
          endif
 
         ! Extrapolate density matrix between steps
-
-         call new_extrapol(no_l, numh, listhptr, listh, Dscf)
+         if (idyn == 0) then
+            ! do not extrapolate for CG relaxation, in case
+            ! there are big jumps
+         else
+            call new_extrapol(no_l, numh, listhptr, listh, Dscf)
+         endif
 
       endif
      

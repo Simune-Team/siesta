@@ -3039,8 +3039,12 @@ The Density matrix can be:
              In all other cases (including "server operation"), the
              default is to allow DM re-use (with possible extrapolation)
              from previous geometry steps.
+
+             There is no extrapolation for "CG", "Forces", and "Phonon"
+             dynamics types.
+
              The fdf variables 'DM.AllowReuse' and 'DM.AllowExtrapolation'
-             can be used to change this behavior.
+             can be used to turn off DM re-use and extrapolation.
 
 \end{verbatim}
 

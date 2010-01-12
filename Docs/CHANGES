@@ -5,6 +5,22 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2010-01-12  11:30:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-b-8
+Avoid extrapolation of DM during geometry optimization
+
+When performing a geometry optimization (CG, Broyden, etc) (idyn=0 in
+the code), there might be sudden jumps in the geometry (e.g., at the
+end of a line-minimization) that render a extrapolation of the DM
+risky. Hence DM extrapolation is turned off in this case.
+
+One might argue that DM re-use should be avoided too.
+
+modified:
+  Docs/CHANGES
+  Docs/siesta.tex
+  Src/new_dm.F
+
+------------------------------------------------------------------------
 2009-12-14  11:30:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-b-7
 Update FoX library and add error and warnings handling options (A. Walker)
 
