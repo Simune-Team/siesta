@@ -5,6 +5,25 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2010-01-12  11:35:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-b-9
+Fix parallel wrapping logic in doping and efield modules
+
+* In the doping module, some fdf calls were unwrapped for MPI operation.
+
+* In m_efield, an early return was not properly executed in parallel,
+  resulting in a hung broadcast.
+
+* Added use statement for mpi routines in m_mpi_utils
+
+  Thanks to J. Soler and P. Ordejon.
+
+modified:
+  Src/Makefile
+  Src/doping.F
+  Src/m_efield.F
+  Src/m_mpi_utils.F
+
+------------------------------------------------------------------------
 2010-01-12  11:30:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-b-8
 Avoid extrapolation of DM during geometry optimization
 

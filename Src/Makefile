@@ -373,7 +373,8 @@ diagsprl.o: atomlist.o fermid.o parallel.o parallelsubs.o precision.o
 diagsprl.o: siesta_geom.o sys.o
 dipole.o: parallel.o precision.o sys.o
 dnaefs.o: atmfuncs.o mneighb.o precision.o
-doping.o: alloc.o meshsubs.o meshsubs.o parallel.o precision.o sys.o
+doping.o: alloc.o m_fdf_global.o meshsubs.o meshsubs.o parallel.o precision.o
+doping.o: sys.o
 dynamics.o: atomlist.o files.o ioxv.o m_mpi_utils.o parallel.o precision.o
 dynamics.o: sys.o units.o
 egandd.o: alloc.o globalise.o m_mpi_utils.o onmod.o onmod.o precision.o sys.o
