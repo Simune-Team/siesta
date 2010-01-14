@@ -5,6 +5,26 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2010-01-14  12:00:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-b-10
+Add option to keep orbital grid array in SP when using GRID_DP
+
+By defining the preprocessor variable PHI_GRID_SP at the same time
+as GRID_DP, the user can keep memory consumption down while enjoying
+the benefits of double-precision charge densities and potentials.
+
+This is because the array that holds orbital values on the grid takes
+up most of the memory, but can safely be stored in single-precision.
+
+(This fact was not properly understood until after the release of
+siesta-3.0-beta, and so a standalone definition of GRID_DP maintains
+its documented meaning of "all the grid magnitudes in single precision")
+
+modified:
+  Docs/siesta.tex
+  Src/meshsubs.F
+  Src/precision.F
+
+------------------------------------------------------------------------
 2010-01-12  11:35:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-b-9
 Fix parallel wrapping logic in doping and efield modules
 

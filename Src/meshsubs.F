@@ -73,7 +73,7 @@ C ----------------------------------------------------------------------
 
       module meshphi
 
-      use precision, only : grid_p
+      use precision, only : phi_grid_p
 C
 C Stores quantities that are connected with phi on the mesh
 C
@@ -98,7 +98,7 @@ C ----------------------------------------------------------------------
       integer, dimension(:), allocatable, save :: lstpht
       integer, dimension(:), allocatable, save :: listp2
 
-      real(grid_p),    dimension(:,:), allocatable, save :: phi
+      real(phi_grid_p), dimension(:,:), allocatable, save :: phi
 
       end module meshphi
 
