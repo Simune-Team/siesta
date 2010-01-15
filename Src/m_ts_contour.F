@@ -35,11 +35,12 @@ C ##################################################################
      .     contourpart,points2read)
 
 #ifdef MPI
-       use mpi_siesta
+       use mpi_siesta, only: MPI_Comm_Rank, MPI_Comm_World
 #endif
 
 
 c======================================================================
+      use precision, only : dp
       implicit none
 c======================================================================
 c     The main idea is to "fill" up points with no weight on excess processors. 
@@ -61,14 +62,14 @@ c     Simple Energy Contour and weight:
       logical isvolt            ! True if finite voltage
       integer Nodes             ! No. nodes for parallel processing
       integer joutfile          ! File unit for printing
-      complex*16 WGF(NCONTOUR), contour(NCONTOUR)
+      complex(dp) WGF(NCONTOUR), contour(NCONTOUR)
 
 
 c======================================================================
 c     OUTPUT
       integer    NPARACONTOUR   ! No. points on parallel contour
-      complex*16 paracontour(1:NCONTOUR,0:Nodes-1) ! Energy points distributed on nodes
-      complex*16 paraWGF(1:NCONTOUR,0:Nodes-1)     ! Weights on distributed energypoints 
+      complex(dp) paracontour(1:NCONTOUR,0:Nodes-1) ! Energy points distributed on nodes
+      complex(dp) paraWGF(1:NCONTOUR,0:Nodes-1)     ! Weights on distributed energypoints 
       character contourpart(1:NCONTOUR,0:Nodes-1)  ! 'L' if belonging to Left Eq. contour-part
 c                                                  ! 'R' if belonging to Right Eq. contour-part
 c                                                  ! 'V' if belonging to Non-eq. contour-part      
@@ -275,9 +276,10 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      .     ncircle,nline,npol)
 
 #ifdef MPI
-      use mpi_siesta
+      use mpi_siesta, only: MPI_Comm_Rank, MPI_Comm_World
 #endif
-      use sys
+      use sys, only : die
+      use precision, only : dp
 
       use m_ts_aux_rout, only : nf, nf1, gaufermi0, gaufermi2, 
      .                           gaufermi10, gaufermi20, gauss
@@ -286,7 +288,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       
 
 c     PARAMETERS
-      real*8 Pi
+      real(dp) Pi
       parameter(Pi=3.141592653589793238462643383279502884d0)
 c      real*8 eV
 c      parameter ( eV = 1.d0 / 13.60580d0 )
@@ -311,34 +313,34 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c INPUT        
       integer nencont           ! No. contour points
       integer ncircle,nline,npol
-      real*8 E1,E2              ! energy parameters 
-      real*8 kT                 ! temperature in Ry
-      real*8 GFeta              ! state broadening in Ry
+      real(dp) E1,E2              ! energy parameters 
+      real(dp) kT                 ! temperature in Ry
+      real(dp) GFeta              ! state broadening in Ry
 
 c OUTPUT
-      complex*16 zcontour(nencont) ! points for GF
-      complex*16 wgzcontour(nencont) ! weights on GF
+      complex(dp) zcontour(nencont) ! points for GF
+      complex(dp) wgzcontour(nencont) ! weights on GF
       
 c     Helpers
-      complex*16, dimension(:), allocatable :: zc,wc,zl,wl,zp,wp
+      complex(dp), dimension(:), allocatable :: zc,wc,zl,wl,zp,wp
 c      complex*16 zc(NCIRCLE), wc(NCIRCLE)
 c      complex*16 zl(NLINE), wl(NLINE) 
 c      complex*16 zp(NPOL), wp(NPOL)
       
-      real*8 delta,gamma,D
+      real(dp) delta,gamma,D
 c      real*8 theta(NCIRCLE),x(NLINE)
 c      real*8 wt(NCIRCLE+NLINE)
-      real*8 R, alpha,beta
-      real*8 wlt(NGAUF),xlt(NGAUF)
+      real(dp) R, alpha,beta
+      real(dp) wlt(NGAUF),xlt(NGAUF)
 
       
-      real*8, dimension(:), allocatable :: theta,x,wt
-      complex*16 ztmp, z0
-      real*8 min,max,rtmp,etaSF
-      real*8 EE1,EE2
+      real(dp), dimension(:), allocatable :: theta,x,wt
+      complex(dp) ztmp, z0
+      real(dp) min,max,rtmp,etaSF
+      real(dp) EE1,EE2
 
       integer job,i,ic,j,Ni,ntgauuse
-       integer Node
+      integer Node
 
 
 #ifdef MPI
@@ -684,30 +686,31 @@ C ##################################################################
 
 
 #ifdef MPI
-      use mpi_siesta
+      use mpi_siesta, only: MPI_Comm_Rank, MPI_Comm_World
 #endif
+      use precision, only: dp
 
 
       implicit none
       
 
 c     PARAMETERS
-      real*8 eV
+      real(dp) eV
       parameter ( eV = 1.d0 / 13.60580d0 )
 
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c     INPUT 
       integer joutfile          !OUT-FILE    
       integer nencont           ! No. contour points
-      real*8 E1,E2              ! energy parameters 
-      real*8 GFeta              ! state broadening in Ry
+      real(dp) E1,E2              ! energy parameters 
+      real(dp) GFeta              ! state broadening in Ry
 
 
 c OUTPUT
-      complex*16 zcontour(nencont) ! points for GF
-      complex*16 wgzcontour(nencont) ! weights on GF
+      complex(dp) zcontour(nencont) ! points for GF
+      complex(dp) wgzcontour(nencont) ! weights on GF
       
-      real*8 delta
+      real(dp) delta
 
       integer ic
 
@@ -777,12 +780,11 @@ C ##################################################################
      .     EFermi0,EFermiL,EFermiR,
      .     WGF,contour,ncontour,ncontour0)
 
-      use fdf
-      use precision
+      use precision, only : dp
       use files, only : slabel
 C FDN
 #ifdef MPI
-      use mpi_siesta
+      use mpi_siesta, only: MPI_Comm_Rank, MPI_Comm_World
 #endif
 C FDN
       use m_ts_options, only :  EMin=>CCEmin, GFEta, kT, smethod,
@@ -793,22 +795,20 @@ c======================================================================
 c======================================================================
 c INPUT
       integer joutfile          !output file unit
-      real*8 EFermi0            !Eq. Fermi energy
-      real*8 EFermiL,EFermiR    !Left/Right Fermi energies (finite voltage)
-
-c     Read from FDF:
-      real*8 Emax
+      real(dp) EFermi0            !Eq. Fermi energy
+      real(dp) EFermiL,EFermiR    !Left/Right Fermi energies (finite voltage)
+      
       integer ncontour, ncontour0
 
 c OUTPUT
 
-      complex*16, dimension (:), pointer:: contour,wgf ! Total "contour"
+      complex(dp), dimension (:), pointer:: contour,wgf ! Total "contour"
 
       integer NEn               ! no. contour points to be used 
 c                               ! (may differ from NCONTOUR)
 
 c PARAMS
-      real*8 eV
+      real(dp) eV
       parameter ( eV = 1.d0/13.60580d0 )
 
 
@@ -816,20 +816,20 @@ c PARAMS
 c Helpers etc.
       logical isvolt            !True if finite voltage
 
-      logical baddim
+      
 
 
       integer imethod           ! Complex contour method
       
 
 
-      real*8 Volt
+      real(dp) Volt
 C      real*8 temp_default       !default temperature
 C      parameter ( temp_default  = 1.900d-3 ) 
 
 
 c      complex*16 contmp(NCONTOUR),WGFtmp(NCONTOUR) 
-      complex*16, dimension (:), allocatable:: contmp,wgftmp 
+      complex(dp), dimension (:), allocatable:: contmp,wgftmp 
 
       integer i,jc,ju
      

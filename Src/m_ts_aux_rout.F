@@ -24,6 +24,9 @@
 !==========================================================================*
 
       module m_ts_aux_rout
+      
+
+      use precision, only : dp
       implicit none
 
 !      public :: splittri, collectri, invmat, transpose
@@ -50,11 +53,11 @@ C ====================================================================
 
 c input:
       integer n1,n2,n3
-      complex*16 A(n1+n2+n3,n1+n2+n3)
+      complex(dp) A(n1+n2+n3,n1+n2+n3)
 c output
-      complex*16 a11(n1,n1), a12(n1,n2)
-      complex*16 a21(n2,n1), a22(n2,n2), a23(n2,n3)
-      complex*16             a32(n3,n2), a33(n3,n3)
+      complex(dp) a11(n1,n1), a12(n1,n2)
+      complex(dp) a21(n2,n1), a22(n2,n2), a23(n2,n3)
+      complex(dp)             a32(n3,n2), a33(n3,n3)
 
 c help
       integer i,j
@@ -126,11 +129,11 @@ c  input:
 C      complex*16 a11(n1,n1), a12(n1,n2)
 C      complex*16 a21(n2,n1), a22(n2,n2), a23(n2,n3)
 C      complex*16             a32(n3,n2), a33(n3,n3)
-      complex*16, pointer, dimension(:,:) :: a12,a21,
+      complex(dp), pointer, dimension(:,:) :: a12,a21,
      .                        a22,a23,a32,a11,a33
 
 c output:
-      complex*16 A(n1+n2+n3,n1+n2+n3)
+      complex(dp) A(n1+n2+n3,n1+n2+n3)
 c help:
       integer i,j
 c====================================================
@@ -225,8 +228,8 @@ C INPUT:
 
 C ======================================================================
 C INPUT/OUTPUT:
-      complex*16 M(0:n*n-1)
-      complex*16 Mi(0:n*n-1)
+      complex(dp) M(0:n*n-1)
+      complex(dp) Mi(0:n*n-1)
    
       integer i,j,ierr
 
@@ -265,7 +268,7 @@ C ====================================================================
 C ====================================================================
       subroutine transpose(M,n1,n2,T)
       integer n1,n2
-      complex*16 M(n1,n2), T(n2,n1)
+      complex(dp) M(n1,n2), T(n2,n1)
       integer i,j
 
       do i =  1,n2
@@ -287,10 +290,10 @@ C ====================================================================
 
 c INPUT
       integer N            ! problem size
-      complex*16 A(N,N)
+      complex(dp) A(N,N)
 
 c INPUT/OUTPUT
-      complex*16 B(N,N)
+      complex(dp) B(N,N)
 
 c OUTPUT
       integer ipvt(N)           !pivoting vector
@@ -359,16 +362,16 @@ c -----------
 c
 c     Fermi Function
 c
-      complex*16 function nf(z)
+      complex(dp) function nf(z)
       implicit none
-      complex*16 z
+      complex(dp) z
       nf=dcmplx(1d0,0d0)/(1d0 + exp(z))
       return
       end function nf
 
-      real*8 function nf1(z)
+      real(dp) function nf1(z)
       implicit none
-      real*8 z
+      real(dp) z
       if (z .lt. -20.) then
          nf1=1.0
       else if (z .gt. 20.) then
@@ -398,7 +401,7 @@ c     INPUT
       integer np
 
 c     OUTPUT
-      real*8 r(np),w(np)
+      real(dp) r(np),w(np)
 
 c     BEGIN
 
@@ -514,7 +517,7 @@ c     INPUT
       integer np
 
 c     OUTPUT
-      real*8 r(np),w(np)
+      real(dp) r(np),w(np)
 
 c     BEGIN
 
@@ -655,7 +658,7 @@ c     INPUT
       integer np
 
 c     OUTPUT
-      real*8 r(np),w(np)
+      real(dp) r(np),w(np)
 
 c     BEGIN
 
@@ -832,7 +835,7 @@ c     INPUT
       integer np
 
 c     OUTPUT
-      real*8 r(np),w(np)
+      real(dp) r(np),w(np)
 
 c     BEGIN
 
@@ -1042,9 +1045,9 @@ c
       subroutine gauss(npts,job,a,b,x,w) 
       use sys,             only: die
       integer npts,job,m,i,j 
-      real*8 x(npts),w(npts),a,b,xi
-      real*8 t,t1,pp,p1,p2,p3,aj
-      real*8 eps,pi,zero,two,one,half,quarter
+      real(dp) x(npts),w(npts),a,b,xi
+      real(dp) t,t1,pp,p1,p2,p3,aj
+      real(dp) eps,pi,zero,two,one,half,quarter
       parameter (pi = 3.14159265358979323846264338328d0,eps = 3.0d-14)
       parameter (zero=0.0d0,one=1.0d0,two=2.0d0)
       parameter (half=0.5d0,quarter=0.25d0)
@@ -1117,7 +1120,7 @@ C ====================================================================
 
       use sys, only: die
 
-      complex*16,dimension(:,:), pointer :: array
+      complex(dp),dimension(:,:), pointer :: array
       integer :: d1, d2
       character(len=*) :: routine
 
@@ -1145,7 +1148,7 @@ C ====================================================================
 
       use sys, only: die
 
-      complex*16,dimension(:,:), pointer :: array
+      complex(dp),dimension(:,:), pointer :: array
       character(len=*) :: routine
 
 C Internal

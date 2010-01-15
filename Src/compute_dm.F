@@ -91,8 +91,8 @@
             call timer('TS',1)
             TSiscf=TSiscf+1
 
-            call transiesta(gamma,nsc,nkpnt,kpoint,kweight,lasto,
-     .        no_l, no_s, nspin, na_u, xa, maxnh, numh, listhptr,
+            call transiesta(gamma,lasto,
+     .        no_l, no_s, nspin, na_u, maxnh, numh, listhptr,
      .        listh, xijo, indxuo, H, S, Dscf, Escf, ef, no_u,
      .        TSiscf,qtot)
             call timer('TS',2)

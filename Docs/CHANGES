@@ -5,6 +5,31 @@
 
 ** CHANGES ALONG trunk
 ---------------------------------------------------------------------
+2010-01-15  16:43:00 GMT  Jose A Torres <jose.torres.alonso@uam.es>     trunk-321
+
+ Fixed the precision of real and complex variables in m_ts* modules. (From F.D.Novaes)
+  
+  * For the TSVHFix and TSvoltage2 subroutines (m_ts_in_siesta.F90 module),
+    fixed the precision of the "v" variable (real space potential) 
+    to be grid_p.
+  
+  * In all the modified modules, the following changes were made:
+  
+    real*8 --> real(dp)
+    complex*16 --> complex(dp)
+    double precision --> real(dp)
+  
+    where "dp" comes from the precision module.   
+  
+  modified:
+    Src/m_ts_aux_rout.F
+    Src/m_ts_contour.F
+    Src/m_ts_electrode.F90
+    Src/m_ts_in_siesta.F
+    Src/m_ts_io.F90
+    Src/m_ts_scattering.F
+
+---------------------------------------------------------------------
 2009-12-07  18:43:00 GMT  Jose A Torres <jtorres.sp@gmail.com>     trunk-320
 
  Make WriteXML option consistent (XML.Write) and document (From A. Walker)
