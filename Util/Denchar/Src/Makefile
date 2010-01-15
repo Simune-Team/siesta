@@ -21,21 +21,16 @@ OBJDIR=Obj
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
-VPATH:=$(shell pwd)/../../../Src
+TOP_LEVEL:=$(shell pwd)/../../../Src
+VPATH:=$(TOP_LEVEL)
 #
 default: what denchar
 #
 dep:
-	@if [ $(VPATH) == "." ] ; then \
 	sfmakedepend --depend=obj  --modext=o \
-                              *.f *.f90 *.F *.F90 ; \
-        else \
-	sfmakedepend --depend=obj  --modext=o \
-          $(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90 ; \
-        fi
+          $(TOP_LEVEL)/*.f $(TOP_LEVEL)/*.f90 $(TOP_LEVEL)/*.F $(TOP_LEVEL)/*.F90 
 	@sed '/^siesta_cmlsubs.o:/s/version.o//'  Makefile > tmp.Makefile
 	@mv tmp.Makefile Makefile
-#
 #
 #
 ARCH_MAKE=../../../$(OBJDIR)/arch.make
@@ -72,7 +67,7 @@ OBJS_DENCHAR = atompla.o planed.o\
         io.o iodm.o itochar.o length.o \
         matvect.o memory.o colinear.o\
 	neighb.o paste.o pxf.o \
-	radfft.o ranger.o recipes.o\
+	m_recipes.o radfft.o ranger.o \
         readwaves.o rhoofr.o wavofr.o \
         redata_denchar.o  local_reinit.o denchar.o \
 	volcel.o wrout.o stsofr.o
@@ -80,20 +75,23 @@ OBJS_DENCHAR = atompla.o planed.o\
 # Use the makefile in Src/fdf and all the sources there.
 #
 FDF=libfdf.a
-FDF_MAKEFILE=$(VPATH)/fdf/makefile
-FDF_INCFLAGS:=-I $(VPATH)/fdf $(INCFLAGS)
+FDF_MAKEFILE=$(TOP_LEVEL)/fdf/makefile
+FDF_INCFLAGS:=-I $(TOP_LEVEL)/fdf $(INCFLAGS)
 $(FDF): 
-	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/fdf" \
+	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" "VPATH=$(TOP_LEVEL)/fdf" \
                           "ARCH_MAKE=../$(ARCH_MAKE)" \
+                          "DEFS=$(DEFS)" \
+                          "FPPFLAGS=$(FPPFLAGS)" \
+                          "MPI_INTERFACE= " \
                           "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 #
 # This is crude but will have to do for now.
 # Note : precision must be the first module
 #
-MOD_OBJS=precision.o parallel.o alloc.o memoryinfo.o sys.o listsc.o  \
+MOD_OBJS=precision.o parallel.o sys.o m_io.o alloc.o memoryinfo.o listsc.o  \
          atmparams.o atom_options.o atmfuncs.o   atm_types.o \
          radial.o spher_harm.o  basis_io.o basis_types.o \
-         files.o flib_spline.o pseudopotential.o chemical.o xml.o
+         files.o flib_spline.o pseudopotential.o chemical.o xml.o 
 #
 COM_OBJS_DENCHAR=$(OBJS_DENCHAR) $(SYSOBJ)
 ALL_OBJS_DENCHAR=$(MOD_OBJS) $(COM_OBJS_DENCHAR)
@@ -119,7 +117,7 @@ atm_types.o: precision.o radial.o
 atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
 atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o m_filter.o
 atom.o: old_atmfuncs.o periodic_table.o precision.o pseudopotential.o recipes.o
-atom.o: sys.o xcmod.o
+atom.o: sys.o 
 atom_options.o: sys.o
 atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o siesta_geom.o
 atomlwf.o: alloc.o atmfuncs.o mneighb.o onmod.o precision.o spatial.o sys.o
@@ -146,8 +144,6 @@ cell_broyden_optim.o: m_mpi_utils.o parallel.o precision.o sys.o units.o
 cell_broyden_optim.o: zmatrix.o
 cell_fire_optim.o: alloc.o m_fdf_global.o m_fire.o m_memory.o parallel.o
 cell_fire_optim.o: precision.o siesta_options.o sys.o zmatrix.o
-cellxc.o: alloc.o meshsubs.o parallel.o parallelsubs.o precision.o sys.o
-cellxc.o: xcmod.o
 cgvc.o: conjgr_old.o m_fdf_global.o m_mpi_utils.o parallel.o precision.o
 cgvc.o: units.o
 cgvc_zmatrix.o: conjgr.o m_fdf_global.o m_mpi_utils.o parallel.o precision.o
@@ -175,7 +171,7 @@ dfscf.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o meshmatrix.o
 dfscf.o: meshsubs.o meshsubs.o parallel.o precision.o sys.o
 dhscf.o: alloc.o atmfuncs.o files.o forhar.o iogrid_netcdf.o m_iorho.o
 dhscf.o: m_ts_in_siesta.o m_ts_options.o meshsubs.o parallel.o parsing.o
-dhscf.o: precision.o siesta_options.o sys.o xcmod.o
+dhscf.o: precision.o siesta_options.o sys.o 
 diag2g.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
 diag2k.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
 diagg.o: fermid.o parallel.o parallelsubs.o precision.o sys.o writewave.o
@@ -212,7 +208,7 @@ flib_spline.o: precision.o
 forhar.o: alloc.o meshsubs.o precision.o
 fractional.o: f2kcli.o periodic_table.o precision.o pseudopotential.o sys.o
 gen-basis.o: atom.o atom_options.o basis_io.o basis_specs.o basis_types.o
-gen-basis.o: old_atmfuncs.o parallel.o precision.o sys.o xcmod.o
+gen-basis.o: old_atmfuncs.o parallel.o precision.o sys.o 
 get_target_stress.o: m_mpi_utils.o parallel.o precision.o units.o
 globalise.o: alloc.o onmod.o onmod.o precision.o spatial.o
 gradient.o: globalise.o m_mpi_utils.o onmod.o precision.o
@@ -419,6 +415,4 @@ vmat.o: meshsubs.o meshsubs.o parallel.o precision.o
 vmatsp.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o meshmatrix.o
 vmatsp.o: meshsubs.o meshsubs.o precision.o
 vmb.o: parallel.o precision.o sys.o
-xc.o: alloc.o precision.o sys.o xcmod.o
-xcmod.o: parallel.o parsing.o precision.o sys.o
 xml.o: precision.o

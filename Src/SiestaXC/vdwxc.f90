@@ -271,7 +271,7 @@ PRIVATE  ! Nothing is declared public beyond this point
   real(dp),parameter:: ddmin = 0.001_dp      ! Min. delta to find phi derivs
 
   ! Mesh parameters for table of phi(q1,q2,r) and its Fourier transform
-  integer, parameter:: nr = 1024             ! Radial mesh points (power of 2)
+  integer, parameter:: nr = 2048             ! Radial mesh points (power of 2)
   integer, parameter:: mq = 30               ! Total number of q mesh points
   integer, parameter:: nq = mq-1             ! Effective number of q mesh points
   real(dp),parameter:: qcut = 5.0_dp         ! Max. value of q mesh
@@ -292,22 +292,22 @@ PRIVATE  ! Nothing is declared public beyond this point
   real(dp),parameter:: ytol = 1.e-15_dp     ! Tol. for saturated q
 
   ! Private module variables and arrays
-  real(dp):: dmesh(nd)                ! Mesh points for phi(d1,d2) table
-  real(dp):: qmesh(mq)                ! Mesh points for phi(q1,q2,r)
-  real(dp):: phi_table(0:3,0:3,nd,nd) ! Coefs. for bicubic interpolation
-  logical :: phi_table_set=.false.    ! Has phi_table been set?
-  logical :: qmesh_set=.false.        ! Has qmesh been set?
-  logical :: kcut_set=.false.         ! Has kcut been set?
-  real(dp):: phir(0:nr,mq,mq)         ! Table of phi(r)
-  real(dp):: d2phidr2(0:nr,mq,mq)     ! Table of d2_phi/dr2
-  real(dp):: dr                       ! r-mesh interval
-  real(dp):: phik(0:nr,mq,mq)         ! Table of phi(k)
-  real(dp):: d2phidk2(0:nr,mq,mq)     ! Table of d2_phi/dk2
-  real(dp):: dk                       ! k-mesh interval
-  real(dp):: kcut                     ! Planewave cutoff: k>kcut => phi=0
-  integer :: nk                       ! # k points within kcut
+  real(dp),save:: dmesh(nd)                ! Mesh points for phi(d1,d2) table
+  real(dp),save:: qmesh(mq)                ! Mesh points for phi(q1,q2,r)
+  real(dp),save:: phi_table(0:3,0:3,nd,nd) ! Coefs. for bicubic interpolation
+  logical, save:: phi_table_set=.false.    ! Has phi_table been set?
+  logical, save:: qmesh_set=.false.        ! Has qmesh been set?
+  logical, save:: kcut_set=.false.         ! Has kcut been set?
+  real(dp),save:: phir(0:nr,mq,mq)         ! Table of phi(r)
+  real(dp),save:: d2phidr2(0:nr,mq,mq)     ! Table of d2_phi/dr2
+  real(dp),save:: dr                       ! r-mesh interval
+  real(dp),save:: phik(0:nr,mq,mq)         ! Table of phi(k)
+  real(dp),save:: d2phidk2(0:nr,mq,mq)     ! Table of d2_phi/dk2
+  real(dp),save:: dk                       ! k-mesh interval
+  real(dp),save:: kcut                     ! Planewave cutoff: k>kcut => phi=0
+  integer, save:: nk                       ! # k points within kcut
 
-!  real(dp):: dqmaxdqmin, qcut
+!  real(dp),save:: dqmaxdqmin, qcut
 
 CONTAINS
 
@@ -1423,6 +1423,7 @@ subroutine vdw_set_kcut( kc )
   nk = int(kc/dk) + 1
   nrs = nint(rsoft/dr)
   rs = nrs * dr
+  if (nk>nr) stop 'vdw_set_kcut: ERROR: nk>nr'
 
 ! BEGIN DEBUG
   write(udebug,'(a,5f8.3)') 'vdw_set_kcut: dcut,qcut,rcut,kcut,kmax=', &

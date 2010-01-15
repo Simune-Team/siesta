@@ -14,7 +14,7 @@
       use m_ioxv,          only: ioxv
       USE siesta_options
       use parallel,        only: IOnode
-      use siesta_cml
+      use siesta_cml,      only: cml_p, cmlEndStep, mainXML
       use sys,             only: die
 
       use m_broyden_optim, only: broyden_optimizer
@@ -51,13 +51,13 @@
 
 
 !------------------------------------------------------------------------- BEGIN
-      ! Save the last coordinates for which the density matrix 
-      ! has been calculated
-      if (istep.eq.fincoor) then
-        xalast(1:3,1:na_s)  = xa(1:3,1:na_s)
+      ! Save the last geometry for which the density matrix 
+      ! (electronic structure) has been calculated
+
+        xa_last(1:3,1:na_s) = xa(1:3,1:na_s)
         ucell_last(1:3,1:3) = ucell(1:3,1:3)
         scell_last(1:3,1:3) = scell(1:3,1:3)
-      endif
+
 
       Ekinion = 0.0_dp   ! Fossil: already initialized in siesta_init
 

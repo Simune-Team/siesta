@@ -83,6 +83,10 @@
           xcfuntype    = 'GGA'
           xcfunparam   = 'Perdew-Burke-Ernzerhof-solid'
 
+        case('am') 
+          xcfuntype    = 'GGA'
+          xcfunparam   = 'Armiento-Mattsson-05'
+
       end select
 
 ! Digest and dump the information about the pseudopotential flavor

@@ -2029,6 +2029,7 @@ C Local variables
         if (icorr .eq. "wc") ps_string ="GGA Wu-Cohen"
         if (icorr .eq. "bl") ps_string ="GGA Becke-Lee-Yang-Parr"
         if (icorr .eq. "ps") ps_string ="GGA PBEsol"
+        if (icorr .eq. "am") ps_string ="GGA AM05"
         if (icorr .eq. "vf" .or. icorr .eq. "vw") 
      $    ps_string ="VDW Dion-Rydberg-Schroeder-Langreth-Lundqvist"
 
@@ -2108,6 +2109,16 @@ C Loop over functionals
             write(6,'(a)')
      .       'xc_check: GGA PBEsol'
             if (icorr.ne.'ps'.and.nXCfunc.eq.1) 
+     $          write(6,'(a,1x,2a)')
+     .          'xc_check: WARNING: Pseudopotential generated with',
+     $           trim(ps_string), " functional"
+
+          elseif((XCauth(nf).eq.'AM05').and.(XCfunc(nf).eq.'GGA')) 
+     .        then
+
+            write(6,'(a)')
+     .       'xc_check: GGA AM05'
+            if (icorr.ne.'am'.and.nXCfunc.eq.1) 
      $          write(6,'(a,1x,2a)')
      .          'xc_check: WARNING: Pseudopotential generated with',
      $           trim(ps_string), " functional"
@@ -3884,8 +3895,8 @@ C*
 C****Generate PAO orbitals with increasing number of nodes ***
 C*for the different shells*
 C 
-                      nnodes=izeta+nsm
-                      nprin=l+izeta+nsm
+                      nnodes=izeta+nsm-1
+                      nprin=l+izeta+nsm-1
                       eorb=0.0d0 
                    call schro_eq(Zval,rofi,vps(1,l),vePAO,s,drdi,
      .              nrc,l,a,b,nnodes,nprin,

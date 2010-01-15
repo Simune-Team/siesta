@@ -157,6 +157,15 @@ C
       use siesta_options, only: read_charge_cdf
       use siesta_options, only: savevna
       use siesta_options, only: read_deformation_charge_cdf
+!
+      use m_efield,       only: initialize_efield, acting_efield
+      use m_efield,       only: get_field_from_dipole, dipole_correction
+      use m_efield,       only: add_potential_from_field
+      use m_efield,       only: user_specified_field
+
+      use m_doping,       only: initialize_doping, doping
+      use m_doping,       only: compute_doping_structs, doping_active
+
 #ifdef TRANSIESTA
 ! TSS Begin
 ! SIESTA Modules
@@ -193,7 +202,6 @@ C        cross(a,b,c)   : Finds the cross product of two vectors
 C        dfscf(...)     : Finds SCF contribution to atomic forces
 C        dipole(...)    : Finds electric dipole moment
 C        doping(...)    : Adds a background charge for doped systems
-C        efield(...)    : Adds potential of an external electric field
 C        write_rho(...)     : Saves electron density on a file
 C        poison(...)    : Solves Poisson equation
 C        reord(...)     : Reorders electron density and potential arrays
@@ -217,7 +225,6 @@ C real*8  DEx           : Auxiliary variable to call cellXC
 C real*8  dvol          : Mesh-cell volume
 C real*8  Ec            : Correlation energy
 C real*8  Ex            : Exchange energy
-C real*8  field(3)      : External electric field
 C logical frstme        : First time this routine is called?
 C integer i             : General-purpose index
 C integer ia            : Atom index
@@ -225,7 +232,6 @@ C integer io            : Orbital index
 C integer ip            : Point index
 C integer is            : Species index
 C logical IsDiag        : Is supercell diagonal?
-C logical IsEfld        : Is there an external electric field?
 C integer ispin         : Spin index
 C integer j             : General-purpose index
 C integer JDGdistr      : J.D.Gale's parallel distribution of mesh points
@@ -237,7 +243,6 @@ C integer nsd           : Number of diagonal spin values (1 or 2)
 C integer ntpl          : Number of mesh Total Points in unit cell
 C                         (including subpoints) locally
 C integer ntopl         : Total number of nonzero orbital points locally
-C integer nzero(3)      : Auxiliary array with zeros, to call efield
 C real*4  rhoatm(ntpl)  : Harris electron density
 C real*4  rhopcc(ntpl)  : Partial-core-correction density for xc
 C real*4  DRho(ntpl)    : Selfconsistent electron density difference
@@ -296,20 +301,20 @@ C
       character(len=20):: XCauth(10), XCfunc(10)
 
       logical, save :: 
-     .  frstme, harrisfun, IsDiag, IsEfld, samesh, samexa, spiral
+     .  frstme, harrisfun, IsDiag, samesh, samexa, spiral
 
       character(len=10), save ::
      .  shape
 
       external
-     .  cross, dfscf,  dipole, ddot, doping,
-     .  efield, poison, 
+     .  cross, dfscf,  dipole, ddot,
+     .  poison, 
      .  reord, rhooda, rhoofd, rhoofdsp, 
      .  timer, vmat, vmatsp, volcel,
      .  readsp
 
       save
-     .  bcell, cell, dvol, field, G2mesh,
+     .  bcell, cell, dvol, G2mesh,
      .  nm, nml, ntml, npcc, nzero, nmpl, ntpl, ntopl,
      .  rmax, scell, tiny, Uharrs, volume
 
@@ -689,7 +694,12 @@ C Add a background charge to neutralize the net charge, to
 C model doped systems. It only adds the charge at points
 C where there are atoms (i.e., not in vacuum).          
 C First, call with 'task=0' to add background charge    
-        call doping(cell,nmpl,0,(samexa.and.samesh),DRho,rhoatm,nsd)
+
+        if (frstme) call initialize_doping()
+        if (doping_active .and. (.not. (samexa.and.samesh))) then
+           call compute_doping_structs(nmpl,rhoatm,nsd)
+        endif
+        if (doping_active) call doping(cell,nmpl,0,DRho)
 
 C Find dipole
         call reord( DRho, DRho, nml, nsm, +1)
@@ -731,7 +741,7 @@ C Solve Poisson's equation
       call reord( Vscf, Vscf, nml, nsm, -1)
 
 C Call doping with 'task=1' to remove background charge added previously
-      call doping(cell,nmpl,1,(samexa.and.samesh),DRho,rhoatm,nsd)
+      if (doping_active) call doping(cell,nmpl,1,DRho)
 
 C Add contribution to stress from electrostatic energy of rhoscf-rhoatm
       if (istr .eq. 1) then
@@ -786,18 +796,22 @@ C ----------------------------------------------------------------------
 C Add potential from external electric field (if present)
 C ----------------------------------------------------------------------
 
-      if (frstme) then
-        call efield( cell, nua, isa, xa, nzero, nsm, dipol,
-     .               Vscf, field )
-        IsEfld = .false.
-        if (sqrt(ddot(3,field,1,field,1)) .gt. tiny) IsEfld = .true.
-      endif
-      if (IsEfld) then
-        call reord( Vscf, Vscf, nml, nsm, +1)
-        call efield( cell, nua, isa, xa, ntm, nsm, dipol,
-     .               Vscf, field )
-        call reord( Vscf, Vscf, nml, nsm, -1)
-        DUext = - ddot(3,field,1,dipol,1)
+      if (frstme) call initialize_efield()
+
+      if (acting_efield) then
+         if (dipole_correction) then
+            field = get_field_from_dipole(dipol,cell)
+            if (Node == 0) write(6,'(a,3f12.6,a)')
+     $           'Electric field for dipole correction =',
+     $           field, ' Ry/Bohr/e'
+         else
+            field = user_specified_field
+         endif
+         call reord( Vscf, Vscf, nml, nsm, +1)
+         call add_potential_from_field( field, cell, nua, isa, xa,
+     $                                  ntm, nsm, Vscf )
+         call reord( Vscf, Vscf, nml, nsm, -1)
+         DUext = - ddot(3,field,1,dipol,1)
       endif
 
 #ifdef TRANSIESTA
@@ -814,7 +828,7 @@ c ---------------------------------------------------------------------
 
          call tsvoltage2(cell, nzero, nsm, Vscf, isvolt )
 
-         if(isvolt .and. isefld) then
+         if(isvolt .and. acting_efield) then
            if(Node.eq.0) then
              write(6,*) 'WARNING: both ext. voltage and field !!'
              write(6,*) 'WARNING: will neglect voltage !!       '
