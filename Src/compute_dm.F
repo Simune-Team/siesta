@@ -161,6 +161,14 @@
      .                      numh, listhptr, listh, S, Dscf, isa,
      .                      lasto, iaorb, iphorb )
           endif
+
+! Write orbital indexes. JMS Dec.2009
+
+          if (IOnode .and. iscf==1) then
+            call write_orb_indx( na_u, na_s, no_u, no_s, isa, xa,
+     .                           iaorb, iphorb, indxuo, nsc, ucell )
+          endif
+
 !--------------------------------------------------------------------------- END
       END subroutine compute_dm
       END MODULE m_compute_dm
