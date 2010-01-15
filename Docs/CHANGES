@@ -4,6 +4,21 @@
 
 
 ** CHANGES ALONG trunk
+
+---------------------------------------------------------------------
+2010-01-15  18:40:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-331
+
+  Two mesh-related bugs (From J.M.Soler)
+  
+  In routine phiOnMesh, function 'size' was used with unassociated pointers.
+  This is a bug, although most compilers tolerate it. Unrelated to this,
+  in routine divideBox1D, the limits of the first and last boxes was not
+  correctly initialized.
+  
+  modified:
+    Src/SiestaXC/mesh3d.F90  ! Initialize partBox(1,1) and partBox(2,nParts)
+    Src/meshsubs.F           ! Check pointer associations
+
 ---------------------------------------------------------------------
 2010-01-15  18:40:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-330
 

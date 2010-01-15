@@ -1131,7 +1131,8 @@
 ! Local variables
       character(len=*),parameter:: myName = 'PhiOnMesh '
       logical :: within
-      integer :: ia, io, iop, ip, ip0, iphi, is, isp, n, nlist, nliste
+      integer :: ia, io, iop, ip, ip0, iphi, is, isp,
+     .           n, nlist, nliste, nmax
       real(dp):: dxsp(3,nsp), grphi(3), phip, r2o, r2sp(nsp)
       logical, save :: firsttime = .true.
       integer, pointer, save :: numphi(:)=>null()
@@ -1201,7 +1202,12 @@
       nliste = 1.01*nlist
 
 ! Adjust dimensions of phi if necessary
-      if (nphi.gt.(size(phi,2))) then
+      if (associated(phi)) then
+        nmax = size(phi,2)
+      else
+        nmax = 0
+      end if
+      if (nphi.gt.nmax) then
         if (DirectPhi) then
           call re_alloc( phi, 1,nsp, 1,nphi,   myName//'phi' )
         else                                                                
@@ -1210,7 +1216,12 @@
       endif                                                              
 
 ! Adjust dimensions of list arrays if necessary
-      if (nlist.gt.size(lstpht) .or. nlist.gt.size(listp2)) then
+      if (associated(lstpht) .and. associated(listp2)) then
+        nmax = min( size(lstpht), size(listp2) )
+      else
+        nmax = 0
+      end if
+      if (nlist.gt.nmax) then
         call re_alloc( lstpht, 1,nliste, myName//'lstpht' )
         call re_alloc( listp2, 1,nliste, myName//'listp2' )
       endif
