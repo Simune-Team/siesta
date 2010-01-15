@@ -132,6 +132,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	m_timer.o \
 	moreParallelSubs.o \
 	read_xc_info.o \
+	vacuum_level.o \
 	write_orb_indx.o \
 #--------------------------------------------------------------
 # FoX whatnot
@@ -653,6 +654,7 @@ transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
 typecell.o: precision.o
 uncell.o: precision.o
 units.o: precision.o
+vacuum_level.o: moreParallelSubs.o precision.o
 vmat.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o meshmatrix.o
 vmat.o: meshsubs.o meshsubs.o parallel.o precision.o
 vmatsp.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o meshmatrix.o

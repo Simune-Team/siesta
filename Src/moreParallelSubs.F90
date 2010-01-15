@@ -177,9 +177,10 @@ MODULE moreParallelSubs
 
 ! All public procedures (there are no public types, parameters, or variables):
 PUBLIC:: &
-  copyFile,      &! Copies a formatted file from one node to another
-  miscAllReduce, &! Reduces a miscellaneous set of variables and arrays
-  nodeString      ! Returns a character string with a node index
+  copyFile,         &! Copies a formatted file from one node to another
+  miscAllReduce,    &! Reduces a miscellaneous set of variables and arrays
+  miscAllReduceInt, &! Integer version
+  nodeString         ! Returns a character string with a node index
 
 PRIVATE ! Nothing is declared public beyond this point
 

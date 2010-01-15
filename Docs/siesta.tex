@@ -5014,6 +5014,13 @@ If netCDF support is compiled in, the file {\tt TotalPotential.grid.nc} is produ
 
 {\it Default value:} {\tt .false.}
 
+{\it Side effect:} the vacuum level, defined as the effective 
+potential at grid points with zero density, is printed in the standard 
+output whenever such points exist (molecules, slabs) and either 
+SaveElectrostaticPotential or SaveTotalPotential are true.
+In a symetric (nonpolar) slab, the work function can be computed as 
+the difference between the vacuum level and the Fermi energy.
+
 
 \item[{\bf SaveIonicCharge}] ({\it logical}):
 \index{SaveIonicCharge@{\bf SaveIonicCharge}}

@@ -5,6 +5,25 @@
 
 ** CHANGES ALONG trunk
 ---------------------------------------------------------------------
+2010-01-15  18:10:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-328
+
+  Print vacuum level(From J.M.Soler)
+  
+  The vacuum level, defined as the effective potential at grid points with
+  zero density, is printed in the standard output. This is done whenever
+  there are such points and either SaveElectrostaticPotential or
+  SaveTotalPotential are true. This will be useful to calculate the work 
+  function of a surface.
+  
+  added:
+    Src/vacuum_level.f90      ! Computes the vacuum level
+  modified:
+    Docs/siesta.tex           ! Document side effect of SaveTotalPotential
+    Src/Makefile              ! Add vacuum_level.o. Update dependencies
+    Src/dhscf.F               ! Call vacuum_level and print it
+    Src/moreParallelSubs.F90  ! Make public miscAllReduceInt
+
+---------------------------------------------------------------------
 2010-01-15  18:10:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-327
 
   Make doping routine call global fdf version (From J.M.Soler)

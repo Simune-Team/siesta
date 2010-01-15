@@ -265,9 +265,11 @@ C ----------------------------------------------------------------------
 C
 C Internal variables
 C
+      real(dp),parameter:: eV = 1 / 13.6058_dp  ! One eV in my units (Ryd)
+
       integer
      .  i, ia, io, ip, iphi, is, ispin, j, ifor,
-     .  n, nbcell, nm(3), npcc, nsd, nv, nzero(3), 
+     .  n, nbcell, nm(3), npcc, np_vac, nsd, nv, nzero(3), 
      .  ntopl, nmpl, nsc(3), ntpl, nml(3), ntml(3), nXCfunc
       integer
      .  iNode, myBox(2,3)
@@ -288,7 +290,7 @@ C
      .  bcell(3,3), b1Xb2(3), cell(3,3), const,
      .  DEc, DEx, ddot, DStres(3,3), dvol, Ec, Ex, field(3),
      .  rhotot, rmax, scell(3,3), stressXC(3,3), tiny, 
-     .  Uharrs, volume, volcel, x0(3)
+     .  Uharrs, Vmax_vac, Vmean_vac, volume, volcel, x0(3)
 
       real(dp), save ::  qspiral(3)
 
@@ -939,6 +941,22 @@ C ----------------------------------------------------------------------
         do ispin = 1,nspin
           call reord( Vscf(1,ispin), Vscf(1,ispin), nml, nsm, -1)
         enddo
+      endif
+
+C ----------------------------------------------------------------------
+C Print vacuum level
+C ----------------------------------------------------------------------
+
+      if (filevt/=' ' .or. filevh/=' ') then
+        forall(ispin=1:nsd) 
+     .    DRho(:,ispin) = DRho(:,ispin) + rhoatm(:) / nsd
+        call vacuum_level( ntpl, nspin, DRho, Vscf, 
+     .                     np_vac, Vmax_vac, Vmean_vac )
+        forall(ispin=1:nsd) 
+     .    DRho(:,ispin) = DRho(:,ispin) - rhoatm(:) / nsd
+        if (np_vac>0 .and. Node==0) print'(/,a,2f12.6,a)', 
+     .    'dhscf: Vacuum level (max, mean) =', 
+     .    Vmax_vac/eV, Vmean_vac/eV, ' eV'
       endif
 
 C ----------------------------------------------------------------------
