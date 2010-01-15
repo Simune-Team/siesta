@@ -31,8 +31,8 @@ C     LOCAL variables
 
       integer, parameter      :: MaxFunc = 10
       integer                 :: nXCfunc
-      character(len=10)       :: XCauth(MaxFunc)
-      character(len=10)       :: XCfunc(MaxFunc)
+      character(len=20)       :: XCauth(MaxFunc)
+      character(len=20)       :: XCfunc(MaxFunc)
       real(dp)                :: XCweightX(MaxFunc)
       real(dp)                :: XCweightC(MaxFunc)
 

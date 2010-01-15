@@ -4,6 +4,24 @@
 
 
 ** CHANGES ALONG trunk
+
+---------------------------------------------------------------------
+2010-01-15  17:55:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-326
+
+  New GGA functionals with PBE form and parameters from Capelle et al
+  
+  The four new functionals, with author labels PBE(JsJrLO), PBE(JsJrHEG), 
+  PBE(GcGxLO), and PBE(GcGxHGE), have the PBE functional form, but use
+  modified values for parameters beta, mu, and kappa. 
+  Refs: L.S.Pedroza et al, PRB 79, 201106 (2009)
+        M.M.Odashima et al, J. Chem. Theory Comp. 5, 798 (2009)
+  
+  modified:
+    Src/SiestaXC/ggaxc.f     ! New functionals implemented
+    Src/SiestaXC/xcmod.f90   ! Increased length for XCfunc and XCauth strings
+    Src/atom.f               ! Let xc_check continue even if func. not known
+    Src/read_xc_info.F       ! Increased length for XCfunc and XCauth strings
+
 ---------------------------------------------------------------------
 2010-01-15  17:40:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-325
 
@@ -14,6 +32,7 @@ Added to the manual documentation on file (label).ORB_INDX
 modified:
     Docs/siesta.ind
     Docs/siesta.tex   ! File ORB_INDX documented.
+    
 ---------------------------------------------------------------------
 2010-01-15  17:40:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-324
 
