@@ -5,9 +5,23 @@
 
 ** CHANGES ALONG trunk
 ---------------------------------------------------------------------
+2010-01-15  18:40:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-329
+
+  Bug correction in mesh3d (From J.M.Soler)
+  
+  A case not taken care of, in routine sameMeshDistr, created an
+  out-of-bounds condition that was noticed by J.D.Gale and others.
+  Also, a use statement was added for MPI routines in m_mpi_utils.
+  
+  modified:
+    Src/SiestaXC/mesh3d.F90  ! Bug corrected in sameMeshDistr
+    Src/m_mpi_utils.F        ! Added use statement for MPI routines
+    Src/meshsubs.F           ! Variable JDGdistr saved and initialized
+
+---------------------------------------------------------------------
 2010-01-15  18:10:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-328
 
-  Print vacuum level(From J.M.Soler)
+  Print vacuum level (From J.M.Soler)
   
   The vacuum level, defined as the effective potential at grid points with
   zero density, is printed in the standard output. This is done whenever

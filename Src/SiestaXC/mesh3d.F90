@@ -2808,6 +2808,8 @@ logical function sameMeshDistr( ID1, ID2 )
     else                       ! Both distr. are defined
       if (i1==i2) then         ! Different IDs but same distr.
         sameMeshDistr = .true.
+      else if (i1==0 .or. i2==0) then ! Since 0 is valid only in serial mode
+        sameMeshDistr = .false.
       else                     ! Different but possibly equivalent distr.
         distr1 => storedMeshDistr(i1)
         distr2 => storedMeshDistr(i2)

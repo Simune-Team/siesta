@@ -404,8 +404,9 @@
 ! Local parameters, variables, and arrays
       character(len=*),parameter:: myName = 'InitMesh '
       logical :: same, within
+      integer,save:: JDGdistr=-1
       integer :: i, ia, i1, i2, i3, io, iphi, is, isp, ity, 
-     .           j, j1, j2, j3, JDGdistr, k, k1, k2, k3, 
+     .           j, j1, j2, j3, k, k1, k2, k3, 
      .           ncells, nep, ntop, ntp, nty
       real(dp):: boxWidth(3), dx(3), dxp(3), extWidth(3),
      .           pldist, r, rcell(3,3), vecmod, volume
