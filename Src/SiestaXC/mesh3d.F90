@@ -1128,6 +1128,7 @@ subroutine divideBox1D( box, nParts, partBox, blockSize, workload )
     partWkld = wlSum / nParts
 
     ! Loop on parts
+    partBox(1,1) = box(1)
     do iPart = 1,nParts-1
       last = 0  ! Last point with nonzero workload (or zero if none yet)
       do i = 0,boxSize-1
@@ -1158,6 +1159,7 @@ subroutine divideBox1D( box, nParts, partBox, blockSize, workload )
         if (nextPart) exit ! i loop
       end do ! i
     end do ! iPart
+    partBox(2,nParts) = box(2)
 
   else ! (.not.present(workload)) => Divide box uniformly
 
@@ -1234,7 +1236,7 @@ subroutine divideBox3D( nMesh, wlDistr, workload, box, &
 
 ! BEGIN DEBUG
 !  write(udebug,*) myName//'projected workload:'
-!  write(udebug,'(i4,3f12.6)') (i,prjWkld(:,i),i=0,maxval(boxShape)-1)
+!  write(udebug,'(i4,3f15.6)') (i,prjWkld(:,i),i=0,maxval(boxShape)-1)
 ! END DEBUG
 
 ! Find total workload in box
@@ -1281,8 +1283,11 @@ subroutine divideBox3D( nMesh, wlDistr, workload, box, &
   if ( any(box(1,axis) > partBox(1,axis,:)) .or. &
        any(partBox(2,axis,1:nParts-1) >= partBox(1,axis,2:nParts)) .or. &
        any(partBox(1,axis,:) > partBox(2,axis,:)) .or. &
-       any(partBox(2,axis,:) > box(2,axis)) ) &
+       any(partBox(2,axis,:) > box(2,axis)) ) then
+    write(udebug,'(a,3(2i6,2x))') errHead//'box=', box
+    write(udebug,'(a,/,(3(2i6,2x)))') errHead//'partBox=', partBox
     call die(errHead//'inconsistent partBox limits')
+  end if
 ! END DEBUG
 
   deallocate( prjWkld )
