@@ -127,10 +127,10 @@ C Globalise data over all nodes
 #ifdef MPI
         call MPI_Bcast(nXCfunc,1,MPI_integer,0,MPI_Comm_World,
      .                 MPIerror)
-        call MPI_Bcast(XCfunc,10*nXCfunc,MPI_character,0,MPI_Comm_World,
-     .                 MPIerror)
-        call MPI_Bcast(XCauth,10*nXCfunc,MPI_character,0,MPI_Comm_World,
-     .                 MPIerror)
+        call MPI_Bcast(XCfunc,len(XCfunc)*nXCfunc,MPI_character,0,
+     .                 MPI_Comm_World,MPIerror)
+        call MPI_Bcast(XCauth,len(XCauth)*nXCfunc,MPI_character,0,
+     .                 MPI_Comm_World,MPIerror)
         call MPI_Bcast(XCweightX,nXCfunc,MPI_double_precision,0,
      .                 MPI_Comm_World,MPIerror)
         call MPI_Bcast(XCweightC,nXCfunc,MPI_double_precision,0,

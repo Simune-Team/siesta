@@ -5,6 +5,20 @@
 
 ** CHANGES ALONG trunk
 ---------------------------------------------------------------------
+2010-01-15  18:40:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-330
+
+  Two bugs in MPI communications (From J.M.Soler)
+  
+  The length increase of strings XCfunc and XCauth in trunk-320-JMS-3 had not
+  been considered in their MPI communication calls. Also, unrelated to this,
+  a conditional return made node 0 not participate in a global broadcast,
+  leaving the other nodes hunging.
+  
+  modified:
+    Src/m_efield.F       ! Removed conditional return
+    Src/read_xc_info.F   ! Corrected string length in MPI_Bcast
+
+---------------------------------------------------------------------
 2010-01-15  18:40:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-329
 
   Bug correction in mesh3d (From J.M.Soler)
