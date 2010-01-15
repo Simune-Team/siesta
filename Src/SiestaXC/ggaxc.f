@@ -1759,11 +1759,10 @@ C Set output arguments
      .                   EX, EC, DEXDD, DECDD, DEXDGD, DECDGD )
 
 C *********************************************************************
-C Implements Perdew-Burke-Ernzerhof Generalized-Gradient-Approximation.
-C with the revised parameters for solids (PBEsol).
-C Ref: J.P.Perdew et al, PRL 100, 136406 (2008)
-C Written by L.C.Balbas and J.M.Soler for PBE. December 1996. 
-C Modified by J.D. Gale for PBEsol. May 2009.
+C Implements the Armiento Mattsson AM05 GGA.
+C Ref: R. Armiento and A. E. Mattsson, PRB 72, 085108 (2005)
+C Written by L.C.Balbas and J.M.Soler originally for PBE. December 1996. 
+C Modified by J.D. Gale for AM05. May 2009.
 C ******** INPUT ******************************************************
 C INTEGER IREL           : Relativistic-exchange switch (0=No, 1=Yes)
 C INTEGER nspin          : Number of spin polarizations (1 or 2)
@@ -1793,7 +1792,7 @@ C Densities in electrons per Bohr**3
 C Energies in Hartrees
 C Gradient vectors in cartesian coordinates
 C ********* ROUTINES CALLED ******************************************
-C EXCHNG, PW92C
+C am05wbs
 C ********************************************************************
 
       use precision, only : dp

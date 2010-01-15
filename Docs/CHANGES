@@ -3,9 +3,16 @@
 =======================================================================
 
 
-** CHANGES ALONG trunk
+** CHANGES ALONG trunk--------------------------------------------
+2010-01-15  17:02:00 GMT  Jose A Torres <jose.torres.alonso@uam.es>  trunk-323
+
+Name of functional updated in AM05XC to correctly be AM05 (From J. Gale)
+
+modified:
+  Src/SiestaXC/ggaxc.f
+  
 ---------------------------------------------------------------------
-2010-01-15  16:43:00 GMT  Jose A Torres <jose.torres.alonso@uam.es>     trunk-322
+2010-01-15  16:43:00 GMT  Jose A Torres <jose.torres.alonso@uam.es>  trunk-322
 
 Changes to the default precision of grid magnitudes (From A. Garcia)
 
