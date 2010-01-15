@@ -57,19 +57,22 @@ C real*8  kpoint(3)           : k point vectors
 C integer nuotot              : total number of orbitals per unit cell
 C                               over all processors
 C
+
+      use precision, only: dp
+
       implicit          none
 
       integer           maxnh, no, nuo, nou,nbufl,ngl,ngr
 
       integer           indxuo(no), listh(maxnh), numh(nuo), 
      .                  listhptr(nuo)
-      double precision  
+      real(dp)  
      .                  H(maxnh), kpoint(3),  
      .                  S(maxnh),xij(3,maxnh)
 
-      double precision  
+      real(dp)  
      .                  ef
-      complex*16  
+      complex(dp)  
      .                  Ha(nou,nou), Sa(nou,nou)
       logical gamma
 
@@ -77,9 +80,9 @@ C  Internal variables .............................................
       integer
      .  io, ind, iuo,
      .  j, jo, juo, io1,jo1
-      double precision   kxij
-      complex*16 cphase
-      complex*16, dimension (:,:), allocatable :: Hw,Sw
+      real(dp)   kxij
+      complex(dp) cphase
+      complex(dp), dimension (:,:), allocatable :: Hw,Sw
 
 C  ....................
 
@@ -218,6 +221,7 @@ C      use parallel
       use parallelsubs, only : GlobalToLocalOrb, WhichNodeOrb
 C FDN
       use mpi_siesta
+      use precision, only : dp
 
       implicit          none
 
@@ -232,13 +236,13 @@ C FDN
      .                  numh(nuo), listhptr(nuo)
       integer           indxuo(no), listhg(maxnhg), 
      .                  numhg(nuotot), listhptrg(nuotot)
-      double precision  
+      real(dp)  
      .                  H(maxnh), kpoint(3),  
      .                  S(maxnh),xijg(3,maxnhg)
 
-      double precision  
+      real(dp)  
      .                  ef
-      complex*16  
+      complex(dp)  
      .                  Ha(nou,nou), Sa(nou,nou)
       logical gamma
 
@@ -246,12 +250,12 @@ C  Internal variables .............................................
       integer
      .  BNode, io, iio, ind, iuo,
      .  j, jo, juo,  nuog , io1,jo1
-      double precision
+      real(dp)
      .  kxij
-      double precision, dimension(:), allocatable, save ::
+      real(dp), dimension(:), allocatable, save ::
      .  Snew,Hnew
-      complex*16 cphase
-      complex*16, dimension (:,:), allocatable :: Hw,Sw
+      complex(dp) cphase
+      complex(dp), dimension (:,:), allocatable :: Hw,Sw
 
 C  ....................
 
@@ -393,6 +397,7 @@ C FDN
       use m_ts_aux_rout, only : splittri, collectri, invmat, transpose,
      .                          csolveg, ts_alloc, ts_dealloc
       use m_ts_options, only: updatedmcr, voltfdf
+      use precision, only: dp
 C FDN
       implicit none                              
 
@@ -405,11 +410,11 @@ C INPUT:
 c                                 z*S-H-Sigma for bulk is in sfe
 
       integer no                !no : no. states
-      complex*16 Hi(0:(no*no)-1),Si(0:(no*no)-1)
-      complex*16 ZEnergy 
+      complex(dp) Hi(0:(no*no)-1),Si(0:(no*no)-1)
+      complex(dp) ZEnergy 
       integer NGL,NGR
-      complex*16 HLL(NGL,NGL)   ! Left electrode GF
-      complex*16 HRR(NGR,NGR)   ! Right electrode GF
+      complex(dp) HLL(NGL,NGL)   ! Left electrode GF
+      complex(dp) HRR(NGR,NGR)   ! Right electrode GF
 C FDN 
 C Use the tridiagonality ?
       logical :: useTri
@@ -423,29 +428,29 @@ C INPUT/OUTPUT:
 C ======================================================================
 C OUTPUT:
 C      complex*16 GF(0:(no*no)-1)  ! 1/(Sc*Energy - H)
-      complex*16, dimension(:), pointer :: GF
+      complex(dp), dimension(:), pointer :: GF
       integer ierr              !inversion err
 C ======================================================================
 c Helpers, tempos ...
-      complex*16, dimension(:), allocatable :: H
+      complex(dp), dimension(:), allocatable :: H
       integer, dimension (:), allocatable:: ipvt
 
       integer i,j,ii,jj
-      complex*16 a,b
+      complex(dp) a,b
 C --------------------------------------------------------------------
 
       integer n1,n2,n3
 C FDN 
       integer :: allocStat
-      complex*16, dimension(:,:), pointer ::  a11,a12,
+      complex(dp), dimension(:,:), pointer ::  a11,a12,
      .                                           a21,a22,a23,
      .                                               a32,a33
-      complex*16, dimension(:,:), pointer ::  b11,b12,
+      complex(dp), dimension(:,:), pointer ::  b11,b12,
      .                                           b21,b22,b23,
      .                                               b32,b33
-      complex*16, dimension(:,:), pointer ::  x12,x32
+      complex(dp), dimension(:,:), pointer ::  x12,x32
 C FDN
-      complex*16, dimension(:,:), pointer ::  x21,x23   
+      complex(dp), dimension(:,:), pointer ::  x21,x23   
       logical :: contactGFonly   
 
 c----------------------------------------------------------------------
@@ -783,6 +788,7 @@ C FDN
 ! FDN
 !      use parallel
       use m_ts_aux_rout, only : csolve 
+      use precision, only : dp
 ! FDN
 
 #ifdef MPI
@@ -797,10 +803,10 @@ C FDN
 c-----------------------------------------------------------------
       implicit none
 c-----------------------------------------------------------------
-      real*8 EPS
+      real(dp) EPS
       parameter(EPS=1d-7)
 
-      real*8 Pi
+      real(dp) Pi
       parameter(Pi=3.14159265358979323846264338327950288419717d0)
       
  
@@ -829,12 +835,12 @@ c                                 return z*S-H-Sigma for bulk
      
       
 
-      complex*16 ZEnergy 
+      complex(dp) ZEnergy 
 
       integer nq                !no. q-points <= NA1*NA2
 C FDN No longer dummys
 C      real*8 q(2,nq),wq(nq)     !q-points and weights
-      real*8 q(2,1),wq(1)     !q-points and weights
+      real(dp) q(2,1),wq(1)     !q-points and weights
 C FDN
 
 
@@ -845,7 +851,7 @@ c
 
 C FDN nq no longer a dummy
 C      complex*16 HAA(NG2,NG2,nq),SAA(NG2,NG2,nq)
-      complex*16 HAA(NG2,NG2,1),SAA(NG2,NG2,1)
+      complex(dp) HAA(NG2,NG2,1),SAA(NG2,NG2,1)
 C FDN
 c -----------
       integer Nodes             ! number of processors
@@ -858,26 +864,26 @@ C FDN
 
 c======================================================================
 c OUTPUT: 
-      complex*16 SFE(NG,NG) !Electrode atoms self-energy for USEBULK true
+      complex(dp) SFE(NG,NG) !Electrode atoms self-energy for USEBULK true
 c                           !else z*S - H - Sigma for ideal surface
-      complex*16  GAMMA(NG,NG)  ! 0.5*(Sigma - Sigma^dagger) 
+      complex(dp)  GAMMA(NG,NG)  ! 0.5*(Sigma - Sigma^dagger) 
       logical errorgs
 
 c=====================================================================
 c Helpers, tempos etc...
       integer Node              ! local processor
       integer ierr,itmp              ! inversion error      
-      complex*16 ZEi, wgfi
+      complex(dp) ZEi, wgfi
       integer iEni
       integer iq,inode
       integer io
       integer jo
-      complex*16 zenloc
+      complex(dp) zenloc
 
-      complex*16, allocatable :: WRK1(:,:),WRK2(:,:),GAA(:,:,:)
+      complex(dp), allocatable :: WRK1(:,:),WRK2(:,:),GAA(:,:,:)
       integer,dimension(:), allocatable :: ipvt
 #ifdef MPI
-      complex*16, allocatable :: cbuffer(:,:,:)
+      complex(dp), allocatable :: cbuffer(:,:,:)
 #endif
       integer  ntot
 
@@ -1251,6 +1257,7 @@ c  matrix and the first[LEFTFLAG true]/last[LEFTFLAG false] states
 c  corresponds to the (ng) Left/Right electrode states.
 c  Gamma is a (ng)x(ng) matrix.
 C ======================================================================
+      use precision, only : dp
       implicit none
 C ======================================================================
 
@@ -1269,18 +1276,18 @@ C INPUT:
 c                               !are left electrode states
 c                               !else it is the ng last right electrode
 c                               !states.
-      complex*16 Gamma(ng,ng)   !i(Sigma-Sigma^dagger)/2
-      complex*16 GF(nc,nc)
+      complex(dp) Gamma(ng,ng)   !i(Sigma-Sigma^dagger)/2
+      complex(dp) GF(nc,nc)
 
 C ======================================================================
 C OUTPUT:
 C      
-      complex*16 GGG(nc,nc)     !GF.GAMMA.GF
+      complex(dp) GGG(nc,nc)     !GF.GAMMA.GF
 
 C ======================================================================
 c Helpers, tempos ...
-      real*8, allocatable ::  swrk1(:,:),swrk2(:,:)
-      complex*16, allocatable ::  swrk3(:,:),swrk4(:,:)
+      real(dp), allocatable ::  swrk1(:,:),swrk2(:,:)
+      complex(dp), allocatable ::  swrk3(:,:),swrk4(:,:)
       integer i,j,ie,je
 
 c=======================================================================
@@ -1462,7 +1469,8 @@ C ======================================================================
 #ifdef MPI
       use mpi_siesta, only: MPI_Comm_Rank, MPI_Comm_World
 #endif
-      use sys
+      use sys, only : die
+      use precision, only : dp
 
       implicit none
 
@@ -1478,15 +1486,15 @@ C INPUT:
       integer nc                !no. states in density matrix
       integer NGL               !no. states in left electrode
       integer NGR               !no. states in right electrode
-      real*8 DML(nc,nc),DMR(nc,nc)      !contour part of DM integration
-      real*8 DMneqL(nc,nc),DMneqR(nc,nc)!real axis part of DM integration
-      real*8 EDML(nc,nc),EDMR(nc,nc)    !L,R estimates of Edm
+      real(dp) DML(nc,nc),DMR(nc,nc)      !contour part of DM integration
+      real(dp) DMneqL(nc,nc),DMneqR(nc,nc)!real axis part of DM integration
+      real(dp) EDML(nc,nc),EDMR(nc,nc)    !L,R estimates of Edm
 
 C ======================================================================
 c Helpers, tempos ...
-      real*8 w,wl,wr,wsum
-      real*8 maxdif2            !largest integration error
-      real*8 maxndif2           !largest normalized integration error
+      real(dp) w,wl,wr,wsum
+      real(dp) maxdif2            !largest integration error
+      real(dp) maxndif2           !largest normalized integration error
       
       integer i,j
 
@@ -1596,7 +1604,8 @@ C ======================================================================
 #ifdef MPI
       use mpi_siesta, only: MPI_Comm_Rank, MPI_Comm_World
 #endif
-      use sys
+      use sys, only : die
+      use precision, only : dp
 
       implicit none
 
@@ -1612,15 +1621,15 @@ C INPUT:
       integer nc                !no. states in density matrix
       integer NGL               !no. states in left electrode
       integer NGR               !no. states in right electrode
-      complex*16 DML(nc,nc),DMR(nc,nc)      !contour part of DM integration
-      complex*16 DMneqL(nc,nc),DMneqR(nc,nc)!real axis part of DM integration
-      complex*16 EDML(nc,nc),EDMR(nc,nc)    !L,R estimates of Edm
+      complex(dp) DML(nc,nc),DMR(nc,nc)      !contour part of DM integration
+      complex(dp) DMneqL(nc,nc),DMneqR(nc,nc)!real axis part of DM integration
+      complex(dp) EDML(nc,nc),EDMR(nc,nc)    !L,R estimates of Edm
 
 C ======================================================================
 c Helpers, tempos ...
-      real*8 w,wl,wr,wsum
-      real*8 maxdif2            !largest integration error
-      real*8 maxndif2           !largest normalized integration error
+      real(dp) w,wl,wr,wsum
+      real(dp) maxdif2            !largest integration error
+      real(dp) maxndif2           !largest normalized integration error
       
       integer i,j
 

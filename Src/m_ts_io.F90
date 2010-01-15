@@ -34,7 +34,7 @@ MODULE m_ts_io
 
       implicit none
 
-      real*8 EPS
+      real(dp) EPS
       parameter(EPS=1d-7)
 
       logical PRINTALOT
@@ -778,9 +778,9 @@ MODULE m_ts_io
       character task*(*), paste*33
       integer   maxnd, nbasis, nspin
       integer   listd(maxnd), numd(nbasis), listdptr(nbasis)
-      real*8    dm(maxnd,nspin)
-      real*8    edm(maxnd,nspin)
-      real*8    ef
+      real(dp)    dm(maxnd,nspin)
+      real(dp)    edm(maxnd,nspin)
+      real(dp)    ef
       logical, optional :: found
 
 ! Internal variables and arrays
@@ -792,7 +792,7 @@ MODULE m_ts_io
 #ifdef MPI
       integer   MPIerror, Request, Status(MPI_Status_Size)
       integer   BNode
-      real*8, dimension(:), allocatable, save :: buffer
+      real(dp), dimension(:), allocatable, save :: buffer
       integer, dimension(:), allocatable, save :: ibuffer
 #endif
       external          chkdim, io_assign, io_close, paste, timer, &

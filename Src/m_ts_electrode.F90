@@ -22,6 +22,7 @@ MODULE m_ts_electrode
        gs,zdos,joutfile,tleft)
 
        use m_ts_aux_rout, only : csolveg
+       use precision, only : dp
 
        implicit none
        integer nv
@@ -32,20 +33,20 @@ MODULE m_ts_electrode
        integer joutfile
        logical tleft
 
-       complex*16 a,b,zdos
-       double precision ro
-       double precision, parameter :: accur=1.d-15
-       complex*16 ZEnergy 
-       complex*16 h00(0:nv*nv-1),s00(0:nv*nv-1)
-       complex*16 h01(0:nv*nv-1),s01(0:nv*nv-1)
-       complex*16 gs(0:nv*nv-1)
+       complex(dp) a,b,zdos
+       real(dp) ro
+       real(dp), parameter :: accur=1.d-15
+       complex(dp) ZEnergy 
+       complex(dp) h00(0:nv*nv-1),s00(0:nv*nv-1)
+       complex(dp) h01(0:nv*nv-1),s01(0:nv*nv-1)
+       complex(dp) gs(0:nv*nv-1)
 
 
        integer, dimension (:), allocatable:: ipvt
-       complex*16, dimension (:), allocatable:: &
+       complex(dp), dimension (:), allocatable:: &
          rh,rh1,rh3,alpha,beta,ab,ba,gb,gs2
 
-       real*8 Pi
+       real(dp) Pi
        parameter(Pi=3.14159265358979323846264338327950288419717d0)
 
        allocate(ipvt(nv))
@@ -340,6 +341,7 @@ MODULE m_ts_electrode
 ! FDN      
 
       use fdf, only : fdf_convfac, fdf_integer, fdf_string
+      use precision, only : dp
 ! FDN
       use m_ts_kpoints, only : ts_nkpnt, ts_kpoint, ts_kweight
       use m_ts_options, only : GFFileL, GFFileR, calcGF
@@ -369,17 +371,17 @@ MODULE m_ts_electrode
 
       character(len=label_length+5) hsfile        !name of HS-input file
       integer NEn ! no. contour points
-      complex*16 contour(NEn),wgf(NEn) !energy contours and weights for GF
-      real*8 efermi             ! the Fermi-energy we REQUIRE the electrode
+      complex(dp) contour(NEn),wgf(NEn) !energy contours and weights for GF
+      real(dp) efermi             ! the Fermi-energy we REQUIRE the electrode
                                 ! to have (e.g. when a voltage is applied)
       integer ispin             !spin number for which to generate gf
 !=======================================================================
 
 !   k_|| == q-points:
-      real*8, pointer:: q(:,:),wq(:) ! k_|| and their weights 
+      real(dp), pointer:: q(:,:),wq(:) ! k_|| and their weights 
       integer na1,na2           ! Replication of unitcell33
       integer nq                ! no. q-points (<= na1*na2 for gamma) 
-      real*8 kpoint(3)          !3D k-point (q,kz)
+      real(dp) kpoint(3)          !3D k-point (q,kz)
       data kpoint /0d0, 0d0, 0d0/
 !------------------------------------------------------------------     
 ! Hamiltonian/Overlap for given k
@@ -402,7 +404,7 @@ MODULE m_ts_electrode
 !      complex*16 GAAq(NGAA,mqpt) ! Inverse ideal GF (z*SAA - HAA - SigmaAA)
 
 !      complex*16 GS(ngaa1)
-      complex*16, allocatable :: GS(:),HAA(:,:),SAA(:,:), GAAq(:,:)
+      complex(dp), allocatable :: GS(:),HAA(:,:),SAA(:,:), GAAq(:,:)
 
       integer nucuse             !Truncate GF to *last/first* nucuse atoms
 !                                !         for   *left/right*
@@ -412,7 +414,7 @@ MODULE m_ts_electrode
 ! (we use that the number of atoms < NG2)
       integer nou               !no. used orbitals     
 
-      complex*16 zbulkdos(NEn) 
+      complex(dp) zbulkdos(NEn) 
 
 !=======================================================================
 !     Helpers, workspace, tempos etc...
@@ -432,12 +434,12 @@ MODULE m_ts_electrode
       logical exist1
       logical tdos,tkham
       
-      complex*16, dimension (:), pointer:: H00, S00, H01, s01
+      complex(dp), dimension (:), pointer:: H00, S00, H01, s01
 
 !      complex*16 h00(ngaa1),s00(ngaa1)
 !      complex*16 h01(ngaa1),s01(ngaa1)
 !      complex*16 ab(ngaa1),ba(ngaa1)
-       complex*16, allocatable :: ab(:),ba(:)
+       complex(dp), allocatable :: ab(:),ba(:)
 
 
       integer i,l1,l2,ia,ia2
@@ -449,19 +451,19 @@ MODULE m_ts_electrode
       integer NG1      ! Number of basis  orbitals
       integer NG2      ! Number of orbitals used
 
-      real*8  factor
-      real*8, allocatable:: eig(:)
+      real(dp)  factor
+      real(dp), allocatable:: eig(:)
       
 
-      complex*16 ZEnergy
-      complex*16 ZSEnergy
-      complex*16 zdos
+      complex(dp) ZEnergy
+      complex(dp) ZSEnergy
+      complex(dp) zdos
       integer iEn
 
 ! FDN Celula unitaria, kscell and kdispl
-      real*8 cell(3,3)
+      real(dp) cell(3,3)
       integer kscell(3,3)
-      real*8  kdispl(3)
+      real(dp)  kdispl(3)
       integer allocstat
 ! FDN
 
@@ -951,12 +953,13 @@ MODULE m_ts_electrode
       use m_ts_io, only: ts_iohs
       use m_ts_kpoints, only: ts_gamma_scf
       use files, only: label_length
+      use precision, only: dp
 !-----------------------------------------------------------------------
       implicit none
 !-----------------------------------------------------------------------
 
 !=======================================================================
-      real*8 EPS
+      real(dp) EPS
       parameter(EPS=1.0d-8)
 !=======================================================================
 
@@ -967,7 +970,7 @@ MODULE m_ts_electrode
       logical tkham             ! true if full H_k hamiltonian is generated
 
 !      integer nuo               !No. states in unitcell (expected in read-in)
-      real*8 kpoint(3) 
+      real(dp) kpoint(3) 
       integer ispin             !set up H for ispin
       character(len=label_length+5) hsfile       !H,S parameter file
 
@@ -994,8 +997,8 @@ MODULE m_ts_electrode
 
 !      real*8  H(maxno,maxuo,nspin) ! Hamiltonian in sparse form
 !      real*8  S(maxno,maxuo)     ! Overlap in sparse form
-      real*8  qtot              ! Total number of electrons
-      real*8  temp              ! Electronic temperature for Fermi smearing
+      real(dp)  qtot              ! Total number of electrons
+      real(dp)  temp              ! Electronic temperature for Fermi smearing
 
       logical Gamma             ! true if Gamma
 
@@ -1003,8 +1006,8 @@ MODULE m_ts_electrode
 !                               (not read/written if only gamma point ..
 !                                but must be written here!!)
 
-      real*8 cell(3,3)          ! unit cell
-      real*8 ef                 ! Fermi energy from parameterfile
+      real(dp) cell(3,3)          ! unit cell
+      real(dp) ef                 ! Fermi energy from parameterfile
 
 !      integer nua               ! No. atoms in unitcell
 !      integer isa(maxua)         ! Species index of each atom
@@ -1016,17 +1019,17 @@ MODULE m_ts_electrode
 
       integer, dimension (:), pointer:: listh, listhptr, &
                              numh,indxuo,isa,lasto
-      double precision, dimension (:,:), pointer:: H,xij,xa
-      double precision, dimension (:), pointer:: S
+      real(dp), dimension (:,:), pointer:: H,xij,xa
+      real(dp), dimension (:), pointer:: S
 
 ! FDN Temporary array xijtemp so that there will be a complex
 !     phase dependence on unit cell
-      double precision, dimension (:,:), pointer:: xijtemp
+      real(dp), dimension (:,:), pointer:: xijtemp
 ! FDN
 
 ! FDN
       integer kscell(3,3)
-      real*8  kdispl(3)
+      real(dp)  kdispl(3)
       character(8) :: iotask
 ! FDN
 
@@ -1036,26 +1039,26 @@ MODULE m_ts_electrode
 !      complex*16 Hk(nuo*nuo), Sk(nuo*nuo)
 !      complex*16 Hk2(nuo*nuo), Sk2(nuo*nuo)
 
-      complex*16, dimension (:), pointer:: Hk, Sk, Hk2, Sk2
+      complex(dp), dimension (:), pointer:: Hk, Sk, Hk2, Sk2
 !      integer, dimension (:), pointer:: lasto
 !      integer lasto(0:maxua)   ! Index of last orbital of each atom
 !-----------------------------------------------------------------------
 ! Helpers
 !      real*8 xo(3,maxuo)        ! Atomic coordinates (Bohr)
-      real*8, allocatable ::   xo(:,:) 
+      real(dp), allocatable ::   xo(:,:) 
 
       integer nuotot,notot,maxnh
       integer ia
       integer i,j,io,jo,iuo,juo
-      real*8 k(3),kxij,rcell(3,3)
-      real*8 recell(3,3)
-      complex*16 cphase
+      real(dp) k(3),kxij,rcell(3,3)
+      real(dp) recell(3,3)
+      complex(dp) cphase
 
 !      integer ix(maxnh)
       integer, dimension (:),allocatable:: ix
       integer icoi,icoa
       integer iprop,inn,it,in,ind
-      real*8   xc      
+      real(dp)   xc      
       logical tinit,tlast
       integer :: icrap1, icrap2 ! dummy variables
 ! FDN

@@ -68,7 +68,6 @@ Cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 C FDN
       use parallelsubs, only : GlobalToLocalOrb, WhichNodeOrb, 
      .                         LocalToGlobalOrb
-C      use parallel
 C FDN
 #endif
       use m_ts_options, only : voltfdf, USEBULK, TriDiag, updatedmcr, 
@@ -85,6 +84,7 @@ C FDN
      .                            GFGammaGF, weightDM, weightDMC
 #endif
       use sys, only : die
+      use precision, only : dp
 
 c======================================================================
       implicit none
@@ -94,11 +94,11 @@ c======================================================================
       integer NGR2,NA1R,NA2R,nqR,nuaR
       integer NCONTOUR0,NCONTOUR
 c======================================================================
-      real*8 eV
+      real(dp) eV
       parameter ( eV = 1.d0 / 13.60580d0 )
-      real*8 Pi
+      real(dp) Pi
       parameter(Pi=3.141592653589793238462643383279503d0)
-      real*8 toPi
+      real(dp) toPi
       parameter(toPi=2d0/Pi)
 c======================================================================
 
@@ -106,7 +106,7 @@ c======================================================================
       character*33 gffileLeft,gffileRight
 
 C From fdf read voltfdf, Volt=voltfdf/eV
-      real*8 Volt               ! the bias voltage
+      real(dp) Volt               ! the bias voltage
 
 C      integer NBUFATL,NBUFATR   ! No. buffer atoms, L/R
       integer NBUFL,NBUFR       ! No. buffer states, L/R
@@ -153,28 +153,28 @@ c                               ! nuo the number of orbitals in unit cell
 c The fermi-energy of the CONTACT (without electrodes) is initially determined
 c by SIESTA. This is taken as the starting energy shift of the contact region:
 c The electrodes in equilibrium has per definition Fermi energy at ZERO.
-      real*8 ef                 ! Fermi energy (used in CONTACT) 
-      real*8 qtot
+      real(dp) ef                 ! Fermi energy (used in CONTACT) 
+      real(dp) qtot
 c =====================================================================
 c   BACK TO SIESTA:
 c =====================================================================
 
-      real*8 Dnew(maxnh,nspin) ! Output Density Matrix
+      real(dp) Dnew(maxnh,nspin) ! Output Density Matrix
 C FDN
       
-      complex*16 ccphase
+      complex(dp) ccphase
 C FDN
-      real*8 Enew(maxnh,nspin) ! Output Energy-Density Matrix
+      real(dp) Enew(maxnh,nspin) ! Output Energy-Density Matrix
 
 c =====================================================================
 c     Greens functions:
 c =====================================================================
 c     Energy Contour:
-      complex*16, dimension (:), pointer:: contour,wgf
+      complex(dp), dimension (:), pointer:: contour,wgf
 
       integer NPARACONTOUR   ! No. points on parallel contour
 c     Energy points and their weight distributed on nodes
-      complex*16, dimension (:,:), allocatable ::
+      complex(dp), dimension (:,:), allocatable ::
      .     paracontour,paraWGF
 c     (point,node) --> part of contour (L,R,V,N) Left,Right,Voltage, No voltage
 
@@ -184,12 +184,12 @@ c     No. actual energy points to read-in for given parallel energy point
       integer, dimension(:), allocatable ::  points2read
 
 c     Read-in bulk H, S, for a given q-points
-      complex*16, dimension(:,:,:), allocatable :: 
+      complex(dp), dimension(:,:,:), allocatable :: 
      .     HAAL,SAAL,HAAR,SAAR 
 
 c     q-points and their weights:
-      real*8, dimension (:,:), pointer:: qL,qR
-      real*8, dimension (:), pointer:: wqL,wqR
+      real(dp), dimension (:,:), pointer:: qL,qR
+      real(dp), dimension (:), pointer:: wqL,wqR
 
 c ==================================================================
 c     Left/Right inverse Greens functions:
@@ -197,12 +197,12 @@ c     Left/Right inverse Greens functions:
 
 c     Electrode GF's
 c     Gamma=i*0.5*(Sigma - Sigma^dagger) 
-      complex*16, dimension (:,:), allocatable:: 
+      complex(dp), dimension (:,:), allocatable:: 
      .     SFEL,SFER,GAMMAL,GAMMAR
 
 c ==================================================================
 c Fermi levels
-      real*8 EFermiL,EFermiR,EFermi0
+      real(dp) EFermiL,EFermiR,EFermi0
 c===================================================================
 
 c Internal representation of H,S,DM and other quantities:    
@@ -211,30 +211,30 @@ c Internal representation of H,S,DM and other quantities:
 c                               !i.e. no. used orbitals
 
 c Full Green's function, H and S of contact:
-      complex*16, dimension(:), allocatable :: H,S
-      complex*16, dimension(:), pointer :: GF
+      complex(dp), dimension(:), allocatable :: H,S
+      complex(dp), dimension(:), pointer :: GF
 
 c     To save space we will save the temporary DML,EDML in DM,EDM. 
 c     contour part of DM integration 
 c     real axis part of DM integration
 c     L,R estimates of Edm
 
-      real*8, dimension(:), allocatable :: 
+      real(dp), dimension(:), allocatable :: 
      .     DM,DMR,DMneqL,DMneqR,EDM,EDMR
 
 C FDN
-      complex*16, dimension(:), allocatable ::
+      complex(dp), dimension(:), allocatable ::
      .  DMCplx,DMRCplx,DMneqLCplx,DMneqRCplx,EDMCplx,EDMRCplx,
      .  work1Cplx
 
       logical :: kpargamma
-      real(8) :: kpartol
+      real(dp) :: kpartol
 C FDN
 
 
-      real*8 QC0                ! Init(SIESTA) no. electrons in update region
-      real*8 QC                 ! no. electrons in update region
-      real*8 QCn0
+      real(dp) QC0                ! Init(SIESTA) no. electrons in update region
+      real(dp) QC                 ! no. electrons in update region
+      real(dp) QCn0
 
 c No. contour points (NCONTOUR if VOLT=0 else NCONTOUR + NVOLT)
       integer NEn
@@ -246,8 +246,8 @@ c     No. orbitals on atoms
 c ==================================================================
 c Helpers, workspace, tempos, auxilaries etc...
       
-      real*8 k(3),kxij,qcloc
-      complex*16 cphase
+      real(dp) k(3),kxij,qcloc
+      complex(dp) cphase
       
       integer ind
       integer jgfL,jgfR         !File units for Left,Right GF
@@ -258,14 +258,14 @@ c      Index of equiv. orb. in uc
 
       integer, dimension(:), allocatable :: indxuo1,lastoL,lastoR
       
-      complex*16, dimension(:), allocatable :: work2
-      real*8, dimension(:), allocatable :: work1
+      complex(dp), dimension(:), allocatable :: work2
+      real(dp), dimension(:), allocatable :: work1
 
-      complex*16, dimension(:), allocatable :: dosdum
+      complex(dp), dimension(:), allocatable :: dosdum
 
             
 
-      complex*16 Z,W
+      complex(dp) Z,W
       integer iPE,ispin
 
       integer i,j,ic,jc
@@ -280,7 +280,7 @@ c      Index of equiv. orb. in uc
       integer, dimension(:), allocatable,save ::
      .  numhg, listhptrg, listhg
  
-      double precision, dimension(:,:), allocatable, save ::
+      real(dp), dimension(:,:), allocatable, save ::
      .  xijg, Dnewg, Enewg
       logical, dimension (:), allocatable ::  listudg
 #endif
@@ -289,7 +289,7 @@ c      Index of equiv. orb. in uc
       logical errorgs
       logical, dimension (:), allocatable ::  listud
 
-      real*8 renorm
+      real(dp) renorm
 
       logical firsttime
       data firsttime /.true./
@@ -330,7 +330,7 @@ C FDN
       save NCONTOUR,NCONTOUR0
       save indxuo1
       
-      complex*16 zdotc
+      complex(dp) zdotc
       external zdotc ! BLAS function
 
       character paste*33
@@ -349,8 +349,8 @@ c           K-points variables
 c ==================================================================
       integer, save ::  nkpar
       integer :: ikpar
-      real(8), dimension(:,:), allocatable, save :: kpar
-      real(8), dimension(:), allocatable, save :: wkpar
+      real(dp), dimension(:,:), allocatable, save :: kpar
+      real(dp), dimension(:), allocatable, save :: wkpar
       logical, save :: diffkpar=.false.
 
 C  Preciso colocar um caso geral de eletrodos com potencialmente
@@ -1688,7 +1688,7 @@ c ===================================================================
 C
 C  Modules
 C
-      use precision, only : dp
+      use precision, only : dp, grid_p
 C FDN put the only attribute
       use parallel, only : ProcessorY
 C FDN
@@ -1701,7 +1701,7 @@ C FDN
 #endif
 
       implicit          none
-      real              v(*)
+      real(grid_p)      v(*)
       integer           mesh(3), nsm
 
 
@@ -1714,7 +1714,7 @@ c Internal variables
 #ifdef MPI
       integer           MPIerror, npl
 #endif
-      double precision  vav, vtot, temp
+      real(dp)          vav, vtot, temp
 
 
 C Get Node number
@@ -1823,7 +1823,7 @@ c        if(Node.eq.0) write(6,*)'Av Pot',Node,vav
 C
 C  Modules
 C
-      use precision, only : dp
+      use precision, only : dp, grid_p
       use fdf, only : fdf_physical
 C FDN put the only attribute
       use parallel, only : ProcessorY
@@ -1839,14 +1839,14 @@ C FDN
       implicit          none
 
       integer           mesh(3), nsm
-      real              v(*)
-      double precision  cell(3,3), dot, field(3)
+      real(grid_p)      v(*)
+      real(dp)          cell(3,3), dot, field(3)
       logical           isvolt 
       external          dot
 
 
 c Internal variables
-      real*8 eV
+      real(dp) eV
       parameter ( eV = 1.d0 / 13.60580d0 )
  
       logical           frstme
@@ -1860,7 +1860,7 @@ c Internal variables
       integer           MPIerror, npl
 #endif
 
-      double precision  f(3),v0,Volt,Lvc,dLvc,vcdir(3),VoltL,VoltR
+      real(dp)  f(3),v0,Volt,Lvc,dLvc,vcdir(3),VoltL,VoltR
 
       parameter(ivc=3)          ! The voltage-direction
 
