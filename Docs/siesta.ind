@@ -8,6 +8,7 @@
 
   \item {\bf AllocReportLevel}, 75
   \item {\bf AllocReportThreshold}, 75
+  \item AM05, 41
   \item animation, 37
   \item antiferromagnetic initial DM, 46
   \item {\bf AtomCoorFormatOut}, 31
@@ -30,17 +31,17 @@
     \subitem default soft confinement radius, 22
     \subitem effective pressure, 28
     \subitem filtering, 26, 27
-    \subitem fix   split-valence table, 22
+    \subitem fix   split-valence table, 21
     \subitem Gen-basis standalone program, 27
     \subitem ghost atoms, 26
     \subitem minimal, 20
     \subitem new   split-valence code, 21, 22
-    \subitem PAO, 19--21, 24
+    \subitem PAO, 19, 20, 24
     \subitem per-shell split norm, 25
     \subitem point at infinity, 29
     \subitem polarization, 20, 26
     \subitem reparametrization of pseudopotential, 29
-    \subitem soft confinement potential, 26
+    \subitem soft confinement potential, 25
     \subitem split valence, 21
     \subitem split valence   for H, 21
     \subitem User basis, 27
@@ -56,7 +57,7 @@
   \item Born effective charges, 69
   \item {\bf     BornCharge}, 88
   \item {\bf BornCharge}, 69
-  \item Broyden mixing, 43, 112
+  \item Broyden mixing, 44, 112
   \item Broyden optimization, 80
   \item bug reports, 100
   \item bulk polarization, 67
@@ -90,14 +91,14 @@
   \item {\bf Diag.PreRotate}, 55
   \item {\bf Diag.Use2D}, 55
   \item Dielectric function, optical absorption, 66
-  \item diffuse orbitals, 20
+  \item diffuse orbitals, 19
   \item {\bf DirectPhi}, 75
   \item {\bf DM.AllowExtrapolation}, 47
   \item {\bf DM.AllowReuse}, 47
   \item {\bf DM.Broyden.Cycle.On.Maxit}, 44
   \item {\bf DM.Broyden.Variable.Weight}, 44
   \item {\bf DM.EnergyTolerance}, 48
-  \item {\bf DM.FormattedFiles}, 45
+  \item {\bf DM.FormattedFiles}, 46
   \item {\bf DM.FormattedInput}, 46
   \item {\bf DM.FormattedOutput}, 46
   \item {\bf DM.Harris.Tolerance}, 49
@@ -106,7 +107,7 @@
   \item {\bf DM.KickMixingWeight}, 44
   \item {\bf DM.MixingWeight}, 43
   \item {\bf DM.MixSCF1}, 44
-  \item {\bf DM.NumberBroyden}, 43
+  \item {\bf DM.NumberBroyden}, 44
   \item {\bf DM.NumberKick}, 44
   \item {\bf DM.NumberPulay}, 43
   \item {\bf DM.PulayOnFile}, 43
@@ -129,12 +130,12 @@
   \indexspace
 
   \item FDF, 11
-  \item fdf.log, 10--12
+  \item fdf.log, 10, 11
   \item ferromagnetic initial DM, 46
   \item {\tt files} (ON.functional), 57
   \item {\bf     FilterCutoff}, 26
   \item {\bf     FilterTol}, 27
-  \item finite-range pseudo-atomic orbitals, 20
+  \item finite-range pseudo-atomic orbitals, 19
   \item {\bf FixAuxiliaryCell}, 53
   \item fixed spin state, 42
   \item {\bf FixSpin}, 42
@@ -155,7 +156,8 @@
   \item GGA, 41
   \item ghost atoms, 14, 26
   \item {\sc Gnubands}, 61
-  \item grid, 49
+  \item grid, 49, 50
+  \item Grid precision, 112
   \item {\bf GridCellSampling}, 50
   \item Ground-state atomic configuration, 20
 
@@ -178,7 +180,7 @@
   \item {\bf kgrid\_cutoff}, 39
   \item {\bf kgrid\_Monkhorst\_Pack}, 39
   \item {\tt Kim}, 56
-  \item Kleinman-Bylander projectors, 23
+  \item Kleinman-Bylander projectors, 22
 
   \indexspace
 
@@ -232,9 +234,9 @@
   \item {\bf MD.UseSaveZM}, 38
   \item {\bf MD.UseStructFile}, 36
   \item {\bf MD.VariableCell}, 77
-  \item mesh, 49
+  \item mesh, 49, 50
   \item {\bf MeshCutoff}, 49
-  \item {\bf MeshSubDivisions}, 49
+  \item {\bf MeshSubDivisions}, 50
   \item {\tt MINIMAL}, 20
   \item minimal basis, 20
   \item mixps   program, 15
@@ -246,7 +248,7 @@
   \item {\bf MM.UnitsEnergy}, 73
   \item Mulliken population analysis, 13, 64
   \item {\bf MullikenInSCF}, 65
-  \item multiple-$\zeta$, 20, 21
+  \item multiple-$\zeta$, 19, 21
 
   \indexspace
 
@@ -341,9 +343,9 @@
   \item {\bf PAO.Basis}\index{basis
     \subitem PAO}, 24
   \item {\bf PAO.BasisSize}, 20
-  \item {\bf PAO.BasisSizes}, 21
+  \item {\bf PAO.BasisSizes}, 20
   \item {\bf PAO.BasisType}, 19
-  \item {\bf PAO.FixSplitTable}, 22
+  \item {\bf PAO.FixSplitTable}, 21
   \item {\bf PAO.NewSplitCode}, 21
   \item {\bf PAO.SoftDefault}, 22
   \item {\bf     PAO.SoftInnerRadius}, 22
@@ -359,13 +361,13 @@
   \item Phonon program, 77
   \item {\sc Phonon program}, 88
   \item {\bf PhononLabels}, 88
-  \item polarization orbitals, 20
+  \item polarization orbitals, 19
   \item {\bf PolarizationGrids}, 67
   \item Precision selection, 112
   \item {\bf ProcessorY}, 74, 106
   \item {\bf ProjectedDensityOfStates}, 63
   \item {\bf PS.KBprojectors} , 23
-  \item {\bf PS.lmax}, 23
+  \item {\bf PS.lmax}, 22
   \item pseudopotential
     \subitem example generation, 9
     \subitem files, 15
@@ -412,7 +414,7 @@
   \item scale factor, 26
   \item SCF, 43
     \subitem mixing, 43, 44
-      \subsubitem Broyden, 43, 44
+      \subsubitem Broyden, 44
       \subsubitem energy convergence, 48
       \subsubitem harris energy convergence, 48
       \subsubitem linear, 43, 44
@@ -449,12 +451,12 @@
   \item Systemlabel, 11
   \item {\it Systemlabel.}.ANI, 10
   \item {\it Systemlabel.}DM, 10
-  \item {\it Systemlabel.}.EIG, 11
-  \item {\it Systemlabel.}.FA, 11
+  \item {\it Systemlabel.}.EIG, 10
+  \item {\it Systemlabel.}.FA, 10
   \item {{\it Systemlabel}.STRUCT\_IN}, 38
   \item {{\it Systemlabel}.STRUCT\_NEXT\_ITER}, 36
   \item {{\it Systemlabel}.STRUCT\_OUT}, 10, 36
-  \item {\it Systemlabel.}xml, 11
+  \item {\it Systemlabel.}xml, 10
   \item {\it Systemlabel.}XV, 10
   \item {\bf SystemName}, 14
   \item {\tt SZ}, 20

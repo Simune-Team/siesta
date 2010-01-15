@@ -39,13 +39,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, trunk-303}}
+{\Huge {\bf S I E S T A \, \, trunk-322}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large October 12, 2009 }
+{\Large Jan 15, 2010 }
 
 \vspace{1.5cm}
 
@@ -356,11 +356,6 @@ subdirectory. If you intend to create a parallel version of {\sc
   Siesta}, make sure you have all the extra support libraries ({\tt
   MPI, scalapack, blacs...} (see Sect.~\ref{sec:parallel}).
   
-One important compilation option is -DGRID\_DP, which tells the
-compiler to use double precision arithmetic in grid-related arrays.
-Unless you find memory problems running siesta, we strongly 
-recommend it, and we will likely make it the default in future versions.
-
 Optionally, the command {\tt ../Src/configure} will
 start an automatic scan of your system and try to build an {\tt
   arch.make} for you. Please note that the configure script might need
@@ -7718,19 +7713,43 @@ the ccViz script.
 \index{Precision selection}
 
 Some of the real arrays used in Siesta are by default
-single-precision, to save memory. This applies to the grid-related
-magnitudes, and to the historical data sets in Broyden mixing. 
-Unless you have memory problems running Siesta, we recommend that 
-the defaults are changed by using pre-processing symbols at compile
-time:
+single-precision, to save memory. This applies to the array that holds
+the values of the basis orbitals on the real-space grid, to the
+historical data sets in Broyden mixing, and to the arrays used in the
+O(N) routines. Note that the grid functions (charge densities,
+potentials, etc) are now (since mid January 2010) in double
+precision by default.
+
+The following pre-processing symbols at compile time control the 
+precision selection
 
 \begin{itemize}
+
+\item Add {\tt -DGRID\_SP} to the {\tt DEFS} variable in {\tt
+  arch.make} to use single-precision for all the grid magnitudes,
+  including the orbitals array and charge densities and potentials.
+  This will cause some numerical differences and will have a
+  negligible effect on memory consumption, since the orbitals array is
+  the main user of memory on the grid, and it is single-precision by
+  default. This setting will recover the default behavior of previous
+  versions of {\sc Siesta}.\index{Grid precision}
+
 \item Add {\tt -DGRID\_DP} to the {\tt DEFS} variable in {\tt
-  arch.make} to use double-precision arrays on the grid.
+  arch.make} to use double-precision for all the grid magnitudes,
+  including the orbitals array. This will significantly increase
+  the memory used for large problems, with negligible differences
+  in accuracy.
+
+
 \item Add {\tt -DBROYDEN\_DP} to the {\tt DEFS} variable in {\tt
   arch.make} to use double-precision arrays for the Broyden historical
   data sets. (Remember that the Broyden mixing for SCF convergence
   acceleration is an experimental feature.)\index{Broyden mixing}
+
+\item Add {\tt -DON\_DP} to the {\tt DEFS} variable in {\tt
+  arch.make} to use double-precision for all the arrays in the
+  O(N) routines. 
+
 \end{itemize}
 
 \addcontentsline{toc}{section}{Index}
