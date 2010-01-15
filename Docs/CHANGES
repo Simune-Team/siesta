@@ -5,6 +5,16 @@
 
 ** CHANGES ALONG trunk
 ---------------------------------------------------------------------
+2010-01-15  17:40:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-325
+
+Document in manual the file on orbital indexes (From J.M.Soler)
+  
+Added to the manual documentation on file (label).ORB_INDX
+  
+modified:
+    Docs/siesta.ind
+    Docs/siesta.tex   ! File ORB_INDX documented.
+---------------------------------------------------------------------
 2010-01-15  17:40:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-324
 
 Write orbital indexes  (From J.M.Soler)
@@ -19,8 +29,7 @@ Write orbital indexes  (From J.M.Soler)
     Src/Makefile             ! Added write_orb_indx.o + Dependencies updated
     Src/atmfuncs.f           ! Orbital symmetry names completed up to g orbitals
     Src/compute_dm.F         ! Added call to write_orb_indx
-
-
+    
 ---------------------------------------------------------------------
 2010-01-15  17:02:00 GMT  Jose A Torres <jose.torres.alonso@uam.es>  trunk-323
 
