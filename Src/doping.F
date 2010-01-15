@@ -37,16 +37,17 @@
       CONTAINS
 
       subroutine initialize_doping()
-      use fdf
       use parallel, only: ionode
+      use m_fdf_global, only: fdf_global_get
 
-      doping_active=fdf_boolean('SimulateDoping',.false.)
+      call fdf_global_get(doping_active,'SimulateDoping',.false.)
+
       if (doping_active) then
          if (ionode) write(6,'(/,(a))')
      .        'doping: SimulateDoping = .true. in input file',
      .        'doping: Neutralizing background will be added to points',
      .        'doping: other than vacuum, to simulate doping'
-         qtot = fdf_double('NetCharge',0.0_dp)
+         call fdf_global_get(qtot,'NetCharge',0.0_dp)
       endif
       end subroutine initialize_doping
 !---------------------------------------------------------------

@@ -4,11 +4,23 @@
 
 
 ** CHANGES ALONG trunk
+---------------------------------------------------------------------
+2010-01-15  18:10:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-327
+
+  Make doping routine call global fdf version (From J.M.Soler)
+  
+  An error was occurring because all nodes were calling the old (serial) fdf
+  routines, which should be called only by node=0. The fdf_global version can
+  handle such global calls.
+  
+  modified:
+    Src/Makefile  ! Updated dependencies
+    Src/doping.F  ! Call global fdf version
 
 ---------------------------------------------------------------------
 2010-01-15  17:55:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-326
 
-  New GGA functionals with PBE form and parameters from Capelle et al
+  New GGA functionals with PBE form and parameters from Capelle et al (From J.M.Soler)
   
   The four new functionals, with author labels PBE(JsJrLO), PBE(JsJrHEG), 
   PBE(GcGxLO), and PBE(GcGxHGE), have the PBE functional form, but use
