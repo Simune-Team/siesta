@@ -18,7 +18,7 @@ PROGRAM siestaXCtest1
   ! Tester parameters
   integer, parameter:: irel    =  1      ! Relativistic? 0=>no, 1=>yes
   integer, parameter:: nCalls  =  1      ! Number of calls to each routine
-  integer, parameter:: nfTot   =  9      ! Total number of functionals
+  integer, parameter:: nfTot   = 10      ! Total number of functionals
   integer, parameter:: nSpin   =  4      ! Number of spin components
   real(dp),parameter:: densMax = 0.1_dp  ! Upper limit to density value
   real(dp),parameter:: gradMax = 0.5_dp  ! Upper limit to density gradient
@@ -30,20 +30,20 @@ PROGRAM siestaXCtest1
                                               ! with density?
 
   ! List of functionals to be tested
-!  integer, parameter:: nf = 9         ! Number of tested functionals
-!  integer:: indexf(nf) = (/1,2,3,4,5,6,7,8,9/)  ! Indexes from list below
-  integer, parameter:: nf = 7         ! Skip problematic functionals
-  integer:: indexf(nf) = (/1,2,  4,5,6,  8,9/)  ! Indexes from list below
+!  integer, parameter:: nf = 10        ! Number of tested functionals
+!  integer:: indexf(nf) = (/1,2,3,4,5,6,7,8,9,10/)  ! Indexes from list below
+  integer, parameter:: nf = 8         ! Skip problematic functionals
+  integer:: indexf(nf) = (/1,2,  4,5,6,  8,9,10/)  ! Indexes from list below
 
   ! All functionals available
   !                  1,       2,       3,       4,       5,   
-  !                  6,       7,       8,       9   
+  !                  6,       7,       8,       9       10
   character(len=3):: &
     func(nfTot) = (/'LDA',   'LDA',   'GGA',   'GGA',   'GGA',    &
-                    'GGA',   'GGA',   'GGA',   'GGA'             /)
+                    'GGA',   'GGA',   'GGA',   'GGA',   'GGA'    /)
   character(len=6):: &
     auth(nfTot) = (/'PZ    ','PW92  ','PW91  ','PBE   ','RPBE  ', &
-                    'revPBE','LYP   ','WC    ','PBESOL'          /) 
+                    'revPBE','LYP   ','WC    ','PBESOL','AM05  ' /) 
 
   ! Tester variables and arrays
   complex(dp),parameter:: c0 = (0._dp,0._dp)  ! Complex zero
