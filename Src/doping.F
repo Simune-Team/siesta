@@ -10,6 +10,15 @@
 !
       module m_doping
 
+! Adds a background charge density to simulate doping.
+! This routine calculates the net charge of the system, and
+! adds a compensating background charge that makes the system 
+! neutral. This background charge is constant at points of
+! the mesh near the atoms, and zero at points far from the atoms.
+! This simulates situations like doped slabs, where the extra
+! electrons (holes) are compensated by oposite charges at the
+! material (the ionized dopant impurities), but not at the vacuum.
+
       use precision, only : dp
 
       implicit none
@@ -44,6 +53,13 @@
 !---------------------------------------------------------------
 
       subroutine compute_doping_structs(np,rhoatm,nsd)
+
+!     Determines in which mesh points the compensating charge will be
+!     placed.  The points in which the background charge is removed are
+!     those for which the absolute value of the atomic charge rhoatm is
+!     larger than a threshold value, defined in this subroutine as
+!     thres=0.005 (empirically found to work well). The user can
+!     experiment with this at will...
 
       use alloc,        only : re_alloc
       use precision,    only : dp, grid_p
@@ -106,40 +122,20 @@ C  Check if charge at that point is larger than threshold
 
       subroutine doping(cell,np,task,rho)
 
-c Adds a background charge density to simulate doping.
-c This routine calculates the net charge of the system, and
-c adds a compensating background charge that makes the system 
-c neutral. This background charge is constant at points of
-c the mesh near the atoms, and zero at points far from the atoms.
-c This simulates situations like doped slabs, where the extra
-c electrons (holes) are compensated by oposite charges at the
-c material (the ionized dopant impurities), but not at the vacuum.
-c This serves to simulate properly doped systems in which there
-c are large portions of vacuum, such as doped slabs.
-c
-c Written by P. Ordejon, July 2009
-c ********* Input ******************************************************
-c real*8  cell(3,3) : Unit cell vectors
-c integer np        : Number of (main) mesh points locally
-c integer task      : 0 = add background;   1 = remove background added
-c                     in a previous call
-c ********* Input and output *******************************************
-c real    rho(*)    : Charge density, to which the background charge is
-c                     added.
-c ********* Units ******************************************************
-c Charges in electros/borh**3
-c Energies in Rydbergs
-c ********* Behaviour **************************************************
-c The routine must be first called with 'task=0', and later with 'task=1'
-c - 'task=0':  the routine calculates the net charge of the system 
-c   determines in which mesh points the compensating charge will be 
-c   placed.  Then, it adds the background charge to these points.
-c - 'task=1':  the background charge added in a previous call with task=0
-c   is now removed.
-c The points in which the background charge is removed are those for
-c which the absolute value of the atomic charge rhoatm is larger than a 
-c threshold value, defined in this subroutine as thres=0.005  (empirically 
-c found to work well). The user can experiment with this at will...
+! Adds a background charge density to simulate doping.  This routine
+! adds a compensating background charge that makes the system
+! neutral. This background charge is constant at points of the mesh near
+! the atoms, and zero at points far from the atoms.  This simulates
+! situations like doped slabs, where the extra electrons (holes) are
+! compensated by oposite charges at the material (the ionized dopant
+! impurities), but not at the vacuum.
+! The routine must be first called with 'task=0', and later with
+! 'task=1' 
+!
+! Written by P. Ordejon, July 2009
+!
+! Charges in electrons/borh**3
+! Energies in Rydbergs
 
       use precision,    only : dp, grid_p
       use mesh,         only : nsp
@@ -151,9 +147,15 @@ c found to work well). The user can experiment with this at will...
 !     The second is the "main-point" index. There is no spin index as
 !     the charges involved are the total ones.
 !
-      integer, intent(in)          ::  np, task
-      real(grid_p), intent(inout)  ::  rho(nsp, np)
+!     Unit cell vectors
       real(dp), intent(in)         ::  cell(3,3)
+      ! Number of "big" mesh points in this MPI process
+      integer, intent(in)          ::  np
+!     ! Task :   0 = add background
+!                1 = remove background added in a previous call
+      integer, intent(in)          ::  task
+!     Charge density, to which the background charge is added.
+      real(grid_p), intent(inout)  ::  rho(nsp, np)
 
       integer           i,ip, isp
       real(dp)          fact

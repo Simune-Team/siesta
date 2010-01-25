@@ -10,25 +10,26 @@
 !
       module m_efield
 
-c The electric field required can be added in two possible ways:
-c 1) FDF block 'ExternalElectricField'. This routine reads the
-c    electric field input by the user, and adds the corresponding
-c    potential to the grid.
-c    Sample FDF electric field specification:
-c       %block ExternalElectricField
-c           0.000  0.000  3.000  V/Ang
-c       %endblock ExternalElectricField
+!     This module implements routines to deal with an external
+!     electric field.
+!
+!     The field required can be specified in two possible ways:
+!
+!     1. Through and FDF block 'ExternalElectricField'. For example:
+!
+!       %block ExternalElectricField
+!           0.000  0.000  3.000  V/Ang
+!       %endblock ExternalElectricField
 
-c 2) FDF Option 'SlabDipoleCorrection'. This options calculates
-c    the electric field required to compensate the dipole of the
-c    system. The potential added to the grid corresponds to that
-c    of a dipole layer at the middle of the vacuum layer. For slabs,
-c    this exactly compensates the electric field at the vacuum, created
-c    by the dipole moment of the system, thus allowing to deal with
-c    asymmetric slabs (and compute properties such as the work funcion
-c    of each of the surfaces).
-c    Sample FDF input:   
-c       SlabDipoleCorrection   .true.
+!    2. Through the FDF Option 'SlabDipoleCorrection'. 
+!    If 'true', the program will then calculate at every SCF step
+!    the electric field required to compensate the dipole of the
+!    system. The potential added to the grid corresponds to that
+!    of a dipole layer in the middle of the vacuum layer. For slabs,
+!    this exactly compensates the electric field at the vacuum created
+!    by the dipole moment of the system, thus allowing to deal with
+!    asymmetric slabs (and compute properties such as the work funcion
+!    of each of the surfaces).
 
       use precision, only: dp
       use sys,       only: die
@@ -132,6 +133,13 @@ c       SlabDipoleCorrection   .true.
 !----------------------------------------------------------------
 
       subroutine initialize_efield()
+!
+!     Initializations that can be done once and for all
+!     It sets the module variables:
+!          user_specified_field
+!          acting_efield
+!          dipole_correction
+!
 
       use parallel,     only: ionode
       use siesta_cml,   only: cml_p, cmlAddProperty, mainXML
@@ -152,18 +160,18 @@ c       SlabDipoleCorrection   .true.
                write(6,'(/,a,3f12.6,a)')
      $              'efield: External electric field =',
      $              input_field, ' Ry/Bohr/e'
-               if (cml_p) call cmlAddProperty(xf=mainXML,
-     $              value=input_field, 
-     .              dictref='siesta:elfield', 
-     .              units='siestaUnits:Ry_Bohr_e')
                user_specified_field(1:3) = input_field(1:3)
             else
                write(6,'(a,(/,a,3f12.6))')
-     .              'efield: ERROR: Non zero bulk electric field.',
+     .              'efield: WARNING: Non zero bulk electric field.',
      .              'efield: Input field (Ry/Bohr/e) =', input_field,
      .              'efield: Orthogonalized field    =', orthog_field
                user_specified_field(1:3) = orthog_field(1:3)
             endif
+            if (cml_p) call cmlAddProperty(xf=mainXML,
+     $           value=user_specified_field, 
+     .           dictref='siesta:elfield', 
+     .           units='siestaUnits:Ry_Bohr_e')
          endif
       endif
 !
