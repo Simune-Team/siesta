@@ -252,6 +252,11 @@ PROGRAM siestaXCtest4
 !    print'(a,4i6)', 'i1max,i2max,i3max, irmax = ', i1max, i2max, i3max, irmax
   end if
 
+! Finalize MPI
+#ifdef MPI
+      call MPI_Finalize( MPIerror )
+#endif
+
 CONTAINS
 
 FUNCTION DensOfR( d0, r )
