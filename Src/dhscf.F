@@ -161,9 +161,6 @@ C       Find system volume
 C ----------------------------------------------------------------------
 C       Mesh initialization 
 C ----------------------------------------------------------------------
-#ifdef DEBUG
-        call write_debug( '      PRE InitMesh' )
-#endif
         if (.not. frstme) call resetMesh() ! Deallocate arrays
         call InitMesh( na, cell, norb, iaorb, iphorb, isa, rmax, 
      &                 G2max, G2mesh, nsc, nmpl, nm,
@@ -205,9 +202,7 @@ C       in each of them.
         do i= 1, nmpl
           numphi(i) = 0
         enddo
-#ifdef DEBUG
-        call write_debug( '      PRE distriPhiOnMesh' )
-#endif
+
         call distriPhiOnMesh( nm, nmpl, norb, iaorb, iphorb,
      &                        isa, numphi )
 
@@ -237,10 +232,6 @@ C       Drho is not used here
      &                          .false., .false. )
 
 C       Calculate orbital values on mesh
-#ifdef DEBUG
-        call write_debug( '      PRE PhiOnMesh' )
-#endif
-
         if (nodes.eq.1) then
           numphi_par => numphi
         else
@@ -603,6 +594,7 @@ C ----------------------------------------------------------------------
      &         Vaux, Chlocal, Totchar, IOBuff )
       call timer( 'DHSCF', 1 )
       call timer( 'DHSCF3', 1 )
+      call medirTiempo( 1, 1 )
 
       volume = volcel(cell)
 C Allocate local memory -------------------------------------------------
@@ -1117,6 +1109,7 @@ C ----------------------------------------------------------------------
 
 C Stop time counter
       call timer( 'DHSCF', 2 )
+      call medirTiempo( 2, 1 )
 
 C ----------------------------------------------------------------------
 C Free locally allocated memory

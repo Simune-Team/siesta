@@ -72,6 +72,9 @@
 #endif
 
 !------------------------------------------------------------------------- BEGIN
+#ifdef DEBUG
+      call write_debug( 'PRE siesta_analysis' )
+#endif
       final = .true.
 !     We want xalast to equal xa for coordinate relaxation only.
 !     Possible ERROR !!!!!!!!!!!!!!!!!!!!!!!!
@@ -129,9 +132,6 @@
      &               'ebk', 'siesta_analysis' )
 
       if (nbk.gt.0) then
-#ifdef DEBUG
-        call write_debug( '  PRE compute bands' )
-#endif
         call bands( no_s, nspin, nspin, no_u, maxnh, maxbk,
      &              numh, listhptr, listh, H, S, Ef, xijo, indxuo,
      &              .true., nbk, bk, ebk, no_u, occtol )
@@ -273,9 +273,6 @@
 
 !     Calculation of the optical conductivity
 !     Attention H0, Eold, Dold are used as auxiliary arrays
-#ifdef DEBUG
-      call write_debug( '  PRE optical' )
-#endif
       call optical(na_u, na_s, xalast, scell_last, ucell_last,
      &             no_u, no_l, no_s, nspin, qspin,
      &             maxnh, numh, listhptr, listh, H, S, H0,
@@ -301,9 +298,6 @@
         if (savepsch) filepsch = paste( slabel, '.IOCH'  )
         if (savetoch) filetoch = paste( slabel, '.TOCH'  )
         g2max = g2cut
-#ifdef DEBUG
-        call write_debug( '  PRE dhscf' )
-#endif
         call dhscf( nspin, no_s, iaorb, iphorb, no_l,
      &              no_u, na_u, na_s, isa, xalast, indxua, 
      &              ntm, 0, 0, 0, filrho, fildrh, filevh, filevt,
@@ -314,17 +308,14 @@
                     ! next to last argument is dummy here,
                     ! as no forces are calculated
                     ! todo: make all these optional
-#ifdef DEBUG
-        call write_debug( '  POS dhscf' )
-#endif
       endif
 
 C     Find local density of states
-#ifdef DEBUG
-      call write_debug( '  PRE local_DOS' )
-#endif
       call local_DOS()
 
+#ifdef DEBUG
+      call write_debug( 'POS siesta_analysis' )
+#endif
 !--------------------------------------------------------------------------- END
       END subroutine siesta_analysis
       END module m_siesta_analysis

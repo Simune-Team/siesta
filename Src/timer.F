@@ -286,6 +286,98 @@ C  WRITTEN BY Alberto Garcia, Feb 2000, stealing code from J. Soler
 
       end subroutine elap1
 
+#define __PPC970__
+
+#ifdef __PPC970__
+
+      MODULE tiempo
+      integer(4)          :: maxcont = 20
+      integer(4), pointer :: neventos(:)
+      integer(8), pointer :: timer(:,:)
+      real(8),    pointer :: abs_time(:)
+      real(8),  parameter :: TRES=69.8356e-9
+      END MODULE tiempo
+ 
+ 
+      subroutine inicializar_tiempo( mxcnt )
+      use tiempo
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      integer(4), optional :: mxcnt
+!--------------------------------------------------------------- Local Variables
+      integer(4) :: ii, counter, rate, maxCounter
+      integer(8) :: walltime
+!------------------------------------------------------------------------- BEGIN
+      if (present(mxcnt)) maxcont = mxcnt
+      nullify( timer, abs_time, neventos )
+      allocate( timer(2,maxcont), abs_time(maxcont), neventos(maxcont) )
+
+      do ii= 1, maxcont
+        timer(1,ii)  = 0
+        timer(2,ii)  = 0
+        neventos(ii) = 0.0
+        abs_time(ii) = 0.0
+      enddo
+!--------------------------------------------------------------------------- END
+      end subroutine inicializar_tiempo
+
+      subroutine medirTiempo( job, cont )
+      use tiempo
+      use sys, only : die
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      integer(4)           :: job, cont
+!--------------------------------------------------------------- Local Variables
+      integer(8)           :: itime, walltime
+
+!------------------------------------------------------------------------- BEGIN
+      if (cont < 1 .OR. cont > maxcont) then
+        call die( 'Wrong cont value' )
+      endif
+
+      IF (job == 1) THEN
+      	timer(1,cont) = walltime( )
+      ELSE IF (job == 2) THEN
+      	timer(2,cont)  = walltime( )
+        itime          = timer(2,cont) - timer(1,cont)
+        abs_time(cont) = abs_time(cont) + itime*TRES
+        neventos(cont) = neventos(cont) + 1
+      ELSE IF (job == 3) THEN
+      	timer(2,cont)  = walltime( )
+        itime          = timer(2,cont) - timer(1,cont)
+        abs_time(cont) = abs_time(cont) + itime*TRES
+        neventos(cont) = neventos(cont) + 1
+        write(23,*) '      iter:', neventos(cont),
+     &    'Tiempo:', itime*TRES, ' total:', abs_time(cont)
+      ELSE IF (job == 0) THEN
+        timer(1,cont)  = walltime( )
+        abs_time(cont) = 0.0
+        neventos(cont) = 0.0
+      ELSE
+        call die( 'Wrong job value' )
+      ENDIF
+!--------------------------------------------------------------------------- END
+      end subroutine medirTiempo
+
+      subroutine showTiempo( uf, cont, mess )
+      use tiempo
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      integer(4)         :: uf, cont
+      character(*)       :: mess
+!--------------------------------------------------------------- Local Variables
+      real(8)            :: tt
+!------------------------------------------------------------------------- BEGIN
+      tt = abs_time(cont)
+
+      if (neventos(cont).eq.0) then
+        write(uf,*) mess,  tt, neventos(cont), tt
+      else
+        write(uf,*) mess,  tt, neventos(cont), tt/neventos(cont)
+      endif
+!--------------------------------------------------------------------------- END
+      end subroutine showTiempo
+#else
       MODULE tiempo
       integer(4)          :: maxcont = 20
       integer(8), pointer :: timer(:,:)
@@ -293,6 +385,7 @@ C  WRITTEN BY Alberto Garcia, Feb 2000, stealing code from J. Soler
       integer(8)          :: current_time
       integer(8)          :: ref_time
       END MODULE tiempo
+ 
  
       subroutine inicializar_tiempo( mxcnt )
       use tiempo
@@ -326,10 +419,10 @@ C  WRITTEN BY Alberto Garcia, Feb 2000, stealing code from J. Soler
       use sys, only : die
       implicit none
 !--------------------------------------------------------------- Input Variables
-      integer(4) :: job, cont
+      integer(4)           :: job, cont
 !--------------------------------------------------------------- Local Variables
-      integer(4) :: rate, contMax, counter
-      integer(8) :: itime
+      integer(4)           :: rate, contMax, counter
+      integer(8)           :: itime
 
 !------------------------------------------------------------------------- BEGIN
       if (cont < 1 .OR. cont > maxcont) then
@@ -351,6 +444,18 @@ C  WRITTEN BY Alberto Garcia, Feb 2000, stealing code from J. Soler
         itime          = timer(2,cont) - timer(1,cont)
         abs_time(cont) = abs_time(cont) + (REAL(itime) / REAL(rate))
         neventos(cont) = neventos(cont) + 1.0
+      ELSE IF (job == 3) THEN
+      	timer(2,cont)  = current_time
+        itime          = timer(2,cont) - timer(1,cont)
+        abs_time(cont) = abs_time(cont) + (REAL(itime) / REAL(rate))
+        neventos(cont) = neventos(cont) + 1.0
+        write(23,*) '      iter:', neventos(cont),
+     &    'Tiempo:', (REAL(itime) / REAL(rate)),
+     &    ' total:', abs_time(cont)
+      ELSE IF (job == 0) THEN
+        timer(1,cont)  = current_time
+        abs_time(cont) = 0.0
+        neventos(cont) = 0.0
       ELSE
         call die( 'Wrong job value' )
       ENDIF
@@ -361,13 +466,19 @@ C  WRITTEN BY Alberto Garcia, Feb 2000, stealing code from J. Soler
       use tiempo
       implicit none
 !--------------------------------------------------------------- Input Variables
-      integer(4)    :: uf, cont
-      character(*)  :: mess
+      integer(4)         :: uf, cont
+      character(*)       :: mess
 !--------------------------------------------------------------- Local Variables
-      real(8)       :: tt
+      real(8)            :: tt
+      real(8), parameter :: ZERO=0.0
 !------------------------------------------------------------------------- BEGIN
       tt = abs_time(cont)
 
-      write(uf,*) mess,  tt, neventos(cont), tt/neventos(cont)
+      if (neventos(cont).eq.ZERO) then
+        write(uf,*) mess,  tt, neventos(cont), tt
+      else
+        write(uf,*) mess,  tt, neventos(cont), tt/neventos(cont)
+      endif
 !--------------------------------------------------------------------------- END
       end subroutine showTiempo
+#endif

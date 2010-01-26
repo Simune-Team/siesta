@@ -142,7 +142,7 @@ C     distributed memory before checking the dimensions
 
 C     Allocate local buffer array for globalised numd
       nullify(numdg)
-      call re_alloc(numdg, 1, no_u, name="numdg", routine="read_dm")
+      call re_alloc( numdg, 1, no_u, 'numdg', 'read_dm' )
       if (Node.eq.0) then
          if (fmti) then
             read(unit1, intfmt) (numdg(m),m=1,no_u)
@@ -168,14 +168,14 @@ C     Convert global numd pointer to local form and generate listdptr
       ndmaxg = maxval(numdg(1:no_u))
 
       ! Allocate density matrix and listd
-      call re_alloc(listd,1,maxnd,name="listd",routine="read_dm")
-      call re_alloc(dm,1,maxnd,1,nspin,name="dm",routine="read_dm")
+      call re_alloc( listd, 1, maxnd, 'listd', 'read_dm' )
+      call re_alloc( dm, 1, maxnd, 1, nspin, 'dm', 'read_dm' )
 
 #ifdef MPI
 C     Create buffer arrays for transfering density matrix between nodes and lists
       nullify(buffer,ibuffer)
-      call re_alloc(buffer,1,ndmaxg,name="buffer",routine="read_dm")
-      call re_alloc(ibuffer,1,ndmaxg,name="ibuffer",routine="read_dm")
+      call re_alloc( buffer,  1, ndmaxg, 'buffer'  , 'read_dm' )
+      call re_alloc( ibuffer, 1, ndmaxg, 'ibuffer' , 'read_dm' )
 #endif
 
       do m = 1,no_u
@@ -215,7 +215,7 @@ C     Create buffer arrays for transfering density matrix between nodes and list
       enddo
 
 #ifdef MPI
-      call de_alloc(ibuffer,name="ibuffer",routine="read_dm")
+      call de_alloc( ibuffer, 'ibuffer', 'read_dm' )
 #endif
 
       do is = 1,nspin
@@ -258,9 +258,9 @@ C     Create buffer arrays for transfering density matrix between nodes and list
       enddo
 
 #ifdef MPI
-      call de_alloc(buffer,name="buffer",routine="read_dm")
+      call de_alloc( buffer, 'buffer', 'read_dm' )
 #endif
-      call de_alloc(numdg,name="numdg",routine="read_dm")
+      call de_alloc( numdg, 'numdg', 'read_dm' )
 
       if (Node.eq.0) then
          call io_close(unit1)
@@ -366,7 +366,7 @@ C     distributed memory before checking the dimensions
 
 C     Allocate local buffer array for globalised numd
       nullify(numdg)
-      call re_alloc(numdg, 1, no_u, name="numdg", routine="read_dm")
+      call re_alloc( numdg, 1, no_u, 'numdg', 'read_dm' )
       if (Node.eq.0) then
          if (fmti) then
             read(unit1, intfmt) (numdg(m),m=1,no_u)
@@ -404,8 +404,8 @@ C     Check size of first dimension of dm
 #ifdef MPI
 C     Create buffer arrays for transfering density matrix between nodes and lists
       nullify(buffer,ibuffer)
-      call re_alloc(buffer,1,ndmaxg,name="buffer",routine="read_dm")
-      call re_alloc(ibuffer,1,ndmaxg,name="ibuffer",routine="read_dm")
+      call re_alloc( buffer,  1, ndmaxg, 'buffer',  'read_dm' )
+      call re_alloc( ibuffer, 1, ndmaxg, 'ibuffer', 'read_dm' )
 #endif
 
       do m = 1,no_u
@@ -445,7 +445,7 @@ C     Create buffer arrays for transfering density matrix between nodes and list
       enddo
 
 #ifdef MPI
-      call de_alloc(ibuffer,name="ibuffer",routine="read_dm")
+      call de_alloc( ibuffer, 'ibuffer', 'read_dm' )
 #endif
 
       do is = 1,nspin
@@ -488,9 +488,9 @@ C     Create buffer arrays for transfering density matrix between nodes and list
       enddo
 
 #ifdef MPI
-      call de_alloc(buffer,name="buffer",routine="read_dm")
+      call de_alloc( buffer, 'buffer', 'read_dm' )
 #endif
-      call de_alloc(numdg,name="numdg",routine="read_dm")
+      call de_alloc( numdg, 'numdg', 'read_dm' )
 
       if (Node.eq.0) then
          call io_close(unit1)
@@ -542,7 +542,7 @@ C     Find total number of basis functions over all Nodes
       endif
 
       nullify(numdg)
-      call re_alloc(numdg, 1, no_u, name="numdg", routine="read_dm")
+      call re_alloc( numdg, 1, no_u, 'numdg', 'write_dm' )
 
 C     Create globalised numd
       do m = 1,no_u
@@ -581,10 +581,8 @@ C     Write out numd array
          endif
 #ifdef MPI
          nullify(buffer,ibuffer)
-         call re_alloc(buffer,1,ndmaxg,name="buffer",
-     $                          routine="write_dm")
-         call re_alloc(ibuffer,1,ndmaxg,name="ibuffer",
-     $                          routine="write_dm")
+         call re_alloc( buffer,  1, ndmaxg, 'buffer',  'write_dm' )
+         call re_alloc( ibuffer, 1, ndmaxg, 'ibuffer', 'write_dm' )
 #endif
       endif
 
@@ -629,7 +627,7 @@ C     Write out listd array
 
 #ifdef MPI
       if (Node.eq.0) then
-         call de_alloc(ibuffer,name="ibuffer",routine="write_dm")
+         call de_alloc( ibuffer, 'ibuffer', 'write_dm' )
       endif
 #endif
 
@@ -677,12 +675,12 @@ C     Write density matrix
 
       if (Node.eq.0) then
 #ifdef MPI
-         call de_alloc(buffer,name="buffer",routine="write_dm")
+         call de_alloc( buffer, 'buffer', 'write_dm' )
 #endif
          call io_close(unit1)
       endif
 
-      call de_alloc(numdg,name="numdg",routine="write_dm")
+      call de_alloc( numdg, 'numdg', 'write_dm' )
 
       end subroutine write_dm
 

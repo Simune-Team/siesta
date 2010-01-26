@@ -105,6 +105,9 @@ C     Functions
       data                       k0 / 3*0.0_dp /
 
 !------------------------------------------------------------------------- BEGIN
+#ifdef DEBUG
+      call write_debug( '      PRE InitMesh' )
+#endif
 C ----------------------------------------------------------------------
 C     Orbital type initialization 
 C ----------------------------------------------------------------------
@@ -366,5 +369,8 @@ C             Store index-distance and vector-distance to point.
 C     Deallocate orbital related memory
       call de_alloc( noty, name='noty', routine='InitMesh' )
       call de_alloc( rcty, name='rcty', routine='InitMesh' )
+#ifdef DEBUG
+      call write_debug( '      POS InitMesh' )
+#endif
 !--------------------------------------------------------------------------- END
       end subroutine InitMesh

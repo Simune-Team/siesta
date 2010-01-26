@@ -1,8 +1,6 @@
       module jacobi_davidson
       use matrixop
-      use precond,      only : precond_t, setIdPrecond,
-     &                         precond_solver_mat,
-     &                         precond_solver_vec
+      use precond
       use precision
       use alloc
       use gmres
@@ -13,14 +11,12 @@
       PRIVATE
 
       real(dp),  pointer :: jd_v0(:) 
-      integer            :: jd_reorthogonalize
-      integer            :: jd_kmax
-      integer            :: jd_mmin
-      integer            :: jd_mmax
-      real               :: jd_eps
-
-      type(precond_t)    :: PC
-
+      integer            :: Kmax
+      integer            :: Mmin
+      integer            :: Mmax
+      integer            :: JDreortho
+      real               :: JDepsilon
+      real               :: ITepsilon
 
       contains
 
@@ -52,7 +48,9 @@ C     Local variables
       real(dp)             :: tt
       logical              :: getD, getPSI
 
-      neig = (qtot*7)/10
+!      neig = min(neig,200)
+      neig = nuotot*2/10
+!      neig = min(neig,100)
 
       write(23,*) '=========  Inside jacobi  ========='
       write(23,*) '     n. orbitales global:', nuotot
@@ -93,6 +91,8 @@ C     Local variables
 
       call create_matrix( nuo, dd_ncolum, nnz, ind, col, H,  A )
       call create_matrix( nuo, dd_ncolum, nnz, ind, col, S,  B )
+      write(23,*) '     n. columnas local  :', A%nc
+      flush(23)
 
       nullify( w, Z, qo )
       call re_alloc( w, 1, neig, 'w', 'jd_diag' )
@@ -106,29 +106,23 @@ C     Set jacobi options
       tt    = 1.0/sqrt(tt)
       jd_v0 = tt
 
-      jd_kmax = neig
-!      jd_kmax = min(50,neig)
-      jd_mmax            = 50
-      jd_mmin            = 20
-      jd_eps             = 1.0e-4
-      jd_reorthogonalize = 2
-      write(23,*) '     JD max krylov dim  :', jd_mmax
-      write(23,*) '     JD min krylov dim  :', jd_mmin
+      Kmax = neig
+!      Kmax = min(50,neig)
+      Mmax      = 50
+      Mmin      = 20
+      JDepsilon = 1.0e-5
+      ITepsilon = 1.0e-5
+      ITmaxiter = min(50,nuotot)
+      JDreortho = 100
+      gmres_dim = min(max(257,nuotot/2),nuotot)
+
+      write(23,*) '     JD max krylov dim :', Mmax
+      write(23,*) '     JD min krylov dim :', Mmin
+      write(23,*) '     JD epsilon        :', JDepsilon
+      write(23,*) '     Iter Epsilon      :', ITepsilon
+      write(23,*) '     Iter Max Iter     :', ITmaxiter
       flush(23)
 
-C     Set MINRES, GMRES or CG options and Preconditioner
-#ifdef KKKKKKKKKK
-      gmres_maxiter = nuotot
-      gmres_dim     = min(max(257,nuotot/2),nuotot)
-      cg_maxiter    = nuotot
-      call setIdPrecond( PC, nuo )
-#else
-      minres_eps     = 1.0e-4
-      minres_maxiter = nuotot
-
-      minres_maxiter = 50
-
-#endif
       getD   = .true.
       getPSI = .false.
 
@@ -144,8 +138,6 @@ C     Set MINRES, GMRES or CG options and Preconditioner
 
       call de_alloc( ind, 'ind', 'jd_diag' )
       call de_alloc( col, 'col', 'jd_diag' )
-      write(23,*) 'POS jd_diag'
-      flush(23)
 
       end subroutine jd_diag
 
@@ -172,13 +164,14 @@ C     Local variables
       real(dp)                   :: qe, ee, qei, eei
       real(dp),          pointer :: ZZ(:,:)
 
-
       call medirTiempo( 1, 6 )
       call jd_solver( n, neig, A, B, W, Z )
       call medirTiempo( 2, 6 )
       write(23,*) '=== AUTOVALORES de salida ==='
+      flush(23)
       do j= 1, neig
-        write(23,*) 'EV(', j, '):', W(j), Z(:,j)
+        write(23,*) 'EV(', j, '):', W(j) !, Z(:,j)
+      flush(23)
       enddo
       write(23,*) ' '
       write(23,*) '========    TIMES    ========'
@@ -190,16 +183,8 @@ C     Local variables
       call showTiempo( 23, 4,  '  Cellxc         :' )
       call showTiempo( 23, 5,  '  Vmat           :' )
       call showTiempo( 23, 6,  'JacobiDa         :' )
-      call showTiempo( 23, 12, '  Eigenval       :' )
-      call showTiempo( 23, 13, '  GramSchB       :' )
-      call showTiempo( 23, 14, '  A·x            :' )
-      call showTiempo( 23, 7,  '  Correcti       :' )
-      call showTiempo( 23, 8,  '    GMRES        :' )
-!      call showTiempo( 23, 11, '      GramSchm   :' )
-      call showTiempo( 23, 9,  '      gmres_mv   :' )
-      call showTiempo( 23, 10, '        (A-o·B)x :' )
-      call showTiempo( 23, 11, '        rd_array :' )
       flush(23)
+
 !      call MPI_finalize( io )
 !      STOP
 
@@ -215,9 +200,8 @@ C Find new Fermi energy and occupation weights
      .               w, temp, qtot, qo, ef, Entropy )
       endif
 
-      write(23,*) 'Fermi energy', ef, Entropy
-      write(23,*) 'Occupations', qo
-      flush(23)
+!      write(23,*) 'Fermi energy', ef, Entropy
+!      write(23,*) 'Occupations', qo
 
 C     Count the number of usefull eigenvalues/vectors
       uneig    = 1
@@ -235,7 +219,7 @@ C     Count the number of usefull eigenvalues/vectors
         endif
       enddo
 
-      write(23,*) 'uneig:', uneig
+      write(23,*) 'Number of used EIGENVALUES:', uneig
       flush(23)
 
       nc = A%nc
@@ -276,110 +260,91 @@ C     Input variables
 C     Output variables
       real(dp),      intent(out) :: lambda(neig), Q(n,neig)
 C     Local variables
-      integer              :: kmax, mmin, mmax, it, i, j, k, m, m2,
-     &                        offset, gm_it, gm_it_tot, nc
-      real(dp)             :: eps, dotp, norm, rteta, nrm2
-      real(dp),    pointer :: t(:), t_tilde(:), V(:,:), Va(:,:),
-     &                        Vb(:,:), VAV(:), VAVtmp(:), VAUX(:,:),
-     &                        teta(:), S(:),
+      integer              :: it, i, j, k, k2, lastk, m, m2,
+     &                        offset, gm_it, gm_it_tot, lwork,
+     &                        reortho, nreort
+      real(dp)             :: dotp, rteta, nrm2, taut, dvdot
+      logical              :: nomin
+      real(dp),    pointer :: t(:), V(:,:), Va(:,:),
+     &                        Vb(:,:), VAV(:,:), VAUX(:,:),
+     &                        teta(:), S(:), MM(:,:),
      &                        vi(:), via(:), vib(:),
      &                        vmb(:), s1(:), u(:), p(:),
      &                        ua(:), r(:), si(:), siplus1(:), Z(:,:),
-     &                        xx(:), work(:)
-      real(dp)             :: dvdot, residual_norm
-      real(dp),  parameter :: ONE=1.0, ZERO=0.0
-      integer              :: reorthogonalize, nreort
+     &                        work(:)
+      real(dp),  parameter :: ONE=1.0, ZERO=0.0, EPS_IT_MIN=1.0E-1
 #ifdef MPI
       integer              :: MPIerror
 #endif
 
       t   => jd_v0
-      kmax = jd_kmax
-      mmin = jd_mmin 
-      mmax = jd_mmax 
-      eps  = jd_eps
 
       k         = 0
       m         = 0
       gm_it_tot = 0
-      nullify( t_tilde, V, Va, Vb, VAUX, VAV,
-     &         teta, S, u, p, ua, r, Z, xx, work )
-      m2 = ((mmax+1)**2+(mmax+1))/2
-      nc = A%nc
-      call re_alloc( t_tilde, 1, n, 't_tilde', 'jd_solver' )
-      call re_alloc( V, 1, n, 1, mmax+1, 'V', 'jd_solver' )
-      call re_alloc( Va, 1, n, 1, mmax+1, 'Va', 'jd_solver' )
-      call re_alloc( Vb, 1, n, 1, mmax+1, 'Vb', 'jd_solver' )
-      call re_alloc( VAUX, 1, n, 1, mmax+1, 'VAUX', 'jd_solver' )
-      call re_alloc( VAV, 1, m2, 'VAV', 'jd_solver' )
-      call re_alloc( VAVtmp, 1, m2, 'VAVtmp', 'jd_solver' )
-      call re_alloc( teta, 1, mmax+1, 'teta', 'jd_solver' )
-      call re_alloc( S, 1, (mmax+1)**2, 'S', 'jd_solver' )
+
+      m2    = ((Mmax+1)*Mmax)/2
+      k2    = ((Kmax+1)*Kmax)/2
+      lwork = max(Kmax*2+5*n+A%nc,max(3*mmax,2*(mmax+kmax)))
+      nullify( V, Va, Vb, VAUX, VAV, teta, MM,
+     &         S, u, p, ua, r, Z, work )
+      call re_alloc( V, 1, n, 1, Mmax, 'V', 'jd_solver' )
+      call re_alloc( Va, 1, n, 1, Mmax, 'Va', 'jd_solver' )
+      call re_alloc( Vb, 1, n, 1, Mmax, 'Vb', 'jd_solver' )
+      call re_alloc( VAUX, 1, n, 1, Mmax, 'VAUX', 'jd_solver' )
+      call re_alloc( VAV, 1, m2, 1, 2, 'VAV', 'jd_solver' )
+      call re_alloc( MM, 1, k2, 1, 2, 'MM', 'jd_solver' )
+      call re_alloc( teta, 1, Mmax, 'teta', 'jd_solver' )
+      call re_alloc( S, 1, Mmax*Mmax, 'S', 'jd_solver' )
       call re_alloc( u, 1, n, 'u', 'jd_solver' )
       call re_alloc( p, 1, n, 'p', 'jd_solver' )
       call re_alloc( ua, 1, n, 'ua', 'jd_solver' )
       call re_alloc( r, 1, n, 'r', 'jd_solver' )
-      call re_alloc( Z, 1, n, 1, kmax, 'Z', 'jd_solver' )
-      call re_alloc( xx, 1, nc, 'xx', 'jd_solver' )
-      call re_alloc( work, 1, 3*mmax, 'work', 'jd_solver' )
+      call re_alloc( Z, 1, n, 1, Kmax, 'Z', 'jd_solver' )
+      call re_alloc( work, 1, lwork, 'work', 'jd_solver' )
 
       ! (1)
-      t_tilde = 0.0
       V       = 0.0
       Va      = 0.0
       Vb      = 0.0
 
       it = 1
-      reorthogonalize = 0
-      nreort          = 0
+      reortho = 0
+      nreort  = 0
+      ITeps   = EPS_IT_MIN
+      nomin   = .true.
+      taut    = 0.0
+
       ! (2)
-      do while ( k .lt. kmax .and. gm_it_tot.le.200*kmax )
+      do while ( k .lt. Kmax )
+        call medirTiempo( 1, 7 )
         write(23,*) ' '
         write(23,*) '  NEW JD_ITER:', it, 'ITSOL_IT:', gm_it_tot,
      &             'JD_dim:', m+1, '  EV found:', k, ' nreort:', nreort
         flush(23)
 
-
         ! (3) - (5)
-        if (m.gt.0)
-     &    call GramSchmidt_B( N, M, Vb, V, t, work, work(mmax+1) )
+        call medirTiempo( 0, 8 )
+        call GramSchmidt( N, M, Vb, V, t, work )
+        call medirTiempo( 2, 8 )
 
-#ifdef RGT
-        do i= 1, k
-          norm = dvdot( n, Z(1,i), t )
-          write(23,*) i, k, 't _|_ Z?', norm
-        enddo
-        do i= 1, m
-          norm = dvdot( n, Vb(1,i), t )
-          write(23,*) i, m, 't _|_ VB?', norm
-        enddo
-#endif
-
-        ! (6) 
+        ! (6) - (10)
+        call medirTiempo( 0, 9 )
         m = m + 1
-        call dsmv( n, nc, B, t, xx, t_tilde )
-        norm = dvdot( n, t_tilde, t )
-        norm = 1.0/sqrt(norm)
-
-        ! (7)
-        call dscal( N, norm, t, 1 )             ! t     = t/norm
         call dcopy( N, t, 1, V(1,m), 1 )        ! Vm    = t
-
-        call dsmv( n, nc, A, t, xx, Va(1,m) )   ! VAm   = A*Vm 
-
-        call dscal( N, norm, t_tilde, 1 )       ! t_til = t_til/norm
-        call dcopy( N, t_tilde, 1, Vb(1,m), 1 ) ! VBm   = t_til
-
-        ! (8) (9) (10)
-        offset = (m-1)*m/2
-        call ddmtv( n, m, V, Va(1,m), VAV(offset+1), work )
+        call projectionMatrix( n, m, A, B, V, VA, VB, VAV, work )
+        call medirTiempo( 2, 9 )
+        write(23,*) '      CANDIDATE EIGENVALUES:', teta(1:m)
 
         ! (11)
-        call dcopy( offset+m, VAV, 1, VAVtmp, 1 )
-        call compute_eigenpairs( m, VAVtmp, teta, S, work )
-        write(23,*) '      CANDIDATE EIGENVALUES:', teta(1:m)
-        flush(23)
+        call medirTiempo( 0, 10 )
+        call computeEigenpairs( m, m2, VAV, teta, S, work )
+        call medirTiempo( 2, 10 )
 
+        call selectEigenpair( nomin, taut, m, teta, S, work )
+        write(23,*) '      SELECTED EIGENVALUE:', teta(1)
+
+        call medirTiempo( 0, 11 )
         ! (12)
         call DGEMV( 'N', n, m, ONE, V, n, S, 1, ZERO, u, 1 )
         call DGEMV( 'N', n, m, ONE, Vb, n, S, 1, ZERO, p, 1 )
@@ -388,19 +353,20 @@ C     Local variables
           r(i) = ua(i) - teta(1)*p(i)
         enddo
 
+        lastk     = k
         ! (13) 
-        do while ( residual_norm( n, r, u) .le. eps )
-          write(23,*) '      GOOD EIGENVALUE(', k+1, ')=', teta(1)
-          flush(23)
+        do while ( residual_norm( n, r, u) .le. JDepsilon )
+          write(23,*) '      GOOD EIGENVALUE:', teta(1)
 
           ! (14)
           call dcopy( n, u, 1, Q(1,k+1), 1 )
+
           call dcopy( n, p, 1, Z(1,k+1), 1 )
           lambda(k+1)   = teta(1)
           k             = k + 1
 
           ! (15)
-          if ( k .eq. kmax ) goto 100
+          if ( k .eq. Kmax ) goto 100
 
           ! (16)
           m = m - 1
@@ -411,24 +377,24 @@ C     Local variables
             call DGEMM( 'N', 'N', n, m, m+1, ONE, V, n, S(m+2), m+1,
      &                  ZERO, VAUX, n )
             call dcopy( n*m, VAUX, 1, V, 1 )
-
             call DGEMM( 'N', 'N', n, m, m+1, ONE, Va, n, S(m+2), m+1,
      &                  ZERO, VAUX, n )
             call dcopy( n*m, VAUX, 1, Va, 1 )
-
             call DGEMM( 'N', 'N', n, m, m+1, ONE, Vb, n, S(m+2), m+1,
      &                  ZERO, VAUX, n )
             call dcopy( n*m, VAUX, 1, Vb, 1 )
+
+            reortho = reortho + m + 1
 
             ! (19) (20)
             offset = 0
             do i = 1, m
               do j= 1, i-1
                 offset = offset + 1
-                VAV(offset) = 0.0
+                VAV(offset,1) = 0.0
               enddo
               offset = offset + 1
-              VAV(offset) = teta(i+1)
+              VAV(offset,1) = teta(i+1)
             enddo
 
             offset = 0
@@ -446,8 +412,6 @@ C     Local variables
             do i = 1, m
               teta(i)     = teta(i+1)
             enddo
-
-!            reorthogonalize = reorthogonalize + 1
           endif
           ! (21)
           call dcopy( n, V,  1, u, 1 )
@@ -455,126 +419,68 @@ C     Local variables
           do i= 1, n
             r(i) = Va(i,1) - teta(1)*p(i)
           enddo
+          write(23,*) '      CANDIDATE EIGENVALUE:', teta(1)
 
-#ifdef RGT
-          do i= 1, m
-            do j= 1, k
-              norm = dvdot( n, Z(1,j), V(1,i) )
-              write(23,*) i, j, 'V _|_ Z?', norm,
-     &        dvdot( n, Q(1,j), Vb(1,i) )
-            enddo
-            do j = 1, i
-              norm = dvdot( n, V(1,i), Vb(1,j) )
-              write(23,*) i, j, 'V^t _|_ Vb?', norm,
-     &        dvdot( n, V(1,j), Vb(1,i) )
-            enddo
-          enddo
-#endif
+          ITeps = EPS_IT_MIN
         ! (22)  
         enddo
-
+        call medirTiempo( 2, 11 )
 
         ! (23)
-        if ( m .gt. mmax ) then
-#ifdef RGT
-          write(23,*) '  Restart Krylov Space'
-          flush(23)
-#endif
-          reorthogonalize = reorthogonalize + 1
+        call medirTiempo( 0, 12 )
+        if ( m .ge. Mmax ) then
+          write(23,*) '    RESTART JACOBI'
 
           ! (24)
-          VAV = 0.0
+C          VAV = 0.0
           ! (25) - (27)
-          call DGEMM( 'N', 'N', n, mmin-1, m, ONE, V, n, S(m+1),
+          call DGEMM( 'N', 'N', n, Mmin-1, m, ONE, V, n, S(m+1),
      &                m, ZERO, VAUX, n )
           call dcopy( n, u, 1, V, 1 )
-          call dcopy( n*(mmin-1), VAUX, 1, V(1,2), 1 )
+          call dcopy( n*(Mmin-1), VAUX, 1, V(1,2), 1 )
 
-          call DGEMM( 'N', 'N', n, mmin-1, m, ONE, Va, n, S(m+1),
+          call DGEMM( 'N', 'N', n, Mmin-1, m, ONE, Va, n, S(m+1),
      &                m, ZERO, VAUX, n )
           call dcopy( n, ua, 1, Va, 1 )
-          call dcopy( n*(mmin-1), VAUX, 1, Va(1,2), 1 )
+          call dcopy( n*(Mmin-1), VAUX, 1, Va(1,2), 1 )
 
-          call DGEMM( 'N', 'N', n, mmin-1, m, ONE, Vb, n, S(m+1),
+          call DGEMM( 'N', 'N', n, Mmin-1, m, ONE, Vb, n, S(m+1),
      &                m, ZERO, VAUX, n )
           call dcopy( n, p, 1, Vb, 1 )
-          call dcopy( n*(mmin-1), VAUX, 1, Vb(1,2), 1 )
+          call dcopy( n*(Mmin-1), VAUX, 1, Vb(1,2), 1 )
+
+          reortho = reortho + m
 
           ! (28)
-          m      = mmin
+          m      = Mmin
           offset = 0
           do i = 1, m
             do j= 1, i-1
               offset = offset + 1
-              VAV(offset) = 0.0
+              VAV(offset,1) = 0.0
             enddo
             offset = offset + 1
-            VAV(offset) = teta(i+1)
+            VAV(offset,1) = teta(i)
           enddo
+          call medirTiempo( 2, 12 )
 
-#ifdef RGT
-          do i= 1, m
-            do j= 1, k
-              norm = dvdot( n, Z(1,j), V(1,i) )
-              write(23,*) i, j, 'V _|_ Z?', norm,
-     &        dvdot( n, Q(1,j), Vb(1,i) )
-            enddo
-            do j = 1, i
-              norm = dvdot( n, V(1,i), Vb(1,j) )
-              write(23,*) i, j, 'V^t _|_ Vb?', norm,
-     &        dvdot( n, V(1,j), Vb(1,i) )
-            enddo
-          enddo
-#endif
         ! (29)
         endif
 
-        if (reorthogonalize.ge.jd_reorthogonalize) then
+        call medirTiempo( 0, 13 )
+        if (reortho.ge.JDreortho) then
+          write(23,*) '    REORTOGONALIZE BASE'
           nreort = nreort + 1
-          write(23,*) '  Reorthogonalization of V & Vb'
-          flush(23)
           do i= 1, m
-            do j= 1, k
-              norm = -dvdot( n, Z(1,j), V(1,i) )
-              call DAXPY( n, norm, Q(1,j), 1, V(1,i), 1 )
-            enddo
-
-            if (i.gt.1)
-     &        call GramSchmidt_B( N, i-1, Vb, V, V(1,i), work,
-     &                            work(mmax+1) )
-
-            ! (6) 
-            call dsmv( n, nc, B, V(1,i), xx, t_tilde )
-            norm = dvdot( n, t_tilde, V(1,i) )
-            norm = 1.0/sqrt(norm)
-
-            ! (7)
-            call dscal( N, norm, V(1,i), 1 )           ! t     = t/norm
-            call dsmv( n, nc, A, V(1,i), xx, Va(1,i) ) ! VAm   = A*Vm 
-            call dscal( N, norm, t_tilde, 1 )          ! t_til = t_til/norm
-            call dcopy( N, t_tilde, 1, Vb(1,i), 1 )    ! VBm   = t_til
-
-            ! (8) (9) (10)
-            offset = (i-1)*i/2
-            call ddmtv( n, i, V, Va(1,i), VAV(offset+1), work )
+            call GramSchmidt2( N, k, i-1, Z, Q, Vb, V, V(1,i), work )
+            call projectionMatrix( n, i, A, B, V, VA, VB, VAV, work )
           enddo
 
-#ifdef RGT
-          do i= 1, m
-            do j= 1, k
-              norm = dvdot( n, Z(1,j), V(1,i) )
-              write(23,*) i, j, 'RESTART V _|_ Z?', norm,
-     &        dvdot( n, Q(1,j), Vb(1,i) )
-            enddo
-            do j = 1, i
-              norm = dvdot( n, V(1,i), Vb(1,j) )
-              write(23,*) i, j, 'RESTART V _|_ Vb?', norm,
-     &         dvdot( n, V(1,j), Vb(1,i) )
-            enddo
-          enddo
-#endif
-          reorthogonalize = 0
+          reortho = 0
+          call medirTiempo( 2, 13 )
         endif
+
+        call medirTiempo( 0, 14 )
         ! (30)
         rteta = teta(1)
         call dcopy( n, p, 1, Z(1,k+1), 1 )
@@ -582,19 +488,34 @@ C     Local variables
 
         ! (31)
         t  = 0.0
-        call medirTiempo( 1, 7 )
-        call jd_correction( n, k+1, Z, A, B, rteta, r, gm_it, t )
-        call medirTiempo( 2, 7 )
 
-#ifdef RGT
-        do i= 1, k+1
-          norm = dvdot( n, Z(1,i), t )
-          write(23,*) i, k+1, 't _|_ Z?', norm
-        enddo
-#endif
+        call jd_correction( n, k+1, lastk, Kmax, Z, MM, A, B, rteta,
+     &                      r, gm_it, t, work, lwork )
+        call medirTiempo( 2, 14 )
+
+        ITeps = ITeps*0.5
+        if (ITeps.lt.ITepsilon) ITeps = ITepsilon
 
         gm_it_tot = gm_it_tot + gm_it
         it = it + 1
+
+        call showTiempo( 23,  8,  'GramSchmidt of V   :' )
+        call showTiempo( 23,  9,  'M=V*A*V            :' )
+        call showTiempo( 23, 10,  'EV of M            :' )
+        call showTiempo( 23, 11,  'Check EV           :' )
+        call showTiempo( 23, 12,  'Restart V          :' )
+        call showTiempo( 23, 13,  'Reortogonalize     :' )
+        call showTiempo( 23, 14,  'JD_Correction      :' )
+        call showTiempo( 23, 15,  '  DDMTM            :' )
+        call showTiempo( 23, 16,  '  choleskyFact     :' )
+        call showTiempo( 23, 20,  '  SYMLQ            :' )
+        call showTiempo( 23, 21,  '    DEFLATED MxV   :' )
+        call showTiempo( 23, 22,  '     y = (A-t*B)*v :' )
+        call showTiempo( 23, 17,  '     DDMTV         :' )
+        call showTiempo( 23, 18,  '     choleskySolve :' )
+        call showTiempo( 23, 19,  '     DGEMV         :' )
+
+        call medirTiempo( 3, 7 )
 
       ! (32)  
       end do
@@ -602,11 +523,10 @@ C     Local variables
 
 100   continue
 
-!!!      call MPI_Finalize( it )
-!!!      STOP
+      call showTiempo( 23, 7,  'Partial Time JacobiDa:' )
+      flush(23)
 
       call de_alloc( work, 'work', 'jd_solver' )
-      call de_alloc( xx, 'xx', 'jd_solver' )
       call de_alloc( Z, 'Z', 'jd_solver' )
       call de_alloc( r, 'r', 'jd_solver' )
       call de_alloc( ua, 'ua', 'jd_solver' )
@@ -614,26 +534,23 @@ C     Local variables
       call de_alloc( u, 'u', 'jd_solver' )
       call de_alloc( S, 'S', 'jd_solver' )
       call de_alloc( teta, 'teta', 'jd_solver' )
-      call de_alloc( VAVtmp, 'VAVtmp', 'jd_solver' )
+      call de_alloc( MM, 'MM', 'jd_solver' )
       call de_alloc( VAV, 'VAV', 'jd_solver' )
       call de_alloc( Vb, 'Vb', 'jd_solver' )
       call de_alloc( Va, 'Va', 'jd_solver' )
       call de_alloc( V, 'V', 'jd_solver' )
-      call de_alloc( t_tilde, 't_tilde', 'jd_solver' )
       end subroutine jd_solver
 
-      subroutine compute_eigenpairs( m, VAV, W, VR, work )
+      subroutine computeEigenpairs( m, m2, AP, W, VR, work )
       use sys,       only : die
       implicit none
 C     Input parameters
-      integer,    intent(in) :: m
-      real(dp)               :: VAV((m*m+m)/2)
+      integer,    intent(in) :: m, m2
 C     Output parameters
-      real(dp)               :: W(m), VR(m*m), work(3*M)
+      real(dp)               :: AP(m2,2), W(m), VR(m*m), work(3*M)
 C     Local Variables
       integer                :: info
 
-      call medirTiempo( 1, 12 )
       ! LAPACK
       !
       ! DSPEV computes all the eigenvalues and, optionally, eigenvectors
@@ -648,96 +565,189 @@ C     Local Variables
       !
       ! The computed eigenvectors are normalized to have Euclidean norm
       ! equal to 1 and largest component real.
-      call DSPEV( 'V', 'U', m, VAV, W, VR, m, work, info )
+      call dcopy( m2, AP, 1, AP(1,2), 1 )
+      call DSPEV( 'V', 'U', m, AP(1,2), W, VR, m, work, info )
 
-      if (info.ne.0) call die( 'ERROR in compute_eigenpairs->DSPEV' )
-      call medirTiempo( 2, 12 )
+      if (info.ne.0) call die( 'ERROR in computeEigenpairs->DSPEV' )
 
-      end subroutine compute_eigenpairs
+      end subroutine computeEigenpairs
 
 
-      subroutine jd_correction( n, ne, Z, A, B, teta, r, gm_it, t )
+      subroutine selectEigenpair( nomin, taut, m, teta, S, work )
       use sys,       only : die
       implicit none
 C     Input parameters
-      integer               :: n, ne
-      real(dp)              :: Z(n,ne)
-      type(matrix_t)        :: A, B
+      logical,   intent(in) :: nomin
+      integer,   intent(in) :: m
+      real(dp),  intent(in) :: taut
+C     Output parameters
+      real(dp), intent(out) :: teta(m), S(m,m), work(m)
+C     Local variables
+      integer               :: ind, i, j
+      real(dp)              :: rr
+
+      if (.not.nomin) then
+        ind = 1
+        do while (teta(1).lt.taut)
+          rr = teta(1)
+          do i= 1, m-1
+            teta(i) = teta(i+1)
+          enddo
+          teta(m) = rr
+
+          do j= 1, m
+            work(j) = S(j,1)
+          enddo
+          do i= 1, m-1
+            do j= 1, m
+              S(j,i) = S(j,i+1)
+            enddo
+          enddo
+          do j= 1, m
+            S(j,m) = work(j)
+          enddo
+
+          ind = ind + 1
+          if (ind.eq.m) call die( 'ERROR in selectEigenpair' )
+        end do
+      endif
+
+      end subroutine selectEigenpair
+
+
+      subroutine jd_correction( n, k, lastk, Kmax, Z, MM, A, B, teta,
+     &                          r, gm_it, t, work, lwork )
+      implicit none
+C     Input parameters
+      integer               :: n, k, lastk, Kmax, lwork
       real(dp)              :: teta, r(n)
+      real(dp),      target :: Z(n*k), work(lwork)
+      type(matrix_t)        :: A, B
 C     Output parameters
       real(dp)              :: t(n)
+      real(dp),      target :: MM(((Kmax+1)*Kmax)/2,2)
       integer               :: gm_it
 C     Local variables
-      integer               :: info
-      real(dp),     pointer :: Z_hat(:,:), M(:,:), r_hat(:), gama(:),
-     &                         alpha(:), Maux(:,:), work(:)
-      integer,      pointer :: ipiv(:)
-      real*8,      parameter :: ONE=1.0, ZERO=0.0, M_ONE=-1.0
+      integer               :: nc, o1, o2
+      real(dp),     pointer :: M(:), Maux(:), LU(:), gama(:),
+     &                         gmaux(:)
+      real*8,     parameter :: ONE=1.0, ZERO=0.0, M_ONE=-1.0
+      write(23,*) 'work', LOC(work), lwork, LOC(work(lwork))
+      flush(23)
 
-C     Allocate local memory
-      call re_alloc( Z_hat, 1, n, 1, ne, 'Z_hat', 'jd_correction' )
-      call re_alloc( M, 1, ne, 1, ne, 'M', 'jd_correction' )
-      call re_alloc( ipiv, 1, ne, 'ipiv', 'jd_correction' )
-      call re_alloc( r_hat, 1, n, 'r_hat', 'jd_correction' )
-      call re_alloc( gama, 1, ne, 'gama', 'jd_correction' )
-      call re_alloc( alpha, 1, ne, 'alpha', 'jd_correction' )
-      call re_alloc( Maux, 1, ne, 1, ne, 'Maux', 'jd_correction' )
-      call re_alloc( work, 1, ne, 'work', 'jd_correction' )
+      nc    = A%nc
 
-      ! (1)
-      call precond_solver_mat( n, ne, PC, Z, Z_hat )
+C     Set local pointers
+      M    => MM(:,1)
+      Maux => MM(:,2)
+      LU   => MM(:,2)
 
-      ! (2)
-      call ddmtm( n, ne, Z, Z_hat, M, Maux )
+      o1 = 1
+      o2 = o1+Kmax
+      gama => work(o1:o2-1)
+
+      o1 = o2
+      o2 = o1+Kmax
+      gmaux => work(o1:o2-1)
+
+      ! (1) - (2)
+      call medirTiempo( 0, 15 )
+      call ddmtmSym( n, k, lastk, Z, M, Maux )
+      call medirTiempo( 2, 15 )
 
       ! (3)
-C     GETRF computes an LU factorization of a general M-by-N matrix A
-C     using partial pivoting with row interchanges.
-      call DGETRF( ne, ne, M, ne, ipiv, info )
+C     computes the cholesky factorization of a symetric N-by-N matrix.
+      call medirTiempo( 0, 16 )
+      call choleskyFact( k, lastk, M, LU )
+      call medirTiempo( 2, 16 )
 
-      if ( info .ne. 0 ) call die( 'ERROR in DGETRF' )
-
-
-      ! (4)
-      ! (5)
-      call precond_solver_vec( n, PC, r, r_hat )
-
-      ! (6)
-      call ddmtv( n, ne, Z, r_hat, gama, work )
+      ! (4) - (6)
+C     gama = Z^t * r
+      call medirTiempo( 0, 17 )
+      call ddmtv( n, k, Z, r, gama, gmaux )
+      call medirTiempo( 2, 17 )
 
       ! (7) (8)
-C     ZGETRS solves a system of linear equations
-C     A * X = B,  A**T * X = B,  or  A**H * X = B
-C     with a general N-by-N matrix A using the LU factorization 
-C     computed by DGETRF.
-      call DGETRS( 'N', ne, 1, M, ne, ipiv, gama, ne, info )
-      if (info.ne.0) call die( 'ERROR in jd_correction->DGETRS' )
-      alpha = gama
+C     gama = M^(-1)*gama using LU from choleskyFact
+      call medirTiempo( 0, 18 )
+      call choleskySolve( k, LU, gama )
+      call medirTiempo( 2, 18 )
 
-      ! (9) r_hat = Z*alpha - r_hat
-      call DGEMV( 'N', n, ne, ONE, Z_hat, n, alpha, 1, M_ONE, r_hat, 1 )
+      ! (9) r = Z*gama - r
+      call medirTiempo( 0, 19 )
+      call DGEMV( 'N', n, k, ONE, Z, n, gama, 1, M_ONE, r, 1 )
+      call medirTiempo( 2, 19 )
 
       ! (10)
-      call medirTiempo( 1, 8 )
-!      call com_gmres( n, ne, A, B, PC, teta, r_hat, Z, Z_hat,
-!     &                M, ipiv, t, gm_it )
-      call com_minres( n, ne, A, B, PC, teta, r_hat, Z, Z_hat,
-     &                M, ipiv, t, gm_it )
-      call medirTiempo( 2, 8 )
-!      call com_cg( n, ne, A, B, PC, teta, r_hat, Z, Z_hat,
-!     &                M, ipiv, t, gm_it )
+      call medirTiempo( 0, 20 )
+      call medirTiempo( 0, 21 )
+      call medirTiempo( 0, 22 )
 
-C     Free local memory
-      call de_alloc( work, 'work', 'jd_correction' )
-      call de_alloc( Maux, 'Maux', 'jd_correction' )
-      call de_alloc( alpha, 'alpha', 'jd_correction' )
-      call de_alloc( gama, 'gama', 'jd_correction' )
-      call de_alloc( r_hat, 'r_hat', 'jd_correction' )
-      call de_alloc( ipiv, 'ipiv', 'jd_correction' )
-      call de_alloc( M, 'M', 'jd_correction' )
-      call de_alloc( Z_hat, 'Z_hat', 'jd_correction' )
-
+      call com_symmlq( n, k, kmax, A, B, teta, r, Z,
+     &                 LU, t, gm_it, work, 5*n+2*kmax+nc )
+      call medirTiempo( 2, 20 )
       end subroutine jd_correction
 
+      subroutine projectionMatrix( n, m, A, B, V, VA, VB, VAV, work )
+      implicit none
+C     Input variables
+      integer,           intent(in) :: n, m
+      type(matrix_t),    intent(in) :: A, B
+C     Output variables
+      real(dp), target, intent(out) :: V(n,m), VA(n,m), VB(n,m),
+     &                                 VAV((m*(m+1))/2), work(*)
+C     Local variables
+      integer                       :: nc, offset
+      real(dp),             pointer :: t(:), ta(:), tb(:)
+      real(dp)                      :: dvdot, nrm
 
-      end module jacobi_davidson
+      nc    = A%nc
+
+      t  => V(1:n,m)
+      ta => VA(1:n,m)
+      tb => VB(1:n,m)
+
+      ! (6)
+      call dsmv( n, nc, B, t, work, tb )
+      nrm = dvdot( n, t, tb )
+      nrm = 1.0/sqrt(nrm)
+
+      ! (7)
+      call dscal( n, nrm, t, 1 )         ! Vm  = t/nrm
+      call dsmv( n, nc, A, t, work, ta )   ! VAm = A*Vm 
+      call dscal( n, nrm, tb, 1 )        ! VBm = tb/nrm
+
+      ! (8) (9) (10)
+      offset = (m-1)*m/2
+      call ddmtv( n, m, V, ta, VAV(offset+1), work )
+      end subroutine projectionMatrix
+
+      function residual_norm( n, x, y )
+      use precision,    only : dp
+#ifdef MPI
+      use m_mpi_utils,  only : globalize_sum
+#endif
+      implicit none
+C     Input variables
+      integer,  intent(in) :: n
+      real(dp), intent(in) :: x(n), y(n)
+C     Output variables
+      real(dp)             :: residual_norm
+C     Local variables
+      integer              :: i
+      real(dp)             :: local(2), global(2)
+      real(dp),   external :: ddot
+
+      local(1) = ddot( n, x, 1, x, 1 )
+      local(2) = ddot( n, y, 1, y, 1 )
+#ifdef MPI
+      call globalize_sum( local, global )
+      residual_norm = sqrt(global(1)/global(2))
+#else
+      residual_norm = sqrt(local(1)/local(2))
+#endif
+      write(23,*) '      RESIDUAL NORM        :',
+     &            residual_norm, JDepsilon
+      end function residual_norm
+
+      end module jacobi_davidson      

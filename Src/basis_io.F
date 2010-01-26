@@ -328,10 +328,18 @@ c
       allocate(species(nspecies))
 
       do is = 1, nspecies
-         spp => species(is)
-         spp%label = species_label(is)
-         spp%read_from_file = .true.
-         call read_ion_ascii(spp)
+        spp                => species(is)
+        spp%label          = species_label(is)
+        spp%read_from_file = .true.
+
+        nullify(spp%orbnl)
+        nullify(spp%pjnl)
+        call reset_rad_func( spp%vna )
+        call reset_rad_func( spp%chlocal )
+        call reset_rad_func( spp%reduced_vlocal )
+        call reset_rad_func( spp%core )
+
+        call read_ion_ascii(spp)
       enddo
 
       end subroutine read_basis_ascii
@@ -479,14 +487,14 @@ c
       character*40 filename
 
       do is = 1, nspecies
-         spp => species(is)
-         if (spp%read_from_file) cycle   !! Do not dump
+        spp => species(is)
+        if (spp%read_from_file) cycle   !! Do not dump
 
-         write(filename,'(a,a)') trim(spp%label), ".ion.nc"
-         write(6,'(2a)') 'Dumping basis to NetCDF file ',
-     $                   trim(filename)
+        write(filename,'(a,a)') trim(spp%label), ".ion.nc"
+        write(6,'(2a)') 'Dumping basis to NetCDF file ',
+     $                  trim(filename)
 
-         iret = nf90_create(trim(filename),NF90_CLOBBER,ncid)
+        iret = nf90_create(trim(filename),NF90_CLOBBER,ncid)
 
         nkbs =  spp%n_pjnl
         norbs = spp%n_orbnl

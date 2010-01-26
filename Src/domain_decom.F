@@ -1,3 +1,50 @@
+! 
+! This file is part of the SIESTA package.
+!
+! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
+! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
+! and J.M.Soler, 1996-2006.
+! 
+! Use of this software constitutes agreement with the full conditions
+! given in the SIESTA license, as signed by all legitimate users.
+!
+
+C This file contains module domain_decom.
+C Creates a new distribution for the Hamiltonian and overlap
+C matrices using domain decomposition. This data distribution is
+C used in iterative methods, because it reduces the number of
+C communications needed in a matrix per vector multiplication
+C
+C Written by Rogeli Grima (BSC) Oct.2008
+C
+C The following subroutines are public:
+C   domainDecom        = Creates a Domain Decomposition of the
+C                        matrix structure.
+C   gatherGlobalMatrix = Process 0 gather the whole matrix.
+C                        It is not mandatory for SIESTA (Only for debug)
+C   preSetOrbitLimits  = Init the limits of the original distribution
+C   resetDomainDecom   = Reset internal arrays of the module
+C
+C Includes the following internal variables:
+C   logical use_dd      :: .true. if we want to use domain decomposition
+C   logical use_dd_perm :: .true. if the domain decomposition permutation
+C                          has been created.
+C   integer llimit      :: Lower limit of the original distribution
+C   integer ulimit      :: Upper limit of the original distribution
+C   integer dd_nuo      :: Number of rows of current distribution
+C   integer dd_ncolum   :: Number of columns of current distribution
+C   integer dd_perm     :: Transforms a global index into a local index
+C   integer dd_invp     :: Transforms a local index into a global index
+C   integer dd_cperm    :: Transforms a global column index into a local index.
+C   integer dd_nnode    :: Process number of every orbital.
+C   integer dd_ncom     :: Number of communications
+C   integer dd_comm     :: Communications (neighbour processes)
+C   integer dd_bsiz     :: Size of communications (boundary size)
+C   integer dd_lni      :: Local internal nodes. Orbitals that only appear
+C                          in the current process.
+C   integer dd_lnb      :: Local boundary nodes. Orbitals that belongs to
+C                          current process but needed by other processes.
+C   
       module domain_decom
       use alloc,         only : re_alloc, de_alloc
       use parallel,      only : Node, Nodes
@@ -5,31 +52,29 @@
       use scheComm
       implicit none
 
-      PUBLIC :: preSetOrbitLimits, domainDecom, gatherGlobalMatrix,
-     &          resetDomainDecom, use_dd, ulimit, llimit, use_dd_perm,
-     &          dd_perm, dd_invp, dd_cperm, dd_nuo, dd_nnode,
-     &          dd_ncolum, dd_ncom, lni, lnb, dd_bsiz, dd_comm,
-     &          gperm
+      PUBLIC :: domainDecom, gatherGlobalMatrix,
+     &          resetDomainDecom, preSetOrbitLimits
+!      gperm
 
       PRIVATE
-      logical          :: use_dd
-      logical          :: use_dd_perm
-      integer          :: llimit       ! Lower limit
-      integer          :: ulimit       ! Upper limit
-      integer          :: dd_nuo
-      integer          :: dd_ncom
-      integer          :: dd_ncolum
-      integer, pointer :: dd_perm(:)
-      integer, pointer :: dd_invp(:)
-      integer, pointer :: dd_cperm(:)
-      integer, pointer :: dd_comm(:)
-      integer, pointer :: dd_bsiz(:)
-      integer, pointer :: dd_nnode(:)
+      logical, public           :: use_dd
+      logical, public           :: use_dd_perm
+      integer, public           :: llimit
+      integer, public           :: ulimit
+      integer, public           :: dd_nuo
+      integer, public           :: dd_ncolum
+      integer, public           :: dd_ncom
+      integer, public , pointer :: dd_perm(:)
+      integer, public , pointer :: dd_invp(:)
+      integer, public , pointer :: dd_cperm(:)
+      integer, public , pointer :: dd_nnode(:)
+      integer, public , pointer :: dd_comm(:)
+      integer, public , pointer :: dd_bsiz(:)
+      integer, public           :: dd_lni
+      integer, public           :: dd_lnb
 
       integer          :: gni          ! Global Node internal
       integer          :: gnb          ! Global Node boundary
-      integer          :: lni          ! Local Node internal
-      integer          :: lnb          ! Local Node boundary
       integer, pointer :: listhPtrTot(:)
       integer, pointer :: listhTot(:)
       integer, pointer :: partition(:)
@@ -44,49 +89,34 @@
 
       contains
 
-      subroutine resetDomainDecom(  )
-      implicit none
-
-      if (associated(dd_perm))
-     &  call de_alloc( dd_perm, 'dd_perm','domainDecom' )
-
-      if (associated(dd_invp))
-     &  call de_alloc( dd_invp, 'dd_invp','domainDecom' )
-
-      if (associated(dd_cperm))
-     &  call de_alloc( dd_cperm, 'dd_cperm','domainDecom' )
-
-      if (associated(dd_comm))
-     &  call de_alloc( dd_comm, 'dd_comm','domainDecom' )
-
-      if (associated(dd_bsiz))
-     &  call de_alloc( dd_bsiz, 'dd_bsiz','domainDecom' )
-
-      if (associated(dd_nnode))
-     &  call de_alloc( dd_nnode, 'dd_nnode','domainDecom' )
-
-      end subroutine resetDomainDecom
-
-
-
-
-      subroutine preSetOrbitLimits( no )
-      implicit none
-C     Input variables
-      integer      :: no
-C     Local variables
-      integer      :: blocks, remain
-      
-      blocks = no/Nodes
-      remain = no - blocks*Nodes
-      
-      llimit = blocks*Node + 1 + min(remain,Node)
-      ulimit = blocks*(Node+1) + 1 + min(remain,Node+1)
-      dd_nuo = ulimit - llimit
-      end subroutine preSetOrbitLimits
-
-
       subroutine domainDecom( nuotot, nuo, nnz )
+C ==================================================================
+C Redistribute a matrix using a domain decomposition. This method
+C reduce the number and size of boundaries among the several domains.
+C An scheduling of communications among processes is computed.
+C ==================================================================
+C SUBROUTINE domainDecom( nuotot, nuo, nnz )
+C
+C INPUT:
+C integer  nuotot   : Total number of orbitals
+C integer  nuo      : Local number of orbitals
+C integer  nnz      : Total number of non-null elements in the
+C                     matrix
+C
+C OUTPUT: matrix H structure is accesed via module.
+C integer  numh     : number of non-null elements per row
+C integer  listh    : column index of the non-null elements of the
+C                     matrix.
+C integer  listhptr : Start of every row of listh
+C
+C BEHAVIOR:
+C Process 0 gather all the matrix structure from the other processes.
+C This creates a data partition for each process, computes the
+C boundary nodes and creates an scheduling of communications.
+C Finally, process 0 send the new data distribution and the new
+C scheduling to all the other processes.
+C
+C ==================================================================
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -152,6 +182,36 @@ C       Set orbitals to partitions
       end subroutine domainDecom
 
       subroutine reduceGlobalMatrix( nuotot, nuo, nnz )
+C ==================================================================
+C Process 0 gathers the whole matrix structure from all other
+C processes
+C ==================================================================
+C SUBROUTINE reduceGlobalMatrix( nuotot, nuo, nnz )
+C
+C INPUT:
+C integer  nuotot   : Total number of orbitals
+C integer  nuo      : Local number of orbitals
+C integer  nnz      : Total number of non-null elements in the
+C                     matrix
+C matrix H structure is accesed via module.
+C integer  numh     : number of non-null elements per row
+C integer  listh    : column index of the non-null elements of the
+C                     matrix.
+C
+C OUTPUT: Whole H matrix structure is stored in current module.
+C integer  numhTot     : number of non-null elements per row
+C integer  listhTot    : column index of the non-null elements of
+C                        the matrix.
+C integer  listhPtrTot : Start of every row of listh
+C
+C BEHAVIOR:
+C Process 0 computes the number of rows that should receive from
+C every process.
+C Process 0 receive numh from all the processes and compute the
+C number of non-zero elements in other processes.
+C Process 0 receive the non-zero elements 
+C
+C ==================================================================
       use sparse_matrices, only : numh, listh
 #ifdef MPI
       use mpi_siesta
@@ -168,6 +228,7 @@ C     Local variables
 #endif
 
       if (node.eq.0) then
+C       Compute the number of rows that has every process
         nullify(nuos)
         call re_alloc( nuos, 0, Nodes-1, 'nuos', 'domainDecom' )
         blocks = nuotot/Nodes
@@ -180,6 +241,7 @@ C     Local variables
           endif
         enddo
 
+C       Receive the number of non-null elements of every row
         nullify(listhPtrTot)
         call re_alloc( listhPtrTot, 0, nuotot, 'listhPtrTot',
      &                 'domainDecom' )
@@ -205,6 +267,7 @@ C     Local variables
         call re_alloc( listhTot, 1, nnzG, 'listhTot',
      &                 'domainDecom' )
 
+C       Receive the non-null elements
         do ii= 1, nnz
           listhTot(ii) = listh(ii)
         enddo
@@ -223,8 +286,10 @@ C     Local variables
         call de_alloc( nuos, 'nuos', 'domainDecom' )
       else
 #ifdef MPI
+C       Send the number of non-null elements of every row
         call MPI_send( numh, nuo, MPI_INTEGER, 0, 1,
      &                 MPI_Comm_world, MPIerror )
+C       Send the non-null elements
         call MPI_send( listh, nnz, MPI_INTEGER, 0, 1,
      &                 MPI_Comm_world, MPIerror )
 #endif
@@ -232,8 +297,24 @@ C     Local variables
       end subroutine reduceGlobalMatrix
 
 
-
       subroutine makePartitions( no, nparts )
+C ==================================================================
+C Create a domain decomposition of a matrix graph.
+C ==================================================================
+C SUBROUTINE makePartitions( no, nparts )
+C
+C INPUT:
+C integer  no        : Number of nodes of the matrix graph
+C integer  nparts    : Number of domains
+C
+C OUTPUT: 
+C integer  partition : Domain of every node of the graph
+C
+C BEHAVIOR:
+C Creates a domain decomposition of a graph. Every node is assigned
+C to a domain.
+C
+C ==================================================================
       use sys,           only : die
       implicit none
 !     Input/Output variables
@@ -277,6 +358,7 @@ C     Local variables
 !        call printMatrix( no, no, iia, jja,
 !       &                  'globmat2.ps', 'Global_matrix' )
 
+!       Use metis library to create a Domain decomposition
         metis_options(1) = 0
         if (nparts .gt. 8 ) then
           call METIS_PartGraphKway( no, jja, iia, dummy, dummy, 0,
@@ -294,30 +376,28 @@ C     Local variables
       end subroutine makePartitions
 
 
-      subroutine checkPartitionSize( no )
-!     Input/Output variables
-      integer,           intent(in) :: no
-!     Local variables
-      integer                       :: io, PP
-
-      nullify(nnzInt,nnzBou)
-      call re_alloc( nnzInt, 1, Nodes, 'nnzInt', 'domainDecom' )
-      call re_alloc( nnzBou, 1, Nodes, 'nnzBou', 'domainDecom' )
-      nnzInt = 0
-      nnzBou = 0
-      do io= 1, no
-        PP = partition(io)
-        if (PP.gt.0) then
-          nnzInt(PP) = nnzInt(PP)+listhPtrTot(io)-listhPtrTot(io-1)
-        else
-          PP = -PP
-          nnzBou(PP) = nnzBou(PP)+listhPtrTot(io)-listhPtrTot(io-1)
-        endif
-      enddo
-      end subroutine checkPartitionSize
-
-
       subroutine boundaryNodes( no )
+C ==================================================================
+C Mark nodes with conections with different domains as boundary nodes.
+C ==================================================================
+C SUBROUTINE boundaryNodes( no )
+C
+C INPUT:
+C integer  no        : Number of nodes of the matrix graph
+C
+C OUTPUT: 
+C integer  partition : Domain of every node. Positive if it is an
+C                      internal node and Negative for boundary nodes
+C integer  ginde     : Contains the number of internal and boundary
+C                      nodes for every process.
+C integer  gni       : Total number of internal nodes.
+C integer  gnb       : Total number of boundary nodes.
+C
+C BEHAVIOR:
+C For every node, check if it is a boundary node. Update the number
+C of internal or boundary nodes.
+C
+C ==================================================================
       implicit none
 !     Input/Output variables
       integer,           intent(in) :: no
@@ -358,6 +438,49 @@ C     Local variables
       enddo
       gnb = no - gni
       end subroutine boundaryNodes 
+
+
+      subroutine checkPartitionSize( no )
+C ==================================================================
+C Compute the number of nonzeros of every domain for internal and
+C boundary nodes.
+C ==================================================================
+C SUBROUTINE checkPartitionSize( no )
+C
+C INPUT:
+C integer  no     : Number of nodes of the matrix graph
+C
+C OUTPUT: 
+C integer  nnzInt : number of non-null elements for internal nodes
+C integer  nnzBou : number of non-null elements for boundary nodes
+C
+C BEHAVIOR:
+C For every node, check if it is an internal or a boundary node and
+C count the number of nonzero elements.
+C
+C ==================================================================
+      implicit none
+!     Input/Output variables
+      integer,           intent(in) :: no
+!     Local variables
+      integer                       :: io, PP
+
+      nullify(nnzInt,nnzBou)
+      call re_alloc( nnzInt, 1, Nodes, 'nnzInt', 'domainDecom' )
+      call re_alloc( nnzBou, 1, Nodes, 'nnzBou', 'domainDecom' )
+      nnzInt = 0
+      nnzBou = 0
+      do io= 1, no
+        PP = partition(io)
+        if (PP.gt.0) then
+          nnzInt(PP) = nnzInt(PP)+listhPtrTot(io)-listhPtrTot(io-1)
+        else
+          PP = -PP
+          nnzBou(PP) = nnzBou(PP)+listhPtrTot(io)-listhPtrTot(io-1)
+        endif
+      enddo
+      end subroutine checkPartitionSize
+
 
       subroutine createPerm( no )
       implicit none
@@ -812,8 +935,8 @@ C       Receive Data from process 0
 
       no        = l_no
       nnz       = l_nnz
-      lni       = l_lni
-      lnb       = l_lnb
+      dd_lni    = l_lni
+      dd_lnb    = l_lnb
       dd_ncom   = l_nei
       dd_ncolum = l_no + l_bou
       call re_alloc( listhptr, 1, no, 'listhptr', 'sparseMat' )
@@ -866,11 +989,13 @@ C       Receive Data from process 0
 !     Local Variables
       integer              :: PP, nuo_l, io, jo, ko, nnzG, nnz_l,
      &                        ll, ind, fd
-      integer,     pointer :: ja(:), ia(:)
+      integer,     pointer :: ja(:), ia(:), jndx(:)
       real(dp),    pointer :: M(:), an(:)
 #ifdef MPI
       integer              :: MPIerror, Status(MPI_Status_Size)
 #endif
+      integer              :: ival(1)
+      complex              :: cval(1)
 !
 !     Need arrays: ginde, ginvp
 !
@@ -970,17 +1095,29 @@ C       Receive Data from process 0
 
         call io_assign( fd )
         open( unit=fd, file=filename, status='unknown' )
-        write(fd,*) nuotot, nuotot, nnzG
-        write(fd,*) listhPtrTot
-        write(fd,*) listhTot
-        write(fd,*) M
 
+        call re_alloc( jndx, 1, nnzG, 'jndx', 'domainDecom' )
         do io= 1, nuotot
-          do jo= listhPtrTot(io-1), listhPtrTot(io)-1
-            write(fd,*) io, listhTot(jo), M(jo)
-          enddo
+          jndx(listhPtrTot(io-1):listhPtrTot(io)-1) = io
         enddo
-        call pxfflush(fd)
+
+        call mmwrite( fd, 'coordinate', 'real', 'general', nuotot,
+     &                nuotot, nnzG, listhTot, jndx, ival, M, cval )
+        call de_alloc( jndx, 'jndx', 'domainDecom' )
+
+
+!        write(fd,*) nuotot, nuotot, nnzG
+!        write(fd,*) listhPtrTot
+!        write(fd,*) listhTot
+!        write(fd,*) M
+
+!        do io= 1, nuotot
+!          do jo= listhPtrTot(io-1), listhPtrTot(io)-1
+!            write(fd,*) io, listhTot(jo), M(jo)
+!          enddo
+!        enddo
+!        call pxfflush(fd)
+
         call io_close( fd )
 
         call de_alloc( ja, 'ja', 'domainDecom' )
@@ -999,5 +1136,44 @@ C       Receive Data from process 0
 #endif
       endif
       end subroutine gatherGlobalMatrix
+
+      subroutine resetDomainDecom(  )
+      implicit none
+
+      if (associated(dd_perm))
+     &  call de_alloc( dd_perm, 'dd_perm','domainDecom' )
+
+      if (associated(dd_invp))
+     &  call de_alloc( dd_invp, 'dd_invp','domainDecom' )
+
+      if (associated(dd_cperm))
+     &  call de_alloc( dd_cperm, 'dd_cperm','domainDecom' )
+
+      if (associated(dd_comm))
+     &  call de_alloc( dd_comm, 'dd_comm','domainDecom' )
+
+      if (associated(dd_bsiz))
+     &  call de_alloc( dd_bsiz, 'dd_bsiz','domainDecom' )
+
+      if (associated(dd_nnode))
+     &  call de_alloc( dd_nnode, 'dd_nnode','domainDecom' )
+
+      end subroutine resetDomainDecom
+
+
+      subroutine preSetOrbitLimits( no )
+      implicit none
+C     Input variables
+      integer      :: no
+C     Local variables
+      integer      :: blocks, remain
+      
+      blocks = no/Nodes
+      remain = no - blocks*Nodes
+      
+      llimit = blocks*Node + 1 + min(remain,Node)
+      ulimit = blocks*(Node+1) + 1 + min(remain,Node+1)
+      dd_nuo = ulimit - llimit
+      end subroutine preSetOrbitLimits
 
       end module domain_decom

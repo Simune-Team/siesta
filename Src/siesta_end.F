@@ -28,6 +28,9 @@
       integer MPIerror
 #endif
 !------------------------------------------------------------------------- BEGIN
+#ifdef DEBUG
+      call write_debug( 'PRE SIESTA_END' )
+#endif
 !     Free allocated memory
       call resetSparseMatrices( )
       call resetPulayArrays( )
@@ -58,6 +61,9 @@
       endif
 
 !     Finalize MPI
+#ifdef DEBUG
+      call write_debug( 'POS SIESTA_END' )
+#endif
 #ifdef MPI
       call MPI_Finalize( MPIerror )
 #endif

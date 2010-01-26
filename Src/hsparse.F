@@ -290,7 +290,7 @@ C     be used for DM extrapolation
 C     using information from different geometries.
       ! CHANGED NOW
       call re_alloc( listh, 1, max(1,nlhmax), 'listh',
-     &     routine='hsparse',SHRINK=.true.)
+     &     'sparseMat', SHRINK=.true. )
       if (set_xijo) then
          call re_alloc( xijo, 1, 3, 1, max(1,nlhmax),
      &   'xijo', 'sparseMat' )

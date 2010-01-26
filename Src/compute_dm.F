@@ -27,7 +27,7 @@
       use m_ordern,        only : ordern
       use m_steps,         only : istp
       use m_spin,          only : nspin, qs, efs
-!      use domain_decom,    only : gatherGlobalMatrix
+      use domain_decom,    only : gatherGlobalMatrix
       use jacobi_davidson, only : jd_diag
 #ifdef TRANSIESTA
 ! TSS Begin

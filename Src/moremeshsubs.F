@@ -1,6 +1,27 @@
+! 
+! This file is part of the SIESTA package.
+!
+! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
+! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
+! and J.M.Soler, 1996-2006.
+! 
+! Use of this software constitutes agreement with the full conditions
+! given in the SIESTA license, as signed by all legitimate users.
+!
+
+C This file contains module moreMeshSubs. It defines and handles
+C different parallel mesh distributions.
+C
+C Written by Rogeli Grima (BSC) Dec.2007
+C
+C Includes the following subroutines connected to the mesh :
+C
+C initMeshDistr     = Precompute a new data distribution for the grid mesh
+C                     to be used in Hamiltonian construction.
+C setMeshDistr      = Select a mesh distribution and set the grid sizes.
+C distMeshData      = Move data from one data distribution to another.
+C 
       MODULE moreMeshSubs
-!     Defines and handles different parallel mesh distributions
-!     R.Grima. Dec.2007
       use precision, only : grid_p
       use parallel,  only : node, Nodes, ProcessorY
       use sys,       only : die
@@ -10,14 +31,11 @@
 
       PUBLIC :: initMeshDistr, setMeshDistr
       PUBLIC :: distMeshData, resetMeshDistr
-      PUBLIC :: meshDisType, meshCommType
-      PUBLIC :: meshCommu, meshDistr
-      PUBLIC :: boxIntersection
-
 #ifdef MPI
       PUBLIC :: initMeshExtencil, distExtMeshData, gathExtMeshData
 #endif
       PRIVATE
+
       interface distMeshData
         module procedure distMeshData_rea, distMeshData_int
       end interface distMeshData
@@ -30,11 +48,28 @@
                                      ! box(2,iAxis,iNode)=upper bounds
       END TYPE meshDisType
 
+!     Private type to hold communications to move data from one
+!     distribution to another
       TYPE meshCommType
-      integer          :: ncom
-      integer, pointer :: src(:), dst(:)
+      integer          :: ncom    ! Number of needed communications
+      integer, pointer :: src(:)  ! Sources of communications
+      integer, pointer :: dst(:)  ! Destination of communications 
       END TYPE meshCommType
 
+C ----------------------------------------------------------------------
+C moreMeshSubs variables
+C ----------------------------------------------------------------------
+C character    moduName  : Name of the module
+C integer      maxDistr  : Maximum number of data distribution that
+C                          can be handled.
+C integer      gp        : Alias of the grid precision
+C meshDisType  meshDistr : Contains information of the several data
+C                          distributions
+C meshCommType meshCommu : Contains all the communications to move among
+C                          the several data distributions
+C meshCommType exteCommu : Contains all the needed communications to
+C                          compute the extencil
+C ----------------------------------------------------------------------
       character(len=*),      parameter :: moduName = 'moreMeshSubs '
       integer,               parameter :: maxDistr = 5
       integer,               parameter :: gp = grid_p
@@ -45,6 +80,7 @@
 
       CONTAINS
 
+      subroutine initMeshDistr( iDistr, oDistr, nm, wload )
 C ==================================================================
 C Computes a new data distribution and the communications needed to
 C move data from/to the current distribution to the existing ones.
@@ -56,7 +92,8 @@ C INPUT:
 C integer iDistr  : Distribution index of the input vector
 C integer oDistr  : The new data distribution index.
 C integer nm(3)   : Number of Mesh divisions of each cell vector
-C integer wload   : Weights of every point of the mesh.
+C integer wload   : Weights of every point of the mesh using the
+C                   input distribution
 C
 C OUTPUT:
 C The output values are stored in the current module:
@@ -65,7 +102,7 @@ C        meshCommu(((oDistr-2)*(oDistr-1))/2+1:(oDistr-1)*oDistr/2)
 C
 C BEHAVIOR:
 C If this is the first distribution, we split the mesh uniformly among
-C the several processes (we only split it in dimensions Y and Z.
+C the several processes (we only split it in dimensions Y and Z).
 C
 C For the other data distributions we should split the vector wload.
 C The subroutine splitwload will return the limits of the new data
@@ -74,7 +111,6 @@ C needed to move data from/to the current distribution to/from the
 C previous ones.
 C
 C ==================================================================
-      subroutine initMeshDistr( iDistr, oDistr, nm, wload )
       implicit none
 C     Passed arguments
       integer, optional,  intent(in) :: iDistr
@@ -90,9 +126,7 @@ C     Local variables
       type(meshDisType),  pointer :: distr
 !------------------------------------------------------------------------- BEGIN
       call timer( 'INIME', 1 )
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 7 )
-#endif
+
 C     Check the number of mesh distribution
       if (oDistr.gt.maxDistr)
      &  call die( errMsg // 'oDistr.gt.maxDistr' )
@@ -159,13 +193,11 @@ C       distribution and the previous ones.
 #endif
       endif
 
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 0 )
-#endif
       call timer( 'INIME', 2 )
 !--------------------------------------------------------------------------- END
       end subroutine initMeshDistr
 
+      subroutine setMeshDistr( iDistr, nsm, nsp, nml, nmpl, ntml, ntpl )
 C ==================================================================
 C Fixes the new data limits and dimensions of the mesh to those of
 C the data distribution iDistr.
@@ -188,7 +220,6 @@ C Fixes the new data limits and dimensions of the mesh to those of
 C the data distribution iDistr.
 C
 C ==================================================================
-      subroutine setMeshDistr( iDistr, nsm, nsp, nml, nmpl, ntml, ntpl )
       use mesh, only: meshLim
       implicit none
 C     Passed arguments
@@ -206,6 +237,7 @@ C     Passed arguments
 !--------------------------------------------------------------------------- END
       end subroutine setMeshDistr
 
+      subroutine resetMeshDistr( iDistr )
 C ==================================================================
 C Reset the data of the distribution iDistr
 C ==================================================================
@@ -219,9 +251,7 @@ C Modify data of the current module.
 C
 C BEHAVIOR:
 C Deallocate associated arrays of the current distribution
-C
 C ==================================================================
-      subroutine resetMeshDistr( iDistr )
       implicit none
 C     Passed arguments
       integer, optional,  intent(in) :: iDistr
@@ -276,20 +306,23 @@ C Move data from vector fsrc, that uses distribution iDistr, to vector
 C fdst, that uses distribution oDistr. It also, re-orders a clustered
 C data array into a sequential one and viceversa.
 C If this is a sequencial execution, it only reorders the data.
+C
+C NOTE: There are two subroutines: one to deal with real data and
+C the other with integers. Both are called using the same interface
 C ==================================================================
 C SUBROUTINE distMeshData( iDistr, fsrc, oDistr, fdst, itr )
 C
 C INPUT:
-C integer iDistr   : Distribution index of the input vector.
-C real    fsrc     : Input vector.
-C integer oDistr   : Distribution index of the output vector.
-C integer itr      : TRanslation-direction switch
-C                    ITR=+1 => From clustered to sequential
-C                    ITR=-1 => From sequential to clustered
-C                    ITR=0  => Keep the status
+C integer      iDistr : Distribution index of the input vector.
+C real/integer fsrc   : Input vector.
+C integer      oDistr : Distribution index of the output vector.
+C integer itr         : TRanslation-direction switch
+C                       ITR=+1 => From clustered to sequential
+C                       ITR=-1 => From sequential to clustered
+C                       ITR=0  => Keep the status
 C
 C OUTPUT:
-C real    fdst     : Output vector.
+C real/integer fdst   : Output vector.
 C
 C BEHAVIOR:
 C Check the communications that this process should do to move data
@@ -899,6 +932,7 @@ C     Local variables
       end subroutine boxIntersection
 
 #ifdef MPI
+      subroutine initMeshExtencil( iDistr, nm )
 C ==================================================================
 C Compute the needed communications in order to send/receive the
 C extencil (when the data is ordered in the distribution iDistr)
@@ -921,7 +955,6 @@ C processes. Once we know all our neightbours we call subroutine
 C scheduleComm in order to minimize the number of communications steps.
 C
 C ==================================================================
-      subroutine initMeshExtencil( iDistr, nm )
       use scheComm
       implicit none
 C     Passed arguments
@@ -1048,6 +1081,8 @@ C         process to send/receive the extencil.
 !--------------------------------------------------------------------------- END
       end subroutine initMeshExtencil
 
+      subroutine distExtMeshData( iDistr, iaxis, BS, NSM, NN, NSPIN,
+     &                            maxp, NMeshG, dens, BDENS )
 C ==================================================================
 C Send/receive the extencil information from the "dens" matrix to the
 C temporal array "BDENS".
@@ -1079,8 +1114,6 @@ C intersects with a neightbour node throught the upper, the lower
 C or both sides.
 C
 C ==================================================================
-      subroutine distExtMeshData( iDistr, iaxis, BS, NSM, NN, NSPIN,
-     &                            maxp, NMeshG, dens, BDENS )
       use mpi_siesta
       implicit none
 C     Passed arguments

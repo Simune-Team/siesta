@@ -45,10 +45,10 @@ C     Local variables
      &                          r2sp(nsp)
 
 !------------------------------------------------------------------------- BEGIN
-      call timer( 'PHION', 1 )
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 15 )
+#ifdef DEBUG
+      call write_debug( '      PRE PhiOnMesh' )
 #endif
+      call timer( 'PHION', 1 )
 C     On first call set the logical DirectPhi
       if (firsttime) then
         if (Node.eq.0) then
@@ -131,9 +131,10 @@ C     Find indexes and values of atomic orbitals at mesh points
           endif
         enddo
       enddo
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 0 )
-#endif
+
       call timer( 'PHION', 2 )
+#ifdef DEBUG
+      call write_debug( '      POS PhiOnMesh' )
+#endif
 !--------------------------------------------------------------------------- END
       end subroutine PhiOnMesh

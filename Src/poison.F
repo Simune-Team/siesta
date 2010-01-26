@@ -73,7 +73,7 @@ C
       data K0   /3*0.0_dp/
       data TINY /1.0e-15_dp/
 #ifdef DEBUG
-        call write_debug( '    PRE poison' )
+      call write_debug( '      PRE poison' )
 #endif
 #ifdef MPI
 C Place MPI barrier here so that any waiting time for all
@@ -212,7 +212,7 @@ C Free local memory
       call de_alloc( CG, 'CG', 'poison' )
 
 #ifdef DEBUG
-        call write_debug( '    POS poison' )
+      call write_debug( '      POS poison' )
 #endif
       end
 

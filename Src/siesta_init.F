@@ -87,8 +87,9 @@
 !     The file is called debug.$(PID) Where PID is the process number.
 !     It also works in secuencial mode.
       call debugMpiOn( )
+      call write_debug( 'PRE siesta_init' )
 #endif
-      call inicializar_tiempo( 20 )
+      call inicializar_tiempo( 40 )
       IOnode = (Node .eq. 0)
 
 !     Print version information
@@ -137,13 +138,7 @@
       FreeE   = 0.0_dp
 
 !     Initialise read
-#ifdef DEBUG
-      call write_debug( '  PRE reinit' )
-#endif
       call reinit( sname )
-#ifdef DEBUG
-      call write_debug( '  POS reinit' )
-#endif
 
 !     Initialize CML (relies on reinit)
       call siesta_cml_init( )
@@ -169,13 +164,7 @@
       if (atmonly) call bye( 'End of atom setup' )
 
 !     Read geometry
-#ifdef DEBUG
-      call write_debug( '  PRE struct_init' )
-#endif
       call struct_init( )      ! Sets na_u, isa, ucell
-#ifdef DEBUG
-      call write_debug( '  POS struct_init' )
-#endif
 
 !     Initialize atom lists
       call initatomlists( )    ! Sets iza
@@ -403,6 +392,9 @@
       if (ionode) call pxfflush( 6 )
 
       call timer( 'Setup', 2 )
+#ifdef DEBUG
+      call write_debug( 'POS siesta_init' )
+#endif
 !--------------------------------------------------------------------------- END
       END subroutine siesta_init
 

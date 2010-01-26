@@ -51,6 +51,9 @@
 
 
 !------------------------------------------------------------------------- BEGIN
+#ifdef DEBUG
+      call write_debug( 'PRE siesta_move' )
+#endif
       call timer( 'SIMOVE', 1 )
       ! Save the last coordinates for which the density matrix 
       ! has been calculated
@@ -275,6 +278,9 @@
 ! End of one MD step - flush stdout
       if (ionode) call pxfflush(6)
 
+#ifdef DEBUG
+      call write_debug( 'POS siesta_move' )
+#endif
 !--------------------------------------------------------------------------- END
       END subroutine siesta_move
 

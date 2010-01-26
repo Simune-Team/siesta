@@ -1,0 +1,17 @@
+Jan 26-2010 update: Some docs; Cosmetics. Matrix io...
+
+Snapshot of state of Rogeli's code on Jan 26, 2010.
+
+Incomplete log:
+
+* Some documentation of grid routines.
+
+* Updates to Jacobi-Davidson.
+
+* Matrix market io (mmio)
+
+* Cosmetics, including retabbing of molecular mechanics and other
+  routines.
+
+* Addition of a "reset" routine in module radial.f
+

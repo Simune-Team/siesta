@@ -39,6 +39,7 @@ C integer ne(3)         : Number of mesh-Extension intervals
 C                       : in each direction
 C integer nem(3)        : Extended-mesh divisions in each direction
 C integer nmsc(3)       : Mesh divisions of each supercell vector
+C integer meshLim(2,3)  : Upper an lower limits of the mesh in every process
 C integer nsm           : Number of mesh sub-divisions in each direction
 C integer nsp           : Number of sub-points of each mesh point
 C real*8  rcmesh(3,3)   : Reciprocal mesh-cell vectors
@@ -65,12 +66,37 @@ C ----------------------------------------------------------------------
 
       subroutine resetMesh( )
       use alloc, only: de_alloc
+C
+C Deallocate arrays of module mesh
+C
       implicit none
       call de_alloc( xdop, 'xdop', 'mesh' )
       call de_alloc( idop, 'idop', 'mesh' )
       end subroutine resetMesh
 
       function indexp( ind )
+C
+C Transforms an index of the global extended mesh to an index of the
+C local mesh. If the index don't belong to current process it
+C returns a 0.
+C
+C ----------------------------------------------------------------------
+C Input :
+C ----------------------------------------------------------------------
+C integer ind          : index of the global extended mesh
+C ----------------------------------------------------------------------
+C Output :
+C ----------------------------------------------------------------------
+C integer indexp       : index of the local mesh
+C ----------------------------------------------------------------------
+C Internal :
+C ----------------------------------------------------------------------
+C integer nem(3)       : Extended-mesh divisions in each direction
+C integer ne(3)        : Number of mesh-Extension intervals 
+C                      : in each direction
+C integer nmsc(3)      : Mesh divisions of each supercell vector
+C integer meshLim(2,3) : Upper an lower limits of the mesh in every process
+C ----------------------------------------------------------------------
       implicit none
 C     Input variables
       integer                     :: ind
@@ -79,33 +105,39 @@ C     Output variables
 C     Local variables
       integer                     :: I1, I2, I3, J1, J2, J3, sizX, sizY
 !------------------------------------------------------------------------- BEGIN
+C     Transform the index of the extended mesh from one to three dimensions
       I1 = (ind-1)/nem(1)
       I3 = I1/nem(2)
       I2 = I1 - I3*nem(2)
       I1 = ind-1 - I1*nem(1)
 
+C     Compute its position in the Mesh
       J1 = I1 - ne(1)
       J2 = I2 - ne(2)
       J3 = I3 - ne(3)
-
       J1 = mod( J1 + 1000*nmsc(1), nmsc(1) ) + 1
       J2 = mod( J2 + 1000*nmsc(2), nmsc(2) ) + 1
       J3 = mod( J3 + 1000*nmsc(3), nmsc(3) ) + 1
 
+C     Check if the mesh point belong to current process
       if (J1.ge.meshLim(1,1) .and. J1.le.meshLim(2,1).and.
      &    J2.ge.meshLim(1,2) .and. J2.le.meshLim(2,2).and.
      &    J3.ge.meshLim(1,3) .and. J3.le.meshLim(2,3)) then
+C       Transform the index of the mesh from global to local mesh
+C       and from three to one dimensions
         sizX = meshLim(2,1) - meshLim(1,1) + 1
         sizY = meshLim(2,2) - meshLim(1,2) + 1
         indexp = 1 + J1-meshLim(1,1) +
      &              (J2-meshLim(1,2))*sizX +
      &              (J3-meshLim(1,3))*sizX*sizY
       else
+C       The mesh point doesn't belong to current process
         indexp = 0
       endif
       return
 !--------------------------------------------------------------------------- END
       end function indexp
+
       end module mesh
 
       module meshphi
@@ -134,6 +166,9 @@ C ----------------------------------------------------------------------
       end module meshphi
 
       subroutine resetMeshPhi( )
+C
+C Deallocate arrays of module meshphi if necessary
+C
       use meshphi
       use alloc,         only : de_alloc
       implicit none

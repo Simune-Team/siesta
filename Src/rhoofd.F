@@ -9,7 +9,7 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
       subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, 
-     .                   Dscf, rhoscf, nuo, nuotot, iaorb, iphorb, isa )
+     &                   Dscf, rhoscf, nuo, nuotot, iaorb, iphorb, isa )
 C ********************************************************************
 C Finds the SCF density at the mesh points from the density matrix.
 C Written by P.Ordejon and J.M.Soler. May'95.
@@ -80,9 +80,6 @@ C Internal variables and arrays
 
 #ifdef DEBUG
       call write_debug( '    PRE rhoofd' )
-#endif
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 1 )
 #endif
 
 C     Start time counter
@@ -361,10 +358,8 @@ C     Free local memory
       endif
 
       call timer('rhoofd',2)
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 0 )
-#endif
+
 #ifdef DEBUG
       call write_debug( '    POS rhoofd' )
 #endif
-      end
+      end subroutine rhoofd

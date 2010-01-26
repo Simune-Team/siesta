@@ -13,7 +13,7 @@
 #
 # Remove implicit rules (including for Modula-2, which just confuses matters)
 .SUFFIXES:
-.SUFFIXES: .f .F .o .a  .f90 .F90
+.SUFFIXES: .f .F .o .a  .f90 .F90 .c
 #
 VPATH=.
 #
@@ -126,7 +126,8 @@ OBJS =  domain_decom.o automatic_cell.o atom_options.o \
         debugmpi.o qsort.o distriphionmesh.o \
         dscfcomm.o schecomm.o moremeshsubs.o \
         cellxc_mod.o pspltm1.o lenstr.o printmatrix.o jacobi_davidson.o \
-        matrixop.o precond.o gmres.o cg.o  m_iodm.o m_sparse.o
+        matrixop.o precond.o gmres.o cg.o  m_iodm.o m_sparse.o mmio.o \
+        cholesky.o walltime.o deflatedmv.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -803,4 +804,6 @@ on_core.o: onmod.o
 on_main.o: onmod.o
 printmat.o: printmatrix.o
 tiempo.o: timer.o
+cholesky.o: precision.o sys.o
 version_info.o: version.o
+deflatedmv.o: precision.o matrixop.o
