@@ -256,5 +256,10 @@ PROGRAM siestaXCtest3
     print'(a,/,(3f15.9))', 'diff =', (stress0*volume-dEdStrain)
   end if
 
+! Finalize MPI
+#ifdef MPI
+      call MPI_Finalize( MPIerror )
+#endif
+
 END PROGRAM siestaXCtest3
 
