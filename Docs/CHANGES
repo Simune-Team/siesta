@@ -5,6 +5,22 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2010-01-26  18:50:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-b-11
+Fix bug in previous patch regarding CG DM extrapolation
+
+The logic of a previous patch was wrong, and the resulting
+code prevented the proper restructuring of a reused DM in
+the course of CG relaxations.
+
+To make it clear now: For "CG" calculations, the default is not to
+extrapolate the DM (unless requested by explicitly setting
+'DM.AllowExtrapolation' to "true"). The previous step's DM is reused.
+
+modified:
+  Docs/siesta.tex
+  Src/new_dm.F
+
+------------------------------------------------------------------------
 2010-01-14  12:00:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-b-10
 Add option to keep orbital grid array in SP when using GRID_DP
 

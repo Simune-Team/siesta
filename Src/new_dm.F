@@ -35,8 +35,12 @@
 !              (mapped to 'allow_dm_reuse' and 'allow_dm_extrapolation', and 
 !              both 'true' by default) can be used to change this behavior.
 !
-!              There is no extrapolation for "CG", "Forces", and "Phonon"
-!              dynamics types.              
+!              There is no re-use of the DM for "Forces", and "Phonon"
+!              dynamics types (i.e., the DM is re-initialized)
+!
+!              For "CG" calculations, the default is not to extrapolate the
+!              DM (unless requested by setting 'DM.AllowExtrapolation' to
+!              "true"). The previous step's DM is reused.
 !
 !      For the purposes of extrapolation, this module keeps DMsaved, which
 !      holds the DM from a previous geometry step (used, together with the
@@ -52,6 +56,7 @@
       use precision, only: dp
       use alloc, only: re_alloc, de_alloc
       use parallel,  only: IOnode
+      use m_fdf_global, only: fdf_global_get
       use m_norm
 
 
@@ -258,9 +263,22 @@
          if (idyn == 0) then
             ! do not extrapolate for CG relaxation, in case
             ! there are big jumps
-         else
-            call new_extrapol(no_l, numh, listhptr, listh, Dscf)
+            call fdf_global_get(allow_dm_extrapolation,
+     $                          'DM.AllowExtrapolation'  , .FALSE.)
+            if (allow_dm_extrapolation) then
+               ! The user insisted...
+               if (ionode) then
+                  write(6,"(a)")
+     $                 "NOTE: DM.AllowExtrapolation set " //
+     $                 "with CG dynamics option"
+                  write(0,"(a)")
+     $                 "NOTE: DM.AllowExtrapolation set " //
+     $                 "with CG dynamics option"
+               endif
+            endif
          endif
+
+         call new_extrapol(no_l, numh, listhptr, listh, Dscf)
 
       endif
      
