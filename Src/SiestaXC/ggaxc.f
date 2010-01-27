@@ -1763,7 +1763,7 @@ C Translate density and its gradient to new variables
       D(2) = max(D(2),denmin)
 
 C Call AM05 subroutine
-      call am05wbs(D(1), D(2), GDM(1), GDM(1), FX, FC,
+      call am05wbs(D(1), D(2), GDM(1), GDM(2), FX, FC,
      .             DFXDD(1), DFXDD(2), DFCDD(1), DFCDD(2), 
      .             DFXDG(1), DFXDG(2), DFCDG(1), DFCDG(2))
 

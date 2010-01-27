@@ -19,7 +19,7 @@ libSiestaXC.a: ../libSiestaXC.a
                     "VPATH_ROOT=../../Src" \
 	            "INCFLAGS=-I../MPI" \
                     "FFLAGS=$(FFLAGS)" module \
-	       ; cp -fp libSiestaXC.a siestaXC.mod Testers )
+	       ; cp -fp libSiestaXC.a *.mod Testers )
 #
 test1: libSiestaXC.a test1.o
 	$(FC) $(FFLAGS) $(DEFS) $(INCFLAGS) -o test1 test1.o -lSiestaXC -L.
