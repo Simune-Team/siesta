@@ -286,7 +286,7 @@ C  WRITTEN BY Alberto Garcia, Feb 2000, stealing code from J. Soler
 
       end subroutine elap1
 
-#define __PPC970__
+!!! AG  #define __PPC970__
 
 #ifdef __PPC970__
 

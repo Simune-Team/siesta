@@ -1,3 +1,11 @@
+2010-01-27  Alberto Garcia
+Some cosmetic changes to make it compile
+
+* Gmres: eps definition caused overflow
+* Wrapped powerpc assembler code in timer.F
+
+--------------------------------------------------
+2010-01-26  Alberto Garcia
 Jan 26-2010 update: Some docs; Cosmetics. Matrix io...
 
 Snapshot of state of Rogeli's code on Jan 26, 2010.
