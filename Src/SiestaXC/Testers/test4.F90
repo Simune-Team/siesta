@@ -68,7 +68,7 @@ PROGRAM siestaXCtest4
              cell(3,3), cellEc, cellEx, cellDc, cellDx, &
              d0, d0s(nSpin), diffVxc(nSpin), dr, dx, Ecut, kCut, &
              latConst, maxDiffVxc, pi, r, recCell(3,3), rMesh(nr), &
-             stress(3,3), sumDiffVxc, Vxc(nSpin), &
+             stress(3,3), sumDiffVxc, tmp, Vxc(nSpin), &
              wc(nfTot), wr, wx(nfTot), x(3), x0(3)
   real(gp),allocatable:: cellDens(:,:,:,:), cellVxc(:,:,:,:)
 
@@ -244,9 +244,11 @@ PROGRAM siestaXCtest4
   end do ! i3
 #ifdef MPI
   ! Find sumDiffVxc and maxDiffVxc accross all processor nodes
-  call MPI_AllReduce( sumDiffVxc, sumDiffVxc, 1, MPI_double_precision, &
+  tmp = sumDiffVxc
+  call MPI_AllReduce( tmp, sumDiffVxc, 1, MPI_double_precision, &
                       MPI_Sum, MPI_Comm_World, MPIerror )
-  call MPI_AllReduce( maxDiffVxc, maxDiffVxc, 1, MPI_double_precision, &
+  tmp = maxDiffVxc
+  call MPI_AllReduce( tmp, maxDiffVxc, 1, MPI_double_precision, &
                       MPI_Max, MPI_Comm_World, MPIerror )
 #endif
   avgDiffVxc = sumDiffVxc / nSpin / nx**3
@@ -257,7 +259,7 @@ PROGRAM siestaXCtest4
 
 ! Finalize MPI
 #ifdef MPI
-      call MPI_Finalize( MPIerror )
+  call MPI_Finalize( MPIerror )
 #endif
 
 CONTAINS
