@@ -1759,7 +1759,7 @@ MODULE fdf
       endif
 
       if (fdf_locate(label, mark)) then
-        if (.not. match(mark%pline, 'lr')) then
+        if (.not. match(mark%pline, 'lv')) then
           write(msg,*) 'no real value for ', label
           call die('FDF module: fdf_single', msg, __FILE__, __LINE__,  fdf_err)
         endif
@@ -1804,7 +1804,7 @@ MODULE fdf
       endif
 
       if (fdf_locate(label, mark)) then
-        if (.not. match(mark%pline, 'lr')) then
+        if (.not. match(mark%pline, 'lv')) then
           write(msg,*) 'no real value for ', label
           call die('FDF module: fdf_double', msg, __FILE__, __LINE__, fdf_err)
         endif
