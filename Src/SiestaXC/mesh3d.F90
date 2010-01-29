@@ -1330,16 +1330,20 @@ subroutine fftMeshDistr( nMesh, fftDistr, axisDistr )
 
 ! Check if the input FFT distribution IDs are already defined as such
   iDistr = indexDistr( fftDistr )
-  if (iDistr>0) then
+  if (iDistr>0 .and. iDistr<=maxDistr) then
     distr => storedMeshDistr(iDistr)
     if (distr%defined .and. all(distr%nMesh==nMesh)) then
       found = .true.  ! But now check the axis distributions
       if (present(axisDistr)) then
         do axis = 1,3
           iDistr = indexDistr( axisDistr(axis) )
-          distr => storedMeshDistr(iDistr)
-          if (.not.distr%defined .or. any(distr%nMesh/=nMesh)) &
+          if (iDistr>0 .and. iDistr<=maxDistr) then
+            distr => storedMeshDistr(iDistr)
+            if (.not.distr%defined .or. any(distr%nMesh/=nMesh)) &
+              found = .false.
+          else
             found = .false.
+          end if
         end do ! axis
       end if ! (present(axisDistr))
       if (found) return ! Since the input values are still valid
@@ -2287,16 +2291,20 @@ subroutine redistributeMeshData( srcDistr, srcData, dstDistr, dstData, task )
   integer,intent(inout),optional:: task   ! ID of communication task
 
   character(len=*),parameter:: myName = 'redistributeMeshData '
+  character(len=*),parameter:: errHead = myName//'ERROR: '
   integer:: dstBox(2,3), dstMesh(3), iDistr, nData, nMesh(3)
 
 ! For serial execution, avoid allocating a new array
   if (srcDistr==0 .and. dstDistr==0) then
     dstData => srcData
     return
+  else if (srcDistr<=0 .or. dstDistr<=0) then
+    call die(errHead//'invalid srcDistr or dstDistr')
   end if
 
 ! Find mesh box of node in new distribution
   iDistr = indexDistr( dstDistr )
+  if (iDistr<=0 .or. iDistr>maxDistr) call die(errHead//'invalid dstDistr')
   nMesh = storedMeshDistr(iDistr)%nMesh
   call myMeshBox( nMesh, dstDistr, dstBox )
   dstMesh(:) = dstBox(2,:) - dstBox(1,:) + 1
@@ -2754,6 +2762,11 @@ subroutine reduceDistr( distrID )
 
 ! Find the new distribution
   iDistr = indexDistr( distrID )
+  if (iDistr==0) then
+    return
+  else if (iDistr<0 .or. iDistr>maxDistr) then
+    call die(errHead//'invalid distrID')
+  end if
   newDistr => storedMeshDistr(iDistr)
 
 ! Compare it with all previous distributions
