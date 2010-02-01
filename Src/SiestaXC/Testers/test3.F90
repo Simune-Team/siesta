@@ -27,7 +27,7 @@ PROGRAM siestaXCtest3
   ! Tester parameters
   integer, parameter:: irel  = 0         ! Relativistic? 0=>no, 1=>yes
   integer, parameter:: nSpin = 2         ! Number of spin components
-  integer, parameter:: nfTot = 10        ! Number of functionals available
+  integer, parameter:: nfTot = 11        ! Number of functionals available
   integer, parameter:: nRan =  6         ! Number of random points for test
   real(dp),parameter:: latConst = 10._dp ! Lattice constant, in Bohr
   real(dp),parameter:: Ecut = 30._dp     ! Planewave cutoff of the mesh
@@ -40,18 +40,21 @@ PROGRAM siestaXCtest3
   real(dp),parameter:: deltaStrain = 1.e-4_dp ! Used for numerical derivatives
 
   ! List of functionals to be tested (avoid those not passing test1)
-  integer, parameter:: nf = 8            ! Number of tested functionals
-  integer:: indexf(nf) = (/1,2,  4,5,6,  8,9,10/)  ! Indexes from list below
+  integer, parameter:: nf = 9            ! Number of tested functionals
+  integer:: indexf(nf) = (/1,2,  4,5,6,  8,9,10,11/)  ! Indexes from list below
 
   ! All functionals available
   !                  1,       2,       3,       4,       5,   
-  !                  6,       7,       8,       9,      10,   
+  !                  6,       7,       8,       9,      10,
+  !                 11   
   character(len=3):: &
     func(nfTot) = (/'LDA',   'LDA',   'GGA',   'GGA',   'GGA',    &
-                    'GGA',   'GGA',   'GGA',   'GGA',   'VDW'    /)
+                    'GGA',   'GGA',   'GGA',   'GGA',   'GGA',    &
+                    'VDW'  /)
   character(len=6):: &
     auth(nfTot) = (/'PZ    ','PW92  ','PW91  ','PBE   ','RPBE  ', &
-                    'revPBE','LYP   ','WC    ','PBESOL','DRSLL ' /) 
+                    'revPBE','LYP   ','WC    ','PBESOL','AM05  ', &
+                    'DRSLL ' /) 
                                      
 
   ! A few random numbers
