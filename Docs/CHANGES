@@ -4,6 +4,15 @@
 
 
 ** CHANGES ALONG trunk
+
+-----------------------------------------------------------------------
+2010-02-03  02:22:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-335
+
+MPI_grid_real kind adapted to new standard (J.M. Soler)
+  
+  modified:
+    Src/MPI/mpi.F   ! MPI_grid_real=DAT_double unless def GRID_SP
+    
 -----------------------------------------------------------------------
 2010-02-03  00:17:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-334
 
