@@ -495,10 +495,6 @@ c Reading which electronic occupation function to use -------
           else if (leqi(ocf,'MP')) then
             ocupfnct = 2
             nh = fdf_integer('OccupationMPOrder',1)
-            write(6,'(/a,i2)')
-     .     'Stepf: Methfessel-Paxton step function'
-            write(6,'(a,i2)')
-     .     '       Using Hermite-Gauss polynomials of order ',nh
           else
             call die('fermid: Error: Allowed values '
      $               // 'for OccupationFunction are FD and MP')

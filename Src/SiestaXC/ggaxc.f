@@ -248,10 +248,10 @@ C Non collinear part rewritten by J.M.Soler. Sept. 2009
         dEXdGD(:,3:4) = dEXdGD(:,3:4) / 2
         dECdGD(:,3:4) = dECdGD(:,3:4) / 2
       else   ! Collinear spin => just copy derivatives to output arrays
-        dEXdD = dEXdDD
-        dECdD = dECdDD
-        dEXdGD = dEXdGDD
-        dECdGD = dECdGDD
+        dEXdD(1:nSpin) = dEXdDD(1:nSpin)
+        dECdD(1:nSpin) = dECdDD(1:nSpin)
+        dEXdGD(:,1:nSpin) = dEXdGDD(:,1:nSpin)
+        dECdGD(:,1:nSpin) = dECdGDD(:,1:nSpin)
       end if ! (nSpin==4)
 
       END SUBROUTINE GGAXC

@@ -597,7 +597,7 @@
       nep = nem(1) * nem(2) * nem(3)
 
 ! Allocate local memory relating to nep
-      call re_alloc( indexp, 1,nep, myName//'indexp' )
+      call re_alloc( indexp, 1,nep, myName//'indexp', copy=.false. )
 
 ! Find relationship between extended and normal box points
       boxWidth(:) =    myBox(2,:)    - myBox(1,:) + 1

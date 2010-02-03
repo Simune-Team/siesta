@@ -6,6 +6,32 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2010-02-03  02:34:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-337
+
+Patch for problem in the iVec computers (J. M. Soler)
+  
+  A persistent problem in Australia's iVec supercomputers was traced to an 
+  apparent ifort compiler error, producing a core dump in re_alloc's line
+    array(c(1,1):c(2,1)) = old_array(c(1,1):c(2,1))
+  that disappeared when substituted by
+    do i = c(1,1),c(2,1)
+      array(i) = old_array(i)
+    enddo
+  Since, in the offending call, no array copy was really neaded, the problem
+  was solved insted by adding copy=.false. in that call by initMesh.
+  
+  Independently of the former, a number of corrections or improvements
+  were done in various files, to solve small deficiencies located during
+  the process of debugging the previous problem.
+  
+  modified:
+    Src/SiestaXC/debugxc.f90   ! Corrected file name in closeDebugOutputFile
+    Src/SiestaXC/ggaxc.f       ! Added spin bounds in array copy
+    Src/SiestaXC/mesh3d.F90    ! Added several checks for range of iDistr
+    Src/fermid.F               ! Removed a duplicated printout
+    Src/meshsubs.F             ! Added copy=.false. in call to re_alloc
+
+-----------------------------------------------------------------------
 2010-02-03  02:28:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-336
 
 Corrected call to MPI_AllReduce in SiestaXC/Testers/test4.F90 (J.M. Soler)
