@@ -1,10 +1,21 @@
 =======================================================================
-                  SIESTA CHANGES: TOP IS MOST RECENT
+                  SIESTbA CHANGES: TOP IS MOST RECENT
 =======================================================================
 
 
 ** CHANGES ALONG trunk
----------------------------------------------------------------------
+
+-----------------------------------------------------------------------
+2010-02-02  10:57:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-333
+
+Two minor bugs found by Alberto Garcia (J.M. Soler)
+  
+  modified:
+    Src/SiestaXC/Testers/test3.F90  ! Add MPI_Finalize
+    Src/SiestaXC/Testers/test4.F90  ! Add MPI_Finalize
+    Src/SiestaXC/lib-makefile       ! Add am05.o
+    
+-----------------------------------------------------------------------
 2010-02-01  20:55:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-332
 
 Include AM05 functional in SiestaXC/Testers (J.M. Soler)
