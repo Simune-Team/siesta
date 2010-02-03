@@ -4,7 +4,16 @@
 
 
 ** CHANGES ALONG trunk
+-----------------------------------------------------------------------
+2010-02-03  00:17:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-334
 
+A bug corrected by J.D.Gale in the am05 functional (J.M. Soler)
+  
+  modified:
+    Src/SiestaXC/Testers/makefile   ! Copy ../*.mod
+    Src/SiestaXC/am05.f90           ! Bug corrected
+    Src/SiestaXC/ggaxc.f            ! Corrected call to am05wbs
+    
 -----------------------------------------------------------------------
 2010-02-02  10:57:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-333
 
