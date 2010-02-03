@@ -6,6 +6,15 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2010-02-03  02:28:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-336
+
+Corrected call to MPI_AllReduce in SiestaXC/Testers/test4.F90 (J.M. Soler)
+  
+  modified:
+    Src/SiestaXC/Testers/test1.f90  ! Increased number of densities tried
+    Src/SiestaXC/Testers/test4.F90  ! Corrected call to MPI_AllReduce
+    
+-----------------------------------------------------------------------
 2010-02-03  02:22:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-335
 
 MPI_grid_real kind adapted to new standard (J.M. Soler)
