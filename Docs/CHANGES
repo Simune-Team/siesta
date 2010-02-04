@@ -1,10 +1,27 @@
 =======================================================================
-                  SIESTbA CHANGES: TOP IS MOST RECENT
+                  SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
 
 
 ** CHANGES ALONG trunk
 
+-----------------------------------------------------------------------
+2010-02-04  03:50:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-339
+
+  Fix bug in previous patch regarding CG DM extrapolation (A. Garcia)
+  
+  The logic of a previous patch was wrong, and the resulting
+  code prevented the proper restructuring of a reused DM in
+  the course of CG relaxations.
+  
+  To make it clear now: For "CG" calculations, the default is not to
+  extrapolate the DM (unless requested by explicitly setting
+  'DM.AllowExtrapolation' to "true"). The previous step's DM is reused.
+  
+  modified:
+    Docs/siesta.tex
+    Src/new_dm.F
+    
 -----------------------------------------------------------------------
 2010-02-04  03:36:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-338
 
