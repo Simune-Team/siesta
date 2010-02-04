@@ -6,6 +6,22 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2010-02-04  03:36:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-338
+
+  Avoid extrapolation of DM during geometry optimization (A. Garcia)
+  
+  When performing a geometry optimization (CG, Broyden, etc) (idyn=0 in
+  the code), there might be sudden jumps in the geometry (e.g., at the
+  end of a line-minimization) that render a extrapolation of the DM
+  risky. Hence DM extrapolation is turned off in this case.
+  
+  One might argue that DM re-use should be avoided too.
+  
+  modified:
+    Docs/siesta.tex
+    Src/new_dm.F
+
+-----------------------------------------------------------------------
 2010-02-03  02:34:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-337
 
 Patch for problem in the iVec computers (J. M. Soler)
