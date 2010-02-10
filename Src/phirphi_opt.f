@@ -131,7 +131,7 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
       real(dp),          save :: tiny = 1.0d-9
       real(dp), pointer, save :: Vi(:)
 
-      external  matel
+      external  MATEL
       
 C Start timer
       call timer('phirphiopt',1)
@@ -266,22 +266,22 @@ C Find overlap between neighbour orbitals and KB projectors
                     do ix = 1,3
                      xinv(ix) = - xij(ix,ina)
                     enddo 
-                    call matel('S', is, ks, ioa, koa, xinv,
+                    call MATEL('S', is, ks, ioa, koa, xinv,
      &                         Ski(1,ikb,nno), grSki)
               
                     sum = 0.0d0
                     if (abs(dk(1)).gt.tiny) then
-                      call matel('X', is, ks, ioa, koa, xinv,
+                      call MATEL('X', is, ks, ioa, koa, xinv,
      &                           Sik, grSki)
                       sum = sum + Sik*dk(1) 
                     endif
                     if (abs(dk(2)).gt.tiny) then
-                      call matel('Y', is, ks, ioa, koa, xinv,
+                      call MATEL('Y', is, ks, ioa, koa, xinv,
      &                           Sik, grSki)
                       sum = sum + Sik*dk(2)
                     endif
                     if (abs(dk(3)).gt.tiny) then
-                      call matel('Z', is, ks, ioa, koa, xinv,
+                      call MATEL('Z', is, ks, ioa, koa, xinv,
      &                           Sik, grSki)
                       sum = sum + Sik*dk(3)
                     endif
@@ -375,19 +375,19 @@ C Initialize neighb subroutine
 
                   if (matrix.eq.'R') then 
  
-                    call matel('X', js, is, joa, ioa, xinv,
+                    call MATEL('X', js, is, joa, ioa, xinv,
      &                         Sij, grSij )
                     Si(jo) = Sij*dk(1)  
                      
-                    call matel('Y', js, is, joa, ioa, xinv,
+                    call MATEL('Y', js, is, joa, ioa, xinv,
      &                         Sij, grSij )
                     Si(jo) = Si(jo) + Sij*dk(2)  
  
-                    call matel('Z', js, is, joa, ioa, xinv,
+                    call MATEL('Z', js, is, joa, ioa, xinv,
      &                         Sij, grSij )
                     Si(jo) = Si(jo) + Sij*dk(3) 
            
-                    call matel('S', is, js, ioa, joa, xij(1,jn),
+                    call MATEL('S', is, js, ioa, joa, xij(1,jn),
      &                         Sij, grSij )
                     Si(jo) = Si(jo) + Sij*(
      &                   xa(1,ia)*dk(1)
@@ -440,7 +440,7 @@ C The factor of two because we use Ry for the Hamiltonian
                     else
 C Matrix elements between different atoms are taken from the 
 C gradient of the overlap 
-                      call matel('S', is, js, ioa, joa, xij(1,jn),
+                      call MATEL('S', is, js, ioa, joa, xij(1,jn),
      &                           Sij, grSij )
 C The factor of two because we use Ry for the Hamiltonian
                       Si(jo) =
@@ -465,7 +465,7 @@ C The factor of two because we use Ry for the Hamiltonian
       enddo
 
 C     Free local memory
-      call matel( 'S', 0, 0, 0, 0, xij, Sij, grSij )
+!      call MATEL( 'S', 0, 0, 0, 0, xij, Sij, grSij )
       call reset_neighbour_arrays( )
       call de_alloc( calculated, 'calculated', 'phirphi_opt' )
       call de_alloc( Pij,        'Pij',        'phirphi_opt' )

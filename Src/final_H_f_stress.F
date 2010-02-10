@@ -32,6 +32,7 @@
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
+      use parallel, only: IOnode
 #ifdef TRANSIESTA
 ! TSS Begin
       use files,        only : slabel, label_length
@@ -110,7 +111,7 @@
      &             numh, listhptr, listh, numh, listhptr, listh, 
      &             min(nspin,2), Dscf, Enl, fal, stressl, H,
      &             forces_and_stress=.true. )
-        
+
 #ifdef MPI
 ! Global reduction of energy terms
       call globalize_sum(Enl,buffer1)
@@ -152,12 +153,11 @@
 !     Global reduction of forces and stresses
       nullify(fatmp)
       call re_alloc( fatmp, 1, 3, 1, na_u, 'fatmp', 'final_H_f_stress' )
-      call re_alloc( fal, 1, 3, 1, na_u, 'fal', 'final_H_f_stress' )
       call globalize_sum(stressl(1:3,1:3),stresstmp(1:3,1:3))
       call globalize_sum( fal(1:3,1:na_u), fatmp(1:3,1:na_u) )
       stress(1:3,1:3) = stress(1:3,1:3) + stresstmp(1:3,1:3)
       fa(1:3,1:na_u) = fa(1:3,1:na_u) + fatmp(1:3,1:na_u)
-      call de_alloc( fatmp,'fatmp', 'final_H_f_stress' )
+      call de_alloc( fatmp, 'fatmp', 'final_H_f_stress' )
 #else
       stress(1:3,1:3) = stress(1:3,1:3) + stressl(1:3,1:3)
       fa(1:3,1:na_u) = fa(1:3,1:na_u) + fal(1:3,1:na_u)

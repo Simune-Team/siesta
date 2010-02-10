@@ -47,97 +47,25 @@ C                       : (WITHOUT 2*pi factor)
 C real*8  xdop(3,mop)   : Vector to mesh points within rmax
 C real*8  xdsp(3,nsp)   : Vector to mesh sub-points
 C ----------------------------------------------------------------------
-      integer,  pointer,     save :: idop(:)
-      integer,  pointer,     save :: ipa(:)
-      real(dp), pointer,     save :: dxa(:,:)
-      real(dp), pointer,     save :: xdop(:,:)
-      real(dp), pointer,     save :: xdsp(:,:) ! Allocated in dhscf
-      integer,               save :: mop
-      integer,               save :: ne(3)
-      integer,               save :: nem(3)
-      integer,               save :: nmsc(3)
-      integer,               save :: meshLim(2,3)
-      integer,               save :: nmeshg(3)
-      integer,               save :: nsm
-      integer,               save :: nsp
-      real(dp),              save :: cmesh(3,3)
-      real(dp),              save :: rcmesh(3,3)
-      CONTAINS
-
-      subroutine resetMesh( )
-      use alloc, only: de_alloc
-C
-C Deallocate arrays of module mesh
-C
-      implicit none
-      call de_alloc( xdop, 'xdop', 'mesh' )
-      call de_alloc( idop, 'idop', 'mesh' )
-      end subroutine resetMesh
-
-      function indexp( ind )
-C
-C Transforms an index of the global extended mesh to an index of the
-C local mesh. If the index don't belong to current process it
-C returns a 0.
-C
-C ----------------------------------------------------------------------
-C Input :
-C ----------------------------------------------------------------------
-C integer ind          : index of the global extended mesh
-C ----------------------------------------------------------------------
-C Output :
-C ----------------------------------------------------------------------
-C integer indexp       : index of the local mesh
-C ----------------------------------------------------------------------
-C Internal :
-C ----------------------------------------------------------------------
-C integer nem(3)       : Extended-mesh divisions in each direction
-C integer ne(3)        : Number of mesh-Extension intervals 
-C                      : in each direction
-C integer nmsc(3)      : Mesh divisions of each supercell vector
-C integer meshLim(2,3) : Upper an lower limits of the mesh in every process
-C ----------------------------------------------------------------------
-      implicit none
-C     Input variables
-      integer                     :: ind
-C     Output variables
-      integer                     :: indexp
-C     Local variables
-      integer                     :: I1, I2, I3, J1, J2, J3, sizX, sizY
-!------------------------------------------------------------------------- BEGIN
-C     Transform the index of the extended mesh from one to three dimensions
-      I1 = (ind-1)/nem(1)
-      I3 = I1/nem(2)
-      I2 = I1 - I3*nem(2)
-      I1 = ind-1 - I1*nem(1)
-
-C     Compute its position in the Mesh
-      J1 = I1 - ne(1)
-      J2 = I2 - ne(2)
-      J3 = I3 - ne(3)
-      J1 = mod( J1 + 1000*nmsc(1), nmsc(1) ) + 1
-      J2 = mod( J2 + 1000*nmsc(2), nmsc(2) ) + 1
-      J3 = mod( J3 + 1000*nmsc(3), nmsc(3) ) + 1
-
-C     Check if the mesh point belong to current process
-      if (J1.ge.meshLim(1,1) .and. J1.le.meshLim(2,1).and.
-     &    J2.ge.meshLim(1,2) .and. J2.le.meshLim(2,2).and.
-     &    J3.ge.meshLim(1,3) .and. J3.le.meshLim(2,3)) then
-C       Transform the index of the mesh from global to local mesh
-C       and from three to one dimensions
-        sizX = meshLim(2,1) - meshLim(1,1) + 1
-        sizY = meshLim(2,2) - meshLim(1,2) + 1
-        indexp = 1 + J1-meshLim(1,1) +
-     &              (J2-meshLim(1,2))*sizX +
-     &              (J3-meshLim(1,3))*sizX*sizY
-      else
-C       The mesh point doesn't belong to current process
-        indexp = 0
-      endif
-      return
-!--------------------------------------------------------------------------- END
-      end function indexp
-
+      integer,  pointer, save :: idop(:)
+      integer,  pointer, save :: ipa(:) => null()
+      real(dp), pointer, save :: dxa(:,:) => null()
+      real(dp), pointer, save :: xdop(:,:)
+      real(dp), pointer, save :: xdsp(:,:) ! Allocated in dhscf
+      integer,           save :: mop
+      integer,           save :: ne(3)
+      integer,           save :: nem(3)
+      integer,           save :: nmsc(3)
+      integer,           save :: meshLim(2,3)  ! My processor's box of mesh points:
+                                               !   myBox(1,:) : lower bounds
+                                               !   myBox(2,:) : upper bounds
+      integer,           save :: myExtBox(2,3) ! My extended box of mesh points
+      integer,           save :: nmeshg(3)
+      integer,           save :: nsm
+      integer,           save :: nsp
+      real(dp),          save :: cmesh(3,3)
+      real(dp),          save :: rcmesh(3,3)
+      integer,  pointer, save :: indexp(:) => null()
       end module mesh
 
       module meshphi
@@ -281,66 +209,6 @@ C     If cell has changed then it is necessary to reinitialise coordinates
 !--------------------------------------------------------------------------- END
       end subroutine SameMeshAndAtoms
 
-      subroutine InitAtomMesh( na, xa)
-C
-C Initialises the atom information relating to the mesh
-C
-C ----------------------------------------------------------------------
-C Input :
-C ----------------------------------------------------------------------
-C integer na            : Number of atoms in supercell
-C real*8  xa(3,na)      : Atomic positions of all atoms in supercell
-C ----------------------------------------------------------------------
-C Output :
-C ----------------------------------------------------------------------
-C all output quantities are in the mesh module
-C ----------------------------------------------------------------------
-C Internal variables and arrays:
-C ----------------------------------------------------------------------
-C integer lastna        : Number of atoms on last call
-C ----------------------------------------------------------------------
-      use precision,     only : dp
-      use alloc,         only : re_alloc, de_alloc
-      use mesh
-      implicit none
-C     Passed arguments
-      integer,  intent(in) :: na
-      real(dp), intent(in) :: xa(3,na)
-C     Internal variables
-      integer              :: i, ia, ix(3)
-      integer,        save :: lastna = 0
-      real(dp)             :: dx(3)
-
-!------------------------------------------------------------------------- BEGIN
-C     Check size of atom-mesh arrays nad reallocate if necessary
-      call re_alloc( ipa, 1, na, 'ipa', 'mesh' )
-      call re_alloc( dxa, 1, 3, 1, na, 'dxa', 'mesh' )
-      lastna = na
-
-C     Find atomic positions relative to mesh
-      do ia = 1,na
-C       Find index of extended-mesh cell in which atom is
-        do i = 1,3
-          dx(i) = dot_product(xa(:,ia),rcmesh(:,i))
-          ix(i) = int( dx(i) + 100000 ) - 100000
-          dx(i) = dx(i) - ix(i)
-          ix(i) = mod( ix(i) + 1000*nmsc(i), nmsc(i) )
-          ix(i) = ix(i) + ne(i)
-        enddo
-        ipa(ia) = 1 + ix(1) + nem(1) * ix(2) +
-     &            nem(1) * nem(2) * ix(3)
-
-C       Find atom position within mesh cell
-        do i = 1,3
-          dxa(i,ia) = cmesh(i,1) * dx(1) +
-     &                cmesh(i,2) * dx(2) +
-     &                cmesh(i,3) * dx(3)
-        enddo
-      enddo
-
-!--------------------------------------------------------------------------- END
-      end subroutine initatommesh
-
       subroutine PartialCoreOnMesh( na, isa, ntpl, rhopcc, indxua, 
      &                              nsd, dvol, volume, Vscf, Vaux, 
      &                              fal, stressl, Forces, Stress )
@@ -398,6 +266,9 @@ C     Internal variables
       data tiny / 1.0e-12_dp /
 
 !------------------------------------------------------------------------- BEGIN
+#ifdef DEBUG
+      call write_debug( '      PRE PartialCoreOnMesh' )
+#endif
 C     Find out whether this is a gradient run based on the arguments passed
       Gradients = ( Forces .or. Stress )
 
@@ -405,6 +276,7 @@ C     Initialise array to zero
       if (.not.Gradients) rhopcc(1:ntpl) = 0.0_dp
 
       do ia = 1,na
+        if (ipa(ia)==0) cycle ! Atomic sphere does not intersec my Box
         iua = indxua(ia)
         is = isa(ia)
         ra = rcore( is )
@@ -442,6 +314,9 @@ C                   Calculate density due to PCC
           enddo
         endif
       enddo
+#ifdef DEBUG
+      call write_debug( '      POS PartialCoreOnMesh' )
+#endif
 !--------------------------------------------------------------------------- END
       end subroutine PartialCoreOnMesh
 
@@ -493,6 +368,9 @@ C     Internal variables
       real(dp)                    :: dx(3), grva(3), r, ra, va
       logical                     :: Gradients
 
+#ifdef DEBUG
+      call write_debug( '      PRE NeutralAtomOnMesh' )
+#endif
 C     Check whether forces and/or stress has been
 C     requested based on arguments
       Gradients = (Forces.or.Stress)
@@ -504,6 +382,7 @@ C must be kept. This is particularly important for grid-cell sampling...
       if (.not.Gradients) vna(1:ntpl) = 0.0_dp
 
       do ia = 1,na
+        if (ipa(ia)==0) cycle ! Atomic sphere does not intersec my Box
         iua = indxua(ia)
         is = isa(ia)
         ra = rcut( is, 0 )
@@ -534,6 +413,9 @@ C           Loop over sub-points
           endif
         enddo
       enddo
+#ifdef DEBUG
+      call write_debug( '      POS NeutralAtomOnMesh' )
+#endif
 !--------------------------------------------------------------------------- END
       end subroutine NeutralAtomOnMesh
 
@@ -571,10 +453,14 @@ C     Internal variables
       type(rad_func), pointer  :: func   
  
 !------------------------------------------------------------------------- BEGIN
+#ifdef DEBUG
+      call write_debug( '      PRE LocalChargeOnMesh' )
+#endif
 C     Initialise array to zero 
       Chlocal(1:ntpl) = 0.0_grid_p
  
       do ia = 1,na
+        if (ipa(ia)==0) cycle ! Atomic sphere does not intersec my Box
         iua = indxua(ia)
         is = isa(ia)
         func => species(is)%chlocal
@@ -596,6 +482,8 @@ C           Loop over sub-points
           endif
         enddo
       enddo
- 
+#ifdef DEBUG
+      call write_debug( '      POS LocalChargeOnMesh' )
+#endif
 !--------------------------------------------------------------------------- END
       end subroutine LocalChargeOnMesh

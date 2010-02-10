@@ -97,6 +97,9 @@ C Number of columns in printout.  Must be smaller than 20
       character(len=13) :: atomtitle
 
 C ......................
+#ifdef DEBUG
+      call write_debug( '    PRE mulliken' )
+#endif
 
 C Get Node numberReduce
 #ifdef MPI
@@ -108,11 +111,17 @@ C Find number of locally stored orbitals and allocated related arrays
 
       if (iopt.eq.0) then
 C iopt = 0 implies no analysis
+#ifdef DEBUG
+      call write_debug( '    POS mulliken iopt==0' )
+#endif
         return
       elseif (iopt.lt.0 .or. iopt.gt.3) then
         if (ionode) then
           write(6,"(a)") 'mulliken: ERROR: Wrong iopt'
         endif
+#ifdef DEBUG
+      call write_debug( '    POS mulliken iopt<0 or iopt>3' )
+#endif
         return
       endif 
 
@@ -505,6 +514,10 @@ C Global reduction of terms
 C Deallocate local memory
       call de_alloc( qos, 'qos', 'mulliken' )
 C ...................
+
+#ifdef DEBUG
+      call write_debug( '    POS mulliken' )
+#endif
 
 10    format(12x,20(2x,i4,2x))
 11    format(i12,20(1x,f7.3))

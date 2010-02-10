@@ -91,4 +91,8 @@ C  Loop on sub-points
         enddo
 
       enddo
-      end
+
+#ifdef DEBUG
+      call write_debug( '      POS rhooda' )
+#endif
+      end subroutine rhooda

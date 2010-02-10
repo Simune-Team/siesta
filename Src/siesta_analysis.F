@@ -54,7 +54,8 @@
       character(len=label_length+5) :: filevt
       character(len=label_length+5) :: filrho
 
-      real(dp)          :: dummy_str(3,3), dummy_strl(3,3)
+      real(dp)          :: dummy_str(3,3)
+      real(dp)          :: dummy_strl(3,3)
       real(dp)          :: qspin(4)         ! Local
 
       real(dp)          :: polxyz(3,nspin)  ! Autom., small
@@ -109,7 +110,7 @@
         call bonds( ucell, na_u, isa, xa,
      &       rmax_bonds, trim(slabel) // ".BONDS_FINAL" )
 
-       endif ! IONode
+      endif ! IONode
 
 !     Find and print wavefunctions at selected k-points
       if (nwk.gt.0) then
@@ -298,6 +299,8 @@
         if (savepsch) filepsch = paste( slabel, '.IOCH'  )
         if (savetoch) filetoch = paste( slabel, '.TOCH'  )
         g2max = g2cut
+        dummy_str  = 0.0
+        dummy_strl = 0.0
         call dhscf( nspin, no_s, iaorb, iphorb, no_l,
      &              no_u, na_u, na_s, isa, xalast, indxua, 
      &              ntm, 0, 0, 0, filrho, fildrh, filevh, filevt,

@@ -19,7 +19,8 @@ C ----------------------------------------------------------------------
 C Modules
       use precision, only : dp, grid_p
       use atmfuncs,  only : rcut, phiatm
-      use mesh,      only : dxa, idop, indexp, ipa, mop, nsp, xdop, xdsp
+      use mesh,      only : dxa, idop, indexp, ipa, mop, nsp, xdop,
+     &                      xdsp, meshLim, myExtBox
       use meshphi,   only : directphi, nphi, phi, lstpht, listp2, endpht
       use parallel,  only : Node
       use fdf,       only : fdf_boolean
@@ -29,8 +30,8 @@ C Modules
 #endif
       implicit none
 C Passed arguments
-      integer,    intent(in) :: nmpl, norb, iaorb(norb), iphorb(norb),
-     &                          isa(*)
+      integer,    intent(in) :: nmpl, norb, iaorb(norb),
+     &                          iphorb(norb), isa(*)
       integer, intent(inout) :: numphi(nmpl)
 C     Local variables
       integer                :: ia, io, iop, ip, ip0, iphi, is, isp, n,
@@ -48,6 +49,7 @@ C     Local variables
 #ifdef DEBUG
       call write_debug( '      PRE PhiOnMesh' )
 #endif
+
       call timer( 'PHION', 1 )
 C     On first call set the logical DirectPhi
       if (firsttime) then
@@ -99,10 +101,11 @@ C     Find indexes and values of atomic orbitals at mesh points
       numphi = 0
       do io = 1,norb
         ia = iaorb(io)
+        if (ipa(ia)==0) cycle ! Atomic sphere does not intersec my Box
         iphi = iphorb(io)
         is = isa(ia)
         r2o = rcut(is,iphi)**2
-        do iop = 1,mop
+        do iop = 1, mop
           ip0 = indexp( ipa(ia) + idop(iop) )
           if (ip0 .gt. 0) then
             within = .false.

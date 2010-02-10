@@ -22,15 +22,15 @@ C setMeshDistr      = Select a mesh distribution and set the grid sizes.
 C distMeshData      = Move data from one data distribution to another.
 C 
       MODULE moreMeshSubs
-      use precision, only : grid_p
+      use precision, only : grid_p, dp
       use parallel,  only : node, Nodes, ProcessorY
       use sys,       only : die
       use alloc,     only : re_alloc, de_alloc
 
       implicit none
 
-      PUBLIC :: initMeshDistr, setMeshDistr
-      PUBLIC :: distMeshData, resetMeshDistr
+      PUBLIC :: initMeshDistr, setMeshDistr, allocExtMeshDistr
+      PUBLIC :: allocIpaDistr, distMeshData, resetMeshDistr
 #ifdef MPI
       PUBLIC :: initMeshExtencil, distExtMeshData, gathExtMeshData
 #endif
@@ -42,10 +42,14 @@ C
 
 !     Private type to hold mesh distribution data
       TYPE meshDisType
-      integer          :: nMesh(3)   ! Number of mesh div. in each axis
-      integer, pointer :: box(:,:,:) ! Mesh box bounds of each node:
-                                     ! box(1,iAxis,iNode)=lower bounds
-                                     ! box(2,iAxis,iNode)=upper bounds
+      integer           :: nMesh(3)      ! Number of mesh div. in each axis
+      integer,  pointer :: box(:,:,:)    ! Mesh box bounds of each node:
+                                         ! box(1,iAxis,iNode)=lower bounds
+                                         ! box(2,iAxis,iNode)=upper bounds
+      integer,  pointer :: indexp(:)
+      integer,  pointer :: idop(:)
+      real(dp), pointer :: xdop(:,:)
+      integer,  pointer :: ipa(:)
       END TYPE meshDisType
 
 !     Private type to hold communications to move data from one
@@ -124,6 +128,8 @@ C     Local variables
      &                               blocY, blocZ, nremY, nremZ,
      &                               iniY, iniZ, dimY, dimZ
       type(meshDisType),  pointer :: distr
+      logical,               save :: firstime=.true.
+      integer, pointer :: box(:,:,:)
 !------------------------------------------------------------------------- BEGIN
       call timer( 'INIME', 1 )
 
@@ -132,6 +138,26 @@ C     Check the number of mesh distribution
      &  call die( errMsg // 'oDistr.gt.maxDistr' )
 
 C     Reset data if necessay
+      if (firstime) then
+        do ii= 1, maxDistr
+          nullify(meshDistr(ii)%box)
+          nullify(meshDistr(ii)%indexp)
+          nullify(meshDistr(ii)%idop)
+          nullify(meshDistr(ii)%xdop)
+          nullify(meshDistr(ii)%ipa)
+        enddo
+        do ii= 1, (maxDistr*(maxDistr-1))/2
+          nullify(meshCommu(ii)%src)
+          nullify(meshCommu(ii)%dst)
+        enddo
+        do ii= 1, maxDistr
+          do jj= 1, 3
+            nullify(exteCommu(ii,jj)%src)
+            nullify(exteCommu(ii,jj)%dst)
+          enddo
+        enddo
+        firstime = .false.
+      endif
       call resetMeshDistr( oDistr )
 
       distr => meshDistr(oDistr)
@@ -181,7 +207,7 @@ C       the vector "wload" among the several processes
         endif
 
         call splitwload( Nodes, node+1, nm, wload,
-     &                   meshDistr(iDistr), distr )
+     &                   meshDistr(iDistr), meshDistr(oDistr) )
 
 C       Precompute the communications needed to move data between the new data
 C       distribution and the previous ones.
@@ -196,6 +222,33 @@ C       distribution and the previous ones.
       call timer( 'INIME', 2 )
 !--------------------------------------------------------------------------- END
       end subroutine initMeshDistr
+
+      subroutine allocExtMeshDistr( iDistr, nep, mop )
+      use mesh, only: indexp, idop, xdop
+      implicit none
+      integer,  intent(in) :: iDistr, nep, mop
+
+      call re_alloc( meshDistr(iDistr)%indexp, 1, nep,
+     &               'distr%indexp', 'moreMeshSubs' )
+      call re_alloc( meshDistr(iDistr)%idop, 1, mop,
+     &               'distr%idop', 'moreMeshSubs' )
+      call re_alloc( meshDistr(iDistr)%xdop, 1, 3, 1, mop,
+     &               'distr%xdop', 'moreMeshSubs' )
+
+      indexp => meshDistr(iDistr)%indexp
+      idop   => meshDistr(iDistr)%idop
+      xdop   => meshDistr(iDistr)%xdop
+      end subroutine allocExtMeshDistr
+
+      subroutine allocIpaDistr( iDistr, na )
+      use mesh, only: ipa
+      implicit none
+      integer,  intent(in) :: iDistr, na
+
+      call re_alloc( meshDistr(iDistr)%ipa, 1, na,
+     &               'distr%ipa', 'moreMeshSubs' )
+      ipa => meshDistr(iDistr)%ipa
+      end subroutine allocIpaDistr
 
       subroutine setMeshDistr( iDistr, nsm, nsp, nml, nmpl, ntml, ntpl )
 C ==================================================================
@@ -220,7 +273,7 @@ C Fixes the new data limits and dimensions of the mesh to those of
 C the data distribution iDistr.
 C
 C ==================================================================
-      use mesh, only: meshLim
+      use mesh, only: meshLim, indexp, ipa, idop, xdop
       implicit none
 C     Passed arguments
       integer,  intent(in) :: iDistr, nsm, nsp
@@ -234,6 +287,12 @@ C     Passed arguments
       nmpl   = nml(1)*nml(2)*nml(3)
       ntml   = nml*nsm
       ntpl   = nmpl*nsp
+
+      indexp => meshDistr(iDistr)%indexp
+      idop   => meshDistr(iDistr)%idop
+      xdop   => meshDistr(iDistr)%xdop
+      ipa    => meshDistr(iDistr)%ipa
+
 !--------------------------------------------------------------------------- END
       end subroutine setMeshDistr
 
@@ -271,10 +330,31 @@ C     Local variables
       do idis= ini, fin
         distr => meshDistr(idis)
 
+        distr%nMesh = 0
+
         if (associated(distr%box)) then
           call de_alloc( distr%box, 'distr%box', 'moreMeshSubs' )
         endif
-        distr%nMesh = 0
+
+        if (associated(distr%indexp)) then
+          call de_alloc( distr%indexp, 'distr%indexp',
+     &                   'moreMeshSubs' )
+        endif
+
+        if (associated(distr%idop)) then
+          call de_alloc( distr%idop, 'distr%idop',
+     &                   'moreMeshSubs' )
+        endif
+
+        if (associated(distr%xdop)) then
+          call de_alloc( distr%xdop, 'distr%xdop',
+     &                   'moreMeshSubs' )
+        endif
+
+        if (associated(distr%ipa)) then
+          call de_alloc( distr%ipa, 'distr%ipa',
+     &                   'moreMeshSubs' )
+        endif
 
         do icom=1, 3
           mcomm => exteCommu(idis,icom)

@@ -23,6 +23,7 @@
 #ifdef DEBUG
       call write_debug( '  PRE post_scf_work' )
 #endif
+      call timer( 'PostSCF', 1 )
 !     If converged, make one last iteration to find forces and
 !     stress
 !     Note that here we are using the Dscf guessed by mixer,
@@ -56,6 +57,7 @@
      &       scell, nsc, xa, rmaxo, datm )
       endif
 
+      call timer( 'PostSCF', 2 )
 #ifdef DEBUG
       call write_debug( '  POS post_scf_work' )
 #endif

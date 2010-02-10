@@ -69,6 +69,7 @@
 
       iunit = 2
 
+      write(23,*) '   siesta_move idyn:', idyn
 ! Move atoms ..........................................................
       select case(idyn)
       case(0)

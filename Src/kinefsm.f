@@ -138,7 +138,7 @@ C Valid orbital
                 joa = iphorb(jo)
                 js = isa(ja)
                 if (rcut(is,ioa)+rcut(js,joa) .gt. rij) then
-                  call matel( 'T', is, js, ioa, joa, xij(1,jn),
+                  call MATEL( 'T', is, js, ioa, joa, xij(1,jn),
      .                      Tij, grTij )
                   Ti(jo) = Ti(jo) + Tij
                   Ekin = Ekin + Di(jo) * Tij
@@ -175,7 +175,7 @@ C Valid orbital
       enddo
 
 C Deallocate local memory
-      call MATEL( 'T', 0, 0, 0, 0, xij, Tij, grTij )
+!      call MATEL( 'T', 0, 0, 0, 0, xij, Tij, grTij )
       call reset_neighbour_arrays( )
       call de_alloc( Ti, 'Ti', 'kinefsm' )
       call de_alloc( Di, 'Di', 'kinefsm' )

@@ -110,6 +110,10 @@ C
       integer          :: MPIerror, Status(MPI_Status_Size)
 #endif
 
+#ifdef DEBUG
+      call write_debug( '      PRE CreateLocalDscfPointers' )
+#endif
+
       if (first_time) then
         first_time = .false.
       else
@@ -267,8 +271,11 @@ C         If this is the destination node, receive data from source node.
         endif
       enddo
 #endif
-
       call de_alloc( ibuffer, 'ibuffer', 'meshdscf' )
+
+#ifdef DEBUG
+      call write_debug( '      POS CreateLocalDscfPointers' )
+#endif
       end subroutine CreateLocalDscfPointers
 
       subroutine matrixOtoM( maxnd, numd, listdptr, maxndl, nuo, 

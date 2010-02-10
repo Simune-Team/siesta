@@ -47,6 +47,9 @@
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline
 
+#ifdef DEBUG
+      call write_debug( '  PRE local_DOS' )
+#endif
 ! Find local density of states
       genlogic = fdf_block('LocalDensityOfStates',bfdf)
 
@@ -90,6 +93,9 @@
       endif ! genlogic
 
 
+#ifdef DEBUG
+      call write_debug( '  POS local_DOS' )
+#endif
       END subroutine local_DOS
 
       END module m_local_DOS

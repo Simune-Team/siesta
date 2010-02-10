@@ -58,7 +58,7 @@ C ==================================================================
      &                            iphorb, isa, numphi )
 
       use mesh,         only: mop, ipa, idop, nsp, xdop, xdsp, dxa,
-     &                        indexp
+     &                        indexp, meshLim, myExtBox
       use precision,    only: dp, grid_p
       use atmfuncs,     only: rcut
       use parallel,     only: Nodes, node
@@ -91,6 +91,7 @@ C     Local variables
 C     Find number of atomic orbitals at mesh points
       do io = 1,norb
         ia   = iaorb(io)
+        if (ipa(ia)==0) cycle ! Atomic sphere does not intersec my Box
         iphi = iphorb(io)
         is   = isa(ia)
         r2o  = rcut(is,iphi)**2

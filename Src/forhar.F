@@ -20,7 +20,7 @@
 
       CONTAINS
       subroutine forhar( NTPL, NSPIN, NML, NTML, NPCC, CELL, RHOATM,
-     .                   RHOPCC, VNA, DRHOOUT, VHARRIS1, VHARRIS2 )
+     &                   RHOPCC, VNA, DRHOOUT, VHARRIS1, VHARRIS2 )
 
 C **********************************************************************
 C Build the potentials needed for computing Harris forces:
@@ -88,14 +88,12 @@ C ----------------------------------------------------------------------
       real(grid_p),  pointer :: drhoin(:,:), drhoin_par(:,:),
      &                          dvxcdn(:,:,:), dvxcdn_par(:,:,:),
      &                          vharris1_par(:,:), fsrc(:), fdst(:)
-      INTEGER                :: idistr, odistr, ntpl_2, ntpl_3
+      INTEGER                :: idistr, odistr, ntpl_1, ntpl_3
 
-      nullify( drhoin )
-      call re_alloc( drhoin, 1, ntpl, 1, nspin, name='drhoin',
-     &               routine='forhar' )
-      nullify( dvxcdn )
-      call re_alloc( dvxcdn, 1, ntpl, 1, nspin, 1, nspin, name='dvxcdn',
-     &               routine='forhar' )
+      nullify( drhoin, dvxcdn )
+      call re_alloc( drhoin, 1, ntpl, 1, nspin, 'drhoin', 'forhar' )
+      call re_alloc( dvxcdn, 1, ntpl, 1, nspin, 1, nspin,
+     &               'dvxcdn', 'forhar' )
 
 C ----------------------------------------------------------------------
 C Initialize some variables
@@ -120,9 +118,9 @@ C ----------------------------------------------------------------------
       ENDDO
 
 
-      ntpl_2 = ntpl
+      ntpl_1 = ntpl
 #ifdef MPI
-      idistr = 2
+      idistr = 1
       odistr = 3
       call setMeshDistr( odistr, nsm, nsp, nml, nmpl, ntml, ntpl )
 #endif
@@ -130,16 +128,16 @@ C ----------------------------------------------------------------------
 
       nullify( drhoin_par, vharris1_par, dvxcdn_par )
       call re_alloc( drhoin_par, 1, ntpl_3, 1, nspin,
-     &               name='drhoin_par', routine='forhar' )
+     &               'drhoin_par', 'forhar' )
       call re_alloc( vharris1_par, 1, ntpl_3, 1, nspin,
-     &               name='vharris1_par', routine='forhar' )
+     &               'vharris1_par', 'forhar' )
       call re_alloc( dvxcdn_par, 1, ntpl_3, 1, nspin, 1, nspin,
-     &              name='dvxcdn_par', routine='forhar' )
+     &               'dvxcdn_par', 'forhar' )
 
       DO ISPIN = 1, NSPIN
         fsrc => drhoin(:,ispin)
         fdst => drhoin_par(:,ispin)
-        call distMeshData( idistr, fsrc, odistr, fdst, +1 )
+        call distMeshData( idistr, fsrc, odistr, fdst, 0 )
       ENDDO
 
       CALL CELLXC( 0, 1, CELL, NTML, NTML, NTPL, 0, AUX3, NSPIN,
@@ -149,17 +147,17 @@ C ----------------------------------------------------------------------
       DO ISPIN = 1, NSPIN
         fsrc => VHARRIS1_PAR(:,ISPIN)
         fdst => VHARRIS1(:,ispin)
-        call distMeshData( odistr, fsrc, idistr, fdst, -1 )
+        call distMeshData( odistr, fsrc, idistr, fdst, 0 )
         DO ISPIN2 = 1, NSPIN
           fsrc => DVXCDN_PAR(:,ISPIN,ISPIN2)
           fdst => DVXCDN(:,ISPIN,ISPIN2)
-          call distMeshData( odistr, fsrc, idistr, fdst, -1)
+          call distMeshData( odistr, fsrc, idistr, fdst, 0 )
         ENDDO
       ENDDO
 
-      call de_alloc( dvxcdn_par, name='dvxcdn_par' )
-      call de_alloc( vharris1_par, name='vharris1_par' )
-      call de_alloc( drhoin_par, name='drhoin_par' )
+      call de_alloc( dvxcdn_par,   'dvxcdn_par',   'forhar' )
+      call de_alloc( vharris1_par, 'vharris1_par', 'forhar' )
+      call de_alloc( drhoin_par,   'drhoin_par',   'forhar' )
 
 #ifdef MPI
       call setMeshDistr( idistr, nsm, nsp, nml, nmpl, ntml, ntpl )
@@ -196,8 +194,8 @@ C ----------------------------------------------------------------------
         VHARRIS2(IP) = VNA(IP) - VHARRIS2(IP)
       ENDDO
 
-      call de_alloc( dvxcdn, name='dvxcdn' )
-      call de_alloc( drhoin, name='drhoin' )
+      call de_alloc( dvxcdn, 'dvxcdn', 'forhar')
+      call de_alloc( drhoin, 'drhoin', 'forhar')
+      end subroutine forhar
 
-      END SUBROUTINE FORHAR
       end module m_forhar

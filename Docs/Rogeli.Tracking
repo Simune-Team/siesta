@@ -1,3 +1,20 @@
+-------------------------------------------------------
+2010-02-10  Alberto Garcia     siesta-bsc-290-rogeli-3
+Implementation of distributed indexp (work in progress)
+
+Rogeli has taken the ideas of Jose Soler regarding the distributed
+indexp and implemented a 'per-distribution, per-processor' extended mesh
+and associated index arrays.
+
+Some issues of re-initialization upon atomic movements are still pending.
+
+Some other cosmetic changes, mostly regarding debugging.
+(Except in dhscf, where a few uses of "reord" have changed)
+
+(Snapshot taken in the afternoon of Feb. 5)
+
+
+
 2010-01-27  Alberto Garcia
 Some cosmetic changes to make it compile
 

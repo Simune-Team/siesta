@@ -131,6 +131,9 @@ C Internal variables and arrays
       integer, save  :: npt
 
 c ----------------------------------------------------------------------------
+#ifdef DEBUG
+      call write_debug( '    PRE grdsam' )
+#endif
 
 C Allocate local memory
       call re_alloc( pt, 1, 3, 1, maxpt+1, 'pt', 'grdsam' )
@@ -311,6 +314,9 @@ C Deallocate local memory
       call de_alloc( faold, 'faold', 'grdsam' )
       call de_alloc( avfa2, 'avfa2', 'grdsam' )
       call de_alloc( avfa, 'avfa', 'grdsam' )
+#ifdef DEBUG
+      call write_debug( '    POS grdsam' )
+#endif
 
       return
       end

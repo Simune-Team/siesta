@@ -73,6 +73,7 @@
 #ifdef DEBUG
       call write_debug( '  PRE state_init' )
 #endif
+      call timer( 'STinit', 1 )
 
       istp = istp + 1
 
@@ -308,6 +309,7 @@
      &                              istep)
       endif
 #endif
+      call timer( 'STinit', 2 )
 #ifdef DEBUG
       call write_debug( '  POS state_init' )
 #endif
