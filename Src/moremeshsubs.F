@@ -158,7 +158,7 @@ C     Reset data if necessay
         enddo
         firstime = .false.
       endif
-      call resetMeshDistr( oDistr )
+!      call resetMeshDistr( oDistr )
 
       distr => meshDistr(oDistr)
 

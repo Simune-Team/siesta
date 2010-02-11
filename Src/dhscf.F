@@ -223,21 +223,17 @@ C       Vscf and Vaux are not used here
 C       Find neutral-atom potential
 C       Drho is not used here
         call re_alloc( Vna, 1, ntpl, 'Vna', 'dhscf_init' )
-        call MPI_Barrier( MPI_COMM_WORLD, i )
         call NeutralAtomOnMesh( na, isa, ntpl, Vna, indxua, dvol, 
      &                          volume, dummy_DRho, Fal, stressl, 
      &                          .false., .false. )
-        call MPI_Barrier( MPI_COMM_WORLD, i )
         call reord( Vna, Vna, nml, nsm, +1 )
 
         if (nodes.gt.1) then
           call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
 
 C         Create extended mesh arrays for the second data distribution
-        call MPI_Barrier( MPI_COMM_WORLD, i )
           call setupExtMesh( 2, rmax )
           call InitAtomMesh( na, xa, 2 )
-        call MPI_Barrier( MPI_COMM_WORLD, i )
         endif
 
 C       Calculate orbital values on mesh
@@ -249,10 +245,8 @@ C       Calculate orbital values on mesh
      &                   'dhscf_init' )
           call distMeshData( 1, numphi, 2, numphi_par, 0 )
         endif
-        call MPI_Barrier( MPI_COMM_WORLD, i )
 
         call PhiOnMesh( nmpl, norb, iaorb, iphorb, isa, numphi_par )
-        call MPI_Barrier( MPI_COMM_WORLD, i )
 #ifdef MPI
         if (nodes.gt.1)
      &     call de_alloc( numphi_par, 'numphi_par', 'dhscf_init' )
