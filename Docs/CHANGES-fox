@@ -1,0 +1,28 @@
+-----------------------------------------------------------------------
+2010-02-11 Andrew Walker <a.walker@ucl.ac.uk>  fox-1
+
+Update FoX to version 4.1.0
+  
+  Version 4.1.0 of FoX, used to produce our XML output was released 
+  on 2010-02-09. This patch updates the version shipped with Siesta 
+  to this version. 
+
+  Changes that affect Siesta are that the build process for FoX can
+  now take advantage of possible parallelization (make -j), we can 
+  ask FoX to generate an abort signal if it kills the process and 
+  the inclusion of work arounds for compiler bugs in recent versions 
+  of the pgi compiler. Some of these changes existed in an (unrelased)
+  version of FoX shipped with Siesta since revision 320.
+ 
+  modified:
+      Src/FoX/FoX-config.in
+      Src/FoX/LICENSE
+      Src/FoX/Makefile
+      Src/FoX/common/FoX_common.F90
+      Src/FoX/configure
+      Src/FoX/wxml/FoX_wxml.f90
+      Src/FoX/wxml/m_wxml_core.F90
+      version.info
+  added:
+      Docs/CHANGES-fox
+
