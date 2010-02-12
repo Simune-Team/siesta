@@ -1,4 +1,25 @@
 -------------------------------------------------------
+2010-02-12  Alberto Garcia     siesta-bsc-290-rogeli-5
+More comments in mesh routines
+
+Rogeli has added more comments and clarified the structure
+of the modules.
+
+(Snapshot taken at 6:30pm Feb. 12. Mesh-related only)
+
+modified:
+  Src/dhscf.F
+  Src/distriphionmesh.F
+  Src/initatommesh.F
+  Src/initmesh.F
+  Src/meshsubs.F
+  Src/phionmesh.F
+  Src/setupextmesh.F
+
+removed:
+  Src/REJS/
+
+-------------------------------------------------------
 2010-02-11  Alberto Garcia     siesta-bsc-290-rogeli-4
 End of implementation of distributed indexp
 

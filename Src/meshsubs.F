@@ -59,7 +59,6 @@ C ----------------------------------------------------------------------
       integer,           save :: meshLim(2,3)  ! My processor's box of mesh points:
                                                !   myBox(1,:) : lower bounds
                                                !   myBox(2,:) : upper bounds
-      integer,           save :: myExtBox(2,3) ! My extended box of mesh points
       integer,           save :: nmeshg(3)
       integer,           save :: nsm
       integer,           save :: nsp

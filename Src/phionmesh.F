@@ -20,7 +20,7 @@ C Modules
       use precision, only : dp, grid_p
       use atmfuncs,  only : rcut, phiatm
       use mesh,      only : dxa, idop, indexp, ipa, mop, nsp, xdop,
-     &                      xdsp, meshLim, myExtBox
+     &                      xdsp, meshLim
       use meshphi,   only : directphi, nphi, phi, lstpht, listp2, endpht
       use parallel,  only : Node
       use fdf,       only : fdf_boolean

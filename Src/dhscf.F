@@ -187,7 +187,7 @@ C       Start time counter for atomic initializations
      &    call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
 
 C       Initialise quantities relating to the atom-mesh positioning
-        call InitAtomMesh( na, xa, 1 )
+        call InitAtomMesh( 1, na, xa )
 
 C       Check if we need extencils in cellxc
         call setGGA( )
@@ -233,7 +233,9 @@ C       Drho is not used here
 
 C         Create extended mesh arrays for the second data distribution
           call setupExtMesh( 2, rmax )
-          call InitAtomMesh( na, xa, 2 )
+C         Compute atom positions for the second data distribution 
+          call InitAtomMesh( 2, na, xa )
+
         endif
 
 C       Calculate orbital values on mesh

@@ -1,12 +1,46 @@
-      subroutine InitAtomMesh( na, xa, distr )
+! 
+! This file is part of the SIESTA package.
+!
+! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
+! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
+! and J.M.Soler, 1996- .
+! 
+! Use of this software constitutes agreement with the full conditions
+! given in the SIESTA license, as signed by all legitimate users.
+!
+!***********************************************************************
+!
+! subroutine InitAtomMesh
+! ----------------------------------------------------------------------
+! Initialises the atom information relating to the mesh for a given data
+! distribution. It creates and initialise ipa. This arrays is allocated
+! inside a meshDisType structure and can be accesed by pointers of the
+! mesh module.
+!
+! Only necesary for those data distributions who needs to use the
+! extended mesh.
+!
+! ----------------------------------------------------------------------
+! Input :
+! ----------------------------------------------------------------------
+! integer  distr        : Used data distribution
+! integer  na           : number of atoms
+! integer  xa(3,na)     : Atomic coordinates
+! ----------------------------------------------------------------------
+! Output :
+! ----------------------------------------------------------------------
+! All output quantities are in the mesh and moreMeshSubs modules.
+! The ipa array is stored in moreMeshSubs but accessed using the mesh
+! module pointer.
+!
+!***********************************************************************
+      subroutine InitAtomMesh( distr, na, xa )
       use precision, only: dp
-      use mesh, only: ipa      ! atoms' mesh points within myExtBox
+      use mesh, only: ipa      ! atoms' mesh points within my Extended mesh
       use mesh, only: dxa      ! atom's position relative to mesh point
       use mesh, only: cmesh    ! Mesh cell vectors
       use mesh, only: meshLim  ! My processor's box of mesh points
-      use mesh, only: myExtBox ! My extended box of mesh points
       use mesh, only: ne       ! Points in rmax along each lat. vector
-      use mesh, only: nem      ! Widths of myExtBox
       use mesh, only: nmsc     ! Mesh points in each supercell vector
       use mesh, only: rcmesh   ! Reciprocal mesh cell vectors
       use alloc,only: re_alloc ! (Re)allocation routine
@@ -19,8 +53,8 @@
 !     Local variables
       character(len=*),parameter:: myName = 'InitAtomMesh '
       integer,             save :: lastna = 0  ! Number of atoms on last call
-      integer                   :: ia, ixa(3), j1, j2, j3, jsc(3),
-     &                             jxa(3), myBox(2,3)
+      integer                   :: ia, ixa(3), jsc(3), jxa(3), nem(3),
+     &                             j1, j2, j3, myBox(2,3), myExtBox(2,3)
       real(dp)                  :: cxa(3)
 
 #ifdef DEBUG

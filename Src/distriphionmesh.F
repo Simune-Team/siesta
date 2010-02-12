@@ -58,7 +58,7 @@ C ==================================================================
      &                            iphorb, isa, numphi )
 
       use mesh,         only: mop, ipa, idop, nsp, xdop, xdsp, dxa,
-     &                        indexp, meshLim, myExtBox
+     &                        indexp, meshLim
       use precision,    only: dp, grid_p
       use atmfuncs,     only: rcut
       use parallel,     only: Nodes, node

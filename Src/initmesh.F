@@ -273,8 +273,6 @@ C     Find reciprocal mesh-cell vectors (not multiplied by 2*pi)
 ! x=-ne*dx. Therefore we have to go up to -ne-1 to the left. Thus, we 
 ! just increase ne and forget about these two effects from now on.
       ne(:) = ne(:) + 1
-!      nem(:) = nmsc(:) + 2 * ne(:)
-!      nep = nem(1) * nem(2) * nem(3)
 
 C     Find sub-points
       isp = 0

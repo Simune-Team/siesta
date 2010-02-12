@@ -1,7 +1,53 @@
+! 
+! This file is part of the SIESTA package.
+!
+! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
+! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
+! and J.M.Soler, 1996- .
+! 
+! Use of this software constitutes agreement with the full conditions
+! given in the SIESTA license, as signed by all legitimate users.
+!
+!***********************************************************************
+!
+! subroutine setupExtMesh
+! ----------------------------------------------------------------------
+! Setup the extended mesh variables for a given data distribution.
+! It creates and initialise indexp, xdop and idop. These arrays are
+! allocated inside a meshDisType structure and can be accesed by pointers
+! of the mesh module.
+!
+! Only necesary for those data distributions who needs to use the
+! extended mesh.
+! ----------------------------------------------------------------------
+! Input :
+! ----------------------------------------------------------------------
+! integer  distr        : distribution number
+! real(dp) rmax         : Maximum orbital radius
+!
+! ----------------------------------------------------------------------
+! Output :
+! ----------------------------------------------------------------------
+! All output quantities are in the mesh and moreMeshSubs modules.
+! Data is stored in moreMeshSubs but accessed using the mesh module
+! pointers.
+!
+!***********************************************************************
       subroutine setupExtMesh( distr, rmax )
-      use precision,    only : dp
-      use mesh,         only : meshLim, myExtBox, ne, nem, nmsc, mop,
-     &                         indexp, idop, xdop, cmesh, xdsp, nsp
+      use precision, only : dp
+      use mesh,      only : meshLim  ! My processor's box of mesh points
+      use mesh,      only : ne       ! Points in rmax along each lat. vector
+      use mesh,      only : nmsc     ! Mesh points in each supercell vector
+      use mesh,      only : mop      ! Accumulated num. of orbital points
+      use mesh,      only : nsp      ! Number of sub-points of each mesh point
+      use mesh,      only : cmesh    ! Mesh cell vectors
+      use mesh,      only : xdsp     ! Vector to mesh sub-points
+      use mesh,      only : indexp   ! ranslation from extended to
+                                     ! normal mesh index
+      use mesh,      only : idop     ! Mesh-index span of points 
+                                     ! within an atomic sphere
+      use mesh,      only : xdop     ! Coordinates of (super)points 
+                                     ! within an atomic sphere
       use moreMeshSubs, only : allocExtMeshDistr
       implicit none
 C     Input parameters
@@ -10,7 +56,7 @@ C     Input parameters
 C     Local parameters
       integer              :: i1, i2, i3, j1, j2, j3, k1, k2, k3,
      &                        i, j, k, nep, boxWidth(3), extWidth(3),
-     &                        isp, myBox(2,3)
+     &                        isp, myBox(2,3), nem(3), myExtBox(2,3)
       real(dp)             :: r, dxp(3), dx(3)
       logical              :: within
 C     Functions
