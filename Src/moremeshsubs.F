@@ -795,6 +795,8 @@ C             We should receive data from process src(icom)-1
 
         call de_alloc( JS, 'JS', 'moreMeshSubs' )
       else
+        !! AG: Is this right ?
+        !! AG: And what happens if itr==0?
         if (itr.gt.0) then
            call reord( fsrc, fdst, nm, nsm, itr )
         else

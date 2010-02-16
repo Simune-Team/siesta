@@ -127,7 +127,7 @@ OBJS =  domain_decom.o automatic_cell.o atom_options.o \
         dscfcomm.o schecomm.o moremeshsubs.o \
         cellxc_mod.o pspltm1.o lenstr.o printmatrix.o jacobi_davidson.o \
         matrixop.o precond.o gmres.o cg.o  m_iodm.o m_sparse.o mmio.o \
-        cholesky.o walltime.o deflatedmv.o setupextmesh.o initatommesh.o
+        cholesky.o deflatedmv.o setupextmesh.o initatommesh.o walltime.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -713,6 +713,7 @@ struct_init.o: m_iostruct.o parallel.o periodic_table.o siesta_cml.o
 struct_init.o: siesta_geom.o siesta_options.o zmatrix.o
 sys.o: parallel.o
 timer.o: m_walltime.o parallel.o precision.o sys.o
+timer.o: walltime.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
 typecell.o: precision.o
 uncell.o: precision.o

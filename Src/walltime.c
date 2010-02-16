@@ -1,5 +1,6 @@
 unsigned long long walltime( )
 {
+#ifdef __PPC970__
   unsigned int         HightB, HightA, Low;
   unsigned long long   tt;
 
@@ -13,4 +14,5 @@ unsigned long long walltime( )
 
   tt = ((unsigned long long)HightA<<32) | ((unsigned long long)Low);
   return tt;
+#endif
 }

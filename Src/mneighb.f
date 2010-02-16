@@ -989,9 +989,9 @@ C Next line is non-standard but may be supressed
 
       subroutine reset_neighbour_arrays( )
       implicit none
-#ifdef DEBUG
+!!#ifdef DEBUG
       call write_debug( '      PRE reset_neighbour_arrays' )
-#endif
+!!#endif
 
       celast = 0.0_dp
       rglast = 0.0_dp
@@ -1027,9 +1027,9 @@ C Next line is non-standard but may be supressed
         maxnem = -1
       endif
 
-#ifdef DEBUG
+!!#ifdef DEBUG
       call write_debug( '      POS reset_neighbour_arrays' )
-#endif
+!!#endif
       end subroutine reset_neighbour_arrays
 
       end module neighbour

@@ -1,4 +1,30 @@
 -------------------------------------------------------
+2010-02-16  Alberto Garcia     siesta-bsc-290-rogeli-6
+Cosmetic changes for portability
+
+A block of code in timer.F, and the routine in "walltime.c" are only
+meant for a PPC970 machine. A preprocessor test has been added (and
+note that the relevant macro definition should be included in
+arch.make, and not in the actual code).
+
+A debugging preprocessor block is not processed in mneighb.f due to the
+file extension. Rather than changing it, the debug statement has been made
+unconditional.
+
+The computation of a real parameter in gmres.F overflowed due to the
+use of an integer base in an exponentiation. The base is now real.
+
+(+ Warning Note in moremeshsubs.F)
+
+modified:
+  Src/Makefile
+  Src/gmres.F
+  Src/mneighb.f
+  Src/moremeshsubs.F
+  Src/timer.F
+  Src/walltime.c
+
+-------------------------------------------------------
 2010-02-12  Alberto Garcia     siesta-bsc-290-rogeli-5
 More comments in mesh routines
 

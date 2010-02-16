@@ -36,7 +36,7 @@ C     Local variables
      &                               gamma, delta, epsln, sn, cs, zbar
       real(dp),           pointer :: ww(:), yy(:), r1(:), r2(:), vv(:),
      &                               work(:)
-      real(dp),         parameter :: ZERO= 0.0, ONE= 1.0, EPS=2**47
+      real(dp),         parameter :: ZERO= 0.0, ONE= 1.0, EPS=2.0_dp**47
       real(dp),          external :: dvdot
 
       nc      = A%nc
