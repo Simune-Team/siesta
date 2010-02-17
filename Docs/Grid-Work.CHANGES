@@ -1,5 +1,15 @@
--------------------------------------------------------
-2010-02-17  Alberto Garcia     siesta-bsc-290-rogeli-7
+-------------------------------------------------------------
+2010-02-17  Alberto Garcia     siesta-bsc-290-rogeli-5-ag-3
+More instances of symbolic constants 
+
+Used symbolic constants in calls to initatommesh and setupExtMesh in
+dhscf.
+
+modified:
+  Src/dhscf.F
+
+-------------------------------------------------------------
+2010-02-17  Alberto Garcia     siesta-bsc-290-rogeli-5-ag-2
 Use symbolic constants for Mesh distribution handling
 
 Defined integer parameters UNIFORM, QUADRATIC, and LINEAR
@@ -13,8 +23,8 @@ modified:
   Src/initmesh.F
   Src/moremeshsubs.F
 
--------------------------------------------------------
-2010-02-16  Alberto Garcia     siesta-bsc-290-rogeli-6
+-------------------------------------------------------------
+2010-02-16  Alberto Garcia     siesta-bsc-290-rogeli-5-ag-1
 Cosmetic changes for portability
 
 A block of code in timer.F, and the routine in "walltime.c" are only

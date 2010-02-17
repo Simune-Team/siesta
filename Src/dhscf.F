@@ -234,9 +234,9 @@ C       Drho is not used here
      $                       nml, nmpl, ntml, ntpl )
 
 C         Create extended mesh arrays for the second data distribution
-          call setupExtMesh( 2, rmax )
+          call setupExtMesh( QUADRATIC, rmax )
 C         Compute atom positions for the second data distribution 
-          call InitAtomMesh( 2, na, xa )
+          call InitAtomMesh( QUADRATIC, na, xa )
 
         endif
 
