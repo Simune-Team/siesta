@@ -34,6 +34,11 @@ C
 #ifdef MPI
       PUBLIC :: initMeshExtencil, distExtMeshData, gathExtMeshData
 #endif
+
+      integer, parameter, public :: UNIFORM = 1
+      integer, parameter, public :: QUADRATIC = 2
+      integer, parameter, public :: LINEAR = 3
+
       PRIVATE
 
       interface distMeshData

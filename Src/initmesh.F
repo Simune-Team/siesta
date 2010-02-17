@@ -74,6 +74,7 @@ C  Modules
       use parallelsubs,  only : HowManyMeshPerNode, GlobalToLocalMesh
       use atmfuncs,      only : rcut
       use moreMeshSubs,  only : initMeshDistr, setMeshDistr
+      use moreMeshSubs,  only : UNIFORM
       use alloc,         only : re_alloc, de_alloc
       use mesh
       use siesta_cml
@@ -89,7 +90,7 @@ C     Passed arguments
 C     Local variables
       integer                 :: i, ia, i1, i2, i3, io, iphi, is, isp,
      &                           ity, j, ncells, nep, ntop, ntp, nty,
-     &                           odistr, j1, j2, j3, indi
+     &                           j1, j2, j3, indi
       integer,        pointer :: iphty(:), isty(:), noty(:)
       real(dp)                :: dx(3), dxp(3), pldist, r,
      &                           rcell(3,3), vecmod, volume
@@ -214,12 +215,11 @@ C     Store number of mesh points in module array
 C     Find number of mesh points in unit cell.
       ntp = ntm(1) * ntm(2) * ntm(3)
 
-      oDistr = 1
 C     Create the first mesh distribution
-      call initMeshDistr( oDistr=oDistr, nm=nm )
+      call initMeshDistr( oDistr=UNIFORM, nm=nm )
 
 C     Find and sets local number of Mesh points of each kind
-      call setMeshDistr( oDistr, nsm, nsp, nml, nmpl, ntml, ntpl )
+      call setMeshDistr( UNIFORM, nsm, nsp, nml, nmpl, ntml, ntpl )
 
 C     Find volume of unit cell and of mesh cell
       volume = volcel( cell )
@@ -325,7 +325,7 @@ C     Find sub-points
       ntopl = ((ntop/Nodes) + 1)
 
 C     Create extended mesh arrays for the first data distribution
-      call setupExtMesh( 1, rmax )
+      call setupExtMesh( UNIFORM, rmax )
 
 C     Deallocate orbital related memory
       call de_alloc( noty, name='noty', routine='InitMesh' )

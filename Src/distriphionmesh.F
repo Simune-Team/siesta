@@ -66,6 +66,7 @@ C ==================================================================
       use moreMeshSubs, only: initMeshExtencil
 #endif
       use moreMeshSubs, only: initMeshDistr
+      use moreMeshSubs, only: UNIFORM, QUADRATIC, LINEAR
       use cellxc_mod,   only: GGA, setGGA
       use alloc,        only: re_alloc, de_alloc
       implicit none
@@ -119,13 +120,13 @@ C           If within range, add one to number of point orbitals
         do ip0= 1, nmpl
           wload(ip0) = numphi(ip0)*numphi(ip0)
         enddo
-        call initMeshDistr( 1, 2, nm, wload )
+        call initMeshDistr( UNIFORM, QUADRATIC, nm, wload )
 
         do ip0= 1, nmpl
           if (numphi(ip0).ne.0) wload(ip0) = 1
         enddo
-        call initMeshDistr( 1, 3, nm, wload )
-        if (GGA) call initMeshExtencil( 3, nm )
+        call initMeshDistr( UNIFORM, LINEAR, nm, wload )
+        if (GGA) call initMeshExtencil( LINEAR, nm )
 
 C       Free local memory
         call de_alloc( wload, 'wload', 'distriPhiOnMesh' )

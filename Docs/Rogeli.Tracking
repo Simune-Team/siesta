@@ -1,4 +1,19 @@
 -------------------------------------------------------
+2010-02-17  Alberto Garcia     siesta-bsc-290-rogeli-7
+Use symbolic constants for Mesh distribution handling
+
+Defined integer parameters UNIFORM, QUADRATIC, and LINEAR
+in moremeshubs.F to represent the three distributions in current use, and
+imported and used them in those routines that deal with different distributions.
+
+modified:
+  Src/dhscf.F
+  Src/distriphionmesh.F
+  Src/forhar.F
+  Src/initmesh.F
+  Src/moremeshsubs.F
+
+-------------------------------------------------------
 2010-02-16  Alberto Garcia     siesta-bsc-290-rogeli-6
 Cosmetic changes for portability
 

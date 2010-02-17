@@ -13,6 +13,7 @@
       use alloc,        only : re_alloc, de_alloc
       use mesh
       use moreMeshSubs, only : setMeshDistr, distMeshData
+      use moreMeshSubs, only: UNIFORM, LINEAR
       implicit none
 
       public :: forhar
@@ -88,7 +89,7 @@ C ----------------------------------------------------------------------
       real(grid_p),  pointer :: drhoin(:,:), drhoin_par(:,:),
      &                          dvxcdn(:,:,:), dvxcdn_par(:,:,:),
      &                          vharris1_par(:,:), fsrc(:), fdst(:)
-      INTEGER                :: idistr, odistr, ntpl_1, ntpl_3
+      INTEGER                :: ntpl_3
 
       nullify( drhoin, dvxcdn )
       call re_alloc( drhoin, 1, ntpl, 1, nspin, 'drhoin', 'forhar' )
@@ -117,12 +118,10 @@ C ----------------------------------------------------------------------
      .                           RHOPCC(1:NTPL)/NSPIN
       ENDDO
 
-
-      ntpl_1 = ntpl
 #ifdef MPI
-      idistr = 1
-      odistr = 3
-      call setMeshDistr( odistr, nsm, nsp, nml, nmpl, ntml, ntpl )
+      ! The input distribution is UNIFORM, but we need to work
+      ! with the LINEAR one
+      call setMeshDistr( LINEAR, nsm, nsp, nml, nmpl, ntml, ntpl )
 #endif
       ntpl_3 = ntpl
 
@@ -137,7 +136,7 @@ C ----------------------------------------------------------------------
       DO ISPIN = 1, NSPIN
         fsrc => drhoin(:,ispin)
         fdst => drhoin_par(:,ispin)
-        call distMeshData( idistr, fsrc, odistr, fdst, 0 )
+        call distMeshData( UNIFORM, fsrc, LINEAR, fdst, 0 )
       ENDDO
 
       CALL CELLXC( 0, 1, CELL, NTML, NTML, NTPL, 0, AUX3, NSPIN,
@@ -147,11 +146,11 @@ C ----------------------------------------------------------------------
       DO ISPIN = 1, NSPIN
         fsrc => VHARRIS1_PAR(:,ISPIN)
         fdst => VHARRIS1(:,ispin)
-        call distMeshData( odistr, fsrc, idistr, fdst, 0 )
+        call distMeshData( LINEAR, fsrc, UNIFORM, fdst, 0 )
         DO ISPIN2 = 1, NSPIN
           fsrc => DVXCDN_PAR(:,ISPIN,ISPIN2)
           fdst => DVXCDN(:,ISPIN,ISPIN2)
-          call distMeshData( odistr, fsrc, idistr, fdst, 0 )
+          call distMeshData( LINEAR, fsrc, UNIFORM, fdst, 0 )
         ENDDO
       ENDDO
 
@@ -160,7 +159,7 @@ C ----------------------------------------------------------------------
       call de_alloc( drhoin_par,   'drhoin_par',   'forhar' )
 
 #ifdef MPI
-      call setMeshDistr( idistr, nsm, nsp, nml, nmpl, ntml, ntpl )
+      call setMeshDistr( UNIFORM, nsm, nsp, nml, nmpl, ntml, ntpl )
 #endif
       DO ISPIN = 1, NSPIN
         IF( NPCC .EQ. 1) 

@@ -26,6 +26,7 @@ C     Modules
       use alloc,          only : re_alloc, de_alloc
       use siesta_options, only : harrisfun
       use moreMeshSubs,   only : setMeshDistr, distMeshData
+      use moreMeshSubs,   only : UNIFORM, QUADRATIC, LINEAR
       use m_dhscf,        only : rhopcc, rhoatm, Vna, spiral, rmax,
      &                           IsDiag, cell, ntopl, dvol, ntml, ntpl,
      &                           field, IsEfld, npcc, uharrs, scell,
@@ -184,7 +185,7 @@ C       Start time counter for atomic initializations
         call timer( 'DHSCF2', 1 )
 
         if (nodes.gt.1)
-     &    call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
+     &    call setMeshDistr( UNIFORM, nsm, nsp, nml, nmpl, ntml, ntpl )
 
 C       Initialise quantities relating to the atom-mesh positioning
         call InitAtomMesh( 1, na, xa )
@@ -229,7 +230,8 @@ C       Drho is not used here
         call reord( Vna, Vna, nml, nsm, +1 )
 
         if (nodes.gt.1) then
-          call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
+          call setMeshDistr( QUADRATIC, nsm, nsp,
+     $                       nml, nmpl, ntml, ntpl )
 
 C         Create extended mesh arrays for the second data distribution
           call setupExtMesh( 2, rmax )
@@ -245,7 +247,8 @@ C       Calculate orbital values on mesh
           nullify(numphi_par)
           call re_alloc( numphi_par, 1, nmpl, 'numphi_par',
      &                   'dhscf_init' )
-          call distMeshData( 1, numphi, 2, numphi_par, 0 )
+          call distMeshData( UNIFORM, numphi, QUADRATIC,
+     $                       numphi_par, 0 )
         endif
 
         call PhiOnMesh( nmpl, norb, iaorb, iphorb, isa, numphi_par )
@@ -271,11 +274,11 @@ C       Find Harris (sum of atomic) electron density
 
 C       Routine Poison should use the uniform data distribution
         if (nodes.gt.1)
-     &    call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
+     &    call setMeshDistr( UNIFORM, nsm, nsp, nml, nmpl, ntml, ntpl )
 
 C       Create Rhoatm using distribution number 1
         call re_alloc( rhoatm, 1, ntpl, 'rhoatm', 'dhscf_init' )
-        call distMeshData( 2, rhoatm_par, 1, rhoatm, +1 )
+        call distMeshData( QUADRATIC, rhoatm_par, UNIFORM, rhoatm, +1 )
 
 C       Allocate Temporal array
         call re_alloc( Vscf, 1, ntpl, 1, nspin, 'Vscf', 'dhscf_init' )
@@ -459,6 +462,7 @@ C     Modules
      &                           spiral, ntpl, cell, nmpl, shape, nml,
      &                           qspiral, IsVolt
       use moreMeshSubs,   only : setMeshDistr, distMeshData
+      use moreMeshSubs,   only : UNIFORM, QUADRATIC, LINEAR
       use cellxc_mod,     only : GGA
 #ifdef MPI
       use mpi_siesta
@@ -650,7 +654,8 @@ C             rhoatm and Drho are in seuqential mode
       else
 C     Set the second data distribution and allocate memory for DRho_par
         if (nodes.gt.1)
-     &    call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
+     &    call setMeshDistr( QUADRATIC, nsm, nsp,
+     $                       nml, nmpl, ntml, ntpl )
         call re_alloc( DRho_par, 1, ntpl, 'DRho_par','dhscf' )
 
         if (spiral) then
@@ -667,10 +672,10 @@ C     Set the second data distribution and allocate memory for DRho_par
 
 C       Set the first distribution again and copy DRho to distribution 1
         if (nodes.gt.1)
-     &    call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
+     &    call setMeshDistr( UNIFORM, nsm, nsp, nml, nmpl, ntml, ntpl )
         fsrc => DRho_par(:)
         fdst => DRho(:,1)
-        call distMeshData( 2, fsrc, 1, fdst, +1 )
+        call distMeshData( QUADRATIC, fsrc, UNIFORM, fdst, +1 )
         call de_alloc( DRho_par, 'DRho_par','dhscf' )
       endif
 
@@ -881,7 +886,7 @@ C ----------------------------------------------------------------------
       enddo
 
       if (nodes.gt.1)
-     &  call setMeshDistr( 3, nsm, nsp, nml, nmpl, ntml, ntpl )
+     &  call setMeshDistr( LINEAR, nsm, nsp, nml, nmpl, ntml, ntpl )
 
       call re_alloc( Vscf_gga, 1, ntpl, 1, nspin, 'Vscf_gga', 'dhscf' )
       call re_alloc( DRho_gga, 1, ntpl, 1, nspin, 'DRho_gga', 'dhscf' )
@@ -889,7 +894,7 @@ C ----------------------------------------------------------------------
       do ispin = 1, nsd
         fsrc => DRho(:,ispin)
         fdst => DRho_gga(:,ispin)
-        call distMeshData( 1, fsrc, 3, fdst, 0 )
+        call distMeshData( UNIFORM, fsrc, LINEAR, fdst, 0 )
       enddo
 
 #ifdef DEBUG
@@ -902,12 +907,12 @@ C ----------------------------------------------------------------------
       call medirTiempo( 2, 4 )
 
       if (nodes.gt.1)
-     &  call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
+     &  call setMeshDistr( UNIFORM, nsm, nsp, nml, nmpl, ntml, ntpl )
 
       do ispin = 1,nsd
         fsrc => Vscf_gga(:,ispin)
         fdst => Vscf(:,ispin)
-        call distMeshData( 3, fsrc, 1, fdst, 0 )
+        call distMeshData( LINEAR, fsrc, UNIFORM, fdst, 0 )
       enddo
 
       call de_alloc( DRho_gga, 'DRho_gga', 'dhscf' )
@@ -939,14 +944,15 @@ C     Find SCF contribution to hamiltonian matrix elements
 C ----------------------------------------------------------------------
       if (iHmat .eq. 1) then
         if (nodes.gt.1)
-     &    call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
+     &    call setMeshDistr( QUADRATIC, nsm, nsp,
+     $                       nml, nmpl, ntml, ntpl )
 
         call re_alloc( Vscf_par, 1, ntpl, 1, nspin,
      &                 'Vscf_par', 'dhscf' )
         do ispin = 1, nspin
           fsrc => Vscf(:,ispin)
           fdst => Vscf_par(:,ispin)
-          call distMeshData( 1, fsrc, 2, fdst, -1 )
+          call distMeshData( UNIFORM, fsrc, QUADRATIC, fdst, -1 )
         enddo
 
         if (spiral) then
@@ -963,7 +969,7 @@ C ----------------------------------------------------------------------
 
         call de_alloc( Vscf_par,  'Vscf_par', 'dhscf' )
         if (nodes.gt.1)
-     &    call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
+     &    call setMeshDistr( UNIFORM, nsm, nsp, nml, nmpl, ntml, ntpl )
       endif
 
 #ifdef MPI
@@ -1055,16 +1061,17 @@ C Vaux is (minus) the potential which multiplies rhoatm
 *       endif
 
         if (nodes.gt.1)
-     &    call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
+     &    call setMeshDistr( QUADRATIC, nsm, nsp,
+     $                       nml, nmpl, ntml, ntpl )
         call re_alloc( Vscf_par, 1, ntpl, 1, nspin,
      &                 'Vscf_par', 'dhscf' )
         do ispin = 1, nspin
           fsrc => Vscf(:,ispin)
           fdst => Vscf_par(:,ispin)
-          call distMeshData( 1, fsrc, 2, fdst, -1 )
+          call distMeshData( UNIFORM, fsrc, QUADRATIC, fdst, -1 )
         enddo
         call re_alloc( Vaux_par, 1, ntpl, 'Vaux_par', 'dhscf' )
-        call distMeshData( 1, Vaux, 2, Vaux_par, -1 )
+        call distMeshData( UNIFORM, Vaux, QUADRATIC, Vaux_par, -1 )
 
         call dfscf( ifa, istr, na, norb, nuo, nuotot, nmpl, nspin,
      &              indxua, isa, iaorb, iphorb,
@@ -1075,7 +1082,7 @@ C Vaux is (minus) the potential which multiplies rhoatm
         call de_alloc( Vscf_par, 'Vscf_par', 'dhscf' )
 
         if (nodes.gt.1)
-     &    call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
+     &    call setMeshDistr( UNIFORM, nsm, nsp, nml, nmpl, ntml, ntpl )
 
 
 C Stop time counter for force calculation part
