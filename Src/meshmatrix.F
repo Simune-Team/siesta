@@ -51,11 +51,14 @@ C ----------------------------------------------------------------------
       end subroutine resetDscfPointers
 
       subroutine CreateLocalDscfPointers( nmpl, nuotot, numd,
-     .                                    listdptr, listd )
+     &                                    listdptr, listd )
 C
 C Calculates the values of the orbitals at the mesh points
-C Computes the communications needed to move data ordered
-C by orbitals to data ordered by mesh.
+C
+C Update: Computes the communications needed to move data ordered
+C by orbitals to data ordered by mesh (function dscfComm). All-to-all
+C communications has been substituted by point-to-point communications.
+C Written by Rogeli Grima (BSC) Dec.2007
 C
 C ----------------------------------------------------------------------
 C Input :
@@ -78,7 +81,7 @@ C Modules
 C
       use atomlist,     only : indxuo
       use meshdscf,     only : listdl, listdlptr, NeedDscfL, 
-     .                         nrowsDscfL, numdl, first_time
+     &                         nrowsDscfL, numdl, first_time
       use meshphi,      only : endpht, lstpht
       use parallel,     only : Node, Nodes
       use parallelsubs, only : GlobalToLocalOrb, WhichNodeOrb
@@ -107,8 +110,8 @@ C
       integer          :: MPIerror, Status(MPI_Status_Size)
 #endif
 
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 16 )
+#ifdef DEBUG
+      call write_debug( '      PRE CreateLocalDscfPointers' )
 #endif
 
       if (first_time) then
@@ -151,10 +154,12 @@ C     Allocate/reallocate memory for numdl and listdlptr
       call re_alloc( listdlptr, 1, max(1,nrowsDscfL), 
      &               'listdlptr', 'meshdscf' )
 
-C Distribute information about numd globally
+C     Distribute information about numd globally
+C     Use communications scheduling precomputed in dscfComm
       nullify( ibuffer )
       call re_alloc( ibuffer, 1, DCmax, 'ibuffer', 'meshdscf' )
 
+C     This data is in the current process. No communications needed
       do ii= 1, DCself
         io = DCinvp(ii)
         call GlobalToLocalOrb(io,Node,Nodes,iio)
@@ -166,8 +171,11 @@ C Distribute information about numd globally
       maxndmax = 0
 #ifdef MPI
       do i= 1, DCsize
+C       For all the needed communications
         numdele = 0
         if (DCsrc(i).eq.Node) then
+C         If this is the source node, copy data into a buffer
+C         and send it to the receiver.
           do ii= 1, DCsic(i)
             io = DCinvp(nn)
             call GlobalToLocalOrb(io,Node,Nodes,iio)
@@ -178,6 +186,7 @@ C Distribute information about numd globally
           call MPI_Send( ibuffer, DCsic(i), MPI_integer,
      &                   DCdst(i), 1, MPI_Comm_World, MPIerror )
         else
+C         If this is the destination node, receive data from source node.
           call mpi_recv( ibuffer, DCsic(i), MPI_integer,
      &                   DCsrc(i),  1, MPI_Comm_world, Status,
      &                   MPIerror )
@@ -194,13 +203,13 @@ C Distribute information about numd globally
       call de_alloc( ibuffer, 'ibuffer', 'meshdscf' )
       DCmaxnd = maxndmax
 
-C Create listdlptr using numdl
+C     Create listdlptr using numdl
       listdlptr(1) = 0
       do io = 2,nrowsDscfL
         listdlptr(io) = listdlptr(io-1) + numdl(io-1)
       enddo
 
-C Allocate/reallocate listdl
+C     Allocate/reallocate listdl
       if (nrowsDscfL.gt.0) then
         nsize = listdlptr(nrowsDscfL)+numdl(nrowsDscfL)
       else
@@ -208,10 +217,12 @@ C Allocate/reallocate listdl
       endif
       call re_alloc( listdl, 1, nsize, 'listdl', 'meshdscf' )
 
-C Distribute information about listd globally
+C     Distribute information about listd globally
+C     Use communications scheduling precomputed in dscfComm
       nullify( ibuffer )
       call re_alloc( ibuffer, 1, DCmaxnd, 'ibuffer', 'meshdscf' )
 
+C     This data is in the current process. No communications needed
       do ii= 1, DCself
         io = DCinvp(ii)
         call GlobalToLocalOrb(io,Node,Nodes,iio)
@@ -220,10 +231,14 @@ C Distribute information about listd globally
           listdl(listdlptr(iu)+i) = listd(listdptr(iio)+i)
         enddo
       enddo
+
       nn = DCself + 1
 #ifdef MPI
       do i= 1, DCsize
+C       For all the needed communications
         if (DCsrc(i).eq.Node) then
+C         If this is the source node, copy data into a buffer
+C         and send it to the receiver.
           mm = 0
           do ii= 1, DCsic(i)
             io = DCinvp(nn)
@@ -236,6 +251,7 @@ C Distribute information about listd globally
           call MPI_Send( ibuffer, mm, MPI_integer, DCdst(i), 1, 
      &                   MPI_Comm_World, MPIerror )
         else
+C         If this is the destination node, receive data from source node.
           mm = 0
           do ii= 0, DCsic(i)-1
             io = DCinvp(nn+ii)
@@ -256,19 +272,26 @@ C Distribute information about listd globally
       enddo
 #endif
       call de_alloc( ibuffer, 'ibuffer', 'meshdscf' )
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 0 )
+
+#ifdef DEBUG
+      call write_debug( '      POS CreateLocalDscfPointers' )
 #endif
       end subroutine CreateLocalDscfPointers
 
       subroutine matrixOtoM( maxnd, numd, listdptr, maxndl, nuo, 
-     .                       nspin, Dscf, DscfL )
+     &                       nspin, Dscf, DscfL )
 C ********************************************************************
 C Transforms a matrix which is distributed by block cyclic 
 C distribution of orbitals to a matrix that contains all
 C the orbital rows needed for a mesh point distribution 
 C over the nodes.
 C Created by J.D.Gale, February 2000
+C
+C Update: All-to-all communications has been substituted by
+C point-to-point communications. These have been precomputed in 
+C dscfComm.
+C Written by Rogeli Grima (BSC) Dec.2007
+C
 C *********************** INPUT **************************************
 C integer maxnd         : First dimension of Dscf
 C integer numd(nuo)     : Number of non-zero elements in row of Dscf
@@ -283,38 +306,30 @@ C ********************************************************************
 
 C  Modules
       use precision
-      use meshdscf, only : nrowsDscfL, numdl, listdlptr, NeedDscfL
-      use alloc,    only : re_alloc, de_alloc
+      use meshdscf,     only : nrowsDscfL, numdl, listdlptr, NeedDscfL
+      use alloc,        only : re_alloc, de_alloc
 #ifdef MPI
       use mpi_siesta
       use parallel,     only : Node, Nodes
       use parallelsubs, only : WhichNodeOrb, GlobalToLocalOrb
       use m_dscfComm
 #endif
-
       implicit none
 
 C Argument types and dimensions
-      integer
-     &   maxnd, maxndl, nspin, nuo, numd(nuo), 
-     &   listdptr(nuo)
-
-      real(dp)
-     &   Dscf(maxnd,nspin), DscfL(maxndl,nspin)
-
-      external
-     &   memory
+      integer           :: maxnd, maxndl, nspin, nuo, numd(nuo),
+     &                     listdptr(nuo)
+      real(dp)          :: Dscf(maxnd,nspin), DscfL(maxndl,nspin)
+      external             memory
 
 C Internal variables and arrays
-      integer   io, ispin
-
+      integer           :: io, ispin
 #ifdef MPI
-      integer 
-     &  i, ii, iu, mm, nn, iio, MPIerror,
-     &  Status(MPI_Status_Size)
-      real(dp), dimension(:), pointer ::  buffer
+      integer           :: i, ii, iu, mm, nn, iio, MPIerror,
+     &                     Status(MPI_Status_Size)
+      real(dp), pointer :: buffer(:)
 #else
-      integer il
+      integer           :: il
 #endif
 
 C***********************
@@ -397,13 +412,18 @@ C Get pointer for this row of Dscf and see if it is needed for DscfL
       end subroutine matrixOtoM
 
       subroutine matrixMtoO( maxnvl, maxnv, numVs, listVsptr, nuo, 
-     .                       nspin, VsL, Vs )
-
+     &                       nspin, VsL, Vs )
 C ********************************************************************
 C Transforms a matrix which is distributed by mesh points to a matrix
 C that is distributed by a block cyclic distribution over the orbitals
 C and adds it to an existing array of this form.
 C Created by J.D.Gale, February 2000
+C
+C Update: All-to-all communications has been substituted by
+C point-to-point communications. These have been precomputed in 
+C dscfComm.
+C Written by Rogeli Grima (BSC) Dec.2007
+C
 C *********************** INPUT **************************************
 C integer maxnvl          : First dimension of VsL and maximum number
 C                           of nonzero elements in VsL
@@ -428,7 +448,7 @@ C  Modules
       use mpi_siesta
       use parallel,     only : Node, Nodes
       use parallelsubs, only : WhichNodeOrb, GlobalToLocalOrb,
-     .                         LocalToGlobalOrb
+     &                         LocalToGlobalOrb
       use m_dscfComm
 #endif
 
@@ -436,14 +456,14 @@ C  Modules
 
 C Argument types and dimensions
       integer
-     .   maxnv, maxnvl, nspin, nuo, numVs(nuo), 
-     .   listVsptr(nuo)
+     &   maxnv, maxnvl, nspin, nuo, numVs(nuo), 
+     &   listVsptr(nuo)
       real(dp)
-     .   Vs(maxnv,nspin), VsL(maxnvl,nspin)
+     &   Vs(maxnv,nspin), VsL(maxnvl,nspin)
 
 C Internal variables and arrays
       integer
-     .  i, iu, ispin
+     &  i, iu, ispin
 
 #ifdef MPI
       integer           :: ii, MPIerror, Status(MPI_Status_Size), nn,
@@ -525,8 +545,8 @@ C stored in the orbital oriented array
           iu = NeedDscfL(i)
           if (iu.gt.0) then
             Vs(listVsptr(i)+1:listVsptr(i)+numVs(i),ispin) = 
-     .        Vs(listVsptr(i)+1:listVsptr(i)+numVs(i),ispin) + 
-     .        VsL(listdlptr(iu)+1:listdlptr(iu)+numVs(i),ispin)
+     &        Vs(listVsptr(i)+1:listVsptr(i)+numVs(i),ispin) + 
+     &        VsL(listdlptr(iu)+1:listdlptr(iu)+numVs(i),ispin)
           endif
         enddo
       enddo

@@ -146,6 +146,9 @@ c **********************************************************************
       type(parsed_line), pointer :: pline
 
       external ddot, constr
+#ifdef DEBUG
+      call write_debug( '    PRE fixed' )
+#endif
 
       ! Read constraint data only the first time
       if (frstme) then
@@ -357,6 +360,9 @@ c **********************************************************************
       cstress(1,2) = cstress(1,2) - xs(6)*cstress(1,2)
       cstress(2,1) = cstress(2,1) - xs(6)*cstress(2,1)
 
+#ifdef DEBUG
+      call write_debug( '    POS fixed' )
+#endif
       end subroutine fixed
       
       END MODULE m_fixed

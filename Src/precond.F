@@ -1,10 +1,10 @@
       MODULE precond
       use precision
       use alloc,     only : re_alloc, de_alloc
-      use matrixop,  only : matrix_t
+      use matrixop,  only : matrix_t, reset_matrix
       implicit none
       PUBLIC :: precond_t, setIdPrecond, precond_solver_mat,
-     &          precond_solver_vec
+     &          precond_solver_vec, resetPrecond
 
       PRIVATE
 
@@ -21,6 +21,21 @@
 
       contains
 
+      subroutine resetPrecond( PREC )
+C     Input variables
+      type(precond_t)     :: PREC
+
+      PREC%use_diag = .false.
+      nullify(PREC%ID)
+      call reset_matrix( PREC%L )
+      call reset_matrix( PREC%U )
+      PREC%maxnnzL = 0
+      PREC%maxnnzU = 0
+      PREC%fill    = 0
+      PREC%tol     = 0.0
+      PREC%alpha   = 0.0
+      end subroutine resetPrecond
+
       subroutine setIdPrecond( PREC, n )
       implicit none
 C     Input variables
@@ -32,8 +47,6 @@ C     Input variables
       call re_alloc( PREC%ID, 1, n, 'PREC%ID', 'precond' )
       PREC%ID = 1.0
       end subroutine setIdPrecond
-
-
 
       subroutine precond_solver_mat( n, ne, PREC, Z, Z_hat )
       implicit none
@@ -53,11 +66,7 @@ C     Local variables
           enddo
         enddo
       else
-        do i= 1, ne
-          do j= 1, n
-            Z_hat(j,i) = Z(j,i)
-          enddo
-        enddo
+        call dcopy( n*ne, Z, 1, Z_hat, 1 )
       endif
       end subroutine precond_solver_mat
 
@@ -77,9 +86,7 @@ C     Local variables
           Z_hat(i) = Z(i)*PREC%ID(i)
         enddo
       else
-        do i= 1, n
-          Z_hat(i) = Z(i)
-        enddo
+        call dcopy( n, Z, 1, Z_hat, 1 )
       endif
       end subroutine precond_solver_vec
 

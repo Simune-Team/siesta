@@ -73,6 +73,7 @@
 #ifdef DEBUG
       call write_debug( '  PRE state_init' )
 #endif
+      call timer( 'STinit', 1 )
 
       istp = istp + 1
 
@@ -222,7 +223,7 @@
 
 !     Copy = .true. means that we keep the information
       call re_alloc( Dscf, 1, maxnh, 1, nspin, 'Dscf',
-     &               'siesta', copy=.true. )
+     &               'sparseMat', copy=.true. )
       call re_alloc( Dold, 1, maxnh, 1, nspin, 'Dold',
      &               'sparseMat', copy=.false. )
       call re_alloc( Eold, 1, maxnh, 1, nspin, 'Eold',
@@ -232,11 +233,10 @@
 
 !     Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
       call re_alloc( H, 1, maxnh, 1, nspin, 'H',
-     &              'state_init',shrink=.true.,copy=.false.)
-      call re_alloc( H0, 1, maxnh, 'H0', 'state_init',
-     &              shrink=.true., copy=.false.)
-      call re_alloc( S, 1, maxnh, 'S', 'state_init',
-     &              copy=.false. )
+     &              'sparseMat', shrink=.true., copy=.false. )
+      call re_alloc( H0, 1, maxnh, 'H0', 'sparseMat',
+     &              shrink=.true., copy=.false. )
+      call re_alloc( S, 1, maxnh, 'S', 'sparseMat', copy=.false. )
 
 ! Some printout for debugging ........................................
 *     if (IOnode) then
@@ -309,6 +309,7 @@
      &                              istep)
       endif
 #endif
+      call timer( 'STinit', 2 )
 #ifdef DEBUG
       call write_debug( '  POS state_init' )
 #endif

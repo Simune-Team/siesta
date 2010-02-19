@@ -43,6 +43,9 @@
 #endif /* TRANSIESTA */
       
 !---------------------------------------------------------------------- BEGIN
+#ifdef DEBUG
+      call write_debug( 'PRE siesta_forces' )
+#endif
 !     Initialization tasks for a given geometry
       call state_init( istep )
 
@@ -160,6 +163,9 @@
       endif
 
       call state_analysis( istep )
+#ifdef DEBUG
+      call write_debug( 'POS siesta_forces' )
+#endif
 !--------------------------------------------------------------------------- END
       END subroutine siesta_forces
       END module m_siesta_forces

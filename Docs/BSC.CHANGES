@@ -1,6 +1,45 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+296 Alberto Garcia	  2010-02-19
+Merged work by Rogeli Grima on mesh routines, with some bug fixes
+
+(Work in progress)
+
+There were some bugs in dhscf and in moremeshsubs, found after
+painstakingly commenting the flow of the program.
+
+* dhscf and dhscf_init have been merged in a true module m_dhscf, still
+  in file dhscf.F. 
+
+* The mesh initialization part is now done *unconditionally* in
+  dhscf_init, i.e, after *every* geometry change, even if the change
+  does not involve a cell change. The reason is to avoid complexity,
+  since now the mesh parallel distributions will depend on the
+  detailed atomic positions even if the cell does not change.
+  Besides, the relative cost of a "mesh only" initialization is
+  negligible.  The only real observable effect would be a printout of
+  "initmesh" data at every geometry iteration.
+
+* The variables "nm" and "nsm" are no longer imported in 'moremeshsubs'
+  from module m_dhscf. In fact, nmeshg from module mesh is used instead
+  of nm (which is abused as an argument in several routines).
+
+* Routine distMeshData (real version) had a bug when running in serial
+  mode and asked to "keep" the clustering or sequential character: it 
+  did not copy the input to the output array.
+
+* The change in distribution of the 'drho' array did not take into
+  account the spin dimension.
+
+Remaining known bugs:
+
+ - grdsam needs to call dhscf_init before calling dhscf
+ - the doping routine needs to be called in the quadratic dist
+ - the calculation of the Berry-phase polarization in the first
+   iteration of test 'born_spin' is wrong.
+
+------------------------------------
 295 Alberto Garcia	  2010-01-25
 Update to m_efield and doping modules.
 

@@ -29,7 +29,20 @@
       A%val => val
       end subroutine create_matrix
 
+      subroutine reset_matrix( A )
+      implicit none
+      type(matrix_t), intent(out) :: A
+
+      A%nr   = 0
+      A%nc   = 0
+      A%nnz  = 0
+      nullify(A%ind)
+      nullify(A%col)
+      nullify(A%val)
+      end subroutine reset_matrix
+
       end module matrixop
+
 C
 C     DSMV = Double Sparse Matrix Vector
 C     y(n) = A(n,n)*x(n)
@@ -48,7 +61,6 @@ C     Local variables
       integer                     :: ii, jj, kk
       real(dp)                    :: tt
 
-      call medirTiempo( 1, 14 )
 #ifdef MPI
       call reduce_array( n, nc, x, xx )
 !$OMP PARALLEL DO DEFAULT(NONE)  SCHEDULE(GUIDED)
@@ -74,7 +86,6 @@ C     Local variables
       enddo
 
 #endif
-      call medirTiempo( 2, 14 )
       end subroutine dsmv
 
 
@@ -96,11 +107,8 @@ C     Local variables
       integer                     :: ii, jj, kk
       real(dp)                    :: tt
 
-      call medirTiempo( 1, 10 )
 #ifdef MPI
-      call medirTiempo( 1, 11 )
       call reduce_array( n, nc, x, xx )
-      call medirTiempo( 2, 11 )
 !$OMP PARALLEL DO DEFAULT(NONE) SCHEDULE(GUIDED)
 !$   &  SHARED(n,A,B,xx,y,alpha)
 !$   &  PRIVATE(ii,tt,jj,kk)
@@ -125,12 +133,11 @@ C     Local variables
         y(ii) = tt
       enddo
 #endif
-      call medirTiempo( 2, 10 )
       end subroutine dsmlamv
 
 #ifdef MPI
       subroutine reduce_array( n, nc, x, xx )
-      use domain_decom, only : dd_ncom, lni, lnb, dd_bsiz, dd_comm
+      use domain_decom, only : dd_ncom, dd_lni, dd_lnb, dd_bsiz, dd_comm
       use parallel,     only : node
       use mpi_siesta
       use precision,    only : dp
@@ -147,20 +154,20 @@ C     Local variables
 
       xx(1:n) = x
       if (dd_ncom.gt.0) then
-        myb => x(lni+1:n)
+        myb => x(dd_lni+1:n)
         ind = n + 1
         do icom= 1, dd_ncom
           PP  = dd_comm(icom)-1
           onb = dd_bsiz(icom)
           if (PP.lt.node) then
-            call MPI_Send ( myb, lnb, MPI_DOUBLE_PRECISION, PP,
+            call MPI_Send ( myb, dd_lnb, MPI_DOUBLE_PRECISION, PP,
      &                      0, MPI_COMM_WORLD, ierror )
             call MPI_Recv ( xx(ind), onb, MPI_DOUBLE_PRECISION, PP,
      &                      0, MPI_COMM_WORLD, status, ierror )
           else
             call MPI_Recv ( xx(ind), onb, MPI_DOUBLE_PRECISION, PP,
      &                      0, MPI_COMM_WORLD, status, ierror )
-            call MPI_Send ( myb, lnb, MPI_DOUBLE_PRECISION, PP,
+            call MPI_Send ( myb, dd_lnb, MPI_DOUBLE_PRECISION, PP,
      &                      0, MPI_COMM_WORLD, ierror )
           endif
           ind = ind + onb
@@ -169,7 +176,7 @@ C     Local variables
       end subroutine reduce_array
 
       subroutine reduce_matrix( n, nc, ne, Z, ZZ )
-      use domain_decom, only : dd_ncom, lni, lnb, dd_bsiz, dd_comm
+      use domain_decom, only : dd_ncom, dd_lni, dd_lnb, dd_bsiz, dd_comm
       use parallel,     only : node
       use precision,    only : dp
       use mpi_siesta
@@ -193,28 +200,28 @@ C     Local variables
       maxbs = maxbs*ne
       nullify(buff,myb)
       call re_alloc( buff, 1, maxbs, 'buff', 'matrixop' )
-      call re_alloc( myb, 1, lnb, 1, ne, 'myb', 'matrixop' )
+      call re_alloc( myb, 1, dd_lnb, 1, ne, 'myb', 'matrixop' )
 
 C     Copy the elements that are in the current process
       ZZ(1:n,1:ne) = Z
 
 C     Copy the boundary elements to a contiguos buffer
-      myb = Z(lni+1:lni+lnb,1:ne)
+      myb = Z(dd_lni+1:dd_lni+dd_lnb,1:ne)
 
       ind = n + 1
       do icom= 1, dd_ncom
         PP  = dd_comm(icom)-1
         onb = dd_bsiz(icom)
         if (PP.lt.node) then
-          call MPI_Send ( myb(1,1), lnb*ne, MPI_DOUBLE_PRECISION, PP, 0,
-     &                    MPI_COMM_WORLD, ierror )
+          call MPI_Send ( myb(1,1), dd_lnb*ne, MPI_DOUBLE_PRECISION,
+     &                    PP, 0, MPI_COMM_WORLD, ierror )
           call MPI_Recv ( buff, onb*ne, MPI_DOUBLE_PRECISION, PP, 0,
      &                    MPI_COMM_WORLD, status, ierror )
         else
           call MPI_Recv ( buff, onb*ne, MPI_DOUBLE_PRECISION, PP, 0,
      &                    MPI_COMM_WORLD, status, ierror )
-          call MPI_Send ( myb(1,1), lnb*ne, MPI_DOUBLE_PRECISION, PP, 0,
-     &                    MPI_COMM_WORLD, ierror )
+          call MPI_Send ( myb(1,1), dd_lnb*ne, MPI_DOUBLE_PRECISION,
+     &                    PP, 0, MPI_COMM_WORLD, ierror )
         endif
         
         in2 = 1
@@ -320,6 +327,7 @@ C
       use precision,    only : dp
 #ifdef MPI
       use m_mpi_utils,  only : globalize_sum
+      use mpi
 #endif
       implicit none
 C     Input variables
@@ -330,30 +338,82 @@ C     Output variables
 C     Local variables
       integer                :: i, j, k
       real(dp)               :: tt
+      real(dp),    parameter :: ONE=1.0, ZERO=0.0
 
 #ifdef MPI
-      do j= 1, nc
-        do i= 1, nc
-          tt = 0.0
-          do k= 1, nr
-            tt = tt + A(k,i)*B(k,j)
-          enddo
-          Ct(i,j) = tt
-        enddo
-      enddo
+      call dgemm( 'T', 'N', nc, nc, nr, ONE, A, nr, B,
+     &            nr, ZERO, Ct, nc )
+
       call Globalize_sum( Ct, C )
 #else
-      do j= 1, nc
-        do i= 1, nc
+      call dgemm( 'T', 'N', nc, nc, nr, ONE, A, nr, B, nr, ZERO, C, nc )
+!      do j= 1, nc
+!        do i= 1, nc
+!          tt = 0.0
+!          do k= 1, nr
+!            tt = tt + A(k,i)*B(k,j)
+!          enddo
+!          C(i,j) = tt
+!        enddo
+!      enddo
+#endif
+      end subroutine ddmtm
+
+C
+C     DDMTM_sym = Double Dense Matrix Transposed Matrix Symmetric
+C     C(nc,nc) = A^t(nr,nc)*B(nr,nc)
+C
+
+      subroutine ddmtmSym( nr, nc, pK, A, C, Ct )
+      use matrixop
+      use precision,    only : dp
+#ifdef MPI
+      use m_mpi_utils,  only : globalize_sum
+      use mpi
+#endif
+      implicit none
+C     Input variables
+      integer,    intent(in) :: nr, nc, pK
+      real(dp),   intent(in) :: A(nr,nc)
+C     Output variables
+      real(dp),  intent(out) :: C((nc*(nc+1))/2), Ct((nc*(nc+1))/2)
+C     Local variables
+      integer                :: i, j, k, l, ini, fin
+      real(dp)               :: tt
+      real(dp),    parameter :: ONE=1.0, ZERO=0.0
+
+      ini = (pk*(pk+1))/2+1
+      fin = (nc*(nc+1))/2
+
+#ifdef MPI
+      l = ini
+      do j= pK+1, nc
+        do i= 1, j
           tt = 0.0
           do k= 1, nr
-            tt = tt + A(k,i)*B(k,j)
+            tt = tt + A(k,i)*A(k,j)
           enddo
-          C(i,j) = tt
+          Ct(l) = tt
+          l = l + 1
+        enddo
+      enddo
+
+      call Globalize_sum( Ct(ini:fin), C(ini:fin) )
+#else
+      l = ini
+      do j= pK+1, nc
+        do i= 1, j
+          tt = 0.0
+          do k= 1, nr
+            tt = tt + A(k,i)*A(k,j)
+          enddo
+          C(l) = tt
+          l = l + 1
         enddo
       enddo
 #endif
-      end subroutine ddmtm
+      end subroutine ddmtmSym
+
 
 C
 C     DVDOT = Vector Dot Product
@@ -376,43 +436,16 @@ C     Local variables
       real(dp),   external :: ddot
 
       t = ddot( n, x, 1, y, 1 )
-
 #ifdef MPI
       call Globalize_sum( t, dvdot )
 #else
       dvdot = t                    
-#endif                          
+#endif        
       return
       end function dvdot
 
-      subroutine GramSchmidt( N, M, V, t, Vt, gVt )
-      use precision,    only : dp
-#ifdef MPI
-      use m_mpi_utils,  only : globalize_sum
-#endif
-      implicit none
-C     Input variables
-      integer,     intent(in) :: N, M
-      real(dp),    intent(in) :: V(N,M)
-C     Output variables
-      real(dp)                :: Vt(M), gVt(M)
-      real(dp), intent(inout) :: t(N)
-C     Local variables
-      real(dp),     parameter :: ZERO=0.0, ONE=1.0, MONE=-1.0
 
-      call medirTiempo( 1, 11 )
-      call DGEMV( 'T', n, m, ONE, V, n, t, 1, ZERO, Vt, 1 )
-#ifdef MPI
-      call globalize_sum( Vt, gVt )
-      call DGEMV( 'N', n, m, MONE, V, n, gVt, 1, ONE, t, 1 )
-#else
-      call DGEMV( 'N', n, m, MONE, V, n, Vt, 1, ONE, t, 1 )
-#endif
-      call medirTiempo( 2, 11 )
-
-      end subroutine GramSchmidt
-
-      subroutine GramSchmidt_B( N, M, VB, V, t, VBt, gVBt )
+      subroutine GramSchmidt( N, M, VB, V, t, work )
       use precision,    only : dp
 #ifdef MPI
       use m_mpi_utils,  only : globalize_sum
@@ -422,73 +455,52 @@ C     Input variables
       integer,     intent(in) :: N, M
       real(dp),    intent(in) :: VB(N,M), V(N,M)
 C     Output variables
-      real(dp)                :: VBt(M), gVBt(M)
+      real(dp)                :: work(2*M)
       real(dp), intent(inout) :: t(N)
 C     Local variables
       real(dp),     parameter :: ZERO=0.0, ONE=1.0, MONE=-1.0
-      real(dp)                :: tin, tout, dvdot, tt
-      integer                 :: i
 
-      call medirTiempo( 1, 13 )
-#ifdef RGT
-      tin = sqrt( dvdot( n, t, t ) )
-#endif
-
-#ifdef KKKK
-      do i= 1, m
-        tt = -dvdot( n, t, Vb(1,i) )
-        call DAXPY( n, tt, V(1,i), 1, t, 1 )
-      enddo
-#else
-
-      call DGEMV( 'T', n, m, ONE, Vb, n, t, 1, ZERO, vbt, 1 )
+      if (m.gt.0) then
+        call DGEMV( 'T', n, m, ONE, Vb, n, t, 1, ZERO, work, 1 )
 #ifdef MPI
-      call globalize_sum( Vbt, gVbt )
-      call DGEMV( 'N', n, m, MONE, V, n, gVbt, 1, ONE, t, 1 )
+        call globalize_sum( work(1:M), work(M+1:2*M) )
+        call DGEMV( 'N', n, m, MONE, V, n, work(M+1), 1, ONE, t, 1 )
 #else
-      call DGEMV( 'N', n, m, MONE, V, n, Vbt, 1, ONE, t, 1 )
+        call DGEMV( 'N', n, m, MONE, V, n, work, 1, ONE, t, 1 )
 #endif
-#endif
-
-#ifdef RGT
-      tout = sqrt( dvdot( n, t, t ) )
-      write(23,*) 'GramSchmidt_B  tout - tin - tout/tin:', tout, tin,
-     &            tout/tin
-      flush(23)
-#endif
-
-      call medirTiempo( 2, 13 )
-
-      end subroutine GramSchmidt_B
+      endif
+      end subroutine GramSchmidt
 
 
-      function residual_norm( n, x, y )
+      subroutine GramSchmidt2( N, K, M, Z, Q, VB, V, t, work )
       use precision,    only : dp
 #ifdef MPI
       use m_mpi_utils,  only : globalize_sum
 #endif
       implicit none
 C     Input variables
-      integer,  intent(in) :: n
-      real(dp), intent(in) :: x(n), y(n)
+      integer,     intent(in) :: N, K, M
+      real(dp),    intent(in) :: Z(N,K), Q(N,K), VB(N,M), V(N,M)
 C     Output variables
-      real(dp)             :: residual_norm
+      real(dp)                :: work(2*K+2*M)
+      real(dp), intent(inout) :: t(N)
 C     Local variables
-      integer              :: i
-      real(dp)             :: local(2), global(2)
-      real(dp),   external :: ddot
+      integer                 :: MK
+      real(dp),     parameter :: ZERO=0.0, ONE=1.0, MONE=-1.0
 
-      local(1) = ddot( n, x, 1, x, 1 )
-      local(2) = ddot( n, y, 1, y, 1 )
+      MK = M + K
+      if (k.gt.0)
+     &  call DGEMV( 'T', n, k, ONE, Z,  n, t, 1, ZERO, work, 1 )
+      if (M.gt.0)
+     &  call DGEMV( 'T', n, m, ONE, Vb, n, t, 1, ZERO, work(k+1), 1 )
 #ifdef MPI
-      call globalize_sum( local, global )
-      residual_norm = sqrt(global(1)/global(2))
+      if (MK.gt.0) call globalize_sum( work(1:MK), work(MK+1:2*MK) )
+      if (k.gt.0)
+     &  call DGEMV( 'N', n, k, MONE, Q, n, work(MK+1),   1, ONE, t, 1 )
+      if (M.gt.0)
+     &  call DGEMV( 'N', n, m, MONE, V, n, work(MK+k+1), 1, ONE, t, 1 )
 #else
-      residual_norm = sqrt(local(1)/local(2))
+      call DGEMV( 'N', n, k, MONE, Q, n, work,      1, ONE, t, 1 )
+      call DGEMV( 'N', n, m, MONE, V, n, work(k+1), 1, ONE, t, 1 )
 #endif
-
-#ifdef RGT
-      write(23,*) 'residual_norm:', residual_norm
-      flush(23)
-#endif
-      end function residual_norm
+      end subroutine GramSchmidt2

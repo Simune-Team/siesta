@@ -1,3 +1,39 @@
+! 
+! This file is part of the SIESTA package.
+!
+! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
+! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
+! and J.M.Soler, 1996-2006.
+! 
+! Use of this software constitutes agreement with the full conditions
+! given in the SIESTA license, as signed by all legitimate users.
+!
+
+C ==================================================================
+C Reorder a vector of numbers in decreasing order using the
+C quicksort algorithm. A permutation vector is also created.
+C
+C Written by Rogeli Grima (BSC) Dec.2007
+C
+C ==================================================================
+C SUBROUTINE myQsort( N, A, perm )
+C
+C INPUT:
+C integer   N       : Number of elements
+C
+C OUTPUT:
+C integer   A(N)    : Vector to be reordered
+C integer   perm(N) : Permutation vector
+C
+C BEHAVIOR:
+C This is a recursive algorithm. At every step:
+C   - Choose a pivot element (the first of the array)
+C   - Move elements bigger than pivot to the begining of the array
+C     and smaller ones at the end. Variable 'iq' marks the frontier
+C     between both parts
+C   - Reorder every part calling recursively myQsort
+C
+C ==================================================================
       recursive subroutine myQsort( N, A, perm )
       implicit none
 C     Input variables
@@ -14,6 +50,35 @@ C     Local variables
 !--------------------------------------------------------------------------- END
       end subroutine myQsort
 
+C ==================================================================
+C Set the first element of an array as a pivot and moves values
+C greater than or equal to the pivot element to the begining of the
+C array. It also returns the position of the intersection between
+C both groups. The array perm suffer the same reordering.
+C ==================================================================
+C SUBROUTINE Partition( N, A, perm, marker )
+C
+C INPUT:
+C integer   N       : Number of elements
+C
+C OUTPUT:
+C integer   A(N)    : Vector to be reordered
+C integer   perm(N) : Permutation vector
+C integer   marker  : frontier between "big" values and "small" values
+C
+C BEHAVIOR:
+C Choose the first element of the array as pivot.
+C At every iteration:
+C   - Find a value bigger than the pivot starting from the end
+C     of the array.
+C   - Find a value smaller than the pivot starting from the begining
+c     of the array
+C   - Swap both elements
+C Quit once we have checked all values.
+C
+C NOTE: Values equal to pivot can be at any side.
+C
+C ==================================================================
       subroutine Partition( N, A, perm, marker )
 C     Input variables
       integer       :: N, A(N),  perm(N), marker

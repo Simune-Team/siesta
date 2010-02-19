@@ -5,20 +5,262 @@
       use matrixop
       implicit none
 
-      real(dp)            :: gmres_eps     = 1.0e-4
+      integer             :: ITmaxiter     = 500
       integer             :: gmres_dim     = 257
-      integer             :: gmres_maxiter = 500
-      real(dp), parameter :: gmres_epsmac  = 1.0d-14
-
-      real(dp)            :: minres_eps     = 1.0e-4
-      integer             :: minres_maxiter = 1000
+      real(dp)            :: ITeps         = 1.0e-4
+      real(dp), parameter :: EPSmac        = 1.0d-14
 
       CONTAINS
 
+      subroutine com_symmlq( n, ne, kmax, A, B, teta, bb, Z,
+     &                       LU, xx, iters, wrk, lwrk )
+      use sys,      only : die
+      implicit none
+C     Input variables
+      integer,         intent(in) :: n, ne, kmax, lwrk
+      type(matrix_t),  intent(in) :: A, B
+      real(dp),        intent(in) :: teta, bb(n), Z(n,ne),
+     &                               LU((kmax*(kmax+1))/2)
+C     Output variables
+      real(dp),       intent(out) :: xx(n)
+      real(dp),            target :: wrk(lwrk)
+      integer,        intent(out) :: iters
+C     Local variables
+      integer                     :: i, nc, istop, o1, o2, lwork
+      real(dp)                    :: anorm, acond, rnorm, xnorm, ynorm,
+     &                               b1, beta, beta1, s, alfa, zeta,
+     &                               oldb, denom, t, cgnorm, gbar, dbar,
+     &                               rhs1, rhs2, bstep, snprod, tnorm,
+     &                               ynorm2, gmax, gmin, epsa, epsx,
+     &                               epsr, diag, rtol, elqnrm, qrnorm,
+     &                               gamma, delta, epsln, sn, cs, zbar
+      real(dp),           pointer :: ww(:), yy(:), r1(:), r2(:), vv(:),
+     &                               work(:)
+      real(dp),         parameter :: ZERO= 0.0, ONE= 1.0, EPS=2.0_dp**47
+      real(dp),          external :: dvdot
+
+      nc      = A%nc
+      write(23,*) 'wrk', LOC(wrk), 5*n+2*kmax+nc,LOC(wrk(5*n+2*kmax+nc))
+      flush(23)
+
+      o1 = 1
+      o2 = o1+n
+      ww => wrk(o1:o2-1)
+
+      o1 = o2
+      o2 = o2+n
+      yy => wrk(o1:o2-1)
+
+      o1 = o2
+      o2 = o2+n
+      r1 => wrk(o1:o2-1)
+
+      o1 = o2
+      o2 = o2+n
+      r2 => wrk(o1:o2-1)
+
+      o1 = o2
+      o2 = o2+n
+      vv => wrk(o1:o2-1)
+
+      lwork = 2*kmax + nc
+      o1 = o2
+      o2 = o2+lwork
+      work => wrk(o1:o2-1)
+      write(23,*) 'work', LOC(work), lwork, LOC(work(lwork))
+      write(23,*) 'ini com_symmlq', n, ne, kmax, teta
+
+      istop  = 0
+      anorm  = ZERO
+      acond  = ZERO
+      rnorm  = ZERO
+      xnorm  = ZERO
+      ynorm  = ZERO
+
+      do i = 1, n
+        xx(i) = ZERO
+      enddo
+      do i = 1, n
+        ww(i) = ZERO
+      enddo
+
+!     Set up  V,  the first vector in the Lanczos sequence.
+      CALL DCOPY ( n, bb, 1, yy, 1 )
+      CALL DCOPY ( n, bb, 1, r1, 1 )
+
+!!!     Ojo si se usa precondicionador....
+!!!      IF (PRECON) CALL MSOLVE( N,R1,Y )
+      B1     = yy(1)
+      beta1  = dvdot( n, R1, yy )
+
+      if (beta1 .lt. ZERO) ! M must be indefinite.
+     &  call die( 'ERROR in com_symmlq-> Precon must be indefinite' )
+      if (beta1 .eq. ZERO) goto 100  ! b = 0 exactly.  Stop with x = 0.
+      beta1  = sqrt( beta1 )         ! Normalize y to get v1 later.
+      s      = ONE/beta1
+
+      do i= 1, n
+        vv(i)  = s*yy(i)
+      enddo
+
+!     Set up  Y  for the second Lanczos vector.
+      write(23,*) 'vv', loc(vv), vv
+      write(23,*) 'yy', loc(yy), yy
+      flush(23)
+      call deflatedMV( n, ne, kmax, A, B, teta, vv, Z,
+     &                 LU, yy, work, lwork )
+      alfa = dvdot( n, vv, yy )
+      CALL DAXPY( n, (-alfa*s), r1, 1, yy, 1 )
+
+!     Make sure  R2  will be orthogonal to the first  V.
+      zeta  = dvdot( n, vv, yy )
+      s     = ONE/dvdot( n, vv, vv )
+      CALL DAXPY ( n, (-zeta*s), vv, 1, yy, 1 )
+      CALL DCOPY ( n, yy, 1, r2, 1 )
+!!!     Ojo si se usa precondicionador....
+!!!      IF (PRECON) CALL MSOLVE( n, r2, yy )
+      oldb   = beta1
+      beta   = dvdot( N, R2, yy )
+      if (beta .lt. ZERO)          ! M must be indefinite.
+     &  call die( 'ERROR in com_symmlq-> Precon must be indefinite' )
+      if (beta .eq. ZERO) goto 100 ! b = 0 exactly.  Stop with x = 0.
+      beta   = sqrt( beta )
+
+      rnorm  = dvdot( n, r2, r2 )
+      denom  = SQRT(s*rnorm)
+      s      = zeta/denom
+      t      = dvdot( n, vv, r2 )/denom
+
+!     Initialize other quantities.
+      cgnorm = beta1
+      gbar   = alfa
+      dbar   = beta
+      rhs1   = beta1
+      rhs2   = zero
+      bstep  = zero
+      snprod = ONE
+      tnorm  = alfa**2
+      ynorm2 = ZERO
+      gmax   = ZERO
+      gmin   = one/eps
+
+      iters = 0
+      rtol  = ITeps
+      istop = 0
+!     ------------------------------------------------------------------
+!     Main iteration loop.
+!     ------------------------------------------------------------------
+      DO WHILE (istop.eq.0)
+  300   iters = iters + 1
+
+!       Estimate various norms and test for convergence.
+        anorm  = sqrt(tnorm)
+        ynorm  = sqrt(ynorm2)
+        epsa   = anorm*eps
+        epsx   = anorm*ynorm*eps
+        epsr   = anorm*ynorm*rtol
+        diag   = gbar
+        if (diag .eq. ZERO) diag = epsa
+
+        elqnrm = sqrt(rhs1**2 + rhs2**2)
+        qrnorm = snprod*beta1
+        cgnorm = qrnorm*beta / abs(diag)
+
+!       Estimate  COND(A).
+!       In this version we look at the diagonals of  L  in the
+!       factorization of the tridiagonal matrix,  T = L*Q.
+        denom  = min( gmin, abs(diag) )
+        acond  = gmax/denom
+
+!       See if any of the stopping criteria are satisfied.
+        if (iters  .gt. ITmaxiter ) istop = 5
+        if (acond  .ge. 0.1/eps) istop = 4
+        if (epsx   .ge. beta1  ) istop = 3
+        if (cgnorm .le. epsx   ) istop = 2
+        if (cgnorm .le. epsr   ) istop = 1
+
+        if (istop.ne.0) cycle
+          
+        
+        s = ONE/beta
+        do i = 1, n
+          vv(i) = s*yy(i)
+        enddo
+
+        call deflatedMV( n, ne, kmax, A, B, teta, vv, Z,
+     &                   LU, yy, work, lwork )
+        call daxpy( n, (-beta/oldb), r1, 1, yy, 1 )
+        alfa   = dvdot( n, vv, yy )
+        tnorm  = tnorm + (alfa**2) + 2.0*(beta**2)
+        call daxpy( n, (-alfa/beta), r2, 1, yy, 1 )
+        call dcopy( n, r2, 1, r1, 1 )
+        call dcopy( n, yy, 1, r2, 1 )
+!!!     Ojo si se usa precondicionador....
+!!!        if (precon) call msolve( n,r2,y )
+        oldb = beta
+        beta = dvdot( n, r2, yy )
+        if (beta .le. zero) then
+          istop = 6
+          cycle
+        endif
+        beta   = sqrt( beta )
+
+!       Compute the next plane rotation for  Q.
+        gamma  = sqrt(gbar**2 + oldb**2)
+        cs     = gbar/gamma
+        sn     = oldb/gamma
+        delta  = cs*dbar + sn*alfa
+        gbar   = sn*dbar - cs*alfa
+        epsln  = sn*beta
+        dbar   =         - cs*beta
+
+!       Update  X.
+        zeta   = rhs1/gamma
+        s      = zeta*cs
+        t      = zeta*sn
+
+        do i= 1, n
+           xx(i) = (ww(i)*s  +  vv(i)*t)  +  xx(i)
+           ww(i) =  ww(i)*sn -  vv(i)*cs
+        enddo
+
+!       Accumulate the step along the direction  B,
+!       and go round again.
+        bstep  = snprod*cs*zeta + bstep
+        snprod = snprod*sn
+        gmax   = max( gmax, gamma )
+        gmin   = min( gmin, gamma )
+        ynorm2 = zeta**2 + ynorm2
+        rhs1   = rhs2 - delta*zeta
+        rhs2   =      - epsln*zeta
+      ENDDO
+
+!     Move to the CG point.
+!     (In this version of SYMMLQ, we never stop at an LQ point.)
+      zbar   = rhs1/diag
+      bstep  = snprod*zbar + bstep
+      ynorm  = dsqrt(ynorm2 + zbar**2)
+      call daxpy ( n, zbar, ww, 1, xx, 1 )
+
+!     Add the step along  B.
+      bstep  = bstep/beta1
+      call dcopy ( n, bb, 1, yy, 1 )
+!!!      if (precon) call msolve( n,b,y )
+      call daxpy ( n, bstep, yy, 1, xx, 1 )
+
+ 100  continue
+      write(23,*) '      FIN com_symmlq iters:', iters, ' istop:',
+     &  istop, ' cgnorm:', cgnorm, ' epsr:', epsr, ' eps:', ITeps
+
+      end subroutine com_symmlq
+
+
+
+#ifdef TMP
       subroutine com_minres( n, ne, A, B, PC, teta, bb, Z, Z_hat,
      &                       M, ipiv, xx, iters )
       use sys,      only : die
-           implicit none
+      implicit none
 C     Input variables
       integer,         intent(in) :: n, ne, ipiv(ne)
       type(matrix_t),  intent(in) :: A, B
@@ -103,7 +345,7 @@ C     Local variables
       call dcopy( n, r1, 1, r2, 1 )    ! r2 = r1
 
       iters = 0
-      rtol  = minres_eps
+      rtol  = ITeps
       istop = 0
       DO WHILE (istop.eq.0)
         iters = iters + 1
@@ -204,13 +446,11 @@ C     Local variables
 !       In rare cases, istop is already -1 from above (Abar = const*I).
 
         if (istop .eq. 0) then
-          if (iters .ge. minres_maxiter ) istop = 5
+          if (iters .ge. ITmaxiter ) istop = 5
           if (Acond .ge. 0.1d+0/eps) istop = 4
           if (epsx .ge. beta1     ) istop = 3
           if (qrnorm .le. epsx      ) istop = 2
           if (qrnorm .le. epsr      ) istop = 1
-!      write(23,*) 'Loop iters:', iters, ' istop:', istop,
-!     &            ' qrnorm:', qrnorm, ' Anorm*ynorm:', Anorm*ynorm
         end if
 
 !       See if it is time to print something.
@@ -262,7 +502,7 @@ C     Local variables
 
       if (raux .eq. 0.0d0) return
 
-      stopcri = gmres_eps * raux
+      stopcri = ITeps * raux
       dim2    = gmres_dim*(gmres_dim+3)/2
       nc      = A%nc
 
@@ -284,7 +524,6 @@ C     Local variables
 
 C       raux = ||kryl(*,1)||
         raux = SQRT(dvdot( n, kryl, kryl))
-!        write(23,*) '  GMRES raux:', iters, raux, stopcri
 
         if (raux.le.stopcri) then
 C         The initial guess is the solution
@@ -319,7 +558,6 @@ C           v_j1   = v_j1 - H(i,j) * v_i
 C         H(jj1,jj) = ||kryl(*,jj1)||
           raux = SQRT(dvdot( n, kryl(1,jj1), kryl(1,jj1)))
           hh(idx+jj1) = raux
-!          write(23,*) '  GMRES raux:', iters, raux, stopcri
 
           if (raux.eq.0.0d0) then
             ierr  = 2
@@ -348,7 +586,7 @@ C           transformations on jj-th column of H
 
 C           if gamma is zero then take any small
 C           value will affect only residual estimate
-            if (gamma.eq.0.0) gamma = gmres_epsmac
+            if (gamma.eq.0.0) gamma = EPSmac
 
 C           Get next plane rotation
             cc(jj) = hh(idx+jj)/gamma
@@ -362,17 +600,12 @@ C           Update the rhs of the LS problem
 
 C           Convergence Test
             raux = ABS( rs(jj1) )
-!            write(23,*) '  GMRES raux:', iters, raux, stopcri
 
             if (raux.le.stopcri) then
-!              write(23,*) '         GMRES GOOD...', iters, raux, stopcri
-!              flush(23)
               conv = .TRUE.
               FIN2 = .TRUE.
             else
-              if (iters.ge.gmres_maxiter) then
-!                write(23,*) '         GMRES MAXITER', iters
-!                flush(23)
+              if (iters.ge.ITmaxiter) then
                 conv = .TRUE.
                 FIN2 = .TRUE.
                 ierr = 1
@@ -408,57 +641,5 @@ C         Linear combination of kryl(*,jj)'s to get the solution.
       call de_alloc( rs,   'rs',   'com_gmres' )
       call de_alloc( kryl, 'kryl', 'com_gmres' )
       end subroutine com_gmres
+#endif
       END MODULE GMRES
-
-      subroutine gmres_MV( n, ne, A, B, PC, teta, v, Z, Z_hat,
-     &                     M, ipiv, zz, work )
-      use matrixop
-      use sys,      only : die
-      use precond,  only : precond_t, precond_solver_vec
-      implicit none
-C     Input variables
-      integer,         intent(in) :: n, ne, ipiv(ne)
-      type(matrix_t),  intent(in) :: A, B
-      type(precond_t), intent(in) :: PC
-      real(dp),        intent(in) :: teta, v(n), Z(n,ne), Z_hat(n,ne),
-     &                               M(ne,ne)
-C     Output variables
-      real(dp),       intent(out) :: zz(n)
-      real(dp),            target :: work(*)
-C     Local variables
-      integer                     :: info, nc
-      real(dp),           pointer :: y(:), y_hat(:), gama(:), gbuf(:),
-     &                               vv(:)
-      call medirTiempo( 1, 9 )
-
-      nc = A%nc
-
-      y     => work(1:n)
-      y_hat => work(n+1:2*n)
-      gama  => work(2*n+1:2*n+ne)
-      gbuf  => work(2*n+ne+1:2*n+2*ne+1)
-      vv    => work(2*n+2*ne+1:2*n+2*ne+nc)
-
-      ! (11)
-      call dsmlamv( n, nc, A, teta, B, v, vv, y )
-
-      ! (12)
-      call precond_solver_vec( n, PC, y, y_hat )
-
-      ! (13)
-      call ddmtv( n, ne, Z, y, gama, gbuf )
-
-      ! (14) (15)
-C     DGETRS solves a system of linear equations
-C         A * X = B,  A**T * X = B,  or  A**H * X = B
-C     with a general N-by-N matrix A using the LU factorization
-C     computed by DGETRF.
-      call DGETRS ( 'N', ne, 1, M, ne, ipiv, gama, ne, info )
-      if (info.ne.0) call die( 'ERROR in gmres_mv->DGETRS' )
-
-      ! (16)
-      call ddvlmv( n, ne, y_hat, Z_hat, gama, zz )
-
-      call medirTiempo( 2, 9 )
-
-      end subroutine gmres_mv

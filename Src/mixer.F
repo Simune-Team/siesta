@@ -44,6 +44,7 @@
 #ifdef DEBUG
       call write_debug( '  PRE mixer' )
 #endif
+      call timer( 'MIXER', 1 )
 ! Mix input and output energy-density and density matrices ............
 ! Following line for using and saving the density matrix without mix ..
       if (wmix.ne.0._dp) then
@@ -154,6 +155,7 @@
       endif ! writedm
 #endif /* TRANSIESTA */
 
+      call timer( 'MIXER', 2 )
 #ifdef DEBUG
       call write_debug( '  POS mixer' )
 #endif

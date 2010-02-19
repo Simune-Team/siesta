@@ -92,6 +92,9 @@ C Internal variables ......................................................
 
       external  timer
 C ......................
+#ifdef DEBUG
+      call write_debug( '    PRE overfsm' )
+#endif
 
 C Start timer
       call timer( 'overfsm', 1 )
@@ -136,7 +139,7 @@ C Valid orbital
                 is = isa(ia)
                 js = isa(ja)
                 if (rcut(is,ioa)+rcut(js,joa) .gt. rij) then
-                  call matel( 'S', is, js, ioa, joa, xij(1,jn),
+                  call MATEL( 'S', is, js, ioa, joa, xij(1,jn),
      .                      Sij, grSij )
                   Si(jo) = Si(jo) + Sij
                   do ix = 1,3
@@ -166,7 +169,7 @@ C Valid orbital
       enddo
 
 C Deallocate local memory
-      call matel( 'S', 0, 0, 0, 0, xij, Sij, grSij )
+!      call MATEL( 'S', 0, 0, 0, 0, xij, Sij, grSij )
       call reset_neighbour_arrays( )
       call de_alloc( Si, 'Si', 'overfsm' )
       call de_alloc( Di, 'Di', 'overfsm' )
@@ -174,6 +177,9 @@ C Deallocate local memory
 C Finish timer
       call timer( 'overfsm', 2 )
 
+#ifdef DEBUG
+      call write_debug( '    POS overfsm' )
+#endif
       end subroutine overfsm
       end module m_overfsm
 

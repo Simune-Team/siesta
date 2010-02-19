@@ -58,7 +58,7 @@ C ==================================================================
      &                            iphorb, isa, numphi )
 
       use mesh,         only: mop, ipa, idop, nsp, xdop, xdsp, dxa,
-     &                        indexp
+     &                        indexp, meshLim
       use precision,    only: dp, grid_p
       use atmfuncs,     only: rcut
       use parallel,     only: Nodes, node
@@ -66,6 +66,7 @@ C ==================================================================
       use moreMeshSubs, only: initMeshExtencil
 #endif
       use moreMeshSubs, only: initMeshDistr
+      use moreMeshSubs, only: UNIFORM, QUADRATIC, LINEAR
       use cellxc_mod,   only: GGA, setGGA
       use alloc,        only: re_alloc, de_alloc
       implicit none
@@ -79,12 +80,11 @@ C     Local variables
       logical              :: within
       integer,     pointer :: wload(:)
 !------------------------------------------------------------------------- BEGIN
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 14 )
+#ifdef DEBUG
+      call write_debug( '      PRE distriPhiOnMesh' )
 #endif
       call timer( 'REMESH', 1 )
 
-      call timer( 'RMSH.1', 1 )
       do ii= 1, nmpl
         numphi(ii) = 0
       enddo
@@ -92,6 +92,7 @@ C     Local variables
 C     Find number of atomic orbitals at mesh points
       do io = 1,norb
         ia   = iaorb(io)
+        if (ipa(ia)==0) cycle ! Atomic sphere does not intersec my Box
         iphi = iphorb(io)
         is   = isa(ia)
         r2o  = rcut(is,iphi)**2
@@ -111,33 +112,30 @@ C           If within range, add one to number of point orbitals
           endif
         enddo
       enddo
-      call timer( 'RMSH.1', 2 )
 
 #ifdef MPI
-      call timer( 'RMSH.2', 1 )
       if (nodes.gt.1) then
         nullify( wload )
         call re_alloc( wload, 1, nmpl, 'wload', 'distriPhiOnMesh' )
         do ip0= 1, nmpl
           wload(ip0) = numphi(ip0)*numphi(ip0)
         enddo
-        call initMeshDistr( 1, 2, nm, wload )
+        call initMeshDistr( UNIFORM, QUADRATIC, nm, wload )
 
         do ip0= 1, nmpl
           if (numphi(ip0).ne.0) wload(ip0) = 1
         enddo
-        call initMeshDistr( 1, 3, nm, wload )
-        if (GGA) call initMeshExtencil( 3, nm )
+        call initMeshDistr( UNIFORM, LINEAR, nm, wload )
+        if (GGA) call initMeshExtencil( LINEAR, nm )
 
 C       Free local memory
         call de_alloc( wload, 'wload', 'distriPhiOnMesh' )
 
       endif
-      call timer( 'RMSH.2', 2 )
       call timer( 'REMESH', 2 )
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 0 )
 #endif
+#ifdef DEBUG
+      call write_debug( '      POS distriPhiOnMesh' )
 #endif
 !--------------------------------------------------------------------------- END
       end subroutine distriPhiOnMesh

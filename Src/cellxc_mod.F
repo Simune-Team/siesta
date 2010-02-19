@@ -10,7 +10,7 @@
 C     Local variables
       integer         :: nf
       
-!------------------------------------------------------------------------- BEGIN
+!---------------------------------------------------------------------- BEGIN
       do nf = 1,nXCfunc
         if ( XCfunc(nf).eq.'GGA' .or. XCfunc(nf).eq.'gga') then
           GGA = .true.
@@ -22,7 +22,7 @@ C     Local variables
           endif
         endif
       enddo
-!--------------------------------------------------------------------------- END
+!----------------------------------------------------------------------- END
       end subroutine setGGA
 
       END MODULE cellxc_mod

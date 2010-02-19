@@ -19,7 +19,7 @@
 
       public :: rad_alloc, rad_get, rad_setup_d2, rad_zero
       public :: radial_read_ascii, radial_dump_ascii
-      public :: radial_dump_xml
+      public :: radial_dump_xml, reset_rad_func
 
       type, public :: rad_func
          integer          n
@@ -33,14 +33,28 @@
 
       CONTAINS
 
+      subroutine reset_rad_func( func )
+      implicit none
+      type(rad_func)   :: func
+
+      func%n = 0
+      nullify(func%f)
+      nullify(func%d2)
+      end subroutine reset_rad_func
+
       subroutine rad_alloc(func,n)
+      use alloc, only: re_alloc
+      implicit none
 !
 !     Sets the 'size' n of the arrays and allocates f and d2.
 !
       type(rad_func), intent(inout)    :: func
       integer, intent(in)        :: n
       func%n = n
-      allocate(func%f(n),func%d2(n))
+      nullify(func%f,func%d2)
+      call re_alloc( func%f, 1, n, 'func%f', 'rad_alloc' )
+      call re_alloc( func%d2, 1, n, 'func%d2', 'rad_alloc' )
+!      allocate(func%f(n),func%d2(n))
       end subroutine rad_alloc
 
       subroutine rad_get(func,r,fr,dfdr)
@@ -77,6 +91,8 @@
 !     Do not use yet... interface in need of fuller specification
 !
       function rad_rvals(func) result (r)
+      use alloc, only: re_alloc
+      implicit none
       real(dp), dimension(:), pointer :: r
       type(rad_func), intent(in) :: func
 
@@ -84,9 +100,10 @@
 
       nullify(r)
       if (func%n .eq. 0) return
-      allocate(r(func%n))
+!      allocate(r(func%n))
+      call re_alloc( r, 1, func%n, 'r', 'rad_rvals' )
       do i=1,func%n
-         r(i) = func%delta *(i-1)
+        r(i) = func%delta *(i-1)
       enddo
       end function rad_rvals
 

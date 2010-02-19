@@ -89,8 +89,8 @@ C Internal variables and arrays
 #ifdef DEBUG
         call write_debug( 'ERROR: write_rho not ready yet' )
         call write_debug( fname )
+!        return
 #endif
-        return
 
 C Work out density block dimensions
       if (mod(Nodes,ProcessorY).gt.0)

@@ -587,6 +587,10 @@
       integer :: ia, ix
       real(dp) :: cfmax, fmax, fres
       real(dp) :: ftot(3), cftot(3)
+
+#ifdef DEBUG
+      call write_debug( '    PRE siesta_write_forces' )
+#endif
         fmax = maxval(abs(fa))
         ftot = sum(fa, dim=2)
         cfmax = maxval(abs(cfa))
@@ -664,6 +668,9 @@
           endif
         endif
       endif !final for forces
+#ifdef DEBUG
+      call write_debug( '    POS siesta_write_forces' )
+#endif
 
       end subroutine siesta_write_forces
 

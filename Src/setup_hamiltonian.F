@@ -52,9 +52,6 @@
 #ifdef DEBUG
       call write_debug( '  PRE setup_hamiltonian' )
 #endif
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 13 )
-#endif
       
 !     Normalize density matrix to exact charge
 !     In the first iteration we have the D already normalized
@@ -147,19 +144,15 @@
 ! Save Hamiltonian and overlap matrices ............................
       if (savehs) then
         call iohs( 'write', gamma, no_u, no_s, nspin, indxuo,
-     $             maxnh, numh, listhptr, listh, H, S, qtot, temp,
-     $             xijo )
+     &             maxnh, numh, listhptr, listh, H, S, qtot, temp,
+     &             xijo )
       endif
         if (savehs .or. write_coop) then
           call write_hsx( gamma, no_u, no_s, nspin, indxuo,
-     $               maxnh, numh, listhptr, listh, H, S, qtot, temp,
-     $               xijo)
+     &                    maxnh, numh, listhptr, listh, H, S, qtot,
+     &                    temp, xijo)
         endif
 
-
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 0 )
-#endif
 #ifdef DEBUG
       call write_debug( '  POS setup_hamiltonian' )
 #endif

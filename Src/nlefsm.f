@@ -255,7 +255,7 @@ C               Check maxno - if too small then increase array sizes
                   ikb = ikb + 1
                   ioa = iphorb(io)
                   koa = iphKB(ko)
-                  call matel( 'S', ks, is, koa, ioa, xki(1,ina),
+                  call MATEL( 'S', ks, is, koa, ioa, xki(1,ina),
      &                  Ski(ikb,nno), grSki(1,ikb,nno) )
                 enddo
 
@@ -347,7 +347,7 @@ C             Pick up contributions to H and restore Di and Vi
       enddo
 
 C     Deallocate local memory
-      call MATEL( 'S', 0, 0, 0, 0, xki, Ski, grSki )
+!      call MATEL( 'S', 0, 0, 0, 0, xki, Ski, grSki )
       call reset_neighbour_arrays( )
       call de_alloc( grSki, 'grSki', 'nlefsm' )
       call de_alloc( Ski, 'Ski', 'nlefsm' )

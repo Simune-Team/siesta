@@ -92,9 +92,7 @@ C Internal variables and arrays
 #ifdef DEBUG
         call write_debug( '    PRE vmat' )
 #endif
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 4 )
-#endif
+
 C     Start time counter
       call timer('vmat',1)
 
@@ -306,7 +304,7 @@ C  Look for required orbitals not yet in Vlocal
           enddo
         endif
 
-C  Loop on first orbital of mesh point
+C       Loop on first orbital of mesh point
         lasta = 0
         lastop = 0
         do ic = 1,nc
@@ -319,7 +317,7 @@ C  Loop on first orbital of mesh point
           iop = listp2(imp)
           ilc(ic) = il
 
-C  Generate or retrieve phi values
+C         Generate or retrieve phi values
           if (DirectPhi) then
             if (ia.ne.lasta .or. iop.ne.lastop) then
               lasta = ia
@@ -346,17 +344,17 @@ C  Generate or retrieve phi values
             enddo
           endif
 
-C  Pre-multiply V and Clocal(,ic)
+C         Pre-multiply V and Clocal(,ic)
           do ispin = 1,nspin
             do isp = 1,nsp
               VClocal(isp) = V(isp,ip,ispin) * Clocal(isp,ic)
             enddo
 
-C  Loop on second orbital of mesh point (only for jc.le.ic)
+C           Loop on second orbital of mesh point (only for jc.le.ic)
             do jc = 1,ic
               jl = ilc(jc)
 
-C  Loop over sub-points
+C             Loop over sub-points
               Vij = 0.0_dp
               do isp = 1,nsp
                 Vij = Vij + VClocal(isp) * Clocal(isp,jc)
@@ -499,9 +497,7 @@ C       Redistribute Hamiltonian from mesh to orbital based distribution
       call de_alloc( r2cut, 'r2cut', 'vmat' )
 
       call timer('vmat',2)
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 0 )
-#endif
+
 #ifdef DEBUG
         call write_debug( '    POS vmat' )
 #endif

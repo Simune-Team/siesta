@@ -65,6 +65,7 @@ C Internal variables ......................................................
       real(dp)  fij(3), pi, vij, volcel, volume 
       
 C ......................
+      call timer( 'naefs', 1 )
 
 C Initialize neighb subroutine
       call mneighb( scell, 2.d0*rmaxv, na, xa, 0, 0, nnia )
@@ -83,7 +84,7 @@ C Find neighbour atoms
           is = isa(ia)
           js = isa(ja)
           if (izofis(is).gt.0 .and. izofis(js).gt.0) then
-            call matel( 'T', is, js, 0, 0, xij(1,jn), vij, fij )
+            call MATEL( 'T', is, js, 0, 0, xij(1,jn), vij, fij )
             Ena = Ena + vij / (16.0d0*pi)
             if (forces_and_stress) then
                do ix = 1,3
@@ -101,8 +102,9 @@ C Find neighbour atoms
       enddo
 
 C     Free local memory
-      call MATEL( 'T', 0, 0, 0, 0, xij, vij, fij )
+!      call MATEL( 'T', 0, 0, 0, 0, xij, vij, fij )
       call reset_neighbour_arrays( )
+      call timer( 'naefs', 2 )
       end subroutine naefs
       end module m_naefs
 

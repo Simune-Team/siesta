@@ -36,6 +36,9 @@
       real(dp), pointer :: xang(:,:)
 
 !------------------------------------------------------------------------- BEGIN
+#ifdef DEBUG
+      call write_debug( '  PRE struct_init' )
+#endif
 
       !! Read number of atoms and coordinates, and unit cell
       use_struct_file = fdf_get("UseStructFile",.false.)
@@ -161,6 +164,8 @@
         call cmlEndModule(xf=mainXML)
       endif
 
-
+#ifdef DEBUG
+      call write_debug( '  POS struct_init' )
+#endif
       END subroutine struct_init
       end module m_struct_init

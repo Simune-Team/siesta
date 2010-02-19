@@ -76,9 +76,10 @@ C Internal variables
       real(dp), parameter  :: tiny = 1.0d-9
 
 C ......................
+      call timer( 'phirphi', 1 )
 
 C Initialize neighb subroutine 
-      call mneighb( scell, 2.d0*rmaxo, na, xa, 0, 0, nnia)
+      call mneighb( scell, 2.d0*rmaxo, na, xa, 0, 0, nnia )
 
 C Allocate local memory
       nullify( Si )
@@ -108,31 +109,31 @@ C Allocate local memory
                 if (rcut(is,ioa)+rcut(js,joa) .gt. rij) then  
 
                   if (abs(dk(1)).gt.tiny) then
-                    call matel('X', is, js, ioa, joa, xij(1,jn),
+                    call MATEL('X', is, js, ioa, joa, xij(1,jn),
      .                          Sij, grSij ) 
                     Si(jo) = Si(jo) + 0.5d0*Sij*dk(1)  
  
-                    call matel('X', js, is, joa, ioa, xinv,
+                    call MATEL('X', js, is, joa, ioa, xinv,
      .                          Sij, grSij )
                     Si(jo) = Si(jo) + 0.5d0*Sij*dk(1)  
                   endif
                      
                   if (abs(dk(2)).gt.tiny) then
-                    call matel('Y', is, js, ioa, joa, xij(1,jn),
+                    call MATEL('Y', is, js, ioa, joa, xij(1,jn),
      .                          Sij, grSij )
                     Si(jo) = Si(jo) + 0.5d0*Sij*dk(2) 
                 
-                    call matel('Y', js, is, joa, ioa, xinv,
+                    call MATEL('Y', js, is, joa, ioa, xinv,
      .                          Sij, grSij )
                     Si(jo) = Si(jo) + 0.5d0*Sij*dk(2)  
                   endif
  
                   if (abs(dk(3)).gt.tiny) then
-                    call matel('Z', is, js, ioa, joa, xij(1,jn),
+                    call MATEL('Z', is, js, ioa, joa, xij(1,jn),
      .                          Sij, grSij )
                     Si(jo) = Si(jo) + 0.5d0*Sij*dk(3) 
  
-                    call matel('Z', js, is, joa, ioa, xinv,
+                    call MATEL('Z', js, is, joa, ioa, xinv,
      .                          Sij, grSij )
                     Si(jo) = Si(jo) + 0.5d0*Sij*dk(3) 
                   endif
@@ -150,8 +151,9 @@ C Allocate local memory
       enddo
 
 C Deallocate local memory
-      call matel('Z', 0, 0, 0, 0, xinv, Sij, grSij )
+!      call MATEL('Z', 0, 0, 0, 0, xinv, Sij, grSij )
       call reset_neighbour_arrays( )
       call de_alloc( Si, name='Si' )
 
+      call timer( 'phirphi', 2 )
       end

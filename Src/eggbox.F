@@ -75,6 +75,9 @@ C Internal variables
       save vreal, escale, pi
 
 c --------------------------------------------------------------
+#ifdef DEBUG
+      call write_debug( '    PRE eggbox' )
+#endif
 
       if (frstme) then
          frstme = .false.
@@ -114,6 +117,9 @@ C Get the scale (default 1 eV)
 
          else
 c          write(6,'a') "eggbox: The eggbox effect will not be removed"
+#ifdef DEBUG
+           call write_debug( '    POS eggbox' )
+#endif
            return
          endif
       endif
@@ -201,5 +207,8 @@ C Remove the eggbox energy
       if (task.eq.'energy') then
          Etot=Etot-E*escale
       endif
-         
+
+#ifdef DEBUG
+      call write_debug( '    POS eggbox' )
+#endif
       end subroutine eggbox
