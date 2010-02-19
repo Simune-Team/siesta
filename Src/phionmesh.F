@@ -22,30 +22,30 @@ C Modules
       use mesh,      only : dxa, idop, indexp, ipa, mop, nsp, xdop,
      &                      xdsp, meshLim
       use meshphi,   only : directphi, nphi, phi, lstpht, listp2, endpht
-      use parallel,  only : Node
-      use fdf,       only : fdf_boolean
+      use fdf,       only : fdf_get
+      use parallel,  only : IONode
       use alloc,     only : re_alloc
-#ifdef MPI
-      use mpi_siesta
-#endif
+
       implicit none
 C Passed arguments
       integer,    intent(in) :: nmpl, norb, iaorb(norb),
      &                          iphorb(norb), isa(*)
+
+      ! This array was set in distriPhiOnMesh, and holds
+      ! the pre-computed count of orbitals touching a given
+      ! point. It is re-used and overwritten here.
       integer, intent(inout) :: numphi(nmpl)
+
 C     Local variables
       integer                :: ia, io, iop, ip, ip0, iphi, is, isp, n,
      &                          nlist, nliste
 
-#ifdef MPI
-      integer                :: MPIerror
-#endif
       logical                :: within
       logical,          save :: firsttime = .true.
       real(dp)               :: dxsp(3,nsp), grphi(3), phip, r2o,
      &                          r2sp(nsp)
 
-!------------------------------------------------------------------------- BEGIN
+!--------------------------------------------------------------------- BEGIN
 #ifdef DEBUG
       call write_debug( '      PRE PhiOnMesh' )
 #endif
@@ -53,15 +53,10 @@ C     Local variables
       call timer( 'PHION', 1 )
 C     On first call set the logical DirectPhi
       if (firsttime) then
-        if (Node.eq.0) then
-          DirectPhi  = fdf_boolean( 'DirectPhi', .false. )
-        endif
-#ifdef MPI
-        call MPI_Bcast( DirectPhi, 1, MPI_logical, 0, MPI_Comm_World,
-     &                  MPIerror )
-#endif
+        DirectPhi = fdf_get('DirectPhi', .false. )
         firsttime = .false.
       else
+        ! reset the data structures in module meshphi
         call resetMeshPhi( )
       endif
 
@@ -81,6 +76,12 @@ C     Allocate phi if this is not a direct calculation
         nphi = 1
       else
         nphi = nlist
+        if (IONode) then
+           write(6,"(a,i20)")
+     $          "PhiOnMesh: Number of (b)points on node 0 = ", nmpl
+           write(6,"(a,i20)")
+     $          "PhiOnMesh: nlist on node 0 = ", nlist
+        endif
       endif
 
 C     Add an extra margin of error to nlist to minimise reallocations
@@ -101,7 +102,7 @@ C     Find indexes and values of atomic orbitals at mesh points
       numphi = 0
       do io = 1,norb
         ia = iaorb(io)
-        if (ipa(ia)==0) cycle ! Atomic sphere does not intersec my Box
+        if (ipa(ia)==0) cycle ! Atomic sphere does not intersect my Box
         iphi = iphorb(io)
         is = isa(ia)
         r2o = rcut(is,iphi)**2
@@ -139,5 +140,5 @@ C     Find indexes and values of atomic orbitals at mesh points
 #ifdef DEBUG
       call write_debug( '      POS PhiOnMesh' )
 #endif
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------------------ END
       end subroutine PhiOnMesh

@@ -1,6 +1,31 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+297 Alberto Garcia	  2010-02-19
+More data on sizes. Optional stop after H setup. Cleanup
+
+* If the fdf variable "H-Setup-Only" is "true", the program will stop
+  after setting up the hamiltonian in the first iteration, just before
+  diagonalization. This is useful to benchmark the new grid routines.
+
+* Removed dead code in InitMesh
+
+* Several mesh routines now print data about sizes.
+
+* Temporarily deactivated the "doping" option and the "grid cell sampling"
+  option.
+
+modified:
+  Src/dhscf.F
+  Src/doping.F
+  Src/grdsam.F
+  Src/initmesh.F
+  Src/phionmesh.F
+  Src/setupextmesh.F
+  Src/siesta_forces.F
+  Src/siesta_options.F90
+
+------------------------------------
 296 Alberto Garcia	  2010-02-19
 Merged work by Rogeli Grima on mesh routines, with some bug fixes
 

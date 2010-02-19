@@ -38,16 +38,25 @@
       CONTAINS
 
       subroutine initialize_doping()
-      use fdf
+      use fdf,      only: fdf_get
       use parallel, only: ionode
+      use sys,      only: die
 
-      doping_active=fdf_boolean('SimulateDoping',.false.)
+      doping_active=fdf_get('SimulateDoping',.false.)
       if (doping_active) then
-         if (ionode) write(6,'(/,(a))')
+         if (ionode) then
+            write(6,'(/,(a))')
      .        'doping: SimulateDoping = .true. in input file',
      .        'doping: Neutralizing background will be added to points',
      .        'doping: other than vacuum, to simulate doping'
-         qtot = fdf_double('NetCharge',0.0_dp)
+            write(6,'(a)') "** WARNING: Doping does not work " //
+     $                     "yet in this version"
+            write(0,'(a)') "** WARNING: Doping does not work " //
+     $                     "yet in this version"
+         endif
+         doping_active = .false.
+         call die()
+         qtot = fdf_get('NetCharge',0.0_dp)
       endif
       end subroutine initialize_doping
 !---------------------------------------------------------------

@@ -5,6 +5,7 @@ MODULE siesta_options
   implicit none
   PUBLIC
 
+  logical :: h_setup_only  ! H Setup only
   logical :: chebef        ! Compute the chemical potential in ordern?
   logical :: default       ! Temporary used to pass default values in fdf reads
   logical :: dumpcharge    ! Write electron density?
@@ -319,6 +320,12 @@ MODULE siesta_options
                            value=trim(sname), dictref='siesta:sname')
       call cmlAddParameter(xf=mainXML, name='SystemLabel',            &
                            value=trim(slabel), dictref='siesta:slabel')
+    endif
+
+    ! H setup only
+    h_setup_only = fdf_get('HSetupOnly', .false.)
+    if (ionode .and. h_setup_only) then
+      write(6,1) 'redata: H Setup Only                     = ', h_setup_only
     endif
 
     ! Type of output

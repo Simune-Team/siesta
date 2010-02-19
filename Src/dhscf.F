@@ -45,7 +45,7 @@
       logical                 :: IsDiag, IsEfld, IsVolt, spiral
       character(len=10)       :: shape
       integer                 :: nml(3), ntml(3), npcc,
-     &                           nmpl, ntpl, ntopl
+     &                           nmpl, ntpl
       real(dp)                :: qspiral(3), bcell(3,3), cell(3,3),
      &                           dvol, field(3), rmax, scell(3,3)
       real(dp)                :: G2mesh =  0.0_dp
@@ -189,7 +189,7 @@ C       Mesh initialization
 C ----------------------------------------------------------------------
         call InitMesh( na, cell, norb, iaorb, iphorb, isa, rmax, 
      &                 G2max, G2mesh, nsc, nmpl, nm,
-     &                 nml, ntm, ntml, ntpl, ntopl, dvol )
+     &                 nml, ntm, ntml, ntpl, dvol )
 
         ! Setup box descriptors for each processor,
         ! held in module iogrid_netcdf
@@ -254,6 +254,9 @@ C       Drho is not used here
         call reord( Vna, Vna, nml, nsm, TO_SEQUENTIAL )
 
         if (nodes.gt.1) then
+          if (node .eq. 0) then
+             write(6,"(a)") "Setting up quadratic distribution..."
+          endif
           call setMeshDistr( QUADRATIC, nsm, nsp,
      $                       nml, nmpl, ntml, ntpl )
 
@@ -304,18 +307,16 @@ C       Find Harris (sum of atomic) electron density
         call rhooda( norb, nmpl, datm, rhoatm_par, iaorb, iphorb, isa )
         ! rhoatm_par comes out of here in clustered form in QUADRATIC dist
 
-      if (frstme) call initialize_doping()
-      ! In order to deal with distribution issues, this initialization
-      ! has been moved here, inside the "samexa" block.
-      ! But it does not make sense to have that block in the first place,
-      ! since this is dhscf_init. 
-      ! By definition, it WILL initialize everything.
-      if (doping_active) then  
-         ! Note that this routine uses endpht, which is in the
-         ! QUADRATIC distribution,
-         ! and rhoatm(par) which must be clustered
-         call compute_doping_structs(nmpl,rhoatm_par,nsd)
-      endif
+        if (frstme) call initialize_doping()
+
+        ! In order to deal with distribution issues, this initialization
+        ! has been moved here
+        if (doping_active) then  
+           ! Note that this routine uses endpht, which is in the
+           ! QUADRATIC distribution,
+           ! and rhoatm(par) which must be clustered
+           call compute_doping_structs(nmpl,rhoatm_par,nsd)
+        endif
 
 C       Routine Poison should use the uniform data distribution
         if (nodes.gt.1) then
@@ -592,7 +593,6 @@ C integer npcc          : Partial core corrections? (0=no, 1=yes)
 C integer nsd           : Number of diagonal spin values (1 or 2)
 C integer ntpl          : Number of mesh Total Points in unit cell
 C                         (including subpoints) locally
-C integer ntopl         : Total number of nonzero orbital points locally
 C real*4  rhoatm(ntpl)  : Harris electron density
 C real*4  rhopcc(ntpl)  : Partial-core-correction density for xc
 C real*4  DRho(ntpl)    : Selfconsistent electron density difference

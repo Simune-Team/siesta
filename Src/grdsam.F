@@ -152,6 +152,16 @@ C Check whether GridCellSampling block has been looked for ------------------
 C Look for block and read it if found ---------------------------------------
  
         samgrd = fdf_block('GridCellSampling',bfdf)
+        
+        if (samgrd) then
+           if (Node.eq.0) then
+              write(6,'(a)') "** WARNING: Grid sampling does not " //
+     $             "work yet in this version"
+              write(0,'(a)') "** WARNING: Grid sampling does not " //
+     $             "work yet in this version"
+           endif
+           samgrd = .false.
+        endif
 
         if (samgrd) then
           if (Node.eq.0) then

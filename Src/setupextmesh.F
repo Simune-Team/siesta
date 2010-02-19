@@ -35,6 +35,7 @@
 !***********************************************************************
       subroutine setupExtMesh( distr, rmax )
       use precision, only : dp
+      use parallel,  only : IONode
       use mesh,      only : meshLim  ! My processor's box of mesh points
       use mesh,      only : ne       ! Points in rmax along each lat. vector
       use mesh,      only : nmsc     ! Mesh points in each supercell vector
@@ -62,6 +63,7 @@ C     Local parameters
 C     Functions
       real(dp)             :: dismin
 
+      ! Correspondence between JMS and RG box descriptors
       myBox(:,:) = meshLim(:,:) - 1
 
 ! Add 'wings extensions' to myBox of mesh points, containing all points 
@@ -73,6 +75,11 @@ C     Functions
 ! Find number of extended-box points.
       nem(:) = myExtBox(2,:) - myExtBox(1,:) + 1
       nep = nem(1) * nem(2) * nem(3)
+
+      if (IONode) then
+         write(6,'(a,3(i6,a),i12)') 'ExtMesh (bp) on 0 =',
+     &        nem(1),' x',nem(2),' x',nem(3),' =', nep
+      endif
 
 !     Allocate memory for indexp(nep), idop(mop) and xdop(3,mop) of
 !     the current data distribution
@@ -114,6 +121,11 @@ C     Functions
           enddo ! i1
         enddo ! i2
       enddo ! i3
+
+! This loop is done for each distribution, and replicates
+! the one in InitMesh, except that now we actually fill
+! the data in the arrays. Note that mop does not depend
+! on the distribution.
 
 ! Find points within rmax (orbital points)
       mop = 0
