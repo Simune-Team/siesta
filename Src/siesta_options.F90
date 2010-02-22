@@ -160,6 +160,7 @@ MODULE siesta_options
   integer,  parameter :: SOLVE_ORDERN = 1
   integer,  parameter :: SOLVE_TRANSI = 2
   integer,  parameter :: SOLVE_JACOBI = 101
+  integer,  parameter :: SOLVE_SLEPC  = 102
 
       CONTAINS
 
@@ -194,6 +195,7 @@ MODULE siesta_options
 !                                                 1   = Order-N
 !                                                 2   = Transiesta
 !                                                 101 = Jacobi-Davidson
+!                                                 102 = SLEPC-Diagonalization
 ! real*8 temp              : Temperature for Fermi smearing (Ry)
 ! logical fixspin          : Fix the spin of the system?
 ! real*8  ts               : Total spin of the system
@@ -698,13 +700,24 @@ MODULE siesta_options
         write(6,'(a,4x,a)') 'redata: Method of Calculation            = ', &
                             'Jacobi-Davidson'
       endif
+#ifdef _SLEPC_
+    else if (leqi(method,'slepc')) then
+      isolve = SOLVE_SLEPC
+      DaC    = .false.
+      if (ionode) then
+        write(6,'(a,4x,a)') 'redata: Method of Calculation            = ', &
+                            'SLEPC-Diagonalization'
+      endif
+#endif
     else
       call die( 'redata: The method of solution must be either '//&
 #ifdef TRANSIESTA
-                'OrderN, Diagon, Jacobi or Transiesta' )
-#else
-                'OrderN, Diagon or Jacobi' )
+                'Transiesta '//&
 #endif
+#ifdef _SLEPC_
+                'Slepc '//&
+#endif
+                'OrderN, Diagon or Jacobi' )
     endif
 
 #ifdef DEBUG

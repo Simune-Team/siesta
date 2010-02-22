@@ -127,7 +127,8 @@ OBJS =  domain_decom.o automatic_cell.o atom_options.o \
         dscfcomm.o schecomm.o moremeshsubs.o \
         cellxc_mod.o pspltm1.o lenstr.o printmatrix.o jacobi_davidson.o \
         matrixop.o precond.o gmres.o cg.o  m_iodm.o m_sparse.o mmio.o \
-        cholesky.o walltime.o deflatedmv.o setupextmesh.o initatommesh.o
+        cholesky.o walltime.o deflatedmv.o setupextmesh.o initatommesh.o \
+        slepc_diagon.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -384,7 +385,7 @@ compute_dm.o: atomlist.o iodmhs_netcdf.o jacobi_davidson.o kpoint_grid.o
 compute_dm.o: m_energies.o m_eo.o m_gamma.o m_mpi_utils.o m_rmaxh.o m_spin.o
 compute_dm.o: m_steps.o m_ts_in_siesta.o m_ts_options.o ordern.o parallel.o
 compute_dm.o: precision.o siesta_geom.o siesta_options.o sparse_matrices.o
-compute_dm.o: sys.o
+compute_dm.o: sys.o slepc_diagon.o
 compute_norm.o: m_mpi_utils.o precision.o sparse_matrices.o
 conjgr.o: precision.o
 conjgr_old.o: precision.o
@@ -488,6 +489,7 @@ iozm.o: files.o parallel.o precision.o siesta_geom.o zmatrix.o
 ipack.o: sys.o
 jacobi_davidson.o: alloc.o cg.o domain_decom.o fermid.o gmres.o matrixop.o
 jacobi_davidson.o: parallel.o precision.o precond.o printmatrix.o sys.o
+slepc_diagon.o: alloc.o precision.o parallel.o sys.o
 kgrid.o: parallel.o precision.o units.o
 kgridinit.o: minvec.o parallel.o precision.o sys.o units.o
 kinefsm.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o

@@ -40,8 +40,6 @@ C     Local variables
       real(dp),          external :: dvdot
 
       nc      = A%nc
-      write(23,*) 'wrk', LOC(wrk), 5*n+2*kmax+nc,LOC(wrk(5*n+2*kmax+nc))
-      flush(23)
 
       o1 = 1
       o2 = o1+n
@@ -67,8 +65,6 @@ C     Local variables
       o1 = o2
       o2 = o2+lwork
       work => wrk(o1:o2-1)
-      write(23,*) 'work', LOC(work), lwork, LOC(work(lwork))
-      write(23,*) 'ini com_symmlq', n, ne, kmax, teta
 
       istop  = 0
       anorm  = ZERO
@@ -104,9 +100,6 @@ C     Local variables
       enddo
 
 !     Set up  Y  for the second Lanczos vector.
-      write(23,*) 'vv', loc(vv), vv
-      write(23,*) 'yy', loc(yy), yy
-      flush(23)
       call deflatedMV( n, ne, kmax, A, B, teta, vv, Z,
      &                 LU, yy, work, lwork )
       alfa = dvdot( n, vv, yy )

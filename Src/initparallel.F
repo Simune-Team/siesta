@@ -88,6 +88,11 @@ C Set Domain decomposition flag according to SCF method
       if (isolve.eq.SOLVE_JACOBI) then
         use_dd      = .true.
         use_dd_perm = .false.
+#ifdef _SLEPC_
+      else if (isolve.eq.SOLVE_SLEPC) then
+        use_dd      = .true.
+        use_dd_perm = .false.
+#endif
       else
         use_dd      = .false.
         use_dd_perm = .false.

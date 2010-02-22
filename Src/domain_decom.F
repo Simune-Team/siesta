@@ -72,6 +72,9 @@ C
       integer, public , pointer :: dd_bsiz(:)
       integer, public           :: dd_lni
       integer, public           :: dd_lnb
+#ifdef _SLEPC_
+      integer, public , pointer :: slepc_perm(:)
+#endif
 
       integer          :: gni          ! Global Node internal
       integer          :: gnb          ! Global Node boundary
@@ -492,10 +495,16 @@ C ==================================================================
      &                         offsetB
       integer,      pointer :: adj(:), xadj(:), perI(:), invI(:),
      &                         perB(:), invB(:), perR(:), invR(:)
+#ifdef _SLEPC_
+      integer               :: offSlepc
+#endif
 
       nullify(gperm,ginvp)
       call re_alloc( gperm, 1, no, 'gperm', 'domainDecom' )
       call re_alloc( ginvp, 1, no, 'ginvp', 'domainDecom' )
+#ifdef _SLEPC_
+      call re_alloc( slepc_perm, 1, no, 'slepc_perm', 'domainDecom' )
+#endif
 
       maxni = 1
       do dom= 1, Nodes
@@ -523,6 +532,9 @@ C ==================================================================
       metisOpt = 0
       offsetI  = 0
       offsetB  = gni
+#ifdef _SLEPC_
+      offSlepc = 0
+#endif
       do dom= 1, Nodes
 !       Loop over each subdomain: separate interior and boundary nodes
         call createSubgraph( no, listhTot, listhPtrTot, dom,
@@ -537,8 +549,14 @@ C ==================================================================
             jj        = perR(ii) + offsetI
             gperm(kk) = jj
             ginvp(jj) = kk
+#ifdef _SLEPC_
+            slepc_perm(kk) = perR(ii) + offSlepc
+#endif
           end do
-          offsetI = offsetI + noloc 
+          offsetI = offsetI + noloc
+#ifdef _SLEPC_
+          offSlepc = offSlepc + noloc
+#endif
         endif
 !       Number boundary nodes
         boloc = ginde(4,dom)
@@ -547,8 +565,14 @@ C ==================================================================
           jj       = ii + offsetB
           gperm(kk) = jj
           ginvp(jj) = kk
+#ifdef _SLEPC_
+          slepc_perm(kk) = ii + offSlepc
+#endif
         end do
         offsetB = offsetB + boloc
+#ifdef _SLEPC_
+        offSlepc = offSlepc + boloc
+#endif
       enddo
       call de_alloc(  adj,  'adj', 'domainDecom' )
       call de_alloc( xadj, 'xadj', 'domainDecom' )
@@ -966,6 +990,14 @@ C       Receive Data from process 0
 
       call de_alloc( lbinvp, 'lbinvp', 'domainDecom' )
 
+#ifdef _SLEPC_
+      if (node.ne.0)
+     &  call re_alloc(slepc_perm, 1, notot,'slepc_perm','domainDecom')
+#ifdef MPI
+      call MPI_BCast( slepc_perm, notot, MPI_INTEGER, 0,
+     &                MPI_Comm_world, MPIerror )
+#endif
+#endif
 
       use_dd_perm = .true.
       dd_nuo      = no
@@ -1157,6 +1189,11 @@ C       Receive Data from process 0
 
       if (associated(dd_nnode))
      &  call de_alloc( dd_nnode, 'dd_nnode','domainDecom' )
+
+#ifdef _SLEPC_
+      if (associated(slepc_perm))
+     &  call de_alloc( slepc_perm, 'slepc_perm','domainDecom' )
+#endif
 
       end subroutine resetDomainDecom
 

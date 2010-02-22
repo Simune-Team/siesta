@@ -48,9 +48,11 @@ C     Local variables
       real(dp)             :: tt
       logical              :: getD, getPSI
 
+      call write_debug( '    PRE Jacobi' )
 !      neig = min(neig,200)
-      neig = nuotot*2/10
+      neig = (qtot*6)/5
 !      neig = min(neig,100)
+      neig = min(neig,nuotot)
 
       write(23,*) '=========  Inside jacobi  ========='
       write(23,*) '     n. orbitales global:', nuotot
@@ -139,6 +141,7 @@ C     Set jacobi options
       call de_alloc( ind, 'ind', 'jd_diag' )
       call de_alloc( col, 'col', 'jd_diag' )
 
+      call write_debug( '    POS Jacobi' )
       end subroutine jd_diag
 
       subroutine jd_diagg( n, nspin, neig, nnz, getD, getPSI, fixspin,
@@ -170,7 +173,7 @@ C     Local variables
       write(23,*) '=== AUTOVALORES de salida ==='
       flush(23)
       do j= 1, neig
-        write(23,*) 'EV(', j, '):', W(j) !, Z(:,j)
+        write(23,*) 'EV(', j, '):', W(j)   ! , Z(:,j)
       flush(23)
       enddo
       write(23,*) ' '
@@ -185,23 +188,17 @@ C     Local variables
       call showTiempo( 23, 6,  'JacobiDa         :' )
       flush(23)
 
-!      call MPI_finalize( io )
-!      STOP
-
 C Check if we are done
       if (.not.getD) return
 
 C Find new Fermi energy and occupation weights
       if (fixspin) then
         call fermispin( nspin, nspin, nk, wk, neig, neig, 
-     .                  w, temp, qs, qo, efs, Entropy )
+     &                  w, temp, qs, qo, efs, Entropy )
       else
         call fermid( nspin, nspin, nk, wk, neig, neig, 
-     .               w, temp, qtot, qo, ef, Entropy )
+     &               w, temp, qtot, qo, ef, Entropy )
       endif
-
-!      write(23,*) 'Fermi energy', ef, Entropy
-!      write(23,*) 'Occupations', qo
 
 C     Count the number of usefull eigenvalues/vectors
       uneig    = 1
@@ -219,11 +216,8 @@ C     Count the number of usefull eigenvalues/vectors
         endif
       enddo
 
-      write(23,*) 'Number of used EIGENVALUES:', uneig
-      flush(23)
-
-      nc = A%nc
 #ifdef MPI
+      nc = A%nc
       nullify(ZZ)
       call re_alloc( ZZ, 1, nc, 1, uneig, 'ZZ', 'jd_diagg' )
       call reduce_matrix( n, nc, uneig, Z, ZZ )
@@ -334,15 +328,15 @@ C     Local variables
         call dcopy( N, t, 1, V(1,m), 1 )        ! Vm    = t
         call projectionMatrix( n, m, A, B, V, VA, VB, VAV, work )
         call medirTiempo( 2, 9 )
-        write(23,*) '      CANDIDATE EIGENVALUES:', teta(1:m)
 
         ! (11)
         call medirTiempo( 0, 10 )
         call computeEigenpairs( m, m2, VAV, teta, S, work )
         call medirTiempo( 2, 10 )
+        write(23,*) '      CANDIDATE EIGENVALUE:', teta(1)
 
-        call selectEigenpair( nomin, taut, m, teta, S, work )
-        write(23,*) '      SELECTED EIGENVALUE:', teta(1)
+!        call selectEigenpair( nomin, taut, m, teta, S, work )
+!        write(23,*) '      SELECTED EIGENVALUE:', teta(1)
 
         call medirTiempo( 0, 11 )
         ! (12)
@@ -499,23 +493,23 @@ C          VAV = 0.0
         gm_it_tot = gm_it_tot + gm_it
         it = it + 1
 
-        call showTiempo( 23,  8,  'GramSchmidt of V   :' )
-        call showTiempo( 23,  9,  'M=V*A*V            :' )
-        call showTiempo( 23, 10,  'EV of M            :' )
-        call showTiempo( 23, 11,  'Check EV           :' )
-        call showTiempo( 23, 12,  'Restart V          :' )
-        call showTiempo( 23, 13,  'Reortogonalize     :' )
-        call showTiempo( 23, 14,  'JD_Correction      :' )
-        call showTiempo( 23, 15,  '  DDMTM            :' )
-        call showTiempo( 23, 16,  '  choleskyFact     :' )
-        call showTiempo( 23, 20,  '  SYMLQ            :' )
-        call showTiempo( 23, 21,  '    DEFLATED MxV   :' )
-        call showTiempo( 23, 22,  '     y = (A-t*B)*v :' )
-        call showTiempo( 23, 17,  '     DDMTV         :' )
-        call showTiempo( 23, 18,  '     choleskySolve :' )
-        call showTiempo( 23, 19,  '     DGEMV         :' )
+!         call showTiempo( 23,  8,  'GramSchmidt of V   :' )
+!         call showTiempo( 23,  9,  'M=V*A*V            :' )
+!         call showTiempo( 23, 10,  'EV of M            :' )
+!         call showTiempo( 23, 11,  'Check EV           :' )
+!         call showTiempo( 23, 12,  'Restart V          :' )
+!         call showTiempo( 23, 13,  'Reortogonalize     :' )
+!         call showTiempo( 23, 14,  'JD_Correction      :' )
+!         call showTiempo( 23, 15,  '  DDMTM            :' )
+!         call showTiempo( 23, 16,  '  choleskyFact     :' )
+!         call showTiempo( 23, 20,  '  SYMLQ            :' )
+!         call showTiempo( 23, 21,  '    DEFLATED MxV   :' )
+!         call showTiempo( 23, 22,  '     y = (A-t*B)*v :' )
+!         call showTiempo( 23, 17,  '     DDMTV         :' )
+!         call showTiempo( 23, 18,  '     choleskySolve :' )
+!         call showTiempo( 23, 19,  '     DGEMV         :' )
 
-        call medirTiempo( 3, 7 )
+        call medirTiempo( 2, 7 )
 
       ! (32)  
       end do
@@ -632,8 +626,6 @@ C     Local variables
       real(dp),     pointer :: M(:), Maux(:), LU(:), gama(:),
      &                         gmaux(:)
       real*8,     parameter :: ONE=1.0, ZERO=0.0, M_ONE=-1.0
-      write(23,*) 'work', LOC(work), lwork, LOC(work(lwork))
-      flush(23)
 
       nc    = A%nc
 
