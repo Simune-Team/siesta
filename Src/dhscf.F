@@ -120,7 +120,7 @@ C ----------------------------------------------------------------------
 C     General initialisation
 C ----------------------------------------------------------------------
 C     Start time counter
-      call timer( 'DHSCF', 1 )
+      call timer( 'DHSCF_Init', 1 )
 
       nsd = min(nspin,2)
       nullify(Vscf,rhoatm_par)
@@ -375,6 +375,8 @@ C ----------------------------------------------------------------------
       endif
 #endif /* TRANSIESTA */
       frstme = .false.
+
+      call timer( 'DHSCF_Init', 2 )
 
 #ifdef DEBUG
       call write_debug( '    POS dhscf_init' )

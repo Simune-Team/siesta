@@ -1,6 +1,13 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+298 Alberto Garcia	  2010-02-22
+Clarify timing in dhscf
+
+The timing tags in dhscf were wrong. Now there is a new set for
+DHSCF_Init.
+
+------------------------------------
 297 Alberto Garcia	  2010-02-19
 More data on sizes. Optional stop after H setup. Cleanup
 
