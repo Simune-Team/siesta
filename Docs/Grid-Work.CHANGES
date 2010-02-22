@@ -50,6 +50,10 @@ modified:
   Src/walltime.c
 
 -------------------------------------------------------
+2010-02-22  Alberto Garcia     siesta-bsc-290-rogeli-6
+Snapshot Feb22 -- More slepc work
+
+-------------------------------------------------------
 2010-02-12  Alberto Garcia     siesta-bsc-290-rogeli-5
 More comments in mesh routines
 

@@ -141,6 +141,7 @@
         SCFconverged = last
 
         call timer( 'IterSCF', 2 )
+        call timer( 'partial', 3 )
 
         iscf = iscf + 1
         first = .false.

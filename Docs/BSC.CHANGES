@@ -1,6 +1,33 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+299 Alberto Garcia	  2010-02-22
+Merge of SLEPC work by Rogeli Grima (in progress)
+
+New routines to use the SLEPC library for diagonalization.
+
+Note that some sections depend on the use 
+of the _SLEPC_ preprocessor symbol.
+
+(Extra timing stills depends on __PPC970__)
+
+added:
+  Src/slepc_diagon.F
+modified:
+  Docs/Grid-Work.CHANGES
+  Src/Makefile
+  Src/compute_dm.F
+  Src/domain_decom.F
+  Src/gmres.F
+  Src/initparallel.F
+  Src/jacobi_davidson.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/siesta_options.F90
+  version.info
+
+
+------------------------------------
 298 Alberto Garcia	  2010-02-22
 Clarify timing in dhscf
 
