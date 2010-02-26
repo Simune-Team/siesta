@@ -5,6 +5,27 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2010-02-26  14:30:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-b-12
+Tentative fix for DM reuse bug
+
+In some cases the re-use of the DM after a geometry change led to
+large values of ddmax and instabilities in SCF convergence. The
+tentative cause was the re-allocation of Dscf right after the call to
+hsparse for the new geometry, and before new_dm, combined with a
+"sparsity pattern change" in-place. When the re-allocation is deferred
+to new_dm, and the plain "change_sparsity" routine is used, the
+problem seems to disappear. 
+
+Thanks to Oswaldo Dieguez for his sleuthing work.
+
+More testing is needed to close the bug definitively.
+
+Modified:
+  Src/Makefile
+  Src/new_dm.F
+  Src/state_init.F
+
+------------------------------------------------------------------------
 2010-01-26  18:50:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-b-11
 Fix bug in previous patch regarding CG DM extrapolation
 

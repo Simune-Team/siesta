@@ -51,14 +51,12 @@
 !
 !     Alberto Garcia, September 2007
 !
-      use m_sparse, only: same_sparsity, change_sparsity_inplace
+      use m_sparse, only: same_sparsity, change_sparsity
       use sys, only: die
       use precision, only: dp
       use alloc, only: re_alloc, de_alloc
       use parallel,  only: IOnode
       use m_fdf_global, only: fdf_global_get
-      use m_norm
-
 
 #ifdef MPI
       use mpi_siesta
@@ -66,64 +64,66 @@
 
       implicit none
 
-      real(dp), pointer, private :: DMsaved(:,:)
-      integer, pointer, private  ::
-     $                   listold(:), listptrold(:), numold(:)
+      ! Private variables to implement DM extrapolation and reuse
+
+      ! If extrapolation is allowed, DMsaved stores the DM of
+      ! previous geometry iteration
+      real(dp), pointer, private :: DMsaved(:,:) => null()
+      ! 
+      ! Even if extrapolation is not allowed, these variables
+      ! store the sparsity pattern of the previous geometry
+      ! iteration.
+      integer, pointer, private  :: listold(:) => null()
+      integer, pointer, private  :: listptrold(:) => null()
+      integer, pointer, private  :: numold(:) => null()
 
       private
       public :: new_dm
 
       CONTAINS
 
-      subroutine new_dm( auxchanged )
-      ! We should probably pass it Dscf and the rest....
+      subroutine  new_dm( auxchanged, numh, listhptr, listh, Dscf)
 
-      use sparse_matrices
       USE siesta_options
       use siesta_geom
       use atomlist, only: datm, no_s, iaorb, lasto, no_u, no_l
       use m_spin,   only: nspin
       use m_steps, only: istp
+      use sparse_matrices, only: Escf     !! To be moved
 
 #ifdef TRANSIESTA
-      !TSS Begin
-      ! SIESTA Modules
       use parallel, only: IOnode 
       use m_energies, only: ef
       use sys, only : die
+      !* TS uses maxnh and nh explicitly, and touches Dold and Eold
+      use sparse_matrices, only: maxnh, nh, Dold, Eold
 
-      ! TS Modules
       use m_ts_options, only : VIn, VOut, TSinit, TSrun, foundts
       use m_ts_io, only : TSiodm 
-
-      ! TSS End 
-
 #endif /* TRANSIESTA */
+
       implicit none
 
       logical, intent(in) :: auxchanged ! Has auxiliary supercell changed?
+      integer, intent(in) :: numh(:)
+      integer, intent(in) :: listhptr(:), listh(:)
+      real(dp), pointer   :: Dscf(:,:)
 
-      logical:: dminit     ! Initialize density matrix?
-      logical :: found, try_to_read_from_file
+!     Local variables
+
+      logical :: dminit     ! Initialize density matrix?
+      logical :: try_to_read_from_file
+      integer :: nnz
 
 #ifdef TRANSIESTA
-      ! TSS Begin
-      ! Internal Variables
-      integer :: ts_alloc_stat
-      ! TSS End
+      integer :: ts_alloc_stat, maxnh_ts
 #endif /* TRANSIESTA */
 
       if (IOnode) then
          write(6,"(a,i5)") "New_DM. Step: ", istp
       endif
 
-      ! Initialize density matrix
 
-      if (istp == 1) then
-         nullify(numold,listold,listptrold)
-         nullify(DMsaved)
-      endif
-!
 !     In principle we allow the re-use of the DM (i.e, we do not initialize it)
 !
       dminit = .false. 
@@ -133,7 +133,7 @@
 !
       if (.not. allow_dm_reuse) then
          dminit = .true.
-         try_to_read_from_file = .false.  ! Just in case the user has a fossil DM.UseSaveDM
+         try_to_read_from_file = .false.  ! In case the user has a fossil DM.UseSaveDM
          if (IOnode) then
             write(6,"(a)") "DM re-use not allowed. Resetting always"
             if (usesavedm) then
@@ -188,16 +188,25 @@
             write(6,"(a)") "Initializing Density Matrix..."
          endif
 
+         ! This is the point of resizing of the DM
+         ! to the bounds appropriate to the new sparsity
+         nnz=sum(numh)
+         call re_alloc(Dscf,1,nnz,1,nspin,name="Dscf",
+     $                 routine="new_dm",copy=.false.,shrink=.true.)
+
          ! Reset DMsaved to null
-         call de_alloc(DMsaved)
+         call de_alloc(DMsaved,name="DMsaved",routine="new_dm")
          nullify(DMsaved)
          !
          call initdm(Datm, Dscf, lasto, na_s,
-     .               maxnh, no_s, no_l, nspin, na_u, no_l, nspin,
-     .               numh, listhptr, listh, iaorb, found, inspn, 
+     .               no_s, no_l, nspin, na_u, no_l, nspin,
+     .               numh, listhptr, listh, iaorb, inspn, 
      .               try_to_read_from_file)
          !
-         ! Store sparsity
+         ! Update saved sparsity pattern. 
+         ! no_l should not have changed, but in the future
+         ! one might conceivably implement a domain decomposition,
+         ! and that would involve re-checking this issue
          call re_alloc(numold,1,no_l)
          call re_alloc(listptrold,1,no_l)
          ! NOTE possible shrinking, as the test for changed
@@ -209,51 +218,61 @@
 
 
 #ifdef TRANSIESTA
-      ! TSS Begin
       ! TSS check of TSDM stuff
 
-      if (istp .eq. 1 .and. isolve .eq. 2) then ! try to read TSDM
-         call TSiodm('read', maxnh, no_l, nspin,
+         if (istp .eq. 1 .and. isolve .eq. 2) then ! try to read TSDM
+            !AG: maxnh comes out of here
+            !    Note that this reading operation does not check
+            !    the compatibility of the sparsity
+            call TSiodm('read', maxnh_ts, no_l, nspin,
      .        numh, listhptr, listh, Dscf, Escf, ef, found = foundts)
+            if (maxnh_ts /= nnz) then
+               if (IONOde) then
+                  write(6,*) "*Warning: TSDM read from file has "
+     $                    // "a different size"
+                  write(0,*) "*Warning: TSDM read from file has "
+     $                    // "a different size"
+               endif
+            endif
+            ! Update even if different from current nnz
+            maxnh = maxnh_ts
 
-         if(.not. foundts )  then ! not a TS continuation run
-            TSinit = .true.     ! start to converge a diagon run
-            TSrun = .false.
+            if(.not. foundts )  then ! not a TS continuation run
+               TSinit = .true.  ! start to converge a diagon run
+               TSrun = .false.
 
-            if(IONode) then
-               write(6,'(a)')
+               if(IONode) then
+                  write(6,'(a)')
      .              'TRANSIESTA: No TS-DensityMatrix file found'
-               write(6,'(a)')
+                  write(6,'(a)')
      .              'TRANSIESTA: Initialization runs using diagon'
-            endif
-         else
-            TSinit = .false.
-            TSrun = .true.
+               endif
+            else
+               TSinit = .false.
+               TSrun = .true.
 
-            if(IONode) then
-               write(6,'(a)') 'TRANSIESTA: Continuation run'
-               write(6,'(/a)')
-     .              '                     ************************  '
-               write(6,'(a)')
-     .              '                     *   TRANSIESTA BEGIN   *  '
-               write(6,'(a)')
-     .              '                     ************************  '
-            endif
+               if(IONode) then
+                  write(6,'(a)') 'TRANSIESTA: Continuation run'
+                  write(6,'(/a)')
+     .                 '                     ************************  '
+                  write(6,'(a)')
+     .                 '                     *   TRANSIESTA BEGIN   *  '
+                  write(6,'(a)')
+     .                 '                     ************************  '
+               endif
 
 
-      !     copy Dsfc -> Dold
+               !     copy Dsfc -> Dold
 
-            Dold(1:nh,1:nspin) = Dscf(1:nh,1:nspin)
-            Eold(1:nh,1:nspin) = Escf(1:nh,1:nspin)
+               Dold(1:nh,1:nspin) = Dscf(1:nh,1:nspin)
+               Eold(1:nh,1:nspin) = Escf(1:nh,1:nspin)
 
-         end if                 !found TSDM-file
-      end if                    !istp == 1  and isolve == 2
-
-      ! TSS End
+            end if              !found TSDM-file
+         end if                 !istp == 1  and isolve == 2
 
 #endif /* TRANSIESTA */
 
-      else
+      else    ! not initializing the DM
 
          if (IOnode) then
             write(6,"(a)") "Re-using DM from previous geometry..."
@@ -299,9 +318,14 @@
 
       USE siesta_options
 
-      ! This routine extrapolates DM
+      ! This routine extrapolates the density matrix DM
       ! If it is called for the first time after initialization
       ! it just passes DM through, possibly re-structured.
+
+      ! On INPUT, DM conforms to the previous geometry iteration
+      ! sparsity pattern (stored in module variables)
+      ! On OUTPUT, DM conforms to the current geometry iteration
+      ! sparsity pattern
 
       integer, intent(in) :: nrows
       integer, intent(in) :: num(nrows), listptr(nrows)
@@ -309,9 +333,10 @@
       real(dp), pointer   :: DM(:,:)
       
 
+      real(dp), pointer   :: DMtmp(:,:) => null()
       logical   ::  sparsity_has_changed
       real(dp)  ::  msave
-      integer    ::  i, j, ispin, nspin, nnz
+      integer    ::  i, j, ispin, nspin, nnz, new_nnz, is
 
 #ifdef MPI
       integer  MPIerror
@@ -333,25 +358,38 @@
       ! in which it is necessary? I very much think so, so the 
       ! above block is superfluous.
 
-      ! Another thought: Is it possible that no_l changes during
-      ! the calculation (i.e., the distribution of orbitals among
-      ! nodes)? If it does, we are toast. ! ***** AG
+      ! In future it might be possible that no_l changes during
+      ! the calculation (i.e., because of the implementation of
+      ! orbital distribution by domain decomposition).
       ! In that case we might simply request an initialization of
       ! the density matrix, or write a super extrapolator.
 
       if (sparsity_has_changed) then
    
          ! Fix structure of DM
+         ! This section now uses a temporary matrix and a safer
+         ! restructuring routine.
 
-         call change_sparsity_inplace(nrows,
-     $                                numold,listptrold,listold,
-     $                                num, listptr, list,
-     $                                DM )
+         nspin = size(DM,dim=2)
+         nnz = size(DM,dim=1)      ! This should be sum(numold)
+         call re_alloc(DMtmp,1,nnz,1,nspin,
+     $                 name="DMtmp",routine="new_dm", shrink=.true.)
+         DMtmp(:,:) = DM(:,:)
+         new_nnz = sum(num(:))
+         call re_alloc(DM,1,new_nnz,1,nspin,
+     $                 name="DM",routine="new_dm",shrink=.true.)
+ 
+         do is = 1, nspin 
+            call change_sparsity(nrows,
+     $                           numold,listptrold,listold,
+     $                           num, listptr, list,
+     $                           DMtmp(:,is), DM(:,is) )
+         enddo
+         call de_alloc(DMtmp,name="DMtmp",routine="new_dm")
 
       endif
 
-      nspin = size(DM,dim=2)
-      nnz = size(DM,dim=1)
+      ! At this point DM conforms already to the current sparsity pattern.
 
       if (associated(DMsaved)) then
 
@@ -361,13 +399,30 @@
 
          if (sparsity_has_changed) then
             !Fix structure of DMsaved
-            call change_sparsity_inplace(nrows,
-     $                                numold,listptrold,listold,
-     $                                num, listptr, list,
-     $                                DMsaved )
+            nspin = size(DMsaved,dim=2)
+            nnz = size(DMsaved,dim=1)
+            call re_alloc(DMtmp,1,nnz,1,nspin,
+     $           name="DMtmp",routine="new_dm", shrink=.true.)
+            DMtmp(:,:) = DMsaved(:,:)
+            new_nnz = sum(num(:))
+            call re_alloc(DMsaved,1,new_nnz,1,nspin,
+     $           name="DMsaved",routine="new_dm",shrink=.true.)
+ 
+            do is = 1, nspin 
+               call change_sparsity(nrows,
+     $                              numold,listptrold,listold,
+     $                              num, listptr, list,
+     $                              DMtmp(:,is), DMsaved(:,is) )
+            enddo
+            call de_alloc(DMtmp,name="DMtmp",routine="new_dm")
+
          endif
 
-         ! Extrapolate DM
+         ! Extrapolate DM and update DMsaved
+         ! This is a simple linear extrapolation
+
+         nspin = size(DM,dim=2)
+         nnz = size(DM,dim=1)
 
          do ispin = 1, nspin
             do i = 1, nnz
@@ -377,24 +432,25 @@
             enddo
          enddo
 
-      else
+      else    ! not associated(DMsaved)
 
          if (IOnode) then
-            write(6,"(a)") "Re-using DM without extrapolation..."
+            if (allow_dm_extrapolation) then
+               write(6,"(a)") "Re-using DM without extrapolation " //
+     $                        "for lack of history"
+            else
+               write(6,"(a)") "Re-using DM without extrapolation " //
+     $                        "(not allowed)"
+            endif
          endif
 
-         ! Copy DM to DMsaved
-         ! Note that we use explicit bounds
-         ! If we do not request a shrink, DMsaved might end up
-         ! being larger than DM 
-
          if (allow_dm_extrapolation) then
-            call re_alloc(DMsaved,1,nnz,1,nspin)
+            ! Copy DM to DMsaved for next iteration
+            nspin = size(DM,dim=2)
+            nnz = size(DM,dim=1)
+            call re_alloc(DMsaved,1,nnz,1,nspin,name="DMsaved",
+     $                    routine="new_dm",copy=.false.,shrink=.true.)
             DMsaved(1:nnz,1:nspin) = DM(1:nnz,1:nspin)
-         else
-            if (IOnode) then
-               write(6,"(a)") "(DM extrapolation not allowed)"
-            endif
          endif
       endif
 
@@ -418,8 +474,8 @@
 
 !
       subroutine initdm(Datm, Dscf, lasto, maxa,
-     .                  maxnh, maxo, maxuo, maxspn, nua, no_l, nspin, 
-     .                  numh, listhptr, listh, iaorb, found, inspn, 
+     .                  maxo, maxuo, maxspn, nua, no_l, nspin, 
+     .                  numh, listhptr, listh, iaorb, inspn, 
      .                  try_dm_from_file)
 
 c *******************************************************************
@@ -454,16 +510,15 @@ c integer nspin         : Number of spin components
 c integer maxa          : Max num. atoms for dimension
 c integer maxo          : Max. number of orbitals (globally)
 c integer maxuo         : Max. number of orbitals (locally)
-c integer maxnh         : Max number of nonzero interactions
 c integer maxspn        : Max number of spin components in dimensions
 c integer lasto(0:maxa) : List with last orbital of each atom
-c integer numh(*)       : Dscf matrix sparse information
-c integer listhptr(*)   :  "
-c integer listh(maxnh)  :  "
+c integer numh(:)       : Dscf matrix sparse information
+c integer listhptr(:)   :  "
+c integer listh(:)      :  "
 c integer iaorb(maxo)   : List saying to what atom an orbital belongs 
 c double Datm(no)       : Occupations of basis orbitals in free atom
 c ********* OUTPUT **************************************************
-c double Dscf(maxnh,maxspn) : Density matrix in sparse form
+c double Dscf(:,maxspn) : Density matrix in sparse form
 c *******************************************************************
 
 C
@@ -486,10 +541,10 @@ C
       implicit          none
 
       logical           found, inspn, try_dm_from_file
-      integer           no_l, nua, maxo, maxuo, maxnh, nspin, maxa, 
+      integer           no_l, nua, maxo, maxuo, nspin, maxa, 
      .                  maxspn
       integer           lasto(0:maxa), numh(maxuo), iaorb(maxo)
-      integer, pointer ::  listhptr(:), listh(:)
+      integer       ::  listhptr(:), listh(:)
       real(dp), pointer :: Dscf(:,:)
       real(dp)          Datm(maxo)
       external          memory
@@ -560,6 +615,10 @@ C If found, check and update, otherwise initialize with neutral atoms
      $        "WARNING: Falling back to atomic initialization of DM."
            endif
            found = .false.
+           call de_alloc(num_tmp)
+           call de_alloc(listptr_tmp)
+           call de_alloc(list_tmp)
+           call de_alloc(D_tmp)
         endif
       endif
 
