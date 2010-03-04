@@ -5,6 +5,22 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2010-03-04  15:40:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-b-13
+Fix bug in "kick" code in Pulay mixing
+
+The program was not taking into account the requested value of the
+DM.KickMixingWeight coefficient if the 'DM.NumberKick N' option was
+specified in combination with Pulay mixing. It was always set
+implicitly to 1.0 (i.e., every N steps the full "output" density
+matrix was taken as the input for the next iteration, instead of the
+appropriate mix of input and output DMs).
+
+The bug has been fixed.
+
+Modified:
+  Src/m_pulay.F
+
+------------------------------------------------------------------------
 2010-02-26  14:30:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-b-12
 Tentative fix for DM reuse bug
 

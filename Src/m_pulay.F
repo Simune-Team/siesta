@@ -303,10 +303,8 @@ C Perform linear mixing if iscf = N x nkick
              do in = 1,numd(i)
                ind = listdptr(i) + in
                dmax = max(dmax, abs(dmnew(ind,is) - dmold(ind,is)))
-               if (mix) then
-                 dmnew(ind,is) =
+               dmnew(ind,is) =
      .      (1.0d0-alphakick)*dmold(ind,is) + alphakick *dmnew(ind,is)
-               endif
                dmold(ind,is) = dmnew(ind,is)
              enddo
            enddo
