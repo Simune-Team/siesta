@@ -5,6 +5,19 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2010-03-15  18:40:00 GMT Jose A. Torres <jose.torres.alonso@uam.es> 3.0-b-14
+
+Correction of error in siesta.tex (as discovered by J. Junquera)
+
+The FDF labels DM.Energy.Tolerance and DM.Harris.Tolerance
+were wrongly stated as "real" instead of "real energy", and their
+default value stated with no units when its units are eV.
+
+
+Modified:
+  Docs/siesta.tex
+
+------------------------------------------------------------------------
 2010-03-04  15:40:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-b-13
 Fix bug in "kick" code in Pulay mixing
 
