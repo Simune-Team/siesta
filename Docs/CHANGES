@@ -5,6 +5,25 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2010-03-18  15:10:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-b-15
+Print value of dipole if applying correcting field
+  
+If the SlabDipoleCorrection option is active, print the computed
+value of the total system dipole at every iteration, to help
+diagnose possible problems.
+
+Added note in the manual warning about the use of non-corrected
+density matrices with this option.
+  
+(+ fix MPI wrap of output in m_efield)
+
+modified:
+  Src/Makefile
+  Src/dhscf.F
+  Src/m_efield.F
+  Docs/siesta.tex
+
+------------------------------------------------------------------------
 2010-03-15  18:40:00 GMT Jose A. Torres <jose.torres.alonso@uam.es> 3.0-b-14
 
 Correction of error in siesta.tex (as discovered by J. Junquera)

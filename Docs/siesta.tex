@@ -39,13 +39,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, 3.0-beta-14}}
+{\Huge {\bf S I E S T A \, \, 3.0-beta-15}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large January 26, 2010 }
+{\Large March 18, 2010 }
 
 \vspace{1.5cm}
 
@@ -2836,9 +2836,9 @@ Harris functional in the first SCF step. Only implemented for LDA in
 the Perdew-Zunger parametrization.
 
 When this option is choosen, the values of DM.UseSaveDM,
-MaxSCFIterations, SCFMustConverge and DM.MixSCF1 are automatically set up to False, 1, False
-and False respectively, no matter whatever other specification are in
-the INPUT file.
+MaxSCFIterations, SCFMustConverge and DM.MixSCF1 are automatically set
+up to False, 1, False and False respectively, no matter whatever other
+specification are in the INPUT file.
 \end{itemize}
 
 {\it Default value:} {\tt .false.}
@@ -4917,6 +4917,14 @@ this exactly compensates the electric field at the vacuum created by
 the dipole moment of the system, thus allowing to treat asymmetric
 slabs (including systems with an adsorbate on one surface) and compute
 properties such as the work funcion of each of the surfaces.
+
+NOTE: If the program is fed a starting density matrix from an
+uncorrected calculation (i.e., with an exagerated dipole), the first
+iteration might use a compensating field that is too big, with the
+risk of taking the system out of the convergence basin. In that case,
+it is advisable to use the {\tt DM.MixSCF1}\index{DM.MixSCF1@{\bf
+    DM.MixSCF1}}\index{Slab dipole correction} option to request a mix of the
+input and output density matrices after that first iteration.
 
 (See {\tt Tests/sic-slab})
 
