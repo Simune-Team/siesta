@@ -5,6 +5,18 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2010-03-25  09:15:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-b-16
+Fix initialization of target_stress in some cell-only relaxations
+  
+When using the RelaxCellOnly option in tandem with Broyden relaxation,
+the target stress was not properly initialized.
+
+(Thanks to Marcos Verissimo Alves for pointing out the bug and fix)
+
+modified:
+  Src/cell_broyden_optim.F
+
+------------------------------------------------------------------------
 2010-03-18  15:10:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-b-15
 Print value of dipole if applying correcting field
   

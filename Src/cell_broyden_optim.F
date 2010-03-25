@@ -197,7 +197,7 @@ C Look for target stress and read it if found, otherwise generate it --------
                write(6,'(/a,a)')
      $              'Broyden_optim: No target stress found, ',
      .                'assuming hydrostatic MD.TargetPressure.'
-               target_stress(i,j) = 0.0_dp
+               target_stress(:,:) = 0.0_dp
                do i = 1, 3
                   target_stress(i,i) = - tp
                enddo
