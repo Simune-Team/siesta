@@ -10,6 +10,9 @@
 ! blypxc,   ! Becke-Lee-Yang-Parr (see subroutine blypxc)
 ! pbexc,    ! Perdew, Burke & Ernzerhof, PRL 77, 3865 (1996)
 ! pbesolxc, ! Perdew et al, PRL, 100, 136406 (2008)
+! pw86x,    ! Perdew & Wang, PRB 33, 8800 (1986) (exchange only)
+! pw86rx,   ! Perdew & Wang, PRB 33, 8800 (1986) refitted by
+!           ! E.D.Murray, K.Lee & D.C.Langreth, JCTC 5, 2754 (2009)
 ! pw91xc,   ! Perdew & Wang, JCP, 100, 1290 (1994)
 ! revpbexc, ! GGA Zhang & Yang, PRL 80,890(1998)
 ! rpbexc,   ! Hammer, Hansen & Norskov, PRB 59, 7413 (1999)
@@ -51,6 +54,9 @@
      .  blypxc,   ! Becke-Lee-Yang-Parr (see subroutine blypxc)
      .  pbexc,    ! Perdew, Burke & Ernzerhof, PRL 77, 3865 (1996)
      .  pbesolxc, ! Perdew et al, PRL, 100, 136406 (2008)
+     .  pw86x,    ! Perdew & Wang, PRB 33, 8800 (1986) (exchange only)
+     .  pw86rx,   ! Perdew & Wang, PRB 33, 8800 (1986) refitted by
+                  ! E.D.Murray, K.Lee & D.C.Langreth, JCTC 5, 2754 (2009)
      .  pw91xc,   ! Perdew & Wang, JCP, 100, 1290 (1994)
      .  revpbexc, ! GGA Zhang & Yang, PRL 80,890(1998)
      .  rpbexc,   ! Hammer, Hansen & Norskov, PRB 59, 7413 (1999)
@@ -216,6 +222,14 @@ C Non collinear part rewritten by J.M.Soler. Sept. 2009
       ELSEIF (AUTHOR.EQ.'PBE(GcGxHEG)') THEN
         CALL PBEGcGxHEGxc( IREL, NS, DD, GDD,
      .                  EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
+
+      ELSEIF (AUTHOR.EQ.'PW86') THEN
+        CALL PW86X( IREL, NS, DD, GDD,
+     .              EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
+
+      ELSEIF (AUTHOR.EQ.'PW86R') THEN
+        CALL PW86RX( IREL, NS, DD, GDD,
+     .               EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
 
       ELSE
         call die('GGAXC: Unknown author ' // trim(AUTHOR))
@@ -1792,5 +1806,275 @@ C Set output arguments
       enddo
 
       END SUBROUTINE AM05XC
+
+
+
+      SUBROUTINE PW86formX( a, b, c, iRel, nSpin, Dens, GDens,
+     .                      EX, dEXdD, dEXdGD )
+
+C *********************************************************************
+C Implements Perdew-Wang-86 Generalized-Gradient-Approximation exchange-only
+C functional form, eps_x=eps_x_LDA*(1+15*a*s**2+b*s**4+c*s**6)**(1/15),
+C but with variable values for parameters a, b, and c
+C Refs: J.P.Perdew & Y.Wang, PRB 33, 8800 (1986)
+C       E.D.Murray, K.Lee & D.C.Langreth, JCTC 5, 2754 (2009)
+C Written by J.M.Soler. March 2010.
+C ******** INPUT ******************************************************
+C REAL*8  a, b, c        : Parameter a, b, and c of the PW86 functional
+C INTEGER IREL           : Relativistic-exchange switch (0=No, 1=Yes)
+C INTEGER nspin          : Number of spin polarizations (1 or 2)
+C REAL*8  Dens(nspin)    : Total electron density (if nspin=1) or
+C                           spin electron density (if nspin=2)
+C REAL*8  GDens(3,nspin) : Total or spin density gradient
+C ******** OUTPUT *****************************************************
+C REAL*8  EX             : Exchange energy density
+C REAL*8  DEXDD(nspin)   : Partial derivative
+C                           d(DensTot*Ex)/dDens(ispin),
+C                           where DensTot = Sum_ispin( Dens(ispin) )
+C                          For a constant density, this is the
+C                          exchange potential
+C REAL*8  DEXDGD(3,nspin): Partial derivative
+C                           d(DensTot*Ex)/d(GradDens(i,ispin))
+C ********* UNITS ****************************************************
+C Lengths in Bohr
+C Densities in electrons per Bohr**3
+C Energies in Hartrees
+C Gradient vectors in cartesian coordinates
+C ********* ROUTINES CALLED ******************************************
+C EXCHNG
+C ********************************************************************
+
+      implicit none
+
+C Input
+      real(dp),intent(in) :: a              ! Parameter of PW86 functional
+      real(dp),intent(in) :: b              ! Parameter of PW86 functional
+      real(dp),intent(in) :: c              ! Parameter of PW86 functional
+      integer, intent(in) :: iRel           ! Relativistic exchange? 0=no, 1=yes
+      integer, intent(in) :: nSpin          ! Number of spin components
+      real(dp),intent(in) :: Dens(nSpin)    ! Local electron (spin) density
+      real(dp),intent(in) :: GDens(3,nSpin) ! Gradient of electron density
+
+C Output
+      real(dp),intent(out):: EX             ! Exchange energy per electron
+      real(dp),intent(out):: dEXdD(nSpin)   ! dEx/dDens, Ex=Int(dens*epsX)
+      real(dp),intent(out):: dEXdGD(3,nSpin) ! dEx/dGrad(Dens)
+
+C Internal variables
+      INTEGER
+     .  IS, IX
+      real(dp)
+     .  D(2), DENMIN, DF1DS, DFDD, DFDGD, DFDS, DFXDD(2), DFXDGD(3,2), 
+     .  DKFDD, DS(2), DSDD, DSDGD, DT, ECUNIF, EXUNIF, F, F1, FX,
+     .  GD(3,2), GDM(2), GDMIN, GDMS, GDMT, GDS, GDT(3),
+     .  KFS, PI, S, VXUNIF(2), ZETA
+
+C Lower bounds of density and its gradient to avoid divisions by zero
+      PARAMETER ( DENMIN = 1.D-12 )
+      PARAMETER ( GDMIN  = 1.D-12 )
+
+C Fix some more numerical constants
+      PI = 4 * ATAN(1.D0)
+
+C Translate density and its gradient to new variables
+      IF (nspin .EQ. 1) THEN
+        D(1) = Dens(1) / 2
+        D(2) = D(1)
+        DT = MAX( DENMIN, Dens(1) )
+        DO 10 IX = 1,3
+          GD(IX,1) = GDens(IX,1) / 2
+          GD(IX,2) = GD(IX,1)
+          GDT(IX) = GDens(IX,1)
+   10   CONTINUE
+      ELSE
+        D(1) = Dens(1)
+        D(2) = Dens(2)
+        DT = MAX( DENMIN, Dens(1)+Dens(2) )
+        DO 20 IX = 1,3
+          GD(IX,1) = GDens(IX,1)
+          GD(IX,2) = GDens(IX,2)
+          GDT(IX) = GDens(IX,1) + GDens(IX,2)
+   20   CONTINUE
+      ENDIF
+      GDM(1) = SQRT( GD(1,1)**2 + GD(2,1)**2 + GD(3,1)**2 )
+      GDM(2) = SQRT( GD(1,2)**2 + GD(2,2)**2 + GD(3,2)**2 )
+      GDMT   = SQRT( GDT(1)**2  + GDT(2)**2  + GDT(3)**2  )
+      GDMT = MAX( GDMIN, GDMT )
+
+C Find exchange energy and potential
+      FX = 0
+      DO 60 IS = 1,2
+        DS(IS)   = MAX( DENMIN, 2 * D(IS) )
+        GDMS = MAX( GDMIN, 2 * GDM(IS) )
+        KFS = (3 * PI**2 * DS(IS))**(1._dp/3)
+        S = GDMS / (2 * KFS * DS(IS))
+        F1 = 1 + 15*a*S**2 + b*S**4 + c*S**6
+        F = F1**(1._dp/15)
+c
+c       Note nspin=1 in call to exchng...
+c
+        CALL EXCHNG( IREL, 1, DS(IS), EXUNIF, VXUNIF(IS) )
+        FX = FX + DS(IS) * EXUNIF * F
+
+        DKFDD = KFS / DS(IS) / 3
+        DSDD = S * ( -(DKFDD/KFS) - 1/DS(IS) )
+        DF1DS = 30*a*S + 4*b*S**3 + 6*c*S**5
+        DFDS = F/F1/15 * DF1DS
+        DFDD = DFDS * DSDD
+        DFXDD(IS) = VXUNIF(IS) * F + DS(IS) * EXUNIF * DFDD
+
+        DO 50 IX = 1,3
+          GDS = 2 * GD(IX,IS)
+          DSDGD = (S / GDMS) * GDS / GDMS
+          DFDGD = DFDS * DSDGD
+          DFXDGD(IX,IS) = DS(IS) * EXUNIF * DFDGD
+   50   CONTINUE
+   60 CONTINUE
+      FX = FX / DT / 2
+
+C Set output arguments
+      EX = FX
+      DO 90 IS = 1,nspin
+        DEXDD(IS) = DFXDD(IS)
+        DO 80 IX = 1,3
+          DEXDGD(IX,IS) = DFXDGD(IX,IS)
+   80   CONTINUE
+   90 CONTINUE
+
+      END SUBROUTINE PW86formX
+
+
+
+      SUBROUTINE PW86X( IREL, nspin, Dens, GDens,
+     .                  EX, EC, DEXDD, DECDD, DEXDGD, DECDGD )
+
+C *********************************************************************
+C Implements Perdew-Wang-86 Generalized-Gradient-Approximation 
+C exchange-only functional. Correlation energy returns as zero.
+C Ref: J.P.Perdew & Y.Wang, PRB 33, 8800 (1986)
+C Written by J.M.Soler. March 2010.
+C ******** INPUT ******************************************************
+C INTEGER IREL           : Relativistic-exchange switch (0=No, 1=Yes)
+C INTEGER nspin          : Number of spin polarizations (1 or 2)
+C REAL*8  Dens(nspin)    : Total electron density (if nspin=1) or
+C                           spin electron density (if nspin=2)
+C REAL*8  GDens(3,nspin) : Total or spin density gradient
+C ******** OUTPUT *****************************************************
+C REAL*8  EX             : Exchange energy density
+C REAL*8  EC             : Correlation energy density
+C REAL*8  DEXDD(nspin)   : Partial derivative
+C                           d(DensTot*Ex)/dDens(ispin),
+C                           where DensTot = Sum_ispin( Dens(ispin) )
+C                          For a constant density, this is the
+C                          exchange potential
+C REAL*8  DECDD(nspin)   : Partial derivative
+C                           d(DensTot*Ec)/dDens(ispin),
+C                           where DensTot = Sum_ispin( Dens(ispin) )
+C                          For a constant density, this is the
+C                          correlation potential
+C REAL*8  DEXDGD(3,nspin): Partial derivative
+C                           d(DensTot*Ex)/d(GradDens(i,ispin))
+C REAL*8  DECDGD(3,nspin): Partial derivative
+C                           d(DensTot*Ec)/d(GradDens(i,ispin))
+C ********* UNITS ****************************************************
+C Lengths in Bohr
+C Densities in electrons per Bohr**3
+C Energies in Hartrees
+C Gradient vectors in cartesian coordinates
+C ********* ROUTINES CALLED ******************************************
+C PW86formX
+C ********************************************************************
+
+      IMPLICIT NONE
+
+C Passed arguments
+      integer, intent(in) :: IREL, NSPIN
+      real(dp),intent(in) :: DENS(NSPIN), GDENS(3,NSPIN)
+      real(dp),intent(out):: EX, EC, DECDD(NSPIN), DECDGD(3,NSPIN),
+     .                       DEXDD(NSPIN), DEXDGD(3,NSPIN)
+
+C Internal parameters of the PW86 exchange functional
+      real(dp),parameter:: a = 0.0864_dp
+      real(dp),parameter:: b = 14.0_dp
+      real(dp),parameter:: c = 0.2_dp
+
+C Call PW86 routine with appropriate values for a, b, and c.
+      CALL PW86formX( a, b, c, IREL, nspin, Dens, GDens,
+     .                EX, DEXDD, DEXDGD )
+
+C Set correlation energy and derivatives to zero
+      EC = 0
+      DECDD(:) = 0
+      DECDGD(:,:) = 0
+
+      END SUBROUTINE PW86X
+
+
+
+      SUBROUTINE PW86RX( IREL, nspin, Dens, GDens,
+     .                  EX, EC, DEXDD, DECDD, DEXDGD, DECDGD )
+
+C *********************************************************************
+C Implements Perdew-Wang-86 Generalized-Gradient-Approximation 
+C exchange-only functional with the refitted parameters of
+C Murray, Lee, and Langreth. Correlation energy returns as zero.
+C Refs: J.P.Perdew & Y.Wang, PRB 33, 8800 (1986)
+C       E.D.Murray, K.Lee & D.C.Langreth, JCTC 5, 2754 (2009)
+C Written by J.M.Soler. March 2010.
+C ******** INPUT ******************************************************
+C INTEGER IREL           : Relativistic-exchange switch (0=No, 1=Yes)
+C INTEGER nspin          : Number of spin polarizations (1 or 2)
+C REAL*8  Dens(nspin)    : Total electron density (if nspin=1) or
+C                           spin electron density (if nspin=2)
+C REAL*8  GDens(3,nspin) : Total or spin density gradient
+C ******** OUTPUT *****************************************************
+C REAL*8  EX             : Exchange energy density
+C REAL*8  EC             : Correlation energy density
+C REAL*8  DEXDD(nspin)   : Partial derivative
+C                           d(DensTot*Ex)/dDens(ispin),
+C                           where DensTot = Sum_ispin( Dens(ispin) )
+C                          For a constant density, this is the
+C                          exchange potential
+C REAL*8  DECDD(nspin)   : Partial derivative
+C                           d(DensTot*Ec)/dDens(ispin),
+C                           where DensTot = Sum_ispin( Dens(ispin) )
+C                          For a constant density, this is the
+C                          correlation potential
+C REAL*8  DEXDGD(3,nspin): Partial derivative
+C                           d(DensTot*Ex)/d(GradDens(i,ispin))
+C REAL*8  DECDGD(3,nspin): Partial derivative
+C                           d(DensTot*Ec)/d(GradDens(i,ispin))
+C ********* UNITS ****************************************************
+C Lengths in Bohr
+C Densities in electrons per Bohr**3
+C Energies in Hartrees
+C Gradient vectors in cartesian coordinates
+C ********* ROUTINES CALLED ******************************************
+C PW86formX
+C ********************************************************************
+
+      IMPLICIT NONE
+
+C Passed arguments
+      integer, intent(in) :: IREL, NSPIN
+      real(dp),intent(in) :: DENS(NSPIN), GDENS(3,NSPIN)
+      real(dp),intent(out):: EX, EC, DECDD(NSPIN), DECDGD(3,NSPIN),
+     .                       DEXDD(NSPIN), DEXDGD(3,NSPIN)
+
+C Internal parameters of the refitted PW86 exchange functional
+      real(dp),parameter:: a = 0.1234_dp
+      real(dp),parameter:: b = 17.33_dp
+      real(dp),parameter:: c = 0.163_dp
+
+C Call PW86 routine with appropriate values for a, b, and c.
+      CALL PW86formX( a, b, c, IREL, nspin, Dens, GDens,
+     .                EX, DEXDD, DEXDGD )
+
+C Set correlation energy and derivatives to zero
+      EC = 0
+      DECDD(:) = 0
+      DECDGD(:,:) = 0
+
+      END SUBROUTINE PW86RX
 
       END MODULE m_ggaxc
