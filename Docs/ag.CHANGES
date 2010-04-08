@@ -1,0 +1,4 @@
+AG, April 8, 2010  bsc-trunk-299-dhscf-bugs-1
+Fix grdsam by adding a call to dhscf_init
+
+Still some more cleanup possible: remove samesh check.

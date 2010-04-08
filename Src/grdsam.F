@@ -87,8 +87,10 @@ C
       use fdf
       use parallel,  only : Node
       use sys,       only : die
-      use m_dhscf,   only : dhscf
+      use m_dhscf,   only : dhscf, dhscf_init
       use alloc,     only : re_alloc, de_alloc
+      use siesta_options, only: g2cut
+      use siesta_geom,    only: mscell
 
       implicit          none
 
@@ -106,17 +108,17 @@ C
 C Internal variables and arrays
  
       logical           samesh
-      integer           nr, ipt, maxpt, ia,
+      integer           nr, ipt, ia,
      &                  ix, iv
       real(dp)          avexc, strold(3,3), avdipo(3), avstre(3,3),
      &                  avdxc, avenaa, avenas, avuatm, avuscf, avdusc,
      &                  anpt, strold2(3,3), avstre2(3,3)
+      real(dp)          G2max
 
-      parameter         (maxpt = 100)
+      integer, parameter      :: maxpt = 100
 
-      real(dp), pointer, save :: pt(:,:), avfa(:,:), faold(:,:),
-     &                           xanew(:,:), avfa2(:,:), faold2(:,:),
-     &                           dpt(:,:)
+      real(dp), pointer       :: avfa(:,:), faold(:,:),
+     &                           xanew(:,:), avfa2(:,:), faold2(:,:)
 
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline
@@ -129,6 +131,7 @@ C Internal variables and arrays
       real(dp), save :: lstcll(3,3) = 0.743978657912656D50
       integer, save  :: lstntm(3) = (/10000, 1, 1/) 
       integer, save  :: npt
+      real(dp), pointer, save :: pt(:,:),  dpt(:,:)
 
 c ----------------------------------------------------------------------------
 #ifdef DEBUG
@@ -153,16 +156,6 @@ C Look for block and read it if found ---------------------------------------
  
         samgrd = fdf_block('GridCellSampling',bfdf)
         
-        if (samgrd) then
-           if (Node.eq.0) then
-              write(6,'(a)') "** WARNING: Grid sampling does not " //
-     $             "work yet in this version"
-              write(0,'(a)') "** WARNING: Grid sampling does not " //
-     $             "work yet in this version"
-           endif
-           samgrd = .false.
-        endif
-
         if (samgrd) then
           if (Node.eq.0) then
             write(6,'(a)') 'grdsam: Reading %block GridCellSampling'
@@ -215,6 +208,9 @@ c Sampling ------------------------------------------------------------------
 
       if (samgrd) then
 
+!       This check is superfluous, as the generation of the displacements
+!       can be done in each call without much overhead.
+
 c find if mesh is new -------------------------------------------------------
 
         samesh = .true.
@@ -227,6 +223,7 @@ c find if mesh is new -------------------------------------------------------
           enddo
         enddo
 
+!
 c generate displacements (in Bohr cartesian) if first time or new mesh ------
 
         if (.not. samesh) then
@@ -277,6 +274,16 @@ c loop sampling on displacements making averages ----------------------------
           if (Node.eq.0) then
           write(6,'(a,i3)') 'grdsam: Grid-cell sampling, point ', ipt
           endif
+
+          ! We have to call dhscf_init, among other things, to
+          ! initialize the mesh structures
+          G2max = g2cut
+          call dhscf_init(nspin, norb, iaorb, iphorb,
+     &                      nuo, nuotot, nua, na,
+     &                      isa, xanew, indxua, cell,
+     &                      mscell, G2max, ntm,
+     &                      maxnd, numh, listhptr, listh, datm,
+     &                      Fal, stressl)
 
           call dhscf( nspin, norb, iaorb, iphorb, nuo, nuotot, nua,
      &                na, isa, xanew, indxua, ntm,
