@@ -140,6 +140,9 @@ C     Internal variables
       external          io_assign, io_close,
      &                  paste, volcel
 
+#ifdef DEBUG
+      call write_debug( '  PRE optical' )
+#endif
 C     Start time counter 
       call timer( 'optical', 1 )
 
@@ -695,4 +698,7 @@ C     Deallocate internal arrays
 
       call timer( 'optical', 2 )
 
+#ifdef DEBUG
+      call write_debug( '  POS optical' )
+#endif
       end

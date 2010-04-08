@@ -1,0 +1,20 @@
+--------------------------------------------------
+Alberto Garcia	  2010-04-09  siesta-bsc-299-fdf-2
+
+2010-04-09  AG
+Synch to bsc-trunk-299
+------------------------------------------------------------
+committer: Alberto Garcia <albertog@icmab.es>
+branch nick: ag-bsc-fdf
+timestamp: Thu 2010-01-28 15:02:21 +0100
+message:
+  Make fdf_single and fdf_double accept integers
+------------------------------------------------------------
+committer: Alberto Garcia <albertog@icmab.es>
+branch nick: ag-bsc-fdf
+timestamp: Thu 2010-01-28 15:01:59 +0100
+message:
+  Define proper kind parameters in fdf/prec.F90
+
+
+

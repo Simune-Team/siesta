@@ -8,11 +8,25 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
+
+C This file contains module scheComm. It tries to create an
+C optimal scheduling of communications.
+C
+C Written by Rogeli Grima (BSC) Dec.2007
+C
+C Includes the following subroutine:
+C
+C scheduleComm     = Schedule communications
+C
+C Includes the following data type:
+C
+C COMM_T = Stores all the communications
+C 
       module scheComm
 
       TYPE COMM_T
       integer            :: np        ! Number of processors
-      integer            :: ncol      ! Number of colours
+      integer            :: ncol      ! Number of colours/steps
       integer, pointer   :: ind(:,:)  ! Communications of every process
       END TYPE COMM_T
 
@@ -39,7 +53,7 @@ C BEHAVIOR:
 C We want to create an ordered list of communications for every process.
 C
 C We have a graph of communications, where every node is a process and
-C evry segment is a communication between two processes. First, we build
+C every segment is a communication between two processes. First, we build
 C its adjacency graph, where every node is a communication between two
 C processes and every segment means that two communications involve the
 C same process (they can't happen at the same time).
@@ -126,7 +140,6 @@ C     color.
 
 C     We order the nodes by its number of neightbours.
       call myQsort( Ncom, neights, perm )
-
 
       call re_alloc( color, 1, NCom, 'color', 'scheComm' )
       do com1= 1, Ncom

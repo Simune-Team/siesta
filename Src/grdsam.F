@@ -131,6 +131,9 @@ C Internal variables and arrays
       integer, save  :: npt
 
 c ----------------------------------------------------------------------------
+#ifdef DEBUG
+      call write_debug( '    PRE grdsam' )
+#endif
 
 C Allocate local memory
       call re_alloc( pt, 1, 3, 1, maxpt+1, 'pt', 'grdsam' )
@@ -149,6 +152,16 @@ C Check whether GridCellSampling block has been looked for ------------------
 C Look for block and read it if found ---------------------------------------
  
         samgrd = fdf_block('GridCellSampling',bfdf)
+        
+        if (samgrd) then
+           if (Node.eq.0) then
+              write(6,'(a)') "** WARNING: Grid sampling does not " //
+     $             "work yet in this version"
+              write(0,'(a)') "** WARNING: Grid sampling does not " //
+     $             "work yet in this version"
+           endif
+           samgrd = .false.
+        endif
 
         if (samgrd) then
           if (Node.eq.0) then
@@ -311,6 +324,9 @@ C Deallocate local memory
       call de_alloc( faold, 'faold', 'grdsam' )
       call de_alloc( avfa2, 'avfa2', 'grdsam' )
       call de_alloc( avfa, 'avfa', 'grdsam' )
+#ifdef DEBUG
+      call write_debug( '    POS grdsam' )
+#endif
 
       return
       end

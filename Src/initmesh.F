@@ -1,6 +1,6 @@
       subroutine InitMesh( na, cell, norb, iaorb, iphorb, isa,
      &                     rmax, G2max, G2mesh, nsc, nmpl, 
-     &                     nm, nml, ntm, ntml, ntpl, ntopl, dvol)
+     &                     nm, nml, ntm, ntml, ntpl, dvol)
 C
 C Initialises the mesh
 C
@@ -33,7 +33,6 @@ C integer ntm(3)        : Total number of mesh points
 C integer ntml(3)       : Total number of mesh points stored locally
 C integer ntpl          : Number of mesh Total Points in unit cell
 C                       : (including subpoints) locally
-C integer ntopl         : Total number of nonzero orbital points locally
 C real*8  dvol          : Mesh-cell volume
 C ----------------------------------------------------------------------
 C Internal variables and arrays:
@@ -45,18 +44,13 @@ C integer ia            : Looping variable for number of atoms
 C integer i1,i2,i3      : Mesh indexes in each mesh direction
 C integer is            : Species index
 C integer isp           : Sub-Point index
-C integer ity           : Orbital-type index
 C integer j             : General-porpose index
 C integer j1,j2,j3      : Mesh indexes in each mesh direction
 C real*8  k0(3)         : Zero-vector argument for routine chkgmx
 C integer nep           : Number of extended-mesh points
 C integer nmp           : Number of mesh points in unit cell
-C integer nty           : Number of orbital types
-C integer noty(nty)     : Number of orbitals of each type
 C real*8  pldist        : Distance between mesh planes
 C real*8  r             : Distance between atom and mesh point
-C real*8  rcty(nty)     : Radius of each orbital type
-C logical same          : Indicates whether orbital types are the same
 C real*8  vecmod        : Vector modulus
 C real*8  volume        : Unit cell volume
 C logical within        : Is a mesh point within orbital range?
@@ -72,31 +66,29 @@ C  Modules
       use precision,     only : dp
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : HowManyMeshPerNode, GlobalToLocalMesh
-      use atmfuncs,      only : rcut
       use moreMeshSubs,  only : initMeshDistr, setMeshDistr
+      use moreMeshSubs,  only : UNIFORM
       use alloc,         only : re_alloc, de_alloc
-      use mesh
+      use mesh,          only : ne, mop, nmeshg, nmsc, nsm, nsp
+      use mesh,          only : cmesh, rcmesh, xdsp
       use siesta_cml
 #ifdef MPI
       use mpi_siesta
 #endif
       implicit none
 C     Passed arguments
-      integer                 :: na, ntpl, ntopl, nm(3), nml(3), nmpl,
+      integer                 :: na, ntpl, nm(3), nml(3), nmpl,
      &                           norb, nsc(3), ntm(3), ntml(3),
      &                           iaorb(norb), iphorb(norb), isa(na)
       real(dp)                :: cell(3,3), dvol, G2max, G2mesh, rmax
 C     Local variables
       integer                 :: i, ia, i1, i2, i3, io, iphi, is, isp,
-     &                           ity, j, ncells, nep, ntop, ntp, nty,
-     &                           odistr
-      integer,        pointer :: iphty(:), isty(:), noty(:)
+     &                           ity, j, nep, ntp,  j1, j2, j3, indi
       real(dp)                :: dx(3), dxp(3), pldist, r,
      &                           rcell(3,3), vecmod, volume
       real(dp)                :: k0(3)
-      real(dp),       pointer :: rcty(:)
 
-      logical                 :: same, within
+      logical                 :: within
 C     Functions
       real(dp)                :: dismin, volcel
 
@@ -104,67 +96,10 @@ C     Functions
      &                           timer, volcel
       data                       k0 / 3*0.0_dp /
 
-!------------------------------------------------------------------------- BEGIN
-C ----------------------------------------------------------------------
-C     Orbital type initialization 
-C ----------------------------------------------------------------------
-C     Find number of orbital types
-      nullify( isty, iphty )
-      call re_alloc( isty, 1, norb, 'isty', 'InitMesh' )
-      call re_alloc( iphty, 1, norb, 'iphty', 'InitMesh' )
-
-      nty = 0
-      do io = 1,norb
-        ia = iaorb(io)
-        is = isa(ia)
-        iphi = iphorb(io)
-        ity = 0
-        same = .false.
-        do while (ity .lt. nty .and. .not.same)
-          ity = ity + 1
-          same = (is.eq.isty(ity) .and. iphty(ity).eq.iphi)
-        enddo
-        if (.not.same) then
-          nty = nty + 1
-          isty(nty) = is
-          iphty(nty) = iphi
-        endif
-      enddo
-
-      call de_alloc( iphty, 'iphty', 'InitMesh' )
-      call de_alloc( isty, 'isty', 'InitMesh' )
-
-C     Allocate local arrays dependent on nty
-      nullify( isty, iphty, noty, rcty )
-      call re_alloc( noty,  1, nty, 'noty',  'InitMesh' )
-      call re_alloc( rcty,  1, nty, 'rcty',  'InitMesh' )
-      call re_alloc( isty,  1, nty, 'isty',  'InitMesh' )
-      call re_alloc( iphty, 1, nty, 'iphty', 'InitMesh' )
-
-C     Find number of orbital types, number of orbitals of each type,
-C     and cutoff radius of each type.
-      noty(1:nty) = 0
-      nty = 0
-      do io = 1,norb
-        ia = iaorb(io)
-        is = isa(ia)
-        iphi = iphorb(io)
-        do ity = 1,nty
-          if (is.eq.isty(ity) .and. iphty(ity).eq.iphi) then
-            noty(ity) = noty(ity) + 1
-            goto 160
-          endif
-        enddo
-        nty = nty + 1
-        isty(nty) = is
-        iphty(nty) = iphi
-        noty(nty) = 1
-        rcty(nty) = rcut( is, iphi )
-  160   continue
-      enddo
-
-      call de_alloc( iphty, 'iphty', 'InitMesh' )
-      call de_alloc( isty,  'isty',  'InitMesh' )
+!--------------------------------------------------------------------- BEGIN
+#ifdef DEBUG
+      call write_debug( '      PRE InitMesh' )
+#endif
 
 C ----------------------------------------------------------------------
 C     Mesh initialization 
@@ -211,12 +146,11 @@ C     Store number of mesh points in module array
 C     Find number of mesh points in unit cell.
       ntp = ntm(1) * ntm(2) * ntm(3)
 
-      oDistr = 1
 C     Create the first mesh distribution
-      call initMeshDistr( oDistr=oDistr, nm=nm )
+      call initMeshDistr( oDistr=UNIFORM, nm=nm )
 
 C     Find and sets local number of Mesh points of each kind
-      call setMeshDistr( oDistr, nsm, nsp, nml, nmpl, ntml, ntpl )
+      call setMeshDistr( UNIFORM, nsm, nsp, nml, nmpl, ntml, ntpl )
 
 C     Find volume of unit cell and of mesh cell
       volume = volcel( cell )
@@ -226,6 +160,8 @@ C     Output current mesh dimensions and cut-off
       if (Node.eq.0) then
         write(6,'(/,a,3(i6,a),i12)') 'InitMesh: MESH =',
      &        ntm(1),' x',ntm(2),' x',ntm(3),' =', ntp
+        write(6,'(a,3(i6,a),i12)') 'InitMesh: (bp) =',
+     &        nm(1),' x',nm(2),' x',nm(3),' =', product(nm)
         write(6,'(a,2f10.3,a)')
      &        'InitMesh: Mesh cutoff (required, used) =',
      &        G2max, G2mesh, ' Ry'
@@ -255,22 +191,20 @@ C     Find mesh-cell vectors
 C     Find reciprocal mesh-cell vectors (not multiplied by 2*pi)
       call reclat( cmesh, rcmesh, 0 )
 
-C     Find number of extended-mesh intervals for each cell vector.
-C     Loop over mesh directions
+! Find number ne(:) of extended-mesh intervals for each cell vector.
       do i = 1,3
-C       pldist is the distance between mesh planes
+        ! pldist is the distance between mesh planes
         pldist = 1.0_dp / sqrt(dot_product(rcmesh(:,i),rcmesh(:,i)))
-C       Find number of planes spanned by rmax
-        ne(i) = rmax / pldist + real(nsm-1,kind=dp) / real(nsm,kind=dp)
-        ne(i) = max( ne(i), nsm-2 )
-C       Add ne(i) points to the left and ne(I)+1 points to the
-C       right, to cover the spilling rmax from an atom at any
-C       possible place within the unit cell.
-        nem(i) = nmsc(i) + 2 * ne(i) + 1
-      enddo
+        ! Find number of planes spanned by rmax
+        ne(i) = rmax / pldist
+      enddo ! i
 
-C     Find total number of extended-mesh points.
-      nep = nem(1) * nem(2) * nem(3)
+! For an atom at x=0, ne=rmax/pldist is the last mesh point within rmax.
+! But an atom at mesh cell ix=0 can be almost at x=dx. Therefore we have
+! to go up to ne+1. And subpoints in mesh cell ix=-ne-1 can be almost at
+! x=-ne*dx. Therefore we have to go up to -ne-1 to the left. Thus, we 
+! just increase ne and forget about these two effects from now on.
+      ne(:) = ne(:) + 1
 
 C     Find sub-points
       isp = 0
@@ -287,84 +221,36 @@ C     Find sub-points
         enddo
       enddo
 
-C     Find number of points only within rmax (orbital points)
+! Find number of points within rmax (orbital points)
       mop = 0
-      ntop = 0
-
-C     Loop over possible points within rmax
-      do i3 = -ne(3), ne(3)+1
-        do i2 = -ne(2), ne(2)+1
-          do i1 = -ne(1), ne(1)+1
-C          Find point coordinates
-            do i = 1,3
-              dxp(i) = cmesh(i,1) * i1 +
-     &                 cmesh(i,2) * i2 +
-     &                 cmesh(i,3) * i3 
-            enddo
-
-C           Loop over sub-points
+      do i3 = -ne(3), ne(3)    ! Loop over neighbor (super) points
+        do i2 = -ne(2), ne(2)
+          do i1 = -ne(1), ne(1)
+            dxp(:) = cmesh(:,1) * i1 +  ! (Super) point coordinates
+     .               cmesh(:,2) * i2 +
+     .               cmesh(:,3) * i3 
+            ! Find if any subpoint can be within rmax of an atom that
+            ! is in the origin's mesh cell
             within = .false.
-            do isp = 1,nsp
-C             Find point coordinates
-              dx(1:3) = dxp(1:3) + xdsp(1:3,isp) 
-C             Find distance from point to mesh cell
+            do isp = 1,nsp  ! Loop over sub-points
+              dx(1:3) = dxp(1:3) + xdsp(1:3,isp)  ! Subpoint coords.
+              ! Find distance from point to the mesh cell at the origin
+              ! (since the atom might be at any point of the mesh cell)
               r = dismin( cmesh, dx )
               if ( r .lt. rmax ) within = .true.
-            enddo
+            enddo ! isp
             if ( within ) then
-C             mop is the number of mesh points within rmax
-              mop = mop + 1
-              do ity = 1,nty
-                if ( r .lt. rcty(ity) ) ntop = ntop + noty(ity)
-              enddo
-            endif
-          enddo
-        enddo
-      enddo
+              mop = mop + 1      ! Total number of points within rmax
+            endif ! (within)
+          enddo ! i1
+        enddo ! i2
+      enddo ! i3
 
-C     Calculate ntopl
-      ncells = nsc(1) * nsc(2) * nsc(3)
-      ntop = ntop / ncells
-      ntopl = ((ntop/Nodes) + 1)
+C     Create extended mesh arrays for the first data distribution
+      call setupExtMesh( UNIFORM, rmax )
 
-C     Allocate local memory that depends on mop
-      nullify( idop, xdop )
-      call re_alloc( idop, 1, mop, 'idop', 'mesh' )
-      call re_alloc( xdop, 1, 3, 1, mop, 'xdop', 'mesh' )
-
-C     Find points within rmax (orbital points)
-      mop = 0
-C     Loop over possible points within rmax
-      do i3 = -ne(3), ne(3)+1
-        do i2 = -ne(2), ne(2)+1
-          do i1 = -ne(1), ne(1)+1
-C           Find point coordinates
-            do i = 1,3
-              dxp(i) = cmesh(i,1) * i1 +
-     &                 cmesh(i,2) * i2 +
-     &                 cmesh(i,3) * i3 
-            enddo
-C           Loop over sub-points
-            within = .false.
-            do isp = 1,nsp
-C             Find point coordinates
-              dx(1:3) = dxp(1:3) + xdsp(1:3,isp) 
-C             Find distance from point to mesh cell
-              r = dismin( cmesh, dx )
-              if ( r .lt. rmax ) within = .true.
-            enddo
-            if ( within ) then
-              mop = mop + 1
-C             Store index-distance and vector-distance to point.
-              idop(mop) = i1 + nem(1) * i2 + nem(1) * nem(2) * i3
-              xdop(1:3,mop) = dxp(1:3)
-            endif
-          enddo
-        enddo
-      enddo
-
-C     Deallocate orbital related memory
-      call de_alloc( noty, name='noty', routine='InitMesh' )
-      call de_alloc( rcty, name='rcty', routine='InitMesh' )
-!--------------------------------------------------------------------------- END
+#ifdef DEBUG
+      call write_debug( '      POS InitMesh' )
+#endif
+!----------------------------------------------------------------------- END
       end subroutine InitMesh

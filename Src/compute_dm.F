@@ -27,8 +27,11 @@
       use m_ordern,        only : ordern
       use m_steps,         only : istp
       use m_spin,          only : nspin, qs, efs
-!      use domain_decom,    only : gatherGlobalMatrix
+      use domain_decom,    only : gatherGlobalMatrix
       use jacobi_davidson, only : jd_diag
+#ifdef _SLEPC_
+      use slepc_diagon,    only : slepc_diag
+#endif
 #ifdef TRANSIESTA
 ! TSS Begin
 ! Transiesta Modules
@@ -40,7 +43,7 @@
 !     Input variables
       integer, intent(in) :: iscf
 !     Local variables
-      integer             :: io, ispin
+      integer             :: io, ispin, nnz
       real(dp)            :: const ! Temporary factor used in
                              ! calculation of Harris forces. e1>e2 to
                              ! signal that we do not want DOS weights
@@ -59,6 +62,7 @@
       call write_debug( '  PRE compute_dm' )
 #endif
       call timer( 'compute_dm', 1 )
+
 !     Solve eigenvalue problem 
       if (isolve .eq. SOLVE_DIAGON) then
         call write_debug( '    PRE diagon' )
@@ -109,11 +113,19 @@
 !        call gatherGlobalMatrix( no_s, no_l, maxnh, S, 'S.matrix' )
 !        call gatherGlobalMatrix( no_s, no_l, maxnh, H(1:maxnh,1),
 !     &                           'H.matrix' )
-        call write_debug( '    PRE Jacobi' )
         call jd_diag( no_s, no_l, nspin, neigwanted, fixspin, temp,
      &                qtot, qs, occtol, numh, listh, H, S,
      &                ef, efs, Entrop, Dscf, Escf )
-        call write_debug( '    POS Jacobi' )
+#ifdef _SLEPC_
+      elseif (isolve .eq. SOLVE_SLEPC) then
+!        call gatherGlobalMatrix( no_s, no_l, maxnh, S, 'S.matrix' )
+!        call gatherGlobalMatrix( no_s, no_l, maxnh, H(1:maxnh,1),
+!     &                           'H.matrix' )
+        nnz = numh(no_l) + listhptr(no_l)
+        call slepc_diag( no_s, no_l, nnz, nspin, neigwanted, fixspin,
+     &                   temp, qtot, qs, occtol, numh, listh, H, S,
+     &                   ef, efs, Entrop, Dscf, Escf )
+#endif
       else
         call die('siesta: ERROR: wrong solution method')
       endif
@@ -178,6 +190,11 @@
 #ifdef DEBUG
       call write_debug( '  POS compute_dm' )
 #endif
+
+#ifdef _SLEPC_
+      call MPI_Finalize( io )
+      STOP
+#endif /* Inserted by AG */
 !--------------------------------------------------------------------------- END
       END subroutine compute_dm
       END MODULE m_compute_dm

@@ -1934,7 +1934,7 @@ if (ierr/=0) then
                ' requested by ', routine
   endif
   if (ionode.and.present(bounds))                            &
-    print '(a,i3,2i8)', ('alloc_err: dim, lbound, ubound:',  &
+    print '(a,i3,2i10)', ('alloc_err: dim, lbound, ubound:',  &
           i,bounds(1,i),bounds(2,i),                         &
           i=1,size(bounds,dim=2))            
 #ifdef DEBUG
@@ -1946,7 +1946,7 @@ if (ierr/=0) then
   elseif (present(routine)) then
     write(mpiUnit,*) 'alloc_err: array unknown requested by ', routine
   endif
-  write(mpiUnit,'(a,i3,2i8)') ('alloc_err: dim, lbound, ubound:', &
+  write(mpiUnit,'(a,i3,2i10)') ('alloc_err: dim, lbound, ubound:', &
                       i,bounds(1,i),bounds(2,i),         &
                       i=1,size(bounds,dim=2))
   call pxfflush(mpiUnit)

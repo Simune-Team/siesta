@@ -1,6 +1,7 @@
       module m_siesta_forces
+      implicit none
       private
-      
+
       public :: siesta_forces
 
       CONTAINS
@@ -18,7 +19,7 @@
       use parallel,     only : IOnode
       use m_state_analysis
       use m_steps
-      use sys, only : die
+      use sys, only : die, bye
       use m_convergence, only: converger_t
       use m_convergence, only: reset, set_tolerance
 #ifdef TRANSIESTA
@@ -43,6 +44,9 @@
 #endif /* TRANSIESTA */
       
 !---------------------------------------------------------------------- BEGIN
+#ifdef DEBUG
+      call write_debug( 'PRE siesta_forces' )
+#endif
 !     Initialization tasks for a given geometry
       call state_init( istep )
 
@@ -80,6 +84,11 @@
 
 !       Will use H0 computed above
         call setup_hamiltonian( iscf )
+        if (h_setup_only) then
+           call timer( 'siesta', 2 )
+           call timer( 'all', 3 )
+           call bye("Requested end after setting up H")
+        endif
 
         call compute_dm( iscf )
 
@@ -132,6 +141,7 @@
         SCFconverged = last
 
         call timer( 'IterSCF', 2 )
+        call timer( 'partial', 3 )
 
         iscf = iscf + 1
         first = .false.
@@ -160,6 +170,9 @@
       endif
 
       call state_analysis( istep )
+#ifdef DEBUG
+      call write_debug( 'POS siesta_forces' )
+#endif
 !--------------------------------------------------------------------------- END
       END subroutine siesta_forces
       END module m_siesta_forces

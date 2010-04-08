@@ -22,13 +22,15 @@
       use m_fixed,         only : resetFixedPointers
       use band,            only : reset_bands
       use domain_decom,    only : resetDomainDecom
-      use mesh,            only : resetMesh
       implicit none
 
 #ifdef MPI
       integer MPIerror
 #endif
 !------------------------------------------------------------------------- BEGIN
+#ifdef DEBUG
+      call write_debug( 'PRE SIESTA_END' )
+#endif
 !     Free allocated memory
       call resetSparseMatrices( )
       call resetPulayArrays( )
@@ -38,7 +40,6 @@
       call resetFixedPointers( )
       call reset_bands( )
       call resetDomainDecom( )
-      call resetMesh( )
       call resetMeshPhi( )
       call resetDscfPointers( )
 
@@ -59,6 +60,9 @@
       endif
 
 !     Finalize MPI
+#ifdef DEBUG
+      call write_debug( 'POS SIESTA_END' )
+#endif
 #ifdef MPI
       call MPI_Finalize( MPIerror )
 #endif

@@ -12,6 +12,9 @@
 C ----------------------------------------------------------------------
 C Stores quantities used to transfer data between a matrix that is
 C distributed by orbitals and one distributed by mesh
+C
+C Written by Rogeli Grima (BSC) Dec.2007
+C
 C ----------------------------------------------------------------------
 C integer DCsize        : Number of communications
 C integer DCself        : Number of orbitals that the current process should keep
@@ -36,7 +39,7 @@ C     Modules
       integer, pointer, save :: DCsrc(:), DCdst(:), DCsic(:), DCinvp(:)
       end module m_dscfComm
 
-
+      subroutine dscfComm( nuotot, nrowsDscfL, NeedDscfL )
 C ==================================================================
 C Precomputes the needed communications to transform a matrix
 C that is distributed by orbitals to one distributed by mesh
@@ -59,7 +62,6 @@ C the communication schedule. The rest of processes receive the schedule
 C from process 0.
 C
 C ==================================================================
-      subroutine dscfComm( nuotot, nrowsDscfL, NeedDscfL )
       use precision
       use parallel,     only : NODE, NODES
       use parallelsubs, only : GlobalToLocalOrb, WhichNodeOrb

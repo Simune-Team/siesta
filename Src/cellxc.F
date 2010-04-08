@@ -198,10 +198,6 @@ C Local variables and arrays
      &                         bdensZ(:,:,:), bvxcX(:,:,:),
      &                         bvxcY(:,:,:), bvxcZ(:,:,:)
 
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 3 )
-#endif
-
 C Start time counter (intended only for debugging and development)
       call timer( 'cellXC', 1 )
 
@@ -877,7 +873,4 @@ C Free memory
 C Stop time counter
       call timer( 'cellXC', 2 )
 
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 0 )
-#endif
-      end
+      end subroutine cellxc

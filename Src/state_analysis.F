@@ -39,6 +39,7 @@
       real(dp), external :: volcel
 
 !------------------------------------------------------------------------- BEGIN
+      call timer( 'STanaly', 1 )
 #ifdef DEBUG
       call write_debug( '  PRE state_analysis' )
 #endif
@@ -144,6 +145,7 @@
       if (cml_p) then
          call cmlEndModule(mainXML)         
       endif 
+      call timer( 'STanaly', 2 )
 #ifdef DEBUG
       call write_debug( '  POS state_analysis' )
 #endif

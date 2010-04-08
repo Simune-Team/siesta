@@ -115,7 +115,7 @@ C           Valid orbital
       enddo
 
 C     Deallocate local memory
-      call MATEL( 'S', 0, 0, 0, 0, xij, Sij, grSij )
+!      call MATEL( 'S', 0, 0, 0, 0, xij, Sij, grSij )
       call reset_neighbour_arrays( )
       call de_alloc( Si, 'Si', 'overlap' )
 

@@ -134,6 +134,7 @@ C    Internal variables
       logical,      save :: first_time = .true.
       logical            :: samcel
       integer            :: IX, JX
+      call timer( 'mneighb', 1 )
 
       call sizeup_neighbour_arrays( maxnna )
 
@@ -178,6 +179,7 @@ C     Find neighbours of atom IA
       if (IA .GT. 0) 
      &  call mranger( 'FIND', CELL, range, NA, XA, NA, IAMOVE,
      &                IA, ISC, X0, NNA, MAXNNA )
+      call timer( 'mneighb', 2 )
       end subroutine mneighb
 
       subroutine mranger( mode, cell, range, na, xa,
@@ -510,6 +512,8 @@ c
      &  IAM, IEM, IM, 
      &  NEM, NM, NNM, range2, RNGMAX, Rrange
 
+      call timer( 'mranger', 1 )
+
 C     Allocate local memory - check for change in number of atoms
 C     and if there has been one then re-initialise
       if (NA.gt.MAXNA) then
@@ -830,6 +834,7 @@ C Take next atom in this mesh-cell and go to begining of loop
         enddo
       ENDIF
 C End of search section
+      call timer( 'mranger', 2 )
       return
       end subroutine mranger
 
@@ -984,6 +989,9 @@ C Next line is non-standard but may be supressed
 
       subroutine reset_neighbour_arrays( )
       implicit none
+!!#ifdef DEBUG
+      call write_debug( '      PRE reset_neighbour_arrays' )
+!!#endif
 
       celast = 0.0_dp
       rglast = 0.0_dp
@@ -1019,6 +1027,9 @@ C Next line is non-standard but may be supressed
         maxnem = -1
       endif
 
+!!#ifdef DEBUG
+      call write_debug( '      POS reset_neighbour_arrays' )
+!!#endif
       end subroutine reset_neighbour_arrays
 
       end module neighbour

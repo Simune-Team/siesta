@@ -47,9 +47,6 @@
       use m_projected_DOS,    only: init_projected_DOS
       use writewave,          only: gamma_wavefunctions,
      &                              setup_wf_kpoints
-#ifdef MPI
-      use mpi_siesta,         only: mpi_comm_world
-#endif
 #ifdef TRANSIESTA
 ! TSS Begin
       use m_ts_options, only: read_ts_options
@@ -57,7 +54,12 @@
 ! TSS End
 #endif /* TRANSIESTA */
       implicit none
-
+#ifdef MPI
+#include "mpif.h"
+# ifdef _SLEPC_
+# include "finclude/petsc.h"
+# endif
+#endif
 #ifdef MPI
       integer :: MPIerror  ! Return error code in MPI routines
 #endif
@@ -73,7 +75,11 @@
 !------------------------------------------------------------------------- BEGIN
 #ifdef MPI
 !     Initialise MPI and set processor number
+#ifdef _SLEPC_
+      call SlepcInitialize( PETSC_NULL_CHARACTER, MPIerror )
+#else
       call MPI_Init( MPIerror )
+#endif
       call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
       call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
 
@@ -87,8 +93,9 @@
 !     The file is called debug.$(PID) Where PID is the process number.
 !     It also works in secuencial mode.
       call debugMpiOn( )
+      call write_debug( 'PRE siesta_init' )
 #endif
-      call inicializar_tiempo( 20 )
+      call inicializar_tiempo( 40 )
       IOnode = (Node .eq. 0)
 
 !     Print version information
@@ -137,13 +144,7 @@
       FreeE   = 0.0_dp
 
 !     Initialise read
-#ifdef DEBUG
-      call write_debug( '  PRE reinit' )
-#endif
       call reinit( sname )
-#ifdef DEBUG
-      call write_debug( '  POS reinit' )
-#endif
 
 !     Initialize CML (relies on reinit)
       call siesta_cml_init( )
@@ -169,13 +170,7 @@
       if (atmonly) call bye( 'End of atom setup' )
 
 !     Read geometry
-#ifdef DEBUG
-      call write_debug( '  PRE struct_init' )
-#endif
       call struct_init( )      ! Sets na_u, isa, ucell
-#ifdef DEBUG
-      call write_debug( '  POS struct_init' )
-#endif
 
 !     Initialize atom lists
       call initatomlists( )    ! Sets iza
@@ -403,6 +398,9 @@
       if (ionode) call pxfflush( 6 )
 
       call timer( 'Setup', 2 )
+#ifdef DEBUG
+      call write_debug( 'POS siesta_init' )
+#endif
 !--------------------------------------------------------------------------- END
       END subroutine siesta_init
 

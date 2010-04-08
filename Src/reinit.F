@@ -41,6 +41,9 @@ C  Internal variables .................................................
       logical debug_input, file_exists
 
 C Print Welcome and Presentation .......................................
+#ifdef DEBUG
+      call write_debug( '  PRE reinit' )
+#endif
       filein = "should_not_matter"  ! For non-master nodes
 
       if (Node.eq.0) then
@@ -127,5 +130,8 @@ C Define System Label (short name to label files) ...
         write(6,'(a,71(1h-))') 'reinit: '
       endif
 C ...
+#ifdef DEBUG
+      call write_debug( '  POS reinit' )
+#endif
 
       end

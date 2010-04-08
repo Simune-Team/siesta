@@ -1,6 +1,104 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+299 Alberto Garcia	  2010-02-22
+Merge of SLEPC work by Rogeli Grima (in progress)
+
+New routines to use the SLEPC library for diagonalization.
+
+Note that some sections depend on the use 
+of the _SLEPC_ preprocessor symbol.
+
+(Extra timing stills depends on __PPC970__)
+
+added:
+  Src/slepc_diagon.F
+modified:
+  Docs/Grid-Work.CHANGES
+  Src/Makefile
+  Src/compute_dm.F
+  Src/domain_decom.F
+  Src/gmres.F
+  Src/initparallel.F
+  Src/jacobi_davidson.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/siesta_options.F90
+  version.info
+
+
+------------------------------------
+298 Alberto Garcia	  2010-02-22
+Clarify timing in dhscf
+
+The timing tags in dhscf were wrong. Now there is a new set for
+DHSCF_Init.
+
+------------------------------------
+297 Alberto Garcia	  2010-02-19
+More data on sizes. Optional stop after H setup. Cleanup
+
+* If the fdf variable "H-Setup-Only" is "true", the program will stop
+  after setting up the hamiltonian in the first iteration, just before
+  diagonalization. This is useful to benchmark the new grid routines.
+
+* Removed dead code in InitMesh
+
+* Several mesh routines now print data about sizes.
+
+* Temporarily deactivated the "doping" option and the "grid cell sampling"
+  option.
+
+modified:
+  Src/dhscf.F
+  Src/doping.F
+  Src/grdsam.F
+  Src/initmesh.F
+  Src/phionmesh.F
+  Src/setupextmesh.F
+  Src/siesta_forces.F
+  Src/siesta_options.F90
+
+------------------------------------
+296 Alberto Garcia	  2010-02-19
+Merged work by Rogeli Grima on mesh routines, with some bug fixes
+
+(Work in progress)
+
+There were some bugs in dhscf and in moremeshsubs, found after
+painstakingly commenting the flow of the program.
+
+* dhscf and dhscf_init have been merged in a true module m_dhscf, still
+  in file dhscf.F. 
+
+* The mesh initialization part is now done *unconditionally* in
+  dhscf_init, i.e, after *every* geometry change, even if the change
+  does not involve a cell change. The reason is to avoid complexity,
+  since now the mesh parallel distributions will depend on the
+  detailed atomic positions even if the cell does not change.
+  Besides, the relative cost of a "mesh only" initialization is
+  negligible.  The only real observable effect would be a printout of
+  "initmesh" data at every geometry iteration.
+
+* The variables "nm" and "nsm" are no longer imported in 'moremeshsubs'
+  from module m_dhscf. In fact, nmeshg from module mesh is used instead
+  of nm (which is abused as an argument in several routines).
+
+* Routine distMeshData (real version) had a bug when running in serial
+  mode and asked to "keep" the clustering or sequential character: it 
+  did not copy the input to the output array.
+
+* The change in distribution of the 'drho' array did not take into
+  account the spin dimension.
+
+Remaining known bugs:
+
+ - grdsam needs to call dhscf_init before calling dhscf
+ - the doping routine needs to be called in the quadratic dist
+ - the calculation of the Berry-phase polarization in the first
+   iteration of test 'born_spin' is wrong.
+
+------------------------------------
 295 Alberto Garcia	  2010-01-25
 Update to m_efield and doping modules.
 

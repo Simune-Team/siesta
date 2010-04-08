@@ -194,10 +194,10 @@ C Check internal dimensions ..........................................
          call die('diagon: ERROR: incorrect value of nspin')
       endif
 
-      call re_alloc( psi,  1, npsi, 'psi',  'diagon' )
+      call re_alloc( psi,  1, npsi, 'psi',  'densematrix' )
       if (nspin .ne. 4) then
-         call re_alloc(Haux,1,nhs,name='Haux',routine='diagon')
-         call re_alloc(Saux,1,nhs,name='Saux',routine='diagon')
+         call re_alloc( Haux, 1, nhs, 'Haux', 'densematrix' )
+         call re_alloc( Saux, 1, nhs, 'Saux', 'densematrix' )
       endif
 
 

@@ -1,0 +1,135 @@
+-------------------------------------------------------------
+2010-02-17  Alberto Garcia     siesta-bsc-290-rogeli-5-ag-3
+More instances of symbolic constants 
+
+Used symbolic constants in calls to initatommesh and setupExtMesh in
+dhscf.
+
+modified:
+  Src/dhscf.F
+
+-------------------------------------------------------------
+2010-02-17  Alberto Garcia     siesta-bsc-290-rogeli-5-ag-2
+Use symbolic constants for Mesh distribution handling
+
+Defined integer parameters UNIFORM, QUADRATIC, and LINEAR
+in moremeshubs.F to represent the three distributions in current use, and
+imported and used them in those routines that deal with different distributions.
+
+modified:
+  Src/dhscf.F
+  Src/distriphionmesh.F
+  Src/forhar.F
+  Src/initmesh.F
+  Src/moremeshsubs.F
+
+-------------------------------------------------------------
+2010-02-16  Alberto Garcia     siesta-bsc-290-rogeli-5-ag-1
+Cosmetic changes for portability
+
+A block of code in timer.F, and the routine in "walltime.c" are only
+meant for a PPC970 machine. A preprocessor test has been added (and
+note that the relevant macro definition should be included in
+arch.make, and not in the actual code).
+
+A debugging preprocessor block is not processed in mneighb.f due to the
+file extension. Rather than changing it, the debug statement has been made
+unconditional.
+
+The computation of a real parameter in gmres.F overflowed due to the
+use of an integer base in an exponentiation. The base is now real.
+
+(+ Warning Note in moremeshsubs.F)
+
+modified:
+  Src/Makefile
+  Src/gmres.F
+  Src/mneighb.f
+  Src/moremeshsubs.F
+  Src/timer.F
+  Src/walltime.c
+
+-------------------------------------------------------
+2010-02-22  Alberto Garcia     siesta-bsc-290-rogeli-6
+Snapshot Feb22 -- More slepc work
+
+-------------------------------------------------------
+2010-02-12  Alberto Garcia     siesta-bsc-290-rogeli-5
+More comments in mesh routines
+
+Rogeli has added more comments and clarified the structure
+of the modules.
+
+(Snapshot taken at 6:30pm Feb. 12. Mesh-related only)
+
+modified:
+  Src/dhscf.F
+  Src/distriphionmesh.F
+  Src/initatommesh.F
+  Src/initmesh.F
+  Src/meshsubs.F
+  Src/phionmesh.F
+  Src/setupextmesh.F
+
+removed:
+  Src/REJS/
+
+-------------------------------------------------------
+2010-02-11  Alberto Garcia     siesta-bsc-290-rogeli-4
+End of implementation of distributed indexp
+
+Rogeli has fixed the initialization of ne via extMeshBox and removed
+some mpi barriers in dhscf.
+
+(Snapshot taken at 1pm Feb. 11. Work finished late in Feb 5, according
+to Rogeli).
+
+(Some extra Jacobi-Davidson updates as of Feb 11 not incorporated)
+
+modified:
+  Src/dhscf.F
+  Src/initatommesh.F
+  Src/moremeshsubs.F
+
+-------------------------------------------------------
+2010-02-10  Alberto Garcia     siesta-bsc-290-rogeli-3
+Implementation of distributed indexp (work in progress)
+
+Rogeli has taken the ideas of Jose Soler regarding the distributed
+indexp and implemented a 'per-distribution, per-processor' extended mesh
+and associated index arrays.
+
+Some issues of re-initialization upon atomic movements are still pending.
+
+Some other cosmetic changes, mostly regarding debugging.
+(Except in dhscf, where a few uses of "reord" have changed)
+
+(Snapshot taken in the afternoon of Feb. 5)
+
+
+
+2010-01-27  Alberto Garcia
+Some cosmetic changes to make it compile
+
+* Gmres: eps definition caused overflow
+* Wrapped powerpc assembler code in timer.F
+
+--------------------------------------------------
+2010-01-26  Alberto Garcia
+Jan 26-2010 update: Some docs; Cosmetics. Matrix io...
+
+Snapshot of state of Rogeli's code on Jan 26, 2010.
+
+Incomplete log:
+
+* Some documentation of grid routines.
+
+* Updates to Jacobi-Davidson.
+
+* Matrix market io (mmio)
+
+* Cosmetics, including retabbing of molecular mechanics and other
+  routines.
+
+* Addition of a "reset" routine in module radial.f
+
