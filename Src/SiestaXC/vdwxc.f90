@@ -11,6 +11,7 @@
 ! Eqs.(11-12) and (14-16) of Dion et al.
 ! Refs: M.Dion et al, PRL 92, 246401 (2004)
 !       K.Lee et al, arXiv:1003.5255v1 (2010)
+!       J.Klimes et al, JPCM 22, 022201 (2009)
 !       G.Roman-Perez and J.M.Soler, PRL 103, 096102 (2009)
 ! Written by J.M.Soler. July 2007 - April 2010.
 !------------------------------------------------------------------------------
@@ -1388,10 +1389,16 @@ subroutine vdw_exchng( iRel, nSpin, D, GD, epsX, dEXdD, dEXdGD )
 
 ! Call the appropriate GGA functional
   if (vdw_author=='DRSLL') then
+    ! Dion et al, PRL 92, 246401 (2004)
     call GGAxc( 'revPBE', iRel, nSpin, D, GD, &
                  epsX, epsC, dEXdD, dECdD, dEXdGD, dECdGD )
   else if (vdw_author=='LMKLL') then
+    ! Lee et al, arXiv:1003.5255v1 (2010)
     call GGAxc( 'PW86R', iRel, nSpin, D, GD, &
+                 epsX, epsC, dEXdD, dECdD, dEXdGD, dECdGD )
+  else if (vdw_author=='KBM') then
+    ! Klimes et al, JPCM 22, 022201 (2009)
+    call GGAxc( 'B88KBM', iRel, nSpin, D, GD, &
                  epsX, epsC, dEXdD, dECdD, dEXdGD, dECdGD )
   else
     stop 'vdw_exchng ERROR: unknown author'
@@ -1482,6 +1489,8 @@ subroutine vdw_set_author( author )
     zab = -0.8491_dp
   else if (author=='LMKLL') then
     zab = -1.887_dp
+  else if (author=='KBM') then
+    zab = -0.8491_dp
   else
     stop 'vdw_set_author: ERROR: author not known'
   end if
