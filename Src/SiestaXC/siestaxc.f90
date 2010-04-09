@@ -303,7 +303,8 @@
 !         'PBESOL' => GGA Perdew et al, PRL, 100, 136406 (2008)
 !           'AM05' => GGA Mattsson & Armiento, PRB, 79, 155101 (2009)
 !          'DRSLL' => VDW Dion et al, PRL 92, 246401 (2004)
-
+!          'LMKLL' => VDW K.Lee et al, arXiv:1003.5255v1 (2010)
+!
 ! ------------------------ USAGE ----------------------------------------------
 !   use siestaXC, only: setXC
 !   call setXC( 1, (/'GGA'/), (/'PBE'/), (/1._dp/), (/1._dp/) )

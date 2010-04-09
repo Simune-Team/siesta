@@ -144,7 +144,7 @@
 ! subroutine vdw_set_author( author )
 !   Sets the functional flavour (author initials) and subsequent parameters
 ! Arguments:
-!   character(len=*),intent(in):: vdw_author ! Functnl flavour ('DRSLL'|'LMKLL')
+!   character(len=*),intent(in):: author ! Functnl flavour ('DRSLL'|'LMKLL')
 ! Notes:
 ! - If vdw_set_author is not called, author='DRSLL' is set by default
 ! - Stops with an error message if author has not an allowed value
