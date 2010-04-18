@@ -5,6 +5,12 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2010-04-18  17:20:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-rc1
+Release of siesta-3.0-rc1
+
+Created the release notes and updated the version string.
+
+------------------------------------------------------------------------
 2010-03-25  09:15:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-b-16
 Fix initialization of target_stress in some cell-only relaxations
   
