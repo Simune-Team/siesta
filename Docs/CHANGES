@@ -6,6 +6,16 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2010-04-20 00:44:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-343
+
+Documentation completed on LMKLL flavour of vdW-DF (J. M. Soler)
+  
+modified:
+    Docs/siesta.tex
+    Src/SiestaXC/siestaxc.f90
+    Src/SiestaXC/vdwxc.f90
+
+-----------------------------------------------------------------------
 2010-04-20 00:38:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-342
 
 A bug corrected in testers (J. M. Soler)
