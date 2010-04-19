@@ -6,6 +6,16 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2010-04-20 00:38:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-342
+
+A bug corrected in testers (J. M. Soler)
+  
+modified:
+    Src/SiestaXC/Testers/test2.f90  ! Avoid using DRSLL & LMKLL together
+    Src/SiestaXC/Testers/test3.F90
+    Src/SiestaXC/Testers/test4.F90
+
+-----------------------------------------------------------------------
 2010-04-20 00:34:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-341
 
 Added the vdW functional flavour of K.Lee et al, arXiv:1003.5255v1 (2010) (J.M. Soler)
