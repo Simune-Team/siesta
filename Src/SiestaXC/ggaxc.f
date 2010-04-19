@@ -231,6 +231,14 @@ C Non collinear part rewritten by J.M.Soler. Sept. 2009
         CALL PW86RX( IREL, NS, DD, GDD,
      .               EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
 
+      ELSEIF (AUTHOR.EQ.'B88') THEN
+        CALL B88X( IREL, NS, DD, GDD,
+     .             EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
+
+      ELSEIF (AUTHOR.EQ.'B88KBM') THEN
+        CALL B88KBMX( IREL, NS, DD, GDD,
+     .             EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
+
       ELSE
         call die('GGAXC: Unknown author ' // trim(AUTHOR))
       ENDIF
@@ -2076,5 +2084,290 @@ C Set correlation energy and derivatives to zero
       DECDGD(:,:) = 0
 
       END SUBROUTINE PW86RX
+
+
+      SUBROUTINE B88formX( beta, mu, c, iRel, nSpin, Dens, GDens,
+     .                     EX, dEXdD, dEXdGD )
+
+C *********************************************************************
+C Implements Becke-88 Generalized-Gradient-Approximation exchange-only
+C functional form, eps_x=eps_x_LDA*(1+mu*s**2/(1+beta*s*asinh(c*s))),
+C but with variable values for parameters beta, mu, and c
+C Refs: A.D.Becke, PRA 38, 3098 (1988)
+C       J.Klimes, D.R.Bowler, and A.Michaelides, JPCM 22, 022201 (2009)
+C Written by J.M.Soler. April 2010.
+C ******** INPUT ******************************************************
+C REAL*8  beta, mu, c    : Parameter beta mu, and c of the B88 functional,
+C                          as formulated by Klimes et al
+C INTEGER IREL           : Relativistic-exchange switch (0=No, 1=Yes)
+C INTEGER nspin          : Number of spin polarizations (1 or 2)
+C REAL*8  Dens(nspin)    : Total electron density (if nspin=1) or
+C                           spin electron density (if nspin=2)
+C REAL*8  GDens(3,nspin) : Total or spin density gradient
+C ******** OUTPUT *****************************************************
+C REAL*8  EX             : Exchange energy density
+C REAL*8  DEXDD(nspin)   : Partial derivative
+C                           d(DensTot*Ex)/dDens(ispin),
+C                           where DensTot = Sum_ispin( Dens(ispin) )
+C                          For a constant density, this is the
+C                          exchange potential
+C REAL*8  DEXDGD(3,nspin): Partial derivative
+C                           d(DensTot*Ex)/d(GradDens(i,ispin))
+C ********* UNITS ****************************************************
+C Lengths in Bohr
+C Densities in electrons per Bohr**3
+C Energies in Hartrees
+C Gradient vectors in cartesian coordinates
+C ********* ROUTINES CALLED ******************************************
+C EXCHNG
+C ********************************************************************
+
+      implicit none
+
+C Input
+      real(dp),intent(in) :: beta           ! Parameter of B88 functional
+      real(dp),intent(in) :: mu             ! Parameter of B88 functional
+      real(dp),intent(in) :: c              ! Parameter of B88 functional
+      integer, intent(in) :: iRel           ! Relativistic exchange? 0=no, 1=yes
+      integer, intent(in) :: nSpin          ! Number of spin components
+      real(dp),intent(in) :: Dens(nSpin)    ! Local electron (spin) density
+      real(dp),intent(in) :: GDens(3,nSpin) ! Gradient of electron density
+
+C Output
+      real(dp),intent(out):: EX             ! Exchange energy per electron
+      real(dp),intent(out):: dEXdD(nSpin)   ! dEx/dDens, Ex=Int(dens*epsX)
+      real(dp),intent(out):: dEXdGD(3,nSpin) ! dEx/dGrad(Dens)
+
+C Internal variables
+      INTEGER
+     .  IS, IX
+      real(dp)
+     .  ASINHCS, CS, D(2), DASINHDS, 
+     .  DENMIN, DF1DS, DFDD, DFDGD, DFDS, DFXDD(2), DFXDGD(3,2), 
+     .  DKFDD, DS(2), DSDD, DSDGD, DT, ECUNIF, EXUNIF, F, F1, FX,
+     .  GD(3,2), GDM(2), GDMIN, GDMS, GDMT, GDS, GDT(3),
+     .  KFS, PI, S, VXUNIF(2), ZETA
+
+C Lower bounds of density and its gradient to avoid divisions by zero
+      PARAMETER ( DENMIN = 1.D-12 )
+      PARAMETER ( GDMIN  = 1.D-12 )
+
+C Fix some more numerical constants
+      PI = 4 * ATAN(1.D0)
+
+C Translate density and its gradient to new variables
+      IF (nspin .EQ. 1) THEN
+        D(1) = Dens(1) / 2
+        D(2) = D(1)
+        DT = MAX( DENMIN, Dens(1) )
+        DO 10 IX = 1,3
+          GD(IX,1) = GDens(IX,1) / 2
+          GD(IX,2) = GD(IX,1)
+          GDT(IX) = GDens(IX,1)
+   10   CONTINUE
+      ELSE
+        D(1) = Dens(1)
+        D(2) = Dens(2)
+        DT = MAX( DENMIN, Dens(1)+Dens(2) )
+        DO 20 IX = 1,3
+          GD(IX,1) = GDens(IX,1)
+          GD(IX,2) = GDens(IX,2)
+          GDT(IX) = GDens(IX,1) + GDens(IX,2)
+   20   CONTINUE
+      ENDIF
+      GDM(1) = SQRT( GD(1,1)**2 + GD(2,1)**2 + GD(3,1)**2 )
+      GDM(2) = SQRT( GD(1,2)**2 + GD(2,2)**2 + GD(3,2)**2 )
+      GDMT   = SQRT( GDT(1)**2  + GDT(2)**2  + GDT(3)**2  )
+      GDMT = MAX( GDMIN, GDMT )
+
+C Find exchange energy and potential
+      FX = 0
+      DO 60 IS = 1,2
+        DS(IS)   = MAX( DENMIN, 2 * D(IS) )
+        GDMS = MAX( GDMIN, 2 * GDM(IS) )
+        KFS = (3 * PI**2 * DS(IS))**(1._dp/3)
+        S = GDMS / (2 * KFS * DS(IS))
+        CS = C * S
+        ! Next line is ASINH(CS). See Numerical Recipes
+        ASINHCS = log(CS+sqrt(CS**2+1))
+        F1 = 1 + beta * S * ASINHCS
+        F = 1 + mu * S**2 / F1
+c
+c       Note nspin=1 in call to exchng...
+c
+        CALL EXCHNG( IREL, 1, DS(IS), EXUNIF, VXUNIF(IS) )
+        FX = FX + DS(IS) * EXUNIF * F
+
+        DKFDD = KFS / DS(IS) / 3
+        DSDD = S * ( -(DKFDD/KFS) - 1/DS(IS) )
+        DASINHDS = C * (1 + CS/sqrt(CS**2+1)) / (CS+sqrt(CS**2+1))
+        DF1DS = beta * ASINHCS + beta * S * DASINHDS
+        DFDS = 2*mu*S/F1 - mu*S**2/F1**2 * DF1DS
+        DFDD = DFDS * DSDD
+        DFXDD(IS) = VXUNIF(IS) * F + DS(IS) * EXUNIF * DFDD
+
+        DO 50 IX = 1,3
+          GDS = 2 * GD(IX,IS)
+          DSDGD = (S / GDMS) * GDS / GDMS
+          DFDGD = DFDS * DSDGD
+          DFXDGD(IX,IS) = DS(IS) * EXUNIF * DFDGD
+   50   CONTINUE
+   60 CONTINUE
+      FX = FX / DT / 2
+
+C Set output arguments
+      EX = FX
+      DO 90 IS = 1,nspin
+        DEXDD(IS) = DFXDD(IS)
+        DO 80 IX = 1,3
+          DEXDGD(IX,IS) = DFXDGD(IX,IS)
+   80   CONTINUE
+   90 CONTINUE
+
+      END SUBROUTINE B88formX
+
+
+
+      SUBROUTINE B88X( IREL, nspin, Dens, GDens,
+     .                 EX, EC, DEXDD, DECDD, DEXDGD, DECDGD )
+
+C *********************************************************************
+C Implements Becke-88 Generalized-Gradient-Approximation 
+C exchange-only functional. Correlation energy returns as zero.
+C Refs: A.D.Becke, PRA 38, 3098 (1988)
+C       J.Klimes, D.R.Bowler, and A.Michaelides, JPCM 22, 022201 (2009)
+C Written by J.M.Soler. April 2010.
+C ******** INPUT ******************************************************
+C INTEGER IREL           : Relativistic-exchange switch (0=No, 1=Yes)
+C INTEGER nspin          : Number of spin polarizations (1 or 2)
+C REAL*8  Dens(nspin)    : Total electron density (if nspin=1) or
+C                           spin electron density (if nspin=2)
+C REAL*8  GDens(3,nspin) : Total or spin density gradient
+C ******** OUTPUT *****************************************************
+C REAL*8  EX             : Exchange energy density
+C REAL*8  EC             : Correlation energy density
+C REAL*8  DEXDD(nspin)   : Partial derivative
+C                           d(DensTot*Ex)/dDens(ispin),
+C                           where DensTot = Sum_ispin( Dens(ispin) )
+C                          For a constant density, this is the
+C                          exchange potential
+C REAL*8  DECDD(nspin)   : Partial derivative
+C                           d(DensTot*Ec)/dDens(ispin),
+C                           where DensTot = Sum_ispin( Dens(ispin) )
+C                          For a constant density, this is the
+C                          correlation potential
+C REAL*8  DEXDGD(3,nspin): Partial derivative
+C                           d(DensTot*Ex)/d(GradDens(i,ispin))
+C REAL*8  DECDGD(3,nspin): Partial derivative
+C                           d(DensTot*Ec)/d(GradDens(i,ispin))
+C ********* UNITS ****************************************************
+C Lengths in Bohr
+C Densities in electrons per Bohr**3
+C Energies in Hartrees
+C Gradient vectors in cartesian coordinates
+C ********* ROUTINES CALLED ******************************************
+C PW86formX
+C ********************************************************************
+
+      IMPLICIT NONE
+
+C Passed arguments
+      integer, intent(in) :: IREL, NSPIN
+      real(dp),intent(in) :: DENS(NSPIN), GDENS(3,NSPIN)
+      real(dp),intent(out):: EX, EC, DECDD(NSPIN), DECDGD(3,NSPIN),
+     .                       DEXDD(NSPIN), DEXDGD(3,NSPIN)
+
+C Internal variables and arrays
+      real(dp):: beta, c, mu, pi
+
+C Internal parameters of the B88 exchange functional, written as
+C by Klimes et al
+      pi = acos(-1._dp)
+      c = 2*(6*pi**2)**(1._dp/3)
+      mu = 0.2743_dp
+      beta = 9 * mu * (6/pi)**(1._dp/3) / (2*c)
+
+C Call PW86 routine with appropriate values for a, b, and c.
+      CALL B88formX( beta, mu, c, IREL, nspin, Dens, GDens,
+     .               EX, DEXDD, DEXDGD )
+
+C Set correlation energy and derivatives to zero
+      EC = 0
+      DECDD(:) = 0
+      DECDGD(:,:) = 0
+
+      END SUBROUTINE B88X
+
+
+
+      SUBROUTINE B88KBMX( IREL, nspin, Dens, GDens,
+     .                    EX, EC, DEXDD, DECDD, DEXDGD, DECDGD )
+
+C *********************************************************************
+C Implements Becke-88 GGA exchange functional, reparametrized by Klimes
+C et al for its combined use with vdW-DF nonlocal correlation.
+C Correlation energy returns as zero.
+C Refs: A.D.Becke, PRA 38, 3098 (1988)
+C       J.Klimes, D.R.Bowler, and A.Michaelides, JPCM 22, 022201 (2009)
+C Written by J.M.Soler. April 2010.
+C ******** INPUT ******************************************************
+C INTEGER IREL           : Relativistic-exchange switch (0=No, 1=Yes)
+C INTEGER nspin          : Number of spin polarizations (1 or 2)
+C REAL*8  Dens(nspin)    : Total electron density (if nspin=1) or
+C                           spin electron density (if nspin=2)
+C REAL*8  GDens(3,nspin) : Total or spin density gradient
+C ******** OUTPUT *****************************************************
+C REAL*8  EX             : Exchange energy density
+C REAL*8  EC             : Correlation energy density
+C REAL*8  DEXDD(nspin)   : Partial derivative
+C                           d(DensTot*Ex)/dDens(ispin),
+C                           where DensTot = Sum_ispin( Dens(ispin) )
+C                          For a constant density, this is the
+C                          exchange potential
+C REAL*8  DECDD(nspin)   : Partial derivative
+C                           d(DensTot*Ec)/dDens(ispin),
+C                           where DensTot = Sum_ispin( Dens(ispin) )
+C                          For a constant density, this is the
+C                          correlation potential
+C REAL*8  DEXDGD(3,nspin): Partial derivative
+C                           d(DensTot*Ex)/d(GradDens(i,ispin))
+C REAL*8  DECDGD(3,nspin): Partial derivative
+C                           d(DensTot*Ec)/d(GradDens(i,ispin))
+C ********* UNITS ****************************************************
+C Lengths in Bohr
+C Densities in electrons per Bohr**3
+C Energies in Hartrees
+C Gradient vectors in cartesian coordinates
+C ********* ROUTINES CALLED ******************************************
+C PW86formX
+C ********************************************************************
+
+      IMPLICIT NONE
+
+C Passed arguments
+      integer, intent(in) :: IREL, NSPIN
+      real(dp),intent(in) :: DENS(NSPIN), GDENS(3,NSPIN)
+      real(dp),intent(out):: EX, EC, DECDD(NSPIN), DECDGD(3,NSPIN),
+     .                       DEXDD(NSPIN), DEXDGD(3,NSPIN)
+
+C Internal variables and arrays
+      real(dp):: beta, c, mu, pi
+
+C Klimes et al parameters for the B88 exchange functional
+      pi = acos(-1._dp)
+      c = 2*(6*pi**2)**(1._dp/3)
+      mu = 0.22_dp
+      beta = mu / 1.2_dp
+
+C Call PW86 routine with appropriate values for a, b, and c.
+      CALL B88formX( beta, mu, c, IREL, nspin, Dens, GDens,
+     .               EX, DEXDD, DEXDGD )
+
+C Set correlation energy and derivatives to zero
+      EC = 0
+      DECDD(:) = 0
+      DECDGD(:,:) = 0
+
+      END SUBROUTINE B88KBMX
 
       END MODULE m_ggaxc

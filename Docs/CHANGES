@@ -6,6 +6,21 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2010-04-20 00:48:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-344
+
+Added parametrization of Klimes et al for vdW-DF (J. M. Soler)
+  
+modified:
+    Docs/siesta.tex                  ! Added VDW/KBM
+    Src/SiestaXC/Testers/test1.f90   ! Call to B88 GGA exchange
+    Src/SiestaXC/atomxc.f90          ! Added VDW/KBM comment
+    Src/SiestaXC/cellxc.f90          ! Added VDW/KBM comment
+    Src/SiestaXC/ggaxc.f             ! Added Becke-88 exchange routine
+    Src/SiestaXC/siestaxc.f90        ! Added VDW/KBM comment
+    Src/SiestaXC/vdwxc.f90           ! Call to B88 exchange
+    Src/SiestaXC/xcmod.f90           ! Call to vdw_set_author for KBM
+
+-----------------------------------------------------------------------
 2010-04-20 00:44:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-343
 
 Documentation completed on LMKLL flavour of vdW-DF (J. M. Soler)
