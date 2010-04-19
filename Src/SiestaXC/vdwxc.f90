@@ -9,12 +9,16 @@
 ! where rho(r) is the electron density at point r, grad_rho(r) its gradient,
 ! and q0(rho,grad_rho) and phi(d1,d2) are universal functions defined in 
 ! Eqs.(11-12) and (14-16) of Dion et al.
-! Ref: G.Roman-Perez and J.M.Soler, PRL 103, 096102 (2009)
-! Written by J.M.Soler. July 2007 - July 2008.
+! Refs: M.Dion et al, PRL 92, 246401 (2004)
+!       K.Lee et al, arXiv:1003.5255v1 (2010)
+!       G.Roman-Perez and J.M.Soler, PRL 103, 096102 (2009)
+! Written by J.M.Soler. July 2007 - April 2010.
 !------------------------------------------------------------------------------
 ! Used module procedures:
 !  use mesh1D,      only: derivative        ! Derivative of a function in a mesh
 !  use flib_spline, only: generate_spline   ! Sets spline in a general mesh
+!  use m_ggaxc      only: ggaxc             ! General GGA XC routine
+!  use m_ldaxc,     only: ldaxc             ! General LDA XC routine
 !  use mesh1D,      only: integral          ! Integral of a function in a mesh
 !  use mesh1D,      only: get_mesh          ! Returns the mesh points
 !  use mesh1D,      only: get_n             ! Returns the number of mesh points
@@ -29,8 +33,10 @@
 !------------------------------------------------------------------------------
 ! Public procedures available from this module:
 !   vdw_decusp    : Energy due to the softening of the VdW kernel cusp
+!   vdw_exchng    : GGA exchange energy apropriate for the used vdW flavour
 !   vdw_get_qmesh : Returns size and values of q-mesh
 !   vdw_phi       : Finds and interpolates phi(q1,q2,k)
+!   vdw_set_author: Sets the vdW functional flavour (author initials)
 !   vdw_set_kcut  : Sets the planewave cutoff kc of the integration grid
 !   vdw_theta     : Finds function theta_q(rho,grad_rho)
 !------------------------------------------------------------------------------
@@ -58,6 +64,27 @@
 !   real(dp),intent(out):: dedgrho(3,nspin) ! d(rho*eps)/d(grad_rho)
 ! Notes:
 ! - Requires a previous call to vdw_set_kcut. Otherwise stops with an error msg.
+!------------------------------------------------------------------------------
+! subroutine vdw_exchng( iRel, nSpin, D, GD, epsX, dEXdD, dEXdGD )
+!   Finds the exchange energy density and its derivatives, using the GGA
+!   functional apropriate for the previously-set vdW functional flavour
+! Arguments:
+!   integer, intent(in) :: iRel            ! Relativistic exchange? 0=no, 1=yes
+!   integer, intent(in) :: nSpin           ! Number of spin components
+!   real(dp),intent(in) :: D(nSpin)        ! Local electron (spin) density
+!   real(dp),intent(in) :: GD(3,nSpin)     ! Gradient of electron density
+!   real(dp),intent(out):: epsX            ! Exchange energy per electron
+!   real(dp),intent(out):: dEXdD(nSpin)    ! dEx/dDens, Ex=Int(dens*epsX)
+!   real(dp),intent(out):: dEXdGD(3,nSpin) ! dEx/dGrad(Dens)
+! Sample usage:
+!   integer,parameter:: iRel=0, nSpin=2
+!   real(dp):: D(nSpin), dEXdD(nSpin), dEXdGD(3,nSpin), epsX, GD(3,nSpin)
+!   call vdw_set_author('DRSLL')
+!   do r points
+!     Find D and GD at r
+!     call vdw_exchng( iRel, nSpin, D, GD, epsX, dEXdD, dEXdGD )
+!     Ex = Ex + dVolume*sum(D)*epsX
+!   end do
 !------------------------------------------------------------------------------
 ! subroutine vdw_get_qmesh( n, q )
 !   Returns size and values of q-mesh
@@ -113,7 +140,15 @@
 ! Notes:
 ! - Requires a previous call to vdw_set_kcut. Otherwise stops with an error msg.
 ! - Stops with an error message if size of array phi is smaller than nq*nq.
-!------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------
+! subroutine vdw_set_author( author )
+!   Sets the functional flavour (author initials) and subsequent parameters
+! Arguments:
+!   character(len=*),intent(in):: vdw_author ! Functnl flavour ('DRSLL'|'LMKLL')
+! Notes:
+! - If vdw_set_author is not called, author='DRSLL' is set by default
+! - Stops with an error message if author has not an allowed value
+!-----------------------------------------------------------------------------
 ! subroutine vdw_set_kcut( kc )
 !   Sets the reciprocal planewave cutoff kc of the integration grid, and finds 
 !   the interpolation table to be used by vdw_phi to obtain the vdW kernel phi
@@ -198,6 +233,7 @@ MODULE m_vdwxc
   use mesh1D,      only: integral          ! Integral of a function in a mesh
   use mesh1D,      only: get_mesh          ! Returns the mesh points
   use mesh1D,      only: get_n             ! Returns the number of mesh points
+  use m_ggaxc,     only: ggaxc             ! General GGA XC routine
   use m_ldaxc,     only: ldaxc             ! General LDA XC routine
   use m_radfft,    only: radfft            ! Radial fast Fourier transform
   use mesh1D,      only: set_interpolation ! Sets interpolation method
@@ -216,12 +252,14 @@ MODULE m_vdwxc
   implicit none
 
 ! Called by xc routines
-PUBLIC ::        &
-  vdw_decusp,    &! Energy due to the softening of the VdW kernel cusp
-  vdw_theta,     &! Finds function theta_q(rho,grad_rho)
-  vdw_get_qmesh, &! Returns size and values of q-mesh
-  vdw_phi,       &! Finds and interpolates phi(q1,q2,k)
-  vdw_set_kcut    ! Sets the planewave cutoff kc of the integration grid
+PUBLIC ::         &
+  vdw_decusp,     &! Energy due to the softening of the VdW kernel cusp
+  vdw_exchng,     &! GGA exchange energy apropriate for the used vdW flavour
+  vdw_theta,      &! Finds function theta_q(rho,grad_rho)
+  vdw_get_qmesh,  &! Returns size and values of q-mesh
+  vdw_phi,        &! Finds and interpolates phi(q1,q2,k)
+  vdw_set_author, &! Sets the vdW functional flavour (author initials)
+  vdw_set_kcut     ! Sets the planewave cutoff kc of the integration grid
 
 ! DEBUG
 ! Called by debugging test programs
@@ -292,6 +330,7 @@ PRIVATE  ! Nothing is declared public beyond this point
   real(dp),parameter:: ytol = 1.e-15_dp     ! Tol. for saturated q
 
   ! Private module variables and arrays
+  character(len=5),save:: vdw_author='DRSLL' ! Functional 'flavour' name
   real(dp),save:: dmesh(nd)                ! Mesh points for phi(d1,d2) table
   real(dp),save:: qmesh(mq)                ! Mesh points for phi(q1,q2,r)
   real(dp),save:: phi_table(0:3,0:3,nd,nd) ! Coefs. for bicubic interpolation
@@ -306,6 +345,7 @@ PRIVATE  ! Nothing is declared public beyond this point
   real(dp),save:: dk                       ! k-mesh interval
   real(dp),save:: kcut                     ! Planewave cutoff: k>kcut => phi=0
   integer, save:: nk                       ! # k points within kcut
+  real(dp),save:: zab=-0.8491_dp           ! Parameter of the vdW functional
 
 !  real(dp),save:: dqmaxdqmin, qcut
 
@@ -905,7 +945,6 @@ subroutine qofrho( rho, grho, q, dqdrho, dqdgrho )
   character(len=*),parameter :: author = 'PW92'  ! Perdew-Wang'92 for LDA
   integer,         parameter :: irel   = 0       ! Non-relativistic exchange
   integer,         parameter :: nspin  = 1       ! Unpolarized electron gas
-  real(dp),parameter :: zab = -0.8491_dp         ! See Dion et al
   real(dp):: decdrho, dexdrho, dkfdrho, dq0dgrho(3), dq0dgrho2, dq0drho, &
              dqdq0, dvxdrho(nspin), dvcdrho(nspin), ex, ec, grho2, &
              kf, pi, q0, rhos(nspin), vx(nspin), vc(nspin)
@@ -1330,6 +1369,38 @@ end subroutine vdw_decusp
 
 !-----------------------------------------------------------------------------
 
+subroutine vdw_exchng( iRel, nSpin, D, GD, epsX, dEXdD, dEXdGD )
+
+! Finds the exchange energy density and its derivatives, using the GGA
+! functional apropriate for the previously-set vdW functional flavour
+
+  implicit none
+  integer, intent(in) :: iRel            ! Relativistic exchange? 0=no, 1=yes
+  integer, intent(in) :: nSpin           ! Number of spin components
+  real(dp),intent(in) :: D(nSpin)        ! Local electron (spin) density
+  real(dp),intent(in) :: GD(3,nSpin)     ! Gradient of electron density
+  real(dp),intent(out):: epsX            ! Exchange energy per electron
+  real(dp),intent(out):: dEXdD(nSpin)    ! dEx/dDens, Ex=Int(dens*epsX)
+  real(dp),intent(out):: dEXdGD(3,nSpin) ! dEx/dGrad(Dens)
+
+! Internal variables and arrays
+  real(dp):: epsC, dECdD(nSpin), dECdGD(3,nSpin)
+
+! Call the appropriate GGA functional
+  if (vdw_author=='DRSLL') then
+    call GGAxc( 'revPBE', iRel, nSpin, D, GD, &
+                 epsX, epsC, dEXdD, dECdD, dEXdGD, dECdGD )
+  else if (vdw_author=='LMKLL') then
+    call GGAxc( 'PW86R', iRel, nSpin, D, GD, &
+                 epsX, epsC, dEXdD, dECdD, dEXdGD, dECdGD )
+  else
+    stop 'vdw_exchng ERROR: unknown author'
+  end if
+
+end subroutine vdw_exchng
+
+!-----------------------------------------------------------------------------
+
 subroutine vdw_get_qmesh( n, q )
 
 ! Returns size and values of q-mesh
@@ -1397,6 +1468,26 @@ subroutine vdw_phi( k, phi, dphidk )
   end if
 
 end subroutine vdw_phi
+
+!-----------------------------------------------------------------------------
+
+subroutine vdw_set_author( author )
+
+! Sets the functional flavour (author initials) and subsequent parameters
+
+  implicit none
+  character(len=*),intent(in):: author ! Functnl flavour ('DRSLL'|'LMKLL')
+
+  if (author=='DRSLL') then
+    zab = -0.8491_dp
+  else if (author=='LMKLL') then
+    zab = -1.887_dp
+  else
+    stop 'vdw_set_author: ERROR: author not known'
+  end if
+  vdw_author = author
+
+end subroutine vdw_set_author
 
 !-----------------------------------------------------------------------------
 

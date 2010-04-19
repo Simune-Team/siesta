@@ -6,6 +6,22 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2010-04-20 00:34:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-341
+
+Added the vdW functional flavour of K.Lee et al, arXiv:1003.5255v1 (2010) (J.M. Soler)
+  
+modified:
+    Src/SiestaXC/Testers/test1.f90  ! Added PW86
+    Src/SiestaXC/Testers/test2.f90  ! Added VDW/LMKLL
+    Src/SiestaXC/Testers/test3.F90  ! Added VDW/LMKLL
+    Src/SiestaXC/Testers/test4.F90  ! Added VDW/LMKLL
+    Src/SiestaXC/atomxc.f90         ! Call to vdw_exchng
+    Src/SiestaXC/cellxc.f90         ! Call to vdw_exchng
+    Src/SiestaXC/ggaxc.f            ! Added PW86 and PW86R exchange functionals
+    Src/SiestaXC/vdwxc.f90          ! Added vdw_exchng and vdw_set_author
+    Src/SiestaXC/xcmod.f90          ! Call to vdw_set_author
+
+-----------------------------------------------------------------------
 2010-03-08 12:23:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-340
 
 Update FoX to version 4.1.0 (A. Walker)

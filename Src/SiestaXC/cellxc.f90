@@ -210,6 +210,7 @@
 !         'PBESOL' => GGA Perdew et al, PRL, 100, 136406 (2008)
 !           'AM05' => GGA Mattsson & Armiento, PRB, 79, 155101 (2009)
 !          'DRSLL' => VDW Dion et al, PRL 92, 246401 (2004)
+!          'LMKLL' => VDW K.Lee et al, arXiv:1003.5255v1 (2010)
 ! *******************************************************************
 
 MODULE m_cellXC
@@ -257,6 +258,7 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   use m_timer, only: timer_get     ! Returns counted times
   use m_timer, only: timer_start   ! Starts counting time
   use m_timer, only: timer_stop    ! Stops counting time
+  use m_vdwxc, only: vdw_exchng    ! GGA exchange apropriate for vdW flavour
   use m_vdwxc, only: vdw_decusp    ! Cusp correction to VDW energy
   use m_vdwxc, only: vdw_get_qmesh ! Returns q-mesh for VDW integrals
   use m_vdwxc, only: vdw_phi       ! Returns VDW functional kernel
@@ -949,9 +951,8 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
       ! derivatives with respect to density and density gradient
       if (VDWfunctl) then
 
-        ! Exchange from revPBE GGA
-        call ggaxc( 'revPBE', irel, nSpin, D, GD, epsX, epsC, &
-                    dExdD, dEcdD, dExdGD, dEcdGD )
+        ! Exchange from the apropriate GGA functional
+        call vdw_exchng( irel, nSpin, D, GD, epsX, dExdD, dExdGD )
 
         ! Local correlation from PW92 LDA
         ! Use Eaux and dEdDaux to avoid overwritting epsX and dExdD
