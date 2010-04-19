@@ -97,6 +97,7 @@ radfft.o: alloc.o bessph.o m_recipes.o precision.o
 siestaxc.o: atomxc.o cellxc.o mesh3d.o precision.o xcmod.o
 sys.o: parallel.o
 timer.o: sys.o m_timer.o
-vdwxc.o: debugxc.o flib_spline.o ldaxc.o m_recipes.o mesh1d.o precision.o
-vdwxc.o: radfft.o
-xcmod.o: precision.o sys.o
+vdwxc.o: debugxc.o flib_spline.o ggaxc.o ldaxc.o m_recipes.o mesh1d.o
+vdwxc.o: precision.o radfft.o
+xcmod.o: precision.o sys.o vdwxc.o
+

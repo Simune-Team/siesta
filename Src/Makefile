@@ -491,10 +491,10 @@ m_sparse.o: alloc.o precision.o
 m_spin.o: alloc.o m_fdf_global.o parallel.o precision.o
 m_stress.o: precision.o
 m_timer.o: m_io.o m_walltime.o moreParallelSubs.o parallel.o precision.o sys.o
-m_ts_aux_rout.o: sys.o
+m_ts_aux_rout.o: precision.o sys.o
 m_ts_contour.o: files.o m_ts_aux_rout.o m_ts_options.o precision.o sys.o
 m_ts_electrode.o: files.o m_ts_aux_rout.o m_ts_io.o m_ts_kpoints.o
-m_ts_electrode.o: m_ts_options.o
+m_ts_electrode.o: m_ts_options.o precision.o
 m_ts_in_siesta.o: find_kgrid.o m_ts_contour.o m_ts_electrode.o m_ts_io.o
 m_ts_in_siesta.o: m_ts_kpoints.o m_ts_options.o m_ts_scattering.o parallel.o
 m_ts_in_siesta.o: parallelsubs.o precision.o sys.o
@@ -527,10 +527,10 @@ molecularmechanics.o: alloc.o parallel.o parsing.o precision.o sys.o units.o
 moreParallelSubs.o: alloc.o m_io.o parallel.o precision.o sys.o
 mulliken.o: atmfuncs.o parallel.o parallelsubs.o precision.o siesta_cml.o
 naefs.o: atmfuncs.o mneighb.o precision.o
-new_dm.o: alloc.o atomlist.o compute_norm.o m_energies.o m_iodm.o m_sparse.o
-new_dm.o: m_spin.o m_steps.o m_ts_io.o m_ts_options.o parallel.o parallelsubs.o
-new_dm.o: parsing.o precision.o siesta_geom.o siesta_options.o
-new_dm.o: sparse_matrices.o sys.o units.o
+new_dm.o: alloc.o atomlist.o compute_norm.o m_energies.o m_fdf_global.o
+new_dm.o: m_iodm.o m_sparse.o m_spin.o m_steps.o m_ts_io.o m_ts_options.o
+new_dm.o: parallel.o parallelsubs.o parsing.o precision.o siesta_geom.o
+new_dm.o: siesta_options.o sparse_matrices.o sys.o units.o
 nlefsm.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
 normalize_dm.o: atomlist.o m_mpi_utils.o m_spin.o parallel.o precision.o
 normalize_dm.o: sparse_matrices.o

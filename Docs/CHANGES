@@ -6,6 +6,15 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2010-04-20 00:53:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-345
+
+Updated makefile dependencies (J. M. Soler)
+  
+modified:
+  Src/Makefile
+  Src/SiestaXC/makefile
+  
+-----------------------------------------------------------------------
 2010-04-20 00:48:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-344
 
 Added parametrization of Klimes et al for vdW-DF (J. M. Soler)
