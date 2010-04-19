@@ -6,6 +6,32 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2010-03-08 12:23:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-340
+
+Update FoX to version 4.1.0 (A. Walker)
+  
+  Version 4.1.0 of FoX, used to produce our XML output was released 
+  on 2010-02-09. This patch updates the version shipped with Siesta 
+  to this version. 
+
+  Changes that affect Siesta are that the build process for FoX can
+  now take advantage of possible parallelization (make -j), we can 
+  ask FoX to generate an abort signal if it kills the process and 
+  the inclusion of work arounds for compiler bugs in recent versions 
+  of the pgi compiler. Some of these changes existed in an (unrelased)
+  version of FoX shipped with Siesta since revision 320.
+ 
+  modified:
+      Src/FoX/FoX-config.in
+      Src/FoX/LICENSE
+      Src/FoX/Makefile
+      Src/FoX/common/FoX_common.F90
+      Src/FoX/configure
+      Src/FoX/wxml/FoX_wxml.f90
+      Src/FoX/wxml/m_wxml_core.F90
+      version.info
+      
+-----------------------------------------------------------------------
 2010-02-04  03:50:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-339
 
   Fix bug in previous patch regarding CG DM extrapolation (A. Garcia)
