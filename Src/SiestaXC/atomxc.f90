@@ -127,7 +127,7 @@
 !           'AM05' => GGA Mattsson & Armiento, PRB, 79, 155101 (2009)
 !          'DRSLL' => VDW Dion et al, PRL 92, 246401 (2004)
 !          'LMKLL' => VDW K.Lee et al, arXiv:1003.5255v1 (2010)
-!            'KBM' => VDW J.Klimes et al, JPCM 22, 022201 (2009)
+!            'KBM' => VDW optB88-vdW of J.Klimes et al, JPCM 22, 022201 (2009)
 ! *******************************************************************
 
 MODULE m_atomXC

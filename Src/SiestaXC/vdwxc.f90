@@ -1397,7 +1397,7 @@ subroutine vdw_exchng( iRel, nSpin, D, GD, epsX, dEXdD, dEXdGD )
     call GGAxc( 'PW86R', iRel, nSpin, D, GD, &
                  epsX, epsC, dEXdD, dECdD, dEXdGD, dECdGD )
   else if (vdw_author=='KBM') then
-    ! Klimes et al, JPCM 22, 022201 (2009)
+    ! optB88-vdW of Klimes et al, JPCM 22, 022201 (2009)
     call GGAxc( 'B88KBM', iRel, nSpin, D, GD, &
                  epsX, epsC, dEXdD, dECdD, dEXdGD, dECdGD )
   else
@@ -1486,10 +1486,13 @@ subroutine vdw_set_author( author )
   character(len=*),intent(in):: author ! Functnl flavour ('DRSLL'|'LMKLL')
 
   if (author=='DRSLL') then
+    ! Dion et al, PRL 92, 246401 (2004)
     zab = -0.8491_dp
   else if (author=='LMKLL') then
+    ! Lee et al, arXiv:1003.5255v1 (2010)
     zab = -1.887_dp
   else if (author=='KBM') then
+    ! optB88-vdW of Klimes et al, JPCM 22, 022201 (2009)
     zab = -0.8491_dp
   else
     stop 'vdw_set_author: ERROR: author not known'
