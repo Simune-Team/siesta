@@ -26,13 +26,15 @@ MODULE m_ts_io
 ! ## Changed to F90 by Jose-Luis Mozos, jlm@icmab.es              ##
 ! ##################################################################
 
-      subroutine read_green(jgfu,EFermi,NEn,contour,wgf, &
+      subroutine read_green(jgfu,NEn,contour,wgf, &
                               nua,NA1,NA2,nq,ng,wq,q,errorgf)
 
 
+      use precision, only: dp
+
       implicit none
 
-      real*8 EPS
+      real(dp) EPS
       parameter(EPS=1d-7)
 
       logical PRINTALOT
@@ -45,33 +47,31 @@ MODULE m_ts_io
 
 ! these are the values expected:
 ! they will be compared to the read-in and ERROR messages will appear
-      real*8 efermi             !The required Fermi energy
       integer NEn,ng
-      complex*16 contour(NEn),wgf(NEn)
+      complex(dp) contour(NEn),wgf(NEn)
       integer nua,NA1,NA2       !no. atoms in uc and no. repetitions in A1,A2
       integer nq                !no. q-points
-      logical tleft
 
       logical errorgf
 
 
 ! READ-IN values
-      real*8 efermii            !The required Fermi energy
-      integer NEni,ngi
-      complex*16, dimension(:), allocatable :: contouri,wgfi
+      real(dp) efermii            !The required Fermi energy
+      integer NEni
+      complex(dp), dimension(:), allocatable :: contouri,wgfi
 
       integer nqi
 
 !     q-point=k_|| point and weigth
 
-      real*8, dimension (:,:), pointer:: q
-      real*8, dimension (:), pointer:: wq
+      real(dp), dimension (:,:), pointer:: q
+      real(dp), dimension (:), pointer:: wq
 
       character*70 gftitle
 
 ! Helpers..
 
-      complex*16 ctmp
+      complex(dp) ctmp
       integer iEn
 
 
@@ -116,10 +116,10 @@ MODULE m_ts_io
 
          ctmp=contouri(iEn)-contour(iEn)
          if(cdabs(ctmp).GT.EPS) then 
-            write(6,*) ' Warning: contours differ by >', EPS
+            write(*,*) ' Warning: contours differ by >', EPS
          end if
          if(cdabs(ctmp).GT.10d0*EPS) then 
-            write(6,*) &
+            write(*,*) &
                  ' ERROR: contours differ by >', 10.d0*EPS
             errorgf = .true. 
             return
@@ -129,7 +129,7 @@ MODULE m_ts_io
       do iEn=1,NEn
          ctmp=wgfi(iEn)-wgf(iEn)
          if(cdabs(ctmp).GT.EPS) then 
-            write(6,*)  &
+            write(*,*)  &
                 ' ERROR: contour weights differ by >',EPS
             errorgf = .true. 
             return
@@ -220,19 +220,13 @@ MODULE m_ts_io
 !
 !  Modules
 !
-      use precision
+      use precision,    only : dp
       use parallel,     only : Node, Nodes
       use parallelsubs, only : WhichNodeOrb, LocalToGlobalOrb, &
                                GlobalToLocalOrb, GetNodeOrbs
-      use fdf
+      
       use files,        only : slabel, label_length
       use sys,          only : die
-! TSS Begin
-! Added variables
-!      use atomlist, only : lasto
-!      use m_energies, only : ef
-!      use m_spin, only : efs
-!      use siesta_geom, only : xa, isa, ucell
       use m_ts_kpoints, only: ts_gamma_scf, ts_kscell, ts_kdispl
 ! TSS End
 #ifdef MPI
@@ -274,8 +268,8 @@ MODULE m_ts_io
 ! TSS End
 
 ! Internal variables and arrays
-      integer    im, is, iu, ju, k, mnh, ns
-      integer    ih,hl,nuo,maxnhtot,maxhg
+      integer    is, iu, ju, k, ns
+      integer    ih,hl, maxnhtot, maxhg
       integer, dimension(:), allocatable :: numhg
 #ifdef MPI
       integer    MPIerror, Request, Status(MPI_Status_Size), BNode
@@ -286,7 +280,7 @@ MODULE m_ts_io
       logical    baddim, found, gammaonfile
 ! TSS Begin
 ! Aux Variables
-      integer :: ispin, ios, i, j, i2, l
+      integer :: i, j, i2, l
 ! TSS End
 
 
@@ -767,9 +761,11 @@ MODULE m_ts_io
 !
       use precision, only : sp, dp
 !      use parallel
-      use fdf
+      use fdf,       only : fdf_string
 #ifdef MPI
-      use mpi_siesta
+      use mpi_siesta, only : MPI_ISend, MPI_Bcast, MPI_Comm_Rank, MPI_AllReduce, &
+                             MPI_Sum, DAT_double, MPI_character, MPI_Comm_World, &
+                             MPI_Integer, MPI_logical, MPI_Status_Size
 #endif
 
 ! TSS Begin Added
@@ -782,9 +778,9 @@ MODULE m_ts_io
       character task*(*), paste*33
       integer   maxnd, nbasis, nspin
       integer   listd(maxnd), numd(nbasis), listdptr(nbasis)
-      real*8    dm(maxnd,nspin)
-      real*8    edm(maxnd,nspin)
-      real*8    ef
+      real(dp)    dm(maxnd,nspin)
+      real(dp)    edm(maxnd,nspin)
+      real(dp)    ef
       logical, optional :: found
 
 ! Internal variables and arrays
@@ -796,7 +792,7 @@ MODULE m_ts_io
 #ifdef MPI
       integer   MPIerror, Request, Status(MPI_Status_Size)
       integer   BNode
-      real*8, dimension(:), allocatable, save :: buffer
+      real(dp), dimension(:), allocatable, save :: buffer
       integer, dimension(:), allocatable, save :: ibuffer
 #endif
       external          chkdim, io_assign, io_close, paste, timer, &
