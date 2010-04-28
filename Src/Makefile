@@ -245,7 +245,7 @@ siesta: check-siesta what version $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
 #----------------------------------------------------------------------------
 # TranSIESTA...
 #
-TS_OBJS= m_ts_options.o m_ts_aux_rout.o m_ts_kpoints.o \
+TS_OBJS= m_ts_options.o m_ts_aux_rout.o m_ts_kpoints.o m_ts_iodm.o \
          m_ts_io.o m_ts_scattering.o m_ts_contour.o m_ts_electrode.o \
          m_ts_in_siesta.o
 #
