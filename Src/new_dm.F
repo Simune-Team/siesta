@@ -532,6 +532,7 @@ C Internal variables and arrays
       integer, pointer :: list_tmp(:), num_tmp(:), listptr_tmp(:)
       real(dp), pointer :: D_tmp(:,:), work(:)
 #ifdef TRANSIESTA
+      logical :: ts_found
       real(dp), pointer :: EDM_tmp(:,:)
 #endif /* TRANSIESTA */
 
@@ -560,17 +561,20 @@ C Try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
          if(isolve == 2) then ! Transiesta solution method
 C First try to read the .TSDE file
            call read_dynamic_ts_dm(nh_tmp, no_l, nspin_read, num_tmp, 
-     .             listptr_tmp, list_tmp, D_tmp, EDM_tmp, ef, found )
+     .             listptr_tmp, list_tmp, D_tmp, EDM_tmp, ef, ts_found )
 
 C Print information and do the some TS initializations
-           call ts_init_dm(found)
+           call ts_init_dm(ts_found)
 
 C If it does not find a .TSDE file, try to read a .DM file
-           if(.not. found) 
+           if(.not. ts_found) 
      .        call read_dynamic_dm(nh_tmp, no_l, nspin_read, num_tmp, 
      .             listptr_tmp, list_tmp, D_tmp, found )           
 
+C Either .TSDE or .DM was found
+           found = ts_found .or. found
          else ! Not Transiesta solution mathod
+           ts_found = .false.
            call read_dynamic_dm(nh_tmp, no_l, nspin_read, num_tmp, 
      .             listptr_tmp, list_tmp, D_tmp, found )
          end if ! Transiesta solution method
@@ -601,11 +605,11 @@ C If found, check and update, otherwise initialize with neutral atoms
            call de_alloc(list_tmp)
            call de_alloc(D_tmp)
 #ifdef TRANSIESTA
-           call de_alloc(EDM_tmp)
+           if(ts_found) call de_alloc(EDM_tmp)
 #endif /* TRANSIESTA */
         endif
       endif
-
+      
       if (found) then
 
          same_sp = same_sparsity(no_l,num_tmp,list_tmp,
@@ -618,7 +622,7 @@ C If found, check and update, otherwise initialize with neutral atoms
         if (same_sp) then
            Dscf(:,:) = D_tmp(:,:)
 #ifdef TRANSIESTA
-           Escf(:,:) = EDM_tmp(:,:)
+           if(ts_found) Escf(:,:) = EDM_tmp(:,:)
 #endif /* TRANSIESTA */
         else
            if (IOnode) then
@@ -633,7 +637,8 @@ C If found, check and update, otherwise initialize with neutral atoms
 #ifdef TRANSIESTA
 ! change_sparsity allocates work, but should work, since it does not 
 ! deallocate inside the spin loop
-              call change_sparsity (no_l,num_tmp,listptr_tmp,list_tmp,
+              if(ts_found) 
+     .          call change_sparsity (no_l,num_tmp,listptr_tmp,list_tmp,
      $                                  numh,listhptr,listh,
      $                                  EDM_tmp(:,is), Escf(:,is),
      $                            work)
@@ -646,7 +651,7 @@ C If found, check and update, otherwise initialize with neutral atoms
            call de_alloc(D_tmp)
            call de_alloc(work)  ! Allocated by change_sparsity
 #ifdef TRANSIESTA
-           call de_alloc(EDM_tmp)
+           if(ts_found) call de_alloc(EDM_tmp)
 #endif /* TRANSIESTA */
         endif
 
