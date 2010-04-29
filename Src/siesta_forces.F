@@ -21,14 +21,8 @@
       use m_convergence, only: converger_t
       use m_convergence, only: reset, set_tolerance
 #ifdef TRANSIESTA
-C TSS Begin
-C SIESTA Modules
-      use sparse_matrices, only : nh,Dscf, H
-      use m_spin, only : nspin
-      use sys, only : die
-C  TS Modules
-      use m_ts_options, only : VIn, VOut, mixH, ts_istep
-C TSS End
+      use m_ts_options, only : mixH
+      use m_ts_global_vars, only : VIn, VOut, ts_istep
 #endif /* TRANSIESTA */
 
 
@@ -40,12 +34,10 @@ C TSS End
       logical  :: first, last, SCFconverged
       real(dp) :: dDmax     ! Max. change in density matrix elements
       type(converger_t)  ::  conv_harris, conv_etot
+
 #ifdef TRANSIESTA
-      ! TSS Begin
-      ! Internal Variables
-      integer :: ts_alloc_stat
+! Used in force constant runs
       ts_istep = istep
-      ! TSS End
 #endif /* TRANSIESTA */
 !------------------------------------------------------------------------- BEGIN
 
@@ -89,78 +81,29 @@ C TSS End
 
           call mixer( iscf, dDmax )
 #else /* TRANSIESTA */
-! TSS Begin: Mixing H or DM
-          if(size(VIn) /= nh ) then
-            if (allocated(VIn)) then
-              deallocate(VIn)
-            end if
-            if (allocated(VOut)) then
-              deallocate(VOut)
-            end if
 
-            allocate(VIn(nh,nspin), STAT=ts_alloc_stat)
-            if(ts_alloc_stat /= 0)
-     . call die('Failled to Allocate VIn in siesta_forces !!')
-            allocate(VOut(nh,nspin))
-            if(ts_alloc_stat /= 0)
-     . call die('Failled to Allocate VOut in siesta_forces !!')
-
-          endif
-! TSS End
-
-! Adding the possibility of Mixinh H
+          if (cml_p)
+     $         call cmlStartStep(xf=mainXML, type='SCF', index=iscf)
+! Adding the possibility of Mixinh H.
           if (mixH) then
 
-           if ( first ) then
+            if ( first ) then
+             call setup_hamiltonian( first, last, iscf )
+            end if
+
+            call compute_dm( iscf )
+
             call setup_hamiltonian( first, last, iscf )
-           end if
 
-           if (cml_p)
-     $         call cmlStartStep(xf=mainXML, type='SCF', index=iscf)
+          else ! Mix DM
 
-           VIn(1:nh,1:nspin)=H(1:nh,1:nspin)
+            call setup_hamiltonian( first, last, iscf )
 
-           call compute_dm( iscf )
+            call compute_dm( iscf )
 
-           call setup_hamiltonian( first, last, iscf )
+          end if ! mixH
 
-           VOut(1:nh,1:nspin)=H(1:nh,1:nspin)
-
-           call mixer( iscf, dDmax )
-
-           H(1:nh,1:nspin)=VIn(1:nh,1:nspin)
-
-          else
-! TSS End Mixing H
-
-! TSS Begin
-! Putting VIn=rho
-           VIn(1:nh,1:nspin)=Dscf(1:nh,1:nspin)
-! TSS End
-           if (cml_p)
-     $         call cmlStartStep(xf=mainXML, type='SCF', index=iscf)
-
-           call setup_hamiltonian( first, last, iscf )
-
-           call compute_dm( iscf )
-
-! TSS Begin
-! Putting VOut=rho
-           VOut(1:nh,1:nspin)=Dscf(1:nh,1:nspin)
-! TSS End
-
-
-           call mixer( iscf, dDmax )
-
-! TSS Begin
-! Putting rho=VIn after mixing
-           Dscf(1:nh,1:nspin)=VIn(1:nh,1:nspin)
-! TSS End
-
-
-! TSS Begin
-         end if ! mixH
-! TSS End
+          call mixer( iscf, dDmax )
 #endif /* TRANSIESTA */
 
           call scfconvergence_test( first, iscf, last, dDmax,

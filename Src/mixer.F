@@ -25,7 +25,7 @@
 #ifdef TRANSIESTA
       use m_energies, only: ef
       use m_ts_iodm, only : write_ts_dm
-      use m_ts_options, only: VIn, VOut, TSrun, TSiscf
+      use m_ts_global_vars, only: VIn, VOut, TSrun, TSiscf
 #endif /* TRANSIESTA */
 
       implicit none

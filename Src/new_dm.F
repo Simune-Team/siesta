@@ -92,12 +92,8 @@
       use sparse_matrices, only: Escf     !! To be moved
 
 #ifdef TRANSIESTA
-      !use sys, only : die
-      !* TS uses maxnh and nh explicitly, and touches Dold and Eold
-      use sparse_matrices, only: maxnh, nh, Dold, Eold
-
-      use m_ts_options, only : VIn, VOut, TSrun
-      !use m_ts_io, only : TSiodm 
+      use m_ts_options, only : mixH 
+      use M_ts_global_vars, only : TSrun, VOut
 #endif /* TRANSIESTA */
 
       implicit none
@@ -166,19 +162,6 @@
            write(6,"(a)") "DM reset as supercell changed."
         endif
       endif
-#ifdef TRANSIESTA
-      ! TSS Begin: Mixing arrays
-      if(.not.allocated(VIn)) then
-       allocate(VIn(maxnh,nspin), STAT=ts_alloc_stat)
-       if(ts_alloc_stat /= 0) 
-     .   call die('Failled to Allocate VIn in new_dm !!')
-       allocate(VOut(maxnh,nspin))
-       if(ts_alloc_stat /= 0) 
-     .   call die('Failled to Allocate VOut in new_dm !!')
-           endif 
-      ! TSS End
-
-#endif /* TRANSIESTA */
 
 
       if (dminit) then
@@ -249,6 +232,10 @@
       ! Only part of Escf is updated in TS, so if it is put as zero here
       ! a continuation run gives bad forces.
       if(.not.TSrun) Escf(:,:) = 0.0_dp
+      if(.not. mixH) then
+         nullify(VOut)
+         VOut => Dscf
+      end if
 #else
       Escf(:,:) = 0.0_dp
 #endif /* TRANSIESTA */

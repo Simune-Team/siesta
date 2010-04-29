@@ -319,8 +319,10 @@ C     Create buffer arrays for transfering density matrix between nodes and list
          call io_close(unit1)
       endif
 
+#ifdef MPI
       call MPI_BCast(ef,1,MPI_double_precision,0,MPI_Comm_World,
      .              MPIerror)
+#endif
 
       found = .true.
 
@@ -598,8 +600,10 @@ C     Create buffer arrays for transfering density matrix between nodes and list
          call io_close(unit1)
       endif
 
+#ifdef MPI
       call MPI_BCast(ef,1,MPI_double_precision,0,MPI_Comm_World,
      .              MPIerror)
+#endif
 
       found = .true.
 
@@ -842,7 +846,7 @@ C     Write energy density matrix
       subroutine ts_init_dm(found)
 
       use parallel, only: IOnode 
-      use m_ts_options, only : TSinit, TSrun
+      use m_ts_global_vars, only : TSinit, TSrun
 
       logical, intent(in) :: found
 

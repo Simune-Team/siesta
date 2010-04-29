@@ -245,9 +245,9 @@ siesta: check-siesta what version $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
 #----------------------------------------------------------------------------
 # TranSIESTA...
 #
-TS_OBJS= m_ts_options.o m_ts_aux_rout.o m_ts_kpoints.o m_ts_iodm.o \
-         m_ts_io.o m_ts_scattering.o m_ts_contour.o m_ts_electrode.o \
-         m_ts_in_siesta.o
+TS_OBJS= m_ts_global_vars.o m_ts_options.o m_ts_aux_rout.o m_ts_kpoints.o \
+         m_ts_iodm.o m_ts_io.o m_ts_scattering.o m_ts_contour.o \
+         m_ts_electrode.o m_ts_in_siesta.o
 #
 transiesta: FPPFLAGS+=$(DEFS_PREFIX)-DTRANSIESTA 
 transiesta: DEFS+=$(DEFS_PREFIX)-DTRANSIESTA
@@ -480,7 +480,7 @@ m_ts_io.o: files.o m_spin.o m_ts_kpoints.o parallel.o parallelsubs.o
 m_ts_io.o: precision.o sys.o
 m_ts_kpoints.o: minvec.o parallel.o precision.o siesta_cml.o siesta_options.o
 m_ts_kpoints.o: sys.o units.o
-m_ts_options.o: m_fdf_global.o parallel.o precision.o siesta_options.o sys.o
+m_ts_options.o: m_fdf_global.o parallel.o precision.o siesta_options.o sys.o m_ts_global_vars.o
 m_ts_scattering.o: m_ts_aux_rout.o m_ts_options.o parallelsubs.o precision.o
 m_ts_scattering.o: sys.o
 m_wallclock.o: m_walltime.o

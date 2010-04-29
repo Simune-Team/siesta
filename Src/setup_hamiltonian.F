@@ -31,15 +31,11 @@
       use m_mpi_utils, only: globalize_sum
 #endif
 #ifdef TRANSIESTA
-! TSS Begin
-! SIESTA modules
       use files, only: slabel, label_length
-! TRANSIESTA modules
-      use m_ts_options, only: TSrun, savetshs, ts_istep
+      use m_ts_options, only: savetshs
+      use m_ts_global_vars, only: TSrun, ts_istep
       use m_ts_kpoints, only: ts_gamma_scf, ts_kscell, ts_kdispl
       use m_ts_io, only: ts_iohs
-! TSS End
-
 #endif /* TRANSIESTA */
 
 
@@ -301,7 +297,6 @@
         endif
 
 #ifdef TRANSIESTA
-! TSS Begin
         if (last.and.savetshs) then
            if (idyn.eq.6) then ! Force constants run
               write(numstring,'(2i4)') ia1,ts_istep
@@ -324,7 +319,6 @@
      .             ts_kscell, ts_kdispl, ts_gamma_scf, xa, 0, 0)
            endif
         endif
-! TSS End
 #endif /* TRANSIESTA */
 
 

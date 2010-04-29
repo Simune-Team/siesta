@@ -23,7 +23,7 @@ USE sys, only : die
 implicit none
 PUBLIC
 
-!==========================================================================*
+!=========================================================================*
 !  Arguments read from input file using the fdf package                    *
 !--------------------------------------------------------------------------*
 
@@ -52,8 +52,6 @@ character(20) :: smethod ! GF Numerical Integration Methods
 character(33) :: GFFileL ! Electrode Left GF File
 character(33) :: GFFileR ! Electrode Right GF File
 logical :: calcGF        ! Calculate the electrodes GF
-integer :: ts_istep      ! FC step in phonon calculation
-
 
 !==========================================================================*
 !==========================================================================*
@@ -86,25 +84,6 @@ logical, parameter :: calcGF_def = .true.
 
 
 
-
-!==========================================================================*
-!==========================================================================*
-!  Internal Variables                                                      *
-!--------------------------------------------------------------------------*
-
-
-integer :: TSiscf=0
-
-real(dp) ::           dDmaxRho !TSS MixH
-
-real(dp), dimension(:,:), allocatable, save :: &
-         VIn,VOut             ! TSS mix
-
-logical :: TSinit=.false.,TSrun=.false., errorts
-
-real(8), parameter :: eV=1.d0/13.6058d0
-
-
       CONTAINS
 
 ! *********************************************************************
@@ -126,6 +105,8 @@ subroutine read_ts_options()
 ! SIESTA Modules Used
 use parallel, only: IOnode, Nodes
 use m_fdf_global, only: fdf_global_get
+use units, only: eV
+use m_ts_global_vars, only : ts_istep
 
 #ifdef MPI
 use mpi_siesta, only: MPI_Bcast, MPI_character, MPI_Comm_World
