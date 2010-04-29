@@ -27,7 +27,7 @@ C SIESTA Modules
       use m_spin, only : nspin
       use sys, only : die
 C  TS Modules
-      use m_ts_options, only : VIn, VOut, mixH, initH, ts_istep
+      use m_ts_options, only : VIn, VOut, mixH, ts_istep
 C TSS End
 #endif /* TRANSIESTA */
 
@@ -75,11 +75,6 @@ C TSS End
         if (nscf <= 0) then
            last = .true.
         endif
-#ifdef TRANSIESTA
-! TSS Begin
-        initH=.true.
-! TSS End
-#endif /* TRANSIESTA */
 
         DO WHILE (.not. last)
           call timer( 'IterSCF', 1 )
@@ -118,7 +113,6 @@ C TSS End
 
            if ( first ) then
             call setup_hamiltonian( first, last, iscf )
-            initH=.false.
            end if
 
            if (cml_p)
@@ -142,7 +136,6 @@ C TSS End
 ! TSS Begin
 ! Putting VIn=rho
            VIn(1:nh,1:nspin)=Dscf(1:nh,1:nspin)
-           initH=.false.
 ! TSS End
            if (cml_p)
      $         call cmlStartStep(xf=mainXML, type='SCF', index=iscf)

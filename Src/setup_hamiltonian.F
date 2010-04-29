@@ -35,7 +35,7 @@
 ! SIESTA modules
       use files, only: slabel, label_length
 ! TRANSIESTA modules
-      use m_ts_options, only: TSrun, savetshs, initH, ts_istep
+      use m_ts_options, only: TSrun, savetshs, ts_istep
       use m_ts_kpoints, only: ts_gamma_scf, ts_kscell, ts_kdispl
       use m_ts_io, only: ts_iohs
 ! TSS End

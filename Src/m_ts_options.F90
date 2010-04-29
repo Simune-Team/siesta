@@ -101,8 +101,7 @@ real(dp) ::           dDmaxRho !TSS MixH
 real(dp), dimension(:,:), allocatable, save :: &
          VIn,VOut             ! TSS mix
 
-logical :: TSinit=.false.,TSrun=.false., errorts, &
-           initH ! TSS MixH
+logical :: TSinit=.false.,TSrun=.false., errorts
 
 real(8), parameter :: eV=1.d0/13.6058d0
 

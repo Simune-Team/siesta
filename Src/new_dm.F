@@ -571,7 +571,7 @@ C If it does not find a .TSDE file, try to read a .DM file
      .        call read_dynamic_dm(nh_tmp, no_l, nspin_read, num_tmp, 
      .             listptr_tmp, list_tmp, D_tmp, found )           
 
-C Either .TSDE or .DM was found
+C Either .TSDE or .DM may have been found
            found = ts_found .or. found
          else ! Not Transiesta solution mathod
            ts_found = .false.
