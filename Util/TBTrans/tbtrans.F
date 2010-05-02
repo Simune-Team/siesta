@@ -29,18 +29,18 @@ C------------------------------------------------------------------
       use fdf
 C Module Routines 
       use m_tbt_options, only : tbt_read_options
-      use m_tbt_gf, only : green
 C Module Variables
       use m_tbt_options, only : Emin, Emax, Volt, ncontour, GFeta, 
-     .     USEBULK, neigch, sppol, DoCOOP, RDORTHO, OutputRegionData,
+     .     USEBULK, neigch, sppol, DoCOOP,
      .     RNode, NBUFATL, NBUFATR, hsfile,isoat1,isoat2,
      .     NA1L,NA2L,nqL,NA1R,NA2R,nqR,DoAtomPDOS,CalcIeig  
       use files, only : slabel
-      use m_tbt_gf
       use parallel, only : Node, Nodes, IOnode
       use sys, only : die
-      use m_tbt_kpts, only : TSiokp
+      use m_tbt_kpts, only : get_kp_on_node
       use m_fdf_global, only : fdf_global_get
+C Module Routines and Variables
+      use m_tbt_gf
 #ifdef MPI
       use mpi_siesta
       use m_mpi_utils
@@ -309,7 +309,7 @@ C       close(iukp)
      
       fname=paste(slabel,'.TSHS') 
 
-      call TSiokp(fname,nkxy,kxy,wkxy,kscell,kdispl)
+      call get_kp_on_node(fname,nkxy,kxy,wkxy,kscell,kdispl)
      
 
 
@@ -697,9 +697,7 @@ c
        
 c ============================================================================
 
-#ifdef MPI
-
-#else
+#ifndef MPI
        write(joutfile,'(a22,1X,i2,1X,a16,i3)') 
      .      'Transport for spin ->',ispin,', kxy-point -> ', ikxy
 
@@ -791,15 +789,6 @@ c on return GFRGF contains GF^dagger.GammaR.GF
 
          if(nspin.eq.1) pdos=pdos*2.0 !incl. both spins
 
-#ifdef CDF
-c write datafile with hamiltonian, overlap, self-energies to netcdf-file
-C      if(OutputRegionData)  then
-C         CALL OutputRegion(USEBULK,RDORTHO,joutfile,Volt,NEn,
-C     .        ispin,nspin,isobegin,isoend,nou,
-C     .        H,S,NGL,SFEL,NGR,SFER,ZEnergy)
-C      end if !OutputRegionData
-#endif !CDF
-
       
       if(DoCOOP) 
      . call coop(joutfile,nc,isobegin,isoend,nua,NGL,NBUFL,
@@ -852,7 +841,7 @@ c
          if(neigch.gt.0 .and. neigch.le.nc) then
               allocate(teig(nc))
               teig = 0.0
-            call teigchana(nc,tt,neigch,Teig)
+            call teigchana(nc,tt,neigch,teig)
 #ifdef MPI
             if (.not. allocated(teigbuff)) 
      .    allocate(teigbuff(nkxy,NCONTOUR,neigch))
@@ -862,11 +851,6 @@ c
      &           DREAL(ZEnergy)/eV,(teig(i),i=1,neigch)
 #endif MPI
 
-#ifdef CDF         
-      if(neigch.gt.0)
-     . call netcdf_write_teig(.false.,neigch,teig,DREAL(ZEnergy)/eV,
-     .                            ispin,nspin)
-#endif ! CDF
 
                deallocate(teig)
          endif                  !eigenchannel analysis
@@ -1191,12 +1175,6 @@ C Convert to Ampere
          if(neigch.gt.0) call io_close(unit2)
       end if
 
-
-#ifdef CDF     
-c     close netcdf file with teig:
-      call netcdf_write_teig(.true.,neigch,
-     .            teig,DREAL(ZEnergy)/eV,ispin,nspin)
-#endif ! CDF
 
 
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

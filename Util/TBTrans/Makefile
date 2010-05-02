@@ -47,7 +47,6 @@ TBTOBJS= $(SIESTA_OBJS) $(MOD_TOBJS) $(SYSOBJ) $(EXTRA) \
          calc_green.o cdiag_local.o getsfe.o \
          mkRealContour.o reinit_tb.o setupkham2.o TSiohs.o atompdos.o coop.o \
          csolve.o teigchana.o helpers.o \
-         Lowdin.o netcdfwrite.o 
 
 #
 # Interfaces to libraries
@@ -60,7 +59,7 @@ $(FDF):
                           "ARCH_MAKE=../$(ARCH_MAKE)" \
                           "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 #
-INCFLAGS:=$(NETCDF_INCFLAGS) $(INCFLAGS)
+INCFLAGS:=$(INCFLAGS)
 #
 MPI_MAKEFILE=$(VPATH)/MPI/Makefile
 $(MPI_INTERFACE): 
@@ -75,9 +74,9 @@ $(LINALG):
                           "ARCH_MAKE=../$(ARCH_MAKE)" \
                           "INCFLAGS=$(LINALG_INCFLAGS)" "FFLAGS=$(FFLAGS)" $(LINALG))
 #
-tbtrans: $(TBTOBJS) $(FDF) $(SYSOBJ) $(NETCDF_INTERFACE) $(LINALG)
+tbtrans: $(TBTOBJS) $(FDF) $(SYSOBJ)  $(LINALG)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o tbtrans \
-              $(TBTOBJS) $(MPI_INTERFACE) $(NETCDF_INTERFACE) \
+              $(TBTOBJS) $(MPI_INTERFACE)  \
               $(FDF) $(LIBS) $(LINALG)  || echo "***Please see top of Makefile"
 #	@(cd ../../bin ; rm -f tsScan ; ln -s tbtrans tsScan)
 
@@ -88,9 +87,6 @@ clean:
 	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
 	(cd MPI ; $(MAKE) -f $(MPI_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
 	(cd Libs ; $(MAKE) -f $(MPI_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
-
-readTSHScdf: readTSHScdf.F $(NETCDF_INTERFACE)
-	$(FC) -o readTSHScdf readTSHScdf.F $(NETCDF_INTERFACE) $(NETCDF_LIBS)
 
 #
 # Dependencies
