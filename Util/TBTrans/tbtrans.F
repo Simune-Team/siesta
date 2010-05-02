@@ -1140,7 +1140,7 @@ C Convert to Ampere
 
          do iEn = 1 ,NEn
             write(unit4,'(F9.5,3e16.8)') DREAL(contour(iEn))/eV,
-     .   tavbuff(iEn),tdosavbuff(iEn),pdosav(iEn)
+     .   tavbuff(iEn),tdosavbuff(iEn),pdosavbuff(iEn)
 
             write(unit5,'(F9.5,e16.8)') DREAL(contour(iEn))/eV,
      .   bulkdosbuffL(iEn)
