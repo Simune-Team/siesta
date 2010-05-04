@@ -537,10 +537,11 @@ c     Default: IN CASE OF ERRORS, USE CONTACT REGION
             ncp = isoend - isobegin + 1
             if (IOnode) then
                write(joutfile,*) repeat('=',62) 
-               write(joutfile,'(a30,I3,a1,I3,a2)') 
+               write(joutfile,'(a30,I10,a1,I10,a1)') 
      .           'Projection Region: atoms : [',isoat1,';',isoat2,']'
-               write(joutfile,'(a30,I3,a1,I3,a4,I3)') 
-     .    'Projection Region: states: [',isobegin,';',isoend,'] ;',ncp
+               write(joutfile,'(a30,I10,a1,I10,a6,I10)') 
+     .    'Projection Region: states: [',isobegin,';',isoend,'] Tot:'
+     .    ,ncp
             end if ! IOnode
 
     
@@ -787,7 +788,7 @@ c on return GFRGF contains GF^dagger.GammaR.GF
             end do              !i
          end do                 !j
 
-         if(nspin.eq.1) pdos=pdos*2.0 !incl. both spins
+         if(nspin.eq.1) pdos=pdos*2.0d0 !incl. both spins
 
       
       if(DoCOOP) 
@@ -801,7 +802,7 @@ c on return GFRGF contains GF^dagger.GammaR.GF
          
 
       totdos = (-1.0d0/Pi)*DIMAG(zdotc(nc*nc,Sc,1,GF,1))
-      if(nspin.eq.1) totdos=totdos*2.0 ! incl. both spins
+      if(nspin.eq.1) totdos=totdos*2.0d0 ! incl. both spins
 
 
       tav(iEn)    = tav(iEn) + tottrans*wkxy(ikxy)
@@ -876,15 +877,17 @@ C =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
     
 
 
-#ifdef MPI
-
-#else
+#ifndef MPI
       write(unit1,*) " "
       if(neigch.gt.0)      
      . write(unit2,*) " "
 #endif MPI
 
-
+#ifndef MPDI
+! Leave a blank line inbetween two kpoints
+       write(unit1,*)
+       if(neigch.gt.0) write(unit2,*)
+#endif
 
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
       end do                    !loop over surface kxy-points
@@ -944,6 +947,11 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
      &           DREAL(ZEnergy)/eV,(teigbuff(ikxy,iEn,i),i=1,neigch)
 
                enddo
+
+! Leave a blank line inbetween two kpoints
+               write(unit1,*)
+               if(neigch.gt.0) write(unit2,*)
+
             enddo
          end if ! nkxy > 0 
       end if  ! IOnode
@@ -1058,6 +1066,10 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
      &                write(unit2,'(F9.5,1X,30(1X,f8.5))')
      &           DREAL(ZEnergy)/eV,(teigbuff(ikxy,iEn,i),i=1,neigch)                 
                   enddo 
+
+! Leave a blank line inbetween two kpoints
+                  write(unit1,*)
+                  if(neigch.gt.0) write(unit2,*)
 
                enddo
             end if ! nkxybuff > 0
