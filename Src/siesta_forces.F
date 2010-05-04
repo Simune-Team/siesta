@@ -22,7 +22,7 @@
       use m_convergence, only: reset, set_tolerance
 #ifdef TRANSIESTA
       use m_ts_options, only : mixH
-      use m_ts_global_vars, only : VIn, VOut, ts_istep
+      use m_ts_global_vars, only : ts_istep
 #endif /* TRANSIESTA */
 
 
