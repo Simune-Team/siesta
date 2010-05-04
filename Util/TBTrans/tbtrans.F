@@ -31,7 +31,7 @@ C Module Routines
       use m_tbt_options, only : tbt_read_options
 C Module Variables
       use m_tbt_options, only : Emin, Emax, Volt, ncontour, GFeta, 
-     .     USEBULK, neigch, sppol, DoCOOP,
+     .     USEBULK, neigch, sppol,
      .     RNode, NBUFATL, NBUFATR, hsfile,isoat1,isoat2,
      .     NA1L,NA2L,nqL,NA1R,NA2R,nqR,DoAtomPDOS,CalcIeig  
       use files, only : slabel
@@ -790,10 +790,6 @@ c on return GFRGF contains GF^dagger.GammaR.GF
 
          if(nspin.eq.1) pdos=pdos*2.0d0 !incl. both spins
 
-      
-      if(DoCOOP) 
-     . call coop(joutfile,nc,isobegin,isoend,nua,NGL,NBUFL,
-     . lasto,DREAL(ZEnergy),GF,GFRGF,Sc)
 
       if(DoAtomPDOS)
      . call atompdos(joutfile,nc,nspin,ispin,isobegin,isoend,nua,

@@ -19,7 +19,6 @@ integer NBUFATL,NBUFATR   ! No. buffer atoms, L/R
 
 logical USEBULK           ! If true use bulk params. in L/R regions
 logical sppol
-logical DoCOOP            ! If true do COOP curves
 
 character*33 hsfile       !name of HS-input file
 integer isoat1,isoat2
@@ -60,7 +59,6 @@ real(dp), parameter :: GFeta_def = 0.00001_dp
 logical, parameter :: UseBulk_def = .true.
 integer, parameter :: neigch_def = 0
 logical, parameter :: sppol_def = .false.
-logical, parameter :: DoCOOP_def = .false.
 integer, parameter :: NBUFATL_def=0
 integer, parameter :: NBUFATR_def=0
 logical, parameter :: DoAtomPDOS_def = .false.
@@ -84,10 +82,6 @@ call fdf_global_get(USEBULK,'TS.UseBulkInElectrodes',UseBulk_def)
 call fdf_global_get(neigch,'TS.TBT.NEigen',neigch_def)
 
 call fdf_global_get(sppol,'SpinPolarized',sppol_def)
-
-! Do we want to do COOP curves:
-call fdf_global_get(DoCOOP,'TS.TBT.DoCOOP',DoCOOP_def)
-
 
 call fdf_global_get(NBUFATL,'TS.BufferAtomsLeft',NBUFATL_def)
 call fdf_global_get(NBUFATR,'TS.BufferAtomsRight',NBUFATR_def) 
