@@ -106,8 +106,6 @@ setupkham2.o	: tsread2.o
 tbtrans.o	: hamil2.o 
 green4.o        : greensub.o
 m_tbt_gf.o       : tsread2.o
-netcdfwrite.o   : $(NETCDF_INTERFACE)
-OutputRegionData.o: Lowdin.F $(NETCDF_INTERFACE)
 # DO NOT DELETE THIS LINE - used by make depend
 alloc.o: parallel.o precision.o sys.o
 arw.o: parallel.o sys.o
