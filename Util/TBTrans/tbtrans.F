@@ -33,7 +33,7 @@ C Module Variables
       use m_tbt_options, only : Emin, Emax, Volt, ncontour, GFeta, 
      .     USEBULK, neigch, sppol,
      .     RNode, NBUFATL, NBUFATR, hsfile,isoat1,isoat2,
-     .     NA1L,NA2L,nqL,NA1R,NA2R,nqR,DoAtomPDOS,CalcIeig  
+     .     NA1L,NA2L,nqL,NA1R,NA2R,nqR,CalcIeig  
       use files, only : slabel
       use parallel, only : Node, Nodes, IOnode
       use sys, only : die
@@ -188,7 +188,7 @@ c Helpers, workspace, tempos etc...
 
       integer jgfL,jgfR         !File units for Left,Right GF
 
-      integer isobegin,isoend,ncp
+      integer isobegin,isoend,ncp,isoTDOSBegin,isoTDOSEnd
       
       integer mc                !max no. contact states 
       integer nc                !no. contact states
@@ -514,7 +514,8 @@ c==========================================================================
             mc  = maxuo -NGR -NGL
 
 
-
+            isoTDOSBegin = lasto(NBUFATL+nuaL*NA1L*NA2L)+1-NBUFL-NGL
+            isoTDOSEnd = lasto(nua-NBUFATR-nuaR*NA1R*NA2R)-NBUFL-NGL
 c CHOOSE ATOM IN TERMS OF GLOBAL ATOM NUMERBS (i.e. INCLUDE ELECTRODES HERE)
             if ( isoat1 == 0 )
      .         isoat1 = 1 + NBUFATL + nuaL*NA1L*NA2L !default
@@ -780,25 +781,30 @@ c==========================================================================
 c on return GFRGF contains GF^dagger.GammaR.GF                 
          
 
+! DOS
+         totdos = (-1.0d0/Pi)*DIMAG(zdotc(nc*nc,Sc,1,GF,1))
+
+! Calculate the "excluded" DOS and then subtract from totdos
          pdos=0d0
-         do j=isobegin,isoend
+         do j=isoTDOSBegin, isobegin-1
             do i=1,nc
                pdos = pdos -
      .         (1.0d0/Pi)*DIMAG(Sc(i+nc*(j-1))*GF(i+nc*(j-1)))
             end do              !i
          end do                 !j
 
-         if(nspin.eq.1) pdos=pdos*2.0d0 !incl. both spins
+         do j=isoend+1, isoTDOSEnd
+            do i=1,nc
+               pdos = pdos -
+     .         (1.0d0/Pi)*DIMAG(Sc(i+nc*(j-1))*GF(i+nc*(j-1)))
+            end do              !i
+         end do
+         pdos = totdos - pdos ! Subtract
 
-
-      if(DoAtomPDOS)
-     . call atompdos(joutfile,nc,nspin,ispin,isobegin,isoend,nua,
-     .     NGL,NBUFL,
-     .     lasto,DREAL(ZEnergy),GF,GFRGF,Sc,slabel)
-         
-
-      totdos = (-1.0d0/Pi)*DIMAG(zdotc(nc*nc,Sc,1,GF,1))
-      if(nspin.eq.1) totdos=totdos*2.0d0 ! incl. both spins
+         if(nspin.eq.1) then !incl. both spins
+            pdos=pdos*2.0d0 
+            totdos=totdos*2.0d0
+         end if
 
 
       tav(iEn)    = tav(iEn) + tottrans*wkxy(ikxy)
@@ -879,7 +885,7 @@ C =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
      . write(unit2,*) " "
 #endif MPI
 
-#ifndef MPDI
+#ifndef MPI
 ! Leave a blank line inbetween two kpoints
        write(unit1,*)
        if(neigch.gt.0) write(unit2,*)

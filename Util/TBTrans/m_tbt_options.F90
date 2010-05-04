@@ -26,8 +26,6 @@ integer isoat1,isoat2
 integer NA1L,NA2L,nqL 
 integer NA1R,NA2R,nqR
 
-logical DoAtomPDOS        ! If true calculate atomic PDOS in PDOS-region
-
 character*33 Lhsfile,Rhsfile
 
 integer Lnucuse, Rnucuse
@@ -61,7 +59,6 @@ integer, parameter :: neigch_def = 0
 logical, parameter :: sppol_def = .false.
 integer, parameter :: NBUFATL_def=0
 integer, parameter :: NBUFATR_def=0
-logical, parameter :: DoAtomPDOS_def = .false.
 logical, parameter :: CalcIeig_def = .false.
 character*33 :: hsfile_def
 
@@ -87,8 +84,6 @@ call fdf_global_get(NBUFATL,'TS.BufferAtomsLeft',NBUFATL_def)
 call fdf_global_get(NBUFATR,'TS.BufferAtomsRight',NBUFATR_def) 
 
 call fdf_global_get(hsfile,'TS.TBT.HSFile',hsfile_def)
-
-call fdf_global_get(DoAtomPDOS,'TS.TBT.AtomPDOS',DoAtomPDOS_def)
 
 call fdf_global_get(Lhsfile,'TS.HSFileLeft','LeftELEC.TSHS')
 call fdf_global_get(Rhsfile,'TS.HSFileRight','RightELEC.TSHS')

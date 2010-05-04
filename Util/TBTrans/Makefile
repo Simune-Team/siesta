@@ -45,7 +45,7 @@ SIESTA_OBJS= precision.o alloc.o  memoryinfo.o memory.o pxf.o \
 TBTOBJS= $(SIESTA_OBJS) $(MOD_TOBJS) $(SYSOBJ) $(EXTRA) \
          tbtrans.o transmission.o   \
          calc_green.o cdiag_local.o getsfe.o \
-         mkRealContour.o reinit_tb.o setupkham2.o TSiohs.o atompdos.o \
+         mkRealContour.o reinit_tb.o setupkham2.o TSiohs.o \
          csolve.o teigchana.o helpers.o \
 
 #
