@@ -802,6 +802,7 @@ c on return GFRGF contains GF^dagger.GammaR.GF
          pdos = totdos - pdos ! Subtract
 
          if(nspin.eq.1) then !incl. both spins
+            tottrans = tottrans*2.0d0
             pdos=pdos*2.0d0 
             totdos=totdos*2.0d0
          end if
@@ -860,7 +861,7 @@ c
 
          f_L =  fermi(DREAL(ZEnergy),EFermiL,Temp)
          f_R =  fermi(DREAL(ZEnergy),EFermiR,Temp)
-
+    
          Current = Current + (f_L-f_R)*tottrans*dE*wkxy(ikxy)
          
 
