@@ -372,6 +372,20 @@ c
                open (unit2, file=fname,
      &           status='unknown', blank='zero', err=1314)
             end if
+
+
+            if ( CalcIeig ) then
+               call io_assign(unit3)
+               fname=paste(slabel,'.IEIG' )
+               if(nspin.gt.1) then
+                  if(ispin.eq.1) fname=paste(slabel,'.UP.IEIG' )
+                  if(ispin.eq.2) fname=paste(slabel,'.DOWN.IEIG')
+               end if
+               open (unit3,
+     &         file=fname,
+     &         status='unknown', blank='zero', err=1314)
+            end if ! CalcIeig
+
          end if ! IOnode 
 
  
@@ -545,22 +559,7 @@ c     Default: IN CASE OF ERRORS, USE CONTACT REGION
      .    ,ncp
             end if ! IOnode
 
-    
-            
-
-            if (IOnode) then
-               if ( CalcIeig ) then
-                 call io_assign(unit3)
-                 fname=paste(slabel,'.IEIG' )
-                 if(nspin.gt.1) then
-                    if(ispin.eq.1) fname=paste(slabel,'.UP.IEIG' )
-                    if(ispin.eq.2) fname=paste(slabel,'.DOWN.IEIG')
-                 end if
-                 open (unit3,
-     &         file=fname,
-     &         status='unknown', blank='zero', err=1314)
-              end if ! CalcIeig
-            end if ! IOnode
+ 
        
             if(isobegin.gt.isoend) then
               isobegin = 1
@@ -679,9 +678,9 @@ c
           eigbuff(ikxy,1:maxuo)=eig(1:maxuo)
           ncpbuff(ikxy)=ncp
 #else 
-         write(unit3,'(a22,1X,i3,2a,2f5.3,f6.4)') 
-     .      "#Kxy-point, weight ",ikxy,": ",
-     .      kxy(1,ikxy),kxy(2,ikxy),wkxy(ikxy)
+         write(unit3,*) '# Kxy-point: ',ikxy
+         write(unit3,'(a6,f5.3,1X,f5.3,a7,f6.4)') 
+     .       '# kxy=',kxy(1,ikxy),kxy(2,ikxy),', w= ',wkxy(ikxy)
          do i=1,ncp
             write(unit3,*) i,(eig(i))/eV
          end do
@@ -710,6 +709,17 @@ c ============================================================================
      .   '   E           T(E)            TotDOS         PDOS'
 #endif MPI
 
+C Headers for output file; for each k-point
+       write(unit1,*) '# Kxy-point: ',ikxy
+       write(unit1,'(a6,f5.3,1X,f5.3,a7,f6.4)') 
+     .       '# kxy=',kxy(1,ikxy),kxy(2,ikxy),', w= ',wkxy(ikxy)
+
+       if(neigch.gt.0 .and. neigch.le.nc) then
+          write(unit2,*) '# Kxy-point: ',ikxy
+          write(unit2,'(a6,f5.3,1X,f5.3,a7,f6.4)') 
+     .       '# kxy=',kxy(1,ikxy),kxy(2,ikxy),', w= ',wkxy(ikxy)
+       end if
+         
 C=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
       do 7913 iEn = 1, NCONTOUR      ! loop over energy points
 C=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
@@ -831,9 +841,6 @@ c on return GFRGF contains GF^dagger.GammaR.GF
      .        DREAL(ZEnergy)/eV,tottrans,totdos,pdos
 
 
-         write(unit1,*) '# Kxy-point: ',ikxy
-         write(unit1,'(a6,f5.3,1X,f5.3,a7,f6.4)') 
-     .       '# kxy=',kxy(1,ikxy),kxy(2,ikxy),', w= ',wkxy(ikxy)
          write(unit1,'(F9.5,3e16.8)')
      .        DREAL(ZEnergy)/eV,tottrans,totdos,pdos
 
@@ -890,6 +897,7 @@ C =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
 ! Leave a blank line inbetween two kpoints
        write(unit1,*)
        if(neigch.gt.0) write(unit2,*)
+       if ( CalcIEig ) write(unit3,*)
 #endif
 
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
@@ -906,10 +914,9 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
          if (nkxy > 0) then
             do ikxy = 1,nkxy
                if ( CalcIEig ) then
-                 write(unit3,'(a22,1X,i8,a9,i8)') '#Kxy-point, weight ',
-     .     ikxy,' of Node ',Node
-                 write(unit3,'(3f9.6,f9.6)') kxy(1,ikxy),kxy(2,ikxy),
-     .kxy(3,ikxy),wkxy(ikxy)
+                 write(unit3,*) '# Kxy-point: ',ikxy, ' of Node', Node
+                 write(unit3,'(a6,f5.3,1X,f5.3,a7,f6.4)') 
+     .       '# kxy=',kxy(1,ikxy),kxy(2,ikxy),', w= ',wkxy(ikxy)
                  do i = 1,ncpbuff(ikxy)
                     write(unit3,*) i,(eigbuff(ikxy,i))/eV
                  enddo
@@ -925,15 +932,15 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
      .   '   E           T(E)            TotDOS         PDOS'
 
                write(unit1,*) '# Kxy-point: ',ikxy, ' of Node', Node
-         write(unit1,'(a6,f5.3,1X,f5.3,a7,f6.4)') 
+               write(unit1,'(a6,f5.3,1X,f5.3,a7,f6.4)') 
      .       '# kxy=',kxy(1,ikxy),kxy(2,ikxy),', w= ',wkxy(ikxy)
 
 
 
                if(neigch.gt.0) then
-                  write(unit2,'(a22,1X,i2,1X,a16,i3,a9,i6)') 
-     .      'Transport for spin ->',ispin,', kxy-point -> ', ikxy,
-     .      ', of Node', Node
+                  write(unit2,*) '# Kxy-point: ',ikxy, ' of Node', Node
+                  write(unit2,'(a6,f5.3,1X,f5.3,a7,f6.4)') 
+     .       '# kxy=',kxy(1,ikxy),kxy(2,ikxy),', w= ',wkxy(ikxy)
                end if 
                do iEn = 1,NCONTOUR
                   ZEnergy=contour(iEn)
@@ -954,6 +961,7 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 ! Leave a blank line inbetween two kpoints
                write(unit1,*)
                if(neigch.gt.0) write(unit2,*)
+               if ( CalcIEig ) write(unit3,*)
 
             enddo
          end if ! nkxy > 0 
@@ -1023,10 +1031,9 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
                do ikxy = 1,nkxybuff
                   if ( CalcIEig ) then
-                    write(unit3,'(a22,1X,i8,a9,i8)') 
-     . '#Kxy-point, weight ',ikxy,' of Node ',iNode 
-                    write(unit3,'(3f9.6,f9.6)') kxybuff(1,ikxy),
-     . kxybuff(2,ikxy),kxybuff(3,ikxy),wkxybuff(ikxy)
+                   write(unit3,*) '# Kxy-point: ',ikxy, ' of Node', Node
+                    write(unit3,'(a6,f5.3,1X,f5.3,a7,f6.4)') 
+     .       '# kxy=',kxy(1,ikxy),kxy(2,ikxy),', w= ',wkxy(ikxy)
                     do i = 1,ncpbuff(ikxy)
                        write(unit3,*) i,(eigbuff(ikxy,i))/eV
                     enddo
@@ -1049,10 +1056,11 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
      .   w= ',wkxybuff(ikxy)  
 
 
-               if(neigch.gt.0) 
-     .          write(unit2,'(a22,1X,i2,1X,a16,i3,a9,i6)') 
-     .      'Transport for spin ->',ispin,', kxy-point -> ', ikxy,
-     .      ', of Node', iNode 
+               if(neigch.gt.0) then
+                  write(unit2,*) '# Kxy-point: ',ikxy, ' of Node', Node
+                  write(unit2,'(a6,f5.3,1X,f5.3,a7,f6.4)') 
+     .       '# kxy=',kxy(1,ikxy),kxy(2,ikxy),', w= ',wkxy(ikxy)
+               end if
 
                   do iEn = 1,NCONTOUR
                      ZEnergy=contour(iEn)
@@ -1073,6 +1081,7 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 ! Leave a blank line inbetween two kpoints
                   write(unit1,*)
                   if(neigch.gt.0) write(unit2,*)
+                  if ( CalcIEig ) write(unit3,*) 
 
                enddo
             end if ! nkxybuff > 0
@@ -1095,7 +1104,7 @@ C Convert to Ampere
          write(joutfile,*) 
          write(joutfile,*) 'Results:'
          write(joutfile,*) 
-         write(joutfile,'(a,2ES16.8)') ' Voltage, Current(A) = ',
+         write(joutfile,'(1x,a,2ES16.8)') ' Voltage, Current(A) = ',
      .                                Volt,Currentbuff
          write(joutfile,*)
          write(joutfile,*) repeat('=',62)
@@ -1110,7 +1119,7 @@ C Convert to Ampere
          write(joutfile,*) 
          write(joutfile,*) 'Results:'
          write(joutfile,*)
-         write(joutfile,'(a,2ES16.8)') 'Voltage, Current(A) = ',
+         write(joutfile,'(1x,a,2ES16.8)') 'Voltage, Current(A) = ',
      $                                  Volt,Current
          write(joutfile,*)
          write(joutfile,*) repeat('=',62)
