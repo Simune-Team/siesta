@@ -84,12 +84,15 @@ echo "TBTrans Calculation"
 # TBT can be specified in the command line, and will override
 # the default location in Util
 #
-TBT=${TBT:-${ROOT_DIR}/Util/TBTrans/tbtrans}
-#
-if [ ! -x $TBT ] ; then
+if [ -z "$TBT" ] ; then
+  TBT=${ROOT_DIR}/Util/TBTrans/tbtrans
   echo "Compiling $TBT..."
-  (cd "${ROOT_DIR}/Util/TBTrans" ; make OBJDIR="$OBJDIR")
+  # Clean in case the compiled version there is not compatible
+  (cd "${ROOT_DIR}/Util/TBTrans" ; make OBJDIR="$OBJDIR" clean ;
+       make OBJDIR="$OBJDIR" )
+  TBT="${TS_EXEC_PREFIX} ${ROOT_DIR}/Util/TBTrans/tbtrans"
 fi
+#
 echo "Running script with tbtrans=$TBT"
 mkdir TBT
 cd TBT
@@ -107,7 +110,7 @@ then
    echo "The tbtrans calculation did not go well ..."
    exit
 fi
-rm ../../err_tbt.out
+###rm ../../err_tbt.out
 #
 # Go back to base directory
 #
