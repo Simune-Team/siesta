@@ -1,14 +1,15 @@
 #
 # Single-test makefile template for script usage
 #
-OBJDIR=Obj_TS
+#
+TS=../../../transiesta
 #
 completed:
 	@echo ">>>> Running $(name) test..."
 	@if [ -d work ] ; then rm -rf work ; fi; mkdir work
 	@if [ -f script.sh ] ; then cp -f script.sh work ; fi
 	@echo "    ==> Running script with TranSIESTA as ${TS}"
-	@(cd work ; sh script.sh "${OBJDIR}" )
+	@(cd work ; sh script.sh "${TS}" )
 	@if [ -f completed ] ; then \
            echo "    ===> Script finished successfully";\
          else \
