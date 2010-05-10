@@ -2,7 +2,7 @@
 # Single-test makefile template for script usage
 #
 #
-TS=../../../Obj_TS/transiesta
+TS=../../../transiesta
 #
 completed:
 	@echo ">>>> Running $(name) test..."
