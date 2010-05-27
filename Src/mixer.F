@@ -23,14 +23,9 @@
       use iodm_netcdf, only: write_dm_netcdf
 #endif
 #ifdef TRANSIESTA
-! TSS Begin
-! SIESTA Modules
       use m_energies, only: ef
-      use m_ts_io, only: TSiodm
-! TS Module
-      use m_ts_options, only: VIn, VOut, TSrun, tsdme, TSiscf
-! TSS End
-
+      use m_ts_iodm, only : write_ts_dm
+      use m_ts_global_vars, only: VIn, VOut, TSrun, TSiscf
 #endif /* TRANSIESTA */
 
       implicit none
@@ -139,26 +134,22 @@
            if (.not.TSrun) then   !TSS save DM
              if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
                if (istp.eq.1)
-     .        call write_dm (maxnh, no_l, nspin,
+     .           call write_dm (maxnh, no_l, nspin,
      .                   numh, listhptr, listh, Dscf)
              else
-              call write_dm (maxnh, no_l, nspin,
+               call write_dm (maxnh, no_l, nspin,
      .                   numh, listhptr, listh, Dscf)
              endif
            else
 ! TSS write DME
-             if(tsdme) then
-               if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
-                  if (istp .eq.1)
-     .                 call TSiodm( 'write', maxnh, no_l, nspin,
-     .                 numh, listhptr, listh, Dscf, Escf,
-     .                 ef)
-                  else
-                       call TSiodm( 'write', maxnh, no_l, nspin,
-     .                 numh, listhptr, listh, Dscf, Escf,
-     .                 ef)
-               endif            ! idyn.eq.6
-             endif               ! tsdme
+             if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
+               if (istp .eq.1)
+     .           call write_ts_dm (maxnh, no_l, nspin,
+     .                   numh, listhptr, listh, Dscf, Escf,ef)
+             else
+                call write_ts_dm (maxnh, no_l, nspin,
+     .                   numh, listhptr, listh, Dscf, Escf,ef)
+             endif            ! idyn.eq.6
            endif
 ! TSS End
           endif ! writedm

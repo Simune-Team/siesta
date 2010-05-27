@@ -6,12 +6,11 @@ MODULE m_ts_io
 ! CONTAINS:
 !          1) read_green
 !          2) ts_iohs
-!          3) TSiodm
 
 
   implicit none
 
-  public :: read_green, ts_iohs, TSiodm
+  public :: read_green, ts_iohs
 
   private
 
@@ -26,13 +25,15 @@ MODULE m_ts_io
 ! ## Changed to F90 by Jose-Luis Mozos, jlm@icmab.es              ##
 ! ##################################################################
 
-      subroutine read_green(jgfu,EFermi,NEn,contour,wgf, &
+      subroutine read_green(jgfu,NEn,contour,wgf, &
                               nua,NA1,NA2,nq,ng,wq,q,errorgf)
 
 
+      use precision, only: dp
+
       implicit none
 
-      real*8 EPS
+      real(dp) EPS
       parameter(EPS=1d-7)
 
       logical PRINTALOT
@@ -45,33 +46,31 @@ MODULE m_ts_io
 
 ! these are the values expected:
 ! they will be compared to the read-in and ERROR messages will appear
-      real*8 efermi             !The required Fermi energy
       integer NEn,ng
-      complex*16 contour(NEn),wgf(NEn)
+      complex(dp) contour(NEn),wgf(NEn)
       integer nua,NA1,NA2       !no. atoms in uc and no. repetitions in A1,A2
       integer nq                !no. q-points
-      logical tleft
 
       logical errorgf
 
 
 ! READ-IN values
-      real*8 efermii            !The required Fermi energy
-      integer NEni,ngi
-      complex*16, dimension(:), allocatable :: contouri,wgfi
+      real(dp) efermii            !The required Fermi energy
+      integer NEni
+      complex(dp), dimension(:), allocatable :: contouri,wgfi
 
       integer nqi
 
 !     q-point=k_|| point and weigth
 
-      real*8, dimension (:,:), pointer:: q
-      real*8, dimension (:), pointer:: wq
+      real(dp), dimension (:,:), pointer:: q
+      real(dp), dimension (:), pointer:: wq
 
       character*70 gftitle
 
 ! Helpers..
 
-      complex*16 ctmp
+      complex(dp) ctmp
       integer iEn
 
 
@@ -116,10 +115,10 @@ MODULE m_ts_io
 
          ctmp=contouri(iEn)-contour(iEn)
          if(cdabs(ctmp).GT.EPS) then 
-            write(6,*) ' Warning: contours differ by >', EPS
+            write(*,*) ' Warning: contours differ by >', EPS
          end if
          if(cdabs(ctmp).GT.10d0*EPS) then 
-            write(6,*) &
+            write(*,*) &
                  ' ERROR: contours differ by >', 10.d0*EPS
             errorgf = .true. 
             return
@@ -129,7 +128,7 @@ MODULE m_ts_io
       do iEn=1,NEn
          ctmp=wgfi(iEn)-wgf(iEn)
          if(cdabs(ctmp).GT.EPS) then 
-            write(6,*)  &
+            write(*,*)  &
                 ' ERROR: contour weights differ by >',EPS
             errorgf = .true. 
             return
@@ -220,19 +219,13 @@ MODULE m_ts_io
 !
 !  Modules
 !
-      use precision
+      use precision,    only : dp
       use parallel,     only : Node, Nodes
       use parallelsubs, only : WhichNodeOrb, LocalToGlobalOrb, &
                                GlobalToLocalOrb, GetNodeOrbs
-      use fdf
+      
       use files,        only : slabel, label_length
       use sys,          only : die
-! TSS Begin
-! Added variables
-!      use atomlist, only : lasto
-!      use m_energies, only : ef
-!      use m_spin, only : efs
-!      use siesta_geom, only : xa, isa, ucell
       use m_ts_kpoints, only: ts_gamma_scf, ts_kscell, ts_kdispl
 ! TSS End
 #ifdef MPI
@@ -274,8 +267,8 @@ MODULE m_ts_io
 ! TSS End
 
 ! Internal variables and arrays
-      integer    im, is, iu, ju, k, mnh, ns
-      integer    ih,hl,nuo,maxnhtot,maxhg
+      integer    is, iu, ju, k, ns
+      integer    ih,hl, maxnhtot, maxhg
       integer, dimension(:), allocatable :: numhg
 #ifdef MPI
       integer    MPIerror, Request, Status(MPI_Status_Size), BNode
@@ -286,7 +279,7 @@ MODULE m_ts_io
       logical    baddim, found, gammaonfile
 ! TSS Begin
 ! Aux Variables
-      integer :: ispin, ios, i, j, i2, l
+      integer :: i, j, i2, l
 ! TSS End
 
 
@@ -732,617 +725,6 @@ MODULE m_ts_io
 
 
       end subroutine ts_iohs
-
-!------------------------------------------------------------------------
-!************************************************************************
-!------------------------------------------------------------------------
-
-
-      subroutine TSiodm( task, maxnd, nbasis, nspin, numd, & 
-                    listdptr, listd, dm, edm, ef, found )
-! *******************************************************************
-! Reads/writes density matrix from/to file
-! Written by P.Ordejon and J.M.Soler. May 1997.
-! ********* INPUT ***************************************************
-! character task*3 : 'read' or 'write'
-! integer   maxnd  : First dimension of listd and dm
-! integer   nbasis : Number of atomic orbitals
-! integer   nspin  : Number of spins (1 or 2)
-! ********* INPUT OR OUTPUT (depending on task) *********************
-! integer numd(nbasis)     : !ontrol vector of DM matrix
-!                            (number of nonzero elements of each row)
-! integer listdptr(nbasis) : !ontrol vector of DM matrix
-!                            (pointer to the start of each row)
-! integer listd(maxnd)     : !ontrol vector of DM matrix
-!                            (list of nonzero elements of each row)
-! real*8  dm(maxnd,nspin)  : Density matrix
-! real*8  edm(maxnd,nspin) : Energy Density matrix
-! real*8  ef,efs(nspin)    : Fermi energies
-! ********* OUTPUT *************************************************
-! logical found : Has DM been found in disk? (Only when task='read')
-! ******************************************************************
-      
-!
-!  Modules
-!
-      use precision, only : sp, dp
-!      use parallel
-      use fdf
-#ifdef MPI
-      use mpi_siesta
-#endif
-
-! TSS Begin Added
-      use parallelsubs, only : WhichNodeOrb, GlobalToLocalOrb, &
-                              LocalToGlobalOrb
-! TSS End
-
-      implicit  none
-
-      character task*(*), paste*33
-      integer   maxnd, nbasis, nspin
-      integer   listd(maxnd), numd(nbasis), listdptr(nbasis)
-      real*8    dm(maxnd,nspin)
-      real*8    edm(maxnd,nspin)
-      real*8    ef
-      logical, optional :: found
-
-! Internal variables and arrays
-      character fname*33, sname*30
-      logical   exist1, exist2, exist3, frstme
-      integer   im, is, unit1, unit2, m, nb, ndmax, ns
-      integer   Node, Nodes, nbasistot, ml, ndmaxg
-      integer, dimension(:), allocatable, save :: numdg
-#ifdef MPI
-      integer   MPIerror, Request, Status(MPI_Status_Size)
-      integer   BNode
-      real*8, dimension(:), allocatable, save :: buffer
-      integer, dimension(:), allocatable, save :: ibuffer
-#endif
-      external          chkdim, io_assign, io_close, paste, timer, &
-                        memory
-
-      save      frstme, fname
-      data      frstme /.true./
-
-!     call timer( 'iodm', 1 )
-
-! Get the Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node = 0
-      Nodes = 1
-#endif
-! Find file name
-      if (frstme) then
-        if (Node.eq.0) then
-          sname = fdf_string('SystemLabel','siesta')
-        endif
-#ifdef MPI
-        call MPI_Bcast(sname,30,MPI_character,0,MPI_Comm_World, &
-          MPIerror)
-#endif
-        fname = paste(sname,'.TSDE')
-        frstme = .false.
-      endif
-
-! Find total number of basis functions over all Nodes
-#ifdef MPI
-      if (Nodes.gt.1) then
-        call MPI_AllReduce(nbasis,nbasistot,1,MPI_integer,MPI_sum, &
-          MPI_Comm_World,MPIerror)
-      else
-        nbasistot = nbasis
-      endif
-#else
-      nbasistot = nbasis
-#endif
-
-
-! Allocate local buffer array for globalised numd
-      allocate(numdg(nbasistot))
-      call memory('A','I',nbasistot,'iodm')
-
-      if (task.eq.'read' .or. task.eq.'READ') then
-        if (Node.eq.0) then
-          inquire (file='SAVE.TSDM',     exist=exist1)
-          inquire (file='SAVE.ctrlTSDM', exist=exist2)
-          inquire (file=fname,         exist=exist3)
-        endif
-
-#ifdef MPI
-! Broadcast logicals so that all processors take the same route
-        call MPI_Bcast(exist1,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-        call MPI_Bcast(exist2,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-        call MPI_Bcast(exist3,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-#endif
-
-        if (exist1 .and. exist2) then
-! Old-format files
-         if (Node.eq.0) then
-            write(6,'(/,a)')'TSiodmS: Reading Density Matrix from files'
-            call io_assign(unit1)
-            call io_assign(unit2)
-            open( unit1, file='SAVE.DM', status='unknown')
-            open( unit2, file='SAVE.ctrlDM', status='unknown')
-            rewind(unit1)
-            rewind(unit2)
-          endif
-
-          if (Node.eq.0) then
-            read(unit2,*) (numdg(m),m=1,nbasistot)
-          endif
-#ifdef MPI
-          call MPI_Bcast(numdg,nbasistot,MPI_integer,0,MPI_Comm_World, &
-            MPIerror)
-#endif
-
-! Convert global numd pointer to local form and generate listdptr
-          ndmax = 0
-          do m = 1,nbasis
-            call LocalToGlobalOrb(m,Node,Nodes,ml)
-            numd(m) = numdg(ml)
-            ndmax = ndmax + numd(m)
-            if (m .eq. 1) then
-              listdptr(1) = 0
-            else
-              listdptr(m) = listdptr(m-1) + numd(m-1)
-            endif
-          enddo
-          ndmaxg = 0
-          do m = 1,nbasistot
-            ndmaxg = max(ndmaxg,numdg(m))
-          enddo
-
-! Check size of first dimension of dm
-          call chkdim( 'TSiodm', 'maxnd', maxnd, ndmax, 1 )
-
-#ifdef MPI
-! Create buffer arrays for transfering density matrix between nodes and lists
-          allocate(buffer(ndmaxg))
-          call memory('A','D',ndmaxg,'TSiodm')
-          allocate(ibuffer(ndmaxg))
-          call memory('A','I',ndmaxg,'TSiodm')
-#endif
-
-          do m = 1,nbasistot
-#ifdef MPI
-            call WhichNodeOrb(m,Nodes,BNode)
-            if (BNode.eq.0.and.Node.eq.BNode) then
-              call GlobalToLocalOrb(m,Node,Nodes,ml)
-#else
-              ml = m
-#endif
-              read(unit2,*) (listd(listdptr(ml)+im),im=1,numd(ml))
-#ifdef MPI
-            elseif (Node.eq.0) then
-              do im = 1,numdg(m)
-                read(unit2,*) ibuffer(im)
-              enddo
-              call MPI_ISend(ibuffer,numdg(m),MPI_integer, &
-                BNode,1,MPI_Comm_World,Request,MPIerror)
-              call MPI_Wait(Request,Status,MPIerror)
-            elseif (Node.eq.BNode) then
-              call GlobalToLocalOrb(m,Node,Nodes,ml)
-              call MPI_IRecv(listd(listdptr(ml)+1),numd(ml), &
-                MPI_integer,0,1,MPI_Comm_World,Request,MPIerror)
-              call MPI_Wait(Request,Status,MPIerror)
-            endif
-            if (BNode.ne.0) then
-              call MPI_Barrier(MPI_Comm_World,MPIerror)
-            endif
-#endif
-          enddo
-
-#ifdef MPI
-          call memory('D','I',size(ibuffer),'TSiodm')
-          deallocate(ibuffer)
-#endif
-
-          do is = 1,nspin
-            do m = 1,nbasistot
-#ifdef MPI
-              call WhichNodeOrb(m,Nodes,BNode)
-              if (BNode.eq.0.and.Node.eq.BNode) then
-                call GlobalToLocalOrb(m,Node,Nodes,ml)
-#else
-                ml = m
-#endif
-                do im = 1,numd(ml)
-                  read(unit1,*) dm(listdptr(ml)+im,is)
-                enddo
-
-#ifdef MPI
-              elseif (Node.eq.0) then
-                do im = 1,numdg(m)
-                  read(unit1,*) buffer(im)
-                enddo
-                call MPI_ISend(buffer,numdg(m),DAT_double, &
-                  BNode,1,MPI_Comm_World,Request,MPIerror)
-                call MPI_Wait(Request,Status,MPIerror)
-              elseif (Node.eq.BNode) then
-                call GlobalToLocalOrb(m,Node,Nodes,ml)
-                call MPI_IRecv(dm(listdptr(ml)+1,is),numd(ml), &
-                  DAT_double,0,1,MPI_Comm_World,Request,MPIerror)
-                call MPI_Wait(Request,Status,MPIerror)
-              endif
-              if (BNode.ne.0) then
-                call MPI_Barrier(MPI_Comm_World,MPIerror)
-              endif
-#endif
-            enddo
-          enddo
-
-
-#ifdef MPI
-! Free buffer array
-          call memory('D','D',size(buffer),'TSiodm')
-          deallocate(buffer)
-#endif
-          if (Node.eq.0) then
-            call io_close(unit1)
-            call io_close(unit2)
-          endif
-
-          if(present(found)) found = .true.
-
-        elseif (exist3) then
-! New-format files
-          if (Node.eq.0) then
-            write(6,'(/,a)')'TSiodmS: Reading Density Matrix from files'
-            call io_assign(unit1)
-            open( unit1, file=fname, &
-                form='unformatted', status='unknown' )
-            rewind(unit1)
-            read(unit1) nb, ns
-          endif
-
-! Communicate the values to all Nodes and adjust to allow for
-! distributed memory before checking the dimensions
-#ifdef MPI
-          call MPI_Bcast(nb,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-          call MPI_Bcast(ns,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-#endif
-
-! Check dimensions
-          call chkdim( 'TSiodm', 'nbasis', nbasistot, nb, 0 )
-          call chkdim( 'TSiodm', 'nspin',  nspin,  ns, 0 )
-
-          if (Node.eq.0) then
-            read(unit1) (numdg(m),m=1,nbasistot)
-          endif
-#ifdef MPI
-          call MPI_Bcast(numdg,nbasistot,MPI_integer,0,MPI_Comm_World, &
-            MPIerror)
-#endif
-
-! Convert global numd pointer to local form and generate listdptr
-          ndmax = 0
-          do m = 1,nbasis
-            call LocalToGlobalOrb(m,Node,Nodes,ml)
-            numd(m) = numdg(ml)
-            ndmax = ndmax + numd(m)
-            if (m .eq. 1) then
-              listdptr(1) = 0
-            else
-              listdptr(m) = listdptr(m-1) + numd(m-1)
-            endif
-          enddo
-          ndmaxg = 0
-          do m = 1,nbasistot
-            ndmaxg = max(ndmaxg,numdg(m))
-          enddo
-
-! Check size of first dimension of dm
-          call chkdim( 'TSiodm', 'maxnd', maxnd, ndmax, 1 )
-
-#ifdef MPI
-! Create buffer arrays for transfering density matrix between nodes and lists
-          allocate(buffer(ndmaxg))
-          call memory('A','D',ndmaxg,'TSiodm')
-          allocate(ibuffer(ndmaxg))
-          call memory('A','I',ndmaxg,'TSiodm')
-#endif
-
-          do m = 1,nbasistot
-#ifdef MPI
-            call WhichNodeOrb(m,Nodes,BNode)
-            if (BNode.eq.0.and.Node.eq.BNode) then
-              call GlobalToLocalOrb(m,Node,Nodes,ml)
-#else
-              ml = m
-#endif
-              read(unit1) (listd(listdptr(ml)+im),im=1,numd(ml))
-#ifdef MPI
-            elseif (Node.eq.0) then
-              read(unit1) (ibuffer(im),im=1,numdg(m))
-              call MPI_ISend(ibuffer,numdg(m),MPI_integer, &
-                BNode,1,MPI_Comm_World,Request,MPIerror)
-              call MPI_Wait(Request,Status,MPIerror)
-            elseif (Node.eq.BNode) then
-              call GlobalToLocalOrb(m,Node,Nodes,ml)
-              call MPI_IRecv(listd(listdptr(ml)+1),numd(ml), &
-                MPI_integer,0,1,MPI_Comm_World,Request,MPIerror)
-              call MPI_Wait(Request,Status,MPIerror)
-            endif
-            if (BNode.ne.0) then
-              call MPI_Barrier(MPI_Comm_World,MPIerror)
-            endif
-#endif
-          enddo
-
-#ifdef MPI
-          call memory('D','I',size(ibuffer),'TSiodm')
-          deallocate(ibuffer)
-#endif
-
-! read DM
-
-          do is = 1,nspin
-            do m = 1,nbasistot
-#ifdef MPI
-              call WhichNodeOrb(m,Nodes,BNode)
-              if (BNode.eq.0.and.Node.eq.BNode) then
-                call GlobalToLocalOrb(m,Node,Nodes,ml)
-#else
-                ml = m
-#endif
-                read(unit1) (dm(listdptr(ml)+im,is),im=1,numd(ml))
-#ifdef MPI
-              elseif (Node.eq.0) then
-                read(unit1) (buffer(im),im=1,numdg(m))
-                call MPI_ISend(buffer,numdg(m),DAT_double, &
-                  BNode,1,MPI_Comm_World,Request,MPIerror)
-                call MPI_Wait(Request,Status,MPIerror)
-              elseif (Node.eq.BNode) then
-                call GlobalToLocalOrb(m,Node,Nodes,ml)
-                call MPI_IRecv(dm(listdptr(ml)+1,is),numd(ml), &
-                  DAT_double,0,1,MPI_Comm_World,Request,MPIerror)
-                call MPI_Wait(Request,Status,MPIerror)
-              endif
-              if (BNode.ne.0) then
-                call MPI_Barrier(MPI_Comm_World,MPIerror)
-              endif
-#endif
-            enddo
-          enddo
-
-! read EDM
-
-          do is = 1,nspin
-            do m = 1,nbasistot
-#ifdef MPI
-              call WhichNodeOrb(m,Nodes,BNode)
-              if (BNode.eq.0.and.Node.eq.BNode) then
-                call GlobalToLocalOrb(m,Node,Nodes,ml)
-#else
-                ml = m
-#endif
-               read(unit1)(edm(listdptr(ml)+im,is),im=1,numd(ml))
-#ifdef MPI
-              elseif (Node.eq.0) then
-                read(unit1) (buffer(im),im=1,numdg(m))
-                call MPI_ISend(buffer,numdg(m),DAT_double, &
-                  BNode,1,MPI_Comm_World,Request,MPIerror)
-                call MPI_Wait(Request,Status,MPIerror)
-              elseif (Node.eq.BNode) then
-                call GlobalToLocalOrb(m,Node,Nodes,ml)
-                call MPI_IRecv(edm(listdptr(ml)+1,is),numd(ml), &
-                  DAT_double,0,1,MPI_Comm_World,Request,MPIerror)
-                call MPI_Wait(Request,Status,MPIerror)
-              endif
-              if (BNode.ne.0) then
-                call MPI_Barrier(MPI_Comm_World,MPIerror)
-              endif
-#endif
-            enddo
-          enddo
-
-#ifdef MPI
-! Free buffer array
-          call memory('D','D',size(buffer),'TSiodm')
-          deallocate(buffer)
-#endif
-          if (Node.eq.0) then
-            read(unit1) ef
-            call io_close(unit1)
-          endif
-
-          if(present(found)) found = .true.
-
-        else
-
-          if(present(found)) found = .false.
-
-        endif
-
-      elseif (task.eq.'write' .or. task.eq.'WRITE') then
-
-        if (Node.eq.0) then
-          call io_assign(unit1)
-          open( unit1, file=fname, form='unformatted', &
-            status='unknown' )
-          rewind(unit1)
-          write(unit1) nbasistot, nspin
-        endif
-
-! Create globalised numd
-        do m = 1,nbasistot
-#ifdef MPI
-          call WhichNodeOrb(m,Nodes,BNode)
-          if (BNode.eq.0.and.Node.eq.BNode) then
-            call GlobalToLocalOrb(m,Node,Nodes,ml)
-#else
-            ml = m
-#endif
-            numdg(m) = numd(ml)
-#ifdef MPI
-          elseif (Node.eq.BNode) then
-            call GlobalToLocalOrb(m,Node,Nodes,ml)
-            call MPI_ISend(numd(ml),1,MPI_integer, &
-              0,1,MPI_Comm_World,Request,MPIerror)
-            call MPI_Wait(Request,Status,MPIerror)
-          elseif (Node.eq.0) then
-            call MPI_IRecv(numdg(m),1,MPI_integer, &
-              BNode,1,MPI_Comm_World,Request,MPIerror)
-            call MPI_Wait(Request,Status,MPIerror)
-          endif
-          if (BNode.ne.0) then
-            call MPI_Barrier(MPI_Comm_World,MPIerror)
-          endif
-#endif
-        enddo
-
-! Write out numd array
-        if (Node.eq.0) then
-          ndmaxg = 0
-          do m = 1,nbasistot
-            ndmaxg = max(ndmaxg,numdg(m))
-          enddo
-          write(unit1) (numdg(m),m=1,nbasistot)
-#ifdef MPI
-          allocate(buffer(ndmaxg))
-          call memory('A','D',ndmaxg,'TSiodm')
-          allocate(ibuffer(ndmaxg))
-          call memory('A','I',ndmaxg,'TSiodm')
-#endif
-        endif
-
-! Write out listd array
-        do m = 1,nbasistot
-#ifdef MPI
-          call WhichNodeOrb(m,Nodes,BNode)
-          if (BNode.eq.0.and.Node.eq.BNode) then
-            call GlobalToLocalOrb(m,Node,Nodes,ml)
-#else
-            ml = m
-#endif
-            write(unit1) (listd(listdptr(ml)+im),im=1,numd(ml))
-#ifdef MPI
-          elseif (Node.eq.0) then
-            call MPI_IRecv(ibuffer,numdg(m),MPI_integer,BNode,1, &
-              MPI_Comm_World,Request,MPIerror)
-            call MPI_Wait(Request,Status,MPIerror)
-          elseif (Node.eq.BNode) then
-            call GlobalToLocalOrb(m,Node,Nodes,ml)
-            call MPI_ISend(listd(listdptr(ml)+1),numd(ml),MPI_integer, &
-              0,1,MPI_Comm_World,Request,MPIerror)
-            call MPI_Wait(Request,Status,MPIerror)
-          endif
-          if (BNode.ne.0) then
-            call MPI_Barrier(MPI_Comm_World,MPIerror)
-            if (Node.eq.0) then
-              write(unit1) (ibuffer(im),im=1,numdg(m))
-            endif
-          endif
-#endif
-        enddo
-
-#ifdef MPI
-        if (Node.eq.0) then
-          call memory('D','I',size(ibuffer),'TSiodm')
-          deallocate(ibuffer)
-        endif
-#endif
-
-! Write density matrix
-        do is=1,nspin
-          do m=1,nbasistot
-#ifdef MPI
-            call WhichNodeOrb(m,Nodes,BNode)
-            if (BNode.eq.0.and.Node.eq.BNode) then
-              call GlobalToLocalOrb(m,Node,Nodes,ml)
-#else
-              ml = m
-#endif
-              write(unit1) (dm(listdptr(ml)+im,is),im=1,numd(ml))
-#ifdef MPI
-            elseif (Node.eq.0) then
-              call MPI_IRecv(buffer,numdg(m),DAT_double, &
-                BNode,1,MPI_Comm_World,Request,MPIerror)
-              call MPI_Wait(Request,Status,MPIerror)
-            elseif (Node.eq.BNode) then
-              call GlobalToLocalOrb(m,Node,Nodes,ml)
-              call MPI_ISend(dm(listdptr(ml)+1,is),numd(ml),DAT_double, &
-                0,1,MPI_Comm_World,Request,MPIerror)
-              call MPI_Wait(Request,Status,MPIerror)
-            endif
-            if (BNode.ne.0) then
-              call MPI_Barrier(MPI_Comm_World,MPIerror)
-              if (Node.eq.0) then
-                write(unit1) (buffer(im),im=1,numdg(m))
-              endif
-            endif
-#endif
-          enddo
-        enddo
-
-! Write energy density matrix
-        do is=1,nspin
-          do m=1,nbasistot
-#ifdef MPI
-            call WhichNodeOrb(m,Nodes,BNode)
-            if (BNode.eq.0.and.Node.eq.BNode) then
-              call GlobalToLocalOrb(m,Node,Nodes,ml)
-#else
-              ml = m
-#endif
-              write(unit1) (edm(listdptr(ml)+im,is),im=1,numd(ml))
-#ifdef MPI
-            elseif (Node.eq.0) then
-              call MPI_IRecv(buffer,numdg(m),DAT_double, &
-                BNode,1,MPI_Comm_World,Request,MPIerror)
-              call MPI_Wait(Request,Status,MPIerror)
-            elseif (Node.eq.BNode) then
-              call GlobalToLocalOrb(m,Node,Nodes,ml)
-             call MPI_ISend(edm(listdptr(ml)+1,is),numd(ml),DAT_double, &
-               0,1,MPI_Comm_World,Request,MPIerror)
-              call MPI_Wait(Request,Status,MPIerror)
-            endif
-            if (BNode.ne.0) then
-              call MPI_Barrier(MPI_Comm_World,MPIerror)
-              if (Node.eq.0) then
-                write(unit1) (buffer(im),im=1,numdg(m))
-              endif
-            endif
-#endif
-          enddo
-        enddo
-
-
-        if (Node.eq.0) then
-#ifdef MPI
-          call memory('D','D',size(buffer),'TSiodm')
-          deallocate(buffer)
-#endif
-          write(unit1) ef
-
-          call io_close(unit1)
-        endif
-
-      else
-        if (Node.eq.0) then
-          stop 'TSiodmS: incorrect task'
-        else
-          stop
-        endif
-      endif
-
-! Deallocate local buffer array for globalised numd
-      call memory('D','I',size(numdg),'iodm')
-      deallocate(numdg)
-
-
-!     call timer( 'iodm', 2 )
-      end subroutine TSiodm
-
-
-
-
-
-
 
 
 END MODULE m_ts_io

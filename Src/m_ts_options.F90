@@ -16,20 +16,19 @@
 module m_ts_options
 
 ! SIESTA Modules used
-USE precision
+USE precision, only : dp
 USE siesta_options, only : fixspin
 USE sys, only : die
 
 implicit none
 PUBLIC
 
-!==========================================================================*
+!=========================================================================*
 !  Arguments read from input file using the fdf package                    *
 !--------------------------------------------------------------------------*
 
 logical  :: savetshs     ! Saves the Hamiltonian and Overlap matrices if the 
                          ! the option TS.SaveHS is specified in the input file
-logical  :: tsdme        ! Uses TranSIESTA density matrix, obtained with NEGF            
 logical  :: onlyS	 ! Option to only save overlap matrix
 logical  :: mixH         ! Mixing of the Hamiltoninan instead of DM
 logical  :: USEBULK      ! Use Bulk Hamiltonian in Electrodes
@@ -53,8 +52,6 @@ character(20) :: smethod ! GF Numerical Integration Methods
 character(33) :: GFFileL ! Electrode Left GF File
 character(33) :: GFFileR ! Electrode Right GF File
 logical :: calcGF        ! Calculate the electrodes GF
-integer :: ts_istep      ! FC step in phonon calculation
-
 
 !==========================================================================*
 !==========================================================================*
@@ -87,26 +84,6 @@ logical, parameter :: calcGF_def = .true.
 
 
 
-
-!==========================================================================*
-!==========================================================================*
-!  Internal Variables                                                      *
-!--------------------------------------------------------------------------*
-
-
-integer :: TSiscf=0
-
-real(dp) ::           dDmaxRho !TSS MixH
-
-real(dp), dimension(:,:), allocatable, save :: &
-         VIn,VOut             ! TSS mix
-
-logical :: TSinit=.false.,TSrun=.false., foundts, errorts, &
-           initH ! TSS MixH
-
-real(8), parameter :: eV=1.d0/13.6058d0
-
-
       CONTAINS
 
 ! *********************************************************************
@@ -127,11 +104,12 @@ subroutine read_ts_options()
 
 ! SIESTA Modules Used
 use parallel, only: IOnode, Nodes
-use fdf
 use m_fdf_global, only: fdf_global_get
+use units, only: eV
+use m_ts_global_vars, only : ts_istep
 
 #ifdef MPI
-use mpi_siesta
+use mpi_siesta, only: MPI_Bcast, MPI_character, MPI_Comm_World
 #endif
 
 
@@ -152,7 +130,6 @@ ts_istep=0
 ! Reading TS Options from fdf ...
 call fdf_global_get(savetshs,'TS.SaveHS',savetshs_def)
 call fdf_global_get(onlyS,'TS.onlyS',onlyS_def)
-call fdf_global_get(tsdme,'TS.UseEDM',tsdme_def)
 call fdf_global_get(mixH,'TS.MixH',mixH_def)
 call fdf_global_get(voltfdf,'TS.Voltage',voltfdf_def,'Ry') 
 call fdf_global_get(USEBULK,'TS.UseBulkInElectrodes',USEBULK_def)
@@ -177,14 +154,12 @@ call fdf_global_get(UseVFix,'TS.UseVFix',UseVFix_def)
 ! Output Used Options in OUT file ....
 if (ionode) then
  write(*,1) 'ts_read_options: Save H and S matrices        =', savetshs
-! write(*,1) 'ts_read_options: Save S and quit (onlyS) =', onlyS
-! write(*,1) 'ts_read_options: Use TS EDM              =', tsdme
  write(*,1) 'ts_read_options: Mixing Hamiltonian           =', mixH
  write(*,6) 'ts_read_options: TranSIESTA Voltage           =', voltfdf/eV,' Volts'
 ! write(*,1) 'ts_read_options: Bulk Values in Elecs    =', USEBULK
  write(*,1) 'ts_read_options: TriDiag                      =', TriDiag 
  write(*,1) 'ts_read_options: Update DM Contact Reg. only  =', updatedmcr
-! write(*,1) 'ts_read_options: Use VFix                =', UseVFix
+! write(*,1) 'ts_read_options: Use VFix                     =', UseVFix
 ! write(*,1) 'ts_read_options: Fix Contact Charge      =', FixQ
  write(*,5) 'ts_read_options: N. Buffer At. Left           =', NBUFATL
  write(*,5) 'ts_read_options: N. Buffer At. Right          =', NBUFATR
@@ -195,10 +170,11 @@ if (ionode) then
  write(*,6) 'ts_read_options: Contour E Min.               =', CCEmin,' Ry'
  write(*,7) 'ts_read_options: GFEta                        =', GFEta,' Ry'
  write(*,6) 'ts_read_options: Electronic Temperature       =', kT, ' Ry'
- write(*,10) 'ts_read_options: Bias Contour Method          =', smethod
- write(*,10) 'ts_read_options: Left GF File                 =', GFFileL
- write(*,10) 'ts_read_options: Right GF File                =', GFFileR
+ write(*,10) 'ts_read_options: Bias Contour Method         =', smethod
+ write(*,10) 'ts_read_options: Left GF File                =', GFFileL
+ write(*,10) 'ts_read_options: Right GF File               =', GFFileR
  write(*,1) 'ts_read_options: Calculate GF                 =', calcGF
+ write(*,1) 'ts_read_options: Save S and quit (onlyS)      =', onlyS
 end if
 
 if (IOnode) then
@@ -242,13 +218,9 @@ call MPI_BCast(smethod,20,MPI_character,0,MPI_Comm_World,MPIerror)
 
 
 1   format(a,4x,l1)
-2   format(a)
-4   format(a,i8)
 5   format(a,i5,a)
 6   format(a,f10.4,a)
 7   format(a,f12.6,a)
-8   format(a,f14.12)
-9   format(a,f10.4)
 10  format(a,4x,a)
 end subroutine read_ts_options
 
