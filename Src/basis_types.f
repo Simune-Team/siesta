@@ -598,13 +598,13 @@
      $                         'splnorm:', split_norm(l,n,is)
                endif
                write(lun,'(10x,a10,2x,g12.5)') 
-     $                         'vcte:', vcte(l,n,is)
+     $               'vcte:', vcte(l,n,is)
                write(lun,'(10x,a10,2x,g12.5)') 
-     $                         'rinn:', rinn(l,n,is)
+     $               'rinn:', rinn(l,n,is)
                write(lun,'(10x,a10,2x,4g12.5)') 'rcs:',
-     $                         (rco(i,l,n,is),i=1,nzeta(l,n,is))
+     $               (rco(i,l,n,is),i=1,min(4,nzeta(l,n,is)))
                write(lun,'(10x,a10,2x,4g12.5)') 'lambdas:',
-     $                         (lambda(i,l,n,is),i=1,nzeta(l,n,is))
+     $               (lambda(i,l,n,is),i=1,min(4,nzeta(l,n,is)))
             enddo
          enddo
          write(lun,'(79("-"))')
