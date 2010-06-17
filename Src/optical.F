@@ -19,6 +19,7 @@ C Calculates the imaginary part of the dielectric function using
 C first order perturbation theory.
 C Written by DSP, August 1999.
 C Restyled for f90 version by JDG. June 2004
+C Small modification by DSP, May 2010
 C **************************** INPUT **********************************
 C integer nua                 : Number of atoms in the unit cell
 C integer na                  : Number of atoms 
@@ -176,6 +177,7 @@ C unless otherwise requested
               nmeshk(ix)=1
             enddo 
             nk=1
+	    dsp=0.0d0
        endif
 
 C If nk.ne.0
@@ -191,9 +193,10 @@ C If nk.ne.0
         enddo
   
         cutoff = 0.0d0
-
-        call kgridinit( ucell, kscell,  displ, cutoff, nkopt )
-
+C    DSP, May 2010 call to kgridinit has been eliminated because
+C        the results are not coherent with those of kgrid
+c       call kgridinit( ucell, kscell,  displ, cutoff, nkopt )
+        nkopt=nk
 C Resize arrays to fit nkopt
         call re_alloc(kopt,1,3,1,nkopt,name='kopt',routine='optical')
         call re_alloc(wgthopt,1,nkopt,name='wgthopt',routine='optical')
@@ -209,7 +212,14 @@ C Obtain the points and weigths for the kspace integration
           displ(ix) = dsp
         enddo
         call kgrid( ucell, kscell, displ, nkopt, kopt, wgthopt )
-
+        ngamma=2
+        if (nkopt.eq.1 .and. abs(kopt(1,1)).lt.tiny .and.
+     .                  abs(kopt(2,1)).lt.tiny .and.
+     .                  abs(kopt(3,1)).lt.tiny) then
+          gamma = .true.
+          ngamma = 1
+        endif
+        
 C If nk.eq.0
       else
         nkopt = 0
@@ -223,6 +233,7 @@ C Check whether nkopt is greater than 0
      .     'optical: no calculation performed'
           goto 999
       endif 
+
 
       if (nspin.eq.1) then 
 C Total number of valence electrons in the unit cell
@@ -282,10 +293,6 @@ C Find the size of the array to hold the imaginary dielectric constant
       dw = smooth/10
       nw = nint((wmax-wmin)/dw) + 1
       call re_alloc(epsimg,1,nw,1,2,name='epsimg',routine='optical')
-      
-C Check sizes of K point arrays
-      call re_alloc(kopt,1,3,1,nkopt,name='kopt',routine='optical')
-      call re_alloc(wgthopt,1,nkopt,name='wgthopt',routine='optical')
 
 C Check size of remaining arrays
       call re_alloc(ekloc,1,nuotot,name='ekloc',routine='optical')
@@ -293,27 +300,7 @@ C Check size of remaining arrays
 C The calculation  of the imaginary part of the dielectric 
 C function starts here
 
-C Obtain the points and weigths for the kspace integration
-      do ix = 1,3
-        do iy = 1,3
-          kscell(ix,iy) = 0
-        enddo
-      enddo
-      do ix = 1,3
-        kscell(ix,ix) = nmeshk(ix)
-        displ(ix) = dsp
-      enddo
-      ngamma = 2
-      nk = nkopt
-      call kgrid( ucell, kscell, displ, nk, kopt, wgthopt )
-       
-      if (nk.eq.1 .and. abs(kopt(1,1)).lt.tiny .and.
-     .                  abs(kopt(2,1)).lt.tiny .and.
-     .                  abs(kopt(3,1)).lt.tiny) then
-        gamma = .true.
-        ngamma = 1
-      endif
-     
+
 C Depending on the selected option, the meaning of the vector
 C efield changes 
       if (Node.eq.0) then
@@ -456,6 +443,7 @@ C for metals
      $                name='intraband', routine='optical')
 
 C Construction of the matrix elements of the scalar product n*r 
+        
        if ( option.eq.'polarized') then 
          call phirphi_opt(nua, na, nuo, no, scell, xa, maxnh, 
      .                    lasto, lastkb, iphorb, iphKB, isa, numh,
@@ -515,7 +503,7 @@ C... For Drude formula.....
          omega_p2(2) = 0.0_dp
 
 C Begin the BZ integration
-      do ik = 1,nk
+      do ik = 1,nkopt
 
         do ispin = 1,nspin 
 
@@ -524,6 +512,7 @@ C Begin the BZ integration
           enddo            
              
 C Find Wavefunctions 
+        
           if (nspin.le.2) then 
             call diagpol( ispin, nspin, nuo, no, nuotot,
      .                    maxnh, numh, listhptr, listh, H, S,
@@ -552,25 +541,31 @@ C Apply scissor operator if required
            endif
            
           do ipol = 1,npol            
-
 C Matrix elements for the dipolar transition are stored in Haux
+C DSP May 2010, modified call to subroutine transition_rate 
+C information wmin and wmax
+C passed to subroutine transition_rate so only relevant
+C transition probabilities are explicitly calculated.
             if (ipol.eq.1) then      
-              call transition_rate( ngamma, psi, ek, 
-     .                             temp, efermi, 
+              call transition_rate( ngamma, psi, ek, efermi,
+     .                             ekloc, efermiloc, temp,
+     .                             smooth, wmin, wmax,
      .                             AuxSr, Haux, Saux, numh, 
      .                             listhptr, listh, indxuo, no, 
      .                             nuo, nuotot, xijo, maxnh, nbands, 
      .                             kint, matrix,intraband)
             elseif(ipol.eq.2) then 
-              call transition_rate( ngamma, psi, ek, 
-     .                             temp, efermi, 
+              call transition_rate( ngamma, psi, ek, efermi,
+     .                             ekloc, efermiloc, temp,
+     .                             smooth, wmin, wmax,
      .                             AuxSr2, Haux, Saux, numh, 
      .                             listhptr, listh, indxuo, no,
      .                             nuo, nuotot, xijo, maxnh, nbands, 
      .                             kint, matrix,intraband )
             else 
-              call transition_rate( ngamma, psi, ek, 
-     .                             temp, efermi, 
+              call transition_rate( ngamma, psi, ek, efermi,
+     .                             ekloc, efermiloc, temp,
+     .                             smooth, wmin, wmax,
      .                             AuxSr3, Haux, Saux, numh, 
      .                             listhptr, listh, indxuo, no,
      .                             nuo, nuotot, xijo, maxnh, nbands, 
@@ -599,7 +594,7 @@ C factor of two because smooth is in Ry rather than in Ha
                     f2 = stepf((ekloc(je)-efermiloc)/temp)
                     if (f1*(1.0d0-f2).gt.tiny) then 
                       ediff = ekloc(je) - ekloc(ie)
-                      if ((ediff.ge.min(wmin-2.0d0*smooth,0.0d0)).and.
+                      if ((ediff.ge.max(wmin-2.0d0*smooth,0.0d0)).and.
      .                        (ediff.le.wmax+2.0d0*smooth)) then
                         ije = ngamma*(je-1)+ngamma*nuotot*(iie-1)
                         if(ngamma.eq.2) then 
@@ -610,6 +605,7 @@ C factor of two because smooth is in Ry rather than in Ha
                         T = T*f1*(1.0d0-f2)/dble(npol)
                         T = 4.0d0*(pi**2)*T/volume
                         T = 2.0d0*T*wgthopt(ik)/dble(nspin)
+C Modified April 2010
                         wi = max(wmin,ediff-20.0d0*smooth) 
                         wf = min(wmax,ediff+20.0d0*smooth) 
                         nwi = int((wi-wmin)/dw)+1
@@ -630,10 +626,8 @@ C The factor of two comes from the fact that smooth is in Ry instead of Ha.
 
 C Closing loop on polarization options
           enddo 
-
 C Closing loop on spin orientations
         enddo 
-
 C Closing loop on k_points
       enddo 
 
