@@ -5,6 +5,16 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2010-06-17  10:35:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-rc1-3
+Clarify the meaning of the supercell options in the Vibra manual
+
+New wording to make it clear that the supercell options refer
+to the number of augmentation shells around the unit cell.
+
+modified:
+  Util/Vibra/Docs/vibra.tex
+
+------------------------------------------------------------------------
 2010-06-17  10:25:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-rc1-2
 Fixes and improvements in the optical spectra code
 
