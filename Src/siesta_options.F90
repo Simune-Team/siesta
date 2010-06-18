@@ -22,7 +22,8 @@ MODULE siesta_options
   logical :: noeta         ! Use computed chemical potential instead of eta in ordern?
   logical :: new_diagk     ! Use new diagk routine with file storage of eigenvectors?
   logical :: outlng        ! Long output in the output file?
-  logical :: pulfile       ! Use file to store Pulay info in pulayx?
+  logical :: pulfile       ! Use file to store Pulay info in pulayx? (Obsolete)
+  logical :: avoid_first_after_kick  ! Keep first residual after a kick?
   logical :: RelaxCellOnly ! Relax only lattice vectors, not atomic coordinates
   logical :: RemoveIntraMolecularPressure   ! Remove molecular virial contribution to p
   logical :: savehs        ! Write file with Hamiltonian electrostatic potential?
@@ -480,15 +481,29 @@ MODULE siesta_options
     ! (pulfile)
     call fdf_global_get(pulfile,'DM.PulayOnFile',.false.)
     if (ionode) then
-      if (pulfile.and.Nodes>1) then
+      if (pulfile) then
         call die( 'redata: Cannot use DM.PulayOnFile=.true.'//&
-                  'when running in parallel' )
+                  'in this version' )
       endif
       write(6,1) 'redata: Write Pulay info on disk?        = ',pulfile
     endif
     if (cml_p) then
       call cmlAddParameter(xf=mainXML, name='DM.PulayOnFile',      &
                            value=pulfile, dictRef='siesta:pulfile')
+    endif
+
+    ! 
+    call fdf_global_get(avoid_first_after_kick,  &
+                       'DM.Pulay.Avoid.First.After.Kick',.false.)
+    if (ionode) then
+       write(6,1) 'redata: Discard 1st Pulay DM after  kick = ', &
+            avoid_first_after_kick
+    endif
+    if (cml_p) then
+      call cmlAddParameter(xf=mainXML,  &
+                           name='DM.Pulay.Avoid.First.After.Kick', &
+                           value=pulfile,   &
+                           dictRef='siesta:avoid_first_after_kick')
     endif
 
     ! Density Matrix Mixing  (proportion of output DM in new input DM)

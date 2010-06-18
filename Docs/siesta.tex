@@ -2908,8 +2908,26 @@ performed.
 
 {\it Default value:} {\tt 0}
 
+\item[{\bf DM.Pulay.Avoid.First.After.Kick}] ({\it
+  logical}):\index{SCF!mixing}
+  \index{DM.Pulay.Avoid.First.After.Kick@{\bf
+      DM.Pulay.Avoid.First.After.Kick}}\index{SCF!mixing} Controls
+  whether the first density-matrix residual of the SCF cycle and the
+  first residual after a kick are included in the Pulay history. It
+  can be argued that in these cases the ``output'' DM might be
+  significantly different from the ``input'' DM. To preserve backwards
+  compatibility, these residuals are kept in the Pulay history unless
+  this variable is activated.
+
+{\it Default value:} {\tt .false.}
+
+
 \item[{\bf DM.PulayOnFile}] ({\it logical}):
 \index{DM.PulayOnFile@{\bf DM.PulayOnFile}}
+
+{\bf NOTE:} This feature is temporarily disabled pending a proper
+implementation that works well in parallel.
+
 Store intermediate information of Pulay mixing in files
 ({\tt .true.}) or in memory ({\tt .false.}).
 Memory storage can increase considerably the
