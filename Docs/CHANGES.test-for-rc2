@@ -1,6 +1,23 @@
 ** CHANGES to be tested before they go into rc-2
 
 ------------------------------------------------------------------------
+2010-06-18  10:40:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-rc1-5
+Hook to output the initial charge density
+
+If the fdf variable SaveInitialChargeDensity is "true", the program
+generates a RHO_INIT (and a RhoInit.grid.nc file if netCDF is compiled
+in) containing the charge density used to start the first
+selfconsistency step, and it stops. Note that if an initial density
+matrix (DM file) is used, it is not normalized. This is useful to
+generate the charge density associated to "partial" DMs.
+
+modified:
+  Docs/siesta.tex
+  Src/dhscf.F
+  Src/setup_hamiltonian.F
+  Src/siesta_options.F90
+
+------------------------------------------------------------------------
 2010-06-18  9:05:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-rc1-4
 Fixes and new functionality in Pulay mixing
 

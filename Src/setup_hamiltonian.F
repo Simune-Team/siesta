@@ -79,8 +79,12 @@
 !------------------------------------------------------------------------- BEGIN
 
 #ifndef TRANSIESTA      
-      ! Normalize density matrix to exact charge
-      call normalize_dm(first)
+      ! Normalize density matrix to exact charge, except if
+      ! we are just using the DM to generate the initial rho and exit
+      !
+      if (.not. save_initial_charge_density) then
+         call normalize_dm(first)
+      endif
 #else
       if (.not.TSrun ) call normalize_dm(first)
 #endif /* TRANSIESTA */

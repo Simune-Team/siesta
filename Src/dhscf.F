@@ -136,7 +136,7 @@ C
       use atmfuncs,      only : rcut, rcore
       use units,         only : Debye
       use fdf
-      use sys,           only : die
+      use sys,           only : die, bye
       use mesh,          only : xdsp, nsm, nsp
       use parsing
       use m_iorho,       only : write_rho
@@ -153,6 +153,7 @@ C
       use siesta_options, only: read_charge_cdf
       use siesta_options, only: savevna
       use siesta_options, only: read_deformation_charge_cdf
+      use siesta_options, only: save_initial_charge_density
 !
       use m_efield,       only: initialize_efield, acting_efield
       use m_efield,       only: get_field_from_dipole, dipole_correction
@@ -576,6 +577,22 @@ C ----------------------------------------------------------------------
          else
             call rhoofd(norb, nmpl, maxnd, numd, listdptr, listd,
      .              nspin, Dscf, DRho, nuo, nuotot, iaorb, iphorb, isa)
+!
+            if (save_initial_charge_density) then
+               do ispin = 1,nspin
+                  call reord( DRho(1,ispin), DRho(1,ispin),
+     $                 nml, nsm, +1)
+               enddo
+               call write_rho( "RHO_INIT", cell, ntm, nsm, ntpl,
+     $              nspin, DRho)
+               call write_grid_netcdf( cell, ntm, nspin, ntpl, DRho,
+     $               "RhoInit")
+               do ispin = 1,nspin
+                  call reord( DRho(1,ispin), DRho(1,ispin),
+     $                 nml, nsm, -1)
+               enddo
+              call bye("STOP after producing RHO_INIT")
+            endif
          endif
       endif
 
