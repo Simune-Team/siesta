@@ -16,7 +16,8 @@
 ! Other used module procedures
 !  use sys,        only: die             ! Termination routine
 !  use m_walltime, only: wall_time       ! Wall time routine
-!  use m_io,       only: io_assign       ! Get and reserve an available IO unit
+!  use m_io,       only: io_assign, io_close  ! Get and reserve an available IO unit
+!  use m_io,       only: io_close        ! Free up IO unit after use
 !  use moreParallelSubs, only: copyFile  ! Copies a file across nodes
 !
 ! Used module parameters and variables
@@ -182,7 +183,7 @@ MODULE m_timer
 
 ! Used module procedures
   use sys,        only: die             ! Termination routine
-  use m_io,       only: io_assign       ! Get and reserve an available IO unit
+  use m_io,       only: io_assign, io_close ! Get and reserve an available IO unit
   use m_walltime, only: wall_time       ! Wall time routine
   use moreParallelSubs, only: copyFile  ! Copies a file across nodes
   use parallel,   only: parallel_init   ! Initialize parallel variables
@@ -488,7 +489,7 @@ subroutine print_report( prog )   ! Write a report of counted times
       endif ! (myNode==writerNode)
 
       ! Copy report file to the file system of root node
-      close( unit=iu )
+      call io_close( iu )
       if (reportUnit>0) then ! Append report to file already open
 #ifdef MPI
         ! Find report file name in node 0 and send it to writer node

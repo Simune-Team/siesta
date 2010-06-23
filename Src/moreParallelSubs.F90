@@ -20,7 +20,7 @@
 ! use alloc,      only: de_alloc        ! De-allocation routine
 ! use alloc,      only: re_alloc        ! Re-allocation routine
 ! use sys,        only: die             ! Termination routine
-! use m_io,       only: io_assign       ! Get and reserve an available IO unit
+! use m_io,       only: io_assign, io_close  ! Get and reserve an available IO unit
 !
 !   USED module parameters:
 ! use precision,  only: dp              ! Real double precision type
@@ -151,7 +151,7 @@ MODULE moreParallelSubs
   use alloc,     only: de_alloc  ! De-allocation routine
   use alloc,     only: re_alloc  ! Re-allocation routine
   use sys,       only: die       ! Termination routine
-  use m_io,      only: io_assign ! Get and reserve an available IO unit
+  use m_io,      only: io_assign, io_close ! Get and reserve an available IO unit
 
 ! Used module parameters
   use precision, only: dp              ! Real double precision type
@@ -307,7 +307,7 @@ SUBROUTINE copyFile( srcNode, srcFile, dstNode, dstFile, writeOption )
     end do ! il
     call die(errHead//'too many lines in source file')
 1   continue  ! Jump here when reaching end of input file
-    close( unit=iu )
+    call io_close( iu )
 
   end if ! (myNode == srcNode)
 
@@ -428,7 +428,7 @@ SUBROUTINE copyFile( srcNode, srcFile, dstNode, dstFile, writeOption )
 
     end do ! il
 
-    close( unit=iu )
+    call io_close( iu )
   end if ! (myNode == dstNode)
 
 ! Deallocations

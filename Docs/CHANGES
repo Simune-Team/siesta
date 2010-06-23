@@ -4,6 +4,26 @@
 
 
 ** CHANGES ALONG trunk
+
+-----------------------------------------------------------------------
+2010-06-23 12:02:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-347
+
+Make sure that units are closed with io_close (J. Gale)
+
+ * 'Close' replaced by call to 'io_close' in several routines to
+   prevent luns overload.
+
+ * Unused declarations of io_assign and io_close removed from diagon.F
+   and ksv.f
+
+ (Julian Gale)
+
+ modified:
+   Src/diagon.F
+   Src/ksv.f
+   Src/m_timer.F90
+   Src/moreParallelSubs.F90
+   Src/write_orb_indx.f90
 -----------------------------------------------------------------------
 2010-06-23 02:19:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-346
 
