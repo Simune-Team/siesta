@@ -217,7 +217,9 @@ c
      $              .or. leqi(icorr,'ps')  ! PBEsol
      $              .or. leqi(icorr,'am')  ! AM05
      $              .or. leqi(icorr,'vf')  ! VDW-DRSLL
-     $              .or. leqi(icorr,'vw')) ! Alias for VDW-DRSLL
+     $              .or. leqi(icorr,'vw')  ! Alias for VDW-DRSLL
+     $              .or. leqi(icorr,'vl')  ! VDW-LMKLL -- Lee et al
+     $              .or. leqi(icorr,'vk')) ! VDW-KBM   -- Klimes et al
 
          if (icorr .eq. 'ca') then
             call setxc(1,(/'LDA'/), (/'CA'/), (/1._dp/), (/1._dp/))
@@ -239,6 +241,10 @@ c
             call setxc(1,(/'GGA'/), (/'AM05'/), (/1._dp/), (/1._dp/))
          elseif(icorr .eq. 'vf' .or. icorr .eq. 'vw') then
             call setxc(1,(/'VDW'/), (/'DRSLL'/), (/1._dp/), (/1._dp/))
+         elseif(icorr .eq. 'vl') then
+            call setxc(1,(/'VDW'/), (/'LMKLL'/), (/1._dp/), (/1._dp/))
+         elseif(icorr .eq. 'vk') then
+            call setxc(1,(/'VDW'/), (/'KBM'/), (/1._dp/), (/1._dp/))
          else
             stop 'XC'
          endif

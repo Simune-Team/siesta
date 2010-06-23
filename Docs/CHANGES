@@ -4,7 +4,40 @@
 
 
 ** CHANGES ALONG trunk
+-----------------------------------------------------------------------
+2010-06-23 02:19:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-346
 
+Support for LMKLL and KBM vdW functionals in ATOM (A. Garcia)
+
+ The pseudopotential generation program now accepts the "vl" xc code to
+ request the Lee et al. (LMKLL) version of the vdW functional
+ (arXiv:1003.5255v1 (2010)), and the "vk" xc code for the vdW
+ parametrization of Klimes et al. (KBM) (JPCM 22, 022201 (2009)).
+
+ The id strings in .xml pseudo files are, respectively,
+ 'Lee-et-al--LMKLL', and 'Klimes-et-al--KBM'. For consistency, the id
+ string for the Dion functional has been extended to
+ 'Dion-et-al--DRSLL'
+
+ The ATOM manual has been updated, and the version number set to
+ 3.3.1.
+
+ Obsolete xc routines (pre-SiestaXC) have been removed from the
+ Pseudo/atom directory.
+
+ removed:
+   Pseudo/atom/blypxc.f
+   Pseudo/atom/ggaxc.f
+   Pseudo/atom/ldaxc.f
+   Pseudo/atom/pw92xc.f
+   Pseudo/atom/pzxc.f
+   Pseudo/atom/revpbexc.f
+   Pseudo/atom/rpbexc.f
+ modified:
+   Pseudo/atom/Docs/atom.tex
+   Pseudo/atom/Makefile
+   Pseudo/atom/pseudoXML.f
+   Pseudo/atom/velect.f
 -----------------------------------------------------------------------
 2010-04-20 00:53:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-345
 
