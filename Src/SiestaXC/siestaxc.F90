@@ -705,8 +705,10 @@ MODULE siestaXC
 ! See correspondig modules for usage documentation
   USE fft1d,    only: nfft                 ! Get allowed sizes for FFTs
   USE alloc,    only: alloc_report         ! Set and print allocation report
+#ifdef DEBUG_XC
   USE debugXC,  only: setDebugOutputUnit   ! Set debug report
   USE debugXC,  only: closeDebugOutputFile ! Print debug report
+#endif
   USE m_timer,  only: timer_report         ! Print CPU time report
   USE mesh3d,   only: myMeshBox            ! Get my processor mesh box
   USE mesh3d,   only: setMeshDistr         ! Set a distribution of mesh

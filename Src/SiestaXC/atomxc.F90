@@ -166,13 +166,13 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 ! Module types and variables
   use precision, only: dp          ! Double precision real type
   use alloc,   only: allocDefaults ! Derived type for allocation defaults
-! BEGIN DEBUG
+#ifdef DEBUG_XC
 !  use m_vdwxc, only: qofrho        ! Returns q(rho,grad_rho)
 !  use m_timer, only: timer_start   ! Start CPU time counter
 !  use m_timer, only: timer_stop    ! Stop CPU time counter
   use debugXC, only: udebug        ! Output file unit for debug info
   use debugXC, only: setDebugOutputUnit  ! Sets udebug
-! END DEBUG
+#endif /* DEBUG_XC */
 
   implicit none
 
@@ -247,15 +247,15 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
     uk(:,:)=>null(), ur(:,:)=>null()
   type(allocDefaults):: &
     prevAllocDefaults
-! DEBUG
+#ifdef DEBUG_XC
 !  real(dp):: q, dqdrho, dqdgrho(3)
 !  real(dp):: epsCtmp, dEcdDtmp(nSpin), dEcdGDtmp(3,nSpin)
-! END DEBUG
+#endif /* DEBUG_XC */
 
-! DEBUG
+#ifdef DEBUG_XC
   call setDebugOutputUnit()   ! Initialize udebug variable
 !  call timer_start( myName )  ! Start time counter
-! END DEBUG
+#endif /* DEBUG_XC */
 
 ! Check dimension of arrays Dens and Vxc
   if (maxr<nr) call die(errHead//'maxr<nr')
@@ -378,9 +378,9 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
     ! Find planewave cutoff of density
 !    kc = kcPhi( 0, nr, rmesh(:), sum(dens(:,1:ndSpin),2), EtolKc )
 !    kc = min( kc, kcmax )
-! DEBUG
+#ifdef DEBUG_XC
 !   write(udebug,'(a,f12.6)') myName//'kc =', kc
-! END DEBUG
+#endif /* DEBUG_XC */
 
     ! Estimate the planewave cutoff of the density
     Ecut = 0
@@ -399,9 +399,9 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
     kc = sqrt(Ecut)
     kc = max( kc, kcMin )
     kc = min( kc, kcMax )
-! DEBUG
+#ifdef DEBUG_XC
 !   write(udebug,'(a,f12.6)') myName//'kc =', kc
-! END DEBUG
+#endif /* DEBUG_XC */
 
     ! Set mesh cutoff to filter VdW kernel
     call vdw_set_kcut( kc )
@@ -422,7 +422,7 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
       tk(0:nk,iq) = interpolation( nk+1, r(0:nk), nr, tr(1:nr,iq) )
     end do
 
-! DEBUG
+#ifdef DEBUG_XC
 !    ! Write density
 !    open(1,file='d.out')
 !    do ir = 1,nr
@@ -447,7 +447,7 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 !      write(1,'(30f15.9)') r(ir), tk(ir,1:nq)
 !    end do
 !    close(1)
-! END DEBUG
+#endif /* DEBUG_XC */
 
     ! Fourier-transform theta_iq(r) for each iq
     do iq = 1,nq
@@ -474,7 +474,7 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
       ur(1:nr,iq) = interpolation( nr, rmesh(1:nr), nk+1, uk(0:nk,iq) )
     end do ! iq
 
-! DEBUG
+#ifdef DEBUG_XC
 !    ! Write u
 !    open(1,file='ur.out')
 !    do ir = 0,nk
@@ -486,7 +486,7 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 !      write(1,'(30f15.9)') rmesh(ir), ur(ir,1:nq)
 !    end do
 !    close(1)
-! END DEBUG
+#endif /* DEBUG_XC */
 
   end if ! (VDW)
 
@@ -533,7 +533,7 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
                     dEdDaux, dEcdD, dVxdD, dVcdD )
         dEcdGD = 0.0_dp
 
-! DEBUG
+#ifdef DEBUG_XC
 !        ! Select only non local correlation energy and potential
 !        epsX = 0
 !        epsC = 0
@@ -541,18 +541,18 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 !        dEcdD = 0
 !        dExdGD = 0
 !        dEcdGD = 0
-! END DEBUG
+#endif /* DEBUG_XC */
 
         ! Local cusp correction to nonlocal VdW energy integral
         call vdw_decusp( nSpin, D(:,ir), GD(:,:,ir), &
                          epsCusp, dEcuspdD, dEcuspdGD )
 
-! DEBUG
+#ifdef DEBUG_XC
 !        ! Select only non local correlation energy and potential
 !        epsCusp = 0
 !        dEcuspdD = 0
 !        dEcuspdGD = 0
-! END DEBUG
+#endif /* DEBUG_XC */
 
         ! Find expansion of theta(q(r)) for VdW
         call vdw_theta( nSpin, D(:,ir), GD(:,:,ir), tr(ir,1:nq), dtdd, dtdgd )
@@ -573,12 +573,12 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
       else if (GGAfunc) then
         call ggaxc( XCauth(nf), irel, nSpin, D(:,ir), GD(:,:,ir),  &
                     epsX, epsC, dExdD, dEcdD, dExdGD, dEcdGD )
-! DEBUG
+#ifdef DEBUG_XC
 !        call ldaxc( 'PW92', irel, nSpin, D(:,ir), Eaux, epsC,  &
 !                    dEdDaux, dEcdD, dVxdD, dVcdD )
 !        call ggaxc( XCauth(nf), irel, nSpin, D(:,ir), GD(:,:,ir),  &
 !                    epsX, epsCtmp, dExdD, dEcdDtmp, dExdGD, dEcdGDtmp )
-! END DEBUG
+#endif /* DEBUG_XC */
       else
         call ldaxc( XCauth(nf), irel, nSpin, D(:,ir), epsX, epsC, &
                     dExdD, dEcdD, dVxdD, dVcdD )
@@ -631,14 +631,14 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
   Dc = Dc / Eunit
   Vxc(1:nr,1:nSpin) = Vxc(1:nr,1:nSpin) / Eunit
 
-! DEBUG
+#ifdef DEBUG_XC
 !    ! Write potential
 !    open(1,file='v.out')
 !    do ir = 1,nr
 !      write(1,'(3f15.9)') rmesh(ir), Vxc(ir,1:nSpin)
 !    end do
 !    close(1)
-! END DEBUG
+#endif /* DEBUG_XC */
 
 ! Deallocate VDW-related arrays
   if (VDW) then
@@ -662,9 +662,9 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 ! Restore previous allocation defaults
 !  call alloc_default( restore=prevAllocDefaults )
 
-! DEBUG
+#ifdef DEBUG_XC
 !  call timer_stop( myName )   ! Stop time counter
-! END DEBUG
+#endif /* DEBUG_XC */
 
 end subroutine atomXC
 

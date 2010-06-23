@@ -18,7 +18,7 @@ FFLAGS_DEBUG= -g -Wall -Wextra
 LDFLAGS=
 RANLIB=echo
 #
-DEFS=-DGFORTRAN  -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DDEBUG    # Note this !!
+DEFS=-DGFORTRAN  -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DDEBUG_XC    # Note this !!
 #
 MPI_INTERFACE=libmpi_f90.a
 MPI_INCLUDE=.      # Note . for no-op

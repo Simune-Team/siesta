@@ -43,7 +43,9 @@
       use m_ioxv, only: xv_file_read
       use m_projected_DOS, only: init_projected_DOS
       USE writewave, only: gamma_wavefunctions, setup_wf_kpoints
+#ifdef DEBUG_XC
       USE siestaXC, only: setDebugOutputUnit
+#endif /* DEBUG_XC */
       USE m_timer, only: timer_report  ! Sets options for report of CPU times
 #ifdef MPI
       use mpi_siesta, only: mpi_comm_world
@@ -128,8 +130,10 @@
       Entropy = 0.0_dp
       FreeE = 0.0_dp
 
+#ifdef DEBUG_XC
 ! Set output file unit for debug info
       call setDebugOutputUnit()
+#endif /* DEBUG_XC */
 
 ! Initialise read .....................................................
       call reinit(sname)

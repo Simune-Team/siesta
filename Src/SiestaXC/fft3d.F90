@@ -106,9 +106,9 @@ MODULE m_fft3d
   ! Used module parameters
   use precision,    only: dp           ! Real double precision type
   use precision,    only: gp=>grid_p   ! Real type of mesh array data
-! DEBUG
+#ifdef DEBUG_XC
   use debugXC,      only: udebug    ! File unit for debug output
-! END DEBUG
+#endif /* DEBUG_XC */
 
   implicit none
 
@@ -189,7 +189,7 @@ subroutine fft3d( dat, meshDistr, nMesh, r2k )
   ! all the node's mesh boxes span one of the whole cell axes
   if (newMesh) call fftMeshDistr( nMesh, myDistr, aDistr )
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
   ! Check that aDistr mesh boxes span whole cell axes
   if (newMesh) then
     do ia = 1,3
@@ -198,7 +198,7 @@ subroutine fft3d( dat, meshDistr, nMesh, r2k )
       if (aMesh(ia)/=nMesh(ia)) call die(errHead//'incorrect aBox')
     end do ! ia
   end if ! (newMesh)
-! END DEBUG
+#endif /* DEBUG_XC */
 
   ! Associate communication tasks to distributions
   call associateMeshTask( io2my, meshDistr, myDistr )

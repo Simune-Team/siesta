@@ -245,10 +245,10 @@ MODULE m_vdwxc
 ! Used module parameters
   use precision,   only: dp                ! Real double precision type
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
   use debugXC,     only: udebug     ! File unit for debug output
 !  use plot_module, only: plot
-! END DEBUG
+#endif /* DEBUG_XC */
 
   implicit none
 
@@ -262,7 +262,7 @@ PUBLIC ::         &
   vdw_set_author, &! Sets the vdW functional flavour (author initials)
   vdw_set_kcut     ! Sets the planewave cutoff kc of the integration grid
 
-! DEBUG
+#ifdef DEBUG_XC
 ! Called by debugging test programs
 PUBLIC ::     &
   phiofr,     &! Finds the kernel phi(q1,q2,r) at tabulated q-mesh values
@@ -271,7 +271,7 @@ PUBLIC ::     &
   phi_val,    &! Finds kernel phi(d1,d2) by direct integration
   pofq,       &! Finds polynomials p(q) from cubic spline interpolation
   qofrho       ! Finds the local wavevector parameter q(rho,grad_rho)
-! END DEBUG
+#endif /* DEBUG_XC */
 
 PRIVATE  ! Nothing is declared public beyond this point
 
@@ -533,9 +533,9 @@ real(dp) function dphi( d1, d2 )
 
   deallocate( amesh, c, dphida, dphidb, s, nu0, nu1, nu2 )
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
 !  print'(a,2f12.6,i8,f12.6)', 'dphi: d1,d2, na, phi =', d1, d2, n, dphi
-! END DEBUG
+#endif /* DEBUG_XC */
 
 end function dphi
 
@@ -778,10 +778,10 @@ function phi_soft( d1, d2 )
     phi2 = (4*(phi-phi0) - dphidd*dsoft) / (2*dsoft**2)
     phi4 = (2*(phi0-phi) + dphidd*dsoft) / (2*dsoft**4)
     phi_soft = phi0 + phi2*d**2 + phi4*d**4
-! BEGIN DEBUG
+#ifdef DEBUG_XC
 !    print'(a,5f8.3)', 'phi_soft: d,delta,phi0,phi2,phi4=', &
 !      d, (d1-d2)/(d1+d2), phi0, phi2, phi4
-! END DEBUG
+#endif /* DEBUG_XC */
 
   end if ! (d<=0)
 
@@ -816,9 +816,9 @@ real(dp) function phi_val( d1, d2 )
   call set_mesh( n, xmax=acut, dxndx1=dan/da1 )
   call get_mesh( n, nmesh, amesh )
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
 !  print'(a,i6,/,(10f8.3))', 'phi_val: size, amesh =', n, amesh
-! END DEBUG
+#endif /* DEBUG_XC */
 
 ! Find cos(a), sin(a), nu1(a), and nu2(a)
   pi = acos(-1._dp)
@@ -871,9 +871,9 @@ real(dp) function phi_val( d1, d2 )
 
   deallocate( amesh, c, dphida, dphidb, s, nu1, nu2 )
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
 !  print'(a,2f12.6,i8,f12.6)', 'phi_val: d1,d2, na, phi =', d1, d2, n, phi_val
-! END DEBUG
+#endif /* DEBUG_XC */
 
 end function phi_val
 
@@ -1096,9 +1096,9 @@ subroutine set_phi_table()
 ! Set d-mesh points
   call set_mesh( nd, xmax=dcut, dxndx1=ddmaxddmin )
   call get_mesh( nd, nmesh, dmesh )
-! BEGIN DEBUG
+#ifdef DEBUG_XC
   write(udebug,'(a,/,(10f8.4))') 'set_phi_table: dmesh =', dmesh
-! BEGIN DEBUG
+#endif /* DEBUG_XC */
 
 ! Find function at mesh points
   do id1 = 1,nd
@@ -1121,13 +1121,13 @@ subroutine set_phi_table()
     end do ! id2
   end do ! id1
 
-! DEBUG
+#ifdef DEBUG_XC
 !  open( unit=44, file='phi.out' )
 !  do id2 = 1,nd
 !    write(44,'(/,(f12.6))') phi(:,id2)
 !  end do
 !  close( unit=44 )
-! END DEBUG
+#endif /* DEBUG_XC */
 
   if (deriv_method == 'numeric') then
 !    print*, 'set_phi_table: Using numerical derivatives'
@@ -1240,7 +1240,7 @@ subroutine set_phi_table()
   d2phidd1dd2(:,1) = 0
   d2phidd1dd2(1,:) = 0
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
 ! Print values and derivatives for debugging
 !  print'(a,/,2a10,4a15)', &
 !   'set_phi_table:', 'd1', 'd2', 'phi', 'dphi/dd1', 'dphi/dd2', 'd2phi/dd1dd2'
@@ -1252,7 +1252,7 @@ subroutine set_phi_table()
 !        dphidd1(id1,id2), dphidd2(id1,id2), d2phidd1dd2(id1,id2)
 !    end do
 !  end do
-! END DEBUG
+#endif /* DEBUG_XC */
 
 ! Set up bicubic interpolation coefficients
   call bcucof( nd, nd, dmesh, dmesh, phi, dphidd1, dphidd2, d2phidd1dd2, &
@@ -1279,21 +1279,21 @@ subroutine set_qmesh()
   implicit none
   integer :: nmesh
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
 !      real(dp):: a, b
 !      a = log(20.0_dp) / (20-1)
 !      b = 8.0_dp / (exp(a*(20-1)) - 1)
 !      qcut = b * (exp(a*(nq-1)) - 1)
 !      dqmaxdqmin = exp(a*(nq-1))
-! END DEBUG
+#endif /* DEBUG_XC */
 
   call set_mesh( mq, xmax=qcut, dxndx1=dqmaxdqmin )
   call get_mesh( mq, nmesh, qmesh )
   qmesh_set = .true.
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
   write(udebug,'(/,a,/,(10f8.4))') 'vdw:set_qmesh: qmesh =', qmesh
-! END DEBUG
+#endif /* DEBUG_XC */
 
 end subroutine set_qmesh
 
@@ -1525,10 +1525,10 @@ subroutine vdw_set_kcut( kc )
   rs = nrs * dr
   if (nk>nr) stop 'vdw_set_kcut: ERROR: nk>nr'
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
   write(udebug,'(a,5f8.3)') 'vdw_set_kcut: dcut,qcut,rcut,kcut,kmax=', &
     dcut, qcut, rcut, kc, kmax
-! END DEBUG
+#endif /* DEBUG_XC */
 
   ! For each pair of values q1 and q2
   do iq2 = 1,mq

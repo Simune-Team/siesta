@@ -6,6 +6,40 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2010-06-23 12:20:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-348
+
+Use DEBUG_XC preprocessor symbol to wrap SiestaXC debugging (J. Gale)
+
+ * Comments wrapped by ! DEBUG in several SiestaXC routines (and in
+   related sections of siesta_init and siesta_end) have been replaced
+   by #ifdef DEBUG_XC ... #endif so that the writing of debugging files
+   can be turned off easily at compile time.
+
+   Note that this has forced the change in file extension of a few
+   files in Src/SiestaXC, with concommitant changes in the makefiles.
+
+renamed:
+  Src/SiestaXC/atomxc.f90 => Src/SiestaXC/atomxc.F90
+  Src/SiestaXC/cellxc.f90 => Src/SiestaXC/cellxc.F90
+  Src/SiestaXC/fft3d.f90 => Src/SiestaXC/fft3d.F90
+  Src/SiestaXC/fftr.f90 => Src/SiestaXC/fftr.F90
+  Src/SiestaXC/siestaxc.f90 => Src/SiestaXC/siestaxc.F90
+  Src/SiestaXC/vdwxc.f90 => Src/SiestaXC/vdwxc.F90
+modified:
+  Src/SiestaXC/lib-arch.make
+  Src/SiestaXC/lib-makefile
+  Src/SiestaXC/makefile
+  Src/SiestaXC/mesh3d.F90
+  Src/siesta_end.F
+  Src/siesta_init.F
+  Src/SiestaXC/atomxc.F90
+  Src/SiestaXC/cellxc.F90
+  Src/SiestaXC/fft3d.F90
+  Src/SiestaXC/fftr.F90
+  Src/SiestaXC/siestaxc.F90
+  Src/SiestaXC/vdwxc.F90
+
+-----------------------------------------------------------------------
 2010-06-23 12:02:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-347
 
 Make sure that units are closed with io_close (J. Gale)

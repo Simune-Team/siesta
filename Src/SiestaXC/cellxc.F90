@@ -245,17 +245,17 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   use m_chkgmx,only: meshKcut      ! Returns the planewave cutoff of a mesh
   use mesh3D,  only: myMeshBox     ! Returns the mesh box of my processor
   use parallel,only: parallel_init ! Initializes nodes variables
-! BEGIN DEBUG
+#ifdef DEBUG_XC
   use moreParallelSubs, only: nodeString ! Returns a string with my node number
-! END DEBUG
   use m_vdwxc, only: qofrho        ! For debugging only
+#endif /* DEBUG_XC */
   use alloc,   only: re_alloc      ! Reallocates arrays
   use cellsubs,only: reclat        ! Finds reciprocal unit cell vectors
   use mesh3D,  only: sameMeshDistr ! Finds if two mesh distr. are equal
   use mesh3D,  only: setMeshDistr  ! Defines a new mesh distribution
-! BEGIN DEBUG
+#ifdef DEBUG_XC
   use debugXC, only: setDebugOutputUnit ! Sets udebug variable
-! END DEBUG
+#endif /* DEBUG_XC */
   use m_timer, only: timer_get     ! Returns counted times
   use m_timer, only: timer_start   ! Starts counting time
   use m_timer, only: timer_stop    ! Stops counting time
@@ -272,9 +272,9 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   use precision, only: dp            ! Double precision real type
   use precision, only: gp=>grid_p    ! Real precision type of mesh arrays
   use parallel,  only: nodes         ! Number of processor nodes
-! BEGIN DEBUG
+#ifdef DEBUG_XC
   use debugXC,   only: udebug        ! Output file unit for debug info
-! END DEBUG
+#endif /* DEBUG_XC */
 
   implicit none
 
@@ -380,10 +380,10 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
      GD(3,nSpin), k, kcell(3,3), kcut, kvec(3),  &
      stressVDW(3,3), sumTime, sumTime2, totTime, VDWweightC, volume, &
      XCweightC(maxFunc), XCweightVDW, XCweightX(maxFunc)
-! DEBUG
+#ifdef DEBUG_XC
   integer :: iip, jjp, jq
   real(dp):: rmod, rvec(3)
-! END DEBUG
+#endif /* DEBUG_XC */
   logical :: &
      GGA, GGAfunctl, VDW, VDWfunctl
   character(len=20):: &
@@ -393,10 +393,10 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   type(allocDefaults):: &
      prevAllocDefaults
 
-! DEBUG
+#ifdef DEBUG_XC
   ! Variables for debugging
   real(dp):: GDtot(3), q, dqdD, dqdGD(3)
-! END DEBUG
+#endif /* DEBUG_XC */
 
   ! Make sure that variables in parallel module are set
   call parallel_init()
@@ -404,10 +404,10 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   ! Start time counter
   call timer_start( myName )
 
-! DEBUG
+#ifdef DEBUG_XC
   ! Initialize udebug variable
   call setDebugOutputUnit()
-! END DEBUG
+#endif /* DEBUG_XC */
 
   ! Get the functional(s) to be used
   call getXC( nXCfunc, XCfunc, XCauth, XCweightX, XCweightC )
@@ -497,16 +497,16 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
     ! Deallocate temporary arrays
     call de_alloc( workload, myName//'workload' )
     call de_alloc( myDens,   myName//'myDens' )
-! BEGIN DEBUG
+#ifdef DEBUG_XC
     call myMeshBox( nMesh, myDistr, myBox )
     write(udebug,'(a,3(2x,2i4))') myName//'My new box =', myBox
-! END DEBUG
+#endif /* DEBUG_XC */
   end if ! (nodes>1 .and. timeDisp/timeAvge>maxUnbalance)
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
   ! Keep input distribution for the time being
 !  myDistr = ioDistr
-! END DEBUG
+#endif /* DEBUG_XC */
 
   ! Find the box of mesh points that belong to this node
   call myMeshBox( nMesh, myDistr, myBox )
@@ -681,9 +681,9 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
     call vdw_theta( nSpin, D, GD, tr, dtdd, dtdgd )
     tvac = tr
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
 !    call timer_start( 'cellXC1' )
-! END DEBUG
+#endif /* DEBUG_XC */
 
     ! Loop on mesh points to find theta_q(r)
     ip = 0
@@ -718,7 +718,7 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
       call vdw_theta( nSpin, D, GD, tr, dtdd, dtdgd )
       tvdw(ip,1:nq) = tr(1:nq)
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
 !      ! Write q(r) for debugging
 !      if (i3==myBox(1,3)) then
 !        if (i1==myBox(1,1) .and. i2==myBox(1,2)) then
@@ -734,17 +734,17 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 !        if (i1==myBox(1,1)) write(47,*) ' '
 !        write(47,*) q
 !      end if
-! END DEBUG
+#endif /* DEBUG_XC */
 
     enddo ! i1
     enddo ! i2
     enddo ! i3  (End of loop on mesh points to find theta_q(r))
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
 !    call timer_stop( 'cellXC1' )
 !    call timer_start( 'cellXC2' )
 !    call timer_start( 'cellXC2.1' )
-! END DEBUG
+#endif /* DEBUG_XC */
 
     ! Fourier-tranform theta_iq(r)
     do iq = 1,nq
@@ -781,10 +781,10 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
       end do
     end do ! iq
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
 !    call timer_stop( 'cellXC2.1' )
 !    call timer_start( 'cellXC2.2' )
-! END DEBUG
+#endif /* DEBUG_XC */
 
     ! Find reciprocal unit vectors
     call reclat( cell, kcell, 1 )
@@ -822,13 +822,13 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
         uk(1:nq) = matmul( tk(1:nq), phi(1:nq,1:nq) )
         uvdw(ik,1:nq) = uk(1:nq)
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
 !        ! Find contribution to 0.5*Int_dr*Int_dr'*rho(r)*phi(r,r')*rho(r')
 !        ! Factor 0.5 in the integral cancels with a factor 2 required 
 !        ! because tk and uk contain only the real or imaginary parts
 !        ! of the Fourier components (see fftr2k) 
 !        Enl = Enl + volume * sum(uk*tk)
-! END DEBUG
+#endif /* DEBUG_XC */
 
         ! Find contribution to stress from change of k vectors with strain
         if (k > kmin) then  ! Avoid k=0 (whose contribution is zero)
@@ -850,15 +850,15 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
     end do ! i2
     end do ! i3  End of loop on k-mesh points
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
 !    call timer_stop( 'cellXC2.2' )
 !    call timer_start( 'cellXC2.3' )
-! END DEBUG
+#endif /* DEBUG_XC */
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
 !    print'(a,3f12.6)','cellXC: Ex,Ec,Enl (eV) =', &
 !      Ex/0.03674903_dp, Ec/0.03674903_dp, Enl/0.03674903_dp
-! END DEBUG
+#endif /* DEBUG_XC */
 
     ! Fourier-tranform u_q(k) back to real space
     do iq = 1,nq
@@ -889,21 +889,21 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
       end do
     end do
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
 !    call timer_stop( 'cellXC2.3' )
 !    call timer_stop( 'cellXC2' )
-! END DEBUG
+#endif /* DEBUG_XC */
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
 !    ! Re-initialize Enl if it has been calculated in reciprocal space
 !    Enl = 0.0_dp
-! END DEBUG
+#endif /* DEBUG_XC */
 
   end if ! (VDW) End of VdW initializations------------------------------------
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
 !  call timer_start( 'cellXC3' )
-! END DEBUG
+#endif /* DEBUG_XC */
 
   ! Loop on mesh points -------------------------------------------------------
   ip = 0
@@ -961,7 +961,7 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
                     dEdDaux, dEcdD, dVxdD, dVcdD )
         dEcdGD = 0.0_dp
 
-! DEBUG
+#ifdef DEBUG_XC
 !        ! Select only non local correlation energy and potential
 !        epsX = 0
 !        epsC = 0
@@ -969,17 +969,17 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 !        dEcdD = 0
 !        dExdGD = 0
 !        dEcdGD = 0
-! END DEBUG
+#endif /* DEBUG_XC */
 
         ! Local cusp correction to nonlocal VdW energy integral
         call vdw_decusp( nSpin, D, GD, epsCusp, dEcuspdD, dEcuspdGD )
 
-! DEBUG
+#ifdef DEBUG_XC
 !        ! Select only non local correlation energy and potential
 !        epsCusp = 0
 !        dEcuspdD = 0
 !        dEcuspdGD = 0
-! END DEBUG
+#endif /* DEBUG_XC */
 
         ! Find expansion of theta(q(r)) for VdW
         call vdw_theta( nSpin, D, GD, tr, dtdd, dtdgd )
@@ -1001,7 +1001,7 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
         EcuspVDW = EcuspVDW + dVol * Dtot * epsCusp
         Enl = Enl + dVol * Dtot * epsNL
 
-! DEBUG
+#ifdef DEBUG_XC
 !        if (i1==0 .and. i2==0 .and. i3==0) then
 !          open( unit=33, file='epsNL'//trim(nodeString()), form='formatted' )
 !          write(33,'(3f12.6,i6)') (cell(:,ix),nMesh(ix),ix=1,3)
@@ -1012,7 +1012,7 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 !          ii1*cell(:,1)/nMesh(1), &
 !          ii2*cell(:,2)/nMesh(2), &
 !          ii3*cell(:,3)/nMesh(3), Dtot, epsNL
-! END DEBUG
+#endif /* DEBUG_XC */
 
       else if (GGAfunctl) then
         call ggaxc( XCauth(nf), irel, nSpin, D, GD, &
@@ -1147,9 +1147,9 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   enddo ! i2
   enddo ! i3  (End of loop over mesh points)-----------------------------------
 
-! DEBUG
+#ifdef DEBUG_XC
   close( unit=33 )
-! END DEBUG
+#endif /* DEBUG_XC */
 
   ! If mesh arrays are distributed, add Vxc contribution from neighbor regions
   if (GGA .and. myDistr/=0) then ! Distributed Vxc data
@@ -1196,11 +1196,11 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
     end if ! (sameMeshDistr(ioDistr,myDistr))
   end if ! (associated(myVxc))
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
 !  call timer_stop( 'cellXC3' )
-! END DEBUG
+#endif /* DEBUG_XC */
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
 !  ! Some printout for debugging
 !  if (VDW) then
 !    print'(a,f12.6)', &
@@ -1208,7 +1208,7 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 !    print'(a,3f12.6)','cellXC: Ex,Ecl,Ecnl (eV) =', &
 !         Ex/0.03674903_dp, (Ec-Enl)/0.03674903_dp, Enl/0.03674903_dp
 !  end if
-! END DEBUG
+#endif /* DEBUG_XC */
 
   ! Add contribution to stress from the change of volume with strain
   forall(ix=1:3) stress(ix,ix) = stress(ix,ix) + Ex + Ec
@@ -1285,11 +1285,11 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   timeAvge = sumTime / nodes
   timeDisp = sqrt( max( sumTime2/nodes - timeAvge**2, 0._dp ) )
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
   write(udebug,'(a,3f12.6)') &
     myName//'My CPU time, avge, rel.disp =', &
     myTime, timeAvge, timeDisp/timeAvge
-! END DEBUG
+#endif /* DEBUG_XC */
 
 CONTAINS !---------------------------------------------------------------------
 
