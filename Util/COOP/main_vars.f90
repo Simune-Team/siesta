@@ -52,7 +52,7 @@ module main_vars
   integer, allocatable :: nwf(:,:)
   real(dp),    allocatable :: pk(:,:)
   real(dp), allocatable ::   ados(:,:), ww(:)
-  real(dp), allocatable ::   intdos(:)
+  real(dp), allocatable ::   intdos(:), intebs(:)
 
   ! HS file
   integer, allocatable :: numh(:), listhptr(:), listh(:)  

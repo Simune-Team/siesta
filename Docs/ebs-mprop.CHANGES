@@ -1,0 +1,27 @@
+Compute and print band-structure energy. Updates to Util/COOP/mprop
+
+* The band-structure energy Ebs = Tr(DM*H) is now computed at every 
+  iteration and printed at the beginning and end of the SCF cycle, both
+  in the output file and in the CML file. The calculation is done in  
+  compute_dm, so DM is the "output DM" from the diagonalization of H.
+
+* The mprop program has been updated to output the integrated
+  band-structure energy as a function of energy as a third column in
+  the integrated-dos file. The " -n " option has been documented.
+
+* Creation of Util/COOP/Docs, and addition of some notes on the units
+  and meaning of the COOP and COHP curves.
+
+added:
+  Util/COOP/Docs/
+  Util/COOP/Docs/UnitsAndMeaningOfCurves.txt
+  Util/COOP/Tests/README
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+  Src/m_energies.F90
+  Src/write_subs.F
+  Util/COOP/README
+  Util/COOP/main_vars.f90
+  Util/COOP/mprop.f90
+  Util/COOP/subs.f90
