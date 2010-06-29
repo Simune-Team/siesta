@@ -44,7 +44,6 @@
     \subitem split valence   for H, 21
     \subitem User basis, 27
     \subitem User basis (NetCDF format), 28
-  \item basis     \subitem PAO, 118
   \item {\bf     BasisPressure}, 28
   \item Berry phase, 68
   \item Bessel functions, 26
@@ -72,7 +71,7 @@
   \item {\bf ChemicalSpeciesLabel}, 14, 30
   \item CML, 112
   \item Conjugate-gradient history information, 80
-  \item constant-volume cell relaxation, 78
+  \item constant-volume cell relaxation, 79
   \item constraints in relaxations, 87
   \item {\bf COOP.Write}, 66
   \item cutoff radius, 24
@@ -204,7 +203,7 @@
   \item {\bf MD.Broyden.History.Steps}, 81
   \item  {\bf MD.Broyden.Initial.Inverse.Jacobian}, 81
   \item {\bf MD.BulkModulus}, 85
-  \item {\bf MD.ConstantVolume}, 78
+  \item {\bf MD.ConstantVolume}, 79
   \item {\bf MD.FCDispl}, 89
   \item {\bf MD.FCfirst}, 89
   \item {\bf MD.FClast}, 89
@@ -212,7 +211,7 @@
   \item {\bf MD.FIRE.TimeStep}, 81
   \item {\bf MD.FireQuench}, 82
   \item {\bf MD.InitialTemperature}, 84
-  \item {\bf MD.InitialTimeStep}, 83
+  \item {\bf MD.InitialTimeStep}, 84
   \item {\bf MD.LengthTimeStep}, 84
   \item {\bf MD.MaxCGDispl}, 79
   \item {\bf MD.MaxForceTol}, 79
@@ -224,7 +223,7 @@
   \item {\bf MD.Quench}, 82
   \item {\bf MD.RelaxCellOnly}, 79
   \item {\bf MD.RemoveIntramolecularPressure}, 83
-  \item {\bf MD.TargetPressure}, 82
+  \item {\bf MD.TargetPressure}, 83
   \item {\bf MD.TargetTemperature}, 84
   \item {\bf     MD.TauRelax}, 85
   \item {\bf MD.TypeOfRun}, 77
@@ -241,7 +240,7 @@
   \item mixps   program, 15
   \item {\bf MM.Cutoff}, 74
   \item {\bf MM.Grimme.D}, 74
-  \item {\bf MM.Grimme.S6}, 74
+  \item {\bf MM.Grimme.S6}, 75
   \item {\bf MM.Potentials}, 73
   \item {\bf MM.UnitsDistance}, 74
   \item {\bf MM.UnitsEnergy}, 74
@@ -304,7 +303,7 @@
     \subitem band $\vec k$ points, 13, 61
     \subitem band structure, 61
     \subitem basis, 27
-    \subitem charge density, 72
+    \subitem charge density, 72, 73
     \subitem charge density and/or wfs for DENCHAR code, 77
     \subitem customization, 13
     \subitem dedicated files, 13
@@ -325,9 +324,9 @@
     \subitem long, 13
     \subitem main output file, 12
     \subitem molecular     dynamics
-      \subsubitem history, 85
+      \subsubitem history, 86
     \subitem molecular dynamics
-      \subsubitem Force Constants Matrix, 88
+      \subsubitem Force Constants Matrix, 89
       \subsubitem history, 86
       \subsubitem PHONON forces file, 90
     \subitem Mulliken analysis, 13, 65
@@ -377,10 +376,10 @@
 
   \indexspace
 
-  \item {\bf RcSpatial}, 75
+  \item {\bf RcSpatial}, 76
   \item reading saved     data
     \subitem deformation charge density, 48
-  \item reading saved data, 76
+  \item reading saved data, 77
     \subitem all, 77
     \subitem CG, 80
     \subitem charge density, 48
@@ -405,6 +404,7 @@
   \item {\bf SaveDeltaRho}, 72
   \item {\bf SaveElectrostaticPotential}, 72
   \item {\bf SaveHS}, 53
+  \item {\bf       SaveInitialChargeDensity}, 73
   \item {\bf SaveIonicCharge}, 73
   \item {\bf SaveNeutralAtomPotential}, 72
   \item {\bf     SaveRho}, 72
@@ -479,10 +479,10 @@
   \item {\bf TS.ComplexContour.NumLine}, 96
   \item {\bf TS.ComplexContour.NumPoles}, 97
   \item {\bf TS.GFFileLeft}, 95
-  \item {\bf TS.GFFileRight}, 95
+  \item {\bf TS.GFFileRight}, 96
   \item {\bf TS.HSFileLeft}, 95, 98
   \item {\bf TS.HSFileRight}, 95
-  \item {\bf TS.MixH}, 94
+  \item {\bf TS.MixH}, 95
   \item {\bf TS.NumUsedAtomsLeft}, 96
   \item {\bf TS.NumUsedAtomsRight}, 96
   \item {\bf     TS.SaveHS}, 94
@@ -531,7 +531,7 @@
   \item {\bf WriteForces}, 13
   \item {\bf WriteKbands}, 13, 61
   \item {\bf WriteKpoints}, 13, 41
-  \item {\bf WriteMDhistory}, 85
+  \item {\bf WriteMDhistory}, 86
   \item {\bf WriteMDXmol}, 38
   \item {\bf WriteMullikenPop}, 13, 65
   \item {\bf WriteWaveFunctions}, 13, 63
