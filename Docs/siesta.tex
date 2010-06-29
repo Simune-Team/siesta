@@ -39,7 +39,7 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, 3.0-rc1-5}}
+{\Huge {\bf S I E S T A \, \, 3.0-rc1-6}}
 
 \vspace{1cm}
 \hrulefill
@@ -3613,14 +3613,16 @@ the Order-N calculation faster.  USE WITH CARE!!!
 \index{SaveHS@{\bf SaveHS}}\index{output!Hamiltonian \& overlap}
 Instructs to write the Hamiltonian and overlap matrices, as well
 as other data required to generate bands and density of states,
-in file {\tt SystemLabel}.HS. This file can be read by routine IOHS,
-which may be used by an application program in later versions.
-
-In some cases, {\sc Siesta} produces also an HSX file, which is in a
-more compact form than the usual HS, and in which the Hamiltonian,
+in file {\tt SystemLabel}.HSX. The HSX format is more
+compact than the traditional HS, and the Hamiltonian,
 overlap matrix, and relative-positions array (which is always output,
 even for gamma-point only calculations) are in single precision.
-(See COOP.Write option)
+
+The program {\tt hsx2hs} in {\tt Util/HSX} can be used to generate
+an old-style HS file if needed.
+
+{\sc Siesta} produces also an HSX file if the {\bf COOP.Write} option
+is active.
 \index{output!HSX file}
 
 {\it Use:} File {\tt SystemLabel}.HS is only written, not read, by siesta.
@@ -7570,14 +7572,15 @@ Util/SCF:            experimental python scripts to process DM .nc files
 HS
 
 The old format, very inefficient in terms of space used. It contains
-also the $x_ij$ array and information about the atomic species and orbitals.
+(if produced by a calculation using k-points) also the $x_ij$ array
+and information about the atomic species and orbitals. As of
+{\tt siesta-3.0-rc2}, it has been superseded by the HSX format. If some
+legacy utility needs the HS format, it can be re-generated using
+the tools in {\tt Util/HSX}.
 
 HSX
 
 The new format, with better packing of binary records.
-
-The two formats coexist for now. Some utilities read HS, and others
-(notably the mprop program in Util/COOP), HSX.
 
 DMHS
 

@@ -44,6 +44,7 @@
     \subitem split valence   for H, 21
     \subitem User basis, 27
     \subitem User basis (NetCDF format), 28
+  \item basis     \subitem PAO, 118
   \item {\bf     BasisPressure}, 28
   \item Berry phase, 68
   \item Bessel functions, 26
