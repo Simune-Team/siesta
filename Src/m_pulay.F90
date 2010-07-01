@@ -165,8 +165,15 @@ CONTAINS
     ! is treated as the first step after a kick: a possibly large
     ! jump in the DM
 
-    after_kick = (iscf == 1 .OR.     &
-                 (nkick > 0 .AND. mod(iscf,nkick) == 1) ) 
+    ! The following code implements this in a safe way (avoid mod if nkick==0)
+    ! after_kick = (iscf == 1 .OR.     &
+    !             (nkick > 0 .AND. mod(iscf,nkick) == 1) ) 
+    after_kick = .false.
+    if (iscf == 1) then
+       after_kick = .true.
+    else if (nkick > 0) then
+       if (mod(iscf,nkick)==1) after_kick = .true.
+    endif
 
     if (after_kick .and. avoid_first_after_kick) then
 

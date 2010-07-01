@@ -5,6 +5,23 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2010-07-01  15:00:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-rc1-9
+Fixes for portability (cmlsubs, pulay)
+
+* The PGI compiler had trouble with the "str" function exported from
+  FoX. The call has been replaced by an internal write to an auxiliary
+  variable.
+
+* In m_pulay, some compilers evaluated both sub-clauses of an "and"
+  expression, even if the first was .false.. This led to a division by
+  zero in a mod operation. The expression has been replaced by more
+  robust code.
+
+modified:
+ Src/m_pulay.F90
+ Src/siesta_cmlsubs.F90
+
+------------------------------------------------------------------------
 2010-07-01  09:35:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-rc1-8
 Fix bug in repositioning of MD file
 
