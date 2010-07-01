@@ -5,6 +5,17 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2010-07-01  09:35:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-rc1-8
+Fix bug in repositioning of MD file
+
+The MD file repositioning code in iomd.f gave problems in some
+systems. It has been removed, and substituted by an explicit
+'position="append"' clause in the open statement.
+
+modified:
+ Src/iomd.f
+
+------------------------------------------------------------------------
 2010-06-29  15:15:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-rc1-7
 Compute and print band-structure energy. Updates to Util/COOP/mprop
 
