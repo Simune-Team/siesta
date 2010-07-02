@@ -5,6 +5,19 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2010-07-02  14:05:00 GMT Alberto Garcia <albertog@icmab.es>   3.0-rc1-10
+Use larger output fields for atm diagnostic files
+
+The atm program generates, among others, the files FOURIER_QMAX and
+ECONF_DIFFS, which contain information useful for optimization
+runs. The output fields were quite tight and sometimes
+overflowed. They have beeen made larger.
+
+modified:
+  Pseudo/atom/prdiff.f
+  Pseudo/atom/wrapup.f
+
+------------------------------------------------------------------------
 2010-07-01  15:00:00 GMT Alberto Garcia <albertog@icmab.es>    3.0-rc1-9
 Fixes for portability (cmlsubs, pulay)
 
