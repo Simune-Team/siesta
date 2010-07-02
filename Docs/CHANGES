@@ -5,6 +5,124 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2010-07-02  14:05:00 GMT Alberto Garcia <albertog@icmab.es>   3.0-rc1-11
+Update output reference files for Tests
+
+* The .out and .xml files produced by the tests have been updated.
+
+* Removed the 'ag' test.
+
+* Added 'sic-slab' and 'si-optical' to the 'all' target in Makefile,
+  and removed the 'partial' test.
+
+removed:
+  Tests/Reference-xml/ag.xml
+  Tests/Reference/ag.out
+  Tests/ag/
+  Tests/ag/ag.fdf
+  Tests/ag/ag.pseudos
+  Tests/ag/makefile
+modified:
+  Tests/Makefile
+  Tests/Reference-xml/batio3.xml
+  Tests/Reference-xml/benzene.xml
+  Tests/Reference-xml/bessel.xml
+  Tests/Reference-xml/born.xml
+  Tests/Reference-xml/born_spin.xml
+  Tests/Reference-xml/ch4.xml
+  Tests/Reference-xml/constant_volume.xml
+  Tests/Reference-xml/fe.xml
+  Tests/Reference-xml/fe_broyden.xml
+  Tests/Reference-xml/fe_clust_noncollinear.xml
+  Tests/Reference-xml/fire_benzene.xml
+  Tests/Reference-xml/floating.xml
+  Tests/Reference-xml/force_2.xml
+  Tests/Reference-xml/graphite_c6.xml
+  Tests/Reference-xml/h2o.xml
+  Tests/Reference-xml/h2oZ.xml
+  Tests/Reference-xml/h2o_basis.xml
+  Tests/Reference-xml/h2o_dos.xml
+  Tests/Reference-xml/h2o_findp_bug.xml
+  Tests/Reference-xml/h2o_op_broyden.xml
+  Tests/Reference-xml/h2o_orderN.xml
+  Tests/Reference-xml/h2o_radialgrid.xml
+  Tests/Reference-xml/h2o_reparam.xml
+  Tests/Reference-xml/h_chain.xml
+  Tests/Reference-xml/md_anneal.xml
+  Tests/Reference-xml/md_nose.xml
+  Tests/Reference-xml/md_npr.xml
+  Tests/Reference-xml/md_pr.xml
+  Tests/Reference-xml/md_verlet.xml
+  Tests/Reference-xml/mgco3.xml
+  Tests/Reference-xml/n_chain.xml
+  Tests/Reference-xml/oxyn.xml
+  Tests/Reference-xml/pb_filter_cutoff.xml
+  Tests/Reference-xml/pb_filter_tol.xml
+  Tests/Reference-xml/si-optical.xml
+  Tests/Reference-xml/si2x1h-dipole.xml
+  Tests/Reference-xml/si2x1h.xml
+  Tests/Reference-xml/si64.xml
+  Tests/Reference-xml/si64_coop.xml
+  Tests/Reference-xml/si_bandpoints.xml
+  Tests/Reference-xml/si_coop.xml
+  Tests/Reference-xml/si_pdos_kgrid.xml
+  Tests/Reference-xml/sic-slab.xml
+  Tests/Reference-xml/sih.xml
+  Tests/Reference-xml/sih_fire.xml
+  Tests/Reference-xml/sih_op_broyden.xml
+  Tests/Reference-xml/var_cell.xml
+  Tests/Reference-xml/zmatrix.xml
+  Tests/Reference/batio3.out
+  Tests/Reference/benzene.out
+  Tests/Reference/bessel.out
+  Tests/Reference/born.out
+  Tests/Reference/born_spin.out
+  Tests/Reference/ch4.out
+  Tests/Reference/constant_volume.out
+  Tests/Reference/fe.out
+  Tests/Reference/fe_broyden.out
+  Tests/Reference/fe_clust_noncollinear.out
+  Tests/Reference/fire_benzene.out
+  Tests/Reference/floating.out
+  Tests/Reference/force_2.out
+  Tests/Reference/graphite_c6.out
+  Tests/Reference/h2o.out
+  Tests/Reference/h2oZ.out
+  Tests/Reference/h2o_basis.out
+  Tests/Reference/h2o_dos.out
+  Tests/Reference/h2o_findp_bug.out
+  Tests/Reference/h2o_op_broyden.out
+  Tests/Reference/h2o_orderN.out
+  Tests/Reference/h2o_radialgrid.out
+  Tests/Reference/h2o_reparam.out
+  Tests/Reference/h_chain.out
+  Tests/Reference/md_anneal.out
+  Tests/Reference/md_nose.out
+  Tests/Reference/md_npr.out
+  Tests/Reference/md_pr.out
+  Tests/Reference/md_verlet.out
+  Tests/Reference/mgco3.out
+  Tests/Reference/n_chain.out
+  Tests/Reference/oxyn.out
+  Tests/Reference/partial.out
+  Tests/Reference/pb_filter_cutoff.out
+  Tests/Reference/pb_filter_tol.out
+  Tests/Reference/si-optical.out
+  Tests/Reference/si2x1h-dipole.out
+  Tests/Reference/si2x1h.out
+  Tests/Reference/si64.out
+  Tests/Reference/si64_coop.out
+  Tests/Reference/si_bandpoints.out
+  Tests/Reference/si_coop.out
+  Tests/Reference/si_pdos_kgrid.out
+  Tests/Reference/sic-slab.out
+  Tests/Reference/sih.out
+  Tests/Reference/sih_fire.out
+  Tests/Reference/sih_op_broyden.out
+  Tests/Reference/var_cell.out
+  Tests/Reference/zmatrix.out
+
+------------------------------------------------------------------------
 2010-07-02  14:05:00 GMT Alberto Garcia <albertog@icmab.es>   3.0-rc1-10
 Use larger output fields for atm diagnostic files
 

@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <cml convention="CMLComp" fileId="force_2.xml" xmlns="http://www.xml-cml.org/schema" xmlns:siesta="http://www.uam.es/siesta/namespace" xmlns:siestaUnits="http://www.uam.es/siesta/namespace/units" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:fpx="http://www.uszla.me.uk/fpx" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:units="http://www.uszla.me.uk/FoX/units" xmlns:cmlUnits="http://www.xml-cml.org/units/units" xmlns:siUnits="http://www.xml-cml.org/units/siUnits" xmlns:atomicUnits="http://www.xml-cml.org/units/atomic">
-  <metadata name="UUID" content="dd53f700-ad2b-11de-5154-d8f6fdadb1d7"/>
+  <metadata name="UUID" content="66dd8a20-844c-11df-5a2d-952e3fff06b9"/>
   <metadataList>
     <metadata name="siesta:Program" content="Siesta"/>
-    <metadata name="siesta:Version" content="                                       siesta-trunk-300"/>
-    <metadata name="siesta:Arch" content="nano-intel-mpi"/>
-    <metadata name="siesta:Flags" content="/opt/intel/impi/3.1/bin64/mpiifort -w  -O3 -mp"/>
-    <metadata name="siesta:StartTime" content="2009-09-29T17-10-54"/>
+    <metadata name="siesta:Version" content="                                       siesta-3.0-rc2"/>
+    <metadata name="siesta:Arch" content="macosx-openmpi"/>
+    <metadata name="siesta:Flags" content="/opt/openmpi.gcc.gfortran/bin/mpif90 -O2"/>
+    <metadata name="siesta:StartTime" content="2010-06-30T11-35-29"/>
     <metadata name="siesta:Mode" content="Parallel"/>
-    <metadata name="siesta:Nodes" content="4"/>
-    <metadata name="siesta:NetCDF" content="true"/>
+    <metadata name="siesta:Nodes" content="2"/>
+    <metadata name="siesta:NetCDF" content="false"/>
   </metadataList>
   <module title="Initial System">
     <molecule>
@@ -65,6 +65,9 @@
       <scalar dataType="xsd:boolean">false</scalar>
     </parameter>
     <parameter dictRef="siesta:pulfile" name="DM.PulayOnFile">
+      <scalar dataType="xsd:boolean">false</scalar>
+    </parameter>
+    <parameter dictRef="siesta:avoid_first_after_kick" name="DM.Pulay.Avoid.First.After.Kick">
       <scalar dataType="xsd:boolean">false</scalar>
     </parameter>
     <parameter dictRef="siesta:wmix" name="DM.MixingWeight">
@@ -178,6 +181,9 @@
         </property>
       </propertyList>
       <propertyList title="Energy Decomposition">
+        <property dictRef="siesta:Ebs">
+          <scalar dataType="fpx:real" units="siestaUnits:eV">-51.809545</scalar>
+        </property>
         <property dictRef="siesta:Eions">
           <scalar dataType="fpx:real" units="siestaUnits:eV">380.802124</scalar>
         </property>
@@ -249,19 +255,19 @@
       </propertyList>
       <propertyList title="Forces">
         <property dictRef="siesta:forces">
-          <matrix rows="3" columns="2" dataType="fpx:real" units="siestaUnits:evpa">-4.270224850053e-7 1.037263326037e-7 -1.554371175381e-7 -8.680600059034e-7 2.012301988065e-7 6.561584444314e-7</matrix>
+          <matrix rows="3" columns="2" dataType="fpx:real" units="siestaUnits:evpa">-4.270225739166e-7 1.037258928719e-7 -1.554368686274e-7 -8.680601710446e-7 2.012298007362e-7 6.561584353006e-7</matrix>
         </property>
         <property dictRef="siesta:ftot">
-          <array size="3" dataType="fpx:real" units="siestaUnits:evpa">-1.295082490909e-6 3.049565314102e-7 5.007213268933e-7</array>
+          <array size="3" dataType="fpx:real" units="siestaUnits:evpa">-1.295082744961e-6 3.049556936081e-7 5.007215666731e-7</array>
         </property>
         <property dictRef="siesta:fmax">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">8.680600059034e-7</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">8.680601710446e-7</scalar>
         </property>
         <property dictRef="siesta:fres">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">4.902097719758e-7</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">4.902097756895e-7</scalar>
         </property>
         <property dictRef="siesta:cfmax">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">8.680600059034e-7</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">8.680601710446e-7</scalar>
         </property>
       </propertyList>
     </module>
@@ -313,19 +319,19 @@
       </propertyList>
       <propertyList title="Forces">
         <property dictRef="siesta:forces">
-          <matrix rows="3" columns="2" dataType="fpx:real" units="siestaUnits:evpa">7.722007172213e-1 -1.865704285890e-7 -1.702436185136e-7 -7.823426328108e-1 -3.281515373787e-7 -2.046130107817e-7</matrix>
+          <matrix rows="3" columns="2" dataType="fpx:real" units="siestaUnits:evpa">7.722007172175e-1 -1.865701680216e-7 -1.702433919372e-7 -7.823426328070e-1 -3.281512855595e-7 -2.046126100758e-7</matrix>
         </property>
         <property dictRef="siesta:ftot">
-          <array size="3" dataType="fpx:real" units="siestaUnits:evpa">-1.014191558956e-2 -5.147219659677e-7 -3.748566292953e-7</array>
+          <array size="3" dataType="fpx:real" units="siestaUnits:evpa">-1.014191558951e-2 -5.147214535811e-7 -3.748560020131e-7</array>
         </property>
         <property dictRef="siesta:fmax">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823426328108e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823426328070e-1</scalar>
         </property>
         <property dictRef="siesta:fres">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">4.487675609917e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">4.487675609895e-1</scalar>
         </property>
         <property dictRef="siesta:cfmax">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823426328108e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823426328070e-1</scalar>
         </property>
       </propertyList>
     </module>
@@ -377,19 +383,19 @@
       </propertyList>
       <propertyList title="Forces">
         <property dictRef="siesta:forces">
-          <matrix rows="3" columns="2" dataType="fpx:real" units="siestaUnits:evpa">-7.722009795719e-1 -4.332143796627e-7 -3.903396430676e-7 7.823417134259e-1 2.334049171058e-8 -1.117727978796e-7</matrix>
+          <matrix rows="3" columns="2" dataType="fpx:real" units="siestaUnits:evpa">-7.722009795690e-1 -4.332142758793e-7 -3.903397760869e-7 7.823417134213e-1 2.334063484331e-8 -1.117730373753e-7</matrix>
         </property>
         <property dictRef="siesta:ftot">
-          <array size="3" dataType="fpx:real" units="siestaUnits:evpa">1.014073385400e-2 -4.098738879521e-7 -5.021124409472e-7</array>
+          <array size="3" dataType="fpx:real" units="siestaUnits:evpa">1.014073385233e-2 -4.098736410360e-7 -5.021128134622e-7</array>
         </property>
         <property dictRef="siesta:fmax">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823417134259e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823417134213e-1</scalar>
         </property>
         <property dictRef="siesta:fres">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">4.487673691009e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">4.487673690987e-1</scalar>
         </property>
         <property dictRef="siesta:cfmax">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823417134259e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823417134213e-1</scalar>
         </property>
       </propertyList>
     </module>
@@ -441,19 +447,19 @@
       </propertyList>
       <propertyList title="Forces">
         <property dictRef="siesta:forces">
-          <matrix rows="3" columns="2" dataType="fpx:real" units="siestaUnits:evpa">-1.486323254776e-7 7.722011610019e-1 3.409875236955e-7 -6.600774530878e-7 -7.823427458170e-1 -1.146319978054e-7</matrix>
+          <matrix rows="3" columns="2" dataType="fpx:real" units="siestaUnits:evpa">-1.486324327448e-7 7.722011609974e-1 3.409875392492e-7 -6.600778624890e-7 -7.823427458135e-1 -1.146322417153e-7</matrix>
         </property>
         <property dictRef="siesta:ftot">
-          <array size="3" dataType="fpx:real" units="siestaUnits:evpa">-8.087097785654e-7 -1.014158481516e-2 2.263555258901e-7</array>
+          <array size="3" dataType="fpx:real" units="siestaUnits:evpa">-8.087102952338e-7 -1.014158481614e-2 2.263552975339e-7</array>
         </property>
         <property dictRef="siesta:fmax">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823427458170e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823427458135e-1</scalar>
         </property>
         <property dictRef="siesta:fres">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">4.487677210959e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">4.487677210936e-1</scalar>
         </property>
         <property dictRef="siesta:cfmax">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823427458170e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823427458135e-1</scalar>
         </property>
       </propertyList>
     </module>
@@ -505,19 +511,19 @@
       </propertyList>
       <propertyList title="Forces">
         <property dictRef="siesta:forces">
-          <matrix rows="3" columns="2" dataType="fpx:real" units="siestaUnits:evpa">-9.684490404839e-7 -7.722005433019e-1 -7.942519412369e-7 -3.431163537583e-7 7.823421279893e-1 -6.497973259700e-8</matrix>
+          <matrix rows="3" columns="2" dataType="fpx:real" units="siestaUnits:evpa">-9.684487919654e-7 -7.722005432976e-1 -7.942521856211e-7 -3.431158429719e-7 7.823421279859e-1 -6.497993565966e-8</matrix>
         </property>
         <property dictRef="siesta:ftot">
-          <array size="3" dataType="fpx:real" units="siestaUnits:evpa">-1.311565394242e-6 1.014158468745e-2 -8.592316738339e-7</array>
+          <array size="3" dataType="fpx:real" units="siestaUnits:evpa">-1.311564634937e-6 1.014158468833e-2 -8.592321212808e-7</array>
         </property>
         <property dictRef="siesta:fmax">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823421279893e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823421279859e-1</scalar>
         </property>
         <property dictRef="siesta:fres">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">4.487673644374e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">4.487673644351e-1</scalar>
         </property>
         <property dictRef="siesta:cfmax">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823421279893e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823421279859e-1</scalar>
         </property>
       </propertyList>
     </module>
@@ -569,19 +575,19 @@
       </propertyList>
       <propertyList title="Forces">
         <property dictRef="siesta:forces">
-          <matrix rows="3" columns="2" dataType="fpx:real" units="siestaUnits:evpa">-3.584798467198e-7 -3.016825085458e-7 7.722011385572e-1 -1.447628028553e-7 -1.114419774391e-7 -7.823422024285e-1</matrix>
+          <matrix rows="3" columns="2" dataType="fpx:real" units="siestaUnits:evpa">-3.584800002797e-7 -3.016827500857e-7 7.722011385550e-1 -1.447629554436e-7 -1.114424381095e-7 -7.823422024275e-1</matrix>
         </property>
         <property dictRef="siesta:ftot">
-          <array size="3" dataType="fpx:real" units="siestaUnits:evpa">-5.032426495752e-7 -4.131244859850e-7 -1.014106387130e-2</array>
+          <array size="3" dataType="fpx:real" units="siestaUnits:evpa">-5.032429557233e-7 -4.131251881951e-7 -1.014106387248e-2</array>
         </property>
         <property dictRef="siesta:fmax">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823422024285e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823422024275e-1</scalar>
         </property>
         <property dictRef="siesta:fres">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">4.487675567763e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">4.487675567754e-1</scalar>
         </property>
         <property dictRef="siesta:cfmax">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823422024285e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823422024275e-1</scalar>
         </property>
       </propertyList>
     </module>
@@ -633,19 +639,19 @@
       </propertyList>
       <propertyList title="Forces">
         <property dictRef="siesta:forces">
-          <matrix rows="3" columns="2" dataType="fpx:real" units="siestaUnits:evpa">-5.701978705071e-7 -6.852342249721e-7 -7.722013405519e-1 -6.259643842153e-7 -1.531625295732e-7 7.823422315249e-1</matrix>
+          <matrix rows="3" columns="2" dataType="fpx:real" units="siestaUnits:evpa">-5.701982086665e-7 -6.852343045253e-7 -7.722013405494e-1 -6.259648110680e-7 -1.531623893685e-7 7.823422315241e-1</matrix>
         </property>
         <property dictRef="siesta:ftot">
-          <array size="3" dataType="fpx:real" units="siestaUnits:evpa">-1.196162254722e-6 -8.383967545453e-7 1.014089097300e-2</array>
+          <array size="3" dataType="fpx:real" units="siestaUnits:evpa">-1.196163019735e-6 -8.383966938938e-7 1.014089097469e-2</array>
         </property>
         <property dictRef="siesta:fmax">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823422315249e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823422315241e-1</scalar>
         </property>
         <property dictRef="siesta:fres">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">4.487676231597e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">4.487676231588e-1</scalar>
         </property>
         <property dictRef="siesta:cfmax">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823422315249e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823422315241e-1</scalar>
         </property>
       </propertyList>
     </module>
@@ -697,19 +703,19 @@
       </propertyList>
       <propertyList title="Forces">
         <property dictRef="siesta:forces">
-          <matrix rows="3" columns="2" dataType="fpx:real" units="siestaUnits:evpa">-7.823411754310e-1 -4.458651814496e-8 -2.956845044320e-7 7.721990329839e-1 3.009711359061e-8 3.529366996817e-7</matrix>
+          <matrix rows="3" columns="2" dataType="fpx:real" units="siestaUnits:evpa">-7.823411754275e-1 -4.458694904601e-8 -2.956846640309e-7 7.721990329795e-1 3.009662105388e-8 3.529364860520e-7</matrix>
         </property>
         <property dictRef="siesta:ftot">
-          <array size="3" dataType="fpx:real" units="siestaUnits:evpa">-1.014214244711e-2 -1.448940455435e-8 5.725219524976e-8</array>
+          <array size="3" dataType="fpx:real" units="siestaUnits:evpa">-1.014214244805e-2 -1.449032799213e-8 5.725182202105e-8</array>
         </property>
         <property dictRef="siesta:fmax">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823411754310e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823411754275e-1</scalar>
         </property>
         <property dictRef="siesta:fres">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">4.487666545315e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">4.487666545292e-1</scalar>
         </property>
         <property dictRef="siesta:cfmax">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823411754310e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823411754275e-1</scalar>
         </property>
       </propertyList>
     </module>
@@ -761,19 +767,19 @@
       </propertyList>
       <propertyList title="Forces">
         <property dictRef="siesta:forces">
-          <matrix rows="3" columns="2" dataType="fpx:real" units="siestaUnits:evpa">7.823411590749e-1 4.496280268989e-7 -1.240115448902e-7 -7.721991782579e-1 1.663855613262e-7 -1.070561969200e-7</matrix>
+          <matrix rows="3" columns="2" dataType="fpx:real" units="siestaUnits:evpa">7.823411590713e-1 4.496282631988e-7 -1.240109943205e-7 -7.721991782535e-1 1.663857831770e-7 -1.070556684805e-7</matrix>
         </property>
         <property dictRef="siesta:ftot">
-          <array size="3" dataType="fpx:real" units="siestaUnits:evpa">1.014198081705e-2 6.160135882251e-7 -2.310677418102e-7</array>
+          <array size="3" dataType="fpx:real" units="siestaUnits:evpa">1.014198081783e-2 6.160140463758e-7 -2.310666628010e-7</array>
         </property>
         <property dictRef="siesta:fmax">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823411590749e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823411590713e-1</scalar>
         </property>
         <property dictRef="siesta:fres">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">4.487666914417e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">4.487666914394e-1</scalar>
         </property>
         <property dictRef="siesta:cfmax">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823411590749e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823411590713e-1</scalar>
         </property>
       </propertyList>
     </module>
@@ -825,19 +831,19 @@
       </propertyList>
       <propertyList title="Forces">
         <property dictRef="siesta:forces">
-          <matrix rows="3" columns="2" dataType="fpx:real" units="siestaUnits:evpa">5.975000490680e-8 -7.823411468279e-1 -3.607062535749e-7 3.391097509329e-7 7.721996137760e-1 2.031965964593e-7</matrix>
+          <matrix rows="3" columns="2" dataType="fpx:real" units="siestaUnits:evpa">5.974994692417e-8 -7.823411468241e-1 -3.607056396370e-7 3.391095719902e-7 7.721996137719e-1 2.031971221892e-7</matrix>
         </property>
         <property dictRef="siesta:ftot">
-          <array size="3" dataType="fpx:real" units="siestaUnits:evpa">3.988597558397e-7 -1.014153305189e-2 -1.575096571156e-7</array>
+          <array size="3" dataType="fpx:real" units="siestaUnits:evpa">3.988595189144e-7 -1.014153305226e-2 -1.575085174478e-7</array>
         </property>
         <property dictRef="siesta:fmax">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823411468279e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823411468241e-1</scalar>
         </property>
         <property dictRef="siesta:fres">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">4.487668127837e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">4.487668127814e-1</scalar>
         </property>
         <property dictRef="siesta:cfmax">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823411468279e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823411468241e-1</scalar>
         </property>
       </propertyList>
     </module>
@@ -889,19 +895,19 @@
       </propertyList>
       <propertyList title="Forces">
         <property dictRef="siesta:forces">
-          <matrix rows="3" columns="2" dataType="fpx:real" units="siestaUnits:evpa">1.914426099268e-7 7.823410231289e-1 3.700913990336e-7 7.180174892702e-8 -7.721995577747e-1 2.727342892847e-7</matrix>
+          <matrix rows="3" columns="2" dataType="fpx:real" units="siestaUnits:evpa">1.914422337989e-7 7.823410231248e-1 3.700910995121e-7 7.180168974027e-8 -7.721995577710e-1 2.727337766948e-7</matrix>
         </property>
         <property dictRef="siesta:ftot">
-          <array size="3" dataType="fpx:real" units="siestaUnits:evpa">2.632443588538e-7 1.014146535428e-2 6.428256883183e-7</array>
+          <array size="3" dataType="fpx:real" units="siestaUnits:evpa">2.632439235392e-7 1.014146535384e-2 6.428248762069e-7</array>
         </property>
         <property dictRef="siesta:fmax">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823410231289e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823410231248e-1</scalar>
         </property>
         <property dictRef="siesta:fres">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">4.487667607823e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">4.487667607800e-1</scalar>
         </property>
         <property dictRef="siesta:cfmax">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823410231289e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823410231248e-1</scalar>
         </property>
       </propertyList>
     </module>
@@ -953,19 +959,19 @@
       </propertyList>
       <propertyList title="Forces">
         <property dictRef="siesta:forces">
-          <matrix rows="3" columns="2" dataType="fpx:real" units="siestaUnits:evpa">6.881373647676e-8 -3.995670552529e-7 -7.823415030695e-1 5.285948398751e-7 9.128964534451e-8 7.721989640903e-1</matrix>
+          <matrix rows="3" columns="2" dataType="fpx:real" units="siestaUnits:evpa">6.881401632442e-8 -3.995674266777e-7 -7.823415030676e-1 5.285952208492e-7 9.128932097970e-8 7.721989640888e-1</matrix>
         </property>
         <property dictRef="siesta:ftot">
-          <array size="3" dataType="fpx:real" units="siestaUnits:evpa">5.974085763519e-7 -3.082774099084e-7 -1.014253897921e-2</array>
+          <array size="3" dataType="fpx:real" units="siestaUnits:evpa">5.974092371737e-7 -3.082781056980e-7 -1.014253897883e-2</array>
         </property>
         <property dictRef="siesta:fmax">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823415030695e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823415030676e-1</scalar>
         </property>
         <property dictRef="siesta:fres">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">4.487667299700e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">4.487667299690e-1</scalar>
         </property>
         <property dictRef="siesta:cfmax">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823415030695e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823415030676e-1</scalar>
         </property>
       </propertyList>
     </module>
@@ -1017,19 +1023,19 @@
       </propertyList>
       <propertyList title="Forces">
         <property dictRef="siesta:forces">
-          <matrix rows="3" columns="2" dataType="fpx:real" units="siestaUnits:evpa">7.905774758574e-7 1.380514617958e-7 7.823408102987e-1 -1.049156399171e-7 5.945882244093e-7 -7.721994214106e-1</matrix>
+          <matrix rows="3" columns="2" dataType="fpx:real" units="siestaUnits:evpa">7.905771504936e-7 1.380512598650e-7 7.823408102976e-1 -1.049161837551e-7 5.945880209980e-7 -7.721994214086e-1</matrix>
         </property>
         <property dictRef="siesta:ftot">
-          <array size="3" dataType="fpx:real" units="siestaUnits:evpa">6.856618359403e-7 7.326396862051e-7 1.014138888804e-2</array>
+          <array size="3" dataType="fpx:real" units="siestaUnits:evpa">6.856609667384e-7 7.326392808630e-7 1.014138888909e-2</array>
         </property>
         <property dictRef="siesta:fmax">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823408102987e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823408102976e-1</scalar>
         </property>
         <property dictRef="siesta:fres">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">4.487666598368e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">4.487666598360e-1</scalar>
         </property>
         <property dictRef="siesta:cfmax">
-          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823408102987e-1</scalar>
+          <scalar dataType="fpx:real" units="siestaUnits:evpa">7.823408102976e-1</scalar>
         </property>
       </propertyList>
     </module>
@@ -1067,11 +1073,14 @@
       <propertyList dictRef="siesta:kpt_band">
         <kpoint coords="0.000000000000e0 0.000000000000e0 0.000000000000e0" weight="1.000000000000e0"/>
         <property dictRef="siesta:eigenenergies">
-          <array size="8" dataType="fpx:real" units="siestaUnits:ev">-1.160990779574e0 -2.556619686181e-1 -2.475700707781e-1 -2.396254084305e-1 -5.656655140716e-2 -4.971352985399e-2 -4.238729019053e-2 -1.118500039929e-2</array>
+          <array size="8" dataType="fpx:real" units="siestaUnits:ev">-1.160990779574e0 -2.556619686182e-1 -2.475700707782e-1 -2.396254084306e-1 -5.656655140723e-2 -4.971352985410e-2 -4.238729019067e-2 -1.118500039952e-2</array>
         </property>
       </propertyList>
     </propertyList>
     <propertyList title="Energy Decomposition">
+      <property dictRef="siesta:Ebs">
+        <scalar dataType="fpx:real" units="siestaUnits:eV">-51.806756</scalar>
+      </property>
       <property dictRef="siesta:Eions">
         <scalar dataType="fpx:real" units="siestaUnits:eV">380.802124</scalar>
       </property>
@@ -1122,6 +1131,9 @@
       </property>
     </propertyList>
     <propertyList title="Final Energy">
+      <property dictRef="siesta:Ebs">
+        <scalar dataType="fpx:real" units="siestaUnits:eV">-51.8067564</scalar>
+      </property>
       <property dictRef="siesta:Ekin">
         <scalar dataType="fpx:real" units="siestaUnits:eV">115.5779022</scalar>
       </property>
@@ -1149,27 +1161,27 @@
     </propertyList>
     <propertyList title="Force Summary">
       <property dictRef="siesta:forces">
-        <matrix rows="3" columns="2" dataType="fpx:real" units="siestaUnits:evpa">7.905774758574e-7 1.380514617958e-7 7.823408102987e-1 -1.049156399171e-7 5.945882244093e-7 -7.721994214106e-1</matrix>
+        <matrix rows="3" columns="2" dataType="fpx:real" units="siestaUnits:evpa">7.905771504936e-7 1.380512598650e-7 7.823408102976e-1 -1.049161837551e-7 5.945880209980e-7 -7.721994214086e-1</matrix>
       </property>
       <property dictRef="siesta:ftot">
-        <array size="3" dataType="fpx:real" units="siestaUnits:evpa">6.856618359403e-7 7.326396862051e-7 1.014138888804e-2</array>
+        <array size="3" dataType="fpx:real" units="siestaUnits:evpa">6.856609667384e-7 7.326392808630e-7 1.014138888909e-2</array>
       </property>
     </propertyList>
     <property dictRef="siesta:stress">
-      <matrix rows="3" columns="3" dataType="fpx:real" units="siestaUnits:eV_Ang__3">-2.994677635079e-1 1.434133264399e-2 -7.342644340385e-9 1.434133263909e-2 -2.994677692662e-1 6.576005247739e-9 -7.310392606531e-9 6.596358386693e-9 -2.993830210717e-1</matrix>
+      <matrix rows="3" columns="3" dataType="fpx:real" units="siestaUnits:eV_Ang__3">-2.994677634508e-1 1.434133299119e-2 -6.854943735303e-9 1.434133298628e-2 -2.994677692643e-1 6.383129080461e-9 -6.822692083972e-9 6.403479508825e-9 -2.993830209728e-1</matrix>
     </property>
     <propertyList title="Final Pressure">
       <property dictRef="siesta:cellvol" title="cell volume">
         <scalar dataType="fpx:real" units="siestaUnits:Ang__3">4.002575174983e1</scalar>
       </property>
       <property dictRef="siesta:pressSol" title="Pressure of Solid">
-        <scalar dataType="fpx:real" units="siestaUnits:kbar">4.797601846260e2</scalar>
+        <scalar dataType="fpx:real" units="siestaUnits:kbar">4.797601845417e2</scalar>
       </property>
       <property dictRef="siesta:pressMol" title="Pressure of Molecule">
-        <scalar dataType="fpx:real" units="siestaUnits:kbar">4.940585316284e2</scalar>
+        <scalar dataType="fpx:real" units="siestaUnits:kbar">4.940585315440e2</scalar>
       </property>
     </propertyList>
   </module>
-  <metadata name="siesta:EndTime" content="2009-09-29T17-10-57"/>
+  <metadata name="siesta:EndTime" content="2010-06-30T11-35-35"/>
   <metadata name="dc:contributor" content="FoX-4.0.4 (http://www.uszla.me.uk/FoX)"/>
 </cml>
