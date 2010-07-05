@@ -660,7 +660,7 @@ character(len=*), intent(in) :: filename
          if (h%has_xij) then
             print *, "Your hsx record contains Xij info..."
             print *, "... even if it came from a Gamma-only calc..."
-            print *, "... you will loose it by writing an HS file."
+            print *, "... you will lose it by writing an HS file."
          endif
       endif   ! write_xijk
 !

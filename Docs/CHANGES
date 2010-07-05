@@ -5,6 +5,18 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2010-07-05  15:00:00 GMT Alberto Garcia <albertog@icmab.es>   3.0-rc1-12
+Cosmetic fixes before 3.0-rc2 release
+
+* Fix typo in Util/HSX/hsx_m.f90
+* Remove Docs/ebs-mprop.CHANGES
+
+removed:
+  Docs/ebs-mprop.CHANGES
+modified:
+  Util/HSX/hsx_m.f90
+
+------------------------------------------------------------------------
 2010-07-02  14:05:00 GMT Alberto Garcia <albertog@icmab.es>   3.0-rc1-11
 Update output reference files for Tests
 
