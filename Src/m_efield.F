@@ -189,7 +189,7 @@
      $                    'SlabDipoleCorrection',.false.)
 
       if (dipole_correction) then
-         write(6,'(/,(a))')
+         if (ionode) write(6,'(/,(a))')
      .        'efield: SlabDipoleCorrection = .true. in input file',
      .        'efield: A dipole layer will be introduced in the vacuum',
      .        'efield: region to compensate the system dipole'

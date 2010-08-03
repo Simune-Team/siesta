@@ -370,7 +370,7 @@ denmatlomem.o: alloc.o globalise.o onmod.o precision.o
 densematrix.o: precision.o
 detover.o: alloc.o parallel.o parallelsubs.o precision.o
 dfscf.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o meshmatrix.o
-dfscf.o: meshsubs.o meshsubs.o parallel.o precision.o sys.o
+dfscf.o: meshsubs.o meshsubs.o parallel.o precision.o sys.o units.o
 dhscf.o: alloc.o atmfuncs.o doping.o files.o forhar.o iogrid_netcdf.o
 dhscf.o: m_efield.o m_iorho.o m_ts_in_siesta.o m_ts_options.o meshsubs.o
 dhscf.o: parallel.o parsing.o precision.o siesta_options.o sys.o

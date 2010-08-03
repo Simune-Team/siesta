@@ -106,6 +106,7 @@
   \item {\bf DM.InitSpinAF}, 46
   \item {\bf DM.KickMixingWeight}, 44
   \item {\bf DM.MixingWeight}, 43
+  \item {\bf     DM.MixSCF1}, 70
   \item {\bf DM.MixSCF1}, 44
   \item {\bf DM.NumberBroyden}, 44
   \item {\bf DM.NumberKick}, 44
@@ -431,6 +432,7 @@
   \item {\bf SimulateDoping}, 70
   \item single-$\zeta$, 20
   \item {\bf SingleExcitation}, 42
+  \item Slab dipole correction, 70
   \item {\bf SlabDipoleCorrection}, 70
   \item Slabs with net charge, 70
   \item {\bf SolutionMethod}, 53, 93
