@@ -530,7 +530,7 @@ naefs.o: atmfuncs.o mneighb.o precision.o
 new_dm.o: alloc.o atomlist.o compute_norm.o m_energies.o m_fdf_global.o
 new_dm.o: m_iodm.o m_sparse.o m_spin.o m_steps.o m_ts_io.o m_ts_options.o
 new_dm.o: parallel.o parallelsubs.o parsing.o precision.o siesta_geom.o
-new_dm.o: siesta_options.o sparse_matrices.o sys.o units.o
+new_dm.o: siesta_options.o sys.o units.o
 nlefsm.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
 normalize_dm.o: atomlist.o m_mpi_utils.o m_spin.o parallel.o precision.o
 normalize_dm.o: sparse_matrices.o
