@@ -6,6 +6,202 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2010-08-04  15:40:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-352
+Updates and fixes to the TranSiesta/tbtrans code (F.D. Novaes)
+
+This patch includes bug fixes (in TranSiesta and tbtrans), a cleanup
+involving removal of dead code, proper declarations of variables, and
+a new prototype test framework for TranSiesta and tbtrans.
+
+1. Fixed the issues related to the density matrix in a TS run, due to the
+changes in new_dm.F
+  
+* The new module m_ts_iodm.F is the equivalent of m_iodm.F, created to
+handle .TSDE files. These, are just like .DM files but where the Escf
+sparse matrix and the Fermi Energy are written at the end of the
+file. The makefile was modified in order to include this module.
+
+* The new_dm module now has a cleaner Transiesta related structure.
+The possibility of doing a "continuation run" (where a .TSDE file is
+read and the run starts with a TS calculated density matrix), is
+handled by calling the routine read_dynamic_ts_dm.  Since Transiesta
+also stores and reads Escf, the variable EDM_tmp has been created and
+is used in the same way as D_tmp.  The routine change_sparsity is also
+used for Escf. But these parts of the code have not been tested yet,
+since it would require a change in the sparsity., by atomic
+rearrangements.
+  
+
+added:
+  Src/m_ts_iodm.F
+modified:
+  Src/Makefile
+  Src/new_dm.F
+
+
+2. Changed the way mixH or mixDM are internally handled. Added a
+global_vars module.
+
+* Created the module m_ts_global_vars.f90 that contains the TS
+variables that are accessed in different parts of the code and are not
+passed as dummy arguments.
+
+* Considerable changes were made in the way the possibility of mixing
+either the density matrix or the hamiltonian is handled internally.
+The VIn and VOut pointers are still used, but now, instead of
+allocating some memory and copying the values of Dscf (H) to them,
+they directly point to either the Dscf and Dold matrices OR to H and
+HOld. The latter vector is allocated only whe mixH=.true., and this
+implies that in this case more memory will be required since Dold is
+also allocated because it is used in other parts of the code.  In any
+case, this leads to a smaller amount of allocated memory. The coding
+is clearer also, specially at the siesta_forces routine.
+
+
+added:
+  Src/m_ts_global_vars.f90
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+  Src/dhscf.F
+  Src/m_ts_iodm.F
+  Src/m_ts_options.F90
+  Src/mixer.F
+  Src/new_dm.F
+  Src/scfconvergence_test.F
+  Src/setup_hamiltonian.F
+  Src/siesta_forces.F
+  Src/state_init.F
+  Src/write_subs.F
+
+3. Cleaning of m_ts modules; set grid variables to be defined with
+grid_p; and smaller changes.
+
+* Removed unused variables and dummy arguments (all m_ts modules).
+Also specified what is used from each module with the idiom "use
+MODULE, only:"
+
+* For the TSVHFix and TSvoltage2 subroutines (m_ts_in_siesta.F90
+module), fixed the precision of the "v" variable (real space
+potential) to be grid_p.
+
+* The following cosmetic declaration changes were made:
+
+real*8 --> real(dp)
+complex*16 --> complex(dp)
+double precision --> real(dp)
+
+where "dp" comes from the precision module.
+
+* IOnode was incorrectly set to be node=1, now it is node=0
+  (m_ts_in_siesta.F)
+
+* Removed the initH variable from several routines. (new_dm,
+scfconvergence_test, setup_hamiltonian,siesta_forces)
+  
+  
+modified:
+  Src/compute_dm.F
+  Src/m_ts_contour.F
+  Src/m_ts_electrode.F90
+  Src/m_ts_in_siesta.F
+  Src/m_ts_io.F90
+  Src/m_ts_options.F90
+  Src/m_ts_scattering.F
+  Src/new_dm.F
+  Src/scfconvergence_test.F
+  Src/setup_hamiltonian.F
+  Src/siesta_forces.F
+
+4. Assortment of changes/fixes in TBTrans.
+
+* The original version of TBTrans (by M. Brandbyge) was not
+parallelized.  Some of the original properties computed by tbtrans
+(the transmission function and the pdos) have been "ported" to work
+also in the parallelized version of the code, but some have not. Those
+who have not, have been, for now, deleted (atompdos, coop and NetCDF
+related things).
+
+* The transmission function is now multiplied by two in the
+case of non spin-polarized calculations. As a consequence, the
+computed current is multiplied too.
+
+* The printed value of the pdos (averaged over all the k-points), when 
+running in parallel with more than one node, was not correct: only the values 
+coming from the node=0 were being printed. This has been fixed.
+
+* Some smaller changes were done on the way the results are written in the output 
+files (e.g. including blank lines in between values for each k-point, so that 
+the file can be directly plotted with xmgrace).  Also changed the name of the 
+routine "Tsiokp" (m_tbt_kpoints.F90) to "get_kp_on_node" since it represents 
+better what it really does.
+
+removed:
+  Util/TBTrans/atompdos.F
+  Util/TBTrans/coop.f
+  Util/TBTrans/OutputRegionData.F
+  Util/TBTrans/OutputRegionData.NoLowdin.F
+  Util/TBTrans/netcdfwrite.F
+modified:
+  Util/TBTrans/Makefile
+  Util/TBTrans/m_tbt_gf.F90
+  Util/TBTrans/m_tbt_kpts.F90
+  Util/TBTrans/m_tbt_options.F90
+  Util/TBTrans/tbtrans.F
+
+5. Created a test directory (ts_fast) to test TranSIESTA and
+TBTrans. (F.D.Novaes/A.Garcia)
+
+* An automatic test for transiesta and tbtrans can be run by going to 
+the $OBJDIR/Tests directory, and typing:
+
+  make ts
+
+and to clean:
+
+  make clean_ts
+
+For now, only the tests contained in the ts_fast directory will be
+executed, and more tests with similar structure will be added in the
+near future.  The script first runs the electrode calculation, then
+the scattering region calculation and finally tbtrans. If during any
+of these steps there is an error message sent to stderr, the script
+will stop and the following step will not start. The error message is
+printed to an output file (err_elec.out or err_scat.out or
+err_tbt.out). It only creates the "completed" file if it reaches the
+end.
+
+Parallel compilations can be tested by changing to the ts_fast directory 
+and (for example) typing:
+ 
+  make TS="/opt/openmpi.gcc.gfortran/bin/mpirun -np 2 ../../../transiesta"
+
+By default, tbtrans will be (re)compiled using the arch.make located
+in the $OBJDIR.  To use an already compiled version of tbtrans (again,
+inside the ts_fast directory) type:
+  
+  make TBT=/some/path/to/tbtrans
+
+NOTE: Since the compilation of tbtrans is automatic and unattended,
+you will need to specify in your arch.make the linear algebra libraries
+needed for tbtrans in your system. For example:
+
+  TBTRANS_LINALG=linalg.a # Or maybe only: zgeev_lapack.a zgesv_lapack.a
+
+* The functionality for the TS tests is kept in the new file scrip_ts.mk.
+
+added:
+  Tests/script_ts.mk
+  Tests/ts_fast/
+  Tests/ts_fast/H.psf
+  Tests/ts_fast/elec.fast.fdf
+  Tests/ts_fast/makefile
+  Tests/ts_fast/scat.fast.fdf
+  Tests/ts_fast/script.sh
+modified:
+  Tests/Makefile
+
+-----------------------------------------------------------------------
 2010-08-04  15:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-351
 Fix for out-of-box atoms in meshsubs
 

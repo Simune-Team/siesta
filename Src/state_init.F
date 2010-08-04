@@ -39,7 +39,8 @@
       use m_mpi_utils, only : globalize_max
 #endif
 #ifdef TRANSIESTA
-      use m_ts_options, only : onlyS
+      use m_ts_options, only : onlyS, mixH
+      use m_ts_global_vars, only : VIn, VOut, Hold
       use sys, only : bye
       use m_ts_io, only : ts_iohs
       use files, only: slabel, label_length
@@ -231,7 +232,17 @@
      .     routine='state_init',copy=.false.,shrink=.true.)
       call re_alloc(Escf,1,maxnh,1,nspin,name='Escf',
      .     routine='state_init',copy=.false.,shrink=.true.)
-
+#ifdef TRANSIESTA
+      nullify(VIn)
+      if(.not. mixH) then
+         VIn => Dold
+      else
+         call re_alloc(Hold,1,maxnh,1,nspin,name='Hold',
+     .     routine='state_init',copy=.false.,shrink=.true.)
+         VIn => Hold
+      end if
+#endif /* TRANSIESTA */
+      
       ! Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
       call re_alloc(H,1,maxnh,1,nspin,name='H',
      .              routine='state_init',shrink=.true.,copy=.false.)
@@ -239,6 +250,13 @@
      .              shrink=.true.,copy=.false.)
       call re_alloc(S,1,maxnh,name='S',routine='state_init',
      .              copy=.false.,shrink=.true.)
+
+#ifdef TRANSIESTA
+      nullify(VOut)
+      if( mixH) then
+         Vout => H
+      end if
+#endif /* TRANSIESTA */
 
       ! Find overlap matrix 
       call overlap(na_u, na_s, no_s, scell, xa, indxua, rmaxo,

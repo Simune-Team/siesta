@@ -14,9 +14,7 @@
       use m_convergence, only: converger_t
       use m_convergence, only: add_value, is_converged
 #ifdef TRANSIESTA
-! TSS Begin
-      use m_ts_options, only: TSinit, TSrun, TSiscf, initH
-! TSS End
+      use m_ts_global_vars, only: TSinit, TSrun, TSiscf
 #endif /* TRANSIESTA */
 
       implicit none

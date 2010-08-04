@@ -19,17 +19,12 @@ integer NBUFATL,NBUFATR   ! No. buffer atoms, L/R
 
 logical USEBULK           ! If true use bulk params. in L/R regions
 logical sppol
-logical DoCOOP            ! If true do COOP curves
-logical OutputRegionData  ! Output data for selected PDOS region
-logical RDORTHO           ! Output region data in Lowdin orthogonal form
 
 character*33 hsfile       !name of HS-input file
 integer isoat1,isoat2
 
 integer NA1L,NA2L,nqL 
 integer NA1R,NA2R,nqR
-
-logical DoAtomPDOS        ! If true calculate atomic PDOS in PDOS-region
 
 character*33 Lhsfile,Rhsfile
 
@@ -62,12 +57,8 @@ real(dp), parameter :: GFeta_def = 0.00001_dp
 logical, parameter :: UseBulk_def = .true.
 integer, parameter :: neigch_def = 0
 logical, parameter :: sppol_def = .false.
-logical, parameter :: DoCOOP_def = .false.
-logical, parameter :: RDORTHO_def = .false.
-logical, parameter :: OutputRegionData_def = .true.
 integer, parameter :: NBUFATL_def=0
 integer, parameter :: NBUFATR_def=0
-logical, parameter :: DoAtomPDOS_def = .false.
 logical, parameter :: CalcIeig_def = .false.
 character*33 :: hsfile_def
 
@@ -89,18 +80,10 @@ call fdf_global_get(neigch,'TS.TBT.NEigen',neigch_def)
 
 call fdf_global_get(sppol,'SpinPolarized',sppol_def)
 
-! Do we want to do COOP curves:
-call fdf_global_get(DoCOOP,'TS.TBT.DoCOOP',DoCOOP_def)
-! Region data in Lowdin orthogonalized format or not
-call fdf_global_get(RDORTHO,'TS.TBT.RegionDataOrtho',RDORTHO_def)
-call fdf_global_get(OutputRegionData,'TS.TBT.OutputRegionData',OutputRegionData_def)
-
 call fdf_global_get(NBUFATL,'TS.BufferAtomsLeft',NBUFATL_def)
 call fdf_global_get(NBUFATR,'TS.BufferAtomsRight',NBUFATR_def) 
 
 call fdf_global_get(hsfile,'TS.TBT.HSFile',hsfile_def)
-
-call fdf_global_get(DoAtomPDOS,'TS.TBT.AtomPDOS',DoAtomPDOS_def)
 
 call fdf_global_get(Lhsfile,'TS.HSFileLeft','LeftELEC.TSHS')
 call fdf_global_get(Rhsfile,'TS.HSFileRight','RightELEC.TSHS')

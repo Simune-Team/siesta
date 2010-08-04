@@ -168,13 +168,10 @@ C
       use m_doping,       only: compute_doping_structs, doping_active
 
 #ifdef TRANSIESTA
-! TSS Begin
-! SIESTA Modules
       use siesta_options, only: isolve
-! Transiesta Modules
-      use m_ts_options, only: TSrun, UseVFix
+      use m_ts_options, only: UseVFix
       use m_ts_in_siesta, only: TSVHFix, TSVoltage2
-! TSS End
+      use m_ts_global_vars, only: TSrun
 #endif /* TRANSIESTA */
 
       implicit none

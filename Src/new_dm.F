@@ -94,14 +94,8 @@
       use sparse_matrices, only: Escf     !! To be moved
 
 #ifdef TRANSIESTA
-      use parallel, only: IOnode 
-      use m_energies, only: ef
-      use sys, only : die
-      !* TS uses maxnh and nh explicitly, and touches Dold and Eold
-      use sparse_matrices, only: maxnh, nh, Dold, Eold
-
-      use m_ts_options, only : VIn, VOut, TSinit, TSrun, foundts
-      use m_ts_io, only : TSiodm 
+      use m_ts_options, only : mixH 
+      use M_ts_global_vars, only : TSrun, VOut
 #endif /* TRANSIESTA */
 
       implicit none
@@ -118,7 +112,7 @@
       integer :: nnz
 
 #ifdef TRANSIESTA
-      integer :: ts_alloc_stat, maxnh_ts
+      integer :: ts_alloc_stat
 #endif /* TRANSIESTA */
 
       if (IOnode) then
@@ -170,19 +164,6 @@
            write(6,"(a)") "DM reset as supercell changed."
         endif
       endif
-#ifdef TRANSIESTA
-      ! TSS Begin: Mixing arrays
-      if(.not.allocated(VIn)) then
-       allocate(VIn(maxnh,nspin), STAT=ts_alloc_stat)
-       if(ts_alloc_stat /= 0) 
-     .   call die('Failled to Allocate VIn in new_dm !!')
-       allocate(VOut(maxnh,nspin))
-       if(ts_alloc_stat /= 0) 
-     .   call die('Failled to Allocate VOut in new_dm !!')
-           endif 
-      ! TSS End
-
-#endif /* TRANSIESTA */
 
 
       if (dminit) then
@@ -219,61 +200,6 @@
          listptrold = listhptr
 
 
-#ifdef TRANSIESTA
-      ! TSS check of TSDM stuff
-
-         if (istp .eq. 1 .and. isolve .eq. 2) then ! try to read TSDM
-            !AG: maxnh comes out of here
-            !    Note that this reading operation does not check
-            !    the compatibility of the sparsity
-            call TSiodm('read', maxnh_ts, no_l, nspin,
-     .        numh, listhptr, listh, Dscf, Escf, ef, found = foundts)
-            if (maxnh_ts /= nnz) then
-               if (IONOde) then
-                  write(6,*) "*Warning: TSDM read from file has "
-     $                    // "a different size"
-                  write(0,*) "*Warning: TSDM read from file has "
-     $                    // "a different size"
-               endif
-            endif
-            ! Update even if different from current nnz
-            maxnh = maxnh_ts
-
-            if(.not. foundts )  then ! not a TS continuation run
-               TSinit = .true.  ! start to converge a diagon run
-               TSrun = .false.
-
-               if(IONode) then
-                  write(6,'(a)')
-     .              'TRANSIESTA: No TS-DensityMatrix file found'
-                  write(6,'(a)')
-     .              'TRANSIESTA: Initialization runs using diagon'
-               endif
-            else
-               TSinit = .false.
-               TSrun = .true.
-
-               if(IONode) then
-                  write(6,'(a)') 'TRANSIESTA: Continuation run'
-                  write(6,'(/a)')
-     .                 '                     ************************  '
-                  write(6,'(a)')
-     .                 '                     *   TRANSIESTA BEGIN   *  '
-                  write(6,'(a)')
-     .                 '                     ************************  '
-               endif
-
-
-               !     copy Dsfc -> Dold
-
-               Dold(1:nh,1:nspin) = Dscf(1:nh,1:nspin)
-               Eold(1:nh,1:nspin) = Escf(1:nh,1:nspin)
-
-            end if              !found TSDM-file
-         end if                 !istp == 1  and isolve == 2
-
-#endif /* TRANSIESTA */
-
       else    ! not initializing the DM
 
          if (IOnode) then
@@ -308,6 +234,10 @@
       ! Only part of Escf is updated in TS, so if it is put as zero here
       ! a continuation run gives bad forces.
       if(.not.TSrun) Escf(:,:) = 0.0_dp
+      if(.not. mixH) then
+         nullify(VOut)
+         VOut => Dscf
+      end if
 #else
       Escf(:,:) = 0.0_dp
 #endif /* TRANSIESTA */
@@ -535,6 +465,16 @@ C
       use m_iodm,       only : read_dynamic_dm
       use m_sparse,     only : same_sparsity, change_sparsity
       use alloc,        only : re_alloc, de_alloc
+#ifdef TRANSIESTA
+      use sparse_matrices, only: Escf
+      use m_ts_iodm, only    : read_dynamic_ts_dm, ts_init_dm
+      use m_energies, only: ef  ! Transiesta uses the EF obtained in a initial SIESTA run
+                                ! to place the electrodes and scattering region energy
+                                ! levels at the appropriate relative position, so it is
+                                ! stored in the TSDE file.
+      use siesta_options, only : isolve
+#endif /* TRANSIESTA */
+
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -580,6 +520,10 @@ C Internal variables and arrays
 
       integer, pointer :: list_tmp(:), num_tmp(:), listptr_tmp(:)
       real(dp), pointer :: D_tmp(:,:), work(:)
+#ifdef TRANSIESTA
+      logical :: ts_found
+      real(dp), pointer :: EDM_tmp(:,:)
+#endif /* TRANSIESTA */
 
       integer :: nh_tmp, nspin_read, is
       logical :: same_sp
@@ -595,9 +539,37 @@ C Try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
          call re_alloc(num_tmp,1,no_l,name='num_tmp',routine=myName)
          call re_alloc(listptr_tmp,1,no_l,name='listptr_tmp',
      .                 routine=myName)
+#ifdef TRANSIESTA
+         nullify(EDM_tmp)
+#endif /* TRANSIESTA */
 
+
+#ifndef TRANSIESTA
          call read_dynamic_dm(nh_tmp, no_l, nspin_read, num_tmp, 
+     .             listptr_tmp, list_tmp, D_tmp, found )
+#else
+         if(isolve == 2) then ! Transiesta solution method
+C First try to read the .TSDE file
+           call read_dynamic_ts_dm(nh_tmp, no_l, nspin_read, num_tmp, 
+     .             listptr_tmp, list_tmp, D_tmp, EDM_tmp, ef, ts_found )
+
+C Print information and do the some TS initializations
+           call ts_init_dm(ts_found)
+
+C If it does not find a .TSDE file, try to read a .DM file
+           if(.not. ts_found) 
+     .        call read_dynamic_dm(nh_tmp, no_l, nspin_read, num_tmp, 
+     .             listptr_tmp, list_tmp, D_tmp, found )           
+
+C Either .TSDE or .DM may have been found
+           found = ts_found .or. found
+         else ! Not Transiesta solution mathod
+           ts_found = .false.
+           call read_dynamic_dm(nh_tmp, no_l, nspin_read, num_tmp, 
      .             listptr_tmp, listd=list_tmp, dm=D_tmp, found=found )
+         end if ! Transiesta solution method
+#endif /* TRANSIESTA */
+
       else
         found = .false.
       endif
@@ -623,9 +595,12 @@ C If found, check and update, otherwise initialize with neutral atoms
            call de_alloc(list_tmp,name='listd',
      .                   routine='read_dynamic_dm')
            call de_alloc(D_tmp,name='dm',routine='read_dynamic_dm')
+#ifdef TRANSIESTA
+           if(ts_found) call de_alloc(EDM_tmp)
+#endif /* TRANSIESTA */
         endif
       endif
-
+      
       if (found) then
 
          same_sp = same_sparsity(no_l,num_tmp,list_tmp,
@@ -637,6 +612,9 @@ C If found, check and update, otherwise initialize with neutral atoms
 #endif
         if (same_sp) then
            Dscf(:,:) = D_tmp(:,:)
+#ifdef TRANSIESTA
+           if(ts_found) Escf(:,:) = EDM_tmp(:,:)
+#endif /* TRANSIESTA */
         else
            if (IOnode) then
               write(6,*) "Read DM has different structure. Fixing..."
@@ -647,6 +625,16 @@ C If found, check and update, otherwise initialize with neutral atoms
      $                              numh,listhptr,listh,
      $                              D_tmp(:,is), Dscf(:,is),
      $                              work=work)          
+#ifdef TRANSIESTA
+! change_sparsity allocates work, but should work, since it does not 
+! deallocate inside the spin loop
+              if(ts_found) 
+     .          call change_sparsity (no_l,num_tmp,listptr_tmp,list_tmp,
+     $                                  numh,listhptr,listh,
+     $                                  EDM_tmp(:,is), Escf(:,is),
+     $                            work)
+               
+#endif /* TRANSIESTA */
            enddo
            ! Deallocate with same routine/name used in allocations
            call de_alloc(num_tmp,name='num_tmp',routine=myName)
@@ -655,6 +643,9 @@ C If found, check and update, otherwise initialize with neutral atoms
      .                   routine='read_dynamic_dm')
            call de_alloc(D_tmp,name='dm',routine='read_dynamic_dm')
            call de_alloc(work,name='work',routine='change_sparsity')
+#ifdef TRANSIESTA
+           if(ts_found) call de_alloc(EDM_tmp)
+#endif /* TRANSIESTA */
         endif
 
       else
