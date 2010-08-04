@@ -6,6 +6,19 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2010-08-04  15:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-351
+Fix for out-of-box atoms in meshsubs
+
+In InitAtomMesh, during the calculation of the relative position of an
+atom with respect to the grid, make sure we consider the equivalent
+position inside the cell, even if the atom is outside.
+
+(Possible problem detected by P. Ordejon, fixed by J. Soler)
+
+modified:
+  Src/meshsubs.F
+
+-----------------------------------------------------------------------
 2010-08-03  15:35:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-350
 Port several small patches from 3.0 branch up to 3.0-rc2
 
