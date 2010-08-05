@@ -6,6 +6,42 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2010-08-05  10:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-354
+Fixes and new functionality in Pulay mixing
+
+* The "kick" functionality intended to "shake" periodically the Pulay
+mixing procedure was incorrectly implemented. This has now been fixed,
+with the added feature that the Pulay history is completely reset
+after a kick.
+
+* Additionally, support has been added to specify whether the first
+density-matrix residual of the SCF cycle and the first residual after
+a kick are included in the Pulay history. It can be argued that in
+these cases the "output" DM might be significantly different from the
+"input" DM. To preserve backwards compatibility, these residuals are
+kept in the Pulay history unless the fdf variable
+
+      DM.Pulay.Avoid.First.After.Kick
+
+is set to "true" in the input file.
+
+* The above changes have forced a temporary disabling of the "Pulay on
+  file" feature, which will be re-implemented in a form that works
+  well in parallel.
+
+* Updated the manual.
+
+(A. Garcia)
+
+renamed:
+  Src/m_pulay.F => Src/m_pulay.F90
+modified:
+  Src/mixer.F
+  Src/siesta_options.F90
+  Src/m_pulay.F90
+  Docs/siesta.tex
+
+-----------------------------------------------------------------------
 2010-08-05  10:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-353
 Fixes and improvements in the optical spectra code
 
