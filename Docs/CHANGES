@@ -6,6 +6,23 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2010-08-05  10:55:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-355
+Hook to output the initial charge density
+
+If the fdf variable SaveInitialChargeDensity is "true", the program
+generates a RHO_INIT (and a RhoInit.grid.nc file if netCDF is compiled
+in) containing the charge density used to start the first
+self-consistency step, and it stops. Note that if an initial density
+matrix (DM file) is used, it is not normalized. This is useful to
+generate the charge density associated to "partial" DMs.
+
+modified:
+  Docs/siesta.tex
+  Src/dhscf.F
+  Src/setup_hamiltonian.F
+  Src/siesta_options.F90
+
+-----------------------------------------------------------------------
 2010-08-05  10:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-354
 Fixes and new functionality in Pulay mixing
 

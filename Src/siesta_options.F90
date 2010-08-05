@@ -59,6 +59,9 @@ MODULE siesta_options
   logical :: writedmhs_cdf_history   ! Write file with SCF history in netCDF form?
   logical :: read_charge_cdf   ! Read charge density from file in netCDF form?
   logical :: read_deformation_charge_cdf   ! Read deformation charge density from file in netCDF form?
+!
+  logical :: save_initial_charge_density ! Just save the initial charge density used
+
   logical :: atmonly       ! Set up pseudoatom information only?
   logical :: harrisfun     ! Use Harris functional?
   logical :: muldeb        ! Write Mulliken polpulations at every SCF step?
@@ -1441,6 +1444,9 @@ MODULE siesta_options
     if (read_charge_cdf .or. read_deformation_charge_cdf) then
        mix = .false.
     endif
+
+    call fdf_global_get(save_initial_charge_density,   &
+                       'SaveInitialChargeDensity' , .false.)
 
     call fdf_global_get(new_diagk, 'UseNewDiagk'      , .false. )
 

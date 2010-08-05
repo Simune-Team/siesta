@@ -39,7 +39,7 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, trunk-354}}
+{\Huge {\bf S I E S T A \, \, trunk-355}}
 
 \vspace{1cm}
 \hrulefill
@@ -5091,6 +5091,22 @@ density is positive and the ionic charge density is negative.
 {\it Use:} File {\tt SystemLabel}.TOCH is only written, not read, by siesta.
 
 {\it Default value:} {\tt .false.}
+
+
+\item[{\bf SaveInitialChargeDensity}] ({\it logical}):
+  \index{SaveInitialChargeDensity@{\bf
+      SaveInitialChargeDensity}}\index{output!charge density}
+
+  If ``true'', the program generates a {\tt SystemLabel}.RHOINIT file
+  (and a {\tt RhoInit.grid.nc} file if netCDF support is compiled in)
+  containing the charge density used to start the first
+  self-consistency step, and it stops. Note that if an initial density
+  matrix (DM file) is used, it is not normalized. This is useful to
+  generate the charge density associated to ``partial'' DMs, as
+  created by progras such as {\tt dm\_creator} and {\tt dm\_filter}.
+
+{\it Default value:} {\tt .false.}
+
 
 \end{description}
 
