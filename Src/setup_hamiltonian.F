@@ -292,11 +292,8 @@
         enddo
 
 ! Save Hamiltonian and overlap matrices ............................
-        if (savehs) then
-          call iohs( 'write', gamma, no_u, no_s, nspin, indxuo,
-     $               maxnh, numh, listhptr, listh, H, S, qtot, temp,
-     $               xijo )
-        endif
+! Only in HSX format now.  Use Util/HSX/hsx2hs to generate an HS file
+
         if (write_coop .or. savehs) then
           call write_hsx( gamma, no_u, no_s, nspin, indxuo,
      $               maxnh, numh, listhptr, listh, H, S, qtot, temp,
