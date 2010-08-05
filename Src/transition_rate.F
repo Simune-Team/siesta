@@ -8,8 +8,10 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine transition_rate( ng, psi, ek, temp, efermi, Sr, 
-     .                           Aux, Aux2, numh, listhptr, listh, 
+      subroutine transition_rate( ng, psi, ek, efermi, 
+     .                           ekloc, efermiloc, temp, 
+     .                           smooth, wmin, wmax,
+     .                           Sr, Aux, Aux2, numh, listhptr, listh, 
      .                           indxuo, no, nuo, nuotot, xij, 
      .                           maxnh, nbands, kpoint, matrix,
      .                           intraband )
@@ -17,12 +19,18 @@ C *********************************************************************
 C Finds the matrix element for the dipolar transition between to states
 C Written by DSP. August 1999
 C Restyled for f90 version by JDG. June 2004
+C Modified by DSP. April 2010
 C **************************** INPUT ********************************** 
 C integer ng                  : first dimension of psi, Aux and Aux2
 C real*8  psi(ng,nuotot,nuo)  : Wavefunctions in current k point
 C real*8  ek(nuotot)          : Eigenvalues
 C real*8  temp                : Electronic temperature
 C real*8  efermi              : Fermi level 
+C real*8  ekloc(nuotot)       : Eigenvalues (possibly modified by escissor)
+C real*8  efermiloc           : Fermi level (possibly modified by escissor)
+C real*8  wmin                : minimum transition energy required
+C real*8  wmax                : maximum transition energy required
+C real*8  smooth              : artificial width given to transitions
 C real*8  Sr(maxnh)           : Position operator matrix elements (sparse)
 C real*8  Aux(ng,nuotot,nuo)  : Auxiliary space
 C real*8  Aux2(ng,nuotot,nuo)  : Auxiliary space
@@ -48,6 +56,8 @@ C                               kpoint
 C character matrix*1          : 'R' or 'P' for position or momentum operator
 C *************************** OUTPUT ****************************
 C real*8  Aux(2,nuotot,nuo)   : matrix elements of the dipolar transition
+C real*8  intraband(2,nuo)    : weight of intraband transitions (if a band
+C                               crosses the Fermi energy
 C *************************** UNITS ***********************************
 C Lengths in atomic units (Bohr).
 C k vectors in reciprocal atomic units.
@@ -75,7 +85,8 @@ C Passed variables
      .  xij(3,maxnh), Sr(maxnh), 
      .  psi(ng,nuotot,nuo), kpoint(3), Aux(ng,nuotot,nuo), 
      .  Aux2(ng,nuotot,nuo), ek(nuo), temp, efermi,
-     .  intraband(ng,nuo)
+     .  intraband(ng,nuo), smooth, wmin, wmax, ekloc(nuo),
+     .  efermiloc, ediff
 
       character
      .  matrix*1
@@ -162,7 +173,7 @@ C Allocate workspace array
       BNodei = 0
       iie = 0
       do ie = 1,nbands
-        f1 = 2.0d0*stepf((ek(ie)-efermi)/temp)
+        f1 = 2.0d0*stepf((ekloc(ie)-efermiloc)/temp)
         if (Node.eq.BNodei) then
           iie = iie + 1 
           do j = 1,nuotot 
@@ -175,12 +186,14 @@ C Allocate workspace array
         call MPI_Bcast(psibandi(1,1),ng*nuotot,MPI_double_precision,
      .    BNodei,MPI_Comm_World,MPIerror)
 #endif
-
+            
 C Compute the intra-band contribution to include a Drude-like term
 C for metals
        if(matrix.eq.'P') then 
              intrb(:)=0.0_dp
-             do iuo = 1,nuo
+             ediff=ek(ie)-efermi
+             if(dabs(ediff).lt.2.0d0*smooth) then 
+              do iuo = 1,nuo
                 call LocalToGlobalOrb(iuo,Node,Nodes,iio)
                 do juo = 1,nuotot
                  if(ng.eq.2) then
@@ -207,8 +220,9 @@ C Drude term we do not have the energy denominator
      .                + 0.5_dp* (pipj1*Aux2(1,juo,iuo))
                    intrb(2) = 0.0_dp
                   endif
-                enddo
-              enddo
+                 enddo
+               enddo
+              endif
 #ifdef MPI
         call MPI_Reduce(intrb,intrb2,2,
      .    MPI_double_precision,MPI_sum,BNodei,MPI_Comm_World,MPIerror)
@@ -231,9 +245,14 @@ C Drude term we do not have the energy denominator
             jje = jje + 1 
           endif
           if (dabs(ek(ie)-ek(je)).gt.ediffmin) then   
-            f2 = 2.0d0*stepf((ek(je)-efermi)/temp)
+            f2 = 2.0d0*stepf((ekloc(je)-efermiloc)/temp)
                   
             if (f1*(2.0d0-f2).gt.tiny) then 
+
+             ediff = ekloc(je) - ekloc(ie)
+             if ((ediff.ge.max(wmin-2.0d0*smooth,0.0d0)).and.
+     .               (ediff.le.wmax+2.0d0*smooth)) then
+
               if (Node.eq.BNodej) then
                 do j = 1,nuotot 
                   do ig=1,ng
@@ -276,6 +295,7 @@ C Drude term we do not have the energy denominator
                  AuxLocal(ig,je) = AuxLocal(ig,je)/(ek(je)-ek(ie))
                 enddo 
               endif 
+             endif
             endif 
           endif 
           BTest = je/BlockSize

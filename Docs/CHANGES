@@ -6,6 +6,34 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2010-08-05  10:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-353
+Fixes and improvements in the optical spectra code
+
+* Fixed a bug in optical.F: the call to subroutine kgridinit nwas
+  causing problems and providing results that were not compatible any
+  longer with those of subroutine kgrid.
+
+* Modified call to subroutine transition_rate: wmin and wmax passed to
+  subroutine so that only the relevant transition probabilities are
+  explicitly calculated.
+
+* Added a new test (Tests/si-optical) to exercise the optical code.
+
+(Daniel Sanchez Portal)
+
+added:
+  Tests/Reference-xml/si-optical.xml
+  Tests/Reference/si-optical.out
+  Tests/si-optical/
+  Tests/si-optical/makefile
+  Tests/si-optical/si-optical.fdf
+  Tests/si-optical/si-optical.pseudos
+modified:
+  Docs/CHANGES
+  Src/optical.F
+  Src/transition_rate.F
+
+-----------------------------------------------------------------------
 2010-08-04  15:40:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-352
 Updates and fixes to the TranSiesta/tbtrans code (F.D. Novaes)
 
