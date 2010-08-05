@@ -6,6 +6,35 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2010-08-05  15:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-360
+(Admin) Incorporate logs of recent patches from 3.0 branch
+
+The siesta-3.0 branch can be considered as a sort of "bug-fix" branch
+for "trunk". Hence, periodic merges are needed. This merges
+have up to now been done in a "cherry-picking" manner, since 3.0
+contains other material that is not supposed to go into trunk. This
+has the unfortunate feature that the patch logs are not incorporated
+into the trunk, and a "bzr missing" command will keep reporting
+spurious differences.
+
+The logs of all the recently applied patches, corresponding to 3.0
+patches up to 3.0-rc2, have now been incorporated by doing a normal
+merge followed by "bzr revert ." to remove all file changes (changes
+already incorporated in local revnos from 349 up to this one).  This
+has the effect of marking those patches in siesta-3.0 as "known" to
+this branch, and will simplify the porting of future patches from the
+3.0 branch. Note that the patch logs do not appear in "bzr log" unless
+the "-n0" option is used. This is desirable, as a casual user might
+find the output confusing.
+
+Note that revno 355 in this branch already incorporated (without
+explicit mention in the commit log, due to an oversight) the relevant
+3.0 patches up to 3.0-rc1.
+
+The version string has been set to trunk-360 in both version.info and
+siesta.tex.
+
+-----------------------------------------------------------------------
 2010-08-05  14:40:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-359
 Fixes for portability (FoX str, pulay, MD rewind, reshape)
 
