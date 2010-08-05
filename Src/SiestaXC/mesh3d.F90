@@ -2603,8 +2603,9 @@ subroutine reduceData( nMesh, srcBox, srcData, dstBox, dstData, prjData, &
           ! Find projection of srcData in comBox
           call projection( nMesh, srcBox, srcData(:,:,:,1), comBox, prjBuff )
           ! Copy projection data onto a transfer buffer
+          ! AG: Work around gfortran bug: specify 0 lbound in reshape
           trsfBuff(trsfSize+1:trsfSize+3*maxMesh) = &
-             reshape( prjBuff, (/3*maxMesh/) )
+             reshape( prjBuff(:,0:), (/3*maxMesh/) )
           trsfSize = trsfSize + 3*maxMesh
         end do ! iPart
       end if ! (present(prjData))

@@ -12,7 +12,6 @@ Module siesta_cmlsubs
 
   use siesta_cml, only:   cml_p, mainXML
 
-  Use siesta_cml, only: str_fox
   Use siesta_cml, only: cmlBeginFile, cmlAddNamespace, cmlStartCml
   Use siesta_cml, only: cmlStartMetadataList, cmlAddMetadata
   Use siesta_cml, only: cmlEndMetadataList, cmlEndCml, cmlFinishFile
@@ -32,6 +31,7 @@ Module siesta_cmlsubs
       Use m_timestamp, only: datestring
 
       Character(len=label_length+4) :: fname
+      Character(len=10)             :: nodes_str 
 
       fname = ' '
 
@@ -60,7 +60,9 @@ Module siesta_cmlsubs
          Else
            Call cmlAddMetadata(mainXML, name='siesta:Mode', content='Serial')
          Endif
-         Call cmlAddMetadata(mainXML, name='siesta:Nodes', content=str_fox(nodes))
+         ! Avoid using 'str' function, which causes trouble with PGI compilers
+         write(nodes_str, "(i10)") nodes
+         Call cmlAddMetadata(mainXML, name='siesta:Nodes', content=nodes_str)
 #ifdef CDF
          Call cmlAddMetadata(mainXML, name='siesta:NetCDF',  content='true')
 #else
