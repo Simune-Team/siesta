@@ -6,6 +6,29 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2010-08-05  14:05:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-358
+Cosmetic fixes (larger fields in atm files, vibra manual)
+
+* Use larger output fields for atm diagnostic files
+
+The atm program generates, among others, the files FOURIER_QMAX and
+ECONF_DIFFS, which contain information useful for optimization
+runs. The output fields were quite tight and sometimes
+overflowed. They have beeen made larger.
+
+modified:
+  Pseudo/atom/prdiff.f
+  Pseudo/atom/wrapup.f
+
+* Clarify the meaning of the supercell options in the Vibra manual
+
+New wording to make it clear that the supercell options refer
+to the number of augmentation shells around the unit cell.
+
+modified:
+  Util/Vibra/Docs/vibra.tex
+
+-----------------------------------------------------------------------
 2010-08-05  14:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-357
 Compute and print band-structure energy. Updates to Util/COOP/mprop
 
