@@ -77,7 +77,7 @@ OBJS =  domain_decom.o automatic_cell.o atom_options.o \
 	denmat.o denmatlomem.o detover.o dfscf.o m_diagon.o diagon.o digcel.o \
         fft3d.o dhscf.o constr.o diagk_file.o \
 	diagg.o diagk.o diagkp.o diag2g.o diag2k.o diagpol.o \
-	diagsprl.o dipole.o dismin.o dnaefs.o doping.o dot.o  \
+	diagsprl.o dipole.o dismin.o dnaefs.o doping_uniform.o dot.o  \
 	m_efield.o egandd.o ener3.o ener3lomem.o extrapolon.o \
 	fixed.o flib_spline.o gradient.o gradientlomem.o grdsam.o \
 	hsparse.o idiag.o  initatom.o inver.o iodm_netcdf.o \
@@ -362,7 +362,7 @@ densematrix.o: alloc.o precision.o
 detover.o: alloc.o parallel.o parallelsubs.o precision.o
 dfscf.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o meshmatrix.o
 dfscf.o: meshsubs.o meshsubs.o parallel.o parallelsubs.o precision.o sys.o
-dhscf.o: alloc.o atmfuncs.o cellxc_mod.o doping.o files.o forhar.o
+dhscf.o: alloc.o atmfuncs.o cellxc_mod.o doping_uniform.o files.o forhar.o
 dhscf.o: iogrid_netcdf.o m_efield.o m_iorho.o m_ts_in_siesta.o m_ts_options.o
 dhscf.o: meshsubs.o moremeshsubs.o parallel.o parsing.o precision.o
 dhscf.o: siesta_options.o sys.o xcmod.o
@@ -386,7 +386,7 @@ distriphionmesh.o: parallel.o precision.o
 dnaefs.o: atmfuncs.o mneighb.o precision.o
 domain_decom.o: alloc.o parallel.o precision.o printmatrix.o schecomm.o
 domain_decom.o: sparse_matrices.o sys.o
-doping.o: alloc.o meshsubs.o meshsubs.o parallel.o precision.o sys.o
+doping_uniform.o: alloc.o meshsubs.o meshsubs.o parallel.o precision.o sys.o
 dscfcomm.o: alloc.o parallel.o parallelsubs.o precision.o schecomm.o
 dynamics.o: alloc.o atomlist.o files.o ioxv.o m_mpi_utils.o parallel.o
 dynamics.o: precision.o sys.o units.o
@@ -712,7 +712,6 @@ m_conjgr.o: conjgr.o
 m_conjgr_old.o: conjgr_old.o
 m_dhscf.o: dhscf.o
 m_dnaefs.o: dnaefs.o
-m_doping.o: doping.o
 m_dscfcomm.o: dscfcomm.o
 m_dynamics.o: dynamics.o
 m_fermid.o: fermid.o

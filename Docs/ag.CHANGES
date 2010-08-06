@@ -1,3 +1,23 @@
+------------------------------------------------
+AG, August 6, 2010  bsc-trunk-299-dhscf-bugs-2
+Re-implement the doping feature in the uniform distribution
+
+In this way it is much easier, since we can refer directly to
+the points at which rhoatm is different from zero, without
+having to use any indexes. In fact, this could be done in any 
+distribution, as long as both rho and rhoatm are distributed
+in the same way.
+
+removed:
+  Src/doping.F
+added:
+  Src/doping_uniform.F
+modified:
+  Src/Makefile
+  Src/dhscf.F
+
+
+------------------------------------------------
 AG, April 8, 2010  bsc-trunk-299-dhscf-bugs-1
 Fix grdsam by adding a call to dhscf_init
 
