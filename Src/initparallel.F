@@ -63,6 +63,10 @@ C
       real(dp)      :: rcmaxopt
       real(dp), save:: tiny = 1.0d-6
 
+#ifdef DEBUG
+      call write_debug( '  PRE initparallel' )
+#endif
+
 C  Initialise on first call
       if (first) then
         nullify(natomsNode)
@@ -229,5 +233,8 @@ C
       if (use_dd) then
         call preSetOrbitLimits( no_u )
       endif
-      return
-      end
+
+#ifdef DEBUG
+      call write_debug( '  POS initparallel' )
+#endif
+      end subroutine initparallel

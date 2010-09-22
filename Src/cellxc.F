@@ -177,7 +177,7 @@ C Parameter mspin must be equal or larger than nspin
 
 #ifdef MPI
 C MPI related variables
-      integer  :: IOut, INN, JPNN(3,-NN:NN)
+      integer  :: IOut, INN, JPNN(3,-NN:NN), MPIerror
 #endif
 
 C Local variables and arrays
@@ -198,7 +198,15 @@ C Local variables and arrays
      &                         bdensZ(:,:,:), bvxcX(:,:,:),
      &                         bvxcY(:,:,:), bvxcZ(:,:,:)
 
+#ifdef DEBUG
+      call write_debug( '    PRE cellxc' )
+#endif
+
 C Start time counter (intended only for debugging and development)
+#ifdef _TRACE_
+      call MPI_Barrier( MPI_Comm_World, MPIerror )
+      call MPItrace_event( 1000, 3 )
+#endif
       call timer( 'cellXC', 1 )
 
 C Check ider
@@ -871,6 +879,10 @@ C Free memory
 #endif
 
 C Stop time counter
+#ifdef _TRACE_
+      call MPI_Barrier( MPI_Comm_World, MPIerror )
+      call MPItrace_event( 1000, 0 )
+#endif
       call timer( 'cellXC', 2 )
 
       end subroutine cellxc

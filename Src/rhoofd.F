@@ -52,18 +52,19 @@ C  Modules
       use sys,           only: die
       use alloc,         only: re_alloc, de_alloc
       use parallelsubs,  only: GlobalToLocalOrb
-
+#ifdef MPI
+      use mpi_siesta
+#endif
       implicit none
 
-C Argument types and dimensions
+C     Argument types and dimensions
       integer,       intent(in) :: no, np, maxnd, numd(nuo), nspin,
      &                             nuo, nuotot, iaorb(*), iphorb(*), 
      &                             isa(*), listdptr(nuo), listd(maxnd)
       real(dp),      intent(in) :: Dscf(maxnd,nspin)
       real(grid_p), intent(out) :: rhoscf(nsp,np,nspin)
       external                  :: memory, timer
-
-C Internal variables and arrays
+C     Internal variables and arrays
       integer,        parameter :: minloc = 100,  ! Min buffer size for local copy of Dscf
      &                             maxoa  = 100   ! Max # of orbitals per atom
       logical                   :: ParallelLocal
@@ -77,11 +78,17 @@ C Internal variables and arrays
       integer,          pointer :: ilc(:), ilocal(:), iorb(:)
       real(dp),         pointer :: r2cut(:), Clocal(:,:),
      &                             Dlocal(:,:), phia(:,:)
+#ifdef MPI
+      integer                   :: MPIerror
+#endif
 
 #ifdef DEBUG
       call write_debug( '    PRE rhoofd' )
 #endif
-
+#ifdef _TRACE_
+      call MPI_Barrier( MPI_Comm_World, MPIerror )
+      call MPItrace_event( 1000, 1 )
+#endif
 C     Start time counter
       call timer('rhoofd',1)
 
@@ -101,7 +108,7 @@ C       Redistribute Dscf to DscfL form
      &                   nspin, Dscf, DscfL )
       endif
 
-C  Find atomic cutoff radii
+C     Find atomic cutoff radii
       nullify(r2cut)
       call re_alloc( r2cut, 1, nsmax, 'r2cut', 'rhoofd' )
       r2cut = 0.0
@@ -149,7 +156,7 @@ C     Allocate local memory
 !$OMP END CRITICAL(MEMORY_LOCK)
 
 
-C  Initializations
+C     Initializations
       Dlocal = 0.0_dp
       ilocal = 0
       iorb   = 0
@@ -162,9 +169,9 @@ C       Initializations
 
 C       Find number of nonzero orbitals at this point
         nc = endpht(ip) - endpht(ip-1)
-C  iorb(il)>0 means that row il of Dlocal must not be overwritten
-C  iorb(il)=0 means that row il of Dlocal is empty
-C  iorb(il)<0 means that row il of Dlocal contains a valid row of 
+C       iorb(il)>0 means that row il of Dlocal must not be overwritten
+C       iorb(il)=0 means that row il of Dlocal is empty
+C       iorb(il)<0 means that row il of Dlocal contains a valid row of 
 C             Dscf, but which is not required at this point
         do ic = 1,nc
           imp = endpht(ip-1) + ic
@@ -173,12 +180,11 @@ C             Dscf, but which is not required at this point
           if (il.gt.0) iorb(il) = i
         enddo
 
-C  Look for required rows of Dscf not yet stored in Dlocal
+C       Look for required rows of Dscf not yet stored in Dlocal
         do ic = 1,nc
           imp = endpht(ip-1) + ic
           i = lstpht(imp)
           if (ilocal(i) .eq. 0) then
-
 C           Look for an available row in Dlocal
             do il = 1,maxloc
 C             last runs circularly over rows of Dlocal
@@ -188,7 +194,7 @@ C             last runs circularly over rows of Dlocal
             enddo
             call die('rhoofd: no slot available in Dlocal')
    10       continue
-C  Copy row i of Dscf into row last of Dlocal
+C           Copy row i of Dscf into row last of Dlocal
             j = abs(iorb(last))
             if (j.ne.0) ilocal(j) = 0
             ilocal(i) = last
@@ -265,7 +271,7 @@ C  Copy row i of Dscf into row last of Dlocal
           endif
         enddo
 
-C  Loop on first orbital of mesh point
+C       Loop on first orbital of mesh point
         lasta = 0
         lastop = 0
         do ic = 1,nc
@@ -278,7 +284,7 @@ C  Loop on first orbital of mesh point
           iop = listp2(imp)
           ilc(ic) = il
 
-C  Generate or retrieve phi values
+C         Generate or retrieve phi values
           if (DirectPhi) then
             if (ia.ne.lasta .or. iop.ne.lastop) then
               lasta = ia
@@ -299,7 +305,7 @@ C  Generate or retrieve phi values
             Clocal(:,ic) = phi(:,imp)
           endif
 
-C  Loop on second orbital of mesh point
+C         Loop on second orbital of mesh point
           do jc = 1,ic
             jl = ilc(jc)
             do isp = 1, nsp
@@ -317,7 +323,7 @@ C  Loop on second orbital of mesh point
                 Dij = 2*Dlocal(ijl,ispin)
               endif
 
-C  Loop over sub-points
+C             Loop over sub-points
               do isp = 1,nsp
                 rhoscf(isp,ip,ispin) = rhoscf(isp,ip,ispin) + 
      &            Dij*Cij(isp)
@@ -329,7 +335,7 @@ C  Loop over sub-points
 
         enddo
 
-C  Restore iorb for next point
+C       Restore iorb for next point
         do imp = 1+endpht(ip-1), endpht(ip)
           i = lstpht(imp)
           il = ilocal(i)
@@ -357,6 +363,10 @@ C     Free local memory
         call de_alloc( DscfL, 'DscfL', 'rhoofd' )
       endif
 
+#ifdef _TRACE_
+      call MPI_Barrier( MPI_Comm_World, MPIerror )
+      call MPItrace_event( 1000, 0 )
+#endif
       call timer('rhoofd',2)
 
 #ifdef DEBUG

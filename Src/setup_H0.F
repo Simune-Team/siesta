@@ -14,8 +14,8 @@ C     and initializes data structures on the grid.
       use siesta_geom
       use atmfuncs, only: uion
       use atomlist, only: no_u, iaorb, iphkb, qtot, indxuo, datm, 
-     .                    lastkb, no_s, rmaxv, indxua, iphorb, lasto,
-     .                    rmaxo, no_l
+     &                    lastkb, no_s, rmaxv, indxua, iphorb, lasto,
+     &                    rmaxo, no_l
       use metaforce, only: lMetaForce, meta
       use molecularmechanics, only : twobody
       use m_nlefsm,     only: nlefsm
@@ -54,7 +54,7 @@ C     and initializes data structures on the grid.
 
 !------------------------------------------------------------------------- BEGIN
 #ifdef DEBUG
-        call write_debug( '  PRE setup_H0' )
+      call write_debug( '  PRE setup_H0' )
 #endif
 !     Normalize density matrix to exact charge
 #ifdef TRANSIESTA      
@@ -143,7 +143,7 @@ C     mesh structures for geometry changes
      &                 dummy, stressl)
 
 #ifdef DEBUG
-        call write_debug( '  POS setup_H0' )
+      call write_debug( '  POS setup_H0' )
 #endif
 !--------------------------------------------------------------------------- END
       END subroutine setup_H0

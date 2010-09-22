@@ -7,30 +7,33 @@
 
       PUBLIC :: slepc_diag
       PRIVATE
-#ifdef _SLEPC_
 #include "finclude/slepc.h"
+#include "finclude/slepceps.h"
+
 C---------------         SLEPC parameters         ---------------
-      PetscScalar :: sigma  ! The value of the shift 
-      PetscInt    :: nev    ! number of eigenvalues to compute
-      PetscInt    :: mpd    ! The maximum dimension allowed for the
-                            ! projected problem
-      PetscInt    :: ncv    ! The maximum dimension of the subspace to
-                            ! be used by the solver
-      PetscReal   :: tol    ! The convergence tolerance
-      PetscInt    :: maxit  ! Maximum number of iterations to use 
-#endif
+      PetscScalar :: sigma   ! The value of the shift 
+      PetscInt    :: nev     ! number of eigenvalues to compute
+      PetscInt    :: mpd     ! The maximum dimension allowed for the
+                             ! projected problem
+      PetscInt    :: ncv     ! The maximum dimension of the subspace to
+                             ! be used by the solver
+      PetscReal   :: tol     ! The convergence tolerance
+      PetscInt    :: maxit   ! Maximum number of iterations to use 
+      EPSType     :: epsty   ! Type odf solver: dsitrlanczos
+                             !                  lanczos
+                             !                  arpack
+
       contains
 
       subroutine slepc_diag( nuotot, nuo, nnz, nspin, neig, fixspin,
      &                       temp, qtot, qs, occtol, numh, listh, H, S,
      &                       ef, efs, Entropy, Dnew, Enew )
       use domain_decom, only : slepc_perm
+      use fdf
       implicit none
-#ifdef _SLEPC_
 #include "mpif.h"
 #include "finclude/petsc.h"
 #include "finclude/petscmat.h"
-#endif
 C     Input variables
       integer,   intent(in) :: nuotot, nuo, nspin
       logical,   intent(in) :: fixspin
@@ -44,7 +47,6 @@ C     Output variables
 C     Local variables
       real(dp),     pointer :: w(:), Z(:,:), qo(:)
 
-#ifdef _SLEPC_
       integer               :: i, ierr, nnz
       integer,      pointer :: col(:)
       Mat                   :: A, B
@@ -52,6 +54,7 @@ C     Local variables
 
       call write_debug( '    PRE SLEPC_DIAG' )
       call timer( 'slepc_diag', 1 )
+
 !     Number of eigenvalues to compute
       neig = (qtot*6)/5
       neig = min(neig,nuotot)
@@ -66,6 +69,37 @@ C     Local variables
       call create_slepc_matrix( nuotot, nuo, nnz, numh, col, S, B )
       call de_alloc( col, 'col', 'slepc_diagon' )
 
+!     Set slepc parameters
+      sigma = -1.0
+      nev   = neig
+      mpd   = min(200,nuotot)
+      ncv   = min(mpd+nev,nuotot)
+      tol   = 1.0E-8
+      maxit = 10*nuotot
+      epsty = 'dsitrlanczos'
+
+      sigma = fdf_double(  'slepc.sigma', sigma )
+      nev   = fdf_integer( 'slepc.nev',   nev )
+      mpd   = fdf_integer( 'slepc.mpd',   mpd )
+      ncv   = fdf_integer( 'slepc.ncv',   ncv )
+      maxit = fdf_integer( 'slepc.maxit', maxit )
+      tol   = fdf_double(  'slepc.tol',   tol )
+      epsty = fdf_string(  'slepc.epsty', epsty )
+
+      nev   = min(nev,nuotot)
+      mpd   = min(mpd,nuotot)
+      ncv   = min(ncv,nev+mpd)
+      neig  = nev
+
+      write(23,*) 'sigma:', sigma
+      write(23,*) 'nev  :', nev
+      write(23,*) 'mpd  :', mpd
+      write(23,*) 'ncv  :', ncv
+      write(23,*) 'maxit:', maxit
+      write(23,*) 'tol  :', tol
+      write(23,*) 'epsty:', epsty
+      flush(23)
+
 !     Allocate memory
       nullify( w, Z, qo )
       call re_alloc( w, 1, neig, 'w', 'slepc_diagon' )
@@ -74,14 +108,6 @@ C     Local variables
 
       getD   = .true.
       getPSI = .false.
-
-!     Set slepc parameters
-      sigma = -1.0
-      nev   = neig
-      mpd   = min(200,nuotot)
-      ncv   = min(mpd+nev,nuotot)
-      tol   = 1.0E-8
-      maxit = 10*nuotot
 
       call slepc_solver( nuo, nnz, nspin, neig, getD, getPSI, fixspin,
      &                   temp, qtot, qs, occtol, numh, listh, A, B, ef,
@@ -96,10 +122,8 @@ C     Local variables
 
       call timer( 'slepc_diag', 2 )
       call write_debug( '    POS SLEPC_DIAG' )
-#endif    /* _SLEPC_ */
       end subroutine slepc_diag
 
-#ifdef _SLEPC_
       subroutine slepc_solver( n, nnz, nspin, neig, getD, getPSI,
      &                         fixspin, temp, qtot, qs, occtol, numh,
      &                         listh, A, B, ef, efs, Entropy, w, Z, qo,
@@ -138,9 +162,11 @@ C     Local variables
       PetscScalar, pointer :: array(:)
       EPS :: SOLVER
       ST  :: SpecT
+      KSP :: ksp
+      PC  :: precond 
       Vec :: x
       EPSProblemType mytype
-      EPSType myepstype
+      EPSConvergedReason reason
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 C     Create the eigensolver and display info
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -159,7 +185,7 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 C     Set the method and initial shift
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-      call EPSSetType( SOLVER, 'dsitrlanczos', ierr)
+      call EPSSetType( SOLVER, epsty, ierr)
 !      call EPSSetType( SOLVER, 'lanczos', ierr)
 !      call EPSSetType( SOLVER, 'arpack', ierr)
       if (ierr.ne.0) call die( 'EPSSetType error' )
@@ -172,6 +198,25 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
       call STSetShift( SpecT, sigma, ierr ) 
       if (ierr.ne.0) call die( 'STSetShift error' )
+
+C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+C     Choose a solver
+C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+      call STGetKSP( SpecT, ksp, ierr )
+      if (ierr.ne.0) call die( 'STGetKSP error' )
+
+      call KSPGetPC( ksp, precond, ierr )
+      if (ierr.ne.0) call die( 'KSPGetPC error' )
+
+      call KSPSetType( ksp, KSPPREONLY, ierr )
+      if (ierr.ne.0) call die( 'KSPSetType error' )
+
+      call PCSetType( precond, PCLU, ierr ) 
+      if (ierr.ne.0) call die( 'PCSetType error' )
+
+      call PCFactorSetMatSolverPackage( precond, MAT_SOLVER_MUMPS,
+     &                                  ierr )
+      if (ierr.ne.0) call die( 'PCFactorSetMatSolverPackage error' )
 
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 C     Set the parameters and stoping criterium
@@ -188,35 +233,12 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       call EPSSetFromOptions( SOLVER, ierr )
       if (ierr.ne.0) call die( 'EPSSetFromOptions error' )
 
+!      call EPSGetDimensions( SOLVER, nev, ncv, mpd, ierr )
+!      call EPSGetProblemType( SOLVER, mytype, ierr )
+!      call EPSGetTolerances( SOLVER, tol, maxit, ierr )
+!      call EPSGetType( SOLVER, epsty, ierr )
 
-
-
-
-
-
-      call EPSGetDimensions( SOLVER, nev, ncv, mpd, ierr )
-      write(23,*) 'nev:', nev
-      write(23,*) 'ncv:', ncv
-      write(23,*) 'mpd:', mpd
-      flush(23)
-      call EPSGetProblemType( SOLVER, mytype, ierr )
-      write(23,*) 'mytype:', mytype
-      flush(23)
-      call EPSGetTolerances( SOLVER, tol, maxit, ierr )
-      write(23,*) 'tol:', tol
-      write(23,*) 'maxit:', maxit
-      flush(23)
-      call EPSGetType( SOLVER, myepstype, ierr )
-      write(23,*) 'myepstype:', myepstype
-      flush(23)
-
-
-
-
-
-
-
-      call medirTiempo( 1, 6 )
+      call medirTiempo( 1, 8 )
       call timer( 'EPSSolve', 1 )
       write(23,*) 'PRE EPSSolve'
       flush(23)
@@ -225,7 +247,25 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       flush(23)
       call timer( 'EPSSolve', 2 )
       if (ierr.ne.0) call die( 'EPSSolve error' )
-      call medirTiempo( 2, 6 )
+      call medirTiempo( 2, 8 )
+      call showTiempo( 23, 8,  'Tiempo EPSSolve:' )
+
+      call EPSGetConvergedReason( SOLVER, reason, ierr )
+
+      select case( reason )
+      case(EPS_CONVERGED_TOL)
+        write(23,*) 'EPS_CONVERGED_TOL'
+      case(EPS_CONVERGED_ITERATING)
+        write(23,*) 'EPS_CONVERGED_ITERATING'
+      case(EPS_DIVERGED_ITS)
+        write(23,*) 'EPS_DIVERGED_ITS'
+      case(EPS_DIVERGED_BREAKDOWN)
+        write(23,*) 'EPS_DIVERGED_BREAKDOWN'
+      case(EPS_DIVERGED_NONSYMMETRIC)
+        write(23,*) 'EPS_DIVERGED_NONSYMMETRIC'
+      end select
+      flush(23)
+
 
 
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -234,7 +274,7 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       call EPSGetConverged( SOLVER, nconv, ierr )
       write(23,*) 'nconv', nconv, ' of', neig, '  ierr', ierr
       flush(23)
-      if (ierr.ne.0 .or. nconv.lt.neig)
+      if (ierr.ne.0 .or. nconv.lt.nev)
      &  call die( 'EPSGetConverged error' )
 
 
@@ -245,7 +285,7 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
       write(23,*) '=== AUTOVALORES de salida ==='
       flush(23)
-      do i= 0, neig-1
+      do i= 0, nev-1
         call VecPlaceArray( x, array, ierr )
         if (ierr.ne.0) call die( 'VecPlaceArray error' )
 
@@ -259,36 +299,32 @@ C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         enddo
 
         call VecResetArray( x, ierr )
+      enddo
+      do i= 1, min(nev-5,5)
         write(23,*) 'EV(', i+1, '):', W(i+1)   ! , Z(:,i+1)
         flush(23)
       enddo
-
-      write(23,*) ' '
-      write(23,*) '========    TIMES    ========'
-      flush(23)
-      call showTiempo( 23, 1,  'SetupHam         :' )
-      call showTiempo( 23, 2,  '  Rhoofd         :' )
-      call showTiempo( 23, 3,  '  Poison         :' )
-      call showTiempo( 23, 4,  '  Cellxc         :' )
-      call showTiempo( 23, 5,  '  Vmat           :' )
-      call showTiempo( 23, 6,  'slepc_diagon     :' )
-      flush(23)
-
+      do i= max(nev-5,1), nev
+        write(23,*) 'EV(', i+1, '):', W(i+1)   ! , Z(:,i+1)
+        flush(23)
+      enddo
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 !     Free work space
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
       deallocate( array )
       call EPSDestroy( SOLVER, ierr )
+      write(23,*) ' call EPSDestroy '
+      flush(23)
 
 C Check if we are donecol
       if (.not.getD) return
 
 C Find new Fermi energy and occupation weights
       if (fixspin) then
-        call fermispin( nspin, nspin, nk, wk, neig, neig, 
+        call fermispin( nspin, nspin, nk, wk, nev, nev, 
      &                  w, temp, qs, qo, efs, Entropy )
       else
-        call fermid( nspin, nspin, nk, wk, neig, neig, 
+        call fermid( nspin, nspin, nk, wk, nev, nev, 
      &               w, temp, qtot, qo, ef, Entropy )
       endif
 
@@ -297,7 +333,7 @@ C     Count the number of usefull eigenvalues/vectors
       notfound = .true.
       do while(notfound)
         if (qo(uneig).gt.occtol) then
-          if (uneig+1.gt.neig) then
+          if (uneig+1.gt.nev) then
             notfound = .false.
           else
             uneig = uneig + 1
@@ -400,7 +436,6 @@ C     Local parameters
       allocate(ourlens(0:nr-1))
       allocate(offlens(0:nr-1))
       k     = 0
-      maxnz = 0
       do i= 0, nr-1
         maxnz = max(maxnz,numh(i))
         offlens(i) = 0
@@ -414,20 +449,22 @@ C     Local parameters
           endif
         enddo
       enddo
-      write(23,*) '     ourlens:',  ourlens
-      write(23,*) '     offlens:',  offlens
-      flush(23)
 
       call MatMPIAIJSetPreallocation( A, 0, ourlens, 0, offlens, ierr )
 
       deallocate(offlens)
       deallocate(ourlens)
 
+      maxnz = 0
+      do i= 0, nr-1
+        maxnz = max(maxnz,numh(i))
+      enddo
+
       allocate( val(maxnz) )
       k = 0
       row = Istart
+      call medirTiempo( 1, 10 )
       do i= 0, nr-1
-        call medirTiempo( 1, 10 )
         do j= 1, numh(i)
           val(j) = H(j+k)
         enddo
@@ -435,12 +472,8 @@ C     Local parameters
      &                     INSERT_VALUES, ierr )
         k = k + numh(i)
         row = row + 1
-        call medirTiempo( 2, 10 )
-        if (mod(i,10).eq.9) then
-          call showTiempo( 23, 10,  'Insert row :' )
-          flush(23)
-        endif
       enddo
+      call medirTiempo( 2, 10 )
       deallocate( val )
 
       call medirTiempo( 1, 11 )
@@ -454,11 +487,8 @@ C     Local parameters
       call showTiempo( 23, 11, '  Assembly matrix :' )
       call timer( 'crea_matri', 2 )
 
-      call MatView( A, PETSC_VIEWER_STDOUT_SELF )
-
       end subroutine create_slepc_matrix
 
 #endif    /* _SLEPC_ */
-#endif  /* GLOBAL SLEPC wrapped (AG) */
 
       end module slepc_diagon      

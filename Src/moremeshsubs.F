@@ -20,6 +20,8 @@ C initMeshDistr     = Precompute a new data distribution for the grid mesh
 C                     to be used in Hamiltonian construction.
 C setMeshDistr      = Select a mesh distribution and set the grid sizes.
 C distMeshData      = Move data from one data distribution to another.
+C allocASynBuffer   = Allocate buffer for asynchronous
+C                     communications if necessary
 C 
       MODULE moreMeshSubs
       use precision, only : grid_p, dp
@@ -34,7 +36,7 @@ C
 #ifdef MPI
       PUBLIC :: initMeshExtencil, distExtMeshData, gathExtMeshData
 #endif
-
+      PUBLIC :: allocASynBuffer
 !     Symbolic names for parallel mesh distributions
 
       integer, parameter, public :: UNIFORM = 1
@@ -88,13 +90,22 @@ C                          the several data distributions
 C meshCommType exteCommu : Contains all the needed communications to
 C                          compute the extencil
 C ----------------------------------------------------------------------
-      character(len=*),      parameter :: moduName = 'moreMeshSubs '
+      character(len=*),      parameter :: moduName = 'moreMeshSubs'
       integer,               parameter :: maxDistr = 5
       integer,               parameter :: gp = grid_p
       type(meshDisType),  target, save :: meshDistr(maxDistr)
       type(meshCommType), target, save ::
      &                   meshCommu((maxDistr*(maxDistr-1))/2)
       type(meshCommType), target, save :: exteCommu(maxDistr,3)
+#ifndef SYNCHRONOUS
+# ifdef MPI
+#   define ASYNCHRONOUS
+# endif
+#endif
+#ifdef ASYNCHRONOUS
+      real(grid_p),            pointer :: tBuff1(:)
+      real(grid_p),            pointer :: tBuff2(:)
+#endif
 
       CONTAINS
 
@@ -140,12 +151,12 @@ C     Local variables
       character(len=*), parameter :: errMsg = myName//'ERROR: '
       integer                     :: ii, jj, PY, PZ, PP, ProcessorZ,
      &                               blocY, blocZ, nremY, nremZ,
-     &                               iniY, iniZ, dimY, dimZ
+     &                               iniY, iniZ, dimY, dimZ, nsize
       type(meshDisType),  pointer :: distr
       logical,               save :: firstime=.true.
-      integer, pointer :: box(:,:,:)
+      integer, pointer            :: box(:,:,:), mybox(:,:)
 !------------------------------------------------------------------------- BEGIN
-      call timer( 'INIME', 1 )
+      call timer( 'INITMESH', 1 )
 
 C     Check the number of mesh distribution
       if (oDistr.gt.maxDistr)
@@ -170,16 +181,18 @@ C     Reset data if necessay
             nullify(exteCommu(ii,jj)%dst)
           enddo
         enddo
+#ifdef ASYNCHRONOUS
+        nullify(tBuff1)
+        nullify(tBuff2)
+#endif
         firstime = .false.
       endif
-!      call resetMeshDistr( oDistr )
 
       distr => meshDistr(oDistr)
-
 C     Allocate memory for the current distribution
       nullify( distr%box )
       call re_alloc( distr%box, 1, 2, 1, 3, 1, Nodes,
-     &               'distr%box', 'moreMeshSubs' )
+     &               'distr%box', moduName )
 
 C     The first distribution should be the uniform distribution
       if (oDistr.eq.1) then
@@ -223,6 +236,8 @@ C       the vector "wload" among the several processes
         call splitwload( Nodes, node+1, nm, wload,
      &                   meshDistr(iDistr), meshDistr(oDistr) )
 
+        call reordMeshNumbering( meshDistr(1), distr )
+
 C       Precompute the communications needed to move data between the new data
 C       distribution and the previous ones.
         jj = ((oDistr-2)*(oDistr-1))/2 + 1
@@ -233,35 +248,112 @@ C       distribution and the previous ones.
 #endif
       endif
 
-      call timer( 'INIME', 2 )
+      call timer( 'INITMESH', 2 )
 !--------------------------------------------------------------------------- END
       end subroutine initMeshDistr
+
+C ==================================================================
+C Allocate memory buffers for asynchronous communications.
+C It does nothing for synchronous communications.
+C ==================================================================
+C SUBROUTINE allocASynBuffer( ndistr )
+C
+C INPUT:
+C integer ndistr  : Total number of distributions
+C
+C OUTPUT:
+C The output values are stored in the current module:
+C  real(grid_p) tBuff1(:) :  Buffer for distribution 1
+C  real(grid_p) tBuff2(:) :  Buffer for other distributions
+C
+C BEHAVIOR:
+C 
+C
+C ==================================================================
+      subroutine allocASynBuffer( ndistr )
+      use mesh,    only : nsm
+      implicit none
+C     Input variables
+      integer                     :: ndistr
+C     Local variables
+      integer          :: ii, jj, imax1, imax2, lsize, nsp, Lbox(2,3)
+      integer, pointer :: box1(:,:), box2(:,:), nsize(:)
+      logical          :: inters
+!------------------------------------------------------------------------- BEGIN
+#ifdef ASYNCHRONOUS
+C     Allocate local memory
+      nsp  = nsm*nsm*nsm
+      call re_alloc( nsize, 1, ndistr, 'nsize', moduName )
+
+C     Check the size of the local box for every data distribution
+      do ii= 1, ndistr
+        box1 => meshDistr(ii)%box(:,:,node+1)
+        nsize(ii) = (box1(2,1)-box1(1,1)+1)*
+     &              (box1(2,2)-box1(1,2)+1)*
+     &              (box1(2,3)-box1(1,3)+1)*nsp
+      enddo
+
+C     Check the size of the intersections between the first data distributions
+C     and the others data distributions.
+C     Buffers don't need to store intersections
+      imax1 = 0
+      imax2 = 0
+      box1 => meshDistr(1)%box(:,:,node+1)
+      do ii= 2, ndistr
+        box2 => meshDistr(ii)%box(:,:,node+1)
+        call boxIntersection( box1, box2, Lbox, inters )
+        if (inters) then
+          lsize = (Lbox(2,1)-Lbox(1,1)+1)*
+     &            (Lbox(2,2)-Lbox(1,2)+1)*
+     &            (Lbox(2,3)-Lbox(1,3)+1)*nsp
+        else
+          lsize = 0
+        endif
+        imax1 = max(imax1,nsize(1)-lsize)
+        imax2 = max(imax2,nsize(ii)-lsize)
+      enddo
+
+C     Deallocate local memory
+      call de_alloc( nsize, 'nsize', moduName )
+
+C     Allocate memory for asynchronous communications
+      call re_alloc( tBuff1, 1, imax1, 'tBuff1', moduName )
+      call re_alloc( tBuff2, 1, imax2, 'tBuff2', moduName )
+#endif
+!--------------------------------------------------------------------------- END
+      end subroutine allocASynBuffer
+
 
       subroutine allocExtMeshDistr( iDistr, nep, mop )
       use mesh, only: indexp, idop, xdop
       implicit none
-      integer,  intent(in) :: iDistr, nep, mop
+C     Input variables
+      integer,         intent(in) :: iDistr, nep, mop
+C     Local variables
+      type(meshDisType),  pointer :: distr
 
-      call re_alloc( meshDistr(iDistr)%indexp, 1, nep,
-     &               'distr%indexp', 'moreMeshSubs' )
-      call re_alloc( meshDistr(iDistr)%idop, 1, mop,
-     &               'distr%idop', 'moreMeshSubs' )
-      call re_alloc( meshDistr(iDistr)%xdop, 1, 3, 1, mop,
-     &               'distr%xdop', 'moreMeshSubs' )
+      distr => meshDistr(iDistr)
+      call re_alloc( distr%indexp, 1, nep, 'distr%indexp', moduName )
+      call re_alloc( distr%idop, 1, mop, 'distr%idop', moduName )
+      call re_alloc( distr%xdop, 1, 3, 1, mop, 'distr%xdop', moduName )
 
-      indexp => meshDistr(iDistr)%indexp
-      idop   => meshDistr(iDistr)%idop
-      xdop   => meshDistr(iDistr)%xdop
+      indexp => distr%indexp
+      idop   => distr%idop
+      xdop   => distr%xdop
       end subroutine allocExtMeshDistr
 
       subroutine allocIpaDistr( iDistr, na )
       use mesh, only: ipa
       implicit none
-      integer,  intent(in) :: iDistr, na
-
-      call re_alloc( meshDistr(iDistr)%ipa, 1, na,
-     &               'distr%ipa', 'moreMeshSubs' )
+C     Input variables
+      integer,         intent(in) :: iDistr, na
+C     Local variables
+      type(meshDisType),  pointer :: distr
+!------------------------------------------------------------------------- BEGIN
+      distr => meshDistr(iDistr)
+      call re_alloc( distr%ipa, 1, na, 'distr%ipa', moduName )
       ipa => meshDistr(iDistr)%ipa
+!--------------------------------------------------------------------------- END
       end subroutine allocIpaDistr
 
       subroutine setMeshDistr( iDistr, nsm, nsp, nml, nmpl, ntml, ntpl )
@@ -292,9 +384,12 @@ C ==================================================================
 C     Passed arguments
       integer,  intent(in) :: iDistr, nsm, nsp
       integer, intent(out) :: nml(3), nmpl, ntml(3), ntpl
-
+C     Local variables
+      type(meshDisType),  pointer :: distr
 !------------------------------------------------------------------------- BEGIN
-      meshLim = meshDistr(iDistr)%box(1:2,1:3,node+1)
+      distr => meshDistr(iDistr)
+
+      meshLim = distr%box(1:2,1:3,node+1)
       nml(1) = (MeshLim(2,1)-MeshLim(1,1)) + 1
       nml(2) = (MeshLim(2,2)-MeshLim(1,2)) + 1
       nml(3) = (MeshLim(2,3)-MeshLim(1,3)) + 1
@@ -302,11 +397,10 @@ C     Passed arguments
       ntml   = nml*nsm
       ntpl   = nmpl*nsp
 
-      indexp => meshDistr(iDistr)%indexp
-      idop   => meshDistr(iDistr)%idop
-      xdop   => meshDistr(iDistr)%xdop
-      ipa    => meshDistr(iDistr)%ipa
-
+      indexp => distr%indexp
+      idop   => distr%idop
+      xdop   => distr%xdop
+      ipa    => distr%ipa
 !--------------------------------------------------------------------------- END
       end subroutine setMeshDistr
 
@@ -392,6 +486,15 @@ C     Local variables
           mcomm%ncom = 0
         enddo
       enddo
+
+#ifdef ASYNCHRONOUS
+      if (associated(tBuff1)) then
+        call de_alloc(tBuff1, 'tBuff1', 'moreMeshSubs' )
+      endif
+      if (associated(tBuff2)) then
+        call de_alloc(tBuff2, 'tBuff2', 'moreMeshSubs' )
+      endif
+#endif
 !--------------------------------------------------------------------------- END
       end subroutine resetMeshDistr
 
@@ -431,6 +534,471 @@ C
 C For the sequencial code we call subroutine reord
 C
 C ==================================================================
+#ifdef ASYNCHRONOUS
+      subroutine distMeshData_rea( iDistr, fsrc, oDistr, fdst, itr )
+      use mesh,    only : nsm, nmeshg
+#ifdef MPI
+      use mpi_siesta
+#endif
+      implicit none
+C     Passed arguments
+      integer,         intent(in) :: iDistr, oDistr, itr
+      real(grid_p),    intent(in) :: fsrc(*)
+      real(grid_p),   intent(out) :: fdst(*)
+C     Local variables
+      integer                     :: i, I1, I2, I3, N1, N2, N3, NN, ind,
+     &                               J1, J2, J3, K1, K2, K3, KS, KR,
+     &                               icom, ncom, nsp, me, nsize, lsize,
+     &                               NSRC(3), NDST(3), Lbox(2,3), ierr,
+     &                               nm(3), status(MPI_Status_Size),
+     &                               Xsize, Ysize, Zsize
+      logical                     :: inters
+      integer,            pointer :: request(:), src(:), dst(:),
+     &                               Sbox(:,:), Dbox(:,:), JS(:)
+      real(grid_p),       pointer :: sBuff(:), rBuff(:)
+      type(meshDisType),  pointer :: idis, odis
+
+#ifdef DEBUG
+      call write_debug( '    PRE distMeshData' )
+#endif
+#ifdef _TRACE_
+      call MPI_Barrier( MPI_Comm_World, ierr )
+      call MPItrace_event( 1000, 6 )
+#endif
+      call timer( 'COMM_BSC', 1 )
+
+      nm(1:3) = nmeshg(1:3) / nsm
+      if (nodes == 1) then
+
+        if (itr.gt.0) then
+          ! Note that in reord the first argument is always
+          ! clustered
+          call reord( fsrc, fdst, nm, nsm, TO_SEQUENTIAL )
+        else if (itr .lt. 0) then
+          call reord( fdst, fsrc, nm, nsm, TO_CLUSTER )
+        else
+          ! Copy source to destination 
+          ! This will be executed only in serial mode,
+          ! so we know that the size is the total number
+          ! of (small) points, but maybe this information
+          ! should be more explicit.
+          nsize = product(nmeshg(1:3))
+          fdst(1:nsize) = fsrc(1:nsize)
+        endif
+      else  ! nodes > 1
+C       The communications are stored in a triangular structure.
+        if (iDistr.gt.oDistr) then
+          ind  = ((iDistr-1)*(iDistr-2))/2 + oDistr
+          ncom = meshCommu(ind)%ncom
+          src => meshCommu(ind)%dst
+          dst => meshCommu(ind)%src
+        else
+          ind = ((oDistr-1)*(oDistr-2))/2 + iDistr
+          ncom = meshCommu(ind)%ncom
+          src => meshCommu(ind)%src
+          dst => meshCommu(ind)%dst
+        endif
+
+        nullify( request )
+        call re_alloc( request, 1, ncom, 'request', 'distmeshdata' )
+
+        idis => meshDistr(iDistr)
+        odis => meshDistr(oDistr)
+
+        nsp = nsm*nsm*nsm
+        me  = node + 1
+        nullify( JS )
+        call re_alloc( JS, 1, nsp, 'JS', 'distmeshdata' )
+
+        if (iDistr.eq.UNIFORM) then
+          sBuff => tBuff1(:)
+          rBuff => tBuff2(:)
+        else
+          if (oDistr.eq.UNIFORM) then
+            sBuff => tBuff2(:)
+            rBuff => tBuff1(:)
+          else
+!           Asynchronous buffers are sized to move data from/to
+!           UNIFORM distribution. Check subroutine allocASynBuffer
+!           to contemplate different cases
+            call die( 'Asynchronous temporal buffer error' )
+          endif
+        endif
+
+        Sbox => idis%box(:,:,ME)
+        NSRC(1) = (Sbox(2,1) - Sbox(1,1) + 1)*nsm
+        NSRC(2) = (Sbox(2,2) - Sbox(1,2) + 1)*nsm
+        NSRC(3) = (Sbox(2,3) - Sbox(1,3) + 1)*nsm
+
+        Dbox => odis%box(:,:,ME)
+        NDST(1) = (Dbox(2,1) - Dbox(1,1) + 1)*nsm
+        NDST(2) = (Dbox(2,2) - Dbox(1,2) + 1)*nsm
+        NDST(3) = (Dbox(2,3) - Dbox(1,3) + 1)*nsm
+
+        if (itr.eq.1) then
+C         From clustered to sequential
+          NN = 1
+          I3 = 0
+          DO N3=0, NSM-1
+            I2 = 0
+            DO N2= 0, NSM-1
+              I1 = I2 + I3
+              DO N1= 0, NSM-1
+                JS(NN) = I1
+                NN     = NN + 1
+                I1     = I1 + 1
+              ENDDO
+              I2 = I2 + NDST(1)
+            ENDDO
+            I3 = I3 + NDST(1)*NDST(2)
+          ENDDO
+
+          KS = 1
+          KR = 1
+          do icom= 1, ncom
+            Sbox => idis%box(:,:,src(icom))
+            Dbox => odis%box(:,:,dst(icom))
+            call boxIntersection( Sbox, Dbox, Lbox, inters )
+
+            if (src(icom).eq.ME) then
+              if (dst(icom).eq.ME) then
+C               SRC and DST are the current process
+                J3 = (Lbox(1,3) - Sbox(1,3))*NSRC(1)*NSRC(2)*NSM
+                K3 = (Lbox(1,3) - Dbox(1,3))*NDST(1)*NDST(2)*NSM
+                do I3 = Lbox(1,3), Lbox(2,3)
+                  J2 = (Lbox(1,2) - Sbox(1,2))*NSRC(1)*NSM*NSM
+                  K2 = (Lbox(1,2) - Dbox(1,2))*NDST(1)*NSM
+                  do I2 = Lbox(1,2), Lbox(2,2)
+                    J1 = (Lbox(1,1) - Sbox(1,1))*NSP + 1 + J2 + J3
+                    K1 = (Lbox(1,1) - Dbox(1,1))*NSM + 1 + K2 + K3
+                    do I1 = Lbox(1,1), Lbox(2,1)
+                      DO NN= 1, NSP
+                        fdst(K1+JS(NN)) = fsrc(J1)
+                        J1 = J1 + 1
+                      ENDDO
+                      K1 = K1 + NSM
+                    enddo
+                    J2 = J2 + NSRC(1)*NSM*NSM
+                    K2 = K2 + NDST(1)*NSM
+                  enddo
+                  J3 = J3 + NSRC(1)*NSRC(2)*NSM
+                  K3 = K3 + NDST(1)*NDST(2)*NSM
+                enddo
+              else
+C               We should send data to process dst(icom)-1
+                lsize = (Lbox(2,1) - Lbox(1,1) + 1)*
+     &                  (Lbox(2,2) - Lbox(1,2) + 1)*
+     &                  (Lbox(2,3) - Lbox(1,3) + 1)*nsp
+
+                J3 = (Lbox(1,3) - Sbox(1,3))*NSRC(1)*NSRC(2)*NSM
+                K1 = KS
+                do I3 = Lbox(1,3), Lbox(2,3)
+                  J2 = (Lbox(1,2) - Sbox(1,2))*NSRC(1)*NSM*NSM
+                  do I2 = Lbox(1,2), Lbox(2,2)
+                    J1 = (Lbox(1,1) - Sbox(1,1))*NSP + 1 + J2 + J3
+                    do I1 = Lbox(1,1), Lbox(2,1)
+                      DO NN= 1, NSP
+                        sBuff(K1) = fsrc(J1)
+                        J1 = J1 + 1
+                        K1 = K1 + 1
+                      ENDDO
+                    enddo
+                    J2 = J2 + NSRC(1)*NSM*NSM
+                  enddo
+                  J3 = J3 + NSRC(1)*NSRC(2)*NSM
+                enddo
+#ifdef MPI
+                call mpi_isend( sBuff(KS), lsize, MPI_grid_real,
+     &                          dst(icom)-1, 0, MPI_COMM_WORLD,
+     &                          request(icom), ierr )
+#endif
+                KS = K1
+              endif
+            else
+C             We should receive data from process src(icom)-1
+              lsize = (Lbox(2,1) - Lbox(1,1) + 1)*
+     &                (Lbox(2,2) - Lbox(1,2) + 1)*
+     &                (Lbox(2,3) - Lbox(1,3) + 1)*nsp
+#ifdef MPI
+              call mpi_irecv( rBuff(KR), lsize, MPI_grid_real,
+     &                        src(icom)-1, 0, MPI_COMM_WORLD,
+     &                        request(icom), ierr )
+#endif
+              KR = KR + lsize
+            endif
+          enddo
+
+          J1 = 1
+          do icom= 1, ncom
+C           Wait for received data and move it to the destination buffer
+            if (src(icom).ne.ME) then
+              Sbox => idis%box(:,:,src(icom))
+              Dbox => odis%box(:,:,dst(icom))
+              call boxIntersection( Sbox, Dbox, Lbox, inters )
+#ifdef MPI
+              CALL MPI_WAIT( request(icom), status, ierr )
+#endif
+              K3 = (Lbox(1,3) - Dbox(1,3))*NDST(1)*NDST(2)*NSM
+              do I3 = Lbox(1,3), Lbox(2,3)
+                K2 = (Lbox(1,2) - Dbox(1,2))*NDST(1)*NSM
+                do I2 = Lbox(1,2), Lbox(2,2)
+                  K1 = (Lbox(1,1) - Dbox(1,1))*NSM + 1 + K2 + K3
+                  do I1 = Lbox(1,1), Lbox(2,1)
+                    DO NN= 1, NSP
+                      fdst(K1+JS(NN)) = rBuff(J1)
+                      J1 = J1 + 1
+                    ENDDO
+                    K1 = K1 + NSM
+                  enddo
+                  K2 = K2 + NDST(1)*NSM
+                enddo
+                K3 = K3 + NDST(1)*NDST(2)*NSM
+              enddo
+            endif
+          enddo
+        else if (itr.eq.-1) then
+C         From sequencial to clustered
+          NN = 1
+          I3 = 0
+          DO N3=0, NSM-1
+            I2 = 0
+            DO N2= 0, NSM-1
+              I1 = I2 + I3
+              DO N1= 0, NSM-1
+                JS(NN) = I1
+                NN     = NN + 1
+                I1     = I1 + 1
+              ENDDO
+              I2 = I2 + NSRC(1)
+            ENDDO
+            I3 = I3 + NSRC(1)*NSRC(2)
+          ENDDO
+
+          KS = 1
+          KR = 1
+          do icom= 1, ncom
+            Sbox => idis%box(:,:,src(icom))
+            Dbox => odis%box(:,:,dst(icom))
+            call boxIntersection( Sbox, Dbox, Lbox, inters )
+
+            if (src(icom).eq.ME) then
+              if (dst(icom).eq.ME) then
+C               SRC and DST are the current process
+                J3 = (Lbox(1,3) - Sbox(1,3))*NSRC(1)*NSRC(2)*NSM
+                K3 = (Lbox(1,3) - Dbox(1,3))*NDST(1)*NDST(2)*NSM
+                do I3 = Lbox(1,3), Lbox(2,3)
+                  J2 = (Lbox(1,2) - Sbox(1,2))*NSRC(1)*NSM
+                  K2 = (Lbox(1,2) - Dbox(1,2))*NDST(1)*NSM*NSM
+                  do I2 = Lbox(1,2), Lbox(2,2)
+                    J1 = (Lbox(1,1) - Sbox(1,1))*NSM + 1 + J2 + J3
+                    K1 = (Lbox(1,1) - Dbox(1,1))*NSP + 1 + K2 + K3
+                    do I1 = Lbox(1,1), Lbox(2,1)
+                      DO NN= 1, NSP
+                        fdst(K1) = fsrc(J1+JS(NN))
+                        K1 = K1 + 1
+                      ENDDO
+                      J1 = J1 + NSM
+                    enddo
+                    J2 = J2 + NSRC(1)*NSM
+                    K2 = K2 + NDST(1)*NSM*NSM
+                  enddo
+                  J3 = J3 + NSRC(1)*NSRC(2)*NSM
+                  K3 = K3 + NDST(1)*NDST(2)*NSM
+                enddo
+              else
+C               We should send data to process dst(icom)-1
+                lsize = (Lbox(2,1) - Lbox(1,1) + 1)*
+     &                  (Lbox(2,2) - Lbox(1,2) + 1)*
+     &                  (Lbox(2,3) - Lbox(1,3) + 1)*nsp
+
+                J3 = (Lbox(1,3) - Sbox(1,3))*NSRC(1)*NSRC(2)*NSM
+                K1 = KS
+                do I3 = Lbox(1,3), Lbox(2,3)
+                  J2 = (Lbox(1,2) - Sbox(1,2))*NSRC(1)*NSM
+                  do I2 = Lbox(1,2), Lbox(2,2)
+                    J1 = (Lbox(1,1) - Sbox(1,1))*NSM + 1 + J2 + J3
+                    do I1 = Lbox(1,1), Lbox(2,1)
+                      DO NN= 1, NSP
+                        sBuff(K1) = fsrc(J1+JS(NN))
+                        K1 = K1 + 1
+                      ENDDO
+                      J1 = J1 + NSM
+                    enddo
+                    J2 = J2 + NSRC(1)*NSM
+                  enddo
+                  J3 = J3 + NSRC(1)*NSRC(2)*NSM
+                enddo
+#ifdef MPI
+                call mpi_isend( sBuff(KS), lsize, MPI_grid_real,
+     &                          dst(icom)-1, 0, MPI_COMM_WORLD,
+     &                          request(icom), ierr )
+#endif
+                KS = K1
+              endif
+            else
+C             We should receive data from process src(icom)-1
+              lsize = (Lbox(2,1) - Lbox(1,1) + 1)*
+     &                (Lbox(2,2) - Lbox(1,2) + 1)*
+     &                (Lbox(2,3) - Lbox(1,3) + 1)*nsp
+#ifdef MPI
+              call mpi_irecv( rBuff(KR), lsize, MPI_grid_real,
+     &                        src(icom)-1, 0, MPI_COMM_WORLD,
+     &                        request(icom), ierr )
+#endif
+              KR = KR + lsize
+            endif
+          enddo
+
+          J1 = 1
+          do icom= 1, ncom
+C           Wait for received data and move it to the destination buffer
+            if (src(icom).ne.ME) then
+              Sbox => idis%box(:,:,src(icom))
+              Dbox => odis%box(:,:,dst(icom))
+              call boxIntersection( Sbox, Dbox, Lbox, inters )
+#ifdef MPI
+              CALL MPI_WAIT( request(icom), status, ierr )
+#endif
+              K3 = (Lbox(1,3) - Dbox(1,3))*NDST(1)*NDST(2)*NSM
+              do I3 = Lbox(1,3), Lbox(2,3)
+                K2 = (Lbox(1,2) - Dbox(1,2))*NDST(1)*NSM*NSM
+                do I2 = Lbox(1,2), Lbox(2,2)
+                  K1 = (Lbox(1,1) - Dbox(1,1))*NSP + 1 + K2 + K3
+                  do I1 = Lbox(1,1), Lbox(2,1)
+                    DO NN= 1, NSP
+                      fdst(K1) = rBuff(J1)
+                      K1 = K1 + 1
+                      J1 = J1 + 1
+                    ENDDO
+                  enddo
+                  K2 = K2 + NDST(1)*NSM*NSM
+                enddo
+                K3 = K3 + NDST(1)*NDST(2)*NSM
+              enddo
+            endif
+          enddo
+        else if (itr.eq.0) then
+          KS = 1
+          KR = 1
+C         From sequencial to sequencial or from clustered to clustered
+          do icom= 1, ncom
+            Sbox => idis%box(:,:,src(icom))
+            Dbox => odis%box(:,:,dst(icom))
+            call boxIntersection( Sbox, Dbox, Lbox, inters )
+            Xsize = (Lbox(2,1)-Lbox(1,1)+1)*NSM
+            Ysize = (Lbox(2,2)-Lbox(1,2)+1)*NSM
+            Zsize = (Lbox(2,3)-Lbox(1,3)+1)*NSM
+
+            if (src(icom).eq.ME) then
+              if (dst(icom).eq.ME) then
+C               SRC and DST are the current process
+                J3 = (Lbox(1,3) - Sbox(1,3))*NSRC(1)*NSRC(2)*NSM
+                K3 = (Lbox(1,3) - Dbox(1,3))*NDST(1)*NDST(2)*NSM
+                do I3 = 1, Zsize
+                  J2 = (Lbox(1,2) - Sbox(1,2))*NSRC(1)*NSM
+                  K2 = (Lbox(1,2) - Dbox(1,2))*NDST(1)*NSM
+                  do I2 = 1, Ysize
+                    J1 = (Lbox(1,1) - Sbox(1,1))*NSM + 1 + J2 + J3
+                    K1 = (Lbox(1,1) - Dbox(1,1))*NSM + 1 + K2 + K3
+                    do I1 = 1, Xsize
+                      fdst(K1) = fsrc(J1)
+                      K1 = K1 + 1
+                      J1 = J1 + 1
+                    enddo
+                    J2 = J2 + NSRC(1)
+                    K2 = K2 + NDST(1)
+                  enddo
+                  J3 = J3 + NSRC(1)*NSRC(2)
+                  K3 = K3 + NDST(1)*NDST(2)
+                enddo
+              else
+C               We should send data to process dst(icom)-1
+                lsize = Xsize*Ysize*Zsize
+
+                J3 = (Lbox(1,3) - Sbox(1,3))*NSRC(1)*NSRC(2)*NSM
+                K1 = KS
+                do I3 = 1, Zsize
+                  J2 = (Lbox(1,2) - Sbox(1,2))*NSRC(1)*NSM
+                  do I2 = 1, Ysize
+                    J1 = (Lbox(1,1) - Sbox(1,1))*NSM + 1 + J2 + J3
+                    do I1 = 1, Xsize
+                      sBuff(K1) = fsrc(J1)
+                      K1 = K1 + 1
+                      J1 = J1 + 1
+                    enddo
+                    J2 = J2 + NSRC(1)
+                  enddo
+                  J3 = J3 + NSRC(1)*NSRC(2)
+                enddo
+#ifdef MPI
+                call mpi_isend( sBuff(KS), lsize, MPI_grid_real,
+     &                          dst(icom)-1, 0, MPI_COMM_WORLD,
+     &                          request(icom), ierr )
+#endif
+                KS = K1
+              endif
+            else
+C             We should receive data from process src(icom)-1
+              lsize = Xsize*Ysize*Zsize
+#ifdef MPI
+              call mpi_irecv( rBuff(KR), lsize, MPI_grid_real,
+     &                        src(icom)-1, 0, MPI_COMM_WORLD,
+     &                        request(icom), ierr )
+#endif
+              KR = KR + lsize
+            endif
+          enddo
+
+          J1 = 1
+          do icom= 1, ncom
+C           Wait for received data and move it to the destination buffer
+            if (src(icom).ne.ME) then
+              Sbox => idis%box(:,:,src(icom))
+              Dbox => odis%box(:,:,dst(icom))
+              call boxIntersection( Sbox, Dbox, Lbox, inters )
+              Xsize = (Lbox(2,1)-Lbox(1,1)+1)*NSM
+              Ysize = (Lbox(2,2)-Lbox(1,2)+1)*NSM
+              Zsize = (Lbox(2,3)-Lbox(1,3)+1)*NSM
+#ifdef MPI
+              CALL MPI_WAIT( request(icom), status, ierr )
+#endif
+              K3 = (Lbox(1,3) - Dbox(1,3))*NDST(1)*NDST(2)*NSM
+              do I3 = 1, Zsize
+                K2 = (Lbox(1,2) - Dbox(1,2))*NDST(1)*NSM
+                do I2 = 1, Ysize
+                  K1 = (Lbox(1,1) - Dbox(1,1))*NSM + 1 + K2 + K3
+                  do I1 = 1, Xsize
+                    fdst(K1) = rBuff(J1)
+                    K1 = K1 + 1
+                    J1 = J1 + 1
+                  enddo
+                  K2 = K2 + NDST(1)
+                enddo
+                K3 = K3 + NDST(1)*NDST(2)
+              enddo
+            endif
+          enddo
+        else
+          if (Node.eq.0) then
+            write(*,*)'ERROR: Wrong parameter for function distMeshData'
+          endif
+          call die()
+        endif
+
+        call de_alloc( JS,      'JS',      'distmeshdata' )
+        call de_alloc( request, 'request', 'distmeshdata' )
+      endif
+
+#ifdef _TRACE_
+      call MPI_Barrier( MPI_Comm_World, ierr )
+      call MPItrace_event( 1000, 0 )
+#endif
+      call timer( 'COMM_BSC', 2 )
+#ifdef DEBUG
+      call write_debug( '    POS distMeshData' )
+#endif
+      end subroutine distMeshData_rea
+#else /* SYNCHRONOUS communications */
       subroutine distMeshData_rea( iDistr, fsrc, oDistr, fdst, itr )
       use mesh,    only : nsm, nmeshg
 #ifdef MPI
@@ -460,9 +1028,17 @@ C     Local variables
       integer                     :: MPIerror, Status(MPI_Status_Size)
 #endif
 !----------------------------------------------------------------------- BEGIN
-      nm(1:3) = nmeshg(1:3) / nsm
-      if (nodes == 1) then
+#ifdef DEBUG
+      call write_debug( '    PRE distMeshData' )
+#endif
+#ifdef _TRACE_
+      call MPI_Barrier( MPI_Comm_World, MPIerror )
+      call MPItrace_event( 1000, 6 )
+#endif
+      call timer( 'COMM_BSC', 1 )
 
+      if (nodes == 1) then
+        nm(1:3) = nmeshg(1:3)/nsm
         if (itr.gt.0) then
            ! Note that in reord the first argument is always
            ! clustered
@@ -480,7 +1056,6 @@ C     Local variables
         endif
 
       else  ! nodes > 1
-
 C       The communications are stored in a triangular structure.
         if (iDistr.gt.oDistr) then
           ind  = ((iDistr-1)*(iDistr-2))/2 + oDistr
@@ -716,7 +1291,6 @@ C             We should receive data from process src(icom)-1
               Xsize = Lbox(2,1) - Lbox(1,1) + 1
               Ysize = Lbox(2,2) - Lbox(1,2) + 1
               Zsize = Lbox(2,3) - Lbox(1,3) + 1
-
 #ifdef MPI
               call mpi_recv( TBUF, Xsize*Ysize*Zsize*nsp,
      &                       MPI_grid_real, src(icom)-1, 1,
@@ -833,9 +1407,18 @@ C             We should receive data from process src(icom)-1
 
         call de_alloc( JS, 'JS', 'moreMeshSubs' )
       endif
+
+#ifdef _TRACE_
+      call MPI_Barrier( MPI_Comm_World, MPIerror )
+      call MPItrace_event( 1000, 0 )
+#endif
+      call timer( 'COMM_BSC', 2 )
+#ifdef DEBUG
+      call write_debug( '    POS distMeshData' )
+#endif
 !------------------------------------------------------------------------ END
       end subroutine distMeshData_rea
-
+#endif
 
       subroutine distMeshData_int( iDistr, fsrc, oDistr, fdst, itr )
 #ifdef MPI
@@ -2042,7 +2625,6 @@ C
 C ==================================================================
       subroutine splitwload( Nodes, Node, nm, wload, iDistr, oDistr )
       use mpi_siesta
-
       implicit none
 C     Passed arguments
       integer,      intent(in)      :: Nodes, Node, nm(3), wload(*)
@@ -2061,6 +2643,7 @@ C     Local variables
       integer                     :: MPIerror, Status(MPI_Status_Size)
 !------------------------------------------------------------------------- BEGIN
       call timer( 'SPLOAD', 1 )
+
 C     At the begining of the algorithm all the mesh is assigned to the
 C     first node:  oDistr%box(*,*,1) = nm
       oDistr%box(1,1,1) = 1
@@ -2183,7 +2766,6 @@ C           We should actualize the numbers of processes associated to PP and QQ
       call timer( 'SPLOAD', 2 )
 !--------------------------------------------------------------------------- END
       end subroutine splitwload
-
 
 C ==================================================================
 C Given a 3-D array, "wload", we will make a reduction of its values
@@ -2362,6 +2944,262 @@ C       current position
       endif
 !--------------------------------------------------------------------------- END
       end subroutine vecBisec
+
+#ifdef REORD1
+C ==================================================================
+C SUBROUTINE reordMeshNumbering( distr1, distr2 )
+C Given a new distribution, distr2, reasign each box to the proper
+C process. We use the following criteria:
+C   - Minimize the number of communications. Data don't need to
+C     be communicated if it belongs to the same process in
+C     different data distributions
+C
+C INPUT:
+C integer distr1  : First distribution
+C integer distr2  : Second distribution
+C
+C OUTPUT:
+C The output values are stored in the current module:
+C        meshDistr(distr2)%box(:,:,:)
+C
+C BEHAVIOR:
+C 
+C
+C ==================================================================
+      subroutine reordMeshNumbering( distr1, distr2 )
+      implicit none
+C     Passed arguments
+      type(meshDisType),   intent(in) :: distr1
+      type(meshDisType),  intent(out) :: distr2
+C     Local variables
+      integer                         :: P1, P2, P3, Lbox(2,3), II, I1,
+     &                                   PermI
+      integer,                pointer :: Isiz(:,:), perm(:), weig(:),
+     &                                   invp(:), box(:,:,:)
+      logical                         :: inters
+
+C     Allocate local arrays
+      nullify( Isiz, perm, invp, weig )
+      call re_alloc( Isiz, 1, Nodes, 1, Nodes, 'Isiz', 'moreMeshSubs' )
+      call re_alloc( perm, 1, Nodes, 'perm', 'moreMeshSubs' )
+      call re_alloc( invp, 1, Nodes, 'invp', 'moreMeshSubs' )
+      call re_alloc( weig, 1, Nodes, 'weig', 'moreMeshSubs' )
+
+C     Check the intersections sizes between the two distributions
+      Isiz(1:nodes,1:nodes) = 0
+      do P1= 1, Nodes
+        II=-1
+        do P2= 1, Nodes
+          call boxIntersection( distr1%box(:,:,P1),
+     &                          distr2%box(:,:,P2), Lbox, inters )
+          if (inters) then
+            Isiz(P2,P1) = (Lbox(2,1)-Lbox(1,1)+1)*
+     &                    (Lbox(2,2)-Lbox(1,2)+1)*
+     &                    (Lbox(2,3)-Lbox(1,3)+1)
+            if (Isiz(P2,P1).gt.II) then
+              II = Isiz(P2,P1)
+              I1 = P2
+            endif
+          endif
+        enddo
+        weig(P1) = II
+        perm(P1) = I1
+      enddo
+
+C     Choose a proper permutation for every row
+      invp(1:Nodes) = 0
+      do P1= 1, Nodes
+        II = -1
+C       Choose the node with higher weight among those not permuted before
+        do P2= 1, Nodes
+          if (perm(P2).gt.0) then
+            if (weig(P2).gt.II) then
+              II = weig(P2)
+              I1 = P2
+            endif
+          endif
+        enddo
+
+C       Save the permutation for this node (a negative number means that
+C       the node has been permuted.
+        PermI       = perm(I1)
+        invp(PermI) = I1
+        perm(I1)    = -PermI
+
+C       Change the permutation of those nodes who pretend to use the
+C       permutation permI
+        do P2= 1, Nodes
+          if (perm(P2).eq.PermI) then
+            II= -1
+            do P3= 1, Nodes
+              if (invp(P3).eq.0 .and. Isiz(P3,P2).gt.II) then
+                II = Isiz(P3,P2)
+                I1 = P3
+              endif
+            enddo
+            weig(P2) = II
+            perm(P2) = I1
+          endif
+        enddo
+      enddo
+
+      call re_alloc( box, 1, 2, 1, 3, 1, Nodes, 'box', 'moreMeshSubs' )
+      box(1:2,1:3,1:Nodes) = distr2%box(1:2,1:3,1:Nodes)
+      do P1= 1, Nodes
+        II = -perm(P1)
+        distr2%box(1:2,1:3,P1) = box(1:2,1:3,II)
+      enddo
+
+      call de_alloc( box, 'box', 'moreMeshSubs' )
+      call de_alloc( weig, 'weig', 'moreMeshSubs' )
+      call de_alloc( invp, 'invp', 'moreMeshSubs' )
+      call de_alloc( perm, 'perm', 'moreMeshSubs' )
+      call de_alloc( Isiz, 'Isiz', 'moreMeshSubs' )
+      end subroutine reordMeshNumbering
+#else
+C ==================================================================
+C SUBROUTINE reordMeshNumbering( distr1, distr2 )
+C Given a new distribution, distr2, reasign each box to the proper
+C process. We use the following criteria:
+C   - Minimize the number of communications. Data don't need to
+C     be communicated if it belongs to the same process in
+C     different data distributions
+C   - Distribute memory needs among different NODES (group of processes
+C     that shares the same memory)
+C
+C INPUT:
+C integer distr1  : First distribution
+C integer distr2  : Second distribution
+C integer PROCS_PER_NODE : Number of processes that runs in the same
+C                          node (sharing the same memory)
+C 
+C OUTPUT:
+C The output values are stored in the current module:
+C        meshDistr(distr2)%box(:,:,:)
+C
+C BEHAVIOR:
+C 1) Compute the size of all the boxes of the second distribution
+C 2) Reorder the list of boxes according to its size
+C 3) Create a list of buckets (
+C
+C ==================================================================
+      subroutine reordMeshNumbering( distr1, distr2 )
+      use fdf
+      implicit none
+C     Passed arguments
+      type(meshDisType),   intent(in) :: distr1
+      type(meshDisType),  intent(out) :: distr2
+C     Local variables
+      integer                         :: P1, P2, I1, I2, J1, J2, J3,
+     &                                   K1, K2, K3, NB, NM, SI,
+     &                                   SIMAX, Lbox(2,3)
+      integer,                pointer :: Nsiz(:), perm(:), Gprm(:),
+     &                                   chkb(:), box1(:,:), box2(:,:),
+     &                                   box(:,:,:)
+      integer                         :: PROCS_PER_NODE
+      logical                         :: inters
+
+      PROCS_PER_NODE = fdf_get( 'PROCS_PER_NODE', 4 )
+
+C     Create groups of PROCS_PER_NODE processes
+      NB = nodes/PROCS_PER_NODE         ! Number of buckets
+      NM = MOD(nodes,PROCS_PER_NODE)    ! Size of the last bucket
+      if (NM.NE.0) NB = NB + 1
+
+C     Allocate local arrays
+      nullify( Nsiz, perm, Gprm, chkb )
+      call re_alloc( Nsiz, 1, Nodes, 'Nsiz', 'moreMeshSubs' )
+      call re_alloc( perm, 1, Nodes, 'perm', 'moreMeshSubs' )
+      call re_alloc( Gprm, 1, Nodes, 'Gprm', 'moreMeshSubs' )
+      call re_alloc( chkb, 1, NB,    'chkb', 'moreMeshSubs' )
+      call re_alloc( box, 1, 2, 1, 3, 1, Nodes, 'box', 'moreMeshSubs' )
+
+C     Compute the size of all the boxes of the second distribution
+      do P1= 1, Nodes
+        box2 => distr2%box(:,:,P1)
+        Nsiz(P1) = (box2(2,1)-box2(1,1)+1)*
+     &             (box2(2,2)-box2(1,2)+1)*
+     &             (box2(2,3)-box2(1,3)+1)
+        perm(P1) = P1
+      enddo
+
+C     Reorder the list of boxes according to its size
+      call myQsort( Nodes, Nsiz, perm )
+
+      Gprm(1:Nodes) = 0
+      P1=0
+
+C     We distribute processes in "buckets" of size PROCS_PER_NODE
+C     We have a total number of NB "buckets".
+      DO I1= 1, PROCS_PER_NODE
+C       At every step of loop I1, we assign a box to every bucket
+        if (I1.EQ.NM) NB = NB - 1
+
+C       Reset chkb. All buckets are empty.
+        DO I2= 1, NB
+          chkb(I2) = 0
+        ENDDO
+
+        DO I2= 1, NB
+C         At every step of loop I2, we assign a box to a different bucket
+          P1 = P1 + 1
+          P2 = perm(P1)  ! P2 is the "P1"th biggest box
+          box2 => distr2%box(:,:,P2)
+          J2 = 1
+          J3 = 1
+          SIMAX = -1
+          DO J1=1, Nodes
+C           J1=node; J2=position inside the bucket; J3=bucket index
+            if (chkb(J3).eq.0 .and. Gprm(J1).eq.0) then
+C             chkb(J3).eq.0 => The current bucket is not in use
+C             Gprm(J1).eq.0 => The node has not been permuted yet
+              box1 => distr1%box(:,:,J1)
+              call boxIntersection( box1, box2, Lbox, inters )
+              if (inters) then
+                SI = (Lbox(2,1)-Lbox(1,1)+1)*
+     &               (Lbox(2,2)-Lbox(1,2)+1)*
+     &               (Lbox(2,3)-Lbox(1,3)+1)
+              else
+                SI = 0
+              endif
+              if (SI.gt.SIMAX) then
+C               Save the information of the current node if it has the
+C               biggest intersection with box P2
+                SIMAX = SI
+                K1 = J1
+                K3 = J3
+              endif
+            endif
+C           Update information about bucket index and position
+            J2 = J2 + 1
+            if (J2.gt.PROCS_PER_NODE) then
+              J2 = 1
+              J3 = J3 + 1
+            endif
+          ENDDO
+
+C         box(P2) will be set to process K1 (that belongs to bucket K3)
+          chkb(K3) = 1
+          Gprm(K1) = P2
+        ENDDO
+      ENDDO
+
+C     Reorder boxes of the second distribution according to Gprm
+      box(1:2,1:3,1:Nodes) = distr2%box(1:2,1:3,1:Nodes)
+      do P1= 1, Nodes
+        P2 = Gprm(P1)
+        distr2%box(1:2,1:3,P1) = box(1:2,1:3,P2)
+      enddo
+
+C     Deallocate local arrays
+      call de_alloc( box,  'box',  'moreMeshSubs' )
+      call de_alloc( chkb, 'chkb', 'moreMeshSubs' )
+      call de_alloc( Gprm, 'Gprm', 'moreMeshSubs' )
+      call de_alloc( perm, 'perm', 'moreMeshSubs' )
+      call de_alloc( Nsiz, 'Nsiz', 'moreMeshSubs' )
+
+      end subroutine reordMeshNumbering
+#endif
 
 C ==================================================================
 C Find the communications needed to transform one array that uses

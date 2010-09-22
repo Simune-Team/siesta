@@ -83,19 +83,14 @@ C     Passed arguments
       real(dp)                :: cell(3,3), dvol, G2max, G2mesh, rmax
 C     Local variables
       integer                 :: i, ia, i1, i2, i3, io, iphi, is, isp,
-     &                           ity, j, nep, ntp,  j1, j2, j3, indi
+     &                           ity, j, nep, j1, j2, j3, indi
+      integer*8               :: ntp
       real(dp)                :: dx(3), dxp(3), pldist, r,
      &                           rcell(3,3), vecmod, volume
-      real(dp)                :: k0(3)
-
+      real(dp), parameter     :: k0(3) = (/ 0.0, 0.0, 0.0 /)
       logical                 :: within
 C     Functions
       real(dp)                :: dismin, volcel
-
-      external                   chkgmx, dismin, nfft, reclat,
-     &                           timer, volcel
-      data                       k0 / 3*0.0_dp /
-
 !--------------------------------------------------------------------- BEGIN
 #ifdef DEBUG
       call write_debug( '      PRE InitMesh' )
@@ -134,7 +129,7 @@ C     Check that effective cut-off is large enough as for non-right angled
 C     unit cells this is not guaranteed to be the case. If cut-off needs
 C     to be larger, increase ntm and try again.
       G2mesh = 1.0d6
-      call chkgmx( k0, rcell, ntm, G2mesh )
+      call CHKGMX( k0, rcell, ntm, G2mesh )
       if (G2mesh .lt. G2max) then
         ntm(1:3) = ntm(1:3) + 1
         goto 50
@@ -144,7 +139,7 @@ C     Store number of mesh points in module array
       nmeshg(1:3) = ntm(1:3)
 
 C     Find number of mesh points in unit cell.
-      ntp = ntm(1) * ntm(2) * ntm(3)
+      ntp = product(INT(ntm,8))
 
 C     Create the first mesh distribution
       call initMeshDistr( oDistr=UNIFORM, nm=nm )
@@ -161,7 +156,7 @@ C     Output current mesh dimensions and cut-off
         write(6,'(/,a,3(i6,a),i12)') 'InitMesh: MESH =',
      &        ntm(1),' x',ntm(2),' x',ntm(3),' =', ntp
         write(6,'(a,3(i6,a),i12)') 'InitMesh: (bp) =',
-     &        nm(1),' x',nm(2),' x',nm(3),' =', product(nm)
+     &        nm(1),' x',nm(2),' x',nm(3),' =', product(INT(nm,8))
         write(6,'(a,2f10.3,a)')
      &        'InitMesh: Mesh cutoff (required, used) =',
      &        G2max, G2mesh, ' Ry'

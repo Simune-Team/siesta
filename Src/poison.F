@@ -9,7 +9,7 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
       subroutine poison( CELL, N1, N2, N3, Mesh, RHO, U, V, STRESS, 
-     .                   NSM )
+     &                   NSM )
 
 C *********************************************************************
 C SOLVES POISSON'S EQUATION.
@@ -37,9 +37,7 @@ C INTEGER NSM           : Number of sub-mesh points per mesh point
 C                       : along each axis
 C *********************************************************************
 
-C
-C  Modules
-C
+C     Modules
       use precision,   only : dp, grid_p
       use parallel,    only : Node, Nodes, ProcessorY
       use sys,         only : die
@@ -47,84 +45,77 @@ C
 #ifdef MPI
       use mpi_siesta
 #endif
-
       implicit          none
-
+C     Input/output variables
+      integer               :: N1, N2, N3, Mesh(3), NSM
+      real(grid_p)          :: RHO(N1*N2*N3), V(N1*N2*N3)
+      real(dp)              :: CELL(3,3), STRESS(3,3), U
+C     Local variables
+      integer               :: I, I1, I2, I3, IX, J, J1, J2, J3, JX,
+     &                         NP, NG, NG2, NG3, 
+     &                         ProcessorZ, Py, Pz, J2min, J2max,
+     &                         J3min, J3max, J2L, J3L, NRemY, NRemZ,
+     &                         BlockSizeY, BlockSizeZ
+      real(dp)              :: C, B(3,3), DU, G(3), G2, G2MAX, 
+     &                         PI, VG, VOLUME, VOLCEL
+      external                 CHKGMX, FFT, RECLAT, VOLCEL
+      real(grid_p), pointer :: CG(:,:)
+      real(dp),   parameter :: K0(3)= (/ 0.0, 0.0, 0.0 /), TINY= 1.0e-15
 #ifdef MPI
-      integer           MPIerror
+      integer               :: MPIerror
 #endif
 
-      integer           N1, N2, N3, Mesh(3), NSM
-      real(grid_p)      RHO(N1*N2*N3), V(N1*N2*N3)
-      real(dp)          CELL(3,3), STRESS(3,3), U
-
-      real(grid_p), dimension(:,:), pointer  :: CG
-
-      integer           I, I1, I2, I3, IX, J, J1, J2, J3, JX,
-     .                  NP, NG, NG2, NG3, 
-     .                  ProcessorZ, Py, Pz, J2min, J2max,
-     .                  J3min, J3max, J2L, J3L, NRemY, NRemZ,
-     .                  BlockSizeY, BlockSizeZ
-      real(dp)          C, B(3,3), DU, G(3), G2, G2MAX, 
-     .                  K0(3), PI, TINY, VG, VOLUME, VOLCEL
-      externaL          CHKGMX, FFT, RECLAT, VOLCEL
-      save              K0, TINY
-
-      data K0   /3*0.0_dp/
-      data TINY /1.0e-15_dp/
 #ifdef DEBUG
-      call write_debug( '      PRE poison' )
+      call write_debug( '    PRE POISON' )
 #endif
-#ifdef MPI
-C Place MPI barrier here so that any waiting time for all
-C nodes to reach this point isn't included in the time for
-C the FFT which is otherwise misleading.
-      call MPI_Barrier(MPI_Comm_World, MPIerror)
+#ifdef _TRACE_
+      call MPI_Barrier( MPI_Comm_World, MPIerror )
+      call MPItrace_event( 1000, 2 )
 #endif
 
-C Start timer
-      call timer('POISON',1)
+C     Start time counter
+      call timer( 'POISON', 1 )
 
-C Allocate local memory
+C     Allocate local memory
       nullify( CG )
       call re_alloc( CG, 1, 2, 1, n1*n2*n3, 'CG', 'poison' )
 
-C Find unit cell volume
+C     Find unit cell volume
       VOLUME = VOLCEL( CELL )
 
-C Find reciprocal lattice vectors
+C     Find reciprocal lattice vectors
       call reclat(CELL, B, 1 )
 
-C Find maximun planewave cutoff
+C     Find maximun planewave cutoff
       NP = N1 * N2 * N3
       G2MAX = 1.0e30_dp
       call CHKGMX( K0, B, Mesh, G2MAX )
 
-C Copy density to complex array
+C     Copy density to complex array
       do I = 1, NP
         CG(1,I) = RHO(I)
         CG(2,I) = 0.0_grid_p
       enddo
 
-C Find fourier transform of density
+C     Find fourier transform of density
       call fft( CG, Mesh, -1, NSM )
 
-C Initialize stress contribution
+C     Initialize stress contribution
       do IX = 1,3
         do JX = 1,3
           STRESS(JX,IX) = 0.0_dp
         enddo
       enddo
 
-C Work out processor grid dimensions
+C     Work out processor grid dimensions
       ProcessorZ = Nodes/ProcessorY
       if (ProcessorY*ProcessorZ.ne.Nodes) 
-     $     call die('ERROR: ProcessorY must be a factor of the' //
-     $     ' number of processors!')
+     &     call die('ERROR: ProcessorY must be a factor of the' //
+     &     ' number of processors!')
       Py = (Node/ProcessorZ) + 1
       Pz = Node - (Py - 1)*ProcessorZ + 1
 
-C Multiply by 8*PI/G2 to get the potential
+C     Multiply by 8*PI/G2 to get the potential
       PI = 4.0_dp * atan(1.0_dp)
       U = 0.0_dp
       NG2 = Mesh(2)
@@ -197,33 +188,36 @@ C Multiply by 8*PI/G2 to get the potential
         STRESS(IX,IX) = STRESS(IX,IX) + U / VOLUME
       enddo
  
-C Go back to real space
+C     Go back to real space
       call fft( CG, Mesh, +1, NSM )
 
-C Copy potential to array V
+C     Copy potential to array V
       do I = 1, NP
         V(I) = CG(1,I)
       enddo
  
-C Stop time counter
-      call timer( 'POISON', 2)
-
-C Free local memory
+C     Free local memory
       call de_alloc( CG, 'CG', 'poison' )
 
-#ifdef DEBUG
-      call write_debug( '      POS poison' )
+#ifdef _TRACE_
+      call MPI_Barrier( MPI_Comm_World, MPIerror )
+      call MPItrace_event( 1000, 0 )
 #endif
-      end
+
+C     Stop time counter
+      call timer( 'POISON', 2 )
+
+#ifdef DEBUG
+      call write_debug( '    POS POISON' )
+#endif
+      end subroutine poison
 
       subroutine nfft( N )
-
       use sys, only: die
       use parallel, only: ionode
-
-C CHANGES N INTO THE NEXT INTEGER ALLOWED BY THE FFT ROUTINE
-C WRITTEN BY J.M.SOLER. MAY/95.
-
+      implicit none
+C     CHANGES N INTO THE NEXT INTEGER ALLOWED BY THE FFT ROUTINE
+C     WRITTEN BY J.M.SOLER. MAY/95.
       integer :: np, nmax, nmin, n, nrem, ip
       parameter (NP = 3, NMAX = 1000000)
       integer :: IPRIME(NP)
@@ -242,6 +236,6 @@ C WRITTEN BY J.M.SOLER. MAY/95.
         IF (NREM .EQ. 1) RETURN
       ENDDO
       if (Ionode)
-     $    write(6,*) 'NFFT: NO SUITABLE INTEGER FOUND FOR N =', NMIN
+     &    write(6,*) 'NFFT: NO SUITABLE INTEGER FOUND FOR N =', NMIN
       call die()
       END

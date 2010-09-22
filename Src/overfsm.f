@@ -92,9 +92,6 @@ C Internal variables ......................................................
 
       external  timer
 C ......................
-#ifdef DEBUG
-      call write_debug( '    PRE overfsm' )
-#endif
 
 C Start timer
       call timer( 'overfsm', 1 )
@@ -177,9 +174,6 @@ C Deallocate local memory
 C Finish timer
       call timer( 'overfsm', 2 )
 
-#ifdef DEBUG
-      call write_debug( '    POS overfsm' )
-#endif
       end subroutine overfsm
       end module m_overfsm
 

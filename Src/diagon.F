@@ -142,6 +142,10 @@ C
       real(dp),  pointer :: aux(:)
       integer,   pointer :: muo(:)
 
+#ifdef DEBUG
+      call write_debug( '    PRE diagon' )
+#endif
+
 C  ....................
 C First call initialisation
       if (frstme) then
@@ -320,4 +324,7 @@ C Free local arrays
 
 C Stop time counter
       call timer( 'diagon', 2 )
+#ifdef DEBUG
+      call write_debug( '    POS diagon' )
+#endif
       end

@@ -60,10 +60,6 @@
       
       external atm_transfer
 
-#ifdef DEBUG
-      call write_debug( '  PRE initatom' )
-#endif
-
       call get_atom_options()
 
 !     Reading input for the pseudopotentials and atomic orbitals
@@ -123,8 +119,5 @@
         call deallocate_spec_arrays()
       endif
 
-#ifdef DEBUG
-      call write_debug( '  POS initatom' )
-#endif
       end subroutine initatom
 

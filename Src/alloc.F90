@@ -1642,7 +1642,14 @@ case default
   memType = type
   memSize = abs(delta_size)
 end select
-call memory( task, memType, memSize, trim(rname) )
+!call memory( task, memType, memSize, trim(rname) )
+
+if (present(name)) then
+  aname = TRIM(name) // '%' // rname
+else
+  aname = DEFAULT_NAME
+end if
+call memory( task, memType, memSize, trim(aname) )
 
 if (REPORT_LEVEL <= 0) return
 

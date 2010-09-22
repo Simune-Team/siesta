@@ -146,6 +146,9 @@ C Internal variables ..........................................................
      .  nbands
      
 C ...................
+#ifdef DEBUG
+      call write_debug( '    PRE ordern' )
+#endif
 
 *     call timer( 'ordern', 1 )
 
@@ -384,6 +387,9 @@ C Save LWF's to disk .................................................
 #endif
       frstme = .false.
 
+#ifdef DEBUG
+      call write_debug( '    POS ordern' )
+#endif
       end subroutine ordern
 
       end module m_ordern

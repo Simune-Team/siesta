@@ -53,6 +53,9 @@ C  Modules
       use parallel,      only: Nodes, node
       use alloc,         only: re_alloc, de_alloc
       use parallelsubs,  only: GlobalToLocalOrb
+#ifdef MPI
+      use mpi_siesta
+#endif
 
       implicit none
 
@@ -88,12 +91,20 @@ C Internal variables and arrays
       integer                  :: omp_get_num_threads,
      &                            omp_get_thread_num
 #endif
+#ifdef MPI
+      integer                  :: MPIerror
+#endif
 
 #ifdef DEBUG
         call write_debug( '    PRE vmat' )
 #endif
 
-C     Start time counter
+#ifdef _TRACE_
+      call MPI_Barrier( MPI_Comm_World, MPIerror )
+      call MPItrace_event( 1000, 4 )
+#endif
+
+C       Start time counter
       call timer('vmat',1)
 
 C     Find atomic cutoff radii
@@ -496,10 +507,15 @@ C       Redistribute Hamiltonian from mesh to orbital based distribution
 
       call de_alloc( r2cut, 'r2cut', 'vmat' )
 
+#ifdef _TRACE_
+      call MPI_Barrier( MPI_Comm_World, MPIerror )
+      call MPItrace_event( 1000, 0 )
+#endif
+
       call timer('vmat',2)
 
 #ifdef DEBUG
-        call write_debug( '    POS vmat' )
+      call write_debug( '    POS vmat' )
 #endif
       return
       end

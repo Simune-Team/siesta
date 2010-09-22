@@ -8,7 +8,7 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine memory( Task, Type, NElements, CallingRoutine)
+      subroutine memory( Task, Type, NElements, CallingRoutine )
 C 
 C This subroutine keeps track of information relating to the use 
 C of dynamic memory
@@ -43,7 +43,8 @@ C
       character(len=*), intent(in)        :: CallingRoutine
 
 C Local variables
-      integer    Sign
+      integer   :: Sign
+      integer*8 :: prevMem
 CAG
 !      if (Node.eq.0) then
 !        write(66,'(a,a,a,a,i10)') "---memory: ", CallingRoutine // " ",
@@ -51,7 +52,7 @@ CAG
 !     $                          type // " ", nelements
 !        call flush(66)
 !      endif
-
+      prevMem = CurrentMemory
 C Assign sign of operation based on task
       if (Task .eq. 'A' .or. Task .eq. 'a') then
         Sign = +1
@@ -125,27 +126,21 @@ C
 #ifdef MPI
       use mpi_siesta
 #endif
-
       implicit none
-
 C Passed arguments
-      integer
-     .  Unit, Level
-
+      integer            :: Unit, Level
 C Local arguments
-      integer
-     .  MaxMemory, n
-      integer, pointer :: maxmemlist(:)
-
+      integer            :: n
+      integer*8          :: MaxMemory
+      integer*8, pointer :: maxmemlist(:)
 #ifdef MPI
-      integer
-     .  MPIerror
+      integer            :: MPIerror
 #endif
 
 C Find peak memory use over all Nodes
 #ifdef MPI
-      call MPI_AllReduce(PeakMemory,MaxMemory,1,MPI_integer,MPI_max,
-     .  MPI_Comm_World,MPIerror)
+      call MPI_AllReduce( PeakMemory, MaxMemory, 1, MPI_INTEGER8,
+     &                    MPI_MAX, MPI_COMM_WORLD, MPIerror )
 #else
       MaxMemory = PeakMemory
 #endif
@@ -157,30 +152,30 @@ C Output memory use information
       if (Level.eq.0) then
         if (Node.eq.0) then
           write(Unit,'(''* Maximum dynamic memory allocated = '',i5,
-     .      '' MB'')') (MaxMemory/1000000)+1
+     &      '' MB'')') (MaxMemory/1000000)+1
         endif
       else
-	nullify(maxmemlist)
+        nullify(maxmemlist)
         if (node==0) then
           allocate(maxmemlist(nodes))
         else
           allocate(maxmemlist(1))
         endif
 #ifdef MPI
-        call mpi_gather(peakmemory,1,mpi_integer,
-     .                  maxmemlist,1,mpi_integer,
-     .                  0,mpi_comm_world,mpierror)
+        call mpi_gather( peakmemory, 1, MPI_INTEGER8,
+     &                   maxmemlist, 1, MPI_INTEGER8,
+     &                   0, MPI_COMM_WORLD, MPIerror )
 #else
         maxmemlist=peakmemory
 #endif
         if (node==0) then
           do n=0,Nodes-1
             write(Unit,'(''* Maximum dynamic memory allocated : Node ''
-     .          ,i4,'' = '',i5,'' MB'')') n,(maxmemlist(n+1)/1000000)+1
+     &          ,i4,'' = '',i5,'' MB'')') n,(maxmemlist(n+1)/1000000)+1
           enddo
           write(Unit,'(a)') ' '
           write(Unit,'(''* Maximum memory occured during '',a30)')
-     .               PeakRoutine
+     &               PeakRoutine
         endif
         deallocate(maxmemlist)
       endif
