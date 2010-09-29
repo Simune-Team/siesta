@@ -3091,7 +3091,7 @@ C     Passed arguments
       type(meshDisType),  intent(out) :: distr2
 C     Local variables
       integer                         :: P1, P2, I1, I2, J1, J2, J3,
-     &                                   K1, K2, K3, NB, NM, SI,
+     &                                   K1, K2, K3, NN, NB, NM, SI,
      &                                   SIMAX, Lbox(2,3)
       integer,                pointer :: Nsiz(:), perm(:), Gprm(:),
      &                                   chkb(:), box1(:,:), box2(:,:),
@@ -3102,9 +3102,9 @@ C     Local variables
       PROCS_PER_NODE = fdf_get( 'PROCS_PER_NODE', 4 )
 
 C     Create groups of PROCS_PER_NODE processes
-      NB = nodes/PROCS_PER_NODE         ! Number of buckets
-      NM = MOD(nodes,PROCS_PER_NODE)    ! Size of the last bucket
-      if (NM.NE.0) NB = NB + 1
+      NN = nodes+PROCS_PER_NODE-1
+      NB = NN/PROCS_PER_NODE           ! Number of buckets
+      NM = MOD(NN,PROCS_PER_NODE)+1    ! Size of the last bucket
 
 C     Allocate local arrays
       nullify( Nsiz, perm, Gprm, chkb )
@@ -3133,17 +3133,16 @@ C     We distribute processes in "buckets" of size PROCS_PER_NODE
 C     We have a total number of NB "buckets".
       DO I1= 1, PROCS_PER_NODE
 C       At every step of loop I1, we assign a box to every bucket
-        if (I1.EQ.NM) NB = NB - 1
+        if (I1.EQ.NM+1) NB = NB - 1
 
 C       Reset chkb. All buckets are empty.
-        DO I2= 1, NB
-          chkb(I2) = 0
-        ENDDO
+        chkb(1:NB) = 0
 
         DO I2= 1, NB
 C         At every step of loop I2, we assign a box to a different bucket
           P1 = P1 + 1
           P2 = perm(P1)  ! P2 is the "P1"th biggest box
+
           box2 => distr2%box(:,:,P2)
           J2 = 1
           J3 = 1
