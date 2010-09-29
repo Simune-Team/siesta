@@ -386,7 +386,7 @@ distriphionmesh.o: parallel.o precision.o
 dnaefs.o: atmfuncs.o mneighb.o precision.o
 domain_decom.o: alloc.o parallel.o precision.o printmatrix.o schecomm.o
 domain_decom.o: sparse_matrices.o sys.o
-doping_uniform.o: alloc.o meshsubs.o meshsubs.o parallel.o precision.o sys.o
+doping_uniform.o: alloc.o m_ntm.o meshsubs.o meshsubs.o parallel.o precision.o sys.o
 dscfcomm.o: alloc.o parallel.o parallelsubs.o precision.o schecomm.o
 dynamics.o: alloc.o atomlist.o files.o ioxv.o m_mpi_utils.o parallel.o
 dynamics.o: precision.o sys.o units.o
