@@ -1736,6 +1736,7 @@ MODULE fdf
 !   Returns a single precision value associated with label 'label', 
 !   or the default value if label is not found in the fdf file.
 !   Optionally can return a pointer to the line found.
+!   Note that integers on the line are also accepted
 !
     FUNCTION fdf_single(label, default, line)
       implicit none
@@ -1759,12 +1760,11 @@ MODULE fdf
       endif
 
       if (fdf_locate(label, mark)) then
-        if (.not. match(mark%pline, 'lr')) then
+        if (.not. match(mark%pline, 'lv')) then
           write(msg,*) 'no real value for ', label
           call die('FDF module: fdf_single', msg, __FILE__, __LINE__,  fdf_err)
         endif
-
-        fdf_single = reals(mark%pline, 1, 1)
+        fdf_single = values(mark%pline, 1, 1)
         write(fdf_out,'(a,5x,g20.10)') label, fdf_single
       else
         fdf_single = default
@@ -1781,6 +1781,7 @@ MODULE fdf
 !   Returns a double precision value associated with label 'label', 
 !   or the default value if label is not found in the fdf file.
 !   Optionally can return a pointer to the line found.
+!   Note that integers on the line are also accepted
 !
     FUNCTION fdf_double(label, default, line)
       implicit none
@@ -1804,12 +1805,11 @@ MODULE fdf
       endif
 
       if (fdf_locate(label, mark)) then
-        if (.not. match(mark%pline, 'lr')) then
+        if (.not. match(mark%pline, 'lv')) then
           write(msg,*) 'no real value for ', label
           call die('FDF module: fdf_double', msg, __FILE__, __LINE__, fdf_err)
         endif
-
-        fdf_double = reals(mark%pline, 1, 1)
+        fdf_double = values(mark%pline, 1, 1)
         write(fdf_out,'(a,5x,g20.10)') label, fdf_double
       else
         fdf_double = default

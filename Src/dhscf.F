@@ -25,10 +25,6 @@
 !  The only real observable effect would be a printout of "initmesh" data
 !  at every geometry iteration.
 !
-!  Remaining known BUGS: 
-!    dhscf_init will have to be called by grdsam also.
-!    The doping routine needs to be called in the quadratic dist
-!
       module m_dhscf
 
 !
@@ -79,8 +75,9 @@
       use cellxc_mod,     only : setGGA
       use m_efield,       only : initialize_efield, acting_efield
 
-      use m_doping,       only: initialize_doping
-      use m_doping,       only: compute_doping_structs, doping_active
+      use m_doping_uniform,       only: initialize_doping_uniform
+      use m_doping_uniform,       only: compute_doping_structs_uniform,
+     $                                  doping_active
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -307,17 +304,6 @@ C       Find Harris (sum of atomic) electron density
         call rhooda( norb, nmpl, datm, rhoatm_par, iaorb, iphorb, isa )
         ! rhoatm_par comes out of here in clustered form in QUADRATIC dist
 
-        if (frstme) call initialize_doping()
-
-        ! In order to deal with distribution issues, this initialization
-        ! has been moved here
-        if (doping_active) then  
-           ! Note that this routine uses endpht, which is in the
-           ! QUADRATIC distribution,
-           ! and rhoatm(par) which must be clustered
-           call compute_doping_structs(nmpl,rhoatm_par,nsd)
-        endif
-
 C       Routine Poison should use the uniform data distribution
         if (nodes.gt.1) then
            call setMeshDistr( UNIFORM, nsm, nsp,
@@ -328,6 +314,17 @@ C       Create Rhoatm using UNIFORM distr, in sequential form
         call re_alloc( rhoatm, 1, ntpl, 'rhoatm', 'dhscf_init' )
         call distMeshData( QUADRATIC, rhoatm_par,
      $                     UNIFORM, rhoatm, TO_SEQUENTIAL )
+!
+!  AG: The initialization of doping structs could be done here now,
+!      in the uniform distribution, and with a simple loop over
+!      rhoatm.
+
+        if (frstme) call initialize_doping_uniform()
+        if (doping_active) then  
+           call compute_doping_structs_uniform(ntpl,rhoatm,nsd)
+           ! Will get the global number of hit points
+           ! Then, the doping density to be added can be simply computed
+        endif
 
 C       Allocate Temporal array
         call re_alloc( Vscf, 1, ntpl, 1, nspin, 'Vscf', 'dhscf_init' )
@@ -525,7 +522,7 @@ C     Modules
       use m_efield,       only: add_potential_from_field
       use m_efield,       only: user_specified_field, acting_efield
 
-      use m_doping,       only: doping_active, doping
+      use m_doping_uniform,       only: doping_active, doping_uniform
 
 #ifdef TRANSIESTA
 !     TSS Begin
@@ -846,9 +843,8 @@ C model doped systems. It only adds the charge at points
 C where there are atoms (i.e., not in vacuum).          
 C First, call with 'task=0' to add background charge    
 
-        !BUG** We need to do this in the quadratic distribution, since
-        ! we need endpht (or include endpht in the per-distro structures)
-        if (doping_active) call doping(cell,nmpl,0,DRho)
+        if (doping_active) call doping_uniform(cell,ntpl,0,
+     $                                         DRho(:,1),rhoatm)
 
 C Find dipole
         ! This routine is distribution-blind
@@ -879,7 +875,7 @@ C     Solve Poisson's equation
      &             DUscf, Vscf, DStres, nsm )
       call medirTiempo( 2, 3 )
 
-      ! Vscf is the UNIFORM, sequential form, and only using
+      ! Vscf is in the UNIFORM, sequential form, and only using
       ! the first spin index
 
 #ifdef TRANSIESTA
@@ -887,9 +883,9 @@ C     Solve Poisson's equation
 #endif /* TRANSIESTA */
 
 C Call doping with 'task=1' to remove background charge added previously
-      !BUG** We need to do this in the quadratic distribution, since
-      ! we need endpht (or include endpht in the per-distro structures)
-      if (doping_active) call doping(cell,nmpl,1,DRho)
+
+        if (doping_active) call doping_uniform(cell,ntpl,1,
+     $                                         DRho(:,1),rhoatm)
 
 C Add contribution to stress from electrostatic energy of rhoscf-rhoatm
       if (istr .eq. 1) then

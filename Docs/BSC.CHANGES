@@ -1,6 +1,41 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+300 Alberto Garcia	  2010-09-29
+Updates to fdf and dhscf (grdsam, doping)
+
+* Make fdf_single and fdf_double accept integers
+  (fixed version, including call to 'values')
+
+* Define proper kind parameters in fdf/prec.F90
+
+* Increase width of ik field in OCCS file
+
+* Re-implement the doping feature in the uniform distribution
+
+In this way it is much easier, since we can refer directly to the
+points at which rhoatm is different from zero, without having to use
+any indexes. In fact, this could be done in any distribution, as long
+as both rho and rhoatm are distributed in the same way.
+
+* Fix grdsam by adding a call to dhscf_init
+
+Still some more cleanup possible: remove samesh check.
+
+removed:
+  Src/doping.F
+added:
+  Src/doping_uniform.F
+modified:
+  Src/Makefile
+  Src/dhscf.F
+  Src/diagk.F
+  Src/diagk_file.F
+  Src/fdf/fdf.F90
+  Src/fdf/prec.F90
+  Src/grdsam.F
+
+------------------------------------
 299 Alberto Garcia	  2010-02-22
 Merge of SLEPC work by Rogeli Grima (in progress)
 
