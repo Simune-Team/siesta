@@ -242,7 +242,7 @@ C Compute all eigenvectors if getPSI = .true.
             enddo
           endif
           if (Node .eq. 0) then
-             write(iu,"(2i3,f10.6,i6)")
+             write(iu,"(i5,i3,f10.6,i6)")
      $                  ik, ispin, wk(ik), neigneeded
           endif
 
