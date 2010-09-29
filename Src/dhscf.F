@@ -25,10 +25,6 @@
 !  The only real observable effect would be a printout of "initmesh" data
 !  at every geometry iteration.
 !
-!  Remaining known BUGS: 
-!    dhscf_init will have to be called by grdsam also.
-!    The doping routine needs to be called in the quadratic dist
-!
       module m_dhscf
 
 !
@@ -879,7 +875,7 @@ C     Solve Poisson's equation
      &             DUscf, Vscf, DStres, nsm )
       call medirTiempo( 2, 3 )
 
-      ! Vscf is the UNIFORM, sequential form, and only using
+      ! Vscf is in the UNIFORM, sequential form, and only using
       ! the first spin index
 
 #ifdef TRANSIESTA
