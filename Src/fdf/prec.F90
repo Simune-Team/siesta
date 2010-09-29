@@ -22,6 +22,6 @@ MODULE prec
 ! Kind parameters 
 !
   integer, parameter :: ip = selected_int_kind(9)
-  integer, parameter :: sp = kind(1.0)
-  integer, parameter :: dp = kind(1.d0)
+  integer, parameter :: sp = selected_real_kind(6,20)
+  integer, parameter :: dp = selected_real_kind(14,100)
 END MODULE prec

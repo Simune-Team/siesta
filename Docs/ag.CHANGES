@@ -1,4 +1,18 @@
 ------------------------------------------------
+AG, September 29, 2010  bsc-trunk-299-dhscf-bugs-5
+Merge fdf changes
+
+*  Make fdf_single and fdf_double accept integers
+*  Define proper kind parameters in fdf/prec.F90
+
+------------------------------------------------
+AG, September 29, 2010 -- no change in version.info
+
+Remove comment about obsolete bugs in dhscf
+Increase width of ik field in OCCS file
+Add dependency for doping in Makefile
+
+------------------------------------------------
 AG, August 6, 2010  bsc-trunk-299-dhscf-bugs-2
 Re-implement the doping feature in the uniform distribution
 
