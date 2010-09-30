@@ -5,6 +5,19 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2010-09-30  08:30:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-1
+Update atom manual
+
+* Include a mention of the "fractional atomic number" capability.
+
+* Update the link to Jose Luis Martins' version of the atom program, and
+  the contact information in the README file.
+
+modified:
+  Pseudo/atom/Docs/atom.tex
+  Pseudo/atom/README
+
+------------------------------------------------------------------------
 2010-07-05  15:05:00 GMT Alberto Garcia <albertog@icmab.es>      3.0-rc2
 Release of siesta-3.0-rc2
   
