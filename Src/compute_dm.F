@@ -10,7 +10,7 @@
       use sparse_matrices
       use siesta_geom
       use atomlist, only: qa, lasto, iphorb, iaorb, no_u, no_s, indxuo, 
-     .                    qtot, no_l
+     &                    qtot, no_l
       use sys, only: die
       use Kpoint_grid
       use m_energies
@@ -65,24 +65,20 @@
 
 !     Solve eigenvalue problem 
       if (isolve .eq. SOLVE_DIAGON) then
-        call write_debug( '    PRE diagon' )
         call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
      &              numh, listhptr, listh, numh, listhptr, listh, 
      &              H, S, qtot, fixspin, qs, temp, e1, e2,
      &              gamma, xijo, indxuo, nkpnt, kpoint, kweight,
      &              eo, qo, Dscf, Escf, ef, efs, Entrop, no_u,
      &              occtol, iscf, neigwanted)
-        call write_debug( '    POS diagon' )
         Ecorrec = 0.0_dp
       elseif (isolve .eq. SOLVE_ORDERN) then
         if (.not. gamma) call die("Cannot do O(N) with k-points.")
-        call write_debug( '    PRE ordern' )
         call ordern( usesavelwf, ioptlwf, na_u, no_u, no_l, lasto,
      &               iaorb, isa, qa, rcoor, rmaxh, ucell, xa, iscf,
      &               istp, ncgmax, etol, eta, qtot, maxnh, numh,
      &               listhptr, listh, H, S, chebef, noeta, rcoorcp,
      &               beta, pmax, Dscf, Escf, Ecorrec, nspin, qs )
-        call write_debug( '    POS ordern' )
         Entrop = 0.0_dp
 #ifdef TRANSIESTA
 ! TSS Begin
@@ -170,31 +166,27 @@
 #endif
 ! ..................
 #ifdef CDF
-          if ( writedmhs_cdf_history) then
-            call write_dmh_netcdf( no_l, nh, nspin, Dold, H, Dscf )
-          else if (writedmhs_cdf) then
-             call write_dmh_netcdf( no_l, nh, nspin,
-     &                              Dold, H, Dscf, overwrite=.true.)
-          endif
+      if ( writedmhs_cdf_history) then
+        call write_dmh_netcdf( no_l, nh, nspin, Dold, H, Dscf )
+      else if (writedmhs_cdf) then
+        call write_dmh_netcdf( no_l, nh, nspin, Dold, H, Dscf,
+     &                         overwrite=.true. )
+      endif
 #endif
 
 !     Print populations at each SCF step if requested before mixing ......
       if (muldeb) then
-         write (6,"(/a)")
-     &         'siesta: Mulliken populations before mixing'
-         call mulliken( mullipop, nspin, na_u, no_u, maxnh,
-     &                  numh, listhptr, listh, S, Dscf, isa,
-     &                  lasto, iaorb, iphorb )
+        write (6,"(/a)")
+     &    'siesta: Mulliken populations before mixing'
+        call mulliken( mullipop, nspin, na_u, no_u, maxnh,
+     &                 numh, listhptr, listh, S, Dscf, isa,
+     &                 lasto, iaorb, iphorb )
       endif
+
       call timer( 'compute_dm', 2 )
 #ifdef DEBUG
       call write_debug( '  POS compute_dm' )
 #endif
-
-#ifdef _SLEPC_
-      call MPI_Finalize( io )
-      STOP
-#endif /* Inserted by AG */
 !--------------------------------------------------------------------------- END
       END subroutine compute_dm
       END MODULE m_compute_dm

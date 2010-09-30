@@ -27,7 +27,7 @@
       use domain_decom, only : dd_cperm, dd_ncolum
 
       use parallel,     only : node, nodes
-
+      use fdf
       implicit none
 C     Input variables
       integer,   intent(in) :: nuotot, nuo, nspin
@@ -50,16 +50,46 @@ C     Local variables
 
       call write_debug( '    PRE Jacobi' )
 !      neig = min(neig,200)
-      neig = (qtot*6)/5
+!      neig = (qtot*6)/5
 !      neig = min(neig,100)
-      neig = min(neig,nuotot)
+!      neig = min(neig,nuotot)
 
+#ifdef KKKKKKK
+      Kmax = neig
+!      Kmax = min(50,neig)
+      Mmax      = 50
+      Mmin      = 20
+      JDepsilon = 1.0e-5
+      ITepsilon = 1.0e-5
+      ITmaxiter = min(50,nuotot)
+      JDreortho = 100
+      gmres_dim = min(max(257,nuotot/2),nuotot)
+
+#else
+      Kmax      = fdf_integer( 'jd.kmax',  neig )
+      Mmax      = fdf_integer( 'jd.mmax',  50 )
+      Mmin      = fdf_integer( 'jd.mmin',  20 )
+      JDepsilon = fdf_double(  'jd.eps',   1.0e-5_dp )
+      ITepsilon = fdf_double(  'jd.iteps', 1.0e-5_dp )
+      ITmaxiter = fdf_integer( 'jd.maxit', min(50,nuotot) )
+      JDreortho = fdf_integer( 'jd.reort', 100 )
+#endif
+      Kmax = min(Kmax,nuotot)
+      neig = Kmax
+
+#ifdef DEBUG
       write(23,*) '=========  Inside jacobi  ========='
       write(23,*) '     n. orbitales global:', nuotot
       write(23,*) '     n. orbitales local :', nuo
-      write(23,*) '     n. de autovalores  :', neig
       write(23,*) '     qtot               :', qtot
+      write(23,*) '     n. de autovalores  :', Kmax 
+      write(23,*) '     JD max krylov dim  :', Mmax
+      write(23,*) '     JD min krylov dim  :', Mmin
+      write(23,*) '     JD epsilon         :', JDepsilon
+      write(23,*) '     Iter Epsilon       :', ITepsilon
+      write(23,*) '     Iter Max Iter      :', ITmaxiter
       flush(23)
+#endif
 
       nullify( ind )
       call re_alloc( ind, 1, nuo+1, 'ind', 'jd_diag' )
@@ -108,23 +138,6 @@ C     Set jacobi options
       tt    = 1.0/sqrt(tt)
       jd_v0 = tt
 
-      Kmax = neig
-!      Kmax = min(50,neig)
-      Mmax      = 50
-      Mmin      = 20
-      JDepsilon = 1.0e-5
-      ITepsilon = 1.0e-5
-      ITmaxiter = min(50,nuotot)
-      JDreortho = 100
-      gmres_dim = min(max(257,nuotot/2),nuotot)
-
-      write(23,*) '     JD max krylov dim :', Mmax
-      write(23,*) '     JD min krylov dim :', Mmin
-      write(23,*) '     JD epsilon        :', JDepsilon
-      write(23,*) '     Iter Epsilon      :', ITepsilon
-      write(23,*) '     Iter Max Iter     :', ITmaxiter
-      flush(23)
-
       getD   = .true.
       getPSI = .false.
 
@@ -167,29 +180,49 @@ C     Local variables
       real(dp)                   :: qe, ee, qei, eei
       real(dp),          pointer :: ZZ(:,:)
 
-      call medirTiempo( 1, 6 )
+      call medirTiempo( 1, 7 )
       call jd_solver( n, neig, A, B, W, Z )
-      call medirTiempo( 2, 6 )
+      call medirTiempo( 2, 7 )
       write(23,*) '=== AUTOVALORES de salida ==='
       flush(23)
-      do j= 1, neig
+      do j= 1, min(neig-5,5)
         write(23,*) 'EV(', j, '):', W(j)   ! , Z(:,j)
-      flush(23)
+        flush(23)
       enddo
+      do j= max(neig-5,1), neig
+        write(23,*) 'EV(', j, '):', W(j)   ! , Z(:,j)
+        flush(23)
+      enddo
+
+
+
+
+
+      call medirTiempo( 2, 6 )
       write(23,*) ' '
       write(23,*) '========    TIMES    ========'
       flush(23)
-
       call showTiempo( 23, 1,  'SetupHam         :' )
       call showTiempo( 23, 2,  '  Rhoofd         :' )
       call showTiempo( 23, 3,  '  Poison         :' )
       call showTiempo( 23, 4,  '  Cellxc         :' )
       call showTiempo( 23, 5,  '  Vmat           :' )
-      call showTiempo( 23, 6,  'JacobiDa         :' )
-      flush(23)
+      call showTiempo( 23, 7,  'jd_solver        :' )
+!      call printmemory( 23, 1 )
+!      flush(23)
+
+      call MPI_Finalize( io )
+      STOP
+
+
+
+
+
 
 C Check if we are done
       if (.not.getD) return
+      write(23,*) '=== PRE fermid ==='
+      flush(23)
 
 C Find new Fermi energy and occupation weights
       if (fixspin) then
@@ -199,6 +232,8 @@ C Find new Fermi energy and occupation weights
         call fermid( nspin, nspin, nk, wk, neig, neig, 
      &               w, temp, qtot, qo, ef, Entropy )
       endif
+      write(23,*) '=== POS fermid ==='
+      flush(23)
 
 C     Count the number of usefull eigenvalues/vectors
       uneig    = 1
@@ -240,6 +275,8 @@ C     Count the number of usefull eigenvalues/vectors
           enddo
         enddo
       enddo
+      write(23,*) '=== FIN jd_diagg ==='
+      flush(23)
 
 #ifdef MPI
       call de_alloc( ZZ, 'ZZ', 'jd_diagg' )
@@ -311,34 +348,26 @@ C     Local variables
 
       ! (2)
       do while ( k .lt. Kmax )
-        call medirTiempo( 1, 7 )
         write(23,*) ' '
         write(23,*) '  NEW JD_ITER:', it, 'ITSOL_IT:', gm_it_tot,
      &             'JD_dim:', m+1, '  EV found:', k, ' nreort:', nreort
         flush(23)
 
         ! (3) - (5)
-        call medirTiempo( 0, 8 )
         call GramSchmidt( N, M, Vb, V, t, work )
-        call medirTiempo( 2, 8 )
 
         ! (6) - (10)
-        call medirTiempo( 0, 9 )
         m = m + 1
         call dcopy( N, t, 1, V(1,m), 1 )        ! Vm    = t
         call projectionMatrix( n, m, A, B, V, VA, VB, VAV, work )
-        call medirTiempo( 2, 9 )
 
         ! (11)
-        call medirTiempo( 0, 10 )
         call computeEigenpairs( m, m2, VAV, teta, S, work )
-        call medirTiempo( 2, 10 )
-        write(23,*) '      CANDIDATE EIGENVALUE:', teta(1)
+!        write(23,*) '      CANDIDATE EIGENVALUES:', teta(1:min(4,m))
 
 !        call selectEigenpair( nomin, taut, m, teta, S, work )
 !        write(23,*) '      SELECTED EIGENVALUE:', teta(1)
 
-        call medirTiempo( 0, 11 )
         ! (12)
         call DGEMV( 'N', n, m, ONE, V, n, S, 1, ZERO, u, 1 )
         call DGEMV( 'N', n, m, ONE, Vb, n, S, 1, ZERO, p, 1 )
@@ -413,17 +442,15 @@ C     Local variables
           do i= 1, n
             r(i) = Va(i,1) - teta(1)*p(i)
           enddo
-          write(23,*) '      CANDIDATE EIGENVALUE:', teta(1)
+!          write(23,*) '      CANDIDATE EIGENVALUE:', teta(1)
 
           ITeps = EPS_IT_MIN
         ! (22)  
         enddo
-        call medirTiempo( 2, 11 )
 
         ! (23)
-        call medirTiempo( 0, 12 )
         if ( m .ge. Mmax ) then
-          write(23,*) '    RESTART JACOBI'
+!          write(23,*) '    RESTART JACOBI'
 
           ! (24)
 C          VAV = 0.0
@@ -456,14 +483,12 @@ C          VAV = 0.0
             offset = offset + 1
             VAV(offset,1) = teta(i)
           enddo
-          call medirTiempo( 2, 12 )
 
         ! (29)
         endif
 
-        call medirTiempo( 0, 13 )
         if (reortho.ge.JDreortho) then
-          write(23,*) '    REORTOGONALIZE BASE'
+!          write(23,*) '    REORTOGONALIZE BASE'
           nreort = nreort + 1
           do i= 1, m
             call GramSchmidt2( N, k, i-1, Z, Q, Vb, V, V(1,i), work )
@@ -471,10 +496,8 @@ C          VAV = 0.0
           enddo
 
           reortho = 0
-          call medirTiempo( 2, 13 )
         endif
 
-        call medirTiempo( 0, 14 )
         ! (30)
         rteta = teta(1)
         call dcopy( n, p, 1, Z(1,k+1), 1 )
@@ -482,10 +505,8 @@ C          VAV = 0.0
 
         ! (31)
         t  = 0.0
-
         call jd_correction( n, k+1, lastk, Kmax, Z, MM, A, B, rteta,
      &                      r, gm_it, t, work, lwork )
-        call medirTiempo( 2, 14 )
 
         ITeps = ITeps*0.5
         if (ITeps.lt.ITepsilon) ITeps = ITepsilon
@@ -509,7 +530,6 @@ C          VAV = 0.0
 !         call showTiempo( 23, 18,  '     choleskySolve :' )
 !         call showTiempo( 23, 19,  '     DGEMV         :' )
 
-        call medirTiempo( 2, 7 )
 
       ! (32)  
       end do
@@ -643,41 +663,26 @@ C     Set local pointers
       gmaux => work(o1:o2-1)
 
       ! (1) - (2)
-      call medirTiempo( 0, 15 )
       call ddmtmSym( n, k, lastk, Z, M, Maux )
-      call medirTiempo( 2, 15 )
 
       ! (3)
 C     computes the cholesky factorization of a symetric N-by-N matrix.
-      call medirTiempo( 0, 16 )
       call choleskyFact( k, lastk, M, LU )
-      call medirTiempo( 2, 16 )
 
       ! (4) - (6)
 C     gama = Z^t * r
-      call medirTiempo( 0, 17 )
       call ddmtv( n, k, Z, r, gama, gmaux )
-      call medirTiempo( 2, 17 )
 
       ! (7) (8)
 C     gama = M^(-1)*gama using LU from choleskyFact
-      call medirTiempo( 0, 18 )
       call choleskySolve( k, LU, gama )
-      call medirTiempo( 2, 18 )
 
       ! (9) r = Z*gama - r
-      call medirTiempo( 0, 19 )
       call DGEMV( 'N', n, k, ONE, Z, n, gama, 1, M_ONE, r, 1 )
-      call medirTiempo( 2, 19 )
 
       ! (10)
-      call medirTiempo( 0, 20 )
-      call medirTiempo( 0, 21 )
-      call medirTiempo( 0, 22 )
-
       call com_symmlq( n, k, kmax, A, B, teta, r, Z,
      &                 LU, t, gm_it, work, 5*n+2*kmax+nc )
-      call medirTiempo( 2, 20 )
       end subroutine jd_correction
 
       subroutine projectionMatrix( n, m, A, B, V, VA, VB, VAV, work )
@@ -738,8 +743,8 @@ C     Local variables
 #else
       residual_norm = sqrt(local(1)/local(2))
 #endif
-      write(23,*) '      RESIDUAL NORM        :',
-     &            residual_norm, JDepsilon
+!      write(23,*) '      RESIDUAL NORM        :',
+!     &            residual_norm, JDepsilon
       end function residual_norm
 
       end module jacobi_davidson      

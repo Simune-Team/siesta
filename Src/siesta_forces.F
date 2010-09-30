@@ -84,10 +84,13 @@
 
 !       Will use H0 computed above
         call setup_hamiltonian( iscf )
+        call printmemory( 6, 0 )
+
         if (h_setup_only) then
            call timer( 'siesta', 2 )
            call timer( 'all', 3 )
-           call bye("Requested end after setting up H")
+           call MPI_Finalize( iscf )
+           STOP
         endif
 
         call compute_dm( iscf )

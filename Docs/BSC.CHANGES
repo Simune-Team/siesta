@@ -1,6 +1,90 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+301 Alberto Garcia	  2010-09-30
+Fine-tuning of grid load-balancing and communications
+
+(By Rogeli Grima)
+
+* The load heuristics for the quadratic and "linear" distributions have
+been changed to take into account the fact that "vacuum" points do
+take some processing time.
+
+* To alleviate communication bottlenecks while changing distributions,
+asynchronous mpi sends and receives are used. This means that special
+buffers have to be allocated. Asynchronous communications are used by
+default, unless the SYNCHRONOUS preprocessor variable is set at compile
+time.
+
+* Other relevant changes: 
+ 
+  -- Use eight-byte integers for memory counters
+  -- Insertion of some trace markers, with extra mpi barriers, in 
+     a few places.
+
+This version still contains code to implement prototype
+Jacobi-Davidson iterative diagonalization (with and without the use of
+the SLEPC library).
+
+Detail of changes (most relevant):
+
+dhscf:        removal of debugging and some timing sections. Other cosmetics.
+alloc:        better name handling for memory accounting
+memory:       use 8-byte integers for counters.
+memoryinfo:   use 8-byte integers for counters.
+cellxc:       insert trace markers
+compute_dm:   remove debug sections related to slepc.
+diagon:       add debug markers
+
+distriphionmesh: change load heuristics for the quadratic and "linear"
+                 distributions. Allocate asynchronous-comms buffers.
+fft3d:        use timing
+initmesh:     make ntp into an 8-byte integer.
+initparallel: add debug sections.
+mneighb:      use timing
+
+moremeshsubs: add support for asynchronous communications. Rename
+              meshDistr variable to distr.
+poison:       better declaration of variables. Traces (barriers?)
+rhoofd:       turn into .F file to add MPI barriers for traces.
+siesta_cmlsubs: avoid the use of 'str' from FoX.
+siesta_forces:  use mpi_finalize directly instead of "bye" if 'h_setup_only'.
+siesta_init:  traces 
+slepc_diagon: reorganization.
+timer:        cosmetics
+vmat:         turn into .F file to add MPI barriers for traces.
+
+modified:
+  Src/alloc.F90
+  Src/cellxc.F
+  Src/compute_dm.F
+  Src/deflatedmv.F
+  Src/dhscf.F
+  Src/diagon.F
+  Src/distriphionmesh.F
+  Src/fft3d.F
+  Src/initatom.f
+  Src/initmesh.F
+  Src/initparallel.F
+  Src/jacobi_davidson.F
+  Src/memory.F
+  Src/memoryinfo.F
+  Src/mneighb.f
+  Src/moremeshsubs.F
+  Src/ordern.F
+  Src/overfsm.f
+  Src/poison.F
+  Src/rhoofd.F
+  Src/setup_H0.F
+  Src/siesta_cmlsubs.F90
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/slepc_diagon.F
+  Src/timer.F
+  Src/vmat.F
+  Src/write_subs.F
+
+------------------------------------
 300 Alberto Garcia	  2010-09-29
 Updates to fdf and dhscf (grdsam, doping)
 

@@ -47,6 +47,9 @@
       use m_projected_DOS,    only: init_projected_DOS
       use writewave,          only: gamma_wavefunctions,
      &                              setup_wf_kpoints
+#ifdef MPI
+      use mpi_siesta
+#endif
 #ifdef TRANSIESTA
 ! TSS Begin
       use m_ts_options, only: read_ts_options
@@ -55,37 +58,36 @@
 #endif /* TRANSIESTA */
       implicit none
 #ifdef MPI
-#include "mpif.h"
 # ifdef _SLEPC_
-# include "finclude/petsc.h"
+#   include "mpif.h"
+#   include "finclude/petsc.h"
 # endif
 #endif
 #ifdef MPI
       integer :: MPIerror  ! Return error code in MPI routines
 #endif
       real(dp):: veclen       ! Length of a unit-cell vector
-
-
       integer :: i, is, ispin
       integer :: neigmin      ! Min. number of eigenstates (per k point)
       integer :: ns           ! Number of species
-
       logical :: user_wants_supercell
-
 !------------------------------------------------------------------------- BEGIN
 #ifdef MPI
-!     Initialise MPI and set processor number
+C     Initialise MPI and set processor number
 #ifdef _SLEPC_
       call SlepcInitialize( PETSC_NULL_CHARACTER, MPIerror )
 #else
       call MPI_Init( MPIerror )
+#ifdef _TRACE_
+      call MPItrace_shutdown( )
+#endif
 #endif
       call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
       call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
 
       if (.not. fdf_parallel()) then
         call die('siesta_init: ERROR: FDF module ' //
-     .           'doesn''t have parallel support')
+     &           'doesn''t have parallel support')
       endif
 #endif
 #ifdef DEBUG
@@ -267,14 +269,8 @@
       endif
 
 !     Parallel initialisation
-#ifdef DEBUG
-      call write_debug( '  PRE initparallel' )
-#endif
       call initparallel( no_u, na_u, lasto, xa, ucell, rmaxh )
-#ifdef DEBUG
-      call write_debug( '  POS initparallel' )
-#endif
-!      if (IOnode) call show_distribution( )
+!     if (IOnode) call show_distribution( )
 
 !     Find number of locally stored orbitals and allocated related arrays
       call GetNodeOrbs(no_u,Node,Nodes,no_l)
@@ -404,4 +400,4 @@
 !--------------------------------------------------------------------------- END
       END subroutine siesta_init
 
-      End MODULE m_siesta_init
+      END MODULE m_siesta_init

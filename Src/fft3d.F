@@ -69,6 +69,8 @@ C
       save OldMesh
       data OldMesh/0,0,0/
 
+      call timer( 'FFT3D', 1 )
+
 C
 C     Set mesh size variables
 C
@@ -264,6 +266,7 @@ C
 C
 C     Deallocate local memory
 C
+      call timer( 'FFT3D', 2 )
 
       return
       end

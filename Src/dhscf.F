@@ -135,7 +135,7 @@ C       Set mesh sub-division variables & perform one off allocation
 C       Read spin-spiral wavevector (if defined)
         call readsp( qspiral, spiral )
         if (spiral .and. nspin.lt.4)
-     $    call die('dhscf: ERROR: spiral defined but nspin < 4')
+     &    call die('dhscf: ERROR: spiral defined but nspin < 4')
       endif   ! First time
 
       if (harrisfun) then
@@ -159,161 +159,161 @@ C     Find the maximum orbital radius
         rmax = max( rmax, rcut(is,iphi) )
       enddo
 
-C       Start time counter for mesh initialization
-        call timer( 'DHSCF1', 1 )
+C     Start time counter for mesh initialization
+      call timer( 'DHSCF1', 1 )
 
 C ----------------------------------------------------------------------
-C       Unit cell handling
+C     Unit cell handling
 C ----------------------------------------------------------------------
-C       Find diagonal unit cell and supercell
-        call digcel( ucell, mscell, cell, scell, nsc, IsDiag )
-        if (.not.IsDiag) then
-          if (Node.eq.0) then
-            write(6,'(/,a,3(/,a,3f12.6,a,i6))')
+C     Find diagonal unit cell and supercell
+      call digcel( ucell, mscell, cell, scell, nsc, IsDiag )
+      if (.not.IsDiag) then
+        if (Node.eq.0) then
+          write(6,'(/,a,3(/,a,3f12.6,a,i6))')
      &      'DHSCF: WARNING: New shape of unit cell and supercell:',
-     &     ('DHSCF:',(cell(i,j),i=1,3),'   x',nsc(j),j=1,3)
-          endif
+     &      ('DHSCF:',(cell(i,j),i=1,3),'   x',nsc(j),j=1,3)
         endif
+      endif
 
-C       Find the system shape
-        call shaper( cell, nua, isa, xa, shape, nbcell, bcell )
+C     Find the system shape
+      call shaper( cell, nua, isa, xa, shape, nbcell, bcell )
 
-C       Find system volume
-        volume = volcel( cell )
+C     Find system volume
+      volume = volcel( cell )
 
 C ----------------------------------------------------------------------
-C       Mesh initialization 
+C     Mesh initialization 
 C ----------------------------------------------------------------------
-        call InitMesh( na, cell, norb, iaorb, iphorb, isa, rmax, 
-     &                 G2max, G2mesh, nsc, nmpl, nm,
-     &                 nml, ntm, ntml, ntpl, dvol )
+      call InitMesh( na, cell, norb, iaorb, iphorb, isa, rmax, 
+     &               G2max, G2mesh, nsc, nmpl, nm,
+     &               nml, ntm, ntml, ntpl, dvol )
 
-        ! Setup box descriptors for each processor,
-        ! held in module iogrid_netcdf
-        call set_box_limits(ntm,nsm)
+!     Setup box descriptors for each processor,
+!     held in module iogrid_netcdf
+      call set_box_limits( ntm, nsm )
 
-C       Stop time counter for mesh initialization
-        call timer( 'DHSCF1', 2 )
+C     Stop time counter for mesh initialization
+      call timer( 'DHSCF1', 2 )
 C ----------------------------------------------------------------------
 C     End of mesh initialization 
 C ----------------------------------------------------------------------
+
 C ----------------------------------------------------------------------
-C       Initialize atomic orbitals, density and potential
+C     Initialize atomic orbitals, density and potential
 C ----------------------------------------------------------------------
-C       Start time counter for atomic initializations
-        call timer( 'DHSCF2', 1 )
+C     Start time counter for atomic initializations
+      call timer( 'DHSCF2', 1 )
 
-        if (nodes.gt.1) then
-           call setMeshDistr( UNIFORM, nsm, nsp,
-     $                        nml, nmpl, ntml, ntpl )
+      if (nodes.gt.1) then
+        call setMeshDistr( UNIFORM, nsm, nsp,
+     &                     nml, nmpl, ntml, ntpl )
+      endif
+
+C     Initialise quantities relating to the atom-mesh positioning
+      call InitAtomMesh( UNIFORM, na, xa )
+
+C     Check if we need extencils in cellxc
+      call setGGA( )
+
+C     Compute the number of orbitals on the mesh and recompute the
+C     partions for every processor in order to have a similar load
+C     in each of them.
+      nullify( numphi )
+      call re_alloc( numphi, 1, nmpl, 'numphi', 'dhscf_init' )
+      do i= 1, nmpl
+        numphi(i) = 0
+      enddo
+
+      call distriPhiOnMesh( nm, nmpl, norb, iaorb, iphorb,
+     &                      isa, numphi )
+
+C     Find if there are partial-core-corrections for any atom
+      npcc = 0
+      do ia = 1,na
+        if (rcore(isa(ia)) .gt. tiny) npcc = 1
+      enddo
+
+C     Find partial-core-correction energy density
+C     Vscf and Vaux are not used here
+      call re_alloc( rhopcc, 1, ntpl*npcc+1, 'rhopcc', 'dhscf_init' )
+      if (npcc .eq. 1) then
+        call PartialCoreOnMesh( na, isa, ntpl, rhopcc, indxua,
+     &    nsd, dvol, volume, dummy_Vscf, dummy_Vaux, Fal, stressl,
+     &    .false., .false. )
+        call reord( rhopcc, rhopcc, nml, nsm, TO_SEQUENTIAL )
+      endif
+
+C     Find neutral-atom potential
+C     Drho is not used here
+      call re_alloc( Vna, 1, ntpl, 'Vna', 'dhscf_init' )
+      call NeutralAtomOnMesh( na, isa, ntpl, Vna, indxua, dvol, 
+     &                        volume, dummy_DRho, Fal, stressl, 
+     &                        .false., .false. )
+      call reord( Vna, Vna, nml, nsm, TO_SEQUENTIAL )
+
+      if (nodes.gt.1) then
+        if (node .eq. 0) then
+           write(6,"(a)") "Setting up quadratic distribution..."
         endif
+        call setMeshDistr( QUADRATIC, nsm, nsp,
+     &                     nml, nmpl, ntml, ntpl )
 
-C       Initialise quantities relating to the atom-mesh positioning
-        call InitAtomMesh( UNIFORM, na, xa )
+C       Create extended mesh arrays for the second data distribution
+        call setupExtMesh( QUADRATIC, rmax )
 
-C       Check if we need extencils in cellxc
-        call setGGA( )
+C       Compute atom positions for the second data distribution 
+        call InitAtomMesh( QUADRATIC, na, xa )
+      endif
 
-C       Compute the number of orbitals on the mesh and recompute the
-C       partions for every processor in order to have a similar load
-C       in each of them.
-        nullify( numphi )
-        call re_alloc( numphi, 1, nmpl, 'numphi', 'dhscf_init' )
-        do i= 1, nmpl
-          numphi(i) = 0
-        enddo
+C     Calculate orbital values on mesh
+!     numphi has already been computed in distriPhiOnMesh
+!     in the UNIFORM distribution 
+      if (nodes.eq.1) then
+        numphi_par => numphi
+      else
+        nullify(numphi_par)
+        call re_alloc( numphi_par, 1, nmpl, 'numphi_par',
+     &                 'dhscf_init' )
+        call distMeshData( UNIFORM, numphi, QUADRATIC,
+     &                     numphi_par, KEEP )
+      endif
 
-        call distriPhiOnMesh( nm, nmpl, norb, iaorb, iphorb,
-     &                        isa, numphi )
+      call PhiOnMesh( nmpl, norb, iaorb, iphorb, isa, numphi_par )
 
-C       Find if there are partial-core-corrections for any atom
-        npcc = 0
-        do ia = 1,na
-          if (rcore(isa(ia)) .gt. tiny) npcc = 1
-        enddo
-
-C       Find partial-core-correction energy density
-C       Vscf and Vaux are not used here
-        call re_alloc( rhopcc, 1, ntpl*npcc+1, 'rhopcc', 'dhscf_init' )
-        if (npcc .eq. 1) then
-          call PartialCoreOnMesh( na, isa, ntpl, rhopcc, indxua,
-     &      nsd, dvol, volume, dummy_Vscf, dummy_Vaux, Fal, stressl,
-     &      .false., .false. )
-          call reord( rhopcc, rhopcc, nml, nsm, TO_SEQUENTIAL )
-        endif
-
-C       Find neutral-atom potential
-C       Drho is not used here
-        call re_alloc( Vna, 1, ntpl, 'Vna', 'dhscf_init' )
-        call NeutralAtomOnMesh( na, isa, ntpl, Vna, indxua, dvol, 
-     &                          volume, dummy_DRho, Fal, stressl, 
-     &                          .false., .false. )
-        call reord( Vna, Vna, nml, nsm, TO_SEQUENTIAL )
-
-        if (nodes.gt.1) then
-          if (node .eq. 0) then
-             write(6,"(a)") "Setting up quadratic distribution..."
-          endif
-          call setMeshDistr( QUADRATIC, nsm, nsp,
-     $                       nml, nmpl, ntml, ntpl )
-
-C         Create extended mesh arrays for the second data distribution
-          call setupExtMesh( QUADRATIC, rmax )
-C         Compute atom positions for the second data distribution 
-          call InitAtomMesh( QUADRATIC, na, xa )
-
-        endif
-
-C       Calculate orbital values on mesh
-        ! numphi has already been computed in distriPhiOnMesh
-        ! in the UNIFORM distribution 
-        if (nodes.eq.1) then
-          numphi_par => numphi
-        else
-          nullify(numphi_par)
-          call re_alloc( numphi_par, 1, nmpl, 'numphi_par',
-     &                   'dhscf_init' )
-          call distMeshData( UNIFORM, numphi, QUADRATIC,
-     $                       numphi_par, KEEP )
-        endif
-
-        call PhiOnMesh( nmpl, norb, iaorb, iphorb, isa, numphi_par )
-
-        if (nodes.gt.1) then
-           call de_alloc( numphi_par, 'numphi_par', 'dhscf_init' )
-        endif
-
-        call de_alloc( numphi, 'numphi', 'dhscf_init' )
+      if (nodes.gt.1) then
+        call de_alloc( numphi_par, 'numphi_par', 'dhscf_init' )
+      endif
+      call de_alloc( numphi, 'numphi', 'dhscf_init' )
 
 C ----------------------------------------------------------------------
 C       Create sparse indexing for Dscf as needed for local mesh
-!       Note that this is done in the QUADRATIC distribution
-!       since 'endpht' (computed finally in PhiOnMesh and stored in
-!       meshphi module) is in that distribution.
+C       Note that this is done in the QUADRATIC distribution
+C       since 'endpht' (computed finally in PhiOnMesh and stored in
+C       meshphi module) is in that distribution.
 C ----------------------------------------------------------------------
-        if (Nodes.gt.1) then
-          call CreateLocalDscfPointers( nmpl, nuotot, numd, listdptr, 
-     &                                  listd )
-        endif
+      if (Nodes.gt.1) then
+        call CreateLocalDscfPointers( nmpl, nuotot, numd, listdptr, 
+     &                                listd )
+      endif
 
 C ----------------------------------------------------------------------
-C       Calculate terms relating to the neutral atoms on the mesh
+C     Calculate terms relating to the neutral atoms on the mesh
 C ----------------------------------------------------------------------
-C       Find Harris (sum of atomic) electron density
-        call re_alloc( rhoatm_par, 1, ntpl, 'rhoatm_par', 'dhscf_init' )
-        call rhooda( norb, nmpl, datm, rhoatm_par, iaorb, iphorb, isa )
-        ! rhoatm_par comes out of here in clustered form in QUADRATIC dist
+C     Find Harris (sum of atomic) electron density
+      call re_alloc( rhoatm_par, 1, ntpl, 'rhoatm_par', 'dhscf_init' )
+      call rhooda( norb, nmpl, datm, rhoatm_par, iaorb, iphorb, isa )
+!     rhoatm_par comes out of here in clustered form in QUADRATIC dist
 
-C       Routine Poison should use the uniform data distribution
-        if (nodes.gt.1) then
-           call setMeshDistr( UNIFORM, nsm, nsp,
-     $                        nml, nmpl, ntml, ntpl )
-        endif
+C     Routine Poison should use the uniform data distribution
+      if (nodes.gt.1) then
+         call setMeshDistr( UNIFORM, nsm, nsp,
+     &                      nml, nmpl, ntml, ntpl )
+      endif
 
-C       Create Rhoatm using UNIFORM distr, in sequential form
-        call re_alloc( rhoatm, 1, ntpl, 'rhoatm', 'dhscf_init' )
-        call distMeshData( QUADRATIC, rhoatm_par,
-     $                     UNIFORM, rhoatm, TO_SEQUENTIAL )
+C     Create Rhoatm using UNIFORM distr, in sequential form
+      call re_alloc( rhoatm, 1, ntpl, 'rhoatm', 'dhscf_init' )
+      call distMeshData( QUADRATIC, rhoatm_par,
+     &                   UNIFORM, rhoatm, TO_SEQUENTIAL )
 !
 !  AG: The initialization of doping structs could be done here now,
 !      in the uniform distribution, and with a simple loop over
@@ -326,21 +326,21 @@ C       Create Rhoatm using UNIFORM distr, in sequential form
            ! Then, the doping density to be added can be simply computed
         endif
 
-C       Allocate Temporal array
-        call re_alloc( Vscf, 1, ntpl, 1, nspin, 'Vscf', 'dhscf_init' )
+C     Allocate Temporal array
+      call re_alloc( Vscf, 1, ntpl, 1, nspin, 'Vscf', 'dhscf_init' )
 
-C       Vscf is filled here but not used later
-C       Uharrs is computed (and saved)
-C       DStres is computed but not used later
-        call poison( cell, ntml(1), ntml(2), ntml(3), ntm, rhoatm,
-     &               Uharrs, Vscf, DStres, nsm )
-        call de_alloc( Vscf, 'Vscf', 'dhscf_init' )
+C     Vscf is filled here but not used later
+C     Uharrs is computed (and saved)
+C     DStres is computed but not used later
+      call poison( cell, ntml(1), ntml(2), ntml(3), ntm, rhoatm,
+     &             Uharrs, Vscf, DStres, nsm )
+      call de_alloc( Vscf, 'Vscf', 'dhscf_init' )
 
-        ! Always deallocate rhoatm_par, as it was used even if nodes=1
-        call de_alloc( rhoatm_par, 'rhoatm_par', 'dhscf_init' )
+!     Always deallocate rhoatm_par, as it was used even if nodes=1
+      call de_alloc( rhoatm_par, 'rhoatm_par', 'dhscf_init' )
 
-C       Stop time counter for atomic initializations
-        call timer( 'DHSCF2', 2 )
+C     Stop time counter for atomic initializations
+      call timer( 'DHSCF2', 2 )
 
 C ----------------------------------------------------------------------
 C     At the end of initializations:
@@ -348,17 +348,16 @@ C     At the end of initializations:
 !     Rhoatm, Rhopcc and Vna are in UNIFORM dist, sequential form
 !     The index array endpht is in the QUADRATIC distribution
 C ----------------------------------------------------------------------
-
       if (frstme) then
          call initialize_efield()
       endif
 
 #ifdef TRANSIESTA
       if (frstme) then
-        !  Check if we need to add the potential 
-        !corresponding to the voltage-drop.
-        ! ** FDN: Check that this routine expects things in the
-        !         UNIFORM distribution
+!        Check if we need to add the potential 
+!        corresponding to the voltage-drop.
+!         ** FDN: Check that this routine expects things in the
+!                 UNIFORM distribution
         if (TSmode) then
           call TSvoltage2( cell, ntm, nsm, dummy_Vscf, IsVolt )
           if(IsVolt .and. acting_efield) then
@@ -374,7 +373,6 @@ C ----------------------------------------------------------------------
       frstme = .false.
 
       call timer( 'DHSCF_Init', 2 )
-
 #ifdef DEBUG
       call write_debug( '    POS dhscf_init' )
 #endif
@@ -489,10 +487,9 @@ C ----------------------------------------------------------------------
 C     Modules
       use precision,     only  : dp, grid_p
 
-      ! Number of Mesh divisions of each cell vector (global)
-      ! The status of this variable is confusing
+!     Number of Mesh divisions of each cell vector (global)
+!     The status of this variable is confusing
       use mesh,          only  : nm => nmeshg
-
       use parallel,      only  : Node, Nodes
       use atmfuncs,      only  : rcut, rcore
       use fdf
@@ -521,7 +518,6 @@ C     Modules
       use m_efield,       only: get_field_from_dipole, dipole_correction
       use m_efield,       only: add_potential_from_field
       use m_efield,       only: user_specified_field, acting_efield
-
       use m_doping_uniform,       only: doping_active, doping_uniform
 
 #ifdef TRANSIESTA
@@ -607,23 +603,14 @@ C real*8  x0(3)         : Center of molecule
 C logical harrisfun     : Harris functional or Kohn-Sham?
 C ----------------------------------------------------------------------
 
-C
-C Internal variables
-C
+C     Local variables
       integer  :: i, ia, ip, ispin, nsd
       real(dp) :: b1Xb2(3), const, DEc, DEx, DStres(3,3),
-     $            Ec, Ex, rhotot, x0(3),
-     $            volume
-
-#ifdef MPI
-      integer  MPIerror
-#endif
-
-!
+     &            Ec, Ex, rhotot, x0(3),
+     &            volume
 !     Dummy arrays for cellxc call
-!
-      real(grid_p) ::  aux3(3,1)
-      real(grid_p), dimension(1,1,1)  :: dummy_DVxcdn
+      real(grid_p) :: aux3(3,1)
+      real(grid_p) :: dummy_DVxcdn(1,1,1)
 
       real(dp), external :: volcel, ddot
 
@@ -635,12 +622,15 @@ C
      &  timer, vmat, vmatsp, 
      &  readsp
 
-      ! Work arrays
+C     Work arrays
       real(grid_p), pointer :: Vscf(:,:), Vscf_par(:,:), Vscf_gga(:,:),
      &                         DRho(:,:), DRho_par(:,:), DRho_gga(:,:),
      &                         Vaux(:), Vaux_par(:), Chlocal(:),
      &                         Totchar(:), fsrc(:), fdst(:)
-      real(dp)              :: sbuffer(7), rbuffer(7)
+#ifdef MPI
+      integer  :: MPIerror
+      real(dp) :: sbuffer(7), rbuffer(7)
+#endif
 
 #ifdef DEBUG
       call write_debug( '    PRE DHSCF' )
@@ -657,9 +647,12 @@ C     At the end of DHSCF_INIT, and also at the end of any previous
 !     The index array endpht was in the QUADRATIC distribution
 C ----------------------------------------------------------------------
 
+#ifdef _TRACE_
+      call MPI_Barrier( MPI_Comm_World, MPIerror )
+      call MPItrace_restart( )
+#endif
       call timer( 'DHSCF', 1 )
       call timer( 'DHSCF3', 1 )
-      call medirTiempo( 1, 1 )
 
       nullify( Vscf, Vscf_par, Vscf_gga, DRho, DRho_par, DRho_gga,
      &         Vaux, Vaux_par, Chlocal, Totchar )
@@ -714,21 +707,18 @@ C             rhoatm and Drho are in sequential mode
         ! Set the QUADRATIC distribution and allocate memory for DRho_par
         if (nodes.gt.1) then
            call setMeshDistr( QUADRATIC, nsm, nsp,
-     $                        nml, nmpl, ntml, ntpl )
+     &                        nml, nmpl, ntml, ntpl )
         endif
         call re_alloc( DRho_par, 1, ntpl, 1, nspin,
-     $                 'DRho_par','dhscf' )       
-
+     &                 'DRho_par','dhscf' )       
         if (spiral) then
           call rhoofdsp( norb, nmpl, maxnd, numd, listdptr, listd,
      &                   nspin, Dscf, DRho_par, nuo, nuotot, iaorb,
      &                   iphorb, isa, qspiral )
         else
-          call medirTiempo( 1, 2 )
           call rhoofd( norb, nmpl, maxnd, numd, listdptr, listd,
      &                 nspin, Dscf, DRho_par, nuo, nuotot, iaorb,
      &                 iphorb, isa )
-          call medirTiempo( 2, 2 )
         endif
         ! DRHO_par is here in QUADRATIC, clustered form
 
@@ -739,12 +729,12 @@ C       Set the UNIFORM distribution again and copy DRho to it
         !AG** NOTE: Clarify nsd vs. nspin 
         !           What happens for non-collinear spin calculations?
         do ispin = 1, nspin
-           fsrc => DRho_par(:,ispin)
-           fdst => DRho(:,ispin)
-           ! Sequential to be able to write it out
-           ! if nodes==1, this call will just reorder
-           call distMeshData( QUADRATIC, fsrc,
-     $                       UNIFORM, fdst, TO_SEQUENTIAL )
+          fsrc => DRho_par(:,ispin)
+          fdst => DRho(:,ispin)
+         ! Sequential to be able to write it out
+         ! if nodes==1, this call will just reorder
+          call distMeshData( QUADRATIC, fsrc,
+     &                       UNIFORM, fdst, TO_SEQUENTIAL )
         enddo
         call de_alloc( DRho_par, 'DRho_par','dhscf' )
       endif
@@ -761,7 +751,6 @@ C ----------------------------------------------------------------------
 C Save the diffuse ionic charge and/or the total (ionic+electronic) charge
 C ----------------------------------------------------------------------
       if (filepsch .ne. ' ' .or. filetoch .ne. ' ') then
-
 C       Find diffuse ionic charge on mesh
         ! Note that the *OnMesh routines, except PhiOnMesh,
         ! work with any distribution, thanks to the fact that
@@ -867,13 +856,10 @@ C ----------------------------------------------------------------------
 C     Find Hartree potential of DRho = rhoscf-rhoatm. Store it in Vscf
 C ----------------------------------------------------------------------
 C     Solve Poisson's equation
-
       call re_alloc( Vscf, 1, ntpl, 1, nspin, 'Vscf', 'dhscf' )
 
-      call medirTiempo( 1, 3 )
       call poison( cell, ntml(1), ntml(2), ntml(3), ntm, DRho,
      &             DUscf, Vscf, DStres, nsm )
-      call medirTiempo( 2, 3 )
 
       ! Vscf is in the UNIFORM, sequential form, and only using
       ! the first spin index
@@ -922,15 +908,15 @@ C ----------------------------------------------------------------------
          if (dipole_correction) then
             field = get_field_from_dipole(dipol,cell)
             if (Node == 0) write(6,'(a,3f12.6,a)')
-     $           'Electric field for dipole correction =',
-     $           field, ' Ry/Bohr/e'
+     &           'Electric field for dipole correction =',
+     &           field, ' Ry/Bohr/e'
          else
             field = user_specified_field
          endif
          ! This routine expects a sequential array,
          ! but it is distribution-blind
          call add_potential_from_field( field, cell, nua, isa, xa,
-     $                                  ntm, nsm, Vscf )
+     &                                  ntm, nsm, Vscf )
          DUext = - ddot(3,field,1,dipol,1)
       endif
 
@@ -991,8 +977,7 @@ C ----------------------------------------------------------------------
         endif
       enddo
 
-      ! Everything now is in UNIFORM, sequential form
-
+!     Everything now is in UNIFORM, sequential form
       if (nodes.gt.1) then
          call setMeshDistr( LINEAR, nsm, nsp, nml, nmpl, ntml, ntpl )
       endif
@@ -1006,14 +991,9 @@ C ----------------------------------------------------------------------
         call distMeshData( UNIFORM, fsrc, LINEAR, fdst, KEEP )
       enddo
 
-#ifdef DEBUG
-      call write_debug( '    PRE cellxc' )
-#endif
-      call medirTiempo( 1, 4 )
       call cellxc( 0, 0, cell, ntml, ntml, ntpl, 0, aux3, nspin,
      &             DRho_gga, Ex, Ec, DEx, DEc, Vscf_gga,
      &             dummy_DVxcdn, stressl )
-      call medirTiempo( 2, 4 )
 
       if (nodes.gt.1) then
          call setMeshDistr( UNIFORM, nsm, nsp, nml, nmpl, ntml, ntpl )
@@ -1030,9 +1010,10 @@ C ----------------------------------------------------------------------
 
       Exc = Ex + Ec
       Dxc = DEx + DEc
-      ! Vscf contains only Vxc, and is UNIFORM and sequential
-      ! Now we add up the other contributions to it, at 
-      ! the same time that we get DRho back to true DeltaRho form
+
+!     Vscf contains only Vxc, and is UNIFORM and sequential
+!     Now we add up the other contributions to it, at 
+!     the same time that we get DRho back to true DeltaRho form
       do ispin = 1,nsd
         do ip = 1,ntpl
           DRho(ip,ispin) = DRho(ip,ispin) - rhoatm(ip) / nsd
@@ -1058,17 +1039,18 @@ C ----------------------------------------------------------------------
       if (iHmat .eq. 1) then
          if (nodes.gt.1) then
             call setMeshDistr( QUADRATIC, nsm, nsp,
-     $                         nml, nmpl, ntml, ntpl )
+     &                         nml, nmpl, ntml, ntpl )
          endif
 
-         ! This is a work array, to which we copy Vscf
+!        This is a work array, to which we copy Vscf
          call re_alloc( Vscf_par, 1, ntpl, 1, nspin,
      &                 'Vscf_par', 'dhscf' )
+
          do ispin = 1, nspin
-            fsrc => Vscf(:,ispin)
-            fdst => Vscf_par(:,ispin)
-            call distMeshData( UNIFORM, fsrc,
-     $                         QUADRATIC, fdst, TO_CLUSTER )
+           fsrc => Vscf(:,ispin)
+           fdst => Vscf_par(:,ispin)
+           call distMeshData( UNIFORM, fsrc,
+     &                        QUADRATIC, fdst, TO_CLUSTER )
          enddo
 
          if (spiral) then
@@ -1076,24 +1058,22 @@ C ----------------------------------------------------------------------
      &           numd, listdptr, listd, Hmat, nuo,
      &           nuotot, iaorb, iphorb, isa, qspiral )
          else
-            call medirTiempo( 1, 5 )
             call vmat( norb, nmpl, dvol, nspin, Vscf_par, maxnd,
      &           numd, listdptr, listd, Hmat, nuo,
      &           nuotot, iaorb, iphorb, isa )
-            call medirTiempo( 2, 5 )
          endif
 
          call de_alloc( Vscf_par,  'Vscf_par', 'dhscf' )
          if (nodes.gt.1) then
-            call setMeshDistr( UNIFORM, nsm, nsp,
-     $                         nml, nmpl, ntml, ntpl )
+!          Everything back to UNIFORM, sequential
+           call setMeshDistr( UNIFORM, nsm, nsp,
+     &                         nml, nmpl, ntml, ntpl )
          endif
       endif
 
-      ! Everything back to UNIFORM, sequential
 
 #ifdef MPI
-C Global reduction of Uscf/DUscf/Uatm/Enaatm/Enascf
+C     Global reduction of Uscf/DUscf/Uatm/Enaatm/Enascf
       sbuffer(1) = Uscf
       sbuffer(2) = DUscf
       sbuffer(3) = Uatm
@@ -1112,36 +1092,35 @@ C Global reduction of Uscf/DUscf/Uatm/Enaatm/Enascf
       Dxc    = rbuffer(7)
 #endif
 
-C Add contribution to stress from the derivative of the Jacobian of ---
-C r->r' (strained r) in the integral of Vna*(rhoscf-rhoatm)
+C     Add contribution to stress from the derivative of the Jacobian of ---
+C     r->r' (strained r) in the integral of Vna*(rhoscf-rhoatm)
       if (istr .eq. 1) then
         do i = 1,3
           stress(i,i) = stress(i,i) + ( Enascf - Enaatm ) / volume
         enddo
       endif
 
-C Stop time counter for SCF iteration part
+C     Stop time counter for SCF iteration part
       call timer( 'DHSCF3', 2 )
 
 C ----------------------------------------------------------------------
-C End of SCF iteration part
+C     End of SCF iteration part
 C ----------------------------------------------------------------------
 
       if (ifa.eq.1 .or. istr.eq.1) then
 C ----------------------------------------------------------------------
 C Forces and stress : SCF contribution
 C ----------------------------------------------------------------------
-C Start time counter for force calculation part
+C       Start time counter for force calculation part
         call timer( 'DHSCF4', 1 )
 
-C Find contribution of partial-core-correction
+C       Find contribution of partial-core-correction
         if (npcc .eq. 1) then
-
           call reord( rhopcc, rhopcc, nml, nsm, TO_CLUSTER )
           call reord( Vaux, Vaux, nml, nsm, TO_CLUSTER )
           do ispin = 1,nsd
             call reord( Vscf(:,ispin), Vscf(:,ispin),
-     $                  nml, nsm, TO_CLUSTER )
+     &                  nml, nsm, TO_CLUSTER )
           enddo
 
           call PartialCoreOnMesh( na, isa, ntpl, rhopcc, indxua, nsd,
@@ -1152,21 +1131,19 @@ C Find contribution of partial-core-correction
           call reord( Vaux, Vaux, nml, nsm, TO_SEQUENTIAL )
           do ispin = 1,nsd
             call reord( Vscf(:,ispin), Vscf(:,ispin),
-     $                  nml, nsm, TO_SEQUENTIAL )
+     &                  nml, nsm, TO_SEQUENTIAL )
           enddo
-
         endif
 
         if ( harrisfun) then
-          ! Forhar deals internally with its own needs
-          ! for distribution changes
+!         Forhar deals internally with its own needs
+!         for distribution changes
           call forhar( ntpl, nspin, nml, ntml, npcc, cell, 
      &                 rhoatm, rhopcc, Vna, DRho, Vscf, Vaux )
-          !
-          ! Upon return, everything is UNIFORM, sequential form
+!         Upon return, everything is UNIFORM, sequential form
         endif
 
-C Transform spin density into sum and difference
+C       Transform spin density into sum and difference
         if (nsd .eq. 2) then
           do ip = 1,ntpl
             rhotot     = DRho(ip,1) + DRho(ip,2)
@@ -1184,14 +1161,14 @@ C       Find contribution of neutral-atom potential
         call reord( DRho, DRho, nml, nsm, TO_SEQUENTIAL )
         call reord( Vna, Vna, nml, nsm, TO_SEQUENTIAL )
 
-C Vaux is (minus) the potential which multiplies rhoatm
-*       if (nsd .eq. 2) then
-*         Vaux(1:ntpl) = 0.5_grid_p * Vaux(1:ntpl)
-*       endif
+C       Vaux is (minus) the potential which multiplies rhoatm
+*         if (nsd .eq. 2) then
+*           Vaux(1:ntpl) = 0.5_grid_p * Vaux(1:ntpl)
+*         endif
 
         if (nodes.gt.1) then
            call setMeshDistr( QUADRATIC, nsm, nsp,
-     $                       nml, nmpl, ntml, ntpl )
+     &                       nml, nmpl, ntml, ntpl )
         endif
 
         call re_alloc( Vscf_par, 1, ntpl, 1, nspin,
@@ -1200,13 +1177,13 @@ C Vaux is (minus) the potential which multiplies rhoatm
           fsrc => Vscf(:,ispin)
           fdst => Vscf_par(:,ispin)
           call distMeshData( UNIFORM, fsrc,
-     $                       QUADRATIC, fdst, TO_CLUSTER )
+     &                       QUADRATIC, fdst, TO_CLUSTER )
         enddo
 
-        ! Remember that Vaux contains everything except Vxc
+!       Remember that Vaux contains everything except Vxc
         call re_alloc( Vaux_par, 1, ntpl, 'Vaux_par', 'dhscf' )
         call distMeshData( UNIFORM, Vaux,
-     $                     QUADRATIC, Vaux_par, TO_CLUSTER )
+     &                     QUADRATIC, Vaux_par, TO_CLUSTER )
 
         call dfscf( ifa, istr, na, norb, nuo, nuotot, nmpl, nspin,
      &              indxua, isa, iaorb, iphorb,
@@ -1217,14 +1194,14 @@ C Vaux is (minus) the potential which multiplies rhoatm
         call de_alloc( Vscf_par, 'Vscf_par', 'dhscf' )
 
         if (nodes.gt.1) then
-           call setMeshDistr( UNIFORM, nsm, nsp, nml, nmpl, ntml, ntpl )
+          call setMeshDistr( UNIFORM, nsm, nsp, nml, nmpl, ntml, ntpl )
         endif
 
 
-C Stop time counter for force calculation part
+C       Stop time counter for force calculation part
         call timer( 'DHSCF4', 2 )
 C ----------------------------------------------------------------------
-C End of force and stress calculation
+C       End of force and stress calculation
 C ----------------------------------------------------------------------
       endif
 
@@ -1232,12 +1209,11 @@ C ----------------------------------------------------------------------
 !     Rhoatm, Rhopcc and Vna are in UNIFORM dist, sequential form
 !     The index array endpht is in the QUADRATIC distribution
 
-C Stop time counter
+C     Stop time counter
       call timer( 'DHSCF', 2 )
-      call medirTiempo( 2, 1 )
 
 C ----------------------------------------------------------------------
-C Free locally allocated memory
+C     Free locally allocated memory
 C ----------------------------------------------------------------------
       call de_alloc( Vaux, 'Vaux', 'dhscf' )
       call de_alloc( Vscf, 'Vscf', 'dhscf' )

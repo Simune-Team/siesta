@@ -24,7 +24,7 @@ C                each data type
 C
       implicit none
 
-      integer, save ::
+      integer*8, save ::
      .  WordsInteger, WordsSP, WordsDP, WordsLogical, WordsSC, WordsDC, 
      .  WordsString, WordsLongInt,
      .  PeakMemory, CurrentMemory

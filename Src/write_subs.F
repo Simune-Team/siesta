@@ -378,7 +378,9 @@
         if (harrisfun) then 
           write(6,"(/a,f14.6,/)") 'siesta: Eharris(eV) = ', Eharrs/eV
 !         No need for further cml output
-        elseif (isolve==SOLVE_DIAGON) then
+        elseif (isolve==SOLVE_DIAGON .or.
+     &          isolve==SOLVE_JACOBI .or.
+     &          isolve==SOLVE_SLEPC ) then
           if (cml_p) 
      .         call cmlAddProperty(xf=mainXML, value=FreeE/eV, 
      .         units="siestaUnits:eV", 

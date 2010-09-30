@@ -66,6 +66,7 @@ C ==================================================================
       use moreMeshSubs, only: initMeshExtencil
 #endif
       use moreMeshSubs, only: initMeshDistr
+      use moreMeshSubs, only: allocASynBuffer
       use moreMeshSubs, only: UNIFORM, QUADRATIC, LINEAR
       use cellxc_mod,   only: GGA, setGGA
       use alloc,        only: re_alloc, de_alloc
@@ -118,12 +119,18 @@ C           If within range, add one to number of point orbitals
         nullify( wload )
         call re_alloc( wload, 1, nmpl, 'wload', 'distriPhiOnMesh' )
         do ip0= 1, nmpl
-          wload(ip0) = numphi(ip0)*numphi(ip0)
+          wload(ip0) = numphi(ip0)*(numphi(ip0)+1) + 1
         enddo
         call initMeshDistr( UNIFORM, QUADRATIC, nm, wload )
 
         do ip0= 1, nmpl
-          if (numphi(ip0).ne.0) wload(ip0) = 1
+!         The computational work of a mesh point in cellxc is almost 0 when
+!         when the charge density is zero. We use a proportion of 400/1.
+          if (numphi(ip0).ne.0) then
+            wload(ip0) = 400
+          else
+            wload(ip0) = 1
+          endif
         enddo
         call initMeshDistr( UNIFORM, LINEAR, nm, wload )
         if (GGA) call initMeshExtencil( LINEAR, nm )
@@ -131,7 +138,11 @@ C           If within range, add one to number of point orbitals
 C       Free local memory
         call de_alloc( wload, 'wload', 'distriPhiOnMesh' )
 
+C       Allocate memory for asynchronous communications.
+C       It does nothing if we use synchronous communications.
+        call allocASynBuffer( LINEAR )
       endif
+
       call timer( 'REMESH', 2 )
 #endif
 #ifdef DEBUG
