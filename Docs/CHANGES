@@ -6,6 +6,20 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2010-10-01  10:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-361
+Improved documentation of VDW-KBM functional
+
+(J. Soler)
+
+modified:
+  Docs/siesta.tex
+  Src/SiestaXC/atomxc.F90
+  Src/SiestaXC/cellxc.F90
+  Src/SiestaXC/siestaxc.F90
+  Src/SiestaXC/vdwxc.F90
+  Src/SiestaXC/xcmod.f90
+
+-----------------------------------------------------------------------
 2010-08-05  15:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-360
 (Admin) Incorporate logs of recent patches from 3.0 branch
 
