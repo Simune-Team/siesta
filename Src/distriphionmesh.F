@@ -143,8 +143,8 @@ C       It does nothing if we use synchronous communications.
         call allocASynBuffer( LINEAR )
       endif
 
-      call timer( 'REMESH', 2 )
 #endif
+      call timer( 'REMESH', 2 )
 #ifdef DEBUG
       call write_debug( '      POS distriPhiOnMesh' )
 #endif
