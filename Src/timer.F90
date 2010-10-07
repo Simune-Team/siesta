@@ -151,6 +151,7 @@ end subroutine timer
       end subroutine showTiempo
 #else
       MODULE tiempo
+      implicit none
       integer(4)          :: maxcont = 20
       integer(8), pointer :: timer(:,:)
       real(8),    pointer :: abs_time(:), neventos(:)
@@ -222,8 +223,8 @@ end subroutine timer
         neventos(cont) = neventos(cont) + 1.0
 #ifdef DEBUG
         write(23,*) '      iter:', neventos(cont),
-     &    'Tiempo:', (REAL(itime) / REAL(rate)),
-     &    ' total:', abs_time(cont)
+     $   'Tiempo:', (REAL(itime) / REAL(rate)),
+     $   ' total:', abs_time(cont)
 #endif
       ELSE IF (job == 0) THEN
         timer(1,cont)  = current_time

@@ -57,6 +57,9 @@ C
      &                       serial, noexpert, divideconquer, use2d,
      &                       prerotate, ictxt, allinone, doread,
      &                       firstcall
+#ifdef MPI
+      use mpi_siesta
+#endif
       implicit          none
 
 C Passed variables
@@ -74,6 +77,7 @@ C Passed variables
 C Local variables
       type(allocDefaults) oldDefaults
 #ifdef MPI
+      integer                 :: MPIerror
       integer                 :: anb
       integer                 :: clustersize
       integer                 :: desch(9)
