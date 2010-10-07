@@ -39,13 +39,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, BSC-296}}
+{\Huge {\bf S I E S T A \, \, bsc-303}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large November 24, 2009 }
+{\Large October 7, 2010 }
 
 \vspace{1.5cm}
 
@@ -126,9 +126,10 @@ to perform electronic structure calculations and {\it ab initio} molecular
 dynamics simulations of molecules and solids. Its main characteristics are:
 \begin{itemize}
 \item
-It uses the standard Kohn-Sham self-consistent density functional
-method in the local density (LDA-LSD) or generalized gradient (GGA)
-approximations.
+It uses the standard Kohn-Sham selfconsistent density functional
+method in the local density (LDA-LSD) and generalized gradient (GGA)
+approximations, as well as in a non local functional that includes
+van der Waals interactions (VDW-DF).
 \item
 It uses norm-conserving pseudopotentials in their fully nonlocal
 (Kleinman-Bylander) form.
@@ -1957,6 +1958,43 @@ If the {\bf LatticeConstant} default is used, the default of
 {\bf LatticeVectors} is still diagonal but not necessarily cubic.
 
 
+\item[{\bf SuperCell}] ({\it data block}): 
+\index{SuperCell@{\bf SuperCell}} 
+Integer 3x3 matrix defining a supercell in terms of the unit cell: 
+
+\begin{verbatim}
+     %block SuperCell
+        M(1,1)  M(2,1)  M(3,1) 
+        M(1,2)  M(2,2)  M(3,2) 
+        M(1,3)  M(2,3)  M(3,3) 
+     %endblock SuperCell
+\end{verbatim}
+
+and the supercell is defined as
+$SuperCell(ix,i) = \sum_j CELL(ix,j)*M(j,i)$.
+Notice that the matrix indexes are inverted: each input line 
+specifies one supercell vector.
+
+{\it Warning:} {\bf SuperCell} is disregarded if the geometry is read from
+the XV file, which can happen unadvertedly.
+
+{\it Use:} The atomic positions must be given only for the unit cell,
+and they are 'cloned' automatically in the rest of the supercell.
+The {\bf NumberOfAtoms} given must also be that in a single unit cell.
+However, all values in the output are given for the entire supercell. 
+In fact, CELL is inmediately redefined as the whole supercell and the 
+program no longer knows the existence of an underlying unit cell.
+All other input (apart from NumberOfAtoms and atomic positions), 
+including {\bf kgridMonkhorstPack} must refer to the supercell 
+(this is a change over previous versions). Therefore, to avoid
+confusions, we recommend to use {\bf SuperCell} only to
+generate atomic positions, and then to copy them from the output
+to a new input file with all the atoms specified explicitly and
+with the supercell given as a normal unit cell.
+
+{\it Default value:} No supercell (supercell equal to unit cell).
+
+
 \item[{\bf AtomicCoordinatesFormat}] ({\it string}):
 \index{AtomicCoordinatesFormat@{\bf AtomicCoordinatesFormat}}
 Character string to specify the format of the atomic positions in
@@ -2632,11 +2670,13 @@ used in the grid for $k$-sampling, into the main output file.
 \itemsep 10pt
 \parsep 0pt
 
-\item[{\bf XC.functional}] ({\it string}):
-\index{XC.functional@{\bf XC.functional}}
-Exchange-correlation functional type. May be {\tt LDA}
-(local density approximation, equivalent to {\tt LSD}) or
-{\tt GGA} (Generalized Gradient Approximation).
+
+\item[{\bf XC.functional}] ({\it string}): 
+\index{XC.functional@{\bf XC.functional}} 
+Exchange-correlation functional type. May be {\tt LDA} 
+(local density approximation, equivalent to {\tt LSD}),
+{\tt GGA} (Generalized Gradient Approximation), or
+{\tt VDW} (van der Waals).
 
 {\it Use:} Spin polarization is defined by SpinPolarized label for
 both {\tt LDA} and {\tt GGA}. There is no difference between {\tt LDA}
@@ -2680,7 +2720,11 @@ correlation functional (C. Lee, W. Yang, R. G. Parr, Phys. Rev. B
 Chem. Phys. Lett. {\bf 157}, 200 (1989). See also Johnson, Gill and Pople,
 J. Chem. Phys. {\bf 98}, 5612 (1993). (Some errors were detected in this
 last paper, so not all of their expressions correspond exactly to those
-implemented in {\sc Siesta}).
+implemented in {\sc Siesta})
+\item {\tt DRSLL} van der Waals exchange-correlation density functional of
+M. Dion, H. Rydberg, E. Schr\"{o}der, D. C. Langreth, and B. I. Lundqvist,
+Phys. Rev. Lett. {\bf 92}, 246401 (2004), with the efficient implementation of 
+G. Rom\'an-P\'erez and J. M. Soler, Phys. Rev. Lett. {\bf 103},  096102 (2009).
 
 \end{itemize}
 
@@ -2735,11 +2779,14 @@ or spin polarized ({\tt .true.}) calculation.
 \item[{\bf NonCollinearSpin}] ({\it logical}):
 \index{NonCollinearSpin@{\bf NonCollinearSpin}}\index{spin}
 \index{spin!non-collinear}\index{LSD}
-If {\tt .true.}, non-collinear spin is described using spinor wavefunctions
+If {\tt .true.}, non-collinear spin (i.e. with variable orientation)
+is described using spinor wavefunctions
 and $(2 \times 2)$ spin density matrices at every grid point.
 Ref: T. Oda et al, PRL, {\bf 80}, 3622 (1998).
-Not compatible with GGA because non-collinear density functional
-theory has been developed only for a local functional.
+Notice that no GGA functionals have been derived specifically for non
+collinear spin. Therefore, only the gradient of the spin polarization
+magnitude, and not the gradient of its orientation, are considered
+to calculate the local xc energy density.
 Not compatible with the {\tt Diag.ParallelOverK} option
 {\it Default value:} {\tt .false.}
 
@@ -2772,7 +2819,6 @@ and the LUMO. If there is no spin polarisation, it is half swap only.
 It is done for the first spin component (up) and first k vector.
 
 {\it Default value:} {\tt .false.}
-
 
 \end{description}
 
@@ -3339,14 +3385,20 @@ the issue (see Sect.~\ref{sec:filtering}).
 \index{MeshCutoff@{\bf MeshCutoff}}\index{grid}\index{mesh}
 Defines the plane wave cutoff for the grid.
 
+% JMS/AG. To be implemented:
+%{\it Default value:} If not present, \textbf{MeshCutoff} is made equal 
+%to \textbf{FilterCutoff}, if present. If not, it is obtained from
+%\textbf{FilterTol}, if present, as explained in that parameter.
+%If none of these parameters is present, the default value for 
+%\textbf{MeshCutoff} is {\tt 100 Ry}
+ 
 {\it Default value:} {\tt 100 Ry}
 
 \item[{\bf MeshSubDivisions}] ({\it integer}):
-  \index{MeshSubDivisions@{\bf
-      MeshSubDivisions}}\index{grid}\index{mesh} Defines the number of
-  sub-mesh points in each direction used to save index storage on the
-  mesh. It affects the memory requirements and in some cases the CPU
-  time, but should not affect the results.
+\index{MeshSubDivisions@{\bf MeshSubDivisions}}\index{grid}\index{mesh}
+Defines the number of sub-mesh points in each direction used
+to save index storage on the mesh. It affects the memory
+requirements and the CPU time, but not the results. 
 
 {\it Default value:} {\tt 2}
 
@@ -5208,7 +5260,7 @@ make it possible to run larger jobs where memory is the limiting factor.
 
 \end{description}
 
-\subsection{Memory accounting options}
+\subsection{Memory and CPU-time accounting options}
 \begin{description}
 
 \item[{\bf AllocReportLevel}] ({\it integer}):
@@ -5231,7 +5283,28 @@ The allowed values are:
   level 4 : print every individual (re)allocation or deallocation
 \end{itemize}
 
-{\it Default value:} {\tt 0}
+
+\item[{\bf AllocReportThreshold}] ({\it real}): 
+\index{AllocReportThreshold@{\bf AllocReportThreshold}}
+Sets the minimum size (in bytes) of the arrays whose memory use
+is individually printed in the detailed allocation reports 
+(levels 2 and 3). It does not affect the reported memory sums
+and peaks, which always include all arrays.
+
+{\it Default value:} {\tt 0.0}
+
+
+\item[{\bf TimerReportThreshold}] ({\it real}): 
+\index{TimerReportThreshold@{\bf TimerReportThreshold}}
+Sets the minimum fraction, of total CPU time, of the subroutines or
+code sections whose CPU time is individually printed in the detailed 
+timer reports. To obtain the accounting of MPI communication times
+in parallel executions, you must compile with option {\tt -DMPI\_TIMING}.
+In serial execution, the CPU times are printed at the end of the
+output file. In parallel execution, they are reported in a separated
+file named {\tt SystemLabel}.times.
+
+{\it Default value:} {\tt 0.0}
 
 \end{description}
 
@@ -7025,7 +7098,7 @@ followup of the problem.
   can't assume that you have the very latest version, and a problem
   that exists in one version may not exist in another. Use the version
   number printed at the top of any output file (also found in file
-  Src/version.F).
+  {\tt version.info} in the top directory).
 
 \item The platform on which the problem was found, and the operating
   system and compiler version. State whether the problem appears in a

@@ -115,6 +115,7 @@ MODULE siesta_options
   real(dp) :: taurelax      ! Relaxation time to reach desired T and P in anneal
   real(dp) :: temp          
   real(dp) :: tempinit      ! Initial ionic temperature read in redata
+  real(dp) :: threshold     ! Min. size of arrays printed by alloc_report
   real(dp) :: tp            ! Target pressure. Read in redata. Used in dynamics routines
   real(dp) :: ts            ! Total spin read from redata but not used
   real(dp) :: tt            ! Target temperature. Read in redata. Used in dynamics rout.

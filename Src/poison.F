@@ -42,6 +42,10 @@ C     Modules
       use parallel,    only : Node, Nodes, ProcessorY
       use sys,         only : die
       use alloc,       only : re_alloc, de_alloc
+      use m_fft,       only : fft     ! 3-D fast Fourier transform
+      use cellsubs,    only : reclat  ! Finds reciprocal lattice vectors
+      use cellsubs,    only : volcel  ! Finds unit cell volume
+      use m_chkgmx,    only : chkgmx  ! Checks planewave cutoff of a mesh
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -57,8 +61,7 @@ C     Local variables
      &                         J3min, J3max, J2L, J3L, NRemY, NRemZ,
      &                         BlockSizeY, BlockSizeZ
       real(dp)              :: C, B(3,3), DU, G(3), G2, G2MAX, 
-     &                         PI, VG, VOLUME, VOLCEL
-      external                 CHKGMX, FFT, RECLAT, VOLCEL
+     &                         PI, VG, VOLUME
       real(grid_p), pointer :: CG(:,:)
       real(dp),   parameter :: K0(3)= (/ 0.0, 0.0, 0.0 /), TINY= 1.0e-15
 #ifdef MPI
@@ -98,7 +101,7 @@ C     Copy density to complex array
       enddo
 
 C     Find fourier transform of density
-      call fft( CG, Mesh, -1, NSM )
+      call fft( CG, Mesh, -1 )
 
 C     Initialize stress contribution
       do IX = 1,3
@@ -189,7 +192,7 @@ C     Multiply by 8*PI/G2 to get the potential
       enddo
  
 C     Go back to real space
-      call fft( CG, Mesh, +1, NSM )
+      call fft( CG, Mesh, +1 )
 
 C     Copy potential to array V
       do I = 1, NP
@@ -211,31 +214,3 @@ C     Stop time counter
       call write_debug( '    POS POISON' )
 #endif
       end subroutine poison
-
-      subroutine nfft( N )
-      use sys, only: die
-      use parallel, only: ionode
-      implicit none
-C     CHANGES N INTO THE NEXT INTEGER ALLOWED BY THE FFT ROUTINE
-C     WRITTEN BY J.M.SOLER. MAY/95.
-      integer :: np, nmax, nmin, n, nrem, ip
-      parameter (NP = 3, NMAX = 1000000)
-      integer :: IPRIME(NP)
-      data IPRIME / 2, 3, 5 /
-
-      NMIN = N
-      DO N = NMIN, NMAX
-        NREM = N
-        DO IP = 1,NP
-   10     CONTINUE 
-          IF ( MODULO( NREM, IPRIME(IP) ) .EQ. 0 ) THEN
-            NREM = NREM / IPRIME(IP)
-            GOTO 10
-          ENDIF
-        ENDDO
-        IF (NREM .EQ. 1) RETURN
-      ENDDO
-      if (Ionode)
-     &    write(6,*) 'NFFT: NO SUITABLE INTEGER FOUND FOR N =', NMIN
-      call die()
-      END

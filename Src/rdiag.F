@@ -103,6 +103,7 @@ C Local variables
       integer                 :: sqnpc
       real(dp)                :: dscale
       logical                 :: BlacsOK
+      logical                 :: lBtmp(5)
 C Additional variables for a 2D proc grid
       integer                 :: np2d_row, np2d_col
       integer                 :: my2d_row, my2d_col
@@ -162,6 +163,21 @@ C Set algorithm logicals
         PreRotate     = fdf_boolean('Diag.PreRotate',.false.)
         Use2D         = fdf_boolean('Diag.Use2D',.true.)
 
+#ifdef MPI
+        if (Node.eq.0) then
+           lBtmp(1) = AllInOne
+           lBtmp(2) = DivideConquer
+           lBtmp(3) = NoExpert
+           lBtmp(4) = PreRotate
+           lBtmp(5) = Use2D
+        endif
+        call MPI_Bcast(lBtmp,5,MPI_logical,0,MPI_Comm_World,MPIerror)
+        AllInOne = lBtmp(1)
+        DivideConquer = lBtmp(2)
+        NoExpert = lBtmp(3)
+        PreRotate = lBtmp(4)
+        Use2D = lBtmp(5)
+#endif
         Serial = (Nodes.eq.1)
         if (Serial) Use2D = .false.
         if (AllInOne.and.Serial) DivideConquer = .false.

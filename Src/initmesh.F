@@ -72,6 +72,10 @@ C  Modules
       use mesh,          only : ne, mop, nmeshg, nmsc, nsm, nsp
       use mesh,          only : cmesh, rcmesh, xdsp
       use siesta_cml
+      use cellsubs,      only : reclat  ! Finds reciprocal unit cell
+      use cellsubs,      only : volcel  ! Finds unit cell volume
+      use m_chkgmx,      only : chkgmx  ! Checks planewave cutoff of a mesh
+      use fft1d,         only : nfft    ! Finds allowed value for 1-D FFT
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -90,7 +94,8 @@ C     Local variables
       real(dp), parameter     :: k0(3) = (/ 0.0, 0.0, 0.0 /)
       logical                 :: within
 C     Functions
-      real(dp)                :: dismin, volcel
+      real(dp)                :: dismin
+      external                :: dismin
 !--------------------------------------------------------------------- BEGIN
 #ifdef DEBUG
       call write_debug( '      PRE InitMesh' )

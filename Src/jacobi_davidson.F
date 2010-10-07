@@ -5,6 +5,8 @@
       use alloc
       use gmres
       use cg
+      use sys, only: bye
+
       implicit none
 
       PUBLIC :: jd_diag
@@ -211,13 +213,7 @@ C     Local variables
 !      call printmemory( 23, 1 )
 !      flush(23)
 
-      call MPI_Finalize( io )
-      STOP
-
-
-
-
-
+      call bye("Exit in Jacobi-Davidson test after eigvals")
 
 C Check if we are done
       if (.not.getD) return

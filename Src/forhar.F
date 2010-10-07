@@ -11,17 +11,22 @@
       module m_forhar
       use precision,    only : dp, grid_p
       use alloc,        only : re_alloc, de_alloc
-      use mesh
-      use moreMeshSubs, only : setMeshDistr, distMeshData
-      use moreMeshSubs, only: UNIFORM, LINEAR
-      use moreMeshSubs, only: KEEP
+      use parallel,  only : ProcessorY
+      use mesh,      only : NSM
+      use siestaXC,  only : cellXC       ! Finds xc energy and potential
+      use siestaXC,  only : myMeshBox    ! Returns my processor mesh box
+      use siestaXC, only : jms_setMeshDistr => setMeshDistr
+                                        ! Sets a distribution of mesh
+                                        ! points over parallel processors
+
       implicit none
 
       public :: forhar
       private
 
       CONTAINS
-      subroutine forhar( NTPL, NSPIN, NML, NTML, NPCC, CELL, RHOATM,
+      subroutine forhar( NTPL, NSPIN, NML, NTML, NTM, NPCC,
+     $                   CELL, RHOATM,
      &                   RHOPCC, VNA, DRHOOUT, VHARRIS1, VHARRIS2 )
 
 C **********************************************************************
@@ -41,7 +46,7 @@ C Coded by J. Junquera 09/00
 C **********************************************************************
 
       INTEGER             :: NTPL, NML(3), NTML(3)
-      INTEGER, INTENT(IN) :: NSPIN, NPCC
+      INTEGER, INTENT(IN) :: NSPIN, NPCC, NTM(3)
  
       REAL(dp),                INTENT(IN) :: CELL(3,3)
       REAL(grid_p),            INTENT(IN) :: VNA(NTPL), RHOATM(NTPL),
@@ -50,7 +55,7 @@ C **********************************************************************
       REAL(grid_p), TARGET, INTENT(INOUT) :: VHARRIS1(NTPL,NSPIN)
       REAL(grid_p),         INTENT(INOUT) :: VHARRIS2(NTPL)
       
-      EXTERNAL CELLXC
+      EXTERNAL REORD
 
 ! AG: Note:  REAL*4 variables are really REAL(kind=grid_p)
 !
@@ -83,14 +88,12 @@ C **********************************************************************
 C ----------------------------------------------------------------------
 C Internal variables and arrays
 C ----------------------------------------------------------------------
-      INTEGER                :: IP, ISPIN, ISPIN2, NMPL
-      REAL(dp)               :: EX, EC, DEX, DEC, STRESSL(3,3)
-      real(grid_p)           :: aux3(3,1)   !! dummy arrays for cellxc
+      INTEGER IP, ISPIN, ISPIN2, myBox(2,3)
+      REAL(dp) EX, EC, DEX, DEC, STRESS(3,3)
+      INTEGER, SAVE:: JDGdistr=-1
 
-      real(grid_p),  pointer :: drhoin(:,:), drhoin_par(:,:),
-     &                          dvxcdn(:,:,:), dvxcdn_par(:,:,:),
-     &                          vharris1_par(:,:), fsrc(:), fdst(:)
-      INTEGER                :: ntpl_3
+      real(grid_p),  pointer :: drhoin(:,:), 
+     &                          dvxcdn(:,:,:) 
 
       nullify( drhoin, dvxcdn )
       call re_alloc( drhoin, 1, ntpl, 1, nspin, 'drhoin', 'forhar' )
@@ -104,7 +107,14 @@ C ----------------------------------------------------------------------
       VHARRIS2(:)   = 0.0_grid_p
       DRHOIN(:,:)   = 0.0_grid_p
       DVXCDN(:,:,:) = 0.0_grid_p
-      STRESSL(:,:)  = 0.0_dp
+
+C ----------------------------------------------------------------------
+C Set uniform distribution of mesh points and find my processor mesh box
+C ----------------------------------------------------------------------
+
+      call jms_setMeshDistr( distrID=JDGdistr, nMesh=NTM, 
+     .                       nNodesX=1, nNodesY=ProcessorY, nBlock=NSM )
+      call myMeshBox( NTM, JDGdistr, myBox )
 
 C ----------------------------------------------------------------------
 C Compute exchange-correlation energy and potential and
@@ -119,49 +129,26 @@ C ----------------------------------------------------------------------
      .                           RHOPCC(1:NTPL)/NSPIN
       ENDDO
 
-#ifdef MPI
-      ! The input distribution is UNIFORM, but we need to work
-      ! with the LINEAR one
-      call setMeshDistr( LINEAR, nsm, nsp, nml, nmpl, ntml, ntpl )
-#endif
-      ntpl_3 = ntpl
-
-      nullify( drhoin_par, vharris1_par, dvxcdn_par )
-      call re_alloc( drhoin_par, 1, ntpl_3, 1, nspin,
-     &               'drhoin_par', 'forhar' )
-      call re_alloc( vharris1_par, 1, ntpl_3, 1, nspin,
-     &               'vharris1_par', 'forhar' )
-      call re_alloc( dvxcdn_par, 1, ntpl_3, 1, nspin, 1, nspin,
-     &               'dvxcdn_par', 'forhar' )
 
       DO ISPIN = 1, NSPIN
-        fsrc => drhoin(:,ispin)
-        fdst => drhoin_par(:,ispin)
-        call distMeshData( UNIFORM, fsrc, LINEAR, fdst, KEEP )
+        CALL REORD(DRHOIN(1,ISPIN),DRHOIN(1,ISPIN),NML,NSM,+1)
       ENDDO
 
-      CALL CELLXC( 0, 1, CELL, NTML, NTML, NTPL, 0, AUX3, NSPIN,
-     &             DRHOIN_PAR, EX, EC, DEX, DEC, VHARRIS1_PAR,
-     &             DVXCDN_PAR, STRESSL )
+      CALL CELLXC( 0, CELL, NTM, myBox(1,1), myBox(2,1),
+     .                           myBox(1,2), myBox(2,2),
+     .                           myBox(1,3), myBox(2,3), NSPIN, DRHOIN,
+     .             EX, EC, DEX, DEC, STRESS, VHARRIS1, DVXCDN )
 
       DO ISPIN = 1, NSPIN
-        fsrc => VHARRIS1_PAR(:,ISPIN)
-        fdst => VHARRIS1(:,ispin)
-        call distMeshData( LINEAR, fsrc, UNIFORM, fdst, KEEP )
+        CALL REORD(DRHOIN(1,ISPIN),DRHOIN(1,ISPIN),NML,NSM,-1)
+        CALL REORD(VHARRIS1(1,ISPIN),VHARRIS1(1,ISPIN),NML,NSM,-1)
+
         DO ISPIN2 = 1, NSPIN
-          fsrc => DVXCDN_PAR(:,ISPIN,ISPIN2)
-          fdst => DVXCDN(:,ISPIN,ISPIN2)
-          call distMeshData( LINEAR, fsrc, UNIFORM, fdst, KEEP )
+          CALL REORD(DVXCDN(1,ISPIN,ISPIN2),DVXCDN(1,ISPIN,ISPIN2),
+     .               NML,NSM,-1)
         ENDDO
       ENDDO
 
-      call de_alloc( dvxcdn_par,   'dvxcdn_par',   'forhar' )
-      call de_alloc( vharris1_par, 'vharris1_par', 'forhar' )
-      call de_alloc( drhoin_par,   'drhoin_par',   'forhar' )
-
-#ifdef MPI
-      call setMeshDistr( UNIFORM, nsm, nsp, nml, nmpl, ntml, ntpl )
-#endif
       DO ISPIN = 1, NSPIN
         IF( NPCC .EQ. 1) 
      &    DRHOIN(1:NTPL,ISPIN) = DRHOIN(1:NTPL,ISPIN) - 

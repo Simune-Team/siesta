@@ -89,7 +89,7 @@
         if (h_setup_only) then
            call timer( 'siesta', 2 )
            call timer( 'all', 3 )
-           call MPI_Finalize( iscf )
+           call bye("H-Setup-Only requested")
            STOP
         endif
 
@@ -144,7 +144,7 @@
         SCFconverged = last
 
         call timer( 'IterSCF', 2 )
-        call timer( 'partial', 3 )
+        if (istep.eq.inicoor .and. first) call timer( 'IterSCF', 3 )
 
         iscf = iscf + 1
         first = .false.

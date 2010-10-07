@@ -64,7 +64,7 @@
       use sys,            only : die
       use mesh,           only : xdsp, nsm, nsp
       use parsing
-      use xcmod,          only : nXCfunc, XCauth
+      use siestaXC, only : getXC        ! Returns the XC functional used
       use alloc,          only : re_alloc, de_alloc
       use siesta_options, only : harrisfun
       use moreMeshSubs,   only : setMeshDistr, distMeshData
@@ -72,7 +72,6 @@
       use moreMeshSubs,   only : TO_SEQUENTIAL, TO_CLUSTER, KEEP
 
       use iogrid_netcdf, only: set_box_limits
-      use cellxc_mod,     only : setGGA
       use m_efield,       only : initialize_efield, acting_efield
 
       use m_doping_uniform,       only: initialize_doping_uniform
@@ -108,6 +107,9 @@
       integer,        pointer :: numphi(:), numphi_par(:)
 
       integer                 :: nm(3)   ! For call to initMesh
+      integer                 :: nXCfunc
+      character(len=20)       :: XCauth(10), XCfunc(10)
+
 
 !--------------------------------------------------------------------- BEGIN
 #ifdef DEBUG
@@ -137,6 +139,9 @@ C       Read spin-spiral wavevector (if defined)
         if (spiral .and. nspin.lt.4)
      &    call die('dhscf: ERROR: spiral defined but nspin < 4')
       endif   ! First time
+
+C Get functional(s) being used
+      call getXC( nXCfunc, XCfunc, XCauth )
 
       if (harrisfun) then
         do n = 1,nXCfunc
@@ -211,9 +216,6 @@ C     Start time counter for atomic initializations
 
 C     Initialise quantities relating to the atom-mesh positioning
       call InitAtomMesh( UNIFORM, na, xa )
-
-C     Check if we need extencils in cellxc
-      call setGGA( )
 
 C     Compute the number of orbitals on the mesh and recompute the
 C     partions for every processor in order to have a similar load
@@ -486,6 +488,7 @@ C Distances in Bohr
 C ----------------------------------------------------------------------
 C     Modules
       use precision,     only  : dp, grid_p
+      use parallel, only : ProcessorY
 
 !     Number of Mesh divisions of each cell vector (global)
 !     The status of this variable is confusing
@@ -498,14 +501,19 @@ C     Modules
       use parsing
       use m_iorho,       only  : write_rho
       use m_forhar,      only  : forhar
-      use xcmod,         only  : nXCfunc, XCauth
       use alloc,         only  : re_alloc, de_alloc
       use files,         only  : slabel
       use siesta_options, only : harrisfun
       use moreMeshSubs,   only : setMeshDistr, distMeshData
       use moreMeshSubs,   only : UNIFORM, QUADRATIC, LINEAR
       use moreMeshSubs,   only : TO_SEQUENTIAL, TO_CLUSTER, KEEP
-      use cellxc_mod,     only : GGA
+
+      use siestaXC, only : cellXC       ! Finds xc energy and potential
+      use siestaXC, only : myMeshBox    ! Returns my processor mesh box
+      use siestaXC, only : jms_setMeshDistr => setMeshDistr
+                                        ! Sets a distribution of mesh
+                                        ! points over parallel processors
+
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -583,6 +591,8 @@ C logical IsDiag        : Is supercell diagonal?
 C logical IsEfld        : Is there an external electric field?
 C integer ispin         : Spin index
 C integer j             : General-purpose index
+C integer JDGdistr      : J.D.Gale's parallel distribution of mesh points
+C integer myBox(2,3)    : My processor's mesh box
 C integer nbcell        : Number of independent bulk lattice vectors
 C integer npcc          : Partial core corrections? (0=no, 1=yes)
 C integer nsd           : Number of diagonal spin values (1 or 2)
@@ -605,17 +615,20 @@ C ----------------------------------------------------------------------
 
 C     Local variables
       integer  :: i, ia, ip, ispin, nsd
+!     Interface to JMS's SiestaXC
+      integer
+     .  iNode, myBox(2,3)
+      integer, save::
+     .  JDGdistr=-1
+
       real(dp) :: b1Xb2(3), const, DEc, DEx, DStres(3,3),
-     &            Ec, Ex, rhotot, x0(3),
+     &            Ec, Ex, rhotot, x0(3), stressXC(3,3),
      &            volume
-!     Dummy arrays for cellxc call
-      real(grid_p) :: aux3(3,1)
-      real(grid_p) :: dummy_DVxcdn(1,1,1)
 
       real(dp), external :: volcel, ddot
 
       external
-     &  cellxc, cross,
+     &  cross,
      &  dfscf,  dipole, 
      &  poison, 
      &  reord, rhooda, rhoofd, rhoofdsp, 
@@ -623,8 +636,8 @@ C     Local variables
      &  readsp
 
 C     Work arrays
-      real(grid_p), pointer :: Vscf(:,:), Vscf_par(:,:), Vscf_gga(:,:),
-     &                         DRho(:,:), DRho_par(:,:), DRho_gga(:,:),
+      real(grid_p), pointer :: Vscf(:,:), Vscf_par(:,:),
+     &                         DRho(:,:), DRho_par(:,:),
      &                         Vaux(:), Vaux_par(:), Chlocal(:),
      &                         Totchar(:), fsrc(:), fdst(:)
 #ifdef MPI
@@ -654,7 +667,7 @@ C ----------------------------------------------------------------------
       call timer( 'DHSCF', 1 )
       call timer( 'DHSCF3', 1 )
 
-      nullify( Vscf, Vscf_par, Vscf_gga, DRho, DRho_par, DRho_gga,
+      nullify( Vscf, Vscf_par, DRho, DRho_par,
      &         Vaux, Vaux_par, Chlocal, Totchar )
 
       volume = volcel(cell)
@@ -957,6 +970,16 @@ C Get back spin density from sum and difference
       endif
 
 C ----------------------------------------------------------------------
+C Set uniform distribution of mesh points and find my processor mesh box
+C This is the interface to JM Soler's own cellxc routine, which sets
+C up the right distribution internally.
+C ----------------------------------------------------------------------
+
+      call jms_setMeshDistr( distrID=JDGdistr, nMesh=ntm, 
+     .                   nNodesX=1, nNodesY=ProcessorY, nBlock=nsm )
+      call myMeshBox( ntm, JDGdistr, myBox )
+
+C ----------------------------------------------------------------------
 C Exchange-correlation energy
 C ----------------------------------------------------------------------
       call re_alloc( Vaux, 1, ntpl, 'Vaux', 'dhscf' )
@@ -978,35 +1001,13 @@ C ----------------------------------------------------------------------
       enddo
 
 !     Everything now is in UNIFORM, sequential form
-      if (nodes.gt.1) then
-         call setMeshDistr( LINEAR, nsm, nsp, nml, nmpl, ntml, ntpl )
-      endif
 
-      call re_alloc( Vscf_gga, 1, ntpl, 1, nspin, 'Vscf_gga', 'dhscf' )
-      call re_alloc( DRho_gga, 1, ntpl, 1, nspin, 'DRho_gga', 'dhscf' )
+      call cellXC( 0, cell, ntm, myBox(1,1), myBox(2,1),
+     .                           myBox(1,2), myBox(2,2),
+     .                           myBox(1,3), myBox(2,3), nspin,
+     .             DRho, Ex, Ec, DEx, DEc, stressXC, Vscf )
 
-      do ispin = 1, nsd
-        fsrc => DRho(:,ispin)
-        fdst => DRho_gga(:,ispin)
-        call distMeshData( UNIFORM, fsrc, LINEAR, fdst, KEEP )
-      enddo
-
-      call cellxc( 0, 0, cell, ntml, ntml, ntpl, 0, aux3, nspin,
-     &             DRho_gga, Ex, Ec, DEx, DEc, Vscf_gga,
-     &             dummy_DVxcdn, stressl )
-
-      if (nodes.gt.1) then
-         call setMeshDistr( UNIFORM, nsm, nsp, nml, nmpl, ntml, ntpl )
-      endif
-
-      do ispin = 1,nsd
-        fsrc => Vscf_gga(:,ispin)
-        fdst => Vscf(:,ispin)
-        call distMeshData( LINEAR, fsrc, UNIFORM, fdst, KEEP )
-      enddo
-
-      call de_alloc( DRho_gga, 'DRho_gga', 'dhscf' )
-      call de_alloc( Vscf_gga, 'Vscf_gga', 'dhscf' )
+!     Vscf is still sequential after the call to JMS's cellxc
 
       Exc = Ex + Ec
       Dxc = DEx + DEc
@@ -1023,6 +1024,7 @@ C ----------------------------------------------------------------------
           Vscf(ip,ispin) = Vscf(ip,ispin) + Vaux(ip)
         enddo
       enddo
+      stress = stress + stressXC
 
 C ----------------------------------------------------------------------
 C     Save total potential
@@ -1138,7 +1140,7 @@ C       Find contribution of partial-core-correction
         if ( harrisfun) then
 !         Forhar deals internally with its own needs
 !         for distribution changes
-          call forhar( ntpl, nspin, nml, ntml, npcc, cell, 
+          call forhar( ntpl, nspin, nml, ntml, ntm, npcc, cell, 
      &                 rhoatm, rhopcc, Vna, DRho, Vscf, Vaux )
 !         Upon return, everything is UNIFORM, sequential form
         endif

@@ -98,6 +98,7 @@ C Deallocate arrays of module meshphi if necessary
 C
       use meshphi
       use alloc,         only : de_alloc
+
       implicit none
       if (associated(endpht))
      &  call de_alloc( endpht, 'endpht',  'PhiOnMesh' )

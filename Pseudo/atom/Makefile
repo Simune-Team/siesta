@@ -1,13 +1,9 @@
 #
-# Modern Makefile for ATM
-# Supports the standard mechanisms in the SIESTA tree
-# For traditional compilation, needing only an f77 compiler,
-# and no CML support, see makefile-old.
-#
+# Makefile for ATM
 # ---------------------------------------------------------------
 #
 .SUFFIXES:
-.SUFFIXES: .F90 .f .o .a 
+.SUFFIXES: .F90 .f .F .f90 .o .a 
 #
 default: atm
 #
@@ -16,20 +12,26 @@ default: atm
 #  you might want to change this. (If you do not understand this, you do not
 #  need to change anything. Power users can do "make OBJDIR=Whatever".)
 #
-#  If your main Siesta build used an mpi compiler, you might need to
-#  define an FC_SERIAL symbol in your top arch.make, to avoid linking
-#  in the mpi libraries even if we explicitly undefine MPI below.
-#
 OBJDIR=Obj
 #
-include ../../$(OBJDIR)/arch.make
+#
+ARCH_MAKE=../../$(OBJDIR)/arch.make
+include $(ARCH_MAKE)
 #
 # This is needed on some systems to avoid loading the parallel libraries, which
 # sometimes force running on queuing systems
 #
+#  If your main Siesta build used an mpi compiler, you might need to
+#  define an FC_SERIAL symbol in your top arch.make, to avoid linking
+#  in the mpi libraries even if we explicitly undefine MPI below.
+#
 FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
+#
+# We support both DEFS and FPPFLAGS (crazy -- deprecate DEFS soon)
+DEFS:=$(DEFS_PREFIX)-UMPI $(DEFS) $(DEFS_PREFIX)-UMPI 
+FPPFLAGS:=$(DEFS_PREFIX)-UMPI $(FPPFLAGS) $(DEFS_PREFIX)-UMPI 
 #
 #----------------------------------------------$$$$$
 # EDIT the following lines to suit your system
@@ -81,19 +83,24 @@ $(FoX_built): $(FoX_configured)
 pseudoXML.o: $(FoX_built)
 #
 #--------------------------------------------------------------
-
+dep:
+	sfmakedepend --depend=obj  --modext=o *.f *.f90 *.F *.F90
 #----------------------------------------------$$$$$
 #
-INCFLAGS:=$(INCFLAGS)  ####         -I../../$(OBJDIR)
+INCFLAGS:=$(INCFLAGS)  ##### -I../../$(OBJDIR)
 #
+XC=libSiestaXC.a
+XC_MAKEFILE=$(TOP_LEVEL)/SiestaXC/makefile
+XC_INCFLAGS:=-I $(TOP_LEVEL)/SiestaXC ##$(INCFLAGS)
+$(XC): 
+	(cd SiestaXC ; $(MAKE) -f $(XC_MAKEFILE) \
+                          "FC=$(FC)" "VPATH_ROOT=$(TOP_LEVEL)" \
+                          "ARCH_MAKE=../$(ARCH_MAKE)" \
+                          "INCFLAGS=$(XC_INCFLAGS)" \
+                          "DEFS=$(DEFS)" \
+                          "FPPFLAGS=$(FPPFLAGS)" \
+                          "FFLAGS=$(FFLAGS)"  module )
 #
-XC_OBJS= xc.o
-#
-# Replace definition above with line below to use the 
-# old Soler-Balbas XC routines.
-#
-#XC_OBJS= atomxc.o  ldaxc.o ggaxc.o pbexc.o pw92xc.o pzxc.o \
-#        pw92c.o exchng.o
 #
 MAIN_OBJS= atm.o  nucl_z.o   difnrl.o   difrel.o   dmixp.o   dsolv1.o   \
         pseudo.o  wf.o  hsc.o  excorr.o \
@@ -106,7 +113,7 @@ MAIN_OBJS= atm.o  nucl_z.o   difnrl.o   difrel.o   dmixp.o   dsolv1.o   \
 	coreq.o get_unit.o gauleg.o divdif.o symbols.o \
         prversion.o pseudoXML.o pxf.o force_underflow.o
 #
-OBJS= $(MAIN_OBJS) $(XC_OBJS) 
+OBJS= $(MAIN_OBJS) 
 #
 provide_xml:
 	@echo "Make sure that the wxml library is already compiled."
@@ -115,52 +122,52 @@ provide_xml:
 #
 pseudoXML.o: provide_xml
 #
-atm:	$(FoX_built) $(OBJS) $(AUX_OBJS)
-	$(FC) $(LDFLAGS) -o atm $(OBJS) $(AUX_OBJS) $(LIBS) $(FoX_LIBS)
+velect.o: $(XC)
+atm:	$(FoX_built) $(XC) $(OBJS) $(AUX_OBJS) 
+	$(FC) $(LDFLAGS) -o atm $(OBJS) $(AUX_OBJS) $(XC) $(LIBS) $(FoX_LIBS)
 
 #
 clean:	
-	rm -f *.o atm
+	rm -f *.o *.mod atm *.a
+	(cd SiestaXC ; $(MAKE) -f $(XC_MAKEFILE) \
+                       "ARCH_MAKE=../$(ARCH_MAKE)" clean)
 #
-atm.o: radial.h orbital.h param.h charge.h elecpot.h energy.h
-#
-chg_mism.o: radial.h nonlinear.h linear.h coeffs.h
+# DO NOT DELETE THIS LINE - used by make depend
+atm.o: charge.h param.h orbital.h radial.h energy.h elecpot.h
+change_valence.o: charge.h param.h radial.h ion.h
+chg_mism.o: nonlinear.h coeffs.h radial.h linear.h
 compat_params.o: compat.h
-denplot.o:  radial.h charge.h
-difnrl.o: radial.h param.h ion.h elecpot.h
-difrel.o: radial.h param.h ion.h elecpot.h
-dsolv1.o: radial.h orbital.h ion.h charge.h elecpot.h energy.h
-dsolv2.o: radial.h orbital.h param.h ion.h charge.h elecpot.h energy.h
-etotal.o: orbital.h param.h energy.h
-excorr.o: radial.h param.h
+coreq.o: charge.h radial.h
+denplot.o: param.h charge.h radial.h
+difnrl.o: param.h radial.h ion.h elecpot.h
+difrel.o: param.h radial.h ion.h elecpot.h
+dsolv1.o: charge.h orbital.h radial.h energy.h ion.h elecpot.h
+dsolv2.o: charge.h param.h orbital.h radial.h energy.h ion.h elecpot.h
+dummy_pseudoXML.o: charge.h param.h orbital.h radial.h pseudowave.h ion.h
+etotal.o: param.h orbital.h energy.h
+excorr.o: param.h radial.h
 genrhs.o: nonlinear.h
-input.o:  radial.h orbital.h param.h compat.h
-logder.o: radial.h orbital.h param.h ion.h elecpot.h energy.h ode_blk.h \
-          ode_path.h
-ode.o	: radial.h ode_blk.h
-orban.o : radial.h param.h ion.h elecpot.h
+header.o: param.h orbital.h input.h compat.h radial.h version.h
+hsc.o: param.h orbital.h radial.h energy.h ion.h elecpot.h
+input.o: param.h orbital.h input.h compat.h radial.h version.h
+ker.o: param.h orbital.h radial.h energy.h ion.h elecpot.h
+logder.o: ode_blk.h param.h ode_path.h orbital.h radial.h energy.h ion.h
+logder.o: elecpot.h
+nv0pp.o: coeffs.h
+ode.o: ode_blk.h radial.h
+orban.o: param.h radial.h ion.h elecpot.h
+potran.o: plot.h
 prversion.o: version.h
-pseudo.o: radial.h orbital.h param.h elecpot.h
+pseudo.o: param.h orbital.h radial.h elecpot.h
+pseudoXML.o: charge.h param.h orbital.h radial.h pseudowave.h ion.h
+pswf_store.o: radial.h pseudowave.h ion.h
+recipes.o: ode_path.h
 symbols.o: set2.h
-tm2.o   : radial.h orbital.h ion.h param.h elecpot.h energy.h tm2_blk.h 
-v0pp.o  : radial.h tm2_blk.h
-velect.o: radial.h orbital.h param.h charge.h elecpot.h energy.h compat.h
-vionic.o: radial.h orbital.h param.h ion.h charge.h 
-change_valence.o: radial.h param.h  charge.h ion.h
-wf.o hsc.o ker.o : radial.h orbital.h ion.h param.h elecpot.h energy.h
-wrapup.o: radial.h orbital.h param.h ion.h charge.h elecpot.h energy.h \
-          compat.h
-wtrans.o potran.o: plot.h
-ninput.o header.o: input.h
-pseudoXML.o      : param.h radial.h ion.h orbital.h charge.h
-pswf_store.o pseudoXML.o : pseudowave.h
-#
-
-
-
-
-
-
-
-
-
+tm2.o: param.h orbital.h radial.h energy.h ion.h tm2_blk.h elecpot.h
+v0pp.o: radial.h tm2_blk.h
+velect.o: charge.h param.h orbital.h compat.h radial.h energy.h elecpot.h
+vionic.o: charge.h param.h orbital.h radial.h ion.h
+wf.o: param.h orbital.h radial.h energy.h ion.h elecpot.h
+wrapup.o: param.h orbital.h radial.h energy.h version.h elecpot.h charge.h
+wrapup.o: compat.h pseudowave.h ion.h
+wtrans.o: plot.h

@@ -4,13 +4,15 @@
       logical         :: GGA=.FALSE.
       CONTAINS
       subroutine setGGA( )
-      use xcmod, only : nXCfunc, XCfunc
+      use siestaXC, only : getXC        ! Returns the XC functional used
       use sys,   only : die
       implicit none
 C     Local variables
-      integer         :: nf
-      
+      integer         :: nf, nXCfunc
+      character(len=20):: XCauth(10), XCfunc(10)
+
 !---------------------------------------------------------------------- BEGIN
+      call getXC( nXCfunc, XCfunc, XCauth )
       do nf = 1,nXCfunc
         if ( XCfunc(nf).eq.'GGA' .or. XCfunc(nf).eq.'gga') then
           GGA = .true.

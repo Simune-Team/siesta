@@ -3,42 +3,33 @@
 !
 ! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
 ! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
+! and J.M.Soler, 1996-2006.
 ! 
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      module xcmod
-
-        use precision, only : dp
-
-        implicit none
-
-        integer, parameter      :: MaxFunc = 10
-        integer,           save :: nXCfunc
-        character(len=10), save :: XCauth(MaxFunc)
-        character(len=10), save :: XCfunc(MaxFunc)
-        real(dp),          save :: XCweightX(MaxFunc)
-        real(dp),          save :: XCweightC(MaxFunc)
-
-        public :: nXCfunc, XCauth, XCfunc
-        public :: XCweightX, XCweightC
-        public :: setXC
-        private
-
-      contains
-
-        subroutine setXC()
+      subroutine read_xc_info()
 C
-C  This subroutine reads the exchange-correlation functional information
+C     Reads the exchange-correlation functional information
+C     and calls setXC to store it
 C
-        use fdf
-        use parallel,  only : Node
-        use sys,       only : die
+      use precision, only : dp
+      use SiestaXC,  only : setXC
+      use fdf
+      use parallel,  only : Node
+      use sys,       only : die
 
-        implicit none
+      implicit none
 
-C Local variables
+C     LOCAL variables
+
+      integer, parameter      :: MaxFunc = 10
+      integer                 :: nXCfunc
+      character(len=10)       :: XCauth(MaxFunc)
+      character(len=10)       :: XCfunc(MaxFunc)
+      real(dp)                :: XCweightX(MaxFunc)
+      real(dp)                :: XCweightC(MaxFunc)
+
         integer            :: n
         integer            :: ni
         integer            :: nn
@@ -113,6 +104,10 @@ C Output data for hybrid functionals
           write(6,'(''xc:'')')
         endif
 
-        end subroutine setXC
+C     Store information in module
 
-      end module xcmod
+      call setXC (n=nXCfunc, func=XCfunc, auth=XCauth,
+     $            wx=XCweightX, wc=XCweightC)
+
+      end subroutine read_xc_info
+

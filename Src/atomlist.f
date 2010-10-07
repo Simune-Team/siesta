@@ -292,7 +292,7 @@ C Expand iakb and iphKB and rckb
      .    'superc: Internal auxiliary supercell:',
      .     nsc(1), ' x', nsc(2), ' x', nsc(3), '  =', ncells
 
-         write(6,'(a,3(1x,i5))')
+         write(6,'(a,1x,i5,2(1x,i6))')
      $     'superc: Number of atoms, orbitals, and projectors: ',
      $     na_s, no_s, nokb_s
            
