@@ -335,7 +335,7 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   real(dp),save::  &
      myTime=1,     &! CPU time in this routine and processor in last iteration
      timeAvge=1,   &! Average over processors of CPU time
-     timeDisp=huge(timeDisp)  ! Dispersion over processors of CPU time
+     timeDisp=huge(1.0_dp)  ! Dispersion over processors of CPU time
 
   ! Internal pointers for dynamical allocation
   real(dp), pointer:: &
@@ -412,10 +412,6 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   ! Set routine name for allocations
   call alloc_default( old=prevAllocDefaults, copy=.true., shrink=.true. )
 
-  ! Check argument dVxcdD
-  if (present(dVxcdD) .and. GGA) &
-    call die(errHead//'dVxcdD available only for LDA')
-
   ! Find number of diagonal spin components
   ndSpin = min( nSpin, 2 )
 
@@ -445,6 +441,10 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
       call die( trim(errMsg) )
     endif
   enddo
+
+  ! Check argument dVxcdD
+  if (present(dVxcdD) .and. GGA) &
+    call die(errHead//'dVxcdD available only for LDA')
 
   ! Find my mesh box in I/O distribution of mesh points
   ioBox(1,1)=lb1;  ioBox(1,2)=lb2;  ioBox(1,3)=lb3
