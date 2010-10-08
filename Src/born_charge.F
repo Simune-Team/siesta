@@ -66,7 +66,9 @@
 #endif
       endif
       if (nkpol.gt.0) then
-         ! Note use of xa instead of xalast now
+         ! Note use of xa instead of xa_last, since this routine
+         ! is called at every geometry step, before moving the atoms.
+         !
          call KSV_pol(na_u, na_s, xa, rmaxo, scell, ucell,
      .        no_u, no_l, no_s, nspin, qspin,
      .        maxnh, nkpol, numh, listhptr, listh,

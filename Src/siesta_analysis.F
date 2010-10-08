@@ -77,14 +77,14 @@
       call write_debug( 'PRE siesta_analysis' )
 #endif
       final = .true.
-!     We want xalast to equal xa for coordinate relaxation only.
-!     Possible ERROR !!!!!!!!!!!!!!!!!!!!!!!!
-!     xlast stores the previos atom possition and it is needed further
-!     if (idyn==0) xalast(1:3,1:na_s)=xa(1:3,1:na_s)
       if (cml_p) then
         call cmlStartModule(xf=mainXML, title='Finalization')
       endif
-
+!
+!     NOTE that the geometry output by the following sections
+!     is that "predicted" for the next MD or relaxation step.
+!     This can be considered a feature, or a bug.
+!
       if (IOnode) then
 !       Print atomic coordinates (and also unit cell for ParrRah.)
         if (nmove .ne. 0) then
@@ -111,6 +111,12 @@
      &       rmax_bonds, trim(slabel) // ".BONDS_FINAL" )
 
       endif ! IONode
+!--- end output of geometry information
+!
+!
+! NOTE: In the following sections, wavefunction generation, computation
+!       of band structure, etc, are carried out using the last Hamiltonian
+!       generated in the SCF run for the last geometry considered.
 
 !     Find and print wavefunctions at selected k-points
       if (nwk.gt.0) then
@@ -200,6 +206,11 @@
         call write_basis_enthalpy(FreeE,FreeEHarris)
       endif
 
+! NOTE: Here, the spin polarization is computed using Dscf, which is
+!       a density matrix obtained after mixing the "in" and "out"
+!       DMs of the SCF run for the last geometry considered.
+!       This can be considered a feature or a bug.
+
 !     Print spin polarization
       if (nspin .ge. 2) then
         do ispin = 1,nspin
@@ -260,11 +271,15 @@
         endif !cml_p
       endif
 
+! NOTE: The use of *_last geometries in the following sections
+!       guarantees that the analysis of the electronic structure
+!       is done for the geometry for which it was computed.
+
 !     Calculation of the bulk polarization using the Berry phase
 !     formulas by King-Smith and Vanderbilt
 !     Attention H0 is used as an auxiliary array
       if (nkpol.gt.0 .and. .not.bornz) then
-        call KSV_pol(na_u, na_s, xalast, rmaxo, scell_last, ucell_last,
+        call KSV_pol(na_u, na_s, xa_last, rmaxo, scell_last, ucell_last,
      &               no_u, no_l, no_s, nspin, qspin, 
      &               maxnh, nkpol, numh, listhptr, listh, 
      &               H, S, H0, xijo, indxuo, isa, iphorb, 
@@ -274,7 +289,7 @@
 
 !     Calculation of the optical conductivity
 !     Attention H0, Eold, Dold are used as auxiliary arrays
-      call optical(na_u, na_s, xalast, scell_last, ucell_last,
+      call optical(na_u, na_s, xa_last, scell_last, ucell_last,
      &             no_u, no_l, no_s, nspin, qspin,
      &             maxnh, numh, listhptr, listh, H, S, H0,
      &             Eold(1,1), Dold(1,1), xijo, indxuo, ebk, ef, temp,
@@ -282,6 +297,10 @@
 
       call de_alloc( ebk, 'ebk', 'siesta_analysis' )
 !...................................
+
+!
+!  NOTE: Dscf here is the mixed one (see above).
+!
 
 !     Save electron density and potential
       if (savrho .or. savdrh .or. savevh .or. savevt .or.
@@ -302,7 +321,7 @@
         dummy_str  = 0.0
         dummy_strl = 0.0
         call dhscf( nspin, no_s, iaorb, iphorb, no_l,
-     &              no_u, na_u, na_s, isa, xalast, indxua, 
+     .              no_u, na_u, na_s, isa, xa_last, indxua, 
      &              ntm, 0, 0, 0, filrho, fildrh, filevh, filevt,
      &              filepsch, filetoch, 
      &              maxnh, numh, listhptr, listh, Dscf, Datm,

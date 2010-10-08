@@ -54,16 +54,14 @@
 #ifdef DEBUG
       call write_debug( 'PRE siesta_move' )
 #endif
+      ! Save the last geometry for which the density matrix 
+      ! (electronic structure) has been calculated
       call timer( 'SIMOVE', 1 )
-      ! Save the last coordinates for which the density matrix 
-      ! has been calculated
- 
-      ! This should be done always
-!!!! AG      if (istep.eq.fincoor) then
-        xalast(1:3,1:na_s)  = xa(1:3,1:na_s)
+
+        xa_last(1:3,1:na_s) = xa(1:3,1:na_s)
         ucell_last(1:3,1:3) = ucell(1:3,1:3)
         scell_last(1:3,1:3) = scell(1:3,1:3)
-!!!! AG      endif
+
 
       Ekinion = 0.0_dp   ! Fossil: already initialized in siesta_init
 
