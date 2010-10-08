@@ -14,7 +14,7 @@
       use m_ioxv,          only: ioxv
       USE siesta_options
       use parallel,        only: IOnode
-      use siesta_cml
+      use siesta_cml,      only: cml_p, cmlEndStep, mainXML
       use sys,             only: die
 
       use m_broyden_optim, only: broyden_optimizer
