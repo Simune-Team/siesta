@@ -530,6 +530,7 @@ C If there is insufficient memory due to eigenvalue clustering increase memory
               if (maxclustersize.gt.oldmaxclustersize) then
 C If the memory has increased then try again - otherwise fail
                 ierror = - 1
+                call timer('rdiag3',2)
                 goto 999
               endif
             endif
