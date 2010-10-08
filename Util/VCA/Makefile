@@ -65,16 +65,16 @@ $(FDF):
                           "ARCH_MAKE=../$(ARCH_MAKE)" \
                           "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 #
-MIXPS_OBJS= f2kcli.o flib_spline.o mixps.o atom_options.o pseudopotential.o \
-            sys.o \
-            io.o pxf.o parallel.o periodic_table.o alloc.o memory.o memoryinfo.o
+MIXPS_OBJS= f2kcli.o flib_spline.o atom_options.o pseudopotential.o \
+            sys.o m_io.o io.o alloc.o pxf.o parallel.o periodic_table.o \
+            memory.o memoryinfo.o mixps.o
 
 mixps:  $(FDF) $(MIXPS_OBJS)
 	$(FC) -o mixps \
 	       $(LDFLAGS) $(MIXPS_OBJS)   $(FDF) 
 #----------------------------------------------------------------------------
-FRACTIONAL_OBJS= f2kcli.o alloc.o flib_spline.o fractional.o  atom_options.o \
-                 memory.o memoryinfo.o pseudopotential.o sys.o \
+FRACTIONAL_OBJS= f2kcli.o sys.o m_io.o alloc.o flib_spline.o fractional.o \
+                 atom_options.o  memory.o memoryinfo.o pseudopotential.o  \
                  io.o pxf.o parallel.o periodic_table.o
 
 fractional: $(FDF) $(FRACTIONAL_OBJS)
@@ -88,7 +88,7 @@ clean:
 	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
 
 # DO NOT DELETE THIS LINE - used by make depend
-alloc.o: parallel.o precision.o sys.o
+alloc.o: parallel.o m_io.o precision.o sys.o
 arw.o: parallel.o sys.o
 atm_transfer.o: atm_types.o atmparams.o old_atmfuncs.o periodic_table.o
 atm_transfer.o: radial.o sys.o
