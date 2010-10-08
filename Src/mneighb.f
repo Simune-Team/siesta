@@ -17,6 +17,8 @@
       private
 
       public :: mneighb, reset_neighbour_arrays
+      
+      character(len=*), parameter      :: myName = 'neighbour '
       integer,           public :: maxnna = 200
       integer,  pointer, public :: jan(:)
       real(dp), pointer, public :: r2ij(:)

@@ -215,6 +215,7 @@ c
      $              .or. leqi(icorr,'rv')  ! revPBE
      $              .or. leqi(icorr,'wc')  ! WC (Wu-Cohen)
      $              .or. leqi(icorr,'ps')  ! PBEsol
+     $              .or. leqi(icorr,'am')  ! AM05
      $              .or. leqi(icorr,'vf')  ! VDW-DRSLL
      $              .or. leqi(icorr,'vw')) ! Alias for VDW-DRSLL
 
@@ -234,6 +235,8 @@ c
             call setxc(1,(/'GGA'/), (/'PBEsol'/), (/1._dp/), (/1._dp/))
          elseif(icorr .eq. 'bl') then
             call setxc(1,(/'GGA'/), (/'LYP'/), (/1._dp/), (/1._dp/))
+         elseif(icorr .eq. 'am') then
+            call setxc(1,(/'GGA'/), (/'AM05'/), (/1._dp/), (/1._dp/))
          elseif(icorr .eq. 'vf' .or. icorr .eq. 'vw') then
             call setxc(1,(/'VDW'/), (/'DRSLL'/), (/1._dp/), (/1._dp/))
          else
