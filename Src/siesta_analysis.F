@@ -292,7 +292,8 @@
       call optical(na_u, na_s, xa_last, scell_last, ucell_last,
      &             no_u, no_l, no_s, nspin, qspin,
      &             maxnh, numh, listhptr, listh, H, S, H0,
-     &             Eold(1,1), Dold(1,1), xijo, indxuo, ebk, ef, temp,
+     &             Eold(1:maxnh,1), Dold(1:maxnh,1), xijo,
+     $             indxuo, ebk, ef, temp,
      &             isa, iphorb, iphKB, lasto, lastkb, shape )
 
       call de_alloc( ebk, 'ebk', 'siesta_analysis' )
