@@ -1076,13 +1076,14 @@ C ----------------------------------------------------------------------
 
 #ifdef MPI
 C     Global reduction of Uscf/DUscf/Uatm/Enaatm/Enascf
+!     Note that Exc and Dxc are already reduced in the new cellxc
       sbuffer(1) = Uscf
       sbuffer(2) = DUscf
       sbuffer(3) = Uatm
       sbuffer(4) = Enaatm
       sbuffer(5) = Enascf
-      sbuffer(6) = Exc
-      sbuffer(7) = Dxc
+!!!!      sbuffer(6) = Exc
+!!!!      sbuffer(7) = Dxc
       call MPI_AllReduce( sbuffer, rbuffer, 7, MPI_double_precision,
      &                     MPI_Sum, MPI_Comm_World, MPIerror )
       Uscf   = rbuffer(1)
@@ -1090,8 +1091,8 @@ C     Global reduction of Uscf/DUscf/Uatm/Enaatm/Enascf
       Uatm   = rbuffer(3)
       Enaatm = rbuffer(4)
       Enascf = rbuffer(5)
-      Exc    = rbuffer(6)
-      Dxc    = rbuffer(7)
+!!!!      Exc    = rbuffer(6)
+!!!!      Dxc    = rbuffer(7)
 #endif
 
 C     Add contribution to stress from the derivative of the Jacobian of ---
