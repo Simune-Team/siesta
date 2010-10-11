@@ -16,7 +16,8 @@
 ! Other used module procedures
 !  use sys,        only: die             ! Termination routine
 !  use m_walltime, only: wall_time       ! Wall time routine
-!  use m_io,       only: io_assign       ! Get and reserve an available IO unit
+!  use m_io,       only: io_assign, io_close  ! Get and reserve an available IO unit
+!  use m_io,       only: io_close        ! Free up IO unit after use
 !  use moreParallelSubs, only: copyFile  ! Copies a file across nodes
 !
 ! Used module parameters and variables
@@ -182,7 +183,7 @@ MODULE m_timer
 
 ! Used module procedures
   use sys,        only: die             ! Termination routine
-  use m_io,       only: io_assign       ! Get and reserve an available IO unit
+  use m_io,       only: io_assign, io_close ! Get and reserve an available IO unit
   use m_walltime, only: wall_time       ! Wall time routine
   use moreParallelSubs, only: copyFile  ! Copies a file across nodes
   use parallel,   only: parallel_init   ! Initialize parallel variables
@@ -396,10 +397,15 @@ subroutine print_report( prog )   ! Write a report of counted times
           'Calc: Sum, Avge, myNode, Avg/Max =', &
           sum(nodeCalTime), sum(nodeCalTime)/nNodes, totalCalTime, &
           sum(nodeCalTime)/nNodes / maxval(nodeCalTime)
+#ifdef MPI_TIMING
         write(iu,'(a,3f12.3,f8.3)') &
           'Comm: Sum, Avge, myNode, Avg/Max =', &
           sum(nodeComTime), sum(nodeComTime)/nNodes, totalComTime, &
           sum(nodeComTime)/nNodes / maxval(nodeComTime)
+#else
+	totalComTime = huge(1.0_dp) ! Avoid division by zero in prog table output
+	write(iu,'(a)') 'No communications time available. Compile with -DMPI_TIMING'
+#endif
         write(iu,'(a,3f12.3,f8.3)') &
           'Tot:  Sum, Avge, myNode, Avg/Max =', &
           sum(nodeTotTime), sum(nodeTotTime)/nNodes, totalTime, &
@@ -458,10 +464,15 @@ subroutine print_report( prog )   ! Write a report of counted times
 
       ! Write total communications time
       if (myNode==writerNode) then
+#ifdef MPI_TIMING
         write(iu,'(a15,i9,2(f12.3,f9.4))') &
          'MPI total      ', totalComCalls, &
           totalComTime, 1., totalComTime, totalComTime/totalTime
+#else
+	write(iu,'(a)') 'No communications time available. Compile with -DMPI_TIMING'
+#endif
       endif ! (myNode==writerNode)
+
 
 ! DEBUG
 !      ! Write time spent within final call to timer
@@ -488,7 +499,7 @@ subroutine print_report( prog )   ! Write a report of counted times
       endif ! (myNode==writerNode)
 
       ! Copy report file to the file system of root node
-      close( unit=iu )
+      call io_close( iu )
       if (reportUnit>0) then ! Append report to file already open
 #ifdef MPI
         ! Find report file name in node 0 and send it to writer node
