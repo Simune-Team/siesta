@@ -91,7 +91,8 @@
      &                           nuo, nuotot, nua, na, isa(na),
      &                           indxua(na), mscell(3,3), maxnd,
      &                           numd(nuo), listdptr(nuo), listd(maxnd)
-      real(dp), intent(in)    :: xa(3,na), ucell(3,3), G2max, datm(norb)
+      real(dp), intent(in)    :: xa(3,na), ucell(3,3), datm(norb)
+      real(dp), intent(inout) :: g2max
       integer, intent(inout)  :: ntm(3)
       real(dp), intent(inout) :: Fal(3,nua), stressl(3,3)
 
@@ -513,7 +514,7 @@ C     Modules
       use siestaXC, only : jms_setMeshDistr => setMeshDistr
                                         ! Sets a distribution of mesh
                                         ! points over parallel processors
-
+      use m_vmat,  only  : vmat
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -632,7 +633,7 @@ C     Local variables
      &  dfscf,  dipole, 
      &  poison, 
      &  reord, rhooda, rhoofd, rhoofdsp, 
-     &  timer, vmat, vmatsp, 
+     &  timer, vmatsp, 
      &  readsp
 
 C     Work arrays

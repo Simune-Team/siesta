@@ -8,6 +8,10 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
+      module m_vmat
+      private
+      public :: vmat
+      CONTAINS
       subroutine vmat( no, np, dvol, nspin, V, nvmax, 
      &                 numVs, listVsptr, listVs, Vs, 
      &                 nuo, nuotot, iaorb, iphorb, isa )
@@ -518,4 +522,5 @@ C       Redistribute Hamiltonian from mesh to orbital based distribution
       call write_debug( '    POS vmat' )
 #endif
       return
-      end
+      end subroutine vmat
+      end module m_vmat

@@ -381,6 +381,7 @@ dfscf.o: meshsubs.o meshsubs.o parallel.o parallelsubs.o precision.o sys.o
 dhscf.o: alloc.o atmfuncs.o doping_uniform.o files.o forhar.o iogrid_netcdf.o
 dhscf.o: m_efield.o m_iorho.o m_ts_in_siesta.o m_ts_options.o meshsubs.o
 dhscf.o: moremeshsubs.o parallel.o parsing.o precision.o siesta_options.o sys.o
+dhscf.o: vmat.o
 diag2g.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
 diag2k.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
 diagg.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
