@@ -219,7 +219,10 @@ ALL_OBJS=$(OBJS) $(SYSOBJ)
 # Interfaces to libraries
 #
 libmpi_f90.a: 
-	@(cd MPI ; $(MAKE) "VPATH=$(VPATH)/MPI")
+	@(cd MPI ; $(MAKE) \
+                    "VPATH=$(VPATH)/MPI" \
+                    "FPP_FLAGS=$(FPP_FLAGS)" \
+                    "FFLAGS=$(FFLAGS)" )
 #
 # Libraries that might need to be compiled
 #
