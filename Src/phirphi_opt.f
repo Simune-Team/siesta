@@ -387,7 +387,7 @@ C Initialize neighb subroutine
      &                         Sij, grSij )
                     Si(jo) = Si(jo) + Sij*dk(3) 
            
-                    call MATEL('S', is, js, ioa, joa, xij(1,jn),
+                    call MATEL('S', is, js, ioa, joa, xij(1:3,jn),
      &                         Sij, grSij )
                     Si(jo) = Si(jo) + Sij*(
      &                   xa(1,ia)*dk(1)
@@ -440,7 +440,7 @@ C The factor of two because we use Ry for the Hamiltonian
                     else
 C Matrix elements between different atoms are taken from the 
 C gradient of the overlap 
-                      call MATEL('S', is, js, ioa, joa, xij(1,jn),
+                      call MATEL('S', is, js, ioa, joa, xij(1:3,jn),
      &                           Sij, grSij )
 C The factor of two because we use Ry for the Hamiltonian
                       Si(jo) =

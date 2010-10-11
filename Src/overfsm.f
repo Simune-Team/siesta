@@ -136,7 +136,7 @@ C Valid orbital
                 is = isa(ia)
                 js = isa(ja)
                 if (rcut(is,ioa)+rcut(js,joa) .gt. rij) then
-                  call MATEL( 'S', is, js, ioa, joa, xij(1,jn),
+                  call MATEL( 'S', is, js, ioa, joa, xij(1:3,jn),
      .                      Sij, grSij )
                   Si(jo) = Si(jo) + Sij
                   do ix = 1,3
