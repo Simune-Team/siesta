@@ -73,7 +73,7 @@ C **********************************************************************
 #ifndef BSC_CELLXC
       EXTERNAL REORD
 #else /* BSC_CELLXC */
-      EXTERNAL CELLXC
+      EXTERNAL bsc_cellxc
 #endif /* BSC_CELLXC */
 
 ! AG: Note:  REAL*4 variables are really REAL(kind=grid_p)
@@ -196,7 +196,7 @@ C ----------------------------------------------------------------------
      .                           myBox(1,3), myBox(2,3), NSPIN, DRHOIN,
      .             EX, EC, DEX, DEC, STRESS, VHARRIS1, DVXCDN )
 #else /* BSC_CELLXC */
-      CALL CELLXC( 0, 1, CELL, NTML, NTML, NTPL, 0, AUX3, NSPIN,
+      CALL bsc_cellxc( 0, 1, CELL, NTML, NTML, NTPL, 0, AUX3, NSPIN,
      &             DRHOIN_PAR, EX, EC, DEX, DEC, VHARRIS1_PAR,
      &             DVXCDN_PAR, STRESSL )
 #endif /* BSC_CELLXC */

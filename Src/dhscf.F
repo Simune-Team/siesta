@@ -64,7 +64,11 @@
       use sys,            only : die
       use mesh,           only : xdsp, nsm, nsp
       use parsing
+#ifndef BSC_CELLXC
       use siestaXC, only : getXC        ! Returns the XC functional used
+#else /* BSC_CELLXC */
+      use bsc_xcmod,          only : nXCfunc, XCauth
+#endif /* BSC_CELLXC */
       use alloc,          only : re_alloc, de_alloc
       use siesta_options, only : harrisfun
       use moreMeshSubs,   only : setMeshDistr, distMeshData
@@ -111,8 +115,10 @@
       integer,        pointer :: numphi(:), numphi_par(:)
 
       integer                 :: nm(3)   ! For call to initMesh
+#ifndef BSC_CELLXC
       integer                 :: nXCfunc
       character(len=20)       :: XCauth(10), XCfunc(10)
+#endif /* ! BSC_CELLXC */
 
 !--------------------------------------------------------------------- BEGIN
 #ifdef DEBUG
@@ -143,8 +149,10 @@ C       Read spin-spiral wavevector (if defined)
      &    call die('dhscf: ERROR: spiral defined but nspin < 4')
       endif   ! First time
 
+#ifndef BSC_CELLXC
 C Get functional(s) being used
       call getXC( nXCfunc, XCfunc, XCauth )
+#endif /* ! BSC_CELLXC */
 
       if (harrisfun) then
         do n = 1,nXCfunc
@@ -524,8 +532,8 @@ C     Modules
       use siestaXC, only : jms_setMeshDistr => setMeshDistr
                                         ! Sets a distribution of mesh
                                         ! points over parallel processors
-      use m_vmat,  only  : vmat
 #endif /* BSC_CELLXC */
+      use m_vmat,  only  : vmat
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -656,16 +664,12 @@ C     Local variables
 #ifndef BSC_CELLXC
      &  cross,
 #else /* BSC_CELLXC */
-     &  cellxc, cross,
+     &  bsc_cellxc, cross,
 #endif /* BSC_CELLXC */
      &  dfscf,  dipole, 
      &  poison, 
      &  reord, rhooda, rhoofd, rhoofdsp, 
-#ifndef BSC_CELLXC
      &  timer, vmatsp, 
-#else /* BSC_CELLXC */
-     &  timer, vmat, vmatsp, 
-#endif /* BSC_CELLXC */
      &  readsp
 
 C     Work arrays
@@ -1059,7 +1063,7 @@ C ----------------------------------------------------------------------
         call distMeshData( UNIFORM, fsrc, LINEAR, fdst, KEEP )
       enddo
 
-      call cellxc( 0, 0, cell, ntml, ntml, ntpl, 0, aux3, nspin,
+      call bsc_cellxc( 0, 0, cell, ntml, ntml, ntpl, 0, aux3, nspin,
      &             DRho_gga, Ex, Ec, DEx, DEc, Vscf_gga,
      &             dummy_DVxcdn, stressl )
 #endif /* BSC_CELLXC */

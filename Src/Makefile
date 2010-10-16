@@ -137,7 +137,8 @@ OBJS =  domain_decom.o automatic_cell.o atom_options.o \
 	m_recipes.o \
 	m_timer.o \
 	moreParallelSubs.o \
-	read_xc_info.o 
+	read_xc_info.o \
+        bsc_xcmod.o bsc_cellxc.o xc.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -322,8 +323,8 @@ atm_transfer.o: atm_types.o atmparams.o old_atmfuncs.o periodic_table.o
 atm_transfer.o: radial.o sys.o
 atm_types.o: precision.o radial.o
 atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
-atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o m_filter.o
-atom.o: m_recipes.o old_atmfuncs.o periodic_table.o precision.o
+atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o bsc_xcmod.o
+atom.o: m_filter.o m_recipes.o old_atmfuncs.o periodic_table.o precision.o
 atom.o: pseudopotential.o sys.o
 atom_options.o: sys.o
 atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o siesta_geom.o
@@ -344,6 +345,9 @@ born_charge.o: siesta_geom.o siesta_options.o sparse_matrices.o
 broadcast_basis.o: atm_types.o parallel.o radial.o
 broyden_optim.o: m_broyddj_nocomm.o m_memory.o parallel.o precision.o
 broyden_optim.o: siesta_options.o sys.o units.o
+bsc_cellxc.o: alloc.o bsc_xcmod.o cellxc_mod.o meshsubs.o moremeshsubs.o
+bsc_cellxc.o: parallel.o parallelsubs.o precision.o sys.o
+bsc_xcmod.o: parallel.o precision.o sys.o
 cart2frac.o: sys.o
 cdiag.o: alloc.o m_spin.o memoryinfo.o parallel.o precision.o sys.o
 cell_broyden_optim.o: alloc.o m_broyddj_nocomm.o parallel.o precision.o sys.o
@@ -351,8 +355,6 @@ cell_broyden_optim.o: units.o zmatrix.o
 cell_fire_optim.o: alloc.o m_fdf_global.o m_fire.o m_memory.o parallel.o
 cell_fire_optim.o: precision.o siesta_options.o sys.o zmatrix.o
 cellsubs.o: precision.o
-cellxc.o: alloc.o cellxc_mod.o meshsubs.o moremeshsubs.o parallel.o
-cellxc.o: parallelsubs.o precision.o sys.o xcmod.o
 cellxc_mod.o: sys.o
 cg.o: alloc.o matrixop.o precision.o precond.o sys.o
 cgvc.o: alloc.o conjgr_old.o m_mpi_utils.o parallel.o precision.o sys.o units.o
@@ -666,15 +668,15 @@ siesta_forces.o: mixer.o parallel.o post_scf_work.o scfconvergence_test.o
 siesta_forces.o: setup_H0.o setup_hamiltonian.o siesta_cml.o siesta_options.o
 siesta_forces.o: sparse_matrices.o state_analysis.o state_init.o sys.o
 siesta_geom.o: precision.o
-siesta_init.o: alloc.o atomlist.o bands.o densematrix.o files.o ioxv.o
-siesta_init.o: kpoint_grid.o kpoint_pdos.o ksvinit.o m_check_supercell.o
+siesta_init.o: alloc.o atomlist.o bands.o bsc_xcmod.o densematrix.o files.o
+siesta_init.o: ioxv.o kpoint_grid.o kpoint_pdos.o ksvinit.o m_check_supercell.o
 siesta_init.o: m_energies.o m_eo.o m_forces.o m_gamma.o m_iostruct.o
 siesta_init.o: m_mpi_utils.o m_rmaxh.o m_spin.o m_steps.o m_timer.o
 siesta_init.o: m_ts_in_siesta.o m_ts_options.o m_wallclock.o metaforce.o
 siesta_init.o: molecularmechanics.o parallel.o parallelsubs.o phonon.o
 siesta_init.o: projected_DOS.o siesta_cmlsubs.o siesta_geom.o siesta_options.o
 siesta_init.o: sparse_matrices.o struct_init.o sys.o timestamp.o writewave.o
-siesta_init.o: xcmod.o zmatrix.o
+siesta_init.o: zmatrix.o
 siesta_move.o: atomlist.o broyden_optim.o cell_broyden_optim.o
 siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o iopipes.o ioxv.o
 siesta_move.o: m_energies.o m_forces.o m_kinetic.o m_steps.o m_stress.o
@@ -719,8 +721,7 @@ write_subs.o: m_steps.o m_stress.o m_ts_options.o parallel.o precision.o
 write_subs.o: siesta_cml.o siesta_geom.o siesta_options.o units.o zmatrix.o
 writewave.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o kpoint_grid.o
 writewave.o: parallel.o parallelsubs.o precision.o siesta_geom.o sys.o units.o
-xc.o: alloc.o precision.o sys.o xcmod.o
-xcmod.o: parallel.o precision.o sys.o
+xc.o: alloc.o bsc_xcmod.o precision.o sys.o
 xml.o: precision.o
 zm_broyden_optim.o: alloc.o m_broyddj_nocomm.o parallel.o precision.o sys.o
 zm_broyden_optim.o: units.o zmatrix.o
@@ -728,7 +729,6 @@ zm_fire_optim.o: m_fdf_global.o m_fire.o parallel.o precision.o
 zm_fire_optim.o: siesta_options.o units.o zmatrix.o
 zmatrix.o: alloc.o m_cell.o parallel.o precision.o siesta_geom.o sys.o units.o
 band.o: bands.o
-bsc_xcmod.o: xcmod.o
 diagmemory.o: memoryinfo.o
 listsc_module.o: listsc.o
 m_bessph.o: bessph.o

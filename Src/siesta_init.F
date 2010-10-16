@@ -171,8 +171,6 @@ C     Initialise MPI and set processor number
      .                   threshold=threshold,
      &                   printNow=.false. )
 
-#ifdef BSC_CELLXC
-
 !     Initialise exchange-correlation functional information
 #ifndef BSC_CELLXC
       call read_xc_info()
