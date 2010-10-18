@@ -20,8 +20,7 @@
       use m_hsparse,         only: hsparse
       use m_overlap,         only: overlap
       use m_check_supercell, only: check_sc_factors
-      use siesta_cml
-      use siesta_cmlsubs,    only: siesta_cml_init
+      use siesta_cml,   only: cml_p, cmlStartStep, mainXML
       use zmatrix,           only: lUseZmatrix, write_zmatrix
       use m_energies,        only: Emad
       use write_subs

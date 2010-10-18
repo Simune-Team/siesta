@@ -29,11 +29,12 @@ C
       integer n, m
       integer i, ipoint, il, iu, jl, ju, i1, i2, ii, j
       integer index, jndex
-      double precision z, zero
+      double precision z, zero, sum, cof1, cof2
       double precision f(n), x(n)
       integer mm, mmax
 c
-      common /divcof/ arg(11), val(11), cof(11)
+      double precision arg(11), val(11), cof(11)
+      common /divcof/ arg, val, cof
       common /divint/ mm
       data zero, mmax/0.0D0, 10/
 c

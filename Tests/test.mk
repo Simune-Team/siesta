@@ -7,7 +7,7 @@ SIESTA=../../../siesta
 #
 # Example for BSC runs
 #
-#SIESTA= mpirun -np 4 -machinefile $(HOME)/siesta-test-hfile ../../../siesta
+#SIESTA= mpirun -np 4 ../../../siesta
 #
 #----------------------------------------------------------------------------
 XML-TESTER=../../Util/test-xml/test-xml

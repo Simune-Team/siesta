@@ -171,7 +171,7 @@ C  TINY is a small number to avoid a zero denominator
       real(dp),         PARAMETER :: GWBYDR =  1.5_dp
       real(dp),         PARAMETER :: FFTOL  =  1.e-8_dp
       real(dp),         PARAMETER :: TINY   =  1.e-12_dp
-      CHARACTER(LEN=*), PARAMETER :: MYNAME =  'MATEL'
+      CHARACTER(LEN=*), PARAMETER :: MYNAME =  'MATEL '
 C -------------------------------------------------------------------
 
 C Internal variable types and dimensions ----------------------------
@@ -215,6 +215,9 @@ C -------------------------------------------------------------------
 C Start time counter 
 *     CALL TIMER( MYNAME, 1 )
 
+C Set allocation defaults 
+      CALL ALLOC_DEFAULT( OLD=OLDEFS, COPY=.TRUE., SHRINK=.FALSE. )
+
 C Nullify pointers 
       IF (.NOT.NULLIFIED) THEN
         NULLIFY( IFFR, ILM, ILMFF, INDF, INDFF, INDFFR, INDFFY, NLM,
@@ -224,10 +227,6 @@ C Nullify pointers
         INDFFY(0) = 0
         NULLIFIED = .TRUE.
       ENDIF
-
-C Set allocation defaults 
-      CALL ALLOC_DEFAULT( OLD=OLDEFS, ROUTINE=MYNAME, 
-     &                    COPY=.TRUE., SHRINK=.FALSE. )
 
 C Check if tables must be re-initialized 
       IF ( IS1.LE.0 .OR. IS2.LE.0 ) THEN

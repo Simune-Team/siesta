@@ -557,7 +557,8 @@
          write(lun,'(a20,1x,a2,i4,4x,a5,g12.5,4x,a7,g12.5)')
      $        atm_label(is), 'Z=',iz(is),
      $        'Mass=', smass(is), 'Charge=', charge(is)
-         write(lun,'(a5,i1,1x,a6,i1,5x,a10,a10,1x,a6,l1)')
+! Allow a 2-char width for lmxkb (=-1 for floating and bessel orbs)
+         write(lun,'(a5,i1,1x,a6,i2,5x,a10,a10,1x,a6,l1)')
      $        'Lmxo=', lmxo(is), 'Lmxkb=', lmxkb(is),
      $        'BasisType=', basistype(is), 'Semic=', semic(is)
          do l=0,lmxo(is)

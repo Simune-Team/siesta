@@ -1,18 +1,16 @@
-! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
-!
+!!@LICENSE
+
       module sys
 !
 !     Termination and messaging routines, MPI aware
 !
-      public :: die, bye, message
+      implicit none
+
+      public :: die      ! Prints an error message and calls MPI_Abort
+      public :: bye      ! Prints an error message and calls MPI_Finalize
+      public :: message  ! Prints a message string if node==0
+
+      private
 
       CONTAINS
 
@@ -57,8 +55,8 @@
             write(6,'(a)') trim(str)
             write(0,'(a)') trim(str)
          endif
-         write(6,'(a,i4)') 'ERROR STOP from Node: ', Node
-         write(0,'(a,i4)') 'ERROR STOP from Node: ', Node
+         write(6,'(a,i4)') 'Stopping Program from Node: ', Node
+         write(0,'(a,i4)') 'Stopping Program from Node: ', Node
 !!                                       endif
          if (Node .eq. 0) then
             call pxfflush(6)
@@ -96,7 +94,7 @@
          if (present(str)) then
             write(6,'(a)') trim(str)
          endif
-         write(6,'(a)') 'User-Requested End of Run. Bye!!'
+         write(6,'(a)') 'Requested End of Run. Bye!!'
 !!                                       endif
 
          if (Node .eq. 0) call pxfflush(6)

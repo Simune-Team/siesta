@@ -41,6 +41,10 @@
       use basis_types, only: basis_def_t
       use fdf
       use pseudopotential, only: pseudopotential_t
+#ifndef BSC_CELLXC
+      use siestaXC, only: atomXC  ! XC for a spherical charge
+      use siestaXC, only: getXC   ! Returns the XC functional to be used
+#endif /* ! BSC_CELLXC */
 
       implicit none      
 
@@ -2009,13 +2013,20 @@ C It will display a warning if Rc>4.5 a.u.or Rc < 0.5a.u.!!!!!!!!!!!!
 C Checking the functional used for exchange-correlation energy.
 C Written by D. Sanchez-Portal, Aug. 1998
 
-        use xcmod, only : nXCfunc, XCfunc, XCauth
+#ifdef BSC_CELLXC
+        use bsc_xcmod, only : nXCfunc, XCfunc, XCauth
 
+#endif /* BSC_CELLXC */
 C Passed variable
         character(len=2), intent(in) :: icorr
 
 C Local variables
+#ifndef BSC_CELLXC
+        integer                      :: nf, nXCfunc
+        character(len=20)            :: XCauth(10), XCfunc(10)
+#else /* BSC_CELLXC */
         integer                      :: nf
+#endif /* BSC_CELLXC */
         character(len=40)            :: ps_string
 
         ps_string = "Unknown atomic XC code"
@@ -2028,6 +2039,14 @@ C Local variables
         if (icorr .eq. "wc") ps_string ="GGA Wu-Cohen"
         if (icorr .eq. "bl") ps_string ="GGA Becke-Lee-Yang-Parr"
         if (icorr .eq. "ps") ps_string ="GGA PBEsol"
+#ifndef BSC_CELLXC
+        if (icorr .eq. "am") ps_string ="GGA AM05"
+        if (icorr .eq. "vf" .or. icorr .eq. "vw") 
+     $    ps_string ="VDW Dion-Rydberg-Schroeder-Langreth-Lundqvist"
+
+C Get functional(s) being used
+        call getXC( nXCfunc, XCfunc, XCauth )
+#endif /* ! BSC_CELLXC */
 
 C Loop over functionals
         do nf = 1,nXCfunc
@@ -2106,6 +2125,28 @@ C Loop over functionals
      .          'xc_check: WARNING: Pseudopotential generated with',
      $           trim(ps_string), " functional"
 
+#ifndef BSC_CELLXC
+          elseif((XCauth(nf).eq.'AM05').and.(XCfunc(nf).eq.'GGA')) 
+     .        then
+
+            write(6,'(a)')
+     .       'xc_check: GGA AM05'
+            if (icorr.ne.'am'.and.nXCfunc.eq.1) 
+     $          write(6,'(a,1x,2a)')
+     .          'xc_check: WARNING: Pseudopotential generated with',
+     $           trim(ps_string), " functional"
+
+          elseif ((XCauth(nf).eq.'DRSLL')
+     $                  .and.(XCfunc(nf).eq.'VDW')) then
+
+            write(6,'(a)')  
+     $        'xc_check: VDW Dion-Rydberg-Schroeder-Langreth-Lundqvist'
+            if ((icorr.ne.'vf' .and. icorr.ne.'vw') .and.nXCfunc.eq.1) 
+     $          write(6,'(a,1x,2a)')
+     .          'xc_check: WARNING: Pseudopotential generated with',
+     $           trim(ps_string), " functional"
+
+#endif /* ! BSC_CELLXC */
          else
 
            write(6,'(a)')
@@ -3861,8 +3902,8 @@ C*
 C****Generate PAO orbitals with increasing number of nodes ***
 C*for the different shells*
 C 
-                      nnodes=izeta+nsm
-                      nprin=l+izeta+nsm
+                      nnodes=izeta+nsm-1
+                      nprin=l+izeta+nsm-1
                       eorb=0.0d0 
                    call schro_eq(Zval,rofi,vps(1,l),vePAO,s,drdi,
      .              nrc,l,a,b,nnodes,nprin,

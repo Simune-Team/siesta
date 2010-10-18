@@ -8,6 +8,7 @@
       use alloc,           only : alloc_report, de_alloc
       use siesta_cml,      only : cml_p, mainXML, cmlEndModule
       use siesta_cmlsubs,  only : siesta_cml_exit
+      USE siestaXC,        only : closeDebugOutputFile
       use m_timestamp,     only : timestamp
       use m_wallclock,     only : wallclock
       use parallel,        only : IOnode
@@ -48,6 +49,9 @@
 
 !     Print allocation report
       call alloc_report( printNow=.true. )
+
+! Close debug outup file
+      call closeDebugOutputFile()
 
 !     Stop time counter
       call timer( 'siesta', 2 )

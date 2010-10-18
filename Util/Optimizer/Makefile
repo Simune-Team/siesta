@@ -1,9 +1,17 @@
 .SUFFIXES:
 .SUFFIXES: .f .f90 .F .F90 .o
 #
-# Choose compiler here.
+OBJDIR=Obj
+#
+include ../../$(OBJDIR)/arch.make
+#
+FC_DEFAULT:=$(FC)
+FC_SERIAL?=$(FC_DEFAULT)
+FC:=$(FC_SERIAL)         # Make it non-recursive
+#
 # Optimization flags are not really necessary, but do include
 # the OpenMP compiler flag if your system supports it and it is worth it.
+# Examples:
 #
 ##FC=ifort -openmp    # -g -O1 -CB -ftrapuv
 #
@@ -29,17 +37,6 @@ swarm: $(SWARM_OBJS)
 
 clean:
 	rm -f *.o *.mod swarm simplex
-
-.F.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
-.f.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
-.F90.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
-.f90.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
-#
-
 
 # DO NOT DELETE THIS LINE - used by make depend
 amoeba.o: precision.o vars_module.o

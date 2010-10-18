@@ -5,6 +5,8 @@
       use alloc
       use gmres
       use cg
+      use sys, only: bye
+
       implicit none
 
       PUBLIC :: jd_diag
@@ -211,13 +213,7 @@ C     Local variables
 !      call printmemory( 23, 1 )
 !      flush(23)
 
-      call MPI_Finalize( io )
-      STOP
-
-
-
-
-
+      call bye("Exit in Jacobi-Davidson test after eigvals")
 
 C Check if we are done
       if (.not.getD) return
@@ -491,7 +487,7 @@ C          VAV = 0.0
 !          write(23,*) '    REORTOGONALIZE BASE'
           nreort = nreort + 1
           do i= 1, m
-            call GramSchmidt2( N, k, i-1, Z, Q, Vb, V, V(1,i), work )
+            call GramSchmidt2( N, k, i-1, Z, Q, Vb, V, V(1:N,i), work )
             call projectionMatrix( n, i, A, B, V, VA, VB, VAV, work )
           enddo
 

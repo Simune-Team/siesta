@@ -61,8 +61,8 @@ C GGAXC, LDAXC
 C *******************************************************************
 
       use precision, only : dp
-      use xcmod,     only : nXCfunc, XCfunc, XCauth
-      use xcmod,     only : XCweightX, XCweightC
+      use bsc_xcmod,     only : nXCfunc, XCfunc, XCauth
+      use bsc_xcmod,     only : XCweightX, XCweightC
       use sys,       only: die
       use alloc,     only: re_alloc, de_alloc
 

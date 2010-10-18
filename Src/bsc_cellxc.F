@@ -8,7 +8,8 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine cellxc( irel, ider, cell, NMesh, NSpan, maxp, mtype, 
+      subroutine bsc_cellxc( irel, ider, cell,
+     $                   NMesh, NSpan, maxp, mtype, 
      &                   XMesh, nspin, Dens, EX, EC, DX, DC, VXC, 
      &                   DVXCDN, stressl )
 
@@ -117,8 +118,8 @@ C GGAXC, LDAXC, RECLAT, TIMER, VOLCEL
 C *******************************************************************
 
       use precision,    only : dp, grid_p
-      use xcmod,        only : nXCfunc, XCfunc, XCauth
-      use xcmod,        only : XCweightX, XCweightC
+      use bsc_xcmod,    only : nXCfunc, XCfunc, XCauth
+      use bsc_xcmod,    only : XCweightX, XCweightC
       use sys,          only : die
       use alloc,        only : re_alloc, de_alloc
       use cellxc_mod,   only : GGA
@@ -885,4 +886,4 @@ C Stop time counter
 #endif
       call timer( 'cellXC', 2 )
 
-      end subroutine cellxc
+      end subroutine bsc_cellxc

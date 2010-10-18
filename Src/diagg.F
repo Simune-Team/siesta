@@ -136,9 +136,9 @@ C  Internal variables .............................................
       real(dp), pointer :: psi_tmp(:), paux(:)
 
 C Solve eigenvalue problem
-      call timer( 'r-eigvec', 1 )
-      call timer( 'r-buildHS', 1 )
       do ispin = 1,nspin
+        call timer( 'r-eigvec', 1 )
+        call timer( 'r-buildHS', 1 )
         do io = 1,nuo
           do jo = 1,nuotot
             Saux(jo,io) = 0.0d0

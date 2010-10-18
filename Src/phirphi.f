@@ -109,7 +109,7 @@ C Allocate local memory
                 if (rcut(is,ioa)+rcut(js,joa) .gt. rij) then  
 
                   if (abs(dk(1)).gt.tiny) then
-                    call MATEL('X', is, js, ioa, joa, xij(1,jn),
+                    call MATEL('X', is, js, ioa, joa, xij(1:3,jn),
      .                          Sij, grSij ) 
                     Si(jo) = Si(jo) + 0.5d0*Sij*dk(1)  
  
@@ -119,7 +119,7 @@ C Allocate local memory
                   endif
                      
                   if (abs(dk(2)).gt.tiny) then
-                    call MATEL('Y', is, js, ioa, joa, xij(1,jn),
+                    call MATEL('Y', is, js, ioa, joa, xij(1:3,jn),
      .                          Sij, grSij )
                     Si(jo) = Si(jo) + 0.5d0*Sij*dk(2) 
                 
@@ -129,7 +129,7 @@ C Allocate local memory
                   endif
  
                   if (abs(dk(3)).gt.tiny) then
-                    call MATEL('Z', is, js, ioa, joa, xij(1,jn),
+                    call MATEL('Z', is, js, ioa, joa, xij(1:3,jn),
      .                          Sij, grSij )
                     Si(jo) = Si(jo) + 0.5d0*Sij*dk(3) 
  

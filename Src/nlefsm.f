@@ -255,8 +255,8 @@ C               Check maxno - if too small then increase array sizes
                   ikb = ikb + 1
                   ioa = iphorb(io)
                   koa = iphKB(ko)
-                  call MATEL( 'S', ks, is, koa, ioa, xki(1,ina),
-     &                  Ski(ikb,nno), grSki(1,ikb,nno) )
+                  call MATEL( 'S', ks, is, koa, ioa, xki(1:3,ina),
+     &                  Ski(ikb,nno), grSki(1:3,ikb,nno) )
                 enddo
 
               endif

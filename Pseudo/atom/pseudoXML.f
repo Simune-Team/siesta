@@ -71,6 +71,10 @@
           xcfuntype    = 'GGA'
           xcfunparam   = 'Becke-Lee-Yang-Parr'
 
+        case('vw','vf') 
+          xcfuntype    = 'VDW'
+          xcfunparam   = 'Dion-et-al'
+
         case('wc') 
           xcfuntype    = 'GGA'
           xcfunparam   = 'Wu-Cohen'
@@ -78,6 +82,10 @@
         case('ps') 
           xcfuntype    = 'GGA'
           xcfunparam   = 'Perdew-Burke-Ernzerhof-solid'
+
+        case('am') 
+          xcfuntype    = 'GGA'
+          xcfunparam   = 'Armiento-Mattsson-05'
 
       end select
 
@@ -191,6 +199,8 @@
              call my_add_attribute(xf,"l",il(ivps))
              call my_add_attribute(xf,"cutoff",str(rc(ivps)))
              call my_add_attribute(xf,"occupation",str(zo(indd(ivps))))
+! JMS/AG 2009/04/02: to be checked which one works better
+!             call my_add_attribute(xf,"spin",str(int(-1)))
              call my_add_attribute(xf,"spin","-1")
 
              call xml_NewElement(xf,"radfunc")
@@ -218,6 +228,8 @@
              call my_add_attribute(xf,"l",il(ivps))
              call my_add_attribute(xf,"cutoff",str(rc(ivps)))
              call my_add_attribute(xf,"occupation",str(zo(indu(ivps))))
+! JMS/AG 2009/04/02: to be checked which one works better
+!             call my_add_attribute(xf,"spin",str(int(+1)))
              call my_add_attribute(xf,"spin","+1")
 
              call xml_NewElement(xf,"radfunc")

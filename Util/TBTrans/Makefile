@@ -8,7 +8,6 @@
 #
 default: what  tbtrans 
 #
-SIESTA_DIR=../../Src
 ABS_TOPSRC:=$(shell pwd)/../../Src
 # path as seen from subdirectories
 TOPSRC:=../../../Src
@@ -42,9 +41,11 @@ SYSOBJ=$(SYS).o
 # Tbtrans:
 MOD_TOBJS=  m_tbt_options.o m_tbt_gf.o m_tbt_kpts.o hamil2.o tsread2.o
 
-SIESTA_OBJS= precision.o alloc.o  memoryinfo.o memory.o pxf.o \
-             timer.o m_mpi_utils.o m_fdf_global.o paste.o debugmpi.o \
-             parallel.o sys.o io.o files.o  m_walltime.o zheevds.o
+SIESTA_OBJS= precision.o sys.o m_io.o alloc.o  memoryinfo.o memory.o pxf.o \
+             debugmpi.o \
+             moreParallelSubs.o m_walltime.o m_timer.o timer.o m_mpi_utils.o \
+             m_fdf_global.o paste.o \
+             parallel.o  io.o files.o  m_walltime.o zheevds.o
 
 TBTOBJS= $(SIESTA_OBJS) $(MOD_TOBJS) $(SYSOBJ) $(EXTRA) \
          tbtrans.o transmission.o   \
@@ -79,7 +80,7 @@ $(LINALG):
                           "ARCH_MAKE=../$(ARCH_MAKE)" \
                           "INCFLAGS=$(LINALG_INCFLAGS)" "FFLAGS=$(FFLAGS)" $(LINALG))
 #
-tbtrans: $(TBTOBJS) $(FDF) $(SYSOBJ) $(NETCDF_INTERFACE) $(LINALG)
+tbtrans: $(MPI_INTERFACE) $(TBTOBJS) $(FDF) $(SYSOBJ) $(NETCDF_INTERFACE) $(LINALG)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o tbtrans \
               $(TBTOBJS) $(MPI_INTERFACE) $(NETCDF_INTERFACE) \
               $(FDF) $(LIBS) $(LINALG)  || echo "***Please see top of Makefile"
@@ -118,7 +119,7 @@ m_tbt_gf.o       : tsread2.o
 netcdfwrite.o   : $(NETCDF_INTERFACE)
 OutputRegionData.o: Lowdin.F $(NETCDF_INTERFACE)
 # DO NOT DELETE THIS LINE - used by make depend
-alloc.o: debugmpi.o parallel.o precision.o sys.o
+alloc.o: parallel.o precision.o m_io.o sys.o debugmpi.o
 arw.o: alloc.o parallel.o precision.o sys.o
 atm_transfer.o: atm_types.o atmparams.o old_atmfuncs.o periodic_table.o
 atm_transfer.o: radial.o sys.o

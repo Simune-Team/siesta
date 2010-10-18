@@ -1,849 +1,148 @@
-! 
-! This file is part of the SIESTA package.
+
+!*********************************************************************
+!        MODULE fft1d
+!        Just a wrapper for routines nfft, gpfa, and setgpfa
 !
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+!*********************************************************************
 !
-      subroutine fft(f, Mesh, isn, nsm)
-C
-C  Parallel FFT based on FFT routine of Templeton
-C
-C  On input :
-C
-C  real*8 f()      : contains data to be Fourier transformed
-C  integer Mesh(3) : contains global dimensions of grid
-C  integer isn     : indicates the direction of the transform
-C  integer nsm     : number of sub-mesh points - needed as mesh
-C                  : points are divided over nodes based on
-C                  : coarse mesh rather than fine mesh
-C
-C  On exit :
-C
-C  real*8 f()      : contains data Fourier transformed
-C
-C  Julian Gale, July 1999
-C
+!        subroutine nfft( N )
+!
+!        CHANGES N INTO THE NEXT INTEGER ALLOWED BY THE GPFA ROUTINE
+!        WRITTEN BY J.M.SOLER. MAY/95.
+!
+!        Input and output:
+!        integer:: N    ! Candidate FFT vector size, increased to
+!                         next allowed value, if necessary
+!
+!*********************************************************************
+!
+!        SUBROUTINE 'GPFA'
+!        SELF-SORTING IN-PLACE GENERALIZED PRIME FACTOR (COMPLEX) FFT
+!
+!        *** THIS IS THE ALL-FORTRAN VERSION ***
+!            -------------------------------
+!
+!        CALL GPFA(A,B,TRIGS,INC,JUMP,N,LOT,ISIGN)
+!
+!        A IS FIRST REAL INPUT/OUTPUT VECTOR
+!        B IS FIRST IMAGINARY INPUT/OUTPUT VECTOR
+!        TRIGS IS A TABLE OF TWIDDLE FACTORS, PRECALCULATED
+!              BY CALLING SUBROUTINE 'SETGPFA'
+!        INC IS THE INCREMENT WITHIN EACH DATA VECTOR
+!        JUMP IS THE INCREMENT BETWEEN DATA VECTORS
+!        N IS THE LENGTH OF THE TRANSFORMS:
+!          -----------------------------------
+!            N = (2**IP) * (3**IQ) * (5**IR)
+!          -----------------------------------
+!        LOT IS THE NUMBER OF TRANSFORMS
+!        ISIGN = +1 FOR FORWARD TRANSFORM
+!              = -1 FOR INVERSE TRANSFORM
+!
+!        WRITTEN BY CLIVE TEMPERTON
+!        RECHERCHE EN PREVISION NUMERIQUE
+!        ATMOSPHERIC ENVIRONMENT SERVICE, CANADA
+!
+!----------------------------------------------------------------------
+!
+!        DEFINITION OF TRANSFORM
+!        -----------------------
+!
+!        X(J) = SUM(K=0,...,N-1)(C(K)*EXP(ISIGN*2*I*J*K*PI/N))
+!
+!---------------------------------------------------------------------
+!
+!        FOR A MATHEMATICAL DEVELOPMENT OF THE ALGORITHM USED,
+!        SEE:
+!
+!        C TEMPERTON : "A GENERALIZED PRIME FACTOR FFT ALGORITHM
+!          FOR ANY N = (2**P)(3**Q)(5**R)",
+!          SIAM J. SCI. STAT. COMP., MAY 1992.
+!
+!*********************************************************************
+!
+!        SUBROUTINE 'SETGPFA'
+!        SETUP ROUTINE FOR SELF-SORTING IN-PLACE
+!            GENERALIZED PRIME FACTOR (COMPLEX) FFT [GPFA]
+!
+!        CALL SETGPFA(TRIGS,N)
+!
+!        INPUT :
+!        -----
+!        N IS THE LENGTH OF THE TRANSFORMS. N MUST BE OF THE FORM:
+!          -----------------------------------
+!            N = (2**IP) * (3**IQ) * (5**IR)
+!          -----------------------------------
+!
+!        OUTPUT:
+!        ------
+!        TRIGS IS A TABLE OF TWIDDLE FACTORS,
+!          OF LENGTH 2*IPQR (REAL) WORDS, WHERE:
+!          --------------------------------------
+!            IPQR = (2**IP) + (3**IQ) + (5**IR)
+!          --------------------------------------
+!
+!        WRITTEN BY CLIVE TEMPERTON 1990
+!
+!*********************************************************************
 
-C
-C  Modules
-C
-      use precision,    only :dp, grid_p
-      use parallel,     only : Node, Nodes, ProcessorY
-      use parallelsubs, only : HowManyMeshPerNode
-      use sys,          only : die
-      use alloc,        only : re_alloc, de_alloc
-#ifdef MPI
-      use mpi_siesta
-#endif
+      MODULE fft1d
 
-      implicit none
+! Used module procedures:
+      USE sys,       only: die     ! Termination routine
 
-C
-C  Passed arguments
-C
-      real(grid_p)
-     &  f(*)
-      integer
-     &  Mesh(3), isn, nsm
-C
-C  Local variables
-C
-      integer
-     &  maxmaxtrigs, ntrigs,
-     &  n1, n2, n3, n2l, n3l, CMeshG(3), CMeshL(3), i, n,
-     &  ng, nmeshl, ProcessorZ, IOffSet, OldMesh(3), idiv, imod
-      integer, save :: maxtrigs = 256
-      logical       :: LocalPoints, lredimension
-      real(dp)
-     &  scale
-      real(dp),  pointer, save ::   trigs(:,:) => null()
-#ifdef MPI
-      integer
-     &  n1lf, nrem, Py, Pz
-      real(grid_p), pointer :: ft(:)
-#endif
-      save OldMesh
-      data OldMesh/0,0,0/
-
-      call timer( 'FFT3D', 1 )
-
-C
-C     Set mesh size variables
-C
-      n1 = Mesh(1)
-      n2 = Mesh(2)
-      n3 = Mesh(3)
-      CMeshG(1) = n1/nsm
-      CMeshG(2) = n2/nsm
-      CMeshG(3) = n3/nsm
-      call HowManyMeshPerNode(CMeshG, Node, Nodes, nmeshl, CMeshL)
-      n2l = CMeshL(2)*nsm
-      n3l = CMeshL(3)*nsm
-      n   = n1*n2l*n3l
-      ng  = n1*n2*n3
-C
-C     Set logical as to whether there are any locally stored points
-C
-      LocalPoints = (n.gt.0) 
-C
-C     Work out processor grid size
-C
-      ProcessorZ = Nodes/ProcessorY
-      if (ProcessorY*ProcessorZ.ne.Nodes) 
-     $     call die('ERROR: ProcessorY must be a factor of the' //
-     $     ' number of processors!')
-C
-C     Allocate trigs array
-C
-      if (.not.associated(trigs)) then
-        call re_alloc( trigs, 1, maxtrigs, 1, 3, 'trigs', 'fft' )
-      endif
-
-C
-C     Initialise the tables for the FFT if the mesh has changed
-C
- 10   lredimension = .false.
-      maxmaxtrigs = maxtrigs
-      do i=1,3
-        if (OldMesh(i).ne.Mesh(i)) then
-          call setgpfa(trigs(:,i), maxtrigs, ntrigs, Mesh(i))
-          if (ntrigs.gt.maxmaxtrigs) then
-            lredimension = .true.
-            maxmaxtrigs = ntrigs
-          else
-            OldMesh(i) = Mesh(i)
-          endif
-        endif
-      enddo
-      if (lredimension) then
-C
-C       Resize FFT array for trig factors and set OldMesh to 0 to force recalculation
-C
-        maxtrigs = maxmaxtrigs
-        call re_alloc( trigs, 1, maxtrigs, 1, 3, 'trigs', 'fft' )
-        OldMesh(1:3) = 0
-        goto 10
-      endif
-C
-C     FFT in X direction
-C
-      if (LocalPoints) then
-#ifdef _OMP_
-!$OMP PARALLEL DO SCHEDULE(STATIC) DEFAULT(NONE)
-!$   &  SHARED(n2l,n3l,n1,f,trigs,isn)
-!$   &  PRIVATE(IOffSet)
-        do i= 0, n2l*n3l-1
-          IOffSet=2*n1*i
-          call gpfa(f(IOffSet+1),f(IOffSet+2),trigs(:,1),
-     &            2,2*n1,n1,1,-isn)
-        enddo
-!$OMP END PARALLEL DO
-#else
-        call gpfa(f,f(2),trigs(:,1),2,2*n1,n1,n2l*n3l,-isn)
-#endif
-      endif
-#ifdef MPI
-C
-C     2-D Processor Grid
-C
-      n1lf = n1/ProcessorY
-      nrem = n1 - n1lf*ProcessorY
-      Py = (Node/ProcessorZ) + 1
-      Pz = Node - (Py - 1)*ProcessorZ + 1
-      if (Py.le.nrem) n1lf = n1lf + 1
-C
-C     Allocate local memory
-C
-      nullify( ft )
-      call re_alloc( ft, 1, 2*n1lf*n2*n3l, 'ft', 'fft' )
-C
-C     Redistribute data to be distributed by X and Z
-C
-      call redistribXZ(f,n1,n2l,n3l,ft,n1lf,n2,1,nsm,Node,Nodes)
-C
-C     FFT in Y direction
-C
-      if (LocalPoints) then
-#ifdef _OMP_
-!$OMP PARALLEL DO SCHEDULE(STATIC) DEFAULT(NONE)
-!$   &  SHARED(n1lf,n3l,n2,ft,trigs,isn)
-!$   &  PRIVATE(IOffSet,i,idiv,imod)
-        do i=0,n1lf*n3l-1
-          idiv = i/n1lf
-          imod = mod(i,n1lf)
-          IOffSet = 2*n1lf*n2*idiv + 2*imod
-!$OMP CRITICAL
-          call GPFA(ft(IOffSet+1),ft(IOffSet+2),trigs(:,2),
-     &            2*n1lf,2,n2,1,-isn)
-!$OMP END CRITICAL
-        enddo
-!$OMP END PARALLEL DO
-#else
-        do i=0,n3l-1
-          IOffSet=2*n1lf*n2*i
-          call gpfa(ft(IOffSet+1),ft(IOffSet+2),trigs(:,2),
-     &            2*n1lf,2,n2,n1lf,-isn)
-        enddo
-#endif
-      endif
-C
-C     Redistribute data back to original form
-C
-      call redistribXZ(f,n1,n2l,n3l,ft,n1lf,n2,-1,nsm,Node,Nodes)
-C
-C     Free local memory ready for re-use
-C
-      call de_alloc( ft, 'ft', 'fft' )
-C
-C     Find new distributed x dimension
-C
-      n1lf = n1/ProcessorZ
-      nrem = n1 - n1lf*ProcessorZ
-      if (Pz.le.nrem) n1lf = n1lf + 1
-C
-C     Allocate local memory
-C
-      nullify( ft )   ! AG
-      call re_alloc( ft, 1, 2*n1lf*n2l*n3, 'ft', 'fft' )
-C
-C     Redistribute data to be distributed by X and Y
-C
-      call redistribXY(f,n1,n2l,n3l,ft,n1lf,n3,1,nsm,Node,Nodes)
-C
-C     FFT in Z direction
-C
-      if (LocalPoints) then
-#ifdef _OMP_
-!$OMP PARALLEL DO SCHEDULE(STATIC) DEFAULT(NONE)
-!$   &  SHARED(n1lf,n2l,n3,ft,trigs,isn)
-!$   &  PRIVATE(IOffSet)
-        do i= 0, n1lf-1
-          IOffSet=2*i*n2l
-          call gpfa(ft(IOffSet+1),ft(IOffSet+2),trigs(:,3),
-     &              2*n1lf*n2l,2,n3,n2l,-isn)
-        enddo
-
-!$OMP END PARALLEL DO
-#else
-        call gpfa(ft,ft(2),trigs(:,3),2*n1lf*n2l,2,n3,n1lf*n2l,-isn)
-#endif
-      endif
-C
-C     Redistribute data to be distributed by Z again
-C
-      call redistribXY(f,n1,n2l,n3l,ft,n1lf,n3,-1,nsm,Node,Nodes)
-C
-C     Free local memory
-C
-      call de_alloc( ft, 'ft', 'fft' )
-#else
-C
-C     FFT in Y direction
-C
-      do i=0,n3-1
-         IOffSet=2*n1*n2*i
-         call gpfa(f(IOffSet+1),f(IOffSet+2),trigs(:,2),
-     &             2*n1,2,n2,n1,-isn)
-      enddo
-C
-C     FFT in Z direction
-C
-      call gpfa(f,f(2),trigs(:,3),2*n1*n2,2,n3,n1*n2,-isn)
-#endif
-C
-C     Scale values
-C
-      if (LocalPoints.and.isn.gt.0) then
-        scale=1.0_dp/dble(ng)
-        do i=1,2*n
-          f(i)=f(i)*scale
-        enddo
-      endif
-C
-C     Deallocate local memory
-C
-      call timer( 'FFT3D', 2 )
-
-      return
-      end
-!-------------------------------------
-#ifdef MPI
-      subroutine redistribXZ(f,n1,n2l,n3l,ft,n1lf,n2,idir,nsm,
-     &  Node,Nodes)
-C
-C     This routine redistributes the data over the Nodes as needed
-C     for the FFT routines between the arrays f and ft
-C
-C     Array f is distributed in the Y/Z direction while ft is distributed
-C     in the X/Z direction
-C
-C     idir = direction of redistribution : > 0 => f->ft
-C                                          < 0 => ft->f
-C
-C     Use the processor grid to divide communicator according to Z
-C
-C     Julian Gale, July 1999
-C
-      use precision,   only : dp, grid_p
-      use mpi_siesta
-      use parallel,    only : ProcessorY
-      use sys,         only : die
-      use alloc,       only : re_alloc, de_alloc
+! Used module parameters, variables, and arrays:
+      USE precision, only: dp      ! Double precision real kind
+      USE precision, only: grid_p  ! Real kind used in grid arrays
+      USE parallel,  only: ionode  ! Is this the IO processor?
 
       implicit none
 
-C
-C  Passed arguments
-C
-      integer
-     &  n1, n2, n2l, n1lf, n3l, Node, Nodes, idir, nsm
-      real(grid_p)
-     &  f(2,n1,n2l,n3l), ft(2,n1lf,n2,n3l)
-C
-C  Local variables
-C
-      integer
-     &  BlockSizeY, BlockSizeYMax, jmin, jmax, jloc, n1lmax, NRemY,
-     &  i, j, k, jl, kl, BNode, INode, SNode, jminS, jmaxS
+! Public module procedures:
+      PUBLIC::
+     .  nfft,    ! Finds the next integer allowed by the FFT routine
+     .  gpfa,    ! 1D FFT
+     .  setgpfa  ! Initializes gpfa routine
 
-      integer
-     &  MPIerror, RequestR, RequestS, Status(MPI_Status_Size)
+! Public module parameters, variables, and arrays:
+!     none
 
-      integer, save ::
-     &  ProcessorZ, Py, Pz, ZCommunicator, ZNode, ZNodes
+      PRIVATE ! Nothing is declared public below this point
 
-      logical, save :: firsttimeZ = .true.
+      CONTAINS
 
-      real(grid_p), dimension(:,:,:,:), pointer  :: ftmp,ftmp2
+!*********************************************************************
 
-      if (firsttimeZ) then
-C
-C  Determine processor grid coordinates
-C
-        ProcessorZ = Nodes/ProcessorY
-        if (ProcessorY*ProcessorZ.ne.Nodes) 
-     $     call die('ERROR: ProcessorY must be a factor of the' //
-     $     ' number of processors!')
-        Py = (Node/ProcessorZ) + 1
-        Pz = Node - (Py - 1)*ProcessorZ + 1
-C
-C  Group processors into subsets by Z
-C
-        call MPI_Comm_Split(MPI_Comm_World, Pz, Py, ZCommunicator,
-     &    MPIerror)
-        call MPI_Comm_Rank(ZCommunicator,ZNode,MPIerror)
-        call MPI_Comm_Size(ZCommunicator,ZNodes,MPIerror)
-        firsttimeZ = .false.
-      endif
+      SUBROUTINE nfft( N )
 
-      BlockSizeY = ((n2/nsm)/ProcessorY)*nsm
-      NRemY = (n2 - ProcessorY*BlockSizeY)/nsm
-      if (NRemY.gt.0) then
-        BlockSizeYMax = BlockSizeY + nsm
-      else
-        BlockSizeYMax = BlockSizeY
-      endif
-      n1lmax = ((n1-1)/ProcessorY) + 1
-C
-C  Work out local dimensions
-C
-      jmin = (Py-1)*BlockSizeY + nsm*min(Py-1,NRemY) + 1
-      jmax = jmin + BlockSizeY - 1
-      if (Py-1.lt.NRemY) jmax = jmax + nsm
-      jmax = min(jmax,n2)
-      jloc = jmax - jmin + 1
-C
-C  Allocate local memory and initialise
-C
-      nullify( ftmp )
-      call re_alloc( ftmp, 1, 2, 1, n1lmax, 1, BlockSizeYMax, 1, n3l,
-     &               'ftmp', 'redistribXZ' )
-      nullify( ftmp2 )
-      call re_alloc( ftmp2, 1, 2, 1, n1lmax, 1, BlockSizeYMax, 1, n3l,
-     &               'ftmp2', 'redistribXZ' )
+C CHANGES N INTO THE NEXT INTEGER ALLOWED BY THE FFT ROUTINE
+C WRITTEN BY J.M.SOLER. MAY/95.
 
-      do i = 1,n3l
-        do j = 1,BlockSizeYMax
-          do k = 1,n1lmax
-            ftmp(1,k,j,i) = 0.0_grid_p
-            ftmp(2,k,j,i) = 0.0_grid_p
-            ftmp2(1,k,j,i) = 0.0_grid_p
-            ftmp2(2,k,j,i) = 0.0_grid_p
-          enddo
-        enddo
-      enddo
+      integer :: np, nmax, nmin, n, nrem, ip
+      parameter (NP = 3, NMAX = 1000000)
+      integer :: IPRIME(NP)
+      data IPRIME / 2, 3, 5 /
 
-      if (idir.gt.0) then
-C***********
-C  F -> FT *
-C***********
-C
-C  Handle transfer of terms which are purely local
-C
-        do i = 1,n3l
-          do j = jmin,jmax
-            jl = j - jmin + 1
-            kl = 0
-            do k = 1+ZNode, n1, ZNodes
-              kl = kl + 1
-              ft(1,kl,j,i) = f(1,k,jl,i)
-              ft(2,kl,j,i) = f(2,k,jl,i)
-            enddo
-          enddo
-        enddo
-C
-C  Loop over all Node-Node vectors exchanging local data
-C
-        do INode = 1,ProcessorY-1
-          BNode = (ZNode+INode)
-          BNode = mod(BNode,ProcessorY)
-          SNode = (ZNode-INode)
-          SNode = mod(SNode+ProcessorY,ProcessorY)
-C
-C  Collect data to send
-C
-          do i = 1,n3l
-            do jl = 1,jloc
-              kl = 0
-              do k = 1+BNode, n1, ZNodes
-                kl = kl + 1
-                ftmp(1,kl,jl,i) = f(1,k,jl,i)
-                ftmp(2,kl,jl,i) = f(2,k,jl,i)
-              enddo
-            enddo
-          enddo
-C
-C  Exchange data - send to right and receive from left
-C
-          call MPI_IRecv(ftmp2(1,1,1,1),2*n1lmax*BlockSizeYMax*n3l,
-     &      MPI_grid_real,SNode,1,ZCommunicator,RequestR,MPIerror)
-          call MPI_ISend(ftmp(1,1,1,1),2*n1lmax*BlockSizeYMax*n3l,
-     &      MPI_grid_real,BNode,1,ZCommunicator,RequestS,MPIerror)
-C
-C  Wait for receive to complete
-C
-          call MPI_Wait(RequestR,Status,MPIerror)
-C
-C  Place received data into correct array
-C
-          jminS = SNode*BlockSizeY + nsm*min(SNode,NRemY) + 1
-          jmaxS = jminS + BlockSizeY - 1
-          if (SNode.lt.NRemY) jmaxS = jmaxS + nsm
-          jmaxS = min(jmaxS,n2)
-          do i = 1,n3l
-            do j = jminS,jmaxS
-              jl = j - jminS + 1
-              kl = 0
-              do k = 1+ZNode, n1, ZNodes
-                kl = kl + 1
-                ft(1,kl,j,i) = ftmp2(1,kl,jl,i)
-                ft(2,kl,j,i) = ftmp2(2,kl,jl,i)
-              enddo
-            enddo
-          enddo
-C
-C  Wait for send to complete
-C
-          call MPI_Wait(RequestS,Status,MPIerror)
-        enddo
-      elseif (idir.lt.0) then
-C***********
-C  FT -> F *
-C***********
-C
-C  Handle transfer of terms which are purely local
-C
-        do i = 1,n3l
-          do j = jmin,jmax
-            jl = j - jmin + 1
-            kl = 0
-            do k = 1+ZNode, n1, ZNodes
-              kl = kl + 1
-              f(1,k,jl,i) = ft(1,kl,j,i) 
-              f(2,k,jl,i) = ft(2,kl,j,i) 
-            enddo
-          enddo
-        enddo
-C
-C  Loop over all Node-Node vectors exchanging local data
-C
-        do INode = 1,ProcessorY-1
-          BNode = (ZNode+INode)
-          BNode = mod(BNode,ProcessorY)
-          SNode = (ZNode-INode)
-          SNode = mod(SNode+ProcessorY,ProcessorY)
-C
-C  Collect data to send
-C
-          jminS = SNode*BlockSizeY + nsm*min(SNode,NRemY) + 1
-          jmaxS = jminS + BlockSizeY - 1
-          if (SNode.lt.NRemY) jmaxS = jmaxS + nsm
-          jmaxS = min(jmaxS,n2)
-          do i = 1,n3l
-            do j = jminS,jmaxS
-              jl = j - jminS + 1
-              kl = 0
-              do k = 1+ZNode, n1, ZNodes
-                kl = kl + 1
-                ftmp(1,kl,jl,i) = ft(1,kl,j,i) 
-                ftmp(2,kl,jl,i) = ft(2,kl,j,i) 
-              enddo
-            enddo
-          enddo
-C
-C  Exchange data - send to right and receive from left
-C
-          call MPI_IRecv(ftmp2(1,1,1,1),2*n1lmax*BlockSizeYMax*n3l,
-     &      MPI_grid_real,BNode,1,ZCommunicator,RequestR,MPIerror)
-          call MPI_ISend(ftmp(1,1,1,1),2*n1lmax*BlockSizeYMax*n3l,
-     &      MPI_grid_real,SNode,1,ZCommunicator,RequestS,MPIerror)
-C
-C  Wait for receive to complete
-C
-          call MPI_Wait(RequestR,Status,MPIerror)
-C
-C  Place received data into correct array
-C
-          do i = 1,n3l
-            do jl = 1,jloc
-              kl = 0
-              do k = 1+BNode, n1, ZNodes
-                kl = kl + 1
-                f(1,k,jl,i) = ftmp2(1,kl,jl,i) 
-                f(2,k,jl,i) = ftmp2(2,kl,jl,i) 
-              enddo
-            enddo
-          enddo
-C
-C  Wait for send to complete
-C
-          call MPI_Wait(RequestS,Status,MPIerror)
-        enddo
-      endif
-C
-C  Free local memory
-C
-      call de_alloc( ftmp2, 'ftmp2', 'redistribXZ' )
-      call de_alloc( ftmp, 'ftmp', 'redistribXZ' )
+      NMIN = N
+      DO N = NMIN, NMAX
+        NREM = N
+        DO IP = 1,NP
+   10     CONTINUE 
+          IF ( MODULO( NREM, IPRIME(IP) ) .EQ. 0 ) THEN
+            NREM = NREM / IPRIME(IP)
+            GOTO 10
+          ENDIF
+        ENDDO
+        IF (NREM .EQ. 1) RETURN
+      ENDDO
+      if (Ionode)
+     $    write(6,*) 'NFFT: NO SUITABLE INTEGER FOUND FOR N =', NMIN
+      call die()
+      END SUBROUTINE nfft
 
-      end
 
-      subroutine redistribXY(f,n1,n2l,n3l,ft,n1lf,n3,idir,nsm,
-     &  Node,Nodes)
-C
-C  This routine redistributes the data over the Nodes as needed
-C  for the FFT routines between the arrays f and ft
-C
-C  Array f is distributed in the Y/Z direction while ft is distributed
-C  in the X/Y direction
-C
-C  idir = direction of redistribution : > 0 => f->ft
-C                                       < 0 => ft->f
-C
-C  Use the processor grid to divide communicator according to Y
-C
-C  Currently written in not the most efficient but simple way! 
-C  Need to improve communication later.
-C
-C  Julian Gale, July 1999
-C
-      use precision,   only: dp, grid_p
-      use mpi_siesta
-      use parallel,    only : ProcessorY
-      use sys,         only : die
-      use alloc,       only : re_alloc, de_alloc
+!*********************************************************************
 
-      implicit none
-
-C
-C  Passed arguments
-C
-      integer
-     &  n1, n3, n2l, n1lf, n3l, nsm, Node, Nodes, idir
-      real(grid_p)
-     &  f(2,n1,n2l,n3l), ft(2,n1lf,n2l,n3)
-C
-C  Local variables
-C
-      integer
-     &  i, j, k, il, kl, BNode, BlockSizeZ, imin, imax, iloc,
-     &  INode, n1lmax, SNode, iminS, imaxS, NRemZ, BlockSizeZMax
-
-      integer
-     &  MPIerror, RequestR, RequestS, Status(MPI_Status_Size)
-
-      integer, save ::
-     &  ProcessorZ, Py, Pz, YCommunicator, YNode, YNodes
-
-      logical, save :: firsttimeY = .true.
-
-      real(grid_p), dimension(:,:,:,:), pointer :: ftmp,ftmp2
-
-      if (firsttimeY) then
-C
-C  Determine processor grid coordinates
-C
-        ProcessorZ = Nodes/ProcessorY
-        if (ProcessorY*ProcessorZ.ne.Nodes) 
-     &     call die('ERROR: ProcessorY must be a factor of the' //
-     &     ' number of processors!')
-        Py = (Node/ProcessorZ) + 1
-        Pz = Node - (Py - 1)*ProcessorZ + 1
-C
-C  Group processors into subsets by Y
-C
-        call MPI_Comm_Split(MPI_Comm_World, Py, Pz, YCommunicator,
-     &    MPIerror)
-        call MPI_Comm_Rank(YCommunicator,YNode,MPIerror)
-        call MPI_Comm_Size(YCommunicator,YNodes,MPIerror)
-        firsttimeY = .false.
-      endif
-
-      BlockSizeZ = ((n3/nsm)/ProcessorZ)*nsm
-      NRemZ = (n3 - ProcessorZ*BlockSizeZ)/nsm
-      if (NRemZ.gt.0) then
-        BlockSizeZMax = BlockSizeZ + nsm
-      else
-        BlockSizeZMax = BlockSizeZ
-      endif
-      n1lmax = ((n1-1)/ProcessorZ) + 1
-C
-C  Allocate local memory and initialise
-C
-      nullify( ftmp )
-      call re_alloc( ftmp, 1, 2, 1, n1lmax, 1, n2l, 1, BlockSizeZMax,
-     &               'ftmp', 'redistribXY' )
-      nullify( ftmp2 )
-      call re_alloc( ftmp2, 1, 2, 1, n1lmax, 1, n2l, 1, BlockSizeZMax,
-     &               'ftmp2', 'redistribXY' )
-
-      do i = 1,BlockSizeZMax
-        do j = 1,n2l
-          do k = 1,n1lmax
-            ftmp(1,k,j,i) = 0.0_grid_p
-            ftmp(2,k,j,i) = 0.0_grid_p
-            ftmp2(1,k,j,i) = 0.0_grid_p
-            ftmp2(2,k,j,i) = 0.0_grid_p
-          enddo
-        enddo
-      enddo
-C
-C  Work out local dimensions
-C
-      imin = (Pz-1)*BlockSizeZ + nsm*min(Pz-1,NRemZ) + 1
-      imax = imin + BlockSizeZ - 1
-      if (Pz-1.lt.NRemZ) imax = imax + nsm
-      imax = min(imax,n3)
-      iloc = imax - imin + 1
-
-      if (idir.gt.0) then
-C***********
-C  F -> FT *
-C***********
-C
-C  Handle transfer of terms which are purely local
-C
-        do i = imin,imax
-          il = i - imin + 1
-          do j = 1,n2l
-            kl = 0
-            do k = 1+YNode, n1, YNodes
-              kl = kl + 1
-              ft(1,kl,j,i) = f(1,k,j,il)
-              ft(2,kl,j,i) = f(2,k,j,il)
-            enddo
-          enddo
-        enddo
-C
-C  Loop over all Node-Node vectors exchanging local data
-C
-        do INode = 1,ProcessorZ-1
-          BNode = (YNode+INode)
-          BNode = mod(BNode,ProcessorZ)
-          SNode = (YNode-INode)
-          SNode = mod(SNode+ProcessorZ,ProcessorZ)
-C
-C  Collect data to send
-C
-          do il = 1,iloc
-            do j = 1,n2l
-              kl = 0
-              do k = 1+BNode, n1, YNodes
-                kl = kl + 1
-                ftmp(1,kl,j,il) = f(1,k,j,il)
-                ftmp(2,kl,j,il) = f(2,k,j,il)
-              enddo
-            enddo
-          enddo
-C
-C  Exchange data - send to right and receive from left
-C
-          call MPI_IRecv(ftmp2(1,1,1,1),2*n1lmax*n2l*BlockSizeZMax,
-     &      MPI_grid_real,SNode,1,YCommunicator,RequestR,MPIerror)
-          call MPI_ISend(ftmp(1,1,1,1),2*n1lmax*n2l*BlockSizeZMax,
-     &      MPI_grid_real,BNode,1,YCommunicator,RequestS,MPIerror)
-C
-C  Wait for receive to complete
-C
-          call MPI_Wait(RequestR,Status,MPIerror)
-C
-C  Place received data into correct array
-C
-          iminS = SNode*BlockSizeZ + nsm*min(SNode,NRemZ) + 1
-          imaxS = iminS + BlockSizeZ - 1
-          if (SNode.lt.NRemZ) imaxS = imaxS + nsm
-          imaxS = min(imaxS,n3)
-          do i = iminS,imaxS
-            il = i - iminS + 1
-            do j = 1,n2l
-              kl = 0
-              do k = 1+YNode, n1, YNodes
-                kl = kl + 1
-                ft(1,kl,j,i) = ftmp2(1,kl,j,il)
-                ft(2,kl,j,i) = ftmp2(2,kl,j,il)
-              enddo
-            enddo
-          enddo
-C
-C  Wait for send to complete
-C
-          call MPI_Wait(RequestS,Status,MPIerror)
-        enddo
-      elseif (idir.lt.0) then
-C***********
-C  FT -> F *
-C***********
-C
-C  Handle transfer of terms which are purely local
-C
-        do i = imin,imax
-          il = i - imin + 1
-          do j = 1,n2l
-            kl = 0
-            do k = 1+YNode, n1, YNodes
-              kl = kl + 1
-              f(1,k,j,il) = ft(1,kl,j,i)
-              f(2,k,j,il) = ft(2,kl,j,i)
-            enddo
-          enddo
-        enddo
-C
-C  Loop over all Node-Node vectors exchanging local data
-C
-        do INode = 1,ProcessorZ-1
-          BNode = (YNode+INode)
-          BNode = mod(BNode,ProcessorZ)
-          SNode = (YNode-INode)
-          SNode = mod(SNode+ProcessorZ,ProcessorZ)
-C
-C  Collect data to send
-C
-          iminS = SNode*BlockSizeZ + nsm*min(SNode,NRemZ) + 1
-          imaxS = iminS + BlockSizeZ - 1
-          if (SNode.lt.NRemZ) imaxS = imaxS + nsm
-          imaxS = min(imaxS,n3)
-          do i = iminS,imaxS
-            il = i - iminS + 1
-            do j = 1,n2l
-              kl = 0
-              do k = 1+YNode, n1, YNodes
-                kl = kl + 1
-                ftmp(1,kl,j,il) = ft(1,kl,j,i)
-                ftmp(2,kl,j,il) = ft(2,kl,j,i)
-              enddo
-            enddo
-          enddo
-C
-C  Exchange data - send to right and receive from left
-C
-          call MPI_IRecv(ftmp2(1,1,1,1),2*n1lmax*n2l*BlockSizeZMax,
-     &      MPI_grid_real,BNode,1,YCommunicator,RequestR,MPIerror)
-          call MPI_ISend(ftmp(1,1,1,1),2*n1lmax*n2l*BlockSizeZMax,
-     &      MPI_grid_real,SNode,1,YCommunicator,RequestS,MPIerror)
-C
-C  Wait for receive to complete
-C
-          call MPI_Wait(RequestR,Status,MPIerror)
-C
-C  Place received data into correct array
-C
-          do il = 1,iloc
-            do j = 1,n2l
-              kl = 0
-              do k = 1+BNode, n1, YNodes
-                kl = kl + 1
-                f(1,k,j,il) = ftmp2(1,kl,j,il)
-                f(2,k,j,il) = ftmp2(2,kl,j,il)
-              enddo
-            enddo
-          enddo
-C
-C  Wait for send to complete
-C
-          call MPI_Wait(RequestS,Status,MPIerror)
-        enddo
-      endif
-C
-C  Free local memory
-C
-      call de_alloc( ftmp2, 'ftmp2', 'redistribXY' )
-      call de_alloc( ftmp, 'ftmp', 'redistribXY' )
-
-      return
-      end
-#endif
-
-*        SUBROUTINE 'GPFA'
-*        SELF-SORTING IN-PLACE GENERALIZED PRIME FACTOR (COMPLEX) FFT
-*
-*        *** THIS IS THE ALL-FORTRAN VERSION ***
-*            -------------------------------
-*
-*        CALL GPFA(A,B,TRIGS,INC,JUMP,N,LOT,ISIGN)
-*
-*        A IS FIRST REAL INPUT/OUTPUT VECTOR
-*        B IS FIRST IMAGINARY INPUT/OUTPUT VECTOR
-*        TRIGS IS A TABLE OF TWIDDLE FACTORS, PRECALCULATED
-*              BY CALLING SUBROUTINE 'SETGPFA'
-*        INC IS THE INCREMENT WITHIN EACH DATA VECTOR
-*        JUMP IS THE INCREMENT BETWEEN DATA VECTORS
-*        N IS THE LENGTH OF THE TRANSFORMS:
-*          -----------------------------------
-*            N = (2**IP) * (3**IQ) * (5**IR)
-*          -----------------------------------
-*        LOT IS THE NUMBER OF TRANSFORMS
-*        ISIGN = +1 FOR FORWARD TRANSFORM
-*              = -1 FOR INVERSE TRANSFORM
-*
-*        WRITTEN BY CLIVE TEMPERTON
-*        RECHERCHE EN PREVISION NUMERIQUE
-*        ATMOSPHERIC ENVIRONMENT SERVICE, CANADA
-*
-*----------------------------------------------------------------------
-*
-*        DEFINITION OF TRANSFORM
-*        -----------------------
-*
-*        X(J) = SUM(K=0,...,N-1)(C(K)*EXP(ISIGN*2*I*J*K*PI/N))
-*
-*---------------------------------------------------------------------
-*
-*        FOR A MATHEMATICAL DEVELOPMENT OF THE ALGORITHM USED,
-*        SEE:
-*
-*        C TEMPERTON : "A GENERALIZED PRIME FACTOR FFT ALGORITHM
-*          FOR ANY N = (2**P)(3**Q)(5**R)",
-*          SIAM J. SCI. STAT. COMP., MAY 1992.
-*
-*----------------------------------------------------------------------
-*
       SUBROUTINE GPFA(A,B,TRIGS,INC,JUMP,N,LOT,ISIGN)
-
-      use precision, only: dp, grid_p
 
       IMPLICIT NONE
 *
@@ -852,7 +151,7 @@ C
       INTEGER INC, JUMP, N, LOT, ISIGN
 C
       INTEGER 
-     &  NJ(3), NN, IFAC, LL, KK, IP, IQ, IR, I
+     .  NJ(3), NN, IFAC, LL, KK, IP, IQ, IR, I
 *
 *     DECOMPOSE N INTO FACTORS 2,3,5
 *     ------------------------------
@@ -897,18 +196,18 @@ C
       ENDIF
 *
       RETURN
-      END
+      END SUBROUTINE GPFA
 
+
+!*********************************************************************
 
 *     fortran version of *gpfa2* -
 *     radix-2 section of self-sorting, in-place, generalized pfa
 *     central radix-2 and radix-8 passes included
 *      so that transform length can be any power of 2
 *
-*-------------------------------------------------------------------
-*
+
       subroutine gpfa2f(a,b,trigs,inc,jump,n,mm,lot,isign)
-      use precision, only: dp, grid_p
 
       real(grid_p) ::     a(*), b(*)
       real(dp)     ::     trigs(*)
@@ -1910,7 +1209,10 @@ cdir$ ivdep, shortloop
 *-----( end of loop on blocks of transforms )
 *
       return
-      end
+      end subroutine gpfa2f
+
+!******************************************************************
+
 *     fortran version of *gpfa3* -
 *     radix-3 section of self-sorting, in-place
 *        generalized PFA
@@ -1918,7 +1220,6 @@ cdir$ ivdep, shortloop
 *-------------------------------------------------------------------
 *
       subroutine gpfa3f(a,b,trigs,inc,jump,n,mm,lot,isign)
-      use precision, only: dp, grid_p
 
       real(grid_p) ::     a(*), b(*)
       real(dp)     ::     trigs(*)
@@ -2102,6 +1403,8 @@ cdir$ ivdep, shortloop
 *
 *  loop on type II radix-3 passes
 *  ------------------------------
+  400 continue
+*
       do 480 ipass = mh+1 , m
       jstep = (n*inc) / (3*la)
       jstepl = jstep - ninc
@@ -2349,7 +1652,10 @@ cdir$ ivdep, shortloop
 *-----( end of loop on blocks of transforms )
 *
       return
-      end
+      end subroutine gpfa3f
+
+!*******************************************************************
+
 *     fortran version of *gpfa5* -
 *     radix-5 section of self-sorting, in-place,
 *        generalized pfa
@@ -2602,6 +1908,8 @@ cdir$ ivdep, shortloop
 *
 *  loop on type II radix-5 passes
 *  ------------------------------
+  400 continue
+*
       do 480 ipass = mh+1 , m
       jstep = (n*inc) / (5*la)
       jstepl = jstep - ninc
@@ -3202,33 +2510,10 @@ cdir$ ivdep, shortloop
 *-----( end of loop on blocks of transforms )
 *
       return
-      end
+      end subroutine gpfa5f
 
-*        SUBROUTINE 'SETGPFA'
-*        SETUP ROUTINE FOR SELF-SORTING IN-PLACE
-*            GENERALIZED PRIME FACTOR (COMPLEX) FFT [GPFA]
-*
-*        CALL SETGPFA(TRIGS,N)
-*
-*        INPUT :
-*        -----
-*        N IS THE LENGTH OF THE TRANSFORMS. N MUST BE OF THE FORM:
-*          -----------------------------------
-*            N = (2**IP) * (3**IQ) * (5**IR)
-*          -----------------------------------
-*
-*        OUTPUT:
-*        ------
-*        TRIGS IS A TABLE OF TWIDDLE FACTORS,
-*          OF LENGTH 2*IPQR (REAL) WORDS, WHERE:
-*          --------------------------------------
-*            IPQR = (2**IP) + (3**IQ) + (5**IR)
-*          --------------------------------------
-*
-*        WRITTEN BY CLIVE TEMPERTON 1990
-*
-*----------------------------------------------------------------------
-*
+!*********************************************************************
+
       SUBROUTINE SETGPFA(TRIGS,maxtrigs,ntrigs,N)
 *
       use precision, only : dp
@@ -3299,4 +2584,7 @@ cdir$ ivdep, shortloop
       ntrigs = i
 *
       RETURN
-      END
+      END SUBROUTINE SETGPFA
+
+      END MODULE fft1d
+

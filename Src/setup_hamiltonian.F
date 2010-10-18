@@ -15,7 +15,6 @@
       use metaforce, only: lMetaForce, meta
       use molecularmechanics, only : twobody
       use m_dhscf,      only: dhscf
-      use siesta_cml
       use m_stress
       use m_energies
       use parallel, only: Node

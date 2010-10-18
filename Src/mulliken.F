@@ -448,7 +448,8 @@ C DSP, Orbitals with a 'P' belong to the polarization shell
                           qas(is) = qas(is) + qos(is,itot)
                           qts(is) = qts(is) + qos(is,itot)
                         enddo
-                        call spnvec( nspin, qos(1,itot), qtot,stot,svec)
+                        call spnvec( nspin, qos(1:nspin,itot), qtot,
+     $                               stot,svec)
                         if (ionode) then
                           write(6,'(i4,i5,i1,a7,2f10.5,3x,3f8.3)')
      .                         ia, io,config(1),sym_label(1), 

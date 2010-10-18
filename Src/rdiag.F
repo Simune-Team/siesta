@@ -57,6 +57,9 @@ C
      &                       serial, noexpert, divideconquer, use2d,
      &                       prerotate, ictxt, allinone, doread,
      &                       firstcall
+#ifdef MPI
+      use mpi_siesta
+#endif
       implicit          none
 
 C Passed variables
@@ -74,6 +77,7 @@ C Passed variables
 C Local variables
       type(allocDefaults) oldDefaults
 #ifdef MPI
+      integer                 :: MPIerror
       integer                 :: anb
       integer                 :: clustersize
       integer                 :: desch(9)
@@ -103,6 +107,7 @@ C Local variables
       integer                 :: sqnpc
       real(dp)                :: dscale
       logical                 :: BlacsOK
+      logical                 :: lBtmp(5)
 C Additional variables for a 2D proc grid
       integer                 :: np2d_row, np2d_col
       integer                 :: my2d_row, my2d_col
@@ -162,6 +167,21 @@ C Set algorithm logicals
         PreRotate     = fdf_boolean('Diag.PreRotate',.false.)
         Use2D         = fdf_boolean('Diag.Use2D',.true.)
 
+#ifdef MPI
+        if (Node.eq.0) then
+           lBtmp(1) = AllInOne
+           lBtmp(2) = DivideConquer
+           lBtmp(3) = NoExpert
+           lBtmp(4) = PreRotate
+           lBtmp(5) = Use2D
+        endif
+        call MPI_Bcast(lBtmp,5,MPI_logical,0,MPI_Comm_World,MPIerror)
+        AllInOne = lBtmp(1)
+        DivideConquer = lBtmp(2)
+        NoExpert = lBtmp(3)
+        PreRotate = lBtmp(4)
+        Use2D = lBtmp(5)
+#endif
         Serial = (Nodes.eq.1)
         if (Serial) Use2D = .false.
         if (AllInOne.and.Serial) DivideConquer = .false.
@@ -510,6 +530,7 @@ C If there is insufficient memory due to eigenvalue clustering increase memory
               if (maxclustersize.gt.oldmaxclustersize) then
 C If the memory has increased then try again - otherwise fail
                 ierror = - 1
+                call timer('rdiag3',2)
                 goto 999
               endif
             endif

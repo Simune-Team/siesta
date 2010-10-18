@@ -1,6 +1,155 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+302 Alberto Garcia	  2010-10-18
+Merge of SiestaXC + timer, alloc, FoX, fixes --> trunk-320
+
+* New siestaXC library including van der Waals functional
+
+Implementation of the non local van der Waals density functional 
+of Dion et al (PRL 92, 246401 (2004), PRL 103, 096102 (2009)).
+
+All the exchange-correlation routines have been placed in a library
+called siestaXC, whose unique entry point is module m_siestaxc. The
+sources are in subdirectory Src/SiestaXC, whose makefile allows to
+create a self-contained distribution in file siestaXC.tgz, that can
+be used in programs other than siesta. The library sources that are
+used by siesta also outside the library (like alloc.F90) remain in
+Src, and are copied by SiestaXC/makefile into siestaXC.tgz.
+
+The library is used to compile siesta itself, with a scheme similar
+to that used for MPI, fdf and FoX. Pseudo/atom has been also adapted
+to use the siestaXC library.
+
+The implementation of the non local van der Waals density functional
+has led to a whole rewritting of cellxc and a major one of atomxc.
+File xc has been splitted in m_atomxc, m_ldaxc, and m_ggaxc, which
+are now modules. The VDW-specific routines are in module m_vdwxc.
+
+The new parallelization of cellxc has led to several new modules, of
+which mesh3d is the largest one. It allows new distributions of mesh
+points among processors, that can change dynamically. Other relevant
+modules are fftr, for 3-D FFTs of real functions. fft3d has changed
+to allow (complex) 3-D FFTs using the new distributions of mesh points.
+Module mesh1d provides radial (1-D) mesh utilities. Module m_debugXC
+writes reports debugXC.node$$ with details of mesh distributions.
+
+NOTE: The BSC version of cellxc (including its unique "LINEAR" parallel
+distribution) has been kept in the code, and it is enabled at compile
+time by defining the BSC_CELLXC pre-processor symbol.
+
+(Jose Soler (UAM), with help by Alberto Garcia (ICMAB), Rogeli Grima
+(BSC) , and Jose Maria Cela (BSC))
+
+* The new m_timer module, together with changes in MPI/mpi_siesta, allows
+the profiling of MPI communication times, for each routine that calls 
+timer, after compiling with -DMPI_TIMING. Routine timer itself remains 
+external, but it uses m_timer operationally.
+
+* The full accounting and reporting of allocated arrays is now done in
+module alloc, and printed in (SystemLabel).alloc. The old 'memory'
+routine now passes information to alloc for this accounting, rather
+than the other way around. Therefore, the 'total' allocation sizes
+given by memory routine are no longer complete, though they are still
+printed.
+
+* Incorporate some of J. Soler's documentation and conciseness changes
+  to meshsubs (but note that the distribution of the indexp array had
+  already been implemented separately by Rogeli Grima).
+
+* Partially merged J. Soler's changes for a correct accounting of
+array allocation. Both the 'name' and 'routine' arguments should be
+identical (including case sensitivity) in the corresponding calls to
+re_alloc and de_alloc of an array.  The two arguments are combined
+into an internal name as trim(routine)//' '//name, so that
+(name='rho',routine='dhscf') is equivalent to (name='dhscf rho'). This
+is the name printed in the allocation report. NOTE: Rogeli Grima had
+been making similar changes. To avoid a painful merging, most of the
+detailed changes by J. Soler have been temporarily left out, pending
+another review.
+
+* The (mainly obsolete) 'nodes' option for basis orbital generation was
+producing orbitals with one excess radial node (i.e. one and two nodes
+for double zeta, instead of zero and one node). Corrected.
+
+* Clarification of the use of *_last geometry information (A. Garcia)
+
+The variables xa_last (formerly xalast), ucell_last, and scell_last
+are used to hold the information related to the last geometry for
+which the electronic structure has been computed. This is necessary
+since the "siesta_move" routine updates the geometry after every step.
+By using the "*_last" variables instead of "xa", "ucell", and "scell",
+we make sure that "siesta_analysis", when calculating the
+polarization, optical properties, etc, uses the coordinates actually
+used to compute the electronic structure.
+
+The *_last variables are set at the beginning of "siesta_move", before
+the actual displacements. Due to a bug in the program, however, this
+was being done only at the final scheduled step ('fincoor'), instead
+of inconditionally after every step. Thus they could be used undefined
+if, for example, a relaxation finishes before the scheduled number of
+steps (which is typical).
+
+While fixing this bug, it became apparent that some other sections of
+"siesta_analysis" are using the "predicted" coordinates (the output of
+coordinates in various formats) instead of the last "used"
+coordinates. This can be considered a feature or a bug.
+
+Similarly, the computation of the spin polarization uses a density
+matrix that is actually the result of a mixing after the last SCF
+step.
+
+(Fix prepared by A. Garcia after the discovery of the bug by J. Gale)
+
+* Support for the Armiento and Mattson's  functional added (From J. Gale)
+
+Support for the AM05 functional has been added to routines in SiestaXC 
+and Pseudo. This is done using the AM05 subroutines distributed by 
+Armiento and Mattson, under the terms of the conditions contained within 
+the header to their software allowing modification and redistribution 
+provider the original copyright header remains. 
+
+A new module, am05, contained within the file SiestaXC/am05.f90, has been 
+added containing the code from Armiento and Mattsson. Within ggaxc.f90 
+a wrapper has been added, am05xc, to pass the variables from ggaxc to 
+am05 subroutines and handle the return arguments appropriately. 
+
+In the atom program the two-letter symbol "am" has been added for AM05.
+In SIESTA the GGA Authors are "AM05".
+
+A test of the AM05 functional added in h2o_am05.
+
+* Add support for PBESol XC functional (J. Gale)
+
+* Update FoX library and add XML.AbortOnErrors and XML.AbortOnWarnings
+  (From A. Walker)
+
+It is sometimes useful for warnings or errors generated by the FoX
+libary to result in an abort to generate a core dump or stack trace to
+see where in Siesta the call causing the error is being made. It is
+now possible to turn on this behaviour at runtime using two new fdf
+boolean tags:
+
+ XML.AbortOnErrors  XML.AbortOnWarnings
+
+Both are boolean and default to .false. (which mirrors the current
+stopping behaviour).
+
+These features have been made possible by an update in the FoX library
+that adds an interface to allow errors and warnings to result in an
+abort signal. In the update there is also a fix to work around a PGI
+bug for the overloaded wxml interfaces (aparently not used in Siesta)
+and a change to the prng to avoid using initalised data in prng_init.
+
+* Other fixes:
+
+Pass FPP_FLAGS to MPI makefile (for MPI_TIMINGS)
+Fix intent of g2max in dhscf. Put vmat in a module
+Wrap output in timer when MPI_TIMINGS is off 
+Use (possibly empty) array section of eold in call.
+Fix array actual arguments in ambiguous interfaces
+
+------------------------------------
 301 Alberto Garcia	  2010-09-30
 Fine-tuning of grid load-balancing and communications
 

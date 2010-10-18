@@ -344,8 +344,8 @@ C If LWF's have just been read, restore istep
 
 C Call the CG routines ...............................................
       if (iscf .eq. 1) iterm = 0
-      call cgwf(iscf,itmax,ftol,eta,qs,nbasis,nbasisloc,nbands,
-     .          nhmax,numh,listh,listhptr,maxnc,h,s,fe,iter,dm,
+      call cgwf(iscf,itmax,ftol,eta(1),qs,nbasis,nbasisloc,nbands,
+     .          nhmax,numh,listh,listhptr,maxnc,h,s,fe(1),iter,dm,
      .          edm,nbasisCloc,nspin,Node,Nodes)
       iterm = max(iterm,iter)
 
