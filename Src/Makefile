@@ -355,7 +355,7 @@ cell_broyden_optim.o: units.o zmatrix.o
 cell_fire_optim.o: alloc.o m_fdf_global.o m_fire.o m_memory.o parallel.o
 cell_fire_optim.o: precision.o siesta_options.o sys.o zmatrix.o
 cellsubs.o: precision.o
-cellxc_mod.o: sys.o
+cellxc_mod.o: bsc_xcmod.o sys.o
 cg.o: alloc.o matrixop.o precision.o precond.o sys.o
 cgvc.o: alloc.o conjgr_old.o m_mpi_utils.o parallel.o precision.o sys.o units.o
 cgvc_zmatrix.o: alloc.o conjgr.o m_mpi_utils.o parallel.o precision.o sys.o
@@ -385,10 +385,10 @@ densematrix.o: alloc.o precision.o
 detover.o: alloc.o parallel.o parallelsubs.o precision.o
 dfscf.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o meshmatrix.o
 dfscf.o: meshsubs.o meshsubs.o parallel.o parallelsubs.o precision.o sys.o
-dhscf.o: alloc.o atmfuncs.o cellxc_mod.o doping_uniform.o files.o forhar.o
-dhscf.o: iogrid_netcdf.o m_efield.o m_iorho.o m_ts_in_siesta.o m_ts_options.o
-dhscf.o: meshsubs.o moremeshsubs.o parallel.o parsing.o precision.o
-dhscf.o: siesta_options.o sys.o vmat.o
+dhscf.o: alloc.o atmfuncs.o bsc_xcmod.o cellxc_mod.o doping_uniform.o files.o
+dhscf.o: forhar.o iogrid_netcdf.o m_efield.o m_iorho.o m_ts_in_siesta.o
+dhscf.o: m_ts_options.o meshsubs.o moremeshsubs.o parallel.o parsing.o
+dhscf.o: precision.o siesta_options.o sys.o vmat.o
 diag2g.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
 diag2k.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
 diagg.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
