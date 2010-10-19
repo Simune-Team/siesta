@@ -16,7 +16,7 @@
 module m_ts_options
 
 ! SIESTA Modules used
-USE precision
+USE precision, only : dp
 USE siesta_options, only : fixspin, isolve, SOLVE_TRANSI
 USE sys, only : die
 
@@ -126,11 +126,10 @@ subroutine read_ts_options()
 
 ! SIESTA Modules Used
 use parallel, only: IOnode, Nodes
-use fdf
 use m_fdf_global, only: fdf_global_get
 
 #ifdef MPI
-use mpi_siesta
+use mpi_siesta, only: MPI_Bcast, MPI_character, MPI_Comm_World
 #endif
 implicit none
 
@@ -242,13 +241,9 @@ call MPI_BCast(smethod,20,MPI_character,0,MPI_Comm_World,MPIerror)
 
 
 1   format(a,4x,l1)
-2   format(a)
-4   format(a,i8)
 5   format(a,i5,a)
 6   format(a,f10.4,a)
 7   format(a,f12.6,a)
-8   format(a,f14.12)
-9   format(a,f10.4)
 10  format(a,4x,a)
 end subroutine read_ts_options
 

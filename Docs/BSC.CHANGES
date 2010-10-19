@@ -1,6 +1,23 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+303 Alberto Garcia	  2010-10-19
+Merged some precision changes in m_ts* modules
+  
+* R. Grima had already fixed the precision of the "v" variable (real
+  space potential) to be grid_p in the TSVHFix and TSvoltage2
+  subroutines (m_ts_in_siesta.F90 module).
+
+* F.D. Novaes had made more cosmetic changes to declarations, which
+  have been merged from the trunk:
+  
+    real*8 --> real(dp)
+    complex*16 --> complex(dp)
+    double precision --> real(dp)
+
+* The argument list of routine "transiesta" has been shortened.
+
+------------------------------------
 302 Alberto Garcia	  2010-10-18
 Merge of SiestaXC + timer, alloc, FoX, fixes --> trunk-320
 

@@ -222,9 +222,9 @@ end subroutine timer
         abs_time(cont) = abs_time(cont) + (REAL(itime) / REAL(rate))
         neventos(cont) = neventos(cont) + 1.0
 #ifdef DEBUG
-        write(23,*) '      iter:', neventos(cont),
-     $   'Tiempo:', (REAL(itime) / REAL(rate)),
-     $   ' total:', abs_time(cont)
+        write(23,*) '      iter:', neventos(cont),  &
+         'Tiempo:', (REAL(itime) / REAL(rate)),     &
+         ' total:', abs_time(cont)
 #endif
       ELSE IF (job == 0) THEN
         timer(1,cont)  = current_time

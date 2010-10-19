@@ -529,10 +529,10 @@ m_sparse.o: alloc.o precision.o
 m_spin.o: alloc.o parallel.o precision.o
 m_stress.o: precision.o
 m_timer.o: m_io.o m_walltime.o moreParallelSubs.o parallel.o precision.o sys.o
-m_ts_aux_rout.o: sys.o
+m_ts_aux_rout.o: precision.o sys.o
 m_ts_contour.o: files.o m_ts_aux_rout.o m_ts_options.o precision.o sys.o
 m_ts_electrode.o: files.o m_ts_aux_rout.o m_ts_io.o m_ts_kpoints.o
-m_ts_electrode.o: m_ts_options.o
+m_ts_electrode.o: m_ts_options.o precision.o
 m_ts_in_siesta.o: find_kgrid.o m_mpi_utils.o m_ts_contour.o m_ts_electrode.o
 m_ts_in_siesta.o: m_ts_io.o m_ts_kpoints.o m_ts_options.o m_ts_scattering.o
 m_ts_in_siesta.o: meshsubs.o parallel.o parallelsubs.o precision.o sys.o
