@@ -273,10 +273,7 @@
       use m_energies 
       use m_spin
 #ifdef TRANSIESTA
-! TSS Begin
-! Transiesta Modules
-      use m_ts_options, only: TSinit, TSrun, TSiscf
-! TSS End
+      use m_ts_global_vars, only: TSinit, TSrun, TSiscf 
 #endif /* TRANSIESTA */
       implicit none
 
@@ -285,9 +282,7 @@
       real(dp), intent(in) :: dDmax ! Max. change in dens. matrix elem.
       integer              :: i 
 #ifdef TRANSIESTA
-! TSS Begin
       character(11) :: tmpname
-! TSS End
 #endif /* TRANSIESTA */
 
       ! Only print out full decomposition at very beginning and end.

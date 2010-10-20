@@ -33,11 +33,10 @@
       use slepc_diagon,    only : slepc_diag
 #endif
 #ifdef TRANSIESTA
-! TSS Begin
-! Transiesta Modules
-      use m_ts_options,   only : TSmode, TSiscf, TSinit, TSrun, dDmaxRho
-      use m_ts_in_siesta, only : transiesta
-! TSS End
+      use m_ts_options, only : mixH
+      use m_ts_global_vars, only : TSiscf, TSinit, TSrun, Hold
+      use m_ts_options,     only : TSmode
+      use m_ts_in_siesta,   only : transiesta
 #endif /* TRANSIESTA */
       implicit none
 !     Input variables
@@ -52,11 +51,6 @@
       real(dp)            :: buffer1
 #endif
 
-#ifdef TRANSIESTA
-! TSS Begin
-      integer             :: i,j
-! TSS End
-#endif /* TRANSIESTA */
 !------------------------------------------------------------------------- BEGIN
 #ifdef DEBUG
       call write_debug( '  PRE compute_dm' )
@@ -127,22 +121,14 @@
       endif
 
 #ifdef TRANSIESTA
-! TSS Begin
-! ----------------------------------------------------
-! TSS
-! ----------------------------------------------------
-! CHECK CONVERGENCE OF DENSITY MATRIX
-! ----------------------------------------------------
-         dDmaxRho = -1.
-         do j = 1,nspin
-            do i = 1,nh
-              dDmaxRho = max(dDmaxRho,
-     &     abs(Dscf(i,j)-Dold(i,j)))
-            enddo
-         enddo
-! TSS End
-
-
+! Save present H matrix
+          if(mixH) then
+             do ispin = 1,nspin
+                do io = 1,nh
+                   Hold(io,ispin) = H(io,ispin)
+                enddo
+             enddo
+          end if
 #endif /* TRANSIESTA */
 
 !     Harris-functional energy 

@@ -39,6 +39,10 @@ ALL= h2o h2o_reparam h2o_basis h2o_dos h2o_orderN			\
        fe_clust_noncollinear h_chain n_chain si64_coop si_pdos_kgrid    \
        si2x1h-dipole ar2_vdw graphite_vdw_df 
 #
+# TranSIESTA
+#
+TS= ts_fast
+#
 #  Need to add the new tests and generate the reference outputs and xml files.
 #
 #
@@ -47,8 +51,18 @@ all:
 	 $(MAKE) -C $$dir completed; \
 	done
 
+ts:
+	@for dir in $(TS); do\
+	 $(MAKE) -C $$dir completed; \
+	done 
+
 clean:
 	@for i in $(ALL) ; do \
+		(cd $$i ; make clean) ; \
+	done
+
+clean_ts:
+	@for i in $(TS) ; do \
 		(cd $$i ; make clean) ; \
 	done
 #

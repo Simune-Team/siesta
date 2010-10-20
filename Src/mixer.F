@@ -23,11 +23,9 @@
       use iodm_netcdf, only: write_dm_netcdf
 #endif
 #ifdef TRANSIESTA
-! TSS Begin
       use m_energies,   only : ef
-      use m_ts_io,      only : TSiodm
-      use m_ts_options, only : VIn, VOut, TSrun, tsdme, TSiscf
-! TSS End
+      use m_ts_iodm, only : write_ts_dm
+      use m_ts_global_vars, only: VIn, VOut, TSrun, TSiscf
 #endif /* TRANSIESTA */
       implicit none
 
@@ -141,16 +139,14 @@
           endif
         else
 !         TSS write DME
-          if(tsdme) then
-            if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
+             if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
                if (istp .eq.1)
-     &           call TSiodm( 'write', maxnh, no_l, nspin, numh,
-     &                        listhptr, listh, Dscf, Escf, ef )
-            else
-              call TSiodm( 'write', maxnh, no_l, nspin, numh,
-     &                     listhptr, listh, Dscf, Escf, ef )
-            endif            ! idyn.eq.6
-          endif               ! tsdme
+     .           call write_ts_dm (maxnh, no_l, nspin,
+     .                   numh, listhptr, listh, Dscf, Escf,ef)
+             else
+                call write_ts_dm (maxnh, no_l, nspin,
+     .                   numh, listhptr, listh, Dscf, Escf,ef)
+             endif            ! idyn.eq.6
         endif ! TSrun
       endif ! writedm
 #endif /* TRANSIESTA */

@@ -30,9 +30,7 @@
       use m_mpi_utils, only: globalize_sum
 #endif
 #ifdef TRANSIESTA
-!     TSS Begin
-      use m_ts_options, only: TSrun
-!     TSS End
+      use m_ts_global_vars, only: TSrun
 #endif /* TRANSIESTA */
       implicit none
       integer, intent(in) :: iscf

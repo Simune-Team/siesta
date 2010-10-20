@@ -36,7 +36,8 @@
 #ifdef TRANSIESTA
 ! TSS Begin
       use files,        only : slabel, label_length
-      use m_ts_options, only : TSrun, savetshs, ts_istep
+      use m_ts_global_vars, only : TSrun, ts_istep
+      use m_ts_options, only : savetshs
       use m_ts_kpoints, only : ts_gamma_scf, ts_kscell, ts_kdispl
       use m_ts_io,      only : ts_iohs
 ! TSS End

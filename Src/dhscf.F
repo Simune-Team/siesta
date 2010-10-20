@@ -550,10 +550,9 @@ C     Modules
       use m_doping_uniform,       only: doping_active, doping_uniform
 
 #ifdef TRANSIESTA
-!     TSS Begin
-      use m_ts_options, only: TSmode, TSrun, UseVFix
+      use m_ts_options, only: UseVFix, TSmode
       use m_ts_in_siesta, only: TSVHFix, TSVoltage2
-!     TSS End
+      use m_ts_global_vars, only: TSrun
 #endif /* TRANSIESTA */
       implicit none
       integer

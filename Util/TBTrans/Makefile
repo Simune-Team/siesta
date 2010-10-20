@@ -45,14 +45,13 @@ SIESTA_OBJS= precision.o sys.o m_io.o alloc.o  memoryinfo.o memory.o pxf.o \
              debugmpi.o \
              moreParallelSubs.o m_walltime.o m_timer.o timer.o m_mpi_utils.o \
              m_fdf_global.o paste.o \
-             parallel.o  io.o files.o  m_walltime.o zheevds.o
+             parallel.o  io.o files.o  zheevds.o
 
 TBTOBJS= $(SIESTA_OBJS) $(MOD_TOBJS) $(SYSOBJ) $(EXTRA) \
          tbtrans.o transmission.o   \
          calc_green.o cdiag_local.o getsfe.o \
-         mkRealContour.o reinit_tb.o setupkham2.o TSiohs.o atompdos.o coop.o \
+         mkRealContour.o reinit_tb.o setupkham2.o TSiohs.o \
          csolve.o teigchana.o helpers.o \
-         Lowdin.o netcdfwrite.o 
 
 #
 # Interfaces to libraries
@@ -65,7 +64,7 @@ $(FDF):
                           "ARCH_MAKE=../$(ARCH_MAKE)" \
                           "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 #
-INCFLAGS:=$(NETCDF_INCFLAGS) $(INCFLAGS)
+INCFLAGS:=$(INCFLAGS)
 #
 MPI_MAKEFILE=$(TOPSRC)/MPI/Makefile
 $(MPI_INTERFACE): 
@@ -80,9 +79,9 @@ $(LINALG):
                           "ARCH_MAKE=../$(ARCH_MAKE)" \
                           "INCFLAGS=$(LINALG_INCFLAGS)" "FFLAGS=$(FFLAGS)" $(LINALG))
 #
-tbtrans: $(MPI_INTERFACE) $(TBTOBJS) $(FDF) $(SYSOBJ) $(NETCDF_INTERFACE) $(LINALG)
+tbtrans: $(MPI_INTERFACE) $(TBTOBJS) $(FDF) $(SYSOBJ)  $(LINALG)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o tbtrans \
-              $(TBTOBJS) $(MPI_INTERFACE) $(NETCDF_INTERFACE) \
+              $(TBTOBJS) $(MPI_INTERFACE)  \
               $(FDF) $(LIBS) $(LINALG)  || echo "***Please see top of Makefile"
 #	@(cd ../../bin ; rm -f tsScan ; ln -s tbtrans tsScan)
 
@@ -93,9 +92,6 @@ clean:
 	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
 	(cd MPI ; $(MAKE) -f $(MPI_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
 	(cd Libs ; $(MAKE) -f $(MPI_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
-
-readTSHScdf: readTSHScdf.F $(NETCDF_INTERFACE)
-	$(FC) -o readTSHScdf readTSHScdf.F $(NETCDF_INTERFACE) $(NETCDF_LIBS)
 
 #
 # Dependencies
@@ -116,8 +112,6 @@ setupkham2.o	: tsread2.o
 tbtrans.o	: hamil2.o 
 green4.o        : greensub.o
 m_tbt_gf.o       : tsread2.o
-netcdfwrite.o   : $(NETCDF_INTERFACE)
-OutputRegionData.o: Lowdin.F $(NETCDF_INTERFACE)
 # DO NOT DELETE THIS LINE - used by make depend
 alloc.o: parallel.o precision.o m_io.o sys.o debugmpi.o
 arw.o: alloc.o parallel.o precision.o sys.o

@@ -23,12 +23,8 @@
       use m_convergence, only: converger_t
       use m_convergence, only: reset, set_tolerance
 #ifdef TRANSIESTA
-!     TSS Begin
-      use sparse_matrices, only : nh, Dscf, H, S
-      use m_spin,          only : nspin
-      use sys,             only : die
-      use m_ts_options,    only : VIn, VOut, mixH, ts_istep
-!     TSS End
+      use m_ts_options, only : mixH
+      use m_ts_global_vars, only : ts_istep
 #endif /* TRANSIESTA */
       implicit none
       integer, intent(in)  :: istep
@@ -37,10 +33,8 @@
       real(dp) :: dDmax     ! Max. change in density matrix elements
       type(converger_t)  ::  conv_harris, conv_etot
 #ifdef TRANSIESTA
-!     TSS Begin
-      integer :: ts_alloc_stat
+! Used in force constant runs
       ts_istep = istep
-!     TSS End
 #endif /* TRANSIESTA */
       
 !---------------------------------------------------------------------- BEGIN
@@ -97,44 +91,21 @@
 
         call mixer( iscf, dDmax )
 #else /* TRANSIESTA */
-!       TSS Begin: Mixing H or DM
-!       Resize arrays if necessary????
-!        call re_alloc( Vin, 1, nh, 1, nspin, 'Vin', 'siesta_forces' )
-!        call re_alloc( Vout, 1, nh, 1, nspin, 'Vout', 'siesta_forces' )
 
-! Adding the possibility of Mixinh H
-        if (mixH) then
-          if ( first ) call setup_hamiltonian( iscf )
-          if (cml_p)
+        if (cml_p)
      &      call cmlStartStep( xf=mainXML, type='SCF', index=iscf )
 
-          VIn(1:nh,1:nspin)=H(1:nh,1:nspin)
+! Adding the possibility of Mixing H.
 
+        if (mixH) then
+          if ( first ) call setup_hamiltonian( iscf )
           call compute_dm( iscf )
-
           call setup_hamiltonian( iscf )
-
-          VOut(1:nh,1:nspin)=H(1:nh,1:nspin)
-
-          call mixer( iscf, dDmax )
-
-          H(1:nh,1:nspin) = VIn(1:nh,1:nspin)
-        else
-          VIn(1:nh,1:nspin)=Dscf(1:nh,1:nspin)
-          if (cml_p)
-     &      call cmlStartStep(xf=mainXML, type='SCF', index=iscf)
-
+        else 
           call setup_hamiltonian( iscf )
-
           call compute_dm( iscf )
-
-          VOut(1:nh,1:nspin)=Dscf(1:nh,1:nspin)
-
-          call mixer( iscf, dDmax )
-
-          Dscf(1:nh,1:nspin)=VIn(1:nh,1:nspin)
         end if ! mixH
-!     TSS End
+      	call mixer( iscf, dDmax )
 #endif /* TRANSIESTA */
 
         call scfconvergence_test( first, iscf, last, dDmax,

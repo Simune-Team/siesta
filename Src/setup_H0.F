@@ -40,7 +40,7 @@ C     and initializes data structures on the grid.
 #endif
 #ifdef TRANSIESTA
 !     TSS Begin
-      use m_ts_options, only: TSrun
+      use m_ts_global_vars, only: TSrun
 !     TSS End
 #endif /* TRANSIESTA */
 

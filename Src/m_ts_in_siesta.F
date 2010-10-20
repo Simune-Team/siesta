@@ -373,7 +373,7 @@ C Get Node number
       Nodes = 1 
 #endif
       IONode=.false.
-      if(Node.eq.1) IONode=.true.
+      if(Node.eq.0) IONode=.true.
       
       nullify(GF)
 

@@ -3,11 +3,12 @@ module m_tbt_kpts
 
 implicit none
 
-public
+public :: get_kp_on_node, reclat
+private
 
 contains
 
-subroutine TSiokp(fname,nkpar,kpar,wkpar,kscellfdf,kdisplfdf)
+subroutine get_kp_on_node(fname,nkpar,kpar,wkpar,kscellfdf,kdisplfdf)
 
 use parallel, only : Node, Nodes, IONode
 use sys, only : die
@@ -126,7 +127,7 @@ double precision, allocatable, dimension (:,:) :: xa
       end if ! Nodes > 1
 
  
-      end subroutine TSiokp
+      end subroutine get_kp_on_node
 
 
       subroutine dist_kpts_on_nodes(nkpar,ktmp,wktmp,nkOnNodes,kOnNodes,&
