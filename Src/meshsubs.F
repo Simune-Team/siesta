@@ -80,7 +80,7 @@ C ----------------------------------------------------------------------
       end module mesh
 !-------------------------------------------------------------
       module meshphi
-      use precision, only : grid_p
+      use precision, only : grid_p, phi_grid_p
 
       implicit none
 
@@ -99,7 +99,7 @@ C ----------------------------------------------------------------------
       integer,          pointer, save :: endpht(:)
       integer,          pointer, save :: lstpht(:)
       integer,          pointer, save :: listp2(:)
-      real(grid_p),     pointer, save :: phi(:,:)
+      real(phi_grid_p), pointer, save :: phi(:,:)
       end module meshphi
 
       subroutine resetMeshPhi( )

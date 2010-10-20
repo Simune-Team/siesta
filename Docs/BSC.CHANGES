@@ -1,6 +1,44 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+304 Alberto Garcia	  2010-10-20
+Changes to the default precision of grid magnitudes (-->trunk-322)
+
+The grid functions (charge densities, potentials, etc) are now in
+double precision by default. The 'phi' array that holds the values of
+the basis orbitals on the real-space grid is kept in single precision.
+
+The following pre-processing symbols at compile time control the 
+precision selection:
+
+#ifdef GRID_SP
+    integer, parameter :: grid_p = sp
+    integer, parameter :: phi_grid_p = sp
+#elif defined(GRID_DP)
+    integer, parameter :: grid_p = dp
+    integer, parameter :: phi_grid_p = dp
+#else
+    integer, parameter :: grid_p = dp
+    integer, parameter :: phi_grid_p = sp
+#endif
+
+GRID_DP will lead to a sizable memory increase, as 'phi' is the main
+user of memory on the grid. On the other hand, the gains in accuracy
+are negligible, as the operations over 'phi' are accumulated in double
+precision variables.
+
+GRID_SP recovers the old Siesta default. It will not free much
+memory, and it will show some numerical differences.
+
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/meshsubs.F
+  Src/precision.F
+  
+
+
+------------------------------------
 303 Alberto Garcia	  2010-10-19
 Merged some precision changes in m_ts* modules
   

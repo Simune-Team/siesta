@@ -14,7 +14,9 @@
 !     Select precision of certain parts of the program
 !     These are set through preprocessor directives. The
 !     default behavior is to use single-precision variables
-!     (could change in the future)
+!     for the values of the orbitals on the grid, the Broyden
+!     mixing auxiliary arrays, and the O(N) arrays, and 
+!     double precision for the grid function arrays.
 !
 #ifdef BROYDEN_DP
       integer, parameter :: broyden_p = dp
@@ -22,10 +24,15 @@
       integer, parameter :: broyden_p = sp
 #endif
 
-#ifdef GRID_DP
-      integer, parameter :: grid_p = dp
-#else
+#ifdef GRID_SP
       integer, parameter :: grid_p = sp
+      integer, parameter :: phi_grid_p = sp
+#elif defined(GRID_DP)
+      integer, parameter :: grid_p = dp
+      integer, parameter :: phi_grid_p = dp
+#else
+      integer, parameter :: grid_p = dp
+      integer, parameter :: phi_grid_p = sp
 #endif
 
 #ifdef ON_DP

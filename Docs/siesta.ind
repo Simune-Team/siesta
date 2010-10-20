@@ -8,6 +8,7 @@
 
   \item {\bf AllocReportLevel}, 75
   \item {\bf AllocReportThreshold}, 75
+  \item AM05, 41
   \item animation, 37
   \item antiferromagnetic initial DM, 46
   \item {\bf AtomCoorFormatOut}, 31
@@ -45,7 +46,7 @@
     \subitem split valence   for H, 21
     \subitem User basis, 27
     \subitem User basis (NetCDF format), 27
-  \item basis     \subitem PAO, 116
+  \item basis     \subitem PAO, 117
   \item {\bf     BasisPressure}, 28
   \item Berry phase, 67
   \item Bessel functions, 26
@@ -56,7 +57,7 @@
   \item Born effective charges, 69
   \item {\bf     BornCharge}, 88
   \item {\bf BornCharge}, 69
-  \item Broyden mixing, 43, 112
+  \item Broyden mixing, 44, 113
   \item Broyden optimization, 80
   \item bug reports, 100
   \item bulk polarization, 67
@@ -97,7 +98,7 @@
   \item {\bf DM.Broyden.Cycle.On.Maxit}, 44
   \item {\bf DM.Broyden.Variable.Weight}, 44
   \item {\bf DM.EnergyTolerance}, 48
-  \item {\bf DM.FormattedFiles}, 45
+  \item {\bf DM.FormattedFiles}, 46
   \item {\bf DM.FormattedInput}, 46
   \item {\bf DM.FormattedOutput}, 46
   \item {\bf DM.Harris.Tolerance}, 49
@@ -106,7 +107,7 @@
   \item {\bf DM.KickMixingWeight}, 44
   \item {\bf DM.MixingWeight}, 43
   \item {\bf DM.MixSCF1}, 44
-  \item {\bf DM.NumberBroyden}, 43
+  \item {\bf DM.NumberBroyden}, 44
   \item {\bf DM.NumberKick}, 44
   \item {\bf DM.NumberPulay}, 43
   \item {\bf DM.PulayOnFile}, 43
@@ -155,7 +156,8 @@
   \item GGA, 41
   \item ghost atoms, 14, 26
   \item {\sc Gnubands}, 61
-  \item grid, 49
+  \item grid, 49, 50
+  \item Grid precision, 113
   \item {\bf GridCellSampling}, 50
   \item Ground-state atomic configuration, 20
 
@@ -232,9 +234,9 @@
   \item {\bf MD.UseSaveZM}, 38
   \item {\bf MD.UseStructFile}, 36
   \item {\bf MD.VariableCell}, 77
-  \item mesh, 49
+  \item mesh, 49, 50
   \item {\bf MeshCutoff}, 49
-  \item {\bf MeshSubDivisions}, 49
+  \item {\bf MeshSubDivisions}, 50
   \item {\tt MINIMAL}, 20
   \item minimal basis, 20
   \item mixps   program, 15
@@ -361,7 +363,7 @@
   \item {\bf PhononLabels}, 88
   \item polarization orbitals, 20
   \item {\bf PolarizationGrids}, 67
-  \item Precision selection, 112
+  \item Precision selection, 113
   \item {\bf ProcessorY}, 74, 106
   \item {\bf ProjectedDensityOfStates}, 63
   \item {\bf PS.KBprojectors} , 23
@@ -412,7 +414,7 @@
   \item scale factor, 26
   \item SCF, 43
     \subitem mixing, 43, 44
-      \subsubitem Broyden, 43, 44
+      \subsubitem Broyden, 44
       \subsubitem energy convergence, 48
       \subsubitem harris energy convergence, 48
       \subsubitem linear, 43, 44
@@ -541,6 +543,9 @@
   \item {\bf XC.functional}, 40
   \item {\bf XC.hybrid}, 41
   \item XML, 111
+  \item {\bf XML.AbortOnErrors}, 111
+  \item {\bf XML.AbortOnWarnings}, 111
+  \item {\bf XML.Write}, 111
   \item {\sc XMol}, 37
 
   \indexspace
