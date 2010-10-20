@@ -39,7 +39,7 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, bsc-306}}
+{\Huge {\bf S I E S T A \, \, bsc-309}}
 
 \vspace{1cm}
 \hrulefill
@@ -92,7 +92,7 @@
 \vspace{0.5cm}
 Copyright \copyright\  Fundaci\'on General Universidad Aut\'onoma de Madrid:
 E.Artacho, J.D.Gale, A.Garc\'{\i}a, J.Junquera, P.Ordej\'on,
-D.S\'anchez-Portal and J.M.Soler, 1996-2009
+D.S\'anchez-Portal and J.M.Soler, 1996-2010
 
 \end{center}
 
@@ -2844,9 +2844,9 @@ Harris functional in the first SCF step. Only implemented for LDA in
 the Perdew-Zunger parametrization.
 
 When this option is choosen, the values of DM.UseSaveDM,
-MaxSCFIterations, SCFMustConverge and DM.MixSCF1 are automatically set up to False, 1, False
-and False respectively, no matter whatever other specification are in
-the INPUT file.
+MaxSCFIterations, SCFMustConverge and DM.MixSCF1 are automatically set
+up to False, 1, False and False respectively, no matter whatever other
+specification are in the INPUT file.
 \end{itemize}
 
 {\it Default value:} {\tt .false.}
@@ -3310,14 +3310,14 @@ density matrix change criterion is also satisfied.
 
 {\it Default value:} {\tt .false.}
 
-\item[{\bf DM.Energy.Tolerance}] ({\it real}):
+\item[{\bf DM.Energy.Tolerance}] ({\it real energy}):
 \index{DM.EnergyTolerance@{\bf DM.EnergyTolerance}}
 If {\bf DM.Require.Energy.Convergence} is {\tt .true.}, then
 self-consistency is achieved when the change in the total energy between cycles
 of the SCF procedure is below this value and the
 density matrix change criterion is also satisfied.
 
-{\it Default value:} {${\tt 10^{-4}}$}
+{\it Default value:} {${\tt 10^{-4}}$ eV}
 
 \item[{\bf DM.Require.Harris.Convergence}] ({\it logical}):
 \index{SCF!mixing!harris energy convergence}
@@ -3338,7 +3338,7 @@ the Harris energy instead of the Kohn-Sham energy.
 {\it Default value:} {\tt .false.}
 
 
-\item[{\bf DM.Harris.Tolerance}] ({\it real}):
+\item[{\bf DM.Harris.Tolerance}] ({\it real energy}):
 \index{DM.Harris.Tolerance@{\bf DM.Harris.Tolerance}}
 If {\bf DM.Require.Harris.Convergence} is {\tt .true.}, then
 self-consistency is achieved when the change in the Harris energy between cycles
@@ -3346,7 +3346,7 @@ of the SCF procedure is below this value.
 This is useful if only energies are needed, as the Harris energy tends
 to converge faster than the Kohn-Sham energy.
 
-{\it Default value:} {${\tt 10^{-4}}$}
+{\it Default value:} {${\tt 10^{-4}}$ eV}
 
 \end{description}
 
@@ -4931,6 +4931,14 @@ this exactly compensates the electric field at the vacuum created by
 the dipole moment of the system, thus allowing to treat asymmetric
 slabs (including systems with an adsorbate on one surface) and compute
 properties such as the work funcion of each of the surfaces.
+
+NOTE: If the program is fed a starting density matrix from an
+uncorrected calculation (i.e., with an exagerated dipole), the first
+iteration might use a compensating field that is too big, with the
+risk of taking the system out of the convergence basin. In that case,
+it is advisable to use the {\tt DM.MixSCF1}\index{DM.MixSCF1@{\bf
+    DM.MixSCF1}}\index{Slab dipole correction} option to request a mix of the
+input and output density matrices after that first iteration.
 
 (See {\tt Tests/sic-slab})
 

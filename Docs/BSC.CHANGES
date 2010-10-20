@@ -1,6 +1,57 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+309 Alberto Garcia	  2010-10-20
+Assorted fixes: cxa in InitAtomMesh, target stress, ...  (--> trunk-351)
+
+* Fix for out-of-box atoms in meshsubs
+  
+  In InitAtomMesh, during the calculation of the relative position of an
+  atom with respect to the grid, make sure we consider the equivalent
+  position inside the cell, even if the atom is outside.
+  
+  (Possible problem detected by P. Ordejon, fixed by J. Soler)
+  
+  modified:
+    Src/initatommesh.F
+
+* Port several small patches from 3.0 branch up to 3.0-rc2
+  
+  * Fix initialization of target_stress in some cell-only relaxations
+    
+  When using the RelaxCellOnly option in tandem with Broyden relaxation,
+  the target stress was not properly initialized.
+  
+  (Thanks to Marcos Verissimo Alves for pointing out the bug and fix)
+  
+    modified:
+      Src/cell_broyden_optim.F
+  
+  * Print value of dipole if applying correcting field
+    
+  If the SlabDipoleCorrection option is active, print the computed
+  value of the total system dipole at every iteration, to help
+  diagnose possible problems.
+  
+  Added note in the manual warning about the use of non-corrected
+  density matrices with this option.
+    
+    modified:
+      Src/Makefile
+      Src/dhscf.F
+      Docs/siesta.tex
+      Src/m_efield.F
+  
+  * Correction of error in siesta.tex (as discovered by J. Junquera)
+  
+  The FDF labels DM.Energy.Tolerance and DM.Harris.Tolerance
+  were wrongly stated as "real" instead of "real energy", and their
+  default value stated with no units when its units are eV.
+  
+    modified:
+      Docs/siesta.tex
+
+------------------------------------
 308 Alberto Garcia	  2010-10-20
 Tentative fix for DM reuse bug (--> trunk-349)
 

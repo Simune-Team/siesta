@@ -513,6 +513,7 @@ C     Modules
       use mesh,          only  : nm => nmeshg
       use parallel,      only  : Node, Nodes
       use atmfuncs,      only  : rcut, rcore
+      use units,         only  : Debye, eV
       use fdf
       use sys,           only  : die
       use mesh,          only  : xdsp, nsm, nsp
@@ -547,7 +548,6 @@ C     Modules
       use m_efield,       only: add_potential_from_field
       use m_efield,       only: user_specified_field, acting_efield
       use m_doping_uniform,       only: doping_active, doping_uniform
-      use units,                  only: eV
 
 #ifdef TRANSIESTA
 !     TSS Begin
@@ -956,9 +956,13 @@ C ----------------------------------------------------------------------
       if (acting_efield) then
          if (dipole_correction) then
             field = get_field_from_dipole(dipol,cell)
-            if (Node == 0) write(6,'(a,3f12.6,a)')
-     &           'Electric field for dipole correction =',
-     &           field, ' Ry/Bohr/e'
+            if (Node == 0) then
+	       write(6,'(a,3f12.4,a)')
+     $              'Dipole moment in unit cell   =', dipol/Debye, ' D'
+	       write(6,'(a,3f12.6,a)')
+     $              'Electric field for dipole correction =',
+     $              field, ' Ry/Bohr/e'
+            endif
          else
             field = user_specified_field
          endif

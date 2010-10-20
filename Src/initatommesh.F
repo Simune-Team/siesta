@@ -83,6 +83,9 @@
 
 !       Find atomic coordinates in mesh basis vectors
         cxa(:) = matmul( xa(:,ia), rcmesh(:,:) )
+        ! fix: Make sure we consider equivalent positions
+        !      inside the cell, even if some atoms are outside.
+        cxa(:) = modulo( cxa(:), real(nmsc(:),dp) )
 
 !       Find indexes of mesh cell in which atom is
         ixa(:) = floor(cxa(:))
