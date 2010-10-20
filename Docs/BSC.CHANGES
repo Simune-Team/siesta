@@ -1,6 +1,26 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+306 Alberto Garcia	  2010-10-20
+Avoid extrapolation of DM during geometry optimization (--> trunk-339)
+
+  When performing a geometry optimization (CG, Broyden, etc) (idyn=0 in
+  the code), there might be sudden jumps in the geometry (e.g., at the
+  end of a line-minimization) that render a extrapolation of the DM
+  risky. Hence DM extrapolation is turned off in this case.
+  
+  One might argue that DM re-use should be avoided too.
+  
+  For "CG" (idyn==0) calculations, the default is not to extrapolate
+  the DM (unless requested by explicitly setting
+  'DM.AllowExtrapolation' to "true"). The previous step's DM is reused.
+  
+  modified:
+    Docs/siesta.tex
+    Src/new_dm.F
+
+
+------------------------------------
 305 Alberto Garcia	  2010-10-20
 Assorted fixes, info on orbital indexes, vacuum level (--> trunk-337)
 

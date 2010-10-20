@@ -39,7 +39,7 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, bsc-305}}
+{\Huge {\bf S I E S T A \, \, bsc-306}}
 
 \vspace{1cm}
 \hrulefill
@@ -3047,8 +3047,16 @@ The Density matrix can be:
              In all other cases (including "server operation"), the
              default is to allow DM re-use (with possible extrapolation)
              from previous geometry steps.
+
+             There is no re-use of the DM for "Forces", and "Phonon"
+             dynamics types (i.e., the DM is re-initialized)
+
+             For "CG" calculations, the default is not to extrapolate the
+             DM (unless requested by setting 'DM.AllowExtrapolation' to
+             "true"). The previous step's DM is reused.
+
              The fdf variables 'DM.AllowReuse' and 'DM.AllowExtrapolation'
-             can be used to change this behavior.
+             can be used to turn off DM re-use and extrapolation.
 
 \end{verbatim}
 
