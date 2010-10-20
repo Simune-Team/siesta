@@ -547,6 +547,7 @@ C     Modules
       use m_efield,       only: add_potential_from_field
       use m_efield,       only: user_specified_field, acting_efield
       use m_doping_uniform,       only: doping_active, doping_uniform
+      use units,                  only: eV
 
 #ifdef TRANSIESTA
 !     TSS Begin
@@ -636,22 +637,15 @@ C logical harrisfun     : Harris functional or Kohn-Sham?
 C ----------------------------------------------------------------------
 
 C     Local variables
-      integer  :: i, ia, ip, ispin, nsd
+      integer  :: i, ia, ip, ispin, nsd, np_vac
 #ifndef BSC_CELLXC
 !     Interface to JMS's SiestaXC
-      integer
-     .  iNode, myBox(2,3)
-      integer, save::
-     .  JDGdistr=-1
-
+      integer       :: iNode, myBox(2,3)
+      integer, save :: JDGdistr=-1
+      real(dp) :: stressXC(3,3)
 #endif /* ! BSC_CELLXC */
       real(dp) :: b1Xb2(3), const, DEc, DEx, DStres(3,3),
-#ifndef BSC_CELLXC
-     &            Ec, Ex, rhotot, x0(3), stressXC(3,3),
-#else /* BSC_CELLXC */
-     &            Ec, Ex, rhotot, x0(3),
-#endif /* BSC_CELLXC */
-     &            volume
+     &            Ec, Ex, rhotot, x0(3), volume, Vmax_vac, Vmean_vac
 #ifdef BSC_CELLXC
 !     Dummy arrays for cellxc call
       real(grid_p) :: aux3(3,1)
@@ -661,27 +655,24 @@ C     Local variables
       real(dp), external :: volcel, ddot
 
       external
-#ifndef BSC_CELLXC
      &  cross,
-#else /* BSC_CELLXC */
-     &  bsc_cellxc, cross,
-#endif /* BSC_CELLXC */
      &  dfscf,  dipole, 
      &  poison, 
      &  reord, rhooda, rhoofd, rhoofdsp, 
      &  timer, vmatsp, 
      &  readsp
+#ifdef BSC_CELLXC
+      external bsc_cellxc
+#endif /* BSC_CELLXC */
 
 C     Work arrays
-#ifndef BSC_CELLXC
       real(grid_p), pointer :: Vscf(:,:), Vscf_par(:,:),
      &                         DRho(:,:), DRho_par(:,:),
-#else /* BSC_CELLXC */
-      real(grid_p), pointer :: Vscf(:,:), Vscf_par(:,:), Vscf_gga(:,:),
-     &                         DRho(:,:), DRho_par(:,:), DRho_gga(:,:),
-#endif /* BSC_CELLXC */
      &                         Vaux(:), Vaux_par(:), Chlocal(:),
      &                         Totchar(:), fsrc(:), fdst(:)
+#ifdef BSC_CELLXC
+      real(grid_p), pointer :: Vscf_gga(:,:), DRho_gga(:,:)
+#endif /* BSC_CELLXC */
 #ifdef MPI
       integer  :: MPIerror
       real(dp) :: sbuffer(7), rbuffer(7)
@@ -709,12 +700,11 @@ C ----------------------------------------------------------------------
       call timer( 'DHSCF', 1 )
       call timer( 'DHSCF3', 1 )
 
-#ifndef BSC_CELLXC
       nullify( Vscf, Vscf_par, DRho, DRho_par,
-#else /* BSC_CELLXC */
-      nullify( Vscf, Vscf_par, Vscf_gga, DRho, DRho_par, DRho_gga,
-#endif /* BSC_CELLXC */
      &         Vaux, Vaux_par, Chlocal, Totchar )
+#ifdef BSC_CELLXC
+      nullify( Vscf_gga DRho_gga)
+#endif /* BSC_CELLXC */
 
       volume = volcel(cell)
 
@@ -1121,6 +1111,22 @@ C ----------------------------------------------------------------------
       endif
 
 C ----------------------------------------------------------------------
+C Print vacuum level
+C ----------------------------------------------------------------------
+
+      if (filevt/=' ' .or. filevh/=' ') then
+        forall(ispin=1:nsd) 
+     .    DRho(:,ispin) = DRho(:,ispin) + rhoatm(:) / nsd
+        call vacuum_level( ntpl, nspin, DRho, Vscf, 
+     .                     np_vac, Vmax_vac, Vmean_vac )
+        forall(ispin=1:nsd) 
+     .    DRho(:,ispin) = DRho(:,ispin) - rhoatm(:) / nsd
+        if (np_vac>0 .and. Node==0) print'(/,a,2f12.6,a)', 
+     .    'dhscf: Vacuum level (max, mean) =', 
+     .    Vmax_vac/eV, Vmean_vac/eV, ' eV'
+      endif
+
+C ----------------------------------------------------------------------
 C     Find SCF contribution to hamiltonian matrix elements
 C ----------------------------------------------------------------------
       if (iHmat .eq. 1) then
@@ -1169,10 +1175,7 @@ C     Global reduction of Uscf/DUscf/Uatm/Enaatm/Enascf
       sbuffer(3) = Uatm
       sbuffer(4) = Enaatm
       sbuffer(5) = Enascf
-#ifndef BSC_CELLXC
-!!!!      sbuffer(6) = Exc
-!!!!      sbuffer(7) = Dxc
-#else /* BSC_CELLXC */
+#ifdef BSC_CELLXC
       sbuffer(6) = Exc
       sbuffer(7) = Dxc
 #endif /* BSC_CELLXC */
@@ -1183,14 +1186,11 @@ C     Global reduction of Uscf/DUscf/Uatm/Enaatm/Enascf
       Uatm   = rbuffer(3)
       Enaatm = rbuffer(4)
       Enascf = rbuffer(5)
-#ifndef BSC_CELLXC
-!!!!      Exc    = rbuffer(6)
-!!!!      Dxc    = rbuffer(7)
-#else /* BSC_CELLXC */
+#ifdef BSC_CELLXC
       Exc    = rbuffer(6)
       Dxc    = rbuffer(7)
 #endif /* BSC_CELLXC */
-#endif
+#endif /* MPI */
 
 C     Add contribution to stress from the derivative of the Jacobian of ---
 C     r->r' (strained r) in the integral of Vna*(rhoscf-rhoatm)

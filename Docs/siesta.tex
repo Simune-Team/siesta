@@ -39,7 +39,7 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, bsc-304}}
+{\Huge {\bf S I E S T A \, \, bsc-305}}
 
 \vspace{1cm}
 \hrulefill
@@ -5016,6 +5016,13 @@ If netCDF support is compiled in, the file {\tt TotalPotential.grid.nc} is produ
 
 {\it Default value:} {\tt .false.}
 
+{\it Side effect:} the vacuum level, defined as the effective 
+potential at grid points with zero density, is printed in the standard 
+output whenever such points exist (molecules, slabs) and either 
+SaveElectrostaticPotential or SaveTotalPotential are true.
+In a symetric (nonpolar) slab, the work function can be computed as 
+the difference between the vacuum level and the Fermi energy.
+
 
 \item[{\bf SaveIonicCharge}] ({\it logical}):
 \index{SaveIonicCharge@{\bf SaveIonicCharge}}
@@ -7516,6 +7523,14 @@ Here we provide an overview of some of the most important files and their
 associated tools.
 
 \begin{itemize}
+\item{Orbital indexing}
+
+ORB\_INDX
+
+Provides information on the basis orbitals, in the order used in files 
+DM, HS, etc (and internally by Siesta). It is a plain-text file, with
+information on the meaning of each column at the end of the file.
+
 \item{Density matrix}
 
 DM

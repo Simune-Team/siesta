@@ -2150,10 +2150,10 @@ C Loop over functionals
          else
 
            write(6,'(a)')
-     . 'xc_check: ERROR: Exchange-correlation functional not allowed'
-           write(6,'(a)') 'xc_check: ERROR: xc.functional= ',XCfunc(nf)
-           write(6,'(a)') 'xc_check: ERROR: xc.authors= ',XCauth(nf)
-           call die()
+     $       'xc_check: '//trim(XCfunc(nf))//' '//trim(XCauth(nf))
+           write(6,'(a,1x,2a)')
+     $       'xc_check: WARNING: Pseudopotential generated with',
+     $        trim(ps_string), " functional"
 
          endif
 

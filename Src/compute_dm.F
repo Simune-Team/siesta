@@ -183,6 +183,13 @@
      &                 lasto, iaorb, iphorb )
       endif
 
+! Write orbital indexes. JMS Dec.2009
+
+          if (IOnode .and. iscf==1) then
+            call write_orb_indx( na_u, na_s, no_u, no_s, isa, xa,
+     .                           iaorb, iphorb, indxuo, nsc, ucell )
+          endif
+
       call timer( 'compute_dm', 2 )
 #ifdef DEBUG
       call write_debug( '  POS compute_dm' )

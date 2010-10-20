@@ -138,7 +138,9 @@ OBJS =  domain_decom.o automatic_cell.o atom_options.o \
 	m_timer.o \
 	moreParallelSubs.o \
 	read_xc_info.o \
-        bsc_xcmod.o bsc_cellxc.o xc.o
+        bsc_xcmod.o bsc_cellxc.o xc.o \
+	vacuum_level.o \
+	write_orb_indx.o 
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -388,7 +390,7 @@ dfscf.o: meshsubs.o meshsubs.o parallel.o parallelsubs.o precision.o sys.o
 dhscf.o: alloc.o atmfuncs.o bsc_xcmod.o cellxc_mod.o doping_uniform.o files.o
 dhscf.o: forhar.o iogrid_netcdf.o m_efield.o m_iorho.o m_ts_in_siesta.o
 dhscf.o: m_ts_options.o meshsubs.o moremeshsubs.o parallel.o parsing.o
-dhscf.o: precision.o siesta_options.o sys.o vmat.o
+dhscf.o: precision.o siesta_options.o sys.o units.o vmat.o
 diag2g.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
 diag2k.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
 diagg.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
@@ -708,6 +710,7 @@ transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
 typecell.o: precision.o
 uncell.o: precision.o
 units.o: precision.o
+vacuum_level.o: moreParallelSubs.o precision.o
 vmat.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o meshmatrix.o
 vmat.o: meshsubs.o meshsubs.o parallel.o parallelsubs.o precision.o
 vmatsp.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o meshmatrix.o
@@ -715,6 +718,7 @@ vmatsp.o: meshsubs.o meshsubs.o precision.o
 vmb.o: fixed.o parallel.o precision.o sys.o
 write_md_record.o: atomlist.o m_energies.o m_kinetic.o m_steps.o m_stress.o
 write_md_record.o: md_out.o parallel.o siesta_geom.o siesta_options.o
+write_orb_indx.o: atmfuncs.o cellsubs.o files.o precision.o
 write_raw_efs.o: atmfuncs.o atomlist.o precision.o siesta_geom.o
 write_subs.o: alloc.o atomlist.o m_energies.o m_forces.o m_iostruct.o m_spin.o
 write_subs.o: m_steps.o m_stress.o m_ts_options.o parallel.o precision.o

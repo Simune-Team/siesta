@@ -38,7 +38,7 @@ C Passed arguments
 
 C     Local variables
       integer                :: ia, io, iop, ip, ip0, iphi, is, isp, n,
-     &                          nlist, nliste
+     &                          nlist, nliste, nmax
 
       logical                :: within
       logical,          save :: firsttime = .true.
@@ -88,15 +88,29 @@ C     Add an extra margin of error to nlist to minimise reallocations
       nliste = 1.01*nlist
 
 C     Adjust dimensions of phi if necessary
-      if (DirectPhi) then
-        call re_alloc( phi, 1, nsp, 1, nphi, 'phi', 'PhiOnMesh' )
+      if (associated(phi)) then
+        nmax = size(phi,2)
       else
-        call re_alloc( phi, 1, nsp, 1, nliste, 'phi', 'PhiOnMesh' )
+        nmax = 0
+      end if
+      if (nphi.gt.nmax) then
+        if (DirectPhi) then
+          call re_alloc( phi, 1, nsp, 1, nphi, 'phi', 'PhiOnMesh' )
+       else
+          call re_alloc( phi, 1, nsp, 1, nliste, 'phi', 'PhiOnMesh' )
+       endif
       endif
 
 C     Adjust dimensions of list arrays if necessary
-      call re_alloc( lstpht, 1, nliste, 'lstpht', 'PhiOnMesh' )
-      call re_alloc( listp2, 1, nliste, 'listp2', 'PhiOnMesh' )
+      if (associated(lstpht) .and. associated(listp2)) then
+        nmax = min( size(lstpht), size(listp2) )
+      else
+        nmax = 0
+      end if
+      if (nlist.gt.nmax) then
+        call re_alloc( lstpht, 1, nliste, 'lstpht', 'PhiOnMesh' )
+        call re_alloc( listp2, 1, nliste, 'listp2', 'PhiOnMesh' )
+      endif
 
 C     Find indexes and values of atomic orbitals at mesh points
       numphi = 0

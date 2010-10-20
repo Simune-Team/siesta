@@ -329,7 +329,7 @@ CONTAINS
 !    Cutoffs
 ! *************
     if (n(i) .le. 1.0d-16) then
-
+!
 !     ** specifically handle a small density in the LDA limit (s=0) n->0
 !     ** A small s in AM05 is always indication that we are in the
 !     ** interior LDA limit, regardless of what density we have
@@ -337,7 +337,7 @@ CONTAINS
 ! The following line is the original code
 !       fc = fc + n(i)*eclda
 ! The following line is in the form needed for SIESTA
-        fc = fc + eclda
+        fc = fc + n(i)*eclda/ntot
         vc(i) = vclda(i)*Hc(3-i) + eclda*(1-Hc(3-i))
         dfc(i) = vclda(i)*Hc(3-i) + eclda*(1-Hc(3-i))
         goto 20
@@ -393,7 +393,7 @@ CONTAINS
 ! The following line is the original code
 !   fc = fc + 0.5_dp*nn*eclda*Hc(i)
 ! The following line is in the form needed for SIESTA
-    fc = fc + 0.5_dp*eclda*Hc(i)
+   fc = fc + 0.5_dp*nn*eclda*Hc(i)/ntot
 
 !   ** goto next spin if we are only calculating energies
     if (pot .eq. 0) goto 20

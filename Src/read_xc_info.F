@@ -25,8 +25,8 @@ C     LOCAL variables
 
       integer, parameter      :: MaxFunc = 10
       integer                 :: nXCfunc
-      character(len=10)       :: XCauth(MaxFunc)
-      character(len=10)       :: XCfunc(MaxFunc)
+      character(len=20)       :: XCauth(MaxFunc)
+      character(len=20)       :: XCfunc(MaxFunc)
       real(dp)                :: XCweightX(MaxFunc)
       real(dp)                :: XCweightC(MaxFunc)
 
@@ -95,10 +95,10 @@ C Output data for hybrid functionals
           write(6,'(''xc:  Hybrid exchange-correlation functional:'')
      .      ')
           write(6,'(''xc:'')')
-          write(6,'(''xc: Number Functional Authors  '',
+          write(6,'(''xc: Number     Functional     Authors  '',
      .      ''   Weight(Ex)   Weight(Ec)'')')
           do n = 1,nXCfunc
-          write(6,'(''xc: '',i4,7x,a3,5x,a10,3x,f5.3,8x,f5.3)')
+          write(6,'(''xc: '',i4,3x,a20,2x,a20,3x,f5.3,8x,f5.3)')
      .        n,XCfunc(n),XCauth(n),XCweightX(n),XCweightC(n)
           enddo
           write(6,'(''xc:'')')

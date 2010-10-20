@@ -1,6 +1,130 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+305 Alberto Garcia	  2010-10-20
+Assorted fixes, info on orbital indexes, vacuum level (--> trunk-337)
+
+* Small fixes (J.M. Soler)
+
+    modified:
+      Src/SiestaXC/debugxc.f90   ! Corrected file name in closeDebugOutputFile
+      Src/SiestaXC/ggaxc.f       ! Added spin bounds in array copy
+      Src/SiestaXC/mesh3d.F90    ! Added several checks for range of iDistr
+      Src/fermid.F               ! Removed a duplicated printout
+
+*  Corrected call to MPI_AllReduce in SiestaXC/Testers/test4.F90 (J.M. Soler)
+    
+    modified:
+      Src/SiestaXC/Testers/test1.f90  ! Increased number of densities tried
+      Src/SiestaXC/Testers/test4.F90  ! Corrected call to MPI_AllReduce
+
+*  MPI_grid_real kind adapted to new standard (J.M. Soler)
+    
+    modified:
+      Src/MPI/mpi.F   ! MPI_grid_real=DAT_double unless def GRID_SP
+
+*  A bug corrected by J.D.Gale in the am05 functional (J.M. Soler)
+    
+    modified:
+      Src/SiestaXC/Testers/makefile   ! Copy ../*.mod
+      Src/SiestaXC/am05.f90           ! Bug corrected
+      Src/SiestaXC/ggaxc.f            ! Corrected call to am05wbs
+
+*  Two minor bugs in SiestaXC 
+    
+    modified:
+      Src/SiestaXC/Testers/test3.F90  ! Add MPI_Finalize
+      Src/SiestaXC/Testers/test4.F90  ! Add MPI_Finalize
+      Src/SiestaXC/lib-makefile       ! Add am05.o
+
+*  Include AM05 functional in SiestaXC/Testers (J.M. Soler)
+    
+    The recently-added AM05 functional has been added to those tested by the
+    SiestaXC/Testers.
+    
+    modified:
+      Src/SiestaXC/Testers/test1.f90
+      Src/SiestaXC/Testers/test2.f90
+      Src/SiestaXC/Testers/test3.F90
+      Src/SiestaXC/Testers/test4.F90
+
+*   Two mesh-related bugs (From J.M.Soler)
+    
+    In routine phiOnMesh, function 'size' was used with unassociated pointers.
+    This is a bug, although most compilers tolerate it. Unrelated to this,
+    in routine divideBox1D, the limits of the first and last boxes was not
+    correctly initialized.
+    
+    modified:
+      Src/SiestaXC/mesh3d.F90  ! Initialize partBox(1,1) and partBox(2,nParts)
+      Src/meshsubs.F           ! Check pointer associations
+
+*   Bug correction in mesh3d (From J.M.Soler)
+    
+    A case not taken care of, in routine sameMeshDistr, created an
+    out-of-bounds condition that was noticed by J.D.Gale and others.
+    Also, a use statement was added for MPI routines in m_mpi_utils.
+    
+    modified:
+      Src/SiestaXC/mesh3d.F90  ! Bug corrected in sameMeshDistr
+      Src/m_mpi_utils.F        ! Added use statement for MPI routines
+      Src/meshsubs.F           ! Variable JDGdistr saved and initialized
+
+*   Print vacuum level(From J.M.Soler)
+    
+    The vacuum level, defined as the effective potential at grid points with
+    zero density, is printed in the standard output. This is done whenever
+    there are such points and either SaveElectrostaticPotential or
+    SaveTotalPotential are true. This will be useful to calculate the work 
+    function of a surface.
+    
+    added:
+      Src/vacuum_level.f90      ! Computes the vacuum level
+    modified:
+      Docs/siesta.tex           ! Document side effect of SaveTotalPotential
+      Src/Makefile              ! Add vacuum_level.o. Update dependencies
+      Src/dhscf.F               ! Call vacuum_level and print it
+      Src/moreParallelSubs.F90  ! Make public miscAllReduceInt
+
+*   New GGA functionals with PBE form and parameters from Capelle et al (J.M. Soler)
+    
+    The four new functionals, with author labels PBE(JsJrLO), PBE(JsJrHEG), 
+    PBE(GcGxLO), and PBE(GcGxHGE), have the PBE functional form, but use
+    modified values for parameters beta, mu, and kappa. 
+    Refs: L.S.Pedroza et al, PRB 79, 201106 (2009)
+          M.M.Odashima et al, J. Chem. Theory Comp. 5, 798 (2009)
+    
+    modified:
+      Src/SiestaXC/ggaxc.f     ! New functionals implemented
+      Src/SiestaXC/xcmod.f90   ! Increased length for XCfunc and XCauth strings
+      Src/atom.f               ! Let xc_check continue even if func. not known
+      Src/read_xc_info.F       ! Increased length for XCfunc and XCauth strings
+
+*   Write orbital indexes  (From J.M.Soler)
+    
+    To assist users in interpreting files like (label).DM and (label).HS, a new
+    file called (label).ORB_INDX is written with info on the orbital index order.
+    
+    added:
+      Src/write_orb_indx.f90   ! Writes (label).ORB_INDX
+    
+    modified:
+      Src/Makefile             ! Added write_orb_indx.o + Dependencies updated
+      Src/atmfuncs.f           ! Orbital symmetry names completed up to g orbitals
+      Src/compute_dm.F         ! Added call to write_orb_indx
+      Docs/siesta.tex          ! Docs
+
+*  Name of functional updated in AM05XC to correctly be AM05 (From J. Gale)
+  
+  modified:
+    Src/SiestaXC/ggaxc.f
+
+* Make preprocessor blocks for BSC_CELLXC more concise in dhscf.F (A.G.)
+
+  
+
+
+------------------------------------
 304 Alberto Garcia	  2010-10-20
 Changes to the default precision of grid magnitudes (-->trunk-322)
 

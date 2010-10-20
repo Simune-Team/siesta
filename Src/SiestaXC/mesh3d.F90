@@ -1128,6 +1128,7 @@ subroutine divideBox1D( box, nParts, partBox, blockSize, workload )
     partWkld = wlSum / nParts
 
     ! Loop on parts
+    partBox(1,1) = box(1)
     do iPart = 1,nParts-1
       last = 0  ! Last point with nonzero workload (or zero if none yet)
       do i = 0,boxSize-1
@@ -1158,6 +1159,7 @@ subroutine divideBox1D( box, nParts, partBox, blockSize, workload )
         if (nextPart) exit ! i loop
       end do ! i
     end do ! iPart
+    partBox(2,nParts) = box(2)
 
   else ! (.not.present(workload)) => Divide box uniformly
 
@@ -1234,7 +1236,7 @@ subroutine divideBox3D( nMesh, wlDistr, workload, box, &
 
 ! BEGIN DEBUG
 !  write(udebug,*) myName//'projected workload:'
-!  write(udebug,'(i4,3f12.6)') (i,prjWkld(:,i),i=0,maxval(boxShape)-1)
+!  write(udebug,'(i4,3f15.6)') (i,prjWkld(:,i),i=0,maxval(boxShape)-1)
 ! END DEBUG
 
 ! Find total workload in box
@@ -1281,8 +1283,11 @@ subroutine divideBox3D( nMesh, wlDistr, workload, box, &
   if ( any(box(1,axis) > partBox(1,axis,:)) .or. &
        any(partBox(2,axis,1:nParts-1) >= partBox(1,axis,2:nParts)) .or. &
        any(partBox(1,axis,:) > partBox(2,axis,:)) .or. &
-       any(partBox(2,axis,:) > box(2,axis)) ) &
+       any(partBox(2,axis,:) > box(2,axis)) ) then
+    write(udebug,'(a,3(2i6,2x))') errHead//'box=', box
+    write(udebug,'(a,/,(3(2i6,2x)))') errHead//'partBox=', partBox
     call die(errHead//'inconsistent partBox limits')
+  end if
 ! END DEBUG
 
   deallocate( prjWkld )
@@ -1325,16 +1330,20 @@ subroutine fftMeshDistr( nMesh, fftDistr, axisDistr )
 
 ! Check if the input FFT distribution IDs are already defined as such
   iDistr = indexDistr( fftDistr )
-  if (iDistr>0) then
+  if (iDistr>0 .and. iDistr<=maxDistr) then
     distr => storedMeshDistr(iDistr)
     if (distr%defined .and. all(distr%nMesh==nMesh)) then
       found = .true.  ! But now check the axis distributions
       if (present(axisDistr)) then
         do axis = 1,3
           iDistr = indexDistr( axisDistr(axis) )
-          distr => storedMeshDistr(iDistr)
-          if (.not.distr%defined .or. any(distr%nMesh/=nMesh)) &
+          if (iDistr>0 .and. iDistr<=maxDistr) then
+            distr => storedMeshDistr(iDistr)
+            if (.not.distr%defined .or. any(distr%nMesh/=nMesh)) &
+              found = .false.
+          else
             found = .false.
+          end if
         end do ! axis
       end if ! (present(axisDistr))
       if (found) return ! Since the input values are still valid
@@ -2282,16 +2291,20 @@ subroutine redistributeMeshData( srcDistr, srcData, dstDistr, dstData, task )
   integer,intent(inout),optional:: task   ! ID of communication task
 
   character(len=*),parameter:: myName = 'redistributeMeshData '
+  character(len=*),parameter:: errHead = myName//'ERROR: '
   integer:: dstBox(2,3), dstMesh(3), iDistr, nData, nMesh(3)
 
 ! For serial execution, avoid allocating a new array
   if (srcDistr==0 .and. dstDistr==0) then
     dstData => srcData
     return
+  else if (srcDistr<=0 .or. dstDistr<=0) then
+    call die(errHead//'invalid srcDistr or dstDistr')
   end if
 
 ! Find mesh box of node in new distribution
   iDistr = indexDistr( dstDistr )
+  if (iDistr<=0 .or. iDistr>maxDistr) call die(errHead//'invalid dstDistr')
   nMesh = storedMeshDistr(iDistr)%nMesh
   call myMeshBox( nMesh, dstDistr, dstBox )
   dstMesh(:) = dstBox(2,:) - dstBox(1,:) + 1
@@ -2749,6 +2762,11 @@ subroutine reduceDistr( distrID )
 
 ! Find the new distribution
   iDistr = indexDistr( distrID )
+  if (iDistr==0) then
+    return
+  else if (iDistr<0 .or. iDistr>maxDistr) then
+    call die(errHead//'invalid distrID')
+  end if
   newDistr => storedMeshDistr(iDistr)
 
 ! Compare it with all previous distributions
@@ -2808,6 +2826,8 @@ logical function sameMeshDistr( ID1, ID2 )
     else                       ! Both distr. are defined
       if (i1==i2) then         ! Different IDs but same distr.
         sameMeshDistr = .true.
+      else if (i1==0 .or. i2==0) then ! Since 0 is valid only in serial mode
+        sameMeshDistr = .false.
       else                     ! Different but possibly equivalent distr.
         distr1 => storedMeshDistr(i1)
         distr2 => storedMeshDistr(i2)

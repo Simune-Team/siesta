@@ -16,6 +16,7 @@
       use mpi_siesta, only : MPI_Comm_World, MPI_integer, MPI_logical
       use mpi_siesta, only : MPI_Sum, MPI_Max, MPI_character
       use mpi_siesta, only : MPI_Double_Precision, MPI_Real
+      use mpi_siesta, only : MPI_AllReduce, MPI_Bcast
       integer, private :: MPIerror
 #endif
 
