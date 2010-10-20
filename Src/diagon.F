@@ -129,8 +129,7 @@ C
      .  fixspin, gamma, getD, getPSI
 
       external
-     .  diagg, diagk, diag2g, diag2k, io_assign, io_close,
-     .  readsp, diagsprl
+     .  diagg, diagk, diag2g, diag2k, readsp, diagsprl
 #ifdef CDF
       external diagk_file
 #endif

@@ -1,6 +1,160 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+307 Alberto Garcia	  2010-10-20
+New FoX version, new vdw symbols, assorted fixes (--> trunk-348)
+
+*  Use DEBUG_XC preprocessor symbol to wrap SiestaXC debugging (J. Gale)
+  
+   * Comments wrapped by ! DEBUG in several SiestaXC routines (and in
+     related sections of siesta_init and siesta_end) have been replaced
+     by #ifdef DEBUG_XC ... #endif so that the writing of debugging files
+     can be turned off easily at compile time.
+  
+     Note that this has forced the change in file extension of a few
+     files in Src/SiestaXC, with concommitant changes in the makefiles.
+  
+  renamed:
+    Src/SiestaXC/atomxc.f90 => Src/SiestaXC/atomxc.F90
+    Src/SiestaXC/cellxc.f90 => Src/SiestaXC/cellxc.F90
+    Src/SiestaXC/fft3d.f90 => Src/SiestaXC/fft3d.F90
+    Src/SiestaXC/fftr.f90 => Src/SiestaXC/fftr.F90
+    Src/SiestaXC/siestaxc.f90 => Src/SiestaXC/siestaxc.F90
+    Src/SiestaXC/vdwxc.f90 => Src/SiestaXC/vdwxc.F90
+  modified:
+    Src/SiestaXC/lib-arch.make
+    Src/SiestaXC/lib-makefile
+    Src/SiestaXC/makefile
+    Src/SiestaXC/mesh3d.F90
+    Src/siesta_end.F
+    Src/siesta_init.F
+    Src/SiestaXC/atomxc.F90
+    Src/SiestaXC/cellxc.F90
+    Src/SiestaXC/fft3d.F90
+    Src/SiestaXC/fftr.F90
+    Src/SiestaXC/siestaxc.F90
+    Src/SiestaXC/vdwxc.F90
+
+*  Make sure that units are closed with io_close (J. Gale)
+  
+   * 'Close' replaced by call to 'io_close' in several routines to
+     prevent luns overload.
+  
+   * Unused declarations of io_assign and io_close removed from diagon.F
+     and ksv.f
+  
+   (Julian Gale)
+  
+   modified:
+     Src/diagon.F
+     Src/ksv.f
+     Src/m_timer.F90
+     Src/moreParallelSubs.F90
+     Src/write_orb_indx.f90
+
+*  Support for LMKLL and KBM vdW functionals in ATOM (A. Garcia)
+  
+   The pseudopotential generation program now accepts the "vl" xc code to
+   request the Lee et al. (LMKLL) version of the vdW functional
+   (arXiv:1003.5255v1 (2010)), and the "vk" xc code for the vdW
+   parametrization of Klimes et al. (KBM) (JPCM 22, 022201 (2009)).
+  
+   The id strings in .xml pseudo files are, respectively,
+   'Lee-et-al--LMKLL', and 'Klimes-et-al--KBM'. For consistency, the id
+   string for the Dion functional has been extended to
+   'Dion-et-al--DRSLL'
+  
+   The ATOM manual has been updated, and the version number set to
+   3.3.1.
+  
+   Obsolete xc routines (pre-SiestaXC) have been removed from the
+   Pseudo/atom directory.
+  
+  removed:
+    Pseudo/atom/blypxc.f
+    Pseudo/atom/ggaxc.f
+    Pseudo/atom/ldaxc.f
+    Pseudo/atom/pw92xc.f
+    Pseudo/atom/pzxc.f
+    Pseudo/atom/revpbexc.f
+    Pseudo/atom/rpbexc.f
+  modified:
+    Docs/CHANGES
+    Pseudo/atom/Docs/atom.tex
+    Pseudo/atom/Makefile
+    Pseudo/atom/pseudoXML.f
+    Pseudo/atom/velect.f
+    version.info
+
+*  Updated makefile dependencies (J. M. Soler)
+    
+  modified:
+    Src/Makefile
+    Src/SiestaXC/makefile
+
+*  Added parametrization of Klimes et al for vdW-DF (J. M. Soler)
+    
+  modified:
+      Docs/siesta.tex                  ! Added VDW/KBM
+      Src/SiestaXC/Testers/test1.f90   ! Call to B88 GGA exchange
+      Src/SiestaXC/atomxc.f90          ! Added VDW/KBM comment
+      Src/SiestaXC/cellxc.f90          ! Added VDW/KBM comment
+      Src/SiestaXC/ggaxc.f             ! Added Becke-88 exchange routine
+      Src/SiestaXC/siestaxc.f90        ! Added VDW/KBM comment
+      Src/SiestaXC/vdwxc.f90           ! Call to B88 exchange
+      Src/SiestaXC/xcmod.f90           ! Call to vdw_set_author for KBM
+
+*  Documentation completed on LMKLL flavour of vdW-DF (J. M. Soler)
+    
+  modified:
+    Docs/siesta.tex
+    Src/SiestaXC/siestaxc.f90
+    Src/SiestaXC/vdwxc.f90
+
+*  A bug corrected in testers (J. M. Soler)
+    
+  modified:
+      Src/SiestaXC/Testers/test2.f90  ! Avoid using DRSLL & LMKLL together
+      Src/SiestaXC/Testers/test3.F90
+      Src/SiestaXC/Testers/test4.F90
+
+*  Added the vdW functional flavour of K.Lee et al, arXiv:1003.5255v1 (2010) (J.M. Soler)
+    
+  modified:
+      Src/SiestaXC/Testers/test1.f90  ! Added PW86
+      Src/SiestaXC/Testers/test2.f90  ! Added VDW/LMKLL
+      Src/SiestaXC/Testers/test3.F90  ! Added VDW/LMKLL
+      Src/SiestaXC/Testers/test4.F90  ! Added VDW/LMKLL
+      Src/SiestaXC/atomxc.f90         ! Call to vdw_exchng
+      Src/SiestaXC/cellxc.f90         ! Call to vdw_exchng
+      Src/SiestaXC/ggaxc.f            ! Added PW86 and PW86R exchange functionals
+      Src/SiestaXC/vdwxc.f90          ! Added vdw_exchng and vdw_set_author
+      Src/SiestaXC/xcmod.f90          ! Call to vdw_set_author
+
+*  Update FoX to version 4.1.0 (A. Walker)
+    
+    Version 4.1.0 of FoX, used to produce our XML output was released 
+    on 2010-02-09. This patch updates the version shipped with Siesta 
+    to this version. 
+  
+    Changes that affect Siesta are that the build process for FoX can
+    now take advantage of possible parallelization (make -j), we can 
+    ask FoX to generate an abort signal if it kills the process and 
+    the inclusion of work arounds for compiler bugs in recent versions 
+    of the pgi compiler. Some of these changes existed in an (unrelased)
+    version of FoX shipped with Siesta since revision 320.
+   
+    modified:
+        Src/FoX/FoX-config.in
+        Src/FoX/LICENSE
+        Src/FoX/Makefile
+        Src/FoX/common/FoX_common.F90
+        Src/FoX/configure
+        Src/FoX/wxml/FoX_wxml.f90
+        Src/FoX/wxml/m_wxml_core.F90
+        version.info
+
+------------------------------------
 306 Alberto Garcia	  2010-10-20
 Avoid extrapolation of DM during geometry optimization (--> trunk-339)
 

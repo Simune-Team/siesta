@@ -29,8 +29,8 @@ SIESTA_OBJS:= $(SIESTA_OBJS:.F90=.o)
 #
 SIESTA_SOURCES:=$(addprefix ../, $(SIESTA_SRCS))
 
-LOCAL_SRCS= atomxc.f90 cellxc.f90 debugxc.f90 ggaxc.f ldaxc.f \
-            siestaxc.f90 vdwxc.f90 xcmod.f90  fft3d.f90 fftr.f90 \
+LOCAL_SRCS= atomxc.F90 cellxc.F90 debugxc.f90 ggaxc.f ldaxc.f \
+            siestaxc.F90 vdwxc.F90 xcmod.f90  fft3d.F90 fftr.F90 \
             mesh1d.f90 mesh3d.F90 am05.f90
 LOCAL_OBJS:= $(LOCAL_SRCS:.f=.o)
 LOCAL_OBJS:= $(LOCAL_OBJS:.F=.o)
@@ -98,6 +98,7 @@ radfft.o: alloc.o bessph.o m_recipes.o precision.o
 siestaxc.o: atomxc.o cellxc.o mesh3d.o precision.o xcmod.o
 sys.o: parallel.o
 timer.o: sys.o m_timer.o
-vdwxc.o: debugxc.o flib_spline.o ldaxc.o m_recipes.o mesh1d.o precision.o
-vdwxc.o: radfft.o
-xcmod.o: precision.o sys.o
+vdwxc.o: debugxc.o flib_spline.o ggaxc.o ldaxc.o m_recipes.o mesh1d.o
+vdwxc.o: precision.o radfft.o
+xcmod.o: precision.o sys.o vdwxc.o
+

@@ -47,7 +47,8 @@ PROGRAM siestaXCtest2
   character(len=6):: &
     auth(nfTot) = (/'PZ    ','PW92  ','PW91  ','PBE   ','RPBE  ', &
                     'revPBE','LYP   ','WC    ','PBESOL','AM05  ', &
-                    'DRSLL ' /) 
+!                    'DRSLL ' /) 
+                    'LMKLL ' /) 
 
   ! Tester variables and arrays
   integer :: iDelta, ir, irmax, ismax, iSpin, one, two

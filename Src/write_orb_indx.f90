@@ -34,6 +34,7 @@ subroutine write_orb_indx( na_u, na_s, no_u, no_s, isa, xa, &
 
   ! Used external routines
   external:: io_assign   ! Finds and reserves a I/O file unit
+  external:: io_close    ! Closes a reserved I/O file unit
 
   ! Internal variables and arrays
   character(len=32):: atom_label, orb_sym
@@ -107,7 +108,7 @@ subroutine write_orb_indx( na_u, na_s, no_u, no_s, isa, xa, &
     ' iuo = Equivalent orbital in first unit cell', ' '
 
   ! Close output file
-  close(iu)
+  call io_close(iu)
 
 end subroutine write_orb_indx
 

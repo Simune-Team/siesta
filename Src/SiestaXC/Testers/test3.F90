@@ -54,7 +54,8 @@ PROGRAM siestaXCtest3
   character(len=6):: &
     auth(nfTot) = (/'PZ    ','PW92  ','PW91  ','PBE   ','RPBE  ', &
                     'revPBE','LYP   ','WC    ','PBESOL','AM05  ', &
-                    'DRSLL ' /) 
+!                    'DRSLL ' /) 
+                    'LMKLL ' /) 
                                      
 
   ! A few random numbers

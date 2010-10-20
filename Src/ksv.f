@@ -122,8 +122,7 @@ C Internal variables
 
       character         paste*30, shape*10
 
-      external          ddot, io_assign, io_close,
-     .                  paste, volcel, reclat
+      external          ddot, paste, volcel, reclat, memory
 
       real(dp), dimension(:), pointer :: psi1, psiprev
 

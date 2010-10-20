@@ -112,9 +112,9 @@
   \item {\bf DM.NumberPulay}, 43
   \item {\bf DM.PulayOnFile}, 43
   \item {\bf DM.Require.Energy.Convergence}, 48
-  \item {\bf DM.Require.Harris.Convergence}, 48
+  \item {\bf DM.Require.Harris.Convergence}, 49
   \item {\bf DM.Tolerance}, 48
-  \item {\bf DM.UseSaveDM}, 45
+  \item {\bf DM.UseSaveDM}, 46
   \item {\tt DZ}, 20
   \item {\tt DZP}, 20
 
@@ -156,7 +156,7 @@
   \item GGA, 41
   \item ghost atoms, 14, 26
   \item {\sc Gnubands}, 61
-  \item grid, 49, 50
+  \item grid, 50
   \item Grid precision, 114
   \item {\bf GridCellSampling}, 50
   \item Ground-state atomic configuration, 20
@@ -234,8 +234,8 @@
   \item {\bf MD.UseSaveZM}, 38
   \item {\bf MD.UseStructFile}, 36
   \item {\bf MD.VariableCell}, 77
-  \item mesh, 49, 50
-  \item {\bf MeshCutoff}, 49
+  \item mesh, 50
+  \item {\bf MeshCutoff}, 50
   \item {\bf MeshSubDivisions}, 50
   \item {\tt MINIMAL}, 20
   \item minimal basis, 20
@@ -385,7 +385,7 @@
     \subitem all, 76
     \subitem CG, 80
     \subitem charge density, 47
-    \subitem density matrix, 45, 46
+    \subitem density matrix, 46
     \subitem localized wave functions (order-$N$), 59
     \subitem XV, 37
     \subitem ZM, 38
@@ -416,7 +416,7 @@
     \subitem mixing, 43, 44
       \subsubitem Broyden, 44
       \subsubitem energy convergence, 48
-      \subsubitem harris energy convergence, 48
+      \subsubitem harris energy convergence, 49
       \subsubitem linear, 43, 44
       \subsubitem Pulay, 43
   \item SCF convergence criteria, 48
@@ -524,7 +524,7 @@
   \item {\bf     WriteDenchar}, 76
   \item {\bf WriteDM}, 47
   \item {\bf WriteDM.History.NetCDF}, 48
-  \item {\bf WriteDM.NetCDF}, 47
+  \item {\bf WriteDM.NetCDF}, 48
   \item {\bf WriteDMHS.History.NetCDF}, 48
   \item {\bf WriteDMHS.NetCDF}, 48
   \item {\bf WriteEigenvalues}, 13, 55

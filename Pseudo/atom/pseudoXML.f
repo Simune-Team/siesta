@@ -73,7 +73,15 @@
 
         case('vw','vf') 
           xcfuntype    = 'VDW'
-          xcfunparam   = 'Dion-et-al'
+          xcfunparam   = 'Dion-et-al--DRSLL'
+
+        case('vl') 
+          xcfuntype    = 'VDW'
+          xcfunparam   = 'Lee-et-al--LMKLL'
+
+        case('vk') 
+          xcfuntype    = 'VDW'
+          xcfunparam   = 'Klimes-et-al--KBM'
 
         case('wc') 
           xcfuntype    = 'GGA'

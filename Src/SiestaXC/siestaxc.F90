@@ -303,7 +303,9 @@
 !         'PBESOL' => GGA Perdew et al, PRL, 100, 136406 (2008)
 !           'AM05' => GGA Mattsson & Armiento, PRB, 79, 155101 (2009)
 !          'DRSLL' => VDW Dion et al, PRL 92, 246401 (2004)
-
+!          'LMKLL' => VDW K.Lee et al, arXiv:1003.5255v1 (2010)
+!            'KBM' => VDW J.Klimes et al, JPCM 22, 022201 (2009)
+!
 ! ------------------------ USAGE ----------------------------------------------
 !   use siestaXC, only: setXC
 !   call setXC( 1, (/'GGA'/), (/'PBE'/), (/1._dp/), (/1._dp/) )
@@ -703,8 +705,10 @@ MODULE siestaXC
 ! See correspondig modules for usage documentation
   USE fft1d,    only: nfft                 ! Get allowed sizes for FFTs
   USE alloc,    only: alloc_report         ! Set and print allocation report
+#ifdef DEBUG_XC
   USE debugXC,  only: setDebugOutputUnit   ! Set debug report
   USE debugXC,  only: closeDebugOutputFile ! Print debug report
+#endif
   USE m_timer,  only: timer_report         ! Print CPU time report
   USE mesh3d,   only: myMeshBox            ! Get my processor mesh box
   USE mesh3d,   only: setMeshDistr         ! Set a distribution of mesh
