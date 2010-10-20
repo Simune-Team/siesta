@@ -1,6 +1,27 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+308 Alberto Garcia	  2010-10-20
+Tentative fix for DM reuse bug (--> trunk-349)
+
+In some cases the re-use of the DM after a geometry change led to
+large values of ddmax and instabilities in SCF convergence. The
+tentative cause was the re-allocation of Dscf right after the call to
+hsparse for the new geometry, and before new_dm, combined with a
+"sparsity pattern change" in-place. When the re-allocation is deferred
+to new_dm, and the plain "change_sparsity" routine is used, the
+problem seems to disappear. 
+
+Thanks to Oswaldo Dieguez for his sleuthing work.
+
+More testing is needed to close the bug definitively.
+  
+Modified:
+  Src/Makefile
+  Src/new_dm.F
+  Src/state_init.F
+
+------------------------------------
 307 Alberto Garcia	  2010-10-20
 New FoX version, new vdw symbols, assorted fixes (--> trunk-348)
 

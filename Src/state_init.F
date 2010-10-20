@@ -10,7 +10,9 @@
       use m_new_dm,          only: new_dm
       use m_proximity_check, only: proximity_check
       use siesta_options
-      use sparse_matrices
+      use sparse_matrices, only: nh, maxnh, numh, listh, listhptr
+      use sparse_matrices, only: Dscf, Dold, Escf, Eold
+      use sparse_matrices, only: xijo, H, H0, S
       use siesta_geom
       use atomlist,          only: iphorb, iphkb, rco, rckb, indxua,
      &                             no_s, rmaxkb, rmaxo, no_u, lastkb,
@@ -212,53 +214,29 @@
      $                 set_xijo=.true.)
       maxnh = nh
 
-!     OBSOLETE, but maybe not a bad idea after all, to
-!     allow reading of previous steps' DM even if the sparsity
-!     pattern has changed. The new logic in new_dm makes this
-!     unnecessary.
-
-      !  safety margin for when atoms move 
-      !!!!!!!!   if (nh > maxnh)  maxnh = 1.05 * nh + 40 
-
-!     Copy = .true. means that we keep the information
-      call re_alloc( Dscf, 1, maxnh, 1, nspin, 'Dscf',
-     &               'sparseMat', copy=.true. )
-      call re_alloc( Dold, 1, maxnh, 1, nspin, 'Dold',
-     &               'sparseMat', copy=.false. )
+      ! Note that the resizing of Dscf is done inside new_dm below
+      call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',
+     .     routine='state_init',copy=.false.,shrink=.true.)
       call re_alloc( Eold, 1, maxnh, 1, nspin, 'Eold',
-     &               'sparseMat', copy=.false. )
+     .     routine='state_init',copy=.false.,shrink=.true.)
       call re_alloc( Escf, 1, maxnh, 1, nspin, 'Escf',
-     &               'sparseMat', copy=.false. )
+     .     routine='state_init',copy=.false.,shrink=.true.)
 
 !     Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
       call re_alloc( H, 1, maxnh, 1, nspin, 'H',
-     &              'sparseMat', shrink=.true., copy=.false. )
-      call re_alloc( H0, 1, maxnh, 'H0', 'sparseMat',
+     .              routine='state_init',shrink=.true.,copy=.false.)
+      call re_alloc(H0,1,maxnh,name='H0',routine='state_init',
      &              shrink=.true., copy=.false. )
-      call re_alloc( S, 1, maxnh, 'S', 'sparseMat', copy=.false. )
-
-! Some printout for debugging ........................................
-*     if (IOnode) then
-*       write(6,'(/,a)') 'siesta: connected orbitals'
-*       do io = 1,no_u
-*         call GlobalToLocalOrb(io,Node,Nodes,iio)
-*         if (iio.gt.0) then
-*           write(6,'(i6,4x,15i4)') 
-*    &        io, (listh(listhptr(iio)+j),j=1,numh(iio))
-*         endif
-*#ifdef MPI
-*         call MPI_Barrier(MPI_Comm_World,MPIerror)
-*#endif
-*       enddo
-*       write(6,*) ' '
-*     endif
+      call re_alloc(S,1,maxnh,name='S',routine='state_init',
+     .              copy=.false.,shrink=.true.)
 
 !     Find overlap matrix 
       call overlap( na_u, na_s, no_s, scell, xa, indxua, rmaxo, maxnh,
      &              lasto, iphorb, isa, numh, listhptr, listh, S )
 
 !     Initialize density matrix
-      call new_dm( auxchanged )
+      ! The resizing of Dscf is done inside new_dm
+      call new_dm( auxchanged, numh, listhptr, listh, Dscf)
 
 !     Check for size of Pulay auxiliary matrices
       call init_pulay_arrays()
