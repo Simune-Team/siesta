@@ -53,10 +53,17 @@
 !     Normalize density matrix to exact charge
 !     In the first iteration we have the D already normalized
 !     by setup_H0 ... ***
+!***AG  Clarify this.
+!     Setup_hamiltonian is called before the density is printed out...
 #ifdef TRANSIESTA      
       if (.not.TSrun ) call normalize_dm( first=.false. )
 #else
-      call normalize_dm( first=.false. )
+      ! Normalize density matrix to exact charge, except if
+      ! we are just using the DM to generate the initial rho and exit
+      !
+      if (.not. save_initial_charge_density) then
+         call normalize_dm(first=.false.)
+      endif
 #endif  /* TRANSIESTA */
       ! Initialize Hamiltonian with the non-SCF part...................
 
@@ -139,11 +146,8 @@
 !  It is wasteful to write over and over H and S, as there are
 !  no different files.
 ! Save Hamiltonian and overlap matrices ............................
-      if (savehs) then
-        call iohs( 'write', gamma, no_u, no_s, nspin, indxuo,
-     &             maxnh, numh, listhptr, listh, H, S, qtot, temp,
-     &             xijo )
-      endif
+! Only in HSX format now.  Use Util/HSX/hsx2hs to generate an HS file
+
         if (savehs .or. write_coop) then
           call write_hsx( gamma, no_u, no_s, nspin, indxuo,
      &                    maxnh, numh, listhptr, listh, H, S, qtot,

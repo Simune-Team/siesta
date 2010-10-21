@@ -31,7 +31,7 @@ Module siesta_cmlsubs
       Use m_timestamp, only: datestring
 
       Character(len=label_length+4) :: fname
-      Character(len=10)             :: nodes_str
+      Character(len=10)             :: nodes_str 
 
       fname = ' '
 

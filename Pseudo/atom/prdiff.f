@@ -100,8 +100,8 @@ c
             norm1 = norm1 / n_excitations
             norm2 = sqrt( norm2 / n_excitations)
             write(iu,"(i4)") n_excitations
-            write(iu,"(40f10.5)") ((econf_ae(i,j),j=1,i-1),i=2,nconf)
-            write(iu,"(3f10.5)") maxabs, norm1, norm2
+            write(iu,"(40f12.5)") ((econf_ae(i,j),j=1,i-1),i=2,nconf)
+            write(iu,"(3f12.5)") maxabs, norm1, norm2
             close(iu)
             
          endif ! found AE_ECONF

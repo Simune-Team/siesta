@@ -35,6 +35,7 @@ module m_energies
   real(dp):: FreeEharris! Free energy computed with Harris total energy
   real(dp):: Uatm       ! Harris hartree electron energy,  calculated in dhscf
   real(dp):: Uscf       ! SCF hartree electron energy,  calculated in dhscf
+  real(dp):: Ebs        ! Band-structure energy, Tr(DM*H), calculated in compute_dm
 
 end module m_energies
 

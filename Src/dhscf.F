@@ -515,14 +515,14 @@ C     Modules
       use atmfuncs,      only  : rcut, rcore
       use units,         only  : Debye, eV
       use fdf
-      use sys,           only  : die
+      use sys,           only  : die, bye
       use mesh,          only  : xdsp, nsm, nsp
       use parsing
       use m_iorho,       only  : write_rho
       use m_forhar,      only  : forhar
       use alloc,         only  : re_alloc, de_alloc
       use files,         only  : slabel
-      use siesta_options, only : harrisfun
+      use siesta_options, only : harrisfun, save_initial_charge_density
       use moreMeshSubs,   only : setMeshDistr, distMeshData
       use moreMeshSubs,   only : UNIFORM, QUADRATIC, LINEAR
       use moreMeshSubs,   only : TO_SEQUENTIAL, TO_CLUSTER, KEEP
@@ -785,6 +785,15 @@ C       Set the UNIFORM distribution again and copy DRho to it
      &                       UNIFORM, fdst, TO_SEQUENTIAL )
         enddo
         call de_alloc( DRho_par, 'DRho_par','dhscf' )
+!
+        if (save_initial_charge_density) then 
+           call write_rho( "RHO_INIT", cell, ntm, nsm, ntpl,
+     $              nspin, DRho)
+           call write_grid_netcdf( cell, ntm, nspin, ntpl, DRho,
+     $               "RhoInit")
+           call bye("STOP after producing RHO_INIT from input DM")
+        endif
+
       endif
 
 C ----------------------------------------------------------------------
@@ -903,7 +912,7 @@ C Orthogonalize dipole to bulk directions
 C ----------------------------------------------------------------------
 C     Find Hartree potential of DRho = rhoscf-rhoatm. Store it in Vscf
 C ----------------------------------------------------------------------
-C     Solve Poisson's equation
+!     Solve Poisson's equation
       call re_alloc( Vscf, 1, ntpl, 1, nspin, 'Vscf', 'dhscf' )
 
       call poison( cell, ntml(1), ntml(2), ntml(3), ntm, DRho,

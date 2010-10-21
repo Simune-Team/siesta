@@ -56,11 +56,16 @@ C     and initializes data structures on the grid.
 #ifdef DEBUG
       call write_debug( '  PRE setup_H0' )
 #endif
-!     Normalize density matrix to exact charge
 #ifdef TRANSIESTA      
+!     Normalize density matrix to exact charge
       if (.not.TSrun ) call normalize_dm( first=.true. )
 #else
-      call normalize_dm( first=.true. )
+      ! Normalize density matrix to exact charge, except if
+      ! we are just using the DM to generate the initial rho and exit
+      !
+      if (.not. save_initial_charge_density) then
+         call normalize_dm(first=.true.)
+      endif
 #endif  /* TRANSIESTA */
 
 C     Initialize Hamiltonian

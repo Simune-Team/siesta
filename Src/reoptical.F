@@ -124,7 +124,7 @@ C Read BZ sampling grid
         if (present) then
           if (.not. fdf_bline(bfdf,pline))
      +      call die('reoptical: ERROR in Optical.Mesh block')
-          ni = fdf_bnintegers(pline,1)
+          ni = fdf_bnintegers(pline)
           if (ni .lt. 3) then 
             call die('reoptical: Check syntax in Optical.Mesh block')
           endif  

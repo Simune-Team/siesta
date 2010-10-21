@@ -71,7 +71,7 @@
      &                      wmix, nkick, wmixkick, Dscf, Dold, dDmax )
 #endif /* TRANSIESTA */
         else if (broyden_maxit == 0) then
-          call pulayx( pulfile, iiscf, mmix, no_l, maxnh,
+               call pulayx( iiscf, mmix, no_l, maxnh,
      &                 numh, listhptr, nspin, maxsav, wmix, nkick, 
 #ifdef TRANSIESTA
      &                 wmixkick, VOut, VIn, dDmax)

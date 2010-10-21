@@ -28,6 +28,7 @@
       use m_forces,          only: fa
       use alloc, only: re_alloc, de_alloc
       use m_gamma
+      use m_hsx, only: write_hsx
       use sys, only: die
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
@@ -186,10 +187,11 @@
       enddo        
 
 ! Save Hamiltonian and overlap matrices ............................
+! Only in HSX format now.  Use Util/HSX/hsx2hs to generate an HS file
       if (savehs) then
-        call iohs( 'write', gamma, no_u, no_s, nspin, indxuo,
-     &             maxnh, numh, listhptr, listh, H, S, qtot, temp,
-     &             xijo )
+         call write_hsx( gamma, no_u, no_s, nspin, indxuo,
+     &        maxnh, numh, listhptr, listh, H, S, qtot,
+     &        temp, xijo)
       endif
 #ifdef TRANSIESTA
 ! TSS Begin

@@ -1,6 +1,229 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+311 Alberto Garcia	  2010-10-21
+Fixes: optical, pulay, cosmetics. BS energy, HSX file (--> trunk 361)
+
+*  Improved documentation of VDW-KBM functional
+  
+  (J. Soler)
+  
+  modified:
+    Docs/siesta.tex
+    Src/SiestaXC/atomxc.F90
+    Src/SiestaXC/cellxc.F90
+    Src/SiestaXC/siestaxc.F90
+    Src/SiestaXC/vdwxc.F90
+    Src/SiestaXC/xcmod.f90
+
+*  (Admin) Incorporate logs of recent patches from 3.0 branch
+  
+  The siesta-3.0 branch can be considered as a sort of "bug-fix" branch
+  for "trunk". Hence, periodic merges are needed. This merges
+  have up to now been done in a "cherry-picking" manner, since 3.0
+  contains other material that is not supposed to go into trunk. This
+  has the unfortunate feature that the patch logs are not incorporated
+  into the trunk, and a "bzr missing" command will keep reporting
+  spurious differences.
+  
+  The logs of all the recently applied patches, corresponding to 3.0
+  patches up to 3.0-rc2, have now been incorporated by doing a normal
+  merge followed by "bzr revert ." to remove all file changes (changes
+  already incorporated in local revnos from 349 up to this one).  This
+  has the effect of marking those patches in siesta-3.0 as "known" to
+  this branch, and will simplify the porting of future patches from the
+  3.0 branch. Note that the patch logs do not appear in "bzr log" unless
+  the "-n0" option is used. This is desirable, as a casual user might
+  find the output confusing.
+  
+  Note that revno 355 in trunk already incorporated (without
+  explicit mention in the commit log, due to an oversight) the relevant
+  3.0 patches up to 3.0-rc1.
+  
+*  Fixes for portability (pulay, MD rewind, reshape)
+  
+  * In m_pulay, some compilers evaluated both sub-clauses of an "and"
+    expression, even if the first was .false.. This led to a division by
+    zero in a mod operation. The expression has been replaced by more
+    robust code.
+  
+  * The MD file repositioning code in iomd.f gave problems in some
+    systems. It has been removed, and substituted by an explicit
+    'position="append"' clause in the open statement.
+  
+  * In SiestaXC/mesh3d.F90, work around a gfortran bug in the reshape
+    intrinsic by specifying a zero lower bound. The bug only appears
+    if bounds checking is in effect.
+  
+  modified:
+   Src/m_pulay.F90
+   Src/iomd.f
+   Src/SiestaXC/mesh3d.F90
+
+*  Cosmetic fixes (larger fields in atm files, vibra manual)
+  
+  * Use larger output fields for atm diagnostic files
+  
+  The atm program generates, among others, the files FOURIER_QMAX and
+  ECONF_DIFFS, which contain information useful for optimization
+  runs. The output fields were quite tight and sometimes
+  overflowed. They have beeen made larger.
+  
+  modified:
+    Pseudo/atom/prdiff.f
+    Pseudo/atom/wrapup.f
+  
+  * Clarify the meaning of the supercell options in the Vibra manual
+  
+  New wording to make it clear that the supercell options refer
+  to the number of augmentation shells around the unit cell.
+  
+  modified:
+    Util/Vibra/Docs/vibra.tex
+
+*  Compute and print band-structure energy. Updates to Util/COOP/mprop
+  
+  * The band-structure energy Ebs = Tr(DM*H) is now computed at every 
+    iteration and printed at the beginning and end of the SCF cycle, both
+    in the output file and in the CML file. The calculation is done in  
+    compute_dm, so DM is the "output DM" from the diagonalization of H.
+  
+  * The mprop program has been updated to output the integrated
+    band-structure energy as a function of energy as a third column in
+    the integrated-dos file. The " -n " option has been documented.
+  
+  * Creation of Util/COOP/Docs, and addition of some notes on the units
+    and meaning of the COOP and COHP curves.
+  
+  added:
+    Util/COOP/Docs/
+    Util/COOP/Docs/UnitsAndMeaningOfCurves.txt
+    Util/COOP/Tests/README
+  modified:
+    Src/Makefile
+    Src/compute_dm.F
+    Src/m_energies.F90
+    Src/write_subs.F
+    Util/COOP/README
+    Util/COOP/main_vars.f90
+    Util/COOP/mprop.f90
+    Util/COOP/subs.f90
+
+*  Make the HSX format the default for H,S files
+  
+  The old HS format was highly inefficient, as each piece of data was
+  written to its own record. In addition, it only contained information
+  about the inter-orbital vectors Xij if k-points were used in the
+  calculation.
+  
+  The new HSX file format was introduced at the time of the first
+  COOP/COHP implementation. It is more tightly packed, and the real
+  arrays (H, S, and Xij) are written in single-precision.
+  
+  The HSX format is now the default in Siesta (TranSiesta has its own
+  format).
+  
+  The programs hsx2hs and hs2hsx in Util/HSX are provided to facilitate
+  the transition. Note however that an HS file written by Siesta during
+  a Gamma-only calculation will not contain information about the
+  inter-orbital vectors Xij, and hs2hsx will refuse to create an HSX
+  file from it.
+  
+  See Util/HSX/README for more details.
+  
+  The file iohs.F has been moved to Util/HSX from the main source
+  directory.
+  
+  added:
+    Util/HSX/hs2hsx.f90
+    Util/HSX/hsx2hs.f90
+    Util/HSX/makefile
+  renamed:
+    Src/iohs.F => Util/HSX/iohs.F
+  modified:
+    Docs/siesta.tex
+    Src/Makefile
+    Src/setup_hamiltonian.F
+    Util/HSX/README
+    Util/HSX/hsx_m.f90
+
+*  Hook to output the initial charge density
+  
+  If the fdf variable SaveInitialChargeDensity is "true", the program
+  generates a RHO_INIT (and a RhoInit.grid.nc file if netCDF is compiled
+  in) containing the charge density used to start the first
+  self-consistency step, and it stops. Note that if an initial density
+  matrix (DM file) is used, it is not normalized. This is useful to
+  generate the charge density associated to "partial" DMs.
+  
+  modified:
+    Docs/siesta.tex
+    Src/dhscf.F
+    Src/setup_hamiltonian.F
+    Src/siesta_options.F90
+
+*  Fixes and new functionality in Pulay mixing
+  
+  * The "kick" functionality intended to "shake" periodically the Pulay
+  mixing procedure was incorrectly implemented. This has now been fixed,
+  with the added feature that the Pulay history is completely reset
+  after a kick.
+  
+  * Additionally, support has been added to specify whether the first
+  density-matrix residual of the SCF cycle and the first residual after
+  a kick are included in the Pulay history. It can be argued that in
+  these cases the "output" DM might be significantly different from the
+  "input" DM. To preserve backwards compatibility, these residuals are
+  kept in the Pulay history unless the fdf variable
+  
+        DM.Pulay.Avoid.First.After.Kick
+  
+  is set to "true" in the input file.
+  
+  * The above changes have forced a temporary disabling of the "Pulay on
+    file" feature, which will be re-implemented in a form that works
+    well in parallel.
+  
+  * Updated the manual.
+  
+  (A. Garcia)
+  
+  renamed:
+    Src/m_pulay.F => Src/m_pulay.F90
+  modified:
+    Src/mixer.F
+    Src/siesta_options.F90
+    Src/m_pulay.F90
+    Docs/siesta.tex
+
+*  Fixes and improvements in the optical spectra code
+  
+  * Fixed a bug in optical.F: the call to subroutine kgridinit nwas
+    causing problems and providing results that were not compatible any
+    longer with those of subroutine kgrid.
+  
+  * Modified call to subroutine transition_rate: wmin and wmax passed to
+    subroutine so that only the relevant transition probabilities are
+    explicitly calculated.
+  
+  * Added a new test (Tests/si-optical) to exercise the optical code.
+  
+  (Daniel Sanchez Portal)
+  
+  added:
+    Tests/Reference-xml/si-optical.xml
+    Tests/Reference/si-optical.out
+    Tests/si-optical/
+    Tests/si-optical/makefile
+    Tests/si-optical/si-optical.fdf
+    Tests/si-optical/si-optical.pseudos
+  modified:
+    Docs/CHANGES
+    Src/optical.F
+    Src/transition_rate.F
+
+
+------------------------------------
 310 Alberto Garcia	  2010-10-20
 Updates and fixes to the TranSiesta/tbtrans code (--> trunk-352)
   

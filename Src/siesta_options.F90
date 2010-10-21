@@ -23,7 +23,8 @@ MODULE siesta_options
   logical :: noeta         ! Use computed chemical potential instead of eta in ordern?
   logical :: new_diagk     ! Use new diagk routine with file storage of eigenvectors?
   logical :: outlng        ! Long output in the output file?
-  logical :: pulfile       ! Use file to store Pulay info in pulayx?
+  logical :: pulfile       ! Use file to store Pulay info in pulayx? (Obsolete)
+  logical :: avoid_first_after_kick  ! Keep first residual after a kick?
   logical :: RelaxCellOnly ! Relax only lattice vectors, not atomic coordinates
   logical :: RemoveIntraMolecularPressure   ! Remove molecular virial contribution to p
   logical :: savehs        ! Write file with Hamiltonian electrostatic potential?
@@ -59,6 +60,9 @@ MODULE siesta_options
   logical :: writedmhs_cdf_history   ! Write file with SCF history in netCDF form?
   logical :: read_charge_cdf   ! Read charge density from file in netCDF form?
   logical :: read_deformation_charge_cdf   ! Read deformation charge density from file in netCDF form?
+!
+  logical :: save_initial_charge_density ! Just save the initial charge density used
+
   logical :: atmonly       ! Set up pseudoatom information only?
   logical :: harrisfun     ! Use Harris functional?
   logical :: muldeb        ! Write Mulliken polpulations at every SCF step?
@@ -490,15 +494,29 @@ MODULE siesta_options
     ! (pulfile)
     pulfile = fdf_get('DM.PulayOnFile',.false.)
     if (ionode) then
-      if (pulfile.and.Nodes>1) then
+      if (pulfile) then
         call die( 'redata: Cannot use DM.PulayOnFile=.true.'//&
-                  'when running in parallel' )
+                  'in this version' )
       endif
       write(6,1) 'redata: Write Pulay info on disk?        = ',pulfile
     endif
     if (cml_p) then
       call cmlAddParameter(xf=mainXML, name='DM.PulayOnFile',      &
                            value=pulfile, dictRef='siesta:pulfile')
+    endif
+
+    ! 
+    avoid_first_after_kick = fdf_get (    &
+                       'DM.Pulay.Avoid.First.After.Kick',.false.)
+    if (ionode) then
+       write(6,1) 'redata: Discard 1st Pulay DM after  kick = ', &
+            avoid_first_after_kick
+    endif
+    if (cml_p) then
+      call cmlAddParameter(xf=mainXML,  &
+                           name='DM.Pulay.Avoid.First.After.Kick', &
+                           value=pulfile,   &
+                           dictRef='siesta:avoid_first_after_kick')
     endif
 
     ! Density Matrix Mixing  (proportion of output DM in new input DM)
@@ -1454,6 +1472,9 @@ MODULE siesta_options
     if (read_charge_cdf .or. read_deformation_charge_cdf) then
        mix = .false.
     endif
+
+    save_initial_charge_density = fdf_get(    &
+                       'SaveInitialChargeDensity' , .false.)
 
     new_diagk              = fdf_get( 'UseNewDiagk', .false. )
     writb                  = fdf_get( 'WriteBands', outlng )

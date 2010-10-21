@@ -39,13 +39,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, bsc-309}}
+{\Huge {\bf S I E S T A \, \, bsc-311}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large October 20, 2010 }
+{\Large October 21, 2010 }
 
 \vspace{1.5cm}
 
@@ -2726,9 +2726,9 @@ G. Rom\'an-P\'erez and J. M. Soler, Phys. Rev. Lett. {\bf 103},  096102 (2009).
 \item {\tt LMKLL} vdW-DF functional of Dion {\it et al} (same as DRSLL)
 reparametrized by K. Lee, E. Murray, L. Kong, B. I. Lundqvist and 
 D. C. Langreth, arXiv:1003.5255v1 (2010) 
-\item {\tt LMKLL} vdW-DF functional of Dion {\it et al} (same as DRSLL)
+\item {\tt KBM} vdW-DF  functional of Dion {\it et al} (same as DRSLL)
 reparametrized by J.Klimes, D.R.Bowler, and A.Michaelides, 
-JPCM {\bf 22}, 022201 (2009) 
+JPCM {\bf 22}, 022201 (2009) (optB88-vdW version)
 \end{itemize}
 
 {\it Use:} {\bf XC.functional} and {\bf XC.authors} must be compatible.
@@ -2916,8 +2916,26 @@ performed.
 
 {\it Default value:} {\tt 0}
 
+\item[{\bf DM.Pulay.Avoid.First.After.Kick}] ({\it
+  logical}):\index{SCF!mixing}
+  \index{DM.Pulay.Avoid.First.After.Kick@{\bf
+      DM.Pulay.Avoid.First.After.Kick}}\index{SCF!mixing} Controls
+  whether the first density-matrix residual of the SCF cycle and the
+  first residual after a kick are included in the Pulay history. It
+  can be argued that in these cases the ``output'' DM might be
+  significantly different from the ``input'' DM. To preserve backwards
+  compatibility, these residuals are kept in the Pulay history unless
+  this variable is activated.
+
+{\it Default value:} {\tt .false.}
+
+
 \item[{\bf DM.PulayOnFile}] ({\it logical}):
 \index{DM.PulayOnFile@{\bf DM.PulayOnFile}}
+
+{\bf NOTE:} This feature is temporarily disabled pending a proper
+implementation that works well in parallel.
+
 Store intermediate information of Pulay mixing in files
 ({\tt .true.}) or in memory ({\tt .false.}).
 Memory storage can increase considerably the
@@ -3609,14 +3627,16 @@ the Order-N calculation faster.  USE WITH CARE!!!
 \index{SaveHS@{\bf SaveHS}}\index{output!Hamiltonian \& overlap}
 Instructs to write the Hamiltonian and overlap matrices, as well
 as other data required to generate bands and density of states,
-in file {\tt SystemLabel}.HS. This file can be read by routine IOHS,
-which may be used by an application program in later versions.
-
-In some cases, {\sc Siesta} produces also an HSX file, which is in a
-more compact form than the usual HS, and in which the Hamiltonian,
+in file {\tt SystemLabel}.HSX. The HSX format is more
+compact than the traditional HS, and the Hamiltonian,
 overlap matrix, and relative-positions array (which is always output,
 even for gamma-point only calculations) are in single precision.
-(See COOP.Write option)
+
+The program {\tt hsx2hs} in {\tt Util/HSX} can be used to generate
+an old-style HS file if needed.
+
+{\sc Siesta} produces also an HSX file if the {\bf COOP.Write} option
+is active.
 \index{output!HSX file}
 
 {\it Use:} File {\tt SystemLabel}.HS is only written, not read, by siesta.
@@ -5075,6 +5095,22 @@ density is positive and the ionic charge density is negative.
 {\it Use:} File {\tt SystemLabel}.TOCH is only written, not read, by siesta.
 
 {\it Default value:} {\tt .false.}
+
+
+\item[{\bf SaveInitialChargeDensity}] ({\it logical}):
+  \index{SaveInitialChargeDensity@{\bf
+      SaveInitialChargeDensity}}\index{output!charge density}
+
+  If ``true'', the program generates a {\tt SystemLabel}.RHOINIT file
+  (and a {\tt RhoInit.grid.nc} file if netCDF support is compiled in)
+  containing the charge density used to start the first
+  self-consistency step, and it stops. Note that if an initial density
+  matrix (DM file) is used, it is not normalized. This is useful to
+  generate the charge density associated to ``partial'' DMs, as
+  created by progras such as {\tt dm\_creator} and {\tt dm\_filter}.
+
+{\it Default value:} {\tt .false.}
+
 
 \end{description}
 
@@ -7586,14 +7622,15 @@ Util/SCF:            experimental python scripts to process DM .nc files
 HS
 
 The old format, very inefficient in terms of space used. It contains
-also the $x_ij$ array and information about the atomic species and orbitals.
+(if produced by a calculation using k-points) also the $x_ij$ array
+and information about the atomic species and orbitals. As of
+{\tt siesta-3.0-rc2}, it has been superseded by the HSX format. If some
+legacy utility needs the HS format, it can be re-generated using
+the tools in {\tt Util/HSX}.
 
 HSX
 
 The new format, with better packing of binary records.
-
-The two formats coexist for now. Some utilities read HS, and others
-(notably the mprop program in Util/COOP), HSX.
 
 DMHS
 

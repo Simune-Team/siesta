@@ -91,8 +91,9 @@ c Open file
         endif
       else
         call io_assign( iupos )
-        open(iupos,file=fnpos,form='unformatted',status='unknown')
-        call windu(iupos)
+        print *, "iupos on opening: ", iupos
+        open(iupos,file=fnpos,form='unformatted',status='unknown',
+     $       position="append")
       endif
 
       if(istep . eq . istep0) then
@@ -116,6 +117,8 @@ C Write data on files
      .      ((cell(ix,iv),ix=1,3),(vcell(ix,iv),ix=1,3),iv=1,3)
         endif
       else
+        print *, "iupos on writing: ", iupos
+        print *, "istep, xa, va : ", istep, xa, va
         write(iupos) istep, xa, va
         if ( varcel ) write(iupos) cell, vcell
       endif
@@ -127,15 +130,4 @@ C Close file
       if ( formt .and. varcel ) call io_close( iucel )
 
       return
-      end
-
-c *******************************************************************
-c Wind to end of file of an unformatted file
-      subroutine windu(iu)
-      integer iu
-
- 1    read(iu,end=2)
-      goto 1
- 2    continue
-      backspace iu
       end
