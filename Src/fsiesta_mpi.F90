@@ -1,0 +1,544 @@
+! 
+! This file is part of the SIESTA package.
+!
+! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
+! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
+! and J.M.Soler, 1996- .
+! 
+! Use of this software constitutes agreement with the full conditions
+! given in the SIESTA license, as signed by all legitimate users.
+!-----------------------------------------------------------------------------
+!
+! module fsiesta
+!
+! Support routines for siesta-as-a-subroutine.
+! This version requires SIESTA to be compiled together with its calling program. 
+! It allows multiple siesta processes to run and communicate through MPI.
+!
+! Public procedures provided by this module:
+!   siesta_launch   : Starts a siesta process
+!   siesta_units    : Sets the physical units for calls to siesta_forces
+!   siesta_forces   : Calculates atomic forces, energy, and stress
+!   siesta_get      : Calculates other properties
+!   siesta_quit     : Finishes a siesta process
+!
+! Public parameters, variables and arrays provided by this module:
+!   none
+!
+! Interfaces of public procedures:
+!
+!   subroutine siesta_launch( label, nnodes, mpi_comm, mpi_launcher )
+!     character(len=*),intent(in) :: label    : Name of siesta process
+!                                               (prefix of its .fdf file)
+!     integer,optional,intent(in) :: nnodes   : Number of MPI processes
+!                                               reserved for each siesta process
+!     integer,optional,intent(in) :: mpi_comm : MPI communicator defined by the
+!                                               calling program for siesta use
+!     character(len=*),optional,intent(in):: mpi_launcher (not used: MPI must be
+!                                                        started by master prog)
+!   end subroutine siesta_launch
+!
+!   subroutine siesta_units( length, energy )
+!     character(len=*),intent(in) :: length : Physical unit of length
+!     character(len=*),intent(in) :: energy : Physical unit of energy
+!   end subroutine siesta_units
+!
+!   subroutine siesta_forces( label, na, xa, cell, energy, fa, stress )
+!     character(len=*), intent(in) :: label      : Name of siesta process
+!     integer,          intent(in) :: na         : Number of atoms
+!     real(dp),         intent(in) :: xa(3,na)   : Cartesian coords
+!     real(dp),optional,intent(in) :: cell(3,3)  : Unit cell vectors
+!     real(dp),optional,intent(out):: energy     : Total energy
+!     real(dp),optional,intent(out):: fa(3,na)   : Atomic forces
+!     real(dp),optional,intent(out):: stress(3,3): Stress tensor
+!   end subroutine siesta_forces
+!
+!   subroutine siesta_get( label, property, value, units )
+!     character(len=*), intent(in) :: label      : Name of siesta process
+!     character(len=*), intent(in) :: property   : Name of required magnitude
+!     real(dp),         intent(out):: value      : Value of the magnitude
+!                                                (various dimensions overloaded)
+!     character(len=*), intent(out):: units      : Name of physical units
+!   end subroutine siesta_get
+!     
+!   subroutine siesta_quit( label )
+!     character(len=*),intent(in) :: label       : Name of siesta process
+!   end subroutine siesta_quit
+!
+! Properties available through siesta_get:
+!
+!   property name:  'atomic_numbers'
+!            size:  na (number of atoms per unit cell)
+!            units: ' '
+!
+! Usage:
+! - The typical expected profiles for calling siesta_launch are
+!   - call siesta_launch(myLabel) => a siesta process is launched for each
+!     label, with as many MPI processes as they use the same label. Each
+!     siesta process will read a different myLabel.fdf data file.
+!   - call siesta_launch(singleLabel,siestaNodes) => a number nSiestaProc =
+!     (totalNodes/siestaNodes) of siesta processes are launched, each with 
+!     siestaNodes MPI processes. All will read the same file singleLabel.fdf
+!   - call siesta_launch(singleLabel,mpi_comm=siestaComm) => the same as 
+!     previous one, but with more control and flexibility in distributing 
+!     MPI processes among siesta processes (notice: 'mpi_comm=' is mandatory)
+! - Using nnodes/mpi_comm AND different labels is possible but care must be
+!   paid to their consistency, i.e. different labels cannot occur within the
+!   same siesta process.
+! - A data file named label.fdf (e.g. H2O.fdf) must be present in the working
+!   directory for each label used in siesta_launch. Parameter NumberOfAtoms
+!   in label.fdf must coincide with input argument na in siesta_forces.
+!   See siesta manual for format and required parameters in label.fdf
+! - A statement 'MD.TypeOfRun forces' must be present in label.fdf, to istruct
+!   siesta not to perform any dynamics or relaxation of its own, and to accept
+!   instead the geometries from the master program
+! - A pseudopotential data file for each atomic species must also be present
+! - The call to siesta_launch can be omited in serial execution, and when
+!   neither nnodes nor mpi_comm are present. If the call is present, it must
+!   be before the first call to siesta_forces.
+! - siesta_units may be called either before or after siesta_launch
+! - The stress is defined as dE/d(strain)/Volume, with a positive sign
+!   when the system tends to contract (negative pressure)
+!
+! Sample usage for serial MD simulation:
+!   use fsiesta, only: siesta_forces, siesta_get
+!   character(len=32):: label='H2O', units
+!   integer:: na
+!   real*8 :: energy, dipole(3), cell(3,3), stress(3,3)
+!   real*8 :: fa(3,maxAtoms), xa(3,maxAtoms)
+!   do mdStep = 1,nSteps
+!     ... find the new geometry. Angstroms & eV are assumed.
+!     call siesta_forces( label, na, xa, cell, energy, fa, stress )
+!   end do
+!   call siesta_get( label, 'dipole', dipole, units )
+!
+! Sample usage for a nudged elastic band calculation:
+!   use mpi,     only: MPI_Comm_World
+!   use fsiesta, only: siesta_launch, siesta_units, siesta_forces
+!   character(len=20):: label='Si_vacancy'
+!   integer:: error, MPI_Comm_Siesta, myNode, myNudge
+!   integer:: na, nNodes, nNudges, siestaNodes
+!   real*8 :: energy, cell(3,3), stress(3,3), fa(3,maxAtoms), xa(3,maxAtoms)
+!   call MPI_Comm_Rank( MPI_Comm_World, myNode, error )
+!   call MPI_Comm_Size( MPI_Comm_World, nNodes, error )
+!   ! Set distribution of MPI processes by
+!     siestaNodes = nNodes / nNudges
+!     call siesta_launch( label, siestaNodes )
+!   ! Or equivalently (but not simultaneously)
+!     myNudge = myNode / nNudges
+!     call MPI_Comm_Split( MPI_Comm_World, myNudge, 0, MPI_Comm_Siesta, error )
+!     call siesta_launch( label, mpi_comm=MPI_Comm_Siesta )
+!   call siesta_units( 'bohr', 'Ryd' )
+!   do iStep = relaxSteps
+!     ... find my nudge's new geometry
+!     call siesta_forces( label, na, xa, cell, energy, fa, stress )
+!   end do
+!
+! Behaviour:
+! - Different siesta processes are distiguished because they either:
+!   - have different labels in siesta_launch
+!   - belong to different MPI groups, as set by nnodes or mpi_comm
+! - If mpi_comm is present, nnodes is ignored
+! - If neither nnodes nor mpi_comm are present, the MPI processes are
+!   assigned to the siesta processes according to the input labels
+! - If siesta_units is not called, length='Ang', energy='eV' are
+!   used by default. If it is called more than once, the units in the
+!   last call become in effect.
+! - The physical units set by siesta_units are used for all the siesta
+!   processes launched
+! - If siesta_forces is called without a previous call to siesta_launch
+!   for that label, an internal call siesta_launch(label) is generated
+! - If argument cell is not present in the call to siesta_forces, or if
+!   the cell has zero volume, it is assumed that the system is a molecule,
+!   and a supercell is generated automatically by siesta so that the 
+!   different images do not overlap. In this case the stress returned
+!   has no physical meaning.
+! - The following events result in a stopping error message:
+!   - mpi_comm is not a valid MPI communicator
+!   - two MPI processes in the same siesta process have a different label
+!   - two different labels are used in any calls within the same MPI process
+!   - siesta_launch is called twice
+!   - siesta_quit is called before a call to siesta_launch or siesta_forces
+!   - file label.fdf is not found
+!   - NumberOfAtoms in label.fdf is different from na input in siesta_forces
+!   - An input argument of siesta_forces differs in two MPI processes within
+!     the same siesta process
+!
+! Written by J.M.Soler. Oct.2010
+!-----------------------------------------------------------------------------
+
+MODULE fsiesta
+
+! Used module parameters and procedures
+  use precision,        only: dp              ! Double precision real kind
+  use sys,              only: die             ! Termination routine
+  use m_siesta_init,    only: siesta_init     ! Siesta initialization
+  use m_siesta_analysis,only: siesta_analysis ! Post processing calculations
+  use m_siesta_move,    only: siesta_move     ! Move atoms
+  use m_siesta_forces,  only: &
+    external_siesta_forces => siesta_forces   ! Atomic force calculation
+  use m_siesta_end,     only: siesta_end      ! Finish siesta
+  use siesta_master,    only: siesta_server        ! Is siesta a server?
+  use siesta_master,    only: siesta_subroutine    ! Is siesta a subroutine?
+  use siesta_master,    only: setMasterUnits       ! Set physical units
+  use siesta_master,    only: setCoordsFromMaster  ! Set atomic positions
+  use siesta_master,    only: getForcesForMaster   ! Get atomic forces
+  use siesta_master,    only: getPropertyForMaster ! Get other properties
+  use siesta_master,    only: siesta_server        ! Is siesta a server?
+  use siesta_master,    only: siesta_subroutine    ! Is siesta a subroutine?
+#ifdef MPI
+  use mpi,        only: MPI_Comm_World  ! The true MPI_COMM_WORLD
+  use mpi_siesta, only: MPI_Comm_Siesta => MPI_Comm_World ! What siesta uses
+                                                          ! as MPI_Comm_World
+  use mpi_siesta, only: MPI_Integer           ! Integer data type
+  use mpi_siesta, only: MPI_Character         ! Character data type
+  use mpi_siesta, only: MPI_Double_Precision  ! Real double precision type
+  use mpi_siesta, only: MPI_Max               ! Maximum-option switch
+#endif
+
+  implicit none
+
+PUBLIC :: &
+  siesta_launch, &! Start a siesta process
+  siesta_units,  &! Set physical units
+  siesta_forces, &! Calculate atomic forces, energy, and stress
+  siesta_get,    &! Calculate other magnitudes
+  siesta_quit     ! Finish siesta process
+
+PRIVATE ! Nothing is declared public beyond this point
+
+! Global module variables
+  integer,      parameter :: maxLenLabel = 32
+  logical,           save :: siesta_launched = .false.
+  logical,           save :: siesta_quitted  = .false.
+  logical,           save :: analysed = .false.
+  logical,           save :: relaxed = .false.
+  integer,           save :: step  = 0
+  character(len=32), save :: xunit = 'Ang'
+  character(len=32), save :: eunit = 'eV'
+  character(len=32), save :: funit = 'eV/Ang'
+  character(len=32), save :: sunit = 'eV/Ang**3'
+  character(len=maxLenLabel):: myLabel = ' '
+
+interface siesta_get
+  module procedure siesta_get_rank0, siesta_get_rank1, siesta_get_rank2
+end interface 
+
+CONTAINS
+
+!---------------------------------------------------
+
+subroutine siesta_launch( label, nNodes, mpi_comm, mpi_launcher )
+  implicit none
+  character(len=*),  intent(in) :: label    ! Name of the siesta process
+  integer, optional, intent(in) :: nNodes   ! Number of MPI processes to be used
+  integer, optional, intent(in) :: mpi_comm ! MPI communicator to be used
+  character(len=*),optional,intent(in):: mpi_launcher ! Not used in this version
+
+#ifdef MPI
+  logical:: labelFound
+  integer:: error, iColor, iNode, lenLabel, &
+            myColor, myLenLabel, myNode, nColors, siestaNodes, totNodes
+  integer,  allocatable:: color(:)
+  character(len=maxLenLabel),allocatable:: colorLabel(:), nodeLabel(:)
+#endif
+
+! Check that siesta has not been launched yet
+  if (siesta_launched .or. siesta_quitted) &
+    print*, 'siesta_launch: ERROR: siesta process already launched'
+
+! Declare siesta as a server subroutine
+  siesta_server     = .true.
+  siesta_subroutine = .true.
+
+! Store label
+  myLabel = label
+
+#ifdef MPI
+
+! Get total number of MPI processes (nodes) and my index among them
+  call MPI_Comm_Size( MPI_Comm_World, totNodes, error )
+  call MPI_Comm_Rank( MPI_Comm_World, myNode, error )
+
+! Find maximum label length
+  myLenLabel = len(trim(label))
+  call MPI_AllReduce( myLenLabel, lenLabel, 1, MPI_Integer, &
+                      MPI_Max, MPI_Comm_World, error )
+  if (lenLabel>maxLenLabel) &
+    call die('siesta_launch: ERROR: parameter maxLenLabel too small')
+
+! Allocate array for all labels
+  allocate( nodeLabel(totNodes) )
+
+! Start parallel siesta process
+  if (present(mpi_comm)) then                   ! Use input MPI communicator
+
+    ! Check that mpi_comm is a valid MPI communicator
+    call MPI_Comm_Size( mpi_comm, siestaNodes, error )
+    if (error/=0) &
+      call die('siesta_launch: ERROR: mpi_comm not a valid MPI communicator')
+
+    ! Assign communicator to siesta
+    MPI_Comm_Siesta = mpi_comm
+
+  elseif (present(nNodes) .and. nNodes>0) then  ! Create new MPI communicator
+
+    call MPI_Comm_Rank( MPI_Comm_World, myNode, error )
+    myColor = myNode/nNodes
+    call MPI_Comm_Split( MPI_Comm_World, myColor, 0, MPI_Comm_Siesta, error )
+
+  else   ! Create new MPI communicator according to label(s)
+
+    ! Collect all labels
+    call MPI_AllGather( myLabel,   maxLenLabel, MPI_Character, &
+                        nodeLabel, maxLenLabel, MPI_Character, &
+                        MPI_Comm_World, error )
+
+    ! Assing processor colors according to labels
+    allocate( color(totNodes), colorLabel(totNodes) )
+    nColors = 0
+    do iNode = 1,totNodes
+      labelFound = .false.
+      do iColor = 1,nColors
+        if (nodeLabel(iNode)==colorLabel(iColor)) then
+          labelFound = .true.
+          color(iNode) = iColor
+          exit ! iColor loop
+        end if
+      end do ! iColor
+      if (.not.labelFound) then
+        nColors = nColors + 1
+        colorLabel(nColors) = nodeLabel(iNode)
+        color(iNode) = nColors
+      end if
+    end do ! iNode
+
+    ! Create new communicator
+    myColor = color(myNode)
+    call MPI_Comm_Split( MPI_Comm_World, myColor, 0, MPI_Comm_Siesta, error )
+    deallocate( color, colorLabel )
+
+  end if ! (present(mpi_comm))
+
+! Check that my siesta process has a unique label
+  call MPI_Comm_Size( MPI_Comm_Siesta, siestaNodes, error )
+  call MPI_AllGather( myLabel,   maxLenLabel, MPI_Character, &
+                      nodeLabel, maxLenLabel, MPI_Character, &
+                      MPI_Comm_Siesta, error )
+  do iNode = 1,siestaNodes
+    if (nodeLabel(iNode)/=myLabel) &
+      call die('siesta_launch: ERROR: label mismatch in siesta process')
+  end do
+  deallocate( nodeLabel )
+
+#endif
+
+! Initialize flags and counters
+  siesta_launched = .true.
+  siesta_quitted  = .false.
+  analysed        = .false.
+  relaxed         = .false.
+  step = 0
+
+end subroutine siesta_launch
+
+!---------------------------------------------------
+
+subroutine siesta_units( length, energy )
+  implicit none
+  character(len=*), intent(in) :: length, energy
+  xunit = length
+  eunit = energy
+  funit = trim(eunit)//'/'//trim(xunit)
+  sunit = trim(eunit)//'/'//trim(xunit)//'**3'
+  call setMasterUnits( xunit, eunit )
+end subroutine siesta_units
+
+!---------------------------------------------------
+
+subroutine siesta_forces( label, na, xa, cell, energy, fa, stress )
+  implicit none
+  character(len=*),   intent(in) :: label
+  integer,            intent(in) :: na
+  real(dp),           intent(in) :: xa(3,na)
+  real(dp), optional, intent(in) :: cell(3,3)
+  real(dp), optional, intent(out):: energy
+  real(dp), optional, intent(out):: fa(3,na)
+  real(dp), optional, intent(out):: stress(3,3)
+
+  real(dp):: c(3,3), e, f(3,na), s(3,3)
+
+#ifdef MPI
+  integer :: error, iNode, myNode, n, nNodes, status, tag
+  real(dp):: x(3,na)
+#endif
+
+! Launch siesta, if not yet done
+  if (.not.siesta_launched) call siesta_launch( label )
+
+! Check label
+  if (label/=myLabel) call die('siesta_forces: ERROR: label mismatch')
+
+#ifdef MPI
+! Check that input arguments are equal in all MPI processes
+  call MPI_Comm_Size( MPI_Comm_Siesta, nNodes, error )
+  call MPI_Comm_Rank( MPI_Comm_Siesta, myNode, error )
+  do iNode = 1,nNodes-1
+    if (myNode==0) then
+      call MPI_Recv( n, 1, MPI_Integer, &
+                     iNode, tag, MPI_Comm_Siesta, status, error )
+      call MPI_Recv( x, 3*na, MPI_Double_Precision, &
+                     iNode, tag, MPI_Comm_Siesta, status, error )
+      call MPI_Recv( c, 3*3, MPI_Double_Precision, &
+                     iNode, tag, MPI_Comm_Siesta, status, error )
+      if (n/=na .or. any(x/=xa) .or. any(c/=cell)) &
+        call die('siesta_forces: ERROR: input mismatch among MPI processes')
+    else if (myNode==iNode) then
+      call MPI_Send( na, 1, MPI_Integer, 0, 0, MPI_Comm_Siesta, error )
+      call MPI_Send( xa, 3*na, MPI_Double_Precision, &
+                     0, 0, MPI_Comm_Siesta, error )
+      call MPI_Send( cell, 3*3, MPI_Double_Precision, &
+                     0, 0, MPI_Comm_Siesta, error )
+    end if ! (myNode==0)
+  end do ! iNode
+#endif
+
+! Print coords for debugging
+  print'(/,2a)',         'siesta_forces: label = ', trim(label)
+  print'(3a,/,(3f12.6))','siesta_forces: cell (',trim(xunit),') =',cell
+  print'(3a,/,(3f12.6))','siesta_forces: xa (',trim(xunit),') =', xa
+
+! Copy master's coordinates to master repository
+  if (present(cell)) then
+    c = cell
+  else
+    c = 0
+  end if
+  call setCoordsFromMaster( na, xa, c )
+
+! Move atoms (positions will be read from master repository)
+  if (step==0) then
+    call siesta_init()
+  else
+    call siesta_move( step, relaxed )
+  end if
+  step = step + 1
+
+! Calculate forces
+  call external_siesta_forces( step )
+
+! Get from master repository the forces for master
+  call getForcesForMaster( na, e, f, s )
+
+! Print forces for debugging
+  print'(3a,f12.6)',      'siesta_forces: energy (',trim(eunit),') =', e
+  print'(3a,/,(3f12.6))', 'siesta_forces: stress (',trim(sunit),') =', s
+  print'(3a,/,(3f12.6))', 'siesta_forces: forces (',trim(funit),') =', f
+
+! Copy results to output arguments
+  if (present(energy)) energy = e
+  if (present(fa))     fa     = f
+  if (present(stress)) stress = s
+
+! Flag that post processing analysis has not been done for this geometry
+  analysed = .false.
+
+end subroutine siesta_forces
+
+!---------------------------------------------------
+
+subroutine siesta_get_rank0( label, property, value, units )
+  character(len=*), intent(in) :: label      ! Name of siesta process
+  character(len=*), intent(in) :: property   ! Name of required magnitude
+  real(dp),         intent(out):: value      ! Value of the magnitude
+  character(len=*), intent(out):: units      ! Name of physical units
+  real(dp):: v(1)
+  call siesta_get_value( label, property, 1, v, units )
+  value = v(1)
+end subroutine siesta_get_rank0
+
+!---------------------------------------------------
+
+subroutine siesta_get_rank1( label, property, value, units )
+  character(len=*), intent(in) :: label      ! Name of siesta process
+  character(len=*), intent(in) :: property   ! Name of required magnitude
+  real(dp),         intent(out):: value(:)   ! Value(s) of the magnitude
+  character(len=*), intent(out):: units      ! Name of physical units
+  integer:: vsize
+  vsize = size(value)
+  call siesta_get_value( label, property, vsize, value, units )
+end subroutine siesta_get_rank1
+
+!---------------------------------------------------
+
+subroutine siesta_get_rank2( label, property, value, units )
+  character(len=*), intent(in) :: label      ! Name of siesta process
+  character(len=*), intent(in) :: property   ! Name of required magnitude
+  real(dp),         intent(out):: value(:,:) ! Value(s) of the magnitude
+  character(len=*), intent(out):: units      ! Name of physical units
+  integer:: vsize
+  vsize = size(value)
+  call siesta_get_value( label, property, vsize, value, units )
+end subroutine siesta_get_rank2
+
+!---------------------------------------------------
+
+recursive subroutine siesta_get_value( label, property, vsize, value, units )
+  character(len=*), intent(in) :: label         ! Name of siesta process
+  character(len=*), intent(in) :: property      ! Name of required magnitude
+  integer,          intent(in) :: vsize         ! Size of value array
+  real(dp),         intent(out):: value(vsize)  ! Value(s) of the magnitude
+  character(len=*), intent(out):: units         ! Name of physical units
+
+  character(len=132):: error, message
+
+! Check that siesta has been launched
+  if (.not.siesta_launched) call die('siesta_get: ERROR: siesta not launched')
+
+! Check label
+  if (label/=myLabel) call die('siesta_get: ERROR: label mismatch')
+
+! Get property from master repository
+  call getPropertyForMaster( property, vsize, value, units, error )
+
+! Check that this property is returned with the right size
+  if (error=='unknown_property') then
+    if (analysed) then
+      write(message,*) 'siesta_get: ERROR: not prepared for property = ', &
+                        trim(property)
+      call die( trim(message) )
+    else ! (.not.analysed) => try again after performing post-processing
+      call siesta_analysis( relaxed )
+      analysed = .true.
+      call siesta_get_value( label, property, vsize, value, units )
+    end if ! (analysed)
+  elseif (error=='wrong_size') then
+    write(message,*) 'siesta_get: ERROR: wrong array size for property = ', &
+                      trim(property)
+    call die( trim(message) )
+  end if ! (error=='unknown_property')
+
+end subroutine siesta_get_value
+
+!---------------------------------------------------
+
+subroutine siesta_quit( label )
+  implicit none
+  character(len=*), intent(in) :: label
+
+  if (.not.siesta_launched) then
+    call die('siesta_quit: ERROR: no siesta process launched')
+  elseif (label /= myLabel) then
+    call die('siesta_quit: ERROR: label mismatch')
+  endif
+
+! Finish siesta process
+  call siesta_end()
+
+  siesta_launched = .false.
+  siesta_quitted  = .true.
+
+end subroutine siesta_quit
+
+END MODULE fsiesta
+

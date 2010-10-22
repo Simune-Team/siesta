@@ -20,6 +20,12 @@
       use sys, only : die
       use m_convergence, only: converger_t
       use m_convergence, only: reset, set_tolerance
+      use siesta_geom,   only: na_u           ! Number of atoms in unit cell
+      use m_energies,    only: Etot           ! Total energy
+      use m_forces,      only: cfa            ! Constrained forces
+      use m_stress,      only: cstress        ! Constrained stress tensor
+      use siesta_master, only: forcesToMaster ! Send forces to master prog
+      use siesta_master, only: siesta_server  ! Is siesta a server?
 #ifdef TRANSIESTA
       use m_ts_options, only : mixH
       use m_ts_global_vars, only : ts_istep
@@ -146,6 +152,10 @@
         endif
 
         call state_analysis( istep )
+
+        ! If siesta is running as a subroutine, send forces to master program
+        if (siesta_server) 
+     .    call forcesToMaster( na_u, Etot, cfa, cstress )
 
 !--------------------------------------------------------------------------- END
         END subroutine siesta_forces

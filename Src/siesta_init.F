@@ -60,6 +60,7 @@
       implicit none
 
 #ifdef MPI
+      logical :: initialized
       integer :: MPIerror  ! Return error code in MPI routines
 #endif
 
@@ -73,9 +74,15 @@
       logical :: user_wants_supercell
 
 !------------------------------------------------------------------------- BEGIN
-! Initialise MPI and set processor number
+! Initialise MPI unless siesta is running as a subroutine 
+! of a driver program that may have initialized MPI already
 #ifdef MPI
-      call MPI_Init( MPIerror )
+      call MPI_Initialized( initialized, MPIerror )
+      if (.not.initialized) call MPI_Init( MPIerror )
+#endif
+
+! Set processor number
+#ifdef MPI
       call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
       call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
 #endif

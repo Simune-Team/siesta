@@ -15,6 +15,12 @@ MODULE MPI_SIESTA
 
   USE TIMER_MPI_M, only: timer_mpi
 
+! The following construction allows to supplant MPI_Comm_World within SIESTA,
+! and to use it as a subroutine with its own internal MPI communicator.
+! JMS. Oct.2010
+  USE MPI_INTERFACES, only: true_MPI_Comm_World => MPI_Comm_World
+  integer, public :: MPI_Comm_World = true_MPI_Comm_World
+
   PUBLIC :: MPI_BARRIER
   INTERFACE MPI_BARRIER
     MODULE PROCEDURE myMPI_BARRIER

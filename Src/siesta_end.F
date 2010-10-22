@@ -9,6 +9,7 @@
       use m_timestamp, only : timestamp
       use siesta_cmlsubs, only: siesta_cml_exit
       use siesta_cml,     only: cml_p, cmlEndModule, mainXML
+      use siesta_master,  only: siesta_subroutine  ! Is siesta a subroutine?
 #ifdef DEBUG_XC
       USE siestaXC,    only : closeDebugOutputFile
 #endif /* DEBUG_XC */
@@ -47,9 +48,9 @@
         call wallclock('End of run')
       endif
 
-! Finalize MPI
+! Finalize MPI, unless siesta is running as a subroutine
 #ifdef MPI
-      call MPI_Finalize( MPIerror )
+      if (.not.siesta_subroutine) call MPI_Finalize( MPIerror )
 #endif
 
       if (cml_p) then

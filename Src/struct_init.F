@@ -21,6 +21,10 @@
       use files,          only : slabel
       use zmatrix,        only: lUseZmatrix
       use parallel,       only: IOnode
+      use siesta_master,  only: coordsFromMaster  ! Get coords from master prog
+      use siesta_master,  only: setPropertyForMaster  ! Set a property to be
+                                                      ! sent to master program
+      use siesta_master,  only: siesta_server         ! Is siesta a server?
 
       implicit none
 
@@ -30,7 +34,7 @@
       logical, external :: leqi  ! It lives in fdf.f
 
       character(len=80) :: dummy_str
-      logical           :: Server_calculation, foundxv, foundzm
+      logical           :: foundxv, foundzm
       real(dp)          :: local_charnet
 
       real(dp):: bcell(3,3), tmp_cell(3,3)
@@ -96,10 +100,11 @@
 
 ! Read cell shape and atomic positions from driver program through pipe
       call fdf_global_get(dummy_str,'MD.TypeOfRun',"none")
-      Server_calculation = (leqi(dummy_str,'forces'))
-
-      if (Server_calculation) then
-        call coordsFromPipe( na_u, xa, ucell )
+      siesta_server = (leqi(dummy_str,'forces'))
+      if (siesta_server) then
+        call setPropertyForMaster('atomic_numbers', 
+     .                             na_u, real(iza(:),dp), ' ')
+        call coordsFromMaster( na_u, xa, ucell )
       end if
 ! .....................
 

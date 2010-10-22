@@ -14,10 +14,12 @@ module fsiesta
 ! The routines that handle the other side of the communication are
 ! in module iopipes of siesta program.
 ! Usage:
-!   call siesta_launch( label, nnodes )
+!   call siesta_launch( label, nnodes, mpi_comm, mpi_launcher )
 !     character(len=*),intent(in) :: label  : Name of siesta process
 !                                             (prefix of its .fdf file)
 !     integer,optional,intent(in) :: nnodes : Number of MPI nodes
+!     integer,optional,intent(in) :: mpi_comm : not used in this version
+!     character(len=*),intent(in),optional:: mpi_launcher : e.g. 'mpirun -np 8'
 !
 !   call siesta_units( length, energy )
 !     character(len=*),intent(in) :: length : Physical unit of length
@@ -103,10 +105,11 @@ CONTAINS
 
 !---------------------------------------------------
 
-subroutine siesta_launch( label, nnodes, mpi_launcher )
+subroutine siesta_launch( label, nnodes, mpi_comm, mpi_launcher )
   implicit none
   character(len=*),  intent(in) :: label
   integer, optional, intent(in) :: nnodes
+  integer, optional, intent(in) :: mpi_comm
   character(len=*),  intent(in), optional :: mpi_launcher
 
   character(len=32) :: cpipe, fpipe
