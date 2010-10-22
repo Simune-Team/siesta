@@ -1,6 +1,16 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+312 Alberto Garcia	  2010-10-22
+Clarify file-name conventions in new fdf in reinit
+
+Change the name of the process-specific scratch files to
+a more meaningful 'fdf_input.XXX'.
+
+Note that these files could be made obsolete by a proper
+serialization-broadcast-deserialization of the new fdf data structure.
+
+------------------------------------
 311 Alberto Garcia	  2010-10-21
 Fixes: optical, pulay, cosmetics. BS energy, HSX file (--> trunk 361)
 

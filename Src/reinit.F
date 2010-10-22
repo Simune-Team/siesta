@@ -44,7 +44,18 @@ C Print Welcome and Presentation .......................................
 #ifdef DEBUG
       call write_debug( '  PRE reinit' )
 #endif
-      filein = "should_not_matter"  ! For non-master nodes
+!     Non-master mpi-processes receive a copy of all the
+!     pre-processed fdf input information (recursively
+!     including files when necessary), and dump it on a
+!     text file with name "fdf_input.<ProcessNumber>".
+!     They then read from this file to construct a memory
+!     image of the information.
+!
+!     The master process creates its memory image directly
+!     from the standard fdf file (renamed as INPUT_TMP.$$,
+!     as usually done for historical reasons (see below)).
+!
+      filein = "fdf_input"  
 
       if (Node.eq.0) then
         write(6,'(/a)') 
@@ -76,13 +87,14 @@ c
            write(6,'(/a)') 'reinit: Reading from standard input'
            lun = 5
            call io_assign(lun_tmp)
-           do
+           do  ! make sure we get a new file
               call system_clock( count )
               write(string,*) count
               filein = 'INPUT_TMP.'//adjustl(string)
               inquire( file=filein, exist=file_exists )
               if (.not.file_exists) exit
            end do
+!
            open(lun_tmp,file=filein,
      $          form='formatted',status='replace')
            rewind(lun_tmp)
@@ -104,6 +116,10 @@ c
      .          '***', ' End of input data file '
            call io_close(lun_tmp)
 c
+!          "filein" for fdf is now the temporary file. 
+!          This was necessary historically to allow
+!          the rewinds involved in fdf operation.
+!
         endif
       endif
 c ...
@@ -116,9 +132,9 @@ C Define Name of the system ...
       sname_default = ' '
       sname = fdf_string('SystemName',sname_default)
       if (Node.eq.0) then
-        write(6,'(/a,71(1h-))') 'reinit: '
+        write(6,'(/a,71("-"))') 'reinit: '
         write(6,'(a,a)') 'reinit: System Name: ',trim(sname)
-        write(6,'(a,71(1h-))') 'reinit: '
+        write(6,'(a,71("-"))') 'reinit: '
       endif
 C ...
 
@@ -127,7 +143,7 @@ C Define System Label (short name to label files) ...
       slabel = fdf_string('SystemLabel',slabel_default)
       if (Node.eq.0) then
         write(6,'(a,a)') 'reinit: System Label: ',slabel
-        write(6,'(a,71(1h-))') 'reinit: '
+        write(6,'(a,71("-"))') 'reinit: '
       endif
 C ...
 #ifdef DEBUG
