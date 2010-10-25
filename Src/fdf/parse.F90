@@ -88,6 +88,9 @@
 ! 
 !    This function can take an optional keyword 'after=' (see below).
 ! 
+! *  'substring_search' does not match whole tokens, but substrings in
+!    tokens. And it uses the *case sensitive* Fortran 'index' function.
+
 ! *  'match' is probably the most powerful routine in the module. It
 !    checks whether the token morphology of 'line' conforms to the
 !    sequence of characters specified. For example,
@@ -95,8 +98,15 @@
 !    if (match(p,'nii')) ...
 ! 
 !    returns .TRUE. if 'line' contains at least three tokens and they are
-!    a 'name' and two 'integers'. A 'v' is matched by both an 'integer'
-!    and a 'real'.
+!    a 'name' and two 'integers'. 
+!    Apart from the 'primitive' one-character ids, there is the
+!    possibility of using 'compound' virtual ids for generalized matchings:
+!
+!    - A 'v' ('value') is matched by both an 'integer' and a 'real'.
+!    - A 'j' is matched by both an 'integer' and a 'name'.
+!    - A 's' is matched by an 'integer', a 'real', and a 'name'.
+!    - A 'x' is matched by any kind of token.
+!
 !    This function can take an optional keyword 'after=' (see below).
 ! 
 ! b) Number functions: ntokens ('n|i|r|b|e|l'), nnames ('n'), nreals ('r'),
@@ -172,7 +182,7 @@ MODULE parse
 
 ! Digest, match and search
   public :: digest, destroy
-  public :: match, search
+  public :: match, search, substring_search
 
 ! Rutines to get number and items
   public :: nintegers, nreals, nvalues, nnames
@@ -221,20 +231,20 @@ MODULE parse
 !
     SUBROUTINE create(pline)
       implicit none
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       type(parsed_line), pointer :: pline
 
-!--------------------------------------------------------------- Local Variables
+!------------------------------------------------- Local Variables
       integer(ip)                :: ierr
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       if (ASSOCIATED(pline)) call destroy(pline)
       ALLOCATE(pline, stat=ierr)
       if (ierr .ne. 0) then
         call die('PARSE module: create', 'Error allocating pline',      &
                  __FILE__, __LINE__, rc=ierr)
       endif
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END SUBROUTINE create
 
 !
@@ -242,15 +252,15 @@ MODULE parse
 !
     SUBROUTINE destroy(pline)
       implicit none
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       type(parsed_line), pointer :: pline
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       if (ASSOCIATED(pline)) then
         DEALLOCATE(pline)
         NULLIFY(pline)
       endif
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END SUBROUTINE destroy
 
 !     
@@ -258,19 +268,19 @@ MODULE parse
 !
     FUNCTION nitems(class, pline, after)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       character                         :: class
       integer(ip), intent(in), optional :: after
       type(parsed_line), pointer        :: pline
 
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       integer(ip)                       :: nitems
 
-!--------------------------------------------------------------- Local Variables
+!------------------------------------------------- Local Variables
       character(80)                     :: msg
       integer(ip)                       :: i, starting_pos
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       if (PRESENT(after)) then
         if (after .lt. 0) then
           write(msg,*) 'Wrong starting position when processing class: ', &
@@ -288,7 +298,7 @@ MODULE parse
       enddo
 
       RETURN
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END FUNCTION nitems
 
 !     
@@ -296,18 +306,18 @@ MODULE parse
 !
     FUNCTION nintegers(pline, after)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       integer(ip), intent(in), optional :: after
       type(parsed_line), pointer        :: pline
 
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       integer(ip)                       :: nintegers
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       nintegers = nitems('i', pline, after)
 
       RETURN
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END FUNCTION nintegers
 
 !
@@ -315,18 +325,18 @@ MODULE parse
 !
     FUNCTION nreals(pline, after)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       integer(ip), intent(in), optional :: after
       type(parsed_line), pointer        :: pline
 
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       integer(ip)                       :: nreals
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       nreals = nitems('r', pline, after)
 
       RETURN
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END FUNCTION nreals
 
 !
@@ -334,18 +344,18 @@ MODULE parse
 !
     FUNCTION nvalues(pline, after)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       integer(ip), intent(in), optional :: after
       type(parsed_line), pointer        :: pline
 
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       integer(ip)                       :: nvalues
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       nvalues = nitems('i', pline, after) + nitems('r', pline, after)
 
       RETURN
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END FUNCTION nvalues
 
 !
@@ -353,18 +363,18 @@ MODULE parse
 !
     FUNCTION nnames(pline, after)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       integer(ip), intent(in), optional :: after
       type(parsed_line), pointer        :: pline
 
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       integer(ip)                       :: nnames
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       nnames = nitems('n', pline, after)
 
       RETURN
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END FUNCTION nnames
 
 !
@@ -372,18 +382,18 @@ MODULE parse
 !
     FUNCTION nblocks(pline, after)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       integer(ip), intent(in), optional :: after
       type(parsed_line), pointer        :: pline
 
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       integer(ip)                       :: nblocks
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       nblocks = nitems('b', pline, after)
 
       RETURN
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END FUNCTION nblocks
 
 !
@@ -391,18 +401,18 @@ MODULE parse
 !
     FUNCTION nendblocks(pline, after)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       integer(ip), intent(in), optional :: after
       type(parsed_line), pointer        :: pline
 
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       integer(ip)                       :: nendblocks
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       nendblocks = nitems('e', pline, after)
 
       RETURN
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END FUNCTION nendblocks
 
 !
@@ -410,18 +420,18 @@ MODULE parse
 !
     FUNCTION nlabels(pline, after)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       integer(ip), intent(in), optional :: after
       type(parsed_line), pointer        :: pline
 
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       integer(ip)                       :: nlabels
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       nlabels = nitems('l', pline, after)
 
       RETURN
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END FUNCTION nlabels
 
 !
@@ -429,17 +439,17 @@ MODULE parse
 !
     FUNCTION ntokens(pline, after)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       integer(ip), intent(in), optional :: after
       type(parsed_line), pointer        :: pline
 
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       integer(ip)                       :: ntokens
 
-!--------------------------------------------------------------- Local Variables
+!------------------------------------------------- Local Variables
       integer(ip)                       :: starting_pos
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: ntokens', 'Wrong starting position',  &
@@ -457,7 +467,7 @@ MODULE parse
       endif
 
       RETURN
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END FUNCTION ntokens
 
 !
@@ -467,19 +477,19 @@ MODULE parse
 !
     FUNCTION integers(pline, ind, after)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       integer(ip), intent(in)           :: ind
       integer(ip), intent(in), optional :: after
       type(parsed_line), pointer        :: pline
 
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       integer(ip)                       :: integers
 
-!--------------------------------------------------------------- Local Variables
+!------------------------------------------------- Local Variables
       logical                           :: found
       integer(ip)                       :: i, j, starting_pos
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: integers', 'Wrong starting position', &
@@ -508,7 +518,7 @@ MODULE parse
       endif
 
       RETURN
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END FUNCTION integers
 
 !
@@ -518,19 +528,19 @@ MODULE parse
 !
     FUNCTION reals(pline, ind, after)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       integer(ip), intent(in)           :: ind
       integer(ip), intent(in), optional :: after
       type(parsed_line), pointer        :: pline
 
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       real(dp)                          :: reals
 
-!--------------------------------------------------------------- Local Variables
+!------------------------------------------------- Local Variables
       logical                           :: found
       integer(ip)                       :: i, j, starting_pos
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: reals', 'Wrong starting position',    &
@@ -559,7 +569,7 @@ MODULE parse
       endif
 
       RETURN
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END FUNCTION reals
 
 !
@@ -569,19 +579,19 @@ MODULE parse
 !
     FUNCTION values(pline, ind, after)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       integer(ip), intent(in)           :: ind
       integer(ip), intent(in), optional :: after
       type(parsed_line), pointer        :: pline
 
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       real(dp)                          :: values
 
-!--------------------------------------------------------------- Local Variables
+!------------------------------------------------- Local Variables
       logical                           :: found
       integer(ip)                       :: i, j, starting_pos
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: values', 'Wrong starting position',   &
@@ -611,7 +621,7 @@ MODULE parse
       endif
 
       RETURN
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END FUNCTION values
 
 !
@@ -621,19 +631,19 @@ MODULE parse
 !
     FUNCTION names(pline, ind, after)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       integer(ip), intent(in)           :: ind
       integer(ip), intent(in), optional :: after
       type(parsed_line), pointer        :: pline
 
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       character(len=MAX_LENGTH)         :: names
 
-!--------------------------------------------------------------- Local Variables
+!------------------------------------------------- Local Variables
       logical                           :: found
       integer(ip)                       :: i, j, starting_pos
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: names', 'Wrong starting position',    &
@@ -662,7 +672,7 @@ MODULE parse
       endif
 
       RETURN
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END FUNCTION names
 
 !
@@ -671,13 +681,13 @@ MODULE parse
 !
     FUNCTION blocks(pline)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       type(parsed_line), pointer    :: pline
 
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       character(len=MAX_LENGTH)     :: blocks
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       if (match(pline, 'bl')) then
         blocks = tokens(pline, 2)
       else
@@ -685,7 +695,7 @@ MODULE parse
       endif
 
       RETURN
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END FUNCTION blocks
 
 !
@@ -694,13 +704,13 @@ MODULE parse
 !
     FUNCTION endblocks(pline)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       type(parsed_line), pointer    :: pline
 
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       character(len=MAX_LENGTH)     :: endblocks
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       if (match(pline, 'el')) then
         endblocks = tokens(pline, 2)
       else
@@ -708,7 +718,7 @@ MODULE parse
       endif
 
       RETURN
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END FUNCTION endblocks
 
 !
@@ -717,13 +727,13 @@ MODULE parse
 !
     FUNCTION labels(pline)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       type(parsed_line), pointer :: pline
 
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       character(len=MAX_LENGTH)  :: labels
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       if (match(pline, 'l')) then
         labels = tokens(pline, 1)
       else
@@ -731,7 +741,7 @@ MODULE parse
       endif
 
       RETURN
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END FUNCTION labels
 
 !
@@ -741,18 +751,18 @@ MODULE parse
 !
     FUNCTION tokens(pline, ind, after)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       integer(ip), intent(in)           :: ind
       integer(ip), intent(in), optional :: after
       type(parsed_line), pointer        :: pline
 
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       character(len=MAX_LENGTH)         :: tokens
 
-!--------------------------------------------------------------- Local Variables
+!------------------------------------------------- Local Variables
       integer(ip)                       :: starting_pos, loc
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       if (PRESENT(after)) then
         if ((after .lt. 0) .or. (after .ge. pline%ntokens))             &
           call die('PARSE module: tokens', 'Wrong starting position',   &
@@ -770,7 +780,7 @@ MODULE parse
       tokens = pline%line(pline%first(loc):pline%last(loc))
 
       RETURN
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END FUNCTION tokens
 
 !
@@ -783,20 +793,20 @@ MODULE parse
 !
     FUNCTION characters(pline, ind_init, ind_final, after)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       integer(ip), intent(in)           :: ind_init
       integer(ip), intent(in)           :: ind_final
       integer(ip), intent(in), optional :: after
       type(parsed_line), pointer        :: pline
 
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       character(len=MAX_LENGTH)         :: characters
 
-!--------------------------------------------------------------- Local Variables
+!------------------------------------------------- Local Variables
       integer(ip)                       :: starting_pos
       integer(ip)                       :: loc_init, loc_final
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       if (PRESENT(after)) then
         if ((after .lt. 0) .or. (after .ge. pline%ntokens))             &
           call die('PARSE module: tokens', 'Wrong starting position',   &
@@ -826,7 +836,7 @@ MODULE parse
       characters = pline%line(pline%first(loc_init):pline%last(loc_final))
 
       RETURN
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END FUNCTION characters
 
 !
@@ -835,18 +845,18 @@ MODULE parse
 !
     FUNCTION digest(line) result(pline)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       character(len=*), intent(in) :: line
 
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       type(parsed_line), pointer   :: pline
 
-!--------------------------------------------------------------- Local Variables
+!------------------------------------------------- Local Variables
       character                    :: token_id(MAX_NTOKENS)
       integer(ip)                  :: i, ntokens
       integer(ip)                  :: first(MAX_NTOKENS), last(MAX_NTOKENS)
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
 !     Parse line, and get morphology
       call parses(ntokens, line, first, last)
       call morphol(ntokens, line, first, last, token_id)
@@ -869,7 +879,7 @@ MODULE parse
       enddo
 
       RETURN
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END FUNCTION digest
 
 !
@@ -878,14 +888,14 @@ MODULE parse
 !
     SUBROUTINE parses(ntokens, line, first, last)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       character(len=MAX_LENGTH)    :: line
       
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       integer(ip)                  :: ntokens
       integer(ip)                  :: first(MAX_NTOKENS), last(MAX_NTOKENS)
 
-!--------------------------------------------------------------- Local Variables
+!------------------------------------------------- Local Variables
       logical                      :: intoken, instring, completed
       integer(ip)                  :: i, c, stringdel
 
@@ -917,7 +927,7 @@ MODULE parse
 !     Special characters which are tokens by themselves: <
       is_special(i) = (i .eq. 60)
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       ntokens = 0
 
       intoken  = .FALSE.
@@ -998,7 +1008,7 @@ MODULE parse
         enddo
         write(parse_log,*) ' '
       endif
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END SUBROUTINE parses
 
 !
@@ -1006,20 +1016,20 @@ MODULE parse
 !
     SUBROUTINE morphol(ntokens, line, first, last, token_id)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       character(len=MAX_LENGTH) :: line
       integer(ip)               :: ntokens
       integer(ip)               :: first(MAX_NTOKENS), last(MAX_NTOKENS)
 
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       character                 :: token_id(MAX_NTOKENS)
 
-!--------------------------------------------------------------- Local Variables
+!------------------------------------------------- Local Variables
       character(len=MAX_LENGTH) :: token, msg
       integer(ip)               :: i, ierr
       real(dp)                  :: real_value
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       do i= 1, ntokens
         token = line(first(i):last(i))
         if (is_value(token)) then
@@ -1050,7 +1060,7 @@ MODULE parse
         enddo
         write(parse_log,*) ' '
       endif
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END SUBROUTINE morphol
 
 !
@@ -1058,17 +1068,17 @@ MODULE parse
 !
     SUBROUTINE setmorphol(ntoken, token_id, pline)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       character                  :: token_id
       integer(ip)                :: ntoken
 
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       type(parsed_line), pointer :: pline
 
-!--------------------------------------------------------------- Local Variables
+!------------------------------------------------- Local Variables
       character(len=MAX_LENGTH)  :: msg
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
 
 !     Check if token_id is a valid morphology id
 !     'l' -> Label
@@ -1086,7 +1096,7 @@ MODULE parse
       endif
 
       pline%id(ntoken) = token_id
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END SUBROUTINE setmorphol
 
 !
@@ -1096,7 +1106,7 @@ MODULE parse
 !
     FUNCTION search_fun(string, pline_fun, after, eq_func)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       character(len=*)                  :: string
       integer(ip), intent(in), optional :: after
       type(parsed_line), pointer        :: pline_fun
@@ -1109,13 +1119,13 @@ MODULE parse
         end function eq_func
       end interface
 
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       integer(ip)                       :: search_fun
 
-!--------------------------------------------------------------- Local Variables
+!------------------------------------------------- Local Variables
       integer(ip)                       :: i, starting_pos
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: search_fun', 'Wrong starting position', &
@@ -1148,7 +1158,7 @@ MODULE parse
       endif
 
       RETURN
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END FUNCTION search_fun
 
 !
@@ -1158,7 +1168,7 @@ MODULE parse
 !
     FUNCTION search_sub(pline_sub, string, ind, after, eq_func)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       character(len=*)                   :: string
       integer(ip), intent(in), optional  :: after
       type(parsed_line), pointer         :: pline_sub
@@ -1171,14 +1181,14 @@ MODULE parse
         end function eq_func
       end interface
 
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       logical                            :: search_sub
       integer(ip), intent(out), optional :: ind
 
-!--------------------------------------------------------------- Local Variables
+!------------------------------------------------- Local Variables
       integer(ip)                        :: i, starting_pos
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: search_sub', 'Wrong starting position', &
@@ -1218,8 +1228,61 @@ MODULE parse
       endif
 
       RETURN
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END FUNCTION search_sub
+!
+!   Search a sub-string along a parsed line tokens. If found, leaves
+!   in 'ind' (if present) the index token in the list that has the
+!   string as a substring and it returns .TRUE. Otherwise it returns
+!   .FALSE. and -1 in 'ind'
+!
+    FUNCTION substring_search(pline_sub, string, ind, after)
+      implicit none
+!------------------------------------------------- Input Variables
+      character(len=*)                   :: string
+      integer(ip), intent(in), optional  :: after
+      type(parsed_line), pointer         :: pline_sub
+
+!------------------------------------------------ Output Variables
+      logical                            :: substring_search
+      integer(ip), intent(out), optional :: ind
+
+!------------------------------------------------- Local Variables
+      integer(ip)                        :: i, starting_pos
+
+!----------------------------------------------------------- BEGIN
+      if (PRESENT(after)) then
+        if (after .lt. 0) then
+          call die('PARSE module: substring_search', &
+                   'Wrong starting position', &
+                   __FILE__, __LINE__)
+        endif
+        starting_pos = after
+      else
+        starting_pos = 0
+      endif
+
+      if (PRESENT(ind)) ind = -1
+      substring_search = .FALSE.
+      if (.not. ASSOCIATED(pline_sub)) then
+        call die('PARSE module: substring_search', &
+                 'parsed_line not associated', &
+                 __FILE__, __LINE__)
+      endif
+
+!     NOTE that the we use the case-sensitive Fortran 'index' function
+      i = starting_pos+1
+      do while((.not. substring_search) .and. (i .le. pline_sub%ntokens))
+         if (index(tokens(pline_sub, i),string) > 0) then
+            if (PRESENT(ind)) ind = i
+            substring_search = .TRUE.
+         endif
+         i = i + 1
+      enddo
+
+      RETURN
+!------------------------------------------------------------- END
+    END FUNCTION substring_search
 
 !
 !   Checks whether the morphology of the line or part of it
@@ -1229,19 +1292,19 @@ MODULE parse
 !
     FUNCTION match(pline, str, after)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       character(*), intent(in)          :: str
       integer(ip), intent(in), optional :: after
       type(parsed_line), pointer        :: pline
 
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       logical                           :: match
 
-!--------------------------------------------------------------- Local Variables
+!------------------------------------------------- Local Variables
       character                         :: c, id
       integer(ip)                       :: i, nids, shift
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: match', 'Wrong starting position',    &
@@ -1263,9 +1326,36 @@ MODULE parse
           id = pline%id(shift+i)
 
           if (.not. leqi(c,id)) then
-            if (.not. (leqi(c,'v') .and.                                &
-               (leqi(id,'i') .or. leqi(id,'r'))))                       &
-              match = .FALSE.
+
+          !  x: matches anything
+            if (leqi(c,'x')) then
+               ! do nothing -- match stays .true.
+
+          !  v: integer or real
+            else if (leqi(c,'v')) then
+               if (.not.(leqi(id,'i') .or. leqi(id,'r'))) then
+                  match = .false.
+               endif
+
+          !  s: integer or real or name (symbol)
+            else if (leqi(c,'s')) then
+               if (.not.(leqi(id,'i') .or.   &
+                         leqi(id,'r') .or.   &
+                         leqi(id,'n')  )) then
+                  match = .false.
+               endif
+
+          !  j: integer or name (integer-symbol)
+            else if (leqi(c,'j')) then
+               if (.not.(leqi(id,'i') .or. leqi(id,'n'))) then
+                  match = .false.
+               endif
+
+          !  cannot find a match
+            else
+               match = .false.
+            endif
+
           endif
 
           i = i + 1
@@ -1273,7 +1363,7 @@ MODULE parse
       endif
 
       RETURN
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END FUNCTION match
 
 !
@@ -1281,13 +1371,13 @@ MODULE parse
 !
     FUNCTION is_integer(string)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       character(len=*) :: string
 
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       logical          :: is_integer
 
-!--------------------------------------------------------------- Local Variables
+!------------------------------------------------- Local Variables
       character        :: c
       integer(ip)      :: i, length
 
@@ -1296,7 +1386,7 @@ MODULE parse
       is_digit(c) = ((ichar(c) .ge. 48) .and. (ichar(c) .le. 57))
       is_sign(c)  = ((c .eq. '+') .or. (c .eq. '-'))
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       length = LEN_TRIM(string)
       if (length .gt. 0) then
         c = string(1:1)
@@ -1318,7 +1408,7 @@ MODULE parse
       endif
 
       RETURN
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END FUNCTION is_integer
 
 !
@@ -1326,13 +1416,13 @@ MODULE parse
 !
     FUNCTION is_value(string)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       character(len=*) :: string
 
-!-------------------------------------------------------------- Output Variables
+!------------------------------------------------ Output Variables
       logical          :: is_value
 
-!--------------------------------------------------------------- Local Variables
+!------------------------------------------------- Local Variables
       character        :: c
       logical          :: dotsok
       integer(ip)      :: i, length, exp_mark
@@ -1345,7 +1435,7 @@ MODULE parse
       is_expmark(c) = ((c .eq. 'e') .or. (c .eq. 'E') .or.              &
                        (c .eq. 'd') .or. (c .eq. 'D'))
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       length = LEN_TRIM(string)
 
       is_value = .FALSE.
@@ -1401,7 +1491,7 @@ MODULE parse
       is_value = .TRUE.
 
       RETURN
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END FUNCTION is_value
 
 !
@@ -1409,13 +1499,13 @@ MODULE parse
 !
     SUBROUTINE setdebug(level)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       integer(ip) :: level
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       parse_debug = (level .eq. 1)
       RETURN
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END SUBROUTINE setdebug
 
 !
@@ -1423,13 +1513,13 @@ MODULE parse
 !
     SUBROUTINE setlog(unit)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------- Input Variables
       integer(ip) :: unit
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------- BEGIN
       parse_log = unit
       RETURN
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------- END
     END SUBROUTINE setlog
 
 END MODULE parse

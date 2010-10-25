@@ -1,6 +1,39 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+313 Alberto Garcia	  2010-10-25
+Fix fdf- and parse-related bugs in zmatrix processing
+
+There were two significant bugs in the read_zmatrix routine, caused
+by the switch to the new parsing framework:
+
+-- Routine fdf_bsearch was attempting to match whole tokens, when
+   the intent was simply to find substrings (as in 'mol', 'frac', etc)
+   The fix involves the creation of a new routine fdf_substring_search
+   which uses the 'index' intrinsic. An unwelcome side effect is that
+   the zmatrix keywords *have* to be written in lowercase.
+
+-- The matching mechanism for token class ('i', 'r', 'n', etc) was not
+   powerful enough to represent mixtures of real numbers and symbols, as
+   it is needed in a typical line of the zmatrix format. Thus new 'virtual'
+   token codes have been introduced:
+
+   'x' matches anything
+   's' matches i, r, or n
+   'j' matches i or n
+
+   These join 'v', which already stood for 'integer or real' ('value').
+
+Other minor bugs involved moving the block pointer when printing the
+line (now done printing pline%line directly) and not using '.not.' in 
+a few logical tests.
+
+modified:
+  Src/fdf/fdf.F90
+  Src/fdf/parse.F90
+  Src/zmatrix.F
+
+------------------------------------
 312 Alberto Garcia	  2010-10-22
 Clarify file-name conventions in new fdf in reinit
 

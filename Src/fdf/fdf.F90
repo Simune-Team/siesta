@@ -118,6 +118,7 @@ MODULE fdf
 
   USE parse, only: search
   USE parse, only: fdf_bsearch => search
+  USE parse, only: fdf_substring_search => substring_search
 
   USE utils
   USE prec
@@ -146,7 +147,7 @@ MODULE fdf
   public :: fdf_bintegers, fdf_breals, fdf_bvalues, fdf_bnames, fdf_btokens
 
 ! Match, search over blocks, and destroy block structure
-  public :: fdf_bmatch, fdf_bsearch
+  public :: fdf_bmatch, fdf_bsearch, fdf_substring_search
 
 
 ! Private functions, non-callable

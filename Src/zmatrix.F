@@ -280,22 +280,27 @@ C Initialise number of molecules and Cartesian blocks
         nVars = 0
 
 C Read data block up to endblock statement
+!
+!   NOTE: We use a function to search for substrings
+!         in the line, NOT the exact token match
+!         implied by "fdf_bsearch".
+!
 !        eof = .false.
         nAtoms = 0
         if (Node.eq.0) write(*,"(a)") "%block Zmatrix"
 
         do while (fdf_bline(bfdf,pline))
-          if (Node.eq.0) write(*,"(a)") trim(fdf_getline(bfdf%mark))
+          if (Node.eq.0) write(*,"(a)") trim(pline%line)
 
-          if (fdf_bsearch(pline, 'mol')) then
+          if (fdf_substring_search(pline, 'molecule')) then
 C Found new molecule          
             nZmol = nZmol + 1
             nZmolAtoms(nZmol) = 0
             nZmolStartAtom(nZmol) = nAtoms + 1
             input_type = 0
-            if (fdf_bsearch(pline, 'scale')) then
+            if (fdf_substring_search(pline, 'scale')) then
               units_type = 1
-            elseif (fdf_bsearch(pline, 'frac')) then
+            elseif (fdf_substring_search(pline, 'frac')) then
               if (unknown_cell) then
                 call die("Cannot use fractional coordinates " //
      $                   " if unit cell is not specified")
@@ -304,21 +309,21 @@ C Found new molecule
             else
               units_type = 0
             endif
-          elseif (fdf_bsearch(pline, 'cart')) then
+          elseif (fdf_substring_search(pline, 'cart')) then
 C Found new cartesian block
             nZcart = nZcart + 1
             nZcartAtoms(nZcart) = 0
             nZcartStartAtom(nZcart) = nAtoms + 1
             input_type = 1
             units_type = 0
-          elseif (fdf_bsearch(pline, 'scale')) then
+          elseif (fdf_substring_search(pline, 'scale')) then
 C Found new cartesian(scaled) block
             nZcart = nZcart + 1
             nZcartAtoms(nZcart) = 0
             nZcartStartAtom(nZcart) = nAtoms + 1
             input_type = 1
             units_type = 1
-          elseif (fdf_bsearch(pline, 'frac')) then
+          elseif (fdf_substring_search(pline, 'frac')) then
 C Found new cartesian(fractional) block
 !AG
             if (unknown_cell) then
@@ -330,34 +335,36 @@ C Found new cartesian(fractional) block
             nZcartStartAtom(nZcart) = nAtoms + 1
             input_type = 1
             units_type = 2
-          elseif (fdf_bsearch(pline, 'constant')) then
+          elseif (fdf_substring_search(pline, 'constant')) then
             input_type = 2
-          elseif (fdf_bsearch(pline, 'variable')) then
+          elseif (fdf_substring_search(pline, 'variable')) then
             input_type = 3
-          elseif (fdf_bsearch(pline, 'constraint')) then
+          elseif (fdf_substring_search(pline, 'constraint')) then
             input_type = 4
 
           else 
 C Check that the lines contains the correct type of data
             if (input_type.eq.0) then
-C Molecule (1-4: integers, 5-7: reals)
-              if (.not. fdf_bmatch(pline, 'iiiirrr')) then
-                call die('read_Zmatrix: Error in Z-matrix syntax') 
+C Molecule (1-4: integers, 5-7: reals or symbolic names)
+              if (.not. (fdf_bmatch(pline, 'iiiisss'))) then
+                call die('read_Zmatrix: (iiiisss) Error in syntax') 
               endif
             elseif (input_type.eq.1) then
-C Cartesian (1: integer, 2-4: reals)
-              if (.not. fdf_bmatch(pline, 'irrr')) then
-                call die ('read_Zmatrix: Error in Z-matrix syntax')
+C Cartesian (1: integer, 2-4: reals or symbolic names)
+              if (.not. (fdf_bmatch(pline, 'isss') )) then
+                call die ('read_Zmatrix: (isss) Error in syntax')
               endif
             elseif (input_type.eq.2.or.input_type.eq.3) then
 C Constant/variable definition (1: string, 2: real)
-              if (fdf_bmatch(pline, 'nr')) then
-                call die ('read_Zmatrix: Error in Z-matrix syntax')
+              ! Should this be allowed to be 'nv'?
+              if (.not. (fdf_bmatch(pline, 'nr'))) then
+                call die ('read_Zmatrix: (nr) Error in syntax')
               endif
             elseif (input_type.eq.4) then
 C Constraint definition (1-2: string, 3-4: reals)
-              if (fdf_bmatch(pline, 'nnrr')) then
-                call die ('read_Zmatrix: Error in Z-matrix syntax')
+              ! Should this be allowed to be 'nnvv'?
+              if (.not. (fdf_bmatch(pline, 'nnrr'))) then
+                call die ('read_Zmatrix: (nrrr) Error in syntax')
               endif
             endif
 
