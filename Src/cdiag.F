@@ -243,7 +243,11 @@ C Get Blacs context and initialise Blacs grid for main grid
         nprow = 1
         npcol = Nodes
         if (FirstCall) then
-          call blacs_get( -1, 0, ictxt )
+!         JMS: Changed to allow mpi_comm_world to be supplanted in MPI_siesta.
+!         The change has no effect otherwise, since blacs_get returns the
+!         true value of mpi_comm_world (usually zero) as ictxt
+!          call blacs_get( -1, 0, ictxt )   ! removed
+          ictxt = mpi_comm_world            ! added
           call blacs_gridinit( ictxt, 'C', nprow, npcol )
         endif
 
