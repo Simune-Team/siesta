@@ -28,6 +28,7 @@ C
       use parallel,    only : Node
       use fdf
       use files,       only : slabel, label_length
+      use siesta_master, only: input_file  ! fdf data file
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -78,11 +79,17 @@ C
            open(lun,file='INPUT_DEBUG',form='formatted',status='old')
            rewind(lun)
         else
-c
-c          Read from standard input
-c
-           write(6,'(/a)') 'reinit: Reading from standard input'
-           lun = 5
+
+           if (input_file/=' ') then   ! Read data from given file
+             write(6,'(a)') 'reinit: Reading from '//trim(input_file)
+             call io_assign(lun)
+             open(lun,file=input_file,form='formatted',status='old')
+             rewind(lun)
+           else                        ! Read from standard input
+             write(6,'(/a)') 'reinit: Reading from standard input'
+             lun = 5
+           end if ! (input_file/=' ')
+
            call io_assign(lun_tmp)
            do
              call system_clock( count )

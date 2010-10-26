@@ -186,6 +186,7 @@ MODULE fsiesta
   use siesta_master,    only: getPropertyForMaster ! Get other properties
   use siesta_master,    only: siesta_server        ! Is siesta a server?
   use siesta_master,    only: siesta_subroutine    ! Is siesta a subroutine?
+  use siesta_master,    only: input_file           ! fdf data file
 #ifdef MPI
   use mpi,        only: MPI_Comm_World  ! The true MPI_COMM_WORLD
   use mpi_siesta, only: MPI_Comm_Siesta => MPI_Comm_World ! What siesta uses
@@ -247,9 +248,10 @@ subroutine siesta_launch( label, nNodes, mpi_comm, mpi_launcher )
   if (siesta_launched .or. siesta_quitted) &
     print*, 'siesta_launch: ERROR: siesta process already launched'
 
-! Declare siesta as a server subroutine
+! Declare siesta as a server subroutine and set input file
   siesta_server     = .true.
   siesta_subroutine = .true.
+  input_file = trim(label)//'.fdf'
 
 ! Store label
   myLabel = label
@@ -314,7 +316,7 @@ subroutine siesta_launch( label, nNodes, mpi_comm, mpi_launcher )
     end do ! iNode
 
     ! Create new communicator
-    myColor = color(myNode)
+    myColor = color(myNode+1)
     call MPI_Comm_Split( MPI_Comm_World, myColor, 0, MPI_Comm_Siesta, error )
     deallocate( color, colorLabel )
 
@@ -366,10 +368,11 @@ subroutine siesta_forces( label, na, xa, cell, energy, fa, stress )
   real(dp), optional, intent(out):: fa(3,na)
   real(dp), optional, intent(out):: stress(3,3)
 
-  real(dp):: c(3,3), e, f(3,na), s(3,3)
+  real(dp):: c(3,3), e, f(3,na), myCell(3,3), s(3,3)
+  integer :: myNode=0, nNodes=1
 
 #ifdef MPI
-  integer :: error, iNode, myNode, n, nNodes, status, tag
+  integer :: error, iNode, n, status, tag
   real(dp):: x(3,na)
 #endif
 
@@ -379,42 +382,48 @@ subroutine siesta_forces( label, na, xa, cell, energy, fa, stress )
 ! Check label
   if (label/=myLabel) call die('siesta_forces: ERROR: label mismatch')
 
+! Set unit cell vectors
+  if (present(cell)) then
+    myCell = cell
+  else
+    myCell = 0
+  end if
+
 #ifdef MPI
 ! Check that input arguments are equal in all MPI processes
   call MPI_Comm_Size( MPI_Comm_Siesta, nNodes, error )
   call MPI_Comm_Rank( MPI_Comm_Siesta, myNode, error )
   do iNode = 1,nNodes-1
-    if (myNode==0) then
+    if (myNode==0 .and. nNodes>1) then
       call MPI_Recv( n, 1, MPI_Integer, &
                      iNode, tag, MPI_Comm_Siesta, status, error )
       call MPI_Recv( x, 3*na, MPI_Double_Precision, &
                      iNode, tag, MPI_Comm_Siesta, status, error )
       call MPI_Recv( c, 3*3, MPI_Double_Precision, &
                      iNode, tag, MPI_Comm_Siesta, status, error )
-      if (n/=na .or. any(x/=xa) .or. any(c/=cell)) &
+      if (n/=na .or. any(x/=xa) .or. any(c/=myCell)) &
         call die('siesta_forces: ERROR: input mismatch among MPI processes')
     else if (myNode==iNode) then
       call MPI_Send( na, 1, MPI_Integer, 0, 0, MPI_Comm_Siesta, error )
       call MPI_Send( xa, 3*na, MPI_Double_Precision, &
                      0, 0, MPI_Comm_Siesta, error )
-      call MPI_Send( cell, 3*3, MPI_Double_Precision, &
+      call MPI_Send( myCell, 3*3, MPI_Double_Precision, &
                      0, 0, MPI_Comm_Siesta, error )
     end if ! (myNode==0)
   end do ! iNode
 #endif
 
-! Print coords for debugging
-  print'(/,2a)',         'siesta_forces: label = ', trim(label)
-  print'(3a,/,(3f12.6))','siesta_forces: cell (',trim(xunit),') =',cell
-  print'(3a,/,(3f12.6))','siesta_forces: xa (',trim(xunit),') =', xa
-
 ! Copy master's coordinates to master repository
-  if (present(cell)) then
-    c = cell
-  else
-    c = 0
+  call setCoordsFromMaster( na, xa, myCell )
+
+! Print coords for debugging
+  if (myNode==0) then
+    print'(a,2i6)',      'siesta_forces: MPI_Comm_Siesta, nNodes =', &
+      MPI_Comm_Siesta, nNodes
+    print'(/,2a)',         'siesta_forces: label = ', trim(label)
+    print'(3a,/,(3f12.6))','siesta_forces: cell (',trim(xunit),') =',myCell
+    print'(3a,/,(3f12.6))','siesta_forces: xa (',trim(xunit),') =', xa
   end if
-  call setCoordsFromMaster( na, xa, c )
 
 ! Move atoms (positions will be read from master repository)
   if (step==0) then
@@ -431,9 +440,11 @@ subroutine siesta_forces( label, na, xa, cell, energy, fa, stress )
   call getForcesForMaster( na, e, f, s )
 
 ! Print forces for debugging
-  print'(3a,f12.6)',      'siesta_forces: energy (',trim(eunit),') =', e
-  print'(3a,/,(3f12.6))', 'siesta_forces: stress (',trim(sunit),') =', s
-  print'(3a,/,(3f12.6))', 'siesta_forces: forces (',trim(funit),') =', f
+  if (myNode==0) then
+    print'(3a,f12.6)',      'siesta_forces: energy (',trim(eunit),') =', e
+    print'(3a,/,(3f12.6))', 'siesta_forces: stress (',trim(sunit),') =', s
+    print'(3a,/,(3f12.6))', 'siesta_forces: forces (',trim(funit),') =', f
+  end if
 
 ! Copy results to output arguments
   if (present(energy)) energy = e

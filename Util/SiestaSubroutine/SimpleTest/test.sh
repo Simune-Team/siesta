@@ -41,8 +41,8 @@ cp ${PSEUDOS}/O.psf  .
 #
 ln -sf ${SIESTA} ./siesta
 
-../Src/pipes_serial    | tee pipes_serial.out
-../Src/pipes_parallel  | tee pipes_parallel.out
-../Src/mpi_serial      | tee mpi_serial.out
-../Src/mpi_parallel    | tee mpi_parallel.out
+#../Src/pipes_serial    | tee pipes_serial.out
+#../Src/pipes_parallel  | tee pipes_parallel.out
+#../Src/mpi_serial      | tee mpi_serial.out
+mpirun -np 2 ../Src/mpi_parallel    | tee mpi_parallel.out
 

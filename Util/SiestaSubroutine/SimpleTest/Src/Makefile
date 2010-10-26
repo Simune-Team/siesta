@@ -16,7 +16,7 @@
 WORK_DIR=$(shell pwd)
 SIESTA_DIR=$(WORK_DIR)/../../../..
 SRC_DIR=$(SIESTA_DIR)/Src
-OBJ_DIR=$(SIESTA_DIR)/Obj_parallel
+OBJ_DIR=$(SIESTA_DIR)/Obj
 #
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a .f90 .F90

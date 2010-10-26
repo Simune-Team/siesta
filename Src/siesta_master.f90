@@ -38,6 +38,7 @@
 ! Public variables:
 !   siesta_server        : Is siesta a server?
 !   siesta_subroutine    : Is siesta a subroutine?
+!   input_file           : Name of fdf data file
 !
 !-----------------------------------------------------------------------------
 !
@@ -120,6 +121,7 @@ PUBLIC :: &
 ! Public variables
   logical,public,save:: siesta_server     = .false. ! Is siesta a server?
   logical,public,save:: siesta_subroutine = .false. ! Is siesta a subroutine?
+  character(len=132),public,save:: input_file = ' ' ! fdf data file
 
 PRIVATE ! Nothing is declared public beyond this point
 
