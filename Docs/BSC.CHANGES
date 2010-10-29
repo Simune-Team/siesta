@@ -1,6 +1,39 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+314 Alberto Garcia	  2010-10-29
+Disabled asynchronous grid communications by default
+
+* The asynchronous code in moremeshsubs.F introduced in revno 301
+gives wrong results for the forces in GGA calculations.  This code has
+been disabled by default, and should not be used until it is fixed. It
+can be enabled by defining
+
+ASYNCHRONOUS_GRID_COMMS
+
+at compile time.
+
+* Fixed a syntax bug in a BSC_CELLXC block in dhscf.F
+
+* Made grdsam into a module
+
+* Added a new test mgc-force, to quickly check forces with GGA
+
+added:
+  Tests/mgc-force/
+  Tests/mgc-force/makefile
+  Tests/mgc-force/mgc-force.fdf
+  Tests/mgc-force/mgc-force.pseudos
+modified:
+  Src/Makefile
+  Src/dhscf.F
+  Src/final_H_f_stress.F
+  Src/grdsam.F
+  Src/moremeshsubs.F
+  Tests/Makefile
+
+
+------------------------------------
 313 Alberto Garcia	  2010-10-25
 Fix fdf- and parse-related bugs in zmatrix processing
 

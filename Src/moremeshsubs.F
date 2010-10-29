@@ -9,6 +9,12 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
 
+#ifdef ASYNCHRONOUS_GRID_COMMS   /* Compile-time option */
+# ifdef MPI
+#   define ASYNCHRONOUS           /* Internal symbol */
+# endif
+#endif
+
 C This file contains module moreMeshSubs. It defines and handles
 C different parallel mesh distributions.
 C
@@ -97,11 +103,7 @@ C ----------------------------------------------------------------------
       type(meshCommType), target, save ::
      &                   meshCommu((maxDistr*(maxDistr-1))/2)
       type(meshCommType), target, save :: exteCommu(maxDistr,3)
-#ifndef SYNCHRONOUS
-# ifdef MPI
-#   define ASYNCHRONOUS
-# endif
-#endif
+
 #ifdef ASYNCHRONOUS
       real(grid_p),            pointer :: tBuff1(:)
       real(grid_p),            pointer :: tBuff2(:)

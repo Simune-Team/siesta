@@ -8,6 +8,9 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
+      module m_grdsam
+      public :: grdsam
+      CONTAINS
       subroutine grdsam(nspin, norb, iaorb, iphorb, 
      &                  nuo, nuotot, nua, na, isa, xa, indxua,
      &                  cell, ntm, ifa, istr, maxnd,
@@ -336,5 +339,6 @@ C Deallocate local memory
 #endif
 
       return
-      end
+      end subroutine grdsam
 
+      end module m_grdsam

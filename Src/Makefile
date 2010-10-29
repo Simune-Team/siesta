@@ -426,13 +426,13 @@ fermid.o: m_recipes.o parallel.o precision.o sys.o
 fft.o: alloc.o fft1d.o m_timer.o meshsubs.o parallel.o parallelsubs.o
 fft.o: precision.o sys.o
 fft1d.o: parallel.o precision.o sys.o
-final_H_f_stress.o: alloc.o atmfuncs.o atomlist.o dnaefs.o files.o kinefsm.o
-final_H_f_stress.o: m_dipol.o m_energies.o m_forces.o m_gamma.o m_mpi_utils.o
-final_H_f_stress.o: m_ntm.o m_spin.o m_steps.o m_stress.o m_ts_global_vars.o
-final_H_f_stress.o: m_ts_io.o m_ts_kpoints.o m_ts_options.o metaforce.o
-final_H_f_stress.o: molecularmechanics.o naefs.o nlefsm.o normalize_dm.o
-final_H_f_stress.o: overfsm.o parallel.o siesta_geom.o siesta_options.o
-final_H_f_stress.o: sparse_matrices.o sys.o
+final_H_f_stress.o: alloc.o atmfuncs.o atomlist.o dnaefs.o files.o grdsam.o
+final_H_f_stress.o: kinefsm.o m_dipol.o m_energies.o m_forces.o m_gamma.o
+final_H_f_stress.o: m_hsx.o m_mpi_utils.o m_ntm.o m_spin.o m_steps.o m_stress.o
+final_H_f_stress.o: m_ts_global_vars.o m_ts_io.o m_ts_kpoints.o m_ts_options.o
+final_H_f_stress.o: metaforce.o molecularmechanics.o naefs.o nlefsm.o
+final_H_f_stress.o: normalize_dm.o overfsm.o parallel.o siesta_geom.o
+final_H_f_stress.o: siesta_options.o sparse_matrices.o sys.o
 find_kgrid.o: alloc.o minvec.o parallel.o precision.o units.o
 fire_optim.o: alloc.o m_fdf_global.o m_fire.o m_mpi_utils.o parallel.o
 fire_optim.o: precision.o siesta_options.o units.o
@@ -760,6 +760,7 @@ m_find_kgrid.o: find_kgrid.o
 m_fire_optim.o: fire_optim.o
 m_fixed.o: fixed.o
 m_forhar.o: forhar.o
+m_grdsam.o: grdsam.o
 m_hsparse.o: hsparse.o
 m_intramol_pressure.o: remove_intramol_pressure.o
 m_ioxv.o: ioxv.o

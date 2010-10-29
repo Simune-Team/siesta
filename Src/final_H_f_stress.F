@@ -19,6 +19,7 @@
       use m_kinefsm,    only: kinefsm
       use m_naefs,      only: naefs
       use m_dnaefs,     only: dnaefs
+      use m_grdsam,     only: grdsam
       use m_stress
       use m_energies
       use m_steps, only: istp

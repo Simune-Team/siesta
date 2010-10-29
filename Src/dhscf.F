@@ -702,7 +702,7 @@ C ----------------------------------------------------------------------
       nullify( Vscf, Vscf_par, DRho, DRho_par,
      &         Vaux, Vaux_par, Chlocal, Totchar )
 #ifdef BSC_CELLXC
-      nullify( Vscf_gga DRho_gga)
+      nullify( Vscf_gga, DRho_gga)
 #endif /* BSC_CELLXC */
 
       volume = volcel(cell)
