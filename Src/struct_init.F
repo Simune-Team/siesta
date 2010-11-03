@@ -15,7 +15,6 @@
       use fdf,            only : fdf_physical
       use m_fdf_global,   only: fdf_global_get
       use periodic_table, only : symbol
-      use iopipes,        only: coordsfrompipe
       use m_iostruct,     only: read_struct
       use siesta_cml
       use files,          only : slabel
@@ -98,7 +97,7 @@
       endif
 ! ..................
 
-! Read cell shape and atomic positions from driver program through pipe
+! Read cell shape and atomic positions from driver program
       call fdf_global_get(dummy_str,'MD.TypeOfRun',"none")
       siesta_server = (leqi(dummy_str,'forces'))
       if (siesta_server) then

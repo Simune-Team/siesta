@@ -1,7 +1,8 @@
 program simple
 
 ! A very simple driver for Siesta-as-subroutine (or siesta-as-server)
-! This version launches a serial version of siesta.
+! This version launches a parallel version of siesta and communicates
+! with it through unix pipes. It must be compiled with fsiesta_pipes.F90
 
   use fsiesta
 
@@ -16,18 +17,24 @@ program simple
             0.7, 0.7, 0.0, &
            -0.7, 0.7, 0.0 /
 
+! Set physical units
   call siesta_units( 'Ang', 'eV' )
 
-  call siesta_launch( 'h2o' )
+! Launch a siesta process using two MPI processes
+  call siesta_launch( 'h2o', nnodes=2, mpi_launcher="mpiexec -n " )
   print*, 'siesta launched'
 
+! Find forces
   call siesta_forces( 'h2o', na, xa, energy=e, fa=fa )
   print'(a,/,(3f12.6,3x,3f12.6))', 'xa, fa =', (xa(:,ia),fa(:,ia),ia=1,na)
 
-  xa(1,1) = 0.8
+! Find forces for another geometry
+  xa(1,1) = 0.1
   call siesta_forces( 'h2o', na, xa, energy=e, fa=fa )
   print'(a,/,(3f12.6,3x,3f12.6))', 'xa, fa =', (xa(:,ia),fa(:,ia),ia=1,na)
 
+! Quit siesta process
   call siesta_quit( 'h2o' )
 
 end program simple
+

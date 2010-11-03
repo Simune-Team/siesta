@@ -148,9 +148,13 @@ To use the package, you must:
 !   process will stay listening indefinitedly to the pipe and will need
 !   to be killed in the shell (pipes version).
 ! - siesta_units may be called either before or after siesta_launch
-!
-! Note: the routines that handle the other side of the communication through
-! pipes are in module iopipes of the siesta program.
-! J.M.Soler and A.Garcia. Jan 2004, Dec 2006, Oct 2010
+
+The data flow between the user's 'master' program and siesta is as follows:
+  Using unix pipes (master program compiled with fsiesta_pipes.F90):
+    master <--> fsiesta_pipes <--pipe--> iopipes <--> siesta_master <--> siesta
+  Using MPI (master program compiled with libSiestaForces.a):
+    master <--> fsiesta_mpi <--> siesta_master <--> siesta
+
+J.M.Soler and A.Garcia. Jan 2004, Dec 2006, Oct 2010
 
 

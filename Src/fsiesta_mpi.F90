@@ -188,9 +188,11 @@ MODULE fsiesta
   use siesta_master,    only: siesta_subroutine    ! Is siesta a subroutine?
   use siesta_master,    only: input_file           ! fdf data file
 #ifdef MPI
-  use mpi,        only: MPI_Comm_World  ! The true MPI_COMM_WORLD
+  use mpi,        only: MPI_Comm_World        ! The true MPI_COMM_WORLD
   use mpi_siesta, only: MPI_Comm_Siesta => MPI_Comm_World ! What siesta uses
                                                           ! as MPI_Comm_World
+  use mpi_siesta, only: MPI_Init              ! Initialize MPI
+  use mpi_siesta, only: MPI_Initialized       ! Has MPI been initialized?
   use mpi_siesta, only: MPI_Integer           ! Integer data type
   use mpi_siesta, only: MPI_Character         ! Character data type
   use mpi_siesta, only: MPI_Double_Precision  ! Real double precision type
@@ -237,12 +239,19 @@ subroutine siesta_launch( label, nNodes, mpi_comm, mpi_launcher )
   character(len=*),optional,intent(in):: mpi_launcher ! Not used in this version
 
 #ifdef MPI
-  logical:: labelFound
+  logical:: initialized, labelFound
   integer:: error, iColor, iNode, lenLabel, &
             myColor, myLenLabel, myNode, nColors, siestaNodes, totNodes
   integer,  allocatable:: color(:)
+  character(len=maxLenLabel):: rootLabel
   character(len=maxLenLabel),allocatable:: colorLabel(:), nodeLabel(:)
 #endif
+
+! DEBUG
+!  character(len=32):: output_file
+!  inquire( unit=6, name=output_file )
+!  print*,'siesta_launch: output file = ', trim(output_file)
+! END DEBUG
 
 ! Check that siesta has not been launched yet
   if (siesta_launched .or. siesta_quitted) &
@@ -258,6 +267,11 @@ subroutine siesta_launch( label, nNodes, mpi_comm, mpi_launcher )
 
 #ifdef MPI
 
+! Initialise MPI unless siesta is running as a subroutine 
+! of a driver program that may have initialized MPI already
+  call MPI_Initialized( initialized, error )
+  if (.not.initialized) call MPI_Init( error )
+
 ! Get total number of MPI processes (nodes) and my index among them
   call MPI_Comm_Size( MPI_Comm_World, totNodes, error )
   call MPI_Comm_Rank( MPI_Comm_World, myNode, error )
@@ -268,9 +282,6 @@ subroutine siesta_launch( label, nNodes, mpi_comm, mpi_launcher )
                       MPI_Max, MPI_Comm_World, error )
   if (lenLabel>maxLenLabel) &
     call die('siesta_launch: ERROR: parameter maxLenLabel too small')
-
-! Allocate array for all labels
-  allocate( nodeLabel(totNodes) )
 
 ! Start parallel siesta process
   if (present(mpi_comm)) then                   ! Use input MPI communicator
@@ -292,6 +303,7 @@ subroutine siesta_launch( label, nNodes, mpi_comm, mpi_launcher )
   else   ! Create new MPI communicator according to label(s)
 
     ! Collect all labels
+    allocate( nodeLabel(totNodes) )
     call MPI_AllGather( myLabel,   maxLenLabel, MPI_Character, &
                         nodeLabel, maxLenLabel, MPI_Character, &
                         MPI_Comm_World, error )
@@ -318,20 +330,16 @@ subroutine siesta_launch( label, nNodes, mpi_comm, mpi_launcher )
     ! Create new communicator
     myColor = color(myNode+1)
     call MPI_Comm_Split( MPI_Comm_World, myColor, 0, MPI_Comm_Siesta, error )
-    deallocate( color, colorLabel )
+    deallocate( color, colorLabel, nodeLabel )
 
   end if ! (present(mpi_comm))
 
 ! Check that my siesta process has a unique label
-  call MPI_Comm_Size( MPI_Comm_Siesta, siestaNodes, error )
-  call MPI_AllGather( myLabel,   maxLenLabel, MPI_Character, &
-                      nodeLabel, maxLenLabel, MPI_Character, &
-                      MPI_Comm_Siesta, error )
-  do iNode = 1,siestaNodes
-    if (nodeLabel(iNode)/=myLabel) &
-      call die('siesta_launch: ERROR: label mismatch in siesta process')
-  end do
-  deallocate( nodeLabel )
+  rootLabel = myLabel
+  call MPI_Bcast( rootLabel, maxLenLabel, MPI_Character, &
+                  0, MPI_Comm_Siesta, error )
+  if (myLabel/=rootLabel) &
+    call die('siesta_launch: ERROR: label mismatch in siesta process')
 
 #endif
 
@@ -368,12 +376,12 @@ subroutine siesta_forces( label, na, xa, cell, energy, fa, stress )
   real(dp), optional, intent(out):: fa(3,na)
   real(dp), optional, intent(out):: stress(3,3)
 
-  real(dp):: c(3,3), e, f(3,na), myCell(3,3), s(3,3)
-  integer :: myNode=0, nNodes=1
+  real(dp):: e, f(3,na), myCell(3,3), s(3,3)
+  integer :: myNode=0
 
 #ifdef MPI
-  integer :: error, iNode, n, status, tag
-  real(dp):: x(3,na)
+  integer :: error, n
+  real(dp):: c(3,3), x(3,na)
 #endif
 
 ! Launch siesta, if not yet done
@@ -391,39 +399,27 @@ subroutine siesta_forces( label, na, xa, cell, energy, fa, stress )
 
 #ifdef MPI
 ! Check that input arguments are equal in all MPI processes
-  call MPI_Comm_Size( MPI_Comm_Siesta, nNodes, error )
   call MPI_Comm_Rank( MPI_Comm_Siesta, myNode, error )
-  do iNode = 1,nNodes-1
-    if (myNode==0 .and. nNodes>1) then
-      call MPI_Recv( n, 1, MPI_Integer, &
-                     iNode, tag, MPI_Comm_Siesta, status, error )
-      call MPI_Recv( x, 3*na, MPI_Double_Precision, &
-                     iNode, tag, MPI_Comm_Siesta, status, error )
-      call MPI_Recv( c, 3*3, MPI_Double_Precision, &
-                     iNode, tag, MPI_Comm_Siesta, status, error )
-      if (n/=na .or. any(x/=xa) .or. any(c/=myCell)) &
-        call die('siesta_forces: ERROR: input mismatch among MPI processes')
-    else if (myNode==iNode) then
-      call MPI_Send( na, 1, MPI_Integer, 0, 0, MPI_Comm_Siesta, error )
-      call MPI_Send( xa, 3*na, MPI_Double_Precision, &
-                     0, 0, MPI_Comm_Siesta, error )
-      call MPI_Send( myCell, 3*3, MPI_Double_Precision, &
-                     0, 0, MPI_Comm_Siesta, error )
-    end if ! (myNode==0)
-  end do ! iNode
+  n = na
+  x = xa
+  c = myCell
+  call MPI_Bcast( n, 1, MPI_Integer, 0, MPI_Comm_Siesta, error )
+  call MPI_Bcast( x, 3*na, MPI_Double_Precision, 0, MPI_Comm_Siesta, error )
+  call MPI_Bcast( c, 3*3, MPI_Double_Precision, 0, MPI_Comm_Siesta, error )
+  if (n/=na .or. any(x/=xa) .or. any(c/=myCell)) &
+    call die('siesta_forces: ERROR: input mismatch among MPI processes')
 #endif
 
 ! Copy master's coordinates to master repository
   call setCoordsFromMaster( na, xa, myCell )
 
-! Print coords for debugging
+! BEGIN DEBUG: Print coords
   if (myNode==0) then
-    print'(a,2i6)',      'siesta_forces: MPI_Comm_Siesta, nNodes =', &
-      MPI_Comm_Siesta, nNodes
     print'(/,2a)',         'siesta_forces: label = ', trim(label)
     print'(3a,/,(3f12.6))','siesta_forces: cell (',trim(xunit),') =',myCell
     print'(3a,/,(3f12.6))','siesta_forces: xa (',trim(xunit),') =', xa
   end if
+! END DEBUG
 
 ! Move atoms (positions will be read from master repository)
   if (step==0) then
@@ -439,12 +435,13 @@ subroutine siesta_forces( label, na, xa, cell, energy, fa, stress )
 ! Get from master repository the forces for master
   call getForcesForMaster( na, e, f, s )
 
-! Print forces for debugging
+! BEGIN DEBUG: Print forces
   if (myNode==0) then
-    print'(3a,f12.6)',      'siesta_forces: energy (',trim(eunit),') =', e
+    print'(/,3a,f12.6)',    'siesta_forces: energy (',trim(eunit),') =', e
     print'(3a,/,(3f12.6))', 'siesta_forces: stress (',trim(sunit),') =', s
     print'(3a,/,(3f12.6))', 'siesta_forces: forces (',trim(funit),') =', f
   end if
+! END DEBUG
 
 ! Copy results to output arguments
   if (present(energy)) energy = e

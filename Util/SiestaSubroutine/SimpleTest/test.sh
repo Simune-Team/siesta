@@ -21,28 +21,33 @@ ROOT="../../../.."
 PSEUDOS=${ROOT}/Tests/Pseudos
 #
 if [ -z "$SIESTA" ] ; then
-      SIESTA=${ROOT}/Obj/siesta
+      SIESTA=${ROOT}/Obj-gfortran-parallel/siesta
 fi
 echo "Using Siesta executable: $SIESTA"
 #
 
+#rm -r work
 if [ -d work ] ; then
    echo "Work directory 'work' exists. Please delete it"
    exit
-else
-   mkdir work
 fi
 
-cp -p h2o.fdf work
 #
+mkdir work
 cd work
+cp -p ../h2o.fdf .
 cp ${PSEUDOS}/H.psf  .
 cp ${PSEUDOS}/O.psf  .
-#
 ln -sf ${SIESTA} ./siesta
+#
 
-#../Src/pipes_serial    | tee pipes_serial.out
-#../Src/pipes_parallel  | tee pipes_parallel.out
-#../Src/mpi_serial      | tee mpi_serial.out
-mpirun -np 2 ../Src/mpi_parallel    | tee mpi_parallel.out
+../Src/simple_pipes_serial    | tee simple_pipes_serial.out
+mv h2o.out siesta_pipes_serial.out
+
+../Src/simple_pipes_parallel  | tee simple_pipes_parallel.out
+mv h2o.out siesta_pipes_parallel.out
+
+../Src/simple_mpi_serial      | tee simple_mpi_serial.out
+
+mpirun -np 2 -output-filename simple_mpi_parallel.out ../Src/simple_mpi_parallel
 

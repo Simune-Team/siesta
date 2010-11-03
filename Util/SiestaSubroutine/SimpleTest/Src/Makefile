@@ -16,19 +16,20 @@
 WORK_DIR=$(shell pwd)
 SIESTA_DIR=$(WORK_DIR)/../../../..
 SRC_DIR=$(SIESTA_DIR)/Src
-OBJ_DIR=$(SIESTA_DIR)/Obj
+OBJ_DIR=$(SIESTA_DIR)/Obj-gfortran-parallel
 #
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a .f90 .F90
 #
 VPATH=$(SRC_DIR)
 #
-#  pipes_serial   : Simple serial test with pipes version
-#  pipes_parallel : Simple parallel test with pipes version
-#  mpi_serial     : Simple serial test with MPI version
-#  mpi_parallel   : Simple parallel test with MPI version
+#  simple_pipes_serial   : Simple serial test with pipes version
+#  simple_pipes_parallel : Simple parallel test with pipes version
+#  simple_mpi_serial     : Simple serial test with MPI version
+#  simple_mpi_parallel   : Simple parallel test with MPI version
 #
-default: pipes_serial pipes_parallel mpi_serial mpi_parallel
+default: simple_pipes_serial simple_pipes_parallel \
+	simple_mpi_serial simple_mpi_parallel clean
 #
 ARCH_MAKE=$(OBJ_DIR)/arch.make
 include $(ARCH_MAKE)
@@ -59,19 +60,21 @@ libs_collected:
 #
 # Pipes version
 #
-pipes_serial: $(FSIESTA) serial.o
-	$(FC) $(LDFLAGS) -o pipes_serial $(FSIESTA) serial.o 
+simple_pipes_serial: $(FSIESTA) simple_serial.o
+	$(FC) $(LDFLAGS) -o simple_pipes_serial $(FSIESTA) simple_serial.o 
 #
-pipes_parallel: $(FSIESTA) pipes_parallel.o
-	$(FC) $(LDFLAGS) -o pipes_parallel $(FSIESTA) pipes_parallel.o
+simple_pipes_parallel: $(FSIESTA) simple_pipes_parallel.o
+	$(FC) $(LDFLAGS) -o simple_pipes_parallel \
+	      $(FSIESTA) simple_pipes_parallel.o
 #
 # MPI version
 #
-mpi_serial: libs_collected serial.o 
-	$(FC) $(LDFLAGS) -o mpi_serial serial.o $(ALL_LIBS)
+simple_mpi_serial: libs_collected simple_serial.o 
+	$(FC) $(LDFLAGS) -o simple_mpi_serial simple_serial.o $(ALL_LIBS)
 #
-mpi_parallel: libs_collected mpi_parallel.o 
-	$(FC) $(LDFLAGS) -o mpi_parallel mpi_parallel.o $(ALL_LIBS)
+simple_mpi_parallel: libs_collected simple_mpi_parallel.o 
+	$(FC) $(LDFLAGS) -o simple_mpi_parallel \
+	      simple_mpi_parallel.o $(ALL_LIBS)
 #
 clean: 
 	@echo "==> Cleaning intermediate files ONLY"
@@ -80,5 +83,7 @@ clean:
 #
 pristine: 
 	@echo "==> Cleaning all intermediate and executable files"
-	rm -f pipes_serial pipes_parallel mpi_serial mpi_parallel *.a *.o *.mod libs_collected
+	rm -f simple_pipes_serial simple_pipes_parallel 
+	rm -f simple_mpi_serial simple_mpi_parallel
+	rm -f *.a *.o *.mod libs_collected
 

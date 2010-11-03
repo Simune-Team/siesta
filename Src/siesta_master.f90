@@ -32,7 +32,6 @@
 !   getPropertyForMaster : Get other properties to be sent to master program
 !   setPropertyForMaster : Set other properties to be sent to master program
 !   setCoordsFromMaster  : Set atomic positions sent by master program
-!   setMasterComm        : Set communications mode with master program
 !   setMasterUnits       : Set physical units used by master program
 !
 ! Public variables:
@@ -69,10 +68,6 @@
 !   real(dp),intent(in):: xa(3,na)  ! Atomic coordinates
 !   real(dp),intent(in):: cell(3,3) ! Unit cell vectors
 ! end subroutine setCoordsFromMaster
-!
-! subroutine setMasterComm( mode )
-!   character(len=*),intent(in):: mode  ! Communications mode with master prog
-! end subroutine setMasterComm
 !
 ! subroutine setMasterUnits( xunit, eunit )
 !   character(len=*),intent(in):: xunit  ! Physical unit of length
@@ -115,7 +110,6 @@ PUBLIC :: &
   getPropertyForMaster, &! Get other properties to be sent to master program
   setPropertyForMaster, &! Set other properties to be sent to master program
   setCoordsFromMaster,  &! Set atomic positions sent by master program
-  setMasterComm,        &! Set communications mode with master program
   setMasterUnits         ! Set physical units used by master program
 
 ! Public variables
@@ -150,7 +144,6 @@ PRIVATE ! Nothing is declared public beyond this point
   real(dp),pointer, save:: coords(:,:)         ! Atomic coordinates
   real(dp),pointer, save:: forces(:,:)         ! Atomic forces
   type(propType),   save:: prop(maxProps)      ! Stored physical properties
-  character(len=8), save:: commMode = 'pipes'  ! Communications mode
   character(len=32),save:: master_xunit = 'Ang'       ! Master's unit of length 
   character(len=32),save:: master_eunit = 'eV'        ! Master's unit of energy
   character(len=32),save:: master_funit = 'eV/Ang'    ! Master's unit of force
@@ -170,18 +163,16 @@ subroutine coordsFromMaster( na, xa, cell )
 ! In the pipes version, this is where we first know that we are a server
   siesta_server = .true.
 
-  if (commMode=='pipes') then
-    call coordsFromPipe( na, xa, cell )
-  else if (commMode=='MPI') then
+  if (siesta_subroutine) then
     if (na==nAtoms) then
       xa = coords
       cell = ucell
     else
       call die('coordsFromMaster: ERROR: number-of-atoms mismatch')
     endif
-  else
-    call die('CoordsFromMaster: ERROR: unknown comm. mode '//trim(commMode))
-  end if ! (commMode=='pipes')
+  else    ! (.not.siesta_subroutine)
+    call coordsFromPipe( na, xa, cell )
+  end if ! (siesta_subroutine)
   
 end subroutine coordsFromMaster
 
@@ -195,9 +186,7 @@ subroutine forcesToMaster( na, Etot, fa, stress )
   real(dp),intent(in):: fa(3,na)    ! Atomic forces
   real(dp),intent(in):: stress(3,3) ! Stress tensor
 
-  if (commMode=='pipes') then
-    call forcesToPipe( na, Etot, fa, stress )
-  else if (commMode=='MPI') then
+  if (siesta_subroutine) then
     if (na==nAtoms) then
       energy = Etot
       forces = fa
@@ -205,9 +194,9 @@ subroutine forcesToMaster( na, Etot, fa, stress )
     else ! (na/=nAtoms)
       call die('coordsFromMaster: ERROR: number-of-atoms mismatch')
     endif ! (na==nAtoms)
-  else
-    call die('forcesToMaster: ERROR: unknown comm. mode '//trim(commMode))
-  end if ! (commMode=='pipes')
+  else   ! (.not.siesta_subroutine)
+    call forcesToPipe( na, Etot, fa, stress )
+  end if ! (siesta_subroutine)
 
 end subroutine forcesToMaster
 
@@ -258,18 +247,6 @@ subroutine setCoordsFromMaster( na, xa, cell )
   end if
 
 end subroutine setCoordsFromMaster
-
-!-----------------------------------------------------------------------------
-
-subroutine setMasterComm( mode )
-  implicit none
-  character(len=*),intent(in):: mode  ! Communications mode with master program
-  if (mode=='pipes' .or. mode=='MPI') then
-    commMode = mode
-  else
-    call die('setMasterComm: ERROR: unknown mode '//trim(mode))
-  endif
-end subroutine setMasterComm
 
 !-----------------------------------------------------------------------------
 
