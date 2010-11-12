@@ -181,7 +181,8 @@ subroutine getopts(optionstring,name,optarg,optind,exitcode)
     endif
   name(lname:lname)=copt
   optarg=''
-  if(lopt.lt.len(optionstring).and.optionstring(lopt+1:lopt+1).eq.':') then
+  if(lopt.lt.len(optionstring)) then
+   if (optionstring(lopt+1:lopt+1).eq.':') then
     if(lcur.gt.larg) then
       optind=optind+1
       if(optind.gt.narg) then
@@ -195,6 +196,7 @@ subroutine getopts(optionstring,name,optarg,optind,exitcode)
     endif
     optarg=carg(lcur:larg)
     lcur=larg+1
+   endif
   endif
 end subroutine
 end module m_getopts

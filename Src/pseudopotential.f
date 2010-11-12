@@ -289,10 +289,10 @@
         write(6,'(3a)') 'Dumping pseudopotential information ',
      $       'in formatted form in ', trim(fname)
 
- 9040    format(i4,1x,6f12.6)
+ 9040    format(i6,1x,7f12.6)
          do j = 1, p%nrval
             write(io_ps,9040) j, p%r(j), (p%vdown(i,j),i=1,p%npotd),
-     $                        p%chval(j)
+     $                        p%chval(j), p%chcore(j)
          enddo
          call io_close(io_ps)
          end subroutine pseudo_dump
@@ -527,9 +527,10 @@ c$$$        end subroutine pseudo_header_string
 
         call de_alloc( y2, name='y2', routine='pseudo_reparametrize' )
 
-        call pseudo_write_formatted(trim(p%name)// ".Reparam.psf",p)
-        if (write_ion_plot_files)
-     $      call pseudo_dump(trim(label) // ".Reparam.psdump",p)
+        call pseudo_write_formatted(trim(label)// ".Reparam.psf",p)
+        if (write_ion_plot_files) then
+           call pseudo_dump(trim(label) // ".Reparam.psdump",p)
+        endif
 
       end subroutine pseudo_reparametrize
 
