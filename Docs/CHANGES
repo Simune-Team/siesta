@@ -5,6 +5,16 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2010-11-12  14:50:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-3
+Fix test in m_getopts
+
+A double if test gives problems with some compilers when
+bounds checking is in effect.
+
+modified:
+  Src/m_getopts.f90
+
+------------------------------------------------------------------------
 2010-11-12  14:40:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-2
 Improved grid for re-parametrization of pseudopotentials
 
