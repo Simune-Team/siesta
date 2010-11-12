@@ -327,7 +327,7 @@ C
       use precision,    only : dp
 #ifdef MPI
       use m_mpi_utils,  only : globalize_sum
-      use mpi
+      use mpi_siesta
 #endif
       implicit none
 C     Input variables
@@ -369,7 +369,7 @@ C
       use precision,    only : dp
 #ifdef MPI
       use m_mpi_utils,  only : globalize_sum
-      use mpi
+      use mpi_siesta
 #endif
       implicit none
 C     Input variables

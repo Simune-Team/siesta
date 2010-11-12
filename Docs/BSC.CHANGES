@@ -1,6 +1,24 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+316 Alberto Garcia	  2010-11-12
+Fix import of mpi module in matrixop + new .make files
+
+Use 'mpi_siesta' instead of 'mpi'.
+
+Added new .make files in Src/Sys.
+
+added:
+  Src/Sys/atto-pgf95-openmpi.make
+  Src/Sys/intel10-openmpi.make
+  Src/Sys/intel11-openmpi.make
+  Src/Sys/nano-intel10-mvapich.make
+  Src/Sys/pgf95-pgimpi.make
+modified:
+  Src/Sys/nano-intel-mpi.make
+  Src/matrixop.F
+
+------------------------------------
 315 Alberto Garcia	  2010-11-12
 Remove calls to printmemory()
 
