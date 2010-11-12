@@ -47,7 +47,7 @@
       call resetDscfPointers( )
 
 !     Output memory use up to the end of the program
-      call printmemory( 6, 1 )
+!!      call printmemory( 6, 1 )
 
 !     Print allocation report
       call alloc_report( printNow=.true. )

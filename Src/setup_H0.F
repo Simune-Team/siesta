@@ -126,7 +126,7 @@ C     Allocate all the structures needed for grid work (formerly
 C     in the first section of dhscf  *******
 
 C     Output memory use after setting up the structures
-      if (istp.eq.1) call printmemory( 6, 0 )
+!!      if (istp.eq.1) call printmemory( 6, 0 )
 
 C     Metadynamics energy
       if (lMetaForce) then

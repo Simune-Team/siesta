@@ -1,6 +1,21 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+315 Alberto Garcia	  2010-11-12
+Remove calls to printmemory()
+
+The 'alloc' subsystem no longer calls the 'memory' accounting routine,
+so any information printed by 'printmemory' is misleading. The calls
+have now been commented out.
+
+modified:
+  Src/setup_H0.F
+  Src/siesta_end.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/siesta_move.F
+
+------------------------------------
 314 Alberto Garcia	  2010-10-29
 Disabled asynchronous grid communications by default
 

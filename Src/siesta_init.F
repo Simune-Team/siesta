@@ -411,7 +411,7 @@ C     Initialise MPI and set processor number
       istp = 0
 
 !     Output memory use before main loop
-      call printmemory( 6, 0 )
+!!      call printmemory( 6, 0 )
 
 !     Initialization now complete. Flush stdout.
       if (ionode) call pxfflush( 6 )

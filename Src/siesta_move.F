@@ -271,7 +271,7 @@
       if (cml_p) then
          call cmlEndStep(mainXML)
       endif
-      call printmemory( 6, 0 )
+!!      call printmemory( 6, 0 )
       call timer( 'SIMOVE', 2 )
       call timer( 'IterMD', 2 )
 ! End of one MD step - flush stdout

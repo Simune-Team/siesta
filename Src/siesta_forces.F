@@ -78,7 +78,7 @@
 
 !       Will use H0 computed above
         call setup_hamiltonian( iscf )
-        call printmemory( 6, 0 )
+!!        call printmemory( 6, 0 )
 
         if (h_setup_only) then
            call timer( 'siesta', 2 )
