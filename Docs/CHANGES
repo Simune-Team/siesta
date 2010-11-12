@@ -5,6 +5,34 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2010-11-12  14:40:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-2
+Improved grid for re-parametrization of pseudopotentials
+
+When the option Reparametrize.Pseudos is in effect, the program
+resamples the pseudopotential data into a new logarithmic grid with
+parameters chosen so that the grid-point separation at the typical rcs
+for orbitals is small enough (of the order of 0.01 bohr). The previous
+choice of parameters resulted in grid-point separations of the order
+of 0.005 bohr near the origin, which apparently is not fine enough for
+s orbitals, leading to oscillations in the gradient near the origin.
+
+A new set of default parameters has been chosen to provide a finer
+grid spacing (1.e-5 bohr) near the origin and 0.01 bohr around r=10
+bohr. This results in grids with around 10000 points, which is still
+manageable.
+
+( Also, a few extra diagnostic files are produced if the option
+  Write.Ion.Plot.Files is in effect, and the .psdump file now
+  contains the core charge )
+
+modified:
+  Src/atmparams.f
+  Src/atom.f
+  Src/basis_specs.f
+  Src/pseudopotential.f
+  Docs/siesta.tex
+
+------------------------------------------------------------------------
 2010-09-30  08:30:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-1
 Update atom manual
 
