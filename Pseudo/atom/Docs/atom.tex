@@ -79,7 +79,7 @@ structural changes to the April 1990 (5.0) Minnesota version while at
 Berkeley and elsewhere.
 
 Jose Luis Martins is maintaining his own version of the code:
-\begin{verbatim}{\tt http://bohr.inesc.pt/~jlm/pseudo.html\end{verbatim}
+\begin{verbatim}{\tt http://bohr.inesc-mn.pt/~jlm/pseudo.html\end{verbatim}
 
 
 The program's basic capabilities are:
@@ -810,8 +810,10 @@ The file itself is:
 	(format 3x,a2,3x,a2,a1,2x)
 
 \item Third line. Its use is somewhat esoteric and for most
-		calculations it should contain just a 0.0 in the
-		position shown.
+  calculations it should contain just a 0.0 in the position shown, but
+  that first field might be useful to generate pseudopotentials for
+  ``atoms'' with a fractional atomic number (see the example for ON in
+  the {\tt Tutorial/PS\_Generation} directory).
 \end{itemize}
 
 The rest of the file is devoted to the specification of the electronic

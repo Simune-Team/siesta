@@ -13,6 +13,7 @@
 #
 # Make sure you can find the ioncat executable
 #
+echo $0
 IONCAT=$(basename $0)/ioncat
 #
 ## set -x

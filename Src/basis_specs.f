@@ -187,9 +187,21 @@
 !------------------------------------------------------------------------
       reparametrize_pseudos =
      $   fdf_boolean('ReparametrizePseudos',.false.)
+!
+!        r(i) = b * ( exp(a*(i-1)) - 1 )
+!        spacing near zero: delta = a*b
+!        If the desired spacing at r=R is delta*(1+beta), 
+!        then:
+!               a = beta*delta/R
+!               b = R/beta
+!               N at R = 1 + R*ln(1+beta)/(beta*delta)
+!
       if (reparametrize_pseudos) then
-         new_a = fdf_double("NewAParameter",5.0e-4_dp)
-         new_b = fdf_double("NewBParameter",10.0_dp)
+         ! These default values will provide a grid spacing
+         ! of 1.0e-5 near r=0, and 0.01 near r=10 (bohr units)
+         ! with N at Rmax=100 on the order of 10000 points.
+         new_a = fdf_double("NewAParameter",0.001_dp)
+         new_b = fdf_double("NewBParameter",0.01_dp)
       endif
 
 !

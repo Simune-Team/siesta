@@ -51,10 +51,10 @@ C                     program atm, which generates the files with
 C                     the pseudopotential information). The number
 C                     of points in the grid can be redefined if the
 C                     pseudopotential is reparametrized.
-C                     nrmax = 6000 is a typical safe value in this case.
+C                     nrmax = 20000 is a typical safe value in this case.
 C                     
 
-         integer, parameter, public  :: nrmax  = 6000
+         integer, parameter, public  :: nrmax  = 20000
 
          integer, parameter, public  :: maxos=2*nzetmx*lmx2*nsemx
 

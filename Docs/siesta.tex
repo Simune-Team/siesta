@@ -1811,16 +1811,20 @@ projectors).
 \index{Reparametrize.Pseudos@{\bf Reparametrize.Pseudos}}
 
 By changing the $a$ and $b$ parameters of the logarithmic grid, a new
-one with a more homogeneous overall grid-point separation can be used
-for the generation of basis sets and projectors. For example, by using
-$a=5x10^{-4}$ and $b=10$, the grid point separations at $r=0$ and 10
-bohrs are 0.005 and 0.01 bohrs, respectively. More points are needed
+one with a more adequate grid-point separation can be used for the
+generation of basis sets and projectors. For example, by using
+$a=0.001$ and $b=0.01$, the grid point separations at $r=0$ and 10
+bohrs are 0.00001 and 0.01 bohrs, respectively. More points are needed
 to reach r's of the order of a hundred bohrs, but the extra
 computational effort is negligible.  The net effect of this option
 (notably when coupled to {\bf Restricted.Radial.Grid} {\tt .false.})
 is a closer mapping of any user-specified cutoff radii and of the
 radii implicitly resulting from other input parameters to the actual
-values used by the program.
+values used by the program. (The small grid-point separation near r=0
+is still needed to avoid instabilities for s channels that occurred
+with the previous (reparametrized) default spacing of 0.005 bohr. This
+effect is not yet completely understood. )
+
 
 
 {\it Default value:} { \tt .false.}
@@ -1831,7 +1835,7 @@ values used by the program.
 
 New setting for the pseudopotential grid's $a$ parameter
 
-{\it Default value:} { $5.0x10^{-4}$}
+{\it Default value:} { $0.001$}
 
 \item[{\bf New.B.Parameter}] ({\it real}):
 \index{New.B.Parameter@{\bf
@@ -1839,7 +1843,7 @@ New setting for the pseudopotential grid's $a$ parameter
 
 New setting for the pseudopotential grid's $b$ parameter
 
-{\it Default value:} { $10.0$}
+{\it Default value:} { $0.01$}
 
 \item[{\bf Rmax.Radial.Grid}] ({\it real}):
 \index{Rmax.Radial.Gridr@{\bf
