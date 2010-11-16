@@ -1,6 +1,53 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+318 Alberto Garcia	  2010-11-16
+Fix compilation of Utils
+
+The major remaining issues were:
+
+- New-style fdf calls
+
+- Proper treatment of "private" copies of fdf, MPI, etc
+
+- The macro __FILE__ expanded to a very long string in the fdf
+  routines. A new macro THIS_FILE has been defined instead.
+
+Some issues might still remain. Notably, the dependency lists are very
+cumbersome.
+
+removed:
+  Util/Denchar/Src/fdf/.dummy_dir
+  Util/Gen-basis/fdf/.dummy_directory
+  Util/TBTrans/Libs/
+  Util/TBTrans/Libs/.dummy_directory
+  Util/TBTrans/MPI/.dummy_dir
+  Util/VCA/fdf/.dummy_directory
+  Util/Vibra/Src/fdf/.dummy_directory
+added:
+  Util/Denchar/Src/timer_local.f
+modified:
+  Src/fdf/fdf.F90
+  Src/fdf/io_fdf.F90
+  Src/fdf/parse.F90
+  Util/Denchar/Src/Makefile
+  Util/Denchar/Src/denchar.f
+  Util/Denchar/Src/local_reinit.f
+  Util/Denchar/Src/readpla.f
+  Util/Denchar/Src/readsts.f
+  Util/Gen-basis/Makefile
+  Util/Helpers/Makefile
+  Util/TBTrans/Makefile
+  Util/TBTrans/m_tbt_options.F90
+  Util/TBTrans/mkqgrid.f
+  Util/VCA/Makefile
+  Util/Vibra/Src/Makefile
+  Util/Vibra/Src/fcbuild.f
+  Util/Vibra/Src/klines.f
+  Util/Vibra/Src/recoor.f
+  Util/Vibra/Src/vibrator.f
+
+------------------------------------
 317 Alberto Garcia	  2010-11-12
 Merge 3.0 fixes: ps reparametrization, getopts, ioncat, atm manual
 

@@ -1,3 +1,4 @@
+#define THIS_FILE "fdf.F90"
 !=====================================================================
 !
 ! This file is part of the FDF package.
@@ -312,7 +313,7 @@ MODULE fdf
       ! Prevent the user from opening two head files
       if (fdf_started) then 
         call die('FDF module: fdf_init', 'Head file already set',       &
-                 __FILE__, __LINE__, fdf_err)
+                 THIS_FILE, __LINE__, fdf_err)
       endif
 
 #ifdef _MPI_
@@ -362,27 +363,27 @@ MODULE fdf
       call MPI_Initialized(mpiflag, ierr)
       if (ierr .ne. MPI_SUCCESS) then
         call die('FDF module: fdf_mpi_init', 'Error initializing MPI system.' // &
-                 'Terminating.', __FILE__, __LINE__, fdf_err, rc=ierr)
+                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
       endif
 
       if (.not. mpiflag) then
         call MPI_Init(ierr)
         if (ierr .ne. MPI_SUCCESS) then
           call die('FDF module: fdf_mpi_init', 'Error initializing MPI system.' // &
-                   'Terminating.', __FILE__, __LINE__, fdf_err, rc=ierr)
+                   'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
         endif
       endif
 
       call MPI_Comm_Rank(MPI_COMM_WORLD, rank, ierr)
       if (ierr .ne. MPI_SUCCESS) then
         call die('FDF module: fdf_mpi_init', 'Error getting MPI comm rank.' // &
-                 'Terminating.', __FILE__, __LINE__, fdf_err, rc= ierr)
+                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc= ierr)
       endif
 
       call MPI_Comm_Size(MPI_COMM_WORLD, ntasks, ierr)
       if (ierr .ne. MPI_SUCCESS) then
         call die('FDF module: fdf_mpi_init', 'Error getting MPI comm size.' // &
-                 'Terminating.', __FILE__, __LINE__, fdf_err, rc=ierr)
+                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
       endif
       RETURN
 !--------------------------------------------------------------------------- END
@@ -405,7 +406,7 @@ MODULE fdf
         call MPI_Finalize(ierr)
         if (ierr .ne. MPI_SUCCESS) then
           call die('FDF module: fdf_mpi_finalize', 'Error finalizing MPI system.' // &
-                   'Terminating.', __FILE__, __LINE__, fdf_err, rc=ierr)
+                   'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
         endif
       endif
 
@@ -474,7 +475,7 @@ MODULE fdf
                          MPI_MIN, MPI_COMM_WORLD, ierr)
       if (ierr .ne. MPI_SUCCESS) then
         call die('FDF module: fdf_readcluster', 'Error in MPI_AllReduce (task_exist).' //  &
-                 'Terminating.', __FILE__, __LINE__, fdf_err, rc=ierr)
+                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
       endif
 #else
 !
@@ -489,7 +490,7 @@ MODULE fdf
         write(msg,*) 'No node found in the cluster with ',              &
                      ' input file ', filein,'. Terminating.'
         call die('FDF module: fdf_readcluster', msg,                    &
-                 __FILE__, __LINE__, fdf_err, rc=ierr)
+                 THIS_FILE, __LINE__, fdf_err, rc=ierr)
       else
         if (texist_recv .eq. rank) then
           call fdf_read(filein)
@@ -527,7 +528,7 @@ MODULE fdf
       ALLOCATE(bufferFDF(file_in%nlines*MAX_LENGTH), stat=ierr)
       if (ierr .ne. 0) then
         call die('FDF module: fdf_sendInput', 'Error allocating bufferFDF', &
-                 __FILE__, __LINE__, fdf_err, rc=ierr)
+                 THIS_FILE, __LINE__, fdf_err, rc=ierr)
       endif
 
       mark => file_in%first
@@ -541,14 +542,14 @@ MODULE fdf
 
       if (ierr .ne. MPI_SUCCESS) then
         call die('FDF module: fdf_sendInput', 'Error Broadcasting nlines.' // &
-                 'Terminating.', __FILE__, __LINE__, fdf_err, rc=ierr)
+                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
       endif
 
       call MPI_Bcast(bufferFDF, file_in%nlines*MAX_LENGTH,              &
                      MPI_CHARACTER, rank, MPI_COMM_WORLD, ierr)
       if (ierr .ne. MPI_SUCCESS) then
         call die('FDF module: fdf_sendInput', 'Error Broadcasting bufferFDF.' // &
-                 'Terminating.', __FILE__, __LINE__, fdf_err, rc=ierr)
+                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
       endif
 
       DEALLOCATE(bufferFDF)
@@ -579,20 +580,20 @@ MODULE fdf
                      MPI_INTEGER, root, MPI_COMM_WORLD, ierr)
       if (ierr .ne. MPI_SUCCESS) then
         call die('FDF module: fdf_recvInput', 'Error Broadcasting nlines.' // &
-                 'Terminating.', __FILE__, __LINE__, fdf_err, rc=ierr)
+                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
       endif
 
       ALLOCATE(bufferFDF(nlines*MAX_LENGTH), stat=ierr)
       if (ierr .ne. 0) then
         call die('FDF module: fdf_recvInput', 'Error allocating bufferFDF', &
-                 __FILE__, __LINE__, fdf_err, rc=ierr)
+                 THIS_FILE, __LINE__, fdf_err, rc=ierr)
       endif
 
       call MPI_Bcast(bufferFDF, nlines*MAX_LENGTH,                      &
                      MPI_CHARACTER, root, MPI_COMM_WORLD, ierr)
       if (ierr .ne. MPI_SUCCESS) then
         call die('FDF module: fdf_recvInput', 'Error Broadcasting bufferFDF.' // &
-                 'Terminating.', __FILE__, __LINE__, fdf_err, rc=ierr)
+                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
       endif
 
       call io_assign(lun)
@@ -656,7 +657,7 @@ MODULE fdf
         call MPI_Barrier(MPI_COMM_WORLD, ierr)
         if (ierr .ne. MPI_SUCCESS) then
           call die('FDF module: fdf_readblocking', 'Error in MPI_Barrier (fdf_read).' //    &
-                   'Terminating.', __FILE__, __LINE__, fdf_err, rc=ierr)
+                   'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
         endif
       enddo
 
@@ -711,7 +712,7 @@ MODULE fdf
             if (ntok .eq. 1) then
               write(msg,*) '%block label not found in ', TRIM(filein)
               call die('FDF module: fdf_read', msg,                     &
-                       __FILE__, __LINE__, fdf_err)
+                       THIS_FILE, __LINE__, fdf_err)
             endif
 
 !           %block Label < Filename [ %dump ]
@@ -759,7 +760,7 @@ MODULE fdf
               else
                 write(msg,*) '%block filename not found in ', TRIM(filein)
                 call die('FDF module: fdf_read', msg,                   &
-                         __FILE__, __LINE__, fdf_err)
+                         THIS_FILE, __LINE__, fdf_err)
               endif
 
 !           %block Label
@@ -774,7 +775,7 @@ MODULE fdf
             else
               write(msg,*) 'Bad ''<'' %block format in ', TRIM(filein)
               call die('FDF module: fdf_read', msg,                     &
-                       __FILE__, __LINE__, fdf_err)
+                       THIS_FILE, __LINE__, fdf_err)
             endif
 
 !         %endblock directive
@@ -783,7 +784,7 @@ MODULE fdf
             if (label .eq. ' ') then
               write(msg,*) 'Bad %endblock found in ', TRIM(filein)
               call die('FDF module: fdf_read', msg,                     &
-                       __FILE__, __LINE__, fdf_err)
+                       THIS_FILE, __LINE__, fdf_err)
             else
 !             Warn if block 'label' is empty
               if ((nlstart - file_in%nlines) .eq. 0) then
@@ -807,7 +808,7 @@ MODULE fdf
             if (ntok .eq. 1) then
               write(msg,*) 'Filename on %include not found in ', TRIM(filein)
               call die('FDF module: fdf_read', msg,                     &
-                       __FILE__, __LINE__, fdf_err)
+                       THIS_FILE, __LINE__, fdf_err)
             else
               inc_file = tokens(pline, 2)
               call fdf_read(inc_file)
@@ -819,20 +820,20 @@ MODULE fdf
             if (ind_less .eq. 1) then
               write(msg,*) 'Bad ''<'' found in ', TRIM(filein)
               call die('FDF module: fdf_read', msg,                     &
-                       __FILE__, __LINE__, fdf_err)
+                       THIS_FILE, __LINE__, fdf_err)
 
 !           Check if '<' filename is specified
             elseif (ind_less .eq. ntok) then
               write(msg,*) 'Filename not found after ''<'' in ', TRIM(filein)
               call die('FDF module: fdf_read', msg,                     &
-                       __FILE__, __LINE__, fdf_err)
+                       THIS_FILE, __LINE__, fdf_err)
             else
 !             Search label(s) in Filename
               inc_file = tokens(pline, ind_less+1)
               ALLOCATE(found(ind_less-1), stat=ierr)
               if (ierr .ne. 0) then
                 call die('FDF module: fdf_read', 'Error allocating found', &
-                         __FILE__, __LINE__, fdf_err, rc=ierr)
+                         THIS_FILE, __LINE__, fdf_err, rc=ierr)
               endif
 
 !             If label(s) not found in such Filename throw an error
@@ -847,7 +848,7 @@ MODULE fdf
                  write(msg,*) 'Label ', TRIM(label),                     &
                              ' not found in ', TRIM(inc_file)
                  call die('FDF module: fdf_read', msg,                   &
-                         __FILE__, __LINE__, fdf_err)
+                         THIS_FILE, __LINE__, fdf_err)
               endif
 
               call destroy(pline)
@@ -869,7 +870,7 @@ MODULE fdf
       if ((.not. PRESENT(blocklabel)) .and. (label .ne. ' ')) then
         write(msg,*) '%endblock ', TRIM(label),                         &
                      ' not found in ', TRIM(filein)
-        call die('FDF module: fdf_read', msg, __FILE__, __LINE__, fdf_err)
+        call die('FDF module: fdf_read', msg, THIS_FILE, __LINE__, fdf_err)
       endif
       call fdf_close()
 
@@ -925,7 +926,7 @@ MODULE fdf
             if (ntok .eq. 1) then
               write(msg,*) '%block label not found in ', TRIM(filein)
               call die('FDF module: fdf_readlabel', msg,                &
-                       __FILE__, __LINE__, fdf_err)
+                       THIS_FILE, __LINE__, fdf_err)
             endif
 
 !           %block Label < Filename [ %dump ]
@@ -980,7 +981,7 @@ MODULE fdf
               else
                 write(msg,*) 'Filename on %block not found in ', TRIM(filein)
                 call die('FDF module: fdf_readlabel', msg,              &
-                         __FILE__, __LINE__, fdf_err)
+                         THIS_FILE, __LINE__, fdf_err)
               endif
 
 !           %block Label
@@ -1042,14 +1043,14 @@ MODULE fdf
                 write(msg,*) '%endblock ', TRIM(label),                 &
                              ' not found in ', TRIM(filein)
                 call die('FDF module: fdf_readlabel', msg,              &
-                         __FILE__, __LINE__, fdf_err)
+                         THIS_FILE, __LINE__, fdf_err)
               endif
 
 !           Bad format in %block directive
             else
               write(msg,*) 'Bad ''<'' %block format in ', TRIM(filein)
               call die('FDF module: fdf_readlabel', msg,                &
-                       __FILE__, __LINE__, fdf_err)
+                       THIS_FILE, __LINE__, fdf_err)
             endif
 
 !         %endblock directive
@@ -1057,7 +1058,7 @@ MODULE fdf
 !           Bad if %endblock exists before %block
             write(msg,*) 'Bad %endblock found in ', TRIM(filein)
             call die('FDF module: fdf_readlabel', msg,                  &
-                     __FILE__, __LINE__, fdf_err)
+                     THIS_FILE, __LINE__, fdf_err)
 
 !         %include Filename directive
           elseif (search('%include', pline) .eq. 1) then
@@ -1065,7 +1066,7 @@ MODULE fdf
             if (ntok .eq. 1) then
               write(msg,*) 'Filename on %include not found in ', TRIM(filein)
               call die('FDF module: fdf_readlabel', msg,                &
-                       __FILE__, __LINE__, fdf_err)
+                       THIS_FILE, __LINE__, fdf_err)
             else
               inc_file = tokens(pline, 2)
               call destroy(pline)
@@ -1078,13 +1079,13 @@ MODULE fdf
             if (ind_less .eq. 1) then
               write(msg,*) 'Bad ''<'' found in ', TRIM(filein)
               call die('FDF module: fdf_readlabel', msg,                &
-                       __FILE__, __LINE__, fdf_err)
+                       THIS_FILE, __LINE__, fdf_err)
 
 !           Check if '<' filename is specified
             elseif (ind_less .eq. ntok) then
               write(msg,*) 'Filename not found after ''<'' in ', TRIM(filein)
               call die('FDF module: fdf_readlabel', msg,                &
-                       __FILE__, __LINE__, fdf_err)
+                       THIS_FILE, __LINE__, fdf_err)
             else
 !             Search label(s) in Filename
               line = ' '
@@ -1092,7 +1093,7 @@ MODULE fdf
               ALLOCATE(found_index(ind_less-1), stat=ierr)
               if (ierr .ne. 0) then
                 call die('FDF module: fdf_readlabel', 'Error allocating found_index', &
-                         __FILE__, __LINE__, fdf_err, rc=ierr)
+                         THIS_FILE, __LINE__, fdf_err, rc=ierr)
               endif
               do i= 1, ind_less-1
                 label = tokens(pline, i)
@@ -1112,7 +1113,7 @@ MODULE fdf
                 ALLOCATE(found_loc(nelem_loc), stat=ierr)
                 if (ierr .ne. 0) then
                   call die('FDF module: fdf_readlabel', 'Error allocating found_loc', &
-                           __FILE__, __LINE__, fdf_err, rc=ierr)
+                           THIS_FILE, __LINE__, fdf_err, rc=ierr)
                 endif
 
                 found_loc = .FALSE.
@@ -1128,7 +1129,7 @@ MODULE fdf
                   label = tokens(pline, i)
                   write(msg,*) 'Label ', TRIM(label), ' not found in ', TRIM(inc_file)
                   call die('FDF module: fdf_readlabel', msg,            &
-                           __FILE__, __LINE__, fdf_err)
+                           THIS_FILE, __LINE__, fdf_err)
                 else
 !                 Merge results if all labels found
                   do i= 1, nelem_loc
@@ -1228,7 +1229,7 @@ MODULE fdf
 
       if (.not. fdf_block(label, bfdf)) then
         write(msg,*) 'block ', label, 'to dump not found'
-        call die('FDF module: fdf_dump', msg, __FILE__, __LINE__, fdf_err)
+        call die('FDF module: fdf_dump', msg, THIS_FILE, __LINE__, fdf_err)
       endif
 
 !     fdf_bline prints each block line in fdf_out
@@ -1255,7 +1256,7 @@ MODULE fdf
       ALLOCATE(file_in, stat=ierr)
       if (ierr .ne. 0) then
         call die('FDF module: fdf_initdata', 'Error allocating file_in', &
-                 __FILE__, __LINE__, fdf_err, rc=ierr)
+                 THIS_FILE, __LINE__, fdf_err, rc=ierr)
       endif
 
       file_in%nlines = 0
@@ -1283,7 +1284,7 @@ MODULE fdf
       ALLOCATE(mark, stat=ierr)
       if (ierr .ne. 0) then
         call die('FDF module: fdf_addtoken', 'Error allocating mark',   &
-                 __FILE__, __LINE__, fdf_err, rc=ierr)
+                 THIS_FILE, __LINE__, fdf_err, rc=ierr)
       endif
 
       mark%str   =  line
@@ -1333,7 +1334,7 @@ MODULE fdf
       ndepth = ndepth + 1
       if (ndepth .gt. maxdepth) then
         call die('FDF module: fdf_open', 'Too many nested fdf files...', &
-                 __FILE__, __LINE__, fdf_err)
+                 THIS_FILE, __LINE__, fdf_err)
       endif
 
       if (leqi(filename, 'stdin')) then
@@ -1351,7 +1352,7 @@ MODULE fdf
             '---> Opened [DEPTH:', ndepth,'] ', TRIM(filename)
         else
           write(msg,'(a,a)') 'Cannot open ', TRIM(filename)
-          call die('FDF module: fdf_open', msg, __FILE__, __LINE__, fdf_err)
+          call die('FDF module: fdf_open', msg, THIS_FILE, __LINE__, fdf_err)
         endif
       endif
 
@@ -1582,13 +1583,13 @@ MODULE fdf
 !     Prevents using FDF routines without initialize
       if (.not. fdf_started) then
         call die('FDF module: fdf_integer', 'FDF subsystem not initialized', &
-                 __FILE__, __LINE__, fdf_err)
+                 THIS_FILE, __LINE__, fdf_err)
       endif
 
       if (fdf_locate(label, mark)) then
         if (.not. match(mark%pline, 'li')) then
           write(msg,*) 'no integer value for ', label
-          call die('FDF module: fdf_integer', msg, __FILE__, __LINE__, fdf_err)
+          call die('FDF module: fdf_integer', msg, THIS_FILE, __LINE__, fdf_err)
         endif
 
         fdf_integer = integers(mark%pline, 1, 1)
@@ -1626,7 +1627,7 @@ MODULE fdf
 !     Prevents using FDF routines without initialize
       if (.not. fdf_started) then
         call die('FDF module: fdf_string', 'FDF subsystem not initialized', &
-                 __FILE__, __LINE__, fdf_err)
+                 THIS_FILE, __LINE__, fdf_err)
       endif
 
       if (fdf_locate(label, mark)) then
@@ -1676,7 +1677,7 @@ MODULE fdf
 !     Prevents using FDF routines without initialize
       if (.not. fdf_started) then
         call die('FDF module: fdf_boolean', 'FDF subsystem not initialized', &
-                 __FILE__, __LINE__, fdf_err)
+                 THIS_FILE, __LINE__, fdf_err)
       endif
 
       if (fdf_locate(label, mark)) then
@@ -1698,7 +1699,7 @@ MODULE fdf
           else
             write(msg,*) 'unexpected logical value ', label, ' = ', valstr
             call die('FDF module: fdf_boolean', msg,                    &
-                     __FILE__, __LINE__, fdf_err)
+                     THIS_FILE, __LINE__, fdf_err)
           endif
         else
           fdf_boolean = .TRUE.
@@ -1757,13 +1758,13 @@ MODULE fdf
 !     Prevents using FDF routines without initialize
       if (.not. fdf_started) then
         call die('FDF module: fdf_single', 'FDF subsystem not initialized', &
-                 __FILE__, __LINE__, fdf_err)
+                 THIS_FILE, __LINE__, fdf_err)
       endif
 
       if (fdf_locate(label, mark)) then
         if (.not. match(mark%pline, 'lv')) then
           write(msg,*) 'no real value for ', label
-          call die('FDF module: fdf_single', msg, __FILE__, __LINE__,  fdf_err)
+          call die('FDF module: fdf_single', msg, THIS_FILE, __LINE__,  fdf_err)
         endif
         fdf_single = values(mark%pline, 1, 1)
         write(fdf_out,'(a,5x,g20.10)') label, fdf_single
@@ -1802,13 +1803,13 @@ MODULE fdf
 !     Prevents using FDF routines without initialize
       if (.not. fdf_started) then
         call die('FDF module: fdf_double', 'FDF subsystem not initialized', &
-                 __FILE__, __LINE__, fdf_err)
+                 THIS_FILE, __LINE__, fdf_err)
       endif
 
       if (fdf_locate(label, mark)) then
         if (.not. match(mark%pline, 'lv')) then
           write(msg,*) 'no real value for ', label
-          call die('FDF module: fdf_double', msg, __FILE__, __LINE__, fdf_err)
+          call die('FDF module: fdf_double', msg, THIS_FILE, __LINE__, fdf_err)
         endif
         fdf_double = values(mark%pline, 1, 1)
         write(fdf_out,'(a,5x,g20.10)') label, fdf_double
@@ -1849,14 +1850,14 @@ MODULE fdf
 !     Prevents using FDF routines without initialize
       if (.not. fdf_started) then
         call die('FDF module: fdf_physical', 'FDF subsystem not initialized', &
-                 __FILE__, __LINE__, fdf_err)
+                 THIS_FILE, __LINE__, fdf_err)
       endif
 
 !     Label found
       if (fdf_locate(label, mark)) then
         if (.not. match(mark%pline, 'lv')) then
           write(msg,*) 'no real value for ', label
-          call die('FDF module: fdf_physical', msg, __FILE__, __LINE__, fdf_err)
+          call die('FDF module: fdf_physical', msg, THIS_FILE, __LINE__, fdf_err)
         endif
 
 !       Label with value
@@ -1866,7 +1867,7 @@ MODULE fdf
 !       Look for unit
         if (.not. match(mark%pline, 'lvn')) then
           write(msg,*) 'no unit specified for ', label
-          call die('FDF module: fdf_physical', msg, __FILE__, __LINE__, fdf_err)
+          call die('FDF module: fdf_physical', msg, THIS_FILE, __LINE__, fdf_err)
         endif
 
         unitstr = names(mark%pline, 1, 2)
@@ -2006,12 +2007,12 @@ MODULE fdf
 
       if (ifrom .eq. 0) then
         write(msg,*) 'unknown unit = ', from
-        call die('FDF module: fdf_convfac', msg, __FILE__, __LINE__, fdf_err)
+        call die('FDF module: fdf_convfac', msg, THIS_FILE, __LINE__, fdf_err)
       endif
 
       if (ito .eq. 0) then
         write(msg,*) 'unknown unit = ', to
-        call die('FDF module: fdf_convfac', msg, __FILE__, __LINE__, fdf_err)
+        call die('FDF module: fdf_convfac', msg, THIS_FILE, __LINE__, fdf_err)
       endif
 
       if (leqi(dimm(ifrom), dimm(ito))) then
@@ -2019,7 +2020,7 @@ MODULE fdf
       else
         write(msg,*) 'unit''s physical dimensions don''t match: ',      &
                      from, ', ', to
-        call die('FDF module: fdf_convfac', msg, __FILE__, __LINE__, fdf_err)
+        call die('FDF module: fdf_convfac', msg, THIS_FILE, __LINE__, fdf_err)
       endif
 !--------------------------------------------------------------------------- END
     END FUNCTION fdf_convfac
@@ -2089,7 +2090,7 @@ MODULE fdf
 !     Prevents using FDF routines without initialize
       if (.not. fdf_started) then
         call die('FDF module: fdf_block', 'FDF subsystem not initialized', &
-                 __FILE__, __LINE__, fdf_err)
+                 THIS_FILE, __LINE__, fdf_err)
       endif
 
       fdf_block = .FALSE.
@@ -2137,12 +2138,12 @@ MODULE fdf
 !     Prevents using FDF routines without initialize
       if (.not. fdf_started) then
         call die('FDF module: fdf_bline', 'FDF subsystem not initialized', &
-                 __FILE__, __LINE__, fdf_err)
+                 THIS_FILE, __LINE__, fdf_err)
       endif
 
       if (.not. ASSOCIATED(bfdf%mark)) then
         call die('FDF module: fdf_bline', 'block_fdf structure not initialized', &
-                 __FILE__, __LINE__, fdf_err)
+                 THIS_FILE, __LINE__, fdf_err)
       endif
 
       fdf_bline = .TRUE.
@@ -2200,12 +2201,12 @@ MODULE fdf
 !     Prevents using FDF routines without initialize
       if (.not. fdf_started) then
         call die('FDF module: fdf_bbackspace', 'FDF subsystem not initialized', &
-                 __FILE__, __LINE__, fdf_err)
+                 THIS_FILE, __LINE__, fdf_err)
       endif
 
       if (.not. ASSOCIATED(bfdf%mark)) then
         call die('FDF module: fdf_bbackspace', 'block_fdf structure not initialized', &
-                 __FILE__, __LINE__, fdf_err)
+                 THIS_FILE, __LINE__, fdf_err)
       endif
 
       fdf_bbackspace = .TRUE.
@@ -2259,18 +2260,18 @@ MODULE fdf
 !     Prevents using FDF routines without initialize
       if (.not. fdf_started) then
         call die('FDF module: fdf_brewind', 'FDF subsystem not initialized', &
-                 __FILE__, __LINE__, fdf_err)
+                 THIS_FILE, __LINE__, fdf_err)
       endif
 
       if (.not. ASSOCIATED(bfdf%mark)) then
         call die('FDF module: fdf_brewind', 'block_fdf structure not initialized', &
-                 __FILE__, __LINE__, fdf_err)
+                 THIS_FILE, __LINE__, fdf_err)
       endif
 
       if (.not. fdf_block(bfdf%label, bfdf)) then
         write(msg,*) 'Block ', bfdf%label, ' not found in FDF structure'
         call die('FDF module: fdf_brewind', msg, &
-                 __FILE__, __LINE__, fdf_err)
+                 THIS_FILE, __LINE__, fdf_err)
       endif
 
       RETURN

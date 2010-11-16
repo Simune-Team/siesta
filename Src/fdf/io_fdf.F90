@@ -1,3 +1,4 @@
+#define THIS_FILE "io_fdf.F90"
 !=====================================================================
 ! 
 ! This file is part of the FDF package.
@@ -132,7 +133,7 @@ MODULE io_fdf
 
       if (.not. found) then
         call die('IO module: io_assign', 'No LUNs available',           &
-                 __FILE__, __LINE__)
+                 THIS_FILE, __LINE__)
       endif
 
       RETURN
@@ -162,7 +163,7 @@ MODULE io_fdf
       if (used) then
         write(msg,'(a,i3,a)')                                           &
              'Cannot reserve unit',lun,'. Already connected'
-        call die('IO module: io_reserve', msg, __FILE__, __LINE__)
+        call die('IO module: io_reserve', msg, THIS_FILE, __LINE__)
       endif
 
       if ((lun .ge. min_lun) .and. (lun .le. max_lun))                  &

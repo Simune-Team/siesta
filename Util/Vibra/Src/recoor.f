@@ -39,11 +39,11 @@ c *******************************************************************
 c Internal variables and arrays
 
       character         acf*22, acf_defect*22
-      logical           leqi
       integer           iscale, ia, i, ix, iunit
       double precision  origin(3), xac(3)
 
-
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
 
 c enable FDF input/output
 
@@ -113,10 +113,17 @@ c read atomic coordinates and species
 
       if (.not. overflow) then
 
-        if ( fdf_block('AtomicCoordinatesAndAtomicSpecies',iunit) )
+        if ( fdf_block('AtomicCoordinatesAndAtomicSpecies',bfdf) )
      .    then
           do ia = 1,na
-            read(iunit,*) (xa(i,ia), i=1,3), isa(ia), xmass(ia)
+            if (.not. fdf_bline(bfdf,pline))
+     .        call die('coor: ERROR in ' //
+     .                 'AtomicCoordinatesAndAtomicSpecies block')
+            xa(1,ia) = fdf_bvalues(pline,1)
+            xa(2,ia) = fdf_bvalues(pline,2)
+            xa(3,ia) = fdf_bvalues(pline,3)
+            isa(ia)  = fdf_bintegers(pline,1)
+            xmass(ia)  = fdf_bvalues(pline,4)
           enddo
         else
           write(6,"(/,'recoor: ',72(1h*))")
@@ -127,13 +134,19 @@ c read atomic coordinates and species
           stop 'recoor: ERROR: Atomic coordinates missing'
         endif
 
-        if ( fdf_block('AtomicCoordinatesOrigin',iunit) ) then
-          read(iunit,*) (origin(i),i=1,3)
-          do ia = 1,na
-            do i = 1,3
-              xa(i,ia) = xa(i,ia) + origin(i)
-            enddo
-          enddo
+C Find origin with which to translate all coordinates
+      
+        if (fdf_block('AtomicCoordinatesOrigin',bfdf)) then
+           if (.not. fdf_bline(bfdf,pline))
+     .          call die('coor: ERROR in AtomicCoordinatesOrigin block')
+           origin(1) = fdf_bvalues(pline,1)
+           origin(2) = fdf_bvalues(pline,2)
+           origin(3) = fdf_bvalues(pline,3)
+           do ia = 1,na
+              do i = 1,3
+                 xa(i,ia) = xa(i,ia) + origin(i)
+              enddo
+           enddo
         endif
 
 
@@ -177,4 +190,15 @@ c   Coord. option = 3 => Multiply by lattice vectors
       endif
 
       return
+      CONTAINS
+
+      subroutine die(str)
+      character(len=*), intent(in), optional:: str
+      if (present(str)) then
+         write(6,"(a)") str
+         write(0,"(a)") str
+      endif
+      STOP
+      end subroutine die
+
       end

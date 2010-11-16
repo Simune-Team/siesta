@@ -22,7 +22,7 @@ OBJDIR=Obj
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
 TOP_LEVEL:=$(shell pwd)/../../../Src
-VPATH:=$(TOP_LEVEL)
+VPATH:=.:$(TOP_LEVEL)
 #
 default: what denchar
 #
@@ -78,20 +78,23 @@ FDF=libfdf.a
 FDF_MAKEFILE=$(TOP_LEVEL)/fdf/makefile
 FDF_INCFLAGS:=-I $(TOP_LEVEL)/fdf $(INCFLAGS)
 $(FDF): 
-	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" "VPATH=$(TOP_LEVEL)/fdf" \
+	(mkdir -p fdf ; cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" "VPATH=$(TOP_LEVEL)/fdf" \
                           "ARCH_MAKE=../$(ARCH_MAKE)" \
                           "DEFS=$(DEFS)" \
                           "FPPFLAGS=$(FPPFLAGS)" \
                           "MPI_INTERFACE= " \
                           "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 #
+#
 # This is crude but will have to do for now.
 # Note : precision must be the first module
 #
 MOD_OBJS=precision.o parallel.o debugmpi.o sys.o m_io.o alloc.o memoryinfo.o listsc.o  \
          atmparams.o atom_options.o atmfuncs.o   atm_types.o \
-         radial.o spher_harm.o  basis_io.o basis_types.o \
-         files.o flib_spline.o pseudopotential.o chemical.o xml.o 
+         radial.o spher_harm.o  basis_io.o basis_types.o parallelsubs.o domain_decom.o\
+         printmatrix.o schecomm.o sparse_matrices.o \
+         files.o flib_spline.o pseudopotential.o chemical.o xml.o \
+         spatial.o pspltm1.o lenstr.o qsort.o mmio.o timer_local.o 
 #
 COM_OBJS_DENCHAR=$(OBJS_DENCHAR) $(SYSOBJ)
 ALL_OBJS_DENCHAR=$(MOD_OBJS) $(COM_OBJS_DENCHAR)
@@ -99,7 +102,7 @@ ALL_OBJS_DENCHAR=$(MOD_OBJS) $(COM_OBJS_DENCHAR)
 
 denchar: $(FDF)  $(ALL_OBJS_DENCHAR)
 	$(FC) -o denchar \
-	       $(LDFLAGS) $(ALL_OBJS_DENCHAR) $(FDF) 
+	       $(LDFLAGS) $(ALL_OBJS_DENCHAR) $(FDF) $(METIS_LIB)
 #
 
 clean:
@@ -186,6 +189,8 @@ diagsprl.o: atomlist.o fermid.o parallel.o parallelsubs.o precision.o
 diagsprl.o: siesta_geom.o sys.o
 dipole.o: parallel.o precision.o sys.o
 dnaefs.o: atmfuncs.o mneighb.o precision.o
+domain_decom.o: alloc.o parallel.o precision.o printmatrix.o schecomm.o
+domain_decom.o: sparse_matrices.o sys.o
 dynamics.o: atomlist.o files.o ioxv.o m_mpi_utils.o parallel.o precision.o
 dynamics.o: sys.o units.o
 efield.o: atmfuncs.o parallel.o parallelsubs.o parsing.o precision.o
@@ -326,7 +331,7 @@ outcell.o: precision.o siesta_cml.o units.o
 outcoor.o: alloc.o atmfuncs.o precision.o siesta_geom.o sys.o units.o
 overfsm.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
 overlap.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
-parallelsubs.o: parallel.o spatial.o sys.o
+parallelsubs.o: parallel.o spatial.o sys.o domain_decom.o
 pdos.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o parallel.o
 pdos.o: parallelsubs.o precision.o siesta_geom.o units.o xml.o
 pdosg.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o

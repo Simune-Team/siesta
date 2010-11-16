@@ -18,11 +18,10 @@ C
 C  Modules
 C
       USE PRECISION
-      USE PARALLEL
       USE BASIS_IO
       USE LISTSC_MODULE, ONLY: LISTSC_INIT
       USE FDF
-      use parallel, only: nodes, node, ionode
+      use parallel, only: nodes, node
 
       IMPLICIT NONE
 
@@ -66,7 +65,7 @@ C
      .  FILEIN*20, FILEOUT*20
 
       LOGICAL 
-     .  FOUND, CHARGE, WAVES, STS
+     .  FOUND, CHARGE, WAVES, STS, ionode
 
       EXTERNAL
      .  IODM, READPLA, REDATA_DENCHAR, REINIT, RHOOFR, VOLCEL

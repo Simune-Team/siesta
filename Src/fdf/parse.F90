@@ -1,3 +1,4 @@
+#define THIS_FILE "parse.F90"
 !=====================================================================
 ! 
 ! This file is part of the FDF package.
@@ -242,7 +243,7 @@ MODULE parse
       ALLOCATE(pline, stat=ierr)
       if (ierr .ne. 0) then
         call die('PARSE module: create', 'Error allocating pline',      &
-                 __FILE__, __LINE__, rc=ierr)
+                 THIS_FILE, __LINE__, rc=ierr)
       endif
 !------------------------------------------------------------- END
     END SUBROUTINE create
@@ -285,7 +286,7 @@ MODULE parse
         if (after .lt. 0) then
           write(msg,*) 'Wrong starting position when processing class: ', &
                        class
-          call die('PARSE module: nitems', msg, __FILE__, __LINE__)
+          call die('PARSE module: nitems', msg, THIS_FILE, __LINE__)
         endif
         starting_pos = after
       else
@@ -453,7 +454,7 @@ MODULE parse
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: ntokens', 'Wrong starting position',  &
-                   __FILE__, __LINE__)
+                   THIS_FILE, __LINE__)
         endif
         starting_pos = after
       else
@@ -463,7 +464,7 @@ MODULE parse
       ntokens = pline%ntokens - starting_pos
       if (ntokens .lt. 0) then
         call die('PARSE module: ntokens', 'Wrong starting position',    &
-                 __FILE__, __LINE__)
+                 THIS_FILE, __LINE__)
       endif
 
       RETURN
@@ -493,7 +494,7 @@ MODULE parse
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: integers', 'Wrong starting position', &
-                   __FILE__, __LINE__)
+                   THIS_FILE, __LINE__)
         endif
         starting_pos = after
       else
@@ -514,7 +515,7 @@ MODULE parse
 
       if (.not. found) then
         call die('PARSE module: integers', 'Not enough integers in line', &
-                 __FILE__, __LINE__)
+                 THIS_FILE, __LINE__)
       endif
 
       RETURN
@@ -544,7 +545,7 @@ MODULE parse
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: reals', 'Wrong starting position',    &
-                   __FILE__, __LINE__)
+                   THIS_FILE, __LINE__)
         endif
         starting_pos = after
       else
@@ -565,7 +566,7 @@ MODULE parse
 
       if (.not. found) then
         call die('PARSE module: reals', 'Not enough reals in line',     &
-                 __FILE__, __LINE__)
+                 THIS_FILE, __LINE__)
       endif
 
       RETURN
@@ -595,7 +596,7 @@ MODULE parse
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: values', 'Wrong starting position',   &
-                   __FILE__, __LINE__)
+                   THIS_FILE, __LINE__)
         endif
         starting_pos = after
       else
@@ -617,7 +618,7 @@ MODULE parse
 
       if (.not. found) then
         call die('PARSE module: values', 'Not enough values in line',   &
-                 __FILE__, __LINE__)
+                 THIS_FILE, __LINE__)
       endif
 
       RETURN
@@ -647,7 +648,7 @@ MODULE parse
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: names', 'Wrong starting position',    &
-                   __FILE__, __LINE__)
+                   THIS_FILE, __LINE__)
         endif
         starting_pos = after
       else
@@ -668,7 +669,7 @@ MODULE parse
 
       if (.not. found) then
         call die('PARSE module: names', 'Not enough names in line',     &
-                 __FILE__, __LINE__)
+                 THIS_FILE, __LINE__)
       endif
 
       RETURN
@@ -766,7 +767,7 @@ MODULE parse
       if (PRESENT(after)) then
         if ((after .lt. 0) .or. (after .ge. pline%ntokens))             &
           call die('PARSE module: tokens', 'Wrong starting position',   &
-                   __FILE__, __LINE__)
+                   THIS_FILE, __LINE__)
         starting_pos = after
       else
         starting_pos = 0
@@ -774,7 +775,7 @@ MODULE parse
 
       if (starting_pos+ind .gt. pline%ntokens)                          &
         call die('PARSE module: tokens', 'Wrong starting position',     &
-                 __FILE__, __LINE__)
+                 THIS_FILE, __LINE__)
 
       loc = starting_pos+ind
       tokens = pline%line(pline%first(loc):pline%last(loc))
@@ -810,7 +811,7 @@ MODULE parse
       if (PRESENT(after)) then
         if ((after .lt. 0) .or. (after .ge. pline%ntokens))             &
           call die('PARSE module: tokens', 'Wrong starting position',   &
-                   __FILE__, __LINE__)
+                   THIS_FILE, __LINE__)
         starting_pos = after
       else
         starting_pos = 0
@@ -830,7 +831,7 @@ MODULE parse
            .OR. (loc_final .lt. loc_init)           &
          )  then
          call die('PARSE module: characters', 'Wrong limits',     &
-                 __FILE__, __LINE__)
+                 THIS_FILE, __LINE__)
       endif
 
       characters = pline%line(pline%first(loc_init):pline%last(loc_final))
@@ -868,7 +869,7 @@ MODULE parse
 
       if (ntokens .gt. MAX_NTOKENS) then
          call die('PARSE module: digest', 'Too many tokens', &
-                   __FILE__, __LINE__, rc=666)
+                   THIS_FILE, __LINE__, rc=666)
       endif
 
       do i= 1, ntokens
@@ -1040,7 +1041,7 @@ MODULE parse
           if (ierr .ne. 0) then
             write(msg,'(a,i3,1x,a,/,a)') 'Error in numeric conversion ', &
                  'at token number', i, ' in line ''', TRIM(line), ''''
-            call die('PARSE module: morphol', msg, __FILE__, __LINE__)
+            call die('PARSE module: morphol', msg, THIS_FILE, __LINE__)
           endif
 
           if (is_integer(token)) then
@@ -1092,7 +1093,7 @@ MODULE parse
           (token_id .ne. 'r') .and. (token_id .ne. 'n')) then        
         write(msg,*) 'Morphology id = ''', token_id,                    &
                      ''' not valid for token = ''', tokens(pline, ntoken), ''''
-        call die('PARSE module: setmorphol', msg, __FILE__, __LINE__)
+        call die('PARSE module: setmorphol', msg, THIS_FILE, __LINE__)
       endif
 
       pline%id(ntoken) = token_id
@@ -1129,7 +1130,7 @@ MODULE parse
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: search_fun', 'Wrong starting position', &
-                   __FILE__, __LINE__)
+                   THIS_FILE, __LINE__)
         endif
         starting_pos = after
       else
@@ -1139,7 +1140,7 @@ MODULE parse
       search_fun = -1
       if (.not. ASSOCIATED(pline_fun)) then
         call die('PARSE module: search_fun', 'parsed_line not associated', &
-                 __FILE__, __LINE__)
+                 THIS_FILE, __LINE__)
       endif
 
 !     The default comparison routine is 'leqi' (case-insensitive)
@@ -1192,7 +1193,7 @@ MODULE parse
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: search_sub', 'Wrong starting position', &
-                   __FILE__, __LINE__)
+                   THIS_FILE, __LINE__)
         endif
         starting_pos = after
       else
@@ -1203,7 +1204,7 @@ MODULE parse
       search_sub = .FALSE.
       if (.not. ASSOCIATED(pline_sub)) then
         call die('PARSE module: search_sub', 'parsed_line not associated', &
-                 __FILE__, __LINE__)
+                 THIS_FILE, __LINE__)
       endif
 
 !     The default comparison routine is 'leqi' (case-insensitive)
@@ -1255,7 +1256,7 @@ MODULE parse
         if (after .lt. 0) then
           call die('PARSE module: substring_search', &
                    'Wrong starting position', &
-                   __FILE__, __LINE__)
+                   THIS_FILE, __LINE__)
         endif
         starting_pos = after
       else
@@ -1267,7 +1268,7 @@ MODULE parse
       if (.not. ASSOCIATED(pline_sub)) then
         call die('PARSE module: substring_search', &
                  'parsed_line not associated', &
-                 __FILE__, __LINE__)
+                 THIS_FILE, __LINE__)
       endif
 
 !     NOTE that the we use the case-sensitive Fortran 'index' function
@@ -1308,7 +1309,7 @@ MODULE parse
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: match', 'Wrong starting position',    &
-                   __FILE__, __LINE__)
+                   THIS_FILE, __LINE__)
         endif
         shift = after
       else
