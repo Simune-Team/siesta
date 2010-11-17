@@ -1,6 +1,23 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+319 Alberto Garcia	  2010-11-17
+Fine tuning of Util compilation
+
+Some minor details needed fixing:
+
+- New dependencies when BSC_CELLXC is defined
+- "default" targets need to appear before inclusion of arch.make
+
+removed:
+  Util/TBTrans/MPI/
+modified:
+  Src/Makefile
+  Util/Contrib/APostnikov/Makefile
+  Util/Gen-basis/Makefile
+  Util/Optimizer/Makefile
+
+------------------------------------
 318 Alberto Garcia	  2010-11-16
 Fix compilation of Utils
 
