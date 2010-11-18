@@ -6,6 +6,18 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2010-11-18  08:40:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-363
+Modify bonds routine to print real locations of neighbors
+
+In routine bonds (called at the beginning and at the end of the
+program) we now print the real location of the neighbor atom in space,
+and not, as in earlier versions, the location of the equivalent
+representative in the unit cell.
+
+modified:
+  Src/bonds.f
+
+-----------------------------------------------------------------------
 2010-11-12  16:20:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-362
 Merge 3.0 fixes: ps reparametrization, getopts, ioncat, atm manual
 
