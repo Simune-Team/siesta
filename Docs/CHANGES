@@ -6,6 +6,17 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2010-11-18  08:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-364
+Clarify the output of the timing routine
+
+The timing routine now prints zeros instead of NaNs in the
+communications section if the variable MPI_TIMING is not defined,
+and an informational note.
+
+modified:
+  Src/m_timer.F90
+
+-----------------------------------------------------------------------
 2010-11-18  08:40:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-363
 Modify bonds routine to print real locations of neighbors
 
