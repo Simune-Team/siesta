@@ -1,6 +1,29 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+320 Alberto Garcia	  2010-11-23
+Timing routine output. Positions of neighbors in BONDS file
+
+* Clarify the output of the timing routine
+
+The timing routine now prints zeros instead of NaNs in the
+communications section if the variable MPI_TIMING is not defined, and
+an informational note.
+
+modified:
+  Src/m_timer.F90
+
+* Modify bonds routine to print real locations of neighbors
+
+In routine bonds (called at the beginning and at the end of the
+program) we now print the real location of the neighbor atom in space,
+and not, as in earlier versions, the location of the equivalent
+representative in the unit cell.
+
+modified:
+  Src/bonds.f
+
+------------------------------------
 319 Alberto Garcia	  2010-11-17
 Fine tuning of Util compilation
 
