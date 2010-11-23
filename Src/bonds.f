@@ -79,9 +79,11 @@ C Find neighbours of atom IA
               call pxfflush(iu)
               cycle   ! loop over ia
            endif
+           ! Sort by distance
            call sort( nna, r2ij, index )
            call iorder( jna, 1, nna, index )
            call order(  r2ij, 1, nna, index )
+           call order(  xij, 3, nna, index )
 
            write(iu,fmt="(a,i3,1x,a,3f8.4)")
      $       "Neighbors of: ",
@@ -91,9 +93,15 @@ C Find neighbours of atom IA
             JA = JNA(IN)
             JS = ISA(JA)
             RIJ = SQRT(R2IJ(IN))
-            if (rij > 0.0001_dp)
-     $        write(iu,fmt="(i3,1x,a,f8.4,2x,a,3f8.4)")
-     $           ja, labelfis(js), rij/Ang, "Ang. at: ", xa(:,ja)
+            if (rij > 0.0001_dp) then
+               write(iu,fmt="(i3,1x,a,f8.4,2x,a,3f8.4)")
+     $           ja, labelfis(js), rij/Ang, "Ang. Really at: ",
+     $           xa(:,ia)+xij(:,in)
+            endif
+            ! Note that we now print the real location of the
+            ! neighbor atom in space, and not, as in earlier
+            ! versions, the location of the equivalent representative
+            ! in the unit cell.
           enddo
 
       enddo

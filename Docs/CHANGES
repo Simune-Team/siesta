@@ -5,6 +5,19 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2010-11-23  09:45:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-5
+Modify bonds routine to print real locations of neighbors
+
+In routine bonds (called at the beginning and at the end of the
+program) we now print the real location of the neighbor atom in space,
+and not, as in earlier versions, the location of the equivalent
+representative in the unit cell.
+
+modified:
+  Src/bonds.f
+  Docs/siesta.tex
+
+------------------------------------------------------------------------
 2010-11-12  14:55:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-4
 Cosmetic fixes in Gen-basis/{ioncat,ionplot.sh}
 
