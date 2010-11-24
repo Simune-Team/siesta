@@ -1,6 +1,13 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+321 Alberto Garcia	  2010-11-24
+Write electronic temperature while processing options 
+
+modified:
+ Src/siesta_options.F90
+
+------------------------------------
 320 Alberto Garcia	  2010-11-23
 Timing routine output. Positions of neighbors in BONDS file
 

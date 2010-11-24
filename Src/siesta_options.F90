@@ -767,7 +767,7 @@ MODULE siesta_options
 
     ! Electronic temperature for Fermi Smearing ...
     temp = fdf_get('ElectronicTemperature',temp_default,'Ry')
-    if (ionode .and. isolve.eq.SOLVE_TRANSI) then
+    if (ionode .and. isolve.eq.SOLVE_DIAGON) then
       write(6,6) 'redata: Electronic Temperature           = ',temp,'  Ry'
     endif
 
