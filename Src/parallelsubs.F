@@ -15,8 +15,6 @@ C
       use parallel,     only : BlockSize, ProcessorY
       use spatial,      only : lspatial, nNode, nL2G, nG2L,
      &                         nOrbPerNode
-      use domain_decom, only : use_dd, use_dd_perm, dd_nuo, dd_perm,
-     &                         ulimit, llimit, dd_invp, dd_nnode
       use sys,          only : die
       implicit none
 
@@ -74,8 +72,6 @@ C  Spatial distribution  -
 C-------------------------
           NOrbNode = nOrbPerNode(Node+1)
 
-        else if (use_dd) then
-          NOrbNode = dd_nuo
         else
 C-----------------------------
 C  Blockcyclic distribution  -
@@ -143,16 +139,7 @@ C-------------------------
         else
           LOrb = 0
         endif
-      else if (use_dd) then
-        if (use_dd_perm) then
-          LOrb = dd_perm(GOrb)
-        else
-          if (GOrb.ge.llimit .and. GOrb.lt.ulimit) then
-            LOrb = GOrb - llimit + 1
-          else
-            LOrb = 0
-          endif
-        endif
+
       else
 C-----------------------------
 C  Blockcyclic distribution  -
@@ -213,12 +200,6 @@ C  Spatial distribution  -
 C-------------------------
         GOrb = nL2G(LOrb,Node+1)
 
-      else if (use_dd) then
-        if (use_dd_perm) then
-          GOrb = dd_invp(LOrb)
-        else
-          GOrb = LOrb + llimit - 1
-        endif
       else   
 C-----------------------------
 C  Blockcyclic distribution  -
@@ -267,8 +248,7 @@ C-------------------------
 C  Spatial distribution  - 
 C-------------------------
         Node = nNode(GOrb)
-      else if (use_dd) then
-        Node = dd_nnode(GOrb)
+
       else   
 C-----------------------------
 C  Blockcyclic distribution  -

@@ -24,7 +24,6 @@
       use sparse_matrices, only : resetSparseMatrices
       use m_fixed,         only : resetFixedPointers
       use band,            only : reset_bands
-      use domain_decom,    only : resetDomainDecom
       implicit none
 
 #ifdef MPI
@@ -42,7 +41,6 @@
       call resetDenseMatrix( )
       call resetFixedPointers( )
       call reset_bands( )
-      call resetDomainDecom( )
       call resetMeshPhi( )
       call resetDscfPointers( )
 

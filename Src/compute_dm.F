@@ -28,11 +28,6 @@
       use m_ordern,        only : ordern
       use m_steps,         only : istp
       use m_spin,          only : nspin, qs, efs
-      use domain_decom,    only : gatherGlobalMatrix
-      use jacobi_davidson, only : jd_diag
-#ifdef _SLEPC_
-      use slepc_diagon,    only : slepc_diag
-#endif
 #ifdef TRANSIESTA
       use m_ts_options, only : mixH
       use m_ts_global_vars, only : TSiscf, TSinit, TSrun, Hold
@@ -100,23 +95,6 @@
         Ecorrec = 0._dp
 ! TSS End
 #endif /* TRANSIESTA */
-      elseif (isolve .eq. SOLVE_JACOBI) then
-!        call gatherGlobalMatrix( no_s, no_l, maxnh, S, 'S.matrix' )
-!        call gatherGlobalMatrix( no_s, no_l, maxnh, H(1:maxnh,1),
-!     &                           'H.matrix' )
-        call jd_diag( no_s, no_l, nspin, neigwanted, fixspin, temp,
-     &                qtot, qs, occtol, numh, listh, H, S,
-     &                ef, efs, Entrop, Dscf, Escf )
-#ifdef _SLEPC_
-      elseif (isolve .eq. SOLVE_SLEPC) then
-!        call gatherGlobalMatrix( no_s, no_l, maxnh, S, 'S.matrix' )
-!        call gatherGlobalMatrix( no_s, no_l, maxnh, H(1:maxnh,1),
-!     &                           'H.matrix' )
-        nnz = numh(no_l) + listhptr(no_l)
-        call slepc_diag( no_s, no_l, nnz, nspin, neigwanted, fixspin,
-     &                   temp, qtot, qs, occtol, numh, listh, H, S,
-     &                   ef, efs, Entrop, Dscf, Escf )
-#endif
       else
         call die('siesta: ERROR: wrong solution method')
       endif

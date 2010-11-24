@@ -70,7 +70,7 @@ SYSOBJ=$(SYS).o pxf.o
 #
 # Note that machine-specific files are now in top Src directory.
 #
-OBJS =  domain_decom.o automatic_cell.o atom_options.o \
+OBJS =  automatic_cell.o atom_options.o \
         arw.o  atomlwf.o bands.o basis_enthalpy.o bessph.o bonds.o \
         born_charge.o cellxc_mod.o cgwf.o chkdim.o chkgmx.o \
 	chempot.o coceri.o coxmol.o cross.o compute_norm.o\
@@ -128,10 +128,7 @@ OBJS =  domain_decom.o automatic_cell.o atom_options.o \
         final_H_f_stress.o phionmesh.o initmesh.o \
         debugmpi.o qsort.o distriphionmesh.o \
         dscfcomm.o schecomm.o moremeshsubs.o \
-        pspltm1.o lenstr.o printmatrix.o jacobi_davidson.o \
-        matrixop.o precond.o gmres.o cg.o  m_iodm.o m_sparse.o mmio.o \
-        cholesky.o walltime.o deflatedmv.o setupextmesh.o initatommesh.o \
-        slepc_diagon.o \
+        m_iodm.o m_sparse.o walltime.o setupextmesh.o initatommesh.o \
 	m_filter.o \
         m_io.o \
 	m_recipes.o \

@@ -64,7 +64,6 @@ C
       use sorting
       use neighbour,       only : jna=>jan, xij, r2ij, maxna=>maxnna
       use neighbour,       only : mneighb, reset_neighbour_arrays
-      use domain_decom,    only : use_dd, domainDecom
       use sys,             only : die
       use alloc,           only : re_alloc, de_alloc
       use atomlist,        only : no_l
@@ -464,10 +463,6 @@ C           Restore conect array for next orbital io
         enddo       ! io
       enddo         ! ia
 
-      if (use_dd) then
-        call domainDecom( nuotot, nuo, nlhmax )
-        no_l = nuo
-      endif
 
 C     Initialize listsc
       call LISTSC_INIT( nsc, nuotot )

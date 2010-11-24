@@ -32,7 +32,7 @@ METIS_LIB=/share/apps/metis-4.0/libmetis.a
 
 LAPACK=-L$(PGI)/osx86-64/10.8/lib -llapack -lblas
 LIBS=-L/share/apps/local_libs/pgi-10.8 -lscalapack \
-     -L/share/apps/local_libs/pgi-10.8/openmpi-1.4.2 -lblacsF77 -lblacsC -lblacs \
+     -L/share/apps/local_libs/pgi-10.8/openmpi-1.4.2 -lblacsF77 -lblacsC -lblacs -lblacsF77 -lblacsC \
       $(LAPACK) \
       $(NETCDF_LIBS) $(METIS_LIB)
 #

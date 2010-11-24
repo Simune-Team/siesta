@@ -21,7 +21,6 @@ C
       use parallelsubs, only : set_processorY, set_BlockSizeDefault
       use parallelsubs, only : set_processorYdefault
       use spatial
-      use domain_decom, only : use_dd, use_dd_perm, preSetOrbitLimits
       use sys
       use alloc,        only : re_alloc
       use siesta_options
@@ -86,20 +85,6 @@ C Set spatial decomposition flag according to SCF method
         lspatial = .true.
       else
         lspatial = .false.
-      endif
-
-C Set Domain decomposition flag according to SCF method
-      if (isolve.eq.SOLVE_JACOBI) then
-        use_dd      = .true.
-        use_dd_perm = .false.
-#ifdef _SLEPC_
-      else if (isolve.eq.SOLVE_SLEPC) then
-        use_dd      = .true.
-        use_dd_perm = .false.
-#endif
-      else
-        use_dd      = .false.
-        use_dd_perm = .false.
       endif
 
 C Spatial decomposition flag
@@ -228,10 +213,6 @@ C
           nG2L(ii) = ii
           nNode(ii) = 0
         enddo
-      endif
-
-      if (use_dd) then
-        call preSetOrbitLimits( no_u )
       endif
 
 #ifdef DEBUG

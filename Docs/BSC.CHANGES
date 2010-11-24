@@ -1,6 +1,39 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+322 Alberto Garcia	  2010-11-24
+Remove non-finished iterative diagonalization code
+
+The Jacobi-Davidson (including slepc) code has been
+removed as it is not ready for merging. A number of
+auxiliary files have been deleted.
+
+removed:
+  Src/cg.F
+  Src/cholesky.F
+  Src/deflatedmv.F
+  Src/domain_decom.F
+  Src/gmres.F
+  Src/jacobi_davidson.F
+  Src/lenstr.F
+  Src/matrixop.F
+  Src/mmio.F
+  Src/precond.F
+  Src/printmatrix.F
+  Src/pspltm1.F
+modified:
+  Src/Makefile
+  Src/Sys/atto-pgf95-openmpi.make
+  Src/compute_dm.F
+  Src/hsparse.F
+  Src/initparallel.F
+  Src/parallelsubs.F
+  Src/siesta_end.F
+  Src/siesta_options.F90
+  Src/write_subs.F
+  Util/Denchar/Src/Makefile
+
+------------------------------------
 321 Alberto Garcia	  2010-11-24
 Write electronic temperature while processing options 
 
