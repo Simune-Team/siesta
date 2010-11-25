@@ -5,6 +5,18 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2010-11-25  15:30:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-6
+Fix setting of applied electric field in parallel
+
+Due to a programming error, the user-specified electric
+field was not correctly set in non-master nodes.
+
+Thanks to Alexander Voznyy for the bug report.
+
+modified:
+  Src/m_efield.F
+
+------------------------------------------------------------------------
 2010-11-23  09:45:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-5
 Modify bonds routine to print real locations of neighbors
 
