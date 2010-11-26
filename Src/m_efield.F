@@ -155,24 +155,26 @@
       if (acting_efield) then
          call orthogonalize_efield(input_field,orthog_field,orthog)
 
-         if (ionode) then
-            if (orthog) then
+         if (orthog) then
+            if (ionode) then
                write(6,'(/,a,3f12.6,a)')
      $              'efield: External electric field =',
      $              input_field, ' Ry/Bohr/e'
-               user_specified_field(1:3) = input_field(1:3)
-            else
+            endif
+            user_specified_field(1:3) = input_field(1:3)
+         else
+            if (ionode) then
                write(6,'(a,(/,a,3f12.6))')
      .              'efield: WARNING: Non zero bulk electric field.',
      .              'efield: Input field (Ry/Bohr/e) =', input_field,
      .              'efield: Orthogonalized field    =', orthog_field
-               user_specified_field(1:3) = orthog_field(1:3)
             endif
-            if (cml_p) call cmlAddProperty(xf=mainXML,
+            user_specified_field(1:3) = orthog_field(1:3)
+         endif
+         if (cml_p) call cmlAddProperty(xf=mainXML,
      $           value=user_specified_field, 
      .           dictref='siesta:elfield', 
      .           units='siestaUnits:Ry_Bohr_e')
-         endif
       endif
 !
       acting_efield =

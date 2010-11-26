@@ -1,6 +1,18 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+323 Alberto Garcia	  2010-11-26
+Fix setting of applied electric field in parallel
+
+Due to a programming error, the user-specified electric
+field was not correctly set in non-master nodes.
+
+Thanks to Alexander Vozny for the bug report.
+
+modified:
+  Src/m_efield.F
+
+------------------------------------
 322 Alberto Garcia	  2010-11-24
 Remove non-finished iterative diagonalization code
 
@@ -32,6 +44,10 @@ modified:
   Src/siesta_options.F90
   Src/write_subs.F
   Util/Denchar/Src/Makefile
+
+------------------------------------
+Start of interim branch bsc-grid+fdf
+------------------------------------
 
 ------------------------------------
 321 Alberto Garcia	  2010-11-24
