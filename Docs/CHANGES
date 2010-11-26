@@ -6,6 +6,18 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2010-11-26  15:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-365
+Fix setting of applied electric field in parallel
+
+Due to a programming error, the user-specified electric
+field was not correctly set in non-master nodes.
+
+Thanks to Alexander Vozny for the bug report.
+
+modified:
+  Src/m_efield.F
+
+-----------------------------------------------------------------------
 2010-11-18  08:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-364
 Clarify the output of the timing routine
 
