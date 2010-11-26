@@ -79,6 +79,8 @@
 !   - call siesta_launch(singleLabel,siestaNodes) => a number nSiestaProc =
 !     (totalNodes/siestaNodes) of siesta processes are launched, each with 
 !     siestaNodes MPI processes. All will read the same file singleLabel.fdf
+!     The MPI processes of any given siesta process have conscutive ranks
+!     so that siestaNode = int(MPInode/siestaNodes)
 !   - call siesta_launch(singleLabel,mpi_comm=siestaComm) => the same as 
 !     previous one, but with more control and flexibility in distributing 
 !     MPI processes among siesta processes (notice: 'mpi_comm=' is mandatory)
@@ -188,7 +190,8 @@ MODULE fsiesta
   use siesta_master,    only: siesta_subroutine    ! Is siesta a subroutine?
   use siesta_master,    only: input_file           ! fdf data file
 #ifdef MPI
-  use mpi,        only: MPI_Comm_World        ! The true MPI_COMM_WORLD
+  use mpi_siesta, only: MPI_Comm_World => true_MPI_Comm_World ! The true
+                                                              ! MPI_COMM_WORLD
   use mpi_siesta, only: MPI_Comm_Siesta => MPI_Comm_World ! What siesta uses
                                                           ! as MPI_Comm_World
   use mpi_siesta, only: MPI_Init              ! Initialize MPI
