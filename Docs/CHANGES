@@ -6,6 +6,29 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2010-11-30  13:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-366
+Work around bugs in Intel compilers: FoX generics, k-grid
+
+* Work around a bug in Intel12 compiler in k-grid setup
+
+A dummy internal write is used to re-focus the compiler
+treatment of a few integer variables.
+
+modified:
+  Src/find_kgrid.F
+  Src/kgrid.F
+  Src/kgridinit.F
+
+* Avoid use of generics in declarations in FoX format routine
+
+The use of generic functions in declaration statements was confusing
+the Fortran compiler (version >= 11). They have been replaced by calls
+to the specific versions.
+
+modified:
+  Src/FoX/fsys/fox_m_fsys_format.F90
+
+-----------------------------------------------------------------------
 2010-11-26  15:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-365
 Fix setting of applied electric field in parallel
 
