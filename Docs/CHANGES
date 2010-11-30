@@ -5,6 +5,17 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2010-11-30  08:40:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-7
+Avoid use of generics in declarations in FoX format routine
+
+The use of generic functions in declaration statements was confusing
+the Fortran compiler (version >= 11). They have been replaced by calls
+to the specific versions.
+
+modified:
+  Src/FoX/fsys/fox_m_fsys_format.F90
+
+------------------------------------------------------------------------
 2010-11-25  15:30:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-6
 Fix setting of applied electric field in parallel
 
