@@ -5,6 +5,18 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2010-11-30  11:50:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-87
+Work around a bug in Intel12 compiler in k-grid setup
+
+A dummy internal write is used to re-focus the compiler
+treatment of a few integer variables.
+
+modified:
+  Src/find_kgrid.F
+  Src/kgrid.F
+  Src/kgridinit.F
+
+------------------------------------------------------------------------
 2010-11-30  08:40:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-7
 Avoid use of generics in declarations in FoX format routine
 
