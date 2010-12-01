@@ -81,9 +81,9 @@ C Internal variables and arrays
 #ifdef MPI
       integer    Ind2, MPIerror, Request,
      .           Status(MPI_Status_Size), BNode, NBlock
-      real(grid_p), save, pointer :: bdens(:)
+      real(grid_p), save, pointer :: bdens(:) => null()
 #endif
-      real(sp),           pointer :: temp(:)
+      real(sp),           pointer :: temp(:) => null()
 
 #ifdef MPI
 #ifdef DEBUG
@@ -297,9 +297,9 @@ C Internal variables and arrays
       integer    Ind2, MPIerror, Request, meshl(3),
      .           Status(MPI_Status_Size), BNode, NBlock
       logical    ltmp
-      real(grid_p), save, pointer :: bdens(:)
+      real(grid_p), save, pointer :: bdens(:) => null()
 #endif
-      real(sp),           pointer :: temp(:)
+      real(sp),           pointer :: temp(:) => null()
 
       logical    baddim, found
 

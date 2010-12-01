@@ -2977,7 +2977,7 @@ C     Local variables
       integer                         :: P1, P2, P3, Lbox(2,3), II, I1,
      &                                   PermI
       integer,                pointer :: Isiz(:,:), perm(:), weig(:),
-     &                                   invp(:), box(:,:,:)
+     &                                   invp(:), box(:,:,:)=>null()
       logical                         :: inters
 
 C     Allocate local arrays
@@ -3097,7 +3097,7 @@ C     Local variables
      &                                   SIMAX, Lbox(2,3)
       integer,                pointer :: Nsiz(:), perm(:), Gprm(:),
      &                                   chkb(:), box1(:,:), box2(:,:),
-     &                                   box(:,:,:)
+     &                                   box(:,:,:)=>null()
       integer                         :: PROCS_PER_NODE
       logical                         :: inters
 

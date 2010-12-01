@@ -120,8 +120,11 @@ C Internal variables and arrays
 
       integer, parameter      :: maxpt = 100
 
-      real(dp), pointer       :: avfa(:,:), faold(:,:),
-     &                           xanew(:,:), avfa2(:,:), faold2(:,:)
+      real(dp), pointer       :: avfa(:,:) => null(),
+     $                           faold(:,:) => null(),
+     &                           xanew(:,:) => null(),
+     $                           avfa2(:,:) => null(),
+     $                           faold2(:,:) => null()
 
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline

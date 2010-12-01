@@ -123,10 +123,11 @@ C Internal variables ...........................................................
      &            xnew
       real(dp) :: xdum(3), xaold(3), suncdot(3), raux(3)
 
-      real(dp), pointer :: s(:,:), sdot(:,:), snew(:,:), sunc(:,:)
+      real(dp), pointer :: s(:,:)=>null(), sdot(:,:)=>null(),
+     $                     snew(:,:)=>null(), sunc(:,:)=>null()
       real(dp)          :: rr
 
-      real(dp), pointer, save :: sold(:,:)
+      real(dp), pointer, save :: sold(:,:)=>null()
       real(dp), save ::  hold(3,3), x, xold
 
       integer :: old_natoms, dummy_iza, iacc
@@ -637,8 +638,9 @@ C Internal variables
      &            press(3,3), tdiff, twodt, vol
       real(dp) :: xdum(3), xaold(3), suncdot(3), raux(3)
 
-      real(dp), pointer :: s(:,:), sdot(:,:), snew(:,:), sunc(:,:)
-      real(dp), pointer, save :: sold(:,:)
+      real(dp), pointer :: s(:,:)=>null(), sdot(:,:)=>null(),
+     $                     snew(:,:)=>null(), sunc(:,:)=>null()
+      real(dp), pointer, save :: sold(:,:)=>null()
       real(dp), save ::  hold(3,3)
 
       integer :: old_natoms, dummy_iza, iacc
@@ -1136,7 +1138,7 @@ C Internal variables .........................................................
      .  tekin,temp,twodt,
      .  x,xdot,xlast,xnew,xold
 
-      real(dp), pointer, save :: xanew(:,:), xaold(:,:)
+      real(dp), pointer, save :: xanew(:,:)=>null(), xaold(:,:)=>null()
 C .............................................................................
 
       restart_file = trim(slabel) // '.NOSE_RESTART'
@@ -1423,8 +1425,9 @@ C Internal variables ...........................................................
       real(dp) :: dt2, fovermp, hi(3,3), hs(3), pgas, press(3,3),
      &            pressin, rfac, rfac2, tekin, temp, twodt, vol, volcel
 
-      real(dp), pointer :: s(:,:), sdot(:,:), snew(:,:), sunc(:,:)
-      real(dp), pointer, save :: sold(:,:)
+      real(dp), pointer :: s(:,:)=>null(), sdot(:,:)=>null(),
+     $                     snew(:,:)=>null(), sunc(:,:)=>null()
+      real(dp), pointer, save :: sold(:,:)=>null()
 
       real(dp), dimension(3) :: xdum, xaold
       logical :: have_t_target, have_p_target
@@ -1750,7 +1753,8 @@ C Internal variables ..........................................................
       real(dp)
      .  dot,dt2,fovermp,temp,twodt
 
-      real(dp), pointer, save :: xanew(:,:), xaold(:,:)
+      real(dp), pointer, save :: xanew(:,:)=>null(),
+     $                           xaold(:,:)=>null()
 
 C ........................
 
@@ -1923,7 +1927,7 @@ C Internal variables ..........................................................
       real(dp)
      .  dot,dt2,dtby2,fovermp,temp
 
-      real(dp), pointer, save :: accold(:,:), vold(:,:)
+      real(dp), pointer, save :: accold(:,:)=>null(), vold(:,:)=>null()
 
 C Related to FIRE quenching
       integer, parameter  :: firenmin = 5

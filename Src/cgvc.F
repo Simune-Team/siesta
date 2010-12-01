@@ -86,11 +86,11 @@ c Internal variables and arrays
       real(dp) ::  celli(3,3), sxx, syy, szz, sxy, sxz, syz
       real(dp) ::  stress_dif(3,3)
 
-      real(dp), pointer :: gxa(:), gfa(:)
-      real(dp), pointer, save :: cgaux(:)
+      real(dp), pointer :: gxa(:)=>null(), gfa(:)=>null()
+      real(dp), pointer, save :: cgaux(:)=>null()
 
       type(block_fdf)            :: bfdf
-      type(parsed_line), pointer :: pline
+      type(parsed_line), pointer :: pline=>null()
 
 ! Saved internal variables:
 

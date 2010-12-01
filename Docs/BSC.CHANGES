@@ -1,6 +1,32 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+325 Alberto Garcia	  2010-12-01
+Explicitly nullify pointers in several places
+
+During the wholesale conversion of allocatables to
+pointers in some routines some of the pointers were
+left in an undefined state. The declarations have
+been changed to use the f95 " => null()" construct.
+
+Note: This version includes a minimal fixing of
+      moremeshsubs. There might be other issues
+      involving intent(out) derived types 
+      with pointer components
+
+( + removal of fossil walltime.o from Makefile)
+
+modified:
+  Src/Makefile
+  Src/cgvc.F
+  Src/dynamics.f
+  Src/grdsam.F
+  Src/m_iorho.F
+  Src/moremeshsubs.F
+  Src/mulliken.F
+  Src/zmatrix.F
+
+------------------------------------
 324 Alberto Garcia	  2010-12-01
 Work around bugs in Intel compilers: FoX generics, k-grid
 

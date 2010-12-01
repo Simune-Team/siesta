@@ -946,8 +946,10 @@ C
         integer                     :: ia
         integer                     :: vi
         real(dp), parameter         :: hfrac = 1e-6
-        real(dp), pointer           :: CartesianB(:,:), CartesianF(:,:)
-        real(dp), pointer           :: ZmatF(:), ZmatB(:)
+        real(dp), pointer           :: CartesianB(:,:)=>null(),
+     $                                 CartesianF(:,:)=>null()
+        real(dp), pointer           :: ZmatF(:)=>null(),
+     $                                 ZmatB(:)=>null()
         real(dp)                    :: h
 #ifdef MPI
         integer                     :: MPIerror

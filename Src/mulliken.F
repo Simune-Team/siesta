@@ -78,7 +78,7 @@ C Number of columns in printout.  Must be smaller than 20
       integer  :: MPIerror, mpistatus(MPI_STATUS_SIZE)
       real(dp) :: pb(ncol)
       real(dp) :: temp1(5), temp2(5) 
-      real(dp),  pointer :: qb(:)
+      real(dp),  pointer :: qb(:)=>null()
       character(len=200) ::  mpibuff ! 200 is sufficiently long
 #endif
 
@@ -89,11 +89,11 @@ C Number of columns in printout.  Must be smaller than 20
       real(dp)
      .  p(ncol),qa,qas(4),qts(4),qtot,qtot_temp,stot,svec(3)
 
-      real(dp), pointer :: qo(:), qos(:,:)
+      real(dp), pointer :: qo(:)=>null(), qos(:,:)=>null()
 
       character sym_label(ncol)*7, atm_label*20
 
-      character(len=8), pointer :: orb_label(:)
+      character(len=8), pointer :: orb_label(:)=>null()
       character(len=13) :: atomtitle
 
 C ......................
