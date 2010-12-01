@@ -64,6 +64,8 @@ C
 
       implicit          none
 
+      character(len=24), save         :: accum
+
 C Passed variables
       integer, intent(inout)   :: kscell(3,3)
       integer, intent(out)     :: nk
@@ -270,6 +272,8 @@ C If spiral, use all k points
           elseif (abs(dkg(j)-0.5d0) .lt. tiny) then
             ni = (ng(j)-1)/2 + 1
           endif
+          ! To work around an Intel_12 compiler bug
+          write(accum,"(3i8)") ni,nktot,kdsc(j,j)
           nkr(j) = ni * nktot / kdsc(j,j)
         enddo
 
