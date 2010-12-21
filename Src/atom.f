@@ -370,6 +370,9 @@ c    .          'atom: The above configuration will be used ',
 ! We use the same valence charge as in ps generation
 !
           call vhrtre(rho,ve,rofi,drdi,s,nrval,a)  
+          if (write_ion_plot_files) then
+             call file_out(nrval,rofi,ve,trim(global_label)//".Vhart")
+          endif
 
 ! For PAO basis functions calculations 
 ! We use the "scaled" charge density of an ion of total charge "charge"
@@ -383,6 +386,10 @@ c    .          'atom: The above configuration will be used ',
           enddo 
           call vhrtre(rho_PAO,vePAO,rofi,drdi,s,nrval,a) 
           chargesave(is)=charge
+          if (write_ion_plot_files) then
+             call file_out(nrval,rofi,vePAO,
+     $            trim(global_label)//".Vhart-PAO")
+          endif
 ! 
 ! Check the exchange correlation functionals
 ! 
@@ -408,6 +415,11 @@ c    .          'atom: The above configuration will be used ',
           call atomxc(irelt,nrval,nrmax,rofi,
      .                1,auxrho,ex,ec,dx,dc,vxc)
 
+          if (write_ion_plot_files) then
+             call file_out(nrval,rofi,vxc,
+     $            trim(global_label)//".Vxc")
+          endif
+
           ve(1:nrval)=ve(1:nrval)+vxc(1:nrval)
 
           do ir=2,nrval
@@ -423,6 +435,11 @@ c    .          'atom: The above configuration will be used ',
 
           call atomxc(irelt,nrval,nrmax,rofi,
      .                1,auxrho,ex,ec,dx,dc,vxc)
+
+          if (write_ion_plot_files) then
+             call file_out(nrval,rofi,vxc,
+     $            trim(global_label)//".Vxc-PAO")
+          endif
 
           vePAO(1:nrval)=vePAO(1:nrval)+vxc(1:nrval)
 
@@ -2867,15 +2884,10 @@ C
              table(2,-indx,is)=ekb
 
              if (debug_kb_generation) then
+                nrckb = nint(log(rc/b+1.0d0)/a)+1
                 write(filename,"(a,i1)")
      $               trim(global_label) // "-KBProj.", indx
-                call io_assign(lun)
-                open(unit=lun,file=filename,form="formatted")
-                nrckb = nint(log(rc/b+1.0d0)/a)+1
-                do ir = 1, nrckb
-                   write(lun,*) rofi(ir), proj(ir)
-                enddo
-                call io_close(lun)
+                call file_out(nrckb,rofi,proj,filename)
              endif
 !
              do itb=1,ntbmax-1
@@ -3325,6 +3337,10 @@ C and angular momentum
               do ir = 1, nrval
                 vePAOsoft(ir) = vePAO(ir) + vsoft(ir)
               enddo
+              if (write_ion_plot_files) then
+                 call file_out(nrval,rofi,vePAOsoft,
+     $                trim(global_label)//".Vsoft")
+              endif
 
 ! END SOFT-CONFINEMENT 
 
@@ -6280,5 +6296,25 @@ c    .                     ,'        # scaleFactor(izeta=1,Nzeta)'
       x = (r-a)/(b-a)
       y = tanh(1.0_dp/(x+tiny) - 1.0_dp)
       end function dampen
+
+!----------------------------------------------------------------
+      subroutine file_out(n,r,f,name)
+!
+!     Convenience routine to plot radial magnitudes
+!
+      integer, intent(in)  :: n
+      real(dp), intent(in) :: r(n), f(n)
+      character(len=*), intent(in) :: name
+
+      integer lun, i
+      call io_assign(lun)
+      open(unit=lun,file=trim(name),form="formatted",
+     $     action="write",position="rewind",status="unknown")
+      do i=1,n
+         write(lun,*) r(i), f(i)
+      enddo
+      call io_close(lun)
+
+      end subroutine file_out
 
       end module atom

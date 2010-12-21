@@ -6,6 +6,96 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2010-11-26  15:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-365
+Fix setting of applied electric field in parallel
+
+Due to a programming error, the user-specified electric
+field was not correctly set in non-master nodes.
+
+Thanks to Alexander Vozny for the bug report.
+
+modified:
+  Src/m_efield.F
+
+-----------------------------------------------------------------------
+2010-11-18  08:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-364
+Clarify the output of the timing routine
+
+The timing routine now prints zeros instead of NaNs in the
+communications section if the variable MPI_TIMING is not defined,
+and an informational note.
+
+modified:
+  Src/m_timer.F90
+
+-----------------------------------------------------------------------
+2010-11-18  08:40:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-363
+Modify bonds routine to print real locations of neighbors
+
+In routine bonds (called at the beginning and at the end of the
+program) we now print the real location of the neighbor atom in space,
+and not, as in earlier versions, the location of the equivalent
+representative in the unit cell.
+
+modified:
+  Src/bonds.f
+
+-----------------------------------------------------------------------
+2010-11-12  16:20:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-362
+Merge 3.0 fixes: ps reparametrization, getopts, ioncat, atm manual
+
+* Cosmetic fixes in Gen-basis/{ioncat,ionplot.sh}
+
+modified:
+  Util/Gen-basis/ioncat.f
+  Util/Gen-basis/ionplot.sh
+
+* Fix test in m_getopts
+
+A double if test gives problems with some compilers when
+bounds checking is in effect.
+
+modified:
+  Src/m_getopts.f90
+
+* Improved grid for re-parametrization of pseudopotentials
+
+When the option Reparametrize.Pseudos is in effect, the program
+resamples the pseudopotential data into a new logarithmic grid with
+parameters chosen so that the grid-point separation at the typical rcs
+for orbitals is small enough (of the order of 0.01 bohr). The previous
+choice of parameters resulted in grid-point separations of the order
+of 0.005 bohr near the origin, which apparently is not fine enough for
+s orbitals, leading to oscillations in the gradient near the origin.
+
+A new set of default parameters has been chosen to provide a finer
+grid spacing (1.e-5 bohr) near the origin and 0.01 bohr around r=10
+bohr. This results in grids with around 10000 points, which is still
+manageable.
+
+( Also, a few extra diagnostic files are produced if the option
+  Write.Ion.Plot.Files is in effect, and the .psdump file now
+  contains the core charge )
+
+modified:
+  Src/atmparams.f
+  Src/atom.f
+  Src/basis_specs.f
+  Src/pseudopotential.f
+  Docs/siesta.tex
+
+* Update atom manual
+
+- Include a mention of the "fractional atomic number" capability.
+
+- Update the link to Jose Luis Martins' version of the atom program, and
+  the contact information in the README file.
+
+modified:
+  Pseudo/atom/Docs/atom.tex
+  Pseudo/atom/README
+
+-----------------------------------------------------------------------
 2010-10-01  10:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-361
 Improved documentation of VDW-KBM functional
 

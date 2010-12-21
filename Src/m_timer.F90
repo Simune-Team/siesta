@@ -397,10 +397,15 @@ subroutine print_report( prog )   ! Write a report of counted times
           'Calc: Sum, Avge, myNode, Avg/Max =', &
           sum(nodeCalTime), sum(nodeCalTime)/nNodes, totalCalTime, &
           sum(nodeCalTime)/nNodes / maxval(nodeCalTime)
+#ifdef MPI_TIMING
         write(iu,'(a,3f12.3,f8.3)') &
           'Comm: Sum, Avge, myNode, Avg/Max =', &
           sum(nodeComTime), sum(nodeComTime)/nNodes, totalComTime, &
           sum(nodeComTime)/nNodes / maxval(nodeComTime)
+#else
+	totalComTime = huge(1.0_dp) ! Avoid division by zero in prog table output
+	write(iu,'(a)') 'No communications time available. Compile with -DMPI_TIMING'
+#endif
         write(iu,'(a,3f12.3,f8.3)') &
           'Tot:  Sum, Avge, myNode, Avg/Max =', &
           sum(nodeTotTime), sum(nodeTotTime)/nNodes, totalTime, &
@@ -459,10 +464,15 @@ subroutine print_report( prog )   ! Write a report of counted times
 
       ! Write total communications time
       if (myNode==writerNode) then
+#ifdef MPI_TIMING
         write(iu,'(a15,i9,2(f12.3,f9.4))') &
          'MPI total      ', totalComCalls, &
           totalComTime, 1., totalComTime, totalComTime/totalTime
+#else
+	write(iu,'(a)') 'No communications time available. Compile with -DMPI_TIMING'
+#endif
       endif ! (myNode==writerNode)
+
 
 ! DEBUG
 !      ! Write time spent within final call to timer
