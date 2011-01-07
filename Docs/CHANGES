@@ -6,6 +6,19 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2011-01-07  15:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-367
+Initialized pointers in moreParallelSubs. Timer call
+
+* Several pointers were used without nullification in routine copyfile in
+file moreParallelSubs.F90.
+
+* A "turn-off" call to timer was needed in cdiag in case of early termination.
+
+modified:
+  Src/cdiag.F
+  Src/moreParallelSubs.F90
+
+-----------------------------------------------------------------------
 2010-11-30  13:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-366
 Work around bugs in Intel compilers: FoX generics, k-grid
 

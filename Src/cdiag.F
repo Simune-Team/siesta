@@ -594,6 +594,11 @@ C If there is insufficient memory due to eigenvalue clustering increase memory
               if (maxclustersize.gt.oldmaxclustersize) then
 C If the memory has increased then try again - otherwise fail
                 ierror = - 1
+                if (Node.eq.0) then
+                   write(6,*) "Re-trying diagonalization "//
+     $                        "with more memory..."
+                endif
+                call timer('cdiag3',2)
                 goto 999
               endif
             endif
