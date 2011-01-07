@@ -1,6 +1,30 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+326 Alberto Garcia	  2011-01-07
+Remove direct writes to debug unit. Remove BSC timing framework
+
+* In the BSC development version, the DEBUG preprocessing directive
+controls whether a sort of running commentary of the program is
+written to a set of debug files. This framework has been left in place
+for now, but some stray direct writes to the debug unit (23 by
+default) have been removed in several routines.
+
+* The "tiempo" module and all related fossil calls have been removed.
+
+* Removed the experimental slepc diagonalization routine, which had
+  been overlooked in the previous cleaning pass.
+ 
+removed:
+  Src/slepc_diagon.F
+modified:
+  Src/siesta_init.F
+  Src/siesta_move.F
+  Src/timer.F90
+
+
+
+------------------------------------
 325 Alberto Garcia	  2010-12-01
 Explicitly nullify pointers in several places
 

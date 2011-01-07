@@ -103,7 +103,6 @@ C     Initialise MPI and set processor number
       call debugMpiOn( )
       call write_debug( 'PRE siesta_init' )
 #endif
-      call inicializar_tiempo( 40 )
       IOnode = (Node .eq. 0)
 
 !     Print version information
