@@ -1,6 +1,20 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+327 Alberto Garcia	  2011-01-07
+Sync to trunk: intialize pointers; timer call
+
+* Several pointers were used without nullification in routine copyfile
+in file moreParallelSubs.F90.
+
+* A "turn-off" call to timer was needed in cdiag in case of early
+  termination.
+
+modified:
+  Src/cdiag.F
+  Src/moreParallelSubs.F90
+
+------------------------------------
 326 Alberto Garcia	  2011-01-07
 Remove direct writes to debug unit. Remove BSC timing framework
 

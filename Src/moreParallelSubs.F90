@@ -223,9 +223,9 @@ SUBROUTINE copyFile( srcNode, srcFile, dstNode, dstFile, writeOption )
   real(dp),parameter:: incrFactor =   1.5_dp  ! Increment factor for re_alloc
 
 ! Internal variables and arrays
-  integer,pointer:: lineBuf(:)  ! Which buffer contains each input line
-  integer,pointer:: lineEnd(:)  ! Last character of each line in buffer
-  character(len=bufferSize),pointer:: buffer(:)  ! Buffers to store input
+  integer,pointer:: lineBuf(:)=>null()! Which buffer contains each input line
+  integer,pointer:: lineEnd(:)=>null()! Last character of each line in buffer
+  character(len=bufferSize),pointer:: buffer(:)=>null()! Buffers to store input
   character(len=bufferSize):: line               ! One input line
   integer:: ib, iBuffer(2), il, iu, lineBegin, lineLength, &
             mBuffers, mLines, nBuffers, nLines, two
