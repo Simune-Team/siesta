@@ -1,6 +1,39 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+328 Alberto Garcia	  2011-02-02
+Repackage mesh routines
+
+By putting the mesh and meshphi modules in their own files it has been
+possible to consolidate most of the classic "*mesh" routines in the
+meshsubs.F file. The new BSC functionality is confined to
+moremeshsubs.F (distribution-related routines) and the "communication"
+modules schecomm, meshcomm, and m_dscfcomm.
+
+removed:
+  Src/distriphionmesh.F
+  Src/initatommesh.F
+  Src/initmesh.F
+  Src/phionmesh.F
+  Src/setupextmesh.F
+added:
+  Src/mesh.F
+  Src/meshphi.F
+renamed:
+  Src/dscfcomm.F => Src/m_dscfcomm.F
+  Src/meshmatrix.F => Src/meshdscf.F
+modified:
+  Src/Makefile
+  Src/dfscf.f
+  Src/dhscf.F
+  Src/meshsubs.F
+  Src/rhoofd.F
+  Src/siesta_end.F
+  Src/vmat.F
+  Src/m_dscfcomm.F
+  Src/meshdscf.F
+
+------------------------------------
 327 Alberto Garcia	  2011-01-07
 Sync to trunk: intialize pointers; timer call
 

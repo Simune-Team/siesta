@@ -34,10 +34,15 @@ C
 C     Modules
       use precision
       implicit none
-      integer,          save :: DCsize, DCself, DCtotal, DCmax, DCmaxnd
+      integer, public,  save :: DCsize, DCself, DCtotal, DCmax, DCmaxnd
+      integer, public, pointer, save :: DCsrc(:), DCdst(:),
+     $                                  DCsic(:), DCinvp(:)
       integer, pointer, save :: DCBuffer(:)
-      integer, pointer, save :: DCsrc(:), DCdst(:), DCsic(:), DCinvp(:)
-      end module m_dscfComm
+
+      public :: dscfComm, resetdscfComm
+      private
+
+      CONTAINS
 
       subroutine dscfComm( nuotot, nrowsDscfL, NeedDscfL )
 C ==================================================================
@@ -67,7 +72,6 @@ C ==================================================================
       use parallelsubs, only : GlobalToLocalOrb, WhichNodeOrb
       use alloc
       use scheComm
-      use m_dscfComm
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -305,7 +309,6 @@ C     of every orbital that we should send, receive or copy.
       end subroutine dscfComm
       
       subroutine resetdscfComm( )
-      use m_dscfComm, only : DCBuffer, DCinvp
       use alloc,      only : de_alloc
       implicit none
 !------------------------------------------------------------------------- BEGIN
@@ -313,3 +316,5 @@ C     of every orbital that we should send, receive or copy.
       call de_alloc( DCinvp, 'DCinvp', 'dscfComm' )
 !--------------------------------------------------------------------------- END
       end subroutine resetdscfComm
+
+      end module m_dscfComm

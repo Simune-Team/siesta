@@ -56,6 +56,7 @@ C  Modules
       use listsc_module, only: listsc
       use mesh,          only: dxa, nsp, xdop, xdsp
       use meshphi,       only: endpht, lstpht, listp2
+      use meshdscf,      only: matrixOtoM
       use meshdscf,      only: DscfL, nrowsDscfL, needDscfL
       use meshdscf,      only: listDl, listDlPtr, numdL
       use alloc,         only: re_alloc, de_alloc, alloc_default,

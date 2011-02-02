@@ -30,17 +30,23 @@ C                                      : a row of DscfL
 C real(dp)  DscfL(maxndl,nrowsDscfL)     : Local copy of Dscf elements
 C                                      : needed for the local mesh
 C ----------------------------------------------------------------------
-      integer           :: nrowsDscfL
-      integer,  pointer :: listdl(:), listdlptr(:), NeedDscfL(:),
-     &                     numdl(:)
-      real(dp), pointer :: DscfL(:,:)
+      integer, public            :: nrowsDscfL
+      integer,  pointer, public  :: listdl(:), listdlptr(:),
+     $                              NeedDscfL(:), numdl(:)
+      real(dp), pointer, public  :: DscfL(:,:)
       logical           :: first_time = .true.
 
-      end module meshdscf
+      public ::  matrixOtoM, matrixMtoO
+      public ::  resetDscfPointers
+      public ::  CreateLocalDscfPointers
+
+      private
+
+      CONTAINS
 
       subroutine resetDscfPointers( )
       use alloc, only : de_alloc
-      use meshdscf
+      use m_dscfcomm, only: resetdscfComm
       implicit none
       call resetdscfComm( )
       call de_alloc( listdl,    'listdl',    'meshdscf' )
@@ -80,14 +86,17 @@ C
 C Modules
 C
       use atomlist,     only : indxuo
-      use meshdscf,     only : listdl, listdlptr, NeedDscfL, 
-     &                         nrowsDscfL, numdl, first_time
       use meshphi,      only : endpht, lstpht
       use parallel,     only : Node, Nodes
       use parallelsubs, only : GlobalToLocalOrb, WhichNodeOrb
       use precision
       use alloc
-      use m_dscfComm
+      use m_dscfComm,   only : dscfcomm
+      use m_dscfComm,   only : DCsize, DCself, DCtotal, DCmax
+      use m_dscfComm,   only : DCmaxnd
+      use m_dscfComm,   only : DCsrc, DCdst, DCsic, DCinvp
+
+
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -306,7 +315,6 @@ C ********************************************************************
 
 C  Modules
       use precision
-      use meshdscf,     only : nrowsDscfL, numdl, listdlptr, NeedDscfL
       use alloc,        only : re_alloc, de_alloc
 #ifdef MPI
       use mpi_siesta
@@ -442,7 +450,6 @@ C *********************************************************************
 
 C  Modules
       use precision
-      use meshdscf
       use alloc, only: re_alloc, de_alloc
 #ifdef MPI
       use mpi_siesta
@@ -552,3 +559,6 @@ C stored in the orbital oriented array
       enddo
 #endif
       end subroutine matrixMtoO
+
+      end module meshdscf
+

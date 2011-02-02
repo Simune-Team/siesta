@@ -45,6 +45,7 @@ C  Modules
       use atomlist,      only: indxuo
       use listsc_module, only: LISTSC
       use mesh,          only: nsp, dxa, xdop, xdsp, meshLim
+      use meshdscf,      only: matrixOtoM
       use meshdscf,      only: nrowsDscfL, listdl, listdlptr, NeedDscfL,
      &                         numdl, DscfL
       use meshphi,       only: DirectPhi, endpht, lstpht, listp2, phi

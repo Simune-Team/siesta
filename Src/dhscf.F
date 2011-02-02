@@ -71,9 +71,19 @@
 #endif /* BSC_CELLXC */
       use alloc,          only : re_alloc, de_alloc
       use siesta_options, only : harrisfun
+      use meshsubs,       only : PartialCoreOnMesh
+      use meshsubs,       only : NeutralAtomOnMesh
+      use meshsubs,       only : PhiOnMesh
+      use meshsubs,       only : InitMesh
+      use meshsubs,       only : InitAtomMesh
+      use meshsubs,       only : setupExtMesh
+      use meshsubs,       only : distriPhiOnMesh
+
       use moreMeshSubs,   only : setMeshDistr, distMeshData
       use moreMeshSubs,   only : UNIFORM, QUADRATIC, LINEAR
       use moreMeshSubs,   only : TO_SEQUENTIAL, TO_CLUSTER, KEEP
+
+      use meshdscf,       only : createLocalDscfPointers
 
       use iogrid_netcdf, only: set_box_limits
 #ifdef BSC_CELLXC
@@ -523,6 +533,10 @@ C     Modules
       use alloc,         only  : re_alloc, de_alloc
       use files,         only  : slabel
       use siesta_options, only : harrisfun, save_initial_charge_density
+      use meshsubs,       only : LocalChargeOnMesh
+      use meshsubs,       only : PartialCoreOnMesh
+      use meshsubs,       only : NeutralAtomOnMesh
+
       use moreMeshSubs,   only : setMeshDistr, distMeshData
       use moreMeshSubs,   only : UNIFORM, QUADRATIC, LINEAR
       use moreMeshSubs,   only : TO_SEQUENTIAL, TO_CLUSTER, KEEP

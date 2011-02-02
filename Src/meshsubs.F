@@ -8,124 +8,294 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-!***********************************************************************
-! Contained modules:
-!   module mesh    : Stores variables and arrays associated to the mesh
-!   module meshphi : Stores variables and arrays connected with the
-!                    calculation of basis functions phi on the mesh
-! ----------------------------------------------------------------------
-! Contained external subroutines:
-! ResetMeshPhi      : deallocates meshphi arrays
-! InitMesh          : initialises the mesh
-! SameMeshAndAtoms  : checks whether the mesh or atoms have changed
-! InitAtomMesh      : initialises quantities relating to the atoms
-!                     and the mesh
-! PartialCoreOnMesh : calculates the partial core density on mesh
-! NeutralAtomOnMesh : calculates the neutral atom potential on mesh
-! PhiOnMesh         : calculates the orbital values on the mesh
-!***********************************************************************
-!
-      module mesh
-!
-! Stores quantities that are connected with the mesh
-!
-      use precision, only : dp
-      implicit none
-
-! Mesh variables
-! ----------------------------------------------------------------------
-! real*8  cmesh(3,3)    : Mesh-cell vectors
-! real*8  dxa(3,na)     : Atom position within mesh-cell
-! integer idop(mop)     : Extended-mesh-index displacement of points
-!                       : within a sphere of radius rmax
-! integer indexp(nep)   : Translation from extended to normal mesh index
-! integer ipa(na)       : Mesh cell in which atom is
-! integer mop           : Maximum number of non-zero orbital points
-! integer nmeshg(3)     : Total number of mesh points in each direction
-! integer ne(3)         : Number of mesh-Extension intervals 
-!                       : in each direction
-! integer nem(3)        : Extended-mesh divisions in each direction
-! integer nmsc(3)       : Mesh divisions of each supercell vector
-! integer nmuc(3)       : Mesh divisions of each unit cell vector
-! integer nsm           : Number of mesh sub-divisions in each direction
-! integer nsp           : Number of sub-points of each mesh point
-! integer nusc          : Number of unit cells in each supercell dir.
-! real*8  rcmesh(3,3)   : Reciprocal mesh-cell vectors
-!                       : (WITHOUT 2*pi factor)
-! real*8  xdop(3,mop)   : Vector to mesh points within rmax
-! real*8  xdsp(3,nsp)   : Vector to mesh sub-points
-! integer meshLim(2,3)  : Upper an lower limits of the mesh in every process
-C ----------------------------------------------------------------------
-      integer,  pointer, save :: idop(:)
-      integer,  pointer, save :: ipa(:) => null()
-      real(dp), pointer, save :: dxa(:,:) => null()
-      real(dp), pointer, save :: xdop(:,:)
-      real(dp), pointer, save :: xdsp(:,:) ! Allocated in dhscf
-      integer,           save :: mop
-      integer,           save :: ne(3)
-      integer,           save :: nem(3)
-      integer,           save :: nmsc(3)
-      integer,save :: nmuc(3)       ! Mesh points in each unit cell vector
-      integer,save :: nusc(3)       ! Unit cells in each supercell dir.
-      integer,           save :: meshLim(2,3)  ! My processor's box 
-                                               ! of mesh points:
-                                               !   myBox(1,:) : lower bounds
-                                               !   myBox(2,:) : upper bounds
-      integer,           save :: nmeshg(3)
-      integer,           save :: nsm
-      integer,           save :: nsp
-      real(dp),          save :: cmesh(3,3)
-      real(dp),          save :: rcmesh(3,3)
-      integer,  pointer, save :: indexp(:) => null()
-      end module mesh
 !-------------------------------------------------------------
-      module meshphi
-      use precision, only : grid_p, phi_grid_p
+!     
+      module meshsubs
 
       implicit none
 
-! ----------------------------------------------------------------------
-! Stores variables and arrays related to basis orbitals on the mesh
-! ----------------------------------------------------------------------
-! logical DirectPhi     : If true the phi is calculated on the fly
-! integer endpht(0:nmpl): Last position occupied by points in lstpht
-! integer lstpht(ntopl) : List of non-zero orbitals at point
-! integer listp2(ntopl) : Maps orbital-mesh point to iop
-! integer nphi          : Length of phi array second dimension
-! real    phi(nsp,ntopl): Basis orbitals at mesh points (sparse)
-! ----------------------------------------------------------------------
-      logical,                   save :: DirectPhi
-      integer,                   save :: nphi
-      integer,          pointer, save :: endpht(:)
-      integer,          pointer, save :: lstpht(:)
-      integer,          pointer, save :: listp2(:)
-      real(phi_grid_p), pointer, save :: phi(:,:)
-      end module meshphi
+      public :: initMesh      ! initialises the mesh
+      public :: initAtomMesh  !   " atom info on the mesh
+      public :: sameMeshAndAtoms  ! have the mesh or atoms changed?
+      public :: PartialCoreOnMesh ! partial core density on the mesh
+      public :: NeutralAtomOnMesh ! neutral atom potential on mesh
+      public :: LocalChargeOnMesh ! local (positive ion) charge
+      public :: PhiOnMesh     ! Orbital values on the mesh
+      public :: setupExtMesh  ! Sets up extended mesh
+      public :: distriPhiOnMesh  ! Sets up data distribution
 
-      subroutine resetMeshPhi( )
+      private
+
+      CONTAINS
+
+      subroutine InitMesh( na, cell, norb, iaorb, iphorb, isa,
+     &                     rmax, G2max, G2mesh, nsc, nmpl, 
+     &                     nm, nml, ntm, ntml, ntpl, dvol)
+
+!  Modules
+      use precision,     only : dp
+      use parallel,      only : Node, Nodes
+      use parallelsubs,  only : HowManyMeshPerNode, GlobalToLocalMesh
+      use moreMeshSubs,  only : initMeshDistr, setMeshDistr
+      use moreMeshSubs,  only : UNIFORM
+      use alloc,         only : re_alloc, de_alloc
+      use mesh,          only : ne, mop, nmeshg, nmsc, nsm, nsp
+      use mesh,          only : cmesh, rcmesh, xdsp, nmuc, nusc
+      use siesta_cml
+      use cellsubs,      only : reclat  ! Finds reciprocal unit cell
+      use cellsubs,      only : volcel  ! Finds unit cell volume
+      use m_chkgmx,      only : chkgmx  ! Checks planewave cutoff of a mesh
+      use fft1d,         only : nfft    ! Finds allowed value for 1-D FFT
+#ifdef MPI
+      use mpi_siesta
+#endif
+
+! Passed arguments
+      integer, intent(in):: na           ! Number of atoms in supercell
+      real(dp),intent(in):: cell(3,3)    ! Unit cell vectors
+      integer, intent(in):: norb         ! Total number of basis
+                                         ! orbitals in supercell
+      integer, intent(in):: iaorb(norb)  ! Atom to which orbitals belong
+      integer, intent(in):: iphorb(norb) ! Orbital index (within atom)
+                                         ! of each orbital
+      integer, intent(in):: isa(na)      ! Species index of each atom
+      real(dp),intent(in):: rmax         ! Maximum orbital radius
+      integer, intent(in):: nsc(3)       ! Number of unit-cells in each
+                                         ! supercell direction
+      real(dp),intent(inout):: G2max     ! Effective planewave cutoff
+                                         ! On input : Value required
+                                         ! On output: Value used, which
+                                         ! may be larger
+      real(dp),intent(out):: G2mesh      ! Planewave cutoff of mesh used
+                                         ! (same as G2max on output)
+      integer, intent(out):: nmpl        ! Number of mesh points stored
+                                         ! by my processor
+      integer, intent(out):: nm(3)       ! Number of mesh divisions of
+                                         ! each unit cell vector
+      integer, intent(out):: nml(3)      ! Sizes of my processor's box
+                                         ! of mesh points
+      integer, intent(out):: ntm(3)      ! Mesh divisions of each unit
+                                         ! cell vector, incl. subpoints
+      integer, intent(out):: ntml(3)     ! Sizes of my processor's mesh
+                                         ! box, including subpoints
+      integer, intent(out):: ntpl        ! Mesh points stored by my
+                                         ! processor, incl. subpoints
+!!OLD      integer, intent(out):: ntopl       ! Total number of nonzero
+                                         ! orbital points stored by my
+                                         ! processor
+      real(dp),intent(out):: dvol        ! Volume per mesh (super)point
+
+C ----------------------------------------------------------------------
+C Internal variables and arrays:
+C ----------------------------------------------------------------------
+C real*8  dx(3)         : Vector from atom to mesh sub-point
+C real*8  dxp(3)        : Vector from atom to mesh point
+C integer i             : General-purpose index
+C integer ia            : Looping variable for number of atoms
+C integer i1,i2,i3      : Mesh indexes in each mesh direction
+C integer is            : Species index
+C integer isp           : Sub-Point index
+C integer j             : General-porpose index
+C integer j1,j2,j3      : Mesh indexes in each mesh direction
+C real*8  k0(3)         : Zero-vector argument for routine chkgmx
+C integer nep           : Number of extended-mesh points
+C integer nmp           : Number of mesh points in unit cell
+C real*8  pldist        : Distance between mesh planes
+C real*8  r             : Distance between atom and mesh point
+C real*8  vecmod        : Vector modulus
+C real*8  volume        : Unit cell volume
+C logical within        : Is a mesh point within orbital range?
+C ----------------------------------------------------------------------
+C Units :
+C ----------------------------------------------------------------------
 C
-C Deallocate arrays of module meshphi if necessary
+C Energies in Rydbergs
+C Distances in Bohr
 C
-      use meshphi
-      use alloc,         only : de_alloc
 
-      implicit none
-      if (associated(endpht))
-     &  call de_alloc( endpht, 'endpht',  'PhiOnMesh' )
+C     Local variables
+      integer                 :: i, ia, i1, i2, i3, io, iphi, is, isp,
+     &                           ity, j, nep, j1, j2, j3, indi
+      integer*8               :: ntp
+      real(dp)                :: dx(3), dxp(3), pldist, r,
+     &                           rcell(3,3), vecmod, volume
+      real(dp), parameter     :: k0(3) = (/ 0.0, 0.0, 0.0 /)
+      logical                 :: within
+C     Functions
+      real(dp)                :: dismin
+      external                :: dismin
+!--------------------------------------------------------------------- BEGIN
+#ifdef DEBUG
+      call write_debug( '      PRE InitMesh' )
+#endif
 
-      if (associated(lstpht))
-     &  call de_alloc( lstpht, 'lstpht',  'PhiOnMesh' )
+! ----------------------------------------------------------------------
+! Mesh initialization
+! ----------------------------------------------------------------------
+
+! Find reciprocal cell vectors (multiplied by 2*pi)
+      call reclat( cell, rcell, 1 )
+
+! Find number of mesh intervals for each cell vector.
+! The reciprocal vectors of the mesh unit cell (cell/ntm)
+! are rcell*ntm, and must be larger than 2*G2max
+      do i = 1,3
+        vecmod = sqrt(dot_product(rcell(:,i),rcell(:,i)))
+        ntm(i) = 2 * sqrt(G2max) / vecmod + 1
+      enddo
+
+! Impose that mesh cut-off is large enough
+      impose_cutoff: do
+
+        ! Require that ntm is suitable for FFTs and a multiple of nsm
+        do i = 1,3
+          impose_fft: do
+            ! nfft increases ntm to the next integer suitable for FFTs
+            call nfft( ntm(i) )
+            if ( mod( ntm(i), nsm )==0 ) exit impose_fft
+            ntm(i) = ntm(i) + 1
+          end do impose_fft
+          nm(i) = ntm(i) / nsm
+          nmsc(i) = nm(i) * nsc(i)
+        enddo ! i
+
+        ! Check that effective cut-off is large enough as for non-right
+        ! angled unit cells this is not guaranteed to be the case.
+        ! If cut-off needs to be larger, increase ntm and try again.
+        ! chkgmx decreases G2mesh to the right cutoff value of the mesh
+        G2mesh = 1.0d6
+        call chkgmx( k0, rcell, ntm, G2mesh )
+        if (G2mesh >= G2max) then
+          exit impose_cutoff
+        else
+          ntm(1:3) = ntm(1:3) + 1
+        end if
+
+      end do impose_cutoff
 
 
-      if (associated(listp2))
-     &  call de_alloc( listp2, 'listp2',  'PhiOnMesh' )
+! Save some numbers 
+!     nmeshg in module array
+      nmeshg(:) = ntm(:) ! Total number of mesh points, incl. subpoints
+      nmuc(:) = nm(:)    ! Mesh points in each unit cell vector
+      nusc(:) = nsc(:)   ! Unit cells in each supercell direction
 
-      if (associated(phi))
-     &  call de_alloc( phi, 'phi',  'PhiOnMesh' )
+! Find number of mesh points in unit cell.
+! Note needed integer*8 !
+!!AG** Check proper kind name
 
-      end subroutine resetMeshPhi
-!
-!
+      ntp = product(INT(ntm,kind=8))
+
+C     Create the first mesh distribution
+      call initMeshDistr( oDistr=UNIFORM, nm=nm )
+
+C     Find and sets local number of Mesh points of each kind
+!     Sets nml, nmpl, ntml and ntpl
+      call setMeshDistr( UNIFORM, nsm, nsp, nml, nmpl, ntml, ntpl )
+
+C     Find volume of unit cell and of mesh cell
+      volume = volcel( cell )
+      dvol = volume / ntp
+
+C     Output current mesh dimensions and cut-off
+      if (Node.eq.0) then
+        write(6,'(/,a,3(i6,a),i12)') 'InitMesh: MESH =',
+     &        ntm(1),' x',ntm(2),' x',ntm(3),' =', ntp
+        write(6,'(a,3(i6,a),i12)') 'InitMesh: (bp) =',
+     &        nm(1),' x',nm(2),' x',nm(3),' =', product(INT(nm,8))
+        write(6,'(a,2f10.3,a)')
+     &        'InitMesh: Mesh cutoff (required, used) =',
+     &        G2max, G2mesh, ' Ry'
+      endif
+      if (cml_p) then
+        call cmlStartPropertyList(mainXML)
+        call cmlAddProperty(xf=mainXML, value=ntm,
+     .       dictref='siesta:ntm', title='Mesh',
+     .       units='cmlUnits:countable')
+        call cmlAddProperty(xf=mainXML, value=G2max,
+     .       units='siestaUnits:Ry',
+     .       dictref='siesta:g2max', title='Requested Cut-Off')
+        call cmlAddProperty(xf=mainXML, value=G2mesh,
+     .       units='siestaUnits:Ry',
+     .       dictref='siesta:g2mesh', title='Actual Cut-Off')
+        call cmlEndPropertyList(mainXML)
+      endif
+      G2max = G2mesh
+
+C     Find mesh-cell vectors
+      do i = 1,3
+        do j = 1,3
+          cmesh(j,i) = cell(j,i) / nm(i)
+        enddo
+      enddo
+
+C     Find reciprocal mesh-cell vectors (not multiplied by 2*pi)
+      call reclat( cmesh, rcmesh, 0 )
+
+! Find number ne(:) of extended-mesh intervals for each cell vector.
+      do i = 1,3
+        ! pldist is the distance between mesh planes
+        pldist = 1.0_dp / sqrt(dot_product(rcmesh(:,i),rcmesh(:,i)))
+        ! Find number of planes spanned by rmax
+        ne(i) = rmax / pldist
+      enddo ! i
+
+! For an atom at x=0, ne=rmax/pldist is the last mesh point within rmax.
+! But an atom at mesh cell ix=0 can be almost at x=dx. Therefore we have
+! to go up to ne+1. And subpoints in mesh cell ix=-ne-1 can be almost at
+! x=-ne*dx. Therefore we have to go up to -ne-1 to the left. Thus, we 
+! just increase ne and forget about these two effects from now on.
+      ne(:) = ne(:) + 1
+
+C     Find sub-points
+      isp = 0
+      do i3 = 0, nsm-1
+        do i2 = 0, nsm-1
+          do i1 = 0, nsm-1
+            isp = isp + 1
+            do i = 1,3
+              xdsp(i,isp) = ( cmesh(i,1) * i1 +
+     &                        cmesh(i,2) * i2 +
+     &                        cmesh(i,3) * i3 ) / nsm
+            enddo
+          enddo
+        enddo
+      enddo
+
+! Find number of points within rmax (orbital points)
+      mop = 0
+      do i3 = -ne(3), ne(3)    ! Loop over neighbor (super) points
+        do i2 = -ne(2), ne(2)
+          do i1 = -ne(1), ne(1)
+            dxp(:) = cmesh(:,1) * i1 +  ! (Super) point coordinates
+     .               cmesh(:,2) * i2 +
+     .               cmesh(:,3) * i3 
+            ! Find if any subpoint can be within rmax of an atom that
+            ! is in the origin's mesh cell
+            within = .false.
+            do isp = 1,nsp  ! Loop over sub-points
+              dx(1:3) = dxp(1:3) + xdsp(1:3,isp)  ! Subpoint coords.
+              ! Find distance from point to the mesh cell at the origin
+              ! (since the atom might be at any point of the mesh cell)
+              r = dismin( cmesh, dx )
+              if ( r .lt. rmax ) within = .true.
+            enddo ! isp
+            if ( within ) then
+              mop = mop + 1      ! Total number of points within rmax
+            endif ! (within)
+          enddo ! i1
+        enddo ! i2
+      enddo ! i3
+
+C     Create extended mesh arrays for the first data distribution
+      call setupExtMesh( UNIFORM, rmax )
+
+#ifdef DEBUG
+      call write_debug( '      POS InitMesh' )
+#endif
+!----------------------------------------------------------------------- END
+      end subroutine InitMesh
+
       subroutine SameMeshAndAtoms(na, xa, ucell, rmax, G2max, G2mesh,
      &                            samesh, samexa)
 C
@@ -219,6 +389,122 @@ C     If cell has changed then it is necessary to reinitialise coordinates
 
 !--------------------------------------------------------------------------- END
       end subroutine SameMeshAndAtoms
+
+! subroutine InitAtomMesh
+! ----------------------------------------------------------------------
+! Initialises the atom information relating to the mesh for a given data
+! distribution. It creates and initialise ipa. This arrays is allocated
+! inside a meshDisType structure and can be accesed by pointers of the
+! mesh module.
+!
+! Only necesary for those data distributions who needs to use the
+! extended mesh.
+!
+! ----------------------------------------------------------------------
+! Input :
+! ----------------------------------------------------------------------
+! integer  distr        : Used data distribution
+! integer  na           : number of atoms
+! integer  xa(3,na)     : Atomic coordinates
+! ----------------------------------------------------------------------
+! Output :
+! ----------------------------------------------------------------------
+! All output quantities are in the mesh and moreMeshSubs modules.
+! The ipa array is stored in moreMeshSubs but accessed using the mesh
+! module pointer.
+!
+!***********************************************************************
+      subroutine InitAtomMesh( distr, na, xa )
+      use precision, only: dp
+      use mesh, only: ipa      ! atoms' mesh points within my Extended mesh
+      use mesh, only: dxa      ! atom's position relative to mesh point
+      use mesh, only: cmesh    ! Mesh cell vectors
+      use mesh, only: meshLim  ! My processor's box of mesh points
+      use mesh, only: ne       ! Points in rmax along each lat. vector
+      use mesh, only: nmsc     ! Mesh points in each supercell vector
+      use mesh, only: rcmesh   ! Reciprocal mesh cell vectors
+      use alloc,only: re_alloc ! (Re)allocation routine
+      use moreMeshSubs, only : allocIpaDistr
+      implicit none
+!     Input parameters
+      integer,       intent(in) :: na        ! Number of atoms in supercell
+      real(dp),      intent(in) :: xa(3,na)  ! Atomic coordinates
+      integer,       intent(in) :: distr     ! Used data distribution
+!     Local variables
+      character(len=*),parameter:: myName = 'InitAtomMesh '
+      integer,             save :: lastna = 0  ! Number of atoms on last call
+      integer                   :: ia, ixa(3), jsc(3), jxa(3), nem(3),
+     &                             j1, j2, j3, myBox(2,3), myExtBox(2,3)
+      real(dp)                  :: cxa(3)
+
+#ifdef DEBUG
+      call write_debug( '      PRE InitAtomMesh' )
+#endif
+!     (Re)allocate atom-mesh arrays
+      call allocIpaDistr( distr, na )
+      if (na.ne.lastna) then
+        call re_alloc( dxa, 1,3, 1,na, myName//'dxa' )
+      endif
+      lastna = na
+
+      myBox(:,:) = meshLim(:,:) - 1
+
+!     Add 'wings extensions' to myBox of mesh points, containing all points 
+!     within the orbital spheres that may intersect myBox. Thus, wings must
+!     be one diameter wide.
+      myExtBox(1,:) = myBox(1,:) - 2*ne(:)
+      myExtBox(2,:) = myBox(2,:) + 2*ne(:)
+
+!     Find number of extended-box points.
+      nem(:) = myExtBox(2,:) - myExtBox(1,:) + 1
+
+!     Find atomic positions relative to mesh
+      do ia = 1,na
+
+!       Find atomic coordinates in mesh basis vectors
+        cxa(:) = matmul( xa(:,ia), rcmesh(:,:) )
+        ! fix: Make sure we consider equivalent positions
+        !      inside the cell, even if some atoms are outside.
+        cxa(:) = modulo( cxa(:), real(nmsc(:),dp) )
+
+!       Find indexes of mesh cell in which atom is
+        ixa(:) = floor(cxa(:))
+
+!       Find atom position within mesh cell
+        cxa(:) = cxa(:) - ixa(:)                  ! Mesh coordinates
+        dxa(:,ia) = matmul( cmesh(:,:), cxa(:) )  ! Cartesian coords
+
+!       Find atom's mesh index within myExtBox, but only if the
+!       (periodic) atomic sphere (of width ne) can intersect myBox.
+!       Otherwise, make ipa=0. nem is the width of myExtBox.
+!       nmsc is the width of the supercell.
+!       Notice that, even if several periodic images of the same 
+!       atom may fit within myExtBox, only one must be considered,
+!       since the points within its sphere, once folded into myBox,
+!       will be equivalent to those of any other periodic image.
+        ipa(ia) = 0
+        sc: do j3 = -1,1   ! Loop on neighbor supercells
+            do j2 = -1,1
+            do j1 = -1,1
+              jsc(:) = (/j1,j2,j3/)
+              jxa(:) = ixa(:) + jsc(:)*nmsc(:)
+              if ( all(jxa(:)>=myBox(1,:)-ne(:)) .and. 
+     &             all(jxa(:)<=myBox(2,:)+ne(:)) ) then
+                jxa(:) = jxa(:) - myExtBox(1,:)
+                ipa(ia) = 1 + jxa(1) + nem(1)*jxa(2)
+     &                      + nem(1)*nem(2)*jxa(3)
+                
+                exit sc
+              end if
+            end do    ! j1
+          end do      ! j2
+        end do sc     ! j3
+      enddo ! ia
+
+#ifdef DEBUG
+      call write_debug( '      POS InitAtomMesh' )
+#endif
+      end subroutine InitAtomMesh
 
       subroutine PartialCoreOnMesh( na, isa, ntpl, rhopcc, indxua, 
      &                              nsd, dvol, volume, Vscf, Vaux, 
@@ -498,3 +784,447 @@ C           Loop over sub-points
 #endif
 !--------------------------------------------------------------------------- END
       end subroutine LocalChargeOnMesh
+!
+      subroutine PhiOnMesh( nmpl, norb, iaorb, iphorb, isa, numphi )
+C
+C Calculates the values of the orbitals at the mesh points
+C
+C ----------------------------------------------------------------------
+C Input :
+C ----------------------------------------------------------------------
+C integer nmpl          : Number of mesh points in unit cell locally
+C integer norb          : Total number of basis orbitals in supercell
+C integer iaorb(norb)   : Atom to which each orbital belongs
+C integer iphorb(norb)  : Orbital index (within atom)
+C integer isa(na)       : Species index of all atoms in supercell
+C ----------------------------------------------------------------------
+C Output :
+C ----------------------------------------------------------------------
+C All output quantities are in the module meshphi
+C ----------------------------------------------------------------------
+
+C Modules
+      use precision, only : dp, grid_p
+      use atmfuncs,  only : rcut, phiatm
+      use mesh,      only : dxa, idop, indexp, ipa, mop, nsp, xdop,
+     &                      xdsp, meshLim
+      use meshphi,   only : directphi, nphi, phi, lstpht, listp2, endpht
+      use meshphi,   only : resetMeshPhi
+      use fdf,       only : fdf_get
+      use parallel,  only : IONode
+      use alloc,     only : re_alloc
+
+      implicit none
+C Passed arguments
+      integer,    intent(in) :: nmpl, norb, iaorb(norb),
+     &                          iphorb(norb), isa(*)
+
+      ! This array was set in distriPhiOnMesh, and holds
+      ! the pre-computed count of orbitals touching a given
+      ! point. It is re-used and overwritten here.
+      integer, intent(inout) :: numphi(nmpl)
+
+C     Local variables
+      integer                :: ia, io, iop, ip, ip0, iphi, is, isp, n,
+     &                          nlist, nliste, nmax
+
+      logical                :: within
+      logical,          save :: firsttime = .true.
+      real(dp)               :: dxsp(3,nsp), grphi(3), phip, r2o,
+     &                          r2sp(nsp)
+
+!--------------------------------------------------------------------- BEGIN
+#ifdef DEBUG
+      call write_debug( '      PRE PhiOnMesh' )
+#endif
+
+      call timer( 'PHION', 1 )
+C     On first call set the logical DirectPhi
+      if (firsttime) then
+        DirectPhi = fdf_get('DirectPhi', .false. )
+        firsttime = .false.
+      else
+        ! reset the data structures in module meshphi
+        call resetMeshPhi( )
+      endif
+
+C     Allocate memory related to nmpl
+      nullify( endpht, phi, lstpht, listp2 )
+      call re_alloc( endpht, 0, nmpl, 'endpht', 'PhiOnMesh' )
+
+C     Initialise pointer array
+      endpht(0) = 0
+      do ip = 1,nmpl
+        endpht(ip) = endpht(ip-1) + numphi(ip)
+      enddo
+
+C     Allocate phi if this is not a direct calculation
+      nlist = endpht(nmpl)
+      if (DirectPhi) then
+        nphi = 1
+      else
+        nphi = nlist
+        if (IONode) then
+           write(6,"(a,i20)")
+     $          "PhiOnMesh: Number of (b)points on node 0 = ", nmpl
+           write(6,"(a,i20)")
+     $          "PhiOnMesh: nlist on node 0 = ", nlist
+        endif
+      endif
+
+C     Add an extra margin of error to nlist to minimise reallocations
+      nliste = 1.01*nlist
+
+C     Adjust dimensions of phi if necessary
+      if (associated(phi)) then
+        nmax = size(phi,2)
+      else
+        nmax = 0
+      end if
+      if (nphi.gt.nmax) then
+        if (DirectPhi) then
+          call re_alloc( phi, 1, nsp, 1, nphi, 'phi', 'PhiOnMesh' )
+       else
+          call re_alloc( phi, 1, nsp, 1, nliste, 'phi', 'PhiOnMesh' )
+       endif
+      endif
+
+C     Adjust dimensions of list arrays if necessary
+      if (associated(lstpht) .and. associated(listp2)) then
+        nmax = min( size(lstpht), size(listp2) )
+      else
+        nmax = 0
+      end if
+      if (nlist.gt.nmax) then
+        call re_alloc( lstpht, 1, nliste, 'lstpht', 'PhiOnMesh' )
+        call re_alloc( listp2, 1, nliste, 'listp2', 'PhiOnMesh' )
+      endif
+
+C     Find indexes and values of atomic orbitals at mesh points
+      numphi = 0
+      do io = 1,norb
+        ia = iaorb(io)
+        if (ipa(ia)==0) cycle ! Atomic sphere does not intersect my Box
+        iphi = iphorb(io)
+        is = isa(ia)
+        r2o = rcut(is,iphi)**2
+        do iop = 1, mop
+          ip0 = indexp( ipa(ia) + idop(iop) )
+          if (ip0 .gt. 0) then
+            within = .false.
+            do isp = 1,nsp
+              dxsp(1:3,isp) = xdop(1:3,iop)+xdsp(1:3,isp)-dxa(1:3,ia)
+              r2sp(isp) = sum( dxsp(1:3,isp)**2 )
+              if (r2sp(isp) .lt. r2o) within = .true.
+            enddo
+            if (within) then
+              numphi(ip0) = numphi(ip0) + 1
+              n = endpht(ip0-1) + numphi(ip0)
+              lstpht(n) = io
+              listp2(n) = iop
+              if (.not.DirectPhi) then
+                do isp = 1,nsp
+                  if (r2sp(isp) .lt. r2o) then
+                    call phiatm( is, iphi, dxsp(1,isp),
+     &                           phip, grphi )
+                    phi(isp,n) = phip
+                  else
+                    phi(isp,n) = 0.0_grid_p
+                  endif
+                enddo
+              endif
+            endif
+          endif
+        enddo
+      enddo
+
+      call timer( 'PHION', 2 )
+#ifdef DEBUG
+      call write_debug( '      POS PhiOnMesh' )
+#endif
+!------------------------------------------------------------------------ END
+      end subroutine PhiOnMesh
+
+      subroutine setupExtMesh( distr, rmax )
+! ----------------------------------------------------------------------
+! Setup the extended mesh variables for a given data distribution.
+! It creates and initialise indexp, xdop and idop. These arrays are
+! allocated inside a meshDisType structure and can be accesed by pointers
+! of the mesh module.
+!
+! Only necesary for those data distributions who needs to use the
+! extended mesh.
+! ----------------------------------------------------------------------
+! Input :
+! ----------------------------------------------------------------------
+! integer  distr        : distribution number
+! real(dp) rmax         : Maximum orbital radius
+!
+! ----------------------------------------------------------------------
+! Output :
+! ----------------------------------------------------------------------
+! All output quantities are in the mesh and moreMeshSubs modules.
+! Data is stored in moreMeshSubs but accessed using the mesh module
+! pointers.
+!
+!***********************************************************************
+      use precision, only : dp
+      use parallel,  only : IONode
+      use mesh,      only : meshLim  ! My processor's box of mesh points
+      use mesh,      only : ne       ! Points in rmax along each lat. vector
+      use mesh,      only : nmsc     ! Mesh points in each supercell vector
+      use mesh,      only : mop      ! Accumulated num. of orbital points
+      use mesh,      only : nsp      ! Number of sub-points of each mesh point
+      use mesh,      only : cmesh    ! Mesh cell vectors
+      use mesh,      only : xdsp     ! Vector to mesh sub-points
+      use mesh,      only : indexp   ! ranslation from extended to
+                                     ! normal mesh index
+      use mesh,      only : idop     ! Mesh-index span of points 
+                                     ! within an atomic sphere
+      use mesh,      only : xdop     ! Coordinates of (super)points 
+                                     ! within an atomic sphere
+      use moreMeshSubs, only : allocExtMeshDistr
+
+      implicit none
+C     Input parameters
+      integer              :: distr
+      real(dp)             :: rmax
+C     Local parameters
+      integer              :: i1, i2, i3, j1, j2, j3, k1, k2, k3,
+     &                        i, j, k, nep, boxWidth(3), extWidth(3),
+     &                        isp, myBox(2,3), nem(3), myExtBox(2,3)
+      real(dp)             :: r, dxp(3), dx(3)
+      logical              :: within
+C     Functions
+      real(dp)             :: dismin
+
+      ! Correspondence between JMS and RG box descriptors
+      myBox(:,:) = meshLim(:,:) - 1
+
+! Add 'wings extensions' to myBox of mesh points, containing all points 
+! within the orbital spheres that may intersect myBox. Thus, wings must
+! be one diameter wide.
+      myExtBox(1,:) = myBox(1,:) - 2*ne(:)
+      myExtBox(2,:) = myBox(2,:) + 2*ne(:)
+
+! Find number of extended-box points.
+      nem(:) = myExtBox(2,:) - myExtBox(1,:) + 1
+      nep = nem(1) * nem(2) * nem(3)
+
+      if (IONode) then
+         write(6,'(a,3(i6,a),i12)') 'ExtMesh (bp) on 0 =',
+     &        nem(1),' x',nem(2),' x',nem(3),' =', nep
+      endif
+
+!     Allocate memory for indexp(nep), idop(mop) and xdop(3,mop) of
+!     the current data distribution
+      call allocExtMeshDistr( distr, nep, mop )
+
+! Find relationship between extended and normal box points
+      boxWidth(:) =    myBox(2,:)    - myBox(1,:) + 1
+      extWidth(:) = myExtBox(2,:) - myExtBox(1,:) + 1
+      do i3 = myExtBox(1,3),myExtBox(2,3)
+        do i2 = myExtBox(1,2),myExtBox(2,2)
+          do i1 = myExtBox(1,1),myExtBox(2,1)
+
+            ! Find periodic indexes within first supercell
+            j1 = modulo( i1, nmsc(1) )
+            j2 = modulo( i2, nmsc(2) )
+            j3 = modulo( i3, nmsc(3) )
+
+            ! Find indexes relative to box origins
+            j1 = j1 -    myBox(1,1)
+            j2 = j2 -    myBox(1,2)
+            j3 = j3 -    myBox(1,3)
+            k1 = i1 - myExtBox(1,1)
+            k2 = i2 - myExtBox(1,2)
+            k3 = i3 - myExtBox(1,3)
+
+            ! Find combined mesh indexes.
+            j = 1 + j1 + boxWidth(1)*j2 + boxWidth(1)*boxWidth(2)*j3
+            k = 1 + k1 + extWidth(1)*k2 + extWidth(1)*extWidth(2)*k3
+
+            ! Find myExtBox -> myBox index translation
+            if (j1>=0 .and. j1<boxWidth(1) .and.
+     .          j2>=0 .and. j2<boxWidth(2) .and.
+     .          j3>=0 .and. j3<boxWidth(3)) then
+              indexp(k) = j   ! Point is within myBox
+            else
+              indexp(k) = 0   ! Point is outside myBox
+            endif ! (j>=myBox(1) and j<=myBox(2))
+
+          enddo ! i1
+        enddo ! i2
+      enddo ! i3
+
+! This loop is done for each distribution, and replicates
+! the one in InitMesh, except that now we actually fill
+! the data in the arrays. Note that mop does not depend
+! on the distribution.
+
+! Find points within rmax (orbital points)
+      mop = 0
+      do i3 = -ne(3), ne(3)
+        do i2 = -ne(2), ne(2)
+          do i1 = -ne(1), ne(1)
+            dxp(:) = cmesh(:,1) * i1 +
+     &               cmesh(:,2) * i2 +
+     &               cmesh(:,3) * i3 
+            within = .false.
+            do isp = 1,nsp
+              dx(1:3) = dxp(1:3) + xdsp(1:3,isp) 
+              r = dismin( cmesh, dx )
+              if ( r .lt. rmax ) within = .true.
+            enddo
+            if ( within ) then
+              mop = mop + 1
+              ! Store index-distance and vector-distance to point.
+              idop(mop)     = i1 + nem(1)*i2 + nem(1)*nem(2)*i3
+              xdop(1:3,mop) = dxp(1:3)
+            endif ! (within)
+          enddo ! i1
+        enddo ! i2
+      enddo ! i3
+
+      end subroutine setupExtMesh
+
+!------------------------------------------------------------------
+      subroutine distriPhiOnMesh( nm, nmpl, norb, iaorb,
+     &                            iphorb, isa, numphi )
+
+C Computes the number of orbitals that intersects every mesh point
+C and calls initMeshDistr in order to compute a new data distribution
+C based in the number of orbital intersections.
+C ==================================================================
+C
+C INPUT:
+C integer nm(3)         : Number of Mesh divisions of each cell vector
+C integer nmpl          : Local number of mesh points
+C integer norb          : Total number of basis orbitals in supercell
+C integer iaorb(norb)   : Atom to which each orbital belongs
+C integer iphorb(norb)  : Orbital index (within atom) of each orbital
+C integer isa(na)       : Species index of all atoms in supercell
+C
+C OUTPUT:
+C The output values are in the module moreMeshSubs (New limits of the mesh
+C and the information needed to transfer data between data
+C distributions)
+C
+C BEHAVIOR:
+C The amount of computation in every point of the mesh depends on the
+C number of orbitals that intersecs in that mesh point. This can lead
+C to unbalanced distributions in parallel executions. We want to
+C compute a new data distribution, where the load is balanced among
+C the several processes.
+C
+C In order to compute the number of orbitals that intersects in every
+C mesh point, we loop in all orbitals of every atom and we increase the
+C value of numphi in every point of the mesh that is inside of the
+C radius of the current orbital.
+C
+C Finally, we call initMeshDistr that computes the new data distributions
+C that will be used inside setup_hamiltonian. We are going to have 3
+C different data distributions:
+C  - Uniform:   Same amount of mesh in every process. Used in Poison
+C  - Quadratic: The load in every point of the mesh is proporcional
+C               to the square of the number of orbitals that intersects
+C               in that point. Used in rhoofd and vmat.
+C  - Lineal:    We try to distribute those points of the mesh that have
+C               at least one orbital intersection. Used in cellxc.
+C
+C ==================================================================
+      use mesh,         only: mop, ipa, idop, nsp, xdop, xdsp, dxa,
+     &                        indexp, meshLim
+      use precision,    only: dp, grid_p
+      use atmfuncs,     only: rcut
+      use parallel,     only: Nodes, node
+#ifdef MPI
+      use moreMeshSubs, only: initMeshExtencil
+#endif
+      use moreMeshSubs, only: initMeshDistr
+      use moreMeshSubs, only: allocASynBuffer
+      use moreMeshSubs, only: UNIFORM, QUADRATIC, LINEAR
+      use cellxc_mod,   only: GGA, setGGA
+      use alloc,        only: re_alloc, de_alloc
+      implicit none
+C     Passed arguments
+      integer, intent(in)  :: nm(3), nmpl, norb, iaorb(norb),
+     &                        iphorb(norb), isa(*)
+      integer, intent(out) :: numphi(nmpl)
+C     Local variables
+      integer              :: ii, io, ia, iphi, is, iop, ip0, isp
+      real(dp)             :: r2o, dxsp(3,nsp), r2sp(nsp)
+      logical              :: within
+      integer,     pointer :: wload(:)
+!------------------------------------------------------------------------- BEGIN
+#ifdef DEBUG
+      call write_debug( '      PRE distriPhiOnMesh' )
+#endif
+      call timer( 'REMESH', 1 )
+
+      do ii= 1, nmpl
+        numphi(ii) = 0
+      enddo
+
+C     Find number of atomic orbitals at mesh points
+      do io = 1,norb
+        ia   = iaorb(io)
+        if (ipa(ia)==0) cycle ! Atomic sphere does not intersec my Box
+        iphi = iphorb(io)
+        is   = isa(ia)
+        r2o  = rcut(is,iphi)**2
+C       Loop over mesh points inside rmax
+        do iop = 1, mop
+          ip0 = indexp( ipa(ia) + idop(iop) )
+          if (ip0 .gt. 0) then
+C           Loop over sub-points to find if point is within range
+            within = .false.
+            do isp = 1,nsp
+              dxsp(1:3,isp) = xdop(1:3,iop)+xdsp(1:3,isp)-dxa(1:3,ia)
+              r2sp(isp)     = sum( dxsp(1:3,isp)**2 )
+              if (r2sp(isp) .lt. r2o) within = .true.
+            enddo
+C           If within range, add one to number of point orbitals
+            if (within) numphi(ip0) = numphi(ip0) + 1
+          endif
+        enddo
+      enddo
+
+#ifdef MPI
+      if (nodes.gt.1) then
+        nullify( wload )
+        call re_alloc( wload, 1, nmpl, 'wload', 'distriPhiOnMesh' )
+        do ip0= 1, nmpl
+          wload(ip0) = numphi(ip0)*(numphi(ip0)+1) + 1
+        enddo
+        call initMeshDistr( UNIFORM, QUADRATIC, nm, wload )
+
+        do ip0= 1, nmpl
+!         The computational work of a mesh point in cellxc is almost 0 when
+!         when the charge density is zero. We use a proportion of 400/1.
+          if (numphi(ip0).ne.0) then
+            wload(ip0) = 400
+          else
+            wload(ip0) = 1
+          endif
+        enddo
+        call initMeshDistr( UNIFORM, LINEAR, nm, wload )
+        if (GGA) call initMeshExtencil( LINEAR, nm )
+
+C       Free local memory
+        call de_alloc( wload, 'wload', 'distriPhiOnMesh' )
+
+C       Allocate memory for asynchronous communications.
+C       It does nothing if we use synchronous communications.
+        call allocASynBuffer( LINEAR )
+      endif
+
+#endif
+      call timer( 'REMESH', 2 )
+#ifdef DEBUG
+      call write_debug( '      POS distriPhiOnMesh' )
+#endif
+!--------------------------------------------------------------------------- END
+      end subroutine distriPhiOnMesh
+
+      end module meshsubs

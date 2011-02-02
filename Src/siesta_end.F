@@ -24,6 +24,10 @@
       use sparse_matrices, only : resetSparseMatrices
       use m_fixed,         only : resetFixedPointers
       use band,            only : reset_bands
+      use meshphi,         only : resetMeshPhi
+      use meshdscf,        only : resetDscfPointers
+      use m_dscfcomm,      only : resetdscfComm
+
       implicit none
 
 #ifdef MPI
