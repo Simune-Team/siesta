@@ -1,0 +1,62 @@
+Incorporation of BSC code: mesh optimization; parallel fdf library
+
+The ongoing collaboration with the Barcelona Supercomputer Center (through the
+department of Computer Applications in Science and Engineering) has resulted
+in two new enhancements:
+
+- New code to improve the load-balance among processors in the
+operations carried out in the real-space mesh (involved in the
+computation of charge density, exchange-correlation potential, and
+matrix elements of the hamiltonian, among others).
+
+Since the different operations have different work-load patterns, it
+has been necessary to define and handle three separate data
+distributions, with appropriately optimized communication patterns.
+Most of the new code is contained in new specialized modules, and
+there are calls for data distribution handling in higher-level
+modules, notably dhscf.
+
+An overview of the rationale and implementation of the new functionality
+can be found in
+
+An efficient implementation of a QM-MM method in SIESTA,
+C. F. Sanz-Navarro, R. Grima, A. Garcia, E. A. Bea, A. Soba,
+J.M. Cela, and P. Ordejon, 
+Theoretical Chemistry Accounts. Online pub Sep 2010. 
+DOI: 10.1007/s00214-010-0816-5
+
+We are working on a set of developer-oriented notes to facilitate
+future enhancements.
+
+- A new fdf library which avoids the 'master node bottleneck': each
+MPI processor now holds a copy of the relevant information, and can
+satisfy fdf queries without the need for interprocess communication or
+file access.
+
+The most noticeable change is in the processing of fdf blocks. The previous
+version of the library provided a Fortran unit number from which the
+user code could read the block contents. Now the user is given an
+abstract handle with which to perform explicitly the operations of reading
+lines, parse, and extract useful information. This paradigm was already
+present as a wrapper in previous versions of Siesta, but it is now mandatory.
+
+The two new developments, while formally independent, have been merged
+at the same time due to historical and logistical reasons. Even though
+the mesh enhancements affect directly only a relatively small number
+of files, many others have been modified by changes in memory
+allocation syntax and indentation. The new treatment of fdf blocks and
+the removal of the explicit broadcast step in some existing fdf calls
+has meant changes to many other files. In all, this patch affects
+several dozen files in the Siesta distribution.
+
+We have invested a lot of effort in this work, but it is very likely
+that some issues have escaped us. A list of those known at this
+time can be found in the file Docs/KNOWN.ISSUES.
+
+
+
+
+
+
+
+

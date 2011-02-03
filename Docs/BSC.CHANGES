@@ -1,6 +1,12 @@
 Record of changes leading up to merge of BSC branch.
 
 ------------------------------------
+329 Alberto Garcia	  2011-02-03
+Add KNOWN.ISSUES and MERGE.LOG
+
+To prepare for the merge.
+
+------------------------------------
 328 Alberto Garcia	  2011-02-02
 Repackage mesh routines
 
