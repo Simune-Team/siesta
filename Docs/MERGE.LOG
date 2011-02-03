@@ -1,8 +1,8 @@
 Incorporation of BSC code: mesh optimization; parallel fdf library
 
-The ongoing collaboration with the Barcelona Supercomputer Center (through the
-department of Computer Applications in Science and Engineering) has resulted
-in two new enhancements:
+* The ongoing collaboration with the Barcelona Supercomputer Center
+(through the department of Computer Applications in Science and
+Engineering) has resulted in two new main enhancements:
 
 - New code to improve the load-balance among processors in the
 operations carried out in the real-space mesh (involved in the
@@ -43,18 +43,28 @@ present as a wrapper in previous versions of Siesta, but it is now mandatory.
 The two new developments, while formally independent, have been merged
 at the same time due to historical and logistical reasons. Even though
 the mesh enhancements affect directly only a relatively small number
-of files, many others have been modified by changes in memory
-allocation syntax and indentation. The new treatment of fdf blocks and
-the removal of the explicit broadcast step in some existing fdf calls
-has meant changes to many other files. In all, this patch affects
-several dozen files in the Siesta distribution.
+of files, many others have been modified: some by changes in memory
+allocation syntax and indentation, and some to clarify code patterns
+or interfaces (see below). The new treatment of fdf blocks and the
+removal of the explicit broadcast step in some existing fdf calls has
+meant changes to many other files. In all, this patch affects several
+dozen files in the Siesta distribution.
+
+* Other significant changes
+
+- The interface to the spherical-harmonics module in matel has been
+changed to avoid the creation of temporary arrays at run time. Also,
+some internal arrays in the spherical-harmonics module are now
+pre-allocated to avoid overhead.
+
+- Throughout the code most 'allocatable' arrays have been turned into
+pointers, to be able to exploit the functionality in the alloc module
+to resize them concisely. It can be argued that we have gone too far
+in some cases.
 
 We have invested a lot of effort in this work, but it is very likely
 that some issues have escaped us. A list of those known at this
-time can be found in the file Docs/KNOWN.ISSUES.
-
-
-
+time can be found in the file Docs/KNOWN.ISSUES.BSC-patch
 
 
 
