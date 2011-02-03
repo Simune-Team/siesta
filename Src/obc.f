@@ -8,13 +8,12 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine obc(polxyz, polR, ucell, dx, nspin)
+      subroutine obc( polR, ucell, dx, nspin)
 C *******************************************************************
 C Writes the born effective charges to file 
 C by Tom Archer
 C Modified by Alberto Garcia, April 2007
 C ********* INPUT ***************************************************
-C real*8 polxyz(3,nspin): polarization along cartesian coordinates(Bohr)
 C real*8 dx             : atomic displacements (in Bohr)
 C real*8 polR(3,nspin)  : polarization along lattice vectors(Bohr)
 C real*8 ucell(3,3)     : cell vectors
@@ -37,13 +36,13 @@ C *******************************************************************
       implicit          none
 
       integer, intent(in)  :: nspin 
-      real(dp), intent(in) :: polxyz(3,nspin), polR(3,nspin),
+      real(dp), intent(in) :: polR(3,nspin),
      $                        ucell(3,3), dx
       external io_assign, io_close
 
 c Internal
 
-      integer    igrd, ispin,  i, ix, unit1, n
+      integer    igrd, ispin, ix, unit1
 
       character(len=33), save :: fname
       logical, save  ::    first_time = .true.

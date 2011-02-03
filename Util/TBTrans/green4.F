@@ -14,7 +14,7 @@ C ##################################################################
       
 
       use greensub
-
+      use fdf
       use m_tbt_gf
       use m_tbt_options, only : sppol, Lhsfile, Rhsfile, Lnucuse, 
      .             Rnucuse
@@ -156,7 +156,6 @@ c      complex*16 ab(ngaa1),ba(ngaa1)
 
 c FDF-stuff:
       character*33 paste,header,itemfdf     
-      real*8 fdf_convfac
       external paste
 
 c=======================================================================

@@ -18,7 +18,7 @@ module m_spin
 CONTAINS
 
   subroutine init_spin()
-    use m_fdf_global
+    use fdf, only : fdf_get
     use alloc, only: re_alloc
     use parallel, only: IOnode
 
@@ -26,14 +26,15 @@ CONTAINS
 
     logical  :: SPpol, NonCol
 
-    call fdf_global_get(SPpol,'SpinPolarized',.false.)
-    call fdf_global_get(NonCol,'NonCollinearSpin',.false.)
+    sppol  = fdf_get('SpinPolarized',.false.)
+    noncol = fdf_get('NonCollinearSpin',.false.)
 
 !
 !   NonCol takes precedence. The printout clarifies
 !   whether Up/Down or non-collinear spin is used.
 !
     if (NonCol) then
+
        nspin     = 4
        MColl     = 2
        SPpol     = .false.

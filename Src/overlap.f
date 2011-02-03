@@ -14,7 +14,8 @@
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GlobalToLocalOrb
       use atmfuncs,      only : rcut
-      use neighbour,     only : jna=>jan, r2ij, xij, mneighb
+      use neighbour,     only : jna=>jan, r2ij, xij, mneighb,
+     &                          reset_neighbour_arrays
       use alloc,         only : re_alloc, de_alloc
 
       implicit none
@@ -25,8 +26,8 @@
       CONTAINS
 
       subroutine overlap(nua, na, no, scell, xa, indxua, rmaxo,
-     .                   maxnh, lasto, iphorb, isa, 
-     .                   numh, listhptr, listh, S)
+     &                   maxnh, lasto, iphorb, isa, 
+     &                   numh, listhptr, listh, S)
 C *********************************************************************
 C Computes the overlap matrix
 C Energies in Ry. Lengths in Bohr.
@@ -53,50 +54,40 @@ C                            of each row of the overlap matrix
 C **************************** OUTPUT *********************************
 C real*8  S(maxnh)         : Sparse overlap matrix
 
-      integer, intent(in) ::  maxnh, na, no, nua
-
-      integer, intent(in) ::
-     . indxua(na), iphorb(no), isa(na), lasto(0:na), 
-     . listh(maxnh), numh(*), listhptr(*)
-      real(dp) , intent(in)     :: scell(3,3), rmaxo, xa(3,na)
-      real(dp), intent(out)     :: S(maxnh)
-
+      integer, intent(in)   ::  maxnh, na, no, nua
+      integer, intent(in)   :: indxua(na), iphorb(no), isa(na),
+     &                         lasto(0:na), listh(maxnh), numh(*),
+     &                         listhptr(*)
+      real(dp) , intent(in) :: scell(3,3), rmaxo, xa(3,na)
+      real(dp), intent(out) :: S(maxnh)
 C Internal variables ......................................................
-  
-      integer
-     .  ia, ind, io, ioa, is,  iio, 
-     .  j, ja, jn, jo, joa, js, jua, jx, nnia
-
-      real(dp) grSij(3) , rij, Sij, volcel, volume
-
-      real(dp), dimension(:), pointer  :: Si
-
+      integer               :: ia, ind, io, ioa, is,  iio, j, ja, jn,
+     &                         jo, joa, js, jua, nnia
+      real(dp)              :: grSij(3) , rij, Sij, volcel, volume
+      real(dp),     pointer :: Si(:)
       external  timer
-C ......................
 
-C Start timer
+C     Start timer
       call timer( 'overlap', 1 )
 
       volume = nua * volcel(scell) / na
 
-C Initialize neighb subroutine 
+C     Initialize neighb subroutine 
       call mneighb( scell, 2.d0*rmaxo, na, xa, 0, 0, nnia )
 
-C Allocate local memory
-
+C     Allocate local memory
       nullify(Si)
-      call re_alloc(Si,1,no,name="Si",routine="overlap")
+      call re_alloc( Si, 1, no, 'Si', 'overlap' )
 
       do ia = 1,nua
         call mneighb( scell, 2.d0*rmaxo, na, xa, ia, 0, nnia )
         do io = lasto(ia-1)+1,lasto(ia)
 
-C Is this orbital on this Node?
+C         Is this orbital on this Node?
           call GlobalToLocalOrb(io,Node,Nodes,iio)
           if (iio.gt.0) then
 
-C Valid orbital 
-
+C           Valid orbital
             do jn = 1,nnia
               ja = jna(jn)
               jua = indxua(ja)
@@ -107,8 +98,8 @@ C Valid orbital
                 is = isa(ia)
                 js = isa(ja)
                 if (rcut(is,ioa)+rcut(js,joa) .gt. rij) then
-                  call matel( 'S', is, js, ioa, joa, xij(1,jn),
-     .                      Sij, grSij )
+                  call MATEL( 'S', is, js, ioa, joa, xij(1:3,jn),
+     &                        Sij, grSij )
                   Si(jo) = Si(jo) + Sij
                 endif
               enddo
@@ -123,15 +114,12 @@ C Valid orbital
         enddo
       enddo
 
-C Deallocate local memory
-      call de_alloc(Si,name="Si",routine="overlap")
+C     Deallocate local memory
+!      call MATEL( 'S', 0, 0, 0, 0, xij, Sij, grSij )
+      call reset_neighbour_arrays( )
+      call de_alloc( Si, 'Si', 'overlap' )
 
-C Finish timer
+C     Finish timer
       call timer( 'overlap', 2 )
-
       end subroutine overlap
       end module m_overlap
-
-
-
-

@@ -31,7 +31,7 @@ c *******************************************************************
 
       use atmfuncs,  only : labelfis
       use siesta_geom,  only : isa
-      use fdf, only : fdf_physical, fdf_string
+      use fdf, only : fdf_physical, fdf_string, leqi
       use precision, only : dp
       use units, only : Ang
       use sys,   only: die
@@ -49,7 +49,7 @@ c Internal variables and arrays
 
       character         acf*22, acf_default*22, acfout*22, 
      .                  pieceh*20, titl*60
-      logical           leqi, frstme
+      logical           frstme
       integer           ia, ix
       real(dp)          recell(3,3), alat
 
@@ -146,6 +146,6 @@ c writing the coordinates
      .  ((xap(ix,ia),ix=1,3),isa(ia),ia,trim(labelfis(isa(ia))),ia=1,na)
 
 C Deallocate local memory
-      call de_alloc( xap, name='xap', routine='outcoor' )
+      call de_alloc( xap, name='xap' )
 
       end subroutine outcoor

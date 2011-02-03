@@ -3,6 +3,8 @@
 #
 OBJDIR=Obj
 #
+default: swarm simplex
+#
 include ../../$(OBJDIR)/arch.make
 #
 FC_DEFAULT:=$(FC)
@@ -22,8 +24,6 @@ SIMPLEX_OBJS=io.o parse.o minimizer.o vars_module.o simplex.o \
      sys.o precision.o amoeba.o
 SWARM_OBJS=io.o parse.o minimizer.o vars_module.o swarm.o \
      sys.o precision.o 
-#
-default: swarm simplex
 #
 dep: 
 	sfmakedepend --depend=obj --modext=o *.f *.f90 *.F *.F90

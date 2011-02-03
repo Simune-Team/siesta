@@ -9,7 +9,6 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
 c $Id: constr.f,v 1.6 2003/06/23 09:46:16 ordejon Exp $
-
       subroutine constr( cell, na, isa, amass, xa, stress, fa, ntcon )
 c *****************************************************************
 c User-written routine to implement specific geometric constraints,

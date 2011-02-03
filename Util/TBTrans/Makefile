@@ -53,9 +53,9 @@ TBTOBJS= $(SIESTA_OBJS) $(MOD_TOBJS) $(SYSOBJ) $(EXTRA) \
 #
 FDF=libfdf.a
 FDF_MAKEFILE=$(VPATH)/fdf/makefile
-FDF_INCFLAGS:=-I $(VPATH)/fdf $(INCFLAGS)
+FDF_INCFLAGS:=-I $(VPATH)/fdf -I../MPI $(INCFLAGS)
 $(FDF): 
-	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/fdf" \
+	(mkdir -p fdf ; cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/fdf" \
                           "ARCH_MAKE=../$(ARCH_MAKE)" \
                           "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 #
@@ -63,14 +63,14 @@ INCFLAGS:=$(INCFLAGS)
 #
 MPI_MAKEFILE=$(VPATH)/MPI/Makefile
 $(MPI_INTERFACE): 
-	(cd MPI ; $(MAKE) -f $(MPI_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/MPI" \
+	(mkdir -p MPI; cd MPI ; $(MAKE) -f $(MPI_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/MPI" \
                           "MAKEFILES=$(MPI_MAKEFILE)" "ARCH_MAKE=../$(ARCH_MAKE)" \
                           "FFLAGS=$(FFLAGS)" module_built)
 #
 LINALG_MAKEFILE=$(VPATH)/Libs/makefile
 LINALG_INCFLAGS:=-I $(VPATH)/Libs $(INCFLAGS)
 $(LINALG): 
-	(cd Libs ; $(MAKE) -f $(LINALG_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/Libs" \
+	(mkdir -p Libs; cd Libs ; $(MAKE) -f $(LINALG_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/Libs" \
                           "ARCH_MAKE=../$(ARCH_MAKE)" \
                           "INCFLAGS=$(LINALG_INCFLAGS)" "FFLAGS=$(FFLAGS)" $(LINALG))
 #
@@ -84,9 +84,9 @@ tbtrans: $(MPI_INTERFACE) $(TBTOBJS) $(FDF) $(SYSOBJ)  $(LINALG)
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
 	rm -f tbtrans *.o *.a *.mod
-	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
-	(cd MPI ; $(MAKE) -f $(MPI_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
-	(cd Libs ; $(MAKE) -f $(MPI_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
+	rm -rf ./fdf
+	rm -rf ./MPI
+	rm -rf ./Libs
 
 #
 # Dependencies

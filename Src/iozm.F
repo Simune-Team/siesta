@@ -33,7 +33,6 @@ C  Modules
 C
       use precision
       use parallel,  only : Node
-      use fdf
       use files,     only : slabel, label_length
       use zmatrix,   only : Zmat, ZmatForce, ZmatForceVar
       use zmatrix,   only : Zmat_to_Cartesian
@@ -108,7 +107,7 @@ C If input file not found, go to exit point
 
 C Open file
           call io_assign( iu )
-          open( iu, file=fname, form='formatted', status='unknown' )      
+          open( iu, file=fname, form='formatted', status='unknown' )
 
 C Write data on file
           write(iu,'(2(3x,3f18.9))')

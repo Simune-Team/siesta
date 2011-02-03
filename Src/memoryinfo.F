@@ -24,9 +24,9 @@ C                each data type
 C
       implicit none
 
-      integer, save ::
+      integer*8, save ::
      .  WordsInteger, WordsSP, WordsDP, WordsLogical, WordsSC, WordsDC, 
-     .  WordsString,
+     .  WordsString, WordsLongInt,
      .  PeakMemory, CurrentMemory
 
       character(len=30), save ::
@@ -40,14 +40,15 @@ C
      .  WordsSC / 0 /,
      .  WordsDC / 0 /,
      .  WordsString / 0 /,
+     .  WordsLongInt / 0 /,
      .  PeakMemory / 0 /,
      .  CurrentMemory / 0 /
       
-      integer, parameter, dimension(7) :: ByteSize = 
+      integer, parameter, dimension(8) :: ByteSize = 
 #ifdef OLD_CRAY
-     .     (/8,8,8,8,8,16,8/)
+     .     (/8,8,8,8,8,16,8,8/)
 #else
-     .     (/4,4,8,4,8,16,4/)
+     .     (/4,4,8,4,8,16,4,8/)
 #endif
 
       end module memoryinfo

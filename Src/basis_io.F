@@ -26,7 +26,6 @@
       use basis_types, only: write_basis_specs, basis_parameters
       use pseudopotential
       use radial
-      use fdf
 !      use flib_wxml, only: str
       use xml, only: xml_dump_attribute, xml_dump_element, str
 
@@ -80,7 +79,7 @@
       character(len=40) filename
       character(len=40) dummy
                                 !
-      call read_chemical_types
+      call read_chemical_types()
       nspecies = number_of_species()
       ns = nspecies
 
@@ -96,7 +95,7 @@
          iret = nf90_inq_dimid(ncid,'norbs',norbs_id)
          iret = nf90_inquire_dimension(ncid,norbs_id,len=norbs)
          if (norbs .gt. maxnorbs)
-     $  call die("read_user_basis: Increase maxnorbs in atm_types.f")
+     $     call die("read_user_basis: Increase maxnorbs in atm_types.f")
 
          spp%n_orbnl = norbs
 
@@ -122,7 +121,7 @@
 
          iret = nf90_get_att(ncid,nf90_global,'Atomic_number',spp%z)
          if (atomic_number(is) .ne. spp%z)
-     $                            call die("Atomic number mismatch")
+     $     call die("Atomic number mismatch")
 
          iret = nf90_get_att(ncid,nf90_global,'Valence_charge',spp%zval)
          iret = nf90_get_att(ncid,nf90_global,'Mass',spp%mass)
@@ -322,17 +321,25 @@ c
 
       integer is
 
-      call read_chemical_types
+      call read_chemical_types()
       nspecies = number_of_species()
       ns = nspecies
 
       allocate(species(nspecies))
 
       do is = 1, nspecies
-         spp => species(is)
-         spp%label = species_label(is)
-         spp%read_from_file = .true.
-         call read_ion_ascii(spp)
+        spp                => species(is)
+        spp%label          = species_label(is)
+        spp%read_from_file = .true.
+
+        nullify(spp%orbnl)
+        nullify(spp%pjnl)
+        call reset_rad_func( spp%vna )
+        call reset_rad_func( spp%chlocal )
+        call reset_rad_func( spp%reduced_vlocal )
+        call reset_rad_func( spp%core )
+
+        call read_ion_ascii(spp)
       enddo
 
       end subroutine read_basis_ascii
@@ -480,14 +487,14 @@ c
       character*40 filename
 
       do is = 1, nspecies
-         spp => species(is)
-         if (spp%read_from_file) cycle   !! Do not dump
+        spp => species(is)
+        if (spp%read_from_file) cycle   !! Do not dump
 
-         write(filename,'(a,a)') trim(spp%label), ".ion.nc"
-         write(6,'(2a)') 'Dumping basis to NetCDF file ',
-     $                   trim(filename)
+        write(filename,'(a,a)') trim(spp%label), ".ion.nc"
+        write(6,'(2a)') 'Dumping basis to NetCDF file ',
+     $                  trim(filename)
 
-         iret = nf90_create(trim(filename),NF90_CLOBBER,ncid)
+        iret = nf90_create(trim(filename),NF90_CLOBBER,ncid)
 
         nkbs =  spp%n_pjnl
         norbs = spp%n_orbnl
@@ -697,7 +704,7 @@ c
 #endif
 
 
-      subroutine dump_basis_ascii
+      subroutine dump_basis_ascii()
 
       integer is
 
@@ -863,7 +870,7 @@ c
       end subroutine dump_ion_ascii
 !
 !-----------------------------------------------------------------
-      subroutine dump_basis_xml
+      subroutine dump_basis_xml()
 
       integer is
 
@@ -961,17 +968,17 @@ c
 !
 !
 !---------------------------------------------------------------------
-c$$$      subroutine xml_element_content(xf,name,content)
-c$$$      use flib_wxml
-c$$$      type(xmlf_t), intent(inout) :: xf            ! For new XML output
-c$$$      character(len=*), intent(in)  :: name
-c$$$      character(len=*), intent(in)  :: content
-c$$$
-c$$$      call xml_NewElement(xf,name)
-c$$$      call xml_AddPcdata(xf,content)
-c$$$      call xml_EndElement(xf,name)
-c$$$      end subroutine xml_element_content
-c$$$!---------------------------------------------------------------------
+c      subroutine xml_element_content(xf,name,content)
+c      use flib_wxml
+c      type(xmlf_t), intent(inout) :: xf            ! For new XML output
+c      character(len=*), intent(in)  :: name
+c      character(len=*), intent(in)  :: content
+c
+c      call xml_NewElement(xf,name)
+c      call xml_AddPcdata(xf,content)
+c      call xml_EndElement(xf,name)
+c      end subroutine xml_element_content
+!---------------------------------------------------------------------
 
       end module basis_io
 

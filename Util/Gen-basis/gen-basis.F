@@ -67,6 +67,11 @@ C Initialise MPI and set processor number
       call MPI_Init( MPIerror )
       call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
       call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
+
+      if (.not. fdf_parallel()) then
+        call die('gen-basis: ERROR: FDF module doesn''t have ' //
+                 'parallel support')
+      endif
 #else
       Node =  0
       Nodes = 1

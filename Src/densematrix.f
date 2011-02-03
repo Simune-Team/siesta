@@ -16,8 +16,20 @@ C
 
       implicit none
 
-      real(dp), pointer, save :: Haux(:)
-      real(dp), pointer, save :: Saux(:)
-      real(dp), pointer, save :: psi(:)
+      real(dp), pointer :: Haux(:)
+      real(dp), pointer :: Saux(:)
+      real(dp), pointer :: psi(:)
+
+      CONTAINS
+
+      subroutine resetDenseMatrix( )
+      use alloc, only : de_alloc
+      implicit none
+
+      call de_alloc( Haux, 'Haux', 'densematrix' )
+      call de_alloc( Saux, 'Saux', 'densematrix' )
+      call de_alloc( psi,  'psi',  'densematrix' )
+
+      end subroutine resetDenseMatrix
 
       end module densematrix

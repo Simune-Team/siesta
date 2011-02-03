@@ -22,7 +22,7 @@
      .                   maxnh, maxnd, lasto, lastkb, iphorb, 
      .                   iphKB, numd, listdptr, listd, numh, 
      .                   listhptr, listh, nspin, Dscf, Enl, 
-     .                   fa, stress, H )
+     .                   fa, stress, H , forces_and_stress)
 C *********************************************************************
 C Calculates non-local (NL) pseudopotential contribution to total 
 C energy, atomic forces, stress and hamiltonian matrix elements.
@@ -58,6 +58,7 @@ C integer listh(maxnh)     : Nonzero hamiltonian-matrix element column
 C                            indexes for each matrix row
 C integer nspin            : Number of spin components
 C real*8  Dscf(maxnd,nspin): Density matrix
+C logical forces_and_stress   Determines whether fa and stress are touched
 C ******************* INPUT and OUTPUT *********************************
 C real*8 fa(3,na)          : NL forces (added to input fa)
 C real*8 stress(3,3)       : NL stress (added to input stress)
@@ -73,8 +74,8 @@ C
       use parallelsubs,  only : GetNodeOrbs, LocalToGlobalOrb
       use parallelsubs,  only : GlobalToLocalOrb
       use atmfuncs,      only : rcut, epskb
-      use neighbour    , only : iana=>jan, r2ki=>r2ij, xki=>xij
-      use neighbour    , only : mneighb
+      use neighbour,     only : iana=>jan, r2ki=>r2ij, xki=>xij
+      use neighbour,     only : mneighb, reset_neighbour_arrays
       use alloc,         only : re_alloc, de_alloc
 
       integer, intent(in) ::
@@ -90,6 +91,7 @@ C
       real(dp), intent(inout) :: fa(3,nua), stress(3,3)
       real(dp), intent(inout) :: H(maxnh,nspin)
       real(dp), intent(out)   :: Enl
+      logical, intent(in)     :: forces_and_stress
 
       real(dp) ::   volcel
       external ::   timer, volcel
@@ -148,14 +150,13 @@ C Initialize arrays Di and Vi only once
 
 C Allocate local memory
       nullify( Di )
-      call re_alloc( Di, 1, no, name='Di', routine='nlefsm' )
+      call re_alloc( Di, 1, no, 'Di', 'nlefsm' )
       nullify( Vi )
-      call re_alloc( Vi, 1, no, name='Vi', routine='nlefsm' )
+      call re_alloc( Vi, 1, no, 'Vi', 'nlefsm' )
       nullify( listed )
-      call re_alloc( listed, 1, no, name='listed', routine='nlefsm' )
+      call re_alloc( listed, 1, no, 'listed', 'nlefsm' )
       nullify( listedall )
-      call re_alloc( listedall, 1, no, name='listedall',
-     $               routine='nlefsm' )
+      call re_alloc( listedall, 1, no, 'listedall', 'nlefsm' )
 
       Enl = 0.0d0
       do jo = 1,no
@@ -184,160 +185,78 @@ C Find maximum number of KB projectors of one atom = maxkba
 
 C Allocate local arrays that depend on saved parameters
       nullify( iano )
-      call re_alloc( iano, 1, maxno, name='iano', routine='nlefsm' )
+      call re_alloc( iano, 1, maxno, 'iano', 'nlefsm' )
       nullify( iono )
-      call re_alloc( iono, 1, maxno, name='iono', routine='nlefsm' )
+      call re_alloc( iono, 1, maxno, 'iono', 'nlefsm' )
       nullify( xno )
-      call re_alloc( xno, 1, 3, 1, maxno, name='xno', 
-     &               routine='nlefsm' )
+      call re_alloc( xno, 1, 3, 1, maxno, 'xno',  'nlefsm' )
       nullify( Ski )
-      call re_alloc( Ski, 1, maxkba, 1, maxno, name='Ski', 
-     &               routine='nlefsm' )
+      call re_alloc( Ski, 1, maxkba, 1, maxno, 'Ski', 'nlefsm' )
       nullify( grSki )
-      call re_alloc( grSki, 1, 3, 1, maxkba, 1, maxno, name='grSki',
-     &               routine='nlefsm' )
+      call re_alloc( grSki, 1, 3, 1, maxkba, 1, maxno, 'grSki',
+     &               'nlefsm' )
 
-C Initialize neighb subroutine
+C     Initialize neighb subroutine
       call mneighb( scell, rmax, na, xa, 0, 0, nna )
 
-C Loop on atoms with KB projectors      
+C     Loop on atoms with KB projectors      
       do ka = 1,na
         kua = indxua(ka)
         ks = isa(ka)
         nkb = lastkb(ka) - lastkb(ka-1)
 
-C Find neighbour atoms
+C       Find neighbour atoms
         call mneighb( scell, rmax, na, xa, ka, 0, nna )
 
-C Find neighbour orbitals
-          nno = 0
-          do ina = 1,nna
-            ia = iana(ina)
-            is = isa(ia)
-            rki = sqrt(r2ki(ina))
-            do io = lasto(ia-1)+1,lasto(ia)
+C       Find neighbour orbitals
+        nno = 0
+        do ina = 1,nna
+          ia = iana(ina)
+          is = isa(ia)
+          rki = sqrt(r2ki(ina))
+          do io = lasto(ia-1)+1,lasto(ia)
 
-C Only calculate if needed locally
-              if (listedall(io)) then
+C           Only calculate if needed locally
+            if (listedall(io)) then
+              ioa = iphorb(io)
 
-                ioa = iphorb(io)
-          
-C Find if orbital is within range
-                within = .false.
-                do ko = lastkb(ka-1)+1,lastkb(ka)
-                  koa = iphKB(ko)
-                  if ( rki .lt. rcut(is,ioa)+rcut(ks,koa) ) 
-     .              within = .true.
-                enddo
+C             Find if orbital is within range
+              within = .false.
+              do ko = lastkb(ka-1)+1,lastkb(ka)
+                koa = iphKB(ko)
+                if ( rki .lt. rcut(is,ioa)+rcut(ks,koa) ) 
+     &            within = .true.
+              enddo
 
-C Find overlap between neighbour orbitals and KB projectors
-                if (within) then
-C Check maxno - if too small then increase array sizes
-                  if (nno.eq.maxno) then
-                    maxno = maxno + 100
-                    call re_alloc( iano, 1, maxno, name='iano',
-     $                   copy=.true., routine='nlefsm' )
-                    call re_alloc( iono, 1, maxno, name='iono',
-     $                   copy=.true., routine='nlefsm' )
-                    call re_alloc( xno, 1, 3, 1, maxno, name='xno', 
-     &                   copy=.true., routine='nlefsm' )
-                    call re_alloc( Ski, 1, maxkba, 1, maxno, name='Ski', 
-     &                   copy=.true., routine='nlefsm' )
-                    call re_alloc( grSki, 1, 3, 1, maxkba, 1, maxno,
-     $                   name='grSki', routine='nlefsm', copy=.true. )
-                  endif
-                  nno = nno + 1
-                  iono(nno) = io
-                  iano(nno) = ia
-                  do ix = 1,3
-                    xno(ix,nno) = xki(ix,ina)
-                  enddo
-                  ikb = 0
-                  do ko = lastkb(ka-1)+1,lastkb(ka)
-                    ikb = ikb + 1
-                    ioa = iphorb(io)
-                    koa = iphKB(ko)
-                    call matel( 'S', ks, is, koa, ioa, xki(1,ina),
-     .                    Ski(ikb,nno), grSki(1,ikb,nno) )
-                  enddo
-
+C             Find overlap between neighbour orbitals and KB projectors
+              if (within) then
+C               Check maxno - if too small then increase array sizes
+                if (nno.eq.maxno) then
+                  maxno = maxno + 100
+                  call re_alloc( iano, 1, maxno, 'iano', 'nlefsm',
+     &                           .true. )
+                  call re_alloc( iono, 1, maxno, 'iono', 'nlefsm',
+     &                           .true. )
+                  call re_alloc( xno, 1, 3, 1, maxno, 'xno',  'nlefsm',
+     &                           .true. )
+                  call re_alloc( Ski, 1, maxkba, 1, maxno, 'Ski',
+     &                          'nlefsm', .true. )
+                  call re_alloc( grSki, 1, 3, 1, maxkba, 1, maxno,
+     &                          'grSki', 'nlefsm', .true. )
                 endif
-
-              endif
-
-            enddo
-
-          enddo
-
-C Loop on neighbour orbitals
-          do ino = 1,nno
-            io = iono(ino)
-            ia = iano(ino)
-
-            call GlobalToLocalOrb(io,Node,Nodes,iio)
-            if (iio.gt.0) then
-C Valid orbital
-
-              if (ia .le. nua) then
-
-C Scatter density matrix row of orbital io
-                do j = 1,numd(iio)
-                  ind = listdptr(iio)+j
-                  jo = listd(ind)
-                  do ispin = 1,nspin
-                    Di(jo) = Di(jo) + Dscf(ind,ispin)
-                  enddo
+                nno = nno + 1
+                iono(nno) = io
+                iano(nno) = ia
+                do ix = 1,3
+                  xno(ix,nno) = xki(ix,ina)
                 enddo
-          
-C Scatter filter of desired matrix elements
-                do j = 1,numh(iio)
-                  jo = listh(listhptr(iio)+j)
-                  listed(jo) = .true.
-                enddo
-
-C Find matrix elements with other neighbour orbitals
-                do jno = 1,nno
-                  jo = iono(jno)
-                  if (listed(jo)) then
-
-C Loop on KB projectors
-                    ikb = 0
-                    do ko = lastkb(ka-1)+1,lastkb(ka)
-                      ikb = ikb + 1
-                      koa = iphKB(ko)
-                      epsk = epskb(ks,koa)
-                      Sik = Ski(ikb,ino)
-                      Sjk = Ski(ikb,jno)
-                      Vi(jo) = Vi(jo) + epsk * Sik * Sjk
-                      Cijk = Di(jo) * epsk
-                      Enl = Enl + Cijk * Sik * Sjk
-                      do ix = 1,3
-                        fik = 2.d0 * Cijk * Sjk * grSki(ix,ikb,ino)
-                        fa(ix,ia)  = fa(ix,ia)  - fik
-                        fa(ix,kua) = fa(ix,kua) + fik
-                        do jx = 1,3
-                          stress(jx,ix) = stress(jx,ix) +
-     .                                xno(jx,ino) * fik / volume
-                        enddo
-                      enddo
-                    enddo
-
-                  endif
-                enddo
-
-C Pick up contributions to H and restore Di and Vi
-                do j = 1,numh(iio)
-                  ind = listhptr(iio)+j
-                  jo = listh(ind)
-                  do ispin = 1,nspin
-                    H(ind,ispin) = H(ind,ispin) + Vi(jo)
-                  enddo
-                  Vi(jo) = 0.0d0
-                  listed(jo) = .false.
-                enddo
-                do j = 1,numd(iio)
-                  jo = listd(listdptr(iio)+j)
-                  Di(jo) = 0.0d0
+                ikb = 0
+                do ko = lastkb(ka-1)+1,lastkb(ka)
+                  ikb = ikb + 1
+                  ioa = iphorb(io)
+                  koa = iphKB(ko)
+                  call MATEL( 'S', ks, is, koa, ioa, xki(1:3,ina),
+     &                  Ski(ikb,nno), grSki(1:3,ikb,nno) )
                 enddo
 
               endif
@@ -346,23 +265,101 @@ C Pick up contributions to H and restore Di and Vi
 
           enddo
 
+        enddo
+
+C       Loop on neighbour orbitals
+        do ino = 1,nno
+          io = iono(ino)
+          ia = iano(ino)
+
+          call GlobalToLocalOrb(io,Node,Nodes,iio)
+          if (iio.gt.0) then
+C           Valid orbital
+            if (ia .le. nua) then
+C             Scatter density matrix row of orbital io
+              do j = 1,numd(iio)
+                ind = listdptr(iio)+j
+                jo = listd(ind)
+                do ispin = 1,nspin
+                  Di(jo) = Di(jo) + Dscf(ind,ispin)
+                enddo
+              enddo
+        
+C             Scatter filter of desired matrix elements
+              do j = 1,numh(iio)
+                jo = listh(listhptr(iio)+j)
+                listed(jo) = .true.
+              enddo
+
+C             Find matrix elements with other neighbour orbitals
+              do jno = 1,nno
+                jo = iono(jno)
+                if (listed(jo)) then
+
+C                 Loop on KB projectors
+                  ikb = 0
+                  do ko = lastkb(ka-1)+1,lastkb(ka)
+                    ikb = ikb + 1
+                    koa = iphKB(ko)
+                    epsk = epskb(ks,koa)
+                    Sik = Ski(ikb,ino)
+                    Sjk = Ski(ikb,jno)
+                    Vi(jo) = Vi(jo) + epsk * Sik * Sjk
+                    Cijk = Di(jo) * epsk
+                    Enl = Enl + Cijk * Sik * Sjk
+                    if (forces_and_stress) then
+                      do ix = 1,3
+                        fik = 2.d0 * Cijk * Sjk * grSki(ix,ikb,ino)
+                        fa(ix,ia)  = fa(ix,ia)  - fik
+                        fa(ix,kua) = fa(ix,kua) + fik
+                        do jx = 1,3
+                          stress(jx,ix) = stress(jx,ix) +
+     &                                    xno(jx,ino) * fik / volume
+                        enddo
+                      enddo
+                    endif
+                  enddo
+
+                endif
+              enddo
+
+C             Pick up contributions to H and restore Di and Vi
+              do j = 1,numh(iio)
+                ind = listhptr(iio)+j
+                jo = listh(ind)
+                do ispin = 1,nspin
+                  H(ind,ispin) = H(ind,ispin) + Vi(jo)
+                enddo
+                Vi(jo) = 0.0d0
+                listed(jo) = .false.
+              enddo
+              do j = 1,numd(iio)
+                jo = listd(listdptr(iio)+j)
+                Di(jo) = 0.0d0
+              enddo
+
+            endif
+
+          endif
+
+        enddo
+
       enddo
 
-C Deallocate local memory
-
-      call de_alloc( grSki, name='grSki', routine='nlefsm' )
-      call de_alloc( Ski, name='Ski', routine='nlefsm' )
-      call de_alloc( xno, name='xno', routine='nlefsm' )
-      call de_alloc( iono, name='iono', routine='nlefsm' )
-      call de_alloc( iano, name='iano', routine='nlefsm' )
-
-      call de_alloc( listedall, name='listedall', routine='nlefsm' )
-      call de_alloc( listed, name='listed', routine='nlefsm' )
-      call de_alloc( Vi, name='Vi', routine='nlefsm' )
-      call de_alloc( Di, name='Di', routine='nlefsm' )
+C     Deallocate local memory
+!      call MATEL( 'S', 0, 0, 0, 0, xki, Ski, grSki )
+      call reset_neighbour_arrays( )
+      call de_alloc( grSki, 'grSki', 'nlefsm' )
+      call de_alloc( Ski, 'Ski', 'nlefsm' )
+      call de_alloc( xno, 'xno', 'nlefsm' )
+      call de_alloc( iono, 'iono', 'nlefsm' )
+      call de_alloc( iano, 'iano', 'nlefsm' )
+      call de_alloc( listedall, 'listedall', 'nlefsm' )
+      call de_alloc( listed, 'listed', 'nlefsm' )
+      call de_alloc( Vi, 'Vi', 'nlefsm' )
+      call de_alloc( Di, 'Di', 'nlefsm' )
 
       call timer( 'nlefsm', 2 )
-
       end subroutine nlefsm
 
       end module m_nlefsm

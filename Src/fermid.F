@@ -12,12 +12,9 @@
 
       use precision,  only : dp
       use parallel,   only : IOnode
-      use fdf,        only : fdf_boolean, fdf_integer, fdf_string
+      use fdf,        only : fdf_boolean, fdf_integer, fdf_string, leqi
       use m_recipes,  only:  derfc
       use sys,        only:  die
-#ifdef MPI
-      use mpi_siesta
-#endif
 
       implicit none
 
@@ -86,21 +83,13 @@ C Local variables
       real(dp), save :: tol = 1.0d-10
       real(dp)       :: sumq, emin, emax, t, drange, wkebuf, w, eik
 
-#ifdef MPI
-      integer MPIerror
-#endif
-      
 C Reading whether to do an excited state
       if ( .not. blread) then
+        excitd = fdf_boolean('SingleExcitation', .false.)
         if ( ionode ) then
-          excitd = fdf_boolean('SingleExcitation', .false.)
           if ( excitd ) write(6,'(/a)') 
      .        'fermid: Calculating for lowest-exciton excited state'
         endif
-#ifdef MPI
-        call MPI_Bcast(excitd,1,MPI_logical,0,
-     .                 MPI_Comm_World,MPIerror)
-#endif
         blread = .true.
       endif   
 
@@ -182,9 +171,7 @@ C if nspin =2 populations of homo and lumo become equal.
           endif
 
 C Obtain the electronic entropy
-
-100       entropy = 0.0d0
-
+          entropy = 0.0d0
           do ik = 1,nk
             do ie = 1,ne
               do ispin = 1,nspin
@@ -376,11 +363,7 @@ C Local variables
       character(len=22), save :: ocf = 'FD'
       integer,           save :: nh = 1
       integer,           save :: ocupfnct
-      logical                 :: leqi
       logical,           save :: ocfread = .false.
-#ifdef MPI
-      integer MPIerror
-#endif
       
       parameter (PI = 3.14159265358979D0)
 
@@ -388,31 +371,25 @@ C Reading which electronic occupation function to use -------
 
       if ( .not. ocfread) then
 
-        if ( ionode ) then
-          ocf = fdf_string('OccupationFunction','FD')
+        ocf = fdf_string('OccupationFunction','FD')
 
-          if (leqi(ocf,'FD')) then
-            ocupfnct=1
-            write(6,'(/a)') 
-     .     'stepf: Fermi-Dirac step function'
-          else if (leqi(ocf,'MP')) then
-            ocupfnct=2
-            nh = fdf_integer('OccupationMPOrder',1)
-            write(6,'(/a)') 
-     .     'stepf: Methfessel-Paxton step function'
-            write(6,'(a,i2)') 
-     .     '       Using Hermite-Gauss polynomials of order ',nh
-          else
-            call die('fermid: Error: Allowed values '
-     $               // 'for OccupationFunction are FD and MP')
+        if (leqi(ocf,'FD')) then
+          ocupfnct = 1
+          if ( ionode ) then
+            write(6,'(/a)') 'stepf: Fermi-Dirac step function'
           endif
+        else if (leqi(ocf,'MP')) then
+          ocupfnct = 2
+          nh = fdf_integer('OccupationMPOrder',1)
+          if ( ionode ) then
+            write(6,'(/a)') 'stepf: Methfessel-Paxton step function'
+            write(6,'(a,i2)') 
+     .        '       Using Hermite-Gauss polynomials of order ',nh
+          endif
+        else
+          call die('fermid: Error: Allowed values '
+     $             // 'for OccupationFunction are FD and MP')
         endif
-#ifdef MPI
-        call MPI_Bcast(ocupfnct,1,MPI_integer,0,
-     .                 MPI_Comm_World,MPIerror)
-        call MPI_Bcast(nh,1,MPI_integer,0,
-     .                 MPI_Comm_World,MPIerror)
-#endif
         ocfread = .true.
       endif   
 c--------------------------------------
@@ -473,39 +450,26 @@ C Local variables
       character(len=22), save :: ocf = 'FD'
       integer,           save :: nh = 1
       integer,           save :: ocupfnct
-      logical                 :: leqi
       logical,           save :: ocfread = .false.
       real(dp)                :: tiny, wo, we
 
-#ifdef MPI
-      integer MPIerror
-#endif
-      
       data tiny /1.d-15/
 
 c Reading which electronic occupation function to use -------
 
       if ( .not. ocfread) then
 
-        if ( ionode ) then
-          ocf = fdf_string('OccupationFunction', 'FD')
+        ocf = fdf_string('OccupationFunction', 'FD')
 
-          if (leqi(ocf,'FD')) then
-            ocupfnct = 1
-          else if (leqi(ocf,'MP')) then
-            ocupfnct = 2
-            nh = fdf_integer('OccupationMPOrder',1)
-          else
-            call die('fermid: Error: Allowed values '
-     $               // 'for OccupationFunction are FD and MP')
-          endif
+        if (leqi(ocf,'FD')) then
+          ocupfnct = 1
+        else if (leqi(ocf,'MP')) then
+          ocupfnct = 2
+          nh = fdf_integer('OccupationMPOrder',1)
+        else
+          call die('fermid: Error: Allowed values '
+     $             // 'for OccupationFunction are FD and MP')
         endif
-#ifdef MPI
-        call MPI_Bcast(ocupfnct,1,MPI_integer,0,
-     .                  MPI_Comm_World,MPIerror)
-        call MPI_Bcast(nh,1,MPI_integer,0,
-     .                  MPI_Comm_World,MPIerror)
-#endif
         ocfread = .true.
       endif   
 c--------------------------------------

@@ -8,7 +8,7 @@ module m_pulay
   real(dp), pointer  :: auxpul(:,:)  => null()
   integer            :: n_records_saved = 0
   !
-  public :: pulayx, init_pulay_arrays
+  public :: pulayx, init_pulay_arrays, resetPulayArrays
   !
 CONTAINS
   !
@@ -31,7 +31,7 @@ CONTAINS
        nauxpul = sum(numh(1:no_l)) * nspin * maxsav
        !
        call re_alloc(auxpul,1,nauxpul,1,2,name="auxpul",        &
-            routine="init_pulay_arrrays")
+            routine="pulay")
     endif
     !
   end subroutine init_pulay_arrays
@@ -211,7 +211,7 @@ CONTAINS
                 ind = listdptr(i) + in
                 if (iscf .gt. 1 .or. mix1) then
                    dmnew(ind,is) =                                        &
-                        (1.0d0-alpha)*dmold(ind,is) + alpha*dmnew(ind,is)
+                        (1.0_dp-alpha)*dmold(ind,is) + alpha*dmnew(ind,is)
                 endif
                 dmold(ind,is) = dmnew(ind,is)
              enddo
@@ -236,7 +236,7 @@ CONTAINS
              do in = 1,numd(i)
                 ind = listdptr(i) + in
                 dmnew(ind,is) =                                        &
-                     (1.0d0-alphakick)*dmold(ind,is) + alphakick *dmnew(ind,is)
+                     (1.0_dp-alphakick)*dmold(ind,is) + alphakick *dmnew(ind,is)
 
                 dmold(ind,is) = dmnew(ind,is)
              enddo
@@ -285,8 +285,8 @@ CONTAINS
        enddo
        !
        ! B(i,i) = dot_product(Res(i)*Res(i))
-       b(i,i) = 0.0d0
-       ssum=0.0d0
+       b(i,i) = 0.0_dp
+       ssum=0.0_dp
        do is=1,nspin
           do ii=1,no_l
              do jj=1,numd(ii)
@@ -312,8 +312,8 @@ CONTAINS
 
           !          ! B(i,j) = B(j,i) = dot_product(Res(i)*Res(j))
 
-          b(i,j)=0.0d0
-          ssum=0.0d0
+          b(i,j)=0.0_dp
+          ssum=0.0_dp
           do is=1,nspin
              do ii=1,no_l
                 do jj=1,numd(ii)
@@ -328,11 +328,11 @@ CONTAINS
 
        ! Now extend the matrix with ones in an extra colum
        ! and row ...
-       b(i,maxmix+1)=1.0d0
-       b(maxmix+1,i)=1.0d0
+       b(i,maxmix+1)=1.0_dp
+       b(maxmix+1,i)=1.0_dp
     enddo
     !      ! ... except in the extra diagonal entry
-    b(maxmix+1,maxmix+1)=0.0d0
+    b(maxmix+1,maxmix+1)=0.0_dp
     !
 #ifdef MPI
     ! Global operations, but only for the non-extended entries
@@ -360,17 +360,17 @@ CONTAINS
 !!          write(0,"(a)") "FAILED inversion in Pulayx"
        endif
        do i=1,maxmix
-          coeff(i)=0.0d0
+          coeff(i)=0.0_dp
        enddo
        j=mod(iscf,maxmix)
        if(j.eq.0) j=maxmix
-       coeff(j) = 1.0d0
+       coeff(j) = 1.0_dp
     endif
     !
     ! ........
     !
     ! Read former matrices for mixing .........
-    dmnew(1:maxnd,1:nspin)=0.0d0
+    dmnew(1:maxnd,1:nspin)=0.0_dp
     do i=1,maxmix
        i0 = (i-1) * numel
        do is = 1,nspin
@@ -489,5 +489,12 @@ CONTAINS
 
   end subroutine pulayx
   !
+  subroutine resetPulayArrays( )
+    use alloc, only: de_alloc
+    implicit none
+    if (associated(auxpul))      &
+      call de_alloc( auxpul, 'auxpul', 'pulay' )
+  end subroutine resetPulayArrays
+
 end module m_pulay
-!
+

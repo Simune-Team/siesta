@@ -11,8 +11,8 @@
       subroutine denmat(c,eta,h,s,qs,nbasis,nbasisloc,nbands,ncmax,
      .                  nctmax,nfmax,nftmax,nhmax,nhijmax,numc,listc,
      .                  numct,listct,cttoc,numf,listf,numft,listft,
-     .                  fttof,numh,listh,listhptr,numhij,listhij,
-     .                  dm,edm,nbasisCloc,nspin,Node)
+     .                  numh,listh,listhptr,numhij,listhij,dm,edm,
+     .                  nbasisCloc,nspin,Node)
 C *******************************************************************
 C Subroutine to compute the Density and Energy Density matrices
 C for the Order-N functional of Kim et al. (PRB 52, 1640 (95))
@@ -70,7 +70,6 @@ C integer numft(nbasis)       : Control vector of F transpose matrix
 C                               (number of <>0  elements of each col of F)
 C integer listft(nfmax,nbasis): Control vector of F transpose matrix
 C                               (list of <>0  elements of each col of F)
-C integer fttof(nfmax,nbasis) : Map from Ft to F indexing
 C integer numh(nbasis)        : Control vector of H matrix
 C                               (number of nonzero elements of each row of H)
 C integer listh(nhmax)        : Control vector of H matrix
@@ -112,8 +111,7 @@ C *******************************************************************
      .  numh(nbasisloc),numhij(nbandsloc)
      
       integer
-     .  nftmax,fttof(nftmax,nbasisCloc),
-     .  listft(nftmax,nbasisCloc), numft(nbasisCloc)
+     .  nftmax, listft(nftmax,nbasisCloc), numft(nbasisCloc)
 
       real(dp) ::
      .  c(ncmax,nbasisCloc,nspin),dm(nhmax,nspin),edm(nhmax,nspin),
@@ -446,10 +444,11 @@ C Globalize total charge
 C Normalize ...
       do is = 1,nspin
 C        if (dabs(qs(is)-qout(is)) .gt. 0.05_dp) then
+        if (dabs(qs(is)-qout(is)) .gt. 0.00_dp) then
           fact = qs(is) / qout(is)
           call dscal(nh,fact,dm(1,is),1)
           call dscal(nh,fact,edm(1,is),1)
-C        endif
+        endif
       enddo
 
 C Deallocate local arrays

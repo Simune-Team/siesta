@@ -53,7 +53,7 @@ C Passed variables
       real(dp), intent(inout) :: X(N),H(N,IOPT),cntrol(0:19)
 
 C Local variables
-      real(dp)                :: gmax, gg, gamma
+      real(dp)                :: gg, gamma
       integer                 :: i, j
 
       real(dp)                :: ddot

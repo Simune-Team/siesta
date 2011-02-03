@@ -511,7 +511,7 @@ end subroutine write_attributes
 
     end subroutine wxml_fatal_xf
 
-    pure function xmlf_name(xf) result(fn)
+    function xmlf_name(xf) result(fn)
       Type (xmlf_t), intent(in) :: xf
       character(len=size(xf%filename)) :: fn
       call assign_array_to_str(fn,xf%filename)

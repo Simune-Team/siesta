@@ -13,7 +13,7 @@
       end subroutine dummy_diagk_file
 #else
       subroutine diagk_file( nspin, nuo, no, maxspn,
-     $                  maxuo, maxnh, maxnd, 
+     $                  maxnh, maxnd, 
      .                  maxo, numh, listhptr, listh, numd, listdptr, 
      .                  listd, H, S, getD, getPSI, fixspin, qtot, qs, 
      .                  temp, e1, e2, xij, indxuo, nk, kpoint, wk,
@@ -33,8 +33,6 @@ C integer nuo                 : Number of basis orbitals in unit cell
 C                               local to this processor
 C integer no                  : Number of basis orbitals in supercell
 C integer maxspn              : Second dimension of eo and qo
-C integer maxuo               : Last dimension of xij
-C                               Must be at least max(indxuo)
 C integer maxo                : First dimension of eo and qo
 C integer maxnh               : Maximum number of orbitals interacting  
 C integer maxnd               : First dimension of listd and DM
@@ -120,7 +118,7 @@ C
      .  MPIerror
 #endif
 
-      integer           maxnd, maxnh, maxspn, maxuo, maxo, nk, no,
+      integer           maxnd, maxnh, maxspn, maxo, nk, no,
      .                  nspin, nuo, nuotot, iscf, n_eigenvectors
       integer           indxuo(no), listh(maxnh), numh(nuo),
      .                  listd(maxnd), numd(nuo), listhptr(nuo),
@@ -245,7 +243,7 @@ C Loop over k points
               ie = ie - 1
             enddo
             if (Node .eq. 0) then
-               write(iu,"(2i3,f10.6,i6)")
+               write(iu,"(i5,i3,f10.6,i6)")
      $              ik, ispin, wk(ik), neigneeded
             endif
             if (neigneeded > n_eigenvectors) then

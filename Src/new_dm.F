@@ -20,7 +20,7 @@
 !            Variable-cell calculation:
 !              If the auxiliary cell changes, the DM is forced to be
 !              initialized (conceivably one could rescue some important
-!              information from an old DM, but it is too much trouble 
+!              information from an old DM, but it is too much trouble
 !              for now). NOTE that this is a change in policy with respect
 !              to previous versions of the program, in which a (blind?)
 !              re-use was allowed, except if 'ReInitialiseDM' was 'true'.
@@ -28,11 +28,11 @@
 !              'false' is not recommended. (This fdf variable maps to the
 !              'initdmaux' module variable)
 !
-!              In all other cases (including "server operation"), the 
-!              default is to allow DM re-use (with possible extrapolation) 
+!              In all other cases (including "server operation"), the
+!              default is to allow DM re-use (with possible extrapolation)
 !              from previous geometry steps.
 !              The fdf variables 'DM.AllowReuse' and 'DM.AllowExtrapolation'
-!              (mapped to 'allow_dm_reuse' and 'allow_dm_extrapolation', and 
+!              (mapped to 'allow_dm_reuse' and 'allow_dm_extrapolation', and
 !              both 'true' by default) can be used to change this behavior.
 !
 !              There is no re-use of the DM for "Forces", and "Phonon"
@@ -65,13 +65,13 @@
       implicit none
 
       character(len=*),parameter:: modName = 'm_new_dm '
-      
+
       ! Private variables to implement DM extrapolation and reuse
 
       ! If extrapolation is allowed, DMsaved stores the DM of
       ! previous geometry iteration
       real(dp), pointer, private :: DMsaved(:,:) => null()
-      ! 
+      !
       ! Even if extrapolation is not allowed, these variables
       ! store the sparsity pattern of the previous geometry
       ! iteration.
@@ -94,7 +94,7 @@
       use sparse_matrices, only: Escf     !! To be moved
 
 #ifdef TRANSIESTA
-      use m_ts_options, only : mixH 
+      use m_ts_options, only : mixH
       use M_ts_global_vars, only : TSrun, VOut
 #endif /* TRANSIESTA */
 
@@ -113,6 +113,7 @@
 
 #ifdef TRANSIESTA
       integer :: ts_alloc_stat
+      logical, save :: first_time = .true.
 #endif /* TRANSIESTA */
 
       if (IOnode) then
@@ -122,7 +123,7 @@
 
 !     In principle we allow the re-use of the DM (i.e, we do not initialize it)
 !
-      dminit = .false. 
+      dminit = .false.
       try_to_read_from_file = usesavedm     ! As per defaults
 !
 !     Except if there are explicit instructions
@@ -140,7 +141,7 @@
 !
 !     or using Harris...
 !
-      if (harrisfun) dminit = .true.  
+      if (harrisfun) dminit = .true.
 !
 !     or we are in the first step, or performing force-constant calculations
 !
@@ -183,10 +184,10 @@
          !
          call initdm(Datm, Dscf, lasto, na_s,
      .               no_s, no_l, nspin, na_u, no_l, nspin,
-     .               numh, listhptr, listh, iaorb, inspn, 
+     .               numh, listhptr, listh, iaorb, inspn,
      .               try_to_read_from_file)
          !
-         ! Update saved sparsity pattern. 
+         ! Update saved sparsity pattern.
          ! no_l should not have changed, but in the future
          ! one might conceivably implement a domain decomposition,
          ! and that would involve re-checking this issue
@@ -194,7 +195,7 @@
          call re_alloc(listptrold,1,no_l)
          ! NOTE possible shrinking, as the test for changed
          ! sparsity might involve the length of the listh array
-         call re_alloc(listold,1,size(listh),shrink=.true.)  
+         call re_alloc(listold,1,size(listh),shrink=.true.)
          numold = numh
          listold = listh
          listptrold = listhptr
@@ -228,7 +229,7 @@
          call new_extrapol(no_l, numh, listhptr, listh, Dscf)
 
       endif
-     
+
       ! Initialize energy-density matrix to zero for first call to overfsm
 #ifdef TRANSIESTA
       ! Only part of Escf is updated in TS, so if it is put as zero here
@@ -243,9 +244,6 @@
 #endif /* TRANSIESTA */
 
       END subroutine new_dm
-
-!---------------------------------------------------
-
       subroutine new_extrapol(nrows,num, listptr,list, DM)
 
       USE siesta_options
@@ -263,7 +261,7 @@
       integer, intent(in) :: num(nrows), listptr(nrows)
       integer, intent(in) :: list(:)
       real(dp), pointer   :: DM(:,:)
-      
+
 
       real(dp), pointer   :: DMtmp(:,:) => null()
       logical   ::  sparsity_has_changed
@@ -275,7 +273,7 @@
       logical  lbuffer
 #endif
 
-      sparsity_has_changed = 
+      sparsity_has_changed =
      $  (.not.  same_sparsity (nrows,numold,listold, num,list))
 
 #ifdef MPI
@@ -287,7 +285,7 @@
 
       ! Here is an interesting thought:
       ! Can we do the re-structuring node by node, only on those
-      ! in which it is necessary? I very much think so, so the 
+      ! in which it is necessary? I very much think so, so the
       ! above block is superfluous.
 
       ! In future it might be possible that no_l changes during
@@ -297,7 +295,7 @@
       ! the density matrix, or write a super extrapolator.
 
       if (sparsity_has_changed) then
-   
+
          ! Fix structure of DM
          ! This section now uses a temporary matrix and a safer
          ! restructuring routine.
@@ -310,8 +308,8 @@
          new_nnz = sum(num(:))
          call re_alloc(DM,1,new_nnz,1,nspin,
      $                 name="DM",routine="new_dm",shrink=.true.)
- 
-         do is = 1, nspin 
+
+         do is = 1, nspin
             call change_sparsity(nrows,
      $                           numold,listptrold,listold,
      $                           num, listptr, list,
@@ -339,8 +337,8 @@
             new_nnz = sum(num(:))
             call re_alloc(DMsaved,1,new_nnz,1,nspin,
      $           name="DMsaved",routine="new_dm",shrink=.true.)
- 
-            do is = 1, nspin 
+
+            do is = 1, nspin
                call change_sparsity(nrows,
      $                              numold,listptrold,listold,
      $                              num, listptr, list,
@@ -401,32 +399,30 @@
          listptrold = listptr
 
       endif
-         
-      end subroutine new_extrapol
 
-!
+      end subroutine new_extrapol
       subroutine initdm(Datm, Dscf, lasto, maxa,
-     .                  maxo, maxuo, maxspn, nua, no_l, nspin, 
-     .                  numh, listhptr, listh, iaorb, inspn, 
+     .                  maxo, maxuo, maxspn, nua, no_l, nspin,
+     .                  numh, listhptr, listh, iaorb, inspn,
      .                  try_dm_from_file)
 
 c *******************************************************************
 c Density matrix initialization
 c
 c    If Try_Dm_From_File is true, it is read from file if present.
-c    Otherwise it is generated assuming atomic charging 
+c    Otherwise it is generated assuming atomic charging
 c      (filling up atomic orbitals). The DM originated that way is
 c      not a good DM due to overlaps, but the SCF cycling corrects
 c      that for the next cycle.
 c    Spin polarized calculations starting from atoms:
-c      Default: All atoms with maximum polarization compatible with 
+c      Default: All atoms with maximum polarization compatible with
 c               atomic configuration. In Ferromagnetic ordering (up).
 c      If DM.InitSpinAF is true, as default but in Antiferro order:
 c               even atoms have spin down, odd up.
-c      If fdf %block DM.InitSpin is present it overwrites previous 
+c      If fdf %block DM.InitSpin is present it overwrites previous
 c         schemes: magnetic moments are explicitly given for some atoms.
 c         Atoms not mentioned in the block are initialized non polarized.
-c      
+c
 c Written by E. Artacho. December 1997. Taken from the original piece
 c of siesta.f written by P. Ordejon.
 c Non-collinear spin added by J.M.Soler, May 1998.
@@ -447,7 +443,7 @@ c integer lasto(0:maxa) : List with last orbital of each atom
 c integer numh(:)       : Dscf matrix sparse information
 c integer listhptr(:)   :  "
 c integer listh(:)      :  "
-c integer iaorb(maxo)   : List saying to what atom an orbital belongs 
+c integer iaorb(maxo)   : List saying to what atom an orbital belongs
 c double Datm(no)       : Occupations of basis orbitals in free atom
 c ********* OUTPUT **************************************************
 c double Dscf(:,maxspn) : Density matrix in sparse form
@@ -472,7 +468,7 @@ C
                                 ! to place the electrodes and scattering region energy
                                 ! levels at the appropriate relative position, so it is
                                 ! stored in the TSDE file.
-      use siesta_options, only : isolve
+      use m_ts_options,   only : TSmode
 #endif /* TRANSIESTA */
 
 #ifdef MPI
@@ -483,7 +479,7 @@ C
       implicit          none
 
       logical           found, inspn, try_dm_from_file
-      integer           no_l, nua, maxo, maxuo, nspin, maxa, 
+      integer           no_l, nua, maxo, maxuo, nspin, maxa,
      .                  maxspn
       integer           lasto(0:maxa), numh(maxuo), iaorb(maxo)
       integer       ::  listhptr(:), listh(:)
@@ -495,28 +491,29 @@ c ---------------------------------------------------------------------
 
 C Internal variables and arrays
       character(len=*),parameter:: myName = 'initdm'
-      character         updo*1, line*130, names*80
-      logical           noncol, peratm
+      character         updo*1, msg*80
+      logical           noncol, peratm, badsyntax
       integer           nh, ni, nn, nr, nv, iat, nat, ia, iu,
-     .                  i1, i2, in, ind, ispin, jo, io, 
+     .                  i1, i2, in, ind, ispin, jo, io,
      .                  iio, maxatnew
 
       integer, save ::  maxat
 
       integer           integs(4), lastc, lc(0:3)
 
-      integer, dimension(:), allocatable, save ::
-     .                  atom, ibuffer
+      integer, pointer, save ::  atom(:)
 #ifdef MPI
       integer  MPIerror
       logical  lbuffer
 #endif
-      real(dp)          aspin, cosph, costh, epsilon, 
+      real(dp)          aspin, cosph, costh, epsilon,
      .                  qio, rate, reals(4),
      .                  sinph, sinth, spinat, spio, values(4)
 
-      real(dp), dimension(:), allocatable, save ::
-     .                  phi, spin, theta, dpbuffer1
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
+
+      real(dp), pointer, save :: phi(:), spin(:), theta(:)
 
       integer, pointer :: list_tmp(:), num_tmp(:), listptr_tmp(:)
       real(dp), pointer :: D_tmp(:,:), work(:)
@@ -536,9 +533,9 @@ C Try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
       if (try_dm_from_file) then
 
          nullify(list_tmp,D_tmp,num_tmp,listptr_tmp)
-         call re_alloc(num_tmp,1,no_l,name='num_tmp',routine=myName)
-         call re_alloc(listptr_tmp,1,no_l,name='listptr_tmp',
-     .                 routine=myName)
+         call re_alloc(num_tmp,1,no_l)
+         call re_alloc(listptr_tmp,1,no_l)
+
 #ifdef TRANSIESTA
          nullify(EDM_tmp)
 #endif /* TRANSIESTA */
@@ -548,7 +545,7 @@ C Try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
          call read_dynamic_dm(nh_tmp, no_l, nspin_read, num_tmp, 
      .             listptr_tmp, list_tmp, D_tmp, found )
 #else
-         if(isolve == 2) then ! Transiesta solution method
+         if(TSmode) then ! Transiesta solution method
 C First try to read the .TSDE file
            call read_dynamic_ts_dm(nh_tmp, no_l, nspin_read, num_tmp, 
      .             listptr_tmp, list_tmp, D_tmp, EDM_tmp, ef, ts_found )
@@ -560,13 +557,12 @@ C If it does not find a .TSDE file, try to read a .DM file
            if(.not. ts_found) 
      .        call read_dynamic_dm(nh_tmp, no_l, nspin_read, num_tmp, 
      .             listptr_tmp, list_tmp, D_tmp, found )           
-
 C Either .TSDE or .DM may have been found
            found = ts_found .or. found
          else ! Not Transiesta solution mathod
            ts_found = .false.
-           call read_dynamic_dm(nh_tmp, no_l, nspin_read, num_tmp, 
-     .             listptr_tmp, listd=list_tmp, dm=D_tmp, found=found )
+           call read_dynamic_dm(nh_tmp, no_l, nspin_read, num_tmp,
+     $             listptr_tmp, listd=list_tmp, dm=D_tmp, found=found )
          end if ! Transiesta solution method
 #endif /* TRANSIESTA */
 
@@ -590,7 +586,7 @@ C If found, check and update, otherwise initialize with neutral atoms
      $        "WARNING: Falling back to atomic initialization of DM."
            endif
            found = .false.
-           call de_alloc(num_tmp,name='num_tmp',routine=myName)
+	   call de_alloc(num_tmp,name='num_tmp',routine=myName)
            call de_alloc(listptr_tmp,name='listptr_tmp',routine=myName)
            call de_alloc(list_tmp,name='listd',
      .                   routine='read_dynamic_dm')
@@ -622,9 +618,9 @@ C If found, check and update, otherwise initialize with neutral atoms
            nullify(work)
            do is= 1, nspin
               call change_sparsity (no_l,num_tmp,listptr_tmp,list_tmp,
-     $                              numh,listhptr,listh,
-     $                              D_tmp(:,is), Dscf(:,is),
-     $                              work=work)          
+     $                                  numh,listhptr,listh,
+     $                                  D_tmp(:,is), Dscf(:,is),
+     $                                  work=work)
 #ifdef TRANSIESTA
 ! change_sparsity allocates work, but should work, since it does not 
 ! deallocate inside the spin loop
@@ -636,17 +632,16 @@ C If found, check and update, otherwise initialize with neutral atoms
                
 #endif /* TRANSIESTA */
            enddo
-           ! Deallocate with same routine/name used in allocations
-           call de_alloc(num_tmp,name='num_tmp',routine=myName)
-           call de_alloc(listptr_tmp,name='listptr_tmp',routine=myName)
-           call de_alloc(list_tmp,name='listd',
-     .                   routine='read_dynamic_dm')
-           call de_alloc(D_tmp,name='dm',routine='read_dynamic_dm')
-           call de_alloc(work,name='work',routine='change_sparsity')
+           call de_alloc(num_tmp)
+           call de_alloc(listptr_tmp)
+           call de_alloc(list_tmp)
+           call de_alloc(D_tmp)
+           call de_alloc(work)  ! Allocated by change_sparsity
 #ifdef TRANSIESTA
            if(ts_found) call de_alloc(EDM_tmp)
 #endif /* TRANSIESTA */
         endif
+
 
       else
 
@@ -657,156 +652,109 @@ C   integer atom(nat) : which atoms
 C   double  spin(nat) : what polarization -----------------------------
 
         noncol = .false.
+        peratm = fdf_block('DM.InitSpin',bfdf)
+        noncol = .false.
         if (Node.eq.0) then
-          peratm = fdf_block('DM.InitSpin',iu)
           if (peratm .and. nspin.lt.2) write(6,'(/,a)')
      .    'initdm: WARNING: DM.InitSpin not used because nspin < 2'
         endif
-#ifdef MPI
-        call MPI_Bcast(peratm,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-#endif
 
         if (peratm .and. nspin.ge.2) then
 
 C Allocate local memory
-          allocate(atom(maxat))
-          call memory('A','I',maxat,'initdm')
-          allocate(phi(maxat))
-          call memory('A','D',maxat,'initdm')
-          allocate(spin(maxat))
-          call memory('A','D',maxat,'initdm')
-          allocate(theta(maxat))
-          call memory('A','D',maxat,'initdm')
+          nullify(atom,phi,spin,theta)
+          call re_alloc( atom, 1, maxat, 'atom', 'initdm' )
+          call re_alloc( phi, 1, maxat, 'phi', 'initdm' )
+          call re_alloc( spin, 1, maxat, 'spin', 'initdm' )
+          call re_alloc( theta, 1, maxat, 'theta', 'initdm' )
 
           nat = 0
-          do iat = 1, nua+1
-C Read and parse a line of the data block
-            if (Node.eq.0) then
-              read(iu,'(a)', end=50) line
-            endif
-#ifdef MPI
-            call MPI_Bcast(line,130,MPI_character,0,MPI_Comm_World,
-     .        MPIerror)
-#endif
-            lastc = index(line,'#') - 1
-            if (lastc .le. 0) lastc = len(line)
-            call parse( line(1:lastc), nn, lc, names, nv, values,
-     .                  ni, integs, nr, reals )
-            if (nn.ge.1 .and. names(lc(0)+1:lc(1)).eq.'%endblock') then
-C End data reading
-              goto 50
-            elseif (ni .eq. 1) then
-              if (nat.eq.maxat) then
+          badsyntax = .FALSE.
+          do while(fdf_bline(bfdf,pline) .and. (nat .lt. nua) .and.
+     .            (.not. badsyntax))
+
+            nn = fdf_bnnames(pline)
+            ni = fdf_bnintegers(pline)
+            nr = fdf_bnreals(pline)
+
+            if (ni .eq. 1) then
+              if (nat .eq. maxat) then
                 maxatnew = nat + nint(0.1*nat)
 C
-                allocate(ibuffer(maxat))
-                call memory('A','I',maxat,'initdm')
-                ibuffer(1:maxat) = atom(1:maxat)
-                call memory('D','I',size(atom),'initdm')
-                deallocate(atom)
-                allocate(atom(maxatnew))
-                call memory('A','I',maxatnew,'initdm')
-                atom(1:maxat) = ibuffer(1:maxat)
-                call memory('D','I',size(ibuffer),'initdm')
-                deallocate(ibuffer)
+                call re_alloc( atom, 1, maxatnew, 'atom', 'initdm',
+     &                         copy=.true. )
 C
-                allocate(dpbuffer1(maxat))
-                call memory('A','D',maxat,'initdm')
-                dpbuffer1(1:maxat) = phi(1:maxat)
-                call memory('D','D',size(phi),'initdm')
-                deallocate(phi)
-                allocate(phi(maxatnew))
-                call memory('A','D',maxatnew,'initdm')
-                phi(1:maxat) = dpbuffer1(1:maxat)
-                dpbuffer1(1:maxat) = spin(1:maxat)
-                call memory('D','D',size(spin),'initdm')
-                deallocate(spin)
-                allocate(spin(maxatnew))
-                call memory('A','D',maxatnew,'initdm')
-                spin(1:maxat) = dpbuffer1(1:maxat)
-                dpbuffer1(1:maxat) = theta(1:maxat)
-                call memory('D','D',size(theta),'initdm')
-                deallocate(theta)
-                allocate(theta(maxatnew))
-                call memory('A','D',maxatnew,'initdm')
-                theta(1:maxat) = dpbuffer1(1:maxat)
-                call memory('D','D',size(dpbuffer1),'initdm')
-                deallocate(dpbuffer1)
+                call re_alloc( phi, 1, maxatnew, 'phi', 'initdm',
+     &                         copy=.true. )
+                call re_alloc( spin, 1, maxatnew, 'spin', 'initdm',
+     &                         copy=.true. )
+                call re_alloc( theta, 1, maxatnew, 'theta', 'initdm',
+     &                         copy=.true. )
 C
                 maxat = maxatnew
               endif
               nat = nat + 1
-              atom(nat) = integs(1)
+              atom(nat) = fdf_bintegers(pline,1)
+
+              if (nn .eq. 0) then
+C Read value of spin
+                if (nr .eq. 3) then
+C Read spin value and direction
+                  spin(nat)  = fdf_breals(pline,1)
+                  theta(nat) = fdf_breals(pline,2) * pi/180.0d0
+                  phi(nat)   = fdf_breals(pline,3) * pi/180.0d0
+                elseif (nr .eq. 1) then
+C Read spin value. Default direction.
+                  spin(nat)  = fdf_breals(pline,1)
+                  theta(nat) = 0.d0
+                  phi(nat)   = 0.d0
+                else
+C Print bad-syntax error and stop
+                  badsyntax = .TRUE.
+                endif
+              elseif (nn .eq. 1) then
+C Read spin as + or - (maximun value)
+                updo = fdf_bnames(pline,1)
+                if (updo .eq. '+') then
+                  spin(nat) =  100.d0
+                elseif (updo .eq. '-') then
+                  spin(nat) = -100.d0
+                else
+C Print bad-syntax error and stop
+                  badsyntax = .TRUE.
+                endif
+                if (nr .eq. 2) then
+                  theta(nat) = fdf_breals(pline,1) * pi/180.0d0
+                  phi(nat)   = fdf_breals(pline,2) * pi/180.0d0
+                elseif (nr .eq. 0) then
+                  theta(nat) = 0.d0
+                  phi(nat)   = 0.d0
+                else
+C Print bad-syntax error and stop
+                  badsyntax = .TRUE.
+                endif
+              else
+C Print bad-syntax error and stop
+                badsyntax = .TRUE.
+              endif
+
+              if ((atom(nat) .lt. 1) .or. (atom(nat) .gt. nua)) then
+                write(msg,'(a,a,i4)') 'intdm: ERROR: Bad atom ' //
+     .            'index in DM.InitSpin, line', nat+1
+                call die(TRIM(msg))
+              endif
+              if (abs(theta(nat)) .gt. 1.d-12) noncol = .true.
             else
 C Print bad-syntax error and stop
-              goto 40
+              badsyntax = .TRUE.
             endif
-            if (nn .eq. 0) then
-C Read value of spin
-              if (nr .eq. 3) then
-C Read spin value and direction
-                spin(nat)  = reals(1)
-                theta(nat) = reals(2) * pi/180.0d0
-                phi(nat)   = reals(3) * pi/180.0d0
-              elseif (nr .eq. 1) then
-C Read spin value. Default direction.
-                spin(nat)  = reals(1)
-                theta(nat) = 0.d0
-                phi(nat)   = 0.d0
-              else
-                goto 40
-              endif
-            else if (nn .eq. 1) then
-C Read spin as + or - (maximun value)
-              updo = names(lc(0)+1:lc(1))
-              if (updo .eq. '+') then
-                spin(nat) =  100.d0
-              elseif (updo .eq. '-') then
-                spin(nat) = -100.d0
-              else
-                goto 40
-              endif
-              if (nr .eq. 2) then
-                theta(nat) = reals(1) * pi/180.0d0
-                phi(nat)   = reals(2) * pi/180.0d0
-              elseif (nr .eq. 0) then
-                theta(nat) = 0.d0
-                phi(nat)   = 0.d0
-              else
-                goto 40
-              endif
-            else
-              goto 40
-            endif
-            if (atom(nat).lt.1 .or. atom(nat).gt.nua) then
-              if (Node.eq.0) then
-                write(6,'(/,a)')
-     .          'intdm: ERROR: Bad atom index in DM.InitSpin, line', iat
-              endif
-              call die('intdm: ERROR: Bad atom index in DM.InitSpin')
-            endif
-            if (abs(theta(nat)).gt.1.d-12) noncol = .true.
           enddo
 
-          if (Node.eq.0) then
-            write(6,'(a)') 
-     .         'initdm: ERROR: Too many atom entries in DM.InitSpin'
-           call die('initdm: ERROR: Too many' //
-     $              ' atom entries in DM.InitSpin')
-          else
-            call die()
+          if (badsyntax) then
+            write(msg,'(a,i4)')
+     .        'initdm: ERROR: bad syntax in DM.InitSpin, line', nat+1
+            call die(msg)
           endif
-
-   40     continue
-          if (Node.eq.0) then
-            write(6,*)
-     .       'initdm: ERROR: bad syntax in DM.InitSpin, line', iat
-            call die('initdm: ERROR: bad syntax in DM.InitSpin')
-          else
-            call die()
-          endif
-
-   50     continue
 
           if (noncol .and. nspin.lt.4) then
             if (Node.eq.0) then
@@ -818,9 +766,9 @@ C Read spin as + or - (maximun value)
 
 C Initialize to 0
 
-          Dscf(:,:) = 0.0d0
+          Dscf(:,1:nspin) = 0.0d0
 
-C Initialize all paramagnetic 
+C Initialize all paramagnetic
 
           do ia = 1, nua
             do io = lasto(ia-1) + 1, lasto(ia)
@@ -844,20 +792,20 @@ C Loop on atoms with spin
             ia = atom(iat)
 
 C Find maximum atomic moment that the atoms involved can carry
-          
+
             spinat = 0.d0
             do io = lasto(ia-1) + 1, lasto(ia)
               spinat = spinat + min( Datm(io), 2.d0 - Datm(io) )
             enddo
-            if (spinat.lt.epsilon .and. Node.eq.0) print'(a,i6,a)', 
+            if (spinat.lt.epsilon .and. Node.eq.0) print'(a,i6,a)',
      .        'initdm: WARNING: atom ', atom(iat),
      .        ' has a closed-shell and cannot be polarized'
 
 C If given spin is larger than possible, make it to max atomic
 
             aspin = abs(spin(iat))
-            if ((aspin .gt. spinat) .and. (aspin .gt. epsilon)) 
-     .         spin(iat) = spinat*spin(iat)/aspin 
+            if ((aspin .gt. spinat) .and. (aspin .gt. epsilon))
+     .         spin(iat) = spinat*spin(iat)/aspin
 
 C Initialize orbitals with same rate as atom
 
@@ -895,25 +843,19 @@ C   ispin=3 => Real(D12); ispin=4 => Imag(D12)
           enddo
 
 C Deallocate local memory
-          call memory('D','I',size(atom),'initdm')
-          deallocate(atom)
-          call memory('D','D',size(phi),'initdm')
-          deallocate(phi)
-          call memory('D','D',size(spin),'initdm')
-          deallocate(spin)
-          call memory('D','D',size(theta),'initdm')
-          deallocate(theta)
+          call de_alloc( atom, 'atom', 'initdm' )
+          call de_alloc( phi, 'phi', 'initdm' )
+          call de_alloc( spin, 'spin', 'initdm' )
+          call de_alloc( theta, 'theta', 'initdm' )
 
 c ---------------------------------------------------------------------
 
         else
 
 C Initialize to 0
-
-          Dscf(:,:) = 0.0d0
+          Dscf(:,1:nspin) = 0.0d0
 
 C Automatic, for non magnetic (nspin=1) or for Ferro or Antiferro -----
-
           do io = 1, no_l
             call LocalToGlobalOrb(io,Node,Nodes,iio)
             do in = 1,numh(io)
@@ -928,7 +870,7 @@ C No spin polarization
                 else
 
 C Spin polarization
- 
+
                   i1 = 1
                   i2 = 2
 
@@ -953,8 +895,4 @@ C Ferro or antiferro according to DM.InitSpinAF (inspn)
 
       end subroutine initdm
 
-      END MODULE m_new_dm
-
-
-
-
+      end module m_new_dm

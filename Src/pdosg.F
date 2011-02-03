@@ -8,7 +8,7 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine pdosg( nspin, nuo, no, maxspn, maxuo, maxnh, 
+      subroutine pdosg( nspin, nuo, no, maxspn, maxnh, 
      .                  maxo, numh, listhptr, listh, H, S,
      .                  E1, E2, nhist, sigma, indxuo, eo, 
      .                  haux, saux, psi, dtot, dpr, nuotot )
@@ -25,7 +25,6 @@ C integer nuo               : Number of atomic orbitals in the unit cell
 C integer no                : Number of atomic orbitals in the supercell
 C integer maxspn            : Second dimension of eo and qo 
 C                             (maximum number of differents spin polarizations)
-C integer maxuo             : Maximum number of atomic orbitals in the unit cell
 C integer maxnh             : Maximum number of orbitals interacting
 C                             with any orbital
 C integer maxo              : First dimension of eo
@@ -67,7 +66,7 @@ C **********************************************************************
       implicit none
 
       integer
-     .  nspin, nuo, no, maxspn, maxuo, maxnh, 
+     .  nspin, nuo, no, maxspn, maxnh, 
      .  maxo, nhist, nuotot
 
       integer
@@ -217,7 +216,7 @@ C End loop over broadcast nodes
         enddo
 
 C Free workspace array for overlap
-        call de_alloc( Sloc, name='Sloc', routine='pdosg' )
+        call de_alloc( Sloc, name='Sloc' )
 
 #else
 C Loop over all the energy range
@@ -265,7 +264,7 @@ C Global reduction of dtot matrix
       dtot(1:nhist,1:nspin) = tmp(1:nhist,1:nspin,1)
 
 C Free workspace array for global reduction
-      call de_alloc( tmp, name='tmp', routine='pdosg' )
+      call de_alloc( tmp, name='tmp' )
 #endif
 
       norm = sigma * sqrt(pi)

@@ -217,24 +217,6 @@ c Find total number of points (determinant of kscell)
      .             kscell(2,1) * kscell(1,2) * kscell(3,3) -
      .             kscell(3,1) * kscell(2,2) * kscell(1,3) )
 
-c Look for kscell or cutoff in input fdf file
-c      if ( nktot.eq.0 .and. cutoff.lt.tiny ) then
-c        if ( fdf_block('kgrid_Monkhorst_Pack',iu) ) then
-c          do i = 1,3
-c            read(iu,*) (kscell(j,i),j=1,3), displ(i)
-c          enddo
-c          nktot = abs( kscell(1,1) * kscell(2,2) * kscell(3,3) +
-c     .                 kscell(2,1) * kscell(3,2) * kscell(1,3) +
-c     .                 kscell(3,1) * kscell(1,2) * kscell(2,3) -
-c     .                 kscell(1,1) * kscell(3,2) * kscell(2,3) -
-c     .                 kscell(2,1) * kscell(1,2) * kscell(3,3) -
-c     .                 kscell(3,1) * kscell(2,2) * kscell(1,3) )
-c        else
-c         The second argument is the default value
-c          cutoff = fdf_physical('kgrid_cutoff',defcut,'Bohr')
-c        endif
-c      endif
-
 c Find kscell from required cutoff
       if (nktot .eq. 0) then
         nktot = 1

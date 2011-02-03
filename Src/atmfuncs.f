@@ -176,7 +176,7 @@ C  Distances in Bohr
 
       end function rchlocal
 
-!----------AMENOFIS
+!         AMENOFIS
 !
       FUNCTION ATMPOPFIO (IS,IO)
       real(dp) atmpopfio
@@ -672,15 +672,15 @@ C 7) RPHIATM with ITYPE = 0 is strictly equivalent to VNA_SUB
       end subroutine rphiatm
 
 
-      subroutine all_phi(is,it,r,nphi,phi, grphi)
-      integer, intent(in) :: is     ! Species index
-      integer, intent(in) :: it     ! Orbital-type switch:
-                                    ! IT > 0 => Basis orbitals
-                                    ! IT < 0 => KB projectors
-      real(dp), intent(in)  :: r(3)   ! Point vector, relative to atom
-      integer, intent(out):: nphi   ! Number of phi's
+      subroutine all_phi( is, it, r, nphi, phi, grphi )
+      integer,   intent(in) :: is     ! Species index
+      integer,   intent(in) :: it     ! Orbital-type switch:
+                                      ! IT > 0 => Basis orbitals
+                                      ! IT < 0 => KB projectors
+      real(dp),  intent(in) :: r(3)   ! Point vector, relative to atom
+      integer,  intent(out) :: nphi   ! Number of phi's
       real(dp), intent(out) :: phi(:) ! Basis orbital, KB projector, or
-                                    !  local pseudopotential
+                                      !  local pseudopotential
       real(dp), optional, intent(out) :: grphi(:,:) ! Gradient of phi
 
 C  Returns Kleynman-Bylander local pseudopotential, nonlocal projectors,

@@ -612,8 +612,8 @@ SUBROUTINE miscAllReduceInt( op, a0, b0, c0, d0, e0, f0, &
     n = n + m
   end if
 
-  call de_alloc( recvBuff, name=myName//'recvBuff' )
-  call de_alloc( sendBuff, name=myName//'sendBuff' )
+  call de_alloc( recvBuff )
+  call de_alloc( sendBuff )
 
 #endif
 
@@ -633,7 +633,7 @@ SUBROUTINE miscAllReduceDouble( op, a0, b0, c0, d0, e0, f0, &
   real(dp),optional,intent(inout),dimension(:,:)  :: a2, b2
   real(dp),optional,intent(inout),dimension(:,:,:):: a3
 
-  character(len=*),parameter:: myName  = 'miscAllReduceDouble '
+  character(len=*),parameter:: myName  = 'miscAllReduceInt '
   character(len=*),parameter:: errHead = myName//'ERROR: '
   integer:: MPIerror, m, n
   real(dp),pointer:: recvBuff(:)=>null(), sendBuff(:)=>null()
@@ -791,8 +791,8 @@ SUBROUTINE miscAllReduceDouble( op, a0, b0, c0, d0, e0, f0, &
     n = n + m
   end if
 
-  call de_alloc( recvBuff, name=myName//'recvBuff' )
-  call de_alloc( sendBuff, name=myName//'sendBuff' )
+  call de_alloc( recvBuff )
+  call de_alloc( sendBuff )
 
 #endif
 

@@ -25,7 +25,6 @@ C **********************************************************************
 
       use precision
       use old_atmfuncs
-      use fdf
       use files,         only : slabel, label_length
       use parallel,      only : Node, Nodes
 #ifdef MPI

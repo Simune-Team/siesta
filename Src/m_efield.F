@@ -49,49 +49,41 @@
 
       subroutine get_user_specified_field(input_field)
 
-      use fdf,       only: fdf_convfac, fdf_block, fdf_bline, block
-      use parse,     only: parsed_line, digest, match
-      use parse,     only: names, values
-
-      use parallel,  only: ionode
-      use m_mpi_utils, only: broadcast
+      use fdf, only: fdf_convfac, fdf_block, fdf_bline, block_fdf
+      use fdf, only: parsed_line, fdf_bvalues, fdf_bnames, fdf_bmatch
 
       real(dp),   intent(out)     :: input_field(3)
 
-      logical                     :: found
-      type(block), pointer        :: bp => null()
-      type(parsed_line), pointer  :: p  => null()
-      character(len=132)          :: line, eunits
+      logical                    :: found
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline => null()
+
+      character(len=132)         :: eunits
 
       real(dp)                    :: cfactor
       integer                     :: ix
 
       input_field(1:3) = 0.0_dp
 
-      if (ionode) then
-       found = fdf_block('ExternalElectricField',bp)
-       if (found) then
-         loop: DO
-           if (.not. fdf_bline(bp,line)) exit loop
-           p => digest(line)
-           if (.not. match(p,"vvvn"))
-     $       call die("Wrong format in ElectricField block")
-           eunits = names(p,1)
-           cfactor = fdf_convfac(eunits,'Ry/Bohr/e')
-           do ix = 1,3
-              input_field(ix) = values(p,ix) * cfactor
-           enddo
-         enddo loop
-       endif ! (found)
-      endif ! (ionode)
-      call broadcast(input_field)
+      found = fdf_block('ExternalElectricField',bfdf)
+      if (.not. found ) RETURN
+      loop: DO
+        if (.not. fdf_bline(bfdf,pline)) exit loop
+        if (.not. fdf_bmatch(pline,"vvvn"))
+     $     call die("Wrong format in ElectricField block")
+        eunits = fdf_bnames(pline,1)
+        cfactor = fdf_convfac(eunits,'Ry/Bohr/e')
+        do ix = 1,3
+           input_field(ix) = fdf_bvalues(pline,ix) * cfactor
+        enddo
+      enddo loop
 
       end subroutine get_user_specified_field
-!---------------------------------------------------------------
+!----------------------------------------------------------------
        
       subroutine orthogonalize_efield(input_field,orthog_field,orthog)
 
-!     Orthogonalizes the electric field to the bulk directions
+!     Orthogonalizes the field to the bulk directions
 
       use siesta_geom, only : ucell, xa, na_u, isa
 
@@ -100,7 +92,7 @@
       logical,  intent(out) :: orthog           ! originally orthogonal?
 
 !     tolerance for bulk components of the electric field
-      real(dp), parameter    :: tol = 1.0e-12_dp
+      real(dp), parameter    :: tol = 1.0d-12
 
       real(dp)  :: eb1, eb2, eb3, b1xb2(3), bcell(3,3)
       integer   :: nbcell, ix
@@ -138,7 +130,7 @@
          enddo
       endif
       end subroutine orthogonalize_efield
-!---------------------------------------------------------------
+!----------------------------------------------------------------
 
       subroutine initialize_efield()
 !
@@ -148,9 +140,10 @@
 !          acting_efield
 !          dipole_correction
 !
+
       use parallel,     only: ionode
       use siesta_cml,   only: cml_p, cmlAddProperty, mainXML
-      use m_fdf_global, only: fdf_global_get
+      use fdf,          only: fdf_boolean
 
       real(dp) :: input_field(3), orthog_field(3)
       logical  :: orthog
@@ -187,8 +180,7 @@
       acting_efield =
      $ (ddot(3,user_specified_field,1,user_specified_field,1) /= 0.0_dp)
 
-      call fdf_global_get(dipole_correction,
-     $                    'SlabDipoleCorrection',.false.)
+      dipole_correction = fdf_boolean("SlabDipoleCorrection",.false.)
 
       if (dipole_correction) then
          if (ionode) write(6,'(/,(a))')
@@ -199,7 +191,7 @@
       endif
 
       end subroutine initialize_efield
-!---------------------------------------------------------------
+!----------------------------------------------------------------
 
       function get_field_from_dipole(dipole, cell) result(efield)
 
@@ -214,82 +206,78 @@
       efield(1:3) = -4.0_dp * pi * dipole(1:3) * 2.0_dp / volcel(cell)
 
       end function get_field_from_dipole
-!---------------------------------------------------------------
+!----------------------------------------------------------------
 
       subroutine add_potential_from_field(efield, cell, na, isa, xa,
-     $                                    mesh, nsm, V)
+     $     meshG, nsm, V)
 
-!     Adds the potential created by an external electric field.
-!     Written by J.M.Soler. Feb. 1998.
-!     Modified to operate only on the sub-matrix of the potential stored
-!     locally. J.D.Gale March 1999.
-!     Modularized by A. Garcia, Nov 2009.
-!
-! Distances in Bohr
-! Energies in Rydbergs
-! Electric field in Ry/Bohr
-! Dipoles in electrons*Bohr
-!
-! The sign of the potential is that for electrons (v=+E*x), i.e. 
-! opposite to that of the conventional electrostatic potential.
-! Notice that the potential is not initialized.
-! Bulk electric fields are not allowed. If the specified electric field
-! is not orthogonal to all bulk directions, it is orthogonalized, and
-! a warning message is printed.
-! The electric field produces a discontinuity of the potential in the
-! periodic cell, which is automatically placed in the middle of the
-! vacuum region.
+c     Adds the potential created by an external electric field.
+c     Written by J.M.Soler. Feb. 1998.
+c     Modified to operate only on the sub-matrix of the potential stored
+c     locally. J.D.Gale March 1999.
+c     Modularized by A. Garcia, Nov. 2009
+c     ********* Input ******************************************************
+c     real*8  cell(3,3) : Unit cell vectors
+c     integer na        : Number of atoms
+c     integer isa(na)   : Atomic species indexes
+c     real*8  xa(3,na)  : Atomic positions (cartesian coordinates)
+c     integer meshG(3)  : Number of mesh divisions in each cell direction
+c     integer nsm       : Number of sub-mesh points along each axis
+c     real*8  field(3)  : Electric field
+c     ********* Input and output *******************************************
+c     real    v(*)      : Electron potential, to which that created by the
+c     electric field is added. Notice single precision.
+c     ********* Units ******************************************************
+c     Distances in Bohr
+c     Energies in Rydbergs
+c     Electric field in Ry/Bohr
+c     Dipoles in electrons*Bohr
+c     ********* Behaviour **************************************************
+c     The sign of the potential is that for electrons (v=+E*x), i.e. 
+c     opposite to that of the conventional electrostatic potential.
+c     Notice that the potential is not initialized.
+c     Bulk electric fields are not allowed. If the specified electric field
+c     is not orthogonal to all bulk directions, it is orthogonalized, and
+c     a warning message is printed.
+c     The electric field produces a discontinuity of the potential in the
+c     periodic cell, which is automatically placed in the middle of the
+c     vacuum region.
 
       use precision, only: dp, grid_p
-      use parallel,     only : Node, Nodes, ProcessorY
-      use parallelsubs, only : HowManyMeshPerNode
+
       use atmfuncs,     only : rcut
-#ifdef MPI
-      use mpi_siesta
-#endif
+      use mesh,         only : meshLim
 
       implicit          none
 
-!     Electric field
-      real(dp), intent(in)        :: efield(3)
-!     Number of atoms, species indexes
-      integer, intent(in)          ::  na, isa(na)
-!     Number of mesh divisions in each cell direction
-!     Number of sub-mesh points along each axis
-      integer, intent(in)          ::  mesh(3), nsm
-!     Unit cell and atomic positions
-      real(dp), intent(in)         ::  cell(3,3), xa(3,na)
-!     Electron potential, to which that created by the
-!     electric field is added
+      integer, intent(in)          ::  na, isa(na), meshG(3), nsm
+      real(dp), intent(in)         ::  cell(3,3), efield(3), xa(3,na)
       real(grid_p), intent(inout)  ::  v(*)
 
-      external          reclat
-
       integer           i0(3), i1, i2, i3, ia, imesh,
-     $                  is, iu, ix, j1, j2, j3, last, 
-     .                  nbcell, ni, nn, nr, nv, meshl(3),
-     .                  ProcessorZ, BlockSizeY, BlockSizeZ, Yoffset,
-     .                  Zoffset, Py, Pz, i30, i20, meshnsm(3),
-     .                  NRemY, NRemZ
-#ifdef MPI
-      integer           MPIerror, npl
-#endif
-      real(dp)          dplane(3), f(3), pi, rc, rcell(3,3), v0,
-     .                  xfrac, xmax(3), xmean, xmin(3)
+     $     is, iu, ix,
+     .     j1, j2, j3, meshl(3),
+     .     Xoffset, Yoffset, Zoffset, i30, i20, i10
+
+      real(dp)          dplane(3),
+     .     f(3), rc, rcell(3,3), v0,
+     .     xfrac, xmax(3), xmean, xmin(3)
 
       real(dp), external :: ddot
+      external          reclat
 
-! Find the origin of a shifted cell, with the system centered in it
-! This is done at every call, because of possible atomic movements
 
-! Find reciprocal unit cell and distance between lattice planes
+C     Find the origin of a shifted cell, with the system centered in it
+C     This is done at every call, because of possible atomic movements
+
+C     Find reciprocal unit cell and distance between lattice planes
       call reclat( cell, rcell, 0 )
       do ix = 1,3
          dplane(ix) = 1.0_dp /
      $        sqrt(ddot(3,rcell(1,ix),1,rcell(1,ix),1))
       enddo
 
-! Find the geometric center of the system
+C     Find the geometric center of the system
       do ix = 1,3
          xmin(ix) =  1.0e30_dp
          xmax(ix) = -1.0e30_dp
@@ -304,52 +292,36 @@
          enddo
       enddo
 
-! Find the mesh index of the origin of the shifted cell
+C     Find the mesh index of the origin of the shifted cell
       do ix = 1,3
          xmean = (xmin(ix) + xmax(ix)) / 2
-         i0(ix) = nint( (xmean-0.5_dp) * mesh(ix) )
+         i0(ix) = nint( (xmean-0.5_dp) * meshG(ix) )
       enddo
 
-! Find the electric field in mesh coordinates, so that
-! v = efield*x = f*index
+C     Find the electric field in mesh coordinates, so that
+C     v = efield*x = f*index
       do ix = 1,3
-         f(ix) = ddot(3,efield,1,cell(1,ix),1) / max( mesh(ix), 1 )
+         f(ix) = ddot(3,efield,1,cell(1,ix),1) / max( meshG(ix), 1 )
       enddo
 
-! Find the potential at the origin of the shifted cell, so that
-! the potential is zero at the center of the cell
-      v0 = (- 0.5_dp) * (f(1)*mesh(1) + f(2)*mesh(2) + f(3)*mesh(3))
+C     Find the potential at the origin of the shifted cell, so that
+C     the potential is zero at the center of the cell
 
-! Find local number of mesh points
-      meshnsm(1:3) = mesh(1:3)/nsm
-#ifdef MPI
-      call HowManyMeshPerNode(meshnsm,Node,Nodes,npl,meshl)
-      meshl(1:3) = meshl(1:3)*nsm
-#else
-      meshl(1:3) = mesh(1:3)
-#endif
+      v0 = (- 0.5_dp)*(f(1)*meshG(1) + f(2)*meshG(2) + f(3)*meshG(3))
 
-! Check that ProcessorY is a factor of the number of processors
-      if (mod(Nodes,ProcessorY).gt.0)
-     $     call die('ERROR: ProcessorY must be a factor of the' //
-     $     ' number of processors!')
-      ProcessorZ = Nodes/ProcessorY
+      meshl(1) = (meshLim(2,1) - meshLim(1,1)+1)*nsm
+      meshl(2) = (meshLim(2,2) - meshLim(1,2)+1)*nsm
+      meshl(3) = (meshLim(2,3) - meshLim(1,3)+1)*nsm
 
-! Calculate blocking sizes
-      BlockSizeY = (meshnsm(2)/ProcessorY)*nsm
-      NRemY = (mesh(2) - ProcessorY*BlockSizeY)/nsm
-      BlockSizeZ = (meshnsm(3)/ProcessorZ)*nsm
-      NRemZ = (mesh(3) - ProcessorZ*BlockSizeZ)/nsm
+C     Calculate starting point for grid
 
-! Calculate coordinates of current node in processor grid
-      Py = (Node/ProcessorZ)+1
-      Pz = Node - (Py - 1)*ProcessorZ + 1
+      Xoffset = (meshLim(1,1)-1)*nsm
+      Yoffset = (meshLim(1,2)-1)*nsm
+      Zoffset = (meshLim(1,3)-1)*nsm
 
-! Calculate starting point for grid
-      Yoffset = (Py-1)*BlockSizeY + nsm*min(Py-1,NRemY)
-      Zoffset = (Pz-1)*BlockSizeZ + nsm*min(Pz-1,NRemZ)
+      
+C     Add the electric field potential to the input potential
 
-! Add the electric field potential to the input potential
       imesh = 0
       i30 = Zoffset - 1
       do i3 = 0,meshl(3)-1
@@ -357,17 +329,19 @@
          i20 = Yoffset - 1
          do i2 = 0,meshl(2)-1
             i20 = i20 + 1
+            i10 = Xoffset - 1
             do i1 = 0,meshl(1)-1
+               i10 = i10 + 1
                imesh = imesh + 1
-               j1 = mod( i1-i0(1)+10*mesh(1), mesh(1) )
-               j2 = mod( i20-i0(2)+10*mesh(2), mesh(2) )
-               j3 = mod( i30-i0(3)+10*mesh(3), mesh(3) )
-               v(imesh) = v(imesh) + v0 + f(1)*j1 + f(2)*j2 + f(3)*j3
+               j1 = mod( i10-i0(1)+10*meshG(1), meshG(1) )
+               j2 = mod( i20-i0(2)+10*meshG(2), meshG(2) )
+               j3 = mod( i30-i0(3)+10*meshG(3), meshG(3) )
+               v(imesh) = v(imesh) +
+     &              v0 + f(1)*j1 + f(2)*j2 + f(3)*j3
             enddo
          enddo
       enddo
 
       end subroutine add_potential_from_field
-!---------------------------------------------------------------
 
       end module m_efield
