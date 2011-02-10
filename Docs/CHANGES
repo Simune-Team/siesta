@@ -5,7 +5,19 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
-2010-11-30  11:50:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-87
+2011-02-10  10:10:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-9
+Fix interblock output in denchar
+
+In 2D wavefunction mode, denchar was printing two blank lines
+between coordinate blocks.
+
+modified:
+  Util/Denchar/Src/denchar.f  -- removed duplicate 'use' statement
+  Util/Denchar/Src/rhoofr.f   -- interblock spacing
+  Util/Denchar/Src/wavofr.f   --   "
+
+------------------------------------------------------------------------
+2010-11-30  11:50:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-8
 Work around a bug in Intel12 compiler in k-grid setup
 
 A dummy internal write is used to re-focus the compiler
