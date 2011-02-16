@@ -1684,132 +1684,61 @@ c ===================================================================
 !-------------------------------------------------------------------------
 
 
-      subroutine TSVHFix(  mesh, nsm, v )
-C
-C  Modules
-C
+      subroutine TSVHFix( meshg, nsm, v )
       use precision, only : dp, grid_p
-C FDN put the only attribute
-      use parallel, only : ProcessorY
-C FDN
-#ifdef MPI
-      use mpi_siesta, only : MPI_AllReduce, MPI_Comm_Rank, MPI_Sum,
-     . DAT_double, MPI_Integer, MPI_Comm_World
-C FDN parallelsubs
-      use parallelsubs, only : HowManyMeshPerNode
-C FDN
-#endif
+      use parallel,    only : node, nodes
+      use mesh,        only : meshLim
+      use m_mpi_utils, only : globalize_sum
 
-      implicit          none
-      real(grid_p)      v(*)
-      integer           mesh(3), nsm
+      implicit none
+!     Input variables
+      integer,       intent(in) ::  meshG(3), nsm
+!     Output variables
+      real(grid_p), intent(out) ::  v(*)
+!     Local variables
+      integer                   :: Xoffset, Yoffset, Zoffset, imesh,
+     &                             i1, i2, i3, ntp, meshl(3)
+      real(dp)                  :: vav, vtot
 
+!     Find local number of mesh points
+      meshl(1) = (meshLim(2,1) - meshLim(1,1)+1)*nsm
+      meshl(2) = (meshLim(2,2) - meshLim(1,2)+1)*nsm
+      meshl(3) = (meshLim(2,3) - meshLim(1,3)+1)*nsm
 
-c Internal variables
-      integer           i1, i2, i3, imesh, ntemp,
-     .                  nlp, Node, Nodes, meshl(3),
-     .                  ProcessorZ, BlockSizeY, BlockSizeZ, Yoffset,
-     .                  Zoffset, Py, Pz, i30, i20, meshnsm(3),
-     .                  NRemY, NRemZ
-#ifdef MPI
-      integer           MPIerror, npl
-#endif
-      real(dp)          vav, vtot, temp
+!     Calculate starting point for grid
+      Xoffset = (meshLim(1,1)-1)*nsm
+      Yoffset = (meshLim(1,2)-1)*nsm
+      Zoffset = (meshLim(1,3)-1)*nsm
 
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node = 0
-      Nodes = 1
-#endif
-
-
-C Find local number of mesh points
-        meshnsm(1) = mesh(1)/nsm
-        meshnsm(2) = mesh(2)/nsm
-        meshnsm(3) = mesh(3)/nsm
-#ifdef MPI
-        call HowManyMeshPerNode(meshnsm,Node,Nodes,npl,meshl)
-        meshl(1) = meshl(1)*nsm
-        meshl(2) = meshl(2)*nsm
-        meshl(3) = meshl(3)*nsm
-#else
-        meshl(1) = mesh(1)
-        meshl(2) = mesh(2)
-        meshl(3) = mesh(3)
-#endif
-
-C Check that ProcessorY is a factor of the number of processors
-        if (mod(Nodes,ProcessorY).gt.0) then
-          write(6,'(''ERROR: ProcessorY must be a factor of the'',
-     .      '' number of processors!'')')
-          stop
-        endif
-        ProcessorZ = Nodes/ProcessorY
-
-C Calculate blocking sizes
-        BlockSizeY = (meshnsm(2)/ProcessorY)*nsm
-        NRemY = (mesh(2) - ProcessorY*BlockSizeY)/nsm
-        BlockSizeZ = (meshnsm(3)/ProcessorZ)*nsm
-        NRemZ = (mesh(3) - ProcessorZ*BlockSizeZ)/nsm
-
-C Calculate coordinates of current node in processor grid
-        Py = (Node/ProcessorZ)+1
-        Pz = Node - (Py - 1)*ProcessorZ + 1
-
-C Calculate starting point for grid
-        Yoffset = (Py-1)*BlockSizeY + nsm*min(Py-1,NRemY)
-        Zoffset = (Pz-1)*BlockSizeZ + nsm*min(Pz-1,NRemZ)
-
-         vtot =0.d0
-         nlp =0
-
+!     Compute voltage of Z=0 plane
+      vtot =0.d0
+      if (Zoffset.eq.0) then
         imesh = 0
-        i30 = Zoffset - 1
-        do i3 = 0,meshl(3)-1
-          i30 = i30 + 1
-          i20 = Yoffset - 1
-          do i2 = 0,meshl(2)-1
-            i20 = i20 + 1
-            do i1 = 0,meshl(1)-1
-              imesh = imesh + 1
-              if (i30.eq.0) then
-                 nlp = nlp +1 
-                 vtot = vtot + v(imesh)
-              endif
-            enddo
+        do i2 = 0,meshl(2)-1
+          do i1 = 0,meshl(1)-1
+            imesh = imesh + 1
+            vtot = vtot + v(imesh)
           enddo
         enddo
+      endif
 
-#ifdef MPI
-      temp=0.d0
-        call MPI_AllReduce(vtot,temp,1,DAT_double,MPI_Sum,
-     .  MPI_Comm_World,MPIerror)
-       vtot = temp
-       ntemp=0
-        call MPI_AllReduce(nlp,ntemp,1,MPI_integer,MPI_Sum,
-     .    MPI_Comm_World,MPIerror)
-       nlp = ntemp
- 
-#endif
-        vav=vtot/float(nlp)
+      call globalize_sum( vtot, vav )
 
-        imesh = 0
-        
-        do i3 = 0,meshl(3)-1
-           do i2 = 0,meshl(2)-1
-              do i1 = 0,meshl(1)-1
-                 imesh = imesh + 1
-                 v(imesh) = v(imesh) - vav
-              enddo
-           enddo
+!     Average voltage in the Z=0 plane
+!      ntp = meshG(1)*meshG(2)*nsm*nsm
+      ntp = meshG(1)*meshG(2)
+      vav = vav/float(ntp)
+
+      imesh = 0
+      do i3 = 0,meshl(3)-1
+        do i2 = 0,meshl(2)-1
+          do i1 = 0,meshl(1)-1
+            imesh    = imesh + 1
+            v(imesh) = v(imesh) - vav
+          enddo
         enddo
+      enddo
 
-
-c        if(Node.eq.0) write(6,*)'Av Pot',Node,vav
       end subroutine TSVHFix
 
 !-------------------------------------------------------------------------
@@ -1817,169 +1746,86 @@ c        if(Node.eq.0) write(6,*)'Av Pot',Node,vav
 !-------------------------------------------------------------------------
 
 
-      subroutine TSvoltage2(cell, mesh, nsm, v, isvolt )
-
-
-C
-C  Modules
-C
+      subroutine TSvoltage2(cell, meshG, nsm, v, isvolt )
       use precision, only : dp, grid_p
       use fdf, only : fdf_physical
-C FDN put the only attribute
-      use parallel, only : ProcessorY
-C FDN
-#ifdef MPI
-C FDN parallelsubs
-      use parallelsubs, only : HowManyMeshPerNode
-C FDN
-      use mpi_siesta, only : MPI_Bcast, MPI_Comm_Rank, DAT_double,
-     . MPI_Comm_World
-#endif
+      use parallel, only : node, nodes
+      use mesh,     only : meshLim
 
       implicit          none
+!     Input variables
+      real(dp),      intent(in) :: cell(3,3)
+      integer,       intent(in) :: meshG(3), nsm
+!     Output variables
+      real(grid_p), intent(out) :: v(*)
+      logical,    intent(inout) :: isvolt
+!     Local variables
+      integer                   :: ix, i1, i2, i3, i10, i20, i30, imesh, 
+     &                             meshl(3), Xoffset, Yoffset, Zoffset
+      real(dp)                  :: dot, field(3), Volt, VoltL, VoltR,
+     &                             Lvc, dLvc, vcdir(3)
+      logical,             save :: frstme=.true.
+      real(dp),            save :: f(3), v0
+      integer,        parameter :: ivc=3              ! The voltage-direction
+      real(dp),       parameter :: eV=1.0/13.60580
 
-      integer           mesh(3), nsm
-      real(grid_p)      v(*)
-      real(dp)          cell(3,3), dot, field(3)
-      logical           isvolt 
-      external          dot
-
-
-c Internal variables
-      real(dp) eV
-      parameter ( eV = 1.d0 / 13.60580d0 )
- 
-      logical           frstme
-      integer           i1, i2, i3, imesh,  ix, ivc,
-     .                  Node, Nodes, meshl(3),
-     .                  ProcessorZ, BlockSizeY, BlockSizeZ, Yoffset,
-     .                  Zoffset, Py, Pz, i30, i20, meshnsm(3),
-     .                  NRemY, NRemZ
-
-#ifdef MPI
-      integer           MPIerror, npl
-#endif
-
-      real(dp)  f(3),v0,Volt,Lvc,dLvc,vcdir(3),VoltL,VoltR
-
-      parameter(ivc=3)          ! The voltage-direction
-
-      save              f,frstme,Volt,VoltL,VoltR,v0,Lvc
-
-
-      data frstme /.true./
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node = 0
-      Nodes = 1
-#endif
-
-c Find and store the electric field only the first time
+!     Find and store the electric field only the first time
       if (frstme) then
         frstme = .false.
         isvolt = .false.
         do ix = 1,3
           field(ix) = 0.d0
         enddo
-
  
-c     Read the voltage block from the fdf input file
-       if (Node.eq.0)Volt = fdf_physical('TS.Voltage',0.0d0,'Ry')
+!       Read the voltage block from the fdf input file
+        Volt = fdf_physical('TS.Voltage',0.0d0,'Ry')
 
-#ifdef MPI
-      call MPI_Bcast(Volt,1,DAT_double,0,MPI_Comm_World, MPIerror)
-#endif
+        if(dabs(Volt).GT.0.001d0*eV) then 
+          isvolt=.true.
+        else
+          isvolt=.false.
+          return        !not found and field set to zero in beginning
+        endif
 
+        Lvc = sqrt(dot(cell(1,ivc),cell(1,ivc),3))
 
-         if(dabs(Volt).GT.0.001d0*eV) then 
-            isvolt=.true.
-         else
-            isvolt=.false.
-            return              !not found and field set to zero in beginning
-         endif                  !found
-c
-
-         Lvc = sqrt(dot(cell(1,ivc),cell(1,ivc),3))
-
-         do ix=1,3
-            vcdir(ix) = cell(ix,ivc)/Lvc
-            field(ix) = -vcdir(ix)*Volt/Lvc
-         end do                 !i
+        do ix=1,3
+          vcdir(ix) = cell(ix,ivc)/Lvc
+          field(ix) = -vcdir(ix)*Volt/Lvc
+        end do
 
 
-         if(Node.eq.0) then        
+        if(Node.eq.0) then
           write(6,*)
           write(6,'(a,f6.3,a)')'TSvoltage: Bias ', Volt/eV,'V'
           write(6,'(a,3(f6.3,a))')
-     .         'TSvoltage: In unit cell direction = {',
-     .         vcdir(1),',',vcdir(2),',',vcdir(3),'}'
-         endif 
+     &         'TSvoltage: In unit cell direction = {',
+     &         vcdir(1),',',vcdir(2),',',vcdir(3),'}'
+        endif 
 
-      end if                    !frstme
+        dLvc = Lvc/max( meshG(ivc), 1 ) !
 
-c --------------------- end: first time only -----------------------
+        VoltL = 0.5d0*Volt     ! Left voltage
+        VoltR = -0.5d0*Volt    ! Right voltage
 
+!       field in [0;Lvc]: v = e*x = f*index
+        do ix = 1,3
+          f(ix) = 0d0         !init
+        enddo
+        f(ivc) = -Volt*dLvc/Lvc
+        v0 = VoltL
+      else if (isvolt) then
+!       Find quantities in mesh coordinates
+        meshl(1) = (meshLim(2,1) - meshLim(1,1)+1)*nsm
+        meshl(2) = (meshLim(2,2) - meshLim(1,2)+1)*nsm
+        meshl(3) = (meshLim(2,3) - meshLim(1,3)+1)*nsm
 
+!       Calculate starting point for grid
+        Xoffset = (meshLim(1,1)-1)*nsm
+        Yoffset = (meshLim(1,2)-1)*nsm
+        Zoffset = (meshLim(1,3)-1)*nsm
 
-
-c     Find quantities in mesh coordinates
-
-         dLvc = Lvc/max( mesh(ivc), 1 ) !
-
-         VoltL = 0.5d0*Volt     ! Left voltage
-         VoltR = -0.5d0*Volt    ! Right voltage
-
-c     field in [0;Lvc]: v = e*x = f*index
-         do ix = 1,3
-            f(ix) = 0d0         !init
-         enddo
-         f(ivc) = -Volt*dLvc/Lvc
-         v0 = VoltL
-
-      if (isvolt) then
-
-C Find local number of mesh points
-        meshnsm(1) = mesh(1)/nsm
-        meshnsm(2) = mesh(2)/nsm
-        meshnsm(3) = mesh(3)/nsm
-#ifdef MPI
-        call HowManyMeshPerNode(meshnsm,Node,Nodes,npl,meshl)
-        meshl(1) = meshl(1)*nsm
-        meshl(2) = meshl(2)*nsm
-        meshl(3) = meshl(3)*nsm
-#else
-        meshl(1) = mesh(1)
-        meshl(2) = mesh(2)
-        meshl(3) = mesh(3)
-#endif
-
-C Check that ProcessorY is a factor of the number of processors
-        if (mod(Nodes,ProcessorY).gt.0) then
-          write(6,'(''ERROR: ProcessorY must be a factor of the'',
-     .      '' number of processors!'')')
-          stop
-        endif
-        ProcessorZ = Nodes/ProcessorY
-
-C Calculate blocking sizes
-        BlockSizeY = (meshnsm(2)/ProcessorY)*nsm
-        NRemY = (mesh(2) - ProcessorY*BlockSizeY)/nsm
-        BlockSizeZ = (meshnsm(3)/ProcessorZ)*nsm
-        NRemZ = (mesh(3) - ProcessorZ*BlockSizeZ)/nsm
-
-C Calculate coordinates of current node in processor grid
-        Py = (Node/ProcessorZ)+1
-        Pz = Node - (Py - 1)*ProcessorZ + 1
-
-C Calculate starting point for grid
-        Yoffset = (Py-1)*BlockSizeY + nsm*min(Py-1,NRemY)
-        Zoffset = (Pz-1)*BlockSizeZ + nsm*min(Pz-1,NRemZ)
-
-c Add the electric field potential to the input potential
+!       Add the electric field potential to the input potential
         imesh = 0
         i30 = Zoffset - 1
         do i3 = 0,meshl(3)-1
@@ -1987,15 +1833,15 @@ c Add the electric field potential to the input potential
           i20 = Yoffset - 1
           do i2 = 0,meshl(2)-1
             i20 = i20 + 1
+            i10 = Xoffset - 1
             do i1 = 0,meshl(1)-1
+              i10   = i10 + 1
               imesh = imesh + 1
-              v(imesh) = v(imesh) + v0 + f(1)*i1 + f(2)*i20 + f(3)*i30
+              v(imesh) = v(imesh) + v0 + f(1)*i10 + f(2)*i20 + f(3)*i30
             enddo
           enddo
         enddo
-
       endif
-
       end subroutine TSvoltage2
 
 

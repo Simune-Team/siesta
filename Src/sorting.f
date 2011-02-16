@@ -63,7 +63,7 @@ C **********************************************************************
         IF (IV0 .LT. NV-1) GO TO 30
       ENDDO
 
-      END subroutine ordvec
+      END SUBROUTINE ORDVEC
 
       SUBROUTINE ORDIX( X, M, N, INDX )
 C *******************************************************************
@@ -133,7 +133,7 @@ C *******************************************************************
          INDX(I)=INDXT
       GO TO 2
 
-      END subroutine ordix
+      END SUBROUTINE ORDIX
 
 
       SUBROUTINE ORDER( X, M, N, INDEX )
@@ -172,7 +172,7 @@ C *******************************************************************
           INDEX(I) = -INDEX(I)
    30   CONTINUE
    40 CONTINUE
-      END subroutine order
+      END SUBROUTINE ORDER
 
 
       SUBROUTINE IORDER( IA, M, N, INDEX )
@@ -213,6 +213,6 @@ C *******************************************************************
           INDEX(I) = -INDEX(I)
    30   CONTINUE
    40 CONTINUE
-      END subroutine iorder
+      END SUBROUTINE IORDER
 
       END MODULE sorting

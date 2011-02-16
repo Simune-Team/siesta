@@ -8,19 +8,18 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine savepsi(psiprev, psi, maxpsi, nuo, nuotot, nocc)
+      subroutine savepsi(psiprev, psi, nuo, nuotot, nocc)
 C *********************************************************************
 C Copies psi into psiprev allowing for the fact that the parallel form
 C requires a re-distribution of the data.
 C Written by J.D. Gale, March 2000
 C **************************** INPUT ********************************** 
-C real*8  psi(maxpsi)         : Wavefunctions in current k point
-C real*8  maxpsi              : Array dimensions for psi and psiprev
-C integer nuo                 : Number of (local) orbitals in the unit cell
-C integer nuotot              : Number of orbitals in the unit cell
-C integer nocc                : number of occupied states
+C real*8  psi(2,nuotot,nuo)     : Wavefunctions in current k point
+C integer nuo                   : Number of (local) orbitals in the unit cell
+C integer nuotot                : Number of orbitals in the unit cell
+C integer nocc                  : number of occupied states
 C *************************** OUTPUT **********************************
-C real*8  psiprev(maxpsi)     : Wavefunctions in previous k point
+C real*8  psiprev(2,nuo,nuotot) : Wavefunctions in previous k point
 C *************************** UNITS ***********************************
 C Lengths in atomic units (Bohr).
 C k vectors in reciprocal atomic units.
@@ -35,7 +34,7 @@ C *********************************************************************
 #endif
       implicit none
  
-      integer nuo, nuotot, maxpsi, nocc
+      integer nuo, nuotot, nocc
 
       real(dp)
      .  psiprev(2,nuo,nuotot), 
@@ -84,7 +83,7 @@ C Save local part of psiprev
 
 
       enddo
-      call de_alloc( psitmp,  name='psitmp', routine='savepsi' )
+      call de_alloc( psitmp,  name='psitmp' )
 
 #else
 C Straight serial copy

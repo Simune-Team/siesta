@@ -110,28 +110,25 @@ C  If spiral, the diagonal elements of Vlocal do not change
 
 C  Allocate local memory
       nullify ( ilocal )
-      call re_alloc( ilocal, 1, no, name='ilocal', routine='rhoofdsp' )
+      call re_alloc( ilocal, 1, no, 'ilocal', 'rhoofdsp' )
 
       nullify ( ilc )
-      call re_alloc( ilc, 1, maxloc2, name='ilc', routine='rhoofdsp' )
+      call re_alloc( ilc, 1, maxloc2, 'ilc', 'rhoofdsp' )
 
       nullify (iorb )
-      call re_alloc( iorb, 0, maxloc, name='iorb', routine='rhoofdsp' )
+      call re_alloc( iorb, 0, maxloc, 'iorb', 'rhoofdsp' )
 
       ijl = (maxloc+1)*(maxloc+2)/2
 
       nullify( Dlocal )
-      call re_alloc( Dlocal, 1, ijl, 1, nsd, name='Dlocal',
-     &               routine='rhoofdsp' )
+      call re_alloc( Dlocal, 1, ijl, 1, nsd, 'Dlocal', 'rhoofdsp' )
 
       nullify( DlocalSp )
       call re_alloc( DlocalSp, 0, maxloc, 0, maxloc, 1, nsd, 
-     &               name    = 'DlocalSp',
-     &               routine = 'rhoofdsp' )
+     &               'DlocalSp', 'rhoofdsp' )
 
       nullify( Clocal )
-      call re_alloc( Clocal, 1, nsp, 1, maxloc2, name='Clocal',
-     &               routine='rhoofdsp' )
+      call re_alloc( Clocal, 1, nsp, 1, maxloc2, 'Clocal', 'rhoofdsp' )
 
       if (Parallel_Flag) then
         if (nrowsDscfL.gt.0) then
@@ -139,10 +136,9 @@ C  Allocate local memory
         else
           maxndl = 1
         endif
-        call re_alloc( DscfL, 1, maxndl, 1, nsd+2, name='DscfL',
-     &               routine='rhoofdsp' )
+        call re_alloc( DscfL, 1, maxndl, 1, nsd+2, 'DscfL', 'rhoofdsp' )
 C Redistribute Dscf to DscfL form
-        call matrixOtoM( maxnd, numd, listdptr, maxndl, nuo, nuotot,
+        call matrixOtoM( maxnd, numd, listdptr, maxndl, nuo,
      .    nsd, Dscf, DscfL )
       endif
 
@@ -397,15 +393,15 @@ C  Restore iorb for next point
       enddo
 
 C  Free local memory
-      call de_alloc( ilocal,  name='ilocal', routine='rhoofdsp' )
-      call de_alloc( ilc,  name='ilc', routine='rhoofdsp' )
-      call de_alloc( iorb,  name='iorb', routine='rhoofdsp' )
-      call de_alloc( Clocal,  name='Clocal', routine='rhoofdsp' )
-      call de_alloc( Dlocal,  name='Dlocal', routine='rhoofdsp' )
-      call de_alloc( DlocalSp,  name='DlocalSp', routine='rhoofdsp' )
+      call de_alloc( ilocal, 'ilocal', 'rhoofdsp' )
+      call de_alloc( ilc,'ilc', 'rhoofdsp' )
+      call de_alloc( iorb,'iorb', 'rhoofdsp' )
+      call de_alloc( Clocal, 'Clocal', 'rhoofdsp' )
+      call de_alloc( Dlocal, 'Dlocal', 'rhoofdsp' )
+      call de_alloc( DlocalSp, 'DlocalSp', 'rhoofdsp' )
      
       if (Parallel_Flag) then
-         call de_alloc( DscfL,  name='DscfL', routine='rhoofdsp' )
+         call de_alloc( DscfL, 'DscfL', 'rhoofdsp' )
       endif
 
       call timer('rhoofdsp',2)

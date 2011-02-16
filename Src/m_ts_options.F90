@@ -17,7 +17,7 @@ module m_ts_options
 
 ! SIESTA Modules used
 USE precision, only : dp
-USE siesta_options, only : fixspin
+USE siesta_options, only : fixspin, isolve, SOLVE_TRANSI
 USE sys, only : die
 
 implicit none
@@ -29,7 +29,7 @@ PUBLIC
 
 logical  :: savetshs     ! Saves the Hamiltonian and Overlap matrices if the 
                          ! the option TS.SaveHS is specified in the input file
-logical  :: onlyS	 ! Option to only save overlap matrix
+logical  :: onlyS        ! Option to only save overlap matrix
 logical  :: mixH         ! Mixing of the Hamiltoninan instead of DM
 logical  :: USEBULK      ! Use Bulk Hamiltonian in Electrodes
 logical  :: TriDiag      ! true if tridiagonalization
@@ -58,15 +58,15 @@ logical :: calcGF        ! Calculate the electrodes GF
 !  Default Values for arguments read from input file                       *
 !--------------------------------------------------------------------------*
 
-logical, parameter :: savetshs_def = .true.
-logical, parameter :: onlyS_def = .false.
-logical, parameter :: tsdme_def = .true.
-logical, parameter :: mixH_def = .false.
-logical, parameter :: USEBULK_def = .true.
+logical,  parameter :: savetshs_def = .true.
+logical,  parameter :: onlyS_def = .false.
+logical,  parameter :: tsdme_def = .true.
+logical,  parameter :: mixH_def = .false.
+logical,  parameter :: USEBULK_def = .true.
 logical, parameter :: TriDiag_def = .false.
-logical, parameter :: updatedmcr_def = .true.
-logical, parameter :: FixQ_def = .false.
-logical, parameter :: UseVFix_def = .true.
+logical,  parameter :: updatedmcr_def = .true.
+logical,  parameter :: FixQ_def = .false.
+logical,  parameter :: UseVFix_def = .true.
 real(dp), parameter :: voltfdf_def = 0._dp   ! in Ry
 real(dp), parameter :: CCEmin_def = -3.0_dp  ! in Ry
 real(dp), parameter :: GFEta_def = 0.000001_dp  ! in Ry
@@ -74,15 +74,17 @@ real(dp), parameter :: kT_def = 0.0019_dp  ! in Ry
 integer, parameter :: nline_def = 6
 integer, parameter :: ncircle_def = 24
 integer, parameter :: npol_def = 6
-integer, parameter :: nvolt_def = 5
-integer, parameter :: NBUFATL_def = 0
-integer, parameter :: NBUFATR_def = 0
+integer,  parameter :: nvolt_def = 5
+integer,  parameter :: NBUFATL_def = 0
+integer,  parameter :: NBUFATR_def = 0
 character(20), parameter :: smethod_def = 'gaussfermi'
 character(33), parameter :: GFFileL_def = 'Left.GF'
 character(33), parameter :: GFFileR_def = 'Right.GF'
 logical, parameter :: calcGF_def = .true.
 
 
+
+logical            :: TSmode = .false.
 
       CONTAINS
 
@@ -111,13 +113,14 @@ use m_ts_global_vars, only : ts_istep
 #ifdef MPI
 use mpi_siesta, only: MPI_Bcast, MPI_character, MPI_Comm_World
 #endif
-
+implicit none
 
 ! Internal Variables
 #ifdef MPI
 integer :: MPIerror
 #endif
 
+if (isolve.eq.SOLVE_TRANSI) TSmode = .true.
 
 if (IOnode) then
  write(*,*)

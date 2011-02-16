@@ -12,6 +12,11 @@
 !
 !     We need an explicit interface since assumed-shape arrays are used
 !
+
+      integer, save :: iterm = 0
+      integer, save :: maxnc = 1
+      integer, save :: nbasisCloc
+
       CONTAINS
 
       subroutine ordern(usesavelwf,ioptlwf,natoms,nbasis,nbasisloc,
@@ -82,7 +87,6 @@ C ****************************************************************************
 
 C  Modules
       use precision, only: dp
-      use fdf
       use alloc
       use on_main
       use parallel,  only : IONode, Node, NOdes
@@ -118,10 +122,6 @@ C Internal variables ..........................................................
      .  in, io, iopt, iord, is, iter, ncmax, nctmax, 
      .  nfmax, nftmax, nhijmax, nbands, nh
 
-      integer, save :: iterm = 0
-      integer, save :: maxnc = 1
-      integer, save :: nbasisCloc
-
 #ifdef MPI
       integer :: ntmp
       real(dp) ::
@@ -146,6 +146,9 @@ C Internal variables ..........................................................
      .  nbands
      
 C ...................
+#ifdef DEBUG
+      call write_debug( '    PRE ordern' )
+#endif
 
 *     call timer( 'ordern', 1 )
 
@@ -341,8 +344,8 @@ C If LWF's have just been read, restore istep
 
 C Call the CG routines ...............................................
       if (iscf .eq. 1) iterm = 0
-      call cgwf(iscf,itmax,ftol,eta,qs,nbasis,nbasisloc,nbands,
-     .          nhmax,numh,listh,listhptr,maxnc,h,s,fe,iter,dm,
+      call cgwf(iscf,itmax,ftol,eta(1),qs,nbasis,nbasisloc,nbands,
+     .          nhmax,numh,listh,listhptr,maxnc,h,s,fe(1),iter,dm,
      .          edm,nbasisCloc,nspin,Node,Nodes)
       iterm = max(iterm,iter)
 
@@ -378,11 +381,15 @@ C Global reduction of qtot
       endif
 
 C Save LWF's to disk .................................................
+#ifdef RGT_
       call iolwf( 'write', nbasis, nbasisCloc, nbasisloc, maxnc, 
      .            found, nspin)
-
+#endif
       frstme = .false.
 
+#ifdef DEBUG
+      call write_debug( '    POS ordern' )
+#endif
       end subroutine ordern
 
       end module m_ordern

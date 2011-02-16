@@ -110,10 +110,9 @@ c
 c
  10     continue
         read(lun,err=20,end=20,fmt='(a)') line
-        call chrlen(line,0,length)
-        if (length .ne. 0) then
-           write(6,'(a)') line(1:length)
-           if (.not. debug_input) write(lun_tmp,'(a)') line(1:length)
+        if (len_trim(line) .ne. 0) then
+           write(6,'(a)') trim(line)
+           if (.not. debug_input) write(lun_tmp,'(a)') trim(line)
         endif
         goto 10
  20     continue

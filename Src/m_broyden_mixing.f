@@ -18,7 +18,7 @@
       use alloc,     only: re_alloc, de_alloc
 
       use parallel, only: ionode
-      use m_mpi_utils, only: broadcast, globalize_sum, globalize_max
+      use m_mpi_utils, only: globalize_sum, globalize_max
 
       public :: broyden_mixing
       private
@@ -80,33 +80,29 @@ C                              input and output
 
       real(dp) :: global_dnorm, global_dmax,  dnorm, diff, weight
 
-       numel = nspin * sum(numd(1:nbasis))
-       call Globalize_sum(numel,global_numel)
+      numel = nspin * sum(numd(1:nbasis))
+      call Globalize_sum(numel,global_numel)
 
-       if (.not. initialization_done) then
+      if (.not. initialization_done) then
 
-         if (ionode) then
+        if (ionode) then
           print *, "Broyden: No of relevant DM elements: ", global_numel
-          maxit = fdf_integer("DM.Number.Broyden",5)
-          cycle_on_maxit =
-     $            fdf_boolean("DM.Broyden.Cycle.On.Maxit",.true.)
-          variable_weight =
-     $            fdf_boolean("DM.Broyden.Variable.Weight",.true.)
-          broyden_debug = 
-     $            fdf_boolean("DM.Broyden.Debug",.false.)
+        endif
+        maxit = fdf_integer("DM.Number.Broyden",5)
+        cycle_on_maxit =
+     $          fdf_boolean("DM.Broyden.Cycle.On.Maxit",.true.)
+        variable_weight =
+     $          fdf_boolean("DM.Broyden.Variable.Weight",.true.)
+        broyden_debug = 
+     $          fdf_boolean("DM.Broyden.Debug",.false.)
 
-          jinv0 = fdf_double("DM.Broyden.Initial.Mixing",alpha)
+        jinv0 = fdf_double("DM.Broyden.Initial.Mixing",alpha)
+        if (ionode) then
           print *, "maxit for broyden: ", maxit
           print *, "cycle on maxit: ", cycle_on_maxit
           print *, "variable weight: ", variable_weight
           print *, "initial alpha: ", jinv0
         endif
-
-        call Broadcast(maxit)
-        call Broadcast(cycle_on_maxit)
-        call Broadcast(variable_weight)
-        call Broadcast(broyden_debug)
-        call Broadcast(jinv0)
 
         call broyden_init(br,broyden_debug)
 
@@ -255,10 +251,9 @@ C                              input and output
              enddo
            enddo
 
-           call de_alloc( rold, name='rold', routine='broyden_mixing' )
-           call de_alloc( rnew, name='rnew', routine='broyden_mixing' )
-           call de_alloc( rdiff, name='rdiff',
-     $                    routine='broyden_mixing' )
+           call de_alloc( rold, name='rold' )
+           call de_alloc( rnew, name='rnew' )
+           call de_alloc( rdiff, name='rdiff' )
 
       end subroutine broyden_mixing
 

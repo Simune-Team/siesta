@@ -5,6 +5,8 @@
 !     Precision handling
 !
       implicit none
+      
+      integer, parameter :: i8b = selected_int_kind(18)
 
       integer, parameter :: sp = selected_real_kind(6,30)
       integer, parameter :: dp = selected_real_kind(14,100)

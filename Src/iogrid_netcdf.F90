@@ -260,9 +260,12 @@ end subroutine write_grid_netcdf
 !----------------------------------------
 subroutine read_grid_netcdf(mesh,nspin,npt_l,gridfunc,name)
 use precision, only: dp, grid_p
+
 #ifdef CDF
 use netcdf
 #endif
+
+implicit none
 
       integer, intent(in)          ::     mesh(3)      ! Number of mesh divisions of each lattice vector
       integer, intent(in)          ::     nspin

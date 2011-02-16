@@ -7,7 +7,7 @@
 
       implicit none
 
-      integer io, Node, nuotot, gio, iu, localorbs
+      integer  :: Node, nuotot, iu, localorbs
       logical  :: abort_flag
 
       nuotot = lasto(na_u)

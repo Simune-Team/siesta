@@ -10,9 +10,9 @@
   \item {\bf AllocReportThreshold}, 73
   \item AM05, 38
   \item animation, 34
-  \item antiferromagnetic initial DM, 43
+  \item antiferromagnetic initial DM, 44
   \item {\bf AtomCoorFormatOut}, 28
-  \item {\bf AtomicCoordinatesAndAtomicSpecies}, 28
+  \item {\bf AtomicCoordinatesAndAtomicSpecies}, 29
   \item {\bf AtomicCoordinatesFormat}, 28
   \item {\bf AtomicCoordinatesOrigin}, 28
   \item {\bf AtomicMass}, 12
@@ -31,17 +31,17 @@
     \subitem default soft confinement radius, 19
     \subitem effective pressure, 25
     \subitem filtering, 23, 24
-    \subitem fix   split-valence table, 18
+    \subitem fix   split-valence table, 19
     \subitem Gen-basis standalone program, 24
     \subitem ghost atoms, 23
     \subitem minimal, 17
     \subitem new   split-valence code, 18, 19
-    \subitem PAO, 16, 17, 21
+    \subitem PAO, 16--18, 21
     \subitem per-shell split norm, 22
     \subitem point at infinity, 26
     \subitem polarization, 17, 23
     \subitem reparametrization of pseudopotential, 26
-    \subitem soft confinement potential, 22
+    \subitem soft confinement potential, 23
     \subitem split valence, 18
     \subitem split valence   for H, 18
     \subitem User basis, 24
@@ -71,7 +71,7 @@
   \item Charge of the system, 67
   \item Chebyshev Polynomials, 55
   \item Chemical Potential, 55, 56
-  \item {\bf ChemicalSpeciesLabel}, 11, 26
+  \item {\bf ChemicalSpeciesLabel}, 11, 27
   \item CML, 110
   \item Conjugate-gradient history information, 77
   \item constant-volume cell relaxation, 76
@@ -91,19 +91,19 @@
   \item {\bf Diag.PreRotate}, 52
   \item {\bf Diag.Use2D}, 52
   \item Dielectric function, optical absorption, 63
-  \item diffuse orbitals, 16
+  \item diffuse orbitals, 17
   \item {\bf DirectPhi}, 73
   \item {\bf DM.AllowExtrapolation}, 44
   \item {\bf DM.AllowReuse}, 44
   \item {\bf DM.Broyden.Cycle.On.Maxit}, 41
-  \item {\bf DM.Broyden.Variable.Weight}, 41
+  \item {\bf DM.Broyden.Variable.Weight}, 42
   \item {\bf DM.EnergyTolerance}, 46
   \item {\bf DM.FormattedFiles}, 43
   \item {\bf DM.FormattedInput}, 43
   \item {\bf DM.FormattedOutput}, 43
   \item {\bf DM.Harris.Tolerance}, 46
   \item {\bf DM.InitSpin}, 44
-  \item {\bf DM.InitSpinAF}, 43
+  \item {\bf DM.InitSpinAF}, 44
   \item {\bf DM.KickMixingWeight}, 42
   \item {\bf DM.MixingWeight}, 40
   \item {\bf     DM.MixSCF1}, 68
@@ -132,12 +132,12 @@
   \indexspace
 
   \item FDF, 8
-  \item fdf.log, 7, 8
-  \item ferromagnetic initial DM, 43
+  \item fdf.log, 7--9
+  \item ferromagnetic initial DM, 44
   \item {\tt files} (ON.functional), 54
   \item {\bf     FilterCutoff}, 23
   \item {\bf     FilterTol}, 24
-  \item finite-range pseudo-atomic orbitals, 16
+  \item finite-range pseudo-atomic orbitals, 17
   \item {\bf FixAuxiliaryCell}, 51
   \item fixed spin state, 39
   \item {\bf FixSpin}, 39
@@ -180,9 +180,9 @@
   \indexspace
 
   \item {\bf kgrid\_cutoff}, 36
-  \item {\bf kgrid\_Monkhorst\_Pack}, 36
+  \item {\bf kgrid\_Monkhorst\_Pack}, 37
   \item {\tt Kim}, 54
-  \item Kleinman-Bylander projectors, 19
+  \item Kleinman-Bylander projectors, 20
 
   \indexspace
 
@@ -232,7 +232,7 @@
   \item {\bf     MD.TauRelax}, 82
   \item {\bf MD.TypeOfRun}, 74
   \item {\bf MD.UseSaveCG}, 78
-  \item {\bf MD.UseSaveXV}, 34, 35
+  \item {\bf MD.UseSaveXV}, 35
   \item {\bf MD.UseSaveZM}, 35
   \item {\bf MD.UseStructFile}, 33
   \item {\bf MD.VariableCell}, 75
@@ -250,7 +250,7 @@
   \item {\bf MM.UnitsEnergy}, 71
   \item Mulliken population analysis, 10, 62
   \item {\bf MullikenInSCF}, 62, 63
-  \item multiple-$\zeta$, 16, 18
+  \item multiple-$\zeta$, 17, 18
 
   \indexspace
 
@@ -261,13 +261,13 @@
   \item {\bf NetCharge}, 67
   \item {\bf     New.A.Parameter}, 26
   \item {\bf     New.B.Parameter}, 26
-  \item NEXT\_ITER.UCELL.ZMATRIX, 33
+  \item NEXT\_ITER.UCELL.ZMATRIX, 34
   \item {\tt nodes}, 17
   \item {\bf NonCollinearSpin}, 39
   \item {\tt nonodes}, 17
-  \item {\bf NumberOfAtoms}, 11, 26
+  \item {\bf NumberOfAtoms}, 11, 27
   \item {\bf NumberOfEigenStates}, 51
-  \item {\bf NumberOfSpecies}, 11, 26
+  \item {\bf NumberOfSpecies}, 11, 27
 
   \indexspace
 
@@ -345,9 +345,9 @@
   \item {\bf PAO.Basis}\index{basis
     \subitem PAO}, 21
   \item {\bf PAO.BasisSize}, 17
-  \item {\bf PAO.BasisSizes}, 17
+  \item {\bf PAO.BasisSizes}, 18
   \item {\bf PAO.BasisType}, 16
-  \item {\bf PAO.FixSplitTable}, 18
+  \item {\bf PAO.FixSplitTable}, 19
   \item {\bf PAO.NewSplitCode}, 18
   \item {\bf PAO.SoftDefault}, 19
   \item {\bf     PAO.SoftInnerRadius}, 19
@@ -363,13 +363,13 @@
   \item Phonon program, 75
   \item {\sc Phonon program}, 86
   \item {\bf PhononLabels}, 86
-  \item polarization orbitals, 16
+  \item polarization orbitals, 17
   \item {\bf PolarizationGrids}, 65
   \item Precision selection, 112
   \item {\bf ProcessorY}, 72, 105
   \item {\bf ProjectedDensityOfStates}, 61
   \item {\bf PS.KBprojectors} , 20
-  \item {\bf PS.lmax}, 19
+  \item {\bf PS.lmax}, 20
   \item pseudopotential
     \subitem example generation, 6
     \subitem files, 12
@@ -389,7 +389,7 @@
     \subitem charge density, 45
     \subitem density matrix, 43
     \subitem localized wave functions (order-$N$), 57
-    \subitem XV, 34
+    \subitem XV, 35
     \subitem ZM, 35
   \item readwf, 60
   \item readwfsx, 60
@@ -417,7 +417,7 @@
   \item scale factor, 23
   \item SCF, 40
     \subitem mixing, 40--42
-      \subsubitem Broyden, 41
+      \subsubitem Broyden, 41, 42
       \subsubitem energy convergence, 46
       \subsubitem harris energy convergence, 46
       \subsubitem linear, 40, 42
@@ -433,15 +433,15 @@
   \item siesta, 11
   \item {\bf SimulateDoping}, 67
   \item single-$\zeta$, 17
-  \item {\bf SingleExcitation}, 39
+  \item {\bf SingleExcitation}, 40
   \item Slab dipole correction, 68
   \item {\bf SlabDipoleCorrection}, 68
   \item Slabs with net charge, 67
   \item {\bf SolutionMethod}, 51, 91
   \item species, 11
   \item {\it species.}ion, 7
-  \item spin, 39, 43
-    \subitem initialization, 43
+  \item spin, 39, 44
+    \subitem initialization, 44
     \subitem non-collinear, 39
   \item {\bf SpinPolarized}, 39
   \item split valence, 17
@@ -455,12 +455,12 @@
   \item Systemlabel, 8
   \item {\it Systemlabel.}.ANI, 7
   \item {\it Systemlabel.}DM, 7
-  \item {\it Systemlabel.}.EIG, 7
-  \item {\it Systemlabel.}.FA, 7
+  \item {\it Systemlabel.}.EIG, 8
+  \item {\it Systemlabel.}.FA, 8
   \item {{\it Systemlabel}.STRUCT\_IN}, 35
   \item {{\it Systemlabel}.STRUCT\_NEXT\_ITER}, 33
   \item {{\it Systemlabel}.STRUCT\_OUT}, 7, 33
-  \item {\it Systemlabel.}xml, 7
+  \item {\it Systemlabel.}xml, 8
   \item {\it Systemlabel.}XV, 7
   \item {\bf SystemName}, 11
   \item {\tt SZ}, 17
@@ -544,8 +544,8 @@
   \indexspace
 
   \item {\bf XC.authors}, 38
-  \item {\bf XC.functional}, 37
-  \item {\bf XC.hybrid}, 38
+  \item {\bf XC.functional}, 38
+  \item {\bf XC.hybrid}, 39
   \item XML, 110
   \item {\bf XML.AbortOnErrors}, 110
   \item {\bf XML.AbortOnWarnings}, 110
@@ -558,7 +558,7 @@
   \item {\bf ZM.ForceTolLength}, 77
   \item {\bf ZM.MaxDisplAngle}, 77
   \item {\bf ZM.MaxDisplLength}, 77
-  \item {\bf ZM.UnitsAngle}, 32
+  \item {\bf ZM.UnitsAngle}, 33
   \item {\bf ZM.UnitsLength}, 32
   \item {\bf Zmatrix}, 29
 

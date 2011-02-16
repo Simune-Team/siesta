@@ -38,7 +38,6 @@ C Module Variables
       use parallel, only : Node, Nodes, IOnode
       use sys, only : die
       use m_tbt_kpts, only : get_kp_on_node
-      use m_fdf_global, only : fdf_global_get
 C Module Routines and Variables
       use m_tbt_gf
 #ifdef MPI
@@ -100,10 +99,9 @@ c FROM FDF
       real*8  kdispl(3)
 
       logical genlogic
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline => null()
       integer  iukp,lkp,jkp
-
-
-
 
 c ----------------------------------------------------------------
 c     Greens functions:
@@ -288,25 +286,22 @@ c
       end if      
 
 
-      if (IOnode) then
-        genlogic = fdf_block('kgrid_Monkhorst_Pack',iukp)
+        genlogic = fdf_block('kgrid_Monkhorst_Pack',bfdf)
         if ( genlogic ) then
-         do lkp = 1,3
-           read(iukp,*) (kscell(jkp,lkp),jkp=1,3), kdispl(lkp)
-         enddo
-C       close(iukp)
-        else
-          write(*,*) 'Must specify k-points with Monkhorst_Pack'
-          write(*,*) 'Stoping code'  
-          stop
-        end if
-      end if ! IOnode
+          do lkp = 1,3
+             if (.not. fdf_bline(bfdf,pline))
+     $            call die("Wrong no of lines in MP block")
+             if (.not. fdf_bmatch(pline,"vvvv"))
+     $            call die("Wrong format in MP block")
+             do jkp = 1,3
+                kscell(jkp,lkp) = fdf_bvalues(pline,jkp)
+             enddo
+             kdispl(lkp) = fdf_bvalues(pline,4)   
+          enddo
+       else
+          call die('Must specify k-points with Monkhorst_Pack')
+       end if
 
-#ifdef MPI
-      call broadcast(kscell(:,:))
-      call broadcast(kdispl(:))
-#endif MPI
-     
       fname=paste(slabel,'.TSHS') 
 
       call get_kp_on_node(fname,nkxy,kxy,wkxy,kscell,kdispl)

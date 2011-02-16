@@ -49,11 +49,8 @@ C Internal variables --------------------------------------------------
       INTEGER
      .  UNIT1 
 
-      LOGICAL
-     .  LEQI
-
       EXTERNAL
-     .  IO_ASSIGN, IO_CLOSE, PASTE, LEQI
+     .  IO_ASSIGN, IO_CLOSE, PASTE
 
 C Assign the name of the output file -----------------------------------
       slabel = FDF_STRING('SystemLabel','siesta')

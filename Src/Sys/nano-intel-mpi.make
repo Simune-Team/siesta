@@ -39,9 +39,12 @@ MPI_INTERFACE=libmpi_f90.a
 MPI_INCLUDE=.      # Note . for no-op
 FPPFLAGS_MPI=-DMPI
 #
+METIS_LIB=$(HOME)/lib/libmetis.a
+#
 LIBS=-L/opt/intel/mkl/10.0.3.020/lib/em64t \
      -lmkl_scalapack -lmkl_blacs_intelmpi20_lp64 \
-     -lmkl_lapack -lmkl_em64t -lguide $(EXTRA_LIBS)
+     -lmkl_lapack -lmkl_em64t -lguide $(EXTRA_LIBS) $(METIS_LIB)
+#
 SYS=nag
 FPPFLAGS= $(FPPFLAGS_CDF) $(FPPFLAGS_MPI)
 #

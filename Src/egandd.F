@@ -69,7 +69,6 @@ C **************************************************************************
       use on_core
       use on_main,   only : nbL2G, nbG2L, nbandsloc, ncP2T
       use sys,       only : die
-      use m_mpi_utils, only: broadcast
 #ifdef MPI
       use globalise, only : setglobaliseB, setglobalise, setglobaliseF 
       use globalise, only : globalinitB
@@ -102,10 +101,10 @@ C Internal variables .....................................................
       integer       :: i
       integer       :: m, mt, n
 
-      logical, allocatable, save :: lNeeded(:)
-      logical,              save :: frstme = .true.
-      logical,              save :: frstme2 = .true.
-      logical,              save :: LoMem = .false.
+      logical, pointer, save :: lNeeded(:)
+      logical,          save :: frstme = .true.
+      logical,          save :: frstme2 = .true.
+      logical,          save :: LoMem = .false.
 
 C .....................
 
@@ -131,11 +130,7 @@ C Nullify pointers
         nullify(fs)
 
 C Set flag for memory algorithm choice
-        if (Node.eq.0) then
-          LoMem = fdf_boolean('ON.LowerMemory',.false.)
-        endif
-
-        call Broadcast(LoMem)
+        LoMem = fdf_boolean('ON.LowerMemory',.false.)
 
         frstme = .false.
 
@@ -143,9 +138,9 @@ C Set flag for memory algorithm choice
 
       if (iopt.eq.0) then
 C Find nbandsloc and pointers
-        call re_alloc(nbL2G,1,nbands,name='nbL2G')
-        call re_alloc(nbG2L,1,nbands,name='nbG2L')
-        allocate(lNeeded(nbands))
+        call re_alloc( nbL2G, 1, nbands, 'nbL2G', 'eandg' )
+        call re_alloc( nbG2L, 1, nbands, 'nbG2L', 'eandg' )
+        call re_alloc( lNeeded, 1, nbands, 'lNeeded', 'eandg' )
         do i = 1,nbands
           lNeeded(i) = .false.
         enddo
@@ -167,34 +162,29 @@ C Find nbandsloc and pointers
         deallocate(lNeeded)
 
 C Allocation of memory
-        call re_alloc(numct,1,nbandsloc,name='numct',copy=.true.,
-     .                shrink=.false.)
-        call re_alloc(numf,1,nbandsloc,name='numf',copy=.true.,
-     .                shrink=.false.)
-        call re_alloc(numft,1,nbasisCloc,name='numft',copy=.true.,
-     .                shrink=.false.)
-        call re_alloc(numhij,1,nbandsloc,name='numhij',copy=.true.,
-     .                shrink=.false.)
-        call re_alloc(indon,1,nbasis,name='indon',copy=.true.,
-     .                shrink=.false.)
-        call re_alloc(nindv,1,nbasis,name='nindv',copy=.true.,
-     .                shrink=.false.)
-        call re_alloc(cttoc,1,maxnct,1,nbandsloc,name='cttoc',
-     .                copy=.true.,shrink=.false.)
-        call re_alloc(fttof,1,maxnft,1,nbasisCloc,name='fttof',
-     .                copy=.true.,shrink=.false.)
-        call re_alloc(listct,1,maxnct,1,nbandsloc,name='listct',
-     .                copy=.true.,shrink=.false.)
-        call re_alloc(listf,1,maxnf,1,nbandsloc,name='listf',
-     .                copy=.true.,shrink=.false.)
-        call re_alloc(listft,1,maxnft,1,nbasisCloc,name='listft',
-     .                copy=.true.,shrink=.false.)
-        call re_alloc(listhij,1,maxnhij,1,nbandsloc,name='listhij',
-     .                copy=.true.,shrink=.false.)
-        call re_alloc(f,1,maxnf,1,nbandsloc,name='f',copy=.true.,
-     .                shrink=.false.)
-        call re_alloc(fs,1,maxnf,1,nbandsloc,name='fs',copy=.true.,
-     .                shrink=.false.)
+        call re_alloc(numct,1,nbandsloc,'numct','eandg',.true.,.false.)
+        call re_alloc(numf,1,nbandsloc,'numf','eandg',.true.,.false.)
+        call re_alloc(numft,1,nbasisCloc,'numft','eandg',.true.,
+     &               .false.)
+        call re_alloc(numhij,1,nbandsloc,'numhij','eandg',.true.,
+     &               .false.)
+        call re_alloc(indon,1,nbasis,'indon','eandg',.true.,.false.)
+        call re_alloc(nindv,1,nbasis,'nindv','eandg',.true.,.false.)
+        call re_alloc(cttoc,1,maxnct,1,nbandsloc,'cttoc','eandg',
+     &               .true.,.false.)
+        call re_alloc(fttof,1,maxnft,1,nbasisCloc,'fttof','eandg',
+     &               .true.,.false.)
+        call re_alloc(listct,1,maxnct,1,nbandsloc,'listct','eandg',
+     &               .true.,.false.)
+        call re_alloc(listf,1,maxnf,1,nbandsloc,'listf','eandg',
+     &               .true.,.false.)
+        call re_alloc(listft,1,maxnft,1,nbasisCloc,'listft','eandg',
+     &               .true.,.false.)
+        call re_alloc(listhij,1,maxnhij,1,nbandsloc,'listhij','eandg',
+     &               .true.,.false.)
+        call re_alloc(f,1,maxnf,1,nbandsloc,'f','eandg',.true.,.false.)
+        call re_alloc(fs,1,maxnf,1,nbandsloc,'fs','eandg',.true.,
+     &               .false.)
 
 C Set up index lists for sparse matrices ..................................
 
@@ -206,7 +196,7 @@ C GET F LISTS
      .                  listhptr,indon,maxnf)
 
 C Allocate arrays that depend on variables set above
-        call re_alloc(listf,1,maxnf,1,nbandsloc,name='listf')
+        call re_alloc( listf, 1, maxnf, 1, nbandsloc, 'listf', 'eandg' )
 
 C GET Ft LISTS
         call ctrans2(nbasisCloc,maxnf,maxnft,numf,listf)
@@ -216,8 +206,8 @@ C GET Hij LISTS
      .                  nbasisCloc,ncmax,numc,listc,indon,maxnhij)
 
 C Allocate arrays that depend on variables set above
-        call re_alloc(f,1,maxnf,1,nbandsloc,name='f')
-        call re_alloc(fs,1,maxnf,1,nbandsloc,name='fs')
+        call re_alloc( f, 1, maxnf, 1, nbandsloc, 'f','eandg' )
+        call re_alloc( fs, 1, maxnf, 1, nbandsloc, 'fs','eandg' )
 
 #ifdef MPI
 C Set up communication information
@@ -287,14 +277,14 @@ C-JMS Modified denmat argument list
           call denmatlomem(c,eta,h,s,qs,nbasis,nbasisloc,nbands,ncmax,
      .                     maxnct,maxnf,maxnft,nhmax,maxnhij,numc,listc,
      .                     numct,listct,cttoc,numf,listf,numft,listft,
-     .                     fttof,numh,listh,listhptr,numhij,listhij,
-     .                     dm,edm,nbasisCloc,nspin,Node)
+     .                     numh,listh,listhptr,numhij,listhij,dm,edm,
+     .                     nbasisCloc,nspin,Node)
         else
           call denmat(c,eta,h,s,qs,nbasis,nbasisloc,nbands,ncmax,
      .                maxnct,maxnf,maxnft,nhmax,maxnhij,numc,listc,
      .                numct,listct,cttoc,numf,listf,numft,listft,
-     .                fttof,numh,listh,listhptr,numhij,listhij,
-     .                dm,edm,nbasisCloc,nspin,Node)
+     .                numh,listh,listhptr,numhij,listhij,dm,edm,
+     .                nbasisCloc,nspin,Node)
         endif
         goto 999
       endif

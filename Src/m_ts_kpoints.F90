@@ -108,10 +108,15 @@ MODULE m_ts_kpoints
       real(dp)          ctransf(3,3)
       logical           mp_input
 
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
+
       real(dp), parameter :: defcut = 0.0_dp
       integer, dimension(3,3), parameter :: unit_matrix =  &
                          reshape ((/1,0,0,0,1,0,0,0,1/), (/3,3/))
 
+
+#ifdef CHECK_THIS
       if (Node.eq.0) then
 
          mp_input = fdf_block('kgrid_Monkhorst_Pack',iu)     
@@ -171,9 +176,62 @@ MODULE m_ts_kpoints
       call MPI_Bcast(ts_user_requested_cutoff,1,MPI_logical,0,   &
                      MPI_Comm_World, MPIerror)
 #endif
-    
+#else /* CHECK_THIS */
 
-    end subroutine setup_ts_scf_kscell
+      mp_input = fdf_block('kgrid_Monkhorst_Pack',bfdf)     
+      if ( mp_input ) then
+        ts_user_requested_mp = .true.
+        do i = 1,3
+          if (fdf_bline(bfdf,pline)) then
+            ts_kscell(1,i) = fdf_bintegers(pline,1)
+            ts_kscell(2,i) = fdf_bintegers(pline,2)
+            ts_kscell(3,i) = fdf_bintegers(pline,3)
+            ts_kdispl(i)   = fdf_breals(pline,1)
+          else
+            call die( 'setup_ts_scf_kscell: ERROR no data in' // &
+                      'kgrid_Monkhorst_Pack block' )
+          endif
+        enddo
+        firm_displ = .true.
+      else
+
+         write(*,*) 'WARNING !!!'
+         write(*,*) 'TS kgrid determined first with 3D cell !!!'
+         write(*,*) 'Specifying only cutoff in Electrode AND Scattering calculations might lead to problems !!'
+
+         cutoff = fdf_physical('kgrid_cutoff',defcut,'Bohr')
+         if (cutoff /= defcut) then
+            ts_user_requested_cutoff = .true.
+         endif
+
+         ts_kdispl(1:3) = 0.0_dp  ! Might be changed later
+
+         ! Find equivalent rounded unit-cell
+         call minvec( cell, scmin, ctransf )
+
+         expansion_factor = 1
+         do j = 1,3
+            factor(j,1:3) = 0
+            vmod = sqrt(dot_product(scmin(1:3,j),scmin(1:3,j)))
+            factor(j,j) = int(2.0_dp*cutoff/vmod) + 1
+            expansion_factor = expansion_factor * factor(j,j)
+         enddo
+         ! Generate actual supercell skeleton
+         ts_kscell = matmul(ctransf, factor)
+         ! Avoid confusing permutations
+         ! Defer implementation to avoid diffs with reference version
+         !!if (expansion_factor == 1) then
+         !!   kscell = unit_matrix
+         !!endif
+      endif
+
+!     Modify the ts_kscell and ts_kdispl to obtain the 2D sampling
+      ts_kscell(1:3,3) = 0
+      ts_kscell(3,1:3) = 0
+      ts_kscell(3,3)   = 1
+      ts_kdispl(3)     = 0.0_dp
+#endif /* CHECK_THIS */
+      end subroutine setup_ts_scf_kscell
 
     subroutine ts_write_k_points()
       USE siesta_options, only: writek

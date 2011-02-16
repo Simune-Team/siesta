@@ -38,6 +38,7 @@ C
       use sys,          only : die
       use fdf,          only : fdf_boolean, fdf_string
       use files,        only : slabel, label_length
+      use alloc,        only : re_alloc, de_alloc
 #ifdef MPI
       use mpi_siesta
       use parallelsubs, only : WhichNodeOrb, GlobalToLocalOrb
@@ -62,16 +63,16 @@ C Internal variables
       logical   file_exists
       integer   im, is, unit1, m, nb, ndmax, ns
       integer   nbasistot, ml, ndmaxg
-      integer, dimension(:), allocatable, save :: numdg
+      integer, pointer, save :: numdg(:)
 #ifdef MPI
       integer   MPIerror, Request, Status(MPI_Status_Size)
       integer   BNode
 #ifdef ALLOC_SAVE_BUG
-      real(dp), dimension(:), allocatable :: buffer
-      integer,  dimension(:), allocatable :: ibuffer
+      real(dp), pointer :: buffer(:)
+      integer,  pointer :: ibuffer(:)
 #else
-      real(dp), dimension(:), allocatable, save :: buffer
-      integer,  dimension(:), allocatable, save :: ibuffer
+      real(dp), pointer, save :: buffer(:)
+      integer,  pointer, save :: ibuffer(:)
 #endif
 #endif
       
@@ -110,6 +111,7 @@ C External procedures
 ! Therefore, on all steps after the first, the 
 
 C Find file name
+      call timer( 'iodm', 1 )
       if (ionode) then
         if (frstme) then
           fmto = fdf_boolean('DM.FormattedFiles', .false.)
@@ -148,8 +150,7 @@ C Find total number of basis functions over all Nodes
 #endif
 
 C Allocate local buffer array for globalised numd
-      allocate(numdg(nbasistot))
-      call memory('A','I',nbasistot,'iodm')
+      call re_alloc( numdg, 1, nbasistot, 'numdg', 'iodm' )
 
       if (task.eq.'read' .or. task.eq.'READ') then
         if (Node.eq.0) then
@@ -225,10 +226,8 @@ C Check size of first dimension of dm
 
 #ifdef MPI
 C Create buffer arrays for transfering density matrix between nodes and lists
-          allocate(buffer(ndmaxg))
-          call memory('A','D',ndmaxg,'iodm')
-          allocate(ibuffer(ndmaxg))
-          call memory('A','I',ndmaxg,'iodm')
+          call re_alloc( buffer, 1, ndmaxg, 'buffer', 'iodm' )
+          call re_alloc( ibuffer, 1, ndmaxg, 'ibuffer', 'iodm' )
 #endif
 
           do m = 1,nbasistot
@@ -268,8 +267,7 @@ C Create buffer arrays for transfering density matrix between nodes and lists
           enddo
 
 #ifdef MPI
-          call memory('D','I',size(ibuffer),'iodm')
-          deallocate(ibuffer)
+          call de_alloc( ibuffer, 'ibuffer', 'iodm' )
 #endif
 
           do is = 1,nspin
@@ -313,8 +311,7 @@ C Create buffer arrays for transfering density matrix between nodes and lists
 
 #ifdef MPI
 C Free buffer array
-          call memory('D','D',size(buffer),'iodm')
-          deallocate(buffer)
+          call de_alloc( buffer, 'buffer', 'iodm' )
 #endif
           if (Node.eq.0) then
             call io_close(unit1)
@@ -332,6 +329,7 @@ C Free buffer array
 
         if (Node.eq.0) then
           call io_assign(unit1)
+
           open( unit1, file=fnameo, form=formout, status='unknown' )
           rewind(unit1)
           if (fmto) then
@@ -380,10 +378,8 @@ C Write out numd array
             write(unit1) (numdg(m),m=1,nbasistot)
           endif
 #ifdef MPI
-          allocate(buffer(ndmaxg))
-          call memory('A','D',ndmaxg,'iodm')
-          allocate(ibuffer(ndmaxg))
-          call memory('A','I',ndmaxg,'iodm')
+          call re_alloc( buffer, 1, ndmaxg, 'buffer', 'iodm' )
+          call re_alloc( ibuffer, 1, ndmaxg, 'ibuffer', 'iodm' )
 #endif
         endif
 
@@ -428,8 +424,7 @@ C Write out listd array
 
 #ifdef MPI
         if (Node.eq.0) then
-          call memory('D','I',size(ibuffer),'iodm')
-          deallocate(ibuffer)
+          call de_alloc( ibuffer, 'ibuffer', 'iodm' )
         endif
 #endif
 
@@ -477,8 +472,7 @@ C Write density matrix
 
         if (Node.eq.0) then
 #ifdef MPI
-          call memory('D','D',size(buffer),'iodm')
-          deallocate(buffer)
+          call de_alloc( buffer, 'buffer', 'iodm' )
 #endif
           call io_close(unit1)
         endif
@@ -490,7 +484,7 @@ C Write density matrix
       endif
 
 C Deallocate local buffer array for globalised numd
-      call memory('D','I',size(numdg),'iodm')
-      deallocate(numdg)
+      call de_alloc( numdg, 'numdg', 'iodm' )
 
+      call timer( 'iodm', 2 )
       end subroutine iodm

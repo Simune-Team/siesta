@@ -7,19 +7,18 @@
       subroutine struct_init()
       USE siesta_options
       use m_ioxv
-      USE alloc,          only: re_alloc
+      USE alloc,          only: re_alloc, de_alloc
 
       use siesta_geom
-      use atmfuncs,       only: izofis
-      use atomlist,       only: elem, iza
-      use fdf,            only : fdf_physical
-      use m_fdf_global,   only: fdf_global_get
+      use atmfuncs,       only : izofis
+      use atomlist,       only : elem, iza
+      use fdf
       use periodic_table, only : symbol
-      use m_iostruct,     only: read_struct
+      use m_iostruct,     only : read_struct
       use siesta_cml
       use files,          only : slabel
-      use zmatrix,        only: lUseZmatrix
-      use parallel,       only: IOnode
+      use zmatrix,        only : lUseZmatrix
+      use parallel,       only : IOnode
       use siesta_master,  only: coordsFromMaster  ! Get coords from master prog
       use siesta_master,  only: setPropertyForMaster  ! Set a property to be
                                                       ! sent to master program
@@ -30,8 +29,6 @@
       real(dp), external :: volcel
       external :: automatic_cell, bonds, iozm, shaper
       
-      logical, external :: leqi  ! It lives in fdf.f
-
       character(len=80) :: dummy_str
       logical           :: foundxv, foundzm
       real(dp)          :: local_charnet
@@ -39,12 +36,16 @@
       real(dp):: bcell(3,3), tmp_cell(3,3)
       integer :: i, ia, ix
       integer:: nbcell  ! Auxiliary to call shaper routine
+      real(dp), pointer :: xang(:,:)
 
 !------------------------------------------------------------------------- BEGIN
+#ifdef DEBUG
+      call write_debug( '  PRE struct_init' )
+#endif
 
       !! Read number of atoms and coordinates, and unit cell
-      call fdf_global_get(use_struct_file,"UseStructFile",.false.)
-      call fdf_global_get(use_struct_file,"MD.UseStructFile",
+      use_struct_file = fdf_get("UseStructFile",.false.)
+      use_struct_file = fdf_get("MD.UseStructFile",
      $     use_struct_file)    ! For legacy symbol
       if (use_struct_file) then
          call read_struct( na_u, tmp_cell) ! Sets na_u, xa, and isa
@@ -54,17 +55,15 @@
       ucell = tmp_cell  ! initialize module variable
 
 !     Prepare iza here: it might be needed by ioxv      
-      nullify(iza)
-      call re_alloc(iza,1,na_u,name='iza',routine='struct_init')
-
-      nullify(va)
-      call re_alloc(va,1,3,1,na_u,name='va',routine='struct_init')
+      nullify( iza, va )
+      call re_alloc( iza, 1, na_u, 'iza', 'struct_init' )
+      call re_alloc( va, 1, 3, 1, na_u, 'va', 'struct_init' )
 
       ! Options readed here instead of siesta_options
-      call fdf_global_get(default, 'UseSaveData'     , .false.)
-      call fdf_global_get(usesavexv, 'MD.UseSaveXV'    , default)
-      call fdf_global_get(usesavezm, 'MD.UseSaveZM'    , default)
-      call fdf_global_get(writic, 'WriteCoorInitial', .true. )
+      default   = fdf_get('UseSaveData', .false.)
+      usesavexv = fdf_get('MD.UseSaveXV', default)
+      usesavezm = fdf_get('MD.UseSaveZM', default)
+      writic    = fdf_get('WriteCoorInitial', .true.)
 
       ! Read Z-matrix coordinates and forces from file
       if (lUseZmatrix) then
@@ -97,9 +96,14 @@
       endif
 ! ..................
 
+! Find if siesta is a server of forces, unless we already know it .....
+      if (.not.siesta_server) then
+        dummy_str = fdf_get('MD.TypeOfRun',"none")
+        siesta_server = (leqi(dummy_str,'forces'))
+      end if
+! .....................
+
 ! Read cell shape and atomic positions from driver program
-      call fdf_global_get(dummy_str,'MD.TypeOfRun',"none")
-      siesta_server = (leqi(dummy_str,'forces'))
       if (siesta_server) then
         call setPropertyForMaster('atomic_numbers', 
      .                             na_u, real(iza(:),dp), ' ')
@@ -117,7 +121,7 @@
 
 ! Automatic cell generation ...........................................
       if (volcel(ucell) .lt. 1.0d-8) then
-         call fdf_global_get(local_charnet,'NetCharge',0.0_dp)
+         local_charnet = fdf_get('NetCharge',0.0_dp)
          call automatic_cell(ucell,scell,na_u,xa,isa,local_charnet)
       endif
 
@@ -148,14 +152,20 @@
       if (cml_p) then
 ! We need the names of the elements on node 0
         nullify(elem)
-        call re_alloc(elem,1,na_u,name='elem',routine='struct_init')
+        allocate( elem(na_u) )
+!        call re_alloc( elem, 1, na_u, 'elem', 'struct_init' )
         do i = 1, na_u
            elem(i) = symbol(izofis(isa(i)))
         enddo
 
         call cmlStartModule(xf=mainXML, title='Initial System')
+        nullify(xang)
+        call re_alloc( xang, 1, 3, 1, na_u, 'xang', 'struct_init' )
+        xang = xa(1:3,1:na_u)/Ang
         call cmlAddMolecule(xf=mainXML, natoms=na_u,
      .       coords=xa/Ang, elements=elem, atomRefs=cisa)
+        call de_alloc( xang, 'xang', 'struct_init' )
+
         call cmlAddLattice(xf=mainXML, cell=ucell, 
      .       units='siestaUnits:angstrom', dictref='siesta:ucell')
         call cmlAddProperty(xf=mainXML, value=trim(shape), 
@@ -163,6 +173,8 @@
         call cmlEndModule(xf=mainXML)
       endif
 
-
+#ifdef DEBUG
+      call write_debug( '  POS struct_init' )
+#endif
       END subroutine struct_init
       end module m_struct_init

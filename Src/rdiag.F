@@ -50,12 +50,16 @@ C
       use fdf
       use parallel,   only : Node, Nodes, BlockSize, ProcessorY
       use diagmemory, only : MemoryFactor
-#ifdef MPI
-      use mpi_siesta, only : mpi_bcast, mpi_logical, mpi_comm_world
-#endif
-      use alloc
+      use alloc,      only : re_alloc, de_alloc, allocdefaults,
+     &                       alloc_default
       use sys,        only : die
-
+      use m_diagon,   only : saveeigenvectors, maxclustersize, i2d_ctxt,
+     &                       serial, noexpert, divideconquer, use2d,
+     &                       prerotate, ictxt, allinone, doread,
+     &                       firstcall
+#ifdef MPI
+      use mpi_siesta
+#endif
       implicit          none
 
 C Passed variables
@@ -73,17 +77,15 @@ C Passed variables
 C Local variables
       type(allocDefaults) oldDefaults
 #ifdef MPI
+      integer                 :: MPIerror
       integer                 :: anb
       integer                 :: clustersize
       integer                 :: desch(9)
-      integer                 :: MPIerror
       integer                 :: iacol
       integer                 :: iarow
       integer                 :: iceil
-      integer,           save :: ictxt
       integer                 :: indxg2p
       integer                 :: lwork2
-      integer,           save :: maxclustersize = 12
       integer                 :: mq0
       integer                 :: mycol
       integer                 :: myrow
@@ -103,66 +105,47 @@ C Local variables
       integer                 :: oldmaxclustersize
       integer                 :: pjlaenv
       integer                 :: sqnpc
-      integer,  pointer, save :: iclustr(:)
-      real(dp), pointer, save :: gap(:)
       real(dp)                :: dscale
       logical                 :: BlacsOK
-      logical                 :: lBtmp(6)
+      logical                 :: lBtmp(5)
 C Additional variables for a 2D proc grid
       integer                 :: np2d_row, np2d_col
       integer                 :: my2d_row, my2d_col
-      integer,           save :: i2d_ctxt
       integer, dimension(9)   :: desc_h2d
       
 C Matrices for 2D
-      real(dp), pointer, save, dimension(:,:) ::  h2d, s2d, z2d
       integer ::  mat_2d_row, mat_2d_col
 #endif
-      character               :: jobz
-      character               :: range
-      integer                 :: ilaenv
-      integer                 :: info
-      integer                 :: liwork
-      integer                 :: lwork
-      integer                 :: nb
-      integer                 :: neigok
-      integer,  pointer, save :: ifail(:)
-      integer,  pointer, save :: iwork(:)
-      logical,           save :: AllInOne = .false.
-      logical,           save :: DivideConquer = .true.
-      logical,           save :: DoRead = .true.
-      logical,           save :: FirstCall = .true.
-      logical,           save :: NoExpert = .false.
-      logical,           save :: PreRotate = .false.
-      logical,           save :: SaveEigenvectors = .false.
-      logical,           save :: Use2D = .true.
-      logical,           save :: Serial = .true.
-      logical                 :: ChangeAlgorithm
-      real(dp)                :: vl
-      real(dp)                :: vu
-      real(dp), pointer, save :: work(:)
-      real(dp), pointer, save :: Zsave(:,:)
+      character            :: jobz
+      character            :: range
+      integer              :: ilaenv
+      integer              :: info
+      integer              :: liwork
+      integer              :: lwork
+      integer              :: nb
+      integer              :: neigok
+      logical              :: ChangeAlgorithm
+      real(dp)             :: vl
+      real(dp)             :: vu
 
-      real(dp), parameter     :: abstol = 1.0e-8_dp
-      real(dp), parameter     :: orfac = 1.0e-3_dp
-      real(dp), parameter     :: zero = 0.0_dp
-      real(dp), parameter     :: one = 1.0_dp
+      real(dp),  parameter :: abstol = 1.0e-8_dp
+      real(dp),  parameter :: orfac = 1.0e-3_dp
+      real(dp),  parameter :: zero = 0.0_dp
+      real(dp),  parameter :: one = 1.0_dp
 
-C Start time count
+      integer,     pointer :: iclustr(:), ifail(:), iwork(:)
+      real(dp),    pointer :: gap(:), work(:), Zsave(:,:),
+     &                        h2d(:,:), s2d(:,:), z2d(:,:)
+
+C     Start time count
       call timer('rdiag',1)
 
-C Nullify pointers
-      if (FirstCall) then
-        nullify( ifail, iwork, work, Zsave )
-#ifdef MPI
-        nullify( gap, iclustr )
-        nullify( h2d, s2d, z2d )
-#endif
-      endif
+C     Nullify pointers
+      nullify( iclustr, ifail, iwork, gap, work, Zsave, h2d, s2d, z2d )
 
-C Get old allocation defaults and set new ones
+C     Get old allocation defaults and set new ones
       call alloc_default( old=oldDefaults, copy=.false., shrink=.true.,
-     .                    imin=1, routine='rdiag' )
+     &                    imin=1, routine='rdiag' )
 
 C*******************************************************************************
 C Setup                                                                        *
@@ -178,13 +161,12 @@ C Initialise error flag
 C Set algorithm logicals
       if (DoRead) then
         DoRead = .false.
-        if (Node.eq.0) then
-          AllInOne      = fdf_boolean('Diag.AllInOne',.false.)
-          DivideConquer = fdf_boolean('Diag.DivideAndConquer',.true.)
-          NoExpert      = fdf_boolean('Diag.NoExpert',.false.)
-          PreRotate     = fdf_boolean('Diag.PreRotate',.false.)
-          Use2D         = fdf_boolean('Diag.Use2D',.true.)
-        endif
+        AllInOne      = fdf_boolean('Diag.AllInOne',.false.)
+        DivideConquer = fdf_boolean('Diag.DivideAndConquer',.true.)
+        NoExpert      = fdf_boolean('Diag.NoExpert',.false.)
+        PreRotate     = fdf_boolean('Diag.PreRotate',.false.)
+        Use2D         = fdf_boolean('Diag.Use2D',.true.)
+
 #ifdef MPI
         if (Node.eq.0) then
            lBtmp(1) = AllInOne
@@ -210,8 +192,7 @@ C Set algorithm logicals
           if (Use2D) then
             call die('Zsave not dimensioned in rdiag')
           else
-            call re_alloc( Zsave, 1, nml, 1, nm, name='Zsave', 
-     .                     routine='rdiag' )
+            call re_alloc( Zsave, 1, nml, 1, nm, 'Zsave', 'rdiag' )
           endif
         endif
       endif
@@ -242,13 +223,13 @@ C If 2D approach is being used then setup secondary grid
             call blacs_gridinit(i2d_ctxt, 'R', np2d_row, np2d_col)
           endif
           call blacs_gridinfo(i2d_ctxt, np2d_row, np2d_col,
-     .       my2d_row, my2d_col)
+     &       my2d_row, my2d_col)
         endif
 
 C Set up blacs descriptors for parallel case
         BlacsOK = .true.
         call descinit( desch, n, n, BlockSize, BlockSize, 0, 0, 
-     .                 ictxt, n, info )
+     &                 ictxt, n, info )
         if (info.ne.0) BlacsOK = .false.
         if (.not.BlacsOK) then
           call die('ERROR : Blacs setup has failed in rdiag!')
@@ -261,7 +242,7 @@ C Enquire size of local part of 2D matices
 
 C Set up blacs descriptors for 2D case
           call descinit(desc_h2d, n, n, Blocksize, BlockSize, 0, 0,
-     .                  i2d_ctxt,  mat_2d_row, info)
+     &                  i2d_ctxt,  mat_2d_row, info)
           if (info.ne.0) BlacsOK = .false.
           if (.not.BlacsOK) then
             call die('ERROR : Blacs setup has failed in rdiag!')
@@ -332,7 +313,7 @@ C Calculate memory requirements
           mq0 = numroc(nn,BlockSize,0,0,npcol)
           if (neigvec.gt.0) then
             lwork = 5*n + max(5*nn,np0*mq0+2*BlockSize*BlockSize) +
-     .              iceil(neigvec,Nodes)*nn + maxclustersize*n
+     &              iceil(neigvec,Nodes)*nn + maxclustersize*n
             anb = pjlaenv(ictxt,3,'PDSYTTRD','L',0,0,0,0)
             sqnpc = int(sqrt(dble(Nodes)))
             nps = max(numroc(n,1,0,0,sqnpc),2*anb)
@@ -352,18 +333,21 @@ C Scale memory by memory factor
       lwork = nint(MemoryFactor*dble(lwork))
 
 C Allocate workspace arrays
-      call re_alloc( work,    1,lwork,   name='work'  )
-      call re_alloc( iwork,   1,liwork,  name='iwork' )
-      call re_alloc( ifail,   1,n,       name='ifail'   )
+      call re_alloc( work, 1, lwork, 'work', 'rdiag' )
+      call re_alloc( iwork, 1, liwork, 'iwork', 'rdiag' )
+      call re_alloc( ifail, 1, n, 'ifail', 'rdiag' )
 #ifdef MPI
-      call re_alloc( gap,     1,Nodes,   name='gap'     )
-      call re_alloc( iclustr, 1,2*Nodes, name='iclustr' )
+      call re_alloc( gap, 1, Nodes, 'gap', 'rdiag' )
+      call re_alloc( iclustr, 1, 2*Nodes, 'iclustr', 'rdiag' )
 
       if (Use2D) then
-C Set up workspace arrays for 2D versions of 1D arrays
-        call re_alloc( h2d, 1, mat_2d_row, 1, mat_2d_col, name='h2d')
-        call re_alloc( s2d, 1, mat_2d_row, 1, mat_2d_col, name='s2d')
-        call re_alloc( z2d, 1, mat_2d_row, 1, mat_2d_col, name='z2d')
+C       Set up workspace arrays for 2D versions of 1D arrays
+        call re_alloc( h2d, 1, mat_2d_row, 1, mat_2d_col, 'h2d',
+     &                 'rdiag' )
+        call re_alloc( s2d, 1, mat_2d_row, 1, mat_2d_col, 's2d',
+     &                 'rdiag' )
+        call re_alloc( z2d, 1, mat_2d_row, 1, mat_2d_col, 'z2d',
+     &                 'rdiag' )
 
 C For 2D case, copy arrays to new distribution
         call pdgemr2d(n, n, H, 1, 1, desch, h2d, 1, 1, desc_h2d, ictxt)
@@ -382,23 +366,22 @@ C*******************************************************************************
             call dcopy(n*n,H,1,Z,1)
           else
             call dsygvx(1,jobz,range,'U',n,H,n,S,n,vl,vu,1,neigvec,
-     .                  abstol,neigok,w,Z,n,work,lwork,iwork,ifail,
-     .                  info)
+     &                  abstol,neigok,w,Z,n,work,lwork,iwork,ifail,
+     &                  info)
           endif
 #ifdef MPI
         else 
-   10     continue
           if (Use2D) then
             call pdsygvx(1,jobz,range,'U',n,h2d,1,1,desc_h2d,s2d,1,1,
-     .                   desc_h2d,vl,vu,1,neigvec,abstol,neigok,nz,w,
-     .                   orfac,z2d,1,1,desc_h2d,work,lwork,iwork,liwork,
-     .                   ifail,iclustr,gap,info)
+     &                   desc_h2d,vl,vu,1,neigvec,abstol,neigok,nz,w,
+     &                   orfac,z2d,1,1,desc_h2d,work,lwork,iwork,liwork,
+     &                   ifail,iclustr,gap,info)
             call pdgemr2d(n,n,z2d,1,1,desc_h2d,Z,1,1,desch,ictxt)
           else
             call pdsygvx(1,jobz,range,'U',n,H,1,1,desch,S,1,1,desch,
-     .                   vl,vu,1,neigvec,abstol,neigok,nz,w,orfac,Z,
-     .                   1,1,desch,work,lwork,iwork,liwork,ifail,
-     .                   iclustr,gap,info)
+     &                   vl,vu,1,neigvec,abstol,neigok,nz,w,orfac,Z,
+     &                   1,1,desch,work,lwork,iwork,liwork,ifail,
+     &                   iclustr,gap,info)
           endif
 
 C If there is insufficient memory due to eigenvalue clustering increase memory
@@ -427,7 +410,7 @@ C Check error flag
             if (mod(info/2,2).ne.0) then
               if (Node.eq.0) then
                 write(6,'(/,''Clustered eigenvectors not converged - '',
-     .            ''more memory required'',/)')
+     &            ''more memory required'',/)')
               endif
             endif
             call die('Failure to converge general eigenproblem')
@@ -468,10 +451,10 @@ C*******************************************************************************
         else
           if (Use2D) then
             call pdsyngst(1,'U',n,h2d,1,1,desc_h2d,s2d,1,1,
-     .                    desc_h2d,dscale,work,lwork,info)
+     &                    desc_h2d,dscale,work,lwork,info)
           else
             call pdsyngst(1,'U',n,H,1,1,desch,S,1,1,
-     .                    desch,dscale,work,lwork,info)
+     &                    desch,dscale,work,lwork,info)
           endif
 #endif
         endif
@@ -492,14 +475,14 @@ C Rotate according to eigenvectors from previous cycle
           else
             if (Use2D) then
               call pdsymm('L','U',n,n,one,h2d,1,1,desc_h2d,Zsave,1,1,
-     .                     desc_h2d,zero,z2d,1,1,desc_h2d)
+     &                     desc_h2d,zero,z2d,1,1,desc_h2d)
               call pdgemm('T','N',n,n,n,one,Zsave,1,1,desc_h2d,z2d,1,
-     .                     1,desch,zero,h2d,1,1,desc_h2d)
+     &                     1,desch,zero,h2d,1,1,desc_h2d)
             else
               call pdsymm('L','U',n,n,one,H,1,1,desch,Zsave,1,1,desch,
-     .                     zero,Z,1,1,desch)
+     &                     zero,Z,1,1,desch)
               call pdgemm('T','N',n,n,n,one,Zsave,1,1,desch,Z,1,1,
-     .                     desch,zero,H,1,1,desch)
+     &                     desch,zero,H,1,1,desch)
             endif
 #endif
           endif
@@ -512,33 +495,33 @@ C*******************************************************************************
         if (Serial) then
           if (DivideConquer) then
             call dsyevds(jobz,'U',n,H,n,w,Z,n,work,lwork,iwork,liwork,
-     .                   info)
+     &                   info)
             neigok = n
           else
             call dsyevx(jobz,range,'U',n,H,n,vl,vu,1,neigvec,abstol,
-     .                  neigok,w,Z,n,work,lwork,iwork,ifail,info)
+     &                  neigok,w,Z,n,work,lwork,iwork,ifail,info)
           endif
 #ifdef MPI
         else
           if (DivideConquer) then
             if (Use2D) then
               call pdsyevd(jobz,'U',n,h2d,1,1,desc_h2d,w,z2d,1,1,
-     .                     desc_h2d,work,lwork,iwork,liwork,info)
+     &                     desc_h2d,work,lwork,iwork,liwork,info)
             else
               call pdsyevd(jobz,'U',n,H,1,1,desch,w,Z,1,1,desch,work,
-     .                     lwork,iwork,liwork,info)
+     &                     lwork,iwork,liwork,info)
             endif
             neigok = n
           else
             if (Use2D) then
               call pdsyevx(jobz,range,'U',n,h2d,1,1,desc_h2d,vl,vu,1,
-     .                     neigvec,abstol,neigok,nz,w,orfac,z2d,1,1,
-     .                     desc_h2d,work,lwork,iwork,liwork,ifail,
-     .                     iclustr,gap,info)
+     &                     neigvec,abstol,neigok,nz,w,orfac,z2d,1,1,
+     &                     desc_h2d,work,lwork,iwork,liwork,ifail,
+     &                     iclustr,gap,info)
             else
               call pdsyevx(jobz,range,'U',n,H,1,1,desch,vl,vu,1,neigvec,
-     .                     abstol,neigok,nz,w,orfac,Z,1,1,desch,work,
-     .                     lwork,iwork,liwork,ifail,iclustr,gap,info)
+     &                     abstol,neigok,nz,w,orfac,Z,1,1,desch,work,
+     &                     lwork,iwork,liwork,ifail,iclustr,gap,info)
             endif
 
 C If there is insufficient memory due to eigenvalue clustering increase memory
@@ -569,7 +552,7 @@ C Check error flag
             if (mod(info/2,2).ne.0) then
               if (Node.eq.0) then
                 write(6,'(/,''Clustered eigenvectors not converged - '',
-     .            ''more memory required'',/)')
+     &            ''more memory required'',/)')
               endif
             endif
             call die('Failure to converge standard eigenproblem')
@@ -592,11 +575,11 @@ C*******************************************************************************
           else
             if (Use2D) then
               call pdgemm('N','N',n,n,n,one,Zsave,1,1,desc_h2d,z2d,1,
-     .                     1,desc_h2d,zero,h2d,1,1,desc_h2d)
+     &                     1,desc_h2d,zero,h2d,1,1,desc_h2d)
               call dcopy(n*nm,h2d(1,1),1,z2d(1,1),1)
             else
               call pdgemm('N','N',n,n,n,one,Zsave,1,1,desch,Z,1,1,
-     .                     desch,zero,H,1,1,desch)
+     &                     desch,zero,H,1,1,desch)
               call dcopy(n*nm,H(1,1),1,Z(1,1),1)
             endif
 #endif
@@ -629,11 +612,11 @@ C*******************************************************************************
           if (neigvec.gt.0) then
             if (Use2D) then
               call pdtrsm('Left','U','N','Non-unit',n,neigvec,one,
-     .                     s2d,1,1,desc_h2d,z2d,1,1,desc_h2d)
+     &                     s2d,1,1,desc_h2d,z2d,1,1,desc_h2d)
               call pdgemr2d(n,n,z2d,1,1,desc_h2d,Z,1,1,desch,ictxt)
             else
               call pdtrsm('Left','U','N','Non-unit',n,neigvec,one,
-     .                     S,1,1,desch,Z,1,1,desch)
+     &                     S,1,1,desch,Z,1,1,desch)
             endif
             if (dscale.ne.one) then
               call dscal(n,dscale,w,1)
@@ -645,7 +628,6 @@ C*******************************************************************************
           call die('Error in back transformation in rdiag')
         endif
         call timer('rdiag4',2)
-
       endif
 
 C*******************************************************************************
@@ -660,12 +642,18 @@ C Set first call flag to false
 
 C Deallocate workspace arrays
 #ifdef MPI
-      call de_alloc( iclustr, name='iclustr')
-      call de_alloc( gap,     name='gap'    )
+      if (associated(Zsave)) call de_alloc( Zsave, 'Zsave', 'rdiag' )
+      if (Use2D) then
+        call de_alloc( h2d, 'h2d', 'rdiag' )
+        call de_alloc( s2d, 's2d', 'rdiag' )
+        call de_alloc( z2d, 'z2d', 'rdiag' )
+      endif
+      call de_alloc( iclustr, 'iclustr', 'rdiag' )
+      call de_alloc( gap, 'gap', 'rdiag' )
 #endif
-      call de_alloc( ifail,   name='ifail'  )
-      call de_alloc( iwork,   name='iwork'  )
-      call de_alloc( work,    name='work'   )
+      call de_alloc( ifail, 'ifail', 'rdiag' )
+      call de_alloc( iwork, 'iwork', 'rdiag' )
+      call de_alloc( work, 'work', 'rdiag' )
 
 C  Restore old allocation defaults
       call alloc_default( restore=oldDefaults )

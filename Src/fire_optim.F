@@ -66,8 +66,7 @@ c Internal variables and arrays
 
       real(dp)            :: new_volume, trace, volume
 
-      logical           found
-      integer           iu, ia, i, j, n, indi
+      integer           ia, i, j, n, indi
 
       real(dp) ::  celli(3,3)
       real(dp) ::  stress_dif(3,3)
@@ -78,7 +77,6 @@ c Internal variables and arrays
 ! Saved internal variables:
 
       logical, save :: frstme = .true.
-      logical, save :: tarstr = .false.
       logical, save :: constant_volume
       real(dp), save :: initial_volume
 
@@ -344,15 +342,14 @@ C Output fractional coordinates to cartesian Bohr, and copy to xa -----------
 
       ! Deallocate local memory
 
-        call de_alloc( gxa, name='gxa', routine='fire_optimizer' )
-        call de_alloc( gfa, name='gfa', routine='fire_optimizer' )
-        call de_alloc( deltamax, name='deltamax',
-     .                 routine='fire_optimizer' )
+        call de_alloc( gxa, name='gxa' )
+        call de_alloc( gfa, name='gfa' )
+        call de_alloc( deltamax, name='deltamax' )
 
       else
 
-        call de_alloc( rold, name='rold', routine='fire_optimizer' )
-        call de_alloc( rdiff, name='rdiff', routine='fire_optimizer' )
+        call de_alloc( rold, name='rold' )
+        call de_alloc( rdiff, name='rdiff' )
 
       endif ! variable cell
 

@@ -13,18 +13,15 @@
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
-
       implicit none
-
       logical :: first
       integer :: io, ispin
-      real(dp):: qsol       ! Total unnormalized electron charge
-
+      real(dp):: qsol  ! Total unnormalized electron charge
 #ifdef MPI
-      real(dp):: buffer1   ! Temporary for the result of a globalize operation
+      real(dp):: buffer1
 #endif
 
-      ! Normalize density matrix to exact charge
+!     Normalize density matrix to exact charge
       qsol = 0.0_dp
       do ispin = 1,min(nspin,2)
         do io = 1,nh
@@ -32,13 +29,13 @@
         enddo
       enddo
 #ifdef MPI
-        call globalize_sum(qsol,buffer1)
-        qsol = buffer1
+      call globalize_sum(qsol,buffer1)
+      qsol = buffer1
 #endif
       if (IOnode) then
         if (.not.first .and.
-     .     abs(qsol/qtot-1._dp).gt.1.d-2) write(6,'(a,2f15.6)')
-     .    'siesta: WARNING: Qtot, Tr[D*S] =', qtot, qsol
+     &     abs(qsol/qtot-1._dp).gt.1.d-2) write(6,'(a,2f15.6)')
+     &    'siesta: WARNING: Qtot, Tr[D*S] =', qtot, qsol
       endif
       do ispin = 1,nspin
         do io = 1,nh

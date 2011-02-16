@@ -75,9 +75,10 @@ C real*8 grad(ncmax,nbasis)    : Gradient of functional (sparse)
 C ************************************************************************
 
       use precision
-      use on_main,   only : ncG2L, ncT2P, nbL2G, nbG2L, nbandsloc
+      use on_main,     only : ncG2L, ncT2P, nbL2G, nbG2L, nbandsloc
       use globalise
-      use m_mpi_utils, only: globalize_sum
+      use alloc,       only : re_alloc, de_alloc
+      use m_mpi_utils, only : globalize_sum
 
       implicit none
 
@@ -106,11 +107,10 @@ C Internal variables ......................................................
 #ifdef MPI
       real(dp) ::
      .  ftmp(2), ftmp2(2)
-      real(dp), allocatable, save ::
+      real(dp), pointer, save ::
      .  buxg(:,:),bux1save(:,:),bux2save(:,:), ftG(:,:), fstG(:,:)
 #endif
-
-      real(dp), allocatable, save ::
+      real(dp), pointer, save ::
      .  aux1(:), aux2(:), bux1(:), bux2(:), ft(:,:), fst(:,:)
 
       real(dp) ::
@@ -121,29 +121,20 @@ C..................
       call timer('gradient',1)
       
 C Allocate local arrays
-      allocate(aux1(nbasis))
-      call memory('A','D',size(aux1),'gradient')
-      allocate(aux2(nbasis))
-      call memory('A','D',size(aux2),'gradient')
-      allocate(bux1(nbands))
-      call memory('A','D',size(bux1),'gradient')
-      allocate(bux2(nbands))
-      call memory('A','D',size(bux2),'gradient')
-      allocate(ft(nftmax,nbasisCloc))
-      call memory('A','D',size(ft),'gradient')
-      allocate(fst(nftmax,nbasisCloc))
-      call memory('A','D',size(fst),'gradient')
+      call re_alloc( aux1, 1, nbasis, 'aux1', 'gradient' )
+      call re_alloc( aux2, 1, nbasis, 'aux2', 'gradient' )
+      call re_alloc( bux1, 1, nbands, 'bux1', 'gradient' )
+      call re_alloc( bux2, 1, nbands, 'bux2', 'gradient' )
+      call re_alloc( ft, 1, nftmax, 1, nbasisCloc, 'ft', 'gradient' )
+      call re_alloc( fst, 1, nftmax, 1, nbasisCloc, 'fst', 'gradient' )
 #ifdef MPI
-      allocate(ftG(MaxFt2,nbasisCloc))
-      call memory('A','D',size(ftG),'gradient')
-      allocate(fstG(MaxFt2,nbasisCloc))
-      call memory('A','D',size(fstG),'gradient')
-      allocate(bux1save(nhijmax,nbandsloc))
-      call memory('A','D',size(bux1save),'gradient')
-      allocate(bux2save(nhijmax,nbandsloc))
-      call memory('A','D',size(bux2save),'gradient')
-      allocate(buxg(nbands,2))
-      call memory('A','D',size(buxg),'gradient')
+      call re_alloc( ftG, 1, MaxFt2, 1, nbasisCloc, 'ftG', 'gradient' )
+      call re_alloc( fstG, 1, MaxFt2, 1, nbasisCloc, 'fstG', 'gradient')
+      call re_alloc( bux1save, 1, nhijmax, 1, nbandsloc, 'bux1save',
+     &               'gradient' )
+      call re_alloc( bux2save, 1, nhijmax, 1, nbandsloc, 'bux2save',
+     &               'gradient' )
+      call re_alloc( buxg, 1, nbands, 1, 2, 'buxg', 'gradient')
 #endif
 
 C Initialize output and auxiliary varialbles ...............................
@@ -376,29 +367,18 @@ C End loop over spins
 
 C Deallocate local arrays
 #ifdef MPI
-      call memory('D','D',size(buxg),'gradient')
-      deallocate(buxg)
-      call memory('D','D',size(bux2save),'gradient')
-      deallocate(bux2save)
-      call memory('D','D',size(bux1save),'gradient')
-      deallocate(bux1save)
-      call memory('D','D',size(fstG),'gradient')
-      deallocate(fstG)
-      call memory('D','D',size(ftG),'gradient')
-      deallocate(ftG)
+      call de_alloc( buxg, 'buxg', 'gradient' )
+      call de_alloc( bux2save, 'bux2save', 'gradient' )
+      call de_alloc( bux1save, 'bux1save', 'gradient' )
+      call de_alloc( fstG, 'fstG', 'gradient' )
+      call de_alloc( ftG, 'ftG', 'gradient' )
 #endif
-      call memory('D','D',size(fst),'gradient')
-      deallocate(fst)
-      call memory('D','D',size(ft),'gradient')
-      deallocate(ft)
-      call memory('D','D',size(bux2),'gradient')
-      deallocate(bux2)
-      call memory('D','D',size(bux1),'gradient')
-      deallocate(bux1)
-      call memory('D','D',size(aux2),'gradient')
-      deallocate(aux2)
-      call memory('D','D',size(aux1),'gradient')
-      deallocate(aux1)
+      call de_alloc( fst, 'fst', 'gradient' )
+      call de_alloc( ft, 'ft', 'gradient' )
+      call de_alloc( bux2, 'bux2', 'gradient' )
+      call de_alloc( bux1, 'bux1', 'gradient' )
+      call de_alloc( aux2, 'aux2', 'gradient' )
+      call de_alloc( aux1, 'aux1', 'gradient' )
 
       call timer('gradient',2)
 

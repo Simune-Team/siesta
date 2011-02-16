@@ -8,7 +8,7 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine diag2k( nuo, no, maxuo, maxnh, maxnd, maxo,
+      subroutine diag2k( nuo, no, maxnh, maxnd, maxo,
      .                   numh, listhptr, listh, numd, listdptr, 
      .                   listd, H, S, getD, qtot, temp, e1, e2,
      .                   xij, indxuo, nk, kpoint, wk,
@@ -42,7 +42,6 @@ C Corrected by V.V. Maslyuk for parallel case, Mai 2007
 C **************************** INPUT **********************************
 C integer nuo                 : Number of basis orbitals in unit cell
 C integer no                  : Number of basis orbitals in supercell
-C integer maxuo               : Maximum number of basis orbitals
 C integer maxnh               : Maximum number of orbitals interacting  
 C integer maxnd               : First dimension of listd / DM
 C integer maxo                : First dimension of eo and qo

@@ -17,7 +17,7 @@ default: module
 module:  libSiestaXC.a
 	cp *.mod *.a ..
 #
-SIESTA_SRCS= alloc.F90 bessph.f cellsubs.f  \
+SIESTA_SRCS= alloc.F90 bessph.f cellsubs.f  debugmpi.F \
              chkgmx.f fft1d.F  flib_spline.f90  \
              minvec.f m_io.f moreParallelSubs.F90 \
              m_recipes.f m_timer.F90 m_walltime.f90 parallel.F \
@@ -69,7 +69,7 @@ clean:
 	rm -fr *.o *.*d *.a siestaXC.tgz
 #
 # DO NOT DELETE THIS LINE - used by make depend
-alloc.o: m_io.o parallel.o precision.o sys.o
+alloc.o: debugmpi.o m_io.o parallel.o precision.o sys.o
 atomxc.o: alloc.o ggaxc.o ldaxc.o mesh1d.o precision.o radfft.o
 atomxc.o: sys.o vdwxc.o xcmod.o
 bessph.o: precision.o sys.o
@@ -79,6 +79,7 @@ cellxc.o: m_timer.o mesh3d.o moreParallelSubs.o parallel.o precision.o sys.o
 cellxc.o: vdwxc.o xcmod.o
 chkgmx.o: cellsubs.o minvec.o precision.o sys.o
 debugxc.o: m_io.o moreParallelSubs.o parallel.o
+debugmpi.o: parallel.o
 fft1d.o: parallel.o precision.o sys.o
 fft3d.o: alloc.o debugxc.o fft1d.o m_timer.o mesh3d.o precision.o sys.o
 fftr.o: alloc.o fft3d.o mesh3d.o precision.o sys.o

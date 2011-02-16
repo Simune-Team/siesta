@@ -46,6 +46,8 @@
 
         USE MPI__integer_V    
         USE MPI__integer_S
+        USE MPI__integer8_V    
+        USE MPI__integer8_S
         USE MPI__logical_V   
         USE MPI__logical_S
         USE MPI__character_V  
@@ -57,6 +59,8 @@
 
         USE MPI__integer_VS  
         USE MPI__integer_SV
+        USE MPI__integer8_VS  
+        USE MPI__integer8_SV
         USE MPI__logical_VS   
         USE MPI__logical_SV
         USE MPI__character_VS 

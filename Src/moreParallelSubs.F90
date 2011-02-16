@@ -223,9 +223,9 @@ SUBROUTINE copyFile( srcNode, srcFile, dstNode, dstFile, writeOption )
   real(dp),parameter:: incrFactor =   1.5_dp  ! Increment factor for re_alloc
 
 ! Internal variables and arrays
-  integer,pointer:: lineBuf(:)  ! Which buffer contains each input line
-  integer,pointer:: lineEnd(:)  ! Last character of each line in buffer
-  character(len=bufferSize),pointer:: buffer(:)  ! Buffers to store input
+  integer,pointer:: lineBuf(:)=>null()! Which buffer contains each input line
+  integer,pointer:: lineEnd(:)=>null()! Last character of each line in buffer
+  character(len=bufferSize),pointer:: buffer(:)=>null()! Buffers to store input
   character(len=bufferSize):: line               ! One input line
   integer:: ib, iBuffer(2), il, iu, lineBegin, lineLength, &
             mBuffers, mLines, nBuffers, nLines, two
@@ -612,8 +612,8 @@ SUBROUTINE miscAllReduceInt( op, a0, b0, c0, d0, e0, f0, &
     n = n + m
   end if
 
-  call de_alloc( recvBuff, name=myName//'recvBuff' )
-  call de_alloc( sendBuff, name=myName//'sendBuff' )
+  call de_alloc( recvBuff )
+  call de_alloc( sendBuff )
 
 #endif
 
@@ -633,7 +633,7 @@ SUBROUTINE miscAllReduceDouble( op, a0, b0, c0, d0, e0, f0, &
   real(dp),optional,intent(inout),dimension(:,:)  :: a2, b2
   real(dp),optional,intent(inout),dimension(:,:,:):: a3
 
-  character(len=*),parameter:: myName  = 'miscAllReduceDouble '
+  character(len=*),parameter:: myName  = 'miscAllReduceInt '
   character(len=*),parameter:: errHead = myName//'ERROR: '
   integer:: MPIerror, m, n
   real(dp),pointer:: recvBuff(:)=>null(), sendBuff(:)=>null()
@@ -791,8 +791,8 @@ SUBROUTINE miscAllReduceDouble( op, a0, b0, c0, d0, e0, f0, &
     n = n + m
   end if
 
-  call de_alloc( recvBuff, name=myName//'recvBuff' )
-  call de_alloc( sendBuff, name=myName//'sendBuff' )
+  call de_alloc( recvBuff )
+  call de_alloc( sendBuff )
 
 #endif
 

@@ -12,7 +12,7 @@
 
 C Subroutine to initialise the reading of the data for SIESTA 
 C
-C     It uses the FDF (Flexible Data Fromat) package 
+C     It uses the FDF (Flexible Data Format) package 
 C     of J.M.Soler and A.Garcia
 C
 C Taken from redata. Writen by P.Ordejon, December'96
@@ -24,37 +24,40 @@ C **********************************************************************
 C
 C  Modules
 C
-      use precision
       use parallel,    only : Node
       use fdf
-      use files,       only : slabel, label_length
+      use files,       only : slabel
       use siesta_master, only: input_file  ! fdf data file
-#ifdef MPI
-      use mpi_siesta
-#endif
 
       implicit none
 
-      character(len=*) :: sname
-      character string*20
+      character(len=*), intent(out) :: sname
 
 C  Internal variables .................................................
-      character
-     .  filein*20, fileout*20, line*150 
+      character(len=20) filein, fileout, string
 
-      character
-     .  slabel_default*59, sname_default*20
-
-      integer 
-     .  count, length, lun, lun_tmp
+      integer  ::  count, length, lun, lun_tmp, iostat
+      character :: slabel_default*59, sname_default*20, line*256
 
       logical debug_input, file_exists
-#ifdef MPI
-      integer
-     .  MPIerror
-#endif
 
 C Print Welcome and Presentation .......................................
+#ifdef DEBUG
+      call write_debug( '  PRE reinit' )
+#endif
+!     Non-master mpi-processes receive a copy of all the
+!     pre-processed fdf input information (recursively
+!     including files when necessary), and dump it on a
+!     text file with name "fdf_input.<ProcessNumber>".
+!     They then read from this file to construct a memory
+!     image of the information.
+!
+!     The master process creates its memory image directly
+!     from the standard fdf file (renamed as INPUT_TMP.$$,
+!     as usually done for historical reasons (see below)).
+!
+      filein = "fdf_input"  
+
       if (Node.eq.0) then
         write(6,'(/a)') 
      .   '                           ***********************       '
@@ -63,21 +66,21 @@ C Print Welcome and Presentation .......................................
         write(6,'(a)')
      .   '                           ***********************       '
 C ..................
-
-C Dump data file to output file 
-C and generate scratch file for FDF to read from
-C (except if INPUT_DEBUG exists)
-C
-
+!
+!       Set name of file to read from. Done only
+!       in the master node.
+!
+c
+c     Choose proper file for fdf processing
+c     (INPUT_DEBUG if it exists or "standard input",
+c      processed and dumped to a temporary file)
+c
         inquire(file='INPUT_DEBUG',exist=debug_input)
         if (debug_input) then
            write(6,'(a)') 'WARNING: ' //
      $          'Siesta is reading its input from file INPUT_DEBUG'
-           
-           call io_assign(lun)
            filein = 'INPUT_DEBUG'
-           open(lun,file='INPUT_DEBUG',form='formatted',status='old')
-           rewind(lun)
+
         else
 
            if (input_file/=' ') then   ! Read data from given file
@@ -91,72 +94,67 @@ C
            end if ! (input_file/=' ')
 
            call io_assign(lun_tmp)
-           do
-             call system_clock( count )
-             write(string,*) count
-             filein = 'INPUT_TMP.'//adjustl(string)
-             inquire( file=filein, exist=file_exists )
-             if (.not.file_exists) exit
+           do  ! make sure we get a new file
+              call system_clock( count )
+              write(string,*) count
+              filein = 'INPUT_TMP.'//adjustl(string)
+              inquire( file=filein, exist=file_exists )
+              if (.not.file_exists) exit
            end do
+!
            open(lun_tmp,file=filein,
-     $                  form='formatted',status='replace')
+     $          form='formatted',status='replace')
            rewind(lun_tmp)
-        endif
-
-        write(6,'(a,23(1h*),a,28(1h*))')
-     .    '***', ' Dump of input data file '
+           write(6,"(a,23('*'),a,28('*'))")
+     .          '***', ' Dump of input data file '
 c
- 10     continue
-        read(lun,err=20,end=20,fmt='(a)') line
-        call chrlen(line,0,length)
-        if (length .ne. 0) then
-           write(6,'(a)') line(1:length)
-           if (.not. debug_input) write(lun_tmp,'(a)') line(1:length)
-        endif
-        goto 10
- 20     continue
-c
-        write(6,'(a,23(1h*),a,29(1h*))')
-     .    '***', ' End of input data file '
-c
-c       Choose proper file for fdf processing
-c
-        if (debug_input) then
-           call io_close(lun)
-        else
+           do
+              read(lun,iostat=iostat,fmt='(a)') line
+              if (iostat /= 0 ) exit
+              length = len_trim(line)
+              if (length /= 0) then
+                 write(6,'(a)') line(1:length)
+                 if (.not. debug_input) then
+                    write(lun_tmp,'(a)') line(1:length)
+                 endif
+              endif
+           enddo
+           write(6,"(a,23('*'),a,29('*'))")
+     .          '***', ' End of input data file '
            call io_close(lun_tmp)
+c
+!          "filein" for fdf is now the temporary file. 
+!          This was necessary historically to allow
+!          the rewinds involved in fdf operation.
+!
         endif
+      endif
+c ...
 
 C Set up fdf ...
-        fileout = 'fdf.log'
-        call fdf_init(filein,fileout)
+      fileout = 'fdf.log'
+      call fdf_init(filein,fileout)
 
-C Defile Name of the system ...
-        sname_default = ' '
-        sname = fdf_string('SystemName',sname_default)
-        write(6,'(/a,71(1h-))') 'reinit: '
-        write(6,'(a,a)') 
-     .   'reinit: System Name: ',trim(sname)
-        write(6,'(a,71(1h-))') 'reinit: '
-C ...
-
-C Defile System Label (short name to label files) ...
-        slabel_default  = 'siesta'
-        slabel = fdf_string('SystemLabel',slabel_default)
-        write(6,'(a,a)') 
-     .   'reinit: System Label: ',slabel
-        write(6,'(a,71(1h-))') 'reinit: '
-C ...
+C Define Name of the system ...
+      sname_default = ' '
+      sname = fdf_string('SystemName',sname_default)
+      if (Node.eq.0) then
+        write(6,'(/a,71("-"))') 'reinit: '
+        write(6,'(a,a)') 'reinit: System Name: ',trim(sname)
+        write(6,'(a,71("-"))') 'reinit: '
       endif
+C ...
 
-C Global broadcast of strings
-#ifdef MPI
-      call MPI_Bcast(sname,len(sname),MPI_character,0,MPI_Comm_World,
-     .  MPIerror)
-      call MPI_Bcast(slabel,label_length,MPI_character,0,MPI_Comm_World,
-     .  MPIerror)
+C Define System Label (short name to label files) ...
+      slabel_default  = 'siesta'
+      slabel = fdf_string('SystemLabel',slabel_default)
+      if (Node.eq.0) then
+        write(6,'(a,a)') 'reinit: System Label: ',slabel
+        write(6,'(a,71("-"))') 'reinit: '
+      endif
+C ...
+#ifdef DEBUG
+      call write_debug( '  POS reinit' )
 #endif
 
-      return
       end
-

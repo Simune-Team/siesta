@@ -8,7 +8,7 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine broadcast_basis
+      subroutine broadcast_basis()
 !
 !     Globalizes the basis and potentials data structures
 !
@@ -36,6 +36,10 @@
       type(species_info), pointer  :: spp
       type(rad_func), pointer      :: func
 
+#ifdef DEBUG
+      call write_debug( '  PRE broadcast_basis' )
+#endif
+
       if (Nodes.eq.1) return
 
       call MPI_Bcast(nspecies,1,MPI_integer,0,MPI_Comm_World,MPIerror)
@@ -44,95 +48,94 @@
       if (Node.ne.0) allocate (species(nspecies))
 
       do is=1,nspecies
-         spp => species(is)
-         call MPI_Bcast(spp%symbol,2,MPI_character,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(spp%label,20,MPI_character,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(spp%z,1,MPI_integer,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(spp%mass,1,MPI_double_precision,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(spp%zval,1,MPI_double_precision,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(spp%self_energy,1,MPI_double_precision,
-     $                  0,MPI_Comm_World,MPIerror)
+        spp => species(is)
+        call MPI_Bcast(spp%symbol,2,MPI_character,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%label,20,MPI_character,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%z,1,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%mass,1,MPI_double_precision,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%zval,1,MPI_double_precision,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%self_energy,1,MPI_double_precision,
+     $                 0,MPI_Comm_World,MPIerror)
 
-         call MPI_Bcast(spp%n_orbnl,1,MPI_integer,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(spp%lmax_basis,1,MPI_integer,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(spp%orbnl_l,maxn_orbnl,MPI_integer,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(spp%orbnl_n,maxn_orbnl,MPI_integer,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(spp%orbnl_z,maxn_orbnl,MPI_integer,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(spp%orbnl_ispol,maxn_orbnl,MPI_logical,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(spp%orbnl_pop,maxn_orbnl,MPI_double_precision,
-     $                  0,MPI_Comm_World,MPIerror)
-
-
-
-         call MPI_Bcast(spp%n_pjnl,1,MPI_integer,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(spp%lmax_projs,1,MPI_integer,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(spp%pjnl_l,maxn_pjnl,MPI_integer,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(spp%pjnl_n,maxn_pjnl,MPI_integer,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(spp%pjnl_ekb,maxn_pjnl,MPI_double_precision,
-     $                  0,MPI_Comm_World,MPIerror)
-
-         call MPI_Bcast(spp%norbs,1,MPI_integer,
-     $                  0,MPI_Comm_World,MPIerror)
-
-         call MPI_Bcast(spp%orb_index,maxnorbs,MPI_integer,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(spp%orb_n,maxnorbs,MPI_integer,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(spp%orb_l,maxnorbs,MPI_integer,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(spp%orb_m,maxnorbs,MPI_integer,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(spp%orb_pop,maxnorbs,MPI_double_precision,
-     $                  0,MPI_Comm_World,MPIerror)
-
-         call MPI_Bcast(spp%nprojs,1,MPI_integer,
-     $                  0,MPI_Comm_World,MPIerror)
-
-         call MPI_Bcast(spp%pj_index,maxnprojs,MPI_integer,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(spp%pj_n,maxnprojs,MPI_integer,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(spp%pj_l,maxnprojs,MPI_integer,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(spp%pj_m,maxnprojs,MPI_integer,
-     $                  0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%n_orbnl,1,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%lmax_basis,1,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%orbnl_l,maxn_orbnl,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%orbnl_n,maxn_orbnl,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%orbnl_z,maxn_orbnl,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%orbnl_ispol,maxn_orbnl,MPI_logical,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%orbnl_pop,maxn_orbnl,MPI_double_precision,
+     $                 0,MPI_Comm_World,MPIerror)
 
 
-         if (Node.ne.0) then
-            allocate(spp%orbnl(spp%n_orbnl))
-            allocate(spp%pjnl(spp%n_pjnl))
-         endif
-         
-         do i=1,spp%n_orbnl
-            func=>spp%orbnl(i)
-            call broadcast_radial(func,Node)
-         enddo
 
-         do i=1,spp%n_pjnl
-            func=>spp%pjnl(i)
-            call broadcast_radial(func,Node)
-         enddo
+        call MPI_Bcast(spp%n_pjnl,1,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%lmax_projs,1,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%pjnl_l,maxn_pjnl,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%pjnl_n,maxn_pjnl,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%pjnl_ekb,maxn_pjnl,MPI_double_precision,
+     $                 0,MPI_Comm_World,MPIerror)
 
-         func=>spp%vna
-         call broadcast_radial(func,Node)
+        call MPI_Bcast(spp%norbs,1,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
 
-         func=>spp%chlocal
-         call broadcast_radial(func,Node)
+        call MPI_Bcast(spp%orb_index,maxnorbs,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%orb_n,maxnorbs,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%orb_l,maxnorbs,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%orb_m,maxnorbs,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%orb_pop,maxnorbs,MPI_double_precision,
+     $                 0,MPI_Comm_World,MPIerror)
+
+        call MPI_Bcast(spp%nprojs,1,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+
+        call MPI_Bcast(spp%pj_index,maxnprojs,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%pj_n,maxnprojs,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%pj_l,maxnprojs,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%pj_m,maxnprojs,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+
+        if (Node.ne.0) then
+           allocate(spp%orbnl(spp%n_orbnl))
+           allocate(spp%pjnl(spp%n_pjnl))
+        endif
+        
+        do i=1,spp%n_orbnl
+           func=>spp%orbnl(i)
+           call broadcast_radial(func,Node)
+        enddo
+
+        do i=1,spp%n_pjnl
+           func=>spp%pjnl(i)
+           call broadcast_radial(func,Node)
+        enddo
+
+        func=>spp%vna
+        call broadcast_radial(func,Node)
+
+        func=>spp%chlocal
+        call broadcast_radial(func,Node)
 
 !!       !! Note that reduced_vlocal might not be initialized
 !!       !! if we have read the basis information from a .ion file.
@@ -144,12 +147,11 @@
 !!         func=>spp%reduced_vlocal
 !!         call broadcast_radial(func,Node)
 
-         call MPI_Bcast(spp%there_is_core,1,MPI_logical,
-     $                  0,MPI_Comm_World,MPIerror)
-         
-         func=>spp%core
-         call broadcast_radial(func,Node)
-
+        call MPI_Bcast(spp%there_is_core,1,MPI_logical,
+     $                 0,MPI_Comm_World,MPIerror)
+        
+        func=>spp%core
+        call broadcast_radial(func,Node)
       enddo
 !
 !     Electrostatic correction tables
@@ -160,7 +162,11 @@
          func=>elec_corr(i)
          call broadcast_radial(func,Node)
       enddo
-         
+
+#ifdef DEBUG
+      call write_debug( '  POS broadcast_basis' )
+#endif
+
 !
 !     Done
 !

@@ -78,8 +78,6 @@ C
       use precision,     only : dp
       use parallel,      only : IOnode
       use sys,           only : die
-      use fdf
-      use parsing
       use atmfuncs,      only : zvalfis
       use densematrix
       use alloc,         only : re_alloc, de_alloc
@@ -90,7 +88,7 @@ C
       integer           maxkpol, maxnh, nuo, nuotot, no, nspin, na
       integer           indxuo(no), listh(maxnh), numh(nuo), nkpol
       integer           listhptr(nuo), isa(na), iphorb(no), iaorb(no) 
-      integer           nua, maxna, lasto(0:na)
+      integer           nua, lasto(0:na)
       real(dp)          ddot, 
      .                  H(maxnh,nspin), kpol(3,maxkpol), 
      .                  S(maxnh), xijo(3,maxnh),
@@ -205,19 +203,15 @@ C Check parameter maxkpol
 C Allocate local memory
       nhs = 2*nuotot*nuo
       npsi = 2*nuotot*nuo
-      call re_alloc(Haux,1,nhs,name='Haux',routine='KSV_pol')
-      call re_alloc(Saux,1,nhs,name='Saux',routine='KSV_pol')
-      call re_alloc(psi,1,npsi,name='psi',routine='KSV_pol')
+      call re_alloc( Haux, 1, nhs,  'Haux', 'densematrix' )
+      call re_alloc( Saux, 1, nhs,  'Saux', 'densematrix' )
+      call re_alloc( psi,  1, npsi, 'psi',  'densematrix' )
 
-      nullify( muo )
-      call re_alloc( muo, 1, nuotot, name='muo', routine='KSV_pol' )
-      nullify( ek )
-      call re_alloc( ek, 1, nuotot, name='ek', routine='KSV_pol' )
-      nullify( psi1 )
-      call re_alloc( psi1, 1, npsi, name='psi1', routine='KSV_pol' )
-      nullify( psiprev )
-      call re_alloc( psiprev, 1, npsi, name='psiprev',
-     &               routine='KSV_pol' )
+      nullify( muo, ek, psi1, psiprev )
+      call re_alloc( muo,     1, nuotot, 'muo',     'KSV_pol' )
+      call re_alloc( ek,      1, nuotot, 'ek',      'KSV_pol' )
+      call re_alloc( psi1,    1, npsi,   'psi1',    'KSV_pol' )
+      call re_alloc( psiprev, 1, npsi,   'psiprev', 'KSV_pol' )
 
 C Initialise psi
       do io = 1,npsi
@@ -387,7 +381,7 @@ C In the first point we just store the wavefunctions
                   deti = 0.0d0 
 
 C Store wavefunction for the next point
-                  call savepsi(psiprev,psi,npsi,nuo,nuotot,nocc(ispin))
+                  call savepsi(psiprev,psi,nuo,nuotot,nocc(ispin))
 
                 elseif (il.ne.npl) then 
 C Calculate the determinant of the overlap matrix between the 
@@ -398,7 +392,7 @@ C periodic Bloch functions in this k point and in the previous one.
      .              detr, deti )
  
 C Store wavefunction for the next point
-                  call savepsi(psiprev,psi,npsi,nuo,nuotot,nocc(ispin))
+                  call savepsi(psiprev,psi,nuo,nuotot,nocc(ispin))
 
                 else 
 C Calculate the determinant of the overlap matrix between the
@@ -576,10 +570,10 @@ C This is the only exit point
   999 continue
 
 C Deallocate local memory
-      call de_alloc( muo, name='muo', routine='KSV_pol' )
-      call de_alloc( ek, name='ek', routine='KSV_pol' )
-      call de_alloc( psi1, name='psi1', routine='KSV_pol' )
-      call de_alloc( psiprev, name='psiprev', routine='KSV_pol' )
+      call de_alloc( muo,     'muo',     'KSV_pol' )
+      call de_alloc( ek,      'ek',      'KSV_pol' )
+      call de_alloc( psi1,    'psi1',    'KSV_pol' )
+      call de_alloc( psiprev, 'psiprev', 'KSV_pol' )
 
       if (nkpol.gt.0.and.IOnode) then
         do ispin = 1,nspin

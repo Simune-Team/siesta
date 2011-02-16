@@ -37,7 +37,6 @@ C
       use precision,     only : dp
       use parallel,      only : Node, Nodes
       use parallelsubs
-      use fdf
       use files,         only : slabel, label_length
       use on_main,       only : c, cold, numc, numcold, listc, listcold
       use on_main,       only : xi, g, hg
@@ -55,28 +54,26 @@ C
       character(len=label_length+4) :: paste
       logical   found
       integer   nbasis, nbasisCloc, nbasisloc, nspin, maxnc
-      external  chkdim, io_assign, io_close, paste, timer, memory
+      external  chkdim, io_assign, io_close, paste, timer
 
 C Internal variables and arrays
-      character(len=label_length+4),       save :: fname
-      logical                                   :: exist3
-      logical,                             save :: frstme = .true.
-      integer,  dimension(:), allocatable, save :: numcg
-      integer   im, is, unit1, m, nb, ncmax, ns 
+      character(len=label_length+4), save :: fname
+      logical                             :: exist3
+      logical,                       save :: frstme = .true.
+      integer,              pointer, save :: numcg(:)
+      integer :: im, is, unit1, m, nb, ncmax, ns
 #ifdef MPI
-      integer   MPIerror, n, ndata, Request, Status(MPI_Status_Size)
-      real(dp), dimension(:), allocatable, save :: bdens
-      integer,  dimension(:), allocatable, save :: idens
+      integer :: MPIerror, n, ndata, Request, Status(MPI_Status_Size)
+      real(dp),             pointer, save :: bdens(:)
+      integer,              pointer, save :: idens(:)
 #endif
 
-*     call timer( 'iolwf', 1 )
+      call timer( 'iolwf', 1 )
 
 #ifdef MPI
 C Allocate local buffer array
-      allocate(idens(nbasis))
-      call memory('A','I',nbasis,'iolwf')
-      allocate(bdens(nbasis))
-      call memory('A','D',nbasis,'iolwf')
+      call re_alloc( idens, 1, nbasis, 'idens', 'iolwf' )
+      call re_alloc( bdens, 1, nbasis, 'bdens', 'iolwf' )
 #endif
       
 C Find file name
@@ -101,7 +98,7 @@ C Look now for new-format files
         if (exist3) then
 
 C Allocate local workspace
-          allocate(numcg(nbasis))
+          call re_alloc( numcg, 1, nbasis, 'numcg', 'iolwf' )
 
           if (Node.eq.0) then
             call io_assign(unit1)
@@ -246,19 +243,16 @@ C Receive data on IO node
           endif
 
 C Free local workspace
-          deallocate(numcg)
+          call de_alloc( numcg, 'numcg', 'iolwf' )
           found = .true.
-
         else
-
           found = .false.
-
         endif
 
       elseif (task.eq.'write' .or. task.eq.'WRITE') then
 
 C Allocate local workspace
-        allocate(numcg(nbasis))
+        call re_alloc( numcg, 1, nbasis, 'numcg', 'iolwf' )
 
         if (Node.eq.0) then
           call io_assign(unit1)
@@ -376,7 +370,7 @@ C Receive data on IO node
         endif
 
 C Free local workspace
-        deallocate(numcg)
+        call de_alloc( numcg, 'numcg', 'iolwf' )
 
       else
          call die('iolwf: incorrect task')
@@ -384,11 +378,9 @@ C Free local workspace
 
 #ifdef MPI
 C Free local buffer memory
-      call memory('D','D',size(bdens),'iolwf')
-      deallocate(bdens)
-      call memory('D','I',size(idens),'iolwf')
-      deallocate(idens)
+      call de_alloc( bdens, 'bdens', 'iolwf' )
+      call de_alloc( idens, 'idens', 'iolwf' )
 #endif
 
-*     call timer( 'iolwf', 2 )
+      call timer( 'iolwf', 2 )
       end

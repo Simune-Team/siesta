@@ -1,0 +1,224 @@
+      module m_final_H_f_stress
+      private
+      public :: final_H_f_stress
+      CONTAINS
+
+      subroutine final_H_f_stress( iscf )
+      USE m_normalize_dm, only: normalize_dm
+      USE siesta_options
+      use sparse_matrices
+      use siesta_geom
+      use atmfuncs, only: uion
+      use atomlist, only: no_u, iaorb, iphkb, qtot, indxuo, datm, 
+     &                    lastkb, no_s, rmaxv, indxua, iphorb, lasto,
+     &                    rmaxo, no_l
+      use metaforce, only: lMetaForce, meta
+      use molecularmechanics, only : twobody
+      use m_nlefsm,     only: nlefsm
+      use m_overfsm,    only: overfsm
+      use m_kinefsm,    only: kinefsm
+      use m_naefs,      only: naefs
+      use m_dnaefs,     only: dnaefs
+      use m_grdsam,     only: grdsam
+      use m_stress
+      use m_energies
+      use m_steps, only: istp
+      use m_ntm
+      use m_spin,         only: nspin
+      use m_dipol
+      use m_forces,          only: fa
+      use alloc, only: re_alloc, de_alloc
+      use m_gamma
+      use m_hsx, only: write_hsx
+      use sys, only: die
+#ifdef MPI
+      use m_mpi_utils, only: globalize_sum
+#endif
+      use parallel, only: IOnode
+#ifdef TRANSIESTA
+! TSS Begin
+      use files,        only : slabel, label_length
+      use m_ts_global_vars, only : TSrun, ts_istep
+      use m_ts_options, only : savetshs
+      use m_ts_kpoints, only : ts_gamma_scf, ts_kscell, ts_kdispl
+      use m_ts_io,      only : ts_iohs
+! TSS End
+#endif /* TRANSIESTA */
+      implicit none
+
+      integer,   intent(in) :: iscf
+      real(dp)              :: stressl(3,3)
+      real(dp), pointer     :: fal(:,:)   ! Local-node part of atomic F
+      integer               :: io, is
+      integer               :: ifa     ! Calculate forces? 0=>no, 1=>yes
+      integer               :: istr    ! Calculate stress? 0=>no, 1=>yes
+      real(dp)              :: g2max
+#ifdef MPI
+      real(dp)              :: stresstmp(3,3)
+      real(dp), pointer     :: fatmp(:,:)
+      real(dp)              :: buffer1
+#endif
+#ifdef TRANSIESTA
+!     TSS Begin
+      character(len=label_length+13) :: fname
+      character(8)                   :: numstring
+      character(8)                   :: iotask
+!     SIESTA External
+      character(len=label_length+5)  :: PASTE
+!     TSS End
+#endif /* TRANSIESTA */
+!------------------------------------------------------------------------- BEGIN
+
+!     Normalize density matrix to exact charge
+#ifdef TRANSIESTA      
+      if (.not.TSrun ) call normalize_dm( first=.false. )
+#else
+      call normalize_dm( first=.false. )
+#endif  /* TRANSIESTA */
+
+!     Initialize Hamiltonian ........................................
+      H = 0.0_dp
+
+!     Initialize forces and stress ...................
+      nullify(fal)
+      call re_alloc( fal, 1, 3, 1, na_u, 'fal', 'final_H_f_stress' )
+
+      fa(1:3,1:na_u)   = 0.0_dp
+      fal(1:3,1:na_u)  = 0.0_dp
+      stress(1:3,1:3)  = 0.0_dp
+      stressl(1:3,1:3) = 0.0_dp  ! fal already initialized
+
+! Neutral-atom: energy, forces and stress ............................
+      call naefs( na_u, na_s, scell, xa, indxua, rmaxv,
+     &            isa, Ena, fa, stress, forces_and_stress=.true. )
+      call dnaefs( na_u, na_s, scell, xa, indxua, rmaxv,
+     &            isa, DEna, fa, stress, forces_and_stress=.true. )
+      Ena = Ena + DEna
+
+!     Kinetic: energy, forces, stress and matrix elements .................
+      call kinefsm( na_u, na_s, no_s, scell, xa, indxua, rmaxo,
+     &              maxnh, maxnh, lasto, iphorb, isa, 
+     &              numh, listhptr, listh, numh, listhptr, listh, 
+     &              min(nspin,2), Dscf, Ekin, fal, stressl, H,
+     &              forces_and_stress=.true. ) 
+#ifdef MPI
+! Global reduction of energy terms
+      call globalize_sum(Ekin,buffer1)
+      Ekin = buffer1
+#endif
+! ..................
+
+! Non-local-pseudop: energy, forces, stress and matrix elements .......
+      call nlefsm( scell, na_u, na_s, isa, xa, indxua, 
+     &             maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
+     &             numh, listhptr, listh, numh, listhptr, listh, 
+     &             min(nspin,2), Dscf, Enl, fal, stressl, H,
+     &             forces_and_stress=.true. )
+
+#ifdef MPI
+! Global reduction of energy terms
+      call globalize_sum(Enl,buffer1)
+      Enl = buffer1
+#endif
+
+!     Non-SCF part of total energy
+      E0 = -Eions + Ena + Ekin + Enl
+
+!     Non-local-pseudop: energy, forces, stress and matrix elements
+!     Add SCF contribution to energy and matrix elements 
+      g2max = g2cut
+!     Last call to dhscf and grid-cell sampling if requested
+      ifa  = 1
+      istr = 1
+      call grdsam( nspin, no_s, iaorb, iphorb, 
+     &             no_l, no_u, na_u, na_s, isa, xa, indxua,
+     &             ucell, ntm, ifa, istr, maxnh,
+     &             maxnh, numh, listhptr, listh, Dscf, Datm, H,
+     &             Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
+     &             Exc, Dxc, dipol, fa, stress, fal, stressl )
+
+!     Orthonormalization forces ...........................................
+      call overfsm( na_u, na_s, no_s, scell, xa, indxua, rmaxo,
+     &              maxnh, maxnh, lasto, iphorb, isa, 
+     &              numh, listhptr, listh, numh, listhptr, listh, 
+     &              min(nspin,2), Escf, fal, stressl, S ) 
+
+!     Metadynamics forces
+      if (lMetaForce) then
+        call meta(xa,na_u,ucell,Emeta,fa,stress,.true.,.true.)
+      endif
+
+!     Add on force field contribution if required
+      call twobody( na_u, xa, isa, ucell, Emm,
+     &              ifa=1, fa=fa, istr=1, stress=stress )
+
+#ifdef MPI
+!     Global reduction of forces and stresses
+      nullify(fatmp)
+      call re_alloc( fatmp, 1, 3, 1, na_u, 'fatmp', 'final_H_f_stress' )
+      call globalize_sum(stressl(1:3,1:3),stresstmp(1:3,1:3))
+      call globalize_sum( fal(1:3,1:na_u), fatmp(1:3,1:na_u) )
+      stress(1:3,1:3) = stress(1:3,1:3) + stresstmp(1:3,1:3)
+      fa(1:3,1:na_u) = fa(1:3,1:na_u) + fatmp(1:3,1:na_u)
+      call de_alloc( fatmp, 'fatmp', 'final_H_f_stress' )
+#else
+      stress(1:3,1:3) = stress(1:3,1:3) + stressl(1:3,1:3)
+      fa(1:3,1:na_u) = fa(1:3,1:na_u) + fal(1:3,1:na_u)
+#endif
+      call de_alloc( fal, 'fal', 'final_H_f_stress' )
+
+!     Find entropy ........................................................
+!     Entropy is returned from the call to diagon. To add to the energy
+!     the entropy computed from the input charge, here it is assigned to the one
+!     of the former SCF step
+      Entropy = 0.0_dp
+      if (isolve .eq. SOLVE_DIAGON) then
+        if (istp.gt.1 .or. iscf.gt.1) then
+          Entropy = Entrop
+        endif
+      endif
+        
+!!!! Possible BUG: Dold should not be overwritten in the last iteration
+! Save present density matrix ........................................
+      do is = 1,nspin
+        do io = 1,nh
+          Dold(io,is) = Dscf(io,is)
+          Eold(io,is) = Escf(io,is)
+        enddo
+      enddo        
+
+! Save Hamiltonian and overlap matrices ............................
+! Only in HSX format now.  Use Util/HSX/hsx2hs to generate an HS file
+      if (savehs) then
+         call write_hsx( gamma, no_u, no_s, nspin, indxuo,
+     &        maxnh, numh, listhptr, listh, H, S, qtot,
+     &        temp, xijo)
+      endif
+#ifdef TRANSIESTA
+! TSS Begin
+      if (savetshs) then
+         if (idyn.eq.6) then ! Force constants run
+            write(numstring,'(2i4)') ia1, ts_istep
+            fname = paste( slabel, numstring )
+            fname = paste( fname, '.TSHS' )
+            iotask='write'
+            call ts_iohs( iotask, gamma, .false., no_u, no_s, nspin,
+     &                    indxuo, maxnh, numh, listhptr, listh, H, S, 
+     &                    qtot, temp, xijo, label_length+5, fname, na_u,
+     &                    lasto, isa, ef, ucell, ts_kscell, ts_kdispl,
+     &                    ts_gamma_scf, xa, ts_istep, ia1)
+         else
+            fname  = paste( slabel, '.TSHS' )
+            iotask ='write'
+            call ts_iohs( iotask, gamma, .false., no_u, no_s, nspin,
+     &                    indxuo, maxnh, numh, listhptr, listh, H, S,
+     &                    qtot, temp, xijo, label_length+5, fname, na_u,
+     &                    lasto, isa, ef, ucell,ts_kscell, ts_kdispl,
+     &                    ts_gamma_scf, xa, 0, 0 )
+         endif
+      endif
+! TSS End
+#endif /* TRANSIESTA */
+!--------------------------------------------------------------------------- END
+      END subroutine final_H_f_stress
+      END module m_final_H_f_stress

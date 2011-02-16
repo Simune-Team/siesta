@@ -8,13 +8,13 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine diagg( nspin, nuo, no, maxuo, maxnh, maxnd, 
-     .                  maxo, numh, listhptr, listh, numd, 
-     .                  listdptr, listd, H, S,
-     .                  getD, getPSI, fixspin, qtot, qs, temp, e1, e2,
-     .                  eo, qo, Dnew, Enew, ef, efs, Entropy,
-     .                  Haux, Saux, psi, aux, nuotot, occtol,
-     .                  iscf, neigwanted )
+      subroutine diagg( nspin, nuo, maxuo, maxnh, maxnd, 
+     &                  maxo, numh, listhptr, listh, numd, 
+     &                  listdptr, listd, H, S,
+     &                  getD, getPSI, fixspin, qtot, qs, temp, e1, e2,
+     &                  eo, qo, Dnew, Enew, ef, efs, Entropy,
+     &                  Haux, Saux, psi, nuotot, occtol,
+     &                  iscf, neigwanted )
 C *********************************************************************
 C Subroutine to calculate the eigenvalues and eigenvectors, density
 C and energy-density matrices, and occupation weights of each 
@@ -24,7 +24,6 @@ C Writen by J.Soler, August 1998.
 C **************************** INPUT **********************************
 C integer nspin               : Number of spin components (1 or 2)
 C integer nuo                 : Number of basis orbitals local to node
-C integer no                  : Number of basis orbitals
 C integer maxuo               : Last dimension of xij
 C                               Must be at least max(indxuo)
 C integer maxnh               : Maximum number of orbitals interacting  
@@ -90,6 +89,7 @@ C
       use parallelsubs,  only : LocalToGlobalOrb
       use writewave,     only : writew
       use m_fermid,      only : fermid, fermispin, stepf
+      use alloc
 
 #ifdef MPI
       use mpi_siesta
@@ -99,38 +99,41 @@ C
 
 #ifdef MPI
       integer 
-     .  MPIerror
+     &  MPIerror
 #endif
 
       integer
-     .  iscf, maxnd, maxnh, maxuo, maxo, nuo, no, nspin, nuotot,
-     .  neigwanted
+     &  iscf, maxnd, maxnh, maxuo, maxo, nuo, nspin, nuotot,
+     &  neigwanted
 
       integer 
-     .  listh(maxnh), numh(nuo), listhptr(nuo),
-     .  listd(maxnd), numd(nuo), listdptr(nuo)
+     &  listh(maxnh), numh(nuo), listhptr(nuo),
+     &  listd(maxnd), numd(nuo), listdptr(nuo)
 
       real(dp)
-     .  Dnew(maxnd,nspin), e1, e2, ef, Enew(maxnd,nspin), 
-     .  Entropy, eo(maxo,nspin), H(maxnh,nspin), qo(maxo,nspin), 
-     .  qtot, qs(nspin), S(maxnh), temp, efs(nspin), occtol
+     &  Dnew(maxnd,nspin), e1, e2, ef, Enew(maxnd,nspin), 
+     &  Entropy, eo(maxo,nspin), H(maxnh,nspin), qo(maxo,nspin), 
+     &  qtot, qs(nspin), S(maxnh), temp, efs(nspin), occtol
      
       real(dp)
-     .  Haux(nuotot,nuo), Saux(nuotot,nuo), psi(nuotot,maxuo,nspin), 
-     .  aux(nuotot)
+     &  Haux(nuotot,nuo), Saux(nuotot,nuo), psi(nuotot,maxuo,nspin) 
 
       real(dp), dimension(1), parameter :: wk = (/ 1.0_dp /)
       integer, parameter                :: nk = 1
 
       logical
-     .  getD, getPSI, fixspin
+     &  getD, getPSI, fixspin
 
       external rdiag
 
 C  Internal variables .............................................
       integer           ie, io, iio, ispin, ix, j, jo, BNode, iie, ind,
-     .                  BTest, ierror, nd
+     &                  ierror, nd
       real(dp)          ee, eei, qe, qei, rt, t, k(3)
+
+      integer           :: maxnuo, mm
+      integer, pointer  :: nuo_LOC(:)
+      real(dp), pointer :: psi_tmp(:), paux(:)
 
 C Solve eigenvalue problem
       do ispin = 1,nspin
@@ -152,8 +155,9 @@ C Solve eigenvalue problem
         enddo
         call timer( 'r-buildHS', 2 )
         call rdiag( Haux, Saux, nuotot, nuo, nuotot, eo(1,ispin), 
-     .              psi(1,1,ispin), neigwanted, iscf, ierror )
+     &              psi(1,1,ispin), neigwanted, iscf, ierror )
         call timer( 'r-eigvec', 2 )
+
 
 C Check error flag and take appropriate action
         if (ierror.gt.0) then
@@ -175,7 +179,7 @@ C Repeat diagonalisation with increased memory to handle clustering
             enddo
           enddo
           call rdiag( Haux, Saux, nuotot, nuo, nuotot, eo(1,ispin), 
-     .                psi(1,1,ispin), nuotot, iscf, ierror )
+     &                psi(1,1,ispin), nuotot, iscf, ierror )
         endif
 
         if (getPSI) then
@@ -183,21 +187,20 @@ C Repeat diagonalisation with increased memory to handle clustering
             k(ix) = 0.0d0
           enddo
           call writew(nuotot,nuo,1,k,ispin,
-     .                eo(1,ispin),psi(1,1,ispin),.true.)
+     &                eo(1,ispin),psi(1,1,ispin),.true.)
         endif
 
       enddo
-
 C Check if we are done ................................................
       if (.not.getD) return
 
 C Find new Fermi energy and occupation weights ........................
       if (fixspin) then
         call fermispin( nspin, nspin, nk, wk, maxo, neigwanted, 
-     .                  eo, temp, qs, qo, efs, Entropy )
+     &                  eo, temp, qs, qo, efs, Entropy )
       else
         call fermid( nspin, nspin, nk, wk, maxo, neigwanted, eo, 
-     .               temp, qtot, qo, ef, Entropy )
+     &               temp, qtot, qo, ef, Entropy )
       endif
 
 C Find weights for local density of states ............................
@@ -209,8 +212,8 @@ C Find weights for local density of states ............................
         do ispin = 1,nspin
           do io = 1,nuotot
             qo(io,ispin) = ( stepf((eo(io,ispin)-e2)*rt) -
-     .                       stepf((eo(io,ispin)-e1)*rt)) * 
-     .                       2.0d0/dble(nspin)
+     &                       stepf((eo(io,ispin)-e1)*rt)) * 
+     &                       2.0d0/dble(nspin)
           enddo
         enddo
       endif
@@ -223,45 +226,64 @@ C New density and energy-density matrices of unit-cell orbitals .......
       endif
 
       call timer( 'r-buildD', 1 )
-
 C Global operation to form new density matrix
-      do ispin = 1,nspin
-        BNode = 0
-        iie = 0
-        do ie = 1,nuotot
-          qe = qo(ie,ispin)
-          if (Node.eq.BNode) then
-            iie = iie + 1
-          endif
-          if (abs(qe).gt.occtol) then
-            if (Node.eq.BNode) then
-              call dcopy(nuotot,psi(1,iie,ispin),1,aux,1)
-            endif
+      nullify( nuo_LOC )
+      call re_alloc( nuo_LOC, 0, Nodes-1, 'nuo_LOC', 'diagg' )
 #ifdef MPI
-            call MPI_Bcast(aux,nuotot,MPI_double_precision,BNode,
-     .        MPI_Comm_World,MPIerror)
+      call MPI_Allgather( nuo, 1, MPI_INTEGER, nuo_LOC, 1,
+     &                    MPI_INTEGER, MPI_Comm_World, MPIerror )
+#else
+      nuo_LOC(0) = nuo
 #endif
-            ee = qe * eo(ie,ispin)
-            do io = 1,nuo
-              call LocalToGlobalOrb(io,Node,Nodes,iio)
-              qei = qe*aux(iio)
-              eei = ee*aux(iio)
-              do j = 1,numd(io)
-                ind = listdptr(io) + j
-                jo = listd(ind)
-                Dnew(ind,ispin) = Dnew(ind,ispin) + qei*aux(jo)
-                Enew(ind,ispin) = Enew(ind,ispin) + eei*aux(jo)
-              enddo
+      maxnuo = 0
+      do BNode=0, Nodes-1
+        maxnuo = max(nuo_LOC(BNode),maxnuo)
+      enddo
+      nullify( PSI_TMP )
+      call re_alloc( PSI_TMP, 1, nuotot*maxnuo*nspin, 'PSI_TMP',
+     &               'diagg' )
+
+      do Bnode=0, Nodes-1
+        if (BNode.eq.Node) then
+          mm = 0
+          do ispin= 1, nspin
+            do io= 1, nuo
+              PSI_TMP(mm+1:mm+nuotot) = PSI(1:nuotot,io, ispin)
+              mm = mm + nuotot
             enddo
-          endif
-          BTest = ie/BlockSize
-          if (BTest*BlockSize.eq.ie) then
-            BNode = BNode + 1
-            if (BNode .gt. Nodes-1) BNode = 0
-          endif
+          enddo
+        endif
+#ifdef MPI
+        call MPI_Bcast( PSI_TMP, nuotot*nuo_LOC(Bnode)*nspin,
+     &                  MPI_double_precision, BNode, MPI_Comm_World,
+     &                  MPIerror )
+#endif
+        do ispin = 1,nspin
+          do io = 1,nuo
+            call LocalToGlobalOrb(io,Node,Nodes,iio)
+            mm   = (ispin-1)*nuo_LOC(Bnode)*nuotot
+            do iie = 1,nuo_LOC(Bnode)
+              call  LocalToGlobalOrb(iie,BNode,Nodes,ie)
+              qe = qo(ie,ispin)
+              if (abs(qe).gt.occtol) then
+                paux => PSI_TMP(mm+1:mm+nuotot)
+                ee  = qe*eo(ie,ispin)
+                qei = qe*paux(iio)
+                eei = ee*paux(iio)
+                do j = 1,numd(io)
+                  ind = listdptr(io) + j
+                  jo  = listd(ind)
+                  Dnew(ind,ispin) = Dnew(ind,ispin) + qei*paux(jo)
+                  Enew(ind,ispin) = Enew(ind,ispin) + eei*paux(jo)
+                enddo
+              endif
+              mm = mm + nuotot
+            enddo
+          enddo
         enddo
       enddo
 
       call timer( 'r-buildD', 2 )
-
+      call de_alloc( nuo_LOC, 'nuo_LOC', 'diagg' )
+      call de_alloc( PSI_TMP, 'PSI_TMP', 'diagg' )
       end

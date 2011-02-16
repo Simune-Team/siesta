@@ -102,14 +102,17 @@ C *********************************************************************
 C
 C  Modules
 C
-      use precision
+      use precision,     only : dp
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GlobalToLocalOrb
       use sys,           only : die
-      use neighbour,     only : jan, r2ij, xij, mneighb, maxnna
+      use neighbour,     only : jan, r2ij, xij, mneighb, maxnna,
+     &                          reset_neighbour_arrays
 #ifdef MPI
       use mpi_siesta
 #endif
+
+      implicit none
 
       integer 
      .  natoms, nbasis, nbasisloc, maxnh, pmax
@@ -129,10 +132,6 @@ C Internal variables...
 !     NOTE: nmax has been renamed to nhmax
 !
       integer  ind, ipmax, nhmax, nvmaxnew
-#ifdef MPI
-      integer
-     . MPIerror
-#endif
 
 C nvmax = maximum number of non-zero elements within a sparse vector v
       integer, save :: nvmax
@@ -140,14 +139,12 @@ C nvmax = maximum number of non-zero elements within a sparse vector v
 C ipmax = maximum order the Chebyshev polynomial exp. of the Fermi operator
       parameter(ipmax = 200)
 
-      real(dp)
-     .  mu1,mu2
-      parameter(mu1=-1.2d0,mu2=1.2d0)
+      real(dp),  parameter :: mu1=-1.2d0 , mu2=1.2d0
 
       integer
-     .  i, ia, ii, il, iil, imu, iorb, j, ja, ji, jj, jorb, 
+     .  i, ia, ii, il, iil, iorb, j, ja, ji, jj, jorb, 
      .  k, m, nna, norb, nu, num, numloc, numv, index, indexmax, 
-     .  nhbarmax, jo, jjn, phi, iphi, info
+     .  nhbarmax, jo, jjn, phi, iphi
 
       integer, dimension(:), allocatable, save ::
      .  listvt, numhp, ibuffer, listv,
@@ -166,11 +163,13 @@ C    .  delta, eref2, eref1, eig2, eig1
       real(dp), dimension(:), allocatable, save ::
      .  hbar, paux, vec, wr, wi
 
-
+#ifdef MPI
+      integer :: MPIerror
+      real(dp), dimension(:),  allocatable :: dpbuffer1
+#endif
       real(dp), dimension(:,:), allocatable, save ::
      .  Hdense, Sdense, H1
 
-      real(dp), dimension(:), allocatable, save ::  dpbuffer1
       real(dp), dimension(:,:), allocatable, save :: v, dpbuffer2
 
       external  memory
@@ -427,12 +426,12 @@ C  Globalise Hdense and Sdense for now
         allocate(dpbuffer1(nu))
         call memory('A','D',nu,'chempot')
         do i = 1,nu
-          call MPI_AllReduce(Sdense(1:,i),dpbuffer1,nu,
+          call MPI_AllReduce(Sdense(1,i),dpbuffer1,nu,
      .      MPI_double_precision,MPI_sum,MPI_Comm_World,MPIerror)
           do j = 1,nu
             Sdense(j,i) = dpbuffer1(j)
           enddo
-          call MPI_AllReduce(Hdense(1:,i),dpbuffer1,nu,
+          call MPI_AllReduce(Hdense(1,i),dpbuffer1,nu,
      .      MPI_double_precision,MPI_sum,MPI_Comm_World,MPIerror)
           do j = 1,nu
             Hdense(j,i) = dpbuffer1(j)
@@ -547,14 +546,18 @@ C  First scale and shift the hamiltonian ...
       enddo     
 
 C Calculate maximum length in unit cell ...
+  ! i.e, maximum distance among (-1:1) lattice points
+!AG: This seems to be wrong, as the cell vectors are given
+!    by columns...
       rmax = 0.0d0
       do i = -1,1
         do j = -1,1
           do k = -1,1
+            !AG: ri(:) = i*cell(:,1) + j*cell(:,2) + k*cell(:,3)
             ri(1) = i*cell(1,1) + j*cell(2,1) + k*cell(3,1)
             ri(2) = i*cell(1,2) + j*cell(2,2) + k*cell(3,2)
             ri(3) = i*cell(1,3) + j*cell(2,3) + k*cell(3,3)
-            rrmod = dsqrt( ri(1)**2 + ri(2)**2 + ri(3)**2 )
+            rrmod = sqrt( ri(1)**2 + ri(2)**2 + ri(3)**2 )
             if (rrmod .gt. rmax) rmax = rrmod
           enddo
         enddo
@@ -733,7 +736,11 @@ C ...
 C      write(20,*) p,chpot*13.6d0
 C      enddo
 
+
 C Deallocate local arrays 
+      if (2.*rcoor .lt. rmax) then
+        call reset_neighbour_arrays( )
+      endif
       call memory('D','D',size(wr),'chempot')
       deallocate(wr)
       call memory('D','D',size(wi),'chempot')
@@ -1259,7 +1266,7 @@ C  Generate an initial normalized random vector ........
         u0(i)=2.0d0*ran3(-i)-1.
         mod=mod+u0(i)**2 
       enddo
-      mod=dsqrt(mod)
+      mod=sqrt(mod)
       do i=1,nbasis
         u0(i)=u0(i)/mod
       enddo

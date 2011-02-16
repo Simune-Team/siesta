@@ -235,7 +235,7 @@ C
 C
 C  Free local memory ready for re-use
 C
-      call de_alloc( ft, name='ft', routine='fft' )
+      call de_alloc( ft, name='ft' )
 C
 C  Find new distributed x dimension
 C
@@ -265,7 +265,7 @@ C
 C
 C  Free local memory
 C
-      call de_alloc( ft, name='ft', routine='fft' )
+      call de_alloc( ft, name='ft' )
 #else
 C
 C  FFT in Y direction
@@ -553,8 +553,8 @@ C
 C
 C  Free local memory
 C
-      call de_alloc( ftmp2, name='ftmp2', routine='redistribXZ' )
-      call de_alloc( ftmp, name='ftmp', routine='redistribXZ' )
+      call de_alloc( ftmp2, name='ftmp2' )
+      call de_alloc( ftmp, name='ftmp' )
 
       end subroutine redistribXZ
 
@@ -813,8 +813,8 @@ C
 C
 C  Free local memory
 C
-      call de_alloc( ftmp2, name='ftmp2', routine='redistribXY' )
-      call de_alloc( ftmp, name='ftmp', routine='redistribXY' )
+      call de_alloc( ftmp2, name='ftmp2' )
+      call de_alloc( ftmp, name='ftmp' )
 
       return
       end subroutine redistribXY

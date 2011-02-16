@@ -18,7 +18,6 @@ c real*8  points(3,nk) : k-point coordinates
 c real*8  weight(3,nk) : k-point weight
 c *******************************************************************
 
-      use fdf
       use files,     only : slabel, label_length
       use precision, only : dp
 

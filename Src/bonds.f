@@ -32,28 +32,23 @@ C **********************************************************************
       use sorting,   only : order, iorder
       use alloc,       only: re_alloc, de_alloc
       use neighbour,   only: jna=>jan, xij, r2ij, maxna=>maxnna
-      use neighbour,   only: mneighb
+      use neighbour,   only: mneighb, reset_neighbour_arrays
       implicit          none
 
-      INTEGER, intent(in)  ::     NA, ISA(NA)
+      INTEGER,  intent(in) ::     NA, ISA(NA)
       real(dp), intent(in) ::     CELL(3,3), XA(3,NA), RMAX
       character(len=*), intent(in) :: filename
 
-      EXTERNAL             ::     io_assign, io_close
-
-
-      integer ::  IA, IN, IS, JA, JS, NNA, iu
-
-      integer, dimension(:), pointer ::  index
-
-      real(dp) ::   RI, RIJ, RJ
-      real(dp), parameter :: tol = 1.0e-8_dp
+      EXTERNAL             :: io_assign, io_close
+      integer              ::  IA, IN, JA, JS, NNA, iu
+      integer,     pointer ::  index(:)
+      real(dp)             :: RIJ
+      real(dp),  parameter :: tol = 1.0e-8_dp
 
       nullify(index)
-      call re_alloc(index,1,maxna,name="index",routine="bonds")
+      call re_alloc( index, 1, maxna, 'index', 'bonds' )
 
 C Initialize neighbour-locater routine
-
       CALL MNEIGHB( CELL, RMAX, NA, XA, 0, 0, NNA )
 
 C Main loop
@@ -65,12 +60,11 @@ C Main loop
       do IA = 1,NA
 
 C Find neighbours of atom IA
-
         CALL MNEIGHB( CELL, RMAX, NA, XA, IA, 0, NNA )
         ! This call will do nothing if the internal neighbor arrays
         ! did not grow. If tight size were important, one could
         ! resize to nna instead.
-        call re_alloc(index,1,maxna,name="index",routine="bonds")
+        call re_alloc( index, 1, maxna, 'index', 'bonds' )
 
            if (nna < 2 ) then
               write(iu , *) "Atom ", ia, 
@@ -106,7 +100,8 @@ C Find neighbours of atom IA
 
       enddo
 
-      call de_alloc(index, name="index",routine="bonds")
+      call reset_neighbour_arrays( )
+      call de_alloc( index, 'index', 'bonds' )
       call io_close(iu)
 
       end

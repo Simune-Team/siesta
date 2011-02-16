@@ -148,6 +148,7 @@ end subroutine cp_gf_vars
       use m_tbt_options, only : sppol, Lhsfile, Rhsfile, Lnucuse, &
                   Rnucuse
       use sys, only : die
+      use fdf
 ! FDN
 
 
@@ -286,7 +287,6 @@ end subroutine cp_gf_vars
 
 ! FDF-stuff:
       character*33 paste,header,itemfdf     
-      real*8 fdf_convfac
       external paste
 
 

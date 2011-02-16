@@ -8,7 +8,7 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      SUBROUTINE REORD( FCLUST, FSEQ, NM, NSM, ITR )
+      subroutine reord( fclust, fseq, nm, nsm, itr )
 
 C ********************************************************************
 C Re-orders a clustered data array into a sequential one and viceversa
@@ -49,9 +49,9 @@ C
 C  Allocate local memory
 C
       nullify ( AUX )
-      call re_alloc( AUX, 1, NAUX, name='AUX', routine='reord' )
+      call re_alloc( AUX, 1, NAUX, 'AUX', 'reord' )
       nullify ( JS )
-      call re_alloc( JS, 1, NSM3, name='JS', routine='reord' )
+      call re_alloc( JS,  1, NSM3, 'JS',  'reord' )
 
       IS = 0
       DO IS3 = 0,NSM-1
@@ -108,8 +108,8 @@ C
 C
 C  Free local memory
 C
-      call de_alloc( JS,  name='JS', routine='reord' )
-      call de_alloc( AUX,  name='AUX', routine='reord' )
+      call de_alloc( JS,  'JS',   'reord' )
+      call de_alloc( AUX, 'AUX',  'reord' )
 
       CALL TIMER('REORD',2)
       END

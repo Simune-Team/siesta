@@ -8,7 +8,7 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine pdoskp(nspin, nuo, no, maxspn, maxuo, maxnh, 
+      subroutine pdoskp(nspin, nuo, no, maxspn, maxnh, 
      .                  maxo, numh, listhptr, listh, H, S,
      .                  E1, E2, nhist, sigma, 
      .                  xij, indxuo, nk, kpoint, wk, eo, 
@@ -27,7 +27,6 @@ C integer nuo               : Number of atomic orbitals in the unit cell
 C integer NO                : Number of atomic orbitals in the supercell
 C integer maxspn            : Second dimension of eo and qo 
 C                             (maximum number of differents spin polarizations)
-C integer maxuo             : Maximum number of atomic orbitals in the unit cell
 C integer maxnh             : Maximum number of orbitals interacting
 C                             with any orbital
 C integer maxo              : First dimension of eo
@@ -75,7 +74,7 @@ C **********************************************************************
       implicit none
 
       integer
-     .  nspin, nuo, no, maxspn, maxuo, maxnh, NK, 
+     .  nspin, nuo, no, maxspn, maxnh, NK, 
      .  maxo, nhist, nuotot
 
       integer
@@ -339,13 +338,13 @@ C Solo para los Juo que satisfagan el criterio del record...
       enddo
 
 C Free local memory from computation of dpr
-      call de_alloc( xijloc, name='xijloc', routine='pdoskp' )
-      call de_alloc( Hnew, name='Hnew', routine='pdoskp' )
-      call de_alloc( Snew, name='Snew', routine='pdoskp' )
-      call de_alloc( Dloc, name='Dloc', routine='pdoskp' )
-      call de_alloc( listhg, name='listhg', routine='pdoskp' )
-      call de_alloc( listhptrg, name='listhptrg', routine='pdoskp' )
-      call de_alloc( numhg, name='numhg', routine='pdoskp' )
+      call de_alloc( xijloc, name='xijloc' )
+      call de_alloc( Hnew, name='Hnew' )
+      call de_alloc( Snew, name='Snew' )
+      call de_alloc( Dloc, name='Dloc' )
+      call de_alloc( listhg, name='listhg' )
+      call de_alloc( listhptrg, name='listhptrg' )
+      call de_alloc( numhg, name='numhg' )
 
 #ifdef MPI
 C Allocate workspace array for global reduction
@@ -366,7 +365,7 @@ C Global reduction of dtot matrix
       dtot(1:nhist,1:nspin) = Sloc(1:nhist,1:nspin,1)
 
 C Free workspace array for global reduction
-      call de_alloc( Sloc, name='Sloc', routine='pdoskp' )
+      call de_alloc( Sloc, name='Sloc' )
 #endif
 
       wksum = 0.0d0

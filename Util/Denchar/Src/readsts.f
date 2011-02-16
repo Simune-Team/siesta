@@ -23,6 +23,9 @@ C **********************************************************************
       real(dp), INTENT(OUT) ::
      .  EMIN, DELTAE, ETA, XSTS(3), ARMUNI
 
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
+
 
 C ****** INPUT  ********************************************************
 C REAL*8 VOLUME          : Volume of the unit cell
@@ -54,12 +57,6 @@ C                          (ISCALE = 1 => Bohrs, ISCALE = 2 => Ang)
 
       real(dp) EMAX
 
-      LOGICAL
-     .  LEQI
-
-      EXTERNAL
-     .  LEQI
-C ----
 
       CPF_DEFECT = 'Bohr'
 
@@ -110,8 +107,15 @@ C ----
 
       NE = FDF_INTEGER('Denchar.STSEnergyPoints',100)
 
-      IF ( FDF_BLOCK('Denchar.STSPosition',IUNIT) ) THEN
-        READ(IUNIT,*)(XSTS(IX),IX=1,3)
+      IF ( FDF_BLOCK('Denchar.STSPosition',bfdf) ) THEN
+         if (.not. fdf_bline(bfdf, pline))
+     $        call die("No STS position")
+         if (.not. (fdf_bmatch(pline, 'vvv') )) then
+            call die ('STSPosition: Error in syntax')
+         endif
+         do ix = 1,3
+            xsts(ix) = fdf_bvalues(pline,ix)
+         enddo
       ELSE
         WRITE(6,*)'To calculate STS spectra, you must'
         WRITE(6,*)'specify a position (Denchar.STSPosition)'
@@ -147,6 +151,17 @@ C   Iunitcd = 3 => Multiply by volume unit cell (in bohrs**3)
       ELSEIF( IUNITCD .EQ. 3 ) THEN
         ARMUNI = VOLUME
       ENDIF
+
+      CONTAINS
+
+      subroutine die(str)
+      character(len=*), intent(in), optional:: str
+      if (present(str)) then
+         write(6,"(a)") str
+         write(0,"(a)") str
+      endif
+      STOP
+      end subroutine die
 
       END
 

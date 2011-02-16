@@ -157,7 +157,7 @@ C Loop for the CG minimization
 C Check if the gradient at current point is negative, and sufficiently
 C large to avoid problems. Otherwise, set a fixed lambda
 C to CG iteration cycle with iout = .false.  ................................
-        if (abs(partial) .le. 1.5e-8) then
+        if (abs(partial) .le. nbands*1.0d-10) then
           lambda = lm*0.4d0
           if (lm .eq. 0.0) lambda=0.4d0
 C         iout = .false.
@@ -170,6 +170,8 @@ C         iout = .false.
         endif
 C ...........................
 
+C10      continue
+
 C Get the energy at three points separated by lam ...........................
         iopt = 1
         call eandg(iopt,eta,qs,lam,nhmax,numh,listh,listhptr,ncmax,
@@ -177,7 +179,7 @@ C Get the energy at three points separated by lam ...........................
      .             dm,edm,nbasisCloc,nspin,Node,Nodes)
 
 C Solve exactly the line minimzation with a fourth order polinomial .........
-        call linmin4(partial,elamb,e3,lam,lambda,Node)
+        call linmin4(partial,elamb,e3,lam,lambda)
 
 C Check if the solution of the line minimization is reasonable 
 C (ie, lambda is small)
@@ -190,7 +192,7 @@ C cycle with iout = .false.  ................................
           goto 1000
         endif
 
-        iout = .true.
+C        iout = .true.
 
 1000    continue
 
@@ -214,9 +216,36 @@ C Calculate energy and gradient at current point ...........................
      .             numc,listc,h,s,c,nbasis,nbasisloc,nbands,e3,fe,xi,
      .             dm,edm,nbasisCloc,nspin,Node,Nodes)
 
+
+C Do not exit if energy has increased, since something must
+C have gone wrong.  Go back to previous point and start again....
+        if (fe .gt. fp) then
+          do is = 1,nspin
+            do i = 1,nbasisCloc
+              do j = 1,numc(i)
+                xi(j,i,is) = lambda * xi(j,i,is)
+                c(j,i,is) = c(j,i,is) - xi(j,i,is)
+              enddo
+            enddo
+          enddo
+          if (Node.eq.0) then
+            write(6,"(/a)")'cgwf: WARNING: E. increased; resetting CG'
+          endif
+C          lam = lam/2.0d0
+C          ilam = .true.
+          itest = .true.
+          numit = 0
+          iout = .false.
+          fe = fp
+        endif
+
+C        ilam = .false.
+C        lam = 1.0d0
+          
+        
 C Check if minimization has converged ......................................
-        if (2.*abs(fe-fp).le.ftol*(abs(fe)+abs(fp)+eps)) then
-          if (iout) then
+        if (iout) then
+          if (2.*abs(fe-fp).le.ftol*(abs(fe)+abs(fp)+eps)) then
             if (Node.eq.0) then
               write(6,"(/a)") 'cgwf:  CG tolerance reached'
             endif
@@ -305,7 +334,7 @@ C *******************************************************************
 
 
 
-      subroutine linmin4(partial,elamb,ener,lam,lambda, Node)
+      subroutine linmin4(partial,elamb,ener,lam,lambda)
 C *******************************************************************
 C  Subroutine for the exact minimization of a 4th order polinomial.
 C  Uses the values of the polinomial at four points, and the value of
@@ -336,9 +365,6 @@ C *******************************************************************
 
       real(dp) ::
      .  elamb,partial,lam,lambda,ener(3)
-
-      integer ::
-     .  Node
 
 C Internal variables ......................................................
       integer 

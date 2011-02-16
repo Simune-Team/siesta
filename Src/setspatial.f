@@ -144,10 +144,10 @@ C
 C  Find cell parameters
 C
       call uncell(vecs,a,b,c,alpha,beta,gamma,degtorad)
-      lspatialok = .true.
 C
 C  Check that cut-off is greater than zero
 C
+      lspatialok = .true.
       if (rcut.lt.1.0d-10) lspatialok = .false.
 C
 C  If cell is not compatible return
