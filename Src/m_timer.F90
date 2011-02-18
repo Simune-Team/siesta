@@ -651,6 +651,15 @@ subroutine timer_init()   ! Initialize timing
   time0 = treal
   nProgs = 0
 
+! (Re)initialize data array
+  progData(:)%name=' '           ! Name of program or code section
+  progData(:)%active=.false.     ! Is program time being counted?
+  progData(:)%nCalls=0           ! Number of calls made to the program
+  progData(:)%totTime=0          ! Total time for this program
+  progData(:)%comTime=0          ! Communications time
+  progData(:)%lastTime=0         ! Total time in last call
+  progData(:)%lastComTime=0      ! Communications time in last call
+
 end subroutine timer_init
 
 !===============================================================================
