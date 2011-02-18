@@ -6,6 +6,16 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2011-02-18  15:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-369
+Remove mentions to SLEPC
+
+The mentions to SLEPC were fossils from a side branch and they have been
+removed.
+
+modified:
+  Src/siesta_init.F
+
+-----------------------------------------------------------------------
 2011-02-03  11:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-368
 Incorporation of BSC code: mesh optimization; parallel fdf library
 

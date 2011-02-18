@@ -64,12 +64,6 @@
 #endif /* TRANSIESTA */
       implicit none
 #ifdef MPI
-# ifdef _SLEPC_
-#   include "mpif.h"
-#   include "finclude/petsc.h"
-# endif
-#endif
-#ifdef MPI
       integer :: MPIerror  ! Return error code in MPI routines
 #endif
       real(dp):: veclen       ! Length of a unit-cell vector
@@ -80,13 +74,9 @@
 !------------------------------------------------------------------------- BEGIN
 #ifdef MPI
 C     Initialise MPI and set processor number
-#ifdef _SLEPC_
-      call SlepcInitialize( PETSC_NULL_CHARACTER, MPIerror )
-#else
       call MPI_Init( MPIerror )
 #ifdef _TRACE_
       call MPItrace_shutdown( )
-#endif
 #endif
       call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
       call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
