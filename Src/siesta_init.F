@@ -64,12 +64,6 @@
 #endif /* TRANSIESTA */
       implicit none
 #ifdef MPI
-# ifdef _SLEPC_
-#   include "mpif.h"
-#   include "finclude/petsc.h"
-# endif
-#endif
-#ifdef MPI
       logical :: initialized
       integer :: MPIerror  ! Return error code in MPI routines
 #endif
@@ -84,13 +78,9 @@
 #ifdef MPI
       call MPI_Initialized( initialized, MPIerror )
       if (.not.initialized) then
-#ifdef _SLEPC_
-        call SlepcInitialize( PETSC_NULL_CHARACTER, MPIerror )
-#else
         call MPI_Init( MPIerror )
 #ifdef _TRACE_
         call MPItrace_shutdown( )
-#endif
 #endif
       endif ! (.not.initialized)
       call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
