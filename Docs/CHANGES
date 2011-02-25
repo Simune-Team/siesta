@@ -6,6 +6,29 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2011-02-25  10:20:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-371
+Fixes in pdosxml and denchar
+
+(Ported from siesta-3.0 branch)
+
+*Some compilers might have trouble with the shorthand
+array syntax used in the update of data arrays in m_pdos.f90.
+The bounds are now explicitly indicated.
+
+(Thanks to Miguel Pruneda)
+
+modified:
+  Util/pdosxml/m_pdos.f90
+
+* In 2D wavefunction mode, denchar was printing two blank lines
+between coordinate blocks.
+
+modified:
+  Util/Denchar/Src/denchar.f  -- removed duplicate 'use' statement
+  Util/Denchar/Src/rhoofr.f   -- interblock spacing
+  Util/Denchar/Src/wavofr.f   --   "
+
+-----------------------------------------------------------------------
 2011-02-18  15:55:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-370
 Re-initialize data array in timer routine
 
