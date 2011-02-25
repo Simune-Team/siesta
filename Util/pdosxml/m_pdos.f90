@@ -124,7 +124,7 @@ select case(name)
 
       case ("data")
       !
-      ! We are done filling up the radfunc data
+      ! We are done filling up the data arrays
       ! Check that we got the right number of items
       !
          in_data = .false.
@@ -147,10 +147,10 @@ select case(name)
             orbid%atom_index,  trim(orbid%species)
 
             if (spin_polarized) then
-               dos1 = dos1 + data(1:ndata:2)
-               dos2 = dos2 + data(2:ndata:2)
+               dos1(1:n_energies) = dos1(1:n_energies) + data(1:ndata:2)
+               dos2(1:n_energies) = dos2(1:n_energies) + data(2:ndata:2)
             else
-               dos1 = dos1 + data
+               dos1(1:n_energies) = dos1(1:n_energies) + data(1:ndata)
             endif
          endif
 
@@ -169,12 +169,11 @@ if (len_trim(chunk) == 0) RETURN     ! skip empty chunk
 
 if (in_data) then
 !
-      call build_data_array(chunk,data,ndata)
+   call build_data_array(chunk,data,ndata)
 endif
 if (in_energy_values) then
 !
       call build_data_array(chunk,energies,n_energies)
-
 endif
 
 ndata_spin = 0

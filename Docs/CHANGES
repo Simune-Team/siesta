@@ -5,6 +5,19 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2011-02-25  10:10:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-10
+Use explicit bounds in array update in pdosxml
+
+Some compilers might have trouble with the shorthand
+array syntax used in the update of data arrays in m_pdos.f90.
+The bounds are now explicitly indicated.
+
+(Thanks to Miguel Pruneda)
+
+modified:
+  Util/pdosxml/m_pdos.f90
+
+------------------------------------------------------------------------
 2011-02-10  10:10:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-9
 Fix interblock output in denchar
 
