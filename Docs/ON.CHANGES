@@ -1,0 +1,15 @@
+--------------------------------------
+AG March 3  ---     siesta-3.0-341-on-1
+Take back Pablo's patch for chempot (partially)
+
+Undo the changes to chempot (and the calling sequences
+in ordern and compute_dm).
+
+Do not take back the changes in denmat.F and denmatlomem.F
+yet.
+
+modified:
+  Src/chempot.F
+  Src/compute_dm.F
+  Src/ordern.F
+  version.info

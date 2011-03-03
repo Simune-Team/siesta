@@ -15,7 +15,7 @@
       CONTAINS
 
       subroutine ordern(usesavelwf,ioptlwf,natoms,nbasis,nbasisloc,
-     .                  lasto,iaorb,isa,qa,rcoor,rh,cell,xa,iscf,istep,
+     .                  lasto,isa,qa,rcoor,rh,cell,xa,iscf,istep,
      .                  itmax,ftol,eta,enum,nhmax,numh,listhptr,
      .                  listh,h,s,chebef,noeta,rcoorcp,beta,ipcheb,
      .                  dm,edm,Ecorrec,nspin,qs)
@@ -36,7 +36,6 @@ C integer natoms               : Number of atoms
 C integer nbasis               : Number of basis orbitals globally
 C integer nbasisloc            : Number of basis orbitals locally
 C integer lasto(0:natoms)      : Index of last orbital of each atom
-C integer iaorb(nbasis)        : Atom to which each orbital belong
 C integer isa(natoms)          : Species index of each atom
 C real*8 qa(natoms)            : Neutral atom charge
 C real*8 rcoor                 : Cutoff radius of Localized Wave Functions
@@ -102,7 +101,7 @@ C  Modules
      .  nbasis, nbasisloc, nhmax, nspin
 
       integer
-     .  iaorb(nbasis), isa(natoms), lasto(0:natoms), listh(nhmax), 
+     .  isa(natoms), lasto(0:natoms), listh(nhmax), 
      .  listhptr(nbasis), numh(nbasis)
 
       real(dp) ::
@@ -262,7 +261,7 @@ C and HOMO and LUMO levels ..........
       if (chebef) then
 
         call chempot(h,s,numh,listhptr,listh,rcoorcp,ipcheb,beta,
-     .               lasto,iaorb,cell,xa,enum,nbasis,nbasisloc,natoms,
+     .               lasto,cell,xa,enum,nbasis,nbasisloc,natoms,
      .               nhmax,chpot,emax,emin)
 
         if (ionode) then
