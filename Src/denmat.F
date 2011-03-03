@@ -445,11 +445,11 @@ C Globalize total charge
 
 C Normalize ...
       do is = 1,nspin
-C        if (dabs(qs(is)-qout(is)) .gt. 0.05_dp) then
+        if (dabs(qs(is)-qout(is)) .gt. 0.05_dp) then
           fact = qs(is) / qout(is)
           call dscal(nh,fact,dm(1,is),1)
           call dscal(nh,fact,edm(1,is),1)
-C        endif
+        endif
       enddo
 
 C Deallocate local arrays

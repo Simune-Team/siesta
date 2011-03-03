@@ -534,11 +534,11 @@ C Globalise total charge
 
 C Normalize ...
       do is = 1,nspin
-C        if (dabs(qs(is)-qout(is)) .gt. 0.05_dp) then
+        if (dabs(qs(is)-qout(is)) .gt. 0.05_dp) then
           fact = qs(is) / qout(is)
           dm(1:nh,is) = fact*dm(1:nh,is)
           edm(1:nh,is) = fact*edm(1:nh,is)
-C        endif
+        endif
       enddo
 
 C Deallocate local arrays
