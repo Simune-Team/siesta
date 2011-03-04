@@ -6,6 +6,16 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2011-03-04  14:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-372
+Re-enable write_rho routine
+
+The write_rho routine had been modified for debugging purposes, but
+was not re-enabled. It now has been brought back to normal.
+
+modified:
+  Src/m_iorho.F
+
+-----------------------------------------------------------------------
 2011-02-25  10:20:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-371
 Fixes in pdosxml and denchar
 

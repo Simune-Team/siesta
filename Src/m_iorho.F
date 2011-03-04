@@ -89,7 +89,6 @@ C Internal variables and arrays
 #ifdef DEBUG
         call write_debug( 'ERROR: write_rho not ready yet' )
         call write_debug( fname )
-!        return
 #endif
 
 C Work out density block dimensions
@@ -125,11 +124,9 @@ C Write data
           write(iu,*) mesh, nspin
         else
           write(iu) cell
-          call io_close( iu )
-C            write(iu) mesh, nspin
+          write(iu) mesh, nspin
         endif
       endif
-      return
 
 C Outer loop over spins
         do is = 1,nspin
