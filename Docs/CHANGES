@@ -6,6 +6,20 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2011-03-09  16:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-373
+Fix two bugs in Vibra package
+
+The code to read the coordinates-and-masses block did not process the
+masses properly. It now also warns when there are not enough values in
+each line (a common error).
+
+Variable 'nlines' was not properly set in routine 'klines'.
+
+modified:
+  Util/Vibra/Src/klines.f
+  Util/Vibra/Src/recoor.f
+
+-----------------------------------------------------------------------
 2011-03-04  14:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-372
 Re-enable write_rho routine
 

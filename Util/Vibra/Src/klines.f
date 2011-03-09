@@ -83,12 +83,12 @@ C     *********************************************************************
 
       implicit          none
 
-      integer maxlin
-      parameter (maxlin = 1000)
+      integer, parameter ::  maxlin = 1000
 
-      integer           lastk(maxlin), maxk, nk, nlines
-      double precision  kpoint(3,maxk)
-      character         label(maxlin)*8
+      integer, intent(in)     :: maxk
+      integer, intent(out)    :: lastk(maxlin), nk, nlines
+      double precision, intent(out) ::  kpoint(3,maxk)
+      character(len=8), intent(out) ::  label(maxlin)
 
 
 C     *********************************************************************
@@ -96,7 +96,7 @@ C     *********************************************************************
 C     Internal variables 
 
       integer
-     .     i, ik, il, integs(4), iu, ix, 
+     .     i, ik, integs(4), iu, ix, 
      .     lastc, lc(0:3), 
      .     ni, nkl, nn, nr, nv
 
@@ -167,10 +167,10 @@ C     Find scale used in k point data
       if (.not. fdf_block('BandLines',bfdf)) call die("?")
 
       nk = 0
-      il = 0
+      nlines = 0
       do while (fdf_bline(bfdf,pline)) 
-         il = il + 1
-         if (il > maxlin) call die("maxlin overflow")
+         nlines = nlines + 1
+         if (nlines > maxlin) call die("maxlin overflow")
 
 C     Check if data are already finished
          if (.not. fdf_bmatch(pline,"ivvv")) then
@@ -208,11 +208,11 @@ C     Find points along the line
 
 C     Find point label
             if (fdf_bnnames(pline) .gt. 0) then
-               label(il) = fdf_bnames(pline,1)
+               label(nlines) = fdf_bnames(pline,1)
             else
-               label(il) = ' '
+               label(nlines) = ' '
             endif
-            lastk(il) = nk
+            lastk(nlines) = nk
 
          endif
       enddo
