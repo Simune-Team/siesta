@@ -6,6 +6,25 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2011-03-14  10:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-374
+Experimental output comparison tool
+
+A simple "output digest" script in awk extracts key information fields from the output
+file with default precisions, and generates a small file. These digest files can then
+be compared to check for differences.
+
+This is an experimental feature. It is not yet integrated in the automatic test
+framework. Note that the reference output files in Tests/Reference have not yet
+been updated, pending a review.
+
+added:
+  Tests/cmp_digest.sh               ! Script to compare digest files
+  Tests/out_digest.awk              ! Digest generator
+  Tests/out_digest_template.awk     ! Template for optional precision changes
+modified:
+  Src/obj_setup.sh                  ! It now creates a symbolic link to the ref directory.
+
+-----------------------------------------------------------------------
 2011-03-09  16:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-373
 Fix two bugs in Vibra package
 
