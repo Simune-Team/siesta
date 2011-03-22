@@ -6,7 +6,7 @@
       CONTAINS
 
       subroutine state_init( istep )
-      USE Kpoint_grid, only: setup_Kpoint_grid
+      USE Kpoint_grid, only: setup_Kpoint_grid, maxk
       USE m_new_dm, only: new_dm
       USE m_proximity_check, only: proximity_check
       USE siesta_options
@@ -24,7 +24,6 @@
       use m_check_supercell, only: check_sc_factors
       use siesta_cml,   only: cml_p, cmlStartStep, mainXML
       use zmatrix,      only: lUseZmatrix, write_zmatrix
-      use Kpoint_grid
       use m_energies, only: Emad
       use write_subs
       use m_steps

@@ -5,6 +5,30 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2011-03-22  15:05:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-11
+Clarify folding warning for gamma-point calculations
+
+For gamma-point calculations with unit cells not large enough to avoid
+interactions with images, a warning was produced even though it was
+only relevant for calculations intended for COOP/COHP analysis. The
+warning now appears only in that case.
+
+The manual has been updated to cover the point above, and also to make
+it clear that the Use.New.Diagk option is not compatible with the
+Diag.Parallel.Over.K mode.
+
+(+ cosmetic changes to avoid compiler warnings related to duplicate
+use statements)
+
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/Makefile
+  Src/hsparse.f
+  Src/m_ts_scattering.F
+  Src/state_init.F
+
+------------------------------------------------------------------------
 2011-02-25  10:10:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-10
 Use explicit bounds in array update in pdosxml
 

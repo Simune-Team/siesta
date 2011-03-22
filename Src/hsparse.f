@@ -440,20 +440,7 @@ C Find if jo overlaps with a KB projector
                          if (.not.warn1) then
                             if (Node.eq.0) then
                               if (gamma) then
-                                write(6,'(/,a,2i6,a,/,a)')
-     .                           'NOTE: orbital pair ',io,jo,
-     .                           ' (at least) is multiply connected.',
-     .                           'NOTE: '
-     .                           // 'Harmless for Gamma calculations,'
-     .                           // ' except if a COHP analysis '
-     .                           // 'is intended.'
-                                write(0,'(/,a,2i6,a,/,a)')
-     .                           'NOTE: orbital pair ',io,jo,
-     .                           ' (at least) is multiply connected.',
-     .                           'NOTE: '
-     .                           // 'Harmless for Gamma calculations,'
-     .                           // ' except if a COHP analysis '
-     .                           // 'is intended.'
+                                 call check_cohp(io,jo)
                               else
                                 write(6,'(/,a,2i6,a,/,a)')
      .                           'WARNING: orbital pair ',io,jo,
@@ -502,6 +489,25 @@ C Deallocate local arrays
       call timer( 'hsparse', 2 )
 
       end subroutine hsparse
+      
+      subroutine check_cohp(io,jo)
+      use siesta_options, only: write_coop
+
+      integer, intent(in) :: io, jo
+ 
+      if (write_coop) then
+         write(6,'(/,a,2i6,a,/,a)')
+     .     'NOTE: orbital pair ',io,jo,
+     .     ' (at least) is multiply connected.',
+     .     'NOTE: Your COOP/COHP analysis might ' //
+     $     'be affected by folding.'
+         write(0,'(/,a,2i6,a,/,a)')
+     .     'NOTE: orbital pair ',io,jo,
+     .     ' (at least) is multiply connected.',
+     .     'NOTE: Your COOP/COHP analysis might ' //
+     $     'be affected by folding.'
+      endif
+      end subroutine check_cohp
 
       end module m_hsparse
 

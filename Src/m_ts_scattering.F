@@ -215,7 +215,6 @@ C integer Nodes               : number of processors
 C
 C  Modules
 C
-      use precision
 C FDN
 C      use parallel
       use parallelsubs, only : GlobalToLocalOrb, WhichNodeOrb

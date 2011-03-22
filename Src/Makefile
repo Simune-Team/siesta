@@ -292,6 +292,8 @@ clean:
 #
 
 # DO NOT DELETE THIS LINE - used by make depend
+232-3.0.chempot.o: alloc.o mneighb.o parallel.o parallelsubs.o precision.o
+232-3.0.chempot.o: sys.o
 alloc.o: parallel.o precision.o sys.o
 arw.o: parallel.o sys.o
 atm_transfer.o: atm_types.o atmparams.o old_atmfuncs.o periodic_table.o
@@ -400,7 +402,7 @@ gradient.o: globalise.o m_mpi_utils.o onmod.o precision.o
 gradientlomem.o: globalise.o onmod.o precision.o
 grdsam.o: parallel.o parsing.o precision.o sys.o
 hsparse.o: alloc.o atm_types.o atmfuncs.o listsc.o mneighb.o parallel.o
-hsparse.o: parallelsubs.o precision.o sorting.o sys.o
+hsparse.o: parallelsubs.o precision.o siesta_options.o sorting.o sys.o
 idiag.o: parallel.o sys.o
 initatom.o: atom.o atom_options.o basis_io.o basis_specs.o basis_types.o
 initatom.o: electrostatic.o old_atmfuncs.o precision.o

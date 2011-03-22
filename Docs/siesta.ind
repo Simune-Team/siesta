@@ -75,6 +75,8 @@
   \item constant-volume cell relaxation, 79
   \item constraints in relaxations, 87
   \item {\bf COOP.Write}, 66
+  \item COOP/COHP curves, 66
+    \subitem Gamma-only calculations, 54
   \item cutoff radius, 24
 
   \indexspace
