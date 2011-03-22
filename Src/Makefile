@@ -436,8 +436,8 @@ gradientlomem.o: alloc.o globalise.o onmod.o precision.o
 grdsam.o: alloc.o dhscf.o parallel.o precision.o siesta_geom.o siesta_options.o
 grdsam.o: sys.o
 hsparse.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mneighb.o
-hsparse.o: parallel.o parallelsubs.o precision.o sorting.o sparse_matrices.o
-hsparse.o: sys.o
+hsparse.o: parallel.o parallelsubs.o precision.o siesta_options.o sorting.o
+hsparse.o: sparse_matrices.o sys.o
 idiag.o: parallel.o sys.o
 initatom.o: atmparams.o atom.o atom_options.o basis_io.o basis_specs.o
 initatom.o: basis_types.o electrostatic.o old_atmfuncs.o precision.o
