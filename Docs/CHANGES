@@ -6,6 +6,32 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2011-03-29  13:30:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-376
+Remove earlier patch for calculation of chemical potential
+
+Undo the changes to chempot (and the calling sequences in ordern and
+compute_dm) introduced in November 2007 by P. Ordejon, as they are not
+completely correct. This routine determines an approximate chemical
+potential for O(N) calculations. Note that parallel operation is still
+not possible.
+
+(Did not take back the changes in denmat.F and denmatlomem.F, which
+simply force an unconditional rescaling of the density matrix to
+produce the correct charge density.)
+
+(+ Fixed the code so that arbitrarily large Chebyshev's orders
+are in principle possible in Chempot)
+
+(+ Instrumented the O(N) line-minimization routine to print extra
+information if the preprocessor symbol DEBUG_LINMIN4 is used)
+
+modified:
+  Src/cgwf.F
+  Src/chempot.F
+  Src/compute_dm.F
+  Src/ordern.F
+
+-----------------------------------------------------------------------
 2011-03-22  10:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-375
 Clarify folding warning for gamma-point calculations
 

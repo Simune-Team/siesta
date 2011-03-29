@@ -487,7 +487,14 @@ C Solve the minimum ......................................................
 C .....................
 
 1235  continue
-
+#ifdef DEBUG_LINMIN4
+      if (node == 0) then
+         write(*,"(a,5g26.16,g20.8)") "--LM4-IN: ",
+     $        partial, elamb, ener, lam
+         write(*,"(a,4g26.16,26x,g20.8)") "--LM4OUT: ",
+     $        e0, e1, e2, e3, lambda
+      endif
+#endif
       return
       end
 
