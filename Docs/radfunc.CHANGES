@@ -1,0 +1,59 @@
+-------------------------------------------------------------
+March 29, 2011  Alberto Garcia   siesta-trunk-376-radfunc-1
+Prototype implementation of radial-function registry
+
+A new framework for dealing with arbitrary kinds of radial functions
+(as long as they can be represented by the existing "radfunc" data
+type as defined in module "radial". The indexing problem is solved
+by registering each function in a global pool, which keeps a pointer
+to the relevant data associated to a global index. The mappings
+between the global and the user-level indexes can be made transparent
+without effort.
+
+Any new kind of function can be added. This framework can coexist
+with the old one for as long as needed.
+
+Full documentation will follow.
+
+See complete example of usage in:
+
+register_rfs.F90  -- How to register any kind of radial function
+                     (This file does it for the standard functions
+                      already in Siesta)
+
+atmfuncs.F        -- One way to implement user-level helper functions
+                     for indexing (look for "gindex")
+
+overlap.f         -- How to use the new version of matel (which can
+                     coexist with the old one)
+
+Relevant new code:
+
+radfunc_registry.F90 -- The new registry and evaluators.
+
+new_matel.f          -- Basically the same, with just one global index
+                        per function. Still need to figure out how to
+                        re-use any radial info, if available.
+
+                        If the two versions of matel coexist there might
+                        be some missing opportunities to reuse tables.
+
+spher_harm.f         -- Offers two implementations of YLMEXP.
+
+
+Based in part on ideas contributed by Jose Soler.
+
+added:
+  Docs/radfunc.CHANGES
+  Src/new_matel.f
+  Src/radfunc_registry.F90
+  Src/register_rfs.F90
+modified:
+  Src/Makefile
+  Src/atm_types.f
+  Src/atmfuncs.f
+  Src/matel.f
+  Src/overlap.f
+  Src/parallel.F
+  Src/siesta_init.F
+  Src/spher_harm.f

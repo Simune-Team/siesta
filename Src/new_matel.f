@@ -8,73 +8,11 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      module m_xyz_phiatm
-
-      use precision, only: dp
-      use atmfuncs, only: phiatm
-
-      implicit none
-
-      public :: xphiatm, yphiatm, zphiatm
-      private
-
-
-      CONTAINS 
-
-      SUBROUTINE xphiatm(is,io,r,xphi,grxphi)
-C     Calculates x*phiatm and its gradient
-
-      integer, intent(in)   :: is, io
-      real(dp), intent(in)  :: r(3)
-      real(dp), intent(out) :: xphi, grxphi(3)
-
-      real(dp) phi, grphi(3), x
-
-      call phiatm(is,io,r,phi,grphi)
-      x = r(1)
-      xphi = x * phi
-      grxphi(1) = x * grphi(1) + phi
-      grxphi(2) = x * grphi(2)
-      grxphi(3) = x * grphi(3)
-      END SUBROUTINE xphiatm
-
-      SUBROUTINE yphiatm(is,io,r,yphi,gryphi)
-C     Calculates y*phiatm and its gradient
-
-      integer, intent(in)   :: is, io
-      real(dp), intent(in)  :: r(3)
-      real(dp), intent(out) :: yphi, gryphi(3)
-
-      real(dp) phi, grphi(3), y
-
-      call phiatm(is,io,r,phi,grphi)
-      y = r(2)
-      yphi = y * phi
-      gryphi(1) = y * grphi(1)
-      gryphi(2) = y * grphi(2) + phi
-      gryphi(3) = y * grphi(3)
-      END SUBROUTINE yphiatm
-
-      SUBROUTINE zphiatm(is,io,r,zphi,grzphi)
-C     Calculates z*phiatm and its gradient
-
-      integer, intent(in)   :: is, io
-      real(dp), intent(in)  :: r(3)
-      real(dp), intent(out) :: zphi, grzphi(3)
-
-      real(dp) phi, grphi(3), z
-      call phiatm(is,io,r,phi,grphi)
-      z = r(3)
-      zphi = z * phi
-      grzphi(1) = z * grphi(1)
-      grzphi(2) = z * grphi(2)
-      grzphi(3) = z * grphi(3) + phi
-      END SUBROUTINE zphiatm
-
-      end module m_xyz_phiatm
 !
-
-      SUBROUTINE MATEL( OPERAT, IS1, IS2, IO1, IO2, R12, S12, DSDR )
+      module m_new_matel
+      public :: new_matel
+      CONTAINS
+      SUBROUTINE new_MATEL( OPERAT, IG1, IG2, R12, S12, DSDR )
 C *******************************************************************
 C Finds two-center matrix elements between atom-centerd 'orbitals' 
 C with finite range and angular momentum.
@@ -89,11 +27,9 @@ C   'U' => 1/|r'-r| (with phiatm returning charge distributions)
 C   'X' => x, returning <phi1(r-R12)|x|phi2(r)> (origin on second atom)
 C   'Y' => y, returning <phi1(r-R12)|y|phi2(r)>
 C   'Z' => z, returning <phi1(r-R12)|z|phi2(r)>
-C INTEGER IS1    : Species index of 1st orbital. Must be positive
-C INTEGER IS2    : Species index of 2nd orbital. Must be positive
-C INTEGER IO1    : Orbital index of 1st orbital
-C INTEGER IO2    : Orbital index of 2nd orbital
-C                    Indexes IS1,IS2,IO1,IO2 are used only to call 
+C INTEGER IG1    : Global index of 1st function
+C INTEGER IG2    : Gloabal index of 2nd function (positive)
+C                    Indexes IG1, IG2 are used only to call 
 C                    routines LOFIO, RCUT and PHIATM (see below), and 
 C                    may have other meanings within those routines
 C REAL*8  R12(3) : Vector from first to second atom
@@ -103,23 +39,20 @@ C REAL*8 DSDR(3)  : Derivative (gradient) of S12 with respect to R12.
 C ************************* ROUTINES CALLED *************************
 C The following functions must exist:
 C
-C INTEGER FUNCTION LOFIO(IS,IO)
-C   Returns the maximun angular momentum of orbitals
+C INTEGER FUNCTION LOFIO(IG)
+C   Returns the angular momentum of the function
 C Input:
-C     INTEGER IS : Species index
-C     INTEGER IO : Orbital index
+C     INTEGER IG : Global index
 C
-C REAL*8 FUNCTION RCUT(IS,IO)
-C   Returns cutoff radius of orbitals
+C REAL*8 FUNCTION RCUT(IG)
+C   Returns cutoff radius of the function
 C Input:
-C     INTEGER IS : Species index
-C     INTEGER IO : Orbital index
+C     INTEGER IG : Global index
 C
-C SUBROUTINE PHIATM(IS,IO,R,PHI,GRPHI)
-C   Returns the value of the 'orbital' functions to be integrated
+C SUBROUTINE PHIATM(IG,R,PHI,GRPHI)
+C   Returns the value of the functions to be integrated
 C Input:
-C   INTEGER IS   : Species index
-C   INTEGER IO   : Orbital index
+C     INTEGER IG : Global index
 C   REAL*8  R(3) : Position with respect to atom
 C Output:
 C   REAL*8  PHI      : Value of orbital at point R
@@ -139,8 +72,10 @@ C Modules -----------------------------------------------------------
       use precision, only : dp
       use parallel, only: node
       USE ALLOC
-      USE ATMFUNCS, ONLY: LOFIO, PHIATM, RCUT
-      use m_xyz_phiatm
+      USE m_radfunc_registry, ONLY: LOFIO, PHIATM=>evaluate, RCUT
+      USE m_radfunc_registry, ONLY: xphiatm=>evaluate_x
+      USE m_radfunc_registry, ONLY: yphiatm=>evaluate_y
+      USE m_radfunc_registry, ONLY: zphiatm=>evaluate_z
       use m_recipes, only: spline, splint, derf
       use spher_harm, only: rlylm, ylmexp, ylmylm, lofilm
       use spher_harm, only: reset_spher_harm
@@ -151,7 +86,7 @@ C -------------------------------------------------------------------
 C Argument types and dimensions -------------------------------------
       IMPLICIT          NONE
       CHARACTER         OPERAT
-      INTEGER           IO1, IO2, IS1, IS2
+      INTEGER           IG1, IG2
       real(dp)          DSDR(3), R12(3), S12
 C -------------------------------------------------------------------
 
@@ -179,7 +114,7 @@ C -------------------------------------------------------------------
 C Internal variable types and dimensions ----------------------------
       INTEGER ::
      &  I, IF1, IF2, IFF, IFFY, IFLM1, IFLM2, 
-     &  IO, IOPER, IQ, IR, IS, IX,
+     &  IG, IOPER, IQ, IR, IX,
      &  JF1, JF2, JFF, JFFR, JFFY, JFLM1, JFLM2, JLM, 
      &  JO1, JO2, JR,
      &  L, L1, L2, L3, LMAX,
@@ -189,8 +124,8 @@ C Internal variable types and dimensions ----------------------------
      &  NF=0, NFF=0, NFFR=0, NFFY=0, NR=NQ
 
       INTEGER, POINTER, SAVE ::
-     &  IFFR(:), ILM(:), ILMFF(:), INDF(:,:,:), INDFF(:,:,:),
-     &  INDFFR(:), INDFFY(:), NLM(:,:,:)
+     &  IFFR(:), ILM(:), ILMFF(:), INDF(:,:), INDFF(:,:,:),
+     &  INDFFR(:), INDFFY(:), NLM(:,:)
 
       real(dp) ::
      &  C, CH(2), CPROP, DFFR0, DFFRMX, DSRDR, ERRF,
@@ -224,14 +159,14 @@ C Nullify pointers
       IF (.NOT.NULLIFIED) THEN
         NULLIFY( IFFR, ILM, ILMFF, INDF, INDFF, INDFFR, INDFFY, NLM,
      &           CFFR, DYDR, F, FFR, FFY, Y )
-        CALL RE_ALLOC( INDF, 1, 1, 1, 1, 1, 1, 'INDF', MYNAME )
+        CALL RE_ALLOC( INDF, 1, 1, 1, 1, 'INDF', MYNAME )
         CALL RE_ALLOC( INDFFY, 0,MFF, 'INDFFY', MYNAME )
         INDFFY(0) = 0
         NULLIFIED = .TRUE.
       ENDIF
 
 C Check if tables must be re-initialized 
-      IF ( IS1.LE.0 .OR. IS2.LE.0 ) THEN
+      IF ( IG1.LE.0 .OR. IG2.LE.0 ) THEN
         CALL RESET_SPHER_HARM( )
         CALL RESET_RADFFT( )
         CALL DE_ALLOC( IFFR, 'IFFR', MYNAME )
@@ -278,30 +213,24 @@ C Check argument OPERAT
       ENDIF
 
 C Check size of orbital index table
-      IF ( MAX(IS1,IS2).GT.UBOUND(INDF,1)   .OR.
-     &     MIN(IO1,IO2).LT.LBOUND(INDF,2) .OR.
-     &     MAX(IO1,IO2).GT.UBOUND(INDF,2) .OR.
-     &     MAX(IOPER,3).GT.UBOUND(INDF,3) ) THEN
-        CALL RE_ALLOC( INDF, 1, MAX(UBOUND(INDF,1),IS1,IS2),
-     &                MIN(LBOUND(INDF,2),IO1,IO2),MAX(UBOUND(INDF,2),
-     &                IO1,IO2),1,MAX(UBOUND(INDF,3),IOPER,3),
+      IF ( MAX(IG1,IG2).GT.UBOUND(INDF,1)   .OR.
+     &     MAX(IOPER,3).GT.UBOUND(INDF,2) ) THEN
+        CALL RE_ALLOC( INDF, 1, MAX(UBOUND(INDF,1),IG1,IG2),
+     &                       1,MAX(UBOUND(INDF,2),IOPER,3),
      &                'INDF', MYNAME )
-        CALL RE_ALLOC( NLM,  1,MAX(UBOUND(INDF,1),IS1,IS2),
-     &                MIN(LBOUND(INDF,2),IO1,IO2),MAX(UBOUND(INDF,2),
-     &                IO1,IO2),1,MAX(UBOUND(INDF,3),IOPER,3),
+        CALL RE_ALLOC( NLM,  1,MAX(UBOUND(INDF,1),IG1,IG2),
+     &                       1,MAX(UBOUND(INDF,2),IOPER,3),
      &                'NLM', MYNAME )
       ENDIF
 
 C Find radial expansion of each orbital -----------------------------
       DO I = 1,2
         IF (I .EQ. 1) THEN
-          IS = IS1
-          IO = IO1
-          FOUND = (INDF(IS,IO,1) .NE. 0)
+          IG = IG1
+          FOUND = (INDF(IG,1) .NE. 0)
         ELSE
-          IS = IS2
-          IO = IO2
-          FOUND = (INDF(IS,IO,IOPER) .NE. 0)
+          IG = IG2
+          FOUND = (INDF(IG,IOPER) .NE. 0)
         ENDIF
         IF (.NOT.FOUND) THEN
 *         CALL TIMER( 'MATEL1', 1 )
@@ -314,12 +243,12 @@ C         two orbitals
           NR = NQ
           RMAX = NR * DR
           DRTAB = RMAX / NRTAB
-          IF ( RCUT(IS,IO) .GT. RMAX ) THEN
+          IF ( RCUT(IG) .GT. RMAX ) THEN
             call die('MATEL: NQ too small for required cutoff.')
           ENDIF
 
 C         Reallocate arrays
-          L = LOFIO( IS, IO )
+          L = LOFIO( IG )
           NILM = (L+2)**2
           IF (NF+NILM .GT. MF) MF = EXPAND * (NF+NILM)
           CALL RE_ALLOC( F, 0,NQ, 1,MF, 'F', MYNAME )
@@ -329,27 +258,27 @@ C         Reallocate arrays
 
 C         Expand orbital in spherical harmonics
           IF ((I.EQ.1) .OR. (IOPER.LE.3)) THEN
-            CALL YLMEXP( L, RLYLM, PHIATM, IS, IO, 0, NQ, RMAX,
+            CALL YLMEXP( L, RLYLM, PHIATM, IG, 0, NQ, RMAX,
      &                   NILM, ILM(NF+1:), F(:,NF+1:) )
-            INDF(IS,IO,1) = NF+1
-            INDF(IS,IO,2) = NF+1
-            INDF(IS,IO,3) = NF+1
-            NLM(IS,IO,1) = NILM
-            NLM(IS,IO,2) = NILM
-            NLM(IS,IO,3) = NILM
+            INDF(IG,1) = NF+1
+            INDF(IG,2) = NF+1
+            INDF(IG,3) = NF+1
+            NLM(IG,1) = NILM
+            NLM(IG,2) = NILM
+            NLM(IG,3) = NILM
           ELSE
             IF(IOPER.EQ.4) THEN
-              CALL YLMEXP( L+1, RLYLM, XPHIATM, IS, IO, 0, NQ, RMAX,
+              CALL YLMEXP( L+1, RLYLM, XPHIATM, IG, 0, NQ, RMAX,
      &                     NILM, ILM(NF+1:), F(:,NF+1:) )
             ELSEIF(IOPER.EQ.5) THEN
-              CALL YLMEXP( L+1, RLYLM, YPHIATM, IS, IO, 0, NQ, RMAX,
+              CALL YLMEXP( L+1, RLYLM, YPHIATM, IG, 0, NQ, RMAX,
      &                     NILM, ILM(NF+1:), F(:,NF+1:) )
             ELSE
-              CALL YLMEXP( L+1, RLYLM, ZPHIATM, IS, IO, 0, NQ, RMAX,
+              CALL YLMEXP( L+1, RLYLM, ZPHIATM, IG, 0, NQ, RMAX,
      &                     NILM, ILM(NF+1:), F(:,NF+1:) )
             ENDIF
-            INDF(IS,IO,IOPER) = NF+1
-            NLM(IS,IO,IOPER) = NILM
+            INDF(IG,IOPER) = NF+1
+            NLM(IG,IOPER) = NILM
           ENDIF
 
 C         Store orbital in k-space
@@ -366,19 +295,19 @@ C         Store orbital in k-space
 C -------------------------------------------------------------------
 
 C Find radial expansion of overlap ----------------------------------
-      IF1 = INDF(IS1,IO1,1)
-      IF2 = INDF(IS2,IO2,IOPER)
+      IF1 = INDF(IG1,1)
+      IF2 = INDF(IG2,IOPER)
 
       IF ( INDFF(IF1,IF2,IOPER) .EQ. 0 ) THEN
 *       CALL TIMER( 'MATEL2', 1 )
 
-        NILM1 = NLM(IS1,IO1,1)
-        NILM2 = NLM(IS2,IO2,IOPER)
+        NILM1 = NLM(IG1,1)
+        NILM2 = NLM(IG2,IOPER)
         DO IFLM1 = IF1,IF1+NILM1-1
         DO IFLM2 = IF2,IF2+NILM2-1
 
 C         Check interaction range
-          IF (RCUT(IS1,IO1)+RCUT(IS2,IO2) .GT. RMAX) THEN
+          IF (RCUT(IG1)+RCUT(IG2) .GT. RMAX) THEN
             call die('MATEL: NQ too small for required cutoff.')
           ENDIF
 
@@ -497,33 +426,33 @@ C           Select NRTAB out of NR points
 
 C           Find if radial function is already in table
             FOUND = .FALSE.
-            SEARCH: DO JO1 = LBOUND(INDF,2),UBOUND(INDF,2)
-                    DO JO2 = LBOUND(INDF,2),UBOUND(INDF,2)
-              JF1 = INDF(IS1,JO1,1)
-              JF2 = INDF(IS2,JO2,IOPER)
-              IF (JF1.NE.0 .AND. JF2.NE.0) THEN
-                NJLM1 = NLM(IS1,JO1,1)
-                NJLM2 = NLM(IS2,JO2,IOPER)
-                DO JFLM1 = JF1,JF1+NJLM1-1
-                DO JFLM2 = JF2,JF2+NJLM2-1
-                  JFF = INDFF(JFLM1,JFLM2,IOPER)
-                  IF (JFF .NE. 0) THEN
-                    DO JFFY = INDFFY(JFF-1)+1, INDFFY(JFF)
-                      JFFR = INDFFR(JFFY)
-                      IF ( PROPOR(NRTAB,FFL(1),FFR(1,1,JFFR),
-     &                            FFTOL,CPROP)           ) THEN
-                        FOUND = .TRUE.
-                        IFFR(L3) = JFFR
-                        CFFR(L3) = CPROP
-                        EXIT SEARCH
-                      ENDIF
-                    ENDDO
-                  ENDIF
-                ENDDO
-                ENDDO
-              ENDIF
-            ENDDO
-            ENDDO SEARCH
+c$$$            SEARCH: DO JO1 = LBOUND(INDF,2),UBOUND(INDF,2)
+c$$$                    DO JO2 = LBOUND(INDF,2),UBOUND(INDF,2)
+c$$$              JF1 = INDF(IS1,JO1,1)
+c$$$              JF2 = INDF(IS2,JO2,IOPER)
+c$$$              IF (JF1.NE.0 .AND. JF2.NE.0) THEN
+c$$$                NJLM1 = NLM(IS1,JO1,1)
+c$$$                NJLM2 = NLM(IS2,JO2,IOPER)
+c$$$                DO JFLM1 = JF1,JF1+NJLM1-1
+c$$$                DO JFLM2 = JF2,JF2+NJLM2-1
+c$$$                  JFF = INDFF(JFLM1,JFLM2,IOPER)
+c$$$                  IF (JFF .NE. 0) THEN
+c$$$                    DO JFFY = INDFFY(JFF-1)+1, INDFFY(JFF)
+c$$$                      JFFR = INDFFR(JFFY)
+c$$$                      IF ( PROPOR(NRTAB,FFL(1),FFR(1,1,JFFR),
+c$$$     &                            FFTOL,CPROP)           ) THEN
+c$$$                        FOUND = .TRUE.
+c$$$                        IFFR(L3) = JFFR
+c$$$                        CFFR(L3) = CPROP
+c$$$                        EXIT SEARCH
+c$$$                      ENDIF
+c$$$                    ENDDO
+c$$$                  ENDIF
+c$$$                ENDDO
+c$$$                ENDDO
+c$$$              ENDIF
+c$$$            ENDDO
+c$$$            ENDDO SEARCH
 
 C           Store new radial function
             IF (.NOT.FOUND) THEN
@@ -626,11 +555,11 @@ C     Avoid R12=0
       ENDIF
 
 C     Find if orbitals are far (out of range)
-      IF (R .GT. RCUT(IS1,IO1)+RCUT(IS2,IO2) ) THEN
+      IF (R .GT. RCUT(IG1)+RCUT(IG2) ) THEN
         FAR = .TRUE.
         IF (OPERAT.EQ.'U') THEN
-          IF1 = INDF(IS1,IO1,1)
-          IF2 = INDF(IS2,IO2,IOPER)
+          IF1 = INDF(IG1,1)
+          IF2 = INDF(IG2,IOPER)
           IFF = INDFF(IF1,IF2,IOPER)
           IFFY = INDFFY(IFF)
           JFFR = INDFFR(IFFY)
@@ -645,10 +574,10 @@ C     Find if orbitals are far (out of range)
 
 C     Find spherical harmonics times R**L
       IF (.NOT.FAR) THEN
-        IF1 = INDF(IS1,IO1,1)
-        IF2 = INDF(IS2,IO2,IOPER)
-        NILM1 = NLM(IS1,IO1,1)
-        NILM2 = NLM(IS2,IO2,IOPER)
+        IF1 = INDF(IG1,1)
+        IF2 = INDF(IG2,IOPER)
+        NILM1 = NLM(IG1,1)
+        NILM2 = NLM(IG2,IOPER)
         DO IFLM1 = IF1,IF1+NILM1-1
         DO IFLM2 = IF2,IF2+NILM2-1
           IFF = INDFF(IFLM1,IFLM2,IOPER)
@@ -688,4 +617,5 @@ C Stop time counter
 
 !------------------------ Internal procedures
 
-      END SUBROUTINE MATEL
+      END SUBROUTINE new_MATEL
+      end module m_new_matel

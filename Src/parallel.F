@@ -52,3 +52,12 @@ C
       end subroutine parallel_init
 
       end module parallel
+!
+!     convenience function
+! 
+      function io_node()
+      use parallel, only: node
+      logical :: io_node
+      
+      io_node = ( node == 0)
+      end function io_node

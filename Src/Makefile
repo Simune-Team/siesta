@@ -137,7 +137,8 @@ OBJS =  automatic_cell.o atom_options.o \
 	read_xc_info.o \
         bsc_xcmod.o bsc_cellxc.o xc.o \
 	vacuum_level.o \
-	write_orb_indx.o 
+	write_orb_indx.o \
+	radfunc_registry.o register_rfs.o new_matel.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -534,7 +535,7 @@ m_ts_scattering.o: sys.o
 m_wallclock.o: m_walltime.o
 madelung.o: parallel.o precision.o sys.o
 matel.o: alloc.o atmfuncs.o m_recipes.o parallel.o precision.o radfft.o
-matel.o: spher_harm.o
+matel.o: spher_harm.o sys.o
 md_out.o: files.o m_energies.o precision.o sys.o units.o
 md_utils.o: precision.o
 memory.o: alloc.o memoryinfo.o parallel.o precision.o
@@ -564,6 +565,8 @@ new_dm.o: alloc.o atomlist.o m_energies.o m_fdf_global.o m_iodm.o m_sparse.o
 new_dm.o: m_spin.o m_steps.o m_ts_global_vars.o m_ts_iodm.o m_ts_options.o
 new_dm.o: parallel.o parallelsubs.o parsing.o precision.o siesta_geom.o
 new_dm.o: siesta_options.o sparse_matrices.o sys.o units.o
+new_matel.o: alloc.o m_recipes.o parallel.o precision.o radfft.o
+new_matel.o: radfunc_registry.o spher_harm.o sys.o
 nlefsm.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
 normalize_dm.o: atomlist.o m_mpi_utils.o m_spin.o parallel.o precision.o
 normalize_dm.o: sparse_matrices.o
@@ -579,7 +582,8 @@ ordern.o: precision.o siesta_cml.o sys.o units.o
 outcell.o: precision.o siesta_cml.o units.o
 outcoor.o: alloc.o atmfuncs.o precision.o siesta_geom.o sys.o units.o
 overfsm.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
-overlap.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
+overlap.o: alloc.o atmfuncs.o mneighb.o new_matel.o parallel.o parallelsubs.o
+overlap.o: precision.o radfunc_registry.o
 parallelsubs.o: parallel.o spatial.o sys.o
 pdos.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o parallel.o
 pdos.o: parallelsubs.o precision.o siesta_geom.o units.o xml.o
@@ -604,11 +608,13 @@ proximity_check.o: m_ts_options.o mneighb.o parallel.o precision.o
 proximity_check.o: siesta_geom.o siesta_options.o
 pseudopotential.o: alloc.o atom_options.o flib_spline.o precision.o sys.o
 radfft.o: alloc.o bessph.o m_recipes.o precision.o
+radfunc_registry.o: precision.o radial.o spher_harm.o sys.o
 radial.o: alloc.o precision.o xml.o
 rdiag.o: alloc.o m_diagon.o memoryinfo.o parallel.o precision.o sys.o
 read_xc_info.o: parallel.o precision.o sys.o
 readsp.o: parallel.o precision.o sys.o
 redcel.o: parallel.o precision.o sys.o
+register_rfs.o: atm_types.o atmfuncs.o precision.o radfunc_registry.o radial.o
 reinit.o: files.o parallel.o
 remove_intramol_pressure.o: precision.o zmatrix.o
 reoptical.o: parallel.o precision.o sys.o
@@ -753,6 +759,7 @@ m_minvec.o: minvec.o
 m_mixer.o: mixer.o
 m_naefs.o: naefs.o
 m_new_dm.o: new_dm.o
+m_new_matel.o: new_matel.o
 m_nlefsm.o: nlefsm.o
 m_norm.o: compute_norm.o
 m_normalize_dm.o: normalize_dm.o
@@ -763,6 +770,7 @@ m_post_scf_work.o: post_scf_work.o
 m_projected_dos.o: projected_DOS.o
 m_proximity_check.o: proximity_check.o
 m_radfft.o: radfft.o
+m_radfunc_registry.o: radfunc_registry.o
 m_scf_options.o: m_options.o
 m_scfconvergence_test.o: scfconvergence_test.o
 m_setup_h0.o: setup_H0.o
