@@ -60,49 +60,54 @@
 !
     type(species_info), pointer        :: spp
 !
-    integer :: is, io, gindex
+    integer :: pass, is, io, gindex
     real(dp) :: r(3) = (/0.5_dp, 0.5_dp, 0.5_dp/)
     real(dp) :: grad(3), phi
+    logical, external :: io_node
 
+   do pass = 0, 1
+    if (pass==1) r(:) = 0.0_dp
+    if (io_node()) print *, "Evaluation for r:",r(:)
     do is = 1, nspecies
-       print *, "---IS: ", is
+       if (io_node()) print *, "---IS: ", is
        spp => species(is)
        do io=1,spp%norbs
           call phiatm(is,io,r,phi,grad)
-          print *, "io, rcut, phiatm_h:",   &
+          if (io_node()) print *, "io, rcut, phiatm_h:",   &
                     io, rcut(is,io), phi
           gindex = orb_gindex(is,io)
           call evaluate(gindex,r,phi,grad)
-          print *, "ig, rcut, phiatm_h:",   &
+          if (io_node()) print *, "ig, rcut, phiatm_h:",   &
                     gindex, cutoff(gindex), phi
        enddo
     enddo
 
     do is = 1, nspecies
-       print *, "---IS projs: ", is
+       if (io_node()) print *, "---IS projs: ", is
        spp => species(is)
        do io=1,spp%nprojs
           call phiatm(is,-io,r,phi,grad)
-          print *, "io, rcut, phiatm_h:",   &
+          if (io_node()) print *, "io, rcut, phiatm_h:",   &
                     io, rcut(is,-io), phi
           gindex = kbproj_gindex(is,io)
           call evaluate(gindex,r,phi,grad)
-          print *, "ig, rcut, phiatm_h:",   &
+          if (io_node()) print *, "ig, rcut, phiatm_h:",   &
                     gindex, cutoff(gindex), phi
        enddo
     enddo
     
     ! Vna
     do is = 1, nspecies
-       print *, "---IS vna: ", is
+       if (io_node()) print *, "---IS vna: ", is
        spp => species(is)
        call phiatm(is,0,r,phi,grad)
-       print *, "rcut, phiatm_h:",   &
+       if (io_node()) print *, "rcut, phiatm_h:",   &
                  rcut(is,0), phi
        gindex = vna_gindex(is)
        call evaluate(gindex,r,phi,grad)
-       print *, "ig, rcut, phiatm_h:",   &
+       if (io_node()) print *, "ig, rcut, phiatm_h:",   &
                     gindex, cutoff(gindex), phi
     enddo
+ enddo
     
   end subroutine test_register

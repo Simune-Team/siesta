@@ -155,6 +155,7 @@ module m_radfunc_registry
      real(dp) rly(max_ilm), grly(3,max_ilm)
      integer i, l, m, ilm
 
+     real(dp), parameter     :: tiny = 1.e-20_dp
 
      if (valid(gindex)) then
         
@@ -162,7 +163,9 @@ module m_radfunc_registry
         l = rf_pool(gindex)%l
         m = rf_pool(gindex)%m
 
-        rmod = sqrt(sum(r*r)) 
+        ! the addition of "tiny" avoids division by 0
+        !
+        rmod = sqrt(sum(r*r)) + tiny
         
         if(rmod > func%cutoff) then
 

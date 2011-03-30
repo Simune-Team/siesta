@@ -1,4 +1,17 @@
 -------------------------------------------------------------
+March 30, 2011  Alberto Garcia   siesta-trunk-376-radfunc-2
+Fix division by zero in evaluate routine
+
+A small number is added to rmod to avoid division
+by zero when r(:) = 0 in "evaluate".
+
+Wrapped the output of the testing routine for MPI.
+
+modified:
+  Src/radfunc_registry.F90
+  Src/register_rfs.F90
+
+-------------------------------------------------------------
 March 29, 2011  Alberto Garcia   siesta-trunk-376-radfunc-1
 Prototype implementation of radial-function registry
 
