@@ -5,6 +5,20 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2011-03-31  15:40:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-13
+Cosmetic changes to avoid xlf compiler diagnostics in dummy FoX
+
+If the "trap undefined variables" option is enabled in the xlf
+compiler, some stray symbols in the dummy version of the FoX library
+produce diagnostics. They have been re-wrapped.
+
+(Thanks to Oscar Paz)
+
+modified:
+  Src/FoX/common/m_common_attrs.F90
+  Src/FoX/utils/fox_m_utils_uri.F90
+
+------------------------------------------------------------------------
 2011-03-28  16:20:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-12
 Remove earlier patch for calculation of chemical potential 
 
