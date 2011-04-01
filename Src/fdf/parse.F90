@@ -177,6 +177,10 @@ MODULE parse
   USE prec
   implicit none
 
+
+! Serialization functions
+  public :: serialize_pline, recreate_pline
+
 ! Internal functions: build parsed line and morphology
   private :: create
   private :: parses, morphol
@@ -205,6 +209,8 @@ MODULE parse
   integer(ip), private            :: parse_log   = ERROR_UNIT
   integer(ip), parameter, private :: MAX_NTOKENS = 50
 
+! Length of string encoding plines
+  integer, parameter, public :: SERIALIZED_LENGTH =  MAX_LENGTH+4*(1+2*MAX_NTOKENS)+MAX_NTOKENS
 
 !   Parsed line info (ntokens, token info and identification)
 !   Note that the token characters are stored in a single "line",
@@ -1522,5 +1528,59 @@ MODULE parse
       RETURN
 !------------------------------------------------------------- END
     END SUBROUTINE setlog
+
+!
+    subroutine serialize_pline(pline,string,length)
+    type(parsed_line)   :: pline
+    character(len=*), intent(out) :: string
+    integer, intent(out) :: length
+
+    integer :: pos
+
+    length = SERIALIZED_LENGTH
+    if (len(string) < length) then
+       call die('PARSE module: serialize_pline', &
+            "String too short", &
+            THIS_FILE, __LINE__)
+    endif
+
+    string = ""
+    string(1:MAX_LENGTH) = pline%line
+    pos = MAX_LENGTH
+    write(string(pos+1:pos+4),"(i4)") pline%ntokens
+    pos = pos + 4
+    
+    write(string(pos+1:pos+4*MAX_NTOKENS),"(i4)") pline%first(1:MAX_NTOKENS)
+    pos = pos + 4*MAX_NTOKENS
+    write(string(pos+1:pos+4*MAX_NTOKENS),"(i4)") pline%last(1:MAX_NTOKENS)
+    pos = pos + 4*MAX_NTOKENS
+    write(string(pos+1:pos+MAX_NTOKENS),"(a1)") pline%id(1:MAX_NTOKENS)
+
+  end subroutine serialize_pline
+
+    subroutine recreate_pline(pline,string)
+    type(parsed_line), pointer   :: pline
+    character(len=*), intent(in) :: string
+
+    integer :: pos
+
+    if (len(string) < SERIALIZED_LENGTH)  then
+       call die('PARSE module: recreate_pline', &
+            "String too short", &
+            THIS_FILE, __LINE__)
+    endif
+
+    call create(pline)
+    pline%line = string(1:MAX_LENGTH)
+    pos = MAX_LENGTH
+    read(string(pos+1:pos+4),"(i4)") pline%ntokens
+    pos = pos + 4
+    read(string(pos+1:pos+4*MAX_NTOKENS),"(i4)") pline%first(1:MAX_NTOKENS)
+    pos = pos + 4*MAX_NTOKENS
+    read(string(pos+1:pos+4*MAX_NTOKENS),"(i4)") pline%last(1:MAX_NTOKENS)
+    pos = pos + 4*MAX_NTOKENS
+    read(string(pos+1:pos+MAX_NTOKENS),"(a1)") pline%id(1:MAX_NTOKENS)
+
+  end subroutine recreate_pline
 
 END MODULE parse

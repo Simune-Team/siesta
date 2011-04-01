@@ -121,6 +121,9 @@ MODULE fdf
   USE parse, only: fdf_bsearch => search
   USE parse, only: fdf_substring_search => substring_search
 
+  USE parse, only: serialize_pline, recreate_pline
+  USE parse, only: SERIALIZED_LENGTH
+
   USE utils
   USE prec
   implicit none
@@ -285,6 +288,7 @@ MODULE fdf
   type(fdf_file), pointer, private :: file_in
 
 
+
 ! Define by default all the others inherit module entities as privated
 ! avoiding redefinitions of entities in several module files with same name
   public :: parsed_line   ! Structure for searching inside fdf blocks
@@ -426,7 +430,8 @@ MODULE fdf
 
 !------------------------------------------------------------------------- BEGIN
 #ifdef CLUSTER
-      call fdf_readcluster(filein)
+!!      call fdf_readcluster(filein)
+      call setup_fdf_cluster(filein)
 #elif defined(BLOCKING)
       call fdf_readblocking(filein)
 #else
@@ -509,6 +514,64 @@ MODULE fdf
       RETURN
 !--------------------------------------------------------------------------- END
     END SUBROUTINE fdf_readcluster
+!
+!
+    SUBROUTINE setup_fdf_cluster(filein)
+      use mpi_siesta
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)  :: filein
+
+!--------------------------------------------------------------- Local Variables
+      character(80)  :: msg
+      character(256) :: fileinTmp
+      integer(ip)    :: ierr, texist_send, reading_node
+#ifdef SOPHISTICATED_SEARCH
+      logical        :: file_exist
+#endif
+!------------------------------------------------------------------------- BEGIN
+!     Tests if the running node has the input file:
+!       If found: texist_send = rank
+!       Else    : texist_send = error_code (ntasks + 1)
+
+#ifdef SOPHISTICATED_SEARCH
+      INQUIRE(file=filein, exist=file_exist)
+      if (file_exist) then
+        texist_send = rank
+      else
+        texist_send = ntasks + 1
+      endif
+
+      call MPI_AllReduce(texist_send, reading_node, 1, MPI_INTEGER,      &
+                         MPI_MIN, MPI_COMM_WORLD, ierr)
+      if (ierr .ne. MPI_SUCCESS) then
+        call die('FDF module: fdf_readcluster', 'Error in MPI_AllReduce (task_exist).' //  &
+                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      endif
+#else
+!
+!     Simplify: Assume node 0 has the file
+!
+      reading_node = 0
+#endif
+
+!     The node owner of the input file send the data to the other ones
+!     if none node has an input file with such name abort the application
+      if (reading_node .eq. ntasks + 1) then
+         write(msg,*) 'No node found in the cluster with ',              &
+              ' input file ', filein,'. Terminating.'
+         call die('FDF module: fdf_readcluster', msg,                    &
+              THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      endif
+
+      if (rank == reading_node) then
+         call fdf_read(filein)
+      endif
+      call broadcast_fdf_struct(reading_node)		
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE setup_fdf_cluster
 #endif
 
 !
@@ -621,8 +684,56 @@ MODULE fdf
       RETURN
 !--------------------------------------------------------------------------- END
     END SUBROUTINE fdf_recvInput
-#endif
+!
+!   Broadcast complete fdf structure
+!
+    SUBROUTINE broadcast_fdf_struct(reading_node)
+      use mpi_siesta
+      implicit none
 
+      integer, intent(in)       :: reading_node         ! Node which contains the struct
+
+!--------------------------------------------------------------- Local Variables
+      character, pointer        :: bufferFDF(:)
+      integer(ip)               :: i, j, k, ierr, nlines
+      type(line_dlist), pointer :: mark
+
+!------------------------------------------------------------------------- BEGIN
+
+      nlines = file_in%nlines
+      ALLOCATE(bufferFDF(nlines*SERIALIZED_LENGTH), stat=ierr)
+      if (ierr .ne. 0) then
+        call die('FDF module: broadcast_fdf', 'Error allocating bufferFDF', &
+                 THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      endif
+
+      call MPI_Bcast(nlines, 1,                                 &
+                     MPI_INTEGER, reading_node, MPI_COMM_WORLD, ierr)
+      if (ierr .ne. MPI_SUCCESS) then
+        call die('FDF module: broadcast_fdf', 'Error Broadcasting nlines.' // &
+                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      endif
+
+      if (rank == reading_node) then
+         call serialize_fdf_struct(bufferFDF)
+      endif
+
+      call MPI_Bcast(bufferFDF, size(bufferFDF),              &
+                     MPI_CHARACTER, reading_node, MPI_COMM_WORLD, ierr)
+      if (ierr .ne. MPI_SUCCESS) then
+        call die('FDF module: broadcast_fdf', 'Error Broadcasting bufferFDF.' // &
+                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      endif
+      if (rank /= reading_node) then
+         call recreate_fdf_struct(nlines,bufferFDF)
+      endif
+
+      DEALLOCATE(bufferFDF)
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE broadcast_fdf_struct
+#endif
 !
 !   Reading code for Blocking read. The reading of the input file is
 !   splitted in several steps of size BLOCKSIZE. The number of steps
@@ -2339,5 +2450,40 @@ MODULE fdf
       RETURN
 !--------------------------------------------------------------------------- END
     END SUBROUTINE fdf_setdebug
+
+
+    subroutine serialize_fdf_struct(buffer)
+    character, pointer        :: buffer(:)
+
+    character(len=SERIALIZED_LENGTH)  bufline
+    type(line_dlist), pointer :: mark
+    integer :: i, length, init, final
+
+    mark => file_in%first
+    do i= 1, file_in%nlines
+       call serialize_pline(mark%pline,bufline,length)
+       init  = (i-1)*SERIALIZED_LENGTH+1
+       final = (i)*SERIALIZED_LENGTH
+       buffer(init:final) = s2arr(bufline)
+       mark => mark%next
+    enddo
+  end subroutine serialize_fdf_struct
+
+    subroutine recreate_fdf_struct(nlines,bufferFDF)
+    character, pointer        :: bufferFDF(:)
+    integer, intent(in)       :: nlines
+
+    character(len=SERIALIZED_LENGTH)  bufline
+    type(parsed_line), pointer    :: pline
+    integer :: i, init, final
+
+    do i= 1, nlines
+       init  = (i-1)*SERIALIZED_LENGTH+1
+       final = (i)*SERIALIZED_LENGTH
+       bufline = arr2s(bufferFDF(init:final),SERIALIZED_LENGTH)
+       call recreate_pline(pline,bufline)
+       call fdf_addtoken(pline%line,pline)
+    enddo
+  end subroutine recreate_fdf_struct
 
 END MODULE fdf
