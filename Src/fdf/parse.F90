@@ -1571,7 +1571,6 @@ MODULE parse
             THIS_FILE, __LINE__)
     endif
 
-    call create(pline)
     pline%line = string(1:MAX_LENGTH)
     pos = MAX_LENGTH
     read(string(pos+1:pos+4),"(i4)") pline%ntokens

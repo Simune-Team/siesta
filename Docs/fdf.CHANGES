@@ -1,0 +1,36 @@
+Alberto Garcia, 4 April 2011    pl 1
+Avoid the creation of temporary and log files for fdf in parallel
+
+The standard mode of operation of the new fdf library is "cluster", in
+which the root node reads and processes the fdf file(s) and sends
+relevant information to the rest of the nodes. At the end of the setup
+process every node has a private copy of a pre-parsed fdf structure
+that can be consulted quickly.
+
+In the first version by Raul de la Cruz the root node sent raw text
+information to the other nodes, and these used a temporary scratch
+file to dump it to. Later these nodes invoked the digesting routine on
+the scratch file to create the memory structure.
+
+Now the root node serializes its own memory structure and sends it
+over to the other nodes. These just need to de-serialize the
+information and re-create the memory structure.
+
+Log files were also produced by all nodes by default. Now non-root
+nodes create the log files under "/tmp", with names of the form
+"tmp/fdf.log.N", where N is a representation of the MPI rank. Only
+the root node creates a "fdf.log" file in the working directory.
+This is useful for cluster settings in which non-root nodes might not
+be able to write efficiently to common areas.
+
+Any debug files are created in the same way, with names of the form
+"tmp/fdf.debug.N". At the end of the run they will contain a dump
+of the fdf memory structure.
+
+Alberto Garcia, April 2011
+
+modified:
+  Docs/KNOWN.ISSUES.BSC-patch
+  Src/fdf/fdf.F90
+  Src/fdf/parse.F90
+

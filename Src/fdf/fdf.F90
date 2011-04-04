@@ -174,7 +174,7 @@ MODULE fdf
 
 ! Reading functions for CLUSTER and BLOCKING configuration
 #ifdef CLUSTER
-  private :: fdf_readcluster, fdf_sendInput, fdf_recvInput
+  private :: setup_fdf_cluster, broadcast_fdf_struct
 #endif
 #ifdef BLOCKING
   private :: fdf_readblocking
@@ -517,10 +517,16 @@ MODULE fdf
 !
 !
     SUBROUTINE setup_fdf_cluster(filein)
+!
+!     A more efficient alternative to fdf_sendInput/fdf_recvInput
+!     that avoids the creation of scratch files by non-root nodes.
+!
+!     Alberto Garcia, April 2011
+
       use mpi_siesta
       implicit none
 !--------------------------------------------------------------- Input Variables
-      character(*)  :: filein
+      character(*), intent(in)  :: filein   ! File name
 
 !--------------------------------------------------------------- Local Variables
       character(80)  :: msg
@@ -555,8 +561,7 @@ MODULE fdf
       reading_node = 0
 #endif
 
-!     The node owner of the input file send the data to the other ones
-!     if none node has an input file with such name abort the application
+!     If no node has an input file with such name abort the application
       if (reading_node .eq. ntasks + 1) then
          write(msg,*) 'No node found in the cluster with ',              &
               ' input file ', filein,'. Terminating.'
@@ -564,8 +569,10 @@ MODULE fdf
               THIS_FILE, __LINE__, fdf_err, rc=ierr)
       endif
 
+!     The root node reads and digests the input file 
+!     and sends the serialized fdf_file data structure to the other nodes
+
       if (rank == reading_node) then
-         print *, " Rank: ", rank, " reading fdf file"
          call fdf_read(filein)
       endif
       call broadcast_fdf_struct(reading_node)		
@@ -573,118 +580,7 @@ MODULE fdf
       RETURN
 !--------------------------------------------------------------------------- END
     END SUBROUTINE setup_fdf_cluster
-#endif
 
-!
-!   The owner node of the input file sends data file to the
-!   other processes in the MPI communicator.
-!
-#ifdef CLUSTER
-    SUBROUTINE fdf_sendInput()
-      use mpi_siesta
-      implicit none
-!--------------------------------------------------------------- Local Variables
-      character, pointer        :: bufferFDF(:)
-      integer(ip)               :: i, j, k, ierr
-      type(line_dlist), pointer :: mark
-
-!------------------------------------------------------------------------- BEGIN
-      ALLOCATE(bufferFDF(file_in%nlines*MAX_LENGTH), stat=ierr)
-      if (ierr .ne. 0) then
-        call die('FDF module: fdf_sendInput', 'Error allocating bufferFDF', &
-                 THIS_FILE, __LINE__, fdf_err, rc=ierr)
-      endif
-
-      mark => file_in%first
-      do i= 1, file_in%nlines*MAX_LENGTH, MAX_LENGTH
-        bufferFDF(i:i+MAX_LENGTH-1) = s2arr(mark%str)
-        mark => mark%next
-      enddo
-
-      call MPI_Bcast(file_in%nlines, 1,                                 &
-                     MPI_INTEGER, rank, MPI_COMM_WORLD, ierr)
-
-      if (ierr .ne. MPI_SUCCESS) then
-        call die('FDF module: fdf_sendInput', 'Error Broadcasting nlines.' // &
-                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
-      endif
-
-      call MPI_Bcast(bufferFDF, file_in%nlines*MAX_LENGTH,              &
-                     MPI_CHARACTER, rank, MPI_COMM_WORLD, ierr)
-      if (ierr .ne. MPI_SUCCESS) then
-        call die('FDF module: fdf_sendInput', 'Error Broadcasting bufferFDF.' // &
-                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
-      endif
-
-      DEALLOCATE(bufferFDF)
-
-      RETURN
-!--------------------------------------------------------------------------- END
-    END SUBROUTINE fdf_sendInput
-#endif
-
-!
-!   Remaining nodes recieve the input data file from the owner
-!   of the FDF file inside the cluster.
-!
-#ifdef CLUSTER
-    SUBROUTINE fdf_recvInput(root, filein, fileinTmp)
-      use mpi_siesta
-      implicit none
-!--------------------------------------------------------------- Input Variables
-      character(*)       :: filein, fileinTmp
-      integer(ip)        :: root
-
-!--------------------------------------------------------------- Local Variables
-      integer(ip)        :: i, j, lun, ierr, nlines
-      character, pointer :: bufferFDF(:)
-      character(len=10)  :: fmt
-!------------------------------------------------------------------------- BEGIN
-      call MPI_Bcast(nlines, 1,                                         &
-                     MPI_INTEGER, root, MPI_COMM_WORLD, ierr)
-      if (ierr .ne. MPI_SUCCESS) then
-        call die('FDF module: fdf_recvInput', 'Error Broadcasting nlines.' // &
-                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
-      endif
-
-      ALLOCATE(bufferFDF(nlines*MAX_LENGTH), stat=ierr)
-      if (ierr .ne. 0) then
-        call die('FDF module: fdf_recvInput', 'Error allocating bufferFDF', &
-                 THIS_FILE, __LINE__, fdf_err, rc=ierr)
-      endif
-
-      call MPI_Bcast(bufferFDF, nlines*MAX_LENGTH,                      &
-                     MPI_CHARACTER, root, MPI_COMM_WORLD, ierr)
-      if (ierr .ne. MPI_SUCCESS) then
-        call die('FDF module: fdf_recvInput', 'Error Broadcasting bufferFDF.' // &
-                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
-      endif
-
-      call io_assign(lun)
-      fileinTmp = TRIM(filein) // '.' // i2s(rank)
-      open(unit=lun, file=fileinTmp, form='formatted',                  &
-           status='unknown')
-
-      if (MAX_LENGTH.lt.10) then
-        write(fmt,"(a1,I1,a2)") "(", MAX_LENGTH, "a)"
-      else if (MAX_LENGTH.lt.100) then
-        write(fmt,"(a1,I2,a2)") "(", MAX_LENGTH, "a)"
-      else if (MAX_LENGTH.lt.1000) then
-        write(fmt,"(a1,I3,a2)") "(", MAX_LENGTH, "a)"
-      else
-        write(fmt,"(a1,I4,a2)") "(", MAX_LENGTH, "a)"
-      endif
-
-      do i= 1, nlines*MAX_LENGTH, MAX_LENGTH
-        write(lun,fmt) (bufferFDF(j),j=i,i+MAX_LENGTH-1)
-      enddo
-      call io_close(lun)
-
-      DEALLOCATE(bufferFDF)
-
-      RETURN
-!--------------------------------------------------------------------------- END
-    END SUBROUTINE fdf_recvInput
 !
 !   Broadcast complete fdf structure
 !
@@ -1510,7 +1406,11 @@ MODULE fdf
       call io_assign(fdf_out)
 
 #ifdef _MPI_
-      fileouttmp = TRIM(fileout) // '.' // i2s(rank)
+      if (rank /= 0) then
+         fileouttmp = "/tmp/" // trim(fileout) // "." // i2s(rank)
+      else
+         fileouttmp = fileout
+      endif
 #else
       fileouttmp = fileout
 #endif
@@ -2436,7 +2336,9 @@ MODULE fdf
         if (.not. fdf_debug) then
           call io_assign(fdf_log)
 #ifdef _MPI_
-          filedebug = TRIM(filedebug) // '.' // i2s(rank)
+          if (rank /= 0) then
+             filedebug = "/tmp/" // trim(filedebug) // "." // i2s(rank)
+          endif
 #endif
           open(fdf_log, file=filedebug, form='formatted',               &
                status='unknown')
@@ -2485,6 +2387,7 @@ MODULE fdf
        init  = (i-1)*SERIALIZED_LENGTH+1
        final = (i)*SERIALIZED_LENGTH
        call convert_array_of_chars_to_string(bufferFDF(init:final),bufline)
+       allocate(pline)
        call recreate_pline(pline,bufline)
        call fdf_addtoken(pline%line,pline)
     enddo
@@ -2492,4 +2395,117 @@ MODULE fdf
 
   end subroutine recreate_fdf_struct
 
+!=================================================================
+!--------- Obsolete routines ----------------
+!
+!   The owner node of the input file sends data file to the
+!   other processes in the MPI communicator.
+!
+#ifdef CLUSTER
+    SUBROUTINE fdf_sendInput()
+      use mpi_siesta
+      implicit none
+!--------------------------------------------------------------- Local Variables
+      character, pointer        :: bufferFDF(:)
+      integer(ip)               :: i, j, k, ierr
+      type(line_dlist), pointer :: mark
+
+!------------------------------------------------------------------------- BEGIN
+      ALLOCATE(bufferFDF(file_in%nlines*MAX_LENGTH), stat=ierr)
+      if (ierr .ne. 0) then
+        call die('FDF module: fdf_sendInput', 'Error allocating bufferFDF', &
+                 THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      endif
+
+      mark => file_in%first
+      do i= 1, file_in%nlines*MAX_LENGTH, MAX_LENGTH
+        bufferFDF(i:i+MAX_LENGTH-1) = s2arr(mark%str)
+        mark => mark%next
+      enddo
+
+      call MPI_Bcast(file_in%nlines, 1,                                 &
+                     MPI_INTEGER, rank, MPI_COMM_WORLD, ierr)
+
+      if (ierr .ne. MPI_SUCCESS) then
+        call die('FDF module: fdf_sendInput', 'Error Broadcasting nlines.' // &
+                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      endif
+
+      call MPI_Bcast(bufferFDF, file_in%nlines*MAX_LENGTH,              &
+                     MPI_CHARACTER, rank, MPI_COMM_WORLD, ierr)
+      if (ierr .ne. MPI_SUCCESS) then
+        call die('FDF module: fdf_sendInput', 'Error Broadcasting bufferFDF.' // &
+                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      endif
+
+      DEALLOCATE(bufferFDF)
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE fdf_sendInput
+#endif
+
+!
+!   Remaining nodes recieve the input data file from the owner
+!   of the FDF file inside the cluster.
+!
+#ifdef CLUSTER
+    SUBROUTINE fdf_recvInput(root, filein, fileinTmp)
+      use mpi_siesta
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)       :: filein, fileinTmp
+      integer(ip)        :: root
+
+!--------------------------------------------------------------- Local Variables
+      integer(ip)        :: i, j, lun, ierr, nlines
+      character, pointer :: bufferFDF(:)
+      character(len=10)  :: fmt
+!------------------------------------------------------------------------- BEGIN
+      call MPI_Bcast(nlines, 1,                                         &
+                     MPI_INTEGER, root, MPI_COMM_WORLD, ierr)
+      if (ierr .ne. MPI_SUCCESS) then
+        call die('FDF module: fdf_recvInput', 'Error Broadcasting nlines.' // &
+                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      endif
+
+      ALLOCATE(bufferFDF(nlines*MAX_LENGTH), stat=ierr)
+      if (ierr .ne. 0) then
+        call die('FDF module: fdf_recvInput', 'Error allocating bufferFDF', &
+                 THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      endif
+
+      call MPI_Bcast(bufferFDF, nlines*MAX_LENGTH,                      &
+                     MPI_CHARACTER, root, MPI_COMM_WORLD, ierr)
+      if (ierr .ne. MPI_SUCCESS) then
+        call die('FDF module: fdf_recvInput', 'Error Broadcasting bufferFDF.' // &
+                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      endif
+
+      call io_assign(lun)
+      fileinTmp = TRIM(filein) // '.' // i2s(rank)
+      open(unit=lun, file=fileinTmp, form='formatted',                  &
+           status='unknown')
+
+      if (MAX_LENGTH.lt.10) then
+        write(fmt,"(a1,I1,a2)") "(", MAX_LENGTH, "a)"
+      else if (MAX_LENGTH.lt.100) then
+        write(fmt,"(a1,I2,a2)") "(", MAX_LENGTH, "a)"
+      else if (MAX_LENGTH.lt.1000) then
+        write(fmt,"(a1,I3,a2)") "(", MAX_LENGTH, "a)"
+      else
+        write(fmt,"(a1,I4,a2)") "(", MAX_LENGTH, "a)"
+      endif
+
+      do i= 1, nlines*MAX_LENGTH, MAX_LENGTH
+        write(lun,fmt) (bufferFDF(j),j=i,i+MAX_LENGTH-1)
+      enddo
+      call io_close(lun)
+
+      DEALLOCATE(bufferFDF)
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE fdf_recvInput
+#endif
 END MODULE fdf
