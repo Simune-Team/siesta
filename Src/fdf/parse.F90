@@ -210,7 +210,7 @@ MODULE parse
   integer(ip), parameter, private :: MAX_NTOKENS = 50
 
 ! Length of string encoding plines
-  integer, parameter, public :: SERIALIZED_LENGTH =  MAX_LENGTH+4*(1+2*MAX_NTOKENS)+MAX_NTOKENS
+  integer, parameter, public :: SERIALIZED_LENGTH =  MAX_LENGTH + 4 + 10*MAX_NTOKENS
 
 !   Parsed line info (ntokens, token info and identification)
 !   Note that the token characters are stored in a single "line",
@@ -1535,7 +1535,8 @@ MODULE parse
     character(len=*), intent(out) :: string
     integer, intent(out) :: length
 
-    integer :: pos
+    integer :: pos, i
+    character(len=10) buffer
 
     length = SERIALIZED_LENGTH
     if (len(string) < length) then
@@ -1549,12 +1550,12 @@ MODULE parse
     pos = MAX_LENGTH
     write(string(pos+1:pos+4),"(i4)") pline%ntokens
     pos = pos + 4
-    
-    write(string(pos+1:pos+4*MAX_NTOKENS),"(i4)") pline%first(1:MAX_NTOKENS)
-    pos = pos + 4*MAX_NTOKENS
-    write(string(pos+1:pos+4*MAX_NTOKENS),"(i4)") pline%last(1:MAX_NTOKENS)
-    pos = pos + 4*MAX_NTOKENS
-    write(string(pos+1:pos+MAX_NTOKENS),"(a1)") pline%id(1:MAX_NTOKENS)
+
+    do i=1,pline%ntokens
+       write(buffer,"(1x,a1,2i4)") pline%id(i), pline%first(i), pline%last(i)
+       string(pos+1:pos+10) = buffer
+       pos = pos + 10
+    enddo
 
   end subroutine serialize_pline
 
@@ -1562,7 +1563,7 @@ MODULE parse
     type(parsed_line), pointer   :: pline
     character(len=*), intent(in) :: string
 
-    integer :: pos
+    integer :: pos, i
 
     if (len(string) < SERIALIZED_LENGTH)  then
        call die('PARSE module: recreate_pline', &
@@ -1575,11 +1576,10 @@ MODULE parse
     pos = MAX_LENGTH
     read(string(pos+1:pos+4),"(i4)") pline%ntokens
     pos = pos + 4
-    read(string(pos+1:pos+4*MAX_NTOKENS),"(i4)") pline%first(1:MAX_NTOKENS)
-    pos = pos + 4*MAX_NTOKENS
-    read(string(pos+1:pos+4*MAX_NTOKENS),"(i4)") pline%last(1:MAX_NTOKENS)
-    pos = pos + 4*MAX_NTOKENS
-    read(string(pos+1:pos+MAX_NTOKENS),"(a1)") pline%id(1:MAX_NTOKENS)
+    do i=1,pline%ntokens
+       read(string(pos+1:pos+10),"(1x,a1,2i4)") pline%id(i), pline%first(i), pline%last(i)
+       pos = pos + 10
+    enddo
 
   end subroutine recreate_pline
 

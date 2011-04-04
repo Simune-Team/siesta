@@ -565,6 +565,7 @@ MODULE fdf
       endif
 
       if (rank == reading_node) then
+         print *, " Rank: ", rank, " reading fdf file"
          call fdf_read(filein)
       endif
       call broadcast_fdf_struct(reading_node)		
@@ -700,11 +701,8 @@ MODULE fdf
 
 !------------------------------------------------------------------------- BEGIN
 
-      nlines = file_in%nlines
-      ALLOCATE(bufferFDF(nlines*SERIALIZED_LENGTH), stat=ierr)
-      if (ierr .ne. 0) then
-        call die('FDF module: broadcast_fdf', 'Error allocating bufferFDF', &
-                 THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      if (rank == reading_node) then
+         nlines = file_in%nlines
       endif
 
       call MPI_Bcast(nlines, 1,                                 &
@@ -712,6 +710,12 @@ MODULE fdf
       if (ierr .ne. MPI_SUCCESS) then
         call die('FDF module: broadcast_fdf', 'Error Broadcasting nlines.' // &
                  'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      endif
+
+      ALLOCATE(bufferFDF(nlines*SERIALIZED_LENGTH), stat=ierr)
+      if (ierr .ne. 0) then
+        call die('FDF module: broadcast_fdf', 'Error allocating bufferFDF', &
+                 THIS_FILE, __LINE__, fdf_err, rc=ierr)
       endif
 
       if (rank == reading_node) then
@@ -2464,7 +2468,7 @@ MODULE fdf
        call serialize_pline(mark%pline,bufline,length)
        init  = (i-1)*SERIALIZED_LENGTH+1
        final = (i)*SERIALIZED_LENGTH
-       buffer(init:final) = s2arr(bufline)
+       call convert_string_to_array_of_chars(bufline,buffer(init:final))
        mark => mark%next
     enddo
   end subroutine serialize_fdf_struct
@@ -2480,10 +2484,12 @@ MODULE fdf
     do i= 1, nlines
        init  = (i-1)*SERIALIZED_LENGTH+1
        final = (i)*SERIALIZED_LENGTH
-       bufline = arr2s(bufferFDF(init:final),SERIALIZED_LENGTH)
+       call convert_array_of_chars_to_string(bufferFDF(init:final),bufline)
        call recreate_pline(pline,bufline)
        call fdf_addtoken(pline%line,pline)
     enddo
+    print *, "Processed: ", file_in%nlines, " lines."
+
   end subroutine recreate_fdf_struct
 
 END MODULE fdf
