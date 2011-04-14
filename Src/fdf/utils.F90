@@ -28,6 +28,8 @@ MODULE utils
 
 ! Conversors between formats
   public :: s2i, s2r, arr2s, s2arr, i2s
+  public :: convert_string_to_array_of_chars
+  public :: convert_array_of_chars_to_string
 
 ! Warning and Terminate functions
   public :: warn, die
@@ -300,6 +302,36 @@ MODULE utils
 !--------------------------------------------------------------------------- END
     END FUNCTION arr2s
 
+!
+!   Arbitrary length version of s2arr, but with matching sizes
+!
+    subroutine convert_string_to_array_of_chars(str,arr)
+    character(len=*), intent(in) :: str
+    character, dimension(:), intent(out) :: arr
+    
+    integer :: n, i
+
+    n = len(str)
+    if (size(arr) /= n) call die("convert_str_to_arr","Size mismatch")
+    do i = 1, n
+       arr(i) = str(i:i)
+    enddo
+  end subroutine convert_string_to_array_of_chars
+!
+!   Arbitrary length version of arr2s, but with matching sizes
+!
+    subroutine convert_array_of_chars_to_string(arr,str)
+    character, dimension(:), intent(in) :: arr
+    character(len=*), intent(out) :: str
+    
+    integer :: n, i
+
+    n = size(arr)
+    if (len(str) /= n) call die("convert_arr_to_str","Size mismatch")
+    do i = 1, n
+       str(i:i) = arr(i)
+    enddo
+  end subroutine convert_array_of_chars_to_string
 !
 !   Converts from String to Array of Characters
 !
