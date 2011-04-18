@@ -76,7 +76,7 @@
   \item constraints in relaxations, 87
   \item {\bf COOP.Write}, 66
   \item COOP/COHP curves, 66
-    \subitem Gamma-only calculations, 54
+    \subitem Folding in Gamma-point calculations, 54
   \item cutoff radius, 24
 
   \indexspace
@@ -233,7 +233,7 @@
   \item {\bf MD.UseSaveCG}, 80
   \item {\bf MD.UseSaveXV}, 38, 39
   \item {\bf MD.UseSaveZM}, 38
-  \item {\bf MD.UseStructFile}, 36
+  \item {\bf MD.UseStructFile}, 36, 37
   \item {\bf MD.VariableCell}, 78
   \item mesh, 50
   \item {\bf MeshCutoff}, 50
