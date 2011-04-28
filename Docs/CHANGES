@@ -5,6 +5,19 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2011-04-28  10:55:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-18
+Wrap file output for MPI operation in tbtrans
+
+In tbtrans some auxiliary files were written to by all the nodes.
+
+(+ Also, make sure that the transiesta capability appears at
+the top of the transiesta output file)
+
+modified:
+  Src/Makefile
+  Util/TBTrans/tbtrans.F
+
+------------------------------------------------------------------------
 2011-04-28  10:50:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-17
 Avoid reporting unstable inversion in pulayx
 

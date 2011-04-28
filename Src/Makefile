@@ -222,7 +222,7 @@ version: version.F90
 	@echo "==> Incorporating information about present compilation (compiler and flags)"
 	@sed "s'SIESTA_ARCH'${SIESTA_ARCH}'g;s'FFLAGS'${FC} ${FFLAGS}'g;s'SIESTA_VERSION'\
                                        $$(cat ${<D}/../version.info)'g" $<  > compinfo.F90
-	@($(MAKE) compinfo.o)
+	@($(MAKE) "FPPFLAGS=$(FPPFLAGS)" "DEFS=$(DEFS)" compinfo.o)
 	@mv compinfo.o version.o
 	#@rm -f compinfo.F90
 	@echo
