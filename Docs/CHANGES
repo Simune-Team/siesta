@@ -5,6 +5,27 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2011-04-28  08:55:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-15
+Fix mixing bug in TranSiesta
+
+In TranSiesta mode, the program first carries out a calculation
+at zero bias and with periodic boundary conditions, just as a 
+normal Siesta calculation. During the self-consistent cycle the
+density matrix is mixed to improve convergence. Then the program
+goes into "transiesta mode", during which the mixing is done
+on the potentials. 
+
+In late June 2010, a change in the structure of the mixing code
+introduced a bug: the counter holding the number of history records
+was not properly initialized upon the ending of the preliminary
+siesta-style calculation.
+
+The mixing counter is now properly reset.
+
+modified:
+  Src/scfconvergence_test.F
+
+------------------------------------------------------------------------
 2011-04-18  09:35:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-14
 Fix manual concerning non-collinear GGA and zmatrix input
 

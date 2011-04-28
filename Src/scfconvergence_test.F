@@ -15,6 +15,7 @@
       use m_convergence, only: add_value, is_converged
 #ifdef TRANSIESTA
       use m_ts_global_vars, only: TSinit, TSrun, TSiscf
+      use m_pulay, only: init_pulay_arrays
 #endif /* TRANSIESTA */
 
       implicit none
@@ -87,6 +88,12 @@
            last = .false.       ! we're only done with the initial diagon run
            TSinit = .false.      ! now we start the TRANSIESTA run
            TSrun = .true.
+           !
+           ! From now on, mixing is done on potentials,
+           ! so we have to reset the Pulay record keeping
+           !
+           call init_pulay_arrays()  
+           !
            if(IONode) then
               write(6,'(/a)')
      .  '                          ************************       '
