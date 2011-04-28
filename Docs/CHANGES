@@ -5,6 +5,17 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2011-04-28  09:30:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-16
+Increase field sizes in OCCS file
+
+Some fields overflowed when a large number of k-points 
+was used.
+
+modified:
+  Src/diagk.F
+  Src/diagk_file.F
+
+------------------------------------------------------------------------
 2011-04-28  08:55:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-15
 Fix mixing bug in TranSiesta
 
