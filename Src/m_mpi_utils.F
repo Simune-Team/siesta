@@ -17,10 +17,14 @@
       use mpi_siesta, only : MPI_Sum, MPI_Max, MPI_character
       use mpi_siesta, only : MPI_Double_Precision, MPI_Real
       use mpi_siesta, only : MPI_AllReduce, MPI_Bcast
+      use mpi_siesta, only : MPI_Lor
+      implicit none
       integer, private :: MPIerror
+#else
+      implicit none
 #endif
-
       public :: globalize_max, globalize_sum, broadcast
+      public :: globalize_or
       private
       interface globalize_max
         module procedure globalize_max_dp, globalize_max_int
@@ -123,6 +127,18 @@
 #endif
        end subroutine broadcast_logical
 
+
+      subroutine Globalize_or(local,global)
+      logical, intent(in) :: local
+      logical, intent(out) :: global
+
+#ifndef MPI
+           global = local
+#else
+           call MPI_AllReduce(local,global,1,MPI_Logical,
+     $            MPI_LOR,MPI_Comm_World,MPIerror)
+#endif
+      end subroutine Globalize_or
 
       subroutine Globalize_sum_dp(local,global)
       real(dp), intent(in) :: local

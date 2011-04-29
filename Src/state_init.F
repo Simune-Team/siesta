@@ -34,9 +34,7 @@
       use m_eo
       use m_gamma
       use files,          only : slabel
-#ifdef MPI
-      use m_mpi_utils, only : globalize_max
-#endif
+      use m_mpi_utils, only: globalize_or
 #ifdef TRANSIESTA
       use m_ts_options, only : onlyS, mixH
       use m_ts_global_vars, only : Hold
@@ -60,12 +58,9 @@
       integer :: i, ix, iadispl, ixdispl
 
       logical:: auxchanged ! Has auxiliary supercell changed?
-
+      logical :: folding, folding1
       external ::  madelung, timer
 
-#ifdef MPI
-      integer :: ntmp      ! Temporary to call an MPI routine
-#endif
       real(dp), external :: volcel
 #ifdef TRANSIESTA
       integer, dimension(3,3) :: ts_kscell_file = 0
@@ -220,9 +215,16 @@
       nh = maxnh
       call hsparse( negl, scell, nsc, na_s, isa, xa, lasto, lastkb, 
      .                 iphorb, iphKB, nh, numh, listhptr, listh,
-     $                 set_xijo=.true., xijo=xijo, gamma=gamma )
-
+     $                 set_xijo=.true., xijo=xijo, gamma=gamma,
+     $                 folding=folding1)
       maxnh = nh
+
+      call globalize_or(folding1,folding)
+      if (folding) then
+         if (IOnode) then
+            print *, "Folding of H and S is implicitly performed"
+         endif
+      endif
 
       ! Note that the resizing of Dscf is done inside new_dm below
       call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',
