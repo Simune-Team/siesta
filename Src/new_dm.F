@@ -92,8 +92,7 @@
       use sparse_matrices, only: Escf     !! To be moved
 
 #ifdef TRANSIESTA
-      use m_ts_options, only : mixH 
-      use M_ts_global_vars, only : TSrun, VOut
+      use M_ts_global_vars, only : TSrun
 #endif /* TRANSIESTA */
 
       implicit none
@@ -232,10 +231,6 @@
       ! Only part of Escf is updated in TS, so if it is put as zero here
       ! a continuation run gives bad forces.
       if(.not.TSrun) Escf(:,:) = 0.0_dp
-      if(.not. mixH) then
-         nullify(VOut)
-         VOut => Dscf
-      end if
 #else
       Escf(:,:) = 0.0_dp
 #endif /* TRANSIESTA */

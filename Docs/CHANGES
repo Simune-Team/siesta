@@ -5,6 +5,27 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2011-04-29  12:30:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-20
+Clarify mixing code in TranSiesta mode
+
+If the TranSiesta code is compiled in, the user can choose between two
+mixing options in the self-consistent cycle: density-matrix, or
+Hamiltonian. The option chosen takes effect both for the initial
+normal Siesta-style calculation, if needed, and for the "transiesta
+mode" section. (A previous commit message had this wrong.)
+
+The code in mixer.F and elsewhere has been streamlined, to make it
+clear what the mixed objects are and avoid extraneous global
+dependencies.
+
+modified:
+  Src/Makefile
+  Src/m_ts_global_vars.f90
+  Src/mixer.F
+  Src/new_dm.F
+  Src/state_init.F
+
+------------------------------------------------------------------------
 2011-04-28  11:00:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-19
 Make auxiliary variable double precision in line minimization
 

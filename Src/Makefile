@@ -292,8 +292,6 @@ clean:
 #
 
 # DO NOT DELETE THIS LINE - used by make depend
-232-3.0.chempot.o: alloc.o mneighb.o parallel.o parallelsubs.o precision.o
-232-3.0.chempot.o: sys.o
 alloc.o: parallel.o precision.o sys.o
 arw.o: parallel.o sys.o
 atm_transfer.o: atm_types.o atmparams.o old_atmfuncs.o periodic_table.o
@@ -504,16 +502,16 @@ metaforce.o: parallel.o parsing.o precision.o
 minvec.o: precision.o sorting.o sys.o
 mixer.o: atomlist.o iodm_netcdf.o m_broyden_mixing.o m_energies.o
 mixer.o: m_fire_mixing.o m_iodm.o m_mpi_utils.o m_pulay.o m_spin.o m_steps.o
-mixer.o: m_ts_global_vars.o m_ts_iodm.o parallel.o siesta_geom.o
+mixer.o: m_ts_global_vars.o m_ts_iodm.o m_ts_options.o parallel.o siesta_geom.o
 mixer.o: siesta_options.o sparse_matrices.o
 mneighb.o: alloc.o precision.o sys.o
 molecularmechanics.o: alloc.o parallel.o parsing.o precision.o sys.o units.o
 mulliken.o: atmfuncs.o parallel.o parallelsubs.o precision.o siesta_cml.o
 naefs.o: atmfuncs.o mneighb.o precision.o
 new_dm.o: alloc.o atomlist.o m_energies.o m_fdf_global.o m_iodm.o m_sparse.o
-new_dm.o: m_spin.o m_steps.o m_ts_global_vars.o m_ts_iodm.o m_ts_options.o
-new_dm.o: parallel.o parallelsubs.o parsing.o precision.o siesta_geom.o
-new_dm.o: siesta_options.o sparse_matrices.o sys.o units.o
+new_dm.o: m_spin.o m_steps.o m_ts_global_vars.o m_ts_iodm.o parallel.o
+new_dm.o: parallelsubs.o parsing.o precision.o siesta_geom.o siesta_options.o
+new_dm.o: sparse_matrices.o sys.o units.o
 nlefsm.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
 normalize_dm.o: atomlist.o m_mpi_utils.o m_spin.o parallel.o precision.o
 normalize_dm.o: sparse_matrices.o
@@ -569,9 +567,9 @@ rhoofd.o: meshsubs.o meshsubs.o parallel.o precision.o sys.o
 rhoofdsp.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o meshmatrix.o
 rhoofdsp.o: meshsubs.o meshsubs.o precision.o sys.o
 savepsi.o: alloc.o parallel.o parallelsubs.o precision.o
-scfconvergence_test.o: m_convergence.o m_energies.o m_ts_global_vars.o
-scfconvergence_test.o: m_wallclock.o parallel.o siesta_cml.o siesta_options.o
-scfconvergence_test.o: write_subs.o
+scfconvergence_test.o: m_convergence.o m_energies.o m_pulay.o
+scfconvergence_test.o: m_ts_global_vars.o m_wallclock.o parallel.o siesta_cml.o
+scfconvergence_test.o: siesta_options.o write_subs.o
 setatomnodes.o: alloc.o parallel.o precision.o spatial.o sys.o
 setspatial.o: alloc.o parallel.o precision.o spatial.o
 setup_hamiltonian.o: alloc.o atmfuncs.o atomlist.o files.o m_dipol.o

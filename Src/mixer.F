@@ -25,10 +25,14 @@
 #ifdef TRANSIESTA
       use m_energies, only: ef
       use m_ts_iodm, only : write_ts_dm
-      use m_ts_global_vars, only: VIn, VOut, TSrun, TSiscf
+      use m_ts_options, only: mixH
+      use m_ts_global_vars, only: TSrun, TSiscf, Hold
 #endif /* TRANSIESTA */
 
       implicit none
+
+      real(dp), dimension(:,:), pointer :: Xin => null()
+      real(dp), dimension(:,:), pointer :: Xout => null()  
 
       integer,  intent(in)   :: iscf
       real(dp), intent(out) :: dDmax     ! Max. change in density matrix elements
@@ -42,8 +46,25 @@
       external ::  mulliken
 
 !------------------------------------------------------------------------- BEGIN
+
+#ifdef TRANSIESTA
+      if (mixH) then
+         ! Mix Hamiltonian
+         Xin => Hold
+         Xout => H
+      else
+         ! Mix density matrix
+         Xin => Dold
+         Xout => Dscf
+      endif
+#else
+      Xin => Dold
+      Xout => Dscf
+#endif
+
 ! Mix input and output energy-density and density matrices ............
 ! Following line for using and saving the density matrix without mix ..
+
           if (wmix.ne.0._dp) then
 ! Pulay or Broyden mixing
             mmix  = mix
@@ -64,27 +85,15 @@
             if (fire_mix) then
                call fire_mixing(iscf, mix, no_l, maxnh,
      .                 numh(1:no_l), listhptr(1:no_l), nspin,
-#ifndef TRANSIESTA
-     $                 wmix, nkick, wmixkick, Dscf, Dold, dDmax)
-#else /* TRANSIESTA */
-     $                 wmix, nkick, wmixkick, VOut, VIn, dDmax)
-#endif /* TRANSIESTA */
+     $                 wmix, nkick, wmixkick, Xout, Xin, dDmax)
             else if (broyden_maxit == 0) then
                call pulayx( iiscf, mmix, no_l, maxnh,
      .                   numh, listhptr, nspin, maxsav, wmix, nkick, 
-#ifndef TRANSIESTA
-     .                   wmixkick, Dscf, Dold, dDmax)
-#else /* TRANSIESTA */
-     .                   wmixkick, VOut, VIn, dDmax)
-#endif /* TRANSIESTA */
+     .                   wmixkick, XOut, XIn, dDmax)
             else
                call broyden_mixing(iscf, mix, no_l, maxnh,
      .                 numh(1:no_l), listhptr(1:no_l), nspin,
-#ifndef TRANSIESTA
-     $                 wmix, nkick, wmixkick, Dscf, Dold, dDmax)
-#else /* TRANSIESTA */
-     $                 wmix, nkick, wmixkick, VOut, VIn, dDmax)
-#endif /* TRANSIESTA */
+     $                 wmix, nkick, wmixkick, XOut, XIn, dDmax)
             endif
           endif
 
