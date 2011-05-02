@@ -17,12 +17,14 @@ C  Julian Gale, NRI, Curtin Uni, March 2004
 C
       use precision
       use fdf
+      use siesta_options, only: want_domain_decomposition
       use parallel,     only : Node, Nodes, BlockSize, ProcessorY
       use parallelsubs, only : set_processorY, set_BlockSizeDefault
       use parallelsubs, only : set_processorYdefault
       use spatial
       use sys
       use alloc
+      use domain_decom, only: use_dd, use_dd_perm, preSetOrbitLimits
 #ifdef MPI
       use mpi_siesta, only: mpi_comm_world, mpi_integer
       use mpi_siesta, only: mpi_double_precision
@@ -83,9 +85,15 @@ C  Initialise on first call
 
 C Set spatial decomposition flag according to SCF method
       if (isolve.eq.1) then
-        lspatial = .true.
+         if (want_domain_decomposition) then
+            use_dd = .true.
+            use_dd_perm = .false.
+            lspatial = .false.
+         else
+            lspatial = .true.
+         endif
       else
-        lspatial = .false.
+         lspatial = .false.
       endif
 
 C Spatial decomposition flag
@@ -222,12 +230,18 @@ C
         call re_alloc(nNode,1,maxorb,name='nNode')
         call re_alloc(nOrbPerNode,1,Nodes,name='nOrbPerNode')
 C
+!AG**       THIS IS A BUG: Only the first node is processed!!
+
         nOrbPerNode(1) = maxorb
         do ii = 1,maxorb
           nL2G(ii,1) = ii
           nG2L(ii) = ii
           nNode(ii) = 0
         enddo
+      endif
+
+      if (use_dd) then
+        call preSetOrbitLimits( no_u )
       endif
 
       return

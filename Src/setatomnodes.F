@@ -724,6 +724,13 @@ C
 C  Globalise data
 C
 #ifdef MPI
+!
+!       This is a crude use of allreduce with mpi_max.
+!       It is based on the fact that "non-assigned" slots are zero,
+!       so upon the reduction the global array will contain the
+!       data from all processors. It would be more clear to use
+!       mpi_all_gather...
+
         ntmp(1:maxorb) = nNode(1:maxorb)
         call MPI_AllReduce(ntmp,nNode,maxorb,MPI_integer,MPI_max,
      .    MPI_Comm_World,MPIerror)

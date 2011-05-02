@@ -1,0 +1,26 @@
+----------------------
+May 2, 2011, A. Garcia                    siesta-3.0-351-on-4
+Implement domain decomposition for O(N)
+
+Based on Rogeli Grima's code for the defunct Jacobi-Davidson scheme.
+
+It is enabled by defining
+
+UseDomainDecomposition T
+
+in the fdf file. NOTE that you also need:
+
+WriteDMNetcdf F
+WriteDMHS-netcdf F
+
+until a non-local call to LocalToGlobalOrb is fixed.
+
+The metis library (/share/apps/metis-4.0/libmetis.a in the clusters)
+is also needed.
+
+Julian's Gale "spatial decomposition" code will be bypassed.
+
+A. Garcia, May 2, 2011
+
+
+

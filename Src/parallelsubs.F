@@ -12,11 +12,12 @@
 C
 C  Parallelisation related subroutines
 C
-      use parallel, only : BlockSize, ProcessorY
-      use spatial,  only : lspatial, nNode, nL2G, nG2L,
-     .                     nOrbPerNode
-      use sys,      only : die
-
+      use parallel,     only : BlockSize, ProcessorY
+      use spatial,      only : lspatial, nNode, nL2G, nG2L,
+     &                         nOrbPerNode
+      use domain_decom, only : use_dd, use_dd_perm, dd_nuo, dd_perm,
+     &                         ulimit, llimit, dd_invp, dd_nnode
+      use sys,          only : die
       implicit none
 
       contains
@@ -27,6 +28,7 @@ C
       end subroutine set_processorY
 
       subroutine GetNodeOrbs( NOrb, Node, Nodes, NOrbNode)
+      use parallel, only: thisNode => Node
 C
 C  Calculates the number of orbitals stored on the local Node.
 C
@@ -73,6 +75,10 @@ C  Spatial distribution  -
 C-------------------------
           NOrbNode = nOrbPerNode(Node+1)
 
+        else if (use_dd) then
+          NOrbNode = dd_nuo
+          if (thisNode /= Node)
+     $         call die("Wrong use of GetNodeOrbs in dd")
         else
 C-----------------------------
 C  Blockcyclic distribution  -
@@ -140,8 +146,17 @@ C-------------------------
         else
           LOrb = 0
         endif
-
-      else           
+      else if (use_dd) then
+        if (use_dd_perm) then
+          LOrb = dd_perm(GOrb)
+        else
+          if (GOrb.ge.llimit .and. GOrb.lt.ulimit) then
+            LOrb = GOrb - llimit + 1
+          else
+            LOrb = 0
+          endif
+        endif
+      else
 C-----------------------------
 C  Blockcyclic distribution  -
 C-----------------------------
@@ -168,6 +183,7 @@ C  to indicate this.
 
 
       subroutine LocalToGlobalOrb( LOrb, Node, Nodes, GOrb)
+      use parallel, only: thisNode => Node
 C
 C  Converts an orbital index in the local frame to the global frame
 C
@@ -200,7 +216,15 @@ C-------------------------
 C  Spatial distribution  - 
 C-------------------------
         GOrb = nL2G(LOrb,Node+1)
-          
+
+      else if (use_dd) then
+        if (thisNode /= Node)
+     $           call die("Wrong use of dd L2Global")
+        if (use_dd_perm) then
+          GOrb = dd_invp(LOrb)
+        else
+          GOrb = LOrb + llimit - 1
+        endif
       else   
 C-----------------------------
 C  Blockcyclic distribution  -
@@ -213,9 +237,7 @@ C  Substract local base line to find element number within the block
 
 C  Calculate global index
         GOrb = (LBlock*Nodes + Node)*BlockSize + LEle
-
       endif
-  
       return
       end  subroutine LocalToGlobalOrb
 
@@ -251,7 +273,8 @@ C-------------------------
 C  Spatial distribution  - 
 C-------------------------
         Node = nNode(GOrb)
-          
+      else if (use_dd) then
+        Node = dd_nnode(GOrb)
       else   
 C-----------------------------
 C  Blockcyclic distribution  -
@@ -309,7 +332,7 @@ C  Find grid indices along each axis
 C  Call subroutine to find node number from global XYZ index
       call WhichMeshXYZNode( Mesh, Nxyz, Nodes, Node)
 
-      end   subroutine WhichMeshNode
+      end subroutine WhichMeshNode
 
       subroutine HowManyMeshPerNode(Nxyz, Node, Nodes, NMeshPN, NxyzL)
 C
@@ -335,7 +358,10 @@ C
 C  integer NMeshPN  = total number of local mesh points
 C  integer NxyzL(3) = local dimensions of mesh points on this node
 C
-
+#ifdef MPI
+      use mpi_siesta
+#endif
+      implicit none
 C  Passed variables
       integer Nxyz(3), Node, Nodes, NMeshPN, NxyzL(3)
 
@@ -343,7 +369,9 @@ C  Local variables
       integer 
      .  BlockSizeY, BlockSizeZ, NRemY, NRemZ, Py, Pz,
      .  ProcessorZ
-
+#ifdef MPI
+      integer MPI_err
+#endif
 C  Check that ProcessorY is a factor of the number of processors
       if (mod(Nodes,ProcessorY).gt.0)
      $     call die('ERROR: ProcessorY must be a factor of the' //
@@ -355,8 +383,19 @@ C  Find processor grid location
       Pz = Node - (Py - 1)*ProcessorZ + 1
 
 C  Set blocking sizes
-      BlockSizeY = (Nxyz(2)/ProcessorY) 
-      BlockSizeZ = (Nxyz(3)/ProcessorZ) 
+      BlockSizeY = (Nxyz(2)/ProcessorY)
+      BlockSizeZ = (Nxyz(3)/ProcessorZ)
+      if (BlockSizeY.eq.0.or.BlockSizeZ.eq.0) then
+        if (Node.eq.0) then
+          write(*,*) 'ERROR: Not enought mesh per node'
+          write(*,*) 'Nxyz=', Nxyz, 'PY=', ProcessorY,
+     &               'PZ=', ProcessorZ
+        endif
+#ifdef MPI
+        call MPI_Finalize( MPI_err )
+#endif
+        STOP
+      endif
       NRemY = Nxyz(2) - BlockSizeY*ProcessorY
       NRemZ = Nxyz(3) - BlockSizeZ*ProcessorZ
       if (Py-1.lt.NRemY) BlockSizeY = BlockSizeY + 1

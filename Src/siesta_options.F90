@@ -73,6 +73,8 @@ MODULE siesta_options
   logical :: use_struct_file ! Read structural information from a special file?
   logical :: bornz          ! Calculate Born polarization charges?
   logical :: SCFMustConverge ! Do we have to converge for each SCF calculation?
+  logical :: want_domain_decomposition ! Use domain decomposition for orbitals
+
 
   integer :: ia1           ! Atom index
   integer :: ia2           ! Atom index
@@ -275,6 +277,7 @@ MODULE siesta_options
 ! integer broyden_maxit    : Number of histories saved in Broyden SCF mixing
 ! logical require_energy_convergence  : Impose E. conv. criterion?
 ! logical broyden_optim    : Broyden for forces instead of CG
+! logical want_domain_decomposition:  Use domain decomposition for orbitals
 ! **********************************************************************
 
   subroutine read_options( na, ns, nspin )
@@ -1398,6 +1401,7 @@ MODULE siesta_options
                     .and. (idyn/=6) .and. (idyn/=7)           &
                     .and. (.not. (idyn==5 .and. ianneal/=1) )
 
+    call fdf_global_get(want_domain_decomposition, 'UseDomainDecomposition', .false.)
 
     ! Harris Forces?. Then DM.UseSaveDM should be false (use always
     ! Harris density in the first SCF step of each MD step), and
