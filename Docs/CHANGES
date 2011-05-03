@@ -6,6 +6,31 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2011-05-03  12:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-378
+Fix manual re: non-collinear GGA and zmatrix input. FoX cosmetics
+
+* The manual incorrectly stated that GGA was not compatible with
+non-collinear-spin calculations.
+
+The order of the spherical coordinates for the second atom in the
+zmatrix format input is now explicitly stated.
+
+modified:
+  Docs/siesta.tex
+
+* Cosmetic changes to avoid xlf compiler diagnostics in dummy FoX
+
+If the "trap undefined variables" option is enabled in the xlf
+compiler, some stray symbols in the dummy version of the FoX library
+produce diagnostics. They have been re-wrapped.
+
+(Thanks to Oscar Paz)
+
+modified:
+  Src/FoX/common/m_common_attrs.F90
+  Src/FoX/utils/fox_m_utils_uri.F90
+
+-----------------------------------------------------------------------
 2011-04-14  09:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-377
 Avoid the creation of temporary and log files for fdf in parallel
 
