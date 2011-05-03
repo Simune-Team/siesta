@@ -6,6 +6,27 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2011-05-03  14:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-381
+Clarify mixing code in TranSiesta mode
+
+If the TranSiesta code is compiled in, the user can choose between two
+mixing options in the self-consistent cycle: density-matrix, or
+Hamiltonian. The option chosen takes effect both for the initial
+normal Siesta-style calculation, if needed, and for the "transiesta
+mode" section.
+
+The code in mixer.F and elsewhere has been streamlined, to make it
+clear what the mixed objects are and avoid extraneous global
+dependencies.
+
+modified:
+  Src/Makefile
+  Src/m_ts_global_vars.f90
+  Src/mixer.F
+  Src/new_dm.F
+  Src/state_init.F
+
+-----------------------------------------------------------------------
 2011-05-03  14:05:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-380
 Make auxiliary variable double precision in line minimization
 

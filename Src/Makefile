@@ -551,7 +551,7 @@ metaforce.o: alloc.o parallel.o precision.o sys.o
 minvec.o: cellsubs.o precision.o sorting.o sys.o
 mixer.o: atomlist.o iodm_netcdf.o m_broyden_mixing.o m_energies.o
 mixer.o: m_fire_mixing.o m_iodm.o m_mpi_utils.o m_pulay.o m_spin.o m_steps.o
-mixer.o: m_ts_global_vars.o m_ts_iodm.o parallel.o siesta_geom.o
+mixer.o: m_ts_global_vars.o m_ts_iodm.o m_ts_options.o parallel.o siesta_geom.o
 mixer.o: siesta_options.o sparse_matrices.o
 mneighb.o: alloc.o precision.o sys.o
 molecularmechanics.o: alloc.o parallel.o precision.o sys.o units.o
@@ -619,9 +619,9 @@ rhoofd.o: meshphi.o parallel.o parallelsubs.o precision.o sys.o
 rhoofdsp.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mesh.o
 rhoofdsp.o: meshdscf.o meshphi.o precision.o sys.o
 savepsi.o: alloc.o parallel.o parallelsubs.o precision.o
-scfconvergence_test.o: m_convergence.o m_energies.o m_ts_global_vars.o
-scfconvergence_test.o: m_ts_options.o m_wallclock.o parallel.o siesta_cml.o
-scfconvergence_test.o: siesta_options.o write_subs.o
+scfconvergence_test.o: m_convergence.o m_energies.o m_pulay.o
+scfconvergence_test.o: m_ts_global_vars.o m_ts_options.o m_wallclock.o
+scfconvergence_test.o: parallel.o siesta_cml.o siesta_options.o write_subs.o
 schecomm.o: alloc.o
 setatomnodes.o: alloc.o parallel.o precision.o spatial.o sys.o
 setspatial.o: alloc.o parallel.o precision.o spatial.o
