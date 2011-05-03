@@ -1,4 +1,19 @@
 ----------------------
+May 3, 2011, A. Garcia                    siesta-3.0-351-on-5
+Put in safeguards for orbital indexing
+
+When domain decomposition is used, the full indexing
+arrays of the "spatial" mode (including a nL2G array
+holding global information) are used in the LocalToGlobalOrb
+and GetNodeOrbs calls. 
+
+Calls to these routines in a non-local form is not allowed
+in the initial stage, before the actual decomposition.
+
+A. Garcia, May 2, 2011
+
+
+----------------------
 May 2, 2011, A. Garcia                    siesta-3.0-351-on-4
 Implement domain decomposition for O(N)
 

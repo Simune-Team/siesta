@@ -13,6 +13,7 @@ C
 C  Parallelisation related subroutines
 C
       use parallel,     only : BlockSize, ProcessorY
+      use parallel,     only : thisNode => Node
       use spatial,      only : lspatial, nNode, nL2G, nG2L,
      &                         nOrbPerNode
       use domain_decom, only : use_dd, use_dd_perm, dd_nuo, dd_perm,
@@ -76,9 +77,15 @@ C-------------------------
           NOrbNode = nOrbPerNode(Node+1)
 
         else if (use_dd) then
-          NOrbNode = dd_nuo
-          if (thisNode /= Node)
-     $         call die("Wrong use of GetNodeOrbs in dd")
+           if (use_dd_perm) then
+              !  NOrbNode = dd_nuo
+              ! We have this structure also
+              NOrbNode = nOrbPerNode(Node+1)
+           else
+              if (thisNode /= Node)
+     $             call die("Wrong use of dd GetNodeOrbs")
+              NOrbNode = dd_nuo
+           endif
         else
 C-----------------------------
 C  Blockcyclic distribution  -
@@ -149,6 +156,7 @@ C-------------------------
       else if (use_dd) then
         if (use_dd_perm) then
           LOrb = dd_perm(GOrb)
+          ! same as nG2L(GOrb)
         else
           if (GOrb.ge.llimit .and. GOrb.lt.ulimit) then
             LOrb = GOrb - llimit + 1
@@ -172,7 +180,7 @@ C  Find the block number on the local node
 C  Generate the local orbital pointer based on the local block number
         LOrb = LEle + LBlock*Blocksize
 
-C  Check that this is consistent - if it isn't then this
+C  Check that this is consistent - if it is not then this
 C  local orbital is not on this node and so we return 0
 C  to indicate this.
         OrbCheck = (LBlock*Nodes + Node)*BlockSize + LEle
@@ -218,11 +226,14 @@ C-------------------------
         GOrb = nL2G(LOrb,Node+1)
 
       else if (use_dd) then
-        if (thisNode /= Node)
-     $           call die("Wrong use of dd L2Global")
         if (use_dd_perm) then
-          GOrb = dd_invp(LOrb)
+          !  GOrb = dd_invp(LOrb)
+          ! We have this structures also...
+           GOrb = nL2G(LOrb,Node+1)
         else
+           if (thisNode /= Node)
+     $          call die("Wrong use of dd LocalToGlobalOrb")
+
           GOrb = LOrb + llimit - 1
         endif
       else   
@@ -275,6 +286,7 @@ C-------------------------
         Node = nNode(GOrb)
       else if (use_dd) then
         Node = dd_nnode(GOrb)
+        ! same as nNode(GOrb)
       else   
 C-----------------------------
 C  Blockcyclic distribution  -
