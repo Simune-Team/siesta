@@ -6,6 +6,16 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2011-05-03  16:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-382
+Fix declaration in cgwf.F
+
+A previous commit introduced a spurious dummy argument
+"node", which should really be imported from a module.
+
+modified:
+  Src/cgwf.F
+
+-----------------------------------------------------------------------
 2011-05-03  14:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-381
 Clarify mixing code in TranSiesta mode
 

@@ -360,13 +360,13 @@ C *******************************************************************
 
       use precision, only: dp
       use sys, only: die
+      use parallel, only: node
 
       implicit none
 
       real(dp), intent(in)  :: elamb,partial,lam,ener(3)
       real(dp), intent(out) :: lambda
 
-      integer, intent(in)   :: Node
 C Internal variables ......................................................
       integer :: in,i,info,j,jj
 
