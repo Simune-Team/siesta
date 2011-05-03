@@ -6,6 +6,16 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2011-05-03  14:05:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-380
+Make auxiliary variable double precision in line minimization
+
+In routine linmin4, the complex variable "c" was declared
+as single-precision. It is now a double.
+
+modified:
+  Src/cgwf.F
+
+-----------------------------------------------------------------------
 2011-05-03  13:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-379
 Fix mixing bug in Transiesta + tbtrans wrap + pulayx warnings
 

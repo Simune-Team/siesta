@@ -358,25 +358,23 @@ C ********************** OUTPUT *************************************
 C real*8 lambda               : Distance to minimum
 C *******************************************************************
 
-      use precision
+      use precision, only: dp
       use sys, only: die
 
       implicit none
 
-      real(dp) ::
-     .  elamb,partial,lam,lambda,ener(3)
+      real(dp), intent(in)  :: elamb,partial,lam,ener(3)
+      real(dp), intent(out) :: lambda
 
+      integer, intent(in)   :: Node
 C Internal variables ......................................................
-      integer 
-     .  in,i,info,j,jj
+      integer :: in,i,info,j,jj
 
       real(dp) ::
      .  b(5,5),bi(5,5),e(5),e0,e1,e2,e3,ep1,ep2,ep3,
      .  l,lambda1,lambda2,lambda3,q,r,sol1,sol2,test
 
-      complex 
-     .  c
-
+      complex(dp) :: c
 
 C Set up linear equations system to calculate polinomial coeffs.............
       e0 = 0.0d0
@@ -415,9 +413,9 @@ C Set up linear equations system to calculate polinomial coeffs.............
 
       do jj = 1,5
         e0 = e0 + bi(2,jj) * e(jj)
-        e1 = e1 + bi(3,jj) * e(jj) * 2.0
-        e2 = e2 + bi(4,jj) * e(jj) * 3.0
-        e3 = e3 + bi(5,jj) * e(jj) * 4.0
+        e1 = e1 + bi(3,jj) * e(jj) * 2.0_dp
+        e2 = e2 + bi(4,jj) * e(jj) * 3.0_dp
+        e3 = e3 + bi(5,jj) * e(jj) * 4.0_dp
       enddo
 C .....................
 
@@ -451,11 +449,11 @@ C Solve the minimum ......................................................
 
 1234  continue
 
-      c = (0.0,1.0) * (-test)**0.5
-      c = c + r * (1.0,0.0)
-      c = cexp(1.e0 / 3.e0 * clog(c))
+      c = (0.0_dp,1.0_dp) * (-test)**0.5_dp
+      c = c + r * (1.0_dp,0.0_dp)
+      c = exp(1.0_dp / 3.0_dp * log(c))
 
-      lambda1 = 2.0d0 * real(c) - (e2 / e3) / 3.0d0
+      lambda1 = 2.0d0 * real(c,kind=dp) - (e2 / e3) / 3.0d0
 
       lambda2 = (-(e2 / e3 + lambda1) + dsqrt((e2 / e3 + lambda1)**2 +
      .          4.d0 * (e0 / e3) / lambda1)) / 2.0d0
