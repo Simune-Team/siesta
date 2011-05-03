@@ -135,6 +135,7 @@ CONTAINS
     ! Internal variables ....................................................
     integer :: i0,i,ii,in,is,isite,j,jj,numel,ind,info,maxmix
     logical :: after_kick
+    logical :: debug_inverse = .false.
     !
 #ifdef MPI
     integer  MPIerror
@@ -145,6 +146,14 @@ CONTAINS
     real(dp), dimension(:), pointer   ::  buffer
     real(dp), dimension(:), pointer   ::  coeff
     !
+
+#ifdef DEBUG_PULAY_INVERSE
+    ! Typically, inversion problems in the DIIS procedure
+    ! occur when the error estimate for a step is very small
+    ! compared to the previous ones. This is harmless, but
+    ! this hook would allow a full diagnosis if compiled in.
+    debug_inverse = .true.
+#endif
 
     if (maxsav > 1) then
        savedm => auxpul(:,1)          ! DM in former iterations
@@ -346,7 +355,7 @@ CONTAINS
     enddo
 #endif
     !
-    call inver(b,bi,maxmix+1,maxmix+1,info)
+    call inverse(b,bi,maxmix+1,maxmix+1,info,debug_inverse)
     !
     ! If inver was successful, get coefficients for Pulay mixing
     if (info .eq. 0) then
@@ -355,10 +364,12 @@ CONTAINS
        enddo
     else
        ! Otherwise, use only last step
+#ifdef DEBUG_PULAY_INVERSE
        if (Node == 0) then
-          write(6,"(a)") "FAILED inversion in Pulayx"
-!!          write(0,"(a)") "FAILED inversion in Pulayx"
+         write(6,"(a,i5)")  &
+         "Warning: unstable inversion in Pulayx - fallback to linear mixing"
        endif
+#endif
        do i=1,maxmix
           coeff(i)=0.0_dp
        enddo
@@ -486,7 +497,193 @@ CONTAINS
          endif
       endif
     end subroutine assert
+!---------------------------------------------------
+    SUBROUTINE inverse(A,B,N,NDIM,INFO,debug_inverse)
 
+      IMPLICIT NONE
+      INTEGER, intent(in) ::  N,NDIM
+      real(dp), intent(in)  ::  A(NDIM,NDIM)
+      real(dp), intent(out) ::  B(NDIM,NDIM)
+      integer, intent(out) :: info
+      logical, intent(in)  :: debug_inverse
+
+      real(dp)  ::  X
+
+!!$C Routine to obtain the inverse of a general, nonsymmetric
+!!$C square matrix, by calling the appropriate LAPACK routines
+!!$C The matrix A is of order N, but is defined with a 
+!!$C size NDIM >= N.
+!!$C If the LAPACK routines fail, try the good old Numerical Recipes
+!!$C algorithm
+!!$C
+!!$C P. Ordejon, June 2003
+!!$C
+!!$C **** INPUT ****
+!!$C A(NDIM,NDIM)   real*8      Matrix to be inverted
+!!$C N              integer     Size of the matrix
+!!$C NDIM           integer     Defined size of matrix
+!!$C **** OUTPUT ****
+!!$C B(NDIM,NDIM)   real*8      Inverse of A
+!!$C INFO           integer     If inversion was unsucessful, 
+!!$C                            INFO <> 0 is returned
+!!$C                            Is successfull, INFO = 0 returned
+!!$C ***************
+
+
+      real(dp) ::  WORK(N),C,ERROR,DELTA,TOL, pm(N,N)
+      INTEGER IPIV(N)
+      INTEGER I,J,K
+
+      logical :: debug
+
+      debug = debug_inverse .and. (node == 0)
+
+      TOL=1.0D-4
+      INFO = 0
+
+      DO I=1,N
+      DO J=1,N
+        B(I,J)=A(I,J)
+      ENDDO
+      ENDDO
+
+      CALL DGETRF(N,N,B,NDIM,IPIV,INFO)
+
+      IF (INFO .NE. 0) THEN
+       if (debug) print *,   &
+           'inver:  ERROR: DGETRF exited with error message', INFO
+        GOTO 100
+      ENDIF
+
+      CALL DGETRI(N,B,NDIM,IPIV,WORK,N,INFO)
+
+      IF (INFO .NE. 0) THEN
+       if (debug) print *,   &
+          'inver:  ERROR: DGETRI exited with error message', INFO
+        GOTO 100
+      ENDIF
+
+! CHECK THAT THE INVERSE WAS CORRECTLY CALCULATED
+
+      pm = matmul(a(1:n,1:n),b(1:n,1:n))
+
+      ERROR=0.0D0
+      DO I=1,N
+      DO J=1,N
+        C=0.0D0
+        DO K=1,N
+          C=C+A(I,K)*B(K,J)
+        ENDDO
+        DELTA=0.0D0
+        IF (I.EQ.J)  DELTA=1.0D0
+        ERROR=ERROR+DABS(C-DELTA)
+        C=0.0D0
+        DO K=1,N
+          C=C+B(I,K)*A(K,J)
+        ENDDO
+        DELTA=0.0D0
+        IF (I.EQ.J)  DELTA=1.0D0
+        ERROR=ERROR+DABS(C-DELTA)
+      ENDDO
+      ENDDO
+
+      IF (ERROR/N .GT. TOL) THEN
+       if (debug) then
+          print *,   &
+          'inver:  ERROR in lapack inverse. Error: ', error
+          call print_mat(a,n)
+          call print_mat(b,n)
+          call print_mat(pm,n)
+       endif
+        GOTO 100
+      ENDIF
+
+      INFO = 0
+      RETURN
+
+100   CONTINUE
+
+! Try simple, old algorithm:
+
+      DO I=1,N
+        DO J=1,N
+          B(I,J)=A(I,J)
+        ENDDO
+      ENDDO
+      DO I=1,N
+        IF (B(I,I) .EQ. 0.0D0) THEN
+           if (debug) print *,   &
+            'inver:  zero pivot in fallback algorithm'
+          INFO = -777
+          RETURN
+        ENDIF
+        X=B(I,I)
+        B(I,I)=1.0d0
+        DO J=1,N
+          B(J,I)=B(J,I)/X
+        ENDDO
+        DO K=1,N
+          IF ((K-I).NE.0) THEN 
+            X=B(I,K)
+            B(I,K)=0.0d0
+            DO J=1,N
+              B(J,K)=B(J,K)-B(J,I)*X
+            ENDDO
+          ENDIF
+        ENDDO
+      ENDDO
+
+! CHECK THAT THE INVERSE WAS CORRECTLY CALCULATED
+
+      pm = matmul(a(1:n,1:n),b(1:n,1:n))
+      ERROR=0.0D0
+      DO I=1,N
+      DO J=1,N
+        C=0.0D0
+        DO K=1,N
+          C=C+A(I,K)*B(K,J)
+        ENDDO
+        DELTA=0.0D0
+        IF (I.EQ.J)  DELTA=1.0D0
+        ERROR=ERROR+DABS(C-DELTA)
+        C=0.0D0
+        DO K=1,N
+          C=C+B(I,K)*A(K,J)
+        ENDDO
+        DELTA=0.0D0
+        IF (I.EQ.J)  DELTA=1.0D0
+        ERROR=ERROR+DABS(C-DELTA)
+      ENDDO
+      ENDDO
+
+      IF (ERROR/N .GT. TOL) THEN
+       if (debug) then
+          print *,   &
+            'inver:  INVER unsuccessful, ERROR = ', ERROR
+          call print_mat(a,n)
+          call print_mat(b,n)
+          call print_mat(pm,n)
+       endif
+        INFO = -888
+        RETURN
+      ENDIF
+
+      INFO = 0
+      RETURN
+
+    end SUBROUTINE inverse
+
+    subroutine print_mat(a,n)
+      integer, intent(in)  :: n
+      real(dp), intent(in) :: a(n,n)
+      integer :: i
+
+      print *, "mat:"
+      do i = 1, n
+         print "(6g15.7)", (a(i,j),j=1,n)
+      enddo
+      print *, "------"
+    end subroutine print_mat
   end subroutine pulayx
   !
   subroutine resetPulayArrays( )

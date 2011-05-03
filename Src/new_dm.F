@@ -545,6 +545,7 @@ C Try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
          call read_dynamic_dm(nh_tmp, no_l, nspin_read, num_tmp, 
      .             listptr_tmp, list_tmp, D_tmp, found )
 #else
+         found = .false.   ! initialize
          if(TSmode) then ! Transiesta solution method
 C First try to read the .TSDE file
            call read_dynamic_ts_dm(nh_tmp, no_l, nspin_read, num_tmp, 

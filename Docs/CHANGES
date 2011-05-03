@@ -6,6 +6,62 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2011-05-03  13:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-379
+Fix mixing bug in Transiesta + tbtrans wrap + pulayx warnings
+
+* Fix mixing bug in TranSiesta
+
+In TranSiesta mode, the program first might carry out a calculation at
+zero bias and with periodic boundary conditions, just as a normal
+Siesta calculation. Then the program goes into "transiesta mode"
+proper, during which a new mixing cycle takes place.
+
+In late June 2010, a change in the structure of the mixing code
+introduced a bug: the counter holding the number of history records
+was not properly initialized upon the ending of the preliminary
+siesta-style calculation.
+
+The mixing counter is now properly reset.
+
+modified:
+  Src/scfconvergence_test.F
+
+* In tbtrans some auxiliary files were written to by all the nodes.
+
+(+ Also, make sure that the transiesta capability appears at
+the top of the transiesta output file)
+
+modified:
+  Src/Makefile
+  Util/TBTrans/tbtrans.F
+
+* Avoid reporting unstable inversion in pulayx
+
+Typically, inversion problems in the DIIS procedure occur when the
+error estimate for a step is very small compared to the previous
+ones. This is harmless, and the reporting of a failure in the output
+file is confusing.
+
+In case it is needed, a hook to allow a full diagnosis 
+can be compiled in with the preprocessor flag
+
+DEBUG_PULAY_INVERSE
+
+(+ Also, initialize "found" variable in new_dm.F in transiesta mode)
+
+modified:
+  Src/m_pulay.F90
+  Src/new_dm.F
+
+* Increase field sizes in OCCS file
+
+Some fields overflowed when a large number of k-points was used.
+
+modified:
+  Src/diagk.F
+  Src/diagk_file.F
+
+-----------------------------------------------------------------------
 2011-05-03  12:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-378
 Fix manual re: non-collinear GGA and zmatrix input. FoX cosmetics
 
