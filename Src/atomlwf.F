@@ -8,10 +8,10 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine cspa(ioptlwf,iopt,natoms,nbasis,nbasisloc,lasto,isa,
+      subroutine cspa(ioptlwf,iopt,natoms,no_u,no_l,lasto,isa,
      .                qa,rcoor,rh,cell,xa,nhmax,numh,listh,listhptr,
      .                maxnc,ncmax,nctmax,nfmax,nftmax,nhijmax,nbands,
-     .                nbasisCloc,nspin,Node)
+     .                no_cl,nspin,Node)
 C ******************************************************************************
 C This subroutine builds the Localized Wave Functions, centered
 C on ATOMS (searching for atoms within a cutoff radius rcoor), and 
@@ -49,7 +49,7 @@ C integer iopt              : 0 = Find structure of sparse C matrix and
 C                                  build initial guess
 C                             1 = Just find structure of C matrix
 C integer natoms            : Number of atoms
-C integer nbasis            : Number of basis orbitals
+C integer no_u            : Number of basis orbitals
 C integer lasto(0:natoms)   : Index of last orbital of each atom
 C integer isa(natoms)       : Species index of each atom
 C real*8 qa(natoms)         : Neutral atom charge
@@ -61,10 +61,10 @@ C integer maxnc             : First dimension of C matrix, and maximum
 C                             number of nonzero elements of each row of C
 C integer nspin             : Number of spins
 C ****************************** OUTPUT **************************************
-C real*8 c(ncmax,nbasis)    : Initial guess for sparse coefficients 
+C real*8 c(ncmax,no_u)    : Initial guess for sparse coefficients 
 C                             of LWF's  (only if iopt = 0)
-C integer numc(nbasis)      : Control vector of C matrix
-C integer listc(ncmax,nbasis): Control vector of C matrix
+C integer numc(no_u)      : Control vector of C matrix
+C integer listc(ncmax,no_u): Control vector of C matrix
 C integer ncmax             : True value for ncmax, 
 C                             If ncmax it is too small, then
 C                             c, numc and listc are NOT initialized!!
@@ -88,16 +88,21 @@ C ****************************************************************************
 
       implicit none
 
-      integer 
-     .  iopt,ioptlwf,maxnc,natoms,nbands,nbasis,ncmax,nctmax,
-     .  nfmax,nftmax,nhmax,nhijmax,Node,nbasisloc,
-     .  nbasisCloc,nspin
+      integer, intent(in) :: 
+     .  iopt,ioptlwf,natoms,no_u,nhmax,Node,no_l,nspin
 
-      integer 
+      integer, intent(inout) :: maxnc
+
+      integer, intent(out) ::
+     $     nbands,ncmax,nctmax, nfmax,nftmax,nhijmax,
+     $     no_cl
+
+      integer, intent(in) ::
      .  isa(natoms),lasto(0:natoms),
-     .  numh(nbasis),listh(nhmax),listhptr(nbasis)
+     .  numh(no_u),listh(nhmax),listhptr(no_u)
+!AG* bug: Should be     .  numh(no_l),listh(nhmax),listhptr(no_l)
 
-      real(dp) ::
+      real(dp), intent(in) ::
      .  cell(3,3),qa(natoms),rcoor,rh,xa(3,natoms)
 
 C  Internal variables .......................................................
@@ -147,16 +152,18 @@ C Allocate local arrays
       nullify( alist )
       call re_alloc( alist, 1, natoms, name='alist', routine='cspa' )
       nullify( ilist )
-      call re_alloc( ilist, 1, nbasis, name='ilist', routine='cspa' )
+      call re_alloc( ilist, 1, no_u, name='ilist', routine='cspa' )
       nullify( numft )
-      call re_alloc( numft, 1, nbasis, name='numft', routine='cspa' )
+      call re_alloc( numft, 1, no_u, name='numft', routine='cspa' )
       nullify( lneeded )
-      call re_alloc( lneeded, 1, nbasis, name='lneeded',
+      call re_alloc( lneeded, 1, no_u, name='lneeded',
      &               routine='cspa' )
 
 C Work out which basis functions are required in local C copy
-      lneeded(1:nbasis) = .false.
-      do mul = 1,nbasisloc
+!     These will be those which interact with the local orbitals
+
+      lneeded(1:no_u) = .false.
+      do mul = 1,no_l
         ind = listhptr(mul)
         lneeded(nL2G(mul,Node+1)) = .true.
         do i = 1,numh(mul)
@@ -164,34 +171,45 @@ C Work out which basis functions are required in local C copy
           lneeded(mu) = .true.
         enddo
       enddo
-      nbasisCloc = 0
-      ncG2L(1:nbasis) = 0
-      ncT2P(1:nbasis) = 0
-      do mu = 1,nbasisloc
-        nbasisCloc = nbasisCloc + 1
-        ncL2G(nbasisCloc) = nL2G(mu,Node+1)
-        ncG2L(nL2G(mu,Node+1)) = nbasisCloc
+!
+!     Now build up the indexes ncG2L and ncL2G
+!
+      no_cl = 0
+      ncG2L(1:no_u) = 0
+      ncT2P(1:no_u) = 0
+      ! First set of orbitals: those handled by 
+      ! the local node
+      do mu = 1,no_l
+        no_cl = no_cl + 1  ! = mu
+        ncL2G(no_cl) = nL2G(mu,Node+1)
+        ncG2L(nL2G(mu,Node+1)) = no_cl  ! = mu
       enddo
-      do mu = 1,nbasis
+      ! Second set of orbitals: those interacting
+      ! with the orbitals handled by the local node
+      ! (and not already counted)
+      do mu = 1,no_u
         if (lneeded(mu).and.ncG2L(mu).eq.0) then
-          nbasisCloc = nbasisCloc + 1
-          ncL2G(nbasisCloc) = mu
-          ncG2L(mu) = nbasisCloc
+          no_cl = no_cl + 1
+          ncL2G(no_cl) = mu
+          ncG2L(mu) = no_cl
         endif
       enddo
-      do mul = 1,nbasisloc
-        ncP2T(mul) = ncG2L(nL2G(mul,Node+1))
-        ncT2P(ncG2L(nL2G(mul,Node+1))) = mul
+      do mul = 1,no_l
+        ! These are just identity mappings,
+        ! since the first no_l entries are
+        ! the same in the no_l and the no_cl sets
+        ncP2T(mul) = ncG2L(nL2G(mul,Node+1)) ! ncP2T(mul) = mul
+        ncT2P(ncG2L(nL2G(mul,Node+1))) = mul ! ncT2P(mul) = mul
       enddo
 
-C Resize arrays that depend on nbasisCloc
-      call re_alloc(listc,1,maxnc,1,nbasisCloc,
+C Resize arrays that depend on no_cl
+      call re_alloc(listc,1,maxnc,1,no_cl,
      .              shrink=.false.,name='listc')
-      call re_alloc(listcold,1,maxnc,1,nbasisloc,
+      call re_alloc(listcold,1,maxnc,1,no_l,
      .              shrink=.false.,name='listcold')
-      call re_alloc(c,1,maxnc,1,nbasisCloc,1,nspin,
+      call re_alloc(c,1,maxnc,1,no_cl,1,nspin,
      .              shrink=.false.,name='c')
-      call re_alloc(cold,1,maxnc,1,nbasisloc,1,nspin,
+      call re_alloc(cold,1,maxnc,1,no_l,1,nspin,
      .              shrink=.false.,name='cold')
 
 C Initialize some stuff
@@ -200,17 +218,17 @@ C Initialize some stuff
         alist(ia) = 0
       enddo
 
-      do mul = 1,nbasisCloc
+      do mul = 1,no_cl
         numc(mul) = 0
       enddo
 
-      do mu = 1,nbasis
+      do mu = 1,no_u
         numft(mu) = 0
       enddo
 
       if (iopt .eq. 0) then
         do is = 1,nspin
-          do mu = 1,nbasisCloc
+          do mu = 1,no_cl
             do i = 1,maxnc
               c(i,mu,is) = 0.0d0
             enddo
@@ -267,7 +285,7 @@ C Allocate local memory
       call re_alloc(indexloc,1,max(maxnna,natoms),name='indexloc')
 
       index = 0
-      do ia = 1,natoms
+      loop_ia: do ia = 1,natoms
 
         if (2.0*rcoor .lt. rmax) then
 C Look for neighbours of atom ia
@@ -286,52 +304,15 @@ C Look for neighbours of atom ia
           enddo
         endif
 
-C Determine how many LWF's depending on the atomic species 
-C (or the number of electrons)
-        nelectr = qa(ia) + tiny 
-        if (abs(nelectr - qa(ia) + tiny) .gt. 1e-3) then
-          if (Node.eq.0) then
-            write(6,*) 'cspa: Wrong atomic charge for atom ',ia
-            write(6,*) '      qa = ',qa(ia),' must be an integer'
-          endif
-          call die()
-        endif
-        if (ioptlwf .eq. 1) then
-          indexi = ( ( nelectr + 2 ) / 2 )
-          nelectr2 = nelectr/2
-          nelectr1 = nelectr - nelectr2
-        else if (ioptlwf .eq. 2) then
-          if ( (nelectr/2)*2 .ne. nelectr) then
-c EA: Instead of dying if there is any atom of odd species, use
-c an alternating scheme for assigning 1/2 more or 1/2 less, in
-c strict order of appearance. The user controls where the odd LWFs
-c go by defining the order of atoms in the AtomicSpeciesAndAtomicCoor... block
-c OLD------ if (Node.eq.0) then
-c             write(6,*) 'cspa: Wrong Order-N functional option in ',
-c    .                   'cspa.'
-c             write(6,*) '      You can only use the functional of'
-c             write(6,*) '      Ordejon-Mauri for atoms with an even'
-c             write(6,*) '      number of electrons.'
-c           endif
-c OLD------ call die()
-c give one-extra/one-less LWF to odd species in turn with flag secondodd
-            if (secondodd) then
-               indexi = ( ( nelectr - 1 ) / 2 )
-               secondodd = .false.
-            else
-               indexi = ( ( nelectr + 1 ) / 2 )
-               secondodd = .true.
-            endif
-          else
-            indexi = ( ( nelectr ) / 2 )
-          endif
-        else
-          call die('cspa: Wrong functional option in cspa')
-        endif
+        ! All procs have information about the number of LWFs
+        ! but they keep only the coefficients associated to
+        ! the orbitals they manage and to those that interact with
+        ! them
 
-C loop over LWF's centered on atom ia
-        do indexb = 1,indexi
-          index = index + 1
+        ! loop over LWF's centered on atom ia
+        call get_number_of_lwfs_on_atom()  ! gets indexi, nelectr
+        loop_lwfs_on_ia: do indexb = 1,indexi
+          index = index + 1  ! global counter for number of LWFs
 
 c clear list of atoms considered within loc. range
           do indexa = 1,nna
@@ -340,53 +321,65 @@ c clear list of atoms considered within loc. range
           numloc = 0
 
 C initialize stuff...
-          nct = 0       
+          nct = 0     ! total number of coeffs for this LWF in this node
           snor = 0.0d0
           nf = 0
-          do nu = 1,nbasis
+          do nu = 1,no_u
             ilist(nu) = 0
           enddo
  
 C loop over the neighbors of ia within rcoor
-          do  jj = 1,nna      !!! Ends in Label 30...
+          loop_neighbor_atoms: do  jj = 1,nna  
             ja = jan(jj)
-            norb = lasto(ja) - lasto(ja-1)
 
-C Check if ja has already been included in current lwf
-C*** AG**:  This needs to be clarified !!
+            ! Check if ja has already been included in current lwf
+            ! (an image atom, maybe?)
             do indexa = 1,numloc
-              if (ja .eq. indexloc(indexa)) goto 30
+              if (ja .eq. indexloc(indexa)) cycle loop_neighbor_atoms
             enddo
             numloc = numloc + 1
             indexloc(numloc) = ja
 
-C Loop over orbitals of ja
-            do iorb = 1,norb
+            !  Loop over orbitals of ja
+            norb = lasto(ja) - lasto(ja-1)
+            loop_orbs_on_neighbor: do iorb = 1,norb
               mu = iorb + lasto(ja-1)
 
-C Get random number here for reproducability over numbers of processors
-   10         cgval = (ran3(iseed) - 0.5d0) * 2.0d0
-              if (abs(cgval) .lt. 1d-5) goto 10
+              ! Get random number here for reproducibility over numbers of processors
+              get_random: do
+                 cgval = (ran3(iseed) - 0.5d0) * 2.0d0
+                 if (abs(cgval) .ge. 1d-5) exit get_random
+              enddo get_random
+
+              ! If this orbital (global index mu) is part of our
+              ! c-list, include it in the indexes
+
+              !! alternative: 
+              !! if (ncG2L(mu) == 0) cycle loop_orbs_on_neighbor
 
               if (ncG2L(mu).ne.0) then
                 mul = ncG2L(mu)
                 nm = numc(mul)
                 numc(mul) = nm + 1
                 if (numc(mul) .gt. maxnc) then
-C Reallocate all arrays that depend on maxnc
-                  maxnc = maxnc + 50
-                  call re_alloc(listc,1,maxnc,1,nbasisCloc,name='listc')
-                  call re_alloc(c,1,maxnc,1,nbasisCloc,1,nspin,name='c')
+                  ! Reallocate all arrays that depend on maxnc
+                  maxnc = maxnc + 50   ! this is not optimal
+                                       ! but the arrays will be shrunk
+                                       ! in routine ordern
+                  call re_alloc(listc,1,maxnc,1,no_cl,name='listc')
+                  call re_alloc(c,1,maxnc,1,no_cl,1,nspin,name='c')
                 endif
 
-                listc(nm+1,mul) = index
-                nct = nct + 1
+                listc(nm+1,mul) = index  ! LWF index
+                nct = nct + 1            ! number of coefficients so far
 
-C Find out structure of F and Ft matrices
-C   find orbitals which interact with mu
+                ! Find out structure of F and Ft matrices
+                !   find orbitals which interact with mu
+
                 if (ncT2P(mul).gt.0) then
                   mull = ncT2P(mul)
-                  indmu = listhptr(mull)
+                  indmu = listhptr(mull)  !!AG** Possible bug
+                                          !! mull (=mul) can be > no_l
                   do imu = 1,numh(mull)
                     nu = listh(indmu+imu)
                     if (ilist(nu) .eq. 0) then
@@ -397,7 +390,8 @@ C   find orbitals which interact with mu
                   enddo
                 endif
 
-C Assign ramdom guess for orbitals in atom ia if iopt = 0
+                ! Assign random guess for orbitals in atom ia if iopt = 0
+                ! Note: only those on atom ia, to avoid duplication of work
                 if (iopt .eq. 0) then
                   if (ja .eq. ia) then
                     call initguess(ia,iorb,isa(ia),nelectr,
@@ -408,16 +402,17 @@ C Assign ramdom guess for orbitals in atom ia if iopt = 0
                     snor = snor + cg**2
                   endif
                 endif
-              endif
-            enddo
- 30      continue
-      enddo
-!! Note that the target of the 'goto 30' is such that a "cycle" statement
-!! is emulated.
 
-C Normalize LWF's if iopt = 0  .............................................
-C  (normalize to one if functions are expected to be occupied, 0.5 if half
-C   occupied and 0.1 if empty)
+              endif  ! if iorb is part of our c-list
+
+            enddo  loop_orbs_on_neighbor ! iorb
+          enddo     loop_neighbor_atoms ! ja
+
+          ! Normalize LWF's if iopt = 0  .............................................
+          !   (normalize to one if functions are expected to be occupied, 
+          !   0.5 if half occupied 
+          !   0.1 if empty)
+          !
           if (iopt .eq. 0) then
             fact(1:2) = 1.0d0
             if (ioptlwf .eq. 1) then
@@ -431,12 +426,14 @@ C   occupied and 0.1 if empty)
                 endif
               endif
             endif
+
             do is = 1,nspin
               do mu = lasto(ia-1)+1, lasto(ia)
                 mul = ncG2L(mu)
-                if (mul.gt.0) then
+                if (mul.gt.0) then     ! mu is in our c-list
                   do in = 1,numc(mul)
                     if (listc(in,mul) .eq. index) then
+                      !AG: can put spin loop here
                       c(in,mul,is) = c(in,mul,is) * fact(is)/sqrt(snor)
                     endif
                   enddo
@@ -448,20 +445,20 @@ C   occupied and 0.1 if empty)
           nctmax = max ( nctmax , nct )
           nfmax = max ( nfmax , nf )
           
-        enddo
-      enddo
+        enddo loop_lwfs_on_ia
+      enddo loop_ia
 
-      do mul = 1,nbasisCloc
+      do mul = 1,no_cl
         ncmax  = max ( ncmax  , numc(mul) )
       enddo
 
-      do mu = 1,nbasis
+      do mu = 1,no_u
         nftmax = max ( nftmax , numft(mu) )
       enddo
 
       nbands = index
 
-      if (index .gt. nbasis) then
+      if (index .gt. no_u) then
         if (Node.eq.0) then
           write(6,*) 'cspa: Number of LWFs larger than  basis set size'
           write(6,*) '      Increase basis set, or use less LWFs'
@@ -515,6 +512,7 @@ C  (or the number of electrons)
               nelectr2 = nelectr/2
               nelectr1 = nelectr - nelectr2
             else if (ioptlwf .eq. 2) then
+              !AG: Is this right?
               indexj = ( ( nelectr / 2 ) )
             else
               call die('cspa: Wrong functional option in cspa')
@@ -528,7 +526,7 @@ C  (or the number of electrons)
             alist(ja) = 0
           enddo
           nhijmax = max ( nhijmax , nhij )
-        enddo
+        enddo  ! ia
       endif
 
 C Deallocate local memory
@@ -538,6 +536,55 @@ C Deallocate local memory
       call de_alloc( ilist, name='ilist' )
       call de_alloc( alist, name='alist' )
       call de_alloc( indexloc, name='indexloc' )
+
+      CONTAINS
+
+      !---------------------------------------------
+      subroutine get_number_of_lwfs_on_atom()
+
+      ! Determine how many LWF's depending on the atomic species 
+      ! (or the number of electrons)
+        nelectr = qa(ia) + tiny 
+        if (abs(nelectr - qa(ia) + tiny) .gt. 1e-3) then
+          if (Node.eq.0) then
+            write(6,*) 'cspa: Wrong atomic charge for atom ',ia
+            write(6,*) '      qa = ',qa(ia),' must be an integer'
+          endif
+          call die()
+        endif
+        if (ioptlwf .eq. 1) then
+          indexi = ( ( nelectr + 2 ) / 2 )
+          nelectr2 = nelectr/2
+          nelectr1 = nelectr - nelectr2
+        else if (ioptlwf .eq. 2) then
+          if ( (nelectr/2)*2 .ne. nelectr) then
+c EA: Instead of dying if there is any atom of odd species, use
+c an alternating scheme for assigning 1/2 more or 1/2 less, in
+c strict order of appearance. The user controls where the odd LWFs
+c go by defining the order of atoms in the AtomicSpeciesAndAtomicCoor... block
+c OLD------ if (Node.eq.0) then
+c             write(6,*) 'cspa: Wrong Order-N functional option in ',
+c    .                   'cspa.'
+c             write(6,*) '      You can only use the functional of'
+c             write(6,*) '      Ordejon-Mauri for atoms with an even'
+c             write(6,*) '      number of electrons.'
+c           endif
+c OLD------ call die()
+c give one-extra/one-less LWF to odd species in turn with flag secondodd
+            if (secondodd) then
+               indexi = ( ( nelectr - 1 ) / 2 )
+               secondodd = .false.
+            else
+               indexi = ( ( nelectr + 1 ) / 2 )
+               secondodd = .true.
+            endif
+          else
+            indexi = ( ( nelectr ) / 2 )
+          endif
+        else
+          call die('cspa: Wrong functional option in cspa')
+        endif
+      end subroutine get_number_of_lwfs_on_atom
 
       end subroutine cspa
 

@@ -76,16 +76,21 @@ C ************************************************************************
 
       use precision
       use on_main,   only : ncG2L, ncT2P, nbL2G, nbG2L, nbandsloc
-      use globalise
+#ifdef MPI
+      use globalise,   only : globalinitB, globalisef, globalisec
+      use globalise,   only : globalloadb2, globalcommb
+      use globalise,   only : globalreloadb2, globalrezerob2
+      use globalise,   only : maxft2, numft2, listft2
+#endif
       use m_mpi_utils, only: globalize_sum
 
       implicit none
 
-      integer
+      integer, intent(in) ::
      .  nbasis,nbasisloc,nbands,ncmax,nctmax,nfmax,nftmax,nhmax,
      .  nhijmax,nbasisCloc,nspin,Node
 
-      integer
+      integer, intent(in) ::
      .  cttoc(nctmax,nbandsloc),fttof(nftmax,nbasisCloc),
      .  listc(ncmax,nbasisCloc),listct(nctmax,nbandsloc),
      .  listf(nfmax,nbandsloc),listft(nftmax,nbasisCloc),
@@ -93,10 +98,14 @@ C ************************************************************************
      .  numc(nbasisCloc),numct(nbandsloc),numf(nbandsloc),
      .  numft(nbasisCloc),numh(nbasisloc),numhij(nbandsloc)
 
-      real(dp) ::
-     .  c(ncmax,nbasisCloc,nspin),ener,eta(nspin),qs(nspin),
-     .  grad(ncmax,nbasisCloc,nspin),h(nhmax,nspin),s(nhmax),
-     .  f(nfmax,nbandsloc),fs(nfmax,nbandsloc)
+      real(dp), intent(in) ::
+     .  c(ncmax,nbasisCloc,nspin),eta(nspin),qs(nspin),
+     .  h(nhmax,nspin),s(nhmax)
+
+      real(dp), intent(inout) ::
+     .     f(nfmax,nbandsloc),fs(nfmax,nbandsloc)
+
+      real(dp), intent(out) :: grad(ncmax,nbasisCloc,nspin), ener
 
 C Internal variables ......................................................
 
