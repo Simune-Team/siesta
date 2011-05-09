@@ -155,8 +155,8 @@ C-------------------------
         endif
       else if (use_dd) then
         if (use_dd_perm) then
-          LOrb = dd_perm(GOrb)
-          ! same as nG2L(GOrb)
+          ! LOrb = dd_perm(GOrb)
+           LOrb = nG2L(GOrb)
         else
           if (GOrb.ge.llimit .and. GOrb.lt.ulimit) then
             LOrb = GOrb - llimit + 1
@@ -285,8 +285,11 @@ C  Spatial distribution  -
 C-------------------------
         Node = nNode(GOrb)
       else if (use_dd) then
+         if (.not. use_dd_perm) then
+            call die("WhichNodeOrb not ready in DD")
+         endif
         Node = dd_nnode(GOrb)
-        ! same as nNode(GOrb)
+        !! Node = nNode(GOrb)
       else   
 C-----------------------------
 C  Blockcyclic distribution  -

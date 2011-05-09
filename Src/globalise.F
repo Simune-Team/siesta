@@ -12,11 +12,13 @@
 #ifdef MPI
 
       use precision, only: dp
-      use spatial
+      use spatial, only: nL2G
+      use spatial, only: nNode
+
       use on_core, only : numft, listft
       use on_core,   only : numhij, listhij
       use on_main,   only : ncL2G, ncG2L, nbandsloc, nbL2G
-      use alloc
+      use alloc,     only : re_alloc
       use mpi_siesta, only: mpi_comm_world
       use mpi_siesta, only: mpi_status_size, mpi_integer
       use mpi_siesta, only: mpi_sum, mpi_logical
@@ -94,7 +96,7 @@ C
 
       contains
 
-      subroutine setglobalise(nbasis,nbasisloc,nbasisCloc,maxnh,numh,
+      subroutine setglobalise(no_u,no_l,no_cl,maxnh,numh,
      .                        listh,listhptr,Node,Nodes)
 C
 C  Initialise information required for the globalisation of arrays
@@ -107,8 +109,8 @@ C
 
 C Passed variables
       integer ::
-     .  nbasis,nbasisloc,nbasisCloc,maxnh,Node,Nodes,
-     .  numh(nbasisloc),listhptr(nbasisloc),listh(maxnh)
+     .  no_u,no_l,no_cl,maxnh,Node,Nodes,
+     .  numh(no_l),listhptr(no_l),listh(maxnh)
 
 C Internal variables
       integer                    :: ind
@@ -151,11 +153,11 @@ C--------------------------
 C Find neighbouring nodes -
 C--------------------------
 C Check orbitals to see which ones are connected to orbitals on other nodes
-      allocate(lConnected(nbasis,Nodes))
-      call memory('A','L',nbasis*Nodes,'globalise')
+      allocate(lConnected(no_u,Nodes))
+      call memory('A','L',no_u*Nodes,'globalise')
 
-      lConnected(1:nbasis,1:Nodes) = .false.
-      do m = 1,nbasisloc
+      lConnected(1:no_u,1:Nodes) = .false.
+      do m = 1,no_l
         ind = listhptr(m)
         mug = nL2G(m,Node+1)
         do mn = 1,numh(m)
@@ -172,7 +174,7 @@ C Set flag as to whether a Node needs to be communicated with
       call memory('A','L',Nodes,'globalise')
       lNodeNeeded(1:Nodes) = .false.
       do n = 1,Nodes
-        do mu = 1,nbasis
+        do mu = 1,no_u
           if (lConnected(mu,n)) lNodeNeeded(n) = .true.
         enddo
       enddo
@@ -216,12 +218,12 @@ C----------------------------------------------
 C Find elements of C/grad to be communicated  -
 C----------------------------------------------
 C Allocate array for local flags as to columns needed
-      allocate(lConnectedL(nbasis))
-      call memory('A','L',nbasis,'globalise')
-      lConnectedL(1:nbasis) = .false.
+      allocate(lConnectedL(no_u))
+      call memory('A','L',no_u,'globalise')
+      lConnectedL(1:no_u) = .false.
 
 C Set local flags for C columns held locally
-      do mu = 1,nbasisCloc
+      do mu = 1,no_cl
         mug = ncL2G(mu)
         lConnectedL(mug) = .true.
       enddo
@@ -238,19 +240,19 @@ C Communicate flags to neighbouring nodes
 
 C Post receives
         nRequest = nRequest + 1
-        call MPI_IRecv(lConnected(1,n),nbasis,MPI_logical,NNodeNo(n),
+        call MPI_IRecv(lConnected(1,n),no_u,MPI_logical,NNodeNo(n),
      .    NNodeNo(n),MPI_Comm_World,Request(nRequest),MPIerror)
       
 C Post sends
         nRequest = nRequest + 1
-        call MPI_ISend(lConnectedL,nbasis,MPI_logical,NNodeNo(n),
+        call MPI_ISend(lConnectedL,no_u,MPI_logical,NNodeNo(n),
      .    Node,MPI_Comm_World,Request(nRequest),MPIerror)
       
       enddo
      
 C Statistics
       nTransfer = nTransfer + 2*NNodes
-      nTransferInteger = nTransferInteger + 2*nbasis*NNodes
+      nTransferInteger = nTransferInteger + 2*no_u*NNodes
      
 C Wait for everything to finish
       call MPI_WaitAll(nRequest,Request,Status,MPIerror)
@@ -264,7 +266,7 @@ C Zero counters
 C Find number of basis functions that need to be transfered & size arrays
       MaxBasisSendC = 0
       do n = 1,NNodes
-        do mu = 1,nbasis
+        do mu = 1,no_u
           if (lConnected(mu,n).and.lConnectedL(mu)) then
             NNodeBasisSendC(n) = NNodeBasisSendC(n) + 1
           endif
@@ -277,7 +279,7 @@ C Find number of basis functions that need to be transfered & size arrays
 C Find basis functions that need to be transfered
       NNodeBasisSendC(1:NNodes) = 0
       do n = 1,NNodes
-        do mu = 1,nbasis
+        do mu = 1,no_u
           if (lConnected(mu,n).and.lConnectedL(mu)) then
             NNodeBasisSendC(n) = NNodeBasisSendC(n) + 1
             NNodeBasisSendListC(NNodeBasisSendC(n),n) = mu
@@ -563,7 +565,7 @@ C Call timer
 C--------------------
 C Globalise C/grad  -
 C--------------------
-      subroutine globaliseC(nbasisCloc,ncmax,numc,c,nspin,Node)
+      subroutine globaliseC(no_cl,ncmax,numc,c,nspin,Node)
 C
 C  Globalise the gradient array over adjacent nodes within spatial 
 C  decomposition pattern.
@@ -575,13 +577,13 @@ C
 
 C Passed variables
       integer
-     .  ncmax,nbasisCloc,nspin,Node
+     .  ncmax,no_cl,nspin,Node
 
       integer
-     .  numc(nbasisCloc)
+     .  numc(no_cl)
 
       real(dp) ::
-     .  c(ncmax,nbasisCloc,nspin)
+     .  c(ncmax,no_cl,nspin)
 
 C Internal variables
       integer                     :: i
@@ -1319,7 +1321,7 @@ C Load globalised data arrays
 C--------------------
 C Globalise ft/fst  -
 C--------------------
-      subroutine globaliseF(nbasisCloc,nbands,nftmax,numft,
+      subroutine globaliseF(no_cl,nbands,nftmax,numft,
      .                      listft,ft,ftG,Node)
 C
 C  Globalise the gradient array over adjacent nodes within spatial 
@@ -1330,13 +1332,13 @@ C
 
 C Passed variables
       integer
-     .  nbands,nftmax,nbasisCloc,Node
+     .  nbands,nftmax,no_cl,Node
 
       integer
-     .  listft(nftmax,nbasisCloc),numft(nbasisCloc)
+     .  listft(nftmax,no_cl),numft(no_cl)
 
       real(dp) ::
-     .  ft(nftmax,nbasisCloc),ftG(MaxFt2,nbasisCloc)
+     .  ft(nftmax,no_cl),ftG(MaxFt2,no_cl)
 
 C Internal variables
       integer          :: i
@@ -1370,9 +1372,9 @@ C Allocate space for communication arrays
       allocate(gvec(nbands))
       call memory('A','D',nbands,'globalise')
 
-      ftG(1:MaxFt2,1:nbasisCloc) = 0.0d0
+      ftG(1:MaxFt2,1:no_cl) = 0.0d0
       gvec(1:nbands) = 0.0d0
-      do mu = 1,nbasisCloc
+      do mu = 1,no_cl
         do ik = 1,numft(mu)
           gvec(listft(ik,mu)) = ft(ik,mu)
         enddo
@@ -1458,7 +1460,7 @@ C Call timer
 
       end subroutine globaliseF
 
-      subroutine setglobaliseF(nbasis,nbands,nbasisCloc,maxnft,Node)
+      subroutine setglobaliseF(no_u,nbands,no_cl,maxnft,Node)
 C
 C  Initialise information required for the globalisation of arrays
 C  relating to indexing of Ft by passing to neighbouring nodes.
@@ -1468,7 +1470,7 @@ C
 
 C Passed variables
       integer ::
-     .  nbasis,nbands,nbasisCloc,maxnft,Node
+     .  no_u,nbands,no_cl,maxnft,Node
 
 C Internal variables
       integer                    :: i
@@ -1511,8 +1513,8 @@ C Size data arrays
       call re_alloc(numftG,1,MaxBasisSendC,1,NNodes,name='numftG')
 
 C Allocate array for local flags as to columns needed
-      allocate(lNeeded(nbasis))
-      call memory('A','L',nbasis,'globalise')
+      allocate(lNeeded(no_u))
+      call memory('A','L',no_u,'globalise')
 
 C Allocate communication arrays
       allocate(Request(2*NNodes))
@@ -1614,9 +1616,9 @@ C Wait for everything to finish
 
 C Create copy of numft/listft
       MaxFt2 = maxnft
-      call re_alloc(numft2,1,nbasisCloc,name='numft2')
-      call re_alloc(listft2,1,MaxFt2,1,nbasisCloc,name='listft2')
-      do mu = 1,nbasisCloc
+      call re_alloc(numft2,1,no_cl,name='numft2')
+      call re_alloc(listft2,1,MaxFt2,1,no_cl,name='listft2')
+      do mu = 1,no_cl
         numft2(mu) = numft(mu)
         do muk = 1,numft(mu)
           listft2(muk,mu) = listft(muk,mu)
@@ -1625,7 +1627,7 @@ C Create copy of numft/listft
 
 C Find true list of Ft elements
       ndataFR(1:NNodes) = 0
-      lNeeded(1:nbasis) = .false.
+      lNeeded(1:no_u) = .false.
       do n = 1,NNodes
         do i = 1,NNodeBasisSendC(n)
           mug = NNodeBasisSendListC(i,n)
@@ -1645,7 +1647,7 @@ C Find true list of Ft elements
           enddo
           if (numft2(mu).gt.MaxFt2) then
             MaxFt2 = numft2(mu) + 20
-            call re_alloc(listft2,1,MaxFt2,1,nbasisCloc,name='listft2')
+            call re_alloc(listft2,1,MaxFt2,1,no_cl,name='listft2')
           endif
           numft2(mu) = 0
           do m = 1,nbands

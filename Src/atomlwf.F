@@ -99,8 +99,7 @@ C ****************************************************************************
 
       integer, intent(in) ::
      .  isa(natoms),lasto(0:natoms),
-     .  numh(no_u),listh(nhmax),listhptr(no_u)
-!AG* bug: Should be     .  numh(no_l),listh(nhmax),listhptr(no_l)
+     .  numh(no_l),listh(nhmax),listhptr(no_l)
 
       real(dp), intent(in) ::
      .  cell(3,3),qa(natoms),rcoor,rh,xa(3,natoms)

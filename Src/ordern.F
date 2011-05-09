@@ -102,8 +102,7 @@ C  Modules
 
       integer
      .  isa(natoms), lasto(0:natoms), listh(nhmax), 
-     .  listhptr(no_u), numh(no_u)
-!!AG: * bug Should be     .  listhptr(no_l), numh(no_l)
+     .  listhptr(no_l), numh(no_l)
 
       real(dp) ::
      .  beta, cell(3,3), dm(nhmax,nspin), Ecorrec, edm(nhmax,nspin), 

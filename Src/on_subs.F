@@ -216,7 +216,6 @@ C                            (list of nonzero elements of each row of C)
 C *********************************************************************
 
       use alloc
-      use spatial, only : nG2L
       use on_core, only : nindv, numf, listf
       use on_main, only : ncT2P, nbandsloc, nbL2G, nbG2L
 

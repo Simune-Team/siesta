@@ -1,4 +1,46 @@
 ----------------------
+May 9, 2011, A. Garcia                    siesta-3.0-351-on-7
+More improvements to the distribution code in O(N)
+
+* Allow the user the possibility of not using Spatial Decomposition in
+O(N) runs. It is done by setting, in the fdf file:
+
+UseSpatialDecomposition F
+
+In this case the program will use the standard block-cyclic distribution,
+unless the 
+
+UseDomainDecomposition T
+
+flag is set.
+
+* Fix the creation of the indexing arrays for the case in which the
+user does not wish to use Spatial Decomposition. Previously only the
+master node got them right, maybe due to an oversight by J. Gale.
+
+* Use better names for dummy arguments and variables in the 'globalise' module.
+
+* Fix the dimensions of the dummy arguments numh and listhptr in ordern and
+cspa (atomlwf). This might point to a bug later on in the code in cspa.
+
+* As a (temporary) debugging feature, files are produced to document the
+distribution information: SPATIAL_INDEXES, DD_INDEXES.Node, and BLOCK_INDEXES.
+There are still some issues with domain decomposition.
+
+* Remove unused import from on_subs.
+
+modified:
+  Src/atomlwf.F
+  Src/globalise.F
+  Src/initparallel.F
+  Src/on_subs.F
+  Src/ordern.F
+  Src/parallelsubs.F
+  Src/setatomnodes.F
+  Src/setup_ordern_indexes.F90
+
+
+----------------------
 May 4, 2011, A. Garcia                    siesta-3.0-351-on-6
 Comment and clarify some of the order-N code
 
