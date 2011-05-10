@@ -79,9 +79,10 @@ C                             of each row of Hij
 C integer nbands            : Number of LWF's
 C ****************************************************************************
 
-      use precision
-      use alloc, only: re_alloc, de_alloc
-      use on_main
+      use precision, only: dp
+      use alloc,     only: re_alloc, de_alloc
+      use on_main,   only: numc, listc, c, cold, listcold
+      use on_main,   only: ncg2l, ncl2g, nct2p, ncp2t
       use neighbour, only: jan, r2ij, xij, mneighb, maxnna
       use sys,      only : die
       use spatial,  only : nL2G

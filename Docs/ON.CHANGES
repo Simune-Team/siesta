@@ -1,4 +1,22 @@
 ----------------------
+May 10, 2011, A. Garcia                    siesta-3.0-351-on-8
+Put some O(N) routines in modules and declare intents
+
+And continue the renaming of variables.
+
+modified:
+  Src/Makefile
+  Src/atomlwf.F
+  Src/cgwf.F
+  Src/denmat.F
+  Src/egandd.F
+  Src/ener3.F
+  Src/gradient.F
+  Src/on_subs.F
+  Src/onmod.F
+  Src/ordern.F
+
+----------------------
 May 9, 2011, A. Garcia                    siesta-3.0-351-on-7
 More improvements to the distribution code in O(N)
 

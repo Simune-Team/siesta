@@ -8,10 +8,13 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine ener3(c,grad,lam,eta,qs,h,s,nbasis,nbasisloc,nbands,
+      module m_ener3
+      public :: ener3
+      CONTAINS
+      subroutine ener3(c,grad,lam,eta,qs,h,s,no_u,no_l,nbands,
      .                 ncmax,nctmax,nfmax,nhmax,nhijmax,numc,listc,
      .                 numct,listct,cttoc,numf,listf,numh,listh,
-     .                 listhptr,numhij,listhij,ener,nbasisCloc,nspin,
+     .                 listhptr,numhij,listhij,ener,no_cl,nspin,
      .                 Node)
 
 C ************************************************************************
@@ -22,16 +25,16 @@ C Uses the functional of Kim et al (PRB 52, 1640 (95))
 C Works only with spin-unpolarized systems
 C Written by P.Ordejon. October'96
 C ****************************** INPUT ***********************************
-C real*8 c(ncmax,nbasis)       : Current point (wave function coeff.
+C real*8 c(ncmax,no_u)       : Current point (wave function coeff.
 C                                  in sparse form)
-C real*8 grad(ncmax,nbasis)    : Direction of search (sparse)
+C real*8 grad(ncmax,no_u)    : Direction of search (sparse)
 C real*8 lam                   : Length of step
 C real*8 eta(nspin)            : Fermi level parameter of Kim et al.
 C real*8 qs(nspin)             : Total number of electrons
 C real*8 h(nhmax)              : Hamiltonian matrix (sparse)
 C real*8 s(nhmax)              : Overlap matrix (sparse)
-C integer nbasis               : Global number of basis orbitals
-C integer nbasisloc            : Local number of basis orbitals
+C integer no_u               : Global number of basis orbitals
+C integer no_l            : Local number of basis orbitals
 C integer nbands               : Number of LWF's
 C integer ncmax                : Max num of <>0 elements of each row of C
 C integer nctmax               : Max num of <>0 elements of each col of C
@@ -40,9 +43,9 @@ C                                   F = Ct x H
 C integer nhmax                : Max num of <>0 elements of each row of H
 C integer nhijmax              : Max num of <>0 elements of each row of 
 C                                   Hij=Ct x H x C
-C integer numc(nbasis)         : Control vector of C matrix
+C integer numc(no_u)         : Control vector of C matrix
 C                                (number of <>0  elements of each row of C)
-C integer listc(ncmax,nbasis)  : Control vector of C matrix 
+C integer listc(ncmax,no_u)  : Control vector of C matrix 
 C                               (list of <>0  elements of each row of C)
 C integer numct(nbands)        : Control vector of C transpose matrix
 C                               (number of <>0  elements of each col of C)
@@ -53,11 +56,11 @@ C integer numf(nbands)         : Control vector of F matrix
 C                                (number of <>0  elements of each row of F)
 C integer listf(nfmax,nbands)  : Control vector of F matrix 
 C                                (list of <>0  elements of each row of F)
-C integer numh(nbasis)         : Control vector of H matrix
+C integer numh(no_u)         : Control vector of H matrix
 C                                (number of <>0  elements of each row of H)
 C integer listh(nhmax)         : Control vector of H matrix 
 C                               (list of <>0  elements of each row of H)
-C integer listhptr(nbasis)     : Control vector of H matrix 
+C integer listhptr(no_u)     : Control vector of H matrix 
 C                               (pointer to start of row in listh/h/s)
 C integer numhij(nbands)       : Control vector of Hij matrix
 C                                (number of <>0  elements of each row of Hij)
@@ -70,27 +73,29 @@ C                                     C + 2 * lam * GRAD
 C                                     C + 3 * lam * GRAD
 C ************************************************************************
 
-      use precision
+      use precision, only : dp
       use on_main,   only : ncG2L,ncT2P,nbG2L,nbL2G,nbandsloc
       use globalise
       use m_mpi_utils, only : globalize_sum
 
       implicit none
 
-      integer
-     .  nbasis,nbasisloc,nbands,ncmax,nctmax,nfmax,nhmax,nhijmax,
-     .  nbasisCloc,nspin,Node
+      integer, intent(in) ::
+     .  no_u,no_l,nbands,ncmax,nctmax,nfmax,nhmax,nhijmax,
+     .  no_cl,nspin,Node
 
-      integer
-     .  cttoc(nctmax,nbandsloc),listc(ncmax,nbasisCloc),
+      integer, intent(in) ::
+     .  cttoc(nctmax,nbandsloc),listc(ncmax,no_cl),
      .  listct(nctmax,nbandsloc),listf(nfmax,nbandsloc),
-     .  listh(nhmax),listhptr(nbasisloc),listhij(nhijmax,nbandsloc),
-     .  numc(nbasisCloc),numct(nbandsloc),numf(nbandsloc),
-     .  numh(nbasisloc),numhij(nbandsloc)
+     .  listh(nhmax),listhptr(no_l),listhij(nhijmax,nbandsloc),
+     .  numc(no_cl),numct(nbandsloc),numf(nbandsloc),
+     .  numh(no_l),numhij(nbandsloc)
 
-      real(dp) ::
-     .  c(ncmax,nbasisCloc,nspin),ener(3),eta(nspin),qs(nspin),
-     .  grad(ncmax,nbasisCloc,nspin),h(nhmax,nspin),lam,s(nhmax)
+      real(dp), intent(in) ::
+     .  c(ncmax,no_cl,nspin),eta(nspin),qs(nspin),
+     .  grad(ncmax,no_cl,nspin),h(nhmax,nspin),lam,s(nhmax)
+
+      real(dp), intent(out) :: ener(3)
 
 C Internal variables ......................................................
 
@@ -117,17 +122,17 @@ C
       call timer('ener3',1)
 
 C Allocate workspace arrays
-      allocate(aux1(nbasis))
+      allocate(aux1(no_u))
       call memory('A','D',size(aux1),'ener3')
-      allocate(aux2(nbasis))
+      allocate(aux2(no_u))
       call memory('A','D',size(aux2),'ener3')
-      allocate(aux3(nbasis))
+      allocate(aux3(no_u))
       call memory('A','D',size(aux3),'ener3')
-      allocate(aux4(nbasis))
+      allocate(aux4(no_u))
       call memory('A','D',size(aux4),'ener3')
-      allocate(aux5(nbasis))
+      allocate(aux5(no_u))
       call memory('A','D',size(aux5),'ener3')
-      allocate(aux6(nbasis))
+      allocate(aux6(no_u))
       call memory('A','D',size(aux6),'ener3')
       allocate(bux1(nbands))
       call memory('A','D',size(bux1),'ener3')
@@ -172,7 +177,7 @@ C Initialize output and auxiliary varialbles ...............................
         ener(i) = 0.0d0
       enddo
 
-      do i = 1,nbasis
+      do i = 1,no_u
         aux1(i) = 0.0d0
         aux2(i) = 0.0d0
         aux3(i) = 0.0d0
@@ -430,5 +435,6 @@ C Dellocate workspace arrays
 
       call timer('ener3',2)
 
-      return
-      end
+      end subroutine ener3
+      end module m_ener3
+

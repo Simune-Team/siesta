@@ -8,11 +8,14 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine denmat(c,eta,h,s,qs,nbasis,nbasisloc,nbands,ncmax,
+      module m_denmat
+      public :: denmat
+      CONTAINS
+      subroutine denmat(c,eta,h,s,qs,no_u,no_l,nbands,ncmax,
      .                  nctmax,nfmax,nftmax,nhmax,nhijmax,numc,listc,
      .                  numct,listct,cttoc,numf,listf,numft,listft,
      .                  fttof,numh,listh,listhptr,numhij,listhij,
-     .                  dm,edm,nbasisCloc,nspin,Node)
+     .                  dm,edm,no_cl,nspin,Node)
 C *******************************************************************
 C Subroutine to compute the Density and Energy Density matrices
 C for the Order-N functional of Kim et al. (PRB 52, 1640 (95))
@@ -35,13 +38,13 @@ C Modified by J.M.Soler, May'97
 C Multiplication for cHc x c / cSc x c changed to suit parallel
 C version and spatial decomposition added by J.D. Gale December '04
 C ************************** INPUT **********************************
-C real*8 c(ncmax,nbasis)      : Localized Wave Functions (sparse)
+C real*8 c(ncmax,no_u)      : Localized Wave Functions (sparse)
 C real*8 eta                  : Fermi level parameter of Kim et al.
 C real*8 h(nhmax)             : Hamiltonian matrix (sparse)
 C real*8 s(nhmax)             : Overlap matrix (sparse)
 C real*8 qs(nspin)            : Total number of electrons
-C integer nbasis              : Global number of atomic orbitals
-C integer nbasisloc           : Local number of atomic orbitals
+C integer no_u              : Global number of atomic orbitals
+C integer no_l           : Local number of atomic orbitals
 C integer nbands              : Number of Localized Wave Functions
 C integer ncmax               : First dimension of listc and C, and maximum
 C                               number of nonzero elements of each row of C
@@ -53,9 +56,9 @@ C integer nhmax               : First dimension of listh and H, and maximum
 C                               number of nonzero elements of each row of H
 C integer nhijmax             : Maximum number of non-zero elements of each
 C                               row of Hij
-C integer numc(nbasis)        : Control vector of C matrix
+C integer numc(no_u)        : Control vector of C matrix
 C                               (number of nonzero elements of each row of C)
-C integer listc(ncmax,nbasis) : Control vector of C matrix
+C integer listc(ncmax,no_u) : Control vector of C matrix
 C                              (list of nonzero elements of each row of C)
 C integer numct(nbands)       : Control vector of C transpose matrix
 C                              (number of <>0  elements of each col of C)
@@ -66,27 +69,27 @@ C integer numf(nbands)        : Control vector of F matrix
 C                               (number of <>0  elements of each row of F)
 C integer listf(nfmax,nbands) : Control vector of F matrix
 C                               (list of <>0  elements of each row of F)
-C integer numft(nbasis)       : Control vector of F transpose matrix
+C integer numft(no_u)       : Control vector of F transpose matrix
 C                               (number of <>0  elements of each col of F)
-C integer listft(nfmax,nbasis): Control vector of F transpose matrix
+C integer listft(nfmax,no_u): Control vector of F transpose matrix
 C                               (list of <>0  elements of each col of F)
-C integer fttof(nfmax,nbasis) : Map from Ft to F indexing
-C integer numh(nbasis)        : Control vector of H matrix
+C integer fttof(nfmax,no_u) : Map from Ft to F indexing
+C integer numh(no_u)        : Control vector of H matrix
 C                               (number of nonzero elements of each row of H)
 C integer listh(nhmax)        : Control vector of H matrix
 C                               (list of nonzero elements of each row of H)
-C integer listhptr(nbasis)    : Control vector of H matrix
+C integer listhptr(no_u)    : Control vector of H matrix
 C                               (pointer to start of row in listh/h/s)
 C integer numhij(nbands)      : Control vector of Hij matrix
 C                                (number of <>0  elements of each row of Hij)
 C integer listhij(nhijmax,nbands): Control vector of Hij matrix 
 C                                (list of <>0  elements of each row of Hij)
 C ************************* OUTPUT **********************************
-C real*8 dm(nhmax,nbasis)     : Density Matrix
-C real*8 edm(nhmax,nbasis)    : Energy density matrix
+C real*8 dm(nhmax,no_u)     : Density Matrix
+C real*8 edm(nhmax,no_u)    : Energy density matrix
 C *******************************************************************
 
-      use precision
+      use precision, only : dp
       use on_main,   only : ncG2L, ncP2T, ncT2P, nbL2G, nbandsloc
       use m_mpi_utils, only : globalize_sum
       use alloc,     only : re_alloc, de_alloc
@@ -100,25 +103,27 @@ C *******************************************************************
 
       implicit none
 
-      integer
-     .  nbasis,nbasisloc,nbands,ncmax,nctmax,nfmax,nhmax,nhijmax,
-     .  nbasisCloc,Node,nspin
+      integer, intent(in) ::
+     .  no_u,no_l,nbands,ncmax,nctmax,nfmax,nhmax,nhijmax,
+     .  no_cl,Node,nspin
 
-      integer
-     .  cttoc(nctmax,nbandsloc),listc(ncmax,nbasisCloc),
+      integer, intent(in) ::
+     .  cttoc(nctmax,nbandsloc),listc(ncmax,no_cl),
      .  listct(nctmax,nbandsloc),listf(nfmax,nbandsloc),
-     .  listh(nhmax),listhptr(nbasisloc),listhij(nhijmax,nbandsloc),
-     .  numc(nbasisCloc),numct(nbandsloc),numf(nbandsloc),
-     .  numh(nbasisloc),numhij(nbandsloc)
+     .  listh(nhmax),listhptr(no_l),listhij(nhijmax,nbandsloc),
+     .  numc(no_cl),numct(nbandsloc),numf(nbandsloc),
+     .  numh(no_l),numhij(nbandsloc)
      
-      integer
-     .  nftmax,fttof(nftmax,nbasisCloc),
-     .  listft(nftmax,nbasisCloc), numft(nbasisCloc)
+      integer, intent(in) ::
+     .  nftmax,fttof(nftmax,no_cl),
+     .  listft(nftmax,no_cl), numft(no_cl)
 
-      real(dp) ::
-     .  c(ncmax,nbasisCloc,nspin),dm(nhmax,nspin),edm(nhmax,nspin),
+      real(dp), intent(in) ::
+     .  c(ncmax,no_cl,nspin),
      .  qs(nspin),eta(nspin),h(nhmax,nspin),s(nhmax)
-     
+
+      real(dp), intent(out) :: dm(nhmax,nspin),edm(nhmax,nspin)
+
       external
      .  timer
 
@@ -163,9 +168,9 @@ C Start time counter
 C Allocate local arrays
 
       nullify( cHrow )
-      call re_alloc( cHrow, 1, nbasis, name='cHrow', routine='denmat' )
+      call re_alloc( cHrow, 1, no_u, name='cHrow', routine='denmat' )
       nullify( cSrow )
-      call re_alloc( cSrow, 1, nbasis, name='cSrow', routine='denmat' )
+      call re_alloc( cSrow, 1, no_u, name='cSrow', routine='denmat' )
       nullify( chcrow )
       call re_alloc( chcrow, 1, nbands, name='chcrow',
      &               routine='denmat' )
@@ -190,22 +195,22 @@ C Allocate local arrays
       call re_alloc( ctmp, 1, nbands, 1, 2,
      &               name='ctmp', routine='denmat' )
       nullify( ftG )
-      call re_alloc( ftG, 1, MaxFt2, 1, nbasisCloc,
+      call re_alloc( ftG, 1, MaxFt2, 1, no_cl,
      &               name='ftG', routine='denmat' )
       nullify( fstG )
-      call re_alloc( fstG, 1, MaxFt2, 1, nbasisCloc,
+      call re_alloc( fstG, 1, MaxFt2, 1, no_cl,
      &               name='fstG', routine='denmat' )
 #else
       nullify( ft )
-      call re_alloc( ft, 1, nftmax, 1, nbasisCloc,
+      call re_alloc( ft, 1, nftmax, 1, no_cl,
      &               name='ft', routine='denmat' )
       nullify( fst )
-      call re_alloc( fst, 1, nftmax, 1, nbasisCloc,
+      call re_alloc( fst, 1, nftmax, 1, no_cl,
      &               name='fst', routine='denmat' )
 #endif
 
 C Initialize temporary arrays
-      do m = 1,nbasis
+      do m = 1,no_u
         cHrow(m) = 0.0_dp
         cSrow(m) = 0.0_dp
       enddo
@@ -226,7 +231,7 @@ C Initialize temporary arrays
           chcrowsave(j,i) = 0.0_dp
         enddo
       enddo
-      do i = 1,nbasisCloc
+      do i = 1,no_cl
         do j = 1,MaxFT2
           ftG(j,i) = 0.0_dp
           fstG(j,i) = 0.0_dp
@@ -362,7 +367,7 @@ C Reinitialise ctmp
         enddo
 
 C Find dm=c*cscc and edm=c*chcc. Only the nonzero elements of H.
-        do n = 1,nbasisloc
+        do n = 1,no_l
           nn = ncP2T(n)
       
 C Use listft to expand a column of cscc
@@ -415,8 +420,8 @@ C End of loop over spins
 C Normalize DM to exact charge .........................
 C Calculate total output charge ...
       qout(1:2) = 0.0_dp
-      if (nbasisloc.gt.0) then
-        nh = listhptr(nbasisloc) + numh(nbasisloc)
+      if (no_l.gt.0) then
+        nh = listhptr(no_l) + numh(no_l)
       else
         nh = 0
       endif
@@ -472,4 +477,5 @@ C Deallocate local arrays
 
 C Stop time counter and return ..................
       call timer('denmat',2)
-      end
+      end subroutine denmat
+      end module m_denmat

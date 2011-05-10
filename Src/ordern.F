@@ -83,12 +83,16 @@ C  Modules
       use precision, only: dp
       use fdf
       use alloc
-      use on_main
+      use on_main,    only: c, cold, listc, listcold, numc, numcold
+      use on_main,    only: ncg2l, ncl2g, ncp2t, nct2p
+      use on_main,    only: xi, g, hg
+
       use parallel,  only : IONode, Node, NOdes
       use siesta_cml
       use sys,       only : die
       use units,     only : eV
       use m_chempot, only : chempot
+      use m_cgwf,    only : cgwf
 #ifdef MPI
       use globalise,  only: setglobalise, globaliseC
       use m_mpi_utils, only: globalize_sum, globalize_max  
@@ -96,26 +100,29 @@ C  Modules
 
       implicit none
 
-      integer 
+      integer, intent(in) :: 
      .  ioptlwf, ipcheb, iscf, istep, itmax, natoms, 
      .  no_u, no_l, nhmax, nspin
 
-      integer
+      integer, intent(in) ::
      .  isa(natoms), lasto(0:natoms), listh(nhmax), 
      .  listhptr(no_l), numh(no_l)
 
-      real(dp) ::
-     .  beta, cell(3,3), dm(nhmax,nspin), Ecorrec, edm(nhmax,nspin), 
-     .  enum, eta(2), ftol, h(nhmax,nspin), qa(natoms), rcoor, rcoorcp,
+      real(dp) , intent(inout) :: eta(2)
+      real(dp) , intent(in) ::
+     .  beta, cell(3,3),
+     .  enum, ftol, h(nhmax,nspin), qa(natoms), rcoor, rcoorcp,
      .  rh, s(nhmax), xa(3,natoms), qs(nspin)
 
-      logical
-     .  chebef, noeta, usesavelwf
+      real(dp) , intent(out) :: dm(nhmax,nspin), edm(nhmax,nspin)
+      real(dp) , intent(out) :: Ecorrec
+
+      logical, intent(in)    :: chebef, noeta, usesavelwf
 
 C Internal variables ..........................................................
       integer
      .  in, io, iopt, iord, is, iter, ncmax, nctmax, 
-     .  nfmax, nftmax, nhijmax, nbands, nh
+     .  nfmax, nftmax, nhijmax, nbands, nh, gen_istep
 
       integer, save :: iterm = 0
       integer, save :: maxnc = 1
@@ -131,7 +138,7 @@ C Internal variables ..........................................................
      .  aux(:,:)
 
       real(dp) ::
-     .  fe(2), qtot(nspin)
+     .  fe, qtot(nspin)
 
       real(dp) ::
      .  chpot,emax,emin
@@ -305,18 +312,17 @@ C  iscf = 1 (that is, if we are in a new MD step) ...................
 C If LWF's have just been read from disk, 
 C call extrapol with istep = 2 and iord = 1
 C to make it update the structure of c, if needed
-        itest = .false.
+        gen_istep = istep
         if (istep.eq.1 .and. usesavelwf .and. found) then
-          istep = 2
+          gen_istep = 2
           iord = 0
-          itest = .true.
         endif
-        call extrapolon(istep,iord,nspin,no_u,no_cl,maxnc,
+        call extrapolon(gen_istep,iord,nspin,no_u,no_cl,maxnc,
      .                  numc,listc,aux,numcold,listcold,cold,c,
      .                  no_l)
 
 #ifdef MPI
-        if (istep.ne.1) then
+        if (gen_istep.ne.1) then
 
 C Zero parts of C that current Node does not have primary responsibility for
           do is = 1,nspin
@@ -335,9 +341,6 @@ C Globalise C to get values for rows from other nodes
         endif
 #endif
 
-C If LWF's have just been read, restore istep
-        if (itest) istep = 1
-        itest = .false.
       endif
 
 C Call the CG routines ...............................................

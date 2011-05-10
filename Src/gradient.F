@@ -8,12 +8,15 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine gradient(c,eta,qs,h,s,nbasis,nbasisloc,nbands,ncmax,
+      module m_gradient
+      public :: gradient
+      CONTAINS
+      subroutine gradient(c,eta,qs,h,s,no_u,no_l,nbands,ncmax,
      .                    nctmax,nfmax,nftmax,nhmax,nhijmax,
      .                    numc,listc,numct,listct,cttoc,numf,listf,
      .                    numft,listft,fttof,numh,listh,
      .                    listhptr,numhij,listhij,f,fs,grad,ener,
-     .                    nbasisCloc,nspin,Node)
+     .                    no_cl,nspin,Node)
 
 C ************************************************************************
 C Finds the energy and gradient at point C.
@@ -22,14 +25,14 @@ C Works only with spin-unpolarized systems
 C Written by P.Ordejon. October'96
 C Last modified: J.M.Soler. 30/04/97
 C ****************************** INPUT ***********************************
-C real*8 c(ncmax,nbasis)       : Current point (wave function coeff.
+C real*8 c(ncmax,no_u)       : Current point (wave function coeff.
 C                                  in sparse form)
 C real*8 eta(nspin)            : Fermi level parameter of Kim et al.
 C real*8 qs(nspin)             : Total number of electrons
 C real*8 h(nhmax)              : Hamiltonian matrix (sparse)
 C real*8 s(nhmax)              : Overlap matrix (sparse)
-C integer nbasis               : Global number of basis orbitals
-C integer nbasisloc            : Local number of basis orbitals
+C integer no_u               : Global number of basis orbitals
+C integer no_l            : Local number of basis orbitals
 C integer nbands               : Number of LWF's
 C integer ncmax                : Max num of <>0 elements of each row of C
 C integer nctmax               : Max num of <>0 elements of each col of C
@@ -39,9 +42,9 @@ C integer nftmax               : Max num of <>0 elements of each col of F
 C integer nhmax                : Max num of <>0 elements of each row of H
 C integer nhijmax              : Max num of <>0 elements of each row of 
 C                                   Hij=Ct x H x C
-C integer numc(nbasis)         : Control vector of C matrix
+C integer numc(no_u)         : Control vector of C matrix
 C                                (number of <>0  elements of each row of C)
-C integer listc(ncmax,nbasis)  : Control vector of C matrix 
+C integer listc(ncmax,no_u)  : Control vector of C matrix 
 C                               (list of <>0  elements of each row of C)
 C integer numct(nbands)        : Control vector of C transpose matrix
 C                               (number of <>0  elements of each col of C)
@@ -52,16 +55,16 @@ C integer numf(nbands)         : Control vector of F matrix
 C                                (number of <>0  elements of each row of F)
 C integer listf(nfmax,nbands)  : Control vector of F matrix 
 C                                (list of <>0  elements of each row of F)
-C integer numft(nbasis)        : Control vector of F transpose matrix
+C integer numft(no_u)        : Control vector of F transpose matrix
 C                               (number of <>0  elements of each col of F)
-C integer listft(nfmax,nbasis) : Control vector of F transpose matrix
+C integer listft(nfmax,no_u) : Control vector of F transpose matrix
 C                               (list of <>0  elements of each col of F)
-C integer fttof(nfmax,nbasis)  : Map from Ft to F indexing
-C integer numh(nbasis)         : Control vector of H matrix
+C integer fttof(nfmax,no_u)  : Map from Ft to F indexing
+C integer numh(no_u)         : Control vector of H matrix
 C                                (number of <>0  elements of each row of H)
 C integer listh(nhmax)         : Control vector of H matrix 
 C                               (list of <>0  elements of each row of H)
-C integer listhptr(nbasis)     : Control vector of H matrix 
+C integer listhptr(no_u)     : Control vector of H matrix 
 C                               (pointer to start of rows in listh/h/s)
 C integer numhij(nbands)       : Control vector of Hij matrix
 C                                (number of <>0  elements of each row of Hij)
@@ -71,7 +74,7 @@ C real*8 f(nfmax,nbands)       : Auxiliary space
 C real*8 fs(nfmax,nbands)      : Auxiliary space
 C ***************************** OUTPUT ***********************************
 C real*8 ener                  : Energy at point C
-C real*8 grad(ncmax,nbasis)    : Gradient of functional (sparse)
+C real*8 grad(ncmax,no_u)    : Gradient of functional (sparse)
 C ************************************************************************
 
       use precision
@@ -87,25 +90,25 @@ C ************************************************************************
       implicit none
 
       integer, intent(in) ::
-     .  nbasis,nbasisloc,nbands,ncmax,nctmax,nfmax,nftmax,nhmax,
-     .  nhijmax,nbasisCloc,nspin,Node
+     .  no_u,no_l,nbands,ncmax,nctmax,nfmax,nftmax,nhmax,
+     .  nhijmax,no_cl,nspin,Node
 
       integer, intent(in) ::
-     .  cttoc(nctmax,nbandsloc),fttof(nftmax,nbasisCloc),
-     .  listc(ncmax,nbasisCloc),listct(nctmax,nbandsloc),
-     .  listf(nfmax,nbandsloc),listft(nftmax,nbasisCloc),
-     .  listh(nhmax),listhptr(nbasisloc),listhij(nhijmax,nbandsloc),
-     .  numc(nbasisCloc),numct(nbandsloc),numf(nbandsloc),
-     .  numft(nbasisCloc),numh(nbasisloc),numhij(nbandsloc)
+     .  cttoc(nctmax,nbandsloc),fttof(nftmax,no_cl),
+     .  listc(ncmax,no_cl),listct(nctmax,nbandsloc),
+     .  listf(nfmax,nbandsloc),listft(nftmax,no_cl),
+     .  listh(nhmax),listhptr(no_l),listhij(nhijmax,nbandsloc),
+     .  numc(no_cl),numct(nbandsloc),numf(nbandsloc),
+     .  numft(no_cl),numh(no_l),numhij(nbandsloc)
 
       real(dp), intent(in) ::
-     .  c(ncmax,nbasisCloc,nspin),eta(nspin),qs(nspin),
+     .  c(ncmax,no_cl,nspin),eta(nspin),qs(nspin),
      .  h(nhmax,nspin),s(nhmax)
 
       real(dp), intent(inout) ::
      .     f(nfmax,nbandsloc),fs(nfmax,nbandsloc)
 
-      real(dp), intent(out) :: grad(ncmax,nbasisCloc,nspin), ener
+      real(dp), intent(out) :: grad(ncmax,no_cl,nspin), ener
 
 C Internal variables ......................................................
 
@@ -130,22 +133,22 @@ C..................
       call timer('gradient',1)
       
 C Allocate local arrays
-      allocate(aux1(nbasis))
+      allocate(aux1(no_u))
       call memory('A','D',size(aux1),'gradient')
-      allocate(aux2(nbasis))
+      allocate(aux2(no_u))
       call memory('A','D',size(aux2),'gradient')
       allocate(bux1(nbands))
       call memory('A','D',size(bux1),'gradient')
       allocate(bux2(nbands))
       call memory('A','D',size(bux2),'gradient')
-      allocate(ft(nftmax,nbasisCloc))
+      allocate(ft(nftmax,no_cl))
       call memory('A','D',size(ft),'gradient')
-      allocate(fst(nftmax,nbasisCloc))
+      allocate(fst(nftmax,no_cl))
       call memory('A','D',size(fst),'gradient')
 #ifdef MPI
-      allocate(ftG(MaxFt2,nbasisCloc))
+      allocate(ftG(MaxFt2,no_cl))
       call memory('A','D',size(ftG),'gradient')
-      allocate(fstG(MaxFt2,nbasisCloc))
+      allocate(fstG(MaxFt2,no_cl))
       call memory('A','D',size(fstG),'gradient')
       allocate(bux1save(nhijmax,nbandsloc))
       call memory('A','D',size(bux1save),'gradient')
@@ -165,7 +168,7 @@ C Initialize output and auxiliary varialbles ...............................
 
       ener = 0.0d0
 
-      do i = 1,nbasis
+      do i = 1,no_u
         aux1(i) = 0.0d0
         aux2(i) = 0.0d0
       enddo
@@ -233,7 +236,7 @@ C Fs=CtS
         enddo
 
 C-JMS Find transpose of F and Fs
-        do mu = 1,nbasisCloc
+        do mu = 1,no_cl
           do muk = 1,numft(mu)
             j = listft(muk,mu)
             jl = nbG2L(j)
@@ -247,9 +250,9 @@ C-JMS Find transpose of F and Fs
 
 #ifdef MPI
 C Globalise ft/fst
-        call globaliseF(nbasisCloc,nbands,nftmax,numft,listft,
+        call globaliseF(no_cl,nbands,nftmax,numft,listft,
      .                  ft,ftG,Node)
-        call globaliseF(nbasisCloc,nbands,nftmax,numft,listft,
+        call globaliseF(no_cl,nbands,nftmax,numft,listft,
      .                  fst,fstG,Node)
 #endif
 
@@ -358,7 +361,7 @@ C Global reduction of func1/2
 #endif
 
         bux1(1:nbands) = 0.0d0
-        do k = 1,nbasisCloc
+        do k = 1,no_cl
           do ik = 1,numft(k)
             j = listft(ik,k)
             bux1(j) = 2.0d0*spinfct*ft(ik,k) + bux1(j)
@@ -380,7 +383,7 @@ C End loop over spins
       enddo
 
 #ifdef MPI
-      call globaliseC(nbasisCloc,ncmax,numc,grad,nspin,Node)
+      call globaliseC(no_cl,ncmax,numc,grad,nspin,Node)
 #endif
 
 C Deallocate local arrays
@@ -411,5 +414,5 @@ C Deallocate local arrays
 
       call timer('gradient',2)
 
-      return
-      end
+      end subroutine gradient
+      end module m_gradient

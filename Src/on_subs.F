@@ -8,13 +8,15 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine ctrans1(nbasisCloc,ntmax)
+      module m_on_subs
+      public :: ctrans1, ctrans2, axb_build1, axb_build2
+      CONTAINS
+      subroutine ctrans1(no_cl,ntmax)
 C ********************************************************************
 C Finds the C transpose matrix control vectors numt and listt,
 C and the index vector cttoc.
 C Written by P.Ordejon. October'96
 C ***************************** INPUT *********************************
-C integer nbasisloc      : Local number of rows of C 
 C integer nbands         : Number of columns of full C
 C integer ntmax          : maximum number of nonzero elements of each
 C                           column of C
@@ -32,8 +34,8 @@ C *********************************************************************
 
       implicit none
 
-      integer
-     .  nbasisCloc,ntmax
+      integer, intent(in)    :: no_cl
+      integer, intent(inout) :: ntmax
 
 C Internal variables ..................................................
       integer
@@ -45,7 +47,7 @@ C  Initialize numt list
       enddo
 
 C  Construct information for transpose of C 
-      do mu = 1,nbasisCloc
+      do mu = 1,no_cl
         do imu = 1,numc(mu)
           i = listc(imu,mu)
           il = nbG2L(i)
@@ -67,7 +69,7 @@ C  Reinitialize numt list
       enddo
 
 C  Construct information for transpose of C 
-      do mu = 1,nbasisCloc
+      do mu = 1,no_cl
         do imu = 1,numc(mu)
           i = listc(imu,mu)
           il = nbG2L(i)
@@ -80,10 +82,10 @@ C  Construct information for transpose of C
         enddo
       enddo
 
-      return
-      end
+      end subroutine ctrans1
 
-      subroutine ctrans2(nbasisCloc,maxnf,maxnft,numf,listf)
+
+      subroutine ctrans2(no_cl,maxnf,maxnft,numf,listf)
 C ********************************************************************
 C Finds the C transpose matrix control vectors numt and listt,
 C and the index vector cttoc.
@@ -113,15 +115,16 @@ C *********************************************************************
 
       implicit none
 
-      integer
-     .  nbasisCloc,maxnf,maxnft,listf(maxnf,nbandsloc),numf(nbandsloc)
+      integer, intent(in) ::
+     .  no_cl,maxnf,listf(maxnf,nbandsloc),numf(nbandsloc)
+      integer, intent(out) :: maxnft
 
 C Internal variables ..................................................
       integer
      .  i,ii,imu,mu,mul,n
 
 C  Initialize numft list
-      do i = 1,nbasisCloc
+      do i = 1,no_cl
         numft(i) = 0
       enddo
 
@@ -139,14 +142,14 @@ C  Find maximum dimension for arrays
 
 C  Find maximum value of numft and re-zero numft
       maxnft = 0
-      do i = 1,nbasisCloc
+      do i = 1,no_cl
         maxnft = max(maxnft,numft(i))
         numft(i) = 0
       enddo
 
 C Resize arrays
-      call re_alloc(listft,1,maxnft,1,nbasisCloc,name='listft')
-      call re_alloc(fttof,1,maxnft,1,nbasisCloc,name='fttof')
+      call re_alloc(listft,1,maxnft,1,no_cl,name='listft')
+      call re_alloc(fttof,1,maxnft,1,no_cl,name='fttof')
 
 C  Construct information for transpose of F
       do mul = 1,nbandsloc
@@ -163,8 +166,8 @@ C  Construct information for transpose of F
         enddo
       enddo
 
-      return
-      end
+      end subroutine ctrans2
+
 
       subroutine axb_build1(nbasis,maxnct,numct,listct,nhmax,numh,
      .                      listh,listhptr,indon,maxnf)
@@ -221,10 +224,12 @@ C *********************************************************************
 
       implicit none
 
-      integer
-     .  nbasis,maxnct,nhmax,maxnf,
-     .  indon(nbasis),listct(maxnct,nbandsloc),listh(nhmax),
+      integer, intent(in) ::
+     .  nbasis,maxnct,nhmax,
+     .  listct(maxnct,nbandsloc),listh(nhmax),
      .  listhptr(nbasis),numct(nbandsloc),numh(nbasis)
+      integer, intent(inout) :: maxnf
+      integer, intent(out)   :: indon(nbasis)
 
 C Internal variables..................................................
       integer
@@ -307,10 +312,9 @@ C Find out C control vectors - store elements
         nind = 0
       enddo
 
-      return
-      end
+      end subroutine axb_build1
 
-      subroutine axb_build2(nbands,maxnf,numf,listf,nbasisCloc,
+      subroutine axb_build2(nbands,maxnf,numf,listf,no_cl,
      .                      ncmax,numc,listc,indon,maxnhij)
 C ********************************************************************
 C Constructs control indexes of a C matrix in sparse form,
@@ -363,10 +367,12 @@ C *********************************************************************
 
       implicit none
 
-      integer
-     .  nbands,maxnf,ncmax,maxnhij,nbasisCloc,
-     .  indon(nbands),listf(maxnf,nbandsloc),listc(ncmax,nbasisCloc),
-     .  numf(nbandsloc),numc(nbasisCloc)
+      integer, intent(in) ::
+     .  nbands,maxnf,ncmax,no_cl,
+     .  listf(maxnf,nbandsloc),listc(ncmax,no_cl),
+     .  numf(nbandsloc),numc(no_cl)
+      integer, intent(inout) :: maxnhij
+      integer, intent(out)   :: indon(nbands)
 
 C Internal variables..................................................
       integer
@@ -433,5 +439,7 @@ C Find out C control vectors
         nind = 0
       enddo
 
-      return
-      end
+      end  subroutine axb_build2
+
+      end module m_on_subs
+
