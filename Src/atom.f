@@ -1863,7 +1863,7 @@ c     write(6,*) 'GHOST: First excited state for L=',l,elocal2
       end subroutine ghost
 
 
-        subroutine KBproj(rofi,drdi,vps,vlocal,nrwf,l,rphi,
+      subroutine KBproj(ikb,rofi,drdi,vps,vlocal,nrwf,l,rphi,
      .    dkbcos,ekb,proj,nrc)  
 C****
 C    This routine calculates the Kleinman-Bylander projector
@@ -1875,51 +1875,34 @@ C****
 
           implicit none
 
-          real(dp)
-     .        rofi(*),vps(*),drdi(*),proj(*),
-     .        rphi(*), vlocal(*), dkbcos,ekb
-          integer
-     .        nrwf, l, nrc
+          ! ikb is the KB index for this l
+          integer, intent(in)   :: ikb, nrwf, l
+          real(dp), intent(in)  :: rofi(*),vps(*),drdi(*),
+     .                             rphi(*), vlocal(*)
+          real(dp), intent(out) :: proj(*), dkbcos, ekb
+          integer, intent(out)  :: nrc
 
 C* Internal variables***
 
           real(dp) 
-     .        eps, dnrm, vl, vphi, avgv, r, phi, dknrm,
-     .        dincv, rc, rphi2(nrmax,nkbmx), vii(nkbmx),
-     .        sum, vij(nkbmx)
-          integer
-     .        ir, l_last, nkb_last, jkb, ikb
+     .        dnrm, vl, vphi, avgv, r, phi, dknrm,
+     .        dincv, rc, sum, vij(nkbmx)
 
-          logical  called
-             
-          parameter (eps=1.0d-6)
+          real(dp), SAVE ::   rphi2(nrmax,nkbmx), vii(nkbmx)
 
+          integer   ir, jkb
 
-          save called, l_last, nkb_last, rphi2, vii
-          data called /.false./
-   
-              
-             if(called) then 
-               if(l.ne.l_last) then 
-                  l_last=l 
-                  nkb_last=0
-               endif
-             else
-               called=.true.
-               l_last=l
-               nkb_last=0
-             endif
-
+          real(dp), parameter  :: eps=1.0d-6
 
 C We need to orthogonalize to the previous projectors. 
 C We follow the scheme proposed by Blochl, PRB 41, 5414 (1990)
-             ikb=nkb_last+1
-             if(nkb_last.eq.0) then 
+
+             if(ikb.eq.1) then 
                do ir=1,nrwf
                   rphi2(ir,1)=rphi(ir)
                enddo 
              else
-               do jkb=1,nkb_last
+               do jkb=1,ikb-1
                  sum=0.0d0
                  do ir=1,nrwf
                     vl=vps(ir)-vlocal(ir)
@@ -1930,14 +1913,14 @@ C We follow the scheme proposed by Blochl, PRB 41, 5414 (1990)
                enddo
                do ir=1,nrwf
                   sum=0.0d0
-                  do jkb=1,nkb_last
+                  do jkb=1,ikb-1
                      sum=sum+
      .               vij(jkb)*rphi2(ir,jkb)/(vii(jkb)+1.0d-20)
                   enddo
                   rphi2(ir,ikb)=rphi(ir)-sum
                enddo
              endif
-             nkb_last=ikb
+
 C Normalize the new function            
              dnrm=0.0d0
              do ir=1,nrwf
@@ -3006,11 +2989,8 @@ C
 
 C***KB Projectors
 C
-          call KBproj(rofi,drdi,vps(1,l),vlocal,nrwf,l,rphi(1,ikb),
-     .                 dkbcos(ikb,l),ekb(ikb,l),proj,nrc)
-
-C
-C*
+          call KBproj(ikb,rofi,drdi,vps(1,l),vlocal,nrwf,l,
+     $                rphi(1,ikb),dkbcos(ikb,l),ekb(ikb,l),proj,nrc)
 
           rc(ikb,l)=rofi(nrc)
  
