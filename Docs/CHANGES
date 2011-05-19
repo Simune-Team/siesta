@@ -6,6 +6,21 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2011-05-19  15:20:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-383
+Fix and clarify code for KB projector orthogonalization
+
+In routine kbproj, a saved variable was used to keep track
+of the number of previous KB projectors with the same l. This
+variable was only reset upon a change in l. This can lead
+to errors if a species with a single l=0 KB complex is used.
+
+The code has been streamlined, passing explicitly an index
+that determines the sequence number of the projector.
+
+modified:
+  Src/atom.f
+
+-----------------------------------------------------------------------
 2011-05-03  16:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-382
 Fix declaration in cgwf.F
 
