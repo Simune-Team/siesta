@@ -1,0 +1,92 @@
+Release Notes for SIESTA-3.1, June 10, 2011
+
+GENERAL NOTES
+
+Siesta-3.1 can be considered mature enough, and users are encouraged
+to use it. 
+
+MOST RELEVANT CHANGES SINCE SIESTA-3.0-rc2
+
+This is only a subset of all the changes. A complete list can be found
+in the Docs/CHANGES file.
+
+BUG FIXES AND IMPROVEMENTS
+
+*  Fix setting of applied electric field in parallel
+
+  Due to a programming error, the user-specified electric
+  field was not correctly set in non-master nodes.
+  
+*  Fix mixing bug in TranSiesta
+
+  In TranSiesta mode, the program first might carry out a calculation at
+  zero bias and with periodic boundary conditions, just as a normal
+  Siesta calculation. Then the program goes into "transiesta mode"
+  proper, during which a new mixing cycle takes place.
+  
+  In late June 2010, a change in the structure of the mixing code
+  introduced a bug: the counter holding the number of history records
+  was not properly initialized upon the ending of the preliminary
+  siesta-style calculation.
+  
+  The mixing counter is now properly reset.
+
+*  Improved grid for re-parametrization of pseudopotentials
+
+  When the option Reparametrize.Pseudos is in effect, the program
+  resamples the pseudopotential data into a new logarithmic grid with
+  parameters chosen so that the grid-point separation at the typical rcs
+  for orbitals is small enough (of the order of 0.01 bohr). The previous
+  choice of parameters resulted in grid-point separations of the order
+  of 0.005 bohr near the origin, which apparently is not fine enough for
+  s orbitals, leading to oscillations in the gradient near the origin.
+  
+  A new set of default parameters has been chosen to provide a finer
+  grid spacing (1.e-5 bohr) near the origin and 0.01 bohr around r=10
+  bohr. This results in grids with around 10000 points, which is still
+  manageable.
+
+COSMETIC CHANGES
+
+*  Avoid use of generic functions in FoX declaration statements
+
+  The use of generic functions in declaration statements was confusing
+  the Intel Fortran compiler (version >= 11). They have been replaced by calls
+  to the specific versions. 
+
+  Note that the FoX interface still seems to expose a number of  bugs and
+  weaknesses in some compilers. In some cases it might be necessary to deactivate 
+  the FoX library in the Siesta building process. To do so, insert the line
+
+  DUMMY_FOX= --enable-dummy
+
+  in your arch.make file, and recompile Siesta (i.e, "make clean; make").
+
+  For more information, see the appropriate news item in the Siesta web page.
+
+*  Modify bonds routine to print real locations
+
+  In routine bonds (called at the beginning and at the end of the
+  program) we now print the real location of the neighbor atom in space,
+  and not, as in earlier versions, the location of the equivalent
+  representative in the unit cell.
+
+*  Clarify folding warning for gamma-point calculations
+
+  For gamma-point calculations with unit cells not large enough to avoid
+  interactions with images, a warning was produced even though it was
+  only relevant for calculations intended for COOP/COHP analysis. The
+  warning now appears only in that case.
+
+*  Avoid reporting unstable inversion in pulayx
+
+  Typically, inversion problems in the DIIS procedure occur when the
+  error estimate for a step is very small compared to the previous
+  ones. This is harmless, and the reporting of a failure in the output
+  file is confusing.
+  
+  In case it is needed, a hook to allow a full diagnosis 
+  can be compiled in with the preprocessor flag
+  
+  -DDEBUG_PULAY_INVERSE
+
