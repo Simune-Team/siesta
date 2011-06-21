@@ -1,10 +1,10 @@
-Siesta Version:                                        siesta-3.0-rc2
-Architecture  : macosx-openmpi
-Compiler flags: /opt/openmpi.gcc.gfortran/bin/mpif90 -O2
-PARALLEL version
+Siesta Version:                                        siesta-3.1
+Architecture  : ifort11-macosx64
+Compiler flags: ifort  -O2
+SERIAL version
 
-* Running on    2 nodes in parallel
->> Start of run:  30-JUN-2010  11:35:59
+* Running in serial mode
+>> Start of run:  10-JUN-2011  14:39:36
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -474,9 +474,6 @@ redata: Stress tolerance                 =     2.0000  GPa
 redata: ***********************************************************************
 Total number of electrons:    48.000000
 Total ionic charge:    48.000000
-
-* ProcessorY, Blocksize:    1  17
-
  Kpoints in:          154 . Kpoints trimmed:          154
 
 siesta: k-grid: Number of k-points =   154
@@ -486,7 +483,6 @@ siesta: k-grid:   -7   0   7      0.500
 siesta: k-grid:    0  -7   7      0.000
 siesta: k-grid:    0   0   6      0.000
 Naive supercell factors:     4    4    4
-Auxiliary supercell needs to be larger than naive one...
 Auxiliary supercell needs to be larger than naive one...
 
 superc: Internal auxiliary supercell:     5 x     5 x     4  =     100
@@ -527,22 +523,22 @@ Initializing Density Matrix...
 InitMesh: MESH =    32 x    32 x    32 =       32768
 InitMesh: Mesh cutoff (required, used) =   100.000   112.857 Ry
 
-* Maximum dynamic memory allocated =    10 MB
+* Maximum dynamic memory allocated =    12 MB
 
 stepf: Fermi-Dirac step function
  Broyden: No of relevant DM elements:         9610
  maxit for broyden:            4
  cycle on maxit:  T
  variable weight:  T
- initial alpha:   0.10000000000000001     
+ initial alpha:   0.100000000000000     
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -700.301967
+siesta: Ebs     =      -700.301762
 siesta: Eions   =      5228.674091
 siesta: Ena     =      1092.429444
 siesta: Ekin    =      2100.835149
 siesta: Enl     =      -258.044678
-siesta: DEna    =        -0.000015
+siesta: DEna    =        -0.000159
 siesta: DUscf   =         0.000000
 siesta: DUext   =         0.000000
 siesta: Exc     =      -683.847183
@@ -551,61 +547,61 @@ siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =     -2966.326649
-siesta: Etot    =     -2977.301374
-siesta: FreeEng =     -2977.301374
+siesta: Eharris =     -2966.326781
+siesta: Etot    =     -2977.301519
+siesta: FreeEng =     -2977.301519
 
-siesta: Eharris(eV) =   -2966.326649
+siesta: Eharris(eV) =   -2966.326781
 
 
-siesta: Eharris(eV) =   -2966.326649
+siesta: Eharris(eV) =   -2966.326781
 
-timer: Routine,Calls,Time,% = IterSCF        1       5.172  78.72
-elaps: Routine,Calls,Wall,% = IterSCF        1       2.668  78.22
+timer: Routine,Calls,Time,% = IterSCF        1       1.808  72.10
+elaps: Routine,Calls,Wall,% = IterSCF        1       1.807  72.07
 
-siesta: E_KS - E_eggbox =     -2949.8288
+siesta: E_KS - E_eggbox =     -2949.8289
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000000    0.000000   -0.000000
-     2    0.000000   -0.000000    0.000000
-     3   -0.000003   -0.000001    0.000001
-     4    0.000004    0.000000    0.000000
-     5    2.760278   -6.173725   -0.000003
-     6    0.000004    3.703923   -5.658186
-     7   -2.760270    2.469807    5.658181
-     8   -2.760279    6.173722    0.000003
-     9   -0.000000   -3.703924    5.658181
-    10    2.760284   -2.469810   -5.658182
+     1    0.000000    0.000000    0.000000
+     2    0.000000    0.000000    0.000000
+     3   -0.000003    0.000000    0.000000
+     4    0.000004   -0.000001    0.000000
+     5    2.760278   -6.173723   -0.000001
+     6    0.000005    3.703921   -5.658186
+     7   -2.760272    2.469801    5.658184
+     8   -2.760280    6.173723    0.000002
+     9    0.000000   -3.703923    5.658186
+    10    2.760285   -2.469810   -5.658184
 ----------------------------------------
-   Tot    0.000018   -0.000008   -0.000005
+   Tot    0.000017   -0.000010    0.000000
 ----------------------------------------
-   Max    6.173725
+   Max    6.173723
    Res    3.024370    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    6.173725    constrained
+   Max    6.173723    constrained
 
 Stress-tensor-Voigt (kbar):      567.99      382.08      355.54      103.89       30.41       68.01
 (Free)E + p*V (eV/cell)    -2975.1357
-Target enthalpy (eV/cell)    -2891.6795
+Target enthalpy (eV/cell)    -2891.6797
 
 siesta: Stress tensor (static) (eV/Ang**3):
-         0.354510    0.064841    0.042446
-         0.064841    0.238476    0.018978
-         0.042446    0.018978    0.221909
+         0.354509    0.064841    0.042446
+         0.064841    0.238474    0.018978
+         0.042446    0.018978    0.221907
 
-siesta: Pressure (static):       -435.20668244  kBar
+siesta: Pressure (static):       -435.20378996  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-         0.354510    0.064841    0.042446
-         0.064841    0.238476    0.018978
-         0.042446    0.018978    0.221909
+         0.354509    0.064841    0.042446
+         0.064841    0.238474    0.018978
+         0.042446    0.018978    0.221907
 
-siesta: Pressure (total):       -435.20668244  kBar
-
+siesta: Pressure (total):       -435.20378996  kBar
+ 
 Broyden_optim: max_history for broyden:   6
 Broyden_optim: cycle on maxit: T
 Broyden_optim: initial inverse jacobian:   1.0000
-
+ 
 Broyden_optim: No of elements:     36
 
 Broyden_optim: No target stress found, assuming hydrostatic MD.TargetPressure.
@@ -615,31 +611,30 @@ Broyden_optim:     -1000.000       0.000       0.000
 Broyden_optim:         0.000   -1000.000       0.000
 Broyden_optim:         0.000       0.000   -1000.000
 
-* Maximum dynamic memory allocated =    10 MB
+* Maximum dynamic memory allocated =    12 MB
 
 siesta:                 ==============================
                             Begin CG move =      1
                         ==============================
 
 outcoor: Atomic coordinates (fractional):                   
-    0.00000000    0.00000000   -0.00000000   1       1  Mg
+    0.00000000    0.00000000    0.00000000   1       1  Mg
     0.50000000    0.50000000    0.50000000   1       2  Mg
     0.24999999    0.24999999    0.24999999   2       3  C
    -0.24999998   -0.24999999   -0.24999999   2       4  C
-    0.53740572   -0.03740575    0.24999998   3       5  O
-    0.25000001    0.53740574   -0.03740575   3       6  O
-   -0.03740569    0.25000005    0.53740579   3       7  O
-   -0.53740572    0.03740574   -0.24999999   3       8  O
-   -0.25000000   -0.53740573    0.03740575   3       9  O
+    0.53740572   -0.03740574    0.24999999   3       5  O
+    0.25000002    0.53740574   -0.03740575   3       6  O
+   -0.03740569    0.25000003    0.53740578   3       7  O
+   -0.53740573    0.03740574   -0.24999999   3       8  O
+   -0.25000000   -0.53740573    0.03740576   3       9  O
     0.03740574   -0.25000003   -0.53740576   3      10  O
  Kpoints in:          168 . Kpoints trimmed:          168
-Auxiliary supercell needs to be larger than naive one...
 
 siesta: k-grid: Number of k-points =   168
 siesta: k-grid: Cutoff (effective) =    15.185 Ang
 siesta: k-grid: Supercell and displacements
 siesta: k-grid:   -7   0   7      0.500
-siesta: k-grid:   -7   7   0      0.000
+siesta: k-grid:    7  -7   0      0.000
 siesta: k-grid:    0   0   6      0.000
 Naive supercell factors:     4    4    4
 Auxiliary supercell needs to be larger than naive one...
@@ -649,62 +644,62 @@ superc: Number of atoms, orbitals, and projectors:   1000   3400   8000
 
 outcell: Unit cell vectors (Ang):
         5.251635   -0.028238   -0.018485
-        3.480776    3.932513   -0.018485
-        3.480776    1.556261    3.611517
+        3.480777    3.932514   -0.018485
+        3.480777    1.556261    3.611518
 
-outcell: Cell vector modules (Ang)   :    5.251743    5.251743    5.251743
+outcell: Cell vector modules (Ang)   :    5.251744    5.251744    5.251744
 outcell: Cell angles (23,13,12) (deg):     48.7948     48.7948     48.7948
-outcell: Cell volume (Ang**3)        :     75.2462
+outcell: Cell volume (Ang**3)        :     75.2463
 New_DM. Step:     2
 Initializing Density Matrix...
 
 InitMesh: MESH =    30 x    30 x    30 =       27000
 InitMesh: Mesh cutoff (required, used) =   100.000   116.744 Ry
 
-siesta: Eharris(eV) =   -2965.796805
+siesta: Eharris(eV) =   -2965.796955
 
 
-siesta: Eharris(eV) =   -2965.796805
+siesta: Eharris(eV) =   -2965.796955
 
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000001    0.000000    0.000002
-     2    0.000002   -0.000001    0.000000
-     3    0.000003    0.000002   -0.000004
-     4    0.000002   -0.000003    0.000000
-     5    3.774815   -8.442865    0.000002
-     6   -0.000008    5.065273   -7.737811
-     7   -3.774792    3.377582    7.737832
-     8   -3.774814    8.442858    0.000000
-     9    0.000008   -5.065280    7.737815
-    10    3.774814   -3.377563   -7.737810
+     1    0.000000    0.000000    0.000001
+     2    0.000001   -0.000001    0.000000
+     3   -0.000001    0.000004   -0.000003
+     4    0.000001   -0.000002    0.000000
+     5    3.774812   -8.442859   -0.000009
+     6   -0.000005    5.065272   -7.737802
+     7   -3.774792    3.377573    7.737822
+     8   -3.774809    8.442848    0.000004
+     9    0.000016   -5.065278    7.737808
+    10    3.774808   -3.377547   -7.737805
 ----------------------------------------
-   Tot    0.000031    0.000003    0.000027
+   Tot    0.000032    0.000011    0.000018
 ----------------------------------------
-   Max    8.442865
-   Res    4.135964    sqrt( Sum f_i^2 / 3N )
+   Max    8.442859
+   Res    4.135959    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    8.442865    constrained
+   Max    8.442859    constrained
 
-Stress-tensor-Voigt (kbar):      453.52       49.24       -8.48      225.91       66.12      147.88
-(Free)E + p*V (eV/cell)    -2956.5877
-Target enthalpy (eV/cell)    -2901.8854
+Stress-tensor-Voigt (kbar):      453.51       49.24       -8.48      225.91       66.12      147.88
+(Free)E + p*V (eV/cell)    -2956.5878
+Target enthalpy (eV/cell)    -2901.8855
 
 siesta: Stress tensor (static) (eV/Ang**3):
-         0.283059    0.141001    0.092301
-         0.141001    0.030734    0.041268
-         0.092301    0.041268   -0.005293
+         0.283057    0.141000    0.092301
+         0.141000    0.030733    0.041268
+         0.092301    0.041268   -0.005294
 
-siesta: Pressure (static):       -164.75935292  kBar
+siesta: Pressure (static):       -164.75624559  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-         0.283059    0.141001    0.092301
-         0.141001    0.030734    0.041268
-         0.092301    0.041268   -0.005293
+         0.283057    0.141000    0.092301
+         0.141000    0.030733    0.041268
+         0.092301    0.041268   -0.005294
 
-siesta: Pressure (total):       -164.75935292  kBar
+siesta: Pressure (total):       -164.75624559  kBar
 
-* Maximum dynamic memory allocated =    10 MB
+* Maximum dynamic memory allocated =    12 MB
 
 siesta:                 ==============================
                             Begin CG move =      2
@@ -713,14 +708,14 @@ siesta:                 ==============================
 outcoor: Atomic coordinates (fractional):                   
     0.00000000    0.00000000    0.00000001   1       1  Mg
     0.50000001    0.50000000    0.50000001   1       2  Mg
-    0.25000001    0.25000002    0.24999999   2       3  C
-   -0.24999997   -0.24999999   -0.24999998   2       4  C
-    0.56751365   -0.06751374    0.24999997   3       5  O
-    0.24999995    0.56751352   -0.06751371   3       6  O
-   -0.06751344    0.25000027    0.56751394   3       7  O
-   -0.56751364    0.06751369   -0.24999997   3       8  O
-   -0.24999994   -0.56751356    0.06751372   3       9  O
-    0.06751366   -0.25000003   -0.56751363   3      10  O
+    0.24999998    0.25000001    0.24999998   2       3  C
+   -0.24999997   -0.25000000   -0.24999999   2       4  C
+    0.56751363   -0.06751372    0.24999992   3       5  O
+    0.24999998    0.56751354   -0.06751366   3       6  O
+   -0.06751345    0.25000021    0.56751387   3       7  O
+   -0.56751362    0.06751366   -0.24999996   3       8  O
+   -0.24999987   -0.56751351    0.06751375   3       9  O
+    0.06751362   -0.24999996   -0.56751361   3      10  O
  Kpoints in:          280 . Kpoints trimmed:          280
 
 siesta: k-grid: Number of k-points =   280
@@ -735,13 +730,13 @@ superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
 superc: Number of atoms, orbitals, and projectors:   1250   4250  10000
 
 outcell: Unit cell vectors (Ang):
-        4.501575   -0.144814   -0.094798
-        2.893756    3.451280   -0.094798
-        2.893756    1.293803    3.200999
+        4.501578   -0.144814   -0.094797
+        2.893757    3.451281   -0.094798
+        2.893757    1.293804    3.201000
 
-outcell: Cell vector modules (Ang)   :    4.504902    4.504902    4.504902
+outcell: Cell vector modules (Ang)   :    4.504904    4.504904    4.504904
 outcell: Cell angles (23,13,12) (deg):     51.8518     51.8518     51.8518
-outcell: Cell volume (Ang**3)        :     52.2564
+outcell: Cell volume (Ang**3)        :     52.2565
 New_DM. Step:     3
 DM reset as supercell changed.
 Initializing Density Matrix...
@@ -749,66 +744,66 @@ Initializing Density Matrix...
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =   100.000   105.274 Ry
 
-siesta: Eharris(eV) =   -2956.021876
+siesta: Eharris(eV) =   -2956.022123
 
 
-siesta: Eharris(eV) =   -2956.021876
+siesta: Eharris(eV) =   -2956.022123
 
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000021   -0.000018    0.000053
-     2    0.000041   -0.000039    0.000005
-     3    0.000002   -0.000011    0.000025
-     4   -0.000002    0.000013   -0.000005
-     5    1.024346   -2.291060    0.000024
-     6    0.000012    1.374516   -2.099718
-     7   -1.024430    0.916551    2.099628
-     8   -1.024310    2.291027    0.000002
-     9    0.000015   -1.374532    2.099705
-    10    1.024322   -0.916490   -2.099710
+     1    0.000017    0.000001    0.000047
+     2    0.000034   -0.000026    0.000020
+     3    0.000010   -0.000015    0.000020
+     4   -0.000006    0.000006    0.000000
+     5    1.024350   -2.291063    0.000025
+     6    0.000012    1.374500   -2.099727
+     7   -1.024411    0.916550    2.099641
+     8   -1.024318    2.291030    0.000010
+     9   -0.000001   -1.374551    2.099681
+    10    1.024313   -0.916505   -2.099710
 ----------------------------------------
-   Tot    0.000018   -0.000042    0.000008
+   Tot   -0.000002   -0.000071    0.000007
 ----------------------------------------
-   Max    2.291060
+   Max    2.291063
    Res    1.122325    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    2.291060    constrained
+   Max    2.291063    constrained
 
-Stress-tensor-Voigt (kbar):     -908.64    -1196.61    -1237.73      160.92       47.10      105.34
-(Free)E + p*V (eV/cell)    -2897.9860
-Target enthalpy (eV/cell)    -2901.7149
+Stress-tensor-Voigt (kbar):     -908.64    -1196.61    -1237.74      160.92       47.10      105.34
+(Free)E + p*V (eV/cell)    -2897.9862
+Target enthalpy (eV/cell)    -2901.7151
 
 siesta: Stress tensor (static) (eV/Ang**3):
-        -0.567120    0.100438    0.065748
-         0.100438   -0.746858    0.029397
-         0.065748    0.029397   -0.772525
+        -0.567122    0.100438    0.065748
+         0.100438   -0.746859    0.029396
+         0.065748    0.029396   -0.772525
 
-siesta: Pressure (static):       1114.32739855  kBar
+siesta: Pressure (static):       1114.32906556  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-        -0.567120    0.100438    0.065748
-         0.100438   -0.746858    0.029397
-         0.065748    0.029397   -0.772525
+        -0.567122    0.100438    0.065748
+         0.100438   -0.746859    0.029396
+         0.065748    0.029396   -0.772525
 
-siesta: Pressure (total):       1114.32739855  kBar
+siesta: Pressure (total):       1114.32906556  kBar
 
-* Maximum dynamic memory allocated =    10 MB
+* Maximum dynamic memory allocated =    12 MB
 
 siesta:                 ==============================
                             Begin CG move =      3
                         ==============================
 
 outcoor: Atomic coordinates (fractional):                   
-    0.00000007   -0.00000000    0.00000017   1       1  Mg
-    0.50000016    0.49999999    0.50000007   1       2  Mg
-    0.25000002    0.24999999    0.25000005   2       3  C
-   -0.24999998   -0.24999996   -0.24999999   2       4  C
-    0.56782841   -0.06782844    0.25000005   3       5  O
-    0.25000000    0.56782828   -0.06782836   3       6  O
-   -0.06782850    0.25000008    0.56782817   3       7  O
-   -0.56782827    0.06782838   -0.24999994   3       8  O
-   -0.24999989   -0.56782829    0.06782837   3       9  O
-    0.06782833   -0.24999993   -0.56782827   3      10  O
+    0.00000006    0.00000004    0.00000016   1       1  Mg
+    0.50000013    0.50000001    0.50000011   1       2  Mg
+    0.25000002    0.24999999    0.25000004   2       3  C
+   -0.25000000   -0.24999999   -0.24999999   2       4  C
+    0.56782837   -0.06782839    0.25000001   3       5  O
+    0.25000002    0.56782822   -0.06782832   3       6  O
+   -0.06782842    0.25000006    0.56782815   3       7  O
+   -0.56782826    0.06782832   -0.24999992   3       8  O
+   -0.24999988   -0.56782830    0.06782826   3       9  O
+    0.06782824   -0.24999994   -0.56782826   3      10  O
  Kpoints in:          280 . Kpoints trimmed:          280
 
 siesta: k-grid: Number of k-points =   280
@@ -823,79 +818,79 @@ superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
 superc: Number of atoms, orbitals, and projectors:   1250   4250  10000
 
 outcell: Unit cell vectors (Ang):
-        4.571326   -0.160804   -0.105265
-        2.928350    3.513923   -0.105265
-        2.928350    1.309270    3.262599
+        4.571330   -0.160804   -0.105265
+        2.928352    3.513925   -0.105265
+        2.928352    1.309271    3.262601
 
-outcell: Cell vector modules (Ang)   :    4.575365    4.575365    4.575366
+outcell: Cell vector modules (Ang)   :    4.575368    4.575369    4.575369
 outcell: Cell angles (23,13,12) (deg):     52.1934     52.1934     52.1934
-outcell: Cell volume (Ang**3)        :     55.3036
+outcell: Cell volume (Ang**3)        :     55.3037
 New_DM. Step:     4
 Initializing Density Matrix...
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =   100.000   102.487 Ry
 
-siesta: Eharris(eV) =   -2959.934751
+siesta: Eharris(eV) =   -2959.934994
 
 
-siesta: Eharris(eV) =   -2959.934751
+siesta: Eharris(eV) =   -2959.934994
 
 
 siesta: Atomic forces (eV/Ang):
-     1   -0.000040   -0.000005   -0.000051
-     2   -0.000065    0.000015   -0.000014
-     3    0.000011   -0.000008   -0.000016
-     4    0.000001   -0.000012    0.000017
-     5    0.428572   -0.958422   -0.000013
-     6    0.000017    0.575032   -0.878394
-     7   -0.428440    0.383428    0.878453
-     8   -0.428547    0.958435   -0.000003
-     9   -0.000011   -0.575026    0.878410
-    10    0.428534   -0.383439   -0.878414
+     1   -0.000046   -0.000024   -0.000050
+     2   -0.000072    0.000003   -0.000028
+     3    0.000010   -0.000009   -0.000010
+     4    0.000001   -0.000007    0.000015
+     5    0.428577   -0.958422   -0.000004
+     6    0.000007    0.575047   -0.878394
+     7   -0.428457    0.383430    0.878458
+     8   -0.428541    0.958445   -0.000002
+     9   -0.000003   -0.575019    0.878433
+    10    0.428555   -0.383454   -0.878417
 ----------------------------------------
-   Tot    0.000030   -0.000004   -0.000026
+   Tot    0.000032   -0.000008    0.000001
 ----------------------------------------
-   Max    0.958435
-   Res    0.469522    sqrt( Sum f_i^2 / 3N )
+   Max    0.958445
+   Res    0.469527    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.958435    constrained
+   Max    0.958445    constrained
 
 Stress-tensor-Voigt (kbar):     -493.82     -616.44     -633.95       68.52       20.05       44.86
-(Free)E + p*V (eV/cell)    -2918.4393
-Target enthalpy (eV/cell)    -2903.9904
+(Free)E + p*V (eV/cell)    -2918.4395
+Target enthalpy (eV/cell)    -2903.9906
 
 siesta: Stress tensor (static) (eV/Ang**3):
-        -0.308216    0.042768    0.027997
-         0.042768   -0.384748    0.012517
-         0.027997    0.012517   -0.395675
+        -0.308217    0.042767    0.027996
+         0.042767   -0.384748    0.012517
+         0.027996    0.012517   -0.395676
 
-siesta: Pressure (static):        581.40339883  kBar
+siesta: Pressure (static):        581.40487510  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-        -0.308216    0.042768    0.027997
-         0.042768   -0.384748    0.012517
-         0.027997    0.012517   -0.395675
+        -0.308217    0.042767    0.027996
+         0.042767   -0.384748    0.012517
+         0.027996    0.012517   -0.395676
 
-siesta: Pressure (total):        581.40339883  kBar
+siesta: Pressure (total):        581.40487510  kBar
 
-* Maximum dynamic memory allocated =    10 MB
+* Maximum dynamic memory allocated =    12 MB
 
 siesta:                 ==============================
                             Begin CG move =      4
                         ==============================
 
 outcoor: Atomic coordinates (fractional):                   
-    0.00000010    0.00000002    0.00000020   1       1  Mg
-    0.50000020    0.50000001    0.50000010   1       2  Mg
-    0.25000000    0.24999998    0.25000005   2       3  C
-   -0.24999998   -0.24999996   -0.24999999   2       4  C
-    0.55965805   -0.05965814    0.25000003   3       5  O
-    0.25000000    0.55965798   -0.05965805   3       6  O
-   -0.05965827    0.25000000    0.55965775   3       7  O
-   -0.55965795    0.05965808   -0.24999993   3       8  O
-   -0.24999990   -0.55965799    0.05965805   3       9  O
-    0.05965801   -0.24999993   -0.55965797   3      10  O
+    0.00000009    0.00000007    0.00000021   1       1  Mg
+    0.50000017    0.50000004    0.50000015   1       2  Mg
+    0.25000001    0.24999999    0.25000004   2       3  C
+   -0.25000000   -0.24999999   -0.25000000   2       4  C
+    0.55965146   -0.05965154    0.25000000   3       5  O
+    0.25000003    0.55965136   -0.05965147   3       6  O
+   -0.05965162    0.24999999    0.55965119   3       7  O
+   -0.55965138    0.05965146   -0.24999993   3       8  O
+   -0.24999991   -0.55965145    0.05965136   3       9  O
+    0.05965135   -0.24999995   -0.55965141   3      10  O
  Kpoints in:          280 . Kpoints trimmed:          280
 
 siesta: k-grid: Number of k-points =   280
@@ -910,86 +905,86 @@ superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
 superc: Number of atoms, orbitals, and projectors:   1250   4250  10000
 
 outcell: Unit cell vectors (Ang):
-        4.783640   -0.127145   -0.083231
-        3.095006    3.649701   -0.083231
-        3.095006    1.383783    3.378224
+        4.783812   -0.127118   -0.083213
+        3.095141    3.649811   -0.083213
+        3.095141    1.383843    3.378318
 
-outcell: Cell vector modules (Ang)   :    4.786053    4.786053    4.786054
-outcell: Cell angles (23,13,12) (deg):     51.2157     51.2157     51.2157
-outcell: Cell volume (Ang**3)        :     61.4767
+outcell: Cell vector modules (Ang)   :    4.786224    4.786224    4.786225
+outcell: Cell angles (23,13,12) (deg):     51.2150     51.2150     51.2150
+outcell: Cell volume (Ang**3)        :     61.4819
 New_DM. Step:     5
 Initializing Density Matrix...
 
 InitMesh: MESH =    30 x    30 x    30 =       27000
-InitMesh: Mesh cutoff (required, used) =   100.000   144.608 Ry
+InitMesh: Mesh cutoff (required, used) =   100.000   144.596 Ry
 
-siesta: Eharris(eV) =   -2964.348272
+siesta: Eharris(eV) =   -2964.351075
 
 
-siesta: Eharris(eV) =   -2964.348272
+siesta: Eharris(eV) =   -2964.351075
 
 
 siesta: Atomic forces (eV/Ang):
-     1   -0.000048   -0.000007   -0.000052
-     2   -0.000069    0.000012   -0.000013
-     3    0.000009   -0.000004   -0.000018
-     4    0.000004   -0.000019    0.000022
-     5    1.255937   -2.808988   -0.000004
-     6    0.000020    1.685263   -2.574415
-     7   -1.255859    1.123706    2.574491
-     8   -1.255921    2.809017    0.000003
-     9    0.000005   -1.685247    2.574430
-    10    1.255926   -1.123767   -2.574441
+     1   -0.000057   -0.000024   -0.000051
+     2   -0.000078   -0.000001   -0.000027
+     3    0.000009   -0.000006   -0.000012
+     4    0.000001   -0.000008    0.000016
+     5    1.256626   -2.810529   -0.000019
+     6    0.000025    1.686211   -2.575842
+     7   -1.256547    1.124328    2.575916
+     8   -1.256606    2.810558    0.000003
+     9   -0.000009   -1.686175    2.575869
+    10    1.256632   -1.124392   -2.575866
 ----------------------------------------
-   Tot    0.000003   -0.000034    0.000002
+   Tot   -0.000004   -0.000038   -0.000014
 ----------------------------------------
-   Max    2.809017
-   Res    1.376070    sqrt( Sum f_i^2 / 3N )
+   Max    2.810558
+   Res    1.376831    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    2.809017    constrained
+   Max    2.810558    constrained
 
-Stress-tensor-Voigt (kbar):       21.08     -171.03     -198.46      107.36       31.42       70.28
-(Free)E + p*V (eV/cell)    -2940.2703
-Target enthalpy (eV/cell)    -2906.3563
+Stress-tensor-Voigt (kbar):       21.23     -170.93     -198.36      107.38       31.43       70.29
+(Free)E + p*V (eV/cell)    -2940.2785
+Target enthalpy (eV/cell)    -2906.3571
 
 siesta: Stress tensor (static) (eV/Ang**3):
-         0.013157    0.067006    0.043863
-         0.067006   -0.106750    0.019611
-         0.043863    0.019611   -0.123870
+         0.013248    0.067018    0.043872
+         0.067018   -0.106683    0.019615
+         0.043872    0.019615   -0.123806
 
-siesta: Pressure (static):        116.13957549  kBar
+siesta: Pressure (static):        116.02089345  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-         0.013157    0.067006    0.043863
-         0.067006   -0.106750    0.019611
-         0.043863    0.019611   -0.123870
+         0.013248    0.067018    0.043872
+         0.067018   -0.106683    0.019615
+         0.043872    0.019615   -0.123806
 
-siesta: Pressure (total):        116.13957549  kBar
+siesta: Pressure (total):        116.02089345  kBar
 
-* Maximum dynamic memory allocated =    11 MB
+* Maximum dynamic memory allocated =    14 MB
 
 siesta:                 ==============================
                             Begin CG move =      5
                         ==============================
 
 outcoor: Atomic coordinates (fractional):                   
-   -0.00000001   -0.00000002   -0.00000009   1       1  Mg
-    0.49999988    0.49999996    0.49999990   1       2  Mg
-    0.25000007    0.25000000    0.25000000   2       3  C
-   -0.25000001   -0.24999999   -0.24999999   2       4  C
-    0.56237103   -0.06237034    0.25000019   3       5  O
-    0.24999998    0.56237063   -0.06237059   3       6  O
-   -0.06236993    0.25000089    0.56237127   3       7  O
-   -0.56237081    0.06237031   -0.25000024   3       8  O
-   -0.25000011   -0.56237083    0.06237051   3       9  O
-    0.06237061   -0.24999994   -0.56237055   3      10  O
- Kpoints in:          280 . Kpoints trimmed:          280
+   -0.00000001   -0.00000006   -0.00000011   1       1  Mg
+    0.49999987    0.49999994    0.49999987   1       2  Mg
+    0.25000004    0.24999999    0.25000000   2       3  C
+   -0.24999998   -0.25000000   -0.24999996   2       4  C
+    0.56232146   -0.06232067    0.25000037   3       5  O
+    0.24999982    0.56232087   -0.06232096   3       6  O
+   -0.06232054    0.25000067    0.56232141   3       7  O
+   -0.56232113    0.06232080   -0.25000013   3       8  O
+   -0.24999982   -0.56232094    0.06232112   3       9  O
+    0.06232107   -0.24999990   -0.56232081   3      10  O
+ Kpoints in:          224 . Kpoints trimmed:          224
 
-siesta: k-grid: Number of k-points =   280
-siesta: k-grid: Cutoff (effective) =    16.403 Ang
+siesta: k-grid: Number of k-points =   224
+siesta: k-grid: Cutoff (effective) =    16.406 Ang
 siesta: k-grid: Supercell and displacements
 siesta: k-grid:   -8   8   0      0.500
-siesta: k-grid:    0   8  -8      0.500
+siesta: k-grid:    8   0  -8      0.500
 siesta: k-grid:    0   7   0      0.000
 Naive supercell factors:     5    5    5
 
@@ -997,83 +992,83 @@ superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
 superc: Number of atoms, orbitals, and projectors:   1250   4250  10000
 
 outcell: Unit cell vectors (Ang):
-        4.700594   -0.144388   -0.094519
-        3.026780    3.599309   -0.094519
-        3.026780    1.353278    3.336556
+        4.701874   -0.144158   -0.094368
+        3.027805    3.600110   -0.094368
+        3.027805    1.353736    3.337230
 
-outcell: Cell vector modules (Ang)   :    4.703761    4.703760    4.703761
-outcell: Cell angles (23,13,12) (deg):     51.6866     51.6866     51.6866
-outcell: Cell volume (Ang**3)        :     59.1941
+outcell: Cell vector modules (Ang)   :    4.705030    4.705029    4.705030
+outcell: Cell angles (23,13,12) (deg):     51.6801     51.6801     51.6801
+outcell: Cell volume (Ang**3)        :     59.2305
 New_DM. Step:     6
 Initializing Density Matrix...
 
 InitMesh: MESH =    30 x    30 x    30 =       27000
-InitMesh: Mesh cutoff (required, used) =   100.000   150.571 Ry
+InitMesh: Mesh cutoff (required, used) =   100.000   150.478 Ry
 
-siesta: Eharris(eV) =   -2963.024106
+siesta: Eharris(eV) =   -2963.047935
 
 
-siesta: Eharris(eV) =   -2963.024106
+siesta: Eharris(eV) =   -2963.047935
 
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000043   -0.000024    0.000060
-     2    0.000082   -0.000034   -0.000001
-     3   -0.000010    0.000020    0.000007
-     4    0.000015   -0.000029    0.000015
-     5    0.990062   -2.214502    0.000025
-     6   -0.000038    1.328521   -2.029547
-     7   -0.990143    0.885970    2.029476
-     8   -0.990058    2.214485   -0.000010
-     9    0.000012   -1.328542    2.029549
-    10    0.990117   -0.885842   -2.029542
+     1    0.000047   -0.000005    0.000040
+     2    0.000076   -0.000004    0.000008
+     3    0.000006   -0.000005    0.000016
+     4    0.000005   -0.000009    0.000010
+     5    0.994640   -2.224712    0.000066
+     6   -0.000006    1.334689   -2.038911
+     7   -0.994665    0.890039    2.038880
+     8   -0.994644    2.224683    0.000006
+     9   -0.000004   -1.334699    2.038886
+    10    0.994671   -0.889932   -2.038915
 ----------------------------------------
-   Tot    0.000082    0.000022    0.000034
+   Tot    0.000127    0.000046    0.000087
 ----------------------------------------
-   Max    2.214502
-   Res    1.084815    sqrt( Sum f_i^2 / 3N )
+   Max    2.224712
+   Res    1.089821    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    2.214502    constrained
+   Max    2.224712    constrained
 
-Stress-tensor-Voigt (kbar):     -131.65     -308.11     -333.31       98.61       28.86       64.55
-(Free)E + p*V (eV/cell)    -2933.2988
-Target enthalpy (eV/cell)    -2905.8737
+Stress-tensor-Voigt (kbar):     -130.18     -306.92     -332.16       98.77       28.91       64.65
+(Free)E + p*V (eV/cell)    -2933.3743
+Target enthalpy (eV/cell)    -2905.8853
 
 siesta: Stress tensor (static) (eV/Ang**3):
-        -0.082170    0.061546    0.040288
-         0.061546   -0.192307    0.018013
-         0.040288    0.018013   -0.208034
+        -0.081251    0.061644    0.040353
+         0.061644   -0.191562    0.018042
+         0.040353    0.018041   -0.207314
 
-siesta: Pressure (static):        257.69218207  kBar
+siesta: Pressure (static):        256.41892866  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-        -0.082170    0.061546    0.040288
-         0.061546   -0.192307    0.018013
-         0.040288    0.018013   -0.208034
+        -0.081251    0.061644    0.040353
+         0.061644   -0.191562    0.018042
+         0.040353    0.018041   -0.207314
 
-siesta: Pressure (total):        257.69218207  kBar
+siesta: Pressure (total):        256.41892866  kBar
 
-* Maximum dynamic memory allocated =    12 MB
+* Maximum dynamic memory allocated =    14 MB
 
 siesta:                 ==============================
                             Begin CG move =      6
                         ==============================
 
 outcoor: Atomic coordinates (fractional):                   
-    0.00000013    0.00000007   -0.00000005   1       1  Mg
-    0.49999996    0.50000009    0.49999995   1       2  Mg
-    0.25000010    0.25000003    0.24999996   2       3  C
-   -0.25000001   -0.25000003   -0.24999999   2       4  C
-    0.56319412   -0.06319283    0.25000030   3       5  O
-    0.24999978    0.56319322   -0.06319351   3       6  O
-   -0.06319180    0.25000214    0.56319488   3       7  O
-   -0.56319381    0.06319270   -0.25000058   3       8  O
-   -0.25000036   -0.56319390    0.06319315   3       9  O
-    0.06319342   -0.24999974   -0.56319319   3      10  O
+    0.00000025    0.00000006   -0.00000005   1       1  Mg
+    0.50000000    0.50000016    0.49999992   1       2  Mg
+    0.25000007    0.25000000    0.24999999   2       3  C
+   -0.24999993   -0.25000001   -0.24999989   2       4  C
+    0.56337780   -0.06337610    0.25000101   3       5  O
+    0.24999937    0.56337647   -0.06337684   3       6  O
+   -0.06337564    0.25000183    0.56337796   3       7  O
+   -0.56337719    0.06337633   -0.25000041   3       8  O
+   -0.24999967   -0.56337670    0.06337716   3       9  O
+    0.06337709   -0.24999962   -0.56337635   3      10  O
  Kpoints in:          280 . Kpoints trimmed:          280
 
 siesta: k-grid: Number of k-points =   280
-siesta: k-grid: Cutoff (effective) =    16.356 Ang
+siesta: k-grid: Cutoff (effective) =    16.336 Ang
 siesta: k-grid: Supercell and displacements
 siesta: k-grid:   -8   8   0      0.500
 siesta: k-grid:    0   8  -8      0.500
@@ -1084,262 +1079,262 @@ superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
 superc: Number of atoms, orbitals, and projectors:   1250   4250  10000
 
 outcell: Unit cell vectors (Ang):
-        4.669435   -0.156906   -0.102714
-        2.996674    3.584435   -0.102713
-        2.996674    1.339818    3.326202
+        4.663598   -0.159189   -0.104207
+        2.991081    3.581606   -0.104207
+        2.991081    1.337316    3.324209
 
-outcell: Cell vector modules (Ang)   :    4.673199    4.673198    4.673199
-outcell: Cell angles (23,13,12) (deg):     52.0146     52.0146     52.0146
-outcell: Cell volume (Ang**3)        :     58.6173
+outcell: Cell vector modules (Ang)   :    4.667478    4.667475    4.667477
+outcell: Cell angles (23,13,12) (deg):     52.0750     52.0750     52.0750
+outcell: Cell volume (Ang**3)        :     58.5067
 New_DM. Step:     7
 Initializing Density Matrix...
 
 InitMesh: MESH =    30 x    30 x    30 =       27000
-InitMesh: Mesh cutoff (required, used) =   100.000   153.163 Ry
+InitMesh: Mesh cutoff (required, used) =   100.000   153.653 Ry
 
-siesta: Eharris(eV) =   -2962.693243
+siesta: Eharris(eV) =   -2962.626682
 
 
-siesta: Eharris(eV) =   -2962.693243
+siesta: Eharris(eV) =   -2962.626682
 
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000086   -0.000148    0.000225
-     2    0.000211   -0.000192   -0.000036
-     3   -0.000005    0.000024    0.000024
-     4    0.000028   -0.000029    0.000025
-     5    0.832766   -1.863246   -0.000169
-     6    0.000136    1.117726   -1.707585
-     7   -0.833336    0.745350    1.707344
-     8   -0.832744    1.863257    0.000143
-     9    0.000281   -1.117733    1.707583
-    10    0.832994   -0.745440   -1.707532
+     1    0.000110   -0.000071    0.000176
+     2    0.000210   -0.000105    0.000009
+     3    0.000015    0.000002    0.000044
+     4    0.000025    0.000000    0.000022
+     5    0.801126   -1.792190    0.000119
+     6    0.000004    1.075252   -1.642460
+     7   -0.801427    0.717135    1.642302
+     8   -0.801097    1.792157   -0.000053
+     9    0.000023   -1.075152    1.642414
+    10    0.801260   -0.716796   -1.642553
 ----------------------------------------
-   Tot    0.000417   -0.000430    0.000020
+   Tot    0.000249    0.000232    0.000020
 ----------------------------------------
-   Max    1.863257
-   Res    0.912705    sqrt( Sum f_i^2 / 3N )
+   Max    1.792190
+   Res    0.877917    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    1.863257    constrained
+   Max    1.792190    constrained
 
-Stress-tensor-Voigt (kbar):     -179.97     -330.35     -351.82       84.02       24.58       55.01
-(Free)E + p*V (eV/cell)    -2931.7620
-Target enthalpy (eV/cell)    -2905.6904
+Stress-tensor-Voigt (kbar):     -184.86     -332.69     -353.82       82.62       24.18       54.08
+(Free)E + p*V (eV/cell)    -2931.5586
+Target enthalpy (eV/cell)    -2905.6485
 
 siesta: Stress tensor (static) (eV/Ang**3):
-        -0.112330    0.052443    0.034332
-         0.052443   -0.206186    0.015344
-         0.034332    0.015344   -0.219589
+        -0.115378    0.051568    0.033755
+         0.051568   -0.207647    0.015089
+         0.033755    0.015089   -0.220835
 
-siesta: Pressure (static):        287.38293250  kBar
+siesta: Pressure (static):        290.45587625  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-        -0.112330    0.052443    0.034332
-         0.052443   -0.206186    0.015344
-         0.034332    0.015344   -0.219589
+        -0.115378    0.051568    0.033755
+         0.051568   -0.207647    0.015089
+         0.033755    0.015089   -0.220835
 
-siesta: Pressure (total):        287.38293250  kBar
+siesta: Pressure (total):        290.45587625  kBar
 
-* Maximum dynamic memory allocated =    12 MB
+* Maximum dynamic memory allocated =    14 MB
 
 siesta:                 ==============================
                             Begin CG move =      7
                         ==============================
 
 outcoor: Atomic coordinates (fractional):                   
-    0.00000374   -0.00000154    0.00000495   1       1  Mg
-    0.50000647    0.50000025    0.50000111   1       2  Mg
-    0.25000057    0.25000072    0.25000021   2       3  C
-   -0.24999946   -0.25000024   -0.24999934   2       4  C
-    0.57008531   -0.07009289    0.24998978   3       5  O
-    0.25000410    0.57009070   -0.07008769   3       6  O
-   -0.07008737    0.25000814    0.57008879   3       7  O
-   -0.57008315    0.07009284   -0.24999325   3       8  O
-   -0.24999288   -0.57008542    0.07009517   3       9  O
-    0.07008808   -0.25000276   -0.57008947   3      10  O
- Kpoints in:          224 . Kpoints trimmed:          224
+    0.00000673    0.00000113    0.00000621   1       1  Mg
+    0.50000831    0.50000375    0.50000341   1       2  Mg
+    0.25000081    0.25000055    0.25000118   2       3  C
+   -0.24999833   -0.24999931   -0.24999789   2       4  C
+    0.56900504   -0.06900119    0.25000762   3       5  O
+    0.24999347    0.56900181   -0.06900155   3       6  O
+   -0.06899851    0.25001826    0.56900606   3       7  O
+   -0.56899910    0.06900341   -0.25000130   3       8  O
+   -0.24999633   -0.56899926    0.06900582   3       9  O
+    0.06900454   -0.24999283   -0.56899954   3      10  O
+ Kpoints in:          256 . Kpoints trimmed:          256
 
-siesta: k-grid: Number of k-points =   224
-siesta: k-grid: Cutoff (effective) =    15.015 Ang
+siesta: k-grid: Number of k-points =   256
+siesta: k-grid: Cutoff (effective) =    16.151 Ang
 siesta: k-grid: Supercell and displacements
-siesta: k-grid:    8  -8   0      0.500
+siesta: k-grid:   -8   8   0      0.500
 siesta: k-grid:    0   8  -8      0.500
-siesta: k-grid:    7   0   0      0.000
+siesta: k-grid:    0   8   0      0.500
 Naive supercell factors:     5    5    5
 
 superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
 superc: Number of atoms, orbitals, and projectors:   1250   4250  10000
 
 outcell: Unit cell vectors (Ang):
-        4.276485   -0.283220   -0.185416
-        2.640520    3.375830   -0.185396
-        2.640509    1.180596    3.168109
+        4.238538   -0.316390   -0.207102
+        2.590498    3.369593   -0.207094
+        2.590506    1.158199    3.171126
 
-outcell: Cell vector modules (Ang)   :    4.289862    4.289865    4.289873
-outcell: Cell angles (23,13,12) (deg):     55.7004     55.7009     55.7004
-outcell: Cell volume (Ang**3)        :     50.2557
+outcell: Cell vector modules (Ang)   :    4.255373    4.255317    4.255371
+outcell: Cell angles (23,13,12) (deg):     56.6434     56.6434     56.6431
+outcell: Cell volume (Ang**3)        :     50.2624
 New_DM. Step:     8
 Initializing Density Matrix...
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
-InitMesh: Mesh cutoff (required, used) =   100.000   122.007 Ry
+InitMesh: Mesh cutoff (required, used) =   100.000   125.608 Ry
 
-siesta: Eharris(eV) =   -2953.737912
+siesta: Eharris(eV) =   -2953.774873
 
 
-siesta: Eharris(eV) =   -2953.737912
+siesta: Eharris(eV) =   -2953.774873
 
 
 siesta: Atomic forces (eV/Ang):
-     1   -0.001338    0.001573   -0.001097
-     2   -0.001858    0.000900    0.001350
-     3    0.000240    0.000027    0.000429
-     4    0.000411   -0.000522   -0.000386
-     5   -0.566850    1.276820   -0.000085
-     6    0.000549   -0.765401    1.168227
-     7    0.571912   -0.511361   -1.168624
-     8    0.567900   -1.275719   -0.001026
-     9   -0.000478    0.763752   -1.169648
-    10   -0.569200    0.510166    1.170890
+     1   -0.001549   -0.000451   -0.000382
+     2   -0.001915   -0.000929   -0.000094
+     3    0.000139    0.000343    0.000439
+     4    0.000649   -0.000156   -0.000388
+     5   -0.657223    1.473570   -0.001323
+     6    0.000597   -0.882944    1.350137
+     7    0.659151   -0.589654   -1.349237
+     8    0.659247   -1.472388   -0.000081
+     9   -0.000321    0.884570   -1.348932
+    10   -0.656860    0.589358    1.350222
 ----------------------------------------
-   Tot    0.001288    0.000234    0.000030
+   Tot    0.001915    0.001318    0.000361
 ----------------------------------------
-   Max    1.276820
-   Res    0.624848    sqrt( Sum f_i^2 / 3N )
+   Max    1.473570
+   Res    0.721456    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    1.276820    constrained
+   Max    1.473570    constrained
 
-Stress-tensor-Voigt (kbar):    -1261.51    -1151.67    -1136.04      -61.42      -17.86      -40.31
-(Free)E + p*V (eV/cell)    -2893.2776
-Target enthalpy (eV/cell)    -2899.0201
+Stress-tensor-Voigt (kbar):    -1282.39    -1077.35    -1048.04     -114.64      -33.53      -75.03
+(Free)E + p*V (eV/cell)    -2894.7031
+Target enthalpy (eV/cell)    -2898.9672
 
 siesta: Stress tensor (static) (eV/Ang**3):
-        -0.787362   -0.038335   -0.025157
-        -0.038335   -0.718810   -0.011149
-        -0.025157   -0.011149   -0.709054
+        -0.800398   -0.071550   -0.046827
+        -0.071550   -0.672420   -0.020930
+        -0.046827   -0.020930   -0.654130
 
-siesta: Pressure (static):       1183.07378407  kBar
+siesta: Pressure (static):       1135.92760061  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-        -0.787362   -0.038335   -0.025157
-        -0.038335   -0.718810   -0.011149
-        -0.025157   -0.011149   -0.709054
+        -0.800398   -0.071550   -0.046827
+        -0.071550   -0.672420   -0.020930
+        -0.046827   -0.020930   -0.654130
 
-siesta: Pressure (total):       1183.07378407  kBar
+siesta: Pressure (total):       1135.92760061  kBar
 Cycling the Broyden process...
 
-* Maximum dynamic memory allocated =    12 MB
+* Maximum dynamic memory allocated =    14 MB
 
 siesta:                 ==============================
                             Begin CG move =      8
                         ==============================
 
 outcoor: Atomic coordinates (fractional):                   
-   -0.00000070    0.00000001    0.00000068   1       1  Mg
-    0.49999988    0.49999895    0.50000108   1       2  Mg
-    0.25000097    0.25000091    0.25000134   2       3  C
-   -0.24999844   -0.25000053   -0.24999995   2       4  C
-    0.56713716   -0.06712654    0.24999851   3       5  O
-    0.25000449    0.56713337   -0.06713124   3       6  O
-   -0.06712609    0.25000641    0.56713381   3       7  O
-   -0.56713298    0.06713039   -0.25000073   3       8  O
-   -0.24999560   -0.56713246    0.06713312   3       9  O
-    0.06713335   -0.25000075   -0.56712674   3      10  O
+    0.00000067   -0.00000151    0.00000060   1       1  Mg
+    0.50000077    0.49999869    0.49999914   1       2  Mg
+    0.25000054    0.25000078    0.25000135   2       3  C
+   -0.24999816   -0.24999925   -0.24999894   2       4  C
+    0.56955490   -0.06954835    0.25000368   3       5  O
+    0.24999781    0.56955237   -0.06954975   3       6  O
+   -0.06954821    0.25000864    0.56955445   3       7  O
+   -0.56954887    0.06955294   -0.24999984   3       8  O
+   -0.24999898   -0.56954915    0.06955408   3       9  O
+    0.06955495   -0.24999492   -0.56954775   3      10  O
  Kpoints in:          280 . Kpoints trimmed:          280
 
 siesta: k-grid: Number of k-points =   280
-siesta: k-grid: Cutoff (effective) =    15.394 Ang
+siesta: k-grid: Cutoff (effective) =    15.281 Ang
 siesta: k-grid: Supercell and displacements
-siesta: k-grid:    8  -8   0      0.500
-siesta: k-grid:    8   0  -8      0.500
-siesta: k-grid:    7   0   0      0.000
+siesta: k-grid:   -8   8   0      0.500
+siesta: k-grid:    0   8  -8      0.500
+siesta: k-grid:    0   7   0      0.000
 Naive supercell factors:     5    5    5
 
 superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
 superc: Number of atoms, orbitals, and projectors:   1250   4250  10000
 
 outcell: Unit cell vectors (Ang):
-        4.389032   -0.239816   -0.156985
-        2.747913    3.430768   -0.156987
-        2.747915    1.228601    3.207099
+        4.356785   -0.236191   -0.154611
+        2.729112    3.404283   -0.154608
+        2.729114    1.220184    3.181881
 
-outcell: Cell vector modules (Ang)   :    4.398382    4.398391    4.398407
-outcell: Cell angles (23,13,12) (deg):     54.3967     54.3967     54.3966
-outcell: Cell volume (Ang**3)        :     52.3051
+outcell: Cell vector modules (Ang)   :    4.365921    4.365902    4.365923
+outcell: Cell angles (23,13,12) (deg):     54.3482     54.3482     54.3481
+outcell: Cell volume (Ang**3)        :     51.0870
 New_DM. Step:     9
 Initializing Density Matrix...
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
-InitMesh: Mesh cutoff (required, used) =   100.000   114.060 Ry
+InitMesh: Mesh cutoff (required, used) =   100.000   115.689 Ry
 
-siesta: Eharris(eV) =   -2956.669260
+siesta: Eharris(eV) =   -2954.937870
 
 
-siesta: Eharris(eV) =   -2956.669260
+siesta: Eharris(eV) =   -2954.937870
 
 
 siesta: Atomic forces (eV/Ang):
-     1    0.001323   -0.000152    0.000755
-     2    0.001555    0.000030   -0.000113
-     3    0.000058    0.000214   -0.000719
-     4   -0.000124    0.000139    0.000809
-     5    0.143748   -0.326350    0.000949
-     6   -0.000128    0.194434   -0.298403
-     7   -0.155391    0.132041    0.297199
-     8   -0.144558    0.325376    0.000015
-     9    0.000402   -0.194913    0.298156
-    10    0.145076   -0.129460   -0.299410
+     1    0.001769    0.000435    0.000672
+     2    0.002114    0.000590    0.000416
+     3   -0.000033    0.000125    0.000033
+     4    0.000101   -0.000103   -0.000021
+     5   -0.132410    0.293822    0.000829
+     6    0.000083   -0.177324    0.269150
+     7    0.130619   -0.116910   -0.270287
+     8    0.131031   -0.294501    0.000879
+     9   -0.000064    0.175936   -0.270220
+    10   -0.132390    0.118655    0.268745
 ----------------------------------------
-   Tot   -0.008039    0.001358   -0.000762
+   Tot    0.000820    0.000725    0.000197
 ----------------------------------------
-   Max    0.326350
-   Res    0.159691    sqrt( Sum f_i^2 / 3N )
+   Max    0.294501
+   Res    0.144135    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.326350    constrained
+   Max    0.294501    constrained
 
-Stress-tensor-Voigt (kbar):     -902.21     -920.10     -922.74       10.44        2.98        6.77
-(Free)E + p*V (eV/cell)    -2904.5856
-Target enthalpy (eV/cell)    -2901.8112
+Stress-tensor-Voigt (kbar):    -1061.67    -1094.21    -1098.86       18.19        5.32       11.91
+(Free)E + p*V (eV/cell)    -2897.5880
+Target enthalpy (eV/cell)    -2900.2955
 
 siesta: Stress tensor (static) (eV/Ang**3):
-        -0.563109    0.006515    0.004222
-         0.006515   -0.574273    0.001860
-         0.004222    0.001860   -0.575921
+        -0.662637    0.011350    0.007435
+         0.011350   -0.682947    0.003318
+         0.007435    0.003318   -0.685845
 
-siesta: Pressure (static):        915.01465811  kBar
+siesta: Pressure (static):       1084.91433693  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-        -0.563109    0.006515    0.004222
-         0.006515   -0.574273    0.001860
-         0.004222    0.001860   -0.575921
+        -0.662637    0.011350    0.007435
+         0.011350   -0.682947    0.003318
+         0.007435    0.003318   -0.685845
 
-siesta: Pressure (total):        915.01465811  kBar
+siesta: Pressure (total):       1084.91433693  kBar
 Cycling the Broyden process...
 
-* Maximum dynamic memory allocated =    12 MB
+* Maximum dynamic memory allocated =    14 MB
 
 siesta:                 ==============================
                             Begin CG move =      9
                         ==============================
 
 outcoor: Atomic coordinates (fractional):                   
-    0.00000261    0.00000171    0.00000411   1       1  Mg
-    0.50000387    0.50000145    0.50000336   1       2  Mg
-    0.25000117    0.25000150    0.25000029   2       3  C
-   -0.24999881   -0.25000054   -0.24999856   2       4  C
-    0.56823342   -0.06823168    0.24999670   3       5  O
-    0.25000439    0.56823218   -0.06823282   3       6  O
-   -0.06825135    0.24999493    0.56821834   3       7  O
-   -0.56823112    0.06823231   -0.24999921   3       8  O
-   -0.24999449   -0.56823172    0.06823444   3       9  O
-    0.06823285   -0.24999992   -0.56822949   3      10  O
+    0.00000426    0.00000073    0.00000421   1       1  Mg
+    0.50000515    0.50000172    0.50000237   1       2  Mg
+    0.25000062    0.25000115    0.25000182   2       3  C
+   -0.24999741   -0.24999903   -0.24999854   2       4  C
+    0.56700837   -0.06700360    0.25000464   3       5  O
+    0.24999734    0.56700601   -0.06700455   3       6  O
+   -0.06700356    0.25001143    0.56700793   3       7  O
+   -0.56700322    0.06700680   -0.24999931   3       8  O
+   -0.24999864   -0.56700361    0.06700807   3       9  O
+    0.06700863   -0.24999290   -0.56700283   3      10  O
  Kpoints in:          280 . Kpoints trimmed:          280
 
 siesta: k-grid: Number of k-points =   280
-siesta: k-grid: Cutoff (effective) =    15.280 Ang
+siesta: k-grid: Cutoff (effective) =    15.354 Ang
 siesta: k-grid: Supercell and displacements
-siesta: k-grid:    0   8  -8      0.500
 siesta: k-grid:   -8   8   0      0.500
+siesta: k-grid:    0   8  -8      0.500
 siesta: k-grid:    0   7   0      0.000
 Naive supercell factors:     5    5    5
 
@@ -1347,86 +1342,86 @@ superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
 superc: Number of atoms, orbitals, and projectors:   1250   4250  10000
 
 outcell: Unit cell vectors (Ang):
-        4.355736   -0.247565   -0.162049
-        2.719936    3.411041   -0.162046
-        2.719943    1.216067    3.191056
+        4.376837   -0.247444   -0.161976
+        2.734096    3.426720   -0.161972
+        2.734099    1.222411    3.205400
 
-outcell: Cell vector modules (Ang)   :    4.365774    4.365720    4.365747
-outcell: Cell angles (23,13,12) (deg):     54.6437     54.6436     54.6436
-outcell: Cell volume (Ang**3)        :     51.4951
+outcell: Cell vector modules (Ang)   :    4.386817    4.386790    4.386818
+outcell: Cell angles (23,13,12) (deg):     54.6100     54.6101     54.6099
+outcell: Cell volume (Ang**3)        :     52.1962
 New_DM. Step:    10
 Initializing Density Matrix...
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
-InitMesh: Mesh cutoff (required, used) =   100.000   116.149 Ry
+InitMesh: Mesh cutoff (required, used) =   100.000   114.985 Ry
 
-siesta: Eharris(eV) =   -2955.580911
+siesta: Eharris(eV) =   -2956.546706
 
 
-siesta: Eharris(eV) =   -2955.580911
+siesta: Eharris(eV) =   -2956.546706
 
 
 siesta: Atomic forces (eV/Ang):
-     1   -0.002596    0.000363   -0.003476
-     2   -0.004456    0.001765   -0.000636
-     3   -0.000130    0.000177    0.001056
-     4   -0.000047   -0.000179   -0.000057
-     5   -0.068719    0.159128   -0.000096
-     6   -0.000504   -0.094279    0.144920
-     7    0.085139   -0.083105   -0.131793
-     8    0.068833   -0.158218   -0.000736
-     9   -0.001404    0.094936   -0.145228
-    10   -0.070787    0.061748    0.145583
+     1   -0.000567   -0.000325   -0.000173
+     2   -0.000597   -0.000331   -0.000192
+     3    0.000102    0.000175    0.000151
+     4    0.000263   -0.000067   -0.000073
+     5    0.101814   -0.234049   -0.001699
+     6    0.000267    0.140769   -0.214373
+     7   -0.106586    0.091438    0.213304
+     8   -0.104467    0.234338    0.000062
+     9   -0.000048   -0.140003    0.214866
+    10    0.101830   -0.094814   -0.214152
 ----------------------------------------
-   Tot    0.005329   -0.017664    0.009537
+   Tot   -0.007989   -0.002867   -0.002280
 ----------------------------------------
-   Max    0.159128
-   Res    0.077760    sqrt( Sum f_i^2 / 3N )
+   Max    0.234338
+   Res    0.114449    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.159128    constrained
+   Max    0.234338    constrained
 
-Stress-tensor-Voigt (kbar):    -1004.66    -1018.98    -1019.97        7.90        2.69        4.79
-(Free)E + p*V (eV/cell)    -2900.4100
-Target enthalpy (eV/cell)    -2900.8772
+Stress-tensor-Voigt (kbar):     -898.89     -914.05     -916.21        8.48        2.49        5.55
+(Free)E + p*V (eV/cell)    -2904.6490
+Target enthalpy (eV/cell)    -2901.7079
 
 siesta: Stress tensor (static) (eV/Ang**3):
-        -0.627053    0.004933    0.002991
-         0.004933   -0.635989    0.001681
-         0.002991    0.001681   -0.636607
+        -0.561038    0.005290    0.003464
+         0.005290   -0.570501    0.001553
+         0.003464    0.001553   -0.571848
 
-siesta: Pressure (static):       1014.53550096  kBar
+siesta: Pressure (static):        909.71930478  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-        -0.627053    0.004933    0.002991
-         0.004933   -0.635989    0.001681
-         0.002991    0.001681   -0.636607
+        -0.561038    0.005290    0.003464
+         0.005290   -0.570501    0.001553
+         0.003464    0.001553   -0.571848
 
-siesta: Pressure (total):       1014.53550096  kBar
+siesta: Pressure (total):        909.71930478  kBar
 Cycling the Broyden process...
 
-* Maximum dynamic memory allocated =    12 MB
+* Maximum dynamic memory allocated =    14 MB
 
 siesta:                 ==============================
                             Begin CG move =     10
                         ==============================
 
 outcoor: Atomic coordinates (fractional):                   
-    0.00000076    0.00000071    0.00000112   1       1  Mg
-    0.50000053    0.50000034    0.50000129   1       2  Mg
-    0.25000110    0.25000160    0.25000093   2       3  C
-   -0.24999876   -0.25000070   -0.24999860   2       4  C
-    0.56747119   -0.06746642    0.24999732   3       5  O
-    0.25000439    0.56746876   -0.06746915   3       6  O
-   -0.06747608    0.24998931    0.56746461   3       7  O
-   -0.56746862    0.06746785   -0.25000026   3       8  O
-   -0.24999504   -0.56746847    0.06747022   3       9  O
-    0.06746913   -0.25000112   -0.56746565   3      10  O
- Kpoints in:          224 . Kpoints trimmed:          224
+    0.00000305   -0.00000077    0.00000291   1       1  Mg
+    0.50000387    0.50000020    0.50000090   1       2  Mg
+    0.25000085    0.25000166    0.25000242   2       3  C
+   -0.24999667   -0.24999872   -0.24999826   2       4  C
+    0.56787119   -0.06787713    0.24999746   3       5  O
+    0.24999776    0.56787655   -0.06787308   3       6  O
+   -0.06787722    0.25000485    0.56787092   3       7  O
+   -0.56787219    0.06787713   -0.24999876   3       8  O
+   -0.24999876   -0.56787227    0.06787853   3       9  O
+    0.06787145   -0.24999929   -0.56787664   3      10  O
+ Kpoints in:          280 . Kpoints trimmed:          280
 
-siesta: k-grid: Number of k-points =   224
-siesta: k-grid: Cutoff (effective) =    15.300 Ang
+siesta: k-grid: Number of k-points =   280
+siesta: k-grid: Cutoff (effective) =    15.244 Ang
 siesta: k-grid: Supercell and displacements
-siesta: k-grid:   -8   0   8      0.500
+siesta: k-grid:   -8   8   0      0.500
 siesta: k-grid:    0   8  -8      0.500
 siesta: k-grid:    0   7   0      0.000
 Naive supercell factors:     5    5    5
@@ -1435,87 +1430,87 @@ superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
 superc: Number of atoms, orbitals, and projectors:   1250   4250  10000
 
 outcell: Unit cell vectors (Ang):
-        4.361211   -0.250184   -0.163747
-        2.721635    3.416873   -0.163761
-        2.721653    1.216818    3.197064
+        4.344736   -0.255054   -0.166957
+        2.707020    3.407869   -0.166953
+        2.707023    1.210304    3.190116
 
-outcell: Cell vector modules (Ang)   :    4.371449    4.371399    4.371414
-outcell: Cell angles (23,13,12) (deg):     54.7033     54.7028     54.7033
-outcell: Cell volume (Ang**3)        :     51.7797
+outcell: Cell vector modules (Ang)   :    4.355417    4.355388    4.355416
+outcell: Cell angles (23,13,12) (deg):     54.8544     54.8544     54.8542
+outcell: Cell volume (Ang**3)        :     51.4227
 New_DM. Step:    11
 Initializing Density Matrix...
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
-InitMesh: Mesh cutoff (required, used) =   100.000   115.938 Ry
+InitMesh: Mesh cutoff (required, used) =   100.000   117.026 Ry
 
-siesta: Eharris(eV) =   -2955.989670
+siesta: Eharris(eV) =   -2955.502743
 
 
-siesta: Eharris(eV) =   -2955.989670
+siesta: Eharris(eV) =   -2955.502743
 
 
 siesta: Atomic forces (eV/Ang):
-     1   -0.000446    0.000260   -0.001103
-     2   -0.001139    0.000941   -0.000239
-     3    0.000133   -0.000345    0.000230
-     4   -0.000443    0.000442    0.000334
-     5    0.044955   -0.100660    0.000134
-     6   -0.001256    0.060645   -0.092000
-     7   -0.041791    0.040909    0.093896
-     8   -0.045329    0.100582   -0.000002
-     9   -0.001731   -0.060696    0.091938
-    10    0.045106   -0.041469   -0.093075
+     1   -0.001587    0.001232   -0.001359
+     2   -0.001974    0.001011    0.000803
+     3    0.000044    0.000147   -0.000136
+     4   -0.000111   -0.000086    0.000104
+     5   -0.055063    0.128227   -0.001050
+     6    0.000090   -0.076888    0.116231
+     7    0.058546   -0.051712   -0.115194
+     8    0.056053   -0.127596    0.000072
+     9   -0.000428    0.075941   -0.117202
+    10   -0.055564    0.050167    0.117674
 ----------------------------------------
-   Tot   -0.001943    0.000609    0.000112
+   Tot    0.000007    0.000442   -0.000057
 ----------------------------------------
-   Max    0.100660
-   Res    0.049419    sqrt( Sum f_i^2 / 3N )
+   Max    0.128227
+   Res    0.062358    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.100660    constrained
+   Max    0.128227    constrained
 
-Stress-tensor-Voigt (kbar):     -960.46     -974.42     -976.41        7.78        2.23        5.08
-(Free)E + p*V (eV/cell)    -2902.2111
-Target enthalpy (eV/cell)    -2901.2555
+Stress-tensor-Voigt (kbar):    -1007.07    -1017.28    -1018.67        5.62        1.68        3.70
+(Free)E + p*V (eV/cell)    -2900.3753
+Target enthalpy (eV/cell)    -2900.8355
 
 siesta: Stress tensor (static) (eV/Ang**3):
-        -0.599463    0.004858    0.003170
-         0.004858   -0.608179    0.001393
-         0.003170    0.001393   -0.609420
+        -0.628559    0.003507    0.002308
+         0.003507   -0.634926    0.001047
+         0.002308    0.001047   -0.635799
 
-siesta: Pressure (static):        970.42894464  kBar
+siesta: Pressure (static):       1014.34060056  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-        -0.599463    0.004858    0.003170
-         0.004858   -0.608179    0.001393
-         0.003170    0.001393   -0.609420
+        -0.628559    0.003507    0.002308
+         0.003507   -0.634926    0.001047
+         0.002308    0.001047   -0.635799
 
-siesta: Pressure (total):        970.42894464  kBar
+siesta: Pressure (total):       1014.34060056  kBar
 Cycling the Broyden process...
 
-* Maximum dynamic memory allocated =    12 MB
+* Maximum dynamic memory allocated =    14 MB
 
 siesta:                 ==============================
                             Begin CG move =     11
                         ==============================
 
 outcoor: Atomic coordinates (fractional):                   
-    0.00000138    0.00000149    0.00000123   1       1  Mg
-    0.50000047    0.50000142    0.50000156   1       2  Mg
-    0.25000170    0.25000107    0.25000090   2       3  C
-   -0.25000006   -0.25000043   -0.24999822   2       4  C
-    0.56761542   -0.06761353    0.24999626   3       5  O
-    0.25000131    0.56761267   -0.06761620   3       6  O
-   -0.06762371    0.25000166    0.56761046   3       7  O
-   -0.56761384    0.06761364   -0.24999958   3       8  O
-   -0.24999868   -0.56761731    0.06761274   3       9  O
-    0.06761545   -0.25000274   -0.56761368   3      10  O
+   -0.00000122   -0.00000151   -0.00000143   1       1  Mg
+    0.49999849    0.49999824    0.49999925   1       2  Mg
+    0.25000103    0.25000212    0.25000256   2       3  C
+   -0.24999666   -0.24999890   -0.24999817   2       4  C
+    0.56718423   -0.06718216    0.24999818   3       5  O
+    0.24999797    0.56718558   -0.06718283   3       6  O
+   -0.06718299    0.25000534    0.56718399   3       7  O
+   -0.56718289    0.06718520   -0.24999996   3       8  O
+   -0.24999958   -0.56718242    0.06718666   3       9  O
+    0.06718350   -0.24999928   -0.56718288   3      10  O
  Kpoints in:          280 . Kpoints trimmed:          280
 
 siesta: k-grid: Number of k-points =   280
-siesta: k-grid: Cutoff (effective) =    15.258 Ang
+siesta: k-grid: Cutoff (effective) =    15.255 Ang
 siesta: k-grid: Supercell and displacements
-siesta: k-grid:    0   8  -8      0.500
 siesta: k-grid:   -8   8   0      0.500
+siesta: k-grid:    0   8  -8      0.500
 siesta: k-grid:    0   7   0      0.000
 Naive supercell factors:     5    5    5
 
@@ -1523,87 +1518,87 @@ superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
 superc: Number of atoms, orbitals, and projectors:   1250   4250  10000
 
 outcell: Unit cell vectors (Ang):
-        4.348914   -0.254827   -0.166798
-        2.709976    3.410804   -0.166791
-        2.709986    1.211620    3.192744
+        4.347698   -0.257460   -0.168535
+        2.707202    3.411692   -0.168533
+        2.707204    1.210387    3.194246
 
-outcell: Cell vector modules (Ang)   :    4.359566    4.359515    4.359548
-outcell: Cell angles (23,13,12) (deg):     54.8418     54.8418     54.8418
-outcell: Cell volume (Ang**3)        :     51.5519
+outcell: Cell vector modules (Ang)   :    4.358574    4.358554    4.358577
+outcell: Cell angles (23,13,12) (deg):     54.9123     54.9123     54.9121
+outcell: Cell volume (Ang**3)        :     51.6154
 New_DM. Step:    12
 Initializing Density Matrix...
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
-InitMesh: Mesh cutoff (required, used) =   100.000   116.785 Ry
+InitMesh: Mesh cutoff (required, used) =   100.000   116.947 Ry
 
-siesta: Eharris(eV) =   -2955.685903
+siesta: Eharris(eV) =   -2955.782845
 
 
-siesta: Eharris(eV) =   -2955.685903
+siesta: Eharris(eV) =   -2955.782845
 
 
 siesta: Atomic forces (eV/Ang):
-     1   -0.001176   -0.000949   -0.001210
-     2   -0.001701    0.000037   -0.001050
-     3   -0.000481    0.000360    0.001017
-     4    0.000249   -0.000219   -0.000696
-     5   -0.025521    0.058786   -0.000335
-     6    0.000108   -0.034270    0.053833
-     7    0.028951   -0.024602   -0.052910
-     8    0.025668   -0.058616   -0.000075
-     9    0.000251    0.036345   -0.052649
-    10   -0.026160    0.023048    0.054041
+     1    0.001393    0.000904    0.000385
+     2    0.001395    0.000897    0.000506
+     3   -0.000198    0.000219   -0.000277
+     4   -0.000277    0.000050    0.000176
+     5    0.036105   -0.081620    0.000467
+     6   -0.000019    0.047752   -0.075138
+     7   -0.036886    0.032977    0.074377
+     8   -0.037145    0.080871    0.000689
+     9   -0.000127   -0.049442    0.073999
+    10    0.036088   -0.032037   -0.075113
 ----------------------------------------
-   Tot    0.000188   -0.000079   -0.000033
+   Tot    0.000329    0.000571    0.000071
 ----------------------------------------
-   Max    0.058786
-   Res    0.028726    sqrt( Sum f_i^2 / 3N )
+   Max    0.081620
+   Res    0.039870    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.058786    constrained
+   Max    0.081620    constrained
 
-Stress-tensor-Voigt (kbar):     -991.18    -1006.38    -1008.41        8.48        2.51        5.55
-(Free)E + p*V (eV/cell)    -2900.9377
-Target enthalpy (eV/cell)    -2901.0017
+Stress-tensor-Voigt (kbar):     -973.75     -984.17     -985.64        5.80        1.70        3.81
+(Free)E + p*V (eV/cell)    -2901.7250
+Target enthalpy (eV/cell)    -2901.1189
 
 siesta: Stress tensor (static) (eV/Ang**3):
-        -0.618638    0.005291    0.003464
-         0.005291   -0.628127    0.001568
-         0.003464    0.001568   -0.629390
+        -0.607761    0.003619    0.002378
+         0.003619   -0.614263    0.001059
+         0.002378    0.001059   -0.615179
 
-siesta: Pressure (static):       1001.98853309  kBar
+siesta: Pressure (static):        981.18504626  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-        -0.618638    0.005291    0.003464
-         0.005291   -0.628127    0.001568
-         0.003464    0.001568   -0.629390
+        -0.607761    0.003619    0.002378
+         0.003619   -0.614263    0.001059
+         0.002378    0.001059   -0.615179
 
-siesta: Pressure (total):       1001.98853309  kBar
+siesta: Pressure (total):        981.18504626  kBar
 Cycling the Broyden process...
 
-* Maximum dynamic memory allocated =    12 MB
+* Maximum dynamic memory allocated =    14 MB
 
 siesta:                 ==============================
                             Begin CG move =     12
                         ==============================
 
 outcoor: Atomic coordinates (fractional):                   
-    0.00000102    0.00000111    0.00000076   1       1  Mg
-    0.50000002    0.50000107    0.50000113   1       2  Mg
-    0.25000155    0.25000110    0.25000106   2       3  C
-   -0.24999988   -0.25000046   -0.24999835   2       4  C
-    0.56741599   -0.06741334    0.24999641   3       5  O
-    0.25000163    0.56741319   -0.06741617   3       6  O
-   -0.06742288    0.25000102    0.56741120   3       7  O
-   -0.56741422    0.06741371   -0.24999975   3       8  O
-   -0.24999833   -0.56741707    0.06741341   3       9  O
-    0.06741563   -0.25000274   -0.56741355   3      10  O
+    0.00000182    0.00000213    0.00000179   1       1  Mg
+    0.50000147    0.50000180    0.50000269   1       2  Mg
+    0.25000057    0.25000233    0.25000198   2       3  C
+   -0.24999728   -0.24999921   -0.24999819   2       4  C
+    0.56723520   -0.06723438    0.24999846   3       5  O
+    0.24999801    0.56723513   -0.06723598   3       6  O
+   -0.06723555    0.25000569    0.56723479   3       7  O
+   -0.56723612    0.06723458   -0.25000027   3       8  O
+   -0.24999972   -0.56723512    0.06723664   3       9  O
+    0.06723439   -0.24999861   -0.56723522   3      10  O
  Kpoints in:          280 . Kpoints trimmed:          280
 
 siesta: k-grid: Number of k-points =   280
-siesta: k-grid: Cutoff (effective) =    15.271 Ang
+siesta: k-grid: Cutoff (effective) =    15.225 Ang
 siesta: k-grid: Supercell and displacements
-siesta: k-grid:    0   8  -8      0.500
 siesta: k-grid:   -8   8   0      0.500
+siesta: k-grid:    0   8  -8      0.500
 siesta: k-grid:    0   7   0      0.000
 Naive supercell factors:     5    5    5
 
@@ -1611,87 +1606,87 @@ superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
 superc: Number of atoms, orbitals, and projectors:   1250   4250  10000
 
 outcell: Unit cell vectors (Ang):
-        4.352693   -0.254193   -0.166383
-        2.712968    3.413198   -0.166378
-        2.712979    1.212957    3.194770
+        4.338643   -0.261428   -0.171134
+        2.698207    3.407593   -0.171131
+        2.698208    1.206367    3.191527
 
-outcell: Cell vector modules (Ang)   :    4.363282    4.363233    4.363264
-outcell: Cell angles (23,13,12) (deg):     54.8196     54.8196     54.8197
-outcell: Cell volume (Ang**3)        :     51.6529
+outcell: Cell vector modules (Ang)   :    4.349880    4.349862    4.349884
+outcell: Cell angles (23,13,12) (deg):     55.0292     55.0292     55.0290
+outcell: Cell volume (Ang**3)        :     51.4687
 New_DM. Step:    13
 Initializing Density Matrix...
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
-InitMesh: Mesh cutoff (required, used) =   100.000   116.552 Ry
+InitMesh: Mesh cutoff (required, used) =   100.000   117.597 Ry
 
-siesta: Eharris(eV) =   -2955.825612
+siesta: Eharris(eV) =   -2955.587640
 
 
-siesta: Eharris(eV) =   -2955.825612
+siesta: Eharris(eV) =   -2955.587640
 
 
 siesta: Atomic forces (eV/Ang):
-     1   -0.000812   -0.000720   -0.000973
-     2   -0.001257    0.000139   -0.000843
-     3   -0.000414    0.000276    0.000844
-     4    0.000163   -0.000139   -0.000564
-     5    0.031805   -0.070024   -0.000180
-     6    0.000083    0.042696   -0.064138
-     7   -0.029441    0.026993    0.064898
-     8   -0.031829    0.070092   -0.000029
-     9    0.000223   -0.041150    0.065086
-    10    0.031327   -0.028364   -0.064120
+     1   -0.001173   -0.000530   -0.000206
+     2   -0.001126   -0.000551   -0.000398
+     3   -0.000056    0.000164   -0.000081
+     4   -0.000050    0.000064    0.000069
+     5    0.003440   -0.006156   -0.000575
+     6    0.000164    0.004345   -0.005391
+     7   -0.044651   -0.036026    0.022960
+     8   -0.002278    0.006546   -0.000507
+     9    0.000039   -0.003013    0.006270
+    10    0.003460   -0.002682   -0.005578
 ----------------------------------------
-   Tot   -0.000151   -0.000199   -0.000019
+   Tot   -0.042230   -0.037840    0.016563
 ----------------------------------------
-   Max    0.070092
-   Res    0.034359    sqrt( Sum f_i^2 / 3N )
+   Max    0.044651
+   Res    0.011644    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.070092    constrained
+   Max    0.044651    constrained
 
-Stress-tensor-Voigt (kbar):     -973.58     -981.80     -982.85        4.58        1.36        3.00
-(Free)E + p*V (eV/cell)    -2901.7946
-Target enthalpy (eV/cell)    -2901.1308
+Stress-tensor-Voigt (kbar):    -1025.36    -1012.76    -1009.71       -8.61       -1.31       -3.70
+(Free)E + p*V (eV/cell)    -2900.4430
+Target enthalpy (eV/cell)    -2900.9551
 
 siesta: Stress tensor (static) (eV/Ang**3):
-        -0.607653    0.002859    0.001870
-         0.002859   -0.612785    0.000849
-         0.001870    0.000849   -0.613441
+        -0.639972   -0.005377   -0.002312
+        -0.005377   -0.632106   -0.000820
+        -0.002312   -0.000820   -0.630204
 
-siesta: Pressure (static):        979.41003463  kBar
+siesta: Pressure (static):       1015.94185834  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-        -0.607653    0.002859    0.001870
-         0.002859   -0.612785    0.000849
-         0.001870    0.000849   -0.613441
+        -0.639972   -0.005377   -0.002312
+        -0.005377   -0.632106   -0.000820
+        -0.002312   -0.000820   -0.630204
 
-siesta: Pressure (total):        979.41003463  kBar
+siesta: Pressure (total):       1015.94185834  kBar
 Cycling the Broyden process...
 
-* Maximum dynamic memory allocated =    12 MB
+* Maximum dynamic memory allocated =    14 MB
 
 siesta:                 ==============================
                             Begin CG move =     13
                         ==============================
 
 outcoor: Atomic coordinates (fractional):                   
-   -0.00000024   -0.00000120   -0.00000186   1       1  Mg
-    0.49999797    0.49999977    0.49999836   1       2  Mg
-    0.25000046    0.25000093    0.25000203   2       3  C
-   -0.24999937   -0.25000040   -0.24999920   2       4  C
-    0.56756266   -0.06755868    0.24999643   3       5  O
-    0.25000197    0.56756042   -0.06756121   3       6  O
-   -0.06756711    0.25000357    0.56755764   3       7  O
-   -0.56756090    0.06755904   -0.25000017   3       8  O
-   -0.24999755   -0.56756071    0.06756208   3       9  O
-    0.06756152   -0.25000319   -0.56755936   3      10  O
+    0.00000134    0.00000171    0.00000129   1       1  Mg
+    0.50000097    0.50000136    0.50000228   1       2  Mg
+    0.25000062    0.25000231    0.25000203   2       3  C
+   -0.24999723   -0.24999919   -0.24999819   2       4  C
+    0.56721728   -0.06721566    0.24999869   3       5  O
+    0.24999801    0.56721698   -0.06721749   3       6  O
+   -0.06721860    0.25000338    0.56721581   3       7  O
+   -0.56721764    0.06721642   -0.25000029   3       8  O
+   -0.24999974   -0.56721669    0.06721840   3       9  O
+    0.06721645   -0.24999847   -0.56721653   3      10  O
  Kpoints in:          280 . Kpoints trimmed:          280
 
 siesta: k-grid: Number of k-points =   280
-siesta: k-grid: Cutoff (effective) =    15.241 Ang
+siesta: k-grid: Cutoff (effective) =    15.230 Ang
 siesta: k-grid: Supercell and displacements
-siesta: k-grid:    0   8  -8      0.500
 siesta: k-grid:   -8   8   0      0.500
+siesta: k-grid:    0   8  -8      0.500
 siesta: k-grid:    0   7   0      0.000
 Naive supercell factors:     5    5    5
 
@@ -1699,215 +1694,214 @@ superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
 superc: Number of atoms, orbitals, and projectors:   1250   4250  10000
 
 outcell: Unit cell vectors (Ang):
-        4.343867   -0.257278   -0.168407
-        2.704783    3.408679   -0.168399
-        2.704791    1.209299    3.191432
+        4.340296   -0.260879   -0.170779
+        2.699719    3.408464   -0.170777
+        2.699717    1.207043    3.192176
 
-outcell: Cell vector modules (Ang)   :    4.354737    4.354687    4.354714
-outcell: Cell angles (23,13,12) (deg):     54.9130     54.9130     54.9130
-outcell: Cell volume (Ang**3)        :     51.4795
+outcell: Cell vector modules (Ang)   :    4.351482    4.351468    4.351484
+outcell: Cell angles (23,13,12) (deg):     55.0125     55.0125     55.0122
+outcell: Cell volume (Ang**3)        :     51.5024
 New_DM. Step:    14
 Initializing Density Matrix...
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
-InitMesh: Mesh cutoff (required, used) =   100.000   117.155 Ry
+InitMesh: Mesh cutoff (required, used) =   100.000   117.484 Ry
 
-siesta: Eharris(eV) =   -2955.591099
+siesta: Eharris(eV) =   -2955.634100
 
 
-siesta: Eharris(eV) =   -2955.591099
+siesta: Eharris(eV) =   -2955.634100
 
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000486    0.000630   -0.000198
-     2    0.000273    0.000729    0.000375
-     3   -0.002543   -0.000244   -0.001524
-     4   -0.000241    0.000044   -0.001191
-     5   -0.017174    0.037931    0.000258
-     6    0.000003   -0.023239    0.034209
-     7    0.017680   -0.015542   -0.034431
-     8    0.016383   -0.038018    0.000321
-     9   -0.000043    0.022135   -0.034915
-    10   -0.017298    0.015351    0.034384
+     1   -0.000837   -0.000337   -0.000303
+     2   -0.000933   -0.000224   -0.000367
+     3   -0.000308    0.000129    0.000095
+     4   -0.000281    0.000003    0.000198
+     5    0.005534   -0.011510   -0.000305
+     6    0.000176    0.007302   -0.010190
+     7   -0.004423    0.003899    0.011039
+     8   -0.004820    0.011744   -0.000351
+     9   -0.000004   -0.006328    0.010819
+    10    0.005451   -0.004785   -0.010464
 ----------------------------------------
-   Tot   -0.002473   -0.000223   -0.002713
+   Tot   -0.000443   -0.000106    0.000171
 ----------------------------------------
-   Max    0.038018
-   Res    0.018561    sqrt( Sum f_i^2 / 3N )
+   Max    0.011744
+   Res    0.005656    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.038018    constrained
+   Max    0.011744    constrained
 
-Stress-tensor-Voigt (kbar):     -997.50    -1005.85    -1006.81        4.25        1.24        3.04
-(Free)E + p*V (eV/cell)    -2900.8226
-Target enthalpy (eV/cell)    -2900.9315
+Stress-tensor-Voigt (kbar):    -1010.77    -1003.05    -1001.89       -4.32       -1.28       -2.84
+(Free)E + p*V (eV/cell)    -2900.8244
+Target enthalpy (eV/cell)    -2900.9928
 
 siesta: Stress tensor (static) (eV/Ang**3):
-        -0.622587    0.002653    0.001900
-         0.002653   -0.627794    0.000773
-         0.001900    0.000773   -0.628395
+        -0.630864   -0.002696   -0.001771
+        -0.002696   -0.626049   -0.000801
+        -0.001771   -0.000801   -0.625326
 
-siesta: Pressure (static):       1003.38742490  kBar
+siesta: Pressure (static):       1005.23755469  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-        -0.622587    0.002653    0.001900
-         0.002653   -0.627794    0.000773
-         0.001900    0.000773   -0.628395
+        -0.630864   -0.002696   -0.001771
+        -0.002696   -0.626049   -0.000801
+        -0.001771   -0.000801   -0.625326
 
-siesta: Pressure (total):       1003.38742490  kBar
+siesta: Pressure (total):       1005.23755469  kBar
 
-* Maximum dynamic memory allocated =    12 MB
+* Maximum dynamic memory allocated =    14 MB
 
 outcoor: Relaxed atomic coordinates (fractional):           
-   -0.00000024   -0.00000120   -0.00000186   1       1  Mg
-    0.49999797    0.49999977    0.49999836   1       2  Mg
-    0.25000046    0.25000093    0.25000203   2       3  C
-   -0.24999937   -0.25000040   -0.24999920   2       4  C
-    0.56756266   -0.06755868    0.24999643   3       5  O
-    0.25000197    0.56756042   -0.06756121   3       6  O
-   -0.06756711    0.25000357    0.56755764   3       7  O
-   -0.56756090    0.06755904   -0.25000017   3       8  O
-   -0.24999755   -0.56756071    0.06756208   3       9  O
-    0.06756152   -0.25000319   -0.56755936   3      10  O
+    0.00000134    0.00000171    0.00000129   1       1  Mg
+    0.50000097    0.50000136    0.50000228   1       2  Mg
+    0.25000062    0.25000231    0.25000203   2       3  C
+   -0.24999723   -0.24999919   -0.24999819   2       4  C
+    0.56721728   -0.06721566    0.24999869   3       5  O
+    0.24999801    0.56721698   -0.06721749   3       6  O
+   -0.06721860    0.25000338    0.56721581   3       7  O
+   -0.56721764    0.06721642   -0.25000029   3       8  O
+   -0.24999974   -0.56721669    0.06721840   3       9  O
+    0.06721645   -0.24999847   -0.56721653   3      10  O
 
 outcell: Unit cell vectors (Ang):
-        4.343867   -0.257278   -0.168407
-        2.704783    3.408679   -0.168399
-        2.704791    1.209299    3.191432
+        4.340296   -0.260879   -0.170779
+        2.699719    3.408464   -0.170777
+        2.699717    1.207043    3.192176
 
-outcell: Cell vector modules (Ang)   :    4.354737    4.354687    4.354714
-outcell: Cell angles (23,13,12) (deg):     54.9130     54.9130     54.9130
-outcell: Cell volume (Ang**3)        :     51.4795
+outcell: Cell vector modules (Ang)   :    4.351482    4.351468    4.351484
+outcell: Cell angles (23,13,12) (deg):     55.0125     55.0125     55.0122
+outcell: Cell volume (Ang**3)        :     51.5024
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -812.781307
+siesta: Ebs     =      -812.536230
 siesta: Eions   =      5228.674091
-siesta: Ena     =      1067.421573
-siesta: Ekin    =      2502.661203
-siesta: Enl     =      -410.807047
-siesta: DEna    =      -141.873112
-siesta: DUscf   =        27.629841
+siesta: Ena     =      1067.427924
+siesta: Ekin    =      2502.580382
+siesta: Enl     =      -410.866501
+siesta: DEna    =      -141.800780
+siesta: DUscf   =        27.593281
 siesta: DUext   =         0.000000
-siesta: Exc     =      -749.420497
+siesta: Exc     =      -749.397921
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =     -2955.591099
-siesta: Etot    =     -2933.062130
-siesta: FreeEng =     -2933.062130
+siesta: Eharris =     -2955.634100
+siesta: Etot    =     -2933.137706
+siesta: FreeEng =     -2933.137706
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =    -812.781307
-siesta:       Kinetic =    2502.661203
-siesta:       Hartree =     683.983512
+siesta:  Band Struct. =    -812.536230
+siesta:       Kinetic =    2502.580382
+siesta:       Hartree =     684.587531
 siesta:    Ext. field =       0.000000
-siesta:   Exch.-corr. =    -749.420497
-siesta:  Ion-electron =   -3544.756311
-siesta:       Ion-ion =   -1825.530037
+siesta:   Exch.-corr. =    -749.397921
+siesta:  Ion-electron =   -3545.780728
+siesta:       Ion-ion =   -1825.126969
 siesta:       Ekinion =       0.000000
-siesta:         Total =   -2933.062130
+siesta:         Total =   -2933.137706
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:    -0.622587    0.002653    0.001900
-siesta:     0.002653   -0.627794    0.000773
-siesta:     0.001900    0.000773   -0.628395
+siesta:    -0.630864   -0.002696   -0.001771
+siesta:    -0.002696   -0.626049   -0.000801
+siesta:    -0.001771   -0.000801   -0.625326
 
 siesta: Constrained stress tensor (static) (eV/Ang**3):
-siesta:    -0.622587    0.002653    0.001900
-siesta:     0.002653   -0.627794    0.000773
-siesta:     0.001900    0.000773   -0.628395
+siesta:    -0.630864   -0.002696   -0.001771
+siesta:    -0.002696   -0.626049   -0.000801
+siesta:    -0.001771   -0.000801   -0.625326
 
-siesta: Cell volume =         51.479525 Ang**3
+siesta: Cell volume =         51.502424 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
-siesta:           0.00682075          0.00684297  Ry/Bohr**3
-siesta:           0.62625840          0.62829806  eV/Ang**3
-siesta:        1003.38742490       1006.65535483  kBar
-(Free)E+ p_basis*V_orbitals  =       -2931.867833
-(Free)Eharris+ p_basis*V_orbitals  =       -2877.167666
+siesta:           0.00683333          0.00682684  Ry/Bohr**3
+siesta:           0.62741315          0.62681682  eV/Ang**3
+siesta:        1005.23755469       1004.28212185  kBar
+(Free)E+ p_basis*V_orbitals  =       -2931.943409
+(Free)Eharris+ p_basis*V_orbitals  =       -2877.240011
 
-* Maximum dynamic memory allocated : Node    0 =    12 MB
-* Maximum dynamic memory allocated : Node    1 =    11 MB
+* Maximum dynamic memory allocated : Node    0 =    14 MB
 
-* Maximum memory occured during redistribXZ                   
+* Maximum memory occured during ranger                        
 
 timer: CPU execution times:
 timer:  Routine       Calls   Time/call    Tot.time        %
-timer:  siesta            1     136.027     136.027   100.00
-timer:  Setup             1       1.011       1.011     0.74
-timer:  bands             1       0.001       0.001     0.00
-timer:  writewave         1       0.002       0.002     0.00
+timer:  siesta            1      53.154      53.154   100.00
+timer:  Setup             1       0.476       0.476     0.90
+timer:  bands             1       0.000       0.000     0.00
+timer:  writewave         1       0.001       0.001     0.00
 timer:  KSV_init          1       0.000       0.000     0.00
-timer:  IterMD           14       9.627     134.776    99.08
-timer:  hsparse          14       0.118       1.650     1.21
-timer:  overlap          14       0.014       0.200     0.15
-timer:  IterSCF          14       7.276     101.865    74.89
-timer:  kinefsm          28       0.011       0.306     0.22
-timer:  nlefsm           28       0.726      20.315    14.93
-timer:  DHSCF            28       1.632      45.685    33.59
-timer:  DHSCF1           14       0.144       2.015     1.48
-timer:  DHSCF2           14       2.023      28.316    20.82
-timer:  REORD           252       0.000       0.016     0.01
-timer:  POISON           42       0.010       0.410     0.30
-timer:  DHSCF3           28       0.209       5.846     4.30
-timer:  rhoofd           28       0.097       2.711     1.99
-timer:  cellXC           42       0.012       0.506     0.37
-timer:  vmat             28       0.083       2.317     1.70
+timer:  IterMD           14       3.758      52.607    98.97
+timer:  hsparse          14       0.109       1.525     2.87
+timer:  overlap          14       0.010       0.136     0.26
+timer:  IterSCF          14       2.500      35.001    65.85
+timer:  kinefsm          28       0.008       0.217     0.41
+timer:  nlefsm           28       0.415      11.608    21.84
+timer:  DHSCF            28       0.639      17.878    33.63
+timer:  DHSCF1           14       0.059       0.826     1.55
+timer:  DHSCF2           14       0.560       7.838    14.75
+timer:  REORD           252       0.000       0.014     0.03
+timer:  POISON           42       0.002       0.095     0.18
+timer:  DHSCF3           28       0.157       4.398     8.27
+timer:  rhoofd           28       0.067       1.878     3.53
+timer:  cellXC           42       0.009       0.383     0.72
+timer:  vmat             28       0.078       2.180     4.10
 timer:  MolMec           28       0.000       0.000     0.00
-timer:  diagon           14       3.984      55.772    41.00
-timer:  c-eigval       3570       0.006      19.772    14.54
-timer:  c-buildHS      3570       0.001       4.600     3.38
-timer:  cdiag          7140       0.005      36.299    26.68
-timer:  cdiag1         7140       0.000       1.865     1.37
-timer:  cdiag2         7140       0.001       4.600     3.38
-timer:  cdiag3         7140       0.003      23.673    17.40
-timer:  cdiag4         7140       0.000       1.813     1.33
-timer:  c-eigvec       3570       0.007      25.785    18.96
-timer:  c-buildD       3570       0.003      10.054     7.39
-timer:  DHSCF4           14       0.678       9.488     6.97
-timer:  dfscf            14       0.341       4.776     3.51
-timer:  overfsm          14       0.009       0.127     0.09
-timer:  optical           1       0.125       0.125     0.09
+timer:  diagon           14       1.301      18.220    34.28
+timer:  c-eigval       3602       0.001       5.209     9.80
+timer:  c-buildHS      3602       0.001       2.083     3.92
+timer:  cdiag          7204       0.001       6.944    13.06
+timer:  cdiag1         7204       0.000       0.222     0.42
+timer:  cdiag2         7204       0.000       0.831     1.56
+timer:  cdiag3         7204       0.001       5.545    10.43
+timer:  cdiag4         7204       0.000       0.213     0.40
+timer:  c-eigvec       3602       0.002       5.889    11.08
+timer:  c-buildD       3602       0.002       7.031    13.23
+timer:  DHSCF4           14       0.344       4.810     9.05
+timer:  dfscf            14       0.197       2.754     5.18
+timer:  overfsm          14       0.007       0.092     0.17
+timer:  optical           1       0.000       0.000     0.00
   
 
 elaps: ELAPSED times:
 elaps:  Routine       Calls   Time/call    Tot.time        %
-elaps:  siesta            1      71.716      71.716   100.00
-elaps:  Setup             1       0.546       0.546     0.76
-elaps:  bands             1       0.001       0.001     0.00
+elaps:  siesta            1      53.141      53.141   100.00
+elaps:  Setup             1       0.477       0.477     0.90
+elaps:  bands             1       0.000       0.000     0.00
 elaps:  writewave         1       0.001       0.001     0.00
 elaps:  KSV_init          1       0.000       0.000     0.00
-elaps:  IterMD           14       5.074      71.038    99.05
-elaps:  hsparse          14       0.067       0.943     1.31
-elaps:  overlap          14       0.008       0.117     0.16
-elaps:  IterSCF          14       3.835      53.697    74.87
-elaps:  kinefsm          28       0.007       0.186     0.26
-elaps:  nlefsm           28       0.452      12.665    17.66
-elaps:  DHSCF            28       0.865      24.222    33.77
-elaps:  DHSCF1           14       0.080       1.123     1.57
-elaps:  DHSCF2           14       1.059      14.829    20.68
-elaps:  REORD           252       0.000       0.007     0.01
-elaps:  POISON           42       0.006       0.233     0.32
-elaps:  DHSCF3           28       0.110       3.094     4.31
-elaps:  rhoofd           28       0.053       1.489     2.08
-elaps:  cellXC           42       0.007       0.274     0.38
-elaps:  vmat             28       0.043       1.199     1.67
+elaps:  IterMD           14       3.757      52.592    98.97
+elaps:  hsparse          14       0.109       1.524     2.87
+elaps:  overlap          14       0.010       0.136     0.26
+elaps:  IterSCF          14       2.499      34.992    65.85
+elaps:  kinefsm          28       0.008       0.217     0.41
+elaps:  nlefsm           28       0.414      11.604    21.84
+elaps:  DHSCF            28       0.638      17.873    33.63
+elaps:  DHSCF1           14       0.059       0.826     1.55
+elaps:  DHSCF2           14       0.560       7.836    14.74
+elaps:  REORD           252       0.000       0.013     0.02
+elaps:  POISON           42       0.002       0.095     0.18
+elaps:  DHSCF3           28       0.157       4.398     8.28
+elaps:  rhoofd           28       0.067       1.878     3.53
+elaps:  cellXC           42       0.009       0.383     0.72
+elaps:  vmat             28       0.078       2.180     4.10
 elaps:  MolMec           28       0.000       0.000     0.00
-elaps:  diagon           14       2.097      29.359    40.94
-elaps:  c-eigval       3570       0.003      10.250    14.29
-elaps:  c-buildHS      3570       0.001       2.621     3.65
-elaps:  cdiag          7140       0.003      18.350    25.59
-elaps:  cdiag1         7140       0.000       1.073     1.50
-elaps:  cdiag2         7140       0.000       0.815     1.14
-elaps:  cdiag3         7140       0.002      14.054    19.60
-elaps:  cdiag4         7140       0.000       0.791     1.10
-elaps:  c-eigvec       3570       0.004      13.301    18.55
-elaps:  c-buildD       3570       0.002       5.591     7.80
-elaps:  DHSCF4           14       0.369       5.163     7.20
-elaps:  dfscf            14       0.194       2.709     3.78
-elaps:  overfsm          14       0.005       0.071     0.10
+elaps:  diagon           14       1.301      18.215    34.28
+elaps:  c-eigval       3602       0.001       5.207     9.80
+elaps:  c-buildHS      3602       0.001       2.085     3.92
+elaps:  cdiag          7204       0.001       6.941    13.06
+elaps:  cdiag1         7204       0.000       0.222     0.42
+elaps:  cdiag2         7204       0.000       0.834     1.57
+elaps:  cdiag3         7204       0.001       5.544    10.43
+elaps:  cdiag4         7204       0.000       0.216     0.41
+elaps:  c-eigvec       3602       0.002       5.887    11.08
+elaps:  c-buildD       3602       0.002       7.030    13.23
+elaps:  DHSCF4           14       0.343       4.809     9.05
+elaps:  dfscf            14       0.197       2.753     5.18
+elaps:  overfsm          14       0.007       0.092     0.17
 elaps:  optical           1       0.000       0.000     0.00
   
->> End of run:  30-JUN-2010  11:37:11
+>> End of run:  10-JUN-2011  14:40:29

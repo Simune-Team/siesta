@@ -39,13 +39,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, 3.0-rc2-13}}
+{\Huge {\bf S I E S T A \, \, 3.1}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large April 18, 2011 }
+{\Large June 21, 2011 }
 
 \vspace{1.5cm}
 
@@ -92,7 +92,7 @@
 \vspace{0.5cm}
 Copyright \copyright\  Fundaci\'on General Universidad Aut\'onoma de Madrid:
 E.Artacho, J.D.Gale, A.Garc\'{\i}a, J.Junquera, P.Ordej\'on,
-D.S\'anchez-Portal and J.M.Soler, 1996-2010
+D.S\'anchez-Portal and J.M.Soler, 1996-2011
 
 \end{center}
 
@@ -2737,15 +2737,19 @@ implemented in {\sc Siesta}).
 
 \item[{\bf XC.hybrid}] ({\it data block}):
 \index{XC.hybrid@{\bf XC.hybrid}}
-This data block allows the user to create a hybrid functional by
+This data block allows the user to create a ``cocktail'' functional by
 mixing the desired amounts of exchange and correlation from each of
-the functionals described under XC.authors.
-The format of the block is that the first line must contain the
-number of functionals to be mixed. On the subsequent lines the
-values of XC.functl and XC.authors must be given and then the
-weights for the exchange and correlation, in that order. If only
-one number is given then the same weight is applied to both
-exchange and correlation.
+the functionals described under XC.authors. Note that these ``mixed''
+functionals do {\em not} have the exact Hartree-Fock exchange which
+is a key ingredient of the true ``hybrid'' functionals. The use of
+the word ``hybrid'' in the label is unfortunate in this regard, and
+might be deprecated in a future version.
+
+The first line of the block must contain the number of functionals to
+be mixed. On the subsequent lines the values of XC.functl and
+XC.authors must be given and then the weights for the exchange and
+correlation, in that order. If only one number is given then the same
+weight is applied to both exchange and correlation.
 
 The following is an example in which a 75:25 mixture of Ceperley-Alder
 and PBE correlation is made, with an equal split of the exchange
@@ -6438,7 +6442,7 @@ us start with an example to show the basic operations of a transport
 calculation.  Starting from the top {\sc Siesta} directory:
 
 \begin{verbatim}
-$ cd Tests/transiesta/Fast
+$ cd Examples/TranSiesta
 \end{verbatim}
 
 First it is necessary to do the electrode calculation (see below for
@@ -6476,7 +6480,10 @@ and {\tt scat.fast.TSDE}. The first one contains, as previously mentioned,
 essentially the Hamiltonian and Overlap matrices, and the {\tt .TSDE} file 
 has the {\sc TranSiesta} density matrix, the equivalent to the {\tt .DM} 
 file of {\sc Siesta}. The transmission function and the current are calculated 
-using the {\tt tbtrans} postprocessing (bellow).
+using the {\tt tbtrans} postprocessing tool (below).
+
+Other automated TranSiesta-TBTrans examples can be found in
+{\tt Tests/TranSiesta-TBTrans}.
 
 \subsection{Brief explanation}
 

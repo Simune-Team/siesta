@@ -5,6 +5,67 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2011-06-21  14:20:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-22
+Update TranSiesta tests. New reference outputs. Cosmetics
+
+*  Update the TranSiesta-TBTrans test directories
+  
+  TranSiesta-TBTrans specific tests now reside in
+  Tests/TranSiesta-TBTrans. These tests (currently ts_fast and ts_au)
+  only make sense if the "transiesta" flavor of Siesta has been compiled
+  in (by executing "make transiesta" in a fresh build directory), so
+  they are not executed by default.
+  
+  Reference outputs can now be found in
+  Tests/Reference/TranSiesta-TBTrans.
+  
+  The manual has been updated to refer to the Examples/TranSiesta
+  directory (which has been created) for the guided calculation.
+  
+  removed:
+    Tests/transiesta/Fast/
+    Tests/transiesta/au_111_capacitor/
+    Tests/transiesta/bulk_au_111/
+    Tests/transiesta/elec_au_111_abc/
+  added:
+    Tests/Reference/TranSiesta-TBTrans/
+    Tests/Reference/TranSiesta-TBTrans/ts_au/
+    Tests/Reference/TranSiesta-TBTrans/ts_fast/
+    Tests/TranSiesta-TBTrans/ts_au/
+    Examples/TranSiesta
+  renamed:
+    Tests/transiesta/ => Tests/TranSiesta-TBTrans/
+    Tests/ts_fast/ => Tests/TranSiesta-TBTrans/ts_fast/
+  modified:
+    Tests/TranSiesta-TBTrans/ts_fast/makefile
+    Tests/TranSiesta-TBTrans/ts_fast/script.sh
+    Tests/Makefile
+    Tests/script_ts.mk
+    Docs/siesta.tex
+
+*  Clarify the mention of "hybrid" functionals in the manual
+  
+  modified:
+    Docs/siesta.tex
+
+*  Re-generate the reference output files.
+
+  modified:
+    Tests/Reference
+    Tests/Reference-xml
+
+*  Remove order-N test from standard list. Add note.
+
+  As it does not run well in parallel, the order-N
+  test has been removed from the standard list
+  in the Makefile for the Tests directory.
+  
+  added:
+    Tests/h2o_orderN/000README
+  modified:
+    Tests/Makefile
+
+------------------------------------------------------------------------
 2011-05-19  15:05:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-21
 Fix and clarify code for KB projector orthogonalization
 
