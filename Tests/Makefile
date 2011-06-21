@@ -29,7 +29,7 @@ REFERENCE=../../ref-version/Tests
 #
 label=work
 #
-ALL= h2o h2o_reparam h2o_basis h2o_dos h2o_orderN			\
+ALL= h2o h2o_reparam h2o_basis h2o_dos      		\
        floating benzene bessel mgco3 si2x1h force_2 born born_spin	\
        var_cell constant_volume batio3 fe fe_broyden sih si64		\
        h2oZ sih_op_broyden h2o_op_broyden zmatrix md_pr md_npr		\
