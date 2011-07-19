@@ -690,59 +690,6 @@ contains
     enddo
   end function expressSegments
 
-  pure function expressURI_len(u) result(n)
-    type(URI), intent(in) :: u
-    integer :: n
-
-    n = 0
-    if (associated(u%scheme)) &
-      n = size(u%scheme) + 1
-    if (associated(u%authority)) &
-      n = n + pctEncode_len(str_vs(u%authority), unreserved//sub_delims//"@:") + 2
-    !FIXME - I suspect that ';' as the first character of a segment should be escaped
-    n = n + pctEncode_len(str_vs(u%path), pchar//";"//"/")
-    if (associated(u%query)) &
-      n = n + pctEncode_len(str_vs(u%query), uric) + 1
-    if (associated(u%fragment)) &
-      n = n + pctEncode_len(str_vs(u%fragment), uric) + 1
-
-  end function expressURI_len
-
-  function expressURI(u) result(URIstring)
-    type(URI), intent(in) :: u
-    character(len=expressURI_len(u)) :: URIstring
-
-    integer :: i, j
-    URIstring=""
-    i = 1
-    if (associated(u%scheme)) then
-      URIstring(:size(u%scheme)+1) = str_vs(u%scheme)//":"
-      i = i + size(u%scheme) + 1
-    endif
-    if (associated(u%authority)) then
-      j = pctEncode_len(str_vs(u%authority), unreserved//sub_delims//"@:")
-      URIstring(i:i+j+1) = &
-        "//"//pctEncode(str_vs(u%authority), unreserved//sub_delims//"@:")
-      i = i + j + 2
-    endif
-    if (size(u%path)>0) then
-      !FIXME - I suspect that ';' as the first character of a segment should be escaped
-      j = pctEncode_len(str_vs(u%path), pchar//";"//"/")
-      URIstring(i:i+j-1) = pctEncode(str_vs(u%path), pchar//";"//"/")
-      i = i + j
-    endif
-    if (associated(u%query)) then
-      j = pctEncode_len(str_vs(u%query), uric)
-      URIstring(i:i+j) = "?"//pctEncode(str_vs(u%query), uric)
-      i = i + j + 1
-    endif
-    if (associated(u%fragment)) then
-      j = pctEncode_len(str_vs(u%fragment), uric)
-      URIstring(i:i+j) = "#"//pctEncode(str_vs(u%fragment), uric)
-    endif
-
-  end function expressURI
-
   subroutine dumpURI(u)
     type(URI), intent(in) :: u
     integer :: i
@@ -793,6 +740,65 @@ contains
     endif
   end subroutine dumpURI
 #endif
+
+  pure function expressURI_len(u) result(n)
+    type(URI), intent(in) :: u
+    integer :: n
+
+    n = 0
+#ifndef DUMMYLIB
+    if (associated(u%scheme)) &
+      n = size(u%scheme) + 1
+    if (associated(u%authority)) &
+      n = n + pctEncode_len(str_vs(u%authority), unreserved//sub_delims//"@:") + 2
+    !FIXME - I suspect that ';' as the first character of a segment should be escaped
+    n = n + pctEncode_len(str_vs(u%path), pchar//";"//"/")
+    if (associated(u%query)) &
+      n = n + pctEncode_len(str_vs(u%query), uric) + 1
+    if (associated(u%fragment)) &
+      n = n + pctEncode_len(str_vs(u%fragment), uric) + 1
+#endif
+
+  end function expressURI_len
+
+  function expressURI(u) result(URIstring)
+    type(URI), intent(in) :: u
+    character(len=expressURI_len(u)) :: URIstring
+
+#ifndef DUMMYLIB
+    integer :: i, j
+#endif
+    URIstring=""
+#ifndef DUMMYLIB
+    i = 1
+    if (associated(u%scheme)) then
+      URIstring(:size(u%scheme)+1) = str_vs(u%scheme)//":"
+      i = i + size(u%scheme) + 1
+    endif
+    if (associated(u%authority)) then
+      j = pctEncode_len(str_vs(u%authority), unreserved//sub_delims//"@:")
+      URIstring(i:i+j+1) = &
+        "//"//pctEncode(str_vs(u%authority), unreserved//sub_delims//"@:")
+      i = i + j + 2
+    endif
+    if (size(u%path)>0) then
+      !FIXME - I suspect that ';' as the first character of a segment should be escaped
+      j = pctEncode_len(str_vs(u%path), pchar//";"//"/")
+      URIstring(i:i+j-1) = pctEncode(str_vs(u%path), pchar//";"//"/")
+      i = i + j
+    endif
+    if (associated(u%query)) then
+      j = pctEncode_len(str_vs(u%query), uric)
+      URIstring(i:i+j) = "?"//pctEncode(str_vs(u%query), uric)
+      i = i + j + 1
+    endif
+    if (associated(u%fragment)) then
+      j = pctEncode_len(str_vs(u%fragment), uric)
+      URIstring(i:i+j) = "#"//pctEncode(str_vs(u%fragment), uric)
+    endif
+#endif
+
+  end function expressURI
 
   function copyURI(u1) result(u2)
     type(URI), pointer :: u1

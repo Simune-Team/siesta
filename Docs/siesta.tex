@@ -39,13 +39,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, trunk-368}}
+{\Huge {\bf S I E S T A \, \, trunk-378}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large February 3, 2011 }
+{\Large April 18, 2011 }
 
 \vspace{1.5cm}
 
@@ -2146,9 +2146,12 @@ the values are set differently. For atom 1, \texttt{r}, \texttt{a},
 and \texttt{t}, are the Cartesian coordinates of the atom.  For the
 second atom, \texttt{r}, \texttt{a}, and \texttt{t} are the
 coordinates in spherical form of the second atom relative to the
-first. Finally, for the third atom, the numbers take their normal
-form, but the torsional angle is defined relative to a notional atom 1
-unit in the z-direction above the atom \texttt{j}.
+first: first the radius, then the polar angle (angle between the
+$z$-axis and the displacement vector) and then the azimuthal angle
+(angle between the $x$-axis and the projection of the displacement
+vector on the $x$-$y$ plane). Finally, for the third atom, the numbers
+take their normal form, but the torsional angle is defined relative to
+a notional atom 1 unit in the z-direction above the atom \texttt{j}.
 
 Secondly. blocks of atoms all of which are subject to the simplest of
 constraints may be specified in one of the following three ways,
@@ -2783,17 +2786,18 @@ or spin polarized ({\tt .true.}) calculation.
 
 
 \item[{\bf NonCollinearSpin}] ({\it logical}):
-\index{NonCollinearSpin@{\bf NonCollinearSpin}}\index{spin}
-\index{spin!non-collinear}\index{LSD}
-If {\tt .true.}, non-collinear spin (i.e. with variable orientation)
-is described using spinor wavefunctions
-and $(2 \times 2)$ spin density matrices at every grid point.
-Ref: T. Oda et al, PRL, {\bf 80}, 3622 (1998).
-Notice that no GGA functionals have been derived specifically for non
-collinear spin. Therefore, only the gradient of the spin polarization
+  \index{NonCollinearSpin@{\bf NonCollinearSpin}}\index{spin}
+  \index{spin!non-collinear}\index{LSD} If {\tt .true.}, non-collinear
+  spin (i.e. with variable orientation) is described using spinor 
+  wavefunctions and $(2 \times 2)$ spin
+  density matrices at every grid point.  Refs: T. Oda et al, PRL, {\bf
+    80}, 3622 (1998); 
+V. M. Garc\'{\i}a-Su\'arez et al, Eur. Phys. Jour. B {\bf 40}, 371 (2004);
+V. M. Garc\'{\i}a-Su\'arez et al, Journal of
+  Phys: Cond. Matt {\bf 16}, 5453 (2004). 
 magnitude, and not the gradient of its orientation, are considered
 to calculate the local xc energy density.
-Not compatible with the {\tt Diag.ParallelOverK} option
+Not compatible with the {\tt  Diag.ParallelOverK} option 
 {\it Default value:} {\tt .false.}
 
 
@@ -3671,14 +3675,18 @@ If true, the program does not check whether the auxiliary cell
 constructed with a naive algorithm is appropriate. This variable is
 only useful if one wishes to reproduce calculations done with previous
 versions of the program in which the auxiliary cell was not large
-enough, as indicated by warnings such as:\\ \texttt{xijorb: WARNING:
-  orbital pair 1 341 is multiply connected}
+enough, as indicated by warnings such as:
+
+\texttt{WARNING: orbital pair 1 341 is multiply connected}
 
 Only small numerical differences in the results are to be expected.
 
-Note that the warning is harmless for gamma-only calculations, except
-if one pretends to use information about the relative coordinates
-of interacting orbitals (see the COOP.write option).
+Note that for gamma-point-only calculations there is an implicit
+``folding'' of matrix elements corresponding to the images of orbitals
+outside the unit cell. If information about the specific values of
+these matrix elements is needed (as for COOP/COHP analysis), one has
+to make sure that the unit cell is large enough.  
+\index{COOP/COHP curves!Folding in Gamma-point calculations}
 
 {\it Default value:} {\tt .false.}
 
@@ -3751,7 +3759,8 @@ and band overlaps.
 A new file {\tt OCCS} is produced with information about the number of
 states occupied.
 
-This is an experimental feature.
+This is an experimental feature. Note: It is not compatible with the
+{\tt Diag.Parallel.Over.K} option.
 
 {\it Default value:} {\tt .false.}
 
@@ -4567,6 +4576,7 @@ when dealing with SCF problems, otherwise too verbose.
 
 \subsubsection{Crystal-Orbital overlap and hamilton populations (COOP/COHP)}
 \label{sec:coop}
+\index{COOP/COHP curves}
 
 These curves are quite useful to analyze the electronic structure to
 get insight about bonding characteristics. See the {\tt Util/COOP}

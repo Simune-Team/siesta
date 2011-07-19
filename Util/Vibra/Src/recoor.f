@@ -116,14 +116,19 @@ c read atomic coordinates and species
         if ( fdf_block('AtomicCoordinatesAndAtomicSpecies',bfdf) )
      .    then
           do ia = 1,na
-            if (.not. fdf_bline(bfdf,pline))
-     .        call die('coor: ERROR in ' //
-     .                 'AtomicCoordinatesAndAtomicSpecies block')
+            if (.not. fdf_bline(bfdf,pline)) then
+               call die('vibrator: Not enough lines in ' //
+     .              'AtomicCoordinatesAndAtomicSpecies block')
+            endif
+            if (.not. fdf_bmatch(pline,'vvviv')) then
+               call die("vibrator: not enough values in Coords line")
+            endif
+
             xa(1,ia) = fdf_bvalues(pline,1)
             xa(2,ia) = fdf_bvalues(pline,2)
             xa(3,ia) = fdf_bvalues(pline,3)
             isa(ia)  = fdf_bintegers(pline,1)
-            xmass(ia)  = fdf_bvalues(pline,4)
+            xmass(ia)  = fdf_bvalues(pline,5)
           enddo
         else
           write(6,"(/,'recoor: ',72(1h*))")
@@ -189,7 +194,7 @@ c   Coord. option = 3 => Multiply by lattice vectors
 
       endif
 
-      return
+
       CONTAINS
 
       subroutine die(str)

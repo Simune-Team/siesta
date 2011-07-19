@@ -727,11 +727,11 @@ C calculate module and phase of wavefunction
 
            IF (IDIMEN .EQ. 2) THEN
              IF ( MOD(NPO,NPX) .EQ. 0 ) THEN
-               WRITE(UNITRE1,'(/)')
-               WRITE(UNITIM1,'(/)')
+               WRITE(UNITRE1,*)
+               WRITE(UNITIM1,*)
                IF ( NSPIN .EQ. 2 ) THEN
-                 WRITE(UNITRE2,'(/)')
-                 WRITE(UNITIM2,'(/)')
+                 WRITE(UNITRE2,*)
+                 WRITE(UNITIM2,*)
                ENDIF
              ENDIF
            ENDIF

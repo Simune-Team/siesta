@@ -64,8 +64,8 @@
         Ecorrec = 0.0_dp
       elseif (isolve .eq. SOLVE_ORDERN) then
         if (.not. gamma) call die("Cannot do O(N) with k-points.")
-        call ordern( usesavelwf, ioptlwf, na_u, no_u, no_l, lasto,
-     &               iaorb, isa, qa, rcoor, rmaxh, ucell, xa, iscf,
+        call ordern(usesavelwf, ioptlwf, na_u, no_u, no_l, lasto,
+     &               isa, qa, rcoor, rmaxh, ucell, xa, iscf,
      &               istp, ncgmax, etol, eta, qtot, maxnh, numh,
      &               listhptr, listh, H, S, chebef, noeta, rcoorcp,
      &               beta, pmax, Dscf, Escf, Ecorrec, nspin, qs )

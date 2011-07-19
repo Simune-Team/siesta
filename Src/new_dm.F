@@ -94,8 +94,7 @@
       use sparse_matrices, only: Escf     !! To be moved
 
 #ifdef TRANSIESTA
-      use m_ts_options, only : mixH
-      use M_ts_global_vars, only : TSrun, VOut
+      use M_ts_global_vars, only : TSrun
 #endif /* TRANSIESTA */
 
       implicit none
@@ -235,10 +234,6 @@
       ! Only part of Escf is updated in TS, so if it is put as zero here
       ! a continuation run gives bad forces.
       if(.not.TSrun) Escf(:,:) = 0.0_dp
-      if(.not. mixH) then
-         nullify(VOut)
-         VOut => Dscf
-      end if
 #else
       Escf(:,:) = 0.0_dp
 #endif /* TRANSIESTA */
@@ -545,6 +540,7 @@ C Try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
          call read_dynamic_dm(nh_tmp, no_l, nspin_read, num_tmp, 
      .             listptr_tmp, list_tmp, D_tmp, found )
 #else
+         found = .false.   ! initialize
          if(TSmode) then ! Transiesta solution method
 C First try to read the .TSDE file
            call read_dynamic_ts_dm(nh_tmp, no_l, nspin_read, num_tmp, 

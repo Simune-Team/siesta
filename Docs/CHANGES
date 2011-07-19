@@ -6,6 +6,296 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2011-05-19  15:20:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-383
+Fix and clarify code for KB projector orthogonalization
+
+In routine kbproj, a saved variable was used to keep track
+of the number of previous KB projectors with the same l. This
+variable was only reset upon a change in l. This can lead
+to errors if a species with a single l=0 KB complex is used.
+
+The code has been streamlined, passing explicitly an index
+that determines the sequence number of the projector.
+
+modified:
+  Src/atom.f
+
+-----------------------------------------------------------------------
+2011-05-03  16:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-382
+Fix declaration in cgwf.F
+
+A previous commit introduced a spurious dummy argument
+"node", which should really be imported from a module.
+
+modified:
+  Src/cgwf.F
+
+-----------------------------------------------------------------------
+2011-05-03  14:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-381
+Clarify mixing code in TranSiesta mode
+
+If the TranSiesta code is compiled in, the user can choose between two
+mixing options in the self-consistent cycle: density-matrix, or
+Hamiltonian. The option chosen takes effect both for the initial
+normal Siesta-style calculation, if needed, and for the "transiesta
+mode" section.
+
+The code in mixer.F and elsewhere has been streamlined, to make it
+clear what the mixed objects are and avoid extraneous global
+dependencies.
+
+modified:
+  Src/Makefile
+  Src/m_ts_global_vars.f90
+  Src/mixer.F
+  Src/new_dm.F
+  Src/state_init.F
+
+-----------------------------------------------------------------------
+2011-05-03  14:05:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-380
+Make auxiliary variable double precision in line minimization
+
+In routine linmin4, the complex variable "c" was declared
+as single-precision. It is now a double.
+
+modified:
+  Src/cgwf.F
+
+-----------------------------------------------------------------------
+2011-05-03  13:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-379
+Fix mixing bug in Transiesta + tbtrans wrap + pulayx warnings
+
+* Fix mixing bug in TranSiesta
+
+In TranSiesta mode, the program first might carry out a calculation at
+zero bias and with periodic boundary conditions, just as a normal
+Siesta calculation. Then the program goes into "transiesta mode"
+proper, during which a new mixing cycle takes place.
+
+In late June 2010, a change in the structure of the mixing code
+introduced a bug: the counter holding the number of history records
+was not properly initialized upon the ending of the preliminary
+siesta-style calculation.
+
+The mixing counter is now properly reset.
+
+modified:
+  Src/scfconvergence_test.F
+
+* In tbtrans some auxiliary files were written to by all the nodes.
+
+(+ Also, make sure that the transiesta capability appears at
+the top of the transiesta output file)
+
+modified:
+  Src/Makefile
+  Util/TBTrans/tbtrans.F
+
+* Avoid reporting unstable inversion in pulayx
+
+Typically, inversion problems in the DIIS procedure occur when the
+error estimate for a step is very small compared to the previous
+ones. This is harmless, and the reporting of a failure in the output
+file is confusing.
+
+In case it is needed, a hook to allow a full diagnosis 
+can be compiled in with the preprocessor flag
+
+DEBUG_PULAY_INVERSE
+
+(+ Also, initialize "found" variable in new_dm.F in transiesta mode)
+
+modified:
+  Src/m_pulay.F90
+  Src/new_dm.F
+
+* Increase field sizes in OCCS file
+
+Some fields overflowed when a large number of k-points was used.
+
+modified:
+  Src/diagk.F
+  Src/diagk_file.F
+
+-----------------------------------------------------------------------
+2011-05-03  12:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-378
+Fix manual re: non-collinear GGA and zmatrix input. FoX cosmetics
+
+* The manual incorrectly stated that GGA was not compatible with
+non-collinear-spin calculations.
+
+The order of the spherical coordinates for the second atom in the
+zmatrix format input is now explicitly stated.
+
+modified:
+  Docs/siesta.tex
+
+* Cosmetic changes to avoid xlf compiler diagnostics in dummy FoX
+
+If the "trap undefined variables" option is enabled in the xlf
+compiler, some stray symbols in the dummy version of the FoX library
+produce diagnostics. They have been re-wrapped.
+
+(Thanks to Oscar Paz)
+
+modified:
+  Src/FoX/common/m_common_attrs.F90
+  Src/FoX/utils/fox_m_utils_uri.F90
+
+-----------------------------------------------------------------------
+2011-04-14  09:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-377
+Avoid the creation of temporary and log files for fdf in parallel
+
+The standard mode of operation of the new fdf library is "cluster", in
+which the root node reads and processes the fdf file(s) and sends
+relevant information to the rest of the nodes. At the end of the setup
+process every node has a private copy of a pre-parsed fdf structure
+that can be consulted quickly.
+
+In the first version by Raul de la Cruz the root node sent raw text
+information to the other nodes, and these used a temporary scratch
+file to dump it to. Later these nodes invoked the digesting routine on
+the scratch file to create the memory structure.
+
+Now the root node serializes its own memory structure and sends it
+over to the other nodes. These just need to de-serialize the
+information and re-create the memory structure.
+
+Log files were also produced by all nodes by default. Now non-root
+nodes create the log files under "/tmp", with names of the form
+"tmp/fdf.log.N", where N is a representation of the MPI rank. Only
+the root node creates a "fdf.log" file in the working directory.
+This is useful for cluster settings in which non-root nodes might not
+be able to write efficiently to common areas.
+
+Any debug files are created in the same way, with names of the form
+"tmp/fdf.debug.N". At the end of the run they will contain a dump
+of the fdf memory structure.
+
+Alberto Garcia, April 2011
+
+modified:
+  Docs/KNOWN.ISSUES.BSC-patch
+  Src/fdf/fdf.F90
+  Src/fdf/parse.F90
+
+
+-----------------------------------------------------------------------
+2011-03-29  13:30:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-376
+Remove earlier patch for calculation of chemical potential
+
+Undo the changes to chempot (and the calling sequences in ordern and
+compute_dm) introduced in November 2007 by P. Ordejon, as they are not
+completely correct. This routine determines an approximate chemical
+potential for O(N) calculations. Note that parallel operation is still
+not possible.
+
+(Did not take back the changes in denmat.F and denmatlomem.F, which
+simply force an unconditional rescaling of the density matrix to
+produce the correct charge density.)
+
+(+ Fixed the code so that arbitrarily large Chebyshev's orders
+are in principle possible in Chempot)
+
+(+ Instrumented the O(N) line-minimization routine to print extra
+information if the preprocessor symbol DEBUG_LINMIN4 is used)
+
+modified:
+  Src/cgwf.F
+  Src/chempot.F
+  Src/compute_dm.F
+  Src/ordern.F
+
+-----------------------------------------------------------------------
+2011-03-22  10:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-375
+Clarify folding warning for gamma-point calculations
+
+For gamma-point calculations with unit cells not large enough to avoid
+interactions with images, a warning was produced even though it was
+only relevant for calculations intended for COOP/COHP analysis. The
+warning now appears only in that case.
+
+The manual has been updated to cover the point above, and also to make
+it clear that the Use.New.Diagk option is not compatible with the
+Diag.Parallel.Over.K mode.
+
+(+ cosmetic changes to avoid compiler warnings related to duplicate
+use statements)
+
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/Makefile
+  Src/hsparse.f
+  Src/m_ts_scattering.F
+
+-----------------------------------------------------------------------
+2011-03-14  10:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-374
+Experimental output comparison tool
+
+A simple "output digest" script in awk extracts key information fields from the output
+file with default precisions, and generates a small file. These digest files can then
+be compared to check for differences.
+
+This is an experimental feature. It is not yet integrated in the automatic test
+framework. Note that the reference output files in Tests/Reference have not yet
+been updated, pending a review.
+
+added:
+  Tests/cmp_digest.sh               ! Script to compare digest files
+  Tests/out_digest.awk              ! Digest generator
+  Tests/out_digest_template.awk     ! Template for optional precision changes
+modified:
+  Src/obj_setup.sh                  ! It now creates a symbolic link to the ref directory.
+
+-----------------------------------------------------------------------
+2011-03-09  16:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-373
+Fix two bugs in Vibra package
+
+The code to read the coordinates-and-masses block did not process the
+masses properly. It now also warns when there are not enough values in
+each line (a common error).
+
+Variable 'nlines' was not properly set in routine 'klines'.
+
+modified:
+  Util/Vibra/Src/klines.f
+  Util/Vibra/Src/recoor.f
+
+-----------------------------------------------------------------------
+2011-03-04  14:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-372
+Re-enable write_rho routine
+
+The write_rho routine had been modified for debugging purposes, but
+was not re-enabled. It now has been brought back to normal.
+
+modified:
+  Src/m_iorho.F
+
+-----------------------------------------------------------------------
+2011-02-25  10:20:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-371
+Fixes in pdosxml and denchar
+
+(Ported from siesta-3.0 branch)
+
+*Some compilers might have trouble with the shorthand
+array syntax used in the update of data arrays in m_pdos.f90.
+The bounds are now explicitly indicated.
+
+(Thanks to Miguel Pruneda)
+
+modified:
+  Util/pdosxml/m_pdos.f90
+
+* In 2D wavefunction mode, denchar was printing two blank lines
+between coordinate blocks.
+
+modified:
+  Util/Denchar/Src/denchar.f  -- removed duplicate 'use' statement
+  Util/Denchar/Src/rhoofr.f   -- interblock spacing
+  Util/Denchar/Src/wavofr.f   --   "
+
+-----------------------------------------------------------------------
 2011-02-18  15:55:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-370
 Re-initialize data array in timer routine
 

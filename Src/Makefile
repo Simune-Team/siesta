@@ -254,7 +254,7 @@ version: version.F90
 	@echo "==> Incorporating information about present compilation (compiler and flags)"
 	@sed "s'SIESTA_ARCH'${SIESTA_ARCH}'g;s'FFLAGS'${FC} ${FFLAGS}'g;s'SIESTA_VERSION'\
                                        $$(cat ${<D}/../version.info)'g" $<  > compinfo.F90
-	@($(MAKE) compinfo.o)
+	@($(MAKE) "FPPFLAGS=$(FPPFLAGS)" "DEFS=$(DEFS)" compinfo.o)
 	@mv compinfo.o version.o
 	#@rm -f compinfo.F90
 	@echo
@@ -401,7 +401,7 @@ cgvc.o: alloc.o conjgr_old.o m_mpi_utils.o parallel.o precision.o sys.o units.o
 cgvc_zmatrix.o: alloc.o conjgr.o m_mpi_utils.o parallel.o precision.o sys.o
 cgvc_zmatrix.o: units.o zmatrix.o
 
-cgwf.o: onmod.o precision.o sys.o
+cgwf.o: onmod.o parallel.o precision.o sys.o
 
 chemical.o: parallel.o precision.o sys.o
 
@@ -547,8 +547,8 @@ grdsam.o: alloc.o dhscf.o parallel.o precision.o siesta_geom.o siesta_options.o
 grdsam.o: sys.o
 
 hsparse.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mneighb.o
-hsparse.o: parallel.o parallelsubs.o precision.o sorting.o sparse_matrices.o
-hsparse.o: sys.o
+hsparse.o: parallel.o parallelsubs.o precision.o siesta_options.o sorting.o
+hsparse.o: sparse_matrices.o sys.o
 
 
 
@@ -759,7 +759,7 @@ minvec.o: cellsubs.o precision.o sorting.o sys.o
 
 mixer.o: atomlist.o iodm_netcdf.o m_broyden_mixing.o m_energies.o
 mixer.o: m_fire_mixing.o m_iodm.o m_mpi_utils.o m_pulay.o m_spin.o m_steps.o
-mixer.o: m_ts_global_vars.o m_ts_iodm.o parallel.o siesta_geom.o
+mixer.o: m_ts_global_vars.o m_ts_iodm.o m_ts_options.o parallel.o siesta_geom.o
 mixer.o: siesta_options.o sparse_matrices.o
 
 mneighb.o: alloc.o precision.o sys.o
@@ -889,9 +889,9 @@ rhoofdsp.o: meshdscf.o meshphi.o precision.o sys.o
 savepsi.o: alloc.o parallel.o parallelsubs.o precision.o
 
 
-scfconvergence_test.o: m_convergence.o m_energies.o m_ts_global_vars.o
-scfconvergence_test.o: m_ts_options.o m_wallclock.o parallel.o siesta_cml.o
-scfconvergence_test.o: siesta_options.o write_subs.o
+scfconvergence_test.o: m_convergence.o m_energies.o m_pulay.o
+scfconvergence_test.o: m_ts_global_vars.o m_ts_options.o m_wallclock.o
+scfconvergence_test.o: parallel.o siesta_cml.o siesta_options.o write_subs.o
 
 schecomm.o: alloc.o
 
@@ -985,9 +985,9 @@ state_init.o: m_steps.o m_ts_global_vars.o m_ts_io.o m_ts_options.o new_dm.o
 state_init.o: overlap.o parallel.o proximity_check.o siesta_cml.o siesta_geom.o
 state_init.o: siesta_options.o sparse_matrices.o sys.o write_subs.o zmatrix.o
 
-struct_init.o: alloc.o atmfuncs.o atomlist.o files.o iopipes.o ioxv.o
-struct_init.o: m_iostruct.o parallel.o periodic_table.o siesta_cml.o
-struct_init.o: siesta_geom.o siesta_master.o siesta_options.o zmatrix.o
+struct_init.o: alloc.o atmfuncs.o atomlist.o files.o ioxv.o m_iostruct.o
+struct_init.o: parallel.o periodic_table.o siesta_cml.o siesta_geom.o
+struct_init.o: siesta_master.o siesta_options.o zmatrix.o
 
 sys.o: parallel.o
 

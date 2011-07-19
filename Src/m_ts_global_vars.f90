@@ -15,9 +15,7 @@ USE precision, only : dp
 
 integer :: TSiscf=0
 
-! Used for mixing of DM OR H.
-real(dp), dimension(:,:), pointer :: VIn => null()
-real(dp), dimension(:,:), pointer :: VOut => null()  
+! Used to hold the "input" H when mixing the Hamiltonian
 real(dp), dimension(:,:), pointer :: Hold => null()   
 
  
