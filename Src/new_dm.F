@@ -632,10 +632,11 @@ C If found, check and update, otherwise initialize with neutral atoms
                
 #endif /* TRANSIESTA */
            enddo
-           call de_alloc(num_tmp)
-           call de_alloc(listptr_tmp)
-           call de_alloc(list_tmp)
-           call de_alloc(D_tmp)
+           call de_alloc(num_tmp,name='num_tmp',routine=myName)
+           call de_alloc(listptr_tmp,name='listptr_tmp',routine=myName)
+           call de_alloc(list_tmp,name='listd',
+     .                   routine='read_dynamic_dm')
+           call de_alloc(D_tmp,name='dm',routine='read_dynamic_dm')
            call de_alloc(work)  ! Allocated by change_sparsity
 #ifdef TRANSIESTA
            if(ts_found) call de_alloc(EDM_tmp)
