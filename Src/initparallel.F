@@ -92,6 +92,8 @@ C Set spatial decomposition flag according to SCF method
 
       call fdf_global_get(want_spatial_decomposition,
      $     'UseSpatialDecomposition', .true.)
+      lspatial = .false.
+#ifdef MPI
       if (isolve.eq.1) then
          if (want_domain_decomposition) then
             use_dd = .true.
@@ -103,6 +105,7 @@ C Set spatial decomposition flag according to SCF method
       else
          lspatial = .false.
       endif
+#endif
 
 C Spatial decomposition flag
 
@@ -266,16 +269,6 @@ C
          endif
 
       endif
-
-
-c$$$!AG**       THIS IS A BUG: Only the first node is processed!!
-c$$$        nOrbPerNode(1) = maxorb
-c$$$        do ii = 1,maxorb
-c$$$          nL2G(ii,1) = ii
-c$$$          nG2L(ii) = ii
-c$$$          nNode(ii) = 0
-c$$$        enddo
-
 
       if (use_dd) then
         call preSetOrbitLimits( no_u )

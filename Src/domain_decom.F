@@ -363,6 +363,7 @@ C ==================================================================
 
 !       Use metis library to create a Domain decomposition
         metis_options(1) = 0
+#ifdef ON_DOMAIN_DECOMP
         if (nparts .gt. 8 ) then
           call METIS_PartGraphKway( no, jja, iia, dummy, dummy, 0,
      &                              1, nparts, metis_options,
@@ -372,6 +373,13 @@ C ==================================================================
      &                                   1, nparts, metis_options,
      &                                   edgecut, partition )
         endif
+#else
+        ! This statement should not be reached if we caught
+        ! the initial attempt to request domain decomposition without
+        ! the proper symbol (in siesta_options)
+        !
+        call die("Need to compile with ON_DOMAIN_DECOMP support")
+#endif
 
         call de_alloc( jja, 'jja', 'domainDecom' )
         call de_alloc( iia, 'iia', 'domainDecom' )
@@ -495,16 +503,10 @@ C ==================================================================
      &                         offsetB
       integer,      pointer :: adj(:), xadj(:), perI(:), invI(:),
      &                         perB(:), invB(:), perR(:), invR(:)
-#ifdef _SLEPC_
-      integer               :: offSlepc
-#endif
 
       nullify(gperm,ginvp)
       call re_alloc( gperm, 1, no, 'gperm', 'domainDecom' )
       call re_alloc( ginvp, 1, no, 'ginvp', 'domainDecom' )
-#ifdef _SLEPC_
-      call re_alloc( slepc_perm, 1, no, 'slepc_perm', 'domainDecom' )
-#endif
 
       maxni = 1
       do dom= 1, Nodes
@@ -532,9 +534,7 @@ C ==================================================================
       metisOpt = 0
       offsetI  = 0
       offsetB  = gni
-#ifdef _SLEPC_
-      offSlepc = 0
-#endif
+
       do dom= 1, Nodes
 !       Loop over each subdomain: separate interior and boundary nodes
         call createSubgraph( no, listhTot, listhPtrTot, dom,
@@ -542,21 +542,17 @@ C ==================================================================
 !       Number interior nodes
         noloc = ginde(2,dom)
         if (noloc.gt.0) then
+#ifdef ON_DOMAIN_DECOMP
           call METIS_NodeND( noloc, xadj, adj, 1, metisOpt, perR, invR )
+#endif
 
           do ii = 1, noloc
             kk        = invI(ii)
             jj        = perR(ii) + offsetI
             gperm(kk) = jj
             ginvp(jj) = kk
-#ifdef _SLEPC_
-            slepc_perm(kk) = perR(ii) + offSlepc
-#endif
           end do
           offsetI = offsetI + noloc
-#ifdef _SLEPC_
-          offSlepc = offSlepc + noloc
-#endif
         endif
 !       Number boundary nodes
         boloc = ginde(4,dom)
@@ -565,14 +561,8 @@ C ==================================================================
           jj       = ii + offsetB
           gperm(kk) = jj
           ginvp(jj) = kk
-#ifdef _SLEPC_
-          slepc_perm(kk) = ii + offSlepc
-#endif
         end do
         offsetB = offsetB + boloc
-#ifdef _SLEPC_
-        offSlepc = offSlepc + boloc
-#endif
       enddo
       call de_alloc(  adj,  'adj', 'domainDecom' )
       call de_alloc( xadj, 'xadj', 'domainDecom' )

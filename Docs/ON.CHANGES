@@ -1,4 +1,21 @@
 ----------------------
+July 20, 2011, A. Garcia                    siesta-3.0-351-on-10
+Hide calls to Metis library in serial mode
+
+Mentions to the Metis library are hidden in serial mode by wrapping
+them in preprocessor blocks controlled by the symbol
+
+ON_DOMAIN_DECOMP
+
+which needs to be specified at (parallel) compile time if domain decomposition
+is desired.
+
+modified:
+  Src/domain_decom.F
+  Src/initparallel.F
+  Src/siesta_options.F90
+
+----------------------
 July 20, 2011, A. Garcia                    siesta-3.0-351-on-9
 More comments in atomlwf and on_subs
 

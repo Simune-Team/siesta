@@ -1402,6 +1402,13 @@ MODULE siesta_options
                     .and. (.not. (idyn==5 .and. ianneal/=1) )
 
     call fdf_global_get(want_domain_decomposition, 'UseDomainDecomposition', .false.)
+#ifndef ON_DOMAIN_DECOMP
+#ifdef MPI
+    if (want_domain_decomposition) then
+        call die("Need to compile with ON_DOMAIN_DECOMP support")
+    endif
+#endif
+#endif
 
     ! Harris Forces?. Then DM.UseSaveDM should be false (use always
     ! Harris density in the first SCF step of each MD step), and
