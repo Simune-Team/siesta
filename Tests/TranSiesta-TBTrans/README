@@ -1,0 +1,57 @@
+! 
+! The files in this directory are part of the SIESTA package.
+!
+! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
+! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
+! and J.M.Soler, 1996- .
+! 
+! Use of this software constitutes agreement with the full conditions
+! given in the SIESTA license, as signed by all legitimate users.
+!
+!-------------------------------------------------------------------
+
+Automated tests for TranSiesta-TBTrans
+
+A copy of the Tests directory is placed by the Src/obj_setup.sh script
+into the compilation directory (which by default is Obj, but any number of
+compilation directories can be created, as explained in the manual --
+we will refer to this compilation directory as OBJDIR). The original
+Tests directory should therefore be kept clean, and all the work done
+in the relevant copy.
+
+Remember that the target "transiesta" has to be specified in OBJDIR
+for compilation of TranSiesta:
+
+make transiesta
+
+For the default mode of operation, go into any subdirectory of the
+current directory (OBJDIR/Tests/TranSiesta-TBTrans) and type
+'make'. This will execute a script that first runs the "electrode"
+calculation, and then the "scattering region" calculation and the
+TBTrans post-processing.
+
+Reference output files can be found in directory
+Tests/Reference/TranSiesta-TBTrans.
+
+To use a different TranSiesta executable (i.e., other than the default,
+which is the one compiled in OBJDIR), use:
+
+make TS=/full/path/to/transiesta
+
+This technique is also useful for other execution environments. For
+example, to run OBJDIR/transiesta in parallel (assuming the right path
+and libraries for mpirun are set):
+
+make TS="mpirun -np 2 ../../../transiesta"
+
+The source for TBTrans resides in Util/TBTrans. To guarantee that the
+TBTrans executable is compatible with the TranSiesta executable in
+OBJDIR, TBTrans is re-compiled with the appropriate settings in
+OBJDIR/arch.make.  
+
+To override the default TBTrans executable in Util/TBTrans, TBT can be
+specified in the command line:
+
+make TBT=/full/path/to/tbtrans
+
+
