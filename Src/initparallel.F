@@ -19,6 +19,7 @@ C
       use fdf
       use m_fdf_global, only: fdf_global_get
       use siesta_options, only: want_domain_decomposition
+      use siesta_options, only: want_spatial_decomposition
       use parallel,     only : Node, Nodes, BlockSize, ProcessorY
       use parallelsubs, only : set_processorY, set_BlockSizeDefault
       use parallelsubs, only : set_processorYdefault
@@ -72,7 +73,6 @@ C
       real(dp)      :: rcmaxopt
       real(dp), save:: tiny = 1.0d-6
 
-      logical :: want_spatial_decomposition 
 
 C  Initialise on first call
       if (first) then
@@ -90,8 +90,6 @@ C  Initialise on first call
 
 C Set spatial decomposition flag according to SCF method
 
-      call fdf_global_get(want_spatial_decomposition,
-     $     'UseSpatialDecomposition', .true.)
       lspatial = .false.
 #ifdef MPI
       if (isolve.eq.1) then

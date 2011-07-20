@@ -479,9 +479,9 @@ C Restore conect array for next orbital io
           enddo       ! io
         enddo         ! ia
    
-        print "(a5,i3,a40,3i8)",
-     $         "Node: ", Node, "in hsparse nuo, nuotot, nlhmax: ",
-     $         nuo, nuotot, nlhmax
+!!        print "(a5,i3,a40,3i8)",
+!!     $         "Node: ", Node, "in hsparse nuo, nuotot, nlhmax: ",
+!!     $         nuo, nuotot, nlhmax
 
 C Initialize listsc
       call listsc_init( nsc, nuotot )

@@ -1,4 +1,20 @@
 ----------------------
+July 20, 2011, A. Garcia                    siesta-3.0-351-on-12
+Do not use Spatial decomposition by default
+
+The new default is now block-cyclic decomposition.
+
+UseDomainDecomposition and
+UseSpatialDecomposition 
+
+control the other two options.
+
+modified:
+  Src/hsparse.f
+  Src/initparallel.F
+  Src/siesta_options.F90
+
+----------------------
 July 20, 2011, A. Garcia                    siesta-3.0-351-on-11
 Stop if O(N) chemical potential calculation is requested
 
