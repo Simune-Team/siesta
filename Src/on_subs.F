@@ -47,6 +47,11 @@ C  Initialize numt list
       enddo
 
 C  Construct information for transpose of C 
+      ! numct(b_l): number of coefficients
+      ! handled here (for 1:no_cl) for the
+      ! local band b_l
+      ! By definition, a band is local if
+      ! this number is not zero
       do mu = 1,no_cl
         do imu = 1,numc(mu)
           i = listc(imu,mu)

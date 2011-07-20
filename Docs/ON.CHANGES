@@ -1,4 +1,12 @@
 ----------------------
+July 20, 2011, A. Garcia                    siesta-3.0-351-on-9
+More comments in atomlwf and on_subs
+
+modified:
+  Src/atomlwf.F
+  Src/on_subs.F
+
+----------------------
 May 10, 2011, A. Garcia                    siesta-3.0-351-on-8
 Put some O(N) routines in modules and declare intents
 

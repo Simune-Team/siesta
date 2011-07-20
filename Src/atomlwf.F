@@ -198,7 +198,21 @@ C Work out which basis functions are required in local C copy
         ! These are just identity mappings,
         ! since the first no_l entries are
         ! the same in the no_l and the no_cl sets
+
+        ! nct2p is just a filter: if >0, its argument
+        ! belongs to the (partial) set of indexes
+        ! that go from 1 to no_l. It could really be
+        ! a logical mask. It is always used as
+        ! if (nct2p(i)>0) then...
+
+        ! ncp2t is just the identity over 1:no_l,
+        ! where it is used in the rest of the program
+
+        ! Both arrays are dimensioned to no_u, even though
+        ! only the first no_l entries are used for ncP2T.
+
         ncP2T(mul) = ncG2L(nL2G(mul,Node+1)) ! ncP2T(mul) = mul
+        ! Note also that the range of ncG2L is 1:no_cl, 
         ncT2P(ncG2L(nL2G(mul,Node+1))) = mul ! ncT2P(mul) = mul
       enddo
 
@@ -245,10 +259,13 @@ C ........................
 
 C Calculate maximum length in unit cell ......................................
 C determine maximum cell length
+      !AG: Possible bug: cell vectors are given by the columns of cell!
       rmax = 0.0d0
       do i = -1,1
         do j = -1,1
           do k = -1,1
+            !AG It should be
+            ! rr(1) = i*cell(1,1) + j*cell(1,2) + k*cell(1,3)
             rr(1) = i*cell(1,1) + j*cell(2,1) + k*cell(3,1)
             rr(2) = i*cell(1,2) + j*cell(2,2) + k*cell(3,2)
             rr(3) = i*cell(1,3) + j*cell(2,3) + k*cell(3,3)
@@ -284,15 +301,18 @@ C Initialize routine for neighbour search
 C Allocate local memory
       call re_alloc(indexloc,1,max(maxnna,natoms),name='indexloc')
 
-      index = 0
+      index = 0   ! Counter for total number of LWF
       loop_ia: do ia = 1,natoms
 
         if (2.0*rcoor .lt. rmax) then
-C Look for neighbours of atom ia
+          ! Localization size smaller than max cell size
+          ! Look for neighbours of atom ia
           call mneighb(cell,rcoor,natoms,xa,ia,0,nna)
           ! Reallocate in case nna has increased  (Tight form)
           call re_alloc(indexloc,1,nna,name='indexloc',routine="cspa")
         else
+          ! Localization size greater than max cell size
+          ! We can treat all atoms in the cell as neighbors
           ! Make sure we have enough space
           ! (Cleaner alternative to initial allocation with  
           ! max(maxnna,natoms)
@@ -364,7 +384,7 @@ C loop over the neighbors of ia within rcoor
                 if (numc(mul) .gt. maxnc) then
                   ! Reallocate all arrays that depend on maxnc
                   maxnc = maxnc + 50   ! this is not optimal
-                                       ! but the arrays will be shrunk
+                                       ! but the arrays could be shrunk
                                        ! in routine ordern
                   call re_alloc(listc,1,maxnc,1,no_cl,name='listc')
                   call re_alloc(c,1,maxnc,1,no_cl,1,nspin,name='c')
@@ -374,21 +394,28 @@ C loop over the neighbors of ia within rcoor
                 nct = nct + 1            ! number of coefficients so far
 
                 ! Find out structure of F and Ft matrices
-                !   find orbitals which interact with mu
+                ! F = S*C
+                !   find orbitals (nu, global index) which interact with mu
 
                 if (ncT2P(mul).gt.0) then
+                  ! mul is one of 1:no_l
                   mull = ncT2P(mul)
-                  indmu = listhptr(mull)  !!AG** Possible bug
-                                          !! mull (=mul) can be > no_l
+                  indmu = listhptr(mull)  
                   do imu = 1,numh(mull)
                     nu = listh(indmu+imu)
-                    if (ilist(nu) .eq. 0) then
+                    if (ilist(nu) .eq. 0) then  ! Avoid overcounting
                       ilist(nu) = 1
                       numft(nu) = numft(nu) + 1
                       nf = nf + 1
                     endif
                   enddo
                 endif
+                ! At the end of this process, numft(nu) will contain 
+                ! the number of locally managed orbitals (indexes 1:no_l)
+                ! that interact with nu. nf will be the total number of such interactions.
+                ! It is somehow the "sparsity" of the transpose of the S and H matrices
+                ! But note that numft is deallocated here, and only nftmax = max(numft(:))
+                ! is retained.
 
                 ! Assign random guess for orbitals in atom ia if iopt = 0
                 ! Note: only those on atom ia, to avoid duplication of work
@@ -513,6 +540,10 @@ C  (or the number of electrons)
               nelectr1 = nelectr - nelectr2
             else if (ioptlwf .eq. 2) then
               !AG: Is this right?
+              if ( (nelectr/2)*2 .ne. nelectr) then
+                 call
+     $        die("Check Ordejon-Mauri Func. indexj assignment in cspa")
+              endif
               indexj = ( ( nelectr / 2 ) )
             else
               call die('cspa: Wrong functional option in cspa')
