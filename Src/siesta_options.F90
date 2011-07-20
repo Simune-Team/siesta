@@ -822,6 +822,9 @@ MODULE siesta_options
     ! Option to calculate the Chemical potential in O(N)
     ! Option to use the Chemical Potential calculated instead
     ! of the eta variable of the input
+
+    ! NOTE: This does not yet work in parallel
+
     call fdf_global_get(noeta,'ON.ChemicalPotentialUse',.false.)
     if (noeta) then
       ! if so, we must (obviously) calculate the chemical potential
@@ -831,6 +834,11 @@ MODULE siesta_options
       call fdf_global_get(chebef,'ON.ChemicalPotential',.false.)
     endif
 
+#ifdef MPI
+    if (chebef) then
+	call die("ON.ChemicalPotential(Use) options do not work with MPI")
+    endif		
+#endif
 
     ! Cutoff radius to calculate the Chemical Potential by projection
     call fdf_global_get( rcoorcp, 'ON.ChemicalPotentialRc', &

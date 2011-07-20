@@ -1,4 +1,16 @@
 ----------------------
+July 20, 2011, A. Garcia                    siesta-3.0-351-on-11
+Stop if O(N) chemical potential calculation is requested
+
+The code in chempot is not correctly parallelized yet.  Now the
+program stops at the beginning of the run if any of the relevant fdf
+options is enabled.
+
+modified:
+  Src/siesta_options.F90
+  Docs/siesta.tex
+
+----------------------
 July 20, 2011, A. Garcia                    siesta-3.0-351-on-10
 Hide calls to Metis library in serial mode
 
