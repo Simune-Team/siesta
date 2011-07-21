@@ -81,6 +81,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
 c Declarations:
 c
+      integer :: next
       integer ival(*)
       double precision rval(*)
       complex cval(*)
@@ -385,6 +386,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
 c Declarations:
 c
+      integer :: next
       integer i, rows, cols, nnz, iunit
       integer count
       character mmhead*14
@@ -752,7 +754,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c Convert uppercase letters to lowercase letters in string with
 c starting postion pos and length len.
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc      
-      integer pos, len
+      integer pos, len, i, k
       character*(*) string
 
       character*26 lcase, ucase
@@ -779,7 +781,7 @@ c     Count is set to the length of the word found.
 c     
 c 30-Oct-96   Bug fix: fixed non-ansi zero stringlength
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc      
-      integer slen, start, next, begin, space, wlen
+      integer slen, start, next, begin, space, wlen, i
       character*(*) word
       character*(*) string
 

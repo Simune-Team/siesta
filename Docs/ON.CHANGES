@@ -1,4 +1,11 @@
 ----------------------
+July 21, 2011, A. Garcia                    siesta-3.0-351-on-13
+Declare variables in mmio.F
+
+modified:
+  Src/mmio.F
+
+----------------------
 July 20, 2011, A. Garcia                    siesta-3.0-351-on-12
 Do not use Spatial decomposition by default
 
