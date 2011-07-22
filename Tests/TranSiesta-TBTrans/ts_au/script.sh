@@ -58,7 +58,6 @@ do
   cd Scat_$SCAT
   ln ../../Au.psf .
   ln ../../${SCAT}.fdf .
-  ${TS} < ${SCAT}.fdf > ${SCAT}.out
   # Copy the electrode's .TSHS
   ln ../Elec/${ELEC}.TSHS .
   $TS < ${SCAT}.fdf > ${SCAT}.out

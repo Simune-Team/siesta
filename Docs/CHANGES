@@ -5,6 +5,15 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2011-07-22  14:45:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-23
+Fix a script in the TranSiesta-TBTrans/ts_au test
+
+A duplicate line was causing a hard-to-fathom error.
+
+modified:
+  Tests/TranSiesta-TBTrans/ts_au/script.sh
+
+------------------------------------------------------------------------
 2011-06-21  14:20:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-22
 Update TranSiesta tests. New reference outputs. Cosmetics
 
