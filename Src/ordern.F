@@ -14,7 +14,7 @@
 !
       CONTAINS
 
-      subroutine ordern(usesavelwf,ioptlwf,natoms,nbasis,nbasisloc,
+      subroutine ordern(usesavelwf,ioptlwf,natoms,no_u,no_l,
      .                  lasto,isa,qa,rcoor,rh,cell,xa,iscf,istep,
      .                  itmax,ftol,eta,enum,nhmax,numh,listhptr,
      .                  listh,h,s,chebef,noeta,rcoorcp,beta,ipcheb,
@@ -33,8 +33,8 @@ C                                0 = Read blindly from disk
 C                                1 = Functional of Kim et al.
 C                                2 = Functional of Ordejon-Mauri
 C integer natoms               : Number of atoms
-C integer nbasis               : Number of basis orbitals globally
-C integer nbasisloc            : Number of basis orbitals locally
+C integer no_u               : Number of basis orbitals globally
+C integer no_l            : Number of basis orbitals locally
 C integer lasto(0:natoms)      : Index of last orbital of each atom
 C integer isa(natoms)          : Species index of each atom
 C real*8 qa(natoms)            : Neutral atom charge
@@ -52,11 +52,11 @@ C real*8 eta(2)                : Fermi level parameter of Kim et al.
 C real*8 enum                  : Total number of electrons
 C integer nhmax                : First dimension of listh and H, and maximum
 C                                number of nonzero elements of each row of H
-C integer numh(nbasis)         : Control vector of H matrix
+C integer numh(no_u)         : Control vector of H matrix
 C                                (number of nonzero elements of each row of H)
 C integer listh(nhmax)         : Control vector of H matrix
 C                                (list of nonzero elements of each row of H)
-C integer listhptr(nbasis)     : Control vector of H matrix
+C integer listhptr(no_u)     : Control vector of H matrix
 C                                (pointer to start of row in listh / H)
 C real*8 h(nhmax,nspin)        : Hamiltonian matrix (sparse)
 C real*8 s(nhmax)              : Overlap matrix (sparse)
@@ -83,12 +83,16 @@ C  Modules
       use precision, only: dp
       use fdf
       use alloc
-      use on_main
+      use on_main,    only: c, cold, listc, listcold, numc, numcold
+      use on_main,    only: ncg2l, ncl2g, ncp2t, nct2p
+      use on_main,    only: xi, g, hg
+
       use parallel,  only : IONode, Node, NOdes
       use siesta_cml
       use sys,       only : die
       use units,     only : eV
       use m_chempot, only : chempot
+      use m_cgwf,    only : cgwf
 #ifdef MPI
       use globalise,  only: setglobalise, globaliseC
       use m_mpi_utils, only: globalize_sum, globalize_max  
@@ -96,30 +100,33 @@ C  Modules
 
       implicit none
 
-      integer 
+      integer, intent(in) :: 
      .  ioptlwf, ipcheb, iscf, istep, itmax, natoms, 
-     .  nbasis, nbasisloc, nhmax, nspin
+     .  no_u, no_l, nhmax, nspin
 
-      integer
+      integer, intent(in) ::
      .  isa(natoms), lasto(0:natoms), listh(nhmax), 
-     .  listhptr(nbasis), numh(nbasis)
+     .  listhptr(no_l), numh(no_l)
 
-      real(dp) ::
-     .  beta, cell(3,3), dm(nhmax,nspin), Ecorrec, edm(nhmax,nspin), 
-     .  enum, eta(2), ftol, h(nhmax,nspin), qa(natoms), rcoor, rcoorcp,
+      real(dp) , intent(inout) :: eta(2)
+      real(dp) , intent(in) ::
+     .  beta, cell(3,3),
+     .  enum, ftol, h(nhmax,nspin), qa(natoms), rcoor, rcoorcp,
      .  rh, s(nhmax), xa(3,natoms), qs(nspin)
 
-      logical
-     .  chebef, noeta, usesavelwf
+      real(dp) , intent(out) :: dm(nhmax,nspin), edm(nhmax,nspin)
+      real(dp) , intent(out) :: Ecorrec
+
+      logical, intent(in)    :: chebef, noeta, usesavelwf
 
 C Internal variables ..........................................................
       integer
      .  in, io, iopt, iord, is, iter, ncmax, nctmax, 
-     .  nfmax, nftmax, nhijmax, nbands, nh
+     .  nfmax, nftmax, nhijmax, nbands, nh, gen_istep
 
       integer, save :: iterm = 0
       integer, save :: maxnc = 1
-      integer, save :: nbasisCloc
+      integer, save :: no_cl
 
 #ifdef MPI
       integer :: ntmp
@@ -131,7 +138,7 @@ C Internal variables ..........................................................
      .  aux(:,:)
 
       real(dp) ::
-     .  fe(2), qtot(nspin)
+     .  fe, qtot(nspin)
 
       real(dp) ::
      .  chpot,emax,emin
@@ -166,20 +173,20 @@ C Nullify pointers
         nullify(hg)
 
 C Set default sizes for order N arrays
-        call re_alloc(listc,1,maxnc,1,nbasisloc,name='listc')
-        call re_alloc(listcold,1,maxnc,1,nbasisloc,name='listcold')
-        call re_alloc(numc,1,nbasis,name='numc')
-        call re_alloc(numcold,1,nbasis,name='numcold')
-        call re_alloc(ncG2L,1,nbasis,name='ncG2L')
-        call re_alloc(ncL2G,1,nbasis,name='ncL2G')
-        call re_alloc(ncP2T,1,nbasis,name='ncP2T')
-        call re_alloc(ncT2P,1,nbasis,name='ncT2P')
-        call re_alloc(c,1,maxnc,1,nbasisloc,1,nspin,name='c')
-        call re_alloc(cold,1,maxnc,1,nbasisloc,1,nspin,name='cold')
-        call re_alloc(xi,1,maxnc,1,nbasisloc,1,nspin,name='xi')
-        call re_alloc(g,1,maxnc,1,nbasisloc,1,nspin,name='g')
-        call re_alloc(hg,1,maxnc,1,nbasisloc,1,nspin,name='hg')
-        call re_alloc(aux,1,2,1,nbasis,name='aux')
+        call re_alloc(listc,1,maxnc,1,no_l,name='listc')
+        call re_alloc(listcold,1,maxnc,1,no_l,name='listcold')
+        call re_alloc(numc,1,no_u,name='numc')
+        call re_alloc(numcold,1,no_u,name='numcold')
+        call re_alloc(ncG2L,1,no_u,name='ncG2L')
+        call re_alloc(ncL2G,1,no_u,name='ncL2G')
+        call re_alloc(ncP2T,1,no_u,name='ncP2T')
+        call re_alloc(ncT2P,1,no_u,name='ncT2P')
+        call re_alloc(c,1,maxnc,1,no_l,1,nspin,name='c')
+        call re_alloc(cold,1,maxnc,1,no_l,1,nspin,name='cold')
+        call re_alloc(xi,1,maxnc,1,no_l,1,nspin,name='xi')
+        call re_alloc(g,1,maxnc,1,no_l,1,nspin,name='g')
+        call re_alloc(hg,1,maxnc,1,no_l,1,nspin,name='hg')
+        call re_alloc(aux,1,2,1,no_u,name='aux')
 
       endif
 
@@ -211,30 +218,32 @@ C  structure of localized wave functions, and initial guess .............
           iopt = 1
         endif
 C  Call cspa to initialise Wannier function related data structures
-        call cspa(ioptlwf,iopt,natoms,nbasis,nbasisloc,lasto,isa,
+        call cspa(ioptlwf,iopt,natoms,no_u,no_l,lasto,isa,
      .            qa,rcoor,rh,cell,xa,nhmax,numh,listh,
      .            listhptr,maxnc,ncmax,nctmax,nfmax,nftmax,
-     .            nhijmax,nbands,nbasisCloc,nspin,Node)
+     .            nhijmax,nbands,no_cl,nspin,Node)
       endif
 
 C  Resize arrays in case maxnc has changed
-      call re_alloc(listc,1,maxnc,1,nbasisCloc,name='listc')
-      call re_alloc(listcold,1,maxnc,1,nbasisloc,name='listcold')
-      call re_alloc(c,1,maxnc,1,nbasisCloc,1,nspin,name='c')
-      call re_alloc(cold,1,maxnc,1,nbasisloc,1,nspin,name='cold')
-      call re_alloc(xi,1,maxnc,1,nbasisCloc,1,nspin,name='xi')
-      call re_alloc(g,1,maxnc,1,nbasisCloc,1,nspin,name='g')
-      call re_alloc(hg,1,maxnc,1,nbasisCloc,1,nspin,name='hg')
+!!!! AG: Shrink if needed (maxnc increased in chunks of 50 in cspa)
+!!
+      call re_alloc(listc,1,maxnc,1,no_cl,name='listc')
+      call re_alloc(listcold,1,maxnc,1,no_l,name='listcold')
+      call re_alloc(c,1,maxnc,1,no_cl,1,nspin,name='c')
+      call re_alloc(cold,1,maxnc,1,no_l,1,nspin,name='cold')
+      call re_alloc(xi,1,maxnc,1,no_cl,1,nspin,name='xi')
+      call re_alloc(g,1,maxnc,1,no_cl,1,nspin,name='g')
+      call re_alloc(hg,1,maxnc,1,no_cl,1,nspin,name='hg')
 
       if (iscf.eq.1.and.istep.eq.1) then
         if (usesavelwf) then
 C  Read Wannier functions if file is present
-          call iolwf( 'read', nbasis, nbasisCloc, nbasisloc, maxnc, 
+          call iolwf( 'read', no_u, no_cl, no_l, maxnc, 
      .                found, nspin)
           if (found) then
 C  Find out number of bands
             nbands = 0
-            do io = 1,nbasisloc
+            do io = 1,no_l
               do in = 1,numcold(io)
                 nbands = max( nbands, listcold(in,io) )
               enddo
@@ -245,7 +254,7 @@ C  Find out number of bands
 #endif
 C  Copy coefficients read in from Cold to C ready for extrapolon
             do is = 1,nspin
-              do io = 1,nbasisloc
+              do io = 1,no_l
                 do in = 1,numcold(io)
                   c(in,io,is) = cold(in,io,is)
                 enddo
@@ -261,7 +270,7 @@ C and HOMO and LUMO levels ..........
       if (chebef) then
 
         call chempot(h,s,numh,listhptr,listh,rcoorcp,ipcheb,beta,
-     .               lasto,cell,xa,enum,nbasis,nbasisloc,natoms,
+     .               lasto,cell,xa,enum,no_u,no_l,natoms,
      .               nhmax,chpot,emax,emin)
 
         if (ionode) then
@@ -291,7 +300,7 @@ C  iscf = 1 (that is, if we are in a new MD step) ...................
           write(6,"(/a,i3)") 'ordern: ioptlwf =',ioptlwf
         endif
         if (ioptlwf.eq.0) then
-          do io = 1,nbasisloc
+          do io = 1,no_l
             numc(io) = numcold(io)
             do in = 1,numcold(io)
               listc(in,io) = listcold(in,io)
@@ -303,22 +312,21 @@ C  iscf = 1 (that is, if we are in a new MD step) ...................
 C If LWF's have just been read from disk, 
 C call extrapol with istep = 2 and iord = 1
 C to make it update the structure of c, if needed
-        itest = .false.
+        gen_istep = istep
         if (istep.eq.1 .and. usesavelwf .and. found) then
-          istep = 2
+          gen_istep = 2
           iord = 0
-          itest = .true.
         endif
-        call extrapolon(istep,iord,nspin,nbasis,nbasisCloc,maxnc,
+        call extrapolon(gen_istep,iord,nspin,no_u,no_cl,maxnc,
      .                  numc,listc,aux,numcold,listcold,cold,c,
-     .                  nbasisloc)
+     .                  no_l)
 
 #ifdef MPI
-        if (istep.ne.1) then
+        if (gen_istep.ne.1) then
 
 C Zero parts of C that current Node does not have primary responsibility for
           do is = 1,nspin
-            do io = nbasisloc+1,nbasisCloc
+            do io = no_l+1,no_cl
               do in = 1,numc(io)
                 c(in,io,is) = 0.0d0
               enddo
@@ -326,30 +334,27 @@ C Zero parts of C that current Node does not have primary responsibility for
           enddo
 
 C Globalise C to get values for rows from other nodes
-          call setglobalise(nbasis,nbasisloc,nbasisCloc,nhmax,numh,
+          call setglobalise(no_u,no_l,no_cl,nhmax,numh,
      .                    listh,listhptr,Node,Nodes)
-          call globaliseC(nbasisCloc,maxnc,numc,c,nspin,Node)
+          call globaliseC(no_cl,maxnc,numc,c,nspin,Node)
 
         endif
 #endif
 
-C If LWF's have just been read, restore istep
-        if (itest) istep = 1
-        itest = .false.
       endif
 
 C Call the CG routines ...............................................
       if (iscf .eq. 1) iterm = 0
-      call cgwf(iscf,itmax,ftol,eta,qs,nbasis,nbasisloc,nbands,
+      call cgwf(iscf,itmax,ftol,eta,qs,no_u,no_l,nbands,
      .          nhmax,numh,listh,listhptr,maxnc,h,s,fe,iter,dm,
-     .          edm,nbasisCloc,nspin,Node,Nodes)
+     .          edm,no_cl,nspin,Node,Nodes)
       iterm = max(iterm,iter)
 
 C Calculate correction to the total energy from Kim's functional .....
 C First calculate total charge of the solution
       qtot(1:nspin) = 0.0d0
-      if (nbasisloc.gt.0) then
-        nh = listhptr(nbasisloc) + numh(nbasisloc)
+      if (no_l.gt.0) then
+        nh = listhptr(no_l) + numh(no_l)
         do is = 1,nspin
           do in = 1,nh
             qtot(is) = qtot(is) + dm(in,is) * s(in)
@@ -377,7 +382,7 @@ C Global reduction of qtot
       endif
 
 C Save LWF's to disk .................................................
-      call iolwf( 'write', nbasis, nbasisCloc, nbasisloc, maxnc, 
+      call iolwf( 'write', no_u, no_cl, no_l, maxnc, 
      .            found, nspin)
 
       frstme = .false.

@@ -8,9 +8,12 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine cgwf(iscf,itmax,ftol,eta,qs,nbasis,nbasisloc,nbands,
+      module m_cgwf
+      public :: cgwf
+      CONTAINS
+      subroutine cgwf(iscf,itmax,ftol,eta,qs,no_u,no_l,nbands,
      .                nhmax,numh,listh,listhptr,ncmax,h,s,fe,iter,dm,
-     .                edm,nbasisCloc,nspin,Node,Nodes)
+     .                edm,no_cl,nspin,Node,Nodes)
 C *******************************************************************
 C Conjugate gradient minimization of the Kim et al. functional
 C Returns the converged WF. coefficients and the density matrices.
@@ -24,56 +27,64 @@ C real*8 ftol                 : Relative tolerance in CG minimization
 C                                (recomended: 1e-8)
 C real*8 eta                  : Fermi level parameter of Kim et al.
 C real*8 qs(nspin)            : Total number of electrons
-C integer nbasis              : Global number of atomic orbitals
-C integer nbasisloc           : Local number of atomic orbitals
+C integer no_u              : Global number of atomic orbitals
+C integer no_l           : Local number of atomic orbitals
 C integer nbands              : Number of Localized Wave Functions
 C integer nhmax               : First dimension of listh and H, and maximum
 C                               number of nonzero elements of each row of H
-C integer numh(nbasis)        : Control vector of H matrix
+C integer numh(no_u)        : Control vector of H matrix
 C                               (number of nonzero elements of each row of H)
 C integer listh(nhmax)        : Control vector of H matrix
 C                               (list of nonzero elements of each row of H)
-C integer listhptr(nbasis)    : Control vector of H matrix
+C integer listhptr(no_u)    : Control vector of H matrix
 C                               (pointer to start of rows in listh/H)
 C integer ncmax               : First dimension of listc and C, and maximum
 C                               number of nonzero elements of each row of C
-C integer numc(nbasis)        : Control vector of C matrix
+C integer numc(no_u)        : Control vector of C matrix
 C                               (number of nonzero elements of each row of C)
-C integer listc(ncmax,nbasis) : Control vector of C matrix
+C integer listc(ncmax,no_u) : Control vector of C matrix
 C                               (list of nonzero elements of each row of C)
-C real*8 h(nhmax,nbasis,nspin): Hamiltonian matrix (sparse)
-C real*8 s(nhmax,nbasis)      : Overlap matrix (sparse)
-C real*4 g(ncmax,nbasis)      : Auxiliary space matrix
-C real*4 hg(ncmax,nbasis)     : Auxiliary space matrix
-C real*8 xi(ncmax,nbasis)     : Auxiliary space matrix (gradients)
+C real*8 h(nhmax,no_u,nspin): Hamiltonian matrix (sparse)
+C real*8 s(nhmax,no_u)      : Overlap matrix (sparse)
+C real*4 g(ncmax,no_u)      : Auxiliary space matrix
+C real*4 hg(ncmax,no_u)     : Auxiliary space matrix
+C real*8 xi(ncmax,no_u)     : Auxiliary space matrix (gradients)
 C integer nspin               : Number of spins
 C ******************** INPUT AND OUTPUT *****************************
-C real*8 c(ncmax,nbasis)      : Localized Wave Functions (sparse)
+C real*8 c(ncmax,no_u)      : Localized Wave Functions (sparse)
 C ************************* OUTPUT **********************************
 C real*8 fe                   : Final electronic band structure energy
 C integer iter                : Number of CG iterations
-C real*8 dm(nhmax,nbasis)     : Density matrix (sparse)
-C real*8 edm(nhmax,nbasis)    : Energy Density matrix (sparse)
+C real*8 dm(nhmax,no_u)     : Density matrix (sparse)
+C real*8 edm(nhmax,no_u)    : Energy Density matrix (sparse)
 C *******************************************************************
 
-      use precision
-      use on_main
+      use precision, only: dp
+      use on_main, only  : c, numc, listc
+      use on_main, only  : nct2p, ncp2t
+      use on_main, only  : xi, g, hg
+      use m_eandg, only  : eandg
+
 #ifdef MPI
       use mpi_siesta
 #endif
 
       implicit none
 
-      integer
-     .  nbands,nbasis,nbasisloc,ncmax,nhmax,nbasisCloc,Node,Nodes,nspin
+      integer, intent(in) ::
+     .  nbands,no_u,no_l,ncmax,nhmax,no_cl,Node,Nodes,nspin
 
-      integer
-     .  iscf,iter,itmax,
-     .  listh(nhmax),listhptr(nbasis),numh(nbasis)
+      integer, intent(in) ::
+     .  iscf,itmax,
+     .  listh(nhmax),listhptr(no_l),numh(no_l)
 
-      real(dp) ::
-     .  dm(nhmax,nspin),edm(nhmax,nspin),qs(nspin),eta,fe,ftol,
-     .  h(nhmax,nspin),s(nhmax)
+      real(dp) , intent(in) :: qs(nspin),eta(2),ftol,
+     .                         h(nhmax,nspin),s(nhmax)
+
+      integer,   intent(out) :: iter
+      real(dp) , intent(out) :: dm(nhmax,nspin),edm(nhmax,nspin)
+      real(dp) , intent(out) :: fe
+
 
 C  Internal variables .................................................
       integer 
@@ -111,20 +122,20 @@ C Calculate control vectors only if in first SCF step ....................
       if (iscf .eq. 1) then
         iopt = 0
         call eandg(iopt,eta,qs,lam,nhmax,numh,listh,listhptr,ncmax,
-     .             numc,listc,h,s,c,nbasis,nbasisloc,nbands,e3,e,xi,
-     .             dm,edm,nbasisCloc,nspin,Node,Nodes)
+     .             numc,listc,h,s,c,no_u,no_l,nbands,e3,e,xi,
+     .             dm,edm,no_cl,nspin,Node,Nodes)
       endif
 
 C Calculate gradient for first CG step ...................................
       iopt = 2
       call eandg(iopt,eta,qs,lam,nhmax,numh,listh,listhptr,ncmax,
-     .           numc,listc,h,s,c,nbasis,nbasisloc,nbands,e3,fp,xi,
-     .           dm,edm,nbasisCloc,nspin,Node,Nodes)
+     .           numc,listc,h,s,c,no_u,no_l,nbands,e3,fp,xi,
+     .           dm,edm,no_cl,nspin,Node,Nodes)
 
       elamb = fp
 
       do is = 1,nspin
-        do i = 1,nbasisCloc
+        do i = 1,no_cl
           do j = 1,numc(i)
             g(j,i,is) = - xi(j,i,is)
             hg(j,i,is) = g(j,i,is)
@@ -173,8 +184,8 @@ C ...........................
 C Get the energy at three points separated by lam ...........................
         iopt = 1
         call eandg(iopt,eta,qs,lam,nhmax,numh,listh,listhptr,ncmax,
-     .             numc,listc,h,s,c,nbasis,nbasisloc,nbands,e3,e,xi,
-     .             dm,edm,nbasisCloc,nspin,Node,Nodes)
+     .             numc,listc,h,s,c,no_u,no_l,nbands,e3,e,xi,
+     .             dm,edm,no_cl,nspin,Node,Nodes)
 
 C Solve exactly the line minimzation with a fourth order polinomial .........
         call linmin4(partial,elamb,e3,lam,lambda,Node)
@@ -196,7 +207,7 @@ C cycle with iout = .false.  ................................
 
 C Update point to line mimimum and multiply gradient by lambda .............
         do is = 1,nspin
-          do i = 1,nbasisCloc
+          do i = 1,no_cl
             do j = 1,numc(i)
               xi(j,i,is) = lambda * xi(j,i,is)
               c(j,i,is) = c(j,i,is) + xi(j,i,is)
@@ -211,8 +222,8 @@ C Calculate energy and gradient at current point ...........................
         partial = 0.0d0
         iopt = 2
         call eandg(iopt,eta,qs,lam,nhmax,numh,listh,listhptr,ncmax,
-     .             numc,listc,h,s,c,nbasis,nbasisloc,nbands,e3,fe,xi,
-     .             dm,edm,nbasisCloc,nspin,Node,Nodes)
+     .             numc,listc,h,s,c,no_u,no_l,nbands,e3,fe,xi,
+     .             dm,edm,no_cl,nspin,Node,Nodes)
 
 C Check if minimization has converged ......................................
         if (2.*abs(fe-fp).le.ftol*(abs(fe)+abs(fp)+eps)) then
@@ -230,7 +241,7 @@ C Continue if tol not reached
         gg = 0.0d0
         dgg = 0.0d0
         do is = 1,nspin
-          do i = 1,nbasisloc
+          do i = 1,no_l
             ii = ncP2T(i)
             do j = 1,numc(ii)
               gg = gg + g(j,ii,is)**2
@@ -252,7 +263,7 @@ C Global reduction of gg/dgg
         if (gg .eq. 0.0d0) goto 16
         gam = dgg / gg
         do is = 1,nspin
-          do i = 1,nbasisCloc
+          do i = 1,no_cl
             do j = 1,numc(i)
               g(j,i,is) = - xi(j,i,is)
               if (itest) gam = 0.0d0
@@ -293,17 +304,15 @@ C Exit if maximum number of iterations has been reached ...................
 C Compute density matrix ...................................................
       iopt = 3
       call eandg(iopt,eta,qs,lam,nhmax,numh,listh,listhptr,ncmax,
-     .           numc,listc,h,s,c,nbasis,nbasisloc,nbands,e3,fe,xi,
-     .           dm,edm,nbasisCloc,nspin,Node,Nodes)
+     .           numc,listc,h,s,c,no_u,no_l,nbands,e3,fe,xi,
+     .           dm,edm,no_cl,nspin,Node,Nodes)
 C ............................
 C33   format('ITER = ',i4,6x,'GRAD = ',f18.6,6x,'ENER = ',f14.6)
  33   format('cgwf: iter = ',i4,6x,'grad = ',f18.6,6x,'Eb(Ry) = ',f14.6)
-      return
-      end
-C ......................
-C *******************************************************************
 
+      end subroutine cgwf
 
+!------------------------------------
 
       subroutine linmin4(partial,elamb,ener,lam,lambda, Node)
 C *******************************************************************
@@ -465,6 +474,9 @@ C .....................
      $        e0, e1, e2, e3, lambda
       endif
 #endif
-      return
-      end
+      end subroutine linmin4
+
+      end module m_cgwf
+
+
 

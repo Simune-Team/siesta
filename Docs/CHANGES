@@ -5,6 +5,215 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2011-07-22  15:30:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-25
+Some cleanup and new options for O(N) solver code
+
+The O(N) solver code is being cleaned up, and more options are being
+added, but should still be used with care and for systems for which
+it is appropriate.
+
+* More documentation and better variable names and structure in some
+  files.
+
+* Stop if O(N) chemical potential calculation is requested in parallel
+  
+  The code in chempot is not correctly parallelized yet.  Now the
+  program stops at the beginning of the run if any of the relevant fdf
+  options is enabled.
+  
+* Implement graph-based domain decomposition for O(N) routines
+  
+  Based on code by Rogeli Grima (BSC).
+  
+  It is enabled by defining
+  
+  UseDomainDecomposition T
+  
+  in the fdf file. NOTE that if you use NetCDF you also need:
+  
+  WriteDMNetcdf F
+  WriteDMHS-netcdf F
+  
+  until a non-local call to LocalToGlobalOrb is fixed.
+  
+  The METIS library (www.cs.umn.edu/~metis) is also needed. Calls to
+  this library are wrapped in preprocessor blocks controlled by the
+  symbol
+  
+  ON_DOMAIN_DECOMP
+  
+  which needs to be specified at (parallel) compile time if domain
+  decomposition is desired.
+
+  
+  Now, by default, Julian's Gale spatial decomposition code is
+  bypassed, unless the fdf variable
+
+        UseSpatialDecomposition 
+
+  is set.  The default is now to use block-cyclic decomposition, but
+  any serious calculation should use one of the two more sophisticated
+  approaches.
+
+* Add the Util/ON directory with lwf2cdf program
+
+  This utility program converts the information in the LWF file 
+  to netCDF format.
+
+(A. Garcia, May-July 2011)
+
+added:
+  Src/domain_decom.F
+  Src/lenstr.F
+  Src/mmio.F
+  Src/printmatrix.F
+  Src/pspltm1.F
+  Src/qsort.F
+  Src/schecomm.F
+  Src/setup_ordern_indexes.F90
+  Util/ON/
+  Util/ON/lwf2cdf.F90
+  Util/ON/makefile
+renamed:
+  Src/parallelsubs.f => Src/parallelsubs.F
+modified:
+  Docs/CHANGES
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/Makefile
+  Src/atomlwf.F
+  Src/cgwf.F
+  Src/compute_dm.F
+  Src/denmat.F
+  Src/egandd.F
+  Src/ener3.F
+  Src/globalise.F
+  Src/gradient.F
+  Src/hsparse.f
+  Src/initparallel.F
+  Src/m_mpi_utils.F
+  Src/on_subs.F
+  Src/onmod.F
+  Src/ordern.F
+  Src/setatomnodes.F
+  Src/show_distribution.f
+  Src/siesta_options.F90
+  Src/state_init.F
+  Src/uncell.f
+  Src/parallelsubs.F
+
+------------------------------------------------------------------------
+2011-07-22  14:55:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-24
+Documentation for tests. New .make file. Cosmetics
+
+* Clarify the mention of hybrid XC functionals in the manual
+  
+  modified:
+    Docs/siesta.tex
+
+* Add arch.make file for Marenostrum IBM supercomputer using ESSL
+    
+  Added the necessary LAPACK libraries in order to compile using ESSL on IBM.
+  ESSL are a set of system-optimized BLAS functions and subroutines.
+    
+  Use the following lines in your arch.make:
+    COMP_LIBS = essl_lapack.a
+    LIBS      = -lessl
+  
+  The new file Src/Sys/marenostrum-mpi-essl-netcdf-64.make is appropriate
+  for 64 bit operation.
+    
+  (Thanks to Oscar Paz)
+  
+  added:
+    Src/Sys/marenostrum-mpi-essl-netcdf-64.make
+    Src/Libs/essl_lapack.f
+  modified:
+    Src/Libs/makefile
+    Src/Makefile
+
+* Make sure 'partial' is compiled in test
+  
+  The 'partial' test is not completely set up for transparent operation,
+  and the needed executable in Util/VCA needs to be pre-compiled.
+  
+  The script stops with a message if this is not done (note that this
+  test is not executed by default from the top Makefile).
+  
+  modified:
+    Tests/partial/script.sh
+
+------------------------------------------------------------------------
+2011-07-22  14:45:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-23
+Fix a script in the TranSiesta-TBTrans/ts_au test
+
+A duplicate line was causing a hard-to-fathom error.
+
+modified:
+  Tests/TranSiesta-TBTrans/ts_au/script.sh
+
+------------------------------------------------------------------------
+2011-06-21  14:20:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-22
+Update TranSiesta tests. New reference outputs. Cosmetics
+
+*  Update the TranSiesta-TBTrans test directories
+  
+  TranSiesta-TBTrans specific tests now reside in
+  Tests/TranSiesta-TBTrans. These tests (currently ts_fast and ts_au)
+  only make sense if the "transiesta" flavor of Siesta has been compiled
+  in (by executing "make transiesta" in a fresh build directory), so
+  they are not executed by default.
+  
+  Reference outputs can now be found in
+  Tests/Reference/TranSiesta-TBTrans.
+  
+  The manual has been updated to refer to the Examples/TranSiesta
+  directory (which has been created) for the guided calculation.
+  
+  removed:
+    Tests/transiesta/Fast/
+    Tests/transiesta/au_111_capacitor/
+    Tests/transiesta/bulk_au_111/
+    Tests/transiesta/elec_au_111_abc/
+  added:
+    Tests/Reference/TranSiesta-TBTrans/
+    Tests/Reference/TranSiesta-TBTrans/ts_au/
+    Tests/Reference/TranSiesta-TBTrans/ts_fast/
+    Tests/TranSiesta-TBTrans/ts_au/
+    Examples/TranSiesta
+  renamed:
+    Tests/transiesta/ => Tests/TranSiesta-TBTrans/
+    Tests/ts_fast/ => Tests/TranSiesta-TBTrans/ts_fast/
+  modified:
+    Tests/TranSiesta-TBTrans/ts_fast/makefile
+    Tests/TranSiesta-TBTrans/ts_fast/script.sh
+    Tests/Makefile
+    Tests/script_ts.mk
+    Docs/siesta.tex
+
+*  Clarify the mention of "hybrid" functionals in the manual
+  
+  modified:
+    Docs/siesta.tex
+
+*  Re-generate the reference output files.
+
+  modified:
+    Tests/Reference
+    Tests/Reference-xml
+
+*  Remove order-N test from standard list. Add note.
+
+  As it does not run well in parallel, the order-N
+  test has been removed from the standard list
+  in the Makefile for the Tests directory.
+  
+  added:
+    Tests/h2o_orderN/000README
+  modified:
+    Tests/Makefile
+
+------------------------------------------------------------------------
 2011-05-19  15:05:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-21
 Fix and clarify code for KB projector orthogonalization
 
