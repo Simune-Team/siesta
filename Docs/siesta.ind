@@ -44,18 +44,18 @@
     \subitem split valence   for H, 21
     \subitem User basis, 27
     \subitem User basis (NetCDF format), 28
-  \item basis     \subitem PAO, 118
+  \item basis     \subitem PAO, 119
   \item {\bf     BasisPressure}, 28
   \item Berry phase, 68
   \item Bessel functions, 26
   \item \%block, 11
   \item {\bf BlockSize}, 75
-  \item {\bf Blocksize}, 107
+  \item {\bf Blocksize}, 108
   \item BLYP, 42
   \item Born effective charges, 70
   \item {\bf     BornCharge}, 89
   \item {\bf BornCharge}, 70
-  \item Broyden mixing, 44, 114
+  \item Broyden mixing, 44, 115
   \item Broyden optimization, 81
   \item bug reports, 101
   \item bulk polarization, 68
@@ -70,7 +70,7 @@
   \item Chebyshev Polynomials, 59
   \item Chemical Potential, 59
   \item {\bf ChemicalSpeciesLabel}, 14, 30
-  \item CML, 112
+  \item CML, 113
   \item Conjugate-gradient history information, 80
   \item constant-volume cell relaxation, 79
   \item constraints in relaxations, 87
@@ -94,12 +94,12 @@
   \item diffuse orbitals, 20
   \item {\bf DirectPhi}, 76
   \item {\bf DM.AllowExtrapolation}, 48
-  \item {\bf DM.AllowReuse}, 47
+  \item {\bf DM.AllowReuse}, 48
   \item {\bf DM.Broyden.Cycle.On.Maxit}, 45
   \item {\bf DM.Broyden.Variable.Weight}, 45
   \item {\bf DM.EnergyTolerance}, 49
   \item {\bf DM.FormattedFiles}, 46
-  \item {\bf DM.FormattedInput}, 46
+  \item {\bf DM.FormattedInput}, 47
   \item {\bf DM.FormattedOutput}, 47
   \item {\bf DM.Harris.Tolerance}, 50
   \item {\bf DM.InitSpin}, 47
@@ -110,7 +110,7 @@
   \item {\bf DM.MixSCF1}, 45
   \item {\bf DM.NumberBroyden}, 44
   \item {\bf DM.NumberKick}, 45
-  \item {\bf DM.NumberPulay}, 43
+  \item {\bf DM.NumberPulay}, 44
   \item {\bf       DM.Pulay.Avoid.First.After.Kick}, 44
   \item {\bf DM.PulayOnFile}, 44
   \item {\bf DM.Require.Energy.Convergence}, 49
@@ -139,14 +139,14 @@
   \item {\bf     FilterTol}, 27
   \item finite-range pseudo-atomic orbitals, 20
   \item {\bf FixAuxiliaryCell}, 54
-  \item fixed spin state, 42, 43
-  \item {\bf FixSpin}, 42
+  \item fixed spin state, 43
+  \item {\bf FixSpin}, 43
   \item Force Constants     Matrix
     \subitem using {\sc Phonon}, 78
   \item Force Constants   Matrix, 78
   \item Force Constants Matrix, 89
     \subitem using {\sc Phonon}, 90
-  \item FoX XML library, 112
+  \item FoX XML library, 113
   \item fractional program, 15
 
   \indexspace
@@ -255,8 +255,8 @@
 
   \item {\bf NaiveAuxiliaryCell}, 54
   \item {\bf NeglNonOverlapInt}, 53
-  \item NetCDF format, 27, 28, 105
-  \item NetCDF library, 105
+  \item NetCDF format, 27, 28, 106
+  \item NetCDF library, 106
   \item {\bf NetCharge}, 70
   \item {\bf     New.A.Parameter}, 29
   \item {\bf     New.B.Parameter}, 29
@@ -354,8 +354,8 @@
   \item {\bf PAO.SplitNorm}, 21
   \item {\bf PAO.SplitNormH}, 21
   \item {\bf PAO.SplitTailNorm}, 22
-  \item Parallel {\sc Siesta}, 107
-  \item {\bf ParallelOverK}, 107
+  \item Parallel {\sc Siesta}, 108
+  \item {\bf ParallelOverK}, 108
   \item PBE, 41
   \item PBEsol, 41
   \item perturbative polarization, 20, 26
@@ -364,8 +364,8 @@
   \item {\bf PhononLabels}, 89
   \item polarization orbitals, 20
   \item {\bf PolarizationGrids}, 68
-  \item Precision selection, 114
-  \item {\bf ProcessorY}, 75, 107
+  \item Precision selection, 115
+  \item {\bf ProcessorY}, 75, 108
   \item {\bf ProjectedDensityOfStates}, 64
   \item {\bf PS.KBprojectors} , 23
   \item {\bf PS.lmax}, 23
@@ -373,7 +373,7 @@
     \subitem example generation, 9
     \subitem files, 16
     \subitem generation, 15
-  \item Pulay mixing, 43
+  \item Pulay mixing, 44
   \item PW92, 41
   \item PZ, 41
 
@@ -420,7 +420,7 @@
       \subsubitem energy convergence, 49
       \subsubitem harris energy convergence, 49
       \subsubitem linear, 43, 45
-      \subsubitem Pulay, 43
+      \subsubitem Pulay, 44
   \item SCF convergence criteria, 49
   \item {\bf SCF.Read.Charge.NetCDF}, 48
   \item {\bf       SCF.Read.Deformation.Charge.NetCDF}, 48
@@ -479,18 +479,18 @@
   \item {\bf TS.CalcGF}, 95
   \item {\bf TS.ComplexContour.Emin}, 96
   \item {\bf TS.ComplexContour.NumCircle}, 96
-  \item {\bf TS.ComplexContour.NumLine}, 96
+  \item {\bf TS.ComplexContour.NumLine}, 97
   \item {\bf TS.ComplexContour.NumPoles}, 97
   \item {\bf TS.GFFileLeft}, 95
   \item {\bf TS.GFFileRight}, 96
   \item {\bf TS.HSFileLeft}, 95, 98
-  \item {\bf TS.HSFileRight}, 95
+  \item {\bf TS.HSFileRight}, 96
   \item {\bf TS.MixH}, 95
   \item {\bf TS.NumUsedAtomsLeft}, 96
   \item {\bf TS.NumUsedAtomsRight}, 96
   \item {\bf     TS.SaveHS}, 94
-  \item {\bf       TS.TBT.Emax}, 98
-  \item {\bf       TS.TBT.Emin}, 98
+  \item {\bf       TS.TBT.Emax}, 99
+  \item {\bf       TS.TBT.Emin}, 99
   \item {\bf        TS.TBT.NEigen}, 99
   \item {\bf TS.TBT.NPoints}, 99
   \item {\bf     TS.TriDiag}, 95
@@ -544,10 +544,10 @@
   \item {\bf XC.authors}, 41
   \item {\bf XC.functional}, 41
   \item {\bf XC.hybrid}, 42
-  \item XML, 112
-  \item {\bf XML.AbortOnErrors}, 112
-  \item {\bf XML.AbortOnWarnings}, 112
-  \item {\bf XML.Write}, 112
+  \item XML, 113
+  \item {\bf XML.AbortOnErrors}, 113
+  \item {\bf XML.AbortOnWarnings}, 113
+  \item {\bf XML.Write}, 113
   \item {\sc XMol}, 37, 38
 
   \indexspace
