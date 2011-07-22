@@ -1,4 +1,14 @@
 ----------------------
+July 22, 2011, A. Garcia                    siesta-3.0-351-on-14
+Document the O(N) decomposition options
+
+Update the manual with the new O(N) options.
+
+modified:
+  Docs/siesta.tex
+  Docs/siesta.ind
+
+----------------------
 July 21, 2011, A. Garcia                    siesta-3.0-351-on-13
 Declare variables in mmio.F
 
