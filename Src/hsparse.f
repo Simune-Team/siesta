@@ -68,7 +68,7 @@ C
       subroutine hsparse( negl, cell, nsc, na, isa, xa,
      .                    lasto, lastkb, iphorb, iphkb,
      .                    nlhmax, numh, listhptr, listh,
-     $                    set_xijo, xijo, gamma)
+     $                    set_xijo, xijo, gamma, folding)
 
       use precision
       use parallel,      only : Node, Nodes
@@ -101,6 +101,7 @@ C
       logical, intent(in)     :: set_xijo
       real(dp),  pointer      :: xijo(:,:)
       logical, intent(in)     :: gamma
+      logical, intent(out)    :: folding
 
       external               timer
 
@@ -209,6 +210,8 @@ C Initialize vector switch only once
         conect(io) = .false.
         listhtmp(io) = 0
       enddo
+
+      folding = .false.
 
 C----------------------------------
 C  Find number of non-zeros in H  _
@@ -423,6 +426,7 @@ C Find if jo overlaps with a KB projector
 
                    if (connected) then
                      if (conect(jo)) then
+                        folding = .true.
 
                        ! This test is now deferred to be able
                        ! to catch multiple images while avoiding
@@ -475,6 +479,10 @@ C Restore conect array for next orbital io
           enddo       ! io
         enddo         ! ia
    
+!!        print "(a5,i3,a40,3i8)",
+!!     $         "Node: ", Node, "in hsparse nuo, nuotot, nlhmax: ",
+!!     $         nuo, nuotot, nlhmax
+
 C Initialize listsc
       call listsc_init( nsc, nuotot )
 

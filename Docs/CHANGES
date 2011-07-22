@@ -5,6 +5,104 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2011-07-22  15:30:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-25
+Some cleanup and new options for O(N) solver code
+
+The O(N) solver code is being cleaned up, and more options are being
+added, but should still be used with care and for systems for which
+it is appropriate.
+
+* More documentation and better variable names and structure in some
+  files.
+
+* Stop if O(N) chemical potential calculation is requested in parallel
+  
+  The code in chempot is not correctly parallelized yet.  Now the
+  program stops at the beginning of the run if any of the relevant fdf
+  options is enabled.
+  
+* Implement graph-based domain decomposition for O(N) routines
+  
+  Based on code by Rogeli Grima (BSC).
+  
+  It is enabled by defining
+  
+  UseDomainDecomposition T
+  
+  in the fdf file. NOTE that if you use NetCDF you also need:
+  
+  WriteDMNetcdf F
+  WriteDMHS-netcdf F
+  
+  until a non-local call to LocalToGlobalOrb is fixed.
+  
+  The METIS library (www.cs.umn.edu/~metis) is also needed. Calls to
+  this library are wrapped in preprocessor blocks controlled by the
+  symbol
+  
+  ON_DOMAIN_DECOMP
+  
+  which needs to be specified at (parallel) compile time if domain
+  decomposition is desired.
+
+  
+  Now, by default, Julian's Gale spatial decomposition code is
+  bypassed, unless the fdf variable
+
+        UseSpatialDecomposition 
+
+  is set.  The default is now to use block-cyclic decomposition, but
+  any serious calculation should use one of the two more sophisticated
+  approaches.
+
+* Add the Util/ON directory with lwf2cdf program
+
+  This utility program converts the information in the LWF file 
+  to netCDF format.
+
+(A. Garcia, May-July 2011)
+
+added:
+  Src/domain_decom.F
+  Src/lenstr.F
+  Src/mmio.F
+  Src/printmatrix.F
+  Src/pspltm1.F
+  Src/qsort.F
+  Src/schecomm.F
+  Src/setup_ordern_indexes.F90
+  Util/ON/
+  Util/ON/lwf2cdf.F90
+  Util/ON/makefile
+renamed:
+  Src/parallelsubs.f => Src/parallelsubs.F
+modified:
+  Docs/CHANGES
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/Makefile
+  Src/atomlwf.F
+  Src/cgwf.F
+  Src/compute_dm.F
+  Src/denmat.F
+  Src/egandd.F
+  Src/ener3.F
+  Src/globalise.F
+  Src/gradient.F
+  Src/hsparse.f
+  Src/initparallel.F
+  Src/m_mpi_utils.F
+  Src/on_subs.F
+  Src/onmod.F
+  Src/ordern.F
+  Src/setatomnodes.F
+  Src/show_distribution.f
+  Src/siesta_options.F90
+  Src/state_init.F
+  Src/uncell.f
+  Src/parallelsubs.F
+
+------------------------------------------------------------------------
 2011-07-22  14:55:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-24
 Documentation for tests. New .make file. Cosmetics
 

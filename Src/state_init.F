@@ -27,16 +27,17 @@
       use m_energies, only: Emad
       use write_subs
       use m_steps
-      use parallel, only: IOnode
+      use parallel, only: IOnode, Nodes
       use m_spin, only: nspin
       use m_rmaxh
       use m_pulay, only: init_pulay_arrays
       use m_eo
       use m_gamma
       use files,          only : slabel
-#ifdef MPI
-      use m_mpi_utils, only : globalize_max
-#endif
+      use m_mpi_utils, only: globalize_or
+      use parallel, only: Node
+      use domain_decom, only: domainDecom, use_dd, use_dd_perm
+
 #ifdef TRANSIESTA
       use m_ts_options, only : onlyS, mixH
       use m_ts_global_vars, only : Hold
@@ -60,12 +61,9 @@
       integer :: i, ix, iadispl, ixdispl
 
       logical:: auxchanged ! Has auxiliary supercell changed?
-
+      logical :: folding, folding1
       external ::  madelung, timer
 
-#ifdef MPI
-      integer :: ntmp      ! Temporary to call an MPI routine
-#endif
       real(dp), external :: volcel
 #ifdef TRANSIESTA
       integer, dimension(3,3) :: ts_kscell_file = 0
@@ -127,7 +125,6 @@
         call outcoor( ucell, xa, na_u, ' ', writec )
         call siesta_write_positions()
       endif
-
 
       ! Actualize things if variable cell 
       auxchanged = .false.
@@ -220,9 +217,39 @@
       nh = maxnh
       call hsparse( negl, scell, nsc, na_s, isa, xa, lasto, lastkb, 
      .                 iphorb, iphKB, nh, numh, listhptr, listh,
-     $                 set_xijo=.true., xijo=xijo, gamma=gamma )
-
+     $                 set_xijo=.true., xijo=xijo, gamma=gamma,
+     $                 folding=folding1)
       maxnh = nh
+!
+      call globalize_or(folding1,folding)
+      if (folding) then
+         if (IOnode) then
+            print *, "Folding of H and S is implicitly performed"
+         endif
+      endif
+      !
+      ! If using domain decomposition, redistribute orbitals
+      ! for this geometry, based on the hsparse info. 
+      ! The first time round, the initial distribution is a
+      ! simple block one (given by preSetOrbitLimits).
+      !
+      ! Any DM, etc, read from file will be redistributed according
+      ! to the new pattern. 
+      ! Inherited DMs from a previous geometry cannot be used if the
+      ! orbital distribution changes. For now, we avoid changing the
+      ! distribution (the variable use_dd_perm is .true. if domain
+      ! decomposition is in effect). Names should be changed...
+
+      if (use_dd .and. (.not. use_dd_perm)) then
+         call domainDecom( no_u, no_l, maxnh )  ! maxnh intent(in) here
+         maxnh = sum(numh(1:no_l))
+         nh = maxnh
+         ! We still need to re-create Julian Gale's
+         ! indexing for O(N) in parallel.
+         print "(a5,i3,a20,3i8)",
+     $         "Node: ", Node, "no_u, no_l, maxnh: ", no_u, no_l, maxnh
+         call setup_ordern_indexes(no_l, no_u, Nodes)
+      endif
 
       ! Note that the resizing of Dscf is done inside new_dm below
       call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',
