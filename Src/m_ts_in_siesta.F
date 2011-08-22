@@ -1732,6 +1732,7 @@ C Find local number of mesh points
         meshnsm(2) = mesh(2)/nsm
         meshnsm(3) = mesh(3)/nsm
 #ifdef MPI
+        !! print *, "N:",Node, "TSVHFix-- mesh:", mesh
         call HowManyMeshPerNode(meshnsm,Node,Nodes,npl,meshl)
         meshl(1) = meshl(1)*nsm
         meshl(2) = meshl(2)*nsm
@@ -1947,6 +1948,7 @@ C Find local number of mesh points
         meshnsm(2) = mesh(2)/nsm
         meshnsm(3) = mesh(3)/nsm
 #ifdef MPI
+        !! print *, "N:",Node, "TSVoltage2-- mesh:", mesh
         call HowManyMeshPerNode(meshnsm,Node,Nodes,npl,meshl)
         meshl(1) = meshl(1)*nsm
         meshl(2) = meshl(2)*nsm
