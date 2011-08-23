@@ -78,6 +78,9 @@ LDFLAGS=
 
 # Extra flags for library creation by the 'ar' command
 ARFLAGS_EXTRA=
+# Note that the 'ar' command can itself be specified by
+# defining the AR variable. In most 'make' programs, AR is a
+# built-in variable
 
 #
 # These symbols help to keep the building rules concise
