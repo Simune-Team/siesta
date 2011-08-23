@@ -42,7 +42,7 @@ module_built: libmpi_f90.a
 	@touch module_built
 #
 libmpi_f90.a: mpi.o mpi__include.o Interfaces.o
-	@ar $(ARFLAGS_EXTRA) cru libmpi_f90.a mpi.o mpi__include.o Interfaces.o
+	@$(AR) $(ARFLAGS_EXTRA) cru libmpi_f90.a mpi.o mpi__include.o Interfaces.o
 	-$(RANLIB) libmpi_f90.a
 #
 clean:
