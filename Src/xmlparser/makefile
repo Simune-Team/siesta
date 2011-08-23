@@ -15,7 +15,7 @@ DOM_OBJ_FILES= flib_dom.o \
           m_strings.o
 #
 libxmlparser.a: $(OBJFILES) 
-	ar $(ARFLAGS_EXTRA) cru libxmlparser.a $(OBJFILES)
+	$(AR) $(ARFLAGS_EXTRA) cru libxmlparser.a $(OBJFILES)
 	-$(RANLIB) libxmlparser.a
 	cp libxmlparser.a ..
 	@cp -p *.*d ..

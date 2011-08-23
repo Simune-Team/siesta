@@ -267,7 +267,7 @@ MODULE m_ts_io
 ! TSS End
 
 ! Internal variables and arrays
-      integer    is, iu, ju, k, ns
+      integer    is, iu, k, ns
       integer    ih,hl, maxnhtot, maxhg
       integer, dimension(:), allocatable :: numhg
 #ifdef MPI
@@ -276,7 +276,7 @@ MODULE m_ts_io
       real(dp), dimension(:),   allocatable :: buffer
       real(dp), dimension(:,:), allocatable :: buffer2
 #endif
-      logical    baddim, found, gammaonfile
+      logical    found, gammaonfile
 ! TSS Begin
 ! Aux Variables
       integer :: i, j, i2, l
@@ -287,8 +287,10 @@ MODULE m_ts_io
 ! #################### READ ######################################
 ! Choose between read or write
       if (task.eq.'read' .or. task.eq.'READ') then
-    
 
+        ! Note that only the master node is suppossed to
+        ! call this routine in "read" mode...
+    
 ! Check if input file exists
           inquire( file=fname, exist=found)
 
@@ -301,27 +303,17 @@ MODULE m_ts_io
 ! Read dimensions
             read(iu) na_u, no_u, no_s, Enspin, maxnh
 
-! Allocations
-
-
-
 ! Check dimensions
-          baddim = .false.
-          if (Enspin  .ne. nspin) baddim = .true.
-           
-          if (baddim) then
-            if (Node.eq.0) then
-              call io_assign( ju )
-              open( ju, file='ts_iohs.h', status='unknown' )
-              write(ju,'(a)') 'C Dimensions for input to ts_iohs'
-              write(ju,'(6x,a,i8,a)') 'parameter ( nspin =', ns,  ' )'
-              call io_close( ju )
-              call die('ts_iohs: BAD DIMENSIONS')
-            else
-              call die()
-            endif
-          endif
 
+            if (Enspin  .ne. nspin) then
+               if (node == 0) then
+                 write(6,"(a,i10,a,i10)") "nspin mismatch: In "   &
+                      // trim(fname) // " : ",                    &
+                      Enspin, ". Current run: ", nspin
+               endif
+               call die('ts_iohs: TSHS file contains a wrong nspin')
+            endif
+           
 ! TSS Begin
 ! Allocate arrays that are going to be read now
           nullify(xa,isa)

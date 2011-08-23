@@ -25,7 +25,7 @@ check_flags:
 	@echo "In fdf, INCFLAGS is: $(INCFLAGS)"
 #
 libfdf.a: check_flags fdf.o fdf_mod.o parse.o
-	ar $(ARFLAGS_EXTRA) cru libfdf.a fdf.o fdf_mod.o parse.o
+	$(AR) $(ARFLAGS_EXTRA) cru libfdf.a fdf.o fdf_mod.o parse.o
 	-$(RANLIB) libfdf.a
 #
 fdf_mod.o: fdf_mod.f parse.o

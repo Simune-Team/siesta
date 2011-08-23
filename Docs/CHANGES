@@ -5,6 +5,44 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2011-08-23  13:55:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-26
+Assorted bugfixes for recent features and cosmetics
+
+Bugfixes for recent features:
+
+* Remove a superfluous test in new parallelsubs code
+
+  This fix solves a problem related to the new domain-decomposition
+  code which affected TranSiesta runs
+
+* Include support for domain_decom in Denchar makefile
+
+Cosmetic changes:
+
+ - State that the units for mprop distances are Ang
+ - Clarify error message in ts_iohs regarding nspin
+ - Write eigenvalues in eV in CML file (ioeig)
+ - Use $(AR) instead of 'ar' in all makefiles
+ - Specify Ry units for H in DMHS netcdf files
+ - Fix call to 'memory' in Denchar/stsofr.f
+
+modified:
+  Src/Libs/makefile
+  Src/MPI/Makefile
+  Src/Sys/DOCUMENTED-TEMPLATE.make
+  Src/fdf/makefile
+  Src/iodmhs_netcdf.F90
+  Src/ioeig.f
+  Src/m_ts_in_siesta.F
+  Src/m_ts_io.F90
+  Src/parallelsubs.F
+  Src/wxml/makefile
+  Src/xmlparser/makefile
+  Util/COOP/subs.f90
+  Util/Denchar/Src/Makefile
+  Util/Denchar/Src/stsofr.f
+
+------------------------------------------------------------------------
 2011-07-22  15:30:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-25
 Some cleanup and new options for O(N) solver code
 

@@ -85,7 +85,7 @@ c -------------------------------------------------------------------
           do ik = 1, nk
             call cmlAddKPoint(xf=mainXML, coords=kpoints(:, ik), 
      .                        weight=kweights(ik))
-            call cmlAddProperty(xf=mainXML, value=eo(1:no,is,ik), 
+            call cmlAddProperty(xf=mainXML, value=eo(1:no,is,ik)/eV, 
      .                          dictRef='siesta:eigenenergies',
      .                          units='siestaUnits:ev')
 !            call cmlAddBand(xf=mainXML, 

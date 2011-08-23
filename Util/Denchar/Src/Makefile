@@ -93,6 +93,8 @@ $(FDF):
 MOD_OBJS=precision.o parallel.o alloc.o memoryinfo.o sys.o listsc.o  \
          atmparams.o atom_options.o atmfuncs.o   atm_types.o \
          radial.o spher_harm.o  basis_io.o basis_types.o \
+         domain_decom.o schecomm.o printmatrix.o qsort.o mmio.o pspltm1.o lenstr.o \
+         sparse_matrices.o \
          files.o flib_spline.o pseudopotential.o chemical.o xml.o
 #
 COM_OBJS_DENCHAR=$(OBJS_DENCHAR) $(SYSOBJ)
@@ -190,6 +192,8 @@ diagsprl.o: atomlist.o fermid.o parallel.o parallelsubs.o precision.o
 diagsprl.o: siesta_geom.o sys.o
 dipole.o: parallel.o precision.o sys.o
 dnaefs.o: atmfuncs.o mneighb.o precision.o
+domain_decom.o: alloc.o parallel.o precision.o printmatrix.o schecomm.o
+domain_decom.o: sparse_matrices.o sys.o
 dynamics.o: atomlist.o files.o ioxv.o m_mpi_utils.o parallel.o precision.o
 dynamics.o: sys.o units.o
 efield.o: atmfuncs.o parallel.o parallelsubs.o parsing.o precision.o

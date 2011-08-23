@@ -400,17 +400,23 @@ C  Find processor grid location
 C  Set blocking sizes
       BlockSizeY = (Nxyz(2)/ProcessorY)
       BlockSizeZ = (Nxyz(3)/ProcessorZ)
-      if (BlockSizeY.eq.0.or.BlockSizeZ.eq.0) then
-        if (Node.eq.0) then
-          write(*,*) 'ERROR: Not enought mesh per node'
-          write(*,*) 'Nxyz=', Nxyz, 'PY=', ProcessorY,
-     &               'PZ=', ProcessorZ
-        endif
-#ifdef MPI
-        call MPI_Finalize( MPI_err )
-#endif
-        STOP
-      endif
+
+      ! This check seems to be superfluous, and it 
+      ! triggers an abort in certain TranSiesta runs
+      ! Note that it comes from the BSC branch.
+
+c$$$      if (BlockSizeY.eq.0.or.BlockSizeZ.eq.0) then
+c$$$        if (Node.eq.0) then
+c$$$          write(*,*) 'ERROR: Not enough mesh per node'
+c$$$          write(*,*) 'Nxyz=', Nxyz, 'PY=', ProcessorY,
+c$$$     &               'PZ=', ProcessorZ
+c$$$        endif
+c$$$#ifdef MPI
+c$$$        call MPI_Finalize( MPI_err )
+c$$$#endif
+c$$$        STOP
+c$$$      endif
+
       NRemY = Nxyz(2) - BlockSizeY*ProcessorY
       NRemZ = Nxyz(3) - BlockSizeZ*ProcessorZ
       if (Py-1.lt.NRemY) BlockSizeY = BlockSizeY + 1
