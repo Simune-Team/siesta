@@ -5,6 +5,22 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2011-08-26  13:15:00 GMT Alberto Garcia <albertog@icmab.es>  siesta-3.1
+Siesta-3.1 release
+
+Added release notes
+Updated version string
+Updated bug reporting guidelines
+
+added:
+  Docs/release.notes_3.1
+modified:
+  Docs/REPORTING_BUGS
+  Docs/siesta.tex
+  README
+  version.info
+
+------------------------------------------------------------------------
 2011-08-26  13:05:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-27
 Do not count ghost atoms when printing ionic charge
 

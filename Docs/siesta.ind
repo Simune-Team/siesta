@@ -44,18 +44,18 @@
     \subitem split valence   for H, 21
     \subitem User basis, 27
     \subitem User basis (NetCDF format), 28
-  \item basis     \subitem PAO, 120
+  \item basis     \subitem PAO, 119
   \item {\bf     BasisPressure}, 28
   \item Berry phase, 69
   \item Bessel functions, 26
   \item \%block, 11
   \item {\bf BlockSize}, 75
-  \item {\bf Blocksize}, 109
+  \item {\bf Blocksize}, 108
   \item BLYP, 42
   \item Born effective charges, 70
   \item {\bf     BornCharge}, 90
   \item {\bf BornCharge}, 70
-  \item Broyden mixing, 44, 116
+  \item Broyden mixing, 44, 115
   \item Broyden optimization, 82
   \item bug reports, 102
   \item bulk polarization, 69
@@ -70,7 +70,7 @@
   \item Chebyshev Polynomials, 59
   \item Chemical Potential, 59, 60
   \item {\bf ChemicalSpeciesLabel}, 14, 30
-  \item CML, 114
+  \item CML, 113
   \item Conjugate-gradient history information, 81
   \item constant-volume cell relaxation, 80
   \item constraints in relaxations, 88
@@ -146,7 +146,7 @@
   \item Force Constants   Matrix, 79
   \item Force Constants Matrix, 90
     \subitem using {\sc Phonon}, 91
-  \item FoX XML library, 114
+  \item FoX XML library, 113
   \item fractional program, 15
 
   \indexspace
@@ -255,8 +255,8 @@
 
   \item {\bf NaiveAuxiliaryCell}, 54
   \item {\bf NeglNonOverlapInt}, 53
-  \item NetCDF format, 27, 28, 107
-  \item NetCDF library, 107
+  \item NetCDF format, 27, 28, 106
+  \item NetCDF library, 106
   \item {\bf NetCharge}, 71
   \item {\bf     New.A.Parameter}, 29
   \item {\bf     New.B.Parameter}, 29
@@ -354,8 +354,8 @@
   \item {\bf PAO.SplitNorm}, 21
   \item {\bf PAO.SplitNormH}, 21
   \item {\bf PAO.SplitTailNorm}, 22
-  \item Parallel {\sc Siesta}, 109
-  \item {\bf ParallelOverK}, 109
+  \item Parallel {\sc Siesta}, 108
+  \item {\bf ParallelOverK}, 108
   \item PBE, 41
   \item PBEsol, 41
   \item perturbative polarization, 20, 26
@@ -364,8 +364,8 @@
   \item {\bf PhononLabels}, 90
   \item polarization orbitals, 20
   \item {\bf PolarizationGrids}, 69
-  \item Precision selection, 116
-  \item {\bf ProcessorY}, 75, 109
+  \item Precision selection, 115
+  \item {\bf ProcessorY}, 75, 108
   \item {\bf ProjectedDensityOfStates}, 64
   \item {\bf PS.KBprojectors} , 23
   \item {\bf PS.lmax}, 23
@@ -546,10 +546,10 @@
   \item {\bf XC.authors}, 41
   \item {\bf XC.functional}, 41
   \item {\bf XC.hybrid}, 42
-  \item XML, 114
-  \item {\bf XML.AbortOnErrors}, 114
-  \item {\bf XML.AbortOnWarnings}, 114
-  \item {\bf XML.Write}, 114
+  \item XML, 113
+  \item {\bf XML.AbortOnErrors}, 113
+  \item {\bf XML.AbortOnWarnings}, 113
+  \item {\bf XML.Write}, 113
   \item {\sc XMol}, 37, 38
 
   \indexspace
