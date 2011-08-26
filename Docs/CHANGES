@@ -5,6 +5,21 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2011-08-26  13:05:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-27
+Do not count ghost atoms when printing ionic charge
+
+This was purely cosmetic, but misleading: the variable
+zvaltot now records only the sum of (pseudo)protons in
+non-ghost species.
+
+(+ cosmetic fix in the printing of lmxkb for ghosts
+species in .ion files)
+
+modified:
+  Src/atomlist.f
+  Src/basis_types.f
+
+------------------------------------------------------------------------
 2011-08-23  13:55:00 GMT Alberto Garcia <albertog@icmab.es>  3.0-rc2-26
 Assorted bugfixes for recent features and cosmetics
 

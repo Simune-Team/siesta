@@ -14,7 +14,7 @@
       use alloc
       use parallel, only: IOnode
       use  atmfuncs, only: nofis, nkbfis, izofis, massfis,
-     $                     rcut, atmpopfio, zvalfis
+     $                     rcut, atmpopfio, zvalfis, floating
       use atm_types, only: species
       use siesta_geom, only: na_u, na_s, xa, isa, xa_last
       implicit none
@@ -60,6 +60,7 @@ C real*8 qa(na)             : Neutral atom charge of each atom
 
       real(dp), save, public     :: qtot ! Total number of electrons
       real(dp), save, public     :: zvaltot ! Total number of pseudoprotons
+                                            ! (excluding those of ghost atoms)
 
 
       integer, pointer, save, public  :: iaorb(:)
@@ -142,7 +143,9 @@ c Initialize atomic lists
       zvaltot = 0.0_dp
       do ia = 1,na_u
         is = isa(ia)
-        zvaltot = zvaltot + zvalfis(is)
+        if (.not. floating(is)) then
+           zvaltot = zvaltot + zvalfis(is)
+        endif
         noa  = nofis(is)
         nkba = nkbfis(is)
         lasto(ia)  = lasto(ia-1)  + noa
