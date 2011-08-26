@@ -6,6 +6,16 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2011-08-26  12:40:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-384
+Print information about grid distributions
+
+New code has been added to show information about
+the different grid data distributions.
+
+modified:
+  Src/moremeshsubs.F
+
+-----------------------------------------------------------------------
 2011-05-19  15:20:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-383
 Fix and clarify code for KB projector orthogonalization
 
