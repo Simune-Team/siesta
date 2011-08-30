@@ -6,6 +6,22 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2011-08-30  09:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-385
+Fix two minor bugs in Denchar
+
+Some compilers had trouble with a block pointer. It has
+been made into a normal variable.
+
+An attempt was made to close an I/O unit that had not
+ben opened in the spin-unpolarized case.
+
+(Thanks to T. Sondon)
+
+modified:
+  Util/Denchar/Src/atompla.f
+  Util/Denchar/Src/rhoofr.f
+
+-----------------------------------------------------------------------
 2011-08-26  12:40:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-384
 Print information about grid distributions
 
