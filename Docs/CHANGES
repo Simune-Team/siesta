@@ -5,6 +5,15 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2011-09-01  08:35:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl1
+Fix makefile symbols in Util/STM/ol-stm
+
+The new domain_decomposition symbols and dependencies were missing.
+
+modified:
+  Util/STM/ol-stm/Src/Makefile
+
+------------------------------------------------------------------------
 2011-08-26  13:15:00 GMT Alberto Garcia <albertog@icmab.es>  siesta-3.1
 Siesta-3.1 release
 
