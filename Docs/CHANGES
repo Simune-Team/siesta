@@ -5,6 +5,22 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2011-09-11  15:00:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl2
+Fix minor bug in denchar and obsolete output in domain_decom
+
+* An attempt was made to close an I/O unit that had not
+been opened in the spin-unpolarized case in Denchar.
+  
+  (Thanks to T. Sondon)
+
+* Obsolete debug information was still being written to
+unit 23 in domain_decom, including a call to "flush".
+  
+modified:
+  Util/Denchar/Src/rhoofr.f
+  Src/domain_decom.F
+
+------------------------------------------------------------------------
 2011-09-01  08:35:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl1
 Fix makefile symbols in Util/STM/ol-stm
 

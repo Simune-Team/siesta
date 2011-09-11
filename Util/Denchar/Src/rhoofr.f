@@ -610,7 +610,7 @@ C End y and z loops
 
       CALL IO_CLOSE(UNIT1)
       CALL IO_CLOSE(UNIT2)
-      CALL IO_CLOSE(UNIT3)
+      if (NSPIN .EQ. 2) CALL IO_CLOSE(UNIT3)
       IF (IDIMEN .EQ. 2 .AND. NSPIN .EQ. 2) CALL IO_CLOSE(UNIT4)
      
           
