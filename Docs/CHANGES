@@ -6,6 +6,18 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2011-09-12  09:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-386
+Fix fdf_defined to take blocks into account
+
+The new version of fdf_defined was only checking
+for the existence of single labels. It has been
+fixed to check for blocks too.
+
+modified:
+  Src/fdf/fdf.F90
+  Src/fdf/sample.F90
+
+-----------------------------------------------------------------------
 2011-08-30  09:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-385
 Fix two minor bugs in Denchar
 

@@ -2303,13 +2303,20 @@ MODULE fdf
 
 !--------------------------------------------------------------- Local Variables
       type(line_dlist), pointer :: mark
+      type(block_fdf)           :: bfdf
 
-!------------------------------------------------------------------------- BEGIN
+
+!--------------------------------------------------------------------- BEGIN
+      ! First, check whether a single label exists:
       fdf_defined = fdf_locate(label, mark)
+      if (.not. fdf_defined) then
+         ! Check whether there is a block with that label
+         fdf_defined = fdf_block(label,bfdf)
+      endif
       if (fdf_defined) write(fdf_out,'(a)') label
 
       RETURN
-!--------------------------------------------------------------------------- END
+!----------------------------------------------------------------------- END
     END FUNCTION fdf_defined
 
 ! 
