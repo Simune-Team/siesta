@@ -6,6 +6,16 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2011-09-16  09:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-387
+Fix bug in BandLines processing
+
+The processing of the BandLines block was faulty, resulting
+in most cases in the skipping of the 'bands' calculation.
+
+modified:
+  Src/bands.F
+
+-----------------------------------------------------------------------
 2011-09-12  09:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-386
 Fix fdf_defined to take blocks into account
 
