@@ -5,6 +5,12 @@
 ** CHANGES ALONG siesta-3.0 branch
 
 ------------------------------------------------------------------------
+2011-10-03  10:15:00 GMT Alberto Garcia <albertog@icmab.es>   3.1.1
+Release bugfix siesta-3.1.1
+
+Update version string. No changes to the manual
+
+------------------------------------------------------------------------
 2011-10-03  10:10:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl3
 Include missing LDFLAGS symbol in some Util makefiles
 
