@@ -14,7 +14,6 @@ FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 #
-LFLAGS=$(FFLAGS)
 # --------------------------------- 
 #
 EXECS = eig2bxsf xv2xsf md2axsf rho2xsf vib2xsf
@@ -29,15 +28,15 @@ all: $(EXECS)
 	     displa.o  opnout.o   read_ev.o itochar.o w_arrow.o w_movie.o
 
  eig2bxsf : $(eig_obj)
-	$(FC) $(LFLAGS) -o $@ $(eig_obj)
-  xv2xsf   : $(xv_obj)
-	$(FC) $(LFLAGS) -o $@ $(xv_obj)
-  md2axsf  : $(md_obj)
-	$(FC) $(LFLAGS) -o $@ $(md_obj)
-  rho2xsf  : $(rho_obj)
-	$(FC) $(LFLAGS) -o $@ $(rho_obj)
-  vib2xsf  : $(vib_obj)
-	$(FC) $(LFLAGS) -o $@ $(vib_obj)
+	$(FC) $(FFLAGS) $(LDFLAGS) -o $@ $(eig_obj)
+ xv2xsf   : $(xv_obj)
+	$(FC) $(FFLAGS) $(LDFLAGS) -o $@ $(xv_obj)
+ md2axsf  : $(md_obj)
+	$(FC) $(FFLAGS) $(LDFLAGS) -o $@ $(md_obj)
+ rho2xsf  : $(rho_obj)
+	$(FC) $(FFLAGS) $(LDFLAGS) -o $@ $(rho_obj)
+ vib2xsf  : $(vib_obj)
+	$(FC) $(FFLAGS) $(LDFLAGS) -o $@ $(vib_obj)
 
 clean:
 	@echo " Cleaning up"
