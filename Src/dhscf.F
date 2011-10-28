@@ -739,20 +739,11 @@ C ----------------------------------------------------------------------
 C Find SCF electron density at mesh points. Store it in array DRho
 C ----------------------------------------------------------------------
 !
-!     We need to expand the capabilities
-!     of the reading routine to handle arbitrary distributions.
+!     The reading routine works in the uniform distribution, in
+!     sequential form
 !
-      if (read_charge_cdf .or. read_deformation_charge_cdf) then
-         read_charge_cdf = .false.
-         read_deformation_charge_cdf = .false.
-         call die("Reading of Charge for SCF not implemented yet")
-      endif
       if (read_charge_cdf) then
          call read_grid_netcdf(ntm(1:3),nspin,ntpl,DRho,"Rho")
-!         do ispin = 1,nspin
-!            call reord( DRho(1,ispin), DRho(1,ispin),
-!                        nml, nsm, TO_CLUSTER)
-!         enddo
          read_charge_cdf = .false.
       else if (read_deformation_charge_cdf) then
          call read_grid_netcdf(ntm(1:3),nspin,ntpl,DRho,"DeltaRho")
@@ -761,12 +752,12 @@ C ----------------------------------------------------------------------
 C             rhoatm and Drho are in sequential mode
               DRho(ip,ispin) = DRho(ip,ispin) + rhoatm(ip)
             enddo
-!            call reord( DRho(1,ispin), DRho(1,ispin),
-!                        nml, nsm, TO_CLUSTER)
          enddo
          read_deformation_charge_cdf = .false.
       else
         ! Set the QUADRATIC distribution and allocate memory for DRho_par
+        ! since the construction of the density from the DM and orbital
+        ! data needs that distribution
         if (nodes.gt.1) then
            call setMeshDistr( QUADRATIC, nsm, nsp,
      &                        nml, nmpl, ntml, ntpl )
