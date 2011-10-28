@@ -6,6 +6,17 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2011-10-28  10:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-390
+Avoid temporary arrays in SiestaXC/mesh3d
+
+Calls with a re-shaped array as argument, and with
+array-section arguments, were inducing some compilers
+to create temporary arrays.
+
+modified:
+  Src/SiestaXC/mesh3d.F90
+
+-----------------------------------------------------------------------
 2011-10-28  10:35:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-389
 Re-instate reading of charge netcdf files
 

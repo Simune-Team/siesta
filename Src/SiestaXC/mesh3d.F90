@@ -1088,7 +1088,11 @@ subroutine divideBox1D( box, nParts, partBox, blockSize, workload )
   implicit none
   integer,          intent(in) :: box(2)
   integer,          intent(in) :: nParts
-  integer,          intent(out):: partBox(2,nParts)
+!
+! Avoid the creation of a temporary array by passing descriptor info
+!!!  integer,          intent(out):: partBox(2,nParts)
+  integer,          intent(out):: partBox(:,:)  
+!
   integer, optional,intent(in) :: blockSize
   real(gp),optional,intent(in) :: workload(0:)
 
@@ -1601,11 +1605,13 @@ subroutine gatherBoxes( box, boxes )
   integer,intent(out):: boxes(2,3,0:totNodes-1)  ! All node's boxes
 
   integer,allocatable:: buffer(:)
+  integer :: box1d(6)    ! To avoid the creation of a temporary array
 
 #ifdef MPI
 ! Gather the boxes of all nodes
   allocate( buffer(6*totNodes) )
-  call MPI_AllGather( reshape(box,(/6/)), 6, MPI_Integer, &
+  box1d(1:6) = reshape(box,(/6/))
+  call MPI_AllGather( box1d , 6, MPI_Integer, &
                       buffer, 6, MPI_Integer, MPI_COMM_WORLD, MPIerror )
   boxes = reshape( buffer, (/2,3,totNodes/) )
   deallocate( buffer )
