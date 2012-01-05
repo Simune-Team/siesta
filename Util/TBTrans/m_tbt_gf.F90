@@ -48,6 +48,7 @@ double precision, allocatable, dimension (:), target :: RS,Refs
 logical RGamma             ! true if Gamma
 real(8), dimension(3,3) ::  Rrcell
 
+
 contains
 
 subroutine alloc_gf_vars(H,S,xij,indxuo,listh,listhptr,numh,efs, ix, &
@@ -147,6 +148,7 @@ end subroutine cp_gf_vars
       use m_tbt_options, only : sppol, Lhsfile, Rhsfile, Lnucuse, &
                   Rnucuse
       use sys, only : die
+      use fdf
 ! FDN
 
 
@@ -285,7 +287,6 @@ end subroutine cp_gf_vars
 
 ! FDF-stuff:
       character*33 paste,header,itemfdf     
-      real*8 fdf_convfac
       external paste
 
 
@@ -305,7 +306,7 @@ end subroutine cp_gf_vars
        tag='Left'
        stag='L'
       else
-!!   left
+!!   right
        gfjob='RIGHT '
        LRSign=-1
        tag='Right'

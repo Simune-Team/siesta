@@ -549,13 +549,15 @@ C Loop again over neighbours -------------------------------------------
 
          IF (IDIMEN .EQ. 2) THEN
            IF ( MOD(NPO,NPX) .EQ. 0 ) THEN
+CC-AG        Use * for single line separation,
+CC-AG        since (/) gives two...
 CC-AG             WRITE(UNIT1,'(/)')
 CC-AG             WRITE(UNIT2,'(/)')
                   WRITE(UNIT1,*)
                   WRITE(UNIT2,*)
              IF ( NSPIN .EQ. 2 ) THEN
-               WRITE(UNIT3,'(/)')
-               WRITE(UNIT4,'(/)')
+               WRITE(UNIT3,*)
+               WRITE(UNIT4,*)
              ENDIF
            ENDIF
          ENDIF
@@ -608,7 +610,11 @@ C End y and z loops
 
       CALL IO_CLOSE(UNIT1)
       CALL IO_CLOSE(UNIT2)
-      CALL IO_CLOSE(UNIT3)
+      !==TS== bug fixed for non spin-polarized cases
+      IF (NSPIN .EQ. 2) THEN
+        CALL IO_CLOSE(UNIT3)
+      ENDIF
+      !==TS== 
       IF (IDIMEN .EQ. 2 .AND. NSPIN .EQ. 2) CALL IO_CLOSE(UNIT4)
      
           

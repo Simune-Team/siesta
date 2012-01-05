@@ -8,7 +8,7 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine cdiag(H,S,n,nm,nml,w,Z,neigvec,iscf,ierror)
+      subroutine cdiag( H, S, n, nm, nml, w, Z, neigvec, iscf, ierror )
 C ***************************************************************************
 C Subroutine  to solve all eigenvalues and eigenvectors of the
 C real general eigenvalue problem  H z = w S z,  with H and S
@@ -82,7 +82,6 @@ C Local variables
       integer                 :: anb
       integer                 :: clustersize
       integer                 :: desch(9)
-      integer                 :: MPIerror
       integer                 :: iacol
       integer                 :: iarow
       integer                 :: iceil
@@ -112,7 +111,6 @@ C Local variables
       real(dp), pointer, save :: gap(:)
       real(dp)                :: dscale
       logical                 :: BlacsOK
-      logical                 :: lBtmp(6)
 C Additional variables for a 2D proc grid
       integer                 :: np2d_row, np2d_col
       integer                 :: my2d_row, my2d_col
@@ -199,26 +197,11 @@ C Initialise error flag
 C Set algorithm logicals
       if (DoRead) then
         DoRead = .false.
-        if (Node.eq.0) then
-          AllInOne      = fdf_boolean('Diag.AllInOne',.false.)
-          DivideConquer = fdf_boolean('Diag.DivideAndConquer',.true.)
-          NoExpert      = fdf_boolean('Diag.NoExpert',.false.)
-          PreRotate     = fdf_boolean('Diag.PreRotate',.false.)
-          Use2D         = fdf_boolean('Diag.Use2D',.true.)
-        endif
-#ifdef MPI
-        lBtmp(1) = AllInOne
-        lBtmp(2) = DivideConquer
-        lBtmp(3) = NoExpert
-        lBtmp(4) = PreRotate
-        lBtmp(5) = Use2D
-        call MPI_Bcast(lBtmp,5,MPI_logical,0,MPI_Comm_World,MPIerror)
-        AllInOne = lBtmp(1)
-        DivideConquer = lBtmp(2) 
-        NoExpert = lBtmp(3) 
-        PreRotate = lBtmp(4) 
-        Use2D = lBtmp(5)
-#endif
+        AllInOne      = fdf_boolean('Diag.AllInOne',.false.)
+        DivideConquer = fdf_boolean('Diag.DivideAndConquer',.true.)
+        NoExpert      = fdf_boolean('Diag.NoExpert',.false.)
+        PreRotate     = fdf_boolean('Diag.PreRotate',.false.)
+        Use2D         = fdf_boolean('Diag.Use2D',.true.)
       endif
       Serial = (Nodes.eq.1.or.ParallelOverK)
       if (Serial) Use2D = .false.
@@ -594,6 +577,11 @@ C If there is insufficient memory due to eigenvalue clustering increase memory
               if (maxclustersize.gt.oldmaxclustersize) then
 C If the memory has increased then try again - otherwise fail
                 ierror = - 1
+                if (Node.eq.0) then
+                   write(6,*) "Re-trying diagonalization "//
+     $                        "with more memory..."
+                endif
+                call timer('cdiag3',2)
                 goto 999
               endif
             endif

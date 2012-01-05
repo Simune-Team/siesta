@@ -1,5 +1,9 @@
 #
 # Makefile for ATM
+#
+# Please note that ATM now depends on the SiestaXC and FoX libraries
+# for its correct compilation. It is not currently possible to have
+# a "standalone" version independent of the rest of the Siesta package.
 # ---------------------------------------------------------------
 #
 .SUFFIXES:
@@ -99,6 +103,7 @@ $(XC):
                           "INCFLAGS=$(XC_INCFLAGS)" \
                           "DEFS=$(DEFS)" \
                           "FPPFLAGS=$(FPPFLAGS)" \
+                          "MPI_INTERFACE= " \
                           "FFLAGS=$(FFLAGS)"  module )
 #
 #

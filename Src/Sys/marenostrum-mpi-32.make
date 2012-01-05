@@ -4,6 +4,7 @@ FC= mpif90   #xlf90_r
 #
 FFLAGS_DEBUG= -g
 FFLAGS=-O3 -qstrict -qtune=ppc970 -qarch=ppc970 -q32
+#FFLAGS=-g -qfullpath -qstrict -qtune=ppc970 -qarch=ppc970 -q32
 FFLAGS_parse=-qsuffix=f=f -qfree #-qfixed
 LDFLAGS= -q32
 COMP_LIBS=

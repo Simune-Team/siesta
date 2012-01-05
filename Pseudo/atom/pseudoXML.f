@@ -73,7 +73,15 @@
 
         case('vw','vf') 
           xcfuntype    = 'VDW'
-          xcfunparam   = 'Dion-et-al'
+          xcfunparam   = 'Dion-et-al--DRSLL'
+
+        case('vl') 
+          xcfuntype    = 'VDW'
+          xcfunparam   = 'Lee-et-al--LMKLL'
+
+        case('vk') 
+          xcfuntype    = 'VDW'
+          xcfunparam   = 'Klimes-et-al--KBM'
 
         case('wc') 
           xcfuntype    = 'GGA'
@@ -82,6 +90,10 @@
         case('ps') 
           xcfuntype    = 'GGA'
           xcfunparam   = 'Perdew-Burke-Ernzerhof-solid'
+
+        case('am') 
+          xcfuntype    = 'GGA'
+          xcfunparam   = 'Armiento-Mattsson-05'
 
       end select
 

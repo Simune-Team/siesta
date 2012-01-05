@@ -8,10 +8,14 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine kinefsm(nua, na, no, scell, xa, indxua, rmaxo, maxo,
+      module m_kinefsm
+      public :: kinefsm
+      CONTAINS
+      subroutine kinefsm(nua, na, no, scell, xa, indxua, rmaxo,
      .                  maxnh, maxnd, lasto, iphorb, isa, 
      .                  numd, listdptr, listd, numh, listhptr, listh, 
-     .                  nspin, Dscf, Ekin, fa, stress, H )
+     .                  nspin, Dscf, Ekin, fa, stress, H,
+     .                  forces_and_stress )
 C *********************************************************************
 C Kinetic contribution to energy, forces, stress and matrix elements.
 C Energies in Ry. Lengths in Bohr.
@@ -24,7 +28,6 @@ C real*8  scell(3,3)       : Supercell vectors SCELL(IXYZ,IVECT)
 C real*8  xa(3,na)         : Atomic positions in cartesian coordinates
 c integer indxua(na)       : Index of equivalent atom in unit cell
 C real*8  rmaxo            : Maximum cutoff for atomic orbitals
-C integer maxo             : Second dimension of Dscf and H
 C integer maxnh            : First dimension of H and listh
 C integer maxnd            : First dimension of Dscf and listd
 C integer lasto(0:na)      : Last orbital index of each atom
@@ -44,6 +47,7 @@ C integer listh(maxnh)     : Column indexes of the nonzero elements
 C                            of each row of the hamiltonian matrix
 C integer nspin            : Number of spin components of Dscf and H
 C integer Dscf(maxnd,nspin): Density matrix
+C logical forces_and_stress   Determines whether fa and stress are touched
 C **************************** OUTPUT *********************************
 C real*8 Ekin              : Kinetic energy in unit cell
 C ********************** INPUT and OUTPUT *****************************
@@ -58,12 +62,13 @@ C
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GlobalToLocalOrb
       use atmfuncs,      only : rcut
-      use neighbour,     only : jna=>jan, r2ij, xij, mneighb
+      use neighbour,     only : jna=>jan, r2ij, xij, mneighb,
+     &                          reset_neighbour_arrays 
       use alloc,         only : re_alloc, de_alloc
 
       implicit none
 
-      integer ::  maxnd, maxnh, maxo, na, no, nspin, nua
+      integer ::  maxnd, maxnh, na, no, nspin, nua
 
       integer
      .  indxua(na), iphorb(no), isa(na), lasto(0:na), 
@@ -74,6 +79,7 @@ C
      .  scell(3,3), Dscf(maxnd,nspin), Ekin, 
      .  fa(3,nua), H(maxnh,nspin), rmaxo, 
      .  stress(3,3), xa(3,na)
+      logical, intent(in)  :: forces_and_stress
 
 C Internal variables ..................................................
   
@@ -94,9 +100,9 @@ C Start timer
 
 C Allocate local memory
       nullify( Di )
-      call re_alloc( Di, 1, no, name='Di', routine='kinefsm' )
+      call re_alloc( Di, 1, no, 'Di', 'kinefsm' )
       nullify( Ti )
-      call re_alloc( Ti, 1, no, name='Ti', routine='kinefsm' )
+      call re_alloc( Ti, 1, no, 'Ti', 'kinefsm' )
 
       volume = nua * volcel(scell) / na
 
@@ -132,19 +138,23 @@ C Valid orbital
                 joa = iphorb(jo)
                 js = isa(ja)
                 if (rcut(is,ioa)+rcut(js,joa) .gt. rij) then
-                  call matel( 'T', is, js, ioa, joa, xij(1,jn),
+                  call MATEL( 'T', is, js, ioa, joa, xij(1,jn),
      .                      Tij, grTij )
                   Ti(jo) = Ti(jo) + Tij
                   Ekin = Ekin + Di(jo) * Tij
-                  do ix = 1,3
-                    fij(ix) = Di(jo) * grTij(ix)
-                    fa(ix,ia)  = fa(ix,ia)  + fij(ix)
-                    fa(ix,jua) = fa(ix,jua) - fij(ix)
-                    do jx = 1,3
-                      stress(jx,ix) = stress(jx,ix) +
-     .                              xij(jx,jn) * fij(ix) / volume
+                  if (forces_and_stress) then
+!                   print *, "No way "
+!                   call pxfflush(6)
+                    do ix = 1,3
+                      fij(ix) = Di(jo) * grTij(ix)
+                      fa(ix,ia)  = fa(ix,ia)  + fij(ix)
+                      fa(ix,jua) = fa(ix,jua) - fij(ix)
+                      do jx = 1,3
+                        stress(jx,ix) = stress(jx,ix) +
+     .                                  xij(jx,jn) * fij(ix) / volume
+                      enddo
                     enddo
-                  enddo
+                  endif 
                 endif
               enddo
             enddo
@@ -165,10 +175,13 @@ C Valid orbital
       enddo
 
 C Deallocate local memory
-      call de_alloc( Ti, name='Ti' )
-      call de_alloc( Di, name='Di' )
+!      call MATEL( 'T', 0, 0, 0, 0, xij, Tij, grTij )
+      call reset_neighbour_arrays( )
+      call de_alloc( Ti, 'Ti', 'kinefsm' )
+      call de_alloc( Di, 'Di', 'kinefsm' )
 
 C Finish timer
       call timer( 'kinefsm', 2 )
 
-      end
+      end subroutine kinefsm
+      end module m_kinefsm

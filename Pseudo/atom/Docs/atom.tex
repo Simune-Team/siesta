@@ -50,7 +50,7 @@
 \par\vspace{3cm}
 \hrulefill
 \par\vspace{3cm}
-{\Large {\bf Version 3.2.8, 29 April 2008}}
+{\Large {\bf Version 3.3.1, 18 June 2010}}
 \par\vspace{2cm}
 \hrulefill
 
@@ -58,7 +58,7 @@
 ICMAB-CSIC, Barcelona
 
 albertog@icmab.es}
-vfill
+\vfill
 \end{center}
 
 \end{titlepage}
@@ -79,7 +79,7 @@ structural changes to the April 1990 (5.0) Minnesota version while at
 Berkeley and elsewhere.
 
 Jose Luis Martins is maintaining his own version of the code:
-\begin{verbatim}{\tt http://bohr.inesc.pt/~jlm/pseudo.html\end{verbatim}
+\begin{verbatim}{\tt http://bohr.inesc-mn.pt/~jlm/pseudo.html\end{verbatim}
 
 
 The program's basic capabilities are:
@@ -151,11 +151,15 @@ materials simulation'', Jour. Phys.: Condens. Matter, 14, 2745-2779
 
 \section{COMPILING THE PROGRAM}
 
-Edit {\tt makefile} in the main source directory, and modify, if
-needed, the defaults for Fortran compiler and auxiliary file
-containing date and time routines (not standard in {\tt Fortran77}).
+(Please note that {\sc ATOM} now depends on the SiestaXC and FoX libraries
+for its correct compilation. It is not currently possible to have
+a ``standalone'' version independent of the rest of the Siesta package.)
 
-Type {\tt make}. After a short while you will have the executable (called
+The Fortran compiler and auxiliary file settings are specified in the
+appropriate {\tt arch.make} file in the Siesta compilation directory.
+
+Just type {\tt make} in the main {\sc ATOM} source directory ({\tt
+Pseudo/atom}). After a short while you will have the executable (called
 {\tt atm}) in that same directory. The program should work for any atom
 without recompilation. 
 
@@ -772,11 +776,20 @@ The file itself is:
           {\tt wc} indicates the WC
           scheme by Z. Wu and R.E. Cohen (PRB 73, 235116 (2006)),
           {\tt bl} selects the BLYP (Becke-Lee-Yang-Parr) scheme,
+          {\tt am} indicates the AM05 scheme by R. Armiento and A.E. Mattsson 
+          (PRB 72, 085108 (2005), PRB 79, 155101 (2009)),
           and {\tt ps} selects the PBEsol scheme by Perdew et al (PRL 100, 136406 (2008))
           (see source file {\tt xc.f} for more details).
           To use the van der Waals functional of M. Dion et al, PRL 92, 246401
           (2004) (as implemented by G. Rom\'an-P\'erez and J. M. Soler,
-          PRL 103, 096102 (2009)), set the string to {\tt vw} or {\tt vf}.
+          PRL 103, 096102 (2009)), set the string to {\tt vw} or {\tt
+            vf}.
+          Another version of the vdW functional, that of Lee et
+          al. (arXiv:1003.5255v1 (2010)) (LMKLL) can be enabled by using
+          {\tt vl},
+          and the Klimes et al. parametrization (JPCM 22, 022201
+          (2009)) (KBM)
+          by using {\tt vk}.
 	  By default, the exchange-correlation energy and potential
 	  are computed using the Balb\'as-Martins-Soler package 
 	  (PRB 64, 165110 (2001)), except for
@@ -797,8 +810,10 @@ The file itself is:
 	(format 3x,a2,3x,a2,a1,2x)
 
 \item Third line. Its use is somewhat esoteric and for most
-		calculations it should contain just a 0.0 in the
-		position shown.
+  calculations it should contain just a 0.0 in the position shown, but
+  that first field might be useful to generate pseudopotentials for
+  ``atoms'' with a fractional atomic number (see the example for ON in
+  the {\tt Tutorial/PS\_Generation} directory).
 \end{itemize}
 
 The rest of the file is devoted to the specification of the electronic

@@ -10,9 +10,13 @@
 ! blypxc,   ! Becke-Lee-Yang-Parr (see subroutine blypxc)
 ! pbexc,    ! Perdew, Burke & Ernzerhof, PRL 77, 3865 (1996)
 ! pbesolxc, ! Perdew et al, PRL, 100, 136406 (2008)
+! pw86x,    ! Perdew & Wang, PRB 33, 8800 (1986) (exchange only)
+! pw86rx,   ! Perdew & Wang, PRB 33, 8800 (1986) refitted by
+!           ! E.D.Murray, K.Lee & D.C.Langreth, JCTC 5, 2754 (2009)
 ! pw91xc,   ! Perdew & Wang, JCP, 100, 1290 (1994)
 ! revpbexc, ! GGA Zhang & Yang, PRL 80,890(1998)
 ! rpbexc,   ! Hammer, Hansen & Norskov, PRB 59, 7413 (1999)
+! am05xc,   ! Mattsson & Armiento, PRB, 79, 155101 (2009)
 ! wcxc      ! Wu-Cohen (see subroutine wcxc)
 !
 !   PUBLIC parameters, types, and variables available from this module:
@@ -50,9 +54,13 @@
      .  blypxc,   ! Becke-Lee-Yang-Parr (see subroutine blypxc)
      .  pbexc,    ! Perdew, Burke & Ernzerhof, PRL 77, 3865 (1996)
      .  pbesolxc, ! Perdew et al, PRL, 100, 136406 (2008)
+     .  pw86x,    ! Perdew & Wang, PRB 33, 8800 (1986) (exchange only)
+     .  pw86rx,   ! Perdew & Wang, PRB 33, 8800 (1986) refitted by
+                  ! E.D.Murray, K.Lee & D.C.Langreth, JCTC 5, 2754 (2009)
      .  pw91xc,   ! Perdew & Wang, JCP, 100, 1290 (1994)
      .  revpbexc, ! GGA Zhang & Yang, PRL 80,890(1998)
      .  rpbexc,   ! Hammer, Hansen & Norskov, PRB 59, 7413 (1999)
+     .  am05xc,   ! Mattsson & Armiento, PRB, 79, 155101 (2009)
      .  wcxc      ! Wu-Cohen (see subroutine wcxc)
 
       PRIVATE  ! Nothing is declared public beyond this point
@@ -66,7 +74,7 @@ C Finds the exchange and correlation energies at a point, and their
 C derivatives with respect to density and density gradient, in the
 C Generalized Gradient Correction approximation.
 C Lengths in Bohr, energies in Hartrees
-C Written by L.C.Balbas and J.M.Soler, Dec'96. myVersion 0.5.
+C Written by L.C.Balbas and J.M.Soler, Dec'96.
 C Modified by V.M.Garcia-Suarez to include non-collinear spin. June 2002
 C Non collinear part rewritten by J.M.Soler. Sept. 2009
 
@@ -195,6 +203,42 @@ C Non collinear part rewritten by J.M.Soler. Sept. 2009
         CALL PBESOLXC( IREL, NS, DD, GDD,
      .                 EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
 
+      ELSEIF (AUTHOR.EQ.'AM05'.OR.AUTHOR.EQ.'am05') THEN
+        CALL AM05XC( IREL, NS, DD, GDD,
+     .               EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
+
+      ELSEIF (AUTHOR.EQ.'PBE(JsJrLO)') THEN
+        CALL PBEJsJrLOxc( IREL, NS, DD, GDD,
+     .                  EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
+
+      ELSEIF (AUTHOR.EQ.'PBE(JsJrHEG)') THEN
+        CALL PBEJsJrHEGxc( IREL, NS, DD, GDD,
+     .                  EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
+
+      ELSEIF (AUTHOR.EQ.'PBE(GcGxLO)') THEN
+        CALL PBEGcGxLOxc( IREL, NS, DD, GDD,
+     .                  EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
+
+      ELSEIF (AUTHOR.EQ.'PBE(GcGxHEG)') THEN
+        CALL PBEGcGxHEGxc( IREL, NS, DD, GDD,
+     .                  EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
+
+      ELSEIF (AUTHOR.EQ.'PW86') THEN
+        CALL PW86X( IREL, NS, DD, GDD,
+     .              EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
+
+      ELSEIF (AUTHOR.EQ.'PW86R') THEN
+        CALL PW86RX( IREL, NS, DD, GDD,
+     .               EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
+
+      ELSEIF (AUTHOR.EQ.'B88') THEN
+        CALL B88X( IREL, NS, DD, GDD,
+     .             EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
+
+      ELSEIF (AUTHOR.EQ.'B88KBM') THEN
+        CALL B88KBMX( IREL, NS, DD, GDD,
+     .             EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
+
       ELSE
         call die('GGAXC: Unknown author ' // trim(AUTHOR))
       ENDIF
@@ -226,13 +270,224 @@ C Non collinear part rewritten by J.M.Soler. Sept. 2009
         dEXdGD(:,3:4) = dEXdGD(:,3:4) / 2
         dECdGD(:,3:4) = dECdGD(:,3:4) / 2
       else   ! Collinear spin => just copy derivatives to output arrays
-        dEXdD = dEXdDD
-        dECdD = dECdDD
-        dEXdGD = dEXdGDD
-        dECdGD = dECdGDD
+        dEXdD(1:nSpin) = dEXdDD(1:nSpin)
+        dECdD(1:nSpin) = dECdDD(1:nSpin)
+        dEXdGD(:,1:nSpin) = dEXdGDD(:,1:nSpin)
+        dECdGD(:,1:nSpin) = dECdGDD(:,1:nSpin)
       end if ! (nSpin==4)
 
       END SUBROUTINE GGAXC
+
+
+
+      SUBROUTINE PBEformXC( beta, mu, kappa, iRel, nSpin, Dens, GDens,
+     .                      EX, EC, dEXdD, dECdD, dEXdGD, dECdGD )
+
+C *********************************************************************
+C Implements Perdew-Burke-Ernzerhof Generalized-Gradient-Approximation
+C functional form, but with variable values for parameters beta, mu, and
+C kappa. Ref: J.P.Perdew, K.Burke & M.Ernzerhof, PRL 77, 3865 (1996)
+C Written by L.C.Balbas and J.M.Soler. December 1996. 
+C ******** INPUT ******************************************************
+C REAL*8  BETA           : Parameter beta of the PBE functional
+C REAL*8  MU             : Parameter mu of the PBE functional
+C REAL*8  KAPPA          : Parameter kappa of the PBE functional
+C INTEGER IREL           : Relativistic-exchange switch (0=No, 1=Yes)
+C INTEGER nspin          : Number of spin polarizations (1 or 2)
+C REAL*8  Dens(nspin)    : Total electron density (if nspin=1) or
+C                           spin electron density (if nspin=2)
+C REAL*8  GDens(3,nspin) : Total or spin density gradient
+C ******** OUTPUT *****************************************************
+C REAL*8  EX             : Exchange energy density
+C REAL*8  EC             : Correlation energy density
+C REAL*8  DEXDD(nspin)   : Partial derivative
+C                           d(DensTot*Ex)/dDens(ispin),
+C                           where DensTot = Sum_ispin( Dens(ispin) )
+C                          For a constant density, this is the
+C                          exchange potential
+C REAL*8  DECDD(nspin)   : Partial derivative
+C                           d(DensTot*Ec)/dDens(ispin),
+C                           where DensTot = Sum_ispin( Dens(ispin) )
+C                          For a constant density, this is the
+C                          correlation potential
+C REAL*8  DEXDGD(3,nspin): Partial derivative
+C                           d(DensTot*Ex)/d(GradDens(i,ispin))
+C REAL*8  DECDGD(3,nspin): Partial derivative
+C                           d(DensTot*Ec)/d(GradDens(i,ispin))
+C ********* UNITS ****************************************************
+C Lengths in Bohr
+C Densities in electrons per Bohr**3
+C Energies in Hartrees
+C Gradient vectors in cartesian coordinates
+C ********* ROUTINES CALLED ******************************************
+C EXCHNG, PW92C
+C ********************************************************************
+
+      implicit none
+
+C Input
+      real(dp),intent(in) :: beta           ! Parameter of PBE functional
+      real(dp),intent(in) :: mu             ! Parameter of PBE functional
+      real(dp),intent(in) :: kappa          ! Parameter of PBE functional
+      integer, intent(in) :: iRel           ! Relativistic exchange? 0=no, 1=yes
+      integer, intent(in) :: nSpin          ! Number of spin components
+      real(dp),intent(in) :: Dens(nSpin)    ! Local electron (spin) density
+      real(dp),intent(in) :: GDens(3,nSpin) ! Gradient of electron density
+
+C Output
+      real(dp),intent(out):: EX             ! Exchange energy per electron
+      real(dp),intent(out):: EC             ! Correlation energy per electron
+      real(dp),intent(out):: dEXdD(nSpin)   ! dEx/dDens, Ex=Int(dens*epsX)
+      real(dp),intent(out):: dECdD(nSpin)   ! dEc/dDens
+      real(dp),intent(out):: dEXdGD(3,nSpin) ! dEx/dGrad(Dens)
+      real(dp),intent(out):: dECdGD(3,nSpin) ! dEc/dGrad(Dens)
+
+C Internal variables
+      INTEGER
+     .  IS, IX
+      real(dp)
+     .  A, D(2), DADD, DECUDD, DENMIN, 
+     .  DF1DD, DF2DD, DF3DD, DF4DD, DF1DGD, DF3DGD, DF4DGD,
+     .  DFCDD(2), DFCDGD(3,2), DFDD, DFDGD, DFXDD(2), DFXDGD(3,2),
+     .  DHDD, DHDGD, DKFDD, DKSDD, DPDD, DPDZ, DRSDD, 
+     .  DS(2), DSDD, DSDGD, DT, DTDD, DTDGD, DZDD(2), 
+     .  ECUNIF, EXUNIF,
+     .  F, F1, F2, F3, F4, FC, FX, FOUTHD,
+     .  GAMMA, GD(3,2), GDM(2), GDMIN, GDMS, GDMT, GDS, GDT(3),
+     .  H, HALF, KF, KFS, KS, PHI, PI, RS, S,
+     .  T, THD, THRHLF, TWO, TWOTHD, VCUNIF(2), VXUNIF(2), ZETA
+
+C Lower bounds of density and its gradient to avoid divisions by zero
+      PARAMETER ( DENMIN = 1.D-12 )
+      PARAMETER ( GDMIN  = 1.D-12 )
+
+C Fix some numerical parameters
+      PARAMETER ( FOUTHD=4.D0/3.D0, HALF=0.5D0,
+     .            THD=1.D0/3.D0, THRHLF=1.5D0,
+     .            TWO=2.D0, TWOTHD=2.D0/3.D0 )
+
+C Fix some more numerical constants
+      PI = 4 * ATAN(1.D0)
+      GAMMA = (1 - LOG(TWO)) / PI**2
+
+C Translate density and its gradient to new variables
+      IF (nspin .EQ. 1) THEN
+        D(1) = HALF * Dens(1)
+        D(2) = D(1)
+        DT = MAX( DENMIN, Dens(1) )
+        DO 10 IX = 1,3
+          GD(IX,1) = HALF * GDens(IX,1)
+          GD(IX,2) = GD(IX,1)
+          GDT(IX) = GDens(IX,1)
+   10   CONTINUE
+      ELSE
+        D(1) = Dens(1)
+        D(2) = Dens(2)
+        DT = MAX( DENMIN, Dens(1)+Dens(2) )
+        DO 20 IX = 1,3
+          GD(IX,1) = GDens(IX,1)
+          GD(IX,2) = GDens(IX,2)
+          GDT(IX) = GDens(IX,1) + GDens(IX,2)
+   20   CONTINUE
+      ENDIF
+      GDM(1) = SQRT( GD(1,1)**2 + GD(2,1)**2 + GD(3,1)**2 )
+      GDM(2) = SQRT( GD(1,2)**2 + GD(2,2)**2 + GD(3,2)**2 )
+      GDMT   = SQRT( GDT(1)**2  + GDT(2)**2  + GDT(3)**2  )
+      GDMT = MAX( GDMIN, GDMT )
+
+C Find local correlation energy and potential
+      CALL PW92C( 2, D, ECUNIF, VCUNIF )
+
+C Find total correlation energy
+      RS = ( 3 / (4*PI*DT) )**THD
+      KF = (3 * PI**2 * DT)**THD
+      KS = SQRT( 4 * KF / PI )
+      ZETA = ( D(1) - D(2) ) / DT
+      ZETA = MAX( -1.D0+DENMIN, ZETA )
+      ZETA = MIN(  1.D0-DENMIN, ZETA )
+      PHI = HALF * ( (1+ZETA)**TWOTHD + (1-ZETA)**TWOTHD )
+      T = GDMT / (2 * PHI * KS * DT)
+      F1 = ECUNIF / GAMMA / PHI**3
+      F2 = EXP(-F1)
+      A = BETA / GAMMA / (F2-1)
+      F3 = T**2 + A * T**4
+      F4 = BETA/GAMMA * F3 / (1 + A*F3)
+      H = GAMMA * PHI**3 * LOG( 1 + F4 )
+      FC = ECUNIF + H
+
+C Find correlation energy derivatives
+      DRSDD = - (THD * RS / DT)
+      DKFDD =   THD * KF / DT
+      DKSDD = HALF * KS * DKFDD / KF
+      DZDD(1) =   1 / DT - ZETA / DT
+      DZDD(2) = - (1 / DT) - ZETA / DT
+      DPDZ = HALF * TWOTHD * ( 1/(1+ZETA)**THD - 1/(1-ZETA)**THD )
+      DO 40 IS = 1,2
+        DECUDD = ( VCUNIF(IS) - ECUNIF ) / DT
+        DPDD = DPDZ * DZDD(IS)
+        DTDD = (- T) * ( DPDD/PHI + DKSDD/KS + 1/DT )
+        DF1DD = F1 * ( DECUDD/ECUNIF - 3*DPDD/PHI )
+        DF2DD = (- F2) * DF1DD
+        DADD = (- A) * DF2DD / (F2-1)
+        DF3DD = (2*T + 4*A*T**3) * DTDD + DADD * T**4
+        DF4DD = F4 * ( DF3DD/F3 - (DADD*F3+A*DF3DD)/(1+A*F3) )
+        DHDD = 3 * H * DPDD / PHI
+        DHDD = DHDD + GAMMA * PHI**3 * DF4DD / (1+F4)
+        DFCDD(IS) = VCUNIF(IS) + H + DT * DHDD
+
+        DO 30 IX = 1,3
+          DTDGD = (T / GDMT) * GDT(IX) / GDMT
+          DF3DGD = DTDGD * ( 2 * T + 4 * A * T**3 )
+          DF4DGD = F4 * DF3DGD * ( 1/F3 - A/(1+A*F3) ) 
+          DHDGD = GAMMA * PHI**3 * DF4DGD / (1+F4)
+          DFCDGD(IX,IS) = DT * DHDGD
+   30   CONTINUE
+   40 CONTINUE
+
+C Find exchange energy and potential
+      FX = 0
+      DO 60 IS = 1,2
+        DS(IS)   = MAX( DENMIN, 2 * D(IS) )
+        GDMS = MAX( GDMIN, 2 * GDM(IS) )
+        KFS = (3 * PI**2 * DS(IS))**THD
+        S = GDMS / (2 * KFS * DS(IS))
+        F1 = 1 + MU * S**2 / KAPPA
+        F = 1 + KAPPA - KAPPA / F1
+c
+c       Note nspin=1 in call to exchng...
+c
+        CALL EXCHNG( IREL, 1, DS(IS), EXUNIF, VXUNIF(IS) )
+        FX = FX + DS(IS) * EXUNIF * F
+
+        DKFDD = THD * KFS / DS(IS)
+        DSDD = S * ( -(DKFDD/KFS) - 1/DS(IS) )
+        DF1DD = 2 * (F1-1) * DSDD / S
+        DFDD = KAPPA * DF1DD / F1**2
+        DFXDD(IS) = VXUNIF(IS) * F + DS(IS) * EXUNIF * DFDD
+
+        DO 50 IX = 1,3
+          GDS = 2 * GD(IX,IS)
+          DSDGD = (S / GDMS) * GDS / GDMS
+          DF1DGD = 2 * MU * S * DSDGD / KAPPA
+          DFDGD = KAPPA * DF1DGD / F1**2
+          DFXDGD(IX,IS) = DS(IS) * EXUNIF * DFDGD
+   50   CONTINUE
+   60 CONTINUE
+      FX = HALF * FX / DT
+
+C Set output arguments
+      EX = FX
+      EC = FC
+      DO 90 IS = 1,nspin
+        DEXDD(IS) = DFXDD(IS)
+        DECDD(IS) = DFCDD(IS)
+        DO 80 IX = 1,3
+          DEXDGD(IX,IS) = DFXDGD(IX,IS)
+          DECDGD(IX,IS) = DFCDGD(IX,IS)
+   80   CONTINUE
+   90 CONTINUE
+
+      END SUBROUTINE PBEformXC
 
 
 
@@ -242,7 +497,7 @@ C Non collinear part rewritten by J.M.Soler. Sept. 2009
 C *********************************************************************
 C Implements Perdew-Burke-Ernzerhof Generalized-Gradient-Approximation.
 C Ref: J.P.Perdew, K.Burke & M.Ernzerhof, PRL 77, 3865 (1996)
-C Written by L.C.Balbas and J.M.Soler. December 1996. myVersion 0.5.
+C Modified to call PBEformXC by J.M.Soler. December 2009.
 C ******** INPUT ******************************************************
 C INTEGER IREL           : Relativistic-exchange switch (0=No, 1=Yes)
 C INTEGER nspin          : Number of spin polarizations (1 or 2)
@@ -275,364 +530,259 @@ C ********* ROUTINES CALLED ******************************************
 C EXCHNG, PW92C
 C ********************************************************************
 
-      use precision, only : dp
+      IMPLICIT NONE
 
-      implicit          none
-      INTEGER           IREL, nspin
-      real(dp)          Dens(nspin), DECDD(nspin), DECDGD(3,nspin),
-     .                  DEXDD(nspin), DEXDGD(3,nspin), GDens(3,nspin)
+C Passed arguments
+      integer, intent(in) :: IREL, NSPIN
+      real(dp),intent(in) :: DENS(NSPIN), GDENS(3,NSPIN)
+      real(dp),intent(out):: EX, EC, DECDD(NSPIN), DECDGD(3,NSPIN),
+     .                       DEXDD(NSPIN), DEXDGD(3,NSPIN)
 
 C Internal variables
-      INTEGER
-     .  IS, IX
+      real(dp):: BETA, KAPPA, MU, PI
 
-      real(dp)
-     .  A, BETA, D(2), DADD, DECUDD, DENMIN, 
-     .  DF1DD, DF2DD, DF3DD, DF4DD, DF1DGD, DF3DGD, DF4DGD,
-     .  DFCDD(2), DFCDGD(3,2), DFDD, DFDGD, DFXDD(2), DFXDGD(3,2),
-     .  DHDD, DHDGD, DKFDD, DKSDD, DPDD, DPDZ, DRSDD, 
-     .  DS(2), DSDD, DSDGD, DT, DTDD, DTDGD, DZDD(2), 
-     .  EC, ECUNIF, EX, EXUNIF,
-     .  F, F1, F2, F3, F4, FC, FX, FOUTHD,
-     .  GAMMA, GD(3,2), GDM(2), GDMIN, GDMS, GDMT, GDS, GDT(3),
-     .  H, HALF, KAPPA, KF, KFS, KS, MU, PHI, PI, RS, S,
-     .  T, THD, THRHLF, TWO, TWOTHD, VCUNIF(2), VXUNIF(2), ZETA
+C Fix values for PBE functional parameters
+      PI = 4 * ATAN(1._dp)
+      BETA = 0.066725_dp       ! From grad. exp. for correl. rs->0
+      MU = BETA * PI**2 / 3    ! From Jell. response for x+c
+      KAPPA = 0.804_dp         ! From general Lieb-Oxford bound
 
-C Lower bounds of density and its gradient to avoid divisions by zero
-      PARAMETER ( DENMIN = 1.D-12 )
-      PARAMETER ( GDMIN  = 1.D-12 )
-
-C Fix some numerical parameters
-      PARAMETER ( FOUTHD=4.D0/3.D0, HALF=0.5D0,
-     .            THD=1.D0/3.D0, THRHLF=1.5D0,
-     .            TWO=2.D0, TWOTHD=2.D0/3.D0 )
-
-C Fix some more numerical constants
-      PI = 4 * ATAN(1.D0)
-      BETA = 0.066725D0
-      GAMMA = (1 - LOG(TWO)) / PI**2
-      MU = BETA * PI**2 / 3
-      KAPPA = 0.804D0
-
-C Translate density and its gradient to new variables
-      IF (nspin .EQ. 1) THEN
-        D(1) = HALF * Dens(1)
-        D(2) = D(1)
-        DT = MAX( DENMIN, Dens(1) )
-        DO 10 IX = 1,3
-          GD(IX,1) = HALF * GDens(IX,1)
-          GD(IX,2) = GD(IX,1)
-          GDT(IX) = GDens(IX,1)
-   10   CONTINUE
-      ELSE
-        D(1) = Dens(1)
-        D(2) = Dens(2)
-        DT = MAX( DENMIN, Dens(1)+Dens(2) )
-        DO 20 IX = 1,3
-          GD(IX,1) = GDens(IX,1)
-          GD(IX,2) = GDens(IX,2)
-          GDT(IX) = GDens(IX,1) + GDens(IX,2)
-   20   CONTINUE
-      ENDIF
-      GDM(1) = SQRT( GD(1,1)**2 + GD(2,1)**2 + GD(3,1)**2 )
-      GDM(2) = SQRT( GD(1,2)**2 + GD(2,2)**2 + GD(3,2)**2 )
-      GDMT   = SQRT( GDT(1)**2  + GDT(2)**2  + GDT(3)**2  )
-      GDMT = MAX( GDMIN, GDMT )
-
-C Find local correlation energy and potential
-      CALL PW92C( 2, D, ECUNIF, VCUNIF )
-
-C Find total correlation energy
-      RS = ( 3 / (4*PI*DT) )**THD
-      KF = (3 * PI**2 * DT)**THD
-      KS = SQRT( 4 * KF / PI )
-      ZETA = ( D(1) - D(2) ) / DT
-      ZETA = MAX( -1.D0+DENMIN, ZETA )
-      ZETA = MIN(  1.D0-DENMIN, ZETA )
-      PHI = HALF * ( (1+ZETA)**TWOTHD + (1-ZETA)**TWOTHD )
-      T = GDMT / (2 * PHI * KS * DT)
-      F1 = ECUNIF / GAMMA / PHI**3
-      F2 = EXP(-F1)
-      A = BETA / GAMMA / (F2-1)
-      F3 = T**2 + A * T**4
-      F4 = BETA/GAMMA * F3 / (1 + A*F3)
-      H = GAMMA * PHI**3 * LOG( 1 + F4 )
-      FC = ECUNIF + H
-
-C Find correlation energy derivatives
-      DRSDD = - (THD * RS / DT)
-      DKFDD =   THD * KF / DT
-      DKSDD = HALF * KS * DKFDD / KF
-      DZDD(1) =   1 / DT - ZETA / DT
-      DZDD(2) = - (1 / DT) - ZETA / DT
-      DPDZ = HALF * TWOTHD * ( 1/(1+ZETA)**THD - 1/(1-ZETA)**THD )
-      DO 40 IS = 1,2
-        DECUDD = ( VCUNIF(IS) - ECUNIF ) / DT
-        DPDD = DPDZ * DZDD(IS)
-        DTDD = (- T) * ( DPDD/PHI + DKSDD/KS + 1/DT )
-        DF1DD = F1 * ( DECUDD/ECUNIF - 3*DPDD/PHI )
-        DF2DD = (- F2) * DF1DD
-        DADD = (- A) * DF2DD / (F2-1)
-        DF3DD = (2*T + 4*A*T**3) * DTDD + DADD * T**4
-        DF4DD = F4 * ( DF3DD/F3 - (DADD*F3+A*DF3DD)/(1+A*F3) )
-        DHDD = 3 * H * DPDD / PHI
-        DHDD = DHDD + GAMMA * PHI**3 * DF4DD / (1+F4)
-        DFCDD(IS) = VCUNIF(IS) + H + DT * DHDD
-
-        DO 30 IX = 1,3
-          DTDGD = (T / GDMT) * GDT(IX) / GDMT
-          DF3DGD = DTDGD * ( 2 * T + 4 * A * T**3 )
-          DF4DGD = F4 * DF3DGD * ( 1/F3 - A/(1+A*F3) ) 
-          DHDGD = GAMMA * PHI**3 * DF4DGD / (1+F4)
-          DFCDGD(IX,IS) = DT * DHDGD
-   30   CONTINUE
-   40 CONTINUE
-
-C Find exchange energy and potential
-      FX = 0
-      DO 60 IS = 1,2
-        DS(IS)   = MAX( DENMIN, 2 * D(IS) )
-        GDMS = MAX( GDMIN, 2 * GDM(IS) )
-        KFS = (3 * PI**2 * DS(IS))**THD
-        S = GDMS / (2 * KFS * DS(IS))
-        F1 = 1 + MU * S**2 / KAPPA
-        F = 1 + KAPPA - KAPPA / F1
-c
-c       Note nspin=1 in call to exchng...
-c
-        CALL EXCHNG( IREL, 1, DS(IS), EXUNIF, VXUNIF(IS) )
-        FX = FX + DS(IS) * EXUNIF * F
-
-        DKFDD = THD * KFS / DS(IS)
-        DSDD = S * ( -(DKFDD/KFS) - 1/DS(IS) )
-        DF1DD = 2 * (F1-1) * DSDD / S
-        DFDD = KAPPA * DF1DD / F1**2
-        DFXDD(IS) = VXUNIF(IS) * F + DS(IS) * EXUNIF * DFDD
-
-        DO 50 IX = 1,3
-          GDS = 2 * GD(IX,IS)
-          DSDGD = (S / GDMS) * GDS / GDMS
-          DF1DGD = 2 * MU * S * DSDGD / KAPPA
-          DFDGD = KAPPA * DF1DGD / F1**2
-          DFXDGD(IX,IS) = DS(IS) * EXUNIF * DFDGD
-   50   CONTINUE
-   60 CONTINUE
-      FX = HALF * FX / DT
-
-C Set output arguments
-      EX = FX
-      EC = FC
-      DO 90 IS = 1,nspin
-        DEXDD(IS) = DFXDD(IS)
-        DECDD(IS) = DFCDD(IS)
-        DO 80 IX = 1,3
-          DEXDGD(IX,IS) = DFXDGD(IX,IS)
-          DECDGD(IX,IS) = DFCDGD(IX,IS)
-   80   CONTINUE
-   90 CONTINUE
+C Call PBE routine with appropriate values for beta, mu, and kappa.
+      CALL PBEformXC( BETA, MU, KAPPA, IREL, nspin, Dens, GDens,
+     .                EX, EC, DEXDD, DECDD, DEXDGD, DECDGD )
 
       END SUBROUTINE PBEXC
 
 
 
       SUBROUTINE REVPBEXC( IREL, nspin, Dens, GDens,
-     .                  EX, EC, DEXDD, DECDD, DEXDGD, DECDGD )
+     .                     EX, EC, DEXDD, DECDD, DEXDGD, DECDGD )
 
 C *********************************************************************
 C Implements revPBE: revised Perdew-Burke-Ernzerhof GGA.
 C Ref: Y. Zhang & W. Yang, Phys. Rev. Lett. 80, 890 (1998).
-C Written by E. Artacho in January 2006 by modifying the PBE routine of 
-C L.C.Balbas and J.M.Soler. December 1996. myVersion 0.5.
-C ******** INPUT ******************************************************
-C INTEGER IREL           : Relativistic-exchange switch (0=No, 1=Yes)
-C INTEGER nspin          : Number of spin polarizations (1 or 2)
-C REAL*8  Dens(nspin)    : Total electron density (if nspin=1) or
-C                           spin electron density (if nspin=2)
-C REAL*8  GDens(3,nspin) : Total or spin density gradient
-C ******** OUTPUT *****************************************************
-C REAL*8  EX             : Exchange energy density
-C REAL*8  EC             : Correlation energy density
-C REAL*8  DEXDD(nspin)   : Partial derivative
-C                           d(DensTot*Ex)/dDens(ispin),
-C                           where DensTot = Sum_ispin( Dens(ispin) )
-C                          For a constant density, this is the
-C                          exchange potential
-C REAL*8  DECDD(nspin)   : Partial derivative
-C                           d(DensTot*Ec)/dDens(ispin),
-C                           where DensTot = Sum_ispin( Dens(ispin) )
-C                          For a constant density, this is the
-C                          correlation potential
-C REAL*8  DEXDGD(3,nspin): Partial derivative
-C                           d(DensTot*Ex)/d(GradDens(i,ispin))
-C REAL*8  DECDGD(3,nspin): Partial derivative
-C                           d(DensTot*Ec)/d(GradDens(i,ispin))
-C ********* UNITS ****************************************************
-C Lengths in Bohr
-C Densities in electrons per Bohr**3
-C Energies in Hartrees
-C Gradient vectors in cartesian coordinates
-C ********* ROUTINES CALLED ******************************************
-C EXCHNG, PW92C
+C Same interface as PBEXC.
+C revPBE parameters introduced by E. Artacho in January 2006
+C Modified to call PBEformXC by J.M.Soler. December 2009.
 C ********************************************************************
 
-      use precision, only : dp
+      IMPLICIT NONE
 
-      implicit          none
-      INTEGER           IREL, nspin
-      real(dp)          Dens(nspin), DECDD(nspin), DECDGD(3,nspin),
-     .                  DEXDD(nspin), DEXDGD(3,nspin), GDens(3,nspin)
+C Passed arguments
+      integer, intent(in) :: IREL, NSPIN
+      real(dp),intent(in) :: DENS(NSPIN), GDENS(3,NSPIN)
+      real(dp),intent(out):: EX, EC, DECDD(NSPIN), DECDGD(3,NSPIN),
+     .                       DEXDD(NSPIN), DEXDGD(3,NSPIN)
 
 C Internal variables
-      INTEGER
-     .  IS, IX
+      real(dp):: BETA, KAPPA, MU, PI
 
-      real(dp)
-     .  A, BETA, D(2), DADD, DECUDD, DENMIN, 
-     .  DF1DD, DF2DD, DF3DD, DF4DD, DF1DGD, DF3DGD, DF4DGD,
-     .  DFCDD(2), DFCDGD(3,2), DFDD, DFDGD, DFXDD(2), DFXDGD(3,2),
-     .  DHDD, DHDGD, DKFDD, DKSDD, DPDD, DPDZ, DRSDD, 
-     .  DS(2), DSDD, DSDGD, DT, DTDD, DTDGD, DZDD(2), 
-     .  EC, ECUNIF, EX, EXUNIF,
-     .  F, F1, F2, F3, F4, FC, FX, FOUTHD,
-     .  GAMMA, GD(3,2), GDM(2), GDMIN, GDMS, GDMT, GDS, GDT(3),
-     .  H, HALF, KAPPA, KF, KFS, KS, MU, PHI, PI, RS, S,
-     .  T, THD, THRHLF, TWO, TWOTHD, VCUNIF(2), VXUNIF(2), ZETA
+C Fix values for PBE functional parameters
+      PI = 4 * ATAN(1._dp)
+      BETA = 0.066725_dp       ! From grad. exp. for correl. rs->0
+      MU = BETA * PI**2 / 3    ! From Jell. response for x+c
+      KAPPA = 1.245_dp         ! From fit of molecular energies
 
-C Lower bounds of density and its gradient to avoid divisions by zero
-      PARAMETER ( DENMIN = 1.D-12 )
-      PARAMETER ( GDMIN  = 1.D-12 )
-
-C Fix some numerical parameters
-      PARAMETER ( FOUTHD=4.D0/3.D0, HALF=0.5D0,
-     .            THD=1.D0/3.D0, THRHLF=1.5D0,
-     .            TWO=2.D0, TWOTHD=2.D0/3.D0 )
-
-C Fix some more numerical constants
-      PI = 4 * ATAN(1.D0)
-      BETA = 0.066725D0
-      GAMMA = (1 - LOG(TWO)) / PI**2
-      MU = BETA * PI**2 / 3
-cea  The only modification w.r.t. PBE in this following line.
-      KAPPA = 1.245D0
-
-C Translate density and its gradient to new variables
-      IF (nspin .EQ. 1) THEN
-        D(1) = HALF * Dens(1)
-        D(2) = D(1)
-        DT = MAX( DENMIN, Dens(1) )
-        DO 10 IX = 1,3
-          GD(IX,1) = HALF * GDens(IX,1)
-          GD(IX,2) = GD(IX,1)
-          GDT(IX) = GDens(IX,1)
-   10   CONTINUE
-      ELSE
-        D(1) = Dens(1)
-        D(2) = Dens(2)
-        DT = MAX( DENMIN, Dens(1)+Dens(2) )
-        DO 20 IX = 1,3
-          GD(IX,1) = GDens(IX,1)
-          GD(IX,2) = GDens(IX,2)
-          GDT(IX) = GDens(IX,1) + GDens(IX,2)
-   20   CONTINUE
-      ENDIF
-      GDM(1) = SQRT( GD(1,1)**2 + GD(2,1)**2 + GD(3,1)**2 )
-      GDM(2) = SQRT( GD(1,2)**2 + GD(2,2)**2 + GD(3,2)**2 )
-      GDMT   = SQRT( GDT(1)**2  + GDT(2)**2  + GDT(3)**2  )
-      GDMT = MAX( GDMIN, GDMT )
-
-C Find local correlation energy and potential
-      CALL PW92C( 2, D, ECUNIF, VCUNIF )
-
-C Find total correlation energy
-      RS = ( 3 / (4*PI*DT) )**THD
-      KF = (3 * PI**2 * DT)**THD
-      KS = SQRT( 4 * KF / PI )
-      ZETA = ( D(1) - D(2) ) / DT
-      ZETA = MAX( -1.D0+DENMIN, ZETA )
-      ZETA = MIN(  1.D0-DENMIN, ZETA )
-      PHI = HALF * ( (1+ZETA)**TWOTHD + (1-ZETA)**TWOTHD )
-      T = GDMT / (2 * PHI * KS * DT)
-      F1 = ECUNIF / GAMMA / PHI**3
-      F2 = EXP(-F1)
-      A = BETA / GAMMA / (F2-1)
-      F3 = T**2 + A * T**4
-      F4 = BETA/GAMMA * F3 / (1 + A*F3)
-      H = GAMMA * PHI**3 * LOG( 1 + F4 )
-      FC = ECUNIF + H
-
-C Find correlation energy derivatives
-      DRSDD = - (THD * RS / DT)
-      DKFDD =   THD * KF / DT
-      DKSDD = HALF * KS * DKFDD / KF
-      DZDD(1) =   1 / DT - ZETA / DT
-      DZDD(2) = - (1 / DT) - ZETA / DT
-      DPDZ = HALF * TWOTHD * ( 1/(1+ZETA)**THD - 1/(1-ZETA)**THD )
-      DO 40 IS = 1,2
-        DECUDD = ( VCUNIF(IS) - ECUNIF ) / DT
-        DPDD = DPDZ * DZDD(IS)
-        DTDD = (- T) * ( DPDD/PHI + DKSDD/KS + 1/DT )
-        DF1DD = F1 * ( DECUDD/ECUNIF - 3*DPDD/PHI )
-        DF2DD = (- F2) * DF1DD
-        DADD = (- A) * DF2DD / (F2-1)
-        DF3DD = (2*T + 4*A*T**3) * DTDD + DADD * T**4
-        DF4DD = F4 * ( DF3DD/F3 - (DADD*F3+A*DF3DD)/(1+A*F3) )
-        DHDD = 3 * H * DPDD / PHI
-        DHDD = DHDD + GAMMA * PHI**3 * DF4DD / (1+F4)
-        DFCDD(IS) = VCUNIF(IS) + H + DT * DHDD
-
-        DO 30 IX = 1,3
-          DTDGD = (T / GDMT) * GDT(IX) / GDMT
-          DF3DGD = DTDGD * ( 2 * T + 4 * A * T**3 )
-          DF4DGD = F4 * DF3DGD * ( 1/F3 - A/(1+A*F3) ) 
-          DHDGD = GAMMA * PHI**3 * DF4DGD / (1+F4)
-          DFCDGD(IX,IS) = DT * DHDGD
-   30   CONTINUE
-   40 CONTINUE
-
-C Find exchange energy and potential
-      FX = 0
-      DO 60 IS = 1,2
-        DS(IS)   = MAX( DENMIN, 2 * D(IS) )
-        GDMS = MAX( GDMIN, 2 * GDM(IS) )
-        KFS = (3 * PI**2 * DS(IS))**THD
-        S = GDMS / (2 * KFS * DS(IS))
-        F1 = 1 + MU * S**2 / KAPPA
-        F = 1 + KAPPA - KAPPA / F1
-c
-c       Note nspin=1 in call to exchng...
-c
-        CALL EXCHNG( IREL, 1, DS(IS), EXUNIF, VXUNIF(IS) )
-        FX = FX + DS(IS) * EXUNIF * F
-
-        DKFDD = THD * KFS / DS(IS)
-        DSDD = S * ( -(DKFDD/KFS) - 1/DS(IS) )
-        DF1DD = 2 * (F1-1) * DSDD / S
-        DFDD = KAPPA * DF1DD / F1**2
-        DFXDD(IS) = VXUNIF(IS) * F + DS(IS) * EXUNIF * DFDD
-
-        DO 50 IX = 1,3
-          GDS = 2 * GD(IX,IS)
-          DSDGD = (S / GDMS) * GDS / GDMS
-          DF1DGD = 2 * MU * S * DSDGD / KAPPA
-          DFDGD = KAPPA * DF1DGD / F1**2
-          DFXDGD(IX,IS) = DS(IS) * EXUNIF * DFDGD
-   50   CONTINUE
-   60 CONTINUE
-      FX = HALF * FX / DT
-
-C Set output arguments
-      EX = FX
-      EC = FC
-      DO 90 IS = 1,nspin
-        DEXDD(IS) = DFXDD(IS)
-        DECDD(IS) = DFCDD(IS)
-        DO 80 IX = 1,3
-          DEXDGD(IX,IS) = DFXDGD(IX,IS)
-          DECDGD(IX,IS) = DFCDGD(IX,IS)
-   80   CONTINUE
-   90 CONTINUE
+C Call PBE routine with appropriate values for beta, mu, and kappa.
+      CALL PBEformXC( BETA, MU, KAPPA, IREL, nspin, Dens, GDens,
+     .                EX, EC, DEXDD, DECDD, DEXDGD, DECDGD )
 
       END SUBROUTINE REVPBEXC
+
+
+
+      SUBROUTINE PBESOLXC( IREL, NSPIN, DENS, GDENS,
+     .                  EX, EC, DEXDD, DECDD, DEXDGD, DECDGD )
+
+C *********************************************************************
+C Implements Perdew-Burke-Ernzerhof Generalized-Gradient-Approximation.
+C with the revised parameters for solids (PBEsol).
+C Ref: J.P.Perdew et al, PRL 100, 136406 (2008)
+C Same interface as PBEXC.
+C Modified by J.D. Gale for PBEsol. May 2009.
+C Modified to call PBEformXC by J.M.Soler. December 2009.
+C ********************************************************************
+
+      IMPLICIT NONE
+
+C Passed arguments
+      integer, intent(in) :: IREL, NSPIN
+      real(dp),intent(in) :: DENS(NSPIN), GDENS(3,NSPIN)
+      real(dp),intent(out):: EX, EC, DECDD(NSPIN), DECDGD(3,NSPIN),
+     .                       DEXDD(NSPIN), DEXDGD(3,NSPIN)
+
+C Internal variables
+      real(dp):: BETA, KAPPA, MU, PI
+
+C Fix values for PBE functional parameters
+      PI = 4 * ATAN(1._dp)
+      BETA = 0.046_dp          ! From fit of Jell. surf. energies
+      MU = 10.0_dp / 81.0_dp   ! From grad. exp. for exchange.
+      KAPPA = 0.804_dp         ! From general Lieb-Oxford bound
+
+C Call PBE routine with appropriate values for beta, mu, and kappa.
+      CALL PBEformXC( BETA, MU, KAPPA, IREL, nspin, Dens, GDens,
+     .                EX, EC, DEXDD, DECDD, DEXDGD, DECDGD )
+
+      END SUBROUTINE PBESOLXC
+
+
+
+      SUBROUTINE PBEJsJrLOxc( IREL, NSPIN, DENS, GDENS,
+     .                      EX, EC, DEXDD, DECDD, DEXDGD, DECDGD )
+
+C *********************************************************************
+C Implements Perdew-Burke-Ernzerhof Generalized-Gradient-Approximation
+C functional form, with revised parameters of Capelle et al:
+C   Js refers to Jellium surface energies, that fix parameter beta
+C   Jr refers to Jellium response, that fixes parameter mu
+C   LO refers to Lieb-Oxford bound, that fixes parameter kappa
+C Refs: L.S.Pedroza et al, PRB 79, 201106 (2009)
+C       M.M.Odashima et al, J. Chem. Theory Comp. 5, 798 (2009)
+C Same interface as PBEXC. J.M.Soler. December 2009.
+C ********************************************************************
+
+      IMPLICIT NONE
+
+C Passed arguments
+      integer, intent(in) :: IREL, NSPIN
+      real(dp),intent(in) :: DENS(NSPIN), GDENS(3,NSPIN)
+      real(dp),intent(out):: EX, EC, DECDD(NSPIN), DECDGD(3,NSPIN),
+     .                       DEXDD(NSPIN), DEXDGD(3,NSPIN)
+
+C Internal variables
+      real(dp):: BETA, KAPPA, MU, PI
+
+C Fix values for PBE functional parameters
+      PI = 4 * ATAN(1._dp)
+      BETA = 0.046_dp          ! From fit of Jell. surf. energies
+      MU = BETA * PI**2 / 3    ! From Jell. response for x+c
+      KAPPA = 0.804_dp         ! From general Lieb-Oxford bound
+
+C Call PBE routine with appropriate values for beta, mu, and kappa.
+      CALL PBEformXC( BETA, MU, KAPPA, IREL, nspin, Dens, GDens,
+     .                EX, EC, DEXDD, DECDD, DEXDGD, DECDGD )
+
+      END SUBROUTINE PBEJsJrLOxc
+
+
+
+      SUBROUTINE PBEJsJrHEGxc( IREL, NSPIN, DENS, GDENS,
+     .                      EX, EC, DEXDD, DECDD, DEXDGD, DECDGD )
+
+C *********************************************************************
+C Implements Perdew-Burke-Ernzerhof Generalized-Gradient-Approximation
+C functional form, with revised parameters of Capelle et al:
+C   Js refers to Jellium surface energies, that fix parameter beta
+C   Jr refers to Jellium response, that fixes parameter mu
+C   HGE refers to the Lieb-Oxford bound for the low-density limit of
+C       the homogeneous electron gas, that fixes parameter kappa
+C Refs: L.S.Pedroza et al, PRB 79, 201106 (2009)
+C       M.M.Odashima et al, J. Chem. Theory Comp. 5, 798 (2009)
+C Same interface as PBEXC. J.M.Soler. December 2009.
+C ********************************************************************
+
+      IMPLICIT NONE
+
+C Passed arguments
+      integer, intent(in) :: IREL, NSPIN
+      real(dp),intent(in) :: DENS(NSPIN), GDENS(3,NSPIN)
+      real(dp),intent(out):: EX, EC, DECDD(NSPIN), DECDGD(3,NSPIN),
+     .                       DEXDD(NSPIN), DEXDGD(3,NSPIN)
+
+C Internal variables
+      real(dp):: BETA, KAPPA, MU, PI
+
+C Fix values for PBE functional parameters
+      PI = 4 * ATAN(1._dp)
+      BETA = 0.046_dp          ! From fit of Jell. surf. energies
+      MU = BETA * PI**2 / 3    ! From Jell. response for x+c
+      KAPPA = 0.552_dp         ! From Lieb-Oxford bound for HEG
+
+C Call PBE routine with appropriate values for beta, mu, and kappa.
+      CALL PBEformXC( BETA, MU, KAPPA, IREL, nspin, Dens, GDens,
+     .                EX, EC, DEXDD, DECDD, DEXDGD, DECDGD )
+
+      END SUBROUTINE PBEJsJrHEGxc
+
+
+
+      SUBROUTINE PBEGcGxLOxc( IREL, NSPIN, DENS, GDENS,
+     .                      EX, EC, DEXDD, DECDD, DEXDGD, DECDGD )
+
+C *********************************************************************
+C Implements Perdew-Burke-Ernzerhof Generalized-Gradient-Approximation
+C functional form, with revised parameters of Capelle et al:
+C   Gc refers to gradient exp. for correl., that fixes parameter beta
+C   Gx refers to grad. expansion for exchange, that fixes parameter mu
+C   LO refers to Lieb-Oxford bound, that fixes parameter kappa
+C Refs: L.S.Pedroza et al, PRB 79, 201106 (2009)
+C       M.M.Odashima et al, J. Chem. Theory Comp. 5, 798 (2009)
+C Same interface as PBEXC. J.M.Soler. December 2009.
+C ********************************************************************
+
+      IMPLICIT NONE
+
+C Passed arguments
+      integer, intent(in) :: IREL, NSPIN
+      real(dp),intent(in) :: DENS(NSPIN), GDENS(3,NSPIN)
+      real(dp),intent(out):: EX, EC, DECDD(NSPIN), DECDGD(3,NSPIN),
+     .                       DEXDD(NSPIN), DEXDGD(3,NSPIN)
+
+C Internal variables
+      real(dp):: BETA, KAPPA, MU, PI
+
+C Fix values for PBE functional parameters
+      PI = 4 * ATAN(1._dp)
+      BETA = 0.066725_dp       ! From grad. exp. for correl. rs->0
+      MU = 10._dp / 81._dp     ! From grad. exp. for exchange.
+      KAPPA = 0.804_dp         ! From general Lieb-Oxford bound
+
+C Call PBE routine with appropriate values for beta, mu, and kappa.
+      CALL PBEformXC( BETA, MU, KAPPA, IREL, nspin, Dens, GDens,
+     .                EX, EC, DEXDD, DECDD, DEXDGD, DECDGD )
+
+      END SUBROUTINE PBEGcGxLOxc
+
+
+
+      SUBROUTINE PBEGcGxHEGxc( IREL, NSPIN, DENS, GDENS,
+     .                      EX, EC, DEXDD, DECDD, DEXDGD, DECDGD )
+
+C *********************************************************************
+C Implements Perdew-Burke-Ernzerhof Generalized-Gradient-Approximation
+C functional form, with revised parameters of Capelle et al:
+C   Gc refers to gradient exp. for correl., that fixes parameter beta
+C   Gx refers to grad. expansion for exchange, that fixes parameter mu
+C   HGE refers to the Lieb-Oxford bound for the low-density limit of
+C       the homogeneous electron gas, that fixes parameter kappa
+C Refs: L.S.Pedroza et al, PRB 79, 201106 (2009)
+C       M.M.Odashima et al, J. Chem. Theory Comp. 5, 798 (2009)
+C Same interface as PBEXC. J.M.Soler. December 2009.
+C ********************************************************************
+
+      IMPLICIT NONE
+
+C Passed arguments
+      integer, intent(in) :: IREL, NSPIN
+      real(dp),intent(in) :: DENS(NSPIN), GDENS(3,NSPIN)
+      real(dp),intent(out):: EX, EC, DECDD(NSPIN), DECDGD(3,NSPIN),
+     .                       DEXDD(NSPIN), DEXDGD(3,NSPIN)
+
+C Internal variables
+      real(dp):: BETA, KAPPA, MU, PI
+
+C Fix values for PBE functional parameters
+      PI = 4 * ATAN(1._dp)
+      BETA = 0.066725_dp       ! From grad. exp. for correl. rs->0
+      MU = 10._dp / 81._dp     ! From grad. exp. for exchange.
+      KAPPA = 0.552_dp         ! From Lieb-Oxford bound for HEG
+
+C Call PBE routine with appropriate values for beta, mu, and kappa.
+      CALL PBEformXC( BETA, MU, KAPPA, IREL, nspin, Dens, GDens,
+     .                EX, EC, DEXDD, DECDD, DEXDGD, DECDGD )
+
+      END SUBROUTINE PBEGcGxHEGxc
 
 
 
@@ -674,8 +824,6 @@ C Gradient vectors in cartesian coordinates
 C ********* ROUTINES CALLED ******************************************
 C EXCHNG, PW92C
 C ********************************************************************
-
-      use precision, only : dp
 
       implicit          none
       INTEGER           IREL, nspin
@@ -904,8 +1052,6 @@ c Energies in Hartrees
 c Gradient vectors in cartesian coordinates
 c ********************************************************************
  
-      use precision, only : dp
-
       implicit none
 
       integer nspin
@@ -1122,7 +1268,7 @@ C Ref: Hammer, Hansen & Norskov, PRB 59, 7413 (1999) and
 C J.P.Perdew, K.Burke & M.Ernzerhof, PRL 77, 3865 (1996)
 C
 C Written by M.V. Fernandez-Serra. March 2004. On the PBE routine of
-C L.C.Balbas and J.M.Soler. December 1996. myVersion 0.5.
+C L.C.Balbas and J.M.Soler. December 1996.
 C ******** INPUT ******************************************************
 C INTEGER IREL           : Relativistic-exchange switch (0=No, 1=Yes)
 C INTEGER nspin          : Number of spin polarizations (1 or 2)
@@ -1154,8 +1300,6 @@ C Gradient vectors in cartesian coordinates
 C ********* ROUTINES CALLED ******************************************
 C EXCHNG, PW92C
 C ********************************************************************
-
-      use precision, only : dp
 
       implicit          none
       INTEGER           IREL, nspin
@@ -1374,8 +1518,6 @@ C ********* ROUTINES CALLED ******************************************
 C EXCHNG, PW92C
 C ********************************************************************
 
-      use precision, only : dp
-
       implicit          none
       INTEGER           IREL, nspin
       real(dp)          Dens(nspin), DECDD(nspin), DECDGD(3,nspin),
@@ -1552,37 +1694,36 @@ C Set output arguments
 
 
 
-      SUBROUTINE PBESOLXC( IREL, NSPIN, DENS, GDENS,
-     .                  EX, EC, DEXDD, DECDD, DEXDGD, DECDGD )
+      SUBROUTINE AM05XC( IREL, nspin, Dens, GDens,
+     .                   EX, EC, DEXDD, DECDD, DEXDGD, DECDGD )
 
 C *********************************************************************
-C Implements Perdew-Burke-Ernzerhof Generalized-Gradient-Approximation.
-C with the revised parameters for solids (PBEsol).
-C Ref: J.P.Perdew et al, PRL 100, 136406 (2008)
-C Written by L.C.Balbas and J.M.Soler for PBE. December 1996. 
-C Modified by J.D. Gale for PBEsol. May 2009.
+C Implements the Armiento Mattsson AM05 GGA.
+C Ref: R. Armiento and A. E. Mattsson, PRB 72, 085108 (2005)
+C Written by L.C.Balbas and J.M.Soler originally for PBE. December 1996. 
+C Modified by J.D. Gale for AM05. May 2009.
 C ******** INPUT ******************************************************
 C INTEGER IREL           : Relativistic-exchange switch (0=No, 1=Yes)
-C INTEGER NSPIN          : Number of spin polarizations (1 or 2)
-C REAL*8  DENS(NSPIN)    : Total electron density (if NSPIN=1) or
-C                           spin electron density (if NSPIN=2)
-C REAL*8  GDENS(3,NSPIN) : Total or spin density gradient
+C INTEGER nspin          : Number of spin polarizations (1 or 2)
+C REAL*8  Dens(nspin)    : Total electron density (if nspin=1) or
+C                           spin electron density (if nspin=2)
+C REAL*8  GDens(3,nspin) : Total or spin density gradient
 C ******** OUTPUT *****************************************************
 C REAL*8  EX             : Exchange energy density
 C REAL*8  EC             : Correlation energy density
-C REAL*8  DEXDD(NSPIN)   : Partial derivative
+C REAL*8  DEXDD(nspin)   : Partial derivative
 C                           d(DensTot*Ex)/dDens(ispin),
-C                           where DensTot = Sum_ispin( DENS(ispin) )
+C                           where DensTot = Sum_ispin( Dens(ispin) )
 C                          For a constant density, this is the
 C                          exchange potential
-C REAL*8  DECDD(NSPIN)   : Partial derivative
+C REAL*8  DECDD(nspin)   : Partial derivative
 C                           d(DensTot*Ec)/dDens(ispin),
-C                           where DensTot = Sum_ispin( DENS(ispin) )
+C                           where DensTot = Sum_ispin( Dens(ispin) )
 C                          For a constant density, this is the
 C                          correlation potential
-C REAL*8  DEXDGD(3,NSPIN): Partial derivative
+C REAL*8  DEXDGD(3,nspin): Partial derivative
 C                           d(DensTot*Ex)/d(GradDens(i,ispin))
-C REAL*8  DECDGD(3,NSPIN): Partial derivative
+C REAL*8  DECDGD(3,nspin): Partial derivative
 C                           d(DensTot*Ec)/d(GradDens(i,ispin))
 C ********* UNITS ****************************************************
 C Lengths in Bohr
@@ -1590,64 +1731,177 @@ C Densities in electrons per Bohr**3
 C Energies in Hartrees
 C Gradient vectors in cartesian coordinates
 C ********* ROUTINES CALLED ******************************************
-C EXCHNG, PW92C
+C am05wbs
 C ********************************************************************
 
-      IMPLICIT          NONE
-      INTEGER           IREL, NSPIN
-      DOUBLE PRECISION  DENS(NSPIN), DECDD(NSPIN), DECDGD(3,NSPIN),
-     .                  DEXDD(NSPIN), DEXDGD(3,NSPIN), GDENS(3,NSPIN)
+      use precision, only : dp
+      use am05,      only : am05wbs
+
+      implicit          none
+      integer           irel, nspin
+      real(dp)          Dens(nspin), DECDD(nspin), DECDGD(3,nspin),
+     .                  DEXDD(nspin), DEXDGD(3,nspin), GDens(3,nspin)
+
+C Internal variables
+      integer
+     .  is, ix
+
+      real(dp)
+     .  D(2), DENMIN, DFXDD(2), DFCDD(2), DFCDGD(3,2), 
+     .  DFXDGD(3,2), DFXDG(2), DFCDG(2),
+     .  DS(2), DT, EC, EX, FX, FC,
+     .  GD(3,2), GDM(2), GDMIN, GDMS, GDMT, GDS, GDT(3)
+
+C Lower bounds of density and its gradient to avoid divisions by zero
+      parameter ( DENMIN = 1.D-12 )
+      parameter ( GDMIN  = 1.D-12 )
+
+C Translate density and its gradient to new variables
+      if (nspin .eq. 1) then
+        D(1) = 0.5_dp*Dens(1)
+        D(2) = D(1)
+        DT = max( DENMIN, Dens(1) )
+        do ix = 1,3
+          GD(ix,1) = 0.5_dp*GDens(ix,1)
+          GD(ix,2) = GD(ix,1)
+          GDT(ix) = GDens(ix,1)
+        enddo
+      else
+        D(1) = Dens(1)
+        D(2) = Dens(2)
+        DT = max( DENMIN, Dens(1)+Dens(2) )
+        do ix = 1,3
+          GD(ix,1) = GDens(ix,1)
+          GD(ix,2) = GDens(ix,2)
+          GDT(ix) = GDens(ix,1) + GDens(ix,2)
+        enddo
+      endif
+      GDM(1) = sqrt( GD(1,1)**2 + GD(2,1)**2 + GD(3,1)**2 )
+      GDM(2) = sqrt( GD(1,2)**2 + GD(2,2)**2 + GD(3,2)**2 )
+      GDMT   = sqrt( GDT(1)**2  + GDT(2)**2  + GDT(3)**2  )
+      GDMT = max( GDMIN, GDMT )
+
+      D(1) = max(D(1),denmin)
+      D(2) = max(D(2),denmin)
+
+C Call AM05 subroutine
+      call am05wbs(D(1), D(2), GDM(1), GDM(2), FX, FC,
+     .             DFXDD(1), DFXDD(2), DFCDD(1), DFCDD(2), 
+     .             DFXDG(1), DFXDG(2), DFCDG(1), DFCDG(2))
+
+C Convert gradient terms into vectors
+      do is = 1,nspin
+        do ix = 1,3
+          DFXDGD(ix,is) = DFXDG(is)*GD(ix,is)
+          DFCDGD(ix,is) = DFCDG(is)*GD(ix,is)
+        enddo
+      enddo
+
+C Convert FX to form required by SIESTA - note factor of 1/2
+C is already applied in am05 code.
+      FX = FX / DT
+
+C Set output arguments
+      EX = FX
+      EC = FC
+      do is = 1,nspin
+        DEXDD(is) = DFXDD(is)
+        DECDD(is) = DFCDD(is)
+        do ix = 1,3
+          DEXDGD(ix,is) = DFXDGD(ix,is)
+          DECDGD(ix,is) = DFCDGD(ix,is)
+        enddo
+      enddo
+
+      END SUBROUTINE AM05XC
+
+
+
+      SUBROUTINE PW86formX( a, b, c, iRel, nSpin, Dens, GDens,
+     .                      EX, dEXdD, dEXdGD )
+
+C *********************************************************************
+C Implements Perdew-Wang-86 Generalized-Gradient-Approximation exchange-only
+C functional form, eps_x=eps_x_LDA*(1+15*a*s**2+b*s**4+c*s**6)**(1/15),
+C but with variable values for parameters a, b, and c
+C Refs: J.P.Perdew & Y.Wang, PRB 33, 8800 (1986)
+C       E.D.Murray, K.Lee & D.C.Langreth, JCTC 5, 2754 (2009)
+C Written by J.M.Soler. March 2010.
+C ******** INPUT ******************************************************
+C REAL*8  a, b, c        : Parameter a, b, and c of the PW86 functional
+C INTEGER IREL           : Relativistic-exchange switch (0=No, 1=Yes)
+C INTEGER nspin          : Number of spin polarizations (1 or 2)
+C REAL*8  Dens(nspin)    : Total electron density (if nspin=1) or
+C                           spin electron density (if nspin=2)
+C REAL*8  GDens(3,nspin) : Total or spin density gradient
+C ******** OUTPUT *****************************************************
+C REAL*8  EX             : Exchange energy density
+C REAL*8  DEXDD(nspin)   : Partial derivative
+C                           d(DensTot*Ex)/dDens(ispin),
+C                           where DensTot = Sum_ispin( Dens(ispin) )
+C                          For a constant density, this is the
+C                          exchange potential
+C REAL*8  DEXDGD(3,nspin): Partial derivative
+C                           d(DensTot*Ex)/d(GradDens(i,ispin))
+C ********* UNITS ****************************************************
+C Lengths in Bohr
+C Densities in electrons per Bohr**3
+C Energies in Hartrees
+C Gradient vectors in cartesian coordinates
+C ********* ROUTINES CALLED ******************************************
+C EXCHNG
+C ********************************************************************
+
+      implicit none
+
+C Input
+      real(dp),intent(in) :: a              ! Parameter of PW86 functional
+      real(dp),intent(in) :: b              ! Parameter of PW86 functional
+      real(dp),intent(in) :: c              ! Parameter of PW86 functional
+      integer, intent(in) :: iRel           ! Relativistic exchange? 0=no, 1=yes
+      integer, intent(in) :: nSpin          ! Number of spin components
+      real(dp),intent(in) :: Dens(nSpin)    ! Local electron (spin) density
+      real(dp),intent(in) :: GDens(3,nSpin) ! Gradient of electron density
+
+C Output
+      real(dp),intent(out):: EX             ! Exchange energy per electron
+      real(dp),intent(out):: dEXdD(nSpin)   ! dEx/dDens, Ex=Int(dens*epsX)
+      real(dp),intent(out):: dEXdGD(3,nSpin) ! dEx/dGrad(Dens)
 
 C Internal variables
       INTEGER
      .  IS, IX
-
-      DOUBLE PRECISION
-     .  A, BETA, D(2), DADD, DECUDD, DENMIN, 
-     .  DF1DD, DF2DD, DF3DD, DF4DD, DF1DGD, DF3DGD, DF4DGD,
-     .  DFCDD(2), DFCDGD(3,2), DFDD, DFDGD, DFXDD(2), DFXDGD(3,2),
-     .  DHDD, DHDGD, DKFDD, DKSDD, DPDD, DPDZ, DRSDD, 
-     .  DS(2), DSDD, DSDGD, DT, DTDD, DTDGD, DZDD(2), 
-     .  EC, ECUNIF, EX, EXUNIF,
-     .  F, F1, F2, F3, F4, FC, FX, FOUTHD,
-     .  GAMMA, GD(3,2), GDM(2), GDMIN, GDMS, GDMT, GDS, GDT(3),
-     .  H, HALF, KAPPA, KF, KFS, KS, MU, PHI, PI, RS, S,
-     .  T, THD, THRHLF, TWO, TWOTHD, VCUNIF(2), VXUNIF(2), ZETA
+      real(dp)
+     .  D(2), DENMIN, DF1DS, DFDD, DFDGD, DFDS, DFXDD(2), DFXDGD(3,2), 
+     .  DKFDD, DS(2), DSDD, DSDGD, DT, ECUNIF, EXUNIF, F, F1, FX,
+     .  GD(3,2), GDM(2), GDMIN, GDMS, GDMT, GDS, GDT(3),
+     .  KFS, PI, S, VXUNIF(2), ZETA
 
 C Lower bounds of density and its gradient to avoid divisions by zero
       PARAMETER ( DENMIN = 1.D-12 )
       PARAMETER ( GDMIN  = 1.D-12 )
 
-C Fix some numerical parameters
-      PARAMETER ( FOUTHD=4.D0/3.D0, HALF=0.5D0,
-     .            THD=1.D0/3.D0, THRHLF=1.5D0,
-     .            TWO=2.D0, TWOTHD=2.D0/3.D0 )
-
 C Fix some more numerical constants
       PI = 4 * ATAN(1.D0)
-      BETA = 0.046d0
-      GAMMA = (1 - LOG(TWO)) / PI**2
-      MU = 10.0d0/81.0d0
-      KAPPA = 0.804D0
 
 C Translate density and its gradient to new variables
-      IF (NSPIN .EQ. 1) THEN
-        D(1) = HALF * DENS(1)
+      IF (nspin .EQ. 1) THEN
+        D(1) = Dens(1) / 2
         D(2) = D(1)
-        DT = MAX( DENMIN, DENS(1) )
+        DT = MAX( DENMIN, Dens(1) )
         DO 10 IX = 1,3
-          GD(IX,1) = HALF * GDENS(IX,1)
+          GD(IX,1) = GDens(IX,1) / 2
           GD(IX,2) = GD(IX,1)
-          GDT(IX) = GDENS(IX,1)
+          GDT(IX) = GDens(IX,1)
    10   CONTINUE
       ELSE
-        D(1) = DENS(1)
-        D(2) = DENS(2)
-        DT = MAX( DENMIN, DENS(1)+DENS(2) )
+        D(1) = Dens(1)
+        D(2) = Dens(2)
+        DT = MAX( DENMIN, Dens(1)+Dens(2) )
         DO 20 IX = 1,3
-          GD(IX,1) = GDENS(IX,1)
-          GD(IX,2) = GDENS(IX,2)
-          GDT(IX) = GDENS(IX,1) + GDENS(IX,2)
+          GD(IX,1) = GDens(IX,1)
+          GD(IX,2) = GDens(IX,2)
+          GDT(IX) = GDens(IX,1) + GDens(IX,2)
    20   CONTINUE
       ENDIF
       GDM(1) = SQRT( GD(1,1)**2 + GD(2,1)**2 + GD(3,1)**2 )
@@ -1655,100 +1909,465 @@ C Translate density and its gradient to new variables
       GDMT   = SQRT( GDT(1)**2  + GDT(2)**2  + GDT(3)**2  )
       GDMT = MAX( GDMIN, GDMT )
 
-C Find local correlation energy and potential
-      CALL PW92C( 2, D, ECUNIF, VCUNIF )
-
-C Find total correlation energy
-      RS = ( 3 / (4*PI*DT) )**THD
-      KF = (3 * PI**2 * DT)**THD
-      KS = SQRT( 4 * KF / PI )
-      ZETA = ( D(1) - D(2) ) / DT
-      ZETA = MAX( -1.D0+DENMIN, ZETA )
-      ZETA = MIN(  1.D0-DENMIN, ZETA )
-      PHI = HALF * ( (1+ZETA)**TWOTHD + (1-ZETA)**TWOTHD )
-      T = GDMT / (2 * PHI * KS * DT)
-      F1 = ECUNIF / GAMMA / PHI**3
-      F2 = EXP(-F1)
-      A = BETA / GAMMA / (F2-1)
-      F3 = T**2 + A * T**4
-      F4 = BETA/GAMMA * F3 / (1 + A*F3)
-      H = GAMMA * PHI**3 * LOG( 1 + F4 )
-      FC = ECUNIF + H
-
-C Find correlation energy derivatives
-      DRSDD = - (THD * RS / DT)
-      DKFDD =   THD * KF / DT
-      DKSDD = HALF * KS * DKFDD / KF
-      DZDD(1) =   1 / DT - ZETA / DT
-      DZDD(2) = - (1 / DT) - ZETA / DT
-      DPDZ = HALF * TWOTHD * ( 1/(1+ZETA)**THD - 1/(1-ZETA)**THD )
-      DO 40 IS = 1,2
-        DECUDD = ( VCUNIF(IS) - ECUNIF ) / DT
-        DPDD = DPDZ * DZDD(IS)
-        DTDD = (- T) * ( DPDD/PHI + DKSDD/KS + 1/DT )
-        DF1DD = F1 * ( DECUDD/ECUNIF - 3*DPDD/PHI )
-        DF2DD = (- F2) * DF1DD
-        DADD = (- A) * DF2DD / (F2-1)
-        DF3DD = (2*T + 4*A*T**3) * DTDD + DADD * T**4
-        DF4DD = F4 * ( DF3DD/F3 - (DADD*F3+A*DF3DD)/(1+A*F3) )
-        DHDD = 3 * H * DPDD / PHI
-        DHDD = DHDD + GAMMA * PHI**3 * DF4DD / (1+F4)
-        DFCDD(IS) = VCUNIF(IS) + H + DT * DHDD
-
-        DO 30 IX = 1,3
-          DTDGD = (T / GDMT) * GDT(IX) / GDMT
-          DF3DGD = DTDGD * ( 2 * T + 4 * A * T**3 )
-          DF4DGD = F4 * DF3DGD * ( 1/F3 - A/(1+A*F3) ) 
-          DHDGD = GAMMA * PHI**3 * DF4DGD / (1+F4)
-          DFCDGD(IX,IS) = DT * DHDGD
-   30   CONTINUE
-   40 CONTINUE
-
 C Find exchange energy and potential
       FX = 0
       DO 60 IS = 1,2
         DS(IS)   = MAX( DENMIN, 2 * D(IS) )
         GDMS = MAX( GDMIN, 2 * GDM(IS) )
-        KFS = (3 * PI**2 * DS(IS))**THD
+        KFS = (3 * PI**2 * DS(IS))**(1._dp/3)
         S = GDMS / (2 * KFS * DS(IS))
-        F1 = 1 + MU * S**2 / KAPPA
-        F = 1 + KAPPA - KAPPA / F1
+        F1 = 1 + 15*a*S**2 + b*S**4 + c*S**6
+        F = F1**(1._dp/15)
 c
 c       Note nspin=1 in call to exchng...
 c
         CALL EXCHNG( IREL, 1, DS(IS), EXUNIF, VXUNIF(IS) )
         FX = FX + DS(IS) * EXUNIF * F
 
-        DKFDD = THD * KFS / DS(IS)
+        DKFDD = KFS / DS(IS) / 3
         DSDD = S * ( -(DKFDD/KFS) - 1/DS(IS) )
-        DF1DD = 2 * (F1-1) * DSDD / S
-        DFDD = KAPPA * DF1DD / F1**2
+        DF1DS = 30*a*S + 4*b*S**3 + 6*c*S**5
+        DFDS = F/F1/15 * DF1DS
+        DFDD = DFDS * DSDD
         DFXDD(IS) = VXUNIF(IS) * F + DS(IS) * EXUNIF * DFDD
 
         DO 50 IX = 1,3
           GDS = 2 * GD(IX,IS)
           DSDGD = (S / GDMS) * GDS / GDMS
-          DF1DGD = 2 * MU * S * DSDGD / KAPPA
-          DFDGD = KAPPA * DF1DGD / F1**2
+          DFDGD = DFDS * DSDGD
           DFXDGD(IX,IS) = DS(IS) * EXUNIF * DFDGD
    50   CONTINUE
    60 CONTINUE
-      FX = HALF * FX / DT
+      FX = FX / DT / 2
 
 C Set output arguments
       EX = FX
-      EC = FC
-      DO 90 IS = 1,NSPIN
+      DO 90 IS = 1,nspin
         DEXDD(IS) = DFXDD(IS)
-        DECDD(IS) = DFCDD(IS)
         DO 80 IX = 1,3
           DEXDGD(IX,IS) = DFXDGD(IX,IS)
-          DECDGD(IX,IS) = DFCDGD(IX,IS)
    80   CONTINUE
    90 CONTINUE
 
-      END SUBROUTINE PBESOLXC
+      END SUBROUTINE PW86formX
+
+
+
+      SUBROUTINE PW86X( IREL, nspin, Dens, GDens,
+     .                  EX, EC, DEXDD, DECDD, DEXDGD, DECDGD )
+
+C *********************************************************************
+C Implements Perdew-Wang-86 Generalized-Gradient-Approximation 
+C exchange-only functional. Correlation energy returns as zero.
+C Ref: J.P.Perdew & Y.Wang, PRB 33, 8800 (1986)
+C Written by J.M.Soler. March 2010.
+C ******** INPUT ******************************************************
+C INTEGER IREL           : Relativistic-exchange switch (0=No, 1=Yes)
+C INTEGER nspin          : Number of spin polarizations (1 or 2)
+C REAL*8  Dens(nspin)    : Total electron density (if nspin=1) or
+C                           spin electron density (if nspin=2)
+C REAL*8  GDens(3,nspin) : Total or spin density gradient
+C ******** OUTPUT *****************************************************
+C REAL*8  EX             : Exchange energy density
+C REAL*8  EC             : Correlation energy density
+C REAL*8  DEXDD(nspin)   : Partial derivative
+C                           d(DensTot*Ex)/dDens(ispin),
+C                           where DensTot = Sum_ispin( Dens(ispin) )
+C                          For a constant density, this is the
+C                          exchange potential
+C REAL*8  DECDD(nspin)   : Partial derivative
+C                           d(DensTot*Ec)/dDens(ispin),
+C                           where DensTot = Sum_ispin( Dens(ispin) )
+C                          For a constant density, this is the
+C                          correlation potential
+C REAL*8  DEXDGD(3,nspin): Partial derivative
+C                           d(DensTot*Ex)/d(GradDens(i,ispin))
+C REAL*8  DECDGD(3,nspin): Partial derivative
+C                           d(DensTot*Ec)/d(GradDens(i,ispin))
+C ********* UNITS ****************************************************
+C Lengths in Bohr
+C Densities in electrons per Bohr**3
+C Energies in Hartrees
+C Gradient vectors in cartesian coordinates
+C ********* ROUTINES CALLED ******************************************
+C PW86formX
+C ********************************************************************
+
+      IMPLICIT NONE
+
+C Passed arguments
+      integer, intent(in) :: IREL, NSPIN
+      real(dp),intent(in) :: DENS(NSPIN), GDENS(3,NSPIN)
+      real(dp),intent(out):: EX, EC, DECDD(NSPIN), DECDGD(3,NSPIN),
+     .                       DEXDD(NSPIN), DEXDGD(3,NSPIN)
+
+C Internal parameters of the PW86 exchange functional
+      real(dp),parameter:: a = 0.0864_dp
+      real(dp),parameter:: b = 14.0_dp
+      real(dp),parameter:: c = 0.2_dp
+
+C Call PW86 routine with appropriate values for a, b, and c.
+      CALL PW86formX( a, b, c, IREL, nspin, Dens, GDens,
+     .                EX, DEXDD, DEXDGD )
+
+C Set correlation energy and derivatives to zero
+      EC = 0
+      DECDD(:) = 0
+      DECDGD(:,:) = 0
+
+      END SUBROUTINE PW86X
+
+
+
+      SUBROUTINE PW86RX( IREL, nspin, Dens, GDens,
+     .                  EX, EC, DEXDD, DECDD, DEXDGD, DECDGD )
+
+C *********************************************************************
+C Implements Perdew-Wang-86 Generalized-Gradient-Approximation 
+C exchange-only functional with the refitted parameters of
+C Murray, Lee, and Langreth. Correlation energy returns as zero.
+C Refs: J.P.Perdew & Y.Wang, PRB 33, 8800 (1986)
+C       E.D.Murray, K.Lee & D.C.Langreth, JCTC 5, 2754 (2009)
+C Written by J.M.Soler. March 2010.
+C ******** INPUT ******************************************************
+C INTEGER IREL           : Relativistic-exchange switch (0=No, 1=Yes)
+C INTEGER nspin          : Number of spin polarizations (1 or 2)
+C REAL*8  Dens(nspin)    : Total electron density (if nspin=1) or
+C                           spin electron density (if nspin=2)
+C REAL*8  GDens(3,nspin) : Total or spin density gradient
+C ******** OUTPUT *****************************************************
+C REAL*8  EX             : Exchange energy density
+C REAL*8  EC             : Correlation energy density
+C REAL*8  DEXDD(nspin)   : Partial derivative
+C                           d(DensTot*Ex)/dDens(ispin),
+C                           where DensTot = Sum_ispin( Dens(ispin) )
+C                          For a constant density, this is the
+C                          exchange potential
+C REAL*8  DECDD(nspin)   : Partial derivative
+C                           d(DensTot*Ec)/dDens(ispin),
+C                           where DensTot = Sum_ispin( Dens(ispin) )
+C                          For a constant density, this is the
+C                          correlation potential
+C REAL*8  DEXDGD(3,nspin): Partial derivative
+C                           d(DensTot*Ex)/d(GradDens(i,ispin))
+C REAL*8  DECDGD(3,nspin): Partial derivative
+C                           d(DensTot*Ec)/d(GradDens(i,ispin))
+C ********* UNITS ****************************************************
+C Lengths in Bohr
+C Densities in electrons per Bohr**3
+C Energies in Hartrees
+C Gradient vectors in cartesian coordinates
+C ********* ROUTINES CALLED ******************************************
+C PW86formX
+C ********************************************************************
+
+      IMPLICIT NONE
+
+C Passed arguments
+      integer, intent(in) :: IREL, NSPIN
+      real(dp),intent(in) :: DENS(NSPIN), GDENS(3,NSPIN)
+      real(dp),intent(out):: EX, EC, DECDD(NSPIN), DECDGD(3,NSPIN),
+     .                       DEXDD(NSPIN), DEXDGD(3,NSPIN)
+
+C Internal parameters of the refitted PW86 exchange functional
+      real(dp),parameter:: a = 0.1234_dp
+      real(dp),parameter:: b = 17.33_dp
+      real(dp),parameter:: c = 0.163_dp
+
+C Call PW86 routine with appropriate values for a, b, and c.
+      CALL PW86formX( a, b, c, IREL, nspin, Dens, GDens,
+     .                EX, DEXDD, DEXDGD )
+
+C Set correlation energy and derivatives to zero
+      EC = 0
+      DECDD(:) = 0
+      DECDGD(:,:) = 0
+
+      END SUBROUTINE PW86RX
+
+
+      SUBROUTINE B88formX( beta, mu, c, iRel, nSpin, Dens, GDens,
+     .                     EX, dEXdD, dEXdGD )
+
+C *********************************************************************
+C Implements Becke-88 Generalized-Gradient-Approximation exchange-only
+C functional form, eps_x=eps_x_LDA*(1+mu*s**2/(1+beta*s*asinh(c*s))),
+C but with variable values for parameters beta, mu, and c
+C Refs: A.D.Becke, PRA 38, 3098 (1988)
+C       J.Klimes, D.R.Bowler, and A.Michaelides, JPCM 22, 022201 (2009)
+C Written by J.M.Soler. April 2010.
+C ******** INPUT ******************************************************
+C REAL*8  beta, mu, c    : Parameter beta mu, and c of the B88 functional,
+C                          as formulated by Klimes et al
+C INTEGER IREL           : Relativistic-exchange switch (0=No, 1=Yes)
+C INTEGER nspin          : Number of spin polarizations (1 or 2)
+C REAL*8  Dens(nspin)    : Total electron density (if nspin=1) or
+C                           spin electron density (if nspin=2)
+C REAL*8  GDens(3,nspin) : Total or spin density gradient
+C ******** OUTPUT *****************************************************
+C REAL*8  EX             : Exchange energy density
+C REAL*8  DEXDD(nspin)   : Partial derivative
+C                           d(DensTot*Ex)/dDens(ispin),
+C                           where DensTot = Sum_ispin( Dens(ispin) )
+C                          For a constant density, this is the
+C                          exchange potential
+C REAL*8  DEXDGD(3,nspin): Partial derivative
+C                           d(DensTot*Ex)/d(GradDens(i,ispin))
+C ********* UNITS ****************************************************
+C Lengths in Bohr
+C Densities in electrons per Bohr**3
+C Energies in Hartrees
+C Gradient vectors in cartesian coordinates
+C ********* ROUTINES CALLED ******************************************
+C EXCHNG
+C ********************************************************************
+
+      implicit none
+
+C Input
+      real(dp),intent(in) :: beta           ! Parameter of B88 functional
+      real(dp),intent(in) :: mu             ! Parameter of B88 functional
+      real(dp),intent(in) :: c              ! Parameter of B88 functional
+      integer, intent(in) :: iRel           ! Relativistic exchange? 0=no, 1=yes
+      integer, intent(in) :: nSpin          ! Number of spin components
+      real(dp),intent(in) :: Dens(nSpin)    ! Local electron (spin) density
+      real(dp),intent(in) :: GDens(3,nSpin) ! Gradient of electron density
+
+C Output
+      real(dp),intent(out):: EX             ! Exchange energy per electron
+      real(dp),intent(out):: dEXdD(nSpin)   ! dEx/dDens, Ex=Int(dens*epsX)
+      real(dp),intent(out):: dEXdGD(3,nSpin) ! dEx/dGrad(Dens)
+
+C Internal variables
+      INTEGER
+     .  IS, IX
+      real(dp)
+     .  ASINHCS, CS, D(2), DASINHDS, 
+     .  DENMIN, DF1DS, DFDD, DFDGD, DFDS, DFXDD(2), DFXDGD(3,2), 
+     .  DKFDD, DS(2), DSDD, DSDGD, DT, ECUNIF, EXUNIF, F, F1, FX,
+     .  GD(3,2), GDM(2), GDMIN, GDMS, GDMT, GDS, GDT(3),
+     .  KFS, PI, S, VXUNIF(2), ZETA
+
+C Lower bounds of density and its gradient to avoid divisions by zero
+      PARAMETER ( DENMIN = 1.D-12 )
+      PARAMETER ( GDMIN  = 1.D-12 )
+
+C Fix some more numerical constants
+      PI = 4 * ATAN(1.D0)
+
+C Translate density and its gradient to new variables
+      IF (nspin .EQ. 1) THEN
+        D(1) = Dens(1) / 2
+        D(2) = D(1)
+        DT = MAX( DENMIN, Dens(1) )
+        DO 10 IX = 1,3
+          GD(IX,1) = GDens(IX,1) / 2
+          GD(IX,2) = GD(IX,1)
+          GDT(IX) = GDens(IX,1)
+   10   CONTINUE
+      ELSE
+        D(1) = Dens(1)
+        D(2) = Dens(2)
+        DT = MAX( DENMIN, Dens(1)+Dens(2) )
+        DO 20 IX = 1,3
+          GD(IX,1) = GDens(IX,1)
+          GD(IX,2) = GDens(IX,2)
+          GDT(IX) = GDens(IX,1) + GDens(IX,2)
+   20   CONTINUE
+      ENDIF
+      GDM(1) = SQRT( GD(1,1)**2 + GD(2,1)**2 + GD(3,1)**2 )
+      GDM(2) = SQRT( GD(1,2)**2 + GD(2,2)**2 + GD(3,2)**2 )
+      GDMT   = SQRT( GDT(1)**2  + GDT(2)**2  + GDT(3)**2  )
+      GDMT = MAX( GDMIN, GDMT )
+
+C Find exchange energy and potential
+      FX = 0
+      DO 60 IS = 1,2
+        DS(IS)   = MAX( DENMIN, 2 * D(IS) )
+        GDMS = MAX( GDMIN, 2 * GDM(IS) )
+        KFS = (3 * PI**2 * DS(IS))**(1._dp/3)
+        S = GDMS / (2 * KFS * DS(IS))
+        CS = C * S
+        ! Next line is ASINH(CS). See Numerical Recipes
+        ASINHCS = log(CS+sqrt(CS**2+1))
+        F1 = 1 + beta * S * ASINHCS
+        F = 1 + mu * S**2 / F1
+c
+c       Note nspin=1 in call to exchng...
+c
+        CALL EXCHNG( IREL, 1, DS(IS), EXUNIF, VXUNIF(IS) )
+        FX = FX + DS(IS) * EXUNIF * F
+
+        DKFDD = KFS / DS(IS) / 3
+        DSDD = S * ( -(DKFDD/KFS) - 1/DS(IS) )
+        DASINHDS = C * (1 + CS/sqrt(CS**2+1)) / (CS+sqrt(CS**2+1))
+        DF1DS = beta * ASINHCS + beta * S * DASINHDS
+        DFDS = 2*mu*S/F1 - mu*S**2/F1**2 * DF1DS
+        DFDD = DFDS * DSDD
+        DFXDD(IS) = VXUNIF(IS) * F + DS(IS) * EXUNIF * DFDD
+
+        DO 50 IX = 1,3
+          GDS = 2 * GD(IX,IS)
+          DSDGD = (S / GDMS) * GDS / GDMS
+          DFDGD = DFDS * DSDGD
+          DFXDGD(IX,IS) = DS(IS) * EXUNIF * DFDGD
+   50   CONTINUE
+   60 CONTINUE
+      FX = FX / DT / 2
+
+C Set output arguments
+      EX = FX
+      DO 90 IS = 1,nspin
+        DEXDD(IS) = DFXDD(IS)
+        DO 80 IX = 1,3
+          DEXDGD(IX,IS) = DFXDGD(IX,IS)
+   80   CONTINUE
+   90 CONTINUE
+
+      END SUBROUTINE B88formX
+
+
+
+      SUBROUTINE B88X( IREL, nspin, Dens, GDens,
+     .                 EX, EC, DEXDD, DECDD, DEXDGD, DECDGD )
+
+C *********************************************************************
+C Implements Becke-88 Generalized-Gradient-Approximation 
+C exchange-only functional. Correlation energy returns as zero.
+C Refs: A.D.Becke, PRA 38, 3098 (1988)
+C       J.Klimes, D.R.Bowler, and A.Michaelides, JPCM 22, 022201 (2009)
+C Written by J.M.Soler. April 2010.
+C ******** INPUT ******************************************************
+C INTEGER IREL           : Relativistic-exchange switch (0=No, 1=Yes)
+C INTEGER nspin          : Number of spin polarizations (1 or 2)
+C REAL*8  Dens(nspin)    : Total electron density (if nspin=1) or
+C                           spin electron density (if nspin=2)
+C REAL*8  GDens(3,nspin) : Total or spin density gradient
+C ******** OUTPUT *****************************************************
+C REAL*8  EX             : Exchange energy density
+C REAL*8  EC             : Correlation energy density
+C REAL*8  DEXDD(nspin)   : Partial derivative
+C                           d(DensTot*Ex)/dDens(ispin),
+C                           where DensTot = Sum_ispin( Dens(ispin) )
+C                          For a constant density, this is the
+C                          exchange potential
+C REAL*8  DECDD(nspin)   : Partial derivative
+C                           d(DensTot*Ec)/dDens(ispin),
+C                           where DensTot = Sum_ispin( Dens(ispin) )
+C                          For a constant density, this is the
+C                          correlation potential
+C REAL*8  DEXDGD(3,nspin): Partial derivative
+C                           d(DensTot*Ex)/d(GradDens(i,ispin))
+C REAL*8  DECDGD(3,nspin): Partial derivative
+C                           d(DensTot*Ec)/d(GradDens(i,ispin))
+C ********* UNITS ****************************************************
+C Lengths in Bohr
+C Densities in electrons per Bohr**3
+C Energies in Hartrees
+C Gradient vectors in cartesian coordinates
+C ********* ROUTINES CALLED ******************************************
+C PW86formX
+C ********************************************************************
+
+      IMPLICIT NONE
+
+C Passed arguments
+      integer, intent(in) :: IREL, NSPIN
+      real(dp),intent(in) :: DENS(NSPIN), GDENS(3,NSPIN)
+      real(dp),intent(out):: EX, EC, DECDD(NSPIN), DECDGD(3,NSPIN),
+     .                       DEXDD(NSPIN), DEXDGD(3,NSPIN)
+
+C Internal variables and arrays
+      real(dp):: beta, c, mu, pi
+
+C Internal parameters of the B88 exchange functional, written as
+C by Klimes et al
+      pi = acos(-1._dp)
+      c = 2*(6*pi**2)**(1._dp/3)
+      mu = 0.2743_dp
+      beta = 9 * mu * (6/pi)**(1._dp/3) / (2*c)
+
+C Call PW86 routine with appropriate values for a, b, and c.
+      CALL B88formX( beta, mu, c, IREL, nspin, Dens, GDens,
+     .               EX, DEXDD, DEXDGD )
+
+C Set correlation energy and derivatives to zero
+      EC = 0
+      DECDD(:) = 0
+      DECDGD(:,:) = 0
+
+      END SUBROUTINE B88X
+
+
+
+      SUBROUTINE B88KBMX( IREL, nspin, Dens, GDens,
+     .                    EX, EC, DEXDD, DECDD, DEXDGD, DECDGD )
+
+C *********************************************************************
+C Implements Becke-88 GGA exchange functional, reparametrized by Klimes
+C et al for its combined use with vdW-DF nonlocal correlation.
+C Correlation energy returns as zero.
+C Refs: A.D.Becke, PRA 38, 3098 (1988)
+C       J.Klimes, D.R.Bowler, and A.Michaelides, JPCM 22, 022201 (2009)
+C Written by J.M.Soler. April 2010.
+C ******** INPUT ******************************************************
+C INTEGER IREL           : Relativistic-exchange switch (0=No, 1=Yes)
+C INTEGER nspin          : Number of spin polarizations (1 or 2)
+C REAL*8  Dens(nspin)    : Total electron density (if nspin=1) or
+C                           spin electron density (if nspin=2)
+C REAL*8  GDens(3,nspin) : Total or spin density gradient
+C ******** OUTPUT *****************************************************
+C REAL*8  EX             : Exchange energy density
+C REAL*8  EC             : Correlation energy density
+C REAL*8  DEXDD(nspin)   : Partial derivative
+C                           d(DensTot*Ex)/dDens(ispin),
+C                           where DensTot = Sum_ispin( Dens(ispin) )
+C                          For a constant density, this is the
+C                          exchange potential
+C REAL*8  DECDD(nspin)   : Partial derivative
+C                           d(DensTot*Ec)/dDens(ispin),
+C                           where DensTot = Sum_ispin( Dens(ispin) )
+C                          For a constant density, this is the
+C                          correlation potential
+C REAL*8  DEXDGD(3,nspin): Partial derivative
+C                           d(DensTot*Ex)/d(GradDens(i,ispin))
+C REAL*8  DECDGD(3,nspin): Partial derivative
+C                           d(DensTot*Ec)/d(GradDens(i,ispin))
+C ********* UNITS ****************************************************
+C Lengths in Bohr
+C Densities in electrons per Bohr**3
+C Energies in Hartrees
+C Gradient vectors in cartesian coordinates
+C ********* ROUTINES CALLED ******************************************
+C PW86formX
+C ********************************************************************
+
+      IMPLICIT NONE
+
+C Passed arguments
+      integer, intent(in) :: IREL, NSPIN
+      real(dp),intent(in) :: DENS(NSPIN), GDENS(3,NSPIN)
+      real(dp),intent(out):: EX, EC, DECDD(NSPIN), DECDGD(3,NSPIN),
+     .                       DEXDD(NSPIN), DEXDGD(3,NSPIN)
+
+C Internal variables and arrays
+      real(dp):: beta, c, mu, pi
+
+C Klimes et al parameters for the B88 exchange functional
+      pi = acos(-1._dp)
+      c = 2*(6*pi**2)**(1._dp/3)
+      mu = 0.22_dp
+      beta = mu / 1.2_dp
+
+C Call PW86 routine with appropriate values for a, b, and c.
+      CALL B88formX( beta, mu, c, IREL, nspin, Dens, GDens,
+     .               EX, DEXDD, DEXDGD )
+
+C Set correlation energy and derivatives to zero
+      EC = 0
+      DECDD(:) = 0
+      DECDGD(:,:) = 0
+
+      END SUBROUTINE B88KBMX
 
       END MODULE m_ggaxc
-
-

@@ -9,31 +9,27 @@
       use m_energies
 
       use sparse_matrices
-      USE siesta_options, only :occtol, g2cut, isolve, 
-     &                          fixspin, temp, neigwanted 
+      USE siesta_options
       use siesta_geom
       use atomlist,       only: indxuo, indxua           
       use atomlist,       only: qtot, no_u, no_l
       use atomlist,       only: iphorb                   
       use atomlist,       only: datm, no_s, iaorb        
-      use fdf,            only : fdf_block, fdf_convfac  
+      use fdf
       use sys,            only: die                      
-      use m_mpi_utils,    only : broadcast               
-      use files,          only : slabel                  
+      use files,          only : slabel     
       use Kpoint_grid
       use parallel,       only: IOnode                   
       use files,          only : label_length            
-      use parse
       use m_ntm
       use m_forces,       only: fa
       use m_eo
       use m_spin,         only: nspin, qs, efs
       use m_gamma
+      use m_dhscf,        only: dhscf
       implicit none
 
       character(len=label_length+5), external :: paste
-
-      type(parsed_line), pointer  :: p
 
 
       integer :: dummy_iscf = 1
@@ -45,35 +41,31 @@
       real(dp)  :: dummy_str(3,3), dummy_strl(3,3)  ! for dhscf call
       real(dp)  :: dummy_dipol(3)
 
-      integer   :: iu
       real(dp)  :: factor, g2max
       logical   :: genlogic   ! Generate local density of states?
-      character(len=150) :: line    ! Data line read
 
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
+
+#ifdef DEBUG
+      call write_debug( '  PRE local_DOS' )
+#endif
 ! Find local density of states
-      if (IOnode) then
-        genlogic = fdf_block('LocalDensityOfStates',iu)
-      endif
-      call broadcast(genlogic)
+      genlogic = fdf_block('LocalDensityOfStates',bfdf)
 
       if ( genlogic ) then
 
 ! Find the desired energy range
-        if (IOnode) then
-          read(iu,'(a)') line
-          p=>digest(line)
-          if (.not. match(p,"vvn"))
-     .       call die("Wrong format in LocalDensityofStates")
-          factor = fdf_convfac( names(p,1), 'Ry' )
-          e1 = values(p,1)*factor
-          e2 = values(p,2)*factor
-          call destroy(p)
-        endif
-        call broadcast(e1)
-        call broadcast(e2)
+        if (.not. fdf_bline(bfdf,pline))
+     .    call die('local_DOS: ERROR in LocalDensityOfStates block')
+        if (.not. fdf_bmatch(pline,'vvn'))
+     .    call die("Wrong format in LocalDensityofStates")
+        factor = fdf_convfac( fdf_bnames(pline,1), 'Ry' )
+        e1 = fdf_bvalues(pline,1)*factor
+        e2 = fdf_bvalues(pline,2)*factor
 
         !Find the density matrix for states between e1 and e2
-        if (isolve .eq. 0) then
+        if (isolve .eq. SOLVE_DIAGON) then
           call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
      .                numh, listhptr, listh, numh, listhptr, listh, 
      .                H, S, qtot, fixspin, qs, temp, e1, e2,
@@ -85,13 +77,11 @@
           fildos = paste( slabel, '.LDOS' )
           g2max = g2cut
           call dhscf( nspin, no_s, iaorb, iphorb, no_l,
-     .              no_u, na_u, na_s, isa, xalast, indxua, 
-     .              ucell_last, mscell, g2max, ntm,
-     .              0, 0, 0, fildos, ' ', ' ', ' ', ' ', ' ',
-     .              maxnh, numh, listhptr, listh, Dscf, Datm,
-     .              maxnh, numh, listhptr, listh, H,
+     .              no_u, na_u, na_s, isa, xa_last, indxua, 
+     .              ntm, 0, 0, 0, fildos, ' ', ' ', ' ', ' ', ' ',
+     .              maxnh, numh, listhptr, listh, Dscf, Datm, maxnh, H,
      .              Enaatm, Enascf, Uatm, Uscf, DUscf, DUext, Exc, Dxc,
-     .              dummy_dipol, fa, dummy_str, fa, dummy_strl )
+     .              dummy_dipol, dummy_str, fa, dummy_strl )
                     ! next to last argument is dummy here,
                     ! as no forces are calculated
                     ! todo: make all these optional
@@ -103,6 +93,9 @@
       endif ! genlogic
 
 
+#ifdef DEBUG
+      call write_debug( '  POS local_DOS' )
+#endif
       END subroutine local_DOS
 
       END module m_local_DOS

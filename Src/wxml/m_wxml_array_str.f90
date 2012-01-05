@@ -18,7 +18,8 @@ private
 
 CONTAINS
 !-------------------------------------------------------------
-pure subroutine assign_array_to_str(str,s)
+subroutine assign_array_to_str(str,s)
+implicit none
 character(len=1), dimension(:), intent(in)   :: s
 character(len=*), intent(out) :: str
 
@@ -38,7 +39,8 @@ end subroutine assign_array_to_str
 ! intrinsic assignment... so we resort to using an explicit
 ! subroutine call.
 !
-pure subroutine assign_str_to_array(s,str)
+subroutine assign_str_to_array(s,str)
+implicit none
 character(len=1), dimension(:), intent(out)   :: s
 character(len=*), intent(in) :: str
 
@@ -52,12 +54,13 @@ enddo
 end subroutine assign_str_to_array
 
 !-------------------------------------------------------------
-pure function compare_array_str(s,str) result(equal) ! .equal. generic
+function compare_array_str(s,str) result(equal) ! .equal. generic
+implicit none
 character(len=1), dimension(:), intent(in)   :: s
 character(len=*), intent(in) :: str
 logical                      :: equal
+integer                      :: lens, lenstr, i
 
-integer :: lens, lenstr, i
 
 equal = .false.
 lens = size(s)

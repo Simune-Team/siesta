@@ -17,7 +17,7 @@ default: module
 module:  libSiestaXC.a
 	cp *.mod *.a ..
 #
-SIESTA_SRCS= alloc.F90 bessph.f cellsubs.f  \
+SIESTA_SRCS= alloc.F90 bessph.f cellsubs.f  debugmpi.F \
              chkgmx.f fft1d.F  flib_spline.f90  \
              minvec.f m_io.f moreParallelSubs.F90 \
              m_recipes.f m_timer.F90 m_walltime.f90 parallel.F \
@@ -29,9 +29,9 @@ SIESTA_OBJS:= $(SIESTA_OBJS:.F90=.o)
 #
 SIESTA_SOURCES:=$(addprefix ../, $(SIESTA_SRCS))
 
-LOCAL_SRCS= atomxc.f90 cellxc.f90 debugxc.f90 ggaxc.f ldaxc.f \
-            siestaXC.f90 vdwxc.f90 xcmod.f90  fft3d.f90 fftr.f90 \
-            mesh1d.f90 mesh3d.F90
+LOCAL_SRCS= atomxc.F90 cellxc.F90 debugxc.f90 ggaxc.f ldaxc.f \
+            siestaxc.F90 vdwxc.F90 xcmod.f90  fft3d.F90 fftr.F90 \
+            mesh1d.f90 mesh3d.F90 am05.f90
 LOCAL_OBJS:= $(LOCAL_SRCS:.f=.o)
 LOCAL_OBJS:= $(LOCAL_OBJS:.F=.o)
 LOCAL_OBJS:= $(LOCAL_OBJS:.f90=.o)
@@ -69,7 +69,7 @@ clean:
 	rm -fr *.o *.*d *.a siestaXC.tgz
 #
 # DO NOT DELETE THIS LINE - used by make depend
-alloc.o: m_io.o parallel.o precision.o sys.o
+alloc.o: debugmpi.o m_io.o parallel.o precision.o sys.o
 atomxc.o: alloc.o ggaxc.o ldaxc.o mesh1d.o precision.o radfft.o
 atomxc.o: sys.o vdwxc.o xcmod.o
 bessph.o: precision.o sys.o
@@ -79,12 +79,14 @@ cellxc.o: m_timer.o mesh3d.o moreParallelSubs.o parallel.o precision.o sys.o
 cellxc.o: vdwxc.o xcmod.o
 chkgmx.o: cellsubs.o minvec.o precision.o sys.o
 debugxc.o: m_io.o moreParallelSubs.o parallel.o
+debugmpi.o: parallel.o
 fft1d.o: parallel.o precision.o sys.o
 fft3d.o: alloc.o debugxc.o fft1d.o m_timer.o mesh3d.o precision.o sys.o
 fftr.o: alloc.o fft3d.o mesh3d.o precision.o sys.o
 flib_spline.o: precision.o
-ggaxc.o: ldaxc.o precision.o sys.o
+ggaxc.o: ldaxc.o precision.o sys.o am05.o
 ldaxc.o: precision.o sys.o
+am05.o: precision.o sys.o
 m_io.o: sys.o
 m_recipes.o: sys.o
 m_timer.o: m_io.o m_walltime.o moreParallelSubs.o parallel.o precision.o sys.o
@@ -93,9 +95,10 @@ mesh3d.o: alloc.o debugxc.o parallel.o precision.o sorting.o sys.o
 minvec.o: cellsubs.o precision.o sorting.o sys.o
 moreParallelSubs.o: alloc.o m_io.o parallel.o precision.o sys.o
 radfft.o: alloc.o bessph.o m_recipes.o precision.o
-siestaXC.o: atomxc.o cellxc.o mesh3d.o precision.o xcmod.o
+siestaxc.o: atomxc.o cellxc.o mesh3d.o precision.o xcmod.o
 sys.o: parallel.o
 timer.o: sys.o m_timer.o
-vdwxc.o: debugxc.o flib_spline.o ldaxc.o m_recipes.o mesh1d.o precision.o
-vdwxc.o: radfft.o
-xcmod.o: precision.o sys.o
+vdwxc.o: debugxc.o flib_spline.o ggaxc.o ldaxc.o m_recipes.o mesh1d.o
+vdwxc.o: precision.o radfft.o
+xcmod.o: precision.o sys.o vdwxc.o
+

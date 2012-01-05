@@ -58,6 +58,9 @@ c Internal variables ...
       data pi / 3.1415926d0 /
       data overflow /.false./
 
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
+
 c ...
      
 
@@ -112,15 +115,25 @@ c Lattice constant of unit cell...
 c ...
 
 c Lattice vectors of unit cell...
-      if ( fdf_block('LatticeParameters',iunit) .and.
-     .     fdf_block('LatticeVectors',iunit) ) then
+      if ( fdf_block('LatticeParameters',bfdf) .and.
+     .     fdf_block('LatticeVectors',bfdf) ) then
          write(6,'(2a)')'ERROR: Lattice vectors doubly ',
      .     'specified: by LatticeVectors and by LatticeParameters.' 
          stop 
       endif
 
-      if ( fdf_block('LatticeParameters',iunit) ) then
-         read(iunit,*) alp, blp, clp, alplp, betlp, gamlp
+      if ( fdf_block('LatticeParameters',bfdf) ) then
+         if (.not. fdf_bline(bfdf, pline))
+     $        call die("No LatticeParameters")
+         if (.not. (fdf_bmatch(pline, 'vvvvvv') )) then
+            call die ('LatticeParameters: Error in syntax')
+         endif
+         alp = fdf_bvalues(pline,1)
+         blp = fdf_bvalues(pline,2)
+         clp = fdf_bvalues(pline,3)
+         alplp = fdf_bvalues(pline,4)
+         betlp = fdf_bvalues(pline,5)
+         gamlp = fdf_bvalues(pline,6)
          write(6,'(a)')
      .    'Lattice Parameters (units of Lattice Constant) ='
          write(6,'(a,3f10.5,3f9.3)')
@@ -138,9 +151,13 @@ c Lattice vectors of unit cell...
          xxx = (cos(alplp) - cos(betlp)*cos(gamlp))/sin(gamlp)
          cell(2,3) = clp * xxx
          cell(3,3) = clp * sqrt(sin(betlp)*sin(betlp) - xxx*xxx)
-      elseif ( fdf_block('LatticeVectors',iunit) ) then
+      elseif ( fdf_block('LatticeVectors',bfdf) ) then
         do i = 1,3
-          read(iunit,*) (cell(j,i), j=1,3)
+          if (.not. fdf_bline(bfdf, pline))
+     .      call die('redcel: ERROR in LatticeVectors block')
+          cell(1,i) = fdf_bvalues(pline,1)
+          cell(2,i) = fdf_bvalues(pline,2)
+          cell(3,i) = fdf_bvalues(pline,3)
         enddo
       else
         do i = 1,3
@@ -306,5 +323,16 @@ c ...
      . '    ERROR: File FC.fdf already exists!',
      . '********************************************'
       stop
-      end
+      CONTAINS
+
+      subroutine die(str)
+      character(len=*), intent(in), optional:: str
+      if (present(str)) then
+         write(6,"(a)") str
+         write(0,"(a)") str
+      endif
+      STOP
+      end subroutine die
+
+      end program fcbuild
 

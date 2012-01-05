@@ -82,7 +82,8 @@ C ****************************************************************************
       use precision
       use alloc, only: re_alloc, de_alloc
       use on_main
-      use neighbour, only: jan, r2ij, xij, mneighb, maxnna
+      use neighbour, only: jan, r2ij, xij, mneighb, maxnna,
+     &                     reset_neighbour_arrays
       use sys,      only : die
       use spatial,  only : nL2G
 
@@ -125,9 +126,6 @@ C  Internal variables .......................................................
 
       if (firstcall) then
 
-C Nullify local pointers on first call
-        nullify(indexloc)
-
 C Initialise random number generator
         cgval = ran3(-iseed)
 
@@ -144,15 +142,11 @@ C Check that iopt is correct ................................................
 
 
 C Allocate local arrays
-      nullify( alist )
-      call re_alloc( alist, 1, natoms, name='alist', routine='cspa' )
-      nullify( ilist )
-      call re_alloc( ilist, 1, nbasis, name='ilist', routine='cspa' )
-      nullify( numft )
-      call re_alloc( numft, 1, nbasis, name='numft', routine='cspa' )
-      nullify( lneeded )
-      call re_alloc( lneeded, 1, nbasis, name='lneeded',
-     &               routine='cspa' )
+      nullify( alist, ilist, numft, lneeded )
+      call re_alloc( alist,   1, natoms, 'alist',   'cspa' )
+      call re_alloc( ilist,   1, nbasis, 'ilist',   'cspa' )
+      call re_alloc( numft,   1, nbasis, 'numft',   'cspa' )
+      call re_alloc( lneeded, 1, nbasis, 'lneeded', 'cspa' )
 
 C Work out which basis functions are required in local C copy
       lneeded(1:nbasis) = .false.
@@ -264,7 +258,9 @@ C Initialize routine for neighbour search
       call mneighb(cell,rcoor,natoms,xa,0,0,nna) 
 
 C Allocate local memory
-      call re_alloc(indexloc,1,max(maxnna,natoms),name='indexloc')
+      nullify(indexloc)
+      call re_alloc( indexloc, 1, max(maxnna,natoms),
+     &               'indexloc', 'cspa' )
 
       index = 0
       do ia = 1,natoms
@@ -273,7 +269,7 @@ C Allocate local memory
 C Look for neighbours of atom ia
           call mneighb(cell,rcoor,natoms,xa,ia,0,nna)
           ! Reallocate in case nna has increased  (Tight form)
-          call re_alloc(indexloc,1,nna,name='indexloc',routine="cspa")
+          call re_alloc( indexloc, 1, nna, 'indexloc', 'cspa' )
         else
           ! Make sure we have enough space
           ! (Cleaner alternative to initial allocation with  
@@ -532,7 +528,7 @@ C  (or the number of electrons)
       endif
 
 C Deallocate local memory
-
+      call reset_neighbour_arrays( )
       call de_alloc( lneeded, name='lneeded' )
       call de_alloc( numft, name='numft' )
       call de_alloc( ilist, name='ilist' )

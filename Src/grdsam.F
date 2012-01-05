@@ -8,12 +8,15 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
+      module m_grdsam
+      public :: grdsam
+      CONTAINS
       subroutine grdsam(nspin, norb, iaorb, iphorb, 
-     .                  nuo, nuotot, nua, na, isa, xa, indxua,
-     .                  cell, mscell, g2max, ntm, ifa, istr, maxnd,
-     .                  maxnh, numh, listhptr, listh, Dscf, Datm, Hmat,
-     .                  Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
-     .                  Exc, Dxc, dipol, fa, stress, fal, stressl )
+     &                  nuo, nuotot, nua, na, isa, xa, indxua,
+     &                  cell, ntm, ifa, istr, maxnd,
+     &                  maxnh, numh, listhptr, listh, Dscf, Datm, Hmat,
+     &                  Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
+     &                  Exc, Dxc, dipol, fa, stress, fal, stressl )
 
 c ***************************************************************************
 c Final call to dhscf of the scf cycle + grid-cell sampling
@@ -50,7 +53,6 @@ c integer na            : number of atoms in supercell
 c integer isa(na)       : species indexes
 c real*8  xa(3,na)      : atomic positions
 c real*8  cell(3,3)     : unit cell vectors
-c integer mscell(3,3)   : supercell vectors in units of ucell
 c integer ifa           : scf contrib to forces calculated or not
 c integer istr          : scf contrib to stress calculated or not
 c integer maxnd         : first dimension of dscf
@@ -75,7 +77,6 @@ c real*8  exc    : scf XC energy
 c real*8  dxc    : scf double-counting correction to exc
 c real*8  dipol(3): electric dipole (in a.u.)
 c *********************** DHSCF INPUT AND OUTPUT ****************************
-c real*8  g2max       : effective planewave cutoff in Ry 
 c real*8  fa(3,na)    : atomic forces
 c real*8  stress(3,3) : stress tensor
 c real*8  fal(3,na)   : atomic forces (local to Node)
@@ -87,49 +88,46 @@ C  Modules
 C
       use precision
       use fdf
-      use parsing
       use parallel,  only : Node
       use sys,       only : die
-#ifdef MPI
-      use mpi_siesta
-#endif
+      use m_dhscf,   only : dhscf, dhscf_init
+      use alloc,     only : re_alloc, de_alloc
+      use siesta_options, only: g2cut
+      use siesta_geom,    only: mscell
 
       implicit          none
 
       integer           maxnh, maxnd, na, norb, nspin, nuo, nuotot, 
-     .                  nua, iaorb(norb), ifa, indxua(na), 
-     .                  iphorb(norb), isa(na), istr, listh(maxnh),
-     .                  listhptr(nuo), mscell(3,3), 
-     .                  numh(nuo), ntm(3)
+     &                  nua, iaorb(norb), ifa, indxua(na), 
+     &                  iphorb(norb), isa(na), istr, listh(maxnh),
+     &                  listhptr(nuo), numh(nuo), ntm(3)
 
       real(dp)          cell(3,3), datm(norb), dipol(3), 
-     .                  dscf(maxnd,nspin), DUscf, DUext, Dxc, 
-     .                  enaatm, enascf, exc, fa(3,nua), g2max,
-     .                  Hmat(maxnh,nspin), stress(3,3),
-     .                  uatm, uscf, xa(3,na), fal(3,nua), stressl(3,3)
-
-      external          memory
+     &                  dscf(maxnd,nspin), DUscf, DUext, Dxc, 
+     &                  enaatm, enascf, exc, fa(3,nua),
+     &                  Hmat(maxnh,nspin), stress(3,3),
+     &                  uatm, uscf, xa(3,na), fal(3,nua), stressl(3,3)
 
 C Internal variables and arrays
  
-      character         line*130, names*80
       logical           samesh
-      integer           ni, nn, nr, nv, ipt, maxpt, iu, ia,
-     .                  ix, iv, integs(4), lastc, lc(0:3)
-#ifdef MPI
-      integer           MPIerror
-#endif
-      real(dp)          reals(4), values(4), avexc,
-     .                  strold(3,3), avdipo(3), avstre(3,3), avdxc,
-     .                  avenaa, avenas, avuatm, avuscf, avdusc, anpt,
-     .                  strold2(3,3), avstre2(3,3)
+      integer           nr, ipt, ia,
+     &                  ix, iv
+      real(dp)          avexc, strold(3,3), avdipo(3), avstre(3,3),
+     &                  avdxc, avenaa, avenas, avuatm, avuscf, avdusc,
+     &                  anpt, strold2(3,3), avstre2(3,3)
+      real(dp)          G2max
 
-      parameter         (maxpt = 100)
+      integer, parameter      :: maxpt = 100
 
-      real(dp), dimension(:,:), allocatable, save ::
-     .                  pt, avfa, faold, xanew, avfa2, faold2
-      real(dp), dimension(:,:), allocatable, save ::
-     .                  dpt
+      real(dp), pointer       :: avfa(:,:) => null(),
+     $                           faold(:,:) => null(),
+     &                           xanew(:,:) => null(),
+     $                           avfa2(:,:) => null(),
+     $                           faold2(:,:) => null()
+
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
 
 
       !Saved variables:
@@ -139,26 +137,22 @@ C Internal variables and arrays
       real(dp), save :: lstcll(3,3) = 0.743978657912656D50
       integer, save  :: lstntm(3) = (/10000, 1, 1/) 
       integer, save  :: npt
+      real(dp), pointer, save :: pt(:,:),  dpt(:,:)
 
 c ----------------------------------------------------------------------------
+#ifdef DEBUG
+      call write_debug( '    PRE grdsam' )
+#endif
 
 C Allocate local memory
-      if (.not.allocated(dpt)) then
-        allocate(pt(3,maxpt+1))
-        call memory('A','D',3*(maxpt+1),'grdsam')
-        allocate(dpt(3,maxpt+1))
-        call memory('A','D',3*(maxpt+1),'grdsam')
-      endif
-      allocate(avfa(3,na))
-      call memory('A','D',3*na,'grdsam')
-      allocate(avfa2(3,na))
-      call memory('A','D',3*na,'grdsam')
-      allocate(faold(3,na))
-      call memory('A','D',3*na,'grdsam')
-      allocate(faold2(3,na))
-      call memory('A','D',3*na,'grdsam')
-      allocate(xanew(3,na))
-      call memory('A','D',3*na,'grdsam')
+      call re_alloc( pt, 1, 3, 1, maxpt+1, 'pt', 'grdsam' )
+      call re_alloc( dpt, 1, 3, 1, maxpt+1, 'dpt', 'grdsam' )
+
+      call re_alloc( avfa, 1, 3, 1, na, 'avfa', 'grdsam' )
+      call re_alloc( avfa2, 1, 3, 1, na, 'avfa2', 'grdsam' )
+      call re_alloc( faold, 1, 3, 1, na, 'faold', 'grdsam' )
+      call re_alloc( faold2, 1, 3, 1, na, 'faold2', 'grdsam' )
+      call re_alloc( xanew, 1, 3, 1, na, 'xanew', 'grdsam' )
 
 C Check whether GridCellSampling block has been looked for ------------------
 
@@ -166,41 +160,31 @@ C Check whether GridCellSampling block has been looked for ------------------
 
 C Look for block and read it if found ---------------------------------------
  
-        if (Node.eq.0) then
-          samgrd = fdf_block('GridCellSampling',iu)
-        endif
-#ifdef MPI
-        call MPI_Bcast(samgrd,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-#endif
-
+        samgrd = fdf_block('GridCellSampling',bfdf)
+        
         if (samgrd) then
           if (Node.eq.0) then
             write(6,'(a)') 'grdsam: Reading %block GridCellSampling'
           endif
-          do ipt = 1, maxpt + 1
-            if (Node.eq.0) then
-              read(iu,'(a)', end=50) line
-            endif
-#ifdef MPI
-            call MPI_Bcast(line,130,MPI_character,0,MPI_Comm_World,
-     .        MPIerror)
-#endif
-            lastc = index(line,'#') - 1
-            if (lastc .le. 0) lastc = len(line)
-            call parse( line(1:lastc), nn, lc, names, nv, values,
-     .                  ni, integs, nr, reals )
+          ipt = 1
+          do while(fdf_bline(bfdf,pline) .and. (ipt .le. maxpt+1))
+            nr = fdf_bnreals(pline)
             if (nr .ge. 3) then
-              pt(1,ipt) = reals(1)
-              pt(2,ipt) = reals(2)
-              pt(3,ipt) = reals(3)
+              pt(1,ipt) = fdf_breals(pline,1)
+              pt(2,ipt) = fdf_breals(pline,2)
+              pt(3,ipt) = fdf_breals(pline,3)
+              ipt = ipt + 1
             else
-              npt = ipt - 1
-              goto 50
+              write(6,'(a,/,a)')
+     &          'grdsam: syntax ERROR in %block GridCellSampling:',
+     &          trim(fdf_getline(bfdf%mark))
             endif
           enddo
-          call die('grdsam: ERROR: Number of points' //
-     $             ' in block larger than MAXPT')
-   50     continue
+          if (ipt .gt. maxpt+1) then
+            call die('grdsam: ERROR: Number of points' //
+     $               ' in block larger than MAXPT')
+          endif
+          npt = ipt - 1
         endif
         blread = .true.
       endif
@@ -219,19 +203,19 @@ c if sampling, store the forces and stresses prior to dhscf -----------------
 
 
 c first (normal) call to DHSCF, ihmat=1 --------------------------------------
-
       call dhscf( nspin, norb, iaorb, iphorb, nuo, nuotot, nua,
-     .            na, isa, xa, indxua, cell, mscell, g2max, ntm,
-     .            ifa, istr, 1, ' ', ' ', ' ', ' ', ' ', ' ',
-     .            maxnd, numh, listhptr, listh, Dscf, Datm,
-     .            maxnh, numh, listhptr, listh, Hmat,  
-     .            Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
-     .            Exc, Dxc, dipol, fa, stress, fal, stressl)
-
+     &            na, isa, xa, indxua, ntm,
+     &            ifa, istr, 1, ' ', ' ', ' ', ' ', ' ', ' ',
+     &            maxnd, numh, listhptr, listh, Dscf, Datm,
+     &            maxnh, Hmat, Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
+     &            Exc, Dxc, dipol, stress, fal, stressl)
 
 c Sampling ------------------------------------------------------------------
 
       if (samgrd) then
+
+!       This check is superfluous, as the generation of the displacements
+!       can be done in each call without much overhead.
 
 c find if mesh is new -------------------------------------------------------
 
@@ -245,19 +229,20 @@ c find if mesh is new -------------------------------------------------------
           enddo
         enddo
 
+!
 c generate displacements (in Bohr cartesian) if first time or new mesh ------
 
         if (.not. samesh) then
           if (Node.eq.0) then
             write(6,'(a)') 
-     .       'grdsam: Generating displacements for grid-cell sampling'
+     &       'grdsam: Generating displacements for grid-cell sampling'
           endif
           do ipt = 1, npt
             do ix = 1, 3
               dpt(ix,ipt) = 0.0d0
               do iv = 1, 3
                 dpt(ix,ipt) = dpt(ix,ipt) + 
-     .                          cell(ix,iv)*pt(iv,ipt)/dble(ntm(iv))
+     &                          cell(ix,iv)*pt(iv,ipt)/dble(ntm(iv))
               enddo
             enddo
           enddo
@@ -296,13 +281,22 @@ c loop sampling on displacements making averages ----------------------------
           write(6,'(a,i3)') 'grdsam: Grid-cell sampling, point ', ipt
           endif
 
+          ! We have to call dhscf_init, among other things, to
+          ! initialize the mesh structures
+          G2max = g2cut
+          call dhscf_init(nspin, norb, iaorb, iphorb,
+     &                      nuo, nuotot, nua, na,
+     &                      isa, xanew, indxua, cell,
+     &                      mscell, G2max, ntm,
+     &                      maxnd, numh, listhptr, listh, datm,
+     &                      Fal, stressl)
+
           call dhscf( nspin, norb, iaorb, iphorb, nuo, nuotot, nua,
-     .                na, isa, xanew, indxua, cell, mscell, g2max, ntm,
-     .                ifa, istr, 0, ' ', ' ', ' ', ' ', ' ', ' ',
-     .                maxnd, numh, listhptr, listh, Dscf, Datm,
-     .                maxnh, numh, listhptr, listh, Hmat, 
-     .                Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
-     .                Exc, Dxc, dipol, fa, stress, fal, stressl)
+     &                na, isa, xanew, indxua, ntm,
+     &                ifa, istr, 0, ' ', ' ', ' ', ' ', ' ', ' ',
+     &                maxnd, numh, listhptr, listh, Dscf, Datm,
+     &                maxnh, Hmat, Enaatm, Enascf, Uatm, Uscf, DUscf,
+     &                DUext, Exc, Dxc, dipol, stress, fal, stressl)
 
           avfa(1:3,1:nua) = avfa(1:3,1:nua) + fa(1:3,1:nua)
           avfa2(1:3,1:nua) = avfa2(1:3,1:nua) + fal(1:3,1:nua)
@@ -338,17 +332,16 @@ c final averages ------------------------------------------------------------
       endif
 
 C Deallocate local memory
-      call memory('D','D',size(xanew),'grdsam')
-      deallocate(xanew)
-      call memory('D','D',size(faold2),'grdsam')
-      deallocate(faold2)
-      call memory('D','D',size(faold),'grdsam')
-      deallocate(faold)
-      call memory('D','D',size(avfa2),'grdsam')
-      deallocate(avfa2)
-      call memory('D','D',size(avfa),'grdsam')
-      deallocate(avfa)
+      call de_alloc( xanew, 'xanew', 'grdsam' )
+      call de_alloc( faold2, 'faold2', 'grdsam' )
+      call de_alloc( faold, 'faold', 'grdsam' )
+      call de_alloc( avfa2, 'avfa2', 'grdsam' )
+      call de_alloc( avfa, 'avfa', 'grdsam' )
+#ifdef DEBUG
+      call write_debug( '    POS grdsam' )
+#endif
 
       return
-      end
+      end subroutine grdsam
 
+      end module m_grdsam

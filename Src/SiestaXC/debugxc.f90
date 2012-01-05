@@ -74,7 +74,7 @@ subroutine closeDebugOutputFile()
   ! Copy all debug.out* files to root node. Notice that in each call to
   ! copyFile, only node iNode will actually send its file to node=0
   do iNode = 1,Nodes-1
-    nodeFileName = filePrefix//nodeString(iNode)
+    nodeFileName = filePrefix//'.node'//nodeString(iNode)
     call copyFile( srcNode=iNode, srcFile=nodeFileName, &
                    dstNode=0,     dstFile=nodeFileName, &
                    writeOption='overwrite' )

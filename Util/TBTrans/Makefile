@@ -8,7 +8,6 @@
 #
 default: what  tbtrans 
 #
-SIESTA_DIR=../../Src
 VPATH:=$(shell pwd)/../../Src
 OBJDIR=Obj
 ARCH_MAKE=../../$(OBJDIR)/arch.make
@@ -38,46 +37,46 @@ SYSOBJ=$(SYS).o
 # Tbtrans:
 MOD_TOBJS=  m_tbt_options.o m_tbt_gf.o m_tbt_kpts.o hamil2.o tsread2.o
 
-SIESTA_OBJS= precision.o alloc.o  memoryinfo.o memory.o pxf.o \
-             timer.o m_mpi_utils.o m_fdf_global.o paste.o \
-             parallel.o sys.o io.o files.o  m_walltime.o zheevds.o
+SIESTA_OBJS= precision.o sys.o m_io.o alloc.o  memoryinfo.o memory.o pxf.o \
+             moreParallelSubs.o m_walltime.o m_timer.o timer.o m_mpi_utils.o \
+             m_fdf_global.o paste.o \
+             parallel.o  io.o files.o  zheevds.o
 
 TBTOBJS= $(SIESTA_OBJS) $(MOD_TOBJS) $(SYSOBJ) $(EXTRA) \
          tbtrans.o transmission.o   \
          calc_green.o cdiag_local.o getsfe.o \
-         mkRealContour.o reinit_tb.o setupkham2.o TSiohs.o atompdos.o coop.o \
+         mkRealContour.o reinit_tb.o setupkham2.o TSiohs.o \
          csolve.o teigchana.o helpers.o \
-         Lowdin.o netcdfwrite.o 
 
 #
 # Interfaces to libraries
 #
 FDF=libfdf.a
 FDF_MAKEFILE=$(VPATH)/fdf/makefile
-FDF_INCFLAGS:=-I $(VPATH)/fdf $(INCFLAGS)
+FDF_INCFLAGS:=-I $(VPATH)/fdf -I../MPI $(INCFLAGS)
 $(FDF): 
-	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/fdf" \
+	(mkdir -p fdf ; cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/fdf" \
                           "ARCH_MAKE=../$(ARCH_MAKE)" \
                           "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 #
-INCFLAGS:=$(NETCDF_INCFLAGS) $(INCFLAGS)
+INCFLAGS:=$(INCFLAGS)
 #
 MPI_MAKEFILE=$(VPATH)/MPI/Makefile
 $(MPI_INTERFACE): 
-	(cd MPI ; $(MAKE) -f $(MPI_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/MPI" \
+	(mkdir -p MPI; cd MPI ; $(MAKE) -f $(MPI_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/MPI" \
                           "MAKEFILES=$(MPI_MAKEFILE)" "ARCH_MAKE=../$(ARCH_MAKE)" \
                           "FFLAGS=$(FFLAGS)" module_built)
 #
 LINALG_MAKEFILE=$(VPATH)/Libs/makefile
 LINALG_INCFLAGS:=-I $(VPATH)/Libs $(INCFLAGS)
 $(LINALG): 
-	(cd Libs ; $(MAKE) -f $(LINALG_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/Libs" \
+	(mkdir -p Libs; cd Libs ; $(MAKE) -f $(LINALG_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/Libs" \
                           "ARCH_MAKE=../$(ARCH_MAKE)" \
                           "INCFLAGS=$(LINALG_INCFLAGS)" "FFLAGS=$(FFLAGS)" $(LINALG))
 #
-tbtrans: $(TBTOBJS) $(FDF) $(SYSOBJ) $(NETCDF_INTERFACE) $(LINALG)
+tbtrans: $(MPI_INTERFACE) $(TBTOBJS) $(FDF) $(SYSOBJ)  $(LINALG)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o tbtrans \
-              $(TBTOBJS) $(MPI_INTERFACE) $(NETCDF_INTERFACE) \
+              $(TBTOBJS) $(MPI_INTERFACE)  \
               $(FDF) $(LIBS) $(LINALG)  || echo "***Please see top of Makefile"
 #	@(cd ../../bin ; rm -f tsScan ; ln -s tbtrans tsScan)
 
@@ -85,12 +84,9 @@ tbtrans: $(TBTOBJS) $(FDF) $(SYSOBJ) $(NETCDF_INTERFACE) $(LINALG)
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
 	rm -f tbtrans *.o *.a *.mod
-	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
-	(cd MPI ; $(MAKE) -f $(MPI_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
-	(cd Libs ; $(MAKE) -f $(MPI_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
-
-readTSHScdf: readTSHScdf.F $(NETCDF_INTERFACE)
-	$(FC) -o readTSHScdf readTSHScdf.F $(NETCDF_INTERFACE) $(NETCDF_LIBS)
+	rm -rf ./fdf
+	rm -rf ./MPI
+	rm -rf ./Libs
 
 #
 # Dependencies
@@ -110,10 +106,8 @@ setupkham2.o	: tsread2.o
 tbtrans.o	: hamil2.o 
 green4.o        : greensub.o
 m_tbt_gf.o       : tsread2.o
-netcdfwrite.o   : $(NETCDF_INTERFACE)
-OutputRegionData.o: Lowdin.F $(NETCDF_INTERFACE)
 # DO NOT DELETE THIS LINE - used by make depend
-alloc.o: parallel.o precision.o sys.o
+alloc.o: parallel.o precision.o m_io.o sys.o
 arw.o: parallel.o sys.o
 atm_transfer.o: atm_types.o atmparams.o old_atmfuncs.o periodic_table.o
 atm_transfer.o: radial.o sys.o

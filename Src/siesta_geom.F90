@@ -33,7 +33,7 @@ MODULE siesta_geom
 
   ! Atomic coordinates
   real(dp), pointer               :: xa(:,:)
-  real(dp), pointer               :: xalast(:,:)
+  real(dp), pointer               :: xa_last(:,:)
 
   ! Atomic velocities
   real(dp), pointer               :: va(:,:)

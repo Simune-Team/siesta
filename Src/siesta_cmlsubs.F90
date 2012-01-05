@@ -10,17 +10,16 @@
 !
 Module siesta_cmlsubs
 
-  Use FoX_common, only: str
-  Use FoX_wxml, only: xmlf_t      ! help pgf95...
-  Use FoX_wcml
+  use siesta_cml, only:   cml_p, mainXML
 
-  Implicit None
-  Private
-  
+  Use siesta_cml, only: cmlBeginFile, cmlAddNamespace, cmlStartCml
+  Use siesta_cml, only: cmlStartMetadataList, cmlAddMetadata
+  Use siesta_cml, only: cmlEndMetadataList, cmlEndCml, cmlFinishFile
+  Use siesta_cml, only: FoX_set_fatal_warnings, FoX_set_fatal_errors
+
   public :: siesta_cml_init, siesta_cml_exit
 
-  Logical, public      :: cml_p = .False.
-  Type(xmlf_t), public, save :: mainXML
+  Private
 
   Contains
 
@@ -32,11 +31,14 @@ Module siesta_cmlsubs
       Use m_timestamp, only: datestring
 
       Character(len=label_length+4) :: fname
+      Character(len=10)             :: nodes_str 
 
       fname = ' '
 
       If (IOnode) Then
-         cml_p = fdf_boolean( 'WriteXML', .True. )
+         cml_p = fdf_boolean( 'XML.Write', .True. )
+         call FoX_set_fatal_errors(fdf_boolean('XML.AbortOnErrors', .false.))
+         call FoX_set_fatal_warnings(fdf_boolean('XML.AbortOnWarnings', .false.))
       Else
          cml_p = .False.
       Endif !IOnode
@@ -58,7 +60,9 @@ Module siesta_cmlsubs
          Else
            Call cmlAddMetadata(mainXML, name='siesta:Mode', content='Serial')
          Endif
-         Call cmlAddMetadata(mainXML, name='siesta:Nodes', content=str(nodes))
+         ! Avoid using 'str' function, which causes trouble with PGI compilers
+         write(nodes_str, "(i10)") nodes
+         Call cmlAddMetadata(mainXML, name='siesta:Nodes', content=nodes_str)
 #ifdef CDF
          Call cmlAddMetadata(mainXML, name='siesta:NetCDF',  content='true')
 #else

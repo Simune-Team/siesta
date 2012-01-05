@@ -15,6 +15,7 @@
 
       implicit none
 
+      character(len=24), save, public          :: accum
       private
       public :: find_kgrid
 
@@ -62,12 +63,12 @@ C Passed variables
       external                 ::  idiag, reclat
 
 C Internal variables
-      integer           i, ir, iu, ix, j, i1, i2, i3,
+      integer           i, ir, ix, j, i1, i2, i3,
      .                  kdsc(3,3), maux(3,3,2), ml(3,3), mr(3,3),
      .                  ng(3), ni, nkr(3), nktot,
      $                  proj(3,3), igmin(3), igmax(3)
 
-      real(dp)          cutoff, d(3), dkg(3), dkx(3), dscell(3,3),
+      real(dp)          d(3), dkg(3), dkx(3), dscell(3,3),
      .                  gridk(3,3), gscell(3,3), 
      .                  scell(3,3), scmin(3,3), tiny, vmod, w1, wtot
       real(dp)          ctransf(3,3)
@@ -183,6 +184,8 @@ C (if possible) after reflection on each alternative plane
           elseif (abs(dkg(j)-0.5d0) .lt. tiny) then
             ni = (ng(j)-1)/2 + 1
           endif
+          ! To work around an Intel_12 compiler bug
+          write(accum,"(3i8)") ni,nktot,kdsc(j,j)
           nkr(j) = ni * nktot / kdsc(j,j)
         enddo
 

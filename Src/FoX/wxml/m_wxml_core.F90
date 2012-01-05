@@ -16,7 +16,7 @@ module m_wxml_core
     is_empty, init_elstack, push_elstack, destroy_elstack
   use m_common_entities, only: existing_entity, is_unparsed_entity
   use m_common_error, only: FoX_warning_base, FoX_error_base, FoX_fatal_base, &
-    error_stack, in_error
+    error_stack, in_error, FoX_get_fatal_errors, FoX_get_fatal_warnings
   use m_common_io, only: get_unit
   use m_common_namecheck, only: checkEncName, checkName, checkQName, &
     checkCharacterEntityReference, checkPublicId, prefixOfQName, &
@@ -125,6 +125,9 @@ module m_wxml_core
 
   public :: xmlf_Name
   public :: xmlf_OpenTag
+
+  public :: xmlf_SetPretty_print
+  public :: xmlf_GetPretty_print
 
   interface xml_AddCharacters
     module procedure xml_AddCharacters_Ch
@@ -1632,6 +1635,23 @@ contains
 #endif
   end subroutine xml_Close
 
+  subroutine xmlf_SetPretty_print(xf, new_value)
+    type(xmlf_t), intent(inout) :: xf
+    logical, intent(in)         :: new_value
+#ifndef DUMMYLIB
+    xf%pretty_print = new_value
+#endif
+  end subroutine xmlf_SetPretty_print
+
+  pure function xmlf_GetPretty_print(xf) result(value)
+    logical :: value
+    type(xmlf_t), intent(in) :: xf
+#ifdef DUMMYLIB
+    value = .false.
+#else
+    value = xf%pretty_print
+#endif
+  end function xmlf_GetPretty_print
 
   pure function xmlf_name(xf) result(fn)
     type (xmlf_t), intent(in) :: xf
@@ -1775,6 +1795,11 @@ contains
     type(xmlf_t), intent(in) :: xf
     character(len=*), intent(in) :: msg
     
+    if (FoX_get_fatal_warnings()) then
+        write(6,'(a)') 'FoX warning made fatal'
+        call wxml_fatal_xf(xf, msg)
+    endif
+
     if (xf%xds%warning) then
       write(6,'(a)') 'WARNING(wxml) in writing to file ', xmlf_name(xf)
       write(6,'(a)')  msg
@@ -1787,7 +1812,12 @@ contains
     ! Emit error message, clean up file and stop.
     type(xmlf_t), intent(inout) :: xf
     character(len=*), intent(in) :: msg
-    
+   
+    if (FoX_get_fatal_errors()) then
+        write(6,'(a)') 'FoX error made fatal'
+        call wxml_fatal_xf(xf, msg)
+    endif
+ 
     write(6,'(a)') 'ERROR(wxml) in writing to file ', xmlf_name(xf)
     write(6,'(a)')  msg
     

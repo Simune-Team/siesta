@@ -289,10 +289,10 @@
         write(6,'(3a)') 'Dumping pseudopotential information ',
      $       'in formatted form in ', trim(fname)
 
- 9040    format(i4,1x,6f12.6)
+ 9040    format(i6,1x,7f12.6)
          do j = 1, p%nrval
             write(io_ps,9040) j, p%r(j), (p%vdown(i,j),i=1,p%npotd),
-     $                        p%chval(j)
+     $                        p%chval(j), p%chcore(j)
          enddo
          call io_close(io_ps)
          end subroutine pseudo_dump
@@ -321,23 +321,23 @@
 
         end subroutine pseudo_header_print
 
-c$$$        subroutine pseudo_header_string(p,s)
-c$$$        type(pseudopotential_t)  :: p
-c$$$        character(len=*), intent(inout) :: s
-c$$$
-c$$$        integer :: n, i
-c$$$
-c$$$ 8005   format(1x,a2,1x,a2,1x,a3,1x,a4)
-c$$$ 8010   format(1x,6a10,/,1x,a70)
-c$$$ 8015   format(1x,2i3,i5,3g20.12)
-c$$$        
-c$$$        write(s,8005) p%name, p%icorr, p%irel, p%nicore
-c$$$        n = len_trim(s) + 1
-c$$$        write(s(n:),fmt="(a1)") char(10)
-c$$$        n = len_trim(s) + 1
-c$$$        write(s(n:),8010) (p%method(i),i=1,6), p%text
-c$$$
-c$$$        end subroutine pseudo_header_string
+c        subroutine pseudo_header_string(p,s)
+c        type(pseudopotential_t)  :: p
+c        character(len=*), intent(inout) :: s
+c
+c        integer :: n, i
+c
+c 8005   format(1x,a2,1x,a2,1x,a3,1x,a4)
+c 8010   format(1x,6a10,/,1x,a70)
+c 8015   format(1x,2i3,i5,3g20.12)
+c        
+c        write(s,8005) p%name, p%icorr, p%irel, p%nicore
+c        n = len_trim(s) + 1
+c        write(s(n:),fmt="(a1)") char(10)
+c        n = len_trim(s) + 1
+c        write(s(n:),8010) (p%method(i),i=1,6), p%text
+c
+c        end subroutine pseudo_header_string
 !--------
 !
       subroutine read_ps_conf(irel,lmax,text,chgvps)
@@ -527,9 +527,10 @@ c$$$        end subroutine pseudo_header_string
 
         call de_alloc( y2, name='y2' )
 
-        call pseudo_write_formatted(trim(p%name)// ".Reparam.psf",p)
-        if (write_ion_plot_files)
-     $      call pseudo_dump(trim(label) // ".Reparam.psdump",p)
+        call pseudo_write_formatted(trim(label)// ".Reparam.psf",p)
+        if (write_ion_plot_files) then
+           call pseudo_dump(trim(label) // ".Reparam.psdump",p)
+        endif
 
       end subroutine pseudo_reparametrize
 

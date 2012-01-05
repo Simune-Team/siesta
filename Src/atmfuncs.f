@@ -46,6 +46,7 @@ C     different chemical species in the calculation:
       public  :: lofio, symfio, cnfigfio, zetafio, mofio
       public  :: labelfis, lomaxfis, nztfl, rphiatm, lmxkbfis
       public  :: phiatm, all_phi
+      public  :: pol   ! Added JMS Dec.2009
       private
                           !
       contains
@@ -175,7 +176,7 @@ C  Distances in Bohr
 
       end function rchlocal
 
-!----------AMENOFIS
+!         AMENOFIS
 !
       FUNCTION ATMPOPFIO (IS,IO)
       real(dp) atmpopfio
@@ -233,10 +234,10 @@ C   INTEGER LOFIO  : Quantum number L of orbital or KB projector
       
       spp => species(is)
       if (io.gt.0) then
-         if (io.gt.spp%norbs)  call die("No such orbital")
+         if (io.gt.spp%norbs)  call die("lofio: No such orbital")
          lofio = spp%orb_l(io)
       else if (io.lt.0) then
-         if (-io.gt.spp%nprojs)  call die("No such projector")
+         if (-io.gt.spp%nprojs)  call die("lofio: No such projector")
          lofio = spp%pj_l(-io)
       else
          lofio = 0
@@ -263,10 +264,10 @@ C   INTEGER MOFIO  : Quantum number m of orbital or KB projector
       
       spp => species(is)
       if (io.gt.0) then
-         if (io.gt.spp%norbs)  call die("No such orbital")
+         if (io.gt.spp%norbs)  call die("mofio: No such orbital")
          mofio = spp%orb_m(io)
       else if (io.lt.0) then
-         if (-io.gt.spp%nprojs)  call die("No such projector")
+         if (-io.gt.spp%nprojs)  call die("mofio: No such projector")
          mofio = spp%pj_m(-io)
       else
          mofio = 0
@@ -291,7 +292,7 @@ C   INTEGER ZETAFIO  : Zeta number of orbital
 
       spp => species(is)
       if (io.gt.0) then
-         if (io.gt.spp%norbs)  call die("No such orbital")
+         if (io.gt.spp%norbs)  call die("zetafio: No such orbital")
          zetafio = spp%orbnl_z(spp%orb_index(io))
       else 
          call die('zetafio only deals with orbitals')
@@ -315,12 +316,12 @@ C  Distances in Bohr
       
       spp => species(is)
       if (io.gt.0) then
-         if (io.gt.spp%norbs)  call die("No such orbital")
+         if (io.gt.spp%norbs)  call die("rcut: No such orbital")
 
          op => spp%orbnl(spp%orb_index(io))
          rcut = op%cutoff
       else if (io.lt.0) then
-         if (-io.gt.spp%nprojs)  call die("No such projector")
+         if (-io.gt.spp%nprojs)  call die("rcut: No such projector")
          pp => spp%pjnl(spp%pj_index(-io))
          rcut = pp%cutoff
       else
@@ -345,29 +346,31 @@ C                    IO < 0 => Kleynman-Bylander projectors
 C   INTEGER SYMFIO  : Symmetry of the orbital or KB projector
 C  2) Returns 's' for IO = 0
 
-
       integer ilm, i, lorb, morb
-      integer, parameter  :: lmax_sym=3
-   
-      character(len=6)  sym_label((lmax_sym+1)*(lmax_sym+1)) 
-      character(len=7)  paste
-         
-      external paste
-C
-        data  sym_label(1)          / 's' /
-        data (sym_label(i),i=2,4)   / 'py', 'pz', 'px' /
-        data (sym_label(i),i=5,9)   / 'dxy', 'dyz', 'dz2',
-     .                                'dxz', 'dx2-y2' / 
-        data (sym_label(i),i=10,16) / 'f', 'f', 'f', 'f', 
-     .                                'f', 'f', 'f' /
+      integer, parameter  :: lmax_sym=4
+
+      character(len=11)  sym_label((lmax_sym+1)*(lmax_sym+1)) 
+
+      data  sym_label(1)
+     .  / 's' /
+      data (sym_label(i),i=2,4)
+     .  / 'py', 'pz', 'px' /
+      data (sym_label(i),i=5,9)
+     .  / 'dxy', 'dyz', 'dz2', 'dxz', 'dx2-y2' / 
+      data (sym_label(i),i=10,16)
+     .  / 'fy(3x2-y2)', 'fxyz', 'fz2y', 'fz3',
+     .    'fz2x', 'fz(x2-y2)', 'fx(x2-3y2)' /
+      data (sym_label(i),i=17,25)
+     .  / 'gxy(x2-y2)', 'gzy(3x2-y2)', 'gz2xy', 'gz3y', 'gz4',
+     .    'gz3x', 'gz2(x2-y2)', 'gzx(x2-3y2)', 'gx4+y4' /
 
       call chk('rcut',is)
       
       spp => species(is)
       if (io.gt.0) then
-         if (io.gt.spp%norbs)  call die("No such orbital")
+         if (io.gt.spp%norbs)  call die("symfio: No such orbital")
       else if (io.lt.0) then
-         if (-io.gt.spp%nprojs)  call die("No such projector")
+         if (-io.gt.spp%nprojs)  call die("symfio: No such projector")
       else
          symfio = 's'
       endif
@@ -380,7 +383,7 @@ C
       else
          ilm=lorb*lorb+lorb+morb+1  
          if(pol(is,io)) then 
-            symfio=paste('P',sym_label(ilm))
+            symfio='P'//sym_label(ilm)
          else
             symfio=sym_label(ilm) 
          endif 
@@ -669,15 +672,15 @@ C 7) RPHIATM with ITYPE = 0 is strictly equivalent to VNA_SUB
       end subroutine rphiatm
 
 
-      subroutine all_phi(is,it,r,nphi,phi, grphi)
-      integer, intent(in) :: is     ! Species index
-      integer, intent(in) :: it     ! Orbital-type switch:
-                                    ! IT > 0 => Basis orbitals
-                                    ! IT < 0 => KB projectors
-      real(dp), intent(in)  :: r(3)   ! Point vector, relative to atom
-      integer, intent(out):: nphi   ! Number of phi's
+      subroutine all_phi( is, it, r, nphi, phi, grphi )
+      integer,   intent(in) :: is     ! Species index
+      integer,   intent(in) :: it     ! Orbital-type switch:
+                                      ! IT > 0 => Basis orbitals
+                                      ! IT < 0 => KB projectors
+      real(dp),  intent(in) :: r(3)   ! Point vector, relative to atom
+      integer,  intent(out) :: nphi   ! Number of phi's
       real(dp), intent(out) :: phi(:) ! Basis orbital, KB projector, or
-                                    !  local pseudopotential
+                                      !  local pseudopotential
       real(dp), optional, intent(out) :: grphi(:,:) ! Gradient of phi
 
 C  Returns Kleynman-Bylander local pseudopotential, nonlocal projectors,

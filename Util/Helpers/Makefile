@@ -20,8 +20,8 @@ FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 #
-DEFS:=$(DEFS_PREFIX)-UMPI $(DEFS) 
-FPPFLAGS:=$(DEFS_PREFIX)-UMPI $(FPPFLAGS) 
+DEFS:=$(DEFS_PREFIX)-UMPI $(DEFS) $(DEFS_PREFIX)-UMPI
+FPPFLAGS:=$(DEFS_PREFIX)-UMPI $(FPPFLAGS) $(DEFS_PREFIX)-UMPI
 INCFLAGS:=$(NETCDF_INCFLAGS) $(INCFLAGS)
 #
 # Uncomment the following line for debugging support
@@ -33,7 +33,7 @@ SYSOBJ=$(SYS).o
 # Note that machine-specific files are now in top Src directory.
 #
 OBJS_GET_CHEM_LABELS=precision.o f2kcli.o parallel.o \
-          chemical.o io.o \
+          chemical.o io.o m_io.o alloc.o \
           memoryinfo.o memory.o periodic_table.o\
           pxf.o atom_options.o  \
           sys.o get_chem_labels.o $(SYSOBJ)
@@ -47,6 +47,9 @@ FDF_INCFLAGS:=-I $(VPATH)/fdf $(INCFLAGS)
 $(FDF): 
 	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/fdf" \
                           "ARCH_MAKE=../$(ARCH_MAKE)" \
+                          "DEFS=$(DEFS)" \
+                          "FPPFLAGS=$(FPPFLAGS)" \
+                          "MPI_INTERFACE= " \
                           "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 #
 get_chem_labels: $(FDF)  $(OBJS_GET_CHEM_LABELS)

@@ -77,8 +77,6 @@
      $                                   ::  pjnl_ekb   ! energy of
                                                          ! each nl proj
 !
-!                        ------------------------------
-!
 !        Aggregate numbers of orbitals and projectors (including 2l+1
 !        copies for each "nl"), and index arrays keeping track of
 !        which "nl" family they belong to, and their n, l, and m (to avoid

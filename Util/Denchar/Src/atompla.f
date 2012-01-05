@@ -9,10 +9,11 @@ C Coded by J. Junquera May '99
 C Modified by P. Ordejon to include 3D capability; June 2003
 C **********************************************************************
 
-      use precision
-      USE FDF
-      USE PARSE
-      USE SYS
+      use precision, only: dp
+      USE FDF, only: block_fdf, fdf_block, fdf_bline
+      use fdf, only: fdf_bmatch, fdf_bintegers
+      USE PARSE, only: parsed_line, digest, match
+      USE SYS, only: die
 
       IMPLICIT NONE
 
@@ -38,9 +39,6 @@ C                          will be rotated
 C REAL*8  XAPLANE(3,NA)  : Atomic coordinates in plane reference frame
 C **********************************************************************
 
-      CHARACTER
-     .  LINE*150
-
       INTEGER 
      .  NATINPL_DEFECT, IDIMEN, IUNIT, IAT, IX
  
@@ -50,8 +48,8 @@ C **********************************************************************
       LOGICAL 
      .  ATINPLA
 
-      TYPE(PARSED_LINE), POINTER :: P
-      TYPE(BLOCK), POINTER       :: BP
+      TYPE(PARSED_LINE), pointer :: line
+      TYPE(BLOCK_fdf)            :: BP
 
       EXTERNAL 
      .  MATVECT
@@ -71,19 +69,15 @@ C Read fdf data block 'Denchar.AtomsInPlane' ---------------------------
         NATINPL_DEFECT = 0
         NATINPLA = 0
   
-        NULLIFY(BP)
         IF ( .NOT. FDF_BLOCK('Denchar.AtomsInPlane',BP) )  GOTO 2000
 
         LOOP: DO
           IF (.NOT. FDF_BLINE(BP,LINE)) EXIT LOOP
-          P=>DIGEST(LINE)
-          IF (.NOT. MATCH(P,"I") ) 
+          IF (.NOT. fdf_bmatch(line,"I") ) 
      .         CALL DIE("Wrong format in Denchar.AtomsInPlane")
           NATINPLA = NATINPLA + 1
-          INDICES(NATINPLA) = INTEGERS(P,1) 
-          CALL DESTROY(P)
+          INDICES(NATINPLA) = fdf_bintegers(line,1) 
         ENDDO LOOP
-        CALL DESTROY(BP) 
  2000   CONTINUE
 
       ELSE IF (IDIMEN .EQ. 3) THEN

@@ -79,7 +79,6 @@ module m_common_attrs
   public :: set_nsURI
   public :: set_prefix
   public :: set_localName
-#endif
 
   ! For internal FoX use only:
   public :: get_att_index_pointer
@@ -91,6 +90,7 @@ module m_common_attrs
   public :: getBase
 
   public :: sortAttrs
+#endif
 
   interface len
     module procedure getLength

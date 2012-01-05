@@ -29,18 +29,17 @@ C------------------------------------------------------------------
       use fdf
 C Module Routines 
       use m_tbt_options, only : tbt_read_options
-      use m_tbt_gf, only : green
 C Module Variables
       use m_tbt_options, only : Emin, Emax, Volt, ncontour, GFeta, 
-     .     USEBULK, neigch, sppol, DoCOOP, RDORTHO, OutputRegionData,
+     .     USEBULK, neigch, sppol,
      .     RNode, NBUFATL, NBUFATR, hsfile,isoat1,isoat2,
-     .     NA1L,NA2L,nqL,NA1R,NA2R,nqR,DoAtomPDOS,CalcIeig  
+     .     NA1L,NA2L,nqL,NA1R,NA2R,nqR,CalcIeig  
       use files, only : slabel
-      use m_tbt_gf
       use parallel, only : Node, Nodes, IOnode
       use sys, only : die
-      use m_tbt_kpts, only : TSiokp
-      use m_fdf_global, only : fdf_global_get
+      use m_tbt_kpts, only : get_kp_on_node
+C Module Routines and Variables
+      use m_tbt_gf
 #ifdef MPI
       use mpi_siesta
       use m_mpi_utils
@@ -100,10 +99,9 @@ c FROM FDF
       real*8  kdispl(3)
 
       logical genlogic
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline => null()
       integer  iukp,lkp,jkp
-
-
-
 
 c ----------------------------------------------------------------
 c     Greens functions:
@@ -188,7 +186,7 @@ c Helpers, workspace, tempos etc...
 
       integer jgfL,jgfR         !File units for Left,Right GF
 
-      integer isobegin,isoend,ncp
+      integer isobegin,isoend,ncp,isoTDOSBegin,isoTDOSEnd
       
       integer mc                !max no. contact states 
       integer nc                !no. contact states
@@ -288,28 +286,25 @@ c
       end if      
 
 
-      if (IOnode) then
-        genlogic = fdf_block('kgrid_Monkhorst_Pack',iukp)
+        genlogic = fdf_block('kgrid_Monkhorst_Pack',bfdf)
         if ( genlogic ) then
-         do lkp = 1,3
-           read(iukp,*) (kscell(jkp,lkp),jkp=1,3), kdispl(lkp)
-         enddo
-C       close(iukp)
-        else
-          write(*,*) 'Must specify k-points with Monkhorst_Pack'
-          write(*,*) 'Stoping code'  
-          stop
-        end if
-      end if ! IOnode
+          do lkp = 1,3
+             if (.not. fdf_bline(bfdf,pline))
+     $            call die("Wrong no of lines in MP block")
+             if (.not. fdf_bmatch(pline,"vvvv"))
+     $            call die("Wrong format in MP block")
+             do jkp = 1,3
+                kscell(jkp,lkp) = fdf_bvalues(pline,jkp)
+             enddo
+             kdispl(lkp) = fdf_bvalues(pline,4)   
+          enddo
+       else
+          call die('Must specify k-points with Monkhorst_Pack')
+       end if
 
-#ifdef MPI
-      call broadcast(kscell(:,:))
-      call broadcast(kdispl(:))
-#endif MPI
-     
       fname=paste(slabel,'.TSHS') 
 
-      call TSiokp(fname,nkxy,kxy,wkxy,kscell,kdispl)
+      call get_kp_on_node(fname,nkxy,kxy,wkxy,kscell,kdispl)
      
 
 
@@ -372,6 +367,20 @@ c
                open (unit2, file=fname,
      &           status='unknown', blank='zero', err=1314)
             end if
+
+
+            if ( CalcIeig ) then
+               call io_assign(unit3)
+               fname=paste(slabel,'.IEIG' )
+               if(nspin.gt.1) then
+                  if(ispin.eq.1) fname=paste(slabel,'.UP.IEIG' )
+                  if(ispin.eq.2) fname=paste(slabel,'.DOWN.IEIG')
+               end if
+               open (unit3,
+     &         file=fname,
+     &         status='unknown', blank='zero', err=1314)
+            end if ! CalcIeig
+
          end if ! IOnode 
 
  
@@ -514,7 +523,8 @@ c==========================================================================
             mc  = maxuo -NGR -NGL
 
 
-
+            isoTDOSBegin = lasto(NBUFATL+nuaL*NA1L*NA2L)+1-NBUFL-NGL
+            isoTDOSEnd = lasto(nua-NBUFATR-nuaR*NA1R*NA2R)-NBUFL-NGL
 c CHOOSE ATOM IN TERMS OF GLOBAL ATOM NUMERBS (i.e. INCLUDE ELECTRODES HERE)
             if ( isoat1 == 0 )
      .         isoat1 = 1 + NBUFATL + nuaL*NA1L*NA2L !default
@@ -537,28 +547,14 @@ c     Default: IN CASE OF ERRORS, USE CONTACT REGION
             ncp = isoend - isobegin + 1
             if (IOnode) then
                write(joutfile,*) repeat('=',62) 
-               write(joutfile,'(a30,I3,a1,I3,a2)') 
+               write(joutfile,'(a30,I10,a1,I10,a1)') 
      .           'Projection Region: atoms : [',isoat1,';',isoat2,']'
-               write(joutfile,'(a30,I3,a1,I3,a4,I3)') 
-     .    'Projection Region: states: [',isobegin,';',isoend,'] ;',ncp
+               write(joutfile,'(a30,I10,a1,I10,a6,I10)') 
+     .    'Projection Region: states: [',isobegin,';',isoend,'] Tot:'
+     .    ,ncp
             end if ! IOnode
 
-    
-            
-
-            if (IOnode) then
-               if ( CalcIeig ) then
-                 call io_assign(unit3)
-                 fname=paste(slabel,'.IEIG' )
-                 if(nspin.gt.1) then
-                    if(ispin.eq.1) fname=paste(slabel,'.UP.IEIG' )
-                    if(ispin.eq.2) fname=paste(slabel,'.DOWN.IEIG')
-                 end if
-                 open (unit3,
-     &         file=fname,
-     &         status='unknown', blank='zero', err=1314)
-              end if ! CalcIeig
-            end if ! IOnode
+ 
        
             if(isobegin.gt.isoend) then
               isobegin = 1
@@ -677,9 +673,9 @@ c
           eigbuff(ikxy,1:maxuo)=eig(1:maxuo)
           ncpbuff(ikxy)=ncp
 #else 
-         write(unit3,'(a22,1X,i3,2a,2f5.3,f6.4)') 
-     .      "#Kxy-point, weight ",ikxy,": ",
-     .      kxy(1,ikxy),kxy(2,ikxy),wkxy(ikxy)
+         write(unit3,*) '# Kxy-point: ',ikxy
+         write(unit3,'(a6,f5.3,1X,f5.3,a7,f6.4)') 
+     .       '# kxy=',kxy(1,ikxy),kxy(2,ikxy),', w= ',wkxy(ikxy)
          do i=1,ncp
             write(unit3,*) i,(eig(i))/eV
          end do
@@ -697,9 +693,7 @@ c
        
 c ============================================================================
 
-#ifdef MPI
-
-#else
+#ifndef MPI
        write(joutfile,'(a22,1X,i2,1X,a16,i3)') 
      .      'Transport for spin ->',ispin,', kxy-point -> ', ikxy
 
@@ -709,6 +703,19 @@ c ============================================================================
        write(joutfile,*) 
      .   '   E           T(E)            TotDOS         PDOS'
 #endif MPI
+
+C Headers for output file; for each k-point
+       if ( IOnode ) then
+          write(unit1,*) '# Kxy-point: ',ikxy
+          write(unit1,'(a6,f5.3,1X,f5.3,a7,f6.4)') 
+     .       '# kxy=',kxy(1,ikxy),kxy(2,ikxy),', w= ',wkxy(ikxy)
+
+          if(neigch.gt.0 .and. neigch.le.nc) then
+             write(unit2,*) '# Kxy-point: ',ikxy
+             write(unit2,'(a6,f5.3,1X,f5.3,a7,f6.4)') 
+     .       '# kxy=',kxy(1,ikxy),kxy(2,ikxy),', w= ',wkxy(ikxy)
+          end if
+       endif  ! IOnode
 
 C=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
       do 7913 iEn = 1, NCONTOUR      ! loop over energy points
@@ -781,38 +788,31 @@ c==========================================================================
 c on return GFRGF contains GF^dagger.GammaR.GF                 
          
 
+! DOS
+         totdos = (-1.0d0/Pi)*DIMAG(zdotc(nc*nc,Sc,1,GF,1))
+
+! Calculate the "excluded" DOS and then subtract from totdos
          pdos=0d0
-         do j=isobegin,isoend
+         do j=isoTDOSBegin, isobegin-1
             do i=1,nc
                pdos = pdos -
      .         (1.0d0/Pi)*DIMAG(Sc(i+nc*(j-1))*GF(i+nc*(j-1)))
             end do              !i
          end do                 !j
 
-         if(nspin.eq.1) pdos=pdos*2.0 !incl. both spins
+         do j=isoend+1, isoTDOSEnd
+            do i=1,nc
+               pdos = pdos -
+     .         (1.0d0/Pi)*DIMAG(Sc(i+nc*(j-1))*GF(i+nc*(j-1)))
+            end do              !i
+         end do
+         pdos = totdos - pdos ! Subtract
 
-#ifdef CDF
-c write datafile with hamiltonian, overlap, self-energies to netcdf-file
-C      if(OutputRegionData)  then
-C         CALL OutputRegion(USEBULK,RDORTHO,joutfile,Volt,NEn,
-C     .        ispin,nspin,isobegin,isoend,nou,
-C     .        H,S,NGL,SFEL,NGR,SFER,ZEnergy)
-C      end if !OutputRegionData
-#endif !CDF
-
-      
-      if(DoCOOP) 
-     . call coop(joutfile,nc,isobegin,isoend,nua,NGL,NBUFL,
-     . lasto,DREAL(ZEnergy),GF,GFRGF,Sc)
-
-      if(DoAtomPDOS)
-     . call atompdos(joutfile,nc,nspin,ispin,isobegin,isoend,nua,
-     .     NGL,NBUFL,
-     .     lasto,DREAL(ZEnergy),GF,GFRGF,Sc,slabel)
-         
-
-      totdos = (-1.0d0/Pi)*DIMAG(zdotc(nc*nc,Sc,1,GF,1))
-      if(nspin.eq.1) totdos=totdos*2.0 ! incl. both spins
+         if(nspin.eq.1) then !incl. both spins
+            tottrans = tottrans*2.0d0
+            pdos=pdos*2.0d0 
+            totdos=totdos*2.0d0
+         end if
 
 
       tav(iEn)    = tav(iEn) + tottrans*wkxy(ikxy)
@@ -838,9 +838,6 @@ C      end if !OutputRegionData
      .        DREAL(ZEnergy)/eV,tottrans,totdos,pdos
 
 
-         write(unit1,*) '# Kxy-point: ',ikxy
-         write(unit1,'(a6,f5.3,1X,f5.3,a7,f6.4)') 
-     .       '# kxy=',kxy(1,ikxy),kxy(2,ikxy),', w= ',wkxy(ikxy)
          write(unit1,'(F9.5,3e16.8)')
      .        DREAL(ZEnergy)/eV,tottrans,totdos,pdos
 
@@ -852,7 +849,7 @@ c
          if(neigch.gt.0 .and. neigch.le.nc) then
               allocate(teig(nc))
               teig = 0.0
-            call teigchana(nc,tt,neigch,Teig)
+            call teigchana(nc,tt,neigch,teig)
 #ifdef MPI
             if (.not. allocated(teigbuff)) 
      .    allocate(teigbuff(nkxy,NCONTOUR,neigch))
@@ -862,18 +859,13 @@ c
      &           DREAL(ZEnergy)/eV,(teig(i),i=1,neigch)
 #endif MPI
 
-#ifdef CDF         
-      if(neigch.gt.0)
-     . call netcdf_write_teig(.false.,neigch,teig,DREAL(ZEnergy)/eV,
-     .                            ispin,nspin)
-#endif ! CDF
 
                deallocate(teig)
          endif                  !eigenchannel analysis
 
          f_L =  fermi(DREAL(ZEnergy),EFermiL,Temp)
          f_R =  fermi(DREAL(ZEnergy),EFermiR,Temp)
-
+    
          Current = Current + (f_L-f_R)*tottrans*dE*wkxy(ikxy)
          
 
@@ -892,15 +884,18 @@ C =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
     
 
 
-#ifdef MPI
-
-#else
+#ifndef MPI
       write(unit1,*) " "
       if(neigch.gt.0)      
      . write(unit2,*) " "
 #endif MPI
 
-
+#ifndef MPI
+! Leave a blank line inbetween two kpoints
+       write(unit1,*)
+       if(neigch.gt.0) write(unit2,*)
+       if ( CalcIEig ) write(unit3,*)
+#endif
 
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
       end do                    !loop over surface kxy-points
@@ -916,10 +911,9 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
          if (nkxy > 0) then
             do ikxy = 1,nkxy
                if ( CalcIEig ) then
-                 write(unit3,'(a22,1X,i8,a9,i8)') '#Kxy-point, weight ',
-     .     ikxy,' of Node ',Node
-                 write(unit3,'(3f9.6,f9.6)') kxy(1,ikxy),kxy(2,ikxy),
-     .kxy(3,ikxy),wkxy(ikxy)
+                 write(unit3,*) '# Kxy-point: ',ikxy, ' of Node', Node
+                 write(unit3,'(a6,f5.3,1X,f5.3,a7,f6.4)') 
+     .       '# kxy=',kxy(1,ikxy),kxy(2,ikxy),', w= ',wkxy(ikxy)
                  do i = 1,ncpbuff(ikxy)
                     write(unit3,*) i,(eigbuff(ikxy,i))/eV
                  enddo
@@ -935,15 +929,15 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
      .   '   E           T(E)            TotDOS         PDOS'
 
                write(unit1,*) '# Kxy-point: ',ikxy, ' of Node', Node
-         write(unit1,'(a6,f5.3,1X,f5.3,a7,f6.4)') 
+               write(unit1,'(a6,f5.3,1X,f5.3,a7,f6.4)') 
      .       '# kxy=',kxy(1,ikxy),kxy(2,ikxy),', w= ',wkxy(ikxy)
 
 
 
                if(neigch.gt.0) then
-                  write(unit2,'(a22,1X,i2,1X,a16,i3,a9,i6)') 
-     .      'Transport for spin ->',ispin,', kxy-point -> ', ikxy,
-     .      ', of Node', Node
+                  write(unit2,*) '# Kxy-point: ',ikxy, ' of Node', Node
+                  write(unit2,'(a6,f5.3,1X,f5.3,a7,f6.4)') 
+     .       '# kxy=',kxy(1,ikxy),kxy(2,ikxy),', w= ',wkxy(ikxy)
                end if 
                do iEn = 1,NCONTOUR
                   ZEnergy=contour(iEn)
@@ -960,6 +954,12 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
      &           DREAL(ZEnergy)/eV,(teigbuff(ikxy,iEn,i),i=1,neigch)
 
                enddo
+
+! Leave a blank line inbetween two kpoints
+               write(unit1,*)
+               if(neigch.gt.0) write(unit2,*)
+               if ( CalcIEig ) write(unit3,*)
+
             enddo
          end if ! nkxy > 0 
       end if  ! IOnode
@@ -1028,10 +1028,9 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
                do ikxy = 1,nkxybuff
                   if ( CalcIEig ) then
-                    write(unit3,'(a22,1X,i8,a9,i8)') 
-     . '#Kxy-point, weight ',ikxy,' of Node ',iNode 
-                    write(unit3,'(3f9.6,f9.6)') kxybuff(1,ikxy),
-     . kxybuff(2,ikxy),kxybuff(3,ikxy),wkxybuff(ikxy)
+                   write(unit3,*) '# Kxy-point: ',ikxy, ' of Node', Node
+                    write(unit3,'(a6,f5.3,1X,f5.3,a7,f6.4)') 
+     .       '# kxy=',kxy(1,ikxy),kxy(2,ikxy),', w= ',wkxy(ikxy)
                     do i = 1,ncpbuff(ikxy)
                        write(unit3,*) i,(eigbuff(ikxy,i))/eV
                     enddo
@@ -1054,10 +1053,11 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
      .   w= ',wkxybuff(ikxy)  
 
 
-               if(neigch.gt.0) 
-     .          write(unit2,'(a22,1X,i2,1X,a16,i3,a9,i6)') 
-     .      'Transport for spin ->',ispin,', kxy-point -> ', ikxy,
-     .      ', of Node', iNode 
+               if(neigch.gt.0) then
+                  write(unit2,*) '# Kxy-point: ',ikxy, ' of Node', Node
+                  write(unit2,'(a6,f5.3,1X,f5.3,a7,f6.4)') 
+     .       '# kxy=',kxy(1,ikxy),kxy(2,ikxy),', w= ',wkxy(ikxy)
+               end if
 
                   do iEn = 1,NCONTOUR
                      ZEnergy=contour(iEn)
@@ -1074,6 +1074,11 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
      &                write(unit2,'(F9.5,1X,30(1X,f8.5))')
      &           DREAL(ZEnergy)/eV,(teigbuff(ikxy,iEn,i),i=1,neigch)                 
                   enddo 
+
+! Leave a blank line inbetween two kpoints
+                  write(unit1,*)
+                  if(neigch.gt.0) write(unit2,*)
+                  if ( CalcIEig ) write(unit3,*) 
 
                enddo
             end if ! nkxybuff > 0
@@ -1096,7 +1101,7 @@ C Convert to Ampere
          write(joutfile,*) 
          write(joutfile,*) 'Results:'
          write(joutfile,*) 
-         write(joutfile,'(a,2ES16.8)') ' Voltage, Current(A) = ',
+         write(joutfile,'(1x,a,2ES16.8)') ' Voltage, Current(A) = ',
      .                                Volt,Currentbuff
          write(joutfile,*)
          write(joutfile,*) repeat('=',62)
@@ -1111,7 +1116,7 @@ C Convert to Ampere
          write(joutfile,*) 
          write(joutfile,*) 'Results:'
          write(joutfile,*)
-         write(joutfile,'(a,2ES16.8)') 'Voltage, Current(A) = ',
+         write(joutfile,'(1x,a,2ES16.8)') 'Voltage, Current(A) = ',
      $                                  Volt,Current
          write(joutfile,*)
          write(joutfile,*) repeat('=',62)
@@ -1156,7 +1161,7 @@ C Convert to Ampere
 
          do iEn = 1 ,NEn
             write(unit4,'(F9.5,3e16.8)') DREAL(contour(iEn))/eV,
-     .   tavbuff(iEn),tdosavbuff(iEn),pdosav(iEn)
+     .   tavbuff(iEn),tdosavbuff(iEn),pdosavbuff(iEn)
 
             write(unit5,'(F9.5,e16.8)') DREAL(contour(iEn))/eV,
      .   bulkdosbuffL(iEn)
@@ -1191,12 +1196,6 @@ C Convert to Ampere
          if(neigch.gt.0) call io_close(unit2)
       end if
 
-
-#ifdef CDF     
-c     close netcdf file with teig:
-      call netcdf_write_teig(.true.,neigch,
-     .            teig,DREAL(ZEnergy)/eV,ispin,nspin)
-#endif ! CDF
 
 
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

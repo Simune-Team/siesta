@@ -8,7 +8,7 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine diagk( nspin, nuo, no, maxspn, maxuo, maxnh, maxnd, 
+      subroutine diagk( nspin, nuo, no, maxspn, maxnh, maxnd, 
      .                  maxo, numh, listhptr, listh, numd, listdptr, 
      .                  listd, H, S, getD, getPSI, fixspin, qtot, qs, 
      .                  temp, e1, e2, xij, indxuo, nk, kpoint, wk,
@@ -27,8 +27,6 @@ C integer nuo                 : Number of basis orbitals in unit cell
 C                               local to this processor
 C integer no                  : Number of basis orbitals in supercell
 C integer maxspn              : Second dimension of eo and qo
-C integer maxuo               : Last dimension of xij
-C                               Must be at least max(indxuo)
 C integer maxo                : First dimension of eo and qo
 C integer maxnh               : Maximum number of orbitals interacting  
 C integer maxnd               : First dimension of listd and DM
@@ -114,7 +112,7 @@ C
      .  MPIerror
 #endif
 
-      integer           maxnd, maxnh, maxspn, maxuo, maxo, nk, no,
+      integer           maxnd, maxnh, maxspn, maxo, nk, no,
      .                  nspin, nuo, nuotot, iscf
       integer           indxuo(no), listh(maxnh), numh(nuo),
      .                  listd(maxnd), numd(nuo), listhptr(nuo),
@@ -141,7 +139,6 @@ C  Internal variables .............................................
 
       logical, allocatable :: done_juo(:)
 C  ....................
-
 
       allocate(done_juo(nuotot))
 
@@ -173,8 +170,8 @@ C Note : sign of complex part changed to match change in order of iuo/juo
             enddo
           enddo
           call timer( 'c-buildHS', 2 )
-          call cdiag(Haux,Saux,nuotot,nuo,nuotot,eo(1,ispin,ik),psi,
-     .      0,iscf,ierror)
+          call cdiag( Haux, Saux, nuotot, nuo, nuotot, eo(1,ispin,ik),
+     &                psi, 0, iscf, ierror )
           if (ierror.ne.0) then
             call die('Terminating due to failed diagonalisation')
           endif
@@ -193,6 +190,7 @@ C Find new Fermi energy and occupation weights ........................
         call fermid( nspin, maxspn, nk, wk, maxo, nuotot, eo, 
      .             temp, qtot, qo, ef, Entropy )
       endif
+
 
 C Find weights for local density of states ............................
       if (e1 .lt. e2) then
@@ -229,7 +227,6 @@ C Loop over k points
       do ik = 1,nk
 
         do ispin = 1,nspin
-
 C Find maximum eigenvector that is required for this k point and spin
 C Compute all eigenvectors if getPSI = .true.
 
@@ -245,7 +242,7 @@ C Compute all eigenvectors if getPSI = .true.
             enddo
           endif
           if (Node .eq. 0) then
-             write(iu,"(2i3,f10.6,i6)")
+             write(iu,"(i6,i3,f12.8,i8)")
      $                  ik, ispin, wk(ik), neigneeded
           endif
 
@@ -310,7 +307,7 @@ C Repeat diagonalisation with increased memory to handle clustering
              call writew(nuotot,nuo,ik,kpoint(1,ik),ispin,
      .                 aux,psi,.false.)
           endif
- 
+
           if (getD) then
              call timer( 'c-buildD', 1 )
 
@@ -398,7 +395,6 @@ C Global operation to form new density matrix
 
         enddo
       enddo
-
       deallocate(done_juo)
 
       if (Node .eq. 0) then

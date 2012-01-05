@@ -20,7 +20,7 @@
 ! use alloc,      only: de_alloc        ! De-allocation routine
 ! use alloc,      only: re_alloc        ! Re-allocation routine
 ! use sys,        only: die             ! Termination routine
-! use m_io,       only: io_assign       ! Get and reserve an available IO unit
+! use m_io,       only: io_assign, io_close  ! Get and reserve an available IO unit
 !
 !   USED module parameters:
 ! use precision,  only: dp              ! Real double precision type
@@ -151,7 +151,7 @@ MODULE moreParallelSubs
   use alloc,     only: de_alloc  ! De-allocation routine
   use alloc,     only: re_alloc  ! Re-allocation routine
   use sys,       only: die       ! Termination routine
-  use m_io,      only: io_assign ! Get and reserve an available IO unit
+  use m_io,      only: io_assign, io_close ! Get and reserve an available IO unit
 
 ! Used module parameters
   use precision, only: dp              ! Real double precision type
@@ -177,9 +177,10 @@ MODULE moreParallelSubs
 
 ! All public procedures (there are no public types, parameters, or variables):
 PUBLIC:: &
-  copyFile,      &! Copies a formatted file from one node to another
-  miscAllReduce, &! Reduces a miscellaneous set of variables and arrays
-  nodeString      ! Returns a character string with a node index
+  copyFile,         &! Copies a formatted file from one node to another
+  miscAllReduce,    &! Reduces a miscellaneous set of variables and arrays
+  miscAllReduceInt, &! Integer version
+  nodeString         ! Returns a character string with a node index
 
 PRIVATE ! Nothing is declared public beyond this point
 
@@ -222,9 +223,9 @@ SUBROUTINE copyFile( srcNode, srcFile, dstNode, dstFile, writeOption )
   real(dp),parameter:: incrFactor =   1.5_dp  ! Increment factor for re_alloc
 
 ! Internal variables and arrays
-  integer,pointer:: lineBuf(:)  ! Which buffer contains each input line
-  integer,pointer:: lineEnd(:)  ! Last character of each line in buffer
-  character(len=bufferSize),pointer:: buffer(:)  ! Buffers to store input
+  integer,pointer:: lineBuf(:)=>null()! Which buffer contains each input line
+  integer,pointer:: lineEnd(:)=>null()! Last character of each line in buffer
+  character(len=bufferSize),pointer:: buffer(:)=>null()! Buffers to store input
   character(len=bufferSize):: line               ! One input line
   integer:: ib, iBuffer(2), il, iu, lineBegin, lineLength, &
             mBuffers, mLines, nBuffers, nLines, two
@@ -306,7 +307,7 @@ SUBROUTINE copyFile( srcNode, srcFile, dstNode, dstFile, writeOption )
     end do ! il
     call die(errHead//'too many lines in source file')
 1   continue  ! Jump here when reaching end of input file
-    close( unit=iu )
+    call io_close( iu )
 
   end if ! (myNode == srcNode)
 
@@ -427,7 +428,7 @@ SUBROUTINE copyFile( srcNode, srcFile, dstNode, dstFile, writeOption )
 
     end do ! il
 
-    close( unit=iu )
+    call io_close( iu )
   end if ! (myNode == dstNode)
 
 ! Deallocations

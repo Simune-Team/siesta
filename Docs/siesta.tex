@@ -39,13 +39,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, trunk-303}}
+{\Huge {\bf S I E S T A \, \, trunk-378}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large October 12, 2009 }
+{\Large April 18, 2011 }
 
 \vspace{1.5cm}
 
@@ -92,7 +92,7 @@
 \vspace{0.5cm}
 Copyright \copyright\  Fundaci\'on General Universidad Aut\'onoma de Madrid:
 E.Artacho, J.D.Gale, A.Garc\'{\i}a, J.Junquera, P.Ordej\'on,
-D.S\'anchez-Portal and J.M.Soler, 1996-2009
+D.S\'anchez-Portal and J.M.Soler, 1996-2010
 
 \end{center}
 
@@ -116,6 +116,8 @@ D.S\'anchez-Portal and J.M.Soler, 1996-2009
   material prepared for {\sc Siesta} schools and workshops at the
   project's web page {\tt http://www.uam.es/siesta}}
 
+
+{\bf NOTE: Almost none of the BSC features are documented yet...}
 
 {\sc Siesta}\index{Siesta@{\sc Siesta}} (Spanish Initiative for
 Electronic Simulations with
@@ -356,11 +358,6 @@ subdirectory. If you intend to create a parallel version of {\sc
   Siesta}, make sure you have all the extra support libraries ({\tt
   MPI, scalapack, blacs...} (see Sect.~\ref{sec:parallel}).
   
-One important compilation option is -DGRID\_DP, which tells the
-compiler to use double precision arithmetic in grid-related arrays.
-Unless you find memory problems running siesta, we strongly 
-recommend it, and we will likely make it the default in future versions.
-
 Optionally, the command {\tt ../Src/configure} will
 start an automatic scan of your system and try to build an {\tt
   arch.make} for you. Please note that the configure script might need
@@ -1845,16 +1842,20 @@ projectors).
 \index{Reparametrize.Pseudos@{\bf Reparametrize.Pseudos}}
 
 By changing the $a$ and $b$ parameters of the logarithmic grid, a new
-one with a more homogeneous overall grid-point separation can be used
-for the generation of basis sets and projectors. For example, by using
-$a=5x10^{-4}$ and $b=10$, the grid point separations at $r=0$ and 10
-bohrs are 0.005 and 0.01 bohrs, respectively. More points are needed
+one with a more adequate grid-point separation can be used for the
+generation of basis sets and projectors. For example, by using
+$a=0.001$ and $b=0.01$, the grid point separations at $r=0$ and 10
+bohrs are 0.00001 and 0.01 bohrs, respectively. More points are needed
 to reach r's of the order of a hundred bohrs, but the extra
 computational effort is negligible.  The net effect of this option
 (notably when coupled to {\bf Restricted.Radial.Grid} {\tt .false.})
 is a closer mapping of any user-specified cutoff radii and of the
 radii implicitly resulting from other input parameters to the actual
-values used by the program.
+values used by the program. (The small grid-point separation near r=0
+is still needed to avoid instabilities for s channels that occurred
+with the previous (reparametrized) default spacing of 0.005 bohr. This
+effect is not yet completely understood. )
+
 
 
 {\it Default value:} { \tt .false.}
@@ -1865,7 +1866,7 @@ values used by the program.
 
 New setting for the pseudopotential grid's $a$ parameter
 
-{\it Default value:} { $5.0x10^{-4}$}
+{\it Default value:} { $0.001$}
 
 \item[{\bf New.B.Parameter}] ({\it real}):
 \index{New.B.Parameter@{\bf
@@ -1873,7 +1874,7 @@ New setting for the pseudopotential grid's $a$ parameter
 
 New setting for the pseudopotential grid's $b$ parameter
 
-{\it Default value:} { $10.0$}
+{\it Default value:} { $0.01$}
 
 \item[{\bf Rmax.Radial.Grid}] ({\it real}):
 \index{Rmax.Radial.Gridr@{\bf
@@ -2176,9 +2177,12 @@ the values are set differently. For atom 1, \texttt{r}, \texttt{a},
 and \texttt{t}, are the Cartesian coordinates of the atom.  For the
 second atom, \texttt{r}, \texttt{a}, and \texttt{t} are the
 coordinates in spherical form of the second atom relative to the
-first. Finally, for the third atom, the numbers take their normal
-form, but the torsional angle is defined relative to a notional atom 1
-unit in the z-direction above the atom \texttt{j}.
+first: first the radius, then the polar angle (angle between the
+$z$-axis and the displacement vector) and then the azimuthal angle
+(angle between the $x$-axis and the projection of the displacement
+vector on the $x$-$y$ plane). Finally, for the third atom, the numbers
+take their normal form, but the torsional angle is defined relative to
+a notional atom 1 unit in the z-direction above the atom \texttt{j}.
 
 Secondly. blocks of atoms all of which are subject to the simplest of
 constraints may be specified in one of the following three ways,
@@ -2565,16 +2569,15 @@ message is printed.
 {\it Default value:} {\tt 1.0 Bohr}
 
 \item[{\bf MaxBondDistance}] ({\it physical}):
-\index{MaxBondDistance@{\bf MaxBondDistance}}
-{\sc Siesta} prints the interatomic
-distances\index{interatomic distances}, up to
-a range of {\tt MaxBondDistance}, to file
-{\tt SystemLabel.BONDS} upon first
-reading the structural information, and to file
-{\tt SystemLabel.BONDS\_FINAL}
-after the last geometry iteration. The neighbors are identified by
-atom number and symbol, but the positions reported are those of the
-equivalent atom in the unit cell. This is an experimental feature.
+\index{MaxBondDistance@{\bf MaxBondDistance}} {\sc Siesta} prints the
+interatomic distances\index{interatomic distances}, up to a range of
+{\tt MaxBondDistance}, to file {\tt SystemLabel.BONDS} upon first
+reading the structural information, and to file {\tt
+SystemLabel.BONDS\_FINAL} after the last geometry iteration. The
+reference atoms are all the atoms in the unit cell. The routine now
+prints the real location of the neighbor atoms in space, and not, as in
+earlier versions, the location of the equivalent representative in the
+unit cell.
 
 {\it Default value:} {\tt 6.0 Bohr}
 
@@ -2738,6 +2741,9 @@ approximation.  Ref: Hammer, Hansen and Norskov PRB 59, 7413
 \item {\tt WC} (Wu-Cohen modification of PBE functional). Generalized gradients
 approximation.  Ref: Z. Wu and R.E. Cohen, PRB 73, 235116 (2006)
 \index{GGA} \index{WC}
+\item {\tt AM05} (Armiento-Mattsson-05). Generalized gradients
+approximation.  Ref: R. Armiento and A.E. Mattsson, PRB 72, 085108 (2005)
+\index{GGA} \index{AM05}
 \item {\tt PBEsol} (Perdew-Burke-Ernzerhof for solids). Generalized gradients
 approximation.  Ref: Perdew et al, PRL 100, 136406
 (2008)\index{GGA} \index{PBEsol}
@@ -2754,7 +2760,12 @@ implemented in {\sc Siesta})
 M. Dion, H. Rydberg, E. Schr\"{o}der, D. C. Langreth, and B. I. Lundqvist,
 Phys. Rev. Lett. {\bf 92}, 246401 (2004), with the efficient implementation of 
 G. Rom\'an-P\'erez and J. M. Soler, Phys. Rev. Lett. {\bf 103},  096102 (2009).
-
+\item {\tt LMKLL} vdW-DF functional of Dion {\it et al} (same as DRSLL)
+reparametrized by K. Lee, E. Murray, L. Kong, B. I. Lundqvist and 
+D. C. Langreth, arXiv:1003.5255v1 (2010) 
+\item {\tt KBM} vdW-DF  functional of Dion {\it et al} (same as DRSLL)
+reparametrized by J.Klimes, D.R.Bowler, and A.Michaelides, 
+JPCM {\bf 22}, 022201 (2009) (optB88-vdW version)
 \end{itemize}
 
 {\it Use:} {\bf XC.functional} and {\bf XC.authors} must be compatible.
@@ -2806,17 +2817,18 @@ or spin polarized ({\tt .true.}) calculation.
 
 
 \item[{\bf NonCollinearSpin}] ({\it logical}):
-\index{NonCollinearSpin@{\bf NonCollinearSpin}}\index{spin}
-\index{spin!non-collinear}\index{LSD}
-If {\tt .true.}, non-collinear spin (i.e. with variable orientation)
-is described using spinor wavefunctions
-and $(2 \times 2)$ spin density matrices at every grid point.
-Ref: T. Oda et al, PRL, {\bf 80}, 3622 (1998).
-Notice that no GGA functionals have been derived specifically for non
-collinear spin. Therefore, only the gradient of the spin polarization
+  \index{NonCollinearSpin@{\bf NonCollinearSpin}}\index{spin}
+  \index{spin!non-collinear}\index{LSD} If {\tt .true.}, non-collinear
+  spin (i.e. with variable orientation) is described using spinor 
+  wavefunctions and $(2 \times 2)$ spin
+  density matrices at every grid point.  Refs: T. Oda et al, PRL, {\bf
+    80}, 3622 (1998); 
+V. M. Garc\'{\i}a-Su\'arez et al, Eur. Phys. Jour. B {\bf 40}, 371 (2004);
+V. M. Garc\'{\i}a-Su\'arez et al, Journal of
+  Phys: Cond. Matt {\bf 16}, 5453 (2004). 
 magnitude, and not the gradient of its orientation, are considered
 to calculate the local xc energy density.
-Not compatible with the {\tt Diag.ParallelOverK} option
+Not compatible with the {\tt  Diag.ParallelOverK} option 
 {\it Default value:} {\tt .false.}
 
 
@@ -2870,9 +2882,9 @@ Harris functional in the first SCF step. Only implemented for LDA in
 the Perdew-Zunger parametrization.
 
 When this option is choosen, the values of DM.UseSaveDM,
-MaxSCFIterations, SCFMustConverge and DM.MixSCF1 are automatically set up to False, 1, False
-and False respectively, no matter whatever other specification are in
-the INPUT file.
+MaxSCFIterations, SCFMustConverge and DM.MixSCF1 are automatically set
+up to False, 1, False and False respectively, no matter whatever other
+specification are in the INPUT file.
 \end{itemize}
 
 {\it Default value:} {\tt .false.}
@@ -2942,8 +2954,26 @@ performed.
 
 {\it Default value:} {\tt 0}
 
+\item[{\bf DM.Pulay.Avoid.First.After.Kick}] ({\it
+  logical}):\index{SCF!mixing}
+  \index{DM.Pulay.Avoid.First.After.Kick@{\bf
+      DM.Pulay.Avoid.First.After.Kick}}\index{SCF!mixing} Controls
+  whether the first density-matrix residual of the SCF cycle and the
+  first residual after a kick are included in the Pulay history. It
+  can be argued that in these cases the ``output'' DM might be
+  significantly different from the ``input'' DM. To preserve backwards
+  compatibility, these residuals are kept in the Pulay history unless
+  this variable is activated.
+
+{\it Default value:} {\tt .false.}
+
+
 \item[{\bf DM.PulayOnFile}] ({\it logical}):
 \index{DM.PulayOnFile@{\bf DM.PulayOnFile}}
+
+{\bf NOTE:} This feature is temporarily disabled pending a proper
+implementation that works well in parallel.
+
 Store intermediate information of Pulay mixing in files
 ({\tt .true.}) or in memory ({\tt .false.}).
 Memory storage can increase considerably the
@@ -3078,8 +3108,16 @@ The Density matrix can be:
              In all other cases (including "server operation"), the
              default is to allow DM re-use (with possible extrapolation)
              from previous geometry steps.
+
+             There is no re-use of the DM for "Forces", and "Phonon"
+             dynamics types (i.e., the DM is re-initialized)
+
+             For "CG" calculations, the default is not to extrapolate the
+             DM (unless requested by setting 'DM.AllowExtrapolation' to
+             "true"). The previous step's DM is reused.
+
              The fdf variables 'DM.AllowReuse' and 'DM.AllowExtrapolation'
-             can be used to change this behavior.
+             can be used to turn off DM re-use and extrapolation.
 
 \end{verbatim}
 
@@ -3328,14 +3366,14 @@ density matrix change criterion is also satisfied.
 
 {\it Default value:} {\tt .false.}
 
-\item[{\bf DM.Energy.Tolerance}] ({\it real}):
+\item[{\bf DM.Energy.Tolerance}] ({\it real energy}):
 \index{DM.EnergyTolerance@{\bf DM.EnergyTolerance}}
 If {\bf DM.Require.Energy.Convergence} is {\tt .true.}, then
 self-consistency is achieved when the change in the total energy between cycles
 of the SCF procedure is below this value and the
 density matrix change criterion is also satisfied.
 
-{\it Default value:} {${\tt 10^{-4}}$}
+{\it Default value:} {${\tt 10^{-4}}$ eV}
 
 \item[{\bf DM.Require.Harris.Convergence}] ({\it logical}):
 \index{SCF!mixing!harris energy convergence}
@@ -3356,7 +3394,7 @@ the Harris energy instead of the Kohn-Sham energy.
 {\it Default value:} {\tt .false.}
 
 
-\item[{\bf DM.Harris.Tolerance}] ({\it real}):
+\item[{\bf DM.Harris.Tolerance}] ({\it real energy}):
 \index{DM.Harris.Tolerance@{\bf DM.Harris.Tolerance}}
 If {\bf DM.Require.Harris.Convergence} is {\tt .true.}, then
 self-consistency is achieved when the change in the Harris energy between cycles
@@ -3364,7 +3402,7 @@ of the SCF procedure is below this value.
 This is useful if only energies are needed, as the Harris energy tends
 to converge faster than the Kohn-Sham energy.
 
-{\it Default value:} {${\tt 10^{-4}}$}
+{\it Default value:} {${\tt 10^{-4}}$ eV}
 
 \end{description}
 
@@ -3627,14 +3665,16 @@ the Order-N calculation faster.  USE WITH CARE!!!
 \index{SaveHS@{\bf SaveHS}}\index{output!Hamiltonian \& overlap}
 Instructs to write the Hamiltonian and overlap matrices, as well
 as other data required to generate bands and density of states,
-in file {\tt SystemLabel}.HS. This file can be read by routine IOHS,
-which may be used by an application program in later versions.
-
-In some cases, {\sc Siesta} produces also an HSX file, which is in a
-more compact form than the usual HS, and in which the Hamiltonian,
+in file {\tt SystemLabel}.HSX. The HSX format is more
+compact than the traditional HS, and the Hamiltonian,
 overlap matrix, and relative-positions array (which is always output,
 even for gamma-point only calculations) are in single precision.
-(See COOP.Write option)
+
+The program {\tt hsx2hs} in {\tt Util/HSX} can be used to generate
+an old-style HS file if needed.
+
+{\sc Siesta} produces also an HSX file if the {\bf COOP.Write} option
+is active.
 \index{output!HSX file}
 
 {\it Use:} File {\tt SystemLabel}.HS is only written, not read, by siesta.
@@ -3666,14 +3706,18 @@ If true, the program does not check whether the auxiliary cell
 constructed with a naive algorithm is appropriate. This variable is
 only useful if one wishes to reproduce calculations done with previous
 versions of the program in which the auxiliary cell was not large
-enough, as indicated by warnings such as:\\ \texttt{xijorb: WARNING:
-  orbital pair 1 341 is multiply connected}
+enough, as indicated by warnings such as:
+
+\texttt{WARNING: orbital pair 1 341 is multiply connected}
 
 Only small numerical differences in the results are to be expected.
 
-Note that the warning is harmless for gamma-only calculations, except
-if one pretends to use information about the relative coordinates
-of interacting orbitals (see the COOP.write option).
+Note that for gamma-point-only calculations there is an implicit
+``folding'' of matrix elements corresponding to the images of orbitals
+outside the unit cell. If information about the specific values of
+these matrix elements is needed (as for COOP/COHP analysis), one has
+to make sure that the unit cell is large enough.  
+\index{COOP/COHP curves!Folding in Gamma-point calculations}
 
 {\it Default value:} {\tt .false.}
 
@@ -3746,7 +3790,8 @@ and band overlaps.
 A new file {\tt OCCS} is produced with information about the number of
 states occupied.
 
-This is an experimental feature.
+This is an experimental feature. Note: It is not compatible with the
+{\tt Diag.Parallel.Over.K} option.
 
 {\it Default value:} {\tt .false.}
 
@@ -4562,6 +4607,7 @@ when dealing with SCF problems, otherwise too verbose.
 
 \subsubsection{Crystal-Orbital overlap and hamilton populations (COOP/COHP)}
 \label{sec:coop}
+\index{COOP/COHP curves}
 
 These curves are quite useful to analyze the electronic structure to
 get insight about bonding characteristics. See the {\tt Util/COOP}
@@ -4950,6 +4996,14 @@ the dipole moment of the system, thus allowing to treat asymmetric
 slabs (including systems with an adsorbate on one surface) and compute
 properties such as the work funcion of each of the surfaces.
 
+NOTE: If the program is fed a starting density matrix from an
+uncorrected calculation (i.e., with an exagerated dipole), the first
+iteration might use a compensating field that is too big, with the
+risk of taking the system out of the convergence basin. In that case,
+it is advisable to use the {\tt DM.MixSCF1}\index{DM.MixSCF1@{\bf
+    DM.MixSCF1}}\index{Slab dipole correction} option to request a mix of the
+input and output density matrices after that first iteration.
+
 (See {\tt Tests/sic-slab})
 
 {\it Default value:} {\tt false}
@@ -5047,6 +5101,13 @@ If netCDF support is compiled in, the file {\tt TotalPotential.grid.nc} is produ
 
 {\it Default value:} {\tt .false.}
 
+{\it Side effect:} the vacuum level, defined as the effective 
+potential at grid points with zero density, is printed in the standard 
+output whenever such points exist (molecules, slabs) and either 
+SaveElectrostaticPotential or SaveTotalPotential are true.
+In a symetric (nonpolar) slab, the work function can be computed as 
+the difference between the vacuum level and the Fermi energy.
+
 
 \item[{\bf SaveIonicCharge}] ({\it logical}):
 \index{SaveIonicCharge@{\bf SaveIonicCharge}}
@@ -5078,6 +5139,22 @@ density is positive and the ionic charge density is negative.
 {\it Use:} File {\tt SystemLabel}.TOCH is only written, not read, by siesta.
 
 {\it Default value:} {\tt .false.}
+
+
+\item[{\bf SaveInitialChargeDensity}] ({\it logical}):
+  \index{SaveInitialChargeDensity@{\bf
+      SaveInitialChargeDensity}}\index{output!charge density}
+
+  If ``true'', the program generates a {\tt SystemLabel}.RHOINIT file
+  (and a {\tt RhoInit.grid.nc} file if netCDF support is compiled in)
+  containing the charge density used to start the first
+  self-consistency step, and it stops. Note that if an initial density
+  matrix (DM file) is used, it is not normalized. This is useful to
+  generate the charge density associated to ``partial'' DMs, as
+  created by progras such as {\tt dm\_creator} and {\tt dm\_filter}.
+
+{\it Default value:} {\tt .false.}
+
 
 \end{description}
 
@@ -7547,6 +7624,14 @@ Here we provide an overview of some of the most important files and their
 associated tools.
 
 \begin{itemize}
+\item{Orbital indexing}
+
+ORB\_INDX
+
+Provides information on the basis orbitals, in the order used in files 
+DM, HS, etc (and internally by Siesta). It is a plain-text file, with
+information on the meaning of each column at the end of the file.
+
 \item{Density matrix}
 
 DM
@@ -7581,14 +7666,15 @@ Util/SCF:            experimental python scripts to process DM .nc files
 HS
 
 The old format, very inefficient in terms of space used. It contains
-also the $x_ij$ array and information about the atomic species and orbitals.
+(if produced by a calculation using k-points) also the $x_ij$ array
+and information about the atomic species and orbitals. As of
+{\tt siesta-3.0-rc2}, it has been superseded by the HSX format. If some
+legacy utility needs the HS format, it can be re-generated using
+the tools in {\tt Util/HSX}.
 
 HSX
 
 The new format, with better packing of binary records.
-
-The two formats coexist for now. Some utilities read HS, and others
-(notably the mprop program in Util/COOP), HSX.
 
 DMHS
 
@@ -7673,6 +7759,47 @@ graphically rich, fashion. This section will explain how to do this.
 
 \end{itemize}
 
+\subsection{Controlling XML output}
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+
+\item[{\bf XML.Write}] ({\it logical}): 
+\index{XML.Write@{\bf XML.Write}} 
+Determine if the main XML file should be created for this run.
+
+{\it Default value:} {\tt true}
+
+\item[{\bf XML.AbortOnErrors}] ({\it logical}): 
+\index{XML.AbortOnErrors@{\bf XML.AbortOnErrors}} 
+This controls the behaviour of the XML output library when it detects 
+internal errors or erroneous use of the API and is intended to aid debugging.
+When this option is false, the library will emit a diagnostic message to 
+standard error before stopping execution with a Fortran stop statement.
+When this option is true, the message is generated but execution will be 
+terminated by generating a runtime exception leading to an abort signal. 
+Depending on the execution environment and compiler options, this can lead 
+to the generation of a core file or stack trace. 
+
+{\it Default value:} {\tt false}
+
+\item[{\bf XML.AbortOnWarnings}] ({\it logical}): 
+\index{XML.AbortOnWarnings@{\bf XML.AbortOnWarnings}} 
+This controls the behaviour of the XML output library when it detects 
+minor errors and is intended to aid debugging.  When this option is false,
+the library will emit a diagnostic message to standard error before 
+continuing execution. When this option is true, the message is generated 
+but execution will also be terminated by generating a runtime exception 
+leading to an abort signal. Depending on the execution environment and 
+compiler options, this can lead to the generation of a core file or 
+stack trace.
+
+{\it Default value:} {\tt false}
+
+\end{description}
+
 \subsection{Converting XML to XHTML}
 
 The translation of the {\sc Siesta} XML output to a HTML-based webpage is
@@ -7705,19 +7832,43 @@ the ccViz script.
 \index{Precision selection}
 
 Some of the real arrays used in Siesta are by default
-single-precision, to save memory. This applies to the grid-related
-magnitudes, and to the historical data sets in Broyden mixing. 
-Unless you have memory problems running Siesta, we recommend that 
-the defaults are changed by using pre-processing symbols at compile
-time:
+single-precision, to save memory. This applies to the array that holds
+the values of the basis orbitals on the real-space grid, to the
+historical data sets in Broyden mixing, and to the arrays used in the
+O(N) routines. Note that the grid functions (charge densities,
+potentials, etc) are now (since mid January 2010) in double
+precision by default.
+
+The following pre-processing symbols at compile time control the 
+precision selection
 
 \begin{itemize}
+
+\item Add {\tt -DGRID\_SP} to the {\tt DEFS} variable in {\tt
+  arch.make} to use single-precision for all the grid magnitudes,
+  including the orbitals array and charge densities and potentials.
+  This will cause some numerical differences and will have a
+  negligible effect on memory consumption, since the orbitals array is
+  the main user of memory on the grid, and it is single-precision by
+  default. This setting will recover the default behavior of previous
+  versions of {\sc Siesta}.\index{Grid precision}
+
 \item Add {\tt -DGRID\_DP} to the {\tt DEFS} variable in {\tt
-  arch.make} to use double-precision arrays on the grid.
+  arch.make} to use double-precision for all the grid magnitudes,
+  including the orbitals array. This will significantly increase
+  the memory used for large problems, with negligible differences
+  in accuracy.
+
+
 \item Add {\tt -DBROYDEN\_DP} to the {\tt DEFS} variable in {\tt
   arch.make} to use double-precision arrays for the Broyden historical
   data sets. (Remember that the Broyden mixing for SCF convergence
   acceleration is an experimental feature.)\index{Broyden mixing}
+
+\item Add {\tt -DON\_DP} to the {\tt DEFS} variable in {\tt
+  arch.make} to use double-precision for all the arrays in the
+  O(N) routines. 
+
 \end{itemize}
 
 \addcontentsline{toc}{section}{Index}

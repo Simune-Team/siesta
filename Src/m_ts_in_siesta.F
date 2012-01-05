@@ -57,18 +57,17 @@ C     Ry, and Bohr is used throughout the program unless explicitly
 C     stated.
 Cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
-      subroutine transiesta(gamma,nsc,nkpnt,kpoint,kweight,lasto,
-     .  nuo, no, nspin, nua, xa, maxnh, numh, listhptr,
+      subroutine transiesta(gamma,lasto,
+     .  nuo, no, nspin, nua, maxnh, numh, listhptr,
      .  listh,  xij, indxuo, Hs, Ss, Dnew, Enew, ef, nuotot,
      .  TSiscf,qtot)
 
-      use fdf
 #ifdef MPI
-      use mpi_siesta
+      use mpi_siesta, only: MPI_Bcast, MPI_Comm_Rank, DAT_dcomplex,
+     . MPI_Sum, DAT_double, MPI_Comm_World, MPI_Integer, MPI_logical
 C FDN
       use parallelsubs, only : GlobalToLocalOrb, WhichNodeOrb, 
      .                         LocalToGlobalOrb
-C      use parallel
 C FDN
 #endif
       use m_ts_options, only : voltfdf, USEBULK, TriDiag, updatedmcr, 
@@ -84,7 +83,8 @@ C FDN
       use m_ts_scattering, only : consHS, getsfe, getGF_Tri,
      .                            GFGammaGF, weightDM, weightDMC
 #endif
-      use sys
+      use sys, only : die
+      use precision, only : dp
 
 c======================================================================
       implicit none
@@ -94,19 +94,19 @@ c======================================================================
       integer NGR2,NA1R,NA2R,nqR,nuaR
       integer NCONTOUR0,NCONTOUR
 c======================================================================
-      real*8 eV
+      real(dp) eV
       parameter ( eV = 1.d0 / 13.60580d0 )
-      real*8 Pi
+      real(dp) Pi
       parameter(Pi=3.141592653589793238462643383279503d0)
-      real*8 toPi
+      real(dp) toPi
       parameter(toPi=2d0/Pi)
 c======================================================================
 
 
-      character*33 gffileLeft,gffileRight, gffile_default
+      character*33 gffileLeft,gffileRight
 
 C From fdf read voltfdf, Volt=voltfdf/eV
-      real*8 Volt               ! the bias voltage
+      real(dp) Volt               ! the bias voltage
 
 C      integer NBUFATL,NBUFATR   ! No. buffer atoms, L/R
       integer NBUFL,NBUFR       ! No. buffer states, L/R
@@ -118,11 +118,11 @@ c   FROM SIESTA:
 c =====================================================================
       integer nua               ! No. atoms in unit cell
       logical gamma             !True if gamma point calculation
-      integer nsc(3)            ! Number of super-cells: must be 1,1,1
-      integer nkpnt             ! Number of k points
+      
+     
 
-      real*8  kpoint(3,nkpnt)   ! k point vectors
-      real*8  kweight(nkpnt)    ! k point weights (must sum one)
+      
+      
 
       integer lasto(0:nua)      ! last-orbital index on atoms
       integer nspin             ! Number of spin components (1 or 2)
@@ -146,35 +146,35 @@ c                               ! column indexes for each matrix row
 c                               !  Unit cell orbitals must be the first in
 c                               ! orbital lists, i.e. indxuo.le.nuo, with
 c                               ! nuo the number of orbitals in unit cell  
-      real*8 xa(3,nua)          !atomic positions
+      
 
       integer TSiscf
 
 c The fermi-energy of the CONTACT (without electrodes) is initially determined
 c by SIESTA. This is taken as the starting energy shift of the contact region:
 c The electrodes in equilibrium has per definition Fermi energy at ZERO.
-      real*8 ef                 ! Fermi energy (used in CONTACT) 
-      real*8 qtot
+      real(dp) ef                 ! Fermi energy (used in CONTACT) 
+      real(dp) qtot
 c =====================================================================
 c   BACK TO SIESTA:
 c =====================================================================
 
-      real*8 Dnew(maxnh,nspin) ! Output Density Matrix
+      real(dp) Dnew(maxnh,nspin) ! Output Density Matrix
 C FDN
-      real*8 xo(3,nuo)
-      complex*16 ccphase
+      
+      complex(dp) ccphase
 C FDN
-      real*8 Enew(maxnh,nspin) ! Output Energy-Density Matrix
+      real(dp) Enew(maxnh,nspin) ! Output Energy-Density Matrix
 
 c =====================================================================
 c     Greens functions:
 c =====================================================================
 c     Energy Contour:
-      complex*16, dimension (:), pointer:: contour,wgf
+      complex(dp), dimension (:), pointer:: contour,wgf
 
       integer NPARACONTOUR   ! No. points on parallel contour
 c     Energy points and their weight distributed on nodes
-      complex*16, dimension (:,:), allocatable ::
+      complex(dp), dimension (:,:), allocatable ::
      .     paracontour,paraWGF
 c     (point,node) --> part of contour (L,R,V,N) Left,Right,Voltage, No voltage
 
@@ -184,12 +184,12 @@ c     No. actual energy points to read-in for given parallel energy point
       integer, dimension(:), allocatable ::  points2read
 
 c     Read-in bulk H, S, for a given q-points
-      complex*16, dimension(:,:,:), allocatable :: 
+      complex(dp), dimension(:,:,:), allocatable :: 
      .     HAAL,SAAL,HAAR,SAAR 
 
 c     q-points and their weights:
-      real*8, dimension (:,:), pointer:: qL,qR
-      real*8, dimension (:), pointer:: wqL,wqR
+      real(dp), dimension (:,:), pointer:: qL,qR
+      real(dp), dimension (:), pointer:: wqL,wqR
 
 c ==================================================================
 c     Left/Right inverse Greens functions:
@@ -197,12 +197,12 @@ c     Left/Right inverse Greens functions:
 
 c     Electrode GF's
 c     Gamma=i*0.5*(Sigma - Sigma^dagger) 
-      complex*16, dimension (:,:), allocatable:: 
+      complex(dp), dimension (:,:), allocatable:: 
      .     SFEL,SFER,GAMMAL,GAMMAR
 
 c ==================================================================
 c Fermi levels
-      real*8 EFermiL,EFermiR,EFermi0
+      real(dp) EFermiL,EFermiR,EFermi0
 c===================================================================
 
 c Internal representation of H,S,DM and other quantities:    
@@ -211,30 +211,30 @@ c Internal representation of H,S,DM and other quantities:
 c                               !i.e. no. used orbitals
 
 c Full Green's function, H and S of contact:
-      complex*16, dimension(:), allocatable :: H,S
-      complex*16, dimension(:), pointer :: GF
+      complex(dp), dimension(:), allocatable :: H,S
+      complex(dp), dimension(:), pointer :: GF
 
 c     To save space we will save the temporary DML,EDML in DM,EDM. 
 c     contour part of DM integration 
 c     real axis part of DM integration
 c     L,R estimates of Edm
 
-      real*8, dimension(:), allocatable :: 
+      real(dp), dimension(:), allocatable :: 
      .     DM,DMR,DMneqL,DMneqR,EDM,EDMR
 
 C FDN
-      complex*16, dimension(:), allocatable ::
+      complex(dp), dimension(:), allocatable ::
      .  DMCplx,DMRCplx,DMneqLCplx,DMneqRCplx,EDMCplx,EDMRCplx,
      .  work1Cplx
 
       logical :: kpargamma
-      real(8) :: kpartol
+      real(dp) :: kpartol
 C FDN
 
 
-      real*8 QC0                ! Init(SIESTA) no. electrons in update region
-      real*8 QC                 ! no. electrons in update region
-      real*8 QCn0
+      real(dp) QC0                ! Init(SIESTA) no. electrons in update region
+      real(dp) QC                 ! no. electrons in update region
+      real(dp) QCn0
 
 c No. contour points (NCONTOUR if VOLT=0 else NCONTOUR + NVOLT)
       integer NEn
@@ -246,8 +246,8 @@ c     No. orbitals on atoms
 c ==================================================================
 c Helpers, workspace, tempos, auxilaries etc...
       
-      real*8 k(3),kxij,qcloc
-      complex*16 cphase
+      real(dp) k(3),kxij,qcloc
+      complex(dp) cphase
       
       integer ind
       integer jgfL,jgfR         !File units for Left,Right GF
@@ -258,19 +258,19 @@ c      Index of equiv. orb. in uc
 
       integer, dimension(:), allocatable :: indxuo1,lastoL,lastoR
       
-      complex*16, dimension(:), allocatable :: work2
-      real*8, dimension(:), allocatable :: work1
+      complex(dp), dimension(:), allocatable :: work2
+      real(dp), dimension(:), allocatable :: work1
 
-      complex*16, dimension(:), allocatable :: dosdum
+      complex(dp), dimension(:), allocatable :: dosdum
 
-      complex*16 ZEnergy      
+            
 
-      complex*16 Z,W
+      complex(dp) Z,W
       integer iPE,ispin
 
       integer i,j,ic,jc
       integer ia,iau,ia2
-      integer io,jo,iuo,juo,io1,jo1,iio,is
+      integer io,jo,iuo,juo,iio,is
       integer ierr,itmp         !matrix inversion failure
       integer Nodes
       integer nuotot
@@ -280,7 +280,7 @@ c      Index of equiv. orb. in uc
       integer, dimension(:), allocatable,save ::
      .  numhg, listhptrg, listhg
  
-      double precision, dimension(:,:), allocatable, save ::
+      real(dp), dimension(:,:), allocatable, save ::
      .  xijg, Dnewg, Enewg
       logical, dimension (:), allocatable ::  listudg
 #endif
@@ -289,7 +289,7 @@ c      Index of equiv. orb. in uc
       logical errorgs
       logical, dimension (:), allocatable ::  listud
 
-      real*8 renorm
+      real(dp) renorm
 
       logical firsttime
       data firsttime /.true./
@@ -330,7 +330,7 @@ C FDN
       save NCONTOUR,NCONTOUR0
       save indxuo1
       
-      complex*16 zdotc
+      complex(dp) zdotc
       external zdotc ! BLAS function
 
       character paste*33
@@ -349,8 +349,8 @@ c           K-points variables
 c ==================================================================
       integer, save ::  nkpar
       integer :: ikpar
-      real(8), dimension(:,:), allocatable, save :: kpar
-      real(8), dimension(:), allocatable, save :: wkpar
+      real(dp), dimension(:,:), allocatable, save :: kpar
+      real(dp), dimension(:), allocatable, save :: wkpar
       logical, save :: diffkpar=.false.
 
 C  Preciso colocar um caso geral de eletrodos com potencialmente
@@ -373,7 +373,7 @@ C Get Node number
       Nodes = 1 
 #endif
       IONode=.false.
-      if(Node.eq.1) IONode=.true.
+      if(Node.eq.0) IONode=.true.
       
       nullify(GF)
 
@@ -465,11 +465,9 @@ c
             allocate(dosdum(NEn))
 C FDN nspin added as variable
             CALL green(jout,
-     .           NEn,contour,WGF,EFermiL,dosdum,.true.,.false.,
-     .           nspin )
+     .           NEn,contour,WGF,EFermiL,dosdum,.true.,nspin )
             CALL green(jout,
-     .           NEn,contour,WGF,EFermiR,dosdum,.false.,.false.,
-     .           nspin )
+     .           NEn,contour,WGF,EFermiR,dosdum,.false.,nspin )
 C FDN
             
             gffileLeft=GFFileL
@@ -502,7 +500,7 @@ c Left
        if(Node.eq.0) then
          call io_assign(jgfL)
          OPEN(FILE=gffileLeft,UNIT=jgfL,FORM='UNFORMATTED')
-         call read_green(jgfL,EFermiL,NEn,contour,WGF,
+         call read_green(jgfL,NEn,contour,WGF,
      .        nuaL,NA1L,NA2L,nqL,NGL2,wqL,qL,errorgf)
          call io_close(jgfL)
         endif     
@@ -541,7 +539,7 @@ c     Open and read header of GF-file
 
        call io_assign(jgfR)
        OPEN(FILE=gffileRight,UNIT=jgfR,FORM='UNFORMATTED')
-       call read_green(jgfR,EFermiR,NEn,contour,WGF,
+       call read_green(jgfR,NEn,contour,WGF,
      .      nuaR,NA1R,NA2R,nqR,NGR2,wqR,qR,errorgf)
        call io_close(jgfR)
 
@@ -1027,7 +1025,7 @@ c Left
          call io_assign(jgfL)
           open(file=gffileLeft,unit=jgfL,form='unformatted')
 
-          call read_green(jgfL,EFermiL,NEn,contour,WGF,
+          call read_green(jgfL,NEn,contour,WGF,
      .              nuaL,NA1L,NA2L,nqL,NGL2,wqL,qL,errorgf)
 
           endif
@@ -1051,7 +1049,7 @@ c Right
          if(Node.eq.0) then
           call io_assign(jgfR)
           open(file=gffileRight,unit=jgfR,form='unformatted')
-          call read_green(jgfR,EFermiR,NEn,contour,WGF,
+          call read_green(jgfR,NEn,contour,WGF,
      .              nuaR,NA1R,NA2R,nqR,NGR2,wqR,qR,errorgf)
          endif
 
@@ -1121,16 +1119,16 @@ c setup hamiltonian
 #ifdef MPI 
 
          call  consHSp(nuo, no,   maxnh,  maxnhg,
-     .                 gamma, numh, listhptr, listh,
+     .                 gamma, numh, listhptr,
      .                 numhg, listhptrg,listhg,
      .                 Hs(1,ispin), Ss, xijg, indxuo1, k, nuotot,
-     .                 H,S, Node, Nodes,ef,nou,NGL,NGR,NBUFL,NBUFR)
+     .                 H,S, Node, Nodes,ef,nou,NGL,NGR,NBUFL)
 
 #else
 
          call consHS( nuo, no,  maxnh,gamma, numh, listhptr,
      .                listh,Hs(1,ispin), Ss, xij, indxuo1, 
-     .                k,nuo,H,S,ef,nou, NGL,NGR,NBUFL,NBUFR)
+     .                k,H,S,ef,nou, NGL,NGR,NBUFL)
 #endif
 
       
@@ -1167,7 +1165,7 @@ c LEFT:
 
 
          call getsfe(USEBULK,jgfL,HAAL,SAAL,Z,
-     &        NGL2,nuaL,lastoL,NA1L,NA2L,NGL,SFEL,GAMMAL,
+     &        NGL2,NGL,SFEL,GAMMAL,
      &        Nodes,points2read(iPE),errorgs,ikpar)
 
 C FDN
@@ -1181,7 +1179,7 @@ c        if(Node.eq.0) write(6,*) "hola getsfe R", ipe
 c RIGHT:
 
          call getsfe(USEBULK,jgfR,HAAR,SAAR,Z,
-     &        NGR2,nuaR,lastoR,NA1R,NA2R,NGR,SFER,GAMMAR,
+     &        NGR2,NGR,SFER,GAMMAR,
      &        Nodes,points2read(iPE),errorgs,ikpar)
 
 C FDN
@@ -1254,7 +1252,7 @@ c     Non-equilibrium part:
 
 
 c   Calculate rho^R(e) -> work2 ! NOTE R!!
-        call GFGammaGF(jout,.false.,nou,NGR,GF,GAMMAR,work2)
+        call GFGammaGF(.false.,nou,NGR,GF,GAMMAR,work2)
         
 c note DM = DML+DMneqR or DM=DMR+DMneqL
 c note we use "+" here!
@@ -1273,7 +1271,7 @@ C FDN
             end do
 c  Calculate rho^L(e) -> work2 ! NOTE L!!
 
-        call GFGammaGF(jout,.true.,nou,NGL,GF,GAMMAL,work2)
+        call GFGammaGF(.true.,nou,NGL,GF,GAMMAL,work2)
         
 c     note we use "-" here!
             do i=1,nou*nou
@@ -1398,10 +1396,10 @@ C FDN
          deallocate(work2)
         end if
        if (kpargamma) then
-         call weightDM(jout,nou,NGL,NGR,DM,DMR,DMneqL,
+         call weightDM(nou,NGL,NGR,DM,DMR,DMneqL,
      .        DMneqR,EDM,EDMR)
        else
-         call weightDMC(jout,nou,NGL,NGR,DMCplx,DMRCplx,
+         call weightDMC(nou,NGL,NGR,DMCplx,DMRCplx,
      . DMneqLCplx,DMneqRCplx,EDMCplx,EDMRCplx)
        end if
 C FDN
@@ -1686,131 +1684,61 @@ c ===================================================================
 !-------------------------------------------------------------------------
 
 
-      subroutine TSVHFix(  mesh, nsm, v )
-C
-C  Modules
-C
-      use precision
-C FDN put the only attribute
-      use parallel, only : ProcessorY
-C FDN
-#ifdef MPI
-      use mpi_siesta
-C FDN parallelsubs
-      use parallelsubs, only : HowManyMeshPerNode
-C FDN
-#endif
+      subroutine TSVHFix( meshg, nsm, v )
+      use precision, only : dp, grid_p
+      use parallel,    only : node, nodes
+      use mesh,        only : meshLim
+      use m_mpi_utils, only : globalize_sum
 
-      implicit          none
-      real              v(*)
-      integer           mesh(3), nsm
+      implicit none
+!     Input variables
+      integer,       intent(in) ::  meshG(3), nsm
+!     Output variables
+      real(grid_p), intent(out) ::  v(*)
+!     Local variables
+      integer                   :: Xoffset, Yoffset, Zoffset, imesh,
+     &                             i1, i2, i3, ntp, meshl(3)
+      real(dp)                  :: vav, vtot
 
+!     Find local number of mesh points
+      meshl(1) = (meshLim(2,1) - meshLim(1,1)+1)*nsm
+      meshl(2) = (meshLim(2,2) - meshLim(1,2)+1)*nsm
+      meshl(3) = (meshLim(2,3) - meshLim(1,3)+1)*nsm
 
-c Internal variables
-      integer           i1, i2, i3, ia, imesh, ntemp,
-     .                  nlp, Node, Nodes, meshl(3),
-     .                  ProcessorZ, BlockSizeY, BlockSizeZ, Yoffset,
-     .                  Zoffset, Py, Pz, i30, i20, meshnsm(3),
-     .                  NRemY, NRemZ
-#ifdef MPI
-      integer           MPIerror, npl
-#endif
-      double precision  vav, vtot, temp
+!     Calculate starting point for grid
+      Xoffset = (meshLim(1,1)-1)*nsm
+      Yoffset = (meshLim(1,2)-1)*nsm
+      Zoffset = (meshLim(1,3)-1)*nsm
 
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node = 0
-      Nodes = 1
-#endif
-
-
-C Find local number of mesh points
-        meshnsm(1) = mesh(1)/nsm
-        meshnsm(2) = mesh(2)/nsm
-        meshnsm(3) = mesh(3)/nsm
-#ifdef MPI
-        call HowManyMeshPerNode(meshnsm,Node,Nodes,npl,meshl)
-        meshl(1) = meshl(1)*nsm
-        meshl(2) = meshl(2)*nsm
-        meshl(3) = meshl(3)*nsm
-#else
-        meshl(1) = mesh(1)
-        meshl(2) = mesh(2)
-        meshl(3) = mesh(3)
-#endif
-
-C Check that ProcessorY is a factor of the number of processors
-        if (mod(Nodes,ProcessorY).gt.0) then
-          write(6,'(''ERROR: ProcessorY must be a factor of the'',
-     .      '' number of processors!'')')
-          stop
-        endif
-        ProcessorZ = Nodes/ProcessorY
-
-C Calculate blocking sizes
-        BlockSizeY = (meshnsm(2)/ProcessorY)*nsm
-        NRemY = (mesh(2) - ProcessorY*BlockSizeY)/nsm
-        BlockSizeZ = (meshnsm(3)/ProcessorZ)*nsm
-        NRemZ = (mesh(3) - ProcessorZ*BlockSizeZ)/nsm
-
-C Calculate coordinates of current node in processor grid
-        Py = (Node/ProcessorZ)+1
-        Pz = Node - (Py - 1)*ProcessorZ + 1
-
-C Calculate starting point for grid
-        Yoffset = (Py-1)*BlockSizeY + nsm*min(Py-1,NRemY)
-        Zoffset = (Pz-1)*BlockSizeZ + nsm*min(Pz-1,NRemZ)
-
-         vtot =0.d0
-         nlp =0
-
+!     Compute voltage of Z=0 plane
+      vtot =0.d0
+      if (Zoffset.eq.0) then
         imesh = 0
-        i30 = Zoffset - 1
-        do i3 = 0,meshl(3)-1
-          i30 = i30 + 1
-          i20 = Yoffset - 1
-          do i2 = 0,meshl(2)-1
-            i20 = i20 + 1
-            do i1 = 0,meshl(1)-1
-              imesh = imesh + 1
-              if (i30.eq.0) then
-                 nlp = nlp +1 
-                 vtot = vtot + v(imesh)
-              endif
-            enddo
+        do i2 = 0,meshl(2)-1
+          do i1 = 0,meshl(1)-1
+            imesh = imesh + 1
+            vtot = vtot + v(imesh)
           enddo
         enddo
+      endif
 
-#ifdef MPI
-      temp=0.d0
-        call MPI_AllReduce(vtot,temp,1,DAT_double,MPI_Sum,
-     .  MPI_Comm_World,MPIerror)
-       vtot = temp
-       ntemp=0
-        call MPI_AllReduce(nlp,ntemp,1,MPI_integer,MPI_Sum,
-     .    MPI_Comm_World,MPIerror)
-       nlp = ntemp
- 
-#endif
-        vav=vtot/float(nlp)
+      call globalize_sum( vtot, vav )
 
-        imesh = 0
-        
-        do i3 = 0,meshl(3)-1
-           do i2 = 0,meshl(2)-1
-              do i1 = 0,meshl(1)-1
-                 imesh = imesh + 1
-                 v(imesh) = v(imesh) - vav
-              enddo
-           enddo
+!     Average voltage in the Z=0 plane
+!      ntp = meshG(1)*meshG(2)*nsm*nsm
+      ntp = meshG(1)*meshG(2)
+      vav = vav/float(ntp)
+
+      imesh = 0
+      do i3 = 0,meshl(3)-1
+        do i2 = 0,meshl(2)-1
+          do i1 = 0,meshl(1)-1
+            imesh    = imesh + 1
+            v(imesh) = v(imesh) - vav
+          enddo
         enddo
+      enddo
 
-
-c        if(Node.eq.0) write(6,*)'Av Pot',Node,vav
       end subroutine TSVHFix
 
 !-------------------------------------------------------------------------
@@ -1818,168 +1746,86 @@ c        if(Node.eq.0) write(6,*)'Av Pot',Node,vav
 !-------------------------------------------------------------------------
 
 
-      subroutine TSvoltage2(cell, mesh, nsm, v, isvolt )
-
-
-C
-C  Modules
-C
-      use precision
-      use fdf
-C FDN put the only attribute
-      use parallel, only : ProcessorY
-C FDN
-#ifdef MPI
-C FDN parallelsubs
-      use parallelsubs, only : HowManyMeshPerNode
-C FDN
-      use mpi_siesta
-#endif
+      subroutine TSvoltage2(cell, meshG, nsm, v, isvolt )
+      use precision, only : dp, grid_p
+      use fdf, only : fdf_physical
+      use parallel, only : node, nodes
+      use mesh,     only : meshLim
 
       implicit          none
+!     Input variables
+      real(dp),      intent(in) :: cell(3,3)
+      integer,       intent(in) :: meshG(3), nsm
+!     Output variables
+      real(grid_p), intent(out) :: v(*)
+      logical,    intent(inout) :: isvolt
+!     Local variables
+      integer                   :: ix, i1, i2, i3, i10, i20, i30, imesh, 
+     &                             meshl(3), Xoffset, Yoffset, Zoffset
+      real(dp)                  :: dot, field(3), Volt, VoltL, VoltR,
+     &                             Lvc, dLvc, vcdir(3)
+      logical,             save :: frstme=.true.
+      real(dp),            save :: f(3), v0
+      integer,        parameter :: ivc=3              ! The voltage-direction
+      real(dp),       parameter :: eV=1.0/13.60580
 
-      integer           mesh(3), nsm
-      real              v(*)
-      double precision  cell(3,3), dot, field(3)
-      logical           isvolt 
-      external          dot
-
-
-c Internal variables
-      real*8 eV
-      parameter ( eV = 1.d0 / 13.60580d0 )
- 
-      logical           found, frstme
-      integer           i1, i2, i3, imesh,  ix, ivc,
-     .                  Node, Nodes, meshl(3),
-     .                  ProcessorZ, BlockSizeY, BlockSizeZ, Yoffset,
-     .                  Zoffset, Py, Pz, i30, i20, meshnsm(3),
-     .                  NRemY, NRemZ
-
-#ifdef MPI
-      integer           MPIerror, npl
-#endif
-
-      double precision  f(3),v0,Volt,Lvc,dLvc,vcdir(3),VoltL,VoltR
-
-      parameter(ivc=3)          ! The voltage-direction
-
-      save              f,frstme,Volt,VoltL,VoltR,v0,Lvc
-
-
-      data frstme /.true./
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node = 0
-      Nodes = 1
-#endif
-
-c Find and store the electric field only the first time
+!     Find and store the electric field only the first time
       if (frstme) then
         frstme = .false.
         isvolt = .false.
         do ix = 1,3
           field(ix) = 0.d0
         enddo
-
  
-c     Read the voltage block from the fdf input file
-       if (Node.eq.0)Volt = fdf_physical('TS.Voltage',0.0d0,'Ry')
+!       Read the voltage block from the fdf input file
+        Volt = fdf_physical('TS.Voltage',0.0d0,'Ry')
 
-#ifdef MPI
-      call MPI_Bcast(Volt,1,DAT_double,0,MPI_Comm_World, MPIerror)
-#endif
+        if(dabs(Volt).GT.0.001d0*eV) then 
+          isvolt=.true.
+        else
+          isvolt=.false.
+          return        !not found and field set to zero in beginning
+        endif
 
+        Lvc = sqrt(dot(cell(1,ivc),cell(1,ivc),3))
 
-         if(dabs(Volt).GT.0.001d0*eV) then 
-            isvolt=.true.
-         else
-            isvolt=.false.
-            return              !not found and field set to zero in beginning
-         endif                  !found
-c
-
-         Lvc = sqrt(dot(cell(1,ivc),cell(1,ivc),3))
-
-         do ix=1,3
-            vcdir(ix) = cell(ix,ivc)/Lvc
-            field(ix) = -vcdir(ix)*Volt/Lvc
-         end do                 !i
+        do ix=1,3
+          vcdir(ix) = cell(ix,ivc)/Lvc
+          field(ix) = -vcdir(ix)*Volt/Lvc
+        end do
 
 
-         if(Node.eq.0) then        
+        if(Node.eq.0) then
           write(6,*)
           write(6,'(a,f6.3,a)')'TSvoltage: Bias ', Volt/eV,'V'
           write(6,'(a,3(f6.3,a))')
-     .         'TSvoltage: In unit cell direction = {',
-     .         vcdir(1),',',vcdir(2),',',vcdir(3),'}'
-         endif 
+     &         'TSvoltage: In unit cell direction = {',
+     &         vcdir(1),',',vcdir(2),',',vcdir(3),'}'
+        endif 
 
-      end if                    !frstme
+        dLvc = Lvc/max( meshG(ivc), 1 ) !
 
-c --------------------- end: first time only -----------------------
+        VoltL = 0.5d0*Volt     ! Left voltage
+        VoltR = -0.5d0*Volt    ! Right voltage
 
+!       field in [0;Lvc]: v = e*x = f*index
+        do ix = 1,3
+          f(ix) = 0d0         !init
+        enddo
+        f(ivc) = -Volt*dLvc/Lvc
+        v0 = VoltL
+      else if (isvolt) then
+!       Find quantities in mesh coordinates
+        meshl(1) = (meshLim(2,1) - meshLim(1,1)+1)*nsm
+        meshl(2) = (meshLim(2,2) - meshLim(1,2)+1)*nsm
+        meshl(3) = (meshLim(2,3) - meshLim(1,3)+1)*nsm
 
+!       Calculate starting point for grid
+        Xoffset = (meshLim(1,1)-1)*nsm
+        Yoffset = (meshLim(1,2)-1)*nsm
+        Zoffset = (meshLim(1,3)-1)*nsm
 
-
-c     Find quantities in mesh coordinates
-
-         dLvc = Lvc/max( mesh(ivc), 1 ) !
-
-         VoltL = 0.5d0*Volt     ! Left voltage
-         VoltR = -0.5d0*Volt    ! Right voltage
-
-c     field in [0;Lvc]: v = e*x = f*index
-         do ix = 1,3
-            f(ix) = 0d0         !init
-         enddo
-         f(ivc) = -Volt*dLvc/Lvc
-         v0 = VoltL
-
-      if (isvolt) then
-
-C Find local number of mesh points
-        meshnsm(1) = mesh(1)/nsm
-        meshnsm(2) = mesh(2)/nsm
-        meshnsm(3) = mesh(3)/nsm
-#ifdef MPI
-        call HowManyMeshPerNode(meshnsm,Node,Nodes,npl,meshl)
-        meshl(1) = meshl(1)*nsm
-        meshl(2) = meshl(2)*nsm
-        meshl(3) = meshl(3)*nsm
-#else
-        meshl(1) = mesh(1)
-        meshl(2) = mesh(2)
-        meshl(3) = mesh(3)
-#endif
-
-C Check that ProcessorY is a factor of the number of processors
-        if (mod(Nodes,ProcessorY).gt.0) then
-          write(6,'(''ERROR: ProcessorY must be a factor of the'',
-     .      '' number of processors!'')')
-          stop
-        endif
-        ProcessorZ = Nodes/ProcessorY
-
-C Calculate blocking sizes
-        BlockSizeY = (meshnsm(2)/ProcessorY)*nsm
-        NRemY = (mesh(2) - ProcessorY*BlockSizeY)/nsm
-        BlockSizeZ = (meshnsm(3)/ProcessorZ)*nsm
-        NRemZ = (mesh(3) - ProcessorZ*BlockSizeZ)/nsm
-
-C Calculate coordinates of current node in processor grid
-        Py = (Node/ProcessorZ)+1
-        Pz = Node - (Py - 1)*ProcessorZ + 1
-
-C Calculate starting point for grid
-        Yoffset = (Py-1)*BlockSizeY + nsm*min(Py-1,NRemY)
-        Zoffset = (Pz-1)*BlockSizeZ + nsm*min(Pz-1,NRemZ)
-
-c Add the electric field potential to the input potential
+!       Add the electric field potential to the input potential
         imesh = 0
         i30 = Zoffset - 1
         do i3 = 0,meshl(3)-1
@@ -1987,15 +1833,15 @@ c Add the electric field potential to the input potential
           i20 = Yoffset - 1
           do i2 = 0,meshl(2)-1
             i20 = i20 + 1
+            i10 = Xoffset - 1
             do i1 = 0,meshl(1)-1
+              i10   = i10 + 1
               imesh = imesh + 1
-              v(imesh) = v(imesh) + v0 + f(1)*i1 + f(2)*i20 + f(3)*i30
+              v(imesh) = v(imesh) + v0 + f(1)*i10 + f(2)*i20 + f(3)*i30
             enddo
           enddo
         enddo
-
       endif
-
       end subroutine TSvoltage2
 
 
@@ -2013,11 +1859,14 @@ c Add the electric field potential to the input potential
       USE parallel, only  : Node
       USE precision, only : dp       
 #ifdef MPI
-      USE mpi_siesta
+      USE mpi_siesta, only : MPI_Bcast, MPI_logical, MPI_Comm_World
 #endif
 
 ! TS Modules
-      USE m_ts_kpoints 
+      USE m_ts_kpoints, only : ts_kpoint, ts_nkpnt, ts_eff_kgrid_cutoff,
+     . ts_firm_displ, ts_kdispl, ts_gamma_scf, ts_kscell, ts_kweight, 
+     . ts_scf_kgrid_first_time, ts_spiral, ts_user_requested_mp,ts_maxk,
+     . setup_ts_scf_kscell, setup_ts_scf_kscell, ts_write_k_points
 
 ! Local Variables
       implicit none

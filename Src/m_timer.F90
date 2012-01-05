@@ -16,7 +16,8 @@
 ! Other used module procedures
 !  use sys,        only: die             ! Termination routine
 !  use m_walltime, only: wall_time       ! Wall time routine
-!  use m_io,       only: io_assign       ! Get and reserve an available IO unit
+!  use m_io,       only: io_assign, io_close  ! Get and reserve an available IO unit
+!  use m_io,       only: io_close        ! Free up IO unit after use
 !  use moreParallelSubs, only: copyFile  ! Copies a file across nodes
 !
 ! Used module parameters and variables
@@ -94,6 +95,7 @@
 !   Stops counting time for a program or code section
 ! INPUT:
 !   character(len=*) prog  ! Name of program of code section to be timed
+!                          ! prog ideally should be at least of length 4.
 ! USAGE:
 !   See GENERAL USAGE section
 ! BEHAVIOUR:
@@ -181,7 +183,7 @@ MODULE m_timer
 
 ! Used module procedures
   use sys,        only: die             ! Termination routine
-  use m_io,       only: io_assign       ! Get and reserve an available IO unit
+  use m_io,       only: io_assign, io_close ! Get and reserve an available IO unit
   use m_walltime, only: wall_time       ! Wall time routine
   use moreParallelSubs, only: copyFile  ! Copies a file across nodes
   use parallel,   only: parallel_init   ! Initialize parallel variables
@@ -299,7 +301,7 @@ subroutine print_report( prog )   ! Write a report of counted times
       ! Write header
       write(6,'(/,a,f12.3)') 'timer: Elapsed wall time (sec) =', wallTime
       write(6,'(a)') 'timer: CPU execution times (sec):'
-      write(6,'(/,a15,a9,3a12,2a9)') &
+      write(6,'(/,a15,a9,2a12,a9)') &
         'Routine        ', 'Calls', 'Time/call', 'Tot.time', '%'
 
       ! Write program times
@@ -307,7 +309,7 @@ subroutine print_report( prog )   ! Write a report of counted times
         progName    = progData(iProg)%name
         progCalls   = progData(iProg)%nCalls
         progTotTime = progData(iProg)%totTime
-        write(6,'(a15,i9,2f12.3,2f9.2)') &
+        write(6,'(a15,i9,2f12.3,f9.2)') &
           progName, progCalls, progTotTime/progCalls, &
                     progTotTime, progTotTime/totalTime*100
       end do ! iProg
@@ -395,10 +397,15 @@ subroutine print_report( prog )   ! Write a report of counted times
           'Calc: Sum, Avge, myNode, Avg/Max =', &
           sum(nodeCalTime), sum(nodeCalTime)/nNodes, totalCalTime, &
           sum(nodeCalTime)/nNodes / maxval(nodeCalTime)
+#ifdef MPI_TIMING
         write(iu,'(a,3f12.3,f8.3)') &
           'Comm: Sum, Avge, myNode, Avg/Max =', &
           sum(nodeComTime), sum(nodeComTime)/nNodes, totalComTime, &
           sum(nodeComTime)/nNodes / maxval(nodeComTime)
+#else
+	totalComTime = huge(1.0_dp) ! Avoid division by zero in prog table output
+	write(iu,'(a)') 'No communications time available. Compile with -DMPI_TIMING'
+#endif
         write(iu,'(a,3f12.3,f8.3)') &
           'Tot:  Sum, Avge, myNode, Avg/Max =', &
           sum(nodeTotTime), sum(nodeTotTime)/nNodes, totalTime, &
@@ -457,10 +464,15 @@ subroutine print_report( prog )   ! Write a report of counted times
 
       ! Write total communications time
       if (myNode==writerNode) then
+#ifdef MPI_TIMING
         write(iu,'(a15,i9,2(f12.3,f9.4))') &
          'MPI total      ', totalComCalls, &
           totalComTime, 1., totalComTime, totalComTime/totalTime
+#else
+	write(iu,'(a)') 'No communications time available. Compile with -DMPI_TIMING'
+#endif
       endif ! (myNode==writerNode)
+
 
 ! DEBUG
 !      ! Write time spent within final call to timer
@@ -487,7 +499,7 @@ subroutine print_report( prog )   ! Write a report of counted times
       endif ! (myNode==writerNode)
 
       ! Copy report file to the file system of root node
-      close( unit=iu )
+      call io_close( iu )
       if (reportUnit>0) then ! Append report to file already open
 #ifdef MPI
         ! Find report file name in node 0 and send it to writer node
@@ -639,6 +651,15 @@ subroutine timer_init()   ! Initialize timing
   time0 = treal
   nProgs = 0
 
+! (Re)initialize data array
+  progData(:)%name=' '           ! Name of program or code section
+  progData(:)%active=.false.     ! Is program time being counted?
+  progData(:)%nCalls=0           ! Number of calls made to the program
+  progData(:)%totTime=0          ! Total time for this program
+  progData(:)%comTime=0          ! Communications time
+  progData(:)%lastTime=0         ! Total time in last call
+  progData(:)%lastComTime=0      ! Communications time in last call
+
 end subroutine timer_init
 
 !===============================================================================
@@ -713,7 +734,7 @@ end subroutine timer_start
 subroutine timer_stop( prog )   ! Stop counting time for a program
 
   implicit none
-  character(len=*),intent(in):: prog  ! Name of program of code section
+  character(len=*),intent(in):: prog     ! Name of program of code section
 
 ! Internal variables
   integer :: iProg, jProg

@@ -79,16 +79,17 @@ C Internal variables ---------------------------------------------------
 
       INTEGER
      .  IUNIT, IX, JX, NPX_DEFECT, NPY_DEFECT, NPZ_DEFECT,
-     .  IND1, IND2, IND3
+     .  IND1, IND2, IND3, i
 
       real(dp)
      .  ORIGIN(3), XDIR(3)
 
-      LOGICAL 
-     .  LEQI, COLIN
+      LOGICAL COLIN
 
-      EXTERNAL 
-     .  LEQI, COLINEAR
+      EXTERNAL COLINEAR
+
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
 
       DATA ORIGIN /0.D0,0.D0,0.D0/
       DATA XDIR   /1.D0,0.D0,0.D0/
@@ -174,25 +175,59 @@ C Internal variables ---------------------------------------------------
        STOP
       ENDIF
 
-      IF ( FDF_BLOCK('Denchar.CompNormalVector',IUNIT) ) THEN
-        READ(IUNIT,*)(NORMAL(IX),IX=1,3)
+      IF ( FDF_BLOCK('Denchar.CompNormalVector',bfdf) ) THEN
+         if (.not. fdf_bline(bfdf, pline))
+     $        call die("No Normal vector")
+         if (.not. (fdf_bmatch(pline, 'vvv') )) then
+            call die ('CompNormalVector: Error in syntax')
+         endif
+         do ix = 1,3
+            normal(ix) = fdf_bvalues(pline,ix)
+         enddo
       ENDIF
 
-      IF ( FDF_BLOCK('Denchar.Comp2Vectors',IUNIT) ) THEN
-        READ(IUNIT,*)(DIRVER1(IX),IX=1,3)
-        READ(IUNIT,*)(DIRVER2(IX),IX=1,3)
+      IF ( FDF_BLOCK('Denchar.Comp2Vectors',bfdf) ) THEN
+           if (.not. fdf_bline(bfdf, pline))
+     $             call die("No 1st vector")
+           if (.not. (fdf_bmatch(pline, 'vvv') )) then
+              call die ('Comp2Vectors: Error in syntax')
+           endif
+           do ix = 1,3
+              dirver1(ix) = fdf_bvalues(pline,ix)
+           enddo
+           if (.not. fdf_bline(bfdf, pline))
+     $             call die("No 2nd vector")
+           if (.not. (fdf_bmatch(pline, 'vvv') )) then
+              call die ('Comp2Vectors: Error in syntax')
+           endif
+           do ix = 1,3
+              dirver2(ix) = fdf_bvalues(pline,ix)
+           enddo
       ENDIF
 
-      IF ( FDF_BLOCK('Denchar.Coor3Points',IUNIT) ) THEN
-        READ(IUNIT,*)(COORPO(1,IX),IX=1,3)
-        READ(IUNIT,*)(COORPO(2,IX),IX=1,3)
-        READ(IUNIT,*)(COORPO(3,IX),IX=1,3)
+      IF ( FDF_BLOCK('Denchar.Coor3Points',bfdf) ) THEN
+         do i = 1, 3
+            if (.not. fdf_bline(bfdf, pline))
+     $           call die("Not enough points in Coor3")
+            if (.not. (fdf_bmatch(pline, 'vvv') )) then
+               call die ('Coor3Points: Error in syntax')
+            endif
+            do ix = 1,3
+               coorpo(i,ix) = fdf_bvalues(pline,ix)
+            enddo
+         enddo
       ENDIF
 
-      IF ( FDF_BLOCK('Denchar.Indices3Atoms',IUNIT) ) THEN
-        READ(IUNIT,*)IND1, IND2, IND3
+      IF ( FDF_BLOCK('Denchar.Indices3Atoms',bfdf) ) THEN
+            if (.not. fdf_bline(bfdf, pline))
+     $           call die("No lines in Indices3Atoms")
+            if (.not. (fdf_bmatch(pline, 'iii') )) then
+               call die ('Indices3Atoms: Error in syntax')
+            endif
+            ind1 = fdf_bvalues(pline,1)
+            ind2 = fdf_bvalues(pline,2)
+            ind3 = fdf_bvalues(pline,3)
       ENDIF
-
 
 
       IF ( IOPTION .EQ. 4 ) THEN
@@ -219,12 +254,26 @@ C Check if the three points are colinear -------------------------------
       ENDIF
  
 
-      IF ( FDF_BLOCK('Denchar.PlaneOrigin',IUNIT) ) THEN
-        READ(IUNIT,*)(ORIGIN(IX),IX=1,3)
+      IF ( FDF_BLOCK('Denchar.PlaneOrigin',bfdf) ) THEN
+         if (.not. fdf_bline(bfdf, pline))
+     $        call die("No Plane Origin")
+         if (.not. (fdf_bmatch(pline, 'vvv') )) then
+            call die ('Plane Origin: Error in syntax')
+         endif
+         do ix = 1,3
+            origin(ix) = fdf_bvalues(pline,ix)
+         enddo
       ENDIF
 
-      IF ( FDF_BLOCK('Denchar.X_Axis',IUNIT) ) THEN
-        READ(IUNIT,*)(XDIR(IX),IX=1,3)
+      IF ( FDF_BLOCK('Denchar.X_Axis',bfdf) ) THEN
+         if (.not. fdf_bline(bfdf, pline))
+     $        call die("No X_Axis")
+         if (.not. (fdf_bmatch(pline, 'vvv') )) then
+            call die ('X_Axis: Error in syntax')
+         endif
+         do ix = 1,3
+            xdir(ix) = fdf_bvalues(pline,ix)
+         enddo
       ENDIF
 
       IF (IOPTION .LT. 3) THEN
@@ -265,6 +314,17 @@ C   Iunitcd = 3 => Multiply by volume unit cell (in bohrs**3)
       ELSEIF( IUNITCD .EQ. 3 ) THEN
         ARMUNI = VOLUME
       ENDIF
+
+      CONTAINS
+
+      subroutine die(str)
+      character(len=*), intent(in), optional:: str
+      if (present(str)) then
+         write(6,"(a)") str
+         write(0,"(a)") str
+      endif
+      STOP
+      end subroutine die
 
       END
 

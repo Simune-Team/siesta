@@ -17,7 +17,7 @@
 VPATH:=$(shell pwd)/../../Src
 OBJDIR=Obj
 #
-all: grid2cdf cdf2xsf cdf2grid grid2val grid2cube
+all: grid2cdf cdf2xsf cdf2grid grid2val grid2cube grid_rotate
 #
 include ../../$(OBJDIR)/arch.make
 #
@@ -66,6 +66,14 @@ grid2val: grid2val.o
 #------------------
 grid2cube: grid2cube.o
 	$(FC) $(LDFLAGS) -o $@ grid2cube.o 
+#
+#------------------
+grid_rotate: grid_rotate.o
+	$(FC) $(LDFLAGS) -o $@ grid_rotate.o
+#
+#------------------
+grid_supercell: grid_supercell.o
+	$(FC) $(LDFLAGS) -o $@ grid_supercell.o
 #
 #------------------
 clean: 

@@ -76,6 +76,7 @@ C    G(NR) should be replaced by zero for any other use. NOTICE: this
 C    is commented out in this version!
 C *********************************************************************
 C Written by J.M.Soler. August 1996.
+! Work arrays handling by Rogeli Grima, ca 2009
 C *********************************************************************
 
       MODULE m_radfft
@@ -83,14 +84,24 @@ C *********************************************************************
       USE precision, only: dp        ! Double precision real kind
       USE m_bessph,  only: bessph    ! Spherical Bessel functions
       USE m_recipes, only: four1     ! 1D fast Fourier transform
+      USE alloc,     only: re_alloc, de_alloc
 !      USE m_timer,   only: timer_start  ! Start counting CPU time
 !      USE m_timer,   only: timer_stop   ! Stop counting CPU time
 
       implicit none
 
       PUBLIC :: radfft               ! Radial fast Fourier transform
+      PUBLIC :: reset_radfft         ! Deallocates work arrays
 
       PRIVATE
+
+      ! Work arrays held in module to minimize reallocations
+      ! Note that we avoid "automatic" arrays, which may cause stack problems
+      real(dp), pointer :: GG(:)
+      real(dp), pointer :: FN(:,:)
+      real(dp), pointer :: P(:,:,:)
+      integer           :: MAXL = -1
+      integer           :: MAXNR = -1
 
       CONTAINS
 
@@ -113,12 +124,24 @@ C -------------------------------------------------------------------
 C Internal variable types and dimensions ----------------------------
       INTEGER  ::  I, IQ, IR, JR, M, MQ, N, NQ
       real(dp) ::  C, DQ, DR, FR, PI, R, RN, Q, QMAX
-      real(dp) ::  GG(0:2*NR), FN(2,0:2*NR), P(2,0:L,0:L)
+!!      real(dp) ::  GG(0:2*NR), FN(2,0:2*NR), P(2,0:L,0:L)
 C -------------------------------------------------------------------
 
 C Start time counter ------------------------------------------------
 *     CALL TIMER_START( 'RADFFT' )
-C -------------------------------------------------------------------
+C
+C     Allocate local memory 
+      if (MAXL.eq.-1) nullify(P)
+      if (L.GT.MAXL) then
+        call re_alloc( P, 1, 2, 0, L, 0, L, 'P', 'RADFFT' )
+        MAXL=L
+      endif
+      if (MAXNR.eq.-1) nullify(FN,GG)
+      if (NR.GT.MAXNR) then
+        call re_alloc( FN, 1, 2, 0, 2*NR, 'FN', 'RADFFT' )
+        call re_alloc( GG, 0, 2*NR, 'GG', 'RADFFT' )
+        MAXNR=NR
+      endif
 
 C Find some constants -----------------------------------------------
       PI = 4.D0 * ATAN( 1.D0 )
@@ -256,6 +279,15 @@ C Stop time counter ------------------------------------------------
 C -------------------------------------------------------------------
 
       END SUBROUTINE radfft
+
+      SUBROUTINE RESET_RADFFT( )
+      implicit none
+      call de_alloc( P, 'P', 'RADFFT' )
+      call de_alloc( FN, 'FN', 'RADFFT' )
+      call de_alloc( GG, 'GG', 'RADFFT' )
+      MAXL  = -1
+      MAXNR = -1
+      END SUBROUTINE RESET_RADFFT
 
       END MODULE m_radfft
 

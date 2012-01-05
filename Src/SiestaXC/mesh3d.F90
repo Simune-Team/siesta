@@ -647,9 +647,9 @@ MODULE mesh3D
   use precision, only: gp=>grid_p      ! Grid-data real precision type
   use parallel,  only: myNode=>node    ! This process node
   use parallel,  only: totNodes=>nodes ! Total number of processor nodes
-! BEGIN DEBUG
+#ifdef DEBUG_XC
   use debugXC,   only: udebug          ! Output file unit for debug info
-! END DEBUG
+#endif /* DEBUG_XC */
 
 ! Used MPI procedures and types
 #ifdef MPI
@@ -940,7 +940,7 @@ subroutine associateMeshTask( taskID, distrID1, distrID2 )
 ! Mark task as already associated
   task%associated = .true.
 
-! DEBUG
+#ifdef DEBUG_XC
 !  if (present(distrID2)) then
 !    write(udebug,'(a,3(2x,2i4))') myName//'taskID,iTask,distrID,iDistr=', &
 !      taskID, iTask, distrID1, iDistr1, distrID2, iDistr2
@@ -948,7 +948,7 @@ subroutine associateMeshTask( taskID, distrID1, distrID2 )
 !    write(udebug,'(a,3(2x,2i4))') myName//'taskID,iTask,distrID,iDistr=', &
 !      taskID, iTask, distrID1, iDistr1
 !  end if
-! END DEBUG
+#endif /* DEBUG_XC */
 
 end subroutine associateMeshTask
 
@@ -988,10 +988,10 @@ subroutine commonBox( nMesh, aBox, bBox, aComBox, bComBox, sizeSum, nParts )
   call unitCellParts( nMesh, bBox, bPartBox, bPartBoxFUC, bParts )
 
 ! Find intersection boxes common to aBox and bBox
-! BEGIN DEBUG
+#ifdef DEBUG_XC
 !  write(udebug,'(a,3(2i4,2x))') myName//'       aBox=', aBox
 !  write(udebug,'(a,3(2i4,2x))') myName//'       bBox=', bBox
-! END DEBUG
+#endif /* DEBUG_XC */
   nParts = 0
   sizeSum(0) = 0
   do bPart = 1,bParts
@@ -1016,7 +1016,7 @@ subroutine commonBox( nMesh, aBox, bBox, aComBox, bComBox, sizeSum, nParts )
                             bPartBox(:,:,bPart) - bPartBoxFUC(:,:,bPart)
       bComBox(1,:,nParts) = bComBox(1,:,nParts) - bBox(1,:)
       bComBox(2,:,nParts) = bComBox(2,:,nParts) - bBox(1,:)
-! BEGIN DEBUG
+#ifdef DEBUG_XC
 !      write(udebug,'(a,3(2i4,2x))') myName//'   aPartBox=', &
 !                                                   aPartBox(:,:,aPart)
 !      write(udebug,'(a,3(2i4,2x))') myName//'     comBox=', &
@@ -1025,7 +1025,7 @@ subroutine commonBox( nMesh, aBox, bBox, aComBox, bComBox, sizeSum, nParts )
 !                                                    aComBox(:,:,nParts)
 !      write(udebug,'(a,3(2i4,2x))') myName//'    bComBox=', &
 !                                                    bComBox(:,:,nParts)
-! END DEBUG
+#endif /* DEBUG_XC */
     end if
   end do ! aPart
   end do ! bPart
@@ -1088,7 +1088,11 @@ subroutine divideBox1D( box, nParts, partBox, blockSize, workload )
   implicit none
   integer,          intent(in) :: box(2)
   integer,          intent(in) :: nParts
-  integer,          intent(out):: partBox(2,nParts)
+!
+! Avoid the creation of a temporary array by passing descriptor info
+!!!  integer,          intent(out):: partBox(2,nParts)
+  integer,          intent(out):: partBox(:,:)  
+!
   integer, optional,intent(in) :: blockSize
   real(gp),optional,intent(in) :: workload(0:)
 
@@ -1128,6 +1132,7 @@ subroutine divideBox1D( box, nParts, partBox, blockSize, workload )
     partWkld = wlSum / nParts
 
     ! Loop on parts
+    partBox(1,1) = box(1)
     do iPart = 1,nParts-1
       last = 0  ! Last point with nonzero workload (or zero if none yet)
       do i = 0,boxSize-1
@@ -1158,6 +1163,7 @@ subroutine divideBox1D( box, nParts, partBox, blockSize, workload )
         if (nextPart) exit ! i loop
       end do ! i
     end do ! iPart
+    partBox(2,nParts) = box(2)
 
   else ! (.not.present(workload)) => Divide box uniformly
 
@@ -1232,10 +1238,10 @@ subroutine divideBox3D( nMesh, wlDistr, workload, box, &
   prjWkld = 0
   call projectMeshData( nMesh, wlDistr, workload, box, prjWkld )
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
 !  write(udebug,*) myName//'projected workload:'
-!  write(udebug,'(i4,3f12.6)') (i,prjWkld(:,i),i=0,maxval(boxShape)-1)
-! END DEBUG
+!  write(udebug,'(i4,3f15.6)') (i,prjWkld(:,i),i=0,maxval(boxShape)-1)
+#endif /* DEBUG_XC */
 
 ! Find total workload in box
   wlSum = sum(prjWkld) / 3  ! Since the sum of each projection must be equal
@@ -1276,14 +1282,17 @@ subroutine divideBox3D( nMesh, wlDistr, workload, box, &
                       prjWkld(axis,0:boxShape(axis)-1) )
   end if ! (wlSum==0._dp)
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
 ! Check that all box limits are consistent
   if ( any(box(1,axis) > partBox(1,axis,:)) .or. &
        any(partBox(2,axis,1:nParts-1) >= partBox(1,axis,2:nParts)) .or. &
        any(partBox(1,axis,:) > partBox(2,axis,:)) .or. &
-       any(partBox(2,axis,:) > box(2,axis)) ) &
+       any(partBox(2,axis,:) > box(2,axis)) ) then
+    write(udebug,'(a,3(2i6,2x))') errHead//'box=', box
+    write(udebug,'(a,/,(3(2i6,2x)))') errHead//'partBox=', partBox
     call die(errHead//'inconsistent partBox limits')
-! END DEBUG
+  end if
+#endif /* DEBUG_XC */
 
   deallocate( prjWkld )
 
@@ -1325,16 +1334,20 @@ subroutine fftMeshDistr( nMesh, fftDistr, axisDistr )
 
 ! Check if the input FFT distribution IDs are already defined as such
   iDistr = indexDistr( fftDistr )
-  if (iDistr>0) then
+  if (iDistr>0 .and. iDistr<=maxDistr) then
     distr => storedMeshDistr(iDistr)
     if (distr%defined .and. all(distr%nMesh==nMesh)) then
       found = .true.  ! But now check the axis distributions
       if (present(axisDistr)) then
         do axis = 1,3
           iDistr = indexDistr( axisDistr(axis) )
-          distr => storedMeshDistr(iDistr)
-          if (.not.distr%defined .or. any(distr%nMesh/=nMesh)) &
+          if (iDistr>0 .and. iDistr<=maxDistr) then
+            distr => storedMeshDistr(iDistr)
+            if (.not.distr%defined .or. any(distr%nMesh/=nMesh)) &
+              found = .false.
+          else
             found = .false.
+          end if
         end do ! axis
       end if ! (present(axisDistr))
       if (found) return ! Since the input values are still valid
@@ -1345,9 +1358,9 @@ subroutine fftMeshDistr( nMesh, fftDistr, axisDistr )
   call optimizeNodeDistr( nMesh, totNodes, axisNodes )
 
 ! Create homogeneous 3D distribution
-! DEBUG
+#ifdef DEBUG_XC
 !  write(udebug,*) myName//'calling setMeshDistr with fftDistr'
-! END DEBUG
+#endif /* DEBUG_XC */
   call setMeshDistr( fftDistr, nMesh, nNodesX=axisNodes(1), &
                      nNodesY=axisNodes(2), nNodesZ=axisNodes(3) )
 
@@ -1368,10 +1381,10 @@ subroutine fftMeshDistr( nMesh, fftDistr, axisDistr )
   nodeSpan(2) = axisNodes(3)
   nodeSpan(1) = axisNodes(3) * axisNodes(2)
 
-! DEBUG
+#ifdef DEBUG_XC
 !    write(udebug,'(a,3i4)') myName//'axisNodes=', axisNodes
 !    write(udebug,'(a,3i4)') myName//'nodeSpan=', nodeSpan
-! END DEBUG
+#endif /* DEBUG_XC */
 
 ! Allocate a small temporary array
   allocate( subBox(2,0:maxval(axisNodes)-1,3) )
@@ -1425,7 +1438,7 @@ subroutine fftMeshDistr( nMesh, fftDistr, axisDistr )
       end do ! jNode2
       end do ! jNode3
 
-! DEBUG
+#ifdef DEBUG_XC
 !      write(udebug,'(a,2i4,3(2x,2i4))') &
 !        myName//'axis1,node0,box0=', axis1, node0, box0
 !      write(udebug,'(a,3i4)') myName//'boxNodes=', boxNodes
@@ -1437,7 +1450,7 @@ subroutine fftMeshDistr( nMesh, fftDistr, axisDistr )
 !        write(udebug,'(a,i4,2x,3i4)') &
 !          myName//'axis3,subBox=', axis3, subBox(:,jNode3,3)
 !      end do
-! END DEBUG
+#endif /* DEBUG_XC */
 
     end do ! iNode2
     end do ! iNode3
@@ -1445,13 +1458,13 @@ subroutine fftMeshDistr( nMesh, fftDistr, axisDistr )
     ! Check if this distribution was already defined
     call reduceDistr( axisDistr(axis1) )
 
-! DEBUG
+#ifdef DEBUG_XC
     iDistr = indexDistr( axisDistr(axis1) )
     distr => storedMeshDistr(iDistr)
 !    write(udebug,'(a,3i4)') myName//'axis1,axis2,axis3=', axis1, axis2, axis3
     write(udebug,'(a,2i6,3(2x,2i4))') myName//'distrID,iDistr,myBox=', &
       axisDistr(axis1), iDistr, distr%box(:,:,myNode)
-! END DEBUG
+#endif /* DEBUG_XC */
 
   end do ! axis1
 
@@ -1540,10 +1553,10 @@ subroutine freeMeshTask( taskID )
   task => storedMeshTask(iTask) ! Just a shorter name
   if (.not.task%defined) return
 
-! DEBUG
+#ifdef DEBUG_XC
 !  write(udebug,'(a,4i6)') &
 !    myName//'taskID,iTask,task%distr=', taskID, iTask, task%distr
-! END DEBUG
+#endif /* DEBUG_XC */
 
 ! Erase ID from the task ID list
   do iID = 1,maxTaskID
@@ -1592,11 +1605,13 @@ subroutine gatherBoxes( box, boxes )
   integer,intent(out):: boxes(2,3,0:totNodes-1)  ! All node's boxes
 
   integer,allocatable:: buffer(:)
+  integer :: box1d(6)    ! To avoid the creation of a temporary array
 
 #ifdef MPI
 ! Gather the boxes of all nodes
   allocate( buffer(6*totNodes) )
-  call MPI_AllGather( reshape(box,(/6/)), 6, MPI_Integer, &
+  box1d(1:6) = reshape(box,(/6/))
+  call MPI_AllGather( box1d , 6, MPI_Integer, &
                       buffer, 6, MPI_Integer, MPI_COMM_WORLD, MPIerror )
   boxes = reshape( buffer, (/2,3,totNodes/) )
   deallocate( buffer )
@@ -1719,9 +1734,9 @@ subroutine initDistr( distrID, nMesh, firstNode, nNodes )
   distr%box(1,:,:) = 0
   distr%box(2,:,:) = -1
 
-! DEBUG
+#ifdef DEBUG_XC
 ! write(udebug,'(a,2i6)') myName//'distrID,iDistr=', distrID, iDistr
-! END DEBUG
+#endif /* DEBUG_XC */
 
 end subroutine initDistr
 
@@ -1785,9 +1800,9 @@ subroutine initTask( taskID )
   task%dstBox(1,:,:) = 0
   task%dstBox(2,:,:) = -1
 
-! DEBUG
+#ifdef DEBUG_XC
 ! write(udebug,'(a,2i6)') myName//'taskID, iTask=', taskID, iTask
-! END DEBUG
+#endif /* DEBUG_XC */
 
 end subroutine initTask
 
@@ -1997,10 +2012,10 @@ subroutine optimizeTransferOrder( nNodes, node, nTrsf, trsfNode, trsfDir )
 ! Trap a trivial case, in which there is nothing to optimize
   if (maxTrsf < 2) return
 
-! DEBUG
+#ifdef DEBUG_XC
 !  write(udebug,'(a,2i6)') myName//'nTrsf,maxTrsf=', nTrsf, maxTrsf
 !  if (maxTrsf > 2*nNodes) call die(errHead//'too many transfers per node')
-! END DEBUG
+#endif /* DEBUG_XC */
 
 ! Allocate arrays for the input transfer sequences of all nodes
   call re_alloc( myTrsf, 1,maxTrsf, name=myName//'myTrsf' )
@@ -2073,9 +2088,9 @@ subroutine optimizeTransferOrder( nNodes, node, nTrsf, trsfNode, trsfDir )
                        name=myName//'outTrsf', copy=.true. )
       end do realloc_loop
 
-! DEBUG
+#ifdef DEBUG_XC
       if (.not.found) call die(errHead//'parameter incrFact too small')
-! END DEBUG
+#endif /* DEBUG_XC */
     end do ! iTrsf
 
     ! Copy transfer sequence to output arrays
@@ -2085,10 +2100,10 @@ subroutine optimizeTransferOrder( nNodes, node, nTrsf, trsfNode, trsfDir )
       ! The -1 is to change back from node range (1:nNodes) to (0:nNodes-1)
       trsfNode = abs( myTrsf(1:nTrsf) ) - 1
       trsfDir = sign( 1, myTrsf(1:nTrsf) )
-! DEBUG
+#ifdef DEBUG_XC
 !      write(udebug,'(a,20i4)') myName//' inTrsf=', inTrsf(1:nTrsf,myNode)
 !      write(udebug,'(a,20i4)') myName//'outTrsf=', myTrsf(1:nTrsf)
-! END DEBUG
+#endif /* DEBUG_XC */
       exit ! i1 loop
     end if
 
@@ -2243,10 +2258,12 @@ subroutine projectMeshData( nMesh, srcDistr, srcData, prjBox, prjData, task )
 !  if (any( shape(srcData) /= srcMesh )) &
 !    call die( errHead//'incorrect shape of srcData array' )
   if (any( shape(srcData) /= srcMesh )) then
+#ifdef DEBUG_XC
     write(udebug,'(a,i6,3(2x,2i4))') &
       errHead//'srcDistr,srcBox =', srcDistr, srcBox
     write(udebug,'(a,3i6,3x,3i6)') &
       errHead//'shape(srcData),srcMesh =', shape(srcData), srcMesh
+#endif /* DEBUG_XC */
     call die( errHead//'incorrect shape of srcData array' )
   end if
   if (size(prjData,2) < maxval(prjBox(2,:)-prjBox(1,:)+1)) &
@@ -2282,16 +2299,20 @@ subroutine redistributeMeshData( srcDistr, srcData, dstDistr, dstData, task )
   integer,intent(inout),optional:: task   ! ID of communication task
 
   character(len=*),parameter:: myName = 'redistributeMeshData '
+  character(len=*),parameter:: errHead = myName//'ERROR: '
   integer:: dstBox(2,3), dstMesh(3), iDistr, nData, nMesh(3)
 
 ! For serial execution, avoid allocating a new array
   if (srcDistr==0 .and. dstDistr==0) then
     dstData => srcData
     return
+  else if (srcDistr<=0 .or. dstDistr<=0) then
+    call die(errHead//'invalid srcDistr or dstDistr')
   end if
 
 ! Find mesh box of node in new distribution
   iDistr = indexDistr( dstDistr )
+  if (iDistr<=0 .or. iDistr>maxDistr) call die(errHead//'invalid dstDistr')
   nMesh = storedMeshDistr(iDistr)%nMesh
   call myMeshBox( nMesh, dstDistr, dstBox )
   dstMesh(:) = dstBox(2,:) - dstBox(1,:) + 1
@@ -2299,7 +2320,7 @@ subroutine redistributeMeshData( srcDistr, srcData, dstDistr, dstData, task )
 ! Allocate destination data array
   nData = size(srcData,4)
   call re_alloc( dstData, 0,dstMesh(1)-1, 0,dstMesh(2)-1, 0,dstMesh(3)-1, &
-                 1,nData, routine=myName, copy=.false., shrink=.true. )
+                 1,nData, name=myName//'dstData', copy=.false., shrink=.true. )
 
 ! Copy srcData to dstData
   if ( sameMeshDistr(srcDistr,dstDistr) ) then
@@ -2359,10 +2380,10 @@ subroutine reduceData( nMesh, srcBox, srcData, dstBox, dstData, prjData, &
   real(gp),pointer:: trsfBuff(:)=>null()
   type(taskType),pointer:: task
 
-! DEBUG
+#ifdef DEBUG_XC
 !  write(udebug,'(a,i4,3(2x,2i4),2x,3(2x,2i4))') &
 !    myName//'myNode+1,srcBox,dstBox=', myNode+1, srcBox, dstBox
-! END DEBUG
+#endif /* DEBUG_XC */
 
 ! Check that one of dstData or prjData is present
   if (.not.present(dstData) .and. .not.present(prjData)) return
@@ -2471,14 +2492,14 @@ subroutine reduceData( nMesh, srcBox, srcData, dstBox, dstData, prjData, &
     end if
   end if
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
 !  do iNode = 0,totNodes-1
 !    call nodeMeshBox( nMesh, srcDistr, iNode, srcBox )
 !    write(udebug,'(a,i4,2x,3(2i4,2x),3(2i4,2x))') &
 !      myName//'node,srcBox,dstBox=', &
 !      iNode, srcBoxes(:,:,iNode), dstBoxes(:,:,iNode)
 !  end do
-! END DEBUG
+#endif /* DEBUG_XC */
 
 ! Find the order of inter-node transfers
   nTrsf = 2*(totNodes-1) ! One send and one receive to/from each other node
@@ -2491,10 +2512,10 @@ subroutine reduceData( nMesh, srcBox, srcData, dstBox, dstData, prjData, &
     call all2allTransferOrder( totNodes, myNode, nTrsf, trsfNode, trsfDir )
   end if ! (taskOptimized)
 
-! DEBUG
+#ifdef DEBUG_XC
 !  write(udebug,'(a,i4,2x,20i4)') myName//'myNode+1,Trsfs=', &
 !    myNode+1, trsfDir(1:nTrsf)*(trsfNode(1:nTrsf)+1)
-! END DEBUG
+#endif /* DEBUG_XC */
 
 ! Find required size of buffer to transfer data
   trsfSize = 0
@@ -2541,13 +2562,13 @@ subroutine reduceData( nMesh, srcBox, srcData, dstBox, dstData, prjData, &
         cycle ! iTrsf loop
       end if ! (nParts>0)
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
       ! Check buffer size
       if (present(dstData) .and. sizeSum(nParts) > size(trsfBuff)) &
         call die(errHead//'size(trsfBuff) too small')
-! END DEBUG
+#endif /* DEBUG_XC */
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
 !      if (nParts>0) then
 !        write(udebug,'(a,2i6)') myName//'srcNode,dstNode=', myNode, dstNode
 !        write(udebug,'(a,2i6)') myName//'        sizeSum=',sizeSum(0:nParts)
@@ -2555,16 +2576,14 @@ subroutine reduceData( nMesh, srcBox, srcData, dstBox, dstData, prjData, &
 !        write(udebug,'(a,3(2i4,2x))') myName//'   dstBox=', &
 !                                         dstBoxes(:,:,dstNode)
 !      end if
-! END DEBUG
 
-! BEGIN DEBUG
 !      do iPart = 1,nParts
 !        write(udebug,'(a,3(2i4,2x))') myName//'srcComBox=', &
 !          ((srcComBox(i,ix,iPart),i=1,2),ix=1,3)
 !        write(udebug,'(a,3(2i4,2x))') myName//'dstComBox=', &
 !          ((dstComBox(i,ix,iPart),i=1,2),ix=1,3)
 !      end do ! iPart
-! END DEBUG
+#endif /* DEBUG_XC */
 
       ! Copy data from each part of common box to a transfer buffer
       if (present(dstData)) then
@@ -2590,17 +2609,18 @@ subroutine reduceData( nMesh, srcBox, srcData, dstBox, dstData, prjData, &
           ! Find projection of srcData in comBox
           call projection( nMesh, srcBox, srcData(:,:,:,1), comBox, prjBuff )
           ! Copy projection data onto a transfer buffer
+          ! AG: Work around gfortran bug: specify 0 lbound in reshape
           trsfBuff(trsfSize+1:trsfSize+3*maxMesh) = &
-             reshape( prjBuff, (/3*maxMesh/) )
+             reshape( prjBuff(:,0:), (/3*maxMesh/) )
           trsfSize = trsfSize + 3*maxMesh
         end do ! iPart
       end if ! (present(prjData))
 
-! DEBUG
+#ifdef DEBUG_XC
 !      write(udebug,'(a,2i4,3(2x,2i4),2x,3(2x,2i4),i8)') &
 !        myName//' myNode,dstNode, myBox,dstBox,trsfSize=', &
 !        myNode+1, dstNode+1, srcBox, dstBoxes(:,:,dstNode), trsfSize
-! END DEBUG
+#endif /* DEBUG_XC */
 
       ! Send data buffer
       if (trsfSize>0) &
@@ -2626,29 +2646,27 @@ subroutine reduceData( nMesh, srcBox, srcData, dstBox, dstData, prjData, &
         cycle ! iTrsf loop
       end if ! (nParts>0)
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
       ! Check buffer size
       if (present(dstData) .and. sizeSum(nParts)>size(trsfBuff)) &
         call die(errHead//'size(trsfBuff) too small')
-! END DEBUG
+#endif /* DEBUG_XC */
 
-! BEGIN DEBUG
+#ifdef DEBUG_XC
 !      if (nParts>0) then
 !        write(udebug,'(a,2i6)') myName//'srcNode,dstNode=', srcNode, myNode
 !        write(udebug,'(a,2i6)') myName//'        sizeSum=',sizeSum(0:nParts)
 !        write(udebug,'(a,3(2i4,2x))') myName//'   srcBox=', srcBox
 !        write(udebug,'(a,3(2i4,2x))') myName//'   dstBox=', dstBox
 !      end if
-! END DEBUG
 
-! BEGIN DEBUG
 !      do iPart = 1,nParts
 !        write(udebug,'(a,3(2i4,2x))') myName//'srcComBox=', &
 !          ((srcComBox(i,ix,iPart),i=1,2),ix=1,3)
 !        write(udebug,'(a,3(2i4,2x))') myName//'dstComBox=', &
 !          ((dstComBox(i,ix,iPart),i=1,2),ix=1,3)
 !      end do ! iPart
-! END DEBUG
+#endif /* DEBUG_XC */
 
       ! Receive data buffer
       trsfSize = 0
@@ -2658,11 +2676,11 @@ subroutine reduceData( nMesh, srcBox, srcData, dstBox, dstData, prjData, &
         call MPI_Recv( trsfBuff(1:trsfSize), trsfSize, MPI_grid_real, &
                        srcNode, MPItag, MPI_COMM_WORLD, MPIstatus, MPIerror )
 
-! DEBUG
+#ifdef DEBUG_XC
 !      write(udebug,'(a,2i4,3(2x,2i4),2x,3(2x,2i4),i8)') &
 !        myName//'srcNode, myNode,srcBox, myBox,trsfSize=', &
 !        srcNode+1, myNode+1, srcBoxes(:,:,srcNode), dstBox, trsfSize
-! END DEBUG
+#endif /* DEBUG_XC */
 
       ! Copy buffer data for each part of common box to destination array
       if (present(dstData)) then
@@ -2714,11 +2732,11 @@ subroutine reduceData( nMesh, srcBox, srcData, dstBox, dstData, prjData, &
     task%trsfNode = trsfNode
     task%trsfDir = trsfDir
     task%optimized = .true.
-! DEBUG
+#ifdef DEBUG_XC
 !    write(udebug,'(a,4i4,/,(20i4))') &
 !      myName//'taskID,iTask,distr1,distr2,Trsfs=', &
 !      taskID, iTask, task%distr, trsfDir(1:nTrsf)*trsfNode(1:nTrsf)
-! END DEBUG
+#endif /* DEBUG_XC */
   end if
 
   ! Deallocations
@@ -2749,6 +2767,11 @@ subroutine reduceDistr( distrID )
 
 ! Find the new distribution
   iDistr = indexDistr( distrID )
+  if (iDistr==0) then
+    return
+  else if (iDistr<0 .or. iDistr>maxDistr) then
+    call die(errHead//'invalid distrID')
+  end if
   newDistr => storedMeshDistr(iDistr)
 
 ! Compare it with all previous distributions
@@ -2764,10 +2787,10 @@ subroutine reduceDistr( distrID )
     if (any(oldDistr%box(:,:,:)/=newDistr%box(:,:,:))) cycle
     ! If this point is reached, both distributions are equal.
 
-! DEBUG
+#ifdef DEBUG_XC
 !    write(udebug,'(a,3i4)') &
 !      myName//'distrID,oldDistr,newDistr=', distrID, jDistr, iDistr
-! END DEBUG
+#endif /* DEBUG_XC */
 
     ! Free new distribution
     call freeMeshDistr( distrID )
@@ -2808,6 +2831,8 @@ logical function sameMeshDistr( ID1, ID2 )
     else                       ! Both distr. are defined
       if (i1==i2) then         ! Different IDs but same distr.
         sameMeshDistr = .true.
+      else if (i1==0 .or. i2==0) then ! Since 0 is valid only in serial mode
+        sameMeshDistr = .false.
       else                     ! Different but possibly equivalent distr.
         distr1 => storedMeshDistr(i1)
         distr2 => storedMeshDistr(i2)
@@ -2961,16 +2986,16 @@ subroutine setMeshDistr( distrID, nMesh, box, firstNode, nNodes, &
           myPart = (myNode-node0-myGroup*groupSize) / partSize ! My part within 
                                                                ! my group
           axis = 0  ! So that it will be chosen by divideBox3D
-! DEBUG
+#ifdef DEBUG_XC
 !          write(udebug,'(a,3(2x,2i4))') myName//'dividing box=', myBox
-! END DEBUG
+#endif /* DEBUG_XC */
           call divideBox3D( nMesh, wlDistr, workload, myBox, &
                               nParts, blockSize, axis, partBox )
           myBox(:,:) = partBox(:,:,myPart)  ! Select my part of the box
           groupSize = partSize              ! Reduce group size
-! DEBUG
+#ifdef DEBUG_XC
 !          write(udebug,'(a,3(2x,2i4))') myName//' my part box=', myBox
-! END DEBUG
+#endif /* DEBUG_XC */
         end do ! iPow
       end do ! iFac
 
@@ -3066,12 +3091,12 @@ subroutine setMeshDistr( distrID, nMesh, box, firstNode, nNodes, &
     ! Reset newDistrID if this distribution was already defined
     call reduceDistr( newDistrID )
     distrID = newDistrID
-! DEBUG
+#ifdef DEBUG_XC
     iDistr = indexDistr( distrID )
     distr => storedMeshDistr(iDistr)
     write(udebug,'(a,2i6,3(2x,2i4))') myName//'distrID,iDistr,myBox=', &
       distrID, iDistr, distr%Box(:,:,myNode)
-! END DEBUG
+#endif /* DEBUG_XC */
   end if
 
 end subroutine setMeshDistr

@@ -49,19 +49,21 @@ C *********************************************************************
 C    6  10        20        30        40        50        60        7072
 
 C  Modules
-      use precision, only: dp, grid_p
-      use atmfuncs, only: rcut, all_phi
-      use atm_types, only: nsmax=>nspecies
-      use atomlist, only: indxuo
+      use precision,     only: dp, grid_p
+      use atmfuncs,      only: rcut, all_phi
+      use atm_types,     only: nsmax=>nspecies
+      use atomlist,      only: indxuo
       use listsc_module, only: listsc
-      use mesh, only: dxa, nsp, xdop, xdsp
-      use meshphi, only: endpht, lstpht, listp2
-      use meshdscf, only: DscfL, nrowsDscfL, needDscfL
-      use meshdscf, only: listDl, listDlPtr, numdL
-      use alloc,    only: re_alloc, de_alloc, alloc_default,
-     $                    allocDefaults
-      use parallel, only: Nodes
-      use sys,      only: die
+      use mesh,          only: dxa, nsp, xdop, xdsp
+      use meshphi,       only: endpht, lstpht, listp2
+      use meshdscf,      only: matrixOtoM
+      use meshdscf,      only: DscfL, nrowsDscfL, needDscfL
+      use meshdscf,      only: listDl, listDlPtr, numdL
+      use alloc,         only: re_alloc, de_alloc, alloc_default,
+     $                         allocDefaults
+      use parallel,      only: Nodes, Node
+      use sys,           only: die
+      use parallelsubs,  only: GlobalToLocalOrb
 
       implicit none
 
@@ -117,12 +119,12 @@ C  Allocate buffers to store partial copies of Dscf and C
       maxc = maxval(endpht(1:np)-endpht(0:np-1))
       maxb = maxc + minb
       maxb = min( maxb, no )
-      call re_alloc( C,   1,nsp,  1,maxc,          name='C'   )
-      call re_alloc( D,   0,maxb, 0,maxb, 1,nspin, name='D'   )
-      call re_alloc( gC,  1,3,    1,nsp,  1,maxc,  name='gC'  )
-      call re_alloc( ibc, 1,maxc,                  name='ibc' )
-      call re_alloc( iob, 0,maxb,                  name='iob' )
-      call re_alloc( xgC, 1,9,    1,nsp,  1,maxc,  name='xgC' )
+      call re_alloc( C, 1, nsp, 1, maxc, 'C', 'dfscf' )
+      call re_alloc( D, 0, maxb, 0, maxb, 1, nspin, 'D', 'dfscf' )
+      call re_alloc( gC, 1, 3, 1, nsp, 1, maxc, 'gC', 'dfscf' )
+      call re_alloc( ibc, 1, maxc, 'ibc', 'dfscf' )
+      call re_alloc( iob, 0, maxb, 'iob', 'dfscf' )
+      call re_alloc( xgC, 1, 9, 1, nsp, 1, maxc, 'xgC', 'dfscf' )
 
 C  Set logical that determines whether we need to use parallel or serial mode
       Parallel_Run = (Nodes.gt.1)
@@ -134,10 +136,9 @@ C  If parallel, allocate temporary storage for Local Dscf
         else
           maxndl = 1
         endif
-        call re_alloc( DscfL, 1, maxndl, 1, nspin,
-     &                 name='DscfL',  routine='dfscf' )
+        call re_alloc( DscfL, 1, maxndl, 1, nspin, 'DscfL', 'dfscf' )
 C Redistribute Dscf to DscfL form
-        call matrixOtoM( maxnd, numd, listdptr, maxndl, nuo, nuotot,
+        call matrixOtoM( maxnd, numd, listdptr, maxndl, nuo,
      .                   nspin, Dscf, DscfL )
 
       endif
@@ -224,8 +225,9 @@ C  Copy row i of Dscf into row last of D
                 D(jb,ib,1:nspin) = DscfL(ind,1:nspin)
               enddo
             else
-              do ii = 1, numd(iu)
-                ind = listdptr(iu)+ii
+              call GlobalToLocalOrb( iu, Node, Nodes, iul )
+              do ii = 1, numd(iul)
+                ind = listdptr(iul)+ii
                 j = listd(ind)
                 if (i.ne.iu) j = listsc( i, iu, j )
                 jb = ibuff(j)
@@ -359,14 +361,14 @@ C  End of mesh point loop
       enddo
   
 C  Deallocate local memory
-      call de_alloc( xgC, name='xgC'  )
-      call de_alloc( iob, name='iob' )
-      call de_alloc( ibc, name='ibc'  )
-      call de_alloc( gC,  name='gC'   )
-      call de_alloc( D,   name='D'    )
-      call de_alloc( C,   name='C'    )
+      call de_alloc( xgC, 'xgC', 'dfscf' )
+      call de_alloc( iob, 'iob', 'dfscf' )
+      call de_alloc( ibc, 'ibc', 'dfscf' )
+      call de_alloc( gC, 'gC', 'dfscf' )
+      call de_alloc( D, 'D', 'dfscf' )
+      call de_alloc( C, 'C', 'dfscf' )
       if (Parallel_Run) then
-        call de_alloc( DscfL,  name='DscfL' )
+        call de_alloc( DscfL, 'DscfL', 'dfscf' )
       endif
 
 C  Restore old allocation defaults

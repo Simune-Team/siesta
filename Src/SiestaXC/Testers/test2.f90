@@ -16,7 +16,7 @@ PROGRAM siestaXCtest2
   ! Tester parameters
   integer, parameter:: irel  =  0 ! Relativistic? 0=>no, 1=>yes
   integer, parameter:: nSpin =  2 ! Number of spin components
-  integer, parameter:: nfTot = 10 ! Number of functionals
+  integer, parameter:: nfTot = 11 ! Number of functionals
   integer, parameter:: nr    = 51 ! Number of radial points
   integer, parameter:: n1cut =  8 ! Cutoff parameter
   integer, parameter:: n2cut =  2 ! Cutoff parameter:
@@ -29,22 +29,26 @@ PROGRAM siestaXCtest2
   real(dp),parameter:: densMin  = 1.e-9_dp  ! Min. density to proceed
 
   ! List of functionals to be tested (avoid those not passing test1)
-  integer, parameter:: nf = 8         ! Number of tested functionals
-  integer:: indexf(nf) = (/1,2,  4,5,6,  8,9,10/)  ! Indexes from list below
+  integer, parameter:: nf = 9         ! Number of tested functionals
+  integer:: indexf(nf) = (/1,2,  4,5,6,  8,9,10,11/)  ! Indexes from list below
 
   ! Same to test a single functional
 !  integer, parameter:: nf = 1        ! Number of tested functionals
-!  integer:: indexf(nf) = (/10/)      ! Indexes from list below
+!  integer:: indexf(nf) = (/11/)      ! Indexes from list below
 
   ! All functionals available
   !                  1,       2,       3,       4,       5,   
-  !                  6,       7,       8,       9,      10,   
+  !                  6,       7,       8,       9,      10,
+  !                 11   
   character(len=3):: &
     func(nfTot) = (/'LDA',   'LDA',   'GGA',   'GGA',   'GGA',    &
-                    'GGA',   'GGA',   'GGA',   'GGA',   'VDW'    /)
+                    'GGA',   'GGA',   'GGA',   'GGA',   'GGA',    &
+                    'VDW'  /)
   character(len=6):: &
     auth(nfTot) = (/'PZ    ','PW92  ','PW91  ','PBE   ','RPBE  ', &
-                    'revPBE','LYP   ','WC    ','PBESOL','DRSLL ' /) 
+                    'revPBE','LYP   ','WC    ','PBESOL','AM05  ', &
+!                    'DRSLL ' /) 
+                    'LMKLL ' /) 
 
   ! Tester variables and arrays
   integer :: iDelta, ir, irmax, ismax, iSpin, one, two

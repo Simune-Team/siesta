@@ -183,7 +183,6 @@ program mprop
 
   call io_close(idos)
 
-
   ! Read HSX file
   ! Will pick up atoms, zval, and thus the nominal number of electrons,
   ! but the total charge is read as qtot.
@@ -204,16 +203,18 @@ program mprop
   !       Here we double the DOS for the case of nspin=1,
   !       to get the correct number of states.
 
-  allocate(intdos(npts_energy))
+  allocate(intdos(npts_energy), intebs(npts_energy))
   call io_assign(intdos_u)
   open(intdos_u,file=trim(sflnm)//".intdos",form="formatted", &
        status="unknown",action="write",position="rewind")
   intdos(1) = 0.0_dp
-  write(intdos_u,*) low_e, intdos(1)
+  intebs(1) = 0.0_dp
+  write(intdos_u,*) low_e, intdos(1), intebs(1)
   do i = 2, npts_energy
      energy = low_e + e_step*(i-1)
      intdos(i) = intdos(i-1) + sum(ados(i,:)) * e_step * 2.0_dp /nsp
-     write(intdos_u,*) energy, intdos(i)
+     intebs(i) = intebs(i-1) + energy*sum(ados(i,:)) * e_step * 2.0_dp /nsp
+     write(intdos_u,*) energy, intdos(i), intebs(i)
   enddo
   call io_close(intdos_u)
 

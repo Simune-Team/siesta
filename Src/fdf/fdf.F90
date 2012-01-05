@@ -1,0 +1,2518 @@
+#define THIS_FILE "fdf.F90"
+!=====================================================================
+!
+! This file is part of the FDF package.
+!
+! This module implements an extended Fortran 90/95 interface
+! to the Flexible Data Format library of A. Garcia and J.M. Soler,
+! originally written in Fortran 77.
+!
+! FEATURES:
+!
+! a) Block pointers.
+!
+! Block content can be flexibly handled by means of a pointer
+! to a derived type 'block_fdf'. Typical usage:
+!
+!     use fdf
+!     type(block_fdf)            :: bfdf
+!     type(parsed_line), pointer :: pline
+!
+!     if (fdf_block('SomeBlock', bfdf)) then
+!       do while(fdf_bline(bfdf, pline))
+!         (process line 'integers|reals|values|names ...')
+!       enddo
+!     endif
+!
+! The subroutine 'fdf_block' returns in 'bfdf' a structure used
+! to read the contents of the block.
+!
+! Routine fdf_bline returns in 'pline' the next non-blank parsed
+! line, non-comment line from the block, unless there are no more
+! lines, in which case it returns .FALSE. and 'pline' is undefined.
+!
+! Routine 'backspace' moves the internal pointer of 'block_fdf'
+! structure to the previous line returned.
+!
+! Routine 'rewind' moves the internal pointer of 'block_fdf' structure
+! to the beginning of the block.
+!
+! b) Generic interface to scalar routines.
+!
+! The generic function 'fdf_get' can be used instead of any of the
+! scalar routines. The specific names are also accepted.
+!
+! c) Architecture support: this FDF implementation supports the following
+!    architectures environments.
+!
+!    1) Thread-safe: The new implementation is thread-safe and will support
+!       calling it from several OMP-threads executing in the same node.
+!
+!       The implementation is as follows: fdf_init and fdf_shutdown are
+!       SINGLE/CRITICAL sections that only one thread must execute.
+!       On the other hand 'get'/'test' routines in FDF library are
+!       thread-safe because each thread keeps its relative information
+!       about the search/query that the caller program requests.
+!
+!    2) MPI-aware: For MPI executions, FDF library renames output/debugging
+!       or log files to prevent overlaps of these files in a
+!       shared/parallel filesystem.
+!
+!       This option is enabled with _MPI_ macro, and superseded by
+!       CLUSTER and BLOCKING macros.
+!
+!    3) Cluster filesystem: It is able to read the input FDF file from a
+!       non-shared filesystem and broadcast the information to the rest
+!       of the nodes in the execution.
+!
+!       The implementation is as follows: the first node in the MPI rank
+!       that is the owner of the input FDF file, process the file and
+!       send it to the rest of the nodes in the MPI communicator.
+!
+!       This option is enabled with CLUSTER macro. This option cannot be
+!       used if BLOCKING macro is enabled.
+!
+!    4) Blocking reading: For huge executions (> 1.000 nodes) this option
+!       is useful for shared/parallel filesystems where reading the same
+!       file by several nodes could be a problem (collapsing system).
+!
+!       The implementation is as follows: reading phase is done in blocking
+!       pattern of size BLOCKSIZE nodes (configurable at compile time).
+!       This means that the number of steps needed is STEPS = #NODES/BLOCKSIZE.
+!
+!       This option is enabled with BLOCKING macro. This option cannot be
+!       used if CLUSTER macro is enabled.
+!
+! Alberto Garcia, 1996-2007
+! Raul de la Cruz (BSC), September 2007
+!
+!
+!========================================================================
+
+! AG: If running under MPI (flagged by the MPI symbol, choose the CLUSTER
+!     mode of operation.
+!
+!
+#ifdef MPI
+# define _MPI_
+# define CLUSTER
+# undef MPI
+#endif
+
+#ifndef _MPI_
+# if defined(CLUSTER) || defined(BLOCKING)
+#   define _MPI_
+# endif
+#endif
+
+MODULE fdf
+  USE io_fdf
+
+  USE parse, only: parsed_line
+  USE parse, only: nintegers, nreals
+  USE parse, only: nvalues, nnames, ntokens
+  USE parse, only: integers, reals
+  USE parse, only: values, names, tokens, characters
+  USE parse, only: match
+  USE parse, only: digest, blocks, endblocks, labels
+  USE parse, only: destroy, setdebug, setlog, setmorphol
+
+  USE parse, only: search
+  USE parse, only: fdf_bsearch => search
+  USE parse, only: fdf_substring_search => substring_search
+
+  USE parse, only: serialize_pline, recreate_pline
+  USE parse, only: SERIALIZED_LENGTH
+
+  USE utils
+  USE prec
+  implicit none
+
+! User callable routines in FDF library
+
+! Start, stop and check parallelism in FDF system
+  public :: fdf_init, fdf_shutdown, fdf_parallel
+
+! Reading label functions
+  public :: fdf_get
+  public :: fdf_integer, fdf_single, fdf_double
+  public :: fdf_string, fdf_boolean
+  public :: fdf_physical, fdf_convfac
+
+! Returns the string associated with a mark line
+  public :: fdf_getline
+
+! Test if label is defined
+  public :: fdf_defined
+
+! %block reading (processing each line)
+  public :: fdf_block, fdf_bline, fdf_bbackspace, fdf_brewind
+  public :: fdf_bnintegers, fdf_bnreals, fdf_bnvalues, fdf_bnnames, fdf_bntokens
+  public :: fdf_bintegers, fdf_breals, fdf_bvalues, fdf_bnames, fdf_btokens
+
+! Match, search over blocks, and destroy block structure
+  public :: fdf_bmatch, fdf_bsearch, fdf_substring_search
+
+
+! Private functions, non-callable
+
+! Main functions to build FDF structure (called in fdf_init)
+  private :: fdf_initdata, fdf_addtoken, fdf_readline
+  private :: fdf_read, fdf_readlabel, fdf_searchlabel
+  private :: fdf_open, fdf_close
+
+! Input/Output configuration
+  private :: fdf_input, fdf_output
+
+! Destroy dynamic list of FDF structure (called in fdf_shutdown)
+  private :: fdf_destroy, fdf_destroy_dl
+
+! MPI init/finalize functions
+#ifdef _MPI_
+  private :: fdf_mpi_init, fdf_mpi_finalize
+#endif
+
+! Reading functions for CLUSTER and BLOCKING configuration
+#ifdef CLUSTER
+  private :: setup_fdf_cluster, broadcast_fdf_struct
+#endif
+#ifdef BLOCKING
+  private :: fdf_readblocking
+#endif
+
+! Debugging functions, level and prints debugging info
+  private :: fdf_setdebug, fdf_printfdf
+
+! Finds a label in the FDF herarchy
+  private :: fdf_locate
+
+! Dump function (for blocks)
+  private :: fdf_dump
+
+! Wrappers functions for block access, search, matching,
+! number and elements in the block (call to parse module)
+  interface fdf_bnintegers
+    module procedure nintegers
+  end interface
+
+  interface fdf_bnreals
+    module procedure nreals
+  end interface
+
+  interface fdf_bnvalues
+    module procedure nvalues
+  end interface
+
+  interface fdf_bnnames
+    module procedure nnames
+  end interface
+
+  interface fdf_bntokens
+    module procedure ntokens
+  end interface
+
+  interface fdf_bintegers
+    module procedure integers
+  end interface
+
+  interface fdf_breals
+    module procedure reals
+  end interface
+
+  interface fdf_bvalues
+    module procedure values
+  end interface
+
+  interface fdf_bnames
+    module procedure names
+  end interface
+
+  interface fdf_btokens
+    module procedure tokens
+  end interface
+
+  interface fdf_bmatch
+    module procedure match
+  end interface
+
+! fdf_get wrapper for label functions
+  interface fdf_get
+    module procedure fdf_integer
+    module procedure fdf_single
+    module procedure fdf_double
+    module procedure fdf_boolean
+    module procedure fdf_string
+    module procedure fdf_physical
+  end interface
+
+
+! Unit numbers for input, output, error notification, and
+! debugging output (the latter active if fdf_debug is true)
+  logical, private                :: fdf_debug   = .FALSE.,             &
+                                     fdf_debug2  = .FALSE.,             &
+                                     fdf_started = .FALSE.
+
+  integer(ip), parameter, private :: maxdepth   = 5
+  integer(ip), private            :: ndepth
+  integer(ip), private            :: fdf_in(maxdepth)
+  integer(ip), private            :: fdf_out, fdf_err, fdf_log
+
+! MPI variables (id, number of MPI tasks)
+#ifdef _MPI_
+  logical, private                :: mpiflag
+  integer(ip), private            :: rank, ntasks
+#endif
+
+! Structure for searching inside fdf blocks
+  type, public :: block_fdf
+    character(len=MAX_LENGTH) :: label
+    type(line_dlist), pointer :: mark
+  end type block_fdf
+
+! Dynamic list for parsed_line structures
+  type, public :: line_dlist
+    character(len=MAX_LENGTH)  :: str
+    type(parsed_line), pointer :: pline
+    type(line_dlist), pointer  :: next
+    type(line_dlist), pointer  :: prev
+  end type line_dlist
+
+! FDF data structure (first and last lines)
+  type, private :: fdf_file
+    integer(ip)               :: nlines
+    type(line_dlist), pointer :: first
+    type(line_dlist), pointer :: last
+  end type fdf_file
+
+! Input FDF file
+  type(fdf_file), pointer, private :: file_in
+
+
+
+! Define by default all the others inherit module entities as privated
+! avoiding redefinitions of entities in several module files with same name
+  public :: parsed_line   ! Structure for searching inside fdf blocks
+  public :: leqi          ! For legacy support (old codes)
+  private
+
+
+  CONTAINS
+
+!
+!   Initialization for fdf. Simplified user interface using
+!   the io package.
+!
+      SUBROUTINE fdf_init(filein, fileout)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*) :: filein, fileout
+
+#ifndef DEBUG
+!--------------------------------------------------------------- Local Variables
+      integer(ip)  :: debug_level
+#endif
+
+!------------------------------------------------------------------------- BEGIN
+!$OMP SINGLE
+      ! Prevent the user from opening two head files
+      if (fdf_started) then 
+        call die('FDF module: fdf_init', 'Head file already set',       &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+#ifdef _MPI_
+      call fdf_mpi_init()
+#endif
+      call fdf_initdata()
+
+      call io_geterr(fdf_err)
+
+#ifdef DEBUG
+      call fdf_setdebug(2)
+#endif
+
+      call fdf_output(fileout)
+
+      call fdf_input(filein)
+
+      fdf_started = .TRUE.
+
+#ifndef DEBUG
+      debug_level = fdf_integer('fdf-debug', 0)
+      call fdf_setdebug(debug_level)
+#endif
+
+      if (fdf_debug2) call fdf_printfdf()
+
+#ifdef _MPI_
+      call fdf_mpi_finalize()
+#endif
+!$OMP END SINGLE
+      RETURN
+!--------------------------------------------------------------------------- END
+      END SUBROUTINE fdf_init
+
+!
+!   Initialize MPI subsystem if the application calling/using FDF
+!   library is not running with MPI enabled.
+!
+#ifdef _MPI_
+    SUBROUTINE fdf_mpi_init()
+      use mpi_siesta
+      implicit none
+!--------------------------------------------------------------- Local Variables
+      integer(ip) :: ierr
+
+!------------------------------------------------------------------------- BEGIN
+      call MPI_Initialized(mpiflag, ierr)
+      if (ierr .ne. MPI_SUCCESS) then
+        call die('FDF module: fdf_mpi_init', 'Error initializing MPI system.' // &
+                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      endif
+
+      if (.not. mpiflag) then
+        call MPI_Init(ierr)
+        if (ierr .ne. MPI_SUCCESS) then
+          call die('FDF module: fdf_mpi_init', 'Error initializing MPI system.' // &
+                   'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
+        endif
+      endif
+
+      call MPI_Comm_Rank(MPI_COMM_WORLD, rank, ierr)
+      if (ierr .ne. MPI_SUCCESS) then
+        call die('FDF module: fdf_mpi_init', 'Error getting MPI comm rank.' // &
+                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc= ierr)
+      endif
+
+      call MPI_Comm_Size(MPI_COMM_WORLD, ntasks, ierr)
+      if (ierr .ne. MPI_SUCCESS) then
+        call die('FDF module: fdf_mpi_init', 'Error getting MPI comm size.' // &
+                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      endif
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE fdf_mpi_init
+#endif
+
+!
+!   Finalize MPI subsystem if the application calling/using FDF
+!   library is not running with MPI enabled.
+!
+#ifdef _MPI_
+    SUBROUTINE fdf_mpi_finalize()
+      use mpi_siesta
+      implicit none
+!--------------------------------------------------------------- Local Variables
+      integer(ip)   :: ierr
+
+!------------------------------------------------------------------------- BEGIN
+      if (.not. mpiflag) then
+        call MPI_Finalize(ierr)
+        if (ierr .ne. MPI_SUCCESS) then
+          call die('FDF module: fdf_mpi_finalize', 'Error finalizing MPI system.' // &
+                   'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
+        endif
+      endif
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE fdf_mpi_finalize
+#endif
+
+!
+!   Reads the input file depending on the configuration of the system:
+!   Shared Filesystem, Cluster Filesystem or Blocking input access
+!
+    SUBROUTINE fdf_input(filein)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)  :: filein
+
+!------------------------------------------------------------------------- BEGIN
+#ifdef CLUSTER
+!!      call fdf_readcluster(filein)
+      call setup_fdf_cluster(filein)
+#elif defined(BLOCKING)
+      call fdf_readblocking(filein)
+#else
+      call fdf_read(filein)
+#endif
+
+      write(fdf_out,'(a,a,a,i3)') '#FDF module: Opened ', filein,   &
+                                  ' for input. Unit:', fdf_in(1)
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE fdf_input
+
+!
+!   Reading code for Cluster Architecture, where the filesystem
+!   is not shared along all the nodes in the system.
+!
+#ifdef CLUSTER
+    SUBROUTINE fdf_readcluster(filein)
+      use mpi_siesta
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)  :: filein
+
+!--------------------------------------------------------------- Local Variables
+      character(80)  :: msg
+      character(256) :: fileinTmp
+      integer(ip)    :: ierr, texist_send, texist_recv
+#ifdef SOPHISTICATED_SEARCH
+      logical        :: file_exist
+#endif
+!------------------------------------------------------------------------- BEGIN
+!     Tests if the running node has the input file:
+!       If found: texist_send = rank
+!       Else    : texist_send = error_code (ntasks + 1)
+
+#ifdef SOPHISTICATED_SEARCH
+      INQUIRE(file=filein, exist=file_exist)
+      if (file_exist) then
+        texist_send = rank
+      else
+        texist_send = ntasks + 1
+      endif
+
+      call MPI_AllReduce(texist_send, texist_recv, 1, MPI_INTEGER,      &
+                         MPI_MIN, MPI_COMM_WORLD, ierr)
+      if (ierr .ne. MPI_SUCCESS) then
+        call die('FDF module: fdf_readcluster', 'Error in MPI_AllReduce (task_exist).' //  &
+                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      endif
+#else
+!
+!     Simplify: Assume node 0 has the file
+!
+      texist_recv = 0
+#endif
+
+!     The node owner of the input file send the data to the other ones
+!     if none node has an input file with such name abort the application
+      if (texist_recv .eq. ntasks + 1) then
+        write(msg,*) 'No node found in the cluster with ',              &
+                     ' input file ', filein,'. Terminating.'
+        call die('FDF module: fdf_readcluster', msg,                    &
+                 THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      else
+        if (texist_recv .eq. rank) then
+          call fdf_read(filein)
+          call fdf_sendInput()
+!!Debug          call MPI_Barrier( MPI_COMM_WORLD, ierr )
+          write(fdf_out,*) '#FDF module: Node', rank, 'reading/sending', &
+                           ' input file ', filein
+        else
+          call fdf_recvInput(texist_recv, filein, fileinTmp)
+!!Debug          call MPI_Barrier( MPI_COMM_WORLD, ierr )
+          call fdf_read(fileinTmp)
+          write(fdf_out,*) '#FDF module: Node', rank, 'recieving input', &
+                           ' file from', texist_recv, 'to ', TRIM(fileinTmp)
+        endif
+      endif
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE fdf_readcluster
+!
+!
+    SUBROUTINE setup_fdf_cluster(filein)
+!
+!     A more efficient alternative to fdf_sendInput/fdf_recvInput
+!     that avoids the creation of scratch files by non-root nodes.
+!
+!     Alberto Garcia, April 2011
+
+      use mpi_siesta
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*), intent(in)  :: filein   ! File name
+
+!--------------------------------------------------------------- Local Variables
+      character(80)  :: msg
+      character(256) :: fileinTmp
+      integer(ip)    :: ierr, texist_send, reading_node
+#ifdef SOPHISTICATED_SEARCH
+      logical        :: file_exist
+#endif
+!------------------------------------------------------------------------- BEGIN
+!     Tests if the running node has the input file:
+!       If found: texist_send = rank
+!       Else    : texist_send = error_code (ntasks + 1)
+
+#ifdef SOPHISTICATED_SEARCH
+      INQUIRE(file=filein, exist=file_exist)
+      if (file_exist) then
+        texist_send = rank
+      else
+        texist_send = ntasks + 1
+      endif
+
+      call MPI_AllReduce(texist_send, reading_node, 1, MPI_INTEGER,      &
+                         MPI_MIN, MPI_COMM_WORLD, ierr)
+      if (ierr .ne. MPI_SUCCESS) then
+        call die('FDF module: fdf_readcluster', 'Error in MPI_AllReduce (task_exist).' //  &
+                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      endif
+#else
+!
+!     Simplify: Assume node 0 has the file
+!
+      reading_node = 0
+#endif
+
+!     If no node has an input file with such name abort the application
+      if (reading_node .eq. ntasks + 1) then
+         write(msg,*) 'No node found in the cluster with ',              &
+              ' input file ', filein,'. Terminating.'
+         call die('FDF module: fdf_readcluster', msg,                    &
+              THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      endif
+
+!     The root node reads and digests the input file 
+!     and sends the serialized fdf_file data structure to the other nodes
+
+      if (rank == reading_node) then
+         call fdf_read(filein)
+      endif
+      call broadcast_fdf_struct(reading_node)		
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE setup_fdf_cluster
+
+!
+!   Broadcast complete fdf structure
+!
+    SUBROUTINE broadcast_fdf_struct(reading_node)
+      use mpi_siesta
+      implicit none
+
+      integer, intent(in)       :: reading_node         ! Node which contains the struct
+
+!--------------------------------------------------------------- Local Variables
+      character, pointer        :: bufferFDF(:)
+      integer(ip)               :: i, j, k, ierr, nlines
+      type(line_dlist), pointer :: mark
+
+!------------------------------------------------------------------------- BEGIN
+
+      if (rank == reading_node) then
+         nlines = file_in%nlines
+      endif
+
+      call MPI_Bcast(nlines, 1,                                 &
+                     MPI_INTEGER, reading_node, MPI_COMM_WORLD, ierr)
+      if (ierr .ne. MPI_SUCCESS) then
+        call die('FDF module: broadcast_fdf', 'Error Broadcasting nlines.' // &
+                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      endif
+
+      ALLOCATE(bufferFDF(nlines*SERIALIZED_LENGTH), stat=ierr)
+      if (ierr .ne. 0) then
+        call die('FDF module: broadcast_fdf', 'Error allocating bufferFDF', &
+                 THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      endif
+
+      if (rank == reading_node) then
+         call serialize_fdf_struct(bufferFDF)
+      endif
+
+      call MPI_Bcast(bufferFDF, size(bufferFDF),              &
+                     MPI_CHARACTER, reading_node, MPI_COMM_WORLD, ierr)
+      if (ierr .ne. MPI_SUCCESS) then
+        call die('FDF module: broadcast_fdf', 'Error Broadcasting bufferFDF.' // &
+                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      endif
+      if (rank /= reading_node) then
+         call recreate_fdf_struct(nlines,bufferFDF)
+      endif
+
+      DEALLOCATE(bufferFDF)
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE broadcast_fdf_struct
+#endif
+!
+!   Reading code for Blocking read. The reading of the input file is
+!   splitted in several steps of size BLOCKSIZE. The number of steps
+!   needed to read the file in all the nodes depends on the total nodes,
+!   being ntasks/BLOCKINGSIZE.
+!
+!   With this method we can avoid a colapse of a global parallel filesystem
+!   if the execution of the application runs over a huge amount of nodes.
+!
+#ifdef BLOCKING
+# ifndef BLOCKSIZE
+#   define BLOCKSIZE 2
+# endif
+    SUBROUTINE fdf_readblocking(filein)
+      use mpi_siesta
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*) :: filein
+
+!--------------------------------------------------------------- Local Variables
+      integer(ip)  :: i, ierr
+
+!------------------------------------------------------------------------- BEGIN
+
+      do i= 0, ntasks-1, BLOCKSIZE
+        if ((rank .ge. i) .and. (rank .le. i+BLOCKSIZE-1)) then
+          call fdf_read(filein)
+          write(fdf_out,*) '#FDF module: Task', rank, 'reading input', &
+                           ' file ', filein, ' in step', (i/BLOCKSIZE)+1
+        endif
+
+        call MPI_Barrier(MPI_COMM_WORLD, ierr)
+        if (ierr .ne. MPI_SUCCESS) then
+          call die('FDF module: fdf_readblocking', 'Error in MPI_Barrier (fdf_read).' //    &
+                   'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
+        endif
+      enddo
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE fdf_readblocking
+#endif
+
+!
+!   Read an input file (and include files) and builds memory
+!   structure that will contain the data and will help in searching
+!
+    RECURSIVE SUBROUTINE fdf_read(filein, blocklabel)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)               :: filein
+      character(*), optional     :: blocklabel
+
+!--------------------------------------------------------------- Local Variables
+      logical                    :: dump
+      logical, allocatable       :: found(:)
+      character(80)              :: msg
+      character(len=MAX_LENGTH)  :: line, label, inc_file
+      integer(ip)                :: i, ierr, ntok, ind_less, nlstart
+      type(parsed_line), pointer :: pline
+
+!------------------------------------------------------------------------- BEGIN
+!     Open reading input file
+      call fdf_open(filein)
+
+!     Read each input data line
+      if (PRESENT(blocklabel)) then
+        label = blocklabel
+      else
+        label = ' '
+      endif
+      do while (fdf_readline(line))
+
+!       Check if valid data (tokens, non-blank)
+        pline => digest(line)
+        ntok = ntokens(pline)
+        if (ntok .ne. 0) then
+
+!         Find different special cases in the input files
+!         (%block, %endblock, %include, Label1 Label2 ... < Filename)
+
+!         %block directive
+          ind_less = search('<', pline)
+          if (search('%block', pline) .eq. 1) then
+
+!           No label found in %block directive
+            if (ntok .eq. 1) then
+              write(msg,*) '%block label not found in ', TRIM(filein)
+              call die('FDF module: fdf_read', msg,                     &
+                       THIS_FILE, __LINE__, fdf_err)
+            endif
+
+!           %block Label < Filename [ %dump ]
+            if (ind_less .eq. 3) then
+
+              if (ntok .ge. 4) then
+!               Test if %dump is present
+                if (search('%dump', pline) .eq. 5) then
+                  dump = .TRUE.
+                else
+                  dump = .FALSE.
+                endif
+
+!               Add begin, body and end sections of block
+                label = tokens(pline, 2)
+                inc_file  = tokens(pline, 4)
+                call destroy(pline)
+                line = '%block ' // label
+                pline => digest(line)
+                call setmorphol(1, 'b', pline)
+                call setmorphol(2, 'l', pline)
+                call fdf_addtoken(line, pline)
+
+                nlstart = file_in%nlines
+                call fdf_read(inc_file, label)
+
+!               Warn if block 'label' is empty
+                if ((nlstart - file_in%nlines) .eq. 0) then
+                  write(msg,*) 'FDF module: fdf_read: block ',          &
+                               TRIM(label), ' is empty...'
+                  call warn(msg)
+                endif
+
+                line = '%endblock ' // label
+                pline => digest(line)
+                call setmorphol(1, 'e', pline)
+                call setmorphol(2, 'l', pline)
+                call fdf_addtoken(line, pline)
+
+!               Dump included file to fileout
+                if (dump) call fdf_dump(label)
+                label = ' '
+
+!             Filename not found in %block directive
+              else
+                write(msg,*) '%block filename not found in ', TRIM(filein)
+                call die('FDF module: fdf_read', msg,                   &
+                         THIS_FILE, __LINE__, fdf_err)
+              endif
+
+!           %block Label
+            elseif (ind_less .eq. -1) then
+              label = tokens(pline, 2)
+              call setmorphol(1, 'b', pline)
+              call setmorphol(2, 'l', pline)
+              call fdf_addtoken(line, pline)
+              nlstart = file_in%nlines
+
+!           Bad format in %block directive
+            else
+              write(msg,*) 'Bad ''<'' %block format in ', TRIM(filein)
+              call die('FDF module: fdf_read', msg,                     &
+                       THIS_FILE, __LINE__, fdf_err)
+            endif
+
+!         %endblock directive
+          elseif (search('%endblock', pline) .eq. 1) then
+!           Check if %block exists before %endblock
+            if (label .eq. ' ') then
+              write(msg,*) 'Bad %endblock found in ', TRIM(filein)
+              call die('FDF module: fdf_read', msg,                     &
+                       THIS_FILE, __LINE__, fdf_err)
+            else
+!             Warn if block 'label' is empty
+              if ((nlstart - file_in%nlines) .eq. 0) then
+                write(msg,*) 'FDF module: fdf_read: block ',            &
+                             TRIM(label), ' is empty...'
+                call warn(msg)
+              endif
+
+              call destroy(pline)
+              line = '%endblock ' // label
+              pline => digest(line)
+              call setmorphol(1, 'e', pline)
+              call setmorphol(2, 'l', pline)
+              call fdf_addtoken(line, pline)
+              label = ' '
+            endif
+
+!         %include Filename directive
+          elseif (search('%include', pline) .eq. 1) then
+!           Check if include filename is specified
+            if (ntok .eq. 1) then
+              write(msg,*) 'Filename on %include not found in ', TRIM(filein)
+              call die('FDF module: fdf_read', msg,                     &
+                       THIS_FILE, __LINE__, fdf_err)
+            else
+              inc_file = tokens(pline, 2)
+              call fdf_read(inc_file)
+            endif
+
+!         Label1 Label2 ... < Filename directive
+          elseif (ind_less .ne. -1) then
+!           Check if '<' is in a valid position
+            if (ind_less .eq. 1) then
+              write(msg,*) 'Bad ''<'' found in ', TRIM(filein)
+              call die('FDF module: fdf_read', msg,                     &
+                       THIS_FILE, __LINE__, fdf_err)
+
+!           Check if '<' filename is specified
+            elseif (ind_less .eq. ntok) then
+              write(msg,*) 'Filename not found after ''<'' in ', TRIM(filein)
+              call die('FDF module: fdf_read', msg,                     &
+                       THIS_FILE, __LINE__, fdf_err)
+            else
+!             Search label(s) in Filename
+              inc_file = tokens(pline, ind_less+1)
+              ALLOCATE(found(ind_less-1), stat=ierr)
+              if (ierr .ne. 0) then
+                call die('FDF module: fdf_read', 'Error allocating found', &
+                         THIS_FILE, __LINE__, fdf_err, rc=ierr)
+              endif
+
+!             If label(s) not found in such Filename throw an error
+              found = .FALSE.
+              if (.not. fdf_readlabel(ind_less-1, pline,                &
+                                      inc_file, found)) then
+                 i = 1
+                 do while ((i .le. ind_less-1) .and. (found(i)))
+                    i = i + 1
+                 enddo
+                 label = tokens(pline, i)
+                 write(msg,*) 'Label ', TRIM(label),                     &
+                             ' not found in ', TRIM(inc_file)
+                 call die('FDF module: fdf_read', msg,                   &
+                         THIS_FILE, __LINE__, fdf_err)
+              endif
+
+              call destroy(pline)
+              DEALLOCATE(found)
+            endif
+
+!         Add remaining kind of tokens to dynamic list as labels
+          else
+            if (label .eq. ' ') call setmorphol(1, 'l', pline)
+            call fdf_addtoken(line, pline)
+          endif
+        else
+!         Destroy parsed_line structure if no elements
+          call destroy(pline)
+        endif
+      enddo
+
+!     Close one level of input file
+      if ((.not. PRESENT(blocklabel)) .and. (label .ne. ' ')) then
+        write(msg,*) '%endblock ', TRIM(label),                         &
+                     ' not found in ', TRIM(filein)
+        call die('FDF module: fdf_read', msg, THIS_FILE, __LINE__, fdf_err)
+      endif
+      call fdf_close()
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE fdf_read
+
+!
+!   Read an input file (and include files) searching labels to
+!   include them in memory structure that will contain the data
+!
+    RECURSIVE FUNCTION fdf_readlabel(nelem, plabel, filein, found) result(readlabel)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)               :: filein
+      integer(ip)                :: nelem
+      type(parsed_line), pointer :: plabel
+
+!-------------------------------------------------------------- Output Variables
+      logical                    :: readlabel
+      logical                    :: found(nelem)
+
+!--------------------------------------------------------------- Local Variables
+      logical                    :: dump, found_elem
+      logical, pointer           :: found_loc(:)
+      character(80)              :: msg
+      character(len=MAX_LENGTH)  :: line, inc_file, label
+      integer(ip)                :: i, ierr, ntok, ind_less, nlstart
+      integer(ip)                :: elem, nelem_loc
+      integer(ip), pointer       :: found_index(:)
+      type(parsed_line), pointer :: pline
+
+!------------------------------------------------------------------------- BEGIN
+!     Open input file with labels
+      call fdf_open(filein)
+
+!     While not reach to end of file and found all labels
+      do while (fdf_readline(line) .and. (.not. ALL(found)))
+
+!       Check if valid data (tokens, non-blank)
+        pline => digest(line)
+        ntok = ntokens(pline)
+        if (ntok .ne. 0) then
+
+!         Find different special cases in the input files
+!         (%block, %endblock, %include, Label1 Label2 ... < Filename)
+
+!         %block directive
+          ind_less = search('<', pline)
+          if (search('%block', pline) .eq. 1) then
+
+!           No label found in %block directive
+            if (ntok .eq. 1) then
+              write(msg,*) '%block label not found in ', TRIM(filein)
+              call die('FDF module: fdf_readlabel', msg,                &
+                       THIS_FILE, __LINE__, fdf_err)
+            endif
+
+!           %block Label < Filename [ %dump ]
+            if (ind_less .eq. 3) then
+
+              if (ntok .ge. 4) then
+!               Test if %dump is present
+                if (search('%dump', pline) .eq. 5) then
+                  dump = .TRUE.
+                else
+                  dump = .FALSE.
+                endif
+
+                label = tokens(pline, 2)
+                elem  = fdf_searchlabel(found, nelem, label, plabel)
+
+                inc_file = tokens(pline, 4)
+                call destroy(pline)
+
+!               If match with any label add [begin, body, end] of block
+                if (elem .ne. -1) then
+                  line = '%block ' // label
+                  pline => digest(line)
+                  call setmorphol(1, 'b', pline)
+                  call setmorphol(2, 'l', pline)
+                  call fdf_addtoken(line, pline)
+
+                  nlstart = file_in%nlines
+                  call fdf_read(inc_file, label)
+
+!                 Warn if block 'label' is empty
+                  if ((nlstart - file_in%nlines) .eq. 0) then
+                    write(msg,*) 'FDF module: fdf_readlabel: block ',   &
+                                 TRIM(label), ' is empty...'
+                    call warn(msg)
+                  endif
+
+                  line = '%endblock ' // label
+                  pline => digest(line)
+                  call setmorphol(1, 'e', pline)
+                  call setmorphol(2, 'l', pline)
+                  call fdf_addtoken(line, pline)
+
+!                 Dump included file to fileout
+                  if (dump) call fdf_dump(label)
+
+                  found(elem) = .TRUE.
+                  label = ' '
+                endif
+
+!             Filename not found in %block directive
+              else
+                write(msg,*) 'Filename on %block not found in ', TRIM(filein)
+                call die('FDF module: fdf_readlabel', msg,              &
+                         THIS_FILE, __LINE__, fdf_err)
+              endif
+
+!           %block Label
+            elseif (ind_less .eq. -1) then
+              label = tokens(pline, 2)
+              elem  = fdf_searchlabel(found, nelem, label, plabel)
+              found_elem = .TRUE.
+
+!             If match with any label add [begin,body,end] of block
+              if (elem .ne. -1) then
+                call setmorphol(1, 'b', pline)
+                call setmorphol(2, 'l', pline)
+                call fdf_addtoken(line, pline)
+                nlstart = file_in%nlines
+
+                found_elem = .FALSE.
+                do while (fdf_readline(line) .and. (.not. found_elem))
+                  pline => digest(line)
+                  if (ntokens(pline) .ne. 0) then
+                    if (search('%endblock', pline) .eq. 1) then
+!                     Warn if block 'label' is empty
+                      if ((nlstart - file_in%nlines) .eq. 0) then
+                        write(msg,*) 'FDF module: fdf_readlabel: block ', &
+                                     TRIM(label), ' is empty...'
+                        call warn(msg)
+                      endif
+
+                      call destroy(pline)
+                      line = '%endblock ' // label
+                      pline => digest(line)
+                      call setmorphol(1, 'e', pline)
+                      call setmorphol(2, 'l', pline)
+                      label = ' '
+
+                      found_elem  = .TRUE.
+                      found(elem) = .TRUE.
+                    endif
+                    call fdf_addtoken(line, pline)
+                  endif
+                enddo
+
+!             Move to the end of the block
+              else
+                call destroy(pline)
+
+                found_elem = .FALSE.
+                do while (fdf_readline(line) .and. (.not. found_elem))
+                  pline => digest(line)
+                  if (search('%endblock', pline) .eq. 1) then
+                    label = ' '
+                    found_elem = .TRUE.
+                  endif
+                  call destroy(pline)
+                enddo
+              endif
+
+!             Error due to %endblock not found
+              if (.not. found_elem) then
+                write(msg,*) '%endblock ', TRIM(label),                 &
+                             ' not found in ', TRIM(filein)
+                call die('FDF module: fdf_readlabel', msg,              &
+                         THIS_FILE, __LINE__, fdf_err)
+              endif
+
+!           Bad format in %block directive
+            else
+              write(msg,*) 'Bad ''<'' %block format in ', TRIM(filein)
+              call die('FDF module: fdf_readlabel', msg,                &
+                       THIS_FILE, __LINE__, fdf_err)
+            endif
+
+!         %endblock directive
+          elseif (search('%endblock', pline) .eq. 1) then
+!           Bad if %endblock exists before %block
+            write(msg,*) 'Bad %endblock found in ', TRIM(filein)
+            call die('FDF module: fdf_readlabel', msg,                  &
+                     THIS_FILE, __LINE__, fdf_err)
+
+!         %include Filename directive
+          elseif (search('%include', pline) .eq. 1) then
+!           Check if include filename is specified
+            if (ntok .eq. 1) then
+              write(msg,*) 'Filename on %include not found in ', TRIM(filein)
+              call die('FDF module: fdf_readlabel', msg,                &
+                       THIS_FILE, __LINE__, fdf_err)
+            else
+              inc_file = tokens(pline, 2)
+              call destroy(pline)
+              readlabel = fdf_readlabel(nelem, plabel, inc_file, found)
+            endif
+
+!         Label1 Label2 ... < Filename directive
+          elseif (ind_less .ne. -1) then
+!           Check if '<' is in a valid position
+            if (ind_less .eq. 1) then
+              write(msg,*) 'Bad ''<'' found in ', TRIM(filein)
+              call die('FDF module: fdf_readlabel', msg,                &
+                       THIS_FILE, __LINE__, fdf_err)
+
+!           Check if '<' filename is specified
+            elseif (ind_less .eq. ntok) then
+              write(msg,*) 'Filename not found after ''<'' in ', TRIM(filein)
+              call die('FDF module: fdf_readlabel', msg,                &
+                       THIS_FILE, __LINE__, fdf_err)
+            else
+!             Search label(s) in Filename
+              line = ' '
+              nelem_loc = 0
+              ALLOCATE(found_index(ind_less-1), stat=ierr)
+              if (ierr .ne. 0) then
+                call die('FDF module: fdf_readlabel', 'Error allocating found_index', &
+                         THIS_FILE, __LINE__, fdf_err, rc=ierr)
+              endif
+              do i= 1, ind_less-1
+                label = tokens(pline, i)
+                elem = fdf_searchlabel(found, nelem, label, plabel)
+                if (elem .ne. -1) then
+                  line = TRIM(line) // ' ' // TRIM(label)
+                  nelem_loc = nelem_loc + 1
+                  found_index(nelem_loc) = elem
+                endif
+              enddo
+
+!             Process Filename if any label found
+              if (nelem_loc .ge. 1) then
+                inc_file = tokens(pline, ind_less+1)
+                call destroy(pline)
+
+                ALLOCATE(found_loc(nelem_loc), stat=ierr)
+                if (ierr .ne. 0) then
+                  call die('FDF module: fdf_readlabel', 'Error allocating found_loc', &
+                           THIS_FILE, __LINE__, fdf_err, rc=ierr)
+                endif
+
+                found_loc = .FALSE.
+
+!               If label(s) not found in such Filename throw an error
+                pline => digest(line)
+                if (.not. fdf_readlabel(nelem_loc, pline,               &
+                                        inc_file, found_loc)) then
+                  i = 1
+                  do while ((i .le. nelem_loc) .and. (found_loc(i)))
+                    i = i + 1
+                  enddo
+                  label = tokens(pline, i)
+                  write(msg,*) 'Label ', TRIM(label), ' not found in ', TRIM(inc_file)
+                  call die('FDF module: fdf_readlabel', msg,            &
+                           THIS_FILE, __LINE__, fdf_err)
+                else
+!                 Merge results if all labels found
+                  do i= 1, nelem_loc
+                    found(found_index(i)) = found_loc(i)
+                  enddo
+                endif
+
+                DEALLOCATE(found_index)
+              endif
+
+              DEALLOCATE(found_loc)
+              call destroy(pline)
+            endif
+
+!         Label [ Value ] directive
+          else
+            elem = fdf_searchlabel(found, nelem, tokens(pline, 1), plabel)
+
+!           If match with any label add it
+            if (elem .ne. -1) then
+              call setmorphol(1, 'l', pline)
+              call fdf_addtoken(line, pline)
+              found(elem) = .TRUE.
+            else
+!             Destroy parsed_line structure if no label found
+              call destroy(pline)
+            endif
+          endif
+
+        else
+!         Destroy parsed_line structure if no label found
+          call destroy(pline)
+        endif
+      enddo
+
+!     Close input file with labels
+      call fdf_close()
+
+      readlabel = ALL(found)
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_readlabel
+
+!
+!   Search a label in a set of not 'found' tokens given by plabel and nelem.
+!   Returns the index on plabel of the token that matches with label.
+!
+    FUNCTION fdf_searchlabel(found, nelem, label, plabel)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      integer(ip)                :: nelem
+      logical                    :: found(nelem)
+      character(*)               :: label
+      type(parsed_line), pointer :: plabel
+
+!-------------------------------------------------------------- Output Variables
+      integer(ip)                :: fdf_searchlabel
+
+!--------------------------------------------------------------- Local Variables
+      logical                    :: found_elem
+      integer(ip)                :: i
+
+!------------------------------------------------------------------------- BEGIN
+      i = 1
+      found_elem = .FALSE.
+      fdf_searchlabel = -1
+      do while ((i .le. nelem) .and. (.not. found_elem))
+
+        if (.not. found(i)) then
+          if (labeleq(label, tokens(plabel, i))) then
+            found_elem      = .TRUE.
+            fdf_searchlabel = i
+          endif
+        endif
+        i = i + 1
+      enddo
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_searchlabel
+
+!
+!   Dumps the content of a block
+!
+    SUBROUTINE fdf_dump(label)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)               :: label
+
+!--------------------------------------------------------------- Local Variables
+      character(80)              :: msg
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
+
+!------------------------------------------------------------------------- BEGIN
+      fdf_started = .TRUE.
+
+      if (.not. fdf_block(label, bfdf)) then
+        write(msg,*) 'block ', label, 'to dump not found'
+        call die('FDF module: fdf_dump', msg, THIS_FILE, __LINE__, fdf_err)
+      endif
+
+!     fdf_bline prints each block line in fdf_out
+      do while(fdf_bline(bfdf, pline))
+      enddo
+
+      fdf_started = .FALSE.
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE fdf_dump
+
+!
+!   Init FDF file structure
+!
+    SUBROUTINE fdf_initdata()
+      implicit none
+!--------------------------------------------------------------- Local Variables
+      integer(ip) :: ierr
+
+!------------------------------------------------------------------------- BEGIN
+      ndepth = 0
+
+      ALLOCATE(file_in, stat=ierr)
+      if (ierr .ne. 0) then
+        call die('FDF module: fdf_initdata', 'Error allocating file_in', &
+                 THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      endif
+
+      file_in%nlines = 0
+      NULLIFY(file_in%first)
+      NULLIFY(file_in%last)
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE fdf_initdata
+
+!
+!   Add a token to the dynamic list of parsed lines
+!
+    SUBROUTINE fdf_addtoken(line, pline)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(len=MAX_LENGTH)  :: line
+      type(parsed_line), pointer :: pline
+
+!--------------------------------------------------------------- Local Variables
+      integer                    :: i, ierr
+      type(line_dlist), pointer  :: mark
+
+!------------------------------------------------------------------------- BEGIN
+      ALLOCATE(mark, stat=ierr)
+      if (ierr .ne. 0) then
+        call die('FDF module: fdf_addtoken', 'Error allocating mark',   &
+                 THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      endif
+
+      mark%str   =  line
+      mark%pline => pline
+      NULLIFY(mark%next)
+
+      if (ASSOCIATED(file_in%first)) then
+        mark%prev         => file_in%last
+        file_in%last%next => mark
+      else
+        NULLIFY(mark%prev)
+        file_in%first => mark
+      endif
+
+      file_in%last => mark
+      file_in%nlines = file_in%nlines + 1
+
+      if (fdf_debug2) then
+        write(fdf_log,*) '***FDF_ADDTOKEN*******************************'
+        write(fdf_log,*) 'Line:', TRIM(mark%str)
+        write(fdf_log,*) 'Ntokens:', mark%pline%ntokens
+        do i= 1, mark%pline%ntokens
+          write(fdf_log,*) '  Token:', trim(tokens(pline,i)), &
+                           ' (', mark%pline%id(i), ')'
+        enddo
+        write(fdf_log,*) '**********************************************'
+      endif
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE fdf_addtoken
+
+!
+!   Opens a file for FDF processing.
+!
+    SUBROUTINE fdf_open(filename)
+      implicit none
+!-------------------------------------------------------------- Output Variables
+      character(*)  :: filename
+
+!--------------------------------------------------------------- Local Variables
+      logical       :: file_exists
+      character(80) :: msg
+      integer(ip)   :: lun
+
+!------------------------------------------------------------------------- BEGIN
+      ndepth = ndepth + 1
+      if (ndepth .gt. maxdepth) then
+        call die('FDF module: fdf_open', 'Too many nested fdf files...', &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      if (leqi(filename, 'stdin')) then
+        lun = INPUT_UNIT
+        if (fdf_debug) write(fdf_log,'(a,i1,a)')                        &
+          '---> Reading from standard input [DEPTH:', ndepth,'] '
+      else
+        call io_assign(lun)
+
+        INQUIRE(file=filename, exist=file_exists)
+        if (file_exists) then
+          open(unit=lun, file=filename, status='old', form='formatted')
+          REWIND(lun)
+          if (fdf_debug) write(fdf_log,'(a,i1,a,a)')                    &
+            '---> Opened [DEPTH:', ndepth,'] ', TRIM(filename)
+        else
+          write(msg,'(a,a)') 'Cannot open ', TRIM(filename)
+          call die('FDF module: fdf_open', msg, THIS_FILE, __LINE__, fdf_err)
+        endif
+      endif
+
+      fdf_in(ndepth) = lun
+      REWIND(fdf_in(ndepth))
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE fdf_open
+
+!
+!   Closes currently opened fdf file
+!
+    SUBROUTINE fdf_close()
+      implicit none
+!------------------------------------------------------------------------- BEGIN
+      if (ndepth .ge. 1) then
+        call io_close(fdf_in(ndepth))
+        if (fdf_debug)                                                  &
+          write(fdf_log,'(a,i1,a)') '---> Closed [DEPTH:', ndepth,']'
+        ndepth = ndepth - 1
+      endif
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE fdf_close
+
+!
+!   Set output file for FDF subsystem
+!
+    SUBROUTINE fdf_output(fileout)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)   :: fileout
+
+!--------------------------------------------------------------- Local Variables
+      character(256) :: fileouttmp
+
+!------------------------------------------------------------------------- BEGIN
+      call io_assign(fdf_out)
+
+#ifdef _MPI_
+      if (rank /= 0) then
+         fileouttmp = "/tmp/" // trim(fileout) // "." // i2s(rank)
+      else
+         fileouttmp = fileout
+      endif
+#else
+      fileouttmp = fileout
+#endif
+      open( unit=fdf_out, file=TRIM(fileouttmp), form='formatted',       &
+            access='sequential', status='replace' )
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE fdf_output
+
+!
+!   Frees and shutdown FDF system
+!
+    SUBROUTINE fdf_shutdown()
+      implicit none
+!------------------------------------------------------------------------- BEGIN
+!$OMP SINGLE
+      if (fdf_started) then
+        call fdf_destroy(file_in)
+        fdf_started = .FALSE.
+
+        call io_close(fdf_out)
+      endif
+!$OMP END SINGLE
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE fdf_shutdown
+
+!
+!   Destroy the fdf_file structure for the input file
+!
+    SUBROUTINE fdf_destroy(fdfp)
+      implicit none
+!-------------------------------------------------------------- Output Variables
+      type(fdf_file), pointer :: fdfp
+
+!------------------------------------------------------------------------- BEGIN
+      if (ASSOCIATED(fdfp%first)) call fdf_destroy_dl(fdfp%first)
+      DEALLOCATE(fdfp)
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE fdf_destroy
+
+!
+!   Destroy recursively the dynamic list of parsed lines
+!
+    RECURSIVE SUBROUTINE fdf_destroy_dl(dlp)
+      implicit none
+!-------------------------------------------------------------- Output Variables
+      type(line_dlist), pointer :: dlp
+
+!------------------------------------------------------------------------- BEGIN
+      if (ASSOCIATED(dlp%next)) call fdf_destroy_dl(dlp%next)
+      call destroy(dlp%pline)
+      DEALLOCATE(dlp)
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE fdf_destroy_dl
+
+!
+!   Tells when FDF library has been compiled with parallel
+!   execution support. Depends on _MPI_ macro.
+!
+    FUNCTION fdf_parallel()
+      implicit none
+!-------------------------------------------------------------- Output Variables
+      logical      :: fdf_parallel
+
+!------------------------------------------------------------------------- BEGIN
+#ifdef _MPI_
+      fdf_parallel = .TRUE.
+#else
+      fdf_parallel = .FALSE.
+#endif
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_parallel
+
+!
+!   Read a line of the 'ndepth' input file, returning .TRUE. if
+!   there are more lines to read from input file, .FALSE. otherwise.
+!
+    FUNCTION fdf_readline(line)
+      implicit none
+!-------------------------------------------------------------- Output Variables
+      logical      :: fdf_readline
+      character(*) :: line
+
+!--------------------------------------------------------------- Local Variables
+      integer(ip)  :: stat
+
+!------------------------------------------------------------------------- BEGIN
+      read(fdf_in(ndepth), '(a)', iostat=stat) line
+
+      if (stat .eq. 0) then
+        fdf_readline = .TRUE.
+        if (fdf_debug2) write(fdf_log, '(a,a76)') 'fdf_readline > ', line
+      else
+        fdf_readline = .FALSE.
+      endif
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_readline
+
+!
+!   Returns the string line associated with the mark pointer
+!   in the FDF herarchy. If mark is not associated returns ''.
+!
+    FUNCTION fdf_getline(mark)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      type(line_dlist), pointer :: mark
+
+!-------------------------------------------------------------- Output Variables
+      character(len=MAX_LENGTH) :: fdf_getline
+
+!------------------------------------------------------------------------- BEGIN
+      if (ASSOCIATED(mark)) then
+        fdf_getline = mark%str
+      else
+        fdf_getline = ' '
+      endif
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_getline
+
+!
+!   Prints all the fdf_file structure of the input file(s)
+!
+    SUBROUTINE fdf_printfdf()
+      implicit none
+!--------------------------------------------------------------- Local Variables
+      integer(ip)               :: i, ntokens
+      character*1               :: id
+      type(line_dlist), pointer :: dlp
+      character(len=MAX_LENGTH) :: tok
+
+!------------------------------------------------------------------------- BEGIN
+      dlp => file_in%first
+
+      write(fdf_log,*) '*** FDF Memory Structure Summary: ************'
+      do while (ASSOCIATED(dlp))
+        ntokens = dlp%pline%ntokens
+        write(fdf_log,*) 'Line:', TRIM(dlp%str)
+        write(fdf_log,*) 'Ntokens:', ntokens
+        do i= 1, ntokens
+          tok = tokens(dlp%pline,i)
+          id  = dlp%pline%id(i)
+          write(fdf_log,*) '  Token:', tok, '(', dlp%pline%id(i), ')'
+        enddo
+        dlp => dlp%next
+      enddo
+      write(fdf_log,*) '**********************************************'
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE fdf_printfdf
+
+!
+!   Returns an integer associated with label 'label', or the default
+!   value if label is not found in the fdf file.
+!   Optionally can return a pointer to the line found.
+!
+    FUNCTION fdf_integer(label, default, line)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)                        :: label
+      integer(ip)                         :: default
+
+!-------------------------------------------------------------- Output Variables
+      integer(ip)                         :: fdf_integer
+      type(line_dlist), pointer, optional :: line
+
+!--------------------------------------------------------------- Local Variables
+      character(80)                       :: msg
+      type(line_dlist), pointer           :: mark
+
+!------------------------------------------------------------------------- BEGIN
+!     Prevents using FDF routines without initialize
+      if (.not. fdf_started) then
+        call die('FDF module: fdf_integer', 'FDF subsystem not initialized', &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      if (fdf_locate(label, mark)) then
+        if (.not. match(mark%pline, 'li')) then
+          write(msg,*) 'no integer value for ', label
+          call die('FDF module: fdf_integer', msg, THIS_FILE, __LINE__, fdf_err)
+        endif
+
+        fdf_integer = integers(mark%pline, 1, 1)
+        write(fdf_out,'(a,5x,i10)') label, fdf_integer
+      else
+        fdf_integer = default
+        write(fdf_out,'(a,i10,5x,a)') label, default, '# default value'
+      endif
+
+      if (PRESENT(line)) line = mark
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_integer
+
+!
+!   Returns a string associated with label 'label', or the default
+!   string if label is not found in the fdf file.
+!   Optionally can return a pointer to the line found.
+!
+    FUNCTION fdf_string(label, default, line)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)                        :: label
+      character(*)                        :: default
+
+!-------------------------------------------------------------- Output Variables
+      character(80)                       :: fdf_string
+      type(line_dlist), pointer, optional :: line
+
+!--------------------------------------------------------------- Local Variables
+      type(line_dlist), pointer           :: mark
+
+!------------------------------------------------------------------------- BEGIN
+!     Prevents using FDF routines without initialize
+      if (.not. fdf_started) then
+        call die('FDF module: fdf_string', 'FDF subsystem not initialized', &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      if (fdf_locate(label, mark)) then
+        ! Get all the characters spanning the space from the second to
+        ! the last token
+        fdf_string = characters(mark%pline, ind_init=2, ind_final=-1)
+        write(fdf_out,'(a,5x,a)') label, fdf_string
+      else
+        fdf_string = default
+        write(fdf_out,'(a,5x,a,5x,a)') label, default, '# default value'
+      endif
+
+      if (PRESENT(line)) line = mark
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_string
+
+!
+!   Returns true if label 'label' appears by itself or in the form
+!   label {yes,true,.true.,t,y} (case insensitive).
+!
+!   Returns false if label 'label' appears in the form
+!   label {no,false,.false.,f,n} (case insensitive).
+!
+!   If label is not found in the fdf file, fdf_boolean returns the 
+!   LOGICAL variable default.
+!
+!   Optionally can return a pointer to the line found.
+!
+    FUNCTION fdf_boolean(label, default, line)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)                        :: label
+      logical                             :: default
+
+!-------------------------------------------------------------- Output Variables
+      logical                             :: fdf_boolean
+      type(line_dlist), pointer, optional :: line
+
+!--------------------------------------------------------------- Local Variables
+      character(80)                       :: msg, valstr
+      type(line_dlist), pointer           :: mark
+
+
+!------------------------------------------------------------------------- BEGIN
+!     Prevents using FDF routines without initialize
+      if (.not. fdf_started) then
+        call die('FDF module: fdf_boolean', 'FDF subsystem not initialized', &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      if (fdf_locate(label, mark)) then
+
+!       If the label appears by itself, we interpret it as .true.
+        if (ntokens(mark%pline) .ne. 1) then
+
+!         Look for second word
+          valstr = names(mark%pline, 1, 1)
+
+          if (is_true(valstr)) then
+            fdf_boolean = .TRUE.
+            write(fdf_out,'(a,5x,l10)') label, fdf_boolean
+
+          elseif (is_false(valstr)) then
+            fdf_boolean = .FALSE.
+            write(fdf_out,'(a,5x,l10)') label, fdf_boolean
+
+          else
+            write(msg,*) 'unexpected logical value ', label, ' = ', valstr
+            call die('FDF module: fdf_boolean', msg,                    &
+                     THIS_FILE, __LINE__, fdf_err)
+          endif
+        else
+          fdf_boolean = .TRUE.
+          write(fdf_out,'(a,5x,l10,5x,a)') label, fdf_boolean,          &
+                                           '# label by itself'
+        endif
+      else
+        fdf_boolean = default
+        write(fdf_out,'(a,5x,l10,5x,a)') label, default, '# default value'
+      endif
+
+      if (PRESENT(line)) line = mark
+
+      RETURN
+
+      CONTAINS
+
+      logical function is_true(valstr)  result(a)
+      character(len=*), intent(in) :: valstr
+      a = leqi(valstr, 'yes')    .or. leqi(valstr, 'true') .or. &
+          leqi(valstr, '.true.') .or. leqi(valstr, 't')    .or. &
+          leqi(valstr, 'y')
+      end function is_true
+
+      logical function is_false(valstr)  result(a)
+      character(len=*), intent(in) :: valstr
+      a = leqi(valstr, 'no')      .or. leqi(valstr, 'false') .or. &
+          leqi(valstr, '.false.') .or. leqi(valstr, 'f')     .or. &
+          leqi(valstr, 'n')
+      end function is_false
+
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_boolean
+
+!
+!   Returns a single precision value associated with label 'label', 
+!   or the default value if label is not found in the fdf file.
+!   Optionally can return a pointer to the line found.
+!   Note that integers on the line are also accepted
+!
+    FUNCTION fdf_single(label, default, line)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)                        :: label
+      real(sp)                            :: default
+
+!-------------------------------------------------------------- Output Variables
+      real(sp)                            :: fdf_single
+      type(line_dlist), pointer, optional :: line
+
+!--------------------------------------------------------------- Local Variables
+      character(80)                       :: msg
+      type(line_dlist), pointer           :: mark
+
+!------------------------------------------------------------------------- BEGIN
+!     Prevents using FDF routines without initialize
+      if (.not. fdf_started) then
+        call die('FDF module: fdf_single', 'FDF subsystem not initialized', &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      if (fdf_locate(label, mark)) then
+        if (.not. match(mark%pline, 'lv')) then
+          write(msg,*) 'no real value for ', label
+          call die('FDF module: fdf_single', msg, THIS_FILE, __LINE__,  fdf_err)
+        endif
+        fdf_single = values(mark%pline, 1, 1)
+        write(fdf_out,'(a,5x,g20.10)') label, fdf_single
+      else
+        fdf_single = default
+        write(fdf_out,'(a,5x,g20.10,5x,a)') label, default, '# default value'
+      endif
+
+      if (PRESENT(line)) line = mark
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_single
+
+!
+!   Returns a double precision value associated with label 'label', 
+!   or the default value if label is not found in the fdf file.
+!   Optionally can return a pointer to the line found.
+!   Note that integers on the line are also accepted
+!
+    FUNCTION fdf_double(label, default, line)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)                        :: label
+      real(dp)                            :: default
+
+!-------------------------------------------------------------- Output Variables
+      real(dp)                            :: fdf_double
+      type(line_dlist), pointer, optional :: line
+
+!--------------------------------------------------------------- Local Variables
+      character(80)                       :: msg
+      type(line_dlist), pointer           :: mark
+
+!------------------------------------------------------------------------- BEGIN
+!     Prevents using FDF routines without initialize
+      if (.not. fdf_started) then
+        call die('FDF module: fdf_double', 'FDF subsystem not initialized', &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      if (fdf_locate(label, mark)) then
+        if (.not. match(mark%pline, 'lv')) then
+          write(msg,*) 'no real value for ', label
+          call die('FDF module: fdf_double', msg, THIS_FILE, __LINE__, fdf_err)
+        endif
+        fdf_double = values(mark%pline, 1, 1)
+        write(fdf_out,'(a,5x,g20.10)') label, fdf_double
+      else
+        fdf_double = default
+        write(fdf_out,'(a,5x,g20.10,5x,a)') label, default, '# default value'
+      endif
+
+      if (PRESENT(line)) line = mark
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_double
+
+!
+!   Returns a double precision value associated with label 'label',
+!   or the default value if label is not found in the fdf file.
+!   Converts the units to defunit.
+!   Optionally can return a pointer to the line found.
+!
+    FUNCTION fdf_physical(label, default, defunit, line)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)                        :: label, defunit
+      real(dp)                            :: default
+
+!-------------------------------------------------------------- Output Variables
+      real(dp)                            :: fdf_physical
+      type(line_dlist), pointer, optional :: line
+
+!--------------------------------------------------------------- Local Variables
+      character(10)                       :: unitstr
+      character(80)                       :: msg
+      real(dp)                            :: value
+      type(line_dlist), pointer           :: mark
+
+!------------------------------------------------------------------------- BEGIN
+!     Prevents using FDF routines without initialize
+      if (.not. fdf_started) then
+        call die('FDF module: fdf_physical', 'FDF subsystem not initialized', &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+!     Label found
+      if (fdf_locate(label, mark)) then
+        if (.not. match(mark%pline, 'lv')) then
+          write(msg,*) 'no real value for ', label
+          call die('FDF module: fdf_physical', msg, THIS_FILE, __LINE__, fdf_err)
+        endif
+
+!       Label with value
+        value = values(mark%pline, 1, 1)
+        fdf_physical = value 
+
+!       Look for unit
+        if (.not. match(mark%pline, 'lvn')) then
+          write(msg,*) 'no unit specified for ', label
+          call die('FDF module: fdf_physical', msg, THIS_FILE, __LINE__, fdf_err)
+        endif
+
+        unitstr = names(mark%pline, 1, 2)
+        if (.not. leqi(unitstr, defunit))                               &
+          fdf_physical = value * fdf_convfac(unitstr, defunit)
+
+        write(fdf_out,'(a,5x,g20.10,1x,a10)') label, fdf_physical, defunit
+        write(fdf_out,'(a,a,5x,g20.10,1x,a10)')                         &
+             '# above item originally: ', label, value, unitstr
+      else
+        fdf_physical = default
+        write(fdf_out,'(a,5x,g20.10,1x,a,5x,a)')                        &
+             label, default, defunit, '# default value'
+      endif
+
+      if (PRESENT(line)) line = mark
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_physical
+
+!
+!   Returns conversion factor between a subset of physical units
+!   Written by j.m.soler. dec'96.
+!   Modified by alberto garcia, jan'97.
+!
+    FUNCTION fdf_convfac(from, to)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)           :: from, to
+
+!-------------------------------------------------------------- Output Variables
+      real(dp)               :: fdf_convfac
+
+!--------------------------------------------------------------- Local Variables
+      integer(ip), parameter :: nu = 68
+      character(10)          :: dimm(nu), name(nu)
+      character(80)          :: msg
+      integer(ip)            :: iu, ifrom, ito
+      real(dp)               :: unit(nu)
+
+!------------------------------------------------------------------------- BEGIN
+
+!
+!     We allow case variations in the units. this could be dangerous
+!     (meV --> MeV!!) in real life, but not in this restricted 
+!     field.
+!     
+      data (dimm(iu), name(iu), unit(iu), iu=1, 10) /  &
+           'mass  ', 'kg      ', 1.d0,                 &
+           'mass  ', 'g       ', 1.d-3,                &
+           'mass  ', 'amu     ', 1.66054d-27,          &
+           'length', 'm       ', 1.d0,                 &
+           'length', 'nm      ', 1.d-9,                &
+           'length', 'ang     ', 1.d-10,               &
+           'length', 'bohr    ', 0.529177d-10,         &
+           'time  ', 's       ', 1.d0,                 &
+           'time  ', 'fs      ', 1.d-15,               &
+           'energy', 'j       ', 1.d0/
+
+      data (dimm(iu), name(iu), unit(iu), iu=11, 20) / &
+           'energy', 'erg     ', 1.d-7,                &
+           'energy', 'ev      ', 1.60219d-19,          &
+           'energy', 'mev     ', 1.60219d-22,          &
+           'energy', 'ry      ', 2.17991d-18,          &
+           'energy', 'mry     ', 2.17991d-21,          &
+           'energy', 'hartree ', 4.35982d-18,          &
+           'energy', 'k       ', 1.38066d-23,          &
+           'energy', 'kcal/mol', 6.94780d-21,          &
+           'force ', 'n       ', 1.d0,                 &
+           'force ', 'ev/ang  ', 1.60219d-9/
+
+      data (dimm(iu), name(iu), unit(iu), iu=21, 30) / &
+           'force ', 'ry/bohr ', 4.11943d-8,           &
+           'length  ', 'cm      ', 1.d-2,              &
+           'time    ', 'ps      ', 1.d-12,             &
+           'time    ', 'ns      ', 1.d-9,              &
+           'energy  ', 'mhartree', 4.35982d-21,        &
+           'energy  ', 'kj/mol  ', 1.6606d-21,         &
+           'energy  ', 'hz      ', 6.6262d-34,         &
+           'energy  ', 'thz     ', 6.6262d-22,         &
+           'energy  ', 'cm-1    ', 1.986d-23,          &
+           'energy  ', 'cm^-1   ', 1.986d-23/
+
+      data (dimm(iu), name(iu), unit(iu), iu=31,40) /  &
+           'pressure', 'pa      ', 1.d0,               &
+           'pressure', 'mpa     ', 1.d6,               &
+           'pressure', 'gpa     ', 1.d9,               &
+           'pressure', 'atm     ', 1.01325d5,          &
+           'pressure', 'bar     ', 1.d5,               &
+           'pressure', 'mbar    ', 1.d11,              &
+           'charge  ', 'c       ', 1.d0,               &
+           'charge  ', 'e       ', 1.602177d-19,       &
+           'dipole  ', 'c*m     ', 1.d0,               &
+           'dipole  ', 'd       ', 3.33564d-30/
+
+      data (dimm(iu), name(iu), unit(iu), iu=41,50) /  &
+           'dipole  ', 'debye   ', 3.33564d-30,        &
+           'dipole  ', 'e*bohr  ', 8.47835d-30,        &
+           'dipole  ', 'e*ang   ', 1.602177d-29,       &
+           'energy  ', 'cm**-1    ', 1.986d-23,        &
+           'pressure', 'ry/bohr**3', 1.47108d13,       &
+           'pressure', 'ev/ang**3 ', 1.60219d11,       &
+           'mominert', 'kg*m**2   ', 1.d0,             &
+           'mominert', 'ry*fs**2  ', 2.17991d-48,      &
+           'efield  ', 'v/m       ', 1.d0,             &
+           'efield  ', 'v/nm      ', 1.d9 /
+
+      data (dimm(iu), name(iu), unit(iu), iu=51,60) /  &
+           'efield  ', 'v/ang     ', 1.d10,            &
+           'efield  ', 'v/bohr    ', 1.8897268d10,     &
+           'efield  ', 'ry/bohr/e ', 2.5711273d11,     &
+           'efield  ', 'har/bohr/e', 5.1422546d11,     &
+           'angle   ', 'deg       ', 1.d0,             &
+           'angle   ', 'rad       ', 5.72957795d1,     &
+           'torque  ', 'eV/deg    ', 1.0d0,            &
+           'torque  ', 'eV/rad    ', 1.745533d-2,      &
+           'torque  ', 'Ry/deg    ', 13.6058d0,        &
+           'torque  ', 'Ry/rad    ', 0.237466d0 /
+      data (dimm(iu), name(iu), unit(iu), iu=61,68) /  &
+          'torque  ', 'meV/deg   ', 1.0d-3,            &
+          'torque  ', 'meV/rad   ', 1.745533d-5,       &
+          'torque  ', 'mRy/deg   ', 13.6058d-3,        &
+          'torque  ', 'mRy/rad   ', 0.237466d-3,       &
+          'time    ', 'mins    ', 60.d0,               &
+          'time    ', 'hours   ', 3600.d0,             &
+          'time    ', 'days    ', 86400.d0,            &
+          'time    ', 'ps        ', 1.d-12  /       
+
+!
+      ifrom = 0
+      ito   = 0
+      do iu= 1, nu
+        if (leqi(name(iu), from)) ifrom = iu
+        if (leqi(name(iu), to))   ito   = iu
+      end do
+
+      if (ifrom .eq. 0) then
+        write(msg,*) 'unknown unit = ', from
+        call die('FDF module: fdf_convfac', msg, THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      if (ito .eq. 0) then
+        write(msg,*) 'unknown unit = ', to
+        call die('FDF module: fdf_convfac', msg, THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      if (leqi(dimm(ifrom), dimm(ito))) then
+        fdf_convfac = unit(ifrom) / unit(ito)
+      else
+        write(msg,*) 'unit''s physical dimensions don''t match: ',      &
+                     from, ', ', to
+        call die('FDF module: fdf_convfac', msg, THIS_FILE, __LINE__, fdf_err)
+      endif
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_convfac
+
+!
+!   Searches for label in the fdf hierarchy. If it appears the function
+!   returns .TRUE. and leaves mark pointer positioned at the line.
+!   Otherwise, it returns .FALSE. and mark points to NULL.
+!
+    FUNCTION fdf_locate(label, mark)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)              :: label
+
+!-------------------------------------------------------------- Output Variables
+      logical                   :: fdf_locate
+      type(line_dlist), pointer :: mark
+
+!--------------------------------------------------------------- Local Variables
+      character(80)             :: strlabel
+
+!------------------------------------------------------------------------- BEGIN
+      fdf_locate = .FALSE.
+
+!      if (fdf_donothing) return
+
+      mark => file_in%first
+      do while ((.not. fdf_locate) .and. (ASSOCIATED(mark)))
+
+        if (match(mark%pline, 'l')) then
+          strlabel = labels(mark%pline)
+
+          if (labeleq(strlabel, label, fdf_log)) then
+            fdf_locate = .TRUE.
+          else
+            mark => mark%next
+          endif
+        else
+          mark => mark%next
+        endif
+      enddo
+
+      if (.not. fdf_locate) NULLIFY(mark)
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_locate
+
+!
+!   Searches for block label in the fdf hierarchy. If it appears returns
+!   .TRUE. and leaves block mark pointer positioned at the first line.
+!   Otherwise, it returns .FALSE. and block mark points to NULL.
+!
+    FUNCTION fdf_block(label, bfdf)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)    :: label
+
+!-------------------------------------------------------------- Output Variables
+      logical         :: fdf_block
+      type(block_fdf) :: bfdf
+
+!--------------------------------------------------------------- Local Variables
+      character(80)   :: strlabel
+
+!------------------------------------------------------------------------- BEGIN
+!     Prevents using FDF routines without initialize
+      if (.not. fdf_started) then
+        call die('FDF module: fdf_block', 'FDF subsystem not initialized', &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      fdf_block = .FALSE.
+
+      bfdf%mark => file_in%first
+      do while ((.not. fdf_block) .and. (ASSOCIATED(bfdf%mark)))
+
+        if (match(bfdf%mark%pline, 'bl')) then
+          strlabel = blocks(bfdf%mark%pline)
+
+          if (labeleq(strlabel, label, fdf_log)) then
+            fdf_block = .TRUE.
+            bfdf%label = label
+
+            write(fdf_out,'(a,a)') '%block ', TRIM(label)
+          endif
+        endif
+
+        bfdf%mark => bfdf%mark%next
+      enddo
+
+      if (.not. fdf_block) NULLIFY(bfdf%mark)
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_block
+
+!
+!   Get successive parsed lines from block returning
+!   .TRUE. while more lines exist in the block bfdf.
+!
+    FUNCTION fdf_bline(bfdf, pline)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      type(block_fdf)            :: bfdf
+
+!-------------------------------------------------------------- Output Variables
+      logical                    :: fdf_bline
+      type(parsed_line), pointer :: pline
+
+!--------------------------------------------------------------- Local Variables
+      character(80)              :: strlabel
+
+!------------------------------------------------------------------------- BEGIN
+!     Prevents using FDF routines without initialize
+      if (.not. fdf_started) then
+        call die('FDF module: fdf_bline', 'FDF subsystem not initialized', &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      if (.not. ASSOCIATED(bfdf%mark)) then
+        call die('FDF module: fdf_bline', 'block_fdf structure not initialized', &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      fdf_bline = .TRUE.
+
+!     If we are in the head of the block move to the content
+      if (match(bfdf%mark%pline, 'bl')) then
+        strlabel = blocks(bfdf%mark%pline)
+
+        if (labeleq(strlabel, bfdf%label, fdf_log)) then
+          bfdf%mark => bfdf%mark%next
+
+          write(fdf_out,'(a,a)') '%block ', TRIM(bfdf%label)
+        endif
+      endif
+
+      if (match(bfdf%mark%pline, 'el')) then
+        strlabel = endblocks(bfdf%mark%pline)
+
+        if (labeleq(strlabel, bfdf%label, fdf_log)) then
+          fdf_bline = .FALSE.
+          NULLIFY(pline)
+
+          write(fdf_out,'(a,a)') '%endblock ', TRIM(bfdf%label)
+        endif
+      endif
+
+      if (fdf_bline) then
+        write(fdf_out,'(1x,a)') TRIM(bfdf%mark%str)
+
+        pline     => bfdf%mark%pline
+        bfdf%mark => bfdf%mark%next
+      endif
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_bline
+
+!
+!   Backspace to the previous physical line in the block
+!   returning .TRUE. while more lines exist in the block bfdf.
+!
+    FUNCTION fdf_bbackspace(bfdf, pline)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      type(block_fdf)            :: bfdf
+
+!-------------------------------------------------------------- Output Variables
+      logical                    :: fdf_bbackspace
+      type(parsed_line), pointer :: pline
+
+!--------------------------------------------------------------- Local Variables
+      character(80)              :: strlabel
+
+!------------------------------------------------------------------------- BEGIN
+!     Prevents using FDF routines without initialize
+      if (.not. fdf_started) then
+        call die('FDF module: fdf_bbackspace', 'FDF subsystem not initialized', &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      if (.not. ASSOCIATED(bfdf%mark)) then
+        call die('FDF module: fdf_bbackspace', 'block_fdf structure not initialized', &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      fdf_bbackspace = .TRUE.
+
+!     If we are in the bottom of the block move to the content
+      if (match(bfdf%mark%pline, 'el')) then
+        strlabel = endblocks(bfdf%mark%pline)
+
+        if (labeleq(strlabel, bfdf%label, fdf_log)) then
+          bfdf%mark => bfdf%mark%prev
+
+          write(fdf_out,'(a,a)') '%endblock ', TRIM(bfdf%label)
+        endif
+      endif
+
+      if (match(bfdf%mark%pline, 'bl')) then
+        strlabel = blocks(bfdf%mark%pline)
+
+        if (labeleq(strlabel, bfdf%label, fdf_log)) then
+          fdf_bbackspace = .FALSE.
+          NULLIFY(pline)
+
+          write(fdf_out,'(a,a)') '%block ', TRIM(bfdf%label)
+        endif
+      endif
+
+      if (fdf_bbackspace) then
+        write(fdf_out,'(1x,a)') TRIM(bfdf%mark%str)
+
+        pline     => bfdf%mark%pline
+        bfdf%mark => bfdf%mark%prev
+      endif
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_bbackspace
+
+!
+!   Moves the pointer of the working line (bfdf%mark)
+!   to the beginning of the block 'label' structure.
+!
+    SUBROUTINE fdf_brewind(bfdf)
+      implicit none
+!-------------------------------------------------------------- Output Variables
+      type(block_fdf) :: bfdf
+
+!--------------------------------------------------------------- Local Variables
+      character(80)   :: msg
+
+!------------------------------------------------------------------------- BEGIN
+!     Prevents using FDF routines without initialize
+      if (.not. fdf_started) then
+        call die('FDF module: fdf_brewind', 'FDF subsystem not initialized', &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      if (.not. ASSOCIATED(bfdf%mark)) then
+        call die('FDF module: fdf_brewind', 'block_fdf structure not initialized', &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      if (.not. fdf_block(bfdf%label, bfdf)) then
+        write(msg,*) 'Block ', bfdf%label, ' not found in FDF structure'
+        call die('FDF module: fdf_brewind', msg, &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE fdf_brewind
+
+!
+!   Check if label is defined
+!     
+    logical FUNCTION fdf_defined(label)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)              :: label
+
+!--------------------------------------------------------------- Local Variables
+      type(line_dlist), pointer :: mark
+      type(block_fdf)           :: bfdf
+
+
+!--------------------------------------------------------------------- BEGIN
+      ! First, check whether a single label exists:
+      fdf_defined = fdf_locate(label, mark)
+      if (.not. fdf_defined) then
+         ! Check whether there is a block with that label
+         fdf_defined = fdf_block(label,bfdf)
+      endif
+      if (fdf_defined) write(fdf_out,'(a)') label
+
+      RETURN
+!----------------------------------------------------------------------- END
+    END FUNCTION fdf_defined
+
+! 
+!   Debugging levels: 
+!   level <= 0: nothing
+!   level  = 1: standard
+!   level >= 2: exhaustive
+!
+    SUBROUTINE fdf_setdebug(level)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      integer(ip)   :: level
+
+!--------------------------------------------------------------- Local Variables
+      character(20) :: filedebug = 'fdf.debug'
+
+!------------------------------------------------------------------------- BEGIN
+      if (level .le. 0) then
+        if (fdf_debug) then
+          call io_close(fdf_log)
+          fdf_debug = .FALSE.
+        endif
+      else
+        if (.not. fdf_debug) then
+          call io_assign(fdf_log)
+#ifdef _MPI_
+          if (rank /= 0) then
+             filedebug = "/tmp/" // trim(filedebug) // "." // i2s(rank)
+          endif
+#endif
+          open(fdf_log, file=filedebug, form='formatted',               &
+               status='unknown')
+          REWIND(fdf_log)
+          fdf_debug = .TRUE.
+
+!         Set logging/debugging info for PARSE module also
+          call setlog(fdf_log)
+          call setdebug(1)
+        endif
+      endif
+
+      fdf_debug2 = (level .ge. 2)
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE fdf_setdebug
+
+
+    subroutine serialize_fdf_struct(buffer)
+    character, pointer        :: buffer(:)
+
+    character(len=SERIALIZED_LENGTH)  bufline
+    type(line_dlist), pointer :: mark
+    integer :: i, length, init, final
+
+    mark => file_in%first
+    do i= 1, file_in%nlines
+       call serialize_pline(mark%pline,bufline,length)
+       init  = (i-1)*SERIALIZED_LENGTH+1
+       final = (i)*SERIALIZED_LENGTH
+       call convert_string_to_array_of_chars(bufline,buffer(init:final))
+       mark => mark%next
+    enddo
+  end subroutine serialize_fdf_struct
+
+    subroutine recreate_fdf_struct(nlines,bufferFDF)
+    character, pointer        :: bufferFDF(:)
+    integer, intent(in)       :: nlines
+
+    character(len=SERIALIZED_LENGTH)  bufline
+    type(parsed_line), pointer    :: pline
+    integer :: i, init, final
+
+    do i= 1, nlines
+       init  = (i-1)*SERIALIZED_LENGTH+1
+       final = (i)*SERIALIZED_LENGTH
+       call convert_array_of_chars_to_string(bufferFDF(init:final),bufline)
+       allocate(pline)
+       call recreate_pline(pline,bufline)
+       call fdf_addtoken(pline%line,pline)
+    enddo
+    print *, "Processed: ", file_in%nlines, " lines."
+
+  end subroutine recreate_fdf_struct
+
+!=================================================================
+!--------- Obsolete routines ----------------
+!
+!   The owner node of the input file sends data file to the
+!   other processes in the MPI communicator.
+!
+#ifdef CLUSTER
+    SUBROUTINE fdf_sendInput()
+      use mpi_siesta
+      implicit none
+!--------------------------------------------------------------- Local Variables
+      character, pointer        :: bufferFDF(:)
+      integer(ip)               :: i, j, k, ierr
+      type(line_dlist), pointer :: mark
+
+!------------------------------------------------------------------------- BEGIN
+      ALLOCATE(bufferFDF(file_in%nlines*MAX_LENGTH), stat=ierr)
+      if (ierr .ne. 0) then
+        call die('FDF module: fdf_sendInput', 'Error allocating bufferFDF', &
+                 THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      endif
+
+      mark => file_in%first
+      do i= 1, file_in%nlines*MAX_LENGTH, MAX_LENGTH
+        bufferFDF(i:i+MAX_LENGTH-1) = s2arr(mark%str)
+        mark => mark%next
+      enddo
+
+      call MPI_Bcast(file_in%nlines, 1,                                 &
+                     MPI_INTEGER, rank, MPI_COMM_WORLD, ierr)
+
+      if (ierr .ne. MPI_SUCCESS) then
+        call die('FDF module: fdf_sendInput', 'Error Broadcasting nlines.' // &
+                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      endif
+
+      call MPI_Bcast(bufferFDF, file_in%nlines*MAX_LENGTH,              &
+                     MPI_CHARACTER, rank, MPI_COMM_WORLD, ierr)
+      if (ierr .ne. MPI_SUCCESS) then
+        call die('FDF module: fdf_sendInput', 'Error Broadcasting bufferFDF.' // &
+                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      endif
+
+      DEALLOCATE(bufferFDF)
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE fdf_sendInput
+#endif
+
+!
+!   Remaining nodes recieve the input data file from the owner
+!   of the FDF file inside the cluster.
+!
+#ifdef CLUSTER
+    SUBROUTINE fdf_recvInput(root, filein, fileinTmp)
+      use mpi_siesta
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)       :: filein, fileinTmp
+      integer(ip)        :: root
+
+!--------------------------------------------------------------- Local Variables
+      integer(ip)        :: i, j, lun, ierr, nlines
+      character, pointer :: bufferFDF(:)
+      character(len=10)  :: fmt
+!------------------------------------------------------------------------- BEGIN
+      call MPI_Bcast(nlines, 1,                                         &
+                     MPI_INTEGER, root, MPI_COMM_WORLD, ierr)
+      if (ierr .ne. MPI_SUCCESS) then
+        call die('FDF module: fdf_recvInput', 'Error Broadcasting nlines.' // &
+                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      endif
+
+      ALLOCATE(bufferFDF(nlines*MAX_LENGTH), stat=ierr)
+      if (ierr .ne. 0) then
+        call die('FDF module: fdf_recvInput', 'Error allocating bufferFDF', &
+                 THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      endif
+
+      call MPI_Bcast(bufferFDF, nlines*MAX_LENGTH,                      &
+                     MPI_CHARACTER, root, MPI_COMM_WORLD, ierr)
+      if (ierr .ne. MPI_SUCCESS) then
+        call die('FDF module: fdf_recvInput', 'Error Broadcasting bufferFDF.' // &
+                 'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
+      endif
+
+      call io_assign(lun)
+      fileinTmp = TRIM(filein) // '.' // i2s(rank)
+      open(unit=lun, file=fileinTmp, form='formatted',                  &
+           status='unknown')
+
+      if (MAX_LENGTH.lt.10) then
+        write(fmt,"(a1,I1,a2)") "(", MAX_LENGTH, "a)"
+      else if (MAX_LENGTH.lt.100) then
+        write(fmt,"(a1,I2,a2)") "(", MAX_LENGTH, "a)"
+      else if (MAX_LENGTH.lt.1000) then
+        write(fmt,"(a1,I3,a2)") "(", MAX_LENGTH, "a)"
+      else
+        write(fmt,"(a1,I4,a2)") "(", MAX_LENGTH, "a)"
+      endif
+
+      do i= 1, nlines*MAX_LENGTH, MAX_LENGTH
+        write(lun,fmt) (bufferFDF(j),j=i,i+MAX_LENGTH-1)
+      enddo
+      call io_close(lun)
+
+      DEALLOCATE(bufferFDF)
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE fdf_recvInput
+#endif
+END MODULE fdf

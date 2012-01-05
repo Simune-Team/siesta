@@ -12,7 +12,7 @@
 #
 # Note the parallel environment above ("-pe mpich") and the MPIRUN below
 #
-prog=../../../Src/siesta
+prog=../../../siesta
 MPIRUN=/opt/64/mpich-pgi6/bin/mpirun
 #
 echo This job runs on the following nodes:

@@ -69,12 +69,12 @@
 
       implicit none
 
-      integer :: ia, jx, ix
+      integer :: jx, ix
 
-      real(dp):: Pmol       ! "Molecular pressure" (discounting Virial term)
-      real(dp):: Psol       ! Pressure of "solid"
-      real(dp):: Press      ! Pressure
-      real(dp):: ps(3,3)    ! Auxiliary array
+      real(dp):: Pmol     ! Molecular pressure (discounting Virial term)
+      real(dp):: Psol     ! Pressure of "solid"
+      real(dp):: Press    ! Pressure
+      real(dp):: ps(3,3)  ! Auxiliary array
 
 ! Stress tensor and pressure:
       
@@ -273,29 +273,23 @@
       use m_energies 
       use m_spin
 #ifdef TRANSIESTA
-! TSS Begin
-! Transiesta Modules
-      use m_ts_options, only: TSinit, TSrun, TSiscf
-! TSS End
+      use m_ts_global_vars, only: TSinit, TSrun, TSiscf 
 #endif /* TRANSIESTA */
       implicit none
 
-      logical :: first
-      integer :: iscf
-      real(dp), intent(in) :: dDmax     ! Max. change in density matrix elements
+      logical              :: first
+      integer              :: iscf
+      real(dp), intent(in) :: dDmax ! Max. change in dens. matrix elem.
+      integer              :: i 
 #ifdef TRANSIESTA
-! TSS Begin
       character(11) :: tmpname
-! TSS End
 #endif /* TRANSIESTA */
-
-      integer :: i 
-
 
       ! Only print out full decomposition at very beginning and end.
       if ((istp==1.and.first).or.final) then
         write(6,'(/,a,/,(a,f17.6))')
      .     'siesta: Program''s energy decomposition (eV):',
+     .     'siesta: Ebs     =', Ebs/eV, 
      .     'siesta: Eions   =', Eions/eV,
      .     'siesta: Ena     =', Ena/eV,
      .     'siesta: Ekin    =', Ekin/eV,
@@ -315,6 +309,9 @@
         if (cml_p) then
           call cmlStartPropertyList(mainXML,
      .         title='Energy Decomposition')
+          call cmlAddProperty(xf=mainXML, value=Ebs/eV, 
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:Ebs', fmt='r6')
           call cmlAddProperty(xf=mainXML, value=Eions/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:Eions', fmt='r6')
@@ -366,21 +363,21 @@
           call cmlEndPropertyList(mainXML)
         endif
       endif
-      ! On all SCF steps, print out the current energy (format depending on type of run)
+!     On all SCF steps, print out the current energy
       if (.not.final) then
-        ! Print total energy and density matrix error .........................
+!       Print total energy and density matrix error 
         if (cml_p) then
           call cmlStartPropertyList(mainXML, title='SCF Cycle')
-          ! Eharrs is always output
+!         Eharrs is always output
           call cmlAddProperty(xf=mainXML, value=Eharrs/eV, 
      .         units="siestaUnits:eV", 
      .         dictRef="siesta:Eharrs", fmt="r7")
         endif
-        ! This chain of if statements determines which properties are output.
+!       Determines which properties are output.
         if (harrisfun) then 
           write(6,"(/a,f14.6,/)") 'siesta: Eharris(eV) = ', Eharrs/eV
-            ! No need for further cml output
-        elseif (isolve==0) then
+!         No need for further cml output
+        elseif (isolve==SOLVE_DIAGON) then
           if (cml_p) 
      .         call cmlAddProperty(xf=mainXML, value=FreeE/eV, 
      .         units="siestaUnits:eV", 
@@ -428,7 +425,7 @@
      .             dictRef="siesta:Ef", fmt="r7")
             endif !cml_p
           endif !fixspin
-        elseif (isolve==1) then
+        elseif (isolve==SOLVE_ORDERN) then
           write(6,'(/,a15,i4)') 'siesta: iscf = ',iscf
           write(6,'(a14,f15.4,a13,f15.4,a10,f7.4/)') 
      .         'Eharris(eV) = ',Eharrs/eV,
@@ -511,16 +508,16 @@
         endif                !TSrun
 ! TSS End
 #endif /* TRANSIESTA */
-        
+
         if (cml_p) then
           call cmlEndPropertyList(mainXML)
         endif
         
       else !final
-      ! Print out additional information in finalization.
-
+!       Print out additional information in finalization.
         write(6,'(/,a)') 'siesta: Final energy (eV):'
         write(6,'(a,a15,f15.6)')
+     .    'siesta: ', 'Band Struct. =', Ebs/eV,
      .    'siesta: ',      'Kinetic =', Ekin/eV,
      .    'siesta: ',      'Hartree =', Uscf/eV,
      .    'siesta: ',   'Ext. field =', DUext/eV,
@@ -531,6 +528,9 @@
      .    'siesta: ',        'Total =', (Etot+Ekinion)/eV
         if (cml_p) then
           call cmlStartPropertyList(xf=mainXML, title='Final Energy')
+          call cmlAddProperty(xf=mainXML, value=Ebs/eV,  
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:Ebs', fmt='r7')
           call cmlAddProperty(xf=mainXML, value=Ekin/eV,  
      .         units='siestaUnits:eV', 
      .         dictref='siesta:Ekin', fmt='r7')
@@ -583,15 +583,17 @@
       USE siesta_options
       use siesta_geom
       use siesta_cml
-      use units
+      use units,      only : Ang
       use m_forces
-
+      use alloc,      only : re_alloc, de_alloc
       implicit none
-
       integer :: ia, ix
       real(dp) :: cfmax, fmax, fres
       real(dp) :: ftot(3), cftot(3)
 
+#ifdef DEBUG
+      call write_debug( '    PRE siesta_write_forces' )
+#endif
         fmax = maxval(abs(fa))
         ftot = sum(fa, dim=2)
         cfmax = maxval(abs(cfa))
@@ -669,6 +671,9 @@
           endif
         endif
       endif !final for forces
+#ifdef DEBUG
+      call write_debug( '    POS siesta_write_forces' )
+#endif
 
       end subroutine siesta_write_forces
 

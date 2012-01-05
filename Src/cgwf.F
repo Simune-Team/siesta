@@ -157,7 +157,7 @@ C Loop for the CG minimization
 C Check if the gradient at current point is negative, and sufficiently
 C large to avoid problems. Otherwise, set a fixed lambda
 C to CG iteration cycle with iout = .false.  ................................
-        if (abs(partial) .le. 1.5e-8) then
+        if (abs(partial) .le. nbands*1.0d-10) then
           lambda = lm*0.4d0
           if (lm .eq. 0.0) lambda=0.4d0
 C         iout = .false.
@@ -170,6 +170,8 @@ C         iout = .false.
         endif
 C ...........................
 
+C10      continue
+
 C Get the energy at three points separated by lam ...........................
         iopt = 1
         call eandg(iopt,eta,qs,lam,nhmax,numh,listh,listhptr,ncmax,
@@ -177,7 +179,7 @@ C Get the energy at three points separated by lam ...........................
      .             dm,edm,nbasisCloc,nspin,Node,Nodes)
 
 C Solve exactly the line minimzation with a fourth order polinomial .........
-        call linmin4(partial,elamb,e3,lam,lambda,Node)
+        call linmin4(partial,elamb,e3,lam,lambda)
 
 C Check if the solution of the line minimization is reasonable 
 C (ie, lambda is small)
@@ -190,7 +192,7 @@ C cycle with iout = .false.  ................................
           goto 1000
         endif
 
-        iout = .true.
+C        iout = .true.
 
 1000    continue
 
@@ -214,9 +216,36 @@ C Calculate energy and gradient at current point ...........................
      .             numc,listc,h,s,c,nbasis,nbasisloc,nbands,e3,fe,xi,
      .             dm,edm,nbasisCloc,nspin,Node,Nodes)
 
+
+C Do not exit if energy has increased, since something must
+C have gone wrong.  Go back to previous point and start again....
+        if (fe .gt. fp) then
+          do is = 1,nspin
+            do i = 1,nbasisCloc
+              do j = 1,numc(i)
+                xi(j,i,is) = lambda * xi(j,i,is)
+                c(j,i,is) = c(j,i,is) - xi(j,i,is)
+              enddo
+            enddo
+          enddo
+          if (Node.eq.0) then
+            write(6,"(/a)")'cgwf: WARNING: E. increased; resetting CG'
+          endif
+C          lam = lam/2.0d0
+C          ilam = .true.
+          itest = .true.
+          numit = 0
+          iout = .false.
+          fe = fp
+        endif
+
+C        ilam = .false.
+C        lam = 1.0d0
+          
+        
 C Check if minimization has converged ......................................
-        if (2.*abs(fe-fp).le.ftol*(abs(fe)+abs(fp)+eps)) then
-          if (iout) then
+        if (iout) then
+          if (2.*abs(fe-fp).le.ftol*(abs(fe)+abs(fp)+eps)) then
             if (Node.eq.0) then
               write(6,"(/a)") 'cgwf:  CG tolerance reached'
             endif
@@ -305,7 +334,7 @@ C *******************************************************************
 
 
 
-      subroutine linmin4(partial,elamb,ener,lam,lambda, Node)
+      subroutine linmin4(partial,elamb,ener,lam,lambda)
 C *******************************************************************
 C  Subroutine for the exact minimization of a 4th order polinomial.
 C  Uses the values of the polinomial at four points, and the value of
@@ -329,28 +358,23 @@ C ********************** OUTPUT *************************************
 C real*8 lambda               : Distance to minimum
 C *******************************************************************
 
-      use precision
+      use precision, only: dp
       use sys, only: die
+      use parallel, only: node
 
       implicit none
 
-      real(dp) ::
-     .  elamb,partial,lam,lambda,ener(3)
-
-      integer ::
-     .  Node
+      real(dp), intent(in)  :: elamb,partial,lam,ener(3)
+      real(dp), intent(out) :: lambda
 
 C Internal variables ......................................................
-      integer 
-     .  in,i,info,j,jj
+      integer :: in,i,info,j,jj
 
       real(dp) ::
      .  b(5,5),bi(5,5),e(5),e0,e1,e2,e3,ep1,ep2,ep3,
      .  l,lambda1,lambda2,lambda3,q,r,sol1,sol2,test
 
-      complex 
-     .  c
-
+      complex(dp) :: c
 
 C Set up linear equations system to calculate polinomial coeffs.............
       e0 = 0.0d0
@@ -389,9 +413,9 @@ C Set up linear equations system to calculate polinomial coeffs.............
 
       do jj = 1,5
         e0 = e0 + bi(2,jj) * e(jj)
-        e1 = e1 + bi(3,jj) * e(jj) * 2.0
-        e2 = e2 + bi(4,jj) * e(jj) * 3.0
-        e3 = e3 + bi(5,jj) * e(jj) * 4.0
+        e1 = e1 + bi(3,jj) * e(jj) * 2.0_dp
+        e2 = e2 + bi(4,jj) * e(jj) * 3.0_dp
+        e3 = e3 + bi(5,jj) * e(jj) * 4.0_dp
       enddo
 C .....................
 
@@ -425,11 +449,11 @@ C Solve the minimum ......................................................
 
 1234  continue
 
-      c = (0.0,1.0) * (-test)**0.5
-      c = c + r * (1.0,0.0)
-      c = cexp(1.e0 / 3.e0 * clog(c))
+      c = (0.0_dp,1.0_dp) * (-test)**0.5_dp
+      c = c + r * (1.0_dp,0.0_dp)
+      c = exp(1.0_dp / 3.0_dp * log(c))
 
-      lambda1 = 2.0d0 * real(c) - (e2 / e3) / 3.0d0
+      lambda1 = 2.0d0 * real(c,kind=dp) - (e2 / e3) / 3.0d0
 
       lambda2 = (-(e2 / e3 + lambda1) + dsqrt((e2 / e3 + lambda1)**2 +
      .          4.d0 * (e0 / e3) / lambda1)) / 2.0d0
@@ -461,7 +485,14 @@ C Solve the minimum ......................................................
 C .....................
 
 1235  continue
-
+#ifdef DEBUG_LINMIN4
+      if (node == 0) then
+         write(*,"(a,5g26.16,g20.8)") "--LM4-IN: ",
+     $        partial, elamb, ener, lam
+         write(*,"(a,4g26.16,26x,g20.8)") "--LM4OUT: ",
+     $        e0, e1, e2, e3, lambda
+      endif
+#endif
       return
       end
 

@@ -358,7 +358,7 @@
       end subroutine print_basis_def
 
 !-----------------------------------------------------------------------
-      subroutine basis_specs_transfer
+      subroutine basis_specs_transfer()
       use alloc, only: re_alloc
 
       integer lmax, lmaxkb, nzeta_max, nsemi_max, nkb_max
@@ -420,69 +420,58 @@
 !     ALLOCATE old arrrays
 !
       nullify( semic )
-      call re_alloc( semic, 1, nsp, name='semic',
-     &               routine='basis_specs_transfer' )
+      call re_alloc( semic, 1, nsp, 'semic', 'basis_types' )
       nullify( lmxkb )
-      call re_alloc( lmxkb, 1, nsp, name='lmxkb',
-     &               routine='basis_specs_transfer' )
+      call re_alloc( lmxkb, 1, nsp, 'lmxkb', 'basis_types' )
       nullify( lmxo )
-      call re_alloc( lmxo, 1, nsp, name='lmxo',
-     &               routine='basis_specs_transfer' )
+      call re_alloc( lmxo, 1, nsp, 'lmxo', 'basis_types' )
       nullify( nsemic )
-      call re_alloc( nsemic, 0, lmaxd, 1, nsp, name='nsemic',
-     &               routine='basis_specs_transfer' )
+      call re_alloc( nsemic, 0, lmaxd, 1, nsp, 'nsemic', 'basis_types' )
       nullify( cnfigmx )
-      call re_alloc( cnfigmx, 0, lmaxd, 1, nsp, name='cnfigmx',
-     &               routine='basis_specs_transfer' )
+      call re_alloc( cnfigmx, 0, lmaxd, 1, nsp,
+     &               'cnfigmx',  'basis_types' )
       nullify( nkbl )
-      call re_alloc( nkbl, 0, lmaxd, 1, nsp, name='nkbl',
-     &               routine='basis_specs_transfer' )
+      call re_alloc( nkbl, 0, lmaxd, 1, nsp, 'nkbl', 'basis_types' )
       nullify( polorb )
-      call re_alloc( polorb, 0, lmaxd, 1, nsemx, 1, nsp, name='polorb',
-     &               routine='basis_specs_transfer' )
+      call re_alloc( polorb, 0, lmaxd, 1, nsemx, 1, nsp,
+     &               'polorb', 'basis_types' )
       nullify( nzeta )
-      call re_alloc( nzeta, 0, lmaxd, 1, nsemx, 1, nsp, name='nzeta',
-     &               routine='basis_specs_transfer' )
+      call re_alloc( nzeta, 0, lmaxd, 1, nsemx, 1, nsp,
+     &               'nzeta', 'basis_types' )
       nullify( split_norm )
       call re_alloc( split_norm, 0, lmaxd, 1, nsemx, 1, nsp,
-     &               name='split_norm',
-     &               routine='basis_specs_transfer' )
+     &               'split_norm', 'basis_types' )
       nullify( filtercut )
       call re_alloc( filtercut, 0, lmaxd, 1, nsemx, 1, nsp,
-     &               name='filtercut',
-     &               routine='basis_specs_transfer' )
+     &               'filtercut', 'basis_types' )
       nullify( vcte )
-      call re_alloc( vcte, 0, lmaxd, 1, nsemx, 1, nsp, name='vcte',
-     &               routine='basis_specs_transfer' )
+      call re_alloc( vcte, 0, lmaxd, 1, nsemx, 1, nsp,
+     &               'vcte', 'basis_types' )
       nullify( rinn )
-      call re_alloc( rinn, 0, lmaxd, 1, nsemx, 1, nsp, name='rinn',
-     &               routine='basis_specs_transfer' )
+      call re_alloc( rinn, 0, lmaxd, 1, nsemx, 1, nsp,
+     &               'rinn', 'basis_types' )
       nullify( erefkb )
-      call re_alloc( erefkb, 1, nkbmx, 0, lmaxd, 1, nsp, name='erefkb',
-     &               routine='basis_specs_transfer' )
+      call re_alloc( erefkb, 1, nkbmx, 0, lmaxd, 1, nsp,
+     &               'erefkb', 'basis_types' )
       nullify( charge )
-      call re_alloc( charge, 1, nsp, name='charge',
-     &               routine='basis_specs_transfer' )
+      call re_alloc( charge, 1, nsp, 'charge', 'basis_types' )
       nullify( lambda )
       call re_alloc( lambda, 1, nzetmx, 0, lmaxd, 1, nsemx, 1, nsp,
-     &               name='lambda',
-     &               routine='basis_specs_transfer' )
+     &               'lambda', 'basis_types' )
       nullify( rco )
       call re_alloc( rco, 1, nzetmx, 0, lmaxd, 1, nsemx, 1, nsp,
-     &               name='rco',
-     &               routine='basis_specs_transfer' )
+     &               'rco', 'basis_types' )
       nullify( iz )
-      call re_alloc( iz, 1, nsp, name='iz',
-     &               routine='basis_specs_transfer' )
+      call re_alloc( iz, 1, nsp, 'iz', 'basis_types' )
       nullify( smass )
-      call re_alloc( smass, 1, nsp, name='smass',
-     &               routine='basis_specs_transfer' )
+      call re_alloc( smass, 1, nsp, 'smass', 'basis_types' )
       nullify( basistype )
-      call re_alloc( basistype, 1, nsp, name='basistype',
-     &               routine='basis_specs_transfer' )
+      allocate(basistype(nsp))
+!      call re_alloc( basistype, 1, nsp, 'basistype', 'basis_types' )
       nullify( atm_label )
-      call re_alloc( atm_label, 1, nsp, name='atm_label',
-     &               routine='basis_specs_transfer' )
+      allocate(atm_label(nsp))
+!      call re_alloc( atm_label, 1, nsp, 'atm_label', 'basis_types' )
+
 !
 !     Transfer
 !
@@ -578,7 +567,8 @@
          write(lun,'(a20,1x,a2,i4,4x,a5,g12.5,4x,a7,g12.5)')
      $        atm_label(is), 'Z=',iz(is),
      $        'Mass=', smass(is), 'Charge=', charge(is)
-         write(lun,'(a5,i1,1x,a6,i1,5x,a10,a10,1x,a6,l1)')
+! Allow a 2-char width for lmxkb (=-1 for floating and bessel orbs)
+         write(lun,'(a5,i1,1x,a6,i2,5x,a10,a10,1x,a6,l1)')
      $        'Lmxo=', lmxo(is), 'Lmxkb=', lmxkb(is),
      $        'BasisType=', basistype(is), 'Semic=', semic(is)
          do l=0,lmxo(is)
@@ -622,26 +612,28 @@
 !
       use alloc, only: de_alloc
 
-      call de_alloc( semic, name='semic')
-      call de_alloc( lmxkb, name='lmxkb')
-      call de_alloc( lmxo, name='lmxo')
-      call de_alloc( nsemic, name='nsemic')
-      call de_alloc( cnfigmx, name='cnfigmx')
-      call de_alloc( nkbl, name='nkbl')
-      call de_alloc( polorb, name='polorb')
-      call de_alloc( nzeta, name='nzeta')
-      call de_alloc( split_norm, name='split_norm')
-      call de_alloc( filtercut, name='filtercut')
-      call de_alloc( vcte, name='vcte')
-      call de_alloc( rinn, name='rinn')
-      call de_alloc( erefkb, name='erefkb')
-      call de_alloc( charge, name='charge')
-      call de_alloc( lambda, name='lambda')
-      call de_alloc( rco, name='rco')
-      call de_alloc( iz, name='iz')
-      call de_alloc( smass, name='smass')
-      call de_alloc( basistype, name='basistype')
-      call de_alloc( atm_label, name='atm_label')
+      call de_alloc( semic,      'semic',      'basis_types' )
+      call de_alloc( lmxkb,      'lmxkb',      'basis_types' )
+      call de_alloc( lmxo,       'lmxo',       'basis_types' )
+      call de_alloc( nsemic,     'nsemic',     'basis_types' )
+      call de_alloc( cnfigmx,    'cnfigmx',    'basis_types' )
+      call de_alloc( nkbl,       'nkbl',       'basis_types' )
+      call de_alloc( polorb,     'polorb',     'basis_types' )
+      call de_alloc( nzeta,      'nzeta',      'basis_types' )
+      call de_alloc( split_norm, 'split_norm', 'basis_types' )
+      call de_alloc( filtercut,  'filtercut',  'basis_types' )
+      call de_alloc( vcte,       'vcte',       'basis_types' )
+      call de_alloc( rinn,       'rinn',       'basis_types' )
+      call de_alloc( erefkb,     'erefkb',     'basis_types' )
+      call de_alloc( charge,     'charge',     'basis_types' )
+      call de_alloc( lambda,     'lambda',     'basis_types' )
+      call de_alloc( rco,        'rco',        'basis_types' )
+      call de_alloc( iz,         'iz',         'basis_types' )
+      call de_alloc( smass,      'smass',      'basis_types' )
+      deallocate( basistype )
+      deallocate( atm_label )
+!      call de_alloc( basistype, 'basistype', 'basis_types' )
+!      call de_alloc( atm_label, 'atm_label', 'basis_types' )
 !
       end subroutine deallocate_spec_arrays
 

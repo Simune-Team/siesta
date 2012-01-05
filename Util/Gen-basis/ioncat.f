@@ -59,8 +59,8 @@ C Internal variables ...................................................
             read(opt_arg,*) iorb
          case ('k', '+k')
             process_kbp = .true.
-            write(0,*) "Will process KB proj ", trim(opt_arg)
             read(opt_arg,*) ikb
+            write(0,*) "Will process KB proj ", ikb
          case ('c', '+c')
             process_core = .true.
             write(0,*) "Will process pseudo core charge "
@@ -79,9 +79,10 @@ C Internal variables ...................................................
             write(0,*) "Will zoom near zero, up to ", 10.0_dp**(rlog)
          case ('h', '+h')
             call print_help()
+            STOP
          case ('?',':')
             write(0,*) "Invalid option: ", opt_arg(1:1)
-            call print_help()
+            write(0,*) "Use -h option for help"
             STOP
          end select
       enddo
@@ -171,7 +172,7 @@ C Internal variables ...................................................
       if (process_kbp) then
          if (ikb > nkb) STOP "no such KB projector"
          write(6,*) "# KB proj (#, l, m, rc):",
-     $        i, lofio(1,-ikb), mofio(1,-ikb), rcut(1,-ikb)
+     $        ikb, lofio(1,-ikb), mofio(1,-ikb), rcut(1,-ikb)
          rc = rcut(1,-ikb)
          rmin = 0.0_dp
          rmax = 1.05_dp * rc

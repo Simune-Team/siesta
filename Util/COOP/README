@@ -15,6 +15,7 @@ in the input file. Copy the resulting .WFSX and .HSX files.
 
 Then, prepare a .mpr file like those you can find in the Tests directory, and
 execute mprop (type 'mprop -h' for usage notes).
+See the Docs directory for some extra documentation (work in progress).
 
 ----------------------------------------------------------------------
 

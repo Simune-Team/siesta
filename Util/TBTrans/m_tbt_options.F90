@@ -2,8 +2,8 @@ module m_tbt_options
 
 use precision, only : dp
 use fdf
-use m_fdf_global, only : fdf_global_get
 use files, only : slabel
+
 
 implicit none
 public
@@ -19,17 +19,12 @@ integer NBUFATL,NBUFATR   ! No. buffer atoms, L/R
 
 logical USEBULK           ! If true use bulk params. in L/R regions
 logical sppol
-logical DoCOOP            ! If true do COOP curves
-logical OutputRegionData  ! Output data for selected PDOS region
-logical RDORTHO           ! Output region data in Lowdin orthogonal form
 
 character*33 hsfile       !name of HS-input file
 integer isoat1,isoat2
 
 integer NA1L,NA2L,nqL 
 integer NA1R,NA2R,nqR
-
-logical DoAtomPDOS        ! If true calculate atomic PDOS in PDOS-region
 
 character*33 Lhsfile,Rhsfile
 
@@ -62,12 +57,8 @@ real(dp), parameter :: GFeta_def = 0.00001_dp
 logical, parameter :: UseBulk_def = .true.
 integer, parameter :: neigch_def = 0
 logical, parameter :: sppol_def = .false.
-logical, parameter :: DoCOOP_def = .false.
-logical, parameter :: RDORTHO_def = .false.
-logical, parameter :: OutputRegionData_def = .true.
 integer, parameter :: NBUFATL_def=0
 integer, parameter :: NBUFATR_def=0
-logical, parameter :: DoAtomPDOS_def = .false.
 logical, parameter :: CalcIeig_def = .false.
 character*33 :: hsfile_def
 
@@ -77,39 +68,31 @@ hsfile_def=paste(slabel,'.TSHS')
 
 ! Read from fdf
 
-call fdf_global_get(Emin,'TS.TBT.Emin',Emin_def,'Ry')
-call fdf_global_get(Emax,'TS.TBT.Emax',Emax_def,'Ry')
-call fdf_global_get(Volt,'TS.Voltage',Volt_def)
+ Emin = fdf_get('TS.TBT.Emin',Emin_def,'Ry')
+ Emax = fdf_get('TS.TBT.Emax',Emax_def,'Ry')
+ Volt = fdf_get( 'TS.Voltage', Volt_def)
 
-call fdf_global_get(ncontour,'TS.TBT.NPoints',ncontour_def)
-call fdf_global_get(GFeta,'TS.TBT.Eta',GFeta_def,'Ry')
+ ncontour = fdf_get( 'TS.TBT.NPoints', ncontour_def)
+ GFeta = fdf_get('TS.TBT.Eta',GFeta_def,'Ry')
 
-call fdf_global_get(USEBULK,'TS.UseBulkInElectrodes',UseBulk_def)
-call fdf_global_get(neigch,'TS.TBT.NEigen',neigch_def)
+ USEBULK = fdf_get( 'TS.UseBulkInElectrodes', UseBulk_def)
+ neigch = fdf_get( 'TS.TBT.NEigen', neigch_def)
 
-call fdf_global_get(sppol,'SpinPolarized',sppol_def)
+ sppol = fdf_get( 'SpinPolarized', sppol_def)
 
-! Do we want to do COOP curves:
-call fdf_global_get(DoCOOP,'TS.TBT.DoCOOP',DoCOOP_def)
-! Region data in Lowdin orthogonalized format or not
-call fdf_global_get(RDORTHO,'TS.TBT.RegionDataOrtho',RDORTHO_def)
-call fdf_global_get(OutputRegionData,'TS.TBT.OutputRegionData',OutputRegionData_def)
+ NBUFATL = fdf_get( 'TS.BufferAtomsLeft', NBUFATL_def)
+ NBUFATR = fdf_get( 'TS.BufferAtomsRight', NBUFATR_def) 
 
-call fdf_global_get(NBUFATL,'TS.BufferAtomsLeft',NBUFATL_def)
-call fdf_global_get(NBUFATR,'TS.BufferAtomsRight',NBUFATR_def) 
+ hsfile = fdf_get( 'TS.TBT.HSFile', hsfile_def)
 
-call fdf_global_get(hsfile,'TS.TBT.HSFile',hsfile_def)
+ Lhsfile = fdf_get( 'TS.HSFileLeft', 'LeftELEC.TSHS')
+ Rhsfile = fdf_get( 'TS.HSFileRight', 'RightELEC.TSHS')
 
-call fdf_global_get(DoAtomPDOS,'TS.TBT.AtomPDOS',DoAtomPDOS_def)
+ Lnucuse = fdf_get( 'TS.NumUsedAtomsLeft', 0)
+ Rnucuse = fdf_get( 'TS.NumUsedAtomsRight', 0)
 
-call fdf_global_get(Lhsfile,'TS.HSFileLeft','LeftELEC.TSHS')
-call fdf_global_get(Rhsfile,'TS.HSFileRight','RightELEC.TSHS')
-
-call fdf_global_get(Lnucuse,'TS.NumUsedAtomsLeft',0)
-call fdf_global_get(Rnucuse,'TS.NumUsedAtomsRight',0)
-
-call fdf_global_get(isoat1,'TS.TBT.PDOSFrom',0)
-call fdf_global_get(isoat2,'TS.TBT.PDOSTo',0)
+ isoat1 = fdf_get( 'TS.TBT.PDOSFrom', 0)
+ isoat2 = fdf_get( 'TS.TBT.PDOSTo', 0)
 
 nqL=1
 nqR=1
@@ -118,7 +101,7 @@ NA2L=1
 NA1R=1
 NA2R=1
 
-call fdf_global_get(CalcIeig,'TS.TBT.CalcIeig',CalcIeig_def)
+ CalcIeig = fdf_get( 'TS.TBT.CalcIeig', CalcIeig_def)
 
 
 

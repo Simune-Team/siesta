@@ -112,7 +112,7 @@ subroutine add_str_to_buffer(s,buffer)
 character(len=*), intent(in)   :: s
 type(buffer_t), intent(inout)  :: buffer
 
-integer   :: n, len_s, last_pos
+integer   :: i, n, len_s, last_pos
 
 len_s = len(s)
 last_pos = buffer%size
@@ -123,7 +123,7 @@ if (n> MAX_BUFF_SIZE) then
   call wxml_error("Buffer overflow: long unbroken string of pcdata or attribute value...")
 endif
 
-buffer%str(last_pos+1:n) = s
+if (len_s.gt.0) buffer%str(last_pos+1:n) = s
 end subroutine add_str_to_buffer
 
 subroutine add_to_buffer_escaping_markup(s,buf)

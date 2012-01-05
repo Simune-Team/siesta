@@ -28,8 +28,8 @@
 
       subroutine consHS( nuo, no,  maxnh,  
      .                  gamma, numh, listhptr, listh, 
-     .                  H, S, xij, indxuo,  kpoint, nuotot,
-     .                  Ha,Sa,ef,nou,NGL,NGR,NBUFL,NBUFR)
+     .                  H, S, xij, indxuo,  kpoint,
+     .                  Ha,Sa,ef,nou,NGL,NGR,NBUFL)
 
 C *********************************************************************
 C integer nuo                 : Number of basis orbitals in unit cell
@@ -57,29 +57,32 @@ C real*8  kpoint(3)           : k point vectors
 C integer nuotot              : total number of orbitals per unit cell
 C                               over all processors
 C
+
+      use precision, only: dp
+
       implicit          none
 
-      integer           maxnh, no, nuo, nuotot, nou,nbufl,nbufr,ngl,ngr
+      integer           maxnh, no, nuo, nou,nbufl,ngl,ngr
 
       integer           indxuo(no), listh(maxnh), numh(nuo), 
      .                  listhptr(nuo)
-      double precision  
+      real(dp)  
      .                  H(maxnh), kpoint(3),  
      .                  S(maxnh),xij(3,maxnh)
 
-      double precision  
+      real(dp)  
      .                  ef
-      complex*16  
+      complex(dp)  
      .                  Ha(nou,nou), Sa(nou,nou)
       logical gamma
 
 C  Internal variables .............................................
       integer
-     .  ie, ierror, ik, io, iio, ind, is,  iuo,
-     .  j, jo, juo, maxnhg,  io1,jo1
-      double precision   kxij
-      complex*16 cphase
-      complex*16, dimension (:,:), allocatable :: Hw,Sw
+     .  io, ind, iuo,
+     .  j, jo, juo, io1,jo1
+      real(dp)   kxij
+      complex(dp) cphase
+      complex(dp), dimension (:,:), allocatable :: Hw,Sw
 
 C  ....................
 
@@ -179,11 +182,11 @@ C      end
 c
 #ifdef MPI
       subroutine consHSp(nuo, no,   maxnh,  maxnhg,
-     .                  gamma, numh, listhptr, listh, 
+     .                  gamma, numh, listhptr, 
      .                  numhg, listhptrg,listhg,
      .                  H, S, xijg, indxuo,  kpoint, nuotot,
      .                  Ha,Sa,
-     .                  Node, Nodes,ef,nou,NGL,NGR,NBUFL,NBUFR)
+     .                  Node, Nodes,ef,nou,NGL,NGR,NBUFL)
 C *********************************************************************
 C integer nuo                 : Number of basis orbitals in unit cell
 C                               local to this processor
@@ -212,12 +215,12 @@ C integer Nodes               : number of processors
 C
 C  Modules
 C
-      use precision
 C FDN
 C      use parallel
       use parallelsubs, only : GlobalToLocalOrb, WhichNodeOrb
 C FDN
       use mpi_siesta
+      use precision, only : dp
 
       implicit          none
 
@@ -226,32 +229,32 @@ C FDN
 
       integer           maxnh, maxnhg, no,
      .                  nuo, nuotot, Node, Nodes,
-     .                  nou,nbufl,nbufr,ngl,ngr
+     .                  nou,nbufl,ngl,ngr
 
-      integer           listh(maxnh), 
+      integer         
      .                  numh(nuo), listhptr(nuo)
       integer           indxuo(no), listhg(maxnhg), 
      .                  numhg(nuotot), listhptrg(nuotot)
-      double precision  
+      real(dp)  
      .                  H(maxnh), kpoint(3),  
      .                  S(maxnh),xijg(3,maxnhg)
 
-      double precision  
+      real(dp)  
      .                  ef
-      complex*16  
+      complex(dp)  
      .                  Ha(nou,nou), Sa(nou,nou)
       logical gamma
 
 C  Internal variables .............................................
       integer
-     .  BNode, ie, ierror, ik, io, iio, ind, is, iuo,
+     .  BNode, io, iio, ind, iuo,
      .  j, jo, juo,  nuog , io1,jo1
-      double precision
-     .  ckxij,  kxij, t
-      double precision, dimension(:), allocatable, save ::
+      real(dp)
+     .  kxij
+      real(dp), dimension(:), allocatable, save ::
      .  Snew,Hnew
-      complex*16 cphase
-      complex*16, dimension (:,:), allocatable :: Hw,Sw
+      complex(dp) cphase
+      complex(dp), dimension (:,:), allocatable :: Hw,Sw
 
 C  ....................
 
@@ -393,6 +396,7 @@ C FDN
       use m_ts_aux_rout, only : splittri, collectri, invmat, transpose,
      .                          csolveg, ts_alloc, ts_dealloc
       use m_ts_options, only: updatedmcr, voltfdf
+      use precision, only: dp
 C FDN
       implicit none                              
 
@@ -405,11 +409,11 @@ C INPUT:
 c                                 z*S-H-Sigma for bulk is in sfe
 
       integer no                !no : no. states
-      complex*16 Hi(0:(no*no)-1),Si(0:(no*no)-1)
-      complex*16 ZEnergy 
+      complex(dp) Hi(0:(no*no)-1),Si(0:(no*no)-1)
+      complex(dp) ZEnergy 
       integer NGL,NGR
-      complex*16 HLL(NGL,NGL)   ! Left electrode GF
-      complex*16 HRR(NGR,NGR)   ! Right electrode GF
+      complex(dp) HLL(NGL,NGL)   ! Left electrode GF
+      complex(dp) HRR(NGR,NGR)   ! Right electrode GF
 C FDN 
 C Use the tridiagonality ?
       logical :: useTri
@@ -423,29 +427,29 @@ C INPUT/OUTPUT:
 C ======================================================================
 C OUTPUT:
 C      complex*16 GF(0:(no*no)-1)  ! 1/(Sc*Energy - H)
-      complex*16, dimension(:), pointer :: GF
+      complex(dp), dimension(:), pointer :: GF
       integer ierr              !inversion err
 C ======================================================================
 c Helpers, tempos ...
-      complex*16, dimension(:), allocatable :: H
+      complex(dp), dimension(:), allocatable :: H
       integer, dimension (:), allocatable:: ipvt
 
       integer i,j,ii,jj
-      complex*16 a,b
+      complex(dp) a,b
 C --------------------------------------------------------------------
 
       integer n1,n2,n3
 C FDN 
       integer :: allocStat
-      complex*16, dimension(:,:), pointer ::  a11,a12,
+      complex(dp), dimension(:,:), pointer ::  a11,a12,
      .                                           a21,a22,a23,
      .                                               a32,a33
-      complex*16, dimension(:,:), pointer ::  b11,b12,
+      complex(dp), dimension(:,:), pointer ::  b11,b12,
      .                                           b21,b22,b23,
      .                                               b32,b33
-      complex*16, dimension(:,:), pointer ::  x12,x32
+      complex(dp), dimension(:,:), pointer ::  x12,x32
 C FDN
-      complex*16, dimension(:,:), pointer ::  x21,x23   
+      complex(dp), dimension(:,:), pointer ::  x21,x23   
       logical :: contactGFonly   
 
 c----------------------------------------------------------------------
@@ -775,7 +779,7 @@ C     &     NG2,nua,lasto,NA1,NA2,NG,SFE,GAMMA,Nodes,points2read,
 C     &     errorgs)
 
       subroutine getsfe(USEBULK,jgfu,HAA,SAA,ZEnergy,
-     &     NG2,nua,lasto,NA1,NA2,NG,SFE,GAMMA,Nodes,points2read,
+     &     NG2,NG,SFE,GAMMA,Nodes,points2read,
      &     errorgs,ikinp)
 
 C FDN
@@ -783,10 +787,14 @@ C FDN
 ! FDN
 !      use parallel
       use m_ts_aux_rout, only : csolve 
+      use precision, only : dp
 ! FDN
 
 #ifdef MPI
-      use mpi_siesta
+      use mpi_siesta, only : MPI_Bcast, MPI_Comm_Rank, MPI_AllReduce, 
+     . MPI_Sum, DAT_dcomplex, MPI_Integer, MPI_Status_Size, 
+     . MPI_Comm_World
+               
 #endif
 
 
@@ -794,10 +802,10 @@ C FDN
 c-----------------------------------------------------------------
       implicit none
 c-----------------------------------------------------------------
-      real*8 EPS
+      real(dp) EPS
       parameter(EPS=1d-7)
 
-      real*8 Pi
+      real(dp) Pi
       parameter(Pi=3.14159265358979323846264338327950288419717d0)
       
  
@@ -820,18 +828,18 @@ c                                 return z*S-H-Sigma for bulk
 
       integer jgfu              !fileunit from which we read GF
 
-      integer NA1,NA2           ! repetitions of surface UC.
+      
       integer NG                ! size of GF in NA1xNA2 supercell
 
-      integer nua               ! no. uc (1x1) atoms
-      integer lasto(0:nua)      ! index of last orbitals of uc atoms.
+     
+      
 
-      complex*16 ZEnergy 
+      complex(dp) ZEnergy 
 
       integer nq                !no. q-points <= NA1*NA2
 C FDN No longer dummys
 C      real*8 q(2,nq),wq(nq)     !q-points and weights
-      real*8 q(2,1),wq(1)     !q-points and weights
+      real(dp) q(2,1),wq(1)     !q-points and weights
 C FDN
 
 
@@ -842,7 +850,7 @@ c
 
 C FDN nq no longer a dummy
 C      complex*16 HAA(NG2,NG2,nq),SAA(NG2,NG2,nq)
-      complex*16 HAA(NG2,NG2,1),SAA(NG2,NG2,1)
+      complex(dp) HAA(NG2,NG2,1),SAA(NG2,NG2,1)
 C FDN
 c -----------
       integer Nodes             ! number of processors
@@ -855,26 +863,26 @@ C FDN
 
 c======================================================================
 c OUTPUT: 
-      complex*16 SFE(NG,NG) !Electrode atoms self-energy for USEBULK true
+      complex(dp) SFE(NG,NG) !Electrode atoms self-energy for USEBULK true
 c                           !else z*S - H - Sigma for ideal surface
-      complex*16  GAMMA(NG,NG)  ! 0.5*(Sigma - Sigma^dagger) 
+      complex(dp)  GAMMA(NG,NG)  ! 0.5*(Sigma - Sigma^dagger) 
       logical errorgs
 
 c=====================================================================
 c Helpers, tempos etc...
       integer Node              ! local processor
       integer ierr,itmp              ! inversion error      
-      complex*16 ZEi, wgfi
+      complex(dp) ZEi, wgfi
       integer iEni
       integer iq,inode
-      integer io,ia1,ia2,iau,iuo
-      integer jo,ja1,ja2,jau,juo
-      complex*16 cphase,ccphase,zenloc
+      integer io
+      integer jo
+      complex(dp) zenloc
 
-      complex*16, allocatable :: WRK1(:,:),WRK2(:,:),GAA(:,:,:)
+      complex(dp), allocatable :: WRK1(:,:),WRK2(:,:),GAA(:,:,:)
       integer,dimension(:), allocatable :: ipvt
 #ifdef MPI
-      complex*16, allocatable :: cbuffer(:,:,:)
+      complex(dp), allocatable :: cbuffer(:,:,:)
 #endif
       integer  ntot
 
@@ -1240,7 +1248,7 @@ c======================================================================
 
 
 
-      subroutine GFGammaGF(joutfile,LEFTFLAG,nc,ng,GF,Gamma,GGG)
+      subroutine GFGammaGF(LEFTFLAG,nc,ng,GF,Gamma,GGG)
 
 C ======================================================================
 c  This routine returns GGG=(-i)*GF.Gamma.GF, where GF is a (nc)x(nc)
@@ -1248,6 +1256,7 @@ c  matrix and the first[LEFTFLAG true]/last[LEFTFLAG false] states
 c  corresponds to the (ng) Left/Right electrode states.
 c  Gamma is a (ng)x(ng) matrix.
 C ======================================================================
+      use precision, only : dp
       implicit none
 C ======================================================================
 
@@ -1259,25 +1268,25 @@ c
 C ======================================================================
 C INPUT:
 
-      integer joutfile          ! unit-number of out-file, OUT
+      
       logical LEFTFLAG          !True if LEFT
       integer nc                !no. states in contact region
       integer ng                !if LeftFLAG the ng first states of nc
 c                               !are left electrode states
 c                               !else it is the ng last right electrode
 c                               !states.
-      complex*16 Gamma(ng,ng)   !i(Sigma-Sigma^dagger)/2
-      complex*16 GF(nc,nc)
+      complex(dp) Gamma(ng,ng)   !i(Sigma-Sigma^dagger)/2
+      complex(dp) GF(nc,nc)
 
 C ======================================================================
 C OUTPUT:
 C      
-      complex*16 GGG(nc,nc)     !GF.GAMMA.GF
+      complex(dp) GGG(nc,nc)     !GF.GAMMA.GF
 
 C ======================================================================
 c Helpers, tempos ...
-      real*8, allocatable ::  swrk1(:,:),swrk2(:,:)
-      complex*16, allocatable ::  swrk3(:,:),swrk4(:,:)
+      real(dp), allocatable ::  swrk1(:,:),swrk2(:,:)
+      complex(dp), allocatable ::  swrk3(:,:),swrk4(:,:)
       integer i,j,ie,je
 
 c=======================================================================
@@ -1447,7 +1456,7 @@ C ##  Version 011200  Kurt Stokbro, ks@mic.dtu.dk                 ##
 C ##################################################################
 
 
-      subroutine weightDM(joutfile,nc,NGL,NGR,DML,DMR,DMneqL,DMneqR,
+      subroutine weightDM(nc,NGL,NGR,DML,DMR,DMneqL,DMneqR,
      .     EDML,EDMR)
 C ======================================================================
 c  This routine find weight for the DM integral. On output
@@ -1457,9 +1466,10 @@ C  In left electrode w=1 and in right electrode w=0
 C ======================================================================
 
 #ifdef MPI
-      use mpi_siesta
+      use mpi_siesta, only: MPI_Comm_Rank, MPI_Comm_World
 #endif
-      use sys
+      use sys, only : die
+      use precision, only : dp
 
       implicit none
 
@@ -1471,20 +1481,20 @@ c
 C ======================================================================
 C INPUT:
 
-      integer joutfile          ! unit-number of out-file, OUT
+      
       integer nc                !no. states in density matrix
       integer NGL               !no. states in left electrode
       integer NGR               !no. states in right electrode
-      real*8 DML(nc,nc),DMR(nc,nc)      !contour part of DM integration
-      real*8 DMneqL(nc,nc),DMneqR(nc,nc)!real axis part of DM integration
-      real*8 EDML(nc,nc),EDMR(nc,nc)    !L,R estimates of Edm
+      real(dp) DML(nc,nc),DMR(nc,nc)      !contour part of DM integration
+      real(dp) DMneqL(nc,nc),DMneqR(nc,nc)!real axis part of DM integration
+      real(dp) EDML(nc,nc),EDMR(nc,nc)    !L,R estimates of Edm
 
 C ======================================================================
 c Helpers, tempos ...
-      real*8 w,wl,wr,wsum,dif,dif2,ndif2
-      real*8 maxdif2            !largest integration error
-      real*8 maxndif2           !largest normalized integration error
-      integer idif2, jdif2,indif2,jndif2 ! indisis of max errors
+      real(dp) w,wl,wr,wsum
+      real(dp) maxdif2            !largest integration error
+      real(dp) maxndif2           !largest normalized integration error
+      
       integer i,j
 
       integer Node
@@ -1581,7 +1591,7 @@ C ====================================================================
 
 
 C FDN Routine for complex matrices
-      subroutine weightDMC(joutfile,nc,NGL,NGR,DML,DMR,DMneqL,DMneqR,
+      subroutine weightDMC(nc,NGL,NGR,DML,DMR,DMneqL,DMneqR,
      .     EDML,EDMR)
 C ======================================================================
 c  This routine find weight for the DM integral. On output
@@ -1591,9 +1601,10 @@ C  In left electrode w=1 and in right electrode w=0
 C ======================================================================
 
 #ifdef MPI
-      use mpi_siesta
+      use mpi_siesta, only: MPI_Comm_Rank, MPI_Comm_World
 #endif
-      use sys
+      use sys, only : die
+      use precision, only : dp
 
       implicit none
 
@@ -1605,20 +1616,20 @@ c
 C ======================================================================
 C INPUT:
 
-      integer joutfile          ! unit-number of out-file, OUT
+      
       integer nc                !no. states in density matrix
       integer NGL               !no. states in left electrode
       integer NGR               !no. states in right electrode
-      complex*16 DML(nc,nc),DMR(nc,nc)      !contour part of DM integration
-      complex*16 DMneqL(nc,nc),DMneqR(nc,nc)!real axis part of DM integration
-      complex*16 EDML(nc,nc),EDMR(nc,nc)    !L,R estimates of Edm
+      complex(dp) DML(nc,nc),DMR(nc,nc)      !contour part of DM integration
+      complex(dp) DMneqL(nc,nc),DMneqR(nc,nc)!real axis part of DM integration
+      complex(dp) EDML(nc,nc),EDMR(nc,nc)    !L,R estimates of Edm
 
 C ======================================================================
 c Helpers, tempos ...
-      real*8 w,wl,wr,wsum,dif,dif2,ndif2
-      real*8 maxdif2            !largest integration error
-      real*8 maxndif2           !largest normalized integration error
-      integer idif2, jdif2,indif2,jndif2 ! indisis of max errors
+      real(dp) w,wl,wr,wsum
+      real(dp) maxdif2            !largest integration error
+      real(dp) maxndif2           !largest normalized integration error
+      
       integer i,j
 
       integer Node

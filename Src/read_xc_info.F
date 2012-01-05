@@ -11,19 +11,13 @@
       subroutine read_xc_info()
 C
 C     Reads the exchange-correlation functional information
-C     and calls xcmod::setXC to store it for the use of
-C     atomxc and cellxc.
+C     and calls setXC to store it
 C
-      use SiestaXC, only: setXC
-
       use precision, only : dp
-      use parsing, only: parse
+      use SiestaXC,  only : setXC
       use fdf
       use parallel,  only : Node
       use sys,       only : die
-#ifdef MPI
-      use mpi_siesta
-#endif
 
       implicit none
 
@@ -31,111 +25,84 @@ C     LOCAL variables
 
       integer, parameter      :: MaxFunc = 10
       integer                 :: nXCfunc
-      character(len=10)       :: XCauth(MaxFunc)
-      character(len=10)       :: XCfunc(MaxFunc)
+      character(len=20)       :: XCauth(MaxFunc)
+      character(len=20)       :: XCfunc(MaxFunc)
       real(dp)                :: XCweightX(MaxFunc)
       real(dp)                :: XCweightC(MaxFunc)
 
-
-        character(len=80)  :: names
-
-        character(len=130) :: line
-        integer            :: integs(4)
-        integer            :: iu
-        integer            :: lastc
-        integer            :: lc(0:3)
         integer            :: n
         integer            :: ni
         integer            :: nn
         integer            :: nr
-        integer            :: nv
-        real(dp)           :: reals(4)
-        real(dp)           :: values(4)
 
-#ifdef MPI
-        integer            :: MPIerror
-#endif
+        type(block_fdf)            :: bfdf
+        type(parsed_line), pointer :: pline
 
-        if (Node.eq.0) then
 C Read XC functionals
-          if (fdf_block('xc.hybrid',iu)) then
-            read(iu,'(a)') line
-            lastc = index(line,'#') - 1
-            if (lastc .le. 0) lastc = len(line)
-            call parse( line(1:lastc), nn, lc, names, nv, values,
-     .                  ni, integs, nr, reals )
-            if (ni.eq.0) then
-              call die('Number of functionals missing in XC.hybrid')
-            endif
-            nXCfunc = abs(integs(1))
-            if (nXCfunc.gt.MaxFunc) then
-              call die('Too many functionals in XC.hybrid')
-            endif
-            do n = 1,nXCfunc
-              read(iu,'(a)') line
-              lastc = index(line,'#') - 1
-              if (lastc .le. 0) lastc = len(line)
-              call parse( line(1:lastc), nn, lc, names, nv, values,
-     .                    ni, integs, nr, reals )
-              if (nn.gt.0) then
-                XCfunc(n) = names(lc(0)+1:lc(1))
-              else
-                XCfunc(n) = 'LDA'
-              endif
-              if (nn.gt.1) then
-                XCauth(n) = names(lc(1)+1:lc(2))
-              else
-                XCauth(n) = 'PZ'
-              endif
-              if (nr.gt.1) then
-                XCweightX(n) = reals(1)
-                XCweightC(n) = reals(2)
-              elseif (nr.eq.1) then
-                XCweightX(n) = reals(1)
-                XCweightC(n) = reals(1)
-              else
-                XCweightX(n) = 1.0_dp
-                XCweightC(n) = 1.0_dp
-              endif
-            enddo
-          else
-            nXCfunc = 1 
-            XCfunc(1) = fdf_string('xc.functional','LDA')
-            XCauth(1) = fdf_string('xc.authors','PZ')
-            XCweightX(1) = 1.0_dp
-            XCweightC(1) = 1.0_dp
+        if (fdf_block('xc.hybrid',bfdf)) then
+          if (.not. fdf_bline(bfdf,pline)) then
+            call die('setXC: ERROR no data in XC.hybrid block')
           endif
+          ni = fdf_bnintegers(pline)
 
-C Output data for hybrid functionals
-          if (nXCfunc.gt.1) then
-            write(6,'(/,''xc:'')')
-            write(6,'(''xc:  Hybrid exchange-correlation functional:'')
-     .        ')
-            write(6,'(''xc:'')')
-            write(6,'(''xc: Number Functional Authors  '',
-     .        ''   Weight(Ex)   Weight(Ec)'')')
-            do n = 1,nXCfunc
-            write(6,'(''xc: '',i4,7x,a3,5x,a10,3x,f5.3,8x,f5.3)')
-     .          n,XCfunc(n),XCauth(n),XCweightX(n),XCweightC(n)
-            enddo
-            write(6,'(''xc:'')')
+          if (ni .eq. 0) then
+            call die('setXC: Number of functionals missing in ' //
+     .               'XC.hybrid')
           endif
+          nXCfunc = abs(fdf_bintegers(pline,1))
+          if (nXCfunc .gt. MaxFunc) then
+            call die('setXC: Too many functionals in XC.hybrid')
+          endif
+          do n= 1, nXCfunc
+            if (.not. fdf_bline(bfdf,pline)) then
+              call die('setXC: Number of XC functionals does not match')
+            endif
+            nn = fdf_bnnames(pline)
+            nr = fdf_bnreals(pline)
 
+            if (nn .gt. 0) then
+              XCfunc(n) = fdf_bnames(pline,1)
+            else
+              XCfunc(n) = 'LDA'
+            endif
+            if (nn .gt. 1) then
+              XCauth(n) = fdf_bnames(pline,2)
+            else
+              XCauth(n) = 'PZ'
+            endif
+            if (nr .gt. 1) then
+              XCweightX(n) = fdf_breals(pline,1)
+              XCweightC(n) = fdf_breals(pline,2)
+            elseif (nr .eq. 1) then
+              XCweightX(n) = fdf_breals(pline,1)
+              XCweightC(n) = fdf_breals(pline,1)
+            else
+              XCweightX(n) = 1.0_dp
+              XCweightC(n) = 1.0_dp
+            endif
+          enddo
+        else
+          nXCfunc = 1 
+          XCfunc(1) = fdf_string('xc.functional','LDA')
+          XCauth(1) = fdf_string('xc.authors','PZ')
+          XCweightX(1) = 1.0_dp
+          XCweightC(1) = 1.0_dp
         endif
 
-C Globalise data over all nodes
-#ifdef MPI
-        call MPI_Bcast(nXCfunc,1,MPI_integer,0,MPI_Comm_World,
-     .                 MPIerror)
-        call MPI_Bcast(XCfunc,10*nXCfunc,MPI_character,0,MPI_Comm_World,
-     .                 MPIerror)
-        call MPI_Bcast(XCauth,10*nXCfunc,MPI_character,0,MPI_Comm_World,
-     .                 MPIerror)
-        call MPI_Bcast(XCweightX,nXCfunc,MPI_double_precision,0,
-     .                 MPI_Comm_World,MPIerror)
-        call MPI_Bcast(XCweightC,nXCfunc,MPI_double_precision,0,
-     .                 MPI_Comm_World,MPIerror)
-#endif
+C Output data for hybrid functionals
+        if ((nXCfunc .gt. 1) .and. (Node .eq. 0)) then
+          write(6,'(/,''xc:'')')
+          write(6,'(''xc:  Hybrid exchange-correlation functional:'')
+     .      ')
+          write(6,'(''xc:'')')
+          write(6,'(''xc: Number     Functional     Authors  '',
+     .      ''   Weight(Ex)   Weight(Ec)'')')
+          do n = 1,nXCfunc
+          write(6,'(''xc: '',i4,3x,a20,2x,a20,3x,f5.3,8x,f5.3)')
+     .        n,XCfunc(n),XCauth(n),XCweightX(n),XCweightC(n)
+          enddo
+          write(6,'(''xc:'')')
+        endif
 
 C     Store information in module
 

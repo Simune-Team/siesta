@@ -8,7 +8,7 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine pdosk( nspin, nuo, no, maxspn, maxuo, maxnh, 
+      subroutine pdosk( nspin, nuo, no, maxspn, maxnh, 
      .                  maxo, numh, listhptr, listh, H, S,
      .                  E1, E2, nhist, sigma, 
      .                  xij, indxuo, nk, kpoint, wk, eo, 
@@ -25,7 +25,6 @@ C INTEGER nuo               : Number of atomic orbitals in the unit cell
 C INTEGER NO                : Number of atomic orbitals in the supercell
 C INTEGER maxspn            : Second dimension of eo and qo 
 C                             (maximum number of differents spin polarizations)
-C INTEGER maxuo             : Maximum number of atomic orbitals in the unit cell
 C INTEGER maxnh             : Maximum number of orbitals interacting
 C                             with any orbital
 C INTEGER maxo              : First dimension of eo
@@ -72,7 +71,7 @@ C **********************************************************************
       implicit none
 
       integer
-     .  nspin, nuo, no, maxspn, maxuo, maxnh, NK, 
+     .  nspin, nuo, no, maxspn, maxnh, NK, 
      .  maxo, nhist, nuotot
 
       integer

@@ -13,9 +13,7 @@
 !     Broyden geometry optimization
 !      
       use precision, only : dp
-      use fdf,          only: fdf_block
-      use m_fdf_global, only: fdf_global_get
-      use m_mpi_utils, only:  broadcast
+      use fdf
       use units, only: kBar
       use sys, only: die
 !
@@ -24,7 +22,7 @@
      $                     broyden_destroy, broyden_init,
      $                     broyden_is_setup
 
-      use m_memory, only: memory, mem_stat
+      use alloc,    only : re_alloc, de_alloc
       use parallel, only : ionode
 
       implicit none
@@ -78,18 +76,16 @@ C
       logical, intent(out) :: relaxd
 
 c Internal variables and arrays
+      real(dp) :: volume, new_volume, trace
+      integer  :: i, j, indi
+      real(dp) :: celli(3,3), sxx, syy, szz, sxy, sxz, syz
+      real(dp) :: stress_dif(3,3)
 
-      real(dp)            :: new_volume, trace, volume
+      real(dp), pointer ::  rnew(:)
+      real(dp), dimension(:), pointer  :: gxa, gfa, max_step
 
-      logical           found
-      integer           iu, ia, i, j, n, indi
-
-      real(dp) ::  celli(3,3), sxx, syy, szz, sxy, sxz, syz
-      real(dp) ::  stress_dif(3,3)
-
-      real(dp), dimension(:), allocatable       :: gxa, gfa, max_step
-      real(dp), dimension(:), allocatable       :: rold, rnew, rdiff
-
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
 
 ! Saved internal variables:
 
@@ -122,19 +118,16 @@ c ---------------------------------------------------------------------------
 
       if (.not. initialization_done) then
 
-          call fdf_global_get(maxit,"MD.Broyden.History.Steps",5)
-          call fdf_global_get(cycle_on_maxit,
-     $              "MD.Broyden.Cycle.On.Maxit",.true.)
-          call fdf_global_get(variable_weight,
-     $         "MD.Broyden.Variable.Weight",.false.)
-          call fdf_global_get(broyden_debug,
-     $         "MD.Broyden.Debug",.false.)
-          call fdf_global_get(jinv0,
-     $         "MD.Broyden.Initial.Inverse.Jacobian",1.0_dp)
-          call fdf_global_get(Max_step_strain,
+        maxit           = fdf_get("MD.Broyden.History.Steps",5)
+        cycle_on_maxit  = fdf_get("MD.Broyden.Cycle.On.Maxit",.true.)
+        variable_weight = fdf_get("MD.Broyden.Variable.Weight",.false.)
+        broyden_debug   = fdf_get("MD.Broyden.Debug",.false.)
+        jinv0           = fdf_get("MD.Broyden.Initial.Inverse.Jacobian",
+     $                            1.0_dp)
+        Max_step_strain = fdf_get(
      $         "MD.MaxCGDispl",0.02_dp,"Bohr")
 
-         if (ionode) then
+        if (ionode) then
           write(6,*) 
           write(6,'(a,i3)')
      $         "Broyden_optim: max_history for broyden: ", maxit
@@ -147,8 +140,8 @@ c ---------------------------------------------------------------------------
           write(6,*) 
         endif
 
-         call broyden_init(br,debug=broyden_debug)
-         initialization_done = .true.
+        call broyden_init(br,debug=broyden_debug)
+        initialization_done = .true.
 
       endif
 
@@ -157,69 +150,76 @@ C If first call to optim, check dim and get target stress --------------------
 
       if ( frstme ) then
   
-         if (varcel ) then
-            numel =  6
-         else
-            call die("no varcel?")
-         endif
-         if (Ionode) then
-           write(6,'(a,i6)') "Cell_Broyden_optim: No of elements: ",
-     $                numel
-         endif
+        if (varcel ) then
+          numel =  6
+        else
+          call die("no varcel?")
+        endif
+        if (Ionode) then
+          write(6,'(a,i6)') "Cell_Broyden_optim: No of elements: ",
+     $                      numel
+        endif
 
         if ( varcel ) then
 
 C Check if we want a constant-volume simulation
-          call fdf_global_get(constant_volume,
-     .                        "MD.ConstantVolume", .false.)
+          constant_volume = fdf_get("MD.ConstantVolume", .false.)
 
 C Look for target stress and read it if found, otherwise generate it --------
 
-          if (ionode) then
-            tarstr = fdf_block('MD.TargetStress',iu)
+          tarstr = fdf_block('MD.TargetStress',bfdf)
 
-            if (tarstr) then
-               write(6,'(/a,a)')
-     $              'Broyden_optim: Reading %block MD.TargetStress',
-     .                        ' (units of MD.TargetPressure).'
-               read(iu,*, end=50) sxx, syy, szz, sxy, sxz, syz
-               target_stress(1,1) = - sxx * tp
-               target_stress(2,2) = - syy * tp
-               target_stress(3,3) = - szz * tp
-               target_stress(1,2) = - sxy * tp
-               target_stress(2,1) = - sxy * tp
-               target_stress(1,3) = - sxz * tp
-               target_stress(3,1) = - sxz * tp
-               target_stress(2,3) = - syz * tp
-               target_stress(3,2) = - syz * tp
-   50          continue
-            else
-               write(6,'(/a,a)')
-     $              'Broyden_optim: No target stress found, ',
-     .                'assuming hydrostatic MD.TargetPressure.'
-               target_stress(i,j) = 0.0_dp
-               do i = 1, 3
-                  target_stress(i,i) = - tp
-               enddo
+          if (tarstr) then
+            if (ionode) then
+              write(6,'(/a,a)')
+     $            'Broyden_optim: Reading %block MD.TargetStress',
+     .                      ' (units of MD.TargetPressure).'
             endif
+            if (.not. fdf_bline(bfdf,pline))
+     $        call die('cell_broyden_optimizer: ERROR in ' //
+     .                 'MD.TargetStress block')
+            sxx = fdf_bvalues(pline,1)
+            syy = fdf_bvalues(pline,2)
+            szz = fdf_bvalues(pline,3)
+            sxy = fdf_bvalues(pline,4)
+            sxz = fdf_bvalues(pline,5)
+            syz = fdf_bvalues(pline,6)
+            target_stress(1,1) = - sxx * tp
+            target_stress(2,2) = - syy * tp
+            target_stress(3,3) = - szz * tp
+            target_stress(1,2) = - sxy * tp
+            target_stress(2,1) = - sxy * tp
+            target_stress(1,3) = - sxz * tp
+            target_stress(3,1) = - sxz * tp
+            target_stress(2,3) = - syz * tp
+            target_stress(3,2) = - syz * tp
+          else
+            if (ionode) then
+              write(6,'(/a,a)')
+     $            'Broyden_optim: No target stress found, ',
+     .            'assuming hydrostatic MD.TargetPressure.'
+            endif
+            target_stress(:,:) = 0.0_dp
+            do i= 1, 3
+              target_stress(i,i) = - tp
+            enddo
+          endif
 
 C Write target stress down --------------------------------------------------
 
+          if (ionode) then
             write(6,"(/a)") 'Broyden_optim: Target stress (kBar)'
             do i=1, 3
-               write(6,"(a,2x,3f12.3)") 
-     .       'Broyden_optim:', (target_stress(i,j)/kBar, j=1,3)
+              write(6,"(a,2x,3f12.3)") 
+     .            'Broyden_optim:', (target_stress(i,j)/kBar, j=1,3)
             enddo
-          endif  ! node0
-
-          call broadcast(target_stress(1:3,1:3))
-
+          endif
 
 C Scale factor for strain variables to share magnitude with coordinates 
 C ---- (a length in Bohrs typical of bond lengths ..) ------------------
 
-          call fdf_global_get(precon,'MD.PreconditionVariableCell',
-     .                           9.4486344d0,'Bohr')
+          precon = fdf_get('MD.PreconditionVariableCell',
+     .                     9.4486344d0,'Bohr')
 
 C Initialize absolute strain and save initial cell vectors -------------
 C Initialization to 1. for numerical reasons, later substracted --------
@@ -236,22 +236,10 @@ C Initialization to 1. for numerical reasons, later substracted --------
 C Variable cell -------------------------------------------------------------
 
       if ( varcel ) then
-
-         allocate(gfa(numel), stat=mem_stat)
-         call memory('A','D',numel,'Broyden_optim',
-     $        stat=mem_stat,id="gfa")
-
-         allocate(gxa(numel), stat=mem_stat)
-         call memory('A','D',numel,'Broyden_optim',
-     $        stat=mem_stat,id="gxa")
-
-         allocate(max_step(numel), stat=mem_stat)
-         call memory('A','D',numel,'Broyden_optim',
-     $        stat=mem_stat,id="max_step")
-
-         allocate (rnew(numel), stat=mem_stat)
-         call memory('A','D',numel,'Broyden_optim',
-     $        stat=mem_stat,id="rnew")
+        call re_alloc( gfa, 1, numel, 'gfa', 'Broyden_optim' )
+        call re_alloc( gxa, 1, numel, 'gxa', 'Broyden_optim' )
+        call re_alloc( rnew, 1, numel, 'rnew', 'Broyden_optim' )
+        call re_alloc( max_step, 1, numel, 'max_step', 'Broyden_optim' )
 
 
         relaxd = .true.
@@ -345,22 +333,12 @@ C Transform back if variable cell
 
 
       ! Deallocate local memory
+        call de_alloc( rnew,'rnew', 'Broyden_optim' )
+        call de_alloc( gxa,'gxa', 'Broyden_optim' )
+        call de_alloc( gfa,'gfa', 'Broyden_optim' )
+        call de_alloc( max_step,'max_step', 'Broyden_optim' )
 
-        deallocate (rnew, stat=mem_stat)
-        call memory('D','D',numel,'Broyden_optim',
-     $       stat=mem_stat,id="rnew")
 
-        deallocate (gxa, stat=mem_stat)
-        call memory('D','D',numel,'Broyden_optim',
-     $       stat=mem_stat,id="gxa")
-
-        deallocate (max_step, stat=mem_stat)
-        call memory('D','D',numel,'Broyden_optim',
-     $       stat=mem_stat,id="max_step")
-
-        deallocate (gfa, stat=mem_stat)
-        call memory('D','D',numel,'Broyden_optim',
-     $       stat=mem_stat,id="gfa")
 
       endif ! variable cell
 

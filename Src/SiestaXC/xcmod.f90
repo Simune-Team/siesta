@@ -33,7 +33,10 @@
 !            'LYP' => GGA Becke-Lee-Yang-Parr (see subroutine blypxc)
 !             'WC' => GGA Wu-Cohen (see subroutine wcxc)
 !         'PBESOL' => GGA Perdew et al, PRL, 100, 136406 (2008)
+!           'AM05' => GGA Mattsson & Armiento, PRB, 79, 155101 (2009)
 !          'DRSLL' => VDW Dion et al, PRL 92, 246401 (2004)
+!          'LMKLL' => VDW K.Lee et al, arXiv:1003.5255v1 (2010)
+!            'KBM' => VDW optB88-vdW of J.Klimes et al, JPCM 22, 022201 (2009)
 !
 ! ------------------------ USAGE ----------------------------------------------
 !   use siestaXC, only: setXC
@@ -69,8 +72,9 @@
 
 module xcmod
 
-  use precision, only: dp   ! Double precision real kind
-  use sys,       only: die  ! Termination routine
+  use precision, only: dp              ! Double precision real kind
+  use sys,       only: die             ! Termination routine
+  use m_vdwxc,   only: vdw_set_author  ! Sets vdW functional flavour
 
   implicit none
 
@@ -82,7 +86,7 @@ private ! Nothing is declared public beyond this point
 
   integer, parameter :: maxFunc = 10
   integer,           save :: nXCfunc=0
-  character(len=10), save :: XCauth(MaxFunc), XCfunc(MaxFunc)
+  character(len=20), save :: XCauth(MaxFunc), XCfunc(MaxFunc)
   real(dp),          save :: XCweightX(MaxFunc), XCweightC(MaxFunc)
 
 contains
@@ -94,12 +98,23 @@ contains
     character(len=*),intent(in):: auth(n) ! Functional author labels
     real(dp),        intent(in):: wx(n)   ! Functl weights for exchng
     real(dp),        intent(in):: wc(n)   ! Functl weights for correl
+    integer:: i, j
     if (n>maxFunc) call die('setXC: ERROR: parameter maxFunc too small')
     nXCfunc = n
     XCfunc(1:n) = func(1:n)
     XCauth(1:n) = auth(1:n)
     XCweightX(1:n) = wx(1:n)
     XCweightC(1:n) = wc(1:n)
+    do i = 1,n
+      if (XCfunc(i)=='VDW' .or. XCfunc(i)=='vdw' .or. XCfunc(i)=='vdW') then
+        XCfunc(i) = 'VDW'
+        do j = 1,i-1
+          if (XCfunc(j)=='VDW' .and. XCauth(j)/=XCauth(i)) &
+            call die('setXC ERROR: mixing different VDW authors not allowed')
+        end do ! j
+        call vdw_set_author( XCauth(i) )
+      end if ! (XCfunc(i)=='VDW')
+    end do ! i
   end subroutine setXC
 
   subroutine getXC( n, func, auth, wx, wc )

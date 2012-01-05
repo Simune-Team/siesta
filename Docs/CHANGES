@@ -3,7 +3,2379 @@
 =======================================================================
 
 
-** CHANGES ALONG trunk 
+** CHANGES ALONG trunk
+
+-----------------------------------------------------------------------
+2011-10-28  10:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-390
+Avoid temporary arrays in SiestaXC/mesh3d
+
+Calls with a re-shaped array as argument, and with
+array-section arguments, were inducing some compilers
+to create temporary arrays.
+
+modified:
+  Src/SiestaXC/mesh3d.F90
+
+-----------------------------------------------------------------------
+2011-10-28  10:35:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-389
+Re-instate reading of charge netcdf files
+
+This feature had been turned off after the BSC merge pending
+clarification.
+
+modified:
+  Src/dhscf.F
+
+-----------------------------------------------------------------------
+2011-10-28  10:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-388
+Grid file utilities. User-specified mesh sizes
+
+Two new programs are available to generate grid files
+(density, potential):
+
+-- grid_rotate: cyclically rotates the coordinates of
+                a grid file.
+-- grid_supercell: generates the grid file appropriate
+                   for a supercell.
+
+The user can now specify the mesh sizes to be used
+by the program, by inserting a block definition in 
+the fdf file:
+
+%block Mesh-sizes
+  40 56 120
+%endblock Mesh-sizes
+
+This feature is useful when coupled to the above utilities,
+since the "magic" fft numbers might not be appropriate.
+
+added:
+  Docs/Grid.CHANGES
+  Util/Grid/grid_rotate.F90
+  Util/Grid/grid_supercell.F90
+modified:
+  Src/Makefile
+  Src/meshsubs.F
+  Util/Grid/makefile
+
+-----------------------------------------------------------------------
+2011-09-16  09:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-387
+Fix bug in BandLines processing
+
+The processing of the BandLines block was faulty, resulting
+in most cases in the skipping of the 'bands' calculation.
+
+modified:
+  Src/bands.F
+
+-----------------------------------------------------------------------
+2011-09-12  09:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-386
+Fix fdf_defined to take blocks into account
+
+The new version of fdf_defined was only checking
+for the existence of single labels. It has been
+fixed to check for blocks too.
+
+modified:
+  Src/fdf/fdf.F90
+  Src/fdf/sample.F90
+
+-----------------------------------------------------------------------
+2011-08-30  09:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-385
+Fix two minor bugs in Denchar
+
+Some compilers had trouble with a block pointer. It has
+been made into a normal variable.
+
+An attempt was made to close an I/O unit that had not
+ben opened in the spin-unpolarized case.
+
+(Thanks to T. Sondon)
+
+modified:
+  Util/Denchar/Src/atompla.f
+  Util/Denchar/Src/rhoofr.f
+
+-----------------------------------------------------------------------
+2011-08-26  12:40:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-384
+Print information about grid distributions
+
+New code has been added to show information about
+the different grid data distributions.
+
+modified:
+  Src/moremeshsubs.F
+
+-----------------------------------------------------------------------
+2011-05-19  15:20:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-383
+Fix and clarify code for KB projector orthogonalization
+
+In routine kbproj, a saved variable was used to keep track
+of the number of previous KB projectors with the same l. This
+variable was only reset upon a change in l. This can lead
+to errors if a species with a single l=0 KB complex is used.
+
+The code has been streamlined, passing explicitly an index
+that determines the sequence number of the projector.
+
+modified:
+  Src/atom.f
+
+-----------------------------------------------------------------------
+2011-05-03  16:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-382
+Fix declaration in cgwf.F
+
+A previous commit introduced a spurious dummy argument
+"node", which should really be imported from a module.
+
+modified:
+  Src/cgwf.F
+
+-----------------------------------------------------------------------
+2011-05-03  14:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-381
+Clarify mixing code in TranSiesta mode
+
+If the TranSiesta code is compiled in, the user can choose between two
+mixing options in the self-consistent cycle: density-matrix, or
+Hamiltonian. The option chosen takes effect both for the initial
+normal Siesta-style calculation, if needed, and for the "transiesta
+mode" section.
+
+The code in mixer.F and elsewhere has been streamlined, to make it
+clear what the mixed objects are and avoid extraneous global
+dependencies.
+
+modified:
+  Src/Makefile
+  Src/m_ts_global_vars.f90
+  Src/mixer.F
+  Src/new_dm.F
+  Src/state_init.F
+
+-----------------------------------------------------------------------
+2011-05-03  14:05:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-380
+Make auxiliary variable double precision in line minimization
+
+In routine linmin4, the complex variable "c" was declared
+as single-precision. It is now a double.
+
+modified:
+  Src/cgwf.F
+
+-----------------------------------------------------------------------
+2011-05-03  13:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-379
+Fix mixing bug in Transiesta + tbtrans wrap + pulayx warnings
+
+* Fix mixing bug in TranSiesta
+
+In TranSiesta mode, the program first might carry out a calculation at
+zero bias and with periodic boundary conditions, just as a normal
+Siesta calculation. Then the program goes into "transiesta mode"
+proper, during which a new mixing cycle takes place.
+
+In late June 2010, a change in the structure of the mixing code
+introduced a bug: the counter holding the number of history records
+was not properly initialized upon the ending of the preliminary
+siesta-style calculation.
+
+The mixing counter is now properly reset.
+
+modified:
+  Src/scfconvergence_test.F
+
+* In tbtrans some auxiliary files were written to by all the nodes.
+
+(+ Also, make sure that the transiesta capability appears at
+the top of the transiesta output file)
+
+modified:
+  Src/Makefile
+  Util/TBTrans/tbtrans.F
+
+* Avoid reporting unstable inversion in pulayx
+
+Typically, inversion problems in the DIIS procedure occur when the
+error estimate for a step is very small compared to the previous
+ones. This is harmless, and the reporting of a failure in the output
+file is confusing.
+
+In case it is needed, a hook to allow a full diagnosis 
+can be compiled in with the preprocessor flag
+
+DEBUG_PULAY_INVERSE
+
+(+ Also, initialize "found" variable in new_dm.F in transiesta mode)
+
+modified:
+  Src/m_pulay.F90
+  Src/new_dm.F
+
+* Increase field sizes in OCCS file
+
+Some fields overflowed when a large number of k-points was used.
+
+modified:
+  Src/diagk.F
+  Src/diagk_file.F
+
+-----------------------------------------------------------------------
+2011-05-03  12:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-378
+Fix manual re: non-collinear GGA and zmatrix input. FoX cosmetics
+
+* The manual incorrectly stated that GGA was not compatible with
+non-collinear-spin calculations.
+
+The order of the spherical coordinates for the second atom in the
+zmatrix format input is now explicitly stated.
+
+modified:
+  Docs/siesta.tex
+
+* Cosmetic changes to avoid xlf compiler diagnostics in dummy FoX
+
+If the "trap undefined variables" option is enabled in the xlf
+compiler, some stray symbols in the dummy version of the FoX library
+produce diagnostics. They have been re-wrapped.
+
+(Thanks to Oscar Paz)
+
+modified:
+  Src/FoX/common/m_common_attrs.F90
+  Src/FoX/utils/fox_m_utils_uri.F90
+
+-----------------------------------------------------------------------
+2011-04-14  09:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-377
+Avoid the creation of temporary and log files for fdf in parallel
+
+The standard mode of operation of the new fdf library is "cluster", in
+which the root node reads and processes the fdf file(s) and sends
+relevant information to the rest of the nodes. At the end of the setup
+process every node has a private copy of a pre-parsed fdf structure
+that can be consulted quickly.
+
+In the first version by Raul de la Cruz the root node sent raw text
+information to the other nodes, and these used a temporary scratch
+file to dump it to. Later these nodes invoked the digesting routine on
+the scratch file to create the memory structure.
+
+Now the root node serializes its own memory structure and sends it
+over to the other nodes. These just need to de-serialize the
+information and re-create the memory structure.
+
+Log files were also produced by all nodes by default. Now non-root
+nodes create the log files under "/tmp", with names of the form
+"tmp/fdf.log.N", where N is a representation of the MPI rank. Only
+the root node creates a "fdf.log" file in the working directory.
+This is useful for cluster settings in which non-root nodes might not
+be able to write efficiently to common areas.
+
+Any debug files are created in the same way, with names of the form
+"tmp/fdf.debug.N". At the end of the run they will contain a dump
+of the fdf memory structure.
+
+Alberto Garcia, April 2011
+
+modified:
+  Docs/KNOWN.ISSUES.BSC-patch
+  Src/fdf/fdf.F90
+  Src/fdf/parse.F90
+
+
+-----------------------------------------------------------------------
+2011-03-29  13:30:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-376
+Remove earlier patch for calculation of chemical potential
+
+Undo the changes to chempot (and the calling sequences in ordern and
+compute_dm) introduced in November 2007 by P. Ordejon, as they are not
+completely correct. This routine determines an approximate chemical
+potential for O(N) calculations. Note that parallel operation is still
+not possible.
+
+(Did not take back the changes in denmat.F and denmatlomem.F, which
+simply force an unconditional rescaling of the density matrix to
+produce the correct charge density.)
+
+(+ Fixed the code so that arbitrarily large Chebyshev's orders
+are in principle possible in Chempot)
+
+(+ Instrumented the O(N) line-minimization routine to print extra
+information if the preprocessor symbol DEBUG_LINMIN4 is used)
+
+modified:
+  Src/cgwf.F
+  Src/chempot.F
+  Src/compute_dm.F
+  Src/ordern.F
+
+-----------------------------------------------------------------------
+2011-03-22  10:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-375
+Clarify folding warning for gamma-point calculations
+
+For gamma-point calculations with unit cells not large enough to avoid
+interactions with images, a warning was produced even though it was
+only relevant for calculations intended for COOP/COHP analysis. The
+warning now appears only in that case.
+
+The manual has been updated to cover the point above, and also to make
+it clear that the Use.New.Diagk option is not compatible with the
+Diag.Parallel.Over.K mode.
+
+(+ cosmetic changes to avoid compiler warnings related to duplicate
+use statements)
+
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/Makefile
+  Src/hsparse.f
+  Src/m_ts_scattering.F
+
+-----------------------------------------------------------------------
+2011-03-14  10:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-374
+Experimental output comparison tool
+
+A simple "output digest" script in awk extracts key information fields from the output
+file with default precisions, and generates a small file. These digest files can then
+be compared to check for differences.
+
+This is an experimental feature. It is not yet integrated in the automatic test
+framework. Note that the reference output files in Tests/Reference have not yet
+been updated, pending a review.
+
+added:
+  Tests/cmp_digest.sh               ! Script to compare digest files
+  Tests/out_digest.awk              ! Digest generator
+  Tests/out_digest_template.awk     ! Template for optional precision changes
+modified:
+  Src/obj_setup.sh                  ! It now creates a symbolic link to the ref directory.
+
+-----------------------------------------------------------------------
+2011-03-09  16:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-373
+Fix two bugs in Vibra package
+
+The code to read the coordinates-and-masses block did not process the
+masses properly. It now also warns when there are not enough values in
+each line (a common error).
+
+Variable 'nlines' was not properly set in routine 'klines'.
+
+modified:
+  Util/Vibra/Src/klines.f
+  Util/Vibra/Src/recoor.f
+
+-----------------------------------------------------------------------
+2011-03-04  14:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-372
+Re-enable write_rho routine
+
+The write_rho routine had been modified for debugging purposes, but
+was not re-enabled. It now has been brought back to normal.
+
+modified:
+  Src/m_iorho.F
+
+-----------------------------------------------------------------------
+2011-02-25  10:20:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-371
+Fixes in pdosxml and denchar
+
+(Ported from siesta-3.0 branch)
+
+*Some compilers might have trouble with the shorthand
+array syntax used in the update of data arrays in m_pdos.f90.
+The bounds are now explicitly indicated.
+
+(Thanks to Miguel Pruneda)
+
+modified:
+  Util/pdosxml/m_pdos.f90
+
+* In 2D wavefunction mode, denchar was printing two blank lines
+between coordinate blocks.
+
+modified:
+  Util/Denchar/Src/denchar.f  -- removed duplicate 'use' statement
+  Util/Denchar/Src/rhoofr.f   -- interblock spacing
+  Util/Denchar/Src/wavofr.f   --   "
+
+-----------------------------------------------------------------------
+2011-02-18  15:55:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-370
+Re-initialize data array in timer routine
+
+Apparently it fixes some strangeness with some compilers.
+
+(by Jose Soler)
+
+modified:
+  Src/m_timer.F90
+
+-----------------------------------------------------------------------
+2011-02-18  15:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-369
+Remove mentions to SLEPC
+
+The mentions to SLEPC were fossils from a side branch and they have been
+removed.
+
+modified:
+  Src/siesta_init.F
+
+-----------------------------------------------------------------------
+2011-02-03  11:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-368
+Incorporation of BSC code: mesh optimization; parallel fdf library
+
+* The ongoing collaboration with the Barcelona Supercomputer Center
+(through the department of Computer Applications in Science and
+Engineering) has resulted in two new main enhancements:
+
+- New code to improve the load-balance among processors in the
+operations carried out in the real-space mesh (involved in the
+computation of charge density, exchange-correlation potential, and
+matrix elements of the hamiltonian, among others).
+
+Since the different operations have different work-load patterns, it
+has been necessary to define and handle three separate data
+distributions, with appropriately optimized communication patterns.
+Most of the new code is contained in new specialized modules, and
+there are calls for data distribution handling in higher-level
+modules, notably dhscf.
+
+An overview of the rationale and implementation of the new functionality
+can be found in
+
+An efficient implementation of a QM-MM method in SIESTA,
+C. F. Sanz-Navarro, R. Grima, A. Garcia, E. A. Bea, A. Soba,
+J.M. Cela, and P. Ordejon, 
+Theoretical Chemistry Accounts. Online pub Sep 2010. 
+DOI: 10.1007/s00214-010-0816-5
+
+We are working on a set of developer-oriented notes to facilitate
+future enhancements.
+
+- A new fdf library which avoids the 'master node bottleneck': each
+MPI processor now holds a copy of the relevant information, and can
+satisfy fdf queries without the need for interprocess communication or
+file access.
+
+The most noticeable change is in the processing of fdf blocks. The previous
+version of the library provided a Fortran unit number from which the
+user code could read the block contents. Now the user is given an
+abstract handle with which to perform explicitly the operations of reading
+lines, parse, and extract useful information. This paradigm was already
+present as a wrapper in previous versions of Siesta, but it is now mandatory.
+
+The two new developments, while formally independent, have been merged
+at the same time due to historical and logistical reasons. Even though
+the mesh enhancements affect directly only a relatively small number
+of files, many others have been modified: some by changes in memory
+allocation syntax and indentation, and some to clarify code patterns
+or interfaces (see below). The new treatment of fdf blocks and the
+removal of the explicit broadcast step in some existing fdf calls has
+meant changes to many other files. In all, this patch affects several
+dozen files in the Siesta distribution.
+
+* Other significant changes
+
+- The interface to the spherical-harmonics module in matel has been
+changed to avoid the creation of temporary arrays at run time. Also,
+some internal arrays in the spherical-harmonics module are now
+pre-allocated to avoid overhead.
+
+- Throughout the code most 'allocatable' arrays have been turned into
+pointers, to be able to exploit the functionality in the alloc module
+to resize them concisely. It can be argued that we have gone too far
+in some cases.
+
+We have invested a lot of effort in this work, but it is very likely
+that some issues have escaped us. A list of those known at this
+time can be found in the file Docs/KNOWN.ISSUES.BSC-patch
+
+removed:
+  Src/FoX/arch.make
+  Src/doping.F
+  Src/fdf/fdf.f
+  Src/fdf/fdf.h
+  Src/fdf/fdf_mod.f
+  Src/fdf/fdfdefs.h
+  Src/fdf/io_for_fdf_tests.f
+  Src/fdf/io_sample.f
+  Src/fdf/parse.f
+  Src/fdf/sample.f
+  Src/m_efield.F
+  Tests/bsc-compare.sh
+  Tests/std-compare.sh
+  Util/Denchar/Src/fdf/.dummy_dir
+  Util/Gen-basis/fdf/.dummy_directory
+  Util/TBTrans/Libs/
+  Util/TBTrans/Libs/.dummy_directory
+  Util/TBTrans/MPI/
+  Util/TBTrans/MPI/.dummy_dir
+  Util/TBTrans/fdf/
+  Util/VCA/fdf/.dummy_directory
+  Util/Vibra/Src/fdf/.dummy_directory
+added:
+  .bzrignore
+  Docs/BSC.CHANGES
+  Docs/KNOWN.ISSUES.BSC-patch
+  Src/FoX/arch.make
+  Src/Libs/dgetrs_lapack.f
+  Src/Libs/dspev_lapack.f
+  Src/Sys/altix-32b-par.make
+  Src/Sys/altix-32b-ser.make
+  Src/Sys/atto-pgf95-openmpi.make
+  Src/Sys/finisterrae.make.moved
+  Src/Sys/g95-macosx-netcdf.make
+  Src/Sys/gfortran-macosx-netcdf.make
+  Src/Sys/intel-mpi-checks-metis.make
+  Src/Sys/intel10-openmpi.make
+  Src/Sys/intel11-openmpi.make
+  Src/Sys/macosx-openmpi.make
+  Src/Sys/marenostrum-lanczos.make
+  Src/Sys/marenostrum-mpi-metis-64.make
+  Src/Sys/mn-32b-par.make
+  Src/Sys/mn-32b-ser.make
+  Src/Sys/mn-openmp.make
+  Src/Sys/nano-intel10-mvapich.make
+  Src/Sys/pgf95-pgimpi.make
+  Src/Sys/rogeli-intel-par.make
+  Src/bsc_cellxc.F
+  Src/bsc_xcmod.F
+  Src/cellxc_mod.F
+  Src/debugmpi.F
+  Src/doping_uniform.F
+  Src/fdf.Standard
+  Src/fdf/XY.fdf
+  Src/fdf/arch.make
+  Src/fdf/fdf.F90
+  Src/fdf/hostfile
+  Src/fdf/io_fdf.F90
+  Src/fdf/iso_fortran_env.F90
+  Src/fdf/parse.F90
+  Src/fdf/prec.F90
+  Src/fdf/sample.F90
+  Src/fdf/submit.sh
+  Src/fdf/tags
+  Src/fdf/utils.F90
+  Src/final_H_f_stress.F
+  Src/m_diagon.F
+  Src/m_dscfcomm.F
+  Src/m_efield.F
+  Src/mesh.F
+  Src/meshcomm.F
+  Src/meshphi.F
+  Src/moremeshsubs.F
+  Src/qsort.F
+  Src/schecomm.F
+  Src/setup_H0.F
+  Src/walltime.c
+  Src/xc.f
+  Tests/mgc-force/
+  Tests/mgc-force/makefile
+  Tests/mgc-force/mgc-force.fdf
+  Tests/mgc-force/mgc-force.pseudos
+  Util/Denchar/Src/timer_local.f
+renamed:
+  Src/atom.f => Src/atom.F
+  Src/forhar.f => Src/forhar.F
+  Src/hsparse.f => Src/hsparse.F
+  Src/meshmatrix.F => Src/meshdscf.F
+  Src/parallelsubs.f => Src/parallelsubs.F
+  Src/rhooda.f => Src/rhooda.F
+  Src/rhoofd.f => Src/rhoofd.F
+  Src/sparse_matrices.F90 => Src/sparse_matrices.F
+  Src/timer.f90 => Src/timer.F90
+  Src/vmat.f => Src/vmat.F
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/MPI/generate.sh
+  Src/MPI/mpi.F
+  Src/MPI/mpi__include.f90
+  Src/Makefile
+  Src/SiestaXC/lib-makefile
+  Src/SiestaXC/makefile
+  Src/Sys/finisterrae.make
+  Src/Sys/gfortran-netcdf.make
+  Src/Sys/marenostrum-mpi-32.make
+  Src/Sys/nano-intel-mpi-cdf.make
+  Src/Sys/nano-intel-mpi.make
+  Src/alloc.F90
+  Src/arw.f
+  Src/atm_transfer.f
+  Src/atm_types.f
+  Src/atmfuncs.f
+  Src/atomlist.f
+  Src/atomlwf.F
+  Src/bands.F
+  Src/basis_io.F
+  Src/basis_specs.f
+  Src/basis_types.f
+  Src/bonds.f
+  Src/born_charge.F
+  Src/broadcast_basis.F
+  Src/broyden_optim.F
+  Src/cdiag.F
+  Src/cell_broyden_optim.F
+  Src/cell_fire_optim.F
+  Src/cgvc.F
+  Src/cgvc_zmatrix.F
+  Src/cgwf.F
+  Src/chemical.f
+  Src/chempot.F
+  Src/compute_dm.F
+  Src/conjgr.f
+  Src/constr.f
+  Src/coor.F
+  Src/denmat.F
+  Src/denmatlomem.F
+  Src/densematrix.f
+  Src/detover.F
+  Src/dfscf.f
+  Src/dhscf.F
+  Src/diag2g.F
+  Src/diag2k.F
+  Src/diagg.F
+  Src/diagk.F
+  Src/diagk_file.F
+  Src/diagkp.F
+  Src/diagon.F
+  Src/diagpol.f
+  Src/diagsprl.F
+  Src/dipole.F
+  Src/dnaefs.f
+  Src/dynamics.f
+  Src/egandd.F
+  Src/eggbox.F
+  Src/electrostatic.f
+  Src/ener3.F
+  Src/ener3lomem.F
+  Src/fdf/Otherfile
+  Src/fdf/README
+  Src/fdf/coords.fdf
+  Src/fdf/fdf.Standard
+  Src/fdf/makefile
+  Src/fdf/sample.fdf
+  Src/fermid.F
+  Src/fft.F
+  Src/find_kgrid.F
+  Src/fire_optim.F
+  Src/fixed.F
+  Src/get_target_stress.f
+  Src/globalise.F
+  Src/gradient.F
+  Src/gradientlomem.F
+  Src/grdsam.F
+  Src/initatom.f
+  Src/initparallel.F
+  Src/iocg.f
+  Src/iodm.F
+  Src/iodm_netcdf.F90
+  Src/iodmhs_netcdf.F90
+  Src/ioeig.f
+  Src/iofa.f
+  Src/iogrid_netcdf.F90
+  Src/iokp.f
+  Src/iolwf.F
+  Src/iomd.f
+  Src/iopipes.F90
+  Src/ioxv.F
+  Src/iozm.F
+  Src/kgrid.F
+  Src/kgridinit.F
+  Src/kinefsm.f
+  Src/kpoint_grid.F90
+  Src/kpoint_pdos.F90
+  Src/ksv.f
+  Src/ksvinit.F
+  Src/linpack.F
+  Src/listsc.f
+  Src/local_DOS.F
+  Src/m_broyden_mixing.f
+  Src/m_fire_mixing.f
+  Src/m_history.f90
+  Src/m_iodm.F
+  Src/m_iorho.F
+  Src/m_iostruct.f
+  Src/m_memory.F
+  Src/m_mpi_utils.F
+  Src/m_pulay.F90
+  Src/m_sparse.F
+  Src/m_spin.F90
+  Src/m_ts_in_siesta.F
+  Src/m_ts_kpoints.F90
+  Src/m_ts_options.F90
+  Src/matel.f
+  Src/memory.F
+  Src/memoryinfo.F
+  Src/meshsubs.F
+  Src/metaforce.F
+  Src/mixer.F
+  Src/mneighb.f
+  Src/molecularmechanics.F90
+  Src/moreParallelSubs.F90
+  Src/mulliken.F
+  Src/naefs.f
+  Src/new_dm.F
+  Src/nlefsm.f
+  Src/normalize_dm.F
+  Src/obc.f
+  Src/old_atmfuncs.f
+  Src/optical.F
+  Src/ordern.F
+  Src/outcoor.f
+  Src/overfsm.f
+  Src/overlap.f
+  Src/pdos.F
+  Src/pdosg.F
+  Src/pdosk.F
+  Src/pdoskp.F
+  Src/phirphi.f
+  Src/phirphi_opt.f
+  Src/phonon.F
+  Src/pixmol.f
+  Src/plcharge.F
+  Src/poison.F
+  Src/post_scf_work.F
+  Src/precision.F
+  Src/projected_DOS.F
+  Src/proximity_check.F
+  Src/pseudopotential.f
+  Src/pxf.F90
+  Src/radfft.f
+  Src/radial.f
+  Src/rdiag.F
+  Src/read_xc_info.F
+  Src/readsp.F
+  Src/redcel.F
+  Src/reinit.F
+  Src/reoptical.F
+  Src/reord.f
+  Src/rhoofdsp.f
+  Src/savepsi.F
+  Src/scfconvergence_test.F
+  Src/setatomnodes.F
+  Src/setspatial.f
+  Src/setup_hamiltonian.F
+  Src/setup_kscell.F
+  Src/shaper.f
+  Src/show_distribution.f
+  Src/siesta.F
+  Src/siesta_analysis.F
+  Src/siesta_end.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/siesta_move.F
+  Src/siesta_options.F90
+  Src/sorting.f
+  Src/spher_harm.f
+  Src/state_analysis.F
+  Src/state_init.F
+  Src/struct_init.F
+  Src/vmatsp.f
+  Src/vmb.F
+  Src/write_md_record.F
+  Src/write_subs.F
+  Src/writewave.F
+  Src/wxml/m_wxml_array_str.f90
+  Src/wxml/m_wxml_buffer.f90
+  Src/wxml/m_wxml_core.f90
+  Src/wxml/m_wxml_dictionary.f90
+  Src/wxml/m_wxml_elstack.f90
+  Src/zm_broyden_optim.F
+  Src/zm_fire_optim.F
+  Src/zmatrix.F
+  Tests/Makefile
+  Util/Contrib/APostnikov/Makefile
+  Util/Denchar/Src/Makefile
+  Util/Denchar/Src/atompla.f
+  Util/Denchar/Src/denchar.f
+  Util/Denchar/Src/local_reinit.f
+  Util/Denchar/Src/readpla.f
+  Util/Denchar/Src/readsts.f
+  Util/Gen-basis/Makefile
+  Util/Gen-basis/gen-basis.F
+  Util/HSX/iohs.F
+  Util/Helpers/Makefile
+  Util/Optimizer/Makefile
+  Util/TBTrans/Makefile
+  Util/TBTrans/green4.F
+  Util/TBTrans/m_tbt_gf.F90
+  Util/TBTrans/m_tbt_options.F90
+  Util/TBTrans/mkqgrid.f
+  Util/TBTrans/reinit_tb.F
+  Util/TBTrans/tbtrans.F
+  Util/VCA/Makefile
+  Util/Vibra/Src/Makefile
+  Util/Vibra/Src/fcbuild.f
+  Util/Vibra/Src/klines.f
+  Util/Vibra/Src/recoor.f
+  Util/Vibra/Src/vibrator.f
+  version.info
+  Src/atom.F
+  Src/forhar.F
+  Src/hsparse.F
+  Src/meshdscf.F
+  Src/parallelsubs.F
+  Src/rhooda.F
+  Src/rhoofd.F
+  Src/sparse_matrices.F
+  Src/timer.F90
+  Src/vmat.F
+
+
+
+
+
+
+-----------------------------------------------------------------------
+2011-01-07  15:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-367
+Initialized pointers in moreParallelSubs. Timer call
+
+* Several pointers were used without nullification in routine copyfile in
+file moreParallelSubs.F90.
+
+* A "turn-off" call to timer was needed in cdiag in case of early termination.
+
+modified:
+  Src/cdiag.F
+  Src/moreParallelSubs.F90
+
+-----------------------------------------------------------------------
+2010-11-30  13:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-366
+Work around bugs in Intel compilers: FoX generics, k-grid
+
+* Work around a bug in Intel12 compiler in k-grid setup
+
+A dummy internal write is used to re-focus the compiler
+treatment of a few integer variables.
+
+modified:
+  Src/find_kgrid.F
+  Src/kgrid.F
+  Src/kgridinit.F
+
+* Avoid use of generics in declarations in FoX format routine
+
+The use of generic functions in declaration statements was confusing
+the Fortran compiler (version >= 11). They have been replaced by calls
+to the specific versions.
+
+modified:
+  Src/FoX/fsys/fox_m_fsys_format.F90
+
+-----------------------------------------------------------------------
+2010-11-26  15:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-365
+Fix setting of applied electric field in parallel
+
+Due to a programming error, the user-specified electric
+field was not correctly set in non-master nodes.
+
+Thanks to Alexander Vozny for the bug report.
+
+modified:
+  Src/m_efield.F
+
+-----------------------------------------------------------------------
+2010-11-18  08:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-364
+Clarify the output of the timing routine
+
+The timing routine now prints zeros instead of NaNs in the
+communications section if the variable MPI_TIMING is not defined,
+and an informational note.
+
+modified:
+  Src/m_timer.F90
+
+-----------------------------------------------------------------------
+2010-11-18  08:40:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-363
+Modify bonds routine to print real locations of neighbors
+
+In routine bonds (called at the beginning and at the end of the
+program) we now print the real location of the neighbor atom in space,
+and not, as in earlier versions, the location of the equivalent
+representative in the unit cell.
+
+modified:
+  Src/bonds.f
+
+-----------------------------------------------------------------------
+2010-11-12  16:20:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-362
+Merge 3.0 fixes: ps reparametrization, getopts, ioncat, atm manual
+
+* Cosmetic fixes in Gen-basis/{ioncat,ionplot.sh}
+
+modified:
+  Util/Gen-basis/ioncat.f
+  Util/Gen-basis/ionplot.sh
+
+* Fix test in m_getopts
+
+A double if test gives problems with some compilers when
+bounds checking is in effect.
+
+modified:
+  Src/m_getopts.f90
+
+* Improved grid for re-parametrization of pseudopotentials
+
+When the option Reparametrize.Pseudos is in effect, the program
+resamples the pseudopotential data into a new logarithmic grid with
+parameters chosen so that the grid-point separation at the typical rcs
+for orbitals is small enough (of the order of 0.01 bohr). The previous
+choice of parameters resulted in grid-point separations of the order
+of 0.005 bohr near the origin, which apparently is not fine enough for
+s orbitals, leading to oscillations in the gradient near the origin.
+
+A new set of default parameters has been chosen to provide a finer
+grid spacing (1.e-5 bohr) near the origin and 0.01 bohr around r=10
+bohr. This results in grids with around 10000 points, which is still
+manageable.
+
+( Also, a few extra diagnostic files are produced if the option
+  Write.Ion.Plot.Files is in effect, and the .psdump file now
+  contains the core charge )
+
+modified:
+  Src/atmparams.f
+  Src/atom.f
+  Src/basis_specs.f
+  Src/pseudopotential.f
+  Docs/siesta.tex
+
+* Update atom manual
+
+- Include a mention of the "fractional atomic number" capability.
+
+- Update the link to Jose Luis Martins' version of the atom program, and
+  the contact information in the README file.
+
+modified:
+  Pseudo/atom/Docs/atom.tex
+  Pseudo/atom/README
+
+-----------------------------------------------------------------------
+2010-10-01  10:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-361
+Improved documentation of VDW-KBM functional
+
+(J. Soler)
+
+modified:
+  Docs/siesta.tex
+  Src/SiestaXC/atomxc.F90
+  Src/SiestaXC/cellxc.F90
+  Src/SiestaXC/siestaxc.F90
+  Src/SiestaXC/vdwxc.F90
+  Src/SiestaXC/xcmod.f90
+
+-----------------------------------------------------------------------
+2010-08-05  15:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-360
+(Admin) Incorporate logs of recent patches from 3.0 branch
+
+The siesta-3.0 branch can be considered as a sort of "bug-fix" branch
+for "trunk". Hence, periodic merges are needed. This merges
+have up to now been done in a "cherry-picking" manner, since 3.0
+contains other material that is not supposed to go into trunk. This
+has the unfortunate feature that the patch logs are not incorporated
+into the trunk, and a "bzr missing" command will keep reporting
+spurious differences.
+
+The logs of all the recently applied patches, corresponding to 3.0
+patches up to 3.0-rc2, have now been incorporated by doing a normal
+merge followed by "bzr revert ." to remove all file changes (changes
+already incorporated in local revnos from 349 up to this one).  This
+has the effect of marking those patches in siesta-3.0 as "known" to
+this branch, and will simplify the porting of future patches from the
+3.0 branch. Note that the patch logs do not appear in "bzr log" unless
+the "-n0" option is used. This is desirable, as a casual user might
+find the output confusing.
+
+Note that revno 355 in this branch already incorporated (without
+explicit mention in the commit log, due to an oversight) the relevant
+3.0 patches up to 3.0-rc1.
+
+The version string has been set to trunk-360 in both version.info and
+siesta.tex.
+
+-----------------------------------------------------------------------
+2010-08-05  14:40:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-359
+Fixes for portability (FoX str, pulay, MD rewind, reshape)
+
+* The PGI compiler had trouble with the "str" function exported from
+  FoX. The call has been replaced by an internal write to an auxiliary
+  variable.
+
+* In m_pulay, some compilers evaluated both sub-clauses of an "and"
+  expression, even if the first was .false.. This led to a division by
+  zero in a mod operation. The expression has been replaced by more
+  robust code.
+
+* The MD file repositioning code in iomd.f gave problems in some
+  systems. It has been removed, and substituted by an explicit
+  'position="append"' clause in the open statement.
+
+* In SiestaXC/mesh3d.F90, work around a gfortran bug in the reshape
+  intrinsic by specifying a zero lower bound. The bug only appears
+  if bounds checking is in effect.
+
+modified:
+ Src/m_pulay.F90
+ Src/siesta_cmlsubs.F90
+ Src/iomd.f
+ Src/SiestaXC/mesh3d.F90
+
+-----------------------------------------------------------------------
+2010-08-05  14:05:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-358
+Cosmetic fixes (larger fields in atm files, vibra manual)
+
+* Use larger output fields for atm diagnostic files
+
+The atm program generates, among others, the files FOURIER_QMAX and
+ECONF_DIFFS, which contain information useful for optimization
+runs. The output fields were quite tight and sometimes
+overflowed. They have beeen made larger.
+
+modified:
+  Pseudo/atom/prdiff.f
+  Pseudo/atom/wrapup.f
+
+* Clarify the meaning of the supercell options in the Vibra manual
+
+New wording to make it clear that the supercell options refer
+to the number of augmentation shells around the unit cell.
+
+modified:
+  Util/Vibra/Docs/vibra.tex
+
+-----------------------------------------------------------------------
+2010-08-05  14:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-357
+Compute and print band-structure energy. Updates to Util/COOP/mprop
+
+* The band-structure energy Ebs = Tr(DM*H) is now computed at every 
+  iteration and printed at the beginning and end of the SCF cycle, both
+  in the output file and in the CML file. The calculation is done in  
+  compute_dm, so DM is the "output DM" from the diagonalization of H.
+
+* The mprop program has been updated to output the integrated
+  band-structure energy as a function of energy as a third column in
+  the integrated-dos file. The " -n " option has been documented.
+
+* Creation of Util/COOP/Docs, and addition of some notes on the units
+  and meaning of the COOP and COHP curves.
+
+added:
+  Util/COOP/Docs/
+  Util/COOP/Docs/UnitsAndMeaningOfCurves.txt
+  Util/COOP/Tests/README
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+  Src/m_energies.F90
+  Src/write_subs.F
+  Util/COOP/README
+  Util/COOP/main_vars.f90
+  Util/COOP/mprop.f90
+  Util/COOP/subs.f90
+
+-----------------------------------------------------------------------
+2010-08-05  13:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-356
+Make the HSX format the default for H,S files
+
+The old HS format was highly inefficient, as each piece of data was
+written to its own record. In addition, it only contained information
+about the inter-orbital vectors Xij if k-points were used in the
+calculation.
+
+The new HSX file format was introduced at the time of the first
+COOP/COHP implementation. It is more tightly packed, and the real
+arrays (H, S, and Xij) are written in single-precision.
+
+The HSX format is now the default in Siesta (TranSiesta has its own
+format).
+
+The programs hsx2hs and hs2hsx in Util/HSX are provided to facilitate
+the transition. Note however that an HS file written by Siesta during
+a Gamma-only calculation will not contain information about the
+inter-orbital vectors Xij, and hs2hsx will refuse to create an HSX
+file from it.
+
+See Util/HSX/README for more details.
+
+The file iohs.F has been moved to Util/HSX from the main source
+directory.
+
+added:
+  Util/HSX/hs2hsx.f90
+  Util/HSX/hsx2hs.f90
+  Util/HSX/makefile
+renamed:
+  Src/iohs.F => Util/HSX/iohs.F
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/setup_hamiltonian.F
+  Util/HSX/README
+  Util/HSX/hsx_m.f90
+
+-----------------------------------------------------------------------
+2010-08-05  10:55:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-355
+Hook to output the initial charge density
+
+If the fdf variable SaveInitialChargeDensity is "true", the program
+generates a RHO_INIT (and a RhoInit.grid.nc file if netCDF is compiled
+in) containing the charge density used to start the first
+self-consistency step, and it stops. Note that if an initial density
+matrix (DM file) is used, it is not normalized. This is useful to
+generate the charge density associated to "partial" DMs.
+
+modified:
+  Docs/siesta.tex
+  Src/dhscf.F
+  Src/setup_hamiltonian.F
+  Src/siesta_options.F90
+
+-----------------------------------------------------------------------
+2010-08-05  10:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-354
+Fixes and new functionality in Pulay mixing
+
+* The "kick" functionality intended to "shake" periodically the Pulay
+mixing procedure was incorrectly implemented. This has now been fixed,
+with the added feature that the Pulay history is completely reset
+after a kick.
+
+* Additionally, support has been added to specify whether the first
+density-matrix residual of the SCF cycle and the first residual after
+a kick are included in the Pulay history. It can be argued that in
+these cases the "output" DM might be significantly different from the
+"input" DM. To preserve backwards compatibility, these residuals are
+kept in the Pulay history unless the fdf variable
+
+      DM.Pulay.Avoid.First.After.Kick
+
+is set to "true" in the input file.
+
+* The above changes have forced a temporary disabling of the "Pulay on
+  file" feature, which will be re-implemented in a form that works
+  well in parallel.
+
+* Updated the manual.
+
+(A. Garcia)
+
+renamed:
+  Src/m_pulay.F => Src/m_pulay.F90
+modified:
+  Src/mixer.F
+  Src/siesta_options.F90
+  Src/m_pulay.F90
+  Docs/siesta.tex
+
+-----------------------------------------------------------------------
+2010-08-05  10:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-353
+Fixes and improvements in the optical spectra code
+
+* Fixed a bug in optical.F: the call to subroutine kgridinit nwas
+  causing problems and providing results that were not compatible any
+  longer with those of subroutine kgrid.
+
+* Modified call to subroutine transition_rate: wmin and wmax passed to
+  subroutine so that only the relevant transition probabilities are
+  explicitly calculated.
+
+* Added a new test (Tests/si-optical) to exercise the optical code.
+
+(Daniel Sanchez Portal)
+
+added:
+  Tests/Reference-xml/si-optical.xml
+  Tests/Reference/si-optical.out
+  Tests/si-optical/
+  Tests/si-optical/makefile
+  Tests/si-optical/si-optical.fdf
+  Tests/si-optical/si-optical.pseudos
+modified:
+  Docs/CHANGES
+  Src/optical.F
+  Src/transition_rate.F
+
+-----------------------------------------------------------------------
+2010-08-04  15:40:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-352
+Updates and fixes to the TranSiesta/tbtrans code (F.D. Novaes)
+
+This patch includes bug fixes (in TranSiesta and tbtrans), a cleanup
+involving removal of dead code, proper declarations of variables, and
+a new prototype test framework for TranSiesta and tbtrans.
+
+1. Fixed the issues related to the density matrix in a TS run, due to the
+changes in new_dm.F
+  
+* The new module m_ts_iodm.F is the equivalent of m_iodm.F, created to
+handle .TSDE files. These, are just like .DM files but where the Escf
+sparse matrix and the Fermi Energy are written at the end of the
+file. The makefile was modified in order to include this module.
+
+* The new_dm module now has a cleaner Transiesta related structure.
+The possibility of doing a "continuation run" (where a .TSDE file is
+read and the run starts with a TS calculated density matrix), is
+handled by calling the routine read_dynamic_ts_dm.  Since Transiesta
+also stores and reads Escf, the variable EDM_tmp has been created and
+is used in the same way as D_tmp.  The routine change_sparsity is also
+used for Escf. But these parts of the code have not been tested yet,
+since it would require a change in the sparsity., by atomic
+rearrangements.
+  
+
+added:
+  Src/m_ts_iodm.F
+modified:
+  Src/Makefile
+  Src/new_dm.F
+
+
+2. Changed the way mixH or mixDM are internally handled. Added a
+global_vars module.
+
+* Created the module m_ts_global_vars.f90 that contains the TS
+variables that are accessed in different parts of the code and are not
+passed as dummy arguments.
+
+* Considerable changes were made in the way the possibility of mixing
+either the density matrix or the hamiltonian is handled internally.
+The VIn and VOut pointers are still used, but now, instead of
+allocating some memory and copying the values of Dscf (H) to them,
+they directly point to either the Dscf and Dold matrices OR to H and
+HOld. The latter vector is allocated only whe mixH=.true., and this
+implies that in this case more memory will be required since Dold is
+also allocated because it is used in other parts of the code.  In any
+case, this leads to a smaller amount of allocated memory. The coding
+is clearer also, specially at the siesta_forces routine.
+
+
+added:
+  Src/m_ts_global_vars.f90
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+  Src/dhscf.F
+  Src/m_ts_iodm.F
+  Src/m_ts_options.F90
+  Src/mixer.F
+  Src/new_dm.F
+  Src/scfconvergence_test.F
+  Src/setup_hamiltonian.F
+  Src/siesta_forces.F
+  Src/state_init.F
+  Src/write_subs.F
+
+3. Cleaning of m_ts modules; set grid variables to be defined with
+grid_p; and smaller changes.
+
+* Removed unused variables and dummy arguments (all m_ts modules).
+Also specified what is used from each module with the idiom "use
+MODULE, only:"
+
+* For the TSVHFix and TSvoltage2 subroutines (m_ts_in_siesta.F90
+module), fixed the precision of the "v" variable (real space
+potential) to be grid_p.
+
+* The following cosmetic declaration changes were made:
+
+real*8 --> real(dp)
+complex*16 --> complex(dp)
+double precision --> real(dp)
+
+where "dp" comes from the precision module.
+
+* IOnode was incorrectly set to be node=1, now it is node=0
+  (m_ts_in_siesta.F)
+
+* Removed the initH variable from several routines. (new_dm,
+scfconvergence_test, setup_hamiltonian,siesta_forces)
+  
+  
+modified:
+  Src/compute_dm.F
+  Src/m_ts_contour.F
+  Src/m_ts_electrode.F90
+  Src/m_ts_in_siesta.F
+  Src/m_ts_io.F90
+  Src/m_ts_options.F90
+  Src/m_ts_scattering.F
+  Src/new_dm.F
+  Src/scfconvergence_test.F
+  Src/setup_hamiltonian.F
+  Src/siesta_forces.F
+
+4. Assortment of changes/fixes in TBTrans.
+
+* The original version of TBTrans (by M. Brandbyge) was not
+parallelized.  Some of the original properties computed by tbtrans
+(the transmission function and the pdos) have been "ported" to work
+also in the parallelized version of the code, but some have not. Those
+who have not, have been, for now, deleted (atompdos, coop and NetCDF
+related things).
+
+* The transmission function is now multiplied by two in the
+case of non spin-polarized calculations. As a consequence, the
+computed current is multiplied too.
+
+* The printed value of the pdos (averaged over all the k-points), when 
+running in parallel with more than one node, was not correct: only the values 
+coming from the node=0 were being printed. This has been fixed.
+
+* Some smaller changes were done on the way the results are written in the output 
+files (e.g. including blank lines in between values for each k-point, so that 
+the file can be directly plotted with xmgrace).  Also changed the name of the 
+routine "Tsiokp" (m_tbt_kpoints.F90) to "get_kp_on_node" since it represents 
+better what it really does.
+
+removed:
+  Util/TBTrans/atompdos.F
+  Util/TBTrans/coop.f
+  Util/TBTrans/OutputRegionData.F
+  Util/TBTrans/OutputRegionData.NoLowdin.F
+  Util/TBTrans/netcdfwrite.F
+modified:
+  Util/TBTrans/Makefile
+  Util/TBTrans/m_tbt_gf.F90
+  Util/TBTrans/m_tbt_kpts.F90
+  Util/TBTrans/m_tbt_options.F90
+  Util/TBTrans/tbtrans.F
+
+5. Created a test directory (ts_fast) to test TranSIESTA and
+TBTrans. (F.D.Novaes/A.Garcia)
+
+* An automatic test for transiesta and tbtrans can be run by going to 
+the $OBJDIR/Tests directory, and typing:
+
+  make ts
+
+and to clean:
+
+  make clean_ts
+
+For now, only the tests contained in the ts_fast directory will be
+executed, and more tests with similar structure will be added in the
+near future.  The script first runs the electrode calculation, then
+the scattering region calculation and finally tbtrans. If during any
+of these steps there is an error message sent to stderr, the script
+will stop and the following step will not start. The error message is
+printed to an output file (err_elec.out or err_scat.out or
+err_tbt.out). It only creates the "completed" file if it reaches the
+end.
+
+Parallel compilations can be tested by changing to the ts_fast directory 
+and (for example) typing:
+ 
+  make TS="/opt/openmpi.gcc.gfortran/bin/mpirun -np 2 ../../../transiesta"
+
+By default, tbtrans will be (re)compiled using the arch.make located
+in the $OBJDIR.  To use an already compiled version of tbtrans (again,
+inside the ts_fast directory) type:
+  
+  make TBT=/some/path/to/tbtrans
+
+NOTE: Since the compilation of tbtrans is automatic and unattended,
+you will need to specify in your arch.make the linear algebra libraries
+needed for tbtrans in your system. For example:
+
+  TBTRANS_LINALG=linalg.a # Or maybe only: zgeev_lapack.a zgesv_lapack.a
+
+* The functionality for the TS tests is kept in the new file scrip_ts.mk.
+
+added:
+  Tests/script_ts.mk
+  Tests/ts_fast/
+  Tests/ts_fast/H.psf
+  Tests/ts_fast/elec.fast.fdf
+  Tests/ts_fast/makefile
+  Tests/ts_fast/scat.fast.fdf
+  Tests/ts_fast/script.sh
+modified:
+  Tests/Makefile
+
+-----------------------------------------------------------------------
+2010-08-04  15:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-351
+Fix for out-of-box atoms in meshsubs
+
+In InitAtomMesh, during the calculation of the relative position of an
+atom with respect to the grid, make sure we consider the equivalent
+position inside the cell, even if the atom is outside.
+
+(Possible problem detected by P. Ordejon, fixed by J. Soler)
+
+modified:
+  Src/meshsubs.F
+
+-----------------------------------------------------------------------
+2010-08-03  15:35:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-350
+Port several small patches from 3.0 branch up to 3.0-rc2
+
+* Fix initialization of target_stress in some cell-only relaxations
+  
+When using the RelaxCellOnly option in tandem with Broyden relaxation,
+the target stress was not properly initialized.
+
+(Thanks to Marcos Verissimo Alves for pointing out the bug and fix)
+
+  modified:
+    Src/cell_broyden_optim.F
+
+* Print value of dipole if applying correcting field
+  
+If the SlabDipoleCorrection option is active, print the computed
+value of the total system dipole at every iteration, to help
+diagnose possible problems.
+
+Added note in the manual warning about the use of non-corrected
+density matrices with this option.
+  
+(+ fix MPI wrap of output in m_efield)
+
+  modified:
+    Src/Makefile
+    Src/dhscf.F
+    Src/m_efield.F
+    Docs/siesta.tex
+
+* Correction of error in siesta.tex (as discovered by J. Junquera)
+
+The FDF labels DM.Energy.Tolerance and DM.Harris.Tolerance
+were wrongly stated as "real" instead of "real energy", and their
+default value stated with no units when its units are eV.
+
+  modified:
+    Docs/siesta.tex
+
+-----------------------------------------------------------------------
+2010-08-03  15:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-349
+Tentative fix for DM reuse bug
+
+In some cases the re-use of the DM after a geometry change led to
+large values of ddmax and instabilities in SCF convergence. The
+tentative cause was the re-allocation of Dscf right after the call to
+hsparse for the new geometry, and before new_dm, combined with a
+"sparsity pattern change" in-place. When the re-allocation is deferred
+to new_dm, and the plain "change_sparsity" routine is used, the
+problem seems to disappear. 
+
+Thanks to Oswaldo Dieguez for his sleuthing work.
+
+More testing is needed to close the bug definitively.
+  
+Modified:
+  Src/Makefile
+  Src/new_dm.F
+  Src/state_init.F
+
+-----------------------------------------------------------------------
+2010-06-23 12:20:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-348
+
+Use DEBUG_XC preprocessor symbol to wrap SiestaXC debugging (J. Gale)
+
+ * Comments wrapped by ! DEBUG in several SiestaXC routines (and in
+   related sections of siesta_init and siesta_end) have been replaced
+   by #ifdef DEBUG_XC ... #endif so that the writing of debugging files
+   can be turned off easily at compile time.
+
+   Note that this has forced the change in file extension of a few
+   files in Src/SiestaXC, with concommitant changes in the makefiles.
+
+renamed:
+  Src/SiestaXC/atomxc.f90 => Src/SiestaXC/atomxc.F90
+  Src/SiestaXC/cellxc.f90 => Src/SiestaXC/cellxc.F90
+  Src/SiestaXC/fft3d.f90 => Src/SiestaXC/fft3d.F90
+  Src/SiestaXC/fftr.f90 => Src/SiestaXC/fftr.F90
+  Src/SiestaXC/siestaxc.f90 => Src/SiestaXC/siestaxc.F90
+  Src/SiestaXC/vdwxc.f90 => Src/SiestaXC/vdwxc.F90
+modified:
+  Src/SiestaXC/lib-arch.make
+  Src/SiestaXC/lib-makefile
+  Src/SiestaXC/makefile
+  Src/SiestaXC/mesh3d.F90
+  Src/siesta_end.F
+  Src/siesta_init.F
+  Src/SiestaXC/atomxc.F90
+  Src/SiestaXC/cellxc.F90
+  Src/SiestaXC/fft3d.F90
+  Src/SiestaXC/fftr.F90
+  Src/SiestaXC/siestaxc.F90
+  Src/SiestaXC/vdwxc.F90
+
+-----------------------------------------------------------------------
+2010-06-23 12:02:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-347
+
+Make sure that units are closed with io_close (J. Gale)
+
+ * 'Close' replaced by call to 'io_close' in several routines to
+   prevent luns overload.
+
+ * Unused declarations of io_assign and io_close removed from diagon.F
+   and ksv.f
+
+ (Julian Gale)
+
+ modified:
+   Src/diagon.F
+   Src/ksv.f
+   Src/m_timer.F90
+   Src/moreParallelSubs.F90
+   Src/write_orb_indx.f90
+-----------------------------------------------------------------------
+2010-06-23 02:19:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-346
+
+Support for LMKLL and KBM vdW functionals in ATOM (A. Garcia)
+
+ The pseudopotential generation program now accepts the "vl" xc code to
+ request the Lee et al. (LMKLL) version of the vdW functional
+ (arXiv:1003.5255v1 (2010)), and the "vk" xc code for the vdW
+ parametrization of Klimes et al. (KBM) (JPCM 22, 022201 (2009)).
+
+ The id strings in .xml pseudo files are, respectively,
+ 'Lee-et-al--LMKLL', and 'Klimes-et-al--KBM'. For consistency, the id
+ string for the Dion functional has been extended to
+ 'Dion-et-al--DRSLL'
+
+ The ATOM manual has been updated, and the version number set to
+ 3.3.1.
+
+ Obsolete xc routines (pre-SiestaXC) have been removed from the
+ Pseudo/atom directory.
+
+ removed:
+   Pseudo/atom/blypxc.f
+   Pseudo/atom/ggaxc.f
+   Pseudo/atom/ldaxc.f
+   Pseudo/atom/pw92xc.f
+   Pseudo/atom/pzxc.f
+   Pseudo/atom/revpbexc.f
+   Pseudo/atom/rpbexc.f
+ modified:
+   Pseudo/atom/Docs/atom.tex
+   Pseudo/atom/Makefile
+   Pseudo/atom/pseudoXML.f
+   Pseudo/atom/velect.f
+-----------------------------------------------------------------------
+2010-04-20 00:53:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-345
+
+Updated makefile dependencies (J. M. Soler)
+  
+modified:
+  Src/Makefile
+  Src/SiestaXC/makefile
+  
+-----------------------------------------------------------------------
+2010-04-20 00:48:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-344
+
+Added parametrization of Klimes et al for vdW-DF (J. M. Soler)
+  
+modified:
+    Docs/siesta.tex                  ! Added VDW/KBM
+    Src/SiestaXC/Testers/test1.f90   ! Call to B88 GGA exchange
+    Src/SiestaXC/atomxc.f90          ! Added VDW/KBM comment
+    Src/SiestaXC/cellxc.f90          ! Added VDW/KBM comment
+    Src/SiestaXC/ggaxc.f             ! Added Becke-88 exchange routine
+    Src/SiestaXC/siestaxc.f90        ! Added VDW/KBM comment
+    Src/SiestaXC/vdwxc.f90           ! Call to B88 exchange
+    Src/SiestaXC/xcmod.f90           ! Call to vdw_set_author for KBM
+
+-----------------------------------------------------------------------
+2010-04-20 00:44:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-343
+
+Documentation completed on LMKLL flavour of vdW-DF (J. M. Soler)
+  
+modified:
+    Docs/siesta.tex
+    Src/SiestaXC/siestaxc.f90
+    Src/SiestaXC/vdwxc.f90
+
+-----------------------------------------------------------------------
+2010-04-20 00:38:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-342
+
+A bug corrected in testers (J. M. Soler)
+  
+modified:
+    Src/SiestaXC/Testers/test2.f90  ! Avoid using DRSLL & LMKLL together
+    Src/SiestaXC/Testers/test3.F90
+    Src/SiestaXC/Testers/test4.F90
+
+-----------------------------------------------------------------------
+2010-04-20 00:34:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-341
+
+Added the vdW functional flavour of K.Lee et al, arXiv:1003.5255v1 (2010) (J.M. Soler)
+  
+modified:
+    Src/SiestaXC/Testers/test1.f90  ! Added PW86
+    Src/SiestaXC/Testers/test2.f90  ! Added VDW/LMKLL
+    Src/SiestaXC/Testers/test3.F90  ! Added VDW/LMKLL
+    Src/SiestaXC/Testers/test4.F90  ! Added VDW/LMKLL
+    Src/SiestaXC/atomxc.f90         ! Call to vdw_exchng
+    Src/SiestaXC/cellxc.f90         ! Call to vdw_exchng
+    Src/SiestaXC/ggaxc.f            ! Added PW86 and PW86R exchange functionals
+    Src/SiestaXC/vdwxc.f90          ! Added vdw_exchng and vdw_set_author
+    Src/SiestaXC/xcmod.f90          ! Call to vdw_set_author
+
+-----------------------------------------------------------------------
+2010-03-08 12:23:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-340
+
+Update FoX to version 4.1.0 (A. Walker)
+  
+  Version 4.1.0 of FoX, used to produce our XML output was released 
+  on 2010-02-09. This patch updates the version shipped with Siesta 
+  to this version. 
+
+  Changes that affect Siesta are that the build process for FoX can
+  now take advantage of possible parallelization (make -j), we can 
+  ask FoX to generate an abort signal if it kills the process and 
+  the inclusion of work arounds for compiler bugs in recent versions 
+  of the pgi compiler. Some of these changes existed in an (unrelased)
+  version of FoX shipped with Siesta since revision 320.
+ 
+  modified:
+      Src/FoX/FoX-config.in
+      Src/FoX/LICENSE
+      Src/FoX/Makefile
+      Src/FoX/common/FoX_common.F90
+      Src/FoX/configure
+      Src/FoX/wxml/FoX_wxml.f90
+      Src/FoX/wxml/m_wxml_core.F90
+      version.info
+      
+-----------------------------------------------------------------------
+2010-02-04  03:50:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-339
+
+  Fix bug in previous patch regarding CG DM extrapolation (A. Garcia)
+  
+  The logic of a previous patch was wrong, and the resulting
+  code prevented the proper restructuring of a reused DM in
+  the course of CG relaxations.
+  
+  To make it clear now: For "CG" calculations, the default is not to
+  extrapolate the DM (unless requested by explicitly setting
+  'DM.AllowExtrapolation' to "true"). The previous step's DM is reused.
+  
+  modified:
+    Docs/siesta.tex
+    Src/new_dm.F
+    
+-----------------------------------------------------------------------
+2010-02-04  03:36:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-338
+
+  Avoid extrapolation of DM during geometry optimization (A. Garcia)
+  
+  When performing a geometry optimization (CG, Broyden, etc) (idyn=0 in
+  the code), there might be sudden jumps in the geometry (e.g., at the
+  end of a line-minimization) that render a extrapolation of the DM
+  risky. Hence DM extrapolation is turned off in this case.
+  
+  One might argue that DM re-use should be avoided too.
+  
+  modified:
+    Docs/siesta.tex
+    Src/new_dm.F
+
+-----------------------------------------------------------------------
+2010-02-03  02:34:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-337
+
+Patch for problem in the iVec computers (J. M. Soler)
+  
+  A persistent problem in Australia's iVec supercomputers was traced to an 
+  apparent ifort compiler error, producing a core dump in re_alloc's line
+    array(c(1,1):c(2,1)) = old_array(c(1,1):c(2,1))
+  that disappeared when substituted by
+    do i = c(1,1),c(2,1)
+      array(i) = old_array(i)
+    enddo
+  Since, in the offending call, no array copy was really neaded, the problem
+  was solved insted by adding copy=.false. in that call by initMesh.
+  
+  Independently of the former, a number of corrections or improvements
+  were done in various files, to solve small deficiencies located during
+  the process of debugging the previous problem.
+  
+  modified:
+    Src/SiestaXC/debugxc.f90   ! Corrected file name in closeDebugOutputFile
+    Src/SiestaXC/ggaxc.f       ! Added spin bounds in array copy
+    Src/SiestaXC/mesh3d.F90    ! Added several checks for range of iDistr
+    Src/fermid.F               ! Removed a duplicated printout
+    Src/meshsubs.F             ! Added copy=.false. in call to re_alloc
+
+-----------------------------------------------------------------------
+2010-02-03  02:28:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-336
+
+Corrected call to MPI_AllReduce in SiestaXC/Testers/test4.F90 (J.M. Soler)
+  
+  modified:
+    Src/SiestaXC/Testers/test1.f90  ! Increased number of densities tried
+    Src/SiestaXC/Testers/test4.F90  ! Corrected call to MPI_AllReduce
+    
+-----------------------------------------------------------------------
+2010-02-03  02:22:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-335
+
+MPI_grid_real kind adapted to new standard (J.M. Soler)
+  
+  modified:
+    Src/MPI/mpi.F   ! MPI_grid_real=DAT_double unless def GRID_SP
+    
+-----------------------------------------------------------------------
+2010-02-03  00:17:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-334
+
+A bug corrected by J.D.Gale in the am05 functional (J.M. Soler)
+  
+  modified:
+    Src/SiestaXC/Testers/makefile   ! Copy ../*.mod
+    Src/SiestaXC/am05.f90           ! Bug corrected
+    Src/SiestaXC/ggaxc.f            ! Corrected call to am05wbs
+    
+-----------------------------------------------------------------------
+2010-02-02  10:57:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-333
+
+Two minor bugs found by Alberto Garcia (J.M. Soler)
+  
+  modified:
+    Src/SiestaXC/Testers/test3.F90  ! Add MPI_Finalize
+    Src/SiestaXC/Testers/test4.F90  ! Add MPI_Finalize
+    Src/SiestaXC/lib-makefile       ! Add am05.o
+    
+-----------------------------------------------------------------------
+2010-02-01  20:55:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-332
+
+Include AM05 functional in SiestaXC/Testers (J.M. Soler)
+  
+  The recently-added AM05 functional has been added to those tested by the
+  SiestaXC/Testers.
+  
+  modified:
+    Src/SiestaXC/Testers/test1.f90
+    Src/SiestaXC/Testers/test2.f90
+    Src/SiestaXC/Testers/test3.F90
+    Src/SiestaXC/Testers/test4.F90
+
+---------------------------------------------------------------------
+2010-01-15  18:40:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-331
+
+  Two mesh-related bugs (From J.M.Soler)
+  
+  In routine phiOnMesh, function 'size' was used with unassociated pointers.
+  This is a bug, although most compilers tolerate it. Unrelated to this,
+  in routine divideBox1D, the limits of the first and last boxes was not
+  correctly initialized.
+  
+  modified:
+    Src/SiestaXC/mesh3d.F90  ! Initialize partBox(1,1) and partBox(2,nParts)
+    Src/meshsubs.F           ! Check pointer associations
+
+---------------------------------------------------------------------
+2010-01-15  18:40:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-330
+
+  Two bugs in MPI communications (From J.M.Soler)
+  
+  The length increase of strings XCfunc and XCauth in trunk-320-JMS-3 had not
+  been considered in their MPI communication calls. Also, unrelated to this,
+  a conditional return made node 0 not participate in a global broadcast,
+  leaving the other nodes hunging.
+  
+  modified:
+    Src/m_efield.F       ! Removed conditional return
+    Src/read_xc_info.F   ! Corrected string length in MPI_Bcast
+
+---------------------------------------------------------------------
+2010-01-15  18:40:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-329
+
+  Bug correction in mesh3d (From J.M.Soler)
+  
+  A case not taken care of, in routine sameMeshDistr, created an
+  out-of-bounds condition that was noticed by J.D.Gale and others.
+  Also, a use statement was added for MPI routines in m_mpi_utils.
+  
+  modified:
+    Src/SiestaXC/mesh3d.F90  ! Bug corrected in sameMeshDistr
+    Src/m_mpi_utils.F        ! Added use statement for MPI routines
+    Src/meshsubs.F           ! Variable JDGdistr saved and initialized
+
+---------------------------------------------------------------------
+2010-01-15  18:10:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-328
+
+  Print vacuum level (From J.M.Soler)
+  
+  The vacuum level, defined as the effective potential at grid points with
+  zero density, is printed in the standard output. This is done whenever
+  there are such points and either SaveElectrostaticPotential or
+  SaveTotalPotential are true. This will be useful to calculate the work 
+  function of a surface.
+  
+  added:
+    Src/vacuum_level.f90      ! Computes the vacuum level
+  modified:
+    Docs/siesta.tex           ! Document side effect of SaveTotalPotential
+    Src/Makefile              ! Add vacuum_level.o. Update dependencies
+    Src/dhscf.F               ! Call vacuum_level and print it
+    Src/moreParallelSubs.F90  ! Make public miscAllReduceInt
+
+---------------------------------------------------------------------
+2010-01-15  18:10:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-327
+
+  Make doping routine call global fdf version (From J.M.Soler)
+  
+  An error was occurring because all nodes were calling the old (serial) fdf
+  routines, which should be called only by node=0. The fdf_global version can
+  handle such global calls.
+  
+  modified:
+    Src/Makefile  ! Updated dependencies
+    Src/doping.F  ! Call global fdf version
+
+---------------------------------------------------------------------
+2010-01-15  17:55:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-326
+
+  New GGA functionals with PBE form and parameters from Capelle et al (From J.M.Soler)
+  
+  The four new functionals, with author labels PBE(JsJrLO), PBE(JsJrHEG), 
+  PBE(GcGxLO), and PBE(GcGxHGE), have the PBE functional form, but use
+  modified values for parameters beta, mu, and kappa. 
+  Refs: L.S.Pedroza et al, PRB 79, 201106 (2009)
+        M.M.Odashima et al, J. Chem. Theory Comp. 5, 798 (2009)
+  
+  modified:
+    Src/SiestaXC/ggaxc.f     ! New functionals implemented
+    Src/SiestaXC/xcmod.f90   ! Increased length for XCfunc and XCauth strings
+    Src/atom.f               ! Let xc_check continue even if func. not known
+    Src/read_xc_info.F       ! Increased length for XCfunc and XCauth strings
+
+---------------------------------------------------------------------
+2010-01-15  17:40:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-325
+
+Document in manual the file on orbital indexes (From J.M.Soler)
+  
+Added to the manual documentation on file (label).ORB_INDX
+  
+modified:
+    Docs/siesta.ind
+    Docs/siesta.tex   ! File ORB_INDX documented.
+    
+---------------------------------------------------------------------
+2010-01-15  17:40:00 GMT Jose A Torres <jose.torres.alonso@uam.es>  trunk-324
+
+Write orbital indexes  (From J.M.Soler)
+  
+  To assist users in interpreting files like (label).DM and (label).HS, a new
+  file called (label).ORB_INDX is written with info on the orbital index order.
+  
+  added:
+    Src/write_orb_indx.f90   ! Writes (label).ORB_INDX
+  
+  modified:
+    Src/Makefile             ! Added write_orb_indx.o + Dependencies updated
+    Src/atmfuncs.f           ! Orbital symmetry names completed up to g orbitals
+    Src/compute_dm.F         ! Added call to write_orb_indx
+    
+---------------------------------------------------------------------
+2010-01-15  17:02:00 GMT  Jose A Torres <jose.torres.alonso@uam.es>  trunk-323
+
+Name of functional updated in AM05XC to correctly be AM05 (From J. Gale)
+
+modified:
+  Src/SiestaXC/ggaxc.f
+  
+---------------------------------------------------------------------
+2010-01-15  16:43:00 GMT  Jose A Torres <jose.torres.alonso@uam.es>  trunk-322
+
+Changes to the default precision of grid magnitudes (From A. Garcia)
+
+The grid functions (charge densities, potentials, etc) are now in
+double precision by default. The 'phi' array that holds the values of
+the basis orbitals on the real-space grid is kept in single precision.
+
+The following pre-processing symbols at compile time control the 
+precision selection:
+
+#ifdef GRID_SP
+    integer, parameter :: grid_p = sp
+    integer, parameter :: phi_grid_p = sp
+#elif defined(GRID_DP)
+    integer, parameter :: grid_p = dp
+    integer, parameter :: phi_grid_p = dp
+#else
+    integer, parameter :: grid_p = dp
+    integer, parameter :: phi_grid_p = sp
+#endif
+
+GRID_DP will lead to a sizable memory increase, as 'phi' is the main
+user of memory on the grid. On the other hand, the gains in accuracy
+are negligible, as the operations over 'phi' are accumulated in double
+precision variables.
+
+GRID_SP recovers the old Siesta default. It will not free much
+memory, and it will show some numerical differences.
+
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/meshsubs.F
+  Src/precision.F
+
+---------------------------------------------------------------------
+2010-01-15  16:43:00 GMT  Jose A Torres <jose.torres.alonso@uam.es>     trunk-321
+
+ Fixed the precision of real and complex variables in m_ts* modules. (From F.D.Novaes)
+  
+  * For the TSVHFix and TSvoltage2 subroutines (m_ts_in_siesta.F90 module),
+    fixed the precision of the "v" variable (real space potential) 
+    to be grid_p.
+  
+  * In all the modified modules, the following changes were made:
+  
+    real*8 --> real(dp)
+    complex*16 --> complex(dp)
+    double precision --> real(dp)
+  
+    where "dp" comes from the precision module.   
+  
+  modified:
+    Src/m_ts_aux_rout.F
+    Src/m_ts_contour.F
+    Src/m_ts_electrode.F90
+    Src/m_ts_in_siesta.F
+    Src/m_ts_io.F90
+    Src/m_ts_scattering.F
+
+---------------------------------------------------------------------
+2009-12-07  18:43:00 GMT  Jose A Torres <jtorres.sp@gmail.com>     trunk-320
+
+ Make WriteXML option consistent (XML.Write) and document (From A. Walker)
+
+ Document the two new XML options: XML.AbortOnErrors and
+ XML.AbortOnWarnings in siesta.tex (documentation is in the
+ XML appendix).
+
+ Rename undocumented WriteXML option to XML.Write for
+ consistancy. Document this option in siesta.tex.
+ 
+ modified:
+  Docs/siesta.tex
+  Src/siesta_cmlsubs.F90
+ 
+---------------------------------------------------------------------
+2009-12-07  18:28:00 GMT  Jose A Torres <jtorres.sp@gmail.com>     trunk-319
+
+Update FoX library and add XML.AbortOnErrors and XML.AbortOnWarnings (From A. Walker)
+
+It is sometimes useful for warnings or errors generated by the FoX
+libary to result in an abort to generate a core dump or stack trace to
+see where in Siesta the call causing the error is being made. It is
+now possible to turn on this behaviour at runtime using two new fdf
+boolean tags:
+
+ XML.AbortOnErrors  XML.AbortOnWarnings
+
+Both are boolean and default to .false. (which mirrors the current
+stopping behaviour).
+
+These features have been made possible by an update in the FoX library
+that adds an interface to allow errors and warnings to result in an
+abort signal. In the update there is also a fix to work around a PGI
+bug for the overloaded wxml interfaces (aparently not used in Siesta)
+and a change to the prng to avoid using initalised data in prng_init.
+
+added:
+  Src/FoX/arch.make
+modified:
+  Src/FoX/Makefile
+  Src/FoX/common/FoX_common.F90
+  Src/FoX/common/m_common_error.F90
+  Src/FoX/common/makefile
+  Src/FoX/fsys/fox_m_fsys_abort_flush.F90
+  Src/FoX/utils/fox_m_utils_uuid.F90
+  Src/FoX/utils/makefile
+  Src/FoX/wcml/m_wcml_molecule.F90
+  Src/FoX/wcml/makefile
+  Src/FoX/wxml/m_wxml_core.F90
+  Src/FoX/wxml/m_wxml_overloads.F90
+  Src/FoX/wxml/makefile
+  Src/siesta_cml.f90
+  Src/siesta_cmlsubs.F90
+
+------------------------------------------------------------------------------
+2009-12-04  16:21:00 GMT  Jose A Torres <jtorres.sp@gmail.com>      trunk-318
+
+Fixes to compilation of Utils (From A. Garcia)
+
+After the merge of SiestaXC the building of many Util programs was broken.
+The problems have been fixed.
+
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/atom/divdif.f
+  Util/Denchar/Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/Helpers/Makefile
+  Util/Optimizer/Makefile
+  Util/STM/ol-stm/Src/Makefile
+  Util/STM/simple-stm/plstm.f
+  Util/TBTrans/Makefile
+  Util/VCA/Makefile
+
+------------------------------------------------------------------------------
+2009-11-27  19:56:00 GMT  Jose A Torres <jtorres.sp@gmail.com>      trunk-317
+
+Minor change in cellxc.f90 to make it compatible with xlf
+
+In cellxc.f90 
+The code:
+timeDisp=huge(timeDisp)  
+Seems to give compilation problems when using xlf
+It has been replaced by
+timeDisp=huge(1.0_dp)  
+ 
+modified:
+  Src/SiestaXC/cellxc.f90 
+
+------------------------------------------------------------------------------
+2009-11-27  19:35:00 GMT  Jose A Torres <jtorres.sp@gmail.com>      trunk-316
+
+Position of checking statement corrected in cellxc.f90 
+
+The variable GGA was being used before being defined in 
+SiestaXC/cellxc.f90. This modification fixes that bug. 
+The following block:
+"  if (present(dVxcdD) .and. GGA) &
+    call die(errHead//'dVxcdD available only for LDA')
+"
+Has been moved to a new position, just after GGA has been defined.
+ 
+modified:
+  Src/SiestaXC/cellxc.f90 
+
+------------------------------------------------------------------------------
+2009-11-27  18:56:00 GMT  Jose A Torres <jtorres.sp@gmail.com>      trunk-315
+
+Modularize efield and doping modules. Restructure CML interfaces. (From A. Garcia)
+
+* The code in efield.F (now m_efield.F) has been split in several
+  routines. 
+
+* The code in doping.F has been split in several routines.
+
+* Siesta_cml is now the main interface to CML in Siesta.
+  Siesta_cmlsubs is a client of siesta_cml and only exports
+  siesta_cml_init and siesta_cml_exit.
+  
+  For unknown reasons, it has been necessary to declare all the
+  symbols in siesta_cml explicitly "public" and add the "private"
+  global statement to avoid compiler crashes (intel V10) upon
+  compiling several modules.  A number of explicit "only" clauses have
+  been added to a few CML import statements in several modules.
+
+removed:
+  Src/efield.F
+added:
+  Src/m_efield.F
+modified:
+  Src/Makefile
+  Src/dhscf.F
+  Src/doping.F
+  Src/post_scf_work.F
+  Src/setup_hamiltonian.F
+  Src/siesta_cml.f90
+  Src/siesta_cmlsubs.F90
+  Src/siesta_end.F
+  Src/siesta_move.F
+  Src/state_init.F
+  
+------------------------------------------------------------------------------
+2009-11-27  18:45:00 GMT  Jose A Torres <jtorres.sp@gmail.com>      trunk-314
+
+Fix test scripts for correct executable path (From A. Garcia)
+
+* Some scripts in Tests/Scripts still referred to the old "Src"-style
+  siesta executable.
+
+* Tests/test.mk had a path to the executable which assumed that it ran
+  under the default Obj directory.
+
+modified:
+  Tests/Scripts/matterhorn-gm.sge
+  Tests/Scripts/matterhorn-mpich.sge
+  Tests/Scripts/nano.pbs
+  Tests/Scripts/nano4.sh
+  Tests/Scripts/simple_parallel.sh
+  Tests/test.mk
+  
+------------------------------------------------------------------------------
+2009-11-25  09:34:00 GMT  Jose A Torres <jtorres.sp@gmail.com>      trunk-313
+
+siestaXC.f90 renamed siestaxc.f90 (From J. Soler)
+
+To avoid case ambiguities, that cause compilation problems, the name of file
+siestaXC.f90 has been renamed as siestaxc.f90
+
+renamed:
+  Src/SiestaXC/siestaXC.f90 => Src/SiestaXC/siestaxc.f90
+modified:
+  Src/SiestaXC/lib-00-README  ! siestaXC.mod -> siestaxc.mod
+  Src/SiestaXC/lib-makefile   ! siestaXC.f90,o -> siestaxc.f90,o
+  Src/SiestaXC/makefile       ! siestaXC.f90,o -> siestaxc.f90,o
+
+------------------------------------------------------------------------
+2009-11-23  09:54:00 GMT Jose A Torres <jtorres.sp@gmail.com>    trunk-312
+
+Support for the Armiento and Mattson's  functional added (From J. Gale)
+
+Support for the AM05 functional has been added to routines in SiestaXC 
+and Pseudo. This is done using the AM05 subroutines distributed by 
+Armiento and Mattson, under the terms of the conditions contained within 
+the header to their software allowing modification and redistribution 
+provider the original copyright header remains. 
+
+A new module, am05, contained within the file SiestaXC/am05.f90, has been 
+added containing the code from Armiento and Mattsson. Within ggaxc.f90 
+a wrapper has been added, am05xc, to pass the variables from ggaxc to 
+am05 subroutines and handle the return arguments appropriately. 
+
+In the atom program the two-letter symbol "am" has been added for AM05.
+In SIESTA the GGA Authors are "AM05".
+
+A test of the AM05 functional added in h2o_am05.
+
+added:
+  Pseudo/atom/am05.f
+  Src/SiestaXC/am05.f90
+  Tests/Pseudos/H_am05.psf
+  Tests/Pseudos/O_am05.psf
+  Tests/Reference/h2o_am05.out
+  Tests/h2o_am05/
+  Tests/h2o_am05/README
+  Tests/h2o_am05/h2o_am05.fdf
+  Tests/h2o_am05/h2o_am05.pseudos
+  Tests/h2o_am05/makefile
+modified:
+  Docs/siesta.tex
+  Pseudo/atom/Docs/atom.tex
+  Pseudo/atom/pseudoXML.f
+  Pseudo/atom/velect.f
+  Src/Makefile
+  Src/SiestaXC/atomxc.f90
+  Src/SiestaXC/cellxc.f90
+  Src/SiestaXC/ggaxc.f
+  Src/SiestaXC/makefile
+  Src/SiestaXC/siestaXC.f90
+  Src/SiestaXC/xcmod.f90
+  Src/atom.f
+  
+------------------------------------------------------------------------
+2009-11-10  20:30:00 GMT Jose M Soler <jose.soler@uam.es>      trunk-311
+
+Avoid repetition of routine name in allocation report
+
+Since the introduction of the routine name in the allocation report, in
+revno 301, some arrays appeared with a repeated routine name, since this
+is also given in the array name. Also, the module name has been added in
+calls to re_alloc, within module neighbour.
+
+modified:
+  Src/SiestaXC/atomxc.f90   ! Call to alloc_default commented out
+  Src/SiestaXC/cellxc.f90   ! 'routine' removed from call to alloc_default
+  Src/matel.f               ! 'routine' removed from call to alloc_default
+  Src/mneighb.f             ! Module name used in calls to re_alloc
+ 
+
+------------------------------------------------------------------------
+2009-11-10 18:25:00 GMT Jose A. Torres <jtorres.sp@gmail.com>   trunk-310
+
+Increased parameter nr in vdwxc, to avoid an out-of-bounds condition(J. Soler)
+
+An out of bounds condition was occurring in vdwxc when called by atom
+pseudopotential generation program. With ifort, this lead to program
+crash or to an overflow of the system memory. To solve this, parameter 
+nr been increased from 1024 to 2048, and a check has been added.
+
+modified:
+  Src/SiestaXC/vdwxc.f90   ! Parameter nr increased
+
+------------------------------------------------------------------------
+2009-11-10 17:59:00 GMT Jose A. Torres <jtorres.sp@gmail.com>   trunk-309
+
+Clarification of the use of *_last geometry information (A. Garcia)
+
+The variables xa_last (formerly xalast), ucell_last, and scell_last
+are used to hold the information related to the last geometry for
+which the electronic structure has been computed. This is necessary
+since the "siesta_move" routine updates the geometry after every step.
+By using the "*_last" variables instead of "xa", "ucell", and "scell",
+we make sure that "siesta_analysis", when calculating the
+polarization, optical properties, etc, uses the coordinates actually
+used to compute the electronic structure.
+
+The *_last variables are set at the beginning of "siesta_move", before
+the actual displacements. Due to a bug in the program, however, this
+was being done only at the final scheduled step ('fincoor'), instead
+of inconditionally after every step. Thus they could be used undefined
+if, for example, a relaxation finishes before the scheduled number of
+steps (which is typical).
+
+While fixing this bug, it became apparent that some other sections of
+"siesta_analysis" are using the "predicted" coordinates (the output of
+coordinates in various formats) instead of the last "used"
+coordinates. This can be considered a feature or a bug.
+
+Similarly, the computation of the spin polarization uses a density
+matrix that is actually the result of a mixing after the last SCF
+step.
+
+(Fix prepared by A. Garcia after the discovery of the bug by J. Gale)
+
+modified:
+  Src/atomlist.f
+  Src/born_charge.F
+  Src/local_DOS.F
+  Src/siesta_analysis.F
+  Src/siesta_geom.F90
+  Src/siesta_move.F
+ 
+------------------------------------------------------------------------
+2009-11-10  17:53:00 GMT Jose A. Torres <jtorres.sp@gmail.com> trunk-308
+
+Fix bug in electric field initialization (J. Junquera)
+
+When using the ExternalElectricField option (block), a bug prevented
+the actual use of the field to generate the potential ramp on the grid
+(but not the calculation of an extra contribution to the energy).
+
+
+modified:
+  Src/efield.F
+
+------------------------------------------------------------------------
+2009-11-06  19:34 GMT Jose A. Torres <jtorres.sp@gmail.com>     trunk-307
+
+Error fixed for MPI_Waitall, Call to write_raw_efs limited to I/O node (J.Gale)
+
+Introduced some patches from J.Gale's branch:
+
+* Error in mpi_siesta.f90 fixed for MPI_Waitall. The interface had 
+  the wrong set of arguments passed through.
+
+    +     call MPI_WAITALL(COUNT, ARRAY_OF_REQUESTS, ARRAY_OF_STATUSES, IERROR)
+    ---
+    -     call MPI_WAITALL(COUNT, ARRAY_OF_REQUESTS, INDEX, STATUS, IERROR)
+
+* Call to write_raw_efs from state_analysis now limited to I/O node only.
+
+    +       if (IOnode) call write_raw_efs(stress,na_u,fa,FreeE)
+    ---
+    -       call write_raw_efs(stress,na_u,fa,FreeE)
+
+* Some comments changed in Src/m_timer.F90
+
+
+modified:
+  Src/MPI/mpi_siesta.f90   !  
+  Src/m_timer.F90
+  Src/state_analysis.F
+
+------------------------------------------------------------------------
+2009-11-03  11:15:00 GMT Jose M Soler <jose.soler@uam.es>      trunk-306
+Correct number of orbital nodes with 'nodes' option
+
+The (mainly obsolete) 'nodes' option for basis orbital generation was
+producing orbitals with one excess radial node (i.e. one and two nodes
+for double zeta, instead of zero and one node). Corrected.
+
+A goto statement, out of a start-stop-timer piece of code, lead to
+a program die within timer in some cases. Corrected.
+
+modified:
+  Src/atom.f        ! Radial nodes decresed for 'nodes' option
+  Src/m_timer.F90   ! A small correction of output format
+  Src/rdiag.F       ! Added call to stop_timer within rdiag3 section
+
+------------------------------------------------------------------------
+2009-10-15  21:00:00 GMT Jose M Soler <jose.soler@uam.es>      trunk-305
+Match arguments between re_alloc and de_alloc calls
+
+For a correct accounting of array allocations, both the 'name' and
+'routine' arguments should be identical (including case sensitivity)
+in the corresponding calls to re_alloc and de_alloc of an array.
+The two arguments are combined into an internal name as 
+trim(routine)//' '//name, so that (name='rho',routine='dhscf') 
+is equivalent to (name='dhscf rho'). This is the name printed in
+the allocation report.
+
+When the array is allocated and deallocated in different subroutines, 
+it is clearer not to use the 'routine' argument, or give it the value 
+of the array 'owner' (for example its module name). 
+
+Our most complicated case is that of arrays declared in one or more 
+subroutines and allocated in a subroutine called by them (as done in
+find_kgrid). In this case, the 'routine' name must be that of the
+allocating subroutine, but the arrays of the different calling
+routines will be reported as a single array. Thus, array kpoint of 
+routine kpoint_grid and array kpoints_pdos of routine kpoint_pdos 
+will be reported together as array points of routine find_kgrid.
+
+I see no solution if more than one called subroutine (not in the 
+same module) were allocating or deallocating an array, but there
+is no such a case in siesta.
+
+For the previous reasons, until now, only the 'name' argument was used.
+But this made it difficult to identify the siesta routines allocating
+many arrays. So from now on, the whole routine+name will be used.
+
+The calls to printmemory have been commented out: its output has
+become unrealistic, since most allocations occur in re_alloc and
+they are no longer transmitted to routine memory.
+
+modified:
+  Src/SiestaXC/fft3d.f90
+  Src/SiestaXC/mesh3d.F90
+  Src/alloc.F90
+  Src/atomlwf.F
+  Src/bands.F
+  Src/basis_types.f
+  Src/bonds.f
+  Src/cgvc_zmatrix.F
+  Src/detover.F
+  Src/dhscf.F
+  Src/fft.F
+  Src/find_kgrid.F
+  Src/fire_optim.F
+  Src/forhar.f
+  Src/hsparse.f
+  Src/kinefsm.f
+  Src/ksv.f
+  Src/m_broyden_mixing.f
+  Src/m_fire_mixing.f
+  Src/m_iodm.F
+  Src/m_pulay.F
+  Src/m_sparse.F
+  Src/memory.F
+  Src/meshmatrix.F
+  Src/molecularmechanics.F90
+  Src/moreParallelSubs.F90
+  Src/new_dm.F
+  Src/nlefsm.f
+  Src/old_atmfuncs.f
+  Src/outcoor.f
+  Src/overfsm.f
+  Src/pdos.F
+  Src/pdosg.F
+  Src/pdosk.F
+  Src/pdoskp.F
+  Src/phirphi.f
+  Src/poison.F
+  Src/pseudopotential.f
+  Src/reord.f
+  Src/rhoofd.f
+  Src/rhoofdsp.f
+  Src/savepsi.F
+  Src/setup_hamiltonian.F
+  Src/siesta_analysis.F
+  Src/siesta_end.F
+  Src/siesta_init.F
+  Src/siesta_move.F
+  Src/spher_harm.f
+  Src/state_init.F
+  Src/vmat.f
+  Src/vmatsp.f
+  Src/zm_broyden_optim.F
+  Src/zm_fire_optim.F
+  Src/zmatrix.F
 
 ------------------------------------------------------------------------
 2009-10-13  08:05:00 GMT Alberto Garcia <albertog@icmab.es>    trunk-304

@@ -14,7 +14,7 @@
       use m_ioxv,          only: ioxv
       USE siesta_options
       use parallel,        only: IOnode
-      use siesta_cml
+      use siesta_cml,      only: cml_p, cmlEndStep, mainXML
       use sys,             only: die
 
       use m_broyden_optim, only: broyden_optimizer
@@ -51,13 +51,17 @@
 
 
 !------------------------------------------------------------------------- BEGIN
-      ! Save the last coordinates for which the density matrix 
-      ! has been calculated
-      if (istep.eq.fincoor) then
-        xalast(1:3,1:na_s)  = xa(1:3,1:na_s)
+#ifdef DEBUG
+      call write_debug( 'PRE siesta_move' )
+#endif
+      ! Save the last geometry for which the density matrix 
+      ! (electronic structure) has been calculated
+      call timer( 'SIMOVE', 1 )
+
+        xa_last(1:3,1:na_s) = xa(1:3,1:na_s)
         ucell_last(1:3,1:3) = ucell(1:3,1:3)
         scell_last(1:3,1:3) = scell(1:3,1:3)
-      endif
+
 
       Ekinion = 0.0_dp   ! Fossil: already initialized in siesta_init
 
@@ -84,9 +88,8 @@
 
            if (lUseZmatrix) then
              if (broyden_optim) then
-                call zm_broyden_optimizer( na_u, xa, cfa, ucell,
-     $               cstress, dxmax, tp, ftol, strtol,
-     $               varcel, relaxd)
+                call zm_broyden_optimizer( na_u, xa, ucell, cstress, tp,
+     &                                     strtol, varcel, relaxd )
              elseif (fire_optim) then
                 call zm_fire_optimizer( na_u, xa, cfa, ucell,
      $               cstress, dxmax, tp, ftol, strtol,
@@ -99,8 +102,7 @@
            else
              if (broyden_optim) then
                 call broyden_optimizer( na_u, xa, cfa, ucell,
-     $               cstress, dxmax, tp, ftol, strtol,
-     $               varcel, relaxd )
+     $               cstress, tp, ftol, strtol, varcel, relaxd )
              elseif (fire_optim) then
                 call fire_optimizer( na_u, xa, cfa, ucell,
      $               cstress, dxmax, tp, ftol, strtol,
@@ -136,11 +138,10 @@
          endif
 
       case (2)
-         call nose(istp, iunit, na_u, cfa, tt, dt, amass, mn,
-     .       ntcon, va, xa, Ekinion, kn, vn, tempion)
+         call nose( istp, iunit, na_u, cfa, tt, dt, amass, mn,
+     .              ntcon, va, xa, Ekinion, kn, vn, tempion )
         ! Propagate the new structure to the virtual supercell
         call superx( ucell, nsc, na_u, na_s, xa, scell )
-
       case (3)
          call pr(istp, iunit, iquench, na_u, cfa, cstress, tp, dt,
      .           amass, mpr, ntcon, va, xa, vcell, ucell, Ekinion, 
@@ -269,12 +270,15 @@
       if (cml_p) then
          call cmlEndStep(mainXML)
       endif
-      call printmemory( 6, 0 )
+!!      call printmemory( 6, 0 )
+      call timer( 'SIMOVE', 2 )
       call timer( 'IterMD', 2 )
-
 ! End of one MD step - flush stdout
       if (ionode) call pxfflush(6)
 
+#ifdef DEBUG
+      call write_debug( 'POS siesta_move' )
+#endif
 !--------------------------------------------------------------------------- END
       END subroutine siesta_move
 

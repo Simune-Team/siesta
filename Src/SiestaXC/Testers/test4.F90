@@ -25,7 +25,7 @@ PROGRAM siestaXCtest4
   ! Tester parameters
   integer, parameter:: irel  =  0 ! Relativistic? 0=>no, 1=>yes
   integer, parameter:: nSpin =  2 ! Number of spin components
-  integer, parameter:: nfTot = 10 ! Number of functionals
+  integer, parameter:: nfTot = 11 ! Number of functionals
   integer, parameter:: nr = 501   ! Number of radial points
   integer, parameter:: nx = 60    ! Number of grid points per lattice vector
   integer, parameter:: n1cut = 8  ! Cutoff parameter
@@ -39,22 +39,26 @@ PROGRAM siestaXCtest4
   real(dp),parameter:: densMin  = 1.e-9_dp  ! Min. density to proceed
 
   ! List of functionals to be tested (avoid those not passing test1)
-  integer, parameter:: nf = 8         ! Number of tested functionals
-  integer:: indexf(nf) = (/1,2,  4,5,6,  8,9,10/)  ! Indexes from list below
+  integer, parameter:: nf = 9         ! Number of tested functionals
+  integer:: indexf(nf) = (/1,2,  4,5,6,  8,9,10,11/)  ! Indexes from list below
 
   ! Same to test a single functional
 !  integer, parameter:: nf = 1        ! Number of tested functionals
-!  integer:: indexf(nf) = (/10/)      ! Indexes from list below
+!  integer:: indexf(nf) = (/11/)      ! Indexes from list below
 
   ! All functionals available
   !                  1,       2,       3,       4,       5,   
-  !                  6,       7,       8,       9,      10,   
+  !                  6,       7,       8,       9,      10,
+  !                 11   
   character(len=3):: &
     func(nfTot) = (/'LDA',   'LDA',   'GGA',   'GGA',   'GGA',    &
-                    'GGA',   'GGA',   'GGA',   'GGA',   'VDW'    /)
+                    'GGA',   'GGA',   'GGA',   'GGA',   'GGA',    &
+                    'VDW'  /)
   character(len=6):: &
     auth(nfTot) = (/'PZ    ','PW92  ','PW91  ','PBE   ','RPBE  ', &
-                    'revPBE','LYP   ','WC    ','PBESOL','DRSLL ' /) 
+                    'revPBE','LYP   ','WC    ','PBESOL','AM05  ', &
+!                    'DRSLL ' /) 
+                    'LMKLL ' /) 
 
   ! Tester variables and arrays
   integer :: cellMesh(3) = (/nx,nx,nx/)
@@ -65,7 +69,7 @@ PROGRAM siestaXCtest4
              cell(3,3), cellEc, cellEx, cellDc, cellDx, &
              d0, d0s(nSpin), diffVxc(nSpin), dr, dx, Ecut, kCut, &
              latConst, maxDiffVxc, pi, r, recCell(3,3), rMesh(nr), &
-             stress(3,3), sumDiffVxc, Vxc(nSpin), &
+             stress(3,3), sumDiffVxc, tmp, Vxc(nSpin), &
              wc(nfTot), wr, wx(nfTot), x(3), x0(3)
   real(gp),allocatable:: cellDens(:,:,:,:), cellVxc(:,:,:,:)
 
@@ -241,9 +245,11 @@ PROGRAM siestaXCtest4
   end do ! i3
 #ifdef MPI
   ! Find sumDiffVxc and maxDiffVxc accross all processor nodes
-  call MPI_AllReduce( sumDiffVxc, sumDiffVxc, 1, MPI_double_precision, &
+  tmp = sumDiffVxc
+  call MPI_AllReduce( tmp, sumDiffVxc, 1, MPI_double_precision, &
                       MPI_Sum, MPI_Comm_World, MPIerror )
-  call MPI_AllReduce( maxDiffVxc, maxDiffVxc, 1, MPI_double_precision, &
+  tmp = maxDiffVxc
+  call MPI_AllReduce( tmp, maxDiffVxc, 1, MPI_double_precision, &
                       MPI_Max, MPI_Comm_World, MPIerror )
 #endif
   avgDiffVxc = sumDiffVxc / nSpin / nx**3
@@ -251,6 +257,11 @@ PROGRAM siestaXCtest4
     print'(a,2f15.9)', 'avgDiffVxc, maxDiffVxc = ', avgDiffVxc, maxDiffVxc
 !    print'(a,4i6)', 'i1max,i2max,i3max, irmax = ', i1max, i2max, i3max, irmax
   end if
+
+! Finalize MPI
+#ifdef MPI
+  call MPI_Finalize( MPIerror )
+#endif
 
 CONTAINS
 

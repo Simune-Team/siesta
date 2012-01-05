@@ -16,13 +16,12 @@ c
       end
 c
 #ifdef MPI
-      subroutine diagkp( nspin, nuo, no, maxspn, maxuo, maxnh, maxnd, 
-     .                  maxo, numh, listhptr, listh, numd, listdptr, 
-     .                  listd, H, S, getD, fixspin, qtot, qs, temp, 
-     .                  e1, e2, xij, indxuo, nk, kpoint, wk,
-     .                  eo, qo, Dnew, Enew, ef, efs, Entropy,
-     .                  Haux, Saux, psi, Dk, Ek, aux, nuotot, occtol,
-     .                  iscf )
+      subroutine diagkp( nspin, nuo, no, maxspn, maxnh, maxnd, 
+     &                   maxo, numh, listhptr, listh, H, S, getD,
+     &                   fixspin, qtot, qs, temp, e1, e2, xij, indxuo,
+     &                   nk, kpoint, wk, eo, qo, Dnew, Enew, ef, efs,
+     &                   Entropy, Haux, Saux, psi, Dk, Ek, aux, nuotot,
+     &                   occtol, iscf )
 C *********************************************************************
 C Subroutine to calculate the eigenvalues and eigenvectors, density
 C and energy-density matrices, and occupation weights of each 
@@ -38,8 +37,6 @@ C integer nuo                 : Number of basis orbitals in unit cell
 C                               local to this processor
 C integer no                  : Number of basis orbitals in supercell
 C integer maxspn              : Second dimension of eo and qo
-C integer maxuo               : Last dimension of xij
-C                               Must be at least max(indxuo)
 C integer maxo                : First dimension of eo and qo
 C integer maxnh               : Maximum number of orbitals interacting  
 C integer maxnd               : First dimension of listd / DM
@@ -49,12 +46,6 @@ C integer listhptr(nuo)       : Pointer to each row (-1) of the
 C                               hamiltonian matrix locally
 C integer listh(maxnh)        : Nonzero hamiltonian-matrix element  
 C                               column indexes for each matrix row
-C integer numd(nuo)           : Number of nonzero elements of each row 
-C                               of density matrix locally
-C integer listdptr(nuo)       : Pointer to each row (-1) of the
-C                               density matrix locally
-C integer listd(maxnd)        : Nonzero density-matrix element column 
-C                               indexes for each matrix row
 C real*8  H(maxnh,nspin)      : Hamiltonian in sparse form
 C real*8  S(maxnh)            : Overlap in sparse form
 C logical getD                : Find occupations and density matrices?
@@ -110,58 +101,54 @@ C
       use parallelsubs, only : WhichNodeOrb, GlobalToLocalOrb
       use mpi_siesta
       use m_fermid,     only : fermid, fermispin, stepf
+      use alloc,        only : re_alloc, de_alloc
 
       implicit          none
 
       integer 
-     .  MPIerror
+     &  MPIerror
 
-      integer           maxnd, maxnh, maxspn, maxuo, maxo, nk, no,
-     .                  nspin, nuo, nuotot, iscf
-      integer           indxuo(no), listh(maxnh), numh(maxuo),
-     .                  listd(maxnd), numd(maxuo), listhptr(maxuo),
-     .                  listdptr(maxuo)
+      integer           maxnd, maxnh, maxspn, maxo, nk, no,
+     &                  nspin, nuo, nuotot, iscf
+      integer           indxuo(no), listh(maxnh), numh(nuo),
+     &                  listhptr(nuo)
       real(dp)          Dnew(maxnd,nspin), 
-     .                  e1, e2, ef, efs(nspin), Enew(maxnd,nspin),
-     .                  Entropy, eo(maxo,maxspn,nk), H(maxnh,nspin),
-     .                  kpoint(3,nk), qo(maxo,maxspn,nk), qtot, 
-     .                  S(maxnh), temp, wk(nk), occtol,
-     .                  xij(3,maxnh), qs(nspin)
+     &                  e1, e2, ef, efs(nspin), Enew(maxnd,nspin),
+     &                  Entropy, eo(maxo,maxspn,nk), H(maxnh,nspin),
+     &                  kpoint(3,nk), qo(maxo,maxspn,nk), qtot, 
+     &                  S(maxnh), temp, wk(nk), occtol,
+     &                  xij(3,maxnh), qs(nspin)
       real(dp)          Dk(2,nuotot,nuotot), Ek(2,nuotot,nuotot),
-     .                  Haux(2,nuotot,nuotot), Saux(2,nuotot,nuotot),
-     .                  psi(2,nuotot,nuotot), aux(2,nuotot*5)
+     &                  Haux(2,nuotot,nuotot), Saux(2,nuotot,nuotot),
+     &                  psi(2,nuotot,nuotot), aux(2,nuotot*5)
       logical           getD, fixspin
       external          cdiag, memory
 
 C  Internal variables .............................................
-      integer
-     .  BNode, ie, ierror, ik, io, iio, ind, is, ispin, iuo,
-     .  j, jo, juo, maxnhg, nuog, maxnumh, neigneeded
-      integer, dimension(:), allocatable, save ::
-     .  numhg, listhptrg, listhg
-      real(dp)
-     .  ckxij, ee, kxij, pipj1, pipj2, qe, skxij, t
-      real(dp), dimension(:), allocatable, save ::
-     .  Snew, Dloc
-      real(dp), dimension(:,:), allocatable, save ::
-     .  Hnew, Dnewloc, Enewloc, xijloc
-C  ....................
+      integer           :: BNode, ie, ierror, ik, io, iio, ind, is,
+     &                     ispin, iuo, j, jo, juo, maxnhg, nuog,
+     &                     maxnumh, neigneeded
+      integer,  pointer :: numhg(:), listhptrg(:), listhg(:)
+      real(dp)          :: ckxij, ee, kxij, pipj1, pipj2, qe, skxij, t
+      real(dp), pointer :: Snew(:), Dloc(:), Hnew(:,:), Dnewloc(:,:),
+     &                     Enewloc(:,:), xijloc(:,:)
+C  ..&.................
 
 C Globalise list arrays - assumes listh and listd are the same
 
 C Allocate local memory for global list arrays
-      allocate(numhg(nuotot))
-      call memory('A','I',nuotot,'diagkp')
-      allocate(listhptrg(nuotot))
-      call memory('A','I',nuotot,'diagkp')
+      call re_alloc( numhg, 1, nuotot, name='numhg',
+     &               routine= 'diagkp' )
+      call re_alloc( listhptrg, 1, nuotot, name='listhptrg',
+     &               routine= 'diagkp' )
 
 C Find maximum value in numh and create local storage
       maxnumh = 0
       do io = 1,nuo
         maxnumh = max(maxnumh,numh(io))
       enddo
-      allocate(Dloc(maxnumh))
-      call memory('A','D',maxnumh,'diagkp')
+      call re_alloc( Dloc, 1, maxnumh, name='Dloc',
+     &               routine= 'diagkp' )
 
 C Globalise numh
       do io = 1,nuotot
@@ -171,7 +158,7 @@ C Globalise numh
           numhg(io) = numh(iio)
         endif
         call MPI_Bcast(numhg(io),1,MPI_integer,BNode,
-     .    MPI_Comm_World,MPIerror)
+     &    MPI_Comm_World,MPIerror)
       enddo
 
 C Build global listhptr
@@ -182,29 +169,31 @@ C Build global listhptr
 
 C Globalse listh
       maxnhg = listhptrg(nuotot) + numhg(nuotot)
-      allocate(listhg(maxnhg))
-      call memory('A','I',maxnhg,'diagkp')
+
+      call re_alloc( listhg, 1, maxnhg, name='listhg',
+     &               routine= 'diagkp' )
       do io = 1,nuotot
         call WhichNodeOrb(io,Nodes,BNode)
         if (Node.eq.BNode) then
           call GlobalToLocalOrb(io,Node,Nodes,iio)
           do jo = 1,numhg(io)
             listhg(listhptrg(io)+1:listhptrg(io)+numhg(io)) = 
-     .        listh(listhptr(iio)+1:listhptr(iio)+numh(iio))
+     &        listh(listhptr(iio)+1:listhptr(iio)+numh(iio))
           enddo
         endif
         call MPI_Bcast(listhg(listhptrg(io)+1),numhg(io),MPI_integer,
-     .    BNode,MPI_Comm_World,MPIerror)
+     &    BNode,MPI_Comm_World,MPIerror)
       enddo
 
-C Create new distribution of H and S
+C     Create new distribution of H and S
       nuog = nuotot
-      allocate(Snew(maxnhg))
-      call memory('A','D',maxnhg,'diagkp')
-      allocate(Hnew(maxnhg,nspin))
-      call memory('A','D',maxnhg*nspin,'diagkp')
-      allocate(xijloc(3,maxnhg))
-      call memory('A','D',3*maxnhg,'diagkp')
+
+      call re_alloc( Snew, 1, maxnhg, name='listhg',
+     &               routine= 'diagkp' )
+      call re_alloc( Hnew, 1, maxnhg, 1, nspin, name='Hnew',
+     &               routine= 'diagkp' )
+      call re_alloc( xijloc, 1, 3, 1, maxnhg, name='xijloc',
+     &               routine= 'diagkp' )
 
       do io = 1,nuotot
         call WhichNodeOrb(io,Nodes,BNode)
@@ -224,12 +213,12 @@ C Create new distribution of H and S
         endif
         do is = 1,nspin
           call MPI_Bcast(Hnew(listhptrg(io)+1,is),numhg(io),
-     .      MPI_double_precision,BNode,MPI_Comm_World,MPIerror)
+     &      MPI_double_precision,BNode,MPI_Comm_World,MPIerror)
         enddo
         call MPI_Bcast(Snew(listhptrg(io)+1),numhg(io),
-     .    MPI_double_precision,BNode,MPI_Comm_World,MPIerror)
+     &    MPI_double_precision,BNode,MPI_Comm_World,MPIerror)
         call MPI_Bcast(xijloc(1,listhptrg(io)+1),3*numhg(io),
-     .    MPI_double_precision,BNode,MPI_Comm_World,MPIerror)
+     &    MPI_double_precision,BNode,MPI_Comm_World,MPIerror)
       enddo
 
 C Find eigenvalues .........................................
@@ -250,8 +239,8 @@ C Find eigenvalues .........................................
               iuo = indxuo(io)
               juo = indxuo(jo)
               kxij = kpoint(1,ik) * xijloc(1,ind) +
-     .               kpoint(2,ik) * xijloc(2,ind) +
-     .               kpoint(3,ik) * xijloc(3,ind)
+     &               kpoint(2,ik) * xijloc(2,ind) +
+     &               kpoint(3,ik) * xijloc(3,ind)
               ckxij = cos(kxij)
               skxij = sin(kxij)
 C Note : sign of complex part changed to match change in order of iuo/juo
@@ -262,7 +251,7 @@ C Note : sign of complex part changed to match change in order of iuo/juo
             enddo
           enddo
           call cdiag(Haux,Saux,nuotot,nuotot,nuog,eo(1,ispin,ik),psi,
-     .               0,iscf,ierror)
+     &               0,iscf,ierror)
           if (ierror.ne.0) then
             call die('Terminating due to failed diagonalisation')
           endif
@@ -275,25 +264,25 @@ C Globalise eigenvalues
         BNode = BNode + 1
         if (BNode.eq.Nodes) BNode = 0
         call MPI_Bcast(eo(1,1,ik),nuotot*nspin,MPI_double_precision,
-     .    BNode,MPI_Comm_World,MPIerror)
+     &    BNode,MPI_Comm_World,MPIerror)
       enddo
 
 C Check if we are done ................................................
       if (.not.getD) goto 999
 
 C Allocate local copies of Dk and Ek for building matrices
-      allocate(Dnewloc(maxnhg,2))
-      call memory('A','D',2*maxnhg,'diagkp')
-      allocate(Enewloc(maxnhg,2))
-      call memory('A','D',2*maxnhg,'diagkp')
+      call re_alloc( Dnewloc, 1, maxnhg, 1, 2, name='Dnewloc',
+     &               routine= 'diagkp' )
+      call re_alloc( Enewloc, 1, maxnhg, 1, 2, name='Enewloc',
+     &               routine= 'diagkp' )
 
 C Find new Fermi energy and occupation weights ........................
       if (fixspin) then
         call fermispin( nspin, nspin, nk, wk, maxo, nuotot, eo,
-     .               temp, qs, qo, efs, Entropy )
+     &               temp, qs, qo, efs, Entropy )
       else
         call fermid( nspin, maxspn, nk, wk, maxo, nuotot, eo, 
-     .             temp, qtot, qo, ef, Entropy )
+     &             temp, qtot, qo, ef, Entropy )
       endif
 
 C Find weights for local density of states ............................
@@ -305,8 +294,8 @@ C Find weights for local density of states ............................
           do ispin = 1,nspin
             do io = 1,nuotot
               qo(io,ispin,ik) = wk(ik) * 
-     .             ( stepf((eo(io,ispin,ik)-e2)/t) -
-     .               stepf((eo(io,ispin,ik)-e1)/t)) * 2.0d0 / nspin
+     &             ( stepf((eo(io,ispin,ik)-e2)/t) -
+     &               stepf((eo(io,ispin,ik)-e1)/t)) * 2.0d0 / nspin
             enddo
           enddo
         enddo
@@ -338,8 +327,8 @@ C Find eigenvectors
               iuo = indxuo(io)
               juo = indxuo(jo)
               kxij = kpoint(1,ik) * xijloc(1,ind) +
-     .               kpoint(2,ik) * xijloc(2,ind) +
-     .               kpoint(3,ik) * xijloc(3,ind)
+     &               kpoint(2,ik) * xijloc(2,ind) +
+     &               kpoint(3,ik) * xijloc(3,ind)
               ckxij = cos(kxij)
               skxij = sin(kxij)
               Saux(1,juo,iuo) = Saux(1,juo,iuo) + Snew(ind)*ckxij
@@ -349,7 +338,7 @@ C Find eigenvectors
             enddo
           enddo
           call cdiag(Haux,Saux,nuotot,nuotot,nuog,aux,psi,
-     .               neigneeded,iscf,ierror)
+     &               neigneeded,iscf,ierror)
 
 C Check error flag and take appropriate action
           if (ierror.gt.0) then
@@ -365,8 +354,8 @@ C Repeat diagonalisation with increased memory to handle clustering
                 iuo = indxuo(io)
                 juo = indxuo(jo)
                 kxij = kpoint(1,ik) * xijloc(1,ind) +
-     .                 kpoint(2,ik) * xijloc(2,ind) +
-     .                 kpoint(3,ik) * xijloc(3,ind)
+     &                 kpoint(2,ik) * xijloc(2,ind) +
+     &                 kpoint(3,ik) * xijloc(3,ind)
                 ckxij = cos(kxij)
                 skxij = sin(kxij)
                 Saux(1,juo,iuo) = Saux(1,juo,iuo) +Snew(ind)*ckxij
@@ -376,7 +365,7 @@ C Repeat diagonalisation with increased memory to handle clustering
               enddo
             enddo
             call cdiag(Haux,Saux,nuotot,nuotot,nuog,aux,psi,
-     .                 neigneeded,iscf,ierror)
+     &                 neigneeded,iscf,ierror)
           endif
 !
 !         Here we could write the wavefunctions, taking care to
@@ -404,9 +393,9 @@ C Global operation to form new density matrix
               do iuo = 1,nuog
                 do juo = 1,nuotot
                   pipj1 = aux(1,iuo) * aux(1,juo) +
-     .                    aux(2,iuo) * aux(2,juo)
+     &                    aux(2,iuo) * aux(2,juo)
                   pipj2 = aux(1,iuo) * aux(2,juo) -
-     .                    aux(2,iuo) * aux(1,juo)
+     &                    aux(2,iuo) * aux(1,juo)
                   Dk(1,juo,iuo) = Dk(1,juo,iuo) + qe * pipj1
                   Dk(2,juo,iuo) = Dk(2,juo,iuo) + qe * pipj2
                   Ek(1,juo,iuo) = Ek(1,juo,iuo) + ee * pipj1
@@ -417,42 +406,40 @@ C Global operation to form new density matrix
           enddo
           do io = 1,nuog
             iuo = indxuo(io)
-C Should be numd/listd/listdptr but H equivalents used to save globalisation
             do j = 1,numhg(io)
               ind = listhptrg(io) + j
               jo = listhg(ind)
               juo = indxuo(jo)
               kxij = kpoint(1,ik) * xijloc(1,ind) +
-     .               kpoint(2,ik) * xijloc(2,ind) +
-     .               kpoint(3,ik) * xijloc(3,ind)
+     &               kpoint(2,ik) * xijloc(2,ind) +
+     &               kpoint(3,ik) * xijloc(3,ind)
               ckxij = cos(kxij)
               skxij = sin(kxij)
               Dnewloc(ind,ispin) = Dnewloc(ind,ispin) + 
-     .          Dk(1,juo,iuo)*ckxij - Dk(2,juo,iuo)*skxij
+     &          Dk(1,juo,iuo)*ckxij - Dk(2,juo,iuo)*skxij
               Enewloc(ind,ispin) = Enewloc(ind,ispin) + 
-     .          Ek(1,juo,iuo)*ckxij - Ek(2,juo,iuo)*skxij
+     &          Ek(1,juo,iuo)*ckxij - Ek(2,juo,iuo)*skxij
             enddo
           enddo
 
         enddo
       enddo
 
-C Globalise Dnew/Enew (reference to numhg should be numd)
       do io = 1,nuog
         call WhichNodeOrb(io,Nodes,BNode)
         call GlobalToLocalOrb(io,BNode,Nodes,iio)
         do ispin = 1,nspin
           call MPI_Reduce(Dnewloc(listhptrg(io)+1,ispin),
-     .      Dloc(1),numhg(io),MPI_double_precision,
-     .      MPI_sum,BNode,MPI_Comm_World,MPIerror)
+     &      Dloc(1),numhg(io),MPI_double_precision,
+     &      MPI_sum,BNode,MPI_Comm_World,MPIerror)
           if (Node.eq.BNode) then
             do j = 1,numh(iio)
               Dnew(listhptr(iio)+j,ispin) = Dloc(j)
             enddo
           endif
           call MPI_Reduce(Enewloc(listhptrg(io)+1,ispin),
-     .      Dloc(1),numhg(io),MPI_double_precision,
-     .      MPI_sum,BNode,MPI_Comm_World,MPIerror)
+     &      Dloc(1),numhg(io),MPI_double_precision,
+     &      MPI_sum,BNode,MPI_Comm_World,MPIerror)
           if (Node.eq.BNode) then
             do j = 1,numh(iio)
               Enew(listhptr(iio)+j,ispin) = Dloc(j)
@@ -462,29 +449,20 @@ C Globalise Dnew/Enew (reference to numhg should be numd)
       enddo
 
 C Deallocate local memory needed only if getD is true
-      call memory('D','D',size(Enewloc),'diagkp')
-      deallocate(Enewloc)
-      call memory('D','D',size(Dnewloc),'diagkp')
-      deallocate(Dnewloc)
+      call de_alloc( Enewloc, name='Enewloc', routine= 'diagkp' )
+      call de_alloc( Dnewloc, name='Dnewloc', routine= 'diagkp' )
 
 C Exit point 
   999 continue
 
 C Free local memory
-      call memory('D','D',size(xijloc),'diagkp')
-      deallocate(xijloc)
-      call memory('D','D',size(Hnew),'diagkp')
-      deallocate(Hnew)
-      call memory('D','D',size(Snew),'diagkp')
-      deallocate(Snew)
-      call memory('D','D',size(Dloc),'diagkp')
-      deallocate(Dloc)
-      call memory('D','I',size(listhg),'diagkp')
-      deallocate(listhg)
-      call memory('D','I',size(listhptrg),'diagkp')
-      deallocate(listhptrg)
-      call memory('D','I',size(numhg),'diagkp')
-      deallocate(numhg)
+      call de_alloc( xijloc, name='xijloc', routine= 'diagkp' )
+      call de_alloc( Hnew, name='Hnew', routine= 'diagkp' )
+      call de_alloc( Snew, name='Snew', routine= 'diagkp' )
+      call de_alloc( Dloc, name='Dloc', routine= 'diagkp' )
+      call de_alloc( listhg, name='listhg', routine= 'diagkp' )
+      call de_alloc( listhptrg, name='listhptrg', routine= 'diagkp' )
+      call de_alloc( numhg, name='numhg', routine= 'diagkp' )
 
-      end
+      end subroutine diagkp
 #endif

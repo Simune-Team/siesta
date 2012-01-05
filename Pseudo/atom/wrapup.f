@@ -399,8 +399,8 @@ c
       norm1 = norm1 / n_channels
       norm2 = sqrt( norm2 / n_channels)
       write(lun,"(i4)") n_channels
-      write(lun,"(5f10.5)") (qc(j),j=lo(ncp)+1,lo(norb)+1)
-      write(lun,"(4f10.5)") minabs, maxabs, norm1, norm2
+      write(lun,"(5f14.5)") (qc(j),j=lo(ncp)+1,lo(norb)+1)
+      write(lun,"(4f14.5)") minabs, maxabs, norm1, norm2
       close(lun)
 c
       write(6,9020)

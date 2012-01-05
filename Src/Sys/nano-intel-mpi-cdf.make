@@ -24,8 +24,7 @@ FC=/opt/intel/impi/3.1/bin64/mpiifort
 #  I am not sure whether the compiler attempts to multithread the code
 #
 FFLAGS= -w  -O3 -mp
-FFLAGS_CHECKS=-g -O0 -debug full -traceback -C
-FFLAGS_DEBUG= -g 
+FFLAGS_DEBUG= -g -O0 -debug full -traceback -C
 LDFLAGS= -static    # do not remove just yet
 EXTRA_LIBS=-lpthread -lsvml
 COMP_LIBS=
@@ -39,12 +38,13 @@ MPI_INTERFACE=libmpi_f90.a
 MPI_INCLUDE=.      # Note . for no-op
 FPPFLAGS_MPI=-DMPI
 #
+METIS=/share/apps/metis-4.0/libmetis.a
 NETCDF_LIBS= -L$(NETCDF_ROOT)/lib -lnetcdf
 LIBS=-L/opt/intel/mkl/10.0.3.020/lib/em64t \
      -lmkl_scalapack -lmkl_blacs_intelmpi20_lp64 \
-     -lmkl_lapack -lmkl_em64t -lguide $(EXTRA_LIBS) $(NETCDF_LIBS)
+     -lmkl_lapack -lmkl_em64t -lguide $(EXTRA_LIBS) $(NETCDF_LIBS) $(METIS)
 SYS=nag
-FPPFLAGS= $(FPPFLAGS_CDF) $(FPPFLAGS_MPI)
+FPPFLAGS= $(FPPFLAGS_CDF) $(FPPFLAGS_MPI) -DDEBUG
 #
 .F.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<

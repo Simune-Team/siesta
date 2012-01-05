@@ -9,7 +9,7 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
       subroutine iomd( na, isa, iza, xa, va, cell, vcell, varcel, istep,
-     .                 istep0, istepf, temp, eks, getot, volume, Psol)
+     .                 istep0, temp, eks, getot, volume, Psol)
 c *******************************************************************
 c Saves positions, cell, and energies in a MD run (accumulative)
 c J.Kohanoff August 1998, slightly modified by E. Artacho, Feb. 1999
@@ -32,7 +32,6 @@ c real*8  eks        : Kohn-Sham energy
 c real*8  getot      : Total energy
 c integer istep      : Present time step
 c integer istep0     : First time step
-c integer istepf     : Last time step
 c real*8  volume     : cell volume in Ang**3
 c real*8  Psol       : total pressure (static plus kinetik) in kBar
 c *******************************************************************
@@ -43,7 +42,7 @@ c *******************************************************************
       implicit          none
 
       integer           na, isa(na), iza(na)
-      integer           istep, istep0, istepf
+      integer           istep, istep0
       logical           varcel
       real(dp)          cell(3,3), xa(3,na), va(3,na), vcell(3,3),
      .                  temp, eks, getot, volume, Psol, eV
@@ -92,8 +91,9 @@ c Open file
         endif
       else
         call io_assign( iupos )
-        open(iupos,file=fnpos,form='unformatted',status='unknown')
-        call windu(iupos)
+        print *, "iupos on opening: ", iupos
+        open(iupos,file=fnpos,form='unformatted',status='unknown',
+     $       position="append")
       endif
 
       if(istep . eq . istep0) then
@@ -117,6 +117,8 @@ C Write data on files
      .      ((cell(ix,iv),ix=1,3),(vcell(ix,iv),ix=1,3),iv=1,3)
         endif
       else
+        print *, "iupos on writing: ", iupos
+        print *, "istep, xa, va : ", istep, xa, va
         write(iupos) istep, xa, va
         if ( varcel ) write(iupos) cell, vcell
       endif
@@ -128,15 +130,4 @@ C Close file
       if ( formt .and. varcel ) call io_close( iucel )
 
       return
-      end
-
-c *******************************************************************
-c Wind to end of file of an unformatted file
-      subroutine windu(iu)
-      integer iu
-
- 1    read(iu,end=2)
-      goto 1
- 2    continue
-      backspace iu
       end

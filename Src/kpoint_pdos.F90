@@ -37,26 +37,13 @@ MODULE Kpoint_pdos
   USE fdf, only       : fdf_defined
   USE m_find_kgrid, only : find_kgrid
 
-#ifdef MPI
-  USE mpi_siesta
-#endif
-
   implicit none
   real(dp), intent(in)  :: ucell(3,3)
   logical,  intent(out) :: different_pdos_grid
 
-#ifdef MPI
-  integer :: MPIerror
-#endif
-
   if (pdos_kgrid_first_time) then
     nullify(kweight_pdos,kpoints_pdos)
-    if (Node.eq.0) then
-      spiral = fdf_defined('SpinSpiral')
-    endif
-#ifdef MPI
-    call MPI_Bcast(spiral,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-#endif
+    spiral = fdf_defined('SpinSpiral')
     call setup_pdos_kscell(ucell, firm_displ)
 
     pdos_kgrid_first_time = .false.
@@ -116,12 +103,9 @@ MODULE Kpoint_pdos
 !  Modules
 
     use precision,  only : dp
-    use parallel,   only : Node
     use m_minvec,   only : minvec
+    use sys,        only : die
     use fdf
-#ifdef MPI
-    use mpi_siesta
-#endif
 
     implicit          none
 
@@ -130,10 +114,8 @@ MODULE Kpoint_pdos
     logical, intent(out)   :: firm_displ
 
 ! Internal variables
-    integer           i, iu, j,  factor(3,3), expansion_factor
-#ifdef MPI
-    integer           MPIerror
-#endif
+    integer           i, j,  factor(3,3), expansion_factor
+
     real(dp)          scmin(3,3),  vmod, cutoff
     real(dp)          ctransf(3,3)
     logical           mp_input
@@ -142,53 +124,52 @@ MODULE Kpoint_pdos
     integer, dimension(3,3), parameter :: unit_matrix =  &
                          reshape ((/1,0,0,0,1,0,0,0,1/), (/3,3/))
 
-    if (Node.eq.0) then
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
 
-      mp_input = fdf_block('PDOS.kgrid_Monkhorst_Pack',iu)
+      mp_input = fdf_block('PDOS.kgrid_Monkhorst_Pack',bfdf)
       if ( mp_input ) then
-        user_requested_mp = .true.
-        do i = 1,3
-          read(iu,*) (kscell(j,i),j=1,3), kdispl(i)
-        enddo
-        firm_displ = .true.
+         user_requested_mp = .true.
+         do i= 1, 3
+            if (.not. fdf_bline(bfdf,pline))            &
+              call die('setup_pdos_kscell: ERROR in ' // &
+                       'PDOS.kgrid_Monkhorst_Pack block')
+            kscell(1,i) = fdf_bintegers(pline,1)
+            kscell(2,i) = fdf_bintegers(pline,2)
+            kscell(3,i) = fdf_bintegers(pline,3)
+            kdispl(i)   = fdf_breals(pline,1)
+         enddo
+         firm_displ = .true.
 
       else
 
-        cutoff = fdf_physical('PDOS.kgrid_cutoff',defcut,'Bohr')
-        if (cutoff /= defcut) then
-          user_requested_cutoff = .true.
-        endif
+         cutoff = fdf_physical('PDOS.kgrid_cutoff',defcut,'Bohr')
+         if (cutoff /= defcut) then
+         !!  write(6,"(a,f10.5)") "PDOS Kgrid cutoff input: ", cutoff
+            user_requested_cutoff = .true.
+         endif
 
-        kdispl(1:3) = 0.0_dp  ! Might be changed later
-        firm_displ = .false.  ! In future we might add new options
-                              ! for user-specified displacements
-            
-        ! Find equivalent rounded unit-cell
-        call minvec( cell, scmin, ctransf )
+         kdispl(1:3) = 0.0_dp  ! Might be changed later
+         firm_displ = .false.  ! In future we might add new options
+                               ! for user-specified displacements
+         
+         ! Find equivalent rounded unit-cell
+         call minvec( cell, scmin, ctransf )
 
-        expansion_factor = 1
-        do j = 1,3
-          factor(j,1:3) = 0
-          vmod = sqrt(dot_product(scmin(1:3,j),scmin(1:3,j)))
-          factor(j,j) = int(2.0_dp*cutoff/vmod) + 1
-          expansion_factor = expansion_factor * factor(j,j)
-        enddo
-        ! Generate actual supercell skeleton
-        kscell = matmul(ctransf, factor)
-        ! Avoid confusing permutations
-        if (expansion_factor == 1) then
-          kscell = unit_matrix
-        endif
+         expansion_factor = 1
+         do j = 1,3
+            factor(j,1:3) = 0
+            vmod = sqrt(dot_product(scmin(1:3,j),scmin(1:3,j)))
+            factor(j,j) = int(2.0_dp*cutoff/vmod) + 1
+            expansion_factor = expansion_factor * factor(j,j)
+         enddo
+         ! Generate actual supercell skeleton
+         kscell = matmul(ctransf, factor)
+         ! Avoid confusing permutations
+         if (expansion_factor == 1) then
+            kscell = unit_matrix
+         endif
       endif
-    endif
-
-#ifdef MPI
-    call MPI_Bcast(kscell(1,1),9,MPI_integer,0,MPI_Comm_World, MPIerror)
-    call MPI_Bcast(kdispl,3,MPI_double_precision,0,MPI_Comm_World, MPIerror)
-    call MPI_Bcast(firm_displ,1,MPI_logical,0,MPI_Comm_World, MPIerror)
-    call MPI_Bcast(user_requested_mp,1,MPI_logical,0,MPI_Comm_World, MPIerror)
-    call MPI_Bcast(user_requested_cutoff,1,MPI_logical,0,MPI_Comm_World, MPIerror)
-#endif
 
   end subroutine setup_pdos_kscell
 

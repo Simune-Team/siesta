@@ -26,18 +26,16 @@
 ! This routine also outputs information about the basis specification
 ! determined by the routines in the 'basis_specs' modules. 
 !
-
-
       use fdf
       use precision
       use basis_types, only: basis_specs_transfer, nsp
       use basis_types, only: deallocate_spec_arrays
       use basis_types, only: iz, lmxkb, nkbl, 
-     .           erefkb, lmxo, nzeta, rco, 
-     .           lambda, filtercut,
-     .           atm_label, polorb, semic, nsemic,
-     .           cnfigmx, charge, smass, basistype,
-     .           rinn, vcte, split_norm
+     &           erefkb, lmxo, nzeta, rco, 
+     &           lambda, filtercut,
+     &           atm_label, polorb, semic, nsemic,
+     &           cnfigmx, charge, smass, basistype,
+     &           rinn, vcte, split_norm
       use basis_types, only: write_basis_specs
       use basis_types, only: basis_def_t, basis_parameters
       use basis_specs, only: read_basis_specs
@@ -50,78 +48,69 @@
       use old_atmfuncs, only: clear_tables, deallocate_old_arrays
       use atom, only: atom_main, prinput
       use electrostatic, only: elec_corr_setup
+      use atmparams, only: lmaxd, nkbmx, nsemx, nzetmx
       use atom_options, only: get_atom_options
 
       implicit none
-
-      integer, intent(out) :: ns   ! Number of species
-
-C Internal variables ...................................................
-      integer is
-
-      type(basis_def_t), pointer   :: basp
-
-      logical user_basis, user_basis_netcdf
+      integer,         intent(out) :: ns   ! Number of species
+!     Internal variables ...................................................
+      integer                      :: is
+      logical                      :: user_basis, user_basis_netcdf
+      type(basis_def_t),   pointer :: basp
       
       external atm_transfer
 
       call get_atom_options()
-c
-c Reading input for the pseudopotentials and atomic orbitals 
 
+!     Reading input for the pseudopotentials and atomic orbitals
       write(6,'(/2a)') 
-     .    'initatom: Reading input for the pseudopotentials ',
-     .    'and atomic orbitals ----------'
+     &    'initatom: Reading input for the pseudopotentials ',
+     &    'and atomic orbitals ----------'
 
       user_basis = fdf_boolean('user-basis',.false.)
       user_basis_netcdf = fdf_boolean('user-basis-netcdf',.false.)
 
       if (user_basis_netcdf) then
-
-         write(6,'(/a)') 'Reading PAOs and KBs from NetCDF files...'
-         call read_basis_netcdf(ns)
-         call elec_corr_setup()
-
+        write(6,'(/a)') 'Reading PAOs and KBs from NetCDF files...'
+        call read_basis_netcdf(ns)
+        call elec_corr_setup()
       else if (user_basis) then
-
-         write(6,'(/a)') 'Reading PAOs and KBs from ascii files...'
-         call read_basis_ascii(ns)
-         call elec_corr_setup()
-
+        write(6,'(/a)') 'Reading PAOs and KBs from ascii files...'
+        call read_basis_ascii(ns)
+        call elec_corr_setup()
       else
-!
-!     New routines in basis_specs and basis_types.
-!
-         call read_basis_specs()
-         call basis_specs_transfer()
+!       New routines in basis_specs and basis_types.
+        call read_basis_specs()
+        call basis_specs_transfer()
 
-         nsmax = nsp             !! For old_atmfuncs
-         call allocate_old_arrays()
-         call clear_tables()
+        nsmax = nsp             !! For old_atmfuncs
+        call allocate_old_arrays()
+        call clear_tables()
 
-         do is = 1,nsp
-            call write_basis_specs(6,is)
-            basp=>basis_parameters(is)
-            call atom_main( iz(is), lmxkb(is),
-     $           nkbl(0:,is), erefkb(1:,0:,is),lmxo(is),
-     $           nzeta(0:,1:,is), rco(1:,0:,1:,is), 
-     $           lambda(1:,0:,1:,is), atm_label(is),
-     $           polorb(0:,1:,is), semic(is), nsemic(0:,is),
-     $           cnfigmx(0:,is),charge(is),
-     $           smass(is), basistype(is), is,
-     $           rinn(0:,1:,is), vcte(0:,1:,is),
-     $           split_norm(0:,1:,is), filtercut(0:,1:,is),
-     $           basp)
-         enddo 
+        do is = 1,nsp
+          call write_basis_specs(6,is)
+          basp=>basis_parameters(is)
+          call ATOM_MAIN( iz(is), lmxkb(is), nkbl(0:lmaxd,is),
+     &                    erefkb(1:nkbmx,0:lmaxd,is), lmxo(is),
+     &                    nzeta(0:lmaxd,1:nsemx,is),
+     &                    rco(1:nzetmx,0:lmaxd,1:nsemx,is),
+     &                    lambda(1:nzetmx,0:lmaxd,1:nsemx,is),
+     &                    atm_label(is), polorb(0:lmaxd,1:nsemx,is),
+     &                    semic(is), nsemic(0:lmaxd,is),
+     &                    cnfigmx(0:lmaxd,is), charge(is), smass(is),
+     &                    basistype(is), is, rinn(0:lmaxd,1:nsemx,is),
+     &                    vcte(0:lmaxd,1:nsemx,is),
+     &                    split_norm(0:lmaxd,1:nsemx,is), 
+     &                    filtercut(0:lmaxd,1:nsemx,is), basp)
+        enddo 
 
-         call prinput(nsp)
+        call prinput(nsp)
 
-!        Create the new data structures for atmfuncs.
-
-         call atm_transfer()
-         call deallocate_old_arrays()
-         call elec_corr_setup()
-         ns = nsp               ! Set number of species for main program
+!       Create the new data structures for atmfuncs.
+        call atm_transfer()
+        call deallocate_old_arrays()
+        call elec_corr_setup()
+        ns = nsp               ! Set number of species for main program
 
       endif
 
@@ -134,7 +123,4 @@ c Reading input for the pseudopotentials and atomic orbitals
       endif
 
       end subroutine initatom
-
-
-
 

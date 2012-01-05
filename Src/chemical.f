@@ -89,7 +89,7 @@
 !---
       subroutine read_chemical_types(silent)
 
-      use parse
+      use parallel,    only : Node
       use fdf
 
       logical, intent(in), optional :: silent
@@ -97,9 +97,8 @@
       integer nsp, isp
       integer ns_read
 
-      type(block), pointer  :: bp
-      type(parsed_line), pointer  :: p
-      character(len=132) line
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
 
       character(len=20) label
       integer  z, is
@@ -118,23 +117,20 @@
       allocate(chemical_list%z(nsp))
       chemical_list%no_of_species = nsp
      
-      nullify(bp)
-      found = fdf_block('Chemical_species_label',bp)
+      found = fdf_block('Chemical_species_label',bfdf)
       if (.not. found )
-     $     call die("Block Chemical_species_label does not exist.")
+     $  call die("Block Chemical_species_label does not exist.")
 
       ns_read = 0
-      loop: DO
-        if (.not. fdf_bline(bp,line)) exit loop
+      do while(fdf_bline(bfdf,pline))
         ns_read = ns_read + 1
-        p => digest(line)
-        if (.not. match(p,"iin"))
-     $       call die("Wrong format in Chemical_species_label")
-        isp = integers(p,1)
+        if (.not. fdf_bmatch(pline,'iin'))
+     $    call die("Wrong format in Chemical_species_label")
+        isp = fdf_bintegers(pline,1)
         if (isp .gt. nsp .or. isp .lt. 1)
-     $       call die("Wrong specnum in Chemical_species_label")
-        label = names(p,1)
-        z = integers(p,2)
+     $    call die("Wrong specnum in Chemical_species_label")
+        label = fdf_bnames(pline,1)
+        z = fdf_bintegers(pline,2)
         floating = (z.le.0)
         bessel = (z.eq.-100)
         synthetic = (z.gt.200)
@@ -142,17 +138,17 @@
         if (printing_allowed) then
            if (.not.floating) then
               write(6,*) 'Species number: ', isp,
-     $             ' Label: ', trim(label),
-     $             ' Atomic number:',  z
+     $                 ' Label: ', trim(label),
+     $                 ' Atomic number:',  z
            elseif (bessel) then
               write(6,*) 'Species number: ', isp,
-     $             ' Label: ', trim(label),
-     $             ' (floating Bessel functions)'
+     $                 ' Label: ', trim(label),
+     $                 ' (floating Bessel functions)'
            else
               write(6,*) 'Species number: ', isp,
-     $             ' Label: ', trim(label),
-     $             ' Atomic number:',  z,
-     $             ' (floating PAOs)'
+     $                 ' Label: ', trim(label),
+     $                 ' Atomic number:',  z,
+     $                 ' (floating PAOs)'
            endif
         endif
 !
@@ -167,11 +163,8 @@
 
         chemical_list%z(isp) = z
         chemical_list%spec_label(isp) = label
- 
-       call destroy(p)
-      enddo loop
+      enddo
       if (ns_read .ne. nsp) call die("Not enough species in block")
-      call destroy(bp)
 
       end subroutine read_chemical_types
 
@@ -206,9 +199,3 @@
       end subroutine print_chemical_type
 
       end module chemical
-
-
-
-
-
-

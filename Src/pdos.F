@@ -71,7 +71,6 @@ C **********************************************************************
       use files,        only : slabel, label_length
 #ifdef MPI
       use parallelsubs, only : GetNodeOrbs
-      use mpi_siesta,   only : MPI_logical, MPI_Comm_World
 #endif
 
       implicit none
@@ -115,24 +114,17 @@ C Internal variables ---------------------------------------------------
      .  io_assign, io_close,
      .  pdosk, timer
 
-#ifdef MPI
-      integer :: mpierror
-#endif
-
       type(xmlf_t) :: xf            ! For new XML output
 
       call timer( 'pdos', 1)
 
 C Find the intervals between the subdivisions in the energy scale ------
       delta = (E2 - E1) / (NHIST-1)
-      if (Node.eq.0) then
+      if (Nodes .eq. 1) then
+        ParallelOverK = .false.
+      else
         ParallelOverK = fdf_boolean('Diag.ParallelOverK',.false.)
-        if (Nodes.eq.1) ParallelOverK = .false.
       endif
-#ifdef MPI
-      call MPI_Bcast(ParallelOverK, 1, MPI_logical, 0,
-     .               MPI_Comm_World, MPIerror)
-#endif
 
 C Find number of orbitals per unit cell 
 #ifdef MPI
@@ -156,15 +148,12 @@ C Check internal dimensions --------------------------------------------
        endif
 
 C Allocate local arrays ------------------------------------------------
-      call re_alloc(Haux,1,nhs,name='Haux',routine='pdos')
-      call re_alloc(Saux,1,nhs,name='Saux',routine='pdos')
-      call re_alloc(psi,1,npsi,name='psi',routine='pdos')
-      nullify( dtot )
-      call re_alloc( dtot, 1, nhist, 1, 2, name='dtot',
-     &               routine='pdos' )
-      nullify( dpr )
-      call re_alloc( dpr, 1, nhist, 1, no_u, 1, 2, name='dpr',
-     &               routine='pdos' )
+      call re_alloc( Haux, 1, nhs,  'Haux', 'densematrix' )
+      call re_alloc( Saux, 1, nhs,  'Saux', 'densematrix' )
+      call re_alloc( psi,  1, npsi, 'psi',  'densematrix' )
+      nullify( dtot, dpr )
+      call re_alloc( dtot, 1, nhist, 1, 2, 'dtot', 'pdos' )
+      call re_alloc( dpr, 1, nhist, 1, no_u, 1, 2, 'dpr', 'pdos' )
 
 C Initialize the projected density of states ---------------------------
       do ispin = 1, 2
@@ -178,19 +167,19 @@ C Initialize the projected density of states ---------------------------
 
 C  Call appropiate routine ----------------------------------------------
       if (nspin.le.2 .and. gamma) then
-        call pdosg( NSPIN, NUO, NO, MAXSPN, NO_L, MAXNH,
+        call pdosg( NSPIN, NUO, NO, MAXSPN, MAXNH,
      .              MAXO, NUMH, LISTHPTR, LISTH, H, S,
      .              E1, E2, NHIST, SIGMA, INDXUO, EO,
      .              HAUX, SAUX, PSI, DTOT, DPR, NO_U )
       elseif ( nspin.le.2 .and. .not.gamma) then
         if (ParallelOverK) then
-          call pdoskp( NSPIN, NUO, NO, MAXSPN, NO_L, MAXNH,
+          call pdoskp( NSPIN, NUO, NO, MAXSPN, MAXNH,
      .                MAXO, NUMH, LISTHPTR, LISTH, H, S,
      .                E1, E2, NHIST, SIGMA, 
      .                XIJ, INDXUO, NK, KPOINT, WK, EO,
      .                HAUX, SAUX, PSI, DTOT, DPR, NO_U )
         else
-          call pdosk( NSPIN, NUO, NO, MAXSPN, NO_L, MAXNH,
+          call pdosk( NSPIN, NUO, NO, MAXSPN, MAXNH,
      .                MAXO, NUMH, LISTHPTR, LISTH, H, S,
      .                E1, E2, NHIST, SIGMA, 
      .                XIJ, INDXUO, NK, KPOINT, WK, EO,
@@ -236,8 +225,7 @@ C New writing
         write(iunit2,'(a)') '<energy_values units="eV">'
 
         nullify( tmp )
-        call re_alloc( tmp, 1, 2*nhist, name='tmp',
-     &                 routine='pdos' )
+        call re_alloc( tmp, 1, 2*nhist, 'tmp', 'pdos' )
         do ihist = 1,nhist
            ENER = E1 + (ihist-1) * delta
            tmp(ihist) = ener/eV
@@ -308,13 +296,13 @@ C Close file
         call io_close(iunit2)
 
 C Free local workspace array
-        call de_alloc( tmp, name='tmp' )
+        call de_alloc( tmp, 'tmp', 'pdos' )
 
       endif
 
 C Free local arrays ----------------------------------------------------
-      call de_alloc( dpr, name='dpr' )
-      call de_alloc( dtot, name='dtot' )
+      call de_alloc( dpr, 'dpr', 'pdos' )
+      call de_alloc( dtot, 'dtot', 'pdos' )
 
       call timer( 'pdos', 2)
 

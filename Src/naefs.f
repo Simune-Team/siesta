@@ -8,8 +8,11 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
+      module m_naefs
+      public :: naefs
+      CONTAINS
       subroutine naefs(nua, na, scell, xa, indxua, rmaxv,
-     .                 isa, Ena, fa, stress)
+     .                 isa, Ena, fa, stress, forces_and_stress)
 C *********************************************************************
 C Neutral Atom (NA) energy, forces and stress.
 C This is the self energy of rho_na=-Laplacian(v_na(Ry))/(8*pi)
@@ -24,6 +27,7 @@ C real*8  xa(3,na)         : Atomic positions in cartesian coordinates
 c integer indxua(na)       : Index of equivalent atom in unit cell
 C real*8  rmaxv            : Maximum cutoff for NA potential
 C integer isa(na)          : Species index of each atom
+C logical forces_and_stress   Determines whether fa and stress are touched
 C **************************** OUTPUT *********************************
 C real*8 Ena               : NA energy
 C ********************** INPUT and OUTPUT *****************************
@@ -40,7 +44,8 @@ C *********************************************************************
 
       use precision 
       use atmfuncs,  only: izofis
-      use neighbour, only: jna=>jan, xij, mneighb
+      use neighbour, only: jna=>jan, xij, mneighb,
+     &                     reset_neighbour_arrays
 
       implicit none
 
@@ -52,12 +57,15 @@ C *********************************************************************
       real(dp)
      .  scell(3,3), Ena, fa(3,nua), rmaxv, stress(3,3), xa(3,na)
 
+      logical, intent(in)  :: forces_and_stress
+
 C Internal variables ......................................................
       integer  ia, is, ix, ja, jn, js, jx, jua, nnia
 
       real(dp)  fij(3), pi, vij, volcel, volume 
       
 C ......................
+      call timer( 'naefs', 1 )
 
 C Initialize neighb subroutine
       call mneighb( scell, 2.d0*rmaxv, na, xa, 0, 0, nnia )
@@ -76,20 +84,28 @@ C Find neighbour atoms
           is = isa(ia)
           js = isa(ja)
           if (izofis(is).gt.0 .and. izofis(js).gt.0) then
-            call matel( 'T', is, js, 0, 0, xij(1,jn), vij, fij )
+            call MATEL( 'T', is, js, 0, 0, xij(1:3,jn), vij, fij )
             Ena = Ena + vij / (16.0d0*pi)
-            do ix = 1,3
-              fij(ix) = fij(ix) / (16.0d0*pi)
-              fa(ix,ia)  = fa(ix,ia)  + fij(ix)
-              fa(ix,jua) = fa(ix,jua) - fij(ix)
-              do jx = 1,3
-                stress(jx,ix) = stress(jx,ix) +
-     .                          xij(jx,jn) * fij(ix) / volume
-              enddo
-            enddo
+            if (forces_and_stress) then
+               do ix = 1,3
+                  fij(ix) = fij(ix) / (16.0d0*pi)
+                  fa(ix,ia)  = fa(ix,ia)  + fij(ix)
+                  fa(ix,jua) = fa(ix,jua) - fij(ix)
+                  do jx = 1,3
+                     stress(jx,ix) = stress(jx,ix) +
+     .                    xij(jx,jn) * fij(ix) / volume
+                  enddo
+               enddo
+            endif
           endif
         enddo
       enddo
 
-      end
+C     Free local memory
+!      call MATEL( 'T', 0, 0, 0, 0, xij, vij, fij )
+      call reset_neighbour_arrays( )
+      call timer( 'naefs', 2 )
+      end subroutine naefs
+      end module m_naefs
+
 
