@@ -698,9 +698,9 @@ C Sanity checks on values
 !
 ! Filteret cutoff
 !
-          if (fdf_bsearch(p,"F",indexp)) then
-            if (fdf_bmatch(p,"v",after=indexp)) then
-              s%filtercut = fdf_bvalues(p,ind=1,after=indexp)
+          if (fdf_bsearch(pline,"F",indexp)) then
+            if (fdf_bmatch(pline,"v",after=indexp)) then
+              s%filtercut = fdf_bvalues(pline,ind=1,after=indexp)
             else
               call die("Need cut-off after F in PAO.Basis")
             endif

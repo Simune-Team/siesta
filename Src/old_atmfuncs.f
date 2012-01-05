@@ -224,7 +224,7 @@ C     chemical species present in the calculation.
       call de_alloc( rcotb,       'rcotb',       'old_atmfuncs' )
       call de_alloc( rcpoltb,     'rcpoltb',     'old_atmfuncs' )
       call de_alloc( lambdatb,    'lambdatb',    'old_atmfuncs' )
-      call de_alloc( filtercuttb, 'filtercuttb'  'old_atmfuncs' )
+      call de_alloc( filtercuttb, 'filtercuttb', 'old_atmfuncs' )
       call de_alloc( qtb,         'qtb',         'old_atmfuncs' )
       call de_alloc( slfe,        'slfe',        'old_atmfuncs' )
       call de_alloc( rctb,        'rctb',        'old_atmfuncs' )

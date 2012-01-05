@@ -2969,6 +2969,7 @@ C
      .         write(6,'(a,i3,/a)') 
      .         'KBgen: More than one KB projector for l=',l,
      .         'KBgen: ghost states analysis will be not performed'
+           endif
 C
 C KB Projectors
 C
