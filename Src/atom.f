@@ -61,6 +61,7 @@
 ! with ntbmax=500
 
         real(dp), parameter             :: eshift_default=0.02d0
+        real(dp), parameter             :: eorbcut_default=20.0d0
 ! Default energy-shift to define the cut off radius of orbitals
 ! In Rydbergs
 
@@ -3167,7 +3168,7 @@ C Internal variables
      .    cons1, cons2, rnp, spln, eshift, csum,
      .    g(nrmax), r, el, ekin, rdummy,
      .    r1, r2, dfdi, d2fdi2, d2fdr2, dr,
-     .    epot, epot2, rh, dy, eorb, eps, 
+     .    epot, epot2, rh, dy, eorb, eps, eorbcut,
      .    filter_shell,
      .    over(nsemx), vsoft(nrmax), vePAOsoft(nrmax),
      .    exponent, d, dn, norm(nsemx), rcsan,
@@ -3188,6 +3189,7 @@ C
 C Reading the energy-shift to define the cut-off radius of orbitals
 C
         eshift=fdf_physical('PAO.EnergyShift',eshift_default,'Ry')
+        eorbcut=fdf_physical('PAO.EnergyCutoff',eorbcut_default,'Ry')
 
         norb = 0 
         indx = 0
@@ -3404,11 +3406,6 @@ C
               if (nfilteret.gt.nzetmx) then
                 call die("number of filterets exceeds nzetmx")
               endif
-C
-C  Set number of zetas to be equal to the number of filterets
-C
-              nzeta(l,nsm) = nfilteret
-              nzetasave(l,nsm,is) = nfilteret
 
               filter_cutoff_orbitals = max(filter_cutoff_orbitals,
      .                                     kmax**2)
@@ -3423,9 +3420,14 @@ C
               endif
               forb(1) = forb(2)    
 C
+C  Initialise the number of zetas
+C
+              nzeta(l,nsm) = 0
+              nzetasave(l,nsm,is) = 0
+C
 C  Loop over the filterets using them to create new zetas
 C
-              do izeta = 1,nzeta(l,nsm)
+              do izeta = 1,nfilteret
                 ! Copy filteret back to g array
                 g = 0.0_dp
                 do ir = 2,nrc
@@ -3439,8 +3441,8 @@ C
 
                 ! Copy some parameters to this zeta
                 filtercut(l,nsm) = filter_shell
-                lambda(izeta,l,nsm) = lambda(1,l,nsm)
-                rco(izeta,l,nsm) = rc*lambda(1,l,nsm)
+                lambda(nzeta(l,nsm)+1,l,nsm) = lambda(1,l,nsm)
+                rco(nzeta(l,nsm)+1,l,nsm) = rc*lambda(1,l,nsm)
 
                 ! Compute the kinetic energy
                 ekin = 0.0_dp
@@ -3459,51 +3461,61 @@ C
                 enddo
 
                 ! Compute the potential energy 
-                nrcomp = nint(log(rco(izeta,l,nsm)/b+1.0d0)/a)+1
+                nrcomp = nint(log(rco(nzeta(l,nsm)+1,l,nsm)/b+1.0d0)/a)
+     .            + 1
                 epot  = 0.0_dp
                 epot2 = 0.0_dp
                 do ir = 1,nrcomp
                   r = rofi(ir)
-                  r2 = r/lambda(izeta,l,nsm)
+                  r2 = r/lambda(nzeta(l,nsm)+1,l,nsm)
                   nr = nint(log(r2/b+1.0_dp)/a) + 1
                   nmin = max(1,nr-npoint)
                   nmax = min(nrc,nr+npoint)
                   nn = nmax - nmin + 1
                   call polint(rofi(nmin),g(nmin),nn,r2,rh,dy)
-                  rh = rh/sqrt(lambda(izeta,l,nsm)**(2*l+3))
+                  rh = rh/sqrt(lambda(nzeta(l,nsm)+1,l,nsm)**(2*l+3))
                   epot = epot +
-     .            drdi(ir)*(ve(ir)+vps(ir,l))*(rh*r**(l+1))**2
+     .              drdi(ir)*(ve(ir)+vps(ir,l))*(rh*r**(l+1))**2
                   epot2 = epot2 +
-     .            drdi(ir)*vps(ir,l)*(rh*r**(l+1))**2
+     .              drdi(ir)*vps(ir,l)*(rh*r**(l+1))**2
                 enddo
                 eorb = ekin + epot
+C
+C  Test filteret cutoff against energy criterion except for first zeta which is the PAO
+C
+                if (eorb.lt.eorbcut.or.izeta.eq.1) then
+                  nzeta(l,nsm) = nzeta(l,nsm) + 1
+                  nzetasave(l,nsm,is) = nzetasave(l,nsm,is) + 1
 
 C
 C  Output for basis functions
 C
-                if (izeta.eq.1) then
-                  write(6,'(/,(3x,a,i2),3(/,a25,f12.6))')
-     .              'izeta =',izeta,
-     .              'cutoff =',filtercut(l,nsm),
-     .              'rc =',rco(izeta,l,nsm),
-     .              'energy =',eorb
-                  ePAO(l,nsm) = eorb
-                elseif (izeta.gt.1) then
-                  write(6,'(/,(3x,a,i2),2(/,a25,f12.6))')
-     .              'izeta =',izeta,
-     .              'rmatch =',rco(izeta,l,nsm),
-     .              'energy =',eorb
+                  if (izeta.eq.1) then
+                    write(6,'(/,(3x,a,i2),3(/,a25,f12.6))')
+     .                'izeta =',izeta,
+     .                'cutoff =',filtercut(l,nsm),
+     .                'rc =',rco(nzeta(l,nsm),l,nsm),
+     .                'energy =',eorb
+                    ePAO(l,nsm) = eorb
+                  elseif (izeta.gt.1) then
+                    write(6,'(/,(3x,a,i2),2(/,a25,f12.6))')
+     .                'izeta =',nzeta(l,nsm),
+     .                'rmatch =',rco(nzeta(l,nsm),l,nsm),
+     .                'energy =',eorb
+                  endif
+                  write(6,'(a25,f12.6)') 'kinetic =',ekin
+                  write(6,'(a25,f12.6)') 'potential(screened) =',epot
+                  write(6,'(a25,f12.6)') 'potential(ionic) =',epot2 
+
+                  norb = norb + (2*l+1)
+                  indx = indx + 1
+
+                  call comBasis(is,a,b,rofi,g,l,
+     .                          rco(nzeta(l,nsm),l,nsm),
+     .                          lambda(nzeta(l,nsm),l,nsm),
+     .                          filtercut(l,nsm),izeta,nsm,nrc,indx)
                 endif
-                write(6,'(a25,f12.6)') 'kinetic =',ekin
-                write(6,'(a25,f12.6)') 'potential(screened) =',epot
-                write(6,'(a25,f12.6)') 'potential(ionic) =',epot2 
 
-                norb = norb + (2*l+1)
-                indx = indx + 1
-
-                call comBasis(is,a,b,rofi,g,l,rco(izeta,l,nsm),
-     .                        lambda(izeta,l,nsm),filtercut(l,nsm),
-     .                        izeta,nsm,nrc,indx)
               enddo
 
 !
@@ -5781,7 +5793,7 @@ C
      .    rc, rcpol(nzetmx,0:lmaxd,nsemx),
      .    phipol(nrmax), split_table(nrmax),
      .    rnrm(nrmax), dnrm, phi,
-     .    g(nrmax), r, ekin, 
+     .    g(nrmax), r, ekin, eorbcut,
      .    r1, r2, dfdi, d2fdi2, d2fdr2, dr,
      .    epot, epot2, eorb, eps
 
@@ -5791,6 +5803,8 @@ C
         logical :: filterorbitals
         real(dp):: kmax, kmax_tol, etol, paofilterFactor, filter_shell
       
+        eorbcut = fdf_physical('PAO.EnergyCutoff',eorbcut_default,'Ry')
+
         norb = 0 
         indx = 0
 C
@@ -5857,24 +5871,20 @@ C
               if (nfilteret.gt.nzetmx) then
                 call die("number of filterets exceeds nzetmx")
               endif
-
 C
-C  Set number of polarization zetas to be equal to the number of filterets
-C
-              polorb(l,nsm) = nfilteret
-              npolorbsave(l,nsm,is) = nfilteret
-
               filter_cutoff_orbitals = max(filter_cutoff_orbitals,
      .                                   kmax**2)
               filtercut(l,nsm) = filter_shell
+C
+C  Initialise the number of zetas for the polarisation orbitals
+C
+              polorb(l,nsm) = 0
+              npolorbsave(l,nsm,is) = 0
 
 C
 C  Loop over the filterets using them to create new polarization zetas
 C
-              do ipol = 1,polorb(l,nsm)
-                write(6,'(/A,I1,A)')
-     .            'POLgen: Polarization orbital for state ',
-     .            cnfigtb(l,nsm,is), sym(l)
+              do ipol = 1,nfilteret
                   
                 ! Copy filteret back to g array
                 if (ipol.eq.1) then
@@ -5908,7 +5918,7 @@ C
 C
 C Cut-off radius for the split polarization function
 C
-                rcpol(ipol,l,nsm) = rofi(nrc)
+                rcpol(polorb(l,nsm)+1,l,nsm) = rofi(nrc)
 C
 C Normalization of basis functions
 C
@@ -5950,28 +5960,39 @@ C
      .              drdi(ir)*vps(ir,l)*(g(ir)*r**(l+2))**2
                 enddo
                 eorb = ekin + epot
+C
+C  Only accept zeta if the energy is below the cutoff or if this is the PAO
+C
+                if (eorb.lt.eorbcut.or.ipol.eq.1) then
+                  polorb(l,nsm) = polorb(l,nsm) + 1
+                  npolorbsave(l,nsm,is) = npolorbsave(l,nsm,is) + 1
        
-                if (ipol.eq.1) then  
-                  write(6,'(/,(3x,a,i2),2(/,a25,f12.6))')
-     .              'izeta =',ipol,
-     .              'rc =',rcpol(ipol,l,nsm),
-     .              'energy =',eorb 
-                elseif(ipol.gt.1) then 
-                  write(6,'(/,(3x,a,i2),3(/,a25,f12.6))')
-     .              'izeta =',ipol,
-     .              'rmatch =',rcpol(ipol,l,nsm),
-     .              'energy =',eorb 
-                endif 
+                  write(6,'(/A,I1,A)')
+     .              'POLgen: Polarization orbital for state ',
+     .              cnfigtb(l,nsm,is), sym(l)
+                  if (ipol.eq.1) then  
+                    write(6,'(/,(3x,a,i2),2(/,a25,f12.6))')
+     .                'izeta =',ipol,
+     .                'rc =',rcpol(ipol,l,nsm),
+     .                'energy =',eorb 
+                  elseif(ipol.gt.1) then 
+                    write(6,'(/,(3x,a,i2),3(/,a25,f12.6))')
+     .                'izeta =',polorb(l,nsm),
+     .                'rmatch =',rcpol(polorb(l,nsm),l,nsm),
+     .                'energy =',eorb 
+                  endif 
 
-                write(6,'(a25,f12.6)') 'kinetic =',ekin
-                write(6,'(a25,f12.6)') 'potential(screened) =',epot
-                write(6,'(a25,f12.6)') 'potential(ionic) =',epot2 
+                  write(6,'(a25,f12.6)') 'kinetic =',ekin
+                  write(6,'(a25,f12.6)') 'potential(screened) =',epot
+                  write(6,'(a25,f12.6)') 'potential(ionic) =',epot2 
 
-                norb = norb + (2*(l+1)+1)
-                indx = indx + 1
+                  norb = norb + (2*(l+1)+1)
+                  indx = indx + 1
 
-                call comPOL(is,a,b,rofi,g,l,nsm,rcpol(ipol,l,nsm),
-     .                      ipol,nrc,indx)
+                  call comPOL(is,a,b,rofi,g,l,nsm,
+     .                        rcpol(polorb(l,nsm),l,nsm),
+     .                        ipol,nrc,indx)
+                endif
 
               enddo 
 

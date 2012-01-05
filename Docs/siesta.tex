@@ -1342,6 +1342,23 @@ automatically).
 \end{itemize}
 
 \end{description}
+
+\begin{description}
+\item[{\bf PAO.EnergyCutoff}] ({\it real energy}): If the multiple
+zetas are generated using filterets then only the filterets with
+an energy lower than this cutoff are included. Increasing this
+value leads to a richer basis set (provided the cutoff is raised
+above the energy of any filteret that was previously not included)
+but a more expensive calculation.
+It only has an effect when the option
+{\bf PAO.BasisType} is set to filteret.
+
+{\it Use:} It has to be positive.
+
+{\it Default value:} {\tt 30.0 Ry}
+
+\end{description}
+
 \subsubsection{Soft-confinement options}
 \begin{description}
 
