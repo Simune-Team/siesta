@@ -3181,7 +3181,7 @@ C Internal variables
 
         real(dp)
      .    eigen(0:lmaxd), rc, split_table(nrmax),
-     .    rnrm(nrmax), dnrm, phi, frsp, dfrsp,
+     .    rnrm(nrmax), dnrm, phi, frsp, dfrsp, cf,
      .    cons1, cons2, rnp, spln, eshift, csum,
      .    g(nrmax), r, el, ekin, rdummy,
      .    r1, r2, dfdi, d2fdi2, d2fdr2, dr,
@@ -3189,9 +3189,9 @@ C Internal variables
      .    filter_shell,
      .    over(nsemx), vsoft(nrmax), vePAOsoft(nrmax),
      .    exponent, d, dn, norm(nsemx), rcsan,
-     .    kmax, kmax_tol, etol, paofilterFactor,
-     .    spln_min
-        integer :: nfilteret, maxfilteret
+     .    kmax, kmax_tol, etol, paoFilterFactor,
+     .    spln_min, paoContract
+        integer :: nfilteret, maxfilteret, nflimit
         real(dp),allocatable,dimension(:)   :: cfilteret !filtered orbitals
         real(dp),allocatable,dimension(:,:) :: filterets !filtered orbitals
         real(dp),allocatable,dimension(:)   :: forb !filtered orbital
@@ -3418,6 +3418,57 @@ C
      .                          norm_opt=2,nfilteret=nfilteret,
      .                          filteret=filterets,cfilteret=cfilteret)
 C
+C  If contraction cutoff is greater than zero then contract filterets
+C
+              paoContract = fdf_double("PAO.ContractionCutoff",0.0_dp)
+              paoContract = abs(paoContract)
+              if (paoContract.gt.0.0_dp) then
+                izeta = 0
+                nflimit = 0
+                do while (izeta.lt.nfilteret.and.nflimit.eq.0) 
+                  izeta = izeta + 1
+                  if (abs(cfilteret(izeta)).lt.paoContract) then
+                    nflimit = izeta
+                  endif
+                enddo
+C
+C  If nflimit = 0 then no filterets were found to contract
+C  If nflimit > 0 then contract from nflimit to nfilteret
+C  If nflimit = nfilteret then no point contracting 1 filteret!
+C
+                if (nflimit.ne.0.and.nflimit.ne.nfilteret) then
+C
+C  Scale the first filteret by its coefficient
+C
+                  cf = cfilteret(nflimit)
+                  do ir = 1,nrc
+                    filterets(ir,nflimit) = cf*filterets(ir,nflimit)
+                  enddo
+C
+C  Now add the scaled remaining filterets to the first one
+C
+                  do izeta = nflimit+1,nfilteret
+                    cf = cfilteret(izeta)
+                    do ir = 1,nrc
+                      filterets(ir,izeta) = filterets(ir,izeta) + 
+     .                  cf*filterets(ir,izeta)
+                    enddo
+                  enddo
+C
+C  Compute the overall filteret coefficient
+C
+                  cf = 0.0_dp
+                  do izeta = nflimit,nfilteret
+                    cf = cf + cfilteret(izeta)**2
+                  enddo
+                  cfilteret(nflimit) = sqrt(cf)
+C
+C  Reset the number of filterets
+C
+                  nfilteret = nflimit
+                endif
+              endif
+C
 C  If number of filterets exceeds limit on number of zetas then stop
 C
               if (nfilteret.gt.nzetmx) then
@@ -3597,7 +3648,7 @@ C
      .    epot, epot2, rh, dy, eorb, eps, 
      .    over(nsemx), vsoft(nrmax), vePAOsoft(nrmax),
      .    dlt, d, dn, norm(nsemx),
-     .    kmax, kmax_tol, etol, paofilterFactor,
+     .    kmax, kmax_tol, etol, paoFilterFactor,
      .    spln_min
         integer :: n_eigen
         real(dp),allocatable,dimension(:) :: forb !filtered orbital
@@ -5490,7 +5541,7 @@ C
         logical :: filterorbitals, new_split_code, split_tail_norm
         logical :: fix_split_table
         logical :: old_style_pol
-        real(dp):: kmax, kmax_tol, etol, paofilterFactor, spln_min
+        real(dp):: kmax, kmax_tol, etol, paoFilterFactor, spln_min
         integer :: n_eigen
         real(dp),allocatable,dimension(:) :: forb !filtered orbital
       
@@ -5818,9 +5869,10 @@ C
         real(dp),allocatable,dimension(:,:) :: filterets !filtered orbitals
 
         logical :: filterorbitals
-        real(dp):: kmax, kmax_tol, etol, paofilterFactor, filter_shell
+        real(dp):: kmax, kmax_tol, etol, paoFilterFactor, filter_shell
       
-        eorbcut = fdf_physical('PAO.EnergyCutoff',eorbcut_default,'Ry')
+        eorbcut = 
+     .    fdf_physical('PAO.EnergyPolCutoff',eorbcut_default,'Ry')
 
         norb = 0 
         indx = 0
@@ -6012,6 +6064,8 @@ C
                 endif
 
               enddo 
+
+              deallocate(filterets)
 
             endif    
           enddo  

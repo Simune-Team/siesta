@@ -1352,8 +1352,37 @@ It only has an effect when the option
 
 {\it Use:} It has to be positive.
 
-{\it Default value:} {\tt 30.0 Ry}
+{\it Default value:} {\tt 20.0 Ry}
+\end{description}
 
+\begin{description}
+\item[{\bf PAO.EnergyPolCutoff}] ({\it real energy}): If the multiple
+zetas are generated using filterets then only the filterets with
+an energy lower than this cutoff are included for the polarisation
+functions. Increasing this value leads to a richer basis set 
+(provided the cutoff is raised above the energy of any filteret 
+that was previously not included) but a more expensive calculation.
+It only has an effect when the option
+{\bf PAO.BasisType} is set to filteret.
+
+{\it Use:} It has to be positive.
+
+{\it Default value:} {\tt 20.0 Ry}
+\end{description}
+
+\begin{description}
+\item[{\bf PAO.ContractionCutoff}] ({\it real}): If the multiple
+zetas are generated using filterets then any filterets that have
+a coefficient less than this threshold within the original PAO
+will be contracted together to form a single filteret.
+Increasing this value leads to a smaller basis set but allows
+the underlying basis to have a higher kinetic energy cut-off for
+filtering. It only has an effect when the option
+{\bf PAO.BasisType} is set to filteret.
+
+{\it Use:} It has to be in the range 0 to 1.
+
+{\it Default value:} {\tt 0.0}
 \end{description}
 
 \subsubsection{Soft-confinement options}
