@@ -83,6 +83,10 @@
          spp%lmax_basis = lomaxfis(is)
          spp%norbs = nofis(is)
 
+!        Check that number of orbitals is below maximum 
+         if (spp%norbs.gt.maxnorbs) 
+     .     call die("atm_transfer: Increase maxnorbs in atm_types.f")
+
          do io = 1,  spp%norbs
             spp%orb_n(io) = cnfigfio(is,io)  !! Not sure about this
             spp%orb_l(io) = lofio(is,io)
