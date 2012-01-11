@@ -431,7 +431,7 @@ subroutine gen_filteret( l, nr, maxfilteret, r, f, kc, norm_opt, nfilteret, filt
   integer :: i, ierror, ij, ij1, ij2, ik, ir, n, nj, m, j
   real(dp):: cij, dk, dkr, dr, f0norm, fnorm, fg, jl0, jl1, jl2, &
              k, k4j1(0:nmesh), kmesh(0:nmesh), kr, kr0, kr1, kr2, &
-             pi, rc, rmesh(0:nmesh), co1, co2
+             pi, rc, rmesh(0:nmesh), co1
   integer, allocatable:: indx(:)
   real(dp),allocatable:: aux(:), c(:,:), e(:), fm(:), g(:,:), gr(:,:), &
                          h(:,:), jl(:,:), jlk(:,:), jlnorm(:), jlr(:), &
@@ -590,6 +590,9 @@ subroutine gen_filteret( l, nr, maxfilteret, r, f, kc, norm_opt, nfilteret, filt
     co1 = co1 + cfilteret(i)**2
   enddo
   co1 = 1.0_dp/sqrt(co1)
+  do i = 1,m
+    cfilteret(i) = co1*cfilteret(i)
+  enddo
 
 ! Generate new filterets
   filteret(1:nr,1) = f(1:nr)
