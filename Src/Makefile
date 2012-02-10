@@ -91,7 +91,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	reinit.o reord.o rhoofd.o rhoofdsp.o rhooda.o \
 	savepsi.o shaper.o timer.o \
 	vmb.o vmat.o vmatsp.o volcel.o xc.o \
-	cellxc.o cdiag.o rdiag.o \
+	cellxc.o cdiag.o rdiag.o rdiag_elpa.o\
         cgvc.o cgvc_zmatrix.o m_convergence.o \
         iocg.o ioeig.o iofa.o iokp.o iomd.o typecell.o \
         ofc.o poison.o readsp.o radfft.o \
@@ -126,7 +126,8 @@ OBJS =  automatic_cell.o atom_options.o \
         cell_fire_optim.o m_fire_para.o m_fire_mixing.o write_raw_efs.o \
         m_iodm.o m_sparse.o kpoint_pdos.o \
         domain_decom.o schecomm.o printmatrix.o qsort.o mmio.o pspltm1.o lenstr.o \
-        setup_ordern_indexes.o
+        setup_ordern_indexes.o \
+        elpa1.o elpa2.o elpa2_kernels.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -368,7 +369,8 @@ dhscf.o: m_ts_options.o meshsubs.o parallel.o parsing.o precision.o
 dhscf.o: siesta_options.o sys.o units.o xcmod.o
 diag2g.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
 diag2k.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
-diagg.o: fermid.o parallel.o parallelsubs.o precision.o sys.o writewave.o
+diagg.o: fermid.o m_fdf_global.o parallel.o parallelsubs.o precision.o
+diagg.o: rdiag_elpa.o sys.o writewave.o
 diagk.o: compute_norm.o fermid.o parallel.o parallelsubs.o precision.o sys.o
 diagk.o: writewave.o
 diagk_file.o: fermid.o iowfs_netcdf.o parallel.o parallelsubs.o precision.o
@@ -392,6 +394,7 @@ egandd.o: on_subs.o onmod.o onmod.o precision.o sys.o
 eggbox.o: parallel.o parsing.o precision.o
 electrostatic.o: atm_types.o atmfuncs.o atmparams.o precision.o radfft.o
 electrostatic.o: radial.o recipes.o sys.o
+elpa2.o: elpa1.o
 ener3.o: globalise.o m_mpi_utils.o onmod.o precision.o
 ener3lomem.o: globalise.o m_mpi_utils.o onmod.o precision.o
 extrapolon.o: parallel.o precision.o sys.o
@@ -459,7 +462,6 @@ m_fdf_global.o: m_mpi_utils.o parallel.o precision.o
 m_fire.o: parallel.o precision.o
 m_fire_mixing.o: alloc.o m_fdf_global.o m_fire_para.o m_mpi_utils.o parallel.o
 m_fire_mixing.o: precision.o
-m_fire_ordern.o: m_mpi_utils.o parallel.o precision.o
 m_fire_para.o: m_mpi_utils.o parallel.o precision.o
 m_forces.o: precision.o
 m_getopts.o: f2kcli.o
@@ -566,6 +568,7 @@ pseudopotential.o: alloc.o atom_options.o flib_spline.o precision.o sys.o
 radfft.o: alloc.o precision.o recipes.o
 radial.o: precision.o xml.o
 rdiag.o: alloc.o memoryinfo.o parallel.o precision.o sys.o
+rdiag_elpa.o: alloc.o elpa1.o elpa2.o parallel.o precision.o sys.o
 readsp.o: parallel.o precision.o sys.o
 recipes.o: sys.o
 redcel.o: precision.o sys.o
@@ -714,6 +717,7 @@ m_post_scf_work.o: post_scf_work.o
 m_projected_dos.o: projected_DOS.o
 m_proximity_check.o: proximity_check.o
 m_radfft.o: radfft.o
+m_rdiag_elpa.o: rdiag_elpa.o
 m_recipes.o: recipes.o
 m_scf_options.o: m_options.o
 m_scfconvergence_test.o: scfconvergence_test.o

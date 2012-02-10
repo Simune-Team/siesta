@@ -1,0 +1,17 @@
+-------------------------------------------------
+2012-02-10  Alberto Garcia   siesta-3.1.1--elpa-1
+First step for ELPA interface
+
+Wrote a new routine rdiag_elpa to interface with the library.
+There are some residual MPI problems.
+
+added:
+  Src/Sys/macosx-gfortran-openmpi.make
+  Src/elpa1.f90
+  Src/elpa2.f90
+  Src/elpa2_kernels.f90
+  Src/rdiag_elpa.F
+modified:
+  Src/Makefile
+  Src/diagg.F
+
