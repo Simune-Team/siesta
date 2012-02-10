@@ -277,6 +277,10 @@
 
               call pdtrsm('Left','U','N','Non-unit',n,neigvec,one,
      .                     s2d,1,1,desc_h2d,z2d,1,1,desc_h2d)
+
+        call mpi_barrier(mpi_comm_world, mpierror) ! for correct timings only
+        if (node==0) print *, "About to convert z to 1d..."
+        call mpi_barrier(mpi_comm_world, mpierror) ! for correct timings only
               call pdgemr2d(n,n,z2d,1,1,desc_h2d,Z,1,1,desch,ictxt)
               if (dscale.ne.one) then
                  call dscal(n,dscale,w,1)
@@ -286,9 +290,16 @@
                  call die('Error in back transformation in rdiag')
               endif
 
-              CALL BLACS_GRIDEXIT( ICTXT )
-              CALL BLACS_GRIDEXIT( I2D_CTXT )
-              CALL BLACS_EXIT( 0 )
+        call mpi_barrier(mpi_comm_world, mpierror) ! for correct timings only
+        if (node==0) print *, "About to exit"
+        call mpi_barrier(mpi_comm_world, mpierror) ! for correct timings only
+
+
+        CALL BLACS_GRIDEXIT( ICTXT )
+        CALL BLACS_GRIDEXIT( I2D_CTXT )
+              ! Do not call blacs_exit, as it seems to be 
+              ! shutting down mpi...
+              !!!!! CALL BLACS_EXIT( 0 )
 
 ! Deallocate workspace arrays
       call de_alloc( work,    name='work'   )

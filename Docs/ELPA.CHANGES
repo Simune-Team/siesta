@@ -1,4 +1,13 @@
 -------------------------------------------------
+2012-02-10  Alberto Garcia   siesta-3.1.1--elpa-2
+ELPA solver now works for real matrices
+
+It works with the intel compiler and openmpi-1.4.
+
+modified:
+  Src/rdiag_elpa.F
+
+-------------------------------------------------
 2012-02-10  Alberto Garcia   siesta-3.1.1--elpa-1
 First step for ELPA interface
 
