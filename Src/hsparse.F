@@ -32,14 +32,12 @@ C                        where no=lasto(na)
 C integer iphkb(nkb)   : Index of each KB projector in its atom
 C                        (negative). Here nkb=lastkb(na)
 C integer isa(na)      : Species index of each atom
-C **************************** INPUT and OUTPUT ***********************
-C integer nlhmax: Input : Dimension of listh
-C                 Output: Actual value needed for nlhmax (Maximum number
-C                         of basis orbitals interacting, either directly
-C                         or through a KB projector, with any orbital)
+C set_xijo             : logical
 C **************************** OUTPUT *********************************
-C set_xijo              : logical
 C xijo                  : vectors between orbital centers
+C integer nlhmax        : Maximum number
+C                         of basis orbitals interacting, either directly
+C                         or through a KB projector, with any orbital
 C **************************** BEHAVIOR *******************************
 C Equivalent pairs of atoms are assigned the same sparse index, i.e.
 C if atoms i1 and j1 are equivalent, and so are i2 and j2, and the
@@ -77,7 +75,7 @@ C
       integer,           intent(in) :: nsc(3)
       real(dp),          intent(in) :: cell(3,3), xa(3,na)
       logical,           intent(in) :: negl
-      integer,        intent(inout) :: nlhmax
+      integer,        intent(out)   :: nlhmax
       logical, intent(in)           :: gamma
       logical, intent(in)     :: set_xijo
 

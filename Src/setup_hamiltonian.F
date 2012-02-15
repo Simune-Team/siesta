@@ -6,7 +6,10 @@
       subroutine setup_hamiltonian( iscf )
       USE m_normalize_dm, only: normalize_dm
       USE siesta_options
-      use sparse_matrices
+      use sparse_matrices, only: H_kin, H_vkb
+      use sparse_matrices, only: listh, listhptr, numh, maxnh
+      use sparse_matrices, only: H, S
+      use sparse_matrices, only: Dold, Dscf, Eold, Escf, xijo
       use siesta_geom
       use atmfuncs, only: uion
       use atomlist, only: no_u, iaorb, iphkb, qtot, indxuo, datm, 
@@ -51,9 +54,6 @@
 #endif
       
 !     Normalize density matrix to exact charge
-!     In the first iteration we have the D already normalized
-!     by setup_H0 ... ***
-!***AG  Clarify this.
 !     Setup_hamiltonian is called before the density is printed out...
 #ifdef TRANSIESTA      
       if (.not.TSrun ) call normalize_dm( first=.false. )
@@ -65,15 +65,16 @@
          call normalize_dm(first=.false.)
       endif
 #endif  /* TRANSIESTA */
+
       ! Initialize Hamiltonian with the non-SCF part...................
 
       do ispin = 1,nspin
         if (ispin .le. 2) then
-          do io = 1,nh
-            H(io,ispin) = H0(io)
+          do io = 1,maxnh
+            H(io,ispin) = H_kin(io) + H_vkb(io)
           enddo
         else
-          do io = 1,nh
+          do io = 1,maxnh
             H(io,ispin) = 0.0_dp
           enddo
         endif
@@ -82,23 +83,24 @@
 
 ! Non-SCF part of total energy .......................................
 
-      E0 = 0.0_dp
+      Ekin = 0.0_dp
+      Enl = 0.0_dp
       do ispin = 1,min(nspin,2)
-        do io = 1,nh
-          E0 = E0 + H0(io) * Dscf(io,ispin)
+        do io = 1,maxnh
+          Ekin = Ekin + H_kin(io) * Dscf(io,ispin)
+          Enl = Enl + H_vkb(io) * Dscf(io,ispin)
         enddo
       enddo
 #ifdef MPI
-! Global reduction of E0
-      call globalize_sum(E0,buffer1)
-      E0 = buffer1
+! Global reduction of Ekin and Enl
+      call globalize_sum(Ekin,buffer1)
+      Ekin = buffer1
+      call globalize_sum(Enl,buffer1)
+      Enl = buffer1
 #endif
-      E0 = E0 - Eions + Ena
-! ..................
-!         print *, "hi antes de dhscf", Node
-!         call pxfflush(6)
+      E0 = Ekin + Enl - Eions + Ena
 
-! Non-local-pseudop: energy, forces, stress and matrix elements .......
+
 ! Add SCF contribution to energy and matrix elements ..................
       g2max = g2cut
 
@@ -118,9 +120,6 @@
 
       call de_alloc( fal, 'fal', 'setup_hamiltonian' ) 
 
-! ..................
-!         print *, "hi despues de dhscf", Node
-!         call pxfflush(6)
 
 ! Find entropy ........................................................
 ! Entropy is returned from the call to diagon. To add to the energy
@@ -137,7 +136,7 @@
 
 ! Save present density matrix ........................................
       do is = 1,nspin
-        do io = 1,nh
+        do io = 1,maxnh
           Dold(io,is) = Dscf(io,is)
           Eold(io,is) = Escf(io,is)
         enddo

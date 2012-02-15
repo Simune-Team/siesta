@@ -100,7 +100,7 @@
      &              maxnh, maxnh, lasto, iphorb, isa, 
      &              numh, listhptr, listh, numh, listhptr, listh, 
      &              min(nspin,2), Dscf, Ekin, fal, stressl, H,
-     &              forces_and_stress=.true. ) 
+     &              matrix_elements_only=.false. ) 
 #ifdef MPI
 ! Global reduction of energy terms
       call globalize_sum(Ekin,buffer1)
@@ -113,7 +113,7 @@
      &             maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
      &             numh, listhptr, listh, numh, listhptr, listh, 
      &             min(nspin,2), Dscf, Enl, fal, stressl, H,
-     &             forces_and_stress=.true. )
+     &             matrix_elements_only=.false. ) 
 
 #ifdef MPI
 ! Global reduction of energy terms
@@ -181,7 +181,7 @@
 !!!! Possible BUG: Dold should not be overwritten in the last iteration
 ! Save present density matrix ........................................
       do is = 1,nspin
-        do io = 1,nh
+        do io = 1,maxnh
           Dold(io,is) = Dscf(io,is)
           Eold(io,is) = Escf(io,is)
         enddo

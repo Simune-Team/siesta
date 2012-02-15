@@ -103,7 +103,7 @@
 ! Save present H matrix
           if(mixH) then
              do ispin = 1,nspin
-                do io = 1,nh
+                do io = 1,maxnh
                    Hold(io,ispin) = H(io,ispin)
                 enddo
              enddo
@@ -120,7 +120,7 @@
 !       ispin=4 => Imag(D12)
         const = 1._dp
         if (ispin .gt. 2) const = 2._dp
-        do io = 1,nh
+        do io = 1,maxnh
           DEharr = DEharr + H(io,ispin) * const * 
      &                 ( Dscf(io,ispin) - Dold(io,ispin) )
           Ebs = Ebs + H(io,ispin) * const * Dscf(io,ispin)
@@ -136,9 +136,9 @@
 ! ..................
 #ifdef CDF
       if ( writedmhs_cdf_history) then
-        call write_dmh_netcdf( no_l, nh, nspin, Dold, H, Dscf )
+        call write_dmh_netcdf( no_l, maxnh, nspin, Dold, H, Dscf )
       else if (writedmhs_cdf) then
-        call write_dmh_netcdf( no_l, nh, nspin, Dold, H, Dscf,
+        call write_dmh_netcdf( no_l, maxnh, nspin, Dold, H, Dscf,
      &                         overwrite=.true. )
       endif
 #endif

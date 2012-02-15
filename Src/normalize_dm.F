@@ -6,7 +6,7 @@
 
       subroutine normalize_dm( first )
       use precision, only: dp
-      use sparse_matrices, only: Dscf, Escf, nh, S
+      use sparse_matrices, only: Dscf, Escf, maxnh, S
       use atomlist, only: qtot
       use parallel, only: IOnode
       use m_spin,   only: nspin
@@ -24,7 +24,7 @@
 !     Normalize density matrix to exact charge
       qsol = 0.0_dp
       do ispin = 1,min(nspin,2)
-        do io = 1,nh
+        do io = 1,maxnh
           qsol = qsol + Dscf(io,ispin) * s(io)
         enddo
       enddo
@@ -38,7 +38,7 @@
      &    'siesta: WARNING: Qtot, Tr[D*S] =', qtot, qsol
       endif
       do ispin = 1,nspin
-        do io = 1,nh
+        do io = 1,maxnh
           Dscf(io,ispin) = Dscf(io,ispin) * qtot/qsol
           Escf(io,ispin) = Escf(io,ispin) * qtot/qsol
         enddo

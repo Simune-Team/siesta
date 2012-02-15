@@ -14,7 +14,9 @@
       USE m_projected_DOS, only: projected_DOS
       USE m_local_DOS, only: local_DOS
       USE siesta_options
-      use sparse_matrices
+      use sparse_matrices, only: maxnh, listh, listhptr, numh
+      use sparse_matrices, only: H, S, Dscf, Dold, Eold, xijo
+      use sparse_matrices, only: Work=>H_kin  ! For scratch only!
       use siesta_geom
       use m_dhscf, only: dhscf
       use atomlist, only: indxuo, iaorb, lastkb, lasto, datm, no_l,
@@ -72,7 +74,7 @@
       real(dp)          :: qtmp(4)
 #endif
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------------------- BEGIN
 #ifdef DEBUG
       call write_debug( 'PRE siesta_analysis' )
 #endif
@@ -277,21 +279,21 @@
 
 !     Calculation of the bulk polarization using the Berry phase
 !     formulas by King-Smith and Vanderbilt
-!     Attention H0 is used as an auxiliary array
+!     Attention Work is used as an auxiliary array
       if (nkpol.gt.0 .and. .not.bornz) then
         call KSV_pol(na_u, na_s, xa_last, rmaxo, scell_last, ucell_last,
      &               no_u, no_l, no_s, nspin, qspin, 
      &               maxnh, nkpol, numh, listhptr, listh, 
-     &               H, S, H0, xijo, indxuo, isa, iphorb, 
+     &               H, S, Work, xijo, indxuo, isa, iphorb, 
      &               iaorb, lasto, shape,
      &               nkpol,kpol,wgthpol, polR, polxyz ) 
       endif
 
 !     Calculation of the optical conductivity
-!     Attention H0, Eold, Dold are used as auxiliary arrays
+!     Attention Work, Eold, Dold are used as auxiliary arrays
       call optical(na_u, na_s, xa_last, scell_last, ucell_last,
      &             no_u, no_l, no_s, nspin, qspin,
-     &             maxnh, numh, listhptr, listh, H, S, H0,
+     &             maxnh, numh, listhptr, listh, H, S, Work,
      &             Eold(1:maxnh,1), Dold(1:maxnh,1), xijo,
      $             indxuo, ebk, ef, temp,
      &             isa, iphorb, iphKB, lasto, lastkb, shape )

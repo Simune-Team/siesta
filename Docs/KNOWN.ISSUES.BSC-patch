@@ -57,14 +57,6 @@ feature.
 * There might be still some extra debugging output having to do with
 the new mesh distributions. It will be progressively removed.
 
-* H0 (the non self-consistent part of H) is now set up in its own
-routine, setup_H0, outside the SCF loop. This applies to the matrix
-elements that do not depend on the self-consistent charge. This means
-that the 'kinetic' and 'non-local' energies are not correctly updated
-during the cycle, but the *total* energy is unaffected, as those
-contributions are part of the band-structure energy computed as
-Tr(H*DM).
-
 -- Compiler issues
 
 Unfortunately, compiler releases are very frequent now, and some of them

@@ -10,9 +10,9 @@
       use m_new_dm,          only: new_dm
       use m_proximity_check, only: proximity_check
       use siesta_options
-      use sparse_matrices, only: nh, maxnh, numh, listh, listhptr
+      use sparse_matrices, only: maxnh, numh, listh, listhptr
       use sparse_matrices, only: Dscf, Dold, Escf, Eold
-      use sparse_matrices, only: xijo, H, H0, S
+      use sparse_matrices, only: xijo, H, S, H_kin, H_vkb
       use siesta_geom
       use atomlist,          only: iphorb, iphkb, rco, rckb, indxua,
      &                             no_s, rmaxkb, rmaxo, no_u, lastkb,
@@ -206,14 +206,11 @@
 !     and, if applicable,  vectors between orbital centers
 
 !     Listh and xijo are allocated inside hsparse
-!     nh is set by the routine also
 !     Note: We always generate xijo now, for COOP and other
 !           analyses.
-      nh = maxnh
       call hsparse( negl, scell, nsc, na_s, isa, xa, lasto,
-     &              lastkb, iphorb, iphKB, nh, gamma,
+     &              lastkb, iphorb, iphKB, maxnh, gamma,
      $                 set_xijo=.true.)
-      maxnh = nh
 
       ! Note that the resizing of Dscf is done inside new_dm below
       call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',
@@ -232,7 +229,9 @@
 !     Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
       call re_alloc( H, 1, maxnh, 1, nspin, 'H',
      .              routine='state_init',shrink=.true.,copy=.false.)
-      call re_alloc(H0,1,maxnh,name='H0',routine='state_init',
+      call re_alloc(H_kin,1,maxnh,name='H_kin',routine='state_init',
+     &              shrink=.true., copy=.false. )
+      call re_alloc(H_vkb,1,maxnh,name='H_vkb',routine='state_init',
      &              shrink=.true., copy=.false. )
       call re_alloc(S,1,maxnh,name='S',routine='state_init',
      .              copy=.false.,shrink=.true.)

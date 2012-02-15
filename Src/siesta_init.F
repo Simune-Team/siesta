@@ -123,7 +123,7 @@ C     Initialise MPI and set processor number
       nullify(Haux,Saux,psi)
       nullify(Dscf,Dold,Eold,Escf)
       nullify(listh)
-      nullify(H,H0,S)
+      nullify(H,S)
       nullify(xijo)
 
 !     Initialize some variables

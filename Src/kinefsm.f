@@ -15,7 +15,7 @@
      .                  maxnh, maxnd, lasto, iphorb, isa, 
      .                  numd, listdptr, listd, numh, listhptr, listh, 
      .                  nspin, Dscf, Ekin, fa, stress, H,
-     .                  forces_and_stress )
+     .                  matrix_elements_only )
 C *********************************************************************
 C Kinetic contribution to energy, forces, stress and matrix elements.
 C Energies in Ry. Lengths in Bohr.
@@ -46,8 +46,11 @@ C                            the hamiltonian matrix
 C integer listh(maxnh)     : Column indexes of the nonzero elements  
 C                            of each row of the hamiltonian matrix
 C integer nspin            : Number of spin components of Dscf and H
-C integer Dscf(maxnd,nspin): Density matrix
-C logical forces_and_stress   Determines whether fa and stress are touched
+C                            If computing only matrix elements, it
+C                            can be set to 1.
+C logical matrix_elements_only:
+C integer Dscf(maxnd,nspin): Density matrix. Not touched if computing
+C                            only matrix elements.
 C **************************** OUTPUT *********************************
 C real*8 Ekin              : Kinetic energy in unit cell
 C ********************** INPUT and OUTPUT *****************************
@@ -79,7 +82,7 @@ C
      .  scell(3,3), Dscf(maxnd,nspin), Ekin, 
      .  fa(3,nua), H(maxnh,nspin), rmaxo, 
      .  stress(3,3), xa(3,na)
-      logical, intent(in)  :: forces_and_stress
+      logical, intent(in)  :: matrix_elements_only
 
 C Internal variables ..................................................
   
@@ -99,18 +102,20 @@ C Start timer
       call timer( 'kinefsm', 1 )
 
 C Allocate local memory
-      nullify( Di )
-      call re_alloc( Di, 1, no, 'Di', 'kinefsm' )
+      if (.not. matrix_elements_only) then
+         nullify( Di )
+         call re_alloc( Di, 1, no, 'Di', 'kinefsm' )
+         Di(1:no) = 0.0_dp
+      endif
       nullify( Ti )
       call re_alloc( Ti, 1, no, 'Ti', 'kinefsm' )
+      Ti(1:no) = 0.0_dp
 
       volume = nua * volcel(scell) / na
 
       call mneighb( scell, 2.0d0*rmaxo, na, xa, 0, 0, nnia )
 
       Ekin = 0.0_dp
-      Di(1:no) = 0.0_dp
-      Ti(1:no) = 0.0_dp
 
       do ia = 1,nua
         call mneighb( scell, 2.0d0*rmaxo, na, xa, ia, 0, nnia )
@@ -118,18 +123,19 @@ C Allocate local memory
 
 C Is this orbital on this Node?
           call GlobalToLocalOrb(io,Node,Nodes,iio)
-          if (iio.gt.0) then
+          if (iio.gt.0) then  ! Local orbital
             ioa = iphorb(io)
             is = isa(ia)
 
-C Valid orbital 
-            do j = 1,numd(iio)
-              ind = listdptr(iio) + j
-              jo = listd(ind)
-              do ispin = 1,nspin
-                Di(jo) = Di(jo) + Dscf(ind,ispin)
-              enddo
-            enddo
+            if (.not. matrix_elements_only) then
+               do j = 1,numd(iio)
+                  ind = listdptr(iio) + j
+                  jo = listd(ind)
+                  do ispin = 1,nspin
+                     Di(jo) = Di(jo) + Dscf(ind,ispin)
+                  enddo
+               enddo
+            endif
             do jn = 1,nnia
               ja = jna(jn)
               jua = indxua(ja)
@@ -141,10 +147,9 @@ C Valid orbital
                   call MATEL( 'T', is, js, ioa, joa, xij(1,jn),
      .                      Tij, grTij )
                   Ti(jo) = Ti(jo) + Tij
-                  Ekin = Ekin + Di(jo) * Tij
-                  if (forces_and_stress) then
-!                   print *, "No way "
-!                   call pxfflush(6)
+
+                  if (.not. matrix_elements_only) then
+                     Ekin = Ekin + Di(jo) * Tij
                     do ix = 1,3
                       fij(ix) = Di(jo) * grTij(ix)
                       fa(ix,ia)  = fa(ix,ia)  + fij(ix)
@@ -156,12 +161,15 @@ C Valid orbital
                     enddo
                   endif 
                 endif
+
               enddo
             enddo
-            do j = 1,numd(iio)
-              jo = listd(listdptr(iio)+j)
-              Di(jo) = 0.0_dp
-            enddo
+            if (.not. matrix_elements_only) then
+               do j = 1,numd(iio)
+                  jo = listd(listdptr(iio)+j)
+                  Di(jo) = 0.0_dp
+               enddo
+            endif
             do j = 1,numh(iio)
               ind = listhptr(iio)+j
               jo = listh(ind)
@@ -178,7 +186,9 @@ C Deallocate local memory
 !      call MATEL( 'T', 0, 0, 0, 0, xij, Tij, grTij )
       call reset_neighbour_arrays( )
       call de_alloc( Ti, 'Ti', 'kinefsm' )
-      call de_alloc( Di, 'Di', 'kinefsm' )
+      if (.not. matrix_elements_only) then
+         call de_alloc( Di, 'Di', 'kinefsm' )
+      endif
 
 C Finish timer
       call timer( 'kinefsm', 2 )

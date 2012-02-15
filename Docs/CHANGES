@@ -6,6 +6,53 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-02-15  18:05:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-391
+Clarify flow of data in setup_H0
+
+The routine setup_H0 pre-computes the matrix elements of the kinetic
+and non-local pseudopotential pieces of the Hamiltonian, which do not
+depend on the density matrix.
+
+Routines kinefsm and nlfesm also compute Ekin and Enl, respectively,
+but since they are not called anymore in the SCF cycles, Ekin and Enl
+are not updated, and are only printed at the first and last
+iterations.
+
+In order to make this more explicit, H0 has been substituted by two
+arrays, H_kin and H_vkb, to hold the pieces of H. Ekin and Enl are now
+computed in setup_hamiltonian, with the appropriate density matrix.  A
+minor cosmetic issue now is that, in setup_H0, the routines 'kinefsm'
+and 'nlefsm' must be called with a value of 1 for nspin, as befits the
+structure of H_kin and H_vkb. The density matrix array is not
+referenced.
+
+Other changes:
+
+* The variable 'nh' has been substituted by its equivalent maxnh
+throughout the code.
+
+* The use of H0 as a work array in calls to the ksv_pol routine has
+been made clearer by importing H_kin and renaming it 'Work'.
+
+modified:
+  Docs/KNOWN.ISSUES.BSC-patch
+  Src/Makefile
+  Src/born_charge.F
+  Src/compute_dm.F
+  Src/final_H_f_stress.F
+  Src/hsparse.F
+  Src/kinefsm.f
+  Src/nlefsm.f
+  Src/normalize_dm.F
+  Src/post_scf_work.F
+  Src/setup_H0.F
+  Src/setup_hamiltonian.F
+  Src/siesta_analysis.F
+  Src/siesta_init.F
+  Src/sparse_matrices.F
+  Src/state_init.F
+
+-----------------------------------------------------------------------
 2011-10-28  10:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-390
 Avoid temporary arrays in SiestaXC/mesh3d
 

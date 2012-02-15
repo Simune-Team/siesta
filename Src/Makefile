@@ -626,10 +626,10 @@ schecomm.o: alloc.o
 setatomnodes.o: alloc.o parallel.o precision.o spatial.o sys.o
 setspatial.o: alloc.o parallel.o precision.o spatial.o
 setup_H0.o: alloc.o atmfuncs.o atomlist.o dhscf.o dnaefs.o kinefsm.o m_dipol.o
-setup_H0.o: m_energies.o m_forces.o m_gamma.o m_mpi_utils.o m_ntm.o m_spin.o
-setup_H0.o: m_steps.o m_stress.o m_ts_global_vars.o metaforce.o
-setup_H0.o: molecularmechanics.o naefs.o nlefsm.o normalize_dm.o parallel.o
-setup_H0.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o
+setup_H0.o: m_energies.o m_gamma.o m_mpi_utils.o m_ntm.o m_spin.o m_steps.o
+setup_H0.o: m_ts_global_vars.o metaforce.o molecularmechanics.o naefs.o
+setup_H0.o: nlefsm.o parallel.o siesta_geom.o siesta_options.o
+setup_H0.o: sparse_matrices.o sys.o
 setup_hamiltonian.o: alloc.o atmfuncs.o atomlist.o dhscf.o m_dipol.o
 setup_hamiltonian.o: m_energies.o m_gamma.o m_hsx.o m_mpi_utils.o m_ntm.o
 setup_hamiltonian.o: m_spin.o m_steps.o m_stress.o m_ts_global_vars.o
