@@ -35,6 +35,9 @@
 #ifdef TRANSIESTA
       use m_ts_global_vars, only: TSrun
 #endif /* TRANSIESTA */
+
+      use m_sparse_types, only: map_data_sparse_matrix
+
       implicit none
       integer, intent(in) :: iscf
       real(dp)            :: stressl(3,3)
@@ -47,6 +50,8 @@
       integer             :: istr    ! Calc. stress?      0=>no, 1=>yes
       integer             :: ihmat   ! Calc. hamiltonian? 0=>no, 1=>yes
       real(dp)            :: g2max
+
+      real(dp), pointer   :: H_vkb_val(:,:)
 
 !------------------------------------------------------------------------- BEGIN
 #ifdef DEBUG
@@ -68,10 +73,11 @@
 
       ! Initialize Hamiltonian with the non-SCF part...................
 
+      call map_data_sparse_matrix(H_vkb,H_vkb_val)
       do ispin = 1,nspin
         if (ispin .le. 2) then
           do io = 1,maxnh
-            H(io,ispin) = H_kin(io) + H_vkb(io)
+            H(io,ispin) = H_kin(io) + H_vkb_val(io,1)
           enddo
         else
           do io = 1,maxnh
@@ -88,7 +94,7 @@
       do ispin = 1,min(nspin,2)
         do io = 1,maxnh
           Ekin = Ekin + H_kin(io) * Dscf(io,ispin)
-          Enl = Enl + H_vkb(io) * Dscf(io,ispin)
+          Enl = Enl + H_vkb_val(io,1) * Dscf(io,ispin)
         enddo
       enddo
 #ifdef MPI

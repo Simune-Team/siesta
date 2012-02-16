@@ -48,6 +48,8 @@
       use iodm_netcdf, only: setup_dm_netcdf_file
       use iodmhs_netcdf, only: setup_dmhs_netcdf_file
 #endif
+      use m_sparse_types, only: sparsity_t, sparseMatrix_t
+      use m_sparse_types, only: new_sparse_matrix
 
       implicit none
 
@@ -69,7 +71,12 @@
       real(dp),             pointer :: dummyH(:,:)
 !     SIESTA External
       character(len=label_length+5) :: PASTE
+
 #endif
+
+      type(sparsity_t), pointer     :: sparsity
+
+
 !------------------------------------------------------------------------- BEGIN
       call timer( 'IterMD', 1 )
 #ifdef DEBUG
@@ -210,7 +217,9 @@
 !           analyses.
       call hsparse( negl, scell, nsc, na_s, isa, xa, lasto,
      &              lastkb, iphorb, iphKB, maxnh, gamma,
-     $                 set_xijo=.true.)
+     $                 set_xijo=.true.,sparsity=sparsity)
+
+      call new_sparse_matrix(H_vkb,sparsity,dim2=1)
 
       ! Note that the resizing of Dscf is done inside new_dm below
       call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',
@@ -230,8 +239,6 @@
       call re_alloc( H, 1, maxnh, 1, nspin, 'H',
      .              routine='state_init',shrink=.true.,copy=.false.)
       call re_alloc(H_kin,1,maxnh,name='H_kin',routine='state_init',
-     &              shrink=.true., copy=.false. )
-      call re_alloc(H_vkb,1,maxnh,name='H_vkb',routine='state_init',
      &              shrink=.true., copy=.false. )
       call re_alloc(S,1,maxnh,name='S',routine='state_init',
      .              copy=.false.,shrink=.true.)

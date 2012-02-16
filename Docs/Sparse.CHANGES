@@ -1,0 +1,20 @@
+
+-----------------------------------------------------------------------
+2012-02-16  Alberto Garcia <albertog@icmab.es>   trunk-391-sparse-1
+First prototype implementation of sparse-matrix types
+
+A first test with H_vkb.
+Some rough edges remain.
+
+added:
+  Src/m_sparse_types.F90
+modified:
+  Src/Makefile
+  Src/hsparse.F
+  Src/setup_H0.F
+  Src/setup_hamiltonian.F
+  Src/sparse_matrices.F
+  Src/state_init.F
+
+
+

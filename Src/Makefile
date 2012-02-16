@@ -137,7 +137,8 @@ OBJS =  automatic_cell.o atom_options.o \
 	read_xc_info.o \
         bsc_xcmod.o bsc_cellxc.o xc.o \
 	vacuum_level.o \
-	write_orb_indx.o 
+	write_orb_indx.o \
+	m_sparse_types.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -435,9 +436,9 @@ gradient.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 gradientlomem.o: alloc.o globalise.o onmod.o precision.o
 grdsam.o: alloc.o dhscf.o parallel.o precision.o siesta_geom.o siesta_options.o
 grdsam.o: sys.o
-hsparse.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mneighb.o
-hsparse.o: parallel.o parallelsubs.o precision.o siesta_options.o sorting.o
-hsparse.o: sparse_matrices.o sys.o
+hsparse.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o m_sparse_types.o
+hsparse.o: mneighb.o parallel.o parallelsubs.o precision.o siesta_options.o
+hsparse.o: sorting.o sparse_matrices.o sys.o
 idiag.o: parallel.o sys.o
 initatom.o: atmparams.o atom.o atom_options.o basis_io.o basis_specs.o
 initatom.o: basis_types.o electrostatic.o old_atmfuncs.o precision.o
@@ -510,6 +511,7 @@ m_pulay.o: sparse_matrices.o sys.o
 m_recipes.o: precision.o sys.o
 m_rmaxh.o: precision.o
 m_sparse.o: alloc.o precision.o
+m_sparse_types.o: alloc.o precision.o sys.o
 m_spin.o: alloc.o parallel.o precision.o
 m_stress.o: precision.o
 m_timer.o: m_io.o m_walltime.o moreParallelSubs.o parallel.o precision.o sys.o
@@ -625,16 +627,16 @@ scfconvergence_test.o: parallel.o siesta_cml.o siesta_options.o write_subs.o
 schecomm.o: alloc.o
 setatomnodes.o: alloc.o parallel.o precision.o spatial.o sys.o
 setspatial.o: alloc.o parallel.o precision.o spatial.o
-setup_H0.o: alloc.o atmfuncs.o atomlist.o dhscf.o dnaefs.o kinefsm.o m_dipol.o
-setup_H0.o: m_energies.o m_gamma.o m_mpi_utils.o m_ntm.o m_spin.o m_steps.o
-setup_H0.o: m_ts_global_vars.o metaforce.o molecularmechanics.o naefs.o
-setup_H0.o: nlefsm.o parallel.o siesta_geom.o siesta_options.o
-setup_H0.o: sparse_matrices.o sys.o
+setup_H0.o: alloc.o atmfuncs.o atomlist.o dhscf.o dnaefs.o kinefsm.o
+setup_H0.o: m_energies.o m_ntm.o m_sparse_types.o m_spin.o metaforce.o
+setup_H0.o: molecularmechanics.o naefs.o nlefsm.o siesta_geom.o
+setup_H0.o: siesta_options.o sparse_matrices.o
 setup_hamiltonian.o: alloc.o atmfuncs.o atomlist.o dhscf.o m_dipol.o
 setup_hamiltonian.o: m_energies.o m_gamma.o m_hsx.o m_mpi_utils.o m_ntm.o
-setup_hamiltonian.o: m_spin.o m_steps.o m_stress.o m_ts_global_vars.o
-setup_hamiltonian.o: metaforce.o molecularmechanics.o normalize_dm.o parallel.o
-setup_hamiltonian.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o
+setup_hamiltonian.o: m_sparse_types.o m_spin.o m_steps.o m_stress.o
+setup_hamiltonian.o: m_ts_global_vars.o metaforce.o molecularmechanics.o
+setup_hamiltonian.o: normalize_dm.o parallel.o siesta_geom.o siesta_options.o
+setup_hamiltonian.o: sparse_matrices.o sys.o
 setup_kscell.o: minvec.o parallel.o precision.o units.o
 shaper.o: atmfuncs.o mneighb.o precision.o
 show_distribution.o: atomlist.o parallel.o parallelsubs.o siesta_geom.o sys.o
@@ -672,7 +674,7 @@ siesta_move.o: parallel.o phonon.o siesta_cml.o siesta_geom.o siesta_options.o
 siesta_move.o: sys.o write_subs.o zm_broyden_optim.o zm_fire_optim.o zmatrix.o
 siesta_options.o: files.o memoryinfo.o parallel.o precision.o siesta_cml.o
 siesta_options.o: sys.o units.o
-sparse_matrices.o: alloc.o precision.o
+sparse_matrices.o: alloc.o m_sparse_types.o precision.o
 spatial.o: precision.o
 spher_harm.o: alloc.o precision.o sys.o
 state_analysis.o: atomlist.o born_charge.o fixed.o m_energies.o m_forces.o
@@ -682,10 +684,11 @@ state_analysis.o: siesta_geom.o siesta_options.o sparse_matrices.o write_subs.o
 state_analysis.o: zmatrix.o
 state_init.o: alloc.o atomlist.o files.o hsparse.o iodm_netcdf.o
 state_init.o: iodmhs_netcdf.o kpoint_grid.o m_check_supercell.o m_energies.o
-state_init.o: m_eo.o m_gamma.o m_mpi_utils.o m_pulay.o m_rmaxh.o m_spin.o
-state_init.o: m_steps.o m_ts_global_vars.o m_ts_io.o m_ts_options.o new_dm.o
-state_init.o: overlap.o parallel.o proximity_check.o siesta_cml.o siesta_geom.o
-state_init.o: siesta_options.o sparse_matrices.o sys.o write_subs.o zmatrix.o
+state_init.o: m_eo.o m_gamma.o m_mpi_utils.o m_pulay.o m_rmaxh.o
+state_init.o: m_sparse_types.o m_spin.o m_steps.o m_ts_global_vars.o m_ts_io.o
+state_init.o: m_ts_options.o new_dm.o overlap.o parallel.o proximity_check.o
+state_init.o: siesta_cml.o siesta_geom.o siesta_options.o sparse_matrices.o
+state_init.o: sys.o write_subs.o zmatrix.o
 struct_init.o: alloc.o atmfuncs.o atomlist.o files.o iopipes.o ioxv.o
 struct_init.o: m_iostruct.o parallel.o periodic_table.o siesta_cml.o
 struct_init.o: siesta_geom.o siesta_options.o zmatrix.o

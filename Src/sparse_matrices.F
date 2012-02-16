@@ -1,5 +1,8 @@
       MODULE sparse_matrices
       use precision
+      use m_sparse_types, only: sparsity_t, sparseMatrix_t
+      use m_sparse_types, only: new_sparse_matrix, release_sparse_matrix
+
       implicit none
 
 !     Max. number of nonzero H matrix elements    
@@ -14,8 +17,8 @@
 
       ! Pieces of H that do not depend on the SCF density matrix
       ! Formerly there was a single array H0 for this
-      real(dp), pointer :: H_kin(:) => null()
-      real(dp), pointer :: H_vkb(:) => null()
+      real(dp), pointer    :: H_kin(:) => null()
+      type(sparseMatrix_t) :: H_vkb
 
       CONTAINS
 
@@ -34,7 +37,7 @@
       call de_alloc( Escf,        'Escf',        'sparseMat' )
       call de_alloc( H,           'H',           'sparseMat' )
       call de_alloc( H_kin,       'H_kin',       'sparseMat' )
-      call de_alloc( H_vkb,       'H_vkb',       'sparseMat' )
+      call release_sparse_matrix(H_vkb)
       call de_alloc( xijo,        'xijo',        'sparseMat' )
       call de_alloc( S,           'S',           'sparseMat' )
 

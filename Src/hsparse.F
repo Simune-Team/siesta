@@ -51,7 +51,7 @@ C
       subroutine hsparse( negl, cell, nsc, na, isa, xa,
      &                    lasto, lastkb, iphorb, iphkb,     
      &                    nlhmax, gamma,
-     $                    set_xijo)
+     $                    set_xijo,sparsity)
 
       use precision
       use parallel,        only : Node, Nodes
@@ -64,8 +64,10 @@ C
       use neighbour,       only : mneighb, reset_neighbour_arrays
       use sys,             only : die
       use alloc,           only : re_alloc, de_alloc
-      use atomlist,        only : no_l
+      use atomlist,        only : no_l, no_s
       use sparse_matrices, only : listhptr, numh, listh, xijo
+      use m_sparse_types,  only : sparsity_t, new_sparsity
+
       implicit none
 
       integer,           intent(in) :: na
@@ -77,7 +79,8 @@ C
       logical,           intent(in) :: negl
       integer,        intent(out)   :: nlhmax
       logical, intent(in)           :: gamma
-      logical, intent(in)     :: set_xijo
+      logical, intent(in)           :: set_xijo
+      type(sparsity_t), pointer     :: sparsity
 
       external               timer
 
@@ -448,6 +451,7 @@ C           Restore conect array for next orbital io
         enddo       ! io
       enddo         ! ia
 
+      call new_sparsity(sparsity,no_l,no_s,nlhmax,numh,listhptr,listh)
 
 C     Initialize listsc
       call LISTSC_INIT( nsc, nuotot )
