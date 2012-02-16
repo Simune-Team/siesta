@@ -6,6 +6,18 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-02-16  10:35:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-392
+Proper closing of files in m_iorho
+
+Due to a programming error, the calls to io_close in read_rho and
+check_rho were incorrectly placed.
+
+Thanks to Carlos Sanz for the report and the fix.
+
+modified:
+  Src/m_iorho.F
+
+-----------------------------------------------------------------------
 2012-02-15  18:05:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-391
 Clarify flow of data in setup_H0
 
