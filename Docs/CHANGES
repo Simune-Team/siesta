@@ -6,6 +6,17 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-02-16  15:25:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-393
+Fix pointer initialization in moremeshsubs
+
+Two workspace pointers were not properly nullified before allocation.
+
+Thanks to Olivier Coulaud for the report and the fix.
+
+modified:
+  Src/moremeshsubs.F
+
+-----------------------------------------------------------------------
 2012-02-16  10:35:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-392
 Proper closing of files in m_iorho
 
