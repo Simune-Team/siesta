@@ -561,11 +561,15 @@ moreParallelSubs.o: alloc.o m_io.o parallel.o precision.o sys.o
 moremeshsubs.o: alloc.o mesh.o parallel.o precision.o schecomm.o sys.o
 mulliken.o: alloc.o atmfuncs.o parallel.o parallelsubs.o precision.o
 mulliken.o: siesta_cml.o
+my_new_dm.o: alloc.o atomlist.o m_energies.o m_fdf_global.o m_iodm.o m_sparse.o
+my_new_dm.o: m_sparse_types.o m_spin.o m_steps.o m_ts_iodm.o m_ts_options.o
+my_new_dm.o: parallel.o parallelsubs.o parsing.o precision.o siesta_geom.o
+my_new_dm.o: siesta_options.o sparse_matrices.o sys.o units.o
 naefs.o: atmfuncs.o mneighb.o precision.o
 new_dm.o: alloc.o atomlist.o m_energies.o m_fdf_global.o m_iodm.o m_sparse.o
-new_dm.o: m_spin.o m_steps.o m_ts_global_vars.o m_ts_iodm.o m_ts_options.o
-new_dm.o: parallel.o parallelsubs.o parsing.o precision.o siesta_geom.o
-new_dm.o: siesta_options.o sparse_matrices.o sys.o units.o
+new_dm.o: m_spin.o m_steps.o m_ts_iodm.o m_ts_options.o parallel.o
+new_dm.o: parallelsubs.o parsing.o precision.o siesta_geom.o siesta_options.o
+new_dm.o: sparse_matrices.o sys.o units.o
 nlefsm.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
 normalize_dm.o: atomlist.o m_mpi_utils.o m_spin.o parallel.o precision.o
 normalize_dm.o: sparse_matrices.o
@@ -755,6 +759,7 @@ m_minvec.o: minvec.o
 m_mixer.o: mixer.o
 m_naefs.o: naefs.o
 m_new_dm.o: new_dm.o
+m_new_new_dm.o: my_new_dm.o
 m_nlefsm.o: nlefsm.o
 m_norm.o: compute_norm.o
 m_normalize_dm.o: normalize_dm.o

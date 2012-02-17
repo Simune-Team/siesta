@@ -1,5 +1,16 @@
 
 -----------------------------------------------------------------------
+2012-02-17  Alberto Garcia <albertog@icmab.es>   trunk-391-sparse-5
+Take Escf initialization away from new_dm
+
+It is now moved to state_init, just after the call to new_dm.
+
+modified:
+  Src/Makefile
+  Src/new_dm.F
+  Src/state_init.F
+
+-----------------------------------------------------------------------
 2012-02-17  Alberto Garcia <albertog@icmab.es>   trunk-391-sparse-4
 Avoid re-use of arrays as scratch
 

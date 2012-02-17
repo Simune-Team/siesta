@@ -39,7 +39,7 @@
       use m_mpi_utils,       only: globalize_max
 #endif
 #ifdef TRANSIESTA
-      use m_ts_options, only : onlyS
+      use m_ts_options, only : onlyS, TSrun
       use sys, only : bye
       use m_ts_io, only : ts_iohs
       use files, only: slabel, label_length
@@ -251,7 +251,17 @@
 
 !     Initialize density matrix
       ! The resizing of Dscf is done inside new_dm
+      ! call new_new_dm(sparsity,DM_prev_geom,Dscf)
       call new_dm( auxchanged, numh, listhptr, listh, Dscf)
+
+      ! Initialize energy-density matrix to zero for first call to overfsm
+#ifdef TRANSIESTA
+      ! Only part of Escf is updated in TS, so if it is put as zero here
+      ! a continuation run gives bad forces.
+      if(.not.TSrun) Escf(:,:) = 0.0_dp
+#else
+      Escf(:,:) = 0.0_dp
+#endif /* TRANSIESTA */
 
 !     Check for size of Pulay auxiliary matrices
       call init_pulay_arrays()

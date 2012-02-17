@@ -91,11 +91,6 @@
       use atomlist, only: datm, no_s, iaorb, lasto, no_u, no_l
       use m_spin,   only: nspin
       use m_steps, only: istp
-      use sparse_matrices, only: Escf     !! To be moved
-
-#ifdef TRANSIESTA
-      use M_ts_global_vars, only : TSrun
-#endif /* TRANSIESTA */
 
       implicit none
 
@@ -229,14 +224,6 @@
 
       endif
 
-      ! Initialize energy-density matrix to zero for first call to overfsm
-#ifdef TRANSIESTA
-      ! Only part of Escf is updated in TS, so if it is put as zero here
-      ! a continuation run gives bad forces.
-      if(.not.TSrun) Escf(:,:) = 0.0_dp
-#else
-      Escf(:,:) = 0.0_dp
-#endif /* TRANSIESTA */
 
       END subroutine new_dm
       subroutine new_extrapol(nrows,num, listptr,list, DM)
