@@ -15,6 +15,7 @@ PRIVATE ! Nothing is declared public beyond this point
 
  type sparsity_t
     private
+    character(len=256) :: name = "null_sparsity"
 !   integer        :: n_row_g=0  ! Global number of rows
 !   integer        :: n_col_g=0  ! Global number of columns
     integer        :: nrows
@@ -31,26 +32,42 @@ PRIVATE ! Nothing is declared public beyond this point
  end type
 
  type sparseMatrix_t
-    private
+   private
+   character(len=256) :: name = "null_matrix"
    type(sparsity_t), pointer    :: sparsity => null()
    real(dp),         pointer    :: val(:,:) => null() ! Nonzero-element values
  end type
 
+  ! For debugging purposes, to avoid memory leaks
+  !integer, parameter                            :: nmax_sparsities = 5
+  !type(sparsity_t), dimension(nmax_sparsities)  :: sparsity_pool
+
+  !integer, save                                 :: n_sparsities = 0
+
 CONTAINS
 
- subroutine new_sparsity(sparsity,nrows,ncols,nnzs,num,listptr,list)
+ subroutine new_sparsity(sparsity,nrows,ncols,nnzs,num,listptr,list,name)
 
    type(sparsity_t), pointer     :: sparsity
    integer, intent(in)  :: nrows, ncols, nnzs
    integer, intent(in)  :: num(:), listptr(:)
    integer, intent(in)  :: list(:)
+   character(len=*), intent(in) :: name
 
    integer :: stat
 
-   if (associated(sparsity)) then
-      call die( "sparsity already allocated")
-   endif
+   ! We release the previous incarnation
+   ! This means that we relinquish access to the previous
+   ! memory location. It will be deallocated when nobody
+   ! else is using it.
+   call release_sparsity(sparsity)
+   !
+   ! We allocate a new area for this incarnation
    allocate(sparsity,stat=stat)
+   if (stat /= 0) then
+      call die("Allocation error in new_sparsity")
+   endif
+
    call re_alloc( sparsity%n_col, 1,nrows)
    call re_alloc( sparsity%list_ptr, 1,nrows)
 
@@ -61,14 +78,20 @@ CONTAINS
    sparsity%list_ptr(1:nrows) = listptr(1:nrows)
 
    if (nnzs /= sum(num(1:nrows))) then
-      call die("nnzs mismatch")
+      call die("nnzs mismatch in new_sparsity")
    endif
 
    call re_alloc( sparsity%list_col, 1,nnzs)
    sparsity%list_col(1:nnzs) = list(1:nnzs)
 
    sparsity%refcount = 0
-   sparsity%initialized = .true.
+   sparsity%initialized = .true.   
+   sparsity%name = trim(name)
+
+   print *, "--> allocated sparsity: " // trim(sparsity%name)
+   ! Should we stake a claim to this record?
+   ! Not if the sparsity is only going to be used in matrices...
+   ! call retain_sparsity(sparsity)
    
  end subroutine new_sparsity
 
@@ -77,10 +100,13 @@ CONTAINS
 
    if (associated(sparsity)) then
       sparsity%refcount = sparsity%refcount - 1
+      print *, "--> released sparsity: " //  &
+                trim(sparsity%name) //", new refcount: ", sparsity%refcount
       if (sparsity%refcount == 0) then
          call de_alloc( sparsity%n_col)
          call de_alloc( sparsity%list_ptr)
          call de_alloc( sparsity%list_col)
+         print *, "--> deallocated sparsity: " // trim(sparsity%name) 
          deallocate(sparsity)
          nullify(sparsity)
       endif
@@ -93,8 +119,10 @@ CONTAINS
 
    if (associated(sparsity)) then
       sparsity%refcount = sparsity%refcount + 1
+      print *, "--> retained sparsity: " //  &
+                trim(sparsity%name) //", new refcount: ", sparsity%refcount
    else
-      STOP "sparsity not retained"
+      call die("Attempted to retain unset sparsity")
    endif
    
  end subroutine retain_sparsity
@@ -107,38 +135,55 @@ CONTAINS
   end function matching_sparsity
 
 !-----------------------------------------------------------------------
- subroutine new_sparse_matrix( matrix, sparsity, dim2, value )
+ subroutine new_sparse_matrix( matrix, sparsity, dim2, name, fill_value )
 
    implicit none
 
    type(sparseMatrix_t), intent(out)      :: matrix
    type(sparsity_t), pointer              :: sparsity 
    integer, intent(in)                    :: dim2  ! Should it be lbound/ubound?
-   real(dp), intent(in), OPTIONAL         :: value
+   character(len=*), intent(in)           :: name
+   real(dp), intent(in), OPTIONAL         :: fill_value
 
 
-   if (.not. associated(sparsity))  call die( "sparsity not initialized")
-   call re_alloc( matrix%val, 1,sparsity%nnzs, 1, dim2, routine='sparse_alloc' )
-   if (present(value)) then
-      matrix%val(:,:) = value   ! Optional
+   if (.not. associated(sparsity)) then
+      call die( "sparsity not initialized in new_sparse_matrix")
    endif
+   !
+   call release_sparse_matrix(matrix)   ! In case it was holding info
+   !
    matrix%sparsity => sparsity
+   matrix%name = trim(name)
+   print *, "Allocating info for matrix " // trim(matrix%name) // &
+               " with sparsity " // trim(matrix%sparsity%name)
    call retain_sparsity(matrix%sparsity)
+   call re_alloc( matrix%val, 1,matrix%sparsity%nnzs, 1, dim2, &
+                  routine='new_sparse_matrix', &
+                  shrink=.true., copy=.false.)
+   !
+   if (present(fill_value)) then
+      matrix%val(:,:) = fill_value   ! Optional
+   endif
 
  end subroutine new_sparse_matrix
 
 !--------------------------------------------------------------------------
- subroutine copy_sparse_matrix (destination, source)
+ subroutine copy_sparse_matrix (destination, name, source)
    type(sparseMatrix_t),     intent(in)     :: source
    type(sparseMatrix_t),     intent(inout)  :: destination
+   character(len=*), intent(in)             :: name
 
    type(sparsity_t), pointer :: os, ns
    
    if (associated(source%sparsity)) then
       os => source%sparsity
    else
-      STOP "source matrix not associated"
+      call die("Source matrix " // trim(source%name) // &
+               " not associated in copy_sparse_matrix")
    endif
+
+   print *, "Starting copy of matrix " // trim(source%name) // &
+               " into new matrix " // trim(name)
 
    if (associated(destination%sparsity)) then
       ! Destination matrix already setup
@@ -147,23 +192,26 @@ CONTAINS
          ! Both matrices are compatible
          ! simply copy the data, but check first
          if (size(source%val,dim=2) /= size(destination%val,dim=2)) then
-            ! We will deal with this case later
-            STOP "dim2 mismatch in copy"
+            ! This case has to be dealt with 
+            ! by explicit mapping of the data
+            call die("dim2 mismatch in copy")
          else
             destination%val(:,:) = source%val(:,:)
          endif
+         print *, "Copied data into existing matrix " // trim(destination%name) // &
+               ". New name: " // trim(name)
+         destination%name = trim(name)
       else
-         call release_sparsity(ns)
-         destination%sparsity=>os
-         call retain_sparsity(destination%sparsity)
-         call de_alloc(destination%val)
-         call re_alloc(destination%val,1,os%nnzs,1,size(source%val,dim=2),routine="..")
+         call new_sparse_matrix(destination,source%sparsity, &
+                                size(source%val,dim=2),name)
          destination%val(:,:) = source%val(:,:)
+
       endif
 
    else  ! We need to set up the new matrix
 
-      call new_sparse_matrix(destination,source%sparsity,size(source%val,dim=2))
+      call new_sparse_matrix(destination,source%sparsity, &
+                             size(source%val,dim=2),name)
       destination%val(:,:) = source%val(:,:)
 
    endif
@@ -221,11 +269,17 @@ CONTAINS
 
    type(sparseMatrix_t), intent(inout)      :: matrix
 
-   if (.not. associated(matrix%sparsity)) then
-      call die( "matrix not initialized -- cannot release")
+   ! Print messages only if needed
+   if (associated(matrix%sparsity)) then
+      print *, "Releasing  matrix " // trim(matrix%name) 
+      if (associated(matrix%val)) then
+         call de_alloc( matrix%val )
+      else
+         call die("Data for matrix was not allocated...")
+      endif
+      matrix%name = "null_matrix"
    endif
    call release_sparsity(matrix%sparsity)
-   call de_alloc( matrix%val )
 
  end subroutine release_sparse_matrix
 

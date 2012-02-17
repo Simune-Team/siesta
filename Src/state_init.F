@@ -13,6 +13,7 @@
       use sparse_matrices, only: maxnh, numh, listh, listhptr
       use sparse_matrices, only: Dscf, Dold, Escf, Eold
       use sparse_matrices, only: xijo, H, S, H_kin, H_vkb
+      use sparse_matrices, only: sparsity
       use siesta_geom
       use atomlist,          only: iphorb, iphkb, rco, rckb, indxua,
      &                             no_s, rmaxkb, rmaxo, no_u, lastkb,
@@ -49,7 +50,7 @@
       use iodmhs_netcdf, only: setup_dmhs_netcdf_file
 #endif
       use m_sparse_types, only: sparsity_t, sparseMatrix_t
-      use m_sparse_types, only: new_sparse_matrix
+      use m_sparse_types, only: new_sparsity, new_sparse_matrix
 
       implicit none
 
@@ -74,7 +75,7 @@
 
 #endif
 
-      type(sparsity_t), pointer     :: sparsity
+      character(len=256)            :: name
 
 
 !------------------------------------------------------------------------- BEGIN
@@ -217,9 +218,13 @@
 !           analyses.
       call hsparse( negl, scell, nsc, na_s, isa, xa, lasto,
      &              lastkb, iphorb, iphKB, maxnh, gamma,
-     $                 set_xijo=.true.,sparsity=sparsity)
+     $                 set_xijo=.true.)
 
-      call new_sparse_matrix(H_vkb,sparsity,dim2=1)
+      write(name,"(a,i0)") "sparsity for geom step ", istep
+      call new_sparsity(sparsity,no_l,no_s,
+     $                  maxnh,numh,listhptr,listh,name)
+      write(name,"(a,i0)") "H_vkb in state_init at geom step ", istep
+      call new_sparse_matrix(H_vkb,sparsity,dim2=1,name=name)
 
       ! Note that the resizing of Dscf is done inside new_dm below
       call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',

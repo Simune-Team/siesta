@@ -1,5 +1,22 @@
 
 -----------------------------------------------------------------------
+2012-02-17  Alberto Garcia <albertog@icmab.es>   trunk-391-sparse-2
+Refinement of the implementation of sparse-matrix types
+
+More debugging statements to trace the association of sparsities to matrices.
+Single variable "sparsity" now lives in the 'sparse_matrices' module, and is
+set only in 'state_init'.
+
+Tested H_vkb flow with multiple geometries.
+
+modified:
+  Src/Makefile
+  Src/hsparse.F
+  Src/m_sparse_types.F90
+  Src/sparse_matrices.F
+  Src/state_init.F
+
+-----------------------------------------------------------------------
 2012-02-16  Alberto Garcia <albertog@icmab.es>   trunk-391-sparse-1
 First prototype implementation of sparse-matrix types
 

@@ -18,7 +18,11 @@
       ! Pieces of H that do not depend on the SCF density matrix
       ! Formerly there was a single array H0 for this
       real(dp), pointer    :: H_kin(:) => null()
-      type(sparseMatrix_t) :: H_vkb
+
+      !
+      !  New interface data
+      type(sparsity_t), pointer     :: sparsity => null()
+      type(sparseMatrix_t)          :: H_vkb
 
       CONTAINS
 
