@@ -28,7 +28,7 @@
       use alloc, only: re_alloc, de_alloc
       use m_gamma
       use m_hsx, only: write_hsx
-      use sys, only: die
+      use sys, only: die, bye
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
@@ -162,6 +162,13 @@
 #ifdef DEBUG
       call write_debug( '  POS setup_hamiltonian' )
 #endif
+      if (h_setup_only) then
+         call timer( 'siesta', 2 )
+         call timer( 'all', 3 )
+         call bye("H-Setup-Only requested")
+         STOP
+      endif
+
 !--------------------------------------------------------------------------- END
       END subroutine setup_hamiltonian
       END module m_setup_hamiltonian

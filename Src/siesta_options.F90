@@ -5,6 +5,7 @@ MODULE siesta_options
   implicit none
   PUBLIC
 
+  logical :: mixH          ! Mixing of the Hamiltoninan instead of DM
   logical :: h_setup_only  ! H Setup only
   logical :: chebef        ! Compute the chemical potential in ordern?
   logical :: default       ! Temporary used to pass default values in fdf reads
@@ -135,6 +136,7 @@ MODULE siesta_options
   real(dp), parameter :: g2cut_default = 100.e0_dp
   real(dp), parameter :: temp_default  = 1.900e-3_dp 
 
+  logical,  parameter :: mixH_def = .false.
   integer,  parameter :: maxsav_default = 0
   integer,  parameter :: nscf_default = 50
   integer,  parameter :: ncgmax_default = 1000
@@ -436,6 +438,13 @@ MODULE siesta_options
       call cmlAddParameter( xf=mainXML, name='MaxSCFIterations',  &
                             value=nscf, dictRef='siesta:maxscf',  &
                             units="cmlUnits:countable")
+    endif
+
+    mixH = fdf_get('MixHamiltonian',mixH_def)
+    mixH = fdf_get('TS.MixH',mixH)   ! Catch old-style keyword
+
+    if (ionode) then
+      write(6,1) 'redata: Mix Hamiltonian instead of DM    = ', mixH
     endif
 
     ! Pulay mixing, number of iterations for one Pulay mixing (maxsav)

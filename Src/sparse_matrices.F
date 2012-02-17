@@ -11,9 +11,12 @@
       integer, pointer :: listh(:), listhptr(:),
      &                    numh(:), numhold(:)
 
-      real(dp), pointer :: Dold(:,:), Dscf(:,:),
-     &                     Eold(:,:), Escf(:,:), H(:,:), xijo(:,:),
-     &                     S(:)
+      real(dp), pointer :: Dold(:,:), Dscf(:,:), 
+     &                     Eold(:,:), Escf(:,:), H(:,:),
+     &                     xijo(:,:), S(:)
+
+      ! Used to hold the "input" H when mixing the Hamiltonian
+      real(dp), dimension(:,:), pointer :: Hold => null()   
 
       ! Pieces of H that do not depend on the SCF density matrix
       ! Formerly there was a single array H0 for this

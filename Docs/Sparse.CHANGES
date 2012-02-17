@@ -1,5 +1,28 @@
 
 -----------------------------------------------------------------------
+2012-02-17  Alberto Garcia <albertog@icmab.es>   trunk-391-sparse-3
+Generalize the option to mix the Hamiltonian
+
+The option to mix the Hamiltonian instead of the density matrix was 
+already present in TranSiesta. It has now been generalized.
+The preferred option keyword in the fdf file is
+
+MixHamiltonian T
+
+although the previous TS.MixH keyword is also honored if present.
+
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+  Src/m_ts_global_vars.f90
+  Src/m_ts_options.F90
+  Src/mixer.F
+  Src/setup_hamiltonian.F
+  Src/siesta_forces.F
+  Src/siesta_options.F90
+  Src/sparse_matrices.F
+
+-----------------------------------------------------------------------
 2012-02-17  Alberto Garcia <albertog@icmab.es>   trunk-391-sparse-2
 Refinement of the implementation of sparse-matrix types
 

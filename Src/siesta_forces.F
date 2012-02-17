@@ -23,7 +23,6 @@
       use m_convergence, only: converger_t
       use m_convergence, only: reset, set_tolerance
 #ifdef TRANSIESTA
-      use m_ts_options, only : mixH
       use m_ts_global_vars, only : ts_istep
 #endif /* TRANSIESTA */
       implicit none
@@ -71,31 +70,8 @@
 
       DO WHILE (.not. last)
         call timer( 'IterSCF', 1 )
-
-#ifndef TRANSIESTA
-        if (cml_p) 
-     &    call cmlStartStep(xf=mainXML, type='SCF', index=iscf)
-
-!       Will use H0 computed above
-        call setup_hamiltonian( iscf )
-!!        call printmemory( 6, 0 )
-
-        if (h_setup_only) then
-           call timer( 'siesta', 2 )
-           call timer( 'all', 3 )
-           call bye("H-Setup-Only requested")
-           STOP
-        endif
-
-        call compute_dm( iscf )
-
-        call mixer( iscf, dDmax )
-#else /* TRANSIESTA */
-
         if (cml_p)
      &      call cmlStartStep( xf=mainXML, type='SCF', index=iscf )
-
-! Adding the possibility of Mixing H.
 
         if (mixH) then
           if ( first ) call setup_hamiltonian( iscf )
@@ -105,8 +81,8 @@
           call setup_hamiltonian( iscf )
           call compute_dm( iscf )
         end if ! mixH
+
       	call mixer( iscf, dDmax )
-#endif /* TRANSIESTA */
 
         call scfconvergence_test( first, iscf, last, dDmax,
      &                            conv_harris, conv_etot )

@@ -30,7 +30,6 @@ PUBLIC
 logical  :: savetshs     ! Saves the Hamiltonian and Overlap matrices if the 
                          ! the option TS.SaveHS is specified in the input file
 logical  :: onlyS        ! Option to only save overlap matrix
-logical  :: mixH         ! Mixing of the Hamiltoninan instead of DM
 logical  :: USEBULK      ! Use Bulk Hamiltonian in Electrodes
 logical  :: TriDiag      ! true if tridiagonalization
 logical  :: updatedmcr   ! Update DM values of ONLY Central Region
@@ -61,7 +60,6 @@ logical :: calcGF        ! Calculate the electrodes GF
 logical,  parameter :: savetshs_def = .true.
 logical,  parameter :: onlyS_def = .false.
 logical,  parameter :: tsdme_def = .true.
-logical,  parameter :: mixH_def = .false.
 logical,  parameter :: USEBULK_def = .true.
 logical, parameter :: TriDiag_def = .false.
 logical,  parameter :: updatedmcr_def = .true.
@@ -133,7 +131,6 @@ ts_istep=0
 ! Reading TS Options from fdf ...
 call fdf_global_get(savetshs,'TS.SaveHS',savetshs_def)
 call fdf_global_get(onlyS,'TS.onlyS',onlyS_def)
-call fdf_global_get(mixH,'TS.MixH',mixH_def)
 call fdf_global_get(voltfdf,'TS.Voltage',voltfdf_def,'Ry') 
 call fdf_global_get(USEBULK,'TS.UseBulkInElectrodes',USEBULK_def)
 call fdf_global_get(TriDiag,'TS.TriDiag',TriDiag_def)
@@ -157,7 +154,6 @@ call fdf_global_get(UseVFix,'TS.UseVFix',UseVFix_def)
 ! Output Used Options in OUT file ....
 if (ionode) then
  write(*,1) 'ts_read_options: Save H and S matrices        =', savetshs
- write(*,1) 'ts_read_options: Mixing Hamiltonian           =', mixH
  write(*,6) 'ts_read_options: TranSIESTA Voltage           =', voltfdf/eV,' Volts'
 ! write(*,1) 'ts_read_options: Bulk Values in Elecs    =', USEBULK
  write(*,1) 'ts_read_options: TriDiag                      =', TriDiag 
