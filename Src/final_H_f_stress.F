@@ -178,14 +178,6 @@
         endif
       endif
         
-!!!! Possible BUG: Dold should not be overwritten in the last iteration
-! Save present density matrix ........................................
-      do is = 1,nspin
-        do io = 1,maxnh
-          Dold(io,is) = Dscf(io,is)
-          Eold(io,is) = Escf(io,is)
-        enddo
-      enddo        
 
 ! Save Hamiltonian and overlap matrices ............................
 ! Only in HSX format now.  Use Util/HSX/hsx2hs to generate an HS file

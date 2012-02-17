@@ -1,5 +1,25 @@
 
 -----------------------------------------------------------------------
+2012-02-17  Alberto Garcia <albertog@icmab.es>   trunk-391-sparse-4
+Avoid re-use of arrays as scratch
+
+Routines in the polarization (KSV) and optical modules
+were re-using some arrays in sparse_matrices as scratch.
+Now they do their own allocation, for clarity.
+
+Also, in post_scf_work, set in more clear terms the questions
+regarding the copying of Dold and Dscf.
+
+modified:
+  Src/born_charge.F
+  Src/final_H_f_stress.F
+  Src/ksv.f
+  Src/optical.F
+  Src/overfsm.f
+  Src/post_scf_work.F
+  Src/siesta_analysis.F
+
+-----------------------------------------------------------------------
 2012-02-17  Alberto Garcia <albertog@icmab.es>   trunk-391-sparse-3
 Generalize the option to mix the Hamiltonian
 

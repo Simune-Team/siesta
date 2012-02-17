@@ -16,7 +16,7 @@
       use m_spin,         only: nspin
       use m_ksv,          only: KSV_pol
       use siesta_geom,    only: shape
-      use sparse_matrices, only: Work=>H_kin  ! For scratch only!
+
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
@@ -73,7 +73,7 @@
          call KSV_pol(na_u, na_s, xa, rmaxo, scell, ucell,
      .        no_u, no_l, no_s, nspin, qspin,
      .        maxnh, nkpol, numh, listhptr, listh,
-     .        H, S, Work, xijo, indxuo, isa, iphorb,
+     .        H, S, xijo, indxuo, isa, iphorb,
      .        iaorb, lasto, shape,
      .        nkpol,kpol,wgthpol, polR, polxyz)
       endif
