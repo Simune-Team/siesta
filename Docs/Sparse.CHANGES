@@ -1,5 +1,9 @@
 
 -----------------------------------------------------------------------
+2012-02-20  Alberto Garcia <albertog@icmab.es>   trunk-396-sparse-5
+Sync with trunk-396
+
+-----------------------------------------------------------------------
 2012-02-17  Alberto Garcia <albertog@icmab.es>   trunk-391-sparse-5
 Take Escf initialization away from new_dm
 

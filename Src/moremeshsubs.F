@@ -1858,6 +1858,7 @@ C     Local variables
         call die()
       endif
 
+      nullify(SBUF,RBUF)
       call re_alloc( SBUF, 1, BS*NN*nspin, 'SBUF', 'moreMeshSubs' )
       call re_alloc( RBUF, 1, BS*NN*nspin, 'RBUF', 'moreMeshSubs' )
 
@@ -2263,6 +2264,7 @@ C     Local variables
       dimB(2) = (idis%box(2,2,Cnode)-idis%box(1,2,Cnode)+1)*NSM
       dimB(3) = (idis%box(2,3,Cnode)-idis%box(1,3,Cnode)+1)*NSM
 
+      nullify(SBUF,RBUF)
       call re_alloc( SBUF, 1, BS*NN*nspin, 'SBUF', 'moreMeshSubs' )
       call re_alloc( RBUF, 1, BS*NN*nspin, 'RBUF', 'moreMeshSubs' )
 

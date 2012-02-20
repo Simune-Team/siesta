@@ -6,6 +6,113 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-02-20  16:30:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-396
+Fixes: pointer initialization, logical assignment
+
+In cgvc_zmatrix, two scratch pointers were not properly initialized
+before use.
+
+In nlefsm, two logical arrays were initialized with '0', instead of
+'.false.' (Thanks to Carlos Sanz for pointing this out).
+
+modified:
+  Src/cgvc_zmatrix.F
+  Src/nlefsm.f
+
+-----------------------------------------------------------------------
+2012-02-20  15:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-395
+Avoid broadcast after fdf operation in tbtrans
+
+With the new fdf interface all nodes get the appropriate values
+without a broadcast. Tbtrans (in routine reinit_tb) still called
+mpi_bcast. This led to errors in some systems.
+
+modified:
+  Util/TBTrans/reinit_tb.F
+
+-----------------------------------------------------------------------
+2012-02-20  13:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-394
+Update TranSiesta tests. Cosmetics
+
+*  Update the TranSiesta-TBTrans test directories
+  
+  TranSiesta-TBTrans specific tests now reside in
+  Tests/TranSiesta-TBTrans. These tests (currently ts_fast and ts_au)
+  only make sense if the "transiesta" flavor of Siesta has been compiled
+  in (by executing "make transiesta" in a fresh build directory), so
+  they are not executed by default.
+  
+  Reference outputs can now be found in
+  Tests/Reference/TranSiesta-TBTrans.  Note that these reference
+  outputs have not yet been updated: they correspond to siesta-3.1.
+  
+  The manual has been updated to refer to the Examples/TranSiesta
+  directory (which has been created) for the guided calculation.
+  
+  removed:
+    Tests/transiesta/Fast/
+    Tests/transiesta/au_111_capacitor/
+    Tests/transiesta/bulk_au_111/
+    Tests/transiesta/elec_au_111_abc/
+  added:
+    Tests/Reference/TranSiesta-TBTrans/
+    Tests/Reference/TranSiesta-TBTrans/ts_au/
+    Tests/Reference/TranSiesta-TBTrans/ts_fast/
+    Tests/TranSiesta-TBTrans/ts_au/
+    Examples/TranSiesta
+  renamed:
+    Tests/transiesta/ => Tests/TranSiesta-TBTrans/
+    Tests/ts_fast/ => Tests/TranSiesta-TBTrans/ts_fast/
+  modified:
+    Tests/TranSiesta-TBTrans/ts_fast/makefile
+    Tests/TranSiesta-TBTrans/ts_fast/script.sh
+    Tests/Makefile
+    Tests/script_ts.mk
+    Docs/siesta.tex
+
+*  Removed call to BLAS routine zdotc in tbtrans. Replaced it
+   by an explicit loop.
+
+*  Clarify the mention of "hybrid" functionals in the manual
+  
+  modified:
+    Docs/siesta.tex
+
+*  Remove order-N test from standard list. Add note.
+
+  As it does not run well in parallel, the order-N
+  test has been removed from the standard list
+  in the Makefile for the Tests directory.
+  
+  added:
+    Tests/h2o_orderN/000README
+  modified:
+    Tests/Makefile
+
+-----------------------------------------------------------------------
+2012-02-16  15:25:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-393
+Fix pointer initialization in moremeshsubs
+
+Two workspace pointers were not properly nullified before allocation.
+
+Thanks to Olivier Coulaud for the report and the fix.
+
+modified:
+  Src/moremeshsubs.F
+
+-----------------------------------------------------------------------
+2012-02-16  10:35:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-392
+Proper closing of files in m_iorho
+
+Due to a programming error, the calls to io_close in read_rho and
+check_rho were incorrectly placed.
+
+Thanks to Carlos Sanz for the report and the fix.
+
+modified:
+  Src/m_iorho.F
+
+-----------------------------------------------------------------------
 2012-02-15  18:05:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-391
 Clarify flow of data in setup_H0
 
