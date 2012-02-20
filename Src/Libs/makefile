@@ -26,6 +26,8 @@ ZGESV_OBJS=  zgesv_lapack.o   # machine.o
 # Used in TBTrans
 ZGEEV_OBJS= zgeev_lapack.o
 #
+ESSL_OBJS= essl_lapack.o
+#
 default: linalg.a
 #
 libblas.a: blas.o
@@ -54,6 +56,11 @@ zgeev_lapack.a: $(ZGEEV_OBJS)
 	ar $(ARFLAGS_EXTRA) cru zgeev_lapack.a $(ZGEEV_OBJS)
 	$(RANLIB) zgeev_lapack.a
 	mv zgeev_lapack.a ..
+#
+essl_lapack.a: $(ESSL_OBJS)
+	ar $(ARFLAGS_EXTRA) cru essl_lapack.a $(ESSL_OBJS)
+	$(RANLIB) essl_lapack.a
+	mv essl_lapack.a ..
 #
 clean:
 	rm -f $(ALL_OBJS) *.a

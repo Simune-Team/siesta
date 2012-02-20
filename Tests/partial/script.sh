@@ -8,8 +8,11 @@ fractional=../../../../Util/VCA/fractional
 cp ../../Pseudos/O.psf .
 
 if [ ! -x $fractional ] ; then
-  echo "Compiling $fractional..."
-  (cd ../../../../Util/VCA ; make fractional)
+#  echo "Compiling $fractional..."
+#  (cd ../../../../Util/VCA ; make fractional)
+   echo -n "Please compile 'fractional' in "
+   echo "Util/VCA before running this test"
+   exit 1
 fi
 
 $fractional O  0.5

@@ -6,6 +6,45 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-02-20  16:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-397
+More documentation for tests. New .make file.
+
+* Added a new README file for the Tests directory and for the
+  new-style Transiesta-TBTrans tests
+
+* Add arch.make file for Marenostrum IBM supercomputer using ESSL
+    
+  Added the necessary LAPACK libraries in order to compile using ESSL on IBM.
+  ESSL are a set of system-optimized BLAS functions and subroutines.
+    
+  Use the following lines in your arch.make:
+    COMP_LIBS = essl_lapack.a
+    LIBS      = -lessl
+  
+  The new file Src/Sys/marenostrum-mpi-essl-netcdf-64.make is appropriate
+  for 64 bit operation.
+    
+  (Thanks to Oscar Paz)
+  
+  added:
+    Src/Sys/marenostrum-mpi-essl-netcdf-64.make
+    Src/Libs/essl_lapack.f
+  modified:
+    Src/Libs/makefile
+    Src/Makefile
+
+* Make sure 'partial' is compiled in test
+  
+  The 'partial' test is not completely set up for transparent operation,
+  and the needed executable in Util/VCA needs to be pre-compiled.
+  
+  The script stops with a message if this is not done (note that this
+  test is not executed by default from the top Makefile).
+  
+  modified:
+    Tests/partial/script.sh
+
+-----------------------------------------------------------------------
 2012-02-20  16:30:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-396
 Fixes: pointer initialization, logical assignment
 

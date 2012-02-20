@@ -242,6 +242,10 @@ zgesv_lapack.a:  Libs/zgesv_lapack.f
 	@echo "==> Compiling zgesv_lapack.a in Libs..."
 	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" zgesv_lapack.a)
 #
+essl_lapack.a: Libs/essl_lapack.f
+	@echo "==> Compiling essl_lapack.a in Libs..."
+	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" essl_lapack.a)
+#
 
 version: version.F90
 	@echo
