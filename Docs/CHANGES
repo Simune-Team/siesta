@@ -6,6 +6,20 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-02-20  16:30:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-396
+Fixes: pointer initialization, logical assignment
+
+In cgvc_zmatrix, two scratch pointers were not properly initialized
+before use.
+
+In nlefsm, two logical arrays were initialized with '0', instead of
+'.false.' (Thanks to Carlos Sanz for pointing this out).
+
+modified:
+  Src/cgvc_zmatrix.F
+  Src/nlefsm.f
+
+-----------------------------------------------------------------------
 2012-02-20  15:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-395
 Avoid broadcast after fdf operation in tbtrans
 

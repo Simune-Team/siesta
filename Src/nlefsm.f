@@ -158,10 +158,10 @@ C Allocate local memory
       Vi(1:no) = 0.0_dp
       nullify( listed )
       call re_alloc( listed, 1, no, 'listed', 'nlefsm' )
-      listed(1:no) = 0
+      listed(1:no) = .false.
       nullify( listedall )
       call re_alloc( listedall, 1, no, 'listedall', 'nlefsm' )
-      listedall(1:no) = 0
+      listedall(1:no) = .false.
 
       if (.not. matrix_elements_only) then
          nullify( Di )
