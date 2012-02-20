@@ -6,6 +6,17 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-02-20  15:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-395
+Avoid broadcast after fdf operation in tbtrans
+
+With the new fdf interface all nodes get the appropriate values
+without a broadcast. Tbtrans (in routine reinit_tb) still called
+mpi_bcast. This led to errors in some systems.
+
+modified:
+  Util/TBTrans/reinit_tb.F
+
+-----------------------------------------------------------------------
 2012-02-20  13:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-394
 Update TranSiesta tests. Cosmetics
 
