@@ -127,7 +127,7 @@ subroutine setup_dmhs_netcdf_file( maxnd, nbasis, nspin,    &
       call check( nf90_def_var(ncid,'dm_out',nf90_float,(/nnzs_id,nspin_id,scf_step_id/),dm_out_id))
       call check( nf90_put_att(ncid,dm_out_id,'Description',"Density matrix (OUT)"))
       call check( nf90_def_var(ncid,'h',nf90_float,(/nnzs_id,nspin_id,scf_step_id/),h_id))
-      call check( nf90_put_att(ncid,h_id,'Description',"Hamiltonian"))
+      call check( nf90_put_att(ncid,h_id,'Description',"Hamiltonian (in Ry)"))
 
       if (norbs /= no_s) then
          call check( nf90_def_var(ncid,'indxuo',nf90_int,(/no_s_id/),indxuo_id))

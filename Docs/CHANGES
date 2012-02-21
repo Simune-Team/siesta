@@ -6,6 +6,36 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-02-21  17:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-400
+Assorted bugfixes and cosmetics
+
+Bugfixes for recent features:
+
+* Include support for domain_decom in Denchar makefile
+
+Cosmetic changes:
+
+ - State that the units for mprop distances are Ang
+ - Clarify error message in ts_iohs regarding nspin
+ - Write eigenvalues in eV in CML file (ioeig)
+ - Use $(AR) instead of 'ar' in all makefiles
+ - Specify Ry units for H in DMHS netcdf files
+ - Fix call to 'memory' in Denchar/stsofr.f
+
+modified:
+  Src/Libs/makefile
+  Src/MPI/Makefile
+  Src/Sys/DOCUMENTED-TEMPLATE.make
+  Src/iodmhs_netcdf.F90
+  Src/ioeig.f
+  Src/m_ts_io.F90
+  Src/wxml/makefile
+  Src/xmlparser/makefile
+  Util/COOP/subs.f90
+  Util/Denchar/Src/Makefile
+  Util/Denchar/Src/stsofr.f
+
+-----------------------------------------------------------------------
 2012-02-21  17:05:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-399
 Some cleanup and new options for O(N) solver code
 

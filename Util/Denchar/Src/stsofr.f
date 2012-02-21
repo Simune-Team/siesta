@@ -132,7 +132,7 @@ C Allocate some variables ---------------------------------------------
       PI = 4.0D0 * ATAN(1.0D0)
 
       ALLOCATE(LDOS(NE))
-      CALL MEMORY('A','D',LDOS,'wavofr')
+      CALL MEMORY('A','D',SIZE(LDOS),'stsofr')
 C Initiallize ldos vector ---------------------------------------------
 
       DO IE = 1,NE
@@ -145,23 +145,23 @@ C Initialize neighbour subroutine --------------------------------------
       RMAX = RMAXO
       NNA  = MAXNA
       IF (ALLOCATED(JNA)) THEN
-        CALL MEMORY('D','I',SIZE(JNA),'wavofr')
+        CALL MEMORY('D','I',SIZE(JNA),'stsofr')
         DEALLOCATE(JNA)
       ENDIF
       IF (ALLOCATED(R2IJ)) THEN
-        CALL MEMORY('D','D',SIZE(R2IJ),'wavofr')
+        CALL MEMORY('D','D',SIZE(R2IJ),'stsofr')
         DEALLOCATE(R2IJ)
       ENDIF
       IF (ALLOCATED(XIJ)) THEN
-        CALL MEMORY('D','D',SIZE(XIJ),'wavofr')
+        CALL MEMORY('D','D',SIZE(XIJ),'stsofr')
         DEALLOCATE(XIJ)
       ENDIF
       ALLOCATE(JNA(MAXNA))
-      CALL MEMORY('A','I',MAXNA,'wavofr')
+      CALL MEMORY('A','I',MAXNA,'stsofr')
       ALLOCATE(R2IJ(MAXNA))
-      CALL MEMORY('A','D',MAXNA,'wavofr')
+      CALL MEMORY('A','D',MAXNA,'stsofr')
       ALLOCATE(XIJ(3,MAXNA))
-      CALL MEMORY('A','D',3*MAXNA,'wavofr')
+      CALL MEMORY('A','D',3*MAXNA,'stsofr')
 
       FIRST = .TRUE.
       DO I = 1,3
@@ -356,7 +356,7 @@ C Print out LDOS -------------------------------------------------
       CALL IO_CLOSE(UNIT)
 
 
-      CALL MEMORY('D','D',SIZE(LDOS),'wavofr')
+      CALL MEMORY('D','D',SIZE(LDOS),'stsofr')
       DEALLOCATE(LDOS)
 
 
