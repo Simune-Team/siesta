@@ -43,7 +43,7 @@ C
 
       module on_core
 
-        use precision
+        use precision, only: dp
 
         implicit none
 

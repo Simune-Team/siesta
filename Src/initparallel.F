@@ -17,13 +17,20 @@ C  Julian Gale, NRI, Curtin Uni, March 2004
 C
       use precision
       use fdf
+      use m_fdf_global, only: fdf_global_get
+      use siesta_options, only: want_domain_decomposition
+      use siesta_options, only: want_spatial_decomposition
+      use siesta_options, only: isolve, SOLVE_ORDERN
+      use siesta_options, only: rcoor
       use parallel,     only : Node, Nodes, BlockSize, ProcessorY
       use parallelsubs, only : set_processorY, set_BlockSizeDefault
       use parallelsubs, only : set_processorYdefault
+      use parallelsubs, only : WhichNodeOrb, GetNodeOrbs
+      use parallelsubs, only : LocalToGlobalOrb, GlobalToLocalOrb
       use spatial
       use sys
       use alloc,        only : re_alloc
-      use siesta_options
+      use domain_decom, only: use_dd, use_dd_perm, preSetOrbitLimits
 
       implicit none
 C
@@ -43,7 +50,7 @@ C
       integer       :: procYdefault
       integer       :: procYval
 #endif
-      integer       :: ii
+      integer       :: ii, j, LOrb, GOrb, iu
       integer       :: maxorb
       integer       :: ncell(3)
       integer       :: ncelltotal
@@ -81,13 +88,25 @@ C  Initialise on first call
       endif
 
 C Set spatial decomposition flag according to SCF method
+
+
+      lspatial = .false.
+#ifdef MPI
       if (isolve.eq.SOLVE_ORDERN) then
-        lspatial = .true.
+         if (want_domain_decomposition) then
+            use_dd = .true.
+            use_dd_perm = .false.
+            lspatial = .false.
+         else
+            lspatial = want_spatial_decomposition
+         endif
       else
-        lspatial = .false.
+         lspatial = .false.
       endif
+#endif
 
 C Spatial decomposition flag
+
       rspatial = fdf_physical('RcSpatial',0.0d0,'Bohr')
 
 C Processor grid
@@ -157,7 +176,7 @@ C Check that cut-off is less than cell parameter
         endif
       endif
 
-      if (isolve.eq.SOLVE_DIAGON) then
+      if (.not. lspatial) then
 C Set BlockSize
 #ifdef MPI
         call set_blocksizedefault(Nodes,no_u,blocksizedefault)
@@ -170,21 +189,19 @@ C Set BlockSize
 #ifdef MPI
 C Output indication of parallel parameters
       if (Node.eq.0) then
-        if (isolve.eq.SOLVE_DIAGON) then
-          write(6,'(/,a,2i4,/)')
-     .        '* ProcessorY, Blocksize: ', procYval, Blocksize
-        else if (isolve.eq.SOLVE_ORDERN) then
-          write(6,'(/,a,f8.4,/)')
+        if (lspatial) then
+           write(6,'(/,a,f8.4,/)')
      .        '* Spatial decomposition: Cutoff = ',rcmax
         else
-          write(6,'(/,a,i4,/)')
-     .        '* ProcessorY: ', procYval
+           write(6,'(/,a,2i4,/)')
+     .        '* ProcessorY, Blocksize: ', procYval, Blocksize
         endif
       endif
 #endif
 
 C If spatial perform allocation of atoms to processors
       if (lspatial) then
+
         call setspatial(na_u,xa,ucell,rcmax,lspatialok)
         if (.not.lspatialok) then
           call die('Spatial decomposition failed')
@@ -195,7 +212,12 @@ C If spatial perform allocation of atoms to processors
         else
           ProcessorY = 1
         endif
-      else
+        if (Node.eq.0) then
+           write(6,'(/,a,i4,/)')
+     .        '* ProcessorY ', processorY
+        endif
+
+      elseif (.not. use_dd) then
 C
 C  Build dummy lists linking orbitals with parallel structure
 C
@@ -207,12 +229,45 @@ C
         call re_alloc( nOrbPerNode, 1, Nodes, 'nOrbPerNode',
      &                 'initparallel' )
 C
-        nOrbPerNode(1) = maxorb
-        do ii = 1,maxorb
-          nL2G(ii,1) = ii
-          nG2L(ii) = ii
-          nNode(ii) = 0
+
+        do j = 1, Nodes
+           call GetNodeOrbs(maxorb,j-1,Nodes,nOrbPerNode(j))
         enddo
+        nG2L(:) = 0
+        do ii = 1,maxorb
+          call GlobalToLocalOrb(ii,Node,Nodes,nG2L(ii))
+          call WhichNodeOrb(ii, Nodes, nNode(ii))
+          do j = 1, Nodes
+             call LocalToGlobalOrb(ii,j-1,Nodes,nL2G(ii,j))
+          enddo
+        enddo
+
+         if (node==0) then
+            call io_assign(iu)
+            open(unit=iu,file="BLOCK_INDEXES",form="formatted")
+            write(iu,*) "nl2g"
+            do Lorb = 1, no_u	
+               write(iu, "(i6,8i9)") Lorb, (nL2G(Lorb,j),j=1,Nodes)
+            enddo
+            write(iu,*) "nNode"
+            do Gorb = 1, no_u	
+               write(iu, "(i6,i5)") Gorb, nNode(Gorb)
+            enddo
+            write(iu,*) "nG2L (node 0)"
+            do Gorb = 1, no_u	
+               write(iu, "(i6,i5)") Gorb, nG2L(Gorb)
+            enddo
+            write(iu,*) "nOrbPerNode"
+            do j = 1, Nodes
+               write(iu, "(i6,i8)") j-1, nOrbPerNode(j)
+            enddo
+            call io_close(iu)
+         endif
+
+      endif
+
+      if (use_dd) then
+        call preSetOrbitLimits( no_u )
       endif
 
 #ifdef DEBUG

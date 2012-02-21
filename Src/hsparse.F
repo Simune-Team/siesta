@@ -51,13 +51,13 @@ C
       subroutine hsparse( negl, cell, nsc, na, isa, xa,
      &                    lasto, lastkb, iphorb, iphkb,     
      &                    nlhmax, gamma,
-     $                    set_xijo)
+     $                    set_xijo, folding)
 
       use precision
       use parallel,        only : Node, Nodes
       use parallelsubs,    only : GetNodeOrbs, GlobalToLocalOrb
-      use atmfuncs,      only : rcut, nofis, nkbfis
-      use atm_types,     only : nspecies
+      use atmfuncs,        only : rcut, nofis, nkbfis
+      use atm_types,       only : nspecies
       use listsc_module,   only : listsc_init
       use sorting
       use neighbour,       only : jna=>jan, xij, r2ij, maxna=>maxnna
@@ -78,6 +78,7 @@ C
       integer,        intent(out)   :: nlhmax
       logical, intent(in)           :: gamma
       logical, intent(in)     :: set_xijo
+      logical, intent(out)    :: folding
 
       external               timer
 
@@ -124,7 +125,7 @@ C     Check size of internal arrays
       nuotot = lasto(nua)
       no = nuotot * ncells
 
-!     Numero de orbitales del proceso MPIs
+!     Number of orbitals in local node
       call GetNodeOrbs(nuotot,Node,Nodes,nuo)
 
 C     Allocate local arrays
@@ -193,6 +194,8 @@ C     Initialize vector switch only once
         listhtmp(io) = 0
       enddo
 
+      folding = .false.
+
 C------------------------------------C
 C     Find number of non-zeros in H  C
 C------------------------------------C
@@ -246,7 +249,7 @@ C           Find orbitals connected by direct overlap or
 C           through a KB projector
             do jnat = 1,nna
               ja = jna(jnat)
-                js = isa(ja)
+              js = isa(ja)
               rij = sqrt( r2ij(jnat) )
               do jo = lasto(ja-1)+1,lasto(ja)
 
@@ -352,7 +355,7 @@ C           Find overlaping KB projectors
                  do kna = 1,nna
                     ka = jna(kna)
                     rik = sqrt( r2ij(kna) )
-                  ks = isa(ka)
+                    ks = isa(ka)
                                 ! It is only necessary to check with
                                 ! the *largest* KB projector
                     rck = rkbmax(ks)
@@ -368,7 +371,7 @@ C           Find orbitals connected by direct overlap or
 C           through a KB projector
             do jnat = 1,nna
               ja = jna(jnat)
-                js = isa(ja)
+              js = isa(ja)
               rij = sqrt( r2ij(jnat) )
               do jo = lasto(ja-1)+1,lasto(ja)
 
@@ -397,6 +400,7 @@ C Find if jo overlaps with a KB projector
 
                    if (connected) then
                      if (conect(jo)) then
+                        folding = .true.
 
                        ! This test is now deferred to be able
                        ! to catch multiple images while avoiding
@@ -448,6 +452,9 @@ C           Restore conect array for next orbital io
         enddo       ! io
       enddo         ! ia
 
+!!        print "(a5,i3,a40,3i8)",
+!!     $         "Node: ", Node, "in hsparse nuo, nuotot, nlhmax: ",
+!!     $         nuo, nuotot, nlhmax
 
 C     Initialize listsc
       call LISTSC_INIT( nsc, nuotot )
