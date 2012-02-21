@@ -6,6 +6,16 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-02-21  14:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-398
+Avoid broadcast after fdf operation in m_ts_options
+
+With the new fdf interface all nodes get the appropriate values
+without a broadcast. There was a fossil mpi_bcast in m_ts_options.
+
+modified:
+  Src/m_ts_options.F90
+
+-----------------------------------------------------------------------
 2012-02-20  16:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-397
 More documentation for tests. New .make file.
 
