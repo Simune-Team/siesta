@@ -6,6 +6,204 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-02-22  13:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-401
+Assorted cosmetic and compilation fixes
+
+* Include missing LDFLAGS symbol in some Util makefiles
+
+modified:
+  Util/COOP/Makefile
+  Util/Contrib/APostnikov/Makefile
+  Util/test-xml/makefile
+
+* Obsolete debug information was still being written to unit 23 in
+  domain_decom, including a call to "flush".
+  
+modified:
+  Src/domain_decom.F
+
+* Fix makefile symbols in Util/STM/ol-stm
+  The new domain_decomposition symbols and dependencies were missing.
+
+modified:
+  Util/STM/ol-stm/Src/Makefile
+
+* Updated bug reporting guidelines
+
+added:
+  Docs/REPORTING_BUGS
+modified:
+  Docs/siesta.tex
+  README
+
+* Do not count ghost atoms when printing ionic charge
+
+This was purely cosmetic, but misleading: the variable
+zvaltot now records only the sum of (pseudo)protons in
+non-ghost species.
+
+(+ cosmetic fix in the printing of lmxkb for ghosts
+species in .ion files)
+
+modified:
+  Src/atomlist.f
+  Src/basis_types.f
+
+* Fix the script in Tests/partial
+  Now it can automatically compile the 'fractional' program
+
+modified:
+  Tests/partial/script.sh
+
+* Add Util/clean_all.sh script
+* Remove scratch fdf directories in Util/GenBasis and Util/Vibra
+
+removed:
+  Util/Gen-basis/fdf/
+  Util/Vibra/Src/fdf/
+added:
+  Util/clean_all.sh
+
+
+
+-----------------------------------------------------------------------
+2012-02-21  17:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-400
+Assorted bugfixes and cosmetics
+
+Bugfixes for recent features:
+
+* Include support for domain_decom in Denchar makefile
+
+Cosmetic changes:
+
+ - State that the units for mprop distances are Ang
+ - Clarify error message in ts_iohs regarding nspin
+ - Write eigenvalues in eV in CML file (ioeig)
+ - Use $(AR) instead of 'ar' in all makefiles
+ - Specify Ry units for H in DMHS netcdf files
+ - Fix call to 'memory' in Denchar/stsofr.f
+
+modified:
+  Src/Libs/makefile
+  Src/MPI/Makefile
+  Src/Sys/DOCUMENTED-TEMPLATE.make
+  Src/iodmhs_netcdf.F90
+  Src/ioeig.f
+  Src/m_ts_io.F90
+  Src/wxml/makefile
+  Src/xmlparser/makefile
+  Util/COOP/subs.f90
+  Util/Denchar/Src/Makefile
+  Util/Denchar/Src/stsofr.f
+
+-----------------------------------------------------------------------
+2012-02-21  17:05:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-399
+Some cleanup and new options for O(N) solver code
+
+The O(N) solver code is being cleaned up, and more options are being
+added, but should still be used with care and for systems for which
+it is appropriate.
+
+* More documentation and better variable names and structure in some
+  files.
+
+* Stop if O(N) chemical potential calculation is requested in parallel
+  
+  The code in chempot is not correctly parallelized yet.  Now the
+  program stops at the beginning of the run if any of the relevant fdf
+  options is enabled.
+  
+* Implement graph-based domain decomposition for O(N) routines
+  
+  Based on code by Rogeli Grima (BSC).
+  
+  It is enabled by defining
+  
+  UseDomainDecomposition T
+  
+  in the fdf file. NOTE that if you use NetCDF you also need:
+  
+  WriteDMNetcdf F
+  WriteDMHS-netcdf F
+  
+  until a non-local call to LocalToGlobalOrb is fixed.
+  
+  The METIS library (www.cs.umn.edu/~metis) is also needed. Calls to
+  this library are wrapped in preprocessor blocks controlled by the
+  symbol
+  
+  ON_DOMAIN_DECOMP
+  
+  which needs to be specified at (parallel) compile time if domain
+  decomposition is desired.
+
+  Now, by default, Julian's Gale spatial decomposition code is
+  bypassed, unless the fdf variable
+
+        UseSpatialDecomposition 
+
+  is set.  The default is now to use block-cyclic decomposition, but
+  any serious calculation should use one of the two more sophisticated
+  approaches. A further refinement is in the pipeline.
+
+* Add the Util/ON directory with lwf2cdf program
+
+  This utility program converts the information in the LWF file 
+  to netCDF format.
+
+(A. Garcia, May-July 2011, Feb 2012)
+(Backported from 3.1)
+
+-----------------------------------------------------------------------
+2012-02-21  14:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-398
+Avoid broadcast after fdf operation in m_ts_options
+
+With the new fdf interface all nodes get the appropriate values
+without a broadcast. There was a fossil mpi_bcast in m_ts_options.
+
+modified:
+  Src/m_ts_options.F90
+
+-----------------------------------------------------------------------
+2012-02-20  16:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-397
+More documentation for tests. New .make file.
+
+* Added a new README file for the Tests directory and for the
+  new-style Transiesta-TBTrans tests
+
+* Add arch.make file for Marenostrum IBM supercomputer using ESSL
+    
+  Added the necessary LAPACK libraries in order to compile using ESSL on IBM.
+  ESSL are a set of system-optimized BLAS functions and subroutines.
+    
+  Use the following lines in your arch.make:
+    COMP_LIBS = essl_lapack.a
+    LIBS      = -lessl
+  
+  The new file Src/Sys/marenostrum-mpi-essl-netcdf-64.make is appropriate
+  for 64 bit operation.
+    
+  (Thanks to Oscar Paz)
+  
+  added:
+    Src/Sys/marenostrum-mpi-essl-netcdf-64.make
+    Src/Libs/essl_lapack.f
+  modified:
+    Src/Libs/makefile
+    Src/Makefile
+
+* Make sure 'partial' is compiled in test
+  
+  The 'partial' test is not completely set up for transparent operation,
+  and the needed executable in Util/VCA needs to be pre-compiled.
+  
+  The script stops with a message if this is not done (note that this
+  test is not executed by default from the top Makefile).
+  
+  modified:
+    Tests/partial/script.sh
+
+-----------------------------------------------------------------------
 2012-02-20  16:30:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-396
 Fixes: pointer initialization, logical assignment
 

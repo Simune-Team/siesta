@@ -39,13 +39,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, trunk-392}}
+{\Huge {\bf S I E S T A \, \, trunk-401}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large June 21, 2011 }
+{\Large February 22, 2012 }
 
 \vspace{1.5cm}
 
@@ -3630,7 +3630,7 @@ egg-box energy are given in the {\bf EggboxRemove} block.
 Logical variable to neglect or compute interactions between orbitals
 which do not overlap. These come from the KB projectors.
 Neglecting them makes the Hamiltonian more sparse, and
-the Order-N calculation faster.  USE WITH CARE!!!
+the calculation faster.  {\bf Use with care}
 
 {\it Default value:} {\tt .false.}
 
@@ -3701,11 +3701,40 @@ to make sure that the unit cell is large enough.
 
 {\sc Siesta} can use two methods to determine the electronic structure
 of the system. One is standard diagonalization, which works for all
-systems. The other is based on the direct minimization of a special
-functional over a set of localized functions. The latter scales in
-principle linearly with the size of the system, but is quite fragile
-and only works for systems with clearly separated occupied and empty
-states.  The default is to use diagonalization.
+systems and has a cubic scaling with the size. The other is based on
+the direct minimization of a special functional over a set of
+localized functions. The latter scales in principle linearly with the
+size of the system (only if the size is larger than the radial cutoff
+for the local solution wave-functions), but is quite fragile and
+substantially more difficult to use, and only works for systems with
+clearly separated occupied and empty states.  The default is to use
+diagonalization.
+
+The calculation of the H and S matrix elements is always done with an
+O(N) method. The actual scaling is not linear for small systems, but
+it becomes O(N) when the system dimensions are larger than the scale
+of orbital r$_c$'s.
+
+The relative importance of both parts of the computation (matrix
+elements and solution) depends on the size and quality of the
+calculation. The mesh cutoff affects only the matrix-element
+calculation; orbital cutoff radii affect the matrix elements and the
+linear-scaling solver, but not the diagonalization; the need for {\bf
+  k}-point sampling affects the solvers only, and the number of basis
+orbitals affects them all.
+
+In practice, the vast majority of users employ diagonalization for the
+calculation of the electronic structure. This is so because the vast
+majority of calculations would not benefit from the O(N) solver (most
+of the calculations done are for intermediate system sizes, for varied
+reasons e.g.  the long time scales needed in MD simulations for
+growing system sizes).
+
+Since it is used less often, bugs creeping into the O(N) solver have
+been more resilient than in more popular bits of the code.  Work is
+ongoing to clean and automate the O(N) process, to make the solver
+more user-friendly and robust.
+
 
 \begin{description}
 \itemsep 10pt
@@ -4083,6 +4112,10 @@ Overrides the value of {\bf ON.ChemicalPotential}, setting
 it to {\tt .true.}.
 
 {\it Default value:} {\tt .false.}
+
+{\bf Note:} This option does not work in parallel. An alternative
+is to obtain the approximate value of the chemical potential using
+an initial diagonalization.
 
 \item[{\bf ON.ChemicalPotentialRc}]  ({\it real length}):
 \index{ON.ChemicalPotentialRc@{\bf ON.ChemicalPotentialRc}}
@@ -5296,22 +5329,59 @@ case.
 
 {\it Default value:}  false
 
+\end{description}
+
+\subsubsection{Parallel decompositions for O(N)}
+\label{parallel-on}
+
+Apart from the default block-cyclic decomposition of the orbital data,
+O(N) calculations can use other schemes which should be more
+efficient: spatial decomposition (based on atom proximity), and domain
+decomposition (based on the most efficient abstract partition of the
+interaction graph of the Hamiltonian). 
+
+\begin{description}
+
+\item[{\bf UseDomainDecomposition}] ({\it logical}):
+  \index{UseDomainDecomposition@{\bf UseDomainDecomposition}} This
+  option instructs the program to employ a graph-partitioning
+  algorithm (using the {\tt METIS} library (See {\tt
+    www.cs.umn.edu/~metis}) to find an efficient distribution of the
+  orbital data over processors.  To use this option (meaningful only
+  in parallel) the program has to be compiled with the preprocessor
+  option {\tt ON\_DOMAIN\_DECOMP} and the {\tt METIS} library has to
+  be linked in.
+
+{\it Default value:}  false
+
+\item[{\bf UseSpatialDecomposition}] ({\it logical}):
+  \index{UseSpatialDecomposition@{\bf UseSpatialDecomposition}} When
+  performing a parallel order N calculation, this option instructs the
+  program to execute a spatial decomposition algorithm in which the
+  system is divided into cells, which are then assigned, together with
+  the orbitals centered in them, to the different processors. The size
+  of the cells is, by default, equal to the maximum distance at which
+  there is a non-zero matrix element in the Hamiltonian between two
+  orbitals, or the radius of the Localized Wannier function - which
+  ever is the larger. If this is the case, then an orbital will only
+  interact with other orbitals in the same or neighbouring
+  cells. However, by decreasing the cell size and searching over more
+  cells it is possible to achieve better load balance in some
+  cases. This is controlled by the variable {\bf RcSpatial}.
+
+NOTE: The distribution algorithm is quite fragile and a careful tuning
+of {\bf RcSpatial} might be needed. This option is therefore not
+enabled by default.
+
+{\it Default value:}  false
+
 \item[{\bf RcSpatial}] ({\it real distance}):
 \index{RcSpatial@{\bf RcSpatial}}
-When performing a parallel order N calculation, a domain/spatial
-decomposition algorithm is used in which the system is divided into
-cells, which are then assigned to the nodes. The size of the cells
-is, by default, equal to the maximum distance at which there is a non-zero
-matrix element in the Hamiltonian between two orbitals, or the
-radius of the Wannier function - which ever is the larger. If this is
-the case, then an orbital will only interact with other orbitals in the same
-or neighbouring cells. However, by decreasing the cell size and searching
-over more cells it is possible to achieve better load balance in some
-cases.
 
-{\it Use:} Controls the domain size during the spatial decomposition
+Controls the cell size during the spatial decomposition.
 
-{\it Default value:}  maximum of the matrix element range or the Wannier radius
+{\it Default value:}  maximum of the matrix element range or the
+Localized Wannier Function radius
 
 \end{description}
 
@@ -7146,51 +7216,10 @@ diagonalisation.
 
 \section{REPORTING BUGS}
 \index{bug reports} Your assistance is essential to help improve the
-program. If you find any problem, please report it back to us by email
-to {\tt siesta@uam.es}. Please keep in mind the following guidelines:
+program. If you find any problem, or would like to offer a suggestion
+for improvement, please follow the instructions in the file {\tt
+  Docs/REPORTING\_BUGS}
 
-\begin{itemize}
-
-\item To be useful, bug reports should be as detailed as possible, yet
-concise and to the point.
-
-\item Describe the exact steps you followed to see the problem. You
-  might want to include a copy of the fdf file you used in the
-  calculation, details about the pseudopotentials, etc, or provide a
-  means for us to download the information. If in doubt, do not send large
-  files. State the problem in the most concise form possible and we
-  will request more info from you.
-
-\item Be specific. Describe what happened and how it differs from what
-  should have happened.
-
-\item If you have any idea about how to fix the problem, by all means
-tell us!
-
-\item Please make sure that your bug report includes:
-
-\begin{itemize}
-
-\item Your name and email address.  This is essential for a proper
-followup of the problem.
-
-\item A brief one-line synopsis of the problem.
-
-\item The {\sc Siesta} version in which the problem was found. We
-  can't assume that you have the very latest version, and a problem
-  that exists in one version may not exist in another. Use the version
-  number printed at the top of any output file (also found in file
-  {\tt version.info} in the top directory).
-
-\item The platform on which the problem was found, and the operating
-  system and compiler version. State whether the problem appears in a
-  serial and/or parallel run. Including your arch.make is also a good idea.
-
-\end{itemize}
-
-\item Please limit your communication to one bug report per form or message.
-
-\end{itemize}
 
 \section{ACKNOWLEDGMENTS}
 
@@ -7496,6 +7525,10 @@ if the size of the domains is greater than the Wannier function radius and
 the range of matrix elements in the Hamiltonian. In order to achieve load
 balance, it may be advantageous to use smaller domain sizes. The domain
 size can be controlled through the {\bf RcSpatial} option.
+
+(A new option for domain decomposition, based on an abstract
+partitioning of the interaction graph associated to the Hamiltonian,
+has been added as of version 3.1.)
 
 In the current implementation of the domain decomposition parallelisation,
 both the local elements of the orbital coefficients in the Wannier functions

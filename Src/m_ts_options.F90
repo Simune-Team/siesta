@@ -108,15 +108,8 @@ use m_fdf_global, only: fdf_global_get
 use units, only: eV
 use m_ts_global_vars, only : ts_istep
 
-#ifdef MPI
-use mpi_siesta, only: MPI_Bcast, MPI_character, MPI_Comm_World
-#endif
 implicit none
 
-! Internal Variables
-#ifdef MPI
-integer :: MPIerror
-#endif
 
 if (isolve.eq.SOLVE_TRANSI) TSmode = .true.
 
@@ -210,11 +203,6 @@ if (IOnode) then
   write(*,'(3a)') repeat('*',24),' End: TS CHECKS AND WARNINGS ',repeat('*',26) 
   write(*,*)
 end if
-
-#ifdef MPI
-call MPI_BCast(smethod,20,MPI_character,0,MPI_Comm_World,MPIerror)
-#endif
-
 
 1   format(a,4x,l1)
 5   format(a,i5,a)

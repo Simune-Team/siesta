@@ -70,11 +70,11 @@ test-xml: wxml xmlparser $(OBJS)
 	@echo  "-- Some compilers might have trouble with the DOM subsystem. "
 	@echo  "-- Make sure also that 'INCFLAGS' is part of the default compilation rules in arch.make"
 	@echo
-	$(FC) $(FFLAGS) -o test-xml $(OBJS) $(LIBS)
+	$(FC) $(FFLAGS) $(LDFLAGS) -o test-xml $(OBJS) $(LIBS)
 
 LIST_OBJS= list_nodes.o $(DOM_OBJ_FILES) $(OTHER_OBJS)
 list:   
-	$(FC) $(FFLAGS)  -o list $(LIST_OBJS) $(LIBS)
+	$(FC) $(FFLAGS) $(LDFLAGS)  -o list $(LIST_OBJS) $(LIBS)
 
 clean:
 	rm -f *.o *.*d  test-xml list

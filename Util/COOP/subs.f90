@@ -174,7 +174,7 @@ CONTAINS
       write(6,"('    /-[ If COOP selected; as many blocks as projections wanted ]')")
       write(6,"('    |    curve_name              # COOP curve name')")
       write(6,"('    |    Subset I of AO (*)      # Reference atoms or orbitals')")
-      write(6,"('    |    d1 d2                   # Distance range')")
+      write(6,"('    |    d1 d2                   # Distance range in Angstrom')")
       write(6,"('    \-   Subset II of AO (*)     # Neighbour atoms or orbitals')")
       write(6,"('     (*) See below how to define subsets of AO')")
       write(6,"('     A final line with leading chars  ----  can signal the end of the input')")
