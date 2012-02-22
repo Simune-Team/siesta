@@ -164,9 +164,9 @@ C       Set orbitals to partitions
      &    call de_alloc( Gcomm%ind, 'comm%ind', 'scheComm' )
         call de_alloc( DomNeigh, 'DomNeigh', 'domainDecom' )
         call de_alloc( nNeigh, 'nNeigh', 'domainDecom' )
-        write(23,*) '  ******* ginvp & ginde & ginvp & ginde *******'
-        write(23,*) '  *******        Not deallocated        *******'
-        flush(23)
+!        write(23,*) '  ******* ginvp & ginde & ginvp & ginde *******'
+!        write(23,*) '  *******        Not deallocated        *******'
+!        flush(23)
 !        call de_alloc( nnzBou, 'nnzBou', 'domainDecom' )
 !        call de_alloc( nnzInt, 'nnzInt', 'domainDecom' )
 !        call de_alloc( ginvp, 'ginvp', 'domainDecom' )

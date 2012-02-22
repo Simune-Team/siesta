@@ -6,6 +6,67 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-02-22  13:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-401
+Assorted cosmetic and compilation fixes
+
+* Include missing LDFLAGS symbol in some Util makefiles
+
+modified:
+  Util/COOP/Makefile
+  Util/Contrib/APostnikov/Makefile
+  Util/test-xml/makefile
+
+* Obsolete debug information was still being written to unit 23 in
+  domain_decom, including a call to "flush".
+  
+modified:
+  Src/domain_decom.F
+
+* Fix makefile symbols in Util/STM/ol-stm
+  The new domain_decomposition symbols and dependencies were missing.
+
+modified:
+  Util/STM/ol-stm/Src/Makefile
+
+* Updated bug reporting guidelines
+
+added:
+  Docs/REPORTING_BUGS
+modified:
+  Docs/siesta.tex
+  README
+
+* Do not count ghost atoms when printing ionic charge
+
+This was purely cosmetic, but misleading: the variable
+zvaltot now records only the sum of (pseudo)protons in
+non-ghost species.
+
+(+ cosmetic fix in the printing of lmxkb for ghosts
+species in .ion files)
+
+modified:
+  Src/atomlist.f
+  Src/basis_types.f
+
+* Fix the script in Tests/partial
+  Now it can automatically compile the 'fractional' program
+
+modified:
+  Tests/partial/script.sh
+
+* Add Util/clean_all.sh script
+* Remove scratch fdf directories in Util/GenBasis and Util/Vibra
+
+removed:
+  Util/Gen-basis/fdf/
+  Util/Vibra/Src/fdf/
+added:
+  Util/clean_all.sh
+
+
+
+-----------------------------------------------------------------------
 2012-02-21  17:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-400
 Assorted bugfixes and cosmetics
 
