@@ -22,6 +22,9 @@
 #endif
 
 !     Normalize density matrix to exact charge
+!     Is this appropriate when there is folding
+!     of matrix elements?
+
       qsol = 0.0_dp
       do ispin = 1,min(nspin,2)
         do io = 1,maxnh
@@ -33,9 +36,8 @@
       qsol = buffer1
 #endif
       if (IOnode) then
-        if (.not.first .and.
-     &     abs(qsol/qtot-1._dp).gt.1.d-2) write(6,'(a,2f15.6)')
-     &    'siesta: WARNING: Qtot, Tr[D*S] =', qtot, qsol
+         write(6,'(a,2f15.6)')
+     &    'Normalize-DM: Qtot, Tr[D*S] =', qtot, qsol
       endif
       do ispin = 1,nspin
         do io = 1,maxnh

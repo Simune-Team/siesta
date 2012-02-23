@@ -3,7 +3,7 @@
       public :: scfconvergence_test
       CONTAINS
 
-      subroutine scfconvergence_test( first, iscf, last, dDmax,
+      subroutine scfconvergence_test( iscf, last, dDmax,
      $                                conv_harris, conv_etot)
       USE siesta_options
       use siesta_cml
@@ -21,7 +21,6 @@
       implicit none
 
       integer :: iscf
-      logical :: first
       logical :: last
 
       real(dp), intent(in) :: dDmax     ! Max. change in dens. matrix
@@ -69,7 +68,7 @@
 
       ! Print energies
       if (IOnode) then
-        call siesta_write_energies( first, iscf, dDmax )
+        call siesta_write_energies( iscf, dDmax )
 
         if (harrisfun) then
           write(6,"(/a,f14.6,/)") 'siesta: Eharris(eV) = ',Eharrs/eV

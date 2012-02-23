@@ -266,7 +266,7 @@
       public :: siesta_write_energies
       CONTAINS
       
-      subroutine siesta_write_energies( first, iscf, dDmax )
+      subroutine siesta_write_energies( iscf, dDmax )
       USE siesta_options
       use siesta_cml
       use units
@@ -277,16 +277,18 @@
 #endif /* TRANSIESTA */
       implicit none
 
-      logical              :: first
       integer              :: iscf
       real(dp), intent(in) :: dDmax ! Max. change in dens. matrix elem.
+
+      logical              :: first_scf_step
       integer              :: i 
 #ifdef TRANSIESTA
       character(11) :: tmpname
 #endif /* TRANSIESTA */
 
+      first_scf_step = (iscf == 1)
       ! Only print out full decomposition at very beginning and end.
-      if ((istp==1.and.first).or.final) then
+      if ((istp==1.and.first_scf_step).or.final) then
         write(6,'(/,a,/,(a,f17.6))')
      .     'siesta: Program''s energy decomposition (eV):',
      .     'siesta: Ebs     =', Ebs/eV, 

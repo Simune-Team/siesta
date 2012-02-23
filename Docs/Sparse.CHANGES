@@ -1,5 +1,23 @@
 
 -----------------------------------------------------------------------
+2012-02-23  Alberto Garcia <albertog@icmab.es>   trunk-401-sparse-6
+Write DM normalization info. Simplify logic in scf loop
+
+The DM normalization info is written unconditionally, for
+information purposes to diagnose possible folding problems.
+
+The variable "first" (meaning iscf==1) has been removed from
+siesta_forces, scfconvergence_test, and write_energies.
+
+modified:
+  Src/Makefile
+  Src/normalize_dm.F
+  Src/scfconvergence_test.F
+  Src/siesta_analysis.F
+  Src/siesta_forces.F
+  Src/write_subs.F
+
+-----------------------------------------------------------------------
 2012-02-22  Alberto Garcia <albertog@icmab.es>   trunk-401-sparse-5
 Sync with trunk-401
 
