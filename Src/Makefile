@@ -309,8 +309,8 @@ atom.o: sys.o xcmod.o
 atom_options.o: sys.o
 atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o siesta_geom.o
 atomlwf.o: alloc.o atmfuncs.o mneighb.o onmod.o precision.o spatial.o sys.o
-atompop.o: atmfuncs.o meshsubs.o meshsubs.o parallel.o parallelsubs.o
-atompop.o: precision.o sys.o
+atompop.o: atmfuncs.o atomlist.o meshsubs.o meshsubs.o parallel.o
+atompop.o: parallelsubs.o precision.o sys.o
 automatic_cell.o: atmfuncs.o parallel.o precision.o units.o
 bands.o: alloc.o densematrix.o files.o parallel.o parallelsubs.o parsing.o
 bands.o: precision.o sys.o
