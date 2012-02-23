@@ -39,13 +39,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, 3.1}}
+{\Huge {\bf S I E S T A \, \, 3.1-pl4--pop}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large August 26, 2011 }
+{\Large February 23, 2012 }
 
 \vspace{1.5cm}
 
@@ -163,7 +163,7 @@ It routinely provides:
 \item Atomic forces.
 \item Stress tensor.
 \item Electric dipole moment.
-\item Atomic, orbital and bond populations (Mulliken).
+\item Atomic, orbital and bond populations.
 \item Electron density.
 \end{itemize}
 
@@ -684,6 +684,12 @@ In particular, it redefines the defaults for the following:
 {\bf WriteMullikenPop}\index{WriteMullikenPop@{\bf WriteMullikenPop}}
 \index{output!Mulliken analysis}\index{Mulliken population analysis}
 (it sets it to 1)
+\item
+{\bf WriteHirshfeldPop}\index{WriteHirshfeldPop@{\bf WriteHirshfeldPop}}
+\index{output!Hirshfeld analysis}\index{Hirshfeld population analysis}
+\item
+{\bf WriteVoronoiPop}\index{WriteVoronoiPop@{\bf WriteVoronoiPop}}
+\index{output!Voronoi analysis}\index{Voronoi population analysis}
 \end{itemize}
 
 The specific changing of any of these options overrides the
@@ -4587,13 +4593,44 @@ when dealing with SCF problems, otherwise too verbose.
 
 {\it Default value:} {\tt .false.}
 
-\item[{\bf MullikenInSCF}] ({\it logical}):
-\index{MullikenInSCF@{\bf MullikenInSCF}}
-If true, the Mulliken populations will be written for every SCF step
-at the level of detail specified in {\bf WriteMullikenPop}. Useful
-when dealing with SCF problems, otherwise too verbose.
+\end{description}
 
-{\it Default value:} {\tt .false.}
+\subsubsection{Voronoi and Hirshfeld atomic population analysis}
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+\item[{\bf WriteHirshfeldPop}] ({\it logical}): 
+\index{WriteHirshfeldPop@{\bf WriteHirshfeldPop}}\index{Hirshfeld population
+analysis}\index{output!Hirshfeld analysis} 
+If {\tt .true.}, it calculates and prints the Hirshfeld {\bf net} atomic
+populations on each atom in the system. For a definition of
+the Hirshfeld charges, see Hirshfeld, Theo Chem Acta {\bf 44}, 129 (1977)
+and Fonseca et al, J. Comp. Chem. {\bf 25}, 189 (2003).
+Hirshfeld charges are more reliable than Mulliken charges,
+specially for large basis sets.
+The number printed is the total net charge of the atom: the variation
+from the neutral charge, in units of $|e|$: positive (negative)
+values indicate deficiency (excess) of electrons in the atom.
+
+{\it Default value:} {\tt .false.} (see {\bf LongOutput})
+
+
+\item[{\bf WriteVoronoiPop}] ({\it logical}): 
+\index{WriteVoronoiPop@{\bf WriteVoronoiPop}}\index{Voronoi population
+analysis}\index{output!Voronoi analysis} 
+If {\tt .true.}, it calculates and prints the Voronoi {\bf net} atomic
+populations on each atom in the system. For a definition of
+the Voronoi charges, see Bickelhaupt et al, Organometallics 
+{\bf 15}, 2923 (1996)
+and Fonseca et al, J. Comp. Chem. {\bf 25}, 189 (2003).
+Voronoi charges are more reliable than Mulliken charges,
+specially for large basis sets.
+The number printed is the total net charge of the atom: the variation
+from the neutral charge, in units of $|e|$: positive (negative)
+values indicate deficiency (excess) of electrons in the atom.
+
+{\it Default value:} {\tt .false.} (see {\bf LongOutput})
 
 \end{description}
 

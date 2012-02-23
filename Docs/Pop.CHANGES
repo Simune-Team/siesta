@@ -1,0 +1,23 @@
+Feb 23, 2012  Alberto Garcia                   3.1-pl4--pop
+Implementation of Hirshfeld and Voronoi charges (P. Ordejon)
+
+Notes: 
+
+atompop.F has a section of computation on the grid, which could perhaps
+be included in dhscf.
+
+New test: h2o-pop
+
+added:
+  Docs/Pop.CHANGES
+  Src/atompop.F
+  Tests/Reference-xml/h2o-pop.xml
+  Tests/Reference/h2o-pop.out
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/Makefile
+  Src/mulliken.F
+  Src/siesta_options.F90
+  Src/state_analysis.F
+

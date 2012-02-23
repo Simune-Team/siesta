@@ -131,7 +131,8 @@ C Compute and print Overlap Populations for Orbitals ....................
       if (iopt .eq. 3) then
         if (ionode) then
           write(6,*) 
-          write(6,"(a)")'mulliken: Overlap Populations between Orbitals'
+          write(6,"(a)")
+     .         'mulliken: Mulliken Overlap Populations between Orbitals'
         endif
         nblock = nbasistot / ncol
         ip=1
@@ -209,7 +210,8 @@ C Compute and print Overlap Populations for Atoms ....................
       if (iopt .ge. 2) then
         if (ionode) then
           write(6,*) 
-          write(6,"(a)")'mulliken: Overlap Populations between Atoms'
+          write(6,"(a)")
+     .          'mulliken: Mulliken Overlap Populations between Atoms'
         endif
         nblock = natoms / ncol
         ip=1
@@ -268,7 +270,8 @@ C Compute and print Mulliken Orbital and Atomic Populations ..........
       if (iopt .ge. 1) then
         if (ionode) then
           write(6,*) 
-          write(6,"(a)")'mulliken: Atomic and Orbital Populations:'
+          write(6,"(a)")
+     .         'mulliken: Mulliken Atomic and Orbital Populations:'
         endif
         if (nspin .le. 2) then
 C We only write mulliken to cml file if we are unpolarized or collinear 
