@@ -3,14 +3,14 @@ C    md2axsf,  a script to transform molecular dynamics files
 C             (MD or ANI) written in SIESTA by subr. iomd
 C             into an XCrysden animation file (axsf format).
 C    Three options are possible:
-C    1. Use .MD written with MD.VariableCell = T,
+C    1. Use .MD or .MD_CAR written with MD.VariableCell = T,
 C       then the output is variable-cell animated xsf
-C    2. Use .MD written with MD.VariableCell = F,
+C    2. Use .MD or .MD_CAR written with MD.VariableCell = F,
 C       then the output is fixed-cell (as in XV file) animated xsf
 C    3. Use .ANI which contains no information about the cell;
 C       then the output is fixed-cell (as in XV file) animated xsf
 C
-C       Written by Andrei Postnikov, Mar 2006   Vers_0.3
+C       Written by Andrei Postnikov, Jul 2007   Vers_0.4
 C       apostnik@uos.de
 C
       program md2axsf
@@ -27,8 +27,8 @@ C
       parameter (b2ang=0.529177)   !  Bohr to Angstroem
       double precision,  allocatable :: coord(:,:),veloc(:,:)
       integer,           allocatable :: nz(:), ityp(:)
-      external test_md,test_ani,makebox,inver3,write_axsf1,write_axsf2,
-     .         opnout
+      external test_md,test_mdc,test_ani,makebox,inver3,
+     .         write_axsf1,write_axsf2,opnout
 C
 C     string manipulation functions in Fortran used below:
 C     len_trimd(string): returns the length of string 
@@ -64,23 +64,24 @@ C --  read in translation vectors, convert into Ang:
 C --- finished with .XV
   103 write (6,705,advance="no")
       read (5,*) suffix
-C     inpfil = syslab(1:len_trim(syslab))//
-C    .      '.'//suffix(1:len_trim(suffix))
       inpfil = trim(syslab)//'.'//trim(suffix)
-C     if (suffix(1:len_trim(suffix)).eq.'MD') then
       if (trim(suffix).eq.'MD') then
         mdmod = 1
         open (ii2,file=inpfil,form='unformatted',status='old',err=806)
         write (6,*) 'Found and opened: ',inpfil
         call test_md(ii2,nat,varcel,nstep)
-C     elseif (suffix(1:len_trim(suffix)).eq.'ANI') then
-      elseif (trim(suffix).eq.'ANI') then
+      elseif (trim(suffix).eq.'MD_CAR') then
         mdmod = 2
+        open (ii2,file=inpfil,form='formatted',status='old',err=801)
+        write (6,*) 'Found and opened: ',inpfil
+        call test_mdc(ii2,nat,varcel,nstep)
+      elseif (trim(suffix).eq.'ANI') then
+        mdmod = 3
         open (ii2,file=inpfil,form='formatted',status='old',err=801)
         write (6,*) 'Found and opened: ',inpfil
         call test_ani(ii2,nat,nstep)
       else
-        write (6,*) ' Only MD or ANI allowed, try again:'
+        write (6,*) ' Only MD, MD_CAR or ANI allowed, try again:'
         goto 103
       endif
       write (6,710,advance="no")
@@ -89,7 +90,7 @@ C     elseif (suffix(1:len_trim(suffix)).eq.'ANI') then
       mdstep  = 0
       read (5,*) mdfirst, mdlast, mdstep     
       if (mdfirst.le.0) mdfirst = 1
-      if (mdlast.le.0)  mdlast  = nstep
+      if (mdlast.le.0.or.mdlast.gt.nstep)  mdlast  = nstep
       if (mdstep.le.0)  mdstep  = 1
       if (mdlast.lt.mdfirst) mdlast = mdfirst
       write (6,711) mdfirst,mdfirst+mdstep,
@@ -131,7 +132,8 @@ C     of the output box.
   702 format(3x,3f18.9)
   703 format(i13)
   704 format(i3,i6,3f18.9)
-  705 format(' Suffix of molecular dynamics file (MD or ANI): ')
+  705 format(' Suffix of molecular dynamics file',
+     .       ' (MD, MD_CAR, or ANI): ')
   706 format(' Was this MD run done with MD.VariableCell, T or F : ')
   707 format(' MD record No. ',i6,'  istep =',i6)
   708 format(i5,/)
@@ -146,7 +148,6 @@ C     of the output box.
   712 format(" Do you want to define output box (Y or N): ")
 
   801 write (6,*) ' Error opening file ',
-C    .            inpfil(1:len_trim(inpfil)),' as old formatted'
      .            trim(inpfil),' as old formatted'
       stop
   803 write (6,*) ' End/Error reading XV for cell vector ',ii
@@ -156,17 +157,14 @@ C    .            inpfil(1:len_trim(inpfil)),' as old formatted'
   805 write (6,*) ' End/Error reading XV for atom number ',iat
       stop
   806 write (6,*) ' Error opening file ',
-C    .            outfil(1:len_trim(outfil)),' as old unformatted'
      .            trim(outfil),' as old unformatted'
       stop
   807 write (6,*) ' Error reading file ',
-C    .            outfil(1:len_trim(outfil)),' for nstep=',nstep
      .            trim(outfil),' for nstep=',nstep
       write (6,*) ' This can be (but not necessarily) due to',
      .            ' your wrong guess about VariableCell.'
       stop
   808 write (6,*) ' Error reading file ',
-C    .            outfil(1:len_trim(outfil)),' for nstep=',nstep
      .            trim(outfil),' for nstep=',nstep
       stop
 
