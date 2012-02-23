@@ -2,7 +2,27 @@
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
 
-** CHANGES ALONG siesta-3.0 branch
+** CHANGES ALONG siesta-3 branch
+
+------------------------------------------------------------------------
+2012-02-23  9:30:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl4
+Update of Andrei Postnikov's utilities to V0.4
+
+Added also the fmpdos program, an alternative to pdosxml.
+
+added:
+  Util/Contrib/APostnikov/00README
+  Util/Contrib/APostnikov/fmpdos.f
+  Util/Contrib/APostnikov/test_mdc.f
+modified:
+  Util/Contrib/APostnikov/Makefile
+  Util/Contrib/APostnikov/README
+  Util/Contrib/APostnikov/eig2bxsf.f
+  Util/Contrib/APostnikov/md2axsf.f
+  Util/Contrib/APostnikov/rho2xsf.f
+  Util/Contrib/APostnikov/vib2xsf.f
+  Util/Contrib/APostnikov/wraxsf1.f
+  Util/Contrib/APostnikov/wraxsf2.f
 
 ------------------------------------------------------------------------
 2011-10-03  10:15:00 GMT Alberto Garcia <albertog@icmab.es>   3.1.1

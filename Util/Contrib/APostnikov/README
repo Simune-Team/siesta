@@ -1,7 +1,7 @@
 README to the Sies2xsf selection of routines
-written by Andrei Postnikov (apostnik@uos.de)
+written by Andrei Postnikov (postnikov@univ-metz.fr)
 
-This is  Version_0.3 as of March 2006, 
+This is  Version_0.4 as of July 2010, 
 including the Makefile and a bunch of Fortran90 sources
 to build the following executables:
   eig2bxsf   : to plot Fermi surfaces;
@@ -131,7 +131,8 @@ over the whole plotting region. This is difficult to correct, because
 it would involved many changes over several places in Denchar.
 My suggestion is to live with this, adopting if necessary the following trick:
 i) run Denchar and obtain output in the Gaussian cube format;
-ii) open it with XCrySDen and save in the native .xsf format;
+ii) open it with XCrySDen as  File -> Open Structure -> Gaussian98 Cube File
+and save in the native .xsf format;
 iii) run rho2xsf on the existing .XV file, passing the description of
 the plotting region (origin and three spanning vectors) consistently
 with that used in Denchar. Save the result in the .xsf format;
