@@ -39,7 +39,6 @@
 
       integer  :: iscf
       logical  :: last, SCFconverged
-      real(dp) :: dDmax     ! Max. change in density matrix elements
       type(converger_t)  ::  conv_harris, conv_etot
 
 #ifdef TRANSIESTA
@@ -98,13 +97,13 @@
           call compute_dm( iscf )
         end if ! mixH
 
-      	call mixer( iscf, dDmax )
-
-        call scfconvergence_test( iscf, last, dDmax,
+        call scfconvergence_test( iscf, last,
      &                            conv_harris, conv_etot )
-!       At this point last is true if SCF has converged. But this
+!       At this point 'last' is true if SCF has converged. But this
 !       changed below
         SCFconverged = last
+
+      	if (.not. SCFconverged) call mixer( iscf )
 
         call timer( 'IterSCF', 2 )
         if (istep.eq.inicoor .and. (iscf==1)) then

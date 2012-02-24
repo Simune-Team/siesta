@@ -4,7 +4,7 @@
 
       CONTAINS
  
-      subroutine mixer( iscf, dDmax )
+      subroutine mixer( iscf )
       USE siesta_options
       use sparse_matrices
       use siesta_geom
@@ -16,9 +16,6 @@
       use m_pulay
       use m_iodm,   only: write_dm
       use parallel, only: IONode
-#ifdef MPI
-      use m_mpi_utils, only: globalize_max
-#endif
 #ifdef CDF
       use iodm_netcdf, only: write_dm_netcdf
 #endif
@@ -33,12 +30,11 @@
       real(dp), dimension(:,:), pointer :: Xout => null()  
 
       integer,  intent(in)  :: iscf
-      real(dp), intent(out) :: dDmax   ! Max. change in dens. matrix
+
       integer               :: iiscf
       logical               :: mmix    ! Same as mix. Used in pulayx
-#ifdef MPI
-      real(dp)              :: buffer1
-#endif
+      real(dp)              :: dDmax   ! Dummy for calls
+
       external ::  mulliken
 
 !------------------------------------------------------------------------- BEGIN
@@ -94,11 +90,6 @@
         endif
       endif
 
-#ifdef MPI
-!     Ensure that dDmax is the same on all nodes for convergence test/output
-      call globalize_max(dDmax,buffer1)
-      dDmax = buffer1
-#endif
 !     Print populations at each SCF step, if requested, after mixing ......
       if (muldeb) then 
         write (6,"(/a)")
@@ -109,7 +100,8 @@
       endif
 
 #ifdef CDF
-!     Save density matrix on disk, after mixing ...........................
+!     Save density matrix on disk, after mixing, to
+!     be used for re-starting the SCF cycle.
       if (writedm_cdf_history) then
          call write_dm_netcdf( no_l, maxnh, nspin, Dscf,
      &                         overwrite=.false. )

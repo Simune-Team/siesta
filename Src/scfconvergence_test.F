@@ -3,34 +3,87 @@
       public :: scfconvergence_test
       CONTAINS
 
-      subroutine scfconvergence_test( iscf, last, dDmax,
+      subroutine scfconvergence_test( iscf, last,
      $                                conv_harris, conv_etot)
-      USE siesta_options
-      use siesta_cml
-      use m_wallclock, only : wallclock
-      use parallel, only: IOnode
-      use write_subs
-      use m_energies
-      use m_convergence, only: converger_t
-      use m_convergence, only: add_value, is_converged
+
+      use precision,             only: dp
+      use siesta_cml,            only: cml_p, mainXML
+      use siesta_cml,            only: cmlAddProperty
+      use siesta_cml,            only: cmlStartPropertyList
+      use siesta_cml,            only: cmlEndPropertyList
+      use siesta_options,        only: mixH, Temp, harrisfun, dDtol
+      use siesta_options,        only: require_harris_convergence
+      use siesta_options,        only: require_energy_convergence
+      use siesta_options,        only: energy_tolerance
+      use siesta_options,        only: harris_tolerance
+      use m_wallclock,           only: wallclock
+      use parallel,              only: IOnode
+      use units,                 only: eV
+      use write_subs,            only: siesta_write_energies
+      use m_energies            
+      use atomlist,              only: no_l
+      use m_spin,                only: nspin
+      use sparse_matrices,       only: numh, listhptr
+      use sparse_matrices,       only: H, Hold, Dscf, Dold
+#ifdef MPI
+      use m_mpi_utils,           only: globalize_max
+#endif
+      use m_convergence,         only: converger_t
+      use m_convergence,         only: add_value, is_converged
 #ifdef TRANSIESTA
-      use m_ts_global_vars, only: TSinit, TSrun, TSiscf
-      use m_ts_options, only: TSmode
-      use m_pulay, only: init_pulay_arrays
+      use m_ts_global_vars,      only: TSinit, TSrun, TSiscf
+      use m_ts_options,          only: TSmode
+      use m_pulay,               only: init_pulay_arrays
 #endif /* TRANSIESTA */
       implicit none
 
-      integer :: iscf
-      logical :: last
-
-      real(dp), intent(in) :: dDmax     ! Max. change in dens. matrix
+      integer, intent(in)  :: iscf
+      logical, intent(out) :: last
       type(converger_t), intent(inout)  :: conv_harris, conv_etot
-!------------------------------------------------------------------------- BEGIN
+
+      real(dp) :: dDmax     ! Max. change in dens. matrix or H
+      real(dp), dimension(:,:), pointer :: Xin => null()
+      real(dp), dimension(:,:), pointer :: Xout => null()  
+
+      integer               :: ind, in, is, i
+#ifdef MPI
+      real(dp)              :: buffer1
+#endif
+
+!----------------------------------------------------------------- BEGIN
 #ifdef DEBUG
       call write_debug( '  PRE scfconvergence_test' )
 #endif
       call timer( 'SCFconv', 1 )
       ! convergence test
+
+      if (mixH) then
+         ! Mixing Hamiltonian
+         Xin => Hold
+         Xout => H
+      else
+         ! Mix density matrix
+         Xin => Dold
+         Xout => Dscf
+      endif
+
+    !  Compute current maximum deviation ...........
+      dDmax = 0.0_dp
+      do is = 1,nspin
+         do i = 1,no_l
+            do in = 1,numh(i)
+               ind = listhptr(i) + in
+               dDmax = max(dDmax, abs(Xout(ind,is) - Xin(ind,is)))
+            enddo
+         enddo
+      enddo
+    ! .......
+#ifdef MPI
+!     Ensure that dDmax is the same on all nodes for convergence test/output
+      call globalize_max(dDmax,buffer1)
+      dDmax = buffer1
+#endif
+
 
       DEna = Enascf - Enaatm
       Etot = E0 + DEna + DUscf + DUext + Exc + Ecorrec+Emad+Emm+

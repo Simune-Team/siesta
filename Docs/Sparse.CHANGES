@@ -1,5 +1,39 @@
 
 -----------------------------------------------------------------------
+2012-02-24  Alberto Garcia <albertog@icmab.es>   trunk-401-sparse-8
+Check for convergence (and maybe exit SCF loop) before mixing 
+
+The computation of the maximum difference between X_in and X_out (with
+X either the DM or the Hamiltonian) is now done in
+scfconvergence_test. If convergence has been achieved, mixer is
+bypassed, and the SCF loop is exited. This has the side effect of
+keeping the output DM as input to the post-processing (in particular
+the computation of forces and stresses, and final energies in
+post_scf_work).
+
+Experimentally, it is found that the final E_KS (computed with DM_out)
+is very close to the Harris energy of the last SCF step. This seems to
+be due to the fact that the Hamiltonian is almost converged.
+
+The Harris energy converges very fast. There remains to be explored
+whether the forces computed with DM_out (instead of with DM_predicted) are
+reasonable even for non-perfect convergence in the DM.
+Some tests with Hamiltonian mixing look promising also.
+
+The DM is now written to disk only by mixer, which is fine for re-starts of
+an interrrupted SCF cycle. Another, final copy, should be written in post_scf_work
+after each SCF step.
+
+(To be continued...)
+
+modified:
+  Src/Makefile
+  Src/mixer.F
+  Src/post_scf_work.F
+  Src/scfconvergence_test.F
+  Src/siesta_forces.F
+
+-----------------------------------------------------------------------
 2012-02-24  Alberto Garcia <albertog@icmab.es>   trunk-401-sparse-7
 Avoid updating Eharrs after SCF loop
 
