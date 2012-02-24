@@ -35,13 +35,42 @@
 !     'compute_dm'.
 !     We are using the Escf coming out of compute_dm also.
 
+      ! This call might also involve "grid-cell-sampling" to
+      ! refine the grid contribution to the energy and forces/stress.
       call final_H_f_stress( iscf )
 
 !     Print energies
       DEna = Enascf - Enaatm
       Etot = E0 + DEna + DUscf + DUext + Exc + Ecorrec +
      &       Emad + Emm + Emeta
-      Eharrs = Etot + DEharr
+      ! NOTE: DEharr is only computed by compute_dm, and 
+      ! corresponds to Tr(H*(DM_out-DM_in))
+      ! Since this Etot is computed with DM_next, this value
+      ! for Eharrs is suspect. To make things worse, this value
+      ! is never actually printed, since printing routines use
+      ! Eharrs1, which is the last value of Eharrs computed
+      ! in the scf cycle (set in scfconvergence_test).
+      ! Apparently, Eharrs1 is saved in case a further grid-cell
+      ! sampling is carried out, presumably to avoid recomputing
+      ! it with an "impure" H. In fact, Eharrs1 might be what we
+      ! need everywhere, particularly in the computation of the
+      ! FreeEHarris value used if performing Harris-oriented runs,
+      ! as in basis-optimization (the only magnitude depending 
+      ! explicitly on Eharrs, and thus exhibiting a mismatch with
+      ! what would be obtained from Eharrs1).
+      ! From this point of view, what we need is to get rid of this
+      ! statement and replace Eharris1 with Eharrs elsewhere.
+      ! Note also in general that the "Harris forces" are computed
+      ! by the above call to final_H_f_stress, which is using the
+      ! wrong DM! This would explain the non-conservation of the energy
+      ! in some Harris-based MD runs.
+      ! All this gives further support to the idea that the DM coming
+      ! out of the SCF cycle for post-processing should be the last
+      ! DM_out...
+
+      ! Eharrs = Etot + DEharr
+
+      !
       FreeE  = Etot - Temp * Entropy
 !
 ! The following block has been moved here from 

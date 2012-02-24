@@ -1,5 +1,39 @@
 
 -----------------------------------------------------------------------
+2012-02-24  Alberto Garcia <albertog@icmab.es>   trunk-401-sparse-7
+Avoid updating Eharrs after SCF loop
+
+The Harris energy update DEharr is only computed by compute_dm, and
+corresponds to Tr(H*(DM_out-DM_in)).
+
+In 'post_scf_work' there was an statement
+
+      ! Eharrs = Etot + DEharr
+
+Since this Etot is computed with DM_next (the DM predicted by 'mixer'
+for a hypothetical next SCF iteration) this value for Eharrs is
+suspect. To make things worse, this value is never actually printed,
+since printing routines use Eharrs1, which is the last value of Eharrs
+computed in the SCF cycle (set in 'scfconvergence_test').  Apparently,
+Eharrs1 is saved in case a further grid-cell sampling is carried out,
+presumably to avoid recomputing it with an "impure" H. In fact,
+Eharrs1 might be what we need everywhere, particularly in the
+computation of the FreeEHarris value used if performing
+Harris-oriented runs, as in basis-optimization (the only magnitude
+depending explicitly on Eharrs, and thus exhibiting a mismatch with
+what would be obtained from Eharrs1).  From this point of view, what
+is needed is to remove the above statement (and replace Eharris1 with
+Eharrs elsewhere).
+
+Note also in general that the "Harris forces" are computed by the call
+to 'final_H_f_stress' in 'post_scf_work', which is using the wrong DM!
+This would explain the non-conservation of the energy in some
+Harris-based MD runs.
+
+All this gives further support to the idea that the DM coming out of
+the SCF cycle for post-processing should be the last DM_out...
+
+-----------------------------------------------------------------------
 2012-02-23  Alberto Garcia <albertog@icmab.es>   trunk-401-sparse-6
 Write DM normalization info. Simplify logic in scf loop
 
