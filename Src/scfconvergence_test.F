@@ -84,12 +84,18 @@
       dDmax = buffer1
 #endif
 
-
+      ! These energies were calculated in the latest call to
+      ! setup_hamiltonian, using as ingredient:
+      !
+      !  D_in if mixing the DM
+      !  D_out if mixing the Hamiltonian
+      !
       DEna = Enascf - Enaatm
       Etot = E0 + DEna + DUscf + DUext + Exc + Ecorrec+Emad+Emm+
      &       Emeta
       Eharrs = Etot + DEharr
 
+      ! Monitor Etot and Eharrs for optional convergence
       call add_value(conv_harris, eharrs)
       call add_value(conv_etot, etot)
 
@@ -99,7 +105,6 @@
       ! gridcellsampling) but preserving the value of Eharrs1
       Eharrs1 = Eharrs
 
-      Elast = Etot
       if (require_energy_convergence) then
          if (   dDmax.lt.dDtol
      &        .and. is_converged(conv_etot)) then

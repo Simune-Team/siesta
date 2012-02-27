@@ -23,12 +23,14 @@
       use siesta_options,        only: energy_tolerance
       use siesta_options,        only: harris_tolerance
       use siesta_options,        only: SCFMustConverge, nscf, mixH
+      use siesta_options,        only: mix_after_convergence
       use parallel,              only: IOnode
       use m_state_analysis,      only: state_analysis
       use m_steps,               only: inicoor
       use sys,                   only: die, bye
       use m_convergence,         only: converger_t
       use m_convergence,         only: reset, set_tolerance
+      use parallel,              only: IONode
 #ifdef TRANSIESTA
       use m_ts_global_vars,      only: ts_istep
 #endif /* TRANSIESTA */
@@ -89,21 +91,49 @@
      &      call cmlStartStep( xf=mainXML, type='SCF', index=iscf )
 
         if (mixH) then
-          if ( iscf == 1) call setup_hamiltonian( iscf )
-          call compute_dm( iscf )
-          call setup_hamiltonian( iscf )
+          if ( iscf == 1) call setup_hamiltonian( iscf ) ! Gets E_KS(DM_in) and H_in
+          call compute_dm( iscf )           ! Gets DM_out and (still good) DEHarris
+          call setup_hamiltonian( iscf )    ! Gets E_KS(DM_out) and H_out
         else 
-          call setup_hamiltonian( iscf )
-          call compute_dm( iscf )
+          call setup_hamiltonian( iscf )    ! Computes E_KS(DM_in) and H_in
+          call compute_dm( iscf )           ! Gets DM_out and DEHarris
         end if ! mixH
+
+        ! Computes EHarris 
+        ! Note that one-shot-Harris runs are not compatible with mixH, as EHarris
+        ! is E_KS(DM_in) + Tr[H*(DM_out-DM_in)]
+        ! Checks convergence
 
         call scfconvergence_test( iscf, last,
      &                            conv_harris, conv_etot )
-!       At this point 'last' is true if SCF has converged. But this
-!       changed below
         SCFconverged = last
+        ! In TranSiesta runs, last is re-set to .false. to switch
+        ! to GF mode (to be cleaned up)
 
-      	if (.not. SCFconverged) call mixer( iscf )
+        ! Give a choice to the user regarding the final DM to be used
+        ! downstream, upon exit of the SCF cycle.
+        ! If we do not mix, Dold will contain the last DM_in in the cycle,
+        ! and Dscf the last DM_out.
+        ! If we mix, both will contain DM_next, the "predicted" DM for a
+        ! hypothetical next iteration.
+        !
+        ! Note that if we are mixing H instead of DM, the final H is not
+        ! really used outside the scf loop, as the forces are computed
+        ! using the DM coming out of the cycle (in that case, DM_out, which
+        ! is precisely the DM used to compute the last set of energies).
+
+      	if (SCFconverged) then
+           if (mix_after_convergence) then
+              if (IOnode) then
+                 write(6,"(a)")
+     $                 "Performing a mixing step after convergence"
+              endif
+              call mixer( iscf )
+           endif
+        else
+           call mixer( iscf )
+        endif
+           
 
         call timer( 'IterSCF', 2 )
         if (istep.eq.inicoor .and. (iscf==1)) then
@@ -127,8 +157,9 @@
         call die('SCF did not converge in maximum number of steps.')
       endif
 
-!     End of standard SCF loop.
-!     Do one more pass to compute forces and stresses
+      !     End of standard SCF loop.
+      ! Do one more pass to compute forces and stresses (and energies)
+      ! with the DM coming out of the cycle
       if (last) then
         call post_scf_work( iscf )
       else

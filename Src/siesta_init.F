@@ -132,7 +132,6 @@ C     Initialise MPI and set processor number
       Eharrs1 = 0.0_dp
       Eions   = 0.0_dp
       Ekinion = 0.0_dp
-      Elast   = 0.0_dp
       Emad    = 0.0_dp
       Emeta   = 0.0_dp
       Emm     = 0.0_dp

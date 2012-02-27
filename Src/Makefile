@@ -562,7 +562,7 @@ metaforce.o: alloc.o parallel.o precision.o sys.o
 minvec.o: cellsubs.o precision.o sorting.o sys.o
 mixer.o: atomlist.o iodm_netcdf.o m_broyden_mixing.o m_energies.o
 mixer.o: m_fire_mixing.o m_iodm.o m_pulay.o m_spin.o m_steps.o
-mixer.o: m_ts_global_vars.o m_ts_iodm.o parallel.o siesta_geom.o
+mixer.o: m_ts_global_vars.o m_ts_iodm.o parallel.o precision.o siesta_geom.o
 mixer.o: siesta_options.o sparse_matrices.o
 mneighb.o: alloc.o precision.o sys.o
 molecularmechanics.o: alloc.o parallel.o precision.o sys.o units.o

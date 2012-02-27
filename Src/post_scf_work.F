@@ -26,16 +26,26 @@
       call write_debug( '  PRE post_scf_work' )
 #endif
       call timer( 'PostSCF', 1 )
+!
 !     If converged, make one last iteration to find forces and stress
 
-!     After the change of logic in the SCF loop, we are using the Dscf
-!     and Escf coming out of compute_dm.
+!     Depending on the change of logic in the SCF loop, we are using either
+!     the Dscf and Escf coming "out" of compute_dm, or the result of the
+!     mixing step on D_in and D_out.
+!
+!     For Harris-functional calculations, there is no mixing, and there is
+!     special code to compute the terms involving differences between rho_in
+!     and rho_out (see routine 'forhar')
 
       ! This call might also involve "grid-cell-sampling" to
       ! refine the grid contribution to the energy and forces/stress.
+
       call final_H_f_stress( iscf )
 
-      ! These energies should be identical to those in the last SCF step
+      ! These energies are computed with a different DM from those in the
+      ! last SCF step, except if mixing the Hamiltonian, in which case they
+      ! are the same.
+
       DEna = Enascf - Enaatm
       Etot = E0 + DEna + DUscf + DUext + Exc + Ecorrec +
      &       Emad + Emm + Emeta
@@ -44,7 +54,7 @@
 
       ! NOTE: DEharr is only computed by compute_dm, and 
       ! corresponds to Tr(H*(DM_out-DM_in))
-      ! Since this Etot is computed with DM_next, this value
+      ! Since this Etot is computed with DM_out or DM_next, this value
       ! for Eharrs is suspect. To make things worse, this value
       ! is never actually printed, since printing routines use
       ! Eharrs1, which is the last value of Eharrs computed
@@ -59,18 +69,12 @@
       ! what would be obtained from Eharrs1).
       ! From this point of view, what we need is to get rid of this
       ! statement and replace Eharris1 with Eharrs elsewhere.
-      ! Note also in general that the "Harris forces" are computed
-      ! by the above call to final_H_f_stress, which is using the
-      ! wrong DM! This would explain the non-conservation of the energy
-      ! in some Harris-based MD runs.
-      ! All this gives further support to the idea that the DM coming
-      ! out of the SCF cycle for post-processing should be the last
-      ! DM_out...
 
       ! Eharrs = Etot + DEharr
 
 !
-! This is a good place to save the DM
+! This is a good place to save the DM if we are exiting the SCF loop
+! without a final mixing
 !
       
 !

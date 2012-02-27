@@ -6,6 +6,7 @@ MODULE siesta_options
   PUBLIC
 
   logical :: mixH          ! Mixing of the Hamiltoninan instead of DM
+  logical :: mix_after_convergence  ! Do one last mixing step after SCF convergence
   logical :: h_setup_only  ! H Setup only
   logical :: chebef        ! Compute the chemical potential in ordern?
   logical :: default       ! Temporary used to pass default values in fdf reads
@@ -19,7 +20,7 @@ MODULE siesta_options
   logical :: allow_dm_extrapolation ! Allow the extrapolation of previous geometries' DM ?
   logical :: change_kgrid_in_md ! Allow k-point grid to change in MD calculations
   logical :: naiveauxcell  ! Use naive recipe for auxiliary supercell?
-  logical :: mix           ! Mix first SCF step? Used in broyden_mixing
+  logical :: mix_first_scf_step ! Mix first SCF step? Used in broyden_mixing
   logical :: negl          ! Neglect hamiltonian matrix elements without overlap?
   logical :: noeta         ! Use computed chemical potential instead of eta in ordern?
   logical :: new_diagk     ! Use new diagk routine with file storage of eigenvectors?
@@ -198,7 +199,7 @@ MODULE siesta_options
 ! real*8 dDtol             : Maximum Density Matrix tolerance in SCF
 ! real*8 Energy_tolerance  : Maximum Total energy tolerance in SCF
 ! real*8 Harris_tolerance  : Maximum Harris energy tolerance in SCF
-! logical mix              : Perform mix in first SCF step
+! logical mix_first_scf_step            : Perform mix in first SCF step
 ! real*8 wmix              : Amount of output DM for new DM
 ! integer isolve           : Method of solution.  0   = Diagonalization
 !                                                 1   = Order-N
@@ -452,6 +453,12 @@ MODULE siesta_options
       write(6,1) 'redata: Mix Hamiltonian instead of DM    = ', mixH
     endif
 
+    mix_after_convergence = fdf_get('MixAfterConvergence',.true.)
+
+    if (ionode) then
+      write(6,1) 'redata: Mix after SCF convergence        = ', mix_after_convergence
+    endif
+
     ! Pulay mixing, number of iterations for one Pulay mixing (maxsav)
     maxsav = fdf_get('DM.NumberPulay', maxsav_default)
 
@@ -488,16 +495,16 @@ MODULE siesta_options
     endif
 
     ! Mix density matrix on first SCF step
-    ! (mix)
-    mix = fdf_get('DM.MixSCF1',.false.)
+    ! (mix_first_scf_step)
+    mix_first_scf_step = fdf_get('DM.MixSCF1',.false.)
     !
     if (ionode) then
-      write(6,1) 'redata: Mix DM in first SCF step ?       = ',mix
+      write(6,1) 'redata: Mix DM in first SCF step ?       = ',mix_first_scf_step
     endif
 
     if (cml_p) then
       call cmlAddParameter( xf=mainXML, name='DM.MixSCF1',   &
-                            value=mix, dictRef='siesta:mix' )
+                            value=mix_first_scf_step, dictRef='siesta:mix' )
     endif
 
     ! Use disk or memory to store intermediate Pulay mixing vectors
@@ -1438,14 +1445,22 @@ MODULE siesta_options
     ! MaxSCFIter should be  2, in the second one the Harris 
     ! forces are computed. Also, should not exit if SCF did 
     ! not converge.
+    ! Also, it should not mix the DM, nor the Hamiltonian
     
     harrisfun = fdf_get('Harris_functional',.false.)
 
     if (harrisfun) then
       usesavedm = .false.
-      nscf      = 2
-      mix       = .false.
+      nscf      = 2       ! Could be 1 also
+      mix_first_scf_step  = .false.
       SCFMustConverge = .false.
+      if (mixH) then
+         if (ionode) then
+            write(6,'(a)') 'redata: ' // 'Re-setting MixHamiltonian ' //
+                            // 'for Harris run'
+         endif
+         mixH = .false.
+      endif
     endif
 
     if (ionode) then
@@ -1477,7 +1492,8 @@ MODULE siesta_options
     fdf_get('SCF.Read.Deformation.Charge.NetCDF', .false. )
 
     if (read_charge_cdf .or. read_deformation_charge_cdf) then
-       mix = .false.
+       ! We do not really have a faithful initial DM, so avoid mixing
+       mix_first_scf_step = .false.
     endif
 
     save_initial_charge_density = fdf_get(    &

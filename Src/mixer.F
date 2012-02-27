@@ -5,17 +5,25 @@
       CONTAINS
  
       subroutine mixer( iscf )
-      USE siesta_options
-      use sparse_matrices
-      use siesta_geom
-      use atomlist, only: iaorb, iphorb, lasto, no_u, no_l
-      use m_broyden_mixing
-      use m_fire_mixing
-      use m_steps
-      use m_spin,   only: nspin
-      use m_pulay
-      use m_iodm,   only: write_dm
-      use parallel, only: IONode
+
+      use precision,        only: dp
+      use siesta_options,   only: mix_first_scf_step, mixH, wmix
+      use siesta_options,   only: wmixkick, fire_mix, nkick
+      use siesta_options,   only: maxsav, idyn, broyden_maxit
+      use siesta_options,   only: mullipop, muldeb
+      use siesta_options,   only: writedm, writedm_cdf
+      use siesta_options,   only: writedm_cdf_history
+      use sparse_matrices,  only: Dold, Dscf, Hold, H, S
+      use sparse_matrices,  only: maxnh, numh, listhptr, listh
+      use siesta_geom,      only: na_u, isa
+      use atomlist,         only: iaorb, iphorb, lasto, no_u, no_l
+      use m_broyden_mixing, only: broyden_mixing
+      use m_fire_mixing,    only: fire_mixing
+      use m_steps,          only: istp
+      use m_spin,           only: nspin
+      use m_pulay,          only: pulayx
+      use m_iodm,           only: write_dm
+      use parallel,         only: IONode
 #ifdef CDF
       use iodm_netcdf, only: write_dm_netcdf
 #endif
@@ -54,12 +62,14 @@
          Xout => Dscf
       endif
 
-! Mix input and output energy-density and density matrices ............
-! Following line for using and saving the density matrix without mix ..
 
       if (wmix.ne.0._dp) then
-! Pulay or Broyden mixing
-        mmix  = mix
+
+        ! Convoluted legacy logic for the Pulay mixer
+        ! iiscf is the "effective SCF step"
+        ! To be cleaned up
+
+        mmix  = mix_first_scf_step
         iiscf = iscf
         if (maxsav .le. 0) then
           iiscf = 1
@@ -74,8 +84,9 @@
            endif
         end if
 #endif /* TRANSIESTA */
+
         if (fire_mix) then
-          call fire_mixing( iscf, mix, no_l, maxnh,
+          call fire_mixing( iscf, mix_first_scf_step, no_l, maxnh,
      &                      numh(1:no_l), listhptr(1:no_l), nspin,
      $                      wmix, nkick, wmixkick, Xout, Xin, dDmax)
         else if (broyden_maxit == 0) then
@@ -83,7 +94,7 @@
      &                 numh, listhptr, nspin, maxsav, wmix, nkick, 
      .                 wmixkick, XOut, XIn, dDmax)
         else
-          call broyden_mixing( iscf, mix, no_l, maxnh,
+          call broyden_mixing( iscf, mix_first_scf_step, no_l, maxnh,
      &                         numh(1:no_l), listhptr(1:no_l),
      &                         nspin, wmix, nkick, wmixkick,
      $                         XOut, XIn, dDmax)

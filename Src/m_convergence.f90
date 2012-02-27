@@ -1,5 +1,11 @@
 module m_convergence
 
+! A very simple derived type to monitor convergence of 
+! a magnitude. 
+! Just the last value added is kept, but a convergence check is
+! performed first. Note that only absolute convergence is
+! monitored. 
+!
 integer, parameter, private  :: dp = selected_real_kind(14,100)
 
 type, public :: converger_t

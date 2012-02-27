@@ -1,5 +1,30 @@
 
 -----------------------------------------------------------------------
+2012-02-27  Alberto Garcia <albertog@icmab.es>   trunk-401-sparse-9
+Clarify various issues of DM, H, and energy flow
+
+Mixing after SCF convergence is now a user-settable option, controlled
+by the fdf logical MixAfterConvergence, which is .true. by default.
+
+Some comments have been added (and some other corrected) to clarify
+some issues, in particular the fact that E_KS(DM_out) is computed when
+mixing the Hamiltonian.
+
+The variable 'mix' has been renamed to the more appropriate
+'mix_first_scf_step'.
+
+modified:
+  Src/Makefile
+  Src/m_convergence.f90
+  Src/m_energies.F90
+  Src/mixer.F
+  Src/post_scf_work.F
+  Src/scfconvergence_test.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/siesta_options.F90
+
+-----------------------------------------------------------------------
 2012-02-24  Alberto Garcia <albertog@icmab.es>   trunk-401-sparse-8
 Check for convergence (and maybe exit SCF loop) before mixing 
 
