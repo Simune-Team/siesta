@@ -12,7 +12,7 @@
      &                    numh(:), numhold(:)
 
       real(dp), pointer :: Dold(:,:), Dscf(:,:), 
-     &                     Eold(:,:), Escf(:,:), H(:,:),
+     &                     Escf(:,:), H(:,:),
      &                     xijo(:,:), S(:)
 
       ! Used to hold the "input" H when mixing the Hamiltonian
@@ -40,7 +40,6 @@
 
       call de_alloc( Dold,        'Dold',        'sparseMat' )
       call de_alloc( Dscf,        'Dscf',        'sparseMat' )
-      call de_alloc( Eold,        'Eold',        'sparseMat' )
       call de_alloc( Escf,        'Escf',        'sparseMat' )
       call de_alloc( H,           'H',           'sparseMat' )
       call de_alloc( H_kin,       'H_kin',       'sparseMat' )

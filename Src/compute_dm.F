@@ -52,6 +52,14 @@
 #endif
       call timer( 'compute_dm', 1 )
 
+! Save present DM here, instead of in setup_hamiltonian...
+
+      do ispin = 1,nspin
+         do io = 1,maxnh
+            Dold(io,ispin) = Dscf(io,ispin)
+         enddo
+      enddo
+
 !     Solve eigenvalue problem 
       if (isolve .eq. SOLVE_DIAGON) then
         call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
@@ -98,15 +106,6 @@
       else
         call die('siesta: ERROR: wrong solution method')
       endif
-
-! Save present H matrix
-          if(mixH) then
-             do ispin = 1,nspin
-                do io = 1,maxnh
-                   Hold(io,ispin) = H(io,ispin)
-                enddo
-             enddo
-          end if
 
 !     Harris-functional energy 
       DEharr = 0.0_dp

@@ -11,7 +11,7 @@
       use siesta_cml,            only: cmlAddProperty
       use siesta_cml,            only: cmlStartPropertyList
       use siesta_cml,            only: cmlEndPropertyList
-      use siesta_options,        only: mixH, Temp, harrisfun, dDtol
+      use siesta_options,        only: Temp, harrisfun, dDtol
       use siesta_options,        only: require_harris_convergence
       use siesta_options,        only: require_energy_convergence
       use siesta_options,        only: energy_tolerance
@@ -42,8 +42,7 @@
       type(converger_t), intent(inout)  :: conv_harris, conv_etot
 
       real(dp) :: dDmax     ! Max. change in dens. matrix or H
-      real(dp), dimension(:,:), pointer :: Xin => null()
-      real(dp), dimension(:,:), pointer :: Xout => null()  
+      real(dp) :: dHmax
 
       integer               :: ind, in, is, i
 #ifdef MPI
@@ -57,34 +56,14 @@
       call timer( 'SCFconv', 1 )
       ! convergence test
 
-      if (mixH) then
-         ! Mixing Hamiltonian
-         Xin => Hold
-         Xout => H
-      else
-         ! Mix density matrix
-         Xin => Dold
-         Xout => Dscf
-      endif
 
-    !  Compute current maximum deviation ...........
+    !  Compute current maximum deviation of DM
       dDmax = 0.0_dp
       do is = 1,nspin
          do i = 1,no_l
             do in = 1,numh(i)
                ind = listhptr(i) + in
-               dDmax = max(dDmax, abs(Xout(ind,is) - Xin(ind,is)))
-            enddo
-         enddo
-      enddo
-      if (mixH) then
-    !  Compute current maximum deviation of DM too
-      diffmax = 0.0_dp
-      do is = 1,nspin
-         do i = 1,no_l
-            do in = 1,numh(i)
-               ind = listhptr(i) + in
-               diffmax = max(diffmax, abs(Dscf(ind,is) - Dold(ind,is)))
+               dDmax = max(dDmax, abs(Dscf(ind,is) - Dold(ind,is)))
             enddo
          enddo
       enddo
@@ -94,6 +73,23 @@
       call globalize_max(dDmax,buffer1)
       dDmax = buffer1
 #endif
+
+      ! Compute current maximum deviation of H too
+      dHmax = 0.0_dp
+      do is = 1,nspin
+         do i = 1,no_l
+            do in = 1,numh(i)
+               ind = listhptr(i) + in
+               dHmax =
+     $              max(dHmax, abs(H(ind,is) - Hold(ind,is)))
+            enddo
+         enddo
+      enddo
+#ifdef MPI
+      call globalize_max(dHmax,buffer1)
+      dHmax = buffer1
+#endif
+
 
       ! These energies were calculated in the latest call to
       ! setup_hamiltonian, using as ingredient:
@@ -146,6 +142,7 @@
       ! Print energies
       if (IOnode) then
         call siesta_write_energies( iscf, dDmax )
+        write(6,"(a,f12.7)") "Max(|H_out - H_in|): ", dHmax
 
         if (harrisfun) then
           write(6,"(/a,f14.6,/)") 'siesta: Eharris(eV) = ',Eharrs/eV

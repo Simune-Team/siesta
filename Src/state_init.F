@@ -11,7 +11,7 @@
       use m_proximity_check, only: proximity_check
       use siesta_options
       use sparse_matrices, only: maxnh, numh, listh, listhptr
-      use sparse_matrices, only: Dscf, Dold, Escf, Eold, Hold
+      use sparse_matrices, only: Dscf, Dold, Escf, Hold
       use sparse_matrices, only: xijo, H, S, H_kin, H_vkb
       use sparse_matrices, only: sparsity
       use siesta_geom
@@ -259,14 +259,11 @@
       ! Note that the resizing of Dscf is done inside new_dm below
       call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',
      .     routine='state_init',copy=.false.,shrink=.true.)
-      call re_alloc( Eold, 1, maxnh, 1, nspin, 'Eold',
-     .     routine='state_init',copy=.false.,shrink=.true.)
       call re_alloc( Escf, 1, maxnh, 1, nspin, 'Escf',
      .     routine='state_init',copy=.false.,shrink=.true.)
-      if(mixH) then
-         call re_alloc(Hold,1,maxnh,1,nspin,name='Hold',
+      call re_alloc(Hold,1,maxnh,1,nspin,name='Hold',
      .     routine='state_init',copy=.false.,shrink=.true.)
-      end if
+
       
 !     Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
       call re_alloc( H, 1, maxnh, 1, nspin, 'H',

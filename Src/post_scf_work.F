@@ -8,7 +8,7 @@
 
       USE m_final_H_f_stress, only: final_H_f_stress
       USE siesta_options
-      use sparse_matrices, only: Dscf, Escf, Dold, Eold, maxnh
+      use sparse_matrices, only: Dscf, Escf, Dold, maxnh
       use siesta_geom
       use atomlist, only: lasto, rmaxo, datm, indxuo, no_s, no_u, iphorb
       use m_energies

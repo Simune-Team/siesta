@@ -1,5 +1,29 @@
 
 -----------------------------------------------------------------------
+2012-02-28  Alberto Garcia <albertog@icmab.es>   trunk-401-sparse-11
+Monitor both H and DM SCF errors
+
+Both dDmax and dHmax are now computed in 'scfconvergence_test', to
+monitor H and DM convergence. Only dDmax is used as convergence
+criterion, to maintain compatibility, if mixing H, with previous
+levels of SCF convergence.
+
+Dold is now set in 'compute_dm', and Hold is now (always, even if
+mixing the DM) in setup_hamiltonian.
+
+The DM normalization error is now printed only if relevant (> 1%).
+
+modified:
+  Src/compute_dm.F
+  Src/normalize_dm.F
+  Src/post_scf_work.F
+  Src/scfconvergence_test.F
+  Src/setup_hamiltonian.F
+  Src/siesta_init.F
+  Src/sparse_matrices.F
+  Src/state_init.F
+
+-----------------------------------------------------------------------
 2012-02-28  Alberto Garcia <albertog@icmab.es>   trunk-401-sparse-10
 Use electronic entropy from current SCF step
 

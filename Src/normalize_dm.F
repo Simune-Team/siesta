@@ -36,8 +36,10 @@
       qsol = buffer1
 #endif
       if (IOnode) then
-         write(6,'(a,2f15.6)')
-     &    'Normalize-DM: Qtot, Tr[D*S] =', qtot, qsol
+         if(abs(qsol/qtot-1._dp).gt.1.d-2) then
+            write(6,'(a,2f15.6)')
+     &           'Normalize-DM: Qtot, Tr[D*S] =', qtot, qsol
+         endif
       endif
       do ispin = 1,nspin
         do io = 1,maxnh

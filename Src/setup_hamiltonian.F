@@ -8,8 +8,8 @@
       USE siesta_options
       use sparse_matrices, only: H_kin, H_vkb
       use sparse_matrices, only: listh, listhptr, numh, maxnh
-      use sparse_matrices, only: H, S
-      use sparse_matrices, only: Dold, Dscf, Eold, Escf, xijo
+      use sparse_matrices, only: H, Hold, S
+      use sparse_matrices, only: Dscf, Escf, xijo
       use siesta_geom
       use atmfuncs, only: uion
       use atomlist, only: no_u, iaorb, iphkb, qtot, indxuo, datm, 
@@ -58,6 +58,13 @@
       call write_debug( '  PRE setup_hamiltonian' )
 #endif
       
+! Save present H matrix
+      do ispin = 1,nspin
+         do io = 1,maxnh
+            Hold(io,ispin) = H(io,ispin)
+         enddo
+      enddo
+
 !     Normalize density matrix to exact charge
 !     Setup_hamiltonian is called before the density is printed out...
 #ifdef TRANSIESTA      
@@ -125,15 +132,6 @@
      .            Exc, Dxc, dipol, stress, fal, stressl)
 
       call de_alloc( fal, 'fal', 'setup_hamiltonian' ) 
-
-
-! Save present density matrix ........................................
-      do is = 1,nspin
-        do io = 1,maxnh
-          Dold(io,is) = Dscf(io,is)
-          Eold(io,is) = Escf(io,is)
-        enddo
-      enddo
 
 !  It is wasteful to write over and over H and S, as there are
 !  no different files.
