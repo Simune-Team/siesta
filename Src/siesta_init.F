@@ -135,7 +135,6 @@ C     Initialise MPI and set processor number
       Emad    = 0.0_dp
       Emeta   = 0.0_dp
       Emm     = 0.0_dp
-      Entrop  = 0.0_dp
       Entropy = 0.0_dp
       FreeE   = 0.0_dp
 

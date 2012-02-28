@@ -4,7 +4,7 @@ module m_energies
 
   public
 
-  real(dp):: DEharr
+  real(dp):: DEharr     ! Tr[H * (DM_out - DM_in)], for Harris energy
   real(dp):: DEna       ! Neutral-atom energy term, calculated  in dnaefs
   real(dp):: DUext      ! Interaction energy with external  electric field,
                         ! calculated in dhscf
@@ -24,11 +24,10 @@ module m_energies
   real(dp):: Enascf     ! Integral of Vna * rhoscf, calculated  in dhscf
   real(dp):: Enl        ! Non-local pseudopot. energy term,  calculated in nlefsm
   real(dp):: Emeta      ! Metadynamics energy contribution  calculated in meta
-  real(dp):: Entrop     ! Temporary to call diagon
-  real(dp):: Entropy    ! Entropy due to electron state  occupations, calc. in diagon
+  real(dp):: Entropy    ! Entropy due to electron state occupations, calc. in diagon
   real(dp):: Etot       ! Total electronic energy
   real(dp):: Exc        ! Exchange-correlation energy,  calculated in dhscf
-  real(dp):: E0         ! Non-SCF part of total energy
+  real(dp):: E0         ! Non-SCF part of total energy ( Ekin + Enl )
   real(dp):: Emm        ! Classical two-body term, calculated in  twobody
   real(dp):: FreeE      ! Free energy
   real(dp):: FreeEharris! Free energy computed with Harris total energy

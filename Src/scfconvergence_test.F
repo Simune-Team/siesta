@@ -77,6 +77,17 @@
             enddo
          enddo
       enddo
+      if (mixH) then
+    !  Compute current maximum deviation of DM too
+      diffmax = 0.0_dp
+      do is = 1,nspin
+         do i = 1,no_l
+            do in = 1,numh(i)
+               ind = listhptr(i) + in
+               diffmax = max(diffmax, abs(Dscf(ind,is) - Dold(ind,is)))
+            enddo
+         enddo
+      enddo
     ! .......
 #ifdef MPI
 !     Ensure that dDmax is the same on all nodes for convergence test/output
@@ -98,6 +109,14 @@
       ! Monitor Etot and Eharrs for optional convergence
       call add_value(conv_harris, eharrs)
       call add_value(conv_etot, etot)
+
+      ! The electronic entropy is computed in compute_dm.
+      ! It is used here to make the energy variational if
+      ! occupation numbers change. Note that this is the
+      ! entropy of the band structure computed from H_in,
+      ! which might be claimed to be an "out" quantity.
+      ! In previous versions the entropy of the previous
+      ! SCF step was used instead (with no clear reason).
 
       FreeE  = Etot - Temp * Entropy
 

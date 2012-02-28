@@ -1,5 +1,32 @@
 
 -----------------------------------------------------------------------
+2012-02-28  Alberto Garcia <albertog@icmab.es>   trunk-401-sparse-10
+Use electronic entropy from current SCF step
+
+The electronic entropy is computed (in 'compute_dm') once the
+electronic structure is known. The -TS term in the electronic free
+energy was previously computed using the information from the previous
+SCF step (by having it added to Etot in setup_hamiltonian, using an
+intermediate variable). Now it is added in scfconvergence_test, and it
+corresponds to the current SCF step. There is not much theoretical
+justification for the previous choice, and the new one looks more
+appropriate in general, and notably if E_KS(out) is computed (as with
+H mixing).
+
+The CEA group suggested the change quite a long time ago, and has been
+used it in their own versions of the program.
+
+modified:
+  Src/compute_dm.F
+  Src/final_H_f_stress.F
+  Src/local_DOS.F
+  Src/m_energies.F90
+  Src/scfconvergence_test.F
+  Src/setup_hamiltonian.F
+  Src/siesta_init.F
+  Src/siesta_options.F90
+
+-----------------------------------------------------------------------
 2012-02-27  Alberto Garcia <albertog@icmab.es>   trunk-401-sparse-9
 Clarify various issues of DM, H, and energy flow
 

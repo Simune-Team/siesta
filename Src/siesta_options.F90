@@ -1456,8 +1456,8 @@ MODULE siesta_options
       SCFMustConverge = .false.
       if (mixH) then
          if (ionode) then
-            write(6,'(a)') 'redata: ' // 'Re-setting MixHamiltonian ' //
-                            // 'for Harris run'
+            write(6,'(a)') 'redata: ' // 'Re-setting MixHamiltonian ' // &
+                           'for Harris run'
          endif
          mixH = .false.
       endif

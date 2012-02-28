@@ -14,7 +14,7 @@
      &                    qtot, no_l
       use sys, only: die
       use Kpoint_grid
-      use m_energies,   only: Ebs, DEHarr, Ecorrec, Ef, Entrop
+      use m_energies,   only: Ebs, DEHarr, Ecorrec, Ef, Entropy
       use m_rmaxh
       use m_eo
       use m_gamma
@@ -58,7 +58,7 @@
      &              numh, listhptr, listh, numh, listhptr, listh, 
      &              H, S, qtot, fixspin, qs, temp, e1, e2,
      &              gamma, xijo, indxuo, nkpnt, kpoint, kweight,
-     &              eo, qo, Dscf, Escf, ef, efs, Entrop, no_u,
+     &              eo, qo, Dscf, Escf, ef, efs, Entropy, no_u,
      &              occtol, iscf, neigwanted)
         Ecorrec = 0.0_dp
       elseif (isolve .eq. SOLVE_ORDERN) then
@@ -68,7 +68,7 @@
      &               istp, ncgmax, etol, eta, qtot, maxnh, numh,
      &               listhptr, listh, H, S, chebef, noeta, rcoorcp,
      &               beta, pmax, Dscf, Escf, Ecorrec, nspin, qs )
-        Entrop = 0.0_dp
+        Entropy = 0.0_dp
 #ifdef TRANSIESTA
 ! TSS Begin
       elseif (TSmode .and. TSinit) then
@@ -76,7 +76,7 @@
      &              numh, listhptr, listh, numh, listhptr, listh,
      &              H, S, qtot, fixspin, qs, temp, e1, e2,
      &              gamma, xijo, indxuo, nkpnt, kpoint, kweight,
-     &              eo, qo, Dscf, Escf, ef, efs, Entrop, no_u,
+     &              eo, qo, Dscf, Escf, ef, efs, Entropy, no_u,
      &              occtol, iscf, neigwanted)
 
         Ecorrec = 0._dp
@@ -92,6 +92,7 @@
         call timer('TS',2)
 
         Ecorrec = 0._dp
+        Entropy = 0.0_dp
 ! TSS End
 #endif /* TRANSIESTA */
       else
