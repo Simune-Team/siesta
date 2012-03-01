@@ -40,7 +40,8 @@
       use domain_decom,      only: domainDecom, use_dd, use_dd_perm
 
 #ifdef TRANSIESTA
-      use m_ts_options, only : onlyS, TSrun
+      use m_ts_options, only : onlyS
+      use m_ts_global_vars, only: TSrun
       use sys, only : bye
       use m_ts_io, only : ts_iohs
       use files, only: slabel, label_length

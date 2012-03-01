@@ -1,5 +1,29 @@
 
 -----------------------------------------------------------------------
+2012-03-01  Alberto Garcia <albertog@icmab.es>   trunk-401-sparse-12
+Change of logic in siesta_forces to make E_KS variational
+
+A re-ordering of the operations, and a careful consideration of the different
+contributions to the energy, have allowed the computation of E_KS(out), which
+is variational, both when mixing H and when mixing the DM.
+
+There are still some rough edges, notably in TranSiesta operation and the output
+of the DM.
+
+removed:
+  Src/scfconvergence_test.F
+added:
+  Src/check_scf_convergence.F
+  Src/compute_EKS_Harris.F90
+  Src/compute_max_diff.F
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+  Src/mixer.F
+  Src/siesta_forces.F
+  Src/state_init.F
+
+-----------------------------------------------------------------------
 2012-02-28  Alberto Garcia <albertog@icmab.es>   trunk-401-sparse-11
 Monitor both H and DM SCF errors
 

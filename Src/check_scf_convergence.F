@@ -1,10 +1,11 @@
-      module m_scfconvergence_test
+      module m_check_scf_convergence
       private
-      public :: scfconvergence_test
+      public :: check_scf_convergence
       CONTAINS
 
-      subroutine scfconvergence_test( iscf, last,
-     $                                conv_harris, conv_etot)
+      subroutine check_scf_convergence( iscf, last, E_Harris, E_KS_good,
+     $                                  dDmax, dHmax,
+     $                                  conv_harris, conv_etot)
 
       use precision,             only: dp
       use siesta_cml,            only: cml_p, mainXML
@@ -20,14 +21,8 @@
       use parallel,              only: IOnode
       use units,                 only: eV
       use write_subs,            only: siesta_write_energies
-      use m_energies            
-      use atomlist,              only: no_l
-      use m_spin,                only: nspin
-      use sparse_matrices,       only: numh, listhptr
-      use sparse_matrices,       only: H, Hold, Dscf, Dold
-#ifdef MPI
-      use m_mpi_utils,           only: globalize_max
-#endif
+      use m_energies,            only: Etot, EHarrs, Eharrs1
+      use m_energies,            only: FreeE, Entropy
       use m_convergence,         only: converger_t
       use m_convergence,         only: add_value, is_converged
 #ifdef TRANSIESTA
@@ -39,72 +34,22 @@
 
       integer, intent(in)  :: iscf
       logical, intent(out) :: last
+      real(dp), intent(in) :: E_Harris, E_KS_Good
+      real(dp), intent(in) :: dDmax     ! Max. change in density matrix
+      real(dp), intent(in) :: dHmax     ! Max. change in  H
       type(converger_t), intent(inout)  :: conv_harris, conv_etot
 
-      real(dp) :: dDmax     ! Max. change in dens. matrix or H
-      real(dp) :: dHmax
-
-      integer               :: ind, in, is, i
-#ifdef MPI
-      real(dp)              :: buffer1
-#endif
-
 !----------------------------------------------------------------- BEGIN
-#ifdef DEBUG
-      call write_debug( '  PRE scfconvergence_test' )
-#endif
+
       call timer( 'SCFconv', 1 )
       ! convergence test
 
-
-    !  Compute current maximum deviation of DM
-      dDmax = 0.0_dp
-      do is = 1,nspin
-         do i = 1,no_l
-            do in = 1,numh(i)
-               ind = listhptr(i) + in
-               dDmax = max(dDmax, abs(Dscf(ind,is) - Dold(ind,is)))
-            enddo
-         enddo
-      enddo
-    ! .......
-#ifdef MPI
-!     Ensure that dDmax is the same on all nodes for convergence test/output
-      call globalize_max(dDmax,buffer1)
-      dDmax = buffer1
-#endif
-
-      ! Compute current maximum deviation of H too
-      dHmax = 0.0_dp
-      do is = 1,nspin
-         do i = 1,no_l
-            do in = 1,numh(i)
-               ind = listhptr(i) + in
-               dHmax =
-     $              max(dHmax, abs(H(ind,is) - Hold(ind,is)))
-            enddo
-         enddo
-      enddo
-#ifdef MPI
-      call globalize_max(dHmax,buffer1)
-      dHmax = buffer1
-#endif
-
-
-      ! These energies were calculated in the latest call to
-      ! setup_hamiltonian, using as ingredient:
-      !
-      !  D_in if mixing the DM
-      !  D_out if mixing the Hamiltonian
-      !
-      DEna = Enascf - Enaatm
-      Etot = E0 + DEna + DUscf + DUext + Exc + Ecorrec+Emad+Emm+
-     &       Emeta
-      Eharrs = Etot + DEharr
-
       ! Monitor Etot and Eharrs for optional convergence
-      call add_value(conv_harris, eharrs)
-      call add_value(conv_etot, etot)
+      call add_value(conv_harris, E_Harris)
+      call add_value(conv_etot, E_KS_Good)
+
+      Etot = E_KS_Good
+      Eharrs = E_Harris
 
       ! The electronic entropy is computed in compute_dm.
       ! It is used here to make the energy variational if
@@ -189,9 +134,7 @@
 #endif /* TRANSIESTA */
 
       call timer( 'SCFconv', 2 )
-#ifdef DEBUG
-      call write_debug( '  POS scfconvergence_test' )
-#endif
+
 !--------------------------------------------------------------------------- END
-      END subroutine scfconvergence_test
-      end module m_scfconvergence_test
+      END subroutine check_scf_convergence
+      end module m_check_scf_convergence

@@ -98,7 +98,7 @@ OBJS =  automatic_cell.o atom_options.o \
         ofc.o poison.o readsp.o radfft.o \
 	write_md_record.o kpoint_grid.o find_kgrid.o proximity_check.o\
 	state_init.o siesta_move.o setup_hamiltonian.o compute_dm.o mixer.o\
-	scfconvergence_test.o post_scf_work.o state_analysis.o write_subs.o \
+	check_scf_convergence.o post_scf_work.o state_analysis.o write_subs.o \
 	siesta_init.o struct_init.o siesta_options.o siesta_geom.o \
         siesta_analysis.o siesta_end.o siesta_forces.o \
         siesta.o io.o sparse_matrices.o \
@@ -140,7 +140,8 @@ OBJS =  automatic_cell.o atom_options.o \
         bsc_xcmod.o bsc_cellxc.o xc.o \
 	vacuum_level.o \
 	write_orb_indx.o \
-	m_sparse_types.o
+	m_sparse_types.o \
+        compute_EKS_Harris.o compute_max_diff.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -366,16 +367,25 @@ cgvc.o: alloc.o conjgr_old.o m_mpi_utils.o parallel.o precision.o sys.o units.o
 cgvc_zmatrix.o: alloc.o conjgr.o m_mpi_utils.o parallel.o precision.o sys.o
 cgvc_zmatrix.o: units.o zmatrix.o
 cgwf.o: egandd.o onmod.o parallel.o precision.o sys.o
+check_scf_convergence.o: m_convergence.o m_energies.o m_pulay.o
+check_scf_convergence.o: m_ts_global_vars.o m_ts_options.o m_wallclock.o
+check_scf_convergence.o: parallel.o precision.o siesta_cml.o siesta_options.o
+check_scf_convergence.o: units.o write_subs.o
 chemical.o: parallel.o precision.o sys.o
 chempot.o: alloc.o mneighb.o parallel.o parallelsubs.o precision.o sys.o
 chkdim.o: sys.o
 chkgmx.o: cellsubs.o minvec.o precision.o sys.o
 coceri.o: files.o periodic_table.o precision.o
+compute_EKS_Harris.o: atomlist.o dhscf.o m_dipol.o m_energies.o m_ntm.o
+compute_EKS_Harris.o: m_sparse_types.o m_spin.o precision.o siesta_geom.o
+compute_EKS_Harris.o: siesta_options.o sparse_matrices.o
 compute_dm.o: atomlist.o iodmhs_netcdf.o kpoint_grid.o m_energies.o m_eo.o
 compute_dm.o: m_gamma.o m_mpi_utils.o m_rmaxh.o m_spin.o m_steps.o
 compute_dm.o: m_ts_global_vars.o m_ts_in_siesta.o m_ts_options.o ordern.o
 compute_dm.o: parallel.o precision.o siesta_geom.o siesta_options.o
 compute_dm.o: sparse_matrices.o sys.o units.o
+compute_max_diff.o: atomlist.o m_mpi_utils.o m_spin.o precision.o
+compute_max_diff.o: sparse_matrices.o
 compute_norm.o: m_mpi_utils.o precision.o sparse_matrices.o
 conjgr.o: precision.o
 conjgr_old.o: precision.o
@@ -635,10 +645,6 @@ rhoofd.o: meshphi.o parallel.o parallelsubs.o precision.o sys.o
 rhoofdsp.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mesh.o
 rhoofdsp.o: meshdscf.o meshphi.o precision.o sys.o
 savepsi.o: alloc.o parallel.o parallelsubs.o precision.o
-scfconvergence_test.o: atomlist.o m_convergence.o m_energies.o m_mpi_utils.o
-scfconvergence_test.o: m_pulay.o m_spin.o m_ts_global_vars.o m_ts_options.o
-scfconvergence_test.o: m_wallclock.o parallel.o precision.o siesta_cml.o
-scfconvergence_test.o: siesta_options.o sparse_matrices.o units.o write_subs.o
 schecomm.o: alloc.o
 setatomnodes.o: alloc.o parallel.o precision.o spatial.o sys.o
 setspatial.o: alloc.o parallel.o precision.o spatial.o
@@ -668,11 +674,12 @@ siesta_cmlsubs.o: files.o parallel.o siesta_cml.o timestamp.o
 siesta_end.o: alloc.o bands.o densematrix.o fixed.o m_dscfcomm.o m_pulay.o
 siesta_end.o: m_wallclock.o meshdscf.o meshphi.o moremeshsubs.o parallel.o
 siesta_end.o: siesta_cml.o siesta_cmlsubs.o sparse_matrices.o timestamp.o
-siesta_forces.o: compute_dm.o m_convergence.o m_steps.o m_ts_global_vars.o
-siesta_forces.o: mixer.o parallel.o post_scf_work.o precision.o
-siesta_forces.o: scfconvergence_test.o setup_H0.o setup_hamiltonian.o
-siesta_forces.o: siesta_cml.o siesta_options.o state_analysis.o state_init.o
-siesta_forces.o: sys.o
+siesta_forces.o: check_scf_convergence.o compute_EKS_Harris.o compute_dm.o
+siesta_forces.o: compute_max_diff.o m_convergence.o m_steps.o
+siesta_forces.o: m_ts_global_vars.o mixer.o parallel.o post_scf_work.o
+siesta_forces.o: precision.o setup_H0.o setup_hamiltonian.o siesta_cml.o
+siesta_forces.o: siesta_options.o sparse_matrices.o state_analysis.o
+siesta_forces.o: state_init.o sys.o
 siesta_geom.o: precision.o
 siesta_init.o: alloc.o atomlist.o bands.o bsc_xcmod.o densematrix.o files.o
 siesta_init.o: ioxv.o kpoint_grid.o kpoint_pdos.o ksvinit.o m_check_supercell.o
@@ -745,9 +752,11 @@ m_broyden_optim.o: broyden_optim.o
 m_cell_broyden_optim.o: cell_broyden_optim.o
 m_cell_fire_optim.o: cell_fire_optim.o
 m_cgwf.o: cgwf.o
+m_check_scf_convergence.o: check_scf_convergence.o
 m_chempot.o: chempot.o
 m_chkgmx.o: chkgmx.o
 m_compute_dm.o: compute_dm.o
+m_compute_max_diff.o: compute_max_diff.o
 m_conjgr.o: conjgr.o
 m_conjgr_old.o: conjgr_old.o
 m_denmat.o: denmat.o
@@ -756,6 +765,7 @@ m_dnaefs.o: dnaefs.o
 m_doping_uniform.o: doping_uniform.o
 m_dynamics.o: dynamics.o
 m_eandg.o: egandd.o
+m_eks_harris.o: compute_EKS_Harris.o
 m_ener3.o: ener3.o
 m_fermid.o: fermid.o
 m_fft.o: fft.o
@@ -790,7 +800,6 @@ m_projected_dos.o: projected_DOS.o
 m_proximity_check.o: proximity_check.o
 m_radfft.o: radfft.o
 m_scf_options.o: m_options.o
-m_scfconvergence_test.o: scfconvergence_test.o
 m_setup_h0.o: setup_H0.o
 m_setup_hamiltonian.o: setup_hamiltonian.o
 m_siesta_analysis.o: siesta_analysis.o

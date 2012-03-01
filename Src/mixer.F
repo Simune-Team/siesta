@@ -31,6 +31,7 @@
       use m_energies,   only : ef
       use m_ts_iodm, only : write_ts_dm
       use m_ts_global_vars, only: TSrun, TSiscf
+      use sparse_matrices,  only: Escf
 #endif /* TRANSIESTA */
       implicit none
 

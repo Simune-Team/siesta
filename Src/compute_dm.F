@@ -107,29 +107,6 @@
         call die('siesta: ERROR: wrong solution method')
       endif
 
-!     Harris-functional energy 
-      DEharr = 0.0_dp
-          Ebs = 0.0_dp
-      do ispin = 1,nspin
-!       const factor takes into account that there are two nondiagonal
-!       elements in non-collinear spin density matrix, stored as
-!       ispin=1 => D11; ispin=2 => D22, ispin=3 => Real(D12);
-!       ispin=4 => Imag(D12)
-        const = 1._dp
-        if (ispin .gt. 2) const = 2._dp
-        do io = 1,maxnh
-          DEharr = DEharr + H(io,ispin) * const * 
-     &                 ( Dscf(io,ispin) - Dold(io,ispin) )
-          Ebs = Ebs + H(io,ispin) * const * Dscf(io,ispin)
-        enddo
-      enddo
-#ifdef MPI
-!     Global reduction of DEharr
-      call globalize_sum( DEharr, buffer1 )
-      DEharr = buffer1
-      call globalize_sum(Ebs,buffer1)
-      Ebs = buffer1
-#endif
 ! ..................
 #ifdef CDF
       if ( writedmhs_cdf_history) then
