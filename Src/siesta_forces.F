@@ -27,7 +27,6 @@
       use siesta_options,        only: harris_tolerance
       use siesta_options,        only: SCFMustConverge, nscf, mixH
       use siesta_options,        only: mix_after_convergence
-      use parallel,              only: IOnode
       use m_state_analysis,      only: state_analysis
       use m_steps,               only: inicoor
       use sys,                   only: die, bye
@@ -43,7 +42,7 @@
       integer, intent(in)  :: istep
 
       integer            :: iscf
-      logical            :: last, SCFconverged
+      logical            :: last, SCFconverged, ts_will_continue
       type(converger_t)  :: conv_harris, conv_etot
       real(dp)           :: E_Harris, E_KS_Good
       real(dp)           :: dDmax, dHmax
@@ -54,9 +53,7 @@
 #endif /* TRANSIESTA */
       
 !---------------------------------------------------------------------- BEGIN
-#ifdef DEBUG
-      call write_debug( 'PRE siesta_forces' )
-#endif
+
 !     Initialization tasks for a given geometry, including
 !     the determination of DM_in
       call state_init( istep )
@@ -66,8 +63,8 @@
 
 !     Start of SCF loop
       iscf  = 1
-      last  = .false.
       SCFconverged = .false.
+
       if (require_harris_convergence) then
         call reset(conv_harris)
         call set_tolerance(conv_harris,harris_tolerance)
@@ -77,11 +74,10 @@
         call set_tolerance(conv_etot,energy_tolerance)
       endif
 
-!     The SCF loop is executed at least once, 
-!     except if nscf <= 0.
-      if (nscf <= 0) then
-         last = .true.
-      endif
+!     The SCF loop is executed at least once, except if nscf <= 0.
+!     Trap this for now. It is not clear what the use-case is...
+
+      if (nscf <= 0)  call die(" *** nscf <= 0.... ")
 
       call setup_H0()
 
@@ -95,7 +91,7 @@
       call setup_hamiltonian( iscf ) ! Gets E_KS(DM_in) (non-variational) and H_in
       call compute_max_diff(Hold,H,dHmax)
 
-      DO WHILE (.not. last)
+      DO    ! conditions for exit inside
 
         ! The underlying reason for using "last" is to allow
         ! TranSiesta to keep looping after the initial diagon-style
@@ -107,13 +103,17 @@
         call compute_max_diff(Dold,Dscf,dDmax)
         call compute_EKS_Harris( E_Harris, E_KS_Good )
 
-        ! Checks convergence
 
-        call check_scf_convergence( iscf, last, E_Harris, E_KS_Good,
-     &                            dDmax, dHmax, conv_harris, conv_etot )
-        SCFconverged = last
-        ! In TranSiesta runs, last is re-set to .false. to switch
-        ! to GF mode (to be cleaned up)
+        call check_scf_convergence( iscf, SCFconverged,
+     $                              E_Harris, E_KS_Good,
+     $                              dDmax, dHmax,
+     $                              conv_harris, conv_etot )
+        if (SCFconverged) then
+           if (ionode) then
+              write(6,"(a,i0,a)") "SCF cycle converged in ", iscf,
+     $                             " iterations."
+           endif
+        endif
 
         call timer( 'IterSCF', 2 )
         if (istep.eq.inicoor .and. (iscf==1)) then
@@ -121,27 +121,37 @@
         endif
         if (cml_p) call cmlEndStep(mainXML)
 
-        if (iscf == nscf) then
-          last = .true.
+        ! Now check whether we should exit the loop early
+        ! In TranSiesta runs, SCF convergence is the signal to switch
+        ! to GF mode. Until we completely integrate TranSiesta, we
+        ! need to check this.
+
+        if (iscf == nscf)  EXIT
+        if (SCFconverged) then
+           call check_transiesta_switch(ts_will_continue)
+           if (ts_will_continue) then
+              ! keep in cycle
+           else
+              EXIT
+           endif
         endif
 
-        if (.not. last) then
-           call timer( 'IterSCF', 1 )
-           if (cml_p) call cmlStartStep(mainXML)
-           if (mixH) then
-              call setup_hamiltonian( iscf )  ! Gets H_out (H) and keeps H_in (Hold)
-              call mixer (iscf)               ! Mixes H_in and H_out to give H_in_next
-           else
-              call mixer (iscf)               ! Mixes DM_in and DM_out to give DM_in_next
-              call setup_hamiltonian (iscf)   ! Gets H_in_next from DM_in_next, and E_KS(DM_in)
-           endif
-           call compute_max_diff(Hold,H,dHmax)
+        ! This is formally part of the next SCF step
+        call timer( 'IterSCF', 1 )
+        if (cml_p) call cmlStartStep(mainXML)
+
+        if (mixH) then
+           call setup_hamiltonian( iscf ) ! Gets H_out (H) and keeps H_in (Hold)
+           call mixer (iscf)    ! Mixes H_in and H_out to give H_in_next
+        else
+           call mixer (iscf)    ! Mixes DM_in and DM_out to give DM_in_next
+           call setup_hamiltonian (iscf) ! Gets H_in_next from DM_in_next, and E_KS(DM_in)
         endif
+        call compute_max_diff(Hold,H,dHmax)
 
         ! Save DM and H here for restarts
 
         iscf = iscf + 1
-
 
       ENDDO
 
@@ -160,6 +170,55 @@
       ! for this geometry
       call state_analysis( istep )
 
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------------------ END
       END subroutine siesta_forces
+
+      subroutine check_transiesta_switch(ts_continues_GF)
+
+#ifdef TRANSIESTA
+      use m_ts_global_vars,      only: TSinit, TSrun, TSiscf
+      use m_ts_options,          only: TSmode
+      use m_pulay,               only: init_pulay_arrays
+      use parallel,              only: IONode
+#endif /* TRANSIESTA */
+
+      logical, intent(out) :: ts_continues_GF
+
+#ifndef TRANSIESTA
+      ! We are not compiled as TranSiesta
+      ! Nothing else to do in the loop.
+      ts_continues_GF = .false.
+#else
+      ts_continues_GF = .false.
+
+      if (TSmode .and. TSinit) then
+
+         ! We're  done with the initial diagon run
+         ! Now we start the TRANSIESTA (Green's Functions) run
+
+         TSinit = .false.       
+         TSrun = .true.
+         TSiscf = 0
+
+         ts_continues_GF = .true.
+
+           !
+           ! From now on, a new mixing cycle starts,
+           ! so we have to reset the Pulay record keeping
+           !
+         call init_pulay_arrays()  
+           !
+         if(IONode) then
+           write(6,'(/a)')
+     &'                          ************************       '
+           write(6,'(a)')
+     &'                          *   TRANSIESTA BEGIN   *       '
+           write(6,'(a)')
+     &'                          ************************       '
+         end if
+      end if
+
+#endif /* TRANSIESTA */
+      end subroutine check_transiesta_switch
+
       END module m_siesta_forces

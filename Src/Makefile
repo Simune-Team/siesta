@@ -367,18 +367,17 @@ cgvc.o: alloc.o conjgr_old.o m_mpi_utils.o parallel.o precision.o sys.o units.o
 cgvc_zmatrix.o: alloc.o conjgr.o m_mpi_utils.o parallel.o precision.o sys.o
 cgvc_zmatrix.o: units.o zmatrix.o
 cgwf.o: egandd.o onmod.o parallel.o precision.o sys.o
-check_scf_convergence.o: m_convergence.o m_energies.o m_pulay.o
-check_scf_convergence.o: m_ts_global_vars.o m_ts_options.o m_wallclock.o
-check_scf_convergence.o: parallel.o precision.o siesta_cml.o siesta_options.o
-check_scf_convergence.o: units.o write_subs.o
+check_scf_convergence.o: m_convergence.o m_energies.o m_wallclock.o parallel.o
+check_scf_convergence.o: precision.o siesta_cml.o siesta_options.o units.o
+check_scf_convergence.o: write_subs.o
 chemical.o: parallel.o precision.o sys.o
 chempot.o: alloc.o mneighb.o parallel.o parallelsubs.o precision.o sys.o
 chkdim.o: sys.o
 chkgmx.o: cellsubs.o minvec.o precision.o sys.o
 coceri.o: files.o periodic_table.o precision.o
-compute_EKS_Harris.o: atomlist.o dhscf.o m_dipol.o m_energies.o m_ntm.o
-compute_EKS_Harris.o: m_sparse_types.o m_spin.o precision.o siesta_geom.o
-compute_EKS_Harris.o: siesta_options.o sparse_matrices.o
+compute_EKS_Harris.o: atomlist.o dhscf.o m_dipol.o m_energies.o m_mpi_utils.o
+compute_EKS_Harris.o: m_ntm.o m_sparse_types.o m_spin.o precision.o
+compute_EKS_Harris.o: siesta_geom.o siesta_options.o sparse_matrices.o
 compute_dm.o: atomlist.o iodmhs_netcdf.o kpoint_grid.o m_energies.o m_eo.o
 compute_dm.o: m_gamma.o m_mpi_utils.o m_rmaxh.o m_spin.o m_steps.o
 compute_dm.o: m_ts_global_vars.o m_ts_in_siesta.o m_ts_options.o ordern.o
@@ -675,11 +674,11 @@ siesta_end.o: alloc.o bands.o densematrix.o fixed.o m_dscfcomm.o m_pulay.o
 siesta_end.o: m_wallclock.o meshdscf.o meshphi.o moremeshsubs.o parallel.o
 siesta_end.o: siesta_cml.o siesta_cmlsubs.o sparse_matrices.o timestamp.o
 siesta_forces.o: check_scf_convergence.o compute_EKS_Harris.o compute_dm.o
-siesta_forces.o: compute_max_diff.o m_convergence.o m_steps.o
-siesta_forces.o: m_ts_global_vars.o mixer.o parallel.o post_scf_work.o
-siesta_forces.o: precision.o setup_H0.o setup_hamiltonian.o siesta_cml.o
-siesta_forces.o: siesta_options.o sparse_matrices.o state_analysis.o
-siesta_forces.o: state_init.o sys.o
+siesta_forces.o: compute_max_diff.o m_convergence.o m_pulay.o m_steps.o
+siesta_forces.o: m_ts_global_vars.o m_ts_options.o mixer.o parallel.o
+siesta_forces.o: post_scf_work.o precision.o setup_H0.o setup_hamiltonian.o
+siesta_forces.o: siesta_cml.o siesta_options.o sparse_matrices.o
+siesta_forces.o: state_analysis.o state_init.o sys.o
 siesta_geom.o: precision.o
 siesta_init.o: alloc.o atomlist.o bands.o bsc_xcmod.o densematrix.o files.o
 siesta_init.o: ioxv.o kpoint_grid.o kpoint_pdos.o ksvinit.o m_check_supercell.o
@@ -708,10 +707,10 @@ state_analysis.o: zmatrix.o
 state_init.o: alloc.o atomlist.o domain_decom.o files.o hsparse.o iodm_netcdf.o
 state_init.o: iodmhs_netcdf.o kpoint_grid.o m_check_supercell.o m_energies.o
 state_init.o: m_eo.o m_gamma.o m_mpi_utils.o m_pulay.o m_rmaxh.o
-state_init.o: m_sparse_types.o m_spin.o m_steps.o m_ts_io.o m_ts_options.o
-state_init.o: new_dm.o overlap.o parallel.o proximity_check.o siesta_cml.o
-state_init.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o
-state_init.o: write_subs.o zmatrix.o
+state_init.o: m_sparse_types.o m_spin.o m_steps.o m_ts_global_vars.o m_ts_io.o
+state_init.o: m_ts_options.o new_dm.o overlap.o parallel.o proximity_check.o
+state_init.o: siesta_cml.o siesta_geom.o siesta_options.o sparse_matrices.o
+state_init.o: sys.o write_subs.o zmatrix.o
 struct_init.o: alloc.o atmfuncs.o atomlist.o files.o iopipes.o ioxv.o
 struct_init.o: m_iostruct.o parallel.o periodic_table.o siesta_cml.o
 struct_init.o: siesta_geom.o siesta_options.o zmatrix.o

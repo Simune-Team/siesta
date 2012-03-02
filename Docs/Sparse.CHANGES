@@ -1,5 +1,23 @@
 
 -----------------------------------------------------------------------
+2012-03-02  Alberto Garcia <albertog@icmab.es>   trunk-401-sparse-14
+Clarify TranSiesta logic in SCF loop
+
+A new routine checks whether TranSiesta is compiled in, and
+whether, upon self-consistency, the program is going to switch
+to GF mode and remain in the loop. This is not completely optimal,
+but is an improvement over the previous obscure practice.
+
+The timing calls for the end of the Transiesta step have been
+moved to the transiesta section of compute_dm.
+
+modified:
+  Src/Makefile
+  Src/check_scf_convergence.F
+  Src/compute_dm.F
+  Src/siesta_forces.F
+
+-----------------------------------------------------------------------
 2012-03-02  Alberto Garcia <albertog@icmab.es>   trunk-401-sparse-13
 Fix logic related to Harris runs. Timer and CML calls. Fix MPI makefile. 
 

@@ -25,11 +25,7 @@
       use m_energies,            only: FreeE, Entropy
       use m_convergence,         only: converger_t
       use m_convergence,         only: add_value, is_converged
-#ifdef TRANSIESTA
-      use m_ts_global_vars,      only: TSinit, TSrun, TSiscf
-      use m_ts_options,          only: TSmode
-      use m_pulay,               only: init_pulay_arrays
-#endif /* TRANSIESTA */
+
       implicit none
 
       integer, intent(in)  :: iscf
@@ -104,34 +100,6 @@
         call pxfflush(6)
         call wallclock("-------------- end of scf step")
       endif
-
-#ifdef TRANSIESTA
-!     TSS Begin
-      if (TSmode .and. last .and. TSinit) then
-         last   = .false.     ! we're only done with the initial diagon run
-         TSinit = .false.     ! now we start the TRANSIESTA run
-         TSrun = .true.
-           !
-           ! From now on, a new mixing cycle starts,
-           ! so we have to reset the Pulay record keeping
-           !
-           call init_pulay_arrays()  
-           !
-         if(IONode) then
-           write(6,'(/a)')
-     &'                          ************************       '
-           write(6,'(a)')
-     &'                          *   TRANSIESTA BEGIN   *       '
-           write(6,'(a)')
-     &'                          ************************       '
-        end if
-      end if
-      if (TSiscf .eq. 1) call timer( 'IterSCF', 3 ) !TSS
-      if (TSiscf .eq. 1) call timer( 'TS', 3 ) !TSS
-      if (last) TSiscf = 0
-
-!     TSS End
-#endif /* TRANSIESTA */
 
       call timer( 'SCFconv', 2 )
 

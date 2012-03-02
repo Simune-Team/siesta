@@ -99,6 +99,9 @@
      &    TSiscf,qtot)
         call timer('TS',2)
 
+        if (TSiscf .eq. 1) call timer( 'IterSCF', 3 ) 
+        if (TSiscf .eq. 1) call timer( 'TS', 3 ) 
+
         Ecorrec = 0._dp
         Entropy = 0.0_dp
 ! TSS End
