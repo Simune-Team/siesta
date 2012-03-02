@@ -3,7 +3,8 @@
       public :: check_scf_convergence
       CONTAINS
 
-      subroutine check_scf_convergence( iscf, last, E_Harris, E_KS_good,
+      subroutine check_scf_convergence( iscf, converged,
+     $                                  E_Harris, E_KS_good,
      $                                  dDmax, dHmax,
      $                                  conv_harris, conv_etot)
 
@@ -29,7 +30,7 @@
       implicit none
 
       integer, intent(in)  :: iscf
-      logical, intent(out) :: last
+      logical, intent(out) :: converged
       real(dp), intent(in) :: E_Harris, E_KS_Good
       real(dp), intent(in) :: dDmax     ! Max. change in density matrix
       real(dp), intent(in) :: dHmax     ! Max. change in  H
@@ -64,26 +65,25 @@
       if (require_energy_convergence) then
          if (   dDmax.lt.dDtol
      &        .and. is_converged(conv_etot)) then
-            last = .true.
+            converged = .true.
             if (IOnode) then
                write(6,"(a)") "SCF Convergence by Etot+DM criteria"
             endif
          endif
       else if (require_harris_convergence) then
          if (is_converged(conv_harris)) then
-            last = .true.
+            converged = .true.
             if (IOnode) then
                write(6,"(a)") "SCF Convergence by Harris criterion"
             endif
          endif
       else
-        if (dDmax.lt.dDtol) last = .true.
+        if (dDmax.lt.dDtol) converged = .true.
       endif
 
       ! Print energies
       if (IOnode) then
-        call siesta_write_energies( iscf, dDmax )
-        write(6,"(a,f12.7)") "Max(|H_out - H_in|): ", dHmax
+        call siesta_write_energies( iscf, dDmax, dHmax )
 
         if (harrisfun) then
           write(6,"(/a,f14.6,/)") 'siesta: Eharris(eV) = ',Eharrs/eV
@@ -103,6 +103,6 @@
 
       call timer( 'SCFconv', 2 )
 
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------------------ END
       END subroutine check_scf_convergence
       end module m_check_scf_convergence

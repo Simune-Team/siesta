@@ -201,7 +201,8 @@
 
 !     Print program's energy decomposition and final forces
       if (IOnode) then
-        call siesta_write_energies( iscf=0, dDmax=0.0_dp)
+        call siesta_write_energies( iscf=0, dDmax=0.0_dp,
+     $                                      dHmax=0.0_dp)
         call siesta_write_forces()
         call siesta_write_stress_pressure()
         call write_basis_enthalpy(FreeE,FreeEHarris)

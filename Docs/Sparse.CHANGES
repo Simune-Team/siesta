@@ -1,5 +1,20 @@
 
 -----------------------------------------------------------------------
+2012-03-02  Alberto Garcia <albertog@icmab.es>   trunk-401-sparse-15
+Include dHmax in write_energies
+
+An extra column in the output.
+
+Fixed the logic in siesta_write_energies.
+Fixed wrong units in CML output for dDmax 
+
+modified:
+  Src/check_scf_convergence.F
+  Src/siesta_analysis.F
+  Src/siesta_forces.F
+  Src/write_subs.F
+
+-----------------------------------------------------------------------
 2012-03-02  Alberto Garcia <albertog@icmab.es>   trunk-401-sparse-14
 Clarify TranSiesta logic in SCF loop
 

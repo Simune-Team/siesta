@@ -93,16 +93,9 @@
 
       DO    ! conditions for exit inside
 
-        ! The underlying reason for using "last" is to allow
-        ! TranSiesta to keep looping after the initial diagon-style
-        ! initialization has converged.
-        ! This should be made more clear.
-
-
         call compute_dm( iscf ) ! Gets DM_out (Dscf) and keeps DM_in (Dold)
         call compute_max_diff(Dold,Dscf,dDmax)
         call compute_EKS_Harris( E_Harris, E_KS_Good )
-
 
         call check_scf_convergence( iscf, SCFconverged,
      $                              E_Harris, E_KS_Good,
@@ -137,17 +130,20 @@
         endif
 
         ! This is formally part of the next SCF step
+        ! only done if we are not converged
+
         call timer( 'IterSCF', 1 )
         if (cml_p) call cmlStartStep(mainXML)
 
         if (mixH) then
            call setup_hamiltonian( iscf ) ! Gets H_out (H) and keeps H_in (Hold)
+           call compute_max_diff(Hold,H,dHmax)
            call mixer (iscf)    ! Mixes H_in and H_out to give H_in_next
         else
            call mixer (iscf)    ! Mixes DM_in and DM_out to give DM_in_next
            call setup_hamiltonian (iscf) ! Gets H_in_next from DM_in_next, and E_KS(DM_in)
+           call compute_max_diff(Hold,H,dHmax)
         endif
-        call compute_max_diff(Hold,H,dHmax)
 
         ! Save DM and H here for restarts
 
