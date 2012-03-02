@@ -1450,17 +1450,11 @@ MODULE siesta_options
     harrisfun = fdf_get('Harris_functional',.false.)
 
     if (harrisfun) then
-      usesavedm = .false.
-      nscf      = 2       ! Could be 1 also
+      usesavedm = .false.    ! Presumably we need an atomic reference,
+                             ! at least for the forces
+      nscf      = 1          ! Note change from tradition
       mix_first_scf_step  = .false.
       SCFMustConverge = .false.
-      if (mixH) then
-         if (ionode) then
-            write(6,'(a)') 'redata: ' // 'Re-setting MixHamiltonian ' // &
-                           'for Harris run'
-         endif
-         mixH = .false.
-      endif
     endif
 
     if (ionode) then

@@ -121,8 +121,11 @@
         endif
         if (cml_p) call cmlEndStep(mainXML)
 
+        if (iscf == nscf) then
+          last = .true.
+        endif
 
-        if (.not. SCFconverged) then
+        if (.not. last) then
            call timer( 'IterSCF', 1 )
            if (cml_p) call cmlStartStep(mainXML)
            if (mixH) then
@@ -139,12 +142,6 @@
 
         iscf = iscf + 1
 
-!       The last scheduled iteration is used to compute forces
-!       and stresses, hence the exit if iscf==nscf.
-!       The ">" clause catches the nscf==1 case. For this,
-        if (iscf >= nscf) then
-          last = .true.
-        endif
 
       ENDDO
 

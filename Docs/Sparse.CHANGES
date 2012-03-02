@@ -1,5 +1,25 @@
 
 -----------------------------------------------------------------------
+2012-03-02  Alberto Garcia <albertog@icmab.es>   trunk-401-sparse-13
+Fix logic related to Harris runs. Timer and CML calls. Fix MPI makefile. 
+
+Harris "one-shot" runs "do not converge", yet they exit the loop early since nscf=2 (...).
+The logic in siesta_forces has been changed to allow for this. Now nscf=1 for
+Harris runs.
+
+The placement of the timer and CML calls has been set correctly.
+
+The MPI interface library libmpi_f90.a did not include timer_mpi.o.
+
+Use of MPI-only routine in compute_EKS_Harris.F90
+
+modified:
+  Src/MPI/Makefile
+  Src/compute_EKS_Harris.F90
+  Src/siesta_forces.F
+  Src/siesta_options.F90
+
+-----------------------------------------------------------------------
 2012-03-01  Alberto Garcia <albertog@icmab.es>   trunk-401-sparse-12
 Change of logic in siesta_forces to make E_KS variational
 

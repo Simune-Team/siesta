@@ -35,6 +35,10 @@ CONTAINS
       use m_spin,          only: nspin
       use m_dipol,         only: dipol
       use siesta_geom,     only: na_u, na_s, xa, isa
+#ifdef MPI
+      use m_mpi_utils,     only: globalize_sum
+#endif
+
 
       real(dp), intent(out) :: E_Harris
       real(dp), intent(out) :: E_KS_Good
