@@ -33,6 +33,7 @@
       use m_convergence,         only: converger_t
       use m_convergence,         only: reset, set_tolerance
       use parallel,              only: IONode
+      use m_save_density_matrix, only: save_density_matrix
 #ifdef TRANSIESTA
       use m_ts_global_vars,      only: ts_istep
 #endif /* TRANSIESTA */
@@ -82,10 +83,11 @@
       call setup_H0()
 
       ! Beginning of SCF loop
-      ! Starting point is H_in
+
       call timer( 'IterSCF', 1 )
       if (cml_p)
      &     call cmlStartStep( xf=mainXML, type='SCF', index=iscf )
+
       ! Note that, if mixing H, H_in could also be read from file ...
       H(:,:) = 0.0_dp
       call setup_hamiltonian( iscf ) ! Gets E_KS(DM_in) (non-variational) and H_in
@@ -145,7 +147,8 @@
            call compute_max_diff(Hold,H,dHmax)
         endif
 
-        ! Save DM and H here for restarts
+        ! Save mixed DM (and maybe H later) here for restarts
+        call save_density_matrix("mixed")
 
         iscf = iscf + 1
 
@@ -157,9 +160,12 @@
         call die('SCF did not converge in maximum number of steps.')
       endif
 
+
+      ! Save DM for further analysis offline
+      call save_density_matrix("dmout")
+
       ! Do one more pass to compute forces and stresses (and energies)
       ! with DM_out coming out of the cycle
-
       call post_scf_work( iscf )
 
       ! Perform any other analyses of the electronic structure

@@ -9,27 +9,20 @@
       use precision,        only: dp
       use siesta_options,   only: mix_first_scf_step, mixH, wmix
       use siesta_options,   only: wmixkick, fire_mix, nkick
-      use siesta_options,   only: maxsav, idyn, broyden_maxit
+      use siesta_options,   only: maxsav, broyden_maxit
       use siesta_options,   only: mullipop, muldeb
-      use siesta_options,   only: writedm, writedm_cdf
-      use siesta_options,   only: writedm_cdf_history
       use sparse_matrices,  only: Dold, Dscf, Hold, H, S
       use sparse_matrices,  only: maxnh, numh, listhptr, listh
       use siesta_geom,      only: na_u, isa
       use atomlist,         only: iaorb, iphorb, lasto, no_u, no_l
       use m_broyden_mixing, only: broyden_mixing
       use m_fire_mixing,    only: fire_mixing
-      use m_steps,          only: istp
-      use m_spin,           only: nspin
       use m_pulay,          only: pulayx
-      use m_iodm,           only: write_dm
+      use m_spin,           only: nspin
       use parallel,         only: IONode
-#ifdef CDF
-      use iodm_netcdf, only: write_dm_netcdf
-#endif
+      use m_save_density_matrix,  only: save_density_matrix
 #ifdef TRANSIESTA
       use m_energies,   only : ef
-      use m_ts_iodm, only : write_ts_dm
       use m_ts_global_vars, only: TSrun, TSiscf
       use sparse_matrices,  only: Escf
 #endif /* TRANSIESTA */
@@ -46,10 +39,7 @@
 
       external ::  mulliken
 
-!------------------------------------------------------------------------- BEGIN
-#ifdef DEBUG
-      call write_debug( '  PRE mixer' )
-#endif
+!-------------------------------------------------------------------- BEGIN
 
       call timer( 'MIXER', 1 )
 
@@ -62,7 +52,6 @@
          Xin => Dold
          Xout => Dscf
       endif
-
 
       if (wmix.ne.0._dp) then
 
@@ -111,60 +100,10 @@
      &                 lasto, iaorb, iphorb )
       endif
 
-#ifdef CDF
-!     Save density matrix on disk, after mixing, to
-!     be used for re-starting the SCF cycle.
-      if (writedm_cdf_history) then
-         call write_dm_netcdf( no_l, maxnh, nspin, Dscf,
-     &                         overwrite=.false. )
-      else if (writedm_cdf) then
-         call write_dm_netcdf( no_l, maxnh, nspin, Dscf,
-     &                         overwrite=.true. )
-      endif
-#endif
-    
-#ifndef TRANSIESTA
-      if (writedm) then
-        if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
-          if (istp.eq.1)
-     &    call write_dm (maxnh, no_l, nspin,
-     &               numh, listhptr, listh, Dscf)
-        else
-          call write_dm (maxnh, no_l, nspin,
-     &               numh, listhptr, listh, Dscf)
-        endif
-      endif ! writedm
-#else /* TRANSIESTA */
-! TSS Begin
-      if (writedm) then
-        if (.not.TSrun) then   !TSS save DM
-          if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
-            if (istp.eq.1)
-     &        call write_dm( maxnh, no_l, nspin, numh,
-     &                       listhptr, listh, Dscf )
-          else
-            call write_dm( maxnh, no_l, nspin, numh,
-     &                     listhptr, listh, Dscf)
-          endif
-        else
-!         TSS write DME
-             if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
-               if (istp .eq.1)
-     .           call write_ts_dm (maxnh, no_l, nspin,
-     .                   numh, listhptr, listh, Dscf, Escf,ef)
-             else
-                call write_ts_dm (maxnh, no_l, nspin,
-     .                   numh, listhptr, listh, Dscf, Escf,ef)
-             endif            ! idyn.eq.6
-        endif ! TSrun
-      endif ! writedm
-#endif /* TRANSIESTA */
+      call save_density_matrix("mixed")
 
       call timer( 'MIXER', 2 )
-#ifdef DEBUG
-      call write_debug( '  POS mixer' )
-#endif
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------------------ END
       END subroutine mixer
 
       End MODULE m_mixer

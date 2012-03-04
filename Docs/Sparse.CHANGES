@@ -1,5 +1,25 @@
 
 -----------------------------------------------------------------------
+2012-03-04  Alberto Garcia <albertog@icmab.es>   trunk-401-sparse-16
+Tag storage of DM as 'mixed' or 'dmout' (in progress)
+
+The code for storing the DM on file has been encapsulated in a new
+routine 'save_density_matrix'. This routine is called: a) in the 
+scf cycle, after mixing, and b) after the scf cycle, to store DM_out
+for further offline processing. Note that this is a change from
+previous versions, in which DM_next was always stored.
+
+DM_out corresponds to the last electronic-structure computed, and
+is wave-function-representable.
+
+added:
+  Src/save_density_matrix.F
+modified:
+  Src/Makefile
+  Src/mixer.F
+  Src/siesta_forces.F
+
+-----------------------------------------------------------------------
 2012-03-02  Alberto Garcia <albertog@icmab.es>   trunk-401-sparse-15
 Include dHmax in write_energies
 
