@@ -100,8 +100,8 @@ CONTAINS
 
    if (associated(sparsity)) then
       sparsity%refcount = sparsity%refcount - 1
-      print *, "--> released sparsity: " //  &
-                trim(sparsity%name) //", new refcount: ", sparsity%refcount
+!      print *, "--> released sparsity: " //  &
+!                trim(sparsity%name) //", new refcount: ", sparsity%refcount
       if (sparsity%refcount == 0) then
          call de_alloc( sparsity%n_col)
          call de_alloc( sparsity%list_ptr)
@@ -119,8 +119,8 @@ CONTAINS
 
    if (associated(sparsity)) then
       sparsity%refcount = sparsity%refcount + 1
-      print *, "--> retained sparsity: " //  &
-                trim(sparsity%name) //", new refcount: ", sparsity%refcount
+!      print *, "--> retained sparsity: " //  &
+!                trim(sparsity%name) //", new refcount: ", sparsity%refcount
    else
       call die("Attempted to retain unset sparsity")
    endif
@@ -154,8 +154,8 @@ CONTAINS
    !
    matrix%sparsity => sparsity
    matrix%name = trim(name)
-   print *, "Allocating info for matrix " // trim(matrix%name) // &
-               " with sparsity " // trim(matrix%sparsity%name)
+!   print *, "Allocating info for matrix " // trim(matrix%name) // &
+!               " with sparsity " // trim(matrix%sparsity%name)
    call retain_sparsity(matrix%sparsity)
    call re_alloc( matrix%val, 1,matrix%sparsity%nnzs, 1, dim2, &
                   routine='new_sparse_matrix', &
@@ -182,8 +182,8 @@ CONTAINS
                " not associated in copy_sparse_matrix")
    endif
 
-   print *, "Starting copy of matrix " // trim(source%name) // &
-               " into new matrix " // trim(name)
+!   print *, "Starting copy of matrix " // trim(source%name) // &
+!               " into new matrix " // trim(name)
 
    if (associated(destination%sparsity)) then
       ! Destination matrix already setup
@@ -198,8 +198,8 @@ CONTAINS
          else
             destination%val(:,:) = source%val(:,:)
          endif
-         print *, "Copied data into existing matrix " // trim(destination%name) // &
-               ". New name: " // trim(name)
+!         print *, "Copied data into existing matrix " // trim(destination%name) // &
+!               ". New name: " // trim(name)
          destination%name = trim(name)
       else
          call new_sparse_matrix(destination,source%sparsity, &
@@ -271,7 +271,7 @@ CONTAINS
 
    ! Print messages only if needed
    if (associated(matrix%sparsity)) then
-      print *, "Releasing  matrix " // trim(matrix%name) 
+!      print *, "Releasing  matrix " // trim(matrix%name) 
       if (associated(matrix%val)) then
          call de_alloc( matrix%val )
       else

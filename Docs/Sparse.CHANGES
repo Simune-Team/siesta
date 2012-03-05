@@ -1,5 +1,15 @@
 
 -----------------------------------------------------------------------
+2012-03-05  Alberto Garcia <albertog@icmab.es>   trunk-401-sparse-17
+Avoid extra debugging output in new sparse-matrix code
+
+Reduce for now the level of debugging output in the experimental
+sparse-matrix code.
+
+modified:
+  Src/m_sparse_types.F90
+
+-----------------------------------------------------------------------
 2012-03-04  Alberto Garcia <albertog@icmab.es>   trunk-401-sparse-16
 Tag storage of DM as 'mixed' or 'dmout' (in progress)
 
