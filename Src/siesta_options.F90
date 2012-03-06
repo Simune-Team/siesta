@@ -7,6 +7,7 @@ MODULE siesta_options
 
   logical :: mixH          ! Mixing of the Hamiltoninan instead of DM
   logical :: mix_after_convergence  ! Do one last mixing step after SCF convergence
+  logical :: monitor_forces_in_scf ! Compute forces and stresses at every step
   logical :: h_setup_only  ! H Setup only
   logical :: chebef        ! Compute the chemical potential in ordern?
   logical :: default       ! Temporary used to pass default values in fdf reads
@@ -655,6 +656,9 @@ MODULE siesta_options
       call cmlAddParameter( xf=mainXML, name='DM.HarrisTolerance', units='siestaUnits:eV', &
                             value=Harris_tolerance, dictRef='siesta:Harris_tolerance')
     endif
+
+    ! Monitor forces and stresses during SCF loop
+    monitor_forces_in_scf = fdf_get('MonitorForcesInSCF',.false.)
 !--------------------------------------
 
     ! Initial spin density: Maximum polarization, Ferro (false), AF (true)

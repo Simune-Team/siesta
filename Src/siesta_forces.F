@@ -15,6 +15,7 @@
       use m_compute_max_diff,    only: compute_max_diff
       use m_state_init,          only: state_init
       use m_setup_hamiltonian,   only: setup_hamiltonian
+      use m_final_H_f_stress,    only: final_H_f_stress
       use m_setup_H0,            only: setup_H0
       use m_compute_dm,          only: compute_dm
       use m_EKS_Harris,          only: compute_EKS_Harris
@@ -27,6 +28,7 @@
       use siesta_options,        only: harris_tolerance
       use siesta_options,        only: SCFMustConverge, nscf, mixH
       use siesta_options,        only: mix_after_convergence
+      use siesta_options,        only: monitor_forces_in_scf
       use m_state_analysis,      only: state_analysis
       use m_steps,               only: inicoor
       use sys,                   only: die, bye
@@ -34,6 +36,7 @@
       use m_convergence,         only: reset, set_tolerance
       use parallel,              only: IONode
       use m_save_density_matrix, only: save_density_matrix
+      use write_subs
 #ifdef TRANSIESTA
       use m_ts_global_vars,      only: ts_istep
 #endif /* TRANSIESTA */
@@ -110,6 +113,14 @@
            endif
         endif
 
+        if (monitor_forces_in_scf) then
+           Hold(:,:) = H(:,:)           ! in case we are mixing H
+           call final_H_f_stress(iscf)
+           H(:,:) = Hold(:,:)           ! restore
+           call siesta_write_forces()
+           call siesta_write_stress_pressure()
+        endif
+
         call timer( 'IterSCF', 2 )
         if (istep.eq.inicoor .and. (iscf==1)) then
            call timer( 'IterSCF', 3 )
@@ -133,6 +144,7 @@
 
         ! This is formally part of the next SCF step
         ! only done if we are not converged
+
 
         call timer( 'IterSCF', 1 )
         if (cml_p) call cmlStartStep(mainXML)
