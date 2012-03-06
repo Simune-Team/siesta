@@ -6,6 +6,22 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-03-06  15:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-403
+Allow monitoring of forces during SCF cycle
+
+Using the fdf symbol
+
+MonitorForcesInSCF T
+
+the program will compute the forces and stresses at every scf step. 
+Use in combination with WriteForces.
+
+modified:
+  Src/Makefile
+  Src/siesta_forces.F
+  Src/siesta_options.F90
+
+-----------------------------------------------------------------------
 2012-02-23  9:40:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-402
 Update of Andrei Postnikov's utilities to V0.4
 

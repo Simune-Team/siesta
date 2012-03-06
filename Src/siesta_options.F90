@@ -76,6 +76,7 @@ MODULE siesta_options
   logical :: SCFMustConverge ! Do we have to converge for each SCF calculation?
   logical :: want_domain_decomposition ! Use domain decomposition for orbitals 
   logical :: want_spatial_decomposition ! Use spatial decomposition for orbitals
+  logical :: monitor_forces_in_scf ! Compute forces and stresses at every step
 
 
   integer :: ia1           ! Atom index
@@ -639,8 +640,11 @@ MODULE siesta_options
       call cmlAddParameter( xf=mainXML, name='DM.HarrisTolerance', units='siestaUnits:eV', &
                             value=Harris_tolerance, dictRef='siesta:Harris_tolerance')
     endif
-!--------------------------------------
 
+    ! Monitor forces and stresses during SCF loop
+    monitor_forces_in_scf = fdf_get('MonitorForcesInSCF',.false.)
+                         
+!--------------------------------------
     ! Initial spin density: Maximum polarization, Ferro (false), AF (true)
     if (nspin.eq.2) then
       inspn = fdf_get('DM.InitSpinAF',.false.)

@@ -10,6 +10,7 @@
       use siesta_cml
       use m_state_init
       use m_setup_hamiltonian
+      use m_final_H_f_stress,    only: final_H_f_stress
       use m_setup_H0
       use m_compute_dm
       use m_scfconvergence_test
@@ -22,6 +23,7 @@
       use sys, only : die, bye
       use m_convergence, only: converger_t
       use m_convergence, only: reset, set_tolerance
+      use write_subs
 #ifdef TRANSIESTA
       use m_ts_options, only : mixH
       use m_ts_global_vars, only : ts_istep
@@ -90,6 +92,14 @@
         call compute_dm( iscf )
 
         call mixer( iscf, dDmax )
+
+        if (monitor_forces_in_scf) then
+           call final_H_f_stress(iscf)
+           call siesta_write_forces()
+           call siesta_write_stress_pressure()
+        endif
+
+
 #else /* TRANSIESTA */
 
         if (cml_p)
