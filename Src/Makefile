@@ -659,11 +659,11 @@ siesta_cmlsubs.o: files.o parallel.o siesta_cml.o timestamp.o
 siesta_end.o: alloc.o bands.o densematrix.o fixed.o m_dscfcomm.o m_pulay.o
 siesta_end.o: m_wallclock.o meshdscf.o meshphi.o moremeshsubs.o parallel.o
 siesta_end.o: siesta_cml.o siesta_cmlsubs.o sparse_matrices.o timestamp.o
-siesta_forces.o: compute_dm.o final_H_f_stress.o m_convergence.o m_steps.o
-siesta_forces.o: m_ts_global_vars.o m_ts_options.o mixer.o parallel.o
+siesta_forces.o: compute_dm.o final_H_f_stress.o m_convergence.o m_forces.o
+siesta_forces.o: m_steps.o m_ts_global_vars.o m_ts_options.o mixer.o parallel.o
 siesta_forces.o: post_scf_work.o scfconvergence_test.o setup_H0.o
 siesta_forces.o: setup_hamiltonian.o siesta_cml.o siesta_options.o
-siesta_forces.o: state_analysis.o state_init.o sys.o write_subs.o
+siesta_forces.o: state_analysis.o state_init.o sys.o units.o write_subs.o
 siesta_geom.o: precision.o
 siesta_init.o: alloc.o atomlist.o bands.o bsc_xcmod.o densematrix.o files.o
 siesta_init.o: ioxv.o kpoint_grid.o kpoint_pdos.o ksvinit.o m_check_supercell.o

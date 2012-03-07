@@ -24,6 +24,8 @@
       use m_convergence, only: converger_t
       use m_convergence, only: reset, set_tolerance
       use write_subs
+      use m_forces,              only: fa
+      use units,                 only: eV, Ang
 #ifdef TRANSIESTA
       use m_ts_options, only : mixH
       use m_ts_global_vars, only : ts_istep
@@ -34,6 +36,7 @@
       logical  :: first, last, SCFconverged
       real(dp) :: dDmax     ! Max. change in density matrix elements
       type(converger_t)  ::  conv_harris, conv_etot
+      real(dp), allocatable  :: fa_old(:,:)
 #ifdef TRANSIESTA
 ! Used in force constant runs
       ts_istep = istep
@@ -94,7 +97,14 @@
         call mixer( iscf, dDmax )
 
         if (monitor_forces_in_scf) then
+           allocate(fa_old(size(fa,dim=1),size(fa,dim=2)))
+           fa_old = fa
            call final_H_f_stress(iscf)
+           if (ionode) then
+              print *, "Max diff in force (eV/Ang): ",
+     $                 maxval(abs(fa-fa_old))*Ang/eV
+           endif
+           deallocate(fa_old)
            call siesta_write_forces()
            call siesta_write_stress_pressure()
         endif
