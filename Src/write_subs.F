@@ -394,8 +394,8 @@
              call cmlAddProperty(xf=mainXML, value=dDmax, 
      .             units="siestaUnits:none", 
      .             dictRef="siesta:dDmax",  fmt="r7")
-             call cmlAddProperty(xf=mainXML, value=dHmax, 
-     .             units="siestaUnits:Ry", 
+             call cmlAddProperty(xf=mainXML, value=dHmax/eV, 
+     .             units="siestaUnits:eV", 
      .             dictRef="siesta:dHmax",  fmt="r7")
           endif
 
@@ -421,7 +421,7 @@
      .           write(6,'(/,a12,3a14,3a8)')
      .           'siesta: iscf', '   Eharris(eV)', 
      .           '      E_KS(eV)', '   FreeEng(eV)', 
-     .           '   dDmax', '  Ef(eV)', '   dHmax'
+     .           '   dDmax', '  Ef(eV)', 'dHmx(Ry)'
             write(6,'(a8,i4,3f14.4,2f8.4,f8.4)')
      .           'siesta: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV, 
      .           dDmax, Ef/eV, dHmax
@@ -463,8 +463,8 @@
             call cmlAddProperty(xf=mainXML, value=dDmax,
      .             units="siestaUnits:none",
      .             dictRef="siesta:dDmax",  fmt="r7")
-            call cmlAddProperty(xf=mainXML, value=dHmax,
-     .             units="siestaUnits:Ry",
+            call cmlAddProperty(xf=mainXML, value=dHmax/eV,
+     .             units="siestaUnits:eV",
      .             dictRef="siesta:dHmax",  fmt="r7")
          endif
          if (fixspin) then
@@ -489,7 +489,7 @@
           if (iscf .eq. 1) write(6,'(/,a12,3a14,3a8)')
      .             'siesta: iscf', '   Eharris(eV)',
      .             '      E_KS(eV)', '   FreeEng(eV)',
-     .             '   dDmax', '  Ef(eV)', '   dHmax'
+     .           '   dDmax', '  Ef(eV)', 'dHmx(Ry)'
           write(6,'(a8,i4,3f14.4,2f8.4,f8.4)')
      .             'siesta: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV,
      .             dDmax, Ef/eV, dHmax
@@ -511,7 +511,7 @@
                  if (TSiscf .eq. 1) write(6,'(/,a11,a7,3a14,3a8)')
      .                tmpname,' TSiscf', '   Eharris(eV)',
      .                '      E_KS(eV)', '   FreeEng(eV)',
-     .                '   dDmax', '  Ef(eV)', '   dHmax'
+     .                '   dDmax', '  Ef(eV)', 'dHmx(Ry)'
                  write(6,'(a11,i4,3f14.4,2f8.4,f8.4)')
      .                tmpname,TSiscf, Eharrs/eV, Etot/eV,
      .                FreeE/eV, dDmax, Ef/eV, dHmax

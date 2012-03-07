@@ -70,7 +70,9 @@ MODULE siesta_options
   logical :: harrisfun     ! Use Harris functional?
   logical :: muldeb        ! Write Mulliken polpulations at every SCF step?
   logical :: require_energy_convergence ! to finish SCF iteration?
+  logical :: require_free_energy_convergence ! to finish SCF iteration?
   logical :: require_harris_convergence ! to finish SCF iteration?
+  logical :: require_hamiltonian_convergence ! to finish SCF iteration?
   logical :: broyden_optim ! Use Broyden method to optimize geometry?
   logical :: fire_optim    ! Use FIRE method to optimize geometry?
   logical :: struct_only   ! Output initial structure only?
@@ -106,8 +108,10 @@ MODULE siesta_options
   real(dp) :: charnet       ! Net electric charge
   real(dp) :: Energy_tolerance
   real(dp) :: Harris_tolerance
+  real(dp) :: freeEnergy_tolerance
   real(dp) :: rijmin        ! Min. permited interatomic distance without warning
   real(dp) :: dDtol         ! Tolerance in change of DM elements to finish SCF iteration
+  real(dp) :: dHtol         ! Tolerance in change of H elements to finish SCF iteration
   real(dp) :: dt            ! Time step in dynamics
   real(dp) :: dx            ! Atomic displacement used to calculate Hessian matrix
   real(dp) :: dxmax         ! Max. atomic displacement allowed during geom. relaxation
@@ -149,7 +153,9 @@ MODULE siesta_options
   real(dp), parameter :: wmix_default = 0.25_dp
   real(dp), parameter :: wmixkick_default = 0.5_dp
   real(dp), parameter :: dDtol_default = 1.0e-4_dp
+  real(dp), parameter :: dHtol_default = 1.0e-4_dp   ! 0.1 mRy
   real(dp), parameter :: Energy_tolerance_default = 1.0e-4_dp * eV
+  real(dp), parameter :: freeEnergy_tolerance_default = 1.0e-5_dp * eV
   real(dp), parameter :: Harris_tolerance_default = 1.0e-4_dp * eV
   real(dp), parameter :: occtol_default = 1.0e-12_dp
   real(dp), parameter :: etol_default = 1.0e-8_dp
@@ -198,7 +204,9 @@ MODULE siesta_options
 !                            KB projectors)
 ! integer nscf             : Maximum number of SCF cycles per time step
 ! real*8 dDtol             : Maximum Density Matrix tolerance in SCF
+! real*8 dHtol             : Maximum Hamiltonian tolerance in SCF
 ! real*8 Energy_tolerance  : Maximum Total energy tolerance in SCF
+! real*8 freeEnergy_tolerance  : Maximum Free energy tolerance in SCF
 ! real*8 Harris_tolerance  : Maximum Harris energy tolerance in SCF
 ! logical mix_first_scf_step            : Perform mix in first SCF step
 ! real*8 wmix              : Amount of output DM for new DM
@@ -602,6 +610,32 @@ MODULE siesta_options
                             value=dDtol, dictRef='siesta:dDtol', &
                             units='siestaUnits:eAng_3' )
     endif
+
+    ! Require Hamiltonian convergence for achieving Self-Consistency?
+    require_hamiltonian_convergence = fdf_get('SCF.RequireHConvergence', &
+                                         .false.)
+    if (ionode) then
+      write(6,1) 'redata: Require H convergence for SCF      = ', &
+                  require_hamiltonian_convergence
+    endif
+
+    if (cml_p) then
+      call cmlAddParameter( xf=mainXML, name='SCF.RequireHConvergence', &
+                            value=require_hamiltonian_convergence,               &
+                            dictRef='siesta:ReqHConv' )
+    endif
+
+    ! Hamiltonian tolerance for achieving Self-Consistency
+    dHtol = fdf_get('SCF.H.Tolerance',dHtol_default, 'Ry')
+    if (ionode) then
+      write(6,7) 'redata: Hamiltonian Tolerance in SCF     = ', dHtol, ' Ry'
+    endif
+
+    if (cml_p) then
+      call cmlAddParameter( xf=mainXML, name='SCF.H.Tolerance',     &
+                            value=dHtol, dictRef='siesta:dHtol', &
+                            units='siestaUnits:Ry' )
+    endif
 !--------------------------------------
 
     ! Require Energy convergence for achieving Self-Consistency?
@@ -628,6 +662,33 @@ MODULE siesta_options
     if (cml_p) then
       call cmlAddParameter( xf=mainXML, name='DM.EnergyTolerance', &
                             value=Energy_tolerance/eV, dictRef='siesta:dEtol', &
+                            units="siestaUnits:eV" )
+    endif
+
+    ! Require Free Energy convergence for achieving Self-Consistency?
+    require_free_energy_convergence = fdf_get('SCF.RequireFreeEnergyConvergence', &
+                                         .false.)
+    if (ionode) then
+      write(6,1) 'redata: Only Free Energy convergence   SCF = ', &
+                  require_free_energy_convergence
+    endif
+
+    if (cml_p) then
+      call cmlAddParameter( xf=mainXML, name='SCF.RequireFreeEnergyConvergence', &
+                            value=require_free_energy_convergence,               &
+                            dictRef='siesta:ReqFreeEnergyConv' )
+    endif
+
+    ! Free Energy tolerance for achieving Self-Consistency
+    freeEnergy_tolerance = fdf_get('SCF.FreeEnergyTolerance',    &
+                         freeEnergy_tolerance_default, 'Ry' )
+    if (ionode) then
+      write(6,7) 'redata: Free Energy tol.    for SCF      = ', freeEnergy_tolerance/eV, ' eV'
+    endif
+
+    if (cml_p) then
+      call cmlAddParameter( xf=mainXML, name='DM.FreeEnergyTolerance', &
+                            value=freeEnergy_tolerance/eV, dictRef='siesta:dFreeEtol', &
                             units="siestaUnits:eV" )
     endif
 

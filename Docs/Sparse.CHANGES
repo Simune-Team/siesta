@@ -1,5 +1,39 @@
 
 -----------------------------------------------------------------------
+2012-03-07  Alberto Garcia <albertog@icmab.es>   trunk-401-sparse-19
+New options for testing the convergence. Force convergence diagnostic
+
+* Two new options for convergence:
+
+-- Free Energy (E_KS - T_el * S_electronic)
+
+SCF.RequireFreeEnergyConvergence T
+SCF.FreeEnergyTolerance  <Value> <Unit>  (default 1.0e-5 eV)
+
+-- Hamiltonian matrix elements
+
+SCF.RequireHamiltonianConvergence T
+SCF.H.Tolerance  <Value> <Unit>  (default 0.1 mRy)
+
+
+The SCF cycle will end when the appropriate criterion is satisfied. These two
+are *absolute* criteria: they do not depend on the additional convergence of
+the density matrix (as does the "energy convergence" option already implemented).
+
+* When the option to monitor the forces during the SCF cycle is in effect, the
+program will print the maximum absolute value of the change in forces from one
+step to the next. Other statistics could be implemented.
+
+* More documentation on the flow of information in 'siesta_forces'.
+
+modified:
+  Src/Makefile
+  Src/check_scf_convergence.F
+  Src/siesta_forces.F
+  Src/siesta_options.F90
+  Src/write_subs.F
+
+-----------------------------------------------------------------------
 2012-03-06  Alberto Garcia <albertog@icmab.es>   trunk-401-sparse-18
 Allow monitoring of forces during SCF cycle
 

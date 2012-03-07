@@ -6,18 +6,22 @@
       subroutine check_scf_convergence( iscf, converged,
      $                                  E_Harris, E_KS_good,
      $                                  dDmax, dHmax,
-     $                                  conv_harris, conv_etot)
+     $                                  conv_harris, conv_etot,
+     $                                  conv_free_energy)
 
       use precision,             only: dp
       use siesta_cml,            only: cml_p, mainXML
       use siesta_cml,            only: cmlAddProperty
       use siesta_cml,            only: cmlStartPropertyList
       use siesta_cml,            only: cmlEndPropertyList
-      use siesta_options,        only: Temp, harrisfun, dDtol
+      use siesta_options,        only: Temp, harrisfun, dDtol, dHtol
       use siesta_options,        only: require_harris_convergence
       use siesta_options,        only: require_energy_convergence
+      use siesta_options,        only: require_free_energy_convergence
+      use siesta_options,        only: require_hamiltonian_convergence
       use siesta_options,        only: energy_tolerance
       use siesta_options,        only: harris_tolerance
+      use siesta_options,        only: freeEnergy_tolerance
       use m_wallclock,           only: wallclock
       use parallel,              only: IOnode
       use units,                 only: eV
@@ -34,7 +38,8 @@
       real(dp), intent(in) :: E_Harris, E_KS_Good
       real(dp), intent(in) :: dDmax     ! Max. change in density matrix
       real(dp), intent(in) :: dHmax     ! Max. change in  H
-      type(converger_t), intent(inout)  :: conv_harris, conv_etot
+      type(converger_t), intent(inout)  :: conv_harris, conv_etot,
+     $                                     conv_free_energy
 
 !----------------------------------------------------------------- BEGIN
 
@@ -45,6 +50,7 @@
       call add_value(conv_harris, E_Harris)
       call add_value(conv_etot, E_KS_Good)
 
+      ! Update values in standard places
       Etot = E_KS_Good
       Eharrs = E_Harris
 
@@ -57,12 +63,22 @@
       ! SCF step was used instead (with no clear reason).
 
       FreeE  = Etot - Temp * Entropy
+      call add_value(conv_free_energy, FreeE)
 
       ! Recalculating the energy in the last iter (for
       ! gridcellsampling) but preserving the value of Eharrs1
       Eharrs1 = Eharrs
 
-      if (require_energy_convergence) then
+      if (require_free_energy_convergence) then
+         if (is_converged(conv_free_energy)) then
+            converged = .true.
+            if (IOnode) then
+               write(6,"(a,g11.4,a)")
+     $              "SCF Convergence by FreeEnergy criterion:",
+     $              freeEnergy_tolerance/eV, " eV"
+            endif
+         endif
+      else if (require_energy_convergence) then
          if (   dDmax.lt.dDtol
      &        .and. is_converged(conv_etot)) then
             converged = .true.
@@ -77,7 +93,17 @@
                write(6,"(a)") "SCF Convergence by Harris criterion"
             endif
          endif
+      else if (require_hamiltonian_convergence) then
+         if (dHmax .lt. dHtol) then
+            converged = .true.
+            if (IOnode) then
+               write(6,"(a,g11.4,a)")
+     $              "SCF Convergence by H criterion:",
+     $              dHtol, " Ry"
+            endif
+         endif
       else
+        ! Default criterion: DM convergence
         if (dDmax.lt.dDtol) converged = .true.
       endif
 

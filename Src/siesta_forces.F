@@ -24,8 +24,10 @@
       use m_mixer,               only: mixer
       use siesta_options,        only: require_harris_convergence
       use siesta_options,        only: require_energy_convergence
+      use siesta_options,        only: require_free_energy_convergence
       use siesta_options,        only: energy_tolerance
       use siesta_options,        only: harris_tolerance
+      use siesta_options,        only: freeEnergy_tolerance
       use siesta_options,        only: SCFMustConverge, nscf, mixH
       use siesta_options,        only: mix_after_convergence
       use siesta_options,        only: monitor_forces_in_scf
@@ -36,7 +38,10 @@
       use m_convergence,         only: reset, set_tolerance
       use parallel,              only: IONode
       use m_save_density_matrix, only: save_density_matrix
-      use write_subs
+      use m_forces,              only: fa
+      use units,                 only: eV, Ang
+      use write_subs,            only: siesta_write_forces
+      use write_subs,            only: siesta_write_stress_pressure
 #ifdef TRANSIESTA
       use m_ts_global_vars,      only: ts_istep
 #endif /* TRANSIESTA */
@@ -47,9 +52,10 @@
 
       integer            :: iscf
       logical            :: last, SCFconverged, ts_will_continue
-      type(converger_t)  :: conv_harris, conv_etot
+      type(converger_t)  :: conv_harris, conv_etot, conv_free_energy
       real(dp)           :: E_Harris, E_KS_Good
       real(dp)           :: dDmax, dHmax
+      real(dp), allocatable :: Hsave(:,:), fa_old(:,:)
 
 #ifdef TRANSIESTA
 ! Used in force constant runs
@@ -69,6 +75,10 @@
       iscf  = 1
       SCFconverged = .false.
 
+      if (require_free_energy_convergence) then
+        call reset(conv_free_energy)
+        call set_tolerance(conv_free_energy,freeEnergy_tolerance)
+      endif
       if (require_harris_convergence) then
         call reset(conv_harris)
         call set_tolerance(conv_harris,harris_tolerance)
@@ -102,10 +112,21 @@
         call compute_max_diff(Dold,Dscf,dDmax)
         call compute_EKS_Harris( E_Harris, E_KS_Good )
 
+              ! Note: For DM and H convergence checks. At this point: 
+              ! If mixing the DM:
+              !        Dscf=DM_out, Dold=DM_in, H=H_in, Hold=H_in(prev step)
+              !        dDmax=maxdiff(DM_out,DM_in)
+              !        dHmax=maxdiff(H_in - H_in(prev step))
+              ! If mixing the Hamiltonian:
+              !        Dscf=DM_out, Dold=DM_in, H=H_in (mixed in general), Hold=H_in 
+              !        dDmax=maxdiff(DM_out,DM_in)
+              !        dHmax=maxdiff(H_in - H(DM_out)) ** in prev step **
+
         call check_scf_convergence( iscf, SCFconverged,
      $                              E_Harris, E_KS_Good,
      $                              dDmax, dHmax,
-     $                              conv_harris, conv_etot )
+     $                              conv_harris, conv_etot,
+     $                              conv_free_energy)
         if (SCFconverged) then
            if (ionode) then
               write(6,"(a,i0,a)") "SCF cycle converged in ", iscf,
@@ -114,9 +135,17 @@
         endif
 
         if (monitor_forces_in_scf) then
-           Hold(:,:) = H(:,:)           ! in case we are mixing H
+           allocate(Hsave(size(H,dim=1),size(H,dim=2)))
+           allocate(fa_old(size(fa,dim=1),size(fa,dim=2)))
+           Hsave = H           ! in case we are mixing H
+           fa_old = fa
            call final_H_f_stress(iscf)
-           H(:,:) = Hold(:,:)           ! restore
+           H = Hsave           ! restore
+           if (ionode) then
+              print *, "Max diff in force (eV/Ang): ",
+     $                 maxval(abs(fa-fa_old))*Ang/eV
+           endif
+           deallocate(Hsave,fa_old)
            call siesta_write_forces()
            call siesta_write_stress_pressure()
         endif
@@ -139,6 +168,11 @@
               ! keep in cycle
            else
               EXIT
+              ! Note: we exit with:
+              ! If mixing the DM:
+              !        Dscf=DM_out, Dold=DM_in, H=H_in, Hold=H_in(prev step)
+              ! If mixing the Hamiltonian:
+              !        Dscf=DM_out, Dold=DM_in, H=H_in, Hold=H_in 
            endif
         endif
 
