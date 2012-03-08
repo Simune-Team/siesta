@@ -6,6 +6,21 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-03-08  16:55:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-406
+Fix reading of position constraints in block
+
+In %block GeometryConstraints, the simple option
+
+  position  i  j  k  l ...
+
+to list atoms to be kept fixed, was not implemented correctly.
+
+(Thanks to J. Junquera for the bug report and fix)
+
+modified:
+  Src/fixed.F
+
+-----------------------------------------------------------------------
 2012-03-08  10:40:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-405
 Change position of force-monitoring block
 
