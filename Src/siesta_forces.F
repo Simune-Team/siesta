@@ -96,18 +96,6 @@
 
         call mixer( iscf, dDmax )
 
-        if (monitor_forces_in_scf) then
-           allocate(fa_old(size(fa,dim=1),size(fa,dim=2)))
-           fa_old = fa
-           call final_H_f_stress(iscf)
-           if (ionode) then
-              print *, "Max diff in force (eV/Ang): ",
-     $                 maxval(abs(fa-fa_old))*Ang/eV
-           endif
-           deallocate(fa_old)
-           call siesta_write_forces()
-           call siesta_write_stress_pressure()
-        endif
 
 
 #else /* TRANSIESTA */
@@ -133,6 +121,19 @@
 !       At this point last is true if SCF has converged. But this
 !       changed below
         SCFconverged = last
+
+        if (monitor_forces_in_scf) then
+           allocate(fa_old(size(fa,dim=1),size(fa,dim=2)))
+           fa_old = fa
+           call final_H_f_stress(iscf)
+           if (ionode) then
+              print *, "Max diff in force (eV/Ang): ",
+     $                 maxval(abs(fa-fa_old))*Ang/eV
+           endif
+           deallocate(fa_old)
+           call siesta_write_forces()
+           call siesta_write_stress_pressure()
+        endif
 
         call timer( 'IterSCF', 2 )
         if (istep.eq.inicoor .and. first) call timer( 'IterSCF', 3 )

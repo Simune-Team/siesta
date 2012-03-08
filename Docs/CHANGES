@@ -6,6 +6,18 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-03-08  10:40:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-405
+Change position of force-monitoring block
+
+The optional calculation of forces inside the scf loop is now done
+after printing the current energies. Otherwise the output for etot
+would correspond to that for the following iteration, and EHarris
+would be wrong.
+
+modified:
+  Src/siesta_forces.F
+
+-----------------------------------------------------------------------
 2012-03-07  14:25:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-404
 Add force convergence diagnostic
 
