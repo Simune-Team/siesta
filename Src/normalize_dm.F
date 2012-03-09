@@ -7,8 +7,10 @@
       subroutine normalize_dm( first )
       use precision, only: dp
       use sparse_matrices, only: Dscf, Escf, maxnh, S
+      use siesta_options,  only: dm_normalization_tol
       use atomlist, only: qtot
       use parallel, only: IOnode
+      use sys,      only: die
       use m_spin,   only: nspin
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
@@ -17,6 +19,7 @@
       logical :: first
       integer :: io, ispin
       real(dp):: qsol  ! Total unnormalized electron charge
+      character(len=132) :: msg
 #ifdef MPI
       real(dp):: buffer1
 #endif
@@ -32,11 +35,28 @@
       call globalize_sum(qsol,buffer1)
       qsol = buffer1
 #endif
-      if (IOnode) then
-        if (.not.first .and.
-     &     abs(qsol/qtot-1._dp).gt.1.d-2) write(6,'(a,2f15.6)')
-     &    'siesta: WARNING: Qtot, Tr[D*S] =', qtot, qsol
+
+
+      ! Two degrees of reporting:
+      if (first) then
+         ! If 1st scf step, it might be that a (reused) DM was not
+         ! normalized properly
+         if (abs(qsol/qtot-1._dp) > 1.0e-3_dp) then
+            if (IOnode) then
+               write(6,'(a,2f15.6)')
+     &              'Note: For starting DM, Qtot, Tr[D*S] =', qtot, qsol
+            endif
+         endif
+      else
+         ! In later steps, the lack of normalization is more serious
+         ! The tolerance is tighter by default
+         if (abs(qsol/qtot-1._dp) > dm_normalization_tol) then
+            write(msg,'(a,2f15.6)')
+     $           'Bad DM normalization: Qtot, Tr[D*S] =', qtot, qsol
+            call die(msg)
+         endif
       endif
+
       do ispin = 1,nspin
         do io = 1,maxnh
           Dscf(io,ispin) = Dscf(io,ispin) * qtot/qsol

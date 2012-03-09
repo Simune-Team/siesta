@@ -6,6 +6,45 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-03-09  15:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-407
+Extend DM normalization diagnostics
+
+In order to conserve the number of electrons N, the density matrix
+(DM) has to be normalized: Tr[S*DM]=N, where S is the overlap matrix.
+
+The DM might not be normalized because it has been re-used (and
+re-arranged) from a previous geometry step, or because of some error
+in its computation during the scf cycle.  The two cases are now
+reported differently:
+
+In the first scf step, the fractional tolerance is 0.001 (tighter than
+the previous default of 0.01), and a "Note" is printed.
+
+In subsequent steps, the fractional tolerance can be specified
+by means of the fdf symbol
+
+DM.Normalization.Tolerance  Tol
+
+and is 1.0e-5 by default.  The program now aborts if this threshold is
+breached.
+
+NOTE: The DM might not be normalized upon entry to the (first
+geometry) scf loop because of a possible "folding" of the overlap
+matrix in gamma-point calculations with small unit cells: the overlaps
+of a given unit-cell orbital with multiple images are accumulated
+instead of being kept separate. Then, the trace Tr[S*DM_atomic] will
+not give the number of electrons.
+The folding (which is reported if detected by the program) is done for
+efficiency reasons, but might cause problems for further analysis
+(i.e., Mulliken charges, or COOP/COHP calculations).
+
+modified:
+  Src/Makefile
+  Src/normalize_dm.F
+  Src/setup_hamiltonian.F
+  Src/siesta_options.F90
+
+-----------------------------------------------------------------------
 2012-03-08  16:55:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-406
 Fix reading of position constraints in block
 
