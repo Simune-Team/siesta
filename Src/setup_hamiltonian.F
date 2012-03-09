@@ -68,13 +68,13 @@
 !     Normalize density matrix to exact charge
 !     Setup_hamiltonian is called before the density is printed out...
 #ifdef TRANSIESTA      
-      if (.not.TSrun ) call normalize_dm( first=.false. )
+      if (.not.TSrun ) call normalize_dm( first= (iscf==1) )
 #else
       ! Normalize density matrix to exact charge, except if
       ! we are just using the DM to generate the initial rho and exit
       !
       if (.not. save_initial_charge_density) then
-         call normalize_dm(first=.false.)
+         call normalize_dm(first= (iscf==1))
       endif
 #endif  /* TRANSIESTA */
 

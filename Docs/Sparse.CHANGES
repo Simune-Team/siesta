@@ -1,5 +1,9 @@
 
 -----------------------------------------------------------------------
+2012-03-09  Alberto Garcia <albertog@icmab.es>   trunk-407-sparse-19
+Sync to trunk-407
+
+-----------------------------------------------------------------------
 2012-03-07  Alberto Garcia <albertog@icmab.es>   trunk-401-sparse-19
 New options for testing the convergence. Force convergence diagnostic
 

@@ -6,6 +6,119 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-03-09  15:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-407
+Extend DM normalization diagnostics
+
+In order to conserve the number of electrons N, the density matrix
+(DM) has to be normalized: Tr[S*DM]=N, where S is the overlap matrix.
+
+The DM might not be normalized because it has been re-used (and
+re-arranged) from a previous geometry step, or because of some error
+in its computation during the scf cycle.  The two cases are now
+reported differently:
+
+In the first scf step, the fractional tolerance is 0.001 (tighter than
+the previous default of 0.01), and a "Note" is printed.
+
+In subsequent steps, the fractional tolerance can be specified
+by means of the fdf symbol
+
+DM.Normalization.Tolerance  Tol
+
+and is 1.0e-5 by default.  The program now aborts if this threshold is
+breached.
+
+NOTE: The DM might not be normalized upon entry to the (first
+geometry) scf loop because of a possible "folding" of the overlap
+matrix in gamma-point calculations with small unit cells: the overlaps
+of a given unit-cell orbital with multiple images are accumulated
+instead of being kept separate. Then, the trace Tr[S*DM_atomic] will
+not give the number of electrons.
+The folding (which is reported if detected by the program) is done for
+efficiency reasons, but might cause problems for further analysis
+(i.e., Mulliken charges, or COOP/COHP calculations).
+
+modified:
+  Src/Makefile
+  Src/normalize_dm.F
+  Src/setup_hamiltonian.F
+  Src/siesta_options.F90
+
+-----------------------------------------------------------------------
+2012-03-08  16:55:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-406
+Fix reading of position constraints in block
+
+In %block GeometryConstraints, the simple option
+
+  position  i  j  k  l ...
+
+to list atoms to be kept fixed, was not implemented correctly.
+
+(Thanks to J. Junquera for the bug report and fix)
+
+modified:
+  Src/fixed.F
+
+-----------------------------------------------------------------------
+2012-03-08  10:40:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-405
+Change position of force-monitoring block
+
+The optional calculation of forces inside the scf loop is now done
+after printing the current energies. Otherwise the output for etot
+would correspond to that for the following iteration, and EHarris
+would be wrong.
+
+modified:
+  Src/siesta_forces.F
+
+-----------------------------------------------------------------------
+2012-03-07  14:25:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-404
+Add force convergence diagnostic
+
+When the option to monitor the forces during the SCF cycle is in effect, the
+program will print the maximum absolute value of the change in forces from one
+step to the next. Other statistics could be implemented.
+
+modified:
+  Src/siesta_forces.F
+
+-----------------------------------------------------------------------
+2012-03-06  15:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-403
+Allow monitoring of forces during SCF cycle
+
+Using the fdf symbol
+
+MonitorForcesInSCF T
+
+the program will compute the forces and stresses at every scf step. 
+Use in combination with WriteForces.
+
+modified:
+  Src/Makefile
+  Src/siesta_forces.F
+  Src/siesta_options.F90
+
+-----------------------------------------------------------------------
+2012-02-23  9:40:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-402
+Update of Andrei Postnikov's utilities to V0.4
+
+Added also the fmpdos program, an alternative to pdosxml.
+
+added:
+  Util/Contrib/APostnikov/00README
+  Util/Contrib/APostnikov/fmpdos.f
+  Util/Contrib/APostnikov/test_mdc.f
+modified:
+  Util/Contrib/APostnikov/Makefile
+  Util/Contrib/APostnikov/README
+  Util/Contrib/APostnikov/eig2bxsf.f
+  Util/Contrib/APostnikov/md2axsf.f
+  Util/Contrib/APostnikov/rho2xsf.f
+  Util/Contrib/APostnikov/vib2xsf.f
+  Util/Contrib/APostnikov/wraxsf1.f
+  Util/Contrib/APostnikov/wraxsf2.f
+
+-----------------------------------------------------------------------
 2012-02-22  13:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-401
 Assorted cosmetic and compilation fixes
 
