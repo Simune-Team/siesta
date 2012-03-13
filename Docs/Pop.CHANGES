@@ -1,3 +1,28 @@
+March 13, 2012  Alberto Garcia                   3.1-pl4--pop-2
+Implementation of Bader charge output
+
+If the option
+
+  SaveBaderCharge T
+
+is used, the program will write the electronic charge density with an
+extra set of model core charges, useful for post-processing by a Bader
+"atoms in molecules" analysis. See the manual for important details.
+
+The grid2cube program in Util has been extended to deal with the .BADER
+file.
+
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/dhscf.F
+  Src/meshsubs.F
+  Src/siesta_options.F90
+  Tests/Reference-xml/h2o-pop.xml
+  Tests/Reference/h2o-pop.out
+  Tests/h2o-pop/h2o-pop.fdf
+
+
 Feb 23, 2012  Alberto Garcia                   3.1-pl4--pop
 Implementation of Hirshfeld and Voronoi charges (P. Ordejon)
 

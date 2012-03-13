@@ -1,4 +1,4 @@
-SystemName          Water molecule -- Populations
+SystemName          Water molecule -- Populations + Bader charge
 SystemLabel         h2o-pop
 NumberOfAtoms       3
 NumberOfSpecies     2
@@ -6,8 +6,10 @@ NumberOfSpecies     2
 WriteHirshfeldPop T
 WriteVoronoiPop T
 WriteMullikenPop 1
+Save-Bader-Charge T
 
-MeshCutoff  50 Ry
+# Note the high cutoff for the Bader-charge model cores
+MeshCutoff  500 Ry
 
 %block ChemicalSpeciesLabel
  1  8  O      # Species index, atomic number, species label

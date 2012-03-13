@@ -5162,6 +5162,46 @@ density is positive and the ionic charge density is negative.
 
 {\it Default value:} {\tt .false.}
 
+\item[{\bf SaveBaderCharge}] ({\it logical}):
+  \index{SaveBaderCharge@{\bf SaveBaderCharge}} \index{output!Bader
+    charge} Instructs the program to save the charge density for
+  further post-processing by a Bader-analysis program.  This ``Bader
+  charge'' is the sum of the electronic valence charge density and a
+  set of ``model core charges'' placed at the atomic sites. For a
+  given atom, the model core charge has the same shape as the ``local
+  pseudopotential charge'' used elsewhere by {\sc Siesta} (a
+  generalized Gaussian), but confined to a radius of 1.0 Bohr, and
+  integrating to the total core charge ($Z$-$Z_{\rm val}$). These core
+  charges are needed to provide local maxima for the charge density at
+  the atomic sites, which are not guaranteed in a pseudopotential
+  calculation. For hydrogen, an artificial core of 1 electron is
+  added, with a confinement radius of 0.4 Bohr.  The Bader charge is
+  projected on the grid points of the mesh used by DHSCF, and saved in
+  file {\tt SystemLabel}.BADER. This file can be post-processed by the
+  program {\tt Util/grid2cube} to convert it to the ``cube'' format,
+  accepted by several Bader-analysis programs (for example, see {\tt
+    http://theory.cm.utexas.edu/bader/}).  Due to the need to
+  represent a localized core charge, it is advisable to use a
+  moderately high MeshCutoff when invoking this option (300-500
+  Ry). The size of the ``basin of attraction'' around each atom in the
+  Bader analysis should be monitored to check that the model core
+  charge is contained in it.  
+
+  The suggested way to run the Bader analysis with the Univ. of Texas
+  code is to use both the RHO and BADER files (both in ``cube''
+  format), with the BADER file providing the ``reference'' and the RHO
+  file the actual significant valence charge data which is important
+  in bonding. (See the notes for pseudopotential codes in the above
+  web page.) For example, for the h2o-pop example:
+
+  {\tt bader  h2o-pop.RHO.cube -ref h2o-pop.BADER.cube}
+
+
+If netCDF support is compiled in, the file {\tt BaderCharge.grid.nc}
+is produced.
+
+{\it Default value:} {\tt .false.}
+
 
 \item[{\bf SaveInitialChargeDensity}] ({\it logical}):
   \index{SaveInitialChargeDensity@{\bf

@@ -34,6 +34,7 @@ MODULE siesta_options
   logical :: savrho        ! Write file with electron density?
   logical :: savepsch      ! Write file with ionic (local pseudopotential) charge?
   logical :: savetoch      ! Write file with total charge?
+  logical :: savebader     ! Write file with total (Bader) charge?
   logical :: usesavecg     ! Use continuation file for CG geometry relaxation?
   logical :: usesavelwf    ! Use continuation file for Wannier functions?
   logical :: usesavedm     ! Use cont. file for density matrix?
@@ -1511,7 +1512,8 @@ MODULE siesta_options
     call fdf_global_get(savevna,'SaveNeutralAtomPotential', .false.)
     call fdf_global_get(savevt,'SaveTotalPotential', .false.)
     call fdf_global_get(savepsch,'SaveIonicCharge',  .false.)
-    call fdf_global_get(savetoch,'SaveTotalCharge',  .false.)
+    call fdf_global_get(savebader,'SaveBaderCharge',  .false.)
+    call fdf_global_get(savetoch,'SaveTotalCharge',  savebader)
     RETURN
     !----------------------------------------------------------------------- END
 1   format(a,4x,l1)
