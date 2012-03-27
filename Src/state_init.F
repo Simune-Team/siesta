@@ -13,7 +13,7 @@
       use sparse_matrices, only: maxnh, numh, listh, listhptr
       use sparse_matrices, only: Dscf, Dold, Escf, Hold
       use sparse_matrices, only: xijo, H, S, H_kin, H_vkb
-      use sparse_matrices, only: sparsity
+      use sparse_matrices, only: sparse_pattern
       use siesta_geom
       use atomlist,          only: iphorb, iphkb, rco, rckb, indxua,
      &                             no_s, rmaxkb, rmaxo, no_u, lastkb,
@@ -50,8 +50,8 @@
       use iodm_netcdf, only: setup_dm_netcdf_file
       use iodmhs_netcdf, only: setup_dmhs_netcdf_file
 #endif
-      use m_sparse_types, only: sparsity_t, sparseMatrix_t
-      use m_sparse_types, only: new_sparsity, new_sparse_matrix
+      use class_Sparsity
+      use class_SpMatrix
 
       implicit none
 
@@ -252,10 +252,10 @@
       endif
 
       write(name,"(a,i0)") "sparsity for geom step ", istep
-      call new_sparsity(sparsity,no_l,no_s,
-     $                  maxnh,numh,listhptr,listh,name)
+      call newSparsity(sparse_pattern,no_l,no_s,
+     $                 maxnh,numh,listhptr,listh,name)
       write(name,"(a,i0)") "H_vkb in state_init at geom step ", istep
-      call new_sparse_matrix(H_vkb,sparsity,dim2=1,name=name)
+      call newSpMatrix(sparse_pattern,1,H_vkb,name=name)
 
       ! Note that the resizing of Dscf is done inside new_dm below
       call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',
@@ -280,7 +280,7 @@
 
 !     Initialize density matrix
       ! The resizing of Dscf is done inside new_dm
-      ! call new_new_dm(sparsity,DM_prev_geom,Dscf)
+      ! call new_new_dm(sparse_pattern,DM_prev_geom,Dscf)
       call new_dm( auxchanged, numh, listhptr, listh, Dscf)
 
       ! Initialize energy-density matrix to zero for first call to overfsm

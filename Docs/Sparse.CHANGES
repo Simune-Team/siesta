@@ -1,5 +1,27 @@
 
 -----------------------------------------------------------------------
+2012-03-27  Alberto Garcia <albertog@icmab.es>   trunk-407-sparse-20
+First implementation of new refCount paradigm
+
+Used class_Sparsity, class_Array2D, and class_SpMatrix for a cleaner 
+implementation of the reference-counting ideas. Based on code by
+David Car and Michael List.
+
+removed:
+  Src/m_sparse_types.F90
+added:
+  Src/class_Array2D.F90
+  Src/class_SpMatrix.F90
+  Src/class_Sparsity.F90
+modified:
+  Src/Makefile
+  Src/compute_EKS_Harris.F90
+  Src/setup_H0.F
+  Src/setup_hamiltonian.F
+  Src/sparse_matrices.F
+  Src/state_init.F
+
+-----------------------------------------------------------------------
 2012-03-09  Alberto Garcia <albertog@icmab.es>   trunk-407-sparse-19
 Sync to trunk-407
 

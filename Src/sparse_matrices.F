@@ -1,7 +1,7 @@
       MODULE sparse_matrices
       use precision
-      use m_sparse_types, only: sparsity_t, sparseMatrix_t
-      use m_sparse_types, only: new_sparse_matrix, release_sparse_matrix
+      use class_SpMatrix
+      use class_Sparsity
 
       implicit none
 
@@ -24,8 +24,8 @@
 
       !
       !  New interface data
-      type(sparsity_t), pointer     :: sparsity => null()
-      type(sparseMatrix_t)          :: H_vkb
+      type(Sparsity)                :: sparse_pattern
+      type(SpMatrix)                :: H_vkb
 
       CONTAINS
 
@@ -43,9 +43,10 @@
       call de_alloc( Escf,        'Escf',        'sparseMat' )
       call de_alloc( H,           'H',           'sparseMat' )
       call de_alloc( H_kin,       'H_kin',       'sparseMat' )
-      call release_sparse_matrix(H_vkb)
+      call delete(H_vkb)
       call de_alloc( xijo,        'xijo',        'sparseMat' )
       call de_alloc( S,           'S',           'sparseMat' )
+      call delete(sparse_pattern)
 
       end subroutine resetSparseMatrices
 

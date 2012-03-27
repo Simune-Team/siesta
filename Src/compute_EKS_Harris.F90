@@ -25,7 +25,7 @@ CONTAINS
       use sparse_matrices, only: listh, listhptr, numh, maxnh
       use sparse_matrices, only: H
       use sparse_matrices, only: Dscf, Dold
-      use m_sparse_types,  only: map_data_sparse_matrix
+      use class_SpMatrix,  only: val
       use m_dhscf,         only: dhscf
       use m_energies
       use atomlist,        only: no_u, iaorb, iphkb, qtot, indxuo, datm,   &
@@ -120,7 +120,7 @@ CONTAINS
 
 !     Compute Tr[H_0*DM_out] = Ekin + Enl with DM_out
 
-      call map_data_sparse_matrix(H_vkb,H_vkb_val)
+      H_vkb_val => val(H_vkb)
       Ekin = 0.0_dp
       Enl  = 0.0_dp
       do ispin = 1,min(nspin,2)

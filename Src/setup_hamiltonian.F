@@ -10,6 +10,8 @@
       use sparse_matrices, only: listh, listhptr, numh, maxnh
       use sparse_matrices, only: H, Hold, S
       use sparse_matrices, only: Dscf, Escf, xijo
+      use class_SpMatrix,  only: val
+
       use siesta_geom
       use atmfuncs, only: uion
       use atomlist, only: no_u, iaorb, iphkb, qtot, indxuo, datm, 
@@ -35,8 +37,6 @@
 #ifdef TRANSIESTA
       use m_ts_global_vars, only: TSrun
 #endif /* TRANSIESTA */
-
-      use m_sparse_types, only: map_data_sparse_matrix
 
       implicit none
       integer, intent(in) :: iscf
@@ -80,7 +80,7 @@
 
       ! Initialize Hamiltonian with the non-SCF part...................
 
-      call map_data_sparse_matrix(H_vkb,H_vkb_val)
+      H_vkb_val => val(H_vkb)
       do ispin = 1,nspin
         if (ispin .le. 2) then
           do io = 1,maxnh

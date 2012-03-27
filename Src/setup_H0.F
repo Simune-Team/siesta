@@ -27,7 +27,7 @@ C     and initializes data structures on the grid.
       use m_ntm
       use m_spin,         only: nspin
       use alloc, only: re_alloc, de_alloc
-      use m_sparse_types, only: map_data_sparse_matrix
+      use class_SpMatrix, only: val
 
       implicit none
       real(dp) :: dummy_stress(3,3), dummy_fa(1,1), dummy_dm(1,1)
@@ -92,8 +92,8 @@ C     Non-local-pseudop:  matrix elements only
       local_nspin = 1   ! We will not touch Dscf, and H_vkb does
                         ! not depend on spin
 
-      call map_data_sparse_matrix(H_vkb,H_vkb_val)
-      H_vkb_val(:,1) = 0.0_dp
+      H_vkb_val => val(H_vkb)
+      H_vkb_val(:,:) = 0.0_dp
       call nlefsm(scell, na_u, na_s, isa, xa, indxua, 
      &            maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
      &            numh, listhptr, listh, numh, listhptr, listh, 
