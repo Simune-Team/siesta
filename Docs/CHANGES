@@ -3,6 +3,21 @@
 =======================================================================
 
 ** CHANGES ALONG siesta-3 branch
+------------------------------------------------------------------------
+2012-03-29  8:00:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl5
+Close netCDF file descriptors for DM and DMHS files
+
+The descriptors for the DM.nc and DMHS.nc netCDF files are kept open
+during the SCF cycle, but should be closed at the end of it to avoid
+resource exhaustion in, say, MD runs. This was not done due to a
+programming error.  They are now closed at the beginning of the next
+SCF cycle.
+
+(Thanks to Nick Papior Andersen)
+
+modified:
+  Src/iodm_netcdf.F90
+  Src/iodmhs_netcdf.F90
 
 ------------------------------------------------------------------------
 2012-02-23  9:30:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl4
