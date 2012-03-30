@@ -8,7 +8,7 @@ module class_SpMatrix
 
   public :: SpMatrix
   public :: init, delete, assignment(=), refcount
-  public :: val, spar
+  public :: val, spar, dist
   public :: nrows, nnzs, n_col, list_ptr, list_col
   public :: printSpMatrix
   public :: newSpMatrix
@@ -60,6 +60,10 @@ module class_SpMatrix
 
   interface spar
     module procedure sparSpMatrix
+  end interface
+
+  interface dist
+    module procedure distSpMatrix
   end interface
 
   interface nrows
@@ -214,6 +218,7 @@ contains
 
    end subroutine newSpMatrixFromDims
 
+!--------------------------------------------------
   function valSpMatrix(this) result(p)
    type(SpMatrix), intent(in)  :: this
    real(dp), pointer          :: p(:,:)
@@ -230,6 +235,15 @@ contains
    p => this%data%sp
  end function sparSpMatrix
 
+  function distSpMatrix(this) result(p)
+   type(SpMatrix), intent(in)  :: this
+   type(OrbitalDistribution), pointer     :: p
+
+   nullify(p)
+   p => this%data%dist
+ end function distSpMatrix
+
+!--------------------------------------------------
  function nrowsSpmatrix(this) result (n)
    type(SpMatrix), intent(in)  :: this
    integer                     :: n

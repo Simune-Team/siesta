@@ -10,10 +10,13 @@
       use m_new_dm,          only: new_dm
       use m_proximity_check, only: proximity_check
       use siesta_options
+
       use sparse_matrices, only: maxnh, numh, listh, listhptr
       use sparse_matrices, only: Dscf, Dold, Escf, Hold
-      use sparse_matrices, only: xijo, H, S, H_kin, H_vkb
+      use sparse_matrices, only: xijo, H, S, H_kin
       use sparse_matrices, only: sparse_pattern
+      use sparse_matrices, only: H_vkb, DM
+
       use siesta_geom
       use atomlist,          only: iphorb, iphkb, rco, rckb, indxua,
      &                             no_s, rmaxkb, rmaxo, no_u, lastkb,
@@ -80,8 +83,9 @@
 
       character(len=256)            :: name
 
+      type(SpMatrix)        :: DMnew
 
-!------------------------------------------------------------------------- BEGIN
+!------------------------------------------------------------------- BEGIN
       call timer( 'IterMD', 1 )
 #ifdef DEBUG
       call write_debug( '  PRE state_init' )
@@ -257,6 +261,8 @@
      $                 maxnh,numh,listhptr,listh,name)
       write(name,"(a,i0)") "H_vkb in state_init at geom step ", istep
       call newSpMatrix(sparse_pattern,1,block_dist,H_vkb,name=name)
+      write(name,"(a,i0)") "DM in state_init at geom step ", istep
+      call newSpMatrix(sparse_pattern,nspin,block_dist,DM,name=name)
 
       ! Note that the resizing of Dscf is done inside new_dm below
       call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',
@@ -282,7 +288,11 @@
 !     Initialize density matrix
       ! The resizing of Dscf is done inside new_dm
       ! call new_new_dm(sparse_pattern,DM_prev_geom,Dscf)
-      call new_dm( auxchanged, numh, listhptr, listh, Dscf)
+
+      ! maybe store DM in geometry history
+      call new_dm( auxchanged,DM,DMnew)
+      DM = DMnew    ! assignment -- DM is erased
+      Dscf => val(DM)
 
       ! Initialize energy-density matrix to zero for first call to overfsm
 #ifdef TRANSIESTA

@@ -1,5 +1,22 @@
 
 -----------------------------------------------------------------------
+2012-03-30  Alberto Garcia <albertog@icmab.es>   trunk-407-sparse-22
+First attempt at DM flow clarification
+
+Wrote my_new_dm, and hooked up readSpMatrix and restructSpMatrix.
+Some rough edges.
+
+added:
+  Src/my_new_dm.F90
+  Src/restructSpMatrix.F90
+modified:
+  Src/Makefile
+  Src/class_SpMatrix.F90
+  Src/readSpMatrix.F90
+  Src/sparse_matrices.F
+  Src/state_init.F
+
+-----------------------------------------------------------------------
 2012-03-30  Alberto Garcia <albertog@icmab.es>   trunk-407-sparse-21
 First implementation of OrbitalDistribution object
 

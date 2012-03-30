@@ -25,7 +25,7 @@
       !
       !  New interface data
       type(Sparsity)                :: sparse_pattern
-      type(SpMatrix)                :: H_vkb
+      type(SpMatrix)                :: H_vkb, DM
 
       CONTAINS
 
@@ -39,7 +39,8 @@
       call de_alloc( numhold,     'numhold',     'sparseMat' )
 
       call de_alloc( Dold,        'Dold',        'sparseMat' )
-      call de_alloc( Dscf,        'Dscf',        'sparseMat' )
+!      call de_alloc( Dscf,        'Dscf',        'sparseMat' )
+      call delete(DM)
       call de_alloc( Escf,        'Escf',        'sparseMat' )
       call de_alloc( H,           'H',           'sparseMat' )
       call de_alloc( H_kin,       'H_kin',       'sparseMat' )

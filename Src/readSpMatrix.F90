@@ -6,6 +6,10 @@
    use class_Array2D,  only : assignment(=) 
    use class_OrbitalDistribution
 
+#ifdef MPI
+   use mpi_siesta
+#endif
+
    ! no_l and no_u are needed to determine the distribution
    character(len=*), intent(in) :: filename
 
@@ -15,10 +19,11 @@
    type(OrbitalDistribution), intent(in) :: ref_dist
 
 !     Internal variables
-      type(OrbitalDistribution), intent(in) :: dist
+      type(OrbitalDistribution)          :: dist
       logical   exist3
       integer   im, is, lun, m, nb
       integer   ml
+      integer :: Node, Nodes, IONode, Comm
 
       integer, parameter :: dp = selected_real_kind(10,100)
 
@@ -38,10 +43,10 @@
 !     
       call init(SpM)
 
-      Node => ref_dist%node
-      Nodes => ref_dist%nodes
-      IONode => ref_dist%ionode
-      Comm => ref_dist%comm
+      Node = ref_dist%data%node
+      Nodes = ref_dist%data%nodes
+      IONode = ref_dist%data%ionode
+      Comm = ref_dist%data%comm
 
 !     Find file name
       if (Node.eq. IONode) then
@@ -70,10 +75,10 @@
       call MPI_Bcast(nspin,1,MPI_integer,IONode,Comm,MPIerror)
 #endif
 
-      if (no_u /= ref_dist%n) then
+      if (no_u /= ref_dist%data%n) then
          call copy(dist,other=ref_dist)  ! New distribution
                                 ! Except possibly the pointers for non-blocked dists...
-	 dist%n = no_u	
+	 dist%data%n = no_u	
       else 
          dist = ref_dist  ! Assignment
       endif
@@ -134,8 +139,8 @@
 
          elseif (Node == BNode) then
             ml = index_global_to_local(dist,m,Node)
-            call MPI_IRecv(listd(listdptr(ml)+1),numd(ml),
-     .           MPI_integer,IONode,1,Comm,Request,MPIerror)
+            call MPI_IRecv(listd(listdptr(ml)+1),numd(ml),   &
+                MPI_integer,IONode,1,Comm,Request,MPIerror)
             call MPI_Wait(Request,Status,MPIerror)
          endif
          if (BNode.ne.IONode) then
@@ -161,15 +166,15 @@
 #ifdef MPI
             elseif (Node == IONode) then
                read(lun) (buffer(im),im=1,numdg(m))
-               call MPI_ISend(buffer,numdg(m),MPI_double_precision,
-     .              BNode,1,Comm,Request,MPIerror)
+               call MPI_ISend(buffer,numdg(m),MPI_double_precision,  &
+                   BNode,1,Comm,Request,MPIerror)
                call MPI_Wait(Request,Status,MPIerror)
 
             elseif (Node == BNode) then
                ml = index_global_to_local(dist,m,Node)
-               call MPI_IRecv(dm(listdptr(ml)+1,is),numd(ml),
-     .              MPI_double_precision,IONode,1,Comm,Request,
-     .              MPIerror)
+               call MPI_IRecv(dm(listdptr(ml)+1,is),numd(ml),   &
+                    MPI_double_precision,IONode,1,Comm,Request, &
+                    MPIerror)
                call MPI_Wait(Request,Status,MPIerror)
             endif
             if (BNode.ne.IONode) then
