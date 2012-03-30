@@ -1,5 +1,32 @@
 
 -----------------------------------------------------------------------
+2012-03-30  Alberto Garcia <albertog@icmab.es>   trunk-407-sparse-21
+First implementation of OrbitalDistribution object
+
+Code in class_OrbitalDistribution. The object holds data to handle
+block-cyclic distributions (basically the blocksize), plus pointers
+for a more general distribution (such as one based on domain- or
+spatial-decomposition).
+
+This is supplemented by communicator information.
+
+The code in readSpMatrix.F90 (not hooked up yet) uses the new ideas. In principle,
+it is able to read flexibly any matrix, and distribute it in block-cyclic form.
+
+Still pending: ditribution transformations..., proper serial testing...
+
+added:
+  Src/class_OrbitalDistribution.F90
+  Src/readSpMatrix.F90
+modified:
+  Src/Makefile
+  Src/class_SpMatrix.F90
+  Src/initparallel.F
+  Src/parallel.F
+  Src/parallelsubs.F
+  Src/state_init.F
+
+-----------------------------------------------------------------------
 2012-03-27  Alberto Garcia <albertog@icmab.es>   trunk-407-sparse-20
 First implementation of new refCount paradigm
 

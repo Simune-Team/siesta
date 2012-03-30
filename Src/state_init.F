@@ -29,6 +29,7 @@
       use write_subs
       use m_steps
       use parallel,          only: IOnode, node, nodes
+      use parallel,          only: block_dist
       use m_spin,            only: nspin
       use m_rmaxh
       use m_pulay,           only: init_pulay_arrays
@@ -255,7 +256,7 @@
       call newSparsity(sparse_pattern,no_l,no_s,
      $                 maxnh,numh,listhptr,listh,name)
       write(name,"(a,i0)") "H_vkb in state_init at geom step ", istep
-      call newSpMatrix(sparse_pattern,1,H_vkb,name=name)
+      call newSpMatrix(sparse_pattern,1,block_dist,H_vkb,name=name)
 
       ! Note that the resizing of Dscf is done inside new_dm below
       call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',

@@ -2,6 +2,7 @@ module class_SpMatrix
 
   use class_Sparsity
   use class_Array2D
+  use class_OrbitalDistribution
 
   implicit none
 
@@ -10,12 +11,8 @@ module class_SpMatrix
   public :: val, spar
   public :: nrows, nnzs, n_col, list_ptr, list_col
   public :: printSpMatrix
-  public :: buildSpMatrix
   public :: newSpMatrix
 
-  private :: assignSpMatrix, initSpMatrix, deleteSpMatrix, refcountSpMatrix
-  private :: nrowsSpMatrix, nnzsSpMatrix, n_colSpMatrix
-  private :: list_ptrSpMatrix, list_colSpMatrix
   private
 
   integer, parameter :: dp = selected_real_kind(10,100)
@@ -28,6 +25,7 @@ module class_SpMatrix
     character(len=256)   :: name = "null_SpMatrix"
     type(Sparsity)       :: sp
     type(Array2D)        :: a2d
+    type(OrbitalDistribution)        :: dist
   end type SpMatrix_
 
   ! This is a wrapper type to be passed around
@@ -47,6 +45,11 @@ module class_SpMatrix
     module procedure deleteSpMatrix
   end interface
 
+  interface newSpMatrix
+    module procedure newSpMatrixFromArray2D
+    module procedure newSpMatrixFromDims
+  end interface
+
   interface refcount
      module procedure refcountSpMatrix
   end interface
@@ -62,15 +65,19 @@ module class_SpMatrix
   interface nrows
      module procedure nrowsSpMatrix
   end interface
+
   interface nnzs
      module procedure nnzsSpMatrix
   end interface
+
   interface n_col
      module procedure n_colSpMatrix
   end interface
+
   interface list_ptr
      module procedure list_ptrSpMatrix
   end interface
+
   interface list_col
      module procedure list_colSpMatrix
   end interface
@@ -119,6 +126,7 @@ contains
 
       call delete(smdata%sp)
       call delete(smdata%a2d)
+      call delete(smdata%dist)
      end subroutine deleteSpMatrixData
 
   end subroutine deleteSpMatrix
@@ -152,13 +160,14 @@ contains
  end function refcountSpMatrix
     
 
-  subroutine buildSpMatrix(sp,a2d,this,name)
+  subroutine newSpMatrixFromArray2D(sp,a2d,dist,this,name)
      !........................................
      ! Constructor
      !........................................
      type (SpMatrix), intent(inout) :: this
      type(Sparsity), intent(in)   :: sp
      type(Array2D),  intent(in)   :: a2d
+     type(OrbitalDistribution),  intent(in)   :: dist
      character(len=*), intent(in), optional :: name
 
      integer :: error
@@ -167,22 +176,24 @@ contains
 
      this%data%sp = sp
      this%data%a2d = a2d
+     this%data%dist = dist
 
      if (present(name)) then
         this%data%name = trim(name)
      else
-        this%data%name = "(built from sp and a2d)"
+        this%data%name = "(from sp, dist, and a2d)"
      endif
-     print *, "--> built SpMatrix: " // trim(this%data%name)
+     print *, "--> new SpMatrix: " // trim(this%data%name)
 
-   end subroutine buildSpMatrix
+   end subroutine newSpMatrixFromArray2D
 
-  subroutine newSpMatrix(sp,dim2,this,name)
+  subroutine newSpMatrixFromDims(sp,dim2,dist,this,name)
      !........................................
      ! Constructor
      !........................................
      type (SpMatrix), intent(inout) :: this
      type(Sparsity), intent(in)   :: sp
+     type(OrbitalDistribution), intent(in)   :: dist
      integer,  intent(in)         :: dim2
      character(len=*), intent(in), optional :: name
 
@@ -190,17 +201,18 @@ contains
 
      call init(this)
      this%data%sp = sp
+     this%data%dist = dist
      call newArray2D(this%data%a2d,  &
                      nnzs(sp),dim2,"(new from SpMatrix)")
 
      if (present(name)) then
         this%data%name = trim(name)
      else
-        this%data%name = "(built from sp and dim2)"
+        this%data%name = "(from sp, dist, and dim2)"
      endif
      print *, "--> new SpMatrix: " // trim(this%data%name)
 
-   end subroutine newSpMatrix
+   end subroutine newSpMatrixFromDims
 
   function valSpMatrix(this) result(p)
    type(SpMatrix), intent(in)  :: this

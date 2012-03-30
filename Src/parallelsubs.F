@@ -18,7 +18,7 @@ C
      &                         nOrbPerNode
       use domain_decom, only : use_dd, use_dd_perm, dd_nuo, dd_perm,
      &                         ulimit, llimit, dd_invp, dd_nnode
-      use sys,          only : die
+      use sys,          only : die, message
       implicit none
 
       contains
@@ -64,6 +64,8 @@ C Saved variables
      .  NOrbLast / 0 /
      .  NOrbNodeLast / 0 /
 
+!      if (thisNode /= Node)
+!     $       call message("Non-local use of GetNodeOrbs")
       if (NOrb .eq. NOrbLast) then
 C Values are the same as last call - no need to recalculate
         NOrbNode = NOrbNodeLast
@@ -114,6 +116,7 @@ C Save value for next call
       end subroutine GetNodeOrbs
 
       subroutine GlobalToLocalOrb( GOrb, Node, Nodes, LOrb)
+      use parallel, only: thisNode => Node
 C
 C  Converts an orbital index in the global frame to the local frame
 C  if the orbital is local to this node. Otherwise the pointer is
@@ -144,6 +147,8 @@ C
 C  Local variables
       integer OrbCheck, GBlock, LEle, LBlock
 
+!      if (thisNode /= Node)
+!     $       call message("Non-local use of GlobalToLocalOrb")
       if (lspatial) then 
 C-------------------------
 C  Spatial distribution  -
@@ -219,6 +224,8 @@ C
 C  Local variables
       integer LEle, LBlock
 
+!      if (thisNode /= Node)
+!     $       call message("Non-local use of LocalToGlobalOrb")
       if (lspatial) then 
 C-------------------------
 C  Spatial distribution  - 

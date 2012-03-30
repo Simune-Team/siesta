@@ -23,6 +23,7 @@ C
       use siesta_options, only: isolve, SOLVE_ORDERN
       use siesta_options, only: rcoor
       use parallel,     only : Node, Nodes, BlockSize, ProcessorY
+      use parallel,     only : block_dist
       use parallelsubs, only : set_processorY, set_BlockSizeDefault
       use parallelsubs, only : set_processorYdefault
       use parallelsubs, only : WhichNodeOrb, GetNodeOrbs
@@ -31,6 +32,10 @@ C
       use sys
       use alloc,        only : re_alloc
       use domain_decom, only: use_dd, use_dd_perm, preSetOrbitLimits
+#ifdef MPI
+      use mpi_siesta,   only: MPI_Comm_World
+#endif
+      use class_OrbitalDistribution
 
       implicit none
 C
@@ -181,8 +186,10 @@ C Set BlockSize
 #ifdef MPI
         call set_blocksizedefault(Nodes,no_u,blocksizedefault)
         BlockSize = fdf_integer('blocksize',blocksizedefault)
+        call newDistribution(blocksize,MPI_Comm_World,block_dist)
 #else
         BlockSize = 8
+        call newDistribution(blocksize,-1,block_dist)
 #endif
       endif
 

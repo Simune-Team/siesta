@@ -1,0 +1,659 @@
+! This should be used to specify the orbital distribution, in the spirit
+! of the Scalapack descriptors
+! Closer to Siesta, it should mimic the "order-N arrays" of J. Gale
+!
+!      subroutine GetNodeOrbs( NOrb, Node, Nodes, NOrbNode)
+!            calculates the number of orbitals stored on the (local)? Node
+!            Could be in principle that of any node.
+!            NOTE: NOrb is not always no_u:   nocc in savepsi... (ksv)
+!            NOrbNode = nOrbPerNode(Node+1)
+!      subroutine GlobalToLocalOrb( GOrb, Node, Nodes, LOrb)
+!            ditto, returning zero if Gorb is not handled in local node
+!            LOrb = nG2L(GOrb)
+!      subroutine LocalToGlobalOrb( LOrb, Node, Nodes, GOrb)
+!            easy in principle... but Julian has the option to have the
+!            info from any node...
+!            GOrb = nL2G(LOrb,Node+1)
+!           It is used in iodm_netcdf, but it could be emulated by having
+!           each node send also the info about the global counterparts.
+!      subroutine WhichNodeOrb( GOrb, Nodes, Node)
+!            returns the Node number that handles GOrb
+!            Node = nNode(GOrb)
+
+  module class_OrbitalDistribution
+  
+  implicit none
+
+  type OrbitalDistribution_
+     integer   :: refCount = 0
+     !------------------------
+     character(len=256)   :: name = "null_distribution"
+     !------------------------
+     integer  :: comm = -1       ! MPI communicator
+     integer  :: node = -1       ! MPI rank in comm  (my_proc)
+     integer  :: nodes = 0       ! MPI size of comm  (nprocs)
+     integer  :: ionode = -1     ! Node capable of IO
+     !------------------------
+     integer  :: n = 0           ! Global size
+     !
+     integer  :: blocksize = 0   ! Flag to determine whether the dist is block-cyclic
+     !                   
+     integer  :: isrcproc = 0        ! Processor holding the first element (unused)
+     !------------------------------------------
+     !
+     !                   If the distribution is not block-cyclic,
+     !                   we need explicit information
+     !
+     ! Have 
+     logical                         :: initialized_general_dist = .false.
+     ! Number of elements held by each proc
+     integer, pointer                :: nroc_proc(:)  => null() 
+     ! Global index from Local index (in my_proc)   
+     integer, pointer                :: nl2g(:)       => null() 
+     ! Local index (in my_proc) from global index  (zero if not held by my_proc) 
+     integer, pointer                :: ng2l(:)       => null()  
+     ! Processor number from global index (base 0)
+     integer, pointer                :: ng2p(:)       => null()    
+     !------------------------------------------
+  end type OrbitalDistribution_
+
+  type OrbitalDistribution
+     type(OrbitalDistribution_), pointer :: data => null()
+  end type OrbitalDistribution
+
+  public :: OrbitalDistribution
+  public :: assignment(=), init, delete
+  public :: copy, newDistribution
+  public :: num_local_elements, node_handling_element
+  public :: index_local_to_global, index_global_to_local
+    
+  private
+
+  interface assignment(=)
+    module procedure assignDistribution
+  end interface
+
+  interface init
+    module procedure initDistribution
+  end interface
+
+  interface delete
+    module procedure deleteDistribution
+  end interface
+
+  interface newDistribution
+     module procedure newBlockCyclicDistribution
+  end interface
+
+  interface copy
+     module procedure copyDistribution
+  end interface
+
+  interface refcount
+    module procedure refcountDistribution
+  end interface
+
+  CONTAINS
+
+   subroutine initDistribution(this)
+     !........................................
+     ! Constructor
+     !........................................
+     type (OrbitalDistribution) :: this
+     integer :: error
+
+     call delete(this)
+     allocate(this%data, stat=error)
+     this%data%refCount = 1
+
+  end subroutine initDistribution
+
+  subroutine deleteDistribution(this)
+    !............................
+    ! Destructor
+    !............................
+    type (OrbitalDistribution) :: this
+    integer :: error
+
+    if (.not. associated(this%data)) return
+    print *, "... attempting to deallocate distribution: " //  &        
+                           trim(this%data%name) 
+
+    this%data%refCount = this%data%refCount - 1
+    if (this%data%refCount == 0) then
+      ! Safe to delete the data now
+      call deleteDistributionData(this%data)
+      print *, "--> deallocated distribution: " // trim(this%data%name) 
+      deallocate(this%data, stat=error)
+    endif
+
+    this%data => null()
+
+    CONTAINS
+     subroutine deleteDistributionData(spdata)
+      type(OrbitalDistribution_) :: spdata
+      if (.not. spdata%initialized_general_dist) RETURN
+      deallocate( spdata%nroc_proc)
+      deallocate( spdata%nl2g)
+      deallocate( spdata%ng2l)
+      deallocate( spdata%ng2p)
+     end subroutine deleteDistributionData
+
+  end subroutine deleteDistribution
+
+
+  subroutine assignDistribution(this, other)
+    !..................................................................
+    ! Setting one list equal to another of the same type.
+    ! No data copy, just increment reference and reference the same data
+    !...................................................................
+    type (OrbitalDistribution), intent(inout) :: this
+    type (OrbitalDistribution), intent(in) :: other
+
+    if (.not. associated(other%data)) then
+     call die('Assignment to object that has not been initialized!')
+    endif
+
+    ! Delete to reset the pointers and decrement the ref count
+    call delete(this)
+
+    this%data => other%data
+    this%data%refcount = this%data%refcount+1
+
+  end subroutine assignDistribution
+
+  subroutine copyDistribution(this, other)
+    !..................................................................
+    ! Actual copy, with new data storage
+    !...................................................................
+    type (OrbitalDistribution), intent(inout) :: this
+    type (OrbitalDistribution), intent(in) :: other
+
+    if (.not. associated(other%data)) then
+     call die('Assignment to object that has not been initialized!')
+    endif
+
+    ! Initialize to reset the pointers and decrement the ref count
+    call init(this)
+    ! Now copy the data, except maybe the general dist pointers
+    call copyDistributionData(this%data,other%data)
+
+    CONTAINS
+     subroutine copyDistributionData(dst,src)
+      type(OrbitalDistribution_), intent(in)  :: src
+      type(OrbitalDistribution_), intent(out) :: dst
+
+      dst%comm  = src%comm
+      dst%node  = src%node
+      dst%nodes = src%nodes
+      dst%ionode = src%ionode
+      !
+      dst%n     = src%n
+      dst%blocksize = src%blocksize
+      dst%isrcproc  = src%isrcproc
+      !
+      ! Keep pointers nullified for now, assuming that copies are only
+      ! meaningful for block-cyclic distributions
+      !
+     end subroutine copyDistributionData
+
+  end subroutine copyDistribution
+
+  subroutine newBlockCyclicDistribution(Blocksize,Comm,this,name)
+     !........................................
+     ! Constructor
+     !........................................
+     type (OrbitalDistribution), intent(inout) :: this
+     integer, intent(in)                       :: Blocksize
+     integer, intent(in)                       :: Comm
+     character(len=*), intent(in), optional :: name
+
+     integer :: error
+
+     call init(this)
+
+     this%data%blocksize = Blocksize
+     this%data%comm      = Comm
+
+#ifdef MPI
+     call MPI_Comm_Rank( Comm, this%data%node, error )
+     call MPI_Comm_Size( Comm, this%data%nodes, error )
+#else
+     this%data%node = 0
+     this%data%nodes = 1
+#endif
+     this%data%ionode = 0
+
+     if (present(name)) then
+        this%data%name = trim(name)
+     else
+        this%data%name = "(from BlockSize and Comm)"
+     endif
+     print *, "--> new Distribution: " // trim(this%data%name)
+
+   end subroutine newBlockCyclicDistribution
+
+  function refcountDistribution(this) result(count)
+   type(OrbitalDistribution), intent(in)  :: this
+   integer :: count
+   count = this%data%refCount
+  end function refcountDistribution
+    
+!-----------------------------------------------------------
+   function num_local_elements(this,nels,Node) result(nl)
+     type(OrbitalDistribution), intent(in)  :: this
+     integer, intent(in)                    :: nels
+     integer, intent(in)                    :: Node
+     integer                                :: nl
+
+     integer :: Remainder, MinPerNode, RemainderBlocks
+
+     if (this%data%blocksize == 0) then
+        ! Not a block-cyclic distribution
+        if (nels /= this%data%n) then
+           call die("Cannot figure out no_l if nels/=n")
+           nl = -1
+        endif
+        if (.not. associated(this%data%nroc_proc)) then
+           call die("Dist arrays not setup")
+           nl = -1
+        endif
+        nl = this%data%nroc_proc(Node)
+
+      else  ! block-cyclic distribution
+
+          ! Use Julian's code for now, although this is 
+          ! really Scalapack's numroc  (copied at the end)
+          ! nl = numroc(nels,this%data%blocksize,Node,this%data%isrcproc,this%data%nodes)
+
+          MinPerNode = nels / (this%data%nodes*this%data%blocksize)
+          Remainder = nels - MinPerNode * this%data%nodes*this%data%blocksize
+          RemainderBlocks = Remainder / this%data%blocksize
+          Remainder = Remainder - RemainderBlocks * this%data%blocksize
+          nl = MinPerNode*this%data%blocksize
+          if (Node.lt.RemainderBlocks) nl = nl + this%data%blocksize
+          if (Node.eq.RemainderBlocks) nl = nl + Remainder
+
+      endif
+      end function num_local_elements
+
+   function index_local_to_global(this,il,Node) result(ig)
+     type(OrbitalDistribution), intent(in)  :: this
+     integer, intent(in)                    :: il
+     integer, intent(in)                    :: Node
+     integer                                :: ig
+
+     integer :: LBlock, LEle
+
+     if (this%data%blocksize == 0) then
+        ! Not a block-cyclic distribution
+        if (Node /= this%data%node) then
+           call die("Cannot figure out ig if Node/=my_proc")
+           ig = -1
+        endif
+        if (.not. associated(this%data%nl2g)) then
+           call die("Dist arrays not setup")
+           ig = -1
+        endif
+        ig = this%data%nl2g(il)
+
+      else  ! block-cyclic distribution
+
+          ! Use Julian's code for now, although this is 
+          ! really Scalapack's indxl2g  (copied at the end)
+          ! ig = indxl2g(il,this%data%blocksize,Node,this%data%isrcproc,this%data%nodes)
+
+          !  Find local block number
+          LBlock = ((il -1)/this%data%blocksize)
+          !  Substract local base line to find element number within the block
+          LEle = il - LBlock*this%data%blocksize
+          !  Calculate global index
+          ig = (LBlock*this%data%nodes + Node)*this%data%blocksize + LEle
+
+      endif
+      end function index_local_to_global
+
+   function index_global_to_local(this,ig,Node) result(il)
+     type(OrbitalDistribution), intent(in)  :: this
+     integer, intent(in)                    :: ig
+     integer, intent(in)                    :: Node
+     integer                                :: il
+
+     integer :: LBlock, LEle, GBlock, OrbCheck
+
+     if (this%data%blocksize == 0) then
+        ! Not a block-cyclic distribution
+        if (Node /= this%data%node) then
+           call die("Cannot figure out il if Node/=my_proc")
+           il = -1
+        endif
+        if (.not. associated(this%data%ng2l)) then
+           call die("Dist arrays not setup")
+           il = -1
+        endif
+        il = this%data%ng2l(ig)
+        ! Alternatively: Use an extended ng2p, in which "local" elements are negative.
+        ! if (ng2p(ig)) < 0 then il = -that, else 0
+        ! Example:  0 0 1 1 2 2 -1 -2 4 4 5 5 0 0 1 1 2 2 -3 -4 5 5 ..... (nb=2, np=6)
+
+      else  ! block-cyclic distribution
+
+          ! Use Julian's code for now, although this is 
+          ! really a combination of Scalapack's indxg2p and indxg2l  (copied at the end)
+          ! owner = indxg2p(ig,this%data%blocksize,Node,this%data%isrcproc,this%data%nodes)
+          ! if (owner == Node) then
+          !   il = indxg2l(ig,this%data%blocksize,Node,this%data%isrcproc,this%data%nodes)
+          ! else
+          !   il = 0
+          ! endif 
+
+          !  Find global block number
+          GBlock = ((ig -1)/this%data%blocksize)
+          !  Substract global base line to find element number within the block
+          LEle = ig - GBlock*this%data%blocksize
+          !  Find the block number on the local node
+          LBlock = ((GBlock - Node)/this%data%nodes)
+          !  Generate the local orbital pointer based on the local block number
+          il = LEle + LBlock*this%data%blocksize
+          !  Check that this is consistent - if it is not then this
+          !  local orbital is not on this node and so we return 0
+          !  to indicate this.
+          OrbCheck = (LBlock*this%data%nodes + Node)*this%data%blocksize + LEle
+          if (OrbCheck.ne.ig) il = 0
+      endif
+
+      end function index_global_to_local
+
+   function node_handling_element(this,ig) result(proc)
+     type(OrbitalDistribution), intent(in)  :: this
+     integer, intent(in)                    :: ig
+     integer                                :: proc
+
+     integer :: GBlock
+
+     if (this%data%blocksize == 0) then
+        ! Not a block-cyclic distribution
+        if (.not. associated(this%data%ng2p)) then
+           call die("Dist arrays not setup")
+           proc = -1
+        endif
+        proc = this%data%ng2p(ig)
+        ! Alternatively: Use an extended ng2p, in which "local" elements are negative.
+        ! if (ng2p(ig)) < 0 then il = -that, else 0
+        ! Example:  0 0 1 1 2 2 -1 -2 4 4 5 5 0 0 1 1 2 2 -3 -4 5 5 ..... (nb=2, np=6)
+
+      else  ! block-cyclic distribution
+
+          ! Use Julian's code for now, although this is 
+          ! really Scalapack's indxg2p (copied at the end)
+          ! proc = indxg2p(ig,this%data%blocksize,dummy_Node,  &
+          !                this%data%isrcproc,this%data%nodes)
+
+          !  Find global block number
+          GBlock = ((ig -1)/this%data%blocksize)
+          !  Find the Node number that has this block
+          proc = mod(GBlock,this%data%nodes)
+
+      endif
+
+      end function node_handling_element
+
+!========================================================================
+       INTEGER FUNCTION NUMROC( N, NB, IPROC, ISRCPROC, NPROCS )
+!
+!  -- ScaLAPACK tools routine (version 1.7) --
+!     University of Tennessee, Knoxville, Oak Ridge National Laboratory,
+!     and University of California, Berkeley.
+!     May 1, 1997
+!
+!     .. Scalar Arguments ..
+       INTEGER              IPROC, ISRCPROC, N, NB, NPROCS
+!     ..
+!
+!  Purpose
+!  =======
+!
+!  NUMROC computes the NUMber of Rows Or Columns of a distributed
+!  matrix owned by the process indicated by IPROC.
+!
+!  Arguments
+!  =========
+!
+!  N         (global input) INTEGER
+!            The number of rows/columns in distributed matrix.
+!
+!  NB        (global input) INTEGER
+!            Block size, size of the blocks the distributed matrix is
+!            split into.
+!
+!  IPROC     (local input) INTEGER
+!            The coordinate of the process whose local array row or
+!            column is to be determined.
+!
+!  ISRCPROC  (global input) INTEGER
+!            The coordinate of the process that possesses the first
+!            row or column of the distributed matrix.
+!
+!  NPROCS    (global input) INTEGER
+!            The total number processes over which the matrix is
+!            distributed.
+!
+!  =====================================================================
+!
+!     .. Local Scalars ..
+       INTEGER              EXTRABLKS, MYDIST, NBLOCKS
+!     ..
+!     .. Intrinsic Functions ..
+       INTRINSIC            MOD
+!     ..
+!     .. Executable Statements ..
+!
+!     Figure PROC's distance from source process
+!
+       MYDIST = MOD( NPROCS+IPROC-ISRCPROC, NPROCS )
+!
+!     Figure the total number of whole NB blocks N is split up into
+!
+       NBLOCKS = N / NB
+!
+!     Figure the minimum number of rows/cols a process can have
+!
+       NUMROC = (NBLOCKS/NPROCS) * NB
+!
+!     See if there are any extra blocks
+!
+       EXTRABLKS = MOD( NBLOCKS, NPROCS )
+!
+!     If I have an extra block
+!
+       IF( MYDIST.LT.EXTRABLKS ) THEN
+           NUMROC = NUMROC + NB
+!
+!         If I have last block, it may be a partial block
+!
+       ELSE IF( MYDIST.EQ.EXTRABLKS ) THEN
+           NUMROC = NUMROC + MOD( N, NB )
+       END IF
+!
+       RETURN
+!
+!     End of NUMROC
+!
+       END function numroc
+!==========================================================================
+      INTEGER FUNCTION INDXL2G( INDXLOC, NB, IPROC, ISRCPROC, NPROCS )
+!
+!  -- ScaLAPACK tools routine (version 1.7) --
+!     University of Tennessee, Knoxville, Oak Ridge National Laboratory,
+!     and University of California, Berkeley.
+!     May 1, 1997
+!
+!     .. Scalar Arguments ..
+      INTEGER            INDXLOC, IPROC, ISRCPROC, NB, NPROCS
+!     ..
+!
+!  Purpose
+!  =======
+!
+!  INDXL2G computes the global index of a distributed matrix entry
+!  pointed to by the local index INDXLOC of the process indicated by
+!  IPROC.
+!
+!  Arguments
+!  =========
+!
+!  INDXLOC   (global input) INTEGER
+!            The local index of the distributed matrix entry.
+!
+!  NB        (global input) INTEGER
+!            Block size, size of the blocks the distributed matrix is
+!            split into.
+!
+!  IPROC     (local input) INTEGER
+!            The coordinate of the process whose local array row or
+!            column is to be determined.
+!
+!  ISRCPROC  (global input) INTEGER
+!            The coordinate of the process that possesses the first
+!            row/column of the distributed matrix.
+!
+!  NPROCS    (global input) INTEGER
+!            The total number processes over which the distributed
+!            matrix is distributed.
+!
+!  =====================================================================
+!
+!     .. Intrinsic Functions ..
+      INTRINSIC            MOD
+!     ..
+!     .. Executable Statements ..
+!
+      INDXL2G = NPROCS*NB*((INDXLOC-1)/NB) + MOD(INDXLOC-1,NB) +     &
+                MOD(NPROCS+IPROC-ISRCPROC, NPROCS)*NB + 1
+!
+      RETURN
+!
+!     End of INDXL2G
+!
+      END function indxl2g
+
+!===========================================================
+      INTEGER FUNCTION INDXG2P( INDXGLOB, NB, IPROC, ISRCPROC, NPROCS )
+!
+!  -- ScaLAPACK tools routine (version 1.7) --
+!     University of Tennessee, Knoxville, Oak Ridge National Laboratory,
+!     and University of California, Berkeley.
+!     May 1, 1997
+!
+!     .. Scalar Arguments ..
+      INTEGER            INDXGLOB, IPROC, ISRCPROC, NB, NPROCS
+!     ..
+!
+!  Purpose
+!  =======
+!
+!  INDXG2P computes the process coordinate which posseses the entry of a
+!  distributed matrix specified by a global index INDXGLOB.
+!
+!  Arguments
+!  =========
+!
+!  INDXGLOB  (global input) INTEGER
+!            The global index of the element.
+!
+!  NB        (global input) INTEGER
+!            Block size, size of the blocks the distributed matrix is
+!            split into.
+!
+!  IPROC     (local dummy) INTEGER
+!            Dummy argument in this case in order to unify the calling
+!            sequence of the tool-routines.
+!
+!  ISRCPROC  (global input) INTEGER
+!            The coordinate of the process that possesses the first
+!            row/column of the distributed matrix.
+!
+!  NPROCS    (global input) INTEGER
+!            The total number processes over which the matrix is
+!            distributed.
+!
+!  =====================================================================
+!
+!     .. Intrinsic Functions ..
+      INTRINSIC          MOD
+!     ..
+!     .. Executable Statements ..
+!
+      INDXG2P = MOD( ISRCPROC + (INDXGLOB - 1) / NB, NPROCS )
+!
+      RETURN
+!
+!     End of INDXG2P
+!
+      END function indxg2p
+
+!================================================================
+
+      INTEGER FUNCTION INDXG2L( INDXGLOB, NB, IPROC, ISRCPROC, NPROCS )
+!
+!  -- ScaLAPACK tools routine (version 1.7) --
+!     University of Tennessee, Knoxville, Oak Ridge National Laboratory,
+!     and University of California, Berkeley.
+!     May 1, 1997
+!
+!     .. Scalar Arguments ..
+      INTEGER            INDXGLOB, IPROC, ISRCPROC, NB, NPROCS
+!     ..
+!
+!  Purpose
+!  =======
+!
+!  INDXG2L computes the local index of a distributed matrix entry
+!  pointed to by the global index INDXGLOB.
+!
+!  Arguments
+!  =========
+!
+!  INDXGLOB  (global input) INTEGER
+!            The global index of the distributed matrix entry.
+!
+!  NB        (global input) INTEGER
+!            Block size, size of the blocks the distributed matrix is
+!            split into.
+!
+!  IPROC     (local dummy) INTEGER
+!            Dummy argument in this case in order to unify the calling
+!            sequence of the tool-routines.
+!
+!  ISRCPROC  (local dummy) INTEGER
+!            Dummy argument in this case in order to unify the calling
+!            sequence of the tool-routines.
+!
+!  NPROCS    (global input) INTEGER
+!            The total number processes over which the distributed
+!            matrix is distributed.
+!
+!  =====================================================================
+!
+!     .. Intrinsic Functions ..
+      INTRINSIC          MOD
+!     ..
+!     .. Executable Statements ..
+!
+      INDXG2L = NB*((INDXGLOB-1)/(NB*NPROCS))+MOD(INDXGLOB-1,NB)+1
+!
+      RETURN
+!
+!     End of INDXG2L
+! 
+      END function indxg2l
+
+ subroutine die(str)
+  character(len=*), optional :: str
+  if (present(str)) then
+     print *, trim(str)
+  endif
+  stop
+ end subroutine die
+
+  end module class_OrbitalDistribution

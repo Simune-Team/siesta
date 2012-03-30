@@ -2,6 +2,8 @@
 !
       module parallel
 
+      use class_OrbitalDistribution
+
 C  Parallelisation related global parameters
 C
 C  integer BlockSize = this is the blocking factor used to divide up
@@ -32,6 +34,8 @@ C
       logical, save :: IOnode = .true.
       logical, save :: ParallelOverK = .false.
       logical, save :: ResetFirstCall = .false.
+
+      type(OrbitalDistribution), save  :: block_dist
 
       public
 
