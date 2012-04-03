@@ -144,7 +144,7 @@ OBJS =  automatic_cell.o atom_options.o \
         class_OrbitalDistribution.o \
         compute_EKS_Harris.o compute_max_diff.o \
         save_density_matrix.o  \
-        readSpMatrix.o restructSpMatrix.o
+        readSpMatrix.o restructSpMatrix.o extrapolateSpMatrix.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -434,6 +434,8 @@ electrostatic.o: atm_types.o atmfuncs.o atmparams.o bessph.o m_recipes.o
 electrostatic.o: precision.o radfft.o radial.o sys.o
 ener3.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 ener3lomem.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
+extrapolateSpMatrix.o: class_Array2D.o class_OrbitalDistribution.o
+extrapolateSpMatrix.o: class_SpMatrix.o class_Sparsity.o
 extrapolon.o: parallel.o precision.o sys.o
 fermid.o: m_recipes.o parallel.o precision.o sys.o
 fft.o: alloc.o fft1d.o m_timer.o mesh.o parallel.o parallelsubs.o precision.o
@@ -583,9 +585,9 @@ moremeshsubs.o: alloc.o mesh.o parallel.o precision.o schecomm.o sys.o
 mulliken.o: alloc.o atmfuncs.o parallel.o parallelsubs.o precision.o
 mulliken.o: siesta_cml.o
 my_new_dm.o: alloc.o atomlist.o class_Array2D.o class_OrbitalDistribution.o
-my_new_dm.o: class_SpMatrix.o class_Sparsity.o files.o m_fdf_global.o m_spin.o
-my_new_dm.o: m_steps.o parallel.o parallelsubs.o parsing.o precision.o
-my_new_dm.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o units.o
+my_new_dm.o: class_SpMatrix.o class_Sparsity.o files.o m_spin.o m_steps.o
+my_new_dm.o: parallel.o parallelsubs.o parsing.o precision.o siesta_geom.o
+my_new_dm.o: siesta_options.o sparse_matrices.o sys.o units.o
 naefs.o: atmfuncs.o mneighb.o precision.o
 new_dm.o: alloc.o atomlist.o m_energies.o m_fdf_global.o m_iodm.o m_sparse.o
 new_dm.o: m_spin.o m_steps.o m_ts_iodm.o m_ts_options.o parallel.o

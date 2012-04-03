@@ -292,8 +292,6 @@
      &              lasto, iphorb, isa, numh, listhptr, listh, S )
 
 !     Initialize density matrix
-      ! The resizing of Dscf is done inside new_dm
-      ! call new_new_dm(sparse_pattern,DM_prev_geom,Dscf)
 
       ! DM does not need to be initialized in the very first call
       call new_dm( auxchanged,DM,DMnew)

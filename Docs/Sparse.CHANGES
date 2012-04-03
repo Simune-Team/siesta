@@ -1,5 +1,21 @@
 
 -----------------------------------------------------------------------
+2012-04-03  Alberto Garcia <albertog@icmab.es>   trunk-407-sparse-24
+Added support for DM extrapolation
+
+The code is now very clear. 
+
+Note that DM and DM_prev_geom are reset if the supercell
+changes (this was a bug in the previous implementation).
+
+added:
+  Src/extrapolateSpMatrix.F90
+modified:
+  Src/Makefile
+  Src/my_new_dm.F90
+  Src/state_init.F
+
+-----------------------------------------------------------------------
 2012-04-03  Alberto Garcia <albertog@icmab.es>   trunk-407-sparse-23
 Bug fixes. Saving of DM_prev_geom
 

@@ -56,7 +56,7 @@
       use precision, only: dp
       use alloc, only: re_alloc, de_alloc
       use parallel,  only: IOnode
-      use m_fdf_global, only: fdf_global_get
+      use fdf,       only: fdf_get
 
       implicit none
 
@@ -84,13 +84,14 @@
       implicit none
 
       logical, intent(in) :: auxchanged ! Has auxiliary supercell changed?
-      type(SpMatrix), intent(in)      :: DMin   ! current DM (last geom)
+      type(SpMatrix), intent(inout)      :: DMin   ! current DM (last geom)
       type(SpMatrix), intent(inout)   :: DMnew
 
 !     Local variables
 
       logical :: dminit     ! Initialize density matrix?
       logical :: try_to_read_from_file
+      logical :: do_extrapolation
 
       if (IOnode) then
          write(6,"(a,i5)") "New_DM. Step: ", istp
@@ -140,6 +141,8 @@
         if (IOnode) then
            write(6,"(a)") "DM reset as supercell changed."
         endif
+        call delete(DMin)
+        call delete(DM_prev_geom)
       endif
 
 
@@ -158,20 +161,40 @@
 
          if (IOnode) then
             write(6,"(a)") "Re-using DM from previous geometry..."
-            write(6,"(a)") "... unconditional restructuring"
          endif
 
-        ! No Extrapolation yet, only re-structuring
+        ! Extrapolation or simple re-structuring
+         do_extrapolation = .false.
          if (associated(DM_prev_geom%data)) then
-            print *, " ----------- Possible extrapolation:"
-            call printSparsity(spar(DM_prev_geom))
-            call printSparsity(spar(DMin))
-            call printSparsity(sparse_pattern)
-            print *, " ----------- "
+            if (ionode) then
+               print *, " ----------- Possible extrapolation:"
+               call printSparsity(spar(DM_prev_geom))
+               call printSparsity(spar(DMin))
+               call printSparsity(sparse_pattern)
+               print *, " ----------- "
+            endif
+            if (idyn == 0) then
+               do_extrapolation = fdf_get( 'DM.AllowExtrapolation', .FALSE. )
+               if (do_extrapolation) then
+               ! The user insisted...
+                  if (ionode) then
+                     write(6,"(a)")          &
+                      "NOTE: DM.AllowExtrapolation set with CG dynamics option"
+                  endif
+               endif
+            else
+               do_extrapolation = fdf_get( 'DM.AllowExtrapolation', .TRUE. )
+            endif
          endif
-	call restructSpMatrix(DMin,sparse_pattern,DMnew)
-        print *, "DMnew after calling restructSpMatrix:"
-        call printSpMatrix(DMnew)
+         if (do_extrapolation) then
+            if (ionode) print *, "Extrapolating DM..."
+            call extrapolateSpMatrix(DM_prev_geom,DMin,sparse_pattern,DMnew)
+         else
+            if (ionode) print *, "Restructuring DM..."
+            call restructSpMatrix(DMin,sparse_pattern,DMnew)
+         endif
+         if (ionode)  print *, "DMnew after DM reuse:"
+         if (ionode)  call printSpMatrix(DMnew)
 
       endif
 
@@ -237,10 +260,10 @@
 
       found = .false.
       if (try_dm_from_file) then
-         print *, "Attempting to read DM from file..."
+         if (ionode) print *, "Attempting to read DM from file..."
          call readSpMatrix(trim(slabel)//".DM",   &
                            DMread,found,block_dist)
-         call printSpMatrix(DMread)
+         if (ionode) call printSpMatrix(DMread)
       endif
 
 ! If found, check and update, otherwise initialize with neutral atoms
@@ -274,8 +297,8 @@
       if (found) then
 
 	call restructSpMatrix(DMread,sparse_pattern,DMnew)
-        print *, "DMread after reading file:"
-        call printSpMatrix(Dmread)
+        if (ionode) print *, "DMread after reading file:"
+        if (ionode) call printSpMatrix(Dmread)
         call delete(DMread)
 
       else
@@ -294,8 +317,8 @@
         call newSpMatrix(sparse_pattern,dm_a2d,block_dist,DMnew,  &
                          "(DM initialized from atoms)")
         call delete(dm_a2d)
-        print *, "DMnew after filling with atomic data:"
-        call printSpMatrix(DMnew)
+        if (ionode) print *, "DMnew after filling with atomic data:"
+        if (ionode) call printSpMatrix(DMnew)
 
        endif
       end subroutine initdm
