@@ -14,8 +14,8 @@
       use sparse_matrices, only: maxnh, numh, listh, listhptr
       use sparse_matrices, only: Dscf, Dold, Escf, Hold
       use sparse_matrices, only: xijo, H, S, H_kin
-      use sparse_matrices, only: sparse_pattern
-      use sparse_matrices, only: H_vkb, DM
+      use sparse_matrices, only: sparse_pattern, block_dist
+      use sparse_matrices, only: H_vkb, DM, DM_prev_geom
 
       use siesta_geom
       use atomlist,          only: iphorb, iphkb, rco, rckb, indxua,
@@ -32,7 +32,6 @@
       use write_subs
       use m_steps
       use parallel,          only: IOnode, node, nodes
-      use parallel,          only: block_dist
       use m_spin,            only: nspin
       use m_rmaxh
       use m_pulay,           only: init_pulay_arrays
@@ -259,10 +258,17 @@
       write(name,"(a,i0)") "sparsity for geom step ", istep
       call newSparsity(sparse_pattern,no_l,no_s,
      $                 maxnh,numh,listhptr,listh,name)
+
       write(name,"(a,i0)") "H_vkb in state_init at geom step ", istep
       call newSpMatrix(sparse_pattern,1,block_dist,H_vkb,name=name)
-      write(name,"(a,i0)") "DM in state_init at geom step ", istep
-      call newSpMatrix(sparse_pattern,nspin,block_dist,DM,name=name)
+      print *, "H_vkb...:"
+      call printSpMatrix(H_vkb)
+
+!      if (istep == 1) then
+!         write(name,"(a,i0)") "DM", istep
+!         call newSpMatrix(sparse_pattern,nspin,block_dist,DM,name=name)
+!         call printSpMatrix(DM)
+!      endif
 
       ! Note that the resizing of Dscf is done inside new_dm below
       call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',
@@ -289,10 +295,20 @@
       ! The resizing of Dscf is done inside new_dm
       ! call new_new_dm(sparse_pattern,DM_prev_geom,Dscf)
 
-      ! maybe store DM in geometry history
+      ! DM does not need to be initialized in the very first call
       call new_dm( auxchanged,DM,DMnew)
+      ! Store DM in geometry history
+      if (associated(DM%data)) then
+         DM_prev_geom = DM
+         print *, "... DM_prev_geom:"
+         call printSpMatrix(DM_prev_geom)
+      endif
+
       DM = DMnew    ! assignment -- DM is erased
+      call delete(DMnew)
       Dscf => val(DM)
+      print *, "DM after new_dm:"
+      call printSpMatrix(DM)
 
       ! Initialize energy-density matrix to zero for first call to overfsm
 #ifdef TRANSIESTA

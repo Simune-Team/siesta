@@ -21,7 +21,8 @@ SIESTA_SRCS= alloc.F90 bessph.f cellsubs.f  debugmpi.F \
              chkgmx.f fft1d.F  flib_spline.f90  \
              minvec.f m_io.f moreParallelSubs.F90 \
              m_recipes.f m_timer.F90 m_walltime.f90 parallel.F \
-	     precision.F pxf.F90 radfft.f sorting.f sys.F timer.f90
+	     precision.F pxf.F90 radfft.f sorting.f sys.F timer.f90 \
+             class_OrbitalDistribution.F90
 SIESTA_OBJS:= $(SIESTA_SRCS:.f=.o)
 SIESTA_OBJS:= $(SIESTA_OBJS:.F=.o)
 SIESTA_OBJS:= $(SIESTA_OBJS:.f90=.o)
@@ -94,6 +95,7 @@ mesh1d.o: m_recipes.o precision.o
 mesh3d.o: alloc.o debugxc.o parallel.o precision.o sorting.o sys.o
 minvec.o: cellsubs.o precision.o sorting.o sys.o
 moreParallelSubs.o: alloc.o m_io.o parallel.o precision.o sys.o
+parallel.o: class_OrbitalDistribution.o
 radfft.o: alloc.o bessph.o m_recipes.o precision.o
 siestaxc.o: atomxc.o cellxc.o mesh3d.o precision.o xcmod.o
 sys.o: parallel.o

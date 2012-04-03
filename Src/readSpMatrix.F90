@@ -1,16 +1,15 @@
 
  subroutine readSpMatrix (filename, SpM, found, ref_dist )
 
-   use class_SpMatrix, only : SpMatrix, init
-   use class_Sparsity, only : Sparsity, newSparsity
-   use class_Array2D,  only : assignment(=) 
+   use class_SpMatrix
+   use class_Sparsity
+   use class_Array2D
    use class_OrbitalDistribution
 
 #ifdef MPI
    use mpi_siesta
 #endif
 
-   ! no_l and no_u are needed to determine the distribution
    character(len=*), intent(in) :: filename
 
    ! Note: inout is essential to avoid memory leaks
@@ -19,7 +18,8 @@
    type(OrbitalDistribution), intent(in) :: ref_dist
 
 !     Internal variables
-      type(OrbitalDistribution)          :: dist
+      type(OrbitalDistribution)          :: new_dist
+
       logical   exist3
       integer   im, is, lun, m, nb
       integer   ml
@@ -48,6 +48,7 @@
       IONode = ref_dist%data%ionode
       Comm = ref_dist%data%comm
 
+      print *, "ionode, node: ", ionode, node
 !     Find file name
       if (Node.eq. IONode) then
          inquire (file=filename, exist=exist3)
@@ -76,11 +77,11 @@
 #endif
 
       if (no_u /= ref_dist%data%n) then
-         call copy(dist,other=ref_dist)  ! New distribution
-                                ! Except possibly the pointers for non-blocked dists...
-	 dist%data%n = no_u	
+         call copy(new_dist,other=ref_dist)  ! New distribution
+            ! Except possibly the pointers for non-blocked dists...
+         new_dist%data%n = no_u	
       else 
-         dist = ref_dist  ! Assignment
+         new_dist = ref_dist  ! Assignment
       endif
 
 !     Allocate local buffer array for globalised numd
@@ -92,13 +93,13 @@
       call MPI_Bcast(numdg,no_u,MPI_integer,IONode,Comm,MPIerror)
 #endif
 
-      no_l = num_local_elements(dist,no_u,Node)
+      no_l = num_local_elements(new_dist,no_u,Node)
 !     Convert global numd pointer to local form and generate listdptr
       allocate(numd(1:no_l),listdptr(1:no_l))
       maxnd = 0
       do m = 1,no_l
 #ifdef MPI
-         mg = index_local_to_global(dist,m,Node)
+         mg = index_local_to_global(new_dist,m,Node)
 #else
          mg = m
 #endif
@@ -123,9 +124,9 @@
 
       do m = 1,no_u
 #ifdef MPI
-         Bnode = node_handling_element(dist,m)
+         Bnode = node_handling_element(new_dist,m)
          if (BNode==IONode .and. Node==BNode) then
-            ml = index_global_to_local(dist,m,Node)
+            ml = index_global_to_local(new_dist,m,Node)
 #else
             ml = m
 #endif
@@ -138,7 +139,7 @@
             call MPI_Wait(Request,Status,MPIerror)
 
          elseif (Node == BNode) then
-            ml = index_global_to_local(dist,m,Node)
+            ml = index_global_to_local(new_dist,m,Node)
             call MPI_IRecv(listd(listdptr(ml)+1),numd(ml),   &
                 MPI_integer,IONode,1,Comm,Request,MPIerror)
             call MPI_Wait(Request,Status,MPIerror)
@@ -156,9 +157,9 @@
       do is = 1,nspin
          do m = 1,no_u
 #ifdef MPI
-            Bnode = node_handling_element(dist,m)
+            Bnode = node_handling_element(new_dist,m)
             if (BNode==IONode .and. Node==BNode) then
-               ml = index_global_to_local(dist,m,Node)
+               ml = index_global_to_local(new_dist,m,Node)
 #else
                ml = m
 #endif
@@ -171,7 +172,7 @@
                call MPI_Wait(Request,Status,MPIerror)
 
             elseif (Node == BNode) then
-               ml = index_global_to_local(dist,m,Node)
+               ml = index_global_to_local(new_dist,m,Node)
                call MPI_IRecv(dm(listdptr(ml)+1,is),numd(ml),   &
                     MPI_double_precision,IONode,1,Comm,Request, &
                     MPIerror)
@@ -199,8 +200,8 @@
                        maxnd,numd,listdptr,listd,  &
                        "(read from file)")
       SpM%data%a2d = dm(:,:)
-      SpM%data%dist = dist
-      call delete(dist)
+      SpM%data%dist = new_dist
+      call delete(new_dist)
 
       deallocate(numd,listdptr,listd,dm)
 

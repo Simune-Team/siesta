@@ -2,8 +2,10 @@
       use precision
       use class_SpMatrix
       use class_Sparsity
+      use class_OrbitalDistribution
 
       implicit none
+
 
 !     Max. number of nonzero H matrix elements    
       integer :: maxnh = 10 
@@ -25,7 +27,9 @@
       !
       !  New interface data
       type(Sparsity)                :: sparse_pattern
-      type(SpMatrix)                :: H_vkb, DM
+      type(SpMatrix)                :: H_vkb, DM, DM_prev_geom
+      ! Orbital distribution descriptor
+      type(OrbitalDistribution)     :: block_dist
 
       CONTAINS
 
@@ -41,6 +45,7 @@
       call de_alloc( Dold,        'Dold',        'sparseMat' )
 !      call de_alloc( Dscf,        'Dscf',        'sparseMat' )
       call delete(DM)
+      call delete(DM_prev_geom)
       call de_alloc( Escf,        'Escf',        'sparseMat' )
       call de_alloc( H,           'H',           'sparseMat' )
       call de_alloc( H_kin,       'H_kin',       'sparseMat' )
@@ -48,6 +53,7 @@
       call de_alloc( xijo,        'xijo',        'sparseMat' )
       call de_alloc( S,           'S',           'sparseMat' )
       call delete(sparse_pattern)
+      call delete(block_dist)
 
       end subroutine resetSparseMatrices
 

@@ -1,5 +1,28 @@
 
 -----------------------------------------------------------------------
+2012-04-03  Alberto Garcia <albertog@icmab.es>   trunk-407-sparse-23
+Bug fixes. Saving of DM_prev_geom
+
+Fixed a number of bugs. Re-wrote the logic for the flow
+of DM and added some printSpMatrix calls. Found a place
+to save DM_prev_geom and the conditions for extrapolation.
+Some rough edges remain.
+
+Moved block_dist to module 'sparse_matrices'.
+
+Updated SiestaXC makefile for class_OrbitalDistribution dependency.
+
+modified:
+  Src/Makefile
+  Src/SiestaXC/makefile
+  Src/initparallel.F
+  Src/my_new_dm.F90
+  Src/parallel.F
+  Src/readSpMatrix.F90
+  Src/sparse_matrices.F
+  Src/state_init.F
+
+-----------------------------------------------------------------------
 2012-03-30  Alberto Garcia <albertog@icmab.es>   trunk-407-sparse-22
 First attempt at DM flow clarification
 

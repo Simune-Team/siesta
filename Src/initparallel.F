@@ -23,7 +23,6 @@ C
       use siesta_options, only: isolve, SOLVE_ORDERN
       use siesta_options, only: rcoor
       use parallel,     only : Node, Nodes, BlockSize, ProcessorY
-      use parallel,     only : block_dist
       use parallelsubs, only : set_processorY, set_BlockSizeDefault
       use parallelsubs, only : set_processorYdefault
       use parallelsubs, only : WhichNodeOrb, GetNodeOrbs
@@ -36,6 +35,7 @@ C
       use mpi_siesta,   only: MPI_Comm_World
 #endif
       use class_OrbitalDistribution
+      use sparse_matrices,     only : block_dist
 
       implicit none
 C

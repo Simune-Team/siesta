@@ -73,13 +73,13 @@
 
       USE siesta_options
       use siesta_geom
-      use sparse_matrices,  only: sparse_pattern
-      use parallel,         only: block_dist
+      use sparse_matrices,  only: sparse_pattern, block_dist, DM_prev_geom
       use atomlist,         only: datm, iaorb, lasto, no_u, no_l
       use m_steps,          only: istp
       use m_spin,   only: nspin
 
       use class_SpMatrix
+      use class_Sparsity
 
       implicit none
 
@@ -162,8 +162,16 @@
          endif
 
         ! No Extrapolation yet, only re-structuring
-
+         if (associated(DM_prev_geom%data)) then
+            print *, " ----------- Possible extrapolation:"
+            call printSparsity(spar(DM_prev_geom))
+            call printSparsity(spar(DMin))
+            call printSparsity(sparse_pattern)
+            print *, " ----------- "
+         endif
 	call restructSpMatrix(DMin,sparse_pattern,DMnew)
+        print *, "DMnew after calling restructSpMatrix:"
+        call printSpMatrix(DMnew)
 
       endif
 
@@ -211,7 +219,7 @@
       integer           lasto(0:na_u), iaorb(no_u)
       real(dp)          Datm(no_u)
 
-      type(SpMatrix), intent(out)      :: DMnew
+      type(SpMatrix), intent(inout)      :: DMnew
       type(Sparsity), intent(in) :: sparse_pattern
       type(OrbitalDistribution), intent(in) :: block_dist
 
@@ -220,17 +228,19 @@
       character(len=*),parameter:: myName = 'initdm'
 
       integer :: nspin_read
-      real(dp), pointer :: Dscf(:,:)
+      real(dp), pointer              :: Dscf(:,:)
       integer, pointer, dimension(:) :: numh, listhptr, listh
       type(SpMatrix)                 :: DMread
       type(Array2D)                  :: dm_a2d
 
 ! Try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
 
+      found = .false.
       if (try_dm_from_file) then
-
+         print *, "Attempting to read DM from file..."
          call readSpMatrix(trim(slabel)//".DM",   &
                            DMread,found,block_dist)
+         call printSpMatrix(DMread)
       endif
 
 ! If found, check and update, otherwise initialize with neutral atoms
@@ -264,6 +274,8 @@
       if (found) then
 
 	call restructSpMatrix(DMread,sparse_pattern,DMnew)
+        print *, "DMread after reading file:"
+        call printSpMatrix(Dmread)
         call delete(DMread)
 
       else
@@ -281,6 +293,9 @@
 
         call newSpMatrix(sparse_pattern,dm_a2d,block_dist,DMnew,  &
                          "(DM initialized from atoms)")
+        call delete(dm_a2d)
+        print *, "DMnew after filling with atomic data:"
+        call printSpMatrix(DMnew)
 
        endif
       end subroutine initdm
