@@ -27,9 +27,12 @@ implicit none
 ! These module variables should be put into a derived type, and maybe
 ! not all of them are really necessary
 !
-integer ncid, norbs_id, nspin_id, nnzs_id, scf_step_id
+integer norbs_id, nspin_id, nnzs_id, scf_step_id
 integer no_s_id, indxuo_id
 integer numd_id, row_pointer_id, column_id, dm_id
+!
+
+integer  :: ncid = -1        ! Initialize handle to file descriptor to flag value
 
 public :: setup_dm_netcdf_file, write_dm_netcdf
 private
@@ -101,7 +104,16 @@ subroutine setup_dm_netcdf_file( maxnd, nbasis, nspin,    &
          else
             write(fname,"(a)") "DM.nc"
          endif
-      call check( nf90_create(fname,NF90_CLOBBER,ncid))
+ 
+         !  The netCDF file descriptor is kept open during the SCF cycle, but should be
+         !  closed at the end of it to avoid resource exhaustion in, say, MD runs. 
+         !  It is now actually closed at the beginning of the next SCF cycle. 
+         !  (Thanks to Nick Papior Andersen)
+
+         if (ncid >= 0) then
+            call check( nf90_close(ncid))
+         endif
+         call check( nf90_create(fname,NF90_CLOBBER,ncid))
 !
 !     Dimensions
 !
@@ -234,6 +246,7 @@ subroutine setup_dm_netcdf_file( maxnd, nbasis, nspin,    &
 
 !
 !     Should we close the file at this point?
+!     (... It might be clearer, but see descriptor fix above)
 !
 end subroutine setup_dm_netcdf_file
 
