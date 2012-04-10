@@ -4,6 +4,18 @@
 
 ** CHANGES ALONG siesta-3 branch
 ------------------------------------------------------------------------
+2012-04-10  8:25:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl6
+Fix auxiliary routine read_rho
+
+Corrected a misplaced 'endif' statement in the auxiliary routine read_rho in
+module m_iorho. (Note that this routine is not used in Siesta).
+
+(Thanks to Lu Kuilin)
+
+modified:
+  Src/m_iorho.F
+
+------------------------------------------------------------------------
 2012-03-29  8:00:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl5
 Close netCDF file descriptors for DM and DMHS files
 

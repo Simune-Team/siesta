@@ -368,7 +368,8 @@ C Globalise dimension check
 #endif
 
           if (baddim) then 
-            call die("Dimensions of array rho too small in read_rho")
+             call die("Dimensions of array rho too small in read_rho")
+          endif
 
 C Outer loop over spins
           do is = 1,ns
@@ -471,8 +472,6 @@ C Close file
         if (Node.eq.0) then
           call io_close( iu )
         endif
-
-      endif
 
 #ifdef MPI
 C Deallocate density buffer memory
