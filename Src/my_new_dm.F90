@@ -69,22 +69,24 @@
 
 !=====================================================================
 
-      subroutine  new_dm( auxchanged, DMin, DMnew)
+      subroutine  new_dm( auxchanged, DM_history, DMnew)
 
       USE siesta_options
       use siesta_geom
-      use sparse_matrices,  only: sparse_pattern, block_dist, DM_prev_geom
+      use sparse_matrices,  only: sparse_pattern, block_dist
       use atomlist,         only: datm, iaorb, lasto, no_u, no_l
       use m_steps,          only: istp
       use m_spin,   only: nspin
 
       use class_SpMatrix
       use class_Sparsity
+      use class_Pair_Geometry_SpMatrix
+      use class_Fstack_Pair_Geometry_SpMatrix
 
       implicit none
 
       logical, intent(in) :: auxchanged ! Has auxiliary supercell changed?
-      type(SpMatrix), intent(inout)      :: DMin   ! current DM (last geom)
+      type(Fstack_Pair_Geometry_SpMatrix), intent(in)      :: DM_history
       type(SpMatrix), intent(inout)   :: DMnew
 
 !     Local variables
@@ -92,6 +94,9 @@
       logical :: dminit     ! Initialize density matrix?
       logical :: try_to_read_from_file
       logical :: do_extrapolation
+      integer :: n_dms_in_history
+      type(Pair_Geometry_SpMatrix)     :: pair
+      type(SpMatrix)                   :: DMprevious, DMlast
 
       if (IOnode) then
          write(6,"(a,i5)") "New_DM. Step: ", istp
@@ -121,8 +126,10 @@
       if (harrisfun) dminit = .true.
 !
 !     or we are in the first step, or performing force-constant calculations
-!
-      if (istp .eq. 1) then
+
+      n_dms_in_history = n_items(DM_history)
+
+      if (n_dms_in_history== 0) then
          dminit = .true.
       else
          if ((idyn .eq. 6)             &   ! Force Constants
@@ -141,8 +148,6 @@
         if (IOnode) then
            write(6,"(a)") "DM reset as supercell changed."
         endif
-        call delete(DMin)
-        call delete(DM_prev_geom)
       endif
 
 
@@ -160,19 +165,16 @@
       else    ! not initializing the DM
 
          if (IOnode) then
-            write(6,"(a)") "Re-using DM from previous geometry..."
+            write(6,"(a)") "Re-using DM from previous geometries..."
          endif
 
         ! Extrapolation or simple re-structuring
          do_extrapolation = .false.
-         if (associated(DM_prev_geom%data)) then
-            if (ionode) then
-               print *, " ----------- Possible extrapolation:"
-               call printSparsity(spar(DM_prev_geom))
-               call printSparsity(spar(DMin))
-               call printSparsity(sparse_pattern)
-               print *, " ----------- "
-            endif
+
+         if (ionode) print *, "N DMs in history: ", n_dms_in_history
+         if (ionode) call print_type(DM_history)
+
+         if (n_dms_in_history >= 2) then
             if (idyn == 0) then
                do_extrapolation = fdf_get( 'DM.AllowExtrapolation', .FALSE. )
                if (do_extrapolation) then
@@ -185,18 +187,41 @@
             else
                do_extrapolation = fdf_get( 'DM.AllowExtrapolation', .TRUE. )
             endif
+         else if (n_dms_in_history == 1) then
+            call get(DM_history,n_dms_in_history,pair)
+            if (ionode) call print_type(pair)
+            call second(pair,DMlast)
+            if (ionode) call print_type(DMlast)
+            if (ionode) then 
+               print *, "Using restructured last-geometry DM..."
+               call print_type(spar(DMlast))
+            endif
+            call restructSpMatrix(DMlast,sparse_pattern,DMnew)
          endif
+         
          if (do_extrapolation) then
-            if (ionode) print *, "Extrapolating DM..."
-            call extrapolateSpMatrix(DM_prev_geom,DMin,sparse_pattern,DMnew)
-         else
-            if (ionode) print *, "Restructuring DM..."
-            call restructSpMatrix(DMin,sparse_pattern,DMnew)
+            call get(DM_history,n_dms_in_history,pair)
+            call second(pair,DMlast)
+            call get(DM_history,n_dms_in_history-1,pair)
+            call second(pair,DMprevious)
+            if (ionode) then
+               print *, " ----------- Extrapolating DM:"
+               call print_type(spar(DMprevious))
+               call print_type(spar(DMlast))
+               call print_type(sparse_pattern)
+               print *, " ----------- "
+            endif
+            call extrapolateSpMatrix(DMprevious,DMlast,sparse_pattern,DMnew)
          endif
+
          if (ionode)  print *, "DMnew after DM reuse:"
-         if (ionode)  call printSpMatrix(DMnew)
+         if (ionode)  call print_type(DMnew)
 
       endif
+
+      call delete(pair)
+      call delete(DMprevious)
+      call delete(DMlast)
 
       END subroutine new_dm
 
@@ -297,7 +322,7 @@
 
 	call restructSpMatrix(DMread,sparse_pattern,DMnew)
         if (ionode) print *, "DMread after reading file:"
-        if (ionode) call printSpMatrix(Dmread)
+        if (ionode) call print_type(Dmread)
         call delete(DMread)
 
       else
@@ -317,7 +342,7 @@
                          "(DM initialized from atoms)")
         call delete(dm_a2d)
         if (ionode) print *, "DMnew after filling with atomic data:"
-        if (ionode) call printSpMatrix(DMnew)
+        if (ionode) call print_type(DMnew)
 
        endif
       end subroutine initdm

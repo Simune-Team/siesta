@@ -92,6 +92,7 @@ MODULE siesta_options
   integer :: iquench       ! Quenching option, read in redata, used in dynamics routines
   integer :: isolve        ! Option to find density matrix: 0=>diag, 1=>order-N
   integer :: istart        ! First geommetry iteration step for certain types of dynamics
+  integer :: DM_history_depth   ! Number of previous density matrices used in extrapolation and reuse
   integer :: maxsav        ! Number of previous density matrices used in Pulay mixing
   integer :: broyden_maxit ! Max. iterations in Broyden geometry relaxation
   integer :: mullipop      ! Option for Mulliken population level of detail
@@ -343,6 +344,9 @@ MODULE siesta_options
                            value=trim(slabel), dictref='siesta:slabel')
     endif
 
+    ! 
+    DM_history_depth = fdf_get('DM.HistoryDepth', 4)
+
     ! H setup only
     h_setup_only = fdf_get('HSetupOnly', .false.)
     if (ionode .and. h_setup_only) then
@@ -468,6 +472,7 @@ MODULE siesta_options
     if (ionode) then
       write(6,1) 'redata: Mix after SCF convergence        = ', mix_after_convergence
     endif
+
 
     ! Pulay mixing, number of iterations for one Pulay mixing (maxsav)
     maxsav = fdf_get('DM.NumberPulay', maxsav_default)

@@ -6,19 +6,13 @@ module class_SpMatrix
 
   implicit none
 
-  public :: SpMatrix
-  public :: init, delete, assignment(=), refcount
   public :: val, spar, dist
   public :: nrows, nrows_g, nnzs, n_col, list_ptr, list_col
-  public :: printSpMatrix
+  public :: print_type
   public :: newSpMatrix
-
-  private
 
   integer, parameter :: dp = selected_real_kind(10,100)
 
-  ! This is the "meat" of the type
-  !
   type SpMatrix_
     integer :: refCount = 0
     !----------------------
@@ -28,30 +22,13 @@ module class_SpMatrix
     type(OrbitalDistribution)        :: dist
   end type SpMatrix_
 
-  ! This is a wrapper type to be passed around
   type SpMatrix
     type(SpMatrix_), pointer :: data => null()
   end type SpMatrix
 
-  interface assignment(=)
-    module procedure assignSpMatrix
-  end interface
-
-  interface init
-    module procedure initSpMatrix
-  end interface
-
-  interface delete
-    module procedure deleteSpMatrix
-  end interface
-
   interface newSpMatrix
     module procedure newSpMatrixFromArray2D
     module procedure newSpMatrixFromDims
-  end interface
-
-  interface refcount
-     module procedure refcountSpMatrix
   end interface
 
   interface val
@@ -90,83 +67,23 @@ module class_SpMatrix
      module procedure list_colSpMatrix
   end interface
 
-contains
+interface print_type
+   module procedure printSpMatrix
+end interface
 
-   subroutine initSpMatrix(this)
-     !........................................
-     ! Constructor
-     !........................................
-     type (SpMatrix) :: this
-     integer :: error
+!==========================
+#define TYPE_NAME SpMatrix
+#define __WHERE__ __FILE__
+#include "basic_type.inc"
+!==========================
 
-     call delete(this)
-     allocate(this%data, stat=error)
-     this%data%refCount = 1
-     print *, "--> allocating SpMatrix "
-
-  end subroutine initSpMatrix
-
-  subroutine deleteSpMatrix(this)
-    !............................
-    ! Destructor
-    !............................
-    type (SpMatrix) :: this
-    integer :: error
-
-    if (.not. associated(this%data)) then
-       ! print *, "--> deleting a non-associated SpMatrix"
-       return
-    endif
-    print *, "--> attempting to delete SpMatrix:" // trim(this%data%name)
-    this%data%refCount = this%data%refCount - 1
-    if (this%data%refCount == 0) then
-      ! Safe to delete the data now
-      print *, "--> deallocating SpMatrix: " // trim(this%data%name) 
-      call deleteSpMatrixData(this%data)
-      deallocate(this%data, stat=error)
-    endif
-
-    this%data => null()
-
-    CONTAINS
-     subroutine deleteSpMatrixData(smdata)
+     subroutine delete_Data(smdata)
       type(SpMatrix_) :: smdata
 
       call delete(smdata%sp)
       call delete(smdata%a2d)
       call delete(smdata%dist)
-     end subroutine deleteSpMatrixData
-
-  end subroutine deleteSpMatrix
-
-
-  subroutine assignSpMatrix(this, other)
-    !..................................................................
-    ! Setting one list equal to another of the same type.
-    ! No data copy, just increment reference and reference the same data
-    !...................................................................
-    type (SpMatrix), intent(inout) :: this
-    type (SpMatrix), intent(in) :: other
-
-    if (.not. associated(other%data)) then
-     call die('Assignment to object that has not been initialized!')
-    endif
-
-    ! Delete to reset the pointers and decrement the ref count
-    call delete(this)
-
-    this%data => other%data
-    this%data%refcount = this%data%refcount+1
-    print *, "--> assigned SpMatrix: " // trim(this%data%name)
-
-  end subroutine assignSpMatrix
-
-  function refcountSpMatrix(this) result(count)
-   type(SpMatrix), intent(in)  :: this
-   integer :: count
-   count = this%data%refCount
- end function refcountSpMatrix
-    
+    end subroutine delete_Data
 
   subroutine newSpMatrixFromArray2D(sp,a2d,dist,this,name)
      !........................................
@@ -293,8 +210,8 @@ contains
    endif
 
    print "(a)", "<spMatrix:" // trim(this%data%name)
-   call printSparsity(this%data%sp)
-   call printArray2D(this%data%a2d)
+   call print_type(this%data%sp)
+   call print_type(this%data%a2d)
    print "(a,i0,a)", "refcount: ",refcount(this),">"
 
  end subroutine printSpMatrix

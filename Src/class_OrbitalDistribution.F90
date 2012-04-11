@@ -27,7 +27,7 @@
   type OrbitalDistribution_
      integer   :: refCount = 0
      !------------------------
-     character(len=256)   :: name = "null_distribution"
+     character(len=256)   :: name = "null OrbitalDistribution"
      !------------------------
      integer  :: comm = -1       ! MPI communicator
      integer  :: node = -1       ! MPI rank in comm  (my_proc)
@@ -64,25 +64,9 @@
      type(OrbitalDistribution_), pointer :: data => null()
   end type OrbitalDistribution
 
-  public :: OrbitalDistribution
-  public :: assignment(=), init, delete
   public :: copy, newDistribution
   public :: num_local_elements, node_handling_element
   public :: index_local_to_global, index_global_to_local
-    
-  private
-
-  interface assignment(=)
-    module procedure assignDistribution
-  end interface
-
-  interface init
-    module procedure initDistribution
-  end interface
-
-  interface delete
-    module procedure deleteDistribution
-  end interface
 
   interface newDistribution
      module procedure newBlockCyclicDistribution
@@ -92,78 +76,20 @@
      module procedure copyDistribution
   end interface
 
-  interface refcount
-    module procedure refcountDistribution
-  end interface
+!====================================    
+#define TYPE_NAME OrbitalDistribution
+#define __WHERE__ __FILE__
+#include "basic_type.inc"
+!====================================    
 
-  CONTAINS
-
-   subroutine initDistribution(this)
-     !........................................
-     ! Constructor
-     !........................................
-     type (OrbitalDistribution) :: this
-     integer :: error
-
-     call delete(this)
-     allocate(this%data, stat=error)
-     this%data%refCount = 1
-
-  end subroutine initDistribution
-
-  subroutine deleteDistribution(this)
-    !............................
-    ! Destructor
-    !............................
-    type (OrbitalDistribution) :: this
-    integer :: error
-
-    if (.not. associated(this%data)) return
-    print *, "... attempting to deallocate distribution: " //  &        
-                           trim(this%data%name) 
-
-    this%data%refCount = this%data%refCount - 1
-    if (this%data%refCount == 0) then
-      ! Safe to delete the data now
-      call deleteDistributionData(this%data)
-      print *, "--> deallocated distribution: " // trim(this%data%name) 
-      deallocate(this%data, stat=error)
-    endif
-
-    this%data => null()
-
-    CONTAINS
-     subroutine deleteDistributionData(spdata)
+     subroutine delete_Data(spdata)
       type(OrbitalDistribution_) :: spdata
       if (.not. spdata%initialized_general_dist) RETURN
       deallocate( spdata%nroc_proc)
       deallocate( spdata%nl2g)
       deallocate( spdata%ng2l)
       deallocate( spdata%ng2p)
-     end subroutine deleteDistributionData
-
-  end subroutine deleteDistribution
-
-
-  subroutine assignDistribution(this, other)
-    !..................................................................
-    ! Setting one list equal to another of the same type.
-    ! No data copy, just increment reference and reference the same data
-    !...................................................................
-    type (OrbitalDistribution), intent(inout) :: this
-    type (OrbitalDistribution), intent(in) :: other
-
-    if (.not. associated(other%data)) then
-     call die('Assignment to object that has not been initialized!')
-    endif
-
-    ! Delete to reset the pointers and decrement the ref count
-    call delete(this)
-
-    this%data => other%data
-    this%data%refcount = this%data%refcount+1
-
-  end subroutine assignDistribution
+     end subroutine delete_Data
 
   subroutine copyDistribution(this, other)
     !..................................................................
@@ -235,12 +161,6 @@
 
    end subroutine newBlockCyclicDistribution
 
-  function refcountDistribution(this) result(count)
-   type(OrbitalDistribution), intent(in)  :: this
-   integer :: count
-   count = this%data%refCount
-  end function refcountDistribution
-    
 !-----------------------------------------------------------
    function num_local_elements(this,nels,Node) result(nl)
      type(OrbitalDistribution), intent(in)  :: this
@@ -658,4 +578,4 @@
   stop
  end subroutine die
 
-  end module class_OrbitalDistribution
+end module class_OrbitalDistribution

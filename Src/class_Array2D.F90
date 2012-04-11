@@ -2,118 +2,47 @@ module class_Array2D
 
   implicit none
 
-  public  :: Array2D
-  public  :: init, delete, assignment(=), refcount
-  private :: assignArray2D, initArray2D, deleteArray2D, refcountArray2D
-  private :: Array2DfromNakedArray
-  public  :: newArray2D
-  public  :: printArray2D
-  public  :: val
-  private :: valArray2D
-  private
-
   integer, parameter :: dp = selected_real_kind(10,100)
 
-  ! This is the "meat" of the type
   !
   type Array2D_
     integer :: refCount = 0
     !----------------------
-    character(len=256)   :: name = "null_array"
+    character(len=256)   :: name = "null Array2D"
     real(dp),   pointer  :: val(:,:) => null() ! Nonzero-element values
   end type Array2D_
 
-  ! This is a wrapper type to be passed around
   type Array2D
     type(Array2D_), pointer :: data => null()
   end type Array2D
 
+  public  :: newArray2D, print_type, val
+
   interface assignment(=)
-    module procedure assignArray2D
     module procedure Array2DfromNakedArray
-  end interface
-
-  interface init
-    module procedure initArray2D
-  end interface
-
-  interface delete
-    module procedure deleteArray2D
-  end interface
-
-  interface refcount
-    module procedure refcountArray2D
   end interface
 
   interface val
     module procedure valArray2D
   end interface
 
-contains
+  interface print_type
+    module procedure printArray2D
+  end interface
 
-   subroutine initArray2D(this)
-     !........................................
-     ! Constructor
-     !........................................
-     type (Array2D) :: this
-     integer :: error
+!========================
+#define TYPE_NAME Array2D
+#define __WHERE__ __FILE__
+#include "basic_type.inc"
+!========================
 
-     call delete(this)
-     allocate(this%data, stat=error)
-     print *, "--> allocated 2DArray: " // trim(this%data%name) 
-     this%data%refCount = 1
-
-  end subroutine initArray2D
-
-  subroutine deleteArray2D(this)
-    !............................
-    ! Destructor
-    !............................
-    type (Array2D) :: this
-    integer :: error
-
-    if (.not. associated(this%data)) return
-
-    this%data%refCount = this%data%refCount - 1
-    if (this%data%refCount == 0) then
-      ! Safe to delete the data now
-      print *, "--> deallocated 2DArray: " // trim(this%data%name) 
-      call deleteArray2DData(this%data)
-      deallocate(this%data, stat=error)
-    endif
-
-    this%data => null()
-
-    CONTAINS
-     subroutine deleteArray2DData(a2d_data)
+     subroutine delete_Data(a2d_data)
       type(Array2D_) :: a2d_data
       if (associated(a2d_data%val)) then
         deallocate( a2d_data%val)	
       endif
-     end subroutine deleteArray2DData
+     end subroutine delete_Data
 
-  end subroutine deleteArray2D
-
-
-  subroutine assignArray2D(this, other)
-    !..................................................................
-    ! Setting one list equal to another of the same type.
-    ! No data copy, just increment reference and reference the same data
-    !...................................................................
-    type (Array2D), intent(inout) :: this
-    type (Array2D), intent(in) :: other
-
-    if (.not. associated(other%data)) then
-     call die('Assignment to object that has not been initialized!')
-    endif
-
-    ! Delete to reset the pointers and decrement the ref count
-    call delete(this)
-
-    this%data => other%data
-    this%data%refcount = this%data%refcount+1
-
-  end subroutine assignArray2D
 
   subroutine newArray2D(this,n,m,name)
   ! This could be implemented also as an assignment 
@@ -160,12 +89,6 @@ contains
    this%data%name = "(copied from naked array)"
   end subroutine Array2DfromNakedArray
 
-
-  function refcountArray2D(this) result(count)
-   type(Array2D), intent(in)  :: this
-   integer  :: count
-   count = this%data%refCount
-  end function refcountArray2D
 
   function valArray2D(this) result(p)
    type(Array2D), intent(in)  :: this

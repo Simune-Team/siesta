@@ -2,15 +2,9 @@ module class_Sparsity
 
   implicit none
 
-  public :: Sparsity
-  public :: init, delete, assignment(=), refcount
-  private :: assignSparsity, initSparsity, deleteSparsity, refcountSparsity
   public :: newSparsity
-  public :: printSparsity
+  public :: print_type
   public :: nrows, nrows_g, nnzs, n_col, list_ptr, list_col
-  private :: nrowsSparsity, nnzsSparsity, n_colSparsity
-  private :: list_ptrSparsity, list_colSparsity
-  private
 
   ! This is the "meat" of the type
   !
@@ -31,22 +25,6 @@ module class_Sparsity
   type Sparsity
     type(Sparsity_), pointer :: data => null()
   end type Sparsity
-
-  interface assignment(=)
-    module procedure assignSparsity
-  end interface
-
-  interface init
-    module procedure initSparsity
-  end interface
-
-  interface delete
-    module procedure deleteSparsity
-  end interface
-
-  interface refcount
-    module procedure refcountSparsity
-  end interface
 
   interface nrows
      module procedure nrowsSparsity
@@ -69,81 +47,25 @@ module class_Sparsity
      module procedure list_colSparsity
   end interface
 
-contains
+  interface print_type
+     module procedure printSparsity
+  end interface
 
-   subroutine initSparsity(this)
-     !........................................
-     ! Constructor
-     !........................................
-     type (Sparsity) :: this
-     integer :: error
+!===========================
+#define TYPE_NAME Sparsity
+#define __WHERE__ __FILE__
+#include "basic_type.inc"
+!===========================
 
-     call delete(this)
-     allocate(this%data, stat=error)
-     this%data%refCount = 1
-     print *, "--> allocated sparsity "
-
-  end subroutine initSparsity
-
-  subroutine deleteSparsity(this)
-    !............................
-    ! Destructor
-    !............................
-    type (Sparsity) :: this
-    integer :: error
-
-    if (.not. associated(this%data)) return
-    print *, "... attempting to deallocate sparsity: " //  &        
-                           trim(this%data%name) 
-
-    this%data%refCount = this%data%refCount - 1
-    if (this%data%refCount == 0) then
-      ! Safe to delete the data now
-      call deleteSparsityData(this%data)
-      print *, "--> deallocated sparsity: " // trim(this%data%name) 
-      deallocate(this%data, stat=error)
-    endif
-
-    this%data => null()
-
-    CONTAINS
-     subroutine deleteSparsityData(spdata)
+     subroutine delete_Data(spdata)
       type(Sparsity_) :: spdata
       if (.not. spdata%initialized) RETURN
       deallocate( spdata%n_col)
       deallocate( spdata%list_ptr)
       deallocate( spdata%list_col)
-     end subroutine deleteSparsityData
+    end subroutine delete_Data
 
-  end subroutine deleteSparsity
-
-
-  subroutine assignSparsity(this, other)
-    !..................................................................
-    ! Setting one list equal to another of the same type.
-    ! No data copy, just increment reference and reference the same data
-    !...................................................................
-    type (Sparsity), intent(inout) :: this
-    type (Sparsity), intent(in) :: other
-
-    if (.not. associated(other%data)) then
-     call die('Assignment to object that has not been initialized!')
-    endif
-
-    ! Delete to reset the pointers and decrement the ref count
-    call delete(this)
-
-    this%data => other%data
-    this%data%refcount = this%data%refcount+1
-
-  end subroutine assignSparsity
-
-  function refcountSparsity(this) result(count)
-   type(Sparsity), intent(in)  :: this
-   integer :: count
-   count = this%data%refCount
-  end function refcountSparsity
-    
+!--------------------------------------------------------------------    
  subroutine newSparsity(sp,nrows,nrows_g,nnzs,num,listptr,list,name)
 
    type(Sparsity), intent(inout)  :: sp

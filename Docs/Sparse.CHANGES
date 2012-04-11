@@ -1,5 +1,37 @@
 
 -----------------------------------------------------------------------
+2012-04-11  Alberto Garcia <albertog@icmab.es>   trunk-407-sparse-26
+New framework for extrapolation
+
+Using a finite stack, the (geometry,DM) pairs for every geometry step are
+saved and potentially used for extrapolation. So far only the latest two
+steps are used.
+
+Re-designed the type modules with the use of 'basic_type.inc' for the
+standard reference-counting functionality.
+
+Added template files Pair.T90 and Fstack.T90.
+
+added:
+  Src/Fstack.T90
+  Src/Pair.T90
+  Src/basic_type.inc
+  Src/class_Geometry.F90
+  Src/class_Pair_Geometry_SpMatrix.F90
+modified:
+  Src/Makefile
+  Src/class_Array2D.F90
+  Src/class_OrbitalDistribution.F90
+  Src/class_SpMatrix.F90
+  Src/class_Sparsity.F90
+  Src/my_new_dm.F90
+  Src/siesta_init.F
+  Src/siesta_options.F90
+  Src/sparse_matrices.F
+  Src/state_analysis.F
+  Src/state_init.F
+
+-----------------------------------------------------------------------
 2012-04-11  Alberto Garcia <albertog@icmab.es>   trunk-407-sparse-25
 Add nrows_g to sparsity type. Simplify distribution handling
 

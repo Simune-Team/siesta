@@ -13,6 +13,7 @@
       use m_struct_init,      only: struct_init
       use siesta_options
       use sparse_matrices
+      use class_Fstack_Pair_Geometry_SpMatrix, only: new
       use siesta_geom
       use atomlist,           only: no_u, rmaxkb, amass, lasto, qtot,
      &                              iza, rmaxo, zvaltot, superc,
@@ -62,7 +63,9 @@
       use m_ts_in_siesta, only: setup_ts_kpoint_grid
 ! TSS End
 #endif /* TRANSIESTA */
+
       implicit none
+
 #ifdef MPI
       integer :: MPIerror  ! Return error code in MPI routines
 #endif
@@ -118,7 +121,7 @@ C     Initialise MPI and set processor number
       call timer( 'siesta', 0 )
       call timer( 'siesta', 1 )
       call timer( 'Setup', 1 )
-
+!
 !     Nullify arrays
       nullify(Haux,Saux,psi)
       nullify(Dscf,Dold,Escf)
@@ -199,7 +202,9 @@ C     Initialise MPI and set processor number
       if (struct_only) then
          call bye( 'End of structure processing' )
       endif
-      
+
+!-------------- Now we have the initial geometry
+!
 !     End of Initial Structure Processing
       if (Node.eq.0) then
         write(6,'(/,a,20("*"),a,28("*"))')
@@ -222,6 +227,10 @@ C     Initialise MPI and set processor number
 
 !     Read simulation data
       call read_options( na_u, ns, nspin )
+
+      print *, "DM_history_depth: ", DM_history_depth
+      call new(DM_history,DM_history_depth,"(DM history stack)")
+      print *, "Size of fstack: ", max_size(DM_history)
 
 #ifdef TRANSIESTA
 !     Read TS Input options

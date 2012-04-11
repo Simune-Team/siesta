@@ -3,6 +3,7 @@
       use class_SpMatrix
       use class_Sparsity
       use class_OrbitalDistribution
+      use class_Fstack_Pair_Geometry_SpMatrix
 
       implicit none
 
@@ -27,7 +28,9 @@
       !
       !  New interface data
       type(Sparsity)                :: sparse_pattern
-      type(SpMatrix)                :: H_vkb, DM, DM_prev_geom
+      type(SpMatrix)                :: H_vkb, DM
+      type(Fstack_Pair_Geometry_SpMatrix):: DM_history
+
       ! Orbital distribution descriptor
       type(OrbitalDistribution)     :: block_dist
 
@@ -45,7 +48,6 @@
       call de_alloc( Dold,        'Dold',        'sparseMat' )
 !      call de_alloc( Dscf,        'Dscf',        'sparseMat' )
       call delete(DM)
-      call delete(DM_prev_geom)
       call de_alloc( Escf,        'Escf',        'sparseMat' )
       call de_alloc( H,           'H',           'sparseMat' )
       call de_alloc( H_kin,       'H_kin',       'sparseMat' )
@@ -53,6 +55,7 @@
       call de_alloc( xijo,        'xijo',        'sparseMat' )
       call de_alloc( S,           'S',           'sparseMat' )
       call delete(sparse_pattern)
+      call delete(DM_history)
       call delete(block_dist)
 
       end subroutine resetSparseMatrices

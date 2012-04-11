@@ -144,7 +144,8 @@ OBJS =  automatic_cell.o atom_options.o \
         class_OrbitalDistribution.o \
         compute_EKS_Harris.o compute_max_diff.o \
         save_density_matrix.o  \
-        readSpMatrix.o restructSpMatrix.o extrapolateSpMatrix.o
+        readSpMatrix.o restructSpMatrix.o extrapolateSpMatrix.o \
+        class_Geometry.o class_Pair_Geometry_SpMatrix.o class_Fstack_Pair_Geometry_SpMatrix.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -377,7 +378,16 @@ chemical.o: parallel.o precision.o sys.o
 chempot.o: alloc.o mneighb.o parallel.o parallelsubs.o precision.o sys.o
 chkdim.o: sys.o
 chkgmx.o: cellsubs.o minvec.o precision.o sys.o
+class_Array2D.o: basic_type.inc
+class_Fstack_Pair_Geometry_SpMatrix.o: Fstack.T90 basic_type.inc
+class_Fstack_Pair_Geometry_SpMatrix.o: class_Pair_Geometry_SpMatrix.o
+class_Geometry.o: basic_type.inc
+class_OrbitalDistribution.o: basic_type.inc
+class_Pair_Geometry_SpMatrix.o: Pair.T90 basic_type.inc
+class_Pair_Geometry_SpMatrix.o: class_Geometry.o class_SpMatrix.o
+class_SpMatrix.o: basic_type.inc
 class_SpMatrix.o: class_Array2D.o class_OrbitalDistribution.o class_Sparsity.o
+class_Sparsity.o: basic_type.inc
 coceri.o: files.o periodic_table.o precision.o
 compute_EKS_Harris.o: atomlist.o class_SpMatrix.o dhscf.o m_dipol.o
 compute_EKS_Harris.o: m_energies.o m_mpi_utils.o m_ntm.o m_spin.o precision.o
@@ -584,10 +594,12 @@ moreParallelSubs.o: alloc.o m_io.o parallel.o precision.o sys.o
 moremeshsubs.o: alloc.o mesh.o parallel.o precision.o schecomm.o sys.o
 mulliken.o: alloc.o atmfuncs.o parallel.o parallelsubs.o precision.o
 mulliken.o: siesta_cml.o
-my_new_dm.o: alloc.o atomlist.o class_Array2D.o class_OrbitalDistribution.o
-my_new_dm.o: class_SpMatrix.o class_Sparsity.o files.o m_spin.o m_steps.o
-my_new_dm.o: parallel.o parallelsubs.o parsing.o precision.o siesta_geom.o
-my_new_dm.o: siesta_options.o sparse_matrices.o sys.o units.o
+my_new_dm.o: alloc.o atomlist.o class_Array2D.o
+my_new_dm.o: class_Fstack_Pair_Geometry_SpMatrix.o class_OrbitalDistribution.o
+my_new_dm.o: class_Pair_Geometry_SpMatrix.o class_SpMatrix.o class_Sparsity.o
+my_new_dm.o: files.o m_spin.o m_steps.o parallel.o parallelsubs.o parsing.o
+my_new_dm.o: precision.o siesta_geom.o siesta_options.o sparse_matrices.o sys.o
+my_new_dm.o: units.o
 naefs.o: atmfuncs.o mneighb.o precision.o
 new_dm.o: alloc.o atomlist.o m_energies.o m_fdf_global.o m_iodm.o m_sparse.o
 new_dm.o: m_spin.o m_steps.o m_ts_iodm.o m_ts_options.o parallel.o
@@ -708,15 +720,17 @@ siesta_move.o: parallel.o phonon.o siesta_cml.o siesta_geom.o siesta_options.o
 siesta_move.o: sys.o write_subs.o zm_broyden_optim.o zm_fire_optim.o zmatrix.o
 siesta_options.o: files.o memoryinfo.o parallel.o precision.o siesta_cml.o
 siesta_options.o: sys.o units.o
-sparse_matrices.o: alloc.o class_OrbitalDistribution.o class_SpMatrix.o
+sparse_matrices.o: alloc.o class_Fstack_Pair_Geometry_SpMatrix.o
+sparse_matrices.o: class_OrbitalDistribution.o class_SpMatrix.o
 sparse_matrices.o: class_Sparsity.o precision.o
 spatial.o: precision.o
 spher_harm.o: alloc.o precision.o sys.o
-state_analysis.o: atomlist.o born_charge.o fixed.o m_energies.o m_forces.o
-state_analysis.o: m_iostruct.o m_ntm.o m_spin.o m_stress.o m_wallclock.o
-state_analysis.o: parallel.o remove_intramol_pressure.o siesta_cml.o
-state_analysis.o: siesta_geom.o siesta_options.o sparse_matrices.o write_subs.o
-state_analysis.o: zmatrix.o
+state_analysis.o: atomlist.o born_charge.o
+state_analysis.o: class_Fstack_Pair_Geometry_SpMatrix.o class_Geometry.o
+state_analysis.o: fixed.o m_energies.o m_forces.o m_iostruct.o m_ntm.o m_spin.o
+state_analysis.o: m_stress.o m_wallclock.o parallel.o
+state_analysis.o: remove_intramol_pressure.o siesta_cml.o siesta_geom.o
+state_analysis.o: siesta_options.o sparse_matrices.o write_subs.o zmatrix.o
 state_init.o: alloc.o atomlist.o class_SpMatrix.o class_Sparsity.o
 state_init.o: domain_decom.o files.o hsparse.o iodm_netcdf.o iodmhs_netcdf.o
 state_init.o: kpoint_grid.o m_check_supercell.o m_energies.o m_eo.o m_gamma.o
