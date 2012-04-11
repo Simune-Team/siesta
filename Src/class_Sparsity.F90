@@ -7,7 +7,7 @@ module class_Sparsity
   private :: assignSparsity, initSparsity, deleteSparsity, refcountSparsity
   public :: newSparsity
   public :: printSparsity
-  public :: nrows, nnzs, n_col, list_ptr, list_col
+  public :: nrows, nrows_g, nnzs, n_col, list_ptr, list_col
   private :: nrowsSparsity, nnzsSparsity, n_colSparsity
   private :: list_ptrSparsity, list_colSparsity
   private
@@ -18,18 +18,13 @@ module class_Sparsity
     integer :: refCount = 0
     !----------------------
     character(len=256) :: name = "null_sparsity"
-!   integer        :: n_row_g=0  ! Global number of rows
-!   integer        :: n_col_g=0  ! Global number of columns
-    integer        :: nrows = 0
-    integer        :: ncols = 0
-    integer        :: nnzs  = 0
-!   integer,pointer:: n_row_node(:)=>null() ! # rows in each node
-!   integer,pointer:: row_g2l(:)   =>null() ! Global to local row index
-!   integer,pointer:: row_l2g(:)   =>null() ! Local to global row index
-   integer,pointer:: n_col(:)     =>null() ! Nonzero cols of each row
-   integer,pointer:: list_col(:)  =>null() ! Index of nonzero columns
-   integer,pointer:: list_ptr(:)  =>null() ! First element of each row
-   logical        :: initialized = .false.
+    integer            :: nrows = 0             ! Local number of rows
+    integer            :: nrows_g = 0           ! Global number or rows
+    integer            :: nnzs  = 0             ! Local number of non-zeros
+    integer,pointer    :: n_col(:)     =>null() ! Nonzero cols of each row
+    integer,pointer    :: list_col(:)  =>null() ! Index of nonzero columns
+    integer,pointer    :: list_ptr(:)  =>null() ! First element of each row
+    logical            :: initialized = .false.
   end type Sparsity_
 
   ! This is a wrapper type to be passed around
@@ -56,6 +51,11 @@ module class_Sparsity
   interface nrows
      module procedure nrowsSparsity
   end interface
+
+  interface nrows_g
+     module procedure nrows_gSparsity
+  end interface
+
   interface nnzs
      module procedure nnzsSparsity
   end interface
@@ -144,11 +144,11 @@ contains
    count = this%data%refCount
   end function refcountSparsity
     
- subroutine newSparsity(sp,nrows,ncols,nnzs,num,listptr,list,name)
+ subroutine newSparsity(sp,nrows,nrows_g,nnzs,num,listptr,list,name)
 
    type(Sparsity), intent(inout)  :: sp
 
-   integer, intent(in)  :: nrows, ncols, nnzs
+   integer, intent(in)  :: nrows, nrows_g, nnzs
    integer, intent(in)  :: num(:), listptr(:)
    integer, intent(in)  :: list(:)
    character(len=*), intent(in) :: name
@@ -166,7 +166,7 @@ contains
    allocate(sp%data%list_ptr(1:nrows))
 
    sp%data%nrows = nrows
-   sp%data%ncols = ncols
+   sp%data%nrows_g = nrows_g
    sp%data%nnzs  = nnzs
    sp%data%n_col(1:nrows) = num(1:nrows)
    sp%data%list_ptr(1:nrows) = listptr(1:nrows)
@@ -190,6 +190,12 @@ contains
    integer                     :: n
    n = this%data%nrows
  end function nrowsSparsity
+
+ function nrows_gSparsity(this) result (n)
+   type(Sparsity), intent(in)  :: this
+   integer                     :: n
+   n = this%data%nrows_g
+ end function nrows_gSparsity
 
  function nnzsSparsity(this) result (n)
    type(Sparsity), intent(in)  :: this
@@ -231,9 +237,9 @@ contains
       RETURN
    endif
 
-   print "(a,i0,a,i0,a,i0,a)",     &
-                          "  <sparsity:" // trim(sp%data%name) // " nrows=", &
-                          sp%data%nrows, &
+   print "(a,i0,a,i0,a,i0,a,i0,a)",     &
+                          "  <sparsity:" // trim(sp%data%name) // " nrows_g=", &
+                          sp%data%nrows_g, " nrows=", sp%data%nrows, &
                           " nnzs=",sp%data%nnzs,", refcount: ",  &
                           refcount(sp), ">"
  end subroutine printSparsity

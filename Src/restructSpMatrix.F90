@@ -40,9 +40,16 @@
 
       real(dp), allocatable  :: aux(:)
 
+      ! For non-block-cyclic distributions, we are assuming
+      ! that the distribution pattern is the same (it might not
+      ! be for spatial- or interaction-based distributions).
+      ! This test is just a partial sanity check
+      ! One should compare nl2g(i) for i 1..nrows
+
       if (nrows(SpMin) /= nrows(sp_out)) then
          call die("Incompatible nrows in SpMatrices")
       endif
+
 
       n_col_in => n_col(SpMin)
       n_col_out => n_col(sp_out)

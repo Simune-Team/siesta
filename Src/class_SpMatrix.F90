@@ -9,7 +9,7 @@ module class_SpMatrix
   public :: SpMatrix
   public :: init, delete, assignment(=), refcount
   public :: val, spar, dist
-  public :: nrows, nnzs, n_col, list_ptr, list_col
+  public :: nrows, nrows_g, nnzs, n_col, list_ptr, list_col
   public :: printSpMatrix
   public :: newSpMatrix
 
@@ -68,6 +68,10 @@ module class_SpMatrix
 
   interface nrows
      module procedure nrowsSpMatrix
+  end interface
+
+  interface nrows_g
+     module procedure nrows_gSpMatrix
   end interface
 
   interface nnzs
@@ -249,6 +253,12 @@ contains
    integer                     :: n
    n = nrows(this%data%sp)
  end function nrowsSpmatrix
+
+ function nrows_gSpmatrix(this) result (n)
+   type(SpMatrix), intent(in)  :: this
+   integer                     :: n
+   n = nrows_g(this%data%sp)
+ end function nrows_gSpmatrix
 
  function nnzsSpMatrix(this) result (n)
    type(SpMatrix), intent(in)  :: this

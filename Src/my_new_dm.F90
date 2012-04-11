@@ -263,7 +263,6 @@
          if (ionode) print *, "Attempting to read DM from file..."
          call readSpMatrix(trim(slabel)//".DM",   &
                            DMread,found,block_dist)
-         if (ionode) call printSpMatrix(DMread)
       endif
 
 ! If found, check and update, otherwise initialize with neutral atoms
@@ -282,7 +281,7 @@
 	   call delete(DMread)
         endif
 
-        if (nrows(DMread) /= nrows(sparse_pattern)) then
+        if (nrows_g(DMread) /= nrows_g(sparse_pattern)) then
            if (IONode) then
               write(6,"(a,/,a)")                             &
              "WARNING: Wrong number of orbs in DM file. ",     &

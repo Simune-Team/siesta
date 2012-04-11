@@ -32,13 +32,11 @@
      integer  :: comm = -1       ! MPI communicator
      integer  :: node = -1       ! MPI rank in comm  (my_proc)
      integer  :: nodes = 0       ! MPI size of comm  (nprocs)
-     integer  :: ionode = -1     ! Node capable of IO
+     integer  :: node_io = -1    ! Node capable of IO
      !------------------------
-     integer  :: n = 0           ! Global size
-     !
      integer  :: blocksize = 0   ! Flag to determine whether the dist is block-cyclic
      !                   
-     integer  :: isrcproc = 0        ! Processor holding the first element (unused)
+     integer  :: isrcproc = 0    ! Processor holding the first element (unused)
      !------------------------------------------
      !
      !                   If the distribution is not block-cyclic,
@@ -46,6 +44,11 @@
      !
      ! Have 
      logical                         :: initialized_general_dist = .false.
+     !
+     ! Just for sanity: number of global elements (see function num_local_elements)
+     ! This will have to be set at the time of filling in the arrays
+     ! for non-block-cyclic distributions
+     integer                         :: n = -1
      ! Number of elements held by each proc
      integer, pointer                :: nroc_proc(:)  => null() 
      ! Global index from Local index (in my_proc)   
@@ -186,9 +189,8 @@
       dst%comm  = src%comm
       dst%node  = src%node
       dst%nodes = src%nodes
-      dst%ionode = src%ionode
+      dst%node_io = src%node_io
       !
-      dst%n     = src%n
       dst%blocksize = src%blocksize
       dst%isrcproc  = src%isrcproc
       !
@@ -222,7 +224,7 @@
      this%data%node = 0
      this%data%nodes = 1
 #endif
-     this%data%ionode = 0
+     this%data%node_io = 0
 
      if (present(name)) then
         this%data%name = trim(name)

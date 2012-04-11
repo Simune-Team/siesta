@@ -1,5 +1,27 @@
 
 -----------------------------------------------------------------------
+2012-04-11  Alberto Garcia <albertog@icmab.es>   trunk-407-sparse-25
+Add nrows_g to sparsity type. Simplify distribution handling
+
+The sparsity now holds no_l and no_u as local and global number of
+rows, respectively, and nrows_g is now a function on sparsity and
+sparse-matrix instances.
+
+Removed no_u from the "block-cyclic" part of the orbital distribution type.
+
+Routine readSpMatrix is now simpler as the reference distribution is
+used as is.
+
+modified:
+  Src/class_OrbitalDistribution.F90
+  Src/class_SpMatrix.F90
+  Src/class_Sparsity.F90
+  Src/my_new_dm.F90
+  Src/readSpMatrix.F90
+  Src/restructSpMatrix.F90
+  Src/state_init.F
+
+-----------------------------------------------------------------------
 2012-04-03  Alberto Garcia <albertog@icmab.es>   trunk-407-sparse-24
 Added support for DM extrapolation
 

@@ -256,7 +256,7 @@
       endif
 
       write(name,"(a,i0)") "sparsity for geom step ", istep
-      call newSparsity(sparse_pattern,no_l,no_s,
+      call newSparsity(sparse_pattern,no_l,no_u,
      $                 maxnh,numh,listhptr,listh,name)
 
       write(name,"(a,i0)") "H_vkb in state_init at geom step ", istep
