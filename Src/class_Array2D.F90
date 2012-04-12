@@ -2,11 +2,14 @@ module class_Array2D
 
   implicit none
 
+  character(len=*), parameter :: mod_name=__FILE__
+
   integer, parameter :: dp = selected_real_kind(10,100)
 
   !
   type Array2D_
     integer :: refCount = 0
+    character(len=36)   :: id = "null_id"
     !----------------------
     character(len=256)   :: name = "null Array2D"
     real(dp),   pointer  :: val(:,:) => null() ! Nonzero-element values
@@ -18,8 +21,9 @@ module class_Array2D
 
   public  :: newArray2D, print_type, val
 
-  interface assignment(=)
-    module procedure Array2DfromNakedArray
+  interface newArray2D
+    module procedure newArray2DfromDimensions
+    module procedure newArray2DfromNakedArray
   end interface
 
   interface val
@@ -32,7 +36,6 @@ module class_Array2D
 
 !========================
 #define TYPE_NAME Array2D
-#define __WHERE__ __FILE__
 #include "basic_type.inc"
 !========================
 
@@ -44,7 +47,7 @@ module class_Array2D
      end subroutine delete_Data
 
 
-  subroutine newArray2D(this,n,m,name)
+  subroutine newArray2DFromDimensions(this,n,m,name)
   ! This could be implemented also as an assignment 
   ! (see below)
 
@@ -68,26 +71,35 @@ module class_Array2D
    else
       this%data%name = "(built from n,m)"
    endif
+   call get_uuid(this%data%id)
 
-  end subroutine newArray2D
+ end subroutine newArray2DFromDimensions
 
-  subroutine Array2DfromNakedArray(this, val)
+  subroutine newArray2DfromNakedArray(this, val, name)
     !..................................................................
     !...................................................................
     type (Array2D), intent(inout) :: this
     real(dp), intent(in) :: val(:,:)
+    character(len=*), intent(in), optional  :: name
 
     integer :: n, m
 
     call init(this)
 
-   n = size(val,dim=1)
-   m = size(val,dim=2)
+    n = size(val,dim=1)
+    m = size(val,dim=2)
 
-   allocate(this%data%val(1:n,1:m))
-   this%data%val(:,:) = val(:,:)
-   this%data%name = "(copied from naked array)"
-  end subroutine Array2DfromNakedArray
+    allocate(this%data%val(1:n,1:m))
+    this%data%val(:,:) = val(:,:)
+    if (present(name)) then
+       this%data%name = trim(name)
+    else
+       this%data%name = "(Array2D from naked array)"
+    endif
+    call get_uuid(this%data%id)
+
+
+ end subroutine newArray2DfromNakedArray
 
 
   function valArray2D(this) result(p)

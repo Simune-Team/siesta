@@ -52,17 +52,17 @@
       call write_debug( '  PRE state_analysis' )
 #endif
 
-!     Save (geom,DM) pair to history stack
-!
-      write(msg,"(a,i0)") "step: ",istep
-      call newGeometry(geom,na_u,ucell,xa,isa,
+      if (max_size(DM_history) > 0) then
+
+        ! Save (geom,DM) pair to history stack
+         write(msg,"(a,i0)") "step: ",istep
+         call newGeometry(geom,na_u,ucell,xa,isa,
      $                 name="Geometry for " // msg)
-      call new(pair,geom,DM,name=" Pair geom,DM for " // msg)
-      call print_type(pair)
-      call push(DM_history,pair)
-      call print_type(DM_history)
-      call delete(pair)
-      call delete(geom)
+         call new(pair,geom,DM,name=" Pair geom,DM for " // msg)
+         call push(DM_history,pair)
+         call delete(pair)
+         call delete(geom)
+      endif
 
 !     Save structural information in crystallographic format,
 !     and canonical Zmatrix (if applicable) before moving the atoms

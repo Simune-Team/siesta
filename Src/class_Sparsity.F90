@@ -6,6 +6,8 @@ module class_Sparsity
   public :: print_type
   public :: nrows, nrows_g, nnzs, n_col, list_ptr, list_col
 
+  character(len=*), parameter :: mod_name=__FILE__
+
   ! This is the "meat" of the type
   !
   type Sparsity_
@@ -53,7 +55,6 @@ module class_Sparsity
 
 !===========================
 #define TYPE_NAME Sparsity
-#define __WHERE__ __FILE__
 #include "basic_type.inc"
 !===========================
 

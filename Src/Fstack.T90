@@ -89,8 +89,6 @@ character(len=*), intent(in), OPTIONAL :: name
 integer :: i
 
 call init(this)
-allocate(this%data%val(nsize))
-
 this%data%size = nsize
 this%data%nvals = 0
 
@@ -99,13 +97,18 @@ if (present(name)) then
 else
    this%data%name = "Fstack"
 endif
+
+allocate(this%data%val(nsize))
 print *, '--> allocated ' // trim(this%data%name) 
+
 end subroutine new__
 
 !---------------------------------------------
 subroutine push__(s,item)
 type(FSTACK_NAME), intent(inout) :: s
 type(_T_),      intent(in)    :: item
+
+if (max_size(s) == 0) RETURN
 
 if (s%data%nvals == s%data%size) then
    print *, "cycling fstack..."

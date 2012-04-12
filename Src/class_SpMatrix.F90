@@ -6,6 +6,8 @@ module class_SpMatrix
 
   implicit none
 
+  character(len=*), parameter :: mod_name=__FILE__
+
   public :: val, spar, dist
   public :: nrows, nrows_g, nnzs, n_col, list_ptr, list_col
   public :: print_type
@@ -73,7 +75,6 @@ end interface
 
 !==========================
 #define TYPE_NAME SpMatrix
-#define __WHERE__ __FILE__
 #include "basic_type.inc"
 !==========================
 

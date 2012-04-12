@@ -12,7 +12,7 @@
   PRIVATE
 
   public  :: TYPE_NAME
-  public  :: init, delete, assignment(=), refcount
+  public  :: init, delete, assignment(=), refcount, id
 
   interface assignment(=)
     module procedure assign_
@@ -28,6 +28,10 @@
 
   interface refcount
     module procedure refcount_
+  end interface
+
+  interface id
+    module procedure id_
   end interface
 
 CONTAINS
@@ -61,6 +65,10 @@ CONTAINS
       ! Safe to delete the data now
       call delete_Data(this%data)
       print *, "--> deallocated: " // trim(this%data%name) 
+      print *, "--> deallocated id: " // id(this)
+
+!      if (type_verbose) print *, "--> deallocated: " // trim(this%data%name) 
+!      if (type_debug) print *, "--> deallocated id: " // id(this)
       deallocate(this%data, stat=error)
     endif
 
@@ -78,7 +86,7 @@ CONTAINS
     type (TYPE_NAME), intent(in) :: other
 
     if (.not. associated(other%data)) then
-     call die("Assignment of non-initialized object!" // __WHERE__)
+     call die("Assignment of non-initialized object in " // trim(mod_name))
     endif
 
     ! Delete to reset the pointers and decrement the ref count
@@ -94,5 +102,12 @@ CONTAINS
    integer  :: count
    count = this%data%refCount
   end function refcount_
+
+  function id_(this) result(str)
+   type(TYPE_NAME), intent(in)  :: this
+   character(len=36)            :: str
+   !str = this%data%id
+   str = "dummy id for now"
+  end function id_
 
 !=============================================================

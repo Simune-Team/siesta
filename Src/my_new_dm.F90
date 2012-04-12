@@ -4,8 +4,7 @@
 !     This DM can be:
 !     1. Synthesized directly from atomic occupations (not idempotent)
 !     2. Read from file
-!     3. Extrapolated from (two) previous steps
-!     3.a The DM of the previous iteration
+!     3. Re-used (with possible extrapolation) from previous geometry step(s).
 !
 !     In cases 2 and 3, a check is done to guarantee that the structure
 !     of the read or extrapolated DM conforms to the current sparsity.
@@ -42,14 +41,7 @@
 !              DM (unless requested by setting 'DM.AllowExtrapolation' to
 !              "true"). The previous step's DM is reused.
 !
-!      For the purposes of extrapolation, this module keeps DMsaved, which
-!      holds the DM from a previous geometry step (used, together with the
-!      current DM to extrapolate).
-!      The module also keeps the sparsity at the time of initialization,
-!      so that it can be compared to the current one. If restructuring is
-!      needed, the saved sparsity is updated.
-!
-!     Alberto Garcia, September 2007
+!     Alberto Garcia, September 2007, April 2012
 !
 
       use sys, only: die
@@ -72,7 +64,7 @@
       subroutine  new_dm( auxchanged, DM_history, DMnew)
 
       USE siesta_options
-      use siesta_geom
+      use siesta_geom,      only: xa, na_u
       use sparse_matrices,  only: sparse_pattern, block_dist
       use atomlist,         only: datm, iaorb, lasto, no_u, no_l
       use m_steps,          only: istp
@@ -86,17 +78,14 @@
       implicit none
 
       logical, intent(in) :: auxchanged ! Has auxiliary supercell changed?
-      type(Fstack_Pair_Geometry_SpMatrix), intent(in)      :: DM_history
+      type(Fstack_Pair_Geometry_SpMatrix), intent(inout)      :: DM_history
       type(SpMatrix), intent(inout)   :: DMnew
 
 !     Local variables
 
       logical :: dminit     ! Initialize density matrix?
       logical :: try_to_read_from_file
-      logical :: do_extrapolation
       integer :: n_dms_in_history
-      type(Pair_Geometry_SpMatrix)     :: pair
-      type(SpMatrix)                   :: DMprevious, DMlast
 
       if (IOnode) then
          write(6,"(a,i5)") "New_DM. Step: ", istp
@@ -146,8 +135,9 @@
         dminit = .true.
         try_to_read_from_file = .false.
         if (IOnode) then
-           write(6,"(a)") "DM reset as supercell changed."
+           write(6,"(a)") "DM history reset as supercell changed."
         endif
+        call new(DM_history,DM_history_depth,"(DM history stack)")
       endif
 
 
@@ -169,59 +159,14 @@
          endif
 
         ! Extrapolation or simple re-structuring
-         do_extrapolation = .false.
 
          if (ionode) print *, "N DMs in history: ", n_dms_in_history
          if (ionode) call print_type(DM_history)
-
-         if (n_dms_in_history >= 2) then
-            if (idyn == 0) then
-               do_extrapolation = fdf_get( 'DM.AllowExtrapolation', .FALSE. )
-               if (do_extrapolation) then
-               ! The user insisted...
-                  if (ionode) then
-                     write(6,"(a)")          &
-                      "NOTE: DM.AllowExtrapolation set with CG dynamics option"
-                  endif
-               endif
-            else
-               do_extrapolation = fdf_get( 'DM.AllowExtrapolation', .TRUE. )
-            endif
-         else if (n_dms_in_history == 1) then
-            call get(DM_history,n_dms_in_history,pair)
-            if (ionode) call print_type(pair)
-            call second(pair,DMlast)
-            if (ionode) call print_type(DMlast)
-            if (ionode) then 
-               print *, "Using restructured last-geometry DM..."
-               call print_type(spar(DMlast))
-            endif
-            call restructSpMatrix(DMlast,sparse_pattern,DMnew)
-         endif
-         
-         if (do_extrapolation) then
-            call get(DM_history,n_dms_in_history,pair)
-            call second(pair,DMlast)
-            call get(DM_history,n_dms_in_history-1,pair)
-            call second(pair,DMprevious)
-            if (ionode) then
-               print *, " ----------- Extrapolating DM:"
-               call print_type(spar(DMprevious))
-               call print_type(spar(DMlast))
-               call print_type(sparse_pattern)
-               print *, " ----------- "
-            endif
-            call extrapolateSpMatrix(DMprevious,DMlast,sparse_pattern,DMnew)
-         endif
-
+         call extrapolate_dm_with_coords(DM_history,xa,sparse_pattern,DMnew)
          if (ionode)  print *, "DMnew after DM reuse:"
          if (ionode)  call print_type(DMnew)
 
       endif
-
-      call delete(pair)
-      call delete(DMprevious)
-      call delete(DMlast)
 
       END subroutine new_dm
 
@@ -694,5 +639,83 @@
         endif
 
       end subroutine fill_dscf_from_atom_info
+
+      subroutine extrapolate_dm_with_coords(DM_history,xa,sparse_pattern,DMnew)
+        use class_Sparsity
+        use class_Array2D
+        use class_OrbitalDistribution
+        use class_SpMatrix
+        use class_Geometry
+        use class_Pair_Geometry_SpMatrix
+        use class_Fstack_Pair_Geometry_SpMatrix
+
+        type(Fstack_Pair_Geometry_SpMatrix), intent(in) :: DM_history
+        real(dp), intent(in)                            :: xa(:,:)
+        type(Sparsity), intent(in)                      :: sparse_pattern
+        type(SpMatrix), intent(inout)                   :: DMnew
+
+        integer :: n, na, i, nspin, nnzs_out
+        real(dp), allocatable   :: c(:)
+        real(dp), allocatable   :: xan(:,:,:), dummy_cell(:,:,:)
+        type(Geometry), pointer :: geom 
+        type(SpMatrix), pointer :: dm
+        type(OrbitalDistribution), pointer    :: orb_dist
+        type(Pair_Geometry_SpMatrix), pointer :: pair
+
+        type(SpMatrix)       :: DMtmp
+        type(Array2D)        :: a_out
+
+        real(dp), dimension(:,:) , pointer  :: a, ai, xp
+
+        n = n_items(DM_history)
+        allocate(c(n))
+
+        na = size(xa,dim=2)
+        allocate(xan(3,na,n),dummy_cell(3,3,n))
+
+        do i = 1, n
+           pair => get_pointer(DM_history,i)
+           call firstp(pair,geom)
+           xp => coords(geom)
+           xan(:,:,i) = xp(:,:)
+           dummy_cell(:,:,i) = 1.0_dp
+        enddo
+        call extrapolate(na,n,dummy_cell,xan,dummy_cell(:,:,1),xa,c)
+        print *, "Extrapolation coefficients: "
+        do i = 1, n
+           print "(i0,f10.6)", i, c(i)
+        enddo
+
+        pair => get_pointer(DM_history,1)
+        call secondp(pair,dm)
+
+        ! We assume that all DMs in the history stack have the same orbital distribution...
+        orb_dist => dist(dm)
+        a => val(dm)
+        nspin = size(a,dim=2)
+        nnzs_out = nnzs(sparse_pattern)
+
+        ! Scratch array to accumulate the elements
+        call newArray2D(a_out,nnzs_out, nspin,name="(temp array for extrapolation)")
+        a => val(a_out)
+        a(:,:) = 0.0_dp
+
+        do i = 1, n
+           pair => get_pointer(DM_history,i)
+           call secondp(pair,dm)
+!           if (.not. associated(orb_dist,dist(dm))) then
+!              call die("Different orbital distributions in DM history stack")
+!           endif
+           call restructSpMatrix(dm,sparse_pattern,DMtmp)
+           ai => val(DMtmp)
+           a = a + c(i) * ai
+        enddo
+
+        call newSpMatrix(sparse_pattern,a_out,orb_dist, &
+                         DMnew,name="SpM extrapolated using coords")
+        call delete(a_out)
+        call delete(DMtmp)
+
+      end subroutine extrapolate_dm_with_coords
 
       end module m_new_dm

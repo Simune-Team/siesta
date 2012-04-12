@@ -185,7 +185,7 @@
       call newSparsity(sp_read,no_l,no_u,  &
                        maxnd,numd,listdptr,listd,  &
                        "(read from " // trim(filename) // ")")
-      a2d_read = dm(:,:)
+      call newArray2D(a2d_read,dm,name="(Array from read dm)")
       call newSpMatrix(sp_read,a2d_read,ref_dist,SpM, &
                        "(read from " // trim(filename) // ")")
 

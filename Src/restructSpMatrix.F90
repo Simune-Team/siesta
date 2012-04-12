@@ -101,6 +101,8 @@
       call newSpMatrix(sp_out,a2d_out,dist(SpMin), &
                          SpMout,name="Re-structured SpM")
 
+      call delete(a2d_out)
+
       CONTAINS
         subroutine die(str)
           character(len=*), optional :: str

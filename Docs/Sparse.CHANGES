@@ -1,5 +1,42 @@
 
 -----------------------------------------------------------------------
+2012-04-12  Alberto Garcia <albertog@icmab.es>   trunk-407-sparse-27
+Completed new framework for extrapolation
+
+The extrapolation of the DM using the history of (geometry,DM) pairs
+has been extended to an arbitrary number of history records, using
+code by J.M. Soler and the new infrastructure for flexible data
+structures.
+
+The size of the history stack is determined by the fdf symbol
+
+DM.HistoryDepth <4 by default>
+
+Fine-tuned the design of a few modules. Still work in progress. 
+
+Added the m_uuid module from FoX, as an experimental feature.
+
+added:
+  Src/extrapolate.f90
+  Src/m_uuid.f90
+modified:
+  Src/Fstack.T90
+  Src/Makefile
+  Src/basic_type.inc
+  Src/class_Array2D.F90
+  Src/class_Fstack_Pair_Geometry_SpMatrix.F90
+  Src/class_Geometry.F90
+  Src/class_OrbitalDistribution.F90
+  Src/class_Pair_Geometry_SpMatrix.F90
+  Src/class_SpMatrix.F90
+  Src/class_Sparsity.F90
+  Src/my_new_dm.F90
+  Src/readSpMatrix.F90
+  Src/restructSpMatrix.F90
+  Src/siesta_init.F
+  Src/state_analysis.F
+
+-----------------------------------------------------------------------
 2012-04-11  Alberto Garcia <albertog@icmab.es>   trunk-407-sparse-26
 New framework for extrapolation
 

@@ -145,7 +145,8 @@ OBJS =  automatic_cell.o atom_options.o \
         compute_EKS_Harris.o compute_max_diff.o \
         save_density_matrix.o  \
         readSpMatrix.o restructSpMatrix.o extrapolateSpMatrix.o \
-        class_Geometry.o class_Pair_Geometry_SpMatrix.o class_Fstack_Pair_Geometry_SpMatrix.o
+        class_Geometry.o class_Pair_Geometry_SpMatrix.o class_Fstack_Pair_Geometry_SpMatrix.o \
+        extrapolate.o m_uuid.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -444,6 +445,7 @@ electrostatic.o: atm_types.o atmfuncs.o atmparams.o bessph.o m_recipes.o
 electrostatic.o: precision.o radfft.o radial.o sys.o
 ener3.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 ener3lomem.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
+extrapolate.o: precision.o sys.o
 extrapolateSpMatrix.o: class_Array2D.o class_OrbitalDistribution.o
 extrapolateSpMatrix.o: class_SpMatrix.o class_Sparsity.o
 extrapolon.o: parallel.o precision.o sys.o
@@ -595,11 +597,11 @@ moremeshsubs.o: alloc.o mesh.o parallel.o precision.o schecomm.o sys.o
 mulliken.o: alloc.o atmfuncs.o parallel.o parallelsubs.o precision.o
 mulliken.o: siesta_cml.o
 my_new_dm.o: alloc.o atomlist.o class_Array2D.o
-my_new_dm.o: class_Fstack_Pair_Geometry_SpMatrix.o class_OrbitalDistribution.o
-my_new_dm.o: class_Pair_Geometry_SpMatrix.o class_SpMatrix.o class_Sparsity.o
-my_new_dm.o: files.o m_spin.o m_steps.o parallel.o parallelsubs.o parsing.o
-my_new_dm.o: precision.o siesta_geom.o siesta_options.o sparse_matrices.o sys.o
-my_new_dm.o: units.o
+my_new_dm.o: class_Fstack_Pair_Geometry_SpMatrix.o class_Geometry.o
+my_new_dm.o: class_OrbitalDistribution.o class_Pair_Geometry_SpMatrix.o
+my_new_dm.o: class_SpMatrix.o class_Sparsity.o files.o m_spin.o m_steps.o
+my_new_dm.o: parallel.o parallelsubs.o parsing.o precision.o siesta_geom.o
+my_new_dm.o: siesta_options.o sparse_matrices.o sys.o units.o
 naefs.o: atmfuncs.o mneighb.o precision.o
 new_dm.o: alloc.o atomlist.o m_energies.o m_fdf_global.o m_iodm.o m_sparse.o
 new_dm.o: m_spin.o m_steps.o m_ts_iodm.o m_ts_options.o parallel.o
@@ -704,7 +706,8 @@ siesta_forces.o: save_density_matrix.o setup_H0.o setup_hamiltonian.o
 siesta_forces.o: siesta_cml.o siesta_options.o sparse_matrices.o
 siesta_forces.o: state_analysis.o state_init.o sys.o units.o write_subs.o
 siesta_geom.o: precision.o
-siesta_init.o: alloc.o atomlist.o bands.o bsc_xcmod.o densematrix.o files.o
+siesta_init.o: alloc.o atomlist.o bands.o bsc_xcmod.o
+siesta_init.o: class_Fstack_Pair_Geometry_SpMatrix.o densematrix.o files.o
 siesta_init.o: ioxv.o kpoint_grid.o kpoint_pdos.o ksvinit.o m_check_supercell.o
 siesta_init.o: m_energies.o m_eo.o m_forces.o m_gamma.o m_iostruct.o
 siesta_init.o: m_mpi_utils.o m_rmaxh.o m_spin.o m_steps.o m_timer.o
@@ -841,6 +844,7 @@ m_vmat.o: vmat.o
 m_xyz_phiatm.o: matel.o
 m_zm_broyden_optim.o: zm_broyden_optim.o
 m_zm_fire_optim.o: zm_fire_optim.o
+mtprng.o: m_uuid.o
 neighbour.o: mneighb.o
 on_core.o: onmod.o
 on_main.o: onmod.o

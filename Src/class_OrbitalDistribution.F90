@@ -24,6 +24,8 @@
   
   implicit none
 
+  character(len=*), parameter :: mod_name=__FILE__
+
   type OrbitalDistribution_
      integer   :: refCount = 0
      !------------------------
@@ -78,7 +80,6 @@
 
 !====================================    
 #define TYPE_NAME OrbitalDistribution
-#define __WHERE__ __FILE__
 #include "basic_type.inc"
 !====================================    
 

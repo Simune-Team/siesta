@@ -2,6 +2,8 @@ module class_Geometry
 
   implicit none
 
+  character(len=*), parameter :: mod_name=__FILE__
+
   integer, parameter :: dp = selected_real_kind(10,100)
 
   !
@@ -31,7 +33,6 @@ module class_Geometry
 
 !========================
 #define TYPE_NAME Geometry
-#define __WHERE__ __FILE__
 #include "basic_type.inc"
 !========================
 

@@ -70,7 +70,7 @@
       integer :: MPIerror  ! Return error code in MPI routines
 #endif
       real(dp):: veclen       ! Length of a unit-cell vector
-      integer :: i, is, ispin
+      integer :: i, is, ispin, n_dm_items
       integer :: neigmin      ! Min. number of eigenstates (per k point)
       integer :: ns           ! Number of species
       logical :: user_wants_supercell
@@ -228,8 +228,8 @@ C     Initialise MPI and set processor number
 !     Read simulation data
       call read_options( na_u, ns, nspin )
 
-      print *, "DM_history_depth: ", DM_history_depth
-      call new(DM_history,DM_history_depth,"(DM history stack)")
+      call get_num_dm_history_items(n_dm_items)
+      call new(DM_history,n_dm_items,"(DM history stack)")
       print *, "Size of fstack: ", max_size(DM_history)
 
 #ifdef TRANSIESTA
@@ -417,6 +417,29 @@ C     Initialise MPI and set processor number
       call write_debug( 'POS siesta_init' )
 #endif
 !--------------------------------------------------------------------------- END
+      
+      CONTAINS
+
+      subroutine get_num_dm_history_items(n)
+      integer, intent(out)         :: n
+
+      print *, "DM_history_depth: ", DM_history_depth
+      n = DM_history_depth
+      if (.not. fdf_get("DM.AllowReuse",.true.)) then
+         n = 0
+         return
+      else if (.not. fdf_get("DM.AllowExtrapolation",.true.)) then
+         n = 1
+         return
+      else if ((idyn .eq. 6) .OR. (idyn .eq. 7))  then   ! Forces or Phonon series
+         n = 0
+         return
+      else if (harrisfun) then
+         n = 0
+         return
+      endif
+      end subroutine get_num_dm_history_items
+
       END subroutine siesta_init
 
       END MODULE m_siesta_init
