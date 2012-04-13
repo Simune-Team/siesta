@@ -11,6 +11,7 @@
 
 type Pair_
     integer            :: refCount = 0
+    character(len=36)  :: id = "null_id"
     !-------------------------------------
     character(len=256) :: name = "(null Pair_)"
     type(_T1_)         :: first
@@ -80,9 +81,10 @@ this%data%second = second
 if (present(name)) then
    this%data%name = name
 else
-   this%data%name = "Pair of _T1_ _T2_"
+   this%data%name = "(Pair of _T1_ _T2_)"
 endif
-print *, '--> allocated Pair: ' // trim(this%data%name) 
+call get_uuid(this%data%id)
+print *, '-->   allocated ' // id(this) // " " // trim(this%data%name)
 end subroutine new__
 
 !------------------------------------------------

@@ -1,5 +1,23 @@
 
 -----------------------------------------------------------------------
+2012-04-13  Alberto Garcia <albertog@icmab.es>   trunk-407-sparse-28
+Tagging of allocated objects by UUID
+
+A very simple prototype mechanism for keeping track of extant allocated
+data structures has been implemented. Further refinements might include
+an in-memory registry and optional printout.
+
+modified:
+  Src/Fstack.T90
+  Src/Pair.T90
+  Src/basic_type.inc
+  Src/class_Array2D.F90
+  Src/class_Geometry.F90
+  Src/class_OrbitalDistribution.F90
+  Src/class_SpMatrix.F90
+  Src/class_Sparsity.F90
+
+-----------------------------------------------------------------------
 2012-04-12  Alberto Garcia <albertog@icmab.es>   trunk-407-sparse-27
 Completed new framework for extrapolation
 

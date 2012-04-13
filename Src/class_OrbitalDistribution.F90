@@ -27,7 +27,8 @@
   character(len=*), parameter :: mod_name=__FILE__
 
   type OrbitalDistribution_
-     integer   :: refCount = 0
+     integer              :: refCount = 0
+     character(len=36)    :: id
      !------------------------
      character(len=256)   :: name = "null OrbitalDistribution"
      !------------------------
@@ -156,9 +157,11 @@
      if (present(name)) then
         this%data%name = trim(name)
      else
-        this%data%name = "(from BlockSize and Comm)"
+        this%data%name = "(Distribution from BlockSize and Comm)"
      endif
-     print *, "--> new Distribution: " // trim(this%data%name)
+     call get_uuid(this%data%id)
+     print *, '-->   allocated ' // id(this) // " " // trim(this%data%name)
+
 
    end subroutine newBlockCyclicDistribution
 

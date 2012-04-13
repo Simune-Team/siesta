@@ -12,6 +12,7 @@ module class_Sparsity
   !
   type Sparsity_
     integer :: refCount = 0
+    character(len=36)  :: id = "null_id"
     !----------------------
     character(len=256) :: name = "null_sparsity"
     integer            :: nrows = 0             ! Local number of rows
@@ -104,7 +105,8 @@ module class_Sparsity
    sp%data%initialized = .true.   
    sp%data%name = trim(name)
 
-   print *, "--> allocated sparsity data: " // trim(sp%data%name)
+   call get_uuid(sp%data%id)
+   print *, '-->   allocated ' // id(sp) // " " // trim(sp%data%name)
    
  end subroutine newSparsity
 

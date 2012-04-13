@@ -16,7 +16,8 @@ module class_SpMatrix
   integer, parameter :: dp = selected_real_kind(10,100)
 
   type SpMatrix_
-    integer :: refCount = 0
+    integer            :: refCount = 0
+    character(len=36)  :: id = "null_id"
     !----------------------
     character(len=256)   :: name = "null_SpMatrix"
     type(Sparsity)       :: sp
@@ -107,9 +108,10 @@ end interface
      if (present(name)) then
         this%data%name = trim(name)
      else
-        this%data%name = "(from sp, dist, and a2d)"
+        this%data%name = "(SpMatrix from sp, dist, and a2d)"
      endif
-     print *, "--> new SpMatrix: " // trim(this%data%name)
+     call get_uuid(this%data%id)
+     print *, '-->   allocated ' // id(this) // " " // trim(this%data%name)
 
    end subroutine newSpMatrixFromArray2D
 
@@ -134,9 +136,10 @@ end interface
      if (present(name)) then
         this%data%name = trim(name)
      else
-        this%data%name = "(from sp, dist, and dim2)"
+        this%data%name = "(SpMatrix from sp, dim2, and dist)"
      endif
-     print *, "--> new SpMatrix: " // trim(this%data%name)
+     call get_uuid(this%data%id)
+     print *, '-->   allocated ' // id(this) // " " // trim(this%data%name)
 
    end subroutine newSpMatrixFromDims
 

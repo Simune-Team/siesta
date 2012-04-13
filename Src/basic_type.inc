@@ -64,11 +64,7 @@ CONTAINS
     if (this%data%refCount == 0) then
       ! Safe to delete the data now
       call delete_Data(this%data)
-      print *, "--> deallocated: " // trim(this%data%name) 
-      print *, "--> deallocated id: " // id(this)
-
-!      if (type_verbose) print *, "--> deallocated: " // trim(this%data%name) 
-!      if (type_debug) print *, "--> deallocated id: " // id(this)
+      print *, "--> deallocated " // id(this) // " " // trim(this%data%name) 
       deallocate(this%data, stat=error)
     endif
 
@@ -106,8 +102,7 @@ CONTAINS
   function id_(this) result(str)
    type(TYPE_NAME), intent(in)  :: this
    character(len=36)            :: str
-   !str = this%data%id
-   str = "dummy id for now"
+   str = this%data%id
   end function id_
 
 !=============================================================

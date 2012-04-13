@@ -10,6 +10,7 @@
 
 type Fstack_
     integer            :: refCount = 0
+    character(len=36)  :: id = "null_id"
     !-------------------------------------
     character(len=256) :: name = "(null Fstack_)"
     type(_T_), pointer :: val(:) => null()
@@ -99,7 +100,8 @@ else
 endif
 
 allocate(this%data%val(nsize))
-print *, '--> allocated ' // trim(this%data%name) 
+call get_uuid(this%data%id)
+print *, '-->   allocated ' // id(this) // " " // trim(this%data%name)
 
 end subroutine new__
 

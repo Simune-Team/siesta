@@ -8,7 +8,8 @@ module class_Geometry
 
   !
   type Geometry_
-    integer :: refCount = 0
+    integer            :: refCount = 0
+    character(len=36)  :: id = "null_id"
     !----------------------
     character(len=256)   :: name = "null Geometry"
     integer              :: na                ! Number of atoms
@@ -76,6 +77,8 @@ module class_Geometry
    else
       this%data%name = "(Geometry)"
    endif
+   call get_uuid(this%data%id)
+   print *, '-->   allocated ' // id(this) // " " // trim(this%data%name)
 
   end subroutine newGeometry
 
