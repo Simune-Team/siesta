@@ -46,6 +46,7 @@
     \subitem split valence   for H, 21
     \subitem User basis, 27
     \subitem User basis (NetCDF format), 27
+  \item basis     \subitem PAO, 119
   \item {\bf     BasisPressure}, 28
   \item Berry phase, 69
   \item Bessel functions, 26
@@ -126,7 +127,7 @@
   \item egg-box effect, 51--53
   \item {\bf EggboxRemove}, 52
   \item {\bf EggboxScale}, 53
-  \item {\sc Eig2dos}, 57, 64
+  \item {\sc Eig2DOS}, 57, 64
   \item {\bf ElectronicTemperature}, 57, 58
   \item {\bf ExternalElectricField}, 71
 

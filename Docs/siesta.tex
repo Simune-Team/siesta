@@ -3871,8 +3871,8 @@ overwritten by the options in Sec~\ref{sec:wf-output-user}).
 If {\tt .true.} it writes the Hamiltonian eigenvalues for the sampling
 $\vec k$ points, in the main output file.
 If {\tt .false.}, it writes them in the file {\it Systemlabel}.EIG,
-which can be used by the {\sc Eig2dos}\index{Eig2dos@{\sc Eig2dos}} postprocessing
-utility (in the Util/ directory) for obtaining the density of
+which can be used by the {\sc Eig2DOS}\index{Eig2DOS@{\sc Eig2DOS}} postprocessing
+utility (in the Util/Eig2DOS directory) for obtaining the density of
 states.\index{density of states}
 
 {\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
@@ -4433,7 +4433,7 @@ total density of states:
 \item The Hamiltonian eigenvalues for the SCF sampling $\vec k$ points can be
 dumped into SystemLabel.EIG in a format analogous to SystemLabel.bands,
 but without the kmin, kmax, emin, emax information, and without
-the abscissa. The {\sc Eig2dos}\index{Eig2dos@{\sc Eig2dos}}
+the abscissa. The {\sc Eig2DOS}\index{Eig2DOS@{\sc Eig2DOS}}
 postprocessing utility can be then used to obtain the density of
 states.\index{density of states}
 See the {\bf WriteEigenvalues} descriptor.
