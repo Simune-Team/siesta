@@ -33,7 +33,6 @@ module main_vars
   integer             ::  npts_energy = 200
 
   integer :: nshmx
-  integer :: nwfmx
   integer, parameter :: ncbmx=20
   integer, parameter :: nlwmx=30
 

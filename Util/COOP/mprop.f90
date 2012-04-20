@@ -26,12 +26,24 @@ program mprop
   logical, allocatable   :: mask2(:)
   integer, allocatable   :: num_red(:), ptr(:), list_io2(:), list_ind(:)
 
+  logical  :: enough_electrons 
+
+  integer  :: nwfmx, nwfmin
+  integer  :: min_band = -huge(1)
+  integer  :: max_band =  huge(1)
+  logical  :: min_band_set = .false.
+  logical  :: max_band_set = .false.
+  logical  :: band_interval_set = .false.
+  real(dp) :: min_energy_in_band_set
+  real(dp) :: max_energy_in_band_set
+
+
   !
   !     Process options
   !
   n_opts = 0
   do
-     call getopts('dhls:n:m:M:R:',opt_name,opt_arg,n_opts,iostat)
+     call getopts('dhls:n:m:M:R:b:B:',opt_name,opt_arg,n_opts,iostat)
      if (iostat /= 0) exit
      select case(opt_name)
      case ('d')
@@ -51,6 +63,12 @@ program mprop
      case ('R')
         ref_line_given = .true.
         ref_line = opt_arg
+     case ('b')
+        read(opt_arg,*) min_band
+        min_band_set = .true.
+     case ('B')
+        read(opt_arg,*) max_band
+        max_band_set = .true.
      case ('h')
         call manual()
      case ('?',':')
@@ -76,6 +94,8 @@ program mprop
 
   print "(a,f7.3)", "Using smearing parameter: ", smear
   print "(a,i6,a)", "Using ", npts_energy, " points in energy range"
+
+  band_interval_set = (min_band_set .or. max_band_set)
 
   !==================================================
 
@@ -106,9 +126,12 @@ program mprop
 
   allocate (ados(npts_energy,nsp), ww(npts_energy))
 
-  nwfmx = 0
+  nwfmx = -huge(1)
+  nwfmin = huge(1)
   min_energy = huge(1.0_dp)
   max_energy = -huge(1.0_dp)
+  min_energy_in_band_set = huge(1.0_dp)
+  max_energy_in_band_set = -huge(1.0_dp)
 
   do ik=1,nkp
      do is=1,nsp
@@ -118,20 +141,54 @@ program mprop
         read(wfs_u) is0
         read(wfs_u) number_of_wfns
         nwfmx = max(nwfmx,number_of_wfns)
+        nwfmin = min(nwfmin,number_of_wfns)
 
         do iw=1,number_of_wfns
            read(wfs_u) iw0
            read(wfs_u) eigval
            min_energy = min(min_energy,eigval)
            max_energy = max(max_energy,eigval)
+           ! 
+           !
+           if ((iw>=min_band).and.(iw<=max_band)) then
+              min_energy_in_band_set = min(min_energy_in_band_set,eigval)
+              max_energy_in_band_set = max(max_energy_in_band_set,eigval)
+           endif
            read(wfs_u)
         enddo
      enddo
   enddo
 
-  print *, " Maximum number of wfs per k-point: ", nwfmx
+  print "(a,2i5)", " Minimum/Maximum number of wfs per k-point: ", nwfmin, nwfmx
   print "(a,2f12.4)", "Min_energy, max_energy on WFS file: ",  &
        min_energy, max_energy
+
+  if (band_interval_set) then
+
+     if (min_band_set .and. (min_band < 1)) then
+        print "(a)", " ** Min_band implicitly reset to 1..."
+     endif
+     if (min_band_set .and. (min_band > nwfmin)) then
+        print "(a,2i5)", " ** Min_band is too large for some k-points: (min_band, nwfmin):", min_band, nwfmin
+        STOP
+     endif
+     if (max_band_set .and. (max_band > nwfmin)) then
+        print "(a,2i5)", " ** Max_band is too large for some k-points: (max_band, nwfmin):", max_band, nwfmin
+        print "(a)", " ** Max_band will be effectively reset to its maximum allowed value"
+     endif
+     if (max_band_set .and. (max_band < max(1,min_band))) then
+        print "(a,2i5)", " ** Max_band is less than the effective min_band: (max_band, eff min_band):", max_band, max(1,min_band)
+        STOP
+     endif
+
+     print "(a,3i4)", "Implicit band set used: (min, max_min, max_max):",  &
+                   max(1,min_band), min(nwfmin,max_band), min(nwfmx,max_band)
+     print "(a,2f12.4)", "Min_energy, max_energy in band set : ",  &
+          min_energy_in_band_set, max_energy_in_band_set
+
+     min_energy = min_energy_in_band_set
+     max_energy = max_energy_in_band_set
+  endif
 
 
   ! Here low_e and high_e represent a window for the plot, to
@@ -160,12 +217,14 @@ program mprop
         do iw=1,number_of_wfns
            read(wfs_u) 
            read(wfs_u) eigval
-           do i = 1, npts_energy
-              energy = low_e + e_step*(i-1)
-              weight = delta(energy-eigval)
-              if (weight < tol_weight) CYCLE           ! Will not contribute
-              ados(i,is) = ados(i,is) + wk(ik) * weight
-           enddo
+           if ( (iw>=min_band) .and. (iw<=max_band)) then
+              do i = 1, npts_energy
+                 energy = low_e + e_step*(i-1)
+                 weight = delta(energy-eigval)
+                 if (weight < tol_weight) CYCLE           ! Will not contribute
+                 ados(i,is) = ados(i,is) + wk(ik) * weight
+              enddo
+           endif
            read(wfs_u)       ! Skip wfn info
         enddo
      enddo
@@ -218,18 +277,29 @@ program mprop
   enddo
   call io_close(intdos_u)
 
-  ! Look for Fermi Energy
-  do i = 2, npts_energy
-     if (intdos(i) > qtot) then
-        ! Found fermi energy
-        energy = low_e + e_step*(i-1)
-        ! Correct overshoot, interpolating linearly
-        efermi = energy - (intdos(i)-ztot)*e_step/(intdos(i)-intdos(i-1))
-        exit
+  if (max(min_band,1) > 1) then
+     write(6,"(a,f10.5,a)") "Not meaningful to compute Fermi energy, as min_band>1"
+  else
+     enough_electrons = .false.
+     ! Look for Fermi Energy
+     do i = 2, npts_energy
+        if (intdos(i) > qtot) then
+           enough_electrons = .true.
+           ! Found fermi energy
+           energy = low_e + e_step*(i-1)
+           ! Correct overshoot, interpolating linearly
+           efermi = energy - (intdos(i)-ztot)*e_step/(intdos(i)-intdos(i-1))
+           exit
+        endif
+     enddo
+     if (enough_electrons) then
+        write(6,"(a,f10.5,a)") "Fermi energy: ", efermi, " (depends on smearing)"
+     else
+        write(6,"(a,f10.5,a)") "The band set does not contain enough electrons to compute E_Fermi"
      endif
-  enddo
+  endif
 
-  write(6,"(a,f10.5,a)") "Fermi energy: ", efermi, " (depends on smearing)"
+
 
   if (energies_only) STOP
   !-------------------------------------------------------------------
@@ -243,6 +313,9 @@ program mprop
   ! If not, we also add nsigma*smear to either side of the range, but
   ! only for cosmetic purposes, to avoid cut tails.
 
+
+  ! low_e, high_e         : Determine which eigenstates are used in the curves
+  ! min_energy, max_energy: Determine the energy window for plotting
 
   if (minimum_spec_energy > min_energy) then
      min_energy = minimum_spec_energy
@@ -530,6 +603,7 @@ program mprop
                  if (debug) print *, "     wfn: ", iw
                  read(wfs_u) 
                  read(wfs_u) eigval
+
                  ! Early termination of iteration
                  ! Note that we keep a few more states on the sides, due to
                  ! the smearing
@@ -538,7 +612,14 @@ program mprop
                     CYCLE
                  endif
 
+                 ! Use only the specified band set
+                 if ( (iw<min_band) .or. (iw>max_band)) then
+                    read(wfs_u)   ! Still need to read this
+                    CYCLE
+                 endif
+
                  read(wfs_u) (wf(:,io), io=1,nao)
+
 
                  ! This block will be repeated for every curve,
                  ! but we will divide by the number of curves before writing out

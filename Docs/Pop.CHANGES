@@ -1,3 +1,19 @@
+April 20, 2012  Alberto Garcia                   3.1-pl4--pop-3
+Allow specification of subsets of bands in Util/COOP/mprop
+
+New options "-b min_band -B max_band" to allow the use of restricted
+band sets in the generation of PDOS, COOP, and COHP curves.
+
+Fine tuning still needed to clarify the interaction of the new options
+with the energy-range options, and the distinction of energy-range for
+eigenstate selection and energy-range for plotting.
+
+modified:
+  Util/COOP/main_vars.f90
+  Util/COOP/mprop.f90
+  Util/COOP/subs.f90
+
+---------------------------------------------------------------
 March 13, 2012  Alberto Garcia                   3.1-pl4--pop-2
 Implementation of Bader charge output
 
