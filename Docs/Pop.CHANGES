@@ -1,4 +1,17 @@
 ---------------------------------------------------------------
+April 20, 2012  Alberto Garcia                   3.1-pl4--pop-5
+Clearer energy-range options in mprop program
+
+The -m/-M options now refer to eigenvalues.  Together with the band
+options (-b/-B), they determine the eigenvectors actually taken into
+account.
+
+Plotting range is determined on the basis of the eigenvalue range.
+
+modified:
+  Util/COOP/mprop.f90
+
+---------------------------------------------------------------
 April 20, 2012  Alberto Garcia                   3.1-pl4--pop-4
 Extended the functionality of the 'eig2dos' program
 

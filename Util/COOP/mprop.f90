@@ -1,3 +1,4 @@
+
 !==================================================================
 program mprop
 
@@ -34,9 +35,13 @@ program mprop
   logical  :: min_band_set = .false.
   logical  :: max_band_set = .false.
   logical  :: band_interval_set = .false.
-  real(dp) :: min_energy_in_band_set
-  real(dp) :: max_energy_in_band_set
-
+  real(dp) :: min_eigval
+  real(dp) :: max_eigval
+  real(dp) :: min_eigval_in_file
+  real(dp) :: min_eigval_in_band_set
+  real(dp) :: max_eigval_in_band_set
+  real(dp) :: minimum_spec_eigval = -huge(1.0_dp)
+  real(dp) :: maximum_spec_eigval = huge(1.0_dp)
 
   !
   !     Process options
@@ -57,9 +62,9 @@ program mprop
      case ('n')
         read(opt_arg,*) npts_energy
      case ('m')
-        read(opt_arg,*) minimum_spec_energy
+        read(opt_arg,*) minimum_spec_eigval
      case ('M')
-        read(opt_arg,*) maximum_spec_energy
+        read(opt_arg,*) maximum_spec_eigval
      case ('R')
         ref_line_given = .true.
         ref_line = opt_arg
@@ -113,7 +118,7 @@ program mprop
   !==================================================
   ! Read WFSX file
 
-  write(6,"(1x,a,'.WFSX ...')") trim(sflnm)
+  write(6,"(a)") "Reading wf file: " // trim(sflnm) // ".WFSX"
 
   open(wfs_u,file=trim(sflnm)//'.WFSX',status='old',form='unformatted')
   read(wfs_u) nkp, gamma_wfsx
@@ -128,10 +133,10 @@ program mprop
 
   nwfmx = -huge(1)
   nwfmin = huge(1)
-  min_energy = huge(1.0_dp)
-  max_energy = -huge(1.0_dp)
-  min_energy_in_band_set = huge(1.0_dp)
-  max_energy_in_band_set = -huge(1.0_dp)
+  min_eigval = huge(1.0_dp)
+  max_eigval = -huge(1.0_dp)
+  min_eigval_in_band_set = huge(1.0_dp)
+  max_eigval_in_band_set = -huge(1.0_dp)
 
   do ik=1,nkp
      do is=1,nsp
@@ -146,13 +151,13 @@ program mprop
         do iw=1,number_of_wfns
            read(wfs_u) iw0
            read(wfs_u) eigval
-           min_energy = min(min_energy,eigval)
-           max_energy = max(max_energy,eigval)
+           min_eigval = min(min_eigval,eigval)
+           max_eigval = max(max_eigval,eigval)
            ! 
            !
            if ((iw>=min_band).and.(iw<=max_band)) then
-              min_energy_in_band_set = min(min_energy_in_band_set,eigval)
-              max_energy_in_band_set = max(max_energy_in_band_set,eigval)
+              min_eigval_in_band_set = min(min_eigval_in_band_set,eigval)
+              max_eigval_in_band_set = max(max_eigval_in_band_set,eigval)
            endif
            read(wfs_u)
         enddo
@@ -160,8 +165,12 @@ program mprop
   enddo
 
   print "(a,2i5)", " Minimum/Maximum number of wfs per k-point: ", nwfmin, nwfmx
-  print "(a,2f12.4)", "Min_energy, max_energy on WFS file: ",  &
-       min_energy, max_energy
+  print "(a,2f12.4)", "Min_eigval, max_eigval on WFS file: ",  &
+       min_eigval, max_eigval
+  print "(a,2f12.4)", "Min_eigval, max_eigval in band set : ",  &
+          min_eigval_in_band_set, max_eigval_in_band_set
+
+  min_eigval_in_file = min_eigval    ! Saved for E_Fermi logic
 
   if (band_interval_set) then
 
@@ -181,21 +190,40 @@ program mprop
         STOP
      endif
 
-     print "(a,3i4)", "Implicit band set used: (min, max_min, max_max):",  &
+     min_eigval = min_eigval_in_band_set
+     max_eigval = max_eigval_in_band_set
+  endif
+  print "(a,3i4)", "Implicit band set used: (min, max_min, max_max):",  &
                    max(1,min_band), min(nwfmin,max_band), min(nwfmx,max_band)
-     print "(a,2f12.4)", "Min_energy, max_energy in band set : ",  &
-          min_energy_in_band_set, max_energy_in_band_set
 
-     min_energy = min_energy_in_band_set
-     max_energy = max_energy_in_band_set
+
+  !
+  ! We add nsigma*smear to either side of the range, but
+  ! only for cosmetic purposes, to avoid cut tails.
+
+
+  ! low_e, high_e         : Determine which eigenstates are used in the curves
+  ! min_energy, max_energy: Determine the energy window for plotting
+
+  if (minimum_spec_eigval > min_eigval) then
+     min_eigval = minimum_spec_eigval
+  endif
+  if (maximum_spec_eigval < max_eigval) then
+     max_eigval = maximum_spec_eigval
   endif
 
+  print "(a,2f12.4)", "Min_eigval, max_eigval used: ",  &
+       min_eigval, max_eigval
+  if (min_eigval > max_eigval) STOP "Meaningless range. Check -b/-B and -m/-M options"
 
   ! Here low_e and high_e represent a window for the plot, to
   ! avoid cut tails
 
-  low_e = min_energy - nsigma*smear
-  high_e = max_energy + nsigma*smear
+  low_e = min_eigval - nsigma*smear
+  high_e = max_eigval + nsigma*smear
+
+  print "(a,2f12.4)", "Plotting range for min_energy, max_energy used: ",  &
+       low_e, high_e
 
   e_step = (high_e-low_e)/(npts_energy-1)
   ados(:,1:nsp) = 0.0_dp
@@ -277,8 +305,8 @@ program mprop
   enddo
   call io_close(intdos_u)
 
-  if (max(min_band,1) > 1) then
-     write(6,"(a,f10.5,a)") "Not meaningful to compute Fermi energy, as min_band>1"
+  if ( (max(min_band,1) > 1) .OR. (min_eigval > min_eigval_in_file)) then
+     write(6,"(a,f10.5,a)") "Not meaningful to compute Fermi energy, as min_band>1 or restricted eigvals"
   else
      enough_electrons = .false.
      ! Look for Fermi Energy
@@ -302,39 +330,7 @@ program mprop
 
 
   if (energies_only) STOP
-  !-------------------------------------------------------------------
 
-  !
-  ! Watch out now.
-  ! If the specified range is inside the energy range on file, we might
-  ! have contributions to the spectra coming from states just outside,
-  ! because of the smearing. In this case,  low_e and high_e are set to
-  ! include those states.
-  ! If not, we also add nsigma*smear to either side of the range, but
-  ! only for cosmetic purposes, to avoid cut tails.
-
-
-  ! low_e, high_e         : Determine which eigenstates are used in the curves
-  ! min_energy, max_energy: Determine the energy window for plotting
-
-  if (minimum_spec_energy > min_energy) then
-     min_energy = minimum_spec_energy
-     low_e = min_energy - nsigma*smear
-  else
-     min_energy = min_energy - nsigma*smear
-     low_e = min_energy
-  endif
-
-  if (maximum_spec_energy < max_energy) then
-     max_energy = maximum_spec_energy
-     high_e = max_energy + nsigma*smear
-  else
-     max_energy = max_energy + nsigma*smear
-     high_e = max_energy 
-  endif
-
-  print "(a,2f12.4)", "Min_energy, max_energy used: ",  &
-       min_energy, max_energy
 
   !====================
 
@@ -589,8 +585,6 @@ program mprop
         read(wfs_u) 
         read(wfs_u) 
      
-        e_step = (max_energy-min_energy)/(npts_energy-1)
-
         if (debug) print *, "Number of k-points, spins: ", nkp, nsp
         do ik=1,nkp
            if (debug) print *, "k-point: ", ik
@@ -604,10 +598,8 @@ program mprop
                  read(wfs_u) 
                  read(wfs_u) eigval
 
-                 ! Early termination of iteration
-                 ! Note that we keep a few more states on the sides, due to
-                 ! the smearing
-                 if (eigval < low_e .or. eigval > high_e) then
+                 ! Early termination of iteration if outside range
+                 if (eigval < min_eigval .or. eigval > max_eigval) then
                     read(wfs_u)   ! Still need to read this
                     CYCLE
                  endif
@@ -624,7 +616,7 @@ program mprop
                  ! This block will be repeated for every curve,
                  ! but we will divide by the number of curves before writing out
                     do i = 1, npts_energy
-                       energy = min_energy + e_step*(i-1)
+                       energy = low_e + e_step*(i-1)
                        ww(i) = delta(energy-eigval)
                        ados(i,is) = ados(i,is) + wk(ik) * ww(i)
                     enddo
@@ -709,7 +701,7 @@ program mprop
               open(tab_u,file=trim(mflnm)// "." // trim(tit(ic)) // '.pdos')
               write(tab_u,"(a1,14x,'ENERGY',4(16x,a1,i1))") '#', ("s",m, m=1,nsp)
               do i=1, npts_energy
-                 energy = min_energy + e_step*(i-1)
+                 energy = low_e + e_step*(i-1)
                  write(tab_u,"(f20.8,10(2f13.8,5x))")  &           ! Spin in loop
                       energy, (pdos_vals(i,is,ic),is=1,nspin)
               enddo
@@ -723,7 +715,7 @@ program mprop
               open(tab_u,file=trim(mflnm)// "." // trim(tit(ic)) // '.coop')
               write(tab_u,"(a1,14x,'ENERGY',4(16x,a1,i1))") '#', ("s",m, m=1,nsp)
               do i=1, npts_energy
-                 energy = min_energy + e_step*(i-1)
+                 energy = low_e + e_step*(i-1)
                  write(tab_u,"(f20.8,10(2f13.8,5x))")  &           ! Spin in loop
                       energy, (coop_vals(i,is,ic),is=1,nspin)
               enddo
@@ -734,7 +726,7 @@ program mprop
               open(tab_u,file=trim(mflnm)// "." // trim(tit(ic)) // '.cohp')
               write(tab_u,"(a1,14x,'ENERGY',4(16x,a1,i1))") '#', ("s",m, m=1,nsp)
               do i=1, npts_energy
-                 energy = min_energy + e_step*(i-1)
+                 energy = low_e + e_step*(i-1)
                  write(tab_u,"(f20.8,10(2f13.8,5x))")  &           ! Spin in loop
                       energy, (cohp_vals(i,is,ic),is=1,nspin)
               enddo
@@ -753,9 +745,9 @@ program mprop
      open(idos,file=trim(sflnm)//".ados",form="formatted", &
           status="unknown",action="write",position="rewind")
      write(idos,*) "#  Energy   SIMPLE DOS"
-     e_step = (max_energy-min_energy)/(npts_energy-1)
+     e_step = (high_e-low_e)/(npts_energy-1)
      do i = 1, npts_energy
-        energy = min_energy + e_step*(i-1)
+        energy = low_e + e_step*(i-1)
         ! Note division by the number of curves
         write(idos,*) energy, (ados(i,is)/ncb, is=1,nsp)
      enddo
