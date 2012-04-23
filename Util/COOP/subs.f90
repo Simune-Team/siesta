@@ -161,11 +161,19 @@ CONTAINS
       write(6,*) "           -d:  debug                    "
       write(6,*) "           -l:  print summary of energy information         "
       write(6,*) "   -s SMEAR  :  set value of smearing parameter (default 0.5 eV)"
-      write(6,*) "   -n NPTS   :  set number of sampling points (default 200)"
-      write(6,*) "   -m Min_e  :  set lower bound of energy range                    "
-      write(6,*) "   -M Max_e  :  set upper bound of energy range                    "
+      write(6,*) "    "
+      write(6,*) "   Selection of eigenstates to be used: by eigenvalue range or band index:  "
+      write(6,*) "    "
+      write(6,*) "   -m Min_e  :  set lower bound of eigenvalue range                    "
+      write(6,*) "   -M Max_e  :  set upper bound of eigenvalue range                    "
       write(6,*) "   -b Min_band  :  set minimum band index to be used               "
       write(6,*) "   -B Max_band  :  set maximum band index to be used               "
+      write(6,*) "    "
+      write(6,*) "   Plotting window and sampling rate. By default, window is based on eigenvalue range"
+      write(6,*) "    "
+      write(6,*) "   -n NPTS   :  set number of sampling points (default 200)"
+      write(6,*) "   -w Ewindow_low  :  set lower energy bound of plotting window                    "
+      write(6,*) "   -W Ewindow_high :  set upper energy bound of plotting window                    "
       write(6,*)
       write(6,"('* .mpr FILE STRUCTURE')")
       write(6,"('         SLabel                   # Name of the siesta output files')")

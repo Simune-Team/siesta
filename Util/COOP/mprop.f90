@@ -42,13 +42,15 @@ program mprop
   real(dp) :: max_eigval_in_band_set
   real(dp) :: minimum_spec_eigval = -huge(1.0_dp)
   real(dp) :: maximum_spec_eigval = huge(1.0_dp)
+  real(dp) :: ewindow_low = -huge(1.0_dp)
+  real(dp) :: ewindow_high = huge(1.0_dp)
 
   !
   !     Process options
   !
   n_opts = 0
   do
-     call getopts('dhls:n:m:M:R:b:B:',opt_name,opt_arg,n_opts,iostat)
+     call getopts('dhls:n:m:M:R:b:B:w:W:',opt_name,opt_arg,n_opts,iostat)
      if (iostat /= 0) exit
      select case(opt_name)
      case ('d')
@@ -74,6 +76,10 @@ program mprop
      case ('B')
         read(opt_arg,*) max_band
         max_band_set = .true.
+     case ('w')
+        read(opt_arg,*) ewindow_low
+     case ('W')
+        read(opt_arg,*) ewindow_high
      case ('h')
         call manual()
      case ('?',':')
@@ -97,9 +103,6 @@ program mprop
      STOP "Cannot get .mprop file root"
   endif
 
-  print "(a,f7.3)", "Using smearing parameter: ", smear
-  print "(a,i6,a)", "Using ", npts_energy, " points in energy range"
-
   band_interval_set = (min_band_set .or. max_band_set)
 
   !==================================================
@@ -118,7 +121,8 @@ program mprop
   !==================================================
   ! Read WFSX file
 
-  write(6,"(a)") "Reading wf file: " // trim(sflnm) // ".WFSX"
+  write(6,"(a)") "Reading wave-function file: " // trim(sflnm) // ".WFSX..."
+  write(6,"(a)") "Energy units are eV"
 
   open(wfs_u,file=trim(sflnm)//'.WFSX',status='old',form='unformatted')
   read(wfs_u) nkp, gamma_wfsx
@@ -164,7 +168,7 @@ program mprop
      enddo
   enddo
 
-  print "(a,2i5)", " Minimum/Maximum number of wfs per k-point: ", nwfmin, nwfmx
+  print "(a,2i5)", "Minimum/Maximum number of wfs per k-point: ", nwfmin, nwfmx
   print "(a,2f12.4)", "Min_eigval, max_eigval on WFS file: ",  &
        min_eigval, max_eigval
   print "(a,2f12.4)", "Min_eigval, max_eigval in band set : ",  &
@@ -196,34 +200,48 @@ program mprop
   print "(a,3i4)", "Implicit band set used: (min, max_min, max_max):",  &
                    max(1,min_band), min(nwfmin,max_band), min(nwfmx,max_band)
 
-
-  !
-  ! We add nsigma*smear to either side of the range, but
-  ! only for cosmetic purposes, to avoid cut tails.
-
-
-  ! low_e, high_e         : Determine which eigenstates are used in the curves
-  ! min_energy, max_energy: Determine the energy window for plotting
+  ! min_eigval, max_eigval: Determine which eigenstates are used to compute the curves
+  print "(a,2f12.4)", "Minimum and maximum eigenvalues (based on file data and band selection): ",  min_eigval, max_eigval
 
   if (minimum_spec_eigval > min_eigval) then
      min_eigval = minimum_spec_eigval
+     print "(a,f12.4)", "* Minimum eigenvalue changed as per user range request: ",  min_eigval
   endif
   if (maximum_spec_eigval < max_eigval) then
      max_eigval = maximum_spec_eigval
+     print "(a,f12.4)", "* Maximum eigenvalue changed as per user range request: ",  max_eigval
   endif
 
-  print "(a,2f12.4)", "Min_eigval, max_eigval used: ",  &
-       min_eigval, max_eigval
+  ! Sanity checks
+  print "(a,2f12.4)", "Minimum and maximum eigenvalues to be processed: ",  min_eigval, max_eigval
   if (min_eigval > max_eigval) STOP "Meaningless range. Check -b/-B and -m/-M options"
 
-  ! Here low_e and high_e represent a window for the plot, to
-  ! avoid cut tails
+  ! Here low_e and high_e represent a window for the plot.
+  ! Avoid cut tails by extending the eigenvalue range on both sides
 
   low_e = min_eigval - nsigma*smear
   high_e = max_eigval + nsigma*smear
 
-  print "(a,2f12.4)", "Plotting range for min_energy, max_energy used: ",  &
+  print "(a,2f12.4)", "Plotting range adequate for eigenvalue range selected: ",  &
        low_e, high_e
+
+  if (ewindow_low /= -huge(1.0_dp))  then
+     low_e = ewindow_low
+     print "(a,f12.4)", "* Lower bound of plotting range changed as per user request: ", low_e
+  endif
+  if (ewindow_high /= huge(1.0_dp))  then
+     high_e = ewindow_high
+     print "(a,f12.4)", "* Upper bound of plotting range changed as per user request: ", high_e
+  endif
+
+  ! Sanity checks
+  if (ewindow_low >= ewindow_high) STOP "Meaningless plotting window. Check -w/-W options"
+  if (ewindow_low >= max_eigval) STOP "Ewindow_low > max eigenvalue used. Check -b/-B, -m/-M, -w/-W options"
+  if (ewindow_high <= min_eigval) STOP "Ewindow_high < min eigenvalue used. Check -b/-B, -m/-M, -w/-W options"
+
+  print "(a,f7.3)", "Using smearing parameter: ", smear
+  print "(a,i6,a)", "Using ", npts_energy, " points in energy range"
+
 
   e_step = (high_e-low_e)/(npts_energy-1)
   ados(:,1:nsp) = 0.0_dp

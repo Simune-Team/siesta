@@ -1,4 +1,18 @@
 ---------------------------------------------------------------
+April 23, 2012  Alberto Garcia                   3.1-pl4--pop-6
+Add plotting window options to mprop. Cosmetics
+
+The plotting window can now be specified with the -w/-W options. By
+default it is determined on the basis of the eigenvalue range.
+
+(+ add missing declaration to dm_creator.f90)
+
+modified:
+  Util/COOP/mprop.f90
+  Util/COOP/subs.f90
+  Util/COOP/dm_creator.f90
+
+---------------------------------------------------------------
 April 20, 2012  Alberto Garcia                   3.1-pl4--pop-5
 Clearer energy-range options in mprop program
 

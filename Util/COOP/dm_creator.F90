@@ -11,6 +11,7 @@ program dm_creator
 
   logical :: gamma_wfsx, got_qcos, logical_dummy
   integer :: ii1, ii2, ind, ind_red, no1, no2, n_int, nnz
+  integer :: nwfmx
   real(dp) :: factor, qsol
   real(dp), dimension(:,:), allocatable :: DMout
 
