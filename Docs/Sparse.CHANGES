@@ -1,5 +1,42 @@
 
 -----------------------------------------------------------------------
+2012-04-24  Alberto Garcia <albertog@icmab.es>   trunk-407-sparse-29
+Support TranSiesta logic in new_dm routine. Configurable debugging
+
+Extend readSpmatrix to read both DM and EDM, and Ef, as needed
+by TranSiesta when dealing with TSDE file (a bit kludgish).
+
+Implemented a simple framework for controlling the object debugging
+information:
+
+DebugObjects T
+
+will cause the IOnode to print a message when allocating and
+deallocating objects.
+
+(Extended basic_object.inc to provide this functionality)
+
+added:
+  Src/object_debug.F90
+modified:
+  Src/Fstack.T90
+  Src/Makefile
+  Src/Pair.T90
+  Src/basic_type.inc
+  Src/check_scf_convergence.F
+  Src/class_Array2D.F90
+  Src/class_Geometry.F90
+  Src/class_OrbitalDistribution.F90
+  Src/class_SpMatrix.F90
+  Src/class_Sparsity.F90
+  Src/my_new_dm.F90
+  Src/readSpMatrix.F90
+  Src/save_density_matrix.F
+  Src/siesta_init.F
+  Src/sparse_matrices.F
+  Src/state_init.F
+
+-----------------------------------------------------------------------
 2012-04-13  Alberto Garcia <albertog@icmab.es>   trunk-407-sparse-28
 Tagging of allocated objects by UUID
 

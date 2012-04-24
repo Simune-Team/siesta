@@ -160,10 +160,10 @@
 
         ! Extrapolation or simple re-structuring
 
-         if (ionode) print *, "N DMs in history: ", n_dms_in_history
-         if (ionode) call print_type(DM_history)
+         if (ionode) print "(a,i0)", "N DMs in history: ", n_dms_in_history
+         ! if (ionode) call print_type(DM_history)
          call extrapolate_dm_with_coords(DM_history,xa,sparse_pattern,DMnew)
-         if (ionode)  print *, "DMnew after DM reuse:"
+         if (ionode)  print "(a)", "New DM after history re-use:"
          if (ionode)  call print_type(DMnew)
 
       endif
@@ -204,10 +204,20 @@
       use class_SpMatrix
       use class_OrbitalDistribution
       use class_Array2D
+      use m_readSpmatrix, only: readSpmatrix
+#ifdef TRANSIESTA
+      use sparse_matrices, only : EDM, Escf
+      use m_ts_iodm, only       : ts_init_dm
+      use m_energies, only: ef  ! Transiesta uses the EF obtained in a initial SIESTA run
+                                ! to place the electrodes and scattering region energy
+                                ! levels at the appropriate relative position, so it is
+                                ! stored in the TSDE file.
+      use m_ts_options,   only : TSmode
+#endif /* TRANSIESTA */
 
       implicit          none
 
-      logical           found, inspn, try_dm_from_file
+      logical           dm_found, inspn, try_dm_from_file
       integer           no_l, na_u, no_u, nspin
       integer           lasto(0:na_u), iaorb(no_u)
       real(dp)          Datm(no_u)
@@ -225,19 +235,51 @@
       integer, pointer, dimension(:) :: numh, listhptr, listh
       type(SpMatrix)                 :: DMread
       type(Array2D)                  :: dm_a2d
+#ifdef TRANSIESTA
+      logical                        :: tsde_found
+      type(SpMatrix)                 :: EDMread
+#endif
 
 ! Try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
 
-      found = .false.
+#ifdef TRANSIESTA
+      dm_found = .false.
+      tsde_found = .false.
+      if (try_dm_from_file) then
+         if (TSmode) then
+            if (ionode) print *, "Attempting to read DM,EDM from TSDE file..."
+            call readSpMatrix(trim(slabel)//".TSDE",   &
+                 DMread,tsde_found,block_dist,EDMread,ef)
+            !
+            call ts_init_dm(tsde_found)
+            !
+            if (.not. tsde_found) then
+               if (ionode) print *, "Attempting to read DM from file (TSmode)"
+               call readSpMatrix(trim(slabel)//".DM",   &
+                    DMread,dm_found,block_dist)
+            endif
+            dm_found = (tsde_found .or. dm_found)
+
+         else  ! Not TSmode
+
+            if (ionode) print *, "Attempting to read DM from file..."
+            call readSpMatrix(trim(slabel)//".DM",   &
+                 DMread,dm_found,block_dist)
+
+         endif
+      endif
+#else
+      dm_found = .false.
       if (try_dm_from_file) then
          if (ionode) print *, "Attempting to read DM from file..."
          call readSpMatrix(trim(slabel)//".DM",   &
-                           DMread,found,block_dist)
+                           DMread,dm_found,block_dist)
       endif
+#endif
 
-! If found, check and update, otherwise initialize with neutral atoms
+! If DM found, check and update, otherwise initialize with neutral atoms
 
-      if (found) then
+      if (dm_found) then
         ! Various degrees of sanity checks
 
         nspin_read = size(val(DMread),dim=2)
@@ -247,8 +289,7 @@
               "WARNING: Wrong nspin in DM file: ",  nspin_read,  &
               "WARNING: Falling back to atomic initialization of DM."
            endif
-           found = .false.
-	   call delete(DMread)
+           dm_found = .false.
         endif
 
         if (nrows_g(DMread) /= nrows_g(sparse_pattern)) then
@@ -257,18 +298,17 @@
              "WARNING: Wrong number of orbs in DM file. ",     &
              "WARNING: Falling back to atomic initialization of DM."
            endif
-           found = .false.
-	   call delete(DMread)
+           dm_found = .false.
         endif
 
       endif
       
-      if (found) then
+      ! Density matrix
+      if (dm_found) then
 
 	call restructSpMatrix(DMread,sparse_pattern,DMnew)
         if (ionode) print *, "DMread after reading file:"
         if (ionode) call print_type(Dmread)
-        call delete(DMread)
 
       else
 
@@ -290,6 +330,31 @@
         if (ionode) call print_type(DMnew)
 
        endif
+
+       ! Energy-density matrix
+#ifdef TRANSIESTA
+       if (dm_found) then
+          if (tsde_found) then
+             call restructSpMatrix(EDMread,sparse_pattern,EDM)
+             if (ionode) print *, "EDMread after reading file:"
+             if (ionode) call print_type(EDMread)
+             Escf => val(EDM)
+          else
+             ! Escf remains associated to old EDM
+          endif
+       else
+          ! Escf remains associated to old EDM
+       endif
+#else
+       ! Escf remains associated to old EDM
+#endif           
+
+       ! Put deletes here to avoid complicating the logic
+       call delete(DMread)
+#ifdef TRANSIESTA
+       call delete(EDMread)  
+#endif
+
       end subroutine initdm
 
 !======================================================================
@@ -681,10 +746,12 @@
            dummy_cell(:,:,i) = 1.0_dp
         enddo
         call extrapolate(na,n,dummy_cell,xan,dummy_cell(:,:,1),xa,c)
-        print *, "Extrapolation coefficients: "
-        do i = 1, n
-           print "(i0,f10.6)", i, c(i)
-        enddo
+        if (ionode) then
+           print *, "DM extrapolation coefficients: "
+           do i = 1, n
+              print "(i0,f10.5)", i, c(i)
+           enddo
+        endif
 
         pair => get_pointer(DM_history,1)
         call secondp(pair,dm)

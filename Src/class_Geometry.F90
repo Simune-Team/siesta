@@ -77,8 +77,7 @@ module class_Geometry
    else
       this%data%name = "(Geometry)"
    endif
-   call get_uuid(this%data%id)
-   print *, '-->   allocated ' // id(this) // " " // trim(this%data%name)
+   call tag_new_object(this)
 
   end subroutine newGeometry
 

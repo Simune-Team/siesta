@@ -71,8 +71,7 @@ module class_Array2D
    else
       this%data%name = "(Array2D from n,m)"
    endif
-   call get_uuid(this%data%id)
-   print *, '-->   allocated ' // id(this) // " " // trim(this%data%name)
+   call tag_new_object(this)
 
  end subroutine newArray2DFromDimensions
 
@@ -97,9 +96,7 @@ module class_Array2D
     else
        this%data%name = "(Array2D from naked array)"
     endif
-    call get_uuid(this%data%id)
-    print *, '--> allocated ' // trim(this%data%name) // " " // id(this)
-
+    call tag_new_object(this)
 
  end subroutine newArray2DfromNakedArray
 

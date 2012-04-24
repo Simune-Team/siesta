@@ -105,8 +105,7 @@ module class_Sparsity
    sp%data%initialized = .true.   
    sp%data%name = trim(name)
 
-   call get_uuid(sp%data%id)
-   print *, '-->   allocated ' // id(sp) // " " // trim(sp%data%name)
+   call tag_new_object(sp)
    
  end subroutine newSparsity
 

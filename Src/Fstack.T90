@@ -100,8 +100,7 @@ else
 endif
 
 allocate(this%data%val(nsize))
-call get_uuid(this%data%id)
-print *, '-->   allocated ' // id(this) // " " // trim(this%data%name)
+call tag_new_object(this)
 
 end subroutine new__
 

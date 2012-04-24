@@ -15,7 +15,7 @@
       use sparse_matrices, only: Dscf, Dold, Escf, Hold
       use sparse_matrices, only: xijo, H, S, H_kin
       use sparse_matrices, only: sparse_pattern, block_dist
-      use sparse_matrices, only: H_vkb, DM, DM_history
+      use sparse_matrices, only: H_vkb, DM, EDM, DM_history
 
       use siesta_geom
       use atomlist,          only: iphorb, iphkb, rco, rckb, indxua,
@@ -261,13 +261,15 @@
 
       write(name,"(a,i0)") "H_vkb in state_init at geom step ", istep
       call newSpMatrix(sparse_pattern,1,block_dist,H_vkb,name=name)
-      print *, "H_vkb...:"
-      call print_type(H_vkb)
+      if (ionode) call print_type(H_vkb)
 
-      ! Note that the resizing of Dscf is done inside new_dm below
+      write(name,"(a,i0)") "EDM in state_init at geom step ", istep
+      call newSpMatrix(sparse_pattern,nspin,block_dist,EDM,name=name)
+      if (ionode) call print_type(EDM)
+      Escf => val(EDM)
+
+
       call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',
-     .     routine='state_init',copy=.false.,shrink=.true.)
-      call re_alloc( Escf, 1, maxnh, 1, nspin, 'Escf',
      .     routine='state_init',copy=.false.,shrink=.true.)
       call re_alloc(Hold,1,maxnh,1,nspin,name='Hold',
      .     routine='state_init',copy=.false.,shrink=.true.)
@@ -289,8 +291,8 @@
 
       call new_dm( auxchanged,DM_history,DM)
       Dscf => val(DM)
-      print *, "DM after new_dm:"
-      call print_type(DM)
+      if (ionode) print *, "DM after new_dm:"
+      if (ionode) call print_type(DM)
 
       ! Initialize energy-density matrix to zero for first call to overfsm
 #ifdef TRANSIESTA

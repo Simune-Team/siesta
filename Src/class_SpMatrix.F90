@@ -110,8 +110,7 @@ end interface
      else
         this%data%name = "(SpMatrix from sp, dist, and a2d)"
      endif
-     call get_uuid(this%data%id)
-     print *, '-->   allocated ' // id(this) // " " // trim(this%data%name)
+     call tag_new_object(this)
 
    end subroutine newSpMatrixFromArray2D
 
@@ -138,8 +137,7 @@ end interface
      else
         this%data%name = "(SpMatrix from sp, dim2, and dist)"
      endif
-     call get_uuid(this%data%id)
-     print *, '-->   allocated ' // id(this) // " " // trim(this%data%name)
+     call tag_new_object(this)
 
    end subroutine newSpMatrixFromDims
 

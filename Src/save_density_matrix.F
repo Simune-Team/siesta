@@ -24,10 +24,11 @@
 #endif
 #ifdef TRANSIESTA
       use siesta_options,       only:  idyn, writedm
-      use sparse_matrices,      only:  Edscf
+      use sparse_matrices,      only:  Escf
       use m_steps,              only:  istp
       use m_ts_iodm,            only:  write_ts_dm
       use m_ts_global_vars,     only:  TSrun
+      use m_energies,           only:  ef
 #endif
 
       character(len=*), intent(in)   :: id

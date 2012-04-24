@@ -67,16 +67,12 @@
      type(OrbitalDistribution_), pointer :: data => null()
   end type OrbitalDistribution
 
-  public :: copy, newDistribution
+  public :: newDistribution
   public :: num_local_elements, node_handling_element
   public :: index_local_to_global, index_global_to_local
 
   interface newDistribution
      module procedure newBlockCyclicDistribution
-  end interface
-
-  interface copy
-     module procedure copyDistribution
   end interface
 
 !====================================    
@@ -92,42 +88,6 @@
       deallocate( spdata%ng2l)
       deallocate( spdata%ng2p)
      end subroutine delete_Data
-
-  subroutine copyDistribution(this, other)
-    !..................................................................
-    ! Actual copy, with new data storage
-    !...................................................................
-    type (OrbitalDistribution), intent(inout) :: this
-    type (OrbitalDistribution), intent(in) :: other
-
-    if (.not. associated(other%data)) then
-     call die('Assignment to object that has not been initialized!')
-    endif
-
-    ! Initialize to reset the pointers and decrement the ref count
-    call init(this)
-    ! Now copy the data, except maybe the general dist pointers
-    call copyDistributionData(this%data,other%data)
-
-    CONTAINS
-     subroutine copyDistributionData(dst,src)
-      type(OrbitalDistribution_), intent(in)  :: src
-      type(OrbitalDistribution_), intent(out) :: dst
-
-      dst%comm  = src%comm
-      dst%node  = src%node
-      dst%nodes = src%nodes
-      dst%node_io = src%node_io
-      !
-      dst%blocksize = src%blocksize
-      dst%isrcproc  = src%isrcproc
-      !
-      ! Keep pointers nullified for now, assuming that copies are only
-      ! meaningful for block-cyclic distributions
-      !
-     end subroutine copyDistributionData
-
-  end subroutine copyDistribution
 
   subroutine newBlockCyclicDistribution(Blocksize,Comm,this,name)
      !........................................
@@ -159,9 +119,7 @@
      else
         this%data%name = "(Distribution from BlockSize and Comm)"
      endif
-     call get_uuid(this%data%id)
-     print *, '-->   allocated ' // id(this) // " " // trim(this%data%name)
-
+     call tag_new_object(this)
 
    end subroutine newBlockCyclicDistribution
 

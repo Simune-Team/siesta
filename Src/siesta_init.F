@@ -50,6 +50,7 @@
       use m_projected_DOS,    only: init_projected_DOS
       use writewave,          only: gamma_wavefunctions,
      &                              setup_wf_kpoints
+      use m_object_debug,     only: set_object_debug_level
 #ifdef DEBUG_XC
       USE siestaXC, only: setDebugOutputUnit
 #endif /* DEBUG_XC */
@@ -148,7 +149,16 @@ C     Initialise MPI and set processor number
 
 !     Initialise read .................................................
       call reinit( sname )
-
+!
+!     Set object debugging level
+!
+      call set_object_debug_level(0)
+      if (IONode) then
+         if (fdf_get('DebugObjects',.false.)) then
+            call set_object_debug_level(1)
+         endif
+      endif
+         
 !     Initialize CML (relies on reinit)
       call siesta_cml_init( )
 
@@ -230,7 +240,8 @@ C     Initialise MPI and set processor number
 
       call get_num_dm_history_items(n_dm_items)
       call new(DM_history,n_dm_items,"(DM history stack)")
-      print *, "Size of fstack: ", max_size(DM_history)
+      if (ionode) print "(a,i0)", "Size of DM history Fstack: ",
+     $                            max_size(DM_history)
 
 #ifdef TRANSIESTA
 !     Read TS Input options
@@ -423,19 +434,29 @@ C     Initialise MPI and set processor number
       subroutine get_num_dm_history_items(n)
       integer, intent(out)         :: n
 
-      print *, "DM_history_depth: ", DM_history_depth
       n = DM_history_depth
       if (.not. fdf_get("DM.AllowReuse",.true.)) then
          n = 0
+         if (ionode) print "(a)",
+     $      "DM_history_depth set to zero since no re-use is allowed"
          return
       else if (.not. fdf_get("DM.AllowExtrapolation",.true.)) then
          n = 1
+         if (ionode) print "(a)",
+     $    "DM_history_depth set to one " //
+     $    " since no extrapolation is allowed"
          return
       else if ((idyn .eq. 6) .OR. (idyn .eq. 7))  then   ! Forces or Phonon series
          n = 0
+         if (ionode) print "(a)",
+     $    "DM_history_depth set to zero " //
+     $    " for 'Forces' run"
          return
       else if (harrisfun) then
          n = 0
+         if (ionode) print "(a)",
+     $    "DM_history_depth set to zero " //
+     $    " for 'Harris' run"
          return
       endif
       end subroutine get_num_dm_history_items

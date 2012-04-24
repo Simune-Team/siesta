@@ -83,8 +83,8 @@ if (present(name)) then
 else
    this%data%name = "(Pair of _T1_ _T2_)"
 endif
-call get_uuid(this%data%id)
-print *, '-->   allocated ' // id(this) // " " // trim(this%data%name)
+call tag_new_object(this)
+
 end subroutine new__
 
 !------------------------------------------------

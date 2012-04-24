@@ -46,6 +46,8 @@
       call timer( 'SCFconv', 1 )
       ! convergence test
 
+      converged = .false.
+
       ! Monitor Etot and Eharrs for optional convergence
       call add_value(conv_harris, E_Harris)
       call add_value(conv_etot, E_KS_Good)

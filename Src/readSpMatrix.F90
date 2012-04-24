@@ -1,5 +1,7 @@
-
- subroutine readSpMatrix (filename, SpM, found, ref_dist )
+module m_readSpMatrix
+ public :: readSpMatrix
+ CONTAINS
+ subroutine readSpMatrix (filename, SpM, found, ref_dist, SpM2, real_value )
 
    use class_SpMatrix
    use class_Sparsity
@@ -10,19 +12,24 @@
    use mpi_siesta
 #endif
 
+   integer, parameter :: dp = selected_real_kind(10,100)
+
    character(len=*), intent(in) :: filename
 
    ! Note: inout is essential to avoid memory leaks
    type(SpMatrix), intent(inout)  :: SpM
    logical, intent(out)         :: found
    type(OrbitalDistribution), intent(in) :: ref_dist
+!
+!  Kludge: optional items for TranSiesta
+   type(SpMatrix), intent(inout), OPTIONAL  :: SpM2
+   real(dp), intent(out), OPTIONAL          :: real_value
 
       logical   exist3
       integer   im, is, lun, m, nb
       integer   ml
       integer :: Node, Nodes, Node_io, Comm
 
-      integer, parameter :: dp = selected_real_kind(10,100)
 
       integer, allocatable, dimension(:) :: numdg, numd, listdptr, listd
       real(dp), allocatable              :: dm(:,:)
@@ -69,6 +76,10 @@
       call MPI_Bcast(no_u,1,MPI_integer,Node_io,Comm,MPIerror)
       call MPI_Bcast(nspin,1,MPI_integer,Node_io,Comm,MPIerror)
 #endif
+
+!
+!     Read index arrays of sparse matrix
+!
 
 !     Allocate local buffer array for globalised numd
       allocate(numdg(1:no_u))
@@ -140,6 +151,59 @@
       deallocate(ibuffer)
 #endif
 
+!
+!     Read entries of sparse matrix
+!
+      call read_sparse_values_section()
+
+      call newSparsity(sp_read,no_l,no_u,  &
+                       maxnd,numd,listdptr,listd,  &
+                       "(read from " // trim(filename) // ")")
+
+      call newArray2D(a2d_read,dm,name="(new Array in readSpmatrix)")
+      call newSpMatrix(sp_read,a2d_read,ref_dist,SpM, &
+                       "(SpMatrix read from " // trim(filename) // ")")
+      call delete(a2d_read)
+
+      if (present(SpM2)) then
+         ! Read another matrix with the same indexes (and nspin)
+         call read_sparse_values_section()
+         call newArray2D(a2d_read,dm,name="(new 2nd Array in readSpmatrix)")
+         call newSpMatrix(sp_read,a2d_read,ref_dist,SpM2, &
+               "(2nd SpMatrix read from " // trim(filename) // ")")
+         call delete(a2d_read)
+      endif
+         
+      if (present(real_value)) then
+         if (Node == Node_io) then
+            read(lun) real_value
+         endif
+#ifdef MPI
+         call MPI_Bcast(real_value,1,MPI_double_precision,Node_io,Comm,MPIerror)
+#endif
+      endif
+
+#ifdef MPI
+      deallocate(buffer)
+#endif
+      deallocate(numdg)
+
+      if (Node == Node_io) then
+         close(lun)
+      endif
+
+      found = .true.
+
+      call delete(sp_read)
+      deallocate(numd,listdptr,listd,dm)
+
+    CONTAINS
+      
+      ! A helper routine to avoid code duplication
+      ! It inherits all the variables from the host routine
+
+      subroutine read_sparse_values_section()
+
       do is = 1,nspin
          do m = 1,no_u
 #ifdef MPI
@@ -170,27 +234,7 @@
 #endif
          enddo
       enddo
-
-#ifdef MPI
-      deallocate(buffer)
-#endif
-      deallocate(numdg)
-
-      if (Node == Node_io) then
-         close(lun)
-      endif
-
-      found = .true.
-
-      call newSparsity(sp_read,no_l,no_u,  &
-                       maxnd,numd,listdptr,listd,  &
-                       "(read from " // trim(filename) // ")")
-      call newArray2D(a2d_read,dm,name="(Array from read dm)")
-      call newSpMatrix(sp_read,a2d_read,ref_dist,SpM, &
-                       "(read from " // trim(filename) // ")")
-
-      call delete(sp_read)
-      call delete(a2d_read)
-      deallocate(numd,listdptr,listd,dm)
+    end subroutine read_sparse_values_section
 
     end subroutine readSpMatrix
+  end module m_readSpMatrix

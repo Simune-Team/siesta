@@ -39,24 +39,26 @@ CONTAINS
 ! -- Main structural features
 !
    subroutine init_(this)
-     !........................................
-     ! Constructor
-     !........................................
-     type (TYPE_NAME) :: this
+
+     type (TYPE_NAME), intent(inout) :: this
+
      integer :: error
 
      call delete(this)
      allocate(this%data, stat=error)
+     if (error /= 0) then
+       call die("Allocation error!")
+     endif
      this%data%refCount = 1
 
   end subroutine init_
 
   subroutine delete_(this)
-    !............................
-    ! Destructor
-    !............................
-    type (TYPE_NAME) :: this
+
+    type (TYPE_NAME), intent(inout) :: this
+
     integer :: error
+    logical, external  :: print_debug_object_info
 
     if (.not. associated(this%data)) return
 
@@ -64,8 +66,13 @@ CONTAINS
     if (this%data%refCount == 0) then
       ! Safe to delete the data now
       call delete_Data(this%data)
-      print *, "--> deallocated " // id(this) // " " // trim(this%data%name) 
+      if (print_debug_object_info()) then
+        print *, "--> deallocated " // id(this) // " " // trim(this%data%name) 
+      endif
       deallocate(this%data, stat=error)
+      if (error /= 0) then
+         call die("Deallocation error!")
+      endif
     endif
 
     this%data => null()
@@ -104,5 +111,18 @@ CONTAINS
    character(len=36)            :: str
    str = this%data%id
   end function id_
+
+  subroutine tag_new_object(this)
+   type(TYPE_NAME), intent(inout)  :: this
+
+   logical, external  :: print_debug_object_info
+   external           :: get_uuid
+
+    call get_uuid(this%data%id)
+    if (print_debug_object_info()) then
+      print *, '--> allocated ' // trim(this%data%name) // " " // id(this)
+    endif
+
+   end subroutine tag_new_object
 
 !=============================================================
