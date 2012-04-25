@@ -27,12 +27,12 @@
 
       !
       !  New interface data
-      type(Sparsity)                :: sparse_pattern
-      type(SpMatrix)                :: H_vkb, DM, EDM
-      type(Fstack_Pair_Geometry_SpMatrix):: DM_history
+      type(Sparsity), save                :: sparse_pattern
+      type(SpMatrix), save                :: H_vkb, DM, EDM
+      type(Fstack_Pair_Geometry_SpMatrix), save :: DM_history
 
       ! Orbital distribution descriptor
-      type(OrbitalDistribution)     :: block_dist
+      type(OrbitalDistribution), save     :: block_dist
 
       CONTAINS
 

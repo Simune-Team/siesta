@@ -430,9 +430,6 @@ C     Initialise MPI and set processor number
 #endif
 !--------------------------------------------------------------------------- END
       
-      CONTAINS
-
-
       END subroutine siesta_init
 
       END MODULE m_siesta_init

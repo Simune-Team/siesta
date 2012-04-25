@@ -1,5 +1,19 @@
 
 -----------------------------------------------------------------------
+2012-04-25  Alberto Garcia <albertog@icmab.es>   trunk-409-scf-33
+Fixes for Marenostrum compilation
+
+Initialized derived types in modules have to have the "save" attribute
+to satisfy xlf. It applies to new objects in sparse_matrices.
+
+(+ other oversights detected by xlf)
+
+modified:
+  Src/siesta_init.F
+  Src/sparse_matrices.F
+  Src/state_analysis.F
+
+-----------------------------------------------------------------------
 2012-04-25  Alberto Garcia <albertog@icmab.es>   trunk-409-scf-32
 Sync with trunk-409. Cosmetic changes in manual and branch name
 
