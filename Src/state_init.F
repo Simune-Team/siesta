@@ -291,8 +291,8 @@
 
       call new_dm( auxchanged,DM_history,DM)
       Dscf => val(DM)
-      if (ionode) print *, "DM after new_dm:"
-      if (ionode) call print_type(DM)
+      !if (ionode) print *, "DM after new_dm:"
+      !if (ionode) call print_type(DM)
 
       ! Initialize energy-density matrix to zero for first call to overfsm
 #ifdef TRANSIESTA

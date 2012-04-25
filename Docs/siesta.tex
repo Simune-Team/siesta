@@ -2839,6 +2839,102 @@ It is done for the first spin component (up) and first k vector.
 \vspace{5pt}
 \subsection{The self-consistent-field loop}
 
+\subsubsection{NEW: Convergence of the Kohn-Sham energy and forces}
+
+In previous versions of the program, the Kohn-Sham energy was computed
+using the ``in'' DM. The typical DM used as input for the calculation
+of H was not directly computed from a set of wave-functions (it was
+either the product of mixing or of the initialization from atomic
+values). In this case, the ``kinetic energy'' term in the total energy
+computed in the way stated in the Siesta paper had an error which
+decreased with the approach to self-consistency, but was non-zero. The
+net result was that the Kohn-Sham energy converged more slowly than
+the ``Harris'' energy (which is correctly computed).
+
+When mixing H (see below under ``Mixing Options''), the KS energy is
+in effect computed from DM(out), so this error vanishes.
+
+As a related issue, the forces and stress computed after SCF
+convergence were calculated using the DM coming out of the cycle,
+which by default was the product of a final mixing. This also
+introduced errors which grew with the degree of non-selfconsistency.
+
+The current version introduces several changes:
+
+\begin{itemize}
+\item When mixing the DM, the Kohn-Sham energy is corrected to make it
+  variational. This involves an extra call to {\tt dhscf} (although
+  with neiter forces nor matrix elements being calculated, i.e. only
+  calls to {\tt rhoofd}, {\tt poison}, and {\tt cellxc}). When mixing
+  H, the KS energy computed from DM(out) would be automatically
+  correct, but the current termination logic of the SCF cycle and the
+  (current) need to preserve the Harris energy dictates that the
+  correction be calculated explicitly. This will very probably change
+  soon. In fact, if one were ready to do away with computing E\_Harris,
+  the correct E\_KS(DM\_out) could be computed basically without
+  overhead.
+  
+
+\item The program now prints a new column labeled ``dHmax'' for the
+  self-consistent cycle. The value represents the maximum absolute
+  value of the changes in the entries of H, but its actual meaning
+  depends on whether DM or H mixing is in effect: if mixing the DM,
+  dHmax refers to the change in H(in) with respect to the previous
+  step; if mixing H, dHmax refers to H(out)-H(in) in the previous
+  step.
+
+\item When achieving convergence, the loop is exited without a further
+  mixing of the DM, thus preserving DM(out) for further processing
+  (including the calculation of forces and the analysis of the
+  electronic structure). 
+
+  {\bf NOTE on performance}: If one were not interested in
+  monitoring E\_KS during the cycle, it would be enough to avoid the
+  final mix, and compute the energy and forces from DM\_out to get the
+  ``correct'' E\_KS. Then there would be no overhead. This option is
+  not implemented, pending a full review of the desired behavior.
+
+\item It remains to be seen whether the forces, being computed
+  ``right'' on the basis of DM(out), exhibit somehow better convergence
+  as a function of the scf step. In order to gain some more data and
+  heuristics on this we have implemented a force-monitoring option,
+  activated by setting to {\tt .true.} the variable {\bf
+    MonitorForcesInSCF}. The program will then print the maximum
+  absolute value of the change in forces from one step to the
+  next. Other statistics could be implemented.
+
+\item While the (mixed) DM is saved at every SCF step, as was standard
+  practice, the final DM(out) overwrites the .DM file at the end of
+  the SCF cycle. Thus it is still possible to use a ``mixed'' DM for
+  restarting an interrupted loop, but a ``good'' DM will be used for
+  any other post-processing.
+
+\item There are two new options for controlling the criteria for
+  convergence:
+
+\begin{itemize}
+\item Free Energy ($E_{KS} - T_{el} * S_{electronic}$)
+
+SCF.RequireFreeEnergyConvergence T
+
+SCF.FreeEnergyTolerance  Value Unit  (default 1.0e-5 eV)
+
+\item Hamiltonian matrix elements
+
+SCF.RequireHamiltonianConvergence T
+
+SCF.H.Tolerance  Value Unit  (default 0.1 mRy)
+\end{itemize}
+
+The SCF cycle will end when the appropriate criterion is
+satisfied. These two are {\bf absolute} criteria: they do not depend
+on the additional convergence of the density matrix (as does the
+``energy convergence'' option already implemented).
+
+\end{itemize}
+
+
+
 \begin{description}
 \itemsep 10pt
 \parsep 0pt
@@ -2882,15 +2978,37 @@ the calculation will stop on the first SCF convergence failure.
 
 \subsubsection{Mixing options}
 
+\index{SCF!mixing}
+\index{MixHamiltonian@{\bf MixHamiltonian}}\index{SCF!mixing!Hamiltonian}
+{\bf NOTE}: Mixing of the Hamiltonian instead of the density-matrix, a
+feature previously available only for TranSiesta runs has been
+implemented for general use. It is enabled by setting either the
+{\bf MixHamiltonian} option (preferred) or the old-style {\bf TS.MixH}
+option (deprecated but retained due to its use in TranSiesta).
+
+The evidence obtained so far from test runs indicates that Hamiltonian
+mixing might be better than density-matrix mixing in most cases, and
+is seldom worse. Users are encouraged to test this feature for their
+favorite tough-converging systems, and report their experiences.
+
+The H mixing algorithms available are exactly the same as for
+density-matrix mixing (Pulay, Broyden, Fire), and the keywords
+controlling it are also the same, e.g.{\tt DM.MixingWeight} applies
+both to H and DM mixing.
+
+
 \begin{description}
 
-\item[{\bf DM.MixingWeight}] ({\it real}):\index{SCF!mixing}
+\item[{\bf DM.MixingWeight}] ({\it real}):
 \index{DM.MixingWeight@{\bf DM.MixingWeight}}\index{SCF!mixing!linear}
 Proportion $\alpha$ of
 output Density Matrix to be used for the input Density Matrix of
 next SCF cycle (linear mixing):
 $\rho^{n+1}_{in} = \alpha \rho^{n}_{out}
 +(1 - \alpha) \rho^{n}_{in}$.
+
+Note that this parameter is also used in more sophisticated mixing 
+approaches (i.e. Pulay).
 
 {\it Default value:} {\tt 0.25}
 
@@ -3049,28 +3167,42 @@ for restarts of selfconsistency runs.
 
 \subsubsection{Initialization of the density-matrix}
 
+NOTE: The conditions and options for density-matrix re-use are quite
+varied and not completely orthogonal at this point. For further
+information, see routine {\tt Src/m\_new\_dm.F}. What follows is a
+summary.
+
 The Density matrix can be:
 
 \begin{verbatim}
     1. Synthesized directly from atomic occupations.
        (See the options below for spin considerations)
     2. Read from a .DM file (if the appropriate options are set)
-    3. Extrapolated from (two) previous geometry steps
-    3.a The DM of the previous geometry iteration
+    3. Extrapolated from previous geometry steps
+       (this includes as a special case the re-use of the DM 
+        of the previous geometry iteration)
 
-    In cases 2 and 3, a check is done to guarantee that the structure
-    of the read or extrapolated DM conforms to the current sparsity.
-    If it does not, the information is re-arranged.
+    In cases 2 and 3, the structure of the read or extrapolated DM
+    is automatically adjusted to the current sparsity pattern.
+
+    In what follows, "Initialization" of the DM means that the DM is
+    either read from file (if available) or synthesized from atomic
+    data. This is confusing, and better terminology should be used.
+
 
     Special cases:
+
            Harris functional: The matrix is always initialized
+
            Force calculation: The DM should be written to disk
                               at the time of the "no displacement"
                               calculation and read from file at
                               every subsequent step.
+
            Variable-cell calculation:
+   
              If the auxiliary cell changes, the DM is forced to be
-             initialized (conceivably one could rescue some important
+             synthesized (conceivably one could rescue some important
              information from an old DM, but it is too much trouble
              for now). NOTE that this is a change in policy with respect
              to previous versions of the program, in which a (blind?)
@@ -3081,9 +3213,6 @@ The Density matrix can be:
              In all other cases (including "server operation"), the
              default is to allow DM re-use (with possible extrapolation)
              from previous geometry steps.
-
-             There is no re-use of the DM for "Forces", and "Phonon"
-             dynamics types (i.e., the DM is re-initialized)
 
              For "CG" calculations, the default is not to extrapolate the
              DM (unless requested by setting 'DM.AllowExtrapolation' to
@@ -3204,15 +3333,32 @@ iterations is re-used to start the new geometry's SCF cycle.
 
 {\it Default value:} {\tt .true.}
 
+NOTE: The conditions and options for density-matrix re-use are quite
+varied and not completely orthogonal at this point. For further
+information, see routine {\tt Src/new\_dm.F}.
+
 \item[{\bf DM.AllowExtrapolation}] ({\it logical}):
-\index{DM.AllowExtrapolation@{\bf DM.AllowExtrapolation}}
-Controls whether density matrix information from two previous geometry
-iterations is (linearly) extrapolated to start the new geometry's SCF cycle.
+  \index{DM.AllowExtrapolation@{\bf DM.AllowExtrapolation}} Controls
+  whether the density matrix information from several previous
+  geometry iterations is extrapolated to start the new geometry's SCF
+  cycle.  This feature is useful for molecular dynamics simulations
+  and possibly also for geometry relaxations.  The number of geometry
+  steps saved is controlled by the variable {\bf DM.History.Depth}
 
-{\it Default value:} {\tt .true.}
+{\it Default values:} {\tt .true.} for molecular-dynamics simulations,
+but {\tt .false.} for now for geometry-relaxations (pending further
+tests which users are kindly requested to perform).
 
-Further information regarding the density-matrix re-use can be found
-in the header of routine {\tt Src/new\_dm.F}.
+NOTE: The conditions and options for density-matrix re-use are quite
+varied and not completely orthogonal at this point. For further
+information, see routine {\tt Src/new\_dm.F}.
+
+\item[{\bf DM.History.Depth}] ({\it integer}):
+\index{DM.History.Depth@{\bf DM.Hitory.Depth}}
+Sets the number of geometry steps for which density-matrix information
+is saved for extrapolation.
+
+{\it Default value:} 4
 
 \end{description}
 
@@ -3376,6 +3522,45 @@ This is useful if only energies are needed, as the Harris energy tends
 to converge faster than the Kohn-Sham energy.
 
 {\it Default value:} {${\tt 10^{-4}}$ eV}
+
+\item[{\bf SCF.Require.FreeEnergy.Convergence}] ({\it logical}):
+\index{SCF!mixing!free energy convergence}
+\index{DM.Require.Free.Energy.Convergence@{\bf DM.Require.Free.Energy.Convergence}}
+Logical variable to use the Free energy as monitor of
+self-consistency: this is considered achieved when the change in the Free energy between cycles
+of the SCF procedure is below {\bf SCF.Free.Energy.Tolerance}. No density
+matrix change criterion is used.
+
+{\it Default value:} {\tt .false.}
+
+
+\item[{\bf SCF.Free.Energy.Tolerance}] ({\it real energy}):
+\index{SCF.Free.Energy.Tolerance@{\bf SCF.Free.Energy.Tolerance}}
+If {\bf SCF.Require.Free.Energy.Convergence} is {\tt .true.}, then
+self-consistency is achieved when the change in the Free energy between cycles
+of the SCF procedure is below this value.
+
+{\it Default value:} {${\tt 10^{-5}}$ eV}
+\item[{\bf SCF.Require.Hamiltonian.Convergence}] ({\it logical}):
+\index{SCF!mixing!Hamiltonian convergence}
+\index{DM.Require.Hamiltonian.Convergence@{\bf DM.Require.Hamiltonian.Convergence}}
+Logical variable to use the Hamiltonian matrix elements as monitor of
+self-consistency: this is considered achieved when the maximum
+absolute change in the H matrix elements between cycles
+of the SCF procedure is below {\bf SCF.H.Tolerance}. No density
+matrix change criterion is used.
+
+{\it Default value:} {\tt .false.}
+
+
+\item[{\bf SCF.Hamiltonian.Tolerance}] ({\it real energy}):
+\index{SCF.Hamiltonian.Tolerance@{\bf SCF.Hamiltonian.Tolerance}}
+If {\bf SCF.Require.Hamiltonian.Convergence} is {\tt .true.}, then
+self-consistency is achieved when the maximum absolute change in H
+matrix elements between cycles
+of the SCF procedure is below this value.
+
+{\it Default value:} {\tt 0.1 mRy}
 
 \end{description}
 
@@ -7878,6 +8063,24 @@ precision selection
   arch.make} to use double-precision for all the arrays in the
   O(N) routines. 
 
+\end{itemize}
+
+\newpage
+\section{APPENDIX: Data structures and reference counting}
+\index{Reference counting}
+\index{Data Structures}
+
+To implement some of the new features (e.g. DM extrapolation), {\sc
+  SIESTA} uses new flexible data structures. These are defined and
+handled through a combination and extension of ideas already in the
+Fortran community:
+\begin{itemize}
+\item Simple templating using the ``include file'' mechanism, as in
+  the FLIBS project led by Arjen Markus
+  (\url{http://flibs.sourceforge.net}).
+\item The reference-counting mechanism to avoid memory leaks, as
+  implemented in the PyF95++ project
+  (\url{http://blockit.sourceforge.net}).
 \end{itemize}
 
 \addcontentsline{toc}{section}{Index}

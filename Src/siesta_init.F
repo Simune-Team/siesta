@@ -50,6 +50,7 @@
       use m_projected_DOS,    only: init_projected_DOS
       use writewave,          only: gamma_wavefunctions,
      &                              setup_wf_kpoints
+      use m_new_dm,           only: get_num_dm_history_items
       use m_object_debug,     only: set_object_debug_level
 #ifdef DEBUG_XC
       USE siestaXC, only: setDebugOutputUnit
@@ -431,35 +432,6 @@ C     Initialise MPI and set processor number
       
       CONTAINS
 
-      subroutine get_num_dm_history_items(n)
-      integer, intent(out)         :: n
-
-      n = DM_history_depth
-      if (.not. fdf_get("DM.AllowReuse",.true.)) then
-         n = 0
-         if (ionode) print "(a)",
-     $      "DM_history_depth set to zero since no re-use is allowed"
-         return
-      else if (.not. fdf_get("DM.AllowExtrapolation",.true.)) then
-         n = 1
-         if (ionode) print "(a)",
-     $    "DM_history_depth set to one " //
-     $    " since no extrapolation is allowed"
-         return
-      else if ((idyn .eq. 6) .OR. (idyn .eq. 7))  then   ! Forces or Phonon series
-         n = 0
-         if (ionode) print "(a)",
-     $    "DM_history_depth set to zero " //
-     $    " for 'Forces' run"
-         return
-      else if (harrisfun) then
-         n = 0
-         if (ionode) print "(a)",
-     $    "DM_history_depth set to zero " //
-     $    " for 'Harris' run"
-         return
-      endif
-      end subroutine get_num_dm_history_items
 
       END subroutine siesta_init
 

@@ -1,5 +1,30 @@
 
 -----------------------------------------------------------------------
+2012-04-25  Alberto Garcia <albertog@icmab.es>   trunk-407-sparse-30
+Documentation of recent changes. Cosmetics
+
+The manual has been updated to reflect some of the most important
+changes, mostly related to the handling of the self-consistent loop.
+
+Some cosmetic changes to reduce redundant output.
+
++ Renaming of new_dm file.
+
+removed:
+  Src/m_sparse.F
+  Src/new_dm.F
+renamed:
+  Src/my_new_dm.F90 => Src/m_new_dm.F90
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/Makefile
+  Src/iomd.f
+  Src/siesta_init.F
+  Src/state_init.F
+  Src/m_new_dm.F90
+
+-----------------------------------------------------------------------
 2012-04-24  Alberto Garcia <albertog@icmab.es>   trunk-407-sparse-29
 Support TranSiesta logic in new_dm routine. Configurable debugging
 

@@ -6,9 +6,8 @@
 !     2. Read from file
 !     3. Re-used (with possible extrapolation) from previous geometry step(s).
 !
-!     In cases 2 and 3, a check is done to guarantee that the structure
-!     of the read or extrapolated DM conforms to the current sparsity.
-!     If it does not, the information is re-arranged.
+!     In cases 2 and 3, the structure of the read or extrapolated DM 
+!     is automatically adapted to the current sparsity pattern.
 !
 !     Special cases:
 !            Harris: The matrix is always initialized
@@ -56,6 +55,7 @@
 
       private
       public :: new_dm
+      public :: get_num_dm_history_items
 
       CONTAINS
 
@@ -131,13 +131,20 @@
 !     ... or if the auxiliary cell has changed
 !     (in this case we have to  avoid reading back saved copy from file)
 !
-      if (initdmaux.and.auxchanged) then
-        dminit = .true.
-        try_to_read_from_file = .false.
-        if (IOnode) then
-           write(6,"(a)") "DM history reset as supercell changed."
-        endif
-        call new(DM_history,DM_history_depth,"(DM history stack)")
+      if (auxchanged) then
+         if (initdmaux) then
+            dminit = .true.
+            try_to_read_from_file = .false.
+            if (IOnode) then
+               write(6,"(a)") "DM history reset as supercell changed."
+            endif
+            call new(DM_history,DM_history_depth,"(reset DM history stack)")
+         else
+            if (IOnode) then
+               write(6,"(a)") "** Warning: DM history NOT reset upon supercell change"
+               write(6,"(a)") "** Warning: since 'ReinitialiseDM' is set to .false."
+            endif
+         endif
       endif
 
 
@@ -784,5 +791,34 @@
         call delete(DMtmp)
 
       end subroutine extrapolate_dm_with_coords
+
+      subroutine get_num_dm_history_items(n)
+        use siesta_options, only: DM_history_depth, harrisfun, idyn
+
+      integer, intent(out)         :: n
+
+      n = DM_history_depth
+      if (.not. fdf_get("DM.AllowReuse",.true.)) then
+         n = 0
+         if (ionode) print "(a)",   &
+            "DM_history_depth set to zero since no re-use is allowed"
+         return
+      else if (.not. fdf_get("DM.AllowExtrapolation",.true.)) then
+         n = 1
+         if (ionode) print "(a)", &
+         "DM_history_depth set to one since no extrapolation is allowed"
+         return
+      else if ((idyn .eq. 6) .OR. (idyn .eq. 7))  then   ! Forces or Phonon series
+         n = 0
+         if (ionode) print "(a)", &
+         "DM_history_depth set to zero for 'Forces' run"
+         return
+      else if (harrisfun) then
+         n = 0
+         if (ionode) print "(a)", &
+          "DM_history_depth set to zero for 'Harris' run"
+         return
+      endif
+      end subroutine get_num_dm_history_items
 
       end module m_new_dm
