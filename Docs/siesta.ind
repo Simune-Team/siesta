@@ -70,7 +70,7 @@
   \item {\bf ChangeKgridInMD}, 40
   \item Charge of the system, 73
   \item Chebyshev Polynomials, 62
-  \item Chemical Potential, 62
+  \item Chemical Potential, 62, 63
   \item {\bf ChemicalSpeciesLabel}, 14, 30
   \item CML, 116
   \item Conjugate-gradient history information, 84
@@ -91,7 +91,7 @@
   \item {\bf Diag.Memory}, 78
   \item {\bf Diag.NoExpert}, 58
   \item {\bf Diag.ParallelOverK}, 78
-  \item {\bf Diag.PreRotate}, 58
+  \item {\bf Diag.PreRotate}, 59
   \item {\bf Diag.Use2D}, 59
   \item Dielectric function, optical absorption, 70
   \item diffuse orbitals, 20
@@ -119,8 +119,8 @@
   \item {\bf DM.PulayOnFile}, 46
   \item {\bf DM.Require.Energy.Convergence}, 51
   \item {\bf DM.Require.Free.Energy.Convergence}, 52
-  \item {\bf DM.Require.Hamiltonian.Convergence}, 52
-  \item {\bf DM.Require.Harris.Convergence}, 51
+  \item {\bf       DM.Require.Hamiltonian.Convergence}, 52
+  \item {\bf DM.Require.Harris.Convergence}, 52
   \item {\bf DM.Tolerance}, 51
   \item {\bf DM.UseSaveDM}, 48
   \item {\tt DZ}, 20
@@ -128,10 +128,10 @@
 
   \indexspace
 
-  \item egg-box effect, 53, 54, 56
-  \item {\bf EggboxRemove}, 54
+  \item egg-box effect, 53, 55, 56
+  \item {\bf EggboxRemove}, 55
   \item {\bf EggboxScale}, 56
-  \item {\sc Eig2dos}, 59, 66
+  \item {\sc Eig2DOS}, 59, 66
   \item {\bf ElectronicTemperature}, 59, 60
   \item {\bf ExternalElectricField}, 74
 
@@ -198,7 +198,7 @@
   \item LDA, 41
   \item Linear mixing kick, 47
   \item {\bf LocalDensityOfStates}, 68
-  \item Localized Wave Functions, 61, 63
+  \item Localized Wave Functions, 62, 63
   \item {\bf LongOutput}, 13
   \item Lower order N memory, 63
   \item LSD, 41--43
@@ -261,7 +261,7 @@
 
   \indexspace
 
-  \item {\bf NaiveAuxiliaryCell}, 56
+  \item {\bf NaiveAuxiliaryCell}, 57
   \item {\bf NeglNonOverlapInt}, 56
   \item NetCDF format, 27, 109
   \item NetCDF library, 109
@@ -273,7 +273,7 @@
   \item {\bf NonCollinearSpin}, 42
   \item {\tt nonodes}, 20
   \item {\bf NumberOfAtoms}, 14, 30
-  \item {\bf NumberOfEigenStates}, 57
+  \item {\bf NumberOfEigenStates}, 58
   \item {\bf NumberOfSpecies}, 14, 30
 
   \indexspace
@@ -281,7 +281,7 @@
   \item {\bf OccupationFunction}, 59, 60
   \item {\bf OccupationMPOrder}, 60
   \item {\bf ON.ChemicalPotential}, 62
-  \item {\bf ON.ChemicalPotentialOrder}, 62
+  \item {\bf ON.ChemicalPotentialOrder}, 63
   \item {\bf ON.ChemicalPotentialRc}, 62
   \item {\bf ON.ChemicalPotentialTemperature}, 62
   \item {\bf ON.ChemicalPotentialUse}, 62
@@ -292,7 +292,7 @@
   \item {\bf ON.functional}, 60
   \item {\bf ON.LowerMemory}, 63
   \item {\bf ON.MaxNumIter}, 61
-  \item {\bf ON.RcLWF}, 61
+  \item {\bf ON.RcLWF}, 62
   \item {\bf ON.UseSaveLWF}, 63
   \item {\bf Optical.Broaden}, 70
   \item {\bf Optical.EnergyMaximum}, 70
@@ -303,7 +303,7 @@
   \item {\bf Optical.PolarizationType}, 71
   \item {\bf Optical.Scissor}, 70
   \item {\bf Optical.Vector}, 71
-  \item {\tt Ordejon-Mauri}, 60
+  \item {\tt Ordejon-Mauri}, 61
   \item OUT.UCELL.ZMATRIX, 36
   \item output
     \subitem $\delta \rho(\vec r)$, 75
@@ -407,7 +407,7 @@
   \item Restart of O(N) calculations, 63
   \item {\bf Restricted.Radial.Grid}, 29
   \item revPBE, 41
-  \item rippling, 53, 54, 56
+  \item rippling, 53, 55, 56
   \item {\bf     Rmax.Radial.Grid}, 29
   \item RPBE, 41
 
@@ -430,12 +430,12 @@
       \subsubitem free energy convergence, 52
       \subsubitem Hamiltonian, 45
       \subsubitem Hamiltonian convergence, 52
-      \subsubitem harris energy convergence, 51
+      \subsubitem harris energy convergence, 52
       \subsubitem linear, 45, 47
       \subsubitem Pulay, 45
   \item SCF convergence criteria, 51
   \item {\bf SCF.Free.Energy.Tolerance}, 52
-  \item {\bf SCF.Hamiltonian.Tolerance}, 52
+  \item {\bf SCF.H.Tolerance}, 52
   \item {\bf SCF.Read.Charge.NetCDF}, 50
   \item {\bf       SCF.Read.Deformation.Charge.NetCDF}, 50
   \item {\bf SCFMustConverge}, 45
@@ -530,7 +530,7 @@
 
   \item {\bf WarningMinimumAtomicDistance}, 39
   \item {\bf     WaveFuncKPoints}, 66
-  \item {\bf WaveFuncKPoints}, 65
+  \item {\bf WaveFuncKPoints}, 66
   \item {\bf WaveFuncKPointsScale}, 65
   \item WC, 41
   \item WFSX file, 66

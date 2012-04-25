@@ -39,13 +39,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, trunk-401}}
+{\Huge {\bf S I E S T A \, \, trunk-409-scf-32}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large February 22, 2012 }
+{\Large April 25, 2012 }
 
 \vspace{1.5cm}
 
@@ -92,7 +92,7 @@
 \vspace{0.5cm}
 Copyright \copyright\  Fundaci\'on General Universidad Aut\'onoma de Madrid:
 E.Artacho, J.D.Gale, A.Garc\'{\i}a, J.Junquera, P.Ordej\'on,
-D.S\'anchez-Portal and J.M.Soler, 1996-2011
+D.S\'anchez-Portal and J.M.Soler, 1996-2012
 
 \end{center}
 
@@ -118,6 +118,8 @@ D.S\'anchez-Portal and J.M.Soler, 1996-2011
 
 
 {\bf NOTE: Almost none of the BSC features are documented yet...}
+
+{\bf NOTE: See the description of changes in the logic of the SCF loop}
 
 {\sc Siesta}\index{Siesta@{\sc Siesta}} (Spanish Initiative for
 Electronic Simulations with
@@ -2839,7 +2841,7 @@ It is done for the first spin component (up) and first k vector.
 \vspace{5pt}
 \subsection{The self-consistent-field loop}
 
-\subsubsection{NEW: Convergence of the Kohn-Sham energy and forces}
+{\bf IMPORTANT NOTE: Convergence of the Kohn-Sham energy and forces}
 
 In previous versions of the program, the Kohn-Sham energy was computed
 using the ``in'' DM. The typical DM used as input for the calculation
@@ -2934,6 +2936,7 @@ on the additional convergence of the density matrix (as does the
 \end{itemize}
 
 
+\subsubsection{Harris functional and basic options}
 
 \begin{description}
 \itemsep 10pt
@@ -2948,7 +2951,8 @@ Logical variable to choose between self-consistent Kohn-Sham functional or
 \item {\tt .true.} : Non self consistent Harris functional. Cheap but
 pretty crude for some systems. The forces are computed within the
 Harris functional in the first SCF step. Only implemented for LDA in
-the Perdew-Zunger parametrization.
+the Perdew-Zunger parametrization. It really only applies to starting
+densities which are superpositions of atomic charge densities.
 
 When this option is choosen, the values of DM.UseSaveDM,
 MaxSCFIterations, SCFMustConverge and DM.MixSCF1 are automatically set
@@ -3408,7 +3412,10 @@ implemented, care must be taken to make sure that the FFT grids in the
 \begin{description}
 \item[{\bf WriteDM}] ({\it logical}): \index{WriteDM@{\bf WriteDM}}
 \index{output!density matrix} It determines whether the density matrix
-is output as a binary {\it Systemlabel}.DM file or not.
+is output as a binary {\it Systemlabel}.DM file or not. During the
+self-consistent-field cycle, the DM file is written after mixing the
+input and output density matrices. After the cycle finishes, the file
+is overwritten with the last output DM computed. 
 
 {\it Default value:} {\tt .true.}
 
@@ -3459,6 +3466,7 @@ cycle.
 {\it Default value:} {\tt .false.}
 
 \end{description}
+
 \subsubsection{Convergence criteria}
 \index{SCF convergence criteria}
 
@@ -3542,23 +3550,25 @@ of the SCF procedure is below this value.
 
 {\it Default value:} {${\tt 10^{-5}}$ eV}
 \item[{\bf SCF.Require.Hamiltonian.Convergence}] ({\it logical}):
-\index{SCF!mixing!Hamiltonian convergence}
-\index{DM.Require.Hamiltonian.Convergence@{\bf DM.Require.Hamiltonian.Convergence}}
-Logical variable to use the Hamiltonian matrix elements as monitor of
-self-consistency: this is considered achieved when the maximum
-absolute change in the H matrix elements between cycles
-of the SCF procedure is below {\bf SCF.H.Tolerance}. No density
-matrix change criterion is used.
+  \index{SCF!mixing!Hamiltonian convergence}
+  \index{DM.Require.Hamiltonian.Convergence@{\bf
+      DM.Require.Hamiltonian.Convergence}} Logical variable to use the
+  Hamiltonian matrix elements as monitor of self-consistency: this is
+  considered achieved when the maximum absolute change (dHmax) in the
+  H matrix elements is below {\bf SCF.H.Tolerance}.  The actual
+  meaning of dHmax depends on whether DM or H mixing is in effect: if
+  mixing the DM, dHmax refers to the change in H(in) with respect to
+  the previous step; if mixing H, dHmax refers to H(out)-H(in) in the
+  previous step. No density matrix change criterion is used.
 
 {\it Default value:} {\tt .false.}
 
 
-\item[{\bf SCF.Hamiltonian.Tolerance}] ({\it real energy}):
-\index{SCF.Hamiltonian.Tolerance@{\bf SCF.Hamiltonian.Tolerance}}
-If {\bf SCF.Require.Hamiltonian.Convergence} is {\tt .true.}, then
-self-consistency is achieved when the maximum absolute change in H
-matrix elements between cycles
-of the SCF procedure is below this value.
+\item[{\bf SCF.H.Tolerance}] ({\it real energy}):
+  \index{SCF.H.Tolerance@{\bf SCF.H.Tolerance}} If {\bf
+    SCF.Require.Hamiltonian.Convergence} is {\tt .true.}, then
+  self-consistency is achieved when the maximum absolute change in the
+  H matrix elements is below this value.
 
 {\it Default value:} {\tt 0.1 mRy}
 
@@ -4056,8 +4066,8 @@ overwritten by the options in Sec~\ref{sec:wf-output-user}).
 If {\tt .true.} it writes the Hamiltonian eigenvalues for the sampling
 $\vec k$ points, in the main output file.
 If {\tt .false.}, it writes them in the file {\it Systemlabel}.EIG,
-which can be used by the {\sc Eig2dos}\index{Eig2dos@{\sc Eig2dos}} postprocessing
-utility (in the Util/ directory) for obtaining the density of
+which can be used by the {\sc Eig2DOS}\index{Eig2DOS@{\sc Eig2DOS}} postprocessing
+utility (in the Util/Eig2DOS directory) for obtaining the density of
 states.\index{density of states}
 
 {\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
@@ -4618,7 +4628,7 @@ total density of states:
 \item The Hamiltonian eigenvalues for the SCF sampling $\vec k$ points can be
 dumped into SystemLabel.EIG in a format analogous to SystemLabel.bands,
 but without the kmin, kmax, emin, emax information, and without
-the abscissa. The {\sc Eig2dos}\index{Eig2dos@{\sc Eig2dos}}
+the abscissa. The {\sc Eig2DOS}\index{Eig2DOS@{\sc Eig2DOS}}
 postprocessing utility can be then used to obtain the density of
 states.\index{density of states}
 See the {\bf WriteEigenvalues} descriptor.

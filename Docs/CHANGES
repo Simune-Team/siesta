@@ -6,6 +6,49 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-04-13  15:05:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-409
+Extended the functionality of the 'eig2dos' program
+
+A new directory Util/Eig2DOS holds an updated version of the
+venerable 'eig2dos' program, with a new command-line interface
+that allows to specify all the parameters and new capabilities:
+
+-- Optional use of the k-point weight information in a .KP file.
+-- Selection of a range of bands for the calculation of the DOS.
+
+Invoke the program as  'Eig2DOS -h' for a synopsis.
+
+(A. Garcia)
+
+added:
+  Util/Eig2DOS/
+  Util/Eig2DOS/Eig2DOS.f90
+  Util/Eig2DOS/Makefile
+  Util/Eig2DOS/m_getopts.f90
+renamed:
+  Util/eig2dos.f => Util/Eig2DOS/original.eig2dos.f
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Util/README
+
+-----------------------------------------------------------------------
+2012-04-04  10:40:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-408
+Close netCDF file descriptors for DM and DMHS files
+
+The descriptors for the DM.nc and DMHS.nc netCDF files are kept open
+during the SCF cycle, but should be closed at the end of it to avoid
+resource exhaustion in, say, MD runs. This was not done due to a
+programming error.  They are now closed at the beginning of the next
+SCF cycle.
+
+(Thanks to Nick Papior Andersen)
+
+modified:
+  Src/iodm_netcdf.F90
+  Src/iodmhs_netcdf.F90
+
+-----------------------------------------------------------------------
 2012-03-09  15:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-407
 Extend DM normalization diagnostics
 

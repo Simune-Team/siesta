@@ -1,5 +1,28 @@
 
 -----------------------------------------------------------------------
+2012-04-25  Alberto Garcia <albertog@icmab.es>   trunk-409-scf-32
+Sync with trunk-409. Cosmetic changes in manual and branch name
+
+Changed the branch name to "trunk-scf". Updated the manual with
+the new branch name and corrected a few inconsistencies.
+
+added:
+  Util/Eig2DOS/
+  Util/Eig2DOS/Eig2DOS.f90
+  Util/Eig2DOS/Makefile
+  Util/Eig2DOS/m_getopts.f90
+renamed:
+  Docs/Sparse.CHANGES => Docs/SCF.CHANGES
+  Util/eig2dos.f => Util/Eig2DOS/original.eig2dos.f
+modified:
+  Docs/CHANGES
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/iodm_netcdf.F90
+  Src/iodmhs_netcdf.F90
+  Util/README
+
+-----------------------------------------------------------------------
 2012-04-25  Alberto Garcia <albertog@icmab.es>   trunk-407-sparse-31
 Use alloc module and proper 'die' routine in class modules
 

@@ -3,6 +3,9 @@ process SIESTA output, or to supplement the functionality of the
 program.  Some of them are experimental. See the individual
 directories for documentation.
 
+Eig2DOS:   Estimation of the Density of States from the .EIG file.
+           (by E. Artacho and A. Garcia)
+
 COOP: Generation of COOP/COHP/PDOS curves for chemical analysis.
 
 Optimizer: General-purpose optimizer. Useful for basis-set and
