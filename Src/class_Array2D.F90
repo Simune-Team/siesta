@@ -1,5 +1,7 @@
 module class_Array2D
 
+  use alloc, only: re_alloc, de_alloc
+
   implicit none
 
   character(len=*), parameter :: mod_name=__FILE__
@@ -42,7 +44,8 @@ module class_Array2D
      subroutine delete_Data(a2d_data)
       type(Array2D_) :: a2d_data
       if (associated(a2d_data%val)) then
-        deallocate( a2d_data%val)	
+        call de_alloc( a2d_data%val, &
+             name="val "//trim(a2d_data%name),routine="Array2D")	
       endif
      end subroutine delete_Data
 
@@ -64,13 +67,16 @@ module class_Array2D
 
    call init(this)
 
-   allocate(this%data%val(1:n,1:m))
-   this%data%val(:,:) = 0.0_dp
    if (present(name)) then
       this%data%name = trim(name)
    else
       this%data%name = "(Array2D from n,m)"
    endif
+
+   call re_alloc(this%data%val,1,n,1,m, &
+        name="val "//trim(this%data%name),routine="Array2D")	
+   this%data%val(:,:) = 0.0_dp
+
    call tag_new_object(this)
 
  end subroutine newArray2DFromDimensions
@@ -89,14 +95,17 @@ module class_Array2D
     n = size(val,dim=1)
     m = size(val,dim=2)
 
-    allocate(this%data%val(1:n,1:m))
-    this%data%val(:,:) = val(:,:)
     if (present(name)) then
        this%data%name = trim(name)
     else
        this%data%name = "(Array2D from naked array)"
     endif
-    call tag_new_object(this)
+
+    call re_alloc(this%data%val,1,n,1,m, &
+        name="val "//trim(this%data%name),routine="Array2D")	
+    this%data%val(:,:) = val(:,:)
+
+   call tag_new_object(this)
 
  end subroutine newArray2DfromNakedArray
 
@@ -126,14 +135,5 @@ module class_Array2D
                                " n=",  n," m=",m,   &
                                ", refcount: ", refcount(this),">"
  end subroutine printArray2D
-
-
- subroutine die(str)
-  character(len=*), optional :: str
-  if (present(str)) then
-     print *, trim(str)
-  endif
-  stop
- end subroutine die
 
 end module class_Array2D

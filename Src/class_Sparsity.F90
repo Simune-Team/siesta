@@ -1,5 +1,7 @@
 module class_Sparsity
 
+  use alloc, only: re_alloc, de_alloc
+
   implicit none
 
   public :: newSparsity
@@ -62,9 +64,12 @@ module class_Sparsity
      subroutine delete_Data(spdata)
       type(Sparsity_) :: spdata
       if (.not. spdata%initialized) RETURN
-      deallocate( spdata%n_col)
-      deallocate( spdata%list_ptr)
-      deallocate( spdata%list_col)
+        call de_alloc( spdata%n_col,   &
+                 name="n_col " // trim(spdata%name),routine="Sparsity")	
+        call de_alloc( spdata%list_ptr,   &
+                 name="list_ptr " // trim(spdata%name),routine="Sparsity")	
+        call de_alloc( spdata%list_col,   &
+                 name="list_col " // trim(spdata%name),routine="Sparsity")	
     end subroutine delete_Data
 
 !--------------------------------------------------------------------    
@@ -86,8 +91,12 @@ module class_Sparsity
 
    call init(sp)
 
-   allocate(sp%data%n_col(1:nrows))
-   allocate(sp%data%list_ptr(1:nrows))
+   sp%data%name = trim(name)
+
+   call re_alloc(sp%data%n_col,1,nrows, &
+        name="n_col " // trim(sp%data%name),routine="Sparsity")	
+   call re_alloc(sp%data%list_ptr,1,nrows, &
+        name="list_ptr " // trim(sp%data%name),routine="Sparsity")	
 
    sp%data%nrows = nrows
    sp%data%nrows_g = nrows_g
@@ -99,11 +108,11 @@ module class_Sparsity
       call die("nnzs mismatch in new_sparsity")
    endif
 
-   allocate(sp%data%list_col(1:nnzs))
+   call re_alloc(sp%data%list_col,1,nnzs, &
+        name="list_col " // trim(sp%data%name),routine="Sparsity")	
    sp%data%list_col(1:nnzs) = list(1:nnzs)
 
    sp%data%initialized = .true.   
-   sp%data%name = trim(name)
 
    call tag_new_object(sp)
    
@@ -145,14 +154,6 @@ module class_Sparsity
    p => this%data%list_col
  end function list_colSparsity
    
- subroutine die(str)
-  character(len=*), optional :: str
-  if (present(str)) then
-     print *, trim(str)
-  endif
-  stop
- end subroutine die
-
  subroutine printSparsity(sp)
    type(Sparsity), intent(in)  :: sp
 

@@ -161,13 +161,4 @@ print "(a,i0)", "<refcount: ", this%data%refCount
 
 end subroutine print__
 
-!---------------------
- subroutine die(str)
-  character(len=*), optional :: str
-  if (present(str)) then
-     print *, trim(str)
-  endif
-  stop
- end subroutine die
-
 !=========================== end of template

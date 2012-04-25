@@ -34,6 +34,13 @@
     module procedure id_
   end interface
 
+  ! Stand-alone routine which must be provided
+  interface 
+      subroutine die(str)
+      character(len=*), intent(in)  :: str
+      end subroutine die
+  end interface
+
 CONTAINS
 
 ! -- Main structural features

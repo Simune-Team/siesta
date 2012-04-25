@@ -532,12 +532,4 @@
 ! 
       END function indxg2l
 
- subroutine die(str)
-  character(len=*), optional :: str
-  if (present(str)) then
-     print *, trim(str)
-  endif
-  stop
- end subroutine die
-
 end module class_OrbitalDistribution

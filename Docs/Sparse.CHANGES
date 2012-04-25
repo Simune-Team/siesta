@@ -1,5 +1,27 @@
 
 -----------------------------------------------------------------------
+2012-04-25  Alberto Garcia <albertog@icmab.es>   trunk-407-sparse-31
+Use alloc module and proper 'die' routine in class modules
+
+The class_ modules implementing data structures now use the standard
+Siesta alloc module for their memory handling, and call an MPI-aware
+'die' routine (which, to minimize dependencies, resides in the new
+file die.F90, outside any modules).
+
+added:
+  Src/die.F90
+modified:
+  Src/Fstack.T90
+  Src/Makefile
+  Src/Pair.T90
+  Src/basic_type.inc
+  Src/class_Array2D.F90
+  Src/class_Geometry.F90
+  Src/class_OrbitalDistribution.F90
+  Src/class_SpMatrix.F90
+  Src/class_Sparsity.F90
+
+-----------------------------------------------------------------------
 2012-04-25  Alberto Garcia <albertog@icmab.es>   trunk-407-sparse-30
 Documentation of recent changes. Cosmetics
 

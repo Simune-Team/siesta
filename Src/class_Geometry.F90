@@ -1,5 +1,7 @@
 module class_Geometry
 
+  use alloc, only: re_alloc, de_alloc
+
   implicit none
 
   character(len=*), parameter :: mod_name=__FILE__
@@ -37,13 +39,15 @@ module class_Geometry
 #include "basic_type.inc"
 !========================
 
-     subroutine delete_Data(a2d_data)
-      type(Geometry_) :: a2d_data
-      if (associated(a2d_data%xa)) then
-        deallocate( a2d_data%xa)
+     subroutine delete_Data(g_data)
+      type(Geometry_) :: g_data
+      if (associated(g_data%xa)) then
+        call de_alloc( g_data%xa, &
+                 name="xa " // trim(g_data%name),routine="Geometry")	
       endif
-      if (associated(a2d_data%isa)) then
-        deallocate( a2d_data%isa)
+      if (associated(g_data%isa)) then
+        call de_alloc( g_data%isa, &
+                 name="isa " // trim(g_data%name),routine="Geometry")	
       endif
      end subroutine delete_Data
 
@@ -64,19 +68,22 @@ module class_Geometry
 
    call init(this)
 
-   allocate(this%data%xa(3,na))
-   allocate(this%data%isa(na))
+   if (present(name)) then
+      this%data%name = trim(name)
+   else
+      this%data%name = "(Geometry)"
+   endif
+
+   call re_alloc(this%data%xa,1,3,1,na, &
+                 name="xa " // trim(this%data%name),routine="Geometry")	
+   call re_alloc(this%data%isa,1,na, &
+                 name="isa " // trim(this%data%name),routine="Geometry")	
 
    this%data%na = na
    this%data%cell(:,:) = cell(:,:)
    this%data%xa(:,:) = xa(:,:)
    this%data%isa(:) = isa(:)
 
-   if (present(name)) then
-      this%data%name = trim(name)
-   else
-      this%data%name = "(Geometry)"
-   endif
    call tag_new_object(this)
 
   end subroutine newGeometry
@@ -101,14 +108,5 @@ module class_Geometry
                                " na=",  this%data%na,  &
                                ", refcount: ", refcount(this),">"
  end subroutine printGeometry
-
-
- subroutine die(str)
-  character(len=*), optional :: str
-  if (present(str)) then
-     print *, trim(str)
-  endif
-  stop
- end subroutine die
 
 end module class_Geometry

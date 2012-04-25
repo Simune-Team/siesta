@@ -146,7 +146,7 @@ OBJS =  automatic_cell.o atom_options.o \
         save_density_matrix.o  \
         readSpMatrix.o restructSpMatrix.o extrapolateSpMatrix.o \
         class_Geometry.o class_Pair_Geometry_SpMatrix.o class_Fstack_Pair_Geometry_SpMatrix.o \
-        extrapolate.o m_uuid.o object_debug.o
+        extrapolate.o m_uuid.o object_debug.o die.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -380,15 +380,18 @@ chempot.o: alloc.o mneighb.o parallel.o parallelsubs.o precision.o sys.o
 chkdim.o: sys.o
 chkgmx.o: cellsubs.o minvec.o precision.o sys.o
 class_Array2D.o: basic_type.inc
+class_Array2D.o: alloc.o
 class_Fstack_Pair_Geometry_SpMatrix.o: Fstack.T90 basic_type.inc
 class_Fstack_Pair_Geometry_SpMatrix.o: class_Pair_Geometry_SpMatrix.o
 class_Geometry.o: basic_type.inc
+class_Geometry.o: alloc.o
 class_OrbitalDistribution.o: basic_type.inc
 class_Pair_Geometry_SpMatrix.o: Pair.T90 basic_type.inc
 class_Pair_Geometry_SpMatrix.o: class_Geometry.o class_SpMatrix.o
 class_SpMatrix.o: basic_type.inc
 class_SpMatrix.o: class_Array2D.o class_OrbitalDistribution.o class_Sparsity.o
 class_Sparsity.o: basic_type.inc
+class_Sparsity.o: alloc.o
 coceri.o: files.o periodic_table.o precision.o
 compute_EKS_Harris.o: atomlist.o class_SpMatrix.o dhscf.o m_dipol.o
 compute_EKS_Harris.o: m_energies.o m_mpi_utils.o m_ntm.o m_spin.o precision.o
@@ -431,6 +434,7 @@ diagon.o: precision.o siesta_options.o sys.o
 diagpol.o: precision.o sys.o
 diagsprl.o: atomlist.o fermid.o parallel.o parallelsubs.o precision.o
 diagsprl.o: siesta_geom.o sys.o
+die.o: parallel.o
 dipole.o: mesh.o parallel.o precision.o sys.o
 dnaefs.o: atmfuncs.o mneighb.o precision.o
 domain_decom.o: alloc.o parallel.o precision.o printmatrix.o schecomm.o
