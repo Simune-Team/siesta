@@ -2398,7 +2398,7 @@ MODULE fdf
        call recreate_pline(pline,bufline)
        call fdf_addtoken(pline%line,pline)
     enddo
-    print *, "Processed: ", file_in%nlines, " lines."
+   !    print *, "Processed: ", file_in%nlines, " lines."
 
   end subroutine recreate_fdf_struct
 

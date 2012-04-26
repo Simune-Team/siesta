@@ -1,5 +1,26 @@
 
 -----------------------------------------------------------------------
+2012-04-26  Alberto Garcia <albertog@icmab.es>   trunk-409-scf-34
+Fix bug in extrapolation. Cosmetics
+
+Pass the number of atoms in the unit cell, instead of 
+sizing the xa array (which might be enlarged for the supercell).
+The 'extrapolate' routine is now in the m_new_dm module.
+
+Wrap for MPI or remove various printing statements.
+
+removed:
+  Src/extrapolate.f90
+  Src/m_history.f90
+modified:
+  Src/Fstack.T90
+  Src/Makefile
+  Src/fdf/fdf.F90
+  Src/m_check_supercell.f
+  Src/m_new_dm.F90
+  Src/siesta_init.F
+
+-----------------------------------------------------------------------
 2012-04-25  Alberto Garcia <albertog@icmab.es>   trunk-409-scf-33
 Fixes for Marenostrum compilation
 

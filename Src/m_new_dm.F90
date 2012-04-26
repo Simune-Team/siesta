@@ -55,7 +55,7 @@
 
       private
       public :: new_dm
-      public :: get_num_dm_history_items
+      public :: get_allowed_history_depth
 
       CONTAINS
 
@@ -85,7 +85,7 @@
 
       logical :: dminit     ! Initialize density matrix?
       logical :: try_to_read_from_file
-      integer :: n_dms_in_history
+      integer :: n_dms_in_history, n_depth
 
       if (IOnode) then
          write(6,"(a,i5)") "New_DM. Step: ", istp
@@ -138,7 +138,8 @@
             if (IOnode) then
                write(6,"(a)") "DM history reset as supercell changed."
             endif
-            call new(DM_history,DM_history_depth,"(reset DM history stack)")
+	    call get_allowed_history_depth(n_depth)
+            call new(DM_history,n_depth,"(reset DM history stack)")
          else
             if (IOnode) then
                write(6,"(a)") "** Warning: DM history NOT reset upon supercell change"
@@ -169,7 +170,7 @@
 
          if (ionode) print "(a,i0)", "N DMs in history: ", n_dms_in_history
          ! if (ionode) call print_type(DM_history)
-         call extrapolate_dm_with_coords(DM_history,xa,sparse_pattern,DMnew)
+         call extrapolate_dm_with_coords(DM_history,na_u,xa(:,1:na_u),sparse_pattern,DMnew)
          if (ionode)  print "(a)", "New DM after history re-use:"
          if (ionode)  call print_type(DMnew)
 
@@ -712,7 +713,7 @@
 
       end subroutine fill_dscf_from_atom_info
 
-      subroutine extrapolate_dm_with_coords(DM_history,xa,sparse_pattern,DMnew)
+      subroutine extrapolate_dm_with_coords(DM_history,na_u,xa,sparse_pattern,DMnew)
         use class_Sparsity
         use class_Array2D
         use class_OrbitalDistribution
@@ -722,11 +723,12 @@
         use class_Fstack_Pair_Geometry_SpMatrix
 
         type(Fstack_Pair_Geometry_SpMatrix), intent(in) :: DM_history
-        real(dp), intent(in)                            :: xa(:,:)
+	integer, intent(in)                             :: na_u 
+        real(dp), intent(in)                            :: xa(:,:)  ! includes extra supercell atoms...
         type(Sparsity), intent(in)                      :: sparse_pattern
         type(SpMatrix), intent(inout)                   :: DMnew
 
-        integer :: n, na, i, nspin, nnzs_out
+        integer :: n, i, nspin, nnzs_out
         real(dp), allocatable   :: c(:)
         real(dp), allocatable   :: xan(:,:,:), dummy_cell(:,:,:)
         type(Geometry), pointer :: geom 
@@ -742,8 +744,7 @@
         n = n_items(DM_history)
         allocate(c(n))
 
-        na = size(xa,dim=2)
-        allocate(xan(3,na,n),dummy_cell(3,3,n))
+        allocate(xan(3,na_u,n),dummy_cell(3,3,n))
 
         do i = 1, n
            pair => get_pointer(DM_history,i)
@@ -752,7 +753,7 @@
            xan(:,:,i) = xp(:,:)
            dummy_cell(:,:,i) = 1.0_dp
         enddo
-        call extrapolate(na,n,dummy_cell,xan,dummy_cell(:,:,1),xa,c)
+        call extrapolate(na_u,n,dummy_cell,xan,dummy_cell(:,:,1),xa,c)
         if (ionode) then
            print *, "DM extrapolation coefficients: "
            do i = 1, n
@@ -792,13 +793,25 @@
 
       end subroutine extrapolate_dm_with_coords
 
-      subroutine get_num_dm_history_items(n)
+!
+!
+      subroutine get_allowed_history_depth(n)
+      ! 
+      ! Encapsulates the logic of DM extrapolation and re-use
+      ! (work in progress)
+
         use siesta_options, only: DM_history_depth, harrisfun, idyn
 
       integer, intent(out)         :: n
 
-      n = DM_history_depth
-      if (.not. fdf_get("DM.AllowReuse",.true.)) then
+      n = DM_history_depth     ! As set by default or by the user
+
+      if (harrisfun) then
+         n = 0
+         if (ionode) print "(a)", &
+          "DM_history_depth set to zero for 'Harris' run"
+         return
+      else if (.not. fdf_get("DM.AllowReuse",.true.)) then
          n = 0
          if (ionode) print "(a)",   &
             "DM_history_depth set to zero since no re-use is allowed"
@@ -808,17 +821,163 @@
          if (ionode) print "(a)", &
          "DM_history_depth set to one since no extrapolation is allowed"
          return
+      else if (idyn .eq. 0)  then   ! Geometry relaxation
+	 if (fdf_get("DM.AllowExtrapolation",.false.)) then
+           if (ionode) print "(a,i0)", "Requested Extrapolation for geometry relaxation. DM_history_depth: ", n
+         else	
+           n = 1
+           if (ionode) print "(a)", &
+            "DM_history_depth set to one: no extrapolation allowed by default for geometry relaxation"
+         endif
+         return
       else if ((idyn .eq. 6) .OR. (idyn .eq. 7))  then   ! Forces or Phonon series
          n = 0
          if (ionode) print "(a)", &
          "DM_history_depth set to zero for 'Forces' run"
          return
-      else if (harrisfun) then
-         n = 0
-         if (ionode) print "(a)", &
-          "DM_history_depth set to zero for 'Harris' run"
-         return
       endif
-      end subroutine get_num_dm_history_items
+      end subroutine get_allowed_history_depth
+
+
+! *******************************************************************
+! SUBROUTINE extrapolate( na, n, cell, xa, cell0, x0, c )
+! *******************************************************************
+! Finds optimal coefficients for an approximate expasion of the form
+! D_0 = sum_i c_i D_i, where D_i is the density matrix in the i'th
+! previous iteration, or any other function of the atomic positions. 
+! In practice, given points x_0 and x_i, i=1,...,n, it finds the
+! coefficients c_i such that sum_i c_i*x_i, is closest to x_0, with
+! sum_i c_i = 1. Unit cell vectors are included for completeness of
+! the geometry specification only. Though not used in this version,
+! this routine can be used if cell vectors change (see algorithms).
+! Written by J.M.Soler. Feb.2010.
+! ************************* INPUT ***********************************
+!  integer  na          ! Number of atoms
+!  integer  n           ! Number of previous atomic positions
+!  real(dp) cell(3,3,n) ! n previous unit cell vectors
+!  real(dp) xa(3,na,n)  ! n previous atomic positions (most recent first)
+!  real(dp) cell0(3,3)  ! Present unit cell vectors
+!  real(dp) x0(3,na)    ! Present atomic positions
+! ************************* OUTPUT **********************************
+!  real(dp) c(n)        ! Expansion coefficients
+! ************************ UNITS ************************************
+! Unit of distance is arbitrary, but must be the same in all arguments
+! ********* BEHAVIOUR ***********************************************
+! - Returns without any action if n<1 or na<1
+! - Stops with an error message if matrix inversion fails
+! ********* DEPENDENCIES ********************************************
+! Routines called: 
+!   inver     : Matrix inversion
+! Modules used:
+!   precision : defines parameter 'dp' (double precision real kind)
+!   sys       : provides the stopping subroutine 'die'
+! ********* ALGORITHMS **********************************************
+! Using a linear approximation for D(x), imposing that sum(c)=1, and
+! assuming that <dD/dx_i*dD/dx_j>=0, <(dD/dx_i)**2>=<(dD/dx_j)**2>
+! (i.e. assuming no knowledge on the parcial derivatives), we find
+! (D(x0)-D(sum_i c_i*x_i))**2 = const * (x0-sum_i c_i*x_i)**2
+! Therefore, given points x_0 and x_i, i=1,...,n, we look for the
+! coefficients c_i such that sum_i c_i*x_i, is closest to x_0, with
+! sum_i c_i = 1. It is straighforward to show that this reduces to 
+! solving S*c=s0, where S_ij=x_i*x_j and s0_i=x_i*x0, under the
+! constraint sum(c)=1. To impose it, we rewrite the expansion as
+! xmean + sum_i c_i*(x_i-xmean), where xmean=(1/n)*sum_i x_i.
+! Since the vectors (x_i-xmean) are linearly dependent, the matrix
+! S_ij=(x_i-xmean)*(x_j-xmean) is singular. Therefore, we substitute
+! the last row of S and s0 by 1, thus imposing sum(c)=1.
+! Unit cell vectors are not used in this version, but this routine
+! can be safely used even if cell vectors change, since D depends
+! on the interatomic distances, and it can be shown that
+! sum_ia,ja (xa(:,ia,i)-xa(:,ja,i))*(xa(:,ia,j)-xa(:,ja,j))
+!   = 2*na*sum_ia (xa(:,ia,i)-xmean(:,ia))*(xa(:,ia,j)-xmean(:,ia))
+!   = 2*na*S_ij
+! This implies that approximating the present ineratomic distances,
+! as an expansion of previous ones, is equivalent to approximating
+! the atomic positions.
+! *******************************************************************
+
+SUBROUTINE extrapolate( na, n, cell, xa, cell0, x0, c )
+
+! Used procedures and parameters
+  USE sys,       only: die           ! Termination routine
+  USE precision, only: dp            ! Double precision real kind
+
+! Passed arguments
+  implicit none
+  integer, intent(in) :: na          ! Number of atoms
+  integer, intent(in) :: n           ! Number of previous atomic positions
+  real(dp),intent(in) :: cell(3,3,n) ! n previous unit cell vectors
+  real(dp),intent(in) :: xa(3,na,n)  ! n previous atomic positions
+  real(dp),intent(in) :: cell0(3,3)  ! Present unit cell vectors
+  real(dp),intent(in) :: x0(3,na)    ! Present atomic positions
+  real(dp),intent(out):: c(n)        ! Expansion coefficients
+
+! Internal variables and arrays
+  integer :: i, ierr, j, m, ix, ia
+  real(dp):: s(n,n), s0(n), si(n,n), xmean(3,na)
+
+! Trap special cases
+  if (na<1 .or. n<1) then
+    return
+  else if (n==1) then
+    c(1) = 1
+    return
+  end if
+
+! Find average of previous positions
+  do ia=1,na
+     do ix=1,3
+        xmean(ix,ia) = sum(xa(ix,ia,1:n)) / n
+     enddo
+  enddo
+ 
+! The above is equivalent to
+!   xmean = sum(xa,dim=3)/n
+
+! Find matrix s of dot products. Subtract xmean to place origin within the
+! hyperplane of x vectors
+
+  do j = 1,n
+    s0(j) = sum( (x0-xmean) * (xa(:,:,j)-xmean) )
+    do i = j,n
+      s(i,j) = sum( (xa(:,:,i)-xmean) * (xa(:,:,j)-xmean) )
+      s(j,i) = s(i,j)
+    end do
+  end do
+
+! Find the largest number of (first) m linearly independent vectors xa-xmean.
+! Notice that m<n because we have subtracted xmean. Optimally, we should not
+! restrict ourselves to the first (most recent) m vectors, but that would
+! complicate the code too much.
+  do m = n-1,0,-1
+    if (m==0) exit                   ! Do not try to invert a 0x0 'matrix'
+    call inver( s, si, m, n, ierr )
+    if (ierr==0) exit                ! Not too elegant, but it will do.
+  end do
+
+  !  print *, " # of linearly independent vectors: ", m
+
+! Trap the case in which the first two xa vectors are equal
+  if (m==0) then  ! Just use most recent point only
+    c(1) = 1
+    c(2:n) = 0
+    return
+  end if
+
+! Set one more row for equation sum(c)=1.
+  m = m+1
+  s0(m) = 1
+  s(m,1:m) = 1
+
+! Invert the full equations matrix
+  call inver( s, si, m, n, ierr )
+  if (ierr/=0) call die('extrapolate: ERROR: matrix inversion failed')
+
+! Find expansion coefficients
+  c(1:m) = matmul( si(1:m,1:m), s0(1:m) )
+  c(m+1:n) = 0
+
+END SUBROUTINE extrapolate
+
 
       end module m_new_dm

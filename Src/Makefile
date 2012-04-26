@@ -109,7 +109,7 @@ OBJS =  automatic_cell.o atom_options.o \
         cart2frac.o obc.o \
         precision.o sys.o m_cell.o files.o \
         spatial.o parallel.o parallelsubs.o  parsing.o chemical.o atom.o atmparams.o \
-        m_mpi_utils.o m_fdf_global.o m_history.o m_iorho.o  \
+        m_mpi_utils.o m_fdf_global.o m_iorho.o  \
         atmfuncs.o listsc.o memoryinfo.o m_memory.o sorting.o \
         atomlist.o atm_types.o old_atmfuncs.o radial.o \
         alloc.o phonon.o spher_harm.o periodic_table.o version.o timestamp.o \
@@ -146,7 +146,7 @@ OBJS =  automatic_cell.o atom_options.o \
         save_density_matrix.o  \
         readSpMatrix.o restructSpMatrix.o extrapolateSpMatrix.o \
         class_Geometry.o class_Pair_Geometry_SpMatrix.o class_Fstack_Pair_Geometry_SpMatrix.o \
-        extrapolate.o m_uuid.o object_debug.o die.o
+        m_uuid.o object_debug.o die.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -449,7 +449,6 @@ electrostatic.o: atm_types.o atmfuncs.o atmparams.o bessph.o m_recipes.o
 electrostatic.o: precision.o radfft.o radial.o sys.o
 ener3.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 ener3lomem.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
-extrapolate.o: precision.o sys.o
 extrapolateSpMatrix.o: class_Array2D.o class_OrbitalDistribution.o
 extrapolateSpMatrix.o: class_SpMatrix.o class_Sparsity.o
 extrapolon.o: parallel.o precision.o sys.o
@@ -534,7 +533,6 @@ m_fire_mixing.o: precision.o
 m_fire_para.o: m_mpi_utils.o parallel.o precision.o
 m_forces.o: precision.o
 m_getopts.o: f2kcli.o
-m_history.o: alloc.o
 m_hsx.o: atm_types.o atmfuncs.o atomlist.o files.o parallel.o parallelsubs.o
 m_hsx.o: precision.o siesta_geom.o sys.o
 m_io.o: sys.o
@@ -730,10 +728,11 @@ spatial.o: precision.o
 spher_harm.o: alloc.o precision.o sys.o
 state_analysis.o: atomlist.o born_charge.o
 state_analysis.o: class_Fstack_Pair_Geometry_SpMatrix.o class_Geometry.o
-state_analysis.o: fixed.o m_energies.o m_forces.o m_iostruct.o m_ntm.o m_spin.o
-state_analysis.o: m_stress.o m_wallclock.o parallel.o
-state_analysis.o: remove_intramol_pressure.o siesta_cml.o siesta_geom.o
-state_analysis.o: siesta_options.o sparse_matrices.o write_subs.o zmatrix.o
+state_analysis.o: class_Pair_Geometry_SpMatrix.o fixed.o m_energies.o
+state_analysis.o: m_forces.o m_iostruct.o m_ntm.o m_spin.o m_stress.o
+state_analysis.o: m_wallclock.o parallel.o remove_intramol_pressure.o
+state_analysis.o: siesta_cml.o siesta_geom.o siesta_options.o sparse_matrices.o
+state_analysis.o: write_subs.o zmatrix.o
 state_init.o: alloc.o atomlist.o class_SpMatrix.o class_Sparsity.o
 state_init.o: domain_decom.o files.o hsparse.o iodm_netcdf.o iodmhs_netcdf.o
 state_init.o: kpoint_grid.o m_check_supercell.o m_energies.o m_eo.o m_gamma.o

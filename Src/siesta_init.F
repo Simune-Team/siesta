@@ -50,7 +50,7 @@
       use m_projected_DOS,    only: init_projected_DOS
       use writewave,          only: gamma_wavefunctions,
      &                              setup_wf_kpoints
-      use m_new_dm,           only: get_num_dm_history_items
+      use m_new_dm,           only: get_allowed_history_depth
       use m_object_debug,     only: set_object_debug_level
 #ifdef DEBUG_XC
       USE siestaXC, only: setDebugOutputUnit
@@ -239,7 +239,7 @@ C     Initialise MPI and set processor number
 !     Read simulation data
       call read_options( na_u, ns, nspin )
 
-      call get_num_dm_history_items(n_dm_items)
+      call get_allowed_history_depth(n_dm_items)
       call new(DM_history,n_dm_items,"(DM history stack)")
       if (ionode) print "(a,i0)", "Size of DM history Fstack: ",
      $                            max_size(DM_history)
