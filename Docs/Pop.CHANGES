@@ -1,4 +1,35 @@
 ---------------------------------------------------------------
+April 27, 2012  Alberto Garcia                   3.1-pl4--pop-8
+More refinements for eigenstate output
+
+Use different file names for wavefunction output:
+
+SystemLabel.scf.WFSX        : for COOP/COHP-related use
+SystemLabel.bands.WFSX      : produced by BandLines + Write.WFS.For.Bands
+SystemLabel.selected.WFSX   : produced by WaveFuncKPoints
+
+A subset of the bands can be specified by 
+
+WFS.Band.Min  (int, default 1)
+WFS.Band.Max  (int, default number of orbitals)
+
+The energy window options 
+
+WFS.Energy.Min
+WFS.Energy.Max
+
+are not in effect for BandLines.
+
+There is still a defect in the logic: if Write.WFS.For.Bands is true,
+the .bands file does not contain eigenvalue information.
+
+modified:
+  Src/Makefile
+  Src/bands.F
+  Src/siesta_analysis.F
+  Src/writewave.F
+
+---------------------------------------------------------------
 April 27, 2012  Alberto Garcia                   3.1-pl4--pop-7
 Enhance 'bands' to write out the wavefunctions
 

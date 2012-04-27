@@ -375,7 +375,7 @@ C This is the only exit point
 
       subroutine bands( no_s, nspin, maxspn, no_u, no_l, maxnh, maxk,
      .                  numh, listhptr, listh, H, S, ef, xij, indxuo,
-     .                  writeb, nk, kpoint, ek, occtol )
+     .                  writeb, nk, kpoint, ek, occtol, getPSI )
 
 C Finds band energies at selected k-points.
 C Optionally write WFS to file
@@ -442,7 +442,7 @@ C
       use atomlist,     only : iaorb, iphorb
       use siesta_geom,  only : isa
       use atmfuncs,     only : symfio, cnfigfio, labelfis, nofis
-      use writewave,    only : setup_wfs_list
+      use writewave,    only : wfs_filename
 
 
       implicit          none
@@ -455,6 +455,8 @@ C
       real(dp) ::   ef, ek(no_u,maxspn,maxk),
      .              H(maxnh,nspin), kpoint(3,maxk),
      .              S(maxnh), xij(3,maxnh), occtol
+      logical, intent(in) :: getPSI
+
       character(len=label_length+6) :: paste
       external ::       io_assign, io_close, paste, memory
 
@@ -462,7 +464,7 @@ C
       character(len=label_length+6) :: fname
       character(len=10)             :: string
 
-      logical ::   getD, getPSI, fixspin
+      logical ::   getD, fixspin
 
       integer ::   ik, il, io, ispin, iu, iuo, naux, nhs, j
 
@@ -484,7 +486,6 @@ C Dynamic arrays
 C Start time counter
       call timer( 'bands', 1 )
 
-      call fdf_global_get(getPSI,'WriteWFS.For.Bands', .false.)
 
 C Check parameter maxk
       if (nk .gt. maxk) then
@@ -508,13 +509,8 @@ C Allocate local arrays - only aux is relevant here
 
       if (getPSI .AND. (Node.eq.0)) then
 
-        ! Initialize structures
-        call setup_wfs_list(nk, no_u, scf=.false.)
-
-        fname = trim(slabel) // '.WFSX'
-
         call io_assign( iu )
-        open(iu, file=fname, form="unformatted", status='unknown' )
+        open(iu,file=wfs_filename,form="unformatted",status='unknown')
 
         rewind (iu)
 
