@@ -373,46 +373,48 @@ C This is the only exit point
       end subroutine initbands
 
 
-      subroutine bands( no, nspin, maxspn, maxo, maxuo, maxnh, maxk,
+      subroutine bands( no_s, nspin, maxspn, no_u, no_l, maxnh, maxk,
      .                  numh, listhptr, listh, H, S, ef, xij, indxuo,
-     .                  writeb, nk, kpoint, ek, nuotot, occtol )
-C *********************************************************************
+     .                  writeb, nk, kpoint, ek, occtol )
+
 C Finds band energies at selected k-points.
+C Optionally write WFS to file
 C Written by J.Soler, August 1997 and August 1998.
 C Initialisation moved into a separate routine, JDG Jan 2000.
-C Option for arbitrary points (instead of lines), EA Dec 2006.
+C WFS options by A. Garcia, April 2012
+
 C **************************** INPUT **********************************
-C integer no                  : Number of basis orbitals
+C integer no_s                : Number of basis orbitals in supercell
 C integer nspin               : Number of spin components
 C integer maxspn              : Second dimension of ek
-C integer maxnh               : Maximum number of orbitals interacting  
+C integer maxnh               : Maximum number of orbitals interacting
 C                               with any orbital
 C integer maxk                : Last dimension of kpoint and ek
-C integer numh(nuo)           : Number of nonzero elements of each row 
+C integer numh(no_l)           : Number of nonzero elements of each row
 C                               of hamiltonian matrix
-C integer listhptr(nuo)       : Pointer to start of each row of the
+C integer listhptr(no_l)       : Pointer to start of each row of the
 C                               hamiltonian matrix
-C integer listh(maxlh)        : Nonzero hamiltonian-matrix element  
+C integer listh(maxlh)        : Nonzero hamiltonian-matrix element
 C                               column indexes for each matrix row
 C real*8  H(maxnh,nspin)      : Hamiltonian in sparse form
 C real*8  S(maxnh)            : Overlap in sparse form
 C real*8  ef                  : Fermi energy
 C real*8  xij(3,maxnh)        : Vectors between orbital centers (sparse)
 C                               (not used if only gamma point)
-C integer maxo                : First dimension of ek
-C integer maxuo               : Second dimension of H and S
-C integer indxuo(no)          : Index of equivalent orbital in unit cell
+C integer no_u                : First dimension of ek
+C integer no_l               : Second dimension of H and S
+C integer indxuo(no_s)          : Index of equivalent orbital in unit cell
 C                               Unit cell orbitals must be the first in
-C                               orbital lists, i.e. indxuo.le.nuo, with
-C                               nuo the number of orbitals in unit cell
+C                               orbital lists, i.e. indxuo.le.no_l, with
+C                               no_l the number of orbitals in unit cell
 C real*8  ef                  : Fermi energy
 C logical writeb              : This routine must write bands?
-C integer nuotot              : Total number of orbitals in unit cell
+C integer no_u              : Total number of orbitals in unit cell
 C integer nk                  : Number of band k points
 C real*8  kpoint(3,maxk)      : k point vectors
 C real*8  occtol              : Occupancy threshold for DM build
 C *************************** OUTPUT **********************************
-C real*8  ek(maxo,maxspn,maxk) : Eigenvalues
+C real*8  ek(no_u,maxspn,maxk) : Eigenvalues
 C *************************** UNITS ***********************************
 C Lengths in atomic units (Bohr).
 C k vectors in reciprocal atomic units.
@@ -421,47 +423,50 @@ C ***************** BEHAVIOUR *****************************************
 C - When writeb=true, bands are saved in file sys_name.bands, where
 C   sys_name is the value of fdf label SystemLabel, or 'siesta'
 C   by default.
-C - When nlines is negative, eigenvalues are written for the 
+C - When nlines is negative, eigenvalues are written for the
 C   preselected k points (as introduced through BandPoints).
 C   Otherwise written as lines for band-like representation (BandLines)
 C *********************************************************************
 C
 C  Modules
 C
-      use precision
+      use precision,    only : dp
       use parallel,     only : Node, Nodes
       use parallel,     only : ParallelOverK, ResetFirstCall
       use parallelsubs, only : GetNodeOrbs
-      use fdf
-      use densematrix
+      use m_fdf_global, only : fdf_global_get
+      use densematrix,  only : Haux, Saux, psi
       use alloc,        only : re_alloc, de_alloc
       use files,        only : slabel, label_length
+      use m_gamma,      only : gamma
+      use atomlist,     only : iaorb, iphorb
+      use siesta_geom,  only : isa
+      use atmfuncs,     only : symfio, cnfigfio, labelfis, nofis
+      use writewave,    only : setup_wfs_list
+
 
       implicit          none
 
-      integer           maxk, maxnh, maxspn, maxo, maxuo, nk, no, nspin,
-     .                  nuotot, indxuo(no), listh(maxnh), numh(*), 
-     .                  listhptr(*)
-      logical           writeb
-      real(dp)          ef, ek(maxo,maxspn,maxk),
-     .                  H(maxnh,nspin), kpoint(3,maxk), 
-     .                  S(maxnh), xij(3,maxnh), occtol
+      integer  ::   nspin
+      integer  ::   maxk, maxnh, maxspn, no_u, no_l, nk, no_s,
+     .              indxuo(no_s), listh(maxnh), numh(no_l),
+     .              listhptr(*)
+      logical  ::   writeb
+      real(dp) ::   ef, ek(no_u,maxspn,maxk),
+     .              H(maxnh,nspin), kpoint(3,maxk),
+     .              S(maxnh), xij(3,maxnh), occtol
       character(len=label_length+6) :: paste
-      external          io_assign, io_close, paste, memory
-C *********************************************************************
+      external ::       io_assign, io_close, paste, memory
+
 
       character(len=label_length+6) :: fname
       character(len=10)             :: string
 
-      logical
-     .  getD, getPSI, fixspin
+      logical ::   getD, getPSI, fixspin
 
-      integer
-     .  ik, il, io, ispin, iu, iuo, 
-     .  naux, nuo, nhs
+      integer ::   ik, il, io, ispin, iu, iuo, naux, nhs, j
 
-      logical
-     .  SaveParallelOverK
+      logical ::   SaveParallelOverK
 
       real(dp)
      .  Dnew, qs(2), e1, e2, efs(2), emax, emin, Enew, eV, qk, qtot,
@@ -469,25 +474,19 @@ C *********************************************************************
 
 C Dynamic arrays
       real(dp), dimension(:), pointer :: aux
-      integer,  dimension(:), pointer :: muo
 
       parameter ( eV = 1.d0 / 13.60580d0 )
       save getD, Dnew, Enew, e1, e2, qk, qtot, temp, wk
       data getD /.false./
-      data getPSI /.false./
+
       data Dnew, Enew, e1, e2, qk, qtot, temp, wk /8*0.d0/
 
-C Get number of local orbitals
-#ifdef MPI
-      call GetNodeOrbs(nuotot,Node,Nodes,nuo)
-#else
-      nuo = nuotot
-#endif
-
-C Start time counter 
+C Start time counter
       call timer( 'bands', 1 )
 
-C Check parameter maxk 
+      call fdf_global_get(getPSI,'WriteWFS.For.Bands', .false.)
+
+C Check parameter maxk
       if (nk .gt. maxk) then
         if (Node.eq.0) then
           write(6,'(/,a,/,a)')
@@ -498,42 +497,39 @@ C Check parameter maxk
       endif
 
 C Allocate local arrays - only aux is relevant here
-      nhs = 2*nuotot*nuo
+      nhs = 2*no_u*no_l
       call re_alloc(Haux,1,nhs,name='Haux',routine='bands')
       call re_alloc(Saux,1,nhs,name='Saux',routine='bands')
       call re_alloc(psi,1,nhs,name='psi',routine='bands')
-      naux  = nuotot*5
+      naux  = 2*no_u*5
       nullify( aux )
       call re_alloc( aux, 1, naux, name='aux', routine='bands' )
-      nullify( muo )
-      call re_alloc( muo, 1, nuotot, name='muo', routine='bands' )
 
-C Check indxuo 
-      do iuo = 1,nuotot
-        muo(iuo) = 0
-      enddo
-      do io = 1,no
-        iuo = indxuo(io)
-        if (indxuo(io).le.0 .or. indxuo(io).gt.nuotot) then
-          if (Node.eq.0) then
-            write(6,*) 'bands: invalid index: io, indxuo =',
-     .        io, indxuo(io)
-          endif
-          call die( 'bands: invalid indxuo')
-        endif
-        muo(iuo) = muo(iuo) + 1
-      enddo
-      do iuo = 1,nuotot
-        if (muo(iuo) .ne. muo(1)) then
-          if (Node.eq.0) then
-          write(6,'(/,2a,3i6)') 'bands: ERROR: inconsistent indxuo.',
-     .     ' iuo, muo(iuo), muo(1) =', iuo, muo(iuo), muo(1)
-          endif
-          call die('bands: ERROR: inconsistent indxuo.')
-        endif
-      enddo
 
-C Find the band energies 
+      if (getPSI .AND. (Node.eq.0)) then
+
+        ! Initialize structures
+        call setup_wfs_list(nk, no_u, scf=.false.)
+
+        fname = trim(slabel) // '.WFSX'
+
+        call io_assign( iu )
+        open(iu, file=fname, form="unformatted", status='unknown' )
+
+        rewind (iu)
+
+        write(iu) nk, gamma
+        write(iu) nspin
+        write(iu) no_u
+        write(iu) (iaorb(j),labelfis(isa(iaorb(j))),
+     .            iphorb(j), cnfigfio(isa(iaorb(j)),iphorb(j)),
+     .            symfio(isa(iaorb(j)),iphorb(j)), j=1,no_u)
+
+        call io_close(iu)
+
+      endif
+
+C Find the band energies
       if (nspin.le.2) then
 C fixspin and qs are not used in diagk, since getD=.false. ...
         fixspin = .false.
@@ -550,30 +546,36 @@ C Handle parallel over K points option which is not allowed for here
         ParallelOverK = .false.
         ResetFirstCall = .true.
 
-        call diagk( nspin, nuo, no, maxspn, maxuo, maxnh, maxnh, 
-     .              maxo, numh, listhptr, listh, numh, listhptr, 
+        call diagk( nspin, no_l, no_s, maxspn, no_l, maxnh, maxnh,
+     .              no_u, numh, listhptr, listh, numh, listhptr,
      .              listh, H, S, getD, getPSI, fixspin, qtot, qs, temp,
      .              e1, e2, xij, indxuo, nk, kpoint, wk,
      .              ek, qk, Dnew, Enew, ef, efs, Entropy,
      .              Haux, Saux, psi, Haux, Saux, aux,
-     .              nuotot, occtol, 1 )
+     .              no_u, occtol, 1 )
 
         ParallelOverK = SaveParallelOverK
         ResetFirstCall = .false.
 
       elseif (nspin.eq.4) then
-        call diag2k(nuo, no, maxuo, maxnh, maxnh, maxo,
-     .              numh, listhptr, listh, numh, listhptr, 
+         if (getPSI) then
+            if (node==0) then
+               write(6,*) "No WFS for nspin=4 yet..."
+            endif
+            getPSI = .false.
+         endif
+        call diag2k(no_l, no_s, no_l, maxnh, maxnh, no_u,
+     .              numh, listhptr, listh, numh, listhptr,
      .              listh, H, S, getD, qtot, temp, e1, e2,
      .              xij, indxuo, nk, kpoint, wk,
      .              ek, qk, Dnew, Enew, ef, Entropy,
      .              Haux, Saux, psi, Haux, Saux, aux,
-     .              nuotot, occtol, 1 )
+     .              no_u, occtol, 1 )
       else
         call die( 'bands: ERROR: incorrect value of nspin')
       endif
 
-C Write bands 
+C Write bands
       if (writeb.and.Node.eq.0) then
 
 C Find name of output file and open it
@@ -594,7 +596,7 @@ C Find and write the ranges of k and ek
      .                          (kpoint(2,ik)-kpoint(2,ik-1))**2 +
      .                          (kpoint(3,ik)-kpoint(3,ik-1))**2 )
           do ispin = 1,min(nspin,2)
-            do io = 1, nuotot
+            do io = 1, no_u
               emax = max( emax, ek(io,ispin,ik) )
               emin = min( emin, ek(io,ispin,ik) )
             enddo
@@ -605,21 +607,21 @@ C Write path for BandLines but not for BandPoints
         write(iu,*) emin/eV, emax/eV
 
 C Write eigenvalues
-        write(iu,*) nuotot, min(nspin,2), nk
+        write(iu,*) no_u, min(nspin,2), nk
         path = 0.d0
         do ik = 1,nk
-          if (nlines .ge. 0) then 
+          if (nlines .ge. 0) then
             if (ik .gt. 1)
      .        path = path + sqrt( (kpoint(1,ik)-kpoint(1,ik-1))**2 +
      .                            (kpoint(2,ik)-kpoint(2,ik-1))**2 +
      .                            (kpoint(3,ik)-kpoint(3,ik-1))**2 )
             write(iu,'(f10.6,10f12.4,/,(10x,10f12.4))')
-     .        path, ((ek(io,ispin,ik)/eV,io=1,nuotot),
+     .        path, ((ek(io,ispin,ik)/eV,io=1,no_u),
      .        ispin=1,min(nspin,2))
           else
             write(iu,'(3f9.5,8f12.4,/,(27x,8f12.4))')
      .        kpoint(1,ik), kpoint(2,ik), kpoint(3,ik),
-     .           ((ek(io,ispin,ik)/eV,io=1,nuotot),ispin=1,min(nspin,2))
+     .           ((ek(io,ispin,ik)/eV,io=1,no_u),ispin=1,min(nspin,2))
           endif
         enddo
 
@@ -650,11 +652,10 @@ C Close output file
         call io_close(iu)
       endif
 
-C Free local arrays 
-      call de_alloc( muo, name='muo' )
+C Free local arrays
       call de_alloc( aux, name='aux' )
 
-C This is the only exit point 
+C This is the only exit point
   999 continue
       call timer( 'bands', 2 )
 

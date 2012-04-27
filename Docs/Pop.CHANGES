@@ -1,4 +1,22 @@
 ---------------------------------------------------------------
+April 27, 2012  Alberto Garcia                   3.1-pl4--pop-7
+Enhance 'bands' to write out the wavefunctions
+
+If the fdf symbol
+
+Write.WFS.For.Bands
+
+is set to .true., the program will write out to file SystemLabel.WFSX
+the corresponding wavefunctions. In this version there is no possibility
+yet to use another file name, or to specify a subset of the bands.
+
+modified:
+  Src/Makefile
+  Src/bands.F
+  Src/siesta_analysis.F
+  Src/writewave.F
+
+---------------------------------------------------------------
 April 23, 2012  Alberto Garcia                   3.1-pl4--pop-6
 Add plotting window options to mprop. Cosmetics
 

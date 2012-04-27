@@ -14,6 +14,7 @@
       use sys, only: die
       use alloc, only: re_alloc
       use m_fdf_global, only: fdf_global_get
+      use files,       only : slabel
 
       implicit none
 
@@ -44,7 +45,7 @@
       logical,    save :: wfs_energy_window  = .true.
 
       private 
-      public :: allocwave, setup_wf_kpoints, wwave, writew
+      public :: setup_wfs_list, setup_wf_kpoints, wwave, writew
 
       CONTAINS
 
@@ -96,12 +97,13 @@
 
       end subroutine setup_wf_kpoints
 
-      subroutine allocwave(nk, norb)
+      subroutine setup_wfs_list(nk, norb, scf)
       !
       ! Initialize structures if we are going to
       ! output the wavefunctions for the SCF k-point set
 
       integer, intent(in) :: nk, norb
+      logical, intent(in) :: scf
 
       integer :: j
 
@@ -111,14 +113,22 @@
       endif
 
       call re_alloc(nwflist, 1, nk, name="nwflist",
-     $     routine="allocwave")
+     $     routine="setup_wfs_list")
       call re_alloc(iwf, 1, nk, 1, norb, name="iwf",
-     $     routine="allocwave")
-      scf_set = .true.
+     $     routine="setup_wfs_list")
+      scf_set = scf
 !
 !     Here we request output of all the wavefunctions
 !     by default. Future: set an energy window.
 !
+!      call fdf_global_get(wfs_band_min,"WFS.BandMin",1)
+!      call fdf_global_get(wfs_band_max,"WFS.BandMax",norb)
+
+!      nwflist(1:nk) = wfs_band_max - wfs_band_min + 1
+!      do j=1, nwflist(1)
+!         iwf(1:nk,j) = wfs_band_min - 1 + j
+!      enddo
+
       nwflist(1:nk) = norb
       do j=1, norb
          iwf(1:nk,j) = j
@@ -130,7 +140,7 @@
      $                                 huge(1.0_dp),"Ry")
       call fdf_global_get(debug,"WriteWaveDebug", .false.)
 
-      end subroutine allocwave
+      end subroutine setup_wfs_list
 
       subroutine initwave( maxk, norb, nk, kpoint, overflow)
 C *********************************************************************
@@ -605,7 +615,6 @@ C
       use parallel,    only : Node, Nodes
       use parallel,    only : ParallelOverK, ResetFirstCall
       use fdf
-      use files,       only : slabel
       use densematrix, only : Haux, Saux, psi
       use alloc
       use atmfuncs,     only : symfio, cnfigfio, labelfis, nofis
@@ -861,6 +870,7 @@ C Find file name, and open for Node 0
 
       if (Node .eq. 0) then
         call io_assign( iu )
+        fname = trim(slabel) // '.WFSX'
         open( iu, file=fname, form="unformatted", position='append',
      .        status='old' )
       endif
