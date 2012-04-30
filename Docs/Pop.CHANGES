@@ -1,4 +1,22 @@
 ---------------------------------------------------------------
+April 30, 2012  Alberto Garcia                   3.1-pl4--pop-9
+Still more refinements for eigenstate output
+
+Instead of "scf", use the label
+
+SystemLabel.fullBZ.WFSX     
+
+for COOP/COHP-related use.
+
+The .bands file now contains eigenvalue information if the
+Write.WFS.for.Bands option is used.
+
+modified:
+  Src/bands.F
+  Src/diagk.F
+  Src/siesta_analysis.F
+
+---------------------------------------------------------------
 April 27, 2012  Alberto Garcia                   3.1-pl4--pop-8
 More refinements for eigenstate output
 

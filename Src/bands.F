@@ -486,7 +486,6 @@ C Dynamic arrays
 C Start time counter
       call timer( 'bands', 1 )
 
-
 C Check parameter maxk
       if (nk .gt. maxk) then
         if (Node.eq.0) then
@@ -558,7 +557,7 @@ C Handle parallel over K points option which is not allowed for here
             if (node==0) then
                write(6,*) "No WFS for nspin=4 yet..."
             endif
-            getPSI = .false.
+            RETURN
          endif
         call diag2k(no_l, no_s, no_l, maxnh, maxnh, no_u,
      .              numh, listhptr, listh, numh, listhptr,

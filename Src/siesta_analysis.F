@@ -138,7 +138,7 @@
         call setup_wfs_list(nkpnt,no_u,wfs_band_min,wfs_band_max,
      $                      use_scf_weights=.true.,
      $                      use_energy_window=.true.)
-         wfs_filename = trim(slabel)//".scf.WFSX"
+         wfs_filename = trim(slabel)//".fullBZ.WFSX"
          call wwave( no_s, nspin, nspin, no_u, no_l, maxnh, maxk,
      .        numh, listhptr, listh, H, S, Ef, xijo, indxuo,
      .        nkpnt, kpoint, no_u, gamma, occtol)
