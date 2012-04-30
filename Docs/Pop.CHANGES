@@ -1,4 +1,13 @@
 ---------------------------------------------------------------
+April 30, 2012  Alberto Garcia                  3.1-pl4--pop-10
+Add test directory for new WFS output functionality
+
+Added Tests/si_fatbands
+
+added:
+  Tests/si_fatbands
+
+---------------------------------------------------------------
 April 30, 2012  Alberto Garcia                   3.1-pl4--pop-9
 Still more refinements for eigenstate output
 
