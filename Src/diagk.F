@@ -234,6 +234,7 @@ C Find maximum eigenvector that is required for this k point and spin
 C Compute all eigenvectors if getPSI = .true.
 
           if (getPSI) then
+            ! We do not have info about occupation
             neigneeded = nuotot
           else
             neigneeded = 0

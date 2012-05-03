@@ -466,7 +466,7 @@ C
 
       logical ::   getD, fixspin
 
-      integer ::   ik, il, io, ispin, iu, iuo, naux, nhs, j
+      integer ::   ik, il, io, ispin, iu, iu_wfs, iuo, naux, nhs, j
 
       logical ::   SaveParallelOverK
 
@@ -508,19 +508,20 @@ C Allocate local arrays - only aux is relevant here
 
       if (getPSI .AND. (Node.eq.0)) then
 
-        call io_assign( iu )
-        open(iu,file=wfs_filename,form="unformatted",status='unknown')
+        call io_assign( iu_wfs )
+        open(iu_wfs,file=wfs_filename,
+     $              form="unformatted",status='unknown')
 
-        rewind (iu)
+        rewind (iu_wfs)
 
-        write(iu) nk, gamma
-        write(iu) nspin
-        write(iu) no_u
-        write(iu) (iaorb(j),labelfis(isa(iaorb(j))),
+        write(iu_wfs) nk, gamma
+        write(iu_wfs) nspin
+        write(iu_wfs) no_u
+        write(iu_wfs) (iaorb(j),labelfis(isa(iaorb(j))),
      .            iphorb(j), cnfigfio(isa(iaorb(j)),iphorb(j)),
      .            symfio(isa(iaorb(j)),iphorb(j)), j=1,no_u)
 
-        call io_close(iu)
+        call io_close(iu_wfs)
 
       endif
 

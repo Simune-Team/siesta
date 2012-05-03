@@ -29,15 +29,13 @@
       logical,    save :: scf_set = .false.
       logical,    save :: debug = .false.
 
-      integer, save, dimension(:), pointer   :: nwflist 
-      integer, save, dimension(:,:), pointer :: iwf 
+      integer, save, dimension(:), pointer   :: nwflist => null()
+      integer, save, dimension(:,:), pointer :: iwf => null()
  
       integer, public, save               :: nwk
       integer, public, save               :: maxwk
-      real(dp), public, pointer, save     :: wfk(:,:)
+      real(dp), public, pointer, save     :: wfk(:,:) => null()
       logical, public, save               :: gamma_wavefunctions
-
-      logical,    save :: pointers_nullified = .false.
 
       real(dp),   save :: wfs_energy_min = -huge(1.0_dp)
       real(dp),   save :: wfs_energy_max =  huge(1.0_dp)
@@ -109,11 +107,6 @@
       logical, intent(in) :: use_energy_window           
 
       integer :: j, nwfs
-
-      if (.not. pointers_nullified) then
-         nullify(nwflist,iwf)
-         pointers_nullified = .true.
-      endif
 
       call re_alloc(nwflist, 1, nk, name="nwflist",
      $     routine="setup_wfs_list")
@@ -244,11 +237,6 @@ C Start time counter
       call timer( 'writewave', 1 )
 
       overflow = .false.
-
-      if (.not. pointers_nullified) then
-         nullify(nwflist,iwf)
-         pointers_nullified = .true.
-      endif
 
       if (Frstime) then
          call re_alloc(nwflist, 1, maxk, name="nwflist",
@@ -709,8 +697,8 @@ C Allocate local arrays - only aux is relevant here
       call re_alloc(Haux,1,2*nuotot*nuo,name='Haux',routine='writewave')
       call re_alloc(Saux,1,2*nuotot*nuo,name='Saux',routine='writewave')
       call re_alloc(psi,1,2*nuotot*nuo,name='psi',routine='writewave')
-      allocate(ek(nspin,nuo,nuotot))
-      call memory('A','D',nspin*nuo*nuotot,'writewave')
+      allocate(ek(nuotot,nspin,nk))
+      call memory('A','D',nspin*nk*nuotot,'writewave')
       naux = 2*nuotot*5
       allocate(aux(naux))
       call memory('A','D',naux,'writewave')

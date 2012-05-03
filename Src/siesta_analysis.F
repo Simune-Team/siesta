@@ -124,10 +124,14 @@
 ! Find and print wavefunctions at selected k-points
       if (nwk.gt.0) then
         wfs_filename = trim(slabel)//".selected.WFSX"
+        if (IONode) print "(a)",
+     $              "Writing WFSX for selected k-points in "
+     $                           // trim(wfs_filename)
         call wwave( no_s, nspin, nspin, no_u, no_l, maxnh, maxwk,
      .              numh, listhptr, listh, H, S, Ef, xijo, indxuo,
      .              nwk, wfk, no_u, gamma, occtol )
       endif
+
 
       if (write_coop) then
         ! Output the wavefunctions for the kpoints in the SCF set
@@ -137,8 +141,10 @@
         call fdf_global_get(wfs_band_max,"WFS.BandMax",no_u)
         call setup_wfs_list(nkpnt,no_u,wfs_band_min,wfs_band_max,
      $                      use_scf_weights=.true.,
-     $                      use_energy_window=.true.)
+     $                      use_energy_window=.false.)
          wfs_filename = trim(slabel)//".fullBZ.WFSX"
+         if (IONode) print "(a)", "Writing WFSX for COOP/COHP in " 
+     $                           // trim(wfs_filename)
          call wwave( no_s, nspin, nspin, no_u, no_l, maxnh, maxk,
      .        numh, listhptr, listh, H, S, Ef, xijo, indxuo,
      .        nkpnt, kpoint, no_u, gamma, occtol)
@@ -152,9 +158,12 @@
      &               routine = 'siesta_analysis' )
 
       if (nbk.gt.0) then
+        if (IONode) print "(a)", "Computing bands..."
         call fdf_global_get(getPSI,'WriteWFS.For.Bands', .false.)
         if (getPSI) then
            wfs_filename = trim(slabel)//".bands.WFSX"
+         if (IONode) print "(a)", "Writing WFSX for bands in "
+     $                           // trim(wfs_filename)
            call fdf_global_get(wfs_band_min,"WFS.BandMin",1)
            call fdf_global_get(wfs_band_max,"WFS.BandMax",no_u)
            call setup_wfs_list(nbk,no_u,wfs_band_min,wfs_band_max,
@@ -217,6 +226,7 @@
       if (isolve.eq.0.and.IOnode)
      .     call ioeig(eo,ef,neigwanted,nspin,nkpnt,no_u,nspin,maxk,
      .                kpoint, kweight)
+
 
       call projected_DOS()
 

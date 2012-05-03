@@ -1,4 +1,21 @@
 ---------------------------------------------------------------
+May 3, 2012  Alberto Garcia                     3.1-pl4--pop-11
+Fix bug in ek dimensions in wwave. Cosmetics.
+
+This seems to be a historical bug...
+
+ek was wrongly dimensioned in wwave. The new code for copying the
+eigenvalues triggered a silent array-bounds overflow.
+
+Some more cosmetic changes to follow the creation of the WFS files.
+
+modified:
+  Src/bands.F
+  Src/diagk.F
+  Src/siesta_analysis.F
+  Src/writewave.F
+
+---------------------------------------------------------------
 April 30, 2012  Alberto Garcia                  3.1-pl4--pop-10
 Add test directory for new WFS output functionality
 
