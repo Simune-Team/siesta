@@ -1,4 +1,25 @@
 ---------------------------------------------------------------
+May 4, 2012  Alberto Garcia                     3.1-pl4--pop-12
+Modify Denchar to read WFSX files
+
+Denchar now reads directly the newer-format WFSX files,
+which are more compact.
+
+Also, added a new full example in Util/Denchar/Examples, and
+two python scripts for contour plots, courtesy of Pablo Aguado.
+
+added:
+  Util/Denchar/Examples/2dplot.py
+  Util/Denchar/Examples/FullExample.fdf
+  Util/Denchar/Examples/Si.psf
+  Util/Denchar/Examples/surf.py
+  Util/Denchar/Src/readwavesx.f
+modified:
+  Util/Denchar/Src/Makefile
+  Util/Denchar/Src/denchar.f
+  Util/Denchar/Docs/denchar.tex
+
+---------------------------------------------------------------
 May 3, 2012  Alberto Garcia                     3.1-pl4--pop-11
 Fix bug in ek dimensions in wwave. Cosmetics.
 

@@ -11,8 +11,10 @@ C Modified to handle complex wavefunctions and multiple k-points
 C by P. Ordejon, July 2004
 C Modified to include the local density of states at a point
 C by P. Ordejon, July 2004
+C Modified to use the more efficient WFSX format for wave functions
+C by A. Garcia, May 2012
 C
-C Version: 2.0.1
+C Version: 2.1
 C **********************************************************************
 C
 C  Modules
@@ -69,6 +71,7 @@ C
 
       EXTERNAL
      .  IODM, READPLA, REDATA_DENCHAR, REINIT, RHOOFR, VOLCEL
+      external :: readwavesx
 
       DATA NORMAL /0.D0,0.D0,1.D0/
       DATA COORPO /1.D0,0.D0,0.D0,0.D0,1.D0,0.D0,0.D0,0.D0,1.D0/
@@ -261,7 +264,8 @@ C Allocate temporary space for eigenvalues and eigenfunctions
         ALLOCATE(IPSI(NO_U,NK,NUMWF,NSPIN))
         CALL MEMORY('A','D',NO_U*NUMWF*NSPIN*NK,'denchar')
 
-        CALL READWAVES(NSPIN,NO_U,0,NWF,NUMWF,NK,RPSI,IPSI,E,K,INDW)
+!!!!!!!!        CALL READWAVES(NSPIN,NO_U,0,NWF,NUMWF,NK,RPSI,IPSI,E,K,INDW)
+        CALL READWAVESX(NSPIN,NO_U,0,NWF,NUMWF,NK,RPSI,IPSI,E,K,INDW)
 
 C deallocate temporary space 
         CALL MEMORY('D','I',SIZE(NWF),'denchar')
@@ -292,7 +296,8 @@ C allocate space for eigenenergies and (complex) eigenfunctions
         CALL MEMORY('A','D',NO_U*NUMWF*NSPIN*NK,'denchar')
 
 C call readwaves again to actually read wavefunctions
-        CALL READWAVES(NSPIN,NO_U,1,NWF,NUMWF,NK,RPSI,IPSI,E,K,INDW)
+!!!!        CALL READWAVES(NSPIN,NO_U,1,NWF,NUMWF,NK,RPSI,IPSI,E,K,INDW)
+        CALL READWAVESX(NSPIN,NO_U,1,NWF,NUMWF,NK,RPSI,IPSI,E,K,INDW)
       ENDIF
 
 C Find out parameters of STS simulation
