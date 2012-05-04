@@ -1,4 +1,17 @@
 ---------------------------------------------------------------
+May 4, 2012  Alberto Garcia                     3.1-pl4--pop-13
+Document latest features. Allow energy range in COOP wfs.
+
+Documented the new wave-function output capabilities, including
+the specification of band range and energy (eigenvalue) range.
+Re-enabled energy-range support for the COOP/COHP wavefunction set.
+
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/siesta_analysis.F
+
+---------------------------------------------------------------
 May 4, 2012  Alberto Garcia                     3.1-pl4--pop-12
 Modify Denchar to read WFSX files
 

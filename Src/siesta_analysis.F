@@ -141,7 +141,7 @@
         call fdf_global_get(wfs_band_max,"WFS.BandMax",no_u)
         call setup_wfs_list(nkpnt,no_u,wfs_band_min,wfs_band_max,
      $                      use_scf_weights=.true.,
-     $                      use_energy_window=.false.)
+     $                      use_energy_window=.true.)
          wfs_filename = trim(slabel)//".fullBZ.WFSX"
          if (IONode) print "(a)", "Writing WFSX for COOP/COHP in " 
      $                           // trim(wfs_filename)
