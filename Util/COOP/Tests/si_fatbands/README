@@ -1,0 +1,9 @@
+Get the data from Tests/si_fatbands, i.e., copy the si_fatbands.HSX
+and the si_fatbands.bands.WFSX files, and process them:
+
+/path/to/fat [options] fatbands
+
+Then, a number of .EIGFAT files will be produced. These can be re-processed, 
+together with the standard .bands file by the "fatbands" program in
+Util/Bands.
+

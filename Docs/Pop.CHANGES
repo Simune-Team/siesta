@@ -1,4 +1,36 @@
 ---------------------------------------------------------------
+May 11, 2012  Alberto Garcia                    3.1-pl4--pop-14
+First implementation of Fatbands functionality
+
+For now, the calculation of the importance of a given orbital (set)
+in a wavefunction is implemented in a new program 'fat', although
+most of the code is shared with mprop. This might be changed.
+
+Plotting utilities have been placed in the new Util/Bands directory. The
+ancient 'gnubands' program has been moved there too.
+
+No documentation yet.
+
+added:
+  Util/Bands/
+  Util/Bands/Makefile
+  Util/Bands/f2kcli.F90
+  Util/Bands/fat.gplot
+  Util/Bands/fatbands.f90
+  Util/Bands/m_getopts.f90
+  Util/COOP/Tests/si_fatbands/
+  Util/COOP/Tests/si_fatbands/README
+  Util/COOP/Tests/si_fatbands/fatbands.mpr
+  Util/COOP/fat.f90
+renamed:
+  Util/gnubands.f => Util/Bands/gnubands.f
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Util/COOP/Makefile
+  Util/Eig2DOS/Eig2DOS.f90
+
+---------------------------------------------------------------
 May 4, 2012  Alberto Garcia                     3.1-pl4--pop-13
 Document latest features. Allow energy range in COOP wfs.
 

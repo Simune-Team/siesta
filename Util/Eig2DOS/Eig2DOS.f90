@@ -189,7 +189,7 @@ program Eig2DOS
       enddo
 
       write(0,*)  "Emin, emax in file for selected band(s):", emin_file, emax_file
-      if (energies_only) RETURN
+      if (energies_only) STOP
 
       ! rewind and place file handle at the right point
       rewind(1)
