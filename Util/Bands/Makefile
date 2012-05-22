@@ -17,7 +17,7 @@
 VPATH:=$(shell pwd)/../../Src
 OBJDIR=Obj
 #
-all: fatbands gnubands
+all: eigfat2plot fatbands gnubands
 #
 include ../../$(OBJDIR)/arch.make
 #
@@ -32,17 +32,19 @@ INCFLAGS:=$(INCFLAGS) $(NETCDF_INCFLAGS)
 #
 FAT_OBJS=m_getopts.o f2kcli.o 
 #
-default: Eig2DOS
-#
 fatbands: $(OBJS) fatbands.o
 	$(FC) -o $@ $(LDFLAGS) $(FAT_OBJS) fatbands.o
+#
+eigfat2plot: $(OBJS) eigfat2plot.o
+	$(FC) -o $@ $(LDFLAGS) $(FAT_OBJS) eigfat2plot.o
 #
 gnubands: gnubands.o
 	$(FC) -o $@ $(LDFLAGS)  gnubands.o
 #
 clean:
-	rm -f *.o *.mod fatbands gnubands
+	rm -f *.o *.mod fatbands eigfat2plot gnubands
 
 # DO NOT DELETE THIS LINE - used by make depend
 m_getopts.o: f2kcli.o
 fatbands.o: m_getopts.o f2kcli.o
+eigfat2plot.o: m_getopts.o f2kcli.o

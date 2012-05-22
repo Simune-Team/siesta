@@ -1,4 +1,21 @@
 ---------------------------------------------------------------
+May 22, 2012  Alberto Garcia                    3.1-pl4--pop-15
+Refinement of Fatbands functionality
+
+The program 'fat' has been streamlined. Its output files (EIGFAT format)
+contain both the eigenvalues and the orbital weight ("fat").
+
+A new plotting converted, eigfat2plot, has been placed in the Util/Bands directory. 
+
+No documentation yet.
+
+added:
+  Util/Bands/eigfat2plot.f90
+modified:
+  Util/Bands/Makefile
+  Util/COOP/fat.f90
+
+---------------------------------------------------------------
 May 11, 2012  Alberto Garcia                    3.1-pl4--pop-14
 First implementation of Fatbands functionality
 
