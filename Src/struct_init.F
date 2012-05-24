@@ -35,6 +35,10 @@
       integer:: nbcell  ! Auxiliary to call shaper routine
       real(dp), pointer :: xang(:,:)
 
+      character(len=22) :: dyntyp
+      character(len=60) :: v_r_file
+      logical :: found_verlet_restart
+
 !------------------------------------------------------------------------- BEGIN
 #ifdef DEBUG
       call write_debug( '  PRE struct_init' )
@@ -88,6 +92,23 @@
            else
               write(6,"(a)")
      $       "! Info in XV file prevails over previous structure input"
+           endif
+         endif
+         dyntyp = fdf_get('MD.TypeOfRun','verlet')
+         dt = fdf_get('MD.LengthTimeStep',dt_default,'fs')
+         if (foundxv .and. (leqi(dyntyp,'verlet'))) then
+           v_r_file = trim(slabel) // '.VERLET_RESTART'
+           inquire( file=v_r_file, exist=found_verlet_restart )
+           if ((.not. found_verlet_restart) .and. (dt .ne. 0.0_dp)) then
+             xa=xa-dt*va
+             if (IOnode) then
+               write(6,'(a)') 'WARNING: VERLET_RESTART file not found--'
+               write(6,'(a)') 'WARNING: reading only XV file and moving'
+               write(6,'(a)') 'WARNING: back 1 time step using Euler'
+               write(6,'(a)') 'WARNING:'
+               write(6,'(a)') 'WARNING: If this is not your intention,'
+               write(6,'(a)') 'WARNING: set MD.LengthTimeStep = 0.0 fs'
+             endif
            endif
          endif
       endif

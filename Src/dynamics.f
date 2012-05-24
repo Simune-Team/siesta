@@ -1918,6 +1918,9 @@ C *****************************************************************************
 
 C Internal variables ..........................................................
  
+      logical
+     .  found
+
       integer
      .  ct,i,ia
 
@@ -1995,40 +1998,60 @@ C     if the time step is the first of the simulation ..........................
 
          else
 
-!         For restarts, we need information about the old 
-!         forces, in order to match the velocities
-!         correctly (the velocities in the XV file are
-!         one time step behind, so they are already the
-!         'old' velocities).
+          inquire( file=restart_file, exist=found )
+          if (found) then
+
+!           For restarts, we need information about the old 
+!           forces, in order to match the velocities
+!           correctly (the velocities in the XV file are
+!           one time step behind, so they are already the
+!           'old' velocities).
 !
-          if (Node .eq. 0) then
-           call io_assign(iacc)
-           open(unit=iacc,file=restart_file, form='formatted',
-     $          status='old', action='read', position='rewind')
-           read(iacc,*) old_natoms, old_dt
-           if (old_natoms .ne. natoms)
-     $          call die('Wrong number of atoms in VERLET_RESTART')
-           do ia = 1, natoms
-              read(iacc,*) dummy_iza, (accold(i,ia),i=1,3) ! forces
-              if (dummy_iza .ne. iza(ia)) 
-     $             call die('Wrong species number in VERLET_RESTART')
-              accold(:,ia) = fovermp * accold(:,ia) / ma(ia)
-              vold(:,ia)  = va(:,ia)
-           enddo
-           call io_close(iacc)
-           write(6,*) 'MD restart: Read old forces from VERLET_RESTART'
-           if (abs(old_dt - dt) .gt. 1.0d-8) then
-              write(6,*) 'Timestep has changed. Old: ', old_dt,
-     $             ' New: ', dt
-           endif
+            if (Node .eq. 0) then
+             call io_assign(iacc)
+             open(unit=iacc,file=restart_file, form='formatted',
+     $            status='old', action='read', position='rewind')
+             read(iacc,*) old_natoms, old_dt
+             if (old_natoms .ne. natoms)
+     $            call die('Wrong number of atoms in VERLET_RESTART')
+             do ia = 1, natoms
+                read(iacc,*) dummy_iza, (accold(i,ia),i=1,3) ! forces
+                if (dummy_iza .ne. iza(ia)) 
+     $               call die('Wrong species number in VERLET_RESTART')
+                accold(:,ia) = fovermp * accold(:,ia) / ma(ia)
+                vold(:,ia)  = va(:,ia)
+             enddo
+             call io_close(iacc)
+            write(6,*) 'MD restart: Read old forces from VERLET_RESTART'
+             if (abs(old_dt - dt) .gt. 1.0d-8) then
+                write(6,*) 'Timestep has changed. Old: ', old_dt,
+     $               ' New: ', dt
+             endif
 
-          endif             ! IONode
+            endif             ! IONode
 
-          call broadcast(old_dt)
-          call broadcast(accold(1:3,1:natoms))
-          call broadcast(vold(1:3,1:natoms))
+            call broadcast(old_dt)
+            call broadcast(accold(1:3,1:natoms))
+            call broadcast(vold(1:3,1:natoms))
 
-       endif      ! XV file read
+          else
+
+!           If xv_file_read is true but the VERLET_RESTART file is
+!           not found, we have already backward-propagated x(t) to
+!           x(t-dt) in struct_init using the Euler method, and so
+!           we have positions and velocities at the same time step
+
+            do ia = 1,natoms
+               do i = 1,3
+                  accold(i,ia) = fovermp * fa(i,ia) / ma(ia)
+                  vold(i,ia) = va(i,ia) - dt * accold(i,ia)
+               enddo
+            enddo
+            old_dt=dt
+
+          endif
+
+         endif      ! XV file read
 
       endif    ! first step
 
