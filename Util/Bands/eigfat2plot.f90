@@ -32,7 +32,7 @@
   integer  :: fat_u = 2
   integer  :: n_opts, iostat, nargs, nlabels
   character(len=132) :: opt_name, opt_arg
-  character(len=132) :: fatfile
+  character(len=132) :: fatfile, string_id
   integer  :: ika
 
   !
@@ -71,9 +71,10 @@
   endif
 
         open(fat_u,file=trim(fatfile), status='old',action="read",position="rewind")
-        read(fat_u,*)
+        read(fat_u,"(a132)") string_id
         read(fat_u,*) nband, nspin, nk
 
+        print *, "# " // trim(string_id)
         print *, "# nband, nspin, nk:", nband, nspin, nk
 
      if (.not. max_band_set) max_band = nband
@@ -97,9 +98,9 @@
      endif
 
 
-      print *, "#", min_band, max_band
+      print *, "# min_band, max_band: ", min_band, max_band
 
-        allocate(k(nk),pk(3,nk))
+        allocate(k(nk),pk(3,0:nk))
         allocate(fat(nband,nspin,nk),eig(nband,nspin,nk))
 
         kl = 0.0
@@ -111,12 +112,8 @@
            delta(1:3) = pk(1:3,ika) - pk(1:3,ika-1)
            kl = kl + sqrt(dot_product(delta,delta))
            k(ik) = kl
-           print *, "#", ika, pk(1:3,ika), kl
-!!           read(fat_u,fmt="(4(4x,f10.4,f9.5))")   &
-           read(fat_u,*)   &
-                      ((eig(ib,is,ik),fat(ib,is,ik), ib = 1, nband), is = 1, nspin)
-           do ib = 1, nband
-              print *, "# ---", eig(ib,1,ik), fat(ib,1,ik)
+           do is = 1, nspin
+              read(fat_u,*) (eig(ib,is,ik),fat(ib,is,ik), ib = 1, nband)
            enddo
         enddo
         close(fat_u)

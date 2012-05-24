@@ -1,12 +1,15 @@
 !==================================================================
 !
-! NOTE: MUCH FAT HAS TO BE REMOVED FROM THIS PROGRAM, OR AT LEAST
-! DEACTIVATED FOR "FATBANDS" USE.
-! NO NEED TO WORRY ABOUT ENERGY RANGES, FOR EXAMPLE
-! MAYBE INTRODUCE A NEW OPTION "FATBANDS" FOR MPROP, AND RETAIN
-! A SINGLE PROGRAM
-!
 program fatband
+!
+!
+! Computes the generalized projection of each eigenvector on a given
+! orbital set.
+! The syntax for orbital sets is the same as in mprop, so this
+! program can re-use as description file the same DOS-type file
+! as mprop.
+!
+!
 
   use main_vars
   use orbital_set, only: get_orbital_set
@@ -67,7 +70,7 @@ program fatband
         call manual()
      case ('?',':')
         write(0,*) "Invalid option: ", opt_arg(1:1)
-        write(0,*) "Usage: fat [ -d ] [ -h ] FAT_FILE_ROOT"
+        write(0,*) "Usage: fat [ options ] DescriptionFile "
         write(0,*) "Use -h option for manual"
         STOP
      end select
@@ -76,7 +79,7 @@ program fatband
   nargs = command_argument_count()
   nlabels = nargs - n_opts + 1
   if (nlabels /= 1)  then
-        write(0,*) "Usage: fat [ -d ] [ -h ] FAT_FILE_ROOT"
+     write(0,*) "Usage: fat [ options ] DescriptionFile "
      write(0,*) "Use -h option for manual"
      STOP
   endif
@@ -417,10 +420,12 @@ program fatband
         read(wfs_u) 
      
         open(fat_u,file=trim(mflnm)// "." // trim(tit(ic)) // '.EIGFAT')
-        write(fat_u,"(a,2i5)") "# Min_band, max_band: ", min_band, max_band
+        write(fat_u,"(a,2i5)") "# " // trim(sflnm) // " min_band, max_band: ", min_band, max_band
         write(fat_u,"(3i6)")   nbands, min(nsp,2), nkp
 
         do ik=1,nkp
+
+           write(fat_u,"(i4,3(1x,f10.5))")  ik, pk(1:3,ik)
 
            do is=1,nsp
 
@@ -481,11 +486,10 @@ program fatband
                     enddo  ! i1
 
                  enddo   ! iwf
+                 write(fat_u,"(4(4x,f10.4,f9.5))")   &
+                      (eig(ib,is),fat(ib,is),ib=1,nbands)
               enddo      ! is
 
-              write(fat_u,"(i4,3(1x,f10.5))")  ik, pk(1:3,ik)
-              write(fat_u,"(4(4x,f10.4,f9.5))")   &
-                      ((eig(ib,is),fat(ib,is),ib=1,nbands),is=1,nspin)
            enddo         ! ik
            
            deallocate (num_red)
@@ -496,6 +500,74 @@ program fatband
               close(fat_u)
 
         enddo    ! ic
+
+ CONTAINS
+
+      subroutine manual()
+
+      write(6,"('* FAT(BANDS) PROGRAM')")
+      write(6,"('  Alberto Garcia, ICMAB-CSIC, 2012 ')")
+      write(6,*)
+      write(6,"('    FAT calculates eigenvector projections ')")
+      write(6,"('    using output files obtained with SIESTA. The atomic orbital (AO)')")
+      write(6,"('    sets are defined in an input file (MLabel.mpr).')")
+      write(6,"('  ')")
+      write(6,*) "Usage: fat [ options ] MPROP_FILE_BASENAME"
+      write(6,*) "Options:"
+      write(6,*) "           -h:  print manual                    "
+      write(6,*) "           -d:  debug                    "
+      write(6,*) "           -l:  print summary of energy information         "
+      write(6,*) "    "
+      write(6,*) "   Selection of eigenstates to be used: "
+      write(6,*) "    "
+      write(6,*) "   -b Min_band  :  set minimum band index to be used               "
+      write(6,*) "   -B Max_band  :  set maximum band index to be used               "
+      write(6,*) "    "
+      write(6,*)
+      write(6,"('* .mpr FILE STRUCTURE')")
+      write(6,"('         SLabel                   # Name of the siesta output files')")
+      write(6,"('         DOS                      # DOS option of mprop is mandatory')")
+      write(6,"('    /-  As many blocks as projections wanted ]')")
+      write(6,"('    |    projection_name         # DOS projection name')")
+      write(6,"('    \-   Subset of AO (*)        # Subset of orbitals included')")
+      write(6,"('     (*) See below how to define subsets of AO')")
+      write(6,"('     A final line with leading chars  ----  can signal the end of the input')")
+      write(6,*)
+      write(6,"('* INPUT FILES')")
+      write(6,"('    [output files from SIESTA >=  2.4.1]')")
+      write(6,"('    SLabel.WFSX and SLabel.HSX (new format)')")
+      write(6,*)
+      write(6,"('* OUTPUT FORMAT')")
+      write(6,*) 
+      write(6,*) " MLabel.CurveName.EIGFAT    :  File with eigenvalue and projection info "
+      write(6,"('    [An information file with extension .info will always be generated]')")
+      write(6,*)
+      write(6,"('* PROJECTION AND CURVES NAMES')")
+      write(6,"('    Alphanumerical string up to 30 char. with no spaces')")
+      write(6,"('* SUBSET OF AO USING ORDER NUMBERS')")
+      write(6,"('    List of integer numbers preceeded by a + symbol')")
+      write(6,"('    Each number refers to one AO in the final list of AO of SIESTA')")
+      write(6,"('    Example: + 23 65 78')")
+      write(6,"('* SUBSET OF AO USING ATOM_SHELL NOTATION')")
+      write(6,"('    List of atoms and shell groups of AO')")
+      write(6,"('    General notation: ATOM_SHELL')")
+      write(6,"('     > ATOM:  Atomic symbol refers to all the atoms of that type')")
+      write(6,"('              Integer number refers to the N-th atom in unit cell')")
+      write(6,"('     > SHELL: Integer1+Letter+Integer2')")
+      write(6,"('               > Integer1 refers to the n quantum number')")
+      write(6,"('               > Letter   refers to the l quantum number (s,p,d,f,g,h)')")
+      write(6,"('               > Integer2 refers to a single AO into the n-l shell')")
+      write(6,"('                   Alternatively, alphanumerical strings can be used')")
+      write(6,"('                     p-shells   1  y    d-shells   1  xy   4  xz')")
+      write(6,"('                                2  z               2  yz   5  x2-y2')")
+      write(6,"('                                3  x               3  z2')")
+      write(6,"('    Particular cases:')")
+      write(6,"('     > Just ATOM is indicated: all the AO of the atom will be included')")
+      write(6,"('     > No value for Integer2:  all the AO of the shell will be included')")
+      write(6,"('    Example: Ca_3p Al 4_4d3 5 O_2py')")
+      stop
+
+      end subroutine manual
 
 
 end program fatband

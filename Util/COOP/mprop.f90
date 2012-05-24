@@ -3,6 +3,7 @@
 program mprop
 
   use main_vars
+  use subs, only: manual
   use orbital_set, only: get_orbital_set
   use io_hs, only: read_hs_file
   use read_curves, only: read_curve_information, mask_to_arrays

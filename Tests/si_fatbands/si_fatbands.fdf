@@ -1,6 +1,8 @@
 # -----------------------------------------------------------------------------
+#
+#
 
-SystemName          bulk silicon with test of WFS output
+SystemName          bulk silicon with test of various types of WFS output
 SystemLabel         si_fatbands
 
 NumberOfAtoms       2

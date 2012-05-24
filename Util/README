@@ -6,7 +6,10 @@ directories for documentation.
 Eig2DOS:   Estimation of the Density of States from the .EIG file.
            (by E. Artacho and A. Garcia)
 
+Bands:     Tools for plotting band structures (including "fatbands")
+
 COOP: Generation of COOP/COHP/PDOS curves for chemical analysis.
+      Computation of data to generate "fatbands" plots.
 
 Optimizer: General-purpose optimizer. Useful for basis-set and
 	   pseudopotential optimization (by A. Garcia)
@@ -61,9 +64,6 @@ WFS: Utilities for wavefunction-file manipulation
 STM/plstm:   Simple program for STM simulations (by P. Ordejon)
 
 STM/ol-stm:  Ordejon-Lorente STM image simulator
-
-gnubands: Utility for simple band structure (and phonon dispersion)
-	  plots.
 
 Grid: Utilities for the manipulation of grid files.
 

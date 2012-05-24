@@ -2,6 +2,7 @@
 program dm_creator
 
   use main_vars
+  use subs, only: manual_dm_creator
   use io_hs, only: read_hs_file
 #ifdef CDF
   use iodm_netcdf

@@ -1,4 +1,31 @@
 ---------------------------------------------------------------
+May 24, 2012  Alberto Garcia                    3.1-pl4--pop-16
+Some further streamlining of the fatbands functionality
+
+Fixed a bug in the eigfat2plot program.
+Separated more clearly the spin-up and spin-down sections.
+Minimal documentation at the level of the directory structure.
+
+added:
+  Util/Bands/README
+renamed:
+  Util/Bands/fatbands.f90 => Util/Bands/new.gnubands.f90
+modified:
+  Tests/si_fatbands/si_fatbands.fdf
+  Util/Bands/Makefile
+  Util/Bands/eigfat2plot.f90
+  Util/Bands/fat.gplot
+  Util/COOP/README
+  Util/COOP/Tests/README
+  Util/COOP/Tests/si_fatbands/README
+  Util/COOP/dm_creator.F90
+  Util/COOP/fat.f90
+  Util/COOP/main_vars.f90
+  Util/COOP/mprop.f90
+  Util/README
+  Util/Bands/new.gnubands.f90
+
+---------------------------------------------------------------
 May 22, 2012  Alberto Garcia                    3.1-pl4--pop-15
 Refinement of Fatbands functionality
 

@@ -3,7 +3,10 @@ and the si_fatbands.bands.WFSX files, and process them:
 
 /path/to/fat [options] fatbands
 
-Then, a number of .EIGFAT files will be produced. These can be re-processed, 
-together with the standard .bands file by the "fatbands" program in
-Util/Bands.
+Then, a number of .EIGFAT files will be produced. These files contain
+*both* the eigenvalues and the projection weight for each orbital set
+in the .mpr file, and can be re-processed by the "eigfat2plot" program
+in Util/Bands to produce a data file suitable for plotting by Gnuplot.
+
+Alternatively, users might want to produce their own post-processors.
 
