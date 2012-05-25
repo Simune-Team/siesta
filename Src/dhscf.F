@@ -151,7 +151,7 @@ C
       use iogrid_netcdf, only: read_grid_netcdf
       use iogrid_netcdf, only: set_box_limits
       use siesta_options, only: read_charge_cdf
-      use siesta_options, only: savevna
+      use siesta_options, only: savevna, savebader
       use siesta_options, only: read_deformation_charge_cdf
       use siesta_options, only: save_initial_charge_density
 !
@@ -653,6 +653,15 @@ C Save total (ionic+electronic) charge
         call de_alloc( Chlocal, name='Chlocal' )
       endif
 
+C ----------------------------------------------------------------------
+C Save the total charge (model core + valence) for Bader analysis
+C ----------------------------------------------------------------------
+
+      if (filetoch .ne. ' ' .and. savebader) then
+        call save_bader_charge()
+      endif
+
+
 C Find difference between selfconsistent and atomic densities
       do ispin = 1,nsd
         DRho(1:ntpl,ispin) = DRho(1:ntpl,ispin) - rhoatm(1:ntpl)/nsd
@@ -1027,5 +1036,30 @@ C ----------------------------------------------------------------------
 101   format('dhscf:                  INPUT ERROR')
 102   format('dhscf: ',71(1h*))
 
-      end
+      CONTAINS
+
+      subroutine save_bader_charge()
+      ! Auxiliary routine to output the Bader Charge
+      !
+      real(grid_p), pointer :: BaderCharge(:) => null()
+
+      call re_alloc( BaderCharge, 1, ntpl, name='BaderCharge',
+     &                 routine='dhscf' )
+
+      ! Find a model core charge by re-scaling the local charge
+      call ModelCoreChargeOnMesh( na, isa, ntpl, BaderCharge, indxua )
+      
+      do ispin = 1,nsd
+         BaderCharge(1:ntpl) = BaderCharge(1:ntpl) + DRho(1:ntpl,ispin)
+      enddo
+      call reord( BaderCharge, BaderCharge, nml, nsm, +1)
+      call write_rho( trim(slabel)// ".BADER", cell,
+     $     ntm, nsm, ntpl, 1, BaderCharge )
+      call write_grid_netcdf( cell, ntm, 1, ntpl,
+     $     BaderCharge, "BaderCharge")
+
+      call de_alloc( BaderCharge, name='BaderCharge' )
+      end subroutine save_bader_charge
+
+      end subroutine dhscf
 

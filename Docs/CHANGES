@@ -4,6 +4,55 @@
 
 ** CHANGES ALONG siesta-3 branch
 ------------------------------------------------------------------------
+2012-05-25  8:25:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl7
+New options for charge analysis: Voronoi, Hirshfeld, Bader
+
+* Implementation of Hirshfeld and Voronoi charges (P. Ordejon)
+
+Relevant fdf keywords:
+
+WriteHirshfeldPop T
+WriteVoronoiPop T
+
+See the manual for details.
+
+* Implementation of Bader charge output
+
+If the option
+
+  SaveBaderCharge T
+
+is used, the program will write the electronic charge density with an
+extra set of model core charges, useful for post-processing by a Bader
+"atoms in molecules" analysis. See the manual for important details.
+
+The grid2cube program in Util has been extended to deal with the .BADER
+file.
+
+* New test: h2o-pop
+
+added:
+  Src/atompop.F
+  Tests/Reference-xml/h2o-pop.xml
+  Tests/Reference/h2o-pop.out
+  Tests/h2o-pop/
+  Tests/h2o-pop/h2o-pop.fdf
+  Tests/h2o-pop/h2o-pop.pseudos
+  Tests/h2o-pop/makefile
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/Makefile
+  Src/dhscf.F
+  Src/meshsubs.F
+  Src/mulliken.F
+  Src/siesta_options.F90
+  Src/state_analysis.F
+  Tests/Makefile
+  Util/Grid/grid2cube.f
+
+
+------------------------------------------------------------------------
 2012-04-10  8:25:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl6
 Fix auxiliary routine read_rho
 

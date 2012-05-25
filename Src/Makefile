@@ -70,7 +70,7 @@ SYSOBJ=$(SYS).o pxf.o
 #
 # Note that machine-specific files are now in top Src directory.
 #
-OBJS =  automatic_cell.o atom_options.o \
+OBJS =  automatic_cell.o atom_options.o atompop.o \
         arw.o  atomlwf.o bands.o basis_enthalpy.o bessph.o bonds.o \
         born_charge.o cgwf.o chkdim.o chkgmx.o \
 	chempot.o coceri.o constr.o coxmol.o cross.o compute_norm.o \
@@ -190,7 +190,6 @@ $(FDF):
 dhscf.o iolwf.o  grdsam.o : $(FDF)
 recoor.o outcoor.o ioxv.o m_iostruct.o kgrid.o kgridinit.o ksv.o : $(FDF)
 redata.o siesta.o diagon.o pdos.o plcharge.o: $(FDF)
-coor.o cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o  ofc.o : $(FDF)
 readsp.o eggbox.o iopipes.o : $(FDF)
 #
 atom.o basis_io.o basis_specs.o: $(FDF)
@@ -310,6 +309,8 @@ atom.o: sys.o xcmod.o
 atom_options.o: sys.o
 atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o siesta_geom.o
 atomlwf.o: alloc.o atmfuncs.o mneighb.o onmod.o precision.o spatial.o sys.o
+atompop.o: atmfuncs.o atomlist.o meshsubs.o meshsubs.o parallel.o
+atompop.o: parallelsubs.o precision.o sys.o
 automatic_cell.o: atmfuncs.o parallel.o precision.o units.o
 bands.o: alloc.o densematrix.o files.o parallel.o parallelsubs.o parsing.o
 bands.o: precision.o sys.o
@@ -459,7 +460,6 @@ m_fdf_global.o: m_mpi_utils.o parallel.o precision.o
 m_fire.o: parallel.o precision.o
 m_fire_mixing.o: alloc.o m_fdf_global.o m_fire_para.o m_mpi_utils.o parallel.o
 m_fire_mixing.o: precision.o
-m_fire_ordern.o: m_mpi_utils.o parallel.o precision.o
 m_fire_para.o: m_mpi_utils.o parallel.o precision.o
 m_forces.o: precision.o
 m_getopts.o: f2kcli.o
@@ -630,10 +630,11 @@ siesta_options.o: precision.o siesta_cml.o sys.o units.o
 sparse_matrices.o: precision.o
 spatial.o: precision.o
 spher_harm.o: alloc.o precision.o sys.o
-state_analysis.o: atomlist.o born_charge.o m_energies.o m_forces.o m_iostruct.o
-state_analysis.o: m_ntm.o m_spin.o m_stress.o m_wallclock.o parallel.o
-state_analysis.o: remove_intramol_pressure.o siesta_cml.o siesta_geom.o
-state_analysis.o: siesta_options.o sparse_matrices.o write_subs.o zmatrix.o
+state_analysis.o: atomlist.o atompop.o born_charge.o m_energies.o m_forces.o
+state_analysis.o: m_iostruct.o m_ntm.o m_spin.o m_stress.o m_wallclock.o
+state_analysis.o: parallel.o remove_intramol_pressure.o siesta_cml.o
+state_analysis.o: siesta_geom.o siesta_options.o sparse_matrices.o write_subs.o
+state_analysis.o: zmatrix.o
 state_init.o: alloc.o atomlist.o domain_decom.o files.o hsparse.o iodm_netcdf.o
 state_init.o: iodmhs_netcdf.o kpoint_grid.o m_check_supercell.o m_energies.o
 state_init.o: m_eo.o m_gamma.o m_mpi_utils.o m_pulay.o m_rmaxh.o m_spin.o
@@ -675,6 +676,7 @@ zmatrix.o: sys.o units.o
 band.o: bands.o
 diagmemory.o: memoryinfo.o
 listsc_module.o: listsc.o
+m_atompop.o: atompop.o
 m_born_charge.o: born_charge.o
 m_broyden_optim.o: broyden_optim.o
 m_cell_broyden_optim.o: cell_broyden_optim.o

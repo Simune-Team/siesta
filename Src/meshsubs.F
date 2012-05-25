@@ -1082,6 +1082,116 @@ C Loop over sub-points
  
       end subroutine LocalChargeOnMesh
 
+      subroutine ModelCoreChargeOnMesh( na, isa, ntpl,
+     $                                  ModelCore, indxua )
+C
+C     Uses the "local charge" information to construct a model total
+C     core charge, useful for Bader analysis
+C
+C ----------------------------------------------------------------------
+C Input :
+C ----------------------------------------------------------------------
+C integer na            : Number of atoms in supercell
+C integer isa(na)       : Species index of all atoms in supercell
+C integer ntpl          : Number of mesh Total Points in unit cell
+C                       : (including subpoints) locally
+C integer indxua        : Index of equivalent atom in unit cell
+C ----------------------------------------------------------------------
+C Output : 
+C ----------------------------------------------------------------------
+C real    ModelCore(ntpl)     : Sum of model core charge densities
+C ----------------------------------------------------------------------
+ 
+      use precision,     only : dp, grid_p
+      use atmfuncs, only: rcut, psch, izofis, zvalfis
+      use atm_types, only : species
+      use radial, only : rad_func
+      use mesh,     only: dxa, idop, indexp, ipa, mop, nsp, xdop, xdsp
+ 
+      implicit none
+ 
+C
+C Passed arguments
+C
+      integer, intent(in)  :: na, isa(na), ntpl
+      integer, intent(in)  :: indxua(*)
+      real(grid_p),    intent(out) :: ModelCore(ntpl)
+ 
+C
+C Internal variables
+C
+      integer
+     .  ia, iop, ip, ip0, is, isp, iua
+ 
+      real(dp) dx(3), grpsch(3), r, ra, charge_ratio
+      real(dp) core_charge, beta, pschloc
+
+      type(rad_func), pointer            :: func   
+ 
+C Initialise array to zero 
+      ModelCore(1:ntpl) = 0.0_grid_p
+ 
+      do ia = 1,na
+        iua = indxua(ia)
+        is = isa(ia)
+        func => species(is)%chlocal
+        ra = func%cutoff
+
+        ! We will take advantage of the existing "local charge"
+        ! by rescaling.
+
+        ! The total local charge is Z_val
+        ! We want a total extra core charge of (Z-Zval),
+        ! and with the opposite sign, localized in a
+        ! region of around 1.0 bohr for "normal" atoms and
+        ! 0.4 bohr (= 0.21 Ang) for Hydrogen.
+        ! Note that this is quite a small confinement region, so
+        ! you might need a high cutoff (of the order of 300-500 Ry)
+        ! to represent it on the grid. It might be better to use
+        ! Denchar for this, rather than performing a Siesta calculation
+        ! (even if it reads the converged DM)
+
+        ! --- For Hydrogen, add an artificial core with 1 electron
+        ! Else choose the normal core charge
+        !
+        ! The cutoff for chlocal is divided by beta to obtain the
+        ! tighter localization radius. Note the factor of beta^3
+        ! for normalization of the new function.
+
+        if (izofis(is) == 1) then
+           beta = ra / 0.4_dp
+           charge_ratio = -1.0_dp * beta**3
+        else
+           beta = ra / 1.0_dp
+           charge_ratio = - beta**3 *
+     $              (izofis(is)-zvalfis(is))/zvalfis(is)
+        endif
+ 
+C Loop over mesh points inside rmax
+        do iop = 1,mop
+          ip0 = indexp( ipa(ia) + idop(iop) )
+          if (ip0 .gt. 0) then
+ 
+C Loop over sub-points
+            do isp = 1,nsp
+              dx(1:3) = xdop(1:3,iop) + xdsp(1:3,isp) - dxa(1:3,ia)
+              r = sqrt(dot_product(dx,dx))
+              if (r .lt. ra) then
+                ip = isp + nsp * (ip0 - 1)
+                dx = beta*dx
+                call psch( is, dx, pschloc, grpsch )
+                core_charge = charge_ratio*pschloc
+                ModelCore(ip) = ModelCore(ip) + core_charge
+              endif
+            enddo
+ 
+          endif
+        enddo
+ 
+      enddo
+ 
+      end subroutine ModelCoreChargeOnMesh
+
       subroutine PhiOnMesh( nmpl, norb, iaorb, iphorb, isa)
 C
 C Calculates the values of the orbitals at the mesh points

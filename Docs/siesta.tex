@@ -39,13 +39,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, 3.1}}
+{\Huge {\bf S I E S T A \, \, 3.1-pl7}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large August 26, 2011 }
+{\Large May 25, 2012 }
 
 \vspace{1.5cm}
 
@@ -92,7 +92,7 @@
 \vspace{0.5cm}
 Copyright \copyright\  Fundaci\'on General Universidad Aut\'onoma de Madrid:
 E.Artacho, J.D.Gale, A.Garc\'{\i}a, J.Junquera, P.Ordej\'on,
-D.S\'anchez-Portal and J.M.Soler, 1996-2011
+D.S\'anchez-Portal and J.M.Soler, 1996-2012
 
 \end{center}
 
@@ -163,7 +163,7 @@ It routinely provides:
 \item Atomic forces.
 \item Stress tensor.
 \item Electric dipole moment.
-\item Atomic, orbital and bond populations (Mulliken).
+\item Atomic, orbital and bond populations.
 \item Electron density.
 \end{itemize}
 
@@ -684,6 +684,12 @@ In particular, it redefines the defaults for the following:
 {\bf WriteMullikenPop}\index{WriteMullikenPop@{\bf WriteMullikenPop}}
 \index{output!Mulliken analysis}\index{Mulliken population analysis}
 (it sets it to 1)
+\item
+{\bf WriteHirshfeldPop}\index{WriteHirshfeldPop@{\bf WriteHirshfeldPop}}
+\index{output!Hirshfeld analysis}\index{Hirshfeld population analysis}
+\item
+{\bf WriteVoronoiPop}\index{WriteVoronoiPop@{\bf WriteVoronoiPop}}
+\index{output!Voronoi analysis}\index{Voronoi population analysis}
 \end{itemize}
 
 The specific changing of any of these options overrides the
@@ -4587,13 +4593,44 @@ when dealing with SCF problems, otherwise too verbose.
 
 {\it Default value:} {\tt .false.}
 
-\item[{\bf MullikenInSCF}] ({\it logical}):
-\index{MullikenInSCF@{\bf MullikenInSCF}}
-If true, the Mulliken populations will be written for every SCF step
-at the level of detail specified in {\bf WriteMullikenPop}. Useful
-when dealing with SCF problems, otherwise too verbose.
+\end{description}
 
-{\it Default value:} {\tt .false.}
+\subsubsection{Voronoi and Hirshfeld atomic population analysis}
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+\item[{\bf WriteHirshfeldPop}] ({\it logical}): 
+\index{WriteHirshfeldPop@{\bf WriteHirshfeldPop}}\index{Hirshfeld population
+analysis}\index{output!Hirshfeld analysis} 
+If {\tt .true.}, it calculates and prints the Hirshfeld {\bf net} atomic
+populations on each atom in the system. For a definition of
+the Hirshfeld charges, see Hirshfeld, Theo Chem Acta {\bf 44}, 129 (1977)
+and Fonseca et al, J. Comp. Chem. {\bf 25}, 189 (2003).
+Hirshfeld charges are more reliable than Mulliken charges,
+specially for large basis sets.
+The number printed is the total net charge of the atom: the variation
+from the neutral charge, in units of $|e|$: positive (negative)
+values indicate deficiency (excess) of electrons in the atom.
+
+{\it Default value:} {\tt .false.} (see {\bf LongOutput})
+
+
+\item[{\bf WriteVoronoiPop}] ({\it logical}): 
+\index{WriteVoronoiPop@{\bf WriteVoronoiPop}}\index{Voronoi population
+analysis}\index{output!Voronoi analysis} 
+If {\tt .true.}, it calculates and prints the Voronoi {\bf net} atomic
+populations on each atom in the system. For a definition of
+the Voronoi charges, see Bickelhaupt et al, Organometallics 
+{\bf 15}, 2923 (1996)
+and Fonseca et al, J. Comp. Chem. {\bf 25}, 189 (2003).
+Voronoi charges are more reliable than Mulliken charges,
+specially for large basis sets.
+The number printed is the total net charge of the atom: the variation
+from the neutral charge, in units of $|e|$: positive (negative)
+values indicate deficiency (excess) of electrons in the atom.
+
+{\it Default value:} {\tt .false.} (see {\bf LongOutput})
 
 \end{description}
 
@@ -5122,6 +5159,46 @@ Remember that, within the {\sc Siesta} sign convention, the electron charge
 density is positive and the ionic charge density is negative.
 
 {\it Use:} File {\tt SystemLabel}.TOCH is only written, not read, by siesta.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf SaveBaderCharge}] ({\it logical}):
+  \index{SaveBaderCharge@{\bf SaveBaderCharge}} \index{output!Bader
+    charge} Instructs the program to save the charge density for
+  further post-processing by a Bader-analysis program.  This ``Bader
+  charge'' is the sum of the electronic valence charge density and a
+  set of ``model core charges'' placed at the atomic sites. For a
+  given atom, the model core charge has the same shape as the ``local
+  pseudopotential charge'' used elsewhere by {\sc Siesta} (a
+  generalized Gaussian), but confined to a radius of 1.0 Bohr, and
+  integrating to the total core charge ($Z$-$Z_{\rm val}$). These core
+  charges are needed to provide local maxima for the charge density at
+  the atomic sites, which are not guaranteed in a pseudopotential
+  calculation. For hydrogen, an artificial core of 1 electron is
+  added, with a confinement radius of 0.4 Bohr.  The Bader charge is
+  projected on the grid points of the mesh used by DHSCF, and saved in
+  file {\tt SystemLabel}.BADER. This file can be post-processed by the
+  program {\tt Util/grid2cube} to convert it to the ``cube'' format,
+  accepted by several Bader-analysis programs (for example, see {\tt
+    http://theory.cm.utexas.edu/bader/}).  Due to the need to
+  represent a localized core charge, it is advisable to use a
+  moderately high MeshCutoff when invoking this option (300-500
+  Ry). The size of the ``basin of attraction'' around each atom in the
+  Bader analysis should be monitored to check that the model core
+  charge is contained in it.  
+
+  The suggested way to run the Bader analysis with the Univ. of Texas
+  code is to use both the RHO and BADER files (both in ``cube''
+  format), with the BADER file providing the ``reference'' and the RHO
+  file the actual significant valence charge data which is important
+  in bonding. (See the notes for pseudopotential codes in the above
+  web page.) For example, for the h2o-pop example:
+
+  {\tt bader  h2o-pop.RHO.cube -ref h2o-pop.BADER.cube}
+
+
+If netCDF support is compiled in, the file {\tt BaderCharge.grid.nc}
+is produced.
 
 {\it Default value:} {\tt .false.}
 
