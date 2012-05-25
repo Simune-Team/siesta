@@ -36,8 +36,8 @@
       real(dp), pointer :: xang(:,:)
 
       character(len=22) :: dyntyp
-      character(len=60) :: v_r_file
-      logical :: found_verlet_restart
+      character(len=60) :: restart_file
+      logical :: found_restart, step_back
 
 !------------------------------------------------------------------------- BEGIN
 #ifdef DEBUG
@@ -94,23 +94,36 @@
      $       "! Info in XV file prevails over previous structure input"
            endif
          endif
-!        For a Verlet run with more than one time step, if the
-!        VERLET_RESTART file is not found, backward-propagate the
-!        atomic positions by one time step using the Euler method
-         dyntyp = fdf_get('MD.TypeOfRun','verlet')
+!        For a Verlet/Nose/PR/NPR run with more than one time step, if
+!        the RESTART file is not found, backward-propagate the atomic
+!        positions by one time step using the Euler method
          istart = fdf_get('MD.InitialTimeStep',1)
          ifinal = fdf_get('MD.FinalTimeStep',1)
-         if (foundxv .and. (leqi(dyntyp,'verlet'))
-     $      .and. (ifinal-istart>0)) then
-           v_r_file = trim(slabel) // '.VERLET_RESTART'
-           inquire( file=v_r_file, exist=found_verlet_restart )
-           if (.not. found_verlet_restart) then
-             dt = fdf_get('MD.LengthTimeStep',dt_default,'fs')
-             xa=xa-dt*va
-             if (IOnode) then
-               write(6,'(a)') 'WARNING: VERLET_RESTART file not found--'
-               write(6,'(a)') 'WARNING: reading only XV file and moving'
-               write(6,'(a)') 'WARNING: back 1 time step using Euler'
+         if (foundxv .and. (ifinal-istart>0)) then
+           dyntyp = fdf_get('MD.TypeOfRun','verlet')
+           step_back=.true.
+           if (leqi(dyntyp,'verlet')) then
+             restart_file = trim(slabel) // '.VERLET_RESTART'
+           else if (leqi(dyntyp,'nose')) then
+             restart_file = trim(slabel) // '.NOSE_RESTART'
+           else if (leqi(dyntyp,'parrinellorahman')) then
+             restart_file = trim(slabel) // '.PR_RESTART'
+           else if (leqi(dyntyp,'noseparrinellorahman')) then
+             restart_file = trim(slabel) // '.NPR_RESTART'
+           else
+             step_back=.false.
+           endif
+           if (step_back) then
+             inquire( file=restart_file, exist=found_restart )
+             if (.not. found_restart) then
+               dt = fdf_get('MD.LengthTimeStep',dt_default,'fs')
+               xa=xa-dt*va
+               if (IOnode) then
+                 write(6,'(5a)') 'WARNING: ', trim(restart_file),
+     $                           ' not found--reading only XV file',
+     $                           ' and moving back 1 time step using',
+     $                           ' Euler'
+               endif
              endif
            endif
          endif

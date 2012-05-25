@@ -1,4 +1,12 @@
 -------------------------------------------------------------------------
+2012-05-25  16:00 Fabiano Corsetti <f.corsetti@nanogune.eu>  trunk-409--mv-verlet-restart-3
+Changes in Verlet MD restart applied also to Nose, PR, NPR
+
+modified:
+  Src/dynamics.f
+  Src/struct_init.F
+
+-------------------------------------------------------------------------
 2012-05-25  10:00 Fabiano Corsetti <f.corsetti@nanogune.eu>  trunk-409--mv-verlet-restart-2
 Changed routine for selecting new MD restart
 
