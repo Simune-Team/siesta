@@ -487,7 +487,7 @@ files in your directory including the following:
 
 \item fdf.log\index{fdf.log}
  (contains all the data used, explicit or chosen by default)
-\item O.ion and H.ion\index{species.ionl@{\it species.}ion}
+\item O.ion and H.ion\index{species.ion@{\it species.}ion}
  (complete information about the basis and KB projectors)
 \item h2o.XV\index{Systemlabel.XV@{\it Systemlabel.}XV}
  (contains positions and velocities)
@@ -3855,6 +3855,7 @@ iteration of the SCF loop will be written to a NetCDF file
 
 The complete set of wavefunctions obtained during the last
 iteration of the SCF loop will be written to SystemLabel.fullBZ.WFSX
+\index{WFSX file!fullBZ.WFSX@\texttt{fullBZ.WFSX}} 
 if the {\bf COOP.write} option is in effect.
 
 \begin{description}
@@ -4219,7 +4220,10 @@ reciprocal-lattice-vector coordinates)
 {\it Default value:} {\tt pi/a}
 
 {\bf Note:} You might need to define explicitly a LatticeConstant tag
-in your fdf file.
+in your fdf file if you do not already have one, and make it
+consistent
+with the scale of the k-points and any unit-cell vectors you might
+have already defined.
 
 \item[{\bf BandLines}] ({\it data block}):
 \index{BandLines@{\bf BandLines}}
@@ -4319,8 +4323,8 @@ kAtEndOfLastLine, kPointLabel \\
 \end{verbatim}
 
 \noindent
-The {\sc Gnubands}\index{Gnubands@{\sc Gnubands}} postprocessing
-utility program (found in the Util/ directory) reads the {\it
+The {\sc gnubands}\index{gnubands@{\tt gnubands}} postprocessing
+utility program (found in the Util/Bands directory) reads the {\it
   Systemlabel}.bands for plotting.  See the {\bf BandLines} data
 descriptor above for more information.
 
@@ -4328,9 +4332,11 @@ descriptor above for more information.
 \label{sec:wf-bands}
 
 The user can optionally request that the wavefunctions corresponding
-to the computed bands be written to file. They are written to the
-SystemLabel.bands.WFSX file (see section below for the format). The
-relevant options are:
+to the computed bands be written to file. 
+They are written to the {\it SystemLabel}.bands.WFSX file
+\index{WFSX file!bands.WFSX@\texttt{bands.WFSX}} 
+(see section below for the
+format). The relevant options are:
 
 \begin{description}
 
@@ -4340,6 +4346,13 @@ relevant options are:
 Instructs the program to compute and write the wave functions
 associated to the bands specified (by a {\bf BandLines} or a {\bf
   BandPoints} block) to the file {\tt SystemLabel.bands}.WFSX.
+
+The information in this file might be useful, among other things, to
+generate ``fatbands'' plots, in which both  band eigenvalues and
+information about orbital projections is presented.
+\index{fatbands}
+ See the
+\texttt{fat} program in the \texttt{Util/COOP} directory for details.
 
 {\it Default value:} {\tt .false.}
 
@@ -4373,6 +4386,7 @@ geometry loop (if any) finishes, using the last (presumably converged)
 density matrix produced during the last self-consistent field loop
 (after a final mixing). They are written to the
 SystemLabel.selected.WFSX file (see below for the format).
+\index{WFSX file!selected.WFSX@\texttt{selected.WFSX}} 
 
 Note that the complete set of wavefunctions obtained during the last
 iteration of the SCF loop will be written to SystemLabel.fullBZ.WFSX
@@ -5625,10 +5639,7 @@ charge-density and wavefunction contours.
 {\it Use:} File {\tt SystemLabel}.PLD is only written, not read, by siesta.
 
 Apart from the PLD file, you will need the Density-Matrix (DM) file
-and/or a wavefunction (WFS) file. For the latter, remember that Siesta
-now produces only a packed WFSX file. You will need to run the
-wfsx2wfs program to convert it to the WFS format. This will be fixed
-shortly.
+and/or a wavefunction (WFSX) file. 
 
 {\it Default value:} {\tt .false.}
 

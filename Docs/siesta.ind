@@ -157,7 +157,7 @@
   \item {\bf GeometryConstraints}, \hyperpage{90}
   \item GGA, \hyperpage{41}
   \item ghost atoms, \hyperpage{14}, \hyperpage{26}
-  \item {\sc Gnubands}, \hyperpage{62}
+  \item {\tt gnubands}, \hyperpage{62}
   \item grid, \hyperpage{50}
   \item {\bf GridCellSampling}, \hyperpage{51}
   \item Ground-state atomic configuration, \hyperpage{21}
@@ -531,6 +531,9 @@
   \item {\bf WFS.Energy.Max}, \hyperpage{68}
   \item {\bf WFS.Energy.Min}, \hyperpage{68}
   \item WFSX file, \hyperpage{64}
+    \subitem \texttt{bands.WFSX}, \hyperpage{62}
+    \subitem \texttt{fullBZ.WFSX}, \hyperpage{56}
+    \subitem \texttt{selected.WFSX}, \hyperpage{63}
   \item {\bf Write.WFS.For.Bands}, \hyperpage{63}
   \item {\bf     WriteBands}, \hyperpage{62}
   \item {\bf WriteCoorCerius}, \hyperpage{37}

@@ -1,4 +1,16 @@
 ---------------------------------------------------------------
+May 25, 2012  Alberto Garcia                    3.1-pl4--pop-17
+Some more documentation
+
+Updated the manual.
+More documentation for si_fabands example.
+
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Util/COOP/Tests/si_fatbands/README
+
+---------------------------------------------------------------
 May 24, 2012  Alberto Garcia                    3.1-pl4--pop-16
 Some further streamlining of the fatbands functionality
 
