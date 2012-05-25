@@ -1,0 +1,27 @@
+-------------------------------------------------------------------------
+2012-05-25  10:00 Fabiano Corsetti <f.corsetti@nanogune.eu>  trunk-409--mv-verlet-restart-2
+Changed routine for selecting new MD restart
+
+The backward-propagation is now only used for runs with more than one time step
+
+modified:
+  Src/struct_init.F
+
+-------------------------------------------------------------------------
+2012-05-24  20:00 Fabiano Corsetti <f.corsetti@nanogune.eu>  trunk-409--mv-verlet-restart-1
+Modified MD restart for Verlet runs in case the VERLET_RESTART file is not available
+
+If the user has selected MD.TypeOfRun=Verlet and MD.UseSaveXV for an MD run, but
+the VERLET_RESTART file is not found, the positions x(t) and velocities v(t-dt)
+are read from the XV file, and the positions are then backward-propagated by one
+time step using the Euler method to start the MD run from time (t-dt) with a
+consistent set of positions and velocities.
+
+N.B.: The value of the time step of the previous run (from which the XV file has
+been generated) should be equal to that of the current run. This information is
+not saved in the XV file, and so it is not possible for the code to tell whether
+the two runs are consistent.
+
+modified:
+  Src/dynamics.f
+  Src/struct_init.F
