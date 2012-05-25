@@ -4,6 +4,61 @@
 
 ** CHANGES ALONG siesta-3 branch
 ------------------------------------------------------------------------
+2012-05-25  8:25:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl8
+New energy-range and band-index options in mprop. New Eig2DOS
+
+* Upgrade of the Util/COOP/mprop program, with new options and
+  clarification of existing ones:
+
+- Allow specification of subsets of bands in Util/COOP/mprop
+
+New options "-b min_band -B max_band" to allow the use of restricted
+band sets in the generation of PDOS, COOP, and COHP curves.
+
+- Clearer energy-range options in mprop program
+
+The -m/-M options now refer to eigenvalues.  Together with the band
+options (-b/-B), they determine the eigenvectors actually taken into
+account.
+
+- Add plotting window options to mprop. Cosmetics
+
+The plotting window can now be specified with the -w/-W options. By
+default it is determined on the basis of the eigenvalue range.
+
+(+ add missing declaration to dm_creator.f90)
+
+* Extended the functionality of the 'eig2dos' program
+
+A new directory Util/Eig2DOS holds an updated version of the
+venerable 'eig2dos' program, with a new command-line interface
+that allows to specify all the parameters and new capabilities:
+
+-- Optional use of the k-point weight information in a .KP file.
+-- Selection of a range of bands for the calculation of the DOS.
+
+Invoke the program as  'Eig2DOS -h' for a synopsis.
+
+(A. Garcia)
+
+added:
+  Util/Eig2DOS/
+  Util/Eig2DOS/Eig2DOS.f90
+  Util/Eig2DOS/Makefile
+  Util/Eig2DOS/m_getopts.f90
+renamed:
+  Util/eig2dos.f => Util/Eig2DOS/original.eig2dos.f
+modified:
+  Docs/CHANGES
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Util/COOP/dm_creator.F90
+  Util/COOP/main_vars.f90
+  Util/COOP/mprop.f90
+  Util/COOP/subs.f90
+  Util/README
+
+------------------------------------------------------------------------
 2012-05-25  8:25:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl7
 New options for charge analysis: Voronoi, Hirshfeld, Bader
 
