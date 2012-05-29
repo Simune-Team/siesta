@@ -11,7 +11,7 @@
       module writewave
 
       use precision, only: dp
-      use sys, only: die
+      use sys, only: die, message
       use alloc, only: re_alloc
       use m_fdf_global, only: fdf_global_get
 
@@ -21,7 +21,7 @@
       parameter (maxlin=1000)
 
       character,  save :: label(maxlin)*8
-      character(len=200), save :: fname
+      character(len=200), save, public :: wfs_filename
       integer,    save :: lastk(maxlin)
 
       integer,    save :: nwf = 1
@@ -29,22 +29,20 @@
       logical,    save :: scf_set = .false.
       logical,    save :: debug = .false.
 
-      integer, save, dimension(:), pointer   :: nwflist 
-      integer, save, dimension(:,:), pointer :: iwf 
+      integer, save, dimension(:), pointer   :: nwflist => null()
+      integer, save, dimension(:,:), pointer :: iwf => null()
  
       integer, public, save               :: nwk
       integer, public, save               :: maxwk
-      real(dp), public, pointer, save     :: wfk(:,:)
+      real(dp), public, pointer, save     :: wfk(:,:) => null()
       logical, public, save               :: gamma_wavefunctions
-
-      logical,    save :: pointers_nullified = .false.
 
       real(dp),   save :: wfs_energy_min = -huge(1.0_dp)
       real(dp),   save :: wfs_energy_max =  huge(1.0_dp)
       logical,    save :: wfs_energy_window  = .true.
 
       private 
-      public :: allocwave, setup_wf_kpoints, wwave, writew
+      public :: setup_wfs_list, setup_wf_kpoints, wwave, writew
 
       CONTAINS
 
@@ -96,41 +94,59 @@
 
       end subroutine setup_wf_kpoints
 
-      subroutine allocwave(nk, norb)
+      subroutine setup_wfs_list(nk,norb,wfs_band_min,wfs_band_max,
+     $                          use_scf_weights,use_energy_window)
       !
-      ! Initialize structures if we are going to
-      ! output the wavefunctions for the SCF k-point set
+      ! Initialize structures if the number of bands
+      ! to output is the same for all k-points
+      ! (e.g., for the SCF k-point set, or for the new 'bands' option
 
       integer, intent(in) :: nk, norb
+      integer, intent(in) :: wfs_band_min, wfs_band_max  ! Band range
+      logical, intent(in) :: use_scf_weights            
+      logical, intent(in) :: use_energy_window           
 
-      integer :: j
-
-      if (.not. pointers_nullified) then
-         nullify(nwflist,iwf)
-         pointers_nullified = .true.
-      endif
+      integer :: j, nwfs
 
       call re_alloc(nwflist, 1, nk, name="nwflist",
-     $     routine="allocwave")
+     $     routine="setup_wfs_list")
       call re_alloc(iwf, 1, nk, 1, norb, name="iwf",
-     $     routine="allocwave")
-      scf_set = .true.
+     $     routine="setup_wfs_list")
+
+      scf_set = use_scf_weights
+      wfs_energy_window = use_energy_window
 !
-!     Here we request output of all the wavefunctions
-!     by default. Future: set an energy window.
+      call fdf_global_get(debug,"WriteWaveDebug", .false.)
+
+!     Here we request output of all the eigenstates in a k-point
+!     except if the user selects a band or energy range.
 !
-      nwflist(1:nk) = norb
-      do j=1, norb
-         iwf(1:nk,j) = j
+      if (wfs_band_min < 1) then
+         call die("WFS.BandMin < 1")
+      endif
+      if (wfs_band_max > norb) then
+         call die("WFS.BandMax > number of orbitals")
+      endif
+      if (wfs_band_max < wfs_band_min) then
+         call message("WFS.BandMax < WFS.BandMin." //
+     $        " Nothing written to file")
+      endif
+
+      nwfs = max(0,wfs_band_max - wfs_band_min + 1)
+      nwflist(1:nk) = nwfs
+      do j=1, nwfs
+         iwf(1:nk,j) = wfs_band_min - 1 + j
       enddo
+
+!     The energy window, if allowed, will take effect inside the routine
+!     that writes to file, as the energies are not yet known
 
       call fdf_global_get(wfs_energy_min,"WFS.EnergyMin",
      $                                -huge(1.0_dp),"Ry")
       call fdf_global_get(wfs_energy_max,"WFS.EnergyMax",
      $                                 huge(1.0_dp),"Ry")
-      call fdf_global_get(debug,"WriteWaveDebug", .false.)
 
-      end subroutine allocwave
+      end subroutine setup_wfs_list
 
       subroutine initwave( maxk, norb, nk, kpoint, overflow)
 C *********************************************************************
@@ -222,11 +238,6 @@ C Start time counter
 
       overflow = .false.
 
-      if (.not. pointers_nullified) then
-         nullify(nwflist,iwf)
-         pointers_nullified = .true.
-      endif
-
       if (Frstime) then
          call re_alloc(nwflist, 1, maxk, name="nwflist",
      $        routine="initwave")
@@ -234,6 +245,7 @@ C Start time counter
      $        routine="initwave")
       endif
 
+      wfs_energy_window = .true.
       call fdf_global_get(wfs_energy_min,"WFS.EnergyMin",
      $                                -huge(1.0_dp),"Ry")
       call fdf_global_get(wfs_energy_max,"WFS.EnergyMax",
@@ -605,7 +617,6 @@ C
       use parallel,    only : Node, Nodes
       use parallel,    only : ParallelOverK, ResetFirstCall
       use fdf
-      use files,       only : slabel
       use densematrix, only : Haux, Saux, psi
       use alloc
       use atmfuncs,     only : symfio, cnfigfio, labelfis, nofis
@@ -686,8 +697,8 @@ C Allocate local arrays - only aux is relevant here
       call re_alloc(Haux,1,2*nuotot*nuo,name='Haux',routine='writewave')
       call re_alloc(Saux,1,2*nuotot*nuo,name='Saux',routine='writewave')
       call re_alloc(psi,1,2*nuotot*nuo,name='psi',routine='writewave')
-      allocate(ek(nspin,nuo,nuotot))
-      call memory('A','D',nspin*nuo*nuotot,'writewave')
+      allocate(ek(nuotot,nspin,nk))
+      call memory('A','D',nspin*nk*nuotot,'writewave')
       naux = 2*nuotot*5
       allocate(aux(naux))
       call memory('A','D',naux,'writewave')
@@ -724,14 +735,12 @@ C Check indxuo
       enddo
 
 
-C Find output file name, and open for Node 0
+C Open file
 
       if (Node.eq.0) then
 
-        fname = trim(slabel) // '.WFSX'
-
         call io_assign( iu )
-        open(iu, file=fname, form="unformatted", status='unknown' )
+        open(iu, file=wfs_filename,form="unformatted",status='unknown')
 
         rewind (iu)
 
@@ -861,8 +870,8 @@ C Find file name, and open for Node 0
 
       if (Node .eq. 0) then
         call io_assign( iu )
-        open( iu, file=fname, form="unformatted", position='append',
-     .        status='old' )
+        open(iu,file=wfs_filename,form="unformatted",position='append',
+     .        status='old')
       endif
 
 C Check that the total number of orbitals is correct
@@ -880,7 +889,7 @@ C Check that the total number of orbitals is correct
 
       if (ntot .ne. nuotot) call die('Inconsistent number of orbitals')
 
-      if (wfs_energy_window) then          ! always true by default
+      if (wfs_energy_window) then  
          allocate(ind_wfn(nwflist(ik)))
          number_of_wfns = 0
          do iw = 1,nwflist(ik)

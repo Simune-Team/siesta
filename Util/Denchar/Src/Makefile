@@ -73,7 +73,7 @@ OBJS_DENCHAR = atompla.o planed.o\
         matvect.o memory.o colinear.o\
 	neighb.o paste.o pxf.o \
 	radfft.o ranger.o recipes.o\
-        readwaves.o rhoofr.o wavofr.o \
+        readwavesx.o rhoofr.o wavofr.o \
         redata_denchar.o  local_reinit.o denchar.o \
 	volcel.o wrout.o stsofr.o
 #

@@ -1,6 +1,6 @@
 module main_vars
   use precision, only: dp, sp
-  use subs
+  use subs, only: ival
   use m_getopts
   use units, only: Ang, pi
 

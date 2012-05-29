@@ -9,7 +9,7 @@
 %   Javier Junquera  Feb 04, 2002
 %   Pablo Ordejon    Jul 02, 2003
 %   Pablo Ordejon    2004  -- multiple k-points
-%
+%   Alberto Garcia,  2006-2012 -- fixes, use WFSX format
 
 
 \documentstyle[11pt]{article}
@@ -38,7 +38,7 @@
 
 \vspace{4cm}
 
-{\Huge {\bf {\sc Denchar} 1.4} }
+{\Huge {\bf {\sc Denchar} 2.1} }
 
 \vspace{0.5 cm}
 
@@ -48,7 +48,7 @@ in real space -}}
 
 \vspace{3cm}
 
-{\Large {\it April 1, 2009} }
+{\Large {\it May 4, 2012} }
 
 \vspace{3cm}
 {\Large Javier Junquera}
@@ -65,7 +65,7 @@ in real space -}}
 
 \vspace{1cm}
 
-{\Large Pablo Ordej\'on}
+{\Large Pablo Ordej\'on, Alberto Garc\'{\i}a}
 
 \vspace{5pt}
 
@@ -73,7 +73,7 @@ in real space -}}
 Campus de la UAB, 08193 Bellaterra, Barcelona, Spain}
 
 \vspace{2pt}
-{\bf ordejon@icmab.es}
+{\bf ordejon@icmab.es, albertog@icmab.es}
 \vspace{7mm}
 \end{center}
 
@@ -179,7 +179,7 @@ type {\tt make denchar} there to compile it.
  Finally, you will need the file containing the
  density matrix {\it SystemLabel}.DM if you wish to plot
  the charge density, or that containing the wavefunction
- coefficients {\it SystemLabel}.WFS if you want to plot
+ coefficients {\it SystemLabel}.WFSX if you want to plot
  wavefunctions. These files need to be present in the
  directory where you are running {\sc Denchar} (let's call it
  $\sim$/denchar-run).
@@ -199,7 +199,17 @@ type {\tt make denchar} there to compile it.
 
  {\tt \# cp $\sim$/siesta/RUN/{\it SystemLabel}.DM .}
 
- {\tt \# cp $\sim$/siesta/RUN/{\it SystemLabel}.WFS .}
+ {\tt \# cp $\sim$/siesta/RUN/{\it SystemLabel}.WFSX .}
+
+(NOTE: Modern versions of {\sc Siesta} produce different kinds
+of WFSX files: 
+\begin{itemize}
+\item {\it SystemLabel}.fullBZ.WFSX : for full PDOS or COOP/COHP
+  analysis.
+\item {\it SystemLabel}.bands.WFSX : for ``fatbands'' analysis.
+\item {\it SystemLabel}.selected.WFSX : holding selected k-point information.
+\end{itemize}
+Be sure to copy or link the right version to  {\it SystemLabel}.WFSX.)
 
  Copy or link the executable file to the directory
  where you intend to run  {\sc Denchar}, and that
@@ -275,8 +285,8 @@ and/or wavefunctions in 2D or 3D.
 Specifies if you want to calculate and plot a charge density
 in real space.
 
-{\it Use:} Either {\bf Dencharge.PlotCharge} or
-{\bf Dencharge.PlotWaveFunctions} must be .TRUE.
+{\it Use:} Either {\bf Denchar.PlotCharge} or
+{\bf Denchar.PlotWaveFunctions} must be .TRUE.
 If set to .TRUE., file {\it SystemName}.DM should
 be present.
 
@@ -287,9 +297,9 @@ be present.
 Specifies if you wand to calculate and plot wavefunctions
 in real space.
 
-{\it Use:} Either {\bf Dencharge.PlotCharge} or
-{\bf Dencharge.PlotWaveFunctions} must be .TRUE.
-If set to .TRUE., file {\it SystemName}.WFS should
+{\it Use:} Either {\bf Denchar.PlotCharge} or
+{\bf Denchar.PlotWaveFunctions} must be .TRUE.
+If set to .TRUE., file {\it SystemName}.WFSX should
 be present.
 
 {\it Default value:} .FALSE.
@@ -602,9 +612,9 @@ of atomic densities.
 \subsubsection{Wavefunctions}
 
 {\sc Denchar} plots each of the wavefunctions that is
-present in the file {\tt SystemLabel}.WFS generated
+present in the file {\tt SystemLabel}.WFSX generated
 by Siesta. For each wavefunction, a different file
-will be open containing the values of that wavefunction.
+will be created containing the values of that wavefunction.
 In what follows, the wave function number is denoted by
 \#.
 
@@ -693,9 +703,9 @@ of atomic densities.
 \subsubsection{Wavefunctions}
 
 {\sc Denchar} plots each of the wavefunctions that is
-present in the file {\tt SystemLabel}.WFS generated
+present in the file {\tt SystemLabel}.WFSX generated
 by Siesta. For each wavefunction, a different file
-will be open containing the values of that wavefunction.
+will be created containing the values of that wavefunction.
 In what follows, the wave function number is denoted by
 \#.
 
