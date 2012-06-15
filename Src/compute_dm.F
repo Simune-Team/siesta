@@ -25,7 +25,8 @@
 #ifdef CDF
       use iodmhs_netcdf, only: write_dmh_netcdf
 #endif
-      use m_ordern,        only : ordern
+      use m_minim,         only: minim
+      !use m_ordern,        only : ordern
       use m_steps,         only : istp
       use m_spin,          only : nspin, qs, efs
 #ifdef TRANSIESTA
@@ -38,6 +39,7 @@
 !     Input variables
       integer, intent(in) :: iscf
 !     Local variables
+      logical             :: CallDiagon
       integer             :: io, ispin, nnz
       real(dp)            :: const ! Temporary factor used in
                              ! calculation of Harris forces. e1>e2 to
@@ -54,7 +56,19 @@
       call timer( 'compute_dm', 1 )
 
 !     Solve eigenvalue problem 
-      if (isolve .eq. SOLVE_DIAGON) then
+
+      ! Here we decide if we want to calculate one or more SCF steps by
+      ! diagonalization before proceeding with the minimization routine
+      CallDiagon=.false.
+      if (isolve .eq. SOLVE_ORDERN) then
+        if ((iscf .le. 0) .and. (istp .eq. 1)) then
+          CallDiagon=.true.
+        else
+          if (iscf .eq. 0) CallDiagon=.true.
+        endif
+      endif
+
+      if ((isolve .eq. SOLVE_DIAGON) .or. (CallDiagon)) then
         call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
      &              numh, listhptr, listh, numh, listhptr, listh, 
      &              H, S, qtot, fixspin, qs, temp, e1, e2,
@@ -64,11 +78,16 @@
         Ecorrec = 0.0_dp
       elseif (isolve .eq. SOLVE_ORDERN) then
         if (.not. gamma) call die("Cannot do O(N) with k-points.")
-        call ordern(usesavelwf, ioptlwf, na_u, no_u, no_l, lasto,
-     &               isa, qa, rcoor, rmaxh, ucell, xa, iscf,
-     &               istp, ncgmax, etol, eta, qtot, maxnh, numh,
-     &               listhptr, listh, H, S, chebef, noeta, rcoorcp,
-     &               beta, pmax, Dscf, Escf, Ecorrec, nspin, qs )
+        ! THIS IS A TEMPORARY HACK--we are substituting the ordern
+        ! module with the minim module for testing purposes
+!        call ordern(usesavelwf, ioptlwf, na_u, no_u, no_l, lasto,
+!     &               isa, qa, rcoor, rmaxh, ucell, xa, iscf,
+!     &               istp, ncgmax, etol, eta, qtot, maxnh, numh,
+!     &               listhptr, listh, H, S, chebef, noeta, rcoorcp,
+!     &               beta, pmax, Dscf, Escf, Ecorrec, nspin, qs )
+        call minim(.false., iscf, no_s, nspin, no_u, maxnh, numh,
+     &             listhptr, listh, Dscf, eta, qs, h, s)
+        Ecorrec = 0.0_dp
         Entrop = 0.0_dp
 #ifdef TRANSIESTA
 ! TSS Begin

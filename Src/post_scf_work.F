@@ -12,7 +12,8 @@
       use atomlist, only: lasto, rmaxo, datm, indxuo, no_s, no_u, iphorb
       use m_energies
       use neighbour,   only: maxna=>maxnna   ! For plcharge...
-      use m_spin,         only: nspin
+      use m_spin,         only: nspin, qs
+      use m_minim,        only: minim
       implicit none
 
       integer  :: iscf
@@ -23,6 +24,12 @@
       call write_debug( '  PRE post_scf_work' )
 #endif
       call timer( 'PostSCF', 1 )
+!     If we use the minimization routine, the energy-density
+!     matrix is not calculated inside the SCF step, and
+!     so this must be done now
+      if (isolve .eq. SOLVE_ORDERN) call minim(.true., iscf, no_s,
+     &  nspin, no_u, maxnh, numh, listhptr, listh, Escf, eta, qs)
+
 !     If converged, make one last iteration to find forces and
 !     stress
 !     Note that here we are using the Dscf guessed by mixer,
