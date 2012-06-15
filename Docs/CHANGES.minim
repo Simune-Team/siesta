@@ -1,3 +1,18 @@
+2012-15-06  17:00 Fabiano Corsetti <fcorsetti@nanogune.eu>  trunk-409--minim-3
+Changed initial guess for orbital coefficients
+
+* Empirical testing suggests that starting with an initial guess close to zero
+  can reduce the number of line searches in the initial SCF step by a factor of
+  2; however, if the initial guess is too small the algorithm is numerically
+  unstable
+* The impact of the initial guess on the number of line searches needs to be
+  investigated further!
+
+modified:
+  Docs/CHANGES.minim
+  Src/m_minim.F90
+  version.info
+
 2012-15-06  16:00 Fabiano Corsetti <fcorsetti@nanogune.eu>  trunk-409--minim-2
 Added documentation of changes
 

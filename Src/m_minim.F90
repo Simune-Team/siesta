@@ -263,7 +263,7 @@ subroutine minim_cg(calc_Escf,iscf,Hp_dim_loc,Hp_dim,N_occ,eta,Daux,psi,nspin,Hp
           chi(j,i)=sign(rn,rn2-0.5_dp)
         end do
       end do
-      chi=chi/sqrt(real(Hp_dim,dp))
+      chi=1.0d-2*chi/sqrt(real(Hp_dim,dp))
     ! If this is *not* the first SCF step, but it *is* the first time the minimization routine is
     ! called, then we have already calculated the eigenfuctions from a diagonaliazation call--in
     ! this case, we take the lowest N_occ eigenfunctions as our initial guess, but we must take care
