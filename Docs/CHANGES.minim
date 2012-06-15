@@ -1,0 +1,37 @@
+2012-15-06  16:00 Fabiano Corsetti <fcorsetti@nanogune.eu>  trunk-409--minim-2
+Added documentation of changes
+
+added:
+  Docs/CHANGES.minim
+modified:
+  version.info
+
+2012-15-06  16:00 Fabiano Corsetti <fcorsetti@nanogune.eu>  trunk-409--minim-1
+Implemented the non-O(N) version of the Ordejon-Mauri functional
+
+* The functional is contained in a new module m_minim
+* The m_minim module replaces the m_ordern module and so can be called with
+  "SolutionMethod OrderN" in the SIESTA input file--note, however, that it
+  is *not* an O(N) functional, since there is no localization imposed on the
+  orbitals
+* "ON.eta" can be specified in the SIESTA input file to control the shift of
+  the eigenspectrum, in order to ensure that all of the occupied states (at
+  least) have a negative energy
+* The module works in serial with LAPACK, or in parallel with MPI and
+  ScaLAPACK
+* For efficiency, only the density matrix is computed at each SCF step,
+  while the energy-density matrix is computed once we have reached the end of
+  the SCF loop
+* By changing the assignment of CallDiagon in m_compute_dm, it is possible to
+  perform one or more of the SCF cycles at the beginning of each MD/geometry
+  optimization step by diagonalization instead of minimization; the
+  eigenfunctions are then used as the initial guess for the next minimization
+  call
+
+added:
+  Src/m_minim.F90
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+  Src/post_scf_work.F
+  version.info
