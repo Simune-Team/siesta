@@ -45,13 +45,12 @@ C ----------------------------------------------------------------------
 C
 C  Modules
 C
-      use precision
+      use precision,    only:  dp, grid_p
       use parallel
       use parallelsubs
       use atomlist, only: indxua, indxuo, no_s, no_l, Datm
       use atmfuncs, only: rcut, rcore, symfio, cnfigfio, labelfis, 
      .                    nofis, zvalfis
-      use fdf
       use sys
       use mesh
 #ifdef MPI
@@ -93,20 +92,14 @@ C
      .  MPIerror
 #endif
 
-      real, dimension(:), allocatable, save ::
-     .  rhoatm
+      real(grid_p), dimension(:), allocatable   :: rhoatm
+      real(grid_p), dimension(:,:), allocatable :: DRho
 
-      real, dimension(:,:), allocatable, save ::
-     .  DRho
+      real(dp), dimension(:), allocatable       :: q, qtmp
 
-      real*8, dimension(:), allocatable, save ::
-     .  q, qtmp
+      real(dp) :: dvol, volume, volcel
 
-      real*8
-     .  dvol, volume, volcel
-
-      character
-     .  atm_label*20
+      character(len=20) ::  atm_label
 
       external
      .  rhooda, rhoofd, rhoofdsp,
@@ -311,6 +304,7 @@ C *********************************************************************
 C
 C  Modules
 C
+      use precision, only: dp, grid_p
       use atmfuncs, only: rcut, phiatm
       use mesh,     only: nsp, dxa, xdop, xdsp
       use meshphi
@@ -321,20 +315,22 @@ C
       integer          indxuo(no_s), indxua(na_s),
      .                 iaorb(*), iphorb(*), isa(*)
 
-      real             rhoatm(nsp,np),rhoscf(nsp,np,nspin)
+      real(grid_p) ::  rhoatm(nsp,np),rhoscf(nsp,np,nspin)
 
-      real*8           Datm(no_s), phip, qh(na_u)
+      real(dp)         Datm(no_s), phip, qh(na_u)
 
       integer          i, ip, isp, iu, kn, io, iop, is, iphi, ia, ix, 
      .                 ispin, iua
-      real*8           Ci, gradCi(3), r2o, r2sp, dxsp(3), Qi
+      real(dp)         Ci, gradCi(3), r2o, r2sp, dxsp(3), Qi
 
+      ! A very small number to avoid division by zero
+      real(grid_p)  :: rhoatm_tolerance = 1.0e-12_grid_p
 
 
 C  Initialise Hirshfeld charges
 
       do iua = 1, na_u
-        qh(iua) = 0.0
+        qh(iua) = 0.0_dp
       enddo
 
 C  Loop on mesh points
@@ -347,13 +343,22 @@ C  Loop on orbitals of mesh point
 
 C  Generate phi value and loop on subpoints
           iphi = iphorb(i)
-          if (iphi .gt. no_s) stop 'error!!!'
+!!          if (iphi .gt. no_s) call die("hirshfeld: iphi error")
           ia = iaorb(i)
           iua = indxua(ia)
           is = isa(ia)
           r2o = rcut(is,iphi)**2
           iop = listp2(kn)
           do isp = 1,nsp
+             if (abs(rhoatm(isp,ip)) <= rhoatm_tolerance) then
+                ! Atomic charge is really too small here... so
+                ! we do not count this point
+                CYCLE
+c$$$                 write(6,"(a,g14.6,/,10x,a,2g14.6)")
+c$$$     $               "rhoatm: ", rhoatm(isp,ip), "rho: ",
+c$$$     $                rhoscf(isp,ip,:)
+              endif
+
             do ix = 1,3
               dxsp(ix) = xdop(ix,iop) + xdsp(ix,isp) - dxa(ix,ia)
             enddo
@@ -365,7 +370,6 @@ C  Generate phi value and loop on subpoints
               do ispin = 1, nspin
                 qh(iua) = qh(iua) 
      .                + Qi * rhoscf(isp,ip,ispin)/rhoatm(isp,ip)
-C			write(6,*) rhoscf(isp,ip,ispin),rhoatm(isp,ip)
               enddo
             endif
           enddo
@@ -401,6 +405,7 @@ C *********************************************************************
 C
 C  Modules
 C
+      use precision, only: dp, grid_p
       use atmfuncs, only: rcut, phiatm
       use mesh,     only: nsp, dxa, xdop, xdsp
       use meshphi
@@ -411,21 +416,21 @@ C
       integer          indxua(na_s),
      .                 iaorb(no_s)
 
-      real             rhoatm(nsp,np),rhoscf(nsp,np,nspin)
+      real(grid_p) ::  rhoatm(nsp,np),rhoscf(nsp,np,nspin)
 
-      real*8           phip, qv(na_u)
+      real(dp)     ::  phip, qv(na_u)
 
       integer          i, ip, isp, iu, kn, io, iop, is, ia, ix, 
      .                 ispin, iua, ntimes(na_u), maxeq, neq, ieq
 
-      real*8           Ci, gradCi(3), r2o, r2sp, dxsp(3), Qi, huge, 
+      real(dp)         Ci, gradCi(3), r2o, r2sp, dxsp(3), Qi, huge, 
      .                 rmin, qtot, tol
 
       logical          eq
 
-      parameter (huge = 1.d30)
+      parameter (huge = 1.0e30_dp)
       parameter (maxeq = 20)
-      parameter (tol = 1.0d-2)
+      parameter (tol = 1.0e-2_dp)
 
       integer          iatom(maxeq)
 
@@ -434,7 +439,7 @@ C  Initialise Hirshfeld charges
 
       do iua = 1, na_u
         ntimes(iua) = 0
-        qv(iua) = 0.0
+        qv(iua) = 0.0_dp
       enddo
 
 
@@ -508,7 +513,7 @@ C  is zero, so move to next subpoint
             enddo
           else
 C  Check that charge is actually zero
-            qtot=0.0d0
+            qtot=0.0_dp
             do ispin=1,nspin
               qtot = qtot + rhoscf(isp,ip,ispin) + rhoatm(isp,ip)
             enddo

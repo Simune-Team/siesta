@@ -4,6 +4,19 @@
 
 ** CHANGES ALONG siesta-3 branch
 ------------------------------------------------------------------------
+2012-06-16  15:15:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl10
+Trap very small densities in atompop and enable grid_p support
+
+Sometimes the charge density within an orbital radius can be very
+small, potentially causing problems in the calculation of the
+Hirshfeld charges in 'atompop'. A test has been added.
+
+Relevant arrays in that file are now declared as real(grid_p).
+
+modified:
+  Src/atompop.F
+
+------------------------------------------------------------------------
 2012-05-29  13:15:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl9
 New options for wavefunction output. 'Fatbands' analysis
 
