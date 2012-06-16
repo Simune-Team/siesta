@@ -65,7 +65,7 @@ C Internal variables ......................................................
   
       integer
      .  ia, ind, io, ioa, is,  iio, 
-     .  j, ja, jn, jo, joa, js, jua, jx, nnia
+     .  j, ja, jn, jo, joa, js, jx, nnia
 
       real(dp) grSij(3) , rij, Sij, volcel, volume
 
@@ -99,7 +99,6 @@ C Valid orbital
 
             do jn = 1,nnia
               ja = jna(jn)
-              jua = indxua(ja)
               rij = sqrt( r2ij(jn) )
               do jo = lasto(ja-1)+1,lasto(ja)
                 ioa = iphorb(io)

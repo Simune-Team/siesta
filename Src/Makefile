@@ -311,7 +311,7 @@ atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o siesta_geom.o
 atomlwf.o: alloc.o atmfuncs.o mneighb.o onmod.o precision.o spatial.o sys.o
 atompop.o: atmfuncs.o atomlist.o meshsubs.o meshsubs.o parallel.o
 atompop.o: parallelsubs.o precision.o sys.o
-automatic_cell.o: atmfuncs.o parallel.o precision.o units.o
+automatic_cell.o: atm_types.o atmfuncs.o parallel.o precision.o units.o
 bands.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o m_fdf_global.o
 bands.o: m_gamma.o parallel.o parallelsubs.o parsing.o precision.o
 bands.o: siesta_geom.o sys.o writewave.o

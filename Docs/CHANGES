@@ -4,6 +4,25 @@
 
 ** CHANGES ALONG siesta-3 branch
 ------------------------------------------------------------------------
+2012-06-16  15:15:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl11
+Improved the estimation of the size of the automatic cell
+
+If not specified, Siesta generates automatically a unit cell for
+"molecular" or "atomic" systems. The criterion is that the cell is big
+enough to avoid interactions between orbitals in two different cells.
+
+Up to now, the estimation of the size of the orbitals was given by
+the cutoff of Vna. But if the basis set contains large orbitals which
+are not occupied in the ground state, this estimate is too short.
+
+The "size of the atom" is now estimated as the largest of rc(Vna) and
+the cutoffs of all the orbitals. 
+
+modified:
+  Src/Makefile
+  Src/automatic_cell.f
+
+------------------------------------------------------------------------
 2012-06-16  15:15:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl10
 Trap very small densities in atompop and enable grid_p support
 
