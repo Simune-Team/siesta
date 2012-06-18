@@ -299,10 +299,6 @@ subroutine minim_cg(calc_Escf,iscf,Hp_dim_loc,Hp_dim,N_occ,eta,Daux,psi,nspin,Hp
 #endif
     end if
 
-    allocate(H(1:N_occ,1:N_occ_loc))
-    allocate(S(1:N_occ,1:N_occ_loc))
-    allocate(work3(1:N_occ,1:N_occ_loc))
-
     FirstCall=.false.
   end if
 
@@ -325,9 +321,15 @@ subroutine minim_cg(calc_Escf,iscf,Hp_dim_loc,Hp_dim,N_occ,eta,Daux,psi,nspin,Hp
     deallocate(S)
     deallocate(H)
 
+    call timer_stop('minim_cg')
+
     return
 
   end if
+
+  if (.not. allocated(H)) allocate(H(1:N_occ,1:N_occ_loc))
+  if (.not. allocated(S)) allocate(S(1:N_occ,1:N_occ_loc))
+  if (.not. allocated(work3)) allocate(work3(1:N_occ,1:N_occ_loc))
 
   if (.not. LineSearchFit) then
     allocate(Hd(1:N_occ,1:N_occ_loc))
