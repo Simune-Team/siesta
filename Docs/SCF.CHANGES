@@ -1,5 +1,15 @@
 
 -----------------------------------------------------------------------
+2012-06-18  Alberto Garcia <albertog@icmab.es>   trunk-410-scf-34
+Sync to trunk-410
+
+modified:
+  Docs/CHANGES
+  Src/Makefile
+  Src/automatic_cell.f
+  version.info
+
+-----------------------------------------------------------------------
 2012-04-26  Alberto Garcia <albertog@icmab.es>   trunk-409-scf-34
 Fix bug in extrapolation. Cosmetics
 
