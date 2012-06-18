@@ -1,4 +1,4 @@
-2012-15-06  16:00 Fabiano Corsetti <fcorsetti@nanogune.eu>  trunk-409--minim-4
+2012-18-06  16:00 Fabiano Corsetti <fcorsetti@nanogune.eu>  trunk-409--minim-4
 Fixed deallocation of arrays bug
 
 * The bug was introduced by separating the calculation of the energy-density
