@@ -14,7 +14,7 @@
   \item {\bf AtomCoorFormatOut}, 31
   \item {\bf AtomicCoordinatesAndAtomicSpecies}, 32
   \item {\bf AtomicCoordinatesFormat}, 31
-  \item {\bf AtomicCoordinatesOrigin}, 31
+  \item {\bf AtomicCoordinatesOrigin}, 32
   \item {\bf AtomicMass}, 15
 
   \indexspace
@@ -32,7 +32,7 @@
     \subitem effective pressure, 28
     \subitem filtering, 26, 27
     \subitem fix   split-valence table, 22
-    \subitem Gen-basis standalone program, 27
+    \subitem Gen-basis standalone program, 27, 28
     \subitem ghost atoms, 26
     \subitem minimal, 20
     \subitem new   split-valence code, 21, 22
@@ -100,14 +100,14 @@
   \item {\bf DM.Broyden.Cycle.On.Maxit}, 45
   \item {\bf DM.Broyden.Variable.Weight}, 45
   \item {\bf DM.EnergyTolerance}, 49
-  \item {\bf DM.FormattedFiles}, 46
+  \item {\bf DM.FormattedFiles}, 47
   \item {\bf DM.FormattedInput}, 47
   \item {\bf DM.FormattedOutput}, 47
   \item {\bf DM.Harris.Tolerance}, 50
   \item {\bf DM.InitSpin}, 47
   \item {\bf DM.InitSpinAF}, 47
   \item {\bf DM.KickMixingWeight}, 45
-  \item {\bf DM.MixingWeight}, 43
+  \item {\bf DM.MixingWeight}, 44
   \item {\bf     DM.MixSCF1}, 72
   \item {\bf DM.MixSCF1}, 45
   \item {\bf DM.NumberBroyden}, 44
@@ -116,7 +116,7 @@
   \item {\bf       DM.Pulay.Avoid.First.After.Kick}, 44
   \item {\bf DM.PulayOnFile}, 44
   \item {\bf DM.Require.Energy.Convergence}, 49
-  \item {\bf DM.Require.Harris.Convergence}, 49
+  \item {\bf DM.Require.Harris.Convergence}, 50
   \item {\bf DM.Tolerance}, 49
   \item {\bf DM.UseSaveDM}, 46
   \item {\tt DZ}, 20
@@ -155,12 +155,12 @@
 
   \item Gaussians, 20
   \item {\sc Gen-basis}, 16
-  \item {\sc Gen-basis}, 27
+  \item {\sc Gen-basis}, 27, 28
   \item {\bf GeometryConstraints}, 88
   \item GGA, 41
   \item ghost atoms, 14, 26
   \item {\sc Gnubands}, 62
-  \item grid, 50
+  \item grid, 51
   \item Grid precision, 115
   \item {\bf GridCellSampling}, 51
   \item Ground-state atomic configuration, 20
@@ -197,7 +197,7 @@
   \item Localized Wave Functions, 59, 60
   \item {\bf LongOutput}, 13
   \item Lower order N memory, 60
-  \item LSD, 41--43
+  \item LSD, 41, 43
 
   \indexspace
 
@@ -238,9 +238,9 @@
   \item {\bf MD.UseSaveZM}, 38
   \item {\bf MD.UseStructFile}, 36
   \item {\bf MD.VariableCell}, 80
-  \item mesh, 50
-  \item {\bf MeshCutoff}, 50
-  \item {\bf MeshSubDivisions}, 50
+  \item mesh, 51
+  \item {\bf MeshCutoff}, 51
+  \item {\bf MeshSubDivisions}, 51
   \item {\tt MINIMAL}, 20
   \item minimal basis, 20
   \item mixps   program, 15
@@ -265,7 +265,7 @@
   \item {\bf     New.B.Parameter}, 29
   \item NEXT\_ITER.UCELL.ZMATRIX, 37
   \item {\tt nodes}, 20
-  \item {\bf NonCollinearSpin}, 42
+  \item {\bf NonCollinearSpin}, 43
   \item {\tt nonodes}, 20
   \item {\bf NumberOfAtoms}, 14, 30
   \item {\bf NumberOfEigenStates}, 55
@@ -316,10 +316,10 @@
     \subitem density   matrix, 49
     \subitem density matrix, 48, 49
     \subitem density matrix history, 49
-    \subitem eigenvalues, 13, 56, 64
+    \subitem eigenvalues, 13, 57, 64
     \subitem electrostatic potential, 73
     \subitem forces, 13, 87
-    \subitem grid $\vec k$ points, 13, 40
+    \subitem grid $\vec k$ points, 13, 41
     \subitem Hamiltonian, 49
     \subitem Hamiltonian \& overlap, 53
     \subitem Hamiltonian history, 49
@@ -397,7 +397,7 @@
   \item readwfsx, 64
   \item relaxation of cell parameters only, 80
   \item removal of intramolecular pressure, 84
-  \item {\bf Reparametrize.Pseudos}, 28
+  \item {\bf Reparametrize.Pseudos}, 29
   \item Restart of O(N) calculations, 60
   \item {\bf Restricted.Radial.Grid}, 29
   \item revPBE, 41
@@ -418,18 +418,18 @@
   \item {\bf SaveTotalPotential}, 73
   \item scale factor, 26
   \item SCF, 43
-    \subitem mixing, 43--45
+    \subitem mixing, 44, 45
       \subsubitem Broyden, 44, 45
       \subsubitem energy convergence, 49
-      \subsubitem harris energy convergence, 49
-      \subsubitem linear, 43, 45
+      \subsubitem harris energy convergence, 50
+      \subsubitem linear, 44, 45
       \subsubitem Pulay, 44
   \item SCF convergence criteria, 49
   \item {\bf SCF.Read.Charge.NetCDF}, 48
   \item {\bf       SCF.Read.Deformation.Charge.NetCDF}, 48
   \item {\bf SCFMustConverge}, 43
   \item Scripting, 79
-  \item {\sc     Sies2arc}, 37
+  \item {\sc     Sies2arc}, 38
   \item {\sc Sies2arc}, 37
   \item {\sc Siesta}, 5
   \item siesta, 14
@@ -442,15 +442,15 @@
   \item {\bf SolutionMethod}, 55, 96
   \item species, 14
   \item {\it species.}ion, 10
-  \item spin, 42, 43, 47
+  \item spin, 43, 47
     \subitem initialization, 47
-    \subitem non-collinear, 42
+    \subitem non-collinear, 43
   \item {\bf SpinPolarized}, 42
   \item split valence, 20
   \item {\tt splitgauss}, 20
   \item {\tt STANDARD}, 20
   \item structure input precedence issues, 39
-  \item {\bf SuperCell}, 30
+  \item {\bf SuperCell}, 31
   \item synthetic atoms, 14
   \item {\bf SyntheticAtoms}, 14
   \item {\bf SystemLabel}, 14
@@ -532,14 +532,14 @@
   \item {\bf     WriteDenchar}, 78
   \item {\bf WriteDM}, 48
   \item {\bf WriteDM.History.NetCDF}, 49
-  \item {\bf WriteDM.NetCDF}, 48
+  \item {\bf WriteDM.NetCDF}, 49
   \item {\bf WriteDMHS.History.NetCDF}, 49
   \item {\bf WriteDMHS.NetCDF}, 49
-  \item {\bf WriteEigenvalues}, 13, 56
+  \item {\bf WriteEigenvalues}, 13, 57
   \item {\bf     WriteForces}, 87
   \item {\bf WriteForces}, 13
   \item {\bf WriteKbands}, 13, 62
-  \item {\bf WriteKpoints}, 13, 40
+  \item {\bf WriteKpoints}, 13, 41
   \item {\bf WriteMDhistory}, 87
   \item {\bf WriteMDXmol}, 37
   \item {\bf WriteMullikenPop}, 13, 66

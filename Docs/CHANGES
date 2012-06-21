@@ -6,6 +6,25 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-06-21  10:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-411
+Fix bug in fdf_bbackspace. No .ion.nc files for ghosts
+
+A bug in fdf_bbackspace made it take two steps back when at the end of
+an fdf block. This has now been fixed, removing also the superfluous
+'pline' argument.
+
+When dealing with ghost atoms, the .ion.nc files containing ionic
+information in netCDF format cannot yet be read back properly. Their
+generation has been deactivated for now. Users can still use the
+standard .ion files in ASCII format with the option 'UserBasis T'.
+
+modified:
+  Docs/siesta.tex
+  Src/basis_io.F
+  Src/basis_specs.f
+  Src/fdf/fdf.F90
+
+-----------------------------------------------------------------------
 2012-06-15  15:09:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-410
 Improved the estimation of the size of the automatic cell
 

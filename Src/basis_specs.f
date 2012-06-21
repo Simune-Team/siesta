@@ -460,7 +460,7 @@ C Sanity checks on values
                 ! We are seeing the next species' section
                 if (ish .ne. basp%nkbshells)
      $            call die("Not enough shells for this species...")
-                if (.not. fdf_bbackspace(bfdf, pline))
+                if (.not. fdf_bbackspace(bfdf))
      $            call die('readkb: ERROR in PS.KBprojectors block')
               endif
             endif
@@ -555,7 +555,7 @@ C Sanity checks on values
      $            call die("Not enough shells for this species...")
                 ! Use default values for ref energies
                 k%erefKB(1:k%nkbl) = huge(1.d0)
-                if (.not. fdf_bbackspace(bfdf, pline))
+                if (.not. fdf_bbackspace(bfdf))
      $            call die('readkb: ERROR in PS.KBprojectors block')
               else
                 if (fdf_bnvalues(pline) .ne. k%nkbl)
@@ -712,7 +712,7 @@ C Sanity checks on values
             if (.not. fdf_bmatch(pline,'r')) then
               ! New shell or species
               ! Default values for the scale factors
-              if (.not. fdf_bbackspace(bfdf,pline))
+              if (.not. fdf_bbackspace(bfdf)) 
      $          call die('repaobasis: ERROR in PAO.Basis block')
               cycle shells
             else
