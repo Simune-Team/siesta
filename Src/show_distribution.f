@@ -1,4 +1,5 @@
       subroutine show_distribution()
+!     This is buggy for dd
       use parallel, only: Nodes
       use parallelsubs
       use siesta_geom, only: na_u

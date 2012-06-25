@@ -44,8 +44,6 @@
       use siesta_cml
       use cellsubs,      only : reclat  ! Finds reciprocal unit cell
       use cellsubs,      only : volcel  ! Finds unit cell volume
-      use m_chkgmx,      only : chkgmx  ! Checks planewave cutoff of a mesh
-      use fft1d,         only : nfft    ! Finds allowed value for 1-D FFT
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -97,7 +95,6 @@ C integer is            : Species index
 C integer isp           : Sub-Point index
 C integer j             : General-porpose index
 C integer j1,j2,j3      : Mesh indexes in each mesh direction
-C real*8  k0(3)         : Zero-vector argument for routine chkgmx
 C integer nep           : Number of extended-mesh points
 C integer nmp           : Number of mesh points in unit cell
 C real*8  pldist        : Distance between mesh planes
@@ -118,12 +115,10 @@ C     Local variables
      &                           ity, j, nep, j1, j2, j3, indi
       integer*8               :: ntp
       real(dp)                :: dx(3), dxp(3), pldist, r,
-     &                           rcell(3,3), vecmod, volume
-      real(dp), parameter     :: k0(3) = (/ 0.0, 0.0, 0.0 /)
+     &                           volume
       logical                 :: within
 C     Functions
-      real(dp)                :: dismin
-      external                :: dismin
+      real(dp), external      :: dismin
 !--------------------------------------------------------------------- BEGIN
 #ifdef DEBUG
       call write_debug( '      PRE InitMesh' )
@@ -132,50 +127,13 @@ C     Functions
 ! ----------------------------------------------------------------------
 ! Mesh initialization
 ! ----------------------------------------------------------------------
-
-! Find reciprocal cell vectors (multiplied by 2*pi)
-      call reclat( cell, rcell, 1 )
-
-! Find number of mesh intervals for each cell vector.
-! The reciprocal vectors of the mesh unit cell (cell/ntm)
-! are rcell*ntm, and must be larger than 2*G2max
-      do i = 1,3
-        vecmod = sqrt(dot_product(rcell(:,i),rcell(:,i)))
-        ntm(i) = 2 * sqrt(G2max) / vecmod + 1
-      enddo
-
-! Impose that mesh cut-off is large enough
-      impose_cutoff: do
-
-        ! Require that ntm is suitable for FFTs and a multiple of nsm
-        do i = 1,3
-          impose_fft: do
-            ! nfft increases ntm to the next integer suitable for FFTs
-            call nfft( ntm(i) )
-            if ( mod( ntm(i), nsm )==0 ) exit impose_fft
-            ntm(i) = ntm(i) + 1
-          end do impose_fft
-          nm(i) = ntm(i) / nsm
-          nmsc(i) = nm(i) * nsc(i)
-        enddo ! i
-
-        ! Check that effective cut-off is large enough as for non-right
-        ! angled unit cells this is not guaranteed to be the case.
-        ! If cut-off needs to be larger, increase ntm and try again.
-        ! chkgmx decreases G2mesh to the right cutoff value of the mesh
-        G2mesh = 1.0d6
-        call chkgmx( k0, rcell, ntm, G2mesh )
-        if (G2mesh >= G2max) then
-          exit impose_cutoff
-        else
-          ntm(1:3) = ntm(1:3) + 1
-        end if
-
-      end do impose_cutoff
-
+      ! determines ntm
+      call get_mesh_sizes(cell,G2max,nsm,ntm,G2mesh)
 
 ! Save some numbers 
 !     nmeshg in module array
+      nm(:) = ntm(:) / nsm
+      nmsc(:) = nm(:) * nsc(:)
       nmeshg(:) = ntm(:) ! Total number of mesh points, incl. subpoints
       nmuc(:) = nm(:)    ! Mesh points in each unit cell vector
       nusc(:) = nsc(:)   ! Unit cells in each supercell direction
@@ -295,6 +253,93 @@ C     Create extended mesh arrays for the first data distribution
 #endif
 !----------------------------------------------------------------------- END
       end subroutine InitMesh
+!------------------------------------
+
+      subroutine get_mesh_sizes(cell,G2max,nsm,ntm,RealCutoff)
+      ! Computes the mesh dimensions ntm for a given cell 
+      ! and mesh cutoff, making them multiples of the big-point
+      ! sampling size nsm.
+
+      use precision,     only : dp
+      use cellsubs,      only : reclat  ! Finds reciprocal unit cell
+      use m_chkgmx,      only : chkgmx  ! Checks planewave cutoff of a mesh
+      use fft1d,         only : nfft    ! Finds allowed value for 1-D FFT
+      use fdf
+      use sys,           only : die, message
+
+      real(dp), intent(in)  :: cell(3,3)
+      real(dp), intent(in)  :: G2max
+      real(dp), intent(out) :: RealCutoff
+      integer, intent(in)   :: nsm
+      integer, intent(out)  :: ntm(3)
+      
+      real(dp)  :: rcell(3,3), vecmod
+      integer   :: i
+      real(dp), parameter     :: k0(3) = (/ 0.0, 0.0, 0.0 /)
+
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
+
+      ! Find reciprocal cell vectors (multiplied by 2*pi)
+      call reclat( cell, rcell, 1 )
+
+! Find number of mesh intervals for each cell vector.
+! The reciprocal vectors of the mesh unit cell (cell/ntm)
+! are rcell*ntm, and must be larger than 2*G2max
+      do i = 1,3
+        vecmod = sqrt(dot_product(rcell(:,i),rcell(:,i)))
+        ntm(i) = 2 * sqrt(G2max) / vecmod + 1
+      enddo
+
+! Impose that mesh cut-off is large enough
+      impose_cutoff: do
+
+        ! Require that ntm is suitable for FFTs and a multiple of nsm
+        do i = 1,3
+          impose_fft: do
+            ! nfft increases ntm to the next integer suitable for FFTs
+            call nfft( ntm(i) )
+            if ( mod( ntm(i), nsm )==0 ) exit impose_fft
+            ntm(i) = ntm(i) + 1
+          end do impose_fft
+        enddo ! i
+
+        ! Check that effective cut-off is large enough as for non-right
+        ! angled unit cells this is not guaranteed to be the case.
+        ! If cut-off needs to be larger, increase ntm and try again.
+        ! chkgmx decreases G2mesh to the right cutoff value of the mesh
+        RealCutoff = huge(1.0_dp)
+        call chkgmx( k0, rcell, ntm, RealCutoff )
+        if (RealCutoff >= G2max) then
+          exit impose_cutoff
+        else
+          ntm(1:3) = ntm(1:3) + 1
+        end if
+
+      end do impose_cutoff
+
+      if (fdf_block('MeshSizes',bfdf)) then
+        if (fdf_bline(bfdf, pline)) then
+           ntm(1) = fdf_bintegers(pline,1)
+           ntm(2) = fdf_bintegers(pline,2)
+           ntm(3) = fdf_bintegers(pline,3)
+        else
+           call die('initmesh: ERROR in MeshSizes block')
+        endif
+        RealCutoff = huge(1.0_dp)
+        call chkgmx( k0, rcell, ntm, RealCutoff )
+        if (RealCutoff < G2max) then
+           call message("Read mesh sizes give a smaller"
+     $                   // " cutoff than requested")
+        endif
+        if (any(mod(ntm,nsm) /= 0)) then
+           call die("Read mesh sizes are not multiples of nsm")
+        endif
+      endif
+
+      end subroutine get_mesh_sizes
+
+!--------------------------
 
       subroutine SameMeshAndAtoms(na, xa, ucell, rmax, G2max, G2mesh,
      &                            samesh, samexa)

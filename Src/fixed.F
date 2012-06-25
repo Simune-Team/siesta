@@ -250,6 +250,10 @@ c **********************************************************************
                 endif
                 cycle
               endif
+            else
+              do ia = 1, ni
+                integs(ia) = fdf_bintegers(pline,ia)
+              enddo
             endif
 
             ! Store position constraints

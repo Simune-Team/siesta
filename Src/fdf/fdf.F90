@@ -2200,14 +2200,13 @@ MODULE fdf
 !   Backspace to the previous physical line in the block
 !   returning .TRUE. while more lines exist in the block bfdf.
 !
-    FUNCTION fdf_bbackspace(bfdf, pline)
+    FUNCTION fdf_bbackspace(bfdf)
       implicit none
 !--------------------------------------------------------------- Input Variables
       type(block_fdf)            :: bfdf
 
 !-------------------------------------------------------------- Output Variables
       logical                    :: fdf_bbackspace
-      type(parsed_line), pointer :: pline
 
 !--------------------------------------------------------------- Local Variables
       character(80)              :: strlabel
@@ -2227,32 +2226,34 @@ MODULE fdf
       fdf_bbackspace = .TRUE.
 
 !     If we are in the bottom of the block move to the content
+
       if (match(bfdf%mark%pline, 'el')) then
+
         strlabel = endblocks(bfdf%mark%pline)
 
         if (labeleq(strlabel, bfdf%label, fdf_log)) then
           bfdf%mark => bfdf%mark%prev
 
-          write(fdf_out,'(a,a)') '%endblock ', TRIM(bfdf%label)
+          write(fdf_out,'(1x,a)') "(Backspace to) " // "|" //  &
+                                TRIM(bfdf%mark%str) // "|"
         endif
-      endif
 
-      if (match(bfdf%mark%pline, 'bl')) then
+!     If we are at the head we cannot backspace
+
+      else if (match(bfdf%mark%pline, 'bl')) then
         strlabel = blocks(bfdf%mark%pline)
 
         if (labeleq(strlabel, bfdf%label, fdf_log)) then
           fdf_bbackspace = .FALSE.
-          NULLIFY(pline)
-
-          write(fdf_out,'(a,a)') '%block ', TRIM(bfdf%label)
+          write(fdf_out,'(1x,a)') "(Cannot backspace) " // "|" //  &
+                                TRIM(bfdf%mark%str) // "|"
         endif
-      endif
 
-      if (fdf_bbackspace) then
-        write(fdf_out,'(1x,a)') TRIM(bfdf%mark%str)
+      else
 
-        pline     => bfdf%mark%pline
         bfdf%mark => bfdf%mark%prev
+        write(fdf_out,'(1x,a)') "(Backspace to) " // "|" //  &
+                                TRIM(bfdf%mark%str) // "|"
       endif
 
       RETURN
@@ -2303,13 +2304,20 @@ MODULE fdf
 
 !--------------------------------------------------------------- Local Variables
       type(line_dlist), pointer :: mark
+      type(block_fdf)           :: bfdf
 
-!------------------------------------------------------------------------- BEGIN
+
+!--------------------------------------------------------------------- BEGIN
+      ! First, check whether a single label exists:
       fdf_defined = fdf_locate(label, mark)
+      if (.not. fdf_defined) then
+         ! Check whether there is a block with that label
+         fdf_defined = fdf_block(label,bfdf)
+      endif
       if (fdf_defined) write(fdf_out,'(a)') label
 
       RETURN
-!--------------------------------------------------------------------------- END
+!----------------------------------------------------------------------- END
     END FUNCTION fdf_defined
 
 ! 

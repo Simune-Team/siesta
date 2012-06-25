@@ -41,9 +41,9 @@ dep:
 	sfmakedepend --depend=obj --modext=o *.f *.f90 *.F *.F90
 #
 mprop: $(MPROP_OBJS) mprop.o
-	$(FC) -o $@ $(MPROP_OBJS) mprop.o
+	$(FC) -o $@ $(LDFLAGS) $(MPROP_OBJS) mprop.o
 dm_creator: $(DM_OBJS) dm_creator.o
-	$(FC) -o $@ $(DM_OBJS) dm_creator.o $(NETCDF_LIBS)
+	$(FC) -o $@ $(LDFLAGS) $(DM_OBJS) dm_creator.o $(NETCDF_LIBS)
 #
 clean:
 	rm -f *.o *.mod mprop  dm_creator

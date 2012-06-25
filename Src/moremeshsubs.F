@@ -249,6 +249,14 @@ C       distribution and the previous ones.
         enddo
 #endif
       endif
+      if (Node == 0) then
+         write(6,"(a,i3)")"New grid distribution: ", oDistr
+         do PP= 1, Nodes
+            write(6,"(i12,3x,3(i5,a1,i5))")
+     $       PP,
+     $       (distr%box(1,jj,PP), ":", distr%box(2,jj,PP), jj=1,3)
+         enddo 
+      endif 
 
       call timer( 'INITMESH', 2 )
 !--------------------------------------------------------------------------- END
@@ -1850,6 +1858,7 @@ C     Local variables
         call die()
       endif
 
+      nullify(SBUF,RBUF)
       call re_alloc( SBUF, 1, BS*NN*nspin, 'SBUF', 'moreMeshSubs' )
       call re_alloc( RBUF, 1, BS*NN*nspin, 'RBUF', 'moreMeshSubs' )
 
@@ -2255,6 +2264,7 @@ C     Local variables
       dimB(2) = (idis%box(2,2,Cnode)-idis%box(1,2,Cnode)+1)*NSM
       dimB(3) = (idis%box(2,3,Cnode)-idis%box(1,3,Cnode)+1)*NSM
 
+      nullify(SBUF,RBUF)
       call re_alloc( SBUF, 1, BS*NN*nspin, 'SBUF', 'moreMeshSubs' )
       call re_alloc( RBUF, 1, BS*NN*nspin, 'RBUF', 'moreMeshSubs' )
 

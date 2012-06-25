@@ -47,8 +47,8 @@
 !       Dold was set equal to Dscf at the end of setup_hamiltonian,
 !       also in the "last" iteration.  
       
-      Dscf(1:nh,1:nspin) = Dold(1:nh,1:nspin)
-      Escf(1:nh,1:nspin) = Eold(1:nh,1:nspin)
+      Dscf(1:maxnh,1:nspin) = Dold(1:maxnh,1:nspin)
+      Escf(1:maxnh,1:nspin) = Eold(1:maxnh,1:nspin)
 
       if (dumpcharge) then
         call plcharge( no_s, na_s, no_u, maxnh, maxna, nspin,

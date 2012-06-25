@@ -109,6 +109,30 @@ C
       real(dp)           :: ycrd
       real(dp)           :: zcrd
 C
+!! Why this -2 ?
+!! (and the rest below: Simply to modify 
+!!  the indexes)
+!! The final ordering is:
+!!   1 --> (-1,-1,-1)
+!!   2 --> (-1,-1, 0)
+!!   3 --> (-1,-1, 1)
+!!   4 --> (-1, 0,-1)
+!    ...
+!    So it might be clearer to do this:
+c$$$      n = 0
+c$$$      a1 => ucell(:,1) ... etc
+c$$$      do kk = -1, 1
+c$$$         do jj = -1, 1
+c$$$            do ii = -1, 1
+c$$$               n = n + 1
+c$$$               vlin(1:3) = ii*a1 + jj*a2 + kk*a3
+c$$$               xvec1(n)  = vlin(1) ... etc
+c$$$            enddo
+c$$$         enddo
+c$$$      enddo
+c$$$            
+!!
+!! vector cdi = -2*a1
       xcdi = -2.0d0*ucell(1,1)
       ycdi = -2.0d0*ucell(2,1)
       zcdi = -2.0d0*ucell(3,1)
@@ -117,27 +141,34 @@ C
 C  Loop over unit cells
 C
       do ii = -1,1
+        ! cdi = cdi + a1
         xcdi = xcdi + ucell(1,1)
         ycdi = ycdi + ucell(2,1)
         zcdi = zcdi + ucell(3,1)
+        ! cdj = cdi - 2*a2
         xcdj = xcdi - 2.0d0*ucell(1,2)
         ycdj = ycdi - 2.0d0*ucell(2,2)
         zcdj = zcdi - 2.0d0*ucell(3,2)
         do jj = -1,1
+          ! cdj = cdj + a2
           xcdj = xcdj + ucell(1,2)
           ycdj = ycdj + ucell(2,2)
           zcdj = zcdj + ucell(3,2)
+          ! crd = cdj - 2*a3
           xcrd = xcdj - 2.0d0*ucell(1,3)
           ycrd = ycdj - 2.0d0*ucell(2,3)
           zcrd = zcdj - 2.0d0*ucell(3,3)
           do kk = -1,1
             iimax = iimax + 1
+            ! crd = crd + a3
             xcrd = xcrd + ucell(1,3)
             ycrd = ycrd + ucell(2,3)
             zcrd = zcrd + ucell(3,3)
             ixvec1cell(iimax) = ii
             iyvec1cell(iimax) = jj
             izvec1cell(iimax) = kk
+            ! Store successive points in linear arrays
+            ! vec1(iimax) = crd
             xvec1cell(iimax) = xcrd
             yvec1cell(iimax) = ycrd
             zvec1cell(iimax) = zcrd

@@ -47,7 +47,6 @@
 
 ! Writes the electron density or potential at the mesh points.
 !
-
 C Writen by J.Soler July 1997.
 C Parallel modifications added, while maintaining independence
 C of density matrix on disk from parallel distribution. Uses a
@@ -364,8 +363,9 @@ C Globalise dimension check
           baddim = ltmp
 #endif
 
-          if (baddim) then 
-            call die("Dimensions of array rho too small in read_rho")
+          if (baddim) then
+             call die("Dimensions of array rho too small in read_rho")
+          endif
 
 C Outer loop over spins
           do is = 1,ns
@@ -469,8 +469,6 @@ C Close file
           call io_close( iu )
         endif
 
-      endif
-
 #ifdef MPI
 C Deallocate density buffer memory
       call de_alloc( bdens, 'bdens', 'read_rho' )
@@ -566,8 +564,9 @@ C Find largest value of npl
 #endif
             maxp = npmax
             nspin = ns
-            if (Node.eq.0) call io_close( iu )
           endif
+
+          if (Node.eq.0) call io_close( iu )
 
           end subroutine check_rho
 

@@ -70,6 +70,7 @@ C
 C
 C  Local variables
 C
+      integer :: no_u, iu, LOrb, Gorb
       integer                                  :: i
       integer                                  :: ia
       integer                                  :: icx
@@ -689,6 +690,8 @@ C
 C
 C  Build lists linking orbitals with parallel structure 
 C
+        ! Instead of maxorb, nL2G's first dimension could
+        ! be max(no_l)
         call re_alloc( nL2G, 1, maxorb,1,Nodes, 'nL2G', 'setatomnodes' )
         call re_alloc( nG2L, 1, maxorb, 'nG2L', 'setatomnodes' )
         call re_alloc( nNode, 1, maxorb, 'nNode', 'setatomnodes' )
@@ -718,22 +721,58 @@ C
 C  Globalise data
 C
 #ifdef MPI
+!
+!       This is a crude use of allreduce with mpi_max.
+!       It is based on the fact that "non-assigned" slots are zero,
+!       so upon the reduction the global array will contain the
+!       data from all processors. It would be more clear to use
+!       mpi_all_gather...
+
         ntmp(1:maxorb) = nNode(1:maxorb)
         call MPI_AllReduce(ntmp,nNode,maxorb,MPI_integer,MPI_max,
      .    MPI_Comm_World,MPIerror)
+        ! 
         do ii = 1,Nodes
           ntmp(1:maxorb) = nL2G(1:maxorb,ii)
           call MPI_AllReduce(ntmp,nL2G(1,ii),maxorb,MPI_integer,
      .      MPI_max,MPI_Comm_World,MPIerror)
         enddo
+
+        ! This globalization seems useless, since nG2L should
+        ! only be used by the local node.
         ntmp(1:maxorb) = nG2L(1:maxorb)
         call MPI_AllReduce(ntmp,nG2L,maxorb,MPI_integer,MPI_max,
      .    MPI_Comm_World,MPIerror)
+
         ntmp(1:Nodes) = nOrbPerNode(1:Nodes)
         call MPI_AllReduce(ntmp,nOrbPerNode,Nodes,MPI_integer,MPI_max,
      .    MPI_Comm_World,MPIerror)
         call de_alloc( ntmp,  'ntmp', 'setatomnodes' )
 #endif
+         no_u = maxorb
+         if (node==0) then
+            call io_assign(iu)
+            open(unit=iu,file="SPATIAL_INDEXES",form="formatted")
+            write(iu,*) "nl2g"
+            do Lorb = 1, no_u	
+               write(iu, "(i6,8i9)") Lorb, (nL2G(Lorb,j),j=1,Nodes)
+            enddo
+            write(iu,*) "nNode"
+            do Gorb = 1, no_u	
+               write(iu, "(i6,i5)") Gorb, nNode(Gorb)
+            enddo
+            write(iu,*) "nG2L (node 0)"
+            do Gorb = 1, no_u	
+               write(iu, "(i6,i5)") Gorb, nG2L(Gorb)
+            enddo
+            write(iu,*) "nOrbPerNode"
+            do j = 1, Nodes
+               write(iu, "(i6,i8)") j-1, nOrbPerNode(j)
+            enddo
+            call io_close(iu)
+         endif
+
+
 C
 C  Free local memory
 C

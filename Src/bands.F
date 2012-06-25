@@ -32,7 +32,6 @@
       subroutine setup_bands( )
         implicit none
         ! Find number of band k-points
-        nbk = 0
         maxbk = 1
         nullify(bk)
         call re_alloc( bk, 1, 3, 1, maxbk, 'bk', 'band',
@@ -46,7 +45,6 @@
           maxbk = max(nbk,1)
           call re_alloc( bk, 1, 3, 1, maxbk, 'bk', 'band',
      .                  copy=.false. )
-          nbk = 0
           call initbands( maxbk, nbk, bk )
         endif
         
@@ -148,9 +146,8 @@ C *********************************************************************
       character 
      .  scale*30
 
-      logical
-     .  BandLinesPresent, BandPointsPresent,
-     .  BandLimit, KpntLimit
+      logical BandLinesPresent, BandPointsPresent
+      logical :: Nlines_overflow
 
       integer
      .  ik, il, ix, 
@@ -170,12 +167,8 @@ C Start time counter
 C Initialise the number of band lines
       nlines = 0
 
-C Find k points if they are not given in argument 
-      if (nk .le. 0) then
-
 C Find if there are band-lines data
         BandLinesPresent = fdf_defined('BandLines')
-CEA
         BandPointsPresent = fdf_defined('BandPoints')
 
         if ( BandLinesPresent .or. BandPointsPresent ) then
@@ -206,20 +199,28 @@ C Find scale used in k point data
 CEA
         else
 C No k-point data available => go to exit point
+           nk = 0
           goto 999
         endif
+!
+        if ( BandLinesPresent .and. BandPointsPresent ) then
+           if (Node .eq. 0) then
+            write(6,'(a)')
+     .        'bands: WARNING: BandPoints block supersedes BandLines'
+            endif
+            BandLinesPresent = .false.
+         endif
 
 C For BandLines: Loop on data lines
 CEA
-        if ( BandLinesPresent .and. (.not. BandPointsPresent) ) then
+        if ( BandLinesPresent) then
 
           il = 1
           nk = 0
-          BandLimit = .FALSE.
-          KpntLimit = .FALSE.
+          Nlines_overflow = .FALSE.
           BandLinesPresent = fdf_block('BandLines',bfdf)
-          do while(fdf_bline(bfdf, pline) .and. (.not. BandLimit) .and.
-     .             (.not. KpntLimit))
+
+          do while(fdf_bline(bfdf, pline))
 
 C Read and parse data line
             nn = fdf_bnnames(pline)
@@ -231,7 +232,9 @@ C Add to total number of k points
             nkl = fdf_bintegers(pline,1)
             nk = nk + nkl
 
-C If there is room to store k points
+! If there is room, store k points, otherwise skip this section
+! and wait for a second call after proper allocation
+
             if (nk .le. maxk) then
 
 C Find last point in line
@@ -264,19 +267,16 @@ C Find point label
               endif
               lastk(il) = nk
 
-            else
-C No room to store k points
-              KpntLimit = .TRUE.
             endif
 
             il = il + 1
             if (il .gt. maxlin) then
-C No room to store bands
-              BandLimit = .TRUE.
+              ! No room to store bands --- hard coded limit...
+              Nlines_overflow = .TRUE.
             endif
           enddo
 
-          if ((BandLimit) .and. (Node .eq. 0)) then
+          if ((Nlines_overflow) .and. (Node .eq. 0)) then
             write(6,'(a)') 'bands: ERROR. Parameter maxlin too small'
           endif
           nlines = il - 1
@@ -288,11 +288,9 @@ CEA
 
           il = 0
           nk = 0
-          BandLimit = .FALSE.
-          KpntLimit = .FALSE.
+          Nlines_overflow = .FALSE.
           BandPointsPresent = fdf_block('BandPoints',bfdf)
-          do while(fdf_bline(bfdf, pline) .and. (.not. BandLimit) .and.
-     .             (.not. KpntLimit))
+          do while(fdf_bline(bfdf, pline))
 
 C Read and parse data line
             nn = fdf_bnnames(pline)
@@ -303,7 +301,8 @@ C Read and parse data line
 C Add to total number of k points
             nk = nk + 1
 
-C If there is room to store k points
+! If there is room, store k points, otherwise skip this section
+! and wait for a second call after proper allocation
             if (nk .le. maxk) then
 
 C Accumulate new point
@@ -318,24 +317,20 @@ C Accumulate new point
      .                            rcell(ix,3) * fdf_bvalues(pline,3)
                 enddo
               endif
-            else
-C No room to store k points
-              KpntLimit = .TRUE.
             endif
 
             il = il + 1
             if (il .gt. maxlin) then
-C No room to store bands
-              BandLimit = .TRUE.
+            !  No room to store bands
+              Nlines_overflow = .TRUE.
             endif
           enddo
 
-          if ((BandLimit) .and. (Node .eq. 0)) then
+          if ((Nlines_overflow) .and. (Node .eq. 0)) then
             write(6,'(a)') 'bands: ERROR. Parameter maxlin too small'
           endif
           nlines = - 3
         endif
-      endif
 
 C This is the only exit point 
   999 continue

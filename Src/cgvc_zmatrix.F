@@ -87,7 +87,7 @@ C Internal variables and arrays
       real(dp)            :: sxx, syy, szz, sxy, sxz, syz
       real(dp)            :: celli(3,3)
       real(dp)            :: stress_dif(3,3)
-      real(dp), pointer   :: gxa(:), gfa(:)
+      real(dp), pointer   :: gxa(:) =>null(), gfa(:)=>null()
       real(dp)            :: force, force1
 
       type(block_fdf)            :: bfdf
@@ -107,8 +107,9 @@ C Saved internal variables:
       real(dp),      save :: strain(3,3)
       real(dp),      save :: cellin(3,3)
 
-      real(dp), pointer, save :: cgaux(:), ftoln(:), dxmaxn(:),
-     &                           ftoln_tmp(:)
+      real(dp), pointer, save :: cgaux(:)
+      real(dp), pointer       :: ftoln(:)=>null(), dxmaxn(:)=>null(),
+     &                           ftoln_tmp(:)=>null()
 
       real(dp), external :: volcel
 

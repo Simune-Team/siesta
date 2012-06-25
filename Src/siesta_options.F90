@@ -74,6 +74,10 @@ MODULE siesta_options
   logical :: use_struct_file ! Read structural information from a special file?
   logical :: bornz          ! Calculate Born polarization charges?
   logical :: SCFMustConverge ! Do we have to converge for each SCF calculation?
+  logical :: want_domain_decomposition ! Use domain decomposition for orbitals 
+  logical :: want_spatial_decomposition ! Use spatial decomposition for orbitals
+  logical :: monitor_forces_in_scf ! Compute forces and stresses at every step
+
 
   integer :: ia1           ! Atom index
   integer :: ia2           ! Atom index
@@ -101,6 +105,7 @@ MODULE siesta_options
   real(dp) :: Energy_tolerance
   real(dp) :: Harris_tolerance
   real(dp) :: rijmin        ! Min. permited interatomic distance without warning
+  real(dp) :: dm_normalization_tol   ! Threshold for DM normalization mismatch
   real(dp) :: dDtol         ! Tolerance in change of DM elements to finish SCF iteration
   real(dp) :: dt            ! Time step in dynamics
   real(dp) :: dx            ! Atomic displacement used to calculate Hessian matrix
@@ -278,6 +283,8 @@ MODULE siesta_options
 ! integer broyden_maxit    : Number of histories saved in Broyden SCF mixing
 ! logical require_energy_convergence  : Impose E. conv. criterion?
 ! logical broyden_optim    : Broyden for forces instead of CG
+! logical want_domain_decomposition:  Use domain decomposition for orbitals in O(N)
+! logical want_spatial_decomposition:  Use spatial decomposition for orbitals in O(N)
 ! **********************************************************************
 
   subroutine read_options( na, ns, nspin )
@@ -634,8 +641,11 @@ MODULE siesta_options
       call cmlAddParameter( xf=mainXML, name='DM.HarrisTolerance', units='siestaUnits:eV', &
                             value=Harris_tolerance, dictRef='siesta:Harris_tolerance')
     endif
-!--------------------------------------
 
+    ! Monitor forces and stresses during SCF loop
+    monitor_forces_in_scf = fdf_get('MonitorForcesInSCF',.false.)
+                         
+!--------------------------------------
     ! Initial spin density: Maximum polarization, Ferro (false), AF (true)
     if (nspin.eq.2) then
       inspn = fdf_get('DM.InitSpinAF',.false.)
@@ -824,6 +834,8 @@ MODULE siesta_options
     ! Option to use the Chemical Potential calculated instead
     ! of the eta variable of the input
     noeta = fdf_get('ON.ChemicalPotentialUse',.false.)
+    ! NOTE: This does not yet work in parallel
+
     if (noeta) then
       ! if so, we must (obviously) calculate the chemical potential
       chebef=.true.
@@ -832,6 +844,11 @@ MODULE siesta_options
       chebef = fdf_get('ON.ChemicalPotential',.false.)
     endif
 
+#ifdef MPI
+    if (chebef) then
+	call die("ON.ChemicalPotential(Use) options do not work with MPI")
+    endif		
+#endif
 
     ! Cutoff radius to calculate the Chemical Potential by projection
     rcoorcp = fdf_get( 'ON.ChemicalPotentialRc', &
@@ -1402,6 +1419,15 @@ MODULE siesta_options
                     .and. (idyn/=6) .and. (idyn/=7)           &
                     .and. (.not. (idyn==5 .and. ianneal/=1) )
 
+    want_spatial_decomposition = fdf_get('UseSpatialDecomposition', .false.)
+    want_domain_decomposition = fdf_get('UseDomainDecomposition', .false.)
+#ifndef ON_DOMAIN_DECOMP
+#ifdef MPI
+    if (want_domain_decomposition) then
+        call die("Need to compile with ON_DOMAIN_DECOMP support")
+    endif
+#endif
+#endif
 
     ! Harris Forces?. Then DM.UseSaveDM should be false (use always
     ! Harris density in the first SCF step of each MD step), and
@@ -1467,6 +1493,7 @@ MODULE siesta_options
     initdmaux              = fdf_get( 'ReInitialiseDM', .TRUE. )
     allow_dm_reuse         = fdf_get( 'DM.AllowReuse', .TRUE. )
     allow_dm_extrapolation = fdf_get( 'DM.AllowExtrapolation', .TRUE. )
+    dm_normalization_tol   = fdf_get( 'DM.NormalizationTolerance',1.0d-5)
     muldeb                 = fdf_get( 'MullikenInSCF'   , .false.)
     rijmin                 = fdf_get( 'WarningMinimumAtomicDistance', &
                                       1.0_dp, 'Bohr' )

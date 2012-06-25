@@ -6,6 +6,653 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-06-21  10:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-411
+Fix bug in fdf_bbackspace. No .ion.nc files for ghosts
+
+A bug in fdf_bbackspace made it take two steps back when at the end of
+an fdf block. This has now been fixed, removing also the superfluous
+'pline' argument.
+
+When dealing with ghost atoms, the .ion.nc files containing ionic
+information in netCDF format cannot yet be read back properly. Their
+generation has been deactivated for now. Users can still use the
+standard .ion files in ASCII format with the option 'UserBasis T'.
+
+modified:
+  Docs/siesta.tex
+  Src/basis_io.F
+  Src/basis_specs.f
+  Src/fdf/fdf.F90
+
+-----------------------------------------------------------------------
+2012-06-15  15:09:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-410
+Improved the estimation of the size of the automatic cell
+
+If not specified, Siesta generates automatically a unit cell for
+"molecular" or "atomic" systems. The criterion is that the cell is big
+enough to avoid interactions between orbitals in two different cells.
+
+Up to now, the estimation of the size of the orbitals was given by
+the cutoff of Vna. But if the basis set contains large orbitals which
+are not occupied in the ground state, this estimate is too short.
+
+The "size of the atom" is now estimated as the largest of rc(Vna) and
+the cutoffs of all the orbitals. 
+
+modified:
+  Src/Makefile
+  Src/automatic_cell.f
+
+-----------------------------------------------------------------------
+2012-04-13  15:05:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-409
+Extended the functionality of the 'eig2dos' program
+
+A new directory Util/Eig2DOS holds an updated version of the
+venerable 'eig2dos' program, with a new command-line interface
+that allows to specify all the parameters and new capabilities:
+
+-- Optional use of the k-point weight information in a .KP file.
+-- Selection of a range of bands for the calculation of the DOS.
+
+Invoke the program as  'Eig2DOS -h' for a synopsis.
+
+(A. Garcia)
+
+added:
+  Util/Eig2DOS/
+  Util/Eig2DOS/Eig2DOS.f90
+  Util/Eig2DOS/Makefile
+  Util/Eig2DOS/m_getopts.f90
+renamed:
+  Util/eig2dos.f => Util/Eig2DOS/original.eig2dos.f
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Util/README
+
+-----------------------------------------------------------------------
+2012-04-04  10:40:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-408
+Close netCDF file descriptors for DM and DMHS files
+
+The descriptors for the DM.nc and DMHS.nc netCDF files are kept open
+during the SCF cycle, but should be closed at the end of it to avoid
+resource exhaustion in, say, MD runs. This was not done due to a
+programming error.  They are now closed at the beginning of the next
+SCF cycle.
+
+(Thanks to Nick Papior Andersen)
+
+modified:
+  Src/iodm_netcdf.F90
+  Src/iodmhs_netcdf.F90
+
+-----------------------------------------------------------------------
+2012-03-09  15:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-407
+Extend DM normalization diagnostics
+
+In order to conserve the number of electrons N, the density matrix
+(DM) has to be normalized: Tr[S*DM]=N, where S is the overlap matrix.
+
+The DM might not be normalized because it has been re-used (and
+re-arranged) from a previous geometry step, or because of some error
+in its computation during the scf cycle.  The two cases are now
+reported differently:
+
+In the first scf step, the fractional tolerance is 0.001 (tighter than
+the previous default of 0.01), and a "Note" is printed.
+
+In subsequent steps, the fractional tolerance can be specified
+by means of the fdf symbol
+
+DM.Normalization.Tolerance  Tol
+
+and is 1.0e-5 by default.  The program now aborts if this threshold is
+breached.
+
+NOTE: The DM might not be normalized upon entry to the (first
+geometry) scf loop because of a possible "folding" of the overlap
+matrix in gamma-point calculations with small unit cells: the overlaps
+of a given unit-cell orbital with multiple images are accumulated
+instead of being kept separate. Then, the trace Tr[S*DM_atomic] will
+not give the number of electrons.
+The folding (which is reported if detected by the program) is done for
+efficiency reasons, but might cause problems for further analysis
+(i.e., Mulliken charges, or COOP/COHP calculations).
+
+modified:
+  Src/Makefile
+  Src/normalize_dm.F
+  Src/setup_hamiltonian.F
+  Src/siesta_options.F90
+
+-----------------------------------------------------------------------
+2012-03-08  16:55:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-406
+Fix reading of position constraints in block
+
+In %block GeometryConstraints, the simple option
+
+  position  i  j  k  l ...
+
+to list atoms to be kept fixed, was not implemented correctly.
+
+(Thanks to J. Junquera for the bug report and fix)
+
+modified:
+  Src/fixed.F
+
+-----------------------------------------------------------------------
+2012-03-08  10:40:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-405
+Change position of force-monitoring block
+
+The optional calculation of forces inside the scf loop is now done
+after printing the current energies. Otherwise the output for etot
+would correspond to that for the following iteration, and EHarris
+would be wrong.
+
+modified:
+  Src/siesta_forces.F
+
+-----------------------------------------------------------------------
+2012-03-07  14:25:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-404
+Add force convergence diagnostic
+
+When the option to monitor the forces during the SCF cycle is in effect, the
+program will print the maximum absolute value of the change in forces from one
+step to the next. Other statistics could be implemented.
+
+modified:
+  Src/siesta_forces.F
+
+-----------------------------------------------------------------------
+2012-03-06  15:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-403
+Allow monitoring of forces during SCF cycle
+
+Using the fdf symbol
+
+MonitorForcesInSCF T
+
+the program will compute the forces and stresses at every scf step. 
+Use in combination with WriteForces.
+
+modified:
+  Src/Makefile
+  Src/siesta_forces.F
+  Src/siesta_options.F90
+
+-----------------------------------------------------------------------
+2012-02-23  9:40:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-402
+Update of Andrei Postnikov's utilities to V0.4
+
+Added also the fmpdos program, an alternative to pdosxml.
+
+added:
+  Util/Contrib/APostnikov/00README
+  Util/Contrib/APostnikov/fmpdos.f
+  Util/Contrib/APostnikov/test_mdc.f
+modified:
+  Util/Contrib/APostnikov/Makefile
+  Util/Contrib/APostnikov/README
+  Util/Contrib/APostnikov/eig2bxsf.f
+  Util/Contrib/APostnikov/md2axsf.f
+  Util/Contrib/APostnikov/rho2xsf.f
+  Util/Contrib/APostnikov/vib2xsf.f
+  Util/Contrib/APostnikov/wraxsf1.f
+  Util/Contrib/APostnikov/wraxsf2.f
+
+-----------------------------------------------------------------------
+2012-02-22  13:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-401
+Assorted cosmetic and compilation fixes
+
+* Include missing LDFLAGS symbol in some Util makefiles
+
+modified:
+  Util/COOP/Makefile
+  Util/Contrib/APostnikov/Makefile
+  Util/test-xml/makefile
+
+* Obsolete debug information was still being written to unit 23 in
+  domain_decom, including a call to "flush".
+  
+modified:
+  Src/domain_decom.F
+
+* Fix makefile symbols in Util/STM/ol-stm
+  The new domain_decomposition symbols and dependencies were missing.
+
+modified:
+  Util/STM/ol-stm/Src/Makefile
+
+* Updated bug reporting guidelines
+
+added:
+  Docs/REPORTING_BUGS
+modified:
+  Docs/siesta.tex
+  README
+
+* Do not count ghost atoms when printing ionic charge
+
+This was purely cosmetic, but misleading: the variable
+zvaltot now records only the sum of (pseudo)protons in
+non-ghost species.
+
+(+ cosmetic fix in the printing of lmxkb for ghosts
+species in .ion files)
+
+modified:
+  Src/atomlist.f
+  Src/basis_types.f
+
+* Fix the script in Tests/partial
+  Now it can automatically compile the 'fractional' program
+
+modified:
+  Tests/partial/script.sh
+
+* Add Util/clean_all.sh script
+* Remove scratch fdf directories in Util/GenBasis and Util/Vibra
+
+removed:
+  Util/Gen-basis/fdf/
+  Util/Vibra/Src/fdf/
+added:
+  Util/clean_all.sh
+
+
+
+-----------------------------------------------------------------------
+2012-02-21  17:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-400
+Assorted bugfixes and cosmetics
+
+Bugfixes for recent features:
+
+* Include support for domain_decom in Denchar makefile
+
+Cosmetic changes:
+
+ - State that the units for mprop distances are Ang
+ - Clarify error message in ts_iohs regarding nspin
+ - Write eigenvalues in eV in CML file (ioeig)
+ - Use $(AR) instead of 'ar' in all makefiles
+ - Specify Ry units for H in DMHS netcdf files
+ - Fix call to 'memory' in Denchar/stsofr.f
+
+modified:
+  Src/Libs/makefile
+  Src/MPI/Makefile
+  Src/Sys/DOCUMENTED-TEMPLATE.make
+  Src/iodmhs_netcdf.F90
+  Src/ioeig.f
+  Src/m_ts_io.F90
+  Src/wxml/makefile
+  Src/xmlparser/makefile
+  Util/COOP/subs.f90
+  Util/Denchar/Src/Makefile
+  Util/Denchar/Src/stsofr.f
+
+-----------------------------------------------------------------------
+2012-02-21  17:05:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-399
+Some cleanup and new options for O(N) solver code
+
+The O(N) solver code is being cleaned up, and more options are being
+added, but should still be used with care and for systems for which
+it is appropriate.
+
+* More documentation and better variable names and structure in some
+  files.
+
+* Stop if O(N) chemical potential calculation is requested in parallel
+  
+  The code in chempot is not correctly parallelized yet.  Now the
+  program stops at the beginning of the run if any of the relevant fdf
+  options is enabled.
+  
+* Implement graph-based domain decomposition for O(N) routines
+  
+  Based on code by Rogeli Grima (BSC).
+  
+  It is enabled by defining
+  
+  UseDomainDecomposition T
+  
+  in the fdf file. NOTE that if you use NetCDF you also need:
+  
+  WriteDMNetcdf F
+  WriteDMHS-netcdf F
+  
+  until a non-local call to LocalToGlobalOrb is fixed.
+  
+  The METIS library (www.cs.umn.edu/~metis) is also needed. Calls to
+  this library are wrapped in preprocessor blocks controlled by the
+  symbol
+  
+  ON_DOMAIN_DECOMP
+  
+  which needs to be specified at (parallel) compile time if domain
+  decomposition is desired.
+
+  Now, by default, Julian's Gale spatial decomposition code is
+  bypassed, unless the fdf variable
+
+        UseSpatialDecomposition 
+
+  is set.  The default is now to use block-cyclic decomposition, but
+  any serious calculation should use one of the two more sophisticated
+  approaches. A further refinement is in the pipeline.
+
+* Add the Util/ON directory with lwf2cdf program
+
+  This utility program converts the information in the LWF file 
+  to netCDF format.
+
+(A. Garcia, May-July 2011, Feb 2012)
+(Backported from 3.1)
+
+-----------------------------------------------------------------------
+2012-02-21  14:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-398
+Avoid broadcast after fdf operation in m_ts_options
+
+With the new fdf interface all nodes get the appropriate values
+without a broadcast. There was a fossil mpi_bcast in m_ts_options.
+
+modified:
+  Src/m_ts_options.F90
+
+-----------------------------------------------------------------------
+2012-02-20  16:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-397
+More documentation for tests. New .make file.
+
+* Added a new README file for the Tests directory and for the
+  new-style Transiesta-TBTrans tests
+
+* Add arch.make file for Marenostrum IBM supercomputer using ESSL
+    
+  Added the necessary LAPACK libraries in order to compile using ESSL on IBM.
+  ESSL are a set of system-optimized BLAS functions and subroutines.
+    
+  Use the following lines in your arch.make:
+    COMP_LIBS = essl_lapack.a
+    LIBS      = -lessl
+  
+  The new file Src/Sys/marenostrum-mpi-essl-netcdf-64.make is appropriate
+  for 64 bit operation.
+    
+  (Thanks to Oscar Paz)
+  
+  added:
+    Src/Sys/marenostrum-mpi-essl-netcdf-64.make
+    Src/Libs/essl_lapack.f
+  modified:
+    Src/Libs/makefile
+    Src/Makefile
+
+* Make sure 'partial' is compiled in test
+  
+  The 'partial' test is not completely set up for transparent operation,
+  and the needed executable in Util/VCA needs to be pre-compiled.
+  
+  The script stops with a message if this is not done (note that this
+  test is not executed by default from the top Makefile).
+  
+  modified:
+    Tests/partial/script.sh
+
+-----------------------------------------------------------------------
+2012-02-20  16:30:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-396
+Fixes: pointer initialization, logical assignment
+
+In cgvc_zmatrix, two scratch pointers were not properly initialized
+before use.
+
+In nlefsm, two logical arrays were initialized with '0', instead of
+'.false.' (Thanks to Carlos Sanz for pointing this out).
+
+modified:
+  Src/cgvc_zmatrix.F
+  Src/nlefsm.f
+
+-----------------------------------------------------------------------
+2012-02-20  15:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-395
+Avoid broadcast after fdf operation in tbtrans
+
+With the new fdf interface all nodes get the appropriate values
+without a broadcast. Tbtrans (in routine reinit_tb) still called
+mpi_bcast. This led to errors in some systems.
+
+modified:
+  Util/TBTrans/reinit_tb.F
+
+-----------------------------------------------------------------------
+2012-02-20  13:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-394
+Update TranSiesta tests. Cosmetics
+
+*  Update the TranSiesta-TBTrans test directories
+  
+  TranSiesta-TBTrans specific tests now reside in
+  Tests/TranSiesta-TBTrans. These tests (currently ts_fast and ts_au)
+  only make sense if the "transiesta" flavor of Siesta has been compiled
+  in (by executing "make transiesta" in a fresh build directory), so
+  they are not executed by default.
+  
+  Reference outputs can now be found in
+  Tests/Reference/TranSiesta-TBTrans.  Note that these reference
+  outputs have not yet been updated: they correspond to siesta-3.1.
+  
+  The manual has been updated to refer to the Examples/TranSiesta
+  directory (which has been created) for the guided calculation.
+  
+  removed:
+    Tests/transiesta/Fast/
+    Tests/transiesta/au_111_capacitor/
+    Tests/transiesta/bulk_au_111/
+    Tests/transiesta/elec_au_111_abc/
+  added:
+    Tests/Reference/TranSiesta-TBTrans/
+    Tests/Reference/TranSiesta-TBTrans/ts_au/
+    Tests/Reference/TranSiesta-TBTrans/ts_fast/
+    Tests/TranSiesta-TBTrans/ts_au/
+    Examples/TranSiesta
+  renamed:
+    Tests/transiesta/ => Tests/TranSiesta-TBTrans/
+    Tests/ts_fast/ => Tests/TranSiesta-TBTrans/ts_fast/
+  modified:
+    Tests/TranSiesta-TBTrans/ts_fast/makefile
+    Tests/TranSiesta-TBTrans/ts_fast/script.sh
+    Tests/Makefile
+    Tests/script_ts.mk
+    Docs/siesta.tex
+
+*  Removed call to BLAS routine zdotc in tbtrans. Replaced it
+   by an explicit loop.
+
+*  Clarify the mention of "hybrid" functionals in the manual
+  
+  modified:
+    Docs/siesta.tex
+
+*  Remove order-N test from standard list. Add note.
+
+  As it does not run well in parallel, the order-N
+  test has been removed from the standard list
+  in the Makefile for the Tests directory.
+  
+  added:
+    Tests/h2o_orderN/000README
+  modified:
+    Tests/Makefile
+
+-----------------------------------------------------------------------
+2012-02-16  15:25:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-393
+Fix pointer initialization in moremeshsubs
+
+Two workspace pointers were not properly nullified before allocation.
+
+Thanks to Olivier Coulaud for the report and the fix.
+
+modified:
+  Src/moremeshsubs.F
+
+-----------------------------------------------------------------------
+2012-02-16  10:35:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-392
+Proper closing of files in m_iorho
+
+Due to a programming error, the calls to io_close in read_rho and
+check_rho were incorrectly placed.
+
+Thanks to Carlos Sanz for the report and the fix.
+
+modified:
+  Src/m_iorho.F
+
+-----------------------------------------------------------------------
+2012-02-15  18:05:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-391
+Clarify flow of data in setup_H0
+
+The routine setup_H0 pre-computes the matrix elements of the kinetic
+and non-local pseudopotential pieces of the Hamiltonian, which do not
+depend on the density matrix.
+
+Routines kinefsm and nlfesm also compute Ekin and Enl, respectively,
+but since they are not called anymore in the SCF cycles, Ekin and Enl
+are not updated, and are only printed at the first and last
+iterations.
+
+In order to make this more explicit, H0 has been substituted by two
+arrays, H_kin and H_vkb, to hold the pieces of H. Ekin and Enl are now
+computed in setup_hamiltonian, with the appropriate density matrix.  A
+minor cosmetic issue now is that, in setup_H0, the routines 'kinefsm'
+and 'nlefsm' must be called with a value of 1 for nspin, as befits the
+structure of H_kin and H_vkb. The density matrix array is not
+referenced.
+
+Other changes:
+
+* The variable 'nh' has been substituted by its equivalent maxnh
+throughout the code.
+
+* The use of H0 as a work array in calls to the ksv_pol routine has
+been made clearer by importing H_kin and renaming it 'Work'.
+
+modified:
+  Docs/KNOWN.ISSUES.BSC-patch
+  Src/Makefile
+  Src/born_charge.F
+  Src/compute_dm.F
+  Src/final_H_f_stress.F
+  Src/hsparse.F
+  Src/kinefsm.f
+  Src/nlefsm.f
+  Src/normalize_dm.F
+  Src/post_scf_work.F
+  Src/setup_H0.F
+  Src/setup_hamiltonian.F
+  Src/siesta_analysis.F
+  Src/siesta_init.F
+  Src/sparse_matrices.F
+  Src/state_init.F
+
+-----------------------------------------------------------------------
+2011-10-28  10:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-390
+Avoid temporary arrays in SiestaXC/mesh3d
+
+Calls with a re-shaped array as argument, and with
+array-section arguments, were inducing some compilers
+to create temporary arrays.
+
+modified:
+  Src/SiestaXC/mesh3d.F90
+
+-----------------------------------------------------------------------
+2011-10-28  10:35:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-389
+Re-instate reading of charge netcdf files
+
+This feature had been turned off after the BSC merge pending
+clarification.
+
+modified:
+  Src/dhscf.F
+
+-----------------------------------------------------------------------
+2011-10-28  10:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-388
+Grid file utilities. User-specified mesh sizes
+
+Two new programs are available to generate grid files
+(density, potential):
+
+-- grid_rotate: cyclically rotates the coordinates of
+                a grid file.
+-- grid_supercell: generates the grid file appropriate
+                   for a supercell.
+
+The user can now specify the mesh sizes to be used
+by the program, by inserting a block definition in 
+the fdf file:
+
+%block Mesh-sizes
+  40 56 120
+%endblock Mesh-sizes
+
+This feature is useful when coupled to the above utilities,
+since the "magic" fft numbers might not be appropriate.
+
+added:
+  Docs/Grid.CHANGES
+  Util/Grid/grid_rotate.F90
+  Util/Grid/grid_supercell.F90
+modified:
+  Src/Makefile
+  Src/meshsubs.F
+  Util/Grid/makefile
+
+-----------------------------------------------------------------------
+2011-09-16  09:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-387
+Fix bug in BandLines processing
+
+The processing of the BandLines block was faulty, resulting
+in most cases in the skipping of the 'bands' calculation.
+
+modified:
+  Src/bands.F
+
+-----------------------------------------------------------------------
+2011-09-12  09:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-386
+Fix fdf_defined to take blocks into account
+
+The new version of fdf_defined was only checking
+for the existence of single labels. It has been
+fixed to check for blocks too.
+
+modified:
+  Src/fdf/fdf.F90
+  Src/fdf/sample.F90
+
+-----------------------------------------------------------------------
+2011-08-30  09:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-385
+Fix two minor bugs in Denchar
+
+Some compilers had trouble with a block pointer. It has
+been made into a normal variable.
+
+An attempt was made to close an I/O unit that had not
+ben opened in the spin-unpolarized case.
+
+(Thanks to T. Sondon)
+
+modified:
+  Util/Denchar/Src/atompla.f
+  Util/Denchar/Src/rhoofr.f
+
+-----------------------------------------------------------------------
+2011-08-26  12:40:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-384
+Print information about grid distributions
+
+New code has been added to show information about
+the different grid data distributions.
+
+modified:
+  Src/moremeshsubs.F
+
+-----------------------------------------------------------------------
 2011-05-19  15:20:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-383
 Fix and clarify code for KB projector orthogonalization
 

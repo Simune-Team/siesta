@@ -4,19 +4,20 @@ C             the Fermi surface) from siesta KP and EIG files.
 C             The k-mesh must be generated without shift
 C             (requirement of the BXSF format).
 C
-C             Written by Andrei Postnikov, Mar 2006   Vers_0.3
-C             apostnik@uos.de   
+C             Written by Andrei Postnikov, Jun 2007, modif Jul 2010   Vers_0.4
+C             postnikov@univ-metz.fr
 C
       program ene2bxsf
       implicit none
-      integer ii1,ii2,ii3,io1
-      parameter (ii1=11,ii2=12,ii3=13,io1=14)
+      integer ii1,ii2,ii3,io1,il1
+      parameter (ii1=11,ii2=12,ii3=13,io1=14,il1=15)
       integer ii,jj,nbands,nbmin,nbmax,nkp,ikp,ndum,iis,mdiv(3),ind,
      .        nspin,is,iband,iik,idiv1,idiv2,idiv3,itry1,itry2,itry3,
      .        ib,mkp,homo(2),lumo(2),ik,in2,in3,ialloc
       character inpfil*60,outfil*60,syslab*30,suffix*6
       double precision cell(3,3),efermi,twopi,rcell(3,3),small,
      .       relmin(3),kkp(3),dum
+      logical unshift
       double precision,  allocatable :: relk(:,:), eneb(:,:), enek(:)
       integer,           allocatable :: ndiv(:,:),irrek(:)
       parameter (small=1.0d-04)
@@ -42,6 +43,8 @@ C     inpfil = syslab(1:len_trim(syslab))//'.EIG'
       inpfil = trim(syslab)//'.EIG'
       open (ii2,file=inpfil,form='formatted',status='old',err=801)
       write (6,*) 'Found and opened: ',inpfil
+C --- open LOG file:
+      open (il1,file='eig2bxsf.LOG',form='formatted',status='unknown')
 C --- read Fermi energy and total number of bands from .EIG :
       read  (ii2,*) efermi
       read  (ii2,*) nbands, nspin, nkp
@@ -82,12 +85,27 @@ C --- finds bands crossing the Fermi energy:
         if (homo(is).lt.lumo(is)) write (6,201) is, homo(is),lumo(is)
       enddo
 
-C --- read cell vectors from .XV, convert to Ang, find reciprocal:
+C --- read cell vectors from .XV, find reciprocal:
       do ii=1,3
         read  (ii1,*,end=803,err=803)   (cell(ii,jj),jj=1,3)
       enddo
       close (ii1)
       call inver3(cell,rcell)
+C +++++++++++++++++++++++++
+      write(il1,*) 'Direct cell vectors:'
+      do ii=1,3
+        write(il1, 502) (cell(ii,jj),jj=1,3)
+  502   format(3f14.8)
+      enddo
+      write(il1,*) 'Reciprocal cell vectors without 2pi:'
+      do ii=1,3
+        write(il1, 502) (rcell(jj,ii),jj=1,3)
+      enddo
+      write(il1,*) 'Reciprocal cell vectors times 2pi:'
+      do ii=1,3
+        write(il1, 502) (rcell(jj,ii)*twopi,jj=1,3)
+      enddo
+C +++++++++++++++++++++++++
 
 C --- open .KP as old:
 C     inpfil = syslab(1:len_trim(syslab))//'.KP'
@@ -123,8 +141,8 @@ C ---   find relative coordinates of k-point:
       close (ii3)
 C --- relmin(ii) is now the smallest relative coordinate of k points 
 C     along the reciprocal vector (ii). Good chance that its inverse 
-C     is number of divisions.
-      mdiv(:)=1.d0/relmin(:)+small
+C     is number of divisions. Round up to the closest integer:
+      mdiv(:)=floor(1.d0/relmin(:)+ 0.5)
       write (6,*) ' No. of divisions seems to be ',mdiv
       mkp = (mdiv(1)+1)*(mdiv(2)+1)*(mdiv(3)+1)
       write (6,*) ' Full No. of k-points on general grid:', mkp
@@ -134,45 +152,73 @@ C     is number of divisions.
         write (6,*) ' Fails to allocate space for mkp=',mkp
         stop
       endif
-C --- decifer all k-point coordinates as ndiv(ii,ikp)/mdiv(ii)
+C --- decifer all k-point coordinates as integer fractions, ndiv=relk/mdiv, 
+C     with  0 <= relk  < mdiv :
+      unshift = .false.
       do ikp=1,nkp
-        ndiv(:,ikp)=modulo(floor(relk(:,ikp)/relmin(:)+small),mdiv(:)) 
+        ndiv(:,ikp)=modulo(floor(relk(:,ikp)/relmin(:)+0.5),mdiv(:)) 
+C          floor(relk/relmin)      : max. integer not exceeding relk/relmin
+C          floor(relk/relmin)+0.5  : the integer closest to relk/relmin
+C          modulo(..)              : an always non-negative coord. relk/mdiv
+C++++++++++++++++++
+        write (il1,501) ikp, (relk(ii,ikp),ii=1,3),
+     .                     (ndiv(ii,ikp),mdiv(ii),ii=1,3)
+  501   format (i4,'  relk=',3f10.6,'   ndiv=',3(i4,'/',i2))
+C++++++++++++++++++
+        if (.not.unshift.and.
+     .       (ndiv(1,ikp)**2+ndiv(2,ikp)**2+ndiv(3,ikp)**2).eq.0) then
+          unshift = .true.
+          write (6,*) ' k-mesh contains Gamma-point; this is good...'
+        endif
       enddo
-C --- attribute irreducible k-points to k-points on the grid:
+      if (.not.unshift) then
+        write (6,207) 
+        stop
+      endif
+C --- attribute irreducible k-points 
+C     to k-points over the full reciprocal cell:
       ind=0
-      do idiv3 = 0,mdiv(3)
-      do idiv2 = 0,mdiv(2)
+C -  The right sequnce ("column-major") of writing energies into .BXSF file:
       do idiv1 = 0,mdiv(1)
-        ind = ind + 1      !  global address on the mesh
+      do idiv2 = 0,mdiv(2)
+      div3: do idiv3 = 0,mdiv(3) 
+        ind = ind + 1      !  global address on the k-mesh
         itry1=mod(idiv1,mdiv(1))
         itry2=mod(idiv2,mdiv(2))
         itry3=mod(idiv3,mdiv(3))
-        do 12 ikp=1,nkp
-          if (ndiv(1,ikp).ne.itry1) goto 12
-          if (ndiv(2,ikp).ne.itry2) goto 12
-          if (ndiv(3,ikp).ne.itry3) goto 12
-          irrek(ind) = ikp
-          goto 14
-   12   enddo
-C ---   haven't find anything; try inversion:
+        do ikp=1,nkp
+          if( (ndiv(1,ikp).eq.itry1).and.
+     .        (ndiv(2,ikp).eq.itry2).and.
+     .        (ndiv(3,ikp).eq.itry3) ) then
+! ---       k-point is identified!
+            irrek(ind) = ikp
+            write (il1,503) idiv1,idiv2,idiv3,ikp   
+            cycle div3 ! - skip the rest of ikp loop,
+                       !   try the next idiv3. This is the regular termination
+                       !   of the ikp search if the k-point is found.
+          endif
+        enddo 
+! ---   haven't find any matching k-point; take a second chance, try inversion:
         itry1=mod(mdiv(1)-idiv1,mdiv(1))
         itry2=mod(mdiv(2)-idiv2,mdiv(2))
         itry3=mod(mdiv(3)-idiv3,mdiv(3))
-        do 13 ikp=1,nkp
-          if (ndiv(1,ikp).ne.itry1) goto 13
-          if (ndiv(2,ikp).ne.itry2) goto 13
-          if (ndiv(3,ikp).ne.itry3) goto 13
-          irrek(ind) = ikp
-          goto 14
-   13   enddo
-C ---   haven't try anything with inversion as well;
-        write (6,304) idiv1,mdiv(1),idiv2,mdiv(2),idiv3,mdiv(3)
-  304 format(' No irreducible k-point found for k-grid point (',
-     .       i4,'/',i4,',   ',i4,'/',i4,',   ',i4,'/',i4,' )')
-        write (6,*) ' Are you sure your k-grid was without shift?'
+        do ikp=1,nkp
+          if( (ndiv(1,ikp).eq.itry1).and.
+     .        (ndiv(2,ikp).eq.itry2).and.
+     .        (ndiv(3,ikp).eq.itry3) ) then
+C ---        k-point is identified!
+            irrek(ind) = ikp
+            write (il1,503) idiv1,idiv2,idiv3,ikp   
+            cycle div3 ! - skip the rest of ikp loop,
+                       !   try the next idiv3. This is the regular termination
+                       !   of the ikp search if the k-point is found.
+          endif
+        enddo
+! ---   Loops over k-points with and without inversion terminated
+!       yet identification failed. Stop and complain:
+        write (6,504) idiv1,mdiv(1),idiv2,mdiv(2),idiv3,mdiv(3)
         stop
-   14   continue
-      enddo
+      enddo div3
       enddo
       enddo
       allocate (enek(nkp),  STAT=ialloc)
@@ -232,6 +278,7 @@ C --- write into .BXSF file:
       enddo   !  do is=1,ispin
       deallocate (enek,relk,ndiv,irrek)
       close (ii2)
+C     close (il1)
       stop
 
   201 format (' spin',i2,': band gap between bands ',i5,'  and ',i5)
@@ -240,6 +287,13 @@ C --- write into .BXSF file:
 C 205 format (1p,8e10.3)
   206 format (' For is=',i1,': ',a3,'. grid value =',1p,e12.5,
      .        ' at ix,iy,iz=',3i4)
+  207 format (' Gamma point not found in the k-mesh.', /
+     .        ' Fermi surface calculation needs energy bands',
+     .        ' calculated with unshifted mesh!')
+
+  503 format('  idiv1,2,3 = (',3i5,' )   is  ikp Nr.',i6)
+  504 format(' No irreducible k-point found for k-grid point (',
+     .       i4,'/',i4,',   ',i4,'/',i4,',   ',i4,'/',i4,' )')
 
   801 write (6,*) ' Error opening file ',
 C    .            inpfil(1:len_trim(inpfil)),' as old formatted'
