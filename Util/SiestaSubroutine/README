@@ -44,7 +44,7 @@ To use the package, you must:
  - In all the previous calls, the 'label' argument must be the same as
    the prefix of the siesta fdf data file (i.e. 'h2o' for h2o.fdf).
  - Compile your program, with a copy, in your compilation directory, of:
-   - siesta/Src/fsiesta.f90 (pipes version). See siesta/Src/Makefile
+   - siesta/Src/fsiesta_pipes.f90 (pipes version). See siesta/Src/Makefile
      for the appropriate compilation flags and flush routine.
    - siesta/Obj/libSiestaForces.a and siesta/Obj/*.mod (MPI version)
  - Run your program.
@@ -65,8 +65,8 @@ To use the package, you must:
 5) Make sure that you have a working "flush" subroutine in your system,
    and that it is compiled-in (in file pxf.F90 in the main source directory)
    through the appropriate preprocessor symbols. Otherwise the process 
-   might hang. The compilation of fsiesta.f90 in the main directory should
-   automate this, but you should check (pipes version only).
+   might hang. The compilation of fsiesta_pipes.f90 in the main directory 
+   should automate this, but you should check (pipes version only).
 
 ! Subroutines usage:
 !

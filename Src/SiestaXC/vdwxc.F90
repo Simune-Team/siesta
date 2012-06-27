@@ -145,7 +145,8 @@
 ! subroutine vdw_set_author( author )
 !   Sets the functional flavour (author initials) and subsequent parameters
 ! Arguments:
-!   character(len=*),intent(in):: author ! Functnl flavour ('DRSLL'|'LMKLL')
+!   character(len=*),intent(in):: author ! Functnl flavour 
+!                                          ('DRSLL'|'LMKLL'|'KBM')
 ! Notes:
 ! - If vdw_set_author is not called, author='DRSLL' is set by default
 ! - Stops with an error message if author has not an allowed value
@@ -411,11 +412,15 @@ SUBROUTINE bcucof( n1, n2, x1, x2, y, dydx1, dydx2, d2ydx1dx2, c )
     end do ! i1
   end do ! i2
 
-! Set c for i1=n1 and i2=n2 (valid only at the border)
+! Set c for i1=n1 and i2=n2 (valid only at the very border) using
+! sum_i,j c(i,j,n1,i2) * 0**i * x2**j = sum_i,j c(i,j,n1-1,i2) * 1**i * x2**j
+! sum_i,j c(i,j,i1,n2) * x1**i * 0**j = sum_i,j c(i,j,i1,n2-1) * x1**i * 1**j
+! sum_i,j c(i,j,n1,n2) * 0**i * 0**j = sum_i,j c(i,j,n1-1,n2-1) * 1**i * 1**j
   c(:,:,n1,:) = 0
   c(:,:,:,n2) = 0
-  c(0,0,n1,:) = y(n1,:)
-  c(0,0,:,n2) = y(:,n2)
+  c(0,:,n1,1:n2-1) = sum(c(:,:,n1-1,1:n2-1),dim=1)
+  c(:,0,1:n1-1,n2) = sum(c(:,:,1:n1-1,n2-1),dim=2)
+  c(0,0,n1,n2) = sum(sum(c(:,:,n1-1,n2-1),dim=1),dim=2)
 
 END SUBROUTINE bcucof
 
@@ -1483,7 +1488,7 @@ subroutine vdw_set_author( author )
 ! Sets the functional flavour (author initials) and subsequent parameters
 
   implicit none
-  character(len=*),intent(in):: author ! Functnl flavour ('DRSLL'|'LMKLL')
+  character(len=*),intent(in):: author ! Functnl flavour ('DRSLL'|'LMKLL'|'KBM')
 
   if (author=='DRSLL') then
     ! Dion et al, PRL 92, 246401 (2004)
