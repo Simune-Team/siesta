@@ -167,7 +167,7 @@ subroutine minim_cg(calc_Escf,iscf,Hp_dim_loc,Hp_dim,N_occ,eta,Daux,psi,nspin,Hp
 
   !**** LOCAL ***********************************!
 
-  logical :: conv, ls_conv
+  logical :: conv, ls_conv, ls_fail
 
   integer :: n_step_max ! Max. steps of cg minimization
   integer :: icg, info
@@ -406,8 +406,8 @@ subroutine minim_cg(calc_Escf,iscf,Hp_dim_loc,Hp_dim,N_occ,eta,Daux,psi,nspin,Hp
         call line_search_fit(Hp_dim_loc,Hp_dim,N_occ_loc,N_occ,Hp,Sp,H,S,d,E_omg,g,ls_conv,step_init,work1,work2,work3,work4,work5,&
                              coeff)
       else
-        call line_search_exact(Hp_dim_loc,Hp_dim,N_occ_loc,N_occ,Hp,Sp,H,S,Hd,Sd,Hdd,Sdd,d,E_omg,work1,work2,work3,coeff,icg)
-        ls_conv=.true.
+        call line_search_exact(Hp_dim_loc,Hp_dim,N_occ_loc,N_occ,Hp,Sp,H,S,Hd,Sd,Hdd,Sdd,d,E_omg,work1,work2,work3,coeff,icg,&
+                               ls_conv)
       end if
       icg=icg+1
       E_diff=2.0_dp*abs((E_omg-E_omg_old)/(E_omg+E_omg_old))
@@ -487,7 +487,7 @@ end subroutine minim_cg
 !================================================!
 ! Perform line search by exact calculation       !
 !================================================!
-subroutine line_search_exact(Hp_dim_loc,Hp_dim,N_occ_loc,N_occ,Hp,Sp,H,S,Hd,Sd,Hdd,Sdd,d,E_omg,work1,work2,work3,coeff,icg)
+subroutine line_search_exact(Hp_dim_loc,Hp_dim,N_occ_loc,N_occ,Hp,Sp,H,S,Hd,Sd,Hdd,Sdd,d,E_omg,work1,work2,work3,coeff,icg,ls_conv)
   implicit none
 
   !**** INPUT ***********************************!
@@ -501,6 +501,10 @@ subroutine line_search_exact(Hp_dim_loc,Hp_dim,N_occ_loc,N_occ,Hp,Sp,H,S,Hd,Sd,H
   real(dp), intent(in) :: Hp(:,:) ! Hamiltonian matrix in orbital basis
   real(dp), intent(in) :: Sp(:,:) ! Overlap matrix in orbital basis
   real(dp), intent(in) :: d(:,:)  ! Gradient of Kim functional along line
+
+  !**** OUTPUT **********************************!
+
+  logical, intent(out) :: ls_conv ! Was the line search successful?
 
   !**** INOUT ***********************************!
 
@@ -543,17 +547,28 @@ subroutine line_search_exact(Hp_dim_loc,Hp_dim,N_occ_loc,N_occ,Hp,Sp,H,S,Hd,Sd,H
   ! Using the coeffs. calculated anlytically, we can find the minimum of the functional in the
   ! search direction, and calculate the energy at that minimum
   call solve_quartic(coeff(0:4),x_min,fail)
-  E_omg=coeff(4)*x_min**4+&
-        coeff(3)*x_min**3+&
-        coeff(2)*x_min**2+&
-        coeff(1)*x_min+&
-        coeff(0)
-  ! In certain regions of the coeffs. space the line search gives no minimum. If the initial guess
-  ! for the coeffs. is not too large, this should never occur in the Ordejon-Mauri functional.
-  if (fail) call die('ERROR: no minimum in line search!')
 
-  ! Move to the minimum and recalculate H and S at this point
-  chi=chi+x_min*d
+  ! In certain regions of the coeffs. space the line search gives no minimum. This occurs when there
+  ! are positive eigenvalues in the eigenspecturm which are significantly occupied by our coeffs.
+  ! matrix. The only known cure, unfortunately, is to scale down the entire matrix, thus returning to
+  ! a safe region of the coeffs. space.
+  if (fail) then
+    if (Node==0) print*, 'WARNING: Rescaling coefficients!'
+    E_omg=3.0*E_omg
+    chi=0.5_dp*chi
+    ls_conv=.false.
+  else
+    ! If the line search is successful, move to the minimum
+    E_omg=coeff(4)*x_min**4+&
+          coeff(3)*x_min**3+&
+          coeff(2)*x_min**2+&
+          coeff(1)*x_min+&
+          coeff(0)
+    chi=chi+x_min*d
+    ls_conv=.true.
+  end if
+
+  ! Recalculate H and S at the minimum (or for the rescaled coeffs.)
   call calc_A(Hp_dim_loc,Hp_dim,N_occ_loc,N_occ,Hp,chi,H,work1)
   call calc_A(Hp_dim_loc,Hp_dim,N_occ_loc,N_occ,Sp,chi,S,work2)
 

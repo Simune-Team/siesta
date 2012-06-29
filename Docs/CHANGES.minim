@@ -1,3 +1,17 @@
+2012-29-06  17:00 Fabiano Corsetti <fcorsetti@nanogune.eu>  trunk-409--minim-5
+Added coefficients rescaling to prevent crashes
+
+* In certain regions of the coeffs. space the line search gives no minimum. This
+  occurs when there are positive eigenvalues in the eigenspecturm which are
+  significantly occupied by our coeffs. matrix. The only known cure,
+  unfortunately, is to scale down the entire matrix, thus returning to a safe
+  region of the coeffs. space.
+
+modified:
+  Docs/CHANGES.minim
+  Src/m_minim.F90
+  version.info
+
 2012-18-06  16:00 Fabiano Corsetti <fcorsetti@nanogune.eu>  trunk-409--minim-4
 Fixed deallocation of arrays bug
 
