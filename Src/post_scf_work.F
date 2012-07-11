@@ -14,6 +14,7 @@
       use neighbour,   only: maxna=>maxnna   ! For plcharge...
       use m_spin,         only: nspin, qs
       use m_minim,        only: minim
+      use m_steps,        only : istp
       implicit none
 
       integer  :: iscf
@@ -27,8 +28,8 @@
 !     If we use the minimization routine, the energy-density
 !     matrix is not calculated inside the SCF step, and
 !     so this must be done now
-      if (isolve .eq. SOLVE_ORDERN) call minim(.true., iscf, no_s,
-     &  nspin, no_u, maxnh, numh, listhptr, listh, Escf, eta, qs)
+      if (isolve .eq. SOLVE_ORDERN) call minim(.true., iscf, istp,
+     &  no_s, nspin, no_u, maxnh, numh, listhptr, listh, Escf, eta, qs)
 
 !     If converged, make one last iteration to find forces and
 !     stress

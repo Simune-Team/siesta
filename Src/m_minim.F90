@@ -40,7 +40,7 @@ integer, public, save :: BlockSize_chi ! ScaLAPACK blocking factor for distribut
 
 contains
 
-subroutine minim(calc_Escf,iscf,nbasis,nspin,nuotot,nhmax,numh,listhptr,listh,Dscf,eta,qs,h,s)
+subroutine minim(calc_Escf,iscf,istp,nbasis,nspin,nuotot,nhmax,numh,listhptr,listh,Dscf,eta,qs,h,s,h_kin)
   implicit none
 
   !**** INPUT ***********************************!
@@ -48,6 +48,7 @@ subroutine minim(calc_Escf,iscf,nbasis,nspin,nuotot,nhmax,numh,listhptr,listh,Ds
   logical, intent(in) :: calc_Escf ! Calculate the energy-density matrix from the existing coeffs.?
 
   integer, intent(in) :: iscf            ! SCF iteration num.
+  integer, intent(in) :: istp            ! MD iteration num.
   integer, intent(in) :: nbasis          ! Num. of basis orbitals
   integer, intent(in) :: nspin           ! Num. of spins
   integer, intent(in) :: nuotot          ! Num. of orbitals in unit cell (global)
@@ -59,6 +60,7 @@ subroutine minim(calc_Escf,iscf,nbasis,nspin,nuotot,nhmax,numh,listhptr,listh,Ds
   real(dp), intent(in) :: qs(2)                    ! Num. of electrons per spin
   real(dp), intent(in) :: eta(2)                   ! Chemical potential for Kim functional
   real(dp), intent(in), optional :: h(nhmax,nspin) ! Hamiltonian matrix (sparse)
+  real(dp), intent(in), optional :: h_kin(nhmax)   ! Kinetic energy matrix (sparse)
   real(dp), intent(in), optional :: s(nhmax)       ! Overlap matrix (sparse)
 
   !**** OUTPUT **********************************!
@@ -67,13 +69,19 @@ subroutine minim(calc_Escf,iscf,nbasis,nspin,nuotot,nhmax,numh,listhptr,listh,Ds
 
   !**** LOCAL ***********************************!
 
+  logical :: update_precon ! Update the preconditioner?
+  logical :: use_precon    ! Use the preconditioner?
+
   integer :: nuo ! Num. of orbitals in unit cell (local)
 
-  integer :: ispin, io, jo, j, k, ind, lwork
+  integer :: ispin, io, jo, j, k, ind, lwork, info
+  integer, save :: last_precon_update=0
+  integer, save :: last_call(1:2)=0
 
-  real(dp), allocatable :: Haux(:,:) ! Hamiltonian matrix (dense)
-  real(dp), allocatable :: Saux(:,:) ! Overlap matrix (dense)
-  real(dp), allocatable :: Daux(:,:) ! Density (or energy-density) matrix (dense)
+  real(dp), allocatable :: Haux(:,:)       ! Hamiltonian matrix (dense)
+  real(dp), allocatable :: Daux(:,:)       ! Density (or energy-density) matrix (dense)
+  real(dp), allocatable, save :: Taux(:,:) ! Kinetic energy matrix (dense)
+  real(dp), allocatable, save :: Saux(:,:) ! Overlap matrix (dense)
 
   !**********************************************!
 
@@ -92,21 +100,68 @@ subroutine minim(calc_Escf,iscf,nbasis,nspin,nuotot,nhmax,numh,listhptr,listh,Ds
   if (.not. calc_Escf) then
 
     allocate(Haux(nuotot,nuo))
-    allocate(Saux(nuotot,nuo))
+    if (.not. allocated(Saux)) allocate(Saux(nuotot,nuo))
 
-    ! Convert the Hamiltonian and overlap matrices from sparse to dense
+    ! Convert the Hamiltonian matrix from sparse to dense
     do ispin=1,nspin
       Haux=0.0d0
-      Saux=0.0d0
       do io=1,nuo
         do j=1,numh(io)
           ind=listhptr(io)+j
           jo=listh(ind)
           Haux(jo,io)=Haux(jo,io)+H(ind,ispin)
-          Saux(jo,io)=Saux(jo,io)+S(ind)
         end do
       end do
     end do
+
+    ! If this is the first time the module is called for this MD step, convert also the new overlap
+    ! matrix from sparse to dense
+    if (istp/=last_call(2)) then
+      Saux=0.0d0
+      do io=1,nuo
+        do j=1,numh(io)
+          ind=listhptr(io)+j
+          jo=listh(ind)
+          Saux(jo,io)=Saux(jo,io)+S(ind)
+        end do
+      end do
+    end if
+
+    ! Decide whether preconditioning should be used in this minimization call
+    if (istp==1) then
+      if (iscf<=10) then
+        use_precon=.true.
+      else
+        use_precon=.false.
+      end if
+    else
+      if (iscf==0) then
+        use_precon=.true.
+      else
+        use_precon=.false.
+      end if
+    end if
+    ! If this is the first time we are using preconditioning for this MD step, convert also the new
+    ! kinetic energy matrix from sparse to dense
+    if (use_precon) then
+      if (istp/=last_precon_update) then
+        if (.not. allocated(Taux)) allocate(Taux(nuotot,nuo))
+        Taux=0.0d0
+        do io=1,nuo
+          do j=1,numh(io)
+            ind=listhptr(io)+j
+            jo=listh(ind)
+            Taux(jo,io)=Taux(jo,io)+H_kin(ind)
+          end do
+        end do
+        update_precon=.true.
+        last_precon_update=istp
+      else
+        update_precon=.false.
+      end if
+    else
+      update_precon=.false.
+    end if
 
     ! Shift the eingevalue spectrum w.r.t. the chemical potential reference
     Haux=Haux-eta(1)*Saux
@@ -114,12 +169,9 @@ subroutine minim(calc_Escf,iscf,nbasis,nspin,nuotot,nhmax,numh,listhptr,listh,Ds
   end if
 
   ! Call the routine to perform the energy minimization
-  call minim_cg(calc_Escf,iscf,nuo,nuotot,nint(0.5_dp*qs(1)),eta(1),Daux,psi,nspin,Haux,Saux)
+  call minim_cg(calc_Escf,iscf,nuo,nuotot,nint(0.5_dp*qs(1)),eta(1),Daux,psi,nspin,update_precon,use_precon,Haux,Saux,Taux)
 
-  if (.not. calc_Escf) then
-    deallocate(Saux)
-    deallocate(Haux)
-  end if
+  if (.not. calc_Escf) deallocate(Haux)
 
   ! Convert the density (or energy-density) matrix from dense to sparse
   Dscf=0.0_dp
@@ -135,6 +187,8 @@ subroutine minim(calc_Escf,iscf,nbasis,nspin,nuotot,nhmax,numh,listhptr,listh,Ds
 
   deallocate(Daux)
 
+  last_call(1:2)=(/iscf,istp/)
+
   call timer_stop('minim_mod')
 
   end subroutine minim
@@ -143,12 +197,14 @@ subroutine minim(calc_Escf,iscf,nbasis,nspin,nuotot,nhmax,numh,listhptr,listh,Ds
 ! Minimize the Kim functional by conjugate       !
 ! gradients                                      !
 !================================================!
-subroutine minim_cg(calc_Escf,iscf,Hp_dim_loc,Hp_dim,N_occ,eta,Daux,psi,nspin,Hp,Sp)
+subroutine minim_cg(calc_Escf,iscf,Hp_dim_loc,Hp_dim,N_occ,eta,Daux,psi,nspin,update_precon,use_precon,Hp,Sp,Tp)
   implicit none
 
   !**** INPUT ***********************************!
 
-  logical, intent(in) :: calc_Escf ! Calculate the energy-density matrix from the existing coeffs.?
+  logical, intent(in) :: calc_Escf     ! Calculate the energy-density matrix from the existing coeffs.?
+  logical, intent(in) :: update_precon ! Update the preconditioner?
+  logical, intent(in) :: use_precon    ! Use the preconditioner?
 
   integer, intent(in) :: iscf       ! SCF iteration num.
   integer, intent(in) :: Hp_dim_loc ! Num. of orbitals (local)
@@ -160,6 +216,7 @@ subroutine minim_cg(calc_Escf,iscf,Hp_dim_loc,Hp_dim,N_occ,eta,Daux,psi,nspin,Hp
   real(dp), intent(in) :: psi(1:Hp_dim,1:Hp_dim_loc,1:nspin) ! Eigenvectors from diagonalization
   real(dp), intent(in), optional :: Hp(:,:)                  ! Hamiltonian matrix in orbital basis
   real(dp), intent(in), optional :: Sp(:,:)                  ! Overlap matrix in orbital basis
+  real(dp), intent(in), optional :: Tp(:,:)                  ! Kinetic energy matrix in orbital basis
 
   !**** OUTPUT **********************************!
 
@@ -177,11 +234,13 @@ subroutine minim_cg(calc_Escf,iscf,Hp_dim_loc,Hp_dim,N_occ,eta,Daux,psi,nspin,Hp
   integer :: N_occ_loc_i, mpi_status(mpi_status_size)
 #endif
 
-  real(dp) :: cg_tol     ! Convergence tolerance of cg minimization
-  real(dp) :: step_init  ! Initial trial step length for line search
-  real(dp) :: coeff(0:4) ! Coeffs. of the quartic equation
+  real(dp) :: t_precon_scale ! Kinetic energy scale for the preconditioning
+  real(dp) :: cg_tol         ! Convergence tolerance of cg minimization
+  real(dp) :: step_init      ! Initial trial step length for line search
+  real(dp) :: coeff(0:4)     ! Coeffs. of the quartic equation
   real(dp) :: rn, rn2, E_omg, E_omg_old
   real(dp) :: lambda, lambda_n, lambda_d, E_diff, TrS
+  real(dp), allocatable, save :: Ip(:,:) ! Inverse overlap matrix in orbital basis
   real(dp), allocatable, save :: H(:,:)
   real(dp), allocatable, save :: S(:,:)
   real(dp), allocatable :: Hd(:,:)
@@ -190,6 +249,8 @@ subroutine minim_cg(calc_Escf,iscf,Hp_dim_loc,Hp_dim,N_occ,eta,Daux,psi,nspin,Hp
   real(dp), allocatable :: Sdd(:,:)
   real(dp), allocatable :: g(:,:)
   real(dp), allocatable :: g_p(:,:)
+  real(dp), allocatable :: pg(:,:)
+  real(dp), allocatable :: pg_p(:,:)
   real(dp), allocatable :: d(:,:)
   real(dp), allocatable :: work1(:,:)
   real(dp), allocatable :: work2(:,:)
@@ -302,6 +363,24 @@ subroutine minim_cg(calc_Escf,iscf,Hp_dim_loc,Hp_dim,N_occ,eta,Daux,psi,nspin,Hp
     FirstCall=.false.
   end if
 
+  ! Calculate the preconditioning matrix (s+t/tau)^-1
+  if (update_precon) then
+
+      if (.not. allocated(Ip)) allocate(Ip(1:Hp_dim,1:Hp_dim_loc))
+
+      t_precon_scale=10.0_dp
+
+      Ip=Sp+Tp/t_precon_scale
+#ifdef MPI
+      call pdpotrf('U',Hp_dim,Ip,1,1,desc1,info)
+      call pdpotri('U',Hp_dim,Ip,1,1,desc1,info)
+#else
+      call dpotrf('U',Hp_dim,Ip,Hp_dim,info)
+      call dpotri('U',Hp_dim,Ip,Hp_dim,info)
+#endif
+
+  end if
+
   if (calc_Escf) then
 
     allocate(work1(1:N_occ,1:N_occ_loc))
@@ -339,6 +418,10 @@ subroutine minim_cg(calc_Escf,iscf,Hp_dim_loc,Hp_dim,N_occ,eta,Daux,psi,nspin,Hp
   end if
   allocate(g(1:Hp_dim,1:N_occ_loc))
   allocate(g_p(1:Hp_dim,1:N_occ_loc))
+  if (use_precon) then
+    allocate(pg(1:Hp_dim,1:N_occ_loc))
+    allocate(pg_p(1:Hp_dim,1:N_occ_loc))
+  end if
   allocate(d(1:Hp_dim,1:N_occ_loc))
   allocate(work1(1:Hp_dim,1:N_occ_loc))
   allocate(work2(1:Hp_dim,1:N_occ_loc))
@@ -348,7 +431,7 @@ subroutine minim_cg(calc_Escf,iscf,Hp_dim_loc,Hp_dim,N_occ,eta,Daux,psi,nspin,Hp
   end if
 
   n_step_max=10000
-  cg_tol=1.0d-8
+  cg_tol=1.0d-9
   if (LineSearchFit) step_init=1.0d-1
 
   ! First we calculate the energy and gradient for our initial guess, with the following steps:
@@ -368,6 +451,14 @@ subroutine minim_cg(calc_Escf,iscf,Hp_dim_loc,Hp_dim,N_occ,eta,Daux,psi,nspin,Hp
   !  (note that we *reuse* h*C and s*C contained in work1 and work2 from the previous calls to
   !   calc_A)
   call calc_grad(Hp_dim_loc,Hp_dim,N_occ_loc,N_occ,H,S,g,work1,work2)
+  ! -calculate the preconditioned gradient by premultiplying G by (s+t/tau)^-1
+  if (use_precon) then
+#ifdef MPI
+    call pdsymm('L','U',Hp_dim,N_occ,1.0_dp,Ip,1,1,desc1,g,1,1,desc3,0.0_dp,pg,1,1,desc3)
+#else
+    call dsymm('L','U',Hp_dim,N_occ,1.0_dp,Ip,Hp_dim,g,Hp_dim,0.0_dp,pg,Hp_dim)
+#endif
+  end if
   ! -if we are not using the fitting procedure, calculate the additional matrices:
   !  Hd=G^T*h*C
   !  Sd=G^T*s*C
@@ -398,8 +489,13 @@ subroutine minim_cg(calc_Escf,iscf,Hp_dim_loc,Hp_dim,N_occ,eta,Daux,psi,nspin,Hp
   do i=1,n_step_max
     lambda=0.0_dp
     do j=1,Hp_dim*N_occ-1
-      d=g+lambda*d
+      if (use_precon) then
+        d=pg+lambda*d
+      else
+        d=g+lambda*d
+      end if
       g_p=g
+      if (use_precon) pg_p=pg
       E_omg_old=E_omg
       ! Call the routine to perform the line search (either fitting or analytical)
       if (LineSearchFit) then
@@ -416,10 +512,24 @@ subroutine minim_cg(calc_Escf,iscf,Hp_dim_loc,Hp_dim,N_occ,eta,Daux,psi,nspin,Hp
         conv=.true.
         exit
       end if
-      if (.not. LineSearchFit) call calc_grad(Hp_dim_loc,Hp_dim,N_occ_loc,N_occ,H,S,g,work1,work2)
+      if (.not. LineSearchFit) then
+        call calc_grad(Hp_dim_loc,Hp_dim,N_occ_loc,N_occ,H,S,g,work1,work2)
+        if (use_precon) then
+#ifdef MPI
+          call pdsymm('L','U',Hp_dim,N_occ,1.0_dp,Ip,1,1,desc1,g,1,1,desc3,0.0_dp,pg,1,1,desc3)
+#else
+          call dsymm('L','U',Hp_dim,N_occ,1.0_dp,Ip,Hp_dim,g,Hp_dim,0.0_dp,pg,Hp_dim)
+#endif
+        end if
+      end if
       if (ls_conv) then
-        lambda_n=ddot(Hp_dim*N_occ_loc,g,1,g-g_p,1)
-        lambda_d=ddot(Hp_dim*N_occ_loc,g_p,1,g_p,1)
+        if (use_precon) then
+          lambda_n=ddot(Hp_dim*N_occ_loc,pg,1,g-g_p,1)
+          lambda_d=ddot(Hp_dim*N_occ_loc,pg_p,1,g_p,1)
+        else
+          lambda_n=ddot(Hp_dim*N_occ_loc,g,1,g-g_p,1)
+          lambda_d=ddot(Hp_dim*N_occ_loc,g_p,1,g_p,1)
+        end if
 #ifdef MPI
         call mpi_allreduce(lambda_n,lambda_n_tot,1,mpi_double_precision,mpi_sum,mpi_comm_world,info)
         call mpi_allreduce(lambda_d,lambda_d_tot,1,mpi_double_precision,mpi_sum,mpi_comm_world,info)
@@ -471,6 +581,10 @@ subroutine minim_cg(calc_Escf,iscf,Hp_dim_loc,Hp_dim,N_occ,eta,Daux,psi,nspin,Hp
   deallocate(work2)
   deallocate(work1)
   deallocate(d)
+  if (use_precon) then
+    deallocate(pg_p)
+    deallocate(pg)
+  end if
   deallocate(g_p)
   deallocate(g)
   if (.not. LineSearchFit) then

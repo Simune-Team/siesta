@@ -85,8 +85,8 @@
 !     &               istp, ncgmax, etol, eta, qtot, maxnh, numh,
 !     &               listhptr, listh, H, S, chebef, noeta, rcoorcp,
 !     &               beta, pmax, Dscf, Escf, Ecorrec, nspin, qs )
-        call minim(.false., iscf, no_s, nspin, no_u, maxnh, numh,
-     &             listhptr, listh, Dscf, eta, qs, h, s)
+        call minim(.false., iscf, istp, no_s, nspin, no_u, maxnh,
+     &             numh, listhptr, listh, Dscf, eta, qs, h, s, h_kin)
         Ecorrec = 0.0_dp
         Entrop = 0.0_dp
 #ifdef TRANSIESTA

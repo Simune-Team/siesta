@@ -1,3 +1,23 @@
+2012-11-07  19:00 Fabiano Corsetti <fcorsetti@nanogune.eu>  trunk-409--minim-6
+Added preconditioning to the CG algorithm
+
+* The iterative conjugate gradients (CG) algorithm has been modified by
+  introducing a preconditioner that premultiplies the standard gradient
+  expression. This preconditioning matrix is given by the inverse of (s+t/tau),
+  where s is the overlap matrix for the underlying SIESTA basis set, and t is
+  the corresponding kinetic energy matrix; tau is a scaling factor for the
+  kinetic energy preconditioning. Note that the preconditioner transforms the
+  gradient from covariant to contravariant (although only for the index related
+  to the underlying non-orthogonal basis), thus *partially* fixing the tensorial
+  inconsistencies of the algorithm.
+
+modified:
+  Docs/CHANGES.minim
+  Src/compute_dm.F
+  Src/m_minim.F90
+  Src/post_scf_work.F
+  version.info
+
 2012-29-06  17:00 Fabiano Corsetti <fcorsetti@nanogune.eu>  trunk-409--minim-5
 Added coefficients rescaling to prevent crashes
 
