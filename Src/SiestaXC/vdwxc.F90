@@ -43,8 +43,8 @@
 !------------------------------------------------------------------------------
 ! Public procedures available from this module:
 !   vdw_decusp    : Energy due to the softening of the VdW kernel cusp
-!   vdw_exchng    : GGA exchange energy apropriate for the used vdW flavour
 !   vdw_get_qmesh : Returns size and values of q-mesh
+!   vdw_localxc   : LDA/GGA xc part apropriate for the used vdW flavour
 !   vdw_phi       : Finds and interpolates phi(q1,q2,k)
 !   vdw_set_author: Sets the vdW functional flavour (author initials)
 !   vdw_set_kcut  : Sets the planewave cutoff kc of the integration grid
@@ -272,12 +272,12 @@ MODULE m_vdwxc
 ! Called by xc routines
 PUBLIC ::         &
   vdw_decusp,     &! Energy due to the softening of the VdW kernel cusp
-  vdw_exchng,     &! GGA exchange energy apropriate for the used vdW flavour
-  vdw_theta,      &! Finds function theta_q(rho,grad_rho)
   vdw_get_qmesh,  &! Returns size and values of q-mesh
+  vdw_localxc,    &! LDA/GGA exchange-corr apropriate for the used vdW flavour
   vdw_phi,        &! Finds and interpolates phi(q1,q2,k)
   vdw_set_author, &! Sets the vdW functional flavour (author initials)
-  vdw_set_kcut     ! Sets the planewave cutoff kc of the integration grid
+  vdw_set_kcut,   &! Sets the planewave cutoff kc of the integration grid
+  vdw_theta        ! Finds function theta_q(rho,grad_rho)
 
 #ifdef DEBUG_XC
 ! Called by debugging test programs
@@ -1418,44 +1418,6 @@ end subroutine vdw_decusp
 
 !-----------------------------------------------------------------------------
 
-subroutine vdw_exchng( iRel, nSpin, D, GD, epsX, dEXdD, dEXdGD )
-
-! Finds the exchange energy density and its derivatives, using the GGA
-! functional apropriate for the previously-set vdW functional flavour
-
-  implicit none
-  integer, intent(in) :: iRel            ! Relativistic exchange? 0=no, 1=yes
-  integer, intent(in) :: nSpin           ! Number of spin components
-  real(dp),intent(in) :: D(nSpin)        ! Local electron (spin) density
-  real(dp),intent(in) :: GD(3,nSpin)     ! Gradient of electron density
-  real(dp),intent(out):: epsX            ! Exchange energy per electron
-  real(dp),intent(out):: dEXdD(nSpin)    ! dEx/dDens, Ex=Int(dens*epsX)
-  real(dp),intent(out):: dEXdGD(3,nSpin) ! dEx/dGrad(Dens)
-
-! Internal variables and arrays
-  real(dp):: epsC, dECdD(nSpin), dECdGD(3,nSpin)
-
-! Call the appropriate GGA functional
-  if (vdw_author=='DRSLL') then
-    ! Dion et al, PRL 92, 246401 (2004)
-    call GGAxc( 'revPBE', iRel, nSpin, D, GD, &
-                 epsX, epsC, dEXdD, dECdD, dEXdGD, dECdGD )
-  else if (vdw_author=='LMKLL') then
-    ! Lee et al, arXiv:1003.5255v1 (2010)
-    call GGAxc( 'PW86R', iRel, nSpin, D, GD, &
-                 epsX, epsC, dEXdD, dECdD, dEXdGD, dECdGD )
-  else if (vdw_author=='KBM') then
-    ! optB88-vdW of Klimes et al, JPCM 22, 022201 (2009)
-    call GGAxc( 'B88KBM', iRel, nSpin, D, GD, &
-                 epsX, epsC, dEXdD, dECdD, dEXdGD, dECdGD )
-  else
-    stop 'vdw_exchng ERROR: unknown author'
-  end if
-
-end subroutine vdw_exchng
-
-!-----------------------------------------------------------------------------
-
 subroutine vdw_get_qmesh( n, q )
 
 ! Returns size and values of q-mesh
@@ -1483,6 +1445,73 @@ subroutine vdw_get_qmesh( n, q )
 end subroutine vdw_get_qmesh
 
 ! -----------------------------------------------------------------------------
+
+subroutine vdw_localxc( iRel, nSpin, D, GD, epsX, epsC, &
+                        dEXdD, dECdD, dEXdGD, dECdGD )
+
+! Finds the (semi)local part of the correlation energy density and its 
+! derivatives, using the GGA functional apropriate for the previously-set
+! vdW functional flavour
+
+  implicit none
+  integer, intent(in) :: iRel            ! Relativistic exchange? 0=no, 1=yes
+  integer, intent(in) :: nSpin           ! Number of spin components
+  real(dp),intent(in) :: D(nSpin)        ! Local electron (spin) density
+  real(dp),intent(in) :: GD(3,nSpin)     ! Gradient of electron density
+  real(dp),intent(out):: epsX            ! Local exchange energy per electron
+  real(dp),intent(out):: epsC            ! Local correlation energy per electron
+  real(dp),intent(out):: dEXdD(nSpin)    ! dEx/dDens, Ex=Int(dens*epsX)
+  real(dp),intent(out):: dECdD(nSpin)    ! dEc/dDens, Ec=Int(dens*epsC)
+  real(dp),intent(out):: dEXdGD(3,nSpin) ! dEx/dGrad(Dens)
+  real(dp),intent(out):: dECdGD(3,nSpin) ! dEc/dGrad(Dens)
+
+! Internal variables and arrays
+  real(dp):: epsAux, dEdDaux(nSpin), dEdGDaux(3,nSpin)
+  real(dp):: dVXdD(nSpin,nSpin), dVCdD(nSpin,nSpin)
+
+! Initialize output
+  epsX = 0
+  epsC = 0
+  dEXdD = 0
+  dECdD = 0
+  dEXdGD = 0
+  dECdGD = 0
+
+! Call the appropriate GGA functional.
+! Use aux arrays to avoid overwritting the wrong ones
+  if (vdw_author=='DRSLL') then
+    ! Dion et al, PRL 92, 246401 (2004)
+    ! GGA exchange and LDA correlation (we choose PW92 for the later)
+    call GGAxc( 'revPBE', iRel, nSpin, D, GD, epsX, epsAux, &
+                 dEXdD, dEdDaux, dEXdGD, dEdGDaux )
+    call LDAxc( 'PW92', iRel, nSpin, D, epsAux, epsC,  &
+                dEdDaux, dECdD, dVXdD, dVCdD )
+  else if (vdw_author=='LMKLL') then
+    ! Lee et al, PRB 82, 081101 (2010)
+    call GGAxc( 'PW86R', iRel, nSpin, D, GD, epsX, epsAux, &
+                 dEXdD, dEdDaux, dEXdGD, dEdGDaux )
+    call LDAxc( 'PW92', iRel, nSpin, D, epsAux, epsC,  &
+                dEdDaux, dECdD, dVXdD, dVCdD )
+  else if (vdw_author=='KBM') then
+    ! optB88-vdW of Klimes et al, JPCM 22, 022201 (2009)
+    call GGAxc( 'B88KBM', iRel, nSpin, D, GD, epsX, epsAux, &
+                 dEXdD, dEdDaux, dEXdGD, dEdGDaux )
+    call LDAxc( 'PW92', iRel, nSpin, D, epsAux, epsC,  &
+                dEdDaux, dECdD, dVXdD, dVCdD )
+  else if (vdw_author=='VV') then
+    ! Vydrov and VanVoorhis, JCP 133, 244103 (2010)
+    ! GGA for both exchange and correlation, but with different flavours
+    call GGAxc( 'PW86R', iRel, nSpin, D, GD, epsX, epsAux, &
+                dEXdD, dEdDaux, dEXdGD, dEdGDaux )
+    call GGAxc( 'PBE', iRel, nSpin, D, GD, epsAux, epsC, &
+                dEdDaux, dECdD, dEdGDaux, dECdGD )
+  else
+    stop 'vdw_exchng ERROR: unknown author'
+  end if
+
+end subroutine vdw_localxc
+
+!-----------------------------------------------------------------------------
 
 subroutine vdw_phi( k, phi, dphidk )
 

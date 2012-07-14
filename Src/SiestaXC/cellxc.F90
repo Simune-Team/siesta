@@ -210,8 +210,9 @@
 !         'PBESOL' => GGA Perdew et al, PRL, 100, 136406 (2008)
 !           'AM05' => GGA Mattsson & Armiento, PRB, 79, 155101 (2009)
 !          'DRSLL' => VDW Dion et al, PRL 92, 246401 (2004)
-!          'LMKLL' => VDW K.Lee et al, arXiv:1003.5255v1 (2010)
+!          'LMKLL' => VDW K.Lee et al, PRB 82, 081101 (2010)
 !            'KBM' => VDW optB88-vdW of J.Klimes et al, JPCM 22, 022201 (2009)
+!             'VV' => VDW Vydrov-VanVoorhis, JCP 133, 244103 (2010)
 ! *******************************************************************
 
 MODULE m_cellXC
@@ -259,7 +260,7 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   use m_timer, only: timer_get     ! Returns counted times
   use m_timer, only: timer_start   ! Starts counting time
   use m_timer, only: timer_stop    ! Stops counting time
-  use m_vdwxc, only: vdw_exchng    ! GGA exchange apropriate for vdW flavour
+  use m_vdwxc, only: vdw_localxc   ! Local LDA/GGA xc apropriate for vdW flavour
   use m_vdwxc, only: vdw_decusp    ! Cusp correction to VDW energy
   use m_vdwxc, only: vdw_get_qmesh ! Returns q-mesh for VDW integrals
   use m_vdwxc, only: vdw_phi       ! Returns VDW functional kernel
@@ -371,12 +372,12 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
      r11, r12, r13, r21, r22, r23
   real(dp):: &
      comTime, D(nSpin), dedk, dEcdD(nSpin), dEcdGD(3,nSpin), &
-     dEcidDj, dEcuspdD(nSpin), dEcuspdGD(3,nSpin), dEdDaux(nSpin),  &
+     dEcidDj, dEcuspdD(nSpin), dEcuspdGD(3,nSpin),  &
      dExdD(nSpin), dExdGD(3,nSpin), dExidDj, &
      dGdM(-nn:nn), dGidFj(3,3,-nn:nn), Dj(nSpin), &
      dMdX(3,3), DV, dVol, Dtot, dXdM(3,3), &
      dVcdD(nSpin*nSpin), dVxdD(nSpin*nSpin), &
-     Eaux, EcuspVDW, Enl, epsC, epsCusp, epsNL, epsX, f1, f2, &  
+     EcuspVDW, Enl, epsC, epsCusp, epsNL, epsX, f1, f2, &  
      GD(3,nSpin), k, kcell(3,3), kcut, kvec(3),  &
      stressVDW(3,3), sumTime, sumTime2, totTime, VDWweightC, volume, &
      XCweightC(maxFunc), XCweightVDW, XCweightX(maxFunc)
@@ -952,14 +953,9 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
       ! derivatives with respect to density and density gradient
       if (VDWfunctl) then
 
-        ! Exchange from the apropriate GGA functional
-        call vdw_exchng( irel, nSpin, D, GD, epsX, dExdD, dExdGD )
-
-        ! Local correlation from PW92 LDA
-        ! Use Eaux and dEdDaux to avoid overwritting epsX and dExdD
-        call ldaxc( 'PW92', irel, nSpin, D, Eaux, epsC,  &
-                    dEdDaux, dEcdD, dVxdD, dVcdD )
-        dEcdGD = 0.0_dp
+        ! Local exchange-corr. part from the apropriate LDA/GGA functional
+        call vdw_localxc( irel, nSpin, D, GD, epsX, epsC, &
+                          dExdD, dEcdD, dExdGD, dEcdGD )
 
 #ifdef DEBUG_XC
 !        ! Select only non local correlation energy and potential

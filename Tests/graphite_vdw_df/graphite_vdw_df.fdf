@@ -26,8 +26,10 @@ AtomicCoordinatesFormat Fractional
 
 ##### FUNCTIONAL ##############################################################
 
-XC_functional  VDW
-XC_authors     DRSLL
+XC_functional  GGA
+XC_authors     PBE
+#XC_functional  VDW
+#XC_authors     DRSLL
 
 ##### PRECISION PARAMETERS ####################################################
 

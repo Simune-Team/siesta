@@ -479,7 +479,7 @@ subroutine set_phi_table()
 ! function values) for the kernel phi(k1,k2,k).
 
   implicit none
-  integer :: ik, ikf1, ikf2, ikg1, ikg2, ikfg1, ikfg2, ir
+  integer :: ik, ikf1, ikf2, ikg1, ikg2, ik1, ik2, ir
   real(dp):: dkdk0, dphidk0, dphidkmax, dphidr0, dphidrmax, &
              k, kf1, kf2, kg1, kg2, pi, r(0:nr)
 
@@ -495,10 +495,10 @@ subroutine set_phi_table()
 ! Loop on (k1,k2) mesh points
   do ikg2 = 1,nkg                       ! loop on kg2
     do ikf2 = 1,nkf                     ! loop on kf2
-      ikfg2 = ikf2 + nkf*(ikfg2-1)      ! combined (ikf2,ikg2) index
+      ik2 = ikf2 + nkf*(ik2-1)      ! combined (ikf2,ikg2) index
       do ikg1 = 1,nkg                   ! loop on kg1
         do ikf1 = 1,nkf                 ! loop on kf1
-          ikfg1 = ikf1 + nkf*(ikfg1-1)  ! combined (ikf1,ikg1) index
+          ik1 = ikf1 + nkf*(ik1-1)  ! combined (ikf1,ikg1) index
 
           ! Saturated (kf,kg) values
 !          kf1 = kfmesh(ikf1)
@@ -514,55 +514,55 @@ subroutine set_phi_table()
 
           ! Find kernel as a function of r12
           do ir = 0,nr
-            phir(ir,ikfg1,ikfg2) = vv_phi( kf1, kf2, kg1, kg2, r(ir) )
+            phir(ir,ik1,ik2) = vv_phi( kf1, kf2, kg1, kg2, r(ir) )
           end do
 
           ! Kill kernel smoothly at r=rcut
           do ir = 0,nr
-            phir(ir,ikfg1,ikfg2) = phir(ir,ikfg1,ikfg2) * cutoff( r(ir)/rcut )
+            phir(ir,ik1,ik2) = phir(ir,ik1,ik2) * cutoff( r(ir)/rcut )
           end do
 
           ! Find kernel in reciprocal space
-          call radfft( 0, nr, rcut, phir(:,ikfg1,ikfg2), phik(:,ikfg1,ikfg2) )
-          phik(:,ikfg1,ikfg2) = phik(:,ikfg1,ikfg2) * (2*pi)**1.5_dp
+          call radfft( 0, nr, rcut, phir(:,ik1,ik2), phik(:,ik1,ik2) )
+          phik(:,ik1,ik2) = phik(:,ik1,ik2) * (2*pi)**1.5_dp
 
           ! Filter out above kcut
-          phik(nk:nr,ikfg1,ikfg2) = 0
+          phik(nk:nr,ik1,ik2) = 0
 
           ! Soft filter below kcut
           do ik = 1,nk
             k = ik * dk
-            phik(ik,ikfg1,ikfg2) = phik(ik,ikfg1,ikfg2) * cutoff(k/kcut)
+            phik(ik,ik1,ik2) = phik(ik,ik1,ik2) * cutoff(k/kcut)
           end do
 
           ! Find filtered kernel in real space
-          call radfft( 0, nr, kmax, phik(:,ikfg1,ikfg2), phir(:,ikfg1,ikfg2) )
-          phir(:,ikfg1,ikfg2) = phir(:,ikfg1,ikfg2) / (2*pi)**1.5_dp
+          call radfft( 0, nr, kmax, phik(:,ik1,ik2), phir(:,ik1,ik2) )
+          phir(:,ik1,ik2) = phir(:,ik1,ik2) / (2*pi)**1.5_dp
 
           ! Set up spline interpolation tables
           dphidr0 = 0
           dphidrmax = 0
           dphidk0 = 0
           dphidkmax = 0
-          call spline( dr, phir(:,ikfg1,ikfg2), nr+1, dphidr0, dphidrmax, &
-                       d2phidr2(:,ikfg1,ikfg2) )
-          call spline( dk, phik(:,ikfg1,ikfg2), nk+1, dphidk0, dphidkmax, &
-                       d2phidk2(:,ikfg1,ikfg2) )
+          call spline( dr, phir(:,ik1,ik2), nr+1, dphidr0, dphidrmax, &
+                       d2phidr2(:,ik1,ik2) )
+          call spline( dk, phik(:,ik1,ik2), nk+1, dphidk0, dphidkmax, &
+                       d2phidk2(:,ik1,ik2) )
 
           ! Fill symmetric elements
-          phir(:,ikfg2,ikfg1) = phir(:,ikfg1,ikfg2)
-          phik(:,ikfg2,ikfg1) = phik(:,ikfg1,ikfg2)
-          d2phidr2(:,ikfg2,ikfg1) = d2phidr2(:,ikfg1,ikfg2)
-          d2phidk2(:,ikfg2,ikfg1) = d2phidk2(:,ikfg1,ikfg2)
+          phir(:,ik2,ik1) = phir(:,ik1,ik2)
+          phik(:,ik2,ik1) = phik(:,ik1,ik2)
+          d2phidr2(:,ik2,ik1) = d2phidr2(:,ik1,ik2)
+          d2phidk2(:,ik2,ik1) = d2phidk2(:,ik1,ik2)
 
-!          if (.false. .and. ikfg1==ikfg2) then
-!            print*, 'vv_vdw_set_kcut: ikfg1,ikfg2=', ikfg1, ikfg2
+!          if (.false. .and. ik1==ik2) then
+!            print*, 'vv_vdw_set_kcut: ik1,ik2=', ik1, ik2
 !            call window( 0._dp, 5._dp, -1._dp, 4._dp, 0 )
 !            call axes( 0._dp, 1._dp, 0._dp, 1._dp )
-!            call plot( nr+1, r, phi, phir(:,ikfg1,ikfg2) )
+!            call plot( nr+1, r, phi, phir(:,ik1,ik2) )
 !            call window( 0._dp, 10._dp, -0.05_dp, 0.15_dp, 0 )
 !            call axes( 0._dp, 1._dp, 0._dp, 0.05_dp )
-!            call plot( nr+1, r, r**2*phi, r**2*phir(:,ikfg1,ikfg2))
+!            call plot( nr+1, r, r**2*phi, r**2*phir(:,ik1,ik2))
 !            call show()
 !          end if
 
@@ -687,7 +687,7 @@ subroutine vv_vdw_phi( k, phi, dphidk )
                                       ! for all k1,k2 in (kf,kg) mesh
   real(dp),intent(out):: dphidk(:,:)  ! dphi(k1,k2,k)/dk at given k
 
-  integer :: ik, ikfg1, ikfg2
+  integer :: ik, ik1, ik2
   real(dp):: a, a2, a3, b, b2, b3
 
   if (.not.kcut_set) stop 'vdw_phi: ERROR: kcut must be previously set'
@@ -708,17 +708,17 @@ subroutine vv_vdw_phi( k, phi, dphidk )
     b2 = (3*b**2 -1) * dk / 6
     a3 = (a**3 - a) * dk**2 / 6
     b3 = (b**3 - b) * dk**2 / 6
-    do ikfg2 = 1,nkfg
-      do ikfg1 = 1,ikfg2
-!        call splint( dk, phik(:,ikfg1,ikfg2), d2phidk2(:,ikfg1,ikfg2), &
-!                      nk+1, k, phi(ikfg1,ikfg2), dphidk(ikfg1,ikfg2), pr )
-        phi(ikfg1,ikfg2) = a*phik(ik,ikfg1,ikfg2) + b*phik(ik+1,ikfg1,ikfg2) &
-                + a3*d2phidk2(ik,ikfg1,ikfg2) + b3*d2phidk2(ik+1,ikfg1,ikfg2)
-        dphidk(ikfg1,ikfg2) = (-phik(ik,ikfg1,ikfg2) &
-                               +phik(ik+1,ikfg1,ikfg2) )/dk &
-                - a2*d2phidk2(ik,ikfg1,ikfg2) + b2*d2phidk2(ik+1,ikfg1,ikfg2)
-        phi(ikfg2,ikfg1) = phi(ikfg1,ikfg2)
-        dphidk(ikfg2,ikfg1) = dphidk(ikfg1,ikfg2)
+    do ik2 = 1,nkfg
+      do ik1 = 1,ik2
+!        call splint( dk, phik(:,ik1,ik2), d2phidk2(:,ik1,ik2), &
+!                      nk+1, k, phi(ik1,ik2), dphidk(ik1,ik2), pr )
+        phi(ik1,ik2) = a*phik(ik,ik1,ik2) + b*phik(ik+1,ik1,ik2) &
+                + a3*d2phidk2(ik,ik1,ik2) + b3*d2phidk2(ik+1,ik1,ik2)
+        dphidk(ik1,ik2) = (-phik(ik,ik1,ik2) &
+                               +phik(ik+1,ik1,ik2) )/dk &
+                - a2*d2phidk2(ik,ik1,ik2) + b2*d2phidk2(ik+1,ik1,ik2)
+        phi(ik2,ik1) = phi(ik1,ik2)
+        dphidk(ik2,ik1) = dphidk(ik1,ik2)
       end do
     end do
   end if
@@ -736,7 +736,7 @@ subroutine vv_vdw_phiofr( r, phi )
   real(dp),intent(in) :: r
   real(dp),intent(out):: phi(:,:)
 
-  integer :: ikf1, ikf2, ikg1, ikg2, ikfg1, ikfg2
+  integer :: ikf1, ikf2, ikg1, ikg2, ik1, ik2
   real(dp):: dphidr
 
   if (size(phi,1)<nkfg .or. size(phi,2)<nkfg) &
@@ -746,13 +746,13 @@ subroutine vv_vdw_phiofr( r, phi )
   if (r >= rcut) then
     phi(:,:) = 0
   else
-    do ikfg2 = 1,nkfg
-      do ikfg1 = 1,ikfg2
-        call splint( dr, phir(:,ikfg1,ikfg2), d2phidr2(:,ikfg1,ikfg2), &
-                     nr+1, r, phi(ikfg1,ikfg2), dphidr )
-        phi(ikfg2,ikfg1) = phi(ikfg1,ikfg2)
-      end do ! ikfg1
-    end do ! ikfg2
+    do ik2 = 1,nkfg
+      do ik1 = 1,ik2
+        call splint( dr, phir(:,ik1,ik2), d2phidr2(:,ik1,ik2), &
+                     nr+1, r, phi(ik1,ik2), dphidr )
+        phi(ik2,ik1) = phi(ik1,ik2)
+      end do ! ik1
+    end do ! ik2
   end if ! (r>=rcut)
 
 end subroutine vv_vdw_phiofr

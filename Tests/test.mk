@@ -3,7 +3,7 @@
 #
 # You can edit the SIESTA macro here, or pass it on the command line
 #
-SIESTA=../../../siesta
+SIESTA=../../../Obj/siesta
 #
 # Example for BSC runs
 #

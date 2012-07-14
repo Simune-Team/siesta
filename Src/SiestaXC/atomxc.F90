@@ -126,8 +126,9 @@
 !         'PBESOL' => GGA Perdew et al, PRL, 100, 136406 (2008)
 !           'AM05' => GGA Mattsson & Armiento, PRB, 79, 155101 (2009)
 !          'DRSLL' => VDW Dion et al, PRL 92, 246401 (2004)
-!          'LMKLL' => VDW K.Lee et al, arXiv:1003.5255v1 (2010)
+!          'LMKLL' => VDW K.Lee et al, PRB 82, 081101 (2010)
 !            'KBM' => VDW optB88-vdW of J.Klimes et al, JPCM 22, 022201 (2009)
+!             'VV' => VDW Vydrov-VanVoorhis, JCP 133, 244103 (2010)
 ! *******************************************************************
 
 MODULE m_atomXC
@@ -157,7 +158,7 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
   use mesh1d,  only: set_mesh      ! Sets a one-dimensional mesh
   use mesh1d,  only: set_interpolation  ! Sets the interpolation method
   use m_vdwxc, only: vdw_decusp    ! Cusp correction to VDW energy
-  use m_vdwxc, only: vdw_exchng    ! GGA exchange apropriate for vdW flavour
+  use m_vdwxc, only: vdw_localxc   ! Local LDA/GGA xc apropriate for vdW flavour
   use m_vdwxc, only: vdw_get_qmesh ! Returns q-mesh for VDW integrals
   use m_vdwxc, only: vdw_phi       ! Returns VDW functional kernel
   use m_vdwxc, only: vdw_set_kcut  ! Fixes k-cutoff in VDW integrals
@@ -523,15 +524,9 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
       ! derivatives with respect to density and density gradient
       if (VDWfunc) then
 
-        ! Exchange from GGA apropriate to vdW flafour
-        call vdw_exchng( irel, nSpin, D(:,ir), GD(:,:,ir), &
-                         epsX, dExdD, dExdGD )
-
-        ! Local correlation from PW92 LDA
-        ! Use Eaux and dEdDaux to avoid overwritting epsX and dExdD
-        call ldaxc( 'PW92', irel, nSpin, D(:,ir), Eaux, epsC,  &
-                    dEdDaux, dEcdD, dVxdD, dVcdD )
-        dEcdGD = 0.0_dp
+        ! Local exchange-corr. part from the apropriate LDA/GGA functional
+        call vdw_localxc( irel, nSpin, D, GD, epsX, epsC, &
+                          dExdD, dEcdD, dExdGD, dEcdGD )
 
 #ifdef DEBUG_XC
 !        ! Select only non local correlation energy and potential
