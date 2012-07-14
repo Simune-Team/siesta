@@ -9,13 +9,17 @@
 ! where rho(r) is the electron density at point r, grad_rho(r) its gradient,
 ! and q0(rho,grad_rho) and phi(d1,d2) are universal functions defined in 
 ! Eqs.(11-12) and (14-16) of Dion et al.
+! Using separate module m_vv_vdwxc, it implements also the similar functional
+! of Vydrov and Van Voorhis. See that module for more information.
 ! Refs: M.Dion et al, PRL 92, 246401 (2004)
-!       K.Lee et al, arXiv:1003.5255v1 (2010)
 !       J.Klimes et al, JPCM 22, 022201 (2009)
+!       K.Lee et al, PRB 82, 081101 (2010)
+!       O.A.Vydrov and T.VanVoorhis, JCP 133, 244103 (2010)
 !       G.Roman-Perez and J.M.Soler, PRL 103, 096102 (2009)
-! Written by J.M.Soler. July 2007 - April 2010.
+! Written by J.M.Soler. July 2007 - April 2010 and July 2012.
 !------------------------------------------------------------------------------
 ! Used module procedures:
+!  use sys,         only: die               ! termination routine
 !  use mesh1D,      only: derivative        ! Derivative of a function in a mesh
 !  use flib_spline, only: generate_spline   ! Sets spline in a general mesh
 !  use m_ggaxc      only: ggaxc             ! General GGA XC routine
@@ -28,6 +32,11 @@
 !  use mesh1D,      only: set_mesh          ! Sets a 1D mesh
 !  use m_recipes,   only: spline            ! Sets spline in a uniform mesh
 !  use m_recipes,   only: splint            ! Performs spline interpolation
+!  use m_vv_vdwxc,  only: vv_vdw_beta       ! Parameter beta of VV2010 functionl
+!  use m_vv_vdwxc,  only: vv_vdw_theta      ! Func. theta of VV2010 functional
+!  use m_vv_vdwxc,  only: vv_vdw_get_kmesh  ! Size and values of (kf,kg) mesh
+!  use m_vv_vdwxc,  only: vv_vdw_phi        ! Interpolate rho1*rho2*phi(k1,k2,k)
+!  use m_vv_vdwxc,  only: vv_vdw_set_kcut   ! Sets the planewave cutoff kc
 !------------------------------------------------------------------------------
 ! Used module parameters:
 !   use precision,  only: dp                ! Real double precision type
@@ -230,6 +239,7 @@
 MODULE m_vdwxc
 
 ! Used module procedures
+  use sys,         only: die               ! termination routine
   use mesh1D,      only: derivative        ! Derivative of a function in a mesh
   use flib_spline, only: generate_spline   ! Sets spline in a general mesh
   use mesh1D,      only: integral          ! Integral of a function in a mesh
@@ -242,11 +252,17 @@ MODULE m_vdwxc
   use mesh1D,      only: set_mesh          ! Sets a 1D mesh
   use m_recipes,   only: spline            ! Sets spline in a uniform mesh
   use m_recipes,   only: splint            ! Performs spline interpolation
+  use m_vv_vdwxc,  only: vv_vdw_beta       ! Parameter beta of VV2010 functional
+  use m_vv_vdwxc,  only: vv_vdw_theta      ! Func. theta of VV2010 functional
+  use m_vv_vdwxc,  only: vv_vdw_get_kmesh  ! Size and values of (kf,kg) mesh
+  use m_vv_vdwxc,  only: vv_vdw_phi        ! Interpolates rho1*rho2*phi(k1,k2,k)
+  use m_vv_vdwxc,  only: vv_vdw_set_kcut   ! Sets the planewave cutoff kc
 
 ! Used module parameters
   use precision,   only: dp                ! Real double precision type
 
 #ifdef DEBUG_XC
+  use m_vv_vdwxc,  only: vv_vdw_phiofr     ! Interpolates rho1*rho2*phi(k1,k2,r)
   use debugXC,     only: udebug     ! File unit for debug output
 !  use plot_module, only: plot
 #endif /* DEBUG_XC */
@@ -727,6 +743,12 @@ subroutine phiofr( r, phi )
 
   integer :: iq1, iq2
   real(dp):: dphidr
+
+  ! Trap VV-version exception
+  if (vdw_author=='VV') then
+    call vv_vdw_phiofr( r, phi )
+    return
+  end if
 
   if (size(phi,1)<mq .or. size(phi,2)<mq) &
     stop 'phiofr: ERROR: size(phi) too small'
@@ -1270,6 +1292,19 @@ subroutine set_phi_table()
   write(1) phi_table
   close( unit=1 )
 
+#ifdef DEBUG_XC
+! Save phi_table also in formatted file
+  open( unit=1, file='vdw_kernel.table.formatted', form='formatted' )
+  write(1,*) nd
+  write(1,*) dmesh
+  do id2 = 1,nd
+    do id1 = 1,nd
+      write(1,*) phi_table(:,:,id1,id2)
+    end do
+  end do
+  close( unit=1 )
+#endif /* DEBUG_XC */
+
 ! Mark table as set
   phi_table_set = .true.
 
@@ -1325,6 +1360,14 @@ subroutine vdw_decusp( nspin, rhos, grhos, eps, dedrho, dedgrho )
   integer :: iq1, iq2, ir, is, ix, ns
   real(dp):: dptpdq, dpdq(mq), dqdrho, dqdgrho(3), grho(3), p(mq), &
              ptp, phi22, phi(mq,mq), pi, pt(mq), q, r, rho
+
+  ! Trap VV-version exception
+  if (vdw_author=='VV') then
+    eps = vv_vdw_beta()
+    dedrho = eps
+    dedgrho = 0
+    return
+  end if
 
   if (.not.initialized) then
 
@@ -1420,7 +1463,17 @@ subroutine vdw_get_qmesh( n, q )
   implicit none
   integer,          intent(out) :: n     ! Number of qmesh points
   real(dp),optional,intent(out) :: q(:)  ! Values of qmesh points
-  integer:: nmax
+  integer:: nmax, nkf, nkg
+
+  ! Trap VV-version exception
+  if (vdw_author=='VV') then
+    call vv_vdw_get_kmesh( nkf, nkg )
+    n = nkf*nkg
+    if (present(q)) &
+      call die('vdw_get_qmesh: ERROR q-mesh not available for author=VV')
+    return
+  end if
+
   if (.not.qmesh_set) call set_qmesh()
   n = nq
   if (present(q)) then
@@ -1446,6 +1499,12 @@ subroutine vdw_phi( k, phi, dphidk )
 
   integer :: ik, iq1, iq2
   real(dp):: a, a2, a3, b, b2, b3
+
+  ! Trap VV-version exception
+  if (vdw_author=='VV') then
+    call vv_vdw_phi( k, phi, dphidk )
+    return
+  end if
 
   if (.not.kcut_set) stop 'vdw_phi: ERROR: kcut must be previously set'
 
@@ -1494,11 +1553,13 @@ subroutine vdw_set_author( author )
     ! Dion et al, PRL 92, 246401 (2004)
     zab = -0.8491_dp
   else if (author=='LMKLL') then
-    ! Lee et al, arXiv:1003.5255v1 (2010)
+    ! Lee et al, PRB 82, 081101 (2010)
     zab = -1.887_dp
   else if (author=='KBM') then
     ! optB88-vdW of Klimes et al, JPCM 22, 022201 (2009)
     zab = -0.8491_dp
+  else if (author=='VV') then
+    ! Vydrov-VanVoorhis, JCP 133, 244103 (2010)
   else
     stop 'vdw_set_author: ERROR: author not known'
   end if
@@ -1520,6 +1581,12 @@ subroutine vdw_set_kcut( kc )
   integer :: ik, iq1, iq2, ir, nrs
   real(dp):: dphids, dphidk0, dphidkmax, dphidr0, dphidrmax, dqdq0, &
              k, kmax, phi(0:nr), phi0, phi2, phis, pi, q1, q2, r(0:nr), rs
+
+  ! Trap VV-version exception
+  if (vdw_author=='VV') then
+    call vv_vdw_set_kcut( kc )
+    return
+  end if
 
   if (kc == kcut) return   ! Work alredy done
   if (.not.qmesh_set) call set_qmesh()
@@ -1653,6 +1720,12 @@ subroutine vdw_theta( nspin, rhos, grhos, theta, dtdrho, dtdgrho )
 
   integer :: is, ix, ns
   real(dp):: rho, grho(3), dpdq(mq), dqdrho, dqdgrho(3), p(mq), q
+
+  ! Trap VV-version exception
+  if (vdw_author=='VV') then
+    call vv_vdw_theta( nspin, rhos, grhos, theta, dtdrho, dtdgrho )
+    return
+  end if
 
   ns = min(nspin,2)
   rho = sum(rhos(1:ns))
