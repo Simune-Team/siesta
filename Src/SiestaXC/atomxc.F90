@@ -215,6 +215,7 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
   real(dp), parameter :: kcMin  = 20._dp   ! Bohr^-1
   real(dp), parameter :: kcMax  = 50._dp   ! Bohr^-1
   real(dp), parameter :: Dmin   = 1.e-9_dp ! Min density when estimating kc
+  real(dp), parameter :: Dcut   = 1.e-9_dp ! Min density for nonzero Vxc
 
 ! Fix the maximum number of functionals to be combined
   integer, parameter :: maxFunc = 10
@@ -251,6 +252,9 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 #ifdef DEBUG_XC
 !  real(dp):: q, dqdrho, dqdgrho(3)
 !  real(dp):: epsCtmp, dEcdDtmp(nSpin), dEcdGDtmp(3,nSpin)
+!   integer:: fileUnit
+!   logical:: fileOpened
+!   character(len=32):: fileName
 #endif /* DEBUG_XC */
 
 #ifdef DEBUG_XC
@@ -525,7 +529,7 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
       if (VDWfunc) then
 
         ! Local exchange-corr. part from the apropriate LDA/GGA functional
-        call vdw_localxc( irel, nSpin, D, GD, epsX, epsC, &
+        call vdw_localxc( irel, nSpin, D(:,ir), GD(:,:,ir), epsX, epsC, &
                           dExdD, dEcdD, dExdGD, dEcdGD )
 
 #ifdef DEBUG_XC
@@ -619,6 +623,14 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
     Vxc(1,is) = (4*Vxc(2,is) - Vxc(3,is)) / 3
   enddo ! is
 
+! Make Vxc=0 if VDWfunctl and Dens<Dcut, to avoid singularities
+  if (VDW) then
+    do ir = 1,nr
+      Dtot = sum(Dens(ir,1:ndSpin))
+      if (Dtot<Dcut) Vxc(ir,:) = 0
+    end do
+  end if ! (VDWfunctl)
+
 ! Divide by energy unit
   Ex = Ex / Eunit
   Ec = Ec / Eunit
@@ -659,6 +671,18 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 
 #ifdef DEBUG_XC
 !  call timer_stop( myName )   ! Stop time counter
+#endif /* DEBUG_XC */
+
+#ifdef DEBUG_XC
+!  fileUnit = 57
+!  fileName = 'atomxc.vxc'
+!  inquire(file=fileName,opened=fileOpened)
+!  if (.not.fileOpened) open(unit=fileUnit,file=fileName)
+!  write(fileUnit,*) nr, nSpin
+!  do ir = 1,nr
+!    write(fileUnit,'(5e15.6)') &
+!      rmesh(ir), Dens(ir,1:nSpin), Vxc(ir,1:nSpin)
+!  end do
 #endif /* DEBUG_XC */
 
 end subroutine atomXC

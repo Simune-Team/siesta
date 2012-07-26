@@ -1743,9 +1743,12 @@ subroutine vdw_theta( nspin, rhos, grhos, theta, dtdrho, dtdgrho )
   integer, intent(in) :: nspin               ! Number of spin components
   real(dp),intent(in) :: rhos(nspin)         ! Electron spin density
   real(dp),intent(in) :: grhos(3,nspin)      ! Spin density gradient
-  real(dp),intent(out):: theta(nq)           ! Expansion of rho*q in qmesh
-  real(dp),intent(out):: dtdrho(nq,nspin)    ! dtheta(iq)/drhos
-  real(dp),intent(out):: dtdgrho(3,nq,nspin) ! dtheta(iq)/dgrhos(ix)
+  real(dp),intent(out):: theta(:)            ! Expansion of rho*q in qmesh
+  real(dp),intent(out):: dtdrho(:,:)         ! dtheta(iq)/drhos
+  real(dp),intent(out):: dtdgrho(:,:,:)      ! dtheta(iq)/dgrhos(ix)
+!  real(dp),intent(out):: theta(nq)           ! Expansion of rho*q in qmesh
+!  real(dp),intent(out):: dtdrho(nq,nspin)    ! dtheta(iq)/drhos
+!  real(dp),intent(out):: dtdgrho(3,nq,nspin) ! dtheta(iq)/dgrhos(ix)
 
   integer :: is, ix, ns
   real(dp):: rho, grho(3), dpdq(mq), dqdrho, dqdgrho(3), p(mq), q

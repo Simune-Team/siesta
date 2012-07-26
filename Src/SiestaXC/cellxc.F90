@@ -314,6 +314,9 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   ! Fix density threshold below which it will be taken as zero
   real(dp),parameter :: Dmin = 1.0e-15_dp
 
+  ! Fix density threshold below which we make Vxc=0
+  real(dp),parameter :: Dcut = 1.0e-9_dp
+
   ! Fix a minimum value of k vectors to avoid division by zero
   real(dp),parameter :: kmin = 1.0e-15_dp
 
@@ -1175,6 +1178,38 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 !      call addMeshData( nMesh, boxRght, Vrght, myDistr, myVxc )
     end do ! ic
   end if ! (GGA .and. myDistr/=0)
+
+  ! Make Vxc=0 if VDWfunctl and Dens<Dcut, to avoid singularities
+  if (VDWfunctl) then
+    do i3 = 0,myMesh(3)-1   ! Mesh indexes relative to my box origin
+    do i2 = 0,myMesh(2)-1
+    do i1 = 0,myMesh(1)-1
+      ii1 = i1 + myBox(1,1) ! Mesh indexes relative to cell origin
+      ii2 = i2 + myBox(1,2)
+      ii3 = i3 + myBox(1,3)
+      if (associated(myDens)) then
+        Dtot = sum( myDens(ii1,ii2,ii3,1:ndSpin) )
+      else
+        Dtot = sum( dens(i1,i2,i3,1:ndSpin) )
+      end if
+      if (Dtot<Dcut) then
+        if (associated(myVxc)) then
+          myVxc(ii1,ii2,ii3,:) = 0
+        else
+          Vxc(i1,i2,i3,:) = 0
+        end if
+        if (present(dVxcdD)) then
+          if (associated(mydVxcdD)) then
+            mydVxcdD(ii1,ii2,ii3,:) = 0
+          else
+            dVxcdD(i1,i2,i3,:) = 0
+          end if
+        end if ! (present(dVxcdD))
+      end if ! (Dtot<Dcut)
+    end do
+    end do
+    end do
+  end if ! (VDWfunctl)
 
   ! Copy Vxc data to output arrays
   if (associated(myVxc)) then  ! Distributed Vxc array

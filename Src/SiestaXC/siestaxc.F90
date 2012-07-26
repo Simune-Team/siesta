@@ -31,7 +31,7 @@
 ! External routines used:
 !   pxfflush  : force flush of buffered output to a file
 !
-! Modules used and waht they provide:
+! Modules used and what they provide:
 !   alloc      : (re)allocation utility routines
 !   cellsubs   : routines to find cell volume and reciprocal vectors
 !   debugXC    : routines to set and print a report for debugging XC library
