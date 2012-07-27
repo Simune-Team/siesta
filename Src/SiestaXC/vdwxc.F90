@@ -436,7 +436,7 @@ SUBROUTINE bcucof( n1, n2, x1, x2, y, dydx1, dydx2, d2ydx1dx2, c )
   c(:,:,:,n2) = 0
   c(0,:,n1,1:n2-1) = sum(c(:,:,n1-1,1:n2-1),dim=1)
   c(:,0,1:n1-1,n2) = sum(c(:,:,1:n1-1,n2-1),dim=2)
-  c(0,0,n1,n2) = sum(sum(c(:,:,n1-1,n2-1),dim=1),dim=2)
+  c(0,0,n1,n2) = sum(c(:,:,n1-1,n2-1))
 
 END SUBROUTINE bcucof
 
@@ -745,10 +745,12 @@ subroutine phiofr( r, phi )
   real(dp):: dphidr
 
   ! Trap VV-version exception
+#ifdef DEBUG_XC
   if (vdw_author=='VV') then
     call vv_vdw_phiofr( r, phi )
     return
   end if
+#endif /* DEBUG_XC */
 
   if (size(phi,1)<mq .or. size(phi,2)<mq) &
     stop 'phiofr: ERROR: size(phi) too small'
