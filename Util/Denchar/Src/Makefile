@@ -125,7 +125,7 @@ atom.o: pseudopotential.o sys.o
 atom_options.o: sys.o
 atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o siesta_geom.o
 atomlwf.o: alloc.o atmfuncs.o mneighb.o onmod.o precision.o spatial.o sys.o
-automatic_cell.o: atmfuncs.o parallel.o precision.o units.o
+automatic_cell.o: atm_types.o atmfuncs.o parallel.o precision.o units.o
 bands.o: alloc.o densematrix.o files.o parallel.o parallelsubs.o precision.o
 bands.o: sys.o
 basis_enthalpy.o: atmfuncs.o atomlist.o precision.o siesta_geom.o units.o
@@ -366,7 +366,7 @@ new_dm.o: parallel.o parallelsubs.o parsing.o precision.o siesta_geom.o
 new_dm.o: siesta_options.o sparse_matrices.o sys.o units.o
 nlefsm.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
 normalize_dm.o: atomlist.o m_mpi_utils.o m_spin.o parallel.o precision.o
-normalize_dm.o: sparse_matrices.o
+normalize_dm.o: siesta_options.o sparse_matrices.o sys.o
 obc.o: alloc.o precision.o
 ofc.o: alloc.o files.o precision.o units.o
 old_atmfuncs.o: alloc.o atmparams.o precision.o sys.o
@@ -450,11 +450,11 @@ siesta_cmlsubs.o: files.o parallel.o siesta_cml.o timestamp.o
 siesta_end.o: alloc.o bands.o densematrix.o fixed.o m_dscfcomm.o m_pulay.o
 siesta_end.o: m_wallclock.o meshdscf.o meshphi.o moremeshsubs.o parallel.o
 siesta_end.o: siesta_cml.o siesta_cmlsubs.o sparse_matrices.o timestamp.o
-siesta_forces.o: compute_dm.o m_convergence.o m_steps.o m_ts_global_vars.o
-siesta_forces.o: m_ts_options.o mixer.o parallel.o post_scf_work.o
-siesta_forces.o: scfconvergence_test.o setup_H0.o setup_hamiltonian.o
-siesta_forces.o: siesta_cml.o siesta_options.o state_analysis.o state_init.o
-siesta_forces.o: sys.o
+siesta_forces.o: compute_dm.o final_H_f_stress.o m_convergence.o m_forces.o
+siesta_forces.o: m_steps.o m_ts_global_vars.o m_ts_options.o mixer.o parallel.o
+siesta_forces.o: post_scf_work.o scfconvergence_test.o setup_H0.o
+siesta_forces.o: setup_hamiltonian.o siesta_cml.o siesta_options.o
+siesta_forces.o: state_analysis.o state_init.o sys.o units.o write_subs.o
 siesta_geom.o: precision.o
 siesta_init.o: alloc.o atomlist.o bands.o bsc_xcmod.o densematrix.o files.o
 siesta_init.o: ioxv.o kpoint_grid.o kpoint_pdos.o ksvinit.o m_check_supercell.o
@@ -517,80 +517,3 @@ zm_broyden_optim.o: units.o zmatrix.o
 zm_fire_optim.o: m_fdf_global.o m_fire.o parallel.o precision.o
 zm_fire_optim.o: siesta_options.o units.o zmatrix.o
 zmatrix.o: alloc.o m_cell.o parallel.o precision.o siesta_geom.o sys.o units.o
-band.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/bands.o
-diagmemory.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/memoryinfo.o
-listsc_module.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/listsc.o
-m_bessph.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/bessph.o
-m_born_charge.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/born_charge.o
-m_broyden_optim.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/broyden_optim.o
-m_cell_broyden_optim.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/cell_broyden_optim.o
-m_cell_fire_optim.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/cell_fire_optim.o
-m_cgwf.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/cgwf.o
-m_chempot.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/chempot.o
-m_chkgmx.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/chkgmx.o
-m_compute_dm.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/compute_dm.o
-m_conjgr.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/conjgr.o
-m_conjgr_old.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/conjgr_old.o
-m_denmat.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/denmat.o
-m_dhscf.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/dhscf.o
-m_dnaefs.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/dnaefs.o
-m_doping_uniform.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/doping_uniform.o
-m_dynamics.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/dynamics.o
-m_eandg.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/egandd.o
-m_ener3.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/ener3.o
-m_fermid.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/fermid.o
-m_fft.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/fft.o
-m_final_h_f_stress.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/final_H_f_stress.o
-m_find_kgrid.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/find_kgrid.o
-m_fire_optim.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/fire_optim.o
-m_fixed.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/fixed.o
-m_forhar.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/forhar.o
-m_gradient.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/gradient.o
-m_grdsam.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/grdsam.o
-m_hsparse.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/hsparse.o
-m_intramol_pressure.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/remove_intramol_pressure.o
-m_ioxv.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/ioxv.o
-m_kinefsm.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/kinefsm.o
-m_ksv.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/ksv.o
-m_ksvinit.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/ksvinit.o
-m_local_dos.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/local_DOS.o
-m_minvec.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/minvec.o
-m_mixer.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/mixer.o
-m_naefs.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/naefs.o
-m_new_dm.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/new_dm.o
-m_nlefsm.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/nlefsm.o
-m_norm.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/compute_norm.o
-m_normalize_dm.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/normalize_dm.o
-m_on_subs.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/on_subs.o
-m_ordern.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/ordern.o
-m_overfsm.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/overfsm.o
-m_overlap.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/overlap.o
-m_post_scf_work.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/post_scf_work.o
-m_projected_dos.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/projected_DOS.o
-m_proximity_check.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/proximity_check.o
-m_radfft.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/radfft.o
-m_scf_options.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/m_options.o
-m_scfconvergence_test.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/scfconvergence_test.o
-m_setup_h0.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/setup_H0.o
-m_setup_hamiltonian.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/setup_hamiltonian.o
-m_siesta_analysis.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/siesta_analysis.o
-m_siesta_end.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/siesta_end.o
-m_siesta_forces.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/siesta_forces.o
-m_siesta_init.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/siesta_init.o
-m_siesta_move.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/siesta_move.o
-m_state_analysis.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/state_analysis.o
-m_state_init.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/state_init.o
-m_struct_init.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/struct_init.o
-m_timestamp.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/timestamp.o
-m_vmat.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/vmat.o
-m_xyz_phiatm.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/matel.o
-m_zm_broyden_optim.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/zm_broyden_optim.o
-m_zm_fire_optim.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/zm_fire_optim.o
-neighbour.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/mneighb.o
-on_core.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/onmod.o
-on_main.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/onmod.o
-printmat.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/printmatrix.o
-version_info.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/version.o
-write_subs_energies.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/write_subs.o
-write_subs_positions.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/write_subs.o
-write_subs_pressure.o: /Users/ag/S/trunk/Util/Denchar/Src/../../../Src/write_subs.o
