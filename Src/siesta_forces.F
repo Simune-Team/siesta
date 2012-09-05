@@ -144,8 +144,10 @@
 !       The last scheduled iteration is used to compute forces
 !       and stresses, hence the exit if iscf==nscf.
 !       The ">" clause catches the nscf==1 case. For this,
-        if (iscf >= nscf) then
-          last = .true.
+        if (iscf < min_nscf ) then
+           last = .false.
+        else if (iscf >= nscf) then
+           last = .true.
         endif
         if (cml_p) call cmlEndStep(mainXML)
       ENDDO

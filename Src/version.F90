@@ -36,10 +36,12 @@ character(len=*), parameter :: siesta_arch= &
 "SIESTA_ARCH"
 character(len=*), parameter :: fflags= &
 "FFLAGS"
+character(len=*), parameter :: fppflags= &
+"FPPFLAGS"
 
 private
 public :: num_version, version_str
-public :: siesta_arch, fflags
+public :: siesta_arch, fflags, fppflags
 
 end module version_info
 !================================================================
@@ -57,6 +59,7 @@ implicit none
 write(6,'(2a)') "Siesta Version: ", trim(version_str)
 write(6,'(2a)') 'Architecture  : ', siesta_arch
 write(6,'(2a)') 'Compiler flags: ', fflags
+write(6,'(2a)') 'PP flags      : ', fppflags
 
 #ifdef MPI
 write(6,'(a)') 'PARALLEL version'

@@ -59,7 +59,7 @@
 #ifdef TRANSIESTA
 ! TSS Begin
       use m_ts_options, only: read_ts_options
-      use m_ts_in_siesta, only: setup_ts_kpoint_grid
+      use m_ts_kpoints, only: setup_ts_kpoint_grid
 ! TSS End
 #endif /* TRANSIESTA */
       implicit none

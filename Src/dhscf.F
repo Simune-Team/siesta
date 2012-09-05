@@ -38,7 +38,7 @@
 
       real(grid_p),   pointer :: rhopcc(:), rhoatm(:), Vna(:)
       real(dp)                :: Uharrs     ! Harris energy
-      logical                 :: IsDiag, IsEfld, IsVolt, spiral
+      logical                 :: IsDiag, IsEfld, spiral
       character(len=10)       :: shape
       integer                 :: nml(3), ntml(3), npcc,
      &                           nmpl, ntpl
@@ -99,8 +99,8 @@
 #endif
 #ifdef TRANSIESTA
 !     TSS Begin
-      use m_ts_options,   only : TSmode
-      use m_ts_in_siesta, only : TSVoltage2
+      use m_ts_options,   only : TSmode, isVolt
+      use m_ts_voltage,   only : print_ts_voltage
 !     TSS End
 #endif /* TRANSIESTA */
       implicit none
@@ -384,20 +384,21 @@ C ----------------------------------------------------------------------
       if (frstme) then
 !        Check if we need to add the potential 
 !        corresponding to the voltage-drop.
-!         ** FDN: Check that this routine expects things in the
-!                 UNIFORM distribution
         if (TSmode) then
-          call TSvoltage2( cell, ntm, nsm, dummy_Vscf, IsVolt )
-          if(IsVolt .and. acting_efield) then
-            isvolt = .false.
-            if(Node.eq.0) then
-              write(6,*) 'WARNING: both ext. voltage and field !!'
-              write(6,*) 'WARNING: will neglect voltage !!       '
-            end if
-          end if
+           if ( isVolt ) then
+              call print_ts_voltage(cell)
+           end if
+           if(isVolt .and. acting_efield) then
+              isvolt = .false.
+              if(Node.eq.0) then
+                 write(6,*) 'WARNING: both ext. voltage and field !!'
+                 write(6,*) 'WARNING: will neglect voltage !!       '
+              end if
+           end if
         endif
       endif
 #endif /* TRANSIESTA */
+
       frstme = .false.
 
       call timer( 'DHSCF_Init', 2 )
@@ -564,8 +565,9 @@ C     Modules
       use m_doping_uniform,       only: doping_active, doping_uniform
 
 #ifdef TRANSIESTA
-      use m_ts_options, only: UseVFix, TSmode
-      use m_ts_in_siesta, only: TSVHFix, TSVoltage2
+      use m_ts_options, only: UseVFix, TSmode, isVolt
+      use m_ts_voltage, only : ts_voltage
+      use m_ts_in_siesta, only: TSVHFix
       use m_ts_global_vars, only: TSrun
 #endif /* TRANSIESTA */
       implicit none
@@ -998,7 +1000,7 @@ C ----------------------------------------------------------------------
         ! This routine expects a sequential array,
         ! in whatever distribution
         !FDN** The comment above should be clarified
-        call tsvoltage2(cell, ntm, nsm, Vscf, IsVolt )
+        call ts_voltage(cell, ntm, nsm, Vscf )
       endif
 !    TSS End
 #endif /* TRANSIESTA */

@@ -1,0 +1,273 @@
+module m_tbt_options
+! ************************
+! * SIESTA modules       *
+! ************************
+  use precision, only : dp
+  use diagmemory, only : MemoryFactor
+
+  implicit none
+
+  PUBLIC
+  SAVE
+
+! ##########################
+! # SIESTA options...      #
+! ##########################
+  character(len=200) :: sname
+
+! ################################################
+! #                                              #
+! #  Similar options to those found in           #
+! #  TranSIESTA. For the majority of the         #
+! #  options TS.<option> there is an equivalent  #
+! #  TS.TBT.<option>. The TBT takes precendence  #
+! #  if both are found.                          #
+! #                                              #
+! ################################################
+  
+  logical  :: UseBulk      ! Use Bulk Hamiltonian in Electrodes
+  real(dp) :: VoltFDF      ! Bias applied, Internally Volt=voltfdf/eV. 
+  real(dp) :: VoltL        ! Bias on the left electrode   (  .5 * VoltFDF )
+  real(dp) :: VoltR        ! Bias on the right electrode  ( -.5 * VoltFDF )
+  logical  :: IsVolt       ! Has the value VoltFDF > 0.001/eV
+  real(dp) :: kT           ! Electronic temperature
+  real(dp) :: GFEta        ! Imaginary part of the Bias Contour  
+  integer  :: NBufAtL      ! Number of Left Buffer Atoms
+  integer  :: NBufAtR      ! Number of Right Buffer Atoms
+  integer  :: NRepA1L      ! Number of Left Repetitions in A1 direction
+  integer  :: NRepA2L      ! Number of Left Repetitions in A2 direction
+  integer  :: NRepA1R      ! Number of Right Repetitions in A1 direction
+  integer  :: NRepA2R      ! Number of Right Repetitions in A2 direction
+  integer  :: NUsedAtomsL  ! Number of atoms used from the Left electrode
+  integer  :: NUsedAtomsR  ! Number of atoms used from the Right electrode
+  character(200) :: GFTitle ! Title to paste in electrode Green's function files
+  character(200) :: GFFileL ! Electrode Left GF File
+  character(200) :: GFFileR ! Electrode Right GF File
+  character(200) :: HSFileL ! Electrode Left TSHS File
+  character(200) :: HSFileR ! Electrode Right TSHS File
+  logical :: ElecValenceBandBot ! Calculate Electrode valence band bottom when creating electrode GF
+  logical :: ReUseGF        ! Calculate the electrodes GF
+
+! ################################################
+! #                                              #
+! #  Default values to those found in            #
+! #  TranSIESTA.                                 #
+! #                                              #
+! ################################################
+  logical, parameter :: UseBulk_def = .true.
+  real(dp), parameter :: VoltFDF_def = 0._dp      ! in Ry
+  real(dp), parameter :: kT_def = 1.9e-3_dp       ! in Ry
+  real(dp), parameter :: GFEta_def = 0.000001_dp  ! in Ry
+  integer, parameter :: NBufAt_def = 0
+  integer, parameter :: NRepA_def = 1
+  integer, parameter :: NUsedAtoms_def = -1
+  character(33), parameter :: GFTitle_def = 'Generated GF file'
+  character(33), parameter :: GFFileL_def = 'TBTLeft.GF'
+  character(33), parameter :: GFFileR_def = 'TBTRight.GF'
+  character(33), parameter :: HSFile_def = 'NOT REQUESTED'
+  logical, parameter :: ElecValenceBandBot_def = .true.
+  logical, parameter :: ReUseGF_def = .true.
+
+! ################################################
+! #                                              #
+! #  Specific options for TBTrans                #
+! #                                              #
+! ################################################
+  character(200) :: HSFile ! The scattering region TSHS file
+  real(dp)       :: Emin ! The minimum energy to evaluate the transmission on
+  real(dp)       :: Emax ! The maximum energy to evaluate the transmission on
+!                          Thus the evaluation will be in the range [Emin; Emax]
+  integer        :: NEn  ! the number of devisions on the energy range
+  integer        :: NeigCh   ! No. eigenchannels to calculate
+  logical        :: CalcIeig ! Calculate the eigenvalues in the projected isolated region
+  integer        :: IsoAt1   ! The first atom in the isolated region
+  integer        :: IsoAt2   ! The last atom in the isolated region
+  logical        :: SpinPol  ! Spin polarized calculation?
+  logical        :: COOPCurve ! Do the COOP curves
+  logical        :: AlignScat ! Align the scattering region with the left electrode (only by the first onsite element)
+  logical        :: AtomPDOS ! Calculate the DOS on the projected atoms
+
+! ################################################
+! #                                              #
+! #  Default options for TBTrans                 #
+! #                                              #
+! ################################################
+  real(dp), parameter :: Emin_def = -.2_dp
+  real(dp), parameter :: Emax_def =  .2_dp
+  integer, parameter  :: NEn_def = 100
+  integer, parameter  :: NeigCh_def = 5
+  logical, parameter  :: SpinPol_def = .false.
+  logical, parameter  :: CalcIeig_def = .false.
+  logical, parameter  :: COOPCurve_def = .false.
+  logical, parameter  :: AlignScat_def = .false.
+  logical, parameter  :: AtomPDOS_def = .false.
+CONTAINS
+  
+  ! Read in the tbtrans options
+  subroutine read_tbt_options()
+
+! ************************
+! * SIESTA modules       *
+! ************************
+    use fdf,          only : leqi, fdf_defined
+    use parallel,     only : IOnode, Nodes
+    use m_fdf_global, only : fdf_global_get
+    use units,        only : eV
+    use files,        only : slabel
+    use sys,          only : die
+#ifdef MPI
+    use mpi_siesta, only: MPI_Bcast, MPI_character, MPI_Comm_World
+#endif
+
+
+! Internal Variables
+    character(len=200) :: chars
+    logical :: exist ! Check file existance for files requested
+    character(len=200) :: paste
+    external paste
+#ifdef MPI
+    integer :: MPIerror
+#endif
+    
+    if (IOnode) then
+       write(*,*)
+       write(*,'(2a)') 'tbt_read_options: ', repeat('*', 62)
+    end if
+    
+! Reading from fdf ... This is needed for using 'cdiag'
+    call fdf_global_get(MemoryFactor,'Diag.Memory', 1.0_dp )
+    
+    call fdf_global_get(Emin,'TS.TBT.Emin',Emin_def,'Ry')
+    call fdf_global_get(Emax,'TS.TBT.Emax',Emax_def,'Ry')
+    call fdf_global_get(GFEta,'TS.TBT.Eta',GFeta_def,'Ry')
+    call fdf_global_get(VoltFDF,'TS.Voltage',VoltFDF_def,'Ry') 
+    IsVolt = dabs(VoltFDF) > 0.001_dp/eV
+    VoltL =  .5_dp*VoltFDF
+    VoltR = -.5_dp*VoltFDF
+    call fdf_global_get(NEn,'TS.TBT.NPoints',NEn_def)
+    call fdf_global_get(Neigch,'TS.TBT.NEigen',Neigch_def)
+    call fdf_global_get(SpinPol,'SpinPolarized',SpinPol_def)
+    call fdf_global_get(UseBulk,'TS.UseBulkInElectrodes',UseBulk_def)
+    call fdf_global_get(NBufAtL,'TS.BufferAtomsLeft',NBufAt_def)
+    call fdf_global_get(NBufAtR,'TS.BufferAtomsRight',NBufAt_def)
+    call fdf_global_get(kT,'ElectronicTemperature',kT_def,'Ry')
+    call fdf_global_get(GFTitle,'TS.TBT.GFTitle',GFTitle_def)
+    call fdf_global_get(GFFileL,'TS.TBT.GFFileLeft',GFFileL_def)
+    call fdf_global_get(GFFileR,'TS.TBT.GFFileRight',GFFileR_def)
+    call fdf_global_get(ReUseGF,'TS.ReUseGF',ReUseGF_def)
+    ! This needs a two way entrance (in TranSIESTA it really doesn't matter.
+    ! In TBTrans it can be used to check for Emin against the valence band bottom
+    call fdf_global_get(ElecValenceBandBot,'TS.TBT.CalcElectrodeValenceBandBottom', &
+         ElecValenceBandBot_def)
+    chars = paste(slabel,'.TSHS')
+    call fdf_global_get(HSFile,'TS.TBT.HSFile',chars)
+    ! Read electrode options
+    call fdf_global_get(HSFileL,'TS.HSFileLeft',HSFile_def)
+    call fdf_global_get(NUsedAtomsL,'TS.NumUsedAtomsLeft',NUsedAtoms_def)
+    call fdf_global_get(NRepA1L,'TS.ReplicateA1Left',NRepA_def)
+    call fdf_global_get(NRepA2L,'TS.ReplicateA2Left',NRepA_def)
+    if ( NRepA1L < 1 .or. NRepA2L < 1 ) &
+         call die("Repetition in left electrode must be >= 1.")
+    call fdf_global_get(HSFileR,'TS.HSFileRight',HSFile_def)
+    call fdf_global_get(NUsedAtomsR,'TS.NumUsedAtomsRight',NUsedAtoms_def)
+    call fdf_global_get(NRepA1R,'TS.ReplicateA1Right',NRepA_def)
+    call fdf_global_get(NRepA2R,'TS.ReplicateA2Right',NRepA_def)
+    if ( NRepA1R < 1 .or. NRepA2R < 1 ) &
+         call die("Repetition in right electrode must be >= 1.")
+    call fdf_global_get(CalcIeig,'TS.TBT.CalcIeig',CalcIeig_def)
+    ! TODO read in electrodes and read the actual number of atoms...
+    ! In that way we can already now set the correct PDOS from
+    ! IsoAt1 = 1 + NBufAtL + nuaL * NRepA1L * NRepA2L
+    ! IsoAt2 = nua - NBufAtR - nuaR * NRepA1R * NRepA2R
+    call fdf_global_get(IsoAt1,'TS.TBT.PDOSFrom',-1)
+    call fdf_global_get(IsoAt2,'TS.TBT.PDOSTo',-1)
+    if (IONode) then
+       if (fdf_defined('TS.TBT.DoCOOP')) &
+            write(*,'(a)') '**Warning: FDF symbol TS.TBT.DoCOOP'// &
+            ' is deprecated. See the manual.'
+    endif
+    call fdf_global_get(COOPCurve,'TS.TBT.COOPCurve',COOPCurve_def)
+    call fdf_global_get(AlignScat,'TS.TBT.AlignOnSite',AlignScat_def)
+    call fdf_global_get(AtomPDOS,'TS.TBT.AtomPDOS',AtomPDOS_def)
+
+! Output Used Options in OUT file ....
+    if (ionode) then
+       write(*,6) 'TBTrans Voltage                               =', voltfdf/eV,' V'
+       write(*,1) 'Bulk Values in Electrodes                     =', UseBulk
+       write(*,5) 'Buffer Atoms in Left electrode                =', NBufAtL
+       write(*,5) 'Buffer Atoms in Right electrode               =', NBufAtR
+       write(*,5) 'Points on the energy contour                  =', NEn
+       write(*,7) 'GFEta                                         =', GFEta,' Ry'
+       write(*,6) 'Electronic Temperature                        =', kT, ' Ry'
+       write(*,1) 'Calculate band bottom in elecrodes            =', ElecValenceBandBot
+       write(*,10)'GF title                                      =', TRIM(GFTitle)
+       write(*,10)'Left GF File                                  =', TRIM(GFFileL)
+       write(*,10)'Right GF File                                 =', TRIM(GFFileR)
+       write(*,1) 'Re-use the GF files if they exists            =', ReUseGF
+! Check existance for scattering region .TSHS
+       inquire(file=TRIM(HSFile),exist=exist)
+       if ( .not. exist ) then
+          call die("Scattering region does not exist. &
+               &Please create scattering region file '"//TRIM(HSFile)//"' first.")
+       end if
+       write(*,10)'Scattering region TSHS file                   =', TRIM(HSFile)
+! Check existance for left Electrode.TSHS
+       inquire(file=TRIM(HSFileL),exist=exist)
+       if ( .not. exist ) then
+          call die("Left electrode file does not exist. &
+               &Please create electrode '"//TRIM(HSFileL)//"' first.")
+       end if
+       write(*,10)'Left electrode TSHS file                      =', TRIM(HSFileL)
+       if ( NUsedAtomsL < 0 ) then
+          write(*,10) &
+                  '# atoms used in left elec.                    = ', 'ALL'
+       else
+          write(*,5) &
+                  '# atoms used in left elec.                    = ', NUsedAtomsL
+       end if
+       write(*,'(a,i3,'' X '',i3)') &
+                  'Left elec. repetition A1/A2                   = ', NRepA1L,NRepA2L
+! Check existance for right Electrode.TSHS
+       inquire(file=TRIM(HSFileR),exist=exist)
+       if ( .not. exist ) then
+          call die("Right electrode file does not exist. &
+               &Please create electrode '"//TRIM(HSFileR)//"' first.")
+       end if
+       write(*,10)'Right electrode TSHS file                     =', TRIM(HSFileL)
+       if ( NUsedAtomsL < 0 ) then
+          write(*,10) &
+                  '# atoms used in right elec.                   = ', 'ALL'
+       else
+          write(*,5) &
+                  '# atoms used in right elec.                   = ', NUsedAtomsL
+       end if
+       write(*,'(a,i3,'' X '',i3)') &
+                  'Right elec. repetition A1/A2                  = ', NRepA1L,NRepA2L
+       write(*,'(a,''['',i4,'';'',i4,'']'')') &
+                  'Projected region                              = ', IsoAt1,IsoAt2
+       write(*,1) 'Calculate DOS on projected atoms              = ',AtomPDOS
+       write(*,1) 'Calculate COOP curves                         = ',COOPCurve
+       write(*,1) 'Align the Hamiltonian with the electrode      = ',AlignScat
+       if ( AlignScat ) then
+          call die("TBtrans is currently not implented to align the scattering &
+               &region.")
+       end if
+       if ( AtomPDOS ) then
+          call die("TBtrans is currently not implented to calculate the atom &
+               &PDOS with Mulliken charges.")
+       end if
+    end if
+ 
+    if (IOnode) then
+       write(*,'(2a)') 'tbt_read_options: ', repeat('*', 62)
+       write(*,*)
+    end if
+
+1   format(a,4x,l1)
+5   format(a,i5,a)
+6   format(a,f10.4,a)
+7   format(a,f12.6,a)
+10  format(a,4x,a)
+  end subroutine read_tbt_options
+
+end module m_tbt_options

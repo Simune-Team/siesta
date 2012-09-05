@@ -1,0 +1,52 @@
+----------------------------------------------------
+Sep 5, 2012  -- Alberto Garcia      trunk-411--ts-npa-1
+First stage of merging of changes by Nick Papior Andersen
+
+They affect mostly TranSiesta.
+Full log message to come when the process is completed.
+
+added:
+  Src/kpoint_convert.f90
+  Src/m_glob_sparse.F90
+  Src/m_hs_matrix.f90
+  Src/m_ts_gf.F90
+  Src/m_ts_voltage.F90
+  Src/ts_do_green.F90
+  Util/TBTrans_rep/
+  Util/TBTrans_rep/Makefile
+  Util/TBTrans_rep/coop.F90
+  Util/TBTrans_rep/m_tbt_iotshs.F90
+  Util/TBTrans_rep/m_tbt_kpoints.F90
+  Util/TBTrans_rep/m_tbt_options.F90
+  Util/TBTrans_rep/m_tbt_out.F90
+  Util/TBTrans_rep/m_tbt_read_tshs.F90
+  Util/TBTrans_rep/tbt_init.F90
+  Util/TBTrans_rep/tbt_reinit.F90
+  Util/TBTrans_rep/tbtrans.F90
+  Util/TBTrans_rep/transmission.f90
+  Util/TBTrans_rep/tt_eig.f90
+renamed:
+  Src/m_ts_contour.F => Src/m_ts_contour.f
+modified:
+  Docs/siesta.tex
+  Src/MPI/Makefile
+  Src/Makefile
+  Src/compute_dm.F
+  Src/dhscf.F
+  Src/diagkp.F
+  Src/m_ts_aux_rout.F
+  Src/m_ts_electrode.F90
+  Src/m_ts_in_siesta.F
+  Src/m_ts_io.F90
+  Src/m_ts_kpoints.F90
+  Src/m_ts_options.F90
+  Src/m_ts_scattering.F
+  Src/scfconvergence_test.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/siesta_options.F90
+  Src/version.F90
+  Src/write_subs.F
+  Src/m_ts_contour.f
+
+
