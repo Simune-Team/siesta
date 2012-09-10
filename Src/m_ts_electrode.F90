@@ -565,7 +565,7 @@ contains
           if ( ierror == 0 ) then
              write(*,'(a,f10.4,a)')' Valence Band Bottom: ',eig(1)/eV,' eV'
           else
-             write(*,'(a,i)')' Error in calculating the Band Bottom: ',ierror
+             write(*,'(a,i6)')' Error in calculating the Band Bottom: ',ierror
           end if
        end if
        call memory('D','Z',nuo_E*nuo_E*3,'create_green')
@@ -1060,6 +1060,7 @@ contains
 
 ! Do communication of variables
 #ifdef MPI
+    call MPI_Bcast(ts_Gamma,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
     call MPI_Bcast(nua,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
     call MPI_Bcast(nuo,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
     call MPI_Bcast(notot,1,MPI_Integer,0,MPI_Comm_World,MPIerror)

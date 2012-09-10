@@ -257,11 +257,11 @@ version: version.F90
 	@sed "s'SIESTA_ARCH'${SIESTA_ARCH}'g;s'FFLAGS'${FC} ${FFLAGS}'g;\
 		s'SIESTA_VERSION'$$(cat ${<D}/../version.info)'g;\
 		s'FPPFLAGS'$(FPPFLAGS) $(DEFS)'g" $<  > tmp.F90
-	@awk '{if (length>80) { cur=80; \
-		printf "%s&\n",substr($$0,cur-80,79); \
-		while(length-cur>80){ cur=cur+78 ; \
-		printf "&%s&\n",substr($$0,cur-78,78) \
-		} printf "&%s\n",substr($$0,cur,79)} else { print $$0 }}' tmp.F90 > compinfo.F90
+	@awk '{if (length>80) { cur=78; \
+		printf "%s&\n",substr($$0,0,78); \
+		while(length-cur>78){ cur=cur+76 ; \
+		printf "&%s&\n",substr($$0,cur-76,76) \
+		} printf "&%s\n",substr($$0,cur)} else { print $$0 }}' tmp.F90 > compinfo.F90
 	@($(MAKE) "FPPFLAGS=$(FPPFLAGS)" "DEFS=$(DEFS)" compinfo.o)
 	@mv compinfo.o version.o
 	@echo
