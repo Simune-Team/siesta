@@ -1,4 +1,18 @@
 ----------------------------------------------------
+Sep 10, 2012 -- Nick P. Andersen    trunk-411--ts-npa-2
+
+Several bugfixes in TranSiesta
+
+* Moved work2 array deallocation to appropriate place.
+* Added mpi-bcast for read in gamma variable of TSHS files
+* Makefile for version.F90 could not handle lines of length == 80
+
+modified:
+  Src/m_ts_in_siesta.F 
+  Src/m_ts_electrode.F90
+  Src/Makefile
+
+----------------------------------------------------
 Sep 5, 2012  -- Alberto Garcia      trunk-411--ts-npa-1
 First stage of merging of changes by Nick Papior Andersen
 

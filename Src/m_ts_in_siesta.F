@@ -836,7 +836,7 @@
       allocate(SAAR(noR_GF,noR_GF,nqR))
       call memory('A','Z',2*noL_GF**2*nqL+2*noR_GF**2*nqR,'transiesta')
 
-      if(isvolt)then
+      if(IsVolt)then
 ! FDN Complex for k point sampling
          allocate(work2(nou*nou))
          call memory('A','D',nou*nou,'transiesta')
@@ -908,7 +908,7 @@
           if (ts_gamma_scf) then 
             DM    =  0.d0
             EDM   =  0.d0
-            if (isvolt) then
+            if (IsVolt) then
                DMR    = 0.d0
                DMneqL = 0.d0
                DMneqR = 0.d0
@@ -918,7 +918,7 @@
 !     FDN Complex
             DMCplx        = dcmplx(0.d0,0.d0)
             EDMCplx       = dcmplx(0.d0,0.d0)
-            if (isvolt) then
+            if (IsVolt) then
                DMRCplx    = dcmplx(0.d0,0.d0)
                DMneqLCplx = dcmplx(0.d0,0.d0)
                DMneqRCplx = dcmplx(0.d0,0.d0)
@@ -1334,8 +1334,6 @@
       
       call memory('D','Z',nou*nou,'transiesta')
       deallocate(GF)
-      call memory('D','Z',size(work2),'transiesta')
-      deallocate(work2)
 
       
 #ifdef MPI
@@ -1514,6 +1512,8 @@
 
       
       if(IsVolt) then
+         call memory('D','Z',size(work2),'transiesta')
+         deallocate(work2)
          if ( ts_gamma_scf ) then
             call memory('D','D',size(DMR)+size(DMneqL),'transiesta')
             call memory('D','D',size(EDMR)+size(DMneqR),'transiesta')
