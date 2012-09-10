@@ -39,7 +39,7 @@ MOD_TOBJS=  m_tbt_options.o m_tbt_kpoints.o m_tbt_out.o m_tbt_read_tshs.o ts_do_
 
 SIESTA_OBJS= precision.o sys.o m_io.o alloc.o  memoryinfo.o memory.o pxf.o \
              moreParallelSubs.o m_walltime.o m_timer.o timer.o m_mpi_utils.o \
-             m_fdf_global.o paste.o find_kgrid.o reclat.o idiag.o minvec.o \
+             m_fdf_global.o paste.o reclat.o idiag.o minvec.o \
              parallel.o io.o files.o cellsubs.o sorting.o m_hs_matrix.o \
 	     kpoint_convert.o timestamp.o m_wallclock.o cdiag.o m_spin.o \
 	     zheevds.o \
@@ -516,7 +516,7 @@ zm_fire_optim.o: siesta_options.o units.o zmatrix.o
 zmatrix.o: alloc.o m_cell.o parallel.o precision.o siesta_geom.o sys.o units.o
 coop.o: m_tbt_out.o parallel.o precision.o sys.o units.o
 m_tbt_iotshs.o: m_tbt_kpoints.o parallel.o precision.o sys.o
-m_tbt_kpoints.o: find_kgrid.o parallel.o precision.o sys.o
+m_tbt_kpoints.o: alloc.o minvec.o parallel.o precision.o sys.o units.o
 m_tbt_options.o: files.o m_fdf_global.o memoryinfo.o parallel.o precision.o
 m_tbt_options.o: sys.o units.o
 m_tbt_out.o: parallel.o precision.o units.o

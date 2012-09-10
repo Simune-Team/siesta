@@ -22,6 +22,8 @@ module m_tbt_out
   public :: out_DOS
   public :: out_Trans
   public :: out_COOP, out_COOPLR
+  public :: out_REGION, out_DEVICE
+
 contains
 
   subroutine create_file(slabel,basename,ispin,nspin,funit)
@@ -174,5 +176,63 @@ contains
     integer, intent(in) :: funit
     if ( IONode ) write(funit,*) ""
   end subroutine out_NEWLINE
+
+  subroutine out_REGION(funit,na_u,xa,ia1,ia2,name,marker)
+    use precision, only : dp
+    use units, only : Ang
+    integer, intent(in)  :: funit, na_u
+    real(dp), intent(in) :: xa(3,na_u)
+    integer, intent(in)  :: ia1, ia2
+    character(len=*), intent(in) :: name
+    character(len=1), intent(in) :: marker
+    integer :: i, mid
+    if ( ia2 - ia1 == 0 ) return
+    mid = (ia2 - ia1) / 2
+    if ( IONode ) then
+       write(funit,'(a)') repeat(marker,46)
+       do i = ia1, ia2
+          if ( i == ia1 + mid ) then
+             write(funit,'(a1,3(tr2,f12.7),tr2,a1,tr5,a)') &
+                  marker,xa(:,i),marker,trim(name)
+          else
+             write(funit,'(a1,3(tr2,f12.7),tr2,a1)') &
+                  marker,xa(:,i),marker
+          end if
+       end do
+       write(funit,'(a)') repeat(marker,46)
+    end if
+  end subroutine out_REGION
+
+  subroutine out_DEVICE(funit,na_u,xa,ia1,ia2,isoa1,isoa2,marker)
+    use precision, only : dp
+    use units, only : Ang
+    integer, intent(in)  :: funit, na_u
+    real(dp), intent(in) :: xa(3,na_u)
+    integer, intent(in)  :: ia1, ia2, isoa1, isoa2
+    character(len=1), intent(in) :: marker
+    integer :: i, mid
+    mid = (ia2 - ia1) / 2
+    if ( IONode ) then
+       do i = ia1, ia2
+          if ( i == ia1 + mid ) then
+             if ( isoa1 <= i .and. i <= isoa2 ) then
+                write(funit,'(tr1,3(tr2,f12.7),tr3,a1,tr5,a)') &
+                     xa(:,i),marker,'Device'
+             else
+                write(funit,'(tr1,3(tr2,f12.7),tr8,a)') &
+                     xa(:,i),'Device'
+             end if
+          else
+             if ( isoa1 <= i .and. i <= isoa2 ) then
+                write(funit,'(tr1,3(tr2,f12.7),tr3,a1)') &
+                     xa(:,i),marker
+             else
+                write(funit,'(tr1,3(tr2,f12.7))') &
+                     xa(:,i)
+             end if
+          end if
+       end do
+    end if
+  end subroutine out_DEVICE
 
 end module m_tbt_out

@@ -86,6 +86,7 @@ program tbtrans
   use m_tbt_out,     only : out_Trans, out_kpt_header
   use m_tbt_out,     only : out_EIG, out_TEIG
   use m_tbt_out,     only : out_DOS, out_Trans
+  use m_tbt_out,     only : out_REGION, out_DEVICE
 
   use m_tbt_read_tshs,only: tbt_read_tshs
 
@@ -289,7 +290,7 @@ program tbtrans
 
   ! Initialize the spin factor...
   sF = 1.0_dp
-  if ( nspin > 1 ) sF = 2.0_dp
+  if ( nspin == 1 ) sF = 2.0_dp
 
   
 ! #########################################################
@@ -362,6 +363,7 @@ program tbtrans
      write(*,'(a,i6,'' / '',i6,/)') &
           'Right: GF orbitals / Expanded orbitals : ',noR_GF,noR
   end if
+
 
 ! expected no. states on Electrode atoms within the Green's function file: 
 ! Left
@@ -447,17 +449,40 @@ program tbtrans
 ! #
 
   if ( IsoAt1 < 1 ) IsoAt1 = 1    + NBufAtL + nuaL
-  if ( IsoAt2 < 1 ) IsoAt2 = na_u - NBufAtR - nuaL
- 
+  if ( IsoAt1 < 1 + NBufAtL + nuaL ) then
+     call die("Requested PDOS 1 atom is outside of contact region. &
+          &Please choose an atom within the device.")
+  end if
+  if ( IsoAt2 < 1 ) IsoAt2 = na_u - NBufAtR - nuaR
+  if ( IsoAt2 > na_u - NBufAtR - nuaR ) then
+     call die("Requested PDOS 2 atom is outside of contact region. &
+          &Please choose an atom within the device.")
+  end if
+
 ! Retrive orbital in the CONTACT
-  Isoo1 = lasto(IsoAt1) + 1 ! Orbital in full CONTACT
-  Isoo1C = Isoo1 - noBufL ! Orbital in CONTACT
-  Isoo1D = Isoo1 - noBufL - noL ! Orbital in DEVICE
-  Isoo2 = lasto(IsoAt2)
-  Isoo2C = Isoo2 - noBufL
-  Isoo2D = Isoo2 - noBufL - noL
+  Isoo1 = lasto(IsoAt1-1) + 1 ! Orbital in full CONTACT
+  Isoo2 = lasto(IsoAt2)       ! Orbital in full CONTACT
+  Isoo1C = Isoo1 - noBufL     ! Orbital in CONTACT
+  Isoo2C = Isoo2 - noBufL     ! Orbital in CONTACT
+  Isoo1D = Isoo1C - noL       ! Orbital in DEVICE
+  Isoo2D = Isoo2C - noL       ! Orbital in DEVICE
   Isoo = Isoo2 - Isoo1 + 1
   
+
+  ! Write out system information
+  if ( IONode ) then
+     write(*,'(a)') 'Atomic coordinates and regions (Ang):'
+     if ( NBufAtL > 0 ) &
+        call out_REGION(6,na_u,xa,1, NBufAtL, 'Left buffer','#')
+     call out_REGION(6,na_u,xa,NBufAtL+1,NBufAtL+nuaL, 'Left electrode','-')
+     call out_DEVICE(6,na_u,xa,NBufAtL+nuaL+1,na_u-NBufAtR-nuaR, &
+          IsoAt1,IsoAt2,'*')
+     call out_REGION(6,na_u,xa,na_u-NBufAtR-nuaR+1,na_u-NBufAtR, 'Right electrode','-')
+     if ( NBufAtR > 0 ) &
+          call out_REGION(6,na_u,xa,na_u-NBufAtR+1, na_u, 'Right buffer','#')
+     write(*,*) ''
+  end if
+
   if (IOnode) then
      write(*,*) repeat('=',62) 
      write(*,'(a30,i4,a1,i4,a1)') &
@@ -568,7 +593,9 @@ program tbtrans
   call memory('A','Z',Isoo*Isoo*2,'tbtrans')
 
 ! ... an array to hold the k-point for the DEVICE
-  nullify(Sk_D)
+  nullify(Hk_D,Sk_D)
+!  allocate(Hk_D(noD,noD)) ! Not used yet
+!  call memory('A','Z',noD*noD,'tbtrans')
   allocate(Sk_D(noD,noD))
   call memory('A','Z',noD*noD,'tbtrans')
 
@@ -703,7 +730,7 @@ program tbtrans
         end if
 #endif 
 
-! Copy over PDOS region
+! Copy over PDOS region, the Hk and Sk matrices are in sizes with the electrodes
         do j = 1 , Isoo
            do i = 1 , Isoo
               Hk_iso(i,j) = Hk(i+Isoo1C-1,j+Isoo1C-1)
@@ -712,9 +739,11 @@ program tbtrans
         end do
 
 
-! Copy over device region overlap
+! Copy over device region overlap, we can use this to faster calculate the COOP curves
+! Besides the extra memory should be no problem
         do j = 1 , noD
            do i = 1 , noD
+              ! Hk_D(i,j) = Hk(i+noL,j+noL) ! Not used for anything, yet
               Sk_D(i,j) = Sk(i+noL,j+noL)
            end do
         end do
