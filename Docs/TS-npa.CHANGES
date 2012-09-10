@@ -1,4 +1,11 @@
 ----------------------------------------------------
+Sep 10, 2012 -- Nick P. Andersen    trunk-411--ts-npa-4
+Bugfix in TBtrans which occured when PDOS region was 1
+  
+modified:
+  Util/TBTrans_rep/tbtrans.F90
+
+----------------------------------------------------
 Sep 10, 2012 -- Nick P. Andersen    trunk-411--ts-npa-3
 
 Bugfix in TBtrans and extra region output information

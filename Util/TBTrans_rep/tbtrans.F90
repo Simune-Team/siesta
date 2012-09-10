@@ -492,7 +492,7 @@ program tbtrans
           ,Isoo
   end if
 ! Error check for wrong setup
-  if ( Isoo1 >= Isoo2 ) then
+  if ( Isoo1 > Isoo2 ) then
      call die('Requested isolated region is wrong. &
           &Have you reversed the options?')
   end if
