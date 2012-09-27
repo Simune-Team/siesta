@@ -75,7 +75,7 @@ program tbtrans
   use m_tbt_options, only : GFTitle
   use m_tbt_options, only : NEn, Emin, Emax, NeigCh
   use m_tbt_options, only : IsoAt1, IsoAt2
-  use m_tbt_options, only : COOPCurve, AlignScat, AtomPDOS
+  use m_tbt_options, only : COOPCurve, AlignScat, CalcAtomPDOS
 
   use m_tbt_kpoints, only : siesta_Gamma
   use m_tbt_kpoints, only : Gamma, spiral
@@ -169,7 +169,7 @@ program tbtrans
   complex(dp), dimension(:,:), pointer :: GF, GFRGF
   ! Size of the contact without the buffer regions
   integer :: nou
-  ! Size of the scattering region without the electrode orbitals
+  ! Size of the scattering region without the electrode and buffer orbitals 
   integer :: noD
 
 ! *****************************************
@@ -207,6 +207,8 @@ program tbtrans
   integer :: uGFL, uGFR
   ! For the COOP curves
   integer :: uC, uCL, uCR
+  ! For the AtomPDOS curves
+  integer :: uTOTDOS, uORBDOS
 
 ! *****************************************
 ! * LOCAL variables                       *
@@ -658,6 +660,22 @@ program tbtrans
         call create_file(slabel,'COOPR',ispin,nspin,uCR)
      end if
 
+     if ( CalcAtomPDOS ) then
+        call create_file(slabel,'TOTDOS',ispin,nspin,uTOTDOS)
+        if ( IONode ) then
+           write(uTOTDOS,'(a)')"# Total Mulliken population on atoms"
+           write(uTOTDOS,'(a4,tr1,a10,3(tr1,a13))')"# At","Energy", &
+                "Total", "Left", "Right"
+        end if
+        call create_file(slabel,'ORBDOS',ispin,nspin,uORBDOS)
+        if ( IONode ) then
+           write(uORBDOS,'(a)')"# Mulliken population on orbitals"
+           write(uORBDOS,'(a)')"# Orbitals are in same order as SIESTA Mulliken"
+           write(uORBDOS,'(a4,tr1,a10,tr1,a)')"# At","Energy", &
+                "Mulliken pop. on orbital"
+        end if
+     end if
+
      l_kpt: do ikpt = 1 , nkpnt
         
         kpt(:) = kpoint(:,ikpt)
@@ -677,6 +695,11 @@ program tbtrans
            call out_kpt_header(uC,ikpt,kpt,wkpt,ucell)
            call out_kpt_header(uCL,ikpt,kpt,wkpt,ucell)
            call out_kpt_header(uCR,ikpt,kpt,wkpt,ucell)
+        end if
+
+        if ( CalcAtomPDOS ) then
+           call out_kpt_header(uTOTDOS,ikpt,kpt,wkpt,ucell)
+           call out_kpt_header(uORBDOS,ikpt,kpt,wkpt,ucell)
         end if
 
         
@@ -871,8 +894,11 @@ program tbtrans
                    iE,dreal(ZEnergy),ZwGF)
            end if
 
-           if ( AtomPDOS ) then
-              call die("AtomPDOS is not yet implemented.")
+           if ( CalcAtomPDOS ) then
+              call AtomPDOS(uTOTDOS,uORBDOS,sF,.false.,noBufL+noL,noD, &
+                   na_u, IsoAt1, IsoAt2, lasto, &
+                   real(ZEnergy,dp),real(ZwGF,dp), &
+                   GF, GFRGF, Sk_D)
            end if
 
            ! Calculate the eigenchannels of the device
@@ -924,6 +950,11 @@ program tbtrans
         end if
         call out_NEWLINE(uIeig)
 
+        if ( CalcAtomPDOS ) then
+           call out_NEWLINE(uTOTDOS)
+           call out_NEWLINE(uORBDOS)
+        end if
+        
      end do l_kpt
 
      ! Do globalization of the Averaged arrays
@@ -982,6 +1013,11 @@ program tbtrans
            call io_close(uC)
            call io_close(uCL)
            call io_close(uCR)
+        end if
+
+        if ( CalcAtomPDOS ) then
+           call io_close(uTOTDOS)
+           call io_close(uORBDOS)
         end if
 
         write(*,*) repeat('=',62)

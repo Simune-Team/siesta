@@ -98,6 +98,10 @@ contains
     integer :: MPIerror
 #endif
 
+#ifdef DEBUG
+    call write_debug( 'PRE read_Green' )
+#endif
+
     errorGF = .false.
 
     
@@ -211,6 +215,10 @@ contains
     call MPI_Bcast(wkpar,nkpar,DAT_double,0,MPI_Comm_World,MPIerror)
 #endif
 
+#ifdef DEBUG
+    call write_debug( 'POS read_Green' )
+#endif
+
   end subroutine read_Green
 
 
@@ -284,6 +292,10 @@ contains
     integer :: i,j,iq
     real(dp) :: wqbtmp,qbtmp(3), ktmp(3), kpt(3)
     logical :: localErrorGf
+
+#ifdef DEBUG
+    call write_debug( 'PRE check_Green' )
+#endif
 
     ! Initialize it to be an error unless the entire routine is runned through.
     ! Upon normal exit it will be changed to .FALSE.
@@ -438,6 +450,10 @@ contains
     read(funit) no
 
     errorGF = localErrorGf
+
+#ifdef DEBUG
+    call write_debug( 'POS check_Green' )
+#endif
 
   end subroutine check_Green
 

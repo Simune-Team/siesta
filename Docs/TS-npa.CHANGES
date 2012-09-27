@@ -1,4 +1,42 @@
 ----------------------------------------------------
+Sep 27, 2012 -- Nick P. Andersen    trunk-411--ts-npa-5
+Added AtomPDOS (TBT), TranSIESTA tests of electrode in z-dir, added DEBUG
+
+* Added code for outputting AtomPDOS
+  - This could still be improved so that the PDOS will be output
+    consequtively with regards of energy points and atomic index
+* The AtomPDOS routine is a little better on the communication side
+  as we send after all DOS regions have been calculated
+* The out formats in TBTrans did not have the 'tr1' fix which meant
+  a "close" format
+* Renamed m_tbt_out.F90 to m_tbt_out.f90 (no preprocessing takes place)
+* Added check of unitcell if TSmode == .true. 
+  - If the electrodes extend into the transport direction it is impossible 
+    to generate the surface Green's function for the electrode. 
+    Hence transiesta will stop if the unitcell have any components:
+      ucell(3,1:2) > 1e-7 or ucell(1:2,3) > 1e-7
+    The error margin is hardcoded (no reason to test)
+* Added many DEBUG statements for -DDEBUG in transiesta routines
+* Updated doc to reflect changes
+
+added:
+  Util/TBTrans_rep/atompdos.f90
+  Util/TBTrans_rep/m_lowdin.f90
+renamed:
+  Util/TBTrans_rep/m_tbt_out.F90 => Util/TBTrans_rep/m_tbt_out.f90
+modified:
+  Docs/siesta.tex
+  Src/m_ts_electrode.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_options.F90
+  Src/m_ts_scattering.F
+  Src/ts_do_green.F90
+  Util/TBTrans_rep/Makefile
+  Util/TBTrans_rep/m_tbt_options.F90
+  Util/TBTrans_rep/tbtrans.F90
+  Util/TBTrans_rep/m_tbt_out.f90
+
+----------------------------------------------------
 Sep 10, 2012 -- Nick P. Andersen    trunk-411--ts-npa-4
 Bugfix in TBtrans which occured when PDOS region was 1
   

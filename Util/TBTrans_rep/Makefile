@@ -35,7 +35,8 @@ what:
 
 SYSOBJ=$(SYS).o
 # Tbtrans:
-MOD_TOBJS=  m_tbt_options.o m_tbt_kpoints.o m_tbt_out.o m_tbt_read_tshs.o ts_do_green.o
+MOD_TOBJS=  m_tbt_options.o m_tbt_kpoints.o m_tbt_out.o m_tbt_read_tshs.o ts_do_green.o \
+	m_lowdin.o
 
 SIESTA_OBJS= precision.o sys.o m_io.o alloc.o  memoryinfo.o memory.o pxf.o \
              moreParallelSubs.o m_walltime.o m_timer.o timer.o m_mpi_utils.o \
@@ -48,7 +49,7 @@ SIESTA_OBJS= precision.o sys.o m_io.o alloc.o  memoryinfo.o memory.o pxf.o \
 
 TBTOBJS= $(SIESTA_OBJS) $(MOD_TOBJS) $(SYSOBJ) $(EXTRA) \
          tbtrans.o transmission.o tbt_init.o tbt_reinit.o \
-	 coop.o tt_eig.o
+	 coop.o tt_eig.o atompdos.o
 
 #
 # Interfaces to libraries
@@ -400,6 +401,7 @@ propor.o: precision.o sys.o
 proximity_check.o: m_ts_options.o mneighb.o parallel.o precision.o
 proximity_check.o: siesta_geom.o siesta_options.o
 pseudopotential.o: alloc.o atom_options.o flib_spline.o precision.o sys.o
+
 radfft.o: alloc.o bessph.o m_recipes.o precision.o
 radial.o: alloc.o precision.o xml.o
 rdiag.o: alloc.o m_diagon.o memoryinfo.o parallel.o precision.o sys.o
@@ -514,7 +516,9 @@ zm_broyden_optim.o: units.o zmatrix.o
 zm_fire_optim.o: m_fdf_global.o m_fire.o parallel.o precision.o
 zm_fire_optim.o: siesta_options.o units.o zmatrix.o
 zmatrix.o: alloc.o m_cell.o parallel.o precision.o siesta_geom.o sys.o units.o
+atompdos.o: m_lowdin.o m_tbt_out.o parallel.o precision.o sys.o units.o
 coop.o: m_tbt_out.o parallel.o precision.o sys.o units.o
+m_lowdin.o: precision.o
 m_tbt_iotshs.o: m_tbt_kpoints.o parallel.o precision.o sys.o
 m_tbt_kpoints.o: alloc.o minvec.o parallel.o precision.o sys.o units.o
 m_tbt_options.o: files.o m_fdf_global.o memoryinfo.o parallel.o precision.o

@@ -85,7 +85,7 @@ module m_tbt_options
   logical        :: SpinPol  ! Spin polarized calculation?
   logical        :: COOPCurve ! Do the COOP curves
   logical        :: AlignScat ! Align the scattering region with the left electrode (only by the first onsite element)
-  logical        :: AtomPDOS ! Calculate the DOS on the projected atoms
+  logical        :: CalcAtomPDOS ! Calculate the DOS on the projected atoms
 
 ! ################################################
 ! #                                              #
@@ -100,7 +100,7 @@ module m_tbt_options
   logical, parameter  :: CalcIeig_def = .false.
   logical, parameter  :: COOPCurve_def = .false.
   logical, parameter  :: AlignScat_def = .false.
-  logical, parameter  :: AtomPDOS_def = .false.
+  logical, parameter  :: CalcAtomPDOS_def = .false.
 CONTAINS
   
   ! Read in the tbtrans options
@@ -188,7 +188,7 @@ CONTAINS
     endif
     call fdf_global_get(COOPCurve,'TS.TBT.COOPCurve',COOPCurve_def)
     call fdf_global_get(AlignScat,'TS.TBT.AlignOnSite',AlignScat_def)
-    call fdf_global_get(AtomPDOS,'TS.TBT.AtomPDOS',AtomPDOS_def)
+    call fdf_global_get(CalcAtomPDOS,'TS.TBT.AtomPDOS',CalcAtomPDOS_def)
 
 ! Output Used Options in OUT file ....
     if (ionode) then
@@ -245,16 +245,12 @@ CONTAINS
                   'Right elec. repetition A1/A2                  = ', NRepA1L,NRepA2L
        write(*,'(a,''['',i4,'';'',i4,'']'')') &
                   'Projected region                              = ', IsoAt1,IsoAt2
-       write(*,1) 'Calculate DOS on projected atoms              = ',AtomPDOS
+       write(*,1) 'Calculate DOS on projected atoms              = ',CalcAtomPDOS
        write(*,1) 'Calculate COOP curves                         = ',COOPCurve
        write(*,1) 'Align the Hamiltonian with the electrode      = ',AlignScat
        if ( AlignScat ) then
           call die("TBtrans is currently not implented to align the scattering &
                &region.")
-       end if
-       if ( AtomPDOS ) then
-          call die("TBtrans is currently not implented to calculate the atom &
-               &PDOS with Mulliken charges.")
        end if
     end if
  

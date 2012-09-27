@@ -469,11 +469,13 @@ contains
 #endif
     
 #ifdef DEBUG
-      call write_debug( 'PRE create_Green' )
+    call write_debug( 'PRE create_Green' )
 #endif
 
     ! Should we read Gamma in TSHS file?
     ! Must be .false., otherwise we cannot access Transfer matrix
+    ! This Gamma is to be used for the remaining part of the tests
+    ! We cannot use the ts_gamma in case of Gamma point in kxy direction
     Gamma = .false.
 
     ! We nullify to ensure that they pass ASSOCIATED tests
@@ -728,7 +730,8 @@ contains
 
                 ! init qpoint in reciprocal lattice vectors
                 call kpoint_convert(ucell_E,qb(:,iqpt),qpt,-1)
-                
+
+
                 ! Setup the transfer matrix and the intra cell at the k-point and q-point
                 call set_electrode_HS_Transfer(Gamma,nuo_E,maxnh_E, &
                      notot_E,nspin,H_E,S_E,xij_E,xijo_E,zconnect_E,numh_E, &
@@ -895,7 +898,7 @@ contains
     call timer('genGreen',2)
 
 #ifdef DEBUG
-      call write_debug( 'POS create_Green' )
+    call write_debug( 'POS create_Green' )
 #endif
     
   end subroutine create_Green
@@ -989,7 +992,7 @@ contains
 !=======================================================================
 
 #ifdef DEBUG
-      call write_debug( 'PRE init_elec_HS' )
+    call write_debug( 'PRE init_elec_HS' )
 #endif
 
     nullify(H,S)
@@ -1060,7 +1063,6 @@ contains
 
 ! Do communication of variables
 #ifdef MPI
-    call MPI_Bcast(ts_Gamma,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
     call MPI_Bcast(nua,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
     call MPI_Bcast(nuo,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
     call MPI_Bcast(notot,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
@@ -1070,10 +1072,10 @@ contains
     call MPI_Bcast(ucell(1,1),3*3,DAT_double,0, &
          MPI_Comm_World,MPIerror)
     if ( .not. IONode ) then
-       if ( .not. ts_Gamma ) then 
-! they behave as dummy arrays in case of ts_Gamma == .true.
-! However, the electrode must be ts_Gamma == .false. as we need the transfer matrix
-! TODO in options start-up check that the electrode is in fact a ts_Gamma == .false. calculation
+       if ( .not. Gamma ) then 
+! they behave as dummy arrays in case of Gamma == .true.
+! However, the electrode must be Gamma == .false. as we need the transfer matrix
+! TODO in options start-up check that the electrode is in fact a Gamma == .false. calculation
 ! This can be done together with retrieving the nua_E variable.
           allocate(indxuo(notot))
           call memory('A','I',notot,'elec_HS')
@@ -1097,7 +1099,7 @@ contains
     end if
     call MPI_Bcast(xa(1,1),3*nua,DAT_Double,0, &
          MPI_Comm_World,MPIerror)
-    if ( .not. ts_Gamma ) then
+    if ( .not. Gamma ) then
        call MPI_Bcast(indxuo,notot,MPI_Integer,0, MPI_Comm_World,MPIerror)
        call MPI_Bcast(xij(1,1),3*maxnh,DAT_Double,0, &
             MPI_Comm_World,MPIerror)
@@ -1203,7 +1205,7 @@ contains
     eXa = .false.
 
     ! Create the z-connect array
-    zconnect_gamma: if ( .not. ts_Gamma ) then
+    zconnect_gamma: if ( .not. Gamma ) then
 
        ! temporary array in this part
        allocate(xo(3,nuo))
@@ -1250,6 +1252,12 @@ contains
 #endif
 
     if ( IONode .and. eXa ) then
+       write(0,*) "WARNING: The electrode has connections across &
+            &2 unit cells or more in the transport direction."
+       write(0,*) "WARNING: This is inadvisable."
+       write(0,*) "WARNING: Please increase the electrode size &
+            &in the transport direction."
+       write(0,*) "WARNING: Will proceed without further notice."
        write(*,*) "WARNING: The electrode has connections across &
             &2 unit cells or more in the transport direction."
        write(*,*) "WARNING: This is inadvisable."
@@ -1262,7 +1270,7 @@ contains
     deallocate(xa)
 
 #ifdef DEBUG
-      call write_debug( 'POS init_elec_HS' )
+    call write_debug( 'POS init_elec_HS' )
 #endif
 
   end subroutine init_electrode_HS
@@ -1308,7 +1316,7 @@ contains
     integer :: i,j,iuo,juo,ind
 
 #ifdef DEBUG
-      call write_debug( 'PRE elec_HS_Transfer' )
+    call write_debug( 'PRE elec_HS_Transfer' )
 #endif
 
     if ( Gamma ) then
@@ -1412,7 +1420,7 @@ contains
     enddo
 
 #ifdef DEBUG
-      call write_debug( 'POS elec_HS_Transfer' )
+    call write_debug( 'POS elec_HS_Transfer' )
 #endif
 
 !-----------------------------------------------------------------

@@ -56,6 +56,9 @@ subroutine ts_do_Green(tElec, HSFile, GFFile, GFTitle, &
   integer :: MPIerror
 #endif
 
+#ifdef DEBUG
+  call write_debug( 'PRE do_Green' )
+#endif
 
 ! Create the GF file
   call create_Green(tElec,HSFile, GFFile, GFTitle, &
@@ -95,5 +98,9 @@ subroutine ts_do_Green(tElec, HSFile, GFFile, GFTitle, &
   call MPI_Bcast(errorGF,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
 #endif
   if ( errorGF ) call die("Error in GFfile: "//trim(GFFile))
+
+#ifdef DEBUG
+  call write_debug( 'POS do_Green' )
+#endif
 
 end subroutine ts_do_Green

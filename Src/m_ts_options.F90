@@ -125,6 +125,7 @@ use parallel, only: IOnode, Nodes
 use m_fdf_global, only: fdf_global_get
 use units, only: eV
 use m_ts_global_vars, only : ts_istep
+use siesta_geom, only : ucell
 #ifdef MPI
 use mpi_siesta, only : MPI_Character, MPI_Comm_World
 #endif
@@ -132,6 +133,7 @@ implicit none
 ! Internal Variables
 character(len=20) :: chars
 logical  :: exist ! Check file existance for files requested
+integer :: i
 #ifdef MPI
 integer :: MPIerror
 #endif
@@ -283,6 +285,21 @@ if (IOnode) then
  write(*,*)
 
  write(*,'(3a)') repeat('*',24),' Begin: TS CHECKS AND WARNINGS ',repeat('*',24) 
+
+! Check that the unitcell does not extend into the transport direction
+ if (TSmode) then
+    do i = 1 , 2
+       if ( abs(ucell(3,i)) > 1e-7 .or. abs(ucell(i,3)) > 1e-7 ) then
+          write(*,*) &
+               "ERROR: Unitcell has the electrode extend into the &
+               &transport direction."
+          write(*,*) &
+               "Please change the geometry."
+          call die("Electrodes extend into the transport direction. &
+               &Please change the geometry.")
+       end if
+    end do
+ end if
 
 ! USEBULK and TriDiag
   if((.not. USEBULK) .and. TriDiag) then

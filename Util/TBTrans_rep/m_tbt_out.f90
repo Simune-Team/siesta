@@ -9,12 +9,14 @@ module m_tbt_out
   private
   save
   
-  character(len=200) :: defEIGfmt = '(1i5,2e16.8)'
-  character(len=200) :: defTEIGfmt = '(f10.5,20000e16.8)'
-  character(len=200) :: defDOSfmt = '(3e16.8)'
-  character(len=200) :: defTfmt = '(f10.5,3e16.8))'
-  character(len=200) :: defCOOPfmt = '(2i4,5f10.6))'
-  character(len=200) :: defCOOPLRfmt = '(1i4,5f10.6))'
+  character(len=200) :: defEIGfmt = '(i5,2(tr1,e16.8))'
+  character(len=200) :: defTEIGfmt = '(f10.5,20000(tr1,e16.8))'
+  character(len=200) :: defDOSfmt = '(3(tr1,e16.8))'
+  character(len=200) :: defTfmt = '(f10.5,3(tr1,e16.8))'
+  character(len=200) :: defCOOPfmt = '(2(tr1,i4),5(tr1,f10.6))'
+  character(len=200) :: defCOOPLRfmt = '(i4,5(tr1,f10.6))'
+  character(len=200) :: defAtomPDOSTotfmt = '(1i4,tr1,f10.6,3(tr1,f13.7)))'
+  character(len=200) :: defAtomPDOSOrbfmt = '(1i4,tr1,f10.6,100(tr1,f13.7))' ! If orbitals on a single atom exceeds 100 EDIT HERE
 
   public :: create_file, out_NEWLINE
   public :: out_kpt_header
@@ -23,6 +25,7 @@ module m_tbt_out
   public :: out_Trans
   public :: out_COOP, out_COOPLR
   public :: out_REGION, out_DEVICE
+  public :: out_AtomPDOS_Tot, out_AtomPDOS_Orb
 
 contains
 
@@ -234,5 +237,40 @@ contains
        end do
     end if
   end subroutine out_DEVICE
+
+  subroutine out_AtomPDOS_Tot(funit,ia,E,wE,Tot,Left,Right,fmt)
+    use precision, only : dp
+    use units, only : eV
+    integer, intent(in)  :: funit
+    integer, intent(in)  :: ia
+    real(dp), intent(in) :: E, wE, Tot, Left, Right
+    character(len=*), intent(in), optional :: fmt
+    if ( wE == 0.0_dp ) return
+    if ( present(fmt) ) then
+       if ( IONode ) write(funit,fmt) &
+            ia,E/eV,Tot,Left,Right
+    else
+       if ( IONode ) write(funit,defAtomPDOSTOTfmt) &
+            ia,E/eV,Tot,Left,Right
+    end if
+  end subroutine out_AtomPDOS_Tot
+  
+  subroutine out_AtomPDOS_Orb(funit,ia,E,wE,Orb,no,fmt)
+    use precision, only : dp
+    use units, only : eV
+    integer, intent(in)  :: funit
+    integer, intent(in)  :: ia, no
+    real(dp), intent(in) :: E, wE, Orb(no)
+    character(len=*), intent(in), optional :: fmt
+    integer :: i
+    if ( wE == 0.0_dp ) return
+    if ( present(fmt) ) then
+       if ( IONode ) write(funit,fmt) &
+            ia,E/eV,(Orb(i),i=1,no)
+    else
+       if ( IONode ) write(funit,defAtomPDOSOrbfmt) &
+            ia,E/eV,(Orb(i),i=1,no)
+    end if
+  end subroutine out_AtomPDOS_Orb
 
 end module m_tbt_out

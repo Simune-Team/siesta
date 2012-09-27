@@ -113,6 +113,10 @@ c=======================================================================
 C BEGIN
 c=======================================================================
 
+#ifdef DEBUG
+      call write_debug( 'PRE getGF_Tri' )
+#endif
+
       call timer('GFT',1) 
       
 c ================================================================
@@ -390,6 +394,10 @@ c
 
       end if ! .not. useTri
       call timer('GFT',2)  
+
+#ifdef DEBUG
+      call write_debug( 'POS getGF_Tri' )
+#endif
      
 C ====================================================================
       END subroutine getGF_Tri
@@ -515,6 +523,10 @@ c Helpers, tempos etc...
 c=======================================================================
 c     BEGIN:
 c=======================================================================
+
+#ifdef DEBUG
+      call write_debug( 'PRE getSFE' )
+#endif
 
       call timer('getSFE',1)
       
@@ -816,6 +828,10 @@ c      end do                    !io
 
        call timer('getSFE',2)
 
+#ifdef DEBUG
+      call write_debug( 'POS getSFE' )
+#endif
+
 c======================================================================
       end subroutine getSFE
 c======================================================================
@@ -869,6 +885,10 @@ c Helpers, tempos ...
 c=======================================================================
 C BEGIN
 c=======================================================================
+
+#ifdef DEBUG
+      call write_debug( 'PRE GFGammaGF' )
+#endif
 
       call timer("GFGGF",1)
 
@@ -939,6 +959,10 @@ c=======================================================================
 
       call timer('GFGGF',2)
 
+#ifdef DEBUG
+      call write_debug( 'POS GFGammaGF' )
+#endif
+
 C ====================================================================
       END subroutine GFGammaGF
 C ====================================================================
@@ -998,6 +1022,10 @@ c Helpers, tempos ...
 c=======================================================================
 c BEGIN:
 c=======================================================================
+
+#ifdef DEBUG
+      call write_debug( 'PRE weightDM' )
+#endif
 
       call timer('weightDM',1)
 C Get Node number
@@ -1075,6 +1103,10 @@ C make an integration error estimate
       call timer('weightDM',2)
 C ====================================================================
 
+#ifdef DEBUG
+      call write_debug( 'POS weightDM' )
+#endif
+
       END subroutine weightDM
 C ====================================================================
 
@@ -1121,6 +1153,10 @@ c Helpers, tempos ...
 c=======================================================================
 c BEGIN:
 c=======================================================================
+
+#ifdef DEBUG
+      call write_debug( 'PRE weightDMC' )
+#endif
 
       call timer('weightDMC',1)
 
@@ -1191,6 +1227,11 @@ C make an integration error estimate
 !      endif
 
       call timer('weightDMC',2)
+
+#ifdef DEBUG
+      call write_debug( 'POS weightDMC' )
+#endif
+
 C ====================================================================
       END subroutine weightDMC
 C ====================================================================

@@ -6692,6 +6692,9 @@ Electrodes.  In this case, {\sc TranSiesta} will not consider these
 atoms, and the buffer atoms are considered only for the initial {\sc
   Siesta} calculation, to get a better ``bulk-like'' environment at
 the electrodes.
+Lastly the electrodes must not extend into the transport direction.
+This is checked for by {\sc TranSiesta} and the execution will stop
+if the geometry is badly formatted.
 
 \item
 An important parameter is: {\tt TS.ComplexContour.Emin} It specifies
@@ -7113,7 +7116,9 @@ This factor can be used to control the fluctuations.
 \subsection{  Matching   {\sc TranSiesta} coordinates: basic rules}
 Having discussed the possible input options of {\sc TranSiesta} here
 we just list a set of rules to construct the appropriate coordinates
-of the scattering region.  The order of atoms be such that:
+of the scattering region. The unitcell most only have one component for 
+the transport direction vector ($z$-direction). The order of atoms be 
+such that:
 \begin{itemize}
 \item
 The first {\bf TS.BufferAtomsLeft} atoms will be considered buffer
@@ -7252,6 +7257,25 @@ k-sampling in the tbtrans utility. If it does not exist it will use
 If true will calculate the valence band bottom of the electrode.
 
 {\it Default value:} {\tt true}
+
+\item [{\bf TS.TBT.COOPCurve}]({\it logical}): 
+Calculate COOP curves on the PDOS region. Creates the files:
+\begin{itemize}
+  \item {\tt <SystemLabel>.COOP}
+  \item {\tt <SystemLabel>.COOPL}
+  \item {\tt <SystemLabel>.COOPR}
+\end{itemize}
+
+{\it Default value:} {\tt false}
+
+\item [{\bf TS.TBT.AtomPDOS}]({\it logical}): 
+Calculate PDOS on the PDOS region, creates the files:
+\begin{itemize}
+  \item {\tt <SystemLabel>.TOTDOS}
+  \item {\tt <SystemLabel>.ORBDOS}
+\end{itemize}
+
+{\it Default value:} {\tt true}
 \end{description}
 Note that it is important to specify the voltage, since this
 information is not stored in the .TSHS files. The current will be
@@ -7295,6 +7319,7 @@ To summarize, here we give a list of the parameters read by {\tt
  \item {\bf TS.TBT.PDOSFrom}
  \item {\bf TS.TBT.PDOSTo}
  \item {\bf TS.TBT.COOPCurve}
+ \item {\bf TS.TBT.AtomPDOS}
  \item {\bf TS.TBT.CalcElectrodeValenceBandBottom}
  \item {\bf TS.BufferAtomsLeft}, {\bf TS.BufferAtomsRight}
  \item {\bf TS.NumUsedAtomsLeft}, {\bf TS.NumUsedAtomsRight}
