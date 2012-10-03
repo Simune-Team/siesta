@@ -132,8 +132,15 @@ c
 c ...
 
 C Set up fdf ...
-      fileout = 'fdf.log'
-      call fdf_init(filein,fileout)
+!
+!     Choose a 'unique' prefix for the log (and possible debug) fdf files
+!     The 5-digit sequence might be slightly different in different
+!     processors, depending on the system time.
+
+      call system_clock( count )
+      write(fileout,"(a,i5,a)") 'fdf-', mod(count,100000), ".log"
+
+      call fdf_init(filein,trim(fileout))
 
 C Define Name of the system ...
       sname_default = ' '

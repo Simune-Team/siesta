@@ -6,6 +6,37 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-09-25  10:12:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-413
+Use a 'unique' string in fdf log files
+
+In MPI operation, the fdf subsystem writes log files (and optionally
+debug files) to the /tmp filesystem. Up to now the file names were not
+unique across jobs, which led to failures. Now a string based on the
+5 least significant digits of the current time is added to the file
+prefix. 
+
+Also, removed the printing of a log message regarding the number of
+lines processed while setting up the fdf data structures, which could
+potentially confuse some systems.
+
+modified:
+  Src/reinit.F
+  Src/fdf/fdf.F90
+
+-----------------------------------------------------------------------
+2012-08-27  10:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-412
+Nullify pointers in diagkp
+
+Pointers were not properly nullified in diagkp.
+
+(Thanks to Nick P. Andersen)
+
+(+ clean up extra path dependencies in Denchar Makefile)
+
+modified:
+  Src/diagkp.F
+
+-----------------------------------------------------------------------
 2012-06-21  10:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-411
 Fix bug in fdf_bbackspace. No .ion.nc files for ghosts
 

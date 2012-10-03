@@ -305,20 +305,23 @@ MODULE fdf
       SUBROUTINE fdf_init(filein, fileout)
       implicit none
 !--------------------------------------------------------------- Input Variables
-      character(*) :: filein, fileout
+      character(len=*), intent(in) :: filein, fileout
 
 #ifndef DEBUG
 !--------------------------------------------------------------- Local Variables
       integer(ip)  :: debug_level
+      character(len=40) :: filedebug
 #endif
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------------------- BEGIN
 !$OMP SINGLE
       ! Prevent the user from opening two head files
       if (fdf_started) then 
         call die('FDF module: fdf_init', 'Head file already set',       &
                  THIS_FILE, __LINE__, fdf_err)
       endif
+
+      filedebug = trim(fileout) // ".debug"
 
 #ifdef _MPI_
       call fdf_mpi_init()
@@ -328,7 +331,7 @@ MODULE fdf
       call io_geterr(fdf_err)
 
 #ifdef DEBUG
-      call fdf_setdebug(2)
+      call fdf_setdebug(2,filedebug)
 #endif
 
       call fdf_output(fileout)
@@ -339,7 +342,7 @@ MODULE fdf
 
 #ifndef DEBUG
       debug_level = fdf_integer('fdf-debug', 0)
-      call fdf_setdebug(debug_level)
+      call fdf_setdebug(debug_level,filedebug)
 #endif
 
       if (fdf_debug2) call fdf_printfdf()
@@ -349,7 +352,7 @@ MODULE fdf
 #endif
 !$OMP END SINGLE
       RETURN
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------------------- END
       END SUBROUTINE fdf_init
 
 !
@@ -1397,12 +1400,11 @@ MODULE fdf
     SUBROUTINE fdf_output(fileout)
       implicit none
 !--------------------------------------------------------------- Input Variables
-      character(*)   :: fileout
+      character(len=*), intent(in)   :: fileout
 
-!--------------------------------------------------------------- Local Variables
+!------------------------------------------------------------- Local Variables
       character(256) :: fileouttmp
-
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------------------- BEGIN
       call io_assign(fdf_out)
 
 #ifdef _MPI_
@@ -2326,15 +2328,13 @@ MODULE fdf
 !   level  = 1: standard
 !   level >= 2: exhaustive
 !
-    SUBROUTINE fdf_setdebug(level)
+    SUBROUTINE fdf_setdebug(level,filedebug)
       implicit none
-!--------------------------------------------------------------- Input Variables
-      integer(ip)   :: level
+!------------------------------------------------------------- Input Variables
+      integer(ip)      :: level
+      character(len=*) :: filedebug
 
-!--------------------------------------------------------------- Local Variables
-      character(20) :: filedebug = 'fdf.debug'
-
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------------------- BEGIN
       if (level .le. 0) then
         if (fdf_debug) then
           call io_close(fdf_log)
@@ -2399,7 +2399,7 @@ MODULE fdf
        call recreate_pline(pline,bufline)
        call fdf_addtoken(pline%line,pline)
     enddo
-    print *, "Processed: ", file_in%nlines, " lines."
+    ! print *, "Processed: ", file_in%nlines, " lines."
 
   end subroutine recreate_fdf_struct
 
