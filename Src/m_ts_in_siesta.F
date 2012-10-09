@@ -385,8 +385,8 @@
 !  I need to create a general case of electrodes with potentially 
 !  different numbers of k points, such as an electrode and a bulk nanotube.
 
-#ifdef DEBUG
-      call write_debug( 'PRE transieasta' )
+#ifdef TRANSIESTA_DEBUG
+      call write_debug( 'PRE transiesta' )
 #endif
 
 #ifdef MPI
@@ -540,7 +540,9 @@
 
             call die('ERROR: Unexpected no. orbs. in R elec.')
          end if
-
+         
+         ! no more first time
+         firsttime = .false.
       end if                    ! firsttime
 ! -------------------------------------------------------
       call timer("TS_calc",1)
@@ -562,10 +564,9 @@
       end do
 #endif
       call timer("TS_calc",2)
-! FIRSTTIME
 
+! New MD-step
       if(TSiscf.eq.1) then
-
 ! -------------------------------------------------------
 !
 !     IMPORTANT: Here we set the region which we do not change in DM
@@ -578,7 +579,9 @@
      &           ' calculating SIESTA charge distribution...'
          endif         
 
-
+         ! Check for allocated is necessary due to MD steps
+         ! The lists are constant for each iteration until
+         ! TSiscf is one!
          if(allocated(listud)) then
             call memory('D','L',size(listud),'transiesta')
             deallocate(listud)
@@ -825,15 +828,11 @@
          call memory('A','Z',2*nou*nou,'transiesta')
       end if
       
-      allocate(SFEL(noL,noL))
-      allocate(SFER(noR,noR))
-      allocate(GAMMAL(noL,noL))
-      allocate(GAMMAR(noR,noR))
+      allocate(SFEL(noL,noL),SFER(noR,noR))
+      allocate(GAMMAL(noL,noL),GAMMAR(noR,noR))
       call memory('A','Z',2*noL**2+2*noR**2,'transiesta')
-      allocate(HAAL(noL_GF,noL_GF,nqL))
-      allocate(SAAL(noL_GF,noL_GF,nqL))
-      allocate(HAAR(noR_GF,noR_GF,nqR))
-      allocate(SAAR(noR_GF,noR_GF,nqR))
+      allocate(HAAL(noL_GF,noL_GF,nqL),SAAL(noL_GF,noL_GF,nqL))
+      allocate(HAAR(noR_GF,noR_GF,nqR),SAAR(noR_GF,noR_GF,nqR))
       call memory('A','Z',2*noL_GF**2*nqL+2*noR_GF**2*nqR,'transiesta')
 
       if(IsVolt)then
@@ -842,14 +841,12 @@
          call memory('A','D',nou*nou,'transiesta')
          if ( ts_gamma_scf ) then      
             allocate(DMR(nou*nou))
-            allocate(DMneqL(nou*nou))
-            allocate(DMneqR(nou*nou))
+            allocate(DMneqL(nou*nou),DMneqR(nou*nou))
             allocate(EDMR(nou*nou))
             call memory('A','D',4*nou*nou,'transiesta')
          else
             allocate(DMRCplx(nou*nou))
-            allocate(DMneqLCplx(nou*nou))
-            allocate(DMneqRCplx(nou*nou))
+            allocate(DMneqLCplx(nou*nou),DMneqRCplx(nou*nou))
             allocate(EDMRCplx(nou*nou))
             call memory('A','Z',4*nou*nou,'transiesta')
          end if
@@ -1482,9 +1479,7 @@
 
 !     Deallocate:
       call memory('D','Z',size(H)+size(S),'transiesta')
-
-      deallocate(H)
-      deallocate(S)
+      deallocate(H,S)
 
       if ( ts_gamma_scf ) then
          call memory('D','D',size(DM)+size(EDM),'transiesta')
@@ -1497,18 +1492,14 @@
       end if
 
       call memory('D','Z',size(SFEL)+size(SFER),'transiesta')
-      deallocate(SFEL)
-      deallocate(SFER)
+      deallocate(SFEL,SFER)
       call memory('D','Z',size(GAMMAL)+size(GAMMAR),'transiesta')
-      deallocate(GAMMAL)
-      deallocate(GAMMAR)
+      deallocate(GAMMAL,GAMMAR)
 
       call memory('D','Z',size(HAAL)+size(SAAL),'transiesta')
       call memory('D','Z',size(HAAR)+size(SAAR),'transiesta')
-      deallocate(HAAL)
-      deallocate(SAAL)
-      deallocate(HAAR)
-      deallocate(SAAR)
+      deallocate(HAAL,SAAL)
+      deallocate(HAAR,SAAR)
 
       
       if(IsVolt) then
@@ -1518,8 +1509,7 @@
             call memory('D','D',size(DMR)+size(DMneqL),'transiesta')
             call memory('D','D',size(EDMR)+size(DMneqR),'transiesta')
             deallocate(DMR)
-            deallocate(DMneqL)
-            deallocate(DMneqR)
+            deallocate(DMneqL,DMneqR)
             deallocate(EDMR)
          else
             call memory('D','Z',size(DMRCplx)+size(DMneqLCplx)
@@ -1527,8 +1517,7 @@
             call memory('D','Z',size(DMneqRCplx)+size(EDMRCplx)
      &           ,'transiesta')
             deallocate(DMRCplx)
-            deallocate(DMneqLCplx)
-            deallocate(DMneqRCplx)
+            deallocate(DMneqLCplx,DMneqRCplx)
             deallocate(EDMRCplx)
          end if
       endif
@@ -1550,8 +1539,8 @@
 
       call timer("TS_calc",2)
 ! ===================================================================
-      firsttime = .false.       !first time -- not any more!
-#ifdef DEBUG
+
+#ifdef TRANSIESTA_DEBUG
       call write_debug( 'POS transiesta' )
 #endif
       end subroutine transiesta
@@ -1595,7 +1584,7 @@
 #endif
       real(dp)          vav, vtot, temp
 
-#ifdef DEBUG
+#ifdef TRANSIESTA_DEBUG
       call write_debug( 'PRE TSVHfix' )
 #endif
 
@@ -1684,7 +1673,7 @@
 
         call timer('TSVHFix',2)
 
-#ifdef DEBUG
+#ifdef TRANSIESTA_DEBUG
       call write_debug( 'POS TSVHfix' )
 #endif
 

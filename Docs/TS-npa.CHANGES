@@ -1,4 +1,71 @@
 ----------------------------------------------------
+Oct 9, 2012 -- Nick P. Andersen     trunk-411--ts-npa-6
+Added TranSIESTA regions, transfer cell calculation, NUsedAtoms read in options
+
+* ts_show_regions.f90 has been added for easier debugging system setups
+  - For new users it also provides a better insight as to how transiesta
+    sets up the buffer regions as well as electrodes.
+* m_hs_matrix has been added two new routines:
+  - set_HS_available_transfers:
+     This routine returns the available transfer cells for calculation.
+     It should be similar to the internal supercell for k-point sampling.
+     Thus if Gamma calculation it returns a 2x3 matrix filled with 0's.
+  - set_HS_transfermatrix
+     Can be used to obtain the transfer matrix of the system. 
+     This in effect allows for testing various mechanisms in surface Green's
+     functions etc. However, this should not be implemented into the 
+     m_ts_electrode as it is far slower.
+     However, in future cases it can be used to generate a utility for
+     easy generation of GF files.
+* Bugfix in m_tbt_out.f90. The coordinates has been changed to output Ang
+  correctly.
+* Finally read in the NA in the initialization of TranSIESTA.
+  - Enables the output of the system at start
+  - as well as error checking.
+   ? TODO... Move all contour generation routines to the initialization.
+     Will clean up TranSIESTA as well as faster checking for errors in the GF
+     files.
+* Added comment about the GCC compiler in cases of a forces run.
+  - The GCC 4.7 have removed access to piped files. Thus one needs gfortran
+    compiler version 4.6 or older.
+* Renamed DEBUG flags to TRANSIESTA_DEBUG in the ts files.
+* TS options are limited in their output if diagon or orderN method is used.
+  Only the relevant options for such a run is shown. (However, the full reading
+  can still be found in the fdf.log file)
+* Added a Makefile for the manual as well as hyperref for the document.
+  - make siesta (one time compilation)
+  - make final (latex, makeindex, latex, latex)
+  - make extra (makeindex)
+* Made the version.info directly input to the siesta manual.
+  Again this makes no confusion when passing around revisions of the manual,
+  as one is certain of the revisioned document.
+* Made refs into hyperlinks using hyperref (but only using the url package)
+  So removing the hyperref package will still be compilable.
+
+added:
+  Docs/Makefile
+  Src/ts_show_regions.f90
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/Makefile
+  Src/m_hs_matrix.f90
+  Src/m_ts_contour.f
+  Src/m_ts_electrode.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_in_siesta.F
+  Src/m_ts_io.F90
+  Src/m_ts_options.F90
+  Src/m_ts_scattering.F
+  Src/ts_do_green.F90
+  Util/SiestaSubroutine/README
+  Util/TBTrans/Makefile
+  Util/TBTrans_rep/Makefile
+  Util/TBTrans_rep/m_tbt_options.F90
+  Util/TBTrans_rep/m_tbt_out.f90
+  Util/TBTrans_rep/tbtrans.F90
+
+----------------------------------------------------
 Sep 27, 2012 -- Nick P. Andersen    trunk-411--ts-npa-5
 Added AtomPDOS (TBT), TranSIESTA tests of electrode in z-dir, added DEBUG
 

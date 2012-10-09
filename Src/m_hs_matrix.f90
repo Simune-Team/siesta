@@ -77,7 +77,51 @@ module m_hs_matrix
 ! RemNLastOrbitals is the same, albeit in the end of the Hamiltonian.
 !
 ! If the sizes of the incoming pointers Hk and Sk do not match the above
-! they will be reallocated to the correct size.
+! they will be reallocated to the correct size (without notifying the user).
+!
+! Also there is a routine for obtaining an arbitrary transfer matrix.
+! The interface is very much the same as that for the set_HS_matrix.
+! However, here it has this interface:
+!
+!   call set_HS_transfermatrix(Gamma,ucell,na_u,no_u,no_s,maxnh, &
+!       xij,numh,listhptr,listh,indxuo,H,S, &
+!       k,transfer_cell,HkT,SkT,xa,iaorb, &
+!       RemUCellDistances,RemNFirstOrbitals,RemNLastOrbitals)
+! 
+! 'transfer_cell' is an integer vector of dimen 3 with each indices denoting the transfer matrix in that
+! direction.
+! For instance taking:
+!   transfer_cell(:) = (/ 1 , 3 , 1 /)
+! Will generate the transfer cell to the first neighbouring 'x', third neighbouring 'y' and first
+! neighbouring 'z' cell.
+! Often it can be necessary to have access to only the transfer matrix in one direction.
+! In such cases you can supply:
+!   transfer_cell(:) = (/ TRANSFER_ALL , TRANSFER_ALL , 2 /)
+! The TRANSFER_ALL is a variable in this module and tells that it should
+! use all possible transfer cells in that direction.
+!
+! In this conjunction the routine
+!   call set_HS_available_transfers(Gamma,ucell,na_u,no_u,no_s,maxnh, &
+!       xij,numh,listhptr,listh,indxuo,xa,iaorb,transfer_cell)
+! is invaluable. It returns in transfer_cell the allowed transfer cell units for
+! the system. Notice that transfer_cell is a 2x3 matrix with the formatting like this:
+!
+!   transfer_cell(1,1) : minumum transfer cell in the x-direction
+!   transfer_cell(2,1) : maximum transfer cell in the x-direction
+!   transfer_cell(1,2) : minumum transfer cell in the y-direction
+!   transfer_cell(2,2) : maximum transfer cell in the y-direction
+!   transfer_cell(1,3) : minumum transfer cell in the z-direction
+!   transfer_cell(2,3) : maximum transfer cell in the z-direction
+!
+! Usually the following holds (for obvious reasons):
+!   transfer_cell(1,i) = -transfer_cell(2,i)
+! This routine can thus be used to retrieve the allowed transfer cells before using
+! set_HS_transfermatrix.
+!
+! Notice that RemZConnection is NOT available (it doesn't make sense).
+! Furthermore, xa and iaorb are needed in order to determine the transfer cell.
+! Thus they are no longer optional but mandatory arguments.
+!
 !
 ! Furthermore there are the routines:
 !   call matrix_rem_left_right(no_tot,Hk,Sk,no_L,no_R)
@@ -87,6 +131,7 @@ module m_hs_matrix
 ! and used to symmetrize and shift the Hamiltonian Ef, respectively.
 ! 
 ! NOTICE that a call to matrix_symmetrize is almost always needed!
+! EVEN in the case of the transfer matrix.
  
   implicit none
 
@@ -96,6 +141,11 @@ module m_hs_matrix
      module procedure set_HS_matrix_1d
      module procedure set_HS_matrix_2d
   end interface set_HS_matrix
+
+  interface set_HS_transfermatrix
+     module procedure set_HS_transfermatrix_1d
+     module procedure set_HS_transfermatrix_2d
+  end interface set_HS_transfermatrix
 
   interface matrix_rem_left_right
      module procedure matrix_rem_left_right_1d
@@ -108,8 +158,12 @@ module m_hs_matrix
   end interface matrix_symmetrize
 
   public :: set_HS_matrix
+  public :: set_HS_transfermatrix
   public :: matrix_rem_left_right
   public :: matrix_symmetrize
+  public :: set_HS_available_transfers
+
+  integer, parameter, public :: TRANSFER_ALL = -999999
 
 contains
 
@@ -542,6 +596,419 @@ contains
 
   end subroutine set_HS_matrix_2d
 
+!*****************
+! Setting the Hamiltonian for a specific k-point as a specific transfer
+! This can be used to obtain the transfer matrix for a certain Hamilton and S.
+! It requires that the Node has the full sparse matrix available
+!*****************
+  subroutine set_HS_transfermatrix_1d(Gamma,ucell,na_u,no_u,no_s,maxnh, &
+       xij,numh,listhptr,listh,indxuo,H,S, &
+       k,transfer_cell,HkT,SkT,xa,iaorb, &
+       DUMMY, & ! Ensures that the programmer makes EXPLICIT keywork passing
+       RemUCellDistances,RemNFirstOrbitals,RemNLastOrbitals)
+    use precision, only : dp
+    use sys,       only : die 
+! ***********************
+! * INPUT variables     *
+! ***********************
+    logical, intent(in)               :: Gamma ! Is it a Gamma Calculation?
+    real(dp), intent(in)              :: ucell(3,3) ! The unit cell of system
+    integer, intent(in)               :: na_u ! Unit cell atoms
+    integer, intent(in)               :: no_u ! Unit cell orbitals
+    integer, intent(in)               :: no_s ! Supercell orbitals
+    integer, intent(in)               :: maxnh ! Hamiltonian size
+    real(dp), intent(in)              :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
+    integer, intent(in)               :: numh(no_u),listhptr(no_u)
+    integer, intent(in)               :: listh(maxnh),indxuo(no_s)
+    real(dp), intent(in)              :: H(maxnh) ! Hamiltonian
+    real(dp), intent(in)              :: S(maxnh) ! Overlap
+    real(dp), intent(in)              :: k(3) ! k-point in [1/Bohr]
+    integer, intent(in)               :: transfer_cell(3) ! The transfer cell directions
+    real(dp), intent(in)              :: xa(3,na_u) ! Atomic coordinates (needed for RemZConnection & RemUCellDistances)
+    integer, intent(in)               :: iaorb(no_u) ! The equivalent atomic index for a given orbital (needed for RemUCellDistances)
+! ***********************
+! * OUTPUT variables    *
+! ***********************
+    complex(dp), pointer, intent(out) :: HkT(:),SkT(:)
+
+! ***********************
+! * OPTIONAL variables  *
+! ***********************
+    logical, intent(in), optional :: DUMMY ! Do not supply this, it merely requires the coder
+!                                          ! to use the keyworded arguments!
+    logical, intent(in), optional :: RemUCellDistances
+    integer, intent(in), optional :: RemNFirstOrbitals, RemNLastOrbitals
+
+! ***********************
+! * LOCAL variables     *
+! ***********************
+    real(dp) :: recell(3,3) ! The reciprocal unit cell
+    real(dp) :: xo(3), xijo(3), xc
+    real(dp) :: kxij
+    complex(dp) :: cphase
+    integer :: no_tot
+    integer :: i,j,iu,iuo,juo,iind,ind
+    logical :: l_RemUCellDistances
+    integer :: l_RemNFirstOrbitals, l_RemNLastOrbitals 
+
+    if ( present(DUMMY) ) &
+         call die("You must specify the keyworded arguments &
+         &for set_HS_transfermatrix")
+
+    ! Option collecting
+    l_RemUCellDistances = .false.
+    if ( present(RemUCellDistances) ) &
+         l_RemUCellDistances = RemUCellDistances
+
+    ! Make l_RemNFirstOrbitals contain the number of orbitals
+    ! to be removed from the Hamiltonian in the BEGINNING
+    l_RemNFirstOrbitals = 0
+    if ( present(RemNFirstOrbitals) ) &
+         l_RemNFirstOrbitals = RemNFirstOrbitals
+    ! Make l_RemNLastOrbitals contain the number of orbitals
+    ! to be removed from the Hamiltonian in the END
+    l_RemNLastOrbitals = 0
+    if ( present(RemNLastOrbitals) ) &
+         l_RemNLastOrbitals = RemNLastOrbitals
+    no_tot = no_u - (l_RemNLastOrbitals + l_RemNFirstOrbitals)
+
+
+    if ( associated(HkT) .and. associated(SkT) ) then
+       if ( size(HkT) /= no_tot*no_tot ) then
+          call memory('D','Z',size(HkT)+size(SkT),'set_HS')
+          deallocate(HkT,SkT)
+          nullify(HkT,SkT)
+          allocate(HkT(no_tot*no_tot),SkT(no_tot*no_tot))
+          call memory('A','Z',2*no_tot*no_tot,'set_HS')
+       end if
+    else
+       ! No need to nullify...
+       allocate(HkT(no_tot*no_tot),SkT(no_tot*no_tot))
+       call memory('A','Z',2*no_tot*no_tot,'set_HS')
+    end if
+
+    ! Prepare the cell to calculate the index of the atom
+    call reclat(ucell,recell,0) ! Without 2*Pi
+       
+!
+! Setup H,S for this transfer k-point:
+!
+    do i = 1,no_tot*no_tot
+       HkT(i) = dcmplx(0.d0,0.d0)
+       SkT(i) = dcmplx(0.d0,0.d0)
+    end do
+
+    xo(:) = 0.0_dp
+
+    setup_HST: if (.not.Gamma ) then
+
+       do iuo = 1 , no_tot
+          iu = iuo + l_RemNFirstOrbitals
+          iind = listhptr(iu)
+          do j = 1,numh(iu)
+             ind = iind + j
+             juo = indxuo(listh(ind)) - l_RemNFirstOrbitals
+
+             ! Cycle if we are not in the middle region
+             if ( juo < 1 .or. no_tot < juo ) cycle
+
+             ! Determine the transfer matrix cell
+             xijo(:) = xij(:,ind) - ( &
+                  xa(:,iaorb(juo+l_RemNFirstOrbitals)) - xa(:,iaorb(iu)) &
+                  )
+             xc = sum(xijo(:) * recell(:,1))
+             if ( nint(xc) /= transfer_cell(1) .and. transfer_cell(1) /= TRANSFER_ALL ) cycle
+             xc = sum(xijo(:) * recell(:,2))
+             if ( nint(xc) /= transfer_cell(2) .and. transfer_cell(2) /= TRANSFER_ALL ) cycle
+             xc = sum(xijo(:) * recell(:,3))
+             if ( nint(xc) /= transfer_cell(3) .and. transfer_cell(3) /= TRANSFER_ALL ) cycle
+
+             ! We also wish to remove the connection in
+             ! in the inner cell
+             if ( l_RemUCellDistances ) then
+                xo(1) = xa(1,iaorb(juo + l_RemNFirstOrbitals)) &
+                     -  xa(1,iaorb(iu))
+                xo(2) = xa(2,iaorb(juo + l_RemNFirstOrbitals)) &
+                     -  xa(2,iaorb(iu))
+                xo(3) = xa(3,iaorb(juo + l_RemNFirstOrbitals)) &
+                     -  xa(3,iaorb(iu))
+             end if
+
+             kxij = &
+                  k(1) * (xij(1,ind) - xo(1)) + &
+                  k(2) * (xij(2,ind) - xo(2)) + &
+                  k(3) * (xij(3,ind) - xo(3))
+             cphase = exp(dcmplx(0d0,1d0)*kxij)
+             i = iuo+(juo-1)*no_tot
+             HkT(i) = HkT(i)+H(ind)*cphase
+             SkT(i) = SkT(i)+S(ind)*cphase
+          end do
+       end do
+
+    else setup_HST
+       ! It is not a Gamma calculation, thus we do not have any
+       ! neighbouring cells etc.
+       do iuo = 1 , no_tot
+          iu = iuo + l_RemNFirstOrbitals
+          iind = listhptr(iu)
+          do j = 1,numh(iu)
+             ind = iind + j
+             juo = listh(ind) - l_RemNFirstOrbitals
+
+             ! Cycle if we are not in the middle region
+             if ( juo < 1 .or. no_tot < juo ) cycle
+
+             ! Determine the transfer matrix cell
+             xijo(:) = xij(:,ind) - ( &
+                  xa(:,iaorb(juo+l_RemNFirstOrbitals)) - xa(:,iaorb(iu)) &
+                  )
+             xc = sum(xijo(:) * recell(:,1))
+             if ( nint(xc) /= transfer_cell(1) .and. transfer_cell(1) /= TRANSFER_ALL ) cycle
+             xc = sum(xijo(:) * recell(:,2))
+             if ( nint(xc) /= transfer_cell(2) .and. transfer_cell(2) /= TRANSFER_ALL ) cycle
+             xc = sum(xijo(:) * recell(:,3))
+             if ( nint(xc) /= transfer_cell(3) .and. transfer_cell(3) /= TRANSFER_ALL ) cycle
+
+             i = iuo+(juo-1)*no_tot
+             HkT(i) = HkT(i)+H(ind)
+             SkT(i) = SkT(i)+S(ind)
+          end do
+       end do
+
+    end if setup_HST
+
+  end subroutine set_HS_transfermatrix_1d
+
+
+  subroutine set_HS_transfermatrix_2d(Gamma,ucell,na_u,no_u,no_s,maxnh, &
+       xij,numh,listhptr,listh,indxuo,H,S, &
+       k,transfer_cell,HkT,SkT,xa,iaorb,&
+       DUMMY, & ! Ensures that the programmer makes EXPLICIT keywork passing
+       RemUCellDistances,RemNFirstOrbitals,RemNLastOrbitals)
+    use precision, only : dp
+    use sys,       only : die 
+! ***********************
+! * INPUT variables     *
+! ***********************
+    logical, intent(in)               :: Gamma ! Is it a Gamma Calculation?
+    real(dp), intent(in)              :: ucell(3,3) ! The unit cell of system
+    integer, intent(in)               :: na_u ! Unit cell atoms
+    integer, intent(in)               :: no_u ! Unit cell orbitals
+    integer, intent(in)               :: no_s ! Total orbitals
+    integer, intent(in)               :: maxnh ! Hamiltonian size
+    real(dp), intent(in)              :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
+    integer, intent(in)               :: numh(no_u),listhptr(no_u)
+    integer, intent(in)               :: listh(maxnh),indxuo(no_s)
+    real(dp), intent(in)              :: H(maxnh) ! Hamiltonian
+    real(dp), intent(in)              :: S(maxnh) ! Overlap
+    real(dp), intent(in)              :: k(3) ! k-point in [1/Bohr]
+    integer, intent(in)               :: transfer_cell(3) ! The transfer cell directions
+    real(dp), intent(in)              :: xa(3,na_u) ! Atomic coordinates (needed for RemZConnection & RemUCellDistances)
+    integer, intent(in)               :: iaorb(no_u) ! The equivalent atomic index for a given orbital (needed for RemUCellDistances)
+! ***********************
+! * OUTPUT variables    *
+! ***********************
+    complex(dp), pointer, intent(out) :: HkT(:,:),SkT(:,:)
+! ***********************
+! * OPTIONAL variables  *
+! ***********************
+    logical, intent(in), optional :: DUMMY ! Do not supply this, it merely requires the coder
+!                                          ! to use the keyworded arguments!
+    logical, intent(in), optional :: RemUCellDistances
+    integer, intent(in), optional :: RemNFirstOrbitals, RemNLastOrbitals
+
+! ***********************
+! * LOCAL variables     *
+! ***********************
+    real(dp) :: recell(3,3)
+    real(dp) :: xo(3), xijo(3), xc
+    integer :: no_tot
+    real(dp) :: kxij
+    complex(dp) :: cphase
+    integer :: i,j,iuo,iu,juo,iind,ind
+    logical :: l_RemUCellDistances
+    integer :: l_RemNFirstOrbitals, l_RemNLastOrbitals 
+
+    if ( present(DUMMY) ) &
+         call die("You must specify the keyworded arguments &
+         &for set_HS_transfermatrix")
+
+    ! Option collecting
+    l_RemUCellDistances = .false.
+    if ( present(RemUCellDistances) ) &
+         l_RemUCellDistances = RemUCellDistances
+
+    ! Make l_RemNFirstOrbitals contain the number of orbitals
+    ! to be removed from the Hamiltonian in the BEGINNING
+    l_RemNFirstOrbitals = 0
+    if ( present(RemNFirstOrbitals) ) &
+         l_RemNFirstOrbitals = RemNFirstOrbitals
+    ! Make l_RemNLastOrbitals contain the number of orbitals
+    ! to be removed from the Hamiltonian in the END
+    l_RemNLastOrbitals = 0
+    if ( present(RemNLastOrbitals) ) &
+         l_RemNLastOrbitals = RemNLastOrbitals
+    no_tot = no_u - (l_RemNLastOrbitals + l_RemNFirstOrbitals)
+
+
+    if ( associated(HkT) .and. associated(SkT) ) then
+       if ( size(HkT) /= no_tot*no_tot ) then
+          call memory('D','Z',size(HkT)+size(SkT),'set_HS')
+          deallocate(HkT,SkT)
+          nullify(HkT,SkT)
+          allocate(HkT(no_tot,no_tot),SkT(no_tot,no_tot))
+          call memory('A','Z',2*no_tot*no_tot,'set_HS')
+       end if
+    else
+       ! No need to nullify
+       allocate(HkT(no_tot,no_tot),SkT(no_tot,no_tot))
+       call memory('A','Z',2*no_tot*no_tot,'set_HS')
+    end if
+
+    ! Prepare the cell to calculate the index of the atom
+    call reclat(ucell,recell,0) ! Without 2*Pi
+    
+!
+! Setup H,S for this k-point:
+!
+    do juo = 1,no_tot
+       do iuo = 1,no_tot
+          HkT(iuo,juo) = dcmplx(0.d0,0.d0)
+          SkT(iuo,juo) = dcmplx(0.d0,0.d0)
+       end do
+    end do
+
+    xo(:) = 0.0_dp
+
+    setup_HST: if (.not.Gamma ) then
+
+       do iuo = 1,no_tot
+          iu = iuo + l_RemNFirstOrbitals
+          iind = listhptr(iu)
+          do j = 1,numh(iu)
+             ind = iind + j
+             juo = indxuo(listh(ind)) - l_RemNFirstOrbitals
+
+             ! Cycle if we are not in the middle region
+             if ( juo < 1 .or. no_tot < juo ) cycle
+
+             ! Determine the transfer matrix cell
+             xijo(:) = xij(:,ind) - ( &
+                  xa(:,iaorb(juo+l_RemNFirstOrbitals)) - xa(:,iaorb(iu)) &
+                  )
+             xc = sum(xijo(:) * recell(:,1))
+             if ( nint(xc) /= transfer_cell(1) .and. transfer_cell(1) /= TRANSFER_ALL ) cycle
+             xc = sum(xijo(:) * recell(:,2))
+             if ( nint(xc) /= transfer_cell(2) .and. transfer_cell(2) /= TRANSFER_ALL ) cycle
+             xc = sum(xijo(:) * recell(:,3))
+             if ( nint(xc) /= transfer_cell(3) .and. transfer_cell(3) /= TRANSFER_ALL ) cycle
+
+             ! We also wish to remove the connection in
+             ! in the inner cell
+             if ( l_RemUCellDistances ) then
+                xo(1) = xa(1,iaorb(juo + l_RemNFirstOrbitals)) &
+                     -  xa(1,iaorb(iu))
+                xo(2) = xa(2,iaorb(juo + l_RemNFirstOrbitals)) &
+                     -  xa(2,iaorb(iu))
+                xo(3) = xa(3,iaorb(juo + l_RemNFirstOrbitals)) &
+                     -  xa(3,iaorb(iu))
+             end if
+
+             kxij = &
+                  k(1) * (xij(1,ind) - xo(1)) + &
+                  k(2) * (xij(2,ind) - xo(2)) + &
+                  k(3) * (xij(3,ind) - xo(3))
+             cphase = exp(dcmplx(0d0,1d0)*kxij)
+             HkT(iuo,juo) = HkT(iuo,juo)+H(ind)*cphase
+             SkT(iuo,juo) = SkT(iuo,juo)+S(ind)*cphase
+          end do
+       end do
+
+    else setup_HST
+
+       do iuo = 1,no_tot
+          iu = iuo + l_RemNFirstOrbitals
+          iind = listhptr(iu)
+          do j = 1,numh(iu)
+             ind = iind + j
+             juo = listh(ind) - l_RemNFirstOrbitals
+
+             ! Cycle if we are not in the middle region
+             if ( juo < 1 .or. no_tot < juo ) cycle
+
+             ! Determine the transfer matrix cell
+             xijo(:) = xij(:,ind) - ( &
+                  xa(:,iaorb(juo+l_RemNFirstOrbitals)) - xa(:,iaorb(iu)) &
+                  )
+             xc = sum(xijo(:) * recell(:,1))
+             if ( nint(xc) /= transfer_cell(1) .and. transfer_cell(1) /= TRANSFER_ALL ) cycle
+             xc = sum(xijo(:) * recell(:,2))
+             if ( nint(xc) /= transfer_cell(2) .and. transfer_cell(2) /= TRANSFER_ALL ) cycle
+             xc = sum(xijo(:) * recell(:,3))
+             if ( nint(xc) /= transfer_cell(3) .and. transfer_cell(3) /= TRANSFER_ALL ) cycle
+
+             HkT(iuo,juo) = HkT(iuo,juo)+H(ind)
+             SkT(iuo,juo) = SkT(iuo,juo)+S(ind)
+          end do
+       end do
+
+    end if setup_HST
+    
+  end subroutine set_HS_transfermatrix_2d
+
+  subroutine set_HS_available_transfers(Gamma,ucell,na_u,no_u,no_s,maxnh, &
+       xij,numh,listhptr,listh,indxuo,xa,iaorb,transfer_cell)
+    use precision, only : dp
+! ***********************
+! * INPUT variables     *
+! ***********************
+    logical, intent(in)               :: Gamma ! Is it a Gamma calculation?
+    real(dp), intent(in)              :: ucell(3,3) ! The unit cell of system
+    integer, intent(in)               :: na_u ! Unit cell atoms
+    integer, intent(in)               :: no_u ! Unit cell orbitals
+    integer, intent(in)               :: no_s ! Total orbitals
+    integer, intent(in)               :: maxnh ! Hamiltonian size
+    real(dp), intent(in)              :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
+    integer, intent(in)               :: numh(no_u),listhptr(no_u)
+    integer, intent(in)               :: listh(maxnh),indxuo(no_s)
+    real(dp), intent(in)              :: xa(3,na_u) ! Atomic coordinates (needed for RemZConnection & RemUCellDistances)
+    integer, intent(in)               :: iaorb(no_u) ! The equivalent atomic index for a given orbital (needed for RemUCellDistances)
+! ***********************
+! * OUTPUT variables    *
+! ***********************
+    integer, intent(out)              :: transfer_cell(2,3)
+
+! ***********************
+! * LOCAL variables     *
+! ***********************
+    real(dp) :: recell(3,3)
+    real(dp) :: xijo(3), xc
+    integer :: i,j,iuo,iu,juo,iind,ind
+
+    ! Initialize the transfer cell to:
+    transfer_cell(:,:) = 1
+
+    if ( Gamma ) return
+
+    ! Prepare the cell to calculate the index of the atom
+    call reclat(ucell,recell,0) ! Without 2*Pi
+    
+    do iuo = 1 , no_u
+       do j = 1 , numh(iuo)
+          ind = listhptr(iuo) + j
+          juo = indxuo(listh(ind))
+          xijo(:) = xij(:,ind)-(xa(:,iaorb(juo))-xa(:,iaorb(iuo)))
+          ! Loop over directions
+          do i = 1 , 3 
+             ! recell is already without 2*Pi
+             xc = sum(xijo(:) * recell(:,i))
+             transfer_cell(1,i) = min(transfer_cell(1,i),nint(xc))
+             transfer_cell(2,i) = max(transfer_cell(2,i),nint(xc))
+          end do
+       end do
+    end do
+    
+  end subroutine set_HS_available_transfers
 
   ! Routine for removing left right overlaps of certain regions.
   ! Is used to fully remove the connection between left and right

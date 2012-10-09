@@ -289,7 +289,7 @@ siesta: check-siesta what version \
 TS_OBJS= m_ts_global_vars.o m_ts_options.o m_ts_aux_rout.o m_ts_kpoints.o \
          m_ts_iodm.o m_ts_io.o m_ts_scattering.o m_ts_contour.o \
          m_ts_electrode.o m_ts_in_siesta.o m_ts_voltage.o m_ts_gf.o \
-	 ts_do_green.o
+	 ts_do_green.o ts_show_regions.o
 #
 transiesta: FPPFLAGS+=$(DEFS_PREFIX)-DTRANSIESTA 
 transiesta: DEFS+=$(DEFS_PREFIX)-DTRANSIESTA
@@ -544,8 +544,8 @@ m_ts_iodm.o: alloc.o files.o m_mpi_utils.o m_ts_global_vars.o parallel.o
 m_ts_iodm.o: parallelsubs.o precision.o sys.o
 m_ts_kpoints.o: files.o find_kgrid.o minvec.o parallel.o precision.o
 m_ts_kpoints.o: siesta_cml.o siesta_options.o sys.o
-m_ts_options.o: m_fdf_global.o m_ts_global_vars.o parallel.o precision.o
-m_ts_options.o: siesta_options.o sys.o units.o
+m_ts_options.o: m_fdf_global.o m_ts_global_vars.o m_ts_io.o parallel.o
+m_ts_options.o: precision.o siesta_geom.o siesta_options.o sys.o units.o
 m_ts_scattering.o: m_ts_aux_rout.o parallel.o precision.o sys.o units.o
 m_ts_voltage.o: m_ts_options.o mesh.o parallel.o precision.o units.o
 m_wallclock.o: m_walltime.o
@@ -710,6 +710,7 @@ sys.o: parallel.o
 timer.o: m_timer.o sys.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
 ts_do_green.o: m_ts_electrode.o m_ts_gf.o parallel.o precision.o sys.o
+ts_show_regions.o: parallel.o precision.o units.o
 typecell.o: precision.o
 uncell.o: precision.o
 units.o: precision.o

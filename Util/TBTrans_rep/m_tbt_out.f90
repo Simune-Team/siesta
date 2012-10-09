@@ -196,10 +196,10 @@ contains
        do i = ia1, ia2
           if ( i == ia1 + mid ) then
              write(funit,'(a1,3(tr2,f12.7),tr2,a1,tr5,a)') &
-                  marker,xa(:,i),marker,trim(name)
+                  marker,xa(:,i)/Ang,marker,trim(name)
           else
              write(funit,'(a1,3(tr2,f12.7),tr2,a1)') &
-                  marker,xa(:,i),marker
+                  marker,xa(:,i)/Ang,marker
           end if
        end do
        write(funit,'(a)') repeat(marker,46)
@@ -219,19 +219,19 @@ contains
        do i = ia1, ia2
           if ( i == ia1 + mid ) then
              if ( isoa1 <= i .and. i <= isoa2 ) then
-                write(funit,'(tr1,3(tr2,f12.7),tr3,a1,tr5,a)') &
-                     xa(:,i),marker,'Device'
+                write(funit,'(tr1,3(tr2,f12.7),tr3,a1,tr4,a)') &
+                     xa(:,i)/Ang,marker,'Device'
              else
                 write(funit,'(tr1,3(tr2,f12.7),tr8,a)') &
-                     xa(:,i),'Device'
+                     xa(:,i)/Ang,'Device'
              end if
           else
              if ( isoa1 <= i .and. i <= isoa2 ) then
                 write(funit,'(tr1,3(tr2,f12.7),tr3,a1)') &
-                     xa(:,i),marker
+                     xa(:,i)/Ang,marker
              else
                 write(funit,'(tr1,3(tr2,f12.7))') &
-                     xa(:,i)
+                     xa(:,i)/Ang
              end if
           end if
        end do

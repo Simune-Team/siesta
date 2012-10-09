@@ -98,7 +98,7 @@ contains
     integer :: MPIerror
 #endif
 
-#ifdef DEBUG
+#ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE read_Green' )
 #endif
 
@@ -215,7 +215,7 @@ contains
     call MPI_Bcast(wkpar,nkpar,DAT_double,0,MPI_Comm_World,MPIerror)
 #endif
 
-#ifdef DEBUG
+#ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS read_Green' )
 #endif
 
@@ -293,7 +293,7 @@ contains
     real(dp) :: wqbtmp,qbtmp(3), ktmp(3), kpt(3)
     logical :: localErrorGf
 
-#ifdef DEBUG
+#ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE check_Green' )
 #endif
 
@@ -451,7 +451,7 @@ contains
 
     errorGF = localErrorGf
 
-#ifdef DEBUG
+#ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS check_Green' )
 #endif
 

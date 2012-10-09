@@ -226,6 +226,7 @@ c ------------------ Finite Voltage END ------------------
       end if
 
       call timer('dcontour',2)
+
 c ===================================================================
       return
       end subroutine distrcontour
@@ -785,6 +786,7 @@ C
 c=======================================================================
 c BEGIN:
 c=======================================================================
+
       call timer('SUcontour',1)
 C Get Node number
 
@@ -933,6 +935,7 @@ c (iii):
         end if               
 
       call timer('SUcontour',2)
+
 c ===================================================================
       return
       end subroutine setupcontour

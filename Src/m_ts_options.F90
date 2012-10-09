@@ -125,14 +125,14 @@ use parallel, only: IOnode, Nodes
 use m_fdf_global, only: fdf_global_get
 use units, only: eV
 use m_ts_global_vars, only : ts_istep
-use siesta_geom, only : ucell
+use m_ts_io, only : ts_read_TSHS_na
+use siesta_geom, only : ucell, na_u, xa
 #ifdef MPI
 use mpi_siesta, only : MPI_Character, MPI_Comm_World
 #endif
 implicit none
 ! Internal Variables
 character(len=20) :: chars
-logical  :: exist ! Check file existance for files requested
 integer :: i
 #ifdef MPI
 integer :: MPIerror
@@ -141,8 +141,7 @@ integer :: MPIerror
 if (isolve.eq.SOLVE_TRANSI) TSmode = .true.
 
 if (IOnode) then
- write(*,*)
- write(*,'(2a)') 'ts_read_options: ', repeat('*', 62)
+ write(*,'(/,2a)') 'ts_read_options: ', repeat('*', 62)
 end if
 
 !Set ts_istep default
@@ -161,6 +160,9 @@ call fdf_global_get(TriDiag,'TS.TriDiag',TriDiag_def)
 call fdf_global_get(updatedmcr,'TS.UpdateDMCROnly',updatedmcr_def)
 call fdf_global_get(NBufAtL,'TS.BufferAtomsLeft',NBufAtL_def)
 call fdf_global_get(NBufAtR,'TS.BufferAtomsRight',NBufAtR_def)
+if ( NBufAtL < 0 .or. NBufAtR < 0 ) then
+   call die("Buffer atoms must be 0 or a positive integer.")
+end if
 call fdf_global_get(chars,'TS.ChargeCorrection',ChargeCorr_def)
 ChargeCorr = 0
 if ( leqi(chars,'none') ) then
@@ -190,29 +192,36 @@ call fdf_global_get(ReUseGF,'TS.ReUseGF',ReUseGF_def)
 call fdf_global_get(UseVFix,'TS.UseVFix',UseVFix_def)
 call fdf_global_get(ElecValenceBandBot,'TS.CalcElectrodeValenceBandBottom', &
      ElecValenceBandBot_def)
+
 call fdf_global_get(HSFileL,'TS.HSFileLeft',HSFile_def)
 call fdf_global_get(NUsedAtomsL,'TS.NumUsedAtomsLeft',NUsedAtoms_def)
+call check_HSfile('Left',HSFileL,NUsedAtomsL)
 call fdf_global_get(NRepA1L,'TS.ReplicateA1Left',NRepA_def)
 call fdf_global_get(NRepA2L,'TS.ReplicateA2Left',NRepA_def)
 if ( NRepA1L < 1 .or. NRepA2L < 1 ) &
      call die("Repetition in left electrode must be >= 1.")
+
 call fdf_global_get(HSFileR,'TS.HSFileRight',HSFile_def)
 call fdf_global_get(NUsedAtomsR,'TS.NumUsedAtomsRight',NUsedAtoms_def)
+call check_HSfile('Right',HSFileR,NUsedAtomsR)
 call fdf_global_get(NRepA1R,'TS.ReplicateA1Right',NRepA_def)
 call fdf_global_get(NRepA2R,'TS.ReplicateA2Right',NRepA_def)
 if ( NRepA1R < 1 .or. NRepA2R < 1 ) &
      call die("Repetition in right electrode must be >= 1.")
 
 ! Output Used Options in OUT file ....
-if (ionode) then
+if (IOnode) then
  write(*,1) 'ts_read_options: Save H and S matrices        =', savetshs
  write(*,1) 'ts_read_options: Mixing Hamiltonian           =', mixH
-if ( isVolt ) then
-  write(*,6) 'ts_read_options: TranSIESTA Voltage           =', VoltFDF/eV,' Volts'
-else
-  write(*,'(a)') 'ts_read_options: TranSIESTA no voltage applied'
+ write(*,1) 'ts_read_options: Save S and quit (onlyS)      =', onlyS
 end if
- write(*,1) 'ts_read_options: Bulk Values in Elecs         =', USEBULK
+if (ionode .and. TSmode ) then
+if ( isVolt ) then
+ write(*,6) 'ts_read_options: TranSIESTA Voltage           =', VoltFDF/eV,' Volts'
+else
+ write(*,'(a)')'ts_read_options: TranSIESTA no voltage applied'
+end if
+ write(*,1) 'ts_read_options: Bulk Values in Elecs         =', UseBulk
  write(*,1) 'ts_read_options: TriDiag                      =', TriDiag 
  write(*,1) 'ts_read_options: Update DM Contact Reg. only  =', updatedmcr
  write(*,5) 'ts_read_options: N. Buffer At. Left           =', NBufAtL
@@ -225,64 +234,34 @@ end if
  write(*,7) 'ts_read_options: GFEta                        =', GFEta,' Ry'
  write(*,6) 'ts_read_options: Electronic Temperature       =', kT, ' Ry'
  write(*,10)'ts_read_options: Bias Contour Method          =', smethod
- if ( ChargeCorr == 0 ) then
-    write(*,'(a)')'ts_read_options: Will not correct charge fluctuations'
- else if ( ChargeCorr == 1 ) then ! Correct in buffer
-    if ( 0 < NBufAtL .or. 0 < NBufAtR ) then
- write(*,10)'ts_read_options: Charge fluctuation correction=','buffer'
-    else
-       call die('Charge correction can not happen in buffer as no buffer &
-            &atoms exist.')
-    end if
- write(*,8) 'ts_read_options: Charge correction factor     =',ChargeCorr_factor
- end if
- write(*,1) 'ts_read_options: Calc. band bottom in elec.   =', ElecValenceBandBot
- write(*,10)'ts_read_options: GF title                     =', trim(GFTitle)
- write(*,10)'ts_read_options: Left GF File                 =', trim(GFFileL)
- write(*,10)'ts_read_options: Right GF File                =', trim(GFFileR)
- write(*,1) 'ts_read_options: Re-use GF file if exists     =', ReUseGF
- write(*,1) 'ts_read_options: Save S and quit (onlyS)      =', onlyS
-
- if (isolve == 2) then
-  ! Check existance for left Electrode.TSHS
-  inquire(file=TRIM(HSFileL),exist=exist)
-  if ( .not. exist ) then
-     call die("Left electrode file does not exist. &
-          &Please create electrode '"//trim(HSFileL)//"' first.")
-  end if
-  write(*,10)'ts_read_options: Left electrode TSHS file     =', trim(HSFileL)
-  if ( NUsedAtomsL < 0 ) then
-    write(*,10) &
-             'ts_read_options: # atoms used in left elec.   = ', 'ALL'
+if ( ChargeCorr == 0 ) then
+ write(*,'(a)')'ts_read_options: Will not correct charge fluctuations'
+else if ( ChargeCorr == 1 ) then ! Correct in buffer
+  if ( 0 < NBufAtL .or. 0 < NBufAtR ) then
+   write(*,10)'ts_read_options: Charge fluctuation correction=','buffer'
   else
-    write(*,5) &
-             'ts_read_options: # atoms used in left elec.   = ', NUsedAtomsL
+     call die('Charge correction can not happen in buffer as no buffer &
+          &atoms exist.')
   end if
+  write(*,8)'ts_read_options: Charge correction factor     =',ChargeCorr_factor
+end if
+  write(*,1) 'ts_read_options: Calc. band bottom in elec.   =', ElecValenceBandBot
+  write(*,10)'ts_read_options: GF title                     =', trim(GFTitle)
+  write(*,10)'ts_read_options: Left GF File                 =', trim(GFFileL)
+  write(*,10)'ts_read_options: Right GF File                =', trim(GFFileR)
+  write(*,1) 'ts_read_options: Re-use GF file if exists     =', ReUseGF
+  write(*,10)'ts_read_options: Left electrode TSHS file     =', trim(HSFileL)
+  write(*,5) 'ts_read_options: # atoms used in left elec.   = ', NUsedAtomsL
   write(*,'(a,i3,'' X '',i3)') &
              'ts_read_options: Left elec. repetition A1/A2  = ', NRepA1L,NRepA2L
-  ! Check existance for right Electrode.TSHS
-  inquire(file=TRIM(HSFileR),exist=exist)
-  if ( .not. exist ) then
-     call die("Right electrode file does not exist. &
-          &Please create electrode '"//trim(HSFileR)//"' first.")
-  end if
   write(*,10)'ts_read_options: Right electrode TSHS file    =', trim(HSFileR)
-  if ( NUsedAtomsR < 0 ) then
-    write(*,10) &
-             'ts_read_options: # atoms used in right elec.  = ', 'ALL'
-  else
-    write(*,5) &
-             'ts_read_options: # atoms used in right elec.  = ', NUsedAtomsR
-  end if
+  write(*,5) 'ts_read_options: # atoms used in right elec.  = ', NUsedAtomsR
   write(*,'(a,i3,'' X '',i3)') &
              'ts_read_options: Right elec. repetition A1/A2 = ', NRepA1R,NRepA2R
- end if   
-
 end if
 
 if (IOnode) then
- write(*,'(2a)') 'ts_read_options: ', repeat('*', 62)
- write(*,*)
+ write(*,'(2a,/)') 'ts_read_options: ', repeat('*', 62)
 
  write(*,'(3a)') repeat('*',24),' Begin: TS CHECKS AND WARNINGS ',repeat('*',24) 
 
@@ -325,7 +304,6 @@ if (IOnode) then
   end if
 
   write(*,'(3a)') repeat('*',24),' End: TS CHECKS AND WARNINGS ',repeat('*',26) 
-  write(*,*)
 end if
 
 ! The method could have changed... Broad cast method
@@ -333,12 +311,55 @@ end if
   call MPI_BCast(smethod,20,MPI_character,0,MPI_Comm_World,MPIerror)
 #endif
 
+  if ( TSmode ) then
+  ! Print out the region
+     call ts_show_regions(ucell,na_u,xa, &
+          NBufAtL,NUsedAtomsL,NUsedAtomsR,NBufAtR, &
+          NRepA1L,NRepA2L,NRepA1R,NRepA2R)
+  else
+     write(*,*) ! Simply to not have two blank lines in the output!
+  end if
+
 1   format(a,4x,l1)
 5   format(a,i5,a)
 6   format(a,f10.4,a)
 7   format(a,f12.6,a)
 8   format(a,f10.4)
 10  format(a,4x,a)
+
+contains 
+
+  subroutine check_HSfile(LR,HSFile,NUsedAtoms)
+    character(len=*), intent(in) :: LR
+    character(len=*), intent(in) :: HSFile
+    integer, intent(inout) :: NUsedAtoms
+    integer :: tmp_NUsedAtoms
+    logical :: exist
+    if ( TSmode ) then
+! Check existance for left Electrode.TSHS
+       inquire(file=TRIM(HSFile),exist=exist)
+       if ( .not. exist ) then
+          call die(trim(LR)//" electrode file does not exist. &
+               &Please create electrode '"//trim(HSFile)//"' first.")
+       end if
+       call ts_read_TSHS_na(HSFile,tmp_NUsedAtoms)
+       if ( NUsedAtoms < 0 ) then
+          NUsedAtoms = tmp_NUsedAtoms
+       else if ( NUsedAtoms == 0 ) then
+          if(IONode) &
+               write(*,*) "You need at least one atom in the electrode."
+          call die("None atoms requested for electrode calculation.")
+       else if ( tmp_NUsedAtoms < NUsedAtoms ) then
+          if (IONode) then
+             write(*,*) "# of requested atoms is larger than available."
+             write(*,*) "Requested: ",NUsedAtoms
+             write(*,*) "Available: ",tmp_NUsedAtoms
+          end if
+          call die("Error on requested atoms.")
+       end if
+    end if
+  end subroutine check_HSfile
+
 end subroutine read_ts_options
 
 end module m_ts_options

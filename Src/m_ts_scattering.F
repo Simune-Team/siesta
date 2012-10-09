@@ -39,13 +39,11 @@ C ##################################################################
       subroutine getGF_Tri(USEBULK,updatedmcr,VoltFDF,no,NGL,NGR,Hi,Si,
      &     HLL,HRR,ZEnergy,GF,ierr,useTri)
 
-
-C FDN
       use sys, only: die
       use m_ts_aux_rout, only : splittri, collectri, invmat, transpose,
      &                          csolveg, ts_alloc, ts_dealloc
       use precision, only: dp
-C FDN
+
       implicit none 
 
 
@@ -91,13 +89,13 @@ C --------------------------------------------------------------------
 C FDN 
       integer :: allocStat
       complex(dp), dimension(:,:), allocatable ::  
-     &                                         a11,a12,
-     &                                         a21,a22,a23,
-     &                                             a32,a33
+     &                                             a11,a12,
+     &                                             a21,a22,a23,
+     &                                                 a32,a33
       complex(dp), dimension(:,:), allocatable ::
-     &                                         b11,b12,
-     &                                         b21,b22,b23,
-     &                                             b32,b33
+     &                                             b11,b12,
+     &                                             b21,b22,b23,
+     &                                                 b32,b33
       complex(dp), dimension(:,:), allocatable ::      x12
       complex(dp), dimension(:,:), allocatable ::  x21,    x23
       complex(dp), dimension(:,:), allocatable ::      x32
@@ -113,7 +111,7 @@ c=======================================================================
 C BEGIN
 c=======================================================================
 
-#ifdef DEBUG
+#ifdef TRANSIESTA_DEBUG
       call write_debug( 'PRE getGF_Tri' )
 #endif
 
@@ -395,7 +393,7 @@ c
       end if ! .not. useTri
       call timer('GFT',2)  
 
-#ifdef DEBUG
+#ifdef TRANSIESTA_DEBUG
       call write_debug( 'POS getGF_Tri' )
 #endif
      
@@ -423,20 +421,15 @@ C ## Changed to F90 by Jose-Luis Mozos, jlm@kanigo.icmab.es       ##
 C ## Reimplemented expansion of the electrode by:                 ##
 C ##    Nick Papior Andersen, nickpapior@gmail.com                ##
 C ##################################################################
-C version 5. Dec. 2000
-
-C     The original interface was like this
 
       subroutine getSFE(UseBulk,uGF,HAA,SAA,ZEnergy,ikpt,nq,qb,wq,
      &     no_GF,nua,lasto,NA1,NA2,no,SFE,GAMMA,points2read,
      &     errorgs)
 
-! FDN
       use m_ts_aux_rout, only : csolve 
       use precision, only : dp
       use units,     only : Pi
       use parallel,  only : IONode, Node, Nodes
-! FDN
 
 #ifdef MPI
       use mpi_siesta, only : MPI_Bcast, MPI_AllReduce, 
@@ -448,9 +441,7 @@ C     The original interface was like this
 c-----------------------------------------------------------------
       implicit none
 c-----------------------------------------------------------------
-      real(dp) EPS
-      parameter(EPS=1d-7)
-
+      real(dp), parameter :: EPS = 1d-7
  
 c ==================================================================
 c INPUT
@@ -524,7 +515,7 @@ c=======================================================================
 c     BEGIN:
 c=======================================================================
 
-#ifdef DEBUG
+#ifdef TRANSIESTA_DEBUG
       call write_debug( 'PRE getSFE' )
 #endif
 
@@ -828,7 +819,7 @@ c      end do                    !io
 
        call timer('getSFE',2)
 
-#ifdef DEBUG
+#ifdef TRANSIESTA_DEBUG
       call write_debug( 'POS getSFE' )
 #endif
 
@@ -886,7 +877,7 @@ c=======================================================================
 C BEGIN
 c=======================================================================
 
-#ifdef DEBUG
+#ifdef TRANSIESTA_DEBUG
       call write_debug( 'PRE GFGammaGF' )
 #endif
 
@@ -959,7 +950,7 @@ c=======================================================================
 
       call timer('GFGGF',2)
 
-#ifdef DEBUG
+#ifdef TRANSIESTA_DEBUG
       call write_debug( 'POS GFGammaGF' )
 #endif
 
@@ -1023,7 +1014,7 @@ c=======================================================================
 c BEGIN:
 c=======================================================================
 
-#ifdef DEBUG
+#ifdef TRANSIESTA_DEBUG
       call write_debug( 'PRE weightDM' )
 #endif
 
@@ -1103,7 +1094,7 @@ C make an integration error estimate
       call timer('weightDM',2)
 C ====================================================================
 
-#ifdef DEBUG
+#ifdef TRANSIESTA_DEBUG
       call write_debug( 'POS weightDM' )
 #endif
 
@@ -1154,7 +1145,7 @@ c=======================================================================
 c BEGIN:
 c=======================================================================
 
-#ifdef DEBUG
+#ifdef TRANSIESTA_DEBUG
       call write_debug( 'PRE weightDMC' )
 #endif
 
@@ -1228,7 +1219,7 @@ C make an integration error estimate
 
       call timer('weightDMC',2)
 
-#ifdef DEBUG
+#ifdef TRANSIESTA_DEBUG
       call write_debug( 'POS weightDMC' )
 #endif
 

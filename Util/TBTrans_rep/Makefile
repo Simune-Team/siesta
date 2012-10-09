@@ -6,8 +6,9 @@
 #
 # Please see note about Linear-Algebra libraries below
 #
+
 default: what tbtrans 
-#
+
 VPATH:=$(shell pwd)/../../Src
 OBJDIR=Obj
 ARCH_MAKE=../../$(OBJDIR)/arch.make
@@ -24,7 +25,7 @@ SIESTA_SYS=${SIESTA_ARCH}
 # Uncomment the following line for debugging support
 #
 #FFLAGS=$(FFLAGS_DEBUG) -g
-#
+
 what:
 	@echo
 	@echo "Compilation architecture to be used:  $(SIESTA_SYS)"
@@ -34,6 +35,7 @@ what:
 	@echo
 
 SYSOBJ=$(SYS).o
+
 # Tbtrans:
 MOD_TOBJS=  m_tbt_options.o m_tbt_kpoints.o m_tbt_out.o m_tbt_read_tshs.o ts_do_green.o \
 	m_lowdin.o
@@ -43,7 +45,7 @@ SIESTA_OBJS= precision.o sys.o m_io.o alloc.o  memoryinfo.o memory.o pxf.o \
              m_fdf_global.o paste.o reclat.o idiag.o minvec.o \
              parallel.o io.o files.o cellsubs.o sorting.o m_hs_matrix.o \
 	     kpoint_convert.o timestamp.o m_wallclock.o cdiag.o m_spin.o \
-	     zheevds.o \
+	     zheevds.o debugmpi.o \
 	     m_ts_contour.o m_ts_gf.o m_ts_scattering.o \
 	     m_ts_aux_rout.o m_ts_io.o m_ts_electrode.o
 
@@ -51,9 +53,8 @@ TBTOBJS= $(SIESTA_OBJS) $(MOD_TOBJS) $(SYSOBJ) $(EXTRA) \
          tbtrans.o transmission.o tbt_init.o tbt_reinit.o \
 	 coop.o tt_eig.o atompdos.o
 
-#
+
 # Interfaces to libraries
-#
 FDF=libfdf.a
 FDF_MAKEFILE=$(VPATH)/fdf/makefile
 FDF_INCFLAGS:=-I $(VPATH)/fdf -I../MPI $(INCFLAGS)
@@ -61,22 +62,22 @@ $(FDF):
 	(mkdir -p fdf ; cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/fdf" \
                           "ARCH_MAKE=../$(ARCH_MAKE)" \
                           "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
-#
+
 INCFLAGS:=$(INCFLAGS)
-#
+
 MPI_MAKEFILE=$(VPATH)/MPI/Makefile
 $(MPI_INTERFACE): 
 	(mkdir -p MPI; cd MPI ; $(MAKE) -f $(MPI_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/MPI" \
                           "MAKEFILES=$(MPI_MAKEFILE)" "ARCH_MAKE=../$(ARCH_MAKE)" \
                           "FFLAGS=$(FFLAGS)" module_built)
-#
+
 LINALG_MAKEFILE=$(VPATH)/Libs/makefile
 LINALG_INCFLAGS:=-I $(VPATH)/Libs $(INCFLAGS)
 $(LINALG): 
 	(mkdir -p Libs; cd Libs ; $(MAKE) -f $(LINALG_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/Libs" \
                           "ARCH_MAKE=../$(ARCH_MAKE)" \
                           "INCFLAGS=$(LINALG_INCFLAGS)" "FFLAGS=$(FFLAGS)" $(LINALG))
-#
+
 tbtrans: FPPFLAGS+=$(DEFS_PREFIX)-DTBTRANS
 tbtrans: DEFS+=$(DEFS_PREFIX)-DTBTRANS
 tbtrans: $(MPI_INTERFACE) $(TBTOBJS) $(FDF) $(SYSOBJ)  $(LINALG)
@@ -85,7 +86,6 @@ tbtrans: $(MPI_INTERFACE) $(TBTOBJS) $(FDF) $(SYSOBJ)  $(LINALG)
               $(FDF) $(LIBS) $(LINALG)  || echo "***Please see top of Makefile"
 #	@(cd ../../bin ; rm -f tsScan ; ln -s tbtrans tsScan)
 
-#
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
 	rm -f tbtrans *.o *.a *.mod
@@ -93,9 +93,7 @@ clean:
 	rm -rf ./MPI
 	rm -rf ./Libs
 
-#
 # Dependencies
-# 
 dep:
 	sfmakedepend --depend=obj  --modext=o \
           $(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90 \
@@ -324,8 +322,8 @@ m_ts_iodm.o: alloc.o files.o m_mpi_utils.o m_ts_global_vars.o parallel.o
 m_ts_iodm.o: parallelsubs.o precision.o sys.o
 m_ts_kpoints.o: files.o find_kgrid.o minvec.o parallel.o precision.o
 m_ts_kpoints.o: siesta_cml.o siesta_options.o sys.o
-m_ts_options.o: m_fdf_global.o m_ts_global_vars.o parallel.o precision.o
-m_ts_options.o: siesta_options.o sys.o units.o
+m_ts_options.o: m_fdf_global.o m_ts_global_vars.o m_ts_io.o parallel.o
+m_ts_options.o: precision.o siesta_geom.o siesta_options.o sys.o units.o
 m_ts_scattering.o: m_ts_aux_rout.o parallel.o precision.o sys.o units.o
 m_ts_voltage.o: m_ts_options.o mesh.o parallel.o precision.o units.o
 m_wallclock.o: m_walltime.o
@@ -401,7 +399,6 @@ propor.o: precision.o sys.o
 proximity_check.o: m_ts_options.o mneighb.o parallel.o precision.o
 proximity_check.o: siesta_geom.o siesta_options.o
 pseudopotential.o: alloc.o atom_options.o flib_spline.o precision.o sys.o
-
 radfft.o: alloc.o bessph.o m_recipes.o precision.o
 radial.o: alloc.o precision.o xml.o
 rdiag.o: alloc.o m_diagon.o memoryinfo.o parallel.o precision.o sys.o
@@ -491,6 +488,7 @@ sys.o: parallel.o
 timer.o: m_timer.o sys.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
 ts_do_green.o: m_ts_electrode.o m_ts_gf.o parallel.o precision.o sys.o
+ts_show_regions.o: parallel.o precision.o units.o
 typecell.o: precision.o
 uncell.o: precision.o
 units.o: precision.o
@@ -521,8 +519,8 @@ coop.o: m_tbt_out.o parallel.o precision.o sys.o units.o
 m_lowdin.o: precision.o
 m_tbt_iotshs.o: m_tbt_kpoints.o parallel.o precision.o sys.o
 m_tbt_kpoints.o: alloc.o minvec.o parallel.o precision.o sys.o units.o
-m_tbt_options.o: files.o m_fdf_global.o memoryinfo.o parallel.o precision.o
-m_tbt_options.o: sys.o units.o
+m_tbt_options.o: files.o m_fdf_global.o m_ts_io.o memoryinfo.o parallel.o
+m_tbt_options.o: precision.o sys.o units.o
 m_tbt_out.o: parallel.o precision.o units.o
 m_tbt_read_tshs.o: m_ts_io.o parallel.o precision.o
 tbt_init.o: alloc.o files.o m_spin.o m_tbt_kpoints.o m_tbt_options.o m_timer.o

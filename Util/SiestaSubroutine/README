@@ -58,6 +58,10 @@ and one or more siesta processes. To use the package, you must:
    might hang. The compilation of fsiesta.f90 in the main directory should
    automate this, but you should check.
 
+General notice about compilers:
+1) GCC have removed support for piped files since version 4.7.0. Thus if 
+   using gfortran, you need to have 4.6.x. or older.
+
 ! Subroutines usage:
 !   call siesta_launch( label, nnodes )
 !     character(len=*),intent(in) :: label  : Name of siesta process

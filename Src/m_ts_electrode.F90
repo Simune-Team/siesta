@@ -34,7 +34,6 @@ module m_ts_electrode
 
 contains
 
-
   ! Calculates the surface Green's function for the electrodes
   ! Handles both the left and right one
   subroutine surface_Green(tjob,nv,Zenergy,h00,s00,h01,s01, &
@@ -84,6 +83,10 @@ contains
     integer, dimension(:), allocatable :: ipvt
     complex(dp), dimension(:), allocatable :: &
          rh,rh1,rh3,alpha,beta,ab,ba,gb,gs2
+
+#ifdef TRANSIESTA_DEBUG
+      call write_debug( 'PRE surface_Green' )
+#endif
 
 
     allocate(ipvt(nv))
@@ -353,6 +356,10 @@ contains
     deallocate(ba,ab)
     deallocate(gb,gs2)
 
+#ifdef TRANSIESTA_DEBUG
+      call write_debug( 'POS surface_Green' )
+#endif
+
   end subroutine surface_Green
 
 !------------------------------------------------------------------------
@@ -405,7 +412,7 @@ contains
     real(dp),dimension(3,nkpnt),intent(in) :: kpoint ! k-points
     real(dp),dimension(nkpnt),intent(in) :: kweight ! weights of kpoints
     integer, intent(in)            :: NBufAt,NA1,NA2 ! Buffer/Rep a1/Rep a2
-    integer, intent(inout)         :: NUsedAtoms ! Needs update here
+    integer, intent(in)            :: NUsedAtoms ! Needs update here
     integer, intent(in)            :: nua ! Full system count of atoms in unit cell
     real(dp), dimension(3,3)       :: ucell ! The unit cell of the CONTACT
     real(dp), intent(in)           :: xa(3,nua) ! Coordinates in the system for the TranSIESTA routine
@@ -468,7 +475,7 @@ contains
     integer, allocatable :: reqs(:)
 #endif
     
-#ifdef DEBUG
+#ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE create_Green' )
 #endif
 
@@ -897,7 +904,7 @@ contains
 
     call timer('genGreen',2)
 
-#ifdef DEBUG
+#ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS create_Green' )
 #endif
     
@@ -939,7 +946,7 @@ contains
 ! * INPUT variables     *
 ! ***********************
     character(len=1)     :: tElec   ! 'L' for Left electrode, 'R' for right
-    integer, intent(inout) :: NUsedAtoms ! The number of atoms used...
+    integer, intent(in)  :: NUsedAtoms ! The number of atoms used...
     integer, intent(in)  :: nua_sys ! Full system count of atoms in unit cell
     real(dp), intent(in) :: xa_sys(3,nua_sys) ! Coordinates in the system for the TranSIESTA routine
     integer, intent(in)  :: nspin_sys ! spin in system
@@ -991,7 +998,7 @@ contains
     real(dp), parameter :: EPS = 1.0d-4
 !=======================================================================
 
-#ifdef DEBUG
+#ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE init_elec_HS' )
 #endif
 
@@ -1113,20 +1120,13 @@ contains
     call MPI_Bcast(S,maxnh,DAT_Double,0, MPI_Comm_World,MPIerror)
 #endif
 
-    ! Correct the number of atoms used
-    ! TODO, move this to options, read in electrode and only retreive nua_local
-    if ( NUsedAtoms < 0 ) then
-       NUsedAtoms = nua
-    else if ( NUsedAtoms == 0 ) then
-       write(*,*) "You need at least one atom in the electrode."
-       call die("None atoms requested for electrode calculation.")
-    else
-       if ( NUsedAtoms > nua ) then
-          write(*,*) "# of requested atoms is larger than available."
-          write(*,*) "Requested: ",NUsedAtoms
-          write(*,*) "Available: ",nua
-          call die("Error on requested atoms.")
-       end if
+
+    ! Do a recheck if the electrode file has been overwritted or??
+    if ( NUsedAtoms > nua ) then
+       write(*,*) "# of requested atoms is larger than available."
+       write(*,*) "Requested: ",NUsedAtoms
+       write(*,*) "Available: ",nua
+       call die("Error on requested atoms.")
     end if
 
 
@@ -1269,7 +1269,7 @@ contains
     call memory('D','D',3*nua,'elec_HS') 
     deallocate(xa)
 
-#ifdef DEBUG
+#ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS init_elec_HS' )
 #endif
 
@@ -1315,7 +1315,7 @@ contains
     complex(dp) :: cphase
     integer :: i,j,iuo,juo,ind
 
-#ifdef DEBUG
+#ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE elec_HS_Transfer' )
 #endif
 
@@ -1419,7 +1419,7 @@ contains
        Hk_T(i) = Hk_T(i) - Ef*Sk_T(i)
     enddo
 
-#ifdef DEBUG
+#ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS elec_HS_Transfer' )
 #endif
 

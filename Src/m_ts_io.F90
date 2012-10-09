@@ -4,16 +4,58 @@ module m_ts_io
 !
 !=============================================================================
 ! CONTAINS:
-!          1) ts_iohs
+!          1) ts_read_TSHS_na
+!          2) ts_iohs
 
 
   implicit none
 
   public :: ts_iohs
+  public :: ts_read_TSHS_na
 
   private
 
 contains
+
+  ! Reads in the number of atoms in the electrode. This is for easy operation
+  ! In the options reading phase. We need the size of the electrodes to determine 
+  ! the number of atoms in the electrode.
+  subroutine ts_read_TSHS_na(TSHS,na_u)
+    use parallel, only : IONode
+#ifdef MPI
+    use mpi_siesta
+#endif
+! ***********************
+! * INPUT variables     *
+! ***********************
+    character(len=200), intent(in) :: TSHS
+
+! ***********************
+! * OUTPUT variables    *
+! ***********************    
+    integer, intent(out)           :: na_u
+
+! ***********************
+! * LOCAL variables     *
+! ***********************
+    integer :: uTSHS,tmp(4)
+#ifdef MPI
+    integer :: MPIerror
+#endif
+    
+    if ( IONode ) then
+       call io_assign(uTSHS)
+       open(file=TSHS,unit=uTSHS,form='unformatted')
+       read(uTSHS) na_u, tmp(1:4) !na_u, no_u, no_s, Enspin, maxnh
+       call io_close(uTSHS)
+    end if
+
+#ifdef MPI
+    call MPI_Bcast(na_u,1,MPI_INTEGER,0,MPI_Comm_World,MPIerror)
+#endif
+
+  end subroutine ts_read_TSHS_na
+
 
 ! 
 ! This file is part of the SIESTA package.
@@ -153,6 +195,11 @@ contains
 ! Aux Variables
     integer :: i, j
 ! TSS End
+
+#ifdef TRANSIESTA_DEBUG
+    call write_debug( 'PRE ts_io' )
+#endif
+
     lcheck_kcell = .true.
     if ( present(check_kcell) ) then
        lcheck_kcell = check_kcell
@@ -601,6 +648,10 @@ contains
        call die("ts_iohs have not been given a correct task: "&
             //trim(task)//".")
     endif
+
+#ifdef TRANSIESTA_DEBUG
+    call write_debug( 'POS ts_io' )
+#endif
 
   end subroutine ts_iohs
 

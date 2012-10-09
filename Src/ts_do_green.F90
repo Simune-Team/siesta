@@ -31,7 +31,7 @@ subroutine ts_do_Green(tElec, HSFile, GFFile, GFTitle, &
   real(dp),dimension(3,nkpnt),intent(in) :: kpoint ! k-points
   real(dp),dimension(nkpnt),intent(in) :: kweight ! weights of kpoints
   integer, intent(in)            :: NBufAt,NA1,NA2 ! Buffer/Rep a1/Rep a2
-  integer, intent(inout)         :: NUsedAtoms ! Needs update here
+  integer, intent(in)            :: NUsedAtoms ! Needs update here
   integer, intent(in)            :: nua ! Full system count of atoms in unit cell
   real(dp), dimension(3,3)       :: ucell ! The unit cell of the CONTACT
   real(dp), intent(in)           :: xa(3,nua) ! Coordinates in the system for the TranSIESTA routine
@@ -56,7 +56,7 @@ subroutine ts_do_Green(tElec, HSFile, GFFile, GFTitle, &
   integer :: MPIerror
 #endif
 
-#ifdef DEBUG
+#ifdef TRANSIESTA_DEBUG
   call write_debug( 'PRE do_Green' )
 #endif
 
@@ -93,13 +93,21 @@ subroutine ts_do_Green(tElec, HSFile, GFFile, GFTitle, &
   call MPI_Bcast(no_GF,1,MPI_integer,0,MPI_Comm_World,MPIerror)
 #endif
 
+  ! Do a quick check against the NUsedAtoms (NUsedAtoms == nua_GF)
+  if ( nua_GF /= NUsedAtoms .and. IONode ) then
+     write(*,*) "Error in Green's function file."
+     write(*,*) "Requested used atoms does not match that found in the GF file."
+  end if
+  errorGF = errorGF .or. nua_GF /= NUsedAtoms
+
+
 !     Check the error in the GF file
 #ifdef MPI
   call MPI_Bcast(errorGF,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
 #endif
-  if ( errorGF ) call die("Error in GFfile: "//trim(GFFile))
+  if ( errorGF ) call die("Error in GFfile: "//trim(GFFile)//". Please delete")
 
-#ifdef DEBUG
+#ifdef TRANSIESTA_DEBUG
   call write_debug( 'POS do_Green' )
 #endif
 

@@ -75,7 +75,7 @@ program tbtrans
   use m_tbt_options, only : GFTitle
   use m_tbt_options, only : NEn, Emin, Emax, NeigCh
   use m_tbt_options, only : IsoAt1, IsoAt2
-  use m_tbt_options, only : COOPCurve, AlignScat, CalcAtomPDOS
+  use m_tbt_options, only : CalcCOOP, AlignScat, CalcAtomPDOS
 
   use m_tbt_kpoints, only : siesta_Gamma
   use m_tbt_kpoints, only : Gamma, spiral
@@ -283,6 +283,24 @@ program tbtrans
        H, S, &
        siesta_Gamma, Ef)
   
+  ! Write out system information for tbtrans
+  if ( IONode ) then
+     write(*,'(a)') 'Atomic coordinates and regions (Ang):'
+     if ( NBufAtL > 0 ) &
+        call out_REGION(6,na_u,xa,1, NBufAtL, 'Left buffer','/')
+     call out_REGION(6,na_u,xa,NBufAtL+1,NBufAtL+NUsedAtomsL*NRepA1L*NRepA2L, &
+          'Left electrode','#')
+     call out_DEVICE(6,na_u,xa,NBufAtL+NUsedAtomsL*NRepA1L*NRepA2L+1, &
+          na_u-NBufAtR-NUsedAtomsR*NRepA1R*NRepA2R, &
+          IsoAt1,IsoAt2,'*')
+     call out_REGION(6,na_u,xa,na_u-NBufAtR-NUsedAtomsR*NRepA1R*NRepA2R+1, &
+          na_u-NBufAtR, 'Right electrode','#')
+     if ( NBufAtR > 0 ) &
+          call out_REGION(6,na_u,xa,na_u-NBufAtR+1, na_u, 'Right buffer','/')
+     write(*,*) ''
+  end if
+
+  
 ! Now we can initialize the k-points....
   call setup_tbt_kpoint_grid(ucell)
 
@@ -450,17 +468,6 @@ program tbtrans
 ! # Find the isolated region in terms of orbitals
 ! #
 
-  if ( IsoAt1 < 1 ) IsoAt1 = 1    + NBufAtL + nuaL
-  if ( IsoAt1 < 1 + NBufAtL + nuaL ) then
-     call die("Requested PDOS 1 atom is outside of contact region. &
-          &Please choose an atom within the device.")
-  end if
-  if ( IsoAt2 < 1 ) IsoAt2 = na_u - NBufAtR - nuaR
-  if ( IsoAt2 > na_u - NBufAtR - nuaR ) then
-     call die("Requested PDOS 2 atom is outside of contact region. &
-          &Please choose an atom within the device.")
-  end if
-
 ! Retrive orbital in the CONTACT
   Isoo1 = lasto(IsoAt1-1) + 1 ! Orbital in full CONTACT
   Isoo2 = lasto(IsoAt2)       ! Orbital in full CONTACT
@@ -470,21 +477,6 @@ program tbtrans
   Isoo2D = Isoo2C - noL       ! Orbital in DEVICE
   Isoo = Isoo2 - Isoo1 + 1
   
-
-  ! Write out system information
-  if ( IONode ) then
-     write(*,'(a)') 'Atomic coordinates and regions (Ang):'
-     if ( NBufAtL > 0 ) &
-        call out_REGION(6,na_u,xa,1, NBufAtL, 'Left buffer','#')
-     call out_REGION(6,na_u,xa,NBufAtL+1,NBufAtL+nuaL, 'Left electrode','-')
-     call out_DEVICE(6,na_u,xa,NBufAtL+nuaL+1,na_u-NBufAtR-nuaR, &
-          IsoAt1,IsoAt2,'*')
-     call out_REGION(6,na_u,xa,na_u-NBufAtR-nuaR+1,na_u-NBufAtR, 'Right electrode','-')
-     if ( NBufAtR > 0 ) &
-          call out_REGION(6,na_u,xa,na_u-NBufAtR+1, na_u, 'Right buffer','#')
-     write(*,*) ''
-  end if
-
   if (IOnode) then
      write(*,*) repeat('=',62) 
      write(*,'(a30,i4,a1,i4,a1)') &
@@ -519,13 +511,13 @@ program tbtrans
      open(file=GFFileR,unit=uGFR,form='unformatted')
   end if
 
-! Left
+! Left (notice that nuaL_GF should equal NUsedAtomsL)
   call read_Green(uGFL,EfermiL,nkpnt,NEn,nuaL_GF, &
        NRepA1L,NRepA2L,noL_GF,nspin, &
        nkparL,kparL,wkparL, &
        nqL,wqL,qLb)
 
-! Right
+! Right (notice that nuaR_GF should equal NUsedAtomsR)
   call read_Green(uGFR,EfermiR,nkpnt,NEn,nuaR_GF, &
        NRepA1R,NRepA2R,noR_GF,nspin, &
        nkparR,kparR,wkparR, &
@@ -654,7 +646,7 @@ program tbtrans
      call create_file(slabel,'IEIG',ispin,nspin,uIeig)
 
      
-     if ( COOPCurve ) then
+     if ( CalcCOOP ) then
         call create_file(slabel,'COOP',ispin,nspin,uC)
         call create_file(slabel,'COOPL',ispin,nspin,uCL)
         call create_file(slabel,'COOPR',ispin,nspin,uCR)
@@ -691,7 +683,7 @@ program tbtrans
         end if
         call out_kpt_header(uIeig,ikpt,kpt,wkpt,ucell)
 
-        if ( COOPCurve ) then
+        if ( CalcCOOP ) then
            call out_kpt_header(uC,ikpt,kpt,wkpt,ucell)
            call out_kpt_header(uCL,ikpt,kpt,wkpt,ucell)
            call out_kpt_header(uCR,ikpt,kpt,wkpt,ucell)
@@ -818,14 +810,6 @@ program tbtrans
               end do
            end do
 
-! Isn't the PDOS calculated as this:
-!           PDOS = 0.0_dp
-!           do j = Isoo1D , Isoo2D
-!              do i = Isoo1D , Isoo2D
-!                 PDOS = PDOS - sF/Pi*dimag(Sk_D(i,j)*GF(i,j))
-!              end do
-!           end do
-
 ! Find the "excluded" DOS and subtract from TotDOS
            PDOS = 0.0_dp
            do j = 1 , Isoo1D - 1
@@ -886,7 +870,7 @@ program tbtrans
 #endif
 
            ! Do the COOP curve
-           if ( COOPCurve ) then
+           if ( CalcCOOP ) then
               call COOP(uC,uCL,uCR, &
                    IsoAt1,IsoAt2, &
                    noBufL,noL,noD,nspin, &
@@ -1009,7 +993,7 @@ program tbtrans
         end if
         call io_close(uIeig)
         
-        if ( COOPCurve ) then
+        if ( CalcCOOP ) then
            call io_close(uC)
            call io_close(uCL)
            call io_close(uCR)
