@@ -4,7 +4,7 @@
 !
 !=============================================================================
 ! CONTAINS:
-!          1) getGF_Tri
+!          1) getGF
 !          2) getSFE
 !          3) GFGammaGF
 !          4) weightDM
@@ -12,7 +12,7 @@
 !          6) get_scat_region
       implicit none
 
-      public :: getSFE, getGF_Tri, GFGammaGF
+      public :: getSFE, getGF, GFGammaGF
       public :: weightDM, weightDMC
       public :: get_scat_region
 
@@ -36,7 +36,7 @@ C ##                                                              ##
 C ##  Modified by F. D. Novaes                                    ##
 C ##################################################################
 
-      subroutine getGF_Tri(USEBULK,updatedmcr,VoltFDF,no,NGL,NGR,Hi,Si,
+      subroutine getGF(USEBULK,updatedmcr,VoltFDF,no,NGL,NGR,Hi,Si,
      &     HLL,HRR,ZEnergy,GF,ierr,useTri)
 
       use sys, only: die
@@ -112,7 +112,7 @@ C BEGIN
 c=======================================================================
 
 #ifdef TRANSIESTA_DEBUG
-      call write_debug( 'PRE getGF_Tri' )
+      call write_debug( 'PRE getGF' )
 #endif
 
       call timer('GFT',1) 
@@ -126,12 +126,9 @@ c ================================================================
 ! integration scheme, where both L and R electrodes are used as references.
       contactGFonly = updatedmcr .and. (voltfdf == 0.d0)      
 
-      if(.not.USEBULK) write(6,*) 
-     &  "WARNING: Tridiag only works for USEBULK for finite bias!"
-
 c Setup full H (this part will be changed later..)
 
-      call ts_alloc(H,no*no,"getGF_Tri")
+      call ts_alloc(H,no*no,"getGF")
  
 c
 c     Contact z*S-H without self-energies:
@@ -194,16 +191,16 @@ c
       if ( .not. useTri) then
 ! Invert directly
          allocate(ipvt(no),stat=allocStat)
-         if(allocStat /=0) call die("Could not allocate in getGF_Tri") 
-         call memory('A','I',size(ipvt),"getGF_Tri")      
+         if(allocStat /=0) call die("Could not allocate in getGF") 
+         call memory('A','I',size(ipvt),"getGF")      
 
          call zgesv(no,no,H,no,ipvt,GF,no,ierr)            
 
-         call ts_dealloc(H,"getGF_Tri")
+         call ts_dealloc(H,"getGF")
  
-         call memory('D','I',size(ipvt),"getGF_Tri")
+         call memory('D','I',size(ipvt),"getGF")
          deallocate(ipvt,stat=allocStat)
-         if(allocStat /=0) call die("Could not deallocate in getGF_Tri")
+         if(allocStat /=0) call die("Could not deallocate in getGF")
 
       else
 
@@ -215,18 +212,18 @@ c allocate:
       n2 = no - (NGL+NGR)
       n3 = NGR
               
-      call ts_alloc(a11,n1,n1,"getGF_Tri")
-      call ts_alloc(a12,n1,n2,"getGF_Tri")
-      call ts_alloc(a21,n2,n1,"getGF_Tri")
-      call ts_alloc(a22,n2,n2,"getGF_Tri")
-      call ts_alloc(a23,n2,n3,"getGF_Tri")
-      call ts_alloc(a32,n3,n2,"getGF_Tri")
-      call ts_alloc(a33,n3,n3,"getGF_Tri")
+      call ts_alloc(a11,n1,n1,"getGF")
+      call ts_alloc(a12,n1,n2,"getGF")
+      call ts_alloc(a21,n2,n1,"getGF")
+      call ts_alloc(a22,n2,n2,"getGF")
+      call ts_alloc(a23,n2,n3,"getGF")
+      call ts_alloc(a32,n3,n2,"getGF")
+      call ts_alloc(a33,n3,n3,"getGF")
       
       call splittri(n1,n2,n3,H,a11,a12,a21,a22,a23,a32,a33)
-      call memory('D','Z',size(H),"getGF_Tri")
+      call memory('D','Z',size(H),"getGF")
       deallocate(H,stat=allocStat)
-      if(allocStat /=0) call die("Could not deallocate in getGF_Tri")
+      if(allocStat /=0) call die("Could not deallocate in getGF")
       
       
 
@@ -236,25 +233,25 @@ c====================================================================
       
 
 c     inv(a11) -> store in b11
-      call ts_alloc(b11,n1,n1,"getGF_Tri")
+      call ts_alloc(b11,n1,n1,"getGF")
       call invmat(n1,a11,b11,ierr)
-      call ts_dealloc(a11,"getGF_Tri")
+      call ts_dealloc(a11,"getGF")
       
 
 c     inv(a33) -> store in b33
-      call ts_alloc(b33,n3,n3,"getGF_Tri")
+      call ts_alloc(b33,n3,n3,"getGF")
       call invmat(n3,a33,b33,ierr)
-      call ts_dealloc(a33,"getGF_Tri")
+      call ts_dealloc(a33,"getGF")
       
 
 c     x12 = inv(a11).a12 
-      call ts_alloc(x12,n1,n2,"getGF_Tri")
+      call ts_alloc(x12,n1,n2,"getGF")
       a=dcmplx(1.d0,0.d0)
       b=dcmplx(0.d0,0.d0) 
       call zgemm('N','N', n1, n2, n1 ,a ,b11, n1, a12,
      &     n1, b, x12, n1)     
-      call ts_dealloc(a12,"getGF_Tri")
-      if(contactGFonly) call ts_dealloc(b11,"getGF_Tri")
+      call ts_dealloc(a12,"getGF")
+      if(contactGFonly) call ts_dealloc(b11,"getGF")
       
 
 c     a22 - a21.x12 --> a22
@@ -263,18 +260,18 @@ c     a22 - a21.x12 --> a22
       call zgemm('N','N', n2, n2, n1 ,a ,a21, n2, x12,
      &  n1, b, a22, n2)      
       if(contactGFonly) then
-         call ts_dealloc(x12,"getGF_Tri")
-         call ts_dealloc(a21,"getGF_Tri")
+         call ts_dealloc(x12,"getGF")
+         call ts_dealloc(a21,"getGF")
       end if
       
 c     x32 = inv(a33).a32
-      call ts_alloc(x32,n3,n2,"getGF_Tri")
+      call ts_alloc(x32,n3,n2,"getGF")
       a=dcmplx(1.d0,0.d0)
       b=dcmplx(0.d0,0.d0) 
       call zgemm('N','N', n3, n2, n3 ,a ,b33, n3, a32,
      &     n3, b, x32, n3)   
-      call ts_dealloc(a32,"getGF_Tri")
-      if(contactGFonly) call ts_dealloc(b33,"getGF_Tri")
+      call ts_dealloc(a32,"getGF")
+      if(contactGFonly) call ts_dealloc(b33,"getGF")
        
 
 c     a22 - a23.x32 --> a22
@@ -283,41 +280,41 @@ c     a22 - a23.x32 --> a22
       call zgemm('N','N', n2, n2, n3 ,a ,a23, n2, x32,
      &  n3, b, a22, n2)
       if(contactGFonly) then
-         call ts_dealloc(x32,"getGF_Tri")
-         call ts_dealloc(a23,"getGF_Tri")
+         call ts_dealloc(x32,"getGF")
+         call ts_dealloc(a23,"getGF")
       end if      
       
 c now a22 contains (a22 - a21.x12 - a23.x32) 
 
 c b22 = inv(a22 - a21.x12 - a23.x32) 
-      call ts_alloc(b22,n2,n2,"getGF_Tri")
+      call ts_alloc(b22,n2,n2,"getGF")
       call invmat(n2,a22,b22,ierr)   ! now we've got b22
-      call ts_dealloc(a22,"getGF_Tri")
+      call ts_dealloc(a22,"getGF")
 
       
       if(.not.contactGFonly) then
          
 c  b12 = -x12.b22, b21 = b12^T:
-         call ts_alloc(b12,n1,n2,"getGF_Tri")
+         call ts_alloc(b12,n1,n2,"getGF")
          a=dcmplx(-1.d0,0.d0)
          b=dcmplx(0.d0,0.d0) 
          call zgemm('N','N', n1 , n2 , n2 ,a ,x12, n1, b22,
      &     n2, b, b12, n1)      ! got b12
-         call ts_dealloc(x12,"getGF_Tri")
+         call ts_dealloc(x12,"getGF")
          
 C FDN
 C      call transpose(b12,n1,n2,b21) ! got b21
 C b21 = -b22.a21.inv(a11)
 C  a21.inv(a11) --> x21
-         call ts_alloc(x21,n2,n1,"getGF_Tri")
+         call ts_alloc(x21,n2,n1,"getGF")
          a=dcmplx(1.d0,0.d0)
          b=dcmplx(0.d0,0.d0) 
          call zgemm('N','N', n2, n1, n1 ,a ,a21, n2, b11, 
      &     n1, b, x21, n2)
-         call ts_dealloc(a21,"getGF_Tri")
+         call ts_dealloc(a21,"getGF")
          
 ! b21 = -b22.x21
-         call ts_alloc(b21,n2,n1,"getGF_Tri")
+         call ts_alloc(b21,n2,n1,"getGF")
          a=dcmplx(-1.d0,0.d0)
          b=dcmplx(0.d0,0.d0) 
          call zgemm('N','N', n2 , n1 , n2 ,a ,b22, n2, x21, 
@@ -330,31 +327,31 @@ C  a21.inv(a11) --> x21
          b=dcmplx(1.d0,0.d0) 
          call zgemm('N','N', n1 , n1 , n2 ,a ,b12, n1, x21, 
      &     n2, b, b11, n1)
-         call ts_dealloc(x21,"getGF_Tri")
+         call ts_dealloc(x21,"getGF")
 C FDN 
  
 
 c  b32 = -x32.b22, b23 = b32^T:
-         call ts_alloc(b32,n3,n2,"getGF_Tri")
+         call ts_alloc(b32,n3,n2,"getGF")
          a=dcmplx(-1.d0,0.d0)
          b=dcmplx(0.d0,0.d0) 
          call zgemm('N','N', n3 , n2 , n2 ,a ,x32, n3, b22,
      &     n2, b, b32, n3)      ! got b32  
-         call ts_dealloc(x32,"getGF_Tri")
+         call ts_dealloc(x32,"getGF")
      
 C FDN
 C      call transpose(b32,n3,n2,b23) ! got b23
 C b23 = -b22.a23.inv(a33)
 C   a23.inv(a33) --> x23
-         call ts_alloc(x23,n2,n3,"getGF_Tri")
+         call ts_alloc(x23,n2,n3,"getGF")
          a=dcmplx(1.d0,0.d0)
          b=dcmplx(0.d0,0.d0) 
          call zgemm('N','N', n2, n3, n3 ,a ,a23, n2, b33, 
      &     n3, b, x23, n2)
-         call ts_dealloc(a23,"getGF_Tri")
+         call ts_dealloc(a23,"getGF")
          
 C b23 = -b22.x23
-         call ts_alloc(b23,n2,n3,"getGF_Tri")
+         call ts_alloc(b23,n2,n3,"getGF")
          a=dcmplx(-1.d0,0.d0)
          b=dcmplx(0.d0,0.d0) 
          call zgemm('N','N', n2 , n3 , n2 ,a ,b22, n2, x23, 
@@ -367,7 +364,7 @@ C b23 = -b22.x23
          b=dcmplx(1.d0,0.d0) 
          call zgemm('N','N', n3 , n3 , n2 ,a ,b32, n3, x23, 
      &     n2, b, b33, n3)
-         call ts_dealloc(x23,"getGF_Tri")
+         call ts_dealloc(x23,"getGF")
 
       end if ! .not.contactGFonly
          
@@ -379,26 +376,26 @@ c
  
       call collectri(n1,n2,n3,b11,b12,b21,b22,b23,b32,b33,GF)
  
-      call ts_dealloc(b22,"getGF_Tri")
+      call ts_dealloc(b22,"getGF")
       
       if(.not.contactGFonly) then
-         call ts_dealloc(b11,"getGF_Tri")
-         call ts_dealloc(b12,"getGF_Tri")
-         call ts_dealloc(b21,"getGF_Tri")
-         call ts_dealloc(b23,"getGF_Tri")
-         call ts_dealloc(b32,"getGF_Tri")
-         call ts_dealloc(b33,"getGF_Tri")
+         call ts_dealloc(b11,"getGF")
+         call ts_dealloc(b12,"getGF")
+         call ts_dealloc(b21,"getGF")
+         call ts_dealloc(b23,"getGF")
+         call ts_dealloc(b32,"getGF")
+         call ts_dealloc(b33,"getGF")
       end if
 
       end if ! .not. useTri
       call timer('GFT',2)  
 
 #ifdef TRANSIESTA_DEBUG
-      call write_debug( 'POS getGF_Tri' )
+      call write_debug( 'POS getGF' )
 #endif
      
 C ====================================================================
-      END subroutine getGF_Tri
+      END subroutine getGF
 C ====================================================================
 
 

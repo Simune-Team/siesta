@@ -117,7 +117,7 @@ logical, save :: TSmode = .false.
 !
 ! **************************** OUTPUT *********************************
 
-subroutine read_ts_options()
+subroutine read_ts_options(ucell)
 
 ! SIESTA Modules Used
 use fdf, only : leqi
@@ -126,11 +126,11 @@ use m_fdf_global, only: fdf_global_get
 use units, only: eV
 use m_ts_global_vars, only : ts_istep
 use m_ts_io, only : ts_read_TSHS_na
-use siesta_geom, only : ucell, na_u, xa
 #ifdef MPI
 use mpi_siesta, only : MPI_Character, MPI_Comm_World
 #endif
 implicit none
+real(dp),intent(in) :: ucell(3,3)
 ! Internal Variables
 character(len=20) :: chars
 integer :: i
@@ -221,7 +221,7 @@ if ( isVolt ) then
 else
  write(*,'(a)')'ts_read_options: TranSIESTA no voltage applied'
 end if
- write(*,1) 'ts_read_options: Bulk Values in Elecs         =', UseBulk
+ write(*,1) 'ts_read_options: Bulk Values in Electrodes    =', UseBulk
  write(*,1) 'ts_read_options: TriDiag                      =', TriDiag 
  write(*,1) 'ts_read_options: Update DM Contact Reg. only  =', updatedmcr
  write(*,5) 'ts_read_options: N. Buffer At. Left           =', NBufAtL
@@ -280,21 +280,18 @@ if (IOnode) then
     end do
  end if
 
-! USEBULK and TriDiag
-  if((.not. USEBULK) .and. TriDiag) then
-    write(*,*) & 
-              "WARNING: TriDiag only for UseBulkInElectrodes"
-    write(*,*) "         Using normal inversion"
+! UseBulk and TriDiag
+  if((.not. UseBulk) .and. TriDiag) then
+    write(*,*) "WARNING: TriDiag only for UseBulkInElectrodes"
+    write(*,*) "         Reverting to normal inversion scheme"
     TriDiag = .false. 
   end if
 
 ! Integration Method
   if( .not. (leqi(smethod,'gaussfermi') .or.   &
        leqi(smethod, 'sommerfeld')) ) then 
-    write(*,*) &
-       'WARNING: TS.biasContour.method=',smethod
-    write(*,*) &
-            'not defined: Using gaussfermi instead'
+    write(*,*) 'WARNING: TS.biasContour.method=',smethod
+    write(*,*) '         Reverting to gaussfermi instead'
     smethod='gaussfermi'
   endif
 
@@ -306,19 +303,11 @@ if (IOnode) then
   write(*,'(3a)') repeat('*',24),' End: TS CHECKS AND WARNINGS ',repeat('*',26) 
 end if
 
+write(*,*)
 ! The method could have changed... Broad cast method
 #ifdef MPI
   call MPI_BCast(smethod,20,MPI_character,0,MPI_Comm_World,MPIerror)
 #endif
-
-  if ( TSmode ) then
-  ! Print out the region
-     call ts_show_regions(ucell,na_u,xa, &
-          NBufAtL,NUsedAtomsL,NUsedAtomsR,NBufAtR, &
-          NRepA1L,NRepA2L,NRepA1R,NRepA2R)
-  else
-     write(*,*) ! Simply to not have two blank lines in the output!
-  end if
 
 1   format(a,4x,l1)
 5   format(a,i5,a)

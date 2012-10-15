@@ -6737,7 +6737,7 @@ external bias, {\sc TranSiesta} attaches the system to semi-infinite
 electrodes which extend to the left and right of the contact
 region. Examples of electrodes would include surfaces, nanowires,
 nanotubes or even atomic chains. The electrode must be oriented along
-the z-axis and the unit cell along the z-direction must be large
+the $z$-axis and the unit cell along the $z$-direction must be large
 enough so that orbitals within the unit cell only interact with a
 single nearest neighbor cell (the size of the unit cell can thus be
 derived from the range of support for the orbital basis
@@ -6764,8 +6764,8 @@ between principal layers and not across several principal layers.
 For now {\sc TranSiesta} will continue but print a warning.
 The warning will look like this:
 \begin{verbatim}
-WARNING: The electrode has connections across 2 unit cells or more in the transport direction.
-WARNING: This is unadvisable.
+WARNING: Connections across 2 unit cells or more in the transport direction.
+WARNING: This is inadvisable.
 WARNING: Please increase the electrode size in the transport direction.
 WARNING: Will proceed without further notice.
 \end{verbatim}
@@ -6874,11 +6874,11 @@ calculations, only the usual {\sc Siesta} options are relevant.
 
 {\it Default value:} {\tt true}
 
-    \item[{\bf TS.Voltage}] ({\it physical }): The voltage applied
-      along the z-direction of the unit cell between the two
-      electrodes.
+\item[{\bf TS.Voltage}] ({\it physical }): The voltage applied
+  along the z-direction of the unit cell between the two
+  electrodes.
 
-        {\it Default value:} {\tt 0.0 eV}
+{\it Default value:} {\tt 0.0 eV}
 
 \item[{\bf TS.MixH}] ({\it logical}): \index{TS.MixH@{\bf TS.MixH}}
   During the self consisten cycle, usually the density matrix of
@@ -6909,9 +6909,10 @@ The generated surface Green's functions of the electrodes depend on the atomic s
 but also on the energy points of the contour (that will depend on the voltage). 
 It is possible to use previously generated .GF files, but care must be taken.
 Per default it will try to re-use the GF files present. A check against the parameters
-ensures that they are equivalent. By setting to {\tt false} the Green's function files
+ensures that they are equivalent (however, the atomic coordinates of the electrodes will
+not be checked). By setting to {\tt false} the Green's function files
 will be re-created no matter the existence of GF files.
-This will save computing time.
+This will save computing time. 
 
 {\it Default value:} {\tt true}
 
@@ -7016,7 +7017,7 @@ This can be used to check for the contour points.
 \item [{\bf TS.ChargeCorrection}] ({\it string}):
 \index{TS.ChargeCorrection@{\bf TS.ChargeCorrection}}
 Allows for doing a charge correction in the SCF {\sc TranSiesta} cycle.
-The charges will fluctuate doing the SCF cycle and this is available for
+The charges will fluctuate during the SCF cycle and this is available for
 trying to ``fix'' the charge. 
 
 Available methods:
@@ -7037,7 +7038,7 @@ Available methods:
 \item [{\bf TS.ChargeCorrectionFactor}] ({\it value}):
 \index{TS.ChargeCorrectionFactor@{\bf TS.ChargeCorrectionFactor}}
 The factor for correcting the missing charges. Must be in the range
-[0.0;1.0]. This option only has meaning if {\bf TS.ChargeCorrection}
+$[0.0;1.0]$. This option only has meaning if {\bf TS.ChargeCorrection}
 is not 'none'.
 
 \paragraph{Example:} After an SCF cycle, {\sc TranSiesta} is missing
@@ -7135,7 +7136,7 @@ course, be zero.
 \item The next {\bf TS.NumUsedAtomsLeft $\times$ TS.ReplicateA1Left
     $\times$ TS.ReplicateA2Left} correspond to the left electrode atoms.
 
-\item  The next atoms correspond to the contact region.
+\item  The next atoms correspond to the scattering region.
 \item  The next {\bf TS.NumUsedAtomsRight $\times$ TS.ReplicateA1Right
     $\times$ TS.ReplicateA2Right} are the right electrode atoms.
 \item The next {\bf TS.BufferAtomsRight} correspond to atoms that are
@@ -7183,7 +7184,8 @@ the other output files, we refer the user to the {\sc Siesta} manual.
         TranSiesta} and {\tt tbtrans}.
 
     \item[{\bf .TSKP }]: \index{.TSKP@{\bf .TSKP}} The k-points used
-      in the {\sc TranSiesta} calculation.
+      in the {\sc TranSiesta} calculation. See {\sc Siesta} {\bf KP} 
+      file for formatting information.
 
 \end{description} 
 

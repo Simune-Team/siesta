@@ -23,7 +23,7 @@ subroutine ts_show_regions(ucell,na_u,xa,naBufL,naElecL,naElecR,naBufR,NA1L,NA2L
   ! Initialize ia counter
   ia = 0
 
-  write(*,'(/,a)') 'transiesta: Atomic coordinates and regions (Ang):'
+  write(*,'(a)') 'transiesta: Atomic coordinates and regions (Ang):'
   call out_REGION(ia,naBufL,'Left buffer','/')
   call out_REGION(ia,naElecL,'Left electrode','#')
 

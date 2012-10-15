@@ -93,7 +93,7 @@
 
       use m_ts_contour, only : setupcontour, distrcontour
       use m_ts_GF,      only : read_Green
-      use m_ts_scattering, only : getsfe, getGF_Tri
+      use m_ts_scattering, only : getSFE, getGF
       use m_ts_scattering, only : GFGammaGF, weightDM, weightDMC
       use m_ts_scattering, only : get_scat_region
 
@@ -290,7 +290,11 @@
       real(dp), save :: QCn0 ! Init(SIESTA) no. electrons outside update region
       real(dp)       :: QC   ! no. electrons in update region
 
-      ! Collecting charges in updated region on k-point resolution
+!     Collecting charges in updated region on k-point resolution
+!     First index corresponds to values seen in variables 'region' and
+!     'regiong'.
+!     Second index is 0:ts_nkpnt, 0 is the non-updated region 
+!     Third index is the spin
       real(dp), dimension(:,:,:), allocatable :: Q_kpt
 #ifdef MPI
       real(dp), dimension(:,:,:), allocatable :: Q_kpt_loc
@@ -314,7 +318,9 @@
       integer, dimension(:), allocatable, save :: regiong
 #endif
       ! Variable for doing a renormalization of the charge
-      real(dp), dimension(:), allocatable :: reD
+      real(dp), dimension(:),     allocatable :: reD
+      ! containing the rescaled charge
+      real(dp), dimension(:,:,:), allocatable :: addQ
 !==================================================================
 
 !==================================================================
@@ -756,19 +762,19 @@
      &           'Charge in update region       [Qc0]  :',Qc0,
      &           'Charge outside update region  [Qcn0] :',Qcn0
             if ( NBufAtL > 0 ) write(*,'(a,f12.5,/,a,f12.5)')
-     &           'Left buffer                          :',Q_kpt(1,1,1),
-     &           'Left buffer/left electrode           :',Q_kpt(2,1,1)
+     &           'Left buffer                   [LB]   :',Q_kpt(1,1,1),
+     &           'Left buffer/left electrode    [LB-L] :',Q_kpt(2,1,1)
             write(*,'(a,f12.5,4(/,a,f12.5))')
-     &           'Left electrode                       :',Q_kpt(3,1,1),
-     &           'Left electrode/device                :',Q_kpt(4,1,1),
-     &           'Device                               :',Q_kpt(5,1,1),
-     &           'Device/right electrode               :',Q_kpt(6,1,1),
-     &           'Right electrode                      :',Q_kpt(7,1,1)
+     &           'Left electrode                [L]    :',Q_kpt(3,1,1),
+     &           'Left electrode/device         [L-C]  :',Q_kpt(4,1,1),
+     &           'Device                        [C]    :',Q_kpt(5,1,1),
+     &           'Device/right electrode        [C-R]  :',Q_kpt(6,1,1),
+     &           'Right electrode               [R]    :',Q_kpt(7,1,1)
             if ( NBufAtR > 0 ) write(*,'(a,f12.5,/,a,f12.5)')
-     &           'Right electrode/right buffer         :',Q_kpt(8,1,1),
-     &           'Right buffer                         :',Q_kpt(9,1,1)
-            write(*,'(a,f12.5)')
-     &           'Other                                :',Q_kpt(0,1,1)
+     &           'Right electrode/right buffer  [R-RB] :',Q_kpt(8,1,1),
+     &           'Right buffer                  [RB]   :',Q_kpt(9,1,1)
+            write(*,'(a,f12.5,/)')
+     &           'Other                         [O]    :',Q_kpt(0,1,1)
          end if    
          ! Deallocate Q_kpt as we will reuse it in the update of the region
          call memory('D','D',nspin*10,'transiesta')
@@ -853,7 +859,7 @@
       endif
 
 ! Prepare for the gathering of the charges in the different regions
-      allocate(Q_kpt(0:ts_nkpnt,0:9,nspin))
+      allocate(Q_kpt(0:9,0:ts_nkpnt,nspin))
       Q_kpt(:,:,:) = 0.0_dp
       call memory('A','D',(1+ts_nkpnt)*nspin*10,'transiesta')
 
@@ -878,19 +884,19 @@
 
 !     Initialize density here instead of in the k-point loop
 #ifdef MPI
-       do ind = 1,maxnhg
-          if(listudg(ind)) then
-             Dnewg(ind,ispin) = 0d0
-             Enewg(ind,ispin) = 0d0
-          end if
-       end do
+         do ind = 1,maxnhg
+            if(listudg(ind)) then
+               Dnewg(ind,ispin) = 0d0
+               Enewg(ind,ispin) = 0d0
+            end if
+         end do
 #else
-       do ind = 1,maxnh
-          if(listud(ind)) then
-             Dnew(ind,ispin)  = 0d0
-             Enew(ind,ispin)  = 0d0
-          end if
-       end do
+         do ind = 1,maxnh
+            if(listud(ind)) then
+               Dnew(ind,ispin)  = 0d0
+               Enew(ind,ispin)  = 0d0
+            end if
+         end do
 #endif
 
 
@@ -912,7 +918,6 @@
                EDMR   = 0.d0
             end if
           else
-!     FDN Complex
             DMCplx        = dcmplx(0.d0,0.d0)
             EDMCplx       = dcmplx(0.d0,0.d0)
             if (IsVolt) then
@@ -922,7 +927,6 @@
                EDMRCplx   = dcmplx(0.d0,0.d0)
             end if
           end if
-! FDN
 
 ! Here we could employ the same scheme as in the TBTrans utility
 ! This should yield a faster communication as each k-point
@@ -954,10 +958,11 @@
 !     Weight of energy point:
 !     This is where we include the factor-of-two for spin and
 !     and the (1/Pi) from DM = Im[G]/Pi
+!     Furthermore we include the weight of the k-point
          if(nspin.eq.1) then
-            W = (2d0/Pi)*paraWGF(iPE,Node)
+            W = (2d0/Pi)*paraWGF(iPE,Node)*ts_kweight(ts_ikpt)
          else
-            W = (1d0/Pi)*paraWGF(iPE,Node)
+            W = (1d0/Pi)*paraWGF(iPE,Node)*ts_kweight(ts_ikpt)
          end if
 
          ! Save Z*W, used for E-arrays
@@ -993,7 +998,7 @@
        
 ! Calculate Full GF at energy point
          ierr=0
-         call getGF_Tri(UseBulk,updatedmcr,VoltFDF,nou,noL,noR,H,S,SFEL
+         call getGF(UseBulk,updatedmcr,VoltFDF,nou,noL,noR,H,S,SFEL
      &        ,SFER,Z,GF,ierr,TriDiag)
       
 #ifdef MPI
@@ -1048,13 +1053,13 @@
 ! note we use "+" here!
             if (ts_gamma_scf) then
                do i=1,nou*nou
-                DMneqR(i) = DMneqR(i) +DIMAG(work2(i)*W)
-                EDM(i)    = EDM(i) +   DIMAG(work2(i)*ZW)
+                DMneqR(i) = DMneqR(i) + DIMAG(work2(i)*W)
+                EDM(i)    = EDM(i)    + DIMAG(work2(i)*ZW)
                end do ! i
             else
                do i=1,nou*nou
-                DMneqRCplx(i) = DMneqRCplx(i) +work2(i)*W
-                EDMCplx(i)    = EDMCplx(i) +   work2(i)*ZW
+                DMneqRCplx(i) = DMneqRCplx(i) + work2(i)*W
+                EDMCplx(i)    = EDMCplx(i)    + work2(i)*ZW
                end do ! i
             end if
 
@@ -1065,12 +1070,12 @@
             if (ts_gamma_scf) then
                do i=1,nou*nou
                 DMneqL(i) = DMneqL(i) - DIMAG(work2(i)*W)
-                EDMR(i)   = EDMR(i) +   DIMAG(work2(i)*ZW)
+                EDMR(i)   = EDMR(i)   + DIMAG(work2(i)*ZW)
                end do ! i
             else
                do i=1,nou*nou
                 DMneqLCplx(i) = DMneqLCplx(i) - work2(i)*W
-                EDMRCplx(i)   = EDMRCplx(i) +   work2(i)*ZW
+                EDMRCplx(i)   = EDMRCplx(i)   + work2(i)*ZW
                end do
             end if
 ! -------------------------------------------------------------
@@ -1090,7 +1095,7 @@
 ! We need a reduction
 ! There is no need to initialize the work1 er work1cmplx arrays.
 ! The interface for the MPI routines are INTENT(OUT) which ensures
-! correct handling, however, we have them still.
+! correct handling, however, we still have them.
 #ifdef MPI
 
 ! Global reduction of density matrices
@@ -1203,6 +1208,12 @@
          call zaxpy(nou*nou,dcmplx(Ef,0.d0),DMCplx,1,EDMCplx,1)
       end if
 
+      ! reset charge summation on the non-update region
+      ! This is only used for checking purposes
+      if ( ts_ikpt == ts_nkpnt ) then
+         Q_kpt(:,0,:) = 0.0_dp
+      end if
+
 !
 !     Update Dnew, Enew written in sparse SIESTA-format:
 !     
@@ -1213,6 +1224,7 @@
             ic = iuo - noBufL
             do j = 1,numhg(io)
                ind = listhptrg(io) + j
+
                if(listudg(ind)) then ! update
                   jo = listhg(ind)
                   juo = indxuo(jo)
@@ -1222,16 +1234,18 @@
      &                 DM(ic+nou*(jc-1))
                   Enewg(ind,ispin) = Enewg(ind,ispin) +
      &                 EDM(ic+nou*(jc-1))
-                  
-               end if ! update
 
                ! Collect charges in the Q_kpt array
-               call GlobalToLocalOrb(io,Node,Nodes,iio)
-               if ( iio /= 0 ) then
-                  Q_kpt(ts_ikpt,regiong(ind),ispin) =
-     &                 Q_kpt(ts_ikpt,regiong(ind),ispin)+
-     &                 Dnewg(ind,ispin)*Ss(listhptr(iio)+j)
-               endif
+                  Q_kpt(regiong(ind),ts_ikpt,ispin) =
+     &                 Q_kpt(regiong(ind),ts_ikpt,ispin)+
+     &                 Dnewg(ind,ispin)*Ssg(ind)
+               else
+               ! Collect charges in the Q_kpt array
+                  Q_kpt(regiong(ind),0,ispin) =
+     &                 Q_kpt(regiong(ind),0,ispin)+
+     &                 Dnewg(ind,ispin)*Ssg(ind)
+
+               end if ! update
             end do ! j
          end do    ! io
       else
@@ -1240,6 +1254,7 @@
             ic = iuo - noBufL
             do j = 1,numhg(io)
                ind = listhptrg(io) + j
+
                if(listudg(ind)) then ! update
                   jo = listhg(ind)
                   juo = indxuo(jo)
@@ -1248,27 +1263,31 @@
                   kxij = k(1)*xijg(1,ind) +
      &                 k(2)*xijg(2,ind) +
      &                 k(3)*xijg(3,ind)
+                  
                   cphase =  cdexp( dcmplx(0d0,-1.0d0)*kxij )
                   ccphase = cdexp( dcmplx(0d0,+1.0d0)*kxij )
                   
+! We have moved the ts_kweight to the energy point weight as well
                   Dnewg(ind,ispin) = Dnewg(ind,ispin) + DIMAG(
-     &                 dcmplx(0.5d0*ts_kweight(ts_ikpt),0d0)*
+     &                 dcmplx(0.5d0,0d0)*
      &                 (cphase  *DMCplx(ic+nou*(jc-1)) +
      &                  ccphase *DMCplx(jc+nou*(ic-1))))
                   Enewg(ind,ispin) = Enewg(ind,ispin) + DIMAG(
-     &                 dcmplx(0.5d0*ts_kweight(ts_ikpt),0d0)*
+     &                 dcmplx(0.5d0,0d0)*
      &                 (cphase  *EDMCplx(ic+nou*(jc-1))+
      &                  ccphase *EDMCplx(jc+nou*(ic-1))))
 
-               end if ! update
+! Collect k-point charges
+                  Q_kpt(regiong(ind),ts_ikpt,ispin) =
+     &                 Q_kpt(regiong(ind),ts_ikpt,ispin)+
+     &                 Dnewg(ind,ispin)*Ssg(ind)
+               else
+! Collect k-point charges
+                  Q_kpt(regiong(ind),0,ispin) =
+     &                 Q_kpt(regiong(ind),0,ispin)+
+     &                 Dnewg(ind,ispin)*Ssg(ind)
 
-               ! Collect charges in the Q_kpt array
-               call GlobalToLocalOrb(io,Node,Nodes,iio)
-               if ( iio /= 0 ) then
-                  Q_kpt(ts_ikpt,regiong(ind),ispin) =
-     &                 Q_kpt(ts_ikpt,regiong(ind),ispin)+
-     &                 Dnewg(ind,ispin)*Ss(listhptr(iio)+j)
-               endif
+               end if ! update
             end do ! j
          end do    ! io
       end if
@@ -1292,35 +1311,49 @@
      &                   DM(ic+nou*(jc-1))
                     Enew(ind,ispin) = Enew(ind,ispin) +
      &                   EDM(ic+nou*(jc-1))
-                    
 
                  else
+
                     kxij = (k(1)*xij(1,ind) +
      &                   k(2)*xij(2,ind) +
      &                   k(3)*xij(3,ind) )
                     cphase =  exp( dcmplx(0d0,-1.0d0)*kxij )
                     ccphase = exp( dcmplx(0d0,+1.0d0)*kxij )
+! We have moved the ts_kweight to the energy point weight as well
                     Dnew(ind,ispin) = Dnew(ind,ispin) + Dimag(
-     &                   dcmplx(0.5d0*ts_kweight(ts_ikpt),0d0)*(
+     &                   dcmplx(0.5d0,0d0)*(
      &                   cphase*DMCplx(ic+nou*(jc-1))+ccphase*DMCplx(jc
      &                   +nou*(ic-1)))          )
 
                     Enew(ind,ispin) = Enew(ind,ispin) + Dimag(
-     &                   dcmplx(0.5d0*ts_kweight(ts_ikpt),0d0)*(
+     &                   dcmplx(0.5d0,0d0)*(
      &                   cphase*EDMCplx(ic+nou*(jc-1))+ccphase
      &                   *EDMCplx(jc+nou*(ic-1)))          )
+
                  end if 
+
+! Collect charges on the updated k-point
+                 Q_kpt(region(ind),ts_ikpt,ispin) = 
+     &                Q_kpt(region(ind),ts_ikpt,ispin) +
+     &                Dnew(ind,ispin)*Ss(ind)
+              else
+! Collect charges on the non-updated k-point here
+! It is reset when ts_ikpt == ts_nkpnt so not to count too much
+                 Q_kpt(region(ind),0,ispin) = 
+     &                Q_kpt(region(ind),0,ispin) +
+     &                Dnew(ind,ispin)*Ss(ind)
+
               end if            !update DM,EDM
-              
-              ! Collect charges in the Q_kpt array
-              Q_kpt(ts_ikpt,region(ind),ispin) = 
-     &             Q_kpt(ts_ikpt,region(ind),ispin) +
-     &             Dnew(ind,ispin)*Ss(ind)
            end do               !j
        end do                   !io
 #endif // MPI
 
-
+       ! Make sure that the calculated charge is not accumulated
+       if ( ts_ikpt > 1 ) then
+          Q_kpt(:,ts_ikpt,ispin) = Q_kpt(:,ts_ikpt,ispin) -
+     &         sum(Q_kpt(:,1:ts_ikpt-1,ispin),2)
+       end if
+       
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       END DO                    ! ts_kpoint
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1332,136 +1365,134 @@
       call memory('D','Z',nou*nou,'transiesta')
       deallocate(GF)
 
-      
-#ifdef MPI
-      allocate(Q_kpt_loc(0:ts_nkpnt,0:9,nspin))
-      call memory('A','D',(1+ts_nkpnt)*nspin*10,'transiesta')
-      call MPI_AllReduce(Q_kpt,Q_kpt_loc,(1+ts_nkpnt)*nspin*10,
-     &     DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
-      Q_kpt = Q_kpt_loc
-      call memory('D','D',(1+ts_nkpnt)*nspin*10,'transiesta')
-      deallocate(Q_kpt_loc)
+!***********************
+!     Close Files
+!***********************
+      if(IONode) then
+         call io_close(uGFL)
+         call io_close(uGFR)
+      endif
 
+#ifdef MPI
 ! Distribute Dnew/Enew 
       do io = 1,no_l
-        call LocalToGlobalOrb(io,Node,Nodes,iio)
-          do is = 1,nspin
+         call LocalToGlobalOrb(io,Node,Nodes,iio)
+         do is = 1,nspin
             do jo = 1,numh(io)
                Dnew(listhptr(io)+jo,is)= Dnewg(listhptrg(iio)+jo,is)
                Enew(listhptr(io)+jo,is)= Enewg(listhptrg(iio)+jo,is)
             enddo
-          enddo
+         enddo
       enddo
       call memory('D','D',size(Dnewg)+size(Enewg),'transiesta')
       deallocate(Dnewg)
       deallocate(Enewg)
-
 #endif
 
-      ! Charge in device
-      Qc = sum(Q_kpt(ts_nkpnt,5,:))
 
 ! 
 !     Charge Renormalization 
 !
       if ( ChargeCorr == 1 ) then ! Correct charges in the buffer region
-         allocate(reD(2))
-         call memory('A','D',2,'transiesta')
+         allocate(reD(2),addQ(2,nspin,2))
+         call memory('A','D',2+2*2*nspin,'transiesta')
+         ! Calculate the density factor for obtaining the correct charge
+         ! For the left buffer region
          reD(1) = REAL(noBufL+noBufR,dp)/REAL(noBufL,dp)
-         reD(1) = (Qtot-sum(Q_kpt(ts_nkpnt,:,:)))/(reD(1)
-     &        *sum(Q_kpt(ts_nkpnt,1,:)))
+         reD(1) = (Qtot-sum(Q_kpt(:,:,:)))
+     &        / (reD(1)*sum(Q_kpt(1,:,:)))
+         ! Calculate the density factor for obtaining the correct charge
+         ! For the right buffer region
          reD(2) = REAL(noBufL+noBufR,dp)/REAL(noBufR,dp)
-         reD(2) = (Qtot-sum(Q_kpt(ts_nkpnt,:,:)))/(reD(2)
-     &        *sum(Q_kpt(ts_nkpnt,9,:)))
+         reD(2) = (Qtot-sum(Q_kpt(:,:,:)))/(reD(2)
+     &        *sum(Q_kpt(9,:,:)))
+         ! Reset to zero if not existing
+         if ( noBufL == 0 ) reD(1) = 0.0_dp
+         if ( noBufR == 0 ) reD(2) = 0.0_dp
+
          ! Apply charge-correction factor 
          ! This will reduce "heavy" charge fluctuations and
          ! should guard against this.
-         reD(:) = reD(:) * ChargeCorr_factor
+         reD = reD * ChargeCorr_factor
+         addQ = 0.0_dp
          do ispin = 1 , nspin
             do io = 1,no_l
                do j = 1,numh(io)
                   ind = listhptr(io) + j
-                  if ( region(ind) == 1 ) then
-                     Dnew(ind,ispin) = Dnew(ind,ispin)*reD(1)+Dnew(ind
-     &                    ,ispin)
-                     Enew(ind,ispin) = Enew(ind,ispin)*reD(1)+Enew(ind
-     &                    ,ispin)
-                  else if ( region(ind) == 9 ) then
-                     Dnew(ind,ispin) = Dnew(ind,ispin)*reD(2)+Dnew(ind
-     &                    ,ispin)
-                     Enew(ind,ispin) = Enew(ind,ispin)*reD(2)+Enew(ind
-     &                    ,ispin)
+                  if ( region(ind) == 1 .and. noBufL > 0 ) then
+                     Dnew(ind,ispin) = Dnew(ind,ispin)*reD(1)+
+     &                    Dnew(ind,ispin)
+                     Enew(ind,ispin) = Enew(ind,ispin)*reD(1)+
+     &                    Enew(ind,ispin)
+                     addQ(1,ispin,1) = addQ(1,ispin,1)+
+     &                    Dnew(ind,ispin)*reD(1)
+                  else if ( region(ind) == 9 .and. noBufR > 0 ) then
+                     Dnew(ind,ispin) = Dnew(ind,ispin)*reD(2)+
+     &                    Dnew(ind,ispin)
+                     Enew(ind,ispin) = Enew(ind,ispin)*reD(2)+
+     &                    Enew(ind,ispin)
+                     addQ(2,ispin,1) = addQ(2,ispin,1)+
+     &                    Dnew(ind,ispin)*reD(2)
                   end if
                end do           ! numh
             end do              ! no_l
+
          end do                 !ispin
+! Reduce to the total added charge
+#ifdef MPI
+         call MPI_AllReduce(addQ(1,1,1),addQ(1,1,2),2*nspin,DAT_double
+     &        ,MPI_SUM,MPI_Comm_World,MPIerror)
+         addQ(:,:,1) = addQ(:,:,2)
+#endif
+         Q_kpt(1,0,:) = Q_kpt(1,0,:) + addQ(1,:,1)
+         Q_kpt(9,0,:) = Q_kpt(9,0,:) + addQ(2,:,1)
+
+         call memory('D','D',2+2*2*nspin,'transiesta')
+         deallocate(reD,addQ)
       end if
 
-      if(IONode) then
-         write(*,'(a,I6)') 'TranSIESTA charge on k-points:'
-     &        ,ts_nkpnt
-         if ( nspin == 2 ) then
-            if ( mod(ts_nkpnt,2) == 0 ) then
-               io = ts_nkpnt / 2 
-            else
-               io = (ts_nkpnt+2-mod(ts_nkpnt,2)) / 2
-            end if
-            do i = 1 , io
-               jo = 1
-               if ( i + jo * io > ts_nkpnt ) then
-                  jo = 0
-               end if
-               write(*,'(tr2,2(i3,2(tr1,f8.3),tr3))') (i+io*j,
-     &              sum(Q_kpt(i+io*j,:,:),1)-sum(Q_kpt(i+io*j-1,:,:),1),
-     &              sum(Q_kpt(i+io*j,:,:),2)-sum(Q_kpt(i+io*j-1,:,:),2),
-     &              j=0,jo)
-            end do
-         else
-            if ( mod(ts_nkpnt,4) == 0 ) then
-               io = ts_nkpnt / 4 
-            else
-               io = (ts_nkpnt+4-mod(ts_nkpnt,4)) / 4 
-            end if
-            do i = 1 , io
-               jo = 3
-               do j = 0 , 3 
-                  if ( i + j * io > ts_nkpnt ) then
-                     jo = j - 1
-                     exit
-                  end if
-               end do
-               write(*,'(tr2,4(i3,tr1,f8.3,tr3))') (i+io*j,
-     &              sum(Q_kpt(i+io*j,:,:),1)-sum(Q_kpt(i+io*j-1,:,:),1),
-     &              j=0,jo)
-            end do
-         end if
-         write(*,'(a)') "TranSIESTA region charges:"
-         write(*,'(6(a9,1X))') 'U','L','L-C','C','C-R','R'
-         if ( ChargeCorr == 1 ) then
-            write(*,'(2(a9,1X))') 'Left Buf','Right Buf'
-         end if
-         write(*,'(6(f9.3,1X))') sum(Q_kpt(ts_nkpnt,0,:))
-     &        ,sum(Q_kpt(ts_nkpnt,3,:)),sum(Q_kpt(ts_nkpnt,4,:))
-     &        ,sum(Q_kpt(ts_nkpnt,5,:)),sum(Q_kpt(ts_nkpnt,6,:))
-     &        ,sum(Q_kpt(ts_nkpnt,7,:))
-         if ( ChargeCorr == 1 ) then
-            write(*,'(2(f9.3,1X))') sum(Q_kpt(ts_nkpnt,1,:))
-     &           +reD(1)*noBufL,sum(Q_kpt(ts_nkpnt,9,:))+reD(2)*noBufR
-            call memory('D','D',2,'transiesta')
-            deallocate(reD)
-         end if
+      ! Charge in the updated region
+      ! k-point index 0 is non-updated region...
+      ! Must be done after any charge correction to show correctly
+      Qc = sum(Q_kpt(:,1:ts_nkpnt,:))
+      ! Charge in the non-updated region
+      Qcn0 = sum(Q_kpt(:,0,:))
 
-         write(*,'(a,1X,5(f9.3,1X))') 
+
+      if(IONode) then
+         write(*,'(a)') "TranSIESTA region charges:"
+         write(*,'(6(a9,1X))') 'O','L','L-C','C','C-R','R'
+         if ( noBufL + noBufR > 0 ) then
+            if ( noBufL == 0 ) then ! It must be the Right buffer who has states
+               write(*,'(2(a9,1X))') 'R-RB','RB'
+            else if ( noBufR == 0 ) then ! The left has states
+               write(*,'(2(a9,1X))') 'LB','LB-L'
+            else ! Both have states
+               write(*,'(4(a9,1X))') 'LB','LB-L','RB-L','RB'
+            end if
+         end if
+         write(*,'(6(f9.3,1X))') sum(Q_kpt(0,:,:))
+     &        ,sum(Q_kpt(3,:,:)),sum(Q_kpt(4,:,:))
+     &        ,sum(Q_kpt(5,:,:)),sum(Q_kpt(6,:,:))
+     &        ,sum(Q_kpt(7,:,:))
+         if ( noBufL + noBufR > 0 ) then
+            if ( noBufL == 0 ) then
+               write(*,'(2(f9.3,1X))') sum(Q_kpt(8,:,:))
+     &              ,sum(Q_kpt(9,:,:))
+            else if ( noBufR == 0 ) then
+               write(*,'(2(f9.3,1X))') sum(Q_kpt(1,:,:))
+     &              ,sum(Q_kpt(2,:,:))
+            else
+               write(*,'(4(f9.3,1X))') sum(Q_kpt(1,:,:))
+     &              ,sum(Q_kpt(2,:,:)),sum(Q_kpt(8,:,:)), 
+     &              sum(Q_kpt(9,:,:))
+            end if
+         end if
+         write(*,'(a,3(1X,f9.3))') 
      &        'TranSIESTA: Qc, Qt, Qt0 : ',Qc,Qc+Qcn0,Qtot
       endif 
 !--------------------------------------------------------------------
 
-!     Close Files
-
-      if(IONode) then
-         call io_close(uGFL)
-         call io_close(uGFR)
-      endif
       
 !--------------------------------------------------------------------
 !     Deallocate:

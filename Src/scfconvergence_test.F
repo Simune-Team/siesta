@@ -98,8 +98,8 @@
          ! From now on, a new mixing cycle starts,
          ! so we have to reset the Pulay record keeping
          !
-         call init_pulay_arrays()  
-           !
+         call init_pulay_arrays()
+
          if(IONode) then
            write(6,'(/a)')
      &'                          ************************       '
@@ -110,7 +110,10 @@
         end if
       end if
 
-      if (TSiscf .eq. 1) call timer( 'TS', 3 ) !TSS
+      if (TSiscf .eq. 1) then
+         call timer( 'TS', 3 )       !TSS (with Green's function generation)
+         call timer( 'TS_calc', 3 )  !TSS (only calculating routines)
+      end if
       if (TSrun .and. TSiscf < min_nscf ) last = .false.
 ! Needed for an MD run of TranSiesta
 !      if (TSrun .and. last) then

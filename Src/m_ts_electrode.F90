@@ -1252,14 +1252,14 @@ contains
 #endif
 
     if ( IONode .and. eXa ) then
-       write(0,*) "WARNING: The electrode has connections across &
-            &2 unit cells or more in the transport direction."
+       write(0,*) "WARNING: Connections across 2 unit cells or more &
+            &in the transport direction."
        write(0,*) "WARNING: This is inadvisable."
        write(0,*) "WARNING: Please increase the electrode size &
             &in the transport direction."
        write(0,*) "WARNING: Will proceed without further notice."
-       write(*,*) "WARNING: The electrode has connections across &
-            &2 unit cells or more in the transport direction."
+       write(*,*) "WARNING: Connections across 2 unit cells or more &
+            &in the transport direction."
        write(*,*) "WARNING: This is inadvisable."
        write(*,*) "WARNING: Please increase the electrode size &
             &in the transport direction."

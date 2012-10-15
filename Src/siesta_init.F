@@ -58,6 +58,9 @@
 #endif
 #ifdef TRANSIESTA
 ! TSS Begin
+      use m_ts_options, only: TSmode
+      use m_ts_options, only: NBufAtL,NUsedAtomsL,NRepA1L,NRepA2L
+      use m_ts_options, only: NBufAtR,NUsedAtomsR,NRepA1R,NRepA2R
       use m_ts_options, only: read_ts_options
       use m_ts_kpoints, only: setup_ts_kpoint_grid
 ! TSS End
@@ -227,7 +230,7 @@ C     Initialise MPI and set processor number
 
 #ifdef TRANSIESTA
 !     Read TS Input options
-      call read_ts_options( )
+      call read_ts_options( ucell )
 !     TSS End
 #endif
 
@@ -323,6 +326,13 @@ C     Initialise MPI and set processor number
 #ifdef TRANSIESTA
 !     TSS Begin
       call setup_ts_kpoint_grid( ucell )
+
+! Print out the region if we have a transiesta run
+      if ( TSmode ) then
+         call ts_show_regions(ucell,na_u,xa,
+     &        NBufAtL,NUsedAtomsL,NUsedAtomsR,NBufAtR,
+     &        NRepA1L,NRepA2L,NRepA1R,NRepA2R)
+      end if
 !     TSS End
 #endif
 
