@@ -25,10 +25,10 @@ subroutine ts_show_regions(ucell,na_u,xa,naBufL,naElecL,naElecR,naBufR,NA1L,NA2L
 
   write(*,'(a)') 'transiesta: Atomic coordinates and regions (Ang):'
   call out_REGION(ia,naBufL,'Left buffer','/')
-  call out_REGION(ia,naElecL,'Left electrode','#')
+  call out_REGION(ia,naElecL*NA1L*NA2L,'Left electrode','#')
 
-  mid = (na_u - naBufL-naElecL-naElecR-naBufR+1) / 2
-  do i = 1 , na_u - naBufL-naElecL-naElecR-naBufR
+  mid = (na_u - naBufL-naElecL*NA1L*NA2L-naElecR*NA1R*NA2R-naBufR+1) / 2
+  do i = 1 , na_u - naBufL-naElecL*NA1L*NA2L-naElecR*NA1R*NA2R-naBufR
      ia = ia + 1
      if ( i == mid ) then
         write(*,'(tr1,3(tr2,f12.7),tr8,a)') &
@@ -39,7 +39,7 @@ subroutine ts_show_regions(ucell,na_u,xa,naBufL,naElecL,naElecR,naBufR,NA1L,NA2L
      end if
   end do
 
-  call out_REGION(ia,naElecR,'Right electrode','#')
+  call out_REGION(ia,naElecR*NA1R*NA2R,'Right electrode','#')
   call out_REGION(ia,naBufR,'Right buffer','/')
 
   write(*,*)

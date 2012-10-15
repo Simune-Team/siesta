@@ -381,7 +381,7 @@ contains
 ! ##################################################################
 
   subroutine create_Green(tElec, HSFile, GFFile, GFTitle, &
-       ElecValenceBandBot, optReUseGF, &
+       ElecValenceBandBot, &
        nkpnt,kpoint,kweight, &
        NBufAt,NUsedAtoms,NA1,NA2, &
        ucell,xa,nua,NEn,contour,wGF,chem_shift,ZBulkDOS,nspin)
@@ -407,7 +407,6 @@ contains
     character(len=*), intent(in) :: GFFile  ! The electrode GF file to be saved to
     character(len=*), intent(in) :: GFTitle ! The title to be written in the GF file
     logical, intent(in)          :: ElecValenceBandBot ! Whether or not to calculate electrodes valence bandbottom
-    logical, intent(in)          :: optReUseGF ! Should we re-use the GF files if they exists?    
     integer, intent(in)            :: nkpnt ! Number of k-points
     real(dp),dimension(3,nkpnt),intent(in) :: kpoint ! k-points
     real(dp),dimension(nkpnt),intent(in) :: kweight ! weights of kpoints
@@ -428,7 +427,6 @@ contains
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
-    logical :: ReUseGF
     logical :: Gamma
     character(len=5)   :: GFjob ! Contains either 'Left' or 'Right'
     logical :: exist ! Checking for file existance
@@ -439,6 +437,7 @@ contains
     integer                           :: nuou_E ! # used orbitals from electrode (if NUsedAtoms < nua_E)
     integer                           :: notot_E ! Total number of orbitals
     real(dp), dimension(:,:), pointer :: H_E,xij_E,xijo_E ! Hamiltonian, differences with unitcell, differences without unitcell
+    real(dp), dimension(:,:), pointer :: xa_E ! atomic coordinats
     real(dp), dimension(:),   pointer :: S_E ! Overlap
     integer,  dimension(:),   pointer :: zconnect_E ! Has 0 values for indices where there are no z-connection.
     integer,  dimension(:),   pointer :: numh_E,listhptr_E,listh_E,indxuo_E,lasto_E
@@ -497,27 +496,6 @@ contains
        call die("init electrode has received wrong job ID [L,R]: "//tElec)
     endif
     
-! check the file for existance
-    inquire(file=GFfile,exist=exist)
-
-    ReUseGF = optReUseGF
-! If it does not find the file, calculate the GF
-    if ( exist ) then
-       if (IONode ) then
-          write(*,*) "Electrode Green's function file: '"//&
-               trim(GFFile)//"' already exist."
-          if ( .not. ReUseGF ) then
-             write(*,*)"Green's function file '"//&
-                  trim(GFFile)//"' is requested overwritten."
-          end if
-       end if
-    else
-       ReUseGF = .false.
-    end if
-
-    ! We return if we should not calculate it
-    if ( ReUseGF ) return
-
     call timer('genGreen',1)
 
     if (IONode) then
@@ -529,7 +507,7 @@ contains
     ! Broadcasting within the routine is performed in MPI run
     call init_electrode_HS(tElec,NUsedAtoms,Gamma,xa,nua,nspin, &
          NBufAt, NA1, NA2, HSFile, &
-         nua_E,nuo_E,maxnh_E,notot_E,H_E,S_E,xij_E, &
+         nua_E,nuo_E,maxnh_E,notot_E,xa_E,H_E,S_E,xij_E, &
          xijo_E,zconnect_E,numh_E,listhptr_E,listh_E,indxuo_E,  &
          lasto_E, &
          Ef_E,ucell_E)
@@ -659,6 +637,14 @@ contains
        write(uGF) NUsedAtoms,NA1,NA2,nkpnt,nq
        ! Write spin, ELECTRODE unit-cell
        write(uGF) nspin, ucell_E
+       ! Write out the atomic coordinates of the used electrode
+       if( leqi(tElec,'L') ) then
+          ! Left, we use the last atoms in the list
+          write(uGF) xa_E(:,nua_E-NUsedAtoms+1:nua_E)
+       else
+          ! Right, the first atoms in the list
+          write(uGF) xa_E(:,1:NUsedAtoms)
+       end if
        ! Notice that we write the k-points for the ELECTRODE
        ! Do a conversion here
        allocate(eig(nkpnt*3))
@@ -916,7 +902,7 @@ contains
 !------------------------------------------------------------------------
   subroutine init_electrode_HS(tElec,NUsedAtoms,Gamma,xa_sys,nua_sys,nspin_sys, &
        NBufAt,NA1,NA2, &
-       HSfile,nua,nuo,maxnh,notot,H,S,xij,xijo,zconnect, &
+       HSfile,nua,nuo,maxnh,notot,xa,H,S,xij,xijo,zconnect, &
        numh,listhptr,listh,indxuo,lasto, &
        Ef,ucell)
 
@@ -957,6 +943,7 @@ contains
 ! ***********************
     logical                           :: Gamma
     integer                           :: nua,nuo,maxnh ! Unit cell atoms / orbitals / Hamiltonian size
+    real(dp), dimension(:,:), pointer :: xa ! The atomic coordinates
     real(dp), dimension(:,:), pointer :: H,xij,xijo ! Hamiltonian, differences with unitcell, differences without unitcell
     real(dp), dimension(:),   pointer :: S ! Overlap
     integer,  dimension(:),   pointer :: zconnect ! Has 0 values for indices where there are no z-connection.
@@ -972,7 +959,6 @@ contains
     integer :: notot  ! Total orbitals in all supercells
     integer :: nspin  ! The spin polarization
     integer,  dimension(:),   pointer :: isa ! The atomic species
-    real(dp), dimension(:,:), pointer :: xa ! Atomic coordinates 
     logical :: ts_gamma ! Read gamma from file
     real(dp) :: kdispl(3)
     integer  :: kscell(3,3)
@@ -1265,9 +1251,6 @@ contains
             &in the transport direction."
        write(*,*) "WARNING: Will proceed without further notice."
     end if
-
-    call memory('D','D',3*nua,'elec_HS') 
-    deallocate(xa)
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS init_elec_HS' )

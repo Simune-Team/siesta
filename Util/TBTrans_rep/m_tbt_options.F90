@@ -207,7 +207,7 @@ CONTAINS
     if (IONode) then
        if (fdf_defined('TS.TBT.DoCOOP')) &
             write(*,'(a)') '**Warning: FDF symbol TS.TBT.DoCOOP'// &
-            ' is deprecated. See the manual.'
+            ' is deprecated. Use TS.TBT.COOP instead.'
     endif
     call fdf_global_get(CalcCOOP,'TS.TBT.COOP',CalcCOOP_def)
     call fdf_global_get(AlignScat,'TS.TBT.AlignOnSite',AlignScat_def)
@@ -244,7 +244,7 @@ CONTAINS
        write(*,1) 'Align the Hamiltonian with the electrode      = ',AlignScat
        if ( AlignScat ) then
           call die("TBtrans is currently not implented to align the scattering &
-               &region.")
+               &region and the electrodes.")
        end if
     end if
  

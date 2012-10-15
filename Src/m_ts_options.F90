@@ -124,7 +124,7 @@ use fdf, only : leqi
 use parallel, only: IOnode, Nodes
 use m_fdf_global, only: fdf_global_get
 use units, only: eV
-use m_ts_global_vars, only : ts_istep
+use m_ts_global_vars, only : ts_istep, TSinit
 use m_ts_io, only : ts_read_TSHS_na
 #ifdef MPI
 use mpi_siesta, only : MPI_Character, MPI_Comm_World
@@ -138,7 +138,12 @@ integer :: i
 integer :: MPIerror
 #endif
 
-if (isolve.eq.SOLVE_TRANSI) TSmode = .true.
+if (isolve.eq.SOLVE_TRANSI) then
+   TSmode = .true.
+   ! If in TSmode default to initalization
+   ! In case of 'DM.UseSaveDM TRUE' TSinit will be set accordingly
+   TSinit = .true.
+endif
 
 if (IOnode) then
  write(*,'(/,2a)') 'ts_read_options: ', repeat('*', 62)

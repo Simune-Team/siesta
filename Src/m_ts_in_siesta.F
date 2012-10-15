@@ -92,7 +92,7 @@
       use m_ts_options, only : nline,ncircle,npol,nvolt
 
       use m_ts_contour, only : setupcontour, distrcontour
-      use m_ts_GF,      only : read_Green
+      use m_ts_GF,      only : do_Green, read_Green
       use m_ts_scattering, only : getSFE, getGF
       use m_ts_scattering, only : GFGammaGF, weightDM, weightDMC
       use m_ts_scattering, only : get_scat_region
@@ -464,7 +464,7 @@
          allocate(dosdum(NEn))
          call memory('A','Z',NEn,'transiesta')
 
-         call ts_do_Green('L',HSFileL, GFFileL, GFTitle, 
+         call do_Green('L',HSFileL, GFFileL, GFTitle, 
      &        ElecValenceBandBot, ReUseGF,
      &        ts_nkpnt,ts_kpoint,ts_kweight,
      &        NBufAtL,NUsedAtomsL,NRepA1L,NRepA2L,
@@ -472,7 +472,7 @@
      &        nuaL_GF,noL_GF)
 
 !     Create the Right GF file
-         call ts_do_Green('R',HSFileR,GFFileR, GFTitle,
+         call do_Green('R',HSFileR,GFFileR, GFTitle,
      &        ElecValenceBandBot, ReUseGF,
      &        ts_nkpnt,ts_kpoint,ts_kweight,
      &        NBufAtR,NUsedAtomsR,NRepA1R,NRepA2R,
@@ -800,13 +800,13 @@
       endif
 
 ! Left
-      call read_Green(uGFL,EfermiL,ts_nkpnt,NEn,nuaL_GF, 
+      call read_Green(uGFL,TSiscf==1,EfermiL,ts_nkpnt,NEn,nuaL_GF, 
      &     NRepA1L,NRepA2L,noL_GF,nspin,
      &     nkparL,kparL,wkparL,
      &     nqL,wqL,qLb)
 
 ! Right
-      call read_Green(uGFR,EfermiR,ts_nkpnt,NEn,nuaR_GF,
+      call read_Green(uGFR,TSiscf==1,EfermiR,ts_nkpnt,NEn,nuaR_GF,
      &     NRepA1R,NRepA2R,noR_GF,nspin, 
      &     nkparR,kparR,wkparR,
      &     nqR,wqR,qRb)
@@ -909,22 +909,30 @@
 !     Init DM, EDM
 !
           if (ts_gamma_scf) then 
-            DM    =  0.d0
-            EDM   =  0.d0
+            do i = 1 , nou*nou ! Explicit loops are faster
+               DM(i)  =  0.d0
+               EDM(i) =  0.d0
+            end do
             if (IsVolt) then
-               DMR    = 0.d0
-               DMneqL = 0.d0
-               DMneqR = 0.d0
-               EDMR   = 0.d0
+              do i = 1 , nou*nou
+                 DMR(i)    = 0.d0
+                 DMneqL(i) = 0.d0
+                 DMneqR(i) = 0.d0
+                 EDMR(i)   = 0.d0
+              end do
             end if
           else
-            DMCplx        = dcmplx(0.d0,0.d0)
-            EDMCplx       = dcmplx(0.d0,0.d0)
+            do i = 1 , nou*nou
+               DMCplx(i)  = dcmplx(0.d0,0.d0)
+               EDMCplx(i) = dcmplx(0.d0,0.d0)
+            end do
             if (IsVolt) then
-               DMRCplx    = dcmplx(0.d0,0.d0)
-               DMneqLCplx = dcmplx(0.d0,0.d0)
-               DMneqRCplx = dcmplx(0.d0,0.d0)
-               EDMRCplx   = dcmplx(0.d0,0.d0)
+              do i = 1 , nou*nou
+                 DMRCplx(i)    = dcmplx(0.d0,0.d0)
+                 DMneqLCplx(i) = dcmplx(0.d0,0.d0)
+                 DMneqRCplx(i) = dcmplx(0.d0,0.d0)
+                 EDMRCplx(i)   = dcmplx(0.d0,0.d0)
+              end do
             end if
           end if
 
@@ -1095,7 +1103,7 @@
 ! We need a reduction
 ! There is no need to initialize the work1 er work1cmplx arrays.
 ! The interface for the MPI routines are INTENT(OUT) which ensures
-! correct handling, however, we still have them.
+! correct handling.
 #ifdef MPI
 
 ! Global reduction of density matrices
@@ -1105,34 +1113,34 @@
          allocate(work1(nou*nou))
          call memory('A','D',nou*nou,'transiesta')
          
-         work1 = 0.0d0
+!         work1 = 0.0d0
          call MPI_AllReduce(DM,work1,nou*nou,
      &        DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
          DM = work1
 
-         work1 = 0.0d0
+!         work1 = 0.0d0
          call MPI_AllReduce(EDM,work1,nou*nou,
      &        DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
          EDM = work1
       
          if (IsVolt) then
 
-            work1 = 0.0d0
+!            work1 = 0.0d0
             call MPI_AllReduce(DMR,work1,nou*nou,
      &           DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
             DMR = work1
 
-            work1 = 0.0d0
+!            work1 = 0.0d0
             call MPI_AllReduce(DMneqL,work1,nou*nou,
      &           DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
             DMneqL = work1
 
-            work1 = 0.0d0
+!            work1 = 0.0d0
             call MPI_AllReduce(DMneqR,work1,nou*nou,
      &           DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
             DMneqR = work1
 
-            work1 = 0.0d0
+!            work1 = 0.0d0
             call MPI_AllReduce(EDMR,work1,nou*nou,
      &           DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
             EDMR = work1
@@ -1146,34 +1154,34 @@
          allocate(work1Cplx(nou*nou))
          call memory('A','Z',nou*nou,'transiesta')
 
-         work1Cplx = 0.0d0
+!         work1Cplx = 0.0d0
          call MPI_AllReduce(DMCplx,work1Cplx,nou*nou,
      &        DAT_dcomplex,MPI_sum,MPI_Comm_World,MPIerror)
          DMCplx = work1Cplx
 
-         work1Cplx = 0.0d0
+!         work1Cplx = 0.0d0
          call MPI_AllReduce(EDMCplx,work1Cplx,nou*nou,
      &        DAT_dcomplex,MPI_sum,MPI_Comm_World,MPIerror)
          EDMCplx = work1Cplx
 
          if (IsVolt) then
 
-            work1Cplx = 0.0d0
+!            work1Cplx = 0.0d0
             call MPI_AllReduce(DMRCplx,work1Cplx,nou*nou,
      &           DAT_dcomplex,MPI_sum,MPI_Comm_World,MPIerror)
             DMRCplx = work1Cplx
 
-            work1Cplx = 0.0d0
+!            work1Cplx = 0.0d0
             call MPI_AllReduce(DMneqLCplx,work1Cplx,nou*nou,
      &           DAT_dcomplex,MPI_sum,MPI_Comm_World,MPIerror)
             DMneqLCplx = work1Cplx
             
-            work1Cplx = 0.0d0
+!            work1Cplx = 0.0d0
             call MPI_AllReduce(DMneqRCplx,work1Cplx,nou*nou,
      &           DAT_dcomplex,MPI_sum,MPI_Comm_World,MPIerror)
             DMneqRCplx = work1Cplx
 
-            work1Cplx = 0.0d0
+!            work1Cplx = 0.0d0
             call MPI_AllReduce(EDMRCplx,work1Cplx,nou*nou,
      &           DAT_dcomplex,MPI_sum,MPI_Comm_World,MPIerror)
             EDMRCplx = work1Cplx
@@ -1267,7 +1275,7 @@
                   cphase =  cdexp( dcmplx(0d0,-1.0d0)*kxij )
                   ccphase = cdexp( dcmplx(0d0,+1.0d0)*kxij )
                   
-! We have moved the ts_kweight to the energy point weight as well
+! We have moved the ts_kweight to the energy point weight
                   Dnewg(ind,ispin) = Dnewg(ind,ispin) + DIMAG(
      &                 dcmplx(0.5d0,0d0)*
      &                 (cphase  *DMCplx(ic+nou*(jc-1)) +
@@ -1319,7 +1327,8 @@
      &                   k(3)*xij(3,ind) )
                     cphase =  exp( dcmplx(0d0,-1.0d0)*kxij )
                     ccphase = exp( dcmplx(0d0,+1.0d0)*kxij )
-! We have moved the ts_kweight to the energy point weight as well
+
+! We have moved the ts_kweight to the energy point weight
                     Dnew(ind,ispin) = Dnew(ind,ispin) + Dimag(
      &                   dcmplx(0.5d0,0d0)*(
      &                   cphase*DMCplx(ic+nou*(jc-1))+ccphase*DMCplx(jc
@@ -1391,7 +1400,7 @@
 
 
 ! 
-!     Charge Renormalization 
+!     Charge Corrections
 !
       if ( ChargeCorr == 1 ) then ! Correct charges in the buffer region
          allocate(reD(2),addQ(2,nspin,2))

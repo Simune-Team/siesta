@@ -1,4 +1,30 @@
 ----------------------------------------------------
+Oct 15, 2012 -- Nick P. Andersen     trunk-411--ts-npa-8
+GF checks of electrode atomic coordinates
+
+* Upon reading the GF files the atomic coordinates will also be checked
+  Makes it near impossible to use a GF file which does not conform with the
+  setup.
+* Moved ts_do_Green into the GF module. (thus renamed to do_Green)
+* Bugfix for DM.UseSaveDM False and transiesta 
+  TSinit *was* only set correctly if 'DM.UseSaveDM T'
+  TSinit is now set in m_ts_options if TSmode == True
+* Bugfix in ts_show_regions
+
+removed:
+  Src/ts_do_green.F90
+modified:
+  Src/Makefile
+  Src/m_ts_electrode.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_in_siesta.F
+  Src/m_ts_options.F90
+  Src/ts_show_regions.f90
+  Util/TBTrans_rep/Makefile
+  Util/TBTrans_rep/m_tbt_options.F90
+  Util/TBTrans_rep/tbtrans.F90
+
+----------------------------------------------------
 Oct 15, 2012 -- Nick P. Andersen     trunk-411--ts-npa-7
 Bugfix in charge calculation in TranSIESTA (does not affect calculation)
 

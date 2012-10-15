@@ -37,8 +37,7 @@ what:
 SYSOBJ=$(SYS).o
 
 # Tbtrans:
-MOD_TOBJS=  m_tbt_options.o m_tbt_kpoints.o m_tbt_out.o m_tbt_read_tshs.o ts_do_green.o \
-	m_lowdin.o
+MOD_TOBJS=  m_tbt_options.o m_tbt_kpoints.o m_tbt_out.o m_tbt_read_tshs.o m_lowdin.o
 
 SIESTA_OBJS= precision.o sys.o m_io.o alloc.o  memoryinfo.o memory.o pxf.o \
              moreParallelSubs.o m_walltime.o m_timer.o timer.o m_mpi_utils.o \
@@ -311,7 +310,7 @@ m_ts_aux_rout.o: precision.o sys.o
 m_ts_contour.o: files.o m_ts_aux_rout.o parallel.o precision.o sys.o units.o
 m_ts_electrode.o: files.o m_hs_matrix.o m_tbt_kpoints.o m_ts_aux_rout.o
 m_ts_electrode.o: m_ts_io.o  parallel.o precision.o sys.o units.o
-m_ts_gf.o: parallel.o precision.o sys.o
+m_ts_gf.o: m_ts_electrode.o parallel.o precision.o sys.o units.o
 m_ts_global_vars.o: precision.o
 m_ts_in_siesta.o: m_glob_sparse.o m_hs_matrix.o m_ts_contour.o m_ts_gf.o
 m_ts_in_siesta.o: m_ts_kpoints.o m_ts_options.o m_ts_scattering.o parallel.o
@@ -487,7 +486,6 @@ struct_init.o: siesta_geom.o siesta_options.o zmatrix.o
 sys.o: parallel.o
 timer.o: m_timer.o sys.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
-ts_do_green.o: m_ts_electrode.o m_ts_gf.o parallel.o precision.o sys.o
 ts_show_regions.o: parallel.o precision.o units.o
 typecell.o: precision.o
 uncell.o: precision.o

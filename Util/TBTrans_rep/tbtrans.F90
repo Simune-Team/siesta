@@ -57,7 +57,7 @@ program tbtrans
 ! * TranSIESTA modules   *
 ! ************************
   use m_ts_contour,   only : mkRealContour
-  use m_ts_gf,        only : read_Green, check_Green
+  use m_ts_gf,        only : do_Green, read_Green
   use m_ts_scattering,only : getSFE
   use m_ts_io,        only : ts_iohs
   use m_ts_electrode, only : create_Green
@@ -324,7 +324,7 @@ program tbtrans
 
   
 ! Create the Left GF file
-  call ts_do_Green('L',HSFileL, GFFileL, GFTitle, &
+  call do_Green('L',HSFileL, GFFileL, GFTitle, &
        ElecValenceBandBot, ReUseGF, &
        nkpnt,kpoint,kweight, &
        NBufAtL,NUsedAtomsL,NRepA1L,NRepA2L, &
@@ -344,7 +344,7 @@ program tbtrans
   end if
 
 ! Create the Right GF file
-  call ts_do_Green('R',HSFileR,GFFileR, GFTitle, &
+  call do_Green('R',HSFileR,GFFileR, GFTitle, &
        ElecValenceBandBot, ReUseGF, &
        nkpnt,kpoint,kweight, &
        NBufAtR,NUsedAtomsR,NRepA1R,NRepA2R, &
@@ -512,13 +512,13 @@ program tbtrans
   end if
 
 ! Left (notice that nuaL_GF should equal NUsedAtomsL)
-  call read_Green(uGFL,EfermiL,nkpnt,NEn,nuaL_GF, &
+  call read_Green(uGFL,.true.,EfermiL,nkpnt,NEn,nuaL_GF, &
        NRepA1L,NRepA2L,noL_GF,nspin, &
        nkparL,kparL,wkparL, &
        nqL,wqL,qLb)
 
 ! Right (notice that nuaR_GF should equal NUsedAtomsR)
-  call read_Green(uGFR,EfermiR,nkpnt,NEn,nuaR_GF, &
+  call read_Green(uGFR,.true.,EfermiR,nkpnt,NEn,nuaR_GF, &
        NRepA1R,NRepA2R,noR_GF,nspin, &
        nkparR,kparR,wkparR, &
        nqR,wqR,qRb)
@@ -650,20 +650,31 @@ program tbtrans
         call create_file(slabel,'COOP',ispin,nspin,uC)
         call create_file(slabel,'COOPL',ispin,nspin,uCL)
         call create_file(slabel,'COOPR',ispin,nspin,uCR)
+
+        if ( IONode ) then
+           write(uC,'(a)') "# COOP between atoms"
+           write(uC,'(a,2(a4,tr1),a10,3(tr1,a13))')"#","At1","At2","E [eV]", &
+                "Total", "Left", "Right"
+           write(uCL,'(a)') "# COOP between atoms and regions"
+           write(uCL,'(a,a4,tr1,a10,3(tr1,a13))')"#","At.","E [eV]", &
+                "L2L", "L", "L2R"
+           write(uCR,'(a)') "# COOP between atoms and regions"
+           write(uCR,'(a,a4,tr1,a10,3(tr1,a13))')"#","At.","E [eV]", &
+                "R2R", "R", "R2L"
+        end if
      end if
 
      if ( CalcAtomPDOS ) then
         call create_file(slabel,'TOTDOS',ispin,nspin,uTOTDOS)
+        call create_file(slabel,'ORBDOS',ispin,nspin,uORBDOS)
+
         if ( IONode ) then
            write(uTOTDOS,'(a)')"# Total Mulliken population on atoms"
-           write(uTOTDOS,'(a4,tr1,a10,3(tr1,a13))')"# At","Energy", &
+           write(uTOTDOS,'(a4,tr1,a10,3(tr1,a13))')"# At.","E [eV]", &
                 "Total", "Left", "Right"
-        end if
-        call create_file(slabel,'ORBDOS',ispin,nspin,uORBDOS)
-        if ( IONode ) then
            write(uORBDOS,'(a)')"# Mulliken population on orbitals"
            write(uORBDOS,'(a)')"# Orbitals are in same order as SIESTA Mulliken"
-           write(uORBDOS,'(a4,tr1,a10,tr1,a)')"# At","Energy", &
+           write(uORBDOS,'(a4,tr1,a10,tr1,a)')"# At.","E [eV]", &
                 "Mulliken pop. on orbital"
         end if
      end if
