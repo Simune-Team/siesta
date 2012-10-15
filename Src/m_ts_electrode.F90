@@ -618,6 +618,11 @@ contains
     allocate(Gq(nuou_E*nuou_E,nq))
     call memory('A','Z',nuou_E*nuou_E*nq*3,'create_green')
 
+    ! Allocate all H00,S00,H01 and S01 arrays
+    allocate(H00(nuo_E*nuo_E),S00(nuo_E*nuo_E))
+    allocate(H01(nuo_E*nuo_E),S01(nuo_E*nuo_E))
+    call memory('A','Z',4*nuo_E*nuo_E,'create_Green')
+
     ! Reset bulk DOS
     do iEn = 1 , NEn
        ZBulkDOS(iEn) = dcmplx(0.d0,0.d0)
@@ -863,7 +868,7 @@ contains
     deallocate(GS,Hq,Sq,Gq)
 
     ! Hamiltonians
-    call memory('D','Z',size(H00)*4,'create_green')
+    call memory('D','Z',4*nuo_E*nuo_E,'create_green')
     deallocate(H00,S00,H01,S01)
 
     if ( .not. Gamma ) then
@@ -1289,7 +1294,7 @@ contains
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp), dimension(:), pointer:: Hk,Sk,Hk_T,Sk_T
+    complex(dp), dimension(nuo*nuo)   :: Hk,Sk,Hk_T,Sk_T
 
 ! ***********************
 ! * LOCAL variables     *
@@ -1307,34 +1312,6 @@ contains
        call die("Transfer matrix not possible with Gamma-calculation")
     end if
     
-    if ( associated(Hk) .and. associated(Sk) ) then
-       if ( size(Hk) /= nuo*nuo ) then
-          call memory('D','Z',size(Hk)+size(Sk),'setup_e_HS')
-          deallocate(Hk,Sk)
-          nullify(Hk,Sk)
-          allocate(Hk(nuo*nuo),Sk(nuo*nuo))
-          call memory('A','Z',2*nuo*nuo,'setup_e_HS')
-       end if
-    else
-       nullify(Hk,Sk)
-       allocate(Hk(nuo*nuo),Sk(nuo*nuo))
-       call memory('A','Z',2*nuo*nuo,'setup_e_HS')
-    end if
-
-    if ( associated(Hk_T) .and. associated(Sk_T) ) then
-       if ( size(Hk_T) /= nuo*nuo ) then
-          call memory('D','Z',size(Hk_T)+size(Sk_T),'setup_e_HS')
-          deallocate(Hk_T,Sk_T)
-          nullify(Hk_T,Sk_T)
-          allocate(Hk_T(nuo*nuo),Sk_T(nuo*nuo))
-          call memory('A','Z',2*nuo*nuo,'setup_e_HS')
-       end if
-    else
-       nullify(Hk_T,Sk_T)
-       allocate(Hk_T(nuo*nuo),Sk_T(nuo*nuo))
-       call memory('A','Z',2*nuo*nuo,'setup_e_HS')
-    end if
-
 ! Initialize arrays
     do i = 1,nuo*nuo
        Hk(i) = dcmplx(0.d0,0.d0)

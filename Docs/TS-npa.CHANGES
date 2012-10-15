@@ -1,4 +1,15 @@
 ----------------------------------------------------
+Oct 15, 2012 -- Nick P. Andersen     trunk-411--ts-npa-9
+Bugfix in electrode GF generation if processors > NEn
+
+* If the number of processors exceeded the number of energy points,
+  an array was not used. It is now initialised correct and deallocated
+  correctly.
+  
+modified:
+  Src/m_ts_electrode.F90
+
+----------------------------------------------------
 Oct 15, 2012 -- Nick P. Andersen     trunk-411--ts-npa-8
 GF checks of electrode atomic coordinates
 
