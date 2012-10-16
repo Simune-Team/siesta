@@ -162,6 +162,7 @@ C
 
       use m_doping,       only: initialize_doping, doping
       use m_doping,       only: compute_doping_structs, doping_active
+      use m_doping,       only: ADD_BACKGROUND, REMOVE_BACKGROUND
 
 #ifdef TRANSIESTA
       use siesta_options, only: isolve
@@ -691,6 +692,21 @@ C Transform spin density into sum and difference
         enddo
       endif
 
+C Add a background charge to neutralize the net charge, to
+C model doped systems. It only adds the charge at points
+C where there are atoms (i.e., not in vacuum).          
+
+C NOTE: This section was formerly reached only for non-bulk systems,
+C       while the corresponding removal was done unconditionally.
+C       In the interest of generality, even if it might not make sense
+C       for bulk systems, it can now be used for all systems.
+
+        if (frstme) call initialize_doping()
+        if (doping_active .and. (.not. (samexa.and.samesh))) then
+           call compute_doping_structs(nmpl,rhoatm,nsd)
+        endif
+        if (doping_active) call doping(cell,nmpl,ADD_BACKGROUND,DRho)
+
 C ----------------------------------------------------------------------
 C Calculate the dipole moment
 C ----------------------------------------------------------------------
@@ -702,17 +718,6 @@ C Find center of system
         do ia = 1,nua
           x0(1:3) = x0(1:3) + xa(1:3,ia) / nua
         enddo
-
-C Add a background charge to neutralize the net charge, to
-C model doped systems. It only adds the charge at points
-C where there are atoms (i.e., not in vacuum).          
-C First, call with 'task=0' to add background charge    
-
-        if (frstme) call initialize_doping()
-        if (doping_active .and. (.not. (samexa.and.samesh))) then
-           call compute_doping_structs(nmpl,rhoatm,nsd)
-        endif
-        if (doping_active) call doping(cell,nmpl,0,DRho)
 
 C Find dipole
         call reord( DRho, DRho, nml, nsm, +1)
@@ -730,7 +735,6 @@ C Orthogonalize dipole to bulk directions
           dipol(1:3) = const * b1Xb2(1:3)
         endif
       endif
-
 
 C ----------------------------------------------------------------------
 C Find Hartree potential of DRho = rhoscf-rhoatm. Store it in Vscf
@@ -752,9 +756,6 @@ C Solve Poisson's equation
 #endif /* TRANSIESTA */
       call reord( DRho, DRho, nml, nsm, -1)
       call reord( Vscf, Vscf, nml, nsm, -1)
-
-C Call doping with 'task=1' to remove background charge added previously
-      if (doping_active) call doping(cell,nmpl,1,DRho)
 
 C Add contribution to stress from electrostatic energy of rhoscf-rhoatm
       if (istr .eq. 1) then
@@ -782,6 +783,12 @@ C Global reduction of Uscf/DUscf/Uatm
      .  MPI_Comm_World,MPIerror)
       Uatm = Eloc
 #endif
+
+C Call doping again to remove background charge added previously
+C The extra charge thus only affects the Hartree energy and potential,
+C but not the contribution to Enascf ( = \Int_{Vna*\rho})
+
+      if (doping_active) call doping(cell,nmpl,REMOVE_BACKGROUND,DRho)
 
 C ----------------------------------------------------------------------
 C Add neutral-atom potential to Vscf

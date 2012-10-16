@@ -34,6 +34,10 @@
       public :: initialize_doping, compute_doping_structs
       public :: doping
 
+      integer, parameter, public :: ADD_BACKGROUND = 0
+      integer, parameter, public :: REMOVE_BACKGROUND = 1
+
+
       CONTAINS
 
       subroutine initialize_doping()
@@ -127,10 +131,10 @@
 ! neutral. This background charge is constant at points of the mesh near
 ! the atoms, and zero at points far from the atoms.  This simulates
 ! situations like doped slabs, where the extra electrons (holes) are
-! compensated by oposite charges at the material (the ionized dopant
+! compensated by opposite charges at the material (the ionized dopant
 ! impurities), but not at the vacuum.
-! The routine must be first called with 'task=0', and later with
-! 'task=1' 
+! The routine must be first called with 'task=ADD_BACKGROUND', and later with
+! 'task=REMOVE_BACKGROUND' 
 !
 ! Written by P. Ordejon, July 2009
 !
@@ -150,8 +154,10 @@
       real(dp), intent(in)         ::  cell(3,3)
       ! Number of "big" mesh points in this MPI process
       integer, intent(in)          ::  np
+
 !     ! Task :   0 = add background
 !                1 = remove background added in a previous call
+!     (Symbolic names are now used and exported for the use of calling routines)
       integer, intent(in)          ::  task
 !     Charge density, to which the background charge is added.
       real(grid_p), intent(inout)  ::  rho(nsp, np)
@@ -160,9 +166,9 @@
       real(dp)          fact
       real(dp), external  ::          volcel
 
-      if (task .eq. 0) then
+      if (task .eq. ADD_BACKGROUND) then
         fact = qtot*(nsp*nptot)/(nt*volcel(cell))
-      else if (task .eq. 1) then
+      else if (task .eq. REMOVE_BACKGROUND) then
         fact = -qtot*(nsp*nptot)/(nt*volcel(cell))
       else 
         call die('ERROR: wrong task in doping.F')

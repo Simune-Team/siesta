@@ -4,6 +4,20 @@
 
 ** CHANGES ALONG siesta-3 branch
 ------------------------------------------------------------------------
+2012-10-16  10:40:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl12
+Allow doping feature for all systems
+
+The "SimulateDoping" option is now enabled for "bulk" systems, in the
+interest of generality and to fix an inconsistency in the logic for
+charge removal. (Thanks to N. P. Andersen)
+
+The tasks for addition and removal of charge have now symbolic names.
+
+modified:
+  Src/dhscf.F
+  Src/doping.F
+
+------------------------------------------------------------------------
 2012-06-16  15:15:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl11
 Improved the estimation of the size of the automatic cell
 
