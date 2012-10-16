@@ -4,6 +4,19 @@
 
 ** CHANGES ALONG siesta-3 branch
 ------------------------------------------------------------------------
+2012-10-16  12:30:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl13
+Fix spin loop in initialization in Eig2DOS program
+
+The initialization code was missing a loop over spin.
+
+(+ changes to fix compiler-dependent complaints)
+
+(Thanks to N.P. Andersen)
+
+modified:
+  Util/Eig2DOS.f90
+
+------------------------------------------------------------------------
 2012-10-16  10:40:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl12
 Allow doping feature for all systems
 
