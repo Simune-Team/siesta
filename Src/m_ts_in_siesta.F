@@ -286,9 +286,8 @@
 !   Bookkeeping of charges in different regions:
 !==================================================================
 
-      real(dp), save :: QC0  ! Init(SIESTA) no. electrons in update region
-      real(dp), save :: QCn0 ! Init(SIESTA) no. electrons outside update region
-      real(dp)       :: QC   ! no. electrons in update region
+      real(dp) :: Qcn  ! Init(SIESTA) no. electrons outside update region
+      real(dp) :: Qc   ! no. electrons in update region
 
 !     Collecting charges in updated region on k-point resolution
 !     First index corresponds to values seen in variables 'region' and
@@ -724,11 +723,11 @@
          Q_kpt(:,:,:) = 0.0_dp
          call memory('A','D',nspin*10,'transiesta')
 
-         Qcn0 = 0.d0
+         Qcn = 0.d0
          do ispin = 1,nspin
             do ind = 1,maxnh
                if(.not.listud(ind)) then
-                  Qcn0 = Qcn0 + Dnew(ind,ispin)*Ss(ind)
+                  Qcn = Qcn + Dnew(ind,ispin)*Ss(ind)
                endif
                Q_kpt(region(ind),ispin,1) =
      &              Q_kpt(region(ind),ispin,1)+
@@ -737,9 +736,9 @@
          end do                 !ispin
 
 #ifdef MPI
-         call MPI_AllReduce(Qcn0,qcloc,1,
+         call MPI_AllReduce(Qcn,qcloc,1,
      &        DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
-         Qcn0 = Qcloc
+         Qcn = Qcloc
 
          allocate(Q_kpt_loc(0:9,nspin,1))
          call memory('A','D',nspin*10,'transiesta')
@@ -753,14 +752,14 @@
 !     Write out charges in each region
 !     If a buffer region exists it will print out information about
 !     those as well
-         Qc0 = Qtot - Qcn0
+         Qc = Qtot - Qcn
 
          if(IONode) then 
             write(*,'(4(/,a,f12.5))')
      &           'Efermi from SIESTA                   :',ef/eV,
      &           'Total charge                  [Qt0]  :',Qtot,
-     &           'Charge in update region       [Qc0]  :',Qc0,
-     &           'Charge outside update region  [Qcn0] :',Qcn0
+     &           'Charge in update region       [Qc]   :',Qc,
+     &           'Charge outside update region  [Qcn]  :',Qcn
             if ( NBufAtL > 0 ) write(*,'(a,f12.5,/,a,f12.5)')
      &           'Left buffer                   [LB]   :',Q_kpt(1,1,1),
      &           'Left buffer/left electrode    [LB-L] :',Q_kpt(2,1,1)
@@ -1463,42 +1462,42 @@
       ! Charge in the updated region
       ! k-point index 0 is non-updated region...
       ! Must be done after any charge correction to show correctly
-      Qc = sum(Q_kpt(:,1:ts_nkpnt,:))
+      Qc  = sum(Q_kpt(:,1:ts_nkpnt,:))
       ! Charge in the non-updated region
-      Qcn0 = sum(Q_kpt(:,0,:))
+      Qcn = sum(Q_kpt(:,0,:))
 
 
       if(IONode) then
-         write(*,'(a)') "TranSIESTA region charges:"
-         write(*,'(6(a9,1X))') 'O','L','L-C','C','C-R','R'
+         write(*,'(a,7(1x,a8))') 'ts-charge:','O','L','L-C','C'
+     &        ,'C-R','R','Qt'
          if ( noBufL + noBufR > 0 ) then
             if ( noBufL == 0 ) then ! It must be the Right buffer who has states
-               write(*,'(2(a9,1X))') 'R-RB','RB'
+               write(*,'(a,2(1x,a8))') 'ts-charge:','R-RB','RB'
             else if ( noBufR == 0 ) then ! The left has states
-               write(*,'(2(a9,1X))') 'LB','LB-L'
+               write(*,'(a,2(1x,a8))') 'ts-charge:','LB','LB-L'
             else ! Both have states
-               write(*,'(4(a9,1X))') 'LB','LB-L','RB-L','RB'
+               write(*,'(a,4(1x,a8))') 'ts-charge:','LB','LB-L'
+     &              ,'RB-L','RB'
             end if
          end if
-         write(*,'(6(f9.3,1X))') sum(Q_kpt(0,:,:))
+         write(*,'(a,7(1x,f8.3))') 'ts-charge:'
+     &        ,sum(Q_kpt(0,:,:))
      &        ,sum(Q_kpt(3,:,:)),sum(Q_kpt(4,:,:))
      &        ,sum(Q_kpt(5,:,:)),sum(Q_kpt(6,:,:))
-     &        ,sum(Q_kpt(7,:,:))
+     &        ,sum(Q_kpt(7,:,:)),Qc+Qcn
          if ( noBufL + noBufR > 0 ) then
             if ( noBufL == 0 ) then
-               write(*,'(2(f9.3,1X))') sum(Q_kpt(8,:,:))
-     &              ,sum(Q_kpt(9,:,:))
+               write(*,'(a,2(1x,f8.3))') 'ts-charge:'
+     &              ,sum(Q_kpt(8,:,:)),sum(Q_kpt(9,:,:))
             else if ( noBufR == 0 ) then
-               write(*,'(2(f9.3,1X))') sum(Q_kpt(1,:,:))
-     &              ,sum(Q_kpt(2,:,:))
+               write(*,'(a,2(1x,f8.3))') 'ts-charge:'
+     &              ,sum(Q_kpt(1,:,:)),sum(Q_kpt(2,:,:))
             else
-               write(*,'(4(f9.3,1X))') sum(Q_kpt(1,:,:))
-     &              ,sum(Q_kpt(2,:,:)),sum(Q_kpt(8,:,:)), 
-     &              sum(Q_kpt(9,:,:))
+               write(*,'(a,4(1x,f8.3))') 'ts-charge:'
+     &              ,sum(Q_kpt(1,:,:)),sum(Q_kpt(2,:,:))
+     &              ,sum(Q_kpt(8,:,:)),sum(Q_kpt(9,:,:))
             end if
          end if
-         write(*,'(a,3(1X,f9.3))') 
-     &        'TranSIESTA: Qc, Qt, Qt0 : ',Qc,Qc+Qcn0,Qtot
       endif 
 !--------------------------------------------------------------------
 

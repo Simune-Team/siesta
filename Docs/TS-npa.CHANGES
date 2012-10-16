@@ -1,4 +1,16 @@
 ----------------------------------------------------
+Oct 16, 2012 -- Nick P. Andersen     trunk-411--ts-npa-10
+Cleaned up output, renamed 'TranSIESTA:' to 'ts-charge:'
+
+* Simply make the output shorter and more concise
+* Transiesta output in write_subs has also been 
+  shortened
+
+modified:
+  Src/m_ts_in_siesta.F
+  Src/write_subs.F
+
+----------------------------------------------------
 Oct 15, 2012 -- Nick P. Andersen     trunk-411--ts-npa-9
 Bugfix in electrode GF generation if processors > NEn
 
