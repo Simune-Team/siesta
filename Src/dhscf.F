@@ -163,6 +163,8 @@ C
       use m_doping,       only: initialize_doping, doping
       use m_doping,       only: compute_doping_structs, doping_active
       use m_doping,       only: ADD_BACKGROUND, REMOVE_BACKGROUND
+      use m_partial_charges, only: compute_partial_charges
+      use m_partial_charges, only: want_partial_charges
 
 #ifdef TRANSIESTA
       use siesta_options, only: isolve
@@ -595,6 +597,14 @@ C ----------------------------------------------------------------------
               call bye("STOP after producing RHO_INIT")
             endif
          endif
+      endif
+!
+!     Proper place to integrate Hirshfeld and Voronoi code,
+!     since we have just computed rhoatm and Rho.
+      if (want_partial_charges) then
+         call compute_partial_charges(DRho,rhoatm,
+     .                  nspin, iaorb, iphorb, 
+     .                  isa, nmpl,dvol)
       endif
 
 C ----------------------------------------------------------------------

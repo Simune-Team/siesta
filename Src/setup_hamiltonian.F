@@ -27,6 +27,7 @@
       use m_gamma
       use m_hsx, only: write_hsx
       use sys, only: die
+      use m_partial_charges, only: want_partial_charges
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
@@ -211,6 +212,10 @@
           ifa  = 0
           istr = 0
           ihmat = 1
+          if ((hirshpop .or. voropop)
+     $         .and. partial_charges_at_every_scf_step) then
+             want_partial_charges = .true.
+          endif
           call dhscf( nspin, no_s, iaorb, iphorb, no_l,
      .                no_u, na_u, na_s, isa, xa, indxua, 
      .                ucell, mscell, g2max, ntm,
@@ -219,6 +224,7 @@
      .                maxnh, numh, listhptr, listh, H,
      .                Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
      .                Exc, Dxc, dipol, fa, stress, fal, stressl)
+          want_partial_charges = .false.
         endif
             
 ! Output memory use after first call to dhscf

@@ -25,7 +25,6 @@
       use m_spin,     only: nspin
       use m_forces
       use m_intramol_pressure, only: remove_intramol_pressure
-      use m_atompop,    only : atompop
 
       implicit none
 
@@ -135,15 +134,6 @@ C ...................
      .               numh, listhptr, listh, S, Dscf, isa, 
      .               lasto, iaorb, iphorb )
 !
-
-! Hirshfeld and Voronoi population analysis ..........................
-      if (hirshpop .or. voropop) then
-         call atompop( hirshpop, voropop,
-     .                  nspin, iaorb, iphorb, 
-     .                  no_u, na_u, na_s, isa, ntm, ucell,
-     .                  maxnh, numh, listhptr, listh,
-     .                  Dscf)
-      endif
 
 !     Call the born effective charge routine only in those steps (even) 
 !     in which the dx  is positive.

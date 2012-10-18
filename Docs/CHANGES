@@ -4,6 +4,36 @@
 
 ** CHANGES ALONG siesta-3 branch
 ------------------------------------------------------------------------
+2012-10-18  13:30:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl14
+Integrate computation of Hirshfeld and Voronoi charges in dhscf
+
+The computation of the Hirshfeld and Voronoi partial charges now
+re-uses the charge densities computed in dhscf. By default, they
+are computed only at the end of the program, but this behavior
+can be changed by using the logical fdf options:
+
+PartialChargesAtEveryGeometry
+PartialChargesAtEveryScfStep
+
+removed:
+  Src/atompop.F
+added:
+  Src/m_partial_charges.F
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/Makefile
+  Src/dhscf.F
+  Src/grdsam.F
+  Src/setup_hamiltonian.F
+  Src/siesta_analysis.F
+  Src/siesta_options.F90
+  Src/state_analysis.F
+  Tests/Reference-xml/h2o-pop.xml
+  Tests/Reference/h2o.out
+  Tests/h2o-pop/h2o-pop.fdf
+
+------------------------------------------------------------------------
 2012-10-16  12:30:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl13
 Fix spin loop in initialization in Eig2DOS program
 

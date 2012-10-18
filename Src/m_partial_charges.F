@@ -1,167 +1,86 @@
-      module m_atompop
-      public :: atompop
+      module m_partial_charges
+      public :: compute_partial_charges
+      logical, public :: want_partial_charges = .false.
       private
       CONTAINS
 !
-      subroutine atompop(hirshpop, voropop,
+      subroutine compute_partial_charges(DRho,rhoatm,
      .                  nspin, iaorb, iphorb, 
-     .                  no_u, na_u, na_s, isa, ntm, ucell,
-     .                  maxnd, numd, listdptr, listd, 
-     .                  Dscf )
+     .                  isa, nmpl,dvol)
 
-C integer na_u           : Number of atoms in unit cell
-C
+
 C Calculates the Hirshfeld and Voronoi charges 
 C Coded by P. Ordejon, August 2004
+C Integrated into dhscf workflow by A. Garcia, October 2012
 C
 C ----------------------------------------------------------------------
 C Input :
 C ----------------------------------------------------------------------
-C logical hirshpop      : Perform Hirshfeld population analysis
-C logical voropop       : Perform Voronoi population analysis
 C integer nspin         : Number of different spin polarisations
 C                         nspin=1 => Unpolarized, nspin=2 => polarized
 C                         nspin=4 => Noncollinear spin -NOT IMPLEMENTED-
 C integer iaorb(no_s)   : Atom to which each orbital belongs
 C integer iphorb(no_s)  : Orbital index (within atom) of each orbital
 C integer indxuo        : Index of equivalent orbital in unit cell
-C integer na_u           : Number of atoms in unit cell
-C integer na_s            : Number of atoms in supercell
-C integer isa(na_s)       : Species index of all atoms in supercell
-C integer ntm(3)        : Number of mesh divisions of each cell
-C                         vector, including subgrid.
-C real*8 ucell(3,3)     : Unit cell vectors
-C integer maxnd             : First dimension of listd and Dscf
-C integer numd(no_l)         : Number of nonzero density-matrix
-C                             elements for each matrix row
-C integer listdptr(no_l)     : Pointer to start of rows of density-matrix
-C integer listd(maxnd)      : Nonzero-density-matrix-element column
-C                             indexes for each matrix row
-C real*8  Dscf(maxnd,nspin): SCF density-matrix elements
+C integer isa(na_s)     : Species index of all atoms in supercell
+C real(grid_p) Drho(:,:): Electron charge density (in cluster form)
+C real(grid_p) rhoatm(:): Superposition of atomic Electron charge densities
 C ----------------------------------------------------------------------
 C Output : None
 C ----------------------------------------------------------------------
 
-C
 C  Modules
 C
       use precision,    only:  dp, grid_p
       use parallel
-      use parallelsubs
-      use atomlist, only: indxua, indxuo, no_s, no_l, Datm
+      use atomlist, only: indxua, indxuo, no_s, no_u, Datm
+      use siesta_geom, only: na_u, na_s
       use atmfuncs, only: rcut, rcore, symfio, cnfigfio, labelfis, 
      .                    nofis, zvalfis
       use sys
-      use mesh
+!      use mesh
+      use siesta_options, only: hirshpop, voropop
 #ifdef MPI
       use mpi_siesta
 #endif
 
       implicit none
 
-      logical, intent(in)     ::   hirshpop, voropop
-      integer, intent(in)     ::
-     .  maxnd, na_u, na_s, nspin, ntm(3), no_u,
-     .  iaorb(no_s), iphorb(no_s), isa(na_s), 
-     .  listd(*), listdptr(no_l), numd(no_l)
+      integer, intent(in)     :: nspin,
+     .  iaorb(no_s), iphorb(no_s), isa(na_s), nmpl
 
-      real(dp), intent(In)   ::
-     .  ucell(3,3), Dscf(maxnd,nspin)
-
-C ----------------------------------------------------------------------
-C Routines called internally:
-C ----------------------------------------------------------------------
-C        rhooda(...)    : Finds Harris electron density in the mesh
-C        rhoofd(...)    : Finds SCF electron density in the mesh
-C        volcel(...)    : Returns volume of cell
-C ----------------------------------------------------------------------
+      real(dp), intent(In)         :: dvol
+      real(grid_p), dimension(:), intent(in)   :: rhoatm
+      real(grid_p), dimension(:,:), intent(in) :: DRho
 
 C
 C Internal variables
-C
-C  rhoscf, rhoatm  : defined as in dhscf
 C  real*8 q(na) : atomic charges 
 C
-C
-      integer
-     .  ia, ispin, ntpl, ntp, 
-     .  meshnsm(3), meshl(3), npl, ns, ispec
+      integer ::   ia, ispin, ns, ispec, is
 
 #ifdef MPI
       integer
      .  MPIerror
 #endif
 
-      real(grid_p), dimension(:), allocatable   :: rhoatm
-      real(grid_p), dimension(:,:), allocatable :: DRho
-
       real(dp), dimension(:), allocatable       :: q, qtmp
-
-      real(dp) :: dvol, volume, volcel
 
       character(len=20) ::  atm_label
 
-      external
-     .  rhooda, rhoofd, rhoofdsp,
-     .  memory, volcel
-
+      external  memory
 
 C ----------------------------------------------------------------------
 C General initialisation
 C ----------------------------------------------------------------------
 
       if (nspin .eq. 4) then
-        write(6,*) 'atompop: Hirsfeld and Voronoi populations for'
-        write(6,*) 'atompop: non-collinear spin not implemented...'
+        call message("Hirshfeld and Voronoi populations" //
+     $               " not implemented for non-collinear spin")
         return
       endif
 
-      ns=0
-      do ia = 1,na_u
-        ns=max(ns,isa(ia))
-      enddo
-
-
 C ----------------------------------------------------------------------
-C Allocate memory that depends on the mesh
-C ----------------------------------------------------------------------
-
-C Find system volume and volume per mesh point
-
-      meshnsm(1) = ntm(1)/nsm
-      meshnsm(2) = ntm(2)/nsm
-      meshnsm(3) = ntm(3)/nsm
-
-      call HowManyMeshPerNode(meshnsm,Node,Nodes,npl,meshl)
-
-      volume = volcel( ucell )
-      ntp = ntm(1) * ntm(2) * ntm(3)
-      dvol = volume / ntp
-
-C Number of extended mesh points locally
-      ntpl = npl*nsp
-
-C Allocate memory related to ntpl
-
-      allocate(rhoatm(ntpl))
-      call memory('A','S',ntpl,'hirsh')
-      allocate(DRho(ntpl,nspin))
-      call memory('A','S',ntpl*nspin,'hirsh')
-
-C ----------------------------------------------------------------------
-
-C Find Harris (sum of atomic) electron density
-        call rhooda( no_s, npl, datm, rhoatm, 
-     .               iaorb, iphorb, isa )
-
-C ----------------------------------------------------------------------
-C Find SCF electron density at mesh points. Store it in array DRho
-C ----------------------------------------------------------------------
-
-      call rhoofd(no_s, npl, maxnd, numd, listdptr, listd,
-     .              nspin, Dscf, DRho, no_l, no_u, iaorb, iphorb, isa)
-
-
       allocate(q(na_u))
       call memory('A','D',na_u,'hirsh')
       allocate(qtmp(na_u))
@@ -173,43 +92,25 @@ C ----------------------------------------------------------------------
 
       if (hirshpop) then
         call hirshfeld( no_s, na_s, na_u, nspin, indxuo, indxua, 
-     .                  npl, datm, rhoatm, DRho, iaorb, iphorb, isa, 
+     .                  nmpl, datm, rhoatm, DRho, iaorb, iphorb, isa, 
      .                  q )
 
 #ifdef MPI
-#ifdef NODAT
-        call MPI_AllReduce(q(1),qtmp(1),na_u,
+        call MPI_AllReduce(q,qtmp,na_u,
      .    MPI_double_precision,MPI_sum,MPI_Comm_World,MPIerror)
-#else
-        call MPI_AllReduce(q(1),qtmp(1),na_u,
-     .    DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
-#endif
         q(1:na_u) = qtmp(1:na_u)
 #endif
 
         if (Node.eq.0) then
-          write(6,*)
-          write(6,"(a)")
-     .          'atompop: Hirshfeld Net Atomic Populations:'
+           write(6,"(/,a)")  'Hirshfeld Net Atomic Populations:'
+           write(6,'(a6,2x,a7,2x,a)') 'Atom #', 'Qatom', 'Species'
+           do ia = 1,na_u
+              is = isa(ia)
+              atm_label = labelfis(is)
+              write(6,'(i6,2x,f7.3,2x,a20)'), ia,
+     $             zvalfis(is)-q(ia)*dvol, atm_label
+           enddo
         endif
-
-        do ispec =1, ns
-
-          atm_label=labelfis(ispec)
-          if (Node.eq.0) then
-            write(6,'(/2a)')'Species: ', atm_label
-            write(6,'(a4,a7)') 'Atom', 'Qatom'
-          endif
-
-          do ia = 1,na_u
-            if (isa(ia).eq.ispec) then
-              if (Node.eq.0) then
-                write(6,'(i4,f7.3)')
-     .          ia, zvalfis(ispec)-q(ia)*dvol
-              endif
-            endif
-          enddo
-        enddo
       endif
 
 C ----------------------------------------------------------------------
@@ -218,45 +119,24 @@ C ----------------------------------------------------------------------
 
       if (voropop) then
         call voronoi( no_s, na_s, na_u, nspin, indxua, 
-     .                npl, rhoatm, DRho, iaorb,
+     .                nmpl, rhoatm, DRho, iaorb,
      .                q )
-
-
 #ifdef MPI
-#ifdef NODAT
-        call MPI_AllReduce(q(1),qtmp(1),na_u,
+        call MPI_AllReduce(q,qtmp,na_u,
      .    MPI_double_precision,MPI_sum,MPI_Comm_World,MPIerror)
-#else
-        call MPI_AllReduce(q(1),qtmp(1),na_u,
-     .    DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
-#endif
-
         q(1:na_u) = qtmp(1:na_u)
 #endif
 
         if (Node.eq.0) then
-          write(6,*)
-          write(6,"(a)")
-     .          'atompop: Voronoi Net Atomic Populations:'
+           write(6,"(/,a)")  'Voronoi Net Atomic Populations:'
+           write(6,'(a6,2x,a7,2x,a)') 'Atom #', 'Qatom', 'Species'
+           do ia = 1,na_u
+              is = isa(ia)
+              atm_label = labelfis(is)
+              write(6,'(i6,2x,f7.3,2x,a20)'), ia,
+     $             -q(ia)*dvol, atm_label
+           enddo
         endif
-
-        do ispec =1, ns
-
-          atm_label=labelfis(ispec)
-          if (Node.eq.0) then
-            write(6,'(/2a)')'Species: ', atm_label
-            write(6,'(a4,a7)') 'Atom', 'Qatom'
-          endif
-
-          do ia = 1,na_u
-            if (isa(ia).eq.ispec) then
-              if (Node.eq.0) then
-                write(6,'(i4,f7.3)')
-     .            ia, -q(ia)*dvol
-              endif
-            endif
-          enddo
-        enddo
       endif
 
       call memory('D','D',size(qtmp),'hirsh')
@@ -264,16 +144,7 @@ C ----------------------------------------------------------------------
       call memory('D','D',size(q),'hirsh')
       deallocate(q)
 
-C ----------------------------------------------------------------------
-C Free locally allocated memory
-C ----------------------------------------------------------------------
-      call memory('D','S',size(DRho),'hirsh')
-      deallocate(DRho)
-      call memory('D','S',size(rhoatm),'hirsh')
-      deallocate(rhoatm)
-
-      end subroutine atompop
-
+      end subroutine compute_partial_charges
 
 
       subroutine hirshfeld( no_s, na_s, na_u, nspin, indxuo, indxua, np,
@@ -525,4 +396,4 @@ C  Check that charge is actually zero
       enddo
 
       end subroutine voronoi
-      end module m_atompop
+      end module m_partial_charges

@@ -3,6 +3,7 @@ SystemLabel         h2o-pop
 NumberOfAtoms       3
 NumberOfSpecies     2
 
+#PartialChargesAtEveryScfStep T
 WriteHirshfeldPop T
 WriteVoronoiPop T
 WriteMullikenPop 1

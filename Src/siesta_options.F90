@@ -78,6 +78,8 @@ MODULE siesta_options
   logical :: want_spatial_decomposition ! Use spatial decomposition for orbitals
   logical :: hirshpop        ! Perform Hirshfeld population analysis?
   logical :: voropop         ! Perform Voronoi population analysis?
+  logical :: partial_charges_at_every_geometry
+  logical :: partial_charges_at_every_scf_step
 
   integer :: ia1           ! Atom index
   integer :: ia2           ! Atom index
@@ -401,8 +403,12 @@ MODULE siesta_options
     endif
 
     ! Perform Hirshfeld and/or Voronoi Population Analysis
-    call fdf_global_get(hirshpop,'WriteHirshfeldPop',outlng)
-    call fdf_global_get(voropop,'WriteVoronoiPop',outlng)
+    call fdf_global_get(hirshpop,'WriteHirshfeldPop',.false.)
+    call fdf_global_get(voropop,'WriteVoronoiPop',.false.)
+    call fdf_global_get(partial_charges_at_every_geometry,  &
+                       'PartialChargesAtEveryGeometry',.false.)
+    call fdf_global_get(partial_charges_at_every_scf_step,  &
+                       'PartialChargesAtEveryScfStep',.false.)
 
     ! Planewave cutoff of the real space mesh ...
     call fdf_global_get(g2cut,'MeshCutoff',g2cut_default,'Ry')

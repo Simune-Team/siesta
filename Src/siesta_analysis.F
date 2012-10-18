@@ -39,6 +39,7 @@
       use m_gamma 
       use alloc,             only: re_alloc, de_alloc
       use basis_enthalpy,    only: write_basis_enthalpy
+      use m_partial_charges, only: want_partial_charges
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
@@ -334,10 +335,13 @@
 !
 !  NOTE: Dscf here is the mixed one (see above).
 !
-
+      want_partial_charges = (hirshpop .or. voropop) .AND.
+     $                   (.not. partial_charges_at_every_geometry)
+!
 ! Save electron density and potential
       if (savrho .or. savdrh .or. savevh .or. savevt .or.
-     .    savepsch .or. savetoch ) then
+     .    savepsch .or. savetoch
+     $     .or. want_partial_charges) then
         filrho = ' '
         fildrh = ' '
         filevh = ' '
