@@ -1,0 +1,25 @@
+------------------------------------------------------
+October 18, 2012  Alberto Garcia trunk-413-features3-1
+Port Hirshfeld, Voronoi, and Bader charges to trunk
+
+For Hirshfeld and Voronoi, this is already in the "modern" form centered
+in dhscf. 
+
+added:
+  Src/m_partial_charges.F
+  Tests/h2o-pop/
+  Tests/h2o-pop/h2o-pop.fdf
+  Tests/h2o-pop/h2o-pop.pseudos
+  Tests/h2o-pop/makefile
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/Makefile
+  Src/dhscf.F
+  Src/grdsam.F
+  Src/meshsubs.F
+  Src/setup_hamiltonian.F
+  Src/siesta_analysis.F
+  Src/siesta_options.F90
+  Tests/Makefile
+  Util/Grid/grid2cube.f
