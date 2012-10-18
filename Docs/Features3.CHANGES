@@ -1,4 +1,29 @@
 ------------------------------------------------------
+October 18, 2012  Alberto Garcia trunk-413-features3-2
+New energy-range and band-index options in mprop.
+
+* Upgrade of the Util/COOP/mprop program, with new options and
+  clarification of existing ones:
+
+- Allow specification of subsets of bands in Util/COOP/mprop
+
+New options "-b min_band -B max_band" to allow the use of restricted
+band sets in the generation of PDOS, COOP, and COHP curves.
+
+- Clearer energy-range options in mprop program
+
+The -m/-M options now refer to eigenvalues.  Together with the band
+options (-b/-B), they determine the eigenvectors actually taken into
+account.
+
+- Add plotting window options to mprop. Cosmetics
+
+The plotting window can now be specified with the -w/-W options. By
+default it is determined on the basis of the eigenvalue range.
+
+(+ add missing declaration to dm_creator.f90)
+
+------------------------------------------------------
 October 18, 2012  Alberto Garcia trunk-413-features3-1
 Port Hirshfeld, Voronoi, and Bader charges to trunk
 
