@@ -845,7 +845,7 @@ C ======================================================================
 C Edited by Nick Papior Andersen to limit memory use and do a lot fewer
 C operations.
 C However, this is at the expentiure of more cachemisses.
-C It has however prowed to be more than twice as fast.
+C It has however proved to be more than twice as fast.
 c
 C ======================================================================
 C INPUT:
@@ -867,8 +867,8 @@ C
 
 C ======================================================================
 c Helpers, tempos ...
-      complex(dp), allocatable :: wrk(:,:)
-      integer i,j,ie,je
+      complex(dp), allocatable :: wrk(:)
+      integer :: i,j,ie,je
 
 c=======================================================================
 C BEGIN
@@ -882,67 +882,60 @@ c=======================================================================
 
       if(LEFTFLAG) then
          
-         allocate(wrk(ng,nc))
-         call memory('A','Z',ng*nc,'GFGammaGF')
+         allocate(wrk(ng))
+         call memory('A','Z',ng,'GFGammaGF')
 
          do i=1 , nc
             do ie=1 , ng
-               wrk(ie,i) = dcmplx(0.0d0,0.0d0)
+               wrk(ie) = dcmplx(0.0d0,0.0d0)
                do je=1 , ng
-                  wrk(ie,i) = wrk(ie,i) +
+                  wrk(ie) = wrk(ie) +
      &                 dreal(Gamma(je,ie)) * GF(i,je)
-!     &                 Gamma(je,ie) * GF(i,je)
                enddo
             enddo
-         enddo
-         
-         do i=1 , nc
+
             do j=1 , i
                GGG(j,i) = dcmplx(0.d0,0.d0)
                do ie=1 , ng
                   GGG(j,i) = GGG(j,i) +
-     &                 dreal( wrk(ie,i)*dconjg(GF(j,ie)) )
-!     &                  wrk(ie,i)*dconjg(GF(j,ie) )
+     &                 dreal( wrk(ie)*dconjg(GF(j,ie)) )
                enddo
                GGG(j,i) = GGG(j,i) * dcmplx(0d0,-1.d0)
                GGG(i,j) = GGG(j,i)
             enddo
-         enddo
 
+         enddo
+         
       else ! Do right
  
-         allocate(wrk(nc-ng+1:nc,nc))
-         call memory('A','Z',ng*nc,'GFGammaGF')
+         allocate(wrk(nc-ng+1:nc))
+         call memory('A','Z',ng,'GFGammaGF')
          
          do i=1 , nc
             do ie= nc-ng+1 , nc
-               wrk(ie,i) = dcmplx(0.0d0,0.0d0)
+               wrk(ie) = dcmplx(0.0d0,0.0d0)
                do je= nc-ng+1 , nc
-                  wrk(ie,i) = wrk(ie,i) +
+                  wrk(ie) = wrk(ie) +
      &                 dreal(Gamma(je-nc+ng,ie-nc+ng)) * GF(i,je)
-!     &                 Gamma(je-nc+ng,ie-nc+ng) * GF(i,je)
                enddo
             enddo
-         enddo
-         
-         do i=1,nc
+            
             do j=1,i
                GGG(j,i) = dcmplx(0.d0,0.d0)
                do ie= nc-ng+1,nc
                   GGG(j,i) = GGG(j,i) +
-     &                 dreal( wrk(ie,i)*dconjg(GF(j,ie)) )
-!     &                  wrk(ie,i)*dconjg(GF(j,ie))
-
+     &                 dreal( wrk(ie)*dconjg(GF(j,ie)) )
+                  
                enddo
                GGG(j,i) = GGG(j,i) * dcmplx(0d0,-1.d0)
                GGG(i,j) = GGG(j,i)
             enddo
+            
          enddo
- 
+         
       endif
-
  
-      call memory('D','Z',ng*nc,'GFGammaGF')
+      call memory('D','Z',ng,'GFGammaGF')
       deallocate(wrk)
 
       call timer('GFGGF',2)

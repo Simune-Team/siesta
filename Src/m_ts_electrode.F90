@@ -682,6 +682,7 @@ contains
        ! This is a rather new feature which enhances communication times.
        ! However, this is perhaps overkill as we never have VERY many 
        ! contour points. Say NEn > 1000
+       ! Look in the loop for MPI_Start(...) for where this is used
        do i = 1 , Nodes - 1
           call MPI_Recv_Init(Gq(1,1),nuou_E*nuou_E*nq,DAT_dcomplex, &
                i,i,MPI_Comm_World,reqs(i),MPIerror)
@@ -816,6 +817,10 @@ contains
 
 #ifdef MPI
              ! If not IONode we should send message
+             ! This message parsing is directly connected to 
+             ! a predefined size of the message, see right before
+             ! spin loop.
+             ! It communicates the Gq array to the Gq array
              if ( .not. IONode ) then
                 call MPI_Start(req,MPIerror)
                 call MPI_Wait(req,status,MPIerror)
@@ -1401,15 +1406,6 @@ contains
 ! ******************************************************
   subroutine mkqgrid(NA1,NA2,nq,q,wq)
     use precision, only : dp
-
-! ***************** INPUT **********************************************
-! integer     NA1  : Repetition in the cell(:,1) direction
-! integer     NA2  : Repetition in the cell(:,2) direction
-! ***************** OUTPUT *********************************************
-! integer     nq   : Number of q-points (NA1*NA2)
-! real(dp)    q    : q-points that is the expansion points
-! real(dp)    wq   : weight of q-points
-! **********************************************************************
 
 ! ***********************
 ! * INPUT variables     *

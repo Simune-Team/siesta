@@ -38,7 +38,7 @@ program tbtrans
 ! ************************
 ! * SIESTA modules       *
 ! ************************
-  use parallel,       only : Node, Nodes, IONode
+  use parallel,       only : Node, Nodes, IONode, operator(.PARCOUNT.)
   use units,          only : eV,Pi
   use sys,            only : die
   use precision,      only : dp
@@ -266,10 +266,7 @@ program tbtrans
      dE = 0.0_dp
   end if
   ! Calculate the parallel energy point counts
-  PNEn = NEn
-  if ( MOD(NEn,Nodes) /= 0 ) then
-     PNEn = NEn + Nodes - MOD(NEn,Nodes)
-  end if
+  PNEn = Nodes .PARCOUNT. NEn
 
 ! Make new line before reading in TSHS
   call out_NEWLINE(6)

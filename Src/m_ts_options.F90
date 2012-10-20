@@ -121,7 +121,7 @@ subroutine read_ts_options(ucell)
 
 ! SIESTA Modules Used
 use fdf, only : leqi
-use parallel, only: IOnode, Nodes
+use parallel, only: IOnode, Nodes, operator(.parcount.)
 use m_fdf_global, only: fdf_global_get
 use units, only: eV
 use m_ts_global_vars, only : ts_istep, TSinit
@@ -265,24 +265,40 @@ end if
              'ts_read_options: Right elec. repetition A1/A2 = ', NRepA1R,NRepA2R
 end if
 
-if (IOnode) then
+if (IOnode .and. TSmode) then
  write(*,'(2a,/)') 'ts_read_options: ', repeat('*', 62)
 
  write(*,'(3a)') repeat('*',24),' Begin: TS CHECKS AND WARNINGS ',repeat('*',24) 
 
 ! Check that the unitcell does not extend into the transport direction
- if (TSmode) then
-    do i = 1 , 2
-       if ( abs(ucell(3,i)) > 1e-7 .or. abs(ucell(i,3)) > 1e-7 ) then
-          write(*,*) &
-               "ERROR: Unitcell has the electrode extend into the &
-               &transport direction."
-          write(*,*) &
-               "Please change the geometry."
-          call die("Electrodes extend into the transport direction. &
-               &Please change the geometry.")
-       end if
-    end do
+ do i = 1 , 2
+    if ( abs(ucell(3,i)) > 1e-7 .or. abs(ucell(i,3)) > 1e-7 ) then
+       write(*,*) &
+            "ERROR: Unitcell has the electrode extend into the &
+            &transport direction."
+       write(*,*) &
+            "Please change the geometry."
+       call die("Electrodes extend into the transport direction. &
+            &Please change the geometry.")
+    end if
+ end do
+
+! Print out message if the number of contour points are not 
+! divisable by the number of Nodes
+ if ( (IsVolt .and. &
+      mod(2*(Npol+NLine+Ncircle)+Nvolt,Nodes) /= 0 ) &
+      .or. ( .not. IsVolt .and. &
+      mod(Npol+NLine+Ncircle+Nvolt,Nodes) /= 0 ) )then
+    write(*,*) "NOTICE: Total number of energy points is &
+         &not divisable by the number of nodes."
+    write(*,*) "        There are no computational costs &
+         &associated with increasing this."
+    ! Calculate optimal number of energy points
+    i = Npol+Nline+Ncircle+Nvolt
+    if ( IsVolt ) i = 2*(Npol+Nline+Ncircle)+Nvolt
+    write(*,'(t11,a,i4)') "Used # of energy points   : ",i
+    i = Nodes .PARCOUNT. i
+    write(*,'(t11,a,i4)') "Optimal # of energy points: ",i
  end if
 
 ! UseBulk and TriDiag

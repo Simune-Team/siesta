@@ -1,4 +1,28 @@
 ----------------------------------------------------
+Oct 20, 2012 -- Nick P. Andersen     trunk-411--ts-npa-11
+GFGammaGF optimization, energy-point notification and parallel loop count 
+
+* Provided an operator .PARCOUNT. which returns the ceiling of the 
+  closest integer divisable by number of nodes: Nodes .PARCOUNT. N
+* Added comments as requested
+* Removed some double comments
+* Made checks in the ts_options more general
+* Added check of optimal energy points (provides a user-notification
+  about the optimal number of energy-points with respect to 
+  parallelization
+* Further memory optimization of GFGammaGF 
+* Added ts_p in the precision code. Mainly so that we remember to
+  have this to test in the future
+  
+modified:
+  Src/m_ts_electrode.F90
+  Src/m_ts_options.F90
+  Src/m_ts_scattering.F
+  Src/parallel.F
+  Src/precision.F
+  Util/TBTrans_rep/tbtrans.F90
+
+----------------------------------------------------
 Oct 16, 2012 -- Nick P. Andersen     trunk-411--ts-npa-10
 Cleaned up output, renamed 'TranSIESTA:' to 'ts-charge:'
 
