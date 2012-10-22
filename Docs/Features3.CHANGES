@@ -1,4 +1,13 @@
 ------------------------------------------------------
+October 22, 2012  Alberto Garcia trunk-413-features3-6
+Sync to 3.0-372 (generalize doping feature)
+
+General doping functionality was already incorporated in trunk (i.e.,
+there was no check for "bulk" systems).
+
+Simply add patch record.
+
+------------------------------------------------------
 October 22, 2012  Alberto Garcia trunk-413-features3-5
 Sync to 3.0-371
 
