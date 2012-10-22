@@ -1,0 +1,60 @@
+Release Notes for SIESTA-3.2, May-June 2012
+(These notes apply for now to siesta-3.1-pl9, which should
+be very close to the 3.2 release)
+
+** GENERAL NOTES
+
+Users are encouraged to test this version for production runs.
+
+It has very little new core functionality. Most of the changes
+are minor bug fixes and improvements to the analysis tools.
+
+To report any remaining issues, see Docs/REPORTING_BUGS
+
+** MOST RELEVANT CHANGES SINCE SIESTA-3.1
+
+This is only a subset of all the changes. A complete list can be found
+in the Docs/CHANGES file.
+
+BUG FIXES AND IMPROVEMENTS
+
+*  Fix auxiliary routine read_rho
+
+   (Not really used in Siesta, but present for user-level programs)
+  
+*  Close netCDF file descriptors for DM and DMHS files
+
+  The descriptors for the DM.nc and DMHS.nc netCDF files are kept open
+  during the SCF cycle, but should be closed at the end of it to avoid
+  resource exhaustion in, say, MD runs. This was not done due to a
+  programming error.  They are now closed at the beginning of the next
+  SCF cycle.
+
+*  Include missing LDFLAGS symbol in some Util makefiles
+
+*  Fix minor bug in denchar and obsolete output in domain_decom
+
+ANALYSIS TOOLS
+(See the manual for details)
+
+*  New options for charge analysis: Voronoi, Hirshfeld, Bader
+  
+*  Extended the functionality of the 'eig2dos' program
+
+*  New energy-range and band-index options in mprop
+
+*  Enhanced 'bands' routine to write out the wavefunctions
+
+*  New 'Fatbands' functionality
+
+*  Modified Denchar to read the newer WFSX file format
+
+*  Update of Andrei Postnikov's utilities to V0.4
+
+COSMETIC CHANGES
+
+There are now different file names for wavefunction output:
+
+SystemLabel.bands.WFSX      : produced by BandLines + WFS.Write.For.Bands
+SystemLabel.fullBZ.WFSX     : for COOP/COHP-related use
+SystemLabel.selected.WFSX   : produced by WaveFuncKPoints

@@ -1,4 +1,69 @@
 ------------------------------------------------------
+October 22, 2012  Alberto Garcia trunk-413-features3-3
+New options for wavefunction output. 'Fatbands' analysis
+
+(A. Garcia)
+
+* Enhanced 'bands' routine to write out the wavefunctions
+
+If the fdf symbol
+
+WFS.Write.For.Bands
+
+is set to .true., the program will write out the wavefunctions
+corresponding to the bands specified in the BandLines block.
+
+There are now different file names for wavefunction output:
+
+SystemLabel.bands.WFSX      : produced by BandLines + WFS.Write.For.Bands
+SystemLabel.fullBZ.WFSX     : for COOP/COHP-related use
+SystemLabel.selected.WFSX   : produced by WaveFuncKPoints
+
+Note that for down-stream processing, some of these files might have
+to be renamed to simply 'SystemLabel.WFSX'.
+
+A subset of the bands (for both the BandLines and COOP/COHP cases) can
+be specified by the fdf keywords:
+
+WFS.Band.Min  (int, default: 1)
+WFS.Band.Max  (int, default: number of orbitals)
+
+The energy window options 
+
+WFS.Energy.Min
+WFS.Energy.Max
+
+are not in effect for BandLines.
+
+
+* New 'Fatbands' functionality
+
+A new utility program ('fat') has been added to generate 'fatband'
+information. It processes .WFSX files (typically produced during a
+"bands" calculation) and .HSX files to produce 'EIGFAT' files
+containing both the eigenvalues ("eig") and the value of the
+projection of the wavefunction on a given orbital set ("fat"). Most of
+the code is shared with the PDOS/COOP/COHP program mprop, hence its
+location in the Util/COOP directory.
+
+A new plotting converter, eigfat2plot, has been placed in the
+Util/Bands directory. It is suitable for simple 'gnuplot' use.
+
+Added Tests/si_fatbands
+
+
+* Modified Denchar to read WFSX files
+
+Denchar now reads directly the newer-format WFSX files,
+which are more compact.
+
+Also, added a new full example in Util/Denchar/Examples, and
+two python scripts for contour plots, courtesy of Pablo Aguado.
+
+* Moved gnubands.f program to new directory Util/Bands
+* Added new 'gnubands' program, with more options (Util/Bands/new.gnubands)
+
+------------------------------------------------------
 October 18, 2012  Alberto Garcia trunk-413-features3-2
 New energy-range and band-index options in mprop.
 

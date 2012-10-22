@@ -11,6 +11,7 @@
 \documentclass[11pt]{article}
 \usepackage{makeidx}
 \usepackage{url}
+\usepackage{hyperref}
 
 \tolerance 10000
 \textheight 22cm
@@ -39,13 +40,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, trunk-413-features3-2}}
+{\Huge {\bf S I E S T A \, \, trunk-413-features3-3}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large June 21, 2012 }
+{\Large October 22, 2012 }
 
 \vspace{1.5cm}
 
@@ -479,7 +480,7 @@ files in your directory including the following:
 
 \item fdf.log\index{fdf.log}
  (contains all the data used, explicit or chosen by default)
-\item O.ion and H.ion\index{species.ionl@{\it species.}ion}
+\item O.ion and H.ion\index{species.ion@{\it species.}ion}
  (complete information about the basis and KB projectors)
 \item h2o.XV\index{Systemlabel.XV@{\it Systemlabel.}XV}
  (contains positions and velocities)
@@ -3862,9 +3863,9 @@ iteration of the SCF loop will be written to a NetCDF file
 {\tt WFS.nc} if the {\bf Diag.UseNewDiagk} option is in effect.
 
 The complete set of wavefunctions obtained during the last
-iteration of the SCF loop will be written to SystemLabel.WFSX
-if the {\bf COOP.write} option is in effect (but they might be
-overwritten by the options in Sec~\ref{sec:wf-output-user}).
+iteration of the SCF loop will be written to SystemLabel.fullBZ.WFSX
+\index{WFSX file!fullBZ.WFSX@\texttt{fullBZ.WFSX}} 
+if the {\bf COOP.write} option is in effect.
 
 \begin{description}
 \item[{\bf WriteEigenvalues}] ({\it logical}):
@@ -4228,7 +4229,10 @@ reciprocal-lattice-vector coordinates)
 {\it Default value:} {\tt pi/a}
 
 {\bf Note:} You might need to define explicitly a LatticeConstant tag
-in your fdf file.
+in your fdf file if you do not already have one, and make it
+consistent
+with the scale of the k-points and any unit-cell vectors you might
+have already defined.
 
 \item[{\bf BandLines}] ({\it data block}):
 \index{BandLines@{\bf BandLines}}
@@ -4303,6 +4307,7 @@ defined for band plotting, to the main output file.
 
 \end{description}
 
+
 \subsubsection{Format of the .bands file}
 
 \begin{verbatim}
@@ -4327,25 +4332,74 @@ kAtEndOfLastLine, kPointLabel \\
 \end{verbatim}
 
 \noindent
-The {\sc Gnubands}\index{Gnubands@{\sc Gnubands}} postprocessing
-utility program (found in the Util/ directory) reads the {\it
+The {\sc gnubands}\index{gnubands@{\tt gnubands}} postprocessing
+utility program (found in the Util/Bands directory) reads the {\it
   Systemlabel}.bands for plotting.  See the {\bf BandLines} data
 descriptor above for more information.
 
-\subsection{Output of wavefunctions}
+\subsubsection{Output of wavefunctions associated to bands}
+\label{sec:wf-bands}
+
+The user can optionally request that the wavefunctions corresponding
+to the computed bands be written to file. 
+They are written to the {\it SystemLabel}.bands.WFSX file
+\index{WFSX file!bands.WFSX@\texttt{bands.WFSX}} 
+(see section below for the
+format). The relevant options are:
+
+\begin{description}
+
+\item[{\bf WFS.Write.For.Bands}] ({\it logical}):
+\index{WFS.Write.For.Bands@{\bf WFS.Write.For.Bands}}
+\index{output of wave functions for bands}
+Instructs the program to compute and write the wave functions
+associated to the bands specified (by a {\bf BandLines} or a {\bf
+  BandPoints} block) to the file {\tt SystemLabel.bands}.WFSX.
+
+The information in this file might be useful, among other things, to
+generate ``fatbands'' plots, in which both  band eigenvalues and
+information about orbital projections is presented.
+\index{fatbands}
+ See the
+\texttt{fat} program in the \texttt{Util/COOP} directory for details.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf WFS.Band.Min}] ({\it integer}):
+\index{WFS.Band.Min@{\bf WFS.Band.Min}}
+\index{output of wave functions for bands}
+Specifies the lowest band index of the wave-functions to be written to 
+the file {\tt SystemLabel.bands}.WFSX for each k-point (all k-points
+in the band set are affected). 
+
+{\it Default value:} {\tt 1}
+
+\item[{\bf WFS.Band.Max}] ({\it integer}):
+\index{WFS.Band.Max@{\bf WFS.Band.Max}}
+\index{output of wave functions for bands}
+Specifies the highest band index of the wave-functions to be written to 
+the file {\tt SystemLabel.bands}.WFSX for each k-point (all k-points
+in the band set are affected).
+
+{\it Default value:} {\tt (the number of orbitals)}
+
+\end{description}
+
+
+\subsection{Output of selected wavefunctions}
 \label{sec:wf-output-user}
 
 The user can optionally request that specific wavefunctions are
 written to file. These wavefunctions are re-computed after the
 geometry loop (if any) finishes, using the last (presumably converged)
 density matrix produced during the last self-consistent field loop
-(after a final mixing). They are written to the SystemLabel.WFSX file
-(see below for the format).
+(after a final mixing). They are written to the
+SystemLabel.selected.WFSX file (see below for the format).
+\index{WFSX file!selected.WFSX@\texttt{selected.WFSX}} 
 
 Note that the complete set of wavefunctions obtained during the last
-iteration of the SCF loop will be written to SystemLabel.WFSX
-if the {\bf COOP.write} option is in effect (but they might be
-overwritten by the options below).
+iteration of the SCF loop will be written to SystemLabel.fullBZ.WFSX
+if the {\bf COOP.write} option is in effect.
 
 Note that the complete set of wavefunctions obtained during the last
 iteration of the SCF loop will be written to a NetCDF file
@@ -4382,8 +4436,15 @@ An example for an FCC lattice is:
      %endblock WaveFuncKPoints
 \end{verbatim}
 
-The number of wavefunction is defined by its energy, so that the
+The index of a wavefunction is defined by its energy, so that the
 first one has lowest energy.
+
+The user can also narrow the energy-range used with the {\bf
+  WFS.Energy.Min} and {\bf WFS.Energy.Max} options (both take an
+energy (with units) as extra argument -- see
+section~\ref{sec:coop}). Care should be taken to make sure that the
+actual values of the options make sense.
+
 The output of the wavefunctions in described in Section \ref{subsec:wf}
 
 {\it Use:} Used only if {\bf SolutionMethod} = {\tt diagon}.
@@ -4396,7 +4457,7 @@ to calculate the total energy,  charge density and band structure.
   \index{WriteWaveFunctions@{\bf WriteWaveFunctions}}
   \index{output!wave functions} If {\tt .true.} it writes to the
   output file a list of the wavefunctions actually written to the
-{\it Systemlabel}.WFSX file, which is always produced.
+{\it Systemlabel}.selected.WFSX file, which is always produced.
 
 {\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
 
@@ -4405,7 +4466,7 @@ to calculate the total energy,  charge density and band structure.
 
 \end{description}
 
-The unformatted file SystemLabel.WFSX contains the information of the
+The unformatted WFSX file contains the information of the
 k-points for which wavefunctions coefficients are written, and the
 energies and coefficients of each wavefunction which was specified in
 the input file (see {\bf WaveFuncKPoints}\index{WaveFuncKPoints@{\bf
@@ -4717,7 +4778,7 @@ Materials; Wiley-VCH: Weinheim, 2005.
 \item[{\bf COOP.Write}] ({\it logical}):
 \index{COOP.Write@{\bf COOP.Write}}
 \index{output!Information for COOP/COHP curves}
-Instructs the program to generate  {\tt SystemLabel}.WFSX (packed
+Instructs the program to generate  {\tt SystemLabel.fullBZ}.WFSX (packed
 wavefunction file) and  {\tt SystemLabel}.HSX (H, S and X\_~{ij} file),
 to be processed by {\tt Util/COOP/mprop} to generate COOP/COHP curves,
 (projected) densities of states, etc.
@@ -4733,8 +4794,48 @@ single precision.
 {\it Default value:} {\tt .false.}
 
 The user can narrow the energy-range used (and save some file space)
-by using the {\bf WFS.EnergyMin} and {\bf WFS.EnergyMax} options (both take an
-energy (with units) as extra argument).
+by using the {\bf WFS.Energy.Min} and {\bf WFS.Energy.Max} options (both take an
+energy (with units) as extra argument), and/or the {\bf WFS.Band.Min} and
+{\bf WFS.Band.Max} options. Care should be taken to make sure that the 
+actual values of the options make sense.
+
+Note that the band range options could also affect the output of
+wave-functions associated to bands (see section~\ref{sec:wf-bands}),
+and that the energy range options could also affect the output of
+user-selected wave-functions with the {\bf WaveFuncKpoints} block (see
+section~\ref{sec:wf-output-user}).
+
+\item[{\bf WFS.Energy.Min}] ({\it physical energy}):
+\index{WFS.Energy.Min@{\bf WFS.Energy.Min}}
+Specifies the lowest value of the energy (eigenvalue) of the wave-functions to be written to 
+the file {\tt SystemLabel.fullBZ}.WFSX for each k-point (all k-points
+in the BZ sampling are affected). 
+
+{\it Default value:} $-\infty$
+
+\item[{\bf WFS.Energy.Max}] ({\it physical energy}):
+\index{WFS.Energy.Max@{\bf WFS.Energy.Max}}
+Specifies the highest value of the energy (eigenvalue) of the wave-functions to be written to 
+the file {\tt SystemLabel.fullBZ}.WFSX for each k-point (all k-points
+in the BZ sampling are affected).
+
+{\it Default value:} $+\infty$
+
+\item[{\bf WFS.Band.Min}] ({\it integer}):
+\index{WFS.Band.Min@{\bf WFS.Band.Min}}
+Specifies the lowest band index of the wave-functions to be written to 
+the file (in this context) {\tt SystemLabel.fullBZ}.WFSX for each k-point (all k-points
+in the BZ sampling are affected). 
+
+{\it Default value:} {\tt 1}
+
+\item[{\bf WFS.Band.Max}] ({\it integer}):
+\index{WFS.Band.Max@{\bf WFS.Band.Max}}
+Specifies the highest band index of the wave-functions to be written to 
+the file (in this context) {\tt SystemLabel.fullBZ}.WFSX for each k-point (all k-points
+in the BZ sampling are affected).
+
+{\it Default value:} {\tt (the number of orbitals)}
 
 \end{description}
 
@@ -5623,10 +5724,7 @@ charge-density and wavefunction contours.
 {\it Use:} File {\tt SystemLabel}.PLD is only written, not read, by siesta.
 
 Apart from the PLD file, you will need the Density-Matrix (DM) file
-and/or a wavefunction (WFS) file. For the latter, remember that Siesta
-now produces only a packed WFSX file. You will need to run the
-wfsx2wfs program to convert it to the WFS format. This will be fixed
-shortly.
+and/or a wavefunction (WFSX) file. 
 
 {\it Default value:} {\tt .false.}
 

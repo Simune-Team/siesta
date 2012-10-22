@@ -346,8 +346,8 @@ atomlwf.o: alloc.o atmfuncs.o mneighb.o onmod.o precision.o spatial.o sys.o
 
 automatic_cell.o: atm_types.o atmfuncs.o parallel.o precision.o units.o
 
-bands.o: alloc.o densematrix.o files.o parallel.o parallelsubs.o precision.o
-bands.o: sys.o
+bands.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o m_gamma.o
+bands.o: parallel.o parallelsubs.o precision.o siesta_geom.o sys.o writewave.o
 
 basis_enthalpy.o: atmfuncs.o atomlist.o precision.o siesta_geom.o units.o
 
@@ -1026,7 +1026,7 @@ write_subs.o: alloc.o atomlist.o m_energies.o m_forces.o m_iostruct.o m_spin.o
 write_subs.o: m_steps.o m_stress.o m_ts_global_vars.o parallel.o precision.o
 write_subs.o: siesta_cml.o siesta_geom.o siesta_options.o units.o zmatrix.o
 
-writewave.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o kpoint_grid.o
+writewave.o: alloc.o atmfuncs.o atomlist.o densematrix.o kpoint_grid.o
 writewave.o: parallel.o parallelsubs.o precision.o siesta_geom.o sys.o units.o
 
 xc.o: alloc.o bsc_xcmod.o precision.o sys.o
