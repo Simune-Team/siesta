@@ -1,4 +1,17 @@
 ------------------------------------------------------
+October 22, 2012  Alberto Garcia trunk-413-features3-7
+Fix spin loop in initialization in Eig2DOS program
+
+The initialization code was missing a loop over spin.
+
+(+ changes to fix compiler-dependent complaints)
+
+(Thanks to N.P. Andersen)
+
+modified:
+  Util/Eig2DOS.f90
+
+------------------------------------------------------
 October 22, 2012  Alberto Garcia trunk-413-features3-6
 Sync to 3.0-372 (generalize doping feature)
 
