@@ -1,4 +1,11 @@
 ------------------------------------------------------
+October 22, 2012  Alberto Garcia trunk-413-features3-8
+Sync to 3.0-374
+
+Integration of the Hirshfeld and Voronoi charges in the dhscf
+workflow: already incorporated in trunk. Simply add patch record.
+
+------------------------------------------------------
 October 22, 2012  Alberto Garcia trunk-413-features3-7
 Fix spin loop in initialization in Eig2DOS program
 
