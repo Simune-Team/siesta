@@ -1,4 +1,12 @@
 ------------------------------------------------------
+October 22, 2012  Alberto Garcia trunk-413-features3-9
+Update reference outputs for si_fatbands test
+
+modified:
+  Tests/Reference-xml/si_fatbands.xml
+  Tests/Reference/si_fatbands.out
+
+------------------------------------------------------
 October 22, 2012  Alberto Garcia trunk-413-features3-8
 Sync to 3.0-374
 
