@@ -384,7 +384,7 @@ contains
        ElecValenceBandBot, &
        nkpnt,kpoint,kweight, &
        NBufAt,NUsedAtoms,NA1,NA2, &
-       ucell,xa,nua,NEn,contour,wGF,chem_shift,ZBulkDOS,nspin)
+       ucell,xa,nua,NEn,contour,chem_shift,ZBulkDOS,nspin)
 
     use precision,  only : dp
     use fdf,        only : leqi
@@ -398,7 +398,7 @@ contains
     use mpi_siesta, only : DAT_dcomplex, DAT_double
 #endif
     use m_hs_matrix,only : set_HS_matrix, matrix_symmetrize
-
+    use m_ts_cctype
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
@@ -417,7 +417,7 @@ contains
     real(dp), intent(in)           :: xa(3,nua) ! Coordinates in the system for the TranSIESTA routine
     integer, intent(in)            :: nspin ! spin in system
     integer, intent(in)            :: NEn ! Number of energy points
-    complex(dp), intent(in)        :: contour(NEn),wGF(NEn) !energy contours and weights for GF
+    type(ts_ccontour), intent(in)  :: contour(NEn) ! contours path for GF
     real(dp), intent(in)           :: chem_shift ! the Fermi-energy we REQUIRE the electrode
 ! ***********************
 ! * OUTPUT variables    *
@@ -667,7 +667,7 @@ contains
              eig(i) = kpt(j)
           end do
        end do
-       write(uGF) contour,wGF,eig,kweight,qb,wq
+       write(uGF) contour(:)%c,contour(:)%w,eig,kweight,qb,wq
        call memory('D','D',nkpnt*3,'create_green')
        deallocate(eig)
        ! Write the number of USED orbitals for the calculation
@@ -721,7 +721,7 @@ contains
              curNode = MOD(iEn-1,Nodes)
              E_Nodes: if ( curNode == Node ) then
 #endif
-             ZEnergy  = contour(iEn)
+             ZEnergy  = contour(iEn)%c
              ZSEnergy = ZEnergy-dcmplx(chem_shift,0.0_dp)
              
 ! loop over the repeated cell...
@@ -805,7 +805,7 @@ contains
              if (IONode) then
                 ! Write out calculated information at E point
 
-                write(uGF) iEn,contour(iEn),wGF(iEn),ikpt
+                write(uGF) iEn,contour(iEn)%c,contour(iEn)%w,ikpt
                 
                 if(iEn .eq. 1) then ! This will only occur
                    write(uGF) Hq
@@ -832,7 +832,7 @@ contains
           ! There is no need to create a buffer array for the Gq
           ! We will not use it until we are in the loop again
           if ( IONode .and. curNode /= Node ) then
-             write(uGF) iEn,contour(iEn),wGF(iEn),ikpt
+             write(uGF) iEn,contour(iEn)%c,contour(iEn)%w,ikpt
              call MPI_Start(reqs(curNode),MPIerror)
              call MPI_Wait(reqs(curNode),status,MPIerror)
              write(uGF) Gq

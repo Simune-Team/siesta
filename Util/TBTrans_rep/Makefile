@@ -46,7 +46,8 @@ SIESTA_OBJS= precision.o sys.o m_io.o alloc.o  memoryinfo.o memory.o pxf.o \
 	     kpoint_convert.o timestamp.o m_wallclock.o cdiag.o m_spin.o \
 	     zheevds.o debugmpi.o \
 	     m_ts_contour.o m_ts_gf.o m_ts_scattering.o \
-	     m_ts_aux_rout.o m_ts_io.o m_ts_electrode.o
+	     m_ts_aux_rout.o m_ts_io.o m_ts_electrode.o ts_init.o \
+	     m_ts_cctype.o
 
 TBTOBJS= $(SIESTA_OBJS) $(MOD_TOBJS) $(SYSOBJ) $(EXTRA) \
          tbtrans.o transmission.o tbt_init.o tbt_reinit.o \
@@ -307,22 +308,25 @@ m_spin.o: alloc.o parallel.o precision.o
 m_stress.o: precision.o
 m_timer.o: m_io.o m_walltime.o moreParallelSubs.o parallel.o precision.o sys.o
 m_ts_aux_rout.o: precision.o sys.o
-m_ts_contour.o: files.o m_ts_aux_rout.o parallel.o precision.o sys.o units.o
+m_ts_cctype.o: precision.o
+m_ts_contour.o: m_ts_aux_rout.o m_ts_cctype.o parallel.o precision.o sys.o
+m_ts_contour.o: units.o
 m_ts_electrode.o: files.o m_hs_matrix.o m_tbt_kpoints.o m_ts_aux_rout.o
-m_ts_electrode.o: m_ts_io.o  parallel.o precision.o sys.o units.o
-m_ts_gf.o: m_ts_electrode.o parallel.o precision.o sys.o units.o
+m_ts_electrode.o: m_ts_cctype.o m_ts_io.o  parallel.o precision.o
+m_ts_electrode.o: sys.o units.o
+m_ts_gf.o: m_ts_cctype.o m_ts_electrode.o parallel.o precision.o sys.o units.o
 m_ts_global_vars.o: precision.o
-m_ts_in_siesta.o: m_glob_sparse.o m_hs_matrix.o m_ts_contour.o m_ts_gf.o
-m_ts_in_siesta.o: m_ts_kpoints.o m_ts_options.o m_ts_scattering.o parallel.o
-m_ts_in_siesta.o: parallelsubs.o precision.o sys.o units.o
+m_ts_in_siesta.o: m_glob_sparse.o m_hs_matrix.o m_ts_cctype.o m_ts_contour.o
+m_ts_in_siesta.o: m_ts_gf.o m_ts_kpoints.o m_ts_options.o m_ts_scattering.o
+m_ts_in_siesta.o: parallel.o parallelsubs.o precision.o sys.o units.o
 m_ts_io.o: files.o m_spin.o m_tbt_kpoints.o  parallel.o
 m_ts_io.o: parallelsubs.o precision.o sys.o
 m_ts_iodm.o: alloc.o files.o m_mpi_utils.o m_ts_global_vars.o parallel.o
 m_ts_iodm.o: parallelsubs.o precision.o sys.o
 m_ts_kpoints.o: files.o find_kgrid.o minvec.o parallel.o precision.o
 m_ts_kpoints.o: siesta_cml.o siesta_options.o sys.o
-m_ts_options.o: m_fdf_global.o m_ts_global_vars.o m_ts_io.o parallel.o
-m_ts_options.o: precision.o siesta_options.o sys.o units.o
+m_ts_options.o: files.o m_fdf_global.o m_ts_contour.o m_ts_global_vars.o
+m_ts_options.o: m_ts_io.o parallel.o precision.o siesta_options.o sys.o units.o
 m_ts_scattering.o: m_ts_aux_rout.o parallel.o precision.o sys.o units.o
 m_ts_voltage.o: m_ts_options.o mesh.o parallel.o precision.o units.o
 m_wallclock.o: m_walltime.o
@@ -454,11 +458,10 @@ siesta_init.o: alloc.o atomlist.o bands.o bsc_xcmod.o densematrix.o files.o
 siesta_init.o: ioxv.o kpoint_grid.o kpoint_pdos.o ksvinit.o m_check_supercell.o
 siesta_init.o: m_energies.o m_eo.o m_forces.o m_gamma.o m_iostruct.o
 siesta_init.o: m_mpi_utils.o m_rmaxh.o m_spin.o m_steps.o m_timer.o
-siesta_init.o: m_ts_kpoints.o m_ts_options.o m_wallclock.o metaforce.o
-siesta_init.o: molecularmechanics.o parallel.o parallelsubs.o phonon.o
-siesta_init.o: projected_DOS.o siesta_cmlsubs.o siesta_geom.o siesta_options.o
-siesta_init.o: sparse_matrices.o struct_init.o sys.o timestamp.o writewave.o
-siesta_init.o: zmatrix.o
+siesta_init.o: m_wallclock.o metaforce.o molecularmechanics.o parallel.o
+siesta_init.o: parallelsubs.o phonon.o projected_DOS.o siesta_cmlsubs.o
+siesta_init.o: siesta_geom.o siesta_options.o sparse_matrices.o struct_init.o
+siesta_init.o: sys.o timestamp.o writewave.o zmatrix.o
 siesta_move.o: atomlist.o broyden_optim.o cell_broyden_optim.o
 siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o iopipes.o ioxv.o
 siesta_move.o: m_energies.o m_forces.o m_kinetic.o m_steps.o m_stress.o
@@ -486,6 +489,8 @@ struct_init.o: siesta_geom.o siesta_options.o zmatrix.o
 sys.o: parallel.o
 timer.o: m_timer.o sys.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
+ts_init.o: files.o m_spin.o m_ts_contour.o m_ts_gf.o m_ts_kpoints.o
+ts_init.o: m_ts_options.o parallel.o
 ts_show_regions.o: parallel.o precision.o units.o
 typecell.o: precision.o
 uncell.o: precision.o
@@ -522,7 +527,8 @@ m_tbt_options.o: precision.o sys.o units.o
 m_tbt_out.o: parallel.o precision.o units.o
 m_tbt_read_tshs.o: m_ts_io.o parallel.o precision.o
 tbt_init.o: alloc.o files.o m_spin.o m_tbt_kpoints.o m_tbt_options.o m_timer.o
-tbt_init.o: m_wallclock.o parallel.o precision.o sys.o timestamp.o
+tbt_init.o: m_ts_contour.o m_wallclock.o parallel.o precision.o sys.o
+tbt_init.o: timestamp.o
 tbt_reinit.o: files.o parallel.o
 tbtrans.o: alloc.o files.o m_hs_matrix.o m_tbt_kpoints.o m_tbt_options.o
 tbtrans.o: m_tbt_out.o m_tbt_read_tshs.o m_ts_contour.o m_ts_electrode.o
@@ -530,80 +536,80 @@ tbtrans.o: m_ts_gf.o m_ts_io.o m_ts_scattering.o m_wallclock.o parallel.o
 tbtrans.o: precision.o sys.o timestamp.o units.o
 transmission.o: m_ts_aux_rout.o precision.o sys.o
 tt_eig.o: precision.o sys.o
-band.o: bands.o
-diagmemory.o: memoryinfo.o
-listsc_module.o: listsc.o
-m_bessph.o: bessph.o
-m_born_charge.o: born_charge.o
-m_broyden_optim.o: broyden_optim.o
-m_cell_broyden_optim.o: cell_broyden_optim.o
-m_cell_fire_optim.o: cell_fire_optim.o
-m_cgwf.o: cgwf.o
-m_chempot.o: chempot.o
-m_chkgmx.o: chkgmx.o
-m_compute_dm.o: compute_dm.o
-m_conjgr.o: conjgr.o
-m_conjgr_old.o: conjgr_old.o
-m_denmat.o: denmat.o
-m_dhscf.o: dhscf.o
-m_dnaefs.o: dnaefs.o
-m_doping_uniform.o: doping_uniform.o
-m_dynamics.o: dynamics.o
-m_eandg.o: egandd.o
-m_ener3.o: ener3.o
-m_fermid.o: fermid.o
-m_fft.o: fft.o
-m_final_h_f_stress.o: final_H_f_stress.o
-m_find_kgrid.o: find_kgrid.o
-m_fire_optim.o: fire_optim.o
-m_fixed.o: fixed.o
-m_forhar.o: forhar.o
-m_gradient.o: gradient.o
-m_grdsam.o: grdsam.o
-m_hsparse.o: hsparse.o
-m_intramol_pressure.o: remove_intramol_pressure.o
-m_ioxv.o: ioxv.o
-m_kinefsm.o: kinefsm.o
-m_ksv.o: ksv.o
-m_ksvinit.o: ksvinit.o
-m_local_dos.o: local_DOS.o
-m_minvec.o: minvec.o
-m_mixer.o: mixer.o
-m_naefs.o: naefs.o
-m_new_dm.o: new_dm.o
-m_nlefsm.o: nlefsm.o
-m_norm.o: compute_norm.o
-m_normalize_dm.o: normalize_dm.o
-m_on_subs.o: on_subs.o
-m_ordern.o: ordern.o
-m_overfsm.o: overfsm.o
-m_overlap.o: overlap.o
-m_post_scf_work.o: post_scf_work.o
-m_projected_dos.o: projected_DOS.o
-m_proximity_check.o: proximity_check.o
-m_radfft.o: radfft.o
-m_scf_options.o: m_options.o
-m_scfconvergence_test.o: scfconvergence_test.o
-m_setup_h0.o: setup_H0.o
-m_setup_hamiltonian.o: setup_hamiltonian.o
-m_siesta_analysis.o: siesta_analysis.o
-m_siesta_end.o: siesta_end.o
-m_siesta_forces.o: siesta_forces.o
-m_siesta_init.o: siesta_init.o
-m_siesta_move.o: siesta_move.o
-m_state_analysis.o: state_analysis.o
-m_state_init.o: state_init.o
-m_struct_init.o: struct_init.o
-m_timestamp.o: timestamp.o
-m_vmat.o: vmat.o
-m_xyz_phiatm.o: matel.o
-m_zm_broyden_optim.o: zm_broyden_optim.o
-m_zm_fire_optim.o: zm_fire_optim.o
-neighbour.o: mneighb.o
-on_core.o: onmod.o
-on_main.o: onmod.o
-printmat.o: printmatrix.o
-version_info.o: version.o
-write_subs_energies.o: write_subs.o
-write_subs_positions.o: write_subs.o
-write_subs_pressure.o: write_subs.o
+band.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/bands.o
+diagmemory.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/memoryinfo.o
+listsc_module.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/listsc.o
+m_bessph.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/bessph.o
+m_born_charge.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/born_charge.o
+m_broyden_optim.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/broyden_optim.o
+m_cell_broyden_optim.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/cell_broyden_optim.o
+m_cell_fire_optim.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/cell_fire_optim.o
+m_cgwf.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/cgwf.o
+m_chempot.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/chempot.o
+m_chkgmx.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/chkgmx.o
+m_compute_dm.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/compute_dm.o
+m_conjgr.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/conjgr.o
+m_conjgr_old.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/conjgr_old.o
+m_denmat.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/denmat.o
+m_dhscf.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/dhscf.o
+m_dnaefs.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/dnaefs.o
+m_doping_uniform.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/doping_uniform.o
+m_dynamics.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/dynamics.o
+m_eandg.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/egandd.o
+m_ener3.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/ener3.o
+m_fermid.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/fermid.o
+m_fft.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/fft.o
+m_final_h_f_stress.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/final_H_f_stress.o
+m_find_kgrid.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/find_kgrid.o
+m_fire_optim.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/fire_optim.o
+m_fixed.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/fixed.o
+m_forhar.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/forhar.o
+m_gradient.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/gradient.o
+m_grdsam.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/grdsam.o
+m_hsparse.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/hsparse.o
+m_intramol_pressure.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/remove_intramol_pressure.o
+m_ioxv.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/ioxv.o
+m_kinefsm.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/kinefsm.o
+m_ksv.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/ksv.o
+m_ksvinit.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/ksvinit.o
+m_local_dos.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/local_DOS.o
+m_minvec.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/minvec.o
+m_mixer.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/mixer.o
+m_naefs.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/naefs.o
+m_new_dm.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/new_dm.o
+m_nlefsm.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/nlefsm.o
+m_norm.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/compute_norm.o
+m_normalize_dm.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/normalize_dm.o
+m_on_subs.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/on_subs.o
+m_ordern.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/ordern.o
+m_overfsm.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/overfsm.o
+m_overlap.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/overlap.o
+m_post_scf_work.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/post_scf_work.o
+m_projected_dos.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/projected_DOS.o
+m_proximity_check.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/proximity_check.o
+m_radfft.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/radfft.o
+m_scf_options.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/m_options.o
+m_scfconvergence_test.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/scfconvergence_test.o
+m_setup_h0.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/setup_H0.o
+m_setup_hamiltonian.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/setup_hamiltonian.o
+m_siesta_analysis.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/siesta_analysis.o
+m_siesta_end.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/siesta_end.o
+m_siesta_forces.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/siesta_forces.o
+m_siesta_init.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/siesta_init.o
+m_siesta_move.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/siesta_move.o
+m_state_analysis.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/state_analysis.o
+m_state_init.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/state_init.o
+m_struct_init.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/struct_init.o
+m_timestamp.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/timestamp.o
+m_vmat.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/vmat.o
+m_xyz_phiatm.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/matel.o
+m_zm_broyden_optim.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/zm_broyden_optim.o
+m_zm_fire_optim.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/zm_fire_optim.o
+neighbour.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/mneighb.o
+on_core.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/onmod.o
+on_main.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/onmod.o
+printmat.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/printmatrix.o
+version_info.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/version.o
+write_subs_energies.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/write_subs.o
+write_subs_positions.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/write_subs.o
+write_subs_pressure.o: /home/nick/dtu/siesta-barca-ts/Util/TBTrans_rep/../../Src/write_subs.o

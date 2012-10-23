@@ -6531,9 +6531,11 @@ accomplished:
 \begin{itemize}
   \item full parallelization of the Green's function files (GF-files) 
   generation,
+  \item full Green's function calculation at initialization,
   \item re-implementation of repetition of the electrodes,
   \item more SCF information about charge redistribution,
-  \item separate k-point file (TSKP instead of overwriting KP).
+  \item separate k-point file (TSKP instead of overwriting KP),
+  \item changed the \texttt{CONTOUR} file to \texttt{TSCC}.
 \end{itemize}
 
 The above implementations were done by Nick P. Andersen.
@@ -6722,7 +6724,7 @@ means that the first and the second lines of the {\bf
   kgrid\_Monkhorst\_Pack} block must be the same.  In the case of {\bf
   tbtrans}, the k-point sampling has to be specified also using a {\bf
   kgrid\_Monkhorst\_Pack} block (or preferentially:
-{\bf TBT.kgrid\_Monkhorst\_Pack}), 
+{\bf TBT_kgrid\_Monkhorst\_Pack}), 
 and can differ from the sampling that was used in the {\sc TranSiesta} 
 calculation. The convergence of the transmission function with respect
 to the k sampling can be slower than the one for the density matrix. 
@@ -7193,17 +7195,23 @@ the other output files, we refer the user to the {\sc Siesta} manual.
 \index{tbtrans@{\bf tbtrans}}
 
 The {\tt tbtrans} code can be found in the directory {\tt
-  Util/TBTrans}.  It is used in order to obtain, in a post-processing
-way, the transport properties after a {\sc TranSiesta} run. It was
-developed by M. Brandbyge, and the present version contains
-modifications made by Nick Papior Andersen. It has been made to conform
-with the modifications introduced in {\sc TranSiesta} as of 3.2.
-Thus the repetition of the electrodes can be utilised. It has been 
-completely rewritten to be as fast as possible as well as limiting
-the maintenance to a minimum. 
+  Util/TBTrans}. 
 
-In order to run it, it requires the electrode's .TSHS files (may be
-just one file if the left and right electrodes are equal), and the
+A much optimized version of \texttt{tbtrans} is found in the 
+directory \textt{Util/TBTtrans\_rep} which is recommended to
+be used. Only in this version can the repetition used.
+It has been completely rewritten to be as fast as possible as
+well as limiting the maintenance to a minimum. This version
+has been completely rewritten by Nick Papior Andersen.
+
+It is used in order to obtain, in a post-processing
+way, the transport properties after a {\sc TranSiesta} run. It was
+developed by M. Brandbyge. It has been made to conform
+with the modifications introduced in {\sc TranSiesta} as of 3.2.
+
+In order to run it, it requires the electrode's \texttt{.TSHS} files
+(may be just one file if the left and right electrodes are equal), 
+and the
 scattering region's .TSHS file.  These are generated as explained
 above.  The location of these files are specified by the (already
 discussed) {\bf TS.HSFileLeft}, {\bf TS.HSFileRight} input options,
@@ -7234,8 +7242,8 @@ specified by
     \itemsep 10pt
     \parsep 0pt
 
-\item [{\bf TBT.kgrid\_Monkhorst\_Pack}] \index{TBT.kgrid\_Monkhorst\_Pack@{\bf
-        TBT.kgrid\_Monkhorst\_Pack}}
+\item [{\bf TBT_kgrid\_Monkhorst\_Pack}] \index{TBT_kgrid\_Monkhorst\_Pack@{\bf
+        TBT_kgrid\_Monkhorst\_Pack}}
 \index{kgrid\_Monkhorst\_Pack@{\bf kgrid\_Monkhorst\_Pack}}
 ({\it block}): Block equivalent
 to {\bf kgrid\_Monkhorst\_Pack}, however, this is used to have a separate
@@ -7270,9 +7278,9 @@ If true will calculate the valence band bottom of the electrode.
 \item [{\bf TS.TBT.COOP}]({\it logical}): 
 Calculate COOP curves on the PDOS region. Creates the files:
 \begin{itemize}
-  \item {\tt <SystemLabel>.COOP}
-  \item {\tt <SystemLabel>.COOPL}
-  \item {\tt <SystemLabel>.COOPR}
+  \item \texttt{<SystemLabel>.COOP}
+  \item \texttt{<SystemLabel>.COOPL}
+  \item \texttt{<SystemLabel>.COOPR}
 \end{itemize}
 
 {\it Default value:} {\tt false}
@@ -7280,8 +7288,8 @@ Calculate COOP curves on the PDOS region. Creates the files:
 \item [{\bf TS.TBT.AtomPDOS}]({\it logical}): 
 Calculate PDOS on the PDOS region, creates the files:
 \begin{itemize}
-  \item {\tt <SystemLabel>.TOTDOS}
-  \item {\tt <SystemLabel>.ORBDOS}
+  \item \texttt{<SystemLabel>.TOTDOS}
+  \item \texttt{<SystemLabel>.ORBDOS}
 \end{itemize}
 
 {\it Default value:} {\tt true}
@@ -7293,7 +7301,7 @@ it suited for the integration in the bias window (the energy window
 defined by {\bf TS.TBT.Emin} and {\bf TS.TBT.Emax} being bigger than
 or equal to the applied bias).
 
-The k-point sampling is defined by the {\bf TBT.kgrid\_Monkhorst\_Pack}
+The k-point sampling is defined by the {\bf TBT_kgrid\_Monkhorst\_Pack}
 block, and if that is non-existing it will use the
 {\bf kgrid\_Monkhorst\_Pack} block. The averaged (over k-points)
 transmission function is printed in the file {\tt <SystemLabel>.AVTRANS}.
@@ -7309,13 +7317,15 @@ An additional options is:
 
 
 To summarize, here we give a list of the parameters read by {\tt
-  tbtrans} from the input file (the fdf flags):
+  tbtrans} from the input file (the fdf flags, NPA indicates the version
+created by Nick Papior Andersen):
 \begin{itemize}
  \item {\bf ElectronicTemperature}
  \item {\bf TS.Voltage}
- \item {\bf TS.ReUseGF}
- \item {\bf TS.UseBulkInElectrodes}
- \item {\bf TBT.kgrid\_Monkhorst\_Pack} (block) has precedence of {\bf kgrid\_Monkhorst\_Pack}
+ \item {\bf TS.ReUseGF} (NPA)
+ \item {\bf TS.UseBulkInElectrodes} (NPA)
+ \item {\bf TBT_kgrid\_Monkhorst\_Pack} (block) has precedence of 
+ {\bf kgrid\_Monkhorst\_Pack} (NPA)
  \item {\bf kgrid\_Monkhorst\_Pack} (block)
  \item {\bf TS.HSFileLeft}
  \item {\bf TS.HSFileRight}
@@ -7327,22 +7337,23 @@ To summarize, here we give a list of the parameters read by {\tt
  \item {\bf TS.TBT.CalcIEig}
  \item {\bf TS.TBT.PDOSFrom}
  \item {\bf TS.TBT.PDOSTo}
- \item {\bf TS.TBT.COOPCurve}
- \item {\bf TS.TBT.AtomPDOS}
- \item {\bf TS.TBT.CalcElectrodeValenceBandBottom}
+ \item {\bf TS.TBT.COOPCurve} (NPA)
+ \item {\bf TS.TBT.AtomPDOS} (NPA)
+ \item {\bf TS.TBT.CalcElectrodeValenceBandBottom} (NPA)
  \item {\bf TS.BufferAtomsLeft}, {\bf TS.BufferAtomsRight}
  \item {\bf TS.NumUsedAtomsLeft}, {\bf TS.NumUsedAtomsRight}
- \item {\bf TS.ReplicateA1Left}, {\bf TS.ReplicateA2Left}
- \item {\bf TS.ReplicateA1Right}, {\bf TS.ReplicateA2Right}
+ \item {\bf TS.ReplicateA1Left}, {\bf TS.ReplicateA2Left} (NPA)
+ \item {\bf TS.ReplicateA1Right}, {\bf TS.ReplicateA2Right} (NPA)
  \item {\bf SpinPolarized}
 \end{itemize}
 
 \subsubsection{Compiling TBTtrans}
 
-In the {\tt Util/TBTrans} directory, simply type {\tt make} if your
-main {\sc Siesta} compilation directory is the top {\tt Obj}
-directory. If you have used another object directory {\tt MyObjDir},
-type {\tt make OBJDIR=MyObjDir}.
+In the {\tt Util/TBTrans} or \texttt{Util/TBTrans\_rep} (for the NPA version)
+ directory, 
+simply type {\tt make} if your main {\sc Siesta} compilation 
+directory is the top {\tt Obj} directory. If you have used another
+ object directory {\tt MyObjDir}, type {\tt make OBJDIR=MyObjDir}.
 
 \section{ANALYSIS TOOLS}
 

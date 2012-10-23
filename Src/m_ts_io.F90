@@ -12,6 +12,7 @@ module m_ts_io
 
   public :: ts_iohs
   public :: ts_read_TSHS_na
+  public :: ts_read_TSHS_lasto
 
   private
 
@@ -55,6 +56,56 @@ contains
 #endif
 
   end subroutine ts_read_TSHS_na
+
+
+  ! Reads in the orbitals in the electrode. This is for easy operation
+  subroutine ts_read_TSHS_lasto(TSHS,na_u,lasto)
+    use parallel, only : IONode
+#ifdef MPI
+    use mpi_siesta
+#endif
+! ***********************
+! * INPUT variables     *
+! ***********************
+    character(len=200), intent(in) :: TSHS
+    integer,            intent(in) :: na_u
+
+! ***********************
+! * OUTPUT variables    *
+! ***********************    
+    integer,           intent(out) :: lasto(0:na_u)
+
+! ***********************
+! * LOCAL variables     *
+! ***********************
+    integer :: uTSHS
+#ifdef MPI
+    integer :: MPIerror
+#endif
+    
+    if ( IONode ) then
+       call io_assign(uTSHS)
+       open(file=TSHS,unit=uTSHS,form='unformatted')
+       read(uTSHS) ! na_u, no_u, no_s, Enspin, maxnh
+       read(uTSHS) ! xa
+       read(uTSHS) ! isa   
+       read(uTSHS) ! ucell  
+       read(uTSHS) ! gammaonfile   
+       read(uTSHS) ! onlySfile
+       read(uTSHS) ! ts_gamma_scf_file       
+       read(uTSHS) ! ts_kscell_file
+       read(uTSHS) ! ts_kdispl_file  
+       read(uTSHS) ! istep, ia1
+       read(uTSHS) lasto
+
+       call io_close(uTSHS)
+    end if
+
+#ifdef MPI
+    call MPI_Bcast(lasto,na_u+1,MPI_INTEGER,0,MPI_Comm_World,MPIerror)
+#endif
+
+  end subroutine ts_read_TSHS_lasto
 
 
 ! 

@@ -295,23 +295,22 @@ contains
       integer  :: ik, ix, i
 
       if ( writek ) then
-         write(6,'(/,a)') 'transiesta: ts_k-point coordinates (Bohr**-1) and weights:'
-         write(6,'(a,i4,3f12.6,3x,f12.6)')                          &
+         write(*,'(/,a)') 'transiesta: ts_k-point coordinates (Bohr**-1) and weights:'
+         write(*,'(a,i4,3f12.6,3x,f12.6)')                          &
               ('transiesta: ', ik, (ts_kpoint(ix,ik),ix=1,3), ts_kweight(ik), &
               ik=1,ts_nkpnt)
       endif
       ! Always write the TranSIESTA k-points
       call ts_iokp( ts_nkpnt, ts_kpoint, ts_kweight )
 
-      write(6,'(/a,i6)')  'transiesta: ts_k-grid: Number of Transport k-points =', ts_nkpnt
-      write(6,'(a)') 'transiesta: ts_k-grid: Supercell and displacements'
-      write(6,'(a,3i4,3x,f8.3)') 'transiesta: ts_k-grid: ',        &
+      write(*,'(/,a,i6)')  'transiesta: ts_k-grid: Number of Transport k-points =', ts_nkpnt
+      write(*,'(a)') 'transiesta: ts_k-grid: Supercell and displacements'
+      write(*,'(a,3i4,3x,f8.3)') 'transiesta: ts_k-grid: ',        &
            (ts_kscell(i,1),i=1,3), ts_kdispl(1)
-      write(6,'(a,3i4,3x,f8.3)') 'transiesta: ts_k-grid: ',        &
+      write(*,'(a,3i4,3x,f8.3)') 'transiesta: ts_k-grid: ',        &
            (ts_kscell(i,2),i=1,3), ts_kdispl(2)
-!      write(6,'(a,3i4,3x,f8.3)') 'transiesta: ts_k-grid: ',        &
+!      write(*,'(a,3i4,3x,f8.3)') 'transiesta: ts_k-grid: ',        &
 !           (ts_kscell(i,3),i=1,3), ts_kdispl(3)
-      write(6,*)
       if (cml_p) then
           call cmlStartPropertyList(xf=mainXML, title="Transiesta k-points", &
                  dictRef="siesta:ts_kpoints")

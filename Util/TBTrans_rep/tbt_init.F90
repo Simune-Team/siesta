@@ -1,4 +1,4 @@
-! Handling all the initializations
+8! Handling all the initializations
 ! This opens MPI channels, ensures the options are read in etc.
 !
 subroutine tbt_init()
@@ -8,8 +8,9 @@ subroutine tbt_init()
   use parallel, only : parallel_init, Nodes, IONode
   use parallel, only : ResetFirstCall, ParallelOverK
   use m_tbt_kpoints, only : setup_tbt_kscell
-  use m_tbt_options, only : sname, read_tbt_options
+  use m_tbt_options
   use m_timer, only : timer_report
+  use m_ts_contour, only : setup_contour
   use alloc, only   : alloc_report
   use files, only   : slabel
   use m_timestamp, only : timestamp
@@ -88,6 +89,14 @@ subroutine tbt_init()
 
 ! Read in k-point cell
   call setup_tbt_kscell()
+
+! Create the contour lines
+  call setup_contour(IsVolt,0,VoltL,0.0d0,VoltR, &
+       0,0,0,0,NPoints, &
+       CCEmin, GFEta, kt)
+
+! Print out the contour path
+  call print_contour()
 
 ! Initialization now complete. Flush stdout.
   if (IOnode) call pxfflush( 6 )

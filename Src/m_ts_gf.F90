@@ -51,8 +51,7 @@ contains
        ElecValenceBandBot, optReUseGF, &
        nkpnt,kpoint,kweight, &
        NBufAt,NUsedAtoms,NA1,NA2, &
-       ucell,xa,nua,NEn,contour,wGF,chem_shift,ZBulkDOS,nspin, &
-       nua_GF,no_GF)
+       ucell,xa,nua,NEn,contour,chem_shift,ZBulkDOS,nspin)
     
     use precision,  only : dp
     use parallel  , only : IONode
@@ -61,7 +60,7 @@ contains
     use mpi_siesta, only : MPI_Comm_World
     use mpi_siesta, only : MPI_Bcast, MPI_Integer, MPI_Logical
 #endif
-    
+    use m_ts_cctype
     use m_ts_electrode, only : create_Green
 
     implicit none
@@ -85,15 +84,13 @@ contains
     real(dp), intent(in)           :: xa(3,nua) ! Coordinates in the system for the TranSIESTA routine
     integer, intent(in)            :: nspin ! spin in system
     integer, intent(in)            :: NEn ! Number of energy points
-    complex(dp), intent(in)        :: contour(NEn),wGF(NEn) !energy contours and weights for GF
+    type(ts_ccontour), intent(in)  :: contour(NEn) ! contour for GF
     real(dp), intent(in)           :: chem_shift ! the Fermi-energy we REQUIRE the electrode
 
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
     complex(dp), intent(out)       :: ZBulkDOS(NEn) ! DOS at energy points
-    integer, intent(out)           :: nua_GF ! The number of atoms in the GF file
-    integer, intent(out)           :: no_GF  ! The number of orbitals in the GF file
 
 ! ***********************
 ! * LOCAL variables     *
@@ -133,7 +130,7 @@ contains
             ElecValenceBandBot, &
             nkpnt,kpoint,kweight, &
             NBufAt,NUsedAtoms,NA1,NA2, &
-            ucell,xa,nua,NEn,contour,wGF,chem_shift,ZBulkDOS,nspin)
+            ucell,xa,nua,NEn,contour,chem_shift,ZBulkDOS,nspin)
     end if
 
 !
@@ -153,30 +150,15 @@ contains
           call check_Green(uGF,chem_shift,ucell, &
                NUsedAtoms*NA1*NA2,xa(1,NBufAt+1), &
                nspin,nkpnt,kpoint, &
-               kweight,NEn,contour,wGF,NA1,NA2,errorGF, &
-               nua_GF,no_GF)
+               kweight,NEn,contour,NA1,NA2,errorGF)
        else if ( tElec == 'R' ) then
           call check_Green(uGF,chem_shift,ucell, &
                NUsedAtoms*NA1*NA2,xa(1,nua-NBufAt-NUsedAtoms*NA1*NA2+1), &
                nspin,nkpnt,kpoint, &
-               kweight,NEn,contour,wGF,NA1,NA2,errorGF, &
-               nua_GF,no_GF)
+               kweight,NEn,contour,NA1,NA2,errorGF)
        end if
        call io_close(uGF)
     endif
-
-#ifdef MPI
-    call MPI_Bcast(nua_GF,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-    call MPI_Bcast(no_GF,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-#endif
-
-! Do a quick check against the NUsedAtoms (NUsedAtoms == nua_GF)
-    if ( nua_GF /= NUsedAtoms .and. IONode ) then
-       write(*,*) "Error in Green's function file."
-       write(*,*) "Requested used atoms does not match that found in the GF file."
-    end if
-    errorGF = errorGF .or. nua_GF /= NUsedAtoms
-
 
 !     Check the error in the GF file
 #ifdef MPI
@@ -387,12 +369,12 @@ contains
 ! ## Checks information an returns number of atoms and orbitals   ##
 ! ##################################################################
   subroutine check_Green(funit,c_EfShift,c_ucell,c_nua,c_xa,c_nspin,c_nkpar,c_kpar,c_wkpar, &
-       c_NEn,c_contour,c_wgf, &
-       c_NA1,c_NA2,errorGF, &
-       nua,no)
+       c_NEn,c_contour, &
+       c_NA1,c_NA2,errorGF)
 
     use precision, only: dp
     use units,     only: Ang
+    use m_ts_cctype
 
     real(dp) , parameter :: EPS = 1d-7
     real(dp) , parameter :: EPS_xa = 1d-4
@@ -413,7 +395,7 @@ contains
     real(dp), intent(in)       :: c_kpar(3,c_nkpar) , c_wkpar(c_nkpar)
 ! Energy point on the contour used 
     integer, intent(in)        :: c_NEn
-    complex(dp), intent(in)    :: c_contour(c_NEn),c_wgf(c_NEn)
+    type(ts_ccontour), intent(in) :: c_contour(c_NEn)
 ! We cannot check for number of atoms in the unit cell.
 ! TODO Add this so that it is possible.
 ! Repetition information
@@ -423,10 +405,6 @@ contains
 ! ***********************
 ! Return whether it is a correct Green's function file
     logical, intent(out)       :: errorGF
-! Return number of atoms in the Green's function file
-    integer, intent(out)       :: nua
-! Return the number of orbitals used in the unit cell of this Green's function
-    integer, intent(out)       :: no
 
 ! ***********************
 ! * LOCAL variables     *
@@ -435,7 +413,7 @@ contains
     real(dp) :: EfShift ! The energy shift in the Fermi energy
 
     integer :: NA1,NA2 ! # repetitions in x, # repetitions in y
-    integer :: nkpar,nspin ! # k-points, # spin
+    integer :: nua,no,nkpar,nspin ! # of atoms, # of orbs, # k-points, # spin
     real(dp), dimension (:,:), allocatable :: xa ! electrode atomic coordinates
     real(dp), dimension (:,:), allocatable :: kpar ! k-points
     real(dp), dimension (:), allocatable :: wkpar ! k-point weights
@@ -593,14 +571,14 @@ contains
 
 ! Check contours
     do iEn=1,NEn
-       if ( cdabs(contour(iEn)-c_contour(iEn)) > EPS ) then
+       if ( cdabs(contour(iEn)-c_contour(iEn)%c) > EPS ) then
           write(*,*) ' Warning: contours differ by >', EPS
        end if
-       if ( cdabs(contour(iEn)-c_contour(iEn)) > 10.d0*EPS ) then
+       if ( cdabs(contour(iEn)-c_contour(iEn)%c) > 10.d0*EPS ) then
           write(*,*) ' ERROR  : contours differ by >', 10.d0*EPS
           localErrorGf = .true.
        end if
-       if (cdabs(wgf(iEn)-c_wgf(iEn)) > EPS ) then 
+       if (cdabs(wgf(iEn)-c_contour(iEn)%w) > EPS ) then 
           write(*,*) ' ERROR: contour weights differ by >',EPS
           localErrorGf = .true.
        end if

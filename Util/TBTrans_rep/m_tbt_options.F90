@@ -40,6 +40,8 @@ module m_tbt_options
   integer  :: NRepA2R      ! Number of Right Repetitions in A2 direction
   integer  :: NUsedAtomsL  ! Number of atoms used from the Left electrode
   integer  :: NUsedAtomsR  ! Number of atoms used from the Right electrode
+  integer  :: NUsedOrbsL   ! Number of orbitals used from the Left electrode
+  integer  :: NUsedOrbsR   ! Number of orbitals used from the Right electrode
   character(200) :: GFTitle ! Title to paste in electrode Green's function files
   character(200) :: GFFileL ! Electrode Left GF File
   character(200) :: GFFileR ! Electrode Right GF File
@@ -77,7 +79,7 @@ module m_tbt_options
   real(dp)       :: Emin ! The minimum energy to evaluate the transmission on
   real(dp)       :: Emax ! The maximum energy to evaluate the transmission on
 !                          Thus the evaluation will be in the range [Emin; Emax]
-  integer        :: NEn  ! the number of devisions on the energy range
+  integer        :: NPoints  ! the number of devisions on the energy range
   integer        :: NeigCh   ! No. eigenchannels to calculate
   logical        :: CalcIeig ! Calculate the eigenvalues in the projected isolated region
   integer        :: IsoAt1   ! The first atom in the isolated region
@@ -94,7 +96,7 @@ module m_tbt_options
 ! ################################################
   real(dp), parameter :: Emin_def = -.2_dp
   real(dp), parameter :: Emax_def =  .2_dp
-  integer, parameter  :: NEn_def = 100
+  integer, parameter  :: NPoints_def = 100
   integer, parameter  :: NeigCh_def = 5
   logical, parameter  :: SpinPol_def = .false.
   logical, parameter  :: CalcIeig_def = .false.
@@ -110,12 +112,13 @@ CONTAINS
 ! * SIESTA modules       *
 ! ************************
     use fdf,            only : leqi, fdf_defined
-    use parallel,       only : IOnode, Nodes
+    use parallel,       only : IOnode, Nodes, operator(.PARCOUNT.)
     use m_fdf_global,   only : fdf_global_get
     use units,          only : eV
     use files,          only : slabel
     use sys,            only : die
     use m_ts_io       , only : ts_read_TSHS_na
+    use m_ts_io       , only : ts_read_TSHS_lasto
 #ifdef MPI
     use mpi_siesta, only: MPI_Bcast, MPI_character, MPI_Comm_World
 #endif
@@ -125,7 +128,7 @@ CONTAINS
     character(len=200) :: chars
     logical :: exist ! Check file existance for files requested
     character(len=200) :: paste
-    integer :: na_u, tmp
+    integer :: na_u, tmp, i
     external paste
 #ifdef MPI
     integer :: MPIerror
@@ -144,9 +147,10 @@ CONTAINS
     call fdf_global_get(GFEta,'TS.TBT.Eta',GFeta_def,'Ry')
     call fdf_global_get(VoltFDF,'TS.Voltage',VoltFDF_def,'Ry') 
     IsVolt = dabs(VoltFDF) > 0.001_dp/eV
+    ! Assign the fermi shifts in the electrodes
     VoltL =  .5_dp*VoltFDF
     VoltR = -.5_dp*VoltFDF
-    call fdf_global_get(NEn,'TS.TBT.NPoints',NEn_def)
+    call fdf_global_get(NPoints,'TS.TBT.NPoints',NPoints_def)
     call fdf_global_get(Neigch,'TS.TBT.NEigen',Neigch_def)
     call fdf_global_get(SpinPol,'SpinPolarized',SpinPol_def)
     call fdf_global_get(UseBulk,'TS.UseBulkInElectrodes',UseBulk_def)
@@ -175,7 +179,7 @@ CONTAINS
     ! Read electrode options
     call fdf_global_get(HSFileL,'TS.HSFileLeft',HSFile_def)
     call fdf_global_get(NUsedAtomsL,'TS.NumUsedAtomsLeft',NUsedAtoms_def)
-    call check_HSfile('Left',HSFileL,NUsedAtomsL)
+    call check_HSfile('Left',HSFileL,NUsedAtomsL,NUsedOrbsL)
     call fdf_global_get(NRepA1L,'TS.ReplicateA1Left',NRepA_def)
     call fdf_global_get(NRepA2L,'TS.ReplicateA2Left',NRepA_def)
     if ( NRepA1L < 1 .or. NRepA2L < 1 ) &
@@ -183,7 +187,7 @@ CONTAINS
 
     call fdf_global_get(HSFileR,'TS.HSFileRight',HSFile_def)
     call fdf_global_get(NUsedAtomsR,'TS.NumUsedAtomsRight',NUsedAtoms_def)
-    call check_HSfile('Right',HSFileR,NUsedAtomsR)
+    call check_HSfile('Right',HSFileR,NUsedAtomsR,NUsedOrbsR)
     call fdf_global_get(NRepA1R,'TS.ReplicateA1Right',NRepA_def)
     call fdf_global_get(NRepA2R,'TS.ReplicateA2Right',NRepA_def)
     if ( NRepA1R < 1 .or. NRepA2R < 1 ) &
@@ -219,7 +223,7 @@ CONTAINS
        write(*,1) 'Bulk Values in Electrodes                     =', UseBulk
        write(*,5) 'Buffer Atoms in Left electrode                =', NBufAtL
        write(*,5) 'Buffer Atoms in Right electrode               =', NBufAtR
-       write(*,5) 'Points on the energy contour                  =', NEn
+       write(*,5) 'Points on the energy contour                  =', NPoints
        write(*,7) 'GFEta                                         =', GFEta,' Ry'
        write(*,6) 'Electronic Temperature                        =', kT, ' Ry'
        write(*,1) 'Calculate band bottom in elecrodes            =', ElecValenceBandBot
@@ -253,6 +257,20 @@ CONTAINS
        write(*,*)
     end if
 
+! Print out message if the number of contour points are not 
+! divisable by the number of Nodes
+    if ( IONode .and. mod(NPoints,Nodes) /= 0 ) then
+       write(*,*) "NOTICE: Total number of energy points is &
+            &not divisable by the number of nodes."
+       write(*,*) "        There are no computational costs &
+            &associated with increasing this."
+! Calculate optimal number of energy points
+       i = NPoints
+       write(*,'(t10,a,i4)') "Used # of energy points   : ",i
+       i = Nodes .PARCOUNT. i
+       write(*,'(t10,a,i4)') "Optimal # of energy points: ",i
+    end if
+
 1   format(a,4x,l1)
 5   format(a,i5,a)
 6   format(a,f10.4,a)
@@ -261,11 +279,12 @@ CONTAINS
 
   contains
 
-    subroutine check_HSfile(LR,HSFile,NUsedAtoms)
+    subroutine check_HSfile(LR,HSFile,NUsedAtoms,NUsedOrbs)
       character(len=*), intent(in) :: LR
       character(len=*), intent(in) :: HSFile
-      integer, intent(inout) :: NUsedAtoms
+      integer, intent(inout) :: NUsedAtoms, NUsedOrbs
       integer :: tmp_NUsedAtoms
+      integer, allocatable, dimension(:) :: lasto
       logical :: exist
 ! Check existance for left Electrode.TSHS
       inquire(file=TRIM(HSFile),exist=exist)
@@ -273,7 +292,9 @@ CONTAINS
          call die(trim(LR)//" electrode file does not exist. &
               &Please create electrode '"//trim(HSFile)//"' first.")
       end if
+! Read in the number of atoms in the HSfile
       call ts_read_TSHS_na(HSFile,tmp_NUsedAtoms)
+
       if ( NUsedAtoms < 0 ) then
          NUsedAtoms = tmp_NUsedAtoms
       else if ( NUsedAtoms == 0 ) then
@@ -281,13 +302,33 @@ CONTAINS
               write(*,*) "You need at least one atom in the electrode."
          call die("None atoms requested for electrode calculation.")
       else if ( tmp_NUsedAtoms < NUsedAtoms ) then
-         if ( IONode ) then
+         if (IONode) then
             write(*,*) "# of requested atoms is larger than available."
             write(*,*) "Requested: ",NUsedAtoms
             write(*,*) "Available: ",tmp_NUsedAtoms
          end if
          call die("Error on requested atoms.")
       end if
+
+! We have determined the number of atoms in the 
+! TSHS file
+! Read in lasto to determine the number of orbitals 
+! used in the electrode
+      allocate(lasto(0:tmp_NUsedAtoms))
+      call ts_read_TSHS_lasto(HSFile,tmp_NUsedAtoms,lasto)
+      NUsedOrbs = 0
+      if ( LR == 'Left' ) then
+! We use the first atoms
+         do i = 1 , NUsedAtoms
+            NUsedOrbs = NUsedOrbs + lasto(i)-lasto(i-1)
+         end do
+      else
+! We use the last atoms
+         do i = tmp_NUsedAtoms - NUsedAtoms + 1 , tmp_NUsedAtoms
+            NUsedOrbs = NUsedOrbs + lasto(i)-lasto(i-1)
+         end do
+      end if
+
     end subroutine check_HSfile
   end subroutine read_tbt_options
 

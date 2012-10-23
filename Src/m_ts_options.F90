@@ -51,6 +51,7 @@ integer  :: nline        ! Number of points on the "line" segment of the Contour
 integer  :: ncircle      ! Number of points on the circle part of the contour 
 integer  :: npol         ! Number of poles included in the contour
 integer  :: nvolt        ! Number of points for the Bias integartion part
+integer  :: ntransport   ! Number of points for transport calculation
 integer  :: NBufAtL      ! Number of Left Buffer Atoms
 integer  :: NBufAtR      ! Number of Right Buffer Atoms
 integer  :: NRepA1L      ! Number of Left Repetitions in A1 direction
@@ -59,13 +60,15 @@ integer  :: NRepA1R      ! Number of Right Repetitions in A1 direction
 integer  :: NRepA2R      ! Number of Right Repetitions in A2 direction
 integer  :: NUsedAtomsL  ! Number of atoms used from the Left electrode
 integer  :: NUsedAtomsR  ! Number of atoms used from the Right electrode
+integer  :: NUsedOrbsL   ! Number of orbitals used from the Left electrode
+integer  :: NUsedOrbsR   ! Number of orbitals used from the Right electrode
 character(200) :: GFTitle ! Title to paste in electrode Green's function files
 character(200) :: GFFileL ! Electrode Left GF File
 character(200) :: GFFileR ! Electrode Right GF File
 character(200) :: HSFileL ! Electrode Left TSHS File
 character(200) :: HSFileR ! Electrode Right TSHS File
 logical       :: ElecValenceBandBot ! Calculate Electrode valence band bottom when creating electrode GF
-character(20) :: smethod ! GF Numerical Integration Methods 
+integer :: Cmethod        ! Method for the contour integration
 logical :: ReUseGF        ! Calculate the electrodes GF
 
 !==========================================================================*
@@ -89,6 +92,7 @@ integer, parameter :: nline_def = 6
 integer, parameter :: ncircle_def = 24
 integer, parameter :: npol_def = 6
 integer, parameter :: nvolt_def = 5
+integer, parameter :: ntransport_def = 0
 integer, parameter :: NBufAtL_def = 0
 integer, parameter :: NBufAtR_def = 0
 integer, parameter :: NRepA_def = 1
@@ -120,19 +124,24 @@ logical, save :: TSmode = .false.
 subroutine read_ts_options(ucell)
 
 ! SIESTA Modules Used
+use files, only  : slabel
 use fdf, only : leqi
 use parallel, only: IOnode, Nodes, operator(.parcount.)
 use m_fdf_global, only: fdf_global_get
 use units, only: eV
+use m_ts_contour, only : CC_METHOD_SOMMERFELD
+use m_ts_contour, only : CC_METHOD_GAUSSFERMI
 use m_ts_global_vars, only : ts_istep, TSinit
 use m_ts_io, only : ts_read_TSHS_na
+use m_ts_io, only : ts_read_TSHS_lasto
 #ifdef MPI
-use mpi_siesta, only : MPI_Character, MPI_Comm_World
+use mpi_siesta, only : MPI_Integer, MPI_Comm_World
 #endif
 implicit none
+
 real(dp),intent(in) :: ucell(3,3)
 ! Internal Variables
-character(len=20) :: chars
+character(len=20) :: chars, s_cmethod
 integer :: i
 #ifdef MPI
 integer :: MPIerror
@@ -158,9 +167,10 @@ call fdf_global_get(onlyS,'TS.onlyS',onlyS_def)
 call fdf_global_get(mixH,'TS.MixH',mixH_def)
 call fdf_global_get(VoltFDF,'TS.Voltage',voltfdf_def,'Ry') 
 IsVolt = dabs(VoltFDF) > 0.001_dp/eV
+! Set up the fermi shifts for the left and right electrodes
 VoltL =  0.5_dp*VoltFDF
 VoltR = -0.5_dp*VoltFDF
-call fdf_global_get(USEBULK,'TS.UseBulkInElectrodes',USEBULK_def)
+call fdf_global_get(UseBulk,'TS.UseBulkInElectrodes',UseBulk_def)
 call fdf_global_get(TriDiag,'TS.TriDiag',TriDiag_def)
 call fdf_global_get(updatedmcr,'TS.UpdateDMCROnly',updatedmcr_def)
 call fdf_global_get(NBufAtL,'TS.BufferAtomsLeft',NBufAtL_def)
@@ -172,9 +182,7 @@ call fdf_global_get(chars,'TS.ChargeCorrection',ChargeCorr_def)
 ChargeCorr = 0
 if ( leqi(chars,'none') ) then
    ChargeCorr = 0
-else if ( leqi(chars,'b') ) then
-   ChargeCorr = 1
-else if ( leqi(chars,'buffer') ) then
+else if ( leqi(chars,'b') .or. leqi(chars,'buffer') ) then
    ChargeCorr = 1
 end if
 call fdf_global_get(ChargeCorr_factor,'TS.ChargeCorrectionFactor',ChargeCorr_factor_def)
@@ -184,12 +192,21 @@ if ( ChargeCorr_factor < 0.0_dp .or. &
 endif
 call fdf_global_get(CCEMin,'TS.ComplexContourEmin',CCEMin_def,'Ry')
 call fdf_global_get(GFEta,'TS.biasContour.Eta',GFEta_def,'Ry')
+if ( GFEta <= 0.d0) call die('ERROR: GFeta <= 0.0 ')
 call fdf_global_get(kT,'ElectronicTemperature',kT_def,'Ry')
-call fdf_global_get(smethod,'TS.biasContour.method',smethod_def)
+call fdf_global_get(s_cmethod,'TS.biasContour.method',smethod_def)
+if ( leqi(s_cmethod,'sommerfeld') ) then
+   Cmethod = CC_METHOD_SOMMERFELD
+else if ( leqi(s_cmethod,'gaussfermi') ) then
+   Cmethod = CC_METHOD_GAUSSFERMI
+else
+   Cmethod = 0 ! For producing error message later on
+end if
 call fdf_global_get(npol,'TS.ComplexContour.NPoles',npol_def)
 call fdf_global_get(ncircle,'TS.ComplexContour.NCircle',ncircle_def)
 call fdf_global_get(nline,'TS.ComplexContour.NLine',nline_def)
 call fdf_global_get(nvolt,'TS.biasContour.NumPoints',nvolt_def)
+!call fdf_global_get(Ntransport,'TS.Contour.NTransport',Ntransport_def)
 call fdf_global_get(GFTitle,'TS.GFTitle',GFTitle_def)
 call fdf_global_get(GFFileL,'TS.GFFileLeft',GFFileL_def)
 call fdf_global_get(GFFileR,'TS.GFFileRight',GFFileR_def)
@@ -200,7 +217,7 @@ call fdf_global_get(ElecValenceBandBot,'TS.CalcElectrodeValenceBandBottom', &
 
 call fdf_global_get(HSFileL,'TS.HSFileLeft',HSFile_def)
 call fdf_global_get(NUsedAtomsL,'TS.NumUsedAtomsLeft',NUsedAtoms_def)
-call check_HSfile('Left',HSFileL,NUsedAtomsL)
+call check_HSfile('Left',HSFileL,NUsedAtomsL,NUsedOrbsL)
 call fdf_global_get(NRepA1L,'TS.ReplicateA1Left',NRepA_def)
 call fdf_global_get(NRepA2L,'TS.ReplicateA2Left',NRepA_def)
 if ( NRepA1L < 1 .or. NRepA2L < 1 ) &
@@ -208,7 +225,7 @@ if ( NRepA1L < 1 .or. NRepA2L < 1 ) &
 
 call fdf_global_get(HSFileR,'TS.HSFileRight',HSFile_def)
 call fdf_global_get(NUsedAtomsR,'TS.NumUsedAtomsRight',NUsedAtoms_def)
-call check_HSfile('Right',HSFileR,NUsedAtomsR)
+call check_HSfile('Right',HSFileR,NUsedAtomsR,NUsedOrbsR)
 call fdf_global_get(NRepA1R,'TS.ReplicateA1Right',NRepA_def)
 call fdf_global_get(NRepA2R,'TS.ReplicateA2Right',NRepA_def)
 if ( NRepA1R < 1 .or. NRepA2R < 1 ) &
@@ -235,10 +252,11 @@ end if
  write(*,5) 'ts_read_options: N. Pts. Line                 =', nline
  write(*,5) 'ts_read_options: N. Poles in Contour          =', npol
  write(*,5) 'ts_read_options: N. Pts. Bias Contour         =', nvolt
+! write(*,5) 'ts_read_options: N. Pts. Transport            =', Ntransport
  write(*,6) 'ts_read_options: Contour E Min.               =', CCEmin,' Ry'
  write(*,7) 'ts_read_options: GFEta                        =', GFEta,' Ry'
  write(*,6) 'ts_read_options: Electronic Temperature       =', kT, ' Ry'
- write(*,10)'ts_read_options: Bias Contour Method          =', smethod
+ write(*,10)'ts_read_options: Bias Contour Method          =', s_cmethod
 if ( ChargeCorr == 0 ) then
  write(*,'(a)')'ts_read_options: Will not correct charge fluctuations'
 else if ( ChargeCorr == 1 ) then ! Correct in buffer
@@ -263,9 +281,8 @@ end if
   write(*,5) 'ts_read_options: # atoms used in right elec.  = ', NUsedAtomsR
   write(*,'(a,i3,'' X '',i3)') &
              'ts_read_options: Right elec. repetition A1/A2 = ', NRepA1R,NRepA2R
-end if
 
-if (IOnode .and. TSmode) then
+
  write(*,'(2a,/)') 'ts_read_options: ', repeat('*', 62)
 
  write(*,'(3a)') repeat('*',24),' Begin: TS CHECKS AND WARNINGS ',repeat('*',24) 
@@ -285,20 +302,69 @@ if (IOnode .and. TSmode) then
 
 ! Print out message if the number of contour points are not 
 ! divisable by the number of Nodes
- if ( (IsVolt .and. &
-      mod(2*(Npol+NLine+Ncircle)+Nvolt,Nodes) /= 0 ) &
-      .or. ( .not. IsVolt .and. &
-      mod(Npol+NLine+Ncircle+Nvolt,Nodes) /= 0 ) )then
-    write(*,*) "NOTICE: Total number of energy points is &
-         &not divisable by the number of nodes."
-    write(*,*) "        There are no computational costs &
-         &associated with increasing this."
-    ! Calculate optimal number of energy points
-    i = Npol+Nline+Ncircle+Nvolt
-    if ( IsVolt ) i = 2*(Npol+Nline+Ncircle)+Nvolt
-    write(*,'(t11,a,i4)') "Used # of energy points   : ",i
-    i = Nodes .PARCOUNT. i
-    write(*,'(t11,a,i4)') "Optimal # of energy points: ",i
+! We have two cases
+! IsVolt:
+!   - The equilibrium parts are the same computational cost
+!   - The voltage contour point is more "heavy" in computation
+!   * Solution make both Left and Right equi contours divisible by Nodes
+!   * Make Nvolt divisible by Nodes
+ if ( IsVolt ) then
+    if ( mod(2*(Npol+NLine+Ncircle),Nodes) /= 0 ) then
+       write(*,*) "NOTICE: Equilibrium energy contour points are not"
+       write(*,*) "        divisable by the number of nodes."
+       write(*,*) "        Better scalability is achived by changing:"
+       write(*,*) "          - TS.ComplexContour.NPoles"
+       write(*,*) "          - TS.ComplexContour.NLine"
+       write(*,*) "          - TS.ComplexContour.NCircle"
+
+       ! Calculate optimal number of energy points
+       i = 2*(Npol+Nline+Ncircle)
+       write(*,'(t10,a,i4)') "Used equilibrium # of energy points   : ",i
+       i = Nodes .PARCOUNT. i
+       write(*,'(t10,a,i4,tr1,a4,i3,/)') &
+            "Optimal equilibrium # of energy points: ",i, &
+            achar(177)//" i*",Nodes
+    end if
+    if ( mod(NVolt,Nodes) /= 0 ) then
+       write(*,*) "NOTICE: Non-equilibrium energy contour points are not"
+       write(*,*) "        divisable by the number of nodes."
+       write(*,*) "        Better scalability is achieved by changing:"
+       write(*,*) "          - TS.ComplexContour.NVolt"
+
+       ! Calculate optimal number of energy points
+       i = NVolt
+       write(*,'(t10,a,i4)') "Used non-equilibrium # of energy points   : ",i
+       i = Nodes .PARCOUNT. i
+       write(*,'(t10,a,i4,tr1,a4,i3,/)') &
+            "Optimal non-equilibrium # of energy points: ",i, &
+            achar(177)//" i*",Nodes
+    end if
+    if ( mod(2*(Npol+Nline+Ncircle)+NVolt,Nodes) /= 0 ) then
+       write(*,*) "NOTICE: Total energy contour points are not"
+       write(*,*) "        divisable by the number of nodes."
+
+       ! Calculate optimal number of energy points
+       i = 2*(Npol+Nline+Ncircle)+NVolt
+       write(*,'(t10,a,i4)') "Used # of energy points   : ",i
+       i = Nodes .PARCOUNT. i
+       write(*,'(t10,a,i4,tr1,a4,i3,/)') &
+            "Optimal # of energy points: ",i,achar(177)//" i*",Nodes
+      end if
+ else
+! .not. IsVolt:
+!   - The equilibrium parts are the same computational cost
+!   * Solution make the equi contours divisible by Nodes
+    if ( mod(Npol+NLine+Ncircle,Nodes) /= 0 ) then
+       write(*,*) "NOTICE: Total number of energy points is &
+            &not divisable by the number of nodes."
+       write(*,*) "        There are no computational costs &
+            &associated with increasing this."
+! Calculate optimal number of energy points
+       i = Npol+Nline+Ncircle
+       write(*,'(t10,a,i4)') "Used # of energy points   : ",i
+       i = Nodes .PARCOUNT. i
+       write(*,'(t10,a,i4)') "Optimal # of energy points: ",i
+    end if
  end if
 
 ! UseBulk and TriDiag
@@ -309,11 +375,10 @@ if (IOnode .and. TSmode) then
   end if
 
 ! Integration Method
-  if( .not. (leqi(smethod,'gaussfermi') .or.   &
-       leqi(smethod, 'sommerfeld')) ) then 
-    write(*,*) 'WARNING: TS.biasContour.method=',smethod
+  if( Cmethod == 0 ) then
+    write(*,*) 'WARNING: TS.biasContour.method not recognized.'
     write(*,*) '         Reverting to gaussfermi instead'
-    smethod='gaussfermi'
+    Cmethod = CC_METHOD_GAUSSFERMI
   endif
 
   if (fixspin ) then
@@ -322,12 +387,14 @@ if (IOnode .and. TSmode) then
   end if
 
   write(*,'(3a)') repeat('*',24),' End: TS CHECKS AND WARNINGS ',repeat('*',26) 
+
+  write(*,*)
+
 end if
 
-write(*,*)
 ! The method could have changed... Broad cast method
 #ifdef MPI
-  call MPI_BCast(smethod,20,MPI_character,0,MPI_Comm_World,MPIerror)
+  call MPI_BCast(cmethod,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
 #endif
 
 1   format(a,4x,l1)
@@ -338,12 +405,13 @@ write(*,*)
 10  format(a,4x,a)
 
 contains 
-
-  subroutine check_HSfile(LR,HSFile,NUsedAtoms)
+  
+  subroutine check_HSfile(LR,HSFile,NUsedAtoms,NUsedOrbs)
     character(len=*), intent(in) :: LR
     character(len=*), intent(in) :: HSFile
-    integer, intent(inout) :: NUsedAtoms
+    integer, intent(inout) :: NUsedAtoms, NUsedOrbs
     integer :: tmp_NUsedAtoms
+    integer, allocatable, dimension(:) :: lasto
     logical :: exist
     if ( TSmode ) then
 ! Check existance for left Electrode.TSHS
@@ -352,7 +420,9 @@ contains
           call die(trim(LR)//" electrode file does not exist. &
                &Please create electrode '"//trim(HSFile)//"' first.")
        end if
+       ! Read in the number of atoms in the HSfile
        call ts_read_TSHS_na(HSFile,tmp_NUsedAtoms)
+
        if ( NUsedAtoms < 0 ) then
           NUsedAtoms = tmp_NUsedAtoms
        else if ( NUsedAtoms == 0 ) then
@@ -367,9 +437,29 @@ contains
           end if
           call die("Error on requested atoms.")
        end if
-    end if
-  end subroutine check_HSfile
 
+       ! We have determined the number of atoms in the 
+       ! TSHS file
+       ! Read in lasto to determine the number of orbitals 
+       ! used in the electrode
+       allocate(lasto(0:tmp_NUsedAtoms))
+       call ts_read_TSHS_lasto(HSFile,tmp_NUsedAtoms,lasto)
+       NUsedOrbs = 0
+       if ( LR == 'Left' ) then
+          ! We use the first atoms
+          do i = 1 , NUsedAtoms
+             NUsedOrbs = NUsedOrbs + lasto(i)-lasto(i-1)
+          end do
+       else
+          ! We use the last atoms
+          do i = tmp_NUsedAtoms - NUsedAtoms + 1 , tmp_NUsedAtoms
+             NUsedOrbs = NUsedOrbs + lasto(i)-lasto(i-1)
+          end do
+       end if
+    end if
+
+  end subroutine check_HSfile
+  
 end subroutine read_ts_options
 
 end module m_ts_options

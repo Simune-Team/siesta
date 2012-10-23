@@ -56,7 +56,7 @@ program tbtrans
 ! ************************
 ! * TranSIESTA modules   *
 ! ************************
-  use m_ts_contour,   only : mkRealContour
+  use m_ts_contour,   only : NEn, PNEn, contour
   use m_ts_gf,        only : do_Green, read_Green
   use m_ts_scattering,only : getSFE
   use m_ts_io,        only : ts_iohs
@@ -68,12 +68,16 @@ program tbtrans
   use m_tbt_options, only : UseBulk, kT, GFEta
   use m_tbt_options, only : VoltFDF, VoltL, VoltR, IsVolt
   use m_tbt_options, only : NBufAtL, NRepA1L, NRepA2L, NUsedAtomsL
+  use m_tbt_options, only : nuaL_GF => NUsedAtomsL
+  use m_tbt_options, only : noL_GF  => NUsedOrbsL
   use m_tbt_options, only : GFFileL, HSFileL
   use m_tbt_options, only : NBufAtR, NRepA1R, NRepA2R, NUsedAtomsR
+  use m_tbt_options, only : nuaR_GF => NUsedAtomsR
+  use m_tbt_options, only : noR_GF  => NUsedOrbsR
   use m_tbt_options, only : GFFileR, HSFileR
   use m_tbt_options, only : HSFile, ElecValenceBandBot, ReUseGF
   use m_tbt_options, only : GFTitle
-  use m_tbt_options, only : NEn, Emin, Emax, NeigCh
+  use m_tbt_options, only : Emin, Emax, NeigCh
   use m_tbt_options, only : IsoAt1, IsoAt2
   use m_tbt_options, only : CalcCOOP, AlignScat, CalcAtomPDOS
 
@@ -96,7 +100,7 @@ program tbtrans
 ! * Variables concerning the contour      *
 ! * I.e. the number of energy points.     *
 ! *****************************************
-  complex(dp), dimension(:), allocatable :: contour, wGF ! Equilibrium contour
+
   complex(dp), dimension(:), allocatable :: ZBulkDos ! We need to have it complex to pass to create_Green
 
 
@@ -248,25 +252,12 @@ program tbtrans
   EfermiR = VoltR
   EFermi0 = 0.0_dp ! (EfermiL + EfermiR)*.5_dp !Ry
 
-! Setup contour points.....
-  allocate(contour(NEn))
-  allocate(wGF(NEn))
-  call memory('A','Z',NEn*2,'tbtrans')
-  if ( IONode ) then
-     call mkRealContour(Emin,Emax,GFeta,NEn,contour,wGF)
-  end if
-#ifdef MPI
-  call MPI_Bcast(contour,NEn,MPI_double_complex,0,MPI_Comm_World,MPIerror)
-  call MPI_Bcast(wGF,NEn,MPI_double_complex,0,MPI_Comm_World,MPIerror)
-#endif
 ! We will not redistribute them as that will be done automatically in the loops
   if ( NEn > 1 ) then
      dE = (Emax-Emin)/real(NEn-1,dp)
   else
      dE = 0.0_dp
   end if
-  ! Calculate the parallel energy point counts
-  PNEn = Nodes .PARCOUNT. NEn
 
 ! Make new line before reading in TSHS
   call out_NEWLINE(6)
@@ -285,12 +276,12 @@ program tbtrans
      write(*,'(a)') 'Atomic coordinates and regions (Ang):'
      if ( NBufAtL > 0 ) &
         call out_REGION(6,na_u,xa,1, NBufAtL, 'Left buffer','/')
-     call out_REGION(6,na_u,xa,NBufAtL+1,NBufAtL+NUsedAtomsL*NRepA1L*NRepA2L, &
+     call out_REGION(6,na_u,xa,NBufAtL+1,NBufAtL+nuaL_GF*NRepA1L*NRepA2L, &
           'Left electrode','#')
-     call out_DEVICE(6,na_u,xa,NBufAtL+NUsedAtomsL*NRepA1L*NRepA2L+1, &
-          na_u-NBufAtR-NUsedAtomsR*NRepA1R*NRepA2R, &
+     call out_DEVICE(6,na_u,xa,NBufAtL+nuaL_GF*NRepA1L*NRepA2L+1, &
+          na_u-NBufAtR-nuaR_GF*NRepA1R*NRepA2R, &
           IsoAt1,IsoAt2,'*')
-     call out_REGION(6,na_u,xa,na_u-NBufAtR-NUsedAtomsR*NRepA1R*NRepA2R+1, &
+     call out_REGION(6,na_u,xa,na_u-NBufAtR-nuaR_GF*NRepA1R*NRepA2R+1, &
           na_u-NBufAtR, 'Right electrode','#')
      if ( NBufAtR > 0 ) &
           call out_REGION(6,na_u,xa,na_u-NBufAtR+1, na_u, 'Right buffer','/')
@@ -325,8 +316,7 @@ program tbtrans
        ElecValenceBandBot, ReUseGF, &
        nkpnt,kpoint,kweight, &
        NBufAtL,NUsedAtomsL,NRepA1L,NRepA2L, &
-       ucell,xa,na_u,NEn,contour,wGF,EFermiL,ZBulkDOS,nspin, &
-       nuaL_GF,noL_GF)
+       ucell,xa,na_u,NEn,contour,EFermiL,ZBulkDOS,nspin)
   
   ! If we have created the new GF file we can write out the ZBulkDOS
   ! This is the ZBulkDOS for both spins....
@@ -335,7 +325,7 @@ program tbtrans
      do iE = 1 , NEn 
         ZBulkDOS(iE) = -sF/Pi*dimag(ZBulkDOS(iE)*wGF(iE))
      end do
-     call out_DOS(uDOSL,NEn,contour,ZBulkDOS)
+     call out_DOS(uDOSL,NEn,contour(:)%c,ZBulkDOS)
      call io_close(uDOSL)
      ZBulkDOS(:) = 0.0_dp
   end if
@@ -345,8 +335,7 @@ program tbtrans
        ElecValenceBandBot, ReUseGF, &
        nkpnt,kpoint,kweight, &
        NBufAtR,NUsedAtomsR,NRepA1R,NRepA2R, &
-       ucell,xa,na_u,NEn,contour,wGF,EFermiR,ZBulkDOS,nspin, &
-       nuaR_GF,noR_GF)
+       ucell,xa,na_u,NEn,contour,EFermiR,ZBulkDOS,nspin)
 
   ! If we have created the new GF file we can write out the ZBulkDOS
   ! This is the ZBulkDOS for both spins....
@@ -355,7 +344,7 @@ program tbtrans
      do iE = 1 , NEn 
         ZBulkDOS(iE) = -sF/Pi*dimag(ZBulkDOS(iE)*wGF(iE))
      end do
-     call out_DOS(uDOSR,NEn,contour,ZBulkDOS)
+     call out_DOS(uDOSR,NEn,contour(:)%c,ZBulkDOS)
      call io_close(uDOSR)
   end if
   
@@ -779,8 +768,8 @@ program tbtrans
 ! We need to ensure that the full loop is always run by ALL nodes        
         l_E: do iE = Node + 1 , PNEn , Nodes
 ! Retrieve the node specific energy-point
-           ZEnergy = contour(min(iE,NEn))
-           ZwGF    = wGF(min(iE,NEn))
+           ZEnergy = contour(min(iE,NEn))%c
+           ZwGF    = contour(min(iE,NEn))%w
            
 ! LEFT:
            call getSFE(UseBulk,uGFL,HAAL,SAAL,ZEnergy,ikpt, &
@@ -914,7 +903,7 @@ program tbtrans
                        call MPI_Wait(req,status,MPIerror)
                     end if
                     if ( NEn < iNode + iE ) cycle
-                    call out_TEIG(uTeig,real(contour(iE+iNode),dp), &
+                    call out_TEIG(uTeig,real(contour(iE+iNode)%c,dp), &
                          NeigCh,TEig)
                  else if ( iNode == Node ) then
                     call MPI_ISend(TEig,NeigCh,MPI_Double_Precision, &
@@ -965,18 +954,18 @@ program tbtrans
      call MPI_Reduce(buf_send(1,1),buf_recv(1,1),size(buf_recv), &
           MPI_Double_Precision, MPI_SUM,0,MPI_Comm_World,MPIerror)
      do iE = 1 , NEn
-        call out_Trans(uTAv,real(contour(iE),dp),buf_recv(iE,1), &
+        call out_Trans(uTAv,real(contour(iE)%c,dp),buf_recv(iE,1), &
              buf_recv(iE,2),buf_recv(iE,3))
         if ( NeigCh > 0 ) then
-           call out_TEIG(uTeigAv,real(contour(iE),dp),NeigCh,buf_recv(iE,4:3+NeigCh))
+           call out_TEIG(uTeigAv,real(contour(iE)%c,dp),NeigCh,buf_recv(iE,4:3+NeigCh))
         end if
      end do
 #else
      do iE = 1 , NEn
-        call out_Trans(uTAv,real(contour(iE),dp),TAv(iE), &
+        call out_Trans(uTAv,real(contour(iE)%c,dp),TAv(iE), &
              TDOSAv(iE),PDOSAv(iE))
         if ( NeigCh > 0 ) then
-           call out_TEIG(uTeigAv,real(contour(iE),dp),NeigCh,TEigAv)
+           call out_TEIG(uTeigAv,real(contour(iE)%c,dp),NeigCh,TEigAv)
         end if
      end do
 #endif
@@ -1026,9 +1015,6 @@ program tbtrans
 ! ##########      ends here       ###########
 ! ###########################################
 
-
-  call memory('D','Z',NEn*2,'tbtrans')
-  deallocate(contour,wGF)
 
   call memory('D','I',nuaL_GF+nuaR_GF+2,'tbtrans')
   deallocate(lastoL,lastoR)

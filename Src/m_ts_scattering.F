@@ -1011,12 +1011,6 @@ c=======================================================================
       call timer('weightDM',1)
 C Get Node number
 
-      if (nc.lt. (NGL+NGR))  then
-         if(IONode)
-     &   write(6,*) 'ERROR: weightDM: nc=',nc,'<=',NGL+NGR
-         call die ('ERROR: weightDM: nc<,NGL+NGR')
-      end if
-     
       maxdif2=0.0d0
       maxndif2=0.0d0
       do j=1,nc
@@ -1141,12 +1135,6 @@ c=======================================================================
 
       call timer('weightDMC',1)
 
-      if (nc.lt. (NGL+NGR))  then
-         if(IONode)
-     &   write(6,*) 'ERROR: weightDM: nc=',nc,'<=',NGL+NGR
-         call die ('ERROR: weightDM: nc<,NGL+NGR')
-      end if
-     
       maxdif2=0.0d0
       maxndif2=0.0d0
       do j=1,nc

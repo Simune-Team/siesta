@@ -56,15 +56,11 @@
 #ifdef MPI
       use mpi_siesta
 #endif
+
 #ifdef TRANSIESTA
-! TSS Begin
-      use m_ts_options, only: TSmode
-      use m_ts_options, only: NBufAtL,NUsedAtomsL,NRepA1L,NRepA2L
-      use m_ts_options, only: NBufAtR,NUsedAtomsR,NRepA1R,NRepA2R
-      use m_ts_options, only: read_ts_options
-      use m_ts_kpoints, only: setup_ts_kpoint_grid
-! TSS End
-#endif /* TRANSIESTA */
+      use m_ts_init, only : ts_init
+#endif
+
       implicit none
 #ifdef MPI
       integer :: MPIerror  ! Return error code in MPI routines
@@ -228,12 +224,6 @@ C     Initialise MPI and set processor number
 !     Read simulation data
       call read_options( na_u, ns, nspin )
 
-#ifdef TRANSIESTA
-!     Read TS Input options
-      call read_ts_options( ucell )
-!     TSS End
-#endif
-
       qtot = qtot - charnet     ! qtot set in initatomlists
                                 ! charnet set in redata
       if (IOnode) then
@@ -324,16 +314,7 @@ C     Initialise MPI and set processor number
       endif
 
 #ifdef TRANSIESTA
-!     TSS Begin
-      call setup_ts_kpoint_grid( ucell )
-
-! Print out the region if we have a transiesta run
-      if ( TSmode ) then
-         call ts_show_regions(ucell,na_u,xa,
-     &        NBufAtL,NUsedAtomsL,NUsedAtomsR,NBufAtR,
-     &        NRepA1L,NRepA2L,NRepA1R,NRepA2R)
-      end if
-!     TSS End
+      call ts_init(ucell,na_u,xa)
 #endif
 
       nullify(eo,qo)

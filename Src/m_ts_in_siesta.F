@@ -80,18 +80,28 @@
 #endif
       use m_ts_options, only : ReUseGF
       use m_ts_options, only : HSFileL,HSFileR
-      use m_ts_options, only : NUsedAtomsL,NUsedAtomsR
+      ! We could insert the name here, however, in the context here
+      ! the variable naming here gives more meaning
+      use m_ts_options, only : nuaL_GF => NUsedAtomsL
+      use m_ts_options, only : noL_GF  => NUsedOrbsL
+      use m_ts_options, only : nuaR_GF => NUsedAtomsR
+      use m_ts_options, only : noR_GF  => NUsedOrbsR
+
       use m_ts_options, only : NRepA1L,NRepA2L,NRepA1R,NRepA2R
       use m_ts_options, only : NBufAtL, NBufAtR
       use m_ts_options, only : GFFileL, GFFileR
       use m_ts_options, only : IsVolt, VoltFDF, VoltL, VoltR
       use m_ts_options, only : UseBulk, TriDiag, updatedmcr
-      use m_ts_options, only : nvolt, ElecValenceBandBot, GFTitle
+      use m_ts_options, only : ElecValenceBandBot, GFTitle
       use m_ts_options, only : ChargeCorr, ChargeCorr_factor
-      use m_ts_options, only : CCEmin, GFEta, kT, smethod
-      use m_ts_options, only : nline,ncircle,npol,nvolt
+      use m_ts_options, only : kT
 
-      use m_ts_contour, only : setupcontour, distrcontour
+      use m_ts_cctype, only : CC_PART_EQUI
+      use m_ts_cctype, only : CC_PART_LEFT_EQUI
+      use m_ts_cctype, only : CC_PART_RIGHT_EQUI
+      use m_ts_cctype, only : CC_PART_NON_EQUI
+      use m_ts_cctype, only : CC_PART_TRANSPORT
+      use m_ts_contour, only : PNEn, NEn, contour
       use m_ts_GF,      only : do_Green, read_Green
       use m_ts_scattering, only : getSFE, getGF
       use m_ts_scattering, only : GFGammaGF, weightDM, weightDMC
@@ -145,19 +155,19 @@
 !                               ! for all i with no_l the number of 
 !                               ! orbitals in unit cell
       
-      integer TSiscf ! Current iteration
+      integer :: TSiscf ! Current iteration
 
 ! The fermi-energy of the CONTACT (without electrodes) is initially determined
 ! by SIESTA. This is taken as the starting energy shift of the contact region:
 ! The electrodes in equilibrium has per definition Fermi energy at ZERO.
-      real(dp) Ef                 ! Fermi energy (used in CONTACT) 
-      real(dp) Qtot
+      real(dp) :: Ef                 ! Fermi energy (used in CONTACT) 
+      real(dp) :: Qtot
 !======================================================================
 !   BACK TO SIESTA:
 !======================================================================
 
-      real(dp) Dnew(maxnh,nspin) ! Output Density Matrix
-      real(dp) Enew(maxnh,nspin) ! Output Energy-Density Matrix
+      real(dp) :: Dnew(maxnh,nspin) ! Output Density Matrix
+      real(dp) :: Enew(maxnh,nspin) ! Output Energy-Density Matrix
 
 !======================================================================
 !     Greens functions:
@@ -166,32 +176,6 @@
 ! Full Green's function, H and S of contact:
       complex(dp), dimension(:,:), pointer :: H, S
       complex(dp), dimension(:),   pointer :: GF
-
-!     Energy Contour:
-      complex(dp), dimension (:), pointer, save :: contour,wgf
-!     NCONTOUR0 is the number of contour point if it is an equilibrium
-!     situation
-!     NCONTOUR is the total number of contour points
-! No. contour points (NCONTOUR if VOLT=0 else NCONTOUR + NVOLT)
-      integer, save :: NCONTOUR0,NCONTOUR
-! The number of energy points on the contour
-      integer, save :: NEn
-
-      integer, save :: NPARACONTOUR   ! No. points on parallel contour
-
-!     Energy points and their weight distributed on nodes
-      complex(dp), dimension(:,:), allocatable, save :: paracontour
-      complex(dp), dimension(:,:), allocatable, save :: paraWGF
-
-!     (point,node) --> part of contour :
-!              ('L','R','V','N') Left,Right,Voltage, No voltage
-      character, dimension(:,:), allocatable, save ::  contourpart
-!     When looping a single char is needed
-      character                                    :: Part
-
-!     No. actual energy points to read-in for given parallel energy point
-
-      integer, dimension(:), allocatable, save ::  points2read
 
 !==================================================================
 !     Left/Right electrode variables:
@@ -207,20 +191,10 @@
 !     k-points, q-points, k/q-weights, fermi level shift due to V,
 !     etc.
 
-!     Fermi levels
-!       Left   = 0.5 * Volt
-!       Device = 0.0
-!       Right = -0.5 * Volt
-      real(dp), save :: EFermiL,EFermiR,EFermi0
-
-!     Number of atoms in the electrode (before expansion)
-      integer, save :: nuaL_GF, nuaR_GF
 !     Number of atoms in the electrode (after expansion)
-      integer, save :: nuaL, nuaR
-!     Number of orbitals in the electrodes (before expansion)
-      integer, save :: noL_GF, noR_GF
+      integer :: nuaL, nuaR
 !     Number of orbitals in the electrodes (after expansion)
-      integer, save :: noL,noR
+      integer :: noL,noR
 
 !     The lasto shortened to only the electrodes
       integer, dimension(:), allocatable, save :: lastoL,lastoR
@@ -246,7 +220,7 @@
 !     q-points and their weights:
 !     The notation of b tells the programmer that
 !     q is in units of b_i**-1 and NOT in Bohr**-1
-      integer , save                         :: nqL,nqR
+      integer                                :: nqL,nqR
       real(dp), dimension (:,:), allocatable :: qLb,qRb
       real(dp), dimension (:),   allocatable :: wqL,wqR
 
@@ -333,7 +307,6 @@
       ! Work arrays
       real(dp),    dimension(:), allocatable :: work1
       complex(dp), dimension(:), allocatable :: work2
-      complex(dp), dimension(:), allocatable :: dosdum
 
 ! Energies on the contour
       complex(dp) :: Z,W,ZW
@@ -343,7 +316,7 @@
       logical :: ioinC,joinC,updatedm
 
 ! Loop counters:
-      integer :: iPE,ispin
+      integer :: iPE,iE,ispin
       integer :: ts_ikpt
       integer :: i,j,ic,jc,ind
       integer :: ia,ia2
@@ -378,7 +351,7 @@
 !==================================================================
 !     External routines and interfaces:
 !==================================================================
-      external io_assign, io_close
+      external :: io_assign, io_close
       
       interface
          function paste(s1,s2)
@@ -398,43 +371,18 @@
       call MPI_Bcast(Ef,1,DAT_double,0, MPI_Comm_World,MPIerror)
 #endif
 
+! Make the expansion of the electrodes in atoms and orbitals
+! In this way we save the "SAVE" attribute
+      nuaL = nuaL_GF*NRepA1L*NRepA2L
+      nuaR = nuaR_GF*NRepA1R*NRepA2R
+      noL  = noL_GF *NRepA1L*NRepA2L
+      noR  = noR_GF *NRepA1R*NRepA2R
+
+
 ! ============================================================
 !       ----------- BEGIN: first time only ------------
       if (firsttime) then
 ! ============================================================
-!
-!     We take the common Fermi energy of the electrodes to be zero!
-!     
-         EFermiL = VoltL !Ry
-         EFermiR = VoltR !Ry
-         EFermi0 = 0.0_dp ! (EfermiL + EfermiR)*.5_dp !Ry
-
-!
-!     Setup contour
-!
-         call setupcontour(NEn,EFermi0,EFermiL,EFermiR,
-     &        WGF,contour,NCONTOUR,NCONTOUR0,
-     &        nline,ncircle,npol,nvolt,
-     &        CCEmin,GFEta,kT,smethod)
-
-!
-!     Distribute contour points on nodes
-!
-         allocate( paracontour(1:NCONTOUR,0:Nodes-1)  )
-         allocate( paraWGF(1:NCONTOUR,0:Nodes-1)      )
-         allocate( contourpart(1:NCONTOUR,0:Nodes-1)  ) ! is CHAR
-         allocate( points2read(1:NCONTOUR)            )
-         call memory('A','Z',2*NCONTOUR*Nodes,'transiesta')
-         call memory('A','I',NCONTOUR,'transiesta')
-
-
-! (note we're allocating more than we need here if there're more than 1 node)
-
-         call distrcontour(
-     &        WGF,contour,NCONTOUR,NCONTOUR0,NVOLT,IsVolt,Nodes,
-     &        NPARACONTOUR,paracontour,paraWGF,
-     &        contourpart,points2read)
-
 
 !     the first NBufAtL atoms will be removed
          noBufL = 0
@@ -456,59 +404,14 @@
          nou = no_l - (noBufL+noBufR)
 #endif
 
-! -------------------------------------------------------
-!
-!     GF generation:
-!
-         allocate(dosdum(NEn))
-         call memory('A','Z',NEn,'transiesta')
-
-         call do_Green('L',HSFileL, GFFileL, GFTitle, 
-     &        ElecValenceBandBot, ReUseGF,
-     &        ts_nkpnt,ts_kpoint,ts_kweight,
-     &        NBufAtL,NUsedAtomsL,NRepA1L,NRepA2L,
-     &        ucell,xa,na_u,NEn,contour,wGF,EFermiL,dosdum,nspin,
-     &        nuaL_GF,noL_GF)
-
-!     Create the Right GF file
-         call do_Green('R',HSFileR,GFFileR, GFTitle,
-     &        ElecValenceBandBot, ReUseGF,
-     &        ts_nkpnt,ts_kpoint,ts_kweight,
-     &        NBufAtR,NUsedAtomsR,NRepA1R,NRepA2R,
-     &        ucell,xa,na_u,NEn,contour,wGF,EFermiR,dosdum,nspin,
-     &        nuaR_GF,noR_GF)
-
-         call memory('D','Z',NEn,'transiesta')
-         deallocate(dosdum)
-
-! Make the expansion of the electrodes in atoms and orbitals
-         nuaL = nuaL_GF*NRepA1L*NRepA2L
-         nuaR = nuaR_GF*NRepA1R*NRepA2R
-         noL  = noL_GF *NRepA1L*NRepA2L
-         noR  = noR_GF *NRepA1R*NRepA2R
 
          ! Do a crude check of the sizes
-         if ( nou < noL .or. nou < noR ) then
+         if ( nou <= noL + noR ) then
             call die("The contact region size is &
      &smaller than the electrode size. Please correct.")
          end if
 
 ! -------------------------------------------------------
-         
-!     Print out information in Green's function files
-!     Show the number of used atoms and orbitals
-         if ( IONode ) then
-            write(*,'(/,a,i6,'' / '',i6)')
-     &           'Left : GF atoms    / Expanded atoms    : ',nuaL_GF
-     &           ,nuaL
-            write(*,'(a,i6,'' / '',i6)')
-     &           'Left : GF orbitals / Expanded orbitals : ',noL_GF,noL
-            write(*,'(a,i6,'' / '',i6)')
-     &           'Right: GF atoms    / Expanded atoms    : ',nuaR_GF
-     &           ,nuaR
-            write(*,'(a,i6,'' / '',i6)')
-     &           'Right: GF orbitals / Expanded orbitals : ',noR_GF,noR
-         end if
          
 ! expected no. states on Electrode atoms within the Green's function file: 
 ! Left
@@ -549,7 +452,9 @@
          ! no more first time
          firsttime = .false.
       end if                    ! firsttime
+
 ! -------------------------------------------------------
+
       call timer("TS_calc",1)
 
 #ifdef MPI
@@ -716,6 +621,22 @@
 #endif
 
 ! -------------------------------------------------------
+! 
+!     Show number of orbitals updated...
+!     As the updated region must be symmetric, we can easily
+!     count the "true" number of updated orbitals
+!
+         io = count(listud)
+#ifdef MPI
+         io = count(listudg)
+#endif
+         if ( IOnode ) then
+            write(*,'(/,2(a,i8))') 
+     &           "transiesta: Total elements / Updated elements : ",
+     &           maxnhg," / ",io
+         end if
+
+! -------------------------------------------------------
 !
 !     Calculate initial region charges
 !
@@ -799,13 +720,13 @@
       endif
 
 ! Left
-      call read_Green(uGFL,TSiscf==1,EfermiL,ts_nkpnt,NEn,nuaL_GF, 
+      call read_Green(uGFL,TSiscf==1,VoltL,ts_nkpnt,NEn,nuaL_GF, 
      &     NRepA1L,NRepA2L,noL_GF,nspin,
      &     nkparL,kparL,wkparL,
      &     nqL,wqL,qLb)
 
 ! Right
-      call read_Green(uGFR,TSiscf==1,EfermiR,ts_nkpnt,NEn,nuaR_GF,
+      call read_Green(uGFR,TSiscf==1,VoltR,ts_nkpnt,NEn,nuaR_GF,
      &     NRepA1R,NRepA2R,noR_GF,nspin, 
      &     nkparR,kparR,wkparR,
      &     nqR,wqR,qRb)
@@ -956,20 +877,19 @@
           call matrix_symmetrize(nou,H,S,Ef)
           
 !=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
-         DO iPE = 1, NPARACONTOUR ! loop over parallel contour points
+         DO iPE = Node+1, PNEn, Nodes ! loop over parallel contour points
 !=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
-
-         Z = paracontour(iPE,Node)    ! ZEnergy point for this node
-         Part = contourpart(iPE,Node) ! and place on the contour
+         iE = min(iPE,NEn)
+         Z = contour(iE)%c    ! ZEnergy point for this node
 
 !     Weight of energy point:
 !     This is where we include the factor-of-two for spin and
 !     and the (1/Pi) from DM = Im[G]/Pi
 !     Furthermore we include the weight of the k-point
          if(nspin.eq.1) then
-            W = (2d0/Pi)*paraWGF(iPE,Node)*ts_kweight(ts_ikpt)
+            W = (2d0/Pi)*contour(iE)%w*ts_kweight(ts_ikpt)
          else
-            W = (1d0/Pi)*paraWGF(iPE,Node)*ts_kweight(ts_ikpt)
+            W = (1d0/Pi)*contour(iE)%w*ts_kweight(ts_ikpt)
          end if
 
          ! Save Z*W, used for E-arrays
@@ -980,25 +900,23 @@
 !
 ! SFEL/SFER  <------ GAAL/GAAR
 
-!         if(IONode) write(6,*) "hola getsfe L", ipe
 ! LEFT:
-
          call getSFE(UseBulk,uGFL,HAAL,SAAL,Z,ts_ikpt,
      &        nqL,qLb,wqL,
      &        noL_GF,
      &        nuaL_GF,lastoL,NRepA1L,NRepA2L,
      &        noL,SFEL,GAMMAL,
-     &        points2read(iPE),errorgs)
+     &        min(Nodes,NEn-(iPE-1-Node)),errorgs)
 
          if(errorgs) call die('ERROR in getSFE Left') 
 
 ! RIGHT:
          call getSFE(UseBulk,uGFR,HAAR,SAAR,Z,ts_ikpt,
-     &      nqR,qRb,wqR,
-     &      noR_GF,
-     &      nuaR_GF,lastoR,NRepA1R,NRepA2R,
-     &      noR,SFER,GAMMAR,
-     &      points2read(iPE),errorgs)
+     &        nqR,qRb,wqR,
+     &        noR_GF,
+     &        nuaR_GF,lastoR,NRepA1R,NRepA2R,
+     &        noR,SFER,GAMMAR,
+     &        min(Nodes,NEn-(iPE-1-Node)),errorgs)
 
          if(errorgs) call die('ERROR in getSFE Right') 
 
@@ -1021,9 +939,13 @@
             endif 
          end if
 
+! We should not do anything in case of no more points
+         if ( iPE > NEn ) cycle
 ! -------------------------------------------------------------
 !     No voltage/Left Equilibrium Contour:
-         if(Part .eq. 'N' .or. Part .eq. 'L') then
+         select case ( contour(iE)%part )
+         case ( CC_PART_EQUI , CC_PART_LEFT_EQUI )
+            
             if (ts_gamma_scf) then
               do i=1,nou*nou
                DM(i)  =  DM(i) - DIMAG(GF(i)*W)
@@ -1037,7 +959,7 @@
            end if
 ! -------------------------------------------------------------
 !     Right Equilibrium Contour:
-         else if(Part .eq. 'R') then
+         case ( CC_PART_RIGHT_EQUI )
             if (ts_gamma_scf) then
                do i=1,nou*nou
                 DMR(i)  =  DMR(i) - DIMAG(GF(i)*W)
@@ -1051,7 +973,7 @@
             end if
 ! -------------------------------------------------------------
 !     Non-equilibrium part:
-         else if(Part .eq. 'V') then
+         case ( CC_PART_NON_EQUI )
 
 !   Calculate rho^R(e) -> work2 ! NOTE R!!
             call GFGammaGF(.false.,nou,noR,GF,GAMMAR,work2)
@@ -1086,11 +1008,13 @@
                end do
             end if
 ! -------------------------------------------------------------
-         else
+         !case ( CC_PART_TRANSPORT )
+            ! For the moment do nothing...
+         case default
             if(IONode) 
      &           write(6,*) 'TRANSIESTA: ERROR in contour setup!'
            call die ('TRANSIESTA: ERROR in contour setup!')
-         end if                 !which part of the contour ??
+         end select                 !which part of the contour ??
          
 
 !=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=

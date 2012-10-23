@@ -289,7 +289,7 @@ siesta: check-siesta what version \
 TS_OBJS= m_ts_global_vars.o m_ts_options.o m_ts_aux_rout.o m_ts_kpoints.o \
          m_ts_iodm.o m_ts_io.o m_ts_scattering.o m_ts_contour.o \
          m_ts_electrode.o m_ts_in_siesta.o m_ts_voltage.o m_ts_gf.o \
-	 ts_show_regions.o
+	 m_ts_cctype.o ts_init.o ts_show_regions.o
 #
 transiesta: FPPFLAGS+=$(DEFS_PREFIX)-DTRANSIESTA 
 transiesta: DEFS+=$(DEFS_PREFIX)-DTRANSIESTA
@@ -530,22 +530,24 @@ m_spin.o: alloc.o parallel.o precision.o
 m_stress.o: precision.o
 m_timer.o: m_io.o m_walltime.o moreParallelSubs.o parallel.o precision.o sys.o
 m_ts_aux_rout.o: precision.o sys.o
-m_ts_contour.o: files.o m_ts_aux_rout.o parallel.o precision.o sys.o units.o
-m_ts_electrode.o: files.o m_hs_matrix.o m_ts_aux_rout.o m_ts_io.o
+m_ts_cctype.o: precision.o
+m_ts_contour.o: m_ts_aux_rout.o m_ts_cctype.o parallel.o precision.o sys.o
+m_ts_contour.o: units.o
+m_ts_electrode.o: files.o m_hs_matrix.o m_ts_aux_rout.o m_ts_cctype.o m_ts_io.o
 m_ts_electrode.o: m_ts_kpoints.o parallel.o precision.o sys.o units.o
-m_ts_gf.o: m_ts_electrode.o parallel.o precision.o sys.o units.o
+m_ts_gf.o: m_ts_cctype.o m_ts_electrode.o parallel.o precision.o sys.o units.o
 m_ts_global_vars.o: precision.o
-m_ts_in_siesta.o: m_glob_sparse.o m_hs_matrix.o m_ts_contour.o m_ts_gf.o
-m_ts_in_siesta.o: m_ts_kpoints.o m_ts_options.o m_ts_scattering.o parallel.o
-m_ts_in_siesta.o: parallelsubs.o precision.o sys.o units.o
+m_ts_in_siesta.o: m_glob_sparse.o m_hs_matrix.o m_ts_cctype.o m_ts_contour.o
+m_ts_in_siesta.o: m_ts_gf.o m_ts_kpoints.o m_ts_options.o m_ts_scattering.o
+m_ts_in_siesta.o: parallel.o parallelsubs.o precision.o sys.o units.o
 m_ts_io.o: files.o m_spin.o m_ts_kpoints.o parallel.o parallelsubs.o
 m_ts_io.o: precision.o sys.o
 m_ts_iodm.o: alloc.o files.o m_mpi_utils.o m_ts_global_vars.o parallel.o
 m_ts_iodm.o: parallelsubs.o precision.o sys.o
 m_ts_kpoints.o: files.o find_kgrid.o minvec.o parallel.o precision.o
 m_ts_kpoints.o: siesta_cml.o siesta_options.o sys.o
-m_ts_options.o: m_fdf_global.o m_ts_global_vars.o m_ts_io.o parallel.o
-m_ts_options.o: precision.o siesta_options.o sys.o units.o
+m_ts_options.o: files.o m_fdf_global.o m_ts_contour.o m_ts_global_vars.o
+m_ts_options.o: m_ts_io.o parallel.o precision.o siesta_options.o sys.o units.o
 m_ts_scattering.o: m_ts_aux_rout.o parallel.o precision.o sys.o units.o
 m_ts_voltage.o: m_ts_options.o mesh.o parallel.o precision.o units.o
 m_wallclock.o: m_walltime.o
@@ -677,11 +679,10 @@ siesta_init.o: alloc.o atomlist.o bands.o bsc_xcmod.o densematrix.o files.o
 siesta_init.o: ioxv.o kpoint_grid.o kpoint_pdos.o ksvinit.o m_check_supercell.o
 siesta_init.o: m_energies.o m_eo.o m_forces.o m_gamma.o m_iostruct.o
 siesta_init.o: m_mpi_utils.o m_rmaxh.o m_spin.o m_steps.o m_timer.o
-siesta_init.o: m_ts_kpoints.o m_ts_options.o m_wallclock.o metaforce.o
-siesta_init.o: molecularmechanics.o parallel.o parallelsubs.o phonon.o
-siesta_init.o: projected_DOS.o siesta_cmlsubs.o siesta_geom.o siesta_options.o
-siesta_init.o: sparse_matrices.o struct_init.o sys.o timestamp.o writewave.o
-siesta_init.o: zmatrix.o
+siesta_init.o: m_wallclock.o metaforce.o molecularmechanics.o parallel.o
+siesta_init.o: parallelsubs.o phonon.o projected_DOS.o siesta_cmlsubs.o
+siesta_init.o: siesta_geom.o siesta_options.o sparse_matrices.o struct_init.o
+siesta_init.o: sys.o timestamp.o writewave.o zmatrix.o
 siesta_move.o: atomlist.o broyden_optim.o cell_broyden_optim.o
 siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o iopipes.o ioxv.o
 siesta_move.o: m_energies.o m_forces.o m_kinetic.o m_steps.o m_stress.o
@@ -709,6 +710,8 @@ struct_init.o: siesta_geom.o siesta_options.o zmatrix.o
 sys.o: parallel.o
 timer.o: m_timer.o sys.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
+ts_init.o: files.o m_spin.o m_ts_contour.o m_ts_gf.o m_ts_kpoints.o
+ts_init.o: m_ts_options.o parallel.o siesta_geom.o
 ts_show_regions.o: parallel.o precision.o units.o
 typecell.o: precision.o
 uncell.o: precision.o

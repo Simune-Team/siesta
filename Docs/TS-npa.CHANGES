@@ -1,4 +1,53 @@
 ----------------------------------------------------
+Oct 23, 2012 -- Nick P. Andersen     trunk-411--ts-npa-12
+Moved contour to start and created a type for energy path
+
+* Added module m_ts_cctype for containing the contour path variables.
+  Maybe this should be moved to m_ts_contour. However, for having the 
+  type separately "using" it in subs are easier. 
+* Split the contour generation routines to be more straight-forward.
+  Named each part by their name for easier reference.
+* Output information about the contour path is more understandable
+   - Changed .CONTOUR to .TSCC
+* Started on code for transport during SCF cycle.
+* Made Transiesta fully compliant with the new contour type
+* Added a ts_init routine, much like siesta_init (makes it more stringent
+  on output and coding.
+* Added notice code for telling the user about "non"-optimal energy points
+* Need to fully test it in TBTrans
+
+removed:
+  Src/m_ts_contour.f
+added:
+  Src/m_ts_cctype.f90
+  Src/m_ts_contour.f90
+  Src/ts_init.F90
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/m_ts_electrode.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_in_siesta.F
+  Src/m_ts_io.F90
+  Src/m_ts_kpoints.F90
+  Src/m_ts_options.F90
+  Src/m_ts_scattering.F
+  Src/siesta_init.F
+  Src/ts_show_regions.f90
+  Util/TBTrans_rep/Makefile
+  Util/TBTrans_rep/m_tbt_options.F90
+  Util/TBTrans_rep/tbt_init.F90
+  Util/TBTrans_rep/tbtrans.F90
+
+modified:
+  Src/m_ts_electrode.F90
+  Src/m_ts_options.F90
+  Src/m_ts_scattering.F
+  Src/parallel.F
+  Src/precision.F
+  Util/TBTrans_rep/tbtrans.F90
+
+----------------------------------------------------
 Oct 20, 2012 -- Nick P. Andersen     trunk-411--ts-npa-11
 GFGammaGF optimization, energy-point notification and parallel loop count 
 
