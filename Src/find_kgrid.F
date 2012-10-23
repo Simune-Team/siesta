@@ -174,6 +174,9 @@ C Find total range of grid indexes
 C Find number of points with time-reversal (inversion) symmetry,
 C (if possible) after reflection on each alternative plane
       if (.not. time_reversal_symmetry) then
+         if (Node. eq. 0) then
+            write(6,"(/,a)") "Time-reversal symmetry not used."
+         endif
         ! Use all k points
         nk = nktot
       else

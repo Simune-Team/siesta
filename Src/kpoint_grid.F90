@@ -25,7 +25,7 @@ MODULE Kpoint_grid
   logical, save     :: user_requested_mp = .false.
   logical, save     :: user_requested_cutoff = .false.
 
-  logical, save     :: spiral = .false.
+  logical, save     :: time_reversal_symmetry = .true.
   logical, save     :: firm_displ = .false.
 
   public :: setup_kpoint_grid
@@ -34,7 +34,7 @@ MODULE Kpoint_grid
 
   subroutine setup_Kpoint_grid( ucell )
   USE parallel, only  : Node
-  USE fdf, only       : fdf_defined
+  USE fdf, only       : fdf_defined, fdf_boolean
   USE m_find_kgrid, only : find_kgrid
 
 #ifdef MPI
@@ -43,6 +43,7 @@ MODULE Kpoint_grid
 
     implicit none
     real(dp) :: ucell(3,3)
+    logical  :: spiral
 
 #ifdef MPI
     integer :: MPIerror
@@ -52,9 +53,15 @@ MODULE Kpoint_grid
        nullify(kweight,kpoint)
        if (Node.eq.0) then
           spiral = fdf_defined('SpinSpiral')
+          ! Allow the user to control the use of time-reversal-symmetry
+          ! By default, it is on, except for "spin-spiral" calculations
+          time_reversal_symmetry = fdf_boolean(             &
+                        "TimeReversalSymmetryForKpoints",   &
+                        (.not. spiral))
        endif
 #ifdef MPI
-       call MPI_Bcast(spiral,1,MPI_logical,0,MPI_Comm_World,MPIerror)
+       call MPI_Bcast(time_reversal_symmetry,1,MPI_logical,0,  &
+                      MPI_Comm_World,MPIerror)
 #endif
        call setup_scf_kscell(ucell, firm_displ)
 
@@ -68,9 +75,9 @@ MODULE Kpoint_grid
           call setup_scf_kscell(ucell, firm_displ)
        endif
     endif
-
+    
     call find_kgrid(ucell,kscell,kdispl,firm_displ,     &
-                    (.not. spiral),                    &
+                    time_reversal_symmetry,             &
                     nkpnt,kpoint,kweight, eff_kgrid_cutoff)
 
     maxk = nkpnt

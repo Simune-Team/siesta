@@ -710,10 +710,10 @@ mulliken.o: atmfuncs.o parallel.o parallelsubs.o precision.o siesta_cml.o
 naefs.o: atmfuncs.o mneighb.o precision.o
 
 
-new_dm.o: alloc.o atomlist.o m_energies.o m_fdf_global.o m_iodm.o m_sparse.o
-new_dm.o: m_spin.o m_steps.o m_ts_global_vars.o m_ts_iodm.o parallel.o
-new_dm.o: parallelsubs.o parsing.o precision.o siesta_geom.o siesta_options.o
-new_dm.o: sparse_matrices.o sys.o units.o
+new_dm.o: alloc.o atomlist.o m_energies.o m_fdf_global.o m_iodm.o m_mpi_utils.o
+new_dm.o: m_sparse.o m_spin.o m_steps.o m_ts_global_vars.o m_ts_iodm.o
+new_dm.o: parallel.o parallelsubs.o parsing.o precision.o siesta_geom.o
+new_dm.o: siesta_options.o sparse_matrices.o sys.o units.o
 
 nlefsm.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
 
