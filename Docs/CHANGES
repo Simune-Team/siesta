@@ -6,6 +6,39 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-10-23  13:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-414
+Hirshfeld and Voronoi charges. Bader analysis output
+
+The Hirshfeld and Voronoi methods are partial-charge estimations based
+directly on the charge density. They thus complement the Mulliken analysis
+which depends on the density-matrix.
+
+Relevant fdf keywords:
+
+WriteHirshfeldPop T
+WriteVoronoiPop T
+
+See the manual for details.
+
+(Code for Hirshfeld and Voronoi analysis contributed by P. Ordejon.
+Integrated into the dhscf workflow by A. Garcia.)
+
+* Implementation of Bader charge output
+
+If the option
+
+  SaveBaderCharge T
+
+is used, the program will write the electronic charge density with an
+extra set of model core charges, useful for post-processing by a Bader
+"atoms in molecules" analysis. See the manual for important details.
+
+The grid2cube program in Util has been extended to deal with the .BADER
+file.
+
+* New test: h2o-pop
+
+-----------------------------------------------------------------------
 2012-09-25  10:12:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-413
 Use a 'unique' string in fdf log files
 
