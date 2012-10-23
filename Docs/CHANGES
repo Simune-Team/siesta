@@ -6,6 +6,24 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-10-23  14:05:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-416
+Fix spin loop in initialization in Eig2DOS program
+
+The initialization code was missing a loop over spin.
+
+(+ changes to fix compiler-dependent complaints)
+
+(Thanks to N.P. Andersen)
+
+( + Update reference outputs for si_fatbands test )
+
+
+modified:
+  Tests/Reference-xml/si_fatbands.xml
+  Tests/Reference/si_fatbands.out
+  Util/Eig2DOS/Eig2DOS.f90
+
+-----------------------------------------------------------------------
 2012-10-23  14:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-415
 New options for wavefunction output. 'Fatbands' analysis. Mprop enhancements
 
