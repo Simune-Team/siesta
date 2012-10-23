@@ -4,6 +4,22 @@
 
 ** CHANGES ALONG siesta-3 branch
 ------------------------------------------------------------------------
+2012-10-23  09:15:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl15
+Use actual number of electrons in optical calculations
+
+The 'optical' routine now uses the actual number of electrons (rather
+than the nominal number of valence electrons) for non-spin-polarized
+calculations. This affects only systems with a net charge. Note that
+spin-polarized calculations were already using the actual number
+of electrons.
+
+(Thanks to Alexander Vozny)
+
+modified:
+  Src/Makefile
+  Src/optical.F
+
+------------------------------------------------------------------------
 2012-10-18  13:30:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl14
 Integrate computation of Hirshfeld and Voronoi charges in dhscf
 

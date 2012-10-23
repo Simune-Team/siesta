@@ -730,7 +730,7 @@ on_subs.o: alloc.o onmod.o onmod.o
 
 onmod.o: precision.o
 
-optical.o: alloc.o atmfuncs.o densematrix.o fermid.o files.o parallel.o
+optical.o: alloc.o atomlist.o densematrix.o fermid.o files.o parallel.o
 optical.o: parallelsubs.o parsing.o precision.o sys.o units.o
 
 ordern.o: alloc.o cgwf.o chempot.o globalise.o m_mpi_utils.o onmod.o parallel.o
