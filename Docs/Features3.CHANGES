@@ -1,4 +1,17 @@
 ------------------------------------------------------
+October 23, 2012  Alberto Garcia trunk-413-features3-10
+Allow doping feature for all systems
+
+The "SimulateDoping" option is now enabled for "bulk" systems, in the
+interest of generality and to fix an inconsistency in the logic for
+charge removal. (Thanks to N. P. Andersen)
+
+(Note that a previous "sync" patch was incomplete)
+
+modified:
+  Src/dhscf.F
+
+------------------------------------------------------
 October 22, 2012  Alberto Garcia trunk-413-features3-9
 Update reference outputs for si_fatbands test
 
