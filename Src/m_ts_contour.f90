@@ -95,6 +95,9 @@ contains
        NEn = Npol+Nline+Ncircle+Ntransport
     end if
     PNEn = Nodes .PARCOUNT. NEn
+    if ( NEn <= 0 ) then  ! if there are not any points we definetely have an error
+       call die("ERROR: setup_contour: no energy points specified")
+    end if
     
     ! Equilibrium contour points
     NE_equilibrium = Npol+Nline+Ncircle
@@ -105,7 +108,7 @@ contains
   
 ! Create the equilibrium contour in case we do not have 
 ! a voltage
-    if ( .not. IsVolt ) then
+    if ( .not. IsVolt .and. NE_equilibrium > 0 ) then
 
        c => contour(1:NE_equilibrium) 
        call mod_HansSkriver(CC_PART_EQUI, &
@@ -119,7 +122,7 @@ contains
           c(i)%w = -c(i)%w
        end do
 
-    else ! Do a voltage contour
+    else if ( NE_equilibrium > 0 ) then ! Do a voltage contour
 
 ! Do the left contour line
        c => contour(1:NE_equilibrium) 
@@ -166,7 +169,7 @@ contains
                write(*,*) 'ERROR: Contour not defined'
           call die('ERROR:  setup_contour: Contour not defined') 
        end if
-       
+
     end if
     
 ! Finally we add the transport energy points

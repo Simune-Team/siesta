@@ -111,7 +111,7 @@ CONTAINS
 ! ************************
 ! * SIESTA modules       *
 ! ************************
-    use fdf,            only : leqi, fdf_defined
+    use fdf,            only : leqi, fdf_defined, fdf_deprecated, fdf_obsolete
     use parallel,       only : IOnode, Nodes, operator(.PARCOUNT.)
     use m_fdf_global,   only : fdf_global_get
     use units,          only : eV
@@ -208,11 +208,10 @@ CONTAINS
             &Please choose an atom within the device.")
     end if
 
-    if (IONode) then
-       if (fdf_defined('TS.TBT.DoCOOP')) &
-            write(*,'(a)') '**Warning: FDF symbol TS.TBT.DoCOOP'// &
-            ' is deprecated. Use TS.TBT.COOP instead.'
-    endif
+    ! Show the deprecated and obsolete labels
+    call fdf_deprecated('TS.TBT.DoCOOP','TS.TBT.COOP')
+    call fdf_deprecated('TS.CalcGF','TS.ReUseGF')
+
     call fdf_global_get(CalcCOOP,'TS.TBT.COOP',CalcCOOP_def)
     call fdf_global_get(AlignScat,'TS.TBT.AlignOnSite',AlignScat_def)
     call fdf_global_get(CalcAtomPDOS,'TS.TBT.AtomPDOS',CalcAtomPDOS_def)
@@ -253,22 +252,24 @@ CONTAINS
     end if
  
     if (IOnode) then
-       write(*,'(2a)') 'tbt_read_options: ', repeat('*', 62)
-       write(*,*)
+       write(*,'(2a,/)') 'tbt_read_options: ', repeat('*', 62)
     end if
 
 ! Print out message if the number of contour points are not 
 ! divisable by the number of Nodes
     if ( IONode .and. mod(NPoints,Nodes) /= 0 ) then
-       write(*,*) "NOTICE: Total number of energy points is &
-            &not divisable by the number of nodes."
-       write(*,*) "        There are no computational costs &
-            &associated with increasing this."
+       write(*,*) "NOTICE: Transport energy points are not"
+       write(*,*) "        divisable by the number of nodes."
+       write(*,*) "        Better scalability is achived by changing:"
+       write(*,*) "          - TS.TBT.NPoints"
+
 ! Calculate optimal number of energy points
        i = NPoints
        write(*,'(t10,a,i4)') "Used # of energy points   : ",i
        i = Nodes .PARCOUNT. i
-       write(*,'(t10,a,i4)') "Optimal # of energy points: ",i
+       write(*,'(t10,a,i4,tr1,a4,i3,/)') &
+            "Optimal equilibrium # of energy points: ",i, &
+            achar(177)//" i*",Nodes
     end if
 
 1   format(a,4x,l1)
@@ -330,6 +331,7 @@ CONTAINS
       end if
 
     end subroutine check_HSfile
+
   end subroutine read_tbt_options
 
 end module m_tbt_options

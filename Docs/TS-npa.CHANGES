@@ -1,4 +1,33 @@
 ----------------------------------------------------
+Oct 23, 2012 -- Nick P. Andersen     trunk-411--ts-npa-13
+Enabled tbtrans for new contour type, ipo compilation, FDF-deprecate/obsolete
+
+* Made IPO compilation compatible
+  - user should in their arch.make file add IPO_FLAG=-ipo
+    which then gets removed in library compilations.
+* Made tbtrans fully compliant with the new contour algorithms
+* Fixed a configure statement which often produces errors in NetCDF library
+  checking. I.e. fortran netcdf and c netcdf are not the same lib, so
+  two libs are needed (hence we need quotation marks in the configure script) 
+* Removed spin from ts_init (now in interface)
+* Added possibility for obsolete and deprecation in FDF codes.
+  Enables easier maintenance of fdf labels in the list and also	
+  is a consistent way of handling that.
+
+modified:
+  Src/Makefile
+  Src/configure
+  Src/fdf/fdf.F90
+  Src/m_ts_contour.f90
+  Src/m_ts_options.F90
+  Src/siesta_init.F
+  Src/ts_init.F90
+  Util/TBTrans_rep/Makefile
+  Util/TBTrans_rep/m_tbt_options.F90
+  Util/TBTrans_rep/tbt_init.F90
+  Util/TBTrans_rep/tbtrans.F90
+
+----------------------------------------------------
 Oct 23, 2012 -- Nick P. Andersen     trunk-411--ts-npa-12
 Moved contour to start and created a type for energy path
 

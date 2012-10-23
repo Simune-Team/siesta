@@ -12,9 +12,11 @@
 ! Nick Papior Andersen, 2012, nickpapior@gmail.com
 !
 module m_ts_init
-
+  implicit none
+  private
+  public :: ts_init
 contains
-  subroutine ts_init(ucell, na_u, xa)
+  subroutine ts_init(nspin, ucell, na_u, xa)
   ! Routine for initializing everything related to the Transiesta package.
   ! This is to comply with the SIESTA way of initializing at the beginning
   ! and make the code more managable.
@@ -28,7 +30,6 @@ contains
 ! Used modules
     use parallel, only : IONode
     use files, only : slabel
-    use m_spin
 
     use m_ts_gf,      only : do_Green
     use m_ts_contour, only : setup_contour, print_contour, io_contour
@@ -41,6 +42,7 @@ contains
 ! *********************
 ! * INPUT variables   *
 ! *********************
+    integer, intent(in)  :: nspin
     real(dp), intent(in) :: ucell(3,3)
     integer, intent(in)  :: na_u
     real(dp), intent(in) :: xa(3,na_u)

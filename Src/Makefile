@@ -46,6 +46,12 @@ dep:
 #
 include arch.make
 INCFLAGS:= $(NETCDF_INCFLAGS) $(INCFLAGS)
+# For removing any -ipo compilation in sub directories...
+# Later compilers are also having this enabled, and it lets you
+# specify what to not be used in libraries.
+# This is so because inter-procedural compilation should NOT be performed in
+# libraries (it removes names when a routine can be fully moved into others)
+IPO_FLAG?= -ipo
 #
 # Uncomment the following line for debugging support
 #
@@ -166,7 +172,7 @@ $(FoX_configured):
 	(cd FoX; touch arch.make ; \
          CONFIGURE="$(VPATH)/FoX/configure"; \
          $$CONFIGURE VPATH="$(VPATH)/FoX" \
-         FC="$(FC_SERIAL)" FCFLAGS="$(FFLAGS)" \
+         FC="$(FC_SERIAL)" FCFLAGS="$(FFLAGS:$(IPO_FLAG)=)" \
          --enable-wcml $(DUMMY_FOX) || false )
 #
 # Note we have to make sure to use the same compiler as SIESTA,
@@ -175,7 +181,7 @@ $(FoX_configured):
 #
 # Then we want to make FoX itself. Like so:
 $(FoX_built): $(FoX_configured)
-	(cd FoX; $(MAKE))
+	(cd FoX; $(MAKE) )
 #
 # Now ensure that building FoX is inserted into the dependency chain.
 # Routines using FoX:
@@ -193,7 +199,8 @@ state_init.o struct_init.o write_subs.o xml.o: $(FoX_built)
 #--------------------------------------------------------------
 XMLPARSER=libxmlparser.a
 $(XMLPARSER): 
-	(cd xmlparser ; $(MAKE) "VPATH=$(VPATH)/xmlparser" module)
+	(cd xmlparser ; $(MAKE) "VPATH=$(VPATH)/xmlparser" \
+	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
 #
 #--------------------------------------------------------------
 XC=libSiestaXC.a
@@ -201,11 +208,12 @@ $(XC):
 	(cd SiestaXC ; $(MAKE) \
                     "VPATH_ROOT=$(VPATH)"  \
 	            "INCFLAGS=-I../MPI" \
-                    "FFLAGS=$(FFLAGS)"  module )
+		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module )
 #--------------------------------------------------------------
 FDF=libfdf.a
 $(FDF): 
-	(cd fdf ; $(MAKE) "VPATH=$(VPATH)/fdf" module)
+	(cd fdf ; $(MAKE) "VPATH=$(VPATH)/fdf" \
+		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module )
 #
 # Routines using fdf calls.
 #
@@ -226,29 +234,29 @@ libmpi_f90.a:
 	@(cd MPI ; $(MAKE) \
                     "VPATH=$(VPATH)/MPI" \
                     "FPP_FLAGS=$(FPP_FLAGS)" \
-                    "FFLAGS=$(FFLAGS)" )
+                    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" )
 #
 # Libraries that might need to be compiled
 #
 libblas.a: Libs/blas.f
 	@echo "==> Compiling libblas.a in Libs..."
-	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" libblas.a)
+	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" libblas.a)
 liblapack.a: Libs/lapack.f
 	@echo "==> Compiling liblapack.a in Libs..."
-	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" liblapack.a)
+	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" liblapack.a)
 linalg.a: Libs/blas.f Libs/lapack.f
 	@echo "==> Compiling linalg.a in Libs..."
-	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" linalg.a)
+	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" linalg.a)
 dc_lapack.a:  Libs/dc_lapack.f
 	@echo "==> Compiling dc_lapack.a in Libs..."
-	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" dc_lapack.a)
+	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" dc_lapack.a)
 zgesv_lapack.a:  Libs/zgesv_lapack.f
 	@echo "==> Compiling zgesv_lapack.a in Libs..."
-	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" zgesv_lapack.a)
+	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" zgesv_lapack.a)
 #
 essl_lapack.a: Libs/essl_lapack.f
 	@echo "==> Compiling essl_lapack.a in Libs..."
-	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" essl_lapack.a)
+	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" essl_lapack.a)
 #
 
 version: version.F90
@@ -682,7 +690,7 @@ siesta_init.o: m_mpi_utils.o m_rmaxh.o m_spin.o m_steps.o m_timer.o
 siesta_init.o: m_wallclock.o metaforce.o molecularmechanics.o parallel.o
 siesta_init.o: parallelsubs.o phonon.o projected_DOS.o siesta_cmlsubs.o
 siesta_init.o: siesta_geom.o siesta_options.o sparse_matrices.o struct_init.o
-siesta_init.o: sys.o timestamp.o writewave.o zmatrix.o
+siesta_init.o: sys.o timestamp.o ts_init.o writewave.o zmatrix.o
 siesta_move.o: atomlist.o broyden_optim.o cell_broyden_optim.o
 siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o iopipes.o ioxv.o
 siesta_move.o: m_energies.o m_forces.o m_kinetic.o m_steps.o m_stress.o
@@ -710,8 +718,8 @@ struct_init.o: siesta_geom.o siesta_options.o zmatrix.o
 sys.o: parallel.o
 timer.o: m_timer.o sys.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
-ts_init.o: files.o m_spin.o m_ts_contour.o m_ts_gf.o m_ts_kpoints.o
-ts_init.o: m_ts_options.o parallel.o siesta_geom.o
+ts_init.o: files.o m_ts_contour.o m_ts_gf.o m_ts_kpoints.o m_ts_options.o
+ts_init.o: parallel.o
 ts_show_regions.o: parallel.o precision.o units.o
 typecell.o: precision.o
 uncell.o: precision.o
@@ -803,6 +811,7 @@ m_state_analysis.o: state_analysis.o
 m_state_init.o: state_init.o
 m_struct_init.o: struct_init.o
 m_timestamp.o: timestamp.o
+m_ts_init.o: ts_init.o
 m_vmat.o: vmat.o
 m_xyz_phiatm.o: matel.o
 m_zm_broyden_optim.o: zm_broyden_optim.o

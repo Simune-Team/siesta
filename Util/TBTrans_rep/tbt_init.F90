@@ -1,4 +1,4 @@
-8! Handling all the initializations
+! Handling all the initializations
 ! This opens MPI channels, ensures the options are read in etc.
 !
 subroutine tbt_init()
@@ -10,7 +10,7 @@ subroutine tbt_init()
   use m_tbt_kpoints, only : setup_tbt_kscell
   use m_tbt_options
   use m_timer, only : timer_report
-  use m_ts_contour, only : setup_contour
+  use m_ts_contour, only : setup_contour, print_contour
   use alloc, only   : alloc_report
   use files, only   : slabel
   use m_timestamp, only : timestamp
@@ -21,6 +21,7 @@ subroutine tbt_init()
 
   integer :: level
   real(dp) :: threshold
+  real(dp) :: CCEmin
 #ifdef MPI
   integer :: MPIerror
 #endif
@@ -89,7 +90,9 @@ subroutine tbt_init()
 
 ! Read in k-point cell
   call setup_tbt_kscell()
-
+  
+  CCEmin = 0.0_dp ! The contour "lowest" energy does not make sense in a 
+! transport calculation... It is not used.
 ! Create the contour lines
   call setup_contour(IsVolt,0,VoltL,0.0d0,VoltR, &
        0,0,0,0,NPoints, &

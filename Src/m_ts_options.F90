@@ -125,7 +125,7 @@ subroutine read_ts_options(ucell)
 
 ! SIESTA Modules Used
 use files, only  : slabel
-use fdf, only : leqi
+use fdf, only : leqi, fdf_deprecated, fdf_obsolete
 use parallel, only: IOnode, Nodes, operator(.parcount.)
 use m_fdf_global, only: fdf_global_get
 use units, only: eV
@@ -230,6 +230,13 @@ call fdf_global_get(NRepA1R,'TS.ReplicateA1Right',NRepA_def)
 call fdf_global_get(NRepA2R,'TS.ReplicateA2Right',NRepA_def)
 if ( NRepA1R < 1 .or. NRepA2R < 1 ) &
      call die("Repetition in right electrode must be >= 1.")
+
+! Show the deprecated and obsolete labels
+call fdf_deprecated('TS.CalcGF','TS.ReUseGF')
+call fdf_obsolete('TS.FixContactCharge')
+call fdf_obsolete('TS.KxyPoints')
+call fdf_obsolete('TS.NKVoltScale')
+
 
 ! Output Used Options in OUT file ....
 if (IOnode) then

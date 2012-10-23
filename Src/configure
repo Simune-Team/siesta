@@ -6071,7 +6071,7 @@ fi
 if test $tw_netcdf_ok = yes; then
   DEFS="$DEFS CDF";NETCDF_INTERFACE="libnetcdf_f90.a"
 else
-  NETCDF_LIBS="";tw_netcdf_ok=no;if test ! -z $with_netcdf; then { { echo "$as_me:$LINENO: error: Could not find NetCDF library." >&5
+  NETCDF_LIBS="";tw_netcdf_ok=no;if test ! -z "$with_netcdf"; then { { echo "$as_me:$LINENO: error: Could not find NetCDF library." >&5
 echo "$as_me: error: Could not find NetCDF library." >&2;}
    { (exit 1); exit 1; }; }; fi
 fi

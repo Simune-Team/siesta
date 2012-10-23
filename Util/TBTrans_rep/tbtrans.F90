@@ -107,12 +107,8 @@ program tbtrans
 ! *****************************************
 ! * Electrode variables                   *
 ! *****************************************
-! Number of atoms in the electrode (before expansion)
-  integer :: nuaL_GF, nuaR_GF
 ! Number of atoms in the electrode (after expansion)
   integer :: nuaL, nuaR
-! Number of orbitals in the electrodes (before expansion)
-  integer :: noL_GF, noR_GF
 ! Number of orbitals in the electrodes (after expansion)
   integer :: noL, noR
 ! The lasto shortened to only the electrodes
@@ -224,7 +220,6 @@ program tbtrans
   real(dp) :: kpt(3), wkpt, kpt_Node(3)
   real(dp) :: ucell(3,3) ! The unit cell of the scattering region
   real(dp) :: rTmp
-  integer :: PNEn
   integer :: ierr
   logical :: errorGS
   complex(dp), allocatable :: dummyGAMMA(:,:)
@@ -323,7 +318,7 @@ program tbtrans
   if ( IONode .and. sum(abs(ZBulkDOS(:))) > 0.0_dp ) then
      call create_file(slabel,'LDOS',1,1,uDOSL)
      do iE = 1 , NEn 
-        ZBulkDOS(iE) = -sF/Pi*dimag(ZBulkDOS(iE)*wGF(iE))
+        ZBulkDOS(iE) = -sF/Pi*dimag(ZBulkDOS(iE)*contour(iE)%w)
      end do
      call out_DOS(uDOSL,NEn,contour(:)%c,ZBulkDOS)
      call io_close(uDOSL)
@@ -342,7 +337,7 @@ program tbtrans
   if ( IONode .and. sum(abs(ZBulkDOS(:))) > 0.0_dp ) then
      call create_file(slabel,'RDOS',1,1,uDOSR)
      do iE = 1 , NEn 
-        ZBulkDOS(iE) = -sF/Pi*dimag(ZBulkDOS(iE)*wGF(iE))
+        ZBulkDOS(iE) = -sF/Pi*dimag(ZBulkDOS(iE)*contour(iE)%w)
      end do
      call out_DOS(uDOSR,NEn,contour(:)%c,ZBulkDOS)
      call io_close(uDOSR)
@@ -532,11 +527,8 @@ program tbtrans
 
   ! We need a dummy array for passing to the getSFE routine
   ! as a dummy, we do not care of the contents!
-  if ( noR > noL ) then
-     allocate(dummyGAMMA(noR,noR))
-  else
-     allocate(dummyGAMMA(noL,noL))
-  end if
+  allocate(dummyGAMMA(max(noL,noR),max(noL,noR)))
+  call memory('A','Z',max(noL,noR)**2,'tbtrans')
 
   allocate(eig(nou))
 
@@ -885,7 +877,7 @@ program tbtrans
            ! Calculate the eigenchannels of the device
            if (NEigch > 0) then
               TEig(:) = 0.0_dp
-              if ( wGF(iE) /= 0.0_dp ) then
+              if ( ZwGF /= 0.0_dp ) then
                  call tt_eig(noD,tt,NEigch,TEig)
               end if
 
