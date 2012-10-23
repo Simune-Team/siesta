@@ -925,6 +925,15 @@ C Transform spin density into sum and difference
           DRho(ip,1) = rhotot
         enddo
       endif
+
+C Add a background charge to neutralize the net charge, to
+C model doped systems. It only adds the charge at points
+C where there are atoms (i.e., not in vacuum).          
+C First, call with 'task=0' to add background charge    
+
+        if (doping_active) call doping_uniform(cell,ntpl,0,
+     $                                         DRho(:,1),rhoatm)
+
 C ----------------------------------------------------------------------
 C Calculate the dipole moment
 C ----------------------------------------------------------------------
@@ -936,14 +945,6 @@ C Find center of system
         do ia = 1,nua
           x0(1:3) = x0(1:3) + xa(1:3,ia) / nua
         enddo
-
-C Add a background charge to neutralize the net charge, to
-C model doped systems. It only adds the charge at points
-C where there are atoms (i.e., not in vacuum).          
-C First, call with 'task=0' to add background charge    
-
-        if (doping_active) call doping_uniform(cell,ntpl,0,
-     $                                         DRho(:,1),rhoatm)
 
 C Find dipole
         ! This routine is distribution-blind
@@ -978,11 +979,6 @@ C ----------------------------------------------------------------------
       if (TSmode .and. UseVFix) call TSVHFix( ntm, nsm, Vscf )
 #endif /* TRANSIESTA */
 
-C Call doping with 'task=1' to remove background charge added previously
-
-        if (doping_active) call doping_uniform(cell,ntpl,1,
-     $                                         DRho(:,1),rhoatm)
-
 C Add contribution to stress from electrostatic energy of rhoscf-rhoatm
       if (istr .eq. 1) then
         stressl(1:3,1:3) = stressl(1:3,1:3) + DStres(1:3,1:3)
@@ -997,6 +993,13 @@ C ----------------------------------------------------------------------
       do ip = 1, ntpl
         Uscf = Uscf + dvol * Vscf(ip,1) * rhoatm(ip)
       enddo
+
+C Call doping with 'task=1' to remove background charge added previously
+C The extra charge thus only affects the Hartree energy and potential,
+C but not the contribution to Enascf ( = \Int_{Vna*\rho})
+
+        if (doping_active) call doping_uniform(cell,ntpl,1,
+     $                                         DRho(:,1),rhoatm)
 
 C ----------------------------------------------------------------------
 C Add neutral-atom potential to Vscf

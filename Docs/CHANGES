@@ -6,6 +6,17 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-10-23  14:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-417
+Allow doping feature for all systems
+
+The "SimulateDoping" option is now enabled for "bulk" systems, in the
+interest of generality and to fix an inconsistency in the logic for
+charge removal. (Thanks to N. P. Andersen)
+
+modified:
+  Src/dhscf.F
+
+-----------------------------------------------------------------------
 2012-10-23  14:05:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-416
 Fix spin loop in initialization in Eig2DOS program
 
