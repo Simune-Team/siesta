@@ -4,6 +4,17 @@
 
 ** CHANGES ALONG siesta-3 branch
 ------------------------------------------------------------------------
+2012-10-24  14:45:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl18
+Add rp and rv options to XML pseudopotential handling
+
+The RPBE and revPBE XC flavors were not correctly handled by
+the XML routines.
+
+modified:
+  Pseudo/atom/pseudoXML.f
+  Util/pseudo-xml/xml2psf_helper.f
+
+------------------------------------------------------------------------
 2012-10-24  13:00:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl17
 Enable MD continuation runs even if the restart file is not available
 

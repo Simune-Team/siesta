@@ -67,6 +67,14 @@
           xcfuntype    = 'GGA'
           xcfunparam   = 'Perdew-Burke-Ernzerhof'
 
+        case('rp') 
+          xcfuntype    = 'GGA'
+          xcfunparam   = 'RPBE - Hammer et al'
+
+        case('rv') 
+          xcfuntype    = 'GGA'
+          xcfunparam   = 'revPBE Zhang+Yang'
+
         case('bl') 
           xcfuntype    = 'GGA'
           xcfunparam   = 'Becke-Lee-Yang-Parr'
