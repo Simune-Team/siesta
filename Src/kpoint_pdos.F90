@@ -25,7 +25,7 @@ MODULE Kpoint_pdos
   logical, save     :: user_requested_mp = .false.
   logical, save     :: user_requested_cutoff = .false.
 
-  logical, save     :: spiral = .false.
+  logical, save     :: time_reversal_symmetry = .true.
   logical, save     :: firm_displ = .false.
 
   public :: setup_kpoint_pdos
@@ -34,16 +34,23 @@ MODULE Kpoint_pdos
 
   subroutine setup_Kpoint_pdos( ucell, different_pdos_grid )
   USE parallel, only  : Node
-  USE fdf, only       : fdf_defined
+  USE fdf, only       : fdf_defined, fdf_get
   USE m_find_kgrid, only : find_kgrid
 
   implicit none
   real(dp), intent(in)  :: ucell(3,3)
   logical,  intent(out) :: different_pdos_grid
 
+  logical :: spiral
   if (pdos_kgrid_first_time) then
     nullify(kweight_pdos,kpoints_pdos)
     spiral = fdf_defined('SpinSpiral')
+      ! Allow the user to control the use of time-reversal-symmetry
+      ! By default, it is on, except for "spin-spiral" calculations
+      time_reversal_symmetry = fdf_get(             &
+           "TimeReversalSymmetryForKpoints",   &
+           (.not. spiral))
+
     call setup_pdos_kscell(ucell, firm_displ)
 
     pdos_kgrid_first_time = .false.
@@ -65,7 +72,8 @@ MODULE Kpoint_pdos
 
 ! If the grid hasn't been explicit specified then just set dummy values 
   if (different_pdos_grid) then
-    call find_kgrid(ucell,kscell,kdispl,firm_displ,(.not. spiral), &
+    call find_kgrid(ucell,kscell,kdispl,firm_displ, &
+                    time_reversal_symmetry,         &
                     nkpnt_pdos,kpoints_pdos,kweight_pdos,eff_kgrid_cutoff)
 
     maxk_pdos = nkpnt_pdos

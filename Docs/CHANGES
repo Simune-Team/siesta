@@ -6,6 +6,27 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-10-24  13:30:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-419
+Add option to turn off time-reversal symmetry for k-points
+
+If the fdf option TimeReversalSymmetryForKpoints is set to "false",
+the program will keep all the k-points in the BZ, without using the (k,-k)
+implicit symmetry which is valid in the absence of external magnetic
+fields or spin-orbit coupling. This feature is added for completeness and
+test purposes.
+
+In spin-polarized calculations, the code now prints a summary of the
+initial spin polarization when the density-matrix is initialized.
+
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/find_kgrid.F
+  Src/kpoint_grid.F90
+  Src/kpoint_pdos.F90
+  Src/new_dm.F
+
+-----------------------------------------------------------------------
 2012-10-24  13:20:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-418
 Use actual number of electrons in optical calculations
 
