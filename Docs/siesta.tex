@@ -6751,7 +6751,10 @@ accomplished:
   \item re-implementation of repetition of the electrodes,
   \item more SCF information about charge redistribution,
   \item separate k-point file (TSKP instead of overwriting KP),
-  \item changed the \texttt{CONTOUR} file to \texttt{TSCC}.
+  \item changed the \texttt{CONTOUR} file to \texttt{TSCC},
+  \item changed the GF files to be named according to the 
+  {\it SystemLabel},
+  \item general optimizations in many routines.
 \end{itemize}
 
 The above implementations were done by Nick P. Andersen.
@@ -7167,7 +7170,7 @@ N.B.: The program will stop if this file is not found.
 Name of the .GF file of the left electrode. 
 N.B.: The program will generate a new one if not found.
 
-{\it Default value:} {\tt Left.GF} 
+{\it Default value:} {\tt <SystemLabel>.TSGFL} 
 
 \item[{\bf TS.HSFileRight }] ({\it string}): 
 \index{TS.HSFileRight@{\bf TS.HSFileRight}}
@@ -7180,7 +7183,7 @@ Name of .TSHS file describing right electrode. See TS.HSFileLeft.
 Name of the .GF file of the left electrode. 
 N.B.: The program will generate a new one if not found.
 
-{\it Default value:} {\tt Right.GF}
+{\it Default value:} {\tt <SystemLabel>.TSGFR} 
 
 \item[{\bf TS.NumUsedAtomsLeft}] ({\it integer}):
   \index{TS.NumUsedAtomsLeft@{\bf TS.NumUsedAtomsLeft}} The number of
@@ -7375,8 +7378,8 @@ number smaller than what was used in the electrode's unit cell).
 
 {\sc TranSiesta} generates several output files.  The output files are
 named {\tt <SystemLabel>.ext}, defined using the SystemLabel FDF
-command , and .ext depends on the type of the output.  Below we list
-the .ext files which are specific to transiesta.  For a description of
+command, and .ext depends on the type of the output.  Below we list
+the .ext files which are specific to {\sc TranSiesta}.  For a description of
 the other output files, we refer the user to the {\sc Siesta} manual.
 
 
@@ -7442,14 +7445,14 @@ and by:
 {\it Default value:} {\tt {\it SystemLabel}.TSHS}
 \end{description}
 respectively for the left and right electrodes and the scattering
-region .TSHS file.
+region \texttt{.TSHS} file.
 
 The energy scale in {\tt tbtrans} is shifted so that the Fermi level
 of the system, if no voltage were applied, is zero. When computing the
 transmission function of a zero bias calculation, the transmission at
-the Fermi level is then given by T(E=0). When there is a finite bias,
-the Fermi energy of the left electrode is placed at V/2, and that of
-the right electrode at -V/2.
+the Fermi level is then given by $T(E=0)$. When there is a finite bias,
+the Fermi energy of the left electrode is placed at $V/2$, and that of
+the right electrode at $-V/2$.
 
 The voltage is specified by {\bf TS.Voltage}. The energy window and
 number of points for the computation of the transmission function is
