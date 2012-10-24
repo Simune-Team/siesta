@@ -99,8 +99,6 @@ integer, parameter :: NRepA_def = 1
 integer, parameter :: NUsedAtoms_def = -1
 character(20), parameter :: smethod_def = 'gaussfermi'
 character(33), parameter :: GFTitle_def = 'Generated GF file'
-character(33), parameter :: GFFileL_def = 'Left.GF'
-character(33), parameter :: GFFileR_def = 'Right.GF'
 character(33), parameter :: HSFile_def = 'NOT REQUESTED'
 character(4),  parameter :: ChargeCorr_def = 'none'
 real(dp),  parameter :: ChargeCorr_factor_def = 0.75_dp
@@ -141,7 +139,7 @@ implicit none
 
 real(dp),intent(in) :: ucell(3,3)
 ! Internal Variables
-character(len=20) :: chars, s_cmethod
+character(len=40) :: chars, s_cmethod
 integer :: i
 #ifdef MPI
 integer :: MPIerror
@@ -208,8 +206,10 @@ call fdf_global_get(nline,'TS.ComplexContour.NLine',nline_def)
 call fdf_global_get(nvolt,'TS.biasContour.NumPoints',nvolt_def)
 !call fdf_global_get(Ntransport,'TS.Contour.NTransport',Ntransport_def)
 call fdf_global_get(GFTitle,'TS.GFTitle',GFTitle_def)
-call fdf_global_get(GFFileL,'TS.GFFileLeft',GFFileL_def)
-call fdf_global_get(GFFileR,'TS.GFFileRight',GFFileR_def)
+chars = trim(slabel)//'.TSGFL'
+call fdf_global_get(GFFileL,'TS.GFFileLeft',trim(chars))
+chars = trim(slabel)//'.TSGFR'
+call fdf_global_get(GFFileR,'TS.GFFileRight',trim(chars))
 call fdf_global_get(ReUseGF,'TS.ReUseGF',ReUseGF_def)
 call fdf_global_get(UseVFix,'TS.UseVFix',UseVFix_def)
 call fdf_global_get(ElecValenceBandBot,'TS.CalcElectrodeValenceBandBottom', &

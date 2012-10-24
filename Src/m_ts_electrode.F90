@@ -1185,6 +1185,21 @@ contains
           end do
        end do
        if ( eXa ) then
+! Initialize error parameter
+          write(*,'(a)') "Coordinates from the electrode repeated out to an FDF file"
+          write(*,'(t3,3a20') &
+               "X (Ang)","Y (Ang)","Z (Ang)"
+          iaa = sysElec
+          do ia = elecElec , elecElec + NUsedAtoms - 1
+             do j=0,NA2-1
+                do i=0,NA1-1
+                   write(*,'(t3,3f20.12)') &
+                        (xa(1,ia)+ucell(1,1)*i+ucell(1,2)*j)/Ang, &
+                        (xa(2,ia)+ucell(2,1)*i+ucell(2,2)*j)/Ang, &
+                        (xa(3,ia))/Ang
+                end do
+             end do
+          end do
           call die("The electrodes are not situated in the same coordinates. Please correct.")
        end if
 

@@ -64,8 +64,6 @@ module m_tbt_options
   integer, parameter :: NRepA_def = 1
   integer, parameter :: NUsedAtoms_def = -1
   character(33), parameter :: GFTitle_def = 'Generated GF file'
-  character(33), parameter :: GFFileL_def = 'TBTLeft.GF'
-  character(33), parameter :: GFFileR_def = 'TBTRight.GF'
   character(33), parameter :: HSFile_def = 'NOT REQUESTED'
   logical, parameter :: ElecValenceBandBot_def = .true.
   logical, parameter :: ReUseGF_def = .true.
@@ -158,8 +156,10 @@ CONTAINS
     call fdf_global_get(NBufAtR,'TS.BufferAtomsRight',NBufAt_def)
     call fdf_global_get(kT,'ElectronicTemperature',kT_def,'Ry')
     call fdf_global_get(GFTitle,'TS.TBT.GFTitle',GFTitle_def)
-    call fdf_global_get(GFFileL,'TS.TBT.GFFileLeft',GFFileL_def)
-    call fdf_global_get(GFFileR,'TS.TBT.GFFileRight',GFFileR_def)
+    chars = trim(slabel)//'.TBTGFL'
+    call fdf_global_get(GFFileL,'TS.TBT.GFFileLeft',trim(chars))
+    chars = trim(slabel)//'.TBTGFR'
+    call fdf_global_get(GFFileR,'TS.TBT.GFFileRight',trim(chars))
     call fdf_global_get(ReUseGF,'TS.ReUseGF',ReUseGF_def)
     ! This needs a two way entrance (in TranSIESTA it really doesn't matter.
     ! In TBTrans it can be used to check for Emin against the valence band bottom

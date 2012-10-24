@@ -1,4 +1,37 @@
 ----------------------------------------------------
+Oct 24, 2012 -- Nick P. Andersen     trunk-411--ts-npa-14
+Renamed GF files to <systemlabel>.[TS|TBT]GF[L|R] for clarity. Added m_os
+
+* Renamed the GF files to be more consistent with the naming scheme of files
+  - For transiesta this means that:
+    * Left.GF has been defaulted to <systemlabel>.TSGFL
+    * Right.GF has been defaulted to <systemlabel>.TSGFR
+  - For tbtrans this means that:
+    * TBTLeft.GF has been defaulted to <systemlabel>.TBTGFL
+    * TBTRight.GF has been defaulted to <systemlabel>.TBTGFR
+* Added a m_os module which can aid in the creation of new filenames
+  It is not fully tested but provides a starting ground for creating names
+  with respect to directories. The following functions are available:
+  - file_ext (returns the extension)
+  - file_noext (returns the filename without the extension)
+  - basename (returns the filename without directories)
+  - dirname (returns the directory name, with an ending slash)
+  All these functions return a string of length 512, due to it being in a
+  module, however, we could provide a wrapper function to return it for 
+  the correct length. This requires some more "pure" functions.
+* Added a writeout of the electrode for a higher precision.
+  Enables to insert in FDF files.
+
+added:
+  Src/m_os.f90
+modified:
+  Src/Makefile
+  Src/m_ts_electrode.F90
+  Src/m_ts_options.F90
+  Util/TBTrans_rep/Makefile
+  Util/TBTrans_rep/m_tbt_options.F90
+
+----------------------------------------------------
 Oct 23, 2012 -- Nick P. Andersen     trunk-411--ts-npa-13
 Enabled tbtrans for new contour type, ipo compilation, FDF-deprecate/obsolete
 
