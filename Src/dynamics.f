@@ -114,6 +114,8 @@ C
 
 C Internal variables .............................................................
 
+      logical  ::  found
+
       integer  ::  ct, i, ia, info, j, k
 
       real(dp) :: aux1(3,3), aux2(3,3), diff, dt2, dtby2, gi(3,3),
@@ -219,7 +221,14 @@ C Initialize variables if current time step is the first of the simulation
 !     is continuing by reading an XV file.
       if (istep .eq. 1) then
 
-         if (.not. xv_file_read) then
+         if (xv_file_read) then
+           if (IOnode) inquire( file=restart_file, exist=found )
+           call broadcast(found)
+         else
+           found=.false.
+         endif
+
+         if (.not. found) then
 
             x = 0.0_dp
             xold = 0.0_dp
@@ -630,6 +639,8 @@ C *****************************************************************************
 
 C Internal variables 
 
+      logical :: found
+
       integer  :: ct, i, info, ia, j, k
 
       real(dp) :: a1, a2, aux1(3,3), aux2(3,3), diff, dot, dt2, dtby2,
@@ -708,7 +719,14 @@ C Initialize variables if current time step is the first of the simulation
 !
       if (istep .eq. 1) then
 
-         if (.not. xv_file_read) then
+         if (xv_file_read) then
+           if (IONode) inquire( file=restart_file, exist=found )
+           call broadcast(found)
+         else
+           found=.false.
+         endif
+
+         if (.not. found) then
 
             hold = h - dt * hdot
             if (debug .and. IOnode) print *, 'Old reduced coordinates'
@@ -1125,6 +1143,9 @@ C
      .  memory
 C Internal variables .........................................................
 
+      logical
+     .  found
+
       integer
      .  ct,i,ia
 
@@ -1182,7 +1203,14 @@ C  convert F/m in (Ry/Bohr)/amu  to  Bohr/fs**2
 C Initialize variables if current time step is the first of the simulation
       if (istep .eq. 1) then
 
-         if (.not. xv_file_read) then
+         if (xv_file_read) then
+           if (IONode) inquire( file=restart_file, exist=found )
+           call broadcast(found)
+         else
+           found=.false.
+         endif
+
+         if (.not. found) then
 
 C     Compute old positions in terms of current positions and velocities
 C     if the time step is the first of the simulation 
@@ -1236,7 +1264,7 @@ C     if the time step is the first of the simulation
             endif               ! dt /= old_dt
 
            endif                  ! IONode
-            
+          
             call broadcast(x)
             call broadcast(xold)
             call broadcast(xaold(1:3,1:natoms))
@@ -1918,6 +1946,9 @@ C *****************************************************************************
 
 C Internal variables ..........................................................
  
+      logical
+     .  found
+
       integer
      .  ct,i,ia
 
@@ -1977,7 +2008,15 @@ C Initialise FIRE quench if that is the option
             firenpos = 0
          endif
 
-         if (.not. xv_file_read) then
+         if (xv_file_read) then
+           if (IONode) inquire( file=restart_file, exist=found )
+           call broadcast(found)
+           if (.not. found) old_dt=dt
+         else
+           found=.false.
+         endif
+
+         if (.not. found) then
 
 C     Compute old accelerations and velocities 
 C     if the time step is the first of the simulation ...........................

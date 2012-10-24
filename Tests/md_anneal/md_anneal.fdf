@@ -31,7 +31,7 @@ HarrisFunctional T
 WriteMDHistory T
 
 MD.TypeOfRun         anneal
-MD.AnnealOptions  TemperatureAndPressure
+MD.AnnealOption  TemperatureAndPressure
 MD.InitialTemperature 100 K
 MD.TargetTemperature 600 K
 MD.TargetPressure 40 GPa
