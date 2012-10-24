@@ -12,6 +12,12 @@
 \usepackage{makeidx}
 \usepackage{url}
 \usepackage{hyperref}
+% Hyperref setup
+\hypersetup{
+    hyperindex=true,
+    bookmarksopen=true,
+    bookmarksopenlevel=2,
+}
 
 \tolerance 10000
 \textheight 22cm
@@ -40,7 +46,7 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, trunk-419}}
+{\Huge {\bf S I E S T A \, \, trunk-420}}
 
 \vspace{1cm}
 \hrulefill
@@ -6429,8 +6435,8 @@ respectively. Edit the file to change the settings if desired.
 \subsection{Restarting geometry optimizations and MD runs}
 
 Every time the atoms move, either during coordinate relaxation or
-molecular dynamics, their positions {\bf predicted for next step} and
-{\bf current} velocities are stored in file SystemLabel.XV, where
+molecular dynamics, their {\bf positions predicted for next step} and
+{\bf current velocities} are stored in file SystemLabel.XV, where
 SystemLabel is the value of that FDF descriptor (or 'siesta' by
 default).  The shape of the unit cell and its associated 'velocity'
 (in Parrinello-Rahman dynamics) are also stored in this file. For MD
@@ -6439,15 +6445,20 @@ Nose-Parrinello-Rahman, a file named SystemLabel.VERLET\_RESTART,
 SystemLabel.PR\_RESTART, SystemLabel.NOSE\_RESTART, or
 SystemLabel.NPR\_RESTART, respectively, is created to hold the values
 of auxiliary variables needed for a completely seamless
-continuation. Due to the introduction of this enhanced continuation
-feature in Siesta 2.0, an MD run made with Siesta 1.3 cannot be
-directly restarted with later versions of Siesta: the user would need
-to create the right kind of restart file in addition to setting the
-MD.UseSaveXV flag in the FDF file.
+continuation. 
 
-This restart fix is not complete in all cases nor satisfactory from a
-fundamental point of view, so the MD subsystem in Siesta will have to
-be redesigned. In the meantime, users are reminded that the scripting
+If the restart file is not available, a simulation can still make use
+of the XV information, and ``restart'' by basically repeating the
+last-computed step (the positions are shifted backwards by using a
+single Euler-like step with the current velocities as derivatives).
+While this feature does not result in seamless continuations, it
+allows cross-restarts (those in which a simulation of one kind (e.g.,
+Anneal) is followed by another (e.g., Nose)), and permits 
+to re-use dynamical information from old runs.
+
+This restart fix is not satisfactory from a fundamental point of view,
+so the MD subsystem in Siesta will have to be redesigned
+eventually. In the meantime, users are reminded that the scripting
 hooks being steadily introduced (see Util/Scripting) might be used to
 create custom-made MD scripts.
 
