@@ -6,6 +6,17 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-10-24  14:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-421
+Add rp and rv options to XML pseudopotential handling
+
+The RPBE and revPBE XC flavors were not correctly handled by
+the XML routines.
+
+modified:
+  Pseudo/atom/pseudoXML.f
+  Util/pseudo-xml/xml2psf_helper.f
+
+-----------------------------------------------------------------------
 2012-10-24  13:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-420
 Enable MD continuation runs even if the restart file is not available
 
