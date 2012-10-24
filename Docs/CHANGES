@@ -4,6 +4,69 @@
 
 ** CHANGES ALONG siesta-3 branch
 ------------------------------------------------------------------------
+2012-10-24  13:00:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl17
+Enable MD continuation runs even if the restart file is not available
+
+(Fabiano Corsetti)
+
+If the user has selected MD.UseSaveXV to continue an MD run from a
+previously computed set of positions and velocities (in the XV file),
+but the appropriate restart file is not found, the positions x(t) and
+velocities v(t-dt) are read from the XV file, and the positions are
+then backward-propagated by one time step using the Euler method to
+start the MD run from time (t-dt) with a consistent set of positions
+and velocities.
+
+In previous versions the program complained if the appropriate restart
+file was not available. This patch enables cross-restarts (i.e., an
+Annealing calculation followed by a Nose simulation) within the simple
+"reuse-the-XV-file" framework. The last point computed in the previous
+simulation will be basically repeated in the continuation run. For
+"seamless" continuations, the flavor-specific restart file is needed.
+
+N.B.: The value of the time step of the previous run (from which the
+XV file has been generated) should be equal to that of the current
+run. This information is not saved in the XV file, and so it is not
+possible for the code to tell whether the two runs are consistent.
+
+N.B. 2: The backward-propagation is only used for runs with more than
+one time step, and is done in routine 'struct_init'.
+
+This fix applies to Verlet, Nose, PR, and NPR runs.
+
+* New tests:  
+
+   md-single-run, md-cont, md-cont-no-restart-file
+
+   md-anneal-cont
+
+(+ used correct fdf option for annealing flavor in md_anneal test)
+
+added:
+  Tests/md-anneal-cont/
+  Tests/md-anneal-cont/README
+  Tests/md-anneal-cont/makefile
+  Tests/md-anneal-cont/script.sh
+  Tests/md-cont/
+  Tests/md-cont-no-restart-file/
+  Tests/md-cont-no-restart-file/README
+  Tests/md-cont-no-restart-file/makefile
+  Tests/md-cont-no-restart-file/script.sh
+  Tests/md-cont/README
+  Tests/md-cont/makefile
+  Tests/md-cont/script.sh
+  Tests/md-single-run/
+  Tests/md-single-run/README
+  Tests/md-single-run/makefile
+  Tests/md-single-run/script.sh
+modified:
+  Src/Makefile
+  Src/dynamics.f
+  Src/iomd.f
+  Src/struct_init.F
+  Tests/md_anneal/md_anneal.fdf
+
+------------------------------------------------------------------------
 2012-10-23  12:50:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl16
 Add option to turn off time-reversal symmetry for k-points
 

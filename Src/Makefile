@@ -916,8 +916,9 @@ state_init.o: overlap.o parallel.o proximity_check.o siesta_cml.o siesta_geom.o
 state_init.o: siesta_options.o sparse_matrices.o sys.o write_subs.o zmatrix.o
 
 struct_init.o: alloc.o atmfuncs.o atomlist.o files.o iopipes.o ioxv.o
-struct_init.o: m_fdf_global.o m_iostruct.o parallel.o periodic_table.o
-struct_init.o: siesta_cml.o siesta_geom.o siesta_options.o zmatrix.o
+struct_init.o: m_fdf_global.o m_iostruct.o m_mpi_utils.o parallel.o
+struct_init.o: periodic_table.o siesta_cml.o siesta_geom.o siesta_options.o
+struct_init.o: zmatrix.o
 
 sys.o: parallel.o
 

@@ -14,6 +14,7 @@
       use atomlist,       only: elem, iza
       use fdf,            only : fdf_physical
       use m_fdf_global,   only: fdf_global_get
+      use m_mpi_utils, only : broadcast
       use periodic_table, only : symbol
       use iopipes,        only: coordsfrompipe
       use m_iostruct,     only: read_struct
@@ -37,6 +38,10 @@
       integer :: i, ia, ix
       integer:: nbcell  ! Auxiliary to call shaper routine
 
+      character(len=22) :: dyntyp
+      character(len=60) :: restart_file
+      logical :: found_restart, step_back
+
 !------------------------------------------------------------------------- BEGIN
 
       !! Read number of atoms and coordinates, and unit cell
@@ -57,7 +62,7 @@
       nullify(va)
       call re_alloc(va,1,3,1,na_u,name='va',routine='struct_init')
 
-      ! Options readed here instead of siesta_options
+      ! Options read here instead of in siesta_options
       call fdf_global_get(default, 'UseSaveData'     , .false.)
       call fdf_global_get(usesavexv, 'MD.UseSaveXV'    , default)
       call fdf_global_get(usesavezm, 'MD.UseSaveZM'    , default)
@@ -89,6 +94,44 @@
            else
               write(6,"(a)")
      $       "! Info in XV file prevails over previous structure input"
+           endif
+         endif
+!        For a Verlet/Nose/PR/NPR run with more than one time step, if
+!        the RESTART file is not found, backward-propagate the atomic
+!        positions by one time step using the Euler method
+
+         call fdf_global_get(istart,'MD.InitialTimeStep',1)
+         call fdf_global_get(ifinal,'MD.FinalTimeStep',1)
+         if (foundxv .and. (ifinal-istart>0)) then
+           call fdf_global_get(dyntyp,'MD.TypeOfRun','CG')
+           step_back=.true.
+           if (leqi(dyntyp,'verlet')) then
+             restart_file = trim(slabel) // '.VERLET_RESTART'
+           else if (leqi(dyntyp,'nose')) then
+             restart_file = trim(slabel) // '.NOSE_RESTART'
+           else if (leqi(dyntyp,'parrinellorahman')) then
+             restart_file = trim(slabel) // '.PR_RESTART'
+           else if (leqi(dyntyp,'noseparrinellorahman')) then
+             restart_file = trim(slabel) // '.NPR_RESTART'
+           else
+             step_back=.false.
+           endif
+           if (step_back) then
+              if (IOnode) then
+                 inquire( file=restart_file, exist=found_restart )
+              endif
+              call broadcast(found_restart)
+             if (.not. found_restart) then
+               call fdf_global_get(dt,'MD.LengthTimeStep',
+     $                             dt_default,'fs')
+               xa=xa-dt*va
+               if (IOnode) then
+                 write(6,'(5a)') 'WARNING: ', trim(restart_file),
+     $                           ' not found--reading only XV file',
+     $                           ' and moving back 1 time step using',
+     $                           ' Euler'
+               endif
+             endif
            endif
          endif
       endif
