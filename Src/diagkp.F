@@ -128,11 +128,16 @@ C  Internal variables .............................................
       integer           :: BNode, ie, ierror, ik, io, iio, ind, is,
      &                     ispin, iuo, j, jo, juo, maxnhg, nuog,
      &                     maxnumh, neigneeded
-      integer,  pointer :: numhg(:), listhptrg(:), listhg(:)
+      integer,  pointer :: numhg(:) => null(),
+     $                     listhptrg(:) => null(),
+     $                     listhg(:) => null()
       real(dp)          :: ckxij, ee, kxij, pipj1, pipj2, qe, skxij, t
-      real(dp), pointer :: Snew(:), Dloc(:), Hnew(:,:), Dnewloc(:,:),
-     &                     Enewloc(:,:), xijloc(:,:)
-C  ..&.................
+      real(dp), pointer :: Snew(:) => null(),
+     $                     Dloc(:) => null(),
+     $                     Hnew(:,:) => null(),
+     $                     Dnewloc(:,:) => null(),
+     $                     Enewloc(:,:) => null(),
+     $                     xijloc(:,:) => null()
 
 C Globalise list arrays - assumes listh and listd are the same
 

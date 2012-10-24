@@ -139,9 +139,11 @@ c ---------------------------------------------------------------------------
         fnamein = paste(sysname,'.VT')
       else if (task .eq. 'vh') then 
         fnamein = paste(sysname,'.VH')
+      else if (task .eq. 'bader') then 
+        fnamein = paste(sysname,'.BADER')
       else
         write(6,*) 'Wrong task'
-        write(6,*) 'Accepted values:  rho, drho, ldos, vh, vt'
+        write(6,*) 'Accepted values:  rho, drho, ldos, vh, vt, bader'
         write(6,*) '(in lower case!!!!)'
         stop
       endif

@@ -94,6 +94,9 @@ C
       use alloc,     only : re_alloc, de_alloc
       use siesta_options, only: g2cut
       use siesta_geom,    only: mscell
+      use siesta_options, only: hirshpop, voropop
+      use siesta_options, only: partial_charges_at_every_geometry
+      use m_partial_charges, only: want_partial_charges
 
       implicit          none
 
@@ -203,12 +206,23 @@ c if sampling, store the forces and stresses prior to dhscf -----------------
 
 
 c first (normal) call to DHSCF, ihmat=1 --------------------------------------
+!
+!     At this point we have finished the scf loop for this geometry,
+!     and can compute the partial charges if desired in this call to
+!     dhscf.
+!
+      if ((hirshpop .or. voropop)
+     $    .and. partial_charges_at_every_geometry) then
+         want_partial_charges = .true.
+      endif
+
       call dhscf( nspin, norb, iaorb, iphorb, nuo, nuotot, nua,
      &            na, isa, xa, indxua, ntm,
      &            ifa, istr, 1, ' ', ' ', ' ', ' ', ' ', ' ',
      &            maxnd, numh, listhptr, listh, Dscf, Datm,
      &            maxnh, Hmat, Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
      &            Exc, Dxc, dipol, stress, fal, stressl)
+      want_partial_charges = .false.
 
 c Sampling ------------------------------------------------------------------
 

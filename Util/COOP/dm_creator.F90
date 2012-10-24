@@ -2,6 +2,7 @@
 program dm_creator
 
   use main_vars
+  use subs, only: manual_dm_creator
   use io_hs, only: read_hs_file
 #ifdef CDF
   use iodm_netcdf
@@ -11,6 +12,7 @@ program dm_creator
 
   logical :: gamma_wfsx, got_qcos, logical_dummy
   integer :: ii1, ii2, ind, ind_red, no1, no2, n_int, nnz
+  integer :: nwfmx
   real(dp) :: factor, qsol
   real(dp), dimension(:,:), allocatable :: DMout
 

@@ -6,6 +6,237 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-10-23  14:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-417
+Allow doping feature for all systems
+
+The "SimulateDoping" option is now enabled for "bulk" systems, in the
+interest of generality and to fix an inconsistency in the logic for
+charge removal. (Thanks to N. P. Andersen)
+
+modified:
+  Src/dhscf.F
+
+-----------------------------------------------------------------------
+2012-10-23  14:05:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-416
+Fix spin loop in initialization in Eig2DOS program
+
+The initialization code was missing a loop over spin.
+
+(+ changes to fix compiler-dependent complaints)
+
+(Thanks to N.P. Andersen)
+
+( + Update reference outputs for si_fatbands test )
+
+
+modified:
+  Tests/Reference-xml/si_fatbands.xml
+  Tests/Reference/si_fatbands.out
+  Util/Eig2DOS/Eig2DOS.f90
+
+-----------------------------------------------------------------------
+2012-10-23  14:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-415
+New options for wavefunction output. 'Fatbands' analysis. Mprop enhancements
+
+(A. Garcia)
+
+* Enhanced 'bands' routine to write out the wavefunctions
+
+If the fdf symbol
+
+WFS.Write.For.Bands
+
+is set to .true., the program will write out the wavefunctions
+corresponding to the bands specified in the BandLines block.
+
+There are now different file names for wavefunction output:
+
+SystemLabel.bands.WFSX      : produced by BandLines + WFS.Write.For.Bands
+SystemLabel.fullBZ.WFSX     : for COOP/COHP-related use
+SystemLabel.selected.WFSX   : produced by WaveFuncKPoints
+
+Note that for down-stream processing, some of these files might have
+to be renamed to simply 'SystemLabel.WFSX'.
+
+A subset of the bands (for both the BandLines and COOP/COHP cases) can
+be specified by the fdf keywords:
+
+WFS.Band.Min  (int, default: 1)
+WFS.Band.Max  (int, default: number of orbitals)
+
+The energy window options 
+
+WFS.Energy.Min
+WFS.Energy.Max
+
+are not in effect for BandLines.
+
+
+* New 'Fatbands' functionality
+
+A new utility program ('fat') has been added to generate 'fatband'
+information. It processes .WFSX files (typically produced during a
+"bands" calculation) and .HSX files to produce 'EIGFAT' files
+containing both the eigenvalues ("eig") and the value of the
+projection of the wavefunction on a given orbital set ("fat"). Most of
+the code is shared with the PDOS/COOP/COHP program mprop, hence its
+location in the Util/COOP directory.
+
+A new plotting converter, eigfat2plot, has been placed in the
+Util/Bands directory. It is suitable for simple 'gnuplot' use.
+
+Added Tests/si_fatbands
+
+
+* Modified Denchar to read WFSX files
+
+Denchar now reads directly the newer-format WFSX files,
+which are more compact.
+
+Also, added a new full example in Util/Denchar/Examples, and
+two python scripts for contour plots, courtesy of Pablo Aguado.
+
+* Moved gnubands.f program to new directory Util/Bands
+* Added new 'gnubands' program, with more options (Util/Bands/new.gnubands)
+
+* Mprop enhancements
+
+- New energy-range and band-index options in mprop.
+
+* Upgrade of the Util/COOP/mprop program, with new options and
+  clarification of existing ones:
+
+- Allow specification of subsets of bands in Util/COOP/mprop
+
+New options "-b min_band -B max_band" to allow the use of restricted
+band sets in the generation of PDOS, COOP, and COHP curves.
+
+- Clearer energy-range options in mprop program
+
+The -m/-M options now refer to eigenvalues.  Together with the band
+options (-b/-B), they determine the eigenvectors actually taken into
+account.
+
+- Add plotting window options to mprop. Cosmetics
+
+The plotting window can now be specified with the -w/-W options. By
+default it is determined on the basis of the eigenvalue range.
+
+(+ add missing declaration to dm_creator.f90)
+
+added:
+  Tests/Reference-xml/si_fatbands.xml
+  Tests/Reference/si_fatbands.out
+  Tests/si_fatbands/
+  Tests/si_fatbands/makefile
+  Tests/si_fatbands/si_fatbands.fdf
+  Tests/si_fatbands/si_fatbands.pseudos
+  Util/Bands/
+  Util/Bands/Makefile
+  Util/Bands/README
+  Util/Bands/eigfat2plot.f90
+  Util/Bands/f2kcli.F90
+  Util/Bands/fat.gplot
+  Util/Bands/m_getopts.f90
+  Util/Bands/new.gnubands.f90
+  Util/COOP/Tests/si_fatbands/
+  Util/COOP/Tests/si_fatbands/README
+  Util/COOP/Tests/si_fatbands/fatbands.mpr
+  Util/COOP/fat.f90
+  Util/Denchar/Examples/2dplot.py
+  Util/Denchar/Examples/FullExample.fdf
+  Util/Denchar/Examples/Si.psf
+  Util/Denchar/Examples/surf.py
+  Util/Denchar/Src/readwavesx.f
+renamed:
+  Util/gnubands.f => Util/Bands/gnubands.f
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/Makefile
+  Src/bands.F
+  Src/diagk.F
+  Src/siesta_analysis.F
+  Src/writewave.F
+  Util/COOP/Makefile
+  Util/COOP/README
+  Util/COOP/Tests/README
+  Util/COOP/dm_creator.F90
+  Util/COOP/main_vars.f90
+  Util/COOP/mprop.f90
+  Util/COOP/subs.f90
+  Util/Denchar/Docs/CHANGES
+  Util/Denchar/Docs/denchar.tex
+  Util/Denchar/Src/Makefile
+  Util/Denchar/Src/denchar.f
+  Util/Eig2DOS/Eig2DOS.f90
+  Util/README
+
+-----------------------------------------------------------------------
+2012-10-23  13:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-414
+Hirshfeld and Voronoi charges. Bader analysis output
+
+The Hirshfeld and Voronoi methods are partial-charge estimations based
+directly on the charge density. They thus complement the Mulliken analysis
+which depends on the density-matrix.
+
+Relevant fdf keywords:
+
+WriteHirshfeldPop T
+WriteVoronoiPop T
+
+See the manual for details.
+
+(Code for Hirshfeld and Voronoi analysis contributed by P. Ordejon.
+Integrated into the dhscf workflow by A. Garcia.)
+
+* Implementation of Bader charge output
+
+If the option
+
+  SaveBaderCharge T
+
+is used, the program will write the electronic charge density with an
+extra set of model core charges, useful for post-processing by a Bader
+"atoms in molecules" analysis. See the manual for important details.
+
+The grid2cube program in Util has been extended to deal with the .BADER
+file.
+
+* New test: h2o-pop
+
+-----------------------------------------------------------------------
+2012-09-25  10:12:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-413
+Use a 'unique' string in fdf log files
+
+In MPI operation, the fdf subsystem writes log files (and optionally
+debug files) to the /tmp filesystem. Up to now the file names were not
+unique across jobs, which led to failures. Now a string based on the
+5 least significant digits of the current time is added to the file
+prefix. 
+
+Also, removed the printing of a log message regarding the number of
+lines processed while setting up the fdf data structures, which could
+potentially confuse some systems.
+
+modified:
+  Src/reinit.F
+  Src/fdf/fdf.F90
+
+-----------------------------------------------------------------------
+2012-08-27  10:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-412
+Nullify pointers in diagkp
+
+Pointers were not properly nullified in diagkp.
+
+(Thanks to Nick P. Andersen)
+
+(+ clean up extra path dependencies in Denchar Makefile)
+
+modified:
+  Src/diagkp.F
+
+-----------------------------------------------------------------------
 2012-06-21  10:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-411
 Fix bug in fdf_bbackspace. No .ion.nc files for ghosts
 

@@ -8,7 +8,8 @@
 
       subroutine siesta_analysis( relaxd )
       USE band, only: nbk, bk, maxbk, bands
-      USE writewave, only: nwk, wfk, wwave, allocwave
+      USE writewave, only: nwk, wfk, wwave
+      USE writewave, only: setup_wfs_list, wfs_filename
       USE m_ksvinit, only: nkpol, kpol, wgthpol
       use m_ksv
       USE m_projected_DOS, only: projected_DOS
@@ -21,7 +22,7 @@
       use m_dhscf, only: dhscf
       use atomlist, only: indxuo, iaorb, lastkb, lasto, datm, no_l,
      &                    iphkb, no_u, no_s, iza, iphorb, rmaxo, indxua
-      use fdf, only : fdf_boolean
+      use fdf
       use writewave,    only: wwave
       use siesta_cml
       use files,        only : slabel
@@ -39,6 +40,7 @@
       use m_gamma 
       use alloc,             only: re_alloc, de_alloc
       use basis_enthalpy,    only: write_basis_enthalpy
+      use m_partial_charges, only: want_partial_charges
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
@@ -47,7 +49,7 @@
 
       character(len=label_length+5), external :: paste
 
-      logical :: relaxd
+      logical :: relaxd, getPSI
 
       character(len=label_length+5) :: fildrh
       character(len=label_length+5) :: filepsch
@@ -68,7 +70,7 @@
       real(dp), pointer :: ebk(:,:,:)       ! Band energies
 
       integer           :: j, ix, ind, ik, io, ispin
-      integer           :: maxwk   ! Number of k-points/wavefunction
+      integer           :: wfs_band_min, wfs_band_max
       real(dp)          :: g2max
 #ifdef MPI
       real(dp)          :: qtmp(4)
@@ -122,14 +124,28 @@
 
 !     Find and print wavefunctions at selected k-points
       if (nwk.gt.0) then
-        call wwave( no_s, nspin, nspin, no_u, no_l, maxnh, maxwk,
+        wfs_filename = trim(slabel)//".selected.WFSX"
+        if (IONode) print "(a)",
+     $              "Writing WFSX for selected k-points in "
+     $                           // trim(wfs_filename)
+        call wwave( no_s, nspin, nspin, no_u, no_l, maxnh, nwk,
      &              numh, listhptr, listh, H, S, Ef, xijo, indxuo,
      &              nwk, wfk, no_u, gamma, occtol )
       endif
 
+
       if (write_coop) then
         ! Output the wavefunctions for the kpoints in the SCF set
-         call allocwave(nkpnt,no_u)
+        ! Note that we allow both a band number and an energy range
+        ! The user is responsible for using appropriate values.
+        wfs_band_min = fdf_get("WFS.BandMin",1)
+        wfs_band_max = fdf_get("WFS.BandMax",no_u)
+        call setup_wfs_list(nkpnt,no_u,wfs_band_min,wfs_band_max,
+     $                      use_scf_weights=.true.,
+     $                      use_energy_window=.true.)
+         wfs_filename = trim(slabel)//".fullBZ.WFSX"
+         if (IONode) print "(a)", "Writing WFSX for COOP/COHP in " 
+     $                           // trim(wfs_filename)
          call wwave( no_s, nspin, nspin, no_u, no_l, maxnh, maxk,
      .        numh, listhptr, listh, H, S, Ef, xijo, indxuo,
      .        nkpnt, kpoint, no_u, gamma, occtol)
@@ -141,9 +157,21 @@
      &               'ebk', 'siesta_analysis' )
 
       if (nbk.gt.0) then
-        call bands( no_s, nspin, nspin, no_u, maxnh, maxbk,
-     &              numh, listhptr, listh, H, S, Ef, xijo, indxuo,
-     &              .true., nbk, bk, ebk, no_u, occtol )
+        if (IONode) print "(a)", "Computing bands..."
+        getPSI = fdf_get('WFS.Write.For.Bands', .false.)
+        if (getPSI) then
+           wfs_filename = trim(slabel)//".bands.WFSX"
+         if (IONode) print "(a)", "Writing WFSX for bands in "
+     $                           // trim(wfs_filename)
+           wfs_band_min = fdf_get("WFS.BandMin",1)
+           wfs_band_max = fdf_get("WFS.BandMax",no_u)
+           call setup_wfs_list(nbk,no_u,wfs_band_min,wfs_band_max,
+     $          use_scf_weights=.false.,
+     $          use_energy_window=.false.)
+        endif
+        call bands( no_s, nspin, nspin, no_u, no_l, maxnh, maxbk,
+     .              numh, listhptr, listh, H, S, Ef, xijo, indxuo,
+     .              .true., nbk, bk, ebk, occtol, getPSI )
         if (IOnode) then
           if ( writbk ) then
             write(6,'(/,a,/,a4,a12)')
@@ -197,6 +225,7 @@
       if ((isolve.eq.SOLVE_DIAGON).and.IOnode)
      &     call ioeig(eo,ef,neigwanted,nspin,nkpnt,no_u,nspin,maxk,
      &                kpoint, kweight)
+
 
       call projected_DOS()
 
@@ -304,10 +333,13 @@
 !
 !  NOTE: Dscf here is the mixed one (see above).
 !
+      want_partial_charges = (hirshpop .or. voropop) .AND.
+     $                   (.not. partial_charges_at_every_geometry)
 
 !     Save electron density and potential
       if (savrho .or. savdrh .or. savevh .or. savevt .or.
-     &    savepsch .or. savetoch ) then
+     &    savepsch .or. savetoch 
+     &     .or. want_partial_charges) then
         filrho = ' '
         fildrh = ' '
         filevh = ' '

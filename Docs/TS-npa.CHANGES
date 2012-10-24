@@ -1,5 +1,9 @@
 ----------------------------------------------------
 Oct 24, 2012 -- Nick P. Andersen     trunk-411--ts-npa-14
+[merge] Merged trunk-417 with ts-npa-14
+
+----------------------------------------------------
+Oct 24, 2012 -- Nick P. Andersen     trunk-411--ts-npa-14
 Renamed GF files to <systemlabel>.[TS|TBT]GF[L|R] for clarity. Added m_os
 
 * Renamed the GF files to be more consistent with the naming scheme of files

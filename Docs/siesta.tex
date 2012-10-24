@@ -52,7 +52,7 @@
 \hrulefill
 \vspace{1cm}
 
-{\Large June 21, 2012 }
+{\Large October 23, 2012 }
 
 \vspace{1.5cm}
 
@@ -486,7 +486,7 @@ files in your directory including the following:
 
 \item fdf.log\index{fdf.log}
  (contains all the data used, explicit or chosen by default)
-\item O.ion and H.ion\index{species.ionl@{\it species.}ion}
+\item O.ion and H.ion\index{species.ion@{\it species.}ion}
  (complete information about the basis and KB projectors)
 \item h2o.XV\index{Systemlabel.XV@{\it Systemlabel.}XV}
  (contains positions and velocities)
@@ -3875,9 +3875,9 @@ iteration of the SCF loop will be written to a NetCDF file
 {\tt WFS.nc} if the {\bf Diag.UseNewDiagk} option is in effect.
 
 The complete set of wavefunctions obtained during the last
-iteration of the SCF loop will be written to SystemLabel.WFSX
-if the {\bf COOP.write} option is in effect (but they might be
-overwritten by the options in Sec~\ref{sec:wf-output-user}).
+iteration of the SCF loop will be written to SystemLabel.fullBZ.WFSX
+\index{WFSX file!fullBZ.WFSX@\texttt{fullBZ.WFSX}} 
+if the {\bf COOP.write} option is in effect.
 
 \begin{description}
 \item[{\bf WriteEigenvalues}] ({\it logical}):
@@ -4241,7 +4241,10 @@ reciprocal-lattice-vector coordinates)
 {\it Default value:} {\tt pi/a}
 
 {\bf Note:} You might need to define explicitly a LatticeConstant tag
-in your fdf file.
+in your fdf file if you do not already have one, and make it
+consistent
+with the scale of the k-points and any unit-cell vectors you might
+have already defined.
 
 \item[{\bf BandLines}] ({\it data block}):
 \index{BandLines@{\bf BandLines}}
@@ -4316,6 +4319,7 @@ defined for band plotting, to the main output file.
 
 \end{description}
 
+
 \subsubsection{Format of the .bands file}
 
 \begin{verbatim}
@@ -4340,25 +4344,74 @@ kAtEndOfLastLine, kPointLabel \\
 \end{verbatim}
 
 \noindent
-The {\sc Gnubands}\index{Gnubands@{\sc Gnubands}} postprocessing
-utility program (found in the Util/ directory) reads the {\it
+The {\sc gnubands}\index{gnubands@{\tt gnubands}} postprocessing
+utility program (found in the Util/Bands directory) reads the {\it
   Systemlabel}.bands for plotting.  See the {\bf BandLines} data
 descriptor above for more information.
 
-\subsection{Output of wavefunctions}
+\subsubsection{Output of wavefunctions associated to bands}
+\label{sec:wf-bands}
+
+The user can optionally request that the wavefunctions corresponding
+to the computed bands be written to file. 
+They are written to the {\it SystemLabel}.bands.WFSX file
+\index{WFSX file!bands.WFSX@\texttt{bands.WFSX}} 
+(see section below for the
+format). The relevant options are:
+
+\begin{description}
+
+\item[{\bf WFS.Write.For.Bands}] ({\it logical}):
+\index{WFS.Write.For.Bands@{\bf WFS.Write.For.Bands}}
+\index{output of wave functions for bands}
+Instructs the program to compute and write the wave functions
+associated to the bands specified (by a {\bf BandLines} or a {\bf
+  BandPoints} block) to the file {\tt SystemLabel.bands}.WFSX.
+
+The information in this file might be useful, among other things, to
+generate ``fatbands'' plots, in which both  band eigenvalues and
+information about orbital projections is presented.
+\index{fatbands}
+ See the
+\texttt{fat} program in the \texttt{Util/COOP} directory for details.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf WFS.Band.Min}] ({\it integer}):
+\index{WFS.Band.Min@{\bf WFS.Band.Min}}
+\index{output of wave functions for bands}
+Specifies the lowest band index of the wave-functions to be written to 
+the file {\tt SystemLabel.bands}.WFSX for each k-point (all k-points
+in the band set are affected). 
+
+{\it Default value:} {\tt 1}
+
+\item[{\bf WFS.Band.Max}] ({\it integer}):
+\index{WFS.Band.Max@{\bf WFS.Band.Max}}
+\index{output of wave functions for bands}
+Specifies the highest band index of the wave-functions to be written to 
+the file {\tt SystemLabel.bands}.WFSX for each k-point (all k-points
+in the band set are affected).
+
+{\it Default value:} {\tt (the number of orbitals)}
+
+\end{description}
+
+
+\subsection{Output of selected wavefunctions}
 \label{sec:wf-output-user}
 
 The user can optionally request that specific wavefunctions are
 written to file. These wavefunctions are re-computed after the
 geometry loop (if any) finishes, using the last (presumably converged)
 density matrix produced during the last self-consistent field loop
-(after a final mixing). They are written to the SystemLabel.WFSX file
-(see below for the format).
+(after a final mixing). They are written to the
+SystemLabel.selected.WFSX file (see below for the format).
+\index{WFSX file!selected.WFSX@\texttt{selected.WFSX}} 
 
 Note that the complete set of wavefunctions obtained during the last
-iteration of the SCF loop will be written to SystemLabel.WFSX
-if the {\bf COOP.write} option is in effect (but they might be
-overwritten by the options below).
+iteration of the SCF loop will be written to SystemLabel.fullBZ.WFSX
+if the {\bf COOP.write} option is in effect.
 
 Note that the complete set of wavefunctions obtained during the last
 iteration of the SCF loop will be written to a NetCDF file
@@ -4395,9 +4448,16 @@ An example for an FCC lattice is:
      %endblock WaveFuncKPoints
 \end{verbatim}
 
-The number of wavefunction is defined by its energy, so that the
+The index of a wavefunction is defined by its energy, so that the
 first one has lowest energy.
-The output of the wavefunctions in described in Section \ref{subsec:wf}.
+
+The user can also narrow the energy-range used with the {\bf
+  WFS.Energy.Min} and {\bf WFS.Energy.Max} options (both take an
+energy (with units) as extra argument -- see
+section~\ref{sec:coop}). Care should be taken to make sure that the
+actual values of the options make sense.
+
+The output of the wavefunctions in described in Section \ref{subsec:wf}
 
 {\it Use:} Used only if {\bf SolutionMethod} = {\tt diagon}.
 These k points are unrelated and compatible with any k-grid used
@@ -4409,7 +4469,7 @@ to calculate the total energy,  charge density and band structure.
   \index{WriteWaveFunctions@{\bf WriteWaveFunctions}}
   \index{output!wave functions} If {\tt .true.} it writes to the
   output file a list of the wavefunctions actually written to the
-{\it Systemlabel}.WFSX file, which is always produced.
+{\it Systemlabel}.selected.WFSX file, which is always produced.
 
 {\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
 
@@ -4418,7 +4478,7 @@ to calculate the total energy,  charge density and band structure.
 
 \end{description}
 
-The unformatted file SystemLabel.WFSX contains the information of the
+The unformatted WFSX file contains the information of the
 k-points for which wavefunctions coefficients are written, and the
 energies and coefficients of each wavefunction which was specified in
 the input file (see {\bf WaveFuncKPoints}\index{WaveFuncKPoints@{\bf
@@ -4625,6 +4685,84 @@ when dealing with SCF problems, otherwise too verbose.
 
 \end{description}
 
+\subsubsection{Voronoi and Hirshfeld atomic population analysis}
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+\item[{\bf WriteHirshfeldPop}] ({\it logical}): 
+\index{WriteHirshfeldPop@{\bf WriteHirshfeldPop}}\index{Hirshfeld population
+analysis}\index{output!Hirshfeld analysis} 
+%
+If {\tt .true.}, the program calculates and prints the Hirshfeld {\bf
+  net} atomic populations on each atom in the system. For a definition
+of the Hirshfeld charges, see Hirshfeld, Theo Chem Acta {\bf 44}, 129
+(1977) and Fonseca et al, J. Comp. Chem. {\bf 25}, 189 (2003).
+Hirshfeld charges are more reliable than Mulliken charges, specially
+for large basis sets.  The number printed is the total net charge of
+the atom: the variation from the neutral charge, in units of $|e|$:
+positive (negative) values indicate deficiency (excess) of electrons
+in the atom.
+
+{\it Default value:} {\tt .false.} 
+
+
+\item[{\bf WriteVoronoiPop}] ({\it logical}): 
+\index{WriteVoronoiPop@{\bf WriteVoronoiPop}}\index{Voronoi population
+analysis}\index{output!Voronoi analysis} 
+%
+If {\tt .true.}, the program calculates and prints the Voronoi {\bf
+  net} atomic populations on each atom in the system. For a definition
+of the Voronoi charges, see Bickelhaupt et al, Organometallics {\bf
+  15}, 2923 (1996) and Fonseca et al, J. Comp. Chem. {\bf 25}, 189
+(2003).  Voronoi charges are more reliable than Mulliken charges,
+specially for large basis sets.  The number printed is the total net
+charge of the atom: the variation from the neutral charge, in units of
+$|e|$: positive (negative) values indicate deficiency (excess) of
+electrons in the atom.
+
+{\it Default value:} {\tt .false.}
+
+\end{description}
+
+The Hirshfeld and Voronoi populations (partial charges) are computed
+by default only at the end of the program (i.e., for the final
+geometry, after self-consistency). The following options allow more control:
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+\item[{\bf PartialChargesAtEveryGeometry}] ({\it logical}):
+  \index{PartialChargesAtEveryGeometry@{\bf
+      PartialChargesAtEveryGeometry}}\index{Voronoi population
+      analysis}\index{output!Voronoi analysis}\index{Hirshfeld
+      population analysis}\index{output!Hirshfeld analysis}
+
+The Hirshfeld and Voronoi populations are computed after
+self-consistency is achieved, for all the geometry steps.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf PartialChargesAtEveryScfStep}] ({\it logical}):
+  \index{PartialChargesAtEveryScfStep@{\bf
+      PartialChargesAtEveryScfStep}}\index{Voronoi population
+    analysis}\index{output!Voronoi analysis}\index{Hirshfeld
+    population analysis}\index{output!Hirshfeld analysis}
+
+The Hirshfeld and Voronoi populations are computed for every
+step of the self-consistency process.
+
+{\it Default value:} {\tt .false.}
+
+\end{description}
+
+{\bf Performance note:}
+The default behavior (computing at the end of the program) involves
+an extra calculation of the charge density.
+%
+
+
 \subsubsection{Crystal-Orbital overlap and hamilton populations (COOP/COHP)}
 \label{sec:coop}
 \index{COOP/COHP curves}
@@ -4652,7 +4790,7 @@ Materials; Wiley-VCH: Weinheim, 2005.
 \item[{\bf COOP.Write}] ({\it logical}):
 \index{COOP.Write@{\bf COOP.Write}}
 \index{output!Information for COOP/COHP curves}
-Instructs the program to generate  {\tt SystemLabel}.WFSX (packed
+Instructs the program to generate  {\tt SystemLabel.fullBZ}.WFSX (packed
 wavefunction file) and  {\tt SystemLabel}.HSX (H, S and X\_~{ij} file),
 to be processed by {\tt Util/COOP/mprop} to generate COOP/COHP curves,
 (projected) densities of states, etc.
@@ -4668,8 +4806,48 @@ single precision.
 {\it Default value:} {\tt .false.}
 
 The user can narrow the energy-range used (and save some file space)
-by using the {\bf WFS.EnergyMin} and {\bf WFS.EnergyMax} options (both take an
-energy (with units) as extra argument).
+by using the {\bf WFS.Energy.Min} and {\bf WFS.Energy.Max} options (both take an
+energy (with units) as extra argument), and/or the {\bf WFS.Band.Min} and
+{\bf WFS.Band.Max} options. Care should be taken to make sure that the 
+actual values of the options make sense.
+
+Note that the band range options could also affect the output of
+wave-functions associated to bands (see section~\ref{sec:wf-bands}),
+and that the energy range options could also affect the output of
+user-selected wave-functions with the {\bf WaveFuncKpoints} block (see
+section~\ref{sec:wf-output-user}).
+
+\item[{\bf WFS.Energy.Min}] ({\it physical energy}):
+\index{WFS.Energy.Min@{\bf WFS.Energy.Min}}
+Specifies the lowest value of the energy (eigenvalue) of the wave-functions to be written to 
+the file {\tt SystemLabel.fullBZ}.WFSX for each k-point (all k-points
+in the BZ sampling are affected). 
+
+{\it Default value:} $-\infty$
+
+\item[{\bf WFS.Energy.Max}] ({\it physical energy}):
+\index{WFS.Energy.Max@{\bf WFS.Energy.Max}}
+Specifies the highest value of the energy (eigenvalue) of the wave-functions to be written to 
+the file {\tt SystemLabel.fullBZ}.WFSX for each k-point (all k-points
+in the BZ sampling are affected).
+
+{\it Default value:} $+\infty$
+
+\item[{\bf WFS.Band.Min}] ({\it integer}):
+\index{WFS.Band.Min@{\bf WFS.Band.Min}}
+Specifies the lowest band index of the wave-functions to be written to 
+the file (in this context) {\tt SystemLabel.fullBZ}.WFSX for each k-point (all k-points
+in the BZ sampling are affected). 
+
+{\it Default value:} {\tt 1}
+
+\item[{\bf WFS.Band.Max}] ({\it integer}):
+\index{WFS.Band.Max@{\bf WFS.Band.Max}}
+Specifies the highest band index of the wave-functions to be written to 
+the file (in this context) {\tt SystemLabel.fullBZ}.WFSX for each k-point (all k-points
+in the BZ sampling are affected).
+
+{\it Default value:} {\tt (the number of orbitals)}
 
 \end{description}
 
@@ -5160,6 +5338,47 @@ density is positive and the ionic charge density is negative.
 
 {\it Default value:} {\tt .false.}
 
+\item[{\bf SaveBaderCharge}] ({\it logical}):
+  \index{SaveBaderCharge@{\bf SaveBaderCharge}} \index{output!Bader
+    charge} Instructs the program to save the charge density for
+  further post-processing by a Bader-analysis program.  This ``Bader
+  charge'' is the sum of the electronic valence charge density and a
+  set of ``model core charges'' placed at the atomic sites. For a
+  given atom, the model core charge has the same shape as the ``local
+  pseudopotential charge'' used elsewhere by {\sc Siesta} (a
+  generalized Gaussian), but confined to a radius of 1.0 Bohr, and
+  integrating to the total core charge ($Z$-$Z_{\rm val}$). These core
+  charges are needed to provide local maxima for the charge density at
+  the atomic sites, which are not guaranteed in a pseudopotential
+  calculation. For hydrogen, an artificial core of 1 electron is
+  added, with a confinement radius of 0.4 Bohr.  The Bader charge is
+  projected on the grid points of the mesh used by DHSCF, and saved in
+  file {\tt SystemLabel}.BADER. This file can be post-processed by the
+  program {\tt Util/grid2cube} to convert it to the ``cube'' format,
+  accepted by several Bader-analysis programs (for example, see {\tt
+    http://theory.cm.utexas.edu/bader/}).  Due to the need to
+  represent a localized core charge, it is advisable to use a
+  moderately high MeshCutoff when invoking this option (300-500
+  Ry). The size of the ``basin of attraction'' around each atom in the
+  Bader analysis should be monitored to check that the model core
+  charge is contained in it.  
+
+  The suggested way to run the Bader analysis with the Univ. of Texas
+  code is to use both the RHO and BADER files (both in ``cube''
+  format), with the BADER file providing the ``reference'' and the RHO
+  file the actual significant valence charge data which is important
+  in bonding. (See the notes for pseudopotential codes in the above
+  web page.) For example, for the h2o-pop example:
+
+  {\tt bader  h2o-pop.RHO.cube -ref h2o-pop.BADER.cube}
+
+
+If netCDF support is compiled in, the file {\tt BaderCharge.grid.nc}
+is produced.
+
+{\it Default value:} {\tt .false.}
+
+
 
 \item[{\bf SaveInitialChargeDensity}] ({\it logical}):
   \index{SaveInitialChargeDensity@{\bf
@@ -5517,10 +5736,7 @@ charge-density and wavefunction contours.
 {\it Use:} File {\tt SystemLabel}.PLD is only written, not read, by siesta.
 
 Apart from the PLD file, you will need the Density-Matrix (DM) file
-and/or a wavefunction (WFS) file. For the latter, remember that Siesta
-now produces only a packed WFSX file. You will need to run the
-wfsx2wfs program to convert it to the WFS format. This will be fixed
-shortly.
+and/or a wavefunction (WFSX) file. 
 
 {\it Default value:} {\tt .false.}
 
@@ -6724,7 +6940,7 @@ means that the first and the second lines of the {\bf
   kgrid\_Monkhorst\_Pack} block must be the same.  In the case of {\bf
   tbtrans}, the k-point sampling has to be specified also using a {\bf
   kgrid\_Monkhorst\_Pack} block (or preferentially:
-{\bf TBT_kgrid\_Monkhorst\_Pack}), 
+{\bf TBT\_kgrid\_Monkhorst\_Pack}), 
 and can differ from the sampling that was used in the {\sc TranSiesta} 
 calculation. The convergence of the transmission function with respect
 to the k sampling can be slower than the one for the density matrix. 
@@ -7198,7 +7414,7 @@ The {\tt tbtrans} code can be found in the directory {\tt
   Util/TBTrans}. 
 
 A much optimized version of \texttt{tbtrans} is found in the 
-directory \textt{Util/TBTtrans\_rep} which is recommended to
+directory \texttt{Util/TBTtrans\_rep} which is recommended to
 be used. Only in this version can the repetition used.
 It has been completely rewritten to be as fast as possible as
 well as limiting the maintenance to a minimum. This version
@@ -7242,8 +7458,8 @@ specified by
     \itemsep 10pt
     \parsep 0pt
 
-\item [{\bf TBT_kgrid\_Monkhorst\_Pack}] \index{TBT_kgrid\_Monkhorst\_Pack@{\bf
-        TBT_kgrid\_Monkhorst\_Pack}}
+\item [{\bf TBT\_kgrid\_Monkhorst\_Pack}] \index{TBT\_kgrid\_Monkhorst\_Pack@{\bf
+        TBT\_kgrid\_Monkhorst\_Pack}}
 \index{kgrid\_Monkhorst\_Pack@{\bf kgrid\_Monkhorst\_Pack}}
 ({\it block}): Block equivalent
 to {\bf kgrid\_Monkhorst\_Pack}, however, this is used to have a separate
@@ -7301,7 +7517,7 @@ it suited for the integration in the bias window (the energy window
 defined by {\bf TS.TBT.Emin} and {\bf TS.TBT.Emax} being bigger than
 or equal to the applied bias).
 
-The k-point sampling is defined by the {\bf TBT_kgrid\_Monkhorst\_Pack}
+The k-point sampling is defined by the {\bf TBT\_kgrid\_Monkhorst\_Pack}
 block, and if that is non-existing it will use the
 {\bf kgrid\_Monkhorst\_Pack} block. The averaged (over k-points)
 transmission function is printed in the file {\tt <SystemLabel>.AVTRANS}.
@@ -7324,7 +7540,7 @@ created by Nick Papior Andersen):
  \item {\bf TS.Voltage}
  \item {\bf TS.ReUseGF} (NPA)
  \item {\bf TS.UseBulkInElectrodes} (NPA)
- \item {\bf TBT_kgrid\_Monkhorst\_Pack} (block) has precedence of 
+ \item {\bf TBT\_kgrid\_Monkhorst\_Pack} (block) has precedence of 
  {\bf kgrid\_Monkhorst\_Pack} (NPA)
  \item {\bf kgrid\_Monkhorst\_Pack} (block)
  \item {\bf TS.HSFileLeft}
