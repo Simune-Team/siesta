@@ -307,11 +307,11 @@ MODULE fdf
 !--------------------------------------------------------------- Input Variables
       character(len=*), intent(in) :: filein, fileout
 
-#ifndef DEBUG
+#ifndef FDF_DEBUG
 !--------------------------------------------------------------- Local Variables
       integer(ip)  :: debug_level
-      character(len=40) :: filedebug
 #endif
+      character(len=40) :: filedebug
 
 !----------------------------------------------------------------------- BEGIN
 !$OMP SINGLE
@@ -330,7 +330,7 @@ MODULE fdf
 
       call io_geterr(fdf_err)
 
-#ifdef DEBUG
+#ifdef FDF_DEBUG
       call fdf_setdebug(2,filedebug)
 #endif
 
@@ -340,7 +340,7 @@ MODULE fdf
 
       fdf_started = .TRUE.
 
-#ifndef DEBUG
+#ifndef FDF_DEBUG
       debug_level = fdf_integer('fdf-debug', 0)
       call fdf_setdebug(debug_level,filedebug)
 #endif

@@ -6,6 +6,18 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-10-25  10:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-422
+Fix handling of debugging preprocessor symbol in fdf
+
+The generic DEBUG symbol has been replaced by FDF_DEBUG.  
+
+The declaration of the recently added 'filedebug' local variable has
+been moved out of a preprocessor block.
+
+modified:
+  Src/fdf/fdf.F90
+
+-----------------------------------------------------------------------
 2012-10-24  14:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-421
 Add rp and rv options to XML pseudopotential handling
 
