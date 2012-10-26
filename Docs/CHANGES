@@ -4,6 +4,25 @@
 
 ** CHANGES ALONG siesta-3 branch
 ------------------------------------------------------------------------
+2012-10-26  14:45:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl19
+Bug fixes for array bounds 
+
+There were array bounds problems in:
+
+- The new code to print the initial spin polarization, for the case
+  of non-collinear spin.
+
+- The 'transition_rate' routine: ek and ek_local were wrongly
+  dimensioned to no_l, instead of no_u.
+
+(+ removed old debugging code in 'domain_decomposition')
+
+modified:
+  Src/domain_decom.F
+  Src/new_dm.F
+  Src/transition_rate.F
+
+------------------------------------------------------------------------
 2012-10-24  14:45:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl18
 Add rp and rv options to XML pseudopotential handling
 

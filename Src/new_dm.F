@@ -951,10 +951,10 @@ C Ferro or antiferro according to DM.InitSpinAF (inspn)
       use m_mpi_utils, only: Globalize_sum
       use sparse_matrices, only: S
 
-      real(dp) :: qspin(2)
+      real(dp) :: qspin(nspin)
       integer  :: io, j, ispin, ind
 #ifdef MPI
-      real(dp) :: qtmp(2)
+      real(dp) :: qtmp(nspin)
 #endif
 
 ! Print spin polarization
