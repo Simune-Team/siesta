@@ -31,6 +31,7 @@
       use m_gamma
       use m_hsx, only: write_hsx
       use sys, only: die, bye
+      use m_partial_charges, only: want_partial_charges
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
@@ -123,14 +124,17 @@
       ifa  = 0
       istr = 0
       ihmat = 1
-
+      if ((hirshpop .or. voropop)
+     $     .and. partial_charges_at_every_scf_step) then
+         want_partial_charges = .true.
+      endif
       call dhscf( nspin, no_s, iaorb, iphorb, no_l,
      .            no_u, na_u, na_s, isa, xa, indxua, 
      .            ntm, ifa, istr, ihmat, ' ', ' ', ' ', ' ', ' ', ' ',
      .            maxnh, numh, listhptr, listh, Dscf, Datm,
      .            maxnh, H, Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
      .            Exc, Dxc, dipol, stress, fal, stressl)
-
+      want_partial_charges = .false.
       call de_alloc( fal, 'fal', 'setup_hamiltonian' ) 
 
 !  It is wasteful to write over and over H and S, as there are

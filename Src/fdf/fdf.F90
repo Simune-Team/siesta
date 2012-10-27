@@ -305,20 +305,23 @@ MODULE fdf
       SUBROUTINE fdf_init(filein, fileout)
       implicit none
 !--------------------------------------------------------------- Input Variables
-      character(*) :: filein, fileout
+      character(len=*), intent(in) :: filein, fileout
 
-#ifndef DEBUG
+#ifndef FDF_DEBUG
 !--------------------------------------------------------------- Local Variables
       integer(ip)  :: debug_level
 #endif
+      character(len=40) :: filedebug
 
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------------------- BEGIN
 !$OMP SINGLE
       ! Prevent the user from opening two head files
       if (fdf_started) then 
         call die('FDF module: fdf_init', 'Head file already set',       &
                  THIS_FILE, __LINE__, fdf_err)
       endif
+
+      filedebug = trim(fileout) // ".debug"
 
 #ifdef _MPI_
       call fdf_mpi_init()
@@ -327,8 +330,8 @@ MODULE fdf
 
       call io_geterr(fdf_err)
 
-#ifdef DEBUG
-      call fdf_setdebug(2)
+#ifdef FDF_DEBUG
+      call fdf_setdebug(2,filedebug)
 #endif
 
       call fdf_output(fileout)
@@ -337,9 +340,9 @@ MODULE fdf
 
       fdf_started = .TRUE.
 
-#ifndef DEBUG
+#ifndef FDF_DEBUG
       debug_level = fdf_integer('fdf-debug', 0)
-      call fdf_setdebug(debug_level)
+      call fdf_setdebug(debug_level,filedebug)
 #endif
 
       if (fdf_debug2) call fdf_printfdf()
@@ -349,7 +352,7 @@ MODULE fdf
 #endif
 !$OMP END SINGLE
       RETURN
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------------------- END
       END SUBROUTINE fdf_init
 
 !
@@ -1397,12 +1400,11 @@ MODULE fdf
     SUBROUTINE fdf_output(fileout)
       implicit none
 !--------------------------------------------------------------- Input Variables
-      character(*)   :: fileout
+      character(len=*), intent(in)   :: fileout
 
-!--------------------------------------------------------------- Local Variables
+!------------------------------------------------------------- Local Variables
       character(256) :: fileouttmp
-
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------------------- BEGIN
       call io_assign(fdf_out)
 
 #ifdef _MPI_
@@ -2200,14 +2202,13 @@ MODULE fdf
 !   Backspace to the previous physical line in the block
 !   returning .TRUE. while more lines exist in the block bfdf.
 !
-    FUNCTION fdf_bbackspace(bfdf, pline)
+    FUNCTION fdf_bbackspace(bfdf)
       implicit none
 !--------------------------------------------------------------- Input Variables
       type(block_fdf)            :: bfdf
 
 !-------------------------------------------------------------- Output Variables
       logical                    :: fdf_bbackspace
-      type(parsed_line), pointer :: pline
 
 !--------------------------------------------------------------- Local Variables
       character(80)              :: strlabel
@@ -2227,32 +2228,34 @@ MODULE fdf
       fdf_bbackspace = .TRUE.
 
 !     If we are in the bottom of the block move to the content
+
       if (match(bfdf%mark%pline, 'el')) then
+
         strlabel = endblocks(bfdf%mark%pline)
 
         if (labeleq(strlabel, bfdf%label, fdf_log)) then
           bfdf%mark => bfdf%mark%prev
 
-          write(fdf_out,'(a,a)') '%endblock ', TRIM(bfdf%label)
+          write(fdf_out,'(1x,a)') "(Backspace to) " // "|" //  &
+                                TRIM(bfdf%mark%str) // "|"
         endif
-      endif
 
-      if (match(bfdf%mark%pline, 'bl')) then
+!     If we are at the head we cannot backspace
+
+      else if (match(bfdf%mark%pline, 'bl')) then
         strlabel = blocks(bfdf%mark%pline)
 
         if (labeleq(strlabel, bfdf%label, fdf_log)) then
           fdf_bbackspace = .FALSE.
-          NULLIFY(pline)
-
-          write(fdf_out,'(a,a)') '%block ', TRIM(bfdf%label)
+          write(fdf_out,'(1x,a)') "(Cannot backspace) " // "|" //  &
+                                TRIM(bfdf%mark%str) // "|"
         endif
-      endif
 
-      if (fdf_bbackspace) then
-        write(fdf_out,'(1x,a)') TRIM(bfdf%mark%str)
+      else
 
-        pline     => bfdf%mark%pline
         bfdf%mark => bfdf%mark%prev
+        write(fdf_out,'(1x,a)') "(Backspace to) " // "|" //  &
+                                TRIM(bfdf%mark%str) // "|"
       endif
 
       RETURN
@@ -2325,15 +2328,13 @@ MODULE fdf
 !   level  = 1: standard
 !   level >= 2: exhaustive
 !
-    SUBROUTINE fdf_setdebug(level)
+    SUBROUTINE fdf_setdebug(level,filedebug)
       implicit none
-!--------------------------------------------------------------- Input Variables
-      integer(ip)   :: level
+!------------------------------------------------------------- Input Variables
+      integer(ip)      :: level
+      character(len=*) :: filedebug
 
-!--------------------------------------------------------------- Local Variables
-      character(20) :: filedebug = 'fdf.debug'
-
-!------------------------------------------------------------------------- BEGIN
+!----------------------------------------------------------------------- BEGIN
       if (level .le. 0) then
         if (fdf_debug) then
           call io_close(fdf_log)
@@ -2398,7 +2399,7 @@ MODULE fdf
        call recreate_pline(pline,bufline)
        call fdf_addtoken(pline%line,pline)
     enddo
-   !    print *, "Processed: ", file_in%nlines, " lines."
+    ! print *, "Processed: ", file_in%nlines, " lines."
 
   end subroutine recreate_fdf_struct
 

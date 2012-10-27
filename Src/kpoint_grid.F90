@@ -28,22 +28,28 @@ MODULE Kpoint_grid
   logical                  :: user_requested_mp = .false.
   logical                  :: user_requested_cutoff = .false.
 
-  logical                  :: spiral = .false.
+  logical, save            :: time_reversal_symmetry = .true.
   logical                  :: firm_displ = .false.
 
   CONTAINS
 
   subroutine setup_Kpoint_grid( ucell )
   USE parallel, only  : Node
-  USE fdf, only       : fdf_defined
+  USE fdf, only       : fdf_defined, fdf_get
   USE m_find_kgrid, only : find_kgrid
 
     implicit none
     real(dp) :: ucell(3,3)
+    logical  :: spiral
 
     if (scf_kgrid_first_time) then
        nullify(kweight,kpoint)
        spiral = fdf_defined('SpinSpiral')
+          ! Allow the user to control the use of time-reversal-symmetry
+          ! By default, it is on, except for "spin-spiral" calculations
+       time_reversal_symmetry = fdf_get(             &
+            "TimeReversalSymmetryForKpoints",   &
+            (.not. spiral))
        call setup_scf_kscell(ucell, firm_displ)
 
        scf_kgrid_first_time = .false.
@@ -56,9 +62,9 @@ MODULE Kpoint_grid
           call setup_scf_kscell(ucell, firm_displ)
        endif
     endif
-
+    
     call find_kgrid(ucell,kscell,kdispl,firm_displ,     &
-                    (.not. spiral),                    &
+                    time_reversal_symmetry,             &
                     nkpnt,kpoint,kweight, eff_kgrid_cutoff)
 
     maxk = nkpnt

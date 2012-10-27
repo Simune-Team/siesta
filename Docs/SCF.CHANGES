@@ -1,5 +1,117 @@
 
 -----------------------------------------------------------------------
+2012-10-26  Alberto Garcia <albertog@icmab.es>   trunk-422-scf-35
+Sync to trunk-422
+
+Fix handling of debugging preprocessor symbol...
+[merge] Add rp and rv options to XML pseudopo...
+[merge] Enable MD continuation runs even if t...
+[merge] Add option to turn off time-reversal ...
+[merge] Use actual number of electrons in opt...
+[merge] Allow doping feature for all systems
+[merge] Fix spin loop in initialization in Ei...
+[merge] New options for wavefunction output. ...
+[merge] Hirshfeld and Voronoi charges. Bader ...
+Use a 'unique' string in fdf log files
+Nullify pointers in diagkp
+Fix bug in fdf_bbackspace. No .ion.nc files f...
+
+removed:
+  Src/fdf/tags
+added:
+  Src/m_partial_charges.F
+  Tests/Reference-xml/si_fatbands.xml
+  Tests/Reference/si_fatbands.out
+  Tests/h2o-pop/
+  Tests/h2o-pop/h2o-pop.fdf
+  Tests/h2o-pop/h2o-pop.pseudos
+  Tests/h2o-pop/makefile
+  Tests/md-anneal-cont/
+  Tests/md-anneal-cont/README
+  Tests/md-anneal-cont/makefile
+  Tests/md-anneal-cont/script.sh
+  Tests/md-cont/
+  Tests/md-cont-no-restart-file/
+  Tests/md-cont-no-restart-file/README
+  Tests/md-cont-no-restart-file/makefile
+  Tests/md-cont-no-restart-file/script.sh
+  Tests/md-cont/README
+  Tests/md-cont/makefile
+  Tests/md-cont/script.sh
+  Tests/md-single-run/
+  Tests/md-single-run/README
+  Tests/md-single-run/makefile
+  Tests/md-single-run/script.sh
+  Tests/si_fatbands/
+  Tests/si_fatbands/makefile
+  Tests/si_fatbands/si_fatbands.fdf
+  Tests/si_fatbands/si_fatbands.pseudos
+  Util/Bands/
+  Util/Bands/Makefile
+  Util/Bands/README
+  Util/Bands/eigfat2plot.f90
+  Util/Bands/f2kcli.F90
+  Util/Bands/fat.gplot
+  Util/Bands/m_getopts.f90
+  Util/Bands/new.gnubands.f90
+  Util/COOP/Tests/si_fatbands/
+  Util/COOP/Tests/si_fatbands/README
+  Util/COOP/Tests/si_fatbands/fatbands.mpr
+  Util/COOP/fat.f90
+  Util/Denchar/Examples/2dplot.py
+  Util/Denchar/Examples/FullExample.fdf
+  Util/Denchar/Examples/Si.psf
+  Util/Denchar/Examples/surf.py
+  Util/Denchar/Src/readwavesx.f
+renamed:
+  Util/gnubands.f => Util/Bands/gnubands.f
+modified:
+  Docs/CHANGES
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Pseudo/atom/pseudoXML.f
+  Src/Makefile
+  Src/bands.F
+  Src/basis_io.F
+  Src/basis_specs.f
+  Src/dhscf.F
+  Src/diagk.F
+  Src/diagkp.F
+  Src/dynamics.f
+  Src/fdf/fdf.F90
+  Src/find_kgrid.F
+  Src/grdsam.F
+  Src/kpoint_grid.F90
+  Src/kpoint_pdos.F90
+  Src/m_new_dm.F90
+  Src/meshsubs.F
+  Src/optical.F
+  Src/reinit.F
+  Src/setup_hamiltonian.F
+  Src/siesta_analysis.F
+  Src/siesta_options.F90
+  Src/struct_init.F
+  Src/writewave.F
+  Tests/Makefile
+  Tests/md_anneal/md_anneal.fdf
+  Util/COOP/Makefile
+  Util/COOP/README
+  Util/COOP/Tests/README
+  Util/COOP/dm_creator.F90
+  Util/COOP/main_vars.f90
+  Util/COOP/mprop.f90
+  Util/COOP/subs.f90
+  Util/Denchar/Docs/CHANGES
+  Util/Denchar/Docs/denchar.tex
+  Util/Denchar/Src/Makefile
+  Util/Denchar/Src/denchar.f
+  Util/Eig2DOS/Eig2DOS.f90
+  Util/Grid/grid2cube.f
+  Util/README
+  Util/pseudo-xml/xml2psf_helper.f
+
+
+-----------------------------------------------------------------------
 2012-06-18  Alberto Garcia <albertog@icmab.es>   trunk-410-scf-34
 Sync to trunk-410
 

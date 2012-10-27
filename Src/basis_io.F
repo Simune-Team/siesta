@@ -490,14 +490,22 @@ c
         spp => species(is)
         if (spp%read_from_file) cycle   !! Do not dump
 
+        nkbs =  spp%n_pjnl
+        norbs = spp%n_orbnl
+
         write(filename,'(a,a)') trim(spp%label), ".ion.nc"
+
+        if (norbs == 0 .or. nkbs == 0) then
+           write(6,'(2a)') 'Skipping creation of NetCDF file ',
+     $                  trim(filename) // " (ghost atom)"
+           CYCLE
+        endif
+           
         write(6,'(2a)') 'Dumping basis to NetCDF file ',
      $                  trim(filename)
 
         iret = nf90_create(trim(filename),NF90_CLOBBER,ncid)
 
-        nkbs =  spp%n_pjnl
-        norbs = spp%n_orbnl
 
         iret = nf90_def_dim(ncid,'norbs',norbs,norbs_id)
         call check(iret)
