@@ -1,4 +1,8 @@
 ----------------------------------------------------
+Oct 29, 2012 -- Nick P. Andersen     trunk-422--ts-npa-17
+Merged with trunk
+
+----------------------------------------------------
 Oct 29, 2012 -- Nick P. Andersen     trunk-421--ts-npa-17
 Bugfix in m_ts_electrode and added trim for option reading, removed m_os
 
