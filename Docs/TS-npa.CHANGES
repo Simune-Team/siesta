@@ -1,4 +1,23 @@
 ----------------------------------------------------
+Oct 29, 2012 -- Nick P. Andersen     trunk-421--ts-npa-17
+Bugfix in m_ts_electrode and added trim for option reading, removed m_os
+
+* Removed m_os as it is not stable and should be directly merged with trunk
+* Added Alberto Garcia's bugfixes in the following routines:
+  - m_ts_electrode
+  - m_ts_in_siesta
+* Added a trim to an option printing to not have too much white space
+
+removed:
+  Src/m_os.f90
+modified:
+  Src/Makefile
+  Src/m_ts_electrode.F90
+  Src/m_ts_in_siesta.F90
+  Src/m_ts_options.F90
+  Util/TBTrans_rep/Makefile
+
+----------------------------------------------------
 Oct 24, 2012 -- Nick P. Andersen     trunk-421--ts-npa-16
 Merged with trunk
 

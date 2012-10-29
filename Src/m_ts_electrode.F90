@@ -1187,7 +1187,7 @@ contains
        if ( eXa ) then
 ! Initialize error parameter
           write(*,'(a)') "Coordinates from the electrode repeated out to an FDF file"
-          write(*,'(t3,3a20') &
+          write(*,'(t3,3a20)') &
                "X (Ang)","Y (Ang)","Z (Ang)"
           iaa = sysElec
           do ia = elecElec , elecElec + NUsedAtoms - 1

@@ -263,7 +263,7 @@ end if
  write(*,6) 'ts_read_options: Contour E Min.               =', CCEmin,' Ry'
  write(*,7) 'ts_read_options: GFEta                        =', GFEta,' Ry'
  write(*,6) 'ts_read_options: Electronic Temperature       =', kT, ' Ry'
- write(*,10)'ts_read_options: Bias Contour Method          =', s_cmethod
+ write(*,10)'ts_read_options: Bias Contour Method          =', trim(s_cmethod)
 if ( ChargeCorr == 0 ) then
  write(*,'(a)')'ts_read_options: Will not correct charge fluctuations'
 else if ( ChargeCorr == 1 ) then ! Correct in buffer

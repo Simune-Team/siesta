@@ -626,14 +626,17 @@
 !     As the updated region must be symmetric, we can easily
 !     count the "true" number of updated orbitals
 !
-         io = count(listud)
 #ifdef MPI
+         ind = maxnhg
          io = count(listudg)
+#else
+         ind = maxng
+         io = count(listud)
 #endif
          if ( IOnode ) then
             write(*,'(/,2(a,i8))') 
      &           "transiesta: Total elements / Updated elements : ",
-     &           maxnhg," / ",io
+     &           ind," / ",io
          end if
 
 ! -------------------------------------------------------

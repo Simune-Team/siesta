@@ -50,7 +50,7 @@ SIESTA_OBJS= precision.o sys.o m_io.o alloc.o  memoryinfo.o memory.o pxf.o \
              m_fdf_global.o paste.o reclat.o idiag.o minvec.o \
              parallel.o io.o files.o cellsubs.o sorting.o m_hs_matrix.o \
 	     kpoint_convert.o timestamp.o m_wallclock.o cdiag.o m_spin.o \
-	     zheevds.o debugmpi.o m_os.o \
+	     zheevds.o debugmpi.o \
 	     m_ts_contour.o m_ts_gf.o m_ts_scattering.o \
 	     m_ts_aux_rout.o m_ts_io.o m_ts_electrode.o m_ts_cctype.o
 
