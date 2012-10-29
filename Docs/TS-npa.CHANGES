@@ -1,4 +1,34 @@
 ----------------------------------------------------
+Oct 29, 2012 -- Nick P. Andersen     trunk-422--ts-npa-18
+Added test for the unit-cell repetition
+
+* Added a test for the repetition, it will automatically link to the correct
+  TBTrans utility
+  - I have added a reference as well as corrected the scripts to correctly run
+  - The transmission should be the same as the au_111_capacitor as it is the
+    same system.
+* Bugfix for the sh script for Transiesta.
+  - sh does not contain pushd or popd commands, they are intrinsically
+    linked to bash. Hence we should use bash instead.
+
+added:
+  Tests/Reference/TranSiesta-TBTrans/ts_au_repetition/
+  Tests/Reference/TranSiesta-TBTrans/ts_au_repetition/au_111_capacitor.AVTRANS
+  Tests/Reference/TranSiesta-TBTrans/ts_au_repetition/au_111_capacitor.TEIG
+  Tests/Reference/TranSiesta-TBTrans/ts_au_repetition/au_111_capacitor.TRANS
+  Tests/Reference/TranSiesta-TBTrans/ts_au_repetition/au_111_capacitor.out
+  Tests/Reference/TranSiesta-TBTrans/ts_au_repetition/elec_au_111_abc.out
+  Tests/Reference/TranSiesta-TBTrans/ts_au_repetition/tbt_au_111_capacitor.out
+  Tests/TranSiesta-TBTrans/ts_au_repetition/
+  Tests/TranSiesta-TBTrans/ts_au_repetition/Au.psf
+  Tests/TranSiesta-TBTrans/ts_au_repetition/au_111_capacitor.fdf
+  Tests/TranSiesta-TBTrans/ts_au_repetition/elec_au_111_abc.fdf
+  Tests/TranSiesta-TBTrans/ts_au_repetition/makefile
+  Tests/TranSiesta-TBTrans/ts_au_repetition/script.sh
+modified:
+  Tests/script_ts.mk
+
+----------------------------------------------------
 Oct 29, 2012 -- Nick P. Andersen     trunk-422--ts-npa-17
 Merged with trunk
 
