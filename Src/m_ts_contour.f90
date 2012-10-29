@@ -61,7 +61,7 @@ contains
 
 ! Routine for creating the contour
   subroutine setup_contour(IsVolt,Cmethod,EfL,Ef0,EfR, &
-       NCircle,NLine,Npol,Nvolt,Ntransport, &
+       NCircle,NLine,Npol,Nvolt,Emin,Emax,Ntransport, &
        CCEmin,GFEta,kT)
     
     use precision, only : dp
@@ -77,7 +77,10 @@ contains
     real(dp), intent(in) :: Ef0 ! equilibrium Fermi shift
     real(dp), intent(in) :: EfR ! Right Fermi shift
 ! The different contour path parts
-    integer, intent(in)  :: Ncircle, Nline, Npol,Nvolt, Ntransport
+    integer, intent(in)  :: Ncircle, Nline, Npol,Nvolt
+    real(dp), intent(in) :: Emin ! Minimum transport energy
+    real(dp), intent(in) :: Emax ! Maximum energy
+    integer, intent(in)  :: Ntransport
     real(dp), intent(in) :: CCEmin, GFEta, kT
 
 ! **********************
@@ -174,8 +177,8 @@ contains
     
 ! Finally we add the transport energy points
     if ( Ntransport > 0 ) then
-       c => contour(2*NE_equilibrium+NVolt+1:NEn) 
-       call transmission(EfL,EfR, &
+       c => contour(NEn-Ntransport+1:NEn) 
+       call transmission(Emin,Emax, &
             GFeta,Ntransport, c)
     end if
 

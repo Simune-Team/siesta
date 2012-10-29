@@ -1,4 +1,23 @@
 ----------------------------------------------------
+Oct 29, 2012 -- Nick P. Andersen     trunk-422--ts-npa-19
+Bugfix in reading the TSHS file when Gamma /= GammaOnFile, fixed transport E's
+
+* Fixed m_ts_io to read in the correct format when the file was a Gamma 
+  calculation.
+* Fixed the energy points creation when using transport points
+  to be formatted correctly.
+* Added print out of the energies in TBTrans
+
+modified:
+  Src/m_ts_contour.f90
+  Src/m_ts_io.F90
+  Src/m_ts_options.F90
+  Src/ts_init.F90
+  Util/TBTrans_rep/m_tbt_options.F90
+  Util/TBTrans_rep/m_tbt_read_tshs.F90
+  Util/TBTrans_rep/tbt_init.F90
+
+----------------------------------------------------
 Oct 29, 2012 -- Nick P. Andersen     trunk-422--ts-npa-18
 Added test for the unit-cell repetition
 

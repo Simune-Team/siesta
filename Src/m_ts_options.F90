@@ -245,7 +245,7 @@ if (IOnode) then
  write(*,1) 'ts_read_options: Save S and quit (onlyS)      =', onlyS
 end if
 if (ionode .and. TSmode ) then
-if ( isVolt ) then
+if ( IsVolt ) then
  write(*,6) 'ts_read_options: TranSIESTA Voltage           =', VoltFDF/eV,' Volts'
 else
  write(*,'(a)')'ts_read_options: TranSIESTA no voltage applied'

@@ -68,7 +68,8 @@ contains
        
        ! Create the contour lines
        call setup_contour(IsVolt,Cmethod,VoltL,0.0d0,VoltR, &
-            NCircle,Nline,Npol,NVolt,Ntransport, &
+            NCircle,Nline,Npol,NVolt, &
+            0.d0, 0.d0, Ntransport, & ! Transport emin and emax
             CCEmin, GFEta, kt)
 
        ! Print out the contour path

@@ -95,7 +95,8 @@ subroutine tbt_init()
 ! transport calculation... It is not used.
 ! Create the contour lines
   call setup_contour(IsVolt,0,VoltL,0.0d0,VoltR, &
-       0,0,0,0,NPoints, &
+       0,0,0,0, &
+       Emin, Emax, NPoints, &
        CCEmin, GFEta, kt)
 
 ! Print out the contour path

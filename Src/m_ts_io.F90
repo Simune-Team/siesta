@@ -276,7 +276,6 @@ contains
           read(iu) na_u, no_u, no_s, Enspin, maxnh
 
 ! Check dimensions
-
           if (Enspin  .ne. nspin) then
              if (node == 0) then
                 write(6,"(a,i10,a,i10)") "nspin mismatch: In "   &
@@ -291,12 +290,12 @@ contains
           nullify(xa,isa)
           allocate(xa(3,na_u))
           allocate(isa(na_u)) 
-          CALL memory('A','D',3*na_u,'iohs')
-          CALL memory('A','I',na_u,'iohs')
+          call memory('A','D',3*na_u,'iohs')
+          call memory('A','I',na_u,'iohs')
 ! Read Geometry information
           read(iu) xa
-          read(iu) isa   
-          read(iu) ucell  
+          read(iu) isa
+          read(iu) ucell
 
 ! Read k-point sampling information
           read(iu) gammaonfile   
@@ -347,17 +346,16 @@ contains
 ! Read sparse listings
           nullify(lasto)
           allocate(lasto(0:na_u))
-          CALL memory('A','I',1+na_u,'iohs')
-          READ(iu) lasto
+          call memory('A','I',1+na_u,'iohs')
+          read(iu) lasto(0:na_u)
 
 
-          if (.not.gamma) then
+          if (.not.gammaonfile) then
 ! Allocate arrays that are going to be read now
              nullify(indxuo)
              allocate(indxuo(1:no_s))
-             CALL memory('A','I',no_s,'iohs')
-             READ(iu) (indxuo(ih),ih=1,no_s)
-
+             call memory('A','I',no_s,'iohs')
+             read(iu) (indxuo(ih),ih=1,no_s)
           endif
 
 ! Allocate local array for global numh
@@ -369,7 +367,6 @@ contains
           read(iu) numh(1:no_u)
 
 
-
 ! Read Electronic Structure Information
           read(iu) qtot,temp
           read(iu) ef
@@ -377,7 +374,7 @@ contains
 
 ! Create listhptr
           nullify(listhptr)
-          CALL memory('A','I',no_u,'iohs')
+          call memory('A','I',no_u,'iohs')
           allocate(listhptr(no_u))
           listhptr(1) = 0
 ! TSS nuo->no_u
@@ -390,8 +387,7 @@ contains
 ! Allocate lish
           nullify(listh)
           allocate(listh(maxnh))
-          CALL memory('A','I',maxnh,'iohs')
-
+          call memory('A','I',maxnh,'iohs')
           do ih = 1,no_u
              read(iu) listh(listhptr(ih)+1:listhptr(ih)+numh(ih))
           enddo
@@ -400,7 +396,7 @@ contains
 ! Allocate S
           nullify(S)
           allocate(S(maxnh))
-          CALL memory('A','D',maxnh,'iohs')
+          call memory('A','D',maxnh,'iohs')
           do ih = 1,no_u
              read(iu) S(listhptr(ih)+1:listhptr(ih)+numh(ih))
           enddo
@@ -409,19 +405,19 @@ contains
 ! Allocate H
           nullify(H)
           allocate(H(maxnh,Enspin))
-          CALL memory('A','D',maxnh*Enspin,'iohs')
+          call memory('A','D',maxnh*Enspin,'iohs')
           do is = 1,Enspin
              do ih = 1,no_u
                 read(iu) H(listhptr(ih)+1:listhptr(ih)+numh(ih),is)
              enddo
           enddo
 
-          if (.not.gamma) then
+          if (.not.gammaonfile) then
 ! Read interorbital vectors for K point phasing
 ! Allocate xij
              nullify(xij)
              allocate(xij(3,maxnh))
-             CALL memory('A','D',3*maxnh,'iohs')
+             call memory('A','D',3*maxnh,'iohs')
              do ih = 1,no_u
                 read(iu) (xij(k,listhptr(ih)+1:listhptr(ih)+numh(ih)),k=1,3)
              enddo
@@ -452,7 +448,7 @@ contains
        if (Node.eq.0) then
 ! Open file
           call io_assign( iu )
-          open( iu, file=fname, form='unformatted', status='unknown' )      
+          open( iu, file=fname, form='unformatted', status='unknown' )
 ! Write Dimensions Information
           write(iu) na_u, no_u, no_s, Enspin, maxnhtot
 

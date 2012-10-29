@@ -25,29 +25,6 @@ contains
 ! **************************
 ! * OUTPUT variables       *
 ! **************************
-!    integer  :: no_s            ! # orbitals in supercell cell local to this processor
-!    integer  :: no_u            ! # orbitals in unit cell global
-!    integer  :: nspin           ! spins in the system
-!    real(dp) :: ucell(3,3)      ! The unit cell that the transformation is happening in
-!    integer  :: na_u            ! The number of atoms in the unit cell
-!    real(dp), pointer :: xa(:,:)      ! The atomic coordinates in the unit cell
-!    integer, pointer  :: lasto(:)     ! The last orbital of each atom referenced in the unit cell
-!    integer  :: maxnh           ! Maximum number of orbitals interacting
-!    integer, pointer  :: numh(:)      ! # of nonzero elements of each row of hamiltonian matrix
-!    integer, pointer  :: listhptr(:)  ! Pointer to each row (-1) of the hamiltonian matrix
-!    integer, pointer  :: listh(:)     ! Nonzero hamiltonian-matrix element column
-!                                                    indexes for each matrix row
-!    real(dp), pointer :: xij(:,:)     ! Vectors between orbital centers (sparse)
-!                                                    (not only gamma point)
-!    integer, pointer  :: indxuo(:)    ! Index of equivalent orbital in unit cell
-!                                                    Unit cell orbitals must be the first in
-!                                                    orbital lists, i.e. indxuo.le.no_l, with
-!                                                    no_l the number of orbitals in unit cell
-!    real(dp), pointer :: H(:,:)        ! Hamiltonian in sparse form
-!    real(dp), pointer :: S(:)        ! Overlap in sparse form
-!    logical  :: Gamma                ! Gamma point calculation (i.e. one k-point)
-!    real(dp) :: Ef                   ! Fermi energy
-
   integer, intent(out)  :: no_s            ! # orbitals in supercell cell local to this processor
   integer, intent(out)  :: no_u            ! # orbitals in unit cell global
   integer, intent(out)  :: nspin           ! spins in the system

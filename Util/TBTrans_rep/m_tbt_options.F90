@@ -219,6 +219,8 @@ CONTAINS
 ! Output Used Options in OUT file ....
     if (ionode) then
        write(*,6) 'TBTrans Voltage                               =', voltfdf/eV,' V'
+       write(*,6) 'TBTrans Emin                                  =', Emin/eV,' eV'
+       write(*,6) 'TBTrans Emax                                  =', Emax/eV,' eV'
        write(*,1) 'Bulk Values in Electrodes                     =', UseBulk
        write(*,5) 'Buffer Atoms in Left electrode                =', NBufAtL
        write(*,5) 'Buffer Atoms in Right electrode               =', NBufAtR
