@@ -41,6 +41,13 @@
       integer, parameter :: on_p = sp
 #endif
 
+! For future use in trying to limit the memory usage by
+! reducing precision in Transiesta
+! Preprocessor flag could be: 
+! dp = TRANSIESTA_DP
+! sp = TRANSIESTA_SP
+      integer, parameter :: ts_p = dp
+
       public
 
       end module precision

@@ -1,12 +1,13 @@
-MODULE m_ts_kpoints
+module m_ts_kpoints
 !
 ! Routines that are related to TS kpoint sampling
 !
 !==============================================================================
 ! CONTAINS:
 !          1) setup_ts_scf_kscell
-!          2) ts_write_k_points
-
+!          2) setup_ts_kpoint_grid
+!          3) ts_write_k_points
+!          4) ts_iokp
 
   USE precision, only : dp
  
@@ -30,7 +31,7 @@ MODULE m_ts_kpoints
 ! ts_kdispl) here.
 
 !==============================================================================
-! DETAILS: To obatin the kpoints for the GFs calculations it uses the same 
+! DETAILS: To obtain the kpoints for the GFs calculations it uses the same 
 ! scheme as for SIESTA but puts ts_kscell(3,3)=1 and ts_kdispl(3)=0.0
 !
 !==============================================================================
@@ -56,9 +57,10 @@ MODULE m_ts_kpoints
   logical, public, save     :: ts_spiral = .false.
   logical, public, save     :: ts_firm_displ = .false.
 
-  public :: setup_ts_scf_kscell, ts_write_k_points
+  public :: setup_ts_scf_kscell, setup_ts_kpoint_grid
+  public :: ts_write_k_points
 
-  CONTAINS
+contains
 
 
 !-----------------------------------------------------------------------
@@ -84,7 +86,6 @@ MODULE m_ts_kpoints
 
 !  Modules
 
-      use precision,  only : dp
       use parallel,   only : Node
       use m_minvec,   only : minvec
       use fdf
@@ -231,35 +232,85 @@ MODULE m_ts_kpoints
       ts_kscell(3,3)   = 1
       ts_kdispl(3)     = 0.0_dp
 #endif /* CHECK_THIS */
-      end subroutine setup_ts_scf_kscell
+    end subroutine setup_ts_scf_kscell
+
+    subroutine setup_ts_kpoint_grid( ucell )
+
+! SIESTA Modules
+      USE fdf, only       : fdf_defined
+      USE m_find_kgrid, only : find_kgrid
+      USE parallel, only  : IONode
+      USE precision, only : dp       
+#ifdef MPI
+      USE mpi_siesta, only : MPI_Bcast, MPI_logical, MPI_Comm_World
+#endif
+
+! Local Variables
+      real(dp) :: ucell(3,3)
+
+#ifdef MPI
+      integer :: MPIerror
+#endif
+
+      if (ts_scf_kgrid_first_time) then
+         nullify(ts_kweight,ts_kpoint)
+         if (IONode) then
+            ts_spiral = fdf_defined('SpinSpiral')
+         endif
+#ifdef MPI
+         call MPI_Bcast(ts_spiral,1,MPI_logical,0,MPI_Comm_World,MPIerror)
+#endif
+
+         call setup_ts_scf_kscell(ucell, ts_firm_displ)
+
+         ts_scf_kgrid_first_time = .false.
+
+      else
+         if ( ts_user_requested_mp    ) then
+! no need to set up the kscell again
+         else
+! This was wrong in the old code
+            call setup_ts_scf_kscell(ucell, ts_firm_displ)
+         endif
+      endif
+
+      call find_kgrid(ucell,ts_kscell,ts_kdispl,ts_firm_displ, &
+           (.not. ts_spiral), &
+           ts_nkpnt,ts_kpoint,ts_kweight, ts_eff_kgrid_cutoff)
+
+      ts_maxk = ts_nkpnt
+      ts_gamma_scf =  (ts_nkpnt == 1 .and. &
+           dot_product(ts_kpoint(:,1),ts_kpoint(:,1)) < 1.0e-20_dp)
+
+      if (IONode) call ts_write_k_points()
+
+    end subroutine setup_ts_kpoint_grid
 
     subroutine ts_write_k_points()
       USE siesta_options, only: writek
-      USE units, only: Ang
       USE siesta_cml
 
       implicit none
 
       integer  :: ik, ix, i
-      external :: iokp
 
       if ( writek ) then
-         write(6,'(/,a)') 'transiesta: ts_k-point coordinates (Bohr**-1) and weights:'
-         write(6,'(a,i4,3f12.6,3x,f12.6)')                          &
+         write(*,'(/,a)') 'transiesta: ts_k-point coordinates (Bohr**-1) and weights:'
+         write(*,'(a,i4,3f12.6,3x,f12.6)')                          &
               ('transiesta: ', ik, (ts_kpoint(ix,ik),ix=1,3), ts_kweight(ik), &
               ik=1,ts_nkpnt)
-      else
-         call iokp( ts_nkpnt, ts_kpoint, ts_kweight )
       endif
-      write(6,'(/a,i6)')  'transiesta: ts_k-grid: Number of Transport k-points =', ts_nkpnt
-      write(6,'(a)') 'transiesta: ts_k-grid: Supercell and displacements'
-      write(6,'(a,3i4,3x,f8.3)') 'transiesta: ts_k-grid: ',        &
+      ! Always write the TranSIESTA k-points
+      call ts_iokp( ts_nkpnt, ts_kpoint, ts_kweight )
+
+      write(*,'(/,a,i6)')  'transiesta: ts_k-grid: Number of Transport k-points =', ts_nkpnt
+      write(*,'(a)') 'transiesta: ts_k-grid: Supercell and displacements'
+      write(*,'(a,3i4,3x,f8.3)') 'transiesta: ts_k-grid: ',        &
            (ts_kscell(i,1),i=1,3), ts_kdispl(1)
-      write(6,'(a,3i4,3x,f8.3)') 'transiesta: ts_k-grid: ',        &
+      write(*,'(a,3i4,3x,f8.3)') 'transiesta: ts_k-grid: ',        &
            (ts_kscell(i,2),i=1,3), ts_kdispl(2)
-!      write(6,'(a,3i4,3x,f8.3)') 'transiesta: ts_k-grid: ',        &
+!      write(*,'(a,3i4,3x,f8.3)') 'transiesta: ts_k-grid: ',        &
 !           (ts_kscell(i,3),i=1,3), ts_kdispl(3)
-      write(6,*)
       if (cml_p) then
           call cmlStartPropertyList(xf=mainXML, title="Transiesta k-points", &
                  dictRef="siesta:ts_kpoints")
@@ -275,5 +326,46 @@ MODULE m_ts_kpoints
                  units="siestaUnits:Ang")
       endif
     end subroutine ts_write_k_points
+    
+    subroutine ts_iokp( nk, points, weight )
+! *******************************************************************
+! Saves TranSIESTA k-points (only writing) Bohr^-1
+! Emilio Artacho, Feb. 1999
+! Modified by Nick Papior Andersen to not overwrite the SIESTA k-points
+! ********** INPUT **************************************************
+! integer nk           : Number of TS k-points
+! real*8  points(3,nk) : TS k-point coordinates
+! real*8  weight(3,nk) : TS k-point weight
+! *******************************************************************
+    use fdf
+    use files,     only : slabel, label_length
 
-END MODULE m_ts_kpoints
+    character(len=label_length+5) :: paste
+    integer                       :: nk
+    real(dp)                      :: points(3,*), weight(*)
+    external          io_assign, io_close, paste
+
+! Internal 
+    character(len=label_length+5), save :: fname
+    integer                             :: ik, iu, ix
+    logical,                       save :: frstme = .true.
+! -------------------------------------------------------------------
+
+    if (frstme) then
+       fname = paste( slabel, '.TSKP' )
+       frstme = .false.
+    endif
+
+    call io_assign( iu )
+    open( iu, file=fname, form='formatted', status='unknown' )      
+
+    write(iu,'(i6)') nk
+    write(iu,'(i6,3f12.6,3x,f12.6)') &
+         (ik, (points(ix,ik),ix=1,3), weight(ik), ik=1,nk)
+
+    call io_close( iu )
+
+  end subroutine ts_iokp
+
+
+end module m_ts_kpoints

@@ -40,7 +40,7 @@ MOD_TOBJS=  m_tbt_options.o m_tbt_gf.o m_tbt_kpts.o hamil2.o tsread2.o
 SIESTA_OBJS= precision.o sys.o m_io.o alloc.o  memoryinfo.o memory.o pxf.o \
              moreParallelSubs.o m_walltime.o m_timer.o timer.o m_mpi_utils.o \
              m_fdf_global.o paste.o \
-             parallel.o  io.o files.o  zheevds.o
+             parallel.o  io.o files.o  zheevds.o debugmpi.o
 
 TBTOBJS= $(SIESTA_OBJS) $(MOD_TOBJS) $(SYSOBJ) $(EXTRA) \
          tbtrans.o transmission.o   \
@@ -107,7 +107,7 @@ tbtrans.o	: hamil2.o
 green4.o        : greensub.o
 m_tbt_gf.o       : tsread2.o
 # DO NOT DELETE THIS LINE - used by make depend
-alloc.o: parallel.o precision.o m_io.o sys.o
+alloc.o: debugmpi.o parallel.o precision.o m_io.o sys.o
 arw.o: parallel.o sys.o
 atm_transfer.o: atm_types.o atmparams.o old_atmfuncs.o periodic_table.o
 atm_transfer.o: radial.o sys.o
@@ -164,6 +164,7 @@ conjgr_old.o: precision.o
 coor.o: alloc.o m_mpi_utils.o parallel.o precision.o siesta_geom.o sys.o
 coor.o: zmatrix.o
 coxmol.o: files.o periodic_table.o precision.o
+debugmpi.o: parallel.o
 denmat.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 denmatlomem.o: alloc.o globalise.o onmod.o precision.o
 densematrix.o: precision.o

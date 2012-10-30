@@ -101,6 +101,7 @@ MODULE siesta_options
   integer :: nkick         ! Period between 'kick' steps in SCF iteration
   integer :: nmove         ! Number of geometry iterations
   integer :: nscf          ! Number of SCF iteration steps
+  integer :: min_nscf      ! Minimum number of SCF iteration steps
   integer :: pmax          
   integer :: neigwanted    ! Wanted number of eigenstates (per k point)
   integer :: level          ! Option for allocation report level of detail
@@ -444,10 +445,12 @@ MODULE siesta_options
     endif
 
     ! SCF Loop parameters ...
-    !     Maximum number of SCF iterations
-    nscf = fdf_get('MaxSCFIterations',nscf_default)
+    !     Minimum/Maximum number of SCF iterations
+    min_nscf = fdf_get('MinSCFIterations',0)
+    nscf     = fdf_get('MaxSCFIterations',nscf_default)
     SCFMustConverge = fdf_get('SCFMustConverge', .false.)
     if (ionode) then
+      write(6,4) 'redata: Min. number of SCF Iter          = ',min_nscf
       write(6,4) 'redata: Max. number of SCF Iter          = ',nscf
       if (SCFMustConverge) then
         write(6,4) 'redata: SCF convergence failure will abort job'
@@ -457,6 +460,9 @@ MODULE siesta_options
     if (cml_p) then
       call cmlAddParameter( xf=mainXML, name='MaxSCFIterations',  &
                             value=nscf, dictRef='siesta:maxscf',  &
+                            units="cmlUnits:countable")
+      call cmlAddParameter( xf=mainXML, name='MinSCFIterations',  &
+                            value=min_nscf, dictRef='siesta:minscf',  &
                             units="cmlUnits:countable")
     endif
 

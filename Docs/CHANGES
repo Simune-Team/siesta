@@ -6,6 +6,225 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-10-30   9:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-423
+Transiesta and TBTrans enhancements by Nick P. Andersen
+
+A number of enhancements to the TranSiesta and TBTrans subsystems have
+been added by Nick Papior Andersen, of the Technical Univ. of Denkmark.
+
+A full list of the changes follows. Users are advised to read the file
+Docs/TranSiestaUpdate.pdf, as well as the manual, to get a primer on
+the new features and things to watch out for and explore in the new
+version.
+
+* Added the repetition of the electrode unit cells to limit the Transiesta
+  calculation time.
+  - Through the options:
+    + TS.ReplicateA1Left
+    + TS.ReplicateA2Left
+    + TS.ReplicateA1Right
+    + TS.ReplicateA2Right
+  - We take advantage of Bloch's theorem to accomplish this.
+
+* All contour related variables have been assigned a contour type which 
+  gathers the information about the energy points. This will provide a cleaner
+  interface for those wishing to extend the contour method.
+
+* Changed the contour energy points to be shown in eV, rather than Ry
+  - I.e. they can not be compared in the out-file directly
+
+* Simplified the contour distribution so as to not have any parallel arrays
+
+* The surface Green's function files are now created during option reading
+  This accomodates two important things:
+  1. The GF files are now entirely moved out of the transiesta routine for
+     clarity,
+  2. Any wrong setup of the system will be caught immediately instead of after
+     the diagon run.
+
+* The GF files have been renamed using <systemlabel>.TSGF[L|R]
+
+* Added proper checks of the atomic coordinates when using the electrodes,
+  will now exit if not correctly setup. (checks down to 1e-4)
+
+* Added checks of the unit cell setup, so that in transiesta runs the
+  unitcell must have a distinct z-direction 
+
+* Added checks of the electrodes to show a warning if the electrodes extend
+  into a third neighbouring cell in the transport direction.
+
+* Clarified the fermi level in the electrodes, it was in fact the electrode
+  fermi level shift
+
+* Added a lot of systematic output for clarification about the Transiesta
+  parsing of the system. It will provide how the systems are setup in buffer
+  regions, electrode region and scattering region.
+
+* Informational output regarding the charge re-distribution during the SCF 
+  cycles.
+
+* Fully parallelized the Greens function creation.
+
+* Bugfix in the Transiesta package regarding the DM.UseSaveDM T
+
+* Added a general operator which yields the parallelised number of iterations
+  of an arbitrary loop (.PARCOUNT.), see parallel.F90
+
+* Memory-optimized several routines in the transiesta package
+
+* GFGammaGF has recieved an overhaul which speeds it up by a factor of two 
+  and limits memory substantially!
+
+* Renamed <systemlabel>.CONTOUR to <systemlabel>.TSCC
+
+* Added a ts_init routine for gathering of the required initializations
+
+* Added notices to users about the use of non-optimal energy points in 
+  transiesta runs.
+
+* In case of electrodes not matching with the Transiesta setup it will print
+  out a high-precision block which can be used for the FDF block.
+
+* Added 'chargecorrection' feature, maybe not exact enough to be used,
+  however, it can be used to force the charges to be "correct"
+
+* Changed the Transiesta k-points to be written to file <systemlabel>.TSKP
+  instead of overwriting the <systemlabel>.KP
+
+* Cleaned up a lot of code in all transiesta modules. 
+  One can still clean up some more code, however, we have made good ground.
+
+* Added a precision for transiesta in precision.F90
+  - Currently not used, however, could be the future of limiting Transiesta memory  
+
+* Added -DTRANSIESTA_DEBUG statements to also debug Transiesta
+
+* Added a new TBTrans utility which can be found in Util/TBTtrans_rep
+  - Fully parallel across energy points and forward parallel across k-points
+  - This is tightly integrated with transiesta
+  - Has all the features in Transiesta (parallel GF creation, repetition, etc.)
+  - Has reenabled the calculation of Atomic PDOS
+    + Needs to be checked
+  - Has reenabled the calculation of COOP
+    + Needs to be checked
+  - Prepared to automatically add flags for user defined formats.
+  - The GF files have been renamed using <systemlabel>.TBTGF[L|R]
+  - The regions output also shows which atoms are in the PDOS region
+  - Added a tbt_kgrid_Monkhorst_Pack block which is only read by TBtrans,
+    if it does not exist, it will read kgrid_Monkhorst_Pack instead.
+
+* Bugfix in Tests/script_ts to be able to use bash
+
+* Added a new test:
+  - Tests/TranSiesta-TBTrans/ts_au_repetition/
+    This will default to use the new TBTrans_rep code.
+
+*** General SIESTA changes:
+
+* Added a new fdf option MinSCFIterations to prevent the second iteration
+  jump in MD simulations.
+
+* Increased the width of the output field for dDmax, to improve
+  the monitoring of the convergence of the density matrix.
+
+* Added IPO flags for the Makefile to be able to abstract from that.
+  Libraries should not be compiled with IPO for obvious reasons.
+* Bugfix in the configure command upon checking the NetCDF linking (netcdf
+  is now generally a two library linking, which requires "-marks)
+* Added 'obsolete' and 'deprecated' keys for the FDF library
+
+* For creating the Hamiltonian at various k-points new modules have been added:
+  - m_hs_matrix.f90 
+    + Used to generate a square (dense) matrix from the sparse matrix.
+      Supplying a k-point will create the equivalent k-point Hamiltonian
+    + One can also use this to acquire the transfer matrices
+    + Symmetrizing the hamiltonian and trimming it is also enabled.
+  - m_glob_sparse.f90
+    + Will globalize any arrays which are distributed in SIESTA mpi runs
+    + Used in MPIruns in combination with m_hs_matrix.
+
+* Added a makefile for the manual (make siesta, make final, make extra)
+* Added hyperref to the manual
+
+* Added note about GCC 4.7.1 not being compatible with the forces type run,
+  they have disregarded the piped files in the compiler. Revert to GCC 4.6
+  or older.
+
+removed:
+  Docs/siesta.ind
+  Src/m_ts_contour.F
+added:
+  Docs/Makefile
+  Docs/TS-npa.CHANGES
+  Docs/TranSiestaUpdate.pdf
+  Src/kpoint_convert.f90
+  Src/m_glob_sparse.F90
+  Src/m_hs_matrix.f90
+  Src/m_ts_cctype.f90
+  Src/m_ts_contour.f90
+  Src/m_ts_gf.F90
+  Src/m_ts_voltage.F90
+  Src/ts_init.F90
+  Src/ts_show_regions.f90
+  Tests/Reference/TranSiesta-TBTrans/ts_au_repetition/
+  Tests/Reference/TranSiesta-TBTrans/ts_au_repetition/au_111_capacitor.AVTRANS
+  Tests/Reference/TranSiesta-TBTrans/ts_au_repetition/au_111_capacitor.TEIG
+  Tests/Reference/TranSiesta-TBTrans/ts_au_repetition/au_111_capacitor.TRANS
+  Tests/Reference/TranSiesta-TBTrans/ts_au_repetition/au_111_capacitor.out
+  Tests/Reference/TranSiesta-TBTrans/ts_au_repetition/elec_au_111_abc.out
+  Tests/Reference/TranSiesta-TBTrans/ts_au_repetition/tbt_au_111_capacitor.out
+  Tests/TranSiesta-TBTrans/ts_au_repetition/
+  Tests/TranSiesta-TBTrans/ts_au_repetition/Au.psf
+  Tests/TranSiesta-TBTrans/ts_au_repetition/au_111_capacitor.fdf
+  Tests/TranSiesta-TBTrans/ts_au_repetition/elec_au_111_abc.fdf
+  Tests/TranSiesta-TBTrans/ts_au_repetition/makefile
+  Tests/TranSiesta-TBTrans/ts_au_repetition/script.sh
+  Util/TBTrans_rep/
+  Util/TBTrans_rep/Makefile
+  Util/TBTrans_rep/atompdos.F90
+  Util/TBTrans_rep/coop.F90
+  Util/TBTrans_rep/m_lowdin.f90
+  Util/TBTrans_rep/m_tbt_iotshs.F90
+  Util/TBTrans_rep/m_tbt_kpoints.F90
+  Util/TBTrans_rep/m_tbt_options.F90
+  Util/TBTrans_rep/m_tbt_out.f90
+  Util/TBTrans_rep/m_tbt_read_tshs.F90
+  Util/TBTrans_rep/tbt_init.F90
+  Util/TBTrans_rep/tbt_reinit.F90
+  Util/TBTrans_rep/tbtrans.F90
+  Util/TBTrans_rep/transmission.f90
+  Util/TBTrans_rep/tt_eig.f90
+modified:
+  Docs/README
+  Docs/siesta.tex
+  Src/MPI/Makefile
+  Src/Makefile
+  Src/compute_dm.F
+  Src/configure
+  Src/dhscf.F
+  Src/diagkp.F
+  Src/fdf/fdf.F90
+  Src/m_ts_aux_rout.F
+  Src/m_ts_electrode.F90
+  Src/m_ts_in_siesta.F
+  Src/m_ts_io.F90
+  Src/m_ts_kpoints.F90
+  Src/m_ts_options.F90
+  Src/m_ts_scattering.F
+  Src/parallel.F
+  Src/precision.F
+  Src/scfconvergence_test.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/siesta_options.F90
+  Src/version.F90
+  Src/write_subs.F
+  Tests/TranSiesta-TBTrans/README
+  Tests/script_ts.mk
+  Util/SiestaSubroutine/README
+  Util/TBTrans/Makefile
+
+-----------------------------------------------------------------------
 2012-10-25  10:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-422
 Fix handling of debugging preprocessor symbol in fdf
 
