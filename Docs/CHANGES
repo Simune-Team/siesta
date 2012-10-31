@@ -6,6 +6,28 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-10-31   9:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-424
+Bug fixes for array bounds 
+
+There were array bounds problems in:
+
+- The new code to print the initial spin polarization, for the case
+  of non-collinear spin.
+
+- The 'transition_rate' routine: ek and ek_local were wrongly
+  dimensioned to no_l, instead of no_u.
+
+- The mesh1d file in SiestaXC
+
+(+ removed old debugging code in 'domain_decomposition')
+
+modified:
+  Src/domain_decom.F
+  Src/new_dm.F
+  Src/transition_rate.F
+  Src/SiestaXC/mesh1d.f90
+
+-----------------------------------------------------------------------
 2012-10-30   9:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-423
 Transiesta and TBTrans enhancements by Nick P. Andersen
 
