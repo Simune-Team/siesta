@@ -13,10 +13,10 @@ module m_tbt_out
   character(len=200) :: defTEIGfmt = '(f10.5,20000(tr1,e16.8))'
   character(len=200) :: defDOSfmt = '(3(tr1,e16.8))'
   character(len=200) :: defTfmt = '(f10.5,3(tr1,e16.8))'
-  character(len=200) :: defCOOPfmt = '(2(tr1,i4),5(tr1,f10.6))'
-  character(len=200) :: defCOOPLRfmt = '(i4,5(tr1,f10.6))'
-  character(len=200) :: defAtomPDOSTotfmt = '(1i4,tr1,f10.6,3(tr1,f13.7)))'
-  character(len=200) :: defAtomPDOSOrbfmt = '(1i4,tr1,f10.6,100(tr1,f13.7))' ! If orbitals on a single atom exceeds 100 EDIT HERE
+  character(len=200) :: defCOOPfmt = '(2(tr1,i4),5(tr1,e16.8))'
+  character(len=200) :: defCOOPLRfmt = '(i4,5(tr1,e16.8))'
+  character(len=200) :: defAtomPDOSTotfmt = '(1i4,tr1,f10.6,3(tr1,e16.8)))'
+  character(len=200) :: defAtomPDOSOrbfmt = '(1i4,tr1,f10.6,100(tr1,e16.8))' ! If orbitals on a single atom exceeds 100 EDIT HERE
 
   public :: create_file, out_NEWLINE
   public :: out_kpt_header

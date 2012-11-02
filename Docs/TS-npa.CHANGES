@@ -1,4 +1,13 @@
 ----------------------------------------------------
+Nov 2, 2012 -- Nick P. Andersen     trunk-422--ts-npa-21
+Added more precision in the out files for tbtrans
+
+* Added more precision to the TOTDOS and ORBDOS and COOP
+
+modified:
+  Util/TBTrans_rep/m_tbt_out.F90
+
+----------------------------------------------------
 Nov 2, 2012 -- Nick P. Andersen     trunk-422--ts-npa-20
 ifort10, bugfix, several bugfixes in tbtrans
 
