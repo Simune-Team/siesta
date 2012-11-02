@@ -129,10 +129,6 @@ C     Input variables
       integer          :: MPIerror
       logical,    save :: firsttime = .true.
 
-#ifdef DEBUG
-      call write_debug( '      PRE domainDecom' )
-#endif
-
       if (firsttime) then
         firsttime = .false.
       else
@@ -179,9 +175,6 @@ C       Set orbitals to partitions
 
       endif
 
-#ifdef DEBUG
-      call write_debug( '      POS domainDecom' )
-#endif
       end subroutine domainDecom
 
       subroutine reduceGlobalMatrix( nuotot, nuo, nnz )

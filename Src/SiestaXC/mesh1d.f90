@@ -935,7 +935,7 @@ function integral( n, y, x, dx )
 ! Find integral
   if (interpolation_method=='spline') then
 
-    f = y * xp1
+    f = y * xp1(1:n)
     call spline( 1._dp, f, n, yp1, ypn, d2fdi2 )
 !    call spline( 1._dp, y, n, yp1*xp1(1), ypn*xp1(n), d2ydi2 )
 
