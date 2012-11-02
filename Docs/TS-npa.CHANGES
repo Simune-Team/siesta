@@ -1,4 +1,37 @@
 ----------------------------------------------------
+Nov 2, 2012 -- Nick P. Andersen     trunk-422--ts-npa-20
+ifort10, bugfix, several bugfixes in tbtrans
+
+* m_ts_contour had a possible bug in the pointer assignment,
+  it seemed as if it were a bug in the Ifort 10 compiler. 
+  However, it has been generalized and fixed.
+* Added Alberto's fix for the non-parallel run maxng => maxnh
+* TBTrans fixes:
+ * Removed factors of eV in atompdos and coop. Is I feared it was not
+   a reasonable factor.
+ * Generalized all density of states calculations to the same format
+ * Removed spin dependency in the calculations, thus all information
+   is not spin doubled.
+   - I think this will accomodate several things
+     1. The code is much easier to maintain (no need to check for spin)
+     2. Comparing transmissions makes more sense in "channel" view, and
+        having T = 1.0 is obviously one channel.
+ * Added the use of TS.TBT.ReUseGF in TBTrans instead of reading TS.ReUseGF
+ * Fixed the fdf.log issue that was not merged in at the time of tbtrans 
+   creation
+ * Fixed the user determined calculation of the PDOS Hamiltonian eigenvalues 
+ * Added headers about the contents in all out files
+
+modified:
+  Src/m_ts_contour.f90
+  Src/m_ts_in_siesta.F
+  Util/TBTrans_rep/atompdos.F90
+  Util/TBTrans_rep/coop.F90
+  Util/TBTrans_rep/m_tbt_options.F90
+  Util/TBTrans_rep/tbt_reinit.F90
+  Util/TBTrans_rep/tbtrans.F90
+
+----------------------------------------------------
 Oct 29, 2012 -- Nick P. Andersen     trunk-422--ts-npa-19
 Bugfix in reading the TSHS file when Gamma /= GammaOnFile, fixed transport E's
 

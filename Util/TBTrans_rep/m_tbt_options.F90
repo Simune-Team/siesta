@@ -160,7 +160,7 @@ CONTAINS
     call fdf_global_get(GFFileL,'TS.TBT.GFFileLeft',trim(chars))
     chars = trim(slabel)//'.TBTGFR'
     call fdf_global_get(GFFileR,'TS.TBT.GFFileRight',trim(chars))
-    call fdf_global_get(ReUseGF,'TS.ReUseGF',ReUseGF_def)
+    call fdf_global_get(ReUseGF,'TS.TBT.ReUseGF',ReUseGF_def)
     ! This needs a two way entrance (in TranSIESTA it really doesn't matter.
     ! In TBTrans it can be used to check for Emin against the valence band bottom
     call fdf_global_get(ElecValenceBandBot,'TS.TBT.CalcElectrodeValenceBandBottom', &

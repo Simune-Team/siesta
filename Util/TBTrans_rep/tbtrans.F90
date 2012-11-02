@@ -79,6 +79,7 @@ program tbtrans
   use m_tbt_options, only : GFTitle
   use m_tbt_options, only : Emin, Emax, NeigCh
   use m_tbt_options, only : IsoAt1, IsoAt2
+  use m_tbt_options, only : CalcIeig
   use m_tbt_options, only : CalcCOOP, AlignScat, CalcAtomPDOS
 
   use m_tbt_kpoints, only : siesta_Gamma
@@ -97,10 +98,13 @@ program tbtrans
   implicit none
 
 ! *****************************************
-! * Variables concerning the contour      *
-! * I.e. the number of energy points.     *
+! * Parameters used extensively           *
 ! *****************************************
+  real(dp), parameter :: r1dPi = 1.0_dp/Pi
 
+! *****************************************
+! * Variables concerning the contour      *
+! *****************************************
   complex(dp), dimension(:), allocatable :: ZBulkDos ! We need to have it complex to pass to create_Green
 
 
@@ -214,7 +218,6 @@ program tbtrans
 ! * LOCAL variables                       *
 ! *****************************************
   real(dp) :: EfermiL, EfermiR, Efermi0 ! Fermi levels in the CONTACT
-  real(dp) :: sF ! The spin factor
   real(dp) :: dE ! The distance of the energy points
   real(dp) :: f_L, f_R ! Fermi function evaluation of the fermi levels at energies 'contour'
   real(dp) :: kpt(3), wkpt, kpt_Node(3)
@@ -291,11 +294,6 @@ program tbtrans
   call out_NEWLINE(6)
 
 
-  ! Initialize the spin factor...
-  sF = 1.0_dp
-  if ( nspin == 1 ) sF = 2.0_dp
-
-  
 ! #########################################################
 ! # Create the Green's functions for the contour points   #
 ! #
@@ -317,8 +315,8 @@ program tbtrans
   ! This is the ZBulkDOS for both spins....
   if ( IONode .and. sum(abs(ZBulkDOS(:))) > 0.0_dp ) then
      call create_file(slabel,'LDOS',1,1,uDOSL)
-     do iE = 1 , NEn 
-        ZBulkDOS(iE) = -sF/Pi*dimag(ZBulkDOS(iE)*contour(iE)%w)
+     do iE = 1 , NEn
+        ZBulkDOS(iE) = -r1dPi*dimag(ZBulkDOS(iE)*contour(iE)%w)
      end do
      call out_DOS(uDOSL,NEn,contour(:)%c,ZBulkDOS)
      call io_close(uDOSL)
@@ -336,8 +334,8 @@ program tbtrans
   ! This is the ZBulkDOS for both spins....
   if ( IONode .and. sum(abs(ZBulkDOS(:))) > 0.0_dp ) then
      call create_file(slabel,'RDOS',1,1,uDOSR)
-     do iE = 1 , NEn 
-        ZBulkDOS(iE) = -sF/Pi*dimag(ZBulkDOS(iE)*contour(iE)%w)
+     do iE = 1 , NEn
+        ZBulkDOS(iE) = -r1dPi*dimag(ZBulkDOS(iE)*contour(iE)%w)
      end do
      call out_DOS(uDOSR,NEn,contour(:)%c,ZBulkDOS)
      call io_close(uDOSR)
@@ -530,7 +528,10 @@ program tbtrans
   allocate(dummyGAMMA(max(noL,noR),max(noL,noR)))
   call memory('A','Z',max(noL,noR)**2,'tbtrans')
 
-  allocate(eig(nou))
+  if ( CalcIeig ) then
+     allocate(eig(nou))
+     call memory('A','D',nou,'tbtrans')
+  end if
 
 
 ! We have several Hamiltonians
@@ -588,6 +589,7 @@ program tbtrans
   call memory('A','D',PNEn*2,'tbtrans')
   allocate(aux(Isoo,Isoo))
   call memory('A','Z',Isoo*Isoo,'tbtrans')
+
   ! Initialize the arrays as we are going to do a
   ! reduction
   TEig(:)     = 0.0_dp
@@ -617,11 +619,32 @@ program tbtrans
      ! Create the files that are needed for the calculation
      call create_file(slabel,'TRANS',ispin,nspin,uT)
      call create_file(slabel,'AVTRANS',ispin,nspin,uTAv)
+     if ( IONode ) then ! Write headers...
+        write(uT,'(a10,3(tr1,a16))') "#   E [eV]","Trans [G0]","TotDOS","PDOS"
+        write(uTAv,'(a)') "# Averaged transmission, total DOS and projected DOS"
+        write(uTAv,'(a10,3(tr1,a16))') "#   E [eV]","Trans [G0]","TotDOS","PDOS"
+     end if
+
      if (NEigch > 0) then
         call create_file(slabel,'TEIG',ispin,nspin,uTeig)
         call create_file(slabel,'AVTEIG',ispin,nspin,uTeigAv)
+        if ( IONode ) then ! Write headers...
+           write(uTeig,'(a10,tr1,a)') "#   E [eV]", &
+                "Transmission eigenvalues [G0], descending order"
+           write(uTeigAv,'(a)') &
+                "# Averaged transmission eigenvalues, descending order"
+           write(uTeigAv,'(a10,tr1,a)') "#   E [eV]", &
+                "Transmission eigenvalues [G0], descending order"
+        end if
      end if
-     call create_file(slabel,'IEIG',ispin,nspin,uIeig)
+
+     if ( CalcIeig ) then
+        call create_file(slabel,'IEIG',ispin,nspin,uIeig)
+        if ( IONode ) then ! Write headers...
+           write(uIeig,'(a5,tr1,a)') "#    ", &
+                "Hamiltonian Eigenvalues of isolated region [eV]"
+        end if
+     end if
 
      
      if ( CalcCOOP ) then
@@ -629,7 +652,7 @@ program tbtrans
         call create_file(slabel,'COOPL',ispin,nspin,uCL)
         call create_file(slabel,'COOPR',ispin,nspin,uCR)
 
-        if ( IONode ) then
+        if ( IONode ) then ! Write headers...
            write(uC,'(a)') "# COOP between atoms"
            write(uC,'(a,2(a4,tr1),a10,3(tr1,a13))')"#","At1","At2","E [eV]", &
                 "Total", "Left", "Right"
@@ -646,7 +669,7 @@ program tbtrans
         call create_file(slabel,'TOTDOS',ispin,nspin,uTOTDOS)
         call create_file(slabel,'ORBDOS',ispin,nspin,uORBDOS)
 
-        if ( IONode ) then
+        if ( IONode ) then ! Write headers...
            write(uTOTDOS,'(a)')"# Total Mulliken population on atoms"
            write(uTOTDOS,'(a4,tr1,a10,3(tr1,a13))')"# At.","E [eV]", &
                 "Total", "Left", "Right"
@@ -670,7 +693,10 @@ program tbtrans
         if (NEigch > 0) then
            call out_kpt_header(uTeig,ikpt,kpt,wkpt,ucell)
         end if
-        call out_kpt_header(uIeig,ikpt,kpt,wkpt,ucell)
+
+        if ( CalcIeig ) then
+           call out_kpt_header(uIeig,ikpt,kpt,wkpt,ucell)
+        end if
 
         if ( CalcCOOP ) then
            call out_kpt_header(uC,ikpt,kpt,wkpt,ucell)
@@ -752,10 +778,12 @@ program tbtrans
            end do
         end do
 
+        if ( CalcIeig ) then
 ! Calculate eigenvalues of Isolated region
-        call cdiag(Hk_iso,Sk_iso,Isoo,Isoo,Isoo,eig,aux,Isoo,10,errorGS)
-        if(errorGS) call die('ERROR in isolated diagonalization.') 
-        call out_EIG(uIeig,Isoo,eig)
+           call cdiag(Hk_iso,Sk_iso,Isoo,Isoo,Isoo,eig,aux,Isoo,10,errorGS)
+           if(errorGS) call die('ERROR in isolated diagonalization.') 
+           call out_EIG(uIeig,Isoo,eig)
+        end if
 
 ! We need to ensure that the full loop is always run by ALL nodes        
         l_E: do iE = Node + 1 , PNEn , Nodes
@@ -788,14 +816,12 @@ program tbtrans
            call transmission(UseBulk,nou,Hk,Sk, &
                 noD,noL,SFEL,noR,SFER,ZEnergy, &
                 GF,GFRGF,TotTrans,tt,ierr)
-! Correct for spin
-           TotTrans = TotTrans * sF
 
 ! Total the density of states
            TotDOS = 0.0_dp
            do j = 1 , noD
               do i = 1 , noD
-                 TotDOS = TotDOS - sF/Pi*dimag(dconjg(Sk_D(i,j))*GF(i,j))
+                 TotDOS = TotDOS - r1dPi*dimag(dconjg(Sk_D(i,j))*GF(i,j))
               end do
            end do
 
@@ -803,12 +829,12 @@ program tbtrans
            PDOS = 0.0_dp
            do j = 1 , Isoo1D - 1
               do i = 1 , noD
-                 PDOS = PDOS - sF/Pi*dimag(Sk_D(i,j)*GF(i,j))
+                 PDOS = PDOS - r1dPi*dimag(Sk_D(i,j)*GF(i,j))
               end do
            end do
            do j = Isoo2D + 1, noD
               do i = 1 , noD
-                 PDOS = PDOS - sF/Pi*dimag(Sk_D(i,j)*GF(i,j))
+                 PDOS = PDOS - r1dPi*dimag(Sk_D(i,j)*GF(i,j))
               end do
            end do
            PDOS = TotDOS - PDOS
@@ -862,13 +888,13 @@ program tbtrans
            if ( CalcCOOP ) then
               call COOP(uC,uCL,uCR, &
                    IsoAt1,IsoAt2, &
-                   noBufL,noL,noD,nspin, &
+                   noBufL,noL,noD, &
                    na_u,lasto,GF,GFRGF,Sk_D, &
                    iE,dreal(ZEnergy),ZwGF)
            end if
 
            if ( CalcAtomPDOS ) then
-              call AtomPDOS(uTOTDOS,uORBDOS,sF,.false.,noBufL+noL,noD, &
+              call AtomPDOS(uTOTDOS,uORBDOS,.false.,noBufL+noL,noD, &
                    na_u, IsoAt1, IsoAt2, lasto, &
                    real(ZEnergy,dp),real(ZwGF,dp), &
                    GF, GFRGF, Sk_D)
@@ -877,7 +903,7 @@ program tbtrans
            ! Calculate the eigenchannels of the device
            if (NEigch > 0) then
               TEig(:) = 0.0_dp
-              if ( ZwGF /= 0.0_dp ) then
+              if ( ZwGF /= dcmplx(0.0_dp,0.0_dp) ) then
                  call tt_eig(noD,tt,NEigch,TEig)
               end if
 
@@ -921,7 +947,10 @@ program tbtrans
         if (NEigch > 0) then
            call out_NEWLINE(uTeig)
         end if
-        call out_NEWLINE(uIeig)
+
+        if ( CalcIeig ) then
+           call out_NEWLINE(uIeig)
+        end if
 
         if ( CalcAtomPDOS ) then
            call out_NEWLINE(uTOTDOS)
@@ -980,7 +1009,10 @@ program tbtrans
            call io_close(uTeig)
            call io_close(uTeigAv)
         end if
-        call io_close(uIeig)
+
+        if ( CalcIeig ) then
+           call io_close(uIeig)
+        end if
         
         if ( CalcCOOP ) then
            call io_close(uC)
@@ -1006,7 +1038,11 @@ program tbtrans
 ! ######   Transmission calculation    ######
 ! ##########      ends here       ###########
 ! ###########################################
-
+  
+  if ( CalcIeig ) then
+     call memory('D','D',nou,'tbtrans')
+     deallocate(eig)
+  end if
 
   call memory('D','I',nuaL_GF+nuaR_GF+2,'tbtrans')
   deallocate(lastoL,lastoR)

@@ -5,7 +5,7 @@
 ! #####################################################################
 subroutine COOP(uC,uCL,uCR, &
      IsoAt1,IsoAt2, &
-     noBufL,noL,noD,nspin, &
+     noBufL,noL,noD, &
      na_u,lasto,GF,GFRGF,S, &
      iE,Energy,wGF)
 
@@ -26,7 +26,6 @@ subroutine COOP(uC,uCL,uCR, &
   integer, intent(in) :: uC, uCL, uCR ! The units to write to
   integer, intent(in) :: IsoAt1, IsoAt2 ! Isolated atoms (index in lasto)
   integer, intent(in) :: noBufL, noL, noD ! Orbital counts, left buf, left elec, device
-  integer, intent(in) :: nspin
   integer, intent(in) :: na_u
   integer, intent(in) :: lasto(0:na_u) ! Last orbital index of each atom (full lasto)
   complex(dp), intent(in) :: GF   (noD,noD)
@@ -39,6 +38,7 @@ subroutine COOP(uC,uCL,uCR, &
 ! **************************
 ! * LOCAL variables        *
 ! **************************
+  real(dp), parameter :: r1dPi = 1.0_dp/Pi ! Local Pi factor
   integer             :: noShift ! The shift in orbitals duo to buffer and electrode
   integer             :: ia1, ia2
   integer             :: io1, io2 ! for loops
@@ -46,7 +46,6 @@ subroutine COOP(uC,uCL,uCR, &
   real(dp)            :: coopT,coopL,coopR          !
   real(dp)            :: coopL2L,coopR2L,coopL2R    !
   real(dp)            :: coopR2R
-  complex(dp)         :: ztmp
 
 #ifdef MPI
   real(dp), allocatable :: buf_recv(:), buf_send(:)
@@ -58,8 +57,6 @@ subroutine COOP(uC,uCL,uCR, &
 
 !***********************************************************************
 !     BEGIN
-  if (nspin.eq.1) ztmp = dcmplx(-2.0_dp/Pi,0.0_dp)*eV
-  if (nspin.eq.2) ztmp = dcmplx(-1.0_dp/Pi,0.0_dp)*eV
 
   noShift = noBufL + noL
 #ifdef MPI
@@ -75,8 +72,8 @@ subroutine COOP(uC,uCL,uCR, &
 
         do io1 = lasto(ia1-1) - noShift + 1 , lasto(ia1) - noShift
            do io2 = lasto(ia2-1) - noShift + 1 , lasto(ia2) - noShift
-              coopT = coopT + DIMAG(ztmp*GF   (io1,io2)*S(io1,io2))
-              coopR = coopR + DIMAG(ztmp*GFRGF(io1,io2)*S(io1,io2))
+              coopT = coopT - r1dPi*DIMAG(GF   (io1,io2)*S(io1,io2))
+              coopR = coopR - r1dPi*DIMAG(GFRGF(io1,io2)*S(io1,io2))
            end do
         end do
         
@@ -133,8 +130,8 @@ subroutine COOP(uC,uCL,uCR, &
 
               ! Note that GFRGF= GF^dagger.(GammaR/2).GF,
               ! also that "GFRGF" + "GFIGF" = Im(G)
-              coopTMP1 = DIMAG(ztmp*GF   (io1,io2)*S(io1,io2))
-              coopTMP2 = DIMAG(ztmp*GFRGF(io1,io2)*S(io1,io2))
+              coopTMP1 = - r1dPi * DIMAG(GF   (io1,io2)*S(io1,io2))
+              coopTMP2 = - r1dPi * DIMAG(GFRGF(io1,io2)*S(io1,io2))
               if ( ia2 < ia1 ) then      !atom to the Left
                  coopL   = coopL   + coopTMP1
                  coopR2L = coopR2L + coopTMP2

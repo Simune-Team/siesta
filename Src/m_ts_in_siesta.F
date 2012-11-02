@@ -630,7 +630,7 @@
          ind = maxnhg
          io = count(listudg)
 #else
-         ind = maxng
+         ind = maxnh
          io = count(listud)
 #endif
          if ( IOnode ) then
