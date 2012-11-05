@@ -1,4 +1,37 @@
 ----------------------------------------------------
+Nov 5, 2012 -- Nick P. Andersen     trunk-424--ts-npa-22
+Added documentation, tbtrans fixes, DOS calculation, output
+
+* Added documentation about AtomPDOS and the difference to the PDOS in 
+  TRANS and AVTRANS
+* Fixed index markings of long names (should be on one line to be the same
+  item
+* Added remark on the WARNING message. A short description of what it does
+* Fixed some index references for transiesta
+* Added more contents about the out-files of transiesta
+   - TSKP
+   - TSCC
+* Added remarks of the DOS in tbtrans to not be times a factor of two, in cases
+  of nspin == 1
+* Added new files to the index, TRANS, AVTRANS, TOTDOS, ORBDOS, COOP[|L|R]
+* Rename TS.ReUseGF in tbtrans to TS.TBT.ReUseGF
+* tbtrans output has been streamlined and headers for LDOS and RDOS have been	
+  added
+* Bugfix in the calculation of the electrode density of states
+  - Also fixed that it can be calculated with spin dependency
+
+modified:
+  Docs/siesta.tex
+  Src/m_ts_electrode.F90
+  Src/m_ts_gf.F90
+  Src/ts_init.F90
+  Util/TBTrans_rep/atompdos.F90
+  Util/TBTrans_rep/coop.F90
+  Util/TBTrans_rep/m_tbt_options.F90
+  Util/TBTrans_rep/m_tbt_out.f90
+  Util/TBTrans_rep/tbtrans.F90
+
+----------------------------------------------------
 Nov 2, 2012 -- Nick P. Andersen     trunk-424--ts-npa-21
 Merged with trunk
 

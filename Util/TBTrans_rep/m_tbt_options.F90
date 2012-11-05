@@ -127,7 +127,7 @@ CONTAINS
     logical :: exist ! Check file existance for files requested
     character(len=200) :: paste
     integer :: na_u, tmp, i
-    external paste
+    external :: paste
 #ifdef MPI
     integer :: MPIerror
 #endif
@@ -136,6 +136,11 @@ CONTAINS
        write(*,*)
        write(*,'(2a)') 'tbt_read_options: ', repeat('*', 62)
     end if
+
+    ! Show the deprecated and obsolete labels
+    call fdf_deprecated('TS.TBT.DoCOOP','TS.TBT.COOP')
+    call fdf_deprecated('TS.CalcGF','TS.TBT.ReUseGF')
+
     
 ! Reading from fdf ... This is needed for using 'cdiag'
     call fdf_global_get(MemoryFactor,'Diag.Memory', 1.0_dp )
@@ -207,10 +212,6 @@ CONTAINS
        call die("Requested PDOS 2 atom is outside of contact region. &
             &Please choose an atom within the device.")
     end if
-
-    ! Show the deprecated and obsolete labels
-    call fdf_deprecated('TS.TBT.DoCOOP','TS.TBT.COOP')
-    call fdf_deprecated('TS.CalcGF','TS.ReUseGF')
 
     call fdf_global_get(CalcCOOP,'TS.TBT.COOP',CalcCOOP_def)
     call fdf_global_get(AlignScat,'TS.TBT.AlignOnSite',AlignScat_def)

@@ -394,6 +394,7 @@ contains
 #ifdef MPI
     use mpi_siesta, only : MPI_Comm_World
     use mpi_siesta, only : MPI_Bcast,MPI_ISend,MPI_IRecv
+    use mpi_siesta, only : MPI_Sum
     use mpi_siesta, only : MPI_Wait,MPI_Status_Size
     use mpi_siesta, only : DAT_dcomplex, DAT_double
 #endif
@@ -422,7 +423,7 @@ contains
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp), intent(out)       :: ZBulkDOS(NEn) 
+    complex(dp), intent(out)       :: ZBulkDOS(NEn,nspin) 
 
 ! ***********************
 ! * LOCAL variables     *
@@ -624,8 +625,10 @@ contains
     call memory('A','Z',4*nuo_E*nuo_E,'create_Green')
 
     ! Reset bulk DOS
-    do iEn = 1 , NEn
-       ZBulkDOS(iEn) = dcmplx(0.d0,0.d0)
+    do ispin = 1 , nspin
+       do iEn = 1 , NEn
+          ZBulkDOS(iEn,ispin) = dcmplx(0.d0,0.d0)
+       end do
     end do
 
 !******************************************************************
@@ -775,8 +778,9 @@ contains
                 call surface_Green(tElec,nuo_E,ZSEnergy,H00,S00,H01,S01, &
                      GS,zdos)
 
-                ! In case of spin, this sum must be checked
-                ZBulkDOS(iEn) = ZBulkDOS(iEn) + wq(iqpt)*zdos
+                ! We also average the k-points.
+                ZBulkDOS(iEn,ispin) = ZBulkDOS(iEn,ispin) + &
+                     wq(iqpt)*zdos * kweight(ikpt)
                   
                 ! Copy over surface Green's function
                 if( leqi(tElec,'L') ) then
@@ -897,6 +901,19 @@ contains
     deallocate(H_E)
     call memory('D','D',maxnh_E,'create_green')
     deallocate(S_E)
+
+#ifdef MPI
+    ! Sum the bulkdensity of states
+    ! Here we can safely use the array as temporary (Gq)
+    allocate(Gq(NEn,nspin))
+    call memory('A','Z',NEn*nspin,'create_green')
+    Gq = 0.0_dp
+    call MPI_AllReduce(ZBulkDOS(1,1),Gq(1,1),NEn*nspin, DAT_dComplex, MPI_Sum, &
+         MPI_Comm_World,MPIerror)
+    ZBulkDOS = Gq
+    call memory('D','Z',NEn*nspin,'create_green')
+    deallocate(Gq)
+#endif
 
     call timer('genGreen',2)
 

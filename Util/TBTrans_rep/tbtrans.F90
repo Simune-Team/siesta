@@ -105,7 +105,7 @@ program tbtrans
 ! *****************************************
 ! * Variables concerning the contour      *
 ! *****************************************
-  complex(dp), dimension(:), allocatable :: ZBulkDos ! We need to have it complex to pass to create_Green
+  complex(dp), dimension(:,:), allocatable :: ZBulkDos ! We need to have it complex to pass to create_Green
 
 
 ! *****************************************
@@ -299,10 +299,9 @@ program tbtrans
 ! #
 
 ! Allocate for the bulkdos
-  allocate(ZBulkDOS(NEn))
-  call memory('A','Z',NEn,'tbtrans')
-  ZBulkDOS(:) = 0.0_dp
-
+  allocate(ZBulkDOS(NEn,nspin))
+  call memory('A','Z',NEn*nspin,'tbtrans')
+  ZBulkDOS(:,:) = 0.0_dp
   
 ! Create the Left GF file
   call do_Green('L',HSFileL, GFFileL, GFTitle, &
@@ -313,14 +312,19 @@ program tbtrans
   
   ! If we have created the new GF file we can write out the ZBulkDOS
   ! This is the ZBulkDOS for both spins....
-  if ( IONode .and. sum(abs(ZBulkDOS(:))) > 0.0_dp ) then
-     call create_file(slabel,'LDOS',1,1,uDOSL)
-     do iE = 1 , NEn
-        ZBulkDOS(iE) = -r1dPi*dimag(ZBulkDOS(iE)*contour(iE)%w)
+  if ( IONode .and. sum(abs(ZBulkDOS(:,:))) > 0.0_dp ) then
+     do ispin = 1 , nspin
+        call create_file(slabel,'LDOS',ispin,nspin,uDOSL)
+        write(uDOSL,'(a)') "# k-point averaged density of states in the &
+             &left electrode weighted by the energy point weight"
+        write(uDOSL,'(a,a9,tr1,a16)')"#","E [eV]", "DOS"
+        do iE = 1 , NEn
+           ZBulkDOS(iE,ispin) = -r1dPi*dimag(ZBulkDOS(iE,ispin)*contour(iE)%w)
+        end do
+        call out_DOS(uDOSL,NEn,contour(:)%c,ZBulkDOS(:,ispin))
+        call io_close(uDOSL)
+        ZBulkDOS(:,ispin) = 0.0_dp
      end do
-     call out_DOS(uDOSL,NEn,contour(:)%c,ZBulkDOS)
-     call io_close(uDOSL)
-     ZBulkDOS(:) = 0.0_dp
   end if
 
 ! Create the Right GF file
@@ -332,16 +336,21 @@ program tbtrans
 
   ! If we have created the new GF file we can write out the ZBulkDOS
   ! This is the ZBulkDOS for both spins....
-  if ( IONode .and. sum(abs(ZBulkDOS(:))) > 0.0_dp ) then
-     call create_file(slabel,'RDOS',1,1,uDOSR)
-     do iE = 1 , NEn
-        ZBulkDOS(iE) = -r1dPi*dimag(ZBulkDOS(iE)*contour(iE)%w)
+  if ( IONode .and. sum(abs(ZBulkDOS(:,:))) > 0.0_dp ) then
+     do ispin = 1 , nspin
+        call create_file(slabel,'RDOS',ispin,nspin,uDOSR)
+        write(uDOSR,'(a)') "# k-point averaged density of states in the &
+             &right electrode weighted by the energy point weight"
+        write(uDOSR,'(a,a9,tr1,a16)')"#","E [eV]", "DOS"
+        do iE = 1 , NEn
+           ZBulkDOS(iE,ispin) = -r1dPi*dimag(ZBulkDOS(iE,ispin)*contour(iE)%w)
+        end do
+        call out_DOS(uDOSR,NEn,contour(:)%c,ZBulkDOS(:,ispin))
+        call io_close(uDOSR)
      end do
-     call out_DOS(uDOSR,NEn,contour(:)%c,ZBulkDOS)
-     call io_close(uDOSR)
   end if
   
-  call memory('D','Z',NEn,'tbtrans')
+  call memory('D','Z',NEn*nspin,'tbtrans')
   deallocate(ZBulkDOS)
 
 ! Make the expansion of the electrodes in atoms and orbitals
@@ -654,13 +663,13 @@ program tbtrans
 
         if ( IONode ) then ! Write headers...
            write(uC,'(a)') "# COOP between atoms"
-           write(uC,'(a,2(a4,tr1),a10,3(tr1,a13))')"#","At1","At2","E [eV]", &
+           write(uC,'(a,2(a4,tr1),a10,3(tr1,a16))')"#","At1","At2","E [eV]", &
                 "Total", "Left", "Right"
            write(uCL,'(a)') "# COOP between atoms and regions"
-           write(uCL,'(a,a4,tr1,a10,3(tr1,a13))')"#","At.","E [eV]", &
+           write(uCL,'(a,a3,tr1,a10,3(tr1,a16))')"#","At.","E [eV]", &
                 "L2L", "L", "L2R"
            write(uCR,'(a)') "# COOP between atoms and regions"
-           write(uCR,'(a,a4,tr1,a10,3(tr1,a13))')"#","At.","E [eV]", &
+           write(uCR,'(a,a3,tr1,a10,3(tr1,a16))')"#","At.","E [eV]", &
                 "R2R", "R", "R2L"
         end if
      end if
@@ -671,7 +680,7 @@ program tbtrans
 
         if ( IONode ) then ! Write headers...
            write(uTOTDOS,'(a)')"# Total Mulliken population on atoms"
-           write(uTOTDOS,'(a4,tr1,a10,3(tr1,a13))')"# At.","E [eV]", &
+           write(uTOTDOS,'(a4,tr1,a10,3(tr1,a16))')"# At.","E [eV]", &
                 "Total", "Left", "Right"
            write(uORBDOS,'(a)')"# Mulliken population on orbitals"
            write(uORBDOS,'(a)')"# Orbitals are in same order as SIESTA Mulliken"
@@ -950,6 +959,12 @@ program tbtrans
 
         if ( CalcIeig ) then
            call out_NEWLINE(uIeig)
+        end if
+
+        if ( CalcCOOP ) then
+           call out_NEWLINE(uC)
+           call out_NEWLINE(uCL)
+           call out_NEWLINE(uCR)
         end if
 
         if ( CalcAtomPDOS ) then

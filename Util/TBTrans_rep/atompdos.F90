@@ -47,8 +47,8 @@ subroutine AtomPDOS(uTOTDOS,uORBDOS,LowdinFlag,noBufL_P_L,noD, &
 ! * LOCAL variables      *
 ! ************************
   real(dp), parameter :: r1dPi = 1.0_dp/Pi ! Local Pi factor
-  integer             :: i
-  integer             :: ia, io, no              ! loops
+  integer             :: i, no
+  integer             :: ia, io ! loops
   real(dp), dimension(IsoAt1:IsoAt2) :: PDOSTot, PDOSLeft, PDOSRight ! The dos regions
 
   real(dp),    dimension(:,:),  allocatable :: PDOST
@@ -78,7 +78,7 @@ subroutine AtomPDOS(uTOTDOS,uORBDOS,LowdinFlag,noBufL_P_L,noD, &
   GFS  = dcmplx(0.0_dp,0.0_dp)
   GFRS = dcmplx(0.0_dp,0.0_dp)
 
-  if (LowdinFlag) then
+  if ( LowdinFlag ) then
      GFS  = GF
      call Lowdin_Trans(.false.,noD,GFS,S)
      GFRS = GFRGF
@@ -100,10 +100,11 @@ subroutine AtomPDOS(uTOTDOS,uORBDOS,LowdinFlag,noBufL_P_L,noD, &
      PDosRight(ia) = 0.0_dp
      PDosTot(ia)   = 0.0_dp
      PDosT(:,ia)   = 0.0_dp
-     no            = lasto(ia) - lasto(ia-1)            
+     
+     no = lasto(ia-1) - noBufL_P_L
 
-     do i = 1 , no
-        io = i + lasto(ia-1) - noBufL_P_L
+     do i = 1 , lasto(ia) - lasto(ia-1)
+        io = i + no
 
         PDOST  (i,ia) =               - r1dPi * dimag( GFS(io,io))
         PDOSTot  (ia) = PDOSTot  (ia) - r1dPi * dimag( GFS(io,io))

@@ -90,7 +90,7 @@ contains
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp), intent(out)       :: ZBulkDOS(NEn) ! DOS at energy points
+    complex(dp), intent(out)       :: ZBulkDOS(NEn,nspin) ! DOS at energy points
 
 ! ***********************
 ! * LOCAL variables     *

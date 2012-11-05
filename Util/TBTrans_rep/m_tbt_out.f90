@@ -9,14 +9,15 @@ module m_tbt_out
   private
   save
   
-  character(len=200) :: defEIGfmt = '(i5,2(tr1,e16.8))'
-  character(len=200) :: defTEIGfmt = '(f10.5,20000(tr1,e16.8))'
-  character(len=200) :: defDOSfmt = '(3(tr1,e16.8))'
-  character(len=200) :: defTfmt = '(f10.5,3(tr1,e16.8))'
-  character(len=200) :: defCOOPfmt = '(2(tr1,i4),5(tr1,e16.8))'
-  character(len=200) :: defCOOPLRfmt = '(i4,5(tr1,e16.8))'
-  character(len=200) :: defAtomPDOSTotfmt = '(1i4,tr1,f10.6,3(tr1,e16.8)))'
-  character(len=200) :: defAtomPDOSOrbfmt = '(1i4,tr1,f10.6,100(tr1,e16.8))' ! If orbitals on a single atom exceeds 100 EDIT HERE
+  character(len=200), parameter :: &
+       defEIGfmt = '(i5,2(tr1,e16.8))', &
+       defTEIGfmt = '(f10.5,20000(tr1,e16.8))', &
+       defDOSfmt = '(f10.5,tr1,e16.8)', &
+       defTfmt = '(f10.5,3(tr1,e16.8))', &
+       defCOOPfmt = '(2(tr1,i4),tr1,f10.6,4(tr1,e16.8))', &
+       defCOOPLRfmt = '(i4,tr1,f10.6,4(tr1,e16.8))', &
+       defAtomPDOSTotfmt = '(1i4,tr1,f10.6,3(tr1,e16.8)))', &
+       defAtomPDOSOrbfmt = '(1i4,tr1,f10.6,100(tr1,e16.8))' ! If orbitals on a single atom exceeds 100 EDIT HERE
 
   public :: create_file, out_NEWLINE
   public :: out_kpt_header
@@ -90,15 +91,12 @@ contains
     complex(dp), intent(in) :: E(N), DOS(N)
     character(len=*), intent(in), optional :: fmt
     ! Local variables
-    real(dp) :: totDOS
     integer :: i 
-    totDOS = 0.0_dp
     do i = 1 , N
-       totDOS = totDOS + real(DOS(i),dp)
        if ( present(fmt) ) then
-          if ( IONode ) write(funit,fmt) real(E(i),dp)/eV,real(DOS(i),dp),totDOS
+          if ( IONode ) write(funit,fmt) real(E(i),dp)/eV,real(DOS(i),dp)
        else
-          if ( IONode ) write(funit,defDOSfmt) real(E(i),dp)/eV,real(DOS(i),dp),totDOS
+          if ( IONode ) write(funit,defDOSfmt) real(E(i),dp)/eV,real(DOS(i),dp)
        end if
     end do
   end subroutine out_DOS

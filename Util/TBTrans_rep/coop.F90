@@ -122,8 +122,8 @@ subroutine COOP(uC,uCL,uCR, &
         coopL2R = 0.0_dp
         coopR2L = 0.0_dp
         coopR2R = 0.0_dp
-        coopL =  0.0_dp
-        coopR =  0.0_dp
+        coopL   = 0.0_dp
+        coopR   = 0.0_dp
 
         do ia2 = IsoAt1 , IsoAt2
            do io2 = lasto(ia2-1) - noShift + 1 , lasto(ia2) - noShift
