@@ -733,6 +733,9 @@ m_pulay.o: sparse_matrices.o sys.o
 
 m_recipes.o: precision.o sys.o
 
+m_rhog.o: alloc.o m_mpi_utils.o m_spin.o parallel.o precision.o
+m_rhog.o: siesta_options.o
+
 m_rmaxh.o: precision.o
 
 m_spin.o: alloc.o parallel.o precision.o
@@ -929,6 +932,8 @@ reord.o: alloc.o precision.o
 
 restructSpMatrix.o: class_Array2D.o class_OrbitalDistribution.o
 restructSpMatrix.o: class_SpMatrix.o class_Sparsity.o
+
+rhofft.o: cellsubs.o fft.o precision.o sys.o
 
 rhooda.o: atmfuncs.o atomlist.o mesh.o meshphi.o precision.o
 
@@ -1158,6 +1163,7 @@ m_projected_dos.o: projected_DOS.o
 m_proximity_check.o: proximity_check.o
 m_radfft.o: radfft.o
 m_readspmatrix.o: readSpMatrix.o
+m_rhofft.o: rhofft.o
 m_save_density_matrix.o: save_density_matrix.o
 m_scf_options.o: m_options.o
 m_setup_h0.o: setup_H0.o

@@ -1,3 +1,22 @@
+-----------------------------------------------------------------------
+2012-11-07  Alberto Garcia <albertog@icmab.es>   trunk-422-scf-36
+Add option to avoid correcting E_KS at every scf step
+
+If the explicit display of the convergence of E_KS during the scf loop
+is not necessary, the new fdf option
+
+DoNotCorrectEKS T
+
+can be used to deactivate the variationality correction. The *final*
+E_KS value will still be variational, as it is computed with a pure
+density matrix (not mixed after convergence). The forces will also be
+computed with the pure DM.
+
+modified:
+  Src/Makefile
+  Src/compute_EKS_Harris.F90
+  Docs/siesta.tex
+  Docs/siesta.ind
 
 -----------------------------------------------------------------------
 2012-10-26  Alberto Garcia <albertog@icmab.es>   trunk-422-scf-35

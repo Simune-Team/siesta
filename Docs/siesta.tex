@@ -2912,8 +2912,10 @@ The current version introduces several changes:
   {\bf NOTE on performance}: If one were not interested in
   monitoring E\_KS during the cycle, it would be enough to avoid the
   final mix, and compute the energy and forces from DM\_out to get the
-  ``correct'' E\_KS. Then there would be no overhead. This option is
-  not implemented, pending a full review of the desired behavior.
+  ``correct'' E\_KS. Then there would be no overhead. This behavior
+  can be simulated by using the new logical option {\bf DoNotCorrectEKS}, which
+  avoids the correction during the scf cycle.
+\index{Variational character of E\_KS}
 
 \item It remains to be seen whether the forces, being computed
   ``right'' on the basis of DM(out), exhibit somehow better convergence

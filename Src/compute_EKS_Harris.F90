@@ -20,6 +20,7 @@ CONTAINS
     ! by calling dhscf with DM_out.
 
       use precision,       only: dp
+      use fdf,             only: fdf_get
       use siesta_options,  only: g2cut
       use sparse_matrices, only: H_kin, H_vkb
       use sparse_matrices, only: listh, listhptr, numh, maxnh
@@ -92,6 +93,10 @@ CONTAINS
       ! This is correct
       E_Harris = Etot + DEharr
 
+      if (fdf_get("DoNotCorrectEKS",.false.)) then
+         E_KS_good = Etot
+         return
+      endif
 
       ! Now for E_KS(DM_out)
 
