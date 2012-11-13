@@ -764,9 +764,11 @@
         use class_Pair_Geometry_SpMatrix
         use class_Fstack_Pair_Geometry_SpMatrix
 
+        use fdf, only: fdf_get
+
         type(Fstack_Pair_Geometry_SpMatrix), intent(in) :: DM_history
 	integer, intent(in)                             :: na_u 
-        real(dp), intent(in)                            :: xa(:,:)  ! includes extra supercell atoms...
+        real(dp), intent(in)                            :: xa(:,:)
         type(Sparsity), intent(in)                      :: sparse_pattern
         type(SpMatrix), intent(inout)                   :: DMnew
 
@@ -795,7 +797,17 @@
            xan(:,:,i) = xp(:,:)
            dummy_cell(:,:,i) = 1.0_dp
         enddo
-        call extrapolate(na_u,n,dummy_cell,xan,dummy_cell(:,:,1),xa,c)
+        if (fdf_get("UseDIISforDMExtrapolation",.true.)) then
+           if (fdf_get("UseSVD",.true.)) then
+              call extrapolate_diis_svd(na_u,n,dummy_cell,  &
+                                        xan,dummy_cell(:,:,1),xa,c)
+           else
+              call extrapolate_diis(na_u,n,dummy_cell, &
+                                    xan,dummy_cell(:,:,1),xa,c)
+           endif
+        else  
+           call extrapolate(na_u,n,dummy_cell,xan,dummy_cell(:,:,1),xa,c)
+        endif
         if (ionode) then
            print *, "DM extrapolation coefficients: "
            do i = 1, n
@@ -832,6 +844,7 @@
                          DMnew,name="SpM extrapolated using coords")
         call delete(a_out)
         call delete(DMtmp)
+        deallocate(xan,c,dummy_cell)
 
       end subroutine extrapolate_dm_with_coords
 
@@ -941,8 +954,9 @@
 SUBROUTINE extrapolate( na, n, cell, xa, cell0, x0, c )
 
 ! Used procedures and parameters
-  USE sys,       only: die           ! Termination routine
+  USE sys,       only: message           ! Termination routine
   USE precision, only: dp            ! Double precision real kind
+  use parallel,  only: Node
 
 ! Passed arguments
   implicit none
@@ -997,12 +1011,12 @@ SUBROUTINE extrapolate( na, n, cell, xa, cell0, x0, c )
     if (ierr==0) exit                ! Not too elegant, but it will do.
   end do
 
-  !  print *, " # of linearly independent vectors: ", m
+  if (node==0) print *, " # of linearly independent vectors: ", m
 
 ! Trap the case in which the first two xa vectors are equal
   if (m==0) then  ! Just use most recent point only
-    c(1) = 1
-    c(2:n) = 0
+    c(n) = 1
+    c(1:n-1) = 0
     return
   end if
 
@@ -1013,13 +1027,496 @@ SUBROUTINE extrapolate( na, n, cell, xa, cell0, x0, c )
 
 ! Invert the full equations matrix
   call inver( s, si, m, n, ierr )
-  if (ierr/=0) call die('extrapolate: ERROR: matrix inversion failed')
+  if (ierr/=0) then
+     c(:) = 0.0_dp
+     c(n) = 1.0_dp
+     call message('extrapolate: matrix inversion failed')
+     call message('extrapolate: using last item in history')
+     return
+  endif
 
 ! Find expansion coefficients
+! This is wrong regarding the order...
   c(1:m) = matmul( si(1:m,1:m), s0(1:m) )
   c(m+1:n) = 0
 
 END SUBROUTINE extrapolate
+
+! *******************************************************************
+! SUBROUTINE extrapolate_diis( na, n, cell, xa, cell0, x0, c )
+! *******************************************************************
+! Finds optimal coefficients for an approximate expasion of the form
+! D_0 = sum_i c_i D_i, where D_i is the density matrix in the i'th
+! previous iteration, or any other function of the atomic positions. 
+! In practice, given points x_0 and x_i, i=1,...,n, it finds the
+! coefficients c_i such that sum_i c_i*x_i, is closest to x_0, with
+! sum_i c_i = 1. Unit cell vectors are included for completeness of
+! the geometry specification only. Though not used in this version,
+! this routine can be used if cell vectors change (see algorithms).
+! Original version Written by J.M.Soler. Feb.2010.
+! Couched in DIIS language by A. Garcia, Nov. 2012.
+! ************************* INPUT ***********************************
+!  integer  na          ! Number of atoms
+!  integer  n           ! Number of previous atomic positions
+!  real(dp) cell(3,3,n) ! n previous unit cell vectors
+!  real(dp) xa(3,na,n)  ! n previous atomic positions (most recent first)
+!  real(dp) cell0(3,3)  ! Present unit cell vectors
+!  real(dp) x0(3,na)    ! Present atomic positions
+! ************************* OUTPUT **********************************
+!  real(dp) c(n)        ! Expansion coefficients
+! ************************ UNITS ************************************
+! Unit of distance is arbitrary, but must be the same in all arguments
+! ********* BEHAVIOUR ***********************************************
+! - Returns without any action if n<1 or na<1
+! - Stops with an error message if matrix inversion fails
+! ********* DEPENDENCIES ********************************************
+! Routines called: 
+!   inver     : Matrix inversion
+! Modules used:
+!   precision : defines parameter 'dp' (double precision real kind)
+!   sys       : provides the stopping subroutine 'die'
+! ********* ALGORITHMS **********************************************
+
+SUBROUTINE extrapolate_diis( na, n, cell, xa, cell0, x0, c )
+
+! Used procedures and parameters
+  USE sys,       only: message, die
+  USE precision, only: dp            ! Double precision real kind
+  use parallel,  only: Node
+
+! Passed arguments
+  implicit none
+  integer, intent(in) :: na          ! Number of atoms
+  integer, intent(in) :: n           ! Number of previous atomic positions
+  real(dp),intent(in) :: cell(3,3,n) ! n previous unit cell vectors
+  real(dp),intent(inout) :: xa(3,na,n)  ! n previous atomic positions
+  real(dp),intent(in) :: cell0(3,3)  ! Present unit cell vectors
+  real(dp),intent(in) :: x0(3,na)    ! Present atomic positions
+  real(dp),intent(out):: c(n)        ! Expansion coefficients
+
+! Internal variables and arrays
+  integer :: i, info, j, m, ix, ia
+  real(dp), allocatable, dimension(:,:) :: s, si
+
+  allocate (s(n+1,n+1), si(n+1,n+1))
+
+! Trap special cases
+  if (na<1 .or. n<1) then
+    return
+  else if (n==1) then
+    c(1) = 1
+    return
+  end if
+
+! Find residuals with respect to x0 
+  do i = 1, n
+  do ia=1,na
+     do ix=1,3
+        xa(ix,ia,i) = xa(ix,ia,i) - x0(ix,ia)
+     enddo
+  enddo
+  enddo
+ 
+! Find matrix s of dot products.
+
+  do j = 1,n
+    do i = j,n
+      s(i,j) = sum( xa(:,:,i) * xa(:,:,j) )
+      s(j,i) = s(i,j)
+    end do
+    ! Now extend the matrix with ones in an extra column
+    ! and row ...
+    s(j,n+1)=1.0_dp   ! This value is really arbitrary
+    s(n+1,j)=1.0_dp   ! This represents the Sum_{Ci} = 1 constraint
+  end do
+  s(n+1,n+1) = 0.0_dp
+
+  if (Node == 0) then
+     call print_mat(s,n+1)
+  endif
+
+  ! Find rank of the xi*xj matrix
+  do m = n,0,-1
+    if (m==0) exit                   ! Do not try to invert a 0x0 'matrix'
+    call inver( s, si, m, n+1, info )
+    if (info==0) exit                ! Not too elegant, but it will do.
+  end do
+  if (node==0) print *, " Rank of DIIS matrix: ", m
+
+  if (m<n) then
+     info = -1
+  else
+     ! Invert the full matrix
+     call inver( s, si, n+1, n+1, info)
+  endif
+  c(:) = 0.0_dp
+
+    ! If inver was successful, get coefficients for DIIS/Pulay mixing
+    ! (Last column of the inverse matrix, corresponding to solving a
+    ! linear system with (0,0,0,...,0,1) in the right-hand side)
+    if (info .eq. 0) then
+       do i=1,n
+          c(i)=si(i,n+1)
+       enddo
+    else
+       ! Otherwise, use only last step
+       if (Node == 0) then
+         write(6,"(a,i5)")  &
+         "Warning: unstable inversion in DIIS - use last item only"
+       endif
+       c(n) = 1.0_dp
+    endif
+
+    deallocate(s,si)
+end SUBROUTINE extrapolate_diis
+
+SUBROUTINE extrapolate_diis_svd( na, n, cell, xa, cell0, x0, c )
+
+! Used procedures and parameters
+  USE sys,       only: message, die
+  USE precision, only: dp            ! Double precision real kind
+  use parallel,  only: Node
+
+! Passed arguments
+  implicit none
+  integer, intent(in) :: na          ! Number of atoms
+  integer, intent(in) :: n           ! Number of previous atomic positions
+  real(dp),intent(in) :: cell(3,3,n) ! n previous unit cell vectors
+  real(dp),intent(inout) :: xa(3,na,n)  ! n previous atomic positions
+  real(dp),intent(in) :: cell0(3,3)  ! Present unit cell vectors
+  real(dp),intent(in) :: x0(3,na)    ! Present atomic positions
+  real(dp),intent(out):: c(n)        ! Expansion coefficients
+
+! Internal variables and arrays
+  integer :: i, info, j, m, ix, ia
+  real(dp), allocatable, dimension(:,:) :: s, si
+
+  allocate (s(n+1,n+1), si(n+1,n+1))
+
+! Trap special cases
+  if (na<1 .or. n<1) then
+    return
+  else if (n==1) then
+    c(1) = 1
+    return
+  end if
+
+! Find residuals with respect to x0 
+  do i = 1, n
+  do ia=1,na
+     do ix=1,3
+        xa(ix,ia,i) = xa(ix,ia,i) - x0(ix,ia)
+     enddo
+  enddo
+  enddo
+ 
+! Find matrix s of dot products.
+
+  do j = 1,n
+    do i = j,n
+      s(i,j) = sum( xa(:,:,i) * xa(:,:,j) )
+      s(j,i) = s(i,j)
+    end do
+    ! Now extend the matrix with ones in an extra column
+    ! and row ...
+    s(j,n+1)=1.0_dp   ! This value is really arbitrary
+    s(n+1,j)=1.0_dp   ! This represents the Sum_{Ci} = 1 constraint
+  end do
+  s(n+1,n+1) = 0.0_dp
+
+  if (Node == 0) then
+    ! call print_mat(s,n+1)
+  endif
+
+  ! Find rank of the xi*xj matrix
+  do m = n,0,-1
+    if (m==0) exit                   ! Do not try to invert a 0x0 'matrix'
+    call inver( s, si, m, n+1, info )
+    if (info==0) exit                ! Not too elegant, but it will do.
+  end do
+  if (node==0) print *, " Estimated Rank of xi*xj matrix: ", m
+
+  call invert_with_svd(s,c)
+
+  deallocate(s,si)
+end SUBROUTINE extrapolate_diis_svd
+
+subroutine invert_with_svd(ain,c)
+  real(dp), intent(in) :: ain(:,:)
+  real(dp), intent(out) :: c(:)
+
+  real(dp), allocatable :: a(:,:), s(:), work(:), b(:)
+
+  integer, parameter :: nb = 64
+  integer :: n, lwork
+      INTEGER          NIN, NOUT
+      PARAMETER        (NIN=5,NOUT=6)
+
+      REAL(DP) RCOND, RNORM
+      INTEGER  ::    I, INFO, J, M, RANK, LDA
+
+      REAL(DP) DNRM2
+      EXTERNAL         DNRM2
+
+      EXTERNAL         DGELSS
+
+  n = size(ain,dim=1)
+  lda = n
+  m = n
+  allocate(a(n,n))
+  a = ain
+  allocate(b(n),s(n))
+
+  lwork = 3*n+nb*(n+m)
+  allocate(work(lwork))
+
+      b(:) = 0.0_dp
+      b(n) = 1.0_dp 
+
+!        Choose RCOND to reflect the relative accuracy of the input data
+
+         RCOND = 1.0e-6_dp
+         ! Singular values s_i < rcond*s_1 will be neglected for
+         ! the estimation of the rank.
+
+!        Solve the least squares problem min( norm2(b - Ax) ) for the x
+!        of minimum norm.
+
+         CALL DGELSS(M,N,1,A,LDA,B,M,S,RCOND,RANK,WORK,LWORK,INFO)
+!
+         IF (INFO.EQ.0) THEN
+
+            c(1:n-1) = b(1:n-1)
+
+            WRITE (NOUT,"(a,i3,e11.2)") &
+              'Estimated rank of DIIS matrix, (tol)', RANK, RCOND
+            WRITE (NOUT,"(a,7f11.4)") 'Singular values: ', &
+                                      (S(I),I=1,N)
+
+!           Compute and print estimate of the square root of the
+!           residual sum of squares
+
+            IF (RANK.EQ.N) THEN
+               RNORM = DNRM2(M-N,B(N+1),1)
+               !WRITE (NOUT,*)  'Square root of the residual sum of squares'
+               !WRITE (NOUT,*) RNORM
+            END IF
+         ELSE
+            WRITE (NOUT,*) 'The SVD algorithm failed to converge'
+            print *, "info: ", info
+            c(:) = 0.0_dp
+            c(n-1) = 1.0_dp
+            WRITE (NOUT,*) 'Re-using last item only...'
+         END IF
+
+         deallocate(a,s,work,b)
+
+END subroutine invert_with_svd
+
+    subroutine print_mat(a,n)
+      integer, intent(in)  :: n
+      real(dp), intent(in) :: a(n,n)
+      integer :: i, j
+
+      print *, "mat:"
+      do i = 1, n
+         print "(6g15.7)", (a(i,j),j=1,n)
+      enddo
+      print *, "------"
+    end subroutine print_mat
+
+    SUBROUTINE inverse(A,B,N,NDIM,INFO,debug_inverse)
+      use parallel, only: node
+
+      IMPLICIT NONE
+      INTEGER, intent(in) ::  N,NDIM
+      real(dp), intent(in)  ::  A(NDIM,NDIM)
+      real(dp), intent(out) ::  B(NDIM,NDIM)
+      integer, intent(out) :: info
+      logical, intent(in)  :: debug_inverse
+
+      real(dp)  ::  X
+
+!!$C Routine to obtain the inverse of a general, nonsymmetric
+!!$C square matrix, by calling the appropriate LAPACK routines
+!!$C The matrix A is of order N, but is defined with a 
+!!$C size NDIM >= N.
+!!$C If the LAPACK routines fail, try the good old Numerical Recipes
+!!$C algorithm
+!!$C
+!!$C P. Ordejon, June 2003
+!!$C
+!!$C **** INPUT ****
+!!$C A(NDIM,NDIM)   real*8      Matrix to be inverted
+!!$C N              integer     Size of the matrix
+!!$C NDIM           integer     Defined size of matrix
+!!$C **** OUTPUT ****
+!!$C B(NDIM,NDIM)   real*8      Inverse of A
+!!$C INFO           integer     If inversion was unsucessful, 
+!!$C                            INFO <> 0 is returned
+!!$C                            Is successfull, INFO = 0 returned
+!!$C ***************
+
+
+      real(dp) ::  C,ERROR,DELTA,TOL
+      real(dp), allocatable:: work(:), pm(:,:)
+      integer, dimension(:), allocatable  ::  IWORK, ipiv
+      INTEGER I,J,K
+      real(dp) :: ANORM, RCOND
+
+      logical :: debug
+      real(dp), external :: dlange
+
+      allocate (iwork(n), ipiv(n))
+      allocate (work(n), pm(n,n))
+
+      debug = debug_inverse .and. (node == 0)
+
+      TOL=1.0D-4
+      INFO = 0
+
+      DO I=1,N
+      DO J=1,N
+        B(I,J)=A(I,J)
+      ENDDO
+      ENDDO
+      ANORM = DLANGE( "1", N, N, B, NDIM, WORK )
+      CALL DGETRF(N,N,B,NDIM,IPIV,INFO)
+
+      IF (INFO .NE. 0) THEN
+       if (debug) print *,   &
+           'inver:  ERROR: DGETRF exited with error message', INFO
+        GOTO 100
+      ENDIF
+      CALL DGECON( "1", N, B, NDIM, ANORM, RCOND, WORK, IWORK, INFO )
+      IF (INFO .NE. 0) THEN
+       if (debug) print *,   &
+           'inver:  ERROR: DGECON exited with error message', INFO
+        GOTO 100
+      ENDIF
+      if (debug) print "(a,g20.8)", "Reciprocal condition number: ", rcond
+
+      CALL DGETRI(N,B,NDIM,IPIV,WORK,N,INFO)
+
+      IF (INFO .NE. 0) THEN
+       if (debug) print *,   &
+          'inver:  ERROR: DGETRI exited with error message', INFO
+        GOTO 100
+      ENDIF
+
+! CHECK THAT THE INVERSE WAS CORRECTLY CALCULATED
+
+      pm = matmul(a(1:n,1:n),b(1:n,1:n))
+
+      ERROR=0.0D0
+      DO I=1,N
+      DO J=1,N
+        C=0.0D0
+        DO K=1,N
+          C=C+A(I,K)*B(K,J)
+        ENDDO
+        DELTA=0.0D0
+        IF (I.EQ.J)  DELTA=1.0D0
+        ERROR=ERROR+DABS(C-DELTA)
+        C=0.0D0
+        DO K=1,N
+          C=C+B(I,K)*A(K,J)
+        ENDDO
+        DELTA=0.0D0
+        IF (I.EQ.J)  DELTA=1.0D0
+        ERROR=ERROR+DABS(C-DELTA)
+      ENDDO
+      ENDDO
+
+      IF (ERROR/N .GT. TOL) THEN
+       if (debug) then
+          print *,   &
+          'inver:  ERROR in lapack inverse. Error: ', error
+          call print_mat(a,n)
+          call print_mat(b,n)
+          call print_mat(pm,n)
+       endif
+        GOTO 100
+      ENDIF
+
+      INFO = 0
+      deallocate(work,iwork,ipiv,pm)
+      RETURN
+
+100   CONTINUE
+
+! Try simple, old algorithm:
+
+      DO I=1,N
+        DO J=1,N
+          B(I,J)=A(I,J)
+        ENDDO
+      ENDDO
+      DO I=1,N
+        IF (B(I,I) .EQ. 0.0D0) THEN
+           if (debug) print *,   &
+            'inver:  zero pivot in fallback algorithm'
+          INFO = -777
+          deallocate(work,iwork,ipiv,pm)
+          RETURN
+        ENDIF
+        X=B(I,I)
+        B(I,I)=1.0d0
+        DO J=1,N
+          B(J,I)=B(J,I)/X
+        ENDDO
+        DO K=1,N
+          IF ((K-I).NE.0) THEN 
+            X=B(I,K)
+            B(I,K)=0.0d0
+            DO J=1,N
+              B(J,K)=B(J,K)-B(J,I)*X
+            ENDDO
+          ENDIF
+        ENDDO
+      ENDDO
+
+! CHECK THAT THE INVERSE WAS CORRECTLY CALCULATED
+
+      pm = matmul(a(1:n,1:n),b(1:n,1:n))
+      ERROR=0.0D0
+      DO I=1,N
+      DO J=1,N
+        C=0.0D0
+        DO K=1,N
+          C=C+A(I,K)*B(K,J)
+        ENDDO
+        DELTA=0.0D0
+        IF (I.EQ.J)  DELTA=1.0D0
+        ERROR=ERROR+DABS(C-DELTA)
+        C=0.0D0
+        DO K=1,N
+          C=C+B(I,K)*A(K,J)
+        ENDDO
+        DELTA=0.0D0
+        IF (I.EQ.J)  DELTA=1.0D0
+        ERROR=ERROR+DABS(C-DELTA)
+      ENDDO
+      ENDDO
+
+      IF (ERROR/N .GT. TOL) THEN
+       if (debug) then
+          print *,   &
+            'inver:  INVER unsuccessful, ERROR = ', ERROR
+          call print_mat(a,n)
+          call print_mat(b,n)
+          call print_mat(pm,n)
+       endif
+        INFO = -888
+        deallocate(work,iwork,ipiv,pm)
+        RETURN
+      ENDIF
+
+      INFO = 0
+      deallocate(work,iwork,ipiv,pm)
+      RETURN
+
+    end SUBROUTINE inverse
 
 
       end module m_new_dm

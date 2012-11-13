@@ -2,6 +2,7 @@
 !
 ! The basic data structure is an array which can be cyclically shifted,
 ! and whose individual elements can be indexed.
+! The most recent item is the highest-numbered one.
 !
 ! Parameters: FSTACK_NAME
 !             _T_
@@ -105,6 +106,8 @@ call tag_new_object(this)
 end subroutine new__
 
 !---------------------------------------------
+! The most recent item is the highest-numbered
+!
 subroutine push__(s,item)
 type(FSTACK_NAME), intent(inout) :: s
 type(_T_),      intent(in)    :: item

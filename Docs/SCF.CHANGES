@@ -1,4 +1,27 @@
 -----------------------------------------------------------------------
+2012-11-13  Alberto Garcia <albertog@icmab.es>   trunk-422-scf-37
+Use SVD to obtain the DM extrapolation coefficients
+
+Sometimes (particularly for consecutive line-minimization steps in CG
+relaxation) the coordinate vectors in the extrapolation history for
+the DM might be linearly dependent. A new method based on
+singular-value decomposition has been implemented. This scheme is
+"guaranteed" to give the best possible answer in the presence of a
+reduced-rank matrix.
+
+The new scheme is the default when DM.AllowExtrapolation is set to .true.
+
+The tolerance to discard small singular values is hardwired to 1.e-6
+('rcond' in the sense of the LAPACK routine dgelss).
+
+When trying to figure out the best DM.HistoryDepth value, it is a good
+idea to monitor the effective rank of the DIIS matrix. 
+
+modified:
+  Src/Fstack.T90
+  Src/m_new_dm.F90
+
+-----------------------------------------------------------------------
 2012-11-07  Alberto Garcia <albertog@icmab.es>   trunk-422-scf-36
 Add option to avoid correcting E_KS at every scf step
 
