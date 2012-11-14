@@ -10,14 +10,19 @@
 # for an external specification of the (relative) location 
 # of the arch.make file.
 #
-LOCAL_INCFLAGS=-I../
-INCFLAGS:=$(INCFLAGS) $(LOCAL_INCFLAGS)
 #
 ARCH_MAKE_DEFAULT=../arch.make
 ARCH_MAKE?=$(ARCH_MAKE_DEFAULT)
 include $(ARCH_MAKE)
 #
+# Add items to the INCFLAGS as set by the arch.make file
+#
 INCFLAGS:=-I$(VPATH) $(INCFLAGS)    # For VPATH operation
+#
+# This is needed to pick up top-level module files, such as mpi_siesta
+#
+LOCAL_INCFLAGS=-I../
+INCFLAGS:=$(INCFLAGS) $(LOCAL_INCFLAGS)
 #
 # Include copying operations in rule to make sure that
 # they are always performed.

@@ -1419,8 +1419,36 @@ MODULE fdf
 #else
       fileouttmp = fileout
 #endif
-      open( unit=fdf_out, file=TRIM(fileouttmp), form='formatted',       &
-            access='sequential', status='replace' )
+
+#ifdef FDF_DEBUG
+      !
+      !     If debugging, all the nodes use named log files
+      !
+      open( unit=fdf_out, file=TRIM(fileouttmp), form='formatted', &
+           access='sequential', status='replace' )
+#else
+      !
+      !     Only the master node opens a named log file in the current dir.
+      !     Non-master nodes use a scratch file.
+      !     These log files tend to be quite small, so there
+      !     should not be problems such as filling up filesystems.
+      !     ... your mileage might vary. This is a grey area.
+      !     Some compilers allow the user to specify where scratch
+      !     files go.
+      !
+#ifdef _MPI_
+      if (rank /= 0) then
+         open( unit=fdf_out, form='formatted', &
+              access='sequential', status='scratch' )
+      else
+         open( unit=fdf_out, file=TRIM(fileouttmp), form='formatted', &
+              access='sequential', status='replace' )
+      end if
+#else
+      open( unit=fdf_out, file=TRIM(fileouttmp), form='formatted', &
+           access='sequential', status='replace' )
+#endif
+#endif
 
       RETURN
 !--------------------------------------------------------------------------- END
