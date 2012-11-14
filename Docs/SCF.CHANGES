@@ -1,4 +1,28 @@
 -----------------------------------------------------------------------
+2012-11-14  Alberto Garcia <albertog@icmab.es>   trunk-422-scf-38
+Extend SVD procedure to DM Pulay mixing
+
+The implicit inversion in the DIIS procedure is carried out using
+SVD techniques if the user sets
+
+UseSVDInPulay T
+
+The tolerance to discard small singular values is hardwired to 1.e-6
+('rcond' in the sense of the LAPACK routine dgelss).
+
+Rank degradation history information might be used to determine
+the appropriateness of "kicks" (to be implemented).
+
+(+ The 'solve_with_svd' routine is in the new m_svd.F90 module file)
+
+added:
+  Src/m_svd.F90
+modified:
+  Src/Makefile
+  Src/m_new_dm.F90
+  Src/m_pulay.F90
+
+-----------------------------------------------------------------------
 2012-11-13  Alberto Garcia <albertog@icmab.es>   trunk-422-scf-37
 Use SVD to obtain the DM extrapolation coefficients
 

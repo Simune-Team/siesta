@@ -114,6 +114,8 @@ CONTAINS
     use sys,        only : die
     use alloc
     use siesta_options, only: avoid_first_after_kick
+    use fdf,        only : fdf_get
+    use m_svd,      only : solve_with_svd
 #ifdef MPI
     use mpi_siesta
 #endif
@@ -136,6 +138,9 @@ CONTAINS
     integer :: i0,i,ii,in,is,isite,j,jj,numel,ind,info,maxmix
     logical :: after_kick
     logical :: debug_inverse = .false.
+
+!    logical, save :: kick_due = .false.
+    integer :: rank
     !
 #ifdef MPI
     integer  MPIerror
@@ -209,6 +214,7 @@ CONTAINS
     ! Perform linear mixing if we do not have enough history
 
     if (n_records_saved <= 1) then
+!       kick_due = .false.
 
        ! Could do simply:  
        ! if (iscf > 1 .or. mix1) DMnew = (1.0_dp-alpha)*DMold + alpha*DMnew
@@ -232,6 +238,7 @@ CONTAINS
     !
     ! Perform linear mixing if iscf = N x nkick
     !
+!    if (kick_due .or. (nkick > 0 .AND. mod(iscf,nkick).eq.0)) then
     if (nkick > 0 .AND. mod(iscf,nkick).eq.0) then
        ! Reset the history information
        if (Node == 0) then
@@ -271,7 +278,7 @@ CONTAINS
     call re_alloc( bi, 1, maxmix+1, 1, maxmix+1, name='bi',         &
          routine='pulayx' )
     nullify( coeff )
-    call re_alloc( coeff, 1, maxmix+1, name='coeff',                &
+    call re_alloc( coeff, 1, maxmix, name='coeff',                &
          routine='pulayx' )
     nullify( buffer )
     call re_alloc( buffer, 1, maxmix, name='buffer',                &
@@ -355,7 +362,12 @@ CONTAINS
     enddo
 #endif
     !
-    call inverse(b,bi,maxmix+1,maxmix+1,info,debug_inverse)
+    if (fdf_get("UseSVDinPulay",.false.)) then
+       call solve_with_svd(b,coeff,rank=rank)
+       ! Use a more sophisticated history of rank degradation...
+       !kick_due =  (rank < maxmix + 1)
+    else
+       call inverse(b,bi,maxmix+1,maxmix+1,info,debug_inverse)
     !
     ! If inver was successful, get coefficients for Pulay mixing
     if (info .eq. 0) then
@@ -377,6 +389,7 @@ CONTAINS
        if(j.eq.0) j=maxmix
        coeff(j) = 1.0_dp
     endif
+    endif ! SVD
     !
     ! ........
     !

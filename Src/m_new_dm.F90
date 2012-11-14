@@ -1176,6 +1176,7 @@ SUBROUTINE extrapolate_diis_svd( na, n, cell, xa, cell0, x0, c )
   USE sys,       only: message, die
   USE precision, only: dp            ! Double precision real kind
   use parallel,  only: Node
+  use m_svd,     only: solve_with_svd
 
 ! Passed arguments
   implicit none
@@ -1236,82 +1237,10 @@ SUBROUTINE extrapolate_diis_svd( na, n, cell, xa, cell0, x0, c )
   end do
   if (node==0) print *, " Estimated Rank of xi*xj matrix: ", m
 
-  call invert_with_svd(s,c)
+  call solve_with_svd(s,c)
 
   deallocate(s,si)
 end SUBROUTINE extrapolate_diis_svd
-
-subroutine invert_with_svd(ain,c)
-  real(dp), intent(in) :: ain(:,:)
-  real(dp), intent(out) :: c(:)
-
-  real(dp), allocatable :: a(:,:), s(:), work(:), b(:)
-
-  integer, parameter :: nb = 64
-  integer :: n, lwork
-      INTEGER          NIN, NOUT
-      PARAMETER        (NIN=5,NOUT=6)
-
-      REAL(DP) RCOND, RNORM
-      INTEGER  ::    I, INFO, J, M, RANK, LDA
-
-      REAL(DP) DNRM2
-      EXTERNAL         DNRM2
-
-      EXTERNAL         DGELSS
-
-  n = size(ain,dim=1)
-  lda = n
-  m = n
-  allocate(a(n,n))
-  a = ain
-  allocate(b(n),s(n))
-
-  lwork = 3*n+nb*(n+m)
-  allocate(work(lwork))
-
-      b(:) = 0.0_dp
-      b(n) = 1.0_dp 
-
-!        Choose RCOND to reflect the relative accuracy of the input data
-
-         RCOND = 1.0e-6_dp
-         ! Singular values s_i < rcond*s_1 will be neglected for
-         ! the estimation of the rank.
-
-!        Solve the least squares problem min( norm2(b - Ax) ) for the x
-!        of minimum norm.
-
-         CALL DGELSS(M,N,1,A,LDA,B,M,S,RCOND,RANK,WORK,LWORK,INFO)
-!
-         IF (INFO.EQ.0) THEN
-
-            c(1:n-1) = b(1:n-1)
-
-            WRITE (NOUT,"(a,i3,e11.2)") &
-              'Estimated rank of DIIS matrix, (tol)', RANK, RCOND
-            WRITE (NOUT,"(a,7f11.4)") 'Singular values: ', &
-                                      (S(I),I=1,N)
-
-!           Compute and print estimate of the square root of the
-!           residual sum of squares
-
-            IF (RANK.EQ.N) THEN
-               RNORM = DNRM2(M-N,B(N+1),1)
-               !WRITE (NOUT,*)  'Square root of the residual sum of squares'
-               !WRITE (NOUT,*) RNORM
-            END IF
-         ELSE
-            WRITE (NOUT,*) 'The SVD algorithm failed to converge'
-            print *, "info: ", info
-            c(:) = 0.0_dp
-            c(n-1) = 1.0_dp
-            WRITE (NOUT,*) 'Re-using last item only...'
-         END IF
-
-         deallocate(a,s,work,b)
-
-END subroutine invert_with_svd
 
     subroutine print_mat(a,n)
       integer, intent(in)  :: n
