@@ -1448,8 +1448,8 @@ contains
 ! * OUTPUT variables    *
 ! ***********************
     integer , intent(out)          :: nq       ! no. q-points (<= NA1*NA2 for gamma)
-    real(dp), pointer, intent(out) :: q(:,:)   ! q-points
-    real(dp), pointer, intent(out) :: wq(:)    ! weight of q-points (k_||)
+    real(dp), pointer              :: q(:,:) => null() ! q-points
+    real(dp), pointer              :: wq(:)  => null() ! weight of q-points (k_||)
 
 ! ***********************
 ! * LOCAL variables     *
@@ -1459,10 +1459,8 @@ contains
     nq = NA1*NA2                !initial value
 
 ! To comply with new standard 3-dimension regime
-    nullify(q)
     allocate(q(3,nq))
     call memory('A','D',3*nq,'mkqgrid')
-    nullify(wq)
     allocate(wq(nq))
     call memory('A','D',nq,'mkqgrid')
     ! Initialize to 0.0

@@ -1,4 +1,13 @@
 ----------------------------------------------------
+Nov 19, 2012 -- Nick P. Andersen     trunk-424--ts-npa-24
+Fix for overseen pointer intent value
+
+* Intent for pointers are not F95 compatible (thanks Alberto)
+
+modified:
+  Src/m_ts_electrode.F90
+
+----------------------------------------------------
 Nov 19, 2012 -- Nick P. Andersen     trunk-424--ts-npa-23
 Fix for several reported bugs, pointers and spin factors reintroduced
 
