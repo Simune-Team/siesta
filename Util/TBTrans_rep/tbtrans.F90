@@ -222,7 +222,7 @@ program tbtrans
   real(dp) :: f_L, f_R ! Fermi function evaluation of the fermi levels at energies 'contour'
   real(dp) :: kpt(3), wkpt, kpt_Node(3)
   real(dp) :: ucell(3,3) ! The unit cell of the scattering region
-  real(dp) :: rTmp
+  real(dp) :: rTmp, spin_F
   integer :: ierr
   logical :: errorGS
   complex(dp), allocatable :: dummyGAMMA(:,:)
@@ -293,6 +293,13 @@ program tbtrans
 ! Make new line before Electrode Green's function check
   call out_NEWLINE(6)
 
+! Create the spin-factor in DOS calculations
+  if ( nspin == 1 ) then
+     spin_F = 2.0_dp
+  else
+     spin_F = 1.0_dp
+  end if
+
 
 ! #########################################################
 ! # Create the Green's functions for the contour points   #
@@ -319,7 +326,7 @@ program tbtrans
              &left electrode weighted by the energy point weight"
         write(uDOSL,'(a,a9,tr1,a16)')"#","E [eV]", "DOS"
         do iE = 1 , NEn
-           ZBulkDOS(iE,ispin) = -r1dPi*dimag(ZBulkDOS(iE,ispin)*contour(iE)%w)
+           ZBulkDOS(iE,ispin) = -spin_F*r1dPi*dimag(ZBulkDOS(iE,ispin))
         end do
         call out_DOS(uDOSL,NEn,contour(:)%c,ZBulkDOS(:,ispin))
         call io_close(uDOSL)
@@ -343,7 +350,7 @@ program tbtrans
              &right electrode weighted by the energy point weight"
         write(uDOSR,'(a,a9,tr1,a16)')"#","E [eV]", "DOS"
         do iE = 1 , NEn
-           ZBulkDOS(iE,ispin) = -r1dPi*dimag(ZBulkDOS(iE,ispin)*contour(iE)%w)
+           ZBulkDOS(iE,ispin) = -spin_F*r1dPi*dimag(ZBulkDOS(iE,ispin))
         end do
         call out_DOS(uDOSR,NEn,contour(:)%c,ZBulkDOS(:,ispin))
         call io_close(uDOSR)
@@ -402,7 +409,7 @@ program tbtrans
      lastoR(ia2)=lastoR(ia2-1) + (lasto(ia) - lasto(ia-1))
   end do                 !ia
   
-  if(lastoR(nuaR_GF) .ne. noR_GF) then
+  if (lastoR(nuaR_GF) .ne. noR_GF) then
      if(IONode) &
           write(*,*) 'ERROR: lastoR,noR_GF',lastoR,noR_GF
      call die('ERROR: Unexpected no. orbs. in R elec.')
@@ -538,8 +545,10 @@ program tbtrans
   call memory('A','Z',max(noL,noR)**2,'tbtrans')
 
   if ( CalcIeig ) then
-     allocate(eig(nou))
+     allocate(eig(Isoo))
      call memory('A','D',nou,'tbtrans')
+     allocate(aux(Isoo,Isoo))
+     call memory('A','Z',Isoo*Isoo,'tbtrans')
   end if
 
 
@@ -568,11 +577,13 @@ program tbtrans
   call memory('A','Z',nou*nou*2,'tbtrans')
 #endif
 
+  if ( CalcIeig ) then
 ! ... an array to hold the k-point for isolated region
-  nullify(Hk_iso,Sk_iso)
-  allocate(Hk_iso(Isoo,Isoo))
-  allocate(Sk_iso(Isoo,Isoo))
-  call memory('A','Z',Isoo*Isoo*2,'tbtrans')
+     nullify(Hk_iso,Sk_iso)
+     allocate(Hk_iso(Isoo,Isoo))
+     allocate(Sk_iso(Isoo,Isoo))
+     call memory('A','Z',Isoo*Isoo*2,'tbtrans')
+  end if
 
 ! ... an array to hold the k-point for the DEVICE
   nullify(Hk_D,Sk_D)
@@ -596,8 +607,6 @@ program tbtrans
   call memory('A','D',PNEn+PNEn*NeigCh,'tbtrans')
   allocate(TDOSAv(PNEn),PDOSAv(PNEn))
   call memory('A','D',PNEn*2,'tbtrans')
-  allocate(aux(Isoo,Isoo))
-  call memory('A','Z',Isoo*Isoo,'tbtrans')
 
   ! Initialize the arrays as we are going to do a
   ! reduction
@@ -725,15 +734,20 @@ program tbtrans
 ! Retrieve the node specific k-point
            kpt_Node(:) = kpoint(:,min(ikpt+Node,nkpnt))
 
+#ifdef MPI
            call set_HS_matrix(Gamma,ucell,na_u,no_u,no_s,maxnh, &
                 xij,numh,listhptr,listh,indxuo,H(:,ispin),S, &
                 kpt_Node, &
-#ifdef MPI
                 Hk_Node,Sk_Node, &
-#else
-                Hk,Sk, &
-#endif
                 RemNFirstOrbitals=noBufL,RemNLastOrbitals=noBufR)
+#else
+           call set_HS_matrix(Gamma,ucell,na_u,no_u,no_s,maxnh, &
+                xij,numh,listhptr,listh,indxuo,H(:,ispin),S, &
+                kpt_Node, &
+                Hk,Sk, &
+                RemNFirstOrbitals=noBufL,RemNLastOrbitals=noBufR)
+#endif
+
            
 #ifdef MPI
            call matrix_rem_left_right(nou,Hk_Node,Sk_Node,noL,noR)
@@ -769,15 +783,6 @@ program tbtrans
         end if
 #endif 
 
-! Copy over PDOS region, the Hk and Sk matrices are in sizes with the electrodes
-        do j = 1 , Isoo
-           do i = 1 , Isoo
-              Hk_iso(i,j) = Hk(i+Isoo1C-1,j+Isoo1C-1)
-              Sk_iso(i,j) = Sk(i+Isoo1C-1,j+Isoo1C-1)
-           end do
-        end do
-
-
 ! Copy over device region overlap, we can use this to faster calculate the COOP curves
 ! Besides the extra memory should be no problem
         do j = 1 , noD
@@ -788,6 +793,14 @@ program tbtrans
         end do
 
         if ( CalcIeig ) then
+! Copy over PDOS region, the Hk and Sk matrices are in sizes with the electrodes
+           do j = 1 , Isoo
+              do i = 1 , Isoo
+                 Hk_iso(i,j) = Hk(i+Isoo1C-1,j+Isoo1C-1)
+                 Sk_iso(i,j) = Sk(i+Isoo1C-1,j+Isoo1C-1)
+              end do
+           end do
+           
 ! Calculate eigenvalues of Isolated region
            call cdiag(Hk_iso,Sk_iso,Isoo,Isoo,Isoo,eig,aux,Isoo,10,errorGS)
            if(errorGS) call die('ERROR in isolated diagonalization.') 
@@ -833,6 +846,7 @@ program tbtrans
                  TotDOS = TotDOS - r1dPi*dimag(dconjg(Sk_D(i,j))*GF(i,j))
               end do
            end do
+           TotDOS = spin_F * TotDOS
 
 ! Find the "excluded" DOS and subtract from TotDOS
            PDOS = 0.0_dp
@@ -846,7 +860,7 @@ program tbtrans
                  PDOS = PDOS - r1dPi*dimag(Sk_D(i,j)*GF(i,j))
               end do
            end do
-           PDOS = TotDOS - PDOS
+           PDOS = TotDOS - spin_F * PDOS
 
            if ( ZwGF == dcmplx(0.0_dp,0.0_dp) ) then
               PDOS     = 0.0_dp
@@ -895,15 +909,16 @@ program tbtrans
 
            ! Do the COOP curve
            if ( CalcCOOP ) then
-              call COOP(uC,uCL,uCR, &
+              call COOP(uC,uCL,uCR, spin_F, &
                    IsoAt1,IsoAt2, &
                    noBufL,noL,noD, &
                    na_u,lasto,GF,GFRGF,Sk_D, &
-                   iE,dreal(ZEnergy),ZwGF)
+                   iE,dreal(ZEnergy))
            end if
 
            if ( CalcAtomPDOS ) then
-              call AtomPDOS(uTOTDOS,uORBDOS,.false.,noBufL+noL,noD, &
+              call AtomPDOS(uTOTDOS,uORBDOS,.false.,spin_F, &
+                   noBufL+noL,noD, &
                    na_u, IsoAt1, IsoAt2, lasto, &
                    real(ZEnergy,dp),real(ZwGF,dp), &
                    GF, GFRGF, Sk_D)
@@ -1055,8 +1070,10 @@ program tbtrans
 ! ###########################################
   
   if ( CalcIeig ) then
-     call memory('D','D',nou,'tbtrans')
+     call memory('D','D',Isoo,'tbtrans')
      deallocate(eig)
+     call memory('D','Z',Isoo*Isoo,'tbtrans')
+     deallocate(aux)
   end if
 
   call memory('D','I',nuaL_GF+nuaR_GF+2,'tbtrans')
@@ -1081,8 +1098,10 @@ program tbtrans
   deallocate(Hk_Node,Sk_Node)
 #endif
 
-  call memory('D','Z',Isoo*Isoo*2,'tbtrans')
-  deallocate(Hk_iso,Sk_iso)
+  if ( CalcIeig ) then
+     call memory('D','Z',Isoo*Isoo*2,'tbtrans')
+     deallocate(Hk_iso,Sk_iso)
+  end if
 
   call memory('D','Z',noD*noD,'tbtrans')
   deallocate(Sk_D)
@@ -1100,9 +1119,6 @@ program tbtrans
 
   call memory('D','D',PNEn*2,'tbtrans')
   deallocate(TDOSAv,PDOSAv)
-
-  call memory('D','Z',Isoo*Isoo,'tbtrans')
-  deallocate(aux)
 
 
 ! Stop time counter
@@ -1123,9 +1139,9 @@ program tbtrans
 
 contains
 
-  function fermi(e,ef,T)
-    use precision, only : dp
-    real(dp) e,ef,T,tmp,fermi
+  pure function fermi(e,ef,T)
+    real(dp), intent(in) :: e,ef,T
+    real(dp) :: tmp,fermi
 
     if ( T == 0.0_dp ) then
        if ( e>ef ) fermi = 0.0_dp
@@ -1142,4 +1158,5 @@ contains
     endif
 
   end function fermi
+
 end program tbtrans

@@ -1,4 +1,26 @@
 ----------------------------------------------------
+Nov 19, 2012 -- Nick P. Andersen     trunk-424--ts-npa-23
+Fix for several reported bugs, pointers and spin factors reintroduced
+
+* Intent for pointers are not F95 compatible (thanks Alberto)
+* Introduced alloc module in m_hs_matrix
+* Added dummy routine in m_glob_sparse for non-MPI compilations
+* Reintroduced spin factors in DOS calculations
+* Added check of the displacement in the electrode and system
+  k-grid
+
+modified:
+  Docs/TranSiestaUpdate.pdf
+  Docs/siesta.tex
+  Src/m_glob_sparse.F90
+  Src/m_hs_matrix.f90
+  Src/m_ts_electrode.F90
+  Util/TBTrans_rep/atompdos.F90
+  Util/TBTrans_rep/coop.F90
+  Util/TBTrans_rep/m_tbt_out.f90
+  Util/TBTrans_rep/tbtrans.F90
+
+----------------------------------------------------
 Nov 5, 2012 -- Nick P. Andersen     trunk-424--ts-npa-22
 Added documentation, tbtrans fixes, DOS calculation, output
 

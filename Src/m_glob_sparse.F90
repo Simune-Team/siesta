@@ -202,6 +202,10 @@ contains
     end do
     
   end subroutine glob_sparse_matrix
+
+#else
+  subroutine dummy()
+  end subroutine dummy
 #endif
 
 

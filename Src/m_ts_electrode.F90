@@ -456,7 +456,10 @@ contains
     real(dp) :: kpt(3), qpt(3), ktmp(3)
     
     ! Electrode transfer and hamiltonian matrix
-    complex(dp), dimension(:), pointer :: H00,S00,H01,S01
+    complex(dp), dimension(:), pointer :: H00 => null()
+    complex(dp), dimension(:), pointer :: S00 => null()
+    complex(dp), dimension(:), pointer :: H01 => null()
+    complex(dp), dimension(:), pointer :: S01 => null()
 
     ! Green's function variables
     complex(dp), dimension(:), allocatable :: GS
@@ -484,9 +487,6 @@ contains
     ! This Gamma is to be used for the remaining part of the tests
     ! We cannot use the ts_gamma in case of Gamma point in kxy direction
     Gamma = .false.
-
-    ! We nullify to ensure that they pass ASSOCIATED tests
-    nullify(H00,S00,H01,S01)
 
     ! Check input for what to do
     if( leqi(tElec,'L') ) then
@@ -985,7 +985,7 @@ contains
     character(len=5) :: GFjob
     integer :: notot  ! Total orbitals in all supercells
     integer :: nspin  ! The spin polarization
-    integer,  dimension(:),   pointer :: isa ! The atomic species
+    integer,  dimension(:),   pointer :: isa ! atomic species
     logical :: ts_gamma ! Read gamma from file
     real(dp) :: kdispl(3)
     integer  :: kscell(3,3)
@@ -1047,23 +1047,24 @@ contains
                 eXa = eXa .or. ( kscell(i,j) /= ts_kscell(i,j) )
              end if
           end do
+          eXa = eXa .or. ( kdispl(j) /= ts_kdispl(j) )
        end do
        if ( eXa ) then
           write(*,'(a)') 'Incompatible k-grids...'
           write(*,'(a)') 'Electrode file k-grid:'
           do j = 1 , 3
-             write(*,'(3i4)') (kscell(i,j),i=1,3)
+             write(*,'(3(i4,tr1),f8.4)') (kscell(i,j),i=1,3),kdispl(j)
           end do
           write(*,'(a)') 'System k-grid:'
           do j = 1 , 3
-             write(*,'(3i4)') (ts_kscell(i,j),i=1,3)
+             write(*,'(3(i4,tr1),f8.4)') (ts_kscell(i,j),i=1,3),ts_kdispl(j)
           end do
           write(*,'(a)') 'Electrode file k-grid should be:'
           kscell(:,1) = ts_kscell(:,1) * NA1
           kscell(:,2) = ts_kscell(:,2) * NA2
           kscell(:,3) = ts_kscell(:,3)
           do j = 1 , 3
-             write(*,'(3i4)') (kscell(i,j),i=1,3)
+             write(*,'(3(i4,tr1),f8.4)') (kscell(i,j),i=1,3),ts_kdispl(j)
           end do
           call die('Incompatible electrode k-grids') 
        end if
@@ -1202,7 +1203,6 @@ contains
           end do
        end do
        if ( eXa ) then
-! Initialize error parameter
           write(*,'(a)') "Coordinates from the electrode repeated out to an FDF file"
           write(*,'(t3,3a20)') &
                "X (Ang)","Y (Ang)","Z (Ang)"
@@ -1210,7 +1210,7 @@ contains
           do ia = elecElec , elecElec + NUsedAtoms - 1
              do j=0,NA2-1
                 do i=0,NA1-1
-                   write(*,'(t3,3f20.12)') &
+                   write(*,'(t2,3(tr1,f20.12))') &
                         (xa(1,ia)+ucell(1,1)*i+ucell(1,2)*j)/Ang, &
                         (xa(2,ia)+ucell(2,1)*i+ucell(2,2)*j)/Ang, &
                         (xa(3,ia))/Ang

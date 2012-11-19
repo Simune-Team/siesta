@@ -5,7 +5,8 @@
 ! ##  Adapted and streamlined by Nick Papior Andersen             ##
 ! ##################################################################
 
-subroutine AtomPDOS(uTOTDOS,uORBDOS,LowdinFlag,noBufL_P_L,noD, &
+subroutine AtomPDOS(uTOTDOS,uORBDOS,LowdinFlag,spin_F, &
+     noBufL_P_L,noD, &
      na_u,IsoAt1,IsoAt2,lasto, &
      Energy,wGF, &
      GF,GFRGF,S)
@@ -28,7 +29,8 @@ subroutine AtomPDOS(uTOTDOS,uORBDOS,LowdinFlag,noBufL_P_L,noD, &
 ! * INPUT variables      *
 ! ************************
   integer, intent(in)     :: uTOTDOS,uORBDOS  ! units for writing out info
-  logical, intent(in)     :: LowdinFlag      ! if .true. then Loewdin Charges
+  logical, intent(in)     :: LowdinFlag       ! if .true. then Loewdin Charges
+  real(dp),intent(in)     :: spin_F           ! The spin factor of the calculation
   integer, intent(in)     :: noBufL_P_L       ! number of orbitals in the left  device region
   integer, intent(in)     :: noD              ! number of orbitals in the device region
   integer, intent(in)     :: na_u             ! Atoms in the unit cell
@@ -42,7 +44,7 @@ subroutine AtomPDOS(uTOTDOS,uORBDOS,LowdinFlag,noBufL_P_L,noD, &
   complex(dp), intent(in) :: GFRGF(noD,noD)     !
 ! The variable can not be changed
   complex(dp), intent(inout) :: S(noD,noD)         ! overlap matrix in case of Loewdin S=S^1.2
-
+ 
 ! ************************
 ! * LOCAL variables      *
 ! ************************
@@ -106,9 +108,9 @@ subroutine AtomPDOS(uTOTDOS,uORBDOS,LowdinFlag,noBufL_P_L,noD, &
      do i = 1 , lasto(ia) - lasto(ia-1)
         io = i + no
 
-        PDOST  (i,ia) =               - r1dPi * dimag( GFS(io,io))
-        PDOSTot  (ia) = PDOSTot  (ia) - r1dPi * dimag( GFS(io,io))
-        PDOSRight(ia) = PDOSRight(ia) - r1dPi * dimag(GFRS(io,io))
+        PDOST  (i,ia) =               - spin_F * r1dPi * dimag( GFS(io,io))
+        PDOSTot  (ia) = PDOSTot  (ia) - spin_F * r1dPi * dimag( GFS(io,io))
+        PDOSRight(ia) = PDOSRight(ia) - spin_F * r1dPi * dimag(GFRS(io,io))
      end do
 
      PDOSLeft(ia) = PDOSTot(ia) - PDOSRight(ia)

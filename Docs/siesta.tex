@@ -7457,8 +7457,8 @@ The {\tt tbtrans} code can be found in the directory {\tt
 
 A much optimized version of \texttt{tbtrans} is found in the directory
 \texttt{Util/TBTtrans\_rep} which is recommended to be used. Only in this version can the
-repetition used.  It has been completely rewritten to be as fast as possible as well as
-limiting the maintenance to a minimum. This version has been completely rewritten by Nick
+repetition be used. It has been completely rewritten to be as fast as possible as well as
+keeping the maintenance to a minimum. This version has been completely rewritten by Nick
 Papior Andersen (referred to by NPA in the following).
 
 It is used in order to obtain, in a post-processing
@@ -7469,7 +7469,7 @@ with the modifications introduced in {\sc TranSiesta} as of 3.2.
 In order to run it, it requires the electrode's \texttt{.TSHS} files
 (may be just one file if the left and right electrodes are equal), 
 and the
-scattering region's .TSHS file.  These are generated as explained
+scattering region's \texttt{.TSHS} file.  These are generated as explained
 above.  The location of these files are specified by the (already
 discussed) {\bf TS.HSFileLeft}, {\bf TS.HSFileRight} input options,
 and by:
@@ -7477,7 +7477,7 @@ and by:
     \itemsep 10pt
     \parsep 0pt
 
-\item [{\bf TS.TBT.HSFile}]({\it string}): Scattering region .TSHS file.
+\item [{\bf TS.TBT.HSFile}]({\it string}): Scattering region \texttt{.TSHS} file.
 \index{TS.HSFileLeft@{\bf TS.HSFileLeft}}
 
 {\it Default value:} {\tt {\it SystemLabel}.TSHS}
@@ -7507,6 +7507,9 @@ to {\bf kgrid\_Monkhorst\_Pack}, however, this is used to have a separate
 k-sampling in the tbtrans utility. If it does not exist it will use 
 {\bf kgrid\_Monkhorst\_Pack}.
 
+\textbf{Notice}: \textbf{TBT\_kgrid\_Monkhorst\_Pack} can only be used with the version 
+created by NPA.
+
 {\it Default value:} {\bf kgrid\_Monkhorst\_Pack}
 
 \item [{\bf TS.TBT.Emin}]({\it physical}): Lowest energy value of the
@@ -7530,21 +7533,24 @@ k-sampling in the tbtrans utility. If it does not exist it will use
 \item [{\bf TS.TBT.CalcElectrodeValenceBandBottom}]({\it logical}): 
 If true will calculate the valence band bottom of the electrode.
 
+\textbf{Notice}: Can only be used with the NPA version.
+
 {\it Default value:} {\tt true}
 
-\item [{\bf TS.TBT.COOP}]({\it logical}): Calculate the COOP on the PDOS region. The COOP
-does \emph{not} have the spin factor in case of spin equal to 1. Creates the files:
+\item [{\bf TS.TBT.COOP}]({\it logical}): Calculate the COOP on the PDOS region. 
+Creates the files:
 \begin{itemize}
   \item \systemfile{.COOP}
   \item \systemfile{.COOPL}
   \item \systemfile{.COOPR}
 \end{itemize}
 
+\textbf{Notice}: Can only be used with the NPA version.
+
 {\it Default value:} {\tt false}
 
 \item [{\bf TS.TBT.AtomPDOS}]({\it logical}): Calculate the \emph{onsite} projected
-density of states in the PDOS region. The DOS does \emph{not} have the spin factor in case
-of spin equal to 1. Creates the files:
+density of states in the PDOS region. Creates the files:
 \begin{itemize}
   \item \systemfile{.TOTDOS}
   \item \systemfile{.ORBDOS}
@@ -7552,6 +7558,8 @@ of spin equal to 1. Creates the files:
 
 Notice, that this will not sum up to PDOS in \file{.TRANS}, as this is onsite density of
 states.
+
+\textbf{Notice}: Can only be used with the NPA version.
 
 {\it Default value:} {\tt false}
 \end{description}
@@ -7622,8 +7630,7 @@ depends on the type of the output.
     \item[\systemfile{.TRANS}]: The transmission for each $k$ point,
     as well as the total density of states in the scattering region and the projected
     density of states for all orbitals in the region specified by \fdf{TS.TBT.PDOSFrom}
-    and \fdf{TS.TBT.PDOSTo}. The density of states is \emph{not} including the spin factor
-    in case of one spin.
+    and \fdf{TS.TBT.PDOSTo}.
 
     \item[\systemfile{.AVTRANS}]: The $k$ point averaged
     transmission and density of states according to \file{.TRANS}.

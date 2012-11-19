@@ -179,6 +179,8 @@ contains
        RemZConnection,RemUCellDistances,RemNFirstOrbitals,RemNLastOrbitals)
     use precision, only : dp
     use sys,       only : die 
+    use alloc,     only : re_alloc
+
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
@@ -197,7 +199,7 @@ contains
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp), pointer, intent(out) :: Hk(:),Sk(:)
+    complex(dp), pointer              :: Hk(:), Sk(:)
 
 ! ***********************
 ! * OPTIONAL variables  *
@@ -259,19 +261,8 @@ contains
     no_tot = no_u - (l_RemNLastOrbitals + l_RemNFirstOrbitals)
 
 
-    if ( associated(Hk) .and. associated(Sk) ) then
-       if ( size(Hk) /= no_tot*no_tot ) then
-          call memory('D','Z',size(Hk)+size(Sk),'set_HS')
-          deallocate(Hk,Sk)
-          nullify(Hk,Sk)
-          allocate(Hk(no_tot*no_tot),Sk(no_tot*no_tot))
-          call memory('A','Z',2*no_tot*no_tot,'set_HS')
-       end if
-    else
-       ! No need to nullify...
-       allocate(Hk(no_tot*no_tot),Sk(no_tot*no_tot))
-       call memory('A','Z',2*no_tot*no_tot,'set_HS')
-    end if
+    call re_alloc(Hk,1,no_tot*no_tot,name='Hk',routine='set_HS')
+    call re_alloc(Sk,1,no_tot*no_tot,name='Sk',routine='set_HS')
     
     if ( l_RemZConnection ) then
        ! Prepare the cell to calculate the index of the atom
@@ -394,6 +385,8 @@ contains
        RemZConnection,RemUCellDistances,RemNFirstOrbitals,RemNLastOrbitals)
     use precision, only : dp
     use sys,       only : die 
+    use alloc,     only : re_alloc
+
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
@@ -412,7 +405,7 @@ contains
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp), pointer, intent(out) :: Hk(:,:),Sk(:,:)
+    complex(dp), pointer              :: Hk(:,:), Sk(:,:)
 ! ***********************
 ! * OPTIONAL variables  *
 ! ***********************
@@ -474,19 +467,8 @@ contains
     no_tot = no_u - (l_RemNLastOrbitals + l_RemNFirstOrbitals)
 
 
-    if ( associated(Hk) .and. associated(Sk) ) then
-       if ( size(Hk) /= no_tot*no_tot ) then
-          call memory('D','Z',size(Hk)+size(Sk),'set_HS')
-          deallocate(Hk,Sk)
-          nullify(Hk,Sk)
-          allocate(Hk(no_tot,no_tot),Sk(no_tot,no_tot))
-          call memory('A','Z',2*no_tot*no_tot,'set_HS')
-       end if
-    else
-       ! No need to nullify
-       allocate(Hk(no_tot,no_tot),Sk(no_tot,no_tot))
-       call memory('A','Z',2*no_tot*no_tot,'set_HS')
-    end if
+    call re_alloc(Hk,1,no_tot,1,no_tot,name='Hk',routine='set_HS')
+    call re_alloc(Sk,1,no_tot,1,no_tot,name='Sk',routine='set_HS')
 
     if ( l_RemZConnection ) then
        ! Prepare the cell to calculate the index of the atom
@@ -608,6 +590,8 @@ contains
        RemUCellDistances,RemNFirstOrbitals,RemNLastOrbitals)
     use precision, only : dp
     use sys,       only : die 
+    use alloc,     only : re_alloc
+
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
@@ -629,7 +613,7 @@ contains
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp), pointer, intent(out) :: HkT(:),SkT(:)
+    complex(dp), pointer              :: HkT(:), SkT(:)
 
 ! ***********************
 ! * OPTIONAL variables  *
@@ -672,20 +656,8 @@ contains
          l_RemNLastOrbitals = RemNLastOrbitals
     no_tot = no_u - (l_RemNLastOrbitals + l_RemNFirstOrbitals)
 
-
-    if ( associated(HkT) .and. associated(SkT) ) then
-       if ( size(HkT) /= no_tot*no_tot ) then
-          call memory('D','Z',size(HkT)+size(SkT),'set_HS')
-          deallocate(HkT,SkT)
-          nullify(HkT,SkT)
-          allocate(HkT(no_tot*no_tot),SkT(no_tot*no_tot))
-          call memory('A','Z',2*no_tot*no_tot,'set_HS')
-       end if
-    else
-       ! No need to nullify...
-       allocate(HkT(no_tot*no_tot),SkT(no_tot*no_tot))
-       call memory('A','Z',2*no_tot*no_tot,'set_HS')
-    end if
+    call re_alloc(HkT,1,no_tot*no_tot,name='HkT',routine='set_HS')
+    call re_alloc(SkT,1,no_tot*no_tot,name='SkT',routine='set_HS')
 
     ! Prepare the cell to calculate the index of the atom
     call reclat(ucell,recell,0) ! Without 2*Pi
@@ -787,6 +759,8 @@ contains
        RemUCellDistances,RemNFirstOrbitals,RemNLastOrbitals)
     use precision, only : dp
     use sys,       only : die 
+    use alloc,     only : re_alloc
+
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
@@ -808,7 +782,7 @@ contains
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp), pointer, intent(out) :: HkT(:,:),SkT(:,:)
+    complex(dp), pointer              :: HkT(:,:), SkT(:,:)
 ! ***********************
 ! * OPTIONAL variables  *
 ! ***********************
@@ -851,19 +825,9 @@ contains
     no_tot = no_u - (l_RemNLastOrbitals + l_RemNFirstOrbitals)
 
 
-    if ( associated(HkT) .and. associated(SkT) ) then
-       if ( size(HkT) /= no_tot*no_tot ) then
-          call memory('D','Z',size(HkT)+size(SkT),'set_HS')
-          deallocate(HkT,SkT)
-          nullify(HkT,SkT)
-          allocate(HkT(no_tot,no_tot),SkT(no_tot,no_tot))
-          call memory('A','Z',2*no_tot*no_tot,'set_HS')
-       end if
-    else
-       ! No need to nullify
-       allocate(HkT(no_tot,no_tot),SkT(no_tot,no_tot))
-       call memory('A','Z',2*no_tot*no_tot,'set_HS')
-    end if
+    call re_alloc(HkT,1,no_tot,1,no_tot,name='HkT',routine='set_HS')
+    call re_alloc(SkT,1,no_tot,1,no_tot,name='SkT',routine='set_HS')
+
 
     ! Prepare the cell to calculate the index of the atom
     call reclat(ucell,recell,0) ! Without 2*Pi
@@ -1024,7 +988,7 @@ contains
 ! **************************
 ! * OUTPUT variables       *
 ! **************************
-    complex(dp), intent(inout) :: Hk(no_tot*no_tot),Sk(no_tot*no_tot)
+    complex(dp), intent(inout) :: Hk(no_tot*no_tot), Sk(no_tot*no_tot)
 
 ! **************************
 ! * LOCAL variables        *
@@ -1059,7 +1023,7 @@ contains
 ! **************************
 ! * OUTPUT variables       *
 ! **************************
-    complex(dp), intent(inout) :: Hk(no_tot,no_tot),Sk(no_tot,no_tot)
+    complex(dp), intent(inout) :: Hk(no_tot,no_tot), Sk(no_tot,no_tot)
 
 ! **************************
 ! * LOCAL variables        *
@@ -1094,7 +1058,7 @@ contains
 ! **************************
 ! * OUTPUT variables       *
 ! **************************
-    complex(dp), intent(inout) :: Hk(no_tot*no_tot),Sk(no_tot*no_tot)
+    complex(dp), intent(inout) :: Hk(no_tot*no_tot), Sk(no_tot*no_tot)
     
 ! **************************
 ! * LOCAL variables        *
@@ -1138,7 +1102,7 @@ contains
 ! **************************
 ! * OUTPUT variables       *
 ! **************************
-    complex(dp), intent(inout) :: Hk(no_tot,no_tot),Sk(no_tot,no_tot)
+    complex(dp), intent(inout) :: Hk(no_tot,no_tot), Sk(no_tot,no_tot)
     
 ! **************************
 ! * LOCAL variables        *

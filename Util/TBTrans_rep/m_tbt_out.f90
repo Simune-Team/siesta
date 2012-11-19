@@ -16,8 +16,8 @@ module m_tbt_out
        defTfmt = '(f10.5,3(tr1,e16.8))', &
        defCOOPfmt = '(2(tr1,i4),tr1,f10.6,4(tr1,e16.8))', &
        defCOOPLRfmt = '(i4,tr1,f10.6,4(tr1,e16.8))', &
-       defAtomPDOSTotfmt = '(1i4,tr1,f10.6,3(tr1,e16.8)))', &
-       defAtomPDOSOrbfmt = '(1i4,tr1,f10.6,100(tr1,e16.8))' ! If orbitals on a single atom exceeds 100 EDIT HERE
+       defAtomPDOSTotfmt = '(i4,tr1,f10.6,3(tr1,e16.8))', &
+       defAtomPDOSOrbfmt = '(i4,tr1,f10.6,100(tr1,e16.8))' ! If orbitals on a single atom exceeds 100 EDIT HERE
 
   public :: create_file, out_NEWLINE
   public :: out_kpt_header
@@ -39,8 +39,8 @@ contains
     character(len=200), external :: paste
     fname = paste(slabel,"."//trim(basename))
     if ( nspin > 1 ) then
-       if ( ispin == 1 ) fname = paste(slabel,".UP."//trim(basename))
-       if ( ispin == 2 ) fname = paste(slabel,".DN."//trim(basename))
+       if ( ispin == 1 ) fname = paste(slabel,"_UP."//trim(basename))
+       if ( ispin == 2 ) fname = paste(slabel,"_DN."//trim(basename))
     end if
     if ( IONode ) then
        call io_assign(funit)
