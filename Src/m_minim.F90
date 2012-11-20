@@ -47,15 +47,15 @@ subroutine minim(calc_Escf,iscf,istp,nbasis,nspin,nuotot,nhmax,numh,listhptr,lis
 
   logical, intent(in) :: calc_Escf ! Calculate the energy-density matrix from the existing coeffs.?
 
-  integer, intent(in) :: iscf            ! SCF iteration num.
-  integer, intent(in) :: istp            ! MD iteration num.
-  integer, intent(in) :: nbasis          ! Num. of basis orbitals
-  integer, intent(in) :: nspin           ! Num. of spins
-  integer, intent(in) :: nuotot          ! Num. of orbitals in unit cell (global)
-  integer, intent(in) :: nhmax           ! First dimension of listh and H
-  integer, intent(in) :: numh(nbasis)    ! Num. of nonzero elements of each row of H
-  integer, intent(in) :: listhptr(nhmax) ! Pointer to start of row in listh
-  integer, intent(in) :: listh(nbasis)   ! List of nonzero elements of each row of H
+  integer, intent(in) :: iscf             ! SCF iteration num.
+  integer, intent(in) :: istp             ! MD iteration num.
+  integer, intent(in) :: nbasis           ! Num. of basis orbitals
+  integer, intent(in) :: nspin            ! Num. of spins
+  integer, intent(in) :: nuotot           ! Num. of orbitals in unit cell (global)
+  integer, intent(in) :: nhmax            ! First dimension of listh and H
+  integer, intent(in) :: numh(nbasis)     ! Num. of nonzero elements of each row of H
+  integer, intent(in) :: listhptr(nbasis) ! Pointer to start of row in listh
+  integer, intent(in) :: listh(nhmax)     ! List of nonzero elements of each row of H
 
   real(dp), intent(in) :: qs(2)                    ! Num. of electrons per spin
   real(dp), intent(in) :: eta(2)                   ! Chemical potential for Kim functional

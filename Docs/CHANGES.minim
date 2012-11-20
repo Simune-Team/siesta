@@ -1,3 +1,15 @@
+2012-20-11  17:00 Fabiano Corsetti <fcorsetti@nanogune.eu>  trunk-409--minim-7
+Bug fix
+
+* Bug fixed in m_minim.F90 (incorrect number of elements declared for listhptr
+  and listh). Strangely, however, the bug does not appear to cause any errors in
+  the execution of the code.
+
+modified:
+  Docs/CHANGES.minim
+  Src/m_minim.F90
+  version.info
+
 2012-11-07  19:00 Fabiano Corsetti <fcorsetti@nanogune.eu>  trunk-409--minim-6
 Added preconditioning to the CG algorithm
 
