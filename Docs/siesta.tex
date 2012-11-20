@@ -31,6 +31,22 @@
 \baselineskip=14pt
 \parskip 5pt
 
+% A command for specifying FDF commands...
+\newcommand\fdf[1]{%
+    \textbf{#1}%
+}
+
+% A command for specifying files...
+\newcommand\file[1]{%
+    \texttt{#1}\index{#1@\textbf{#1}}%
+}
+
+% A command for specifying files...
+\newcommand\systemfile[1]{%
+    \texttt{<SystemLabel>#1}\index{#1@\textbf{#1}}%
+}
+    
+
 \begin{document}
 
 % TITLE PAGE --------------------------------------------------------------
@@ -52,7 +68,7 @@
 \hrulefill
 \vspace{1cm}
 
-{\Large October 30, 2012 }
+{\Large November 20, 2012 }
 
 \vspace{1.5cm}
 
@@ -4719,8 +4735,8 @@ in the atom.
 
 
 \item[{\bf WriteVoronoiPop}] ({\it logical}): 
-\index{WriteVoronoiPop@{\bf WriteVoronoiPop}}\index{Voronoi population
-analysis}\index{output!Voronoi analysis} 
+\index{WriteVoronoiPop@{\bf WriteVoronoiPop}} %
+\index{Voronoi population analysis}\index{output!Voronoi analysis} 
 %
 If {\tt .true.}, the program calculates and prints the Voronoi {\bf
   net} atomic populations on each atom in the system. For a definition
@@ -4746,9 +4762,11 @@ geometry, after self-consistency). The following options allow more control:
 
 \item[{\bf PartialChargesAtEveryGeometry}] ({\it logical}):
   \index{PartialChargesAtEveryGeometry@{\bf
-      PartialChargesAtEveryGeometry}}\index{Voronoi population
-      analysis}\index{output!Voronoi analysis}\index{Hirshfeld
-      population analysis}\index{output!Hirshfeld analysis}
+      PartialChargesAtEveryGeometry}}%
+  \index{Voronoi population analysis}%
+  \index{output!Voronoi analysis} %
+  \index{Hirshfeld population analysis} %
+  \index{output!Hirshfeld analysis}
 
 The Hirshfeld and Voronoi populations are computed after
 self-consistency is achieved, for all the geometry steps.
@@ -4757,9 +4775,11 @@ self-consistency is achieved, for all the geometry steps.
 
 \item[{\bf PartialChargesAtEveryScfStep}] ({\it logical}):
   \index{PartialChargesAtEveryScfStep@{\bf
-      PartialChargesAtEveryScfStep}}\index{Voronoi population
-    analysis}\index{output!Voronoi analysis}\index{Hirshfeld
-    population analysis}\index{output!Hirshfeld analysis}
+      PartialChargesAtEveryScfStep}}%
+  \index{Voronoi population analysis}%
+  \index{output!Voronoi analysis}%
+  \index{Hirshfeld population analysis}%
+  \index{output!Hirshfeld analysis}
 
 The Hirshfeld and Voronoi populations are computed for every
 step of the self-consistency process.
@@ -6752,12 +6772,12 @@ Jos\'e-Luis Mozos, who also worked on the parallelization of {\sc
   TranSiesta}.  The present distribution has been adapted to the new
 {\sc Siesta} code structure. With respect to the previous
 implementations, it has the additional feature of allowing for the use
-of a {\bf k}-point sampling other than the gamma point (for the 2D
+of a $k$-point sampling other than the gamma point (for the 2D
 Brillouin zone perpendicular to the transport direction).  These
 modifications, among others, were done by Frederico D. Novaes.
 
-As of 3.2 {\sc TranSiesta} has been given a code restructure to be
-more readable from a programmers point of view. This will result in 
+{\sc TranSiesta} has been recently (Fall 2012) restructured to be
+more readable from a programmer's point of view. This will result in 
 less maintenance of the code. Several improvements have also been 
 accomplished:
 \begin{itemize}
@@ -6807,7 +6827,7 @@ using the appropriate arch.make file for your system (note that you do
 not need to make any modification on your arch.make file: you can use
 the same one that you have used to make a standard {\sc Siesta}
 compilation in your system).  The Makefile takes care of defining the
-appropriate preprocessor flag -DTRANSIESTA so that the {\sc
+appropriate preprocessor flag \texttt{-DTRANSIESTA} so that the {\sc
   TranSiesta} modules and modifications are compiled and incorporated
 into the binary. Upon successful compilation, the binary file {\tt
   transiesta} will be generated, containing an executable version of
@@ -7009,12 +7029,18 @@ WARNING: Will proceed without further notice.
 This can possibly lead to an erroneous surface Green's function. If this
 warning is shown try and increase the electrode layers and use the option
 {\bf TS.NumUsedAtomsLeft/Right} to limit the used number of atoms in the
-surface Green's function calculation.
+surface Green's function calculation. An often encountered problem is the ABC stacking of
+gold. Here, it will almost always give this warning. However, one can overcome this by
+making the electrode to an ABCABC stacking of 6 atoms, and use {\bf
+    TS.NumUsedAtomsLeft/Right} equal to 4, or 3 (this will still have a little error,
+however, the surface Green's function has been calculated using the full ABCABC stacking which
+holds more information).
 
 \subsubsection{Repetition}
 
-As of 3.2 {\sc TranSiesta} is capable of utilizing the electrode 
-periodicity. For this the following options are needed:
+{\sc TranSiesta} is now capable of utilizing the electrode periodicity. In the test
+directory a small example of how it is used can be found. For this the following options
+are needed:
 
 \begin{description}
   \itemsep 10pt
@@ -7139,9 +7165,8 @@ calculations, only the usual {\sc Siesta} options are relevant.
 
 {\it Default value:} {\tt true}
 
-\item[{\bf TS.ReUseGF}] ({\it logical}): 
-\index{TS.ReUseGF@{\bf TS.ReUseGF}}
-\index{TS.CalcGF@{see \bf TS.ReUseGF}}
+\item[\fdf{TS.ReUseGF}] \index{TS.ReUseGF@\textbf{TS.ReUseGF}} ({\it logical}): 
+\index{TS.CalcGF@\textbf{TS.CalcGF}|see{\textbf{TS.ReUseGF}}}
 The generated surface Green's functions of the electrodes depend on the atomic structure,
 but also on the energy points of the contour (that will depend on the voltage). 
 It is possible to use previously generated .GF files, but care must be taken.
@@ -7403,26 +7428,24 @@ the other output files, we refer the user to the {\sc Siesta} manual.
     \itemsep 10pt
     \parsep 0pt
     
-    \item[{\bf .DM }]: \index{.DM@{\bf .DM}} The {\sc Siesta} density
-      matrix. {\sc Siesta} initially performs a calculation at zero
-      bias assuming periodic boundary conditions in all directions,
-      and no voltage, which is used as a starting point for the
-      transiesta calculation.
+    \item[\systemfile{.DM}]: The {\sc Siesta} density matrix. {\sc Siesta} initially
+    performs a calculation at zero bias assuming periodic boundary conditions in all
+    directions, and no voltage, which is used as a starting point for the transiesta
+    calculation.
+    
+    \item[\systemfile{.TSDE}]: The {\sc TranSiesta} density matrix and energy density
+    matrix. During a transiesta run, the .DM values are used for the density matrix in
+    the buffer (if used) and electrode regions. The coupling terms may o may no be
+    updated in a {\sc TranSiesta} run (see {\bf TS.UpdateDMCROnly}).
+    
+    \item[\systemfile{.TSHS}]: The Hamiltonian corresponding to .TSDE, and other
+    information needed by {\sc TranSiesta} and {\tt tbtrans}.
 
-    \item[{\bf .TSDE }]: \index{.TSDE@{\bf .TSDE}} The {\sc
-      TranSiesta} density matrix and energy density matrix. During a
-      transiesta run, the .DM values are used for the density matrix
-      in the buffer (if used) and electrode regions. The coupling
-      terms may o may no be updated in a {\sc TranSiesta} run (see
-      {\bf TS.UpdateDMCROnly}).
+    \item[\systemfile{.TSKP}]: The $k$-points used in the {\sc TranSiesta} calculation. See
+    {\sc Siesta} \file{.KP} file for formatting information.
 
-    \item[{\bf .TSHS }]: \index{.TSHS@{\bf .TSHS}} The Hamiltonian
-      corresponding to .TSDE, and other information needed by {\sc
-        TranSiesta} and {\tt tbtrans}.
-
-    \item[{\bf .TSKP }]: \index{.TSKP@{\bf .TSKP}} The k-points used
-      in the {\sc TranSiesta} calculation. See {\sc Siesta} {\bf KP} 
-      file for formatting information.
+    \item[\systemfile{.TSCC}]: The complex contour integration path used for calculating
+    the non-equilibrium density matrix.
 
 \end{description} 
 
@@ -7432,22 +7455,21 @@ the other output files, we refer the user to the {\sc Siesta} manual.
 The {\tt tbtrans} code can be found in the directory {\tt
   Util/TBTrans}. 
 
-A much optimized version of \texttt{tbtrans} is found in the 
-directory \texttt{Util/TBTtrans\_rep} which is recommended to
-be used. Only in this version can the repetition used.
-It has been completely rewritten to be as fast as possible as
-well as limiting the maintenance to a minimum. This version
-has been completely rewritten by Nick Papior Andersen.
+A much optimized version of \texttt{tbtrans} is found in the directory
+\texttt{Util/TBTtrans\_rep} which is recommended to be used. Only in this version can the
+repetition be used. It has been completely rewritten to be as fast as possible as well as
+keeping the maintenance to a minimum. This version has been completely rewritten by Nick
+Papior Andersen (referred to by NPA in the following).
 
 It is used in order to obtain, in a post-processing
 way, the transport properties after a {\sc TranSiesta} run. It was
 developed by M. Brandbyge. It has been made to conform
-with the modifications introduced in {\sc TranSiesta} as of 3.2.
+with the modifications introduced in {\sc TranSiesta} in late October 2012. 
 
 In order to run it, it requires the electrode's \texttt{.TSHS} files
 (may be just one file if the left and right electrodes are equal), 
 and the
-scattering region's .TSHS file.  These are generated as explained
+scattering region's \texttt{.TSHS} file.  These are generated as explained
 above.  The location of these files are specified by the (already
 discussed) {\bf TS.HSFileLeft}, {\bf TS.HSFileRight} input options,
 and by:
@@ -7455,7 +7477,7 @@ and by:
     \itemsep 10pt
     \parsep 0pt
 
-\item [{\bf TS.TBT.HSFile}]({\it string}): Scattering region .TSHS file.
+\item [{\bf TS.TBT.HSFile}]({\it string}): Scattering region \texttt{.TSHS} file.
 \index{TS.HSFileLeft@{\bf TS.HSFileLeft}}
 
 {\it Default value:} {\tt {\it SystemLabel}.TSHS}
@@ -7485,6 +7507,9 @@ to {\bf kgrid\_Monkhorst\_Pack}, however, this is used to have a separate
 k-sampling in the tbtrans utility. If it does not exist it will use 
 {\bf kgrid\_Monkhorst\_Pack}.
 
+\textbf{Notice}: \textbf{TBT\_kgrid\_Monkhorst\_Pack} can only be used with the version 
+created by NPA.
+
 {\it Default value:} {\bf kgrid\_Monkhorst\_Pack}
 
 \item [{\bf TS.TBT.Emin}]({\it physical}): Lowest energy value of the
@@ -7508,29 +7533,38 @@ k-sampling in the tbtrans utility. If it does not exist it will use
 \item [{\bf TS.TBT.CalcElectrodeValenceBandBottom}]({\it logical}): 
 If true will calculate the valence band bottom of the electrode.
 
+\textbf{Notice}: Can only be used with the NPA version.
+
 {\it Default value:} {\tt true}
 
-\item [{\bf TS.TBT.COOP}]({\it logical}): 
-Calculate COOP curves on the PDOS region. Creates the files:
+\item [{\bf TS.TBT.COOP}]({\it logical}): Calculate the COOP on the PDOS region. 
+Creates the files:
 \begin{itemize}
-  \item \texttt{<SystemLabel>.COOP}
-  \item \texttt{<SystemLabel>.COOPL}
-  \item \texttt{<SystemLabel>.COOPR}
+  \item \systemfile{.COOP}
+  \item \systemfile{.COOPL}
+  \item \systemfile{.COOPR}
 \end{itemize}
+
+\textbf{Notice}: Can only be used with the NPA version.
 
 {\it Default value:} {\tt false}
 
-\item [{\bf TS.TBT.AtomPDOS}]({\it logical}): 
-Calculate PDOS on the PDOS region, creates the files:
+\item [{\bf TS.TBT.AtomPDOS}]({\it logical}): Calculate the \emph{onsite} projected
+density of states in the PDOS region. Creates the files:
 \begin{itemize}
-  \item \texttt{<SystemLabel>.TOTDOS}
-  \item \texttt{<SystemLabel>.ORBDOS}
+  \item \systemfile{.TOTDOS}
+  \item \systemfile{.ORBDOS}
 \end{itemize}
 
-{\it Default value:} {\tt true}
+Notice, that this will not sum up to PDOS in \file{.TRANS}, as this is onsite density of
+states.
+
+\textbf{Notice}: Can only be used with the NPA version.
+
+{\it Default value:} {\tt false}
 \end{description}
 Note that it is important to specify the voltage, since this
-information is not stored in the .TSHS files. The current will be
+information is not stored in the \file{.TSHS} files. The current will be
 computed using the resulting transmission function, so be sure to make
 it suited for the integration in the bias window (the energy window
 defined by {\bf TS.TBT.Emin} and {\bf TS.TBT.Emax} being bigger than
@@ -7538,14 +7572,15 @@ or equal to the applied bias).
 
 The k-point sampling is defined by the {\bf TBT\_kgrid\_Monkhorst\_Pack}
 block, and if that is non-existing it will use the
-{\bf kgrid\_Monkhorst\_Pack} block. The averaged (over k-points)
-transmission function is printed in the file {\tt <SystemLabel>.AVTRANS}.
+{\bf kgrid\_Monkhorst\_Pack} block. The averaged (over $k$-points)
+transmission function is printed in the file \systemfile{.AVTRANS}.
 
 An additional options is:
 \begin{description}
- \item [{\bf TS.TBT.NEigen}]({\it integer}): Number of eigenvalues of
-   the transmission matrix to be computed.  \index{TS.TBT.NEigen@{\bf
-       TS.TBT.NEigen}}
+  \item [{\bf TS.TBT.NEigen}]({\it integer}): Number of eigenvalues of the transmission
+  matrix to be computed. If larger than 0 \file{.TEIG} and \file{.AVTEIG} will be created
+  which holds the $k$-point eigenchannels and the averaged eigenchannels,
+  respectively. \index{TS.TBT.NEigen@{\bf TS.TBT.NEigen}}
 
 {\it Default value:} {\tt 0}
 \end{description}
@@ -7557,7 +7592,7 @@ created by Nick Papior Andersen):
 \begin{itemize}
  \item {\bf ElectronicTemperature}
  \item {\bf TS.Voltage}
- \item {\bf TS.ReUseGF} (NPA)
+ \item {\bf TS.TBT.ReUseGF} (NPA)
  \item {\bf TS.UseBulkInElectrodes} (NPA)
  \item {\bf TBT\_kgrid\_Monkhorst\_Pack} (block) has precedence of 
  {\bf kgrid\_Monkhorst\_Pack} (NPA)
@@ -7572,7 +7607,7 @@ created by Nick Papior Andersen):
  \item {\bf TS.TBT.CalcIEig}
  \item {\bf TS.TBT.PDOSFrom}
  \item {\bf TS.TBT.PDOSTo}
- \item {\bf TS.TBT.COOPCurve} (NPA)
+ \item {\bf TS.TBT.COOP} (NPA)
  \item {\bf TS.TBT.AtomPDOS} (NPA)
  \item {\bf TS.TBT.CalcElectrodeValenceBandBottom} (NPA)
  \item {\bf TS.BufferAtomsLeft}, {\bf TS.BufferAtomsRight}
@@ -7581,6 +7616,32 @@ created by Nick Papior Andersen):
  \item {\bf TS.ReplicateA1Right}, {\bf TS.ReplicateA2Right} (NPA)
  \item {\bf SpinPolarized}
 \end{itemize}
+
+\subsubsection{Output}
+
+\texttt{tbtrans} generates several output files.  The output files are named {\tt
+    <SystemLabel>.\emph{ext}}, defined using the SystemLabel FDF command, and .\emph{ext}
+depends on the type of the output.
+
+\begin{description}
+    \itemsep 10pt
+    \parsep 0pt
+    
+    \item[\systemfile{.TRANS}]: The transmission for each $k$ point,
+    as well as the total density of states in the scattering region and the projected
+    density of states for all orbitals in the region specified by \fdf{TS.TBT.PDOSFrom}
+    and \fdf{TS.TBT.PDOSTo}.
+
+    \item[\systemfile{.AVTRANS}]: The $k$ point averaged
+    transmission and density of states according to \file{.TRANS}.
+
+    \item[\systemfile{.LDOS}]: The $k$ point averaged and energy weighted density of states of
+    the left electrode.
+
+    \item[\systemfile{.RDOS}]: The $k$ point averaged and energy weighted density of states of
+    the right electrode.
+
+\end{description} 
 
 \subsubsection{Compiling TBTtrans}
 
@@ -7604,14 +7665,14 @@ python scripting framework built on top of the 'Atomic Simulation
 Environment' (see {\tt https://wiki.fysik.dtu.dk/ase2}) by the Campos
 group at DTU, Denmark.
 
-(NOTE: "ASE version 2", not the new version 3, is needed)
+(NOTE: ``ASE version 2'', not the new version 3, is needed)
 
 There are objects implementing the "Siesta as server/subroutine" feature, and
 also hooks for file-oriented-communication usage. This interface is
 different from the {\sc Siesta}-specific functionality already
 contained in the ASE framework.
 
-Users can create their own scripts to customize the "outer geometry loop"
+Users can create their own scripts to customize the ``outer geometry loop''
 in Siesta, or to perform various repetitive calculations in compact form.
 
 Note that the interfaces in this framework are still evolving and are

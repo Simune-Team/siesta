@@ -5,7 +5,8 @@
 ! ##  Adapted and streamlined by Nick Papior Andersen             ##
 ! ##################################################################
 
-subroutine AtomPDOS(uTOTDOS,uORBDOS,sF,LowdinFlag,noBufL_P_L,noD, &
+subroutine AtomPDOS(uTOTDOS,uORBDOS,LowdinFlag,spin_F, &
+     noBufL_P_L,noD, &
      na_u,IsoAt1,IsoAt2,lasto, &
      Energy,wGF, &
      GF,GFRGF,S)
@@ -28,8 +29,8 @@ subroutine AtomPDOS(uTOTDOS,uORBDOS,sF,LowdinFlag,noBufL_P_L,noD, &
 ! * INPUT variables      *
 ! ************************
   integer, intent(in)     :: uTOTDOS,uORBDOS  ! units for writing out info
-  real(dp), intent(in)    :: sF               ! the spin factor
-  logical, intent(in)     :: LowdinFlag      ! if .true. then Loewdin Charges
+  logical, intent(in)     :: LowdinFlag       ! if .true. then Loewdin Charges
+  real(dp),intent(in)     :: spin_F           ! The spin factor of the calculation
   integer, intent(in)     :: noBufL_P_L       ! number of orbitals in the left  device region
   integer, intent(in)     :: noD              ! number of orbitals in the device region
   integer, intent(in)     :: na_u             ! Atoms in the unit cell
@@ -43,13 +44,13 @@ subroutine AtomPDOS(uTOTDOS,uORBDOS,sF,LowdinFlag,noBufL_P_L,noD, &
   complex(dp), intent(in) :: GFRGF(noD,noD)     !
 ! The variable can not be changed
   complex(dp), intent(inout) :: S(noD,noD)         ! overlap matrix in case of Loewdin S=S^1.2
-
+ 
 ! ************************
 ! * LOCAL variables      *
 ! ************************
-  integer             :: i
-  integer             :: ia, io, no              ! loops
-  complex(dp)         :: zsF ! Local spin factor
+  real(dp), parameter :: r1dPi = 1.0_dp/Pi ! Local Pi factor
+  integer             :: i, no
+  integer             :: ia, io ! loops
   real(dp), dimension(IsoAt1:IsoAt2) :: PDOSTot, PDOSLeft, PDOSRight ! The dos regions
 
   real(dp),    dimension(:,:),  allocatable :: PDOST
@@ -64,9 +65,6 @@ subroutine AtomPDOS(uTOTDOS,uORBDOS,sF,LowdinFlag,noBufL_P_L,noD, &
 #endif
 
   call timer('AtomPDOS',1)
-! Initialize spin factor with units
-! TODO WHY IS THERE A FACTOR OF eV!!!!
-  zsF = dcmplx(-sF/Pi,0.0_dp)*eV
 
   ! Retrieve the maximum number of orbitals on one atom
   ! This is found from the atoms that are to be calculated
@@ -82,7 +80,7 @@ subroutine AtomPDOS(uTOTDOS,uORBDOS,sF,LowdinFlag,noBufL_P_L,noD, &
   GFS  = dcmplx(0.0_dp,0.0_dp)
   GFRS = dcmplx(0.0_dp,0.0_dp)
 
-  if (LowdinFlag) then
+  if ( LowdinFlag ) then
      GFS  = GF
      call Lowdin_Trans(.false.,noD,GFS,S)
      GFRS = GFRGF
@@ -104,14 +102,15 @@ subroutine AtomPDOS(uTOTDOS,uORBDOS,sF,LowdinFlag,noBufL_P_L,noD, &
      PDosRight(ia) = 0.0_dp
      PDosTot(ia)   = 0.0_dp
      PDosT(:,ia)   = 0.0_dp
-     no            = lasto(ia) - lasto(ia-1)            
+     
+     no = lasto(ia-1) - noBufL_P_L
 
-     do i = 1 , no
-        io = i + lasto(ia-1) - noBufL_P_L
+     do i = 1 , lasto(ia) - lasto(ia-1)
+        io = i + no
 
-        PDOST  (i,ia) =                 dimag(zsF *  GFS(io,io))
-        PDOSTot  (ia) = PDOSTot  (ia) + dimag(zsF *  GFS(io,io))
-        PDOSRight(ia) = PDOSRight(ia) + dimag(zsF * GFRS(io,io))
+        PDOST  (i,ia) =               - spin_F * r1dPi * dimag( GFS(io,io))
+        PDOSTot  (ia) = PDOSTot  (ia) - spin_F * r1dPi * dimag( GFS(io,io))
+        PDOSRight(ia) = PDOSRight(ia) - spin_F * r1dPi * dimag(GFRS(io,io))
      end do
 
      PDOSLeft(ia) = PDOSTot(ia) - PDOSRight(ia)

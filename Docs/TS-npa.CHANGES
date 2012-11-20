@@ -1,4 +1,114 @@
 ----------------------------------------------------
+Nov 19, 2012 -- Nick P. Andersen     trunk-424--ts-npa-24
+Fix for overseen pointer intent value
+
+* Intent for pointers are not F95 compatible (thanks Alberto)
+
+modified:
+  Src/m_ts_electrode.F90
+
+----------------------------------------------------
+Nov 19, 2012 -- Nick P. Andersen     trunk-424--ts-npa-23
+Fix for several reported bugs, pointers and spin factors reintroduced
+
+* Intent for pointers are not F95 compatible (thanks Alberto)
+* Introduced alloc module in m_hs_matrix
+* Added dummy routine in m_glob_sparse for non-MPI compilations
+* Reintroduced spin factors in DOS calculations
+* Added check of the displacement in the electrode and system
+  k-grid
+
+modified:
+  Docs/TranSiestaUpdate.pdf
+  Docs/siesta.tex
+  Src/m_glob_sparse.F90
+  Src/m_hs_matrix.f90
+  Src/m_ts_electrode.F90
+  Util/TBTrans_rep/atompdos.F90
+  Util/TBTrans_rep/coop.F90
+  Util/TBTrans_rep/m_tbt_out.f90
+  Util/TBTrans_rep/tbtrans.F90
+
+----------------------------------------------------
+Nov 5, 2012 -- Nick P. Andersen     trunk-424--ts-npa-22
+Added documentation, tbtrans fixes, DOS calculation, output
+
+* Added documentation about AtomPDOS and the difference to the PDOS in 
+  TRANS and AVTRANS
+* Fixed index markings of long names (should be on one line to be the same
+  item
+* Added remark on the WARNING message. A short description of what it does
+* Fixed some index references for transiesta
+* Added more contents about the out-files of transiesta
+   - TSKP
+   - TSCC
+* Added remarks of the DOS in tbtrans to not be times a factor of two, in cases
+  of nspin == 1
+* Added new files to the index, TRANS, AVTRANS, TOTDOS, ORBDOS, COOP[|L|R]
+* Rename TS.ReUseGF in tbtrans to TS.TBT.ReUseGF
+* tbtrans output has been streamlined and headers for LDOS and RDOS have been	
+  added
+* Bugfix in the calculation of the electrode density of states
+  - Also fixed that it can be calculated with spin dependency
+
+modified:
+  Docs/siesta.tex
+  Src/m_ts_electrode.F90
+  Src/m_ts_gf.F90
+  Src/ts_init.F90
+  Util/TBTrans_rep/atompdos.F90
+  Util/TBTrans_rep/coop.F90
+  Util/TBTrans_rep/m_tbt_options.F90
+  Util/TBTrans_rep/m_tbt_out.f90
+  Util/TBTrans_rep/tbtrans.F90
+
+----------------------------------------------------
+Nov 2, 2012 -- Nick P. Andersen     trunk-424--ts-npa-21
+Merged with trunk
+
+----------------------------------------------------
+Nov 2, 2012 -- Nick P. Andersen     trunk-422--ts-npa-21
+Added more precision in the out files for tbtrans
+
+* Added more precision to the TOTDOS and ORBDOS and COOP
+
+modified:
+  Util/TBTrans_rep/m_tbt_out.F90
+
+----------------------------------------------------
+Nov 2, 2012 -- Nick P. Andersen     trunk-422--ts-npa-20
+ifort10, bugfix, several bugfixes in tbtrans
+
+* m_ts_contour had a possible bug in the pointer assignment,
+  it seemed as if it were a bug in the Ifort 10 compiler. 
+  However, it has been generalized and fixed.
+* Added Alberto's fix for the non-parallel run maxng => maxnh
+* TBTrans fixes:
+ * Removed factors of eV in atompdos and coop. Is I feared it was not
+   a reasonable factor.
+ * Generalized all density of states calculations to the same format
+ * Removed spin dependency in the calculations, thus all information
+   is not spin doubled.
+   - I think this will accomodate several things
+     1. The code is much easier to maintain (no need to check for spin)
+     2. Comparing transmissions makes more sense in "channel" view, and
+        having T = 1.0 is obviously one channel.
+ * Added the use of TS.TBT.ReUseGF in TBTrans instead of reading TS.ReUseGF
+ * Fixed the fdf.log issue that was not merged in at the time of tbtrans 
+   creation
+ * Fixed the user determined calculation of the PDOS Hamiltonian eigenvalues 
+ * Added headers about the contents in all out files
+
+modified:
+  Src/m_ts_contour.f90
+  Src/m_ts_in_siesta.F
+  Util/TBTrans_rep/atompdos.F90
+  Util/TBTrans_rep/coop.F90
+  Util/TBTrans_rep/m_tbt_options.F90
+  Util/TBTrans_rep/tbt_reinit.F90
+  Util/TBTrans_rep/tbtrans.F90
+
+----------------------------------------------------
 Oct 29, 2012 -- Nick P. Andersen     trunk-422--ts-npa-19
 Bugfix in reading the TSHS file when Gamma /= GammaOnFile, fixed transport E's
 

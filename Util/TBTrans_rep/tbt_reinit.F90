@@ -35,7 +35,7 @@ subroutine tbt_reinit(sname)
   character(len=*), intent(out) :: sname
 
 !  Internal variables .................................................
-  character(len=20) filein, fileout, string
+  character(len=30) filein, fileout, string
 
   integer  ::  count, length, lun, lun_tmp, iostat
   character :: slabel_default*59, sname_default*20, line*256
@@ -124,8 +124,14 @@ subroutine tbt_reinit(sname)
 ! ...
 
 ! Set up fdf ...
-  fileout = 'fdf.log'
-  call fdf_init(filein,fileout)
+!
+! Choose a 'unique' prefix for the log (and possible debug) fdf files
+! The 5-digit sequence might be slightly different in different
+! processors, depending on the system time.
+  call system_clock( count )
+  write(fileout,"(a,i5,a)") 'fdf-', mod(count,100000), ".log"
+
+  call fdf_init(filein,trim(fileout))
 
 ! Define Name of the system ...
   sname_default = ' '

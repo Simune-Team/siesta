@@ -516,7 +516,7 @@ m_forces.o: precision.o
 m_getopts.o: f2kcli.o
 m_glob_sparse.o: parallel.o parallelsubs.o precision.o
 m_history.o: alloc.o
-m_hs_matrix.o: precision.o sys.o
+m_hs_matrix.o: alloc.o precision.o sys.o
 m_hsx.o: atm_types.o atmfuncs.o atomlist.o files.o parallel.o parallelsubs.o
 m_hsx.o: precision.o siesta_geom.o sys.o
 m_io.o: sys.o

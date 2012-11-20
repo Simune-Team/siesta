@@ -50,7 +50,7 @@ contains
 ! *********************
 ! * LOCAL variables   *
 ! *********************
-    complex(dp), dimension(:), allocatable :: dos
+    complex(dp), dimension(:,:), allocatable :: dos
 
     ! Read in options for transiesta
     call read_ts_options( ucell )
@@ -80,8 +80,8 @@ contains
 
 
        ! GF generation:
-       allocate(dos(NEn))
-       call memory('A','Z',NEn,'transiesta')
+       allocate(dos(NEn,nspin))
+       call memory('A','Z',NEn*nspin,'transiesta')
      
        ! Create the Left GF file
        call do_Green('L',HSFileL, GFFileL, GFTitle, &
@@ -97,7 +97,7 @@ contains
             NBufAtR,NUsedAtomsR,NRepA1R,NRepA2R, &
             ucell,xa,na_u,NEn,contour,VoltR,dos,nspin)
        
-       call memory('D','Z',NEn,'transiesta')
+       call memory('D','Z',NEn*nspin,'transiesta')
        deallocate(dos)
 
        ! Print out information in Green's function files
