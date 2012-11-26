@@ -1195,6 +1195,10 @@ sufficiently.
 The original PAO's are used, multiple-zeta is generated
 by changing the scale-factors, instead of using the excited orbitals.
 
+\item {\tt filteret:} Use the filterets as a systematic basis set.
+The size of the basis set is controlled by the filter cut-off for
+the orbitals.
+
 \end{itemize}
 
 \noindent
@@ -1358,6 +1362,52 @@ automatically).
 \end{itemize}
 
 \end{description}
+
+\begin{description}
+\item[{\bf PAO.EnergyCutoff}] ({\it real energy}): If the multiple
+zetas are generated using filterets then only the filterets with
+an energy lower than this cutoff are included. Increasing this
+value leads to a richer basis set (provided the cutoff is raised
+above the energy of any filteret that was previously not included)
+but a more expensive calculation.
+It only has an effect when the option
+{\bf PAO.BasisType} is set to filteret.
+
+{\it Use:} It has to be positive.
+
+{\it Default value:} {\tt 20.0 Ry}
+\end{description}
+
+\begin{description}
+\item[{\bf PAO.EnergyPolCutoff}] ({\it real energy}): If the multiple
+zetas are generated using filterets then only the filterets with
+an energy lower than this cutoff are included for the polarisation
+functions. Increasing this value leads to a richer basis set 
+(provided the cutoff is raised above the energy of any filteret 
+that was previously not included) but a more expensive calculation.
+It only has an effect when the option
+{\bf PAO.BasisType} is set to filteret.
+
+{\it Use:} It has to be positive.
+
+{\it Default value:} {\tt 20.0 Ry}
+\end{description}
+
+\begin{description}
+\item[{\bf PAO.ContractionCutoff}] ({\it real}): If the multiple
+zetas are generated using filterets then any filterets that have
+a coefficient less than this threshold within the original PAO
+will be contracted together to form a single filteret.
+Increasing this value leads to a smaller basis set but allows
+the underlying basis to have a higher kinetic energy cut-off for
+filtering. It only has an effect when the option
+{\bf PAO.BasisType} is set to filteret.
+
+{\it Use:} It has to be in the range 0 to 1.
+
+{\it Default value:} {\tt 0.0}
+\end{description}
+
 \subsubsection{Soft-confinement options}
 \begin{description}
 
@@ -1529,7 +1579,7 @@ the following ({\tt opt} means optional):
 \begin{verbatim}
 %block PAO.Basis     # Define Basis set
 O    2  nodes  1.0   # Label, l_shells, type (opt), ionic_charge (opt)
- n=2 0 2  E 50.0 2.5 # n (opt if not using semicore levels),l,Nzeta,Softconf(opt
+ n=2 0 2  E 50.0 2.5 # n (opt if not using semicore levels),l,Nzeta,Softconf(opt)
      3.50  3.50      #     rc(izeta=1,Nzeta)(Bohr)
      0.95  1.00      #     scaleFactor(izeta=1,Nzeta) (opt)
      1 1  P 2        # l, Nzeta, PolOrb (opt), NzetaPol (opt)
@@ -1553,6 +1603,7 @@ the routines in {\tt Src/basis\_specs.f} for detailed information):
          { n }, l(lsh), nzls(lsh,is), { PolOrb(l+1) }, { NzetaPol(l+1) },
          {SplitNormfFlag(lsh,is)}, {SplitNormValue(lsh,is)}
          {SoftConfFlag(lsh,is)}, {PrefactorSoft(lsh,is)}, {InnerRadSoft(lsh,is)}
+         {FilteretFlag(lsh,is)}, {FilteretCutoff(lsh,is)}
            read: rcls(izeta,lsh,is), from izeta = 1 to nzls(l,is)
            read: { contrf(izeta,il,is) }, from izeta = 1 to nzls(l,is)
 \end{verbatim}
@@ -1580,7 +1631,8 @@ considered to belong to the
 valence shell have been included in the calculation)
 \item[-] {\tt l}: Angular momentum of
 basis orbitals of this shell
-\item[-] {\tt nzls(lsh,is)}: Number of 'zetas' for this shell.
+\item[-] {\tt nzls(lsh,is)}: Number of 'zetas' for this shell. For a filteret 
+basis this number is ignored since the number is controlled by the cutoff.
 \item[-] {\tt PolOrb(l+1)}: {\it Optional input}. If set equal to {\tt P}, a
 shell of
 polarization functions (with angular momentum $l+1$)  will be constructed
@@ -1589,6 +1641,8 @@ from the first-zeta orbital of angular momentum $l$. {\it Default value}: ' '
 \item[-] {\tt NzetaPol(l+1)}: {\it Optional input}. Number of
 'zetas' for the
 polarization shell (generated automatically in a split-valence fashion).
+For a filteret basis this number is ignored since the number is controlled
+by the cutoff.
 Only active if {\tt PolOrb = P}. {\it Default value}: {\tt 1}
 \item[-] {\tt SplitNormFlag(lsh,is)}:\index{basis!per-shell split norm}
 {\it Optional input}. If set equal to
@@ -1602,10 +1656,16 @@ is used instead of the Sankey hard-well potential.
 of the soft confinement potential ($V_{0}$ in the formula). Units in Ry.
 {\it Default value}: 0 Ry.
 \item[-] {\tt InnerRadSoft(l,is)}: {\it Optional input}. Inner radius where
-the soft confinemet potential starts off ($r_{i}$ in the formula).
+the soft confinement potential starts off ($r_{i}$ in the formula).
 If negative, the inner radius will be computed as the given fraction
 of the PAO cutoff radius.
 Units in bohrs. {\it Default value}: 0 bohrs.
+\item[-] {\tt FilteretFlag(l,is)}:\index{basis!filteret basis set}
+{\it Optional input}. If set equal to
+{\tt F}, then an individual filter cut-off can be specified for the shell.
+\item[-] {\tt FilteretCutoff(l,is)}: {\it Optional input}. Shell-specific
+value for the filteret basis cutoff. Units in Ry.
+{\it Default value}: The same as the value given by {\it FilterCutoff}.
 \item[-] {\tt rcls(izeta,l,is)}: Cutoff radius (Bohr) of
 each 'zeta' for this shell. For the second zeta onwards, if this value
 is negative, the actual rc used will be the given fraction of the

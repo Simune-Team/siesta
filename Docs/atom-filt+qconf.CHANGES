@@ -1,0 +1,24 @@
+----------------------------------------------------------
+Nov 26 2012  Alberto Garcia   trunk-426--atom-filt+qconf-1
+Merged Julian's filteret basis code
+
+There are some cosmetic changes, but it would be too difficult to
+disentangle them from the relevant changes.
+
+added:
+  Tests/Reference/h2o_filteret_basis.out
+  Tests/h2o_filteret_basis/
+  Tests/h2o_filteret_basis/h2o_filteret_basis.fdf
+  Tests/h2o_filteret_basis/h2o_filteret_basis.pseudos
+  Tests/h2o_filteret_basis/makefile
+modified:
+  Docs/siesta.tex
+  Src/atm_transfer.f
+  Src/atm_types.f
+  Src/atmparams.f
+  Src/atom.F
+  Src/basis_specs.f
+  Src/basis_types.f
+  Src/initatom.f
+  Src/m_filter.f90
+  Src/old_atmfuncs.f

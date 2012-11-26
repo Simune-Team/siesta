@@ -52,6 +52,7 @@
                                                              ! construct
           real(dp)                  ::  rinn       ! Soft confinement
           real(dp)                  ::  vcte       ! Soft confinement
+          real(dp)                  ::  filtercut  ! Filter cutoff
           real(dp), pointer         ::  rc(:)      ! rc's for PAOs
           real(dp), pointer         ::  lambda(:)  ! Contraction factors
           !!! type(rad_func), pointer   ::  orb(:) ! Actual orbitals 
@@ -118,6 +119,7 @@
       real(dp)     ,save, public, pointer :: erefkb(:,:,:)
       real(dp)     ,save, public, pointer :: charge(:)
       real(dp)     ,save, public, pointer :: lambda(:,:,:,:)
+      real(dp)     ,save, public, pointer :: filtercut(:,:,:)
       real(dp)     ,save, public, pointer :: rco(:,:,:,:)
       integer      ,save, public, pointer :: iz(:)
       real(dp)     ,save, public, pointer :: smass(:)
@@ -163,6 +165,7 @@
       target%rinn = source%rinn
       target%vcte = source%vcte
       target%split_norm = source%split_norm
+      target%filtercut = source%filtercut
 
       allocate(target%rc(1:size(source%rc)))
       allocate(target%lambda(1:size(source%lambda)))
@@ -183,6 +186,7 @@
       p%vcte = 0._dp
       p%split_norm = 0.0_dp
       p%split_norm_specified = .false.
+      p%filtercut = 0.0_dp
       nullify(p%rc,p%lambda)
       end subroutine init_shell
 
@@ -273,6 +277,7 @@
       write(6,'(5x,a20,l20)') 'Polarized?       ',    p%polarized
       write(6,'(5x,a20,i20)') 'Nzeta pol'           , p%nzeta_pol
       write(6,'(5x,a20,g20.10)') 'split_norm'     , p%split_norm
+      write(6,'(5x,a20,g20.10)') 'filter cutoff'  , p%filtercut
       write(6,'(5x,a20,g20.10)') 'rinn'           , p%rinn
       write(6,'(5x,a20,g20.10)') 'vcte'           , p%vcte
       write(6,'(5x,a)') 'rc and lambda for each nzeta:'
@@ -436,6 +441,9 @@
       nullify( split_norm )
       call re_alloc( split_norm, 0, lmaxd, 1, nsemx, 1, nsp,
      &               'split_norm', 'basis_types' )
+      nullify( filtercut )
+      call re_alloc( filtercut, 0, lmaxd, 1, nsemx, 1, nsp,
+     &               'filtercut', 'basis_types' )
       nullify( vcte )
       call re_alloc( vcte, 0, lmaxd, 1, nsemx, 1, nsp,
      &               'vcte', 'basis_types' )
@@ -471,6 +479,7 @@
       nkbl(:,:) = 0
       nzeta(:,:,:) = 0
       split_norm(:,:,:) = 0.d0
+      filtercut(:,:,:) = 0.d0
       vcte(:,:,:) = 0.d0
       rinn(:,:,:) = 0.d0
       polorb(:,:,:) = 0
@@ -509,6 +518,7 @@
                nzeta(l,n,isp) = s%nzeta
                polorb(l,n,isp) = s%nzeta_pol
                split_norm(l,n,isp) = s%split_norm
+               filtercut(l,n,isp) = s%filtercut
                vcte(l,n,isp) = s%vcte
                rinn(l,n,isp) = s%rinn
 !
@@ -570,16 +580,21 @@
                write(lun,'(10x,a2,i1,2x,a6,i1,2x,a7,i1)')
      $                         'n=', n, 'nzeta=',nzeta(l,n,is),
      $                         'polorb=', polorb(l,n,is)
-               write(lun,'(10x,a10,2x,g12.5)') 
+               if (basistype(is).eq.'filteret') then
+                 write(lun,'(10x,a10,2x,g12.5)') 
+     $                         'fcutoff:', filtercut(l,n,is)
+               else
+                 write(lun,'(10x,a10,2x,g12.5)') 
      $                         'splnorm:', split_norm(l,n,is)
+               endif
                write(lun,'(10x,a10,2x,g12.5)') 
-     $                         'vcte:', vcte(l,n,is)
+     $               'vcte:', vcte(l,n,is)
                write(lun,'(10x,a10,2x,g12.5)') 
-     $                         'rinn:', rinn(l,n,is)
+     $               'rinn:', rinn(l,n,is)
                write(lun,'(10x,a10,2x,4g12.5)') 'rcs:',
-     $                         (rco(i,l,n,is),i=1,nzeta(l,n,is))
+     $               (rco(i,l,n,is),i=1,min(4,nzeta(l,n,is)))
                write(lun,'(10x,a10,2x,4g12.5)') 'lambdas:',
-     $                         (lambda(i,l,n,is),i=1,nzeta(l,n,is))
+     $               (lambda(i,l,n,is),i=1,min(4,nzeta(l,n,is)))
             enddo
          enddo
          write(lun,'(79("-"))')
@@ -606,6 +621,7 @@
       call de_alloc( polorb,     'polorb',     'basis_types' )
       call de_alloc( nzeta,      'nzeta',      'basis_types' )
       call de_alloc( split_norm, 'split_norm', 'basis_types' )
+      call de_alloc( filtercut,  'filtercut',  'basis_types' )
       call de_alloc( vcte,       'vcte',       'basis_types' )
       call de_alloc( rinn,       'rinn',       'basis_types' )
       call de_alloc( erefkb,     'erefkb',     'basis_types' )
