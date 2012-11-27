@@ -6,6 +6,67 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-11-20  09:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-426
+Bug fixes for new transiesta/tbtrans_rep code
+
+Several bug fixes and clarifications have been added to the new
+TranSiesta/TBTrans code. Be sure to see the file
+Docs/TranSiestaUpdate.pdf for information about the new features and
+behavior changes.
+
+* Corrected the DOS calculations with spin factors
+* Bugfix for units in AtomPDOS and COOP calculations (TBtrans_rep)
+* Renamed FDF-option TS.ReUseGF to TS.TBT.ReUseGF (TBtrans_rep)
+* Fixed options not being seen (TS.TBT.CalcIEig)
+* Added all output files to the documentation
+* Added Header information for all TBtrans_rep data files
+* Added dummy routine in m_glob_sparse for non-MPI compilations
+* Avoid f2003 features for pointer handling
+* Use alloc module in m_hs_matrix
+* Handling of FDF-log files corrected in TBtrans_rep (late merge)
+
+modified:
+  Docs/TS-npa.CHANGES
+  Docs/TranSiestaUpdate.pdf
+  Docs/siesta.tex
+  Src/Makefile
+  Src/m_glob_sparse.F90
+  Src/m_hs_matrix.f90
+  Src/m_ts_contour.f90
+  Src/m_ts_electrode.F90
+  Src/m_ts_gf.F90
+  Src/ts_init.F90
+  Util/TBTrans_rep/atompdos.F90
+  Util/TBTrans_rep/coop.F90
+  Util/TBTrans_rep/m_tbt_options.F90
+  Util/TBTrans_rep/m_tbt_out.f90
+  Util/TBTrans_rep/tbt_reinit.F90
+  Util/TBTrans_rep/tbtrans.F90
+
+-----------------------------------------------------------------------
+2012-11-14  18:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-425
+Use scratch fdf log files for non-master nodes
+
+Unless the FDF_DEBUG preprocessor compilation option is in effect,
+non-master nodes in MPI operation do not use named log files. Instead,
+they use "scratch" files which the operating system opens in
+appropriate places.  This will reduce clutter.
+
+(Note that this feature is in general dangerous if the files are
+large, as they can inadvertently fill up filesystems or otherwise
+create havoc. However, the fdf log files are quite small.)
+
+(Contributed by Nick P. Andersen)
+
+(+ rearranged the statements that update INCFLAGS in the fdf
+makefile. This could trap some incorrect settings of this variable in
+the top arch.make)
+
+modified:
+  Src/fdf/fdf.F90
+  Src/fdf/makefile
+
+-----------------------------------------------------------------------
 2012-10-31   9:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-424
 Bug fixes for array bounds 
 

@@ -450,9 +450,11 @@ contains
 ! <<<<<<<<<< Electrode TSHS variables
 
     integer :: nq ! number of q-points, set 'ts_mkqgrid'
-    real(dp), dimension(:,:), pointer :: qb ! q points for repetition, in units
+    real(dp), dimension(:,:), pointer :: qb => null() 
+                                            ! q points for repetition, in units
                                             ! of reciprocal lattice vectors (hence the b)
-    real(dp), dimension(:), pointer   :: wq ! weights for q points for repetition
+    real(dp), dimension(:), pointer   :: wq => null() 
+                                            ! weights for q points for repetition
     real(dp) :: kpt(3), qpt(3), ktmp(3)
     
     ! Electrode transfer and hamiltonian matrix
@@ -1447,9 +1449,9 @@ contains
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    integer , intent(out)          :: nq       ! no. q-points (<= NA1*NA2 for gamma)
-    real(dp), pointer              :: q(:,:) => null() ! q-points
-    real(dp), pointer              :: wq(:)  => null() ! weight of q-points (k_||)
+    integer , intent(out)          :: nq      ! no. q-points (<= NA1*NA2 for gamma)
+    real(dp), pointer              :: q(:,:)  ! q-points
+    real(dp), pointer              :: wq(:)   ! weight of q-points (k_||)
 
 ! ***********************
 ! * LOCAL variables     *
