@@ -35,7 +35,7 @@
      &           lambda, filtercut,
      &           atm_label, polorb, semic, nsemic,
      &           cnfigmx, charge, smass, basistype,
-     &           rinn, vcte, split_norm
+     &           rinn, vcte, qcoe, qyuk, qwid, split_norm
       use basis_types, only: write_basis_specs
       use basis_types, only: basis_def_t, basis_parameters
       use basis_specs, only: read_basis_specs
@@ -100,8 +100,12 @@
      &                    cnfigmx(0:lmaxd,is), charge(is), smass(is),
      &                    basistype(is), is, rinn(0:lmaxd,1:nsemx,is),
      &                    vcte(0:lmaxd,1:nsemx,is),
+     &                    qcoe(0:lmaxd,1:nsemx,is),
+     &                    qyuk(0:lmaxd,1:nsemx,is),
+     &                    qwid(0:lmaxd,1:nsemx,is),
      &                    split_norm(0:lmaxd,1:nsemx,is), 
      &                    filtercut(0:lmaxd,1:nsemx,is), basp)
+
         enddo 
 
         call prinput(nsp)

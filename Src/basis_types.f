@@ -53,6 +53,9 @@
           real(dp)                  ::  rinn       ! Soft confinement
           real(dp)                  ::  vcte       ! Soft confinement
           real(dp)                  ::  filtercut  ! Filter cutoff
+          real(dp)                  ::  qcoe       ! Charge confinement
+          real(dp)                  ::  qyuk       ! Charge confinement
+          real(dp)                  ::  qwid       ! Charge confinement
           real(dp), pointer         ::  rc(:)      ! rc's for PAOs
           real(dp), pointer         ::  lambda(:)  ! Contraction factors
           !!! type(rad_func), pointer   ::  orb(:) ! Actual orbitals 
@@ -116,6 +119,9 @@
       real(dp)     ,save, public, pointer :: split_norm(:,:,:)
       real(dp)     ,save, public, pointer :: vcte(:,:,:)
       real(dp)     ,save, public, pointer :: rinn(:,:,:)
+      real(dp)     ,save, public, pointer :: qcoe(:,:,:)
+      real(dp)     ,save, public, pointer :: qyuk(:,:,:)
+      real(dp)     ,save, public, pointer :: qwid(:,:,:)
       real(dp)     ,save, public, pointer :: erefkb(:,:,:)
       real(dp)     ,save, public, pointer :: charge(:)
       real(dp)     ,save, public, pointer :: lambda(:,:,:,:)
@@ -164,6 +170,9 @@
       target%nzeta_pol = source%nzeta_pol
       target%rinn = source%rinn
       target%vcte = source%vcte
+      target%qcoe = source%qcoe
+      target%qyuk = source%qyuk
+      target%qwid = source%qwid
       target%split_norm = source%split_norm
       target%filtercut = source%filtercut
 
@@ -184,6 +193,9 @@
       p%nzeta_pol = 0
       p%rinn = 0._dp
       p%vcte = 0._dp
+      p%qcoe = 0._dp
+      p%qyuk = 0._dp
+      p%qwid = 0.01_dp
       p%split_norm = 0.0_dp
       p%split_norm_specified = .false.
       p%filtercut = 0.0_dp
@@ -280,6 +292,9 @@
       write(6,'(5x,a20,g20.10)') 'filter cutoff'  , p%filtercut
       write(6,'(5x,a20,g20.10)') 'rinn'           , p%rinn
       write(6,'(5x,a20,g20.10)') 'vcte'           , p%vcte
+      write(6,'(5x,a20,g20.10)') 'qcoe'           , p%qcoe
+      write(6,'(5x,a20,g20.10)') 'qyuk'           , p%qyuk
+      write(6,'(5x,a20,g20.10)') 'qwid'           , p%qwid
       write(6,'(5x,a)') 'rc and lambda for each nzeta:'
       do i = 1, p%nzeta
          write(6,'(5x,i2,2x,2g20.10)') i, p%rc(i), p%lambda(i)
@@ -450,6 +465,15 @@
       nullify( rinn )
       call re_alloc( rinn, 0, lmaxd, 1, nsemx, 1, nsp,
      &               'rinn', 'basis_types' )
+      nullify( qcoe )
+      call re_alloc( qcoe, 0, lmaxd, 1, nsemx, 1, nsp,
+     &               'qcoe', 'basis_types' )
+      nullify( qyuk )
+      call re_alloc( qyuk, 0, lmaxd, 1, nsemx, 1, nsp,
+     &               'qyuk', 'basis_types' )
+      nullify( qwid )
+      call re_alloc( qwid, 0, lmaxd, 1, nsemx, 1, nsp,
+     &               'qwid', 'basis_types' )
       nullify( erefkb )
       call re_alloc( erefkb, 1, nkbmx, 0, lmaxd, 1, nsp,
      &               'erefkb', 'basis_types' )
@@ -478,14 +502,17 @@
 
       nkbl(:,:) = 0
       nzeta(:,:,:) = 0
-      split_norm(:,:,:) = 0.d0
-      filtercut(:,:,:) = 0.d0
-      vcte(:,:,:) = 0.d0
-      rinn(:,:,:) = 0.d0
+      split_norm(:,:,:) = 0._dp
+      filtercut(:,:,:) = 0._dp
+      vcte(:,:,:) = 0._dp
+      rinn(:,:,:) = 0._dp
+      qcoe(:,:,:) = 0._dp
+      qyuk(:,:,:) = 0._dp
+      qwid(:,:,:) = 0._dp
       polorb(:,:,:) = 0
-      rco(:,:,:,:) = 0.d0
-      lambda(:,:,:,:) = 0.d0
-      erefkb(:,:,:) = 0.d0
+      rco(:,:,:,:) = 0._dp
+      lambda(:,:,:,:) = 0._dp
+      erefkb(:,:,:) = 0._dp
       semic(:) = .false.
       nsemic(:,:) = 0
       cnfigmx(:,:) = 0
@@ -521,6 +548,9 @@
                filtercut(l,n,isp) = s%filtercut
                vcte(l,n,isp) = s%vcte
                rinn(l,n,isp) = s%rinn
+               qcoe(l,n,isp) = s%qcoe
+               qyuk(l,n,isp) = s%qyuk
+               qwid(l,n,isp) = s%qwid
 !
 !              This would make the code act in the same way as
 !              siesta 0.X, but it does not seem to be necessary...
@@ -528,6 +558,9 @@
 !               if (s%nzeta_pol.ne.0) then
 !                  vcte(l+1,n,isp) = s%vcte
 !                  rinn(l+1,n,isp) = s%rinn
+!                  qcoe(l+1,n,isp) = s%qcoe
+!                  qyuk(l+1,n,isp) = s%qyuk
+!                  qwid(l+1,n,isp) = s%qwid
 !               endif
 
 !
@@ -591,6 +624,12 @@
      $               'vcte:', vcte(l,n,is)
                write(lun,'(10x,a10,2x,g12.5)') 
      $               'rinn:', rinn(l,n,is)
+               write(lun,'(10x,a10,2x,g12.5)') 
+     $                         'qcoe:', qcoe(l,n,is)
+               write(lun,'(10x,a10,2x,g12.5)') 
+     $                         'qyuk:', qyuk(l,n,is)
+               write(lun,'(10x,a10,2x,g12.5)') 
+     $                         'qwid:', qwid(l,n,is)
                write(lun,'(10x,a10,2x,4g12.5)') 'rcs:',
      $               (rco(i,l,n,is),i=1,min(4,nzeta(l,n,is)))
                write(lun,'(10x,a10,2x,4g12.5)') 'lambdas:',
@@ -624,6 +663,9 @@
       call de_alloc( filtercut,  'filtercut',  'basis_types' )
       call de_alloc( vcte,       'vcte',       'basis_types' )
       call de_alloc( rinn,       'rinn',       'basis_types' )
+      call de_alloc( qcoe,       'qcoe',       'basis_types' )
+      call de_alloc( qyuk,       'qyuk',       'basis_types' )
+      call de_alloc( qwid,       'qwid',       'basis_types' )
       call de_alloc( erefkb,     'erefkb',     'basis_types' )
       call de_alloc( charge,     'charge',     'basis_types' )
       call de_alloc( lambda,     'lambda',     'basis_types' )

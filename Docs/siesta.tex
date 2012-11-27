@@ -66,9 +66,9 @@
 
 \vspace{1cm}
 \hrulefill
-\vspace{1cm}
+\vspace{0.5cm}
 
-{\Large November 20, 2012 }
+{\Large November 26, 2012 }
 
 \vspace{1.5cm}
 
@@ -1110,6 +1110,28 @@ diverges at $r_c$ ensuring the strict localization there.  It is
 \end{equation}
 and both $r_i$ and $V_{\rm o}$ can be given to {\sc Siesta} together
 with $r_c$ in the input (see {\bf PAO.Basis} below).
+The kink is normally well smoothened with the default values 
+for soft confinement by default ({\bf PAO.SoftDefault} true), which 
+are $r_i = 0.9 \, r_c$ and $V_{\rm o} = 40$ Ry.
+
+When explicitly introducing orbitals in the basis that would be empty in 
+the atom (e.g. polarisation orbitals) these tend to be extremely 
+extended if not completely unbound. The above procedure produces
+orbitals that bulge as far away from the nucleus as possible, to 
+plunge abruptly at $r_c$. Soft confinement can be used to try
+to force a more reasonable shape, but it is not ideal (for orbitals
+peaking in the right region the tails tend to be far too short).
+{\it Charge confinement} \index{Charge confinement} produces
+very good shapes for empty orbitals. Essentially a $Z/r$ potential
+is added to the soft confined potential above. For flexibility
+the charge confinement option in {\sc Siesta} is defined as
+\begin{equation}
+  V_{\rm Q}(r) = {Z e^{-\lambda r} \over \sqrt{r^2 + \delta^2}} 
+\end{equation}
+where $\delta$ is there to avoid the singularity (default $\delta=0.01$ Bohr),
+and $\lambda$ allows to screen the potential if longer tails are needed.
+The description on how to introduce this option can be found in
+the {\bf PAO.Basis} entry below.
 
 Finally, the shape of an orbital is also changed by the ionic
 character of the atom.  Orbitals in cations tend to shrink, and they
@@ -1584,9 +1606,11 @@ O    2  nodes  1.0   # Label, l_shells, type (opt), ionic_charge (opt)
      0.95  1.00      #     scaleFactor(izeta=1,Nzeta) (opt)
      1 1  P 2        # l, Nzeta, PolOrb (opt), NzetaPol (opt)
      3.50            #     rc(izeta=1,Nzeta)(Bohr)
-H    1               # Label, l_shells, type (opt), ionic_charge (opt)
+H    2               # Label, l_shells, type (opt), ionic_charge (opt)
      0 2 S 0.2       # l, Nzeta, Per-shell split norm parameter
      5.00  0.00      #     rc(izeta=1,Nzeta)(Bohr)
+     1 1 Q 3. 0.2    # l, Nzeta, Charge conf (opt): Z and screening
+     5.00            #    rc(izeta=1,Nzeta)(Bohr)
 %endblock PAO.Basis
 \end{verbatim}
 
@@ -1602,8 +1626,9 @@ the routines in {\tt Src/basis\_specs.f} for detailed information):
         read:
          { n }, l(lsh), nzls(lsh,is), { PolOrb(l+1) }, { NzetaPol(l+1) },
          {SplitNormfFlag(lsh,is)}, {SplitNormValue(lsh,is)}
-         {SoftConfFlag(lsh,is)}, {PrefactorSoft(lsh,is)}, {InnerRadSoft(lsh,is)}
+         {SoftConfFlag(lsh,is)}, {PrefactorSoft(lsh,is)}, {InnerRadSoft(lsh,is)},
          {FilteretFlag(lsh,is)}, {FilteretCutoff(lsh,is)}
+         {ChargeConfFlag(lsh,is)}, {Z(lsh,is)}, {Screen(lsh,is)}, {delta(lsh,is}
            read: rcls(izeta,lsh,is), from izeta = 1 to nzls(l,is)
            read: { contrf(izeta,il,is) }, from izeta = 1 to nzls(l,is)
 \end{verbatim}
@@ -1649,7 +1674,7 @@ Only active if {\tt PolOrb = P}. {\it Default value}: {\tt 1}
 {\tt S}, the following number sets the split-norm parameter for that shell.
 \item[-] {\tt SoftConfFlag(l,is)}:\index{basis!soft confinement potential}
 {\it Optional input}. If set equal to
-{\tt E}, the new soft confinement potential proposed in formula (1) of
+{\tt E}, the soft confinement potential proposed in equation (1) of
 the paper by J. Junquera {\it et al.}, Phys. Rev. B {\bf 64}, 235111 (2001),
 is used instead of the Sankey hard-well potential.
 \item[-] {\tt PrefactorSoft(l,is)}: {\it Optional input}. Prefactor
@@ -1666,6 +1691,17 @@ Units in bohrs. {\it Default value}: 0 bohrs.
 \item[-] {\tt FilteretCutoff(l,is)}: {\it Optional input}. Shell-specific
 value for the filteret basis cutoff. Units in Ry.
 {\it Default value}: The same as the value given by {\it FilterCutoff}.
+\item[-] {\tt ChargeConfFlag(lsh,is)}: {\it Optional input}. If set equal to 
+{\tt Q}, the charge confinement potential in equation (2) above is
+added to the confining potential. If present it requires at least
+one number after it ({\tt Z}), but it can be followed by two or three numbers.
+\index{Charge confinement}
+\item[-] {\tt Z(lhs,is)}: {\it Optional input, needed if {\tt Q} is set}. $Z$
+charge in equation (2) above for charge confinement (units of $e$). 
+\item[-] {\tt Screen(lhs,is)}: {\it Optional input}. Yukawa screening parameter
+$\lambda$ in equation (2) above for charge confinement (in Bohr$^{-1}$).
+\item[-] {\tt delta(lhs,is)}: {\it Optional input}. Singularity regularisation parameter
+$\delta$ in equation (2) above for charge confinement (in Bohr).
 \item[-] {\tt rcls(izeta,l,is)}: Cutoff radius (Bohr) of
 each 'zeta' for this shell. For the second zeta onwards, if this value
 is negative, the actual rc used will be the given fraction of the

@@ -1,4 +1,24 @@
 ----------------------------------------------------------
+Nov 27 2012  Alberto Garcia   trunk-426--atom-filt+qconf-2
+Merged Emilio's charge-confinement code
+
+Pending to investigate the initialization of the
+qcoe, qyuk, and qwid variables.
+
+added:
+  Docs/CHANGES.charconf
+  Tests/chargeconf-h2o/
+  Tests/chargeconf-h2o/chargeconf-h2o.fdf
+  Tests/chargeconf-h2o/chargeconf-h2o.pseudos
+  Tests/chargeconf-h2o/makefile
+modified:
+  Docs/siesta.tex
+  Src/atom.F
+  Src/basis_specs.f
+  Src/basis_types.f
+  Src/initatom.f
+
+----------------------------------------------------------
 Nov 26 2012  Alberto Garcia   trunk-426--atom-filt+qconf-1
 Merged Julian's filteret basis code
 

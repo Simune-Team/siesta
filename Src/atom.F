@@ -90,8 +90,8 @@
         subroutine atom_main(izin,lmxkb_in,nkbl,erefkb,lmxo, nzeta, 
      .                       rco,lambda_in,atm_label,npolorb,semic,
      .                       nsemic,cnfigmx,charge_in,smass,basistype, 
-     .                       isin,rinn,vcte,split_norm,filtercut_in,
-     .                       basp)
+     .                       ISIN,RINN,VCTE,qcoe,qyuk,qwid,
+     .                       split_norm,filtercut_in,basp)
 
         implicit none
 
@@ -163,6 +163,11 @@
 
         real(dp), intent(in) :: vcte(0:lmaxd,nsemx), rinn(0:lmaxd,nsemx)
 !       Parameters for soft-confinement potential
+
+      real(dp), intent(in) :: qcoe(0:lmaxd,nsemx)
+      real(dp), intent(in) :: qyuk(0:lmaxd,nsemx)
+      real(dp), intent(in) :: qwid(0:lmaxd,nsemx)
+!       Parameters for charge-confinement potential
 
         real(dp), intent(in) :: split_norm(0:lmaxd,nsemx)
 !       User-defined split_norm values
@@ -603,8 +608,8 @@ c    .          'atom: The above configuration will be used ',
 
             call Basis_gen(Zval,is, iz, a,b,rofi,drdi,s,
      .                     vps, ve, vePAO, nrval, lmxo,nsemic,
-     .                     nzeta, rco, lambda, npolorb,
-     .                     basistype, rphi, no, rinn, vcte, 
+     .                     nzeta, rco, lambda, npolorb, basistype,
+     .                     rphi, no, rinn, vcte, qcoe, qyuk, qwid,
      .                     split_norm, filtercut, atm_label)
  
           else
@@ -622,8 +627,8 @@ c    .          'atom: The above configuration will be used ',
 
             call Basis_gen(Zval,is, iz, a,b,rofi,drdi,s,
      .                     vps, vePAO, vePAO, nrval, lmxo,nsemic,
-     .                     nzeta, rco, lambda, npolorb,
-     .                     basistype, rphi, no, rinn, vcte,
+     .                     nzeta, rco, lambda, npolorb, basistype,
+     .                     rphi, no, rinn, vcte, qcoe, qyuk, qwid,
      .                     split_norm, filtercut, atm_label)
           endif
           write(6,'(a,i3)')
@@ -3027,9 +3032,9 @@ C
 !
         subroutine Basis_gen(Zval,is, iz, a,b,rofi,drdi,s,
      .                       vps, ve, vePAO, nrval, lmxo,nsemic, 
-     .                       nzeta, rco, lambda, polorb,
-     .                       basis_type, rphi, notot, rinn, vcte, 
-     .                       split_norm, filtercut, atm_label)
+     .                       nzeta, rco, lambda, polorb, basis_type,
+     .                       rphi, notot, rinn, vcte, qcoe, qyuk,
+     .                       qwid, split_norm, filtercut, atm_label)
 
 C
 C Generates the basis set and stores all the information in the 
@@ -3048,8 +3053,10 @@ C
      .    rphi(nrmax,0:lmaxd,nsemx), rco(nzetmx,0:lmaxd,nsemx),
      .    lambda(nzetmx, 0:lmaxd,nsemx), vePAO(nrmax),
      .    Zval,rinn(0:lmaxd,nsemx),vcte(0:lmaxd,nsemx),
-     .    split_norm(0:lmaxd,nsemx), filtercut(0:lmaxd,nsemx)
-        character(len=*) 
+     .    qcoe(0:lmaxd,nsemx), qwid(0:lmaxd,nsemx),
+     .    qyuk(0:lmaxd,nsemx), split_norm(0:lmaxd,nsemx),
+     .    filtercut(0:lmaxd,nsemx)
+        character(len=*)
      .    atm_label
         integer
      .    nrval, lmxo, notot, is, iz, nzeta(0:lmaxd,nsemx),
@@ -3073,7 +3080,8 @@ C
      .               nrval, lmxo, nsemic,
      .               nzeta, rco, lambda, 
      .               rphi, ePAO, noPAO,
-     .               rinn, vcte, split_norm,
+     .               rinn, vcte, qcoe, qyuk,
+     .               qwid, split_norm,
      .               filtercut, atm_label)
          
         elseif (basis_type.eq.'nodes') then 
@@ -3110,7 +3118,8 @@ C
      .                  nrval, lmxo, nsemic,
      .                  nzeta, rco, lambda, 
      .                  rphi, ePAO, noPAO,
-     .                  rinn, vcte, split_norm,
+     .                  rinn, vcte, qcoe, qyuk, qwid,
+     .                  split_norm,
      .                  filtercut, atm_label )
          
         endif            
@@ -3121,14 +3130,15 @@ C
         if (basis_type.eq.'filteret') then  
           call POLgen_filteret_new(is, iz, a,b,rofi,drdi,
      .                ePAO,rphi,rco,vps,vePAO,
-     .                polorb,lmxo,nsemic,noPOL,
-     .                rinn,vcte,nrval,split_norm,
+     .                polorb,lmxo,nsemic,noPOL, rinn, vcte,
+     .                qcoe, qyuk, qwid, nrval,
+     .                split_norm,
      .                filtercut,atm_label) 
         else
           call POLgen(is, iz, a,b,rofi,drdi,
      .                ePAO,rphi,rco,vps,vePAO,
-     .                polorb,lmxo,nsemic,noPOL,
-     .                rinn,vcte,nrval,split_norm,
+     .                polorb, lmxo, nsemic, noPOL, rinn, vcte,
+     .                qcoe, qyuk, qwid, nrval, split_norm, 
      .                filtercut,atm_label) 
         endif
 C
@@ -3143,8 +3153,8 @@ C
      .                      vps,ve,vePAO,nrval,lmxo, nsemic,
      .                      nzeta,rco,lambda, 
      .                      rphi, ePAO, norb,
-     .                      rinn,vcte,split_norm,
-     .                      filtercut,atm_label) 
+     .                      rinn,vcte, qcoe, qyuk, qwid,
+     .                      split_norm,filtercut,atm_label) 
 
         use basis_specs, only:  restricted_grid
 C
@@ -3163,6 +3173,8 @@ C
      .    lambda(nzetmx,0:lmaxd,nsemx), Zval,vePAO(nrmax),
      .    ePAO(0:lmaxd,nsemx),
      .    rinn(0:lmaxd,nsemx),vcte(0:lmaxd,nsemx),
+     .    qcoe(0:lmaxd,nsemx), qwid(0:lmaxd,nsemx),
+     .    qyuk(0:lmaxd,nsemx), 
      .    split_norm(0:lmaxd,nsemx), filtercut(0:lmaxd,nsemx)
           character(len=*) atm_label
 
@@ -3276,6 +3288,7 @@ C Calculate the soft confinement potential for a given atomic species and angula
 !!AG** rco might not be the PAO cutoff radius! See below
 
               call build_vsoft(is,l,nsm,rinn(l,nsm),vcte(l,nsm),
+     .                         qcoe(l,nsm),qyuk(l,nsm),qwid(l,nsm),
      .                         a, b, rco(1,l,nsm),rofi,nrval,
      .                         vsoft,plot=write_ion_plot_files)
 
@@ -3604,7 +3617,7 @@ C
         subroutine SPLIT(Zval,is, iz, a,b,rofi,drdi,s,
      .                   vps,ve,vePAO,nrval,lmxo, nsemic,
      .                   nzeta,rco,lambda, rphi, ePAO, norb,
-     .                   rinn,vcte,split_norm,
+     .                   rinn,vcte,qcoe,qyuk,qwid,split_norm, 
      .                   filtercut,atm_label) 
 
         use basis_specs, only:  restricted_grid
@@ -3624,7 +3637,9 @@ C
      .    lambda(nzetmx,0:lmaxd,nsemx), Zval,vePAO(nrmax),
      .    ePAO(0:lmaxd,nsemx),
      .    rinn(0:lmaxd,nsemx),vcte(0:lmaxd,nsemx),
-     .    split_norm(0:lmaxd,nsemx), filtercut(0:lmaxd,nsemx)
+     .    split_norm(0:lmaxd,nsemx), filtercut(0:lmaxd,nsemx),
+     .    qcoe(0:lmaxd,nsemx),qwid(0:lmaxd,nsemx),
+     .    qyuk(0:lmaxd,nsemx)
           character(len=*) atm_label
 
         integer
@@ -3746,8 +3761,9 @@ C and angular momentum
 !!AG** rco might not be the PAO cutoff radius! See below
 
               call build_vsoft(is,l,nsm,rinn(l,nsm),vcte(l,nsm),
-     .                       a, b, rco(1,l,nsm),rofi,nrval,
-     .                       vsoft,plot=write_ion_plot_files)
+     .               qcoe(l,nsm),qyuk(l,nsm),qwid(l,nsm),a,b,
+     .               rco(1,l,nsm),rofi,nrval,vsoft,
+     .               plot=write_ion_plot_files)
 
               do ir = 1, nrval
                 vePAOsoft(ir) = vePAO(ir) + vsoft(ir)
@@ -5500,7 +5516,8 @@ C
         end subroutine slfe_local
 !
         subroutine POLgen(is,iz,a,b,rofi,drdi,ePAO,rphi,rco,vps,ve,
-     .                    polorb,lmxo, nsemic,norb,rinn,vcte,nrval,
+     .                    polorb,lmxo, nsemic,norb,rinn,vcte,
+     .                    qcoe,qyuk,qwid,nrval,
      .                    split_norm,filtercut,atm_label)
 C
 C Calculates the polarization  orbitals for the basis set augmentation.
@@ -5516,6 +5533,8 @@ C
      .    rco(nzetmx,0:lmaxd,nsemx),
      .    ePAO(0:lmaxd,nsemx),
      .    rinn(0:lmaxd,nsemx), vcte(0:lmaxd,nsemx),
+     .    qcoe(0:lmaxd,nsemx), qwid(0:lmaxd,nsemx), 
+     .    qyuk(0:lmaxd,nsemx), 
      .    split_norm(0:lmaxd,nsemx),
      .    filtercut(0:lmaxd,nsemx)
 
@@ -5575,6 +5594,7 @@ C
 C Calculate the soft-confinement potential for the polarization orbitals
 
               call build_vsoft(is,l,nsm,rinn(l,nsm),vcte(l,nsm),
+     .                         qcoe(l,nsm),qyuk(l,nsm),qwid(l,nsm),
      .                         a,b,rco(1,l,nsm),rofi,nrval,vsoft)
 
               do ir = 1, nrval
@@ -5824,7 +5844,8 @@ C
 
         subroutine POLgen_filteret_old(is,iz,a,b,rofi,drdi,ePAO,rphi,
      .                             rco,vps,ve,polorb,lmxo,nsemic,
-     .                             norb,rinn,vcte,nrval,
+     .                             norb,rinn,vcte,
+     .                             qcoe, qyuk, qwid, nrval,
      .                             split_norm,filtercut,atm_label)
 C
 C Calculates the polarization orbitals for the basis set augmentation.
@@ -5845,6 +5866,8 @@ C
      .    rco(nzetmx,0:lmaxd,nsemx),
      .    ePAO(0:lmaxd,nsemx),
      .    rinn(0:lmaxd,nsemx), vcte(0:lmaxd,nsemx),
+     .    qcoe(0:lmaxd,nsemx), qwid(0:lmaxd,nsemx), 
+     .    qyuk(0:lmaxd,nsemx), 
      .    split_norm(0:lmaxd,nsemx),
      .    filtercut(0:lmaxd,nsemx)
 
@@ -6078,7 +6101,8 @@ C
 !
         subroutine POLgen_filteret_new(is,iz,a,b,rofi,drdi,ePAO,rphi,
      .                             rco,vps,ve,polorb,lmxo,nsemic,
-     .                             norb,rinn,vcte,nrval,
+     .                             norb,rinn,vcte,
+     .                             qcoe,qyuk,qwid,nrval,
      .                             split_norm,filtercut,atm_label)
 C
 C Calculates the polarization orbitals for the basis set augmentation.
@@ -6099,6 +6123,8 @@ C
      .    rco(nzetmx,0:lmaxd,nsemx),
      .    ePAO(0:lmaxd,nsemx),
      .    rinn(0:lmaxd,nsemx), vcte(0:lmaxd,nsemx),
+     .    qcoe(0:lmaxd,nsemx), qwid(0:lmaxd,nsemx), 
+     .    qyuk(0:lmaxd,nsemx), 
      .    split_norm(0:lmaxd,nsemx),
      .    filtercut(0:lmaxd,nsemx)
 
@@ -6159,6 +6185,7 @@ C
 C  Build soft-confinement potential for the polarisation orbitals
 C
               call build_vsoft(is,l,nsm,rinn(l,nsm),vcte(l,nsm),
+     .                         qcoe(l,nsm),qyuk(l,nsm),qwid(l,nsm),
      .                         a,b,rco(1,l,nsm),rofi,nrval,vsoft)
 
               do ir = 1, nrval
@@ -7069,14 +7096,17 @@ c    .              ,'        # scaleFactor(izeta=1,Nzeta)'
 
        end function vander
 !----------------------------------------------------- Soft Confinement
-       subroutine build_vsoft(is,l,nsm,rinn,vcte,a,b,
-     $                        rc,rofi,nrval,vsoft,plot)
+       subroutine build_vsoft(is,l,nsm,rinn,vcte,qcoe,qyuk,qwid,
+     $                        a,b,rc,rofi,nrval,vsoft,plot)
 
        integer, intent(in)             :: is
        integer, intent(in)             :: l, nsm
        integer, intent(in)             :: nrval
        real(dp), intent(inout)         :: rinn
        real(dp), intent(in)            :: vcte
+       real(dp), intent(in)            :: qcoe
+       real(dp), intent(in)            :: qyuk
+       real(dp), intent(in)            :: qwid
        real(dp), intent(in)            :: a, b
        real(dp), intent(in)            :: rc
        real(dp), intent(in)            :: rofi(*)
@@ -7117,6 +7147,12 @@ c    .              ,'        # scaleFactor(izeta=1,Nzeta)'
      .         '#        External radius (r_ext) = ',   rcsan,' bohrs'
           write(iu,'(a,f10.4,a)')
      .         '#        Prefactor       (V_0)   = ', vcte,' Ry'
+          write(iu,'(a,f10.4,a)')
+     .         '#        Charge confinment (Z)   = ', qcoe,' e'
+          write(iu,'(a,f10.4,a)')
+     .         '#        Charge conf. screening  = ', qyuk,' Bohrs^-1'
+          write(iu,'(a,f10.4,a)')
+     .         '#        Width for charge c. (d) = ', qwid,' Bohrs'
        endif
 
        do ir = 1, nrval
@@ -7137,6 +7173,15 @@ c    .              ,'        # scaleFactor(izeta=1,Nzeta)'
           endif
        enddo
 
+       if ( (qcoe .gt. epsilon(1.0_dp)) .and. (qcoe .lt. 100._dp) ) then
+          write(6,"(a,f10.4)")
+     $         "Charge confinement: Q: ", qcoe
+          do ir = 1, nrval
+             vsoft(ir) = vsoft(ir) - qcoe*exp(-rofi(ir)*qyuk)
+     .                               /sqrt(rofi(ir)**2 + qwid**2)
+          enddo
+       endif
+             
        if (write_to_file) then
           do ir = 1, nrcomp + 1
              write(iu,'(2f20.7)') rofi(ir),vsoft(ir)

@@ -42,10 +42,11 @@
 !   1st:   Species_label number_of_l_shells [basis_type] [ionic_charge] 
 ! 
 !   For each l_shell:
-!          [n= n] l nzeta [P [ nzeta_pol]] [E vcte rinn] [F cutoff]
+!     [n= n] l nzeta [P [ nzeta_pol]] [E vcte rinn] [Q qcoe [qyuk [qwid]]] [F cutoff]
 !   where 'n= n' is *mandatory* if the species has any semicore states,
-!   and the 'P' (polarization) and 'E' (soft confinement potential)
-!   sections are optional and can appear in any order after nzeta. 
+!   and the 'P' (polarization), E (soft confinement potential), 
+!   'Q' (charge confinement), and 'F' (filteret) sections are optional and can appear
+!   in any order after nzeta. 
 ! 
 !          rc_1  rc_2 .... rc_nzeta  
 ! 
@@ -81,9 +82,10 @@
 !   angular momentum l such that there are not occupied orbitals 
 !   with the same l in the valence shell of the ground-state 
 !   atomic configuration. They polarize the corresponding l-1 shell.
-
 ! 
 !   The Soft-Confinement parameters 'rinn' and 'vcte' are set to 0.0
+!   The Charge-Confinement parameters 'qcoe', 'qyuk' and 'qwid' 
+!   are set to 0.0, 0.0 and 1.0
 ! 
 !   rc(1:nzeta) is set to 0.0
 !   lambda(1:nzeta) is set to 1.0  (this is a change from old practice)
@@ -694,6 +696,31 @@ C Sanity checks on values
           else
             s%vcte = 0.0_dp
             s%rinn = 0.0_dp
+          endif
+!
+! Charge confinement
+! 
+          if (fdf_bsearch(pline,'Q',indexp)) then
+            if (fdf_bmatch(pline,'vvv',after=indexp)) then
+               s%qcoe = fdf_bvalues(pline,ind=1,after=indexp)
+               s%qyuk = fdf_bvalues(pline,ind=2,after=indexp)
+               s%qwid = fdf_bvalues(pline,ind=3,after=indexp)
+            elseif (fdf_bmatch(pline,'vv',after=indexp)) then
+               s%qcoe = fdf_bvalues(pline,ind=1,after=indexp)
+               s%qyuk = fdf_bvalues(pline,ind=2,after=indexp)
+               s%qwid = 0.01_dp
+            elseif (fdf_bmatch(pline,'v',after=indexp)) then
+               s%qcoe = fdf_bvalues(pline,ind=1,after=indexp)
+               s%qyuk = 0.0_dp
+               s%qwid = 0.01_dp
+            else
+               call die("Need one, two or three real numbers after Q in 
+     .                   PAO.Basis")
+            endif
+          else
+            s%qcoe = 0.0_dp
+            s%qyuk = 0.0_dp
+            s%qwid = 0.01_dp
           endif
 !
 ! Filteret cutoff
