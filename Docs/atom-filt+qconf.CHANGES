@@ -1,4 +1,21 @@
 ----------------------------------------------------------
+Nov 27 2012  Alberto Garcia   trunk-426--atom-filt+qconf-3
+Added chargeconf-h2o test and reference outputs
+
+Added Emilio's test. 
+Updated the reference output for filteret test.
+
+added:
+  Docs/CHANGES.charconf
+  Tests/Reference/chargeconf-h2o.out
+  Tests/chargeconf-h2o/
+  Tests/chargeconf-h2o/chargeconf-h2o.fdf
+  Tests/chargeconf-h2o/chargeconf-h2o.pseudos
+  Tests/chargeconf-h2o/makefile
+modified:
+  Tests/Reference/h2o_filteret_basis.out
+
+----------------------------------------------------------
 Nov 27 2012  Alberto Garcia   trunk-426--atom-filt+qconf-2
 Merged Emilio's charge-confinement code
 
