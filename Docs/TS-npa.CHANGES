@@ -1,4 +1,69 @@
 ----------------------------------------------------
+Nov 28, 2012 -- Nick P. Andersen     trunk-426--ts-npa-26
+Added new tests for TranSIESTA, Gold 100 with 4 atom chain
+
+* The current TranSIESTA test with voltage can lead to errorneous 
+  calculations due to its very small matrix elements
+  - Thus small fluctuations in accurary will lead to non-conforming results
+* Instead we have added testing of a much larger system (maybe too large)
+  which has 112 atoms.
+  - It consists of a non-repeated calculation and one with repetition
+    + ts_au_100
+    + ts_au_100_repetition
+    + ts_au_100_0.25V
+    + ts_au_100_repetition_0.25V
+  - The voltage tests are merely for testing the voltage part of TranSIESTA
+* This is intended to superseed the au_111_capacitor test
+
+added:
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100/
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100/au_100.TRANS
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100/au_100.out
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100/elec_au_100.out
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100/tbt_au_100.out
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_0.25V/
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_0.25V/au_100.TRANS
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_0.25V/au_100.out
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_0.25V/elec_au_100.out
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_0.25V/tbt_au_100.out
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition/
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition/au_100.TRANS
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition/au_100.out
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition/elec_au_100.out
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition/tbt_au_100.out
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/au_100.TRANS
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/au_100.out
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/elec_au_100.out
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/tbt_au_100.out
+  Tests/TranSiesta-TBTrans/ts_au_100/
+  Tests/TranSiesta-TBTrans/ts_au_100/Au.psf
+  Tests/TranSiesta-TBTrans/ts_au_100/au_100.fdf
+  Tests/TranSiesta-TBTrans/ts_au_100/elec_au_100.fdf
+  Tests/TranSiesta-TBTrans/ts_au_100/makefile
+  Tests/TranSiesta-TBTrans/ts_au_100/script.sh
+  Tests/TranSiesta-TBTrans/ts_au_100_0.25V/
+  Tests/TranSiesta-TBTrans/ts_au_100_0.25V/Au.psf
+  Tests/TranSiesta-TBTrans/ts_au_100_0.25V/au_100.fdf
+  Tests/TranSiesta-TBTrans/ts_au_100_0.25V/elec_au_100.fdf
+  Tests/TranSiesta-TBTrans/ts_au_100_0.25V/makefile
+  Tests/TranSiesta-TBTrans/ts_au_100_0.25V/script.sh
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition/
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition/Au.psf
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition/au_100.fdf
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition/elec_au_100.fdf
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition/makefile
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition/script.sh
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/Au.psf
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/au_100.fdf
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/elec_au_100.fdf
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/makefile
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/script.sh
+modified:
+  Docs/TranSiestaUpdate.pdf
+
+----------------------------------------------------
 Nov 27, 2012 -- Nick P. Andersen     trunk-426--ts-npa-25
 Merged with trunk
 
