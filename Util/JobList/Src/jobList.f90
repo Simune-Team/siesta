@@ -11,12 +11,16 @@ PRIVATE    ! nothing is declared public beyond this point
 
   ! Internal parameters
   character(len=*),parameter:: dataSuffix = '.fdf'
-  character(len=*),parameter:: copyFiles  = 'cp siesta *.fdf *.psf'
-  character(len=*),parameter:: defaultQueue = './siesta < $1.fdf > $1.out'
+  character(len=*),parameter:: endSuffix = '.EIG'
+  character(len=*),parameter:: copyFiles  = 'cp -f *.fdf *.psf queue.sh'//' '
+  character(len=*),parameter:: defaultQueue = &
+                                       './siesta < $jobName.fdf > $jobName.out'
   character(len=*),parameter:: defaultRequest(1) = (/'energy'/)
   integer,parameter:: maxLines = 1000   ! Max lines in job-list file
   integer,parameter:: maxWords = 100    ! Max words in one line
   integer,parameter:: maxJobs = 1000    ! Max jobs in job list
+  integer,parameter:: ll      = 500     ! Max characters per line
+  integer,parameter:: wl      = 500     ! Max characters per word
   integer,parameter:: unitIn = 42       ! I/O unit for input files
   integer,parameter:: unitOut = 43      ! I/O unit for output files
   integer,parameter:: dp = kind(1.d0)
@@ -33,7 +37,7 @@ PRIVATE    ! nothing is declared public beyond this point
     real(dp)        :: energy      =0._dp
     real(dp)        :: pressure    =0._dp
     real(dp)        :: virial      =0._dp 
-    real(dp),pointer:: coords(:,:) =>null()
+    real(dp),pointer:: coord(:,:)  =>null()
     real(dp),pointer:: force(:,:)  =>null()
     integer, pointer:: za(:)       =>null()   ! atomic numbers
   end type resultsType
@@ -50,7 +54,7 @@ subroutine countJobs( unit, nJobs, nLists )
   integer,optional,intent(out):: nLists ! total number of job lists
 
   integer :: nc
-  character(len=120):: myDir
+  character(len=wl):: myDir
 
   ! Copy input file unit for use across the module
   myUnit = unit
@@ -81,7 +85,7 @@ subroutine runJobs( unit )
   integer,         intent(in) :: unit   ! IO unit of datafile
 
   integer :: nc
-  character(len=120):: myDir
+  character(len=wl):: myDir
 
   ! Copy input file unit for use across the module
   myUnit = unit
@@ -108,7 +112,7 @@ subroutine getResults( unit )
   integer,         intent(in) :: unit   ! IO unit of datafile
 
   integer :: nc
-  character(len=120):: myDir
+  character(len=wl):: myDir
 
   ! Copy input file unit for use across the module
   myUnit = unit
@@ -139,7 +143,7 @@ recursive subroutine scanList( dir, queue, request, listName, task )
   character(len=*),intent(in) :: task       ! ('count'|'run'|'get')
 
   integer :: iCase, iLine, iostat, nCases, nResults, nWords, nJobs
-  character(len=120):: caseDir(maxJobs), caseName(maxJobs), caseType(maxJobs), &
+  character(len=wl):: caseDir(maxJobs), caseName(maxJobs), caseType(maxJobs), &
                        fileIn, fileOut, line, myDir, myRequest(maxWords), &
                        myQueue, newList, words(maxWords)
   real(dp):: results(maxWords)
@@ -152,10 +156,9 @@ recursive subroutine scanList( dir, queue, request, listName, task )
     myDir = trim(dir) // trim(listName) // '/'
     ! Create a new directory for this list and copy files to it
     if (task=='run') then
-      call system('mkdir ' // trim(myDir))
-      call system('cp ' // trim(dir) //'siesta '// &
-                           trim(dir) //'*.fdf ' // &
-                           trim(dir) //'*.psf ' // trim(myDir) )
+      call system('mkdir -p ' // trim(myDir))
+      call system(copyFiles // trim(myDir) )
+      call chdir(trim(myDir))
     endif
   endif ! (listName==' ')
 
@@ -232,6 +235,7 @@ recursive subroutine scanList( dir, queue, request, listName, task )
     else
       fileOut = trim(myDir)//trim(listName)//'.results'
     endif
+    call system('rm -f '//trim(fileOut))  ! clear output file, if it exists
     do iCase = 1,nCases
       if (caseType(iCase)=='list') then
         fileIn = trim(caseDir(iCase))//trim(caseName(iCase))//'.results'
@@ -241,7 +245,7 @@ recursive subroutine scanList( dir, queue, request, listName, task )
         call readResult( caseDir(iCase), myRequest, caseName(iCase), &
                          results=results )
         open(unitOut,file=trim(fileOut),position='append',status='unknown')
-        write(unitOut,'(10e15.6)') results(1:nResults) 
+        write(unitOut,'(10e18.9)') results(1:nResults) 
         close(unitOut)
       endif
     end do
@@ -261,7 +265,7 @@ subroutine nameJob( jobLine, jobName )
   character(len=*),intent(out):: jobName   ! job name
 
   integer:: iWord, nc, nWords
-  character(len=120):: line, word, words(maxWords)
+  character(len=wl):: line, word, words(maxWords)
 
   ! Parse job line
   line = jobLine
@@ -288,8 +292,9 @@ subroutine runOneJob( dir, queue, jobLine )
   character(len=*),intent(in) :: queue     ! queuing statement
   character(len=*),intent(in) :: jobLine   ! line of job specification
 
-  integer:: ic, iLine, iWord, jWord, nc, nLines, nWords
-  character(len=120):: jobDir, jobName, line(maxWords), &
+  logical:: jobEnded
+  integer:: ic, iLine, iWord, jc, jWord, nc, nLines, nWords
+  character(len=wl):: jobDir, jobName, line(maxWords), &
                        queueJob, word, words(maxWords)
 
   ! Find job name
@@ -297,8 +302,8 @@ subroutine runOneJob( dir, queue, jobLine )
 
   ! Create a new directory for this job and copy files to it
   jobDir = trim(dir) // trim(jobName) // '/'
-  call system('mkdir ' // trim(jobDir))
-  call system('cp siesta *.fdf *.psf '//trim(jobDir))
+  call system('mkdir -p ' // trim(jobDir))
+  call system(copyFiles//trim(jobDir))
 
   ! Parse job line (using line(1) because parser argument is inout)
   line(1) = jobLine
@@ -323,6 +328,7 @@ subroutine runOneJob( dir, queue, jobLine )
 
   ! Write .fdf file for job
   open(unitOut,file=trim(jobDir)//trim(jobName)//'.fdf')
+  write(unitOut,*) 'SystemLabel ',trim(jobName)   ! this is specific for siesta
   do iLine = nLines,1,-1               ! last lines (words) have priority
     write(unitOut,'(a)') trim(line(iLine))
   end do
@@ -331,13 +337,18 @@ subroutine runOneJob( dir, queue, jobLine )
   ! Set job
   queueJob = queue
   nc = len(trim(queueJob))
-  do ic = nc-1,1,-1
-    if (queueJob(ic:ic+1)=='$1') queueJob(ic:) = trim(jobName)//queueJob(ic+2:)
+  jc = len('$jobName')
+  do ic = nc-jc+1,1,-1
+    if (queueJob(ic:ic+jc-1)=='$jobName') &
+      queueJob(ic:) = trim(jobName)//queueJob(ic+jc:)
   end do
+!  print*, 'runOneJob: queueJob = ',trim(queueJob)
 
-  ! Submit job
+  ! Submit job only if directory does not contain terminated results already
+  ! This is intended to re-run a whole list for failed jobs
   call chdir(trim(jobDir))
-  call system(trim(queueJob))
+  inquire(file=trim(jobName)//endSuffix,exist=jobEnded)
+  if (.not.jobEnded) call system(trim(queueJob))
   call chdir(trim(dir))
 
 end subroutine runOneJob
@@ -351,7 +362,7 @@ subroutine parser( line, words, nWords )
   character(len=*),intent(out)  :: words(:)  ! words in line, without comments
   integer,         intent(out)  :: nWords    ! number of words
 
-  character(len=120):: myLine
+  character(len=ll):: myLine
   integer:: iWord, nc
 
   ! Remove comments
@@ -389,26 +400,27 @@ subroutine readResult( dir, request, name, result, results )
 
   integer :: ia, ic, is, iostat, iResult, nAtoms, nResults, za
   real(dp):: c(3,3)
-  character(len=120):: fileName
+  character(len=wl):: fileName
   type(resultsType) :: res
 
   ! Read final structure
   fileName = trim(dir)//trim(name)//'.XV'
   open(unitIn,file=trim(fileName),status='old',iostat=iostat)
+!  print'(a,i3,2x,a)','readResult: iostat,fileName=', iostat, trim(fileName)
   if (iostat==0) then
     do ic = 1,3
       read(unitIn,*) res%cell(:,ic)
     end do
     read(unitIn,*) nAtoms
-    allocate( res%za(nAtoms), res%coords(3,nAtoms) )
+    allocate( res%za(nAtoms), res%coord(3,nAtoms) )
     do ia = 1,nAtoms
-      read(unitIn,*) is, res%za(ia), res%coords(:,ia)
+      read(unitIn,*) is, res%za(ia), res%coord(:,ia)
     end do
   else
     nAtoms = 0
-    allocate( res%za(nAtoms), res%coords(3,nAtoms) )
+    allocate( res%za(nAtoms), res%coord(3,nAtoms) )
     res%cell = 0
-    res%coords = 0
+    res%coord = 0
     res%za = 0
   end if
   close(unitIn)
@@ -439,7 +451,7 @@ subroutine readResult( dir, request, name, result, results )
                     c(1,2)*c(2,3)*c(3,1) - c(1,2)*c(2,1)*c(3,3) + &
                     c(1,3)*c(2,1)*c(3,2) - c(1,3)*c(2,2)*c(3,1) )
   res%pressure = -res%stress(1,1)-res%stress(2,2)-res%stress(3,3)
-  res%virial = sum(res%coords*res%force)
+  res%virial = sum(res%coord*res%force)
 
   ! Copy results to output structure
   if (present(result)) then
@@ -469,7 +481,7 @@ subroutine readResult( dir, request, name, result, results )
 
   ! Deallocate internal pointers
   if (associated(res%za)) deallocate(res%za)
-  if (associated(res%coords)) deallocate(res%coords)
+  if (associated(res%coord)) deallocate(res%coord)
   if (associated(res%force)) deallocate(res%force)
 
 end subroutine readResult

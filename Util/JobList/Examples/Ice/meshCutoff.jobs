@@ -1,0 +1,40 @@
+# MeshCutoff convergence for water iceXI vs 
+
+%queue sh queue.sh $jobName 8
+
+%result energy pressure virial
+
+%list MeshCutoff
+  %list iceXI
+    defaults.fdf  iceXI.fdf    dzp.fdf   MeshCutoff  100 Ry      
+    defaults.fdf  iceXI.fdf    dzp.fdf   MeshCutoff  200 Ry      
+    defaults.fdf  iceXI.fdf    dzp.fdf   MeshCutoff  300 Ry      
+    defaults.fdf  iceXI.fdf    dzp.fdf   MeshCutoff  500 Ry      
+    defaults.fdf  iceXI.fdf    dzp.fdf   MeshCutoff  800 Ry  
+  %endlist iceXI
+  %list iceVIII
+    defaults.fdf  iceVIII.fdf  dzp.fdf   MeshCutoff  100 Ry      
+    defaults.fdf  iceVIII.fdf  dzp.fdf   MeshCutoff  200 Ry      
+    defaults.fdf  iceVIII.fdf  dzp.fdf   MeshCutoff  300 Ry      
+    defaults.fdf  iceVIII.fdf  dzp.fdf   MeshCutoff  500 Ry      
+    defaults.fdf  iceVIII.fdf  dzp.fdf   MeshCutoff  800 Ry      
+  %endlist iceVIII
+%endlist MeshCutoff
+
+%list FilteredMeshCutoff
+  %list iceXI
+    defaults.fdf  iceXI.fdf    dzp.fdf   filter100.fdf   MeshCutoff  100 Ry    
+    defaults.fdf  iceXI.fdf    dzp.fdf   filter100.fdf   MeshCutoff  200 Ry      
+    defaults.fdf  iceXI.fdf    dzp.fdf   filter100.fdf   MeshCutoff  300 Ry      
+    defaults.fdf  iceXI.fdf    dzp.fdf   filter100.fdf   MeshCutoff  500 Ry      
+    defaults.fdf  iceXI.fdf    dzp.fdf   filter100.fdf   MeshCutoff  800 Ry  
+  %endlist iceXI
+  %list iceVIII    
+    defaults.fdf  iceVIII.fdf  dzp.fdf   filter100.fdf   MeshCutoff  100 Ry      
+    defaults.fdf  iceVIII.fdf  dzp.fdf   filter100.fdf   MeshCutoff  200 Ry      
+    defaults.fdf  iceVIII.fdf  dzp.fdf   filter100.fdf   MeshCutoff  300 Ry      
+    defaults.fdf  iceVIII.fdf  dzp.fdf   filter100.fdf   MeshCutoff  500 Ry      
+    defaults.fdf  iceVIII.fdf  dzp.fdf   filter100.fdf   MeshCutoff  800 Ry      
+  %endlist iceVIII
+%endlist FilteredMeshCutoff
+
