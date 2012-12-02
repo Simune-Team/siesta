@@ -112,6 +112,7 @@
 
 #ifdef MPI
       use m_glob_sparse, only: glob_sparse_arrays, glob_sparse_matrix
+      use m_glob_sparse, only: glob_sparse_arrays_dealloc
 #endif
       use m_hs_matrix, only : set_HS_matrix, matrix_rem_left_right
       use m_hs_matrix, only : matrix_symmetrize
@@ -1490,15 +1491,9 @@
 
 
 #ifdef MPI
-      call memory('D','I',size(numhg)+size(listhptrg)+size(listhg)
-     &     ,'transiesta')
-      deallocate(numhg)
-      deallocate(listhptrg)
-      deallocate(listhg)
-      if(.not.gamma) then
-         call memory('D','D',size(xijg),'transiesta')
-         deallocate(xijg)
-      endif
+      call glob_sparse_arrays_dealloc(no_u, Gamma,
+     &     maxnhg,
+     &     numhg,listhg,listhptrg,xijg)
       call memory('D','D',maxnhg*2,'transiesta')
       deallocate(Hsg,Ssg)
 #endif

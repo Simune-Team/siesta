@@ -1,4 +1,17 @@
 ----------------------------------------------------
+Nov 28, 2012 -- Nick P. Andersen     trunk-426--ts-npa-27
+Added a deallocation routine for the glob_sparse module
+
+* The glob sparse module did not provide a routine for
+  deallocation of the arrays.
+  This is a most obvious way to handle the arrays.
+  glob_sparse_arrays_dealloc
+
+modified:
+  Src/m_glob_sparse.F90
+  Src/m_ts_in_siesta.F
+
+----------------------------------------------------
 Nov 28, 2012 -- Nick P. Andersen     trunk-426--ts-npa-26
 Added new tests for TranSIESTA, Gold 100 with 4 atom chain
 

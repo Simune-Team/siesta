@@ -40,6 +40,7 @@ module m_glob_sparse
 
 #ifdef MPI
   public :: glob_sparse_arrays
+  public :: glob_sparse_arrays_dealloc
   public :: glob_sparse_matrix
 #endif
 
@@ -150,6 +151,45 @@ contains
 
   end subroutine glob_sparse_arrays
 
+
+  ! Routine for globalizing lists within the unit cell.
+  ! These are the arrays needed when using the glob_HS.
+  subroutine glob_sparse_arrays_dealloc(no_u, Gamma, &
+       maxnhg, &
+       numhg,listhg,listhptrg,xijg)
+
+    use precision,    only : dp  
+
+! **********************
+! * INPUT variables    *
+! **********************
+    integer, intent(in) :: no_u   ! no. orbs. in unit cell (global)
+    logical, intent(in) :: Gamma  ! Is is a Gamma calculation
+    integer, intent(in) :: maxnhg ! Number of elements in the full hamiltonian
+! *******************************
+! * OUTPUT variables            *
+! * The deallocated equivalents *
+! *******************************
+    integer, allocatable,  intent(in out) :: numhg(:)
+    integer, allocatable,  intent(in out) :: listhg(:)
+    integer, allocatable,  intent(in out) :: listhptrg(:)
+    real(dp), allocatable, intent(in out) :: xijg(:,:)
+        
+    call memory('D','I',no_u,'globArrays')
+    deallocate(numhg)
+    
+    call memory('D','I',no_u,'globArrays')
+    deallocate(listhptrg)
+    
+    call memory('D','I',maxnhg,'globArrays')
+    deallocate(listhg)
+    
+    if ( .not. Gamma ) then
+       call memory('D','D',3*maxnhg,'globArrays')
+       deallocate(xijg)
+    end if
+    
+  end subroutine glob_sparse_arrays_dealloc
 
   subroutine glob_sparse_matrix(no_l,no_u,no_s, &
        maxnh,  numh , listhptr , H ,S , &
