@@ -184,22 +184,22 @@ contains
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    logical, intent(in)               :: Gamma ! Is it a Gamma Calculation?
-    real(dp), intent(in)              :: ucell(3,3) ! The unit cell of system
-    integer, intent(in)               :: na_u ! Unit cell atoms
-    integer, intent(in)               :: no_u ! Unit cell orbitals
-    integer, intent(in)               :: no_s ! Supercell orbitals
-    integer, intent(in)               :: maxnh ! Hamiltonian size
-    real(dp), intent(in)              :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
-    integer, intent(in)               :: numh(no_u),listhptr(no_u)
-    integer, intent(in)               :: listh(maxnh),indxuo(no_s)
-    real(dp), intent(in)              :: H(maxnh) ! Hamiltonian
-    real(dp), intent(in)              :: S(maxnh) ! Overlap
-    real(dp), intent(in)              :: k(3) ! k-point in [1/Bohr]
+    logical, intent(in)           :: Gamma ! Is it a Gamma Calculation?
+    real(dp), intent(in)          :: ucell(3,3) ! The unit cell of system
+    integer, intent(in)           :: na_u ! Unit cell atoms
+    integer, intent(in)           :: no_u ! Unit cell orbitals
+    integer, intent(in)           :: no_s ! Supercell orbitals
+    integer, intent(in)           :: maxnh ! Hamiltonian size
+    real(dp), intent(in)          :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
+    integer, intent(in)           :: numh(no_u),listhptr(no_u)
+    integer, intent(in)           :: listh(maxnh),indxuo(no_s)
+    real(dp), intent(in)          :: H(maxnh) ! Hamiltonian
+    real(dp), intent(in)          :: S(maxnh) ! Overlap
+    real(dp), intent(in)          :: k(3) ! k-point in [1/Bohr]
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp), pointer              :: Hk(:), Sk(:)
+    complex(dp), pointer          :: Hk(:), Sk(:)
 
 ! ***********************
 ! * OPTIONAL variables  *
@@ -271,7 +271,7 @@ contains
        ! Find the actual coordinates of the orbitals in the form of the sparse matrices
        ! Notice that this array is without the removed orbitals
        allocate(xuo(no_tot))
-       call memory('A','D',no_tot,'consHS')
+       call memory('A','D',no_tot,'set_HS')
 
        do iuo = 1 , no_tot
           i = iaorb(iuo + l_RemNFirstOrbitals)
@@ -367,7 +367,7 @@ contains
     end if setup_HS
 
     if ( l_RemZConnection ) then
-       call memory('D','D',no_tot,'consHS')
+       call memory('D','D',no_tot,'set_HS')
        deallocate(xuo)
     end if
 
@@ -390,22 +390,22 @@ contains
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    logical, intent(in)               :: Gamma ! Is it a Gamma Calculation?
-    real(dp), intent(in)              :: ucell(3,3) ! The unit cell of system
-    integer, intent(in)               :: na_u ! Unit cell atoms
-    integer, intent(in)               :: no_u ! Unit cell orbitals
-    integer, intent(in)               :: no_s ! Total orbitals
-    integer, intent(in)               :: maxnh ! Hamiltonian size
-    real(dp), intent(in)              :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
-    integer, intent(in)               :: numh(no_u),listhptr(no_u)
-    integer, intent(in)               :: listh(maxnh),indxuo(no_s)
-    real(dp), intent(in)              :: H(maxnh) ! Hamiltonian
-    real(dp), intent(in)              :: S(maxnh) ! Overlap
-    real(dp), intent(in)              :: k(3) ! k-point in [1/Bohr]
+    logical, intent(in)           :: Gamma ! Is it a Gamma Calculation?
+    real(dp), intent(in)          :: ucell(3,3) ! The unit cell of system
+    integer, intent(in)           :: na_u ! Unit cell atoms
+    integer, intent(in)           :: no_u ! Unit cell orbitals
+    integer, intent(in)           :: no_s ! Total orbitals
+    integer, intent(in)           :: maxnh ! Hamiltonian size
+    real(dp), intent(in)          :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
+    integer, intent(in)           :: numh(no_u),listhptr(no_u)
+    integer, intent(in)           :: listh(maxnh),indxuo(no_s)
+    real(dp), intent(in)          :: H(maxnh) ! Hamiltonian
+    real(dp), intent(in)          :: S(maxnh) ! Overlap
+    real(dp), intent(in)          :: k(3) ! k-point in [1/Bohr]
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp), pointer              :: Hk(:,:), Sk(:,:)
+    complex(dp), pointer          :: Hk(:,:), Sk(:,:)
 ! ***********************
 ! * OPTIONAL variables  *
 ! ***********************
@@ -477,7 +477,7 @@ contains
        ! Find the actual coordinates of the orbitals in the form of the sparse matrices
        ! Notice that this array is without the removed orbitals
        allocate(xuo(no_tot))
-       call memory('A','D',no_tot,'consHS')
+       call memory('A','D',no_tot,'set_HS')
 
        do iuo = 1 , no_tot
           i = iaorb(iuo + l_RemNFirstOrbitals)
@@ -572,7 +572,7 @@ contains
     end if setup_HS
 
     if ( l_RemZConnection ) then
-       call memory('D','D',no_tot,'consHS')
+       call memory('D','D',no_tot,'set_HS')
        deallocate(xuo)
     end if
 
@@ -595,25 +595,25 @@ contains
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    logical, intent(in)               :: Gamma ! Is it a Gamma Calculation?
-    real(dp), intent(in)              :: ucell(3,3) ! The unit cell of system
-    integer, intent(in)               :: na_u ! Unit cell atoms
-    integer, intent(in)               :: no_u ! Unit cell orbitals
-    integer, intent(in)               :: no_s ! Supercell orbitals
-    integer, intent(in)               :: maxnh ! Hamiltonian size
-    real(dp), intent(in)              :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
-    integer, intent(in)               :: numh(no_u),listhptr(no_u)
-    integer, intent(in)               :: listh(maxnh),indxuo(no_s)
-    real(dp), intent(in)              :: H(maxnh) ! Hamiltonian
-    real(dp), intent(in)              :: S(maxnh) ! Overlap
-    real(dp), intent(in)              :: k(3) ! k-point in [1/Bohr]
-    integer, intent(in)               :: transfer_cell(3) ! The transfer cell directions
-    real(dp), intent(in)              :: xa(3,na_u) ! Atomic coordinates (needed for RemZConnection & RemUCellDistances)
-    integer, intent(in)               :: iaorb(no_u) ! The equivalent atomic index for a given orbital (needed for RemUCellDistances)
+    logical, intent(in)           :: Gamma ! Is it a Gamma Calculation?
+    real(dp), intent(in)          :: ucell(3,3) ! The unit cell of system
+    integer, intent(in)           :: na_u ! Unit cell atoms
+    integer, intent(in)           :: no_u ! Unit cell orbitals
+    integer, intent(in)           :: no_s ! Supercell orbitals
+    integer, intent(in)           :: maxnh ! Hamiltonian size
+    real(dp), intent(in)          :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
+    integer, intent(in)           :: numh(no_u),listhptr(no_u)
+    integer, intent(in)           :: listh(maxnh),indxuo(no_s)
+    real(dp), intent(in)          :: H(maxnh) ! Hamiltonian
+    real(dp), intent(in)          :: S(maxnh) ! Overlap
+    real(dp), intent(in)          :: k(3) ! k-point in [1/Bohr]
+    integer, intent(in)           :: transfer_cell(3) ! The transfer cell directions
+    real(dp), intent(in)          :: xa(3,na_u) ! Atomic coordinates (needed for RemZConnection & RemUCellDistances)
+    integer, intent(in)           :: iaorb(no_u) ! The equivalent atomic index for a given orbital (needed for RemUCellDistances)
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp), pointer              :: HkT(:), SkT(:)
+    complex(dp), pointer          :: HkT(:), SkT(:)
 
 ! ***********************
 ! * OPTIONAL variables  *
@@ -764,25 +764,25 @@ contains
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    logical, intent(in)               :: Gamma ! Is it a Gamma Calculation?
-    real(dp), intent(in)              :: ucell(3,3) ! The unit cell of system
-    integer, intent(in)               :: na_u ! Unit cell atoms
-    integer, intent(in)               :: no_u ! Unit cell orbitals
-    integer, intent(in)               :: no_s ! Total orbitals
-    integer, intent(in)               :: maxnh ! Hamiltonian size
-    real(dp), intent(in)              :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
-    integer, intent(in)               :: numh(no_u),listhptr(no_u)
-    integer, intent(in)               :: listh(maxnh),indxuo(no_s)
-    real(dp), intent(in)              :: H(maxnh) ! Hamiltonian
-    real(dp), intent(in)              :: S(maxnh) ! Overlap
-    real(dp), intent(in)              :: k(3) ! k-point in [1/Bohr]
-    integer, intent(in)               :: transfer_cell(3) ! The transfer cell directions
-    real(dp), intent(in)              :: xa(3,na_u) ! Atomic coordinates (needed for RemZConnection & RemUCellDistances)
-    integer, intent(in)               :: iaorb(no_u) ! The equivalent atomic index for a given orbital (needed for RemUCellDistances)
+    logical, intent(in)           :: Gamma ! Is it a Gamma Calculation?
+    real(dp), intent(in)          :: ucell(3,3) ! The unit cell of system
+    integer, intent(in)           :: na_u ! Unit cell atoms
+    integer, intent(in)           :: no_u ! Unit cell orbitals
+    integer, intent(in)           :: no_s ! Total orbitals
+    integer, intent(in)           :: maxnh ! Hamiltonian size
+    real(dp), intent(in)          :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
+    integer, intent(in)           :: numh(no_u),listhptr(no_u)
+    integer, intent(in)           :: listh(maxnh),indxuo(no_s)
+    real(dp), intent(in)          :: H(maxnh) ! Hamiltonian
+    real(dp), intent(in)          :: S(maxnh) ! Overlap
+    real(dp), intent(in)          :: k(3) ! k-point in [1/Bohr]
+    integer, intent(in)           :: transfer_cell(3) ! The transfer cell directions
+    real(dp), intent(in)          :: xa(3,na_u) ! Atomic coordinates (needed for RemZConnection & RemUCellDistances)
+    integer, intent(in)           :: iaorb(no_u) ! The equivalent atomic index for a given orbital (needed for RemUCellDistances)
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp), pointer              :: HkT(:,:), SkT(:,:)
+    complex(dp), pointer          :: HkT(:,:), SkT(:,:)
 ! ***********************
 ! * OPTIONAL variables  *
 ! ***********************
@@ -926,21 +926,21 @@ contains
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    logical, intent(in)               :: Gamma ! Is it a Gamma calculation?
-    real(dp), intent(in)              :: ucell(3,3) ! The unit cell of system
-    integer, intent(in)               :: na_u ! Unit cell atoms
-    integer, intent(in)               :: no_u ! Unit cell orbitals
-    integer, intent(in)               :: no_s ! Total orbitals
-    integer, intent(in)               :: maxnh ! Hamiltonian size
-    real(dp), intent(in)              :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
-    integer, intent(in)               :: numh(no_u),listhptr(no_u)
-    integer, intent(in)               :: listh(maxnh),indxuo(no_s)
-    real(dp), intent(in)              :: xa(3,na_u) ! Atomic coordinates (needed for RemZConnection & RemUCellDistances)
-    integer, intent(in)               :: iaorb(no_u) ! The equivalent atomic index for a given orbital (needed for RemUCellDistances)
+    logical, intent(in)  :: Gamma ! Is it a Gamma calculation?
+    real(dp), intent(in) :: ucell(3,3) ! The unit cell of system
+    integer, intent(in)  :: na_u ! Unit cell atoms
+    integer, intent(in)  :: no_u ! Unit cell orbitals
+    integer, intent(in)  :: no_s ! Total orbitals
+    integer, intent(in)  :: maxnh ! Hamiltonian size
+    real(dp), intent(in) :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
+    integer, intent(in)  :: numh(no_u),listhptr(no_u)
+    integer, intent(in)  :: listh(maxnh),indxuo(no_s)
+    real(dp), intent(in) :: xa(3,na_u) ! Atomic coordinates (needed for RemZConnection & RemUCellDistances)
+    integer, intent(in)  :: iaorb(no_u) ! The equivalent atomic index for a given orbital (needed for RemUCellDistances)
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    integer, intent(out)              :: transfer_cell(2,3)
+    integer, intent(out) :: transfer_cell(2,3)
 
 ! ***********************
 ! * LOCAL variables     *
@@ -983,7 +983,7 @@ contains
 ! **************************
 ! * INPUT variables        *
 ! **************************
-    integer, intent(in) :: no_tot, no_L, no_R
+    integer, intent(in)        :: no_tot, no_L, no_R
 
 ! **************************
 ! * OUTPUT variables       *
@@ -1018,7 +1018,7 @@ contains
 ! **************************
 ! * INPUT variables        *
 ! **************************
-    integer, intent(in) :: no_tot, no_L, no_R
+    integer, intent(in)        :: no_tot, no_L, no_R
 
 ! **************************
 ! * OUTPUT variables       *
@@ -1052,8 +1052,8 @@ contains
 ! **************************
 ! * INPUT variables        *
 ! **************************
-    integer, intent(in) :: no_tot
-    real(dp), intent(in) :: Ef
+    integer, intent(in)        :: no_tot
+    real(dp), intent(in)       :: Ef
 
 ! **************************
 ! * OUTPUT variables       *
@@ -1096,8 +1096,8 @@ contains
 ! **************************
 ! * INPUT variables        *
 ! **************************
-    integer, intent(in) :: no_tot
-    real(dp), intent(in) :: Ef
+    integer, intent(in)        :: no_tot
+    real(dp), intent(in)       :: Ef
 
 ! **************************
 ! * OUTPUT variables       *
