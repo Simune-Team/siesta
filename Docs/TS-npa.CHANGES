@@ -1,4 +1,14 @@
 ----------------------------------------------------
+Dec 3, 2012 -- Nick P. Andersen     trunk-426--ts-npa-29
+Bugfix in forces run, an MPI_Bcast was never performed
+
+* A bug had been introduced when changing to the new FDF routines.
+  The broadcasting of xa and cell was never performed in iopipes.f90
+
+modified:
+  Src/iopipes.F90
+
+----------------------------------------------------
 Dec 2, 2012 -- Nick P. Andersen     trunk-426--ts-npa-28
 Name fix in m_hs_matrix
 
