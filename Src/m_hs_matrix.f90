@@ -51,7 +51,9 @@ module m_hs_matrix
 ! are true.
 ! Notice, that any calls to the optional arguments MUST be with keywords! Otherwise
 ! the program will end!
-! TODO : CONSIDERATION : iaorb could be replaced with lasto, however, iaorb is easier to use (perhaps both could be optioned?)
+! We have added so that when iaorb is required, you could also use lasto. This
+! makes it more intuitive as lasto is often more accesible.
+! It on the other hand has a small overhead when using lasto (negligeble).
 !
 ! Gamma denotes whether it is a Gamma calculation (if true, it will not
 ! add k-phases, no matter if k /= \Gamma-point.
@@ -175,7 +177,7 @@ contains
        xij,numh,listhptr,listh,indxuo,H,S, &
        k,Hk,Sk, &
        DUMMY, & ! Ensures that the programmer makes EXPLICIT keywork passing
-       xa,iaorb, &
+       xa,iaorb,lasto, &
        RemZConnection,RemUCellDistances,RemNFirstOrbitals,RemNLastOrbitals)
     use precision, only : dp
     use sys,       only : die 
@@ -208,6 +210,7 @@ contains
 !                                          ! to use the keyworded arguments!
     real(dp), intent(in),optional :: xa(3,na_u) ! Atomic coordinates (needed for RemZConnection & RemUCellDistances)
     integer, intent(in), optional :: iaorb(no_u) ! The equivalent atomic index for a given orbital (needed for RemUCellDistances)
+    integer, intent(in), optional :: lasto(0:na_u) ! The number of orbitals on each atom (needed for RemUCellDistances)
     logical, intent(in), optional :: RemZConnection, RemUCellDistances
     integer, intent(in), optional :: RemNFirstOrbitals, RemNLastOrbitals
 
@@ -220,6 +223,7 @@ contains
     real(dp) :: kxij
     complex(dp) :: cphase
     integer :: no_tot
+    integer, allocatable :: liaorb(:)
     integer :: i,j,iu,iuo,juo,iind,ind
     logical :: l_RemZConnection, l_RemUCellDistances
     integer :: l_RemNFirstOrbitals, l_RemNLastOrbitals 
@@ -235,8 +239,9 @@ contains
     if (l_RemZConnection .and. .not. present(xa)) &
          call die("You need xa in set_HS_matrix when removing &
          &the z-connection.")
-    if (l_RemZConnection .and. .not. present(iaorb)) &
-         call die("You need iaorb in set_HS_matrix when removing &
+    if (l_RemZConnection .and. &
+         (.not. present(iaorb) .and. .not. present(lasto) ) ) &
+         call die("You need iaorb or lasto in set_HS_matrix when removing &
          &the z-connection.")
     l_RemUCellDistances = .false.
     if ( present(RemUCellDistances) ) &
@@ -244,8 +249,9 @@ contains
     if (l_RemUCellDistances .and. .not. present(xa)) &
          call die("You need xa in set_HS_matrix when removing &
          &unit cell distances.")
-    if (l_RemUCellDistances .and. .not. present(iaorb)) &
-         call die("You need iaorb in set_HS_matrix when removing &
+    if (l_RemUCellDistances .and. &
+         (.not. present(iaorb) .and. .not. present(lasto) ) ) &
+         call die("You need iaorb or lasto in set_HS_matrix when removing &
          &unit cell distances.")
 
     ! Make l_RemNFirstOrbitals contain the number of orbitals
@@ -273,15 +279,51 @@ contains
        allocate(xuo(no_tot))
        call memory('A','D',no_tot,'set_HS')
 
-       do iuo = 1 , no_tot
-          i = iaorb(iuo + l_RemNFirstOrbitals)
-          xuo(iuo) = &
+       if ( present(iaorb) ) then
+          do iuo = 1 , no_tot
+             i = iaorb(iuo + l_RemNFirstOrbitals)
+             xuo(iuo) = &
                xa(1,i) * recell(1,3) + &
                xa(2,i) * recell(2,3) + &
                xa(3,i) * recell(3,3)
-       end do !io in uc
+          end do !io in uc
+       else if ( present(lasto) ) then
+          do j = 1 , na_u
+             do i = lasto(j-1) + 1 , lasto(j)
+                if ( i <= l_RemNFirstOrbitals ) cycle
+                if ( no_tot < i - l_RemNFirstOrbitals ) cycle
+                xuo(i-l_RemNFirstOrbitals) = &
+                     xa(1,j) * recell(1,3) + &
+                     xa(2,j) * recell(2,3) + &
+                     xa(3,j) * recell(3,3)
+             end do !io in uc
+          end do
+       end if
+          
     end if
-
+    
+    ! Create the orb => atom index array
+    if ( l_RemUCellDistances ) then
+       allocate(liaorb(no_tot))
+       call memory('A','I',no_tot,'set_HS')
+       
+       if ( present(iaorb) ) then
+          do iuo = 1 , no_tot
+             liaorb(iuo) = iaorb(iuo + l_RemNFirstOrbitals)
+          end do !io in uc
+       else if ( present(lasto) ) then
+          ind = 0
+          do j = 1 , na_u
+             do i = lasto(j-1) + 1 , lasto(j)
+                if ( i <= l_RemNFirstOrbitals ) cycle
+                if ( no_tot < i - l_RemNFirstOrbitals ) cycle
+                ind = ind + 1
+                liaorb(ind) = j
+             end do !io in uc
+          end do
+       end if
+       
+    end if
 
 !
 ! Setup H,S for this k-point:
@@ -317,12 +359,12 @@ contains
              ! We also wish to remove the connection in
              ! in the inner cell
              if ( l_RemUCellDistances ) then
-                xo(1) = xa(1,iaorb(juo + l_RemNFirstOrbitals)) &
-                     -  xa(1,iaorb(iu))
-                xo(2) = xa(2,iaorb(juo + l_RemNFirstOrbitals)) &
-                     -  xa(2,iaorb(iu))
-                xo(3) = xa(3,iaorb(juo + l_RemNFirstOrbitals)) &
-                     -  xa(3,iaorb(iu))
+                xo(1) = xa(1,liaorb(juo)) &
+                     -  xa(1,liaorb(iuo))
+                xo(2) = xa(2,liaorb(juo)) &
+                     -  xa(2,liaorb(iuo))
+                xo(3) = xa(3,liaorb(juo)) &
+                     -  xa(3,liaorb(iuo))
              end if
 
              kxij = &
@@ -366,6 +408,11 @@ contains
 
     end if setup_HS
 
+    if ( l_RemUCellDistances ) then
+       call memory('D','I',no_tot,'set_HS')
+       deallocate(liaorb)
+    end if
+
     if ( l_RemZConnection ) then
        call memory('D','D',no_tot,'set_HS')
        deallocate(xuo)
@@ -381,7 +428,7 @@ contains
        xij,numh,listhptr,listh,indxuo,H,S, &
        k,Hk,Sk, &
        DUMMY, & ! Ensures that the programmer makes EXPLICIT keywork passing
-       xa,iaorb, &
+       xa,iaorb,lasto, &
        RemZConnection,RemUCellDistances,RemNFirstOrbitals,RemNLastOrbitals)
     use precision, only : dp
     use sys,       only : die 
@@ -413,6 +460,7 @@ contains
 !                                          ! to use the keyworded arguments!
     real(dp), intent(in),optional :: xa(3,na_u) ! Atomic coordinates (needed for RemZConnection & RemUCellDistances)
     integer, intent(in), optional :: iaorb(no_u) ! The equivalent atomic index for a given orbital (needed for RemUCellDistances)
+    integer, intent(in), optional :: lasto(0:na_u) ! The number of orbitals on each atom (needed for RemUCellDistances)
     logical, intent(in), optional :: RemZConnection, RemUCellDistances
     integer, intent(in), optional :: RemNFirstOrbitals, RemNLastOrbitals
 
@@ -425,6 +473,7 @@ contains
     integer :: no_tot
     real(dp) :: kxij
     complex(dp) :: cphase
+    integer, allocatable :: liaorb(:)
     integer :: i,j,iuo,iu,juo,iind,ind
     logical :: l_RemZConnection, l_RemUCellDistances
     integer :: l_RemNFirstOrbitals, l_RemNLastOrbitals 
@@ -440,8 +489,9 @@ contains
     if (l_RemZConnection .and. .not. present(xa)) &
          call die("You need xa in set_HS_matrix when removing &
          &the z-connection.")
-    if (l_RemZConnection .and. .not. present(iaorb)) &
-         call die("You need iaorb in set_HS_matrix when removing &
+    if (l_RemZConnection .and. &
+         (.not. present(iaorb) .and. .not. present(lasto) ) ) &
+         call die("You need iaorb or lasto in set_HS_matrix when removing &
          &the z-connection.")
     l_RemUCellDistances = .false.
     if ( present(RemUCellDistances) ) &
@@ -449,8 +499,9 @@ contains
     if (l_RemUCellDistances .and. .not. present(xa)) &
          call die("You need xa in set_HS_matrix when removing &
          &unit cell distances.")
-    if (l_RemUCellDistances .and. .not. present(iaorb)) &
-         call die("You need iaorb in set_HS_matrix when removing &
+    if (l_RemUCellDistances .and. &
+         (.not. present(iaorb) .and. .not. present(lasto) ) ) &
+         call die("You need iaorb or lasto in set_HS_matrix when removing &
          &unit cell distances.")
 
 
@@ -479,13 +530,49 @@ contains
        allocate(xuo(no_tot))
        call memory('A','D',no_tot,'set_HS')
 
-       do iuo = 1 , no_tot
-          i = iaorb(iuo + l_RemNFirstOrbitals)
-          xuo(iuo) = &
+       if ( present(iaorb) ) then
+          do iuo = 1 , no_tot
+             i = iaorb(iuo + l_RemNFirstOrbitals)
+             xuo(iuo) = &
                xa(1,i) * recell(1,3) + &
                xa(2,i) * recell(2,3) + &
                xa(3,i) * recell(3,3)
-       end do !io in uc
+          end do !io in uc
+       else if ( present(lasto) ) then
+          do j = 1 , na_u
+             do i = lasto(j-1) + 1 , lasto(j)
+                if ( i <= l_RemNFirstOrbitals ) cycle
+                if ( no_tot < i - l_RemNFirstOrbitals ) cycle
+                xuo(i-l_RemNFirstOrbitals) = &
+                     xa(1,j) * recell(1,3) + &
+                     xa(2,j) * recell(2,3) + &
+                     xa(3,j) * recell(3,3)
+             end do !io in uc
+          end do
+       end if
+
+    end if
+
+    if ( l_RemUCellDistances ) then
+       allocate(liaorb(no_tot))
+       call memory('A','I',no_tot,'set_HS')
+
+       if ( present(iaorb) ) then
+          do iuo = 1 , no_tot
+             liaorb(iuo) = iaorb(iuo + l_RemNFirstOrbitals)
+          end do !io in uc
+       else if ( present(lasto) ) then
+          ind = 0
+          do j = 1 , na_u
+             do i = lasto(j-1) + 1 , lasto(j)
+                if ( i <= l_RemNFirstOrbitals ) cycle
+                if ( no_tot < i - l_RemNFirstOrbitals ) cycle
+                ind = ind + 1
+                liaorb(ind) = j
+             end do !io in uc
+          end do
+       end if
+
     end if
 
 
@@ -525,12 +612,12 @@ contains
              ! We also wish to remove the connection in
              ! in the inner cell
              if ( l_RemUCellDistances ) then
-                xo(1) = xa(1,iaorb(juo + l_RemNFirstOrbitals)) &
-                     -  xa(1,iaorb(iu))
-                xo(2) = xa(2,iaorb(juo + l_RemNFirstOrbitals)) &
-                     -  xa(2,iaorb(iu))
-                xo(3) = xa(3,iaorb(juo + l_RemNFirstOrbitals)) &
-                     -  xa(3,iaorb(iu))
+                xo(1) = xa(1,liaorb(juo)) &
+                     -  xa(1,liaorb(iuo))
+                xo(2) = xa(2,liaorb(juo)) &
+                     -  xa(2,liaorb(iuo))
+                xo(3) = xa(3,liaorb(juo)) &
+                     -  xa(3,liaorb(iuo))
              end if
 
              kxij = &
@@ -570,6 +657,11 @@ contains
        end do
 
     end if setup_HS
+
+    if ( l_RemUCellDistances ) then
+       call memory('D','I',no_tot,'set_HS')
+       deallocate(liaorb)
+    end if
 
     if ( l_RemZConnection ) then
        call memory('D','D',no_tot,'set_HS')

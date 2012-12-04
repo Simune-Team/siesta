@@ -1,4 +1,37 @@
 ----------------------------------------------------
+Dec 4, 2012 -- Nick P. Andersen     trunk-426--ts-npa-30
+Added tbtrans calculation of the transmission without innercell distances
+
+* This will accomodate several new features in the future:
+  - It gives a more intuitive Hamiltonian for "outsiders".
+    The inner cell distances are all together not required (as far 
+    as NPA knows), so it could be argued to entirely remove it.
+  - When taking a mean of a Hamiltonian it does not make sense to have
+    inner-cell distances contribute to k-points.
+* When comparing to Inelastica's implementation the inner-cell
+  distance is also entirely removed.
+* Required the need for obtaining the Hamiltonian without inner-cell
+  distances.
+  - Added to hs_matrix so that the inner-cell distance can be removed 
+    without iaorb, simply provide lasto instead.
+* Added this to the GF generation (the electrode inner cell must be 
+  the same)
+  - Both the reading and check of the inner-cell creation are performed
+  - TranSIESTA will only perform this with the inner-cell distance
+    (for now)
+* I have not added it to the manual as it will first make sense later on
+  when analysis tools are added
+
+modified:
+  Src/m_hs_matrix.f90
+  Src/m_ts_electrode.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_in_siesta.F
+  Src/ts_init.F90
+  Util/TBTrans_rep/m_tbt_options.F90
+  Util/TBTrans_rep/tbtrans.F90
+
+----------------------------------------------------
 Dec 3, 2012 -- Nick P. Andersen     trunk-426--ts-npa-29
 Bugfix in forces run, an MPI_Bcast was never performed
 
