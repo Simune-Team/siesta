@@ -1,4 +1,15 @@
 ----------------------------------------------------
+Dec 9, 2012 -- Nick P. Andersen     trunk-426--ts-npa-31
+Writing of mulliken populations was writting by all nodes, only IONode
+
+* Showing that the mulliken population was calculated after mixing
+  was showed for all nodes. A simple if of the IONode has been
+  inserted
+
+modified:
+  Src/mixer.F
+
+----------------------------------------------------
 Dec 4, 2012 -- Nick P. Andersen     trunk-426--ts-npa-30
 Added tbtrans calculation of the transmission without innercell distances
 
