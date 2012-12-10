@@ -383,7 +383,7 @@ contains
   subroutine create_Green(tElec, HSFile, GFFile, GFTitle, &
        ElecValenceBandBot, &
        nkpnt,kpoint,kweight, &
-       NBufAt,NUsedAtoms,NA1,NA2, &
+       NBufAt,NUsedAtoms,NA1,NA2, RemUCellDistance, &
        ucell,xa,nua,NEn,contour,chem_shift,ZBulkDOS,nspin)
 
     use precision,  only : dp
@@ -412,6 +412,7 @@ contains
     real(dp),dimension(3,nkpnt),intent(in) :: kpoint ! k-points
     real(dp),dimension(nkpnt),intent(in) :: kweight ! weights of kpoints
     integer, intent(in)            :: NBufAt,NA1,NA2 ! Buffer/Rep a1/Rep a2
+    logical, intent(in)            :: RemUCellDistance ! Whether to remove the unit cell distance in the Hamiltonian.
     integer, intent(in)            :: NUsedAtoms ! Needs update here
     integer, intent(in)            :: nua ! Full system count of atoms in unit cell
     real(dp), dimension(3,3)       :: ucell ! The unit cell of the CONTACT
@@ -644,6 +645,7 @@ contains
        ! Initial header for file
        write(uGF) GFTitle
        write(uGF) chem_shift,NEn
+       write(uGF) RemUCellDistance
        write(uGF) NUsedAtoms,NA1,NA2,nkpnt,nq
        ! Write spin, ELECTRODE unit-cell
        write(uGF) nspin, ucell_E
@@ -735,14 +737,21 @@ contains
                 ! init qpoint in reciprocal lattice vectors
                 call kpoint_convert(ucell_E,qb(:,iqpt),qpt,-1)
 
-
                 ! Setup the transfer matrix and the intra cell at the k-point and q-point
-                call set_electrode_HS_Transfer(Gamma,nuo_E,maxnh_E, &
-                     notot_E,nspin,H_E,S_E,xij_E,xijo_E,zconnect_E,numh_E, &
-                     listhptr_E,listh_E,indxuo_E,Ef_E, &
-                     ispin, kpt, qpt, &
-                     H00,S00,H01,S01)
-
+                if ( RemUCellDistance ) then
+                   call set_electrode_HS_Transfer(Gamma,nuo_E,maxnh_E, &
+                        notot_E,nspin,H_E,S_E,xijo_E,xijo_E,zconnect_E,numh_E, &
+                        listhptr_E,listh_E,indxuo_E,Ef_E, &
+                        ispin, kpt, qpt, &
+                        H00,S00,H01,S01)
+                else
+                   call set_electrode_HS_Transfer(Gamma,nuo_E,maxnh_E, &
+                        notot_E,nspin,H_E,S_E,xij_E,xijo_E,zconnect_E,numh_E, &
+                        listhptr_E,listh_E,indxuo_E,Ef_E, &
+                        ispin, kpt, qpt, &
+                        H00,S00,H01,S01)
+                end if
+                   
                 
                 ! This requires IONode = Node == 0 !
                 if ( iEn .eq. 1 ) then

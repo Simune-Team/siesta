@@ -81,6 +81,7 @@ program tbtrans
   use m_tbt_options, only : IsoAt1, IsoAt2
   use m_tbt_options, only : CalcIeig
   use m_tbt_options, only : CalcCOOP, AlignScat, CalcAtomPDOS
+  use m_tbt_options, only : RemUCellDistances
 
   use m_tbt_kpoints, only : siesta_Gamma
   use m_tbt_kpoints, only : Gamma, spiral
@@ -314,7 +315,7 @@ program tbtrans
   call do_Green('L',HSFileL, GFFileL, GFTitle, &
        ElecValenceBandBot, ReUseGF, &
        nkpnt,kpoint,kweight, &
-       NBufAtL,NUsedAtomsL,NRepA1L,NRepA2L, &
+       NBufAtL,NUsedAtomsL,NRepA1L,NRepA2L, RemUCellDistances, &
        ucell,xa,na_u,NEn,contour,EFermiL,ZBulkDOS,nspin)
   
   ! If we have created the new GF file we can write out the ZBulkDOS
@@ -338,7 +339,7 @@ program tbtrans
   call do_Green('R',HSFileR,GFFileR, GFTitle, &
        ElecValenceBandBot, ReUseGF, &
        nkpnt,kpoint,kweight, &
-       NBufAtR,NUsedAtomsR,NRepA1R,NRepA2R, &
+       NBufAtR,NUsedAtomsR,NRepA1R,NRepA2R, RemUCellDistances, &
        ucell,xa,na_u,NEn,contour,EFermiR,ZBulkDOS,nspin)
 
   ! If we have created the new GF file we can write out the ZBulkDOS
@@ -508,13 +509,13 @@ program tbtrans
 
 ! Left (notice that nuaL_GF should equal NUsedAtomsL)
   call read_Green(uGFL,.true.,EfermiL,nkpnt,NEn,nuaL_GF, &
-       NRepA1L,NRepA2L,noL_GF,nspin, &
+       NRepA1L,NRepA2L,RemUCellDistances, noL_GF,nspin, &
        nkparL,kparL,wkparL, &
        nqL,wqL,qLb)
 
 ! Right (notice that nuaR_GF should equal NUsedAtomsR)
   call read_Green(uGFR,.true.,EfermiR,nkpnt,NEn,nuaR_GF, &
-       NRepA1R,NRepA2R,noR_GF,nspin, &
+       NRepA1R,NRepA2R,RemUCellDistances, noR_GF,nspin, &
        nkparR,kparR,wkparR, &
        nqR,wqR,qRb)
 
@@ -739,12 +740,16 @@ program tbtrans
                 xij,numh,listhptr,listh,indxuo,H(:,ispin),S, &
                 kpt_Node, &
                 Hk_Node,Sk_Node, &
+                xa=xa, &
+                RemUCellDistances=RemUCellDistances,lasto=lasto, &
                 RemNFirstOrbitals=noBufL,RemNLastOrbitals=noBufR)
 #else
            call set_HS_matrix(Gamma,ucell,na_u,no_u,no_s,maxnh, &
                 xij,numh,listhptr,listh,indxuo,H(:,ispin),S, &
                 kpt_Node, &
                 Hk,Sk, &
+                xa=xa, &
+                RemUCellDistances=RemUCellDistances,lasto=lasto, &
                 RemNFirstOrbitals=noBufL,RemNLastOrbitals=noBufR)
 #endif
 

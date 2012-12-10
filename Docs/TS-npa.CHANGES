@@ -1,4 +1,151 @@
 ----------------------------------------------------
+Dec 9, 2012 -- Nick P. Andersen     trunk-426--ts-npa-31
+Writing of mulliken populations was writting by all nodes, only IONode
+
+* Showing that the mulliken population was calculated after mixing
+  was showed for all nodes. A simple if of the IONode has been
+  inserted
+
+modified:
+  Src/mixer.F
+
+----------------------------------------------------
+Dec 4, 2012 -- Nick P. Andersen     trunk-426--ts-npa-30
+Added tbtrans calculation of the transmission without innercell distances
+
+* This will accomodate several new features in the future:
+  - It gives a more intuitive Hamiltonian for "outsiders".
+    The inner cell distances are all together not required (as far 
+    as NPA knows), so it could be argued to entirely remove it.
+  - When taking a mean of a Hamiltonian it does not make sense to have
+    inner-cell distances contribute to k-points.
+* When comparing to Inelastica's implementation the inner-cell
+  distance is also entirely removed.
+* Required the need for obtaining the Hamiltonian without inner-cell
+  distances.
+  - Added to hs_matrix so that the inner-cell distance can be removed 
+    without iaorb, simply provide lasto instead.
+* Added this to the GF generation (the electrode inner cell must be 
+  the same)
+  - Both the reading and check of the inner-cell creation are performed
+  - TranSIESTA will only perform this with the inner-cell distance
+    (for now)
+* I have not added it to the manual as it will first make sense later on
+  when analysis tools are added
+
+modified:
+  Src/m_hs_matrix.f90
+  Src/m_ts_electrode.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_in_siesta.F
+  Src/ts_init.F90
+  Util/TBTrans_rep/m_tbt_options.F90
+  Util/TBTrans_rep/tbtrans.F90
+
+----------------------------------------------------
+Dec 3, 2012 -- Nick P. Andersen     trunk-426--ts-npa-29
+Bugfix in forces run, an MPI_Bcast was never performed
+
+* A bug had been introduced when changing to the new FDF routines.
+  The broadcasting of xa and cell was never performed in iopipes.f90
+
+modified:
+  Src/iopipes.F90
+
+----------------------------------------------------
+Dec 2, 2012 -- Nick P. Andersen     trunk-426--ts-npa-28
+Name fix in m_hs_matrix
+
+* Allocated arrays where attributed a consHS name
+  whereas that is a leftover from old code. We have introduced the
+  correct naming.
+
+modified:
+  Src/m_hs_matrix.f90
+
+----------------------------------------------------
+Dec 2, 2012 -- Nick P. Andersen     trunk-426--ts-npa-27
+Added a deallocation routine for the glob_sparse module
+
+* The glob sparse module did not provide a routine for
+  deallocation of the arrays.
+  This is a most obvious way to handle the arrays.
+  glob_sparse_arrays_dealloc
+
+modified:
+  Src/m_glob_sparse.F90
+  Src/m_ts_in_siesta.F
+
+----------------------------------------------------
+Nov 28, 2012 -- Nick P. Andersen     trunk-426--ts-npa-26
+Added new tests for TranSIESTA, Gold 100 with 4 atom chain
+
+* The current TranSIESTA test with voltage can lead to errorneous 
+  calculations due to its very small matrix elements
+  - Thus small fluctuations in accurary will lead to non-conforming results
+* Instead we have added testing of a much larger system (maybe too large)
+  which has 112 atoms.
+  - It consists of a non-repeated calculation and one with repetition
+    + ts_au_100
+    + ts_au_100_repetition
+    + ts_au_100_0.25V
+    + ts_au_100_repetition_0.25V
+  - The voltage tests are merely for testing the voltage part of TranSIESTA
+* This is intended to superseed the au_111_capacitor test
+
+added:
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100/
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100/au_100.TRANS
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100/au_100.out
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100/elec_au_100.out
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100/tbt_au_100.out
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_0.25V/
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_0.25V/au_100.TRANS
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_0.25V/au_100.out
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_0.25V/elec_au_100.out
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_0.25V/tbt_au_100.out
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition/
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition/au_100.TRANS
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition/au_100.out
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition/elec_au_100.out
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition/tbt_au_100.out
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/au_100.TRANS
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/au_100.out
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/elec_au_100.out
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/tbt_au_100.out
+  Tests/TranSiesta-TBTrans/ts_au_100/
+  Tests/TranSiesta-TBTrans/ts_au_100/Au.psf
+  Tests/TranSiesta-TBTrans/ts_au_100/au_100.fdf
+  Tests/TranSiesta-TBTrans/ts_au_100/elec_au_100.fdf
+  Tests/TranSiesta-TBTrans/ts_au_100/makefile
+  Tests/TranSiesta-TBTrans/ts_au_100/script.sh
+  Tests/TranSiesta-TBTrans/ts_au_100_0.25V/
+  Tests/TranSiesta-TBTrans/ts_au_100_0.25V/Au.psf
+  Tests/TranSiesta-TBTrans/ts_au_100_0.25V/au_100.fdf
+  Tests/TranSiesta-TBTrans/ts_au_100_0.25V/elec_au_100.fdf
+  Tests/TranSiesta-TBTrans/ts_au_100_0.25V/makefile
+  Tests/TranSiesta-TBTrans/ts_au_100_0.25V/script.sh
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition/
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition/Au.psf
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition/au_100.fdf
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition/elec_au_100.fdf
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition/makefile
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition/script.sh
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/Au.psf
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/au_100.fdf
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/elec_au_100.fdf
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/makefile
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/script.sh
+modified:
+  Docs/TranSiestaUpdate.pdf
+
+----------------------------------------------------
+Nov 27, 2012 -- Nick P. Andersen     trunk-426--ts-npa-25
+Merged with trunk
+
+----------------------------------------------------
 Nov 19, 2012 -- Nick P. Andersen     trunk-424--ts-npa-24
 Fix for overseen pointer intent value
 
