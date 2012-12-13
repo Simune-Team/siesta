@@ -609,13 +609,6 @@ program tbtrans
   allocate(TDOSAv(PNEn),PDOSAv(PNEn))
   call memory('A','D',PNEn*2,'tbtrans')
 
-  ! Initialize the arrays as we are going to do a
-  ! reduction
-  TEig(:)     = 0.0_dp
-  TAv(:)      = 0.0_dp
-  TEigAv(:,:) = 0.0_dp
-  TDOSAv(:)   = 0.0_dp
-  PDOSAv(:)   = 0.0_dp
 
 #ifdef MPI
   ! Allocate the buffers for send etc.
@@ -626,15 +619,22 @@ program tbtrans
 ! # done with allocation
 ! ###########################################
 
-  Current = 0.0_dp
 
 ! ###########################################
 ! ######   Transmission calculation    ######
 ! ##########     starts here      ###########
 ! ###########################################
-
   l_spin: do ispin = 1 , nspin
+     
+     ! Initialize the arrays as we are going to do a
+     ! reduction
+     TAv(:)      = 0.0_dp
+     TEigAv(:,:) = 0.0_dp
+     TDOSAv(:)   = 0.0_dp
+     PDOSAv(:)   = 0.0_dp
 
+     Current = 0.0_dp
+     
      ! Create the files that are needed for the calculation
      call create_file(slabel,'TRANS',ispin,nspin,uT)
      call create_file(slabel,'AVTRANS',ispin,nspin,uTAv)
@@ -999,7 +999,7 @@ program tbtrans
      !  1. TAv
      !  2. TDOSAv
      !  3. PDOSAv
-     !  4:. TEigAv
+     !  4: TEigAv
 #ifdef MPI
      buf_send(:,1) = TAv(:)
      buf_send(:,2) = TDOSAv(:)

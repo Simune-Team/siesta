@@ -1,4 +1,15 @@
 ----------------------------------------------------
+Dec 13, 2012 -- Nick P. Andersen     trunk-426--ts-npa-32
+Bugfix in spin calculations for TBTrans_rep
+
+* The current and the averaged arrays were not initialized 
+  correctly for the case of spin.
+  - TAv, TEigAv, TDOSAv, PDOSAv
+  
+modified:
+  Util/TBTrans_rep/tbtrans.F90
+
+----------------------------------------------------
 Dec 9, 2012 -- Nick P. Andersen     trunk-426--ts-npa-31
 Writing of mulliken populations was writting by all nodes, only IONode
 
