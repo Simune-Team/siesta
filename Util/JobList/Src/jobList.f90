@@ -294,8 +294,8 @@ subroutine runOneJob( dir, queue, jobLine )
 
   logical:: jobEnded
   integer:: ic, iLine, iWord, jc, jWord, nc, nLines, nWords
-  character(len=wl):: jobDir, jobName, line(maxWords), &
-                       queueJob, word, words(maxWords)
+  character(len=wl):: fileName, jobDir, jobName, line(maxWords), &
+                      queueJob, word, words(maxWords)
 
   ! Find job name
   call nameJob( jobLine, jobName )
@@ -326,13 +326,17 @@ subroutine runOneJob( dir, queue, jobLine )
     end if
   end do ! iWord
 
-  ! Write .fdf file for job
-  open(unitOut,file=trim(jobDir)//trim(jobName)//'.fdf')
-  write(unitOut,*) 'SystemLabel ',trim(jobName)   ! this is specific for siesta
-  do iLine = nLines,1,-1               ! last lines (words) have priority
-    write(unitOut,'(a)') trim(line(iLine))
-  end do
-  close(unitOut)
+  ! Write .fdf file for job, but avoid overwriting it (this would occur only
+  ! if job contains a single .fdf file, with no other specifications)
+  fileName = trim(jobName)//'.fdf'
+  if (trim(fileName)/=trim(words(1))) then
+    open(unitOut,file=trim(jobDir)//trim(fileName))
+    write(unitOut,*) 'SystemLabel ',trim(jobName)  ! this is specific for siesta
+    do iLine = nLines,1,-1               ! last lines (words) have priority
+      write(unitOut,'(a)') trim(line(iLine))
+    end do
+    close(unitOut)
+  endif
 
   ! Set job
   queueJob = queue
