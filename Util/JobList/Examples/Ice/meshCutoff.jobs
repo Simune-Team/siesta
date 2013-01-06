@@ -2,39 +2,42 @@
 
 %queue sh queue.sh $jobName 8
 
+# %queue touch jobQueued   # test option
+
 %result energy pressure virial
 
 %list MeshCutoff
-  %list iceXI
-    defaults.fdf  iceXI.fdf    dzp.fdf   MeshCutoff  100 Ry      
-    defaults.fdf  iceXI.fdf    dzp.fdf   MeshCutoff  200 Ry      
-    defaults.fdf  iceXI.fdf    dzp.fdf   MeshCutoff  300 Ry      
-    defaults.fdf  iceXI.fdf    dzp.fdf   MeshCutoff  500 Ry      
-    defaults.fdf  iceXI.fdf    dzp.fdf   MeshCutoff  800 Ry  
-  %endlist iceXI
-  %list iceVIII
-    defaults.fdf  iceVIII.fdf  dzp.fdf   MeshCutoff  100 Ry      
-    defaults.fdf  iceVIII.fdf  dzp.fdf   MeshCutoff  200 Ry      
-    defaults.fdf  iceVIII.fdf  dzp.fdf   MeshCutoff  300 Ry      
-    defaults.fdf  iceVIII.fdf  dzp.fdf   MeshCutoff  500 Ry      
-    defaults.fdf  iceVIII.fdf  dzp.fdf   MeshCutoff  800 Ry      
-  %endlist iceVIII
+  %list Unfiltered
+    %list iceXI
+      defaults.fdf; iceXI.fdf; dzp.fdf; MeshCutoff 100 Ry      
+      defaults.fdf; iceXI.fdf; dzp.fdf; MeshCutoff 200 Ry      
+      defaults.fdf; iceXI.fdf; dzp.fdf; MeshCutoff 300 Ry      
+      defaults.fdf; iceXI.fdf; dzp.fdf; MeshCutoff 500 Ry      
+      defaults.fdf; iceXI.fdf; dzp.fdf; MeshCutoff 800 Ry  
+    %endlist iceXI
+    %list iceVIII
+      defaults.fdf; iceVIII.fdf; dzp.fdf; MeshCutoff 100 Ry      
+      defaults.fdf; iceVIII.fdf; dzp.fdf; MeshCutoff 200 Ry      
+      defaults.fdf; iceVIII.fdf; dzp.fdf; MeshCutoff 300 Ry      
+      defaults.fdf; iceVIII.fdf; dzp.fdf; MeshCutoff 500 Ry      
+      defaults.fdf; iceVIII.fdf; dzp.fdf; MeshCutoff 800 Ry      
+    %endlist iceVIII
+  %endlist Unfiltered
+  %list Filtered
+    %list iceXI
+      defaults.fdf; iceXI.fdf; dzp.fdf; FilterCutoff 100 Ry; MeshCutoff 100 Ry    
+      defaults.fdf; iceXI.fdf; dzp.fdf; FilterCutoff 200 Ry; MeshCutoff 200 Ry      
+      defaults.fdf; iceXI.fdf; dzp.fdf; FilterCutoff 300 Ry; MeshCutoff 300 Ry      
+      defaults.fdf; iceXI.fdf; dzp.fdf; FilterCutoff 500 Ry; MeshCutoff 500 Ry      
+      defaults.fdf; iceXI.fdf; dzp.fdf; FilterCutoff 800 Ry; MeshCutoff 800 Ry  
+    %endlist iceXI
+    %list iceVIII    
+      defaults.fdf; iceVIII.fdf; dzp.fdf; FilterCutoff 100 Ry; MeshCutoff 100 Ry      
+      defaults.fdf; iceVIII.fdf; dzp.fdf; FilterCutoff 200 Ry; MeshCutoff 200 Ry      
+      defaults.fdf; iceVIII.fdf; dzp.fdf; FilterCutoff 300 Ry; MeshCutoff 300 Ry      
+      defaults.fdf; iceVIII.fdf; dzp.fdf; FilterCutoff 500 Ry; MeshCutoff 500 Ry      
+      defaults.fdf; iceVIII.fdf; dzp.fdf; FilterCutoff 800 Ry; MeshCutoff 800 Ry      
+    %endlist iceVIII
+  %endlist Filtered
 %endlist MeshCutoff
-
-%list FilteredMeshCutoff
-  %list iceXI
-    defaults.fdf  iceXI.fdf    dzp.fdf   filter100.fdf   MeshCutoff  100 Ry    
-    defaults.fdf  iceXI.fdf    dzp.fdf   filter100.fdf   MeshCutoff  200 Ry      
-    defaults.fdf  iceXI.fdf    dzp.fdf   filter100.fdf   MeshCutoff  300 Ry      
-    defaults.fdf  iceXI.fdf    dzp.fdf   filter100.fdf   MeshCutoff  500 Ry      
-    defaults.fdf  iceXI.fdf    dzp.fdf   filter100.fdf   MeshCutoff  800 Ry  
-  %endlist iceXI
-  %list iceVIII    
-    defaults.fdf  iceVIII.fdf  dzp.fdf   filter100.fdf   MeshCutoff  100 Ry      
-    defaults.fdf  iceVIII.fdf  dzp.fdf   filter100.fdf   MeshCutoff  200 Ry      
-    defaults.fdf  iceVIII.fdf  dzp.fdf   filter100.fdf   MeshCutoff  300 Ry      
-    defaults.fdf  iceVIII.fdf  dzp.fdf   filter100.fdf   MeshCutoff  500 Ry      
-    defaults.fdf  iceVIII.fdf  dzp.fdf   filter100.fdf   MeshCutoff  800 Ry      
-  %endlist iceVIII
-%endlist FilteredMeshCutoff
 

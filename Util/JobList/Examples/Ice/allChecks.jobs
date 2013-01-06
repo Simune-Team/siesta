@@ -6,95 +6,78 @@
 
 %list Pseudo
   %list iceXI
-    defaults.fdf  iceXI.fdf    dzp.fdf   pseudoPBE.fdf
-    defaults.fdf  iceXI.fdf    dzp.fdf   pseudoLMKLL.fdf
-    defaults.fdf  iceXI.fdf    dzp.fdf   pseudoVV.fdf
+    defaults.fdf; iceXI.fdf; dzp.fdf; pseudoPBE.fdf
+    defaults.fdf; iceXI.fdf; dzp.fdf; pseudoLMKLL.fdf
+    defaults.fdf; iceXI.fdf; dzp.fdf; pseudoVV.fdf
   %endlist iceXI
   %list iceVIII
-    defaults.fdf  iceVIII.fdf  dzp.fdf   pseudoPBE.fdf
-    defaults.fdf  iceVIII.fdf  dzp.fdf   pseudoLMKLL.fdf
-    defaults.fdf  iceVIII.fdf  dzp.fdf   pseudoVV.fdf
+    defaults.fdf; iceVIII.fdf; dzp.fdf; pseudoPBE.fdf
+    defaults.fdf; iceVIII.fdf; dzp.fdf; pseudoLMKLL.fdf
+    defaults.fdf; iceVIII.fdf; dzp.fdf; pseudoVV.fdf
   %endlist iceVIII
 %endlist Pseudo
 
 %list BasisSet
   %list iceXI
-    defaults.fdf  iceXI.fdf    dzp.fdf        
-    defaults.fdf  iceXI.fdf    tzp1.fdf        
-    defaults.fdf  iceXI.fdf    tzp2.fdf        
-    defaults.fdf  iceXI.fdf    qzp1.fdf      
-    defaults.fdf  iceXI.fdf    qzp2.fdf      
+    defaults.fdf; iceXI.fdf; dzp.fdf
+    defaults.fdf; iceXI.fdf; tzp1.fdf
+    defaults.fdf; iceXI.fdf; tzp2.fdf
+    defaults.fdf; iceXI.fdf; qzp1.fdf
+    defaults.fdf; iceXI.fdf; qzp2.fdf
   %endlist iceXI
   %list iceVIII
-    defaults.fdf  iceVIII.fdf  dzp.fdf        
-    defaults.fdf  iceVIII.fdf  tzp1.fdf        
-    defaults.fdf  iceVIII.fdf  tzp2.fdf       
-    defaults.fdf  iceVIII.fdf  qzp1.fdf      
-    defaults.fdf  iceVIII.fdf  qzp2.fdf      
+    defaults.fdf; iceVIII.fdf; dzp.fdf
+    defaults.fdf; iceVIII.fdf; tzp1.fdf
+    defaults.fdf; iceVIII.fdf; tzp2.fdf
+    defaults.fdf; iceVIII.fdf; qzp1.fdf
+    defaults.fdf; iceVIII.fdf; qzp2.fdf
   %endlist iceVIII
 %endlist BasisSet
 
 %list MeshCutoff
   %list iceXI
-    defaults.fdf  iceXI.fdf    dzp.fdf   MeshCutoff  100 Ry      
-    defaults.fdf  iceXI.fdf    dzp.fdf   MeshCutoff  200 Ry      
-    defaults.fdf  iceXI.fdf    dzp.fdf   MeshCutoff  300 Ry      
-    defaults.fdf  iceXI.fdf    dzp.fdf   MeshCutoff  500 Ry      
-    defaults.fdf  iceXI.fdf    dzp.fdf   MeshCutoff  800 Ry  
+    defaults.fdf; iceXI.fdf; dzp.fdf; MeshCutoff 100 Ry      
+    defaults.fdf; iceXI.fdf; dzp.fdf; MeshCutoff 200 Ry      
+    defaults.fdf; iceXI.fdf; dzp.fdf; MeshCutoff 300 Ry      
+    defaults.fdf; iceXI.fdf; dzp.fdf; MeshCutoff 500 Ry      
+    defaults.fdf; iceXI.fdf; dzp.fdf; MeshCutoff 800 Ry  
   %endlist iceXI
   %list iceVIII
-    defaults.fdf  iceVIII.fdf  dzp.fdf   MeshCutoff  100 Ry      
-    defaults.fdf  iceVIII.fdf  dzp.fdf   MeshCutoff  200 Ry      
-    defaults.fdf  iceVIII.fdf  dzp.fdf   MeshCutoff  300 Ry      
-    defaults.fdf  iceVIII.fdf  dzp.fdf   MeshCutoff  500 Ry      
-    defaults.fdf  iceVIII.fdf  dzp.fdf   MeshCutoff  800 Ry      
+    defaults.fdf; iceVIII.fdf; dzp.fdf; MeshCutoff 100 Ry      
+    defaults.fdf; iceVIII.fdf; dzp.fdf; MeshCutoff 200 Ry      
+    defaults.fdf; iceVIII.fdf; dzp.fdf; MeshCutoff 300 Ry      
+    defaults.fdf; iceVIII.fdf; dzp.fdf; MeshCutoff 500 Ry      
+    defaults.fdf; iceVIII.fdf; dzp.fdf; MeshCutoff 800 Ry      
   %endlist iceVIII
 %endlist MeshCutoff
 
-%list FilteredMeshCutoff
-  %list iceXI
-    defaults.fdf  iceXI.fdf    dzp.fdf   filter100.fdf   MeshCutoff  100 Ry    
-    defaults.fdf  iceXI.fdf    dzp.fdf   filter100.fdf   MeshCutoff  200 Ry      
-    defaults.fdf  iceXI.fdf    dzp.fdf   filter100.fdf   MeshCutoff  300 Ry      
-    defaults.fdf  iceXI.fdf    dzp.fdf   filter100.fdf   MeshCutoff  500 Ry      
-    defaults.fdf  iceXI.fdf    dzp.fdf   filter100.fdf   MeshCutoff  800 Ry  
-  %endlist iceXI
-  %list iceVIII    
-    defaults.fdf  iceVIII.fdf  dzp.fdf   filter100.fdf   MeshCutoff  100 Ry      
-    defaults.fdf  iceVIII.fdf  dzp.fdf   filter100.fdf   MeshCutoff  200 Ry      
-    defaults.fdf  iceVIII.fdf  dzp.fdf   filter100.fdf   MeshCutoff  300 Ry      
-    defaults.fdf  iceVIII.fdf  dzp.fdf   filter100.fdf   MeshCutoff  500 Ry      
-    defaults.fdf  iceVIII.fdf  dzp.fdf   filter100.fdf   MeshCutoff  800 Ry      
-  %endlist iceVIII
-%endlist FilteredMeshCutoff
-
 %list kGrid
   %list iceXI
-    defaults.fdf  iceXI.fdf    dzp.fdf   kGridCutoff  0 Ang
-    defaults.fdf  iceXI.fdf    dzp.fdf   kGridCutoff  5 Ang
-    defaults.fdf  iceXI.fdf    dzp.fdf   kGridCutoff 10 Ang
+    defaults.fdf; iceXI.fdf; dzp.fdf; kGridCutoff  0 Ang
+    defaults.fdf; iceXI.fdf; dzp.fdf; kGridCutoff  5 Ang
+    defaults.fdf; iceXI.fdf; dzp.fdf; kGridCutoff 10 Ang
   %endlist iceXI
   %list iceVIII    
-    defaults.fdf  iceVIII.fdf  dzp.fdf   kGridCutoff  0 Ang
-    defaults.fdf  iceVIII.fdf  dzp.fdf   kGridCutoff  5 Ang
-    defaults.fdf  iceVIII.fdf  dzp.fdf   kGridCutoff 10 Ang
+    defaults.fdf; iceVIII.fdf; dzp.fdf; kGridCutoff  0 Ang
+    defaults.fdf; iceVIII.fdf; dzp.fdf; kGridCutoff  5 Ang
+    defaults.fdf; iceVIII.fdf; dzp.fdf; kGridCutoff 10 Ang
   %endlist iceVIII
 %endlist kGrid
 
 %list DMtol
   %list iceXI
-    defaults.fdf  iceXI.fdf    dzp.fdf   DM.Tolerance  1.d-3
-    defaults.fdf  iceXI.fdf    dzp.fdf   DM.Tolerance  3.d-4
-    defaults.fdf  iceXI.fdf    dzp.fdf   DM.Tolerance  1.d-4
-    defaults.fdf  iceXI.fdf    dzp.fdf   DM.Tolerance  3.d-5
-    defaults.fdf  iceXI.fdf    dzp.fdf   DM.Tolerance  1.d-5
+    defaults.fdf; iceXI.fdf; dzp.fdf; DM.Tolerance 1.d-3
+    defaults.fdf; iceXI.fdf; dzp.fdf; DM.Tolerance 3.d-4
+    defaults.fdf; iceXI.fdf; dzp.fdf; DM.Tolerance 1.d-4
+    defaults.fdf; iceXI.fdf; dzp.fdf; DM.Tolerance 3.d-5
+    defaults.fdf; iceXI.fdf; dzp.fdf; DM.Tolerance 1.d-5
   %endlist iceXI
   %list iceVIII    
-    defaults.fdf  iceVIII.fdf  dzp.fdf   DM.Tolerance  1.d-3
-    defaults.fdf  iceVIII.fdf  dzp.fdf   DM.Tolerance  3.d-4
-    defaults.fdf  iceVIII.fdf  dzp.fdf   DM.Tolerance  1.d-4
-    defaults.fdf  iceVIII.fdf  dzp.fdf   DM.Tolerance  3.d-5
-    defaults.fdf  iceVIII.fdf  dzp.fdf   DM.Tolerance  1.d-5
+    defaults.fdf; iceVIII.fdf; dzp.fdf; DM.Tolerance 1.d-3
+    defaults.fdf; iceVIII.fdf; dzp.fdf; DM.Tolerance 3.d-4
+    defaults.fdf; iceVIII.fdf; dzp.fdf; DM.Tolerance 1.d-4
+    defaults.fdf; iceVIII.fdf; dzp.fdf; DM.Tolerance 3.d-5
+    defaults.fdf; iceVIII.fdf; dzp.fdf; DM.Tolerance 1.d-5
   %endlist iceVIII
 %endlist DMtol
 

@@ -142,6 +142,7 @@ recursive subroutine scanList( dir, queue, request, listName, task )
   character(len=*),intent(in) :: listName   ! name of job list
   character(len=*),intent(in) :: task       ! ('count'|'run'|'get')
 
+  character(len=1),parameter:: separator(1) = (/' '/)
   integer :: iCase, iLine, iostat, nCases, nResults, nWords, nJobs
   character(len=wl):: caseDir(maxJobs), caseName(maxJobs), caseType(maxJobs), &
                        fileIn, fileOut, line, myDir, myRequest(maxWords), &
@@ -189,7 +190,7 @@ recursive subroutine scanList( dir, queue, request, listName, task )
     endif ! (iostat<0)
 
     ! Parse line, ignoring comments
-    call parser(line,words,nWords)
+    call parser(separator,line,words,nWords)
 
     ! Act depending on line content
     if (nWords==0) then                     ! blank or comment line
@@ -264,12 +265,13 @@ subroutine nameJob( jobLine, jobName )
   character(len=*),intent(in) :: jobLine   ! line of job specification
   character(len=*),intent(out):: jobName   ! job name
 
+  character(len=1),parameter:: separators(2) = (/' ',';'/)
   integer:: iWord, nc, nWords
   character(len=wl):: line, word, words(maxWords)
 
   ! Parse job line
   line = jobLine
-  call parser(line,words,nWords)
+  call parser(separators,line,words,nWords)
 
   ! Set job name by concatenating words
   jobName = ' '
@@ -292,10 +294,11 @@ subroutine runOneJob( dir, queue, jobLine )
   character(len=*),intent(in) :: queue     ! queuing statement
   character(len=*),intent(in) :: jobLine   ! line of job specification
 
+  character(len=1),parameter:: separator(1) = (/';'/)
   logical:: jobEnded
   integer:: ic, iLine, iWord, jc, jWord, nc, nLines, nWords
   character(len=wl):: fileName, jobDir, jobName, line(maxWords), &
-                      queueJob, word, words(maxWords)
+                      myLine, queueJob, word, words(maxWords)
 
   ! Find job name
   call nameJob( jobLine, jobName )
@@ -305,24 +308,19 @@ subroutine runOneJob( dir, queue, jobLine )
   call system('mkdir -p ' // trim(jobDir))
   call system(copyFiles//trim(jobDir))
 
-  ! Parse job line (using line(1) because parser argument is inout)
-  line(1) = jobLine
-  call parser(line(1),words,nWords)
+  ! Parse job-specifications line
+  myLine = jobLine
+  call parser(separator,myLine,words,nWords)
 
   ! Convert job specifications to fdf format lines
-  nLines = 0
-  do iWord = 1,nWords
-    nLines = nLines+1
+  nLines = nWords                      ! lines in the output fdf file
+  do iWord = 1,maxWords                ! loop on job specifications
     word = words(iWord)
-    nc = len(trim(word))               ! number of characters in word
+    nc = len(trim(word))
     if (word(nc-3:nc)=='.fdf') then    ! include new .fdf file
-      line(nLines) = '%include '//trim(word)
-    else                               ! make a line with rest of words
-      line(nLines) = word
-      do jWord = iWord+1,nWords
-        line(nLines) = trim(line(nLines))//' '//words(jWord)
-      end do
-      exit ! do iWord loop
+      line(iWord) = '%include '//trim(word)
+    else                               ! copy statement to new line
+      line(iWord) = word
     end if
   end do ! iWord
 
@@ -331,7 +329,7 @@ subroutine runOneJob( dir, queue, jobLine )
   fileName = trim(jobName)//'.fdf'
   if (trim(fileName)/=trim(words(1))) then
     open(unitOut,file=trim(jobDir)//trim(fileName))
-    write(unitOut,*) 'SystemLabel ',trim(jobName)  ! this is specific for siesta
+    write(unitOut,'(a)') 'SystemLabel '//trim(jobName) ! this is siesta-specific
     do iLine = nLines,1,-1               ! last lines (words) have priority
       write(unitOut,'(a)') trim(line(iLine))
     end do
@@ -359,32 +357,37 @@ end subroutine runOneJob
 
 !------------------------------------------------------------------------------
 
-subroutine parser( line, words, nWords )
+subroutine parser( separators, line, words, nWords )
 
   implicit none
+  character(len=*),intent(in)   :: separators(:) ! character(s) between words
   character(len=*),intent(inout):: line      ! returns without comments
   character(len=*),intent(out)  :: words(:)  ! words in line, without comments
   integer,         intent(out)  :: nWords    ! number of words
 
   character(len=ll):: myLine
-  integer:: iWord, nc
+  integer:: is, iWord, nc, ncs, ns
 
   ! Remove comments
   nc = scan(line,'#')-1          ! last character before comment
-  if (nc<0) nc=len(trim(line))   ! if no comment, last nonblank character
-  line = line(1:nc)
-  myLine = line
+  if (nc>=0) line = line(1:nc)   ! select characters before comment
+  myLine = adjustl(line)         ! remove leading blanks
 
   ! Loop on words
+  ns = size(separators)
   do iWord = 1,size(words)
-    myLine = adjustl(myLine)     ! remove leading blanks
-    nc = scan(myLine,' ')-1      ! last character before next blank
+    nc = len(trim(myLine))
+    do is = 1,ns
+      ncs = scan(myLine,separators(is))-1 ! last character before next separator
+      if (ncs>0) nc = min(nc,ncs)
+    end do
     if (nc<=0) then              ! no more words
       nWords = iWord-1
       return                     ! normal return point
     else
-      words(iWord) = myLine(1:nc)
-      myLine = myLine(nc+1:)
+      if (nc>len(words(iWord))) stop 'parser ERROR: len(words) too small'
+      words(iWord) = adjustl(myLine(1:nc))
+      myLine = adjustl(myLine(nc+2:))     ! discard previous word from myLine
     endif
   end do ! iWord
   stop 'parser ERROR: size(words) too small'
