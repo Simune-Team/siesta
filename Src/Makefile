@@ -202,6 +202,11 @@ $(XMLPARSER):
 	(cd xmlparser ; $(MAKE) "VPATH=$(VPATH)/xmlparser" \
 	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
 #
+NCPS=libncps.a
+$(NCPS): 
+	(cd nc-pseudo ; $(MAKE) "VPATH=$(VPATH)/nc-pseudo" \
+	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
+#
 #--------------------------------------------------------------
 XC=libSiestaXC.a
 $(XC): 
@@ -284,10 +289,10 @@ check-siesta:
 #
 siesta: check-siesta what version \
                 $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) $(XC) \
-                $(COMP_LIBS) $(ALL_OBJS) 
+                $(NCPS) $(COMP_LIBS) $(ALL_OBJS) 
 	$(FC) -o siesta \
 	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML) $(XMLPARSER) \
-               $(XC) $(MPI_INTERFACE) \
+               $(XC) $(NCPS) $(MPI_INTERFACE) \
                $(COMP_LIBS) $(FoX_LIBS) $(LIBS) 
 #
 #------------------------------------------------------------------------

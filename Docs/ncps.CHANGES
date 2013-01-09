@@ -1,0 +1,28 @@
+------------------------------------------------------------
+January 9, 2013  Alberto Garcia          trunk-427--ncps-1
+Prototype implementation of ncps library
+
+A prototype "norm-conserving pseudopotential" library functionality
+has been included in Src/nc-pseudo. It is now possible to read
+pseudo-xml files directly from Siesta.
+
+A bug in the previous implementation, having to do with the "valence
+charge density of ps generation", has been fixed.
+
+Other rough edges remain.
+
+added:
+  Src/nc-pseudo/
+  Src/nc-pseudo/m_ncps.f90
+  Src/nc-pseudo/m_ncps_froyen_ps_t.f90
+  Src/nc-pseudo/m_ncps_parsing_helpers.f90
+  Src/nc-pseudo/m_ncps_translators.f90
+  Src/nc-pseudo/m_ncps_writers.f90
+  Src/nc-pseudo/m_ncps_xml_ps_t.f90
+  Src/nc-pseudo/m_ncps_xmlreader.f90
+  Src/nc-pseudo/makefile
+modified:
+  Src/Makefile
+  Src/pseudopotential.f
+
+

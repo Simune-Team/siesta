@@ -14,7 +14,8 @@
       use precision, only: dp
       use flib_spline, only: generate_spline, evaluate_spline
       use atom_options, only: write_ion_plot_files
-      
+      use m_ncps_froyen_ps_t, only: pseudopotential_t => froyen_ps_t
+
       implicit none
 
       external :: io_assign, io_close
@@ -25,31 +26,32 @@
       public :: pseudo_write_formatted, pseudo_reparametrize
       public :: read_ps_conf, pseudo_dump
 
-      type pseudopotential_t
-        character(len=2)        :: name
-        integer                 :: nr
-        integer                 :: nrval
-        real(dp)                :: zval
-        real(dp)                :: gen_zval  ! Generation valence charge
-        logical                 :: relativistic
-        character(len=10)       :: correlation
-        character(len=2)        :: icorr
-        character(len=3)        :: irel
-        character(len=4)        :: nicore
-        real(dp)                :: a
-        real(dp)                :: b
-        character(len=10)       :: method(6)
-        character(len=70)       :: text
-        integer                 :: npotu
-        integer                 :: npotd
-        real(dp), pointer       :: r(:)
-        real(dp), pointer       :: chcore(:)
-        real(dp), pointer       :: chval(:)
-        real(dp), pointer       :: vdown(:,:)
-        real(dp), pointer       :: vup(:,:)
-        integer, pointer        :: ldown(:)
-        integer, pointer        :: lup(:)
-      end type pseudopotential_t
+      
+c$$$      type pseudopotential_t
+c$$$        character(len=2)        :: name
+c$$$        integer                 :: nr
+c$$$        integer                 :: nrval
+c$$$        real(dp)                :: zval
+c$$$        real(dp)                :: gen_zval  ! Generation valence charge
+c$$$        logical                 :: relativistic
+c$$$        character(len=10)       :: correlation
+c$$$        character(len=2)        :: icorr
+c$$$        character(len=3)        :: irel
+c$$$        character(len=4)        :: nicore
+c$$$        real(dp)                :: a
+c$$$        real(dp)                :: b
+c$$$        character(len=10)       :: method(6)
+c$$$        character(len=70)       :: text
+c$$$        integer                 :: npotu
+c$$$        integer                 :: npotd
+c$$$        real(dp), pointer       :: r(:)
+c$$$        real(dp), pointer       :: chcore(:)
+c$$$        real(dp), pointer       :: chval(:)
+c$$$        real(dp), pointer       :: vdown(:,:)
+c$$$        real(dp), pointer       :: vup(:,:)
+c$$$        integer, pointer        :: ldown(:)
+c$$$        integer, pointer        :: lup(:)
+c$$$      end type pseudopotential_t
 
         CONTAINS
 
@@ -75,9 +77,15 @@
            if (found) then
               call pseudo_read_formatted(fname,p)
            else
-              write(6,'(/,2a,a20,/)') 'read_pseudo: ERROR: ',
-     .             'Pseudopotential file not found: ', fname
-              call die
+              fname = trim(label) // '.xml'
+              inquire(file=fname, exist=found)
+              if (found) then
+                 call pseudo_read_xml(fname,p)
+              else
+                 write(6,'(/,2a,a20,/)') 'read_pseudo: ERROR: ',
+     .                'Pseudopotential file not found: ', fname
+                 call die
+              endif
            endif
         endif
         if (write_ion_plot_files)
@@ -226,6 +234,22 @@
         call io_close(io_ps)
         end subroutine pseudo_read_formatted
 !------
+!----
+        subroutine pseudo_read_xml(fname,p)
+
+        use m_ncps, only: xml_ps_t
+        use m_ncps, only: ncps_xmlreader
+        use m_ncps, only: ncps_xml2froyen
+
+        character(len=*), intent(in)              :: fname
+        type(pseudopotential_t), intent(out)      :: p
+
+        type(xml_ps_t)      :: psxml
+
+        call ncps_xmlreader(fname,psxml)
+        call ncps_xml2froyen(psxml,p)
+
+        end subroutine pseudo_read_xml
 !----
         subroutine pseudo_write_formatted(fname,p)
         character(len=*), intent(in) :: fname
