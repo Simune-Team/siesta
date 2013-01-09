@@ -26,7 +26,7 @@ PRIVATE    ! nothing is declared public beyond this point
   integer,parameter:: dp = kind(1.d0)
 
   ! Internal variables and arrays
-  integer,           save:: myUnit, totJobs, totLists
+  integer,save:: jobCores, totCores, totJobs, totLists
 
   ! Derived type to hold calculation results
   type resultsType
@@ -46,18 +46,18 @@ CONTAINS
 
 !------------------------------------------------------------------------------
 
-subroutine countJobs( unit, nJobs, nLists )
+subroutine countJobs( unit, nLists, nJobs, nCores )
+
+! Counts number of jobs and lists in a joblist file, specified by a I/O unit
 
   implicit none
   integer,         intent(in) :: unit   ! IO unit of datafile
-  integer,optional,intent(out):: nJobs  ! total number of jobs
   integer,optional,intent(out):: nLists ! total number of job lists
+  integer,optional,intent(out):: nJobs  ! total number of jobs
+  integer,optional,intent(out):: nCores ! total number of required cores
 
   integer :: nc
   character(len=wl):: myDir
-
-  ! Copy input file unit for use across the module
-  myUnit = unit
 
   ! Get current directory and add trailing '/' if necessary
   call getcwd(myDir)
@@ -65,15 +65,18 @@ subroutine countJobs( unit, nJobs, nLists )
   if (myDir(nc:nc) /= '/') myDir = myDir(1:nc) // '/'
 
   ! Initializations
+  jobCores = 1            ! default cores per job
+  totCores = 0            ! total number of cores
   totJobs = 0             ! total number of jobs
   totLists = 0            ! total number of lists and sublists
 
   ! Scan the 'root' list (the whole file), specified by blank name
-  call scanList(myDir,defaultQueue,defaultRequest,' ','count')
+  call scanList(unit,myDir,defaultQueue,defaultRequest,' ','count')
 
   ! Copy number of jobs and lists to output variables
-  if (present(nJobs))  nJobs = totJobs
   if (present(nLists)) nLists = totLists
+  if (present(nJobs))  nJobs  = totJobs
+  if (present(nCores)) nCores = totCores
 
 end subroutine countJobs
 
@@ -81,14 +84,13 @@ end subroutine countJobs
 
 subroutine runJobs( unit )
 
+! Runs or queues a number of jobs in a joblist file, specified by a I/O unit
+
   implicit none
-  integer,         intent(in) :: unit   ! IO unit of datafile
+  integer,intent(in) :: unit   ! IO unit of datafile
 
   integer :: nc
   character(len=wl):: myDir
-
-  ! Copy input file unit for use across the module
-  myUnit = unit
 
   ! Get current directory and add trailing '/' if necessary
   call getcwd(myDir)
@@ -96,11 +98,13 @@ subroutine runJobs( unit )
   if (myDir(nc:nc) /= '/') myDir = myDir(1:nc) // '/'
 
   ! Initializations
+  jobCores = 1            ! default cores per job
+  totCores = 0            ! total number of cores
   totJobs = 0             ! total number of jobs
   totLists = 0            ! total number of lists and sublists
 
   ! Scan the 'root' list (the whole file), specified by blank name
-  call scanList(myDir,defaultQueue,defaultRequest,' ','run')
+  call scanList(unit,myDir,defaultQueue,defaultRequest,' ','run')
 
 end subroutine runJobs
 
@@ -108,14 +112,14 @@ end subroutine runJobs
 
 subroutine getResults( unit )
 
+! Collects requested results of jobs in a joblist file (specified by a 
+! I/O unit), into summary output files, within each sub-list directory
+
   implicit none
-  integer,         intent(in) :: unit   ! IO unit of datafile
+  integer,intent(in) :: unit   ! IO unit of datafile
 
   integer :: nc
   character(len=wl):: myDir
-
-  ! Copy input file unit for use across the module
-  myUnit = unit
 
   ! Get current directory and add trailing '/' if necessary
   call getcwd(myDir)
@@ -123,19 +127,22 @@ subroutine getResults( unit )
   if (myDir(nc:nc) /= '/') myDir = myDir(1:nc) // '/'
 
   ! Initializations
+  jobCores = 1            ! default cores per job
+  totCores = 0            ! total number of cores
   totJobs = 0             ! total number of jobs
   totLists = 0            ! total number of lists and sublists
 
   ! Scan the 'root' list (the whole file), specified by blank name
-  call scanList(myDir,defaultQueue,defaultRequest,' ','get')
+  call scanList(unit,myDir,defaultQueue,defaultRequest,' ','get')
 
 end subroutine getResults
 
 !------------------------------------------------------------------------------
 
-recursive subroutine scanList( dir, queue, request, listName, task )
+recursive subroutine scanList( unit, dir, queue, request, listName, task )
 
   implicit none
+  integer,         intent(in) :: unit       ! I/O unit of joblist file
   character(len=*),intent(in) :: dir        ! parent directory
   character(len=*),intent(in) :: queue      ! queuing statement
   character(len=*),intent(in) :: request(:) ! requested results
@@ -143,7 +150,7 @@ recursive subroutine scanList( dir, queue, request, listName, task )
   character(len=*),intent(in) :: task       ! ('count'|'run'|'get')
 
   character(len=1),parameter:: separator(1) = (/' '/)
-  integer :: iCase, iLine, iostat, nCases, nResults, nWords, nJobs
+  integer :: iCase, iLine, iostat, nCases, nCores, nResults, nWords, nJobs
   character(len=wl):: caseDir(maxJobs), caseName(maxJobs), caseType(maxJobs), &
                        fileIn, fileOut, line, myDir, myRequest(maxWords), &
                        myQueue, newList, words(maxWords)
@@ -172,11 +179,12 @@ recursive subroutine scanList( dir, queue, request, listName, task )
   ! Loop on lines of datafile
   finished = .false.       ! has the list terminated normally?
   nJobs = 0                ! number of jobs in list
+  nCores = 0               ! number of cores required by jobs in list
   nCases = 0               ! number of 'cases' (jobs or sublists) in list
   do iLine = 1,maxLines
 
     ! Read one line of input file
-    call readLine( myUnit, line, iostat )
+    call readLine( unit, line, iostat )
 
     ! End of file check
     if (iostat<0) then                      ! end of file
@@ -198,6 +206,7 @@ recursive subroutine scanList( dir, queue, request, listName, task )
     elseif (trim(words(1))=='%queue') then  ! queue specification
       line = adjustl(line)
       myQueue = adjustl(line(7:))           ! remove '%queue' from line
+      call getCores(myQueue,jobCores)
     elseif (trim(words(1))=='%result') then ! result-request especification
       myRequest = ' '
       myRequest(1:nWords-1) = words(2:nWords) ! exclude 1st word (it is %result)
@@ -207,7 +216,7 @@ recursive subroutine scanList( dir, queue, request, listName, task )
       caseType(nCases) = 'list'
       caseName(nCases) = newList
       caseDir(nCases) = trim(myDir) // trim(newList) // '/'
-      call scanList(myDir,myQueue,myRequest,newList,task)
+      call scanList(unit,myDir,myQueue,myRequest,newList,task)
     elseif (words(1)=='%endlist') then      ! end of my list
       if (words(2)==listName) then
         finished = .true.
@@ -220,6 +229,7 @@ recursive subroutine scanList( dir, queue, request, listName, task )
     else                                    ! new job
       nCases = nCases+1
       nJobs = nJobs+1
+      nCores = nCores + jobCores
       caseType(nCases) = 'job'
       call nameJob( line, caseName(nCases) )
       caseDir(nCases) = trim(myDir) // trim(caseName(nCases)) // '/'
@@ -254,16 +264,50 @@ recursive subroutine scanList( dir, queue, request, listName, task )
 
   ! Count jobs and list (but not if it is a list of lists)
   totJobs = totJobs+nJobs
+  totCores = totCores+nCores
   if (nJobs>0) totLists = totLists+1
 
 end subroutine scanList
 
 !------------------------------------------------------------------------------
 
-subroutine nameJob( jobLine, jobName )
+subroutine getCores( queue, ncores )
+
+! Extracts an integer number from string 'queue', assuming that it is the
+! number of cores per job, or returns 1 if there is no such integer
 
   implicit none
-  character(len=*),intent(in) :: jobLine   ! line of job specification
+  character(len=*),intent(in) :: queue    ! queue statement string
+  integer,         intent(out):: ncores   ! number of cores per job
+
+  character(len=1),parameter:: separator(1) = (/' '/)
+  character(len=wl):: words(maxWords)
+  integer:: iWord, n, nWords
+
+  ! Parse queue into blank-separated words
+  call parser(separator,queue,words,nWords)
+
+  ! Find a word that is an integer number. Assume that it is the num. of cores
+  ncores = 1                               ! default value
+  do iWord = 1,nWords
+    n = verify(trim(words(iWord)),'0123456789')  ! verify is an intrinsic funct
+    if (n==0) then                         ! all characters are numbers
+      read(words(iWord),*) ncores          ! read ncores from word
+      return
+    endif
+  end do
+
+end subroutine getCores
+
+!------------------------------------------------------------------------------
+
+subroutine nameJob( jobLine, jobName )
+
+! Generates a job name, concatenating words in a job-specification line
+! .fdf suffixes are removed from words
+
+  implicit none
+  character(len=*),intent(in) :: jobLine   ! string of job specifications
   character(len=*),intent(out):: jobName   ! job name
 
   character(len=1),parameter:: separators(2) = (/' ',';'/)
@@ -289,6 +333,11 @@ end subroutine nameJob
 !------------------------------------------------------------------------------
 
 subroutine runOneJob( dir, queue, jobLine )
+
+! Submits (queues) one job, specified by string 'jobLine' of specifications,
+! using the 'queue' statement, within a job-specific subdirectory of 'dir'
+! The subdirectory is named by concatenating the words in 'jobLine' (without
+! '.fdf' suffixes), separated by '_'
 
   implicit none
   character(len=*),intent(in) :: dir       ! work directory
@@ -360,8 +409,9 @@ end subroutine runOneJob
 
 subroutine readLine( unit, line, iostat )
 
-! Reads one line of job list file, removing comments (marked by a leading '#') 
-! and including continuation lines (marked by a trailing '\')
+! Reads one line of a job list file (specified by a I/O unit), removing 
+! comments (marked by a leading '#'), and including continuation lines 
+! (marked by a trailing '\')
 
   implicit none
   integer,         intent(in) :: unit    ! input file unit
@@ -424,9 +474,9 @@ end subroutine readLine
 
 subroutine parser( separators, line, words, nWords )
 
-  ! Parses one line into words, using any of a number of separators.
-  ! If ' ' is not one of the separators, the 'words' may contain blanks,
-  ! but leading and trailing blanks will be removed from them in any case
+! Parses one line into words, using any of a number of separators.
+! If ' ' is not one of the separators, the 'words' may contain blanks,
+! but leading and trailing blanks will be removed from them in any case
 
   implicit none
   character(len=*),intent(in)   :: separators(:) ! character(s) between words
@@ -462,6 +512,14 @@ end subroutine parser
 !------------------------------------------------------------------------------
 
 subroutine readResult( dir, request, name, result, results )
+
+! Reads magnitudes specified by 'request' string(s), calculated by a SIESTA 
+! job named 'name', within directory 'dir'. The magnitudes are output in one
+! or both of: derived-type structure 'result'; and real array 'results'
+! Presently allowed values (case sensitive) of 'request' are
+!   (volume|energy|pressure|virial|maxForce|avgForce)
+! Additionally, derived-type 'result' returns the system geometry, forces,
+! and stress tensor
 
   implicit none
   character(len=*),          intent(in) :: dir         ! job directory

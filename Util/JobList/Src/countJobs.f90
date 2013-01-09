@@ -6,12 +6,12 @@ program countJobs
   use jobList, only: count => countJobs
 
   implicit none
-  integer :: nJobs, nLists, unit
+  integer :: nCores, nJobs, nLists, unit
 
   unit = 5
-  call count( unit, nJobs, nLists )
+  call count( unit, nLists, nJobs, nCores )
 
-  print*,'number of jobs and lists =', nJobs, nLists
+  print*,'number of lists, jobs, and cores =', nLists, nJobs, nCores
 
 end program countJobs
 
