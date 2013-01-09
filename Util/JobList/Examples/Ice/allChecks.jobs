@@ -1,6 +1,7 @@
 # Convergence tests for water ice
 
-%queue sh queue.sh $jobName 8
+# %queue sh queue.sh $jobName 8       # real queuing of job
+%queue touch jobQueued                # test option
 
 %result energy pressure virial
 

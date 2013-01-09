@@ -1,8 +1,7 @@
 # MeshCutoff convergence for water iceXI vs 
 
-%queue sh queue.sh $jobName 8
-
-# %queue touch jobQueued   # test option
+# %queue sh queue.sh $jobName 8       # real queuing of job
+%queue touch jobQueued                # test option
 
 %result energy pressure virial
 

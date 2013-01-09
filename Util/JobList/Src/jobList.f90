@@ -176,7 +176,7 @@ recursive subroutine scanList( dir, queue, request, listName, task )
   do iLine = 1,maxLines
 
     ! Read one line of input file
-    read(myUnit,'(a)',iostat=iostat) line
+    call readLine( myUnit, line, iostat )
 
     ! End of file check
     if (iostat<0) then                      ! end of file
@@ -252,8 +252,9 @@ recursive subroutine scanList( dir, queue, request, listName, task )
     end do
   endif ! (task=='get')
 
+  ! Count jobs and list (but not if it is a list of lists)
   totJobs = totJobs+nJobs
-  totLists = totLists+1
+  if (nJobs>0) totLists = totLists+1
 
 end subroutine scanList
 
@@ -357,33 +358,97 @@ end subroutine runOneJob
 
 !------------------------------------------------------------------------------
 
+subroutine readLine( unit, line, iostat )
+
+! Reads one line of job list file, removing comments (marked by a leading '#') 
+! and including continuation lines (marked by a trailing '\')
+
+  implicit none
+  integer,         intent(in) :: unit    ! input file unit
+  character(len=*),intent(out):: line    ! line read
+  integer,optional,intent(out):: iostat  ! I/O status
+
+  logical keepReading
+  integer:: lc, nc, newc, status
+  character:: lastChar
+  character(len=1024):: newLine    ! a sufficiently long array
+
+  line = ' '                       ! set a blank line to start
+  nc = 0                           ! number of characters in line
+  keepReading = .true.
+  do while (keepReading)           ! loop on continuation lines
+
+    ! Read new line from input file
+    read(unit,'(a)',iostat=status) newLine
+
+    ! End-of-file trap
+    if (present(iostat)) iostat=status
+    if (status<0) then
+      line = ' '
+      return
+    endif
+
+    ! Remove comments and leading blanks
+    lc = scan(newLine,'#')-1             ! last character before comments
+    if (lc>=0) newLine = newLine(1:lc)   ! select characters before comments
+    newLine = adjustl(newLine)           ! remove leading blanks
+
+    ! Find last character and remove continuation mark
+    newc = len(trim(newLine))            ! nonblank characters in new line
+    lastChar = newLine(newc:newc)        ! last nonblank character
+    if (lastChar=='\') then              ! line will continue
+      newLine(newc:newc) = ' '           ! remove '\' mark
+      newc = len(trim(newLine))          ! remaining nonblank characters
+      keepReading = .true.
+    else
+      keepReading = .false.
+    endif
+
+    ! Concatenate continued line
+    if (nc==0) then                      ! this is first line
+      line = newLine(1:newc)
+      nc = newc
+    else                                 ! this is a continuation line
+      line = line(1:nc)//' '//newLine(1:newc)
+      nc = nc+1+newc
+    endif
+
+    ! Check array length
+    if (nc>len(line)) stop 'readLine ERROR: len(line) too small'
+
+  end do ! while (keepReading)
+
+end subroutine readLine
+
+!------------------------------------------------------------------------------
+
 subroutine parser( separators, line, words, nWords )
+
+  ! Parses one line into words, using any of a number of separators.
+  ! If ' ' is not one of the separators, the 'words' may contain blanks,
+  ! but leading and trailing blanks will be removed from them in any case
 
   implicit none
   character(len=*),intent(in)   :: separators(:) ! character(s) between words
-  character(len=*),intent(inout):: line      ! returns without comments
+  character(len=*),intent(in)   :: line      ! line to be parsed
   character(len=*),intent(out)  :: words(:)  ! words in line, without comments
   integer,         intent(out)  :: nWords    ! number of words
 
   character(len=ll):: myLine
   integer:: is, iWord, nc, ncs, ns
 
-  ! Remove comments
-  nc = scan(line,'#')-1          ! last character before comment
-  if (nc>=0) line = line(1:nc)   ! select characters before comment
-  myLine = adjustl(line)         ! remove leading blanks
-
   ! Loop on words
-  ns = size(separators)
-  do iWord = 1,size(words)
-    nc = len(trim(myLine))
-    do is = 1,ns
-      ncs = scan(myLine,separators(is))-1 ! last character before next separator
-      if (ncs>0) nc = min(nc,ncs)
+  myLine = adjustl(line)                  ! copy line, removing leading blanks
+  ns = size(separators)                   ! number of alternative separators
+  do iWord = 1,size(words)                ! avoid overflooding array size
+    nc = len(trim(myLine))                ! number of nonblank characters
+    do is = 1,ns                          ! loop on separators
+      ncs = scan(myLine,separators(is))-1 ! last character before this separator
+      if (ncs>0) nc = min(nc,ncs)         ! character before first separator
     end do
-    if (nc<=0) then              ! no more words
-      nWords = iWord-1
-      return                     ! normal return point
+    if (nc<=0) then                       ! no more words
+      nWords = iWord-1  
+      return                              ! normal return point
     else
       if (nc>len(words(iWord))) stop 'parser ERROR: len(words) too small'
       words(iWord) = adjustl(myLine(1:nc))
