@@ -64,12 +64,6 @@ subroutine countJobs( unit, nLists, nJobs, nCores )
   nc = len(trim(myDir))
   if (myDir(nc:nc) /= '/') myDir = myDir(1:nc) // '/'
 
-  ! Initializations
-  jobCores = 1            ! default cores per job
-  totCores = 0            ! total number of cores
-  totJobs = 0             ! total number of jobs
-  totLists = 0            ! total number of lists and sublists
-
   ! Scan the 'root' list (the whole file), specified by blank name
   call scanList(unit,myDir,defaultQueue,defaultRequest,' ','count')
 
@@ -97,12 +91,6 @@ subroutine runJobs( unit )
   nc = len(trim(myDir))
   if (myDir(nc:nc) /= '/') myDir = myDir(1:nc) // '/'
 
-  ! Initializations
-  jobCores = 1            ! default cores per job
-  totCores = 0            ! total number of cores
-  totJobs = 0             ! total number of jobs
-  totLists = 0            ! total number of lists and sublists
-
   ! Scan the 'root' list (the whole file), specified by blank name
   call scanList(unit,myDir,defaultQueue,defaultRequest,' ','run')
 
@@ -125,12 +113,6 @@ subroutine getResults( unit )
   call getcwd(myDir)
   nc = len(trim(myDir))
   if (myDir(nc:nc) /= '/') myDir = myDir(1:nc) // '/'
-
-  ! Initializations
-  jobCores = 1            ! default cores per job
-  totCores = 0            ! total number of cores
-  totJobs = 0             ! total number of jobs
-  totLists = 0            ! total number of lists and sublists
 
   ! Scan the 'root' list (the whole file), specified by blank name
   call scanList(unit,myDir,defaultQueue,defaultRequest,' ','get')
@@ -170,11 +152,19 @@ recursive subroutine scanList( unit, dir, queue, request, listName, task )
     endif
   endif ! (listName==' ')
 
+  ! Global initializations
+  if (listName==' ') then   ! this is the 'root' list (the whole file)
+    totCores = 0            ! total number of cores
+    totJobs = 0             ! total number of jobs
+    totLists = 0            ! total number of job lists
+  endif
+
   ! Set my own copies of queue and request
   nResults = count(request/=' ')
   myRequest = ' '
   myRequest(1:nResults) = request(1:nResults)
   myQueue = queue
+  call getCores(myQueue,jobCores)   ! get number of cores per job
 
   ! Loop on lines of datafile
   finished = .false.       ! has the list terminated normally?
@@ -183,7 +173,7 @@ recursive subroutine scanList( unit, dir, queue, request, listName, task )
   nCases = 0               ! number of 'cases' (jobs or sublists) in list
   do iLine = 1,maxLines
 
-    ! Read one line of input file
+    ! Read one line (possibly continued) of input file, ignoring comments
     call readLine( unit, line, iostat )
 
     ! End of file check
@@ -197,7 +187,7 @@ recursive subroutine scanList( unit, dir, queue, request, listName, task )
       endif ! (listName==' ')
     endif ! (iostat<0)
 
-    ! Parse line, ignoring comments
+    ! Parse line
     call parser(separator,line,words,nWords)
 
     ! Act depending on line content

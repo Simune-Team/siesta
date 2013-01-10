@@ -1,85 +1,82 @@
 # Convergence tests for water ice
 
-# %queue sh queue.sh $jobName 8       # real queuing of job
-%queue touch jobQueued                # test option
+# Leave '$jobName' untouched. Do NOT substitute it by an actual name.
+# %queue sh queue.sh $jobName 8    # real queuing of jobs on 8 cores/job
+%queue touch $jobName.queued 8      # testing dummy (does not run anything)
 
 %result energy pressure virial
 
 %list Pseudo
-  %list iceXI
+  %list IceXI
     defaults.fdf; iceXI.fdf; dzp.fdf; pseudoPBE.fdf
     defaults.fdf; iceXI.fdf; dzp.fdf; pseudoLMKLL.fdf
     defaults.fdf; iceXI.fdf; dzp.fdf; pseudoVV.fdf
-  %endlist iceXI
-  %list iceVIII
+  %endlist IceXI
+  %list IceVIII
     defaults.fdf; iceVIII.fdf; dzp.fdf; pseudoPBE.fdf
     defaults.fdf; iceVIII.fdf; dzp.fdf; pseudoLMKLL.fdf
     defaults.fdf; iceVIII.fdf; dzp.fdf; pseudoVV.fdf
-  %endlist iceVIII
+  %endlist IceVIII
 %endlist Pseudo
 
 %list BasisSet
-  %list iceXI
+  %list IceXI
     defaults.fdf; iceXI.fdf; dzp.fdf
-    defaults.fdf; iceXI.fdf; tzp1.fdf
-    defaults.fdf; iceXI.fdf; tzp2.fdf
-    defaults.fdf; iceXI.fdf; qzp1.fdf
-    defaults.fdf; iceXI.fdf; qzp2.fdf
-  %endlist iceXI
-  %list iceVIII
+    defaults.fdf; iceXI.fdf; tzp.fdf
+    defaults.fdf; iceXI.fdf; qzp.fdf
+  %endlist IceXI
+  %list IceVIII
     defaults.fdf; iceVIII.fdf; dzp.fdf
-    defaults.fdf; iceVIII.fdf; tzp1.fdf
-    defaults.fdf; iceVIII.fdf; tzp2.fdf
-    defaults.fdf; iceVIII.fdf; qzp1.fdf
-    defaults.fdf; iceVIII.fdf; qzp2.fdf
-  %endlist iceVIII
+    defaults.fdf; iceVIII.fdf; tzp.fdf
+    defaults.fdf; iceVIII.fdf; qzp.fdf
+  %endlist IceVIII
 %endlist BasisSet
 
 %list MeshCutoff
-  %list iceXI
+  %list IceXI
     defaults.fdf; iceXI.fdf; dzp.fdf; MeshCutoff 100 Ry      
     defaults.fdf; iceXI.fdf; dzp.fdf; MeshCutoff 200 Ry      
     defaults.fdf; iceXI.fdf; dzp.fdf; MeshCutoff 300 Ry      
     defaults.fdf; iceXI.fdf; dzp.fdf; MeshCutoff 500 Ry      
     defaults.fdf; iceXI.fdf; dzp.fdf; MeshCutoff 800 Ry  
-  %endlist iceXI
-  %list iceVIII
+  %endlist IceXI
+  %list IceVIII
     defaults.fdf; iceVIII.fdf; dzp.fdf; MeshCutoff 100 Ry      
     defaults.fdf; iceVIII.fdf; dzp.fdf; MeshCutoff 200 Ry      
     defaults.fdf; iceVIII.fdf; dzp.fdf; MeshCutoff 300 Ry      
     defaults.fdf; iceVIII.fdf; dzp.fdf; MeshCutoff 500 Ry      
     defaults.fdf; iceVIII.fdf; dzp.fdf; MeshCutoff 800 Ry      
-  %endlist iceVIII
+  %endlist IceVIII
 %endlist MeshCutoff
 
 %list kGrid
-  %list iceXI
+  %list IceXI
     defaults.fdf; iceXI.fdf; dzp.fdf; kGridCutoff  0 Ang
     defaults.fdf; iceXI.fdf; dzp.fdf; kGridCutoff  5 Ang
     defaults.fdf; iceXI.fdf; dzp.fdf; kGridCutoff 10 Ang
-  %endlist iceXI
-  %list iceVIII    
+  %endlist IceXI
+  %list IceVIII    
     defaults.fdf; iceVIII.fdf; dzp.fdf; kGridCutoff  0 Ang
     defaults.fdf; iceVIII.fdf; dzp.fdf; kGridCutoff  5 Ang
     defaults.fdf; iceVIII.fdf; dzp.fdf; kGridCutoff 10 Ang
-  %endlist iceVIII
+  %endlist IceVIII
 %endlist kGrid
 
 %list DMtol
-  %list iceXI
+  %list IceXI
     defaults.fdf; iceXI.fdf; dzp.fdf; DM.Tolerance 1.d-3
     defaults.fdf; iceXI.fdf; dzp.fdf; DM.Tolerance 3.d-4
     defaults.fdf; iceXI.fdf; dzp.fdf; DM.Tolerance 1.d-4
     defaults.fdf; iceXI.fdf; dzp.fdf; DM.Tolerance 3.d-5
     defaults.fdf; iceXI.fdf; dzp.fdf; DM.Tolerance 1.d-5
-  %endlist iceXI
-  %list iceVIII    
+  %endlist IceXI
+  %list IceVIII    
     defaults.fdf; iceVIII.fdf; dzp.fdf; DM.Tolerance 1.d-3
     defaults.fdf; iceVIII.fdf; dzp.fdf; DM.Tolerance 3.d-4
     defaults.fdf; iceVIII.fdf; dzp.fdf; DM.Tolerance 1.d-4
     defaults.fdf; iceVIII.fdf; dzp.fdf; DM.Tolerance 3.d-5
     defaults.fdf; iceVIII.fdf; dzp.fdf; DM.Tolerance 1.d-5
-  %endlist iceVIII
+  %endlist IceVIII
 %endlist DMtol
 
 
