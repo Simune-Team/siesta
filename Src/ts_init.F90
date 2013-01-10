@@ -87,14 +87,14 @@ contains
        call do_Green('L',HSFileL, GFFileL, GFTitle, &
             ElecValenceBandBot, ReUseGF, &
             ts_nkpnt,ts_kpoint,ts_kweight, &
-            NBufAtL,NUsedAtomsL,NRepA1L,NRepA2L, &
+            NBufAtL,NUsedAtomsL,NRepA1L,NRepA2L, .false., & !For now TranSIESTA will only perform with inner-cell distances
             ucell,xa,na_u,NEn,contour,VoltL,dos,nspin)
        
        ! Create the Right GF file
        call do_Green('R',HSFileR,GFFileR, GFTitle, &
             ElecValenceBandBot, ReUseGF, &
             ts_nkpnt,ts_kpoint,ts_kweight, &
-            NBufAtR,NUsedAtomsR,NRepA1R,NRepA2R, &
+            NBufAtR,NUsedAtomsR,NRepA1R,NRepA2R, .false., &
             ucell,xa,na_u,NEn,contour,VoltR,dos,nspin)
        
        call memory('D','Z',NEn*nspin,'transiesta')

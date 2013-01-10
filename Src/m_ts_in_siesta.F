@@ -102,7 +102,7 @@
       use m_ts_cctype, only : CC_PART_NON_EQUI
       use m_ts_cctype, only : CC_PART_TRANSPORT
       use m_ts_contour, only : PNEn, NEn, contour
-      use m_ts_GF,      only : do_Green, read_Green
+      use m_ts_GF,      only : read_Green
       use m_ts_scattering, only : getSFE, getGF
       use m_ts_scattering, only : GFGammaGF, weightDM, weightDMC
       use m_ts_scattering, only : get_scat_region
@@ -112,6 +112,7 @@
 
 #ifdef MPI
       use m_glob_sparse, only: glob_sparse_arrays, glob_sparse_matrix
+      use m_glob_sparse, only: glob_sparse_arrays_dealloc
 #endif
       use m_hs_matrix, only : set_HS_matrix, matrix_rem_left_right
       use m_hs_matrix, only : matrix_symmetrize
@@ -724,13 +725,13 @@
 
 ! Left
       call read_Green(uGFL,TSiscf==1,VoltL,ts_nkpnt,NEn,nuaL_GF, 
-     &     NRepA1L,NRepA2L,noL_GF,nspin,
+     &     NRepA1L,NRepA2L,.false.,noL_GF,nspin,
      &     nkparL,kparL,wkparL,
      &     nqL,wqL,qLb)
 
 ! Right
       call read_Green(uGFR,TSiscf==1,VoltR,ts_nkpnt,NEn,nuaR_GF,
-     &     NRepA1R,NRepA2R,noR_GF,nspin, 
+     &     NRepA1R,NRepA2R,.false.,noR_GF,nspin, 
      &     nkparR,kparR,wkparR,
      &     nqR,wqR,qRb)
 
@@ -1490,15 +1491,9 @@
 
 
 #ifdef MPI
-      call memory('D','I',size(numhg)+size(listhptrg)+size(listhg)
-     &     ,'transiesta')
-      deallocate(numhg)
-      deallocate(listhptrg)
-      deallocate(listhg)
-      if(.not.gamma) then
-         call memory('D','D',size(xijg),'transiesta')
-         deallocate(xijg)
-      endif
+      call glob_sparse_arrays_dealloc(no_u, Gamma,
+     &     maxnhg,
+     &     numhg,listhg,listhptrg,xijg)
       call memory('D','D',maxnhg*2,'transiesta')
       deallocate(Hsg,Ssg)
 #endif

@@ -118,10 +118,16 @@ subroutine coordsFromPipe( na, xa, cell )
           'coordsFromPipe: cell (',trim(xunit),') =', cell
            print '(  3a,/,(3f12.6))', &
           'coordsFromPipe: xa (',trim(xunit),') =', xa
+          ! Convert coordinate units
+          cell = cell * fdf_convfac( xunit, siesta_xunit )
+          xa   = xa   * fdf_convfac( xunit, siesta_xunit )
         endif
-        ! Convert coordinate units
-        cell = cell * fdf_convfac( xunit, siesta_xunit )
-        xa   = xa   * fdf_convfac( xunit, siesta_xunit )
+#ifdef MPI
+        call MPI_Bcast( cell(1,1), 9   , MPI_Double_Precision, 0, &
+             MPI_Comm_World, MPIerror)
+        call MPI_Bcast( xa(1,1)  , 3*na, MPI_Double_Precision, 0, &
+             MPI_Comm_World, MPIerror)
+#endif
       else
         call die('coordsFromPipe: ERROR: coords not complete')
       end if

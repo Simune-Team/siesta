@@ -86,6 +86,7 @@ module m_tbt_options
   logical        :: CalcCOOP ! Do the COOP curves
   logical        :: AlignScat ! Align the scattering region with the left electrode (only by the first onsite element)
   logical        :: CalcAtomPDOS ! Calculate the DOS on the projected atoms
+  logical        :: RemUCellDistances ! Remove the Ucell distances when calculating the transmission...
 
 ! ################################################
 ! #                                              #
@@ -101,6 +102,8 @@ module m_tbt_options
   logical, parameter  :: CalcCOOP_def = .false.
   logical, parameter  :: AlignScat_def = .false.
   logical, parameter  :: CalcAtomPDOS_def = .false.
+  logical, parameter  :: RemUCellDistances_def = .false.
+
 CONTAINS
   
   ! Read in the tbtrans options
@@ -216,6 +219,7 @@ CONTAINS
     call fdf_global_get(CalcCOOP,'TS.TBT.COOP',CalcCOOP_def)
     call fdf_global_get(AlignScat,'TS.TBT.AlignOnSite',AlignScat_def)
     call fdf_global_get(CalcAtomPDOS,'TS.TBT.AtomPDOS',CalcAtomPDOS_def)
+    call fdf_global_get(RemUCellDistances,'TS.TBT.RemoveUnitCellDistance',RemUCellDistances_def)
 
 ! Output Used Options in OUT file ....
     if (ionode) then
@@ -248,6 +252,7 @@ CONTAINS
        write(*,1) 'Calculate DOS on projected atoms              = ',CalcAtomPDOS
        write(*,1) 'Calculate COOP                                = ',CalcCOOP
        write(*,1) 'Align the Hamiltonian with the electrode      = ',AlignScat
+       write(*,1) 'Remove inner-cell distances in the Hamiltonian= ',RemUCellDistances
        if ( AlignScat ) then
           call die("TBtrans is currently not implented to align the scattering &
                &region and the electrodes.")
