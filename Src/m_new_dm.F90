@@ -798,7 +798,15 @@
            dummy_cell(:,:,i) = 1.0_dp
         enddo
         if (fdf_get("UseDIISforDMExtrapolation",.true.)) then
-           if (fdf_get("UseSVD",.true.)) then
+           ! Cast Jose Soler's idea into a DIIS framework
+
+           if (fdf_get("UseSVDExperimental",.false.)) then
+              ! Attempt to use the "alternate" KF method with
+              ! first differences.  It does not work well yet
+              call extrapolate_diis_svd_new(na_u,n,dummy_cell,  &
+                                        xan,dummy_cell(:,:,1),xa,c)
+           else if (fdf_get("UseSVD",.true.)) then
+              ! Straightforward SVD
               call extrapolate_diis_svd(na_u,n,dummy_cell,  &
                                         xan,dummy_cell(:,:,1),xa,c)
            else
@@ -806,6 +814,7 @@
                                     xan,dummy_cell(:,:,1),xa,c)
            endif
         else  
+           ! Use Jose Soler's original method
            call extrapolate(na_u,n,dummy_cell,xan,dummy_cell(:,:,1),xa,c)
         endif
         if (ionode) then
@@ -1189,10 +1198,12 @@ SUBROUTINE extrapolate_diis_svd( na, n, cell, xa, cell0, x0, c )
   real(dp),intent(out):: c(n)        ! Expansion coefficients
 
 ! Internal variables and arrays
-  integer :: i, info, j, m, ix, ia
+  integer :: i, info, j, m, ix, ia, rank
   real(dp), allocatable, dimension(:,:) :: s, si
+  real(dp), allocatable, dimension(:)   :: rhs, sigma, beta
 
-  allocate (s(n+1,n+1), si(n+1,n+1))
+  allocate (s(n+1,n+1), si(n+1,n+1), sigma(n+1), rhs(n+1))
+  allocate (beta(n+1))  ! full set of coefficients
 
 ! Trap special cases
   if (na<1 .or. n<1) then
@@ -1237,10 +1248,121 @@ SUBROUTINE extrapolate_diis_svd( na, n, cell, xa, cell0, x0, c )
   end do
   if (node==0) print *, " Estimated Rank of xi*xj matrix: ", m
 
-  call solve_with_svd(s,c)
+  rhs(1:n) = 0.0_dp
+  rhs(n+1) = 1.0_dp
+  !
+  call solve_with_svd(s,rhs,beta,info,sigma=sigma,rank_out=rank)
+  !
+  if (node==0) then
+     print *, 'matrix rank: ', rank
+     print "(a,/,6g12.5)", 'Singular values: ', sigma(:)
+  endif
+  if (info == 0) then
+     c(1:n) = beta(1:n)
+  else
+     if (node==0) then
+        print *, 'The SVD algorithm failed to converge'
+        print *, 'Re-using last item only...'
+        print *, "info: ", info
+     endif
+     c(:) = 0.0_dp
+     c(n) = 1.0_dp
+  endif
 
-  deallocate(s,si)
+  deallocate(s,si,sigma,rhs,beta)
 end SUBROUTINE extrapolate_diis_svd
+
+SUBROUTINE extrapolate_diis_svd_new( na, n, cell, xa, cell0, x0, c )
+
+! Used procedures and parameters
+  USE sys,       only: message, die
+  USE precision, only: dp            ! Double precision real kind
+  use parallel,  only: Node
+  use m_svd,     only: solve_with_svd
+
+! Passed arguments
+  implicit none
+  integer, intent(in) :: na          ! Number of atoms
+  integer, intent(in) :: n           ! Number of previous atomic positions
+  real(dp),intent(in) :: cell(3,3,n) ! n previous unit cell vectors
+  real(dp),intent(inout) :: xa(3,na,n)  ! n previous atomic positions
+  real(dp),intent(in) :: cell0(3,3)  ! Present unit cell vectors
+  real(dp),intent(in) :: x0(3,na)    ! Present atomic positions
+  real(dp),intent(out):: c(n)        ! Expansion coefficients
+
+! Internal variables and arrays
+  integer :: i, info, j, m, ix, ia, rank
+  real(dp), allocatable, dimension(:,:) :: s
+  real(dp), allocatable, dimension(:)   :: rhs, sigma
+  real(dp), allocatable, dimension(:)   :: beta ! intermediate coeffs
+
+  allocate (s(n-1,n-1), rhs(n-1), beta(n-1), sigma(n-1))
+
+! Trap special cases
+  if (na<1 .or. n<1) then
+    return
+  else if (n==1) then
+    c(1) = 1
+    return
+  end if
+
+! Find residual of Nth term with respect to x0 
+  do ia=1,na
+     do ix=1,3
+        xa(ix,ia,n) = xa(ix,ia,n) - x0(ix,ia)
+     enddo
+  enddo
+
+! Find first differences
+! As in alternate method in KF
+  do j=1,n-1
+     do ia=1,na
+        do ix=1,3
+           xa(ix,ia,j) = xa(ix,ia,j+1) - xa(ix,ia,j)
+        enddo
+     enddo
+  enddo
+ 
+! Find matrix s of dot products.
+
+  do j = 1,n-1
+    do i = j,n-1
+      s(i,j) = sum( xa(:,:,i) * xa(:,:,j) )
+      s(j,i) = s(i,j)
+    end do
+    ! And right-hand side
+    rhs(j) = -sum( xa(:,:,j) * xa(:,:,n) )
+  end do
+
+  if (Node == 0) then
+    ! call print_mat(s,n+1)
+  endif
+
+  call solve_with_svd(s,rhs,beta,info,rank_out=rank,sigma=sigma)
+  if (node==0) then
+     print *, 'matrix rank: ', rank
+     print "(a,/,6g12.5)", 'Singular values: ', sigma(:)
+     print "(a,/,6g12.5)", 'Beta coeffs: ', beta(:)
+  endif
+  if (info /= 0) then
+     if (node==0) then
+        print *, 'The SVD algorithm failed to converge'
+        print *, 'Re-using last item only...'
+        print *, "info: ", info
+     endif
+     c(:) = 0.0_dp
+     c(n) = 1.0_dp
+  endif
+
+  ! Re-shuffle coefficients
+  c(n) = 1.0_dp
+  c(1) = -beta(1)
+  do j = 2, n-1
+     c(j) = beta(j-1)-beta(j)
+  enddo
+
+  deallocate(s,beta,rhs,sigma)
+end SUBROUTINE extrapolate_diis_svd_new
 
     subroutine print_mat(a,n)
       integer, intent(in)  :: n

@@ -1,4 +1,35 @@
 -----------------------------------------------------------------------
+2013-01-14  Alberto Garcia <albertog@icmab.es>   trunk-422-scf-39
+SVD interface change. Experimental SVD scheme for DM extrapolation.
+
+The SVD interface has been made more complete to accomodate new
+functionality.
+
+Summary of options for DM extrapolation:
+
+If UseDIISforDMExtrapolation is 'true', the program will use a DIIS
+framework instead of Jose Soler's original method for the
+extrapolation of DMs accross geometries.
+
+Further, if UseSVD is 'true', SVD techniques instead of direct matrix
+inversion are used.
+
+If UseSVDExperimental is 'true', the 'forward
+differences' method of Kresse and Furthmuller is used. (Note that this
+option does not yet work very well).
+
+Summary of options for DM mixing with SVD:
+
+If UseSVDinPulay is 'true', SVD techniques instead of direct matrix
+inversion are used in Pulay mixing.
+
+modified:
+  Src/m_new_dm.F90
+  Src/m_pulay.F90
+  Src/m_svd.F90
+  Src/state_analysis.F
+
+-----------------------------------------------------------------------
 2012-11-14  Alberto Garcia <albertog@icmab.es>   trunk-422-scf-38
 Extend SVD procedure to DM Pulay mixing
 

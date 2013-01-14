@@ -149,7 +149,7 @@ CONTAINS
     real(dp) ::   ssum
     real(dp), dimension(:,:), pointer ::  b, bi
     real(dp), dimension(:), pointer   ::  buffer
-    real(dp), dimension(:), pointer   ::  coeff
+    real(dp), dimension(:), pointer   ::  coeff, sigma, rhs, beta
     !
 
 #ifdef DEBUG_PULAY_INVERSE
@@ -280,6 +280,15 @@ CONTAINS
     nullify( coeff )
     call re_alloc( coeff, 1, maxmix, name='coeff',                &
          routine='pulayx' )
+    nullify( rhs )
+    call re_alloc( rhs, 1, maxmix+1, name='rhs',                &
+         routine='pulayx' )
+    nullify( beta )
+    call re_alloc( beta, 1, maxmix+1, name='beta',                &
+         routine='pulayx' )
+    nullify( sigma )
+    call re_alloc( sigma, 1, maxmix+1, name='sigma',                &
+         routine='pulayx' )
     nullify( buffer )
     call re_alloc( buffer, 1, maxmix, name='buffer',                &
          routine='pulayx' )
@@ -363,7 +372,25 @@ CONTAINS
 #endif
     !
     if (fdf_get("UseSVDinPulay",.false.)) then
-       call solve_with_svd(b,coeff,rank=rank)
+       rhs(1:maxmix) = 0.0_dp
+       rhs(maxmix+1) = 1.0_dp
+
+       call solve_with_svd(b,rhs,beta,info,rank_out=rank,sigma=sigma)
+
+       if (Node == 0) then
+          print "(a,i3)", "SVD rank: ", rank
+          print "(a,6g12.5)", "Singular values: ", sigma(:)
+       endif
+       if (info == 0) then
+          coeff(1:maxmix) = beta(1:maxmix)
+       else
+          if (Node == 0) then
+             write(6,"(a,i5)") "SVD failed - fallback to linear mixing"
+          endif
+          coeff(1:maxmix-1) = 0.0_dp
+          coeff(maxmix) = 1.0_dp
+       endif
+          
        ! Use a more sophisticated history of rank degradation...
        !kick_due =  (rank < maxmix + 1)
     else
@@ -459,6 +486,8 @@ CONTAINS
     call de_alloc( b, name='b', routine="pulayx" )
     call de_alloc( bi, name="bi", routine="pulayx" )
     call de_alloc( coeff, name="coeff", routine="pulayx" )
+    call de_alloc( sigma, name="sigma", routine="pulayx" )
+    call de_alloc( beta, name="beta", routine="pulayx" )
     call de_alloc( buffer, name="buffer", routine="pulayx" )
     !
   CONTAINS

@@ -22,8 +22,9 @@
       use sparse_matrices
       use siesta_geom
 
-      use class_Geometry,               only: newGeometry, Geometry
+      use class_Geometry,  only: newGeometry, Geometry, delete
       use class_Pair_Geometry_SpMatrix, only: Pair_Geometry_SpMatrix
+      use class_Pair_Geometry_SpMatrix, only: new, delete
       use class_Fstack_Pair_Geometry_SpMatrix, only: new
 
       USE siesta_options
