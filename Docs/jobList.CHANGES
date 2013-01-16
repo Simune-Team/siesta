@@ -1,0 +1,166 @@
+---------------------------------------------------------------
+January 16, 2013   Alberto Garcia <albertog@icmab.es> trunk-428-jobList+10
+Implement handling of flag file '0_NORMAL_EXIT' for jobList
+
+The file signals the successful end of execution of a Siesta run.  It
+is removed at the beginning, if it exists, and 'touched' at the end of
+the run.  The 'jobList' suite checks for the existence of this file
+(falling back to the old scheme of checking for the .EIG file) to
+decide whether to (re)submit the job.
+
+For older versions of Siesta, the same functionality could perhaps be achieved
+at the level of the shell.
+
+modified:
+  Src/siesta_end.F
+  Src/siesta_init.F
+  Util/JobList/Src/jobList.f90
+
+------------------------------------------------------------
+revno: 435 [merge]
+committer: Jose M Soler <jose.soler@uam.es>
+branch nick: jobList
+timestamp: Thu 2013-01-10 12:41:01 +0100
+message:
+  Merged with trunk-428
+  
+  modified:
+    Docs/CHANGES
+    Docs/TS-npa.CHANGES
+    Docs/TranSiestaUpdate.pdf
+    Docs/siesta.tex
+    Src/iopipes.F90
+    Src/m_glob_sparse.F90
+    Src/m_hs_matrix.f90
+    Src/m_ts_electrode.F90
+    Src/m_ts_gf.F90
+    Src/m_ts_in_siesta.F
+    Src/mixer.F
+    Src/ts_init.F90
+    Util/TBTrans_rep/m_tbt_options.F90
+    Util/TBTrans_rep/tbtrans.F90
+------------------------------------------------------------
+revno: 434
+committer: Jose M Soler <jose.soler@uam.es>
+branch nick: jobList
+timestamp: Thu 2013-01-10 12:34:46 +0100
+message:
+  Added README. Corrected count of cores.
+  
+  removed:
+    Util/JobList/Examples/Ice/allChecks.jobs
+  added:
+    Util/JobList/Examples/Ice/iceChecks.jobs
+    Util/JobList/Examples/Ice/qzp.fdf
+    Util/JobList/Examples/Ice/tzp.fdf
+    Util/JobList/README
+  modified:
+    Util/JobList/Examples/Ice/meshCutoff.jobs
+    Util/JobList/Src/jobList.f90
+------------------------------------------------------------
+revno: 433
+committer: Jose M Soler <jose.soler@uam.es>
+branch nick: jobList
+timestamp: Wed 2013-01-09 15:08:04 +0100
+message:
+  2013-01-09  15:15:00 GMT Jose M Soler <jose.soler@uam.es>  trunk-426-jobList+7
+  
+  Added cores count. Added comments
+  
+  modified:
+    Util/JobList/Src/countJobs.f90
+    Util/JobList/Src/jobList.f90
+------------------------------------------------------------
+revno: 432
+committer: Jose M Soler <jose.soler@uam.es>
+branch nick: jobList
+timestamp: Wed 2013-01-09 11:27:05 +0100
+message:
+  Allow multi-line job specifications. Count only job-containing lists
+  
+  modified:
+    Util/JobList/Examples/Ice/allChecks.jobs
+    Util/JobList/Examples/Ice/meshCutoff.jobs
+    Util/JobList/Src/jobList.f90
+------------------------------------------------------------
+revno: 431
+committer: Jose M Soler <jose.soler@uam.es>
+branch nick: jobList
+timestamp: Sun 2013-01-06 20:22:52 +0100
+message:
+  Job-specification separator changed from blank to semicolom
+  
+  added:
+    Util/JobList/Src/Makefile
+  modified:
+    Util/JobList/Examples/Ice/allChecks.jobs
+    Util/JobList/Examples/Ice/meshCutoff.jobs
+    Util/JobList/Src/jobList.f90
+------------------------------------------------------------
+revno: 430
+committer: Jose M Soler <jose.soler@uam.es>
+branch nick: jobList
+timestamp: Fri 2013-01-04 21:48:30 +0100
+message:
+  When job contains a single .fdf file, avoid overwritting it
+  
+  modified:
+    Util/JobList/Src/jobList.f90
+------------------------------------------------------------
+revno: 429
+committer: Jose M Soler <jose.soler@uam.es>
+branch nick: jobList
+timestamp: Sat 2012-12-01 11:24:00 -0200
+message:
+  Operative version in krypton. Added Examples/Ice
+  
+  added:
+    Util/JobList/Examples/
+    Util/JobList/Examples/Ice/
+    Util/JobList/Examples/Ice/H.psf
+    Util/JobList/Examples/Ice/O.psf
+    Util/JobList/Examples/Ice/allChecks.jobs
+    Util/JobList/Examples/Ice/defaults.fdf
+    Util/JobList/Examples/Ice/dzp.fdf
+    Util/JobList/Examples/Ice/filter100.fdf
+    Util/JobList/Examples/Ice/iceVIII.fdf
+    Util/JobList/Examples/Ice/iceXI.fdf
+    Util/JobList/Examples/Ice/meshCutoff.gplot
+    Util/JobList/Examples/Ice/meshCutoff.jobs
+    Util/JobList/Examples/Ice/pseudoLMKLL.fdf
+    Util/JobList/Examples/Ice/pseudoPBE.fdf
+    Util/JobList/Examples/Ice/pseudoVV.fdf
+    Util/JobList/Examples/Ice/queue.sh
+    Util/JobList/Src/horizontal.f90
+  modified:
+    Util/JobList/Src/jobList.f90
+------------------------------------------------------------
+revno: 428
+committer: Jose M Soler <jose.soler@uam.es>
+branch nick: jobList
+timestamp: Thu 2012-11-29 09:43:41 -0200
+message:
+  Considerably evolved version
+  
+  added:
+    Util/JobList/Src/countJobs.f90
+    Util/JobList/Src/getResults.f90
+  modified:
+    Util/JobList/Src/jobList.f90
+    Util/JobList/Src/runJobs.f90
+    version.info
+------------------------------------------------------------
+revno: 427
+committer: Jose M Soler <jose.soler@uam.es>
+branch nick: jobList
+timestamp: Wed 2012-11-28 11:44:17 -0200
+message:
+  Added Util/JobList, containing a utility program to run lists of jobs
+  
+  added:
+    Util/JobList/
+    Util/JobList/Src/
+    Util/JobList/Src/jobList.f90
+    Util/JobList/Src/runJobs.f90
+------------------------------------------------------------
+Use --include-merges or -n0 to see merged revisions.

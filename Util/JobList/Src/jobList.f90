@@ -12,6 +12,7 @@ PRIVATE    ! nothing is declared public beyond this point
   ! Internal parameters
   character(len=*),parameter:: dataSuffix = '.fdf'
   character(len=*),parameter:: endSuffix = '.EIG'
+  character(len=*),parameter:: file0Exit = '0_NORMAL_EXIT'
   character(len=*),parameter:: copyFiles  = 'cp -f *.fdf *.psf queue.sh'//' '
   character(len=*),parameter:: defaultQueue = &
                                        './siesta < $jobName.fdf > $jobName.out'
@@ -388,9 +389,22 @@ subroutine runOneJob( dir, queue, jobLine )
 
   ! Submit job only if directory does not contain terminated results already
   ! This is intended to re-run a whole list for failed jobs
+
   call chdir(trim(jobDir))
-  inquire(file=trim(jobName)//endSuffix,exist=jobEnded)
-  if (.not.jobEnded) call system(trim(queueJob))
+
+  ! Check for existence of a special file which signals the end of execution
+  inquire(file=trim(file0Exit),exist=jobEnded)
+
+  if (.not.jobEnded) then
+     ! Fall back to old test with EIG file, in case of an older
+     ! version of Siesta without the new flag file.
+     inquire(file=trim(jobName)//endSuffix,exist=jobEnded)
+  endif
+
+  if (.not.jobEnded) then
+     print "(2a)", 'queueJob = ',trim(queueJob)
+     call system(trim(queueJob))
+  endif
   call chdir(trim(dir))
 
 end subroutine runOneJob
