@@ -1,4 +1,16 @@
 ---------------------------------------------------------------
+January 18, 2013   Alberto Garcia <albertog@icmab.es> trunk-428-jobList+11
+Update the documentation for JobList
+
+Update the Util/README file, and add information about 0_NORMAL_EXIT
+to JobList's README.
+
+modified:
+  Util/JobList/README
+  Util/JobList/Src/jobList.f90
+  Util/README
+
+---------------------------------------------------------------
 January 16, 2013   Alberto Garcia <albertog@icmab.es> trunk-428-jobList+10
 Implement handling of flag file '0_NORMAL_EXIT' for jobList
 

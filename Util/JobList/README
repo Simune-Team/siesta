@@ -57,7 +57,6 @@ by the following example:
 %endlist MeshCutoff
 -------------------------------------------------------------------------
 
-- The 
 - Each nonblank line, not begun by # or %, specifies a job to be queued.
 - Specification 'words' are separated by ';'. 
 - Specifications with '.fdf' suffix are input files, which are included 
@@ -85,10 +84,11 @@ by the following example:
 - If some of the jobs hang or crash, you may kill them, correct any 
   deficiencies in the input files, and type again 'runJobs < myTests'
   AFTER the successful jobs have finished. The succesfull jobs will not
-  be resubmitted. At present, successful termination is assumed by the
-  presence of a SystemLabel.EIG file. Thus, you can force re-submission
-  of a job by erasing this file in its directory (or avoid re-submission 
-  by creating or 'touch'ing it).
+  be resubmitted. Successful termination is assumed either by the
+  presence of the file 0_NORMAL_EXIT (handled by newer versions of Siesta)
+  or, as a fallback, by the presence of a SystemLabel.EIG file. 
+  Thus, you can force re-submission of a job by erasing these files in 
+  its directory (or avoid re-submission by creating or 'touch'ing one of them).
 
 The other utilities are:
 

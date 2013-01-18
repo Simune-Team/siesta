@@ -402,7 +402,7 @@ subroutine runOneJob( dir, queue, jobLine )
   endif
 
   if (.not.jobEnded) then
-     print "(2a)", 'queueJob = ',trim(queueJob)
+     !print "(2a)", 'queueJob = ',trim(queueJob)
      call system(trim(queueJob))
   endif
   call chdir(trim(dir))
