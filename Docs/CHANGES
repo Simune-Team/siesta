@@ -4,6 +4,19 @@
 
 ** CHANGES ALONG siesta-3 branch
 ------------------------------------------------------------------------
+2013-01-21  11:00:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl20
+Fix possible problems in temporary file name
+
+(Thanks to Romuald Carpentier)
+
+The name of the temporary file used to dump the contents of the fdf file
+could be malformed in certain situations. The algorithm has now been
+changed.
+
+modified:
+  Src/reinit.F
+
+------------------------------------------------------------------------
 2012-10-26  14:45:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl19
 Bug fixes for array bounds 
 

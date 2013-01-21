@@ -35,7 +35,6 @@ C
       implicit none
 
       character(len=*) :: sname
-      character string*20
 
 C  Internal variables .................................................
       character
@@ -86,8 +85,7 @@ c
            call io_assign(lun_tmp)
            do
              call system_clock( count )
-             write(string,*) count
-             filein = 'INPUT_TMP.'//adjustl(string)
+             write(filein,"(a,i5.5)") 'INPUT_TMP.', mod(count,100000)
              inquire( file=filein, exist=file_exists )
              if (.not.file_exists) exit
            end do
