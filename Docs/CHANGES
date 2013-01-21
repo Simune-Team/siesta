@@ -6,6 +6,23 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2013-01-21  11:15:00 GMT                                      trunk-431
+Fix possible problems in temporary file name
+
+Author: A. Garcia
+
+The name of the temporary file used to dump the contents of the fdf file
+could be malformed in certain situations. The algorithm has now been
+changed.
+
+(Thanks to Romuald Carpentier)
+
+(+ Remove fossil DEBUG sections)
+
+modified:
+  Src/reinit.F
+
+-----------------------------------------------------------------------
 2013-01-21  10:45:00 GMT                                      trunk-430
 Rationalize fdf logging and debugging
 
