@@ -213,6 +213,7 @@ $(XC):
 FDF=libfdf.a
 $(FDF): 
 	(cd fdf ; $(MAKE) "VPATH=$(VPATH)/fdf" \
+		    "FPPFLAGS=$(FPPFLAGS)" \
 		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module )
 #
 # Routines using fdf calls.

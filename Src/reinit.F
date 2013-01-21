@@ -131,7 +131,7 @@ C Set up fdf ...
 !     processors, depending on the system time.
 
       call system_clock( count )
-      write(fileout,"(a,i5,a)") 'fdf-', mod(count,100000), ".log"
+      write(fileout,"(a,i5.5,a)") 'fdf-', mod(count,100000), ".log"
 
       call fdf_init(filein,trim(fileout))
 
