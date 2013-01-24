@@ -6,6 +6,31 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2013-01-24  14:30:00 GMT                                      trunk-432
+Export some MPI symbols explicitly. Remove obsolete symbols
+
+Author: A. Garcia
+
+Some PGI compilers do not consider symbols public by default
+when they are inherited through a chain of module 'uses'. This
+affected in particular some MPI symbols in the mpi_siesta module.
+The symbols are now made 'public' explicitly.
+
+The symbols DAT_single, DAT_double, etc, which were necessary to
+deal with machines (old Crays) with different meanings for single
+and double precision, have now been removed from the MPI interface
+modules. They still appear in some routines as aliases for imports.
+
+modified:
+  Src/MPI/mpi.F
+  Src/MPI/mpi_siesta.f90
+  Src/m_glob_sparse.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_in_siesta.F
+  Src/m_ts_scattering.F
+
+-----------------------------------------------------------------------
 2013-01-21  11:15:00 GMT                                      trunk-431
 Fix possible problems in temporary file name
 

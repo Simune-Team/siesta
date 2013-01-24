@@ -195,7 +195,9 @@ contains
     use parallel,  only : IONode
     use sys ,      only : die
 #ifdef MPI
-    use mpi_siesta
+    use mpi_siesta, only: DAT_double => MPI_double_precision
+    use mpi_siesta, only: MPI_logical, MPI_comm_world, MPI_Bcast
+    use mpi_siesta, only: MPI_integer
 #endif
     real(dp) , parameter :: EPS = 1d-7
     
