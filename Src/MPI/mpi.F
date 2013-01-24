@@ -77,6 +77,19 @@
         integer, parameter :: MPI_double_complex    = DAT_dcomplex
 
 !
+!   Export explicitly some symbols to help some versions of
+!   the PGI compiler, which do not consider them public by default
+!
+        public :: mpi_real
+        public :: mpi_complex
+        public :: mpi_double_complex
+        public :: mpi_double_precision
+        public :: mpi_2double_precision
+        public :: mpi_integer, mpi_character, mpi_logical
+        public :: mpi_maxloc, mpi_sum, mpi_max, mpi_lor
+        public :: mpi_status_size
+        public :: mpi_comm_world
+!
 !       Interim hack to support flexible precision in grid arrays
 !
 #ifdef GRID_DP

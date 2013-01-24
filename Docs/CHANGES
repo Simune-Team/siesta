@@ -4,6 +4,18 @@
 
 ** CHANGES ALONG siesta-3 branch
 ------------------------------------------------------------------------
+2013-01-24  14:00:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl21
+Export some MPI symbols explicitly
+
+Some PGI compilers do not consider symbols public by default
+when they are inherited through a chain of module 'uses'. This
+affected in particular some MPI symbols in the mpi_siesta module.
+The symbols are now made 'public' explicitly.
+
+modified:
+  Src/MPI/mpi.F
+
+------------------------------------------------------------------------
 2013-01-21  11:00:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl20
 Fix possible problems in temporary file name
 
