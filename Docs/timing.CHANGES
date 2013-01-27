@@ -1,0 +1,10 @@
+-------------------------------------------------
+Jan 27, 2013  Alberto Garcia  trunk-432--timing-1
+First implementation of timing tree
+
+added:
+  Src/timer_tree.f90
+modified:
+  Src/Makefile
+  Src/SiestaXC/makefile
+  Src/timer.F90

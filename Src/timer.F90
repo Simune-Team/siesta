@@ -8,8 +8,7 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-!===============================================================================
-! This is now a wrapper for the functionality in module m_timer
+! This is now a wrapper for the functionality in module m_timer_tree
 !
 ! subroutine timer( prog, iOpt )
 !
@@ -31,10 +30,10 @@ subroutine timer( prog, iOpt )
 
 ! Module procedures used
   use sys,     only: die           ! Termination routine
-  use m_timer, only: timer_init    ! Initialize all times
-  use m_timer, only: timer_start   ! Start counting time
-  use m_timer, only: timer_stop    ! Stop counting time
-  use m_timer, only: timer_report  ! Write all times
+
+  use m_timer_tree, only: timer_on   ! Start counting time
+  use m_timer_tree, only: timer_off    ! Stop counting time
+  use m_timer_tree, only: timer_report  ! Write all times
 
 ! Arguments
   implicit none
@@ -43,13 +42,13 @@ subroutine timer( prog, iOpt )
 
 ! Select action
   if (iOpt==0) then
-    call timer_init()
+    ! call timer_init()
   else if (iOpt==1) then
-    call timer_start( prog )
+    call timer_on( prog )
   else if (iOpt==2) then
-    call timer_stop( prog )
+    call timer_off( prog )
   else if (iOpt==3) then
-    call timer_report( prog, printNow=.true. )
+    call timer_report() ! ( prog, printNow=.true. )
   else
     call die('timer: ERROR: invalid iOpt value')
   end if

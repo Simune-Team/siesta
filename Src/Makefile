@@ -97,7 +97,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	projected_DOS.o propor.o m_partial_charges.o \
 	ran3.o reclat.o redcel.o \
 	reinit.o reord.o rhoofd.o rhoofdsp.o rhooda.o \
-	savepsi.o shaper.o timer.o \
+	savepsi.o shaper.o timer_tree.o timer.o \
 	vmb.o vmat.o vmatsp.o volcel.o \
 	cdiag.o rdiag.o \
         cgvc.o cgvc_zmatrix.o m_convergence.o \
@@ -720,7 +720,7 @@ struct_init.o: alloc.o atmfuncs.o atomlist.o files.o iopipes.o ioxv.o
 struct_init.o: m_iostruct.o m_mpi_utils.o parallel.o periodic_table.o
 struct_init.o: siesta_cml.o siesta_geom.o siesta_options.o zmatrix.o
 sys.o: parallel.o
-timer.o: m_timer.o sys.o
+timer.o: sys.o timer_tree.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
 ts_init.o: files.o m_ts_contour.o m_ts_gf.o m_ts_kpoints.o m_ts_options.o
 ts_init.o: parallel.o
@@ -814,6 +814,7 @@ m_siesta_move.o: siesta_move.o
 m_state_analysis.o: state_analysis.o
 m_state_init.o: state_init.o
 m_struct_init.o: struct_init.o
+m_timer_tree.o: timer_tree.o
 m_timestamp.o: timestamp.o
 m_ts_init.o: ts_init.o
 m_vmat.o: vmat.o
