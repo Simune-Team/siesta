@@ -30,10 +30,16 @@ subroutine timer( prog, iOpt )
 
 ! Module procedures used
   use sys,     only: die           ! Termination routine
+  use parallel,only: node
 
   use m_timer_tree, only: timer_on   ! Start counting time
   use m_timer_tree, only: timer_off    ! Stop counting time
   use m_timer_tree, only: timer_report  ! Write all times
+
+  use m_timer, only: timer_init    ! Initialize all times
+  use m_timer, only: timer_start   ! Start counting time
+  use m_timer, only: timer_stop    ! Stop counting time
+  use m_timer, only: jms_timer_report=>timer_report  ! Write all times
 
 ! Arguments
   implicit none
@@ -42,7 +48,24 @@ subroutine timer( prog, iOpt )
 
 ! Select action
   if (iOpt==0) then
-    ! call timer_init()
+     call timer_init()
+  else if (iOpt==1) then
+    call timer_start( prog )
+  else if (iOpt==2) then
+    call timer_stop( prog )
+  else if (iOpt==3) then
+    call jms_timer_report( prog, printNow=.true. )
+  else
+    call die('timer: ERROR: invalid iOpt value')
+  end if
+
+if (Node == 0) then
+
+  ! New method, based on walltime in the master node only,
+  ! and with a tree structure for the report
+
+  if (iOpt==0) then
+    !     call timer_init()
   else if (iOpt==1) then
     call timer_on( prog )
   else if (iOpt==2) then
@@ -52,6 +75,8 @@ subroutine timer( prog, iOpt )
   else
     call die('timer: ERROR: invalid iOpt value')
   end if
+
+end if
 
 end subroutine timer
 

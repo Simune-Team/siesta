@@ -136,7 +136,7 @@
         endif
 
         call timer( 'IterSCF', 2 )
-        if (istep.eq.inicoor .and. first) call timer( 'IterSCF', 3 )
+!        if (istep.eq.inicoor .and. first) call timer( 'IterSCF', 3 )
 
         iscf = iscf + 1
         first = .false.

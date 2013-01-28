@@ -3,7 +3,7 @@ module m_timer_tree
 implicit none
 
 integer, parameter  :: dp = selected_real_kind(10,100)
-integer, parameter  :: NMAX_CHILDREN = 20
+integer, parameter  :: NMAX_CHILDREN = 10
 integer, parameter  :: maxLength = 40
 
 ! Derived type to hold time data
@@ -25,13 +25,16 @@ integer, parameter  :: maxLength = 40
      type(section_t), dimension(:), pointer :: child
   end type section_t
      
-  type(section_t), pointer :: root_section => null()
+  type(section_t), pointer :: global_section => null()
   type(section_t), pointer :: last_active => null()
+
+  real(dp)       :: globaltime
+  logical,public :: use_walltime = .true.
 
   type(section_t), pointer :: p
   type(times_t), pointer   :: pd
 
-  real                     :: treal
+  real(dp)                 :: treal
   real(dp)                 :: timeNow, deltaTime
 
   public :: timer_on, timer_off, timer_report
@@ -47,15 +50,15 @@ CONTAINS
     ! Use an extra enclosing level for everything,
     ! so that multiple user "trees" can be supported
 
-      if (.not. associated(root_section)) then
-         allocate(root_section)
-         p => root_section
+      if (.not. associated(global_section)) then
+         allocate(global_section)
+         p => global_section
          p%active = .true.
          pd => p%data
-         pd%name = "root_section"
+         pd%name = "global_section"
          pd%nCalls = pd%nCalls + 1
          last_active => p
-         call cpu_time( treal )         ! Standard Fortran95
+         call current_time( treal )
          pd%lastTime = treal
       endif
 
@@ -83,7 +86,7 @@ CONTAINS
       pd%nCalls = pd%nCalls + 1
       last_active => p
       ! Find present CPU time and convert it to double precision
-      call cpu_time( treal )         ! Standard Fortran95
+      call current_time( treal )
       pd%lastTime = treal
 
     end subroutine timer_on
@@ -101,7 +104,7 @@ CONTAINS
     p%active = .false.
     pd => p%data
 
-    call cpu_time( treal )  
+    call current_time( treal )  
     deltaTime = treal - pd%lastTime
     pd%lastTime = deltaTime
     pd%totTime  = pd%totTime + deltaTime
@@ -118,8 +121,22 @@ CONTAINS
   subroutine timer_report(secname)
     character(len=*), optional    :: secname
 
-    p => root_section
+    integer :: i
+    type(times_t), pointer :: qd
+
+    p => global_section
+    ! Assign to the global section the sum of the times
+    ! of its children
+    globaltime = 0
+    do i = 1, p%nchildren
+       qd => p%child(i)%data
+       globaltime = globaltime + qd%totTime
+    enddo
+    p%data%totTime = globaltime + 1.0e-6_dp
+
+    write(*,"(/,a20,T30,a6,a12,a8)") "Section","Calls","Walltime","%"
     call walk_tree(p,0)
+
   end subroutine timer_report
 
   recursive subroutine walk_tree(p,level)
@@ -130,8 +147,8 @@ CONTAINS
   character(len=40) fmtstr
 
   pd => p%data
-  write(fmtstr,"(a,i0,a1,a)") "(", level+1, "x", ",a20,T30,i6,f12.2)"
-  write(*,fmtstr) pd%name, pd%nCalls, pd%totTime
+  write(fmtstr,"(a,i0,a1,a)") "(", level+1, "x", ",a20,T30,i6,f12.3,f8.2)"
+  write(*,fmtstr) pd%name, pd%nCalls, pd%totTime, 100*pd%totTime/globaltime
   if (p%nchildren /= 0) then
      do i=1,p%nchildren
         call walk_tree(p%child(i),level+1)
@@ -163,5 +180,17 @@ subroutine child_index( child, childData, ichild )   ! Get index of child in dat
   end if
 
 end subroutine child_index
+
+subroutine current_time(t)
+  use m_walltime, only: wall_time
+  real(dp), intent(out) :: t
+
+  if (use_walltime) then
+     call wall_time(t)
+  else
+     call cpu_time(treal)
+     t = treal
+  endif
+end subroutine current_time
 
 end module m_timer_tree

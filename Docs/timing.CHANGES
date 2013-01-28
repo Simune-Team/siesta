@@ -1,4 +1,24 @@
 -------------------------------------------------
+Jan 28, 2013  Alberto Garcia  trunk-432--timing-2
+Further refinements of timing tree
+
+Added %.
+
+Used walltime instead of cputime, restricting it to the master node.
+
+The "old" (by J Soler) and new timing methods now coexist.
+
+The interim call to timer_report for IterSCF has been deactivated for
+now.
+
+modified:
+  Src/Makefile
+  Src/SiestaXC/makefile
+  Src/siesta_forces.F
+  Src/timer.F90
+  Src/timer_tree.f90
+
+-------------------------------------------------
 Jan 27, 2013  Alberto Garcia  trunk-432--timing-1
 First implementation of timing tree
 
