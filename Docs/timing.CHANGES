@@ -1,4 +1,25 @@
 -------------------------------------------------
+Jan 28, 2013  Alberto Garcia  trunk-432--timing-3
+Add timing calls for io_dm, io_hsx, and setup_h. Rationalize molmec
+
+'Moleculamechanics' was entering a loop even if no potentials were available.
+For large systems this incurred a substantial overhead.
+
+Added timing calls.
+
+NOTE: The maximum elapsed time without wrap-around in system_clock is
+only 2147 seconds on PGI systems, including Crays (100 times and 1000
+times that for intel and gfortran). Long-running sections might be
+wrongly timed. Perhaps the "date_and_time" call can be used to provide
+a backup check, but it might be expensive.
+
+modified:
+  Src/m_hsx.F
+  Src/m_iodm.F
+  Src/molecularmechanics.F90
+  Src/setup_hamiltonian.F
+
+-------------------------------------------------
 Jan 28, 2013  Alberto Garcia  trunk-432--timing-2
 Further refinements of timing tree
 

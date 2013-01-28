@@ -50,10 +50,9 @@
       real(dp)            :: g2max
 
 !------------------------------------------------------------------------- BEGIN
-#ifdef DEBUG
-      call write_debug( '  PRE setup_hamiltonian' )
-#endif
-      
+
+      call timer('setup_H',1)
+
 !     Normalize density matrix to exact charge
 !     Setup_hamiltonian is called before the density is printed out...
 #ifdef TRANSIESTA      
@@ -157,9 +156,8 @@
      &                    temp, xijo)
         endif
 
-#ifdef DEBUG
-      call write_debug( '  POS setup_hamiltonian' )
-#endif
+      call timer('setup_H',2)
+
 !--------------------------------------------------------------------------- END
       END subroutine setup_hamiltonian
       END module m_setup_hamiltonian
