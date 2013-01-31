@@ -147,7 +147,8 @@ OBJS =  automatic_cell.o atom_options.o \
         bsc_xcmod.o bsc_cellxc.o xc.o \
 	vacuum_level.o \
 	write_orb_indx.o \
-	m_hs_matrix.o kpoint_convert.o m_glob_sparse.o
+	m_hs_matrix.o kpoint_convert.o m_glob_sparse.o\
+        die.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -419,6 +420,7 @@ diagon.o: precision.o siesta_options.o sys.o
 diagpol.o: precision.o sys.o
 diagsprl.o: atomlist.o fermid.o parallel.o parallelsubs.o precision.o
 diagsprl.o: siesta_geom.o sys.o
+die.o: parallel.o
 dipole.o: mesh.o parallel.o precision.o sys.o
 dnaefs.o: atmfuncs.o mneighb.o precision.o
 domain_decom.o: alloc.o parallel.o precision.o printmatrix.o schecomm.o

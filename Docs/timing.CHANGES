@@ -1,4 +1,25 @@
 -------------------------------------------------
+Jan 31, 2013  Alberto Garcia  trunk-432--timing-4
+Document timer_tree module. Use 64-bit integers for time counter.
+
+Added documentation and hooks to timer_tree to make it almost
+completely independent of Siesta.
+
+Added new stand-alone 'die' routine (not in a module) that can
+be called from libraries and low-level modules.
+
+The maximum elapsed time without wrap-around in system_clock can
+be increased significantly by using 64-bit integers in the calls.
+This has been implemented.
+
+added:
+  Src/die.F
+modified:
+  Src/Makefile
+  Src/m_walltime.f90
+  Src/timer_tree.f90
+
+-------------------------------------------------
 Jan 28, 2013  Alberto Garcia  trunk-432--timing-3
 Add timing calls for io_dm, io_hsx, and setup_h. Rationalize molmec
 
