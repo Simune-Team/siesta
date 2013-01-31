@@ -86,7 +86,8 @@
 !!        call printmemory( 6, 0 )
 
         if (h_setup_only) then
-           call timer( 'siesta', 2 )
+           !call timer( 'siesta', 2 )  ! Bug: incomplete...
+           call timer( 'all', 2 )  ! New call to close the tree
            call timer( 'all', 3 )
            call bye("H-Setup-Only requested")
            STOP

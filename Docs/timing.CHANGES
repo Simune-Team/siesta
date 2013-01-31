@@ -1,4 +1,23 @@
 -------------------------------------------------
+Jan 31, 2013  Alberto Garcia  trunk-432--timing-5
+Added option to close all outstanding timing sections
+
+The call 
+
+  call timer('all', 2)
+
+now triggers a complete stop of all outstanding timing sections.
+
+This is useful for clean early termination of programs under some
+condition (e.g., when only the setup of H is performed).
+
+modified:
+  Src/m_timer.F90
+  Src/siesta_forces.F
+  Src/timer.F90
+  Src/timer_tree.f90
+
+-------------------------------------------------
 Jan 31, 2013  Alberto Garcia  trunk-432--timing-4
 Document timer_tree module. Use 64-bit integers for time counter.
 

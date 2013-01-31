@@ -34,6 +34,7 @@ subroutine timer( prog, iOpt )
 
   use m_timer_tree, only: timer_on   ! Start counting time
   use m_timer_tree, only: timer_off    ! Stop counting time
+  use m_timer_tree, only: timer_all_off    ! Stop all sections
   use m_timer_tree, only: timer_report  ! Write all times
 
   use m_timer, only: timer_init    ! Initialize all times
@@ -69,9 +70,13 @@ if (Node == 0) then
   else if (iOpt==1) then
     call timer_on( prog )
   else if (iOpt==2) then
-    call timer_off( prog )
+     if (trim(prog)=='all') then
+        call timer_all_off()
+     else
+        call timer_off( prog )
+     endif
   else if (iOpt==3) then
-    call timer_report() ! ( prog, printNow=.true. )
+    call timer_report() 
   else
     call die('timer: ERROR: invalid iOpt value')
   end if

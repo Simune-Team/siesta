@@ -9,7 +9,7 @@ module m_timer_tree
   ! of sections.
   !
   ! This module keeps a "global_section" which is the parent of all
-  ! first-level sections.
+  ! first-level sections. Users should *not* handle this section.
   !
   ! Exported routines, all accepting a string (section name) as argument:
   !
@@ -64,7 +64,7 @@ module m_timer_tree
   real(dp)                 :: treal
   real(dp)                 :: timeNow, deltaTime
 
-  public :: timer_on, timer_off, timer_report
+  public :: timer_on, timer_off, timer_all_off, timer_report
   private
 
   interface
@@ -157,9 +157,25 @@ CONTAINS
     if (associated(p%caller)) then
        last_active => p%caller
     else
-       ! Should not reach this point
+       call die('timer_tree: attempt to close global_section?')
     endif
   end subroutine timer_off
+
+  !------------------------------------------------
+  subroutine timer_all_off()
+    !
+    !  Closes all outstanding active sections
+    !
+
+    if (.not. associated(last_active)) RETURN
+
+    p => last_active
+    do
+       if (associated(p,global_section)) exit
+       call timer_off(p%data%name)
+       p => p%caller
+    enddo
+  end subroutine timer_all_off
 
   !------------------------------------------------
   subroutine timer_report(secname)
