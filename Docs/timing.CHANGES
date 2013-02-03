@@ -1,4 +1,21 @@
 -------------------------------------------------
+Feb 3, 2013  Alberto Garcia  trunk-432--timing-6
+Remove hard-coded limit to number of timing subsections
+
+The child array in a given timing section will be resized
+if needed.
+
+Added more comments and removed redundant code.
+
+Added timing calls in setup_H0, fft, and matel.
+
+modified:
+  Src/fft.F
+  Src/matel.f
+  Src/setup_H0.F
+  Src/timer_tree.f90
+
+-------------------------------------------------
 Jan 31, 2013  Alberto Garcia  trunk-432--timing-5
 Added option to close all outstanding timing sections
 

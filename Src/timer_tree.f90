@@ -32,16 +32,20 @@ module m_timer_tree
   implicit none
 
   integer, parameter  :: dp = selected_real_kind(10,100)
-  integer, parameter  :: NMAX_CHILDREN = 10
-  integer, parameter  :: maxLength = 40
+  ! initial size of children array
+  integer, parameter  :: INITIAL_N_CHILDREN = 3
+  ! size increase in each extension of the children array
+  integer, parameter  :: N_INC_CHILDREN = 3
+  ! maximum length of the section name
+  integer, parameter  :: NAME_LENGTH = 40
 
   ! Derived type to hold time data
   type times_t
      private
-     character(len=maxLength):: name=' '  ! Name of program or code section
-     integer :: nCalls=0           ! Number of calls made to the program
-     real(dp):: totTime=0          ! Total time for this program
-     real(dp):: lastTime=0         ! Total time in last call
+     character(len=NAME_LENGTH) :: name=' '  ! Name of timed section
+     integer :: nCalls=0           ! Number of calls made to section
+     real(dp):: totTime=0          ! Total time for this section
+     real(dp):: startTime=0         ! Time upon start of current cycle
   end type times_t
 
   type section_t
@@ -61,8 +65,8 @@ module m_timer_tree
   type(section_t), pointer :: p
   type(times_t), pointer   :: pd
 
-  real(dp)                 :: treal
-  real(dp)                 :: timeNow, deltaTime
+  real(dp)                 :: t_current
+  real(dp)                 :: deltaTime
 
   public :: timer_on, timer_off, timer_all_off, timer_report
   private
@@ -92,21 +96,20 @@ CONTAINS
        pd%name = "global_section"
        pd%nCalls = pd%nCalls + 1
        last_active => p
-       call current_time( treal )
-       pd%lastTime = treal
+       call current_time( t_current )
+       pd%startTime = t_current
     endif
 
     ! Find proper place
     p => last_active
     if (p%nchildren==0) then
-       allocate(p%child(NMAX_CHILDREN))
+       allocate(p%child(INITIAL_N_CHILDREN))
     endif
     call child_index(secname,p%child,loc)
     if (loc == 0) then
        ! New child
-       if (p%nchildren == NMAX_CHILDREN) then
-          ! re_allocate in future
-          call die("too many children")
+       if (p%nchildren == size(p%child)) then
+          call expand_array(p%child)
        endif
        p%nchildren = p%nchildren + 1
        !print *, "New child: " // trim(secname) // " of " // trim(p%data%name)
@@ -123,9 +126,9 @@ CONTAINS
     pd%name = secname
     pd%nCalls = pd%nCalls + 1
     last_active => p
-    ! Find present time
-    call current_time( treal )
-    pd%lastTime = treal
+
+    call current_time( t_current )
+    pd%startTime = t_current
 
   end subroutine timer_on
 
@@ -149,9 +152,8 @@ CONTAINS
     p%active = .false.
     pd => p%data
 
-    call current_time( treal )  
-    deltaTime = treal - pd%lastTime
-    pd%lastTime = deltaTime
+    call current_time( t_current )  
+    deltaTime = t_current - pd%startTime
     pd%totTime  = pd%totTime + deltaTime
 
     if (associated(p%caller)) then
@@ -209,7 +211,8 @@ CONTAINS
 
     pd => p%data
     write(fmtstr,"(a,i0,a1,a)") "(", level+1, "x", ",a20,T30,i6,f12.3,f8.2)"
-    write(*,fmtstr) pd%name, pd%nCalls, pd%totTime, 100*pd%totTime/globaltime
+    write(*,fmtstr) pd%name, pd%nCalls,  &
+                    pd%totTime, 100*pd%totTime/globaltime
     if (p%nchildren /= 0) then
        do i=1,p%nchildren
           call walk_tree(p%child(i),level+1)
@@ -242,6 +245,23 @@ CONTAINS
 
   end subroutine child_index
 
+  subroutine expand_array(a)
+    type(section_t), pointer :: a(:)
+
+    integer :: n
+    type(section_t), pointer :: tmp(:) => null()
+
+    n = size(a)
+    allocate(tmp(n))
+    tmp(:) = a(:)
+    deallocate(a)
+    allocate(a(n+N_INC_CHILDREN))
+    a(1:n) = tmp(1:n)
+    deallocate(tmp)
+    print *, "... expanded to: ", size(a)
+
+  end subroutine expand_array
+
   !------------------------------------------------
   subroutine current_time(t)
     !
@@ -249,6 +269,8 @@ CONTAINS
     !
     use m_walltime, only: wall_time
     real(dp), intent(out) :: t
+
+    real  :: treal   ! for call to cpu_time
 
     if (use_walltime) then
        call wall_time(t)
