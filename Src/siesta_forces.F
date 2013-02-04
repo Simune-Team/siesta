@@ -86,7 +86,6 @@
 !!        call printmemory( 6, 0 )
 
         if (h_setup_only) then
-           !call timer( 'siesta', 2 )  ! Bug: incomplete...
            call timer( 'all', 2 )  ! New call to close the tree
            call timer( 'all', 3 )
            call bye("H-Setup-Only requested")
@@ -137,7 +136,7 @@
         endif
 
         call timer( 'IterSCF', 2 )
-!        if (istep.eq.inicoor .and. first) call timer( 'IterSCF', 3 )
+        if (istep.eq.inicoor .and. first) call timer( 'IterSCF', 3 )
 
         iscf = iscf + 1
         first = .false.

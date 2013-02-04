@@ -1,4 +1,16 @@
 -------------------------------------------------
+Feb 4, 2013  Alberto Garcia  trunk-432--timing-7
+Implemented restricted (section) reports
+
+A report can cover a single section. By default, it prints
+also the timings of the first-generation descendants.
+
+modified:
+  Src/siesta_forces.F
+  Src/timer.F90
+  Src/timer_tree.f90
+
+-------------------------------------------------
 Feb 3, 2013  Alberto Garcia  trunk-432--timing-6
 Remove hard-coded limit to number of timing subsections
 

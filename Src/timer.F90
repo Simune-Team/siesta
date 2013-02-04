@@ -76,7 +76,7 @@ if (Node == 0) then
         call timer_off( prog )
      endif
   else if (iOpt==3) then
-    call timer_report() 
+    call timer_report(prog) 
   else
     call die('timer: ERROR: invalid iOpt value')
   end if
