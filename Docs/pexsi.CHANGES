@@ -1,0 +1,17 @@
+------------------------------------------------------------
+Feb 4, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-1
+First prototype of PEXSI interface
+
+Created a routine to write H and S in formatted (!) form to 
+file.
+
+Added new solution method "pexsi".
+
+added:
+  Src/pexsi.f90
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+  Src/m_hsx.F
+  Src/siesta_options.F90
+  Src/sys.F

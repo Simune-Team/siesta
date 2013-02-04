@@ -177,6 +177,7 @@ MODULE siesta_options
   integer,  parameter :: SOLVE_DIAGON = 0
   integer,  parameter :: SOLVE_ORDERN = 1
   integer,  parameter :: SOLVE_TRANSI = 2
+  integer,  parameter :: SOLVE_PEXSI  = 3
 
       CONTAINS
 
@@ -735,6 +736,12 @@ MODULE siesta_options
         call die( 'redata: You chose the Order-N solution option '// &
                   'together with nspin>2.  This is not allowed in '//&
                   'this version of siesta' )
+      endif
+    else if (leqi(method,"pexsi")) then
+       isolve = SOLVE_PEXSI
+      if (ionode) then
+        write(6,'(a,4x,a)') 'redata: Method of Calculation            = ', &
+                            'PEXSI'
       endif
 #ifdef TRANSIESTA
 ! TSS Begin

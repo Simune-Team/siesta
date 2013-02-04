@@ -12,13 +12,14 @@
       use siesta_geom
       use atomlist, only: qa, lasto, iphorb, iaorb, no_u, no_s, indxuo, 
      &                    qtot, no_l
-      use sys, only: die
+      use sys, only: die, bye
       use Kpoint_grid
       use m_energies,   only: Ebs, DEHarr, Ecorrec, Ef, Entrop
       use m_rmaxh
       use m_eo
       use m_gamma
       use parallel, only: IONode
+      use m_pexsi,  only: pexsi
 #ifdef MPI
       use m_mpi_utils,     only:  globalize_sum
 #endif
@@ -47,14 +48,19 @@
       real(dp)            :: buffer1
 #endif
 
-!------------------------------------------------------------------------- BEGIN
-#ifdef DEBUG
-      call write_debug( '  PRE compute_dm' )
-#endif
+!-------------------------------------------------------------------- BEGIN
+
       call timer( 'compute_dm', 1 )
 
+      if (isolve .eq. SOLVE_PEXSI) then
+         ! Prototype interface
+         call pexsi(no_u, nspin, maxnh, numh, listhptr, listh, H, S)
+         call timer('all',2)
+         call timer('all',3)
+         call bye("PEXSI interface: wrote H and S to file. Bye")
+
 !     Solve eigenvalue problem 
-      if (isolve .eq. SOLVE_DIAGON) then
+      else if (isolve .eq. SOLVE_DIAGON) then
         call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
      &              numh, listhptr, listh, numh, listhptr, listh, 
      &              H, S, qtot, fixspin, qs, temp, e1, e2,
@@ -160,9 +166,7 @@
           endif
 
       call timer( 'compute_dm', 2 )
-#ifdef DEBUG
-      call write_debug( '  POS compute_dm' )
-#endif
-!--------------------------------------------------------------------------- END
+
+!----------------------------------------------------------------------- END
       END subroutine compute_dm
       END MODULE m_compute_dm

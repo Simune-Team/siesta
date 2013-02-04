@@ -148,7 +148,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	vacuum_level.o \
 	write_orb_indx.o \
 	m_hs_matrix.o kpoint_convert.o m_glob_sparse.o\
-        die.o
+        die.o pexsi.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -387,7 +387,7 @@ coceri.o: files.o periodic_table.o precision.o
 compute_dm.o: atomlist.o iodmhs_netcdf.o kpoint_grid.o m_energies.o m_eo.o
 compute_dm.o: m_gamma.o m_mpi_utils.o m_rmaxh.o m_spin.o m_steps.o
 compute_dm.o: m_ts_global_vars.o m_ts_in_siesta.o m_ts_options.o ordern.o
-compute_dm.o: parallel.o precision.o siesta_geom.o siesta_options.o
+compute_dm.o: parallel.o pexsi.o precision.o siesta_geom.o siesta_options.o
 compute_dm.o: sparse_matrices.o sys.o units.o
 compute_norm.o: m_mpi_utils.o precision.o sparse_matrices.o
 conjgr.o: precision.o
@@ -619,6 +619,7 @@ pdosg.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
 pdosk.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
 pdoskp.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
 periodic_table.o: precision.o sys.o
+pexsi.o: m_hsx.o precision.o
 phirphi.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
 phirphi_opt.o: alloc.o atm_types.o atmfuncs.o atmparams.o mneighb.o parallel.o
 phirphi_opt.o: parallelsubs.o precision.o spher_harm.o sys.o
@@ -737,6 +738,7 @@ vmat.o: meshphi.o parallel.o parallelsubs.o precision.o
 vmatsp.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mesh.o meshdscf.o
 vmatsp.o: meshphi.o precision.o
 vmb.o: fixed.o parallel.o precision.o sys.o
+write_matrix.o: files.o parallel.o parallelsubs.o precision.o sys.o
 write_md_record.o: atomlist.o m_energies.o m_kinetic.o m_steps.o m_stress.o
 write_md_record.o: md_out.o parallel.o siesta_geom.o siesta_options.o
 write_orb_indx.o: atmfuncs.o cellsubs.o files.o precision.o
@@ -801,6 +803,7 @@ m_on_subs.o: on_subs.o
 m_ordern.o: ordern.o
 m_overfsm.o: overfsm.o
 m_overlap.o: overlap.o
+m_pexsi.o: pexsi.o
 m_post_scf_work.o: post_scf_work.o
 m_projected_dos.o: projected_DOS.o
 m_proximity_check.o: proximity_check.o

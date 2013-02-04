@@ -357,4 +357,258 @@ C Close file
       call timer("writeHSX",2)
 
       end subroutine write_hsx
+
+!-----------------------------------------------------------------
+      subroutine write_hs_formatted(no_u, nspin,
+     $                 maxnh, numh, listhptr, listh, H, S)
+C *********************************************************************
+C Saves the hamiltonian and overlap matrices in formatted form
+C ONLY for gamma case
+C ******************** INPUT
+C integer no_u                : Number of basis orbitals per unit cell
+C integer nspin               : Spin polarization (1 or 2)
+C integer maxnh               : First dimension of listh, H, S and
+C                               second of xij
+C integer numh(nuo)           : Number of nonzero elements of each row
+C                               of hamiltonian matrix
+C integer listhptr(nuo)       : Pointer to the start of each row (-1)
+C                               of hamiltonian matrix
+C integer listh(maxnh)        : Nonzero hamiltonian-matrix element column
+C                               indexes for each matrix row
+C real*8  H(maxnh,nspin)      : Hamiltonian in sparse form
+C real*8  S(maxnh)            : Overlap in sparse form
+
+C
+C  Modules
+C
+      use precision, only: dp, sp
+      use parallel,     only : Node, Nodes
+      use parallelsubs, only : WhichNodeOrb, LocalToGlobalOrb,
+     .                         GlobalToLocalOrb, GetNodeOrbs
+      use atm_types,    only : nspecies
+#ifdef MPI
+      use mpi_siesta
+#endif
+
+      implicit          none
+
+      integer           maxnh, no_u, nspin
+      integer           listh(maxnh), numh(*), listhptr(*)
+      real(dp)          H(maxnh,nspin), S(maxnh)
+      external          io_assign, io_close
+
+
+      integer    im, is, iu, ju, k, mnh, ns, ia, io
+      integer    ih,hl,nuo,maxnhtot,maxhg
+      integer, dimension(:), allocatable :: numhg, hg_ptr
+#ifdef MPI
+      integer    MPIerror, Request, Status(MPI_Status_Size), BNode
+      integer,  dimension(:),   allocatable :: ibuffer
+      real(dp), dimension(:),   allocatable :: buffer
+#endif
+
+
+      call timer("write_HS_fmt",1)
+
+C Find total numbers over all Nodes
+#ifdef MPI
+      call MPI_AllReduce(maxnh,maxnhtot,1,MPI_integer,MPI_sum,
+     .  MPI_Comm_World,MPIerror)
+#else
+      maxnhtot = maxnh
+#endif
+
+        if (Node.eq.0) then
+C Open file
+          call io_assign( iu )
+          open( iu, file="S.matrix", form='formatted', status='unknown')      
+
+C Write overall data
+          write(iu,*) no_u, no_u, maxnhtot, nspin
+
+C Allocate local array for global numh
+          allocate(numhg(no_u))
+          allocate(hg_ptr(no_u+1))
+        endif
+
+C Create globalised numh
+        do ih = 1,no_u
+#ifdef MPI
+          call WhichNodeOrb(ih,Nodes,BNode)
+          if (BNode.eq.0.and.Node.eq.BNode) then
+            call GlobalToLocalOrb(ih,Node,Nodes,hl)
+#else
+            hl = ih
+#endif
+            numhg(ih) = numh(hl)
+#ifdef MPI
+          elseif (Node.eq.BNode) then
+            call GlobalToLocalOrb(ih,Node,Nodes,hl)
+            call MPI_ISend(numh(hl),1,MPI_integer,
+     .        0,1,MPI_Comm_World,Request,MPIerror)
+            call MPI_Wait(Request,Status,MPIerror)
+          elseif (Node.eq.0) then
+            call MPI_IRecv(numhg(ih),1,MPI_integer,
+     .        BNode,1,MPI_Comm_World,Request,MPIerror)
+            call MPI_Wait(Request,Status,MPIerror)
+          endif
+          if (BNode.ne.0) then
+            call MPI_Barrier(MPI_Comm_World,MPIerror)
+          endif
+#endif
+        enddo
+
+        if (Node.eq.0) then
+C Write row pointers
+         maxhg = 0
+         hg_ptr(1) = 1
+         do ih = 1,no_u
+           maxhg = max(maxhg,numhg(ih))
+           hg_ptr(ih+1) = hg_ptr(ih) + numhg(ih)
+         enddo
+         write(iu,*) (hg_ptr(ih),ih=1,no_u+1)
+         deallocate(hg_ptr)
+#ifdef MPI
+          allocate(buffer(maxhg))
+          call memory('A','D',maxhg,'iohs')
+          allocate(ibuffer(maxhg))
+          call memory('A','I',maxhg,'iohs')
+#endif
+        endif
+
+C Write listh
+        do ih = 1,no_u
+#ifdef MPI
+          call WhichNodeOrb(ih,Nodes,BNode)
+          if (BNode.eq.0.and.Node.eq.BNode) then
+            call GlobalToLocalOrb(ih,Node,Nodes,hl)
+#else
+            hl = ih
+#endif
+            write(iu,*) (listh(listhptr(hl)+im),im = 1,numh(hl))
+#ifdef MPI
+          elseif (Node.eq.0) then
+            call MPI_IRecv(ibuffer,numhg(ih),MPI_integer,BNode,1,
+     .        MPI_Comm_World,Request,MPIerror)
+            call MPI_Wait(Request,Status,MPIerror)
+          elseif (Node.eq.BNode) then
+            call GlobalToLocalOrb(ih,Node,Nodes,hl)
+            call MPI_ISend(listh(listhptr(hl)+1),numh(hl),MPI_integer,
+     .        0,1,MPI_Comm_World,Request,MPIerror)
+            call MPI_Wait(Request,Status,MPIerror)
+          endif
+          if (BNode.ne.0) then
+            call MPI_Barrier(MPI_Comm_World,MPIerror)
+            if (Node.eq.0) then
+               write(iu,*) (ibuffer(im),im = 1,numhg(ih))
+            endif
+          endif
+#endif
+        enddo
+
+#ifdef MPI
+        if (Node.eq.0) then
+          call memory('D','I',size(ibuffer),'iohs')
+          deallocate(ibuffer)
+        endif
+#endif
+        if (Node.eq.0) then
+           call io_close(iu)
+           call system("cp S.matrix H.matrix")
+           call io_assign( iu )
+           open( iu, file="H.matrix", form='formatted', status='old',
+     $          action="write", position="append")      
+        endif
+
+
+C Write Hamiltonian
+        do is=1,nspin
+          do ih=1,no_u
+#ifdef MPI
+            call WhichNodeOrb(ih,Nodes,BNode)
+            if (BNode.eq.0.and.Node.eq.BNode) then
+              call GlobalToLocalOrb(ih,Node,Nodes,hl)
+#else
+              hl = ih
+#endif
+              write(iu,*) (real(H(listhptr(hl)+im,is),kind=sp),
+     $             im=1,numh(hl))
+#ifdef MPI
+            elseif (Node.eq.0) then
+              call MPI_IRecv(buffer,numhg(ih),MPI_double_precision,
+     .          BNode,1,MPI_Comm_World,Request,MPIerror)
+              call MPI_Wait(Request,Status,MPIerror)
+            elseif (Node.eq.BNode) then
+              call GlobalToLocalOrb(ih,Node,Nodes,hl)
+              call MPI_ISend(H(listhptr(hl)+1,is),numh(hl),
+     .          MPI_double_precision,0,1,MPI_Comm_World,
+     .          Request,MPIerror)
+              call MPI_Wait(Request,Status,MPIerror)
+            endif
+            if (BNode.ne.0) then
+              call MPI_Barrier(MPI_Comm_World,MPIerror)
+              if (Node.eq.0) then
+                 write(iu,*) (real(buffer(im),kind=sp),im=1,numhg(ih))
+              endif
+            endif
+#endif
+          enddo
+        enddo
+
+
+        if (node == 0) then
+           call io_close(iu)
+           call io_assign( iu )
+           open( iu, file="S.matrix", form='formatted', status='old',
+     $          action="write", position="append")      
+        endif
+
+C Write Overlap matrix
+        do ih = 1,no_u
+#ifdef MPI
+          call WhichNodeOrb(ih,Nodes,BNode)
+          if (BNode.eq.0.and.Node.eq.BNode) then
+            call GlobalToLocalOrb(ih,Node,Nodes,hl)
+#else
+            hl = ih
+#endif
+            write(iu,*) (real(S(listhptr(hl)+im),kind=sp),
+     $                   im = 1,numh(hl))
+#ifdef MPI
+          elseif (Node.eq.0) then
+            call MPI_IRecv(buffer,numhg(ih),MPI_double_precision,
+     .        BNode,1,MPI_Comm_World,Request,MPIerror)
+            call MPI_Wait(Request,Status,MPIerror)
+          elseif (Node.eq.BNode) then
+            call GlobalToLocalOrb(ih,Node,Nodes,hl)
+            call MPI_ISend(S(listhptr(hl)+1),numh(hl),
+     .        MPI_double_precision,0,1,MPI_Comm_World,
+     .        Request,MPIerror)
+            call MPI_Wait(Request,Status,MPIerror)
+          endif
+          if (BNode.ne.0) then
+            call MPI_Barrier(MPI_Comm_World,MPIerror)
+            if (Node.eq.0) then
+               write(iu,*) (real(buffer(im),kind=sp),im=1,numhg(ih))
+            endif
+          endif
+#endif
+        enddo
+
+#ifdef MPI
+        if (Node .eq. 0) then
+           call memory('D','D',size(buffer),'iohs')
+           deallocate(buffer)
+           deallocate(numhg)   
+        endif
+#endif
+
+        if (node == 0) then
+           call io_close( iu )
+        endif
+
+      call timer("write_HS_fmt",2)
+
+      end subroutine write_hs_formatted
+
       end module m_hsx
