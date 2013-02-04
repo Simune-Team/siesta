@@ -54,10 +54,11 @@
 
       if (isolve .eq. SOLVE_PEXSI) then
          ! Prototype interface
-         call pexsi(no_u, nspin, maxnh, numh, listhptr, listh, H, S)
+         call pexsi(no_u, nspin, maxnh, numh, listhptr, listh,
+     $              H, S, qtot)
          call timer('all',2)
          call timer('all',3)
-         call bye("PEXSI interface: wrote H and S to file. Bye")
+         call bye("PEXSI interface with H and S to file. Bye")
 
 !     Solve eigenvalue problem 
       else if (isolve .eq. SOLVE_DIAGON) then

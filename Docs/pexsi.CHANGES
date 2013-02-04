@@ -1,4 +1,17 @@
 ------------------------------------------------------------
+Feb 4, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-2
+Second prototype of PEXSI interface
+
+Called the interface.
+
+renamed:
+  Src/pexsi.f90 => Src/pexsi.F90
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+  Src/pexsi.F90
+
+------------------------------------------------------------
 Feb 4, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-1
 First prototype of PEXSI interface
 
