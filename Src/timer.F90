@@ -8,13 +8,14 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-! This is now a wrapper for the functionality in module m_timer_tree
+! This is now a wrapper for the functionality in modules m_timer_tree
+! and m_timer
 !
 ! subroutine timer( prog, iOpt )
 !
 !  FINDS AND PRINTS THE CPU TIME SPENT IN DIFFERENT ROUTINES AND/OR
-!   PROGRAM SECTIONS. IT MUST BE CALLED WITH IOPT=0 AT THE BEGINNING
-!   OF EACH ROUTINE AND WITH IOPT=1 AT THE END OF IT.
+!   PROGRAM SECTIONS. IT MUST BE CALLED WITH IOPT=1 AT THE BEGINNING
+!   OF EACH ROUTINE AND WITH IOPT=2 AT THE END OF IT.
 !  ARGUMENTS:
 !    PROG: INPUT ARBITRARY NAME FOR THE ROUTINE AND/OR PROGRAM SECTION
 !    IOPT: INPUT OPTION PARAMETER:
@@ -24,7 +25,7 @@
 !      IOPT = 3  => PRINT TIME FOR A ROUTINE OR FOR ALL (IF PROG='ALL')
 !  ROUTINE TIMES INCLUDE THAT SPENT IN THE ROUTINES THEY CALL
 !  WRITTEN BY J.SOLER. JUL.2009
-!===============================================================================
+!=============================================================================
 
 subroutine timer( prog, iOpt )
 
@@ -32,11 +33,12 @@ subroutine timer( prog, iOpt )
   use sys,     only: die           ! Termination routine
   use parallel,only: node
 
+  ! New 'tree-based' module by A. Garcia
   use m_timer_tree, only: timer_on   ! Start counting time
   use m_timer_tree, only: timer_off    ! Stop counting time
-  use m_timer_tree, only: timer_all_off    ! Stop all sections
   use m_timer_tree, only: timer_report  ! Write all times
 
+  ! Standard module by J. Soler
   use m_timer, only: timer_init    ! Initialize all times
   use m_timer, only: timer_start   ! Start counting time
   use m_timer, only: timer_stop    ! Stop counting time
@@ -66,15 +68,12 @@ if (Node == 0) then
   ! and with a tree structure for the report
 
   if (iOpt==0) then
+    ! The timer is initialized in the first call to timer_on...
     !     call timer_init()
   else if (iOpt==1) then
     call timer_on( prog )
   else if (iOpt==2) then
-     if (trim(prog)=='all') then
-        call timer_all_off()
-     else
-        call timer_off( prog )
-     endif
+    call timer_off( prog )
   else if (iOpt==3) then
     call timer_report(prog) 
   else

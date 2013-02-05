@@ -1,4 +1,15 @@
 -------------------------------------------------
+Feb 5, 2013  Alberto Garcia  trunk-432--timing-8
+More documentation. timer_off is now recursive
+
+The behavior of 'timer_off' now parallels that of 'timer_report'
+regarding the presence and value of the optional argument 'secname'.
+
+modified:
+  Src/timer.F90
+  Src/timer_tree.f90
+
+-------------------------------------------------
 Feb 4, 2013  Alberto Garcia  trunk-432--timing-7
 Implemented restricted (section) reports
 
