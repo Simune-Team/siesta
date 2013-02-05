@@ -7170,13 +7170,13 @@ calculations, only the usual {\sc Siesta} options are relevant.
 The generated surface Green's functions of the electrodes depend on the atomic structure,
 but also on the energy points of the contour (that will depend on the voltage). 
 It is possible to use previously generated .GF files, but care must be taken.
-Per default it will try to re-use the GF files present. A check against the parameters
+Per default it will not try to re-use the GF files present. A check against the parameters
 ensures that they are equivalent (however, the atomic coordinates of the electrodes will
 not be checked). By setting to {\tt false} the Green's function files
 will be re-created no matter the existence of GF files.
-This will save computing time. 
+This will save computing time if set to {\tt true}. 
 
-{\it Default value:} {\tt true}
+{\it Default value:} {\tt false}
 
 \item[{\bf TS.TriDiag}] ({\it logical}): \index{TS.TriDiag@{\bf
     TS.TriDiag}} If represented in terms of the left electrode, the

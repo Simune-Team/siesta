@@ -103,7 +103,7 @@ character(33), parameter :: HSFile_def = 'NOT REQUESTED'
 character(4),  parameter :: ChargeCorr_def = 'none'
 real(dp),  parameter :: ChargeCorr_factor_def = 0.75_dp
 logical, parameter :: ElecValenceBandBot_def = .false.
-logical, parameter :: ReUseGF_def = .true.
+logical, parameter :: ReUseGF_def = .false.
 
 logical, save :: TSmode = .false.
 

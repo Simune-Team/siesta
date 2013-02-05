@@ -1,4 +1,38 @@
 ----------------------------------------------------
+Feb 05, 2013 -- Nick P. Andersen     trunk-427--ts-npa-34
+Extended and made glob_sparse more intuitive
+
+* Added routines for globalizing seperate sparse arrays
+  1. This will leverage the need for all arrays when just
+     needing one.
+  2. Particular in IO-writes one wished to do allocating 
+     of an array before writing.
+* Fixed the deallocation to deallocate only if they are not
+  allocated.
+* Added routines for deallocating the global H and S matrices
+* Changed the interface to better match which arrays needs
+  others.
+  In general a preceding array is needed before a later array can
+  be created:
+  call glob_sparse_xij(no_l,no_u, maxnh, &
+         numh ,listhptr, xij, Gamma, &
+  	 numhg,listhptrg,maxnhg, xijg)
+  Here 'xijg' needs 'listhptr' and 'numh', and 'listhptr' needs
+  'numh'
+* Corrected the interfaces in TranSIESTA
+* Made ReUseGF default to .FALSE.. The problem was that if somebody
+  changed the MeshCutOff it could not be ensured via the GF for the 
+  electrodes.
+  Now it is on the user to specify whether the system parameters 
+  have not changed.
+
+modified:
+  Docs/siesta.tex
+  Src/m_glob_sparse.F90
+  Src/m_ts_in_siesta.F
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 Dec 13, 2012 -- Nick P. Andersen     trunk-427--ts-npa-33
 Merge of trunk-427
 

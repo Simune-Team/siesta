@@ -113,6 +113,7 @@
 #ifdef MPI
       use m_glob_sparse, only: glob_sparse_arrays, glob_sparse_matrix
       use m_glob_sparse, only: glob_sparse_arrays_dealloc
+      use m_glob_sparse, only: glob_sparse_matrix_dealloc
 #endif
       use m_hs_matrix, only : set_HS_matrix, matrix_rem_left_right
       use m_hs_matrix, only : matrix_symmetrize
@@ -460,9 +461,8 @@
 
 #ifdef MPI
       call glob_sparse_arrays(no_l,no_u,no_s,maxnh, 
-     &     numh ,listh ,listhptr ,xij , Gamma,
-     &     maxnhg,
-     &     numhg,listhg,listhptrg,xijg)
+     &     numh ,listhptr ,listh ,xij , Gamma,
+     &     numhg,listhptrg,maxnhg,listhg,xijg)
       
       allocate(Dnewg(maxnhg,nspin))
       allocate(Enewg(maxnhg,nspin))
@@ -1489,13 +1489,10 @@
          end if
       endif
 
-
 #ifdef MPI
-      call glob_sparse_arrays_dealloc(no_u, Gamma,
-     &     maxnhg,
-     &     numhg,listhg,listhptrg,xijg)
-      call memory('D','D',maxnhg*2,'transiesta')
-      deallocate(Hsg,Ssg)
+      call glob_sparse_arrays_dealloc(no_u, Gamma, maxnhg, 
+     &     numhg,listhptrg,listhg,xijg)
+      call glob_sparse_matrix_dealloc(maxnhg, Hsg,Ssg)
 #endif
 
       call timer("TS_calc",2)
