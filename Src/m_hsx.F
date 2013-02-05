@@ -424,7 +424,7 @@ C Open file
           open( iu, file="S.matrix", form='formatted', status='unknown')      
 
 C Write overall data
-          write(iu,*) no_u, no_u, maxnhtot, nspin
+          write(iu,*) no_u, no_u, maxnhtot
 
 C Allocate local array for global numh
           allocate(numhg(no_u))

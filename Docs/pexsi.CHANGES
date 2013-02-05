@@ -1,4 +1,14 @@
 ------------------------------------------------------------
+Feb 5, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-3
+Fix extra item in first line of .matrix files
+
+Remove the spin multiplicity, as Lin did not take it
+into account.
+
+modified:
+  Src/pexsi.F90
+
+------------------------------------------------------------
 Feb 4, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-2
 Second prototype of PEXSI interface
 
