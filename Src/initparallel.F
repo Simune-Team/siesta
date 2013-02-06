@@ -20,7 +20,7 @@ C
       use m_fdf_global, only: fdf_global_get
       use siesta_options, only: want_domain_decomposition
       use siesta_options, only: want_spatial_decomposition
-      use siesta_options, only: isolve, SOLVE_ORDERN
+      use siesta_options, only: isolve, SOLVE_ORDERN, SOLVE_PEXSI
       use siesta_options, only: rcoor
       use parallel,     only : Node, Nodes, BlockSize, ProcessorY
       use parallelsubs, only : set_processorY, set_BlockSizeDefault
@@ -179,8 +179,12 @@ C Check that cut-off is less than cell parameter
       if (.not. lspatial) then
 C Set BlockSize
 #ifdef MPI
-        call set_blocksizedefault(Nodes,no_u,blocksizedefault)
-        BlockSize = fdf_integer('blocksize',blocksizedefault)
+         if (isolve.eq.SOLVE_PEXSI) then
+             Blocksize = no_u/Nodes
+          else
+             call set_blocksizedefault(Nodes,no_u,blocksizedefault)
+             BlockSize = fdf_integer('blocksize',blocksizedefault)
+          endif
 #else
         BlockSize = 8
 #endif

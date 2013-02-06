@@ -1,4 +1,23 @@
 ------------------------------------------------------------
+Feb 6, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-4
+Second stage of interface. Block-cyclic plus 0<->LastNode exchange
+
+Lin's distribution is very similar to block-cyclic, except that the
+last node instead of the first one keeps the slack orbitals.
+
+Implemented the interface by setting the Siesta blocksize to Norbs/NNodes
+and by exchanging information between the first and last nodes. This has
+the advantage (theoretical) of being able to call scalapack if needed...
+
+added:
+  Src/pexsi_dump.F90
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+  Src/initparallel.F
+  Src/pexsi.F90
+
+------------------------------------------------------------
 Feb 5, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-3
 Fix extra item in first line of .matrix files
 
