@@ -111,9 +111,7 @@
       use m_ts_kpoints, only : ts_gamma_scf
 
 #ifdef MPI
-      use m_glob_sparse, only: glob_sparse_arrays, glob_sparse_matrix
-      use m_glob_sparse, only: glob_sparse_arrays_dealloc
-      use m_glob_sparse, only: glob_sparse_matrix_dealloc
+      use m_glob_sparse
 #endif
       use m_hs_matrix, only : set_HS_matrix, matrix_rem_left_right
       use m_hs_matrix, only : matrix_symmetrize
@@ -342,7 +340,7 @@
       integer, dimension(:),    allocatable :: numhg
       integer, dimension(:),    allocatable :: listhptrg, listhg
       real(dp), dimension(:,:), allocatable :: xijg
-      real(dp), dimension(:,:), allocatable :: Dnewg, Enewg
+      real(dp), dimension(:),   allocatable :: Dnewg, Enewg
       real(dp), dimension(:),   allocatable :: Hsg, Ssg
 !     The obvious error for MPI
       integer :: MPIerror
@@ -464,15 +462,6 @@
      &     numh ,listhptr ,listh ,xij , Gamma,
      &     numhg,listhptrg,maxnhg,listhg,xijg)
       
-      allocate(Dnewg(maxnhg,nspin))
-      allocate(Enewg(maxnhg,nspin))
-      call memory('A','D',2*maxnhg*nspin,'transiesta')
-      
-      do is = 1, nspin
-         call glob_sparse_matrix(no_l,no_u,no_s,  
-     &        maxnh,  numh , listhptr ,Dnew(:,is) ,Enew(:,is),
-     &        maxnhg, numhg, listhptrg,Dnewg(:,is),Enewg(:,is))
-      end do
 #endif
       call timer("TS_calc",2)
 
@@ -741,6 +730,9 @@
       ! Allocate for the globalized sparse matrices
       allocate(Hsg(maxnhg),Ssg(maxnhg))
       call memory('A','D',maxnhg*2,'transiesta')
+
+      allocate(Dnewg(maxnhg),Enewg(maxnhg))
+      call memory('A','D',maxnhg*2,'transiesta')
 #endif
 
       nullify(H,S)
@@ -791,6 +783,12 @@
       allocate(GF(nou*nou))
       call memory('A','Z',nou*nou,'transiesta')
 
+#ifdef MPI
+      call glob_sparse_matrix(no_l,no_u,no_s,
+     &     maxnh,  numh , listhptr ,Ss,
+     &     maxnhg, numhg, listhptrg,Ssg)
+#endif
+
 ! FDN Spin loop
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       do ispin = 1,nspin        !not really implemented yet!!
@@ -801,17 +799,20 @@
          ! There is no need to do this within the k-point loop
          ! However, it will require maxnhg*2 more disk space...
          call glob_sparse_matrix(no_l,no_u,no_s,
-     &        maxnh,  numh , listhptr ,Hs(:,ispin) ,Ss,
-     &        maxnhg, numhg, listhptrg,Hsg,Ssg)
-         
+     &        maxnh,  numh , listhptr ,Hs(:,ispin) ,
+     &        maxnhg, numhg, listhptrg,Hsg)
+
+         call glob_sparse_matrices(no_l,no_u,no_s,  
+     &        maxnh,  numh , listhptr ,Dnew(:,ispin) ,Enew(:,ispin),
+     &        maxnhg, numhg, listhptrg,Dnewg,Enewg)
 #endif
 
 !     Initialize density here instead of in the k-point loop
 #ifdef MPI
          do ind = 1,maxnhg
             if(listudg(ind)) then
-               Dnewg(ind,ispin) = 0d0
-               Enewg(ind,ispin) = 0d0
+               Dnewg(ind) = 0d0
+               Enewg(ind) = 0d0
             end if
          end do
 #else
@@ -1165,20 +1166,20 @@
                   juo = indxuo(jo)
                   jc = juo - noBufL
                   
-                  Dnewg(ind,ispin) = Dnewg(ind,ispin) +
+                  Dnewg(ind) = Dnewg(ind) +
      &                 DM(ic+nou*(jc-1))
-                  Enewg(ind,ispin) = Enewg(ind,ispin) +
+                  Enewg(ind) = Enewg(ind) +
      &                 EDM(ic+nou*(jc-1))
 
                ! Collect charges in the Q_kpt array
                   Q_kpt(regiong(ind),ts_ikpt,ispin) =
      &                 Q_kpt(regiong(ind),ts_ikpt,ispin)+
-     &                 Dnewg(ind,ispin)*Ssg(ind)
+     &                 Dnewg(ind)*Ssg(ind)
                else
                ! Collect charges in the Q_kpt array
                   Q_kpt(regiong(ind),0,ispin) =
      &                 Q_kpt(regiong(ind),0,ispin)+
-     &                 Dnewg(ind,ispin)*Ssg(ind)
+     &                 Dnewg(ind)*Ssg(ind)
 
                end if ! update
             end do ! j
@@ -1203,11 +1204,11 @@
                   ccphase = cdexp( dcmplx(0d0,+1.0d0)*kxij )
                   
 ! We have moved the ts_kweight to the energy point weight
-                  Dnewg(ind,ispin) = Dnewg(ind,ispin) + DIMAG(
+                  Dnewg(ind) = Dnewg(ind) + DIMAG(
      &                 dcmplx(0.5d0,0d0)*
      &                 (cphase  *DMCplx(ic+nou*(jc-1)) +
      &                  ccphase *DMCplx(jc+nou*(ic-1))))
-                  Enewg(ind,ispin) = Enewg(ind,ispin) + DIMAG(
+                  Enewg(ind) = Enewg(ind) + DIMAG(
      &                 dcmplx(0.5d0,0d0)*
      &                 (cphase  *EDMCplx(ic+nou*(jc-1))+
      &                  ccphase *EDMCplx(jc+nou*(ic-1))))
@@ -1215,12 +1216,12 @@
 ! Collect k-point charges
                   Q_kpt(regiong(ind),ts_ikpt,ispin) =
      &                 Q_kpt(regiong(ind),ts_ikpt,ispin)+
-     &                 Dnewg(ind,ispin)*Ssg(ind)
+     &                 Dnewg(ind)*Ssg(ind)
                else
 ! Collect k-point charges
                   Q_kpt(regiong(ind),0,ispin) =
      &                 Q_kpt(regiong(ind),0,ispin)+
-     &                 Dnewg(ind,ispin)*Ssg(ind)
+     &                 Dnewg(ind)*Ssg(ind)
 
                end if ! update
             end do ! j
@@ -1294,6 +1295,17 @@
       END DO                    ! ts_kpoint
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
+#ifdef MPI
+! Distribute Dnew/Enew 
+      do io = 1,no_l
+         call LocalToGlobalOrb(io,Node,Nodes,iio)
+         do jo = 1,numh(io)
+            Dnew(listhptr(io)+jo,ispin)= Dnewg(listhptrg(iio)+jo)
+            Enew(listhptr(io)+jo,ispin)= Enewg(listhptrg(iio)+jo)
+         enddo
+      enddo
+#endif
+
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       END DO                    !ispin
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -1308,23 +1320,6 @@
          call io_close(uGFL)
          call io_close(uGFR)
       endif
-
-#ifdef MPI
-! Distribute Dnew/Enew 
-      do io = 1,no_l
-         call LocalToGlobalOrb(io,Node,Nodes,iio)
-         do is = 1,nspin
-            do jo = 1,numh(io)
-               Dnew(listhptr(io)+jo,is)= Dnewg(listhptrg(iio)+jo,is)
-               Enew(listhptr(io)+jo,is)= Enewg(listhptrg(iio)+jo,is)
-            enddo
-         enddo
-      enddo
-      call memory('D','D',size(Dnewg)+size(Enewg),'transiesta')
-      deallocate(Dnewg)
-      deallocate(Enewg)
-#endif
-
 
 ! 
 !     Charge Corrections
@@ -1492,7 +1487,8 @@
 #ifdef MPI
       call glob_sparse_arrays_dealloc(no_u, Gamma, maxnhg, 
      &     numhg,listhptrg,listhg,xijg)
-      call glob_sparse_matrix_dealloc(maxnhg, Hsg,Ssg)
+      call glob_sparse_matrices_dealloc(maxnhg, Hsg,Ssg)
+      call glob_sparse_matrices_dealloc(maxnhg, Dnewg,Enewg)
 #endif
 
       call timer("TS_calc",2)

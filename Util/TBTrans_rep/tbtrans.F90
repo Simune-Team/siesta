@@ -59,12 +59,13 @@ program tbtrans
   use m_ts_contour,   only : NEn, PNEn, contour
   use m_ts_gf,        only : do_Green, read_Green
   use m_ts_scattering,only : getSFE
-  use m_ts_io,        only : ts_iohs
   use m_ts_electrode, only : create_Green
 
 ! ************************
 ! * TBtrans modules      *
 ! ************************
+  use m_tbt_options, only : trans_type
+  use m_tbt_options, only : TRANS_TB, TRANS_PHONON
   use m_tbt_options, only : UseBulk, kT, GFEta
   use m_tbt_options, only : VoltFDF, VoltL, VoltR, IsVolt
   use m_tbt_options, only : NBufAtL, NRepA1L, NRepA2L, NUsedAtomsL
@@ -94,7 +95,7 @@ program tbtrans
   use m_tbt_out,     only : out_DOS, out_Trans
   use m_tbt_out,     only : out_REGION, out_DEVICE
 
-  use m_tbt_read_tshs,only: tbt_read_tshs
+  use m_tbt_iotshs,only: tbt_read_tshs
 
   implicit none
 
@@ -264,11 +265,10 @@ program tbtrans
 
 ! Read in the scattering region H and S
 ! From these H and S we create all subsequent Hk and Sk
-  call tbt_read_tshs(HSFile,no_s,no_u,nspin, &
+  call tbt_read_tshs(HSFile,siesta_Gamma,no_s,no_u,nspin, &
        ucell, na_u, xa, lasto, &
        maxnh , numh , listhptr , listh , xij , indxuo, &
-       H, S, &
-       siesta_Gamma, Ef)
+       H, S, Ef)
   
   ! Write out system information for tbtrans
   if ( IONode ) then

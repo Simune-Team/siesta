@@ -358,6 +358,21 @@ contains
 
              ! We also wish to remove the connection in
              ! in the inner cell
+             ! I suspect we have a problem here
+             ! We may need a check for being in the unitcell
+             ! i.e.:
+             ! if ( l_RemUCellDistances ) then
+             !    if ( listh(ind) > no_u ) then ! As we check in the unit cell!
+             !       xo(1) = xa(1,liaorb(juo)) &
+             !            -  xa(1,liaorb(iuo))
+             !       xo(2) = xa(2,liaorb(juo)) &
+             !            -  xa(2,liaorb(iuo))
+             !       xo(3) = xa(3,liaorb(juo)) &
+             !            -  xa(3,liaorb(iuo))
+             !    else
+             !       xo = 0.0_dp
+             !    end if
+             ! end if                
              if ( l_RemUCellDistances ) then
                 xo(1) = xa(1,liaorb(juo)) &
                      -  xa(1,liaorb(iuo))
@@ -611,6 +626,21 @@ contains
 
              ! We also wish to remove the connection in
              ! in the inner cell
+             ! I suspect we have a problem here
+             ! We may need a check for being in the unitcell
+             ! i.e.:
+             ! if ( l_RemUCellDistances ) then
+             !    if ( listh(ind) > no_u ) then ! As we check in the unit cell!
+             !       xo(1) = xa(1,liaorb(juo)) &
+             !            -  xa(1,liaorb(iuo))
+             !       xo(2) = xa(2,liaorb(juo)) &
+             !            -  xa(2,liaorb(iuo))
+             !       xo(3) = xa(3,liaorb(juo)) &
+             !            -  xa(3,liaorb(iuo))
+             !    else
+             !       xo = 0.0_dp
+             !    end if
+             ! end if      
              if ( l_RemUCellDistances ) then
                 xo(1) = xa(1,liaorb(juo)) &
                      -  xa(1,liaorb(iuo))
@@ -789,6 +819,21 @@ contains
 
              ! We also wish to remove the connection in
              ! in the inner cell
+             ! I suspect we have a problem here
+             ! We may need a check for being in the unitcell
+             ! i.e.:
+             ! if ( l_RemUCellDistances ) then
+             !    if ( listh(ind) > no_u ) then ! As we check in the unit cell!
+             !       xo(1) = xa(1,iaorb(juo + l_RemNFirstOrbitals)) &
+             !            -  xa(1,iaorb(iu))
+             !       xo(2) = xa(2,iaorb(juo + l_RemNFirstOrbitals)) &
+             !            -  xa(2,iaorb(iu))
+             !       xo(3) = xa(3,iaorb(juo + l_RemNFirstOrbitals)) &
+             !            -  xa(3,iaorb(iu))
+             !    else
+             !       xo = 0.0_dp
+             !    end if
+             ! end if      
              if ( l_RemUCellDistances ) then
                 xo(1) = xa(1,iaorb(juo + l_RemNFirstOrbitals)) &
                      -  xa(1,iaorb(iu))
@@ -961,6 +1006,21 @@ contains
 
              ! We also wish to remove the connection in
              ! in the inner cell
+             ! I suspect we have a problem here
+             ! We may need a check for being in the unitcell
+             ! i.e.:
+             ! if ( l_RemUCellDistances ) then
+             !    if ( listh(ind) > no_u ) then ! As we check in the unit cell!
+             !       xo(1) = xa(1,iaorb(juo + l_RemNFirstOrbitals)) &
+             !            -  xa(1,iaorb(iu))
+             !       xo(2) = xa(2,iaorb(juo + l_RemNFirstOrbitals)) &
+             !            -  xa(2,iaorb(iu))
+             !       xo(3) = xa(3,iaorb(juo + l_RemNFirstOrbitals)) &
+             !            -  xa(3,iaorb(iu))
+             !    else
+             !       xo = 0.0_dp
+             !    end if
+             ! end if      
              if ( l_RemUCellDistances ) then
                 xo(1) = xa(1,iaorb(juo + l_RemNFirstOrbitals)) &
                      -  xa(1,iaorb(iu))

@@ -25,9 +25,9 @@ module m_glob_sparse
 ! This glob_sparse_arrays is needed before using glob_sparse_matrix.
 !
 ! call glob_sparse_matrix(no_l,no_u,no_s, &
-!       maxnh,  numh , listhptr , H ,S , &
-!       maxnhg, numhg, listhptrg, Hf,Sf)
-! is used to create distribute the sparse matrix H and S to their full non-distributed
+!       maxnh,  numh , listhptr , H(:,ispin) , &
+!       maxnhg, numhg, listhptrg, Hf)
+! is used to create distribute the sparse matrix H to their full non-distributed
 ! sparse matrix representation.
 ! 
 ! Together with m_hs_matrix this module provides an easy interface to generate 
@@ -53,6 +53,8 @@ module m_glob_sparse
   public :: glob_sparse_arrays_dealloc
   public :: glob_sparse_matrix
   public :: glob_sparse_matrix_dealloc
+  public :: glob_sparse_matrices
+  public :: glob_sparse_matrices_dealloc
 #endif
 
 contains
@@ -342,35 +344,8 @@ contains
     
   end subroutine glob_sparse_arrays_dealloc
 
-  ! Routine for deallocating the full sparse matrices H and S
-  subroutine glob_sparse_matrix_dealloc(maxnhg,Hg,Sg)
 
-    use precision,    only : dp  
-
-! **********************
-! * INPUT variables    *
-! **********************
-    integer, intent(in) :: maxnhg ! Number of elements in the full hamiltonian
-
-! *******************************
-! * OUTPUT variables            *
-! * The deallocated equivalents *
-! *******************************
-    real(dp), allocatable, intent(in out) :: Hg(:), Sg(:)
-        
-    if ( allocated(Hg) ) then
-       call memory('D','D',maxnhg,'globArrays')
-       deallocate(Hg)
-    end if
-
-    if ( allocated(Sg) ) then
-       call memory('D','D',maxnhg,'globArrays')
-       deallocate(Sg)
-    end if
-    
-  end subroutine glob_sparse_matrix_dealloc
-
-  subroutine glob_sparse_matrix(no_l,no_u,no_s, &
+  subroutine glob_sparse_matrices(no_l,no_u,no_s, &
        maxnh,  numh , listhptr , H ,S , &
        maxnhg, numhg, listhptrg, Hg,Sg)
 
@@ -420,7 +395,108 @@ contains
        call MPI_Bcast(Sg(listhptrg(io)+1),numhg(io),DAT_double,BNode,MPI_Comm_World,MPIerror)
     end do
     
+  end subroutine glob_sparse_matrices
+
+  ! Routine for deallocating the full sparse matrices H and S
+  subroutine glob_sparse_matrices_dealloc(maxnhg,Hg,Sg)
+
+    use precision,    only : dp  
+
+! **********************
+! * INPUT variables    *
+! **********************
+    integer, intent(in) :: maxnhg ! Number of elements in the full hamiltonian
+
+! *******************************
+! * OUTPUT variables            *
+! * The deallocated equivalents *
+! *******************************
+    real(dp), allocatable, intent(in out) :: Hg(:), Sg(:)
+        
+    if ( allocated(Hg) ) then
+       call memory('D','D',maxnhg,'globArrays')
+       deallocate(Hg)
+    end if
+
+    if ( allocated(Sg) ) then
+       call memory('D','D',maxnhg,'globArrays')
+       deallocate(Sg)
+    end if
+    
+  end subroutine glob_sparse_matrices_dealloc
+
+
+  subroutine glob_sparse_matrix(no_l,no_u,no_s, &
+       maxnh,  numh , listhptr , H  , &
+       maxnhg, numhg, listhptrg, Hg)
+
+    use parallel,     only : Node,Nodes
+    use precision,    only : dp  
+    use mpi_siesta,   only : MPI_Comm_World,DAT_double
+    use parallelsubs, only : GlobalToLocalOrb, WhichNodeOrb
+
+! **********************
+! * INPUT variables    *
+! **********************
+    integer, intent(in) :: no_l              ! no. orbs. in unit cell (local)
+    integer, intent(in) :: no_u              ! no. orbs. in unit cell (global)
+    integer, intent(in) :: no_s              ! no. orbs. in supercell
+    integer, intent(in) :: maxnh             ! Maximum number of nonzero elements of 
+!                                              each row of hamiltonian matrix
+    integer, intent(in) :: numh(no_l)        ! Number of nonzero elements of each row
+    integer, intent(in) :: listhptr(no_l)    ! Pointer to each row (-1) of the
+    real(dp), intent(in):: H(maxnh)          ! The local Hamiltonian in sparse format
+    integer, intent(in) :: maxnhg            ! Sum reduction of maxnh
+    integer, intent(in) :: numhg(no_u)       ! Number of nonzero elements of each row
+    integer, intent(in) :: listhptrg(no_u)   ! Pointer to each row (-1) of the
+
+! ******************************
+! * OUTPUT variables           *
+! ******************************
+    real(dp), intent(out) :: Hg(maxnhg)
+        
+! ************************
+! * LOCAL variables      *
+! ************************
+    integer :: io, jo, iio
+    integer :: BNode
+    integer :: MPIerror
+    
+    do io = 1 , no_u
+       call WhichNodeOrb(io,Nodes,BNode)
+       if (Node.eq.BNode) then
+          call GlobalToLocalOrb(io,Node,Nodes,iio)
+          do jo = 1,numh(iio)
+             Hg(listhptrg(io)+jo) = H(listhptr(iio)+jo)
+          end do
+       endif
+       call MPI_Bcast(Hg(listhptrg(io)+1),numhg(io),DAT_double,BNode,MPI_Comm_World,MPIerror)
+    end do
+    
   end subroutine glob_sparse_matrix
+
+! Routine for deallocating one full sparse matrices 
+  subroutine glob_sparse_matrix_dealloc(maxnhg,Hg)
+
+    use precision,    only : dp  
+
+! **********************
+! * INPUT variables    *
+! **********************
+    integer, intent(in) :: maxnhg ! Number of elements in the full hamiltonian
+
+! *******************************
+! * OUTPUT variables            *
+! * The deallocated equivalents *
+! *******************************
+    real(dp), allocatable, intent(in out) :: Hg(:)
+        
+    if ( allocated(Hg) ) then
+       call memory('D','D',maxnhg,'globArrays')
+       deallocate(Hg)
+    end if
+    
+  end subroutine glob_sparse_matrix_dealloc
 
 #else
   subroutine dummy()

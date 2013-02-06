@@ -11,7 +11,7 @@
       use atmfuncs, only: uion
       use atomlist, only: no_u, iaorb, iphkb, qtot, indxuo, datm, 
      &                    lastkb, no_s, rmaxv, indxua, iphorb, lasto,
-     &                    rmaxo, no_l
+     &                    rmaxo, no_l, iza
       use metaforce, only: lMetaForce, meta
       use molecularmechanics, only : twobody
       use m_nlefsm,     only: nlefsm
@@ -41,7 +41,7 @@
       use m_ts_global_vars, only : TSrun, ts_istep
       use m_ts_options, only : savetshs
       use m_ts_kpoints, only : ts_gamma_scf, ts_kscell, ts_kdispl
-      use m_ts_io,      only : ts_iohs
+      use m_ts_io,      only : ts_write_TSHS,filenameTSHS
 ! TSS End
 #endif /* TRANSIESTA */
       implicit none
@@ -197,25 +197,23 @@
 #ifdef TRANSIESTA
 ! TSS Begin
       if (savetshs) then
-         if (idyn.eq.6) then ! Force constants run
-            write(numstring,'(2i4)') ia1, ts_istep
-            fname = paste( slabel, numstring )
-            fname = paste( fname, '.TSHS' )
-            iotask='write'
-            call ts_iohs( iotask, gamma, .false., no_u, no_s, nspin,
-     &                    indxuo, maxnh, numh, listhptr, listh, H, S, 
-     &                    qtot, temp, xijo, label_length+5, fname, na_u,
-     &                    lasto, isa, ef, ucell, ts_kscell, ts_kdispl,
-     &                    ts_gamma_scf, xa, ts_istep, ia1)
+         if ( idyn.eq.6 ) then
+            fname = filenameTSHS(slabel,ts_istep,ia1,.false.)
+            call ts_write_tshs(fname, .false., Gamma, ts_Gamma_SCF,
+     &           ucell, na_u, no_l, no_u, no_s, maxnh, nspin, 
+     &           ts_kscell, ts_kdispl, 
+     &           xa, iza, lasto, 
+     &           numh, listhptr, listh, xijo, indxuo, H, S, Ef,
+     &           Qtot, Temp, ts_istep, ia1)
          else
-            fname  = paste( slabel, '.TSHS' )
-            iotask ='write'
-            call ts_iohs( iotask, gamma, .false., no_u, no_s, nspin,
-     &                    indxuo, maxnh, numh, listhptr, listh, H, S,
-     &                    qtot, temp, xijo, label_length+5, fname, na_u,
-     &                    lasto, isa, ef, ucell,ts_kscell, ts_kdispl,
-     &                    ts_gamma_scf, xa, 0, 0 )
-         endif
+            fname = filenameTSHS(slabel,0,0,.false.)
+            call ts_write_tshs(fname, .false., Gamma, ts_Gamma_SCF,
+     &           ucell, na_u, no_l, no_u, no_s, maxnh, nspin,
+     &           ts_kscell, ts_kdispl, 
+     &           xa, iza, lasto, 
+     &           numh, listhptr, listh, xijo, indxuo, H, S, Ef,
+     &           Qtot, Temp,        0,   0)
+         end if
       endif
 ! TSS End
 #endif /* TRANSIESTA */
