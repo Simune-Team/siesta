@@ -470,6 +470,8 @@ contains
     call write_debug( 'PRE ts_io_read' )
 #endif
 
+    nullify(xa,iza,lasto,indxuo,numh,listhptr,listh,S,H,xij)
+
     ! Determine whether to broadcast afterwards
     lBcast = .false.
     if ( present(Bcast) ) then
@@ -490,7 +492,6 @@ contains
        no_l = no_u
        
 ! Read Geometry information
-       nullify(xa,iza)
        allocate(xa(3,na_u),iza(na_u)) 
        call memory('A','D',3*na_u,'iohs')
        call memory('A','I',na_u,'iohs')
@@ -507,19 +508,16 @@ contains
        read(iu) kdispl
        read(iu) istep, ia1
 
-       nullify(lasto)
        allocate(lasto(0:na_u))
        call memory('A','I',1+na_u,'iohs')
        read(iu) lasto
 
        if (.not.Gamma) then
-          nullify(indxuo)
           allocate(indxuo(1:no_s))
           call memory('A','I',no_s,'iohs')
           read(iu) indxuo
        endif
 
-       nullify(numh,listhptr)
        allocate(numh(no_u))
        call memory('A','I',no_u,'iohs')
        read(iu) numh
@@ -536,7 +534,6 @@ contains
        read(iu) Ef
 
 ! Read listh
-       nullify(listh)
        allocate(listh(maxnh))
        call memory('A','I',maxnh,'iohs')
        do i = 1 , no_u
@@ -544,7 +541,6 @@ contains
        end do
 
 ! Read Overlap matrix
-       nullify(S)
        allocate(S(maxnh))
        call memory('A','D',maxnh,'iohs')
        do i = 1 , no_u
@@ -552,7 +548,6 @@ contains
        end do
 
        if (.not. onlyS) then
-          nullify(H)
           allocate(H(maxnh,nspin))
           call memory('A','D',maxnh*nspin,'iohs')
 ! Read Hamiltonian	 
@@ -564,7 +559,6 @@ contains
        end if  ! onlyS
 
        if (.not.Gamma) then
-          nullify(xij)
           allocate(xij(3,maxnh))
           call memory('A','D',3*maxnh,'iohs')
           do i = 1 , no_u
@@ -579,7 +573,7 @@ contains
     if ( lBcast ) then
 #ifdef MPI
        all_I(1:8) = (/na_u, no_l, no_u, no_s, maxnh, nspin,istep,ia1 /)
-       call MPI_Bcast(all_I(1),8,MPI_Integer,0,MPI_Comm_World,MPIerror)
+       call MPI_Bcast(all_I,8,MPI_Integer,0,MPI_Comm_World,MPIerror)
        na_u = all_I(1)
        no_l = all_I(2)
        no_u = all_I(3)
@@ -588,6 +582,8 @@ contains
        nspin = all_I(6)
        istep = all_I(7)
        ia1 = all_I(8)
+       call MPI_Bcast(Gamma,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
+       call MPI_Bcast(TSGamma,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
        call MPI_Bcast(Qtot,1,DAT_double,0, MPI_Comm_World,MPIerror)
        call MPI_Bcast(Temp,1,DAT_double,0, MPI_Comm_World,MPIerror)
        call MPI_Bcast(Ef,1,DAT_double,0, MPI_Comm_World,MPIerror)
@@ -622,8 +618,6 @@ contains
           call memory('A','D',maxnh,'iohs')
        end if
        call MPI_Bcast(onlyS,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
-       call MPI_Bcast(Gamma,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
-       call MPI_Bcast(TSGamma,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
        call MPI_Bcast(xa(1,1),3*na_u,DAT_Double,0,MPI_Comm_World,MPIerror)
        call MPI_Bcast(iza,na_u,MPI_Integer,0,MPI_Comm_World,MPIerror)
        if ( .not. Gamma ) then
@@ -633,12 +627,18 @@ contains
        end if
        call MPI_Bcast(lasto(0),1+na_u,MPI_Integer,0, MPI_Comm_World,MPIerror)
        call MPI_Bcast(numh,no_u,MPI_Integer,0, MPI_Comm_World,MPIerror)
-       call MPI_Bcast(listhptr,no_u,MPI_Integer,0, MPI_Comm_World,MPIerror)
        call MPI_Bcast(listh,maxnh,MPI_Integer,0, MPI_Comm_World,MPIerror)
        call MPI_Bcast(H(1,1),maxnh*nspin,DAT_Double,0, &
             MPI_Comm_World,MPIerror)
        call MPI_Bcast(S,maxnh,DAT_Double,0, MPI_Comm_World,MPIerror)
 #endif
+    end if
+
+    if ( .not. IONode ) then
+       listhptr(1) = 0
+       do i = 2 , no_u
+          listhptr(i) = listhptr(i-1) + numh(i-1)
+       end do
     end if
 
 #ifdef TRANSIESTA_DEBUG

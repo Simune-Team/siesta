@@ -33,16 +33,15 @@ M4_FILES = m4/ac_config_aux_dirs.m4  m4/TW_CHECK_FC_FPP.m4      m4/TW_FC_ID_FLAG
 aclocal.m4: $(M4_FILES)
 	cat ${<D}/$(M4_FILES)  > aclocal.m4
 dep:
-	@if [ $(VPATH) = "." ] ; then \
+	-if [ $(VPATH) = "." ] ; then \
 	sfmakedepend --depend=obj  --modext=o \
                               *.f *.f90 *.F *.F90 ; \
         else \
 	sfmakedepend --depend=obj  --modext=o \
           $(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90 ; \
         fi
-	@sed "/^siesta_cmlsubs.o:/s/version.o//;\
-		/^m_ts_io.o:/s/m_tbt_kpoints.o//"  Makefile > tmp.Makefile
-	@mv tmp.Makefile Makefile
+	@sed -i -e "/^siesta_cmlsubs.o:/s/version.o//;\
+		/^m_ts_io.o:/s/m_tbt_kpoints.o//"  Makefile
 #
 include arch.make
 INCFLAGS:= $(NETCDF_INCFLAGS) $(INCFLAGS)
@@ -506,6 +505,8 @@ m_efield.o: atmfuncs.o mesh.o parallel.o precision.o siesta_cml.o siesta_geom.o
 m_efield.o: sys.o units.o
 m_energies.o: precision.o
 m_eo.o: precision.o
+m_exp_coord.o: files.o m_fdf_global.o m_ncdf.o parallel.o precision.o sys.o
+m_exp_coord.o: units.o
 m_fdf_global.o: m_mpi_utils.o parallel.o precision.o
 m_filter.o: bessph.o m_recipes.o radfft.o sorting.o
 m_fire.o: parallel.o precision.o
@@ -517,6 +518,7 @@ m_getopts.o: f2kcli.o
 m_glob_sparse.o: parallel.o parallelsubs.o precision.o
 m_history.o: alloc.o
 m_hs_matrix.o: alloc.o precision.o sys.o
+m_hssigma.o: m_ncdf.o parallel.o precision.o sys.o units.o
 m_hsx.o: atm_types.o atmfuncs.o atomlist.o files.o parallel.o parallelsubs.o
 m_hsx.o: precision.o siesta_geom.o sys.o
 m_io.o: sys.o
@@ -528,6 +530,8 @@ m_iostruct.o: siesta_geom.o sys.o units.o
 m_kinetic.o: precision.o
 m_memory.o: memoryinfo.o parallel.o sys.o
 m_mpi_utils.o: precision.o sys.o
+m_ncdf.o: ncdf_interface.f90 ncdf_code.f90
+m_ncdf.o: dictionary.o pwire.o
 m_options.o: precision.o
 m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
 m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o
@@ -539,6 +543,9 @@ m_sparse.o: alloc.o precision.o
 m_spin.o: alloc.o parallel.o precision.o
 m_stress.o: precision.o
 m_timer.o: m_io.o m_walltime.o moreParallelSubs.o parallel.o precision.o sys.o
+m_trans_approx.o: files.o m_fdf_global.o m_glob_sparse.o m_hs_matrix.o
+m_trans_approx.o: m_hssigma.o m_ncdf.o parallel.o periodic_table.o precision.o
+m_trans_approx.o: sys.o units.o
 m_ts_aux_rout.o: precision.o sys.o
 m_ts_cctype.o: precision.o
 m_ts_contour.o: m_ts_aux_rout.o m_ts_cctype.o parallel.o precision.o sys.o
@@ -553,6 +560,7 @@ m_ts_in_siesta.o: parallel.o parallelsubs.o precision.o sys.o units.o
 m_ts_io.o: m_glob_sparse.o parallel.o precision.o sys.o
 m_ts_iodm.o: alloc.o files.o m_mpi_utils.o m_ts_global_vars.o parallel.o
 m_ts_iodm.o: parallelsubs.o precision.o sys.o
+m_ts_iohs_ncdf.o: m_glob_sparse.o m_ncdf.o parallel.o precision.o sys.o
 m_ts_kpoints.o: files.o find_kgrid.o minvec.o parallel.o precision.o
 m_ts_kpoints.o: siesta_cml.o siesta_options.o sys.o
 m_ts_options.o: files.o m_fdf_global.o m_ts_contour.o m_ts_global_vars.o

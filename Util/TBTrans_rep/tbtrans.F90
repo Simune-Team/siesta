@@ -265,9 +265,10 @@ program tbtrans
 
 ! Read in the scattering region H and S
 ! From these H and S we create all subsequent Hk and Sk
-  call tbt_read_tshs(HSFile,siesta_Gamma,no_s,no_u,nspin, &
-       ucell, na_u, xa, lasto, &
-       maxnh , numh , listhptr , listh , xij , indxuo, &
+  call tbt_read_tshs(HSFile,siesta_Gamma,&
+       ucell, na_u, no_u, no_s, maxnh, nspin, &
+       xa, lasto, &
+       numh, listhptr, listh, xij, indxuo, &
        H, S, Ef)
   
   ! Write out system information for tbtrans

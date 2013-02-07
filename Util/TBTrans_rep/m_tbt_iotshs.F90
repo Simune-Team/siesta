@@ -15,9 +15,10 @@ module m_tbt_iotshs
 
 contains
 
-  subroutine tbt_read_tshs(HSfile, Gamma, no_s,no_u,nspin, &
-       ucell, na_u, xa, lasto, &
-       maxnh , numh , listhptr , listh , xij , indxuo, &
+  subroutine tbt_read_tshs(HSfile, Gamma, &
+       ucell, na_u, no_u, no_s, maxnh, nspin, &
+       xa, lasto, &
+       numh , listhptr , listh , xij , indxuo, &
        H, S, Ef)
 
 ! *********************************************************************
@@ -122,10 +123,10 @@ contains
     fL = len_trim(HSfile)
     if ( leqi(HSfile(fL-4:fL),'.TSHS') ) then
        call ts_read_TSHS(HSfile,onlyS,Gamma,TSGamma, &
-            ucell, na_u, no_u, no_u, no_s, maxnh, nspin, &
-            kscell_file,kdispl_file, &
+            ucell, na_u, i, no_u, no_s, maxnh, nspin, &
+            kscell_file, kdispl_file, &
             xa, iza, lasto, &
-            numh , listhptr , listh , xij , indxuo, &
+            numh, listhptr, listh, xij , indxuo, &
             H, S, Ef, Qtot, Temp, i,j, &
             Bcast=.true.)
     else

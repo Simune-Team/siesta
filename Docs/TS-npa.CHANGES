@@ -1,4 +1,20 @@
 ----------------------------------------------------
+Feb 06, 2013 -- Nick P. Andersen     trunk-427--ts-npa-36
+Bugfixes for last commit, missing pointer nullification
+
+* Missing nullification upon reading the TSHS files.
+* Added "continue on error" with make dep in the makefiles
+* Changed interface to tbt_read for consistency
+
+modified:
+  Src/Makefile
+  Src/m_ts_io.F90
+  Util/TBTrans_rep/Makefile
+  Util/TBTrans_rep/m_tbt_iotshs.F90
+  Util/TBTrans_rep/m_tbt_options.F90
+  Util/TBTrans_rep/tbtrans.F90
+
+----------------------------------------------------
 Feb 05, 2013 -- Nick P. Andersen     trunk-427--ts-npa-35
 Implemented phonon transport code, restructured IO for TS/TBT
 

@@ -197,12 +197,12 @@ CONTAINS
     ! Read in total number of atoms in the TSHS file!
 
     fL = len_trim(HSfile)
-    if ( leqi(HSfile(fL-4:fL),'.TSHS') ) then
+    fFormat: if ( leqi(HSfile(fL-4:fL),'.TSHS') ) then
        call ts_read_TSHS_na(HSFile,na_u)
     else
        call die('Could not determine scattering region file &
             &format: '//trim(HSFile))
-    end if
+    end if fFormat
 
     ! Read electrode options
     call fdf_global_get(HSFileL,'TS.HSFileLeft',HSFile_def)
@@ -326,7 +326,7 @@ CONTAINS
       logical :: exist
       
       fL = len_trim(HSfile)
-      if ( leqi(HSfile(fL-4:fL),'.TSHS') ) then
+      fFormat1: if ( leqi(HSfile(fL-4:fL),'.TSHS') ) then
          ! Check existance for left Electrode.TSHS
          inquire(file=TRIM(HSFile),exist=exist)
          if ( .not. exist ) then
@@ -338,7 +338,7 @@ CONTAINS
       else
          call die(trim(LR)//' electrode file format could not be &
               &recognized: '//trim(HSFile))
-      end if
+      end if fFormat1
 
       if ( NUsedAtoms < 0 ) then
          NUsedAtoms = tmp_NUsedAtoms
@@ -362,12 +362,12 @@ CONTAINS
       allocate(lasto(0:tmp_NUsedAtoms))
       lasto(0) = 0
       fL = len_trim(HSfile)
-      fFormat: if ( leqi(HSfile(fL-4:fL),'.TSHS') ) then
+      fFormat2: if ( leqi(HSfile(fL-4:fL),'.TSHS') ) then
          call ts_read_TSHS_lasto(HSFile,tmp_NUsedAtoms,lasto)
       else
          call die('THIS IS REALLY SERIOUS! PLEASE MAIL THE LIST! &
               &SHOULD NOT BE REACHED!')
-      end if fFormat
+      end if fFormat2
 
       NUsedOrbs = 0
       if ( leqi(LR,'Left') ) then

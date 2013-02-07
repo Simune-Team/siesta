@@ -99,13 +99,12 @@ clean:
 
 # Dependencies
 dep:
-	sfmakedepend --depend=obj --modext=o \
+	-sfmakedepend --depend=obj --modext=o \
 		$(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90 \
 		*.f90 *.F90 *.f *.F
-	@sed "/^m_ts_io.o:/s/m_ts_kpoints.o//" Makefile > tmp.Makefile
-	@sed "/^m_ts_io.o:/s/m_glob_sparse.o//" tmp.Makefile > Makefile
-	@sed "/^m_ts_electrode.o:/s/m_ts_kpoints.o//" Makefile > tmp.Makefile
-	@mv tmp.Makefile Makefile
+	@sed -i -e "/^m_ts_io.o:/s/m_ts_kpoints.o//" Makefile
+	@sed -i -e "/^m_ts_io.o:/s/m_glob_sparse.o//" Makefile
+	@sed -i -e "/^m_ts_electrode.o:/s/m_ts_kpoints.o//" Makefile
 
 $(TBTOBJS): $(FDF)
 
@@ -282,6 +281,8 @@ m_efield.o: atmfuncs.o mesh.o parallel.o precision.o siesta_cml.o siesta_geom.o
 m_efield.o: sys.o units.o
 m_energies.o: precision.o
 m_eo.o: precision.o
+m_exp_coord.o: files.o m_fdf_global.o m_ncdf.o parallel.o precision.o sys.o
+m_exp_coord.o: units.o
 m_fdf_global.o: m_mpi_utils.o parallel.o precision.o
 m_filter.o: bessph.o m_recipes.o radfft.o sorting.o
 m_fire.o: parallel.o precision.o
@@ -293,6 +294,7 @@ m_getopts.o: f2kcli.o
 m_glob_sparse.o: parallel.o parallelsubs.o precision.o
 m_history.o: alloc.o
 m_hs_matrix.o: alloc.o precision.o sys.o
+m_hssigma.o: m_ncdf.o parallel.o precision.o sys.o units.o
 m_hsx.o: atm_types.o atmfuncs.o atomlist.o files.o parallel.o parallelsubs.o
 m_hsx.o: precision.o siesta_geom.o sys.o
 m_io.o: sys.o
@@ -304,6 +306,8 @@ m_iostruct.o: siesta_geom.o sys.o units.o
 m_kinetic.o: precision.o
 m_memory.o: memoryinfo.o parallel.o sys.o
 m_mpi_utils.o: precision.o sys.o
+m_ncdf.o: ncdf_interface.f90 ncdf_code.f90
+m_ncdf.o: dictionary.o pwire.o
 m_options.o: precision.o
 m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
 m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o
@@ -315,6 +319,9 @@ m_sparse.o: alloc.o precision.o
 m_spin.o: alloc.o parallel.o precision.o
 m_stress.o: precision.o
 m_timer.o: m_io.o m_walltime.o moreParallelSubs.o parallel.o precision.o sys.o
+m_trans_approx.o: files.o m_fdf_global.o m_glob_sparse.o m_hs_matrix.o
+m_trans_approx.o: m_hssigma.o m_ncdf.o parallel.o periodic_table.o precision.o
+m_trans_approx.o: sys.o units.o
 m_ts_aux_rout.o: precision.o sys.o
 m_ts_cctype.o: precision.o
 m_ts_contour.o: m_ts_aux_rout.o m_ts_cctype.o parallel.o precision.o sys.o
@@ -329,6 +336,7 @@ m_ts_in_siesta.o: parallel.o parallelsubs.o precision.o sys.o units.o
 m_ts_io.o:  parallel.o precision.o sys.o
 m_ts_iodm.o: alloc.o files.o m_mpi_utils.o m_ts_global_vars.o parallel.o
 m_ts_iodm.o: parallelsubs.o precision.o sys.o
+m_ts_iohs_ncdf.o: m_glob_sparse.o m_ncdf.o parallel.o precision.o sys.o
 m_ts_kpoints.o: files.o find_kgrid.o minvec.o parallel.o precision.o
 m_ts_kpoints.o: siesta_cml.o siesta_options.o sys.o
 m_ts_options.o: files.o m_fdf_global.o m_ts_contour.o m_ts_global_vars.o
@@ -526,12 +534,18 @@ zm_fire_optim.o: siesta_options.o units.o zmatrix.o
 zmatrix.o: alloc.o m_cell.o parallel.o precision.o siesta_geom.o sys.o units.o
 atompdos.o: m_lowdin.o m_tbt_out.o parallel.o precision.o sys.o units.o
 coop.o: m_tbt_out.o parallel.o precision.o sys.o units.o
+m_hssigma.o: m_ncdf.o parallel.o precision.o sys.o units.o
 m_lowdin.o: precision.o
+m_ncdf.o: ncdf_interface.f90 ncdf_code.f90
+m_ncdf.o: dictionary.o pwire.o
+m_tbt_hssigma.o: m_hssigma.o m_lowdin.o m_ncdf.o m_ts_aux_rout.o m_ts_cctype.o
+m_tbt_hssigma.o: parallel.o sys.o units.o
 m_tbt_iotshs.o: m_tbt_kpoints.o m_ts_io.o parallel.o precision.o sys.o
 m_tbt_kpoints.o: alloc.o minvec.o parallel.o precision.o sys.o units.o
 m_tbt_options.o: files.o m_fdf_global.o m_ts_io.o memoryinfo.o parallel.o
 m_tbt_options.o: precision.o sys.o units.o
 m_tbt_out.o: parallel.o precision.o units.o
+m_ts_iohs_ncdf.o: m_glob_sparse.o m_ncdf.o parallel.o precision.o sys.o
 tbt_init.o: alloc.o files.o m_spin.o m_tbt_kpoints.o m_tbt_options.o m_timer.o
 tbt_init.o: m_ts_contour.o m_wallclock.o parallel.o precision.o sys.o
 tbt_init.o: timestamp.o
