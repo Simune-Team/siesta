@@ -21,6 +21,9 @@ C
       use sys,          only : die
       implicit none
 
+      logical, public, save :: pexsi_dist 
+      integer, public, save :: pexsi_bs
+
       contains
 
       subroutine set_processorY(n)
@@ -63,6 +66,17 @@ C Saved variables
       data
      .  NOrbLast / 0 /
      .  NOrbNodeLast / 0 /
+
+      if (pexsi_dist) then
+         remainder = Norb - pexsi_bs*Nodes
+         if (Node == Nodes-1) then
+            NorbNode = pexsi_bs + remainder
+         else
+            NorbNode = pexsi_bs
+         endif
+         
+         RETURN
+      endif
 
       if (NOrb .eq. NOrbLast) then
 C Values are the same as last call - no need to recalculate
@@ -144,7 +158,15 @@ C
 C  Local variables
       integer OrbCheck, GBlock, LEle, LBlock
 
-      if (lspatial) then 
+      if (pexsi_dist) then
+         call WhichNodeOrb(Gorb,Nodes,OrbCheck)
+         if (OrbCheck == Node) then
+            lorb = gorb - pexsi_bs*Node
+         else
+            lorb = 0
+         endif
+         
+      else if (lspatial) then 
 C-------------------------
 C  Spatial distribution  -
 C-------------------------
@@ -219,7 +241,10 @@ C
 C  Local variables
       integer LEle, LBlock
 
-      if (lspatial) then 
+      if (pexsi_dist) then
+         gorb = pexsi_bs*Node + lorb
+
+      else if (lspatial) then 
 C-------------------------
 C  Spatial distribution  - 
 C-------------------------
@@ -279,7 +304,13 @@ C
 C  Local variables
       integer GBlock
 
-      if (lspatial) then 
+      if (pexsi_dist) then
+         Node = (Gorb-1)/pexsi_bs
+         ! Check for overflow: if gorb is in the "remainder" set, the above will 
+         ! set Node to Nodes (e.g. 4 in a {0,1,2,3} set)
+         if (Node == Nodes) Node = Node -1
+
+      else if (lspatial) then 
 C-------------------------
 C  Spatial distribution  - 
 C-------------------------

@@ -1,4 +1,22 @@
 ------------------------------------------------------------
+Feb 7, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-5
+Second stage of interface. PEXSI-specific distribution
+
+Implemented the interface by replacing the distribution
+routines in Siesta (in parallelsubs) to use Lin's distribution.
+This is conceptually simpler for now.
+
+added:
+  Src/pexsi_exchange.F90
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+  Src/initparallel.F
+  Src/parallelsubs.F
+  Src/pexsi.F90
+  Src/siesta_init.F
+
+------------------------------------------------------------
 Feb 6, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-4
 Second stage of interface. Block-cyclic plus 0<->LastNode exchange
 

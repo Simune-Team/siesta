@@ -27,6 +27,7 @@ C
       use parallelsubs, only : set_processorYdefault
       use parallelsubs, only : WhichNodeOrb, GetNodeOrbs
       use parallelsubs, only : LocalToGlobalOrb, GlobalToLocalOrb
+      use parallelsubs, only : pexsi_dist, pexsi_bs
       use spatial
       use sys
       use alloc,        only : re_alloc
@@ -180,7 +181,10 @@ C Check that cut-off is less than cell parameter
 C Set BlockSize
 #ifdef MPI
          if (isolve.eq.SOLVE_PEXSI) then
-             Blocksize = no_u/Nodes
+             pexsi_dist = .true.
+             pexsi_bs = no_u/Nodes
+             BlockSize = pexsi_bs
+             
           else
              call set_blocksizedefault(Nodes,no_u,blocksizedefault)
              BlockSize = fdf_integer('blocksize',blocksizedefault)

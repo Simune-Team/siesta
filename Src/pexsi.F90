@@ -1,6 +1,14 @@
 module m_pexsi
+
   public :: pexsi
+
 CONTAINS
+
+! SIESTA interface to PEXSI
+!
+! This version uses the standard PEXSI distribution (by tricking Siesta into
+! using it)
+!
   subroutine pexsi(no_u, no_l, nspin,  &
        maxnh, numh, listhptr, listh, H, S, qtot, DM, EDM)
 
@@ -21,9 +29,9 @@ CONTAINS
 #else
 
     integer :: mpi_comm = mpi_comm_world
-    integer :: MPIerror, stat(MPI_STATUS_SIZE)
-    integer :: block_size, norbs_slack, nnz_slack
-    integer :: ispin, maxnhtot, ih
+    integer :: MPIerror, stat(MPI_STATUS_SIZE), count
+    integer :: bs, norbs_slack, nnz_slack
+    integer :: ispin, maxnhtot, ih, nnzold
 
 !Lin variables
 integer :: nrows, nnz, nnzLocal, numColLocal
@@ -61,73 +69,20 @@ call mpi_comm_size( MPI_COMM, mpisize, ierr )
 call MPI_Barrier(MPI_comm,ierr)
 
 nrows = no_u
-call MPI_AllReduce(maxnh,maxnhtot,1,MPI_integer,MPI_sum,MPI_Comm_World,MPIerror)
-nnz   = maxnhtot
+numColLocal = no_l
 
-! Compute the number of orbs that we must hand over to the
-! last processor from the first
-block_size = no_u/mpisize
-norbs_slack = no_u - mpisize*block_size
+nnzLocal = sum(numh(1:numColLocal))
+call MPI_AllReduce(nnzLocal,nnz,1,MPI_integer,MPI_sum,MPI_Comm,MPIerror)
 
-if (mpirank == 0) then
 
-  numColLocal = block_size 
-  nnzLocal = sum(numh(1:block_size))  ! discard the rest
-  nnz_slack = sum(numh(block_size+1:no_l))  
-  ! send the information to the last processor
-  call MPI_Send(numh(block_size+1),norbs_slack,MPI_Integer,mpisize-1,0,MPI_comm,ierr)
-  print *, "First node: no_l, numColLocal, maxnh, nnzLocal: ", no_l, numColLocal, maxnh, nnzLocal
-  allocate(colptrLocal(1:numColLocal+1))
-  colptrLocal(1) = 1
-  do ih = 1,numColLocal
-     colptrLocal(ih+1) = colptrLocal(ih) + numh(ih)
-  enddo
-
-else if (mpirank == mpisize-1) then
-
-  numColLocal = block_size + norbs_slack
-  allocate(tmpi(norbs_slack))
-  call MPI_Recv(tmpi,norbs_slack,MPI_Integer,0,0,MPI_comm,stat,ierr)
-  nnz_slack = sum(tmpi(1:norbs_slack))  
-  nnzLocal = sum(numh(1:block_size)) + nnz_slack
-  print *, "Last node: no_l, numColLocal, maxnh, nnzLocal: ", no_l, numColLocal, maxnh, nnzLocal
-
-  allocate(colptrLocal(1:numColLocal+1))
-  colptrLocal(1) = 1
-  do ih = 1,block_size
-     colptrLocal(ih+1) = colptrLocal(ih) + numh(ih)
-  enddo
-  do ih = block_size+1,numColLocal
-     colptrLocal(ih+1) = colptrLocal(ih) + tmpi(ih)
-  enddo
-
-else
-
-  numColLocal = block_size 
-  nnzLocal = sum(numh(1:block_size))
-  print *, "Node ", mpirank, ": no_l, numColLocal, maxnh, nnzLocal: ", no_l, numColLocal, maxnh, nnzLocal
+!  print *, "Node ", mpirank, ": no_l, numColLocal, maxnh, nnzLocal: ", &
+!           no_l, numColLocal, maxnh, nnzLocal
 
   allocate(colptrLocal(1:numColLocal+1))
   colptrLocal(1) = 1
   do ih = 1,numColLocal
      colptrLocal(ih+1) = colptrLocal(ih) + numh(ih)
   enddo
-
-endif
-
-! Prepare the matrix indexes and values
-if (mpirank == 0) then
-  call MPI_Send(listh(nnzLocal+1),nnz_slack,MPI_Integer,mpisize-1,1,MPI_comm,ierr)
-  call MPI_Send(S(nnzLocal+1),nnz_slack,MPI_Double_Precision,mpisize-1,2,MPI_comm,ierr)
-  call MPI_Send(H(nnzLocal+1,ispin),nnz_slack,MPI_Double_Precision,mpisize-1,3,MPI_comm,ierr)
-   rowindLocal => listh
-   HnzvalLocal => H(:,ispin)
-   SnzvalLocal => S
-   DMnzvalLocal => DM(:,ispin)
-   EDMnzvalLocal => EDM(:,ispin)
-   allocate(FDMnzvalLocal(1:maxnh))  ! Note expanded array for future use
-
-else if (mpirank == mpisize-1) then
 
    allocate(rowindLocal(1:nnzLocal))
    allocate(HnzvalLocal(1:nnzLocal))
@@ -136,28 +91,12 @@ else if (mpirank == mpisize-1) then
    allocate(EDMnzvalLocal(1:nnzLocal))
    allocate(FDMnzvalLocal(1:nnzLocal))
 
-   rowindLocal(1:maxnh) =  listh(1:maxnh)
-   HnzvalLocal(1:maxnh) =  H(1:maxnh,ispin)
-   SnzvalLocal(1:maxnh) =  S(1:maxnh)
-   call MPI_Recv(rowindLocal(maxnh+1),nnz_slack,MPI_Integer,0,1,MPI_comm,stat,ierr)
-   call MPI_Recv(SnzvalLocal(maxnh+1),nnz_slack,MPI_Double_Precision,0,2,MPI_comm,stat,ierr)
-   call MPI_Recv(HnzvalLocal(maxnh+1),nnz_slack,MPI_Double_Precision,0,3,MPI_comm,stat,ierr)
+   rowindLocal(1:nnzLocal) = listh(1:nnzLocal)
+   HnzvalLocal(1:nnzLocal) = H(1:nnzLocal,ispin)
+   SnzvalLocal(1:nnzLocal) = S(1:nnzLocal)
 
-else
-   rowindLocal => listh
-   HnzvalLocal => H(:,ispin)
-   SnzvalLocal => S
-   DMnzvalLocal => DM(:,ispin)
-   EDMnzvalLocal => EDM(:,ispin)
-   allocate(FDMnzvalLocal(1:nnzLocal))
-
-endif
-
-call MPI_Barrier(MPI_comm,ierr)
-
-   
 ! Data is for the DNA matrix.
-temperature      = 300.0d0    ! Units??
+temperature      = 3000.0d0    ! Units??
 numElectronExact = qtot   ! 2442.0d0 for DNA
 numPole          = 20
 gap              = 0.0d0
@@ -180,9 +119,6 @@ numElectronTolerance = 1d-1
 ! Later can be changed to 
 npPerPole        = mpisize
 
-
-  DMnzvalLocal(:) = 2*HnzvalLocal(:)
-  EDMnzvalLocal(:) = -1.0_dp
 
 !!$call f_ppexsi_interface( &
 !!$	nrows,&
@@ -216,42 +152,16 @@ if( mpirank == 0 ) then
 	write(*, *) "numElectron = ", numElectron
 endif
 
+   DM(1:nnzLocal,ispin) = DMnzvalLocal(1:nnzLocal)
+   EDM(1:nnzLocal,ispin) = EDMnzvalLocal(1:nnzLocal)
 
-call MPI_Barrier(MPI_comm,ierr)
-
-! Recover DM and EDM
-if (mpirank == 0) then
-
- DM(1:nnzLocal,ispin) = DMnzvalLocal(1:nnzLocal)
- EDM(1:nnzLocal,ispin) = EDMnzvalLocal(1:nnzLocal)
- call MPI_Recv(DM(nnzLocal+1,ispin),nnz_slack,MPI_Double_Precision,mpisize-1,1,MPI_comm,stat,ierr)
- call MPI_Recv(EDM(nnzLocal+1,ispin),nnz_slack,MPI_Double_Precision,mpisize-1,2,MPI_comm,stat,ierr)
-
- print *, "Node: ", mpirank, ": H: ",  H(nnzLocal+1:nnzLocal+2,ispin)
- print *, "Node: ", mpirank, ": DM: ", DM(nnzLocal+1:nnzLocal+2,ispin)
- print *, "Node: ", mpirank, ": EDM: ", EDM(nnzLocal+1:nnzLocal+2,ispin)
-
-else if (mpirank == mpisize-1) then
-
-   call MPI_Send(DMnzvalLocal(maxnh+1),nnz_slack,MPI_Double_Precision,0,1,MPI_comm,ierr)
-   call MPI_Send(EDMnzvalLocal(maxnh+1),nnz_slack,MPI_Double_Precision,0,2,MPI_comm,ierr)
-   DM(1:maxnh,ispin) = DMnzvalLocal(1:maxnh)
-   EDM(1:maxnh,ispin) = EDMnzvalLocal(1:maxnh)
-
-   deallocate(rowindLocal)
-   deallocate(HnzvalLocal)
-   deallocate(SnzvalLocal)
-   deallocate(DMnzvalLocal)
-   deallocate(EDMnzvalLocal)
-   deallocate(FDMnzvalLocal)
-
-else
-
-   deallocate(FDMnzvalLocal)
-
-endif
-
-deallocate(colPtrLocal)
+  deallocate(rowindLocal)
+  deallocate(HnzvalLocal)
+  deallocate(SnzvalLocal)
+  deallocate(DMnzvalLocal)
+  deallocate(EDMnzvalLocal)
+  deallocate(FDMnzvalLocal)
+  deallocate(colPtrLocal)
 
     call timer("pexsi", 2)
 #endif 
