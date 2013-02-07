@@ -313,7 +313,7 @@ program tbtrans
   ZBulkDOS(:,:) = 0.0_dp
   
 ! Create the Left GF file
-  call do_Green('L',HSFileL, GFFileL, GFTitle, &
+  call do_Green('L', HSFileL, GFFileL, GFTitle, &
        ElecValenceBandBot, ReUseGF, &
        nkpnt,kpoint,kweight, &
        NBufAtL,NUsedAtomsL,NRepA1L,NRepA2L, RemUCellDistances, &
@@ -337,7 +337,7 @@ program tbtrans
   end if
 
 ! Create the Right GF file
-  call do_Green('R',HSFileR,GFFileR, GFTitle, &
+  call do_Green('R', HSFileR, GFFileR, GFTitle, &
        ElecValenceBandBot, ReUseGF, &
        nkpnt,kpoint,kweight, &
        NBufAtR,NUsedAtomsR,NRepA1R,NRepA2R, RemUCellDistances, &

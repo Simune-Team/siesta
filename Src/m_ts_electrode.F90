@@ -950,7 +950,7 @@ contains
     use units, only : Ang
     use parallel, only : IONode
     use m_ts_io, only  : ts_read_TSHS
-    use files, only: slabel, label_length
+    use files, only: slabel
 #ifdef MPI
     use mpi_siesta, only: MPI_Comm_World, MPI_LOR
     use mpi_siesta, only: MPI_Bcast,MPI_Barrier
@@ -970,7 +970,7 @@ contains
     integer, intent(in)  :: nua_sys ! Full system count of atoms in unit cell
     real(dp), intent(in) :: xa_sys(3,nua_sys) ! Coordinates in the system for the TranSIESTA routine
     integer, intent(in)  :: nspin_sys ! spin in system
-    character(len=label_length+5),intent(in) :: HSfile !H,S parameter file 
+    character(len=*),intent(in) :: HSfile !H,S parameter file 
     integer, intent(in)  :: NBufAt,NA1,NA2 ! Buffer atoms, and repetitions 
     logical, intent(in)  :: Gamma
 ! ***********************

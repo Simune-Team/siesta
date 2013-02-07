@@ -1,4 +1,15 @@
 ----------------------------------------------------
+Feb 06, 2013 -- Nick P. Andersen     trunk-427--ts-npa-37
+Output in TBTrans of read file was not correct
+
+* Removed uncessesary filename specification length.
+
+modified:
+  Src/m_ts_electrode.F90
+  Util/TBTrans_rep/m_tbt_options.F90
+  Util/TBTrans_rep/tbtrans.F90
+
+----------------------------------------------------
 Feb 06, 2013 -- Nick P. Andersen     trunk-427--ts-npa-36
 Bugfixes for last commit, missing pointer nullification
 

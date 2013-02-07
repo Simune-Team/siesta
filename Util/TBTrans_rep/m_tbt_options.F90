@@ -252,32 +252,32 @@ CONTAINS
        write(*,5) 'Points on the energy contour                  =', NPoints
        write(*,7) 'GFEta                                         =', GFEta,' Ry'
        write(*,6) 'Electronic Temperature                        =', kT, ' Ry'
-       write(*,1) 'Calculate band bottom in elecrodes            =', ElecValenceBandBot
+       write(*,1) 'Calculate band bottom in electrodes           =', ElecValenceBandBot
        write(*,10)'GF title                                      =', TRIM(GFTitle)
        write(*,10)'Left GF File                                  =', TRIM(GFFileL)
        write(*,10)'Right GF File                                 =', TRIM(GFFileR)
        write(*,1) 'Re-use the GF files if they exists            =', ReUseGF
        write(*,10)'Scattering region TSHS file                   =', TRIM(HSFile)
        write(*,10)'Left electrode TSHS file                      =', TRIM(HSFileL)
-       write(*,5) '# atoms used in left elec.                    = ', NUsedAtomsL
+       write(*,5) '# atoms used in left elec.                    =', NUsedAtomsL
        write(*,'(a,i3,'' X '',i3)') &
-                  'Left elec. repetition A1/A2                   = ', NRepA1L,NRepA2L
+                  'Left elec. repetition A1/A2                   =', NRepA1L,NRepA2L
 ! Check existance for right Electrode.TSHS
-       write(*,10)'Right electrode TSHS file                     =', TRIM(HSFileL)
-       write(*,5) '# atoms used in right elec.                   = ', NUsedAtomsL
+       write(*,10)'Right electrode TSHS file                     =', TRIM(HSFileR)
+       write(*,5) '# atoms used in right elec.                   =', NUsedAtomsR
        write(*,'(a,i3,'' X '',i3)') &
-                  'Right elec. repetition A1/A2                  = ', NRepA1L,NRepA2L
+                  'Right elec. repetition A1/A2                  =', NRepA1R,NRepA2R
        write(*,'(a,''['',i5,'';'',i5,'']'')') &
-                  'Projected region                              = ', IsoAt1,IsoAt2
-       write(*,1) 'Calculate DOS on projected atoms              = ',CalcAtomPDOS
-       write(*,1) 'Calculate COOP                                = ',CalcCOOP
-       write(*,1) 'Align the Hamiltonian with the electrode      = ',AlignScat
+                  'Projected region                              =', IsoAt1,IsoAt2
+       write(*,1) 'Calculate DOS on projected atoms              =', CalcAtomPDOS
+       write(*,1) 'Calculate COOP                                =', CalcCOOP
+       write(*,1) 'Align the Hamiltonian with the electrode      =', AlignScat
        if ( trans_type == TRANS_PHONON ) then
-          write(*,10)'Transport type calculation                    = ','Phonon-transport'
+          write(*,10)'Transport type calculation                    =','Phonon-transport'
        else
-          write(*,10)'Transport type calculation                    = ','Regular'
+          write(*,10)'Transport type calculation                    =','Regular'
        end if
-       write(*,1) 'Remove inner-cell distances in the Hamiltonian= ',RemUCellDistances
+       write(*,1) 'Remove inner-cell distances in the Hamiltonian= ', RemUCellDistances
        if ( AlignScat ) then
           call die("TBtrans is currently not implented to align the scattering &
                &region and the electrodes.")
