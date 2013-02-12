@@ -1102,7 +1102,7 @@ contains
     integer :: i,j,iuo,iu,juo,iind,ind
 
     ! Initialize the transfer cell to:
-    transfer_cell(:,:) = 1
+    transfer_cell(:,:) = 0
 
     if ( Gamma ) return
 

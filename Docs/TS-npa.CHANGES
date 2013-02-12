@@ -1,4 +1,15 @@
 ----------------------------------------------------
+Feb 12, 2013 -- Nick P. Andersen     trunk-427--ts-npa-38
+Corrected transfer matrix calculation in hs_matrix
+
+* Bugfix for available transfer matrices.
+  - Was initialised to 1 for all connections
+    Correct value should be 0
+
+modified:
+  Src/m_hs_matrix.F90
+
+----------------------------------------------------
 Feb 06, 2013 -- Nick P. Andersen     trunk-427--ts-npa-37
 Output in TBTrans of read file was not correct
 
