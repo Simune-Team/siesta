@@ -37,6 +37,7 @@
       use m_timestamp,        only: timestamp
       use m_wallclock,        only: wallclock
       use parallel,           only: Node, Nodes, IOnode
+      use parallel,           only: worker
       use densematrix,        only: Haux, Saux, Psi
       use m_energies
       use m_steps
@@ -70,15 +71,24 @@
       integer :: neigmin      ! Min. number of eigenstates (per k point)
       integer :: ns           ! Number of species
       logical :: user_wants_supercell
-!------------------------------------------------------------------------- BEGIN
+
+      integer :: comm_sub, group_world, group_sub, ierr
+      integer :: npPerPole
+      integer, allocatable :: ranks(:)
+
+!---------------------------------------------------------------------- BEGIN
 #ifdef MPI
 C     Initialise MPI and set processor number
       call MPI_Init( MPIerror )
 #ifdef _TRACE_
       call MPItrace_shutdown( )
 #endif
+
       call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
       call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
+
+      if (Node == 0) write(6,"(a,i6)")
+     $      "** Total Number of Nodes: ", Nodes
 
       if (.not. fdf_parallel()) then
         call die('siesta_init: ERROR: FDF module ' //
@@ -88,12 +98,49 @@ C     Initialise MPI and set processor number
       if (Node==0) then
          call system("rm -f 0_NORMAL_EXIT")
       endif
+
+#ifdef DEBUG_XC
+! Set output file unit for debug info
+      call setDebugOutputUnit()
+#endif /* DEBUG_XC */
+
+!     Initialise read .................................................
+      call reinit( sname )
+
+      npPerPole        = fdf_get("PEXSI.np-per-pole",2)
+      allocate(ranks(npPerPole))
+      do i = 1, npPerPole
+         ranks(i) = i-1
+      enddo
+
+#ifdef MPI
+      ! Create a subset communicator for actual Siesta work
+      call MPI_COMM_GROUP(MPI_COMM_WORLD, group_world, ierr) 
+      call MPI_Group_incl(group_world, npPerPole, ranks,
+     $                    group_sub, ierr)
+      call MPI_Comm_create(MPI_COMM_WORLD, group_sub, comm_sub, ierr)
+
+      worker = (Node < npPerPole)
+
+      ! Swap communicator
+      MPI_COMM_WORLD = comm_sub
+      if (worker) then
+         call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
+         call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
+      endif
+#else
+      worker = .true.
+      Node = 0
+      Nodes = 1
+#endif
+
+      if (.not. worker) RETURN
+
 #ifdef DEBUG
 !     Generates a debug file for every process to track the execution.
 !     The file is called debug.$(PID) Where PID is the process number.
 !     It also works in secuencial mode.
       call debugMpiOn( )
-      call write_debug( 'PRE siesta_init' )
 #endif
       IOnode = (Node .eq. 0)
 
@@ -142,13 +189,6 @@ C     Initialise MPI and set processor number
       Entropy = 0.0_dp
       FreeE   = 0.0_dp
 
-#ifdef DEBUG_XC
-! Set output file unit for debug info
-      call setDebugOutputUnit()
-#endif /* DEBUG_XC */
-
-!     Initialise read .................................................
-      call reinit( sname )
 
 !     Initialize CML (relies on reinit)
       call siesta_cml_init( )
@@ -400,9 +440,7 @@ C     Initialise MPI and set processor number
       if (ionode) call pxfflush( 6 )
 
       call timer( 'Setup', 2 )
-#ifdef DEBUG
-      call write_debug( 'POS siesta_init' )
-#endif
+
 !--------------------------------------------------------------------------- END
       END subroutine siesta_init
 

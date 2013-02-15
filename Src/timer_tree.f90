@@ -258,7 +258,6 @@ CONTAINS
     allocate(a(n+N_INC_CHILDREN))
     a(1:n) = tmp(1:n)
     deallocate(tmp)
-    print *, "... expanded to: ", size(a)
 
   end subroutine expand_array
 

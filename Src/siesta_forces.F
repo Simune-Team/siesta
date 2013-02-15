@@ -7,6 +7,7 @@
       CONTAINS
 
       subroutine siesta_forces(istep)
+      use mpi_siesta
       use siesta_cml
       use m_state_init
       use m_setup_hamiltonian
@@ -17,7 +18,7 @@
       use m_post_scf_work
       use m_mixer
       USE siesta_options
-      use parallel,     only : IOnode
+      use parallel,     only : IOnode, worker
       use m_state_analysis
       use m_steps
       use sys, only : die, bye
@@ -41,11 +42,11 @@
 ! Used in force constant runs
       ts_istep = istep
 #endif /* TRANSIESTA */
-      
+
+      integer mpierr
 !---------------------------------------------------------------------- BEGIN
-#ifdef DEBUG
-      call write_debug( 'PRE siesta_forces' )
-#endif
+
+      if (worker)  then
 !     Initialization tasks for a given geometry
       call state_init( istep )
 
@@ -73,8 +74,13 @@
       endif
 
       call setup_H0()
+      endif ! worker
+
+      call MPI_Bcast(last,1,MPI_logical,0,true_MPI_Comm_World,mpierr)
 
       DO WHILE (.not. last)
+
+       if (worker) then
         call timer( 'IterSCF', 1 )
 
 #ifndef TRANSIESTA
@@ -92,9 +98,11 @@
            call bye("H-Setup-Only requested")
            STOP
         endif
+       endif  ! worker
 
-        call compute_dm( iscf )
+       call compute_dm( iscf )
 
+       if (worker) then
         call mixer( iscf, dDmax )
 
 
@@ -151,7 +159,11 @@
            last = .true.
         endif
         if (cml_p) call cmlEndStep(mainXML)
+       endif ! worker
+        call MPI_Bcast(last,1,MPI_logical,0,true_MPI_Comm_World,mpierr)
       ENDDO
+
+      if (.not. worker) RETURN
 
 !     If we have not converged, but get to here, we are out
 !     of steps. We may want to error out.

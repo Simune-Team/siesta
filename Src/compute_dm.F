@@ -19,8 +19,10 @@
       use m_eo
       use m_gamma
       use parallel, only: IONode
+      use parallel, only: worker
       use m_pexsi,  only: pexsi
 #ifdef MPI
+      use mpi_siesta
       use m_mpi_utils,     only:  globalize_sum
 #endif
 #ifdef CDF
@@ -46,12 +48,14 @@
       real(dp), parameter :: e1 = 1.0_dp, e2 = -1.0_dp
 #ifdef MPI
       real(dp)            :: buffer1
+      integer             :: mpierr
 #endif
 
 !-------------------------------------------------------------------- BEGIN
 
-      call timer( 'compute_dm', 1 )
+      if (worker) call timer( 'compute_dm', 1 )
 
+      call MPI_Bcast(isolve,1,MPI_integer,0,true_MPI_Comm_World,mpierr)
       if (isolve .eq. SOLVE_PEXSI) then
          ! Prototype interface
          call pexsi(no_u, no_l, nspin, maxnh, numh, listhptr, listh,
@@ -63,8 +67,12 @@
 !         call timer('all',3)
 !         call bye("PEXSI interface with H and S to file. Bye")
 
+      endif
+      if (.not. worker) RETURN
+      
 !     Solve eigenvalue problem 
-      else if (isolve .eq. SOLVE_DIAGON) then
+ 
+      if (isolve .eq. SOLVE_DIAGON) then
         call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
      &              numh, listhptr, listh, numh, listhptr, listh, 
      &              H, S, qtot, fixspin, qs, temp, e1, e2,
@@ -106,7 +114,7 @@
 ! TSS End
 #endif /* TRANSIESTA */
       else
-        call die('siesta: ERROR: wrong solution method')
+        !call die('siesta: ERROR: wrong solution method')
       endif
 
 #ifdef TRANSIESTA

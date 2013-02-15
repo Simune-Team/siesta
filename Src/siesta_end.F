@@ -13,7 +13,7 @@
 #endif /* DEBUG_XC */
       use m_timestamp,     only : timestamp
       use m_wallclock,     only : wallclock
-      use parallel,        only : IOnode
+      use parallel,        only : IOnode, worker
 #ifdef MPI
       use mpi_siesta,      only : MPI_Finalize
 #endif
@@ -34,9 +34,8 @@
       integer MPIerror
 #endif
 !------------------------------------------------------------------------- BEGIN
-#ifdef DEBUG
-      call write_debug( 'PRE SIESTA_END' )
-#endif
+
+      if (worker) then
 !     Free allocated memory
       call resetSparseMatrices( )
       call resetPulayArrays( )
@@ -73,11 +72,9 @@
         call cmlEndModule(mainXML)
         call siesta_cml_exit()
       endif      
+      endif  ! worker
 
 !     Finalize MPI
-#ifdef DEBUG
-      call write_debug( 'POS SIESTA_END' )
-#endif
 #ifdef MPI
       call MPI_Finalize( MPIerror )
 #endif

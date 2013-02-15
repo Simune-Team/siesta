@@ -29,6 +29,8 @@ MPI_INTERFACE_LIB= ../../$(OBJDIR)/MPI/libmpi_f90.a
 #
 pi3:    MPI pi3.o
 	$(FC) -o pi3 $(LDFLAGS) pi3.o $(MPI_INTERFACE_LIB) $(MPI_LIBS) 
+newcomm:    MPI newcomm.o 
+	$(FC) -o newcomm $(LDFLAGS) newcomm.o $(MPI_INTERFACE_LIB) $(MPI_LIBS) 
 #
 # Blacs test
 #
@@ -59,7 +61,7 @@ mpi_test: MPI $(MT_OBJS) mpi_test.o
 #
 clean:
 	rm -f *.o *.*d  
-	rm -f pi3 blacs_prb pblas_prb
+	rm -f pi3 blacs_prb pblas_prb newcomm
 #
 #
 MPI:

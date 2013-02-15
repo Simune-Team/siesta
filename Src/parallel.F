@@ -24,6 +24,7 @@ C                       this number must also be a power of 2.
 C
       implicit none
 
+      logical, save :: worker = .false.
       integer, save :: Node = 0
       integer, save :: Nodes = 1
       integer, save :: BlockSize  = 24

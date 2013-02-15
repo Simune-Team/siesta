@@ -1,4 +1,44 @@
 ------------------------------------------------------------
+Feb 15, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-6
+Third stage of PEXSI interface. Subset communicator for Siesta
+
+Based on the value of PEXSI.np-per-pole, Siesta now uses a subset
+communicator for most of the work. When PEXSI is entered, all
+the processors participate.
+
+This is implemented by:
+
+ -- Creating a new communicator and storing its value in the
+    (now variable) mpi_comm_world.
+
+ -- Setting a boolean flag "worker" to .true. in those processes
+    that are supposed to participate in Siesta work.
+
+ -- Broadcasting on true_mpi_comm_world any flow-determining variables
+    (such as 'last'), so that all processors call the relevant sections.
+
+ -- Making most of the code conditional to "worker" being .true., except
+    those sections that are meant to be executed by every processor.
+
+added:
+  Src/pexsi_interface_true.inc
+  Util/MPI_test/newcomm.F
+modified:
+  Src/MPI/mpi_siesta.f90
+  Src/cdiag.F
+  Src/compute_dm.F
+  Src/parallel.F
+  Src/pexsi.F90
+  Src/rdiag.F
+  Src/siesta.F
+  Src/siesta_end.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/timer_tree.f90
+  Util/MPI_test/Makefile
+
+
+------------------------------------------------------------
 Feb 7, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-5
 Second stage of interface. PEXSI-specific distribution
 
