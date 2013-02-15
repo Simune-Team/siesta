@@ -429,10 +429,7 @@ C ##################################################################
       use parallel,  only : IONode, Node, Nodes
 
 #ifdef MPI
-      use mpi_siesta, only : MPI_Bcast, MPI_AllReduce, 
-     & MPI_Sum, MPI_Integer, MPI_Status_Size, 
-     & MPI_Comm_World
-      use mpi_siesta, only : DAT_dcomplex => MPI_double_complex
+      use mpi_siesta, DAT_dcomplex => MPI_double_complex
                
 #endif
 

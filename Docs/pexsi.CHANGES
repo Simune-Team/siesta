@@ -1,4 +1,37 @@
 ------------------------------------------------------------
+Feb 15, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-7
+Simplification of MPI interface
+
+In the interest of expediency, the MPI interface has been
+stripped down to the bare minimum:
+
+-- The "grid" types
+-- The "overloaded" mpi_comm_world
+
+No routines are now included. The "use" statements have been modified
+accordingly.
+
+renamed:
+  Src/MPI/mpi_siesta.f90 => Src/MPI/mpi_siesta.F90
+modified:
+  Src/SiestaXC/mesh3d.F90
+  Src/alloc.F90
+  Src/cdiag.F
+  Src/diagon.F
+  Src/ioxv.F
+  Src/m_mpi_utils.F
+  Src/m_timer.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_in_siesta.F
+  Src/m_ts_kpoints.F90
+  Src/m_ts_scattering.F
+  Src/moreParallelSubs.F90
+  Src/optical.F
+  Src/setup_ordern_indexes.F90
+  Src/MPI/mpi_siesta.F90
+
+------------------------------------------------------------
 Feb 15, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-6
 Third stage of PEXSI interface. Subset communicator for Siesta
 

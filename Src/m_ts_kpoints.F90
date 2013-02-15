@@ -242,7 +242,7 @@ contains
       USE parallel, only  : IONode
       USE precision, only : dp       
 #ifdef MPI
-      USE mpi_siesta, only : MPI_Bcast, MPI_logical, MPI_Comm_World
+      USE mpi_siesta
 #endif
 
 ! Local Variables

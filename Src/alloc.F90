@@ -204,14 +204,7 @@ MODULE alloc
   use sys,       only: die       ! Termination routine
   use m_io,      only: io_assign ! Get and reserve an available IO unit
 #ifdef MPI
-!  use mpi_siesta
-  use mpi_siesta, only: MPI_AllGather
-  use mpi_siesta, only: MPI_Barrier
-  use mpi_siesta, only: MPI_Bcast
-  use mpi_siesta, only: MPI_Comm_World
-  use mpi_siesta, only: MPI_double_precision
-  use mpi_siesta, only: MPI_integer
-  use mpi_siesta, only: MPI_character
+  use mpi_siesta
 #endif
 
   implicit none

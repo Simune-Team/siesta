@@ -13,11 +13,7 @@
       use precision, only: dp, sp
       use sys, only: die
 #ifdef MPI
-      use mpi_siesta, only : MPI_Comm_World, MPI_integer, MPI_logical
-      use mpi_siesta, only : MPI_Sum, MPI_Max, MPI_character
-      use mpi_siesta, only : MPI_Double_Precision, MPI_Real
-      use mpi_siesta, only : MPI_AllReduce, MPI_Bcast
-      use mpi_siesta, only : MPI_Lor
+      use mpi_siesta
       implicit none
       integer, private :: MPIerror
 #else

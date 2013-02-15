@@ -392,11 +392,7 @@ contains
     use units,      only : eV
     use sys ,       only : die
 #ifdef MPI
-    use mpi_siesta, only : MPI_Comm_World
-    use mpi_siesta, only : MPI_Bcast,MPI_ISend,MPI_IRecv
-    use mpi_siesta, only : MPI_Sum
-    use mpi_siesta, only : MPI_Wait,MPI_Status_Size
-    use mpi_siesta, only : DAT_dcomplex => MPI_double_complex, &
+    use mpi_siesta,        DAT_dcomplex => MPI_double_complex, &
                            DAT_double => MPI_double_precision
 #endif
     use m_hs_matrix,only : set_HS_matrix, matrix_symmetrize
@@ -953,11 +949,7 @@ contains
     use m_ts_io, only  : ts_iohs
     use files, only: label_length
 #ifdef MPI
-    use mpi_siesta, only: MPI_Comm_World, MPI_LOR
-    use mpi_siesta, only: MPI_Bcast,MPI_Barrier
-    use mpi_siesta, only: DAT_double => MPI_double_precision
-    use mpi_siesta, only: MPI_Logical,MPI_Integer
-    use mpi_siesta, only: MPI_Reduce
+    use mpi_siesta, DAT_double => MPI_double_precision
 #endif
 #ifdef TBTRANS
     use m_tbt_kpoints, only : ts_kscell => kscell

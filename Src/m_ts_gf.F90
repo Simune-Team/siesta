@@ -57,8 +57,7 @@ contains
     use parallel  , only : IONode
     use sys ,       only : die
 #ifdef MPI
-    use mpi_siesta, only : MPI_Comm_World
-    use mpi_siesta, only : MPI_Bcast, MPI_Integer, MPI_Logical
+    use mpi_siesta
 #endif
     use m_ts_cctype
     use m_ts_electrode, only : create_Green
@@ -195,9 +194,7 @@ contains
     use parallel,  only : IONode
     use sys ,      only : die
 #ifdef MPI
-    use mpi_siesta, only: DAT_double => MPI_double_precision
-    use mpi_siesta, only: MPI_logical, MPI_comm_world, MPI_Bcast
-    use mpi_siesta, only: MPI_integer
+    use mpi_siesta, DAT_double => MPI_double_precision
 #endif
     real(dp) , parameter :: EPS = 1d-7
     

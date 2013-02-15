@@ -70,12 +70,8 @@
 
       use parallel  , only: Node, Nodes, IONode
 #ifdef MPI
-      use mpi_siesta, only: MPI_Comm_World,MPI_SUM
-      use mpi_siesta, only: MPI_Bcast
-      use mpi_siesta, only: DAT_dcomplex => MPI_double_complex,
-     $                      DAT_double => MPI_double_precision
-      use mpi_siesta, only: MPI_Logical
-      use mpi_siesta, only: MPI_Integer
+      use mpi_siesta, DAT_dcomplex => MPI_double_complex,
+     $                DAT_double => MPI_double_precision
 
       use parallelsubs, only : GlobalToLocalOrb, WhichNodeOrb
       use parallelsubs, only : LocalToGlobalOrb
@@ -1524,9 +1520,7 @@
       use parallel, only : ProcessorY, Node, Nodes
 ! FDN
 #ifdef MPI
-      use mpi_siesta, only : MPI_AllReduce, MPI_Comm_Rank, MPI_Sum
-      use mpi_siesta, only : MPI_Integer, MPI_Comm_World
-      use mpi_siesta, only : DAT_double => MPI_double_precision
+      use mpi_siesta, DAT_double => MPI_double_precision
 ! FDN parallelsubs
       use parallelsubs, only : HowManyMeshPerNode
 ! FDN
