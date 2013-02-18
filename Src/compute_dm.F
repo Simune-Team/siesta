@@ -47,7 +47,7 @@
                              ! signal that we do not want DOS weights
       real(dp), parameter :: e1 = 1.0_dp, e2 = -1.0_dp
 #ifdef MPI
-      real(dp)            :: buffer1
+      real(dp)            :: buffer1, freeEnergyCorrection
       integer             :: mpierr
 #endif
 
@@ -59,8 +59,11 @@
       if (isolve .eq. SOLVE_PEXSI) then
          ! Prototype interface
          call pexsi(no_u, no_l, nspin, maxnh, numh, listhptr, listh,
-     $              H, S, qtot, Dscf, Escf)
-         Entrop = 0.0_dp   ! CHANGE THIS LATER
+     $              H, S, qtot, Dscf, Escf,
+     $              ef, freeEnergyCorrection, temp)
+         if (ionode) write (6,"(/a,f14.6)")
+     &    'Free energy correction term:', freeEnergyCorrection
+         Entrop = -freeEnergyCorrection / temp
 
 !comment this for further work
 !         call timer('all',2)
@@ -130,7 +133,7 @@
 
 !     Harris-functional energy 
       DEharr = 0.0_dp
-          Ebs = 0.0_dp
+      Ebs = 0.0_dp
       do ispin = 1,nspin
 !       const factor takes into account that there are two nondiagonal
 !       elements in non-collinear spin density matrix, stored as
@@ -142,6 +145,8 @@
           DEharr = DEharr + H(io,ispin) * const * 
      &                 ( Dscf(io,ispin) - Dold(io,ispin) )
           Ebs = Ebs + H(io,ispin) * const * Dscf(io,ispin)
+!         Alternative form
+!         Ebs = Ebs + S(io) * const * Escf(io,ispin)
         enddo
       enddo
 #ifdef MPI

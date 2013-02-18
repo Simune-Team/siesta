@@ -1,4 +1,25 @@
 ------------------------------------------------------------
+Feb 18, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-8
+Add computation of Free Energy. Pass Ef and electronic temp
+
+The electronic temperature is now passed to PEXSI by Siesta.
+The fermi level is passed back, as is an estimate of the difference
+between F and E, from which the 'entropy' can be calculated.
+
+'write_siesta_energies' now supports PEXSI.
+
+(+ bug and typos fixes)
+
+modified:
+  Src/MPI/mpi_siesta.F90
+  Src/Makefile
+  Src/compute_dm.F
+  Src/pexsi.F90
+  Src/siesta_end.F
+  Src/siesta_init.F
+  Src/write_subs.F
+
+------------------------------------------------------------
 Feb 15, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-7
 Simplification of MPI interface
 

@@ -10,11 +10,14 @@ CONTAINS
 ! using it)
 !
   subroutine pexsi(no_u, no_l, nspin,  &
-       maxnh, numh, listhptr, listh, H, S, qtot, DM, EDM)
+       maxnh, numh, listhptr, listh, H, S, qtot, DM, EDM, &
+       ef, freeEnergyCorrection, temp)
 
     use precision, only  : dp
     use fdf
     use parallel, only   : worker
+    use m_mpi_utils, only: globalize_sum
+    use units,       only: Kelvin
 #ifdef MPI
     use mpi_siesta
 #endif
@@ -25,6 +28,9 @@ CONTAINS
     real(dp), intent(in), target :: H(maxnh,nspin), S(maxnh)
     real(dp), intent(in) :: qtot
     real(dp), intent(out), target:: DM(maxnh,nspin), EDM(maxnh,nspin)
+    real(dp), intent(out)        :: ef  ! Fermi energy
+    real(dp), intent(out)        :: freeEnergyCorrection
+    real(dp), intent(in)         :: temp   ! Electronic temperature
 
 #ifndef MPI
     call die("PEXSI needs MPI")
@@ -33,7 +39,7 @@ CONTAINS
     integer :: siesta_comm 
     integer :: MPIerror, stat(MPI_STATUS_SIZE), count
     integer :: bs, norbs_slack, nnz_slack
-    integer :: ispin, maxnhtot, ih, nnzold
+    integer :: ispin, maxnhtot, ih, nnzold, i
 
     real(dp), save :: mu
     logical, save  :: first_call = .false.
@@ -58,6 +64,7 @@ integer:: npPerPole, nprow, npcol
 integer :: mpirank, mpisize, ierr
 !------------
 
+real(dp) :: buffer1
 
 external      :: timer
 
@@ -74,6 +81,7 @@ if (worker) then
    call mpi_comm_size( SIESTA_COMM, mpisize, ierr )
 
    npPerPole = mpisize
+   numElectronExact = qtot   ! 2442.0d0 for DNA
 
    call MPI_Barrier(Siesta_comm,ierr)
 
@@ -107,9 +115,10 @@ if (worker) then
 endif ! worker
 
 ! Data is for the DNA matrix.
-!temperature      = 3000.0d0    ! Units??
-temperature      = fdf_get("PEXSI.temperature",3000.0d0)    ! Units??
-numElectronExact = qtot   ! 2442.0d0 for DNA
+
+!temperature      = fdf_get("PEXSI.temperature",3000.0d0)    ! Units??
+! Now passed directly by Siesta  (Use ElectronicTemperature (with units))
+temperature      = temp/Kelvin
 numPole          = fdf_get("PEXSI.num-poles",20)
 gap              = fdf_get("PEXSI.gap",0.0d0)
 
@@ -142,6 +151,9 @@ numElectronTolerance = fdf_get("PEXSI.num-electron-tolerance",1d-1)
 !npPerPole        = fdf_get("PEXSI.np-per-pole",mpisize)
 
 call MPI_Bcast(npPerPole,1,MPI_integer,0,true_MPI_COMM_world,ierr)
+call MPI_Bcast(nrows,1,MPI_integer,0,true_MPI_COMM_world,ierr)
+call MPI_Bcast(nnz,1,MPI_integer,0,true_MPI_COMM_world,ierr)
+call MPI_Bcast(numElectronExact,1,MPI_double_precision,0,true_MPI_COMM_world,ierr)
 
 include "pexsi_interface.inc"
 
@@ -151,8 +163,17 @@ if (worker) then
       write(*, *) "numElectron = ", numElectron
    endif
 
+   ef = mu
    DM(1:nnzLocal,ispin) = DMnzvalLocal(1:nnzLocal)
    EDM(1:nnzLocal,ispin) = EDMnzvalLocal(1:nnzLocal)
+
+   freeEnergyCorrection = 0.0_dp
+   do i = 1,nnzLocal
+      freeEnergyCorrection = freeEnergyCorrection + SnzvalLocal(i) * &
+           ( FDMnzvalLocal(i) - EDMnzvalLocal(i) )
+   enddo
+   call globalize_sum( freeEnergyCorrection, buffer1 )
+   freeEnergyCorrection = buffer1
 
   deallocate(rowindLocal)
   deallocate(HnzvalLocal)

@@ -15,7 +15,7 @@
       use m_wallclock,     only : wallclock
       use parallel,        only : IOnode, worker
 #ifdef MPI
-      use mpi_siesta,      only : MPI_Finalize
+      use mpi_siesta
 #endif
       use alloc,           only : re_alloc
       use m_pulay,         only : resetPulayArrays
@@ -80,7 +80,7 @@
 #endif
 
       if (IOnode) then
-         call system("touch 0_NORMAL_EXIT")
+         call system("/usr/bin/touch 0_NORMAL_EXIT")
       endif
 !--------------------------------------------------------------------------- END
       END subroutine siesta_end

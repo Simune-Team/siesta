@@ -619,7 +619,8 @@ pdosg.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
 pdosk.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
 pdoskp.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
 periodic_table.o: precision.o sys.o
-pexsi.o: precision.o
+pexsi.o: pexsi_interface.inc
+pexsi.o: m_mpi_utils.o parallel.o precision.o units.o
 pexsi_dump.o: m_hsx.o m_walltime.o precision.o
 pexsi_exchange.o: precision.o
 phirphi.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
@@ -674,8 +675,8 @@ setup_kscell.o: minvec.o parallel.o precision.o units.o
 setup_ordern_indexes.o: alloc.o domain_decom.o parallel.o spatial.o
 shaper.o: atmfuncs.o mneighb.o precision.o
 show_distribution.o: atomlist.o parallel.o parallelsubs.o siesta_geom.o sys.o
-siesta.o: alloc.o m_steps.o siesta_analysis.o siesta_end.o siesta_forces.o
-siesta.o: siesta_init.o siesta_move.o
+siesta.o: alloc.o m_steps.o parallel.o siesta_analysis.o siesta_end.o
+siesta.o: siesta_forces.o siesta_init.o siesta_move.o
 siesta_analysis.o: alloc.o atomlist.o bands.o basis_enthalpy.o dhscf.o files.o
 siesta_analysis.o: kpoint_grid.o ksv.o ksvinit.o local_DOS.o m_dipol.o
 siesta_analysis.o: m_energies.o m_eo.o m_forces.o m_gamma.o m_mpi_utils.o

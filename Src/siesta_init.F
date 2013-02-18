@@ -96,7 +96,7 @@ C     Initialise MPI and set processor number
       endif
 #endif
       if (Node==0) then
-         call system("rm -f 0_NORMAL_EXIT")
+         call system("/bin/rm -f 0_NORMAL_EXIT")
       endif
 
 #ifdef DEBUG_XC
@@ -107,13 +107,14 @@ C     Initialise MPI and set processor number
 !     Initialise read .................................................
       call reinit( sname )
 
-      npPerPole        = fdf_get("PEXSI.np-per-pole",2)
+#ifdef MPI
+      ! Avoid restricting the communicator if not needed (default)
+      npPerPole        = fdf_get("PEXSI.np-per-pole",Nodes)
       allocate(ranks(npPerPole))
       do i = 1, npPerPole
          ranks(i) = i-1
       enddo
 
-#ifdef MPI
       ! Create a subset communicator for actual Siesta work
       call MPI_COMM_GROUP(MPI_COMM_WORLD, group_world, ierr) 
       call MPI_Group_incl(group_world, npPerPole, ranks,
@@ -133,7 +134,7 @@ C     Initialise MPI and set processor number
       Node = 0
       Nodes = 1
 #endif
-
+      IOnode = (Node .eq. 0)
       if (.not. worker) RETURN
 
 #ifdef DEBUG
@@ -142,7 +143,6 @@ C     Initialise MPI and set processor number
 !     It also works in secuencial mode.
       call debugMpiOn( )
 #endif
-      IOnode = (Node .eq. 0)
 
 !     Print version information
       if (IOnode) then
