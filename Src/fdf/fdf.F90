@@ -145,6 +145,9 @@ MODULE fdf
 ! Test if label is defined
   public :: fdf_defined
 
+! Test if a label is used in obsolete or a deprecated state
+  public :: fdf_deprecated, fdf_obsolete
+
 ! %block reading (processing each line)
   public :: fdf_block, fdf_bline, fdf_bbackspace, fdf_brewind
   public :: fdf_bnintegers, fdf_bnreals, fdf_bnvalues, fdf_bnnames, fdf_bntokens
@@ -2364,6 +2367,50 @@ MODULE fdf
       RETURN
 !--------------------------------------------------------------------------- END
     END SUBROUTINE fdf_setdebug
+
+! 
+!   For handling deprecated labels.
+!   Also there is an optional "newlabel" if it has been changed into 
+!   a new label. 
+!
+    subroutine fdf_deprecated(label,newlabel)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)           :: label
+      character(*)           :: newlabel
+      
+!------------------------------------------------------------------------- BEGIN
+      if ( fdf_defined(label) ) then
+         write(fdf_out,'(a)') "**Warning: FDF symbol '"//trim(label)// &
+              "' is deprecated."
+         if ( fdf_defined(newlabel) ) then
+            write(fdf_out,'(a)') "           FDF symbol '"//trim(newlabel)// &
+                 "' will be used instead."
+         else
+            write(fdf_out,'(a)') "           FDF symbol '"//trim(newlabel)// &
+                 "' replaces '"//trim(label)//"'."
+         end if
+      end if
+
+!--------------------------------------------------------------------------- END
+    end subroutine fdf_deprecated
+
+! 
+!   For handling obsoleted labels.
+!
+    subroutine fdf_obsolete(label)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)           :: label
+      
+!------------------------------------------------------------------------- BEGIN
+      if ( fdf_defined(label) ) then
+         write(fdf_out,'(a)') "**Warning: FDF symbol '"//trim(label)// &
+              "' is obsolete."
+      end if
+
+!--------------------------------------------------------------------------- END
+    end subroutine fdf_obsolete
 
 
     subroutine serialize_fdf_struct(buffer)

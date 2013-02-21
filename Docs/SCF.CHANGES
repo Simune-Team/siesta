@@ -1,4 +1,19 @@
 -----------------------------------------------------------------------
+2013-02-21  Alberto Garcia <albertog@icmab.es>   trunk-423-scf-39
+Sync to trunk-423
+
+2012-10-30 [merge] Transiesta and TBTrans enhancements by Nick P. Andersen
+
+Notes: 
+
+- The increase in the width of the dDmax field has been postponed.
+- The full logic of the TranSiesta continuation (changes in now non-existing
+scf_convergence_test) needs to be checked. Note that the timer calls in that
+routine are now in compute_dm.
+- The support for min_nscf has been implemented in a different, clearer way.
+  nscf is set to the maximum of (nscf,min_nscf) in siesta_options.
+
+-----------------------------------------------------------------------
 2013-01-14  Alberto Garcia <albertog@icmab.es>   trunk-422-scf-39
 SVD interface change. Experimental SVD scheme for DM extrapolation.
 

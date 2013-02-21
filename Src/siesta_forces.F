@@ -28,7 +28,8 @@
       use siesta_options,        only: energy_tolerance
       use siesta_options,        only: harris_tolerance
       use siesta_options,        only: freeEnergy_tolerance
-      use siesta_options,        only: SCFMustConverge, nscf, mixH
+      use siesta_options,        only: SCFMustConverge, nscf, min_nscf
+      use siesta_options,        only: mixH
       use siesta_options,        only: mix_after_convergence
       use siesta_options,        only: monitor_forces_in_scf
       use m_state_analysis,      only: state_analysis
@@ -127,6 +128,15 @@
      $                              dDmax, dHmax,
      $                              conv_harris, conv_etot,
      $                              conv_free_energy)
+        if (SCFconverged .and. (iscf < min_nscf)) then
+           SCFconverged = .false.
+           if (ionode) then
+              write(6,"(a,i0)")
+     $         "SCF cycle continued for minimum number of iterations: ",
+     $            min_nscf
+           endif
+        endif
+
         if (SCFconverged) then
            if (ionode) then
               write(6,"(a,i0,a)") "SCF cycle converged in ", iscf,

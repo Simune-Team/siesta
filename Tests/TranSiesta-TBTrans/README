@@ -42,14 +42,14 @@ This technique is also useful for other execution environments. For
 example, to run OBJDIR/transiesta in parallel (assuming the right path
 and libraries for mpirun are set):
 
-make TS="mpirun -np 2 ../../../transiesta"
+make TS="mpirun -np 2 ../../../../transiesta"
 
-The source for TBTrans resides in Util/TBTrans. To guarantee that the
-TBTrans executable is compatible with the TranSiesta executable in
-OBJDIR, TBTrans is re-compiled with the appropriate settings in
-OBJDIR/arch.make.  
+The source for TBTrans resides in Util/TBTrans (or
+Util/TBTrans_rep). To guarantee that the TBTrans executable is
+compatible with the TranSiesta executable in OBJDIR, TBTrans is
+re-compiled with the appropriate settings in OBJDIR/arch.make.
 
-To override the default TBTrans executable in Util/TBTrans, TBT can be
+To override the default TBTrans executable in Util/TBTrans(_rep), TBT can be
 specified in the command line:
 
 make TBT=/full/path/to/tbtrans

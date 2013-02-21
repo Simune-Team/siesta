@@ -59,12 +59,10 @@
 #ifdef MPI
       use mpi_siesta
 #endif
+
 #ifdef TRANSIESTA
-! TSS Begin
-      use m_ts_options, only: read_ts_options
-      use m_ts_in_siesta, only: setup_ts_kpoint_grid
-! TSS End
-#endif /* TRANSIESTA */
+      use m_ts_init, only : ts_init
+#endif
 
       implicit none
 
@@ -244,12 +242,6 @@ C     Initialise MPI and set processor number
       if (ionode) print "(a,i0)", "Size of DM history Fstack: ",
      $                            max_size(DM_history)
 
-#ifdef TRANSIESTA
-!     Read TS Input options
-      call read_ts_options( )
-!     TSS End
-#endif
-
       qtot = qtot - charnet     ! qtot set in initatomlists
                                 ! charnet set in redata
       if (IOnode) then
@@ -340,9 +332,7 @@ C     Initialise MPI and set processor number
       endif
 
 #ifdef TRANSIESTA
-!     TSS Begin
-      call setup_ts_kpoint_grid( ucell )
-!     TSS End
+      call ts_init(nspin,ucell,na_u,xa)
 #endif
 
       nullify(eo,qo)

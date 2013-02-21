@@ -93,14 +93,15 @@
         call timer('TS',1)
         TSiscf=TSiscf+1
 
-        call transiesta(gamma,lasto,
-     .    no_l, no_s, nspin, na_u, maxnh, numh, listhptr,
-     &    listh, xijo, indxuo, H, S, Dscf, Escf, ef, no_u,
-     &    TSiscf,qtot)
+        call transiesta(ucell,gamma,lasto,iaorb,
+     &       no_l, no_s, no_u, nspin, xa, na_u, maxnh, numh, listhptr,
+     &       listh, xijo, indxuo, H, S, Dscf, Escf, Ef,
+     &       TSiscf,qtot)
         call timer('TS',2)
 
         if (TSiscf .eq. 1) call timer( 'IterSCF', 3 ) 
         if (TSiscf .eq. 1) call timer( 'TS', 3 ) 
+        if (TSiscf .eq. 1) call timer( 'TS_calc', 3 ) 
 
         Ecorrec = 0._dp
         Entropy = 0.0_dp

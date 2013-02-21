@@ -6,860 +6,543 @@
 ! CONTAINS:
 !          1) transiesta
 !          2) TSVHFix
-!          3) TSVoltage2
-!          4) setup_ts_kpoint_grid
 
   
       implicit none
 
-      public :: transiesta, TSVHFix, TSVoltage2, setup_ts_kpoint_grid
+      public :: transiesta, TSVHFix
 
       private
 
       CONTAINS
 
 
-C ##################################################################
-C ##                                                              ##       
-C ##                       "TRANSIESTA"                           ##
-C ##                                                              ##       
-C ##          Non-equilibrium Density Matrix Subroutine           ##
-C ##                   to be called from SIESTA                   ##
-C ##                                                              ## 
-C ##                            By                                ##
-C ##              Mads Brandbyge, mbr@mic.dtu.dk                  ##
-C ##               Kurt Stokbro, ks@mic.dtu.dk                    ## 
-C ##               Mikroelektronik Centret (MIC)                  ##
-C ##           Technical University of Denmark (DTU)              ##
-C ##                                                              ##
-C ##################################################################
-C
-C
-C Tight-binding density-matrix/transport program for the SIESTA
-C package.
-C Copyright by Mads Brandbyge, 1999, 2000, 2001, 2002.
-C The use of this program is allowed for not-for-profit research only.
-C Copy or disemination of all or part of this package is not
-C permitted without prior and explicit authorization by the authors.
-C
-C ================================================================
-C Modified by F. D. Novaes to allow calculations with k-point 
-C samplings other than gamma point.
-C ================================================================
-C
-C
-C Assumes listh and listd are the same
-C
-C
-Cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-C UNITS:
-C     Ry, and Bohr is used throughout the program unless explicitly 
-C     stated.
-Cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! ##################################################################
+! ##                                                              ##       
+! ##                       "TRANSIESTA"                           ##
+! ##                                                              ##       
+! ##          Non-equilibrium Density Matrix Subroutine           ##
+! ##                   to be called from SIESTA                   ##
+! ##                                                              ## 
+! ##                            By                                ##
+! ##              Mads Brandbyge, mbr@mic.dtu.dk                  ##
+! ##               Kurt Stokbro, ks@mic.dtu.dk                    ## 
+! ##               Mikroelektronik Centret (MIC)                  ##
+! ##           Technical University of Denmark (DTU)              ##
+! ##                                                              ##
+! ##   Modified by Nick Papior Andersen (electrode repetitions)   ##
+! ##   Modified by Nick Papior Andersen, major clean up           ##
+! ##                                                              ##
+! ##################################################################
+!
+!
+! Tight-binding density-matrix/transport program for the SIESTA
+! package.
+! Copyright by Mads Brandbyge, 1999, 2000, 2001, 2002.
+! The use of this program is allowed for not-for-profit research only.
+! Copy or disemination of all or part of this package is not
+! permitted without prior and explicit authorization by the authors.
+!
+!=================================================================
+! Modified by F. D. Novaes to allow calculations with k-point 
+! samplings other than gamma point.
+!=================================================================
+!
+!
+! Assumes listh and listd are the same
+! Assumes that indxuo is consecutive in numbers:
+!     do i = 1 , no_u
+!       indxuo(i) = i
+!     end do
+!   both in Gamma and (.not. Gamma) point.
+!
+!
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! UNITS:
+!     Ry, and Bohr is used throughout the program unless explicitly 
+!     stated.
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
-      subroutine transiesta(gamma,lasto,
-     .  nuo, no, nspin, nua, maxnh, numh, listhptr,
-     .  listh,  xij, indxuo, Hs, Ss, Dnew, Enew, ef, nuotot,
-     .  TSiscf,qtot)
+      subroutine transiesta(ucell,gamma,lasto,iaorb,
+     &     no_l, no_s, no_u, nspin, xa, na_u, maxnh, numh, listhptr,
+     &     listh,  xij, indxuo, Hs, Ss, Dnew, Enew, Ef,
+     &     TSiscf,Qtot)
+
+      use parallel  , only: Node, Nodes, IONode
+#ifdef MPI
+      use mpi_siesta, only: MPI_Comm_World,MPI_SUM
+      use mpi_siesta, only: MPI_Bcast
+      use mpi_siesta, only: DAT_dcomplex, DAT_double,MPI_Logical
+      use mpi_siesta, only: MPI_Integer
+
+      use parallelsubs, only : GlobalToLocalOrb, WhichNodeOrb
+      use parallelsubs, only : LocalToGlobalOrb
+#endif
+      use m_ts_options, only : ReUseGF
+      use m_ts_options, only : HSFileL,HSFileR
+      ! We could insert the name here, however, in the context here
+      ! the variable naming here gives more meaning
+      use m_ts_options, only : nuaL_GF => NUsedAtomsL
+      use m_ts_options, only : noL_GF  => NUsedOrbsL
+      use m_ts_options, only : nuaR_GF => NUsedAtomsR
+      use m_ts_options, only : noR_GF  => NUsedOrbsR
+
+      use m_ts_options, only : NRepA1L,NRepA2L,NRepA1R,NRepA2R
+      use m_ts_options, only : NBufAtL, NBufAtR
+      use m_ts_options, only : GFFileL, GFFileR
+      use m_ts_options, only : IsVolt, VoltFDF, VoltL, VoltR
+      use m_ts_options, only : UseBulk, TriDiag, updatedmcr
+      use m_ts_options, only : ElecValenceBandBot, GFTitle
+      use m_ts_options, only : ChargeCorr, ChargeCorr_factor
+      use m_ts_options, only : kT
+
+      use m_ts_cctype, only : CC_PART_EQUI
+      use m_ts_cctype, only : CC_PART_LEFT_EQUI
+      use m_ts_cctype, only : CC_PART_RIGHT_EQUI
+      use m_ts_cctype, only : CC_PART_NON_EQUI
+      use m_ts_cctype, only : CC_PART_TRANSPORT
+      use m_ts_contour, only : PNEn, NEn, contour
+      use m_ts_GF,      only : do_Green, read_Green
+      use m_ts_scattering, only : getSFE, getGF
+      use m_ts_scattering, only : GFGammaGF, weightDM, weightDMC
+      use m_ts_scattering, only : get_scat_region
+
+      use m_ts_kpoints, only : ts_nkpnt,ts_kpoint,ts_kweight
+      use m_ts_kpoints, only : ts_gamma_scf
 
 #ifdef MPI
-      use mpi_siesta, only: MPI_Bcast, MPI_Comm_Rank, DAT_dcomplex,
-     . MPI_Sum, DAT_double, MPI_Comm_World, MPI_Integer, MPI_logical
-C FDN
-      use parallelsubs, only : GlobalToLocalOrb, WhichNodeOrb, 
-     .                         LocalToGlobalOrb
-C FDN
+      use m_glob_sparse, only: glob_sparse_arrays, glob_sparse_matrix
 #endif
-      use m_ts_options, only : voltfdf, USEBULK, TriDiag, updatedmcr, 
-     .                         FixQ, NBUFATL, NBUFATR, nvolt, GFFileL, 
-     .                         GFFileR
-      use m_ts_contour, only : setupcontour, distrcontour
-      use m_ts_io, only : read_green
-      use m_ts_electrode, only : green
-#ifdef MPI
-      use m_ts_scattering, only : consHSp, getsfe, getGF_Tri, 
-     .                            GFGammaGF, weightDM, weightDMC
-#else
-      use m_ts_scattering, only : consHS, getsfe, getGF_Tri,
-     .                            GFGammaGF, weightDM, weightDMC
-#endif
+      use m_hs_matrix, only : set_HS_matrix, matrix_rem_left_right
+      use m_hs_matrix, only : matrix_symmetrize
+
+      use units, only : eV,pi
       use sys, only : die
       use precision, only : dp
 
-c======================================================================
-      implicit none
-c======================================================================
 
-      integer NGL2,NA1L,NA2L,nqL,nuaL
-      integer NGR2,NA1R,NA2R,nqR,nuaR
-      integer NCONTOUR0,NCONTOUR
-c======================================================================
-      real(dp) eV
-      parameter ( eV = 1.d0 / 13.60580d0 )
-      real(dp) Pi
-      parameter(Pi=3.141592653589793238462643383279503d0)
-      real(dp) toPi
-      parameter(toPi=2d0/Pi)
-c======================================================================
-
-
-      character*33 gffileLeft,gffileRight
-
-C From fdf read voltfdf, Volt=voltfdf/eV
-      real(dp) Volt               ! the bias voltage
-
-C      integer NBUFATL,NBUFATR   ! No. buffer atoms, L/R
-      integer NBUFL,NBUFR       ! No. buffer states, L/R
-
-
-
-c =====================================================================
-c   FROM SIESTA:
-c =====================================================================
-      integer nua               ! No. atoms in unit cell
-      logical gamma             !True if gamma point calculation
+!======================================================================
+!   FROM SIESTA:
+!======================================================================
+      real(dp) ucell(3,3)       ! Unit cell parameters
+      logical gamma             ! True if gamma point calculation
+      integer na_u               ! No. atoms in unit cell
       
-     
-
-      
-      
-
-      integer lasto(0:nua)      ! last-orbital index on atoms
+      integer lasto(0:na_u)      ! last-orbital index on atoms
       integer nspin             ! Number of spin components (1 or 2)
-c                               ! Can only be 1 for the time being!
+!                               ! Can only be 1 for the time being!
 
-      integer no                ! no. orbitals in supercell
-      integer nuo               ! no. orbs. in unit cell
+      integer no_s              ! no. orbs. in supercell
+      integer no_l              ! no. orbs. in unit cell (local)
+      integer no_u              ! no. orbs. in unit cell (global)
       integer maxnh             ! Maximum number of nonzero elements of 
-c                               ! each row of hamiltonian matrix
-      integer numh(nuo)         ! Number of nonzero elements of each row
+!                               ! each row of hamiltonian matrix
+      integer  iaorb(no_u)      ! The atomic index of the orbitals
+      real(dp) xa(3,na_u)        ! Atomic coordinates in unit cell
+      integer numh(no_l)        ! Number of nonzero elements of each row
       integer listh(maxnh)      ! Nonzero hamiltonian-matrix element
-c                               ! column indexes for each matrix row
-c                               ! of hamiltonian matrix
-      integer listhptr(nuo)     ! Pointer to each row (-1) of the
-c                               ! hamiltonian matrix
-c                               ! column indexes for each matrix row
-      real*8  Hs(maxnh,nspin)   !Hamiltonian in sparse form
-      real*8  Ss(maxnh)         ! Overlap in sparse form
-      real*8  xij(3,maxnh)      ! Vectors between orbital centers (sparse)
-      integer indxuo(no)        ! Index of equivalent orbital in unit cell
-c                               !  Unit cell orbitals must be the first in
-c                               ! orbital lists, i.e. indxuo.le.nuo, with
-c                               ! nuo the number of orbitals in unit cell  
+!                               ! column indexes for each matrix row
+!                               ! of hamiltonian matrix
+      integer listhptr(no_l)    ! Pointer to each row (-1) of the
+!                               ! hamiltonian matrix
+!                               ! column indexes for each matrix row
+      real(dp)  Hs(maxnh,nspin) !Hamiltonian in sparse form
+      real(dp)  Ss(maxnh)       ! Overlap in sparse form
+      real(dp)  xij(3,maxnh)    ! Vectors between orbital centers (sparse)
+      integer indxuo(no_s)      ! Index of equivalent orbital in super cell
+!                               ! Unit cell orbitals must be the first in
+!                               ! orbital lists, i.e. indxuo(i).le.no_l,
+!                               ! for all i with no_l the number of 
+!                               ! orbitals in unit cell
       
+      integer :: TSiscf ! Current iteration
 
-      integer TSiscf
+! The fermi-energy of the CONTACT (without electrodes) is initially determined
+! by SIESTA. This is taken as the starting energy shift of the contact region:
+! The electrodes in equilibrium has per definition Fermi energy at ZERO.
+      real(dp) :: Ef                 ! Fermi energy (used in CONTACT) 
+      real(dp) :: Qtot
+!======================================================================
+!   BACK TO SIESTA:
+!======================================================================
 
-c The fermi-energy of the CONTACT (without electrodes) is initially determined
-c by SIESTA. This is taken as the starting energy shift of the contact region:
-c The electrodes in equilibrium has per definition Fermi energy at ZERO.
-      real(dp) ef                 ! Fermi energy (used in CONTACT) 
-      real(dp) qtot
-c =====================================================================
-c   BACK TO SIESTA:
-c =====================================================================
+      real(dp) :: Dnew(maxnh,nspin) ! Output Density Matrix
+      real(dp) :: Enew(maxnh,nspin) ! Output Energy-Density Matrix
 
-      real(dp) Dnew(maxnh,nspin) ! Output Density Matrix
-C FDN
+!======================================================================
+!     Greens functions:
+!======================================================================
+
+! Full Green's function, H and S of contact:
+      complex(dp), dimension(:,:), pointer :: H, S
+      complex(dp), dimension(:),   pointer :: GF
+
+!==================================================================
+!     Left/Right electrode variables:
+!==================================================================
+
+!     All variables are denoted by L/R for Left/Right, respectively.
+
+!     File units for Left/Right GF
+      integer :: uGFL,uGFR
+
+!     Here we write:
+!     Hamiltonian, overlap, Green's function, scattering matrix,
+!     k-points, q-points, k/q-weights, fermi level shift due to V,
+!     etc.
+
+!     Number of atoms in the electrode (after expansion)
+      integer :: nuaL, nuaR
+!     Number of orbitals in the electrodes (after expansion)
+      integer :: noL,noR
+
+!     The lasto shortened to only the electrodes
+      integer, dimension(:), allocatable, save :: lastoL,lastoR
+
+!     Read-in bulk H, S, for a given q-points
+      complex(dp), dimension(:,:,:), allocatable :: HAAL, SAAL
+      complex(dp), dimension(:,:,:), allocatable :: HAAR, SAAR
+!     Self energies and scattering matrices
+!     Gamma=i*0.5*(Sigma - Sigma^dagger) 
+      complex(dp), dimension(:,:),   allocatable :: SFEL, GAMMAL
+      complex(dp), dimension(:,:),   allocatable :: SFER, GAMMAR
+
+!     Electrode k-points kpar-points and their weights:
+!     Notice that these are at the moment completely identical
+!     to the TranSIESTA k-points at time of creation.
+!     Therefore they should be the same as ts_kpoints until 
+!     implementation is completed to handle different electrode k-point
+!     sampling
+      integer                                :: nkparL,nkparR
+      real(dp), dimension (:,:), allocatable :: kparL ,kparR
+      real(dp), dimension (:)  , allocatable :: wkparL,wkparR
+
+!     q-points and their weights:
+!     The notation of b tells the programmer that
+!     q is in units of b_i**-1 and NOT in Bohr**-1
+      integer                                :: nqL,nqR
+      real(dp), dimension (:,:), allocatable :: qLb,qRb
+      real(dp), dimension (:),   allocatable :: wqL,wqR
+
+!==================================================================
+
+!==================================================================
+!     Density matrix variables:
+!==================================================================
+
+!     To save space we will save the temporary DML,EDML in DM,EDM. 
+!     contour part of DM integration 
+!     real axis part of DM integration
+!     L,R estimates of Edm
+
+      real(dp), dimension(:), allocatable :: DM,DMR
+      real(dp), dimension(:), allocatable :: DMneqL,DMneqR
+      real(dp), dimension(:), allocatable :: EDM, EDMR
+
+      complex(dp), dimension(:), allocatable :: DMCplx,DMRCplx
+      complex(dp), dimension(:), allocatable :: DMneqLCplx,DMneqRCplx
+      complex(dp), dimension(:), allocatable :: EDMCplx,EDMRCplx
+      complex(dp), dimension(:), allocatable :: work1Cplx
+!==================================================================
+
+!==================================================================
+!     Size of problem:
+!==================================================================
       
-      complex(dp) ccphase
-C FDN
-      real(dp) Enew(maxnh,nspin) ! Output Energy-Density Matrix
+!     Number of orbitals in the buffer regions
+      integer, save :: noBufL,noBufR
 
-c =====================================================================
-c     Greens functions:
-c =====================================================================
-c     Energy Contour:
-      complex(dp), dimension (:), pointer:: contour,wgf
-
-      integer NPARACONTOUR   ! No. points on parallel contour
-c     Energy points and their weight distributed on nodes
-      complex(dp), dimension (:,:), allocatable ::
-     .     paracontour,paraWGF
-c     (point,node) --> part of contour (L,R,V,N) Left,Right,Voltage, No voltage
-
-      character, dimension(:,:), allocatable ::  contourpart
-
-c     No. actual energy points to read-in for given parallel energy point
-      integer, dimension(:), allocatable ::  points2read
-
-c     Read-in bulk H, S, for a given q-points
-      complex(dp), dimension(:,:,:), allocatable :: 
-     .     HAAL,SAAL,HAAR,SAAR 
-
-c     q-points and their weights:
-      real(dp), dimension (:,:), pointer:: qL,qR
-      real(dp), dimension (:), pointer:: wqL,wqR
-
-c ==================================================================
-c     Left/Right inverse Greens functions:
-      integer NGL,NGR           !no. orbs. in L/R electrode parts
-
-c     Electrode GF's
-c     Gamma=i*0.5*(Sigma - Sigma^dagger) 
-      complex(dp), dimension (:,:), allocatable:: 
-     .     SFEL,SFER,GAMMAL,GAMMAR
-
-c ==================================================================
-c Fermi levels
-      real(dp) EFermiL,EFermiR,EFermi0
-c===================================================================
-
-c Internal representation of H,S,DM and other quantities:    
-
-      integer nou               !no. of orbs. from SIESTA minus buffer-orbitals
-c                               !i.e. no. used orbitals
-
-c Full Green's function, H and S of contact:
-      complex(dp), dimension(:), allocatable :: H,S
-      complex(dp), dimension(:), pointer :: GF
-
-c     To save space we will save the temporary DML,EDML in DM,EDM. 
-c     contour part of DM integration 
-c     real axis part of DM integration
-c     L,R estimates of Edm
-
-      real(dp), dimension(:), allocatable :: 
-     .     DM,DMR,DMneqL,DMneqR,EDM,EDMR
-
-C FDN
-      complex(dp), dimension(:), allocatable ::
-     .  DMCplx,DMRCplx,DMneqLCplx,DMneqRCplx,EDMCplx,EDMRCplx,
-     .  work1Cplx
-
-      logical :: kpargamma
-      real(dp) :: kpartol
-C FDN
+      integer, save :: nou ! no. of orbs. from SIESTA minus buffer-orbitals
+!                          ! i.e. no. used orbitals
 
 
-      real(dp) QC0                ! Init(SIESTA) no. electrons in update region
-      real(dp) QC                 ! no. electrons in update region
-      real(dp) QCn0
+!==================================================================
+!   Bookkeeping of charges in different regions:
+!==================================================================
 
-c No. contour points (NCONTOUR if VOLT=0 else NCONTOUR + NVOLT)
-      integer NEn
+      real(dp) :: Qcn  ! Init(SIESTA) no. electrons outside update region
+      real(dp) :: Qc   ! no. electrons in update region
 
-c     No. orbitals on atoms
-      integer, allocatable :: norbslist(:) 
-      integer maxbaso           !Max. no. of basis orbitals on atoms
+!     Collecting charges in updated region on k-point resolution
+!     First index corresponds to values seen in variables 'region' and
+!     'regiong'.
+!     Second index is 0:ts_nkpnt, 0 is the non-updated region 
+!     Third index is the spin
+      real(dp), dimension(:,:,:), allocatable :: Q_kpt
+#ifdef MPI
+      real(dp), dimension(:,:,:), allocatable :: Q_kpt_loc
+      real(dp)                                :: Qcloc ! Used for reduction
+#endif
+      ! Integer array holding information on the region content.
+      ! It is built together with listud[g] and has the following
+      ! values:
+      !   0  :  Unknown (actually, all other regions which is NOT unknown)
+      !   1  :  Left buffer region
+      !   2  :  Left buffer-electrode coupling
+      !   3  :  Left electrode
+      !   4  :  Left-device coupling
+      !   5  :  Device
+      !   6  :  Right-device coupling
+      !   7  :  Right electrode
+      !   8  :  Right buffer-electrode coupling
+      !   9  :  Right buffer region
+      integer, dimension(:), allocatable, save :: region
+#ifdef MPI
+      integer, dimension(:), allocatable, save :: regiong
+#endif
+      ! Variable for doing a renormalization of the charge
+      real(dp), dimension(:),     allocatable :: reD
+      ! containing the rescaled charge
+      real(dp), dimension(:,:,:), allocatable :: addQ
+!==================================================================
 
-c ==================================================================
-c Helpers, workspace, tempos, auxilaries etc...
+!==================================================================
+! Helpers, workspace, tempos, auxilaries etc...
+!==================================================================
+      ! Temporary k-points
+      real(dp) :: k(3) ! Temp. k-point
+      real(dp) :: kxij ! exp(k*xij)
+      complex(dp) :: cphase, ccphase ! phases
       
-      real(dp) k(3),kxij,qcloc
-      complex(dp) cphase
-      
-      integer ind
-      integer jgfL,jgfR         !File units for Left,Right GF
-
-c      L uc. atoms (from read-in superc)
-c      R uc. atoms (from read-in superc)
-c      Index of equiv. orb. in uc 
-
-      integer, dimension(:), allocatable :: indxuo1,lastoL,lastoR
-      
+      ! Work arrays
+      real(dp),    dimension(:), allocatable :: work1
       complex(dp), dimension(:), allocatable :: work2
-      real(dp), dimension(:), allocatable :: work1
 
-      complex(dp), dimension(:), allocatable :: dosdum
+! Energies on the contour
+      complex(dp) :: Z,W,ZW
+!==================================================================
 
-            
+! Different logicals
+      logical :: ioinC,joinC,updatedm
 
-      complex(dp) Z,W
-      integer iPE,ispin
+! Loop counters:
+      integer :: iPE,iE,ispin
+      integer :: ts_ikpt
+      integer :: i,j,ic,jc,ind
+      integer :: ia,ia2
+      integer :: io,jo,iuo,juo,iio,is
+! error logicals or integers
+      logical :: errorGS
+      integer :: ierr,itmp
 
-      integer i,j,ic,jc
-      integer ia,iau,ia2
-      integer io,jo,iuo,juo,iio,is
-      integer ierr,itmp         !matrix inversion failure
-      integer Nodes
-      integer nuotot
-
+! array for determining whether an object should be updated
+      logical, dimension (:), allocatable, save :: listud
 #ifdef MPI
-      integer  BNode,  maxnhg
-      integer, dimension(:), allocatable,save ::
-     .  numhg, listhptrg, listhg
- 
-      real(dp), dimension(:,:), allocatable, save ::
-     .  xijg, Dnewg, Enewg
-      logical, dimension (:), allocatable ::  listudg
+      logical, dimension (:), allocatable, save :: listudg
 #endif
 
-      logical existgf,ioinC,joinC,updatedm,isvolt,errorgf
-      logical errorgs
-      logical, dimension (:), allocatable ::  listud
-
-      real(dp) renorm
-
-      logical firsttime
-      data firsttime /.true./
-
-      character  Part
-
-c Files
-      external io_assign, io_close
-      integer jout
-      
-c Save 
-      save firsttime 
-      save gffileLeft,gffileRight
-      save listud 
-
 #ifdef MPI
-      save listudg
+      ! Used for obtaining location of information on target node
+      integer :: BNode
+! All these variables are the globalised versions of their equivalents
+! without the notation of "g"
+      integer                               :: maxnhg
+      integer, dimension(:),    allocatable :: numhg
+      integer, dimension(:),    allocatable :: listhptrg, listhg
+      real(dp), dimension(:,:), allocatable :: xijg
+      real(dp), dimension(:,:), allocatable :: Dnewg, Enewg
+      real(dp), dimension(:),   allocatable :: Hsg, Ssg
+!     The obvious error for MPI
+      integer :: MPIerror
 #endif
 
-      save nou,contour,WGF,QC0,QCN0,norbslist,maxbaso
+      logical, save :: firsttime = .true.
 
-      save NPARACONTOUR,paracontour,paraWGF
-      save contourpart,points2read
-
-      save EFermi0,EFermiL,EFermiR,NEn
-      save Volt,isvolt
-      save NBUFL,NBUFR
-      save lastoL,lastoR
-
-      save NGL2,NA1L,NA2L,nqL,nuaL
-      save NGR2,NA1R,NA2R,nqR,nuaR
-
-C FDN
-      save NGL,NGR,kpargamma
-C FDN
-
-      save jout
-      save NCONTOUR,NCONTOUR0
-      save indxuo1
+!==================================================================
+!     External routines and interfaces:
+!==================================================================
+      external :: io_assign, io_close
       
-      complex(dp) zdotc
-      external zdotc ! BLAS function
+      interface
+         function paste(s1,s2)
+         character(LEN=*), intent(in) :: s1,s2
+         character(LEN=33) :: paste
+         end function paste
+      end interface
 
-      character paste*33
-      external paste
-      
-      logical IONode
-      integer Node
+!  I need to create a general case of electrodes with potentially 
+!  different numbers of k points, such as an electrode and a bulk nanotube.
 
-#ifdef MPI
-      integer MPIerror
+#ifdef TRANSIESTA_DEBUG
+      call write_debug( 'PRE transiesta' )
 #endif
 
-C FDN
-c ==================================================================
-c           K-points variables
-c ==================================================================
-      integer, save ::  nkpar
-      integer :: ikpar
-      real(dp), dimension(:,:), allocatable, save :: kpar
-      real(dp), dimension(:), allocatable, save :: wkpar
-      logical, save :: diffkpar=.false.
-
-C  Preciso colocar um caso geral de eletrodos com potencialmente
-C  um numero diferente de pontos k, como por exemplo um eletrodo sendo
-C  um bulk e o outro um nanotubo
-
-C FDN
-
-c=======================================================================
-c BEGIN:
-c=======================================================================
-
-
-C Get Node number
 #ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror) 
-#else
-      Node = 0
-      Nodes = 1 
-#endif
-      IONode=.false.
-      if(Node.eq.0) IONode=.true.
-      
-      nullify(GF)
-
-c ============================================================
-c       ----------- BEGIN: first time only ------------
-      if(firsttime) then
-c ============================================================
-         
-c     Open output file):
-c
-         if(Node.eq.0) then
-c     call TSprversion
-            jout = 6
-         end if !node 0
-
-         Volt=voltfdf/eV 
- 
-         isvolt=.false.
-         if(dabs(Volt).GT.0.001) isvolt=.true.
-                  
-
-#ifdef MPI
-c note: efis not global variables!!
-      call MPI_Bcast(ef,1,DAT_double,0, MPI_Comm_World,MPIerror)
+      call MPI_Bcast(Ef,1,DAT_double,0, MPI_Comm_World,MPIerror)
 #endif
 
-c
-c     We take the common Fermi energy of the electrodes to be zero!
-c
-         EFermiL =  Volt*eV/2.0d0 !Ry
-         EFermiR = -Volt*eV/2.0d0 !Ry
-         EFermi0 =       0.0d0
-
-c
-c     Setup contour
-c
-         call setupcontour(jout,NEn,EFermi0,EFermiL,EFermiR,
-     .                  WGF,contour,NCONTOUR,NCONTOUR0)
-      
-
-c     Distribute contour points on nodes
-c
-         allocate( paracontour(1:NCONTOUR,0:Nodes-1)  )
-         allocate( paraWGF(1:NCONTOUR,0:Nodes-1)      )
-         allocate( contourpart(1:NCONTOUR,0:Nodes-1)  )
-         allocate( points2read(1:NCONTOUR)            )
+! Make the expansion of the electrodes in atoms and orbitals
+! In this way we save the "SAVE" attribute
+      nuaL = nuaL_GF*NRepA1L*NRepA2L
+      nuaR = nuaR_GF*NRepA1R*NRepA2R
+      noL  = noL_GF *NRepA1L*NRepA2L
+      noR  = noR_GF *NRepA1R*NRepA2R
 
 
-c (note we're allocating more than we need here if there're more than 1 node)
+! ============================================================
+!       ----------- BEGIN: first time only ------------
+      if (firsttime) then
+! ============================================================
 
-         call distrcontour(jout,
-     .        WGF,contour,NCONTOUR,NCONTOUR0,NVOLT,isvolt,Nodes,
-     .        NPARACONTOUR,paracontour,paraWGF,
-     .        contourpart,points2read)
-
-
-c  the first NBUFATL atoms will be removed
-         NBUFL=0
-         do ia=1,NBUFATL
-            NBUFL=NBUFL+(lasto(ia)-lasto(ia-1))
+!     the first NBufAtL atoms will be removed
+         noBufL = 0
+         do ia = 1 , NBufAtL
+            noBufL = noBufL+(lasto(ia)-lasto(ia-1))
          end do                 !ia
-c     the last NBUFATR atoms will be removed
-         NBUFR=0
-         do ia=nua - NBUFATR+1,nua
-            NBUFR=NBUFR+(lasto(ia)-lasto(ia-1))
+!     the last NBufAtR atoms will be removed
+         noBufR = 0
+         do ia = na_u - NBufAtR+1 , na_u
+            noBufR = noBufR+(lasto(ia)-lasto(ia-1))
          end do                 !ia
 
-c
-c No. states minus buffers
-c     
-
+!
+! No. states minus buffers
+!     
 #ifdef MPI
-         nou = nuotot - (NBUFL+NBUFR)
+         nou = no_u - (noBufL+noBufR)
 #else
-         nou = nuo - (NBUFL+NBUFR)
+         nou = no_l - (noBufL+noBufR)
 #endif
 
-      endif ! firsttime
 
+         ! Do a crude check of the sizes
+         if ( nou <= noL + noR ) then
+            call die("The contact region size is &
+     &smaller than the electrode size. Please correct.")
+         end if
 
-
-      if(firsttime) then
-c -------------------------------------------------------
-c
-c     GF generation:
-c
-
-         if(Node.eq.0) then
-            allocate(dosdum(NEn))
-C FDN nspin added as variable
-            CALL green(jout,
-     .           NEn,contour,WGF,EFermiL,dosdum,.true.,nspin )
-            CALL green(jout,
-     .           NEn,contour,WGF,EFermiR,dosdum,.false.,nspin )
-C FDN
-            
-            gffileLeft=GFFileL
-            gffileRight=GFFileR
-
-            inquire(file=gffileLeft,exist=existgf)
-            if(.not.existgf) 
-     .           write(6,*) 'ERROR: Cannot open ',gffileLeft
-            inquire(file=gffileRight,exist=existgf)
-            if(.not.existgf) 
-     .           write(6,*) 'ERROR: Cannot open ',gffileRight
-         endif                  !node=0
-
-
-#ifdef MPI
-      call MPI_Barrier(MPI_Comm_World,MPIerror)
-      call MPI_Bcast(existgf,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-#endif
-      if(.not.existgf) call die('ERROR: Cannot open GF file')
-
-
-c -------------------------------------------------------
-c     Read-in header of Green's functions
-c
-       nullify(wqR); nullify(wqL); nullify(qR); nullify(qL)
-
-c Left
-
-
-       if(Node.eq.0) then
-         call io_assign(jgfL)
-         OPEN(FILE=gffileLeft,UNIT=jgfL,FORM='UNFORMATTED')
-         call read_green(jgfL,NEn,contour,WGF,
-     .        nuaL,NA1L,NA2L,nqL,NGL2,wqL,qL,errorgf)
-         call io_close(jgfL)
-        endif     
-
-#ifdef MPI 
-       call MPI_Bcast(errorgf,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-#endif
-
-       if(errorgf) call die('ERROR in reading Left GF file') 
-
-#ifdef MPI
-      call MPI_Bcast(nuaL,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(NA1L,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(NA2L,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(nqL,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-
-
-      if(Node.ne.0) then
-C FDN in general q// may have z component
-       allocate(qL(3,nqL))
-C FDN
-       allocate(wqL(nqL))
-      endif
-C FDN 2*nqL -> 3*nqL
-      call MPI_Bcast(qL(1,1),3*nqL,DAT_double,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(wqL,nqL,DAT_double,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(NGL2,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-#endif
-
-c --------------------------
-c Right
-
-      if(Node.eq.0) then
-
-c     Open and read header of GF-file
-
-       call io_assign(jgfR)
-       OPEN(FILE=gffileRight,UNIT=jgfR,FORM='UNFORMATTED')
-       call read_green(jgfR,NEn,contour,WGF,
-     .      nuaR,NA1R,NA2R,nqR,NGR2,wqR,qR,errorgf)
-       call io_close(jgfR)
-
-C FDN Compare the kpoints of Left and Right
-       if (nqR == nqL ) then
-        kpartol=0.0001
-        do I = 1,nqL
-          do J = 1,3
-            if ( abs(qL(J,I)-qR(J,I)) > kpartol ) then
-              diffkpar=.true.
-            end if
-          enddo
-        enddo 
-        if ( diffkpar ) then
-         write(*,*) 'Left/Right k-par must be equal !!'
-         write(*,*) 'qL'
-         do I = 1,nqL
-           write(*,*) qL(1:3,I)
-         enddo
-         write(*,*) 'qR'
-         do I = 1,nqR
-           write(*,*) qR(1:3,I)
-         enddo
-         call die('Stopping Code!')
-        end if 
-
-        nkpar=nqL
-        if(allocated(kpar)) deallocate(kpar)
-        allocate(kpar(3,nkpar))
-        kpar=qL
-        if(allocated(wkpar)) deallocate(wkpar)
-        allocate(wkpar(nkpar))
-        wkpar=wqL
-
-       else
-        write(*,*) 'Left/Right k-par must be equal !!'
-        write(*,*) 'nqR=',nqR,'nqL=',nqL
-        call die('Stopping Code!')
-
-       endif
-       if ( nkpar > 1 ) then
-        kpargamma=.false.
-       else
-        if ( kpar(1,1) /= 0d0 .or. 
-     .       kpar(2,1) /= 0d0 .or.
-     .       kpar(3,1) /= 0d0 ) then
-             
-         kpargamma=.false.     
-        
-        else
-       
-         kpargamma=.true.         
- 
-        end if 
-          
-       end if
-C FDN
-
-      endif
-
-C FDN
-#ifdef MPI
-      call MPI_Bcast(nkpar,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-      if (Node /= 0 ) then
-        if(allocated(kpar)) deallocate(kpar)
-        allocate(kpar(3,nkpar))
-        if(allocated(wkpar)) deallocate(wkpar)
-        allocate(wkpar(nkpar))
-      end if
-      call MPI_Bcast(kpar(1,1),3*nkpar,DAT_double,0,MPI_Comm_World,
-     .     MPIerror)
-      call MPI_Bcast(wkpar,nkpar,DAT_double,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(kpargamma,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-#endif
-C FDN
-
-#ifdef MPI
-       call MPI_Bcast(errorgf,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-#endif
-
-       if(errorgf) call die('ERROR in reading Right GF file') 
-
-#ifdef MPI
-      call MPI_Bcast(nuaR,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(NA1R,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(NA2R,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(nqR,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-
-      if(Node.ne.0) then
-C FDN
-       allocate(qR(3,nqR))
-       allocate(wqR(nqR))
-      endif
-
-C FDN
-      call MPI_Bcast(qR(1,1),3*nqR,DAT_double,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(wqR,nqR,DAT_double,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(NGR2,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-#endif
-
-c -------------------------------------------------------    
-         NGL=NGL2*NA1L*NA2L
-         NGR=NGR2*NA1R*NA2R
-c -------------------------------------------------------    
+! -------------------------------------------------------
          
-c
-c expected no. states on Electrode atoms: 
-c
-         allocate(lastoL(0:nuaL)) 
+! expected no. states on Electrode atoms within the Green's function file: 
+! Left
+         allocate(lastoL(0:nuaL_GF)) 
+         call memory('A','I',nuaL_GF+1,'transiesta')
+
          lastoL(0)=0
          ia2=0
-
-         do ia=NBUFATL+1,NBUFATL + nuaL*NA1L*NA2L, NA1L*NA2L
+         do ia=NBufAtL+1,NBufAtL + nuaL, NRepA1L*NRepA2L
             ia2=ia2+1
             lastoL(ia2)=lastoL(ia2-1) + (lasto(ia) - lasto(ia-1))
          end do                 !ia
 
-
-         if(lastoL(nuaL) .ne. NGL2) then
-            if(Node.eq.0)
-     .      write(6,*) 'ERROR: lastoL,NGL2',lastoL,NGL2
+         if(lastoL(nuaL_GF) .ne. noL_GF) then
+            if(IONode)
+     &           write(*,*) 'ERROR: lastoL,noL_GF',lastoL,noL_GF
             call die('ERROR: Unexpected no. orbs. in L elec.')
          end if
 
-         allocate(lastoR(0:nuaR))    
+! Right
+         allocate(lastoR(0:nuaR_GF))    
+         call memory('A','I',nuaR_GF+1,'transiesta')
+
          lastoR(0)=0
          ia2=0
-
-         do ia=nua-(nuaR*NA1R*NA2R + NBUFATR)+1,nua-NBUFATR, NA1R*NA2R  
+         do ia=na_u-(nuaR + NBufAtR)+1,na_u-NBufAtR, NRepA1R*NRepA2R
             ia2=ia2+1
             lastoR(ia2)=lastoR(ia2-1) + (lasto(ia) - lasto(ia-1))
          end do                 !ia
 
-
-
-         if(lastoR(nuaR) .ne. NGR2) then
-            if(Node.eq.0)
-     .      write(6,*) 'ERROR: lastoR,NGR2',lastoR,NGR2
+         if(lastoR(nuaR_GF) .ne. noR_GF) then
+            if(IONode)
+     &           write(*,*) 'ERROR: lastoR,noR_GF',lastoR,noR_GF
 
             call die('ERROR: Unexpected no. orbs. in R elec.')
          end if
+         
+         ! no more first time
+         firsttime = .false.
+      end if                    ! firsttime
 
-         if(Node.eq.0) then
-         write(jout,*) 'L-ELEC: lastoL: ',(lastoL(ia),ia=0,nuaL)
-         write(jout,*) 'R-ELEC: lastoR: ',(lastoR(ia),ia=0,nuaR)
-         endif
+! -------------------------------------------------------
 
-
-#ifdef MPI
-         if(.not. gamma) then
-         allocate(indxuo1(no))          
-            indxuo1 = indxuo    !just a copy of indxuo
-         else                   !gamma:
-         allocate(indxuo1(nuotot))          
-            do io=1,nuotot
-               indxuo1(io)=io   !just orb. number
-            end do
-         end if
-#else
-         if(.not. gamma) then
-         allocate(indxuo1(no))
-            indxuo1 = indxuo    !just a copy of indxuo
-         else                   !gamma:
-         allocate(indxuo1(nuo))
-            do io=1,nuo
-               indxuo1(io)=io   !just orb. number
-            end do
-         end if
-#endif
-
-c
-c No. orbitals on each atom:
-c
-         allocate(norbslist(nua))
-         maxbaso=0
-         do iau=1,nua
-            norbslist(iau)=lasto(iau)-lasto(iau-1)
-            if(norbslist(iau).gt. maxbaso) maxbaso = norbslist(iau)
-         end do                 !iau
-
-
-      end if                    !firsttime
-c -------------------------------------------------------
-
+      call timer("TS_calc",1)
 
 #ifdef MPI
-
-C Allocate local memory for global list arrays
-
-      allocate(numhg(nuotot))
-      allocate(listhptrg(nuotot))
-
-C Globalise numh
-      do io = 1,nuotot
-        call WhichNodeOrb(io,Nodes,BNode)
-        if (Node.eq.BNode) then
-          call GlobalToLocalOrb(io,Node,Nodes,iio)
-          numhg(io) = numh(iio)
-        endif
-
-        call MPI_Bcast(numhg(io),1,MPI_integer,BNode,
-     .    MPI_Comm_World,MPIerror)
-      enddo
-
-C Build global listhptr
-      listhptrg(1) = 0
-      do io = 2,nuotot
-        listhptrg(io) = listhptrg(io-1) + numhg(io-1)
-      enddo
-
-C Globalize listh
-      maxnhg = listhptrg(nuotot)+numhg(nuotot)
-      allocate(listhg(maxnhg))
-
-      do io = 1,nuotot
+      call glob_sparse_arrays(no_l,no_u,no_s,maxnh, 
+     &     numh ,listh ,listhptr ,xij , Gamma,
+     &     maxnhg,
+     &     numhg,listhg,listhptrg,xijg)
       
-        call WhichNodeOrb(io,Nodes,BNode)
-        if (Node.eq.BNode) then
-           call GlobalToLocalOrb(io,Node,Nodes,iio)
-           listhg(listhptrg(io)+1:listhptrg(io)+numhg(io)) =
-     .          listh(listhptr(iio)+1:listhptr(iio)+numh(iio))
-        endif
-        
-        call MPI_Bcast(listhg(listhptrg(io)+1),numhg(io),MPI_integer,
-     .    BNode,MPI_Comm_World,MPIerror)
-      enddo
-
       allocate(Dnewg(maxnhg,nspin))
       allocate(Enewg(maxnhg,nspin))
-      if(.not.gamma) allocate(xijg(3,maxnhg))
-
-
-      do io = 1,nuotot
-         call WhichNodeOrb(io,Nodes,BNode)
-        if (Node.eq.BNode) then
-          call GlobalToLocalOrb(io,Node,Nodes,iio)
-          do is = 1,nspin
-            do jo = 1,numh(iio)
-              Dnewg(listhptrg(io)+jo,is) = Dnew(listhptr(iio)+jo,is)
-              Enewg(listhptrg(io)+jo,is) = Enew(listhptr(iio)+jo,is)
-            enddo
-          enddo
-          if(.not.gamma) then
-           do jo = 1,numh(iio)
-             xijg(1:3,listhptrg(io)+jo) = xij(1:3,listhptr(iio)+jo)
-           enddo
-          endif
-        endif
-
-        do is = 1,nspin
-          call MPI_Bcast(Enewg(listhptrg(io)+1,is),numhg(io),DAT_double,
-     .      BNode,MPI_Comm_World,MPIerror)
-          call MPI_Bcast(Dnewg(listhptrg(io)+1,is),numhg(io),DAT_double,
-     .      BNode,MPI_Comm_World,MPIerror)
-        enddo
-
-        if(.not.gamma) 
-     .  call MPI_Bcast(xijg(1,listhptrg(io)+1),3*numhg(io),DAT_double,
-     .      BNode,MPI_Comm_World,MPIerror)
-
-      enddo
-
+      call memory('A','D',2*maxnhg*nspin,'transiesta')
+      
+      do is = 1, nspin
+         call glob_sparse_matrix(no_l,no_u,no_s,  
+     &        maxnh,  numh , listhptr ,Dnew(:,is) ,Enew(:,is),
+     &        maxnhg, numhg, listhptrg,Dnewg(:,is),Enewg(:,is))
+      end do
 #endif
+      call timer("TS_calc",2)
 
-c FIRSTTIME
-
+! New MD-step
       if(TSiscf.eq.1) then
-c     if(firsttime) then
-         if(Node.eq.0) write(6,*)"TRANSIESTA: Initializing lists"
+! -------------------------------------------------------
+!
+!     IMPORTANT: Here we set the region which we do not change in DM
+!                and initialize.
+!   Furthermore we determine the regions of charges.
+!   This helps in the discovery of charge redistribution during the
+!   self-consistent runs of TranSIESTA.
+         if(IONode) then
+            write(*,'(/,a)') 'Creating update lists and' //
+     &           ' calculating SIESTA charge distribution...'
+         endif         
 
-c -------------------------------------------------------
-c
-c     IMPORTANT: Here we set the region which we do not change in DM
-c                and initialize.
-c
-
-         if(allocated(listud)) deallocate(listud)
+         ! Check for allocated is necessary due to MD steps
+         ! The lists are constant for each iteration until
+         ! TSiscf is one!
+         if(allocated(listud)) then
+            call memory('D','L',size(listud),'transiesta')
+            deallocate(listud)
+         endif
          allocate(listud(maxnh))
+         call memory('A','L',maxnh,'transiesta')
          listud = .false.
 
-#ifdef MPI
-         if(allocated(listudg)) deallocate(listudg)
-         allocate(listudg(maxnhg))
-         listudg = .false.
-#endif
+         if(allocated(region)) then
+            call memory('D','I',size(region),'transiesta')
+            deallocate(region)
+         endif
+         allocate(region(maxnh))
+         call memory('A','I',maxnh,'transiesta')
 
-      do io = 1,nuo
+         do io = 1,no_l
 #ifdef MPI
             call  LocalToGlobalOrb(io, Node, Nodes, iio)
-            iuo = indxuo1(iio)
+            iuo = indxuo(iio)
 #else
-            iuo = indxuo1(io)
+            iuo = indxuo(io)
 #endif
-            ic = iuo - NBUFL
+            ic = iuo - noBufL
             do j = 1,numh(io)
                ind = listhptr(io) + j
                jo = listh(ind)
-               juo = indxuo1(jo)
+               juo = indxuo(jo)
 
-               jc = juo - NBUFL
+               jc = juo - noBufL
+
+               ! Retrieve the scattering position
+               region(ind) = get_scat_region(ic,noL,jc,noR,nou)
 
                ioinC=.false.
                joinC=.false.
-
                if(UseBulk) then !update only where Ham is updated:
-                  if(ic.gt.NGL .and. ic.lt.nou-NGR+1) ioinC=.true.
-                  if(jc.gt.NGL .and. jc.lt.nou-NGR+1) joinC=.true.
+                  if(ic.gt.noL .and. ic.lt.nou-noR+1) ioinC=.true.
+                  if(jc.gt.noL .and. jc.lt.nou-noR+1) joinC=.true.
 
-C FDN From fdf Now
+! FDN From fdf Now
                 if( .not. updatedmcr ) then                
-c
-c              update the cross DM terms between R,L and  C
-c
+!
+!              update the cross DM terms between R,L and  C
+!
                   updatedm = ioinC .or. joinC
                 else
-c
-c              update DM only in C
-c
+!
+!              update DM only in C
+!
                  updatedm = ioinC .and. joinC
-C FDN
+! FDN
                 end if
                else
                   if(ic.ge.1 .and. ic.le.nou) ioinC=.true.
@@ -867,815 +550,965 @@ C FDN
                   updatedm = ioinC .and. joinC
                end if           !UseBulk
 
-c     Always fix bonds between Left/Right electrodes:
-               if(jc.le.NGL .and. ic.ge.(nou-NGR+1))
-     .              updatedm=.false.
-               if(ic.le.NGL .and. jc.ge.(nou-NGR+1))
-     .              updatedm=.false.
+!     Always fix bonds between Left/Right electrodes:
+               if(jc.le.noL .and. ic.ge.(nou-noR+1))
+     &              updatedm=.false.
+               if(ic.le.noL .and. jc.ge.(nou-noR+1))
+     &              updatedm=.false.
                listud(ind)=updatedm
             end do              !j
          end do                 !io
 
 #ifdef MPI
-         do io = 1,nuotot
-            iuo = indxuo1(io)
-            ic = iuo - NBUFL
+         if(allocated(listudg)) then
+            call memory('D','L',size(listudg),'transiesta')
+            deallocate(listudg)
+         endif
+         allocate(listudg(maxnhg))
+         call memory('A','L',maxnhg,'transiesta')
+         listudg = .false.
+
+         if(allocated(regiong)) then
+            call memory('D','I',size(regiong),'transiesta')
+            deallocate(regiong)
+         endif
+         allocate(regiong(maxnhg))
+         call memory('A','I',maxnhg,'transiesta')
+
+         do io = 1,no_u
+            iuo = indxuo(io)
+            ic = iuo - noBufL
 
             do j = 1,numhg(io)
                ind = listhptrg(io) + j
                jo = listhg(ind)
-               juo = indxuo1(jo)
-               jc = juo - NBUFL
+               juo = indxuo(jo)
+               jc = juo - noBufL
+               
+               ! Retrieve the scattering position
+               regiong(ind) = get_scat_region(ic,noL,jc,noR,nou)
 
                ioinC=.false.
                joinC=.false.
-
                if(UseBulk) then !update only where Ham is updated:
-                  if(ic.gt.NGL .and. ic.lt.nou-NGR+1) ioinC=.true.
-                  if(jc.gt.NGL .and. jc.lt.nou-NGR+1) joinC=.true.
-C FDN From fdf Now
+                  if(ic.gt.noL .and. ic.lt.nou-noR+1) ioinC=.true.
+                  if(jc.gt.noL .and. jc.lt.nou-noR+1) joinC=.true.
+! FDN From fdf Now
                   if( .not. updatedmcr ) then                
-c
-c              update the cross DM terms between R,L and  C
-c
+!
+!              update the cross DM terms between R,L and  C
+!
                      updatedm = ioinC .or. joinC
                   else
-c
-c              update DM only in C
-c
+!
+!              update DM only in C
+!
                      updatedm = ioinC .and. joinC
-C FDN
+! FDN
                   end if
                else
                   if(ic.ge.1 .and. ic.le.nou) ioinC=.true.
                   if(jc.ge.1 .and. jc.le.nou) joinC=.true.
                   updatedm = ioinC .and. joinC
                end if           !UseBulk
-
-               if(jc.le.NGL .and. ic.ge.(nou-NGR+1))
-     .              updatedm=.false.
-               if(ic.le.NGL .and. jc.ge.(nou-NGR+1))
-     .              updatedm=.false.
+               if(jc.le.noL .and. ic.ge.(nou-noR+1))
+     &              updatedm=.false.
+               if(ic.le.noL .and. jc.ge.(nou-noR+1))
+     &              updatedm=.false.
                listudg(ind)=updatedm
             end do              !j
          end do                 !io
 #endif
 
+! -------------------------------------------------------
+! 
+!     Show number of orbitals updated...
+!     As the updated region must be symmetric, we can easily
+!     count the "true" number of updated orbitals
+!
+#ifdef MPI
+         ind = maxnhg
+         io = count(listudg)
+#else
+         ind = maxnh
+         io = count(listud)
+#endif
+         if ( IOnode ) then
+            write(*,'(/,2(a,i8))') 
+     &           "transiesta: Total elements / Updated elements : ",
+     &           ind," / ",io
+         end if
 
-c -------------------------------------------------------
-c
-c     Calculate initial L-C-R region charge
-c
+! -------------------------------------------------------
+!
+!     Calculate initial region charges
+!
+         allocate(Q_kpt(0:9,nspin,1))
+         Q_kpt(:,:,:) = 0.0_dp
+         call memory('A','D',nspin*10,'transiesta')
 
-         QCn0 = 0d0
+         Qcn = 0.d0
          do ispin = 1,nspin
             do ind = 1,maxnh
-                 if(.not.listud(ind)) then
-                      QCn0 = QCn0 + Dnew(ind,ispin)*Ss(ind)
-                 endif
+               if(.not.listud(ind)) then
+                  Qcn = Qcn + Dnew(ind,ispin)*Ss(ind)
+               endif
+               Q_kpt(region(ind),ispin,1) =
+     &              Q_kpt(region(ind),ispin,1)+
+     &              Dnew(ind,ispin)*Ss(ind)
             end do              !io
          end do                 !ispin
 
 #ifdef MPI
-      call MPI_AllReduce(qcn0,qcloc,1,
-     .  DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
-       qcn0 = qcloc
+         call MPI_AllReduce(Qcn,qcloc,1,
+     &        DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
+         Qcn = Qcloc
 
+         allocate(Q_kpt_loc(0:9,nspin,1))
+         call memory('A','D',nspin*10,'transiesta')
+         call MPI_AllReduce(Q_kpt,Q_kpt_loc,nspin*10,
+     &        DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
+         Q_kpt = Q_kpt_loc
+         call memory('D','D',nspin*10,'transiesta')
+         deallocate(Q_kpt_loc)
 #endif
 
-        if(Node.eq.0) then 
-           write(jout,'(a,f8.3)') 'From SIESTA: Efermi=',ef/eV
-           write(jout,'(a,f8.3)')'qc0 :',Qc0
-           write(jout,'(a,f8.3)')'qcn0 :',Qcn0
-           write(jout,*) 'nou,NGL,NGR:',nou,NGL,NGR
-        end if    
+!     Write out charges in each region
+!     If a buffer region exists it will print out information about
+!     those as well
+         Qc = Qtot - Qcn
 
-
-        qc0 = qtot -qcn0
-
-c      end if                    !firsttime
+         if(IONode) then 
+            write(*,'(4(/,a,f12.5))')
+     &           'Efermi from SIESTA                   :',ef/eV,
+     &           'Total charge                  [Qt0]  :',Qtot,
+     &           'Charge in update region       [Qc]   :',Qc,
+     &           'Charge outside update region  [Qcn]  :',Qcn
+            if ( NBufAtL > 0 ) write(*,'(a,f12.5,/,a,f12.5)')
+     &           'Left buffer                   [LB]   :',Q_kpt(1,1,1),
+     &           'Left buffer/left electrode    [LB-L] :',Q_kpt(2,1,1)
+            write(*,'(a,f12.5,4(/,a,f12.5))')
+     &           'Left electrode                [L]    :',Q_kpt(3,1,1),
+     &           'Left electrode/device         [L-C]  :',Q_kpt(4,1,1),
+     &           'Device                        [C]    :',Q_kpt(5,1,1),
+     &           'Device/right electrode        [C-R]  :',Q_kpt(6,1,1),
+     &           'Right electrode               [R]    :',Q_kpt(7,1,1)
+            if ( NBufAtR > 0 ) write(*,'(a,f12.5,/,a,f12.5)')
+     &           'Right electrode/right buffer  [R-RB] :',Q_kpt(8,1,1),
+     &           'Right buffer                  [RB]   :',Q_kpt(9,1,1)
+            write(*,'(a,f12.5,/)')
+     &           'Other                         [O]    :',Q_kpt(0,1,1)
+         end if    
+         ! Deallocate Q_kpt as we will reuse it in the update of the region
+         call memory('D','D',nspin*10,'transiesta')
+         deallocate(Q_kpt)
       end if                    !TSiscf ==1
 
-   
+      call timer("TS_calc",1)
 
-c----------------------------------------------
-c Allocation
 
-        allocate(H(nou*nou) )
-        allocate(S(nou*nou))
-C FDN Complex for k point sampling
-        if ( kpargamma ) then
+! -------------------------------------------------------
+!     Read-in header of Green's functions
+!     Prepare for the calculation
+!     We read in the k-points that the electrode was generated with.
+!     Furthermore we read in the expansion q-points
+!     They are communicated in the routine
+
+
+      if(IONode) then
+         call io_assign(uGFL)
+         open(file=GFFileL,unit=uGFL,form='unformatted')
+         call io_assign(uGFR)
+         open(file=GFFileR,unit=uGFR,form='unformatted')
+      endif
+
+! Left
+      call read_Green(uGFL,TSiscf==1,VoltL,ts_nkpnt,NEn,nuaL_GF, 
+     &     NRepA1L,NRepA2L,noL_GF,nspin,
+     &     nkparL,kparL,wkparL,
+     &     nqL,wqL,qLb)
+
+! Right
+      call read_Green(uGFR,TSiscf==1,VoltR,ts_nkpnt,NEn,nuaR_GF,
+     &     NRepA1R,NRepA2R,noR_GF,nspin, 
+     &     nkparR,kparR,wkparR,
+     &     nqR,wqR,qRb)
+
+!----------------------------------------------
+! Allocation
+#ifdef MPI
+      ! Allocate for the globalized sparse matrices
+      allocate(Hsg(maxnhg),Ssg(maxnhg))
+      call memory('A','D',maxnhg*2,'transiesta')
+#endif
+
+      nullify(H,S)
+      allocate(H(nou,nou))
+      allocate(S(nou,nou))
+      call memory('A','Z',2*nou*nou,'transiesta')
+! FDN Complex for k point sampling
+      if ( ts_gamma_scf ) then
          allocate(DM(nou*nou))
          allocate(EDM(nou*nou))
-        else
+         call memory('A','D',2*nou*nou,'transiesta')
+      else
          allocate(DMCplx(nou*nou))
          allocate(EDMCplx(nou*nou))
-        end if
-C FDN
-
+         call memory('A','Z',2*nou*nou,'transiesta')
+      end if
       
-        allocate(SFEL(NGL,NGL))
-        allocate(SFER(NGR,NGR))
-        allocate(GAMMAL(NGL,NGL))
-        allocate(GAMMAR(NGR,NGR))
-     
-C FDN New dimensions
-C        allocate(HAAL(NGL2,NGL2,nqL))
-C        allocate(SAAL(NGL2,NGL2,nqL))
-C        allocate(HAAR(NGR2,NGR2,nqR))
-C        allocate(SAAR(NGR2,NGR2,nqR))
-        allocate(HAAL(NGL2,NGL2,1))
-        allocate(SAAL(NGL2,NGL2,1))
-        allocate(HAAR(NGR2,NGR2,1))
-        allocate(SAAR(NGR2,NGR2,1))
-C FDN
+      allocate(SFEL(noL,noL),SFER(noR,noR))
+      allocate(GAMMAL(noL,noL),GAMMAR(noR,noR))
+      call memory('A','Z',2*noL**2+2*noR**2,'transiesta')
+      allocate(HAAL(noL_GF,noL_GF,nqL),SAAL(noL_GF,noL_GF,nqL))
+      allocate(HAAR(noR_GF,noR_GF,nqR),SAAR(noR_GF,noR_GF,nqR))
+      call memory('A','Z',2*noL_GF**2*nqL+2*noR_GF**2*nqR,'transiesta')
 
-
-        if(isvolt)then
-C FDN Complex for k point sampling
+      if(IsVolt)then
+! FDN Complex for k point sampling
          allocate(work2(nou*nou))
-         if ( kpargamma ) then      
-          allocate(DMR(nou*nou))
-          allocate(DMneqL(nou*nou))
-          allocate(DMneqR(nou*nou))
-          allocate(EDMR(nou*nou))
+         call memory('A','D',nou*nou,'transiesta')
+         if ( ts_gamma_scf ) then      
+            allocate(DMR(nou*nou))
+            allocate(DMneqL(nou*nou),DMneqR(nou*nou))
+            allocate(EDMR(nou*nou))
+            call memory('A','D',4*nou*nou,'transiesta')
          else
-          allocate(DMRCplx(nou*nou))
-          allocate(DMneqLCplx(nou*nou))
-          allocate(DMneqRCplx(nou*nou))
-          allocate(EDMRCplx(nou*nou))
+            allocate(DMRCplx(nou*nou))
+            allocate(DMneqLCplx(nou*nou),DMneqRCplx(nou*nou))
+            allocate(EDMRCplx(nou*nou))
+            call memory('A','Z',4*nou*nou,'transiesta')
          end if
-        endif
-
-c----------------------------------------------
-
-
-C FDN  Put outside kpar loop
-
-c -------------------------------------------------------
-c     Read-in header of Green's functions
-c
-      nullify(wqR); nullify(wqL); nullify(qR); nullify(qL)
-
-
-
-         if(Node.eq.0) then
-c Left
-
-         call io_assign(jgfL)
-          open(file=gffileLeft,unit=jgfL,form='unformatted')
-
-          call read_green(jgfL,NEn,contour,WGF,
-     .              nuaL,NA1L,NA2L,nqL,NGL2,wqL,qL,errorgf)
-
-          endif
-#ifdef MPI
-
-      call MPI_Bcast(nqL,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-
-      if(Node.ne.0) then
-C FDN
-         allocate(qL(3,nqL))
-         allocate(wqL(nqL))
       endif
 
-C FDN
-      call MPI_Bcast(qL(1,1),3*nqL,DAT_double,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(wqL,nqL,DAT_double,0,MPI_Comm_World,MPIerror)
-#endif
+! Prepare for the gathering of the charges in the different regions
+      allocate(Q_kpt(0:9,0:ts_nkpnt,nspin))
+      Q_kpt(:,:,:) = 0.0_dp
+      call memory('A','D',(1+ts_nkpnt)*nspin*10,'transiesta')
 
-c --------------------------
-c Right
-         if(Node.eq.0) then
-          call io_assign(jgfR)
-          open(file=gffileRight,unit=jgfR,form='unformatted')
-          call read_green(jgfR,NEn,contour,WGF,
-     .              nuaR,NA1R,NA2R,nqR,NGR2,wqR,qR,errorgf)
-         endif
+      nullify(GF)
+      allocate(GF(nou*nou))
+      call memory('A','Z',nou*nou,'transiesta')
+
+! FDN Spin loop
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      do ispin = 1,nspin        !not really implemented yet!!
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 #ifdef MPI
-      call MPI_Bcast(nqR,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-
-      if(Node.ne.0) then
-C FDN
-        allocate(qR(3,nqR))
-        allocate(wqR(nqR))
-      endif
-
-C FDN
-      call MPI_Bcast(qR(1,1),3*nqR,DAT_double,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(wqR,nqR,DAT_double,0,MPI_Comm_World,MPIerror)
-#endif
-
-C FDN Spin loop
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      do ispin = 1,nspin !not really implemented yet!!
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
-
-C FDN kpar loop
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-        do ikpar=1,nkpar           ! kpar loop
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
-
-         k(:)=kpar(:,ikpar)
-
-
-c     
-c     Init DM, EDM
-c
-C FDN 
-        if (kpargamma) then    
-         DM    =  0d0
-         EDM   =  0d0
-        else
-C FDN Complex
-         DMCplx=dcmplx(0d0,0d0)
-         EDMCplx=dcmplx(0d0,0d0)
-        end if
-C FDN
-
-         if(isvolt) then
-C FDN
-          if (kpargamma) then            
-            DMR    = 0d0
-            DMneqL = 0d0
-            DMneqR = 0d0
-            EDMR   = 0d0
-          else
-C FDN Complex
-            DMRCplx    = dcmplx(0d0,0d0)
-            DMneqLCplx = dcmplx(0d0,0d0)
-            DMneqRCplx = dcmplx(0d0,0d0)
-            EDMRCplx   = dcmplx(0d0,0d0)
-          end if
-C FDN
- 
-         end if                
-
-c setup hamiltonian
-
-#ifdef MPI 
-
-         call  consHSp(nuo, no,   maxnh,  maxnhg,
-     .                 gamma, numh, listhptr,
-     .                 numhg, listhptrg,listhg,
-     .                 Hs(1,ispin), Ss, xijg, indxuo1, k, nuotot,
-     .                 H,S, Node, Nodes,ef,nou,NGL,NGR,NBUFL)
-
-#else
-
-         call consHS( nuo, no,  maxnh,gamma, numh, listhptr,
-     .                listh,Hs(1,ispin), Ss, xij, indxuo1, 
-     .                k,H,S,ef,nou, NGL,NGR,NBUFL)
-#endif
-
-      
-C=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
-      do 7913 iPE = 1, NPARACONTOUR ! loop over parallel contour points
-C=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
-
-C         allocate(GF(nou*nou))
+         ! Communicate out the globalized sparse matrices
+         ! There is no need to do this within the k-point loop
+         ! However, it will require maxnhg*2 more disk space...
+         call glob_sparse_matrix(no_l,no_u,no_s,
+     &        maxnh,  numh , listhptr ,Hs(:,ispin) ,Ss,
+     &        maxnhg, numhg, listhptrg,Hsg,Ssg)
          
+#endif
 
-c       if(Node.eq.0.and.iPE.eq.1) write(6,*)iPE
+!     Initialize density here instead of in the k-point loop
+#ifdef MPI
+         do ind = 1,maxnhg
+            if(listudg(ind)) then
+               Dnewg(ind,ispin) = 0d0
+               Enewg(ind,ispin) = 0d0
+            end if
+         end do
+#else
+         do ind = 1,maxnh
+            if(listud(ind)) then
+               Dnew(ind,ispin)  = 0d0
+               Enew(ind,ispin)  = 0d0
+            end if
+         end do
+#endif
 
-         Z = paracontour(iPE,Node)    ! ZEnergy point for this node
-         Part = contourpart(iPE,Node) ! and place on the contour
 
-c     Weight of energy point:
-c     This is where we include the factor-of-two for spin and
-c     and the (1/Pi) from DM = Im[G]/Pi
+! we wish to loop over the large k-points... 
+!     other sub calls that ts_kpoint is the correct array...
+         DO ts_ikpt = 1 , ts_nkpnt
+          k(:) = ts_kpoint(:,ts_ikpt)
+
+!     
+!     Init DM, EDM
+!
+          if (ts_gamma_scf) then 
+            do i = 1 , nou*nou ! Explicit loops are faster
+               DM(i)  =  0.d0
+               EDM(i) =  0.d0
+            end do
+            if (IsVolt) then
+              do i = 1 , nou*nou
+                 DMR(i)    = 0.d0
+                 DMneqL(i) = 0.d0
+                 DMneqR(i) = 0.d0
+                 EDMR(i)   = 0.d0
+              end do
+            end if
+          else
+            do i = 1 , nou*nou
+               DMCplx(i)  = dcmplx(0.d0,0.d0)
+               EDMCplx(i) = dcmplx(0.d0,0.d0)
+            end do
+            if (IsVolt) then
+              do i = 1 , nou*nou
+                 DMRCplx(i)    = dcmplx(0.d0,0.d0)
+                 DMneqLCplx(i) = dcmplx(0.d0,0.d0)
+                 DMneqRCplx(i) = dcmplx(0.d0,0.d0)
+                 EDMRCplx(i)   = dcmplx(0.d0,0.d0)
+              end do
+            end if
+          end if
+
+! Here we could employ the same scheme as in the TBTrans utility
+! This should yield a faster communication as each k-point
+! is calculated on separate nodes...
+! Then it is only the communication overhead which "slows" the
+! computation down.
+#ifdef MPI
+          call set_HS_matrix(Gamma,ucell,na_u,no_u,no_s,
+     &         maxnhg,xijg,numhg,listhptrg,listhg,indxuo,Hsg,Ssg, 
+     &         k,H,S,
+     &         RemNFirstOrbitals=noBufL,RemNLastOrbitals=noBufR)
+#else
+          call set_HS_matrix(Gamma,ucell,na_u,no_u,no_s,
+     &         maxnh,xij,numh,listhptr,listh,indxuo,Hs(:,ispin),Ss,
+     &         k,H,S,
+     &         RemNFirstOrbitals=noBufL,RemNLastOrbitals=noBufR)
+#endif
+          call matrix_rem_left_right(nou,H,S,noL,noR)
+          ! The symmetrization has been moved to this routine
+          call matrix_symmetrize(nou,H,S,Ef)
+          
+!=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
+         DO iPE = Node+1, PNEn, Nodes ! loop over parallel contour points
+!=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
+         iE = min(iPE,NEn)
+         Z = contour(iE)%c    ! ZEnergy point for this node
+
+!     Weight of energy point:
+!     This is where we include the factor-of-two for spin and
+!     and the (1/Pi) from DM = Im[G]/Pi
+!     Furthermore we include the weight of the k-point
          if(nspin.eq.1) then
-            W = (2d0/Pi)*paraWGF(iPE,Node)
+            W = (2d0/Pi)*contour(iE)%w*ts_kweight(ts_ikpt)
          else
-            W = (1d0/Pi)*paraWGF(iPE,Node)
+            W = (1d0/Pi)*contour(iE)%w*ts_kweight(ts_ikpt)
          end if
 
-c----------------------------------------------------------------------
-c At this point we need the transformation from
-c G(q) in (1x1) to G(0) in (NA1xNA2)
-c
-c SFEL/SFER  <------ GAAL/GAAR
+         ! Save Z*W, used for E-arrays
+         ZW = Z*W
+!----------------------------------------------------------------------
+! At this point we need the transformation from
+! G(q) in (1x1) to G(0) in (NA1xNA2)
+!
+! SFEL/SFER  <------ GAAL/GAAR
 
-c         if(Node.eq.0) write(6,*) "hola getsfe L", ipe
-c LEFT:
+! LEFT:
+         call getSFE(UseBulk,uGFL,HAAL,SAAL,Z,ts_ikpt,
+     &        nqL,qLb,wqL,
+     &        noL_GF,
+     &        nuaL_GF,lastoL,NRepA1L,NRepA2L,
+     &        noL,SFEL,GAMMAL,
+     &        min(Nodes,NEn-(iPE-1-Node)),errorgs)
 
+         if(errorgs) call die('ERROR in getSFE Left') 
 
+! RIGHT:
+         call getSFE(UseBulk,uGFR,HAAR,SAAR,Z,ts_ikpt,
+     &        nqR,qRb,wqR,
+     &        noR_GF,
+     &        nuaR_GF,lastoR,NRepA1R,NRepA2R,
+     &        noR,SFER,GAMMAR,
+     &        min(Nodes,NEn-(iPE-1-Node)),errorgs)
 
-         call getsfe(USEBULK,jgfL,HAAL,SAAL,Z,
-     &        NGL2,NGL,SFEL,GAMMAL,
-     &        Nodes,points2read(iPE),errorgs,ikpar)
-
-C FDN
-
-#ifdef MPI
-       call MPI_Bcast(errorgs,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-#endif
-       if(errorgs) call die('ERROR in getsfe') 
-
-c        if(Node.eq.0) write(6,*) "hola getsfe R", ipe
-c RIGHT:
-
-         call getsfe(USEBULK,jgfR,HAAR,SAAR,Z,
-     &        NGR2,NGR,SFER,GAMMAR,
-     &        Nodes,points2read(iPE),errorgs,ikpar)
-
-C FDN
-          
-#ifdef MPI
-       call MPI_Bcast(errorgs,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-#endif
-       if(errorgs) call die('ERROR in getsfe') 
+         if(errorgs) call die('ERROR in getSFE Right') 
 
        
-c Calculate Full GF at energy point
-       ierr=0
-
-       call  getGF_Tri(USEBULK,nou,NGL,NGR,H,S,SFEL,SFER,Z,GF,ierr,
-     . TriDiag)
+! Calculate Full GF at energy point
+         ierr=0
+         call getGF(UseBulk,updatedmcr,VoltFDF,nou,noL,noR,H,S,SFEL
+     &        ,SFER,Z,GF,ierr,TriDiag)
       
 #ifdef MPI
-C FDN
-      if (Nodes.gt.1)  then
-        call MPI_AllReduce(ierr,itmp,1,MPI_integer,MPI_sum,
-     .       MPI_Comm_World,MPIerror)      
-        ierr=itmp 
-      end if
-C FDN     
+         itmp = 0
+         call MPI_AllReduce(ierr,itmp,1,MPI_integer,MPI_sum,
+     &        MPI_Comm_World,MPIerror)      
+         ierr=itmp 
 #endif
-      IF(IERR.NE.0) THEN
-         if(Node.eq.0) then
-            write(jout,*) 'ERROR: getGF MATRIX INVERSION FAILED'
-         endif 
-      END IF
 
+         if(ierr.ne.0) then
+            if(IONode) then
+               write(*,*) 'ERROR: getGF MATRIX INVERSION FAILED'
+            endif 
+         end if
 
-c -------------------------------------------------------------
-c     No voltage/Left Equilibrium Contour:
-         if(Part .eq. 'N' .or. Part .eq. 'L') then
-            do i=1,nou*nou
-C FDN
-              if (kpargamma) then
+! We should not do anything in case of no more points
+         if ( iPE > NEn ) cycle
+! -------------------------------------------------------------
+!     No voltage/Left Equilibrium Contour:
+         select case ( contour(iE)%part )
+         case ( CC_PART_EQUI , CC_PART_LEFT_EQUI )
+            
+            if (ts_gamma_scf) then
+              do i=1,nou*nou
                DM(i)  =  DM(i) - DIMAG(GF(i)*W)
-               EDM(i) = EDM(i) - DIMAG(Z*GF(i)*W)
-              else
-C FDN Complex for k sampling
-               DMCplx(i) = DMCplx(i) - GF(i)*W
-               EDMCplx(i) = EDMCplx(i) - Z*GF(i)*W
-              end if
-C FDN
-            end do              !i
-    
+               EDM(i) = EDM(i) - DIMAG(GF(i)*ZW)
+              end do ! i
+           else
+              do i=1,nou*nou
+               DMCplx(i)  =  DMCplx(i) - GF(i)*W
+               EDMCplx(i) = EDMCplx(i) - GF(i)*ZW
+              end do ! i
+           end if
+! -------------------------------------------------------------
+!     Right Equilibrium Contour:
+         case ( CC_PART_RIGHT_EQUI )
+            if (ts_gamma_scf) then
+               do i=1,nou*nou
+                DMR(i)  =  DMR(i) - DIMAG(GF(i)*W)
+                EDMR(i) = EDMR(i) - DIMAG(GF(i)*ZW)
+               end do ! i
+            else 
+               do i=1,nou*nou
+                DMRCplx(i)  =  DMRCplx(i) - GF(i)*W
+                EDMRCplx(i) = EDMRCplx(i) - GF(i)*ZW
+               end do ! i
+            end if
+! -------------------------------------------------------------
+!     Non-equilibrium part:
+         case ( CC_PART_NON_EQUI )
 
-c -------------------------------------------------------------
-c     Right Equilibrium Contour:
-         else if(Part .eq. 'R') then
-            do i=1,nou*nou
-C FDN
-              if (kpargamma) then
-               DMR(i)  =  DMR(i) - DIMAG(GF(i)*W)
-               EDMR(i) = EDMR(i) - DIMAG(Z*GF(i)*W)
-              else 
-C FDN Complxe for k sampling
-               DMRCplx(i)  =  DMRCplx(i) - GF(i)*W
-               EDMRCplx(i) = EDMRCplx(i) - Z*GF(i)*W
-              end if
-C FDN
-            enddo
+!   Calculate rho^R(e) -> work2 ! NOTE R!!
+            call GFGammaGF(.false.,nou,noR,GF,GAMMAR,work2)
+! note DM = DML+DMneqR or DM=DMR+DMneqL
 
+! note we use "+" here!
+            if (ts_gamma_scf) then
+               do i=1,nou*nou
+                DMneqR(i) = DMneqR(i) + DIMAG(work2(i)*W)
+                EDM(i)    = EDM(i)    + DIMAG(work2(i)*ZW)
+               end do ! i
+            else
+               do i=1,nou*nou
+                DMneqRCplx(i) = DMneqRCplx(i) + work2(i)*W
+                EDMCplx(i)    = EDMCplx(i)    + work2(i)*ZW
+               end do ! i
+            end if
+
+!  Calculate rho^L(e) -> work2 ! NOTE L!!
+            call GFGammaGF(.true.,nou,noL,GF,GAMMAL,work2)
         
-c -------------------------------------------------------------
-c     Non-equilibrium part:
-         else if(Part .eq. 'V') then
-
-
-c   Calculate rho^R(e) -> work2 ! NOTE R!!
-        call GFGammaGF(.false.,nou,NGR,GF,GAMMAR,work2)
-        
-c note DM = DML+DMneqR or DM=DMR+DMneqL
-c note we use "+" here!
-
-            do i=1,nou*nou
-C FDN
-              if (kpargamma) then
-               DMneqR(i) = DMneqR(i) +DIMAG(work2(i)*W)
-               EDM(i)    = EDM(i) + DIMAG(Z*work2(i)*W)
-              else
-C FDN Complexe for k sampling
-               DMneqRCplx(i) = DMneqRCplx(i) +work2(i)*W
-               EDMCplx(i)    = EDMCplx(i) + Z*work2(i)*W
-              end if
-C FDN
-            end do
-c  Calculate rho^L(e) -> work2 ! NOTE L!!
-
-        call GFGammaGF(.true.,nou,NGL,GF,GAMMAL,work2)
-        
-c     note we use "-" here!
-            do i=1,nou*nou
-C FDN
-              if (kpargamma) then
-               DMneqL(i) = DMneqL(i) - DIMAG(work2(i)*W)
-               EDMR(i)   = EDMR(i) + DIMAG(Z*work2(i)*W)
-              else
-C FDN Complex for k sampling
-               DMneqLCplx(i) = DMneqLCplx(i) - work2(i)*W
-               EDMRCplx(i)   = EDMRCplx(i) + Z*work2(i)*W
-              end if
-C FDN
-            end do
-c -------------------------------------------------------------
-         else
-            if(Node.eq.0) 
-     .      write(6,*) 'TRANSIESTA: ERROR in contour setup!'
+!     note we use "-" here!
+            if (ts_gamma_scf) then
+               do i=1,nou*nou
+                DMneqL(i) = DMneqL(i) - DIMAG(work2(i)*W)
+                EDMR(i)   = EDMR(i)   + DIMAG(work2(i)*ZW)
+               end do ! i
+            else
+               do i=1,nou*nou
+                DMneqLCplx(i) = DMneqLCplx(i) - work2(i)*W
+                EDMRCplx(i)   = EDMRCplx(i)   + work2(i)*ZW
+               end do
+            end if
+! -------------------------------------------------------------
+         !case ( CC_PART_TRANSPORT )
+            ! For the moment do nothing...
+         case default
+            if(IONode) 
+     &           write(6,*) 'TRANSIESTA: ERROR in contour setup!'
            call die ('TRANSIESTA: ERROR in contour setup!')
-         end if                 !which part of the contour ??
-! As a pointer it MUST be deallocated
-         deallocate(GF)
+         end select                 !which part of the contour ??
          
 
-C=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
- 7913    continue               ! the loop over ALL contour points
-c                               ! on each processor
-C=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
+!=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
+      END DO                    ! the loop over ALL contour points
+!                               ! on each processor
+!=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
 
-c     on return the result is in DM and EDM
-
+!     on return the result is in DM and EDM
+! We need a reduction
+! There is no need to initialize the work1 er work1cmplx arrays.
+! The interface for the MPI routines are INTENT(OUT) which ensures
+! correct handling.
 #ifdef MPI
 
-C Global reduction of density matrices
+! Global reduction of density matrices
+      call timer("TS_comm",1)
+! FDN ts_gamma_scf
+      if (ts_gamma_scf) then
+         allocate(work1(nou*nou))
+         call memory('A','D',nou*nou,'transiesta')
+         
+!         work1 = 0.0d0
+         call MPI_AllReduce(DM,work1,nou*nou,
+     &        DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
+         DM = work1
 
-C FDN kpargamma
-      if (kpargamma) then
-       allocate(work1(nou*nou))
-
-       work1 = 0.0d0
-       call MPI_AllReduce(DM,work1,nou*nou,
-     .     DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
-       DM = work1
-
-       work1 = 0.0d0
-       call MPI_AllReduce(EDM,work1,nou*nou,
-     .     DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
-       EDM = work1
+!         work1 = 0.0d0
+         call MPI_AllReduce(EDM,work1,nou*nou,
+     &        DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
+         EDM = work1
       
-       if (isvolt) then
+         if (IsVolt) then
 
-          work1 = 0.0d0
-          call MPI_AllReduce(DMR,work1,nou*nou,
-     .        DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
-          DMR = work1
-          work1 = 0.0d0
+!            work1 = 0.0d0
+            call MPI_AllReduce(DMR,work1,nou*nou,
+     &           DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
+            DMR = work1
 
-          call MPI_AllReduce(DMneqL,work1,nou*nou,
-     .        DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
-          DMneqL = work1
-          work1 = 0.0d0
- 
-          call MPI_AllReduce(DMneqR,work1,nou*nou,
-     .        DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
-         DMneqR = work1
-         work1 = 0.0d0
-         call MPI_AllReduce(EDMR,work1,nou*nou,
-     .       DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
-         EDMR = work1
-        
-       endif
+!            work1 = 0.0d0
+            call MPI_AllReduce(DMneqL,work1,nou*nou,
+     &           DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
+            DMneqL = work1
 
-       deallocate(work1)
+!            work1 = 0.0d0
+            call MPI_AllReduce(DMneqR,work1,nou*nou,
+     &           DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
+            DMneqR = work1
+
+!            work1 = 0.0d0
+            call MPI_AllReduce(EDMR,work1,nou*nou,
+     &           DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
+            EDMR = work1
+            
+         endif
+       
+         call memory('D','D',size(work1),'transiesta')
+         deallocate(work1)
       else
 
-       allocate(work1Cplx(nou*nou))
+         allocate(work1Cplx(nou*nou))
+         call memory('A','Z',nou*nou,'transiesta')
 
-       work1Cplx = 0.0d0
-       call MPI_AllReduce(DMCplx,work1Cplx,nou*nou,
-     .     DAT_dcomplex,MPI_sum,MPI_Comm_World,MPIerror)
-       DMCplx = work1Cplx
+!         work1Cplx = 0.0d0
+         call MPI_AllReduce(DMCplx,work1Cplx,nou*nou,
+     &        DAT_dcomplex,MPI_sum,MPI_Comm_World,MPIerror)
+         DMCplx = work1Cplx
 
-       work1Cplx = 0.0d0
+!         work1Cplx = 0.0d0
+         call MPI_AllReduce(EDMCplx,work1Cplx,nou*nou,
+     &        DAT_dcomplex,MPI_sum,MPI_Comm_World,MPIerror)
+         EDMCplx = work1Cplx
 
-       call MPI_AllReduce(EDMCplx,work1Cplx,nou*nou,
-     .     DAT_dcomplex,MPI_sum,MPI_Comm_World,MPIerror)
-       EDMCplx = work1Cplx
+         if (IsVolt) then
 
-       if (isvolt) then
+!            work1Cplx = 0.0d0
+            call MPI_AllReduce(DMRCplx,work1Cplx,nou*nou,
+     &           DAT_dcomplex,MPI_sum,MPI_Comm_World,MPIerror)
+            DMRCplx = work1Cplx
 
-          work1Cplx = 0.0d0
-          call MPI_AllReduce(DMRCplx,work1Cplx,nou*nou,
-     .        DAT_dcomplex,MPI_sum,MPI_Comm_World,MPIerror)
-          DMRCplx = work1Cplx
-          work1Cplx = 0.0d0
+!            work1Cplx = 0.0d0
+            call MPI_AllReduce(DMneqLCplx,work1Cplx,nou*nou,
+     &           DAT_dcomplex,MPI_sum,MPI_Comm_World,MPIerror)
+            DMneqLCplx = work1Cplx
+            
+!            work1Cplx = 0.0d0
+            call MPI_AllReduce(DMneqRCplx,work1Cplx,nou*nou,
+     &           DAT_dcomplex,MPI_sum,MPI_Comm_World,MPIerror)
+            DMneqRCplx = work1Cplx
 
-          call MPI_AllReduce(DMneqLCplx,work1Cplx,nou*nou,
-     .        DAT_dcomplex,MPI_sum,MPI_Comm_World,MPIerror)
-          DMneqLCplx = work1Cplx
-          work1Cplx = 0.0d0
- 
-          call MPI_AllReduce(DMneqRCplx,work1Cplx,nou*nou,
-     .        DAT_dcomplex,MPI_sum,MPI_Comm_World,MPIerror)
-         DMneqRCplx = work1Cplx
-         work1Cplx = 0.0d0
-         call MPI_AllReduce(EDMRCplx,work1Cplx,nou*nou,
-     .       DAT_dcomplex,MPI_sum,MPI_Comm_World,MPIerror)
-         EDMRCplx = work1Cplx
-        
-       endif
+!            work1Cplx = 0.0d0
+            call MPI_AllReduce(EDMRCplx,work1Cplx,nou*nou,
+     &           DAT_dcomplex,MPI_sum,MPI_Comm_World,MPIerror)
+            EDMRCplx = work1Cplx
+            
+         endif
 
-       deallocate(work1Cplx)
-
+         call memory('D','Z',size(work1Cplx),'transiesta')
+         deallocate(work1Cplx)
 
       end if
-C FDN kpragamma
-#endif
+      call timer("TS_comm",2)
+#endif MPI
 
-      if (isvolt  ) then 
-C FDN
-        if ( ikpar == nkpar .and. ispin == nspin ) then
-         deallocate(work2)
-        end if
-       if (kpargamma) then
-         call weightDM(nou,NGL,NGR,DM,DMR,DMneqL,
-     .        DMneqR,EDM,EDMR)
-       else
-         call weightDMC(nou,NGL,NGR,DMCplx,DMRCplx,
-     . DMneqLCplx,DMneqRCplx,EDMCplx,EDMRCplx)
-       end if
-C FDN
+      IF ( IsVolt ) THEN 
+         if (ts_gamma_scf) then
+            call weightDM(nou,noL,noR,DM,DMR,DMneqL,
+     &           DMneqR,EDM,EDMR)
+         else
+            call weightDMC(nou,noL,noR,DMCplx,DMRCplx,
+     &           DMneqLCplx,DMneqRCplx,EDMCplx,EDMRCplx)
+         end if
       endif
       
-c--------------------------------------------------------------------
-c
-c     The original Hamiltonian from SIESTA was shifted ef: 
-c  -- thus we have a shift in EDM:
+!--------------------------------------------------------------------
+!
+!     The original Hamiltonian from SIESTA was shifted ef: 
+!  -- thus we have a shift in EDM:
 
-C FDN
-      if (kpargamma) then 
-       call daxpy(nou*nou,ef,DM,1,EDM,1)
+      if (ts_gamma_scf) then 
+         call daxpy(nou*nou,Ef,DM,1,EDM,1)
       else 
-C FDN
-       call zaxpy(nou*nou,dcmplx(ef,0.d0),DMCplx,1,EDMCplx,1)
+         call zaxpy(nou*nou,dcmplx(Ef,0.d0),DMCplx,1,EDMCplx,1)
       end if
-C FDN
 
-c
-c     Update Dnew, Enew written in sparse SIESTA-format:
-c     
+      ! reset charge summation on the non-update region
+      ! This is only used for checking purposes
+      if ( ts_ikpt == ts_nkpnt ) then
+         Q_kpt(:,0,:) = 0.0_dp
+      end if
 
-c first set Dnew,Enew = 0 for elements we want to update
-
-
+!
+!     Update Dnew, Enew written in sparse SIESTA-format:
+!     
 #ifdef MPI
-C FDN Initialized only once
-        if ( ikpar == 1 ) then
-        do ind = 1,maxnhg
-          if(listudg(ind)) then
-            Dnewg(ind,ispin) = 0d0
-            Enewg(ind,ispin) = 0d0
-          end if
-        end do
-        endif
-C FDN
+      if(ts_gamma_scf) then
+         do io = 1,no_u
+            iuo = indxuo(io)
+            ic = iuo - noBufL
+            do j = 1,numhg(io)
+               ind = listhptrg(io) + j
 
+               if(listudg(ind)) then ! update
+                  jo = listhg(ind)
+                  juo = indxuo(jo)
+                  jc = juo - noBufL
+                  
+                  Dnewg(ind,ispin) = Dnewg(ind,ispin) +
+     &                 DM(ic+nou*(jc-1))
+                  Enewg(ind,ispin) = Enewg(ind,ispin) +
+     &                 EDM(ic+nou*(jc-1))
 
-        do io = 1,nuotot
-           iuo = indxuo1(io)
-           ic = iuo - NBUFL
-           do j = 1,numhg(io)
-             ind = listhptrg(io) + j
-             jo = listhg(ind)
-             juo = indxuo1(jo)
-             jc = juo - NBUFL
-             if(listudg(ind)) then ! update
-C FDN
-               if(kpargamma) then
-                Dnewg(ind,ispin) = Dnewg(ind,ispin) +
-     .               DM(ic+nou*(jc-1))
-                Enewg(ind,ispin) = Enewg(ind,ispin) +
-     .               EDM(ic+nou*(jc-1))
+               ! Collect charges in the Q_kpt array
+                  Q_kpt(regiong(ind),ts_ikpt,ispin) =
+     &                 Q_kpt(regiong(ind),ts_ikpt,ispin)+
+     &                 Dnewg(ind,ispin)*Ssg(ind)
                else
-                kxij = (k(1)*xijg(1,ind) +
-     .                 k(2)*xijg(2,ind) +
-     .                 k(3)*xijg(3,ind) )
-                cphase =  exp( dcmplx(0d0,-1.0d0)*kxij )
-                ccphase = exp( dcmplx(0d0,+1.0d0)*kxij )
-      
-        Dnewg(ind,ispin) = Dnewg(ind,ispin) + Dimag(
-     . dcmplx(0.5d0*wkpar(ikpar),0d0)*(
-     . cphase*DMCplx(ic+nou*(jc-1))+ccphase*DMCplx(jc+nou*(ic-1))
-     .                                )          )
+               ! Collect charges in the Q_kpt array
+                  Q_kpt(regiong(ind),0,ispin) =
+     &                 Q_kpt(regiong(ind),0,ispin)+
+     &                 Dnewg(ind,ispin)*Ssg(ind)
 
-        Enewg(ind,ispin) = Enewg(ind,ispin) + Dimag(
-     . dcmplx(0.5d0*wkpar(ikpar),0d0)*(
-     . cphase*EDMCplx(ic+nou*(jc-1))+ccphase*EDMCplx(jc+nou*(ic-1))
-     .                                )          )
+               end if ! update
+            end do ! j
+         end do    ! io
+      else
+         do io = 1,no_u
+            iuo = indxuo(io)
+            ic = iuo - noBufL
+            do j = 1,numhg(io)
+               ind = listhptrg(io) + j
 
-               end if
-C FDN
-             end if             !update DM,EDM
-       
-          end do                !j
-       end do                   !io
-! FDN Teste
-!      stop
-#else
-C FDN Initialized only once
-        if ( ikpar == 1 ) then
-        do ind = 1,maxnh
-          if(listud(ind)) then
-            Dnew(ind,ispin) = 0d0
-            Enew(ind,ispin) = 0d0
-          end if
-        end do
-        endif
-C FDN
+               if(listudg(ind)) then ! update
+                  jo = listhg(ind)
+                  juo = indxuo(jo)
+                  jc = juo - noBufL
+                  
+                  kxij = k(1)*xijg(1,ind) +
+     &                 k(2)*xijg(2,ind) +
+     &                 k(3)*xijg(3,ind)
+                  
+                  cphase =  cdexp( dcmplx(0d0,-1.0d0)*kxij )
+                  ccphase = cdexp( dcmplx(0d0,+1.0d0)*kxij )
+                  
+! We have moved the ts_kweight to the energy point weight
+                  Dnewg(ind,ispin) = Dnewg(ind,ispin) + DIMAG(
+     &                 dcmplx(0.5d0,0d0)*
+     &                 (cphase  *DMCplx(ic+nou*(jc-1)) +
+     &                  ccphase *DMCplx(jc+nou*(ic-1))))
+                  Enewg(ind,ispin) = Enewg(ind,ispin) + DIMAG(
+     &                 dcmplx(0.5d0,0d0)*
+     &                 (cphase  *EDMCplx(ic+nou*(jc-1))+
+     &                  ccphase *EDMCplx(jc+nou*(ic-1))))
 
-        do io = 1,nuo
-           iuo = indxuo1(io)
-           ic = iuo - NBUFL 
+! Collect k-point charges
+                  Q_kpt(regiong(ind),ts_ikpt,ispin) =
+     &                 Q_kpt(regiong(ind),ts_ikpt,ispin)+
+     &                 Dnewg(ind,ispin)*Ssg(ind)
+               else
+! Collect k-point charges
+                  Q_kpt(regiong(ind),0,ispin) =
+     &                 Q_kpt(regiong(ind),0,ispin)+
+     &                 Dnewg(ind,ispin)*Ssg(ind)
+
+               end if ! update
+            end do ! j
+         end do    ! io
+      end if
+!     NPA The MPI part and the sequential part has been seperated to limit
+!     memory usage!
+#else // MPI >>>>>>>>>>>>>>>>>>> MPI ELSE <<<<<<<<<<<<<<<<<<<
+
+        do io = 1,no_l
+           iuo = indxuo(io)
+           ic = iuo - noBufL 
            do j = 1,numh(io)
               ind = listhptr(io) + j
               jo = listh(ind)
-              juo = indxuo1(jo)
-              jc = juo - NBUFL 
+              juo = indxuo(jo)
+              jc = juo - noBufL 
               if(listud(ind)) then ! update
 
-C FDN
-                if ( kpargamma ) then
+                 if ( ts_gamma_scf ) then
 
-          Dnew(ind,ispin) = Dnew(ind,ispin) +
-     .               DM(ic+nou*(jc-1))
-          Enew(ind,ispin) = Enew(ind,ispin) +
-     .               EDM(ic+nou*(jc-1))
-            
+                    Dnew(ind,ispin) = Dnew(ind,ispin) +
+     &                   DM(ic+nou*(jc-1))
+                    Enew(ind,ispin) = Enew(ind,ispin) +
+     &                   EDM(ic+nou*(jc-1))
 
-                else
+                 else
 
-                 kxij = (k(1)*xij(1,ind) +
-     .                 k(2)*xij(2,ind) +
-     .                 k(3)*xij(3,ind) )
-                 cphase =  exp( dcmplx(0d0,-1.0d0)*kxij )
-                 ccphase = exp( dcmplx(0d0,+1.0d0)*kxij )
+                    kxij = (k(1)*xij(1,ind) +
+     &                   k(2)*xij(2,ind) +
+     &                   k(3)*xij(3,ind) )
+                    cphase =  exp( dcmplx(0d0,-1.0d0)*kxij )
+                    ccphase = exp( dcmplx(0d0,+1.0d0)*kxij )
 
-        Dnew(ind,ispin) = Dnew(ind,ispin) + Dimag(
-     . dcmplx(0.5d0*wkpar(ikpar),0d0)*(
-     . cphase*DMCplx(ic+nou*(jc-1))+ccphase*DMCplx(jc+nou*(ic-1))
-     .                                )          )
+! We have moved the ts_kweight to the energy point weight
+                    Dnew(ind,ispin) = Dnew(ind,ispin) + Dimag(
+     &                   dcmplx(0.5d0,0d0)*(
+     &                   cphase*DMCplx(ic+nou*(jc-1))+ccphase*DMCplx(jc
+     &                   +nou*(ic-1)))          )
 
-        Enew(ind,ispin) = Enew(ind,ispin) + Dimag(
-     . dcmplx(0.5d0*wkpar(ikpar),0d0)*(
-     . cphase*EDMCplx(ic+nou*(jc-1))+ccphase*EDMCplx(jc+nou*(ic-1))
-     .                                )          )
+                    Enew(ind,ispin) = Enew(ind,ispin) + Dimag(
+     &                   dcmplx(0.5d0,0d0)*(
+     &                   cphase*EDMCplx(ic+nou*(jc-1))+ccphase
+     &                   *EDMCplx(jc+nou*(ic-1)))          )
 
-                end if 
+                 end if 
 
-              end if             !update DM,EDM
+! Collect charges on the updated k-point
+                 Q_kpt(region(ind),ts_ikpt,ispin) = 
+     &                Q_kpt(region(ind),ts_ikpt,ispin) +
+     &                Dnew(ind,ispin)*Ss(ind)
+              else
+! Collect charges on the non-updated k-point here
+! It is reset when ts_ikpt == ts_nkpnt so not to count too much
+                 Q_kpt(region(ind),0,ispin) = 
+     &                Q_kpt(region(ind),0,ispin) +
+     &                Dnew(ind,ispin)*Ss(ind)
 
-
-C FDN
-
-               
-          end do                !j
+              end if            !update DM,EDM
+           end do               !j
        end do                   !io
-#endif
+#endif // MPI
 
-
-C FDN
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-        end do               ! ikpar
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-C FDN
-
-
-
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      end do                    !ispin
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
-
-#ifdef MPI
-
-C Distribute Dnew/Enew 
-
-      do io = 1,nuo
-        call LocalToGlobalOrb(io,Node,Nodes,iio)
-          do is = 1,nspin
-            do jo = 1,numh(io)
-              Dnew(listhptr(io)+jo,is)= Dnewg(listhptrg(iio)+jo,is)
-              Enew(listhptr(io)+jo,is)= Enewg(listhptrg(iio)+jo,is)
-            enddo
-          enddo
-      enddo
-
-       deallocate(Dnewg)
-       deallocate(Enewg)
-
-#endif
-
-
-c 
-c     Charge Renormalization -- Fix charge in update region
-c
-      QC = 0d0
-      do ispin = 1,nspin
-         do ind = 1,maxnh
-            if(listud(ind))
-     .           QC = QC + Dnew(ind,ispin)*Ss(ind)
-         end do                 !io
-      end do                    !ispin
-
-#ifdef MPI
-      call MPI_AllReduce(qc,qcloc,1,
-     .DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
-      qc = qcloc
-#endif
-
-
-      renorm = 1.0d0
-      
-c      if(FIXQ) then
-c         renorm = QC0/QC
-c         do ispin = 1,nspin
-c            do ind = 1,maxnh
-c               if(listud(ind)) then
-c                  Dnew(ind,ispin)=Dnew(ind,ispin)*renorm
-c                  Enew(ind,ispin)=Enew(ind,ispin)*renorm
-c               end if 
-c            end do                 
-c         end do                 !ispin
-c      end if                    !FIXQ
-
-      if(Node.eq.0) then
-c     write(jout,'(a25,1X,3(f8.3,1X))')
-c     .        'TranSiesta: QC,QC0,renorm:',QC,QC0,renorm
-         write(jout,'(a22,1X,3(f8.3,1X))')
-     .        'TranSiesta: Qsol,Qtot:',QC+qcn0,qtot,renorm
-      endif 
-c--------------------------------------------------------------------
-
-c     Close Files
-
-      if(Node.eq.0) then
-       call io_close(jgfL)
-       call io_close(jgfR)
-      endif
-      
-c--------------------------------------------------------------------
-
-c     Deallocate:
-
-      deallocate(H)
-      deallocate(S)
-C FDN
-      if ( kpargamma ) then
-       deallocate(DM)
-       deallocate(EDM)
-      else
-       deallocate(DMCplx)
-       deallocate(EDMCplx)
-      end if
-C FDN
-c      deallocate(GF)
-
-      deallocate(SFEL)
-      deallocate(SFER)
-      deallocate(GAMMAL)
-      deallocate(GAMMAR)
-
-      deallocate(HAAL)
-      deallocate(SAAL)
-      deallocate(HAAR)
-      deallocate(SAAR)
-
-      
-      if(isvolt) then
-C FDN
-      if ( kpargamma ) then
-         deallocate(DMR)
-         deallocate(DMneqL)
-         deallocate(DMneqR)
-         deallocate(EDMR)
-       else
-         deallocate(DMRCplx)
-         deallocate(DMneqLCplx)
-         deallocate(DMneqRCplx)
-         deallocate(EDMRCplx)
+       ! Make sure that the calculated charge is not accumulated
+       if ( ts_ikpt > 1 ) then
+          Q_kpt(:,ts_ikpt,ispin) = Q_kpt(:,ts_ikpt,ispin) -
+     &         sum(Q_kpt(:,1:ts_ikpt-1,ispin),2)
        end if
-C FDN  
+       
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      END DO                    ! ts_kpoint
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      END DO                    !ispin
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      
+      call memory('D','Z',nou*nou,'transiesta')
+      deallocate(GF)
+
+!***********************
+!     Close Files
+!***********************
+      if(IONode) then
+         call io_close(uGFL)
+         call io_close(uGFR)
+      endif
+
+#ifdef MPI
+! Distribute Dnew/Enew 
+      do io = 1,no_l
+         call LocalToGlobalOrb(io,Node,Nodes,iio)
+         do is = 1,nspin
+            do jo = 1,numh(io)
+               Dnew(listhptr(io)+jo,is)= Dnewg(listhptrg(iio)+jo,is)
+               Enew(listhptr(io)+jo,is)= Enewg(listhptrg(iio)+jo,is)
+            enddo
+         enddo
+      enddo
+      call memory('D','D',size(Dnewg)+size(Enewg),'transiesta')
+      deallocate(Dnewg)
+      deallocate(Enewg)
+#endif
+
+
+! 
+!     Charge Corrections
+!
+      if ( ChargeCorr == 1 ) then ! Correct charges in the buffer region
+         allocate(reD(2),addQ(2,nspin,2))
+         call memory('A','D',2+2*2*nspin,'transiesta')
+         ! Calculate the density factor for obtaining the correct charge
+         ! For the left buffer region
+         reD(1) = REAL(noBufL+noBufR,dp)/REAL(noBufL,dp)
+         reD(1) = (Qtot-sum(Q_kpt(:,:,:)))
+     &        / (reD(1)*sum(Q_kpt(1,:,:)))
+         ! Calculate the density factor for obtaining the correct charge
+         ! For the right buffer region
+         reD(2) = REAL(noBufL+noBufR,dp)/REAL(noBufR,dp)
+         reD(2) = (Qtot-sum(Q_kpt(:,:,:)))/(reD(2)
+     &        *sum(Q_kpt(9,:,:)))
+         ! Reset to zero if not existing
+         if ( noBufL == 0 ) reD(1) = 0.0_dp
+         if ( noBufR == 0 ) reD(2) = 0.0_dp
+
+         ! Apply charge-correction factor 
+         ! This will reduce "heavy" charge fluctuations and
+         ! should guard against this.
+         reD = reD * ChargeCorr_factor
+         addQ = 0.0_dp
+         do ispin = 1 , nspin
+            do io = 1,no_l
+               do j = 1,numh(io)
+                  ind = listhptr(io) + j
+                  if ( region(ind) == 1 .and. noBufL > 0 ) then
+                     Dnew(ind,ispin) = Dnew(ind,ispin)*reD(1)+
+     &                    Dnew(ind,ispin)
+                     Enew(ind,ispin) = Enew(ind,ispin)*reD(1)+
+     &                    Enew(ind,ispin)
+                     addQ(1,ispin,1) = addQ(1,ispin,1)+
+     &                    Dnew(ind,ispin)*reD(1)
+                  else if ( region(ind) == 9 .and. noBufR > 0 ) then
+                     Dnew(ind,ispin) = Dnew(ind,ispin)*reD(2)+
+     &                    Dnew(ind,ispin)
+                     Enew(ind,ispin) = Enew(ind,ispin)*reD(2)+
+     &                    Enew(ind,ispin)
+                     addQ(2,ispin,1) = addQ(2,ispin,1)+
+     &                    Dnew(ind,ispin)*reD(2)
+                  end if
+               end do           ! numh
+            end do              ! no_l
+
+         end do                 !ispin
+! Reduce to the total added charge
+#ifdef MPI
+         call MPI_AllReduce(addQ(1,1,1),addQ(1,1,2),2*nspin,DAT_double
+     &        ,MPI_SUM,MPI_Comm_World,MPIerror)
+         addQ(:,:,1) = addQ(:,:,2)
+#endif
+         Q_kpt(1,0,:) = Q_kpt(1,0,:) + addQ(1,:,1)
+         Q_kpt(9,0,:) = Q_kpt(9,0,:) + addQ(2,:,1)
+
+         call memory('D','D',2+2*2*nspin,'transiesta')
+         deallocate(reD,addQ)
+      end if
+
+      ! Charge in the updated region
+      ! k-point index 0 is non-updated region...
+      ! Must be done after any charge correction to show correctly
+      Qc  = sum(Q_kpt(:,1:ts_nkpnt,:))
+      ! Charge in the non-updated region
+      Qcn = sum(Q_kpt(:,0,:))
+
+
+      if(IONode) then
+         write(*,'(a,7(1x,a8))') 'ts-charge:','O','L','L-C','C'
+     &        ,'C-R','R','Qt'
+         if ( noBufL + noBufR > 0 ) then
+            if ( noBufL == 0 ) then ! It must be the Right buffer who has states
+               write(*,'(a,2(1x,a8))') 'ts-charge:','R-RB','RB'
+            else if ( noBufR == 0 ) then ! The left has states
+               write(*,'(a,2(1x,a8))') 'ts-charge:','LB','LB-L'
+            else ! Both have states
+               write(*,'(a,4(1x,a8))') 'ts-charge:','LB','LB-L'
+     &              ,'RB-L','RB'
+            end if
+         end if
+         write(*,'(a,7(1x,f8.3))') 'ts-charge:'
+     &        ,sum(Q_kpt(0,:,:))
+     &        ,sum(Q_kpt(3,:,:)),sum(Q_kpt(4,:,:))
+     &        ,sum(Q_kpt(5,:,:)),sum(Q_kpt(6,:,:))
+     &        ,sum(Q_kpt(7,:,:)),Qc+Qcn
+         if ( noBufL + noBufR > 0 ) then
+            if ( noBufL == 0 ) then
+               write(*,'(a,2(1x,f8.3))') 'ts-charge:'
+     &              ,sum(Q_kpt(8,:,:)),sum(Q_kpt(9,:,:))
+            else if ( noBufR == 0 ) then
+               write(*,'(a,2(1x,f8.3))') 'ts-charge:'
+     &              ,sum(Q_kpt(1,:,:)),sum(Q_kpt(2,:,:))
+            else
+               write(*,'(a,4(1x,f8.3))') 'ts-charge:'
+     &              ,sum(Q_kpt(1,:,:)),sum(Q_kpt(2,:,:))
+     &              ,sum(Q_kpt(8,:,:)),sum(Q_kpt(9,:,:))
+            end if
+         end if
+      endif 
+!--------------------------------------------------------------------
+
+      
+!--------------------------------------------------------------------
+!     Deallocate:
+      call memory('D','D',(1+ts_nkpnt)*nspin*10,'transiesta')
+      deallocate(Q_kpt)
+      
+      call memory('D','D',4*nqL,'transiesta')
+      deallocate(qLb,wqL)
+      call memory('D','D',4*nqR,'transiesta')
+      deallocate(qRb,wqR)
+      call memory('D','D',4*nkparL,'transiesta')
+      deallocate(kparL,wkparL)
+      call memory('D','D',4*nkparR,'transiesta')
+      deallocate(kparR,wkparR)
+
+!     Deallocate:
+      call memory('D','Z',size(H)+size(S),'transiesta')
+      deallocate(H,S)
+
+      if ( ts_gamma_scf ) then
+         call memory('D','D',size(DM)+size(EDM),'transiesta')
+         deallocate(DM)
+         deallocate(EDM)
+      else
+         call memory('D','Z',size(DMCplx)+size(EDMCplx),'transiesta')
+         deallocate(DMCplx)
+         deallocate(EDMCplx)
+      end if
+
+      call memory('D','Z',size(SFEL)+size(SFER),'transiesta')
+      deallocate(SFEL,SFER)
+      call memory('D','Z',size(GAMMAL)+size(GAMMAR),'transiesta')
+      deallocate(GAMMAL,GAMMAR)
+
+      call memory('D','Z',size(HAAL)+size(SAAL),'transiesta')
+      call memory('D','Z',size(HAAR)+size(SAAR),'transiesta')
+      deallocate(HAAL,SAAL)
+      deallocate(HAAR,SAAR)
+
+      
+      if(IsVolt) then
+         call memory('D','Z',size(work2),'transiesta')
+         deallocate(work2)
+         if ( ts_gamma_scf ) then
+            call memory('D','D',size(DMR)+size(DMneqL),'transiesta')
+            call memory('D','D',size(EDMR)+size(DMneqR),'transiesta')
+            deallocate(DMR)
+            deallocate(DMneqL,DMneqR)
+            deallocate(EDMR)
+         else
+            call memory('D','Z',size(DMRCplx)+size(DMneqLCplx)
+     &           ,'transiesta')
+            call memory('D','Z',size(DMneqRCplx)+size(EDMRCplx)
+     &           ,'transiesta')
+            deallocate(DMRCplx)
+            deallocate(DMneqLCplx,DMneqRCplx)
+            deallocate(EDMRCplx)
+         end if
       endif
 
 
 #ifdef MPI
+      call memory('D','I',size(numhg)+size(listhptrg)+size(listhg)
+     &     ,'transiesta')
       deallocate(numhg)
       deallocate(listhptrg)
       deallocate(listhg)
-      if(.not.gamma) deallocate(xijg)
+      if(.not.gamma) then
+         call memory('D','D',size(xijg),'transiesta')
+         deallocate(xijg)
+      endif
+      call memory('D','D',maxnhg*2,'transiesta')
+      deallocate(Hsg,Ssg)
 #endif
 
-c ===================================================================
-      firsttime = .false.       !first time -- not any more!
-      return                    ! succesfull return
+      call timer("TS_calc",2)
+! ===================================================================
+
+#ifdef TRANSIESTA_DEBUG
+      call write_debug( 'POS transiesta' )
+#endif
       end subroutine transiesta
 
 
@@ -1684,148 +1517,85 @@ c ===================================================================
 !-------------------------------------------------------------------------
 
 
-      subroutine TSVHFix( meshg, nsm, v )
+      subroutine TSVHFix(  mesh, nsm, v )
+!
+!  Modules
+!
       use precision, only : dp, grid_p
-      use parallel,    only : node, nodes
-      use mesh,        only : meshLim
-      use m_mpi_utils, only : globalize_sum
-
-      implicit none
-!     Input variables
-      integer,       intent(in) ::  meshG(3), nsm
-!     Output variables
-      real(grid_p), intent(out) ::  v(*)
-!     Local variables
-      integer                   :: Xoffset, Yoffset, Zoffset, imesh,
-     &                             i1, i2, i3, ntp, meshl(3)
-      real(dp)                  :: vav, vtot
-
-!     Find local number of mesh points
-      meshl(1) = (meshLim(2,1) - meshLim(1,1)+1)*nsm
-      meshl(2) = (meshLim(2,2) - meshLim(1,2)+1)*nsm
-      meshl(3) = (meshLim(2,3) - meshLim(1,3)+1)*nsm
-
-!     Calculate starting point for grid
-      Xoffset = (meshLim(1,1)-1)*nsm
-      Yoffset = (meshLim(1,2)-1)*nsm
-      Zoffset = (meshLim(1,3)-1)*nsm
-
-!     Compute voltage of Z=0 plane
-      vtot =0.d0
-      if (Zoffset.eq.0) then
-        imesh = 0
-        do i2 = 0,meshl(2)-1
-          do i1 = 0,meshl(1)-1
-            imesh = imesh + 1
-            vtot = vtot + v(imesh)
-          enddo
-        enddo
-      endif
-
-      call globalize_sum( vtot, vav )
-
-!     Average voltage in the Z=0 plane
-!      ntp = meshG(1)*meshG(2)*nsm*nsm
-      ntp = meshG(1)*meshG(2)
-      vav = vav/float(ntp)
-
-      imesh = 0
-      do i3 = 0,meshl(3)-1
-        do i2 = 0,meshl(2)-1
-          do i1 = 0,meshl(1)-1
-            imesh    = imesh + 1
-            v(imesh) = v(imesh) - vav
-          enddo
-        enddo
-      enddo
-
-      end subroutine TSVHFix
-
-!-------------------------------------------------------------------------
-!*************************************************************************
-!-------------------------------------------------------------------------
-
-
-      subroutine TSvoltage2(cell, meshG, nsm, v, isvolt )
-      use precision, only : dp, grid_p
-      use fdf, only : fdf_physical
-      use parallel, only : node, nodes
-      use mesh,     only : meshLim
+      use sys, only : die
+! FDN put the only attribute
+      use parallel, only : ProcessorY, Node, Nodes
+! FDN
+#ifdef MPI
+      use mpi_siesta, only : MPI_AllReduce, MPI_Comm_Rank, MPI_Sum
+      use mpi_siesta, only : DAT_double, MPI_Integer, MPI_Comm_World
+! FDN parallelsubs
+      use parallelsubs, only : HowManyMeshPerNode
+! FDN
+#endif
 
       implicit          none
-!     Input variables
-      real(dp),      intent(in) :: cell(3,3)
-      integer,       intent(in) :: meshG(3), nsm
-!     Output variables
-      real(grid_p), intent(out) :: v(*)
-      logical,    intent(inout) :: isvolt
-!     Local variables
-      integer                   :: ix, i1, i2, i3, i10, i20, i30, imesh, 
-     &                             meshl(3), Xoffset, Yoffset, Zoffset
-      real(dp)                  :: dot, field(3), Volt, VoltL, VoltR,
-     &                             Lvc, dLvc, vcdir(3)
-      logical,             save :: frstme=.true.
-      real(dp),            save :: f(3), v0
-      integer,        parameter :: ivc=3              ! The voltage-direction
-      real(dp),       parameter :: eV=1.0/13.60580
+      real(grid_p)      v(*)
+      integer           mesh(3), nsm
 
-!     Find and store the electric field only the first time
-      if (frstme) then
-        frstme = .false.
-        isvolt = .false.
-        do ix = 1,3
-          field(ix) = 0.d0
-        enddo
- 
-!       Read the voltage block from the fdf input file
-        Volt = fdf_physical('TS.Voltage',0.0d0,'Ry')
 
-        if(dabs(Volt).GT.0.001d0*eV) then 
-          isvolt=.true.
-        else
-          isvolt=.false.
-          return        !not found and field set to zero in beginning
+! Internal variables
+      integer           i1, i2, i3, imesh, ntemp
+      integer           nlp, meshl(3)
+      integer           ProcessorZ, BlockSizeY, BlockSizeZ, Yoffset
+      integer           Zoffset, Py, Pz, i30, i20, meshnsm(3)
+      integer           NRemY, NRemZ
+#ifdef MPI
+      integer           MPIerror, npl
+#endif
+      real(dp)          vav, vtot, temp
+
+#ifdef TRANSIESTA_DEBUG
+      call write_debug( 'PRE TSVHfix' )
+#endif
+
+      call timer('TSVHFix',1)
+
+! Find local number of mesh points
+        meshnsm(1) = mesh(1)/nsm
+        meshnsm(2) = mesh(2)/nsm
+        meshnsm(3) = mesh(3)/nsm
+#ifdef MPI
+        !! print *, "N:",Node, "TSVHFix-- mesh:", mesh
+        call HowManyMeshPerNode(meshnsm,Node,Nodes,npl,meshl)
+        meshl(1) = meshl(1)*nsm
+        meshl(2) = meshl(2)*nsm
+        meshl(3) = meshl(3)*nsm
+#else
+        meshl(1) = mesh(1)
+        meshl(2) = mesh(2)
+        meshl(3) = mesh(3)
+#endif
+
+! Check that ProcessorY is a factor of the number of processors
+        if (mod(Nodes,ProcessorY).gt.0) then
+           call die('ERROR: ProcessorY must be a factor of the'//
+     &          ' number of processors!')
         endif
+        ProcessorZ = Nodes/ProcessorY
 
-        Lvc = sqrt(dot(cell(1,ivc),cell(1,ivc),3))
+! Calculate blocking sizes
+        BlockSizeY = (meshnsm(2)/ProcessorY)*nsm
+        NRemY = (mesh(2) - ProcessorY*BlockSizeY)/nsm
+        BlockSizeZ = (meshnsm(3)/ProcessorZ)*nsm
+        NRemZ = (mesh(3) - ProcessorZ*BlockSizeZ)/nsm
 
-        do ix=1,3
-          vcdir(ix) = cell(ix,ivc)/Lvc
-          field(ix) = -vcdir(ix)*Volt/Lvc
-        end do
+! Calculate coordinates of current node in processor grid
+        Py = (Node/ProcessorZ)+1
+        Pz = Node - (Py - 1)*ProcessorZ + 1
 
+! Calculate starting point for grid
+        Yoffset = (Py-1)*BlockSizeY + nsm*min(Py-1,NRemY)
+        Zoffset = (Pz-1)*BlockSizeZ + nsm*min(Pz-1,NRemZ)
 
-        if(Node.eq.0) then
-          write(6,*)
-          write(6,'(a,f6.3,a)')'TSvoltage: Bias ', Volt/eV,'V'
-          write(6,'(a,3(f6.3,a))')
-     &         'TSvoltage: In unit cell direction = {',
-     &         vcdir(1),',',vcdir(2),',',vcdir(3),'}'
-        endif 
+         vtot =0.d0
+         nlp =0
 
-        dLvc = Lvc/max( meshG(ivc), 1 ) !
-
-        VoltL = 0.5d0*Volt     ! Left voltage
-        VoltR = -0.5d0*Volt    ! Right voltage
-
-!       field in [0;Lvc]: v = e*x = f*index
-        do ix = 1,3
-          f(ix) = 0d0         !init
-        enddo
-        f(ivc) = -Volt*dLvc/Lvc
-        v0 = VoltL
-      else if (isvolt) then
-!       Find quantities in mesh coordinates
-        meshl(1) = (meshLim(2,1) - meshLim(1,1)+1)*nsm
-        meshl(2) = (meshLim(2,2) - meshLim(1,2)+1)*nsm
-        meshl(3) = (meshLim(2,3) - meshLim(1,3)+1)*nsm
-
-!       Calculate starting point for grid
-        Xoffset = (meshLim(1,1)-1)*nsm
-        Yoffset = (meshLim(1,2)-1)*nsm
-        Zoffset = (meshLim(1,3)-1)*nsm
-
-!       Add the electric field potential to the input potential
         imesh = 0
         i30 = Zoffset - 1
         do i3 = 0,meshl(3)-1
@@ -1833,81 +1603,51 @@ c ===================================================================
           i20 = Yoffset - 1
           do i2 = 0,meshl(2)-1
             i20 = i20 + 1
-            i10 = Xoffset - 1
             do i1 = 0,meshl(1)-1
-              i10   = i10 + 1
               imesh = imesh + 1
-              v(imesh) = v(imesh) + v0 + f(1)*i10 + f(2)*i20 + f(3)*i30
+              if (i30.eq.0) then
+                 nlp = nlp +1 
+                 vtot = vtot + v(imesh)
+              endif
             enddo
           enddo
         enddo
-      endif
-      end subroutine TSvoltage2
 
+#ifdef MPI
+      temp=0.d0
+        call MPI_AllReduce(vtot,temp,1,DAT_double,MPI_Sum,
+     &  MPI_Comm_World,MPIerror)
+       vtot = temp
+       ntemp=0
+        call MPI_AllReduce(nlp,ntemp,1,MPI_integer,MPI_Sum,
+     &    MPI_Comm_World,MPIerror)
+       nlp = ntemp
+ 
+#endif
+        vav=vtot/float(nlp)
 
+        imesh = 0
+        
+        do i3 = 0,meshl(3)-1
+           do i2 = 0,meshl(2)-1
+              do i1 = 0,meshl(1)-1
+                 imesh = imesh + 1
+                 v(imesh) = v(imesh) - vav
+              enddo
+           enddo
+        enddo
+
+        call timer('TSVHFix',2)
+
+#ifdef TRANSIESTA_DEBUG
+      call write_debug( 'POS TSVHfix' )
+#endif
+
+      end subroutine TSVHFix
 
 !-------------------------------------------------------------------------
 !*************************************************************************
 !-------------------------------------------------------------------------
 
-
-      subroutine setup_ts_kpoint_grid( ucell )
-
-! SIESTA Modules
-      USE fdf, only       : fdf_defined
-      USE m_find_kgrid, only : find_kgrid
-      USE parallel, only  : Node
-      USE precision, only : dp       
-#ifdef MPI
-      USE mpi_siesta, only : MPI_Bcast, MPI_logical, MPI_Comm_World
-#endif
-
-! TS Modules
-      USE m_ts_kpoints, only : ts_kpoint, ts_nkpnt, ts_eff_kgrid_cutoff,
-     . ts_firm_displ, ts_kdispl, ts_gamma_scf, ts_kscell, ts_kweight, 
-     . ts_scf_kgrid_first_time, ts_spiral, ts_user_requested_mp,ts_maxk,
-     . setup_ts_scf_kscell, setup_ts_scf_kscell, ts_write_k_points
-
-! Local Variables
-      implicit none
-      real(dp) :: ucell(3,3)
-
-#ifdef MPI
-      integer :: MPIerror
-#endif
-
-      if (ts_scf_kgrid_first_time) then
-       nullify(ts_kweight,ts_kpoint)
-       if (Node.eq.0) then
-        ts_spiral = fdf_defined('SpinSpiral')
-       endif
-#ifdef MPI
-       call MPI_Bcast(ts_spiral,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-#endif
-
-       call setup_ts_scf_kscell(ucell, ts_firm_displ)
-
-       ts_scf_kgrid_first_time = .false.
-
-      else
-       if ( ts_user_requested_mp    ) then
-          ! no need to set up the kscell again
-       else
-          ! This was wrong in the old code
-          call setup_ts_scf_kscell(ucell, ts_firm_displ)
-       endif
-      endif
-
-      call find_kgrid(ucell,ts_kscell,ts_kdispl,ts_firm_displ,     
-     .             (.not. ts_spiral),                    
-     .             ts_nkpnt,ts_kpoint,ts_kweight, ts_eff_kgrid_cutoff)
-
-      ts_maxk = ts_nkpnt
-      ts_gamma_scf =  (ts_nkpnt == 1 .and.  
-     .         dot_product(ts_kpoint(:,1),ts_kpoint(:,1)) < 1.0e-20_dp)
-
-      if (Node .eq. 0) call ts_write_k_points()
-
-      end subroutine setup_ts_kpoint_grid
 
       END MODULE m_ts_in_siesta
