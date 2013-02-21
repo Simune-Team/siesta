@@ -15,9 +15,9 @@ CONTAINS
 
     use precision, only  : dp
     use fdf
-    use parallel, only   : worker
+    use parallel, only   : worker, ionode
     use m_mpi_utils, only: globalize_sum
-    use units,       only: Kelvin
+    use units,       only: Kelvin, eV
 #ifdef MPI
     use mpi_siesta
 #endif
@@ -42,7 +42,8 @@ CONTAINS
     integer :: ispin, maxnhtot, ih, nnzold, i
 
     real(dp), save :: mu
-    logical, save  :: first_call = .false.
+    logical, save  :: first_call = .true.
+    real(dp)       :: eBandStructure, eBandH
 
 !Lin variables
 integer :: nrows, nnz, nnzLocal, numColLocal
@@ -82,6 +83,8 @@ if (worker) then
 
    npPerPole = mpisize
    numElectronExact = qtot   ! 2442.0d0 for DNA
+   temperature      = temp/Kelvin
+   if (IOnode) write(6,*) "Electronic temperature: ", temperature
 
    call MPI_Barrier(Siesta_comm,ierr)
 
@@ -118,7 +121,7 @@ endif ! worker
 
 !temperature      = fdf_get("PEXSI.temperature",3000.0d0)    ! Units??
 ! Now passed directly by Siesta  (Use ElectronicTemperature (with units))
-temperature      = temp/Kelvin
+
 numPole          = fdf_get("PEXSI.num-poles",20)
 gap              = fdf_get("PEXSI.gap",0.0d0)
 
@@ -154,26 +157,43 @@ call MPI_Bcast(npPerPole,1,MPI_integer,0,true_MPI_COMM_world,ierr)
 call MPI_Bcast(nrows,1,MPI_integer,0,true_MPI_COMM_world,ierr)
 call MPI_Bcast(nnz,1,MPI_integer,0,true_MPI_COMM_world,ierr)
 call MPI_Bcast(numElectronExact,1,MPI_double_precision,0,true_MPI_COMM_world,ierr)
+call MPI_Bcast(temperature,1,MPI_double_precision,0,true_MPI_COMM_world,ierr)
 
 include "pexsi_interface.inc"
 
 if (worker) then
-   if( mpirank == 0 ) then
-      write(*, *) "mu          = ", mu
-      write(*, *) "numElectron = ", numElectron
-   endif
 
    ef = mu
    DM(1:nnzLocal,ispin) = DMnzvalLocal(1:nnzLocal)
    EDM(1:nnzLocal,ispin) = EDMnzvalLocal(1:nnzLocal)
 
    freeEnergyCorrection = 0.0_dp
+   eBandStructure = 0.0_dp
+   eBandH = 0.0_dp
    do i = 1,nnzLocal
       freeEnergyCorrection = freeEnergyCorrection + SnzvalLocal(i) * &
            ( FDMnzvalLocal(i) - EDMnzvalLocal(i) )
+      eBandStructure = eBandStructure + SnzvalLocal(i) * &
+           ( EDMnzvalLocal(i) )
+      eBandH = eBandH + HnzvalLocal(i) * &
+           ( DMnzvalLocal(i) )
    enddo
    call globalize_sum( freeEnergyCorrection, buffer1 )
-   freeEnergyCorrection = buffer1
+   freeEnergyCorrection = buffer1 + mu*numElectron
+   call globalize_sum( eBandStructure, buffer1 )
+   eBandStructure = buffer1
+   call globalize_sum( eBandH, buffer1 )
+   eBandH = buffer1
+
+   if( mpirank == 0 ) then
+      write(*, *) "mu          = ", mu
+      write(*, *) "mu (eV)     = ", mu/eV
+      write(*, *) "numElectron = ", numElectron
+      write(*, *) "eBandStructure (Ry) = ", eBandStructure
+      write(*, *) "eBandStructure (eV) = ", eBandStructure/eV
+      write(*, *) "eBandH (eV) = ", eBandH/eV
+      write(*, *) "freeEnergy (eV) = ", (eBandStructure + freeEnergyCorrection)/eV
+   endif
 
   deallocate(rowindLocal)
   deallocate(HnzvalLocal)

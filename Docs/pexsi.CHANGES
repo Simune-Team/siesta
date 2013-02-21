@@ -1,4 +1,19 @@
 ------------------------------------------------------------
+Feb 21, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-9
+Proper estimation of free energy. Monitor Ebs in two ways
+
+There was an extra term of mu*N_e in the definition of the free energy
+in PEXSI. This is now taken into account. Added the PEXSI case in the
+copying of entropy in "setup_hamiltonian" (strange place...).
+
+The band-structure energy is computed in two ways: Tr(H*DM) and Tr(S*DM)
+to monitor slight differences.
+
+modified:
+  Src/pexsi.F90
+  Src/setup_hamiltonian.F
+
+------------------------------------------------------------
 Feb 18, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-8
 Add computation of Free Energy. Pass Ef and electronic temp
 

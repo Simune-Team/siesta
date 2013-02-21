@@ -131,7 +131,7 @@
 
 !** Can we trust the Entropy if iscf == 1 ??
       Entropy = 0.0_dp
-      if (isolve .eq. SOLVE_DIAGON) then
+      if ((isolve .eq. SOLVE_DIAGON) .or.(isolve .eq. SOLVE_PEXSI)) then
         if (istp.gt.1 .or. iscf.gt.1) then
           Entropy = Entrop
         endif
