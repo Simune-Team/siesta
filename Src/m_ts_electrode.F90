@@ -383,7 +383,7 @@ contains
   subroutine create_Green(tElec, HSFile, GFFile, GFTitle, &
        ElecValenceBandBot, &
        nkpnt,kpoint,kweight, &
-       NBufAt,NUsedAtoms,NA1,NA2, &
+       NBufAt,NUsedAtoms,NA1,NA2, RemUCellDistance, &
        ucell,xa,nua,NEn,contour,chem_shift,ZBulkDOS,nspin)
 
     use precision,  only : dp
@@ -394,6 +394,7 @@ contains
 #ifdef MPI
     use mpi_siesta, only : MPI_Comm_World
     use mpi_siesta, only : MPI_Bcast,MPI_ISend,MPI_IRecv
+    use mpi_siesta, only : MPI_Sum
     use mpi_siesta, only : MPI_Wait,MPI_Status_Size
     use mpi_siesta, only : DAT_dcomplex, DAT_double
 #endif
@@ -411,6 +412,7 @@ contains
     real(dp),dimension(3,nkpnt),intent(in) :: kpoint ! k-points
     real(dp),dimension(nkpnt),intent(in) :: kweight ! weights of kpoints
     integer, intent(in)            :: NBufAt,NA1,NA2 ! Buffer/Rep a1/Rep a2
+    logical, intent(in)            :: RemUCellDistance ! Whether to remove the unit cell distance in the Hamiltonian.
     integer, intent(in)            :: NUsedAtoms ! Needs update here
     integer, intent(in)            :: nua ! Full system count of atoms in unit cell
     real(dp), dimension(3,3)       :: ucell ! The unit cell of the CONTACT
@@ -422,7 +424,7 @@ contains
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp), intent(out)       :: ZBulkDOS(NEn) 
+    complex(dp), intent(out)       :: ZBulkDOS(NEn,nspin) 
 
 ! ***********************
 ! * LOCAL variables     *
@@ -449,13 +451,18 @@ contains
 ! <<<<<<<<<< Electrode TSHS variables
 
     integer :: nq ! number of q-points, set 'ts_mkqgrid'
-    real(dp), dimension(:,:), pointer :: qb ! q points for repetition, in units
+    real(dp), dimension(:,:), pointer :: qb => null() 
+                                            ! q points for repetition, in units
                                             ! of reciprocal lattice vectors (hence the b)
-    real(dp), dimension(:), pointer   :: wq ! weights for q points for repetition
+    real(dp), dimension(:), pointer   :: wq => null() 
+                                            ! weights for q points for repetition
     real(dp) :: kpt(3), qpt(3), ktmp(3)
     
     ! Electrode transfer and hamiltonian matrix
-    complex(dp), dimension(:), pointer :: H00,S00,H01,S01
+    complex(dp), dimension(:), pointer :: H00 => null()
+    complex(dp), dimension(:), pointer :: S00 => null()
+    complex(dp), dimension(:), pointer :: H01 => null()
+    complex(dp), dimension(:), pointer :: S01 => null()
 
     ! Green's function variables
     complex(dp), dimension(:), allocatable :: GS
@@ -483,9 +490,6 @@ contains
     ! This Gamma is to be used for the remaining part of the tests
     ! We cannot use the ts_gamma in case of Gamma point in kxy direction
     Gamma = .false.
-
-    ! We nullify to ensure that they pass ASSOCIATED tests
-    nullify(H00,S00,H01,S01)
 
     ! Check input for what to do
     if( leqi(tElec,'L') ) then
@@ -624,8 +628,10 @@ contains
     call memory('A','Z',4*nuo_E*nuo_E,'create_Green')
 
     ! Reset bulk DOS
-    do iEn = 1 , NEn
-       ZBulkDOS(iEn) = dcmplx(0.d0,0.d0)
+    do ispin = 1 , nspin
+       do iEn = 1 , NEn
+          ZBulkDOS(iEn,ispin) = dcmplx(0.d0,0.d0)
+       end do
     end do
 
 !******************************************************************
@@ -639,6 +645,7 @@ contains
        ! Initial header for file
        write(uGF) GFTitle
        write(uGF) chem_shift,NEn
+       write(uGF) RemUCellDistance
        write(uGF) NUsedAtoms,NA1,NA2,nkpnt,nq
        ! Write spin, ELECTRODE unit-cell
        write(uGF) nspin, ucell_E
@@ -730,14 +737,21 @@ contains
                 ! init qpoint in reciprocal lattice vectors
                 call kpoint_convert(ucell_E,qb(:,iqpt),qpt,-1)
 
-
                 ! Setup the transfer matrix and the intra cell at the k-point and q-point
-                call set_electrode_HS_Transfer(Gamma,nuo_E,maxnh_E, &
-                     notot_E,nspin,H_E,S_E,xij_E,xijo_E,zconnect_E,numh_E, &
-                     listhptr_E,listh_E,indxuo_E,Ef_E, &
-                     ispin, kpt, qpt, &
-                     H00,S00,H01,S01)
-
+                if ( RemUCellDistance ) then
+                   call set_electrode_HS_Transfer(Gamma,nuo_E,maxnh_E, &
+                        notot_E,nspin,H_E,S_E,xijo_E,xijo_E,zconnect_E,numh_E, &
+                        listhptr_E,listh_E,indxuo_E,Ef_E, &
+                        ispin, kpt, qpt, &
+                        H00,S00,H01,S01)
+                else
+                   call set_electrode_HS_Transfer(Gamma,nuo_E,maxnh_E, &
+                        notot_E,nspin,H_E,S_E,xij_E,xijo_E,zconnect_E,numh_E, &
+                        listhptr_E,listh_E,indxuo_E,Ef_E, &
+                        ispin, kpt, qpt, &
+                        H00,S00,H01,S01)
+                end if
+                   
                 
                 ! This requires IONode = Node == 0 !
                 if ( iEn .eq. 1 ) then
@@ -775,8 +789,9 @@ contains
                 call surface_Green(tElec,nuo_E,ZSEnergy,H00,S00,H01,S01, &
                      GS,zdos)
 
-                ! In case of spin, this sum must be checked
-                ZBulkDOS(iEn) = ZBulkDOS(iEn) + wq(iqpt)*zdos
+                ! We also average the k-points.
+                ZBulkDOS(iEn,ispin) = ZBulkDOS(iEn,ispin) + &
+                     wq(iqpt)*zdos * kweight(ikpt)
                   
                 ! Copy over surface Green's function
                 if( leqi(tElec,'L') ) then
@@ -898,6 +913,19 @@ contains
     call memory('D','D',maxnh_E,'create_green')
     deallocate(S_E)
 
+#ifdef MPI
+    ! Sum the bulkdensity of states
+    ! Here we can safely use the array as temporary (Gq)
+    allocate(Gq(NEn,nspin))
+    call memory('A','Z',NEn*nspin,'create_green')
+    Gq = 0.0_dp
+    call MPI_AllReduce(ZBulkDOS(1,1),Gq(1,1),NEn*nspin, DAT_dComplex, MPI_Sum, &
+         MPI_Comm_World,MPIerror)
+    ZBulkDOS = Gq
+    call memory('D','Z',NEn*nspin,'create_green')
+    deallocate(Gq)
+#endif
+
     call timer('genGreen',2)
 
 #ifdef TRANSIESTA_DEBUG
@@ -968,7 +996,7 @@ contains
     character(len=5) :: GFjob
     integer :: notot  ! Total orbitals in all supercells
     integer :: nspin  ! The spin polarization
-    integer,  dimension(:),   pointer :: isa ! The atomic species
+    integer,  dimension(:),   pointer :: isa ! atomic species
     logical :: ts_gamma ! Read gamma from file
     real(dp) :: kdispl(3)
     integer  :: kscell(3,3)
@@ -1030,23 +1058,24 @@ contains
                 eXa = eXa .or. ( kscell(i,j) /= ts_kscell(i,j) )
              end if
           end do
+          eXa = eXa .or. ( kdispl(j) /= ts_kdispl(j) )
        end do
        if ( eXa ) then
           write(*,'(a)') 'Incompatible k-grids...'
           write(*,'(a)') 'Electrode file k-grid:'
           do j = 1 , 3
-             write(*,'(3i4)') (kscell(i,j),i=1,3)
+             write(*,'(3(i4,tr1),f8.4)') (kscell(i,j),i=1,3),kdispl(j)
           end do
           write(*,'(a)') 'System k-grid:'
           do j = 1 , 3
-             write(*,'(3i4)') (ts_kscell(i,j),i=1,3)
+             write(*,'(3(i4,tr1),f8.4)') (ts_kscell(i,j),i=1,3),ts_kdispl(j)
           end do
           write(*,'(a)') 'Electrode file k-grid should be:'
           kscell(:,1) = ts_kscell(:,1) * NA1
           kscell(:,2) = ts_kscell(:,2) * NA2
           kscell(:,3) = ts_kscell(:,3)
           do j = 1 , 3
-             write(*,'(3i4)') (kscell(i,j),i=1,3)
+             write(*,'(3(i4,tr1),f8.4)') (kscell(i,j),i=1,3),ts_kdispl(j)
           end do
           call die('Incompatible electrode k-grids') 
        end if
@@ -1185,7 +1214,6 @@ contains
           end do
        end do
        if ( eXa ) then
-! Initialize error parameter
           write(*,'(a)') "Coordinates from the electrode repeated out to an FDF file"
           write(*,'(t3,3a20)') &
                "X (Ang)","Y (Ang)","Z (Ang)"
@@ -1193,7 +1221,7 @@ contains
           do ia = elecElec , elecElec + NUsedAtoms - 1
              do j=0,NA2-1
                 do i=0,NA1-1
-                   write(*,'(t3,3f20.12)') &
+                   write(*,'(t2,3(tr1,f20.12))') &
                         (xa(1,ia)+ucell(1,1)*i+ucell(1,2)*j)/Ang, &
                         (xa(2,ia)+ucell(2,1)*i+ucell(2,2)*j)/Ang, &
                         (xa(3,ia))/Ang
@@ -1430,9 +1458,9 @@ contains
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    integer , intent(out)          :: nq       ! no. q-points (<= NA1*NA2 for gamma)
-    real(dp), pointer, intent(out) :: q(:,:)   ! q-points
-    real(dp), pointer, intent(out) :: wq(:)    ! weight of q-points (k_||)
+    integer , intent(out)          :: nq      ! no. q-points (<= NA1*NA2 for gamma)
+    real(dp), pointer              :: q(:,:)  ! q-points
+    real(dp), pointer              :: wq(:)   ! weight of q-points (k_||)
 
 ! ***********************
 ! * LOCAL variables     *
@@ -1442,10 +1470,8 @@ contains
     nq = NA1*NA2                !initial value
 
 ! To comply with new standard 3-dimension regime
-    nullify(q)
     allocate(q(3,nq))
     call memory('A','D',3*nq,'mkqgrid')
-    nullify(wq)
     allocate(wq(nq))
     call memory('A','D',nq,'mkqgrid')
     ! Initialize to 0.0

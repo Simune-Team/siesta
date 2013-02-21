@@ -50,7 +50,7 @@ contains
   subroutine do_Green(tElec, HSFile, GFFile, GFTitle, &
        ElecValenceBandBot, optReUseGF, &
        nkpnt,kpoint,kweight, &
-       NBufAt,NUsedAtoms,NA1,NA2, &
+       NBufAt,NUsedAtoms,NA1,NA2, RemUCellDistance, &
        ucell,xa,nua,NEn,contour,chem_shift,ZBulkDOS,nspin)
     
     use precision,  only : dp
@@ -78,6 +78,7 @@ contains
     real(dp),dimension(3,nkpnt),intent(in) :: kpoint ! k-points
     real(dp),dimension(nkpnt),intent(in) :: kweight ! weights of kpoints
     integer, intent(in)            :: NBufAt,NA1,NA2 ! Buffer/Rep a1/Rep a2
+    logical, intent(in)            :: RemUCellDistance ! Whether to remove the unit cell distance in the Hamiltonian.
     integer, intent(in)            :: NUsedAtoms ! Needs update here
     integer, intent(in)            :: nua ! Full system count of atoms in unit cell
     real(dp), dimension(3,3)       :: ucell ! The unit cell of the CONTACT
@@ -90,7 +91,7 @@ contains
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp), intent(out)       :: ZBulkDOS(NEn) ! DOS at energy points
+    complex(dp), intent(out)       :: ZBulkDOS(NEn,nspin) ! DOS at energy points
 
 ! ***********************
 ! * LOCAL variables     *
@@ -129,7 +130,7 @@ contains
        call create_Green(tElec,HSFile, GFFile, GFTitle, &
             ElecValenceBandBot, &
             nkpnt,kpoint,kweight, &
-            NBufAt,NUsedAtoms,NA1,NA2, &
+            NBufAt,NUsedAtoms,NA1,NA2, RemUCellDistance, &
             ucell,xa,nua,NEn,contour,chem_shift,ZBulkDOS,nspin)
     end if
 
@@ -150,12 +151,12 @@ contains
           call check_Green(uGF,chem_shift,ucell, &
                NUsedAtoms*NA1*NA2,xa(1,NBufAt+1), &
                nspin,nkpnt,kpoint, &
-               kweight,NEn,contour,NA1,NA2,errorGF)
+               kweight,NEn,contour,NA1,NA2,RemUCellDistance,errorGF)
        else if ( tElec == 'R' ) then
           call check_Green(uGF,chem_shift,ucell, &
                NUsedAtoms*NA1*NA2,xa(1,nua-NBufAt-NUsedAtoms*NA1*NA2+1), &
                nspin,nkpnt,kpoint, &
-               kweight,NEn,contour,NA1,NA2,errorGF)
+               kweight,NEn,contour,NA1,NA2,RemUCellDistance,errorGF)
        end if
        call io_close(uGF)
     endif
@@ -186,7 +187,7 @@ contains
 ! ## Changed to only read header by Nick P. Andersen              ##
 ! ##    will only check against integer information and Ef shift. ##
 ! ##################################################################
-  subroutine read_Green(funit,print_title,c_EfShift,c_nkpar,c_NEn,c_nua,c_NA1,c_NA2, &
+  subroutine read_Green(funit,print_title,c_EfShift,c_nkpar,c_NEn,c_nua,c_NA1,c_NA2, c_RemUCell, &
        c_no,c_nspin, &
        nkpar,kpar,wkpar,nq,wq,qb)
     
@@ -205,6 +206,7 @@ contains
     logical, intent(in)  :: print_title
     real(dp), intent(in) :: c_EfShift ! The fermi shift in the electrode
     integer, intent(in)  :: c_nkpar,c_NEn,c_nua,c_NA1,c_NA2,c_no,c_nspin
+    logical, intent(in)  :: c_RemUCell
 
 ! ***********************
 ! * OUTPUT variables    *
@@ -223,7 +225,7 @@ contains
     complex(dp), dimension(:), allocatable :: contour,wgf
     real(dp) :: ucell(3,3)
     character(len=200) :: GFtitle
-    logical :: errorGf 
+    logical :: errorGf , RemUCell
 #ifdef MPI
     integer :: MPIerror
 #endif
@@ -247,11 +249,26 @@ contains
           write(*,'(1x,a,/)') "Title: '"//trim(GFtitle)//"'"
        end if
        read(funit) EfShift,NEn
+       read(funit) RemUCell
        read(funit) nua,NA1,NA2,nkpar,nq
        read(funit) nspin,ucell
        allocate(xa(3,nua))
        read(funit) xa
        deallocate(xa) ! We expect check_Green to catch this...
+
+! Check unit cell distances..
+       if ( RemUCell .neqv. c_RemUCell ) then
+          write(*,*)"ERROR: Green's function file: "//TRIM(GFfile)
+          if ( RemUCell ) then
+             write(*,*)"The GF file has no inner unit cell distances. You have requested &
+               &that they are preserved!"
+          else
+             write(*,*)"The GF file has inner unit cell distances. You have requested &
+               &that they are not preserved!"
+          end if
+          write(*,'(2(a,l2))')"Found: ",RemUCell,", expected: ",c_RemUCell
+          errorGF = .true.
+       end if
 
 ! Check Fermi shift
        if ( dabs(c_EfShift-EfShift) > EPS ) then
@@ -370,7 +387,7 @@ contains
 ! ##################################################################
   subroutine check_Green(funit,c_EfShift,c_ucell,c_nua,c_xa,c_nspin,c_nkpar,c_kpar,c_wkpar, &
        c_NEn,c_contour, &
-       c_NA1,c_NA2,errorGF)
+       c_NA1,c_NA2,c_RemUCell,errorGF)
 
     use precision, only: dp
     use units,     only: Ang
@@ -400,6 +417,7 @@ contains
 ! TODO Add this so that it is possible.
 ! Repetition information
     integer, intent(in)        :: c_NA1,c_NA2
+    logical, intent(in)        :: c_RemUCell ! Should the Green's function file have the inner cell distances or not?
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
@@ -431,7 +449,7 @@ contains
     integer :: i,j,iq, iaa, ia
     real(dp) :: c_xa_o(3), xa_o(3)
     real(dp) :: wqbtmp,qbtmp(3), ktmp(3), kpt(3)
-    logical :: localErrorGf, eXa
+    logical :: localErrorGf, eXa, RemUCell
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE check_Green' )
@@ -462,6 +480,17 @@ contains
        write(*,*)"Number of energy points is not as expected!"
        write(*,'(2(a,i4))') "Found: ",NEn,", expected: ",c_NEn
        localErrorGf = .true.
+    end if
+    read(funit) RemUCell
+! Check unit cell distances..
+    if ( RemUCell .neqv. c_RemUCell ) then
+       write(*,*)"ERROR: Green's function file: "//TRIM(GFfile)
+       if ( RemUCell ) then
+          write(*,*)"The GF file has no inner unit cell distances. You have requested &
+               &that they are preserved!"
+          write(*,'(2(a,l2))')"Found: ",RemUCell,", expected: ",c_RemUCell
+          localErrorGf = .true.
+       end if
     end if
 
     ! Read in integers (also the returned number of atoms)

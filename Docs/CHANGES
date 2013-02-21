@@ -6,6 +6,160 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2012-12-13  17:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-428
+Bugfix in spin calculations for TBTrans_rep
+
+(This fixes a problem in the new TBtrans by N.P. Andersen)
+
+* The current and the averaged arrays were not initialized correctly
+  for the case of spin:
+
+  - TAv, TEigAv, TDOSAv, PDOSAv, Current
+  
+modified:
+  Util/TBTrans_rep/tbtrans.F90
+
+-----------------------------------------------------------------------
+2012-12-10  09:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-427
+More fixes and tests for new transiesta/tbtrans_rep code
+
+Several new bug fixes and clarifications have been added to the new
+TranSiesta/TBTrans code, as well as more tests. Be sure to see the file
+Docs/TranSiestaUpdate.pdf for information about the new features and
+behavior changes.
+
+* Added deallocation routine to glob_sparse module
+* Added preliminary code for doing calculations in TBtrans without
+  inner cell distances (for now this has no importance but provides
+  a stepping stone for future development)
+* Bugfix for 'forces' run (bcast of coordinates was not performed)
+* Wrap mulliken-charges message in MPI runs
+
+* Added new test cases:
+
+  - The voltage test case au_111_capacitor sometimes exhibits problems of 
+    accuracy, dependent on compiler and execution options, due to the small
+    conductance. More rigorous tests have been added:
+
+    + ts_au_100
+    + ts_au_100_repetition
+    + ts_au_100_0.25V
+    + ts_au_100_repetition_0.25V
+
+    which optionally exercise both the new "repetition" option and the
+    applied bias. They are based on an Au-chain in between gold 100 surfaces.
+    
+  - These tests are quite large and thus take a significant amount of CPU 
+    time. They might not be needed if the old tests still perform well and
+    the outputs agree with those in the Tests/Reference.
+
+added:
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100/
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_0.25V/
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition/
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/
+  Tests/TranSiesta-TBTrans/ts_au_100/
+  Tests/TranSiesta-TBTrans/ts_au_100_0.25V/
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition/
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/
+modified:
+  Docs/TranSiestaUpdate.pdf
+  Src/iopipes.F90
+  Src/m_glob_sparse.F90
+  Src/m_hs_matrix.f90
+  Src/m_ts_electrode.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_in_siesta.F
+  Src/mixer.F
+  Src/ts_init.F90
+  Util/TBTrans_rep/m_tbt_options.F90
+  Util/TBTrans_rep/tbtrans.F90
+
+
+-----------------------------------------------------------------------
+2012-11-20  09:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-426
+Bug fixes for new transiesta/tbtrans_rep code
+
+Several bug fixes and clarifications have been added to the new
+TranSiesta/TBTrans code. Be sure to see the file
+Docs/TranSiestaUpdate.pdf for information about the new features and
+behavior changes.
+
+* Corrected the DOS calculations with spin factors
+* Bugfix for units in AtomPDOS and COOP calculations (TBtrans_rep)
+* Renamed FDF-option TS.ReUseGF to TS.TBT.ReUseGF (TBtrans_rep)
+* Fixed options not being seen (TS.TBT.CalcIEig)
+* Added all output files to the documentation
+* Added Header information for all TBtrans_rep data files
+* Added dummy routine in m_glob_sparse for non-MPI compilations
+* Avoid f2003 features for pointer handling
+* Use alloc module in m_hs_matrix
+* Handling of FDF-log files corrected in TBtrans_rep (late merge)
+
+modified:
+  Docs/TS-npa.CHANGES
+  Docs/TranSiestaUpdate.pdf
+  Docs/siesta.tex
+  Src/Makefile
+  Src/m_glob_sparse.F90
+  Src/m_hs_matrix.f90
+  Src/m_ts_contour.f90
+  Src/m_ts_electrode.F90
+  Src/m_ts_gf.F90
+  Src/ts_init.F90
+  Util/TBTrans_rep/atompdos.F90
+  Util/TBTrans_rep/coop.F90
+  Util/TBTrans_rep/m_tbt_options.F90
+  Util/TBTrans_rep/m_tbt_out.f90
+  Util/TBTrans_rep/tbt_reinit.F90
+  Util/TBTrans_rep/tbtrans.F90
+
+-----------------------------------------------------------------------
+2012-11-14  18:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-425
+Use scratch fdf log files for non-master nodes
+
+Unless the FDF_DEBUG preprocessor compilation option is in effect,
+non-master nodes in MPI operation do not use named log files. Instead,
+they use "scratch" files which the operating system opens in
+appropriate places.  This will reduce clutter.
+
+(Note that this feature is in general dangerous if the files are
+large, as they can inadvertently fill up filesystems or otherwise
+create havoc. However, the fdf log files are quite small.)
+
+(Contributed by Nick P. Andersen)
+
+(+ rearranged the statements that update INCFLAGS in the fdf
+makefile. This could trap some incorrect settings of this variable in
+the top arch.make)
+
+modified:
+  Src/fdf/fdf.F90
+  Src/fdf/makefile
+
+-----------------------------------------------------------------------
+2012-10-31   9:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-424
+Bug fixes for array bounds 
+
+There were array bounds problems in:
+
+- The new code to print the initial spin polarization, for the case
+  of non-collinear spin.
+
+- The 'transition_rate' routine: ek and ek_local were wrongly
+  dimensioned to no_l, instead of no_u.
+
+- The mesh1d file in SiestaXC
+
+(+ removed old debugging code in 'domain_decomposition')
+
+modified:
+  Src/domain_decom.F
+  Src/new_dm.F
+  Src/transition_rate.F
+  Src/SiestaXC/mesh1d.f90
+
+-----------------------------------------------------------------------
 2012-10-30   9:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-423
 Transiesta and TBTrans enhancements by Nick P. Andersen
 

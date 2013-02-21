@@ -1,4 +1,14 @@
 -----------------------------------------------------------------------
+2013-02-21  Alberto Garcia <albertog@icmab.es>   trunk-428-scf-39
+Sync to trunk-428
+
+2012-12-13 [merge] Bugfix in spin calculations for TBTra...
+2012-12-10 [merge] More fixes and tests for new transies...
+2012-11-20 [merge] Bug fixes for new transiesta/tbtrans_...
+2012-11-14 Use scratch fdf log files for non-master nodes
+2012-10-31 [merge] Bug fixes for array bounds 
+
+-----------------------------------------------------------------------
 2013-02-21  Alberto Garcia <albertog@icmab.es>   trunk-423-scf-39
 Sync to trunk-423
 

@@ -93,8 +93,9 @@
 
 !     Print populations at each SCF step, if requested, after mixing ......
       if (muldeb) then 
-        write (6,"(/a)")
-     &    'siesta: Mulliken populations after mixing'
+         if (IONode)
+     &        write (6,"(/a)")
+     &        'siesta: Mulliken populations after mixing'
         call mulliken( mullipop, nspin, na_u, no_u, maxnh,
      &                 numh, listhptr, listh, S, Dscf, isa,
      &                 lasto, iaorb, iphorb )

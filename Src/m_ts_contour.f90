@@ -336,7 +336,7 @@ contains
 ! * LOCAL variables     *
 ! ***********************
 ! For temporary shift in the array (then we do not need an ic counter)
-    type(ts_ccontour), pointer           :: c(:)
+    type(ts_ccontour), pointer           :: c(:) => null()
     real(dp), dimension(:), allocatable :: theta,x,wt
 
 ! Various constants for calculating the contour
@@ -359,13 +359,10 @@ contains
     z0    = dcmplx(E1 + R, 0d0)
     beta  = dasin(Delta/R)
 
-    ! Clear c pointer
-    nullify(c)
-
 !
 !     Residuals:
 !        
-    c(1:Npol) => contour(1:Npol)
+    c => contour(1:Npol)
     do i = 1 , Npol 
        c(i)%c = dcmplx(E2,Pi*kT*(2.0d0*(i-1)+1d0))
        c(i)%w = dcmplx(0d0,2d0*Pi*kT) 
@@ -376,7 +373,7 @@ contains
 !
 !     Line contour:
 !        
-    c(1:Nline) => contour(Npol+1:Npol+Nline)
+    c => contour(Npol+1:Npol+Nline)
     allocate(wt(Nline),x(Nline))
     call memory('A','D',2*Nline,'mkCplxContour')         
     if(NT.eq.10) then
@@ -404,7 +401,7 @@ contains
 !
 !     Circle contour:
 !
-    c(1:Ncircle) => contour(Npol+Nline+1:Npol+Nline+Ncircle)
+    c => contour(Npol+Nline+1:Npol+Nline+Ncircle)
     allocate(wt(Ncircle),theta(Ncircle))
     call memory('A','D',2*Ncircle,'mkCplxContour') 
     call gauss(Ncircle, 0, beta, Pi, theta, wt)       

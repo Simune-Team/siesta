@@ -50,7 +50,7 @@ contains
 ! *********************
 ! * LOCAL variables   *
 ! *********************
-    complex(dp), dimension(:), allocatable :: dos
+    complex(dp), dimension(:,:), allocatable :: dos
 
     ! Read in options for transiesta
     call read_ts_options( ucell )
@@ -80,24 +80,24 @@ contains
 
 
        ! GF generation:
-       allocate(dos(NEn))
-       call memory('A','Z',NEn,'transiesta')
+       allocate(dos(NEn,nspin))
+       call memory('A','Z',NEn*nspin,'transiesta')
      
        ! Create the Left GF file
        call do_Green('L',HSFileL, GFFileL, GFTitle, &
             ElecValenceBandBot, ReUseGF, &
             ts_nkpnt,ts_kpoint,ts_kweight, &
-            NBufAtL,NUsedAtomsL,NRepA1L,NRepA2L, &
+            NBufAtL,NUsedAtomsL,NRepA1L,NRepA2L, .false., & !For now TranSIESTA will only perform with inner-cell distances
             ucell,xa,na_u,NEn,contour,VoltL,dos,nspin)
        
        ! Create the Right GF file
        call do_Green('R',HSFileR,GFFileR, GFTitle, &
             ElecValenceBandBot, ReUseGF, &
             ts_nkpnt,ts_kpoint,ts_kweight, &
-            NBufAtR,NUsedAtomsR,NRepA1R,NRepA2R, &
+            NBufAtR,NUsedAtomsR,NRepA1R,NRepA2R, .false., &
             ucell,xa,na_u,NEn,contour,VoltR,dos,nspin)
        
-       call memory('D','Z',NEn,'transiesta')
+       call memory('D','Z',NEn*nspin,'transiesta')
        deallocate(dos)
 
        ! Print out information in Green's function files

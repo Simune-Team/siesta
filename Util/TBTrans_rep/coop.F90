@@ -3,11 +3,11 @@
 ! ##                              By                                 ##
 ! ##            Nick Papior Andersen, nickpapior@gmail.com           ##
 ! #####################################################################
-subroutine COOP(uC,uCL,uCR, &
+subroutine COOP(uC,uCL,uCR, spin_F, &
      IsoAt1,IsoAt2, &
-     noBufL,noL,noD,nspin, &
+     noBufL,noL,noD, &
      na_u,lasto,GF,GFRGF,S, &
-     iE,Energy,wGF)
+     iE,Energy)
 
   use precision,       only : dp
   use sys,             only : die
@@ -24,9 +24,9 @@ subroutine COOP(uC,uCL,uCR, &
 ! * INPUT variables        *
 ! **************************
   integer, intent(in) :: uC, uCL, uCR ! The units to write to
+  real(dp), intent(in):: spin_F ! The spin factor
   integer, intent(in) :: IsoAt1, IsoAt2 ! Isolated atoms (index in lasto)
   integer, intent(in) :: noBufL, noL, noD ! Orbital counts, left buf, left elec, device
-  integer, intent(in) :: nspin
   integer, intent(in) :: na_u
   integer, intent(in) :: lasto(0:na_u) ! Last orbital index of each atom (full lasto)
   complex(dp), intent(in) :: GF   (noD,noD)
@@ -34,11 +34,11 @@ subroutine COOP(uC,uCL,uCR, &
   complex(dp), intent(in) :: S    (noD,noD)
   integer, intent(in)     :: iE
   real(dp), intent(in)    :: Energy
-  complex(dp), intent(in) :: wGF
 
 ! **************************
 ! * LOCAL variables        *
 ! **************************
+  real(dp), parameter :: r1dPi = 1.0_dp/Pi ! Local Pi factor
   integer             :: noShift ! The shift in orbitals duo to buffer and electrode
   integer             :: ia1, ia2
   integer             :: io1, io2 ! for loops
@@ -46,7 +46,6 @@ subroutine COOP(uC,uCL,uCR, &
   real(dp)            :: coopT,coopL,coopR          !
   real(dp)            :: coopL2L,coopR2L,coopL2R    !
   real(dp)            :: coopR2R
-  complex(dp)         :: ztmp
 
 #ifdef MPI
   real(dp), allocatable :: buf_recv(:), buf_send(:)
@@ -58,8 +57,6 @@ subroutine COOP(uC,uCL,uCR, &
 
 !***********************************************************************
 !     BEGIN
-  if (nspin.eq.1) ztmp = dcmplx(-2.0_dp/Pi,0.0_dp)*eV
-  if (nspin.eq.2) ztmp = dcmplx(-1.0_dp/Pi,0.0_dp)*eV
 
   noShift = noBufL + noL
 #ifdef MPI
@@ -69,18 +66,22 @@ subroutine COOP(uC,uCL,uCR, &
   
   do ia1 = IsoAt1 , IsoAt2
      do ia2 = IsoAt1 , IsoAt2
-        coopL  = 0.0_dp
+
+        !coopL  = 0.0_dp
         coopT  = 0.0_dp
         coopR  = 0.0_dp
 
-        do io1 = lasto(ia1-1) - noShift + 1 , lasto(ia1) - noShift
-           do io2 = lasto(ia2-1) - noShift + 1 , lasto(ia2) - noShift
-              coopT = coopT + DIMAG(ztmp*GF   (io1,io2)*S(io1,io2))
-              coopR = coopR + DIMAG(ztmp*GFRGF(io1,io2)*S(io1,io2))
+        do io2 = lasto(ia2-1) - noShift + 1 , lasto(ia2) - noShift
+           do io1 = lasto(ia1-1) - noShift + 1 , lasto(ia1) - noShift
+              coopT = coopT - r1dPi*DIMAG(GF   (io1,io2)*S(io1,io2))
+              coopR = coopR - r1dPi*DIMAG(GFRGF(io1,io2)*S(io1,io2))
            end do
         end do
+        coopT = spin_F * coopT 
+        coopR = spin_F * coopR
         
         coopL = coopT - coopR
+
 #ifdef MPI
         buf_send(1) = Energy
         buf_send(2) = coopT
@@ -119,22 +120,28 @@ subroutine COOP(uC,uCL,uCR, &
 !     summedup COOP to all left/right atoms w.r.t. the given atom
 !=======================================================================
   do ia1 = IsoAt1 , IsoAt2
-     do io1 = lasto(ia1-1) - noShift + 1 , lasto(ia1) - noShift
 
-        coopL2L = 0.0_dp
-        coopL2R = 0.0_dp
-        coopR2L = 0.0_dp
-        coopR2R = 0.0_dp
-        coopL =  0.0_dp
-        coopR =  0.0_dp
+     ! This initialization was done in the orbital loop,
+     ! however, that did not make sense, as the calculation
+     ! was only performed on the last orbital on each atom.
+     !coopL2L = 0.0_dp
+     coopL   = 0.0_dp
+     !coopL2R = 0.0_dp
+     coopR2R = 0.0_dp
+     coopR   = 0.0_dp
+     coopR2L = 0.0_dp
+     
 
-        do ia2 = IsoAt1 , IsoAt2
-           do io2 = lasto(ia2-1) - noShift + 1 , lasto(ia2) - noShift
+     do ia2 = IsoAt1 , IsoAt2
+        do io2 = lasto(ia2-1) - noShift + 1 , lasto(ia2) - noShift
+
+           ! for better performance
+           do io1 = lasto(ia1-1) - noShift + 1 , lasto(ia1) - noShift
 
               ! Note that GFRGF= GF^dagger.(GammaR/2).GF,
               ! also that "GFRGF" + "GFIGF" = Im(G)
-              coopTMP1 = DIMAG(ztmp*GF   (io1,io2)*S(io1,io2))
-              coopTMP2 = DIMAG(ztmp*GFRGF(io1,io2)*S(io1,io2))
+              coopTMP1 = - spin_F * r1dPi * DIMAG(GF   (io1,io2)*S(io1,io2))
+              coopTMP2 = - spin_F * r1dPi * DIMAG(GFRGF(io1,io2)*S(io1,io2))
               if ( ia2 < ia1 ) then      !atom to the Left
                  coopL   = coopL   + coopTMP1
                  coopR2L = coopR2L + coopTMP2
@@ -142,10 +149,12 @@ subroutine COOP(uC,uCL,uCR, &
                  coopR   = coopR   + coopTMP1
                  coopR2R = coopR2R - coopTMP2
               end if ! atom 2 Right
-           end do ! io2 -- orbital number on atom ia2
-        end do ! ia2
 
-     end do ! io1 -- orbital number on atom ia1
+           end do ! io1 -- orbital number on atom ia1
+
+        end do ! io2 -- orbital number on atom ia2
+     end do ! ia2
+     
      coopL2L = coopL - coopR2L
      coopL2R = coopR - coopR2R
 
