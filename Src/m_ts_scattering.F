@@ -430,8 +430,9 @@ C ##################################################################
 
 #ifdef MPI
       use mpi_siesta, only : MPI_Bcast, MPI_AllReduce, 
-     & MPI_Sum, DAT_dcomplex, MPI_Integer, MPI_Status_Size, 
+     & MPI_Sum, MPI_Integer, MPI_Status_Size, 
      & MPI_Comm_World
+      use mpi_siesta, only : DAT_dcomplex => MPI_double_complex
                
 #endif
 

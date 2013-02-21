@@ -1,4 +1,14 @@
 -----------------------------------------------------------------------
+2013-02-21  Alberto Garcia <albertog@icmab.es>   trunk-432-scf-39
+Sync to trunk-432
+
+2013-01-24 Export some MPI symbols explicitly. Remove ob...
+2013-01-21 [merge] Fix possible problems in temporary fi...
+2013-01-21 Rationalize fdf logging and debugging
+2013-01-18 [merge] JobList utility to organize and run mul...
+
+
+-----------------------------------------------------------------------
 2013-02-21  Alberto Garcia <albertog@icmab.es>   trunk-428-scf-39
 Sync to trunk-428
 

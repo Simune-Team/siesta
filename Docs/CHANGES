@@ -6,6 +6,111 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2013-01-24  14:30:00 GMT                                      trunk-432
+Export some MPI symbols explicitly. Remove obsolete symbols
+
+Author: A. Garcia
+
+Some PGI compilers do not consider symbols public by default
+when they are inherited through a chain of module 'uses'. This
+affected in particular some MPI symbols in the mpi_siesta module.
+The symbols are now made 'public' explicitly.
+
+The symbols DAT_single, DAT_double, etc, which were necessary to
+deal with machines (old Crays) with different meanings for single
+and double precision, have now been removed from the MPI interface
+modules. They still appear in some routines as aliases for imports.
+
+modified:
+  Src/MPI/mpi.F
+  Src/MPI/mpi_siesta.f90
+  Src/m_glob_sparse.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_in_siesta.F
+  Src/m_ts_scattering.F
+
+-----------------------------------------------------------------------
+2013-01-21  11:15:00 GMT                                      trunk-431
+Fix possible problems in temporary file name
+
+Author: A. Garcia
+
+The name of the temporary file used to dump the contents of the fdf file
+could be malformed in certain situations. The algorithm has now been
+changed.
+
+(Thanks to Romuald Carpentier)
+
+(+ Remove fossil DEBUG sections)
+
+modified:
+  Src/reinit.F
+
+-----------------------------------------------------------------------
+2013-01-21  10:45:00 GMT                                      trunk-430
+Rationalize fdf logging and debugging
+
+Author: A. Garcia
+
+In runs with many processors, the default logging behavior was affecting
+performance. The policy is now as follows.
+
+* Debugging and logging.
+
+By default, all the fdf requests are logged, printing the final value
+extracted (if it is the default value, it is identified as such).
+In MPI operation, only the master node does the logging, unless the
+"output-level" is set to a value >= 2. This can be done directly in
+the fdf file:
+
+fdf-output 2  # Turn on logging for all nodes
+fdf-output 0  # Turn off logging completely
+
+No debugging is done, unless the "debug-level" is set to a value greater
+than zero. The most meaningful way to use this feature is to set the
+debugging level before the fdf data structures are built. This can be
+achieved by calling the routine fdf_setdebug with the appropriate level
+and file name *before* the call to fdf_init.  This gives full control
+over the behavior. This is not currently used in Siesta.
+
+Alternatively, if the library is compiled with the pre-processor symbol
+FDF_DEBUG defined, it will set the debug level to 2 (exhaustive) for all
+nodes in the system. (It will also set the output level to 2 (all nodes)).
+
+If the debugging level (>=2) is only specified in the fdf file itself,
+the library will provide a print-out of the final data structure generated
+(in all nodes).
+
+fdf-debug 2
+
+(+ Support for FDF_DEBUG in the Makefile)
+(+ Cosmetic improvement to the numerical field in the log files)
+
+modified:
+  Src/Makefile
+  Src/fdf/fdf.F90
+  Src/fdf/fdf.Standard
+  Src/reinit.F
+
+-----------------------------------------------------------------------
+2013-01-18  10:30:00 GMT                                      trunk-429
+JobList utility to organize and run multiple jobs 
+
+Author: J. Soler
+
+The JobList directory contains utilities to organize, to run or queue,
+and to collect results of multiple siesta jobs. It is particularly
+suited for preliminary convergence tests, and it uses only fortran
+codes and minimal shell scripts.
+  
+added:
+  Util/JobList/
+modified:
+  Src/siesta_end.F
+  Src/siesta_init.F
+  Util/README
+-----------------------------------------------------------------------
 2012-12-13  17:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-428
 Bugfix in spin calculations for TBTrans_rep
 

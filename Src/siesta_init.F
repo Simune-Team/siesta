@@ -89,6 +89,9 @@ C     Initialise MPI and set processor number
      &           'doesn''t have parallel support')
       endif
 #endif
+      if (Node==0) then
+         call system("rm -f 0_NORMAL_EXIT")
+      endif
 #ifdef DEBUG
 !     Generates a debug file for every process to track the execution.
 !     The file is called debug.$(PID) Where PID is the process number.

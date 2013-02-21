@@ -69,6 +69,11 @@
         call wallclock('End of run')
       endif
 
+      if (cml_p) then
+        call cmlEndModule(mainXML)
+        call siesta_cml_exit()
+      endif      
+
 !     Finalize MPI
 #ifdef DEBUG
       call write_debug( 'POS SIESTA_END' )
@@ -77,10 +82,9 @@
       call MPI_Finalize( MPIerror )
 #endif
 
-      if (cml_p) then
-        call cmlEndModule(mainXML)
-        call siesta_cml_exit()
-      endif      
+      if (IOnode) then
+         call system("touch 0_NORMAL_EXIT")
+      endif
 !--------------------------------------------------------------------------- END
       END subroutine siesta_end
       END MODULE m_siesta_end
