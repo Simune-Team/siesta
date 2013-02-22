@@ -55,12 +55,9 @@ C  Internal variables ...
       double precision
      .  emax, emin, eV, path
 
-      character 
-     .  fname*30, sname*25, string*10
+      character(len=150):: 
+     .  fname, paste, sname, string
 
-
-
-      character         paste*30
       external          io_assign, io_close, paste
 C ...
 
