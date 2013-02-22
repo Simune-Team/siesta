@@ -4,373 +4,22 @@
 !
 !=============================================================================
 ! CONTAINS:
-!          1) consHS
-!          2) consHSp
-!          3) getGF_Tri
-!          4) getsfe
-!          5) GFGammaGF
-!          6) weightDM
-!          7) weightDMC
-
+!          1) getGF
+!          2) getSFE
+!          3) GFGammaGF
+!          4) weightDM
+!          5) weightDMC
+!          6) get_scat_region
       implicit none
 
-#ifdef MPI 
-      public :: consHSp, getsfe, getGF_Tri, GFGammaGF,
-     .          weightDM, weightDMC
-#else
-      public :: consHS, getsfe, getGF_Tri, GFGammaGF, 
-     .          weightDM, weightDMC
-#endif
+      public :: getSFE, getGF, GFGammaGF
+      public :: weightDM, weightDMC
+      public :: get_scat_region
+
 
       private
 
       CONTAINS
-
-      subroutine consHS( nuo, no,  maxnh,  
-     .                  gamma, numh, listhptr, listh, 
-     .                  H, S, xij, indxuo,  kpoint,
-     .                  Ha,Sa,ef,nou,NGL,NGR,NBUFL)
-
-C *********************************************************************
-C integer nuo                 : Number of basis orbitals in unit cell
-C                               local to this processor
-C integer no                  : Number of basis orbitals in supercell
-C integer maxuo               : Last dimension of xij
-C                               Must be at least max(indxuo)
-C integer maxnh               : Maximum number of orbitals interacting  
-C integer maxnd               : First dimension of listd / DM
-C integer numh(nuo)           : Number of nonzero elements of each row 
-C                               of hamiltonian matrix locally
-C integer listhptr(nuo)       : Pointer to each row (-1) of the
-C                               hamiltonian matrix locally
-C integer listh(maxnh)        : Nonzero hamiltonian-matrix element  
-C                               column indexes for each matrix row
-C real*8  H(maxnh)      : Hamiltonian in sparse form
-C real*8  S(maxnh)            : Overlap in sparse form
-C real*8  xij(3,maxnh)        : Vectors between orbital centers (sparse)
-C                               (not used if only gamma point)
-C integer indxuo(no)          : Index of equivalent orbital in unit cell
-C                               Unit cell orbitals must be the first in
-C                               orbital lists, i.e. indxuo.le.nuo, with
-C                               nuo the number of orbitals in unit cell
-C real*8  kpoint(3)           : k point vectors
-C integer nuotot              : total number of orbitals per unit cell
-C                               over all processors
-C
-
-      use precision, only: dp
-
-      implicit          none
-
-      integer           maxnh, no, nuo, nou,nbufl,ngl,ngr
-
-      integer           indxuo(no), listh(maxnh), numh(nuo), 
-     .                  listhptr(nuo)
-      real(dp)  
-     .                  H(maxnh), kpoint(3),  
-     .                  S(maxnh),xij(3,maxnh)
-
-      real(dp)  
-     .                  ef
-      complex(dp)  
-     .                  Ha(nou,nou), Sa(nou,nou)
-      logical gamma
-
-C  Internal variables .............................................
-      integer
-     .  io, ind, iuo,
-     .  j, jo, juo, io1,jo1
-      real(dp)   kxij
-      complex(dp) cphase
-      complex(dp), dimension (:,:), allocatable :: Hw,Sw
-
-C  ....................
-
-
-      allocate(Hw(nuo,nuo))
-      allocate(Sw(nuo,nuo))
-
-      Hw = (0.d0,0.d0)
-      Sw = (0.d0,0.d0)
-
-      Ha = (0.d0,0.d0)
-      Sa = (0.d0,0.d0)
-
-      do io = 1,nuo
-        do j = 1,numh(io)
-          ind = listhptr(io) + j
-          jo = listh(ind)
-          iuo = indxuo(io)
-          juo = indxuo(jo)
-          if(.not. Gamma) then
-            kxij = (kpoint(1) * xij(1,ind) +
-     .              kpoint(2) * xij(2,ind) +
-     .              kpoint(3) * xij(3,ind))
-            cphase = exp(dcmplx(0d0,1d0)*kxij)
-c             write(6,*)kxij,iuo,juo
-C FDN Changed index ordering
-            Sw(iuo,juo) = Sw(iuo,juo) + S(ind)*cphase
-            Hw(iuo,juo) = Hw(iuo,juo) + H(ind)*cphase
-          else
-            Sw(iuo,juo) =  S(ind)
-            Hw(iuo,juo) =  H(ind)
-C FDN
-          endif
-        enddo
-      enddo
-C ....................
-
-
-      do io1=1,nou
-        io=io1+NBUFL
-        do jo1=1,nou
-          jo=jo1+NBUFL
-          Ha(jo1,io1) = Hw(jo,io)
-          Sa(jo1,io1) = Sw(jo,io)
-        end do                 
-      end do
-
-      deallocate(Hw)
-      deallocate(Sw)
-
-c Symmetrize:
-
-
-      do io = 1,nou
-        do jo = 1,io-1
-C FDN
-          Sa(jo,io) = 0.5d0*(Sa(jo,io) + dconjg(Sa(io,jo)) )
-          Ha(jo,io) = 0.5d0*(Ha(jo,io) + dconjg(Ha(io,jo)) )
-          Sa(io,jo) =  dconjg(Sa(jo,io))
-          Ha(io,jo) =  dconjg(Ha(jo,io))
-C FDN
-        enddo                 
-      enddo                  
-
-c
-c     Make sure Left-Right part is zero:
-c
-      do io = nou-NGR+1,nou
-        do jo = 1,NGL
-          Sa(io,jo) = dcmplx(0d0,0d0)
-          Ha(io,jo) = dcmplx(0d0,0d0)
-          Sa(jo,io) = dcmplx(0d0,0d0)
-          Ha(jo,io) = dcmplx(0d0,0d0)
-        end do
-      end do
-
-c
-c     Shift Energy-zero to ef (initially from SIESTA) :
-c
-      call zaxpy(nou*nou,dcmplx(-ef,0.d0),Sa,1,Ha,1)
-
-
-      return
-      end subroutine consHS
-
-!------------------------------------------------------------------------
-!************************************************************************
-!------------------------------------------------------------------------
-
-
-c
-c     Put dummy subroutine here so that compilers do not complain
-c     about empty file in serial compilation.
-c
-C      subroutine dummy_sub2
-C      end
-c
-#ifdef MPI
-      subroutine consHSp(nuo, no,   maxnh,  maxnhg,
-     .                  gamma, numh, listhptr, 
-     .                  numhg, listhptrg,listhg,
-     .                  H, S, xijg, indxuo,  kpoint, nuotot,
-     .                  Ha,Sa,
-     .                  Node, Nodes,ef,nou,NGL,NGR,NBUFL)
-C *********************************************************************
-C integer nuo                 : Number of basis orbitals in unit cell
-C                               local to this processor
-C integer no                  : Number of basis orbitals in supercell
-C integer maxnh               : Maximum number of orbitals interacting  
-C integer maxnd               : First dimension of listd / DM
-C integer numh(nuo)           : Number of nonzero elements of each row 
-C                               of hamiltonian matrix locally
-C integer listhptr(nuo)       : Pointer to each row (-1) of the
-C                               hamiltonian matrix locally
-C integer listh(maxnh)        : Nonzero hamiltonian-matrix element  
-C                               column indexes for each matrix row
-C real*8  H(maxnh)      : Hamiltonian in sparse form
-C real*8  S(maxnh)            : Overlap in sparse form
-C real*8  xij(3,maxnh)        : Vectors between orbital centers (sparse)
-C                               (not used if only gamma point)
-C integer indxuo(no)          : Index of equivalent orbital in unit cell
-C                               Unit cell orbitals must be the first in
-C                               orbital lists, i.e. indxuo.le.nuo, with
-C                               nuo the number of orbitals in unit cell
-C real*8  kpoint(3)           : k point vectors
-C integer nuotot              : total number of orbitals per unit cell
-C                               over all processors
-C integer Node                : local processor
-C integer Nodes               : number of processors
-C
-C  Modules
-C
-C FDN
-C      use parallel
-      use parallelsubs, only : GlobalToLocalOrb, WhichNodeOrb
-C FDN
-      use mpi_siesta
-      use precision, only : dp
-
-      implicit          none
-
-      integer 
-     .  MPIerror
-
-      integer           maxnh, maxnhg, no,
-     .                  nuo, nuotot, Node, Nodes,
-     .                  nou,nbufl,ngl,ngr
-
-      integer         
-     .                  numh(nuo), listhptr(nuo)
-      integer           indxuo(no), listhg(maxnhg), 
-     .                  numhg(nuotot), listhptrg(nuotot)
-      real(dp)  
-     .                  H(maxnh), kpoint(3),  
-     .                  S(maxnh),xijg(3,maxnhg)
-
-      real(dp)  
-     .                  ef
-      complex(dp)  
-     .                  Ha(nou,nou), Sa(nou,nou)
-      logical gamma
-
-C  Internal variables .............................................
-      integer
-     .  BNode, io, iio, ind, iuo,
-     .  j, jo, juo,  nuog , io1,jo1
-      real(dp)
-     .  kxij
-      real(dp), dimension(:), allocatable, save ::
-     .  Snew,Hnew
-      complex(dp) cphase
-      complex(dp), dimension (:,:), allocatable :: Hw,Sw
-
-C  ....................
-
-C Globalise list arrays - assumes listh and listd are the same
-
-
-C Create new distribution of H and S
-      nuog = nuotot
-      allocate(Snew(maxnhg))
-      allocate(Hnew(maxnhg))
-
-      do io = 1,nuotot
-        call WhichNodeOrb(io,Nodes,BNode)
-        if (Node.eq.BNode) then
-          call GlobalToLocalOrb(io,Node,Nodes,iio)
-            do jo = 1,numh(iio)
-              Hnew(listhptrg(io)+jo) = H(listhptr(iio)+jo)
-            enddo
-          do jo = 1,numh(iio)
-            Snew(listhptrg(io)+jo) = S(listhptr(iio)+jo)
-          enddo
-        endif
-          call MPI_Bcast(Hnew(listhptrg(io)+1),numhg(io),DAT_double,
-     .      BNode,MPI_Comm_World,MPIerror)
-        call MPI_Bcast(Snew(listhptrg(io)+1),numhg(io),DAT_double,
-     .      BNode,MPI_Comm_World,MPIerror)
-      enddo
-
-C Find eigenvalues .........................................
-
-        allocate(Hw(nuotot,nuotot))
-        allocate(Sw(nuotot,nuotot))
-
-
-             Hw = (0.d0,0.d0)
-             Sw = (0.d0,0.d0)
-
-             Ha = (0.d0,0.d0)
-             Sa = (0.d0,0.d0)
-
-          do io = 1,nuog
-            do j = 1,numhg(io)
-              ind = listhptrg(io) + j
-              jo = listhg(ind)
-              iuo = indxuo(io)
-              juo = indxuo(jo)
-               if(.not. Gamma) then
-                   kxij = (kpoint(1) * xijg(1,ind) +
-     .             kpoint(2) * xijg(2,ind) +
-     .             kpoint(3) * xijg(3,ind))
-                  cphase = exp(dcmplx(0d0,1d0)*kxij)
-C FDN Changed index ordering
-                  Sw(iuo,juo) = Sw(iuo,juo) + Snew(ind)*cphase
-                  Hw(iuo,juo) = Hw(iuo,juo) + Hnew(ind)*cphase
-               else
-                  Sw(juo,iuo) =  Snew(ind)
-                  Hw(juo,iuo) =  Hnew(ind)
-               endif
-
-            enddo
-          enddo
-C ....................
-
-C Free local memory
-      deallocate(Snew)
-      deallocate(Hnew)
-
-
-      do io1=1,nou
-         io=io1+NBUFL
-         do jo1=1,nou
-            jo=jo1+NBUFL
-            Ha(jo1,io1) = Hw(jo,io)
-            Sa(jo1,io1) = Sw(jo,io)
-         end do                 !jo1
-      end do
-
-      deallocate(Hw)
-      deallocate(Sw)
-
-c Symmetrize:
-
-
-      do io = 1,nou
-         do jo = 1,io-1
-C FDN
-            Sa(jo,io) = 0.5d0*(Sa(jo,io) + dconjg(Sa(io,jo)) )
-            Ha(jo,io) = 0.5d0*(Ha(jo,io) + dconjg(Ha(io,jo)) )
-            Sa(io,jo) =  dconjg(Sa(jo,io))
-            Ha(io,jo) =  dconjg(Ha(jo,io))
-C FDN
-         enddo                  !io
-      enddo                     !jo
-
-
-c
-c     Make sure Left-Right part is zero:
-c
-      do io = nou-NGR+1,nou
-         do jo = 1,NGL
-            Sa(io,jo) = dcmplx(0d0,0d0)
-            Ha(io,jo) = dcmplx(0d0,0d0)
-            Sa(jo,io) = dcmplx(0d0,0d0)
-            Ha(jo,io) = dcmplx(0d0,0d0)
-         end do
-      end do
-
-c
-c     Shift Energy-zero to ef (initially from SIESTA) :
-c
-      call zaxpy(nou*nou,dcmplx(-ef,0.d0),Sa,1,Ha,1)
-
-      end subroutine consHSp
-#endif
-
-
 
 !------------------------------------------------------------------------
 !************************************************************************
@@ -387,18 +36,15 @@ C ##                                                              ##
 C ##  Modified by F. D. Novaes                                    ##
 C ##################################################################
 
-      subroutine getGF_Tri(USEBULK,no,NGL,NGR,Hi,Si,
+      subroutine getGF(USEBULK,updatedmcr,VoltFDF,no,NGL,NGR,Hi,Si,
      &     HLL,HRR,ZEnergy,GF,ierr,useTri)
 
-
-C FDN
       use sys, only: die
       use m_ts_aux_rout, only : splittri, collectri, invmat, transpose,
-     .                          csolveg, ts_alloc, ts_dealloc
-      use m_ts_options, only: updatedmcr, voltfdf
+     &                          csolveg, ts_alloc, ts_dealloc
       use precision, only: dp
-C FDN
-      implicit none                              
+
+      implicit none 
 
 
 C ======================================================================
@@ -407,7 +53,8 @@ C ======================================================================
 C INPUT:
       logical USEBULK           ! if true self-energy only is input else
 c                                 z*S-H-Sigma for bulk is in sfe
-
+      logical updatedmcr
+      real(dp) VoltFDF
       integer no                !no : no. states
       complex(dp) Hi(0:(no*no)-1),Si(0:(no*no)-1)
       complex(dp) ZEnergy 
@@ -427,12 +74,12 @@ C INPUT/OUTPUT:
 C ======================================================================
 C OUTPUT:
 C      complex*16 GF(0:(no*no)-1)  ! 1/(Sc*Energy - H)
-      complex(dp), dimension(:), pointer :: GF
+      complex(dp), intent(out) :: GF(no*no)
       integer ierr              !inversion err
 C ======================================================================
 c Helpers, tempos ...
       complex(dp), dimension(:), allocatable :: H
-      integer, dimension (:), allocatable:: ipvt
+      integer, dimension (:),    allocatable :: ipvt
 
       integer i,j,ii,jj
       complex(dp) a,b
@@ -441,15 +88,17 @@ C --------------------------------------------------------------------
       integer n1,n2,n3
 C FDN 
       integer :: allocStat
-      complex(dp), dimension(:,:), pointer ::  a11,a12,
-     .                                           a21,a22,a23,
-     .                                               a32,a33
-      complex(dp), dimension(:,:), pointer ::  b11,b12,
-     .                                           b21,b22,b23,
-     .                                               b32,b33
-      complex(dp), dimension(:,:), pointer ::  x12,x32
-C FDN
-      complex(dp), dimension(:,:), pointer ::  x21,x23   
+      complex(dp), dimension(:,:), allocatable ::  
+     &                                             a11,a12,
+     &                                             a21,a22,a23,
+     &                                                 a32,a33
+      complex(dp), dimension(:,:), allocatable ::
+     &                                             b11,b12,
+     &                                             b21,b22,b23,
+     &                                                 b32,b33
+      complex(dp), dimension(:,:), allocatable ::      x12
+      complex(dp), dimension(:,:), allocatable ::  x21,    x23
+      complex(dp), dimension(:,:), allocatable ::      x32
       logical :: contactGFonly   
 
 c----------------------------------------------------------------------
@@ -462,12 +111,13 @@ c=======================================================================
 C BEGIN
 c=======================================================================
 
-c      call timer1('GFT',1) 
+#ifdef TRANSIESTA_DEBUG
+      call write_debug( 'PRE getGF' )
+#endif
+
+      call timer('GFT',1) 
       
 c ================================================================
-      nullify(a11,a12,a21,a22,a23,a32,a33)
-      nullify(b11,b12,b21,b22,b23,b32,b33)
-      nullify(x12,x32,x21,x23)
       ierr=0
 ! FDN
 ! Compute only GF(2,2) ?
@@ -476,14 +126,9 @@ c ================================================================
 ! integration scheme, where both L and R electrodes are used as references.
       contactGFonly = updatedmcr .and. (voltfdf == 0.d0)      
 
-      if(.not.USEBULK) write(6,*) 
-     &  "WARNING: Tridiag only works for USEBULK for finite bias!"
-
 c Setup full H (this part will be changed later..)
 
-      allocate(H(no*no),stat=allocStat)
-      if(allocStat /=0) call die("Could not allocate in getGF_Tri")
-      call memory('A','Z',size(H),"getGF_Tri")
+      call ts_alloc(H,no*no,"getGF")
  
 c
 c     Contact z*S-H without self-energies:
@@ -492,67 +137,70 @@ c
          do j = 0, no-1
             do i = 0, no-1
                H(i + 1 + j*no) = 
-     .              ZEnergy*Si(i+j*no)-Hi(i+j*no) 
-            end do                 !i
-         end do                    !j
-       else
-C GF not yet in memory control !!!
-         allocate(GF(no*no),stat=allocStat)
-         if(allocStat /=0) call die("Could not allocate in getGF_Tri")
+     &              ZEnergy*Si(i+j*no)-Hi(i+j*no) 
+            end do              !i
+         end do                 !j
+      else
          do j = 0, no-1
             do i = 0, no-1
                H(i + 1 + j*no) = 
-     .              ZEnergy*Si(i+j*no)-Hi(i+j*no) 
-                GF(i + 1 + no*j) = dcmplx(0d0,0d0)
-            end do                 !i
+     &              ZEnergy*Si(i+j*no)-Hi(i+j*no) 
+               GF(i + 1 + no*j) = dcmplx(0d0,0d0)
+            end do              !i
             GF(j + 1 + no*j) = dcmplx(1d0,0d0)
-         end do                    !j
-       end if 
-     
+         end do                 !j
+      end if 
+      
 c
 c     Add Left Self-energy
 c
-      do j = 1, NGL
-         do i = 1, NGL
-            if(USEBULK) then 
+      if (UseBulk) then 
+         do j = 1, NGL
+            do i = 1, NGL
                H(i + (j-1)*no) = HLL(i,j)
-            else
+            end do              !i
+         end do                 !j
+      else
+         do j = 1, NGL
+            do i = 1, NGL
                H(i + (j-1)*no) = H(i + (j-1)*no) - HLL(i,j)
-            end if              !USEBULK
-         end do                 !i
-      end do                    !j
-
-c
+            end do              !i
+         end do                 !j
+      end if                    !USEBULK
+c     
 c     Add Right Self-energy
-c
-
-      do j = no-NGR+1,no
-         jj=j-(no-NGR)
-         do i = no-NGR+1,no
-            ii=i-(no-NGR)
-            if(USEBULK) then 
+c     
+      if (UseBulk) then
+         do j = no-NGR+1,no
+            jj=j-(no-NGR)
+            do i = no-NGR+1,no
+               ii=i-(no-NGR)
                H(i + (j-1)*no) = HRR(ii,jj)
-            else
+            end do              !i
+         end do                 !j
+      else
+         do j = no-NGR+1,no
+            jj=j-(no-NGR)
+            do i = no-NGR+1,no
+               ii=i-(no-NGR)
                H(i + (j-1)*no) = H(i + (j-1)*no) - HRR(ii,jj)
-            end if              !USEBULK
-         end do                 !i
-      end do                    !j
-
+            end do              !i
+         end do                 !j
+      end if
+      
       if ( .not. useTri) then
 ! Invert directly
          allocate(ipvt(no),stat=allocStat)
-         if(allocStat /=0) call die("Could not allocate in getGF_Tri") 
-         call memory('A','I',size(ipvt),"getGF_Tri")      
+         if(allocStat /=0) call die("Could not allocate in getGF") 
+         call memory('A','I',size(ipvt),"getGF")      
 
-         call csolveg(no,no,H,GF,ipvt,ierr)
-   
-         call memory('D','Z',size(H),"getGF_Tri")
-         deallocate(H,stat=allocStat)
-         if(allocStat /=0) call die("Could not deallocate in getGF_Tri")
+         call zgesv(no,no,H,no,ipvt,GF,no,ierr)            
+
+         call ts_dealloc(H,"getGF")
  
-         call memory('D','I',size(ipvt),"getGF_Tri")
+         call memory('D','I',size(ipvt),"getGF")
          deallocate(ipvt,stat=allocStat)
-         if(allocStat /=0) call die("Could not deallocate in getGF_Tri")
+         if(allocStat /=0) call die("Could not deallocate in getGF")
 
       else
 
@@ -564,18 +212,18 @@ c allocate:
       n2 = no - (NGL+NGR)
       n3 = NGR
               
-      call ts_alloc(a11,n1,n1,"getGF_Tri")
-      call ts_alloc(a12,n1,n2,"getGF_Tri")
-      call ts_alloc(a21,n2,n1,"getGF_Tri")      
-      call ts_alloc(a22,n2,n2,"getGF_Tri")
-      call ts_alloc(a23,n2,n3,"getGF_Tri")      
-      call ts_alloc(a32,n3,n2,"getGF_Tri")
-      call ts_alloc(a33,n3,n3,"getGF_Tri")
+      call ts_alloc(a11,n1,n1,"getGF")
+      call ts_alloc(a12,n1,n2,"getGF")
+      call ts_alloc(a21,n2,n1,"getGF")
+      call ts_alloc(a22,n2,n2,"getGF")
+      call ts_alloc(a23,n2,n3,"getGF")
+      call ts_alloc(a32,n3,n2,"getGF")
+      call ts_alloc(a33,n3,n3,"getGF")
       
       call splittri(n1,n2,n3,H,a11,a12,a21,a22,a23,a32,a33)
-      call memory('D','Z',size(H),"getGF_Tri")
+      call memory('D','Z',size(H),"getGF")
       deallocate(H,stat=allocStat)
-      if(allocStat /=0) call die("Could not deallocate in getGF_Tri")
+      if(allocStat /=0) call die("Could not deallocate in getGF")
       
       
 
@@ -585,25 +233,25 @@ c====================================================================
       
 
 c     inv(a11) -> store in b11
-      call ts_alloc(b11,n1,n1,"getGF_Tri")
+      call ts_alloc(b11,n1,n1,"getGF")
       call invmat(n1,a11,b11,ierr)
-      call ts_dealloc(a11,"getGF_Tri")
+      call ts_dealloc(a11,"getGF")
       
 
 c     inv(a33) -> store in b33
-      call ts_alloc(b33,n3,n3,"getGF_Tri")
+      call ts_alloc(b33,n3,n3,"getGF")
       call invmat(n3,a33,b33,ierr)
-      call ts_dealloc(a33,"getGF_Tri")
+      call ts_dealloc(a33,"getGF")
       
 
 c     x12 = inv(a11).a12 
-      call ts_alloc(x12,n1,n2,"getGF_Tri")
+      call ts_alloc(x12,n1,n2,"getGF")
       a=dcmplx(1.d0,0.d0)
       b=dcmplx(0.d0,0.d0) 
       call zgemm('N','N', n1, n2, n1 ,a ,b11, n1, a12,
      &     n1, b, x12, n1)     
-      call ts_dealloc(a12,"getGF_Tri")
-      if(contactGFonly) call ts_dealloc(b11,"getGF_Tri")
+      call ts_dealloc(a12,"getGF")
+      if(contactGFonly) call ts_dealloc(b11,"getGF")
       
 
 c     a22 - a21.x12 --> a22
@@ -612,18 +260,18 @@ c     a22 - a21.x12 --> a22
       call zgemm('N','N', n2, n2, n1 ,a ,a21, n2, x12,
      &  n1, b, a22, n2)      
       if(contactGFonly) then
-         call ts_dealloc(x12,"getGF_Tri")
-         call ts_dealloc(a21,"getGF_Tri")
+         call ts_dealloc(x12,"getGF")
+         call ts_dealloc(a21,"getGF")
       end if
       
 c     x32 = inv(a33).a32
-      call ts_alloc(x32,n3,n2,"getGF_Tri")
+      call ts_alloc(x32,n3,n2,"getGF")
       a=dcmplx(1.d0,0.d0)
       b=dcmplx(0.d0,0.d0) 
       call zgemm('N','N', n3, n2, n3 ,a ,b33, n3, a32,
      &     n3, b, x32, n3)   
-      call ts_dealloc(a32,"getGF_Tri")
-      if(contactGFonly) call ts_dealloc(b33,"getGF_Tri")
+      call ts_dealloc(a32,"getGF")
+      if(contactGFonly) call ts_dealloc(b33,"getGF")
        
 
 c     a22 - a23.x32 --> a22
@@ -632,41 +280,41 @@ c     a22 - a23.x32 --> a22
       call zgemm('N','N', n2, n2, n3 ,a ,a23, n2, x32,
      &  n3, b, a22, n2)
       if(contactGFonly) then
-         call ts_dealloc(x32,"getGF_Tri")
-         call ts_dealloc(a23,"getGF_Tri")
+         call ts_dealloc(x32,"getGF")
+         call ts_dealloc(a23,"getGF")
       end if      
       
 c now a22 contains (a22 - a21.x12 - a23.x32) 
 
 c b22 = inv(a22 - a21.x12 - a23.x32) 
-      call ts_alloc(b22,n2,n2,"getGF_Tri")
+      call ts_alloc(b22,n2,n2,"getGF")
       call invmat(n2,a22,b22,ierr)   ! now we've got b22
-      call ts_dealloc(a22,"getGF_Tri")
+      call ts_dealloc(a22,"getGF")
 
       
       if(.not.contactGFonly) then
          
 c  b12 = -x12.b22, b21 = b12^T:
-         call ts_alloc(b12,n1,n2,"getGF_Tri")
+         call ts_alloc(b12,n1,n2,"getGF")
          a=dcmplx(-1.d0,0.d0)
          b=dcmplx(0.d0,0.d0) 
          call zgemm('N','N', n1 , n2 , n2 ,a ,x12, n1, b22,
      &     n2, b, b12, n1)      ! got b12
-         call ts_dealloc(x12,"getGF_Tri")
+         call ts_dealloc(x12,"getGF")
          
 C FDN
 C      call transpose(b12,n1,n2,b21) ! got b21
 C b21 = -b22.a21.inv(a11)
 C  a21.inv(a11) --> x21
-         call ts_alloc(x21,n2,n1,"getGF_Tri")
+         call ts_alloc(x21,n2,n1,"getGF")
          a=dcmplx(1.d0,0.d0)
          b=dcmplx(0.d0,0.d0) 
          call zgemm('N','N', n2, n1, n1 ,a ,a21, n2, b11, 
      &     n1, b, x21, n2)
-         call ts_dealloc(a21,"getGF_Tri")
+         call ts_dealloc(a21,"getGF")
          
 ! b21 = -b22.x21
-         call ts_alloc(b21,n2,n1,"getGF_Tri")
+         call ts_alloc(b21,n2,n1,"getGF")
          a=dcmplx(-1.d0,0.d0)
          b=dcmplx(0.d0,0.d0) 
          call zgemm('N','N', n2 , n1 , n2 ,a ,b22, n2, x21, 
@@ -679,31 +327,31 @@ C  a21.inv(a11) --> x21
          b=dcmplx(1.d0,0.d0) 
          call zgemm('N','N', n1 , n1 , n2 ,a ,b12, n1, x21, 
      &     n2, b, b11, n1)
-         call ts_dealloc(x21,"getGF_Tri")
+         call ts_dealloc(x21,"getGF")
 C FDN 
  
 
 c  b32 = -x32.b22, b23 = b32^T:
-         call ts_alloc(b32,n3,n2,"getGF_Tri")
+         call ts_alloc(b32,n3,n2,"getGF")
          a=dcmplx(-1.d0,0.d0)
          b=dcmplx(0.d0,0.d0) 
          call zgemm('N','N', n3 , n2 , n2 ,a ,x32, n3, b22,
      &     n2, b, b32, n3)      ! got b32  
-         call ts_dealloc(x32,"getGF_Tri")
+         call ts_dealloc(x32,"getGF")
      
 C FDN
 C      call transpose(b32,n3,n2,b23) ! got b23
 C b23 = -b22.a23.inv(a33)
 C   a23.inv(a33) --> x23
-         call ts_alloc(x23,n2,n3,"getGF_Tri")
+         call ts_alloc(x23,n2,n3,"getGF")
          a=dcmplx(1.d0,0.d0)
          b=dcmplx(0.d0,0.d0) 
          call zgemm('N','N', n2, n3, n3 ,a ,a23, n2, b33, 
      &     n3, b, x23, n2)
-         call ts_dealloc(a23,"getGF_Tri")
+         call ts_dealloc(a23,"getGF")
          
 C b23 = -b22.x23
-         call ts_alloc(b23,n2,n3,"getGF_Tri")
+         call ts_alloc(b23,n2,n3,"getGF")
          a=dcmplx(-1.d0,0.d0)
          b=dcmplx(0.d0,0.d0) 
          call zgemm('N','N', n2 , n3 , n2 ,a ,b22, n2, x23, 
@@ -716,7 +364,7 @@ C b23 = -b22.x23
          b=dcmplx(1.d0,0.d0) 
          call zgemm('N','N', n3 , n3 , n2 ,a ,b32, n3, x23, 
      &     n2, b, b33, n3)
-         call ts_dealloc(x23,"getGF_Tri")
+         call ts_dealloc(x23,"getGF")
 
       end if ! .not.contactGFonly
          
@@ -726,29 +374,28 @@ c     now collect into GF
 c     
 
  
-C GF not yet in memory control !!!
-      allocate(GF(no*no),stat=allocStat)
-      if(allocStat /=0) call die("Could not allocate in getGF_Tri") 
-    
       call collectri(n1,n2,n3,b11,b12,b21,b22,b23,b32,b33,GF)
  
-      call ts_dealloc(b22,"getGF_Tri")
+      call ts_dealloc(b22,"getGF")
       
       if(.not.contactGFonly) then
-         call ts_dealloc(b11,"getGF_Tri")
-         call ts_dealloc(b12,"getGF_Tri")
-         call ts_dealloc(b21,"getGF_Tri")
-         call ts_dealloc(b23,"getGF_Tri")
-         call ts_dealloc(b32,"getGF_Tri")
-         call ts_dealloc(b33,"getGF_Tri")
+         call ts_dealloc(b11,"getGF")
+         call ts_dealloc(b12,"getGF")
+         call ts_dealloc(b21,"getGF")
+         call ts_dealloc(b23,"getGF")
+         call ts_dealloc(b32,"getGF")
+         call ts_dealloc(b33,"getGF")
       end if
-      
+
       end if ! .not. useTri
- 
+      call timer('GFT',2)  
+
+#ifdef TRANSIESTA_DEBUG
+      call write_debug( 'POS getGF' )
+#endif
      
 C ====================================================================
-      RETURN
-      END subroutine getGF_Tri
+      END subroutine getGF
 C ====================================================================
 
 
@@ -768,46 +415,31 @@ C ##                            By                                ##
 C ##              Mads Brandbyge, mbr@mic.dtu.dk                  ##
 C ##                                                              ##
 C ## Changed to F90 by Jose-Luis Mozos, jlm@kanigo.icmab.es       ##
+C ## Reimplemented expansion of the electrode by:                 ##
+C ##    Nick Papior Andersen, nickpapior@gmail.com                ##
 C ##################################################################
-C version 5. Dec. 2000
 
-C FDN  nq,q,wq no longer dummys
-C     The orihinal interface was like this
-C
-C      subroutine getsfe(USEBULK,jgfu,HAA,SAA,ZEnergy,nq,q,wq,
-C     &     NG2,nua,lasto,NA1,NA2,NG,SFE,GAMMA,Nodes,points2read,
-C     &     errorgs)
+      subroutine getSFE(UseBulk,uGF,HAA,SAA,ZEnergy,ikpt,nq,qb,wq,
+     &     no_GF,nua,lasto,NA1,NA2,no,SFE,GAMMA,points2read,
+     &     errorgs)
 
-      subroutine getsfe(USEBULK,jgfu,HAA,SAA,ZEnergy,
-     &     NG2,NG,SFE,GAMMA,Nodes,points2read,
-     &     errorgs,ikinp)
-
-C FDN
-
-! FDN
-!      use parallel
       use m_ts_aux_rout, only : csolve 
       use precision, only : dp
-! FDN
+      use units,     only : Pi
+      use parallel,  only : IONode, Node, Nodes
 
 #ifdef MPI
-      use mpi_siesta, only : MPI_Bcast, MPI_Comm_Rank, MPI_AllReduce, 
-     . MPI_Sum, DAT_dcomplex, MPI_Integer, MPI_Status_Size, 
-     . MPI_Comm_World
+      use mpi_siesta, only : MPI_Bcast, MPI_AllReduce, 
+     & MPI_Sum, MPI_Integer, MPI_Status_Size, 
+     & MPI_Comm_World
+      use mpi_siesta, only : DAT_dcomplex => MPI_double_complex
                
 #endif
-
-
 
 c-----------------------------------------------------------------
       implicit none
 c-----------------------------------------------------------------
-      real(dp) EPS
-      parameter(EPS=1d-7)
-
-      real(dp) Pi
-      parameter(Pi=3.14159265358979323846264338327950288419717d0)
-      
+      real(dp), parameter :: EPS = 1d-7
  
 c ==================================================================
 c INPUT
@@ -822,55 +454,44 @@ c INPUT
 
 #endif
 
-
       logical USEBULK           ! if true return self-energy only else
 c                                 return z*S-H-Sigma for bulk
 
-      integer jgfu              !fileunit from which we read GF
+      integer uGF              !fileunit from which we read GF
 
-      
-      integer NG                ! size of GF in NA1xNA2 supercell
+      integer no                ! size of GF in NA1xNA2 supercell
 
-     
-      
+      integer,    intent(in) :: nua ! no. uc (1x1) atoms
+      integer,    intent(in) :: lasto(0:nua) ! index of last orbitals of uc atoms.
+      integer,    intent(in) :: NA1,NA2 ! repetitions of surface UC.
+      integer,    intent(in) :: nq !no. q-points <= NA1*NA2
+      real(dp),   intent(in) :: qb(3,nq),wq(nq) !q-points (in reciprocal space) and weights 
+      complex(dp) cphase,ccphase ! for use in transformation in Unit-cell
+!     loop counters for Unit-cell conversion
+      integer                :: ia1,ia2,iau,iuo 
+      integer                :: ja1,ja2,jau,juo
 
       complex(dp) ZEnergy 
-
-      integer nq                !no. q-points <= NA1*NA2
-C FDN No longer dummys
-C      real*8 q(2,nq),wq(nq)     !q-points and weights
-      real(dp) q(2,1),wq(1)     !q-points and weights
-C FDN
-
+      integer, intent(in) :: ikpt
 
 c ----------- 
 c 1x1 surface cell
 c
-      integer NG2               ! size of used part of GAA in UC.
+      integer no_GF               ! size of used part of GAA in UC.
 
-C FDN nq no longer a dummy
-C      complex*16 HAA(NG2,NG2,nq),SAA(NG2,NG2,nq)
-      complex(dp) HAA(NG2,NG2,1),SAA(NG2,NG2,1)
-C FDN
-c -----------
-      integer Nodes             ! number of processors
+      complex(dp) HAA(no_GF,no_GF,nq),SAA(no_GF,no_GF,nq)
       integer points2read
 
-
-C FDN
-      integer ikpar,ikinp
-C FDN
-
+      integer ikpar
 c======================================================================
 c OUTPUT: 
-      complex(dp) SFE(NG,NG) !Electrode atoms self-energy for USEBULK true
+      complex(dp) SFE(no,no) !Electrode atoms self-energy for USEBULK true
 c                           !else z*S - H - Sigma for ideal surface
-      complex(dp)  GAMMA(NG,NG)  ! 0.5*(Sigma - Sigma^dagger) 
+      complex(dp)  GAMMA(no,no)  ! 0.5*(Sigma - Sigma^dagger) 
       logical errorgs
 
 c=====================================================================
 c Helpers, tempos etc...
-      integer Node              ! local processor
       integer ierr,itmp              ! inversion error      
       complex(dp) ZEi, wgfi
       integer iEni
@@ -892,36 +513,30 @@ c=======================================================================
 c     BEGIN:
 c=======================================================================
 
-C FDN Used just to calculate each SE for each kparr
-      nq=1
-      q=0.0
-      wq=1.0
-C FDN
+#ifdef TRANSIESTA_DEBUG
+      call write_debug( 'PRE getSFE' )
+#endif
 
+      call timer('getSFE',1)
       
       if(frstme) icall=1
       if(.not.frstme) icall=icall+1
       frstme=.false.
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
-#endif
 
-       errorgs =.false.
-
-       ntot =  NG2*NG2*nq
-
+      errorgs =.false.
+      
+      ntot =  no_GF*no_GF*nq
+      
       if(points2read .gt. Nodes) then
-         if(Node.eq.0)
-     .   write(6,*) 
-     .    'ERROR GetSFE: points2read=',points2read,' > Nodes=',Nodes
+         if(IONode)
+     &    write(6,*) 
+     &    'ERROR GetSFE: points2read=',points2read,' > Nodes=',Nodes
           errorgs = .true.
           return
       end if
       if(points2read .le. 0) then
-         if(Node.eq.0)
-     .   write(6,*) 'ERROR GetSFE: points2read=',points2read,'< 0'  
+         if(IONode)
+     &   write(6,*) 'ERROR GetSFE: points2read=',points2read,'< 0'  
          errorgs = .true.
          return
       end if
@@ -929,37 +544,26 @@ C FDN
 c
 c     Init:
 c
-       allocate(WRK1(NG,NG))
-       allocate(WRK2(NG,NG))
-       allocate(ipvt(NG))
-c       call memory('A','Z',2*size(WRK1),'getsfe')
-       allocate(GAA(NG2,NG2,nq))
-
+      allocate(WRK1(no,no))
+      allocate(WRK2(no,no))
+      allocate(ipvt(no))
+      call memory('A','Z',2*no*no,'getsfe')
+      call memory('A','I',no,'getsfe')
+      allocate(GAA(no_GF,no_GF,nq))
+      call memory('A','Z',no_GF*no_GF*nq,'getsfe')
+      
 
 #ifdef MPI
 c In order for the inversion to work when inode > points2read
-       GAA=dcmplx(0d0,0d0)
-       do iq=1,nq
-          do io=1,NG2
-             GAA(io,io,iq)=dcmplx(1d0,1d0)
-          end do
-       end do
+      GAA=dcmplx(0.d0,0.d0)
+      do iq=1,nq
+         do io=1,no_GF
+            GAA(io,io,iq)=dcmplx(1.d0,1.d0)
+         end do
+      end do
 #endif
 
-
-
-c       call memory('A','Z',size(GAA),'getsfe')
-
-
-      do io=1,NG
-         do jo=1,NG
-            WRK1(jo,io) = dcmplx(0d0,0d0)
-            WRK2(jo,io) = dcmplx(0d0,0d0)
-            SFE(jo,io)  = dcmplx(0d0,0d0)
-         end do                 !jo
-         SFE(io,io) = dcmplx(1d0,0d0) !to be used in inv.
-      end do                    !io
-
+  
 c Loop over nodes. If root send stuff out to relevant nodes, if
 c not root receive information from root.
 c If there is more nodes than points left to read in file (=points2read)
@@ -967,7 +571,8 @@ c then just send out the data of the last point to the remaining nodes.
 
 
 #ifdef MPI
-       allocate(cbuffer(NG2,NG2,nq))
+      allocate(cbuffer(no_GF,no_GF,nq))
+      call memory('A','Z',no_GF*no_GF*nq,'getsfe')
 #endif
 
 cccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -976,94 +581,84 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 c     ------ root read -------
 
-         if(Node .eq. 0) then
-            if(inode .lt. points2read) 
-C FDN Now also reads ikpar
-     .           read(jgfu) iEni,ZEi,wgfi,ikpar !still enough points to feed to processors
-C FDN
-         endif                  !node0
-#ifdef MPI
-      if(Node.eq.inode) then
-         zenloc = zenergy
-      endif
-        
-      call MPI_Bcast(zenloc,1,DAT_dcomplex,inode,
-     .     MPI_Comm_World,MPIerror)  
-      
-      call MPI_Bcast(iEni,1,MPI_integer,0,
-     .     MPI_Comm_World,MPIerror)  
-#else
-           zenloc = zenergy
+         if(IONode .and. inode .lt. points2read) then
+            read(uGF) iEni,ZEi,wgfi,ikpar !still enough points to feed to processors
+         endif
 
+#ifdef MPI
+         if(Node.eq.inode) then
+            zenloc = zenergy
+         endif
+        
+         call MPI_Bcast(zenloc,1,DAT_dcomplex,inode,
+     &        MPI_Comm_World,MPIerror)  
+         
+         call MPI_Bcast(iEni,1,MPI_integer,0,
+     &        MPI_Comm_World,MPIerror)  
+#else
+         zenloc = zenergy
 #endif
-           if(Node.eq.0) then
-             if(cdabs(ZEi-ZEnloc) .gt. EPS) then
-              write(6,*)
-     .        'ERROR: getsfe: ZEnergy=',ZEi,' expected:',ZEnloc,
-     .        ' in processor ', inode
-                errorgs = .true.
-                return
-             end if
-C FDN
-             if(.not. (ikinp.eq.ikpar)) then
-              write(6,*)
-     .        'ERROR: getsfe: ikpar=',ikpar,' expected:',ikinp,
-     .        ' in processor ', inode
+
+         if(IONode) then
+            if(cdabs(ZEi-ZEnloc) .gt. EPS) then
+               write(6,*)
+     &              'ERROR: getSFE: ZEnergy=',ZEi,' expected:',ZEnloc,
+     &              ' in processor ', inode
                errorgs = .true.
                return
-             end if
-C FDN
-           end if
-
-
-
+            end if
+C NPA Removed
+            if(.not. (ikpt.eq.ikpar)) then
+               write(6,*)
+     &              'ERROR: getSFE: ikpar=',ikpar,' expected:',ikpt
+               errorgs = .true.
+               return
+            end if
+         end if
+         
          if(iEni .eq. 1) then
-           if(Node .eq. 0) then
-             read(jgfu) HAA
-             read(jgfu) SAA
-           endif
+            if(IONode) then
+               read(uGF) HAA
+               read(uGF) SAA
+            endif
            
                      
 #ifdef MPI
-               call MPI_Bcast(HAA(1,1,1),NG2*NG2*nq,DAT_dcomplex,
-     .              0,MPI_Comm_World,MPIerror)  
-               call MPI_Bcast(SAA(1,1,1),NG2*NG2*nq,DAT_dcomplex,
-     .              0,MPI_Comm_World,MPIerror)           
+            call MPI_Bcast(HAA(1,1,1),no_GF*no_GF*nq,DAT_dcomplex,
+     &           0,MPI_Comm_World,MPIerror)  
+            call MPI_Bcast(SAA(1,1,1),no_GF*no_GF*nq,DAT_dcomplex,
+     &           0,MPI_Comm_World,MPIerror)           
 #endif
-          end if              !iEni==1
+         end if                 !iEni==1
        
 
 
-          if(inode .lt. points2read)  then
+         if(inode .lt. points2read)  then
 
 #ifdef MPI
-               if(inode.eq.0.and.Node.eq.0)then
+            if(inode.eq.0.and.IONode)then
 #endif
 
-                   read(jgfu) GAA            !still enough points to feed to processors
+               read(uGF) GAA   !still enough points to feed to processors
 
 #ifdef MPI
-                elseif (Node.eq.0) then
-
-                 read(jgfu) cbuffer
+            elseif (IONode) then
                
-                call MPI_ISend(cbuffer(1,1,1),ntot,DAT_dcomplex,
-     .             inode,1,MPI_Comm_World,Request,MPIerror) 
-                call MPI_Wait(Request,Status,MPIerror)
+               read(uGF) cbuffer
+               
+               call MPI_ISend(cbuffer(1,1,1),no_GF*no_GF*nq,DAT_dcomplex
+     &              ,inode,1,MPI_Comm_World,Request,MPIerror) 
+               call MPI_Wait(Request,Status,MPIerror)
+               
+            elseif (Node.eq.inode) then
+               call MPI_IRecv(GAA(1,1,1),no_GF*no_GF*nq,DAT_dcomplex,
+     &              0,1,MPI_Comm_World,Request,MPIerror)
+               call MPI_Wait(Request,Status,MPIerror)
+               
+            endif               !inode=0 & Node=0
 
-                elseif (Node.eq.inode) then
-                call MPI_IRecv(GAA(1,1,1),ntot,DAT_dcomplex,
-     .            0,1,MPI_Comm_World,Request,MPIerror)
-
-                call MPI_Wait(Request,Status,MPIerror)
-
-               endif !inode=0 & Node=0
-
-               if (inode.ne.0) then
-                call MPI_Barrier(MPI_Comm_World,MPIerror)
-               endif
 #endif
-           end if  ! inode.lt.points2read                    
+         end if                 ! inode.lt.points2read                    
 c     -----------------------
 
 c     -----------------------
@@ -1073,107 +668,97 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccc
 cccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 #ifdef MPI
-       deallocate(cbuffer)
+      call memory('D','Z',size(cbuffer),'getsfe')
+      deallocate(cbuffer)
 #endif
 
-C FDN : CUrrently not used
-Cc
-Cc     Expansion of unit-cell: (1 x 1) -> (NA1 x NA2) 
-Cc     Layer-wise ordering!
-Cc
-Cc----------------------------------------------
-C      do iq=1,nq                !q-points
-Cc----------------------------------------------
-C
-C         io=0
-C         do iau=1,nua
-C            do ia2=0,NA2-1
-C               do ia1=0,NA1-1
-C                  do iuo=1+lasto(iau-1),lasto(iau)  
-C                     
-C                     io=io+1
-C
-C                     jo=0
-C                     do jau=1,nua
-C                        do ja2=0,NA2-1
-C                           do ja1=0,NA1-1
-C                              do juo=1+lasto(jau-1),lasto(jau)  
-C                                 
-C                                 jo=jo+1
-C
-C                     
-C          cphase  =  exp(dcmplx(0d0,-2d0*Pi)  *  
-C     .      ( (ia1-ja1)*q(1,iq) + (ia2-ja2)*q(2,iq)) )    
-C
-C          ccphase  =  exp(dcmplx(0d0,2d0*Pi)  *  
-C     .      ( (ia1-ja1)*q(1,iq) + (ia2-ja2)*q(2,iq)) )    
-C
-C
-Cc
-Cc     Here we employ the time-reversal symmetry: 
-Cc     GF(1x1)(q)(i,j) = GF(1x1)(-q)(j,i)  
-Cc     Note: wq*0.5 since wq already sums up to 1!
-C
-C
-C          WRK1(jo,io) = WRK1(jo,io) + dcmplx(0.5d0*wq(iq),0d0)*
-C     .       (cphase*GAA(juo,iuo,iq)+ccphase*GAA(iuo,juo,iq))
-C
-C          WRK2(jo,io) = WRK2(jo,io) + dcmplx(0.5d0*wq(iq),0d0)*
-C     .       (cphase*(ZEnergy*SAA(juo,iuo,iq)-HAA(juo,iuo,iq))
-C     .     + ccphase*(ZEnergy*SAA(iuo,juo,iq)-HAA(iuo,juo,iq)))
-C             
-Cc debug
-Cc          WRK2(jo,io) = WRK2(jo,io) + 
-Cc     .         dcmplx(0.5d0*wq(iq),0d0)*
-Cc     .         (cphase*SAA(juo,iuo,iq)+ccphase*SAA(iuo,juo,iq))
-C
-C                              
-C                              enddo !iuo
-C                           enddo !ia1
-C                        enddo    !ia2
-C                     enddo    !iau
-C                     
-C                  enddo !juo
-C               enddo !ja1
-C            enddo    !ja2
-C         enddo    !jau
-Cc----------------------------------------------
-C      enddo                     !q-points
-Cc----------------------------------------------
-C FDN
+!-----------------------------------------------------------------------
+!     Expansion of unit-cell: (1x1) -> (NA1 x NA2) Layer-wise ordering!
+!-----------------------------------------------------------------------
+      do io=1,no
+         do jo=1,no
+            WRK1(jo,io) = dcmplx(0d0,0d0)
+            WRK2(jo,io) = dcmplx(0d0,0d0)
+         end do                 ! jo
+      end do                    ! io
 
-C FDN  
-       do io = 1,NG
-          do jo = 1,NG
-             WRK1(io,jo)=GAA(io,jo,1)
-             WRK2(io,jo)=ZEnergy*SAA(io,jo,1)-HAA(io,jo,1)
-          enddo
-       enddo
-C FDN
+      do iq=1,nq                !q-points
+Cc----------------------------------------------
+        io=0
+        do iau=1,nua
+         do ia2=0,NA2-1
+          do ia1=0,NA1-1
+           do iuo=1+lasto(iau-1),lasto(iau)  
+            io=io+1
+            jo=0
+            do jau=1,nua
+             do ja2=0,NA2-1
+              do ja1=0,NA1-1
+               do juo=1+lasto(jau-1),lasto(jau)  
+                jo=jo+1
+                cphase = cdexp(dcmplx(0.0_dp,-2.0_dp*Pi) *
+     &               ( (ia1-ja1)*qb(1,iq) + (ia2-ja2)*qb(2,iq) ))
+!                ccphase = cdexp(dcmplx(0.0_dp,2.0_dp*Pi) *
+!     &               ( (ia1-ja1)*qb(1,iq) + (ia2-ja2)*qb(2,iq) ))
+                
+                WRK1(jo,io) = WRK1(jo,io) + dcmplx(wq(iq),0.0_dp)*
+     &               cphase*GAA(juo,iuo,iq)
+
+!     Here we employ the time-reversal symmetry: 
+!          GF(1x1)(q)(i,j) = GF(1x1)(-q)(j,i)  
+!                WRK1(jo,io) = WRK1(jo,io) + dcmplx(0.5_dp*wq(iq),0.0_dp)*
+!     &               (cphase*GAA(juo,iuo,iq)+ccphase*GAA(iuo,juo,iq))
+                
+                WRK2(jo,io) = WRK2(jo,io) + dcmplx(wq(iq),0.0_dp)*
+     &               cphase*(ZEnergy*SAA(juo,iuo,iq)-HAA(juo,iuo,iq))
+
+!     Here we employ the time-reversal symmetry: 
+!          GF(1x1)(q)(i,j) = GF(1x1)(-q)(j,i)  
+!                WRK2(jo,io) = WRK2(jo,io) + dcmplx(0.5_dp*wq(iq),0.0_dp)*
+!     &               (cphase*(ZEnergy*SAA(juo,iuo,iq)-HAA(juo,iuo,iq))
+!     &               ccphase*(ZEnergy*SAA(iuo,juo,iq)-HAA(iuo,juo,iq)))
+                
+!     For debugging purposes...
+!                ccphase  =  exp(dcmplx(0d0,2d0*Pi)  *  
+!     &               ( (ia1-ja1)*q(1,iq) + (ia2-ja2)*q(2,iq)) )    
+
+!!               WRK2(jo,io) = WRK2(jo,io) + 
+!!     &              dcmplx(0.5d0*wq(iq),0d0)*
+!!     &              (cphase*SAA(juo,iuo,iq)+ccphase*SAA(iuo,juo,iq))
+
+               enddo !juo
+              enddo !ja1
+             enddo !ja2
+            enddo !jau
+           enddo !iuo
+          enddo !ia1
+         enddo !ia2
+        enddo !iau
+c----------------------------------------------
+      enddo                     !q-points
+Cc----------------------------------------------
+      do io=1,no
+         do jo=1,no
+            SFE(jo,io) = dcmplx(0.d0,0.d0)
+         end do                 ! jo
+         SFE(io,io) = dcmplx(1.d0,0.d0) !to be used in inv.
+      end do                    ! io
 
          
 c     Find inverse of GAA --> SFE
       ierr=0
-      itmp=0
-
-      
-
-
-      call csolve(NG,WRK1,SFE,ipvt,ierr)
-
-
+!the csolve has arrays of NG,NG in the interface...
+      call csolve(no,WRK1,SFE,ipvt,ierr)
 
       if(ierr.ne.0) write(90+Node,*) 
-     .     "err hola: ,Node,icall,ierr,zenloc,NG" 
+     &     "err hola: ,Node,icall,ierr,zenloc,NG" 
       if(ierr.ne.0) write(90+Node,*) 
-     .     "err hola: ",Node,icall,ierr,zenloc,NG 
-
+     &     "err hola: ",Node,icall,ierr,zenloc,no 
 
 #ifdef MPI
-      if (Nodes.gt.1) 
-     . call MPI_AllReduce(ierr,itmp,1,MPI_integer,MPI_sum,
-     . MPI_Comm_World,MPIerror)
-      
+      itmp=0
+      call MPI_AllReduce(ierr,itmp,1,MPI_integer,MPI_sum,
+     &     MPI_Comm_World,MPIerror)
       ierr=itmp      
 #endif
 
@@ -1186,24 +771,21 @@ c         errorgs=.true.
       END IF
 
 
-
-
+      do io=1,no
+         do jo=1,no
 c     SFE = Z*S - HAA - Sigma ---> WRK2 - SFE = Sigma -> WRK1:
-      do io=1,NG
-         do jo=1,NG
             WRK1(jo,io) = WRK2(jo,io)-SFE(jo,io)
          end do                 !jo
       end do                    !io
 
-
 c
 c Gamma 
 c
-      do io=1,NG
-         do jo=1,NG
+      do io=1,no
+         do jo=1,no
             GAMMA(jo,io) = 
-     .           dcmplx(0d0,0.5d0)*(WRK1(jo,io) - 
-     .           dconjg(WRK1(io,jo)))
+     &           dcmplx(0d0,0.5d0)*(WRK1(jo,io) - 
+     &           dconjg(WRK1(io,jo)))
          end do                 !jo
       end do                    !io
       
@@ -1211,8 +793,8 @@ c
 c      
 c    Sigma=(Z*S - H) - inv[GF] ---> SFE
 c
-         do io=1,NG
-            do jo=1,NG
+         do io=1,no
+            do jo=1,no
                SFE(jo,io) = WRK1(jo,io)
             end do              !jo
          end do                 !io
@@ -1221,8 +803,8 @@ c
 
 
 c     debug
-c      do io=1,NG
-c         do jo=1,NG
+c      do io=1,no
+c         do jo=1,no
 c            SFE(jo,io) = WRK2(jo,io)
 c         end do                 !jo
 c      end do                    !io
@@ -1230,22 +812,23 @@ c      end do                    !io
 
        call memory('D','Z',2*size(WRK1),'getsfe')
        call memory('D','Z',size(GAA),'getsfe')
-       deallocate(WRK1)
-       deallocate(WRK2)
-       deallocate(GAA)
-       deallocate(ipvt)
+       call memory('D','I',size(ipvt),'getsfe')
+       deallocate(WRK1,WRK2,GAA,ipvt)
 
+       call timer('getSFE',2)
+
+#ifdef TRANSIESTA_DEBUG
+      call write_debug( 'POS getSFE' )
+#endif
 
 c======================================================================
-      return
-      end subroutine getsfe
+      end subroutine getSFE
 c======================================================================
 
 
 !-------------------------------------------------------------------------
 !*************************************************************************
 !-------------------------------------------------------------------------
-
 
 
       subroutine GFGammaGF(LEFTFLAG,nc,ng,GF,Gamma,GGG)
@@ -1257,195 +840,117 @@ c  corresponds to the (ng) Left/Right electrode states.
 c  Gamma is a (ng)x(ng) matrix.
 C ======================================================================
       use precision, only : dp
+
       implicit none
 C ======================================================================
-
-      logical PRINTALOT
-c      parameter(PRINTALOT=.FALSE.)
-      parameter(PRINTALOT=.TRUE.)
-
+C Edited by Nick Papior Andersen to limit memory use and do a lot fewer
+C operations.
+C However, this is at the expentiure of more cachemisses.
+C It has however proved to be more than twice as fast.
 c
 C ======================================================================
 C INPUT:
 
       
-      logical LEFTFLAG          !True if LEFT
-      integer nc                !no. states in contact region
-      integer ng                !if LeftFLAG the ng first states of nc
+      logical, intent(in) :: LEFTFLAG !True if LEFT
+      integer, intent(in) :: nc !no. states in contact region
+      integer, intent(in) :: ng !if LeftFLAG the ng first states of nc
 c                               !are left electrode states
 c                               !else it is the ng last right electrode
 c                               !states.
-      complex(dp) Gamma(ng,ng)   !i(Sigma-Sigma^dagger)/2
-      complex(dp) GF(nc,nc)
+      complex(dp), intent(in) :: Gamma(ng,ng)   !i(Sigma-Sigma^dagger)/2
+      complex(dp), intent(in) :: GF(nc,nc)
 
 C ======================================================================
 C OUTPUT:
 C      
-      complex(dp) GGG(nc,nc)     !GF.GAMMA.GF
+      complex(dp), intent(out) :: GGG(nc,nc)    !GF.GAMMA.GF
 
 C ======================================================================
 c Helpers, tempos ...
-      real(dp), allocatable ::  swrk1(:,:),swrk2(:,:)
-      complex(dp), allocatable ::  swrk3(:,:),swrk4(:,:)
-      integer i,j,ie,je
+      complex(dp), allocatable :: wrk(:)
+      integer :: i,j,ie,je
 
 c=======================================================================
 C BEGIN
 c=======================================================================
 
-      if(nc.lt.ng) then
-         write(6,*) 'ERROR: GFGammaGF: nc=',nc,'<ng=',ng
-         stop 'ERROR: GFGammaGF: nc<ng'
-      end if
-      
-      call timer('TRANS2',1)
-      
-      allocate(swrk2(nc,nc))
-      allocate(swrk4(nc,nc))
-      
-      
-      
-c     do i=1,nc
-c     do j=1, nc 
-c     GGG(i,j) =  dcmplx(0d0,0.d0)
-c          swrk2(i,j) =  0.d0
-c     swrk4(i,j) =  (0.d0,0.d0)
-c     enddo
-c     enddo
-      
-      swrk2 = 0.0d0
-      swrk4 = dcmplx(0d0,0.d0)
-      GGG = dcmplx(0d0,0.d0)
+#ifdef TRANSIESTA_DEBUG
+      call write_debug( 'PRE GFGammaGF' )
+#endif
 
+      call timer("GFGGF",1)
 
       if(LEFTFLAG) then
          
-         allocate(swrk1(ng,ng))
-         allocate(swrk3(ng,nc))
+         allocate(wrk(ng))
+         call memory('A','Z',ng,'GFGammaGF')
 
-         do je=1,ng
-            do ie=1,ng
-               swrk1(ie,je) = DREAL(Gamma(ie,je))
-            end do                
-         end do                
-         
-c     do je=1,ng
-c     do i=1,nc
-c     swrk3(je,i) =(0.0d0,0.0d0)
-c     end do                
-c     end do                
-
-         swrk3 = dcmplx(0d0,0.d0)
-
-         do i=1,nc
-            do j=1, nc 
-               swrk4(i,j) = GF(j,i)
+         do i=1 , nc
+            do ie=1 , ng
+               wrk(ie) = dcmplx(0.0d0,0.0d0)
+               do je=1 , ng
+                  wrk(ie) = wrk(ie) +
+     &                 dreal(Gamma(je,ie)) * GF(i,je)
+               enddo
             enddo
+
+            do j=1 , i
+               GGG(j,i) = dcmplx(0.d0,0.d0)
+               do ie=1 , ng
+                  GGG(j,i) = GGG(j,i) +
+     &                 dreal( wrk(ie)*dconjg(GF(j,ie)) )
+               enddo
+               GGG(j,i) = GGG(j,i) * dcmplx(0d0,-1.d0)
+               GGG(i,j) = GGG(j,i)
+            enddo
+
          enddo
          
-         do i=1,nc
-            do ie=1, ng
-               do je=1,ng
-             swrk3(ie,i) =  swrk3(ie,i) +
-     .                 swrk1(je,ie) *  swrk4(je,i)
-          enddo
-       enddo
-      enddo
-      
+      else ! Do right
  
-      do i=1,nc
-         do j=1,nc
-           do ie=1,ng
-              swrk2(j,i) =  swrk2(j,i) +
-     .             dreal (swrk3(ie,i) *  dconjg(swrk4(ie,j)))
-           enddo
-        enddo
-      enddo
- 
- 
-      do i=1,nc
-         do j=1,i
-            GGG(j,i) = swrk2(j,i) *  dcmplx(0d0,-1.d0)
-            GGG(i,j) = GGG(j,i)
-         end do                 !j
-      end do                    !i
-      
-      else
- 
-         do i=1,nc
-            do j=1, nc
-               swrk4(i,j) = GF(j,i)
-            enddo
-         enddo
- 
-         allocate(swrk1(nc-ng+1:nc,nc-ng+1:nc))
-         allocate(swrk3(nc-ng+1:nc,nc))
- 
- 
-         do je=1,ng
-            do ie=1,ng
-               swrk1(ie+nc-ng,je+nc-ng) = DREAL(Gamma(ie,je))
-            end do                
-         end do                
- 
-         do je=nc-ng+1,nc
-            do i=1,nc
-               swrk3(je,i) =(0.0d0,0.0d0)
-            end do                
-         end do                
+         allocate(wrk(nc-ng+1:nc))
+         call memory('A','Z',ng,'GFGammaGF')
          
-         do i=1,nc
-           do j=1, nc
-              swrk4(i,j) = GF(j,i)
-           enddo
-        enddo
-        
-        do i=1,nc
-           do ie= nc-ng+1,nc
-              do je= nc-ng+1,nc
-                 swrk3(ie,i) =  swrk3(ie,i) +
-     .                swrk1(je,ie) *  swrk4(je,i)
-              enddo
-           enddo
-        enddo
- 
- 
-        do i=1,nc
-           do j=1,nc
-              do ie= nc-ng+1,nc
-             swrk2(j,i) =  swrk2(j,i) +
-     .                dreal (swrk3(ie,i) *  dconjg(swrk4(ie,j)))
-          enddo
-       enddo
-      enddo
- 
- 
-      do i=1,nc
-         do j=1,i
-            GGG(j,i) = swrk2(j,i) *  dcmplx(0d0,-1.d0)
-            GGG(i,j) = GGG(j,i)
-         end do                 !j
-      end do                    !i
- 
+         do i=1 , nc
+            do ie= nc-ng+1 , nc
+               wrk(ie) = dcmplx(0.0d0,0.0d0)
+               do je= nc-ng+1 , nc
+                  wrk(ie) = wrk(ie) +
+     &                 dreal(Gamma(je-nc+ng,ie-nc+ng)) * GF(i,je)
+               enddo
+            enddo
+            
+            do j=1,i
+               GGG(j,i) = dcmplx(0.d0,0.d0)
+               do ie= nc-ng+1,nc
+                  GGG(j,i) = GGG(j,i) +
+     &                 dreal( wrk(ie)*dconjg(GF(j,ie)) )
+                  
+               enddo
+               GGG(j,i) = GGG(j,i) * dcmplx(0d0,-1.d0)
+               GGG(i,j) = GGG(j,i)
+            enddo
+            
+         enddo
+         
       endif
  
+      call memory('D','Z',ng,'GFGammaGF')
+      deallocate(wrk)
 
-      deallocate(swrk1)
-      deallocate(swrk2)
-      deallocate(swrk3)
-      deallocate(swrk4)
+      call timer('GFGGF',2)
 
-      call timer('TRANS2',2)
+#ifdef TRANSIESTA_DEBUG
+      call write_debug( 'POS GFGammaGF' )
+#endif
 
 C ====================================================================
-      RETURN
       END subroutine GFGammaGF
 C ====================================================================
 
 
-!-------------------------------------------------------------------------
-!*************************************************************************
-!-------------------------------------------------------------------------
+
 
 
 C ##################################################################
@@ -1457,7 +962,7 @@ C ##################################################################
 
 
       subroutine weightDM(nc,NGL,NGR,DML,DMR,DMneqL,DMneqR,
-     .     EDML,EDMR)
+     &     EDML,EDMR)
 C ======================================================================
 c  This routine find weight for the DM integral. On output
 C  DML := w (DML+DMneqR) + (1-w) (DMR+DMneqL)
@@ -1465,11 +970,9 @@ C  EDML:= w EDML +(1-w) EDMR
 C  In left electrode w=1 and in right electrode w=0
 C ======================================================================
 
-#ifdef MPI
-      use mpi_siesta, only: MPI_Comm_Rank, MPI_Comm_World
-#endif
       use sys, only : die
       use precision, only : dp
+      use parallel  , only: IONode
 
       implicit none
 
@@ -1497,36 +1000,24 @@ c Helpers, tempos ...
       
       integer i,j
 
-      integer Node
-
-#ifdef MPI
-      integer
-     .  MPIerror
-#endif
-
 
 c=======================================================================
 c BEGIN:
 c=======================================================================
 
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
+#ifdef TRANSIESTA_DEBUG
+      call write_debug( 'PRE weightDM' )
 #endif
 
-      if (nc.lt. (NGL+NGR))  then
-         if(Node.eq.0)
-     .   write(6,*) 'ERROR: weightDM: nc=',nc,'<=',NGL+NGR
-         call die ('ERROR: weightDM: nc<,NGL+NGR')
-      end if
-     
+      call timer('weightDM',1)
+C Get Node number
+
       maxdif2=0.0d0
       maxndif2=0.0d0
       do j=1,nc
          do i=1,nc
+! The values are real as we are in the Gamma point... No need
+!     to complicate it...
             wr=DMneqR(i,j)*DMneqR(i,j)
             wl=DMneqL(i,j)*DMneqL(i,j)
             wsum=wr+wl
@@ -1551,9 +1042,10 @@ c  In the leads we always use either left or right integration scheme.
                w = 1.d0
             endif
 c weight DM and DML
-            DML(i,j) = w   *(DML(i,j)+DMneqR(i,j))
-     .           +(1.0-w)*(DMR(i,j)+DMneqL(i,j))
-            EDML(i,j) = w*EDML(i,j)+(1.0-w)*EDMR(i,j)
+            DML(i,j) = w *(DML(i,j)+DMneqR(i,j))
+     &           +(1.0_dp-w)*(DMR(i,j)+DMneqL(i,j))
+            EDML(i,j) = w*EDML(i,j)+(1.0_dp-w)*EDMR(i,j)
+
 C make an integration error estimate
 ! FDN
 !            dif=DML(i,j)+DMneqR(i,j)-(DMR(i,j)+DMneqL(i,j))
@@ -1584,15 +1076,20 @@ C make an integration error estimate
 !
 !      endif
 
+      call timer('weightDM',2)
 C ====================================================================
-      RETURN
+
+#ifdef TRANSIESTA_DEBUG
+      call write_debug( 'POS weightDM' )
+#endif
+
       END subroutine weightDM
 C ====================================================================
 
 
 C FDN Routine for complex matrices
       subroutine weightDMC(nc,NGL,NGR,DML,DMR,DMneqL,DMneqR,
-     .     EDML,EDMR)
+     &     EDML,EDMR)
 C ======================================================================
 c  This routine find weight for the DM integral. On output
 C  DML := w (DML+DMneqR) + (1-w) (DMR+DMneqL)
@@ -1600,12 +1097,9 @@ C  EDML:= w EDML +(1-w) EDMR
 C  In left electrode w=1 and in right electrode w=0
 C ======================================================================
 
-#ifdef MPI
-      use mpi_siesta, only: MPI_Comm_Rank, MPI_Comm_World
-#endif
       use sys, only : die
       use precision, only : dp
-
+      use parallel, only : IONode
       implicit none
 
       logical PRINTALOT
@@ -1632,33 +1126,16 @@ c Helpers, tempos ...
       
       integer i,j
 
-      integer Node
-
-#ifdef MPI
-      integer
-     .  MPIerror
-#endif
-
-
 c=======================================================================
 c BEGIN:
 c=======================================================================
 
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
+#ifdef TRANSIESTA_DEBUG
+      call write_debug( 'PRE weightDMC' )
 #endif
 
+      call timer('weightDMC',1)
 
-      if (nc.lt. (NGL+NGR))  then
-         if(Node.eq.0)
-     .   write(6,*) 'ERROR: weightDM: nc=',nc,'<=',NGL+NGR
-         call die ('ERROR: weightDM: nc<,NGL+NGR')
-      end if
-     
       maxdif2=0.0d0
       maxndif2=0.0d0
       do j=1,nc
@@ -1687,8 +1164,8 @@ c  In the leads we always use either left or right integration scheme.
             endif
 c weight DM and DML
             DML(i,j) = w   *(DML(i,j)+DMneqR(i,j))
-     .           +(1.0-w)*(DMR(i,j)+DMneqL(i,j))
-            EDML(i,j) = w*EDML(i,j)+(1.0-w)*EDMR(i,j)
+     &           +(1.0_dp-w)*(DMR(i,j)+DMneqL(i,j))
+            EDML(i,j) = w*EDML(i,j)+(1.0_dp-w)*EDMR(i,j)
 C make an integration error estimate
 ! FDN
 !            dif=cdabs(DML(i,j)+DMneqR(i,j)-(DMR(i,j)+DMneqL(i,j)))
@@ -1719,17 +1196,59 @@ C make an integration error estimate
 !
 !      endif
 
+      call timer('weightDMC',2)
+
+#ifdef TRANSIESTA_DEBUG
+      call write_debug( 'POS weightDMC' )
+#endif
+
 C ====================================================================
-      RETURN
       END subroutine weightDMC
 C ====================================================================
 
 
-
-
-
-
-
-
+!     Function for calculating which region in the scattering matrix the
+!     hamiltonian elements adhere.
+      pure function get_scat_region(io,noL,jo,noR,no_u)
+      integer, intent(in) :: io, noL, jo, noR, no_u
+      integer :: get_scat_region
+      
+      
+      if ( io < 1 .and. jo < 1 ) then
+         get_scat_region = 1 ! Left buffer
+      else if ( (io < 1 .and. jo <= noL) .or.
+     &        (io <= noL .and. jo < 1) ) then
+         get_scat_region = 2 ! Left buffer / left electrode
+      else if ( (1 <= io .and. 1 <= jo) .and.
+     &        (io <= noL .and. jo <= noL) ) then
+         get_scat_region = 3 ! Left electrode
+      else if ( ((1 <= io .and. noL < jo) .and.
+     &        (io <= noL .and. jo <= no_u-noR)) .or.
+     &        ((noL < io .and. 1 <= jo) .and.
+     &        (io <= no_u-noR .and. jo <= noL)) ) then
+         get_scat_region = 4 ! Left electrode / contact region
+      else if ( (noL < io .and. noL < jo) .and.
+     &        (io <= no_u-noR .and. jo <= no_u-noR) ) then
+         get_scat_region = 5 ! Contact region
+      else if ( ((noL < io .and. no_u-noR < jo) .and.
+     &        (io <= no_u-noR .and. jo <= no_u)) .or.
+     &        ((no_u-noR < io .and. noL < jo) .and.
+     &        (io <= no_u .and. jo <= no_u-noR)) ) then
+         get_scat_region = 6 ! Contact region / right electrode
+      else if ( (no_u-noR < io .and. no_u-noR < jo) .and.
+     &        (io <= no_u .and. jo <= no_u) ) then
+         get_scat_region = 7 ! Right electrode
+      else if ( ((no_u-noR < io .and. no_u < jo) .and.
+     &        io <= no_u) .or.
+     &        ((no_u < io .and. no_u-noR < jo) .and.
+     &        jo <= no_u) ) then
+         get_scat_region = 8 ! Right electrode / right buffer
+      else if ( no_u < io .and. no_u < jo ) then
+         get_scat_region = 9 ! Right buffer
+      else
+         get_scat_region = 0 ! Everything else (LE/RE ... etc.)
+      end if
+      
+      end function get_scat_region
 
       END MODULE m_ts_scattering

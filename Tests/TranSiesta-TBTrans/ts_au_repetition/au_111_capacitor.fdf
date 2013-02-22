@@ -1,0 +1,164 @@
+
+SystemName  au_111_capacitor
+SystemLabel au_111_capacitor
+
+==================================================
+==================================================
+# SPECIES AND BASIS
+
+# Number of species 
+NumberOfSpecies 1
+%block ChemicalSpeciesLabel
+  1  79 Au 
+%endblock ChemicalSpeciesLabel
+
+PAO.BasisSize    SZP
+PAO.EnergyShift  0.005 Ry
+
+==================================================
+==================================================
+# K-points
+
+%block kgrid_Monkhorst_Pack
+4   0   0   0.0
+0   8   0   0.0
+0   0   30  0.5
+%endblock kgrid_Monkhorst_Pack
+
+==================================================
+==================================================
+# UNIT CELL
+LatticeConstant       2.92311 Ang
+%block LatticeVectors
+2.000000000   0.00000000000   0.0000000000
+0.500000000   0.86602540378   0.0000000000
+0.000000000   0.00000000000  10.6144555530 
+%endblock LatticeVectors
+
+# Atomic coordinates
+NumberOfAtoms 20 
+AtomicCoordinatesFormat ScaledCartesian
+%block AtomicCoordinatesAndAtomicSpecies
+       0.000000000       0.000000000       0.000000000    1  # A
+       1.000000000       0.000000000       0.000000000    1  # A
+       0.500000000       0.288675135       0.816496581    1  # B
+       1.500000000       0.288675135       0.816496581    1  # B
+       0.500000000      -0.288675135       1.632993162    1  # C
+       1.500000000      -0.288675135       1.632993162    1  # C
+       0.000000000       0.000000000       2.449489743    1  # A
+       1.000000000       0.000000000       2.449489743    1  # A
+       0.500000000       0.288675135       3.265986324    1  # B
+       1.500000000       0.288675135       3.265986324    1  # B
+       0.500000000       0.288675135       6.531972648    1  # B
+       1.500000000       0.288675135       6.531972648    1  # B
+       0.500000000      -0.288675135       7.348469229    1  # C
+       1.500000000      -0.288675135       7.348469229    1  # C
+       0.000000000       0.000000000       8.164965810    1  # A
+       1.000000000       0.000000000       8.164965810    1  # A
+       0.500000000       0.288675135       8.981462391    1  # B
+       1.500000000       0.288675135       8.981462391    1  # B
+       0.500000000      -0.288675135       9.797958972    1  # C
+       1.500000000      -0.288675135       9.797958972    1  # C
+%endblock AtomicCoordinatesAndAtomicSpecies
+
+==================================================
+==================================================
+# General variables
+
+ElectronicTemperature  100 K 
+MeshCutoff           350. Ry
+xc.functional         LDA           # Exchange-correlation functional
+xc.authors            CA
+SpinPolarized .false.
+SolutionMethod Transiesta 
+
+==================================================
+==================================================
+# SCF variables
+
+DM.MixSCF1   T
+MaxSCFIterations      300           # Maximum number of SCF iter
+DM.MixingWeight       0.03          # New DM amount for next SCF cycle
+DM.Tolerance          1.d-4         # Tolerance in maximum difference
+DM.UseSaveDM          true          # to use continuation files
+DM.NumberPulay         5
+Diag.DivideAndConquer     no
+TS.MixH                  yes
+
+==================================================
+==================================================
+# MD variables
+
+MD.FinalTimeStep 1
+MD.TypeOfRun CG
+MD.NumCGsteps     000
+MD.UseSaveXV      .true.
+
+==================================================
+==================================================
+# Output variables
+
+WriteMullikenPop                1
+WriteBands                      .false.
+SaveRho                         .false.
+SaveDeltaRho                    .false.
+SaveHS                          .false.
+SaveElectrostaticPotential      True 
+SaveTotalPotential              no
+WriteCoorXmol                   .true.
+WriteMDXmol                     .true.
+WriteMDhistory                  .false.
+WriteEigenvalues                yes
+
+==================================================
+==================================================
+# Parallel variables
+
+Diag.ParallelOverK      no # Messes with the diagonalization...
+
+==================================================
+==================================================
+# Transiesta information
+
+# GF OPTIONS
+TS.ComplexContour.Emin    -30.0 eV 
+TS.ComplexContour.NPoles       03
+TS.ComplexContour.NCircle      30
+TS.ComplexContour.NLine        10 
+# BIAS OPTIONS
+TS.biasContour.NumPoints       15
+
+
+TS.UpdateDMCROnly        false 
+
+# TS OPTIONS
+TS.Voltage 1.000000 eV
+
+# TBT OPTIONS
+TS.TBT.Emin -0.5 eV
+TS.TBT.Emax +0.5 eV
+TS.TBT.NPoints 100
+TS.TBT.NEigen 3
+TS.TBT.Eta        0.000001 Ry
+
+# Write hamiltonian
+TS.SaveHS   .true.
+
+
+# LEFT ELECTRODE
+TS.HSFileLeft  ./elec_au_111_abc.TSHS
+TS.ReplicateA1Left    2
+TS.ReplicateA2Left    1
+TS.NumUsedAtomsLeft   03
+TS.BufferAtomsLeft    0
+
+# RIGHT ELECTRODE
+TS.HSFileRight  ./elec_au_111_abc.TSHS
+TS.ReplicateA1Right   2
+TS.ReplicateA2Right   1
+TS.NumUsedAtomsRight  03
+TS.BufferAtomsRight   0
+
+==================================================
+==================================================
+

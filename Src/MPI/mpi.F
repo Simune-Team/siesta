@@ -17,30 +17,7 @@
 !
 !       Modified by Alberto Garcia, wdpgaara@lg.ehu.es                       
 !
-!       IMPORTANT: In order to support Old Crays, we need a way
-!       to tell MPI that when we use a data type of MPI_double_precision
-!       we really mean "real*8", that is, "double" in most systems.
-!       One way to do this is to use the "DAT_single" and "DAT_double" tags
-!       as symbolic datatypes, and have them point to the appropriate
-!       data type.
-!
-#ifdef OLD_CRAY
-      USE MPI__INCLUDE ,
-     &     DAT_single => MPI_real,                                      &
-     &     DAT_2single => MPI_2real,                                    &
-     &     DAT_double => MPI_real,                                      &
-     &     DAT_2double => MPI_2real,                                    &
-     &     DAT_complex => MPI_complex,                                  &
-     &     DAT_dcomplex => MPI_complex                                  &
-#else
-      USE MPI__INCLUDE ,
-     &     DAT_single => MPI_real,                                      &
-     &     DAT_2single => MPI_2real,                                    &
-     &     DAT_double => MPI_double_precision,                          &
-     &     DAT_2double => MPI_2double_precision,                        &
-     &     DAT_complex => MPI_complex,                                  &
-     &     DAT_dcomplex => MPI_double_complex                           &
-#endif
+        USE MPI__INCLUDE
 
 !       ... generic overloads for <choice> argument routines ...
 
@@ -72,23 +49,15 @@
 !       USE MPI__sendrecv
 
         IMPLICIT NONE
-
-        integer, parameter :: MPI_real              = DAT_single
-        integer, parameter :: MPI_2real             = DAT_2single
-        integer, parameter :: MPI_double_precision  = DAT_double
-        integer, parameter :: MPI_2double_precision = DAT_2double
-        integer, parameter :: MPI_complex           = DAT_complex
-        integer, parameter :: MPI_double_complex    = DAT_dcomplex
-
 !
-!       Interim hack to support flexible precision in grid arrays
+!       Support flexible precision in grid arrays
 !
 #ifdef GRID_SP
-        integer, parameter :: MPI_grid_real         = DAT_single
+        integer, parameter :: MPI_grid_real   = MPI_real
 #elif defined(GRID_DP)
-        integer, parameter :: MPI_grid_real         = DAT_double
+        integer, parameter :: MPI_grid_real   = MPI_double_precision
 #else
-        integer, parameter :: MPI_grid_real         = DAT_double
+        integer, parameter :: MPI_grid_real   = MPI_double_precision
 #endif
 
 !       ... A.9  Fortran Bindings for Point-to-Point Communication  ...

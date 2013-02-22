@@ -20,6 +20,21 @@ MODULE MPI_SIESTA
 ! JMS. Oct.2010
   USE MPI_INTERFACES, only: true_MPI_Comm_World => MPI_Comm_World
   integer, public :: MPI_Comm_World = true_MPI_Comm_World
+!
+!   Export explicitly some symbols to help some versions of
+!   the PGI compiler, which do not consider them public by default
+!
+        public :: mpi_real
+        public :: mpi_complex
+        public :: mpi_double_complex
+        public :: mpi_double_precision
+        public :: mpi_2double_precision
+        public :: mpi_integer, mpi_character, mpi_logical
+        public :: mpi_integer8
+        public :: mpi_maxloc, mpi_sum, mpi_max, mpi_lor
+        public :: mpi_status_size
+        public :: mpi_grid_real
+        public :: mpi_finalize
 
   PUBLIC :: MPI_BARRIER
   INTERFACE MPI_BARRIER

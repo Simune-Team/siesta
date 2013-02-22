@@ -84,8 +84,8 @@ C Passed variables
       real(dp)
      .  xij(3,maxnh), Sr(maxnh), 
      .  psi(ng,nuotot,nuo), kpoint(3), Aux(ng,nuotot,nuo), 
-     .  Aux2(ng,nuotot,nuo), ek(nuo), temp, efermi,
-     .  intraband(ng,nuo), smooth, wmin, wmax, ekloc(nuo),
+     .  Aux2(ng,nuotot,nuo), ek(nuotot), temp, efermi,
+     .  intraband(ng,nuo), smooth, wmin, wmax, ekloc(nuotot),
      .  efermiloc, ediff
 
       character

@@ -35,6 +35,7 @@ MODULE siesta_options
   logical :: savrho        ! Write file with electron density?
   logical :: savepsch      ! Write file with ionic (local pseudopotential) charge?
   logical :: savetoch      ! Write file with total charge?
+  logical :: savebader     ! Write file with charge for Bader analysis?
   logical :: usesavecg     ! Use continuation file for CG geometry relaxation?
   logical :: usesavelwf    ! Use continuation file for Wannier functions?
   logical :: usesavedm     ! Use cont. file for density matrix?
@@ -76,6 +77,11 @@ MODULE siesta_options
   logical :: SCFMustConverge ! Do we have to converge for each SCF calculation?
   logical :: want_domain_decomposition ! Use domain decomposition for orbitals 
   logical :: want_spatial_decomposition ! Use spatial decomposition for orbitals
+  logical :: hirshpop        ! Perform Hirshfeld population analysis?
+  logical :: voropop         ! Perform Voronoi population analysis?
+  logical :: partial_charges_at_every_geometry
+  logical :: partial_charges_at_every_scf_step
+
   logical :: monitor_forces_in_scf ! Compute forces and stresses at every step
 
 
@@ -95,6 +101,7 @@ MODULE siesta_options
   integer :: nkick         ! Period between 'kick' steps in SCF iteration
   integer :: nmove         ! Number of geometry iterations
   integer :: nscf          ! Number of SCF iteration steps
+  integer :: min_nscf      ! Minimum number of SCF iteration steps
   integer :: pmax          
   integer :: neigwanted    ! Wanted number of eigenstates (per k point)
   integer :: level          ! Option for allocation report level of detail
@@ -406,6 +413,15 @@ MODULE siesta_options
                             units="cmlUnits:dimensionless" )
     endif
 
+    ! Perform Hirshfeld and/or Voronoi Population Analysis
+    hirshpop= fdf_get('WriteHirshfeldPop',.false.)
+    voropop=  fdf_get('WriteVoronoiPop',.false.)
+    partial_charges_at_every_geometry =  &
+          fdf_get('PartialChargesAtEveryGeometry',.false.)
+    partial_charges_at_every_scf_step =  &
+          fdf_get('PartialChargesAtEveryScfStep',.false.)
+
+
     ! Planewave cutoff of the real space mesh ...
     g2cut = fdf_get('MeshCutoff',g2cut_default,'Ry')
     if (ionode) then
@@ -429,10 +445,12 @@ MODULE siesta_options
     endif
 
     ! SCF Loop parameters ...
-    !     Maximum number of SCF iterations
-    nscf = fdf_get('MaxSCFIterations',nscf_default)
+    !     Minimum/Maximum number of SCF iterations
+    min_nscf = fdf_get('MinSCFIterations',0)
+    nscf     = fdf_get('MaxSCFIterations',nscf_default)
     SCFMustConverge = fdf_get('SCFMustConverge', .false.)
     if (ionode) then
+      write(6,4) 'redata: Min. number of SCF Iter          = ',min_nscf
       write(6,4) 'redata: Max. number of SCF Iter          = ',nscf
       if (SCFMustConverge) then
         write(6,4) 'redata: SCF convergence failure will abort job'
@@ -442,6 +460,9 @@ MODULE siesta_options
     if (cml_p) then
       call cmlAddParameter( xf=mainXML, name='MaxSCFIterations',  &
                             value=nscf, dictRef='siesta:maxscf',  &
+                            units="cmlUnits:countable")
+      call cmlAddParameter( xf=mainXML, name='MinSCFIterations',  &
+                            value=min_nscf, dictRef='siesta:minscf',  &
                             units="cmlUnits:countable")
     endif
 
@@ -1517,9 +1538,11 @@ MODULE siesta_options
     savevna  = fdf_get( 'SaveNeutralAtomPotential', .false. )
     savevt   = fdf_get( 'SaveTotalPotential', .false. )
     savepsch = fdf_get( 'SaveIonicCharge', .false. )
-    savetoch = fdf_get( 'SaveTotalCharge', .false. )
+    savebader= fdf_get( 'SaveBaderCharge',  .false.)
+    savetoch = fdf_get( 'SaveTotalCharge', savebader )
+
     RETURN
-    !----------------------------------------------------------------------- END
+    !-------------------------------------------------------------------- END
 1   format(a,4x,l1)
 2   format(a)
 4   format(a,i8)

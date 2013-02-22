@@ -890,6 +890,48 @@ C Ferro or antiferro according to DM.InitSpinAF (inspn)
 
       endif
 
+      call print_initial_spin()
+
+
+      CONTAINS
+
+      subroutine print_initial_spin()
+      use m_mpi_utils, only: Globalize_sum
+      use sparse_matrices, only: S
+
+      real(dp) :: qspin(nspin)
+      integer  :: io, j, ispin, ind
+#ifdef MPI
+      real(dp) :: qtmp(nspin)
+#endif
+
+! Print spin polarization
+      if (nspin .ge. 2) then
+        do ispin = 1,nspin
+          qspin(ispin) = 0.0_dp
+          do io = 1,no_l
+            do j = 1,numh(io)
+              ind = listhptr(io)+j
+              qspin(ispin) = qspin(ispin) + Dscf(ind,ispin) * S(ind)
+            enddo
+          enddo
+        enddo
+
+#ifdef MPI
+! Global reduction of spin components
+        call globalize_sum(qspin(1:nspin),qtmp(1:nspin))
+        qspin(1:nspin) = qtmp(1:nspin)
+#endif
+        if (nspin .eq. 2) then
+           if (IOnode) then
+              write(6,'(/,a,f12.6)')
+     .             'initdm: Initial spin polarization (Qup-Qdown) =', 
+     .             qspin(1) - qspin(2)
+           endif
+        endif
+      endif
+      end subroutine print_initial_spin
+
       end subroutine initdm
 
       end module m_new_dm

@@ -145,6 +145,9 @@ MODULE fdf
 ! Test if label is defined
   public :: fdf_defined
 
+! Test if a label is used in obsolete or a deprecated state
+  public :: fdf_deprecated, fdf_obsolete
+
 ! %block reading (processing each line)
   public :: fdf_block, fdf_bline, fdf_bbackspace, fdf_brewind
   public :: fdf_bnintegers, fdf_bnreals, fdf_bnvalues, fdf_bnnames, fdf_bntokens
@@ -153,6 +156,7 @@ MODULE fdf
 ! Match, search over blocks, and destroy block structure
   public :: fdf_bmatch, fdf_bsearch, fdf_substring_search
 
+  public :: fdf_setoutput, fdf_setdebug
 
 ! Private functions, non-callable
 
@@ -162,8 +166,9 @@ MODULE fdf
   private :: fdf_open, fdf_close
 
 ! Input/Output configuration
-  private :: fdf_input, fdf_output
-
+  private :: fdf_input   
+!  private :: fdf_set_output_file
+  
 ! Destroy dynamic list of FDF structure (called in fdf_shutdown)
   private :: fdf_destroy, fdf_destroy_dl
 
@@ -181,7 +186,7 @@ MODULE fdf
 #endif
 
 ! Debugging functions, level and prints debugging info
-  private :: fdf_setdebug, fdf_printfdf
+  private :: fdf_printfdf
 
 ! Finds a label in the FDF herarchy
   private :: fdf_locate
@@ -250,7 +255,8 @@ MODULE fdf
 ! debugging output (the latter active if fdf_debug is true)
   logical, private                :: fdf_debug   = .FALSE.,             &
                                      fdf_debug2  = .FALSE.,             &
-                                     fdf_started = .FALSE.
+                                     fdf_started = .FALSE.,             &
+                                     fdf_output  = .FALSE.
 
   integer(ip), parameter, private :: maxdepth   = 5
   integer(ip), private            :: ndepth
@@ -299,19 +305,18 @@ MODULE fdf
   CONTAINS
 
 !
-!   Initialization for fdf. Simplified user interface using
-!   the io package.
+!   Initialization for fdf.
 !
       SUBROUTINE fdf_init(filein, fileout)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!------------------------------------------------------------- Input Variables
       character(len=*), intent(in) :: filein, fileout
 
-#ifndef DEBUG
-!--------------------------------------------------------------- Local Variables
-      integer(ip)  :: debug_level
-      character(len=40) :: filedebug
+#ifndef FDF_DEBUG
+!------------------------------------------------------------- Local Variables
+      integer(ip)  :: debug_level, output_level
 #endif
+      character(len=256) :: filedebug
 
 !----------------------------------------------------------------------- BEGIN
 !$OMP SINGLE
@@ -330,19 +335,30 @@ MODULE fdf
 
       call io_geterr(fdf_err)
 
-#ifdef DEBUG
-      call fdf_setdebug(2,filedebug)
+#ifdef FDF_DEBUG
+      ! To monitor the parsing and the build-up of the
+      ! fdf data structures in all nodes
+      call fdf_setdebug(2,filedebug)  
+      call fdf_setoutput(2,fileout)   ! All nodes print output
 #endif
 
-      call fdf_output(fileout)
+!!      call fdf_set_output_file(fileout)
 
       call fdf_input(filein)
 
       fdf_started = .TRUE.
 
-#ifndef DEBUG
-      debug_level = fdf_integer('fdf-debug', 0)
+#ifndef FDF_DEBUG
+      ! Flags within the fdf file itself.
+
+      ! At this point only the final fdf data structure will be shown,
+      ! for level >= 2
+      debug_level = fdf_get('fdf-debug', 0)
       call fdf_setdebug(debug_level,filedebug)
+
+      ! The default is to have output only in the master node
+      output_level = fdf_get('fdf-output', 1)
+      call fdf_setoutput(output_level,fileout)
 #endif
 
       if (fdf_debug2) call fdf_printfdf()
@@ -441,7 +457,7 @@ MODULE fdf
       call fdf_read(filein)
 #endif
 
-      write(fdf_out,'(a,a,a,i3)') '#FDF module: Opened ', filein,   &
+      if (fdf_output) write(fdf_out,'(a,a,a,i3)') '#FDF module: Opened ', filein,   &
                                   ' for input. Unit:', fdf_in(1)
 
       RETURN
@@ -504,13 +520,13 @@ MODULE fdf
           call fdf_read(filein)
           call fdf_sendInput()
 !!Debug          call MPI_Barrier( MPI_COMM_WORLD, ierr )
-          write(fdf_out,*) '#FDF module: Node', rank, 'reading/sending', &
+          if (fdf_output) write(fdf_out,*) '#FDF module: Node', rank, 'reading/sending', &
                            ' input file ', filein
         else
           call fdf_recvInput(texist_recv, filein, fileinTmp)
 !!Debug          call MPI_Barrier( MPI_COMM_WORLD, ierr )
           call fdf_read(fileinTmp)
-          write(fdf_out,*) '#FDF module: Node', rank, 'recieving input', &
+          if (fdf_output) write(fdf_out,*) '#FDF module: Node', rank, 'receiving input', &
                            ' file from', texist_recv, 'to ', TRIM(fileinTmp)
         endif
       endif
@@ -664,7 +680,7 @@ MODULE fdf
       do i= 0, ntasks-1, BLOCKSIZE
         if ((rank .ge. i) .and. (rank .le. i+BLOCKSIZE-1)) then
           call fdf_read(filein)
-          write(fdf_out,*) '#FDF module: Task', rank, 'reading input', &
+          if (fdf_output) write(fdf_out,*) '#FDF module: Task', rank, 'reading input', &
                            ' file ', filein, ' in step', (i/BLOCKSIZE)+1
         endif
 
@@ -1397,14 +1413,14 @@ MODULE fdf
 !
 !   Set output file for FDF subsystem
 !
-    SUBROUTINE fdf_output(fileout)
+    SUBROUTINE fdf_set_output_file(fileout)
       implicit none
-!--------------------------------------------------------------- Input Variables
+!----------------------------------------------------- Input Variables
       character(len=*), intent(in)   :: fileout
 
-!------------------------------------------------------------- Local Variables
+!----------------------------------------------------- Local Variables
       character(256) :: fileouttmp
-!----------------------------------------------------------------------- BEGIN
+!----------------------------------------------------- BEGIN
       call io_assign(fdf_out)
 
 #ifdef _MPI_
@@ -1416,12 +1432,40 @@ MODULE fdf
 #else
       fileouttmp = fileout
 #endif
-      open( unit=fdf_out, file=TRIM(fileouttmp), form='formatted',       &
-            access='sequential', status='replace' )
+
+#ifdef FDF_DEBUG
+      !
+      !     If debugging, all the nodes use named log files
+      !
+      open( unit=fdf_out, file=TRIM(fileouttmp), form='formatted', &
+           access='sequential', status='replace' )
+#else
+      !
+      !     Only the master node opens a named log file in the current dir.
+      !     Non-master nodes use a scratch file.
+      !     These log files tend to be quite small, so there
+      !     should not be problems such as filling up filesystems.
+      !     ... your mileage might vary. This is a grey area.
+      !     Some compilers allow the user to specify where scratch
+      !     files go.
+      !
+#ifdef _MPI_
+      if (rank /= 0) then
+         open( unit=fdf_out, form='formatted', &
+              access='sequential', status='scratch' )
+      else
+         open( unit=fdf_out, file=TRIM(fileouttmp), form='formatted', &
+              access='sequential', status='replace' )
+      end if
+#else
+      open( unit=fdf_out, file=TRIM(fileouttmp), form='formatted', &
+           access='sequential', status='replace' )
+#endif
+#endif
 
       RETURN
 !--------------------------------------------------------------------------- END
-    END SUBROUTINE fdf_output
+    END SUBROUTINE fdf_set_output_file
 
 !
 !   Frees and shutdown FDF system
@@ -1610,10 +1654,10 @@ MODULE fdf
         endif
 
         fdf_integer = integers(mark%pline, 1, 1)
-        write(fdf_out,'(a,5x,i10)') label, fdf_integer
+        if (fdf_output) write(fdf_out,'(a,5x,i10)') label, fdf_integer
       else
         fdf_integer = default
-        write(fdf_out,'(a,i10,5x,a)') label, default, '# default value'
+        if (fdf_output) write(fdf_out,'(a,i10,5x,a)') label, default, '# default value'
       endif
 
       if (PRESENT(line)) line = mark
@@ -1651,10 +1695,10 @@ MODULE fdf
         ! Get all the characters spanning the space from the second to
         ! the last token
         fdf_string = characters(mark%pline, ind_init=2, ind_final=-1)
-        write(fdf_out,'(a,5x,a)') label, fdf_string
+        if (fdf_output) write(fdf_out,'(a,5x,a)') label, fdf_string
       else
         fdf_string = default
-        write(fdf_out,'(a,5x,a,5x,a)') label, default, '# default value'
+        if (fdf_output) write(fdf_out,'(a,5x,a,5x,a)') label, default, '# default value'
       endif
 
       if (PRESENT(line)) line = mark
@@ -1707,11 +1751,11 @@ MODULE fdf
 
           if (is_true(valstr)) then
             fdf_boolean = .TRUE.
-            write(fdf_out,'(a,5x,l10)') label, fdf_boolean
+            if (fdf_output) write(fdf_out,'(a,5x,l10)') label, fdf_boolean
 
           elseif (is_false(valstr)) then
             fdf_boolean = .FALSE.
-            write(fdf_out,'(a,5x,l10)') label, fdf_boolean
+            if (fdf_output) write(fdf_out,'(a,5x,l10)') label, fdf_boolean
 
           else
             write(msg,*) 'unexpected logical value ', label, ' = ', valstr
@@ -1720,12 +1764,12 @@ MODULE fdf
           endif
         else
           fdf_boolean = .TRUE.
-          write(fdf_out,'(a,5x,l10,5x,a)') label, fdf_boolean,          &
+          if (fdf_output) write(fdf_out,'(a,5x,l10,5x,a)') label, fdf_boolean,          &
                                            '# label by itself'
         endif
       else
         fdf_boolean = default
-        write(fdf_out,'(a,5x,l10,5x,a)') label, default, '# default value'
+        if (fdf_output) write(fdf_out,'(a,5x,l10,5x,a)') label, default, '# default value'
       endif
 
       if (PRESENT(line)) line = mark
@@ -1784,10 +1828,10 @@ MODULE fdf
           call die('FDF module: fdf_single', msg, THIS_FILE, __LINE__,  fdf_err)
         endif
         fdf_single = values(mark%pline, 1, 1)
-        write(fdf_out,'(a,5x,g20.10)') label, fdf_single
+        if (fdf_output) write(fdf_out,'(a,5x,g20.10)') label, fdf_single
       else
         fdf_single = default
-        write(fdf_out,'(a,5x,g20.10,5x,a)') label, default, '# default value'
+        if (fdf_output) write(fdf_out,'(a,5x,g20.10,5x,a)') label, default, '# default value'
       endif
 
       if (PRESENT(line)) line = mark
@@ -1829,10 +1873,10 @@ MODULE fdf
           call die('FDF module: fdf_double', msg, THIS_FILE, __LINE__, fdf_err)
         endif
         fdf_double = values(mark%pline, 1, 1)
-        write(fdf_out,'(a,5x,g20.10)') label, fdf_double
+        if (fdf_output) write(fdf_out,'(a,5x,g20.10)') label, fdf_double
       else
         fdf_double = default
-        write(fdf_out,'(a,5x,g20.10,5x,a)') label, default, '# default value'
+        if (fdf_output) write(fdf_out,'(a,5x,g20.10,5x,a)') label, default, '# default value'
       endif
 
       if (PRESENT(line)) line = mark
@@ -1891,12 +1935,12 @@ MODULE fdf
         if (.not. leqi(unitstr, defunit))                               &
           fdf_physical = value * fdf_convfac(unitstr, defunit)
 
-        write(fdf_out,'(a,5x,g20.10,1x,a10)') label, fdf_physical, defunit
-        write(fdf_out,'(a,a,5x,g20.10,1x,a10)')                         &
+        if (fdf_output) write(fdf_out,'(a,5x,g20.10,1x,a10)') label, fdf_physical, defunit
+        if (fdf_output) write(fdf_out,'(a,a,5x,g20.10,1x,a10)')                         &
              '# above item originally: ', label, value, unitstr
       else
         fdf_physical = default
-        write(fdf_out,'(a,5x,g20.10,1x,a,5x,a)')                        &
+        if (fdf_output) write(fdf_out,'(a,5x,g20.10,1x,a,5x,a)')                        &
              label, default, defunit, '# default value'
       endif
 
@@ -2122,7 +2166,7 @@ MODULE fdf
             fdf_block = .TRUE.
             bfdf%label = label
 
-            write(fdf_out,'(a,a)') '%block ', TRIM(label)
+            if (fdf_output) write(fdf_out,'(a,a)') '%block ', TRIM(label)
           endif
         endif
 
@@ -2172,7 +2216,7 @@ MODULE fdf
         if (labeleq(strlabel, bfdf%label, fdf_log)) then
           bfdf%mark => bfdf%mark%next
 
-          write(fdf_out,'(a,a)') '%block ', TRIM(bfdf%label)
+          if (fdf_output) write(fdf_out,'(a,a)') '%block ', TRIM(bfdf%label)
         endif
       endif
 
@@ -2183,12 +2227,12 @@ MODULE fdf
           fdf_bline = .FALSE.
           NULLIFY(pline)
 
-          write(fdf_out,'(a,a)') '%endblock ', TRIM(bfdf%label)
+          if (fdf_output) write(fdf_out,'(a,a)') '%endblock ', TRIM(bfdf%label)
         endif
       endif
 
       if (fdf_bline) then
-        write(fdf_out,'(1x,a)') TRIM(bfdf%mark%str)
+        if (fdf_output) write(fdf_out,'(1x,a)') TRIM(bfdf%mark%str)
 
         pline     => bfdf%mark%pline
         bfdf%mark => bfdf%mark%next
@@ -2236,7 +2280,7 @@ MODULE fdf
         if (labeleq(strlabel, bfdf%label, fdf_log)) then
           bfdf%mark => bfdf%mark%prev
 
-          write(fdf_out,'(1x,a)') "(Backspace to) " // "|" //  &
+          if (fdf_output) write(fdf_out,'(1x,a)') "(Backspace to) " // "|" //  &
                                 TRIM(bfdf%mark%str) // "|"
         endif
 
@@ -2247,14 +2291,14 @@ MODULE fdf
 
         if (labeleq(strlabel, bfdf%label, fdf_log)) then
           fdf_bbackspace = .FALSE.
-          write(fdf_out,'(1x,a)') "(Cannot backspace) " // "|" //  &
+          if (fdf_output) write(fdf_out,'(1x,a)') "(Cannot backspace) " // "|" //  &
                                 TRIM(bfdf%mark%str) // "|"
         endif
 
       else
 
         bfdf%mark => bfdf%mark%prev
-        write(fdf_out,'(1x,a)') "(Backspace to) " // "|" //  &
+        if (fdf_output) write(fdf_out,'(1x,a)') "(Backspace to) " // "|" //  &
                                 TRIM(bfdf%mark%str) // "|"
       endif
 
@@ -2316,18 +2360,71 @@ MODULE fdf
          ! Check whether there is a block with that label
          fdf_defined = fdf_block(label,bfdf)
       endif
-      if (fdf_defined) write(fdf_out,'(a)') label
+      if (fdf_defined) then
+         if (fdf_output) write(fdf_out,'(a)') label
+      endif
 
       RETURN
 !----------------------------------------------------------------------- END
     END FUNCTION fdf_defined
 
 ! 
+!   Output levels: 
+!   level <= 0: nothing
+!   level  = 1: standard
+!
+    SUBROUTINE fdf_setoutput(level,fileout_in)
+      implicit none
+!------------------------------------------------------------- Input Variables
+      integer(ip)                  :: level
+      character(len=*), intent(in) :: fileout_in
+
+
+      character(len=256) :: fileout
+
+      fileout = fileout_in
+      if (level .le. 0) then
+        if (fdf_output) then
+          call io_close(fdf_out)
+          fdf_output = .FALSE.
+        endif
+      else
+        if (.not. fdf_output) then
+#ifdef _MPI_
+          if (rank /= 0) then
+             if (level .ge. 2) then
+                fileout = "/tmp/" // trim(fileout) // "." // i2s(rank)
+                call io_assign(fdf_out)
+                open(fdf_out, file=fileout, form='formatted',               &
+                     status='unknown')
+                REWIND(fdf_out)
+                fdf_output = .TRUE.
+             endif
+          else
+             call io_assign(fdf_out)
+             open(fdf_out, file=fileout, form='formatted',               &
+                  status='unknown')
+             REWIND(fdf_out)
+             fdf_output = .TRUE.
+          endif
+#else
+          call io_assign(fdf_out)
+          open(fdf_out, file=fileout, form='formatted',               &
+               status='unknown')
+          REWIND(fdf_out)
+          fdf_output = .TRUE.
+#endif
+        endif
+      endif
+!----------------------------------------------------------------------- END
+    END SUBROUTINE fdf_setoutput
+
+! 
 !   Debugging levels: 
 !   level <= 0: nothing
 !   level  = 1: standard
 !   level >= 2: exhaustive
-!
+
     SUBROUTINE fdf_setdebug(level,filedebug)
       implicit none
 !------------------------------------------------------------- Input Variables
@@ -2362,8 +2459,52 @@ MODULE fdf
       fdf_debug2 = (level .ge. 2)
 
       RETURN
-!--------------------------------------------------------------------------- END
+!----------------------------------------------------------------------- END
     END SUBROUTINE fdf_setdebug
+
+! 
+!   For handling deprecated labels.
+!   Also there is an optional "newlabel" if it has been changed into 
+!   a new label. 
+!
+    subroutine fdf_deprecated(label,newlabel)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)           :: label
+      character(*)           :: newlabel
+      
+!------------------------------------------------------------------------- BEGIN
+      if ( fdf_defined(label) ) then
+         if (fdf_output) write(fdf_out,'(a)') "**Warning: FDF symbol '"//trim(label)// &
+              "' is deprecated."
+         if ( fdf_defined(newlabel) ) then
+            if (fdf_output) write(fdf_out,'(a)') "           FDF symbol '"//trim(newlabel)// &
+                 "' will be used instead."
+         else
+            if (fdf_output) write(fdf_out,'(a)') "           FDF symbol '"//trim(newlabel)// &
+                 "' replaces '"//trim(label)//"'."
+         end if
+      end if
+
+!--------------------------------------------------------------------------- END
+    end subroutine fdf_deprecated
+
+! 
+!   For handling obsoleted labels.
+!
+    subroutine fdf_obsolete(label)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)           :: label
+      
+!------------------------------------------------------------------------- BEGIN
+      if ( fdf_defined(label) ) then
+         if (fdf_output) write(fdf_out,'(a)') "**Warning: FDF symbol '"//trim(label)// &
+              "' is obsolete."
+      end if
+
+!--------------------------------------------------------------------------- END
+    end subroutine fdf_obsolete
 
 
     subroutine serialize_fdf_struct(buffer)

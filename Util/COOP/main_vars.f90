@@ -1,6 +1,6 @@
 module main_vars
   use precision, only: dp, sp
-  use subs
+  use subs, only: ival
   use m_getopts
   use units, only: Ang, pi
 
@@ -33,7 +33,6 @@ module main_vars
   integer             ::  npts_energy = 200
 
   integer :: nshmx
-  integer :: nwfmx
   integer, parameter :: ncbmx=20
   integer, parameter :: nlwmx=30
 

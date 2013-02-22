@@ -40,6 +40,10 @@
              p%icorr = 'bh'
           case('Perdew-Burke-Ernzerhof')
              p%icorr = 'pb'
+          case('RPBE - Hammer et al')
+             p%icorr = 'rp'
+          case('revPBE Zhang+Yang')
+             p%icorr = 'rv'
           case('Becke-Lee-Yang-Parr')
              p%icorr = 'bl'
           case('Dion-et-al')
