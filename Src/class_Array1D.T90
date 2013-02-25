@@ -1,0 +1,144 @@
+! =======================
+! Basic functionality of 
+! concatenating to 
+! retrieve function names
+#include "basic_func.inc"
+! =======================
+
+  use alloc, only: re_alloc, de_alloc
+
+  implicit none
+
+  character(len=*), parameter :: mod_name="class_"//"TYPE_NAME"//".F90"
+
+  integer, parameter :: sp = selected_real_kind(5,10)
+  integer, parameter :: dp = selected_real_kind(10,100)
+
+  type TYPE_NAME_
+     integer :: refCount = 0
+     character(len=36)   :: id = "null_id"
+     !----------------------
+     character(len=256)   :: name = "null TYPE_NAME"
+     VAR_TYPE(PREC), pointer  :: val(:) => null() ! Nonzero-element values
+  end type
+
+  type TYPE_NAME
+     type(TYPE_NAME_), pointer :: data => null()
+  end type
+
+! Note that "basic_type.inc" adds the PRIVATE directive
+! This will also release the requirement to change the local names.
+! Only those through public statements should potentially be altered.
+
+  public :: NEW_TYPE, print_type, val
+
+  interface NEW_TYPE
+     module procedure newArray1DfromDimensions
+     module procedure newArray1DfromNakedArray
+  end interface
+  
+  interface val
+     module procedure valArray1D
+  end interface
+
+  interface print_type
+     module procedure printArray1D
+  end interface
+
+!========================
+#include "basic_type.inc"
+!========================
+
+  subroutine delete_Data(a1d_data)
+    type(TYPE_NAME_) :: a1d_data
+    if (associated(a1d_data%val)) then
+       call de_alloc( a1d_data%val, &
+            name="val "//trim(a1d_data%name),routine="TYPE_NAME")	
+    endif
+  end subroutine delete_Data
+  
+  
+  subroutine newArray1DFromDimensions(this,n,name)
+    ! This could be implemented also as an assignment 
+    ! (see below)
+
+    type(TYPE_NAME), intent(inout)  :: this
+    integer, intent(in)           :: n
+    character(len=*), intent(in), optional  :: name
+
+    integer :: stat
+
+    ! We release the previous incarnation
+    ! This means that we relinquish access to the previous
+    ! memory location. It will be deallocated when nobody
+    ! else is using it.
+   
+    call init(this)
+
+    if (present(name)) then
+       this%data%name = trim(name)
+    else
+       this%data%name = "(TYPE_NAME from n,m)"
+    endif
+
+    call re_alloc(this%data%val,1,n, &
+         name="val "//trim(this%data%name),routine="TYPE_NAME")	
+    this%data%val(:) = CCAT(0.0_,PREC)
+
+    call tag_new_object(this)
+
+  end subroutine newArray1DFromDimensions
+
+  subroutine newArray1DfromNakedArray(this, val, name)
+    !..................................................................
+    !...................................................................
+    type(TYPE_NAME), intent(inout) :: this
+    VAR_TYPE(PREC), intent(in)     :: val(:)
+    character(len=*), intent(in), optional  :: name
+
+    integer :: n
+
+    call init(this)
+
+    n = size(val,dim=1)
+
+    if (present(name)) then
+       this%data%name = trim(name)
+    else
+       this%data%name = "(TYPE_NAME from naked array)"
+    endif
+
+    call re_alloc(this%data%val,1,n, &
+        name="val "//trim(this%data%name),routine="TYPE_NAME")	
+    this%data%val(:) = val(:)
+
+    call tag_new_object(this)
+    
+  end subroutine newArray1DfromNakedArray
+
+
+  function valArray1D(this) result(p)
+    type(TYPE_NAME), intent(in) :: this
+    VAR_TYPE(PREC), pointer     :: p(:)
+    
+    nullify(p)
+    p => this%data%val
+  end function valArray1D
+
+  subroutine printArray1D(this)
+    type(TYPE_NAME), intent(in)  :: this
+    
+    integer :: n, m
+    
+    if (.not. associated(this%data)) then
+       print "(a)", "TYPE_NAME Not Associated"
+       RETURN
+    endif
+    
+    n = size(this%data%val,dim=1)
+    
+    print "(a,i0,a,i0,a)", "  <array1D:" // trim(this%data%name) // &
+                                " n=",  n,   &
+                                ", refcount: ", refcount(this),">"
+  end subroutine printArray1D
+

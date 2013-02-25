@@ -148,7 +148,9 @@ OBJS =  automatic_cell.o atom_options.o \
 	vacuum_level.o \
 	write_orb_indx.o \
 	m_hs_matrix.o kpoint_convert.o m_glob_sparse.o \
-	class_Sparsity.o class_Array2D.o class_SpMatrix.o \
+	class_Sparsity.o class_SpMatrix.o \
+	class_sArray1D.o class_dArray1D.o class_cArray1D.o class_zArray1D.o \
+	class_sArray2D.o class_dArray2D.o class_cArray2D.o class_zArray2D.o \
         class_OrbitalDistribution.o \
         compute_EKS_Harris.o compute_max_diff.o \
         save_density_matrix.o  \
@@ -392,8 +394,6 @@ chemical.o: parallel.o precision.o sys.o
 chempot.o: alloc.o mneighb.o parallel.o parallelsubs.o precision.o sys.o
 chkdim.o: sys.o
 chkgmx.o: cellsubs.o minvec.o precision.o sys.o
-class_Array2D.o: basic_type.inc
-class_Array2D.o: alloc.o
 class_Fstack_Pair_Geometry_SpMatrix.o: Fstack.T90 basic_type.inc
 class_Fstack_Pair_Geometry_SpMatrix.o: class_Pair_Geometry_SpMatrix.o
 class_Geometry.o: basic_type.inc
@@ -402,9 +402,25 @@ class_OrbitalDistribution.o: basic_type.inc
 class_Pair_Geometry_SpMatrix.o: Pair.T90 basic_type.inc
 class_Pair_Geometry_SpMatrix.o: class_Geometry.o class_SpMatrix.o
 class_SpMatrix.o: basic_type.inc
-class_SpMatrix.o: class_Array2D.o class_OrbitalDistribution.o class_Sparsity.o
+class_SpMatrix.o: class_OrbitalDistribution.o class_Sparsity.o class_dArray2D.o
 class_Sparsity.o: basic_type.inc
 class_Sparsity.o: alloc.o
+class_cArray1D.o: class_Array1D.T90 basic_type.inc basic_func.inc
+class_cArray1D.o: alloc.o
+class_cArray2D.o: class_Array2D.T90 basic_type.inc basic_func.inc
+class_cArray2D.o: alloc.o
+class_dArray1D.o: class_Array1D.T90 basic_type.inc basic_func.inc
+class_dArray1D.o: alloc.o
+class_dArray2D.o: class_Array2D.T90 basic_type.inc basic_func.inc
+class_dArray2D.o: alloc.o
+class_sArray1D.o: class_Array1D.T90 basic_type.inc basic_func.inc
+class_sArray1D.o: alloc.o
+class_sArray2D.o: class_Array2D.T90 basic_type.inc basic_func.inc
+class_sArray2D.o: alloc.o
+class_zArray1D.o: class_Array1D.T90 basic_type.inc basic_func.inc
+class_zArray1D.o: alloc.o
+class_zArray2D.o: class_Array2D.T90 basic_type.inc basic_func.inc
+class_zArray2D.o: alloc.o
 coceri.o: files.o periodic_table.o precision.o
 compute_EKS_Harris.o: atomlist.o class_SpMatrix.o dhscf.o m_dipol.o
 compute_EKS_Harris.o: m_energies.o m_mpi_utils.o m_ntm.o m_spin.o precision.o
@@ -462,8 +478,8 @@ electrostatic.o: atm_types.o atmfuncs.o atmparams.o bessph.o m_recipes.o
 electrostatic.o: precision.o radfft.o radial.o sys.o
 ener3.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 ener3lomem.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
-extrapolateSpMatrix.o: class_Array2D.o class_OrbitalDistribution.o
-extrapolateSpMatrix.o: class_SpMatrix.o class_Sparsity.o
+extrapolateSpMatrix.o: class_OrbitalDistribution.o class_SpMatrix.o
+extrapolateSpMatrix.o: class_Sparsity.o class_dArray2D.o
 extrapolon.o: parallel.o precision.o sys.o
 fermid.o: m_recipes.o parallel.o precision.o sys.o
 fft.o: alloc.o fft1d.o m_timer.o mesh.o parallel.o parallelsubs.o precision.o
@@ -560,21 +576,19 @@ m_iostruct.o: siesta_geom.o sys.o units.o
 m_kinetic.o: precision.o
 m_memory.o: memoryinfo.o parallel.o sys.o
 m_mpi_utils.o: precision.o sys.o
-m_new_dm.o: alloc.o atomlist.o class_Array2D.o
-m_new_dm.o: class_Fstack_Pair_Geometry_SpMatrix.o class_Geometry.o
-m_new_dm.o: class_OrbitalDistribution.o class_Pair_Geometry_SpMatrix.o
-m_new_dm.o: class_SpMatrix.o class_Sparsity.o files.o m_energies.o
-m_new_dm.o: m_mpi_utils.o m_spin.o m_steps.o m_svd.o m_ts_iodm.o m_ts_options.o
-m_new_dm.o: parallel.o parallelsubs.o parsing.o precision.o readSpMatrix.o
-m_new_dm.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o units.o
+m_new_dm.o: alloc.o atomlist.o class_Fstack_Pair_Geometry_SpMatrix.o
+m_new_dm.o: class_Geometry.o class_OrbitalDistribution.o
+m_new_dm.o: class_Pair_Geometry_SpMatrix.o class_SpMatrix.o class_Sparsity.o
+m_new_dm.o: class_dArray2D.o files.o m_energies.o m_mpi_utils.o m_spin.o
+m_new_dm.o: m_steps.o m_svd.o m_ts_iodm.o m_ts_options.o parallel.o
+m_new_dm.o: parallelsubs.o parsing.o precision.o readSpMatrix.o siesta_geom.o
+m_new_dm.o: siesta_options.o sparse_matrices.o sys.o units.o
 m_options.o: precision.o
 m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
 m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o
 m_pulay.o: alloc.o atomlist.o m_spin.o m_svd.o parallel.o precision.o
 m_pulay.o: siesta_options.o sparse_matrices.o sys.o
 m_recipes.o: precision.o sys.o
-m_rhog.o: alloc.o m_mpi_utils.o m_spin.o parallel.o precision.o
-m_rhog.o: siesta_options.o
 m_rmaxh.o: precision.o
 m_spin.o: alloc.o parallel.o precision.o
 m_stress.o: precision.o
@@ -672,8 +686,8 @@ pseudopotential.o: alloc.o atom_options.o flib_spline.o precision.o sys.o
 radfft.o: alloc.o bessph.o m_recipes.o precision.o
 radial.o: alloc.o precision.o xml.o
 rdiag.o: alloc.o m_diagon.o memoryinfo.o parallel.o precision.o sys.o
-readSpMatrix.o: class_Array2D.o class_OrbitalDistribution.o class_SpMatrix.o
-readSpMatrix.o: class_Sparsity.o
+readSpMatrix.o: class_OrbitalDistribution.o class_SpMatrix.o class_Sparsity.o
+readSpMatrix.o: class_dArray2D.o
 read_xc_info.o: parallel.o precision.o sys.o
 readsp.o: parallel.o precision.o sys.o
 redcel.o: parallel.o precision.o sys.o
@@ -681,9 +695,8 @@ reinit.o: files.o parallel.o
 remove_intramol_pressure.o: precision.o zmatrix.o
 reoptical.o: parallel.o precision.o sys.o
 reord.o: alloc.o precision.o
-restructSpMatrix.o: class_Array2D.o class_OrbitalDistribution.o
-restructSpMatrix.o: class_SpMatrix.o class_Sparsity.o
-rhofft.o: cellsubs.o fft.o precision.o sys.o
+restructSpMatrix.o: class_OrbitalDistribution.o class_SpMatrix.o
+restructSpMatrix.o: class_Sparsity.o class_dArray2D.o
 rhooda.o: atmfuncs.o atomlist.o mesh.o meshphi.o precision.o
 rhoofd.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mesh.o meshdscf.o
 rhoofd.o: meshphi.o parallel.o parallelsubs.o precision.o sys.o
@@ -856,7 +869,6 @@ m_projected_dos.o: projected_DOS.o
 m_proximity_check.o: proximity_check.o
 m_radfft.o: radfft.o
 m_readspmatrix.o: readSpMatrix.o
-m_rhofft.o: rhofft.o
 m_save_density_matrix.o: save_density_matrix.o
 m_scf_options.o: m_options.o
 m_setup_h0.o: setup_H0.o

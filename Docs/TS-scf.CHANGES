@@ -1,0 +1,58 @@
+----------------------------------------------------
+Feb 25, 2013 -- Nick P. Andersen     trunk-432--ts-scf-1
+Initial commit, separated Array2D into precision and datatypes
+
+* The need for generalizing the Array2D to different precision
+  and data-types was apparent.
+  Furthermore, the need for 1D cases has been met.
+  - The naming scheme has been chosen to follow that of general
+    data type schemes, they are:
+    - sArray[12]D = single real
+    - dArray[12]D = double real
+    - cArray[12]D = single complex
+    - zArray[12]D = double complex
+* Added routines to alloc.F90:
+  - realloc_1c, realloc_2c
+  - realloc_1z, realloc_2z
+  - dealloc_1c, dealloc_2c
+  - dealloc_1z, dealloc_2z
+  to accomodate the new datatypes in the [sdcz]Array[12]D types.
+* The creation of objects through "newArray2D" has been changed
+  to also require the precision/datatype declaration.
+  This will clarify the object inheritance and make codes clear. 
+* Removed the old single data-type array type Array2D
+* All routines dependent on "Array2D" has now changed to "dArray2D"
+* Trying to bypass the naming scheme by using preprocessor concatenators
+  has proven unsuccessfull.
+
+  The reason seems to be the expansion order.
+  
+  Thus there are many preprocess definitions containing the same words,
+  this seems inificient, but necessary.
+
+* We could change all alloc routines/Array[12]D codes to be generated through
+  simple bash-scripts.
+
+removed:
+  Src/class_Array2D.F90
+added:
+  Docs/TS-scf.CHANGES
+  Src/basic_func.inc
+  Src/class_Array1D.T90
+  Src/class_Array2D.T90
+  Src/class_cArray1D.F90
+  Src/class_cArray2D.F90
+  Src/class_dArray1D.F90
+  Src/class_dArray2D.F90
+  Src/class_sArray1D.F90
+  Src/class_sArray2D.F90
+  Src/class_zArray1D.F90
+  Src/class_zArray2D.F90
+modified:
+  Src/Makefile
+  Src/alloc.F90
+  Src/class_SpMatrix.F90
+  Src/extrapolateSpMatrix.F90
+  Src/m_new_dm.F90
+  Src/readSpMatrix.F90
+  Src/restructSpMatrix.F90

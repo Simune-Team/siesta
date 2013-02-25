@@ -211,7 +211,7 @@
       use class_Sparsity
       use class_SpMatrix
       use class_OrbitalDistribution
-      use class_Array2D
+      use class_dArray2D
       use m_readSpmatrix, only: readSpmatrix
 #ifdef TRANSIESTA
       use sparse_matrices, only : EDM, Escf
@@ -242,7 +242,7 @@
       real(dp), pointer              :: Dscf(:,:)
       integer, pointer, dimension(:) :: numh, listhptr, listh
       type(SpMatrix)                 :: DMread
-      type(Array2D)                  :: dm_a2d
+      type(dArray2D)                 :: dm_a2d
 #ifdef TRANSIESTA
       logical                        :: tsde_found
       type(SpMatrix)                 :: EDMread
@@ -320,7 +320,7 @@
 
       else
 
-	call newArray2D(dm_a2d,nnzs(sparse_pattern),nspin,"(DMatomic)")
+	call newdArray2D(dm_a2d,nnzs(sparse_pattern),nspin,"(DMatomic)")
 	Dscf => val(dm_a2d)
         numh     => n_col(sparse_pattern)
         listhptr => list_ptr(sparse_pattern)
@@ -757,7 +757,7 @@
 
       subroutine extrapolate_dm_with_coords(DM_history,na_u,xa,sparse_pattern,DMnew)
         use class_Sparsity
-        use class_Array2D
+        use class_dArray2D
         use class_OrbitalDistribution
         use class_SpMatrix
         use class_Geometry
@@ -781,7 +781,7 @@
         type(Pair_Geometry_SpMatrix), pointer :: pair
 
         type(SpMatrix)       :: DMtmp
-        type(Array2D)        :: a_out
+        type(dArray2D)       :: a_out
 
         real(dp), dimension(:,:) , pointer  :: a, ai, xp
 
@@ -834,7 +834,7 @@
         nnzs_out = nnzs(sparse_pattern)
 
         ! Scratch array to accumulate the elements
-        call newArray2D(a_out,nnzs_out, nspin,name="(temp array for extrapolation)")
+        call newdArray2D(a_out,nnzs_out, nspin,name="(temp array for extrapolation)")
         a => val(a_out)
         a(:,:) = 0.0_dp
 

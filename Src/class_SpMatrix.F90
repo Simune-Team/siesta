@@ -1,7 +1,7 @@
 module class_SpMatrix
 
   use class_Sparsity
-  use class_Array2D
+  use class_dArray2D
   use class_OrbitalDistribution
 
   implicit none
@@ -21,7 +21,7 @@ module class_SpMatrix
     !----------------------
     character(len=256)   :: name = "null_SpMatrix"
     type(Sparsity)       :: sp
-    type(Array2D)        :: a2d
+    type(dArray2D)       :: a2d
     type(OrbitalDistribution)        :: dist
   end type SpMatrix_
 
@@ -93,7 +93,7 @@ end interface
      !........................................
      type (SpMatrix), intent(inout) :: this
      type(Sparsity), intent(in)   :: sp
-     type(Array2D),  intent(in)   :: a2d
+     type(dArray2D),  intent(in)  :: a2d
      type(OrbitalDistribution),  intent(in)   :: dist
      character(len=*), intent(in), optional :: name
 
@@ -129,7 +129,7 @@ end interface
      call init(this)
      this%data%sp = sp
      this%data%dist = dist
-     call newArray2D(this%data%a2d,  &
+     call newdArray2D(this%data%a2d,  &
                      nnzs(sp),dim2,"(new from SpMatrix)")
 
      if (present(name)) then

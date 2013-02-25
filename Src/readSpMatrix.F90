@@ -5,7 +5,7 @@ module m_readSpMatrix
 
    use class_SpMatrix
    use class_Sparsity
-   use class_Array2D
+   use class_dArray2D
    use class_OrbitalDistribution
 
 #ifdef MPI
@@ -35,7 +35,7 @@ module m_readSpMatrix
       real(dp), allocatable              :: dm(:,:)
 
       type(Sparsity)    :: sp_read
-      type(Array2D)     :: a2d_read
+      type(dArray2D)     :: a2d_read
 
 #ifdef MPI
       integer   MPIerror, Request, Status(MPI_Status_Size)
@@ -160,7 +160,7 @@ module m_readSpMatrix
                        maxnd,numd,listdptr,listd,  &
                        "(read from " // trim(filename) // ")")
 
-      call newArray2D(a2d_read,dm,name="(new Array in readSpmatrix)")
+      call newdArray2D(a2d_read,dm,name="(new Array in readSpmatrix)")
       call newSpMatrix(sp_read,a2d_read,ref_dist,SpM, &
                        "(SpMatrix read from " // trim(filename) // ")")
       call delete(a2d_read)
@@ -168,7 +168,7 @@ module m_readSpMatrix
       if (present(SpM2)) then
          ! Read another matrix with the same indexes (and nspin)
          call read_sparse_values_section()
-         call newArray2D(a2d_read,dm,name="(new 2nd Array in readSpmatrix)")
+         call newdArray2D(a2d_read,dm,name="(new 2nd Array in readSpmatrix)")
          call newSpMatrix(sp_read,a2d_read,ref_dist,SpM2, &
                "(2nd SpMatrix read from " // trim(filename) // ")")
          call delete(a2d_read)

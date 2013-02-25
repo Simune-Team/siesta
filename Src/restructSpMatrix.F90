@@ -1,7 +1,7 @@
  subroutine restructSpMatrix(SpMin,sp_out,SpMout)
 
    use class_SpMatrix
-   use class_Array2D
+   use class_dArray2D
    use class_Sparsity
    use class_OrbitalDistribution
 
@@ -31,7 +31,7 @@
       integer :: i, in, ind, j, k, dim2, size_in, size_out
       integer :: maxval_j_old, maxval_j_out, max_col
 
-      type(Array2D)   :: a2d_out
+      type(dArray2D)  :: a2d_out
 
       real(dp), pointer              :: a_in(:,:), a_out(:,:)
       integer, dimension(:), pointer :: n_col_in, n_col_out
@@ -71,7 +71,7 @@
       a_in  => val(SpMin)
       dim2 = size(a_in, dim=2)
 
-      call newArray2D(a2d_out,size_out,dim2,"(new in restruct)")
+      call newdArray2D(a2d_out,size_out,dim2,"(new in restruct)")
 
       a_out => val(a2d_out)
 
