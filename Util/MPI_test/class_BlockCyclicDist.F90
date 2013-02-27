@@ -1,6 +1,8 @@
 !
   module class_BlockCyclicDist
-  
+#ifdef MPI
+    use mpi
+#endif
   implicit none
 
   character(len=*), parameter :: mod_name=__FILE__

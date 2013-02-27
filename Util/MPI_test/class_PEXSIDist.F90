@@ -1,6 +1,8 @@
 !
   module class_PEXSIDist
-  
+#ifdef MPI  
+    use mpi
+#endif
   implicit none
 
   character(len=*), parameter :: mod_name=__FILE__
@@ -11,9 +13,9 @@
      !------------------------
      character(len=256)   :: name = "null PEXSIDist"
      !------------------------
-     integer  :: comm = -1       ! MPI communicator
-     integer  :: node = -1       ! MPI rank in comm  (my_proc)
-     integer  :: nodes = 0       ! MPI size of comm  (nprocs)
+     integer  :: group = -1      ! MPI group
+     integer  :: node = -1       ! MPI rank in group  (my_proc)
+     integer  :: nodes = 0       ! MPI size of group  (nprocs)
      integer  :: node_io = -1    ! Node capable of IO
      !------------------------
      integer  :: blocksize = 0   
@@ -57,13 +59,13 @@
       ! do nothing
      end subroutine delete_Data
 
-  subroutine newPEXSIDistribution(Blocksize,Comm,this,name)
+  subroutine newPEXSIDistribution(Blocksize,Group,this,name)
      !........................................
      ! Constructor
      !........................................
      type (PEXSIDist), intent(inout) :: this
      integer, intent(in)                       :: Blocksize
-     integer, intent(in)                       :: Comm
+     integer, intent(in)                       :: Group
      character(len=*), intent(in), optional :: name
 
      integer :: error
@@ -71,11 +73,15 @@
      call init(this)
 
      this%data%blocksize = Blocksize
-     this%data%comm      = Comm
+     this%data%group      = Group
 
 #ifdef MPI
-     call MPI_Comm_Rank( Comm, this%data%node, error )
-     call MPI_Comm_Size( Comm, this%data%nodes, error )
+     if (Group == MPI_GROUP_NULL) then
+        this%data%node = MPI_PROC_NULL
+     else
+        call MPI_Group_Rank( Group, this%data%node, error )
+        call MPI_Group_Size( Group, this%data%nodes, error )
+     endif
 #else
      this%data%node = 0
      this%data%nodes = 1
@@ -85,7 +91,7 @@
      if (present(name)) then
         this%data%name = trim(name)
      else
-        this%data%name = "(PEXSI Dist from BlockSize and Comm)"
+        this%data%name = "(PEXSI Dist from BlockSize and Group)"
      endif
      call tag_new_object(this)
 
@@ -103,7 +109,9 @@
      remainder = nels - this%data%blocksize * this%data%nodes
      if (Node == (this%data%Nodes - 1)) then
         nl = this%data%blocksize + remainder
-     else
+     else if (Node >= this%data%Nodes) then
+        nl = 0
+     else 
         nl = this%data%blocksize
      endif
 
@@ -115,7 +123,11 @@
      integer, intent(in)                    :: Node
      integer                                :: ig
 
-     ig = this%data%blocksize*Node + il
+     if (Node >= this%data%Nodes) then
+        ig = 0
+     else
+        ig = this%data%blocksize*Node + il
+     endif
 
    end function index_local_to_global_
 
@@ -128,14 +140,17 @@
      integer :: owner, myrank, error
 
      if (present(Node)) then
-        il = ig - this%data%blocksize*Node 
+        if (Node >= this%data%nodes) then
+           il = 0
+        else
+           il = ig - this%data%blocksize*Node 
+        endif
      else
         ! Assume that we only want a non-zero value if the orb
         ! is local to this node
         owner = node_handling_element_(this,ig)
-        call MPI_Comm_Rank( this%data%Comm, myrank, error )
-        if (owner == myrank) then
-           il = ig - this%data%blocksize*myrank
+        if (owner == this%data%node) then
+           il = ig - this%data%blocksize * this%data%node
         else
            il = 0
         endif

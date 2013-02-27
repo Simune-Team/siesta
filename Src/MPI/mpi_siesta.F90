@@ -28,5 +28,6 @@ MODULE MPI_SIESTA
         public :: mpi_maxloc, mpi_sum, mpi_max, mpi_lor
         public :: mpi_status_size
         public :: mpi_grid_real
+        public :: mpi_group_null, mpi_comm_null, mpi_proc_null
 
 END MODULE MPI_SIESTA
