@@ -1,4 +1,22 @@
 ------------------------------------------------------------
+Feb 27, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-10
+First prototype for distribution changes
+
+Added program 'dist' to Util/MPI_test, to explore strategies for
+changes in the matrix distributions. Work in progress.
+
+added:
+  Util/MPI_test/basic_type.inc
+  Util/MPI_test/class_BlockCyclicDist.F90
+  Util/MPI_test/class_PEXSIDist.F90
+  Util/MPI_test/dielocal.F90
+  Util/MPI_test/dist.F90
+  Util/MPI_test/m_uuid.f90
+  Util/MPI_test/object_debug.F90
+modified:
+  Util/MPI_test/Makefile
+
+------------------------------------------------------------
 Feb 21, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-9
 Proper estimation of free energy. Monitor Ebs in two ways
 
