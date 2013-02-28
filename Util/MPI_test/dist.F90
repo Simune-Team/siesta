@@ -12,21 +12,20 @@
       integer :: comm_sub, group_world, group_sub, myid_sub
       integer :: nsub, bs, pbs, norbs, io, ncomms
       integer :: no_l, no_l2, ig
-      integer :: status(mpi_status_size)
 
-      integer :: local_ncomms
-      integer, allocatable :: statuses(:,:), local_req(:)
+      integer :: nrecvs_local, nsends_local
+      integer, allocatable :: statuses(:,:), local_reqR(:), local_reqS(:)
 
       logical :: worker
       integer, allocatable :: ranks(:)
       integer, allocatable :: data1(:)
       integer, allocatable :: data2(:)
+
       type(BlockCyclicDist) :: bcdist
       type(PEXSIDist)       :: pxdist
 
       integer, allocatable, dimension(:) :: p1, p2, isrc, idst
       integer, allocatable, dimension(:) :: src, dst, i1, i2, nitems
-      integer, allocatable, dimension(:) :: requestR, requestS
 
       call MPI_INIT( ierr )
       call MPI_COMM_RANK( MPI_COMM_WORLD, myid, ierr )
@@ -35,8 +34,6 @@
          print *, "Using ", numprocs, " procs in World."
          print *, "Enter number of subset procs:"
          read *, nsub
-         ! Avoid complications for now
-!         nsub = numprocs
          print *, "Enter number of orbitals:"
          read *, norbs
          print *, "Enter blocksize for default dist:"
@@ -45,8 +42,6 @@
       call MPI_Bcast(nsub,1,mpi_integer,0,MPI_COMM_WORLD,ierr)     
       call MPI_Bcast(norbs,1,mpi_integer,0,MPI_COMM_WORLD,ierr)     
       call MPI_Bcast(bs,1,mpi_integer,0,MPI_COMM_WORLD,ierr)     
-
-      allocate(p1(norbs),p2(norbs),isrc(norbs),idst(norbs))
 
       call newDistribution(bs,MPI_Comm_World,bcdist,"bc dist")
 
@@ -89,6 +84,10 @@
       ! easy. For others, the underlying indexing arrays might
       ! be large...)
 
+      ! It might not be necessary to have this in memory. It 
+      ! can be done on the fly
+      allocate(p1(norbs),p2(norbs),isrc(norbs),idst(norbs))
+
       if (myid == 0) then
          write(6,"(5a10)") "Orb", "p1", "i1", "p2", "i2"
       endif
@@ -98,7 +97,9 @@
          isrc(io) = index_global_to_local(bcdist,io,p1(io))
          idst(io) = index_global_to_local(pxdist,io,p2(io))
          if (myid == 0) then
-            write(6,"(5i10)") io, p1(io), isrc(io), p2(io), idst(io)
+            if ((norbs < 1000) .or. (mod(io,12) == 0)) then
+               write(6,"(5i10)") io, p1(io), isrc(io), p2(io), idst(io)
+            endif
          endif
       enddo
 
@@ -120,7 +121,6 @@
       enddo
 
       allocate(src(ncomms),dst(ncomms),i1(ncomms),i2(ncomms),nitems(ncomms))
-      allocate(requestS(ncomms),requestR(ncomms))
 
       ! Second pass: Fill in the data structures
       ncomms = 1
@@ -152,52 +152,51 @@
          enddo
       endif
 
-!      call MPI_FINALIZE(rc)
-!      stop
-
       ! Do the actual transfers, with non-blocking communications
 
-      ! First, post the receives
+      nrecvs_local = 0
+      nsends_local = 0
       do i=1,ncomms
          if (myid == dst(i)) then
+            nrecvs_local = nrecvs_local + 1
+         endif
+         if (myid == src(i)) then
+            nsends_local = nsends_local + 1
+         endif
+      enddo
+      allocate(local_reqR(nrecvs_local))
+      allocate(local_reqS(nsends_local))
+      allocate(statuses(mpi_status_size,nrecvs_local))
+
+      ! First, post the receives
+      nrecvs_local = 0
+      do i=1,ncomms
+         if (myid == dst(i)) then
+            nrecvs_local = nrecvs_local + 1
             call MPI_irecv(data2(i2(i)),nitems(i),MPI_integer,src(i), &
-                           i,mpi_comm_world,requestR(i),ierr)
+                           i,mpi_comm_world,local_reqR(nrecvs_local),ierr)
          endif
       enddo
       ! Post the sends
+      nsends_local = 0
       do i=1,ncomms
          if (myid == src(i)) then
+            nsends_local = nsends_local + 1
             call MPI_isend(data1(i1(i)),nitems(i),MPI_integer,dst(i), &
-                        i,mpi_comm_world,requestS(i),ierr)
+                        i,mpi_comm_world,local_reqS(nsends_local),ierr)
          endif
       enddo
 
-      ! This loop of waits could be substituted by a "waitall",
+      ! A former loop of waits can be substituted by a "waitall",
       ! with every processor keeping track of the actual number of 
       ! requests in which it is involved.
-      local_ncomms = 0
-      do i=1,ncomms
-         if (myid == dst(i)) then
-            local_ncomms = local_ncomms + 1
-         endif
-      enddo
-      allocate(local_req(local_ncomms))
-      allocate(statuses(mpi_status_size,local_ncomms))
-      local_ncomms = 0
-      do i=1,ncomms
-         if (myid == dst(i)) then
-            local_ncomms = local_ncomms + 1
-            local_req(local_ncomms) = requestR(i)
-         endif
-      enddo
-      call MPI_waitall(local_ncomms, local_req, statuses, ierr)
 
-!      do i=1,ncomms
-!         if (myid == dst(i)) then
-!            call MPI_wait(requestR(i),status,ierr)
-!         endif
-!      enddo
+      ! Should we wait also on the sends?
 
+      call MPI_waitall(nrecvs_local, local_reqR, statuses, ierr)
+
+
+      ! This barrier is needed, I think
       call MPI_Barrier(mpi_comm_world,ierr)
 
       if (myid == 0) then

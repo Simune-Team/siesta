@@ -1,4 +1,14 @@
 ------------------------------------------------------------
+Feb 28, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-13
+Fourth prototype for distribution changes
+
+Cleaner logic for local storage of requests.
+Smaller output for large cases.
+
+modified:
+  Util/MPI_test/dist.F90
+
+------------------------------------------------------------
 Feb 28, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-12
 Third prototype for distribution changes
 
