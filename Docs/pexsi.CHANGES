@@ -1,4 +1,14 @@
 ------------------------------------------------------------
+Feb 28, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-14
+Fifth prototype for distribution changes
+
+Used 'comm' derived type to hold communication information.
+Isolated the transfers in a subroutine.
+
+modified:
+  Util/MPI_test/dist.F90
+
+------------------------------------------------------------
 Feb 28, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-13
 Fourth prototype for distribution changes
 

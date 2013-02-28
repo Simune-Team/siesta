@@ -1,6 +1,11 @@
 
       program dist
 
+        ! Redistribution of orbital data.
+        ! Two different distributions: 
+        !   bcdist: block-cyclic (as in Siesta)
+        !   pxdist: one block per processor, with fat last block (as in PEXSI)
+
       use mpi
       use class_BlockCyclicDist
       use class_PEXSIDist
@@ -13,8 +18,6 @@
       integer :: nsub, bs, pbs, norbs, io, ncomms
       integer :: no_l, no_l2, ig
 
-      integer :: nrecvs_local, nsends_local
-      integer, allocatable :: statuses(:,:), local_reqR(:), local_reqS(:)
 
       logical :: worker
       integer, allocatable :: ranks(:)
@@ -25,8 +28,14 @@
       type(PEXSIDist)       :: pxdist
 
       integer, allocatable, dimension(:) :: p1, p2, isrc, idst
-      integer, allocatable, dimension(:) :: src, dst, i1, i2, nitems
 
+      type comm
+         integer :: src, dst, i1, i2, nitems
+      end type comm
+      type(comm), dimension(:), allocatable, target :: comms
+      type(comm), pointer :: c
+
+!--------------------------------
       call MPI_INIT( ierr )
       call MPI_COMM_RANK( MPI_COMM_WORLD, myid, ierr )
       call MPI_COMM_SIZE( MPI_COMM_WORLD, numprocs, ierr )
@@ -120,84 +129,43 @@
          endif
       enddo
 
-      allocate(src(ncomms),dst(ncomms),i1(ncomms),i2(ncomms),nitems(ncomms))
+      allocate(comms(ncomms))
 
       ! Second pass: Fill in the data structures
       ncomms = 1
-      src(ncomms) = p1(1)
-      dst(ncomms) = p2(1)
-      i1(ncomms) = isrc(1)
-      i2(ncomms) = idst(1)
-      nitems(ncomms) = 1
+      c => comms(ncomms)
+      io = 1
+      c%src = p1(io)
+      c%dst = p2(io)
+      c%i1  = isrc(io)
+      c%i2  = idst(io)
+      c%nitems = 1
       do io = 2, norbs
          if ((p1(io) /= p1(io-1)) .or. (p2(io) /= p2(io-1))) then
             ! end of group -- new communication
             ncomms = ncomms + 1
-            src(ncomms) = p1(io)
-            dst(ncomms) = p2(io)
-            i1(ncomms) = isrc(io)
-            i2(ncomms) = idst(io)
-            nitems(ncomms) = 1
+            c => comms(ncomms)
+            c%src = p1(io)
+            c%dst = p2(io)
+            c%i1  = isrc(io)
+            c%i2  = idst(io)
+            c%nitems = 1
          else
             ! we stay in the same communication
-            nitems(ncomms) = nitems(ncomms) + 1
+            c%nitems = c%nitems + 1
          endif
       enddo
 
       if (myid == 0) then
          do i = 1, ncomms
+            c => comms(i)
             print "(a,i5,a,2i5,2i7,i5)", &
                  "comm: ", i, " src, dst, i1, i2, n:", &
-                 src(i), dst(i), i1(i), i2(i), nitems(i)
+                 c%src, c%dst, c%i1, c%i2, c%nitems
          enddo
       endif
 
-      ! Do the actual transfers, with non-blocking communications
-
-      nrecvs_local = 0
-      nsends_local = 0
-      do i=1,ncomms
-         if (myid == dst(i)) then
-            nrecvs_local = nrecvs_local + 1
-         endif
-         if (myid == src(i)) then
-            nsends_local = nsends_local + 1
-         endif
-      enddo
-      allocate(local_reqR(nrecvs_local))
-      allocate(local_reqS(nsends_local))
-      allocate(statuses(mpi_status_size,nrecvs_local))
-
-      ! First, post the receives
-      nrecvs_local = 0
-      do i=1,ncomms
-         if (myid == dst(i)) then
-            nrecvs_local = nrecvs_local + 1
-            call MPI_irecv(data2(i2(i)),nitems(i),MPI_integer,src(i), &
-                           i,mpi_comm_world,local_reqR(nrecvs_local),ierr)
-         endif
-      enddo
-      ! Post the sends
-      nsends_local = 0
-      do i=1,ncomms
-         if (myid == src(i)) then
-            nsends_local = nsends_local + 1
-            call MPI_isend(data1(i1(i)),nitems(i),MPI_integer,dst(i), &
-                        i,mpi_comm_world,local_reqS(nsends_local),ierr)
-         endif
-      enddo
-
-      ! A former loop of waits can be substituted by a "waitall",
-      ! with every processor keeping track of the actual number of 
-      ! requests in which it is involved.
-
-      ! Should we wait also on the sends?
-
-      call MPI_waitall(nrecvs_local, local_reqR, statuses, ierr)
-
-
-      ! This barrier is needed, I think
-      call MPI_Barrier(mpi_comm_world,ierr)
+      call do_transfers(comms)
 
       if (myid == 0) then
          print *, "Checking... (no extra output if correct)..."
@@ -216,9 +184,76 @@
          enddo
       endif
 
- 30   call MPI_FINALIZE(rc)
+      call MPI_FINALIZE(rc)
 
-    end program dist
+      
+ CONTAINS
+
+   subroutine do_transfers(comms)
+     type(comm), intent(in), target :: comms(:)
+
+      ! Do the actual transfers. 
+      ! This version with non-blocking communications
+
+     integer :: ncomms
+     integer :: i
+     integer :: nrecvs_local, nsends_local
+     integer, allocatable :: statuses(:,:), local_reqR(:), local_reqS(:)
+
+     ncomms = size(comms)
+
+      ! Some bookkeeping for the requests
+      nrecvs_local = 0
+      nsends_local = 0
+      do i=1,ncomms
+         c => comms(i)
+         if (myid == c%dst) then
+            nrecvs_local = nrecvs_local + 1
+         endif
+         if (myid == c%src) then
+            nsends_local = nsends_local + 1
+         endif
+      enddo
+      allocate(local_reqR(nrecvs_local))
+      allocate(local_reqS(nsends_local))
+      allocate(statuses(mpi_status_size,nrecvs_local))
+
+      ! First, post the receives
+      nrecvs_local = 0
+      do i=1,ncomms
+         c => comms(i)
+         if (myid == c%dst) then
+            nrecvs_local = nrecvs_local + 1
+            call MPI_irecv(data2(c%i2),c%nitems,MPI_integer,c%src, &
+                           i,mpi_comm_world,local_reqR(nrecvs_local),ierr)
+         endif
+      enddo
+
+      ! Post the sends
+      nsends_local = 0
+      do i=1,ncomms
+         c => comms(i)
+         if (myid == c%src) then
+            nsends_local = nsends_local + 1
+            call MPI_isend(data1(c%i1),c%nitems,MPI_integer,c%dst, &
+                        i,mpi_comm_world,local_reqS(nsends_local),ierr)
+         endif
+      enddo
+
+      ! A former loop of waits can be substituted by a "waitall",
+      ! with every processor keeping track of the actual number of 
+      ! requests in which it is involved.
+
+      ! Should we wait also on the sends?
+
+      call MPI_waitall(nrecvs_local, local_reqR, statuses, ierr)
+
+
+      ! This barrier is needed, I think
+      call MPI_Barrier(mpi_comm_world,ierr)
+    end subroutine do_transfers
+
+  end program dist
 
 
 
