@@ -12,78 +12,192 @@
 
       implicit none
 
-      integer n, myid, numprocs, i, rc, ntotal, ierr
+      integer n, myid, nprocs, i, j, ierr
 
-      integer :: comm_sub, group_world, group_sub, myid_sub
-      integer :: nsub, bs, pbs, norbs, io, ncomms
-      integer :: no_l, no_l2, ig
+      integer :: group_world, group1, group2
+      integer :: nprocs1, nprocs2, bs, pbs, norbs, io, ncomms
+      integer :: ig, ibeg, iend
+
+      real    :: x
 
 
-      logical :: worker
+      logical :: proc_in_second_set, proc_in_first_set
       integer, allocatable :: ranks(:)
-      integer, allocatable :: data1(:)
-      integer, allocatable :: data2(:)
 
       type(BlockCyclicDist) :: bcdist
       type(PEXSIDist)       :: pxdist
-
-      integer, allocatable, dimension(:) :: p1, p2, isrc, idst
 
       type comm
          integer :: src, dst, i1, i2, nitems
       end type comm
       type(comm), dimension(:), allocatable, target :: comms
-      type(comm), pointer :: c
+      type(comm), dimension(:), allocatable, target :: commsnnz
+      type(comm), pointer :: c, cnnz
 
+      type matrix
+         integer :: norbs
+         integer :: no_l
+         integer :: nnzl
+         integer, pointer :: numcols(:) => null()
+         integer, pointer :: cols(:)    => null()
+!         real, pointer    :: vals(:)    => null()
+     end type matrix
+
+      type(matrix) :: m1, m2
+         
 !--------------------------------
       call MPI_INIT( ierr )
       call MPI_COMM_RANK( MPI_COMM_WORLD, myid, ierr )
-      call MPI_COMM_SIZE( MPI_COMM_WORLD, numprocs, ierr )
+      call MPI_COMM_SIZE( MPI_COMM_WORLD, nprocs, ierr )
+
       if (myid  == 0) then
-         print *, "Using ", numprocs, " procs in World."
-         print *, "Enter number of subset procs:"
-         read *, nsub
-         print *, "Enter number of orbitals:"
+         print *, "Using ", nprocs, " procs in World."
+         write(*,fmt="(a)",advance="no") "Enter number of procs in first set: "
+         read *, nprocs1
+         write(*,fmt="(a)",advance="no") "Enter number of procs in second set: "
+         read *, nprocs2
+         write(*,fmt="(a)",advance="no") "Enter number of orbitals: "
          read *, norbs
-         print *, "Enter blocksize for default dist:"
+         write(*,fmt="(a)",advance="no") "Enter blocksize for default dist: "
          read *, bs
       endif
-      call MPI_Bcast(nsub,1,mpi_integer,0,MPI_COMM_WORLD,ierr)     
+      call MPI_Bcast(nprocs1,1,mpi_integer,0,MPI_COMM_WORLD,ierr)     
+      call MPI_Bcast(nprocs2,1,mpi_integer,0,MPI_COMM_WORLD,ierr)     
       call MPI_Bcast(norbs,1,mpi_integer,0,MPI_COMM_WORLD,ierr)     
       call MPI_Bcast(bs,1,mpi_integer,0,MPI_COMM_WORLD,ierr)     
 
-      call newDistribution(bs,MPI_Comm_World,bcdist,"bc dist")
+      call MPI_COMM_GROUP(MPI_COMM_WORLD, group_world, ierr) 
 
-      ! New communicator, just for cleanliness
-      allocate(ranks(nsub))
-      do i = 1, nsub
+      ! New group, just for cleanliness
+      allocate(ranks(nprocs1))
+      do i = 1, nprocs1
          ranks(i) = i-1
       end do
+      call MPI_Group_incl(group_world, nprocs1, ranks, group1, ierr)
+      proc_in_first_set = (group1 /= MPI_GROUP_NULL)
+      call newDistribution(bs,group1,bcdist,"bc dist")
+      deallocate(ranks)
 
-      worker = (myid < nsub)
-!
-      call MPI_COMM_GROUP(MPI_COMM_WORLD, group_world, ierr) 
-      call MPI_Group_incl(group_world, nsub, ranks, group_sub, ierr)
-      call MPI_Comm_create(MPI_COMM_WORLD, group_sub, comm_sub, ierr)
-!
-      pbs = norbs/nsub
-      call newDistribution(pbs,group_sub,pxdist,"px dist")
+      ! New group, just for cleanliness
+      allocate(ranks(nprocs2))
+      do i = 1, nprocs2
+         ranks(i) = i-1
+      end do
+      call MPI_Group_incl(group_world, nprocs2, ranks, group2, ierr)
+      proc_in_second_set = (group2 /= MPI_GROUP_NULL)
+      pbs = norbs/nprocs2
+      call newDistribution(pbs,group2,pxdist,"px dist")
 
-      ! As "data", we simply store the global index of the orbital
-      ! in the array "data1" in the first group of processors
-      no_l = num_local_elements(bcdist,norbs,myid)
-      allocate(data1(no_l))
-      do io = 1, no_l
-         ig = index_local_to_global(bcdist,io,myid)
-         data1(io) = ig
-      enddo
+
+      ! Create source matrix
+      if (proc_in_first_set) then
+         m1%norbs = norbs
+         m1%no_l = num_local_elements(bcdist,norbs,myid)
+         allocate(m1%numcols(m1%no_l))
+         do io = 1, m1%no_l
+            call random_number(x)
+            m1%numcols(io) = x*(0.4*norbs) + 1
+         enddo
+         m1%nnzl = sum(m1%numcols)
+         allocate(m1%cols(m1%nnzl))
+         do j = 1, m1%nnzl
+            call random_number(x)
+            m1%cols(j) = x*norbs + 1
+         enddo
+      endif
+
+      ! Figure out the communication needs
+      call analyze_comms()
 
       ! In preparation for the transfer, we allocate
       ! storage for the second group of processors
-      if (worker) then
-         no_l2 = num_local_elements(pxdist,norbs,myid)
-         allocate(data2(no_l2))
+      ! Note that m2%numcols (and, in general, any of the 2nd set 
+      ! of arrays), will not be allocated by those processors
+      ! not in the second set.
+
+      if (proc_in_second_set) then
+         m2%no_l = num_local_elements(pxdist,norbs,myid)
+         allocate(m2%numcols(m2%no_l))
       endif
+
+      call do_transfers(comms,m1%numcols,m2%numcols)
+
+      ! Now we can figure out how many non-zeros there are
+      if (proc_in_second_set) then
+         m2%nnzl = sum(m2%numcols)
+         allocate(m2%cols(m2%nnzl))
+      endif
+
+      ! Generate a new comms-structure with new start/count indexes
+
+      allocate(commsnnz(size(comms)))
+      do i = 1, size(comms)
+         c => comms(i)
+         cnnz => commsnnz(i)
+
+         cnnz%src = c%src
+         cnnz%dst = c%dst
+         if (myid == c%src) then
+            ! Starting position at source: previous cols plus 1
+            cnnz%i1 = sum(m1%numcols(1:(c%i1-1))) + 1
+            ! Number of items transmitted: total number of cols
+            cnnz%nitems = sum(m1%numcols(c%i1 : c%i1 + c%nitems -1))
+         endif
+         if (myid == c%dst) then
+            ! Starting position at destination: previous cols plus 1
+            cnnz%i2 = sum(m2%numcols(1 : (c%i2-1))) + 1
+            ! Number of items transmitted: total number of cols
+            cnnz%nitems = sum(m2%numcols(c%i2 : c%i2 + c%nitems -1))
+         endif
+      end do
+
+      ! Transfer the cols arrays
+      call do_transfers(commsnnz,m1%cols,m2%cols)
+
+      ! Transfer the values arrays
+!!!!      call do_transfers_real(commsnnz,m1%vals,m2%vals)
+
+      if (myid == 0) then
+!         print *, "Checking... (no extra output if correct)..."
+      endif
+
+      if (proc_in_first_set) then
+         call MPI_Group_RANK(group_world , myid, ierr )
+         ibeg = 1
+         do io = 1, m1%no_l
+            iend = ibeg + m1%numcols(io) - 1
+            ig = index_local_to_global(bcdist,io,myid)
+            print "(a,i4,a,2i5,2x,i5,2x,10i3)", "Src: ", myid, &
+                 " il, ig, ncols, cols: ", io, ig, &
+                 m1%numcols(io), m1%cols(ibeg:iend)
+            ibeg = iend + 1
+         enddo
+      endif
+
+      call MPI_Barrier(mpi_comm_world,ierr)
+
+      if (proc_in_second_set) then
+         call MPI_Group_RANK(group_world , myid, ierr )
+         ibeg = 1
+         do io = 1, m2%no_l
+            iend = ibeg + m2%numcols(io) - 1
+            !print *, "Node: ", myid, " il, ig: ", io, data2(io)
+            ig = index_local_to_global(pxdist,io,myid)
+            print "(a,i4,a,2i5,2x,i5,2x,10i3)", "Dst: ", myid, &
+              " il, ig, ncols, cols: ", io, ig, &
+              m2%numcols(io), m2%cols(ibeg:iend)
+            ibeg = iend + 1
+         enddo
+      endif
+
+      call MPI_FINALIZE(ierr)
+
+      
+ CONTAINS
+
+   subroutine analyze_comms()
+
+      integer, allocatable, dimension(:) :: p1, p2, isrc, idst
 
       ! Find the communication needs for each orbital
       ! This information is replicated in every processor
@@ -164,33 +278,14 @@
                  c%src, c%dst, c%i1, c%i2, c%nitems
          enddo
       endif
+    end subroutine analyze_comms
 
-      call do_transfers(comms)
-
-      if (myid == 0) then
-         print *, "Checking... (no extra output if correct)..."
-      endif
-
-      if (worker) then
-         do io = 1, no_l2
-            call MPI_Group_RANK(group_sub , myid, ierr )
-            !print *, "Node: ", myid, "il, ig: ", io, data2(io)
-            ig = index_local_to_global(pxdist,io,myid)
-            if (ig /= data2(io)) then
-               print "(a,i4,a,2i7,a,i7)", "Node: ", myid, &
-                        "il, ig: ", io, data2(io), &
-                        " should be ", ig
-            endif
-         enddo
-      endif
-
-      call MPI_FINALIZE(rc)
-
-      
- CONTAINS
-
-   subroutine do_transfers(comms)
+!--------------------------------------------------
+   subroutine do_transfers(comms,data1,data2)
      type(comm), intent(in), target :: comms(:)
+     integer, dimension(:), intent(in)  :: data1
+     integer, dimension(:), intent(out) :: data2
+
 
       ! Do the actual transfers. 
       ! This version with non-blocking communications
@@ -199,6 +294,7 @@
      integer :: i
      integer :: nrecvs_local, nsends_local
      integer, allocatable :: statuses(:,:), local_reqR(:), local_reqS(:)
+
 
      ncomms = size(comms)
 

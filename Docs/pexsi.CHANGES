@@ -1,4 +1,15 @@
 ------------------------------------------------------------
+Feb 28, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-15
+Advanced prototype for distribution changes
+
+It can now transfer an actual example of sparse matrix.
+Two subsets are symmetric (except for distribution type).
+
+modified:
+  Util/MPI_test/dist.F90
+  Util/MPI_test/class_BlockCyclicDist.F90
+
+------------------------------------------------------------
 Feb 28, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-14
 Fifth prototype for distribution changes
 
