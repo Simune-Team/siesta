@@ -10,9 +10,12 @@
       integer n, myid, numprocs, i, rc, ntotal, ierr
 
       integer :: comm_sub, group_world, group_sub, myid_sub
-      integer :: nsub, bs, pbs, norbs, io
+      integer :: nsub, bs, pbs, norbs, io, ncomms
       integer :: no_l, no_l2, ig
       integer :: status(mpi_status_size)
+
+      integer :: local_ncomms
+      integer, allocatable :: statuses(:,:), local_req(:)
 
       logical :: worker
       integer, allocatable :: ranks(:)
@@ -22,6 +25,7 @@
       type(PEXSIDist)       :: pxdist
 
       integer, allocatable, dimension(:) :: p1, p2, isrc, idst
+      integer, allocatable, dimension(:) :: src, dst, i1, i2, nitems
       integer, allocatable, dimension(:) :: requestR, requestS
 
       call MPI_INIT( ierr )
@@ -43,7 +47,6 @@
       call MPI_Bcast(bs,1,mpi_integer,0,MPI_COMM_WORLD,ierr)     
 
       allocate(p1(norbs),p2(norbs),isrc(norbs),idst(norbs))
-      allocate(requestS(norbs),requestR(norbs))
 
       call newDistribution(bs,MPI_Comm_World,bcdist,"bc dist")
 
@@ -62,6 +65,8 @@
       pbs = norbs/nsub
       call newDistribution(pbs,group_sub,pxdist,"px dist")
 
+      ! As "data", we simply store the global index of the orbital
+      ! in the array "data1" in the first group of processors
       no_l = num_local_elements(bcdist,norbs,myid)
       allocate(data1(no_l))
       do io = 1, no_l
@@ -69,10 +74,20 @@
          data1(io) = ig
       enddo
 
+      ! In preparation for the transfer, we allocate
+      ! storage for the second group of processors
       if (worker) then
          no_l2 = num_local_elements(pxdist,norbs,myid)
          allocate(data2(no_l2))
       endif
+
+      ! Find the communication needs for each orbital
+      ! This information is replicated in every processor
+      ! (Note that the indexing functions are able to find
+      !  out the information for any processor. For the
+      ! block-cyclic and "pexsi" distributions, this is quite
+      ! easy. For others, the underlying indexing arrays might
+      ! be large...)
 
       if (myid == 0) then
          write(6,"(5a10)") "Orb", "p1", "i1", "p2", "i2"
@@ -87,29 +102,118 @@
          endif
       enddo
 
-      do io=1,norbs
-         if (myid == p2(io)) then
-            call MPI_irecv(data2(idst(io)),1,MPI_integer,p1(io), &
-                           io,mpi_comm_world,requestR(io),ierr)
+      ! Aggregate communications
+      ! First pass: find out how many there are, on the basis
+      ! of groups of orbitals that share the same source and
+      ! destination. Due to the form of the distributions, the
+      ! local indexes are also correlative in that case, so we
+      ! only need to check for p1 and p2. (Check whether this
+      ! applies to every possible distribution...)
+
+      ncomms = 1
+      do io = 2, norbs
+         if ((p1(io) /= p1(io-1)) .or. (p2(io) /= p2(io-1))) then
+            ncomms = ncomms + 1
+         else
+            !
          endif
       enddo
-      do io=1,norbs
-         if (myid == p1(io)) then
-            call MPI_isend(data1(isrc(io)),1,MPI_integer,p2(io), &
-                        io,mpi_comm_world,requestS(io),ierr)
+
+      allocate(src(ncomms),dst(ncomms),i1(ncomms),i2(ncomms),nitems(ncomms))
+      allocate(requestS(ncomms),requestR(ncomms))
+
+      ! Second pass: Fill in the data structures
+      ncomms = 1
+      src(ncomms) = p1(1)
+      dst(ncomms) = p2(1)
+      i1(ncomms) = isrc(1)
+      i2(ncomms) = idst(1)
+      nitems(ncomms) = 1
+      do io = 2, norbs
+         if ((p1(io) /= p1(io-1)) .or. (p2(io) /= p2(io-1))) then
+            ! end of group -- new communication
+            ncomms = ncomms + 1
+            src(ncomms) = p1(io)
+            dst(ncomms) = p2(io)
+            i1(ncomms) = isrc(io)
+            i2(ncomms) = idst(io)
+            nitems(ncomms) = 1
+         else
+            ! we stay in the same communication
+            nitems(ncomms) = nitems(ncomms) + 1
          endif
       enddo
-      do io=1,norbs
-         if (myid == p2(io)) then
-            call MPI_wait(requestR(io),status,ierr)
+
+      if (myid == 0) then
+         do i = 1, ncomms
+            print "(a,i5,a,2i5,2i7,i5)", &
+                 "comm: ", i, " src, dst, i1, i2, n:", &
+                 src(i), dst(i), i1(i), i2(i), nitems(i)
+         enddo
+      endif
+
+!      call MPI_FINALIZE(rc)
+!      stop
+
+      ! Do the actual transfers, with non-blocking communications
+
+      ! First, post the receives
+      do i=1,ncomms
+         if (myid == dst(i)) then
+            call MPI_irecv(data2(i2(i)),nitems(i),MPI_integer,src(i), &
+                           i,mpi_comm_world,requestR(i),ierr)
          endif
       enddo
+      ! Post the sends
+      do i=1,ncomms
+         if (myid == src(i)) then
+            call MPI_isend(data1(i1(i)),nitems(i),MPI_integer,dst(i), &
+                        i,mpi_comm_world,requestS(i),ierr)
+         endif
+      enddo
+
+      ! This loop of waits could be substituted by a "waitall",
+      ! with every processor keeping track of the actual number of 
+      ! requests in which it is involved.
+      local_ncomms = 0
+      do i=1,ncomms
+         if (myid == dst(i)) then
+            local_ncomms = local_ncomms + 1
+         endif
+      enddo
+      allocate(local_req(local_ncomms))
+      allocate(statuses(mpi_status_size,local_ncomms))
+      local_ncomms = 0
+      do i=1,ncomms
+         if (myid == dst(i)) then
+            local_ncomms = local_ncomms + 1
+            local_req(local_ncomms) = requestR(i)
+         endif
+      enddo
+      call MPI_waitall(local_ncomms, local_req, statuses, ierr)
+
+!      do i=1,ncomms
+!         if (myid == dst(i)) then
+!            call MPI_wait(requestR(i),status,ierr)
+!         endif
+!      enddo
 
       call MPI_Barrier(mpi_comm_world,ierr)
 
+      if (myid == 0) then
+         print *, "Checking... (no extra output if correct)..."
+      endif
+
       if (worker) then
          do io = 1, no_l2
-            print *, "Node: ", myid, "il, ig: ", io, data2(io)
+            call MPI_Group_RANK(group_sub , myid, ierr )
+            !print *, "Node: ", myid, "il, ig: ", io, data2(io)
+            ig = index_local_to_global(pxdist,io,myid)
+            if (ig /= data2(io)) then
+               print "(a,i4,a,2i7,a,i7)", "Node: ", myid, &
+                        "il, ig: ", io, data2(io), &
+                        " should be ", ig
+            endif
          enddo
       endif
 

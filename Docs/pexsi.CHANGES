@@ -1,4 +1,14 @@
 ------------------------------------------------------------
+Feb 28, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-12
+Third prototype for distribution changes
+
+Grouped consecutive orbitals into larger communications.
+Used mpi_waitall instead of explicit loops.
+
+modified:
+  Util/MPI_test/dist.F90
+
+------------------------------------------------------------
 Feb 27, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-11
 Second prototype for distribution changes
 
