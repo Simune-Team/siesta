@@ -1,4 +1,15 @@
 ------------------------------------------------------------
+Mar 1, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-16
+Abstracted routine for distribution changes
+
+Clarified the logic of group memberships.
+Still, only groups starting at 0 in group_world are
+supported (no rank translation yet).
+
+modified:
+  Util/MPI_test/dist.F90
+
+------------------------------------------------------------
 Feb 28, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-15
 Advanced prototype for distribution changes
 

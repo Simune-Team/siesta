@@ -1,110 +1,54 @@
+module m_matrix
+  type, public ::  matrix
+     integer :: norbs
+     integer :: no_l
+     integer :: nnzl
+     integer, pointer :: numcols(:) => null()
+     integer, pointer :: cols(:)    => null()
+     !         real, pointer    :: vals(:)    => null()
+  end type matrix
+end module m_matrix
 
-      program dist
 
-        ! Redistribution of orbital data.
-        ! Two different distributions: 
-        !   bcdist: block-cyclic (as in Siesta)
-        !   pxdist: one block per processor, with fat last block (as in PEXSI)
+
+module m_redist
+public :: redistribute
+CONTAINS
+  subroutine redistribute(norbs,m1,bcdist,m2,pxdist,mpi_comm)
 
       use mpi
       use class_BlockCyclicDist
       use class_PEXSIDist
-
+      use m_matrix, only: matrix
+      
       implicit none
 
-      integer n, myid, nprocs, i, j, ierr
+    integer, intent(in)       :: norbs
+    type(matrix) :: m1
+    type(matrix) :: m2
+    type(BlockCyclicDist) :: bcdist
+    type(PEXSIDist)       :: pxdist
+    integer, intent(in)   :: mpi_comm
 
-      integer :: group_world, group1, group2
-      integer :: nprocs1, nprocs2, bs, pbs, norbs, io, ncomms
-      integer :: ig, ibeg, iend
+    type comm
+       integer :: src, dst, i1, i2, nitems
+    end type comm
+    type(comm), dimension(:), allocatable, target :: comms
+    type(comm), dimension(:), allocatable, target :: commsnnz
+    type(comm), pointer :: c, cnnz
 
-      real    :: x
+    integer ::  myrank1, myrank2, myid
+    logical ::  proc_in_set1, proc_in_set2
+    integer ::  ierr
 
+    integer ::  i, io
 
-      logical :: proc_in_second_set, proc_in_first_set
-      integer, allocatable :: ranks(:)
+      call mpi_group_rank(bcdist%data%group,myrank1,ierr)
+      call mpi_group_rank(pxdist%data%group,myrank2,ierr)
+      proc_in_set1 = (myrank1 /= MPI_UNDEFINED)
+      proc_in_set2 = (myrank2 /= MPI_UNDEFINED)
 
-      type(BlockCyclicDist) :: bcdist
-      type(PEXSIDist)       :: pxdist
-
-      type comm
-         integer :: src, dst, i1, i2, nitems
-      end type comm
-      type(comm), dimension(:), allocatable, target :: comms
-      type(comm), dimension(:), allocatable, target :: commsnnz
-      type(comm), pointer :: c, cnnz
-
-      type matrix
-         integer :: norbs
-         integer :: no_l
-         integer :: nnzl
-         integer, pointer :: numcols(:) => null()
-         integer, pointer :: cols(:)    => null()
-!         real, pointer    :: vals(:)    => null()
-     end type matrix
-
-      type(matrix) :: m1, m2
-         
-!--------------------------------
-      call MPI_INIT( ierr )
-      call MPI_COMM_RANK( MPI_COMM_WORLD, myid, ierr )
-      call MPI_COMM_SIZE( MPI_COMM_WORLD, nprocs, ierr )
-
-      if (myid  == 0) then
-         print *, "Using ", nprocs, " procs in World."
-         write(*,fmt="(a)",advance="no") "Enter number of procs in first set: "
-         read *, nprocs1
-         write(*,fmt="(a)",advance="no") "Enter number of procs in second set: "
-         read *, nprocs2
-         write(*,fmt="(a)",advance="no") "Enter number of orbitals: "
-         read *, norbs
-         write(*,fmt="(a)",advance="no") "Enter blocksize for default dist: "
-         read *, bs
-      endif
-      call MPI_Bcast(nprocs1,1,mpi_integer,0,MPI_COMM_WORLD,ierr)     
-      call MPI_Bcast(nprocs2,1,mpi_integer,0,MPI_COMM_WORLD,ierr)     
-      call MPI_Bcast(norbs,1,mpi_integer,0,MPI_COMM_WORLD,ierr)     
-      call MPI_Bcast(bs,1,mpi_integer,0,MPI_COMM_WORLD,ierr)     
-
-      call MPI_COMM_GROUP(MPI_COMM_WORLD, group_world, ierr) 
-
-      ! New group, just for cleanliness
-      allocate(ranks(nprocs1))
-      do i = 1, nprocs1
-         ranks(i) = i-1
-      end do
-      call MPI_Group_incl(group_world, nprocs1, ranks, group1, ierr)
-      proc_in_first_set = (group1 /= MPI_GROUP_NULL)
-      call newDistribution(bs,group1,bcdist,"bc dist")
-      deallocate(ranks)
-
-      ! New group, just for cleanliness
-      allocate(ranks(nprocs2))
-      do i = 1, nprocs2
-         ranks(i) = i-1
-      end do
-      call MPI_Group_incl(group_world, nprocs2, ranks, group2, ierr)
-      proc_in_second_set = (group2 /= MPI_GROUP_NULL)
-      pbs = norbs/nprocs2
-      call newDistribution(pbs,group2,pxdist,"px dist")
-
-
-      ! Create source matrix
-      if (proc_in_first_set) then
-         m1%norbs = norbs
-         m1%no_l = num_local_elements(bcdist,norbs,myid)
-         allocate(m1%numcols(m1%no_l))
-         do io = 1, m1%no_l
-            call random_number(x)
-            m1%numcols(io) = x*(0.4*norbs) + 1
-         enddo
-         m1%nnzl = sum(m1%numcols)
-         allocate(m1%cols(m1%nnzl))
-         do j = 1, m1%nnzl
-            call random_number(x)
-            m1%cols(j) = x*norbs + 1
-         enddo
-      endif
+      call mpi_comm_rank(mpi_comm,myid,ierr)
 
       ! Figure out the communication needs
       call analyze_comms()
@@ -115,16 +59,16 @@
       ! of arrays), will not be allocated by those processors
       ! not in the second set.
 
-      if (proc_in_second_set) then
-         m2%no_l = num_local_elements(pxdist,norbs,myid)
+      if (proc_in_set2) then
+         m2%no_l = num_local_elements(pxdist,norbs,myrank2)
          allocate(m2%numcols(m2%no_l))
       endif
 
       call do_transfers(comms,m1%numcols,m2%numcols)
 
       ! Now we can figure out how many non-zeros there are
-      if (proc_in_second_set) then
-         m2%nnzl = sum(m2%numcols)
+      if (proc_in_set2) then
+         m2%nnzl = sum(m2%numcols(1:m2%no_l))
          allocate(m2%cols(m2%nnzl))
       endif
 
@@ -137,13 +81,13 @@
 
          cnnz%src = c%src
          cnnz%dst = c%dst
-         if (myid == c%src) then
+         if (myrank1 == c%src) then
             ! Starting position at source: previous cols plus 1
             cnnz%i1 = sum(m1%numcols(1:(c%i1-1))) + 1
             ! Number of items transmitted: total number of cols
             cnnz%nitems = sum(m1%numcols(c%i1 : c%i1 + c%nitems -1))
          endif
-         if (myid == c%dst) then
+         if (myrank2 == c%dst) then
             ! Starting position at destination: previous cols plus 1
             cnnz%i2 = sum(m2%numcols(1 : (c%i2-1))) + 1
             ! Number of items transmitted: total number of cols
@@ -157,47 +101,13 @@
       ! Transfer the values arrays
 !!!!      call do_transfers_real(commsnnz,m1%vals,m2%vals)
 
-      if (myid == 0) then
-!         print *, "Checking... (no extra output if correct)..."
-      endif
+      CONTAINS
 
-      if (proc_in_first_set) then
-         call MPI_Group_RANK(group_world , myid, ierr )
-         ibeg = 1
-         do io = 1, m1%no_l
-            iend = ibeg + m1%numcols(io) - 1
-            ig = index_local_to_global(bcdist,io,myid)
-            print "(a,i4,a,2i5,2x,i5,2x,10i3)", "Src: ", myid, &
-                 " il, ig, ncols, cols: ", io, ig, &
-                 m1%numcols(io), m1%cols(ibeg:iend)
-            ibeg = iend + 1
-         enddo
-      endif
-
-      call MPI_Barrier(mpi_comm_world,ierr)
-
-      if (proc_in_second_set) then
-         call MPI_Group_RANK(group_world , myid, ierr )
-         ibeg = 1
-         do io = 1, m2%no_l
-            iend = ibeg + m2%numcols(io) - 1
-            !print *, "Node: ", myid, " il, ig: ", io, data2(io)
-            ig = index_local_to_global(pxdist,io,myid)
-            print "(a,i4,a,2i5,2x,i5,2x,10i3)", "Dst: ", myid, &
-              " il, ig, ncols, cols: ", io, ig, &
-              m2%numcols(io), m2%cols(ibeg:iend)
-            ibeg = iend + 1
-         enddo
-      endif
-
-      call MPI_FINALIZE(ierr)
-
-      
- CONTAINS
-
+!-----------------------------------------------------
    subroutine analyze_comms()
 
       integer, allocatable, dimension(:) :: p1, p2, isrc, idst
+      integer :: ncomms
 
       ! Find the communication needs for each orbital
       ! This information is replicated in every processor
@@ -303,10 +213,10 @@
       nsends_local = 0
       do i=1,ncomms
          c => comms(i)
-         if (myid == c%dst) then
+         if (myrank2 == c%dst) then
             nrecvs_local = nrecvs_local + 1
          endif
-         if (myid == c%src) then
+         if (myrank1 == c%src) then
             nsends_local = nsends_local + 1
          endif
       enddo
@@ -318,10 +228,10 @@
       nrecvs_local = 0
       do i=1,ncomms
          c => comms(i)
-         if (myid == c%dst) then
+         if (myrank2 == c%dst) then
             nrecvs_local = nrecvs_local + 1
             call MPI_irecv(data2(c%i2),c%nitems,MPI_integer,c%src, &
-                           i,mpi_comm_world,local_reqR(nrecvs_local),ierr)
+                           i,mpi_comm,local_reqR(nrecvs_local),ierr)
          endif
       enddo
 
@@ -329,10 +239,10 @@
       nsends_local = 0
       do i=1,ncomms
          c => comms(i)
-         if (myid == c%src) then
+         if (myrank1 == c%src) then
             nsends_local = nsends_local + 1
             call MPI_isend(data1(c%i1),c%nitems,MPI_integer,c%dst, &
-                        i,mpi_comm_world,local_reqS(nsends_local),ierr)
+                        i,mpi_comm,local_reqS(nsends_local),ierr)
          endif
       enddo
 
@@ -346,8 +256,143 @@
 
 
       ! This barrier is needed, I think
-      call MPI_Barrier(mpi_comm_world,ierr)
+      call MPI_Barrier(mpi_comm,ierr)
+
+      deallocate(local_reqR, local_reqS, statuses)
+
     end subroutine do_transfers
+
+  end subroutine redistribute
+
+end module m_redist
+
+      program dist
+
+        ! Redistribution of orbital data.
+        ! Two different distributions: 
+        !   bcdist: block-cyclic (as in Siesta)
+        !   pxdist: one block per processor, with fat last block (as in PEXSI)
+
+      use mpi
+      use class_BlockCyclicDist
+      use class_PEXSIDist
+      use m_matrix, only: matrix
+      use m_redist, only: redistribute
+
+      implicit none
+
+      integer nprocs, i, j, ierr
+
+      integer :: group_world, group1, group2
+      integer :: nprocs1, nprocs2, bs, pbs, norbs, io, ncomms
+      integer :: ig, ibeg, iend
+
+      real    :: x
+
+
+      integer ::  myrank1, myrank2, myid
+      logical :: proc_in_set2, proc_in_set1
+      integer, allocatable :: ranks(:)
+
+      type(BlockCyclicDist) :: bcdist
+      type(PEXSIDist)       :: pxdist
+
+      type(matrix) :: m1, m2
+         
+!--------------------------------
+      call MPI_INIT( ierr )
+      call MPI_COMM_RANK( MPI_COMM_WORLD, myid, ierr )
+      call MPI_COMM_SIZE( MPI_COMM_WORLD, nprocs, ierr )
+
+      if (myid  == 0) then
+         print *, "Using ", nprocs, " procs in World."
+         write(*,fmt="(a)",advance="no") "Enter number of procs in first set: "
+         read *, nprocs1
+         write(*,fmt="(a)",advance="no") "Enter number of procs in 2nd set: "
+         read *, nprocs2
+         write(*,fmt="(a)",advance="no") "Enter number of orbitals: "
+         read *, norbs
+         write(*,fmt="(a)",advance="no") "Enter blocksize for default dist: "
+         read *, bs
+      endif
+      call MPI_Bcast(nprocs1,1,mpi_integer,0,MPI_COMM_WORLD,ierr)     
+      call MPI_Bcast(nprocs2,1,mpi_integer,0,MPI_COMM_WORLD,ierr)     
+      call MPI_Bcast(norbs,1,mpi_integer,0,MPI_COMM_WORLD,ierr)     
+      call MPI_Bcast(bs,1,mpi_integer,0,MPI_COMM_WORLD,ierr)     
+
+      call MPI_COMM_GROUP(MPI_COMM_WORLD, group_world, ierr) 
+
+      ! New group, just for cleanliness
+      allocate(ranks(nprocs1))
+      do i = 1, nprocs1
+         ranks(i) = i-1
+      end do
+      call MPI_Group_incl(group_world, nprocs1, ranks, group1, ierr)
+      call newDistribution(bs,group1,bcdist,"bc dist")
+      deallocate(ranks)
+
+      ! New group, just for cleanliness
+      allocate(ranks(nprocs2))
+      do i = 1, nprocs2
+         ranks(i) = i-1
+      end do
+      call MPI_Group_incl(group_world, nprocs2, ranks, group2, ierr)
+      pbs = norbs/nprocs2
+      call newDistribution(pbs,group2,pxdist,"px dist")
+      deallocate(ranks)
+
+      call mpi_group_rank(bcdist%data%group,myrank1,ierr)
+      call mpi_group_rank(pxdist%data%group,myrank2,ierr)
+      proc_in_set1 = (myrank1 /= MPI_UNDEFINED)
+      proc_in_set2 = (myrank2 /= MPI_UNDEFINED)
+
+      ! Create source matrix
+      if (proc_in_set1) then
+         m1%norbs = norbs
+         m1%no_l = num_local_elements(bcdist,norbs,myrank1)
+         allocate(m1%numcols(m1%no_l))
+         do io = 1, m1%no_l
+            call random_number(x)
+            m1%numcols(io) = x*(0.4*norbs) + 1
+         enddo
+         m1%nnzl = sum(m1%numcols(1:m1%no_l))
+         allocate(m1%cols(m1%nnzl))
+         do j = 1, m1%nnzl
+            call random_number(x)
+            m1%cols(j) = x*norbs + 1
+         enddo
+      endif
+
+      call redistribute(norbs,m1,bcdist,m2,pxdist,mpi_comm_world)
+
+
+      if (proc_in_set1) then
+         ibeg = 1
+         do io = 1, m1%no_l
+            iend = ibeg + m1%numcols(io) - 1
+            ig = index_local_to_global(bcdist,io,myrank1)
+            print "(a,i4,a,2i5,2x,i5,2x,10i3)", "Src: ", myrank1, &
+                 " il, ig, ncols, cols: ", io, ig, &
+                 m1%numcols(io), m1%cols(ibeg:iend)
+            ibeg = iend + 1
+         enddo
+      endif
+
+      call MPI_Barrier(mpi_comm_world,ierr)
+
+      if (proc_in_set2) then
+         ibeg = 1
+         do io = 1, m2%no_l
+            iend = ibeg + m2%numcols(io) - 1
+            ig = index_local_to_global(pxdist,io,myrank2)
+            print "(a,i4,a,2i5,2x,i5,2x,10i3)", "Dst: ", myrank2, &
+              " il, ig, ncols, cols: ", io, ig, &
+              m2%numcols(io), m2%cols(ibeg:iend)
+            ibeg = iend + 1
+         enddo
+      endif
+
+      call MPI_FINALIZE(ierr)
 
   end program dist
 
