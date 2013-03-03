@@ -1,4 +1,17 @@
 ------------------------------------------------------------
+Mar 3, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-17
+Abstracted the distribution kind
+
+New class_Dist encompasses both block-cyclic and PEXSI-type
+distributions.
+
+added:
+  Util/MPI_test/class_Dist.F90
+modified:
+  Util/MPI_test/Makefile
+  Util/MPI_test/dist.F90
+
+------------------------------------------------------------
 Mar 1, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-16
 Abstracted routine for distribution changes
 

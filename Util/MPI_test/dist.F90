@@ -14,11 +14,10 @@ end module m_matrix
 module m_redist
 public :: redistribute
 CONTAINS
-  subroutine redistribute(norbs,m1,bcdist,m2,pxdist,mpi_comm)
+  subroutine redistribute(norbs,m1,dist1,m2,dist2,mpi_comm)
 
       use mpi
-      use class_BlockCyclicDist
-      use class_PEXSIDist
+      use class_Dist
       use m_matrix, only: matrix
       
       implicit none
@@ -26,8 +25,7 @@ CONTAINS
     integer, intent(in)       :: norbs
     type(matrix) :: m1
     type(matrix) :: m2
-    type(BlockCyclicDist) :: bcdist
-    type(PEXSIDist)       :: pxdist
+    type(Dist) :: dist1, dist2
     integer, intent(in)   :: mpi_comm
 
     type comm
@@ -43,8 +41,8 @@ CONTAINS
 
     integer ::  i, io
 
-      call mpi_group_rank(bcdist%data%group,myrank1,ierr)
-      call mpi_group_rank(pxdist%data%group,myrank2,ierr)
+      call mpi_group_rank(group(dist1),myrank1,ierr)
+      call mpi_group_rank(group(dist2),myrank2,ierr)
       proc_in_set1 = (myrank1 /= MPI_UNDEFINED)
       proc_in_set2 = (myrank2 /= MPI_UNDEFINED)
 
@@ -60,7 +58,7 @@ CONTAINS
       ! not in the second set.
 
       if (proc_in_set2) then
-         m2%no_l = num_local_elements(pxdist,norbs,myrank2)
+         m2%no_l = num_local_elements(dist2,norbs,myrank2)
          allocate(m2%numcols(m2%no_l))
       endif
 
@@ -125,10 +123,10 @@ CONTAINS
          write(6,"(5a10)") "Orb", "p1", "i1", "p2", "i2"
       endif
       do io = 1, norbs
-         p1(io) = node_handling_element(bcdist,io)
-         p2(io) = node_handling_element(pxdist,io)
-         isrc(io) = index_global_to_local(bcdist,io,p1(io))
-         idst(io) = index_global_to_local(pxdist,io,p2(io))
+         p1(io) = node_handling_element(dist1,io)
+         p2(io) = node_handling_element(dist2,io)
+         isrc(io) = index_global_to_local(dist1,io,p1(io))
+         idst(io) = index_global_to_local(dist2,io,p2(io))
          if (myid == 0) then
             if ((norbs < 1000) .or. (mod(io,12) == 0)) then
                write(6,"(5i10)") io, p1(io), isrc(io), p2(io), idst(io)
@@ -266,16 +264,15 @@ CONTAINS
 
 end module m_redist
 
-      program dist
+      program disttest
 
         ! Redistribution of orbital data.
         ! Two different distributions: 
-        !   bcdist: block-cyclic (as in Siesta)
-        !   pxdist: one block per processor, with fat last block (as in PEXSI)
+        !   dist1: block-cyclic (as in Siesta)
+        !   dist2: one block per processor, with fat last block (as in PEXSI)
 
       use mpi
-      use class_BlockCyclicDist
-      use class_PEXSIDist
+      use class_Dist
       use m_matrix, only: matrix
       use m_redist, only: redistribute
 
@@ -294,8 +291,7 @@ end module m_redist
       logical :: proc_in_set2, proc_in_set1
       integer, allocatable :: ranks(:)
 
-      type(BlockCyclicDist) :: bcdist
-      type(PEXSIDist)       :: pxdist
+      type(Dist) :: dist1, dist2
 
       type(matrix) :: m1, m2
          
@@ -328,7 +324,7 @@ end module m_redist
          ranks(i) = i-1
       end do
       call MPI_Group_incl(group_world, nprocs1, ranks, group1, ierr)
-      call newDistribution(bs,group1,bcdist,"bc dist")
+      call newDistribution(bs,group1,dist1,TYPE_BLOCK_CYCLIC,"bc dist")
       deallocate(ranks)
 
       ! New group, just for cleanliness
@@ -338,18 +334,20 @@ end module m_redist
       end do
       call MPI_Group_incl(group_world, nprocs2, ranks, group2, ierr)
       pbs = norbs/nprocs2
-      call newDistribution(pbs,group2,pxdist,"px dist")
+      call newDistribution(pbs,group2,dist2,TYPE_PEXSI,"px dist")
       deallocate(ranks)
 
-      call mpi_group_rank(bcdist%data%group,myrank1,ierr)
-      call mpi_group_rank(pxdist%data%group,myrank2,ierr)
+      print *, "Group 1, Group 2: ", group(dist1), group(dist2)
+
+      call mpi_group_rank(group(dist1),myrank1,ierr)
+      call mpi_group_rank(group(dist2),myrank2,ierr)
       proc_in_set1 = (myrank1 /= MPI_UNDEFINED)
       proc_in_set2 = (myrank2 /= MPI_UNDEFINED)
 
       ! Create source matrix
       if (proc_in_set1) then
          m1%norbs = norbs
-         m1%no_l = num_local_elements(bcdist,norbs,myrank1)
+         m1%no_l = num_local_elements(dist1,norbs,myrank1)
          allocate(m1%numcols(m1%no_l))
          do io = 1, m1%no_l
             call random_number(x)
@@ -363,14 +361,14 @@ end module m_redist
          enddo
       endif
 
-      call redistribute(norbs,m1,bcdist,m2,pxdist,mpi_comm_world)
+      call redistribute(norbs,m1,dist1,m2,dist2,mpi_comm_world)
 
 
       if (proc_in_set1) then
          ibeg = 1
          do io = 1, m1%no_l
             iend = ibeg + m1%numcols(io) - 1
-            ig = index_local_to_global(bcdist,io,myrank1)
+            ig = index_local_to_global(dist1,io,myrank1)
             print "(a,i4,a,2i5,2x,i5,2x,10i3)", "Src: ", myrank1, &
                  " il, ig, ncols, cols: ", io, ig, &
                  m1%numcols(io), m1%cols(ibeg:iend)
@@ -384,7 +382,7 @@ end module m_redist
          ibeg = 1
          do io = 1, m2%no_l
             iend = ibeg + m2%numcols(io) - 1
-            ig = index_local_to_global(pxdist,io,myrank2)
+            ig = index_local_to_global(dist2,io,myrank2)
             print "(a,i4,a,2i5,2x,i5,2x,10i3)", "Dst: ", myrank2, &
               " il, ig, ncols, cols: ", io, ig, &
               m2%numcols(io), m2%cols(ibeg:iend)
@@ -394,7 +392,7 @@ end module m_redist
 
       call MPI_FINALIZE(ierr)
 
-  end program dist
+    end program disttest
 
 
 
