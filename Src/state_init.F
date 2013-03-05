@@ -20,8 +20,8 @@
       use siesta_geom
       use atomlist,          only: iphorb, iphkb, rco, rckb, indxua,
      &                             no_s, rmaxkb, rmaxo, no_u, lastkb,
-     &                             lasto, superc, rmaxv, indxuo
-      use atomlist,          only: no_l
+     &                             lasto, superc, rmaxv, indxuo,
+     &                             no_l, iza
       use alloc,             only: re_alloc, de_alloc, alloc_report
       use m_hsparse,         only: hsparse
       use m_overlap,         only: overlap
@@ -46,7 +46,7 @@
       use m_ts_options, only : onlyS
       use m_ts_global_vars, only: TSrun
       use sys, only : bye
-      use m_ts_io, only : ts_iohs
+      use m_ts_io, only : filenameTSHS, ts_write_tshs
       use files, only: slabel, label_length
 #endif
 #ifdef CDF
@@ -308,19 +308,17 @@
 
 #ifdef TRANSIESTA
 !     If onlyS, Save overlap matrix and exit                       ! MPN
-      if (onlyS) then                                              ! MPN    
-        fname = paste( slabel, '.onlyS' )
-        fnlength = label_length+6
-        nullify(dummyH)
-        call re_alloc( dummyH, 1, maxnh, 1, 1, 'dummyH', 'state_init' )
-
-        call ts_iohs('write   ', gamma, .true., no_u, no_s, 
-     &       1, indxuo, maxnh, numh, listhptr, listh, dummyH, 
-     &       S, dummyqtot, temp, xijo, fnlength, fname, na_u, 
-     &       lasto, isa, dummyef, 
-     &       ucell, ts_kscell_file, ts_kdispl_file,            
-     &       ts_gamma_scf_file, xa, 0, 0 )
-        call de_alloc( dummyH, 'dummyH', 'state_init' )
+      if (onlyS) then           ! MPN 
+         fname = filenameTSHS(slabel,0,0,.true.)
+! We include H as S, well-knowing that we only write one of
+!     them, there is no need to allocate space for no reason!
+         call ts_write_tshs(fname, 
+     &        .true., Gamma, ts_Gamma_SCF_file,
+     &        ucell, na_u, no_l, no_u, no_s, maxnh, nspin,
+     &        ts_kscell_file, ts_kdispl_file,
+     &        xa, iza, lasto,
+     &        numh, listhptr, listh, xijo, indxuo, 
+     &        S, S, dummyEf,dummyQtot, Temp,0,0)
         call bye( 'Save overlap matrix and exit' ) ! Exit siesta   ! MPN 
       endif                                                        ! MPN    
 #endif /* TRANSIESTA */

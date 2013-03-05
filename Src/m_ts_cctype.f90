@@ -20,10 +20,10 @@ module m_ts_cctype
 
 ! Create a type to contain the contour information
   type :: ts_ccontour
-     complex(dp) :: c ! Contour value
-     complex(dp) :: w ! Contour weight
-     integer :: part  ! part of the contour
-     integer :: type  ! type of the contour point
+     complex(dp) :: c    ! Contour value
+     complex(dp) :: w    ! Contour weight
+     integer     :: part ! part of the contour
+     integer     :: type ! type of the contour point
   end type ts_ccontour
 
 ! We denote each part by parameters.
@@ -45,5 +45,7 @@ module m_ts_cctype
   integer, parameter :: CC_TYPE_GAUSS_FERMI = 5
   integer, parameter :: CC_TYPE_GAUSS_QUAD  = 6
   integer, parameter :: CC_TYPE_TRANSPORT   = 7
+! Leave space for the following types...
+  integer, parameter :: CC_TYPE_TRANS_PHONON    = 100
 
 end module m_ts_cctype

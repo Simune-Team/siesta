@@ -33,16 +33,15 @@ M4_FILES = m4/ac_config_aux_dirs.m4  m4/TW_CHECK_FC_FPP.m4      m4/TW_FC_ID_FLAG
 aclocal.m4: $(M4_FILES)
 	cat ${<D}/$(M4_FILES)  > aclocal.m4
 dep:
-	@if [ $(VPATH) = "." ] ; then \
+	-if [ $(VPATH) = "." ] ; then \
 	sfmakedepend --depend=obj  --modext=o \
                               *.f *.f90 *.F *.F90 ; \
         else \
 	sfmakedepend --depend=obj  --modext=o \
           $(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90 ; \
         fi
-	@sed "/^siesta_cmlsubs.o:/s/version.o//;\
-		/^m_ts_io.o:/s/m_tbt_kpoints.o//"  Makefile > tmp.Makefile
-	@mv tmp.Makefile Makefile
+	@sed -i -e "/^siesta_cmlsubs.o:/s/version.o//;\
+		/^m_ts_io.o:/s/m_tbt_kpoints.o//"  Makefile
 #
 include arch.make
 INCFLAGS:= $(NETCDF_INCFLAGS) $(INCFLAGS)
@@ -590,6 +589,9 @@ m_pulay.o: alloc.o atomlist.o m_spin.o m_svd.o parallel.o precision.o
 m_pulay.o: siesta_options.o sparse_matrices.o sys.o
 m_recipes.o: precision.o sys.o
 m_rmaxh.o: precision.o
+m_sparsity_loop.o: class_Sparsity.o intrinsic_missing.o
+m_sparsity_uc.o: class_Sparsity.o class_dArray1D.o class_zArray1D.o
+m_sparsity_uc.o: m_sparsity_loop.o
 m_spin.o: alloc.o parallel.o precision.o
 m_stress.o: precision.o
 m_svd.o: precision.o
@@ -605,14 +607,13 @@ m_ts_global_vars.o: precision.o
 m_ts_in_siesta.o: m_glob_sparse.o m_hs_matrix.o m_ts_cctype.o m_ts_contour.o
 m_ts_in_siesta.o: m_ts_gf.o m_ts_kpoints.o m_ts_options.o m_ts_scattering.o
 m_ts_in_siesta.o: parallel.o parallelsubs.o precision.o sys.o units.o
-m_ts_io.o: files.o m_spin.o m_ts_kpoints.o parallel.o parallelsubs.o
-m_ts_io.o: precision.o sys.o
+m_ts_io.o: m_glob_sparse.o parallel.o precision.o sys.o
 m_ts_iodm.o: alloc.o files.o m_mpi_utils.o m_ts_global_vars.o parallel.o
 m_ts_iodm.o: parallelsubs.o precision.o sys.o
 m_ts_kpoints.o: files.o find_kgrid.o minvec.o parallel.o precision.o
 m_ts_kpoints.o: siesta_cml.o siesta_options.o sys.o
-m_ts_options.o: files.o m_fdf_global.o m_ts_contour.o m_ts_global_vars.o
-m_ts_options.o: m_ts_io.o parallel.o precision.o siesta_options.o sys.o units.o
+m_ts_options.o: files.o m_ts_contour.o m_ts_global_vars.o m_ts_io.o parallel.o
+m_ts_options.o: precision.o siesta_options.o sys.o units.o
 m_ts_scattering.o: m_ts_aux_rout.o parallel.o precision.o sys.o units.o
 m_ts_voltage.o: m_ts_options.o mesh.o parallel.o precision.o units.o
 m_wallclock.o: m_walltime.o

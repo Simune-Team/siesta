@@ -30,6 +30,8 @@ module m_ts_contour
 !   4) mod_HansSkriver
 !   5) sommerfeld
 !   6) gaussian_quadrature
+!   7) transport
+!   8) phonon
 
 
 ! Use the type associated with the contour
@@ -43,6 +45,8 @@ module m_ts_contour
   integer, parameter, public :: CC_METHOD_MOD_HANSSKRIVER = 1
   integer, parameter, public :: CC_METHOD_SOMMERFELD      = 2
   integer, parameter, public :: CC_METHOD_GAUSSFERMI      = 3
+! Leave space for other methods
+  integer, parameter, public :: CC_METHOD_PHONON          = 100
 
 ! This module will also contain all the contour variables
   integer, save :: NEn  ! Number of energy points in the contour path
@@ -178,8 +182,15 @@ contains
 ! Finally we add the transport energy points
     if ( Ntransport > 0 ) then
        c => contour(NEn-Ntransport+1:NEn) 
-       call transmission(Emin,Emax, &
-            GFeta,Ntransport, c)
+       if (Cmethod.eq.CC_METHOD_PHONON) then ! Phonon energy-points
+          if (NEn /= Ntransport) then
+             call die('ERROR: when doing phonon transport, only &
+                  &use transport energy-points on the contour')
+          end if
+          call phonon(Emin,Emax,GFeta,Ntransport,c)
+       else
+          call transmission(Emin,Emax,GFeta,Ntransport, c)
+       end if
     end if
 
   end subroutine setup_contour
@@ -239,6 +250,8 @@ contains
                 ctype = 'gaussQ'
              else if ( c%type == CC_TYPE_TRANSPORT ) then
                 ctype = 'trans'
+             else if ( c%type == CC_TYPE_TRANS_PHONON ) then
+                ctype = 'phonon'
              end if
              type = c%type
           end if
@@ -693,5 +706,53 @@ contains
 
   end subroutine transmission
 
+
+! ##################################################################
+! ##      Generate a phonon energy contour to be able to          ##
+! ##                 handle phonon transport                      ##
+! ##           Transmission and DOS calculation                   ##
+! ##                            By                                ##
+! ##        Nick Papior Andersen, nickpapior@gmail.com            ##
+! ##################################################################
+  subroutine phonon(E1,E2,GFeta,NEn,contour)
+
+    use precision, only : dp
+
+! ***********************
+! * INPUT variables     *
+! ***********************
+    real(dp), intent(in) :: E1,E2    ! energy parameters 
+    real(dp), intent(in) :: GFeta    ! state broadening in Ry
+    integer,  intent(in) :: NEn      ! No. contour points
+
+! ***********************
+! * OUTPUT variables    *
+! ***********************
+    type(ts_ccontour), intent(out) :: contour(NEn)   ! points for contour
+
+! ***********************
+! * LOCAL variables     *
+! ***********************
+    real(dp) :: delta
+    integer :: ic
+
+    ! Calculate the weight of each contour point
+    delta = (E2-E1)/(1.d0*max(NEn-1,1))
+
+    do ic = 1 , NEn
+       ! The energy contour in Phonon space is:
+       ! (\omega + i \eta)**2
+       contour(ic)%c = dcmplx(E1+(ic-1)*delta, GFeta)**2
+       contour(ic)%w = dcmplx(delta          , 0d0)
+       contour(ic)%part = CC_PART_TRANSPORT
+       ! ???
+       ! The part is a transport point, so perhaps dubious to 
+       ! also include a type?
+       ! ???
+       ! Right now we use it for printing purposes...
+       contour(ic)%type = CC_TYPE_TRANS_PHONON
+    end do
+
+  end subroutine phonon
 
 end module m_ts_contour

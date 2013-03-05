@@ -43,7 +43,7 @@ what:
 SYSOBJ=$(SYS).o
 
 # Tbtrans:
-MOD_TOBJS=  m_tbt_options.o m_tbt_kpoints.o m_tbt_out.o m_tbt_read_tshs.o m_lowdin.o
+MOD_TOBJS=  m_tbt_options.o m_tbt_kpoints.o m_tbt_out.o m_tbt_iotshs.o m_lowdin.o
 
 SIESTA_OBJS= precision.o sys.o m_io.o alloc.o  memoryinfo.o memory.o pxf.o \
              moreParallelSubs.o m_walltime.o m_timer.o timer.o m_mpi_utils.o \
@@ -99,11 +99,12 @@ clean:
 
 # Dependencies
 dep:
-	sfmakedepend --depend=obj  --modext=o \
-          $(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90 \
-	  *.f90 *.F90 *.f *.F
-	@sed "/^m_ts_io.o:/s/m_ts_kpoints.o//" Makefile > tmp.Makefile
-	@sed "/^m_ts_electrode.o:/s/m_ts_kpoints.o//" tmp.Makefile > Makefile
+	-sfmakedepend --depend=obj --modext=o \
+		$(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90 \
+		*.f90 *.F90 *.f *.F
+	@sed -i -e "/^m_ts_io.o:/s/m_ts_kpoints.o//" Makefile
+	@sed -i -e "/^m_ts_io.o:/s/m_glob_sparse.o//" Makefile
+	@sed -i -e "/^m_ts_electrode.o:/s/m_ts_kpoints.o//" Makefile
 
 $(TBTOBJS): $(FDF)
 
@@ -343,16 +344,14 @@ m_ts_aux_rout.o: precision.o sys.o
 m_ts_cctype.o: precision.o
 m_ts_contour.o: m_ts_aux_rout.o m_ts_cctype.o parallel.o precision.o sys.o
 m_ts_contour.o: units.o
-m_ts_electrode.o: files.o m_hs_matrix.o m_tbt_kpoints.o m_ts_aux_rout.o
-m_ts_electrode.o: m_ts_cctype.o m_ts_io.o  parallel.o precision.o
-m_ts_electrode.o: sys.o units.o
+m_ts_electrode.o: files.o m_hs_matrix.o m_ts_aux_rout.o m_ts_cctype.o m_ts_io.o
+m_ts_electrode.o:  parallel.o precision.o sys.o units.o
 m_ts_gf.o: m_ts_cctype.o m_ts_electrode.o parallel.o precision.o sys.o units.o
 m_ts_global_vars.o: precision.o
 m_ts_in_siesta.o: m_glob_sparse.o m_hs_matrix.o m_ts_cctype.o m_ts_contour.o
 m_ts_in_siesta.o: m_ts_gf.o m_ts_kpoints.o m_ts_options.o m_ts_scattering.o
 m_ts_in_siesta.o: parallel.o parallelsubs.o precision.o sys.o units.o
-m_ts_io.o: files.o m_spin.o m_tbt_kpoints.o  parallel.o
-m_ts_io.o: parallelsubs.o precision.o sys.o
+m_ts_io.o:  parallel.o precision.o sys.o
 m_ts_iodm.o: alloc.o files.o m_mpi_utils.o m_ts_global_vars.o parallel.o
 m_ts_iodm.o: parallelsubs.o precision.o sys.o
 m_ts_kpoints.o: files.o find_kgrid.o minvec.o parallel.o precision.o
@@ -561,28 +560,19 @@ zm_fire_optim.o: siesta_options.o units.o zmatrix.o
 zmatrix.o: alloc.o m_cell.o parallel.o precision.o siesta_geom.o sys.o units.o
 atompdos.o: m_lowdin.o m_tbt_out.o parallel.o precision.o sys.o units.o
 coop.o: m_tbt_out.o parallel.o precision.o sys.o units.o
-m_hssigma.o: m_ncdf.o parallel.o precision.o sys.o units.o
 m_lowdin.o: precision.o
-m_ncdf.o: ncdf_interface.f90 ncdf_code.f90
-m_ncdf.o: dictionary.o pwire.o
-m_tbt_gf.o: m_hs_matrix.o m_tbt_iotshs.o m_ts_aux_rout.o precision.o sys.o
-m_tbt_gf.o: units.o
-m_tbt_hssigma.o: m_hssigma.o m_lowdin.o m_ncdf.o m_ts_aux_rout.o m_ts_cctype.o
-m_tbt_hssigma.o: parallel.o sys.o units.o
-m_tbt_iotshs.o: m_tbt_kpoints.o parallel.o precision.o sys.o
+m_tbt_iotshs.o: m_tbt_kpoints.o m_ts_io.o parallel.o precision.o sys.o
 m_tbt_kpoints.o: alloc.o minvec.o parallel.o precision.o sys.o units.o
 m_tbt_options.o: files.o m_fdf_global.o m_ts_io.o memoryinfo.o parallel.o
 m_tbt_options.o: precision.o sys.o units.o
 m_tbt_out.o: parallel.o precision.o units.o
-m_tbt_read_tshs.o: m_ts_io.o parallel.o precision.o
-m_ts_iohs_ncdf.o: m_glob_sparse.o m_ncdf.o parallel.o precision.o sys.o
 tbt_init.o: alloc.o files.o m_spin.o m_tbt_kpoints.o m_tbt_options.o m_timer.o
 tbt_init.o: m_ts_contour.o m_wallclock.o parallel.o precision.o sys.o
 tbt_init.o: timestamp.o
 tbt_reinit.o: files.o parallel.o
-tbtrans.o: alloc.o files.o m_hs_matrix.o m_tbt_kpoints.o m_tbt_options.o
-tbtrans.o: m_tbt_out.o m_tbt_read_tshs.o m_ts_contour.o m_ts_electrode.o
-tbtrans.o: m_ts_gf.o m_ts_io.o m_ts_scattering.o m_wallclock.o parallel.o
-tbtrans.o: precision.o sys.o timestamp.o units.o
+tbtrans.o: alloc.o files.o m_hs_matrix.o m_tbt_iotshs.o m_tbt_kpoints.o
+tbtrans.o: m_tbt_options.o m_tbt_out.o m_ts_contour.o m_ts_electrode.o
+tbtrans.o: m_ts_gf.o m_ts_scattering.o m_wallclock.o parallel.o precision.o
+tbtrans.o: sys.o timestamp.o units.o
 transmission.o: m_ts_aux_rout.o precision.o sys.o
 tt_eig.o: precision.o sys.o

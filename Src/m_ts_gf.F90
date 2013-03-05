@@ -195,7 +195,7 @@ contains
     use parallel,  only : IONode
     use sys ,      only : die
 #ifdef MPI
-    use mpi_siesta, only: DAT_double => MPI_double_precision
+    use mpi_siesta, only: MPI_Double_Precision => MPI_double_precision
     use mpi_siesta, only: MPI_logical, MPI_comm_world, MPI_Bcast
     use mpi_siesta, only: MPI_integer
 #endif
@@ -366,10 +366,10 @@ contains
        call memory('A','D',4*nq,'transiesta')
     endif
     
-    call MPI_Bcast(qb(1,1),3*nq,DAT_double,0,MPI_Comm_World ,MPIerror)
-    call MPI_Bcast(wq,nq,DAT_double,0,MPI_Comm_World,MPIerror)
-    call MPI_Bcast(kpar(1,1),3*nkpar,DAT_double,0,MPI_Comm_World ,MPIerror)
-    call MPI_Bcast(wkpar,nkpar,DAT_double,0,MPI_Comm_World,MPIerror)
+    call MPI_Bcast(qb(1,1),3*nq,MPI_Double_Precision,0,MPI_Comm_World ,MPIerror)
+    call MPI_Bcast(wq,nq,MPI_Double_Precision,0,MPI_Comm_World,MPIerror)
+    call MPI_Bcast(kpar(1,1),3*nkpar,MPI_Double_Precision,0,MPI_Comm_World ,MPIerror)
+    call MPI_Bcast(wkpar,nkpar,MPI_Double_Precision,0,MPI_Comm_World,MPIerror)
 #endif
 
 #ifdef TRANSIESTA_DEBUG

@@ -147,7 +147,7 @@ subroutine tbt_reinit(sname)
   slabel_default  = 'siesta'
   slabel = fdf_string('SystemLabel',slabel_default)
   if (Node.eq.0) then
-     write(6,'(a,a)') 'reinit: System Label: ',slabel
+     write(6,'(a,a)') 'reinit: System Label: ',trim(slabel)
      write(6,'(a,71("-"))') 'reinit: '
   endif
 ! ...

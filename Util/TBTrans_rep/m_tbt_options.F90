@@ -66,7 +66,7 @@ module m_tbt_options
   character(33), parameter :: GFTitle_def = 'Generated GF file'
   character(33), parameter :: HSFile_def = 'NOT REQUESTED'
   logical, parameter :: ElecValenceBandBot_def = .true.
-  logical, parameter :: ReUseGF_def = .true.
+  logical, parameter :: ReUseGF_def = .false.
 
 ! ################################################
 ! #                                              #
@@ -87,6 +87,11 @@ module m_tbt_options
   logical        :: AlignScat ! Align the scattering region with the left electrode (only by the first onsite element)
   logical        :: CalcAtomPDOS ! Calculate the DOS on the projected atoms
   logical        :: RemUCellDistances ! Remove the Ucell distances when calculating the transmission...
+  integer        :: trans_type ! This could be either 
+! TRANS_TB
+! TRANS_PHONON
+  integer, parameter :: TRANS_TB = 1
+  integer, parameter :: TRANS_PHONON = 2
 
 ! ################################################
 ! #                                              #
@@ -122,14 +127,14 @@ CONTAINS
     use m_ts_io       , only : ts_read_TSHS_lasto
 #ifdef MPI
     use mpi_siesta, only: MPI_Bcast, MPI_character, MPI_Comm_World
+    use mpi_siesta, only: MPI_Integer
 #endif
-
 
 ! Internal Variables
     character(len=200) :: chars
     logical :: exist ! Check file existance for files requested
     character(len=200) :: paste
-    integer :: na_u, tmp, i
+    integer :: na_u, tmp, i, fL
     external :: paste
 #ifdef MPI
     integer :: MPIerror
@@ -144,6 +149,14 @@ CONTAINS
     call fdf_deprecated('TS.TBT.DoCOOP','TS.TBT.COOP')
     call fdf_deprecated('TS.CalcGF','TS.TBT.ReUseGF')
 
+    ! Determine the transport calculation to be performed
+    call fdf_global_get(chars,'TS.TBT.Transport','TB')
+    if ( leqi(chars,'phonon') .or. &
+         leqi(chars,'ph') ) then
+       trans_type = TRANS_PHONON
+    else
+       trans_type = TRANS_TB
+    end if
     
 ! Reading from fdf ... This is needed for using 'cdiag'
     call fdf_global_get(MemoryFactor,'Diag.Memory', 1.0_dp )
@@ -182,7 +195,14 @@ CONTAINS
             &Please create scattering region file '"//TRIM(HSFile)//"' first.")
     end if
     ! Read in total number of atoms in the TSHS file!
-    call ts_read_TSHS_na(HSFile,na_u)
+
+    fL = len_trim(HSfile)
+    fFormat: if ( leqi(HSfile(fL-4:fL),'.TSHS') ) then
+       call ts_read_TSHS_na(HSFile,na_u)
+    else
+       call die('Could not determine scattering region file &
+            &format: '//trim(HSFile))
+    end if fFormat
 
     ! Read electrode options
     call fdf_global_get(HSFileL,'TS.HSFileLeft',HSFile_def)
@@ -232,27 +252,32 @@ CONTAINS
        write(*,5) 'Points on the energy contour                  =', NPoints
        write(*,7) 'GFEta                                         =', GFEta,' Ry'
        write(*,6) 'Electronic Temperature                        =', kT, ' Ry'
-       write(*,1) 'Calculate band bottom in elecrodes            =', ElecValenceBandBot
+       write(*,1) 'Calculate band bottom in electrodes           =', ElecValenceBandBot
        write(*,10)'GF title                                      =', TRIM(GFTitle)
        write(*,10)'Left GF File                                  =', TRIM(GFFileL)
        write(*,10)'Right GF File                                 =', TRIM(GFFileR)
        write(*,1) 'Re-use the GF files if they exists            =', ReUseGF
        write(*,10)'Scattering region TSHS file                   =', TRIM(HSFile)
        write(*,10)'Left electrode TSHS file                      =', TRIM(HSFileL)
-       write(*,5) '# atoms used in left elec.                    = ', NUsedAtomsL
+       write(*,5) '# atoms used in left elec.                    =', NUsedAtomsL
        write(*,'(a,i3,'' X '',i3)') &
-                  'Left elec. repetition A1/A2                   = ', NRepA1L,NRepA2L
+                  'Left elec. repetition A1/A2                   =', NRepA1L,NRepA2L
 ! Check existance for right Electrode.TSHS
-       write(*,10)'Right electrode TSHS file                     =', TRIM(HSFileL)
-       write(*,5) '# atoms used in right elec.                   = ', NUsedAtomsL
+       write(*,10)'Right electrode TSHS file                     =', TRIM(HSFileR)
+       write(*,5) '# atoms used in right elec.                   =', NUsedAtomsR
        write(*,'(a,i3,'' X '',i3)') &
-                  'Right elec. repetition A1/A2                  = ', NRepA1L,NRepA2L
+                  'Right elec. repetition A1/A2                  =', NRepA1R,NRepA2R
        write(*,'(a,''['',i5,'';'',i5,'']'')') &
-                  'Projected region                              = ', IsoAt1,IsoAt2
-       write(*,1) 'Calculate DOS on projected atoms              = ',CalcAtomPDOS
-       write(*,1) 'Calculate COOP                                = ',CalcCOOP
-       write(*,1) 'Align the Hamiltonian with the electrode      = ',AlignScat
-       write(*,1) 'Remove inner-cell distances in the Hamiltonian= ',RemUCellDistances
+                  'Projected region                              =', IsoAt1,IsoAt2
+       write(*,1) 'Calculate DOS on projected atoms              =', CalcAtomPDOS
+       write(*,1) 'Calculate COOP                                =', CalcCOOP
+       write(*,1) 'Align the Hamiltonian with the electrode      =', AlignScat
+       if ( trans_type == TRANS_PHONON ) then
+          write(*,10)'Transport type calculation                    =','Phonon-transport'
+       else
+          write(*,10)'Transport type calculation                    =','Regular'
+       end if
+       write(*,1) 'Remove inner-cell distances in the Hamiltonian= ', RemUCellDistances
        if ( AlignScat ) then
           call die("TBtrans is currently not implented to align the scattering &
                &region and the electrodes.")
@@ -278,6 +303,10 @@ CONTAINS
        write(*,'(t10,a,i4,tr1,a4,i3,/)') &
             "Optimal equilibrium # of energy points: ",i, &
             achar(177)//" i*",Nodes
+       if ( trans_type == TRANS_PHONON .and. Emin < 0.0_dp ) then
+          write(*,'(t10,a)')'WARNING: Phonon energy transport &
+               &will also be performed for negative energies.'
+       end if
     end if
 
 1   format(a,4x,l1)
@@ -292,17 +321,24 @@ CONTAINS
       character(len=*), intent(in) :: LR
       character(len=*), intent(in) :: HSFile
       integer, intent(inout) :: NUsedAtoms, NUsedOrbs
-      integer :: tmp_NUsedAtoms
+      integer :: tmp_NUsedAtoms, fL
       integer, allocatable, dimension(:) :: lasto
       logical :: exist
-! Check existance for left Electrode.TSHS
-      inquire(file=TRIM(HSFile),exist=exist)
-      if ( .not. exist ) then
-         call die(trim(LR)//" electrode file does not exist. &
-              &Please create electrode '"//trim(HSFile)//"' first.")
-      end if
-! Read in the number of atoms in the HSfile
-      call ts_read_TSHS_na(HSFile,tmp_NUsedAtoms)
+      
+      fL = len_trim(HSfile)
+      fFormat1: if ( leqi(HSfile(fL-4:fL),'.TSHS') ) then
+         ! Check existance for left Electrode.TSHS
+         inquire(file=TRIM(HSFile),exist=exist)
+         if ( .not. exist ) then
+            call die(trim(LR)//" electrode file does not exist. &
+                 &Please create electrode '"//trim(HSFile)//"' first.")
+         end if
+         ! Read in the number of atoms in the HSfile
+         call ts_read_TSHS_na(HSFile,tmp_NUsedAtoms)
+      else
+         call die(trim(LR)//' electrode file format could not be &
+              &recognized: '//trim(HSFile))
+      end if fFormat1
 
       if ( NUsedAtoms < 0 ) then
          NUsedAtoms = tmp_NUsedAtoms
@@ -324,9 +360,17 @@ CONTAINS
 ! Read in lasto to determine the number of orbitals 
 ! used in the electrode
       allocate(lasto(0:tmp_NUsedAtoms))
-      call ts_read_TSHS_lasto(HSFile,tmp_NUsedAtoms,lasto)
+      lasto(0) = 0
+      fL = len_trim(HSfile)
+      fFormat2: if ( leqi(HSfile(fL-4:fL),'.TSHS') ) then
+         call ts_read_TSHS_lasto(HSFile,tmp_NUsedAtoms,lasto)
+      else
+         call die('THIS IS REALLY SERIOUS! PLEASE MAIL THE LIST! &
+              &SHOULD NOT BE REACHED!')
+      end if fFormat2
+
       NUsedOrbs = 0
-      if ( LR == 'Left' ) then
+      if ( leqi(LR,'Left') ) then
 ! We use the first atoms
          do i = 1 , NUsedAtoms
             NUsedOrbs = NUsedOrbs + lasto(i)-lasto(i-1)

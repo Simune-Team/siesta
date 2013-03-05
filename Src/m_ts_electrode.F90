@@ -397,7 +397,7 @@ contains
     use mpi_siesta, only : MPI_Sum
     use mpi_siesta, only : MPI_Wait,MPI_Status_Size
     use mpi_siesta, only : DAT_dcomplex => MPI_double_complex, &
-                           DAT_double => MPI_double_precision
+                           MPI_Double_Precision => MPI_double_precision
 #endif
     use m_hs_matrix,only : set_HS_matrix, matrix_symmetrize
     use m_ts_cctype
@@ -949,21 +949,17 @@ contains
     use fdf, only : leqi
     use sys, only : die
     use units, only : Ang
-    use parallel, only : IONode, Node,Nodes
-    use m_ts_io, only  : ts_iohs
-    use files, only: label_length
+    use parallel, only : IONode
+    use m_ts_io, only  : ts_read_TSHS
+    use files, only: slabel
 #ifdef MPI
     use mpi_siesta, only: MPI_Comm_World, MPI_LOR
     use mpi_siesta, only: MPI_Bcast,MPI_Barrier
-    use mpi_siesta, only: DAT_double => MPI_double_precision
+    use mpi_siesta, only: MPI_Double_Precision => MPI_double_precision
     use mpi_siesta, only: MPI_Logical,MPI_Integer
     use mpi_siesta, only: MPI_Reduce
 #endif
-#ifdef TBTRANS
-    use m_tbt_kpoints, only : ts_kscell => kscell
-    use m_tbt_kpoints, only : ts_kdispl => kdispl
-    use m_tbt_kpoints, only : ts_gamma_scf => Gamma
-#else
+#ifndef TBTRANS
     use m_ts_kpoints, only : ts_gamma_scf, ts_kscell, ts_kdispl
 #endif
 
@@ -976,12 +972,12 @@ contains
     integer, intent(in)  :: nua_sys ! Full system count of atoms in unit cell
     real(dp), intent(in) :: xa_sys(3,nua_sys) ! Coordinates in the system for the TranSIESTA routine
     integer, intent(in)  :: nspin_sys ! spin in system
-    character(len=label_length+5),intent(in) :: HSfile !H,S parameter file 
+    character(len=*),intent(in) :: HSfile !H,S parameter file 
     integer, intent(in)  :: NBufAt,NA1,NA2 ! Buffer atoms, and repetitions 
+    logical, intent(in)  :: Gamma
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    logical                           :: Gamma
     integer                           :: nua,nuo,maxnh ! Unit cell atoms / orbitals / Hamiltonian size
     real(dp), dimension(:,:), pointer :: xa ! The atomic coordinates
     real(dp), dimension(:,:), pointer :: H,xij,xijo ! Hamiltonian, differences with unitcell, differences without unitcell
@@ -998,8 +994,9 @@ contains
     character(len=5) :: GFjob
     integer :: notot  ! Total orbitals in all supercells
     integer :: nspin  ! The spin polarization
-    integer,  dimension(:),   pointer :: isa ! atomic species
-    logical :: ts_gamma ! Read gamma from file
+    integer,  dimension(:), pointer :: iza ! atomic species
+    logical :: Gamma_file,TSGamma ! Read gamma from file
+    logical :: onlyS ! onlyS
     real(dp) :: kdispl(3)
     integer  :: kscell(3,3)
     real(dp) :: qtot,Temp ! total charges, electronic temperature
@@ -1015,7 +1012,7 @@ contains
     integer :: elecElec ! The first atom in the electrode in the ELECTRODE setup
     integer :: i,j,ia,iuo,juo,ind,iaa !Loop counters
     character(8) :: iotask
-
+    integer :: fL ! Filename length
 #ifdef MPI
     logical :: eXa_buff
     integer :: MPIerror
@@ -1029,124 +1026,95 @@ contains
 #endif
 
     nullify(H,S)
-    nullify(xij,xijo,xa,isa)
+    nullify(xij,xijo,xa,iza)
     nullify(numh,listhptr,listh,indxuo)
     nullify(lasto)
     nullify(zconnect)
 
-    if ( IONode ) then
-       iotask = 'READ'
-       call ts_iohs(iotask,Gamma, .false., nuo, notot, nspin, &
-            indxuo, maxnh, numh, listhptr, listh, H, S, qtot, Temp, &
-            xij, label_length+5, HSfile, nua, lasto, isa, Ef, &
-            ucell, kscell, kdispl, ts_gamma, xa, dummy1,dummy2, &
-            check_kcell=.false.) 
-       ! Checking the electrode k-grid against the system k-grid...
-       ! This will also check for the repetition...
-       ! This check is not advisable in the TBtrans utility.
-       ! This is because the k-grid is often more fine when calculating
-       ! the transmission function.
-       ! Perhaps this should only check that the electrode k-sampling
-       ! is AT LEAST as good as the system k-grid for a TranSiesta run?
+    fL = len_trim(HSfile)
+    if ( leqi(HSfile(fL-4:fL),'.TSHS') ) then
+       call ts_read_tshs(HSfile, &
+            onlyS, Gamma_file, TSGamma, &
+            ucell, nua, nuo, nuo, notot, maxnh, nspin,  &
+            kscell, kdispl, &
+            xa, iza, lasto, &
+            numh, listhptr, listh, xij, indxuo, &
+            H, S, Ef, &
+            zc, zc, & ! Qtot, Temp
+            i,i, & ! istep, ia1, &
+            Bcast=.true.)
+    else
+       call die('Could not infer the file type of the &
+            &electrode file: '//trim(HSfile))
+    end if
+
+    ! We do not accept onlyS files
+    if ( onlyS ) then
+       call die('An electrode file must contain the Hamiltonian')
+    end if
+
+    ! 'Gamma' is also .false. (however, this will be more "secure")
+    if ( Gamma_file ) then
+       call die('An electrode file needs to be a non-Gamma calculation')
+    end if
+
+          
+! Checking the electrode k-grid against the system k-grid...
+! This will also check for the repetition...
+! This check is not advisable in the TBtrans utility.
+! This is because the k-grid is often more fine when calculating
+! the transmission function. (it could also be more coarse!)
+! Perhaps this should only check that the electrode k-sampling
+! is AT LEAST as good as the system k-grid for a TranSiesta run?
 #ifndef TBTRANS
-       eXa = .false.
-       do j = 1 , 3
-          do i = 1 , 3
-             if ( j == 1 ) then
-                eXa = eXa .or. ( kscell(i,j) /= ts_kscell(i,j)*NA1 )
-             else if ( j == 2 ) then
-                eXa = eXa .or. ( kscell(i,j) /= ts_kscell(i,j)*NA2 )
-             else
-                eXa = eXa .or. ( kscell(i,j) /= ts_kscell(i,j) )
-             end if
-          end do
-          eXa = eXa .or. ( kdispl(j) /= ts_kdispl(j) )
+
+    ! If the system is not a Gamma calculation, then the file must
+    ! not be either (the repetition will only increase the number of
+    ! k-points, hence the above)
+    eXa = (.not. ts_gamma_scf ) .and. TSGamma
+    do j = 1 , 3
+       do i = 1 , 3
+          if ( j == 1 ) then
+             eXa = eXa .or. ( kscell(i,j) /= ts_kscell(i,j)*NA1 )
+          else if ( j == 2 ) then
+             eXa = eXa .or. ( kscell(i,j) /= ts_kscell(i,j)*NA2 )
+          else
+             eXa = eXa .or. ( kscell(i,j) /= ts_kscell(i,j) )
+          end if
        end do
-       if ( eXa ) then
-          write(*,'(a)') 'Incompatible k-grids...'
-          write(*,'(a)') 'Electrode file k-grid:'
-          do j = 1 , 3
-             write(*,'(3(i4,tr1),f8.4)') (kscell(i,j),i=1,3),kdispl(j)
-          end do
-          write(*,'(a)') 'System k-grid:'
-          do j = 1 , 3
-             write(*,'(3(i4,tr1),f8.4)') (ts_kscell(i,j),i=1,3),ts_kdispl(j)
-          end do
-          write(*,'(a)') 'Electrode file k-grid should be:'
-          kscell(:,1) = ts_kscell(:,1) * NA1
-          kscell(:,2) = ts_kscell(:,2) * NA2
-          kscell(:,3) = ts_kscell(:,3)
-          do j = 1 , 3
-             write(*,'(3(i4,tr1),f8.4)') (kscell(i,j),i=1,3),ts_kdispl(j)
-          end do
-          call die('Incompatible electrode k-grids') 
-       end if
+       eXa = eXa .or. ( kdispl(j) /= ts_kdispl(j) )
+    end do
+    if ( eXa ) then
+       write(*,'(a)') 'Incompatible k-grids...'
+       write(*,'(a)') 'Electrode file k-grid:'
+       do j = 1 , 3
+          write(*,'(3(i4,tr1),f8.4)') (kscell(i,j),i=1,3),kdispl(j)
+       end do
+       write(*,'(a)') 'System k-grid:'
+       do j = 1 , 3
+          write(*,'(3(i4,tr1),f8.4)') (ts_kscell(i,j),i=1,3),ts_kdispl(j)
+       end do
+       write(*,'(a)') 'Electrode file k-grid should be:'
+       kscell(:,1) = ts_kscell(:,1) * NA1
+       kscell(:,2) = ts_kscell(:,2) * NA2
+       kscell(:,3) = ts_kscell(:,3)
+       do j = 1 , 3
+          write(*,'(3(i4,tr1),f8.4)') (kscell(i,j),i=1,3),ts_kdispl(j)
+       end do
+       call die('Incompatible electrode k-grids') 
+    end if
 #endif
 
-       ! Deallocate isa, not needed anymore
-       call memory('D','I',nua,'elec_HS')
-       deallocate(isa)
-
-       if( nspin_sys /= nspin ) then
-          write(*,*) "Spin of electrode '"//trim(HSfile) &
-               //"' is different."
-          write(*,*) "Spin electrode / Spin system",nspin,nspin_sys
-          call die('Wrong spin! Check system and electrode!')
-       end if
+! Deallocate isa, not needed anymore
+    call memory('D','I',nua,'elec_HS')
+    deallocate(iza)
+    
+    if( nspin_sys /= nspin ) then
+       write(*,*) "Spin of electrode '"//trim(HSfile) &
+            //"' is different."
+       write(*,*) "Spin electrode / Spin system",nspin,nspin_sys
+       call die('Wrong spin! Check system and electrode!')
     end if
-
-! Do communication of variables
-#ifdef MPI
-    call MPI_Bcast(nua,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
-    call MPI_Bcast(nuo,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
-    call MPI_Bcast(notot,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
-    call MPI_Bcast(nspin,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
-    call MPI_Bcast(maxnh,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
-    call MPI_Bcast(Ef,1,DAT_double,0, MPI_Comm_World,MPIerror)
-    call MPI_Bcast(ucell(1,1),3*3,DAT_double,0, &
-         MPI_Comm_World,MPIerror)
-    if ( .not. IONode ) then
-       if ( .not. Gamma ) then 
-! they behave as dummy arrays in case of Gamma == .true.
-! However, the electrode must be Gamma == .false. as we need the transfer matrix
-! TODO in options start-up check that the electrode is in fact a Gamma == .false. calculation
-! This can be done together with retrieving the nua_E variable.
-          allocate(indxuo(notot))
-          call memory('A','I',notot,'elec_HS')
-          allocate(xij(3,maxnh))
-          call memory('A','D',maxnh*3,'elec_HS')
-       end if
-       allocate(xa(3,nua))
-       call memory('A','D',3*nua,'elec_HS')
-       allocate(lasto(0:nua))
-       call memory('A','I',1+nua,'elec_HS')
-       allocate(numh(nuo))
-       call memory('A','I',nuo,'elec_HS')
-       allocate(listhptr(nuo))
-       call memory('A','I',nuo,'elec_HS')
-       allocate(listh(maxnh))
-       call memory('A','I',maxnh,'elec_HS')
-       allocate(H(maxnh,nspin))
-       call memory('A','D',maxnh*nspin,'elec_HS')
-       allocate(S(maxnh))
-       call memory('A','D',maxnh,'elec_HS')
-    end if
-    call MPI_Bcast(xa(1,1),3*nua,DAT_Double,0, &
-         MPI_Comm_World,MPIerror)
-    if ( .not. Gamma ) then
-       call MPI_Bcast(indxuo,notot,MPI_Integer,0, MPI_Comm_World,MPIerror)
-       call MPI_Bcast(xij(1,1),3*maxnh,DAT_Double,0, &
-            MPI_Comm_World,MPIerror)
-    end if
-    call MPI_Bcast(lasto(0),1+nua,MPI_Integer,0, MPI_Comm_World,MPIerror)
-    call MPI_Bcast(numh,nuo,MPI_Integer,0, MPI_Comm_World,MPIerror)
-    call MPI_Bcast(listhptr,nuo,MPI_Integer,0, MPI_Comm_World,MPIerror)
-    call MPI_Bcast(listh,maxnh,MPI_Integer,0, MPI_Comm_World,MPIerror)
-    call MPI_Bcast(H(1,1),maxnh*nspin,DAT_Double,0, &
-         MPI_Comm_World,MPIerror)
-    call MPI_Bcast(S,maxnh,DAT_Double,0, MPI_Comm_World,MPIerror)
-#endif
-
 
     ! Do a recheck if the electrode file has been overwritted or??
     if ( NUsedAtoms > nua ) then
@@ -1216,9 +1184,9 @@ contains
           end do
        end do
        if ( eXa ) then
-          write(*,'(a)') "Coordinates from the electrode repeated out to an FDF file"
-          write(*,'(t3,3a20)') &
-               "X (Ang)","Y (Ang)","Z (Ang)"
+          write(*,'(a)') "Coordinates from the electrode repeated &
+               &out to an FDF file"
+          write(*,'(t3,3a20)') "X (Ang)","Y (Ang)","Z (Ang)"
           iaa = sysElec
           do ia = elecElec , elecElec + NUsedAtoms - 1
              do j=0,NA2-1
@@ -1230,7 +1198,8 @@ contains
                 end do
              end do
           end do
-          call die("The electrodes are not situated in the same coordinates. Please correct.")
+          call die("The electrodes are not situated in the same coordinates. &
+               &Please correct.")
        end if
 
     end if struct_info
