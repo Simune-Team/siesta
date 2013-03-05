@@ -1,4 +1,22 @@
 ----------------------------------------------------
+Mar 5, 2013 -- Nick P. Andersen     trunk-432--ts-scf-2
+Added sparsity index retrieval by supplying an index
+
+* Added sparsity index retrieval for the arrays:
+  - n_col
+  - list_ptr
+  - list_col
+  simply pass two arguments to the functions
+  - n_col(s,idx)
+  - list_ptr(s,idx)
+  - list_col(s,idx)
+* Removed all fdf_global_get in m_ts_options
+
+modified:
+  Src/class_Sparsity.F90
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 Feb 25, 2013 -- Nick P. Andersen     trunk-432--ts-scf-1
 Initial commit, separated Array2D into precision and datatypes
 

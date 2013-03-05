@@ -121,9 +121,9 @@ subroutine read_ts_options(ucell)
 
 ! SIESTA Modules Used
 use files, only  : slabel
-use fdf, only : leqi, fdf_deprecated, fdf_obsolete
+use fdf, only : fdf_get, fdf_deprecated, fdf_obsolete
+use fdf, only : leqi
 use parallel, only: IOnode, Nodes, operator(.parcount.)
-use m_fdf_global, only: fdf_global_get
 use units, only: eV
 use m_ts_contour, only : CC_METHOD_SOMMERFELD
 use m_ts_contour, only : CC_METHOD_GAUSSFERMI
@@ -158,38 +158,38 @@ end if
 ts_istep=0
 
 ! Reading TS Options from fdf ...
-call fdf_global_get(savetshs,'TS.SaveHS',savetshs_def)
-call fdf_global_get(onlyS,'TS.onlyS',onlyS_def)
-call fdf_global_get(VoltFDF,'TS.Voltage',voltfdf_def,'Ry') 
+savetshs    = fdf_get('TS.SaveHS',savetshs_def)
+onlyS       = fdf_get('TS.onlyS',onlyS_def)
+VoltFDF     = fdf_get('TS.Voltage',voltfdf_def,'Ry') 
 IsVolt = dabs(VoltFDF) > 0.001_dp/eV
 ! Set up the fermi shifts for the left and right electrodes
 VoltL =  0.5_dp*VoltFDF
 VoltR = -0.5_dp*VoltFDF
-call fdf_global_get(UseBulk,'TS.UseBulkInElectrodes',UseBulk_def)
-call fdf_global_get(TriDiag,'TS.TriDiag',TriDiag_def)
-call fdf_global_get(updatedmcr,'TS.UpdateDMCROnly',updatedmcr_def)
-call fdf_global_get(NBufAtL,'TS.BufferAtomsLeft',NBufAtL_def)
-call fdf_global_get(NBufAtR,'TS.BufferAtomsRight',NBufAtR_def)
+UseBulk     = fdf_get('TS.UseBulkInElectrodes',UseBulk_def)
+TriDiag     = fdf_get('TS.TriDiag',TriDiag_def)
+updatedmcr  = fdf_get('TS.UpdateDMCROnly',updatedmcr_def)
+NBufAtL     = fdf_get('TS.BufferAtomsLeft',NBufAtL_def)
+NBufAtR     = fdf_get('TS.BufferAtomsRight',NBufAtR_def)
 if ( NBufAtL < 0 .or. NBufAtR < 0 ) then
    call die("Buffer atoms must be 0 or a positive integer.")
 end if
-call fdf_global_get(chars,'TS.ChargeCorrection',ChargeCorr_def)
+chars       = fdf_get('TS.ChargeCorrection',ChargeCorr_def)
 ChargeCorr = 0
 if ( leqi(chars,'none') ) then
    ChargeCorr = 0
 else if ( leqi(chars,'b') .or. leqi(chars,'buffer') ) then
    ChargeCorr = 1
 end if
-call fdf_global_get(ChargeCorr_factor,'TS.ChargeCorrectionFactor',ChargeCorr_factor_def)
+ChargeCorr_factor = fdf_get('TS.ChargeCorrectionFactor',ChargeCorr_factor_def)
 if ( ChargeCorr_factor < 0.0_dp .or. &
      1.0_dp < ChargeCorr_factor) then
    call die("Charge correction factor must be in the range [0;1]")
 endif
-call fdf_global_get(CCEMin,'TS.ComplexContourEmin',CCEMin_def,'Ry')
-call fdf_global_get(GFEta,'TS.biasContour.Eta',GFEta_def,'Ry')
+CCEMin     = fdf_get('TS.ComplexContourEmin',CCEMin_def,'Ry')
+GFEta      = fdf_get('TS.biasContour.Eta',GFEta_def,'Ry')
 if ( GFEta <= 0.d0) call die('ERROR: GFeta <= 0.0 ')
-call fdf_global_get(kT,'ElectronicTemperature',kT_def,'Ry')
-call fdf_global_get(s_cmethod,'TS.biasContour.method',smethod_def)
+kT         = fdf_get('ElectronicTemperature',kT_def,'Ry')
+s_cmethod = fdf_get('TS.biasContour.method',smethod_def)
 if ( leqi(s_cmethod,'sommerfeld') ) then
    Cmethod = CC_METHOD_SOMMERFELD
 else if ( leqi(s_cmethod,'gaussfermi') ) then
@@ -197,34 +197,34 @@ else if ( leqi(s_cmethod,'gaussfermi') ) then
 else
    Cmethod = 0 ! For producing error message later on
 end if
-call fdf_global_get(npol,'TS.ComplexContour.NPoles',npol_def)
-call fdf_global_get(ncircle,'TS.ComplexContour.NCircle',ncircle_def)
-call fdf_global_get(nline,'TS.ComplexContour.NLine',nline_def)
-call fdf_global_get(nvolt,'TS.biasContour.NumPoints',nvolt_def)
-!call fdf_global_get(Ntransport,'TS.Contour.NTransport',Ntransport_def)
-call fdf_global_get(GFTitle,'TS.GFTitle',GFTitle_def)
+npol       = fdf_get('TS.ComplexContour.NPoles',npol_def)
+ncircle    = fdf_get('TS.ComplexContour.NCircle',ncircle_def)
+nline      = fdf_get('TS.ComplexContour.NLine',nline_def)
+nvolt      = fdf_get('TS.biasContour.NumPoints',nvolt_def)
+!Ntransport = fdf_get('TS.Contour.NTransport',Ntransport_def)
+GFTitle    = fdf_get('TS.GFTitle',GFTitle_def)
 chars = trim(slabel)//'.TSGFL'
-call fdf_global_get(GFFileL,'TS.GFFileLeft',trim(chars))
+GFFileL    = fdf_get('TS.GFFileLeft',trim(chars))
 chars = trim(slabel)//'.TSGFR'
-call fdf_global_get(GFFileR,'TS.GFFileRight',trim(chars))
-call fdf_global_get(ReUseGF,'TS.ReUseGF',ReUseGF_def)
-call fdf_global_get(UseVFix,'TS.UseVFix',UseVFix_def)
-call fdf_global_get(ElecValenceBandBot,'TS.CalcElectrodeValenceBandBottom', &
+GFFileR    = fdf_get('TS.GFFileRight',trim(chars))
+ReUseGF    = fdf_get('TS.ReUseGF',ReUseGF_def)
+UseVFix    = fdf_get('TS.UseVFix',UseVFix_def)
+ElecValenceBandBot = fdf_get('TS.CalcElectrodeValenceBandBottom', &
      ElecValenceBandBot_def)
 
-call fdf_global_get(HSFileL,'TS.HSFileLeft',HSFile_def)
-call fdf_global_get(NUsedAtomsL,'TS.NumUsedAtomsLeft',NUsedAtoms_def)
+HSFileL     = fdf_get('TS.HSFileLeft',HSFile_def)
+NUsedAtomsL = fdf_get('TS.NumUsedAtomsLeft',NUsedAtoms_def)
 call check_HSfile('Left',HSFileL,NUsedAtomsL,NUsedOrbsL)
-call fdf_global_get(NRepA1L,'TS.ReplicateA1Left',NRepA_def)
-call fdf_global_get(NRepA2L,'TS.ReplicateA2Left',NRepA_def)
+NRepA1L     = fdf_get('TS.ReplicateA1Left',NRepA_def)
+NRepA2L     = fdf_get('TS.ReplicateA2Left',NRepA_def)
 if ( NRepA1L < 1 .or. NRepA2L < 1 ) &
      call die("Repetition in left electrode must be >= 1.")
 
-call fdf_global_get(HSFileR,'TS.HSFileRight',HSFile_def)
-call fdf_global_get(NUsedAtomsR,'TS.NumUsedAtomsRight',NUsedAtoms_def)
+HSFileR     = fdf_get('TS.HSFileRight',HSFile_def)
+NUsedAtomsR = fdf_get('TS.NumUsedAtomsRight',NUsedAtoms_def)
 call check_HSfile('Right',HSFileR,NUsedAtomsR,NUsedOrbsR)
-call fdf_global_get(NRepA1R,'TS.ReplicateA1Right',NRepA_def)
-call fdf_global_get(NRepA2R,'TS.ReplicateA2Right',NRepA_def)
+NRepA1R     = fdf_get('TS.ReplicateA1Right',NRepA_def)
+NRepA2R     = fdf_get('TS.ReplicateA2Right',NRepA_def)
 if ( NRepA1R < 1 .or. NRepA2R < 1 ) &
      call die("Repetition in right electrode must be >= 1.")
 
