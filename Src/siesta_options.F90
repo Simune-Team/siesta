@@ -489,7 +489,7 @@ MODULE siesta_options
       write(6,1) 'redata: Mix Hamiltonian instead of DM    = ', mixH
     endif
 
-    mix_after_convergence = fdf_get('MixAfterConvergence',.true.)
+    mix_after_convergence = fdf_get('SCF.MixAfterConvergence',.false.)
 
     if (ionode) then
       write(6,1) 'redata: Mix after SCF convergence        = ', mix_after_convergence

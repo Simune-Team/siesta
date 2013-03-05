@@ -171,12 +171,13 @@
         ! to GF mode. Until we completely integrate TranSiesta, we
         ! need to check this.
 
-        if (iscf == nscf)  EXIT
+        if (iscf == nscf) EXIT
         if (SCFconverged) then
            call check_transiesta_switch(ts_will_continue)
            if (ts_will_continue) then
               ! keep in cycle
            else
+              if (mix_after_convergence) call mixer (iscf) 
               EXIT
               ! Note: we exit with:
               ! If mixing the DM:

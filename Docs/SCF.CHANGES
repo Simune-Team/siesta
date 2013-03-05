@@ -1,4 +1,20 @@
 -----------------------------------------------------------------------
+2013-03-04  Alberto Garcia <albertog@icmab.es>   trunk-432-scf-40
+Re-implement SCF.MixAfterConvergence 
+
+The option to control the mixing after scf convergence had
+been quietly ignored after the major changes to the scf loop
+logic. Now it has been reinstated:
+
+SCF.MixAfterConvergence  T
+
+should recover the old behavior.
+
+modified:
+  Src/siesta_forces.F
+  Src/siesta_options.F90
+
+-----------------------------------------------------------------------
 2013-02-21  Alberto Garcia <albertog@icmab.es>   trunk-432-scf-39
 Sync to trunk-432
 
