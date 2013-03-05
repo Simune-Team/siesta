@@ -1,4 +1,17 @@
 ----------------------------------------------------
+Mar 5, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-3
+TBTrans_rep fix for the new sparsity modules and MPI
+
+* Renamed all DAT_Double references to MPI_Double_precision
+* Added dependency on the sparsity modules (albeit they are
+  not used, they will eventually)
+
+modified:
+  Util/TBTrans_rep/Makefile
+  Util/TBTrans_rep/m_tbt_iotshs.F90
+  Util/TBTrans_rep/m_tbt_read_tshs.F90
+
+----------------------------------------------------
 Mar 5, 2013 -- Nick P. Andersen     trunk-432--ts-scf-2
 Added sparsity index retrieval by supplying an index
 
