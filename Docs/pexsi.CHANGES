@@ -1,4 +1,17 @@
 ------------------------------------------------------------
+Mar 6, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-18
+Fix a bug in node_handling_element for pexsi dists.
+
+Sometimes the last node handles *a lot* of elements,
+and in those cases the naive algorithm was wrong.
+
+Fixed it in the prototype, and also in the current code.
+
+modified:
+  Src/parallelsubs.F
+  Util/MPI_test/class_PEXSIDist.F90
+
+------------------------------------------------------------
 Mar 3, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-17
 Abstracted the distribution kind
 

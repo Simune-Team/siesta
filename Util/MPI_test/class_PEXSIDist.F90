@@ -163,8 +163,15 @@
      integer, intent(in)                    :: ig
      integer                                :: proc
 
+     ! Assume bs=2, norbs=13, nodes=5
+     ! Then, the distribution is 2, 2, 2, 2, 5 for procs 0,1,2,3,4
+     ! For ig=13, proc=6 according to the naive calculation (first line)
+     ! We have to correct this to assign this orb to proc 4.
+     ! Same for ig=10: proc=5
+     ! In this case the load balancing is quite bad.
+
      proc = (ig-1) / this%data%blocksize
-     if (proc == this%data%Nodes) proc = proc - 1
+     if (proc > this%data%Nodes-1) proc = this%data%Nodes - 1
 
    end function node_handling_element_
 

@@ -306,9 +306,10 @@ C  Local variables
 
       if (pexsi_dist) then
          Node = (Gorb-1)/pexsi_bs
-         ! Check for overflow: if gorb is in the "remainder" set, the above will 
-         ! set Node to Nodes (e.g. 4 in a {0,1,2,3} set)
-         if (Node == Nodes) Node = Node -1
+         ! Check for overflow: if gorb is in the "remainder" set, 
+         ! the above will be incorrect (e.g. 4 (or even 5) in a {0,1,2,3} set)
+         ! (Consider the case norbs=13, pexsi_bs=2, nodes=5)
+         if (Node > Nodes-1) Node = Nodes-1
 
       else if (lspatial) then 
 C-------------------------
