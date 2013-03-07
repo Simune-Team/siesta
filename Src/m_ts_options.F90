@@ -228,6 +228,43 @@ NRepA2R     = fdf_get('TS.ReplicateA2Right',NRepA_def)
 if ( NRepA1R < 1 .or. NRepA2R < 1 ) &
      call die("Repetition in right electrode must be >= 1.")
 
+! Here we check whether the user could perform the same
+! calculation with the same GF-file
+   ! Read in the number of atoms in the HSfile, to check
+   ! We cannot assume the user has requested all atoms.
+call ts_read_TSHS_na(HSFileL,i)
+! We check that the user does not request the same GF files
+! for runs with Bias. Furthermore, if na_u in Elec /= {NUsedAtomsL,NUsedAtomsR}
+! then this is also not allowed.
+! For non bias and na_u_elec == NUsedAtomsL == NUsedAtomsR
+! then this is perfectly acceptable!
+if ( trim(GFFileL) == trim(GFFileR) ) then ! Has to be case-sensitive !
+   ! They are the same
+   if ( IsVolt ) call die("The same Green's function file &
+        &can not be used in a bias calculation.")
+   if ( trim(HSFileL) /= trim(HSFileR) ) &
+        call die("The same Green's function file &
+        &can not be used if you request different &
+        &electrode files.")
+   if ( NUsedAtomsL /= NUsedAtomsR .or. &
+        NUsedAtomsL /= i ) &
+        call die("The same Green's function file &
+        &can not be used if you do not request all &
+        &atoms in the electrode!")
+else if ( (.not. IsVolt) .and. & ! for non-bias
+     trim(HSFileL) == trim(HSFileR) .and. & ! for same TSHS files
+     NUsedAtomsL == NUsedAtomsR .and. & ! for same number of atoms used
+     i == NUsedAtomsL ) then ! for using ALL atoms in the electrode
+   if ( IONode ) then
+      write(*,*) 'NOTICE: In non-bias calculations, you can with'
+      write(*,*) '        benefit use the same GF-files for both'
+      write(*,*) '        the left and right electrode.'
+      write(*,*) '        This *only* requires that you use ALL'
+      write(*,*) '        atoms in the electrode and the left/right'
+      write(*,*) '        TSHS files are the same.'
+   end if
+end if
+
 ! Show the deprecated and obsolete labels
 call fdf_deprecated('TS.CalcGF','TS.ReUseGF')
 call fdf_obsolete('TS.FixContactCharge')

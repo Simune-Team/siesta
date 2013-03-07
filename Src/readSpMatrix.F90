@@ -1,9 +1,9 @@
-module m_readSpMatrix
- public :: readSpMatrix
+module m_readdSpArr2D
+ public :: readdSpArr2D
  CONTAINS
- subroutine readSpMatrix (filename, SpM, found, ref_dist, SpM2, real_value )
+ subroutine readdSpArr2D (filename, SpM, found, ref_dist, SpM2, real_value )
 
-   use class_SpMatrix
+   use class_dSpArr2D
    use class_Sparsity
    use class_dArray2D
    use class_OrbitalDistribution
@@ -17,12 +17,12 @@ module m_readSpMatrix
    character(len=*), intent(in) :: filename
 
    ! Note: inout is essential to avoid memory leaks
-   type(SpMatrix), intent(inout)  :: SpM
+   type(dSpArr2D), intent(inout)  :: SpM
    logical, intent(out)         :: found
    type(OrbitalDistribution), intent(in) :: ref_dist
 !
 !  Kludge: optional items for TranSiesta
-   type(SpMatrix), intent(inout), OPTIONAL  :: SpM2
+   type(dSpArr2D), intent(inout), OPTIONAL  :: SpM2
    real(dp), intent(out), OPTIONAL          :: real_value
 
       logical   exist3
@@ -62,7 +62,7 @@ module m_readSpMatrix
       if ( .not. exist3) RETURN
 
       if (Node.eq. Node_io) then
-         write(6,'(/,a)') 'Reading SpMatrixfrom file '// trim(filename)
+         write(6,'(/,a)') 'Reading dSpArr2Dfrom file '// trim(filename)
          lun = 88
          open( lun, file=filename, form="unformatted", status='old' )
          rewind(lun)
@@ -161,16 +161,16 @@ module m_readSpMatrix
                        "(read from " // trim(filename) // ")")
 
       call newdArray2D(a2d_read,dm,name="(new Array in readSpmatrix)")
-      call newSpMatrix(sp_read,a2d_read,ref_dist,SpM, &
-                       "(SpMatrix read from " // trim(filename) // ")")
+      call newdSpArr2D(sp_read,a2d_read,ref_dist,SpM, &
+                       "(dSpArr2D read from " // trim(filename) // ")")
       call delete(a2d_read)
 
       if (present(SpM2)) then
          ! Read another matrix with the same indexes (and nspin)
          call read_sparse_values_section()
          call newdArray2D(a2d_read,dm,name="(new 2nd Array in readSpmatrix)")
-         call newSpMatrix(sp_read,a2d_read,ref_dist,SpM2, &
-               "(2nd SpMatrix read from " // trim(filename) // ")")
+         call newdSpArr2D(sp_read,a2d_read,ref_dist,SpM2, &
+               "(2nd dSpArr2D read from " // trim(filename) // ")")
          call delete(a2d_read)
       endif
          
@@ -236,5 +236,5 @@ module m_readSpMatrix
       enddo
     end subroutine read_sparse_values_section
 
-    end subroutine readSpMatrix
-  end module m_readSpMatrix
+    end subroutine readdSpArr2D
+  end module m_readdSpArr2D

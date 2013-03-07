@@ -10,7 +10,7 @@
       use sparse_matrices, only: listh, listhptr, numh, maxnh
       use sparse_matrices, only: H, Hold, S
       use sparse_matrices, only: Dscf, Escf, xijo
-      use class_SpMatrix,  only: val
+      use class_dSpArr2D,  only: val
 
       use siesta_geom
       use atmfuncs, only: uion

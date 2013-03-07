@@ -1,4 +1,90 @@
 ----------------------------------------------------
+Mar 7, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-4
+Diverged the SpMatrix class to separate Dimension classes
+
+* Have fully clarified the dimension, and sparsity scheme
+  of the *old* SpMatrix class as well as the *Array2D* class
+* Instead of having files constituting the full precision
+  and type regime for the classes we have abstracted it to:
+  - class_[sdcz]Array[12]D
+    * TODO, consider renaming to [...]Arr[12]D?
+  - class_[sdcz]SpArr[12]D (instead of SpMatrix and SpVector)
+* The class creations are formed by the files:
+  class_sdczArray[12]D which abstract the modules by 
+  preprocessor flags. This requires several #define #undef 
+  lines, however, it is clearer to collect these routines
+  to a united code segment.
+* All references to the *old* SpMatrix has been removed 
+  and updated to dSpArr2D (which is the fully equivalent)
+  This also holds for the FStack and Pair classes!
+* The subroutine names of SpMatrix has changed from
+  <prefix>SpMatrix<suffix> to <prefix>dSpArr2D<suffix> naming 
+  scheme
+  - TODO, probably this should be generalized in some way?
+  - TODO, is this prefered? It directly says what it reads
+    however, I much prefer, "<prefix>_dSpArr2D_<suffix>" for 
+    clarification of datatype and inline reading.
+* Removed unnecessary nullification of pointers which
+  are directly associated afterwards
+
+* Added *exact* copy pastable coordinates if the electrodes
+  are not coinciding. The only requirement is that the first
+  atom HAS to be located in the correct place. 
+  I.e. we locate all other atoms with respect to the first
+  electrode-atom in a TranSIESTA cycle.
+* Added GF checks in the m_ts_options routine:
+  - Generally it will be adviced that non-bias runs
+    with the same electrodes on the left- and right-hand
+    side use the same GF (for computational efficiency)
+  - Hence we do the following checks:
+    If the user requests the same left and right GF we
+    can check:
+    - If Bias /= 0.0 we die
+    - If Left TSHS file /= Right TSHS file we die
+    - If requested number of atoms are not the full 
+      electrode file! (the partition of the GF is not 
+      the same for left/right)
+  - Will also notify the user about the option
+    to do this if the conditions are meet.
+  
+removed:
+  Src/class_SpMatrix.F90
+  Src/class_cArray1D.F90
+  Src/class_cArray2D.F90
+  Src/class_dArray1D.F90
+  Src/class_dArray2D.F90
+  Src/class_sArray1D.F90
+  Src/class_sArray2D.F90
+  Src/class_zArray1D.F90
+  Src/class_zArray2D.F90
+added:
+  Src/class_SpArr1D.T90
+  Src/class_SpArr2D.T90
+  Src/class_sdczArray1D.F90
+  Src/class_sdczArray2D.F90
+  Src/class_sdczSpArr1D.F90
+  Src/class_sdczSpArr2D.F90
+modified:
+  Src/Makefile
+  Src/class_Array1D.T90
+  Src/class_Array2D.T90
+  Src/class_Fstack_Pair_Geometry_SpMatrix.F90
+  Src/class_Pair_Geometry_SpMatrix.F90
+  Src/compute_EKS_Harris.F90
+  Src/extrapolateSpMatrix.F90
+  Src/m_new_dm.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_options.F90
+  Src/readSpMatrix.F90
+  Src/restructSpMatrix.F90
+  Src/setup_H0.F
+  Src/setup_hamiltonian.F
+  Src/siesta_init.F
+  Src/sparse_matrices.F
+  Src/state_analysis.F
+  Src/state_init.F
+
+----------------------------------------------------
 Mar 5, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-3
 TBTrans_rep fix for the new sparsity modules and MPI
 

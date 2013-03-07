@@ -23,9 +23,9 @@
       use siesta_geom
 
       use class_Geometry,  only: newGeometry, Geometry, delete
-      use class_Pair_Geometry_SpMatrix, only: Pair_Geometry_SpMatrix
-      use class_Pair_Geometry_SpMatrix, only: new, delete
-      use class_Fstack_Pair_Geometry_SpMatrix, only: new
+      use class_Pair_Geometry_dSpArr2D, only: Pair_Geometry_dSpArr2D
+      use class_Pair_Geometry_dSpArr2D, only: new, delete
+      use class_Fstack_Pair_Geometry_dSpArr2D, only: new
 
       USE siesta_options
       use m_stress
@@ -45,7 +45,7 @@
       real(dp), external :: volcel
 
       character(len=256) :: msg
-      type(Pair_Geometry_SpMatrix)  :: pair
+      type(Pair_Geometry_dSpArr2D)  :: pair
       type(Geometry)                :: geom
 
 !------------------------------------------------------------------------- BEGIN

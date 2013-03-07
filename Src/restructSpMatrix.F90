@@ -1,14 +1,14 @@
- subroutine restructSpMatrix(SpMin,sp_out,SpMout)
+ subroutine restructdSpArr2D(SpMin,sp_out,SpMout)
 
-   use class_SpMatrix
+   use class_dSpArr2D
    use class_dArray2D
    use class_Sparsity
    use class_OrbitalDistribution
 
-   type(SpMatrix), intent(in)    :: SpMin
+   type(dSpArr2D), intent(in)    :: SpMin
    type(Sparsity), intent(in)    :: sp_out
    ! Note!!  inout is essential to avoid memory leaks...
-   type(SpMatrix), intent(inout) :: SpMout
+   type(dSpArr2D), intent(inout) :: SpMout
 
       ! Changes the sparsity pattern of a matrix, re-using
       ! as much information as possible. Newly appearing elements are
@@ -98,7 +98,7 @@
 
       deallocate(aux)
 
-      call newSpMatrix(sp_out,a2d_out,dist(SpMin), &
+      call newdSpArr2D(sp_out,a2d_out,dist(SpMin), &
                          SpMout,name="Re-structured SpM")
 
       call delete(a2d_out)
@@ -112,4 +112,4 @@
           stop
         end subroutine die
 
-    end subroutine restructSpMatrix
+    end subroutine restructdSpArr2D

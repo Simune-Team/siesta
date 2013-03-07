@@ -1171,6 +1171,7 @@ contains
                      (xa_sys(1,iaa)-xa_sys_o(1))/Ang, &
                      (xa_sys(2,iaa)-xa_sys_o(2))/Ang, &
                      (xa_sys(3,iaa)-xa_sys_o(3))/Ang
+                ! Assert the coordinates
                 eXa=eXa.or.abs(xa(1,ia)-xa_o(1) + &
                      ucell(1,1)*i+ucell(1,2)*j - &
                      xa_sys(1,iaa)+xa_sys_o(1)) > EPS
@@ -1184,6 +1185,16 @@ contains
           end do
        end do
        if ( eXa ) then
+
+          ! We need to write out the correct formatting of the electrodes.
+          ! We shift to the first electrode coordinate, and add the 
+          ! first system electrode atom. 
+          ! If the user has the %block AtomicCoord... in:
+          !    LatticeConstant         1. Ang
+          !    AtomicCoordinatesFormat    Ang
+          ! then it is direct copy paste ! :)
+          xa_o(:) = -xa(:,elecElec) + xa_sys(:,sysElec)
+
           write(*,'(a)') "Coordinates from the electrode repeated &
                &out to an FDF file"
           write(*,'(t3,3a20)') "X (Ang)","Y (Ang)","Z (Ang)"
@@ -1192,9 +1203,9 @@ contains
              do j=0,NA2-1
                 do i=0,NA1-1
                    write(*,'(t2,3(tr1,f20.12))') &
-                        (xa(1,ia)+ucell(1,1)*i+ucell(1,2)*j)/Ang, &
-                        (xa(2,ia)+ucell(2,1)*i+ucell(2,2)*j)/Ang, &
-                        (xa(3,ia))/Ang
+                        (xa(1,ia)+xa_o(1)+ucell(1,1)*i+ucell(1,2)*j)/Ang, &
+                        (xa(2,ia)+xa_o(2)+ucell(2,1)*i+ucell(2,2)*j)/Ang, &
+                        (xa(3,ia)+xa_o(3))/Ang
                 end do
              end do
           end do

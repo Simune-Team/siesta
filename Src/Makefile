@@ -147,9 +147,9 @@ OBJS =  automatic_cell.o atom_options.o \
 	vacuum_level.o \
 	write_orb_indx.o \
 	m_hs_matrix.o kpoint_convert.o m_glob_sparse.o \
-	class_Sparsity.o class_SpMatrix.o \
-	class_sArray1D.o class_dArray1D.o class_cArray1D.o class_zArray1D.o \
-	class_sArray2D.o class_dArray2D.o class_cArray2D.o class_zArray2D.o \
+	class_Sparsity.o \
+	class_sdczSpArr1D.o class_sdczSpArr2D.o \
+	class_sdczArray1D.o class_sdczArray2D.o \
         class_OrbitalDistribution.o \
         compute_EKS_Harris.o compute_max_diff.o \
         save_density_matrix.o  \
@@ -342,6 +342,8 @@ clean:
 	(cd Libs ; $(MAKE) clean )
 	(cd SiestaXC ; $(MAKE) clean )
 
+# We specify the dependency on all the classes created in the T90 files:
+
 # DO NOT DELETE THIS LINE - used by make depend
 alloc.o: debugmpi.o m_io.o parallel.o precision.o sys.o
 arw.o: alloc.o parallel.o precision.o sys.o
@@ -399,29 +401,23 @@ class_Geometry.o: basic_type.inc
 class_Geometry.o: alloc.o
 class_OrbitalDistribution.o: basic_type.inc
 class_Pair_Geometry_SpMatrix.o: Pair.T90 basic_type.inc
-class_Pair_Geometry_SpMatrix.o: class_Geometry.o class_SpMatrix.o
-class_SpMatrix.o: basic_type.inc
-class_SpMatrix.o: class_OrbitalDistribution.o class_Sparsity.o class_dArray2D.o
+class_Pair_Geometry_SpMatrix.o: class_Geometry.o class_sdczSpArr2D.o
 class_Sparsity.o: basic_type.inc
 class_Sparsity.o: alloc.o
-class_cArray1D.o: class_Array1D.T90 basic_type.inc basic_func.inc
-class_cArray1D.o: alloc.o
-class_cArray2D.o: class_Array2D.T90 basic_type.inc basic_func.inc
-class_cArray2D.o: alloc.o
-class_dArray1D.o: class_Array1D.T90 basic_type.inc basic_func.inc
-class_dArray1D.o: alloc.o
-class_dArray2D.o: class_Array2D.T90 basic_type.inc basic_func.inc
-class_dArray2D.o: alloc.o
-class_sArray1D.o: class_Array1D.T90 basic_type.inc basic_func.inc
-class_sArray1D.o: alloc.o
-class_sArray2D.o: class_Array2D.T90 basic_type.inc basic_func.inc
-class_sArray2D.o: alloc.o
-class_zArray1D.o: class_Array1D.T90 basic_type.inc basic_func.inc
-class_zArray1D.o: alloc.o
-class_zArray2D.o: class_Array2D.T90 basic_type.inc basic_func.inc
-class_zArray2D.o: alloc.o
+class_sdczArray1D.o: class_Array1D.T90 basic_type.inc basic_func.inc
+class_sdczArray1D.o: alloc.o
+class_sdczArray2D.o: class_Array2D.T90 basic_type.inc basic_func.inc
+class_sdczArray2D.o: alloc.o
+class_sdczSpArr1D.o: class_SpArr1D.T90 basic_type.inc
+class_sdczSpArr1D.o: class_OrbitalDistribution.o class_Sparsity.o
+class_sdczSpArr1D.o: class_sdczArray1D.o class_sdczArray1D.o
+class_sdczSpArr1D.o: class_sdczArray1D.o class_sdczArray1D.o
+class_sdczSpArr2D.o: class_SpArr2D.T90 basic_type.inc
+class_sdczSpArr2D.o: class_OrbitalDistribution.o class_Sparsity.o
+class_sdczSpArr2D.o: class_sdczArray2D.o class_sdczArray2D.o
+class_sdczSpArr2D.o: class_sdczArray2D.o class_sdczArray2D.o
 coceri.o: files.o periodic_table.o precision.o
-compute_EKS_Harris.o: atomlist.o class_SpMatrix.o dhscf.o m_dipol.o
+compute_EKS_Harris.o: atomlist.o class_sdczSpArr2D.o dhscf.o m_dipol.o
 compute_EKS_Harris.o: m_energies.o m_mpi_utils.o m_ntm.o m_spin.o precision.o
 compute_EKS_Harris.o: siesta_geom.o siesta_options.o sparse_matrices.o
 compute_dm.o: atomlist.o iodmhs_netcdf.o kpoint_grid.o m_energies.o m_eo.o
@@ -477,8 +473,8 @@ electrostatic.o: atm_types.o atmfuncs.o atmparams.o bessph.o m_recipes.o
 electrostatic.o: precision.o radfft.o radial.o sys.o
 ener3.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 ener3lomem.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
-extrapolateSpMatrix.o: class_OrbitalDistribution.o class_SpMatrix.o
-extrapolateSpMatrix.o: class_Sparsity.o class_dArray2D.o
+extrapolateSpMatrix.o: class_OrbitalDistribution.o class_Sparsity.o
+extrapolateSpMatrix.o: class_sdczArray2D.o class_sdczSpArr2D.o
 extrapolon.o: parallel.o precision.o sys.o
 fermid.o: m_recipes.o parallel.o precision.o sys.o
 fft.o: alloc.o fft1d.o m_timer.o mesh.o parallel.o parallelsubs.o precision.o
@@ -577,8 +573,8 @@ m_memory.o: memoryinfo.o parallel.o sys.o
 m_mpi_utils.o: precision.o sys.o
 m_new_dm.o: alloc.o atomlist.o class_Fstack_Pair_Geometry_SpMatrix.o
 m_new_dm.o: class_Geometry.o class_OrbitalDistribution.o
-m_new_dm.o: class_Pair_Geometry_SpMatrix.o class_SpMatrix.o class_Sparsity.o
-m_new_dm.o: class_dArray2D.o files.o m_energies.o m_mpi_utils.o m_spin.o
+m_new_dm.o: class_Pair_Geometry_SpMatrix.o class_Sparsity.o class_sdczArray2D.o
+m_new_dm.o: class_sdczSpArr2D.o files.o m_energies.o m_mpi_utils.o m_spin.o
 m_new_dm.o: m_steps.o m_svd.o m_ts_iodm.o m_ts_options.o parallel.o
 m_new_dm.o: parallelsubs.o parsing.o precision.o readSpMatrix.o siesta_geom.o
 m_new_dm.o: siesta_options.o sparse_matrices.o sys.o units.o
@@ -589,9 +585,6 @@ m_pulay.o: alloc.o atomlist.o m_spin.o m_svd.o parallel.o precision.o
 m_pulay.o: siesta_options.o sparse_matrices.o sys.o
 m_recipes.o: precision.o sys.o
 m_rmaxh.o: precision.o
-m_sparsity_loop.o: class_Sparsity.o intrinsic_missing.o
-m_sparsity_uc.o: class_Sparsity.o class_dArray1D.o class_zArray1D.o
-m_sparsity_uc.o: m_sparsity_loop.o
 m_spin.o: alloc.o parallel.o precision.o
 m_stress.o: precision.o
 m_svd.o: precision.o
@@ -687,8 +680,8 @@ pseudopotential.o: alloc.o atom_options.o flib_spline.o precision.o sys.o
 radfft.o: alloc.o bessph.o m_recipes.o precision.o
 radial.o: alloc.o precision.o xml.o
 rdiag.o: alloc.o m_diagon.o memoryinfo.o parallel.o precision.o sys.o
-readSpMatrix.o: class_OrbitalDistribution.o class_SpMatrix.o class_Sparsity.o
-readSpMatrix.o: class_dArray2D.o
+readSpMatrix.o: class_OrbitalDistribution.o class_Sparsity.o
+readSpMatrix.o: class_sdczArray2D.o class_sdczSpArr2D.o
 read_xc_info.o: parallel.o precision.o sys.o
 readsp.o: parallel.o precision.o sys.o
 redcel.o: parallel.o precision.o sys.o
@@ -696,8 +689,8 @@ reinit.o: files.o parallel.o
 remove_intramol_pressure.o: precision.o zmatrix.o
 reoptical.o: parallel.o precision.o sys.o
 reord.o: alloc.o precision.o
-restructSpMatrix.o: class_OrbitalDistribution.o class_SpMatrix.o
-restructSpMatrix.o: class_Sparsity.o class_dArray2D.o
+restructSpMatrix.o: class_OrbitalDistribution.o class_Sparsity.o
+restructSpMatrix.o: class_sdczArray2D.o class_sdczSpArr2D.o
 rhooda.o: atmfuncs.o atomlist.o mesh.o meshphi.o precision.o
 rhoofd.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mesh.o meshdscf.o
 rhoofd.o: meshphi.o parallel.o parallelsubs.o precision.o sys.o
@@ -710,11 +703,11 @@ savepsi.o: alloc.o parallel.o parallelsubs.o precision.o
 schecomm.o: alloc.o
 setatomnodes.o: alloc.o parallel.o precision.o spatial.o sys.o
 setspatial.o: alloc.o parallel.o precision.o spatial.o
-setup_H0.o: alloc.o atmfuncs.o atomlist.o class_SpMatrix.o dhscf.o dnaefs.o
+setup_H0.o: alloc.o atmfuncs.o atomlist.o class_sdczSpArr2D.o dhscf.o dnaefs.o
 setup_H0.o: kinefsm.o m_energies.o m_ntm.o m_spin.o metaforce.o
 setup_H0.o: molecularmechanics.o naefs.o nlefsm.o siesta_geom.o
 setup_H0.o: siesta_options.o sparse_matrices.o
-setup_hamiltonian.o: alloc.o atmfuncs.o atomlist.o class_SpMatrix.o dhscf.o
+setup_hamiltonian.o: alloc.o atmfuncs.o atomlist.o class_sdczSpArr2D.o dhscf.o
 setup_hamiltonian.o: m_dipol.o m_energies.o m_gamma.o m_hsx.o m_mpi_utils.o
 setup_hamiltonian.o: m_ntm.o m_partial_charges.o m_spin.o m_steps.o m_stress.o
 setup_hamiltonian.o: m_ts_global_vars.o metaforce.o molecularmechanics.o
@@ -762,8 +755,8 @@ siesta_move.o: sys.o write_subs.o zm_broyden_optim.o zm_fire_optim.o zmatrix.o
 siesta_options.o: files.o memoryinfo.o parallel.o precision.o siesta_cml.o
 siesta_options.o: sys.o units.o
 sparse_matrices.o: alloc.o class_Fstack_Pair_Geometry_SpMatrix.o
-sparse_matrices.o: class_OrbitalDistribution.o class_SpMatrix.o
-sparse_matrices.o: class_Sparsity.o precision.o
+sparse_matrices.o: class_OrbitalDistribution.o class_Sparsity.o
+sparse_matrices.o: class_sdczSpArr2D.o precision.o
 spatial.o: precision.o
 spher_harm.o: alloc.o precision.o sys.o
 state_analysis.o: atomlist.o born_charge.o
@@ -773,7 +766,7 @@ state_analysis.o: m_forces.o m_iostruct.o m_ntm.o m_spin.o m_stress.o
 state_analysis.o: m_wallclock.o parallel.o remove_intramol_pressure.o
 state_analysis.o: siesta_cml.o siesta_geom.o siesta_options.o sparse_matrices.o
 state_analysis.o: write_subs.o zmatrix.o
-state_init.o: alloc.o atomlist.o class_SpMatrix.o class_Sparsity.o
+state_init.o: alloc.o atomlist.o class_Sparsity.o class_sdczSpArr2D.o
 state_init.o: domain_decom.o files.o hsparse.o iodm_netcdf.o iodmhs_netcdf.o
 state_init.o: kpoint_grid.o m_check_supercell.o m_energies.o m_eo.o m_gamma.o
 state_init.o: m_mpi_utils.o m_new_dm.o m_pulay.o m_rmaxh.o m_spin.o m_steps.o
@@ -815,6 +808,24 @@ zm_fire_optim.o: m_fdf_global.o m_fire.o parallel.o precision.o
 zm_fire_optim.o: siesta_options.o units.o zmatrix.o
 zmatrix.o: alloc.o m_cell.o parallel.o precision.o siesta_geom.o sys.o units.o
 band.o: bands.o
+class_carray1d.o: class_sdczArray1D.o
+class_carray2d.o: class_sdczArray2D.o
+class_csparr1d.o: class_sdczSpArr1D.o
+class_csparr2d.o: class_sdczSpArr2D.o
+class_darray1d.o: class_sdczArray1D.o
+class_darray2d.o: class_sdczArray2D.o
+class_dsparr1d.o: class_sdczSpArr1D.o
+class_dsparr2d.o: class_sdczSpArr2D.o
+class_fstack_pair_geometry_dsparr2d.o: class_Fstack_Pair_Geometry_SpMatrix.o
+class_pair_geometry_dsparr2d.o: class_Pair_Geometry_SpMatrix.o
+class_sarray1d.o: class_sdczArray1D.o
+class_sarray2d.o: class_sdczArray2D.o
+class_ssparr1d.o: class_sdczSpArr1D.o
+class_ssparr2d.o: class_sdczSpArr2D.o
+class_zarray1d.o: class_sdczArray1D.o
+class_zarray2d.o: class_sdczArray2D.o
+class_zsparr1d.o: class_sdczSpArr1D.o
+class_zsparr2d.o: class_sdczSpArr2D.o
 diagmemory.o: memoryinfo.o
 listsc_module.o: listsc.o
 m_bessph.o: bessph.o
@@ -869,7 +880,7 @@ m_post_scf_work.o: post_scf_work.o
 m_projected_dos.o: projected_DOS.o
 m_proximity_check.o: proximity_check.o
 m_radfft.o: radfft.o
-m_readspmatrix.o: readSpMatrix.o
+m_readdsparr2d.o: readSpMatrix.o
 m_save_density_matrix.o: save_density_matrix.o
 m_scf_options.o: m_options.o
 m_setup_h0.o: setup_H0.o
