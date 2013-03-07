@@ -31,7 +31,9 @@ pi3:    MPI pi3.o
 	$(FC) -o pi3 $(LDFLAGS) pi3.o $(MPI_INTERFACE_LIB) $(MPI_LIBS) 
 newcomm:    MPI newcomm.o 
 	$(FC) -o newcomm $(LDFLAGS) newcomm.o $(MPI_INTERFACE_LIB) $(MPI_LIBS) 
-DISTOBJS=class_BlockCyclicDist.o class_PEXSIDist.o class_Dist.o m_uuid.o dielocal.o object_debug.o pxf.o dist.o
+DISTOBJS=class_BlockCyclicDist.o class_PEXSIDist.o class_Dist.o \
+         m_matrix.o m_transfers.o m_redist.o m_uuid.o \
+         dielocal.o object_debug.o pxf.o dist.o
 dist:    MPI $(DISTOBJS)
 	$(FC) -o $@ $(LDFLAGS) $(DISTOBJS) $(MPI_INTERFACE_LIB) $(MPI_LIBS) 
 #

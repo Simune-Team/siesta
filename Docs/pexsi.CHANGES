@@ -1,4 +1,24 @@
 ------------------------------------------------------------
+Mar 7, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-19
+Added rank translation. Abstracted modules.
+
+In case the groups involve ranks not starting at zero and
+monotonic, added rank translation to the transfer routine.
+
+This routine is now part of a new module, which defines the
+'comm' type and provides transfer functions for arrays.
+
+Abstracted also the 'redist' routine.
+
+added:
+  Util/MPI_test/m_matrix.F90
+  Util/MPI_test/m_redist.F90
+  Util/MPI_test/m_transfers.F90
+modified:
+  Util/MPI_test/Makefile
+  Util/MPI_test/dist.F90
+
+------------------------------------------------------------
 Mar 6, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-18
 Fix a bug in node_handling_element for pexsi dists.
 
