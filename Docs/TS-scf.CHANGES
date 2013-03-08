@@ -1,4 +1,30 @@
 ----------------------------------------------------
+Mar 8, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-5
+Added TSDM update region writeout with TRANSIESTA_DEBUG
+
+* When -DTRANSIESTA_DEBUG is supplied a new file:
+  <syslabel>.TSORB_UP is created.
+  This holds the matrix elements which are updated
+  in the following format:
+  no_u no_u
+  <row> <col> <-1|1> 
+  <row> <col> <-1|1> 
+  ...
+
+  where -1 means not updated, and 1 means updated.
+  This is very useful when checking against the updated
+  region. Mainly for future debugging and region abstraction
+  methods.
+
+* Indentations in the class_* files
+
+modified:
+  Src/Makefile
+  Src/class_Array2D.T90
+  Src/class_Sparsity.F90
+  Src/m_ts_in_siesta.F
+
+----------------------------------------------------
 Mar 7, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-4
 Diverged the SpMatrix class to separate Dimension classes
 

@@ -62,8 +62,8 @@
     ! This could be implemented also as an assignment 
     ! (see below)
 
-    type(TYPE_NAME), intent(inout)  :: this
-    integer, intent(in)           :: n, m
+    type(TYPE_NAME), intent(inout) :: this
+    integer, intent(in)            :: n, m
     character(len=*), intent(in), optional  :: name
 
     integer :: stat

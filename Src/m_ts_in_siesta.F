@@ -118,6 +118,7 @@
       use m_hs_matrix, only : set_HS_matrix, matrix_rem_left_right
       use m_hs_matrix, only : matrix_symmetrize
 
+      use files, only : slabel
       use units, only : eV,pi
       use sys, only : die
       use precision, only : dp
@@ -327,10 +328,14 @@
       logical :: errorGS
       integer :: ierr,itmp
 
+      
 ! array for determining whether an object should be updated
       logical, dimension (:), allocatable, save :: listud
 #ifdef MPI
       logical, dimension (:), allocatable, save :: listudg
+#endif
+#ifdef TRANSIESTA_DEBUG
+      integer :: io_listup
 #endif
 
 #ifdef MPI
@@ -479,6 +484,13 @@
          if(IONode) then
             write(*,'(/,a)') 'Creating update lists and' //
      &           ' calculating SIESTA charge distribution...'
+#ifdef TRANSIESTA_DEBUG
+            call io_assign(io_listup)
+            open(io_listup, 
+     &           FILE=trim(slabel)//'.TSORB_UP', 
+     &           FORM='FORMATTED')
+            write(io_listup,'(tr2,i4,tr4,i4)') no_u,no_u
+#endif
          endif         
 
          ! Check for allocated is necessary due to MD steps
@@ -500,6 +512,7 @@
          call memory('A','I',maxnh,'transiesta')
 
          do io = 1,no_l
+            is = 1 
 #ifdef MPI
             call  LocalToGlobalOrb(io, Node, Nodes, iio)
             iuo = indxuo(iio)
@@ -543,10 +556,25 @@
                end if           !UseBulk
 
 !     Always fix bonds between Left/Right electrodes:
-               if(jc.le.noL .and. ic.ge.(nou-noR+1))
+               if(jc.le.noL .and. ic.ge.(nou-noR+1)) 
      &              updatedm=.false.
                if(ic.le.noL .and. jc.ge.(nou-noR+1))
      &              updatedm=.false.
+#ifdef TRANSIESTA_DEBUG
+#ifndef MPI
+               ! we do not do MPI, hence it is the IONode
+               if ( count(indxuo(listh(listhptr(io) + 1:
+     &              listhptr(io)+j-1))==jc) == 0 .or. j==1) then
+               if ( updatedm ) then
+                  write(io_listup,'(tr2,2(i4,tr4),i2)')
+     &                 ic,jc,1
+               else
+                  write(io_listup,'(tr2,2(i4,tr4),i2)')
+     &                 ic,jc,-1
+               end if
+               end if
+#endif
+#endif
                listud(ind)=updatedm
             end do              !j
          end do                 !io
@@ -566,6 +594,11 @@
          endif
          allocate(regiong(maxnhg))
          call memory('A','I',maxnhg,'transiesta')
+
+         ! This loop is "stupid"
+         ! We could do if ic < ... then false
+         ! Instead we do a lot of computation, for nothing.
+         ! TODO clean up ! However, this is a one-time run
 
          do io = 1,no_u
             iuo = indxuo(io)
@@ -607,6 +640,20 @@
      &              updatedm=.false.
                if(ic.le.noL .and. jc.ge.(nou-noR+1))
      &              updatedm=.false.
+#ifdef TRANSIESTA_DEBUG
+               if ( IONode ) then
+               if ( count(indxuo(listhg(listhptrg(io)+1:
+     &              listhptrg(io)+j-1))==jc) == 0 .or. j==1) then
+                  if ( updatedm ) then
+                     write(io_listup,'(tr2,2(i4,tr4),i2)')
+     &                    ic,jc,1
+                  else
+                     write(io_listup,'(tr2,2(i4,tr4),i2)')
+     &                    ic,jc,-1
+                  end if
+               end if
+               end if
+#endif
                listudg(ind)=updatedm
             end do              !j
          end do                 !io
@@ -626,6 +673,10 @@
          io = count(listud)
 #endif
          if ( IOnode ) then
+#ifdef TRANSIESTA_DEBUG
+            ! Close the file which denotes the update region
+            call io_close(io_listup)
+#endif
             write(*,'(/,2(a,i8))') 
      &           "transiesta: Total elements / Updated elements : ",
      &           ind," / ",io

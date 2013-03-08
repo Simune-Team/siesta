@@ -8,7 +8,7 @@ module class_Sparsity
   public :: print_type
   public :: nrows, nrows_g, nnzs, n_col, list_ptr, list_col
 
-  character(len=*), parameter :: mod_name=__FILE__
+  character(len=*), parameter :: mod_name= __FILE__
 
   ! This is the "meat" of the type
   !

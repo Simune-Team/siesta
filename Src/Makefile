@@ -585,6 +585,11 @@ m_pulay.o: alloc.o atomlist.o m_spin.o m_svd.o parallel.o precision.o
 m_pulay.o: siesta_options.o sparse_matrices.o sys.o
 m_recipes.o: precision.o sys.o
 m_rmaxh.o: precision.o
+m_sparsity_loop.o: class_Sparsity.o intrinsic_missing.o
+m_sparsity_mat.o: class_sdczArray1D.o class_sdczSpArr1D.o class_sdczSpArr1D.o
+m_sparsity_mat.o: class_sdczSpArr2D.o m_sparsity_loop.o precision.o
+m_sparsity_uc.o: class_Sparsity.o class_sdczArray1D.o class_sdczArray1D.o
+m_sparsity_uc.o: class_sdczArray2D.o intrinsic_missing.o m_sparsity_loop.o
 m_spin.o: alloc.o parallel.o precision.o
 m_stress.o: precision.o
 m_svd.o: precision.o
@@ -597,9 +602,10 @@ m_ts_electrode.o: files.o m_hs_matrix.o m_ts_aux_rout.o m_ts_cctype.o m_ts_io.o
 m_ts_electrode.o: m_ts_kpoints.o parallel.o precision.o sys.o units.o
 m_ts_gf.o: m_ts_cctype.o m_ts_electrode.o parallel.o precision.o sys.o units.o
 m_ts_global_vars.o: precision.o
-m_ts_in_siesta.o: m_glob_sparse.o m_hs_matrix.o m_ts_cctype.o m_ts_contour.o
-m_ts_in_siesta.o: m_ts_gf.o m_ts_kpoints.o m_ts_options.o m_ts_scattering.o
-m_ts_in_siesta.o: parallel.o parallelsubs.o precision.o sys.o units.o
+m_ts_in_siesta.o: files.o m_glob_sparse.o m_hs_matrix.o m_ts_cctype.o
+m_ts_in_siesta.o: m_ts_contour.o m_ts_gf.o m_ts_kpoints.o m_ts_options.o
+m_ts_in_siesta.o: m_ts_scattering.o parallel.o parallelsubs.o precision.o sys.o
+m_ts_in_siesta.o: units.o
 m_ts_io.o: m_glob_sparse.o parallel.o precision.o sys.o
 m_ts_iodm.o: alloc.o files.o m_mpi_utils.o m_ts_global_vars.o parallel.o
 m_ts_iodm.o: parallelsubs.o precision.o sys.o
