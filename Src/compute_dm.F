@@ -20,7 +20,7 @@
       use m_gamma
       use parallel, only: IONode
       use parallel, only: worker
-      use m_pexsi,  only: pexsi
+      use m_pexsi_solver,  only: pexsi_solver
 #ifdef MPI
       use mpi_siesta
       use m_mpi_utils,     only:  globalize_sum
@@ -58,7 +58,8 @@
       call MPI_Bcast(isolve,1,MPI_integer,0,true_MPI_Comm_World,mpierr)
       if (isolve .eq. SOLVE_PEXSI) then
          ! Prototype interface
-         call pexsi(no_u, no_l, nspin, maxnh, numh, listhptr, listh,
+         call pexsi_solver(no_u, no_l, nspin,
+     $              maxnh, numh, listhptr, listh,
      $              H, S, qtot, Dscf, Escf,
      $              ef, freeEnergyCorrection, temp)
          if (ionode) write (6,"(/a,f14.6)")

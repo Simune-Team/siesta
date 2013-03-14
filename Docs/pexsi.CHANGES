@@ -1,4 +1,24 @@
 ------------------------------------------------------------
+Mar 14, 2013   Alberto Garcia  trunk-432--timing-6--pexsi-19-dist-1
+Interface block for PEXSI. Some comments for new distribution
+
+Added an interface block for the pexsi interface.  The routine is
+added to a library, which is linked if needed (specified in COMP_LIBS
+in the arch.make file).
+
+Currently it does nothing, and the DM is not set, so the program crashes
+in the normalization test.
+
+removed:
+  Src/pexsi_interface_true.inc
+added:
+  Src/m_pexsi_solver.F90
+  Src/pexsi_interface.F90
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+
+------------------------------------------------------------
 Mar 7, 2013   Alberto Garcia    trunk-432--timing-6--pexsi-19
 Added rank translation. Abstracted modules.
 
