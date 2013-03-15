@@ -140,7 +140,8 @@ OBJS =  automatic_cell.o atom_options.o \
         bsc_xcmod.o bsc_cellxc.o xc.o \
 	vacuum_level.o \
 	write_orb_indx.o \
-        m_minim.o \
+        m_dminim.o \
+        m_zminim.o \
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -372,7 +373,7 @@ chkdim.o: sys.o
 chkgmx.o: cellsubs.o minvec.o precision.o sys.o
 coceri.o: files.o periodic_table.o precision.o
 compute_dm.o: atomlist.o iodmhs_netcdf.o kpoint_grid.o m_energies.o m_eo.o
-compute_dm.o: m_gamma.o m_minim.o m_mpi_utils.o m_rmaxh.o m_spin.o m_steps.o
+compute_dm.o: m_gamma.o m_dminim.o m_zminim.o m_mpi_utils.o m_rmaxh.o m_spin.o m_steps.o
 compute_dm.o: m_ts_global_vars.o m_ts_in_siesta.o m_ts_options.o parallel.o
 compute_dm.o: precision.o siesta_geom.o siesta_options.o sparse_matrices.o
 compute_dm.o: sys.o units.o
@@ -513,7 +514,10 @@ m_iostruct.o: alloc.o files.o m_mpi_utils.o parallel.o precision.o
 m_iostruct.o: siesta_geom.o sys.o units.o
 m_kinetic.o: precision.o
 m_memory.o: memoryinfo.o parallel.o sys.o
-m_minim.o: densematrix.o m_timer.o parallel.o parallelsubs.o precision.o sys.o
+m_dminim.o: densematrix.o m_fdf_global.o files.o m_timer.o parallel.o parallelsubs.o
+m_dminim.o: precision.o siesta_options.o sys.o
+m_zminim.o: densematrix.o m_fdf_global.o files.o m_timer.o parallel.o parallelsubs.o
+m_zminim.o: precision.o siesta_options.o sys.o
 m_mpi_utils.o: precision.o sys.o
 m_options.o: precision.o
 m_pulay.o: alloc.o atomlist.o m_spin.o parallel.o precision.o siesta_options.o
@@ -605,7 +609,7 @@ phonon.o: alloc.o files.o parallel.o precision.o sys.o
 pixmol.o: files.o periodic_table.o precision.o
 plcharge.o: files.o old_atmfuncs.o parallel.o precision.o
 poison.o: alloc.o cellsubs.o chkgmx.o fft.o parallel.o precision.o sys.o
-post_scf_work.o: atomlist.o final_H_f_stress.o m_energies.o m_minim.o m_spin.o
+post_scf_work.o: atomlist.o final_H_f_stress.o m_energies.o m_dminim.o m_zminim.o m_spin.o
 post_scf_work.o: mneighb.o siesta_geom.o siesta_options.o sparse_matrices.o
 printmatrix.o: alloc.o
 projected_DOS.o: alloc.o atomlist.o kpoint_grid.o kpoint_pdos.o m_eo.o

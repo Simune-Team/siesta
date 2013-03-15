@@ -1,3 +1,52 @@
+2012-15-03 17:00 Fabiano Corsetti <fcorsetti@nanogune.eu>  trunk-409--minim-8
+Major update (addition of many different features and keywords)
+
+* The module has been expanded to include many different versions of the OMM
+  algorithm, and several additional useful features. Keywords for the SIESTA
+  fdf input file have also been added to allow for detailed user control of the
+  module.
+* Versions of the minimization procedure now available:
+  +-----------------------------------------------------+
+  | Gamma (G)/k points (K)* G G G G G G G G K K K K K K |
+  | Preconditioning         F T F T F F F T F T F T F F |
+  | 2D data decomposition   F F T T F T F F F F T T F T |
+  | Cholesky factorizarion  F F F F T T F F F F F F T T |
+  | Sparse algebra          F F F F F F T T F F F F F F |
+  +-----------------------------------------------------+
+  | * (selected automatically)                          |
+  +-----------------------------------------------------+
+  Furthermore, all versions support spin polarized calculations (for fixed
+  integer number of electrons per spin). Extended k grid calculations also
+  require a fixed number of electrons at each k point.
+* Additional features:
+  - select level of output detail
+  - write/read WF coeffs. to/from file
+  - input ScaLAPACK blocking factor for distributing the WF coeffs. matrix
+  - input number of SCF steps for which to use preconditioning (for first MD
+    step, and subsequent MD steps)
+  - input kinetic energy scale for the preconditioning
+  - input number of SCF steps to solve with diagonalization (for first MD step,
+    and subsequent MD steps)
+  - input convergence tolerance of CG minimization
+  - choose whether to diagonalize at end of MD step to find eigenvalues
+
+removed:
+  Src/m_minim.F90
+added:
+  Src/m_dminim.F90
+  Src/m_zminim.F90
+modified:
+  Docs/CHANGES.minim
+  Src/Makefile
+  Src/compute_dm.F
+  Src/local_DOS.F
+  Src/post_scf_work.F
+  Src/projected_DOS.F
+  Src/siesta_analysis.F
+  Src/siesta_options.F90
+  Src/write_subs.F
+  version.info
+
 2012-20-11  17:00 Fabiano Corsetti <fcorsetti@nanogune.eu>  trunk-409--minim-7
 Bug fix
 

@@ -425,7 +425,7 @@
      .             dictRef="siesta:Ef", fmt="r7")
             endif !cml_p
           endif !fixspin
-        elseif (isolve==SOLVE_ORDERN) then
+        elseif ((isolve==SOLVE_ORDERN) .or. (isolve==SOLVE_MINIM)) then
           write(6,'(/,a15,i4)') 'siesta: iscf = ',iscf
           write(6,'(a14,f15.4,a13,f15.4,a10,f7.4/)') 
      .         'Eharris(eV) = ',Eharrs/eV,
