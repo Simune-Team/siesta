@@ -1,4 +1,108 @@
 ----------------------------------------------------
+Mar 16, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-6
+Changed the class_* classes for more future integrity
+
+* The creation of several type-classes has been streamlined
+  - Each class_<basetype> where <basetype> is:
+    Array1D, Array2D, SpArr1D, SpArr2D.
+    has been transformed to be generated from a single 
+    file for all types.
+    See class_lsdcz<basetype> which collects the
+    creation of all data-types into one single file.
+    TODO, the context could be cleared up, however, 
+    the replication in code is very limited.
+
+* Added a logical array for Array[12]D and SpArr[12]D
+
+* basic_type.inc has recieved concatenation for the name 
+  attribute in the parent class.
+  Hence any classes created by this basic_type requires a "name"
+  field to be processed. 
+  This is a minor additon that helps printing out information
+  about types.
+
+* class_Sparsity has recieved some new additions
+  - Two new fields "ncols" and "ncols_g" has been added.
+    When an object is created they can be optionally passed down.
+    If they are NOT passed, the value "nrows_g" will be used in both
+    instances (which constitute a block-cyclic distribution).
+  - The field-getters of the integer fields in the object has
+    been made to PURE functions. This enables the use of them
+    in routine interfaces.
+    * NOTE * doing debugging of these routines if apted to change
+    could be trouble some. PURE routines does not allow PRINT,WRITE
+    statements (nor calls to UNPURE routines)
+  - Interfaces for retrieving specific indices of arrays in the object
+    has been added, the input variables are given specific names to
+    be more descriptive
+  - The printSparsity has been added information about the sparsity of
+    the array. If "ncols_g" is set then the sparsity can be considered
+    correct all the time. (on multiprocess runs one needs to sum, the
+    sparsity number on all processors to get the correct sparsity, hence
+    the sparsity is the local-nnzs/global size.
+    The field is shown to 4 significant digits, which should be enough.
+
+* class_Geometry has been re-indented (for code structure)
+  Thus many lines have *changed*.
+  The following is what has been added:
+  - field-getters "cell" and "isa" which returns the "cell" or "isa"
+    arrays has been added
+  - All field-getters has been added the index-equivalent specification
+    of the retrival. Hence "coords(g,2)" returns the coords of the 
+    second atom in the geometry.
+  - The field-getter "na" is PURE so that it can be used in interfaces
+
+* class_SpArr[12]D has changed many of the field-getters to be PURE
+  in the case that they only return integers.
+  This means that they can be used in interfaces of routines.
+
+  Have removed the initialization of the arrays on creation.
+  Thus it is up to the developer to initialize arrays if needed.
+  This will actually clear-up the code as the purpose of the array
+  is apparent.
+
+  TODO : many field-getters in class_Sparsity has been 
+  added, we need to add them here as well. However, it seems like there
+  should be a class_Sparsity.inc for any classes that wish
+  to retain direct interaction on the parent object level.
+  That is, routines of direct sparsity access:
+    nnzs(class_SpArr1D)
+  I.e. a common include graph which accesses the this%data%sp
+  field and calls the appropriate sparsity routine.
+  (This will come in handy when doing multitude of changes, as
+  has been done now.)
+
+* class_SpArr2D has recieved some additional features
+  When creating an object from a distribution and sparsity
+  pattern, one now has the possibility to decide which dimension
+  gets attached the sparse layout (before it was the first dimension)
+  This now enables an easy creation of "xa" sparsity arrays which has
+  the correct sparsity layout.
+
+* Makefile has been stripped of beginning line HASH marks on empty lines.
+  They had no purpose and made stepping in the file incredibly hard!
+
+removed:
+  Src/class_sdczArray1D.F90
+  Src/class_sdczArray2D.F90
+  Src/class_sdczSpArr1D.F90
+  Src/class_sdczSpArr2D.F90
+added:
+  Src/class_lsdczArray1D.F90
+  Src/class_lsdczArray2D.F90
+  Src/class_lsdczSpArr1D.F90
+  Src/class_lsdczSpArr2D.F90
+modified:
+  Src/Makefile
+  Src/basic_type.inc
+  Src/class_Array1D.T90
+  Src/class_Array2D.T90
+  Src/class_Geometry.F90
+  Src/class_SpArr1D.T90
+  Src/class_SpArr2D.T90
+  Src/class_Sparsity.F90
+
+----------------------------------------------------
 Mar 8, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-5
 Added TSDM update region writeout with TRANSIESTA_DEBUG
 
