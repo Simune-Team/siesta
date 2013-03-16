@@ -112,7 +112,7 @@
     
   end subroutine newSpDataFromData
 
-  subroutine newSpDataFromDims(sp,dim,dist,this,name)
+  subroutine newSpDataFromDims(sp,dim,dist,this,name,sparsity_dim)
     !........................................
     ! Constructor
     !........................................
@@ -121,14 +121,29 @@
     type(OrbitalDistribution), intent(in) :: dist
     integer,  intent(in)                  :: dim
     character(len=*), intent(in), optional :: name
+    integer, intent(in), optional         :: sparsity_dim
     
     integer :: error
 
     call init(this)
     this%data%sp = sp
     this%data%dist = dist
-    call VAR_NEW_TYPE(this%data%a, &
-         nnzs(sp),dim,"(new from "//STR_TYPE_NAME//")")
+    if ( present(sparsity_dim) ) then
+       if ( sparsity_dim < 1 .or. 2 < sparsity_dim ) then
+          call die('Supplying a sparsity dimension out-of-bounds &
+                &for SpArr2D data is not allowed, range={1,2}')
+       end if
+       if ( sparsity_dim == 1 ) then ! Regular way...
+           call VAR_NEW_TYPE(this%data%a, &
+ 	        nnzs(sp),dim,"(new from "//STR_TYPE_NAME//")")
+       else ! it must be 2
+           call VAR_NEW_TYPE(this%data%a, &
+                dim,nnzs(sp),"(new from "//STR_TYPE_NAME//")")
+       end if
+    else ! Regular handling, sparsity_dim == 1
+       call VAR_NEW_TYPE(this%data%a, &
+            nnzs(sp),dim,"(new from "//STR_TYPE_NAME//")")
+    end if
     
     if (present(name)) then
        this%data%name = trim(name)
@@ -142,21 +157,25 @@
   !--------------------------------------------------
   function valSpData(this) result(p)
     type(TYPE_NAME), intent(in)  :: this
-    VAR_TYPE_TYPE(PREC), pointer :: p(:,:) ! => null()
+#ifdef PREC
+    VAR_TYPE_TYPE(PREC), pointer :: p(:,:) !=> null()
+#else
+    VAR_TYPE_TYPE      , pointer :: p(:,:) !=> null()
+#endif
     
     p => val(this%data%a)
   end function valSpData
 
   function sparSpData(this) result(p)
     type(TYPE_NAME), intent(in) :: this
-    type(Sparsity), pointer     :: p ! => null()
+    type(Sparsity), pointer     :: p !=> null()
     
     p => this%data%sp
   end function sparSpData
   
   function distSpData(this) result(p)
     type(TYPE_NAME), intent(in)        :: this
-    type(OrbitalDistribution), pointer :: p ! => null()
+    type(OrbitalDistribution), pointer :: p !=> null()
     
     p => this%data%dist
   end function distSpData
@@ -185,14 +204,14 @@
 
   function n_colSpData(this) result (p)
     type(TYPE_NAME), intent(in) :: this
-    integer, pointer            :: p(:) ! => null()
+    integer, pointer            :: p(:) !=> null()
 
     p => n_col(this%data%sp)
   end function n_colSpData
 
  function list_ptrSpData(this) result (p)
    type(TYPE_NAME), intent(in) :: this
-   integer, pointer            :: p(:) ! => null()
+   integer, pointer            :: p(:) !=> null()
    p => list_ptr(this%data%sp)
  end function list_ptrSpData
 

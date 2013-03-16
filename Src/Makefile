@@ -14,14 +14,14 @@
 # Remove implicit rules (including for Modula-2, which just confuses matters)
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a  .f90 .F90 .c
-#
+
 VPATH=.
-#
+
 default: what siesta #  fsiesta.o
-#
+
 configure: configure.ac aclocal.m4
 	autoconf ${<D}/configure.ac
-#
+
 M4_FILES = m4/ac_config_aux_dirs.m4  m4/TW_CHECK_FC_FPP.m4      m4/TW_FC_ID_FLAGS.m4  \
  m4/ACX_MPI.m4             m4/TW_CHECK_FC_TR15580.m4  m4/TW_FC_ID.m4        \
  m4/fortran.m4             m4/TW_CHECK_FC_TR15581.m4  m4/TW_FIND_FC_BLAS.m4 \
@@ -29,9 +29,10 @@ M4_FILES = m4/ac_config_aux_dirs.m4  m4/TW_CHECK_FC_FPP.m4      m4/TW_FC_ID_FLAG
  m4/TW_CHECK_FC_90.m4      m4/TW_FC_CHECK_ABORT.m4    m4/TW_PATH_NETCDF.m4  \
  m4/TW_CHECK_FC_95.m4      m4/TW_FC_CHECK_DCFUNS.m4   m4/TW_TRY_DC_LAPACK.m4\
  m4/TW_CHECK_FC_FPP_90.m4  m4/TW_FC_CHECK_FLUSH.m4    m4/TW_FC_KINDS.m4
-#
+
 aclocal.m4: $(M4_FILES)
 	cat ${<D}/$(M4_FILES)  > aclocal.m4
+
 dep:
 	-if [ $(VPATH) = "." ] ; then \
 	sfmakedepend --depend=obj  --modext=o \
@@ -42,22 +43,23 @@ dep:
         fi
 	@sed -i -e "/^siesta_cmlsubs.o:/s/version.o//;\
 		/^m_ts_io.o:/s/m_tbt_kpoints.o//"  Makefile
-#
+
 include arch.make
+
 INCFLAGS:= $(NETCDF_INCFLAGS) $(INCFLAGS)
+
 # For removing any -ipo compilation in sub directories...
 # Later compilers are also having this enabled, and it lets you
 # specify what to not be used in libraries.
 # This is so because inter-procedural compilation should NOT be performed in
 # libraries (it removes names when a routine can be fully moved into others)
 IPO_FLAG?= -ipo
-#
+
 # Uncomment the following line for debugging support
-#
 ##FFLAGS=$(FFLAGS_DEBUG)
-#
+
 .PHONY: .siesta .transiesta what version
-#
+
 what:
 	@echo
 	@if [ "$(VPATH)" = . ]; then \
@@ -71,11 +73,11 @@ what:
 	@echo
 	@echo "Hit ^C to abort..."
 	@sleep 2
-#
+
 SYSOBJ=$(SYS).o pxf.o
-#
+
 # Note that machine-specific files are now in top Src directory.
-#
+
 OBJS =  automatic_cell.o atom_options.o \
         arw.o  atomlwf.o bands.o basis_enthalpy.o bessph.o bonds.o \
         born_charge.o cellxc_mod.o cgwf.o chkdim.o chkgmx.o \
@@ -148,54 +150,56 @@ OBJS =  automatic_cell.o atom_options.o \
 	write_orb_indx.o \
 	m_hs_matrix.o kpoint_convert.o m_glob_sparse.o \
 	class_Sparsity.o \
-	class_sdczSpArr1D.o class_sdczSpArr2D.o \
-	class_sdczArray1D.o class_sdczArray2D.o \
+	class_lsdczSpArr1D.o class_lsdczSpArr2D.o \
+	class_lsdczArray1D.o class_lsdczArray2D.o \
         class_OrbitalDistribution.o \
         compute_EKS_Harris.o compute_max_diff.o \
         save_density_matrix.o  \
         readSpMatrix.o restructSpMatrix.o extrapolateSpMatrix.o \
         class_Geometry.o class_Pair_Geometry_SpMatrix.o class_Fstack_Pair_Geometry_SpMatrix.o \
         m_uuid.o object_debug.o die.o m_svd.o
+
+
 #--------------------------------------------------------------
 # FoX whatnot
-#
+
 # FoX build targets:
 FoX_configured=FoX/.config
 FoX_built=FoX/.FoX
-#
+
 # This is how we pick up modules and libraries for FoX:
 FoX_FCFLAGS=`FoX/FoX-config --fcflags`
 FoX_LIBS=`FoX/FoX-config --libs --wcml`
-#
+
 # And add them to global compiler flags:
 INCFLAGS:=$(INCFLAGS) $(FoX_FCFLAGS) $(NETCDF_INCFLAGS)
-#
+
+
 # First, it needs to be configured. This may have been done
 # by the main SIESTA configure, but in case not:
-#
 FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
-#
+
 $(FoX_configured):
 	(cd FoX; touch arch.make ; \
          CONFIGURE="$(VPATH)/FoX/configure"; \
          $$CONFIGURE VPATH="$(VPATH)/FoX" \
          FC="$(FC_SERIAL)" FCFLAGS="$(FFLAGS:$(IPO_FLAG)=)" \
          --enable-wcml $(DUMMY_FOX) || false )
-#
+
 # Note we have to make sure to use the same compiler as SIESTA,
 # and pick up all the same FFLAGS, and also remember to maybe ask for a dummy library.
 # Note also that the "false" clause will stop the 'make' process if the configuration fails.
-#
+
 # Then we want to make FoX itself. Like so:
 $(FoX_built): $(FoX_configured)
 	(cd FoX; $(MAKE) )
-#
+
 # Now ensure that building FoX is inserted into the dependency chain.
 # Routines using FoX:
 # version (compinfo.o) does not actually need FoX, but making it build after
 # FoX is done avoids a warning as we use the FoX-config script everywhere.
-#
+
 version $(SYSOBJ) $(OBJS) \
 basis_io.o efield.o initatom.o ioeig.o kpoint_grid.o meshsubs.o \
 mulliken.o ordern.o outcell.o pdos.o post_scf_work.o radial.o   \
@@ -203,13 +207,13 @@ scfconvergence_test.o setup_hamiltonian.o siesta_analysis.o     \
 siesta_cml.o siesta_cmlsubs.o siesta_end.o siesta_forces.o      \
 siesta_init.o siesta_move.o siesta_options.o state_analysis.o   \
 state_init.o struct_init.o write_subs.o xml.o: $(FoX_built)
-#
+
 #--------------------------------------------------------------
 XMLPARSER=libxmlparser.a
 $(XMLPARSER): 
 	(cd xmlparser ; $(MAKE) "VPATH=$(VPATH)/xmlparser" \
 	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
-#
+
 #--------------------------------------------------------------
 XC=libSiestaXC.a
 $(XC): 
@@ -217,36 +221,34 @@ $(XC):
                     "VPATH_ROOT=$(VPATH)"  \
 	            "INCFLAGS=-I../MPI" \
 		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module )
+
 #--------------------------------------------------------------
 FDF=libfdf.a
 $(FDF): 
 	(cd fdf ; $(MAKE) "VPATH=$(VPATH)/fdf" \
 		    "FPPFLAGS=$(FPPFLAGS)" \
 		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module )
-#
+
+
 # Routines using fdf calls.
-#
 dhscf.o iolwf.o  grdsam.o : $(FDF)
 recoor.o outcoor.o ioxv.o m_iostruct.o kgrid.o kgridinit.o ksv.o : $(FDF)
 redata.o siesta.o diagon.o pdos.o plcharge.o: $(FDF)
 coor.o cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o  ofc.o : $(FDF)
 readsp.o eggbox.o iopipes.o : $(FDF)
-#
 atom.o basis_io.o basis_specs.o: $(FDF)
-#
-#
+
 ALL_OBJS=$(OBJS) $(SYSOBJ)
-#
+
 # Interfaces to libraries
-#
 libmpi_f90.a: 
 	@(cd MPI ; $(MAKE) \
                     "VPATH=$(VPATH)/MPI" \
                     "FPP_FLAGS=$(FPP_FLAGS)" \
                     "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" )
-#
+
 # Libraries that might need to be compiled
-#
+
 libblas.a: Libs/blas.f
 	@echo "==> Compiling libblas.a in Libs..."
 	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" libblas.a)
@@ -262,11 +264,9 @@ dc_lapack.a:  Libs/dc_lapack.f
 zgesv_lapack.a:  Libs/zgesv_lapack.f
 	@echo "==> Compiling zgesv_lapack.a in Libs..."
 	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" zgesv_lapack.a)
-#
 essl_lapack.a: Libs/essl_lapack.f
 	@echo "==> Compiling essl_lapack.a in Libs..."
 	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" essl_lapack.a)
-#
 
 version: version.F90
 	@echo
@@ -282,7 +282,7 @@ version: version.F90
 	@($(MAKE) "FPPFLAGS=$(FPPFLAGS)" "DEFS=$(DEFS)" compinfo.o)
 	@mv compinfo.o version.o
 	@echo
-#
+
 check-siesta:
 	@if [ -f .transiesta ]; then \
               echo "** You were building transiesta in this directory." ;\
@@ -290,7 +290,7 @@ check-siesta:
               false ;\
 	fi
 	@touch .siesta
-#
+
 siesta: check-siesta what version \
                 $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) $(XC) \
                 $(COMP_LIBS) $(ALL_OBJS) 
@@ -298,18 +298,17 @@ siesta: check-siesta what version \
 	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML) $(XMLPARSER) \
                $(XC) $(MPI_INTERFACE) \
                $(COMP_LIBS) $(FoX_LIBS) $(LIBS) 
-#
+
 #------------------------------------------------------------------------
 #----------------------------------------------------------------------------
 # TranSIESTA...
-#
 TS_OBJS= m_ts_global_vars.o m_ts_options.o m_ts_aux_rout.o m_ts_kpoints.o \
          m_ts_iodm.o m_ts_io.o m_ts_scattering.o m_ts_contour.o \
          m_ts_electrode.o m_ts_in_siesta.o m_ts_voltage.o m_ts_gf.o \
 	 m_ts_cctype.o ts_init.o ts_show_regions.o
-#
-transiesta: FPPFLAGS+=$(DEFS_PREFIX)-DTRANSIESTA 
-transiesta: DEFS+=$(DEFS_PREFIX)-DTRANSIESTA
+
+transiesta: FPPFLAGS+=$(DEFS_PREFIX) -DTRANSIESTA 
+transiesta: DEFS+=$(DEFS_PREFIX) -DTRANSIESTA
 check-ts:
 	@if [ -f .siesta ]; then \
               echo "** You were building plain siesta in this directory." ;\
@@ -317,7 +316,7 @@ check-ts:
               false ;\
 	fi
 	@touch .transiesta
-#
+
 transiesta: check-ts what version \
             $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(XC) \
             $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
@@ -325,8 +324,8 @@ transiesta: check-ts what version \
                $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(XC) \
                $(MPI_INTERFACE) $(NETCDF_INTERFACE) \
                $(COMP_LIBS) $(FoX_LIBS) $(LIBS)
-#
-#
+
+
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
 	rm -f siesta transiesta *.o  *.a *.pcl *.pc
@@ -342,7 +341,6 @@ clean:
 	(cd Libs ; $(MAKE) clean )
 	(cd SiestaXC ; $(MAKE) clean )
 
-# We specify the dependency on all the classes created in the T90 files:
 
 # DO NOT DELETE THIS LINE - used by make depend
 alloc.o: debugmpi.o m_io.o parallel.o precision.o sys.o
@@ -401,23 +399,25 @@ class_Geometry.o: basic_type.inc
 class_Geometry.o: alloc.o
 class_OrbitalDistribution.o: basic_type.inc
 class_Pair_Geometry_SpMatrix.o: Pair.T90 basic_type.inc
-class_Pair_Geometry_SpMatrix.o: class_Geometry.o class_sdczSpArr2D.o
+class_Pair_Geometry_SpMatrix.o: class_Geometry.o class_lsdczSpArr2D.o
 class_Sparsity.o: basic_type.inc
 class_Sparsity.o: alloc.o
-class_sdczArray1D.o: class_Array1D.T90 basic_type.inc basic_func.inc
-class_sdczArray1D.o: alloc.o
-class_sdczArray2D.o: class_Array2D.T90 basic_type.inc basic_func.inc
-class_sdczArray2D.o: alloc.o
-class_sdczSpArr1D.o: class_SpArr1D.T90 basic_type.inc
-class_sdczSpArr1D.o: class_OrbitalDistribution.o class_Sparsity.o
-class_sdczSpArr1D.o: class_sdczArray1D.o class_sdczArray1D.o
-class_sdczSpArr1D.o: class_sdczArray1D.o class_sdczArray1D.o
-class_sdczSpArr2D.o: class_SpArr2D.T90 basic_type.inc
-class_sdczSpArr2D.o: class_OrbitalDistribution.o class_Sparsity.o
-class_sdczSpArr2D.o: class_sdczArray2D.o class_sdczArray2D.o
-class_sdczSpArr2D.o: class_sdczArray2D.o class_sdczArray2D.o
+class_lsdczArray1D.o: class_Array1D.T90 basic_type.inc
+class_lsdczArray1D.o: alloc.o
+class_lsdczArray2D.o: class_Array2D.T90 basic_type.inc
+class_lsdczArray2D.o: alloc.o
+class_lsdczSpArr1D.o: class_SpArr1D.T90 basic_type.inc
+class_lsdczSpArr1D.o: class_OrbitalDistribution.o class_Sparsity.o
+class_lsdczSpArr1D.o: class_lsdczArray1D.o class_lsdczArray1D.o
+class_lsdczSpArr1D.o: class_lsdczArray1D.o class_lsdczArray1D.o
+class_lsdczSpArr1D.o: class_lsdczArray1D.o
+class_lsdczSpArr2D.o: class_SpArr2D.T90 basic_type.inc
+class_lsdczSpArr2D.o: class_OrbitalDistribution.o class_Sparsity.o
+class_lsdczSpArr2D.o: class_lsdczArray2D.o class_lsdczArray2D.o
+class_lsdczSpArr2D.o: class_lsdczArray2D.o class_lsdczArray2D.o
+class_lsdczSpArr2D.o: class_lsdczArray2D.o
 coceri.o: files.o periodic_table.o precision.o
-compute_EKS_Harris.o: atomlist.o class_sdczSpArr2D.o dhscf.o m_dipol.o
+compute_EKS_Harris.o: atomlist.o class_lsdczSpArr2D.o dhscf.o m_dipol.o
 compute_EKS_Harris.o: m_energies.o m_mpi_utils.o m_ntm.o m_spin.o precision.o
 compute_EKS_Harris.o: siesta_geom.o siesta_options.o sparse_matrices.o
 compute_dm.o: atomlist.o iodmhs_netcdf.o kpoint_grid.o m_energies.o m_eo.o
@@ -474,7 +474,7 @@ electrostatic.o: precision.o radfft.o radial.o sys.o
 ener3.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 ener3lomem.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 extrapolateSpMatrix.o: class_OrbitalDistribution.o class_Sparsity.o
-extrapolateSpMatrix.o: class_sdczArray2D.o class_sdczSpArr2D.o
+extrapolateSpMatrix.o: class_lsdczArray2D.o class_lsdczSpArr2D.o
 extrapolon.o: parallel.o precision.o sys.o
 fermid.o: m_recipes.o parallel.o precision.o sys.o
 fft.o: alloc.o fft1d.o m_timer.o mesh.o parallel.o parallelsubs.o precision.o
@@ -573,11 +573,11 @@ m_memory.o: memoryinfo.o parallel.o sys.o
 m_mpi_utils.o: precision.o sys.o
 m_new_dm.o: alloc.o atomlist.o class_Fstack_Pair_Geometry_SpMatrix.o
 m_new_dm.o: class_Geometry.o class_OrbitalDistribution.o
-m_new_dm.o: class_Pair_Geometry_SpMatrix.o class_Sparsity.o class_sdczArray2D.o
-m_new_dm.o: class_sdczSpArr2D.o files.o m_energies.o m_mpi_utils.o m_spin.o
-m_new_dm.o: m_steps.o m_svd.o m_ts_iodm.o m_ts_options.o parallel.o
-m_new_dm.o: parallelsubs.o parsing.o precision.o readSpMatrix.o siesta_geom.o
-m_new_dm.o: siesta_options.o sparse_matrices.o sys.o units.o
+m_new_dm.o: class_Pair_Geometry_SpMatrix.o class_Sparsity.o
+m_new_dm.o: class_lsdczArray2D.o class_lsdczSpArr2D.o files.o m_energies.o
+m_new_dm.o: m_mpi_utils.o m_spin.o m_steps.o m_svd.o m_ts_iodm.o m_ts_options.o
+m_new_dm.o: parallel.o parallelsubs.o parsing.o precision.o readSpMatrix.o
+m_new_dm.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o units.o
 m_options.o: precision.o
 m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
 m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o
@@ -585,11 +585,6 @@ m_pulay.o: alloc.o atomlist.o m_spin.o m_svd.o parallel.o precision.o
 m_pulay.o: siesta_options.o sparse_matrices.o sys.o
 m_recipes.o: precision.o sys.o
 m_rmaxh.o: precision.o
-m_sparsity_loop.o: class_Sparsity.o intrinsic_missing.o
-m_sparsity_mat.o: class_sdczArray1D.o class_sdczSpArr1D.o class_sdczSpArr1D.o
-m_sparsity_mat.o: class_sdczSpArr2D.o m_sparsity_loop.o precision.o
-m_sparsity_uc.o: class_Sparsity.o class_sdczArray1D.o class_sdczArray1D.o
-m_sparsity_uc.o: class_sdczArray2D.o intrinsic_missing.o m_sparsity_loop.o
 m_spin.o: alloc.o parallel.o precision.o
 m_stress.o: precision.o
 m_svd.o: precision.o
@@ -687,7 +682,7 @@ radfft.o: alloc.o bessph.o m_recipes.o precision.o
 radial.o: alloc.o precision.o xml.o
 rdiag.o: alloc.o m_diagon.o memoryinfo.o parallel.o precision.o sys.o
 readSpMatrix.o: class_OrbitalDistribution.o class_Sparsity.o
-readSpMatrix.o: class_sdczArray2D.o class_sdczSpArr2D.o
+readSpMatrix.o: class_lsdczArray2D.o class_lsdczSpArr2D.o
 read_xc_info.o: parallel.o precision.o sys.o
 readsp.o: parallel.o precision.o sys.o
 redcel.o: parallel.o precision.o sys.o
@@ -696,7 +691,7 @@ remove_intramol_pressure.o: precision.o zmatrix.o
 reoptical.o: parallel.o precision.o sys.o
 reord.o: alloc.o precision.o
 restructSpMatrix.o: class_OrbitalDistribution.o class_Sparsity.o
-restructSpMatrix.o: class_sdczArray2D.o class_sdczSpArr2D.o
+restructSpMatrix.o: class_lsdczArray2D.o class_lsdczSpArr2D.o
 rhooda.o: atmfuncs.o atomlist.o mesh.o meshphi.o precision.o
 rhoofd.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mesh.o meshdscf.o
 rhoofd.o: meshphi.o parallel.o parallelsubs.o precision.o sys.o
@@ -709,11 +704,11 @@ savepsi.o: alloc.o parallel.o parallelsubs.o precision.o
 schecomm.o: alloc.o
 setatomnodes.o: alloc.o parallel.o precision.o spatial.o sys.o
 setspatial.o: alloc.o parallel.o precision.o spatial.o
-setup_H0.o: alloc.o atmfuncs.o atomlist.o class_sdczSpArr2D.o dhscf.o dnaefs.o
+setup_H0.o: alloc.o atmfuncs.o atomlist.o class_lsdczSpArr2D.o dhscf.o dnaefs.o
 setup_H0.o: kinefsm.o m_energies.o m_ntm.o m_spin.o metaforce.o
 setup_H0.o: molecularmechanics.o naefs.o nlefsm.o siesta_geom.o
 setup_H0.o: siesta_options.o sparse_matrices.o
-setup_hamiltonian.o: alloc.o atmfuncs.o atomlist.o class_sdczSpArr2D.o dhscf.o
+setup_hamiltonian.o: alloc.o atmfuncs.o atomlist.o class_lsdczSpArr2D.o dhscf.o
 setup_hamiltonian.o: m_dipol.o m_energies.o m_gamma.o m_hsx.o m_mpi_utils.o
 setup_hamiltonian.o: m_ntm.o m_partial_charges.o m_spin.o m_steps.o m_stress.o
 setup_hamiltonian.o: m_ts_global_vars.o metaforce.o molecularmechanics.o
@@ -732,9 +727,10 @@ siesta_analysis.o: m_ntm.o m_partial_charges.o m_spin.o m_steps.o parallel.o
 siesta_analysis.o: projected_DOS.o siesta_cml.o siesta_geom.o siesta_options.o
 siesta_analysis.o: sparse_matrices.o write_subs.o writewave.o zmatrix.o
 siesta_cmlsubs.o: files.o parallel.o siesta_cml.o timestamp.o 
-siesta_end.o: alloc.o bands.o densematrix.o fixed.o m_dscfcomm.o m_pulay.o
-siesta_end.o: m_wallclock.o meshdscf.o meshphi.o moremeshsubs.o parallel.o
-siesta_end.o: siesta_cml.o siesta_cmlsubs.o sparse_matrices.o timestamp.o
+siesta_end.o: alloc.o bands.o densematrix.o files.o fixed.o m_cleanup.o
+siesta_end.o: m_dscfcomm.o m_pulay.o m_wallclock.o meshdscf.o meshphi.o
+siesta_end.o: moremeshsubs.o parallel.o siesta_cml.o siesta_cmlsubs.o
+siesta_end.o: sparse_matrices.o timestamp.o
 siesta_forces.o: check_scf_convergence.o compute_EKS_Harris.o compute_dm.o
 siesta_forces.o: compute_max_diff.o final_H_f_stress.o m_convergence.o
 siesta_forces.o: m_forces.o m_pulay.o m_steps.o m_ts_global_vars.o
@@ -762,7 +758,7 @@ siesta_options.o: files.o memoryinfo.o parallel.o precision.o siesta_cml.o
 siesta_options.o: sys.o units.o
 sparse_matrices.o: alloc.o class_Fstack_Pair_Geometry_SpMatrix.o
 sparse_matrices.o: class_OrbitalDistribution.o class_Sparsity.o
-sparse_matrices.o: class_sdczSpArr2D.o precision.o
+sparse_matrices.o: class_lsdczSpArr2D.o precision.o
 spatial.o: precision.o
 spher_harm.o: alloc.o precision.o sys.o
 state_analysis.o: atomlist.o born_charge.o
@@ -772,7 +768,7 @@ state_analysis.o: m_forces.o m_iostruct.o m_ntm.o m_spin.o m_stress.o
 state_analysis.o: m_wallclock.o parallel.o remove_intramol_pressure.o
 state_analysis.o: siesta_cml.o siesta_geom.o siesta_options.o sparse_matrices.o
 state_analysis.o: write_subs.o zmatrix.o
-state_init.o: alloc.o atomlist.o class_Sparsity.o class_sdczSpArr2D.o
+state_init.o: alloc.o atomlist.o class_Sparsity.o class_lsdczSpArr2D.o
 state_init.o: domain_decom.o files.o hsparse.o iodm_netcdf.o iodmhs_netcdf.o
 state_init.o: kpoint_grid.o m_check_supercell.o m_energies.o m_eo.o m_gamma.o
 state_init.o: m_mpi_utils.o m_new_dm.o m_pulay.o m_rmaxh.o m_spin.o m_steps.o
@@ -814,24 +810,28 @@ zm_fire_optim.o: m_fdf_global.o m_fire.o parallel.o precision.o
 zm_fire_optim.o: siesta_options.o units.o zmatrix.o
 zmatrix.o: alloc.o m_cell.o parallel.o precision.o siesta_geom.o sys.o units.o
 band.o: bands.o
-class_carray1d.o: class_sdczArray1D.o
-class_carray2d.o: class_sdczArray2D.o
-class_csparr1d.o: class_sdczSpArr1D.o
-class_csparr2d.o: class_sdczSpArr2D.o
-class_darray1d.o: class_sdczArray1D.o
-class_darray2d.o: class_sdczArray2D.o
-class_dsparr1d.o: class_sdczSpArr1D.o
-class_dsparr2d.o: class_sdczSpArr2D.o
+class_carray1d.o: class_lsdczArray1D.o
+class_carray2d.o: class_lsdczArray2D.o
+class_csparr1d.o: class_lsdczSpArr1D.o
+class_csparr2d.o: class_lsdczSpArr2D.o
+class_darray1d.o: class_lsdczArray1D.o
+class_darray2d.o: class_lsdczArray2D.o
+class_dsparr1d.o: class_lsdczSpArr1D.o
+class_dsparr2d.o: class_lsdczSpArr2D.o
 class_fstack_pair_geometry_dsparr2d.o: class_Fstack_Pair_Geometry_SpMatrix.o
+class_larray1d.o: class_lsdczArray1D.o
+class_larray2d.o: class_lsdczArray2D.o
+class_lsparr1d.o: class_lsdczSpArr1D.o
+class_lsparr2d.o: class_lsdczSpArr2D.o
 class_pair_geometry_dsparr2d.o: class_Pair_Geometry_SpMatrix.o
-class_sarray1d.o: class_sdczArray1D.o
-class_sarray2d.o: class_sdczArray2D.o
-class_ssparr1d.o: class_sdczSpArr1D.o
-class_ssparr2d.o: class_sdczSpArr2D.o
-class_zarray1d.o: class_sdczArray1D.o
-class_zarray2d.o: class_sdczArray2D.o
-class_zsparr1d.o: class_sdczSpArr1D.o
-class_zsparr2d.o: class_sdczSpArr2D.o
+class_sarray1d.o: class_lsdczArray1D.o
+class_sarray2d.o: class_lsdczArray2D.o
+class_ssparr1d.o: class_lsdczSpArr1D.o
+class_ssparr2d.o: class_lsdczSpArr2D.o
+class_zarray1d.o: class_lsdczArray1D.o
+class_zarray2d.o: class_lsdczArray2D.o
+class_zsparr1d.o: class_lsdczSpArr1D.o
+class_zsparr2d.o: class_lsdczSpArr2D.o
 diagmemory.o: memoryinfo.o
 listsc_module.o: listsc.o
 m_bessph.o: bessph.o

@@ -7,6 +7,7 @@ module class_Sparsity
   public :: newSparsity
   public :: print_type
   public :: nrows, nrows_g, nnzs, n_col, list_ptr, list_col
+  public :: n_row
 
   character(len=*), parameter :: mod_name= __FILE__
 
@@ -19,6 +20,8 @@ module class_Sparsity
     character(len=256) :: name = "null_sparsity"
     integer            :: nrows = 0             ! Local number of rows
     integer            :: nrows_g = 0           ! Global number or rows
+    integer            :: ncols = 0             ! Local number of rows
+    integer            :: ncols_g = 0           ! Global number or rows
     integer            :: nnzs  = 0             ! Local number of non-zeros
     integer, pointer   :: n_col(:)     =>null() ! Nonzero cols of each row
     integer, pointer   :: list_col(:)  =>null() ! Index of nonzero columns
@@ -39,13 +42,33 @@ module class_Sparsity
      module procedure nrows_gSparsity
   end interface
 
-  interface nnzs
-     module procedure nnzsSparsity
+  interface ncols
+     module procedure ncolsSparsity
   end interface
+
+  interface ncols_g
+     module procedure ncols_gSparsity
+  end interface
+
+! ******************
+! Specific routines to retrieve direct information
+! about the sparsity entries.
+
   interface n_col
      module procedure n_colSparsity
      module procedure n_colSparsityI
   end interface
+
+  interface n_row
+     ! This interface ensures that one can retrieve
+     ! all information from the sparse class.
+     module procedure n_rowSparsityI
+  end interface
+
+  interface nnzs
+     module procedure nnzsSparsity
+  end interface
+
   interface list_ptr
      module procedure list_ptrSparsity
      module procedure list_ptrSparsityI
@@ -76,7 +99,11 @@ module class_Sparsity
   end subroutine delete_Data
 
 !--------------------------------------------------------------------    
-  subroutine newSparsity(sp,nrows,nrows_g,nnzs,num,listptr,list,name)
+! For easy compatability we have added ncols and ncols_g as
+! optional arguments.
+! In case, not specified, values of nrows_g are used. (block-cyclic)
+  subroutine newSparsity(sp,nrows,nrows_g,nnzs,num,listptr,list,name, &
+       ncols,ncols_g)
 
     type(Sparsity), intent(inout) :: sp
 
@@ -84,6 +111,7 @@ module class_Sparsity
     integer, intent(in)           :: num(:), listptr(:)
     integer, intent(in)           :: list(:)
     character(len=*), intent(in)  :: name
+    integer, intent(in), optional :: ncols, ncols_g
 
     integer :: stat
 
@@ -103,6 +131,21 @@ module class_Sparsity
 
     sp%data%nrows = nrows
     sp%data%nrows_g = nrows_g
+    if ( present(ncols_g) ) then
+       sp%data%ncols_g = ncols_g
+    else
+       ! We default it to a Block-cyclic distribution, hence
+       ! the number of columns is the same as the number of 
+       ! global rows (we cannot guess super-cells, that would indeed be amazing)
+       sp%data%ncols_g = nrows_g
+    end if
+    if ( present(ncols) ) then
+       sp%data%ncols = ncols
+    else
+       ! Again, block cyclic has the maximum number of columns
+       ! in each block
+       sp%data%ncols = sp%data%ncols_g
+    end if
     sp%data%nnzs  = nnzs
     sp%data%n_col(1:nrows) = num(1:nrows)
     sp%data%list_ptr(1:nrows) = listptr(1:nrows)
@@ -121,19 +164,39 @@ module class_Sparsity
 
   end subroutine newSparsity
   
-  function nrowsSparsity(this) result (n)
+  pure function nrowsSparsity(this) result (n)
     type(Sparsity), intent(in) :: this
     integer                    :: n
     n = this%data%nrows
   end function nrowsSparsity
 
-  function nrows_gSparsity(this) result (n)
+  elemental function n_rowSparsityI(this,col) result (p)
+    type(Sparsity), intent(in) :: this
+    integer, intent(in)        :: col
+    integer                    :: p
+    p = count(this%data%list_col == col)
+  end function n_rowSparsityI
+
+  pure function nrows_gSparsity(this) result (n)
     type(Sparsity), intent(in) :: this
     integer                    :: n
     n = this%data%nrows_g
   end function nrows_gSparsity
 
-  function nnzsSparsity(this) result (n)
+  pure function ncolsSparsity(this) result (n)
+    type(Sparsity), intent(in) :: this
+    integer                    :: n
+    n = this%data%ncols
+  end function ncolsSparsity
+
+  pure function ncols_gSparsity(this) result (n)
+    type(Sparsity), intent(in) :: this
+    integer                    :: n
+    n = this%data%ncols_g
+  end function ncols_gSparsity
+
+
+  pure function nnzsSparsity(this) result (n)
     type(Sparsity), intent(in) :: this
     integer                    :: n
     n = this%data%nnzs
@@ -144,20 +207,19 @@ module class_Sparsity
     integer, pointer           :: p(:)
     p => this%data%n_col
   end function n_colSparsity
-  function n_colSparsityI(this,i) result (p)
+  elemental function n_colSparsityI(this,row) result (p)
     type(Sparsity), intent(in) :: this
-    integer, intent(in)        :: i
+    integer, intent(in)        :: row
     integer                    :: p
-    p = this%data%n_col(i)
+    p = this%data%n_col(row)
   end function n_colSparsityI
-
 
   function list_ptrSparsity(this) result (p)
     type(Sparsity), intent(in) :: this
     integer, pointer           :: p(:)
     p => this%data%list_ptr
   end function list_ptrSparsity
-  function list_ptrSparsityI(this,i) result (p)
+  elemental function list_ptrSparsityI(this,i) result (p)
     type(Sparsity), intent(in) :: this
     integer, intent(in)        :: i
     integer                    :: p
@@ -169,7 +231,7 @@ module class_Sparsity
     integer, pointer           :: p(:)
     p => this%data%list_col
   end function list_colSparsity
-  function list_colSparsityI(this,i) result (p)
+  elemental function list_colSparsityI(this,i) result (p)
     type(Sparsity), intent(in) :: this
     integer, intent(in)        :: i
     integer                    :: p
@@ -184,9 +246,11 @@ module class_Sparsity
        RETURN
     endif
 
-    print "(a,i0,a,i0,a,i0,a,i0,a)", &
+    print "(2(a,i0),a,f0.4,2(a,i0),a)", &
                 "  <sparsity:"//trim(sp%data%name)//" nrows_g=", &
                 sp%data%nrows_g, " nrows=", sp%data%nrows, &
+                " sparsity=",real(sp%data%nnzs)/ &
+                (sp%data%nrows_g*sp%data%ncols_g), &
                 " nnzs=",sp%data%nnzs,", refcount: ",  &
                 refcount(sp), ">"
   end subroutine printSparsity
