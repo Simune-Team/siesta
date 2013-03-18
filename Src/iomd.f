@@ -91,7 +91,6 @@ c Open file
         endif
       else
         call io_assign( iupos )
-        print *, "iupos on opening: ", iupos
         open(iupos,file=fnpos,form='unformatted',status='unknown',
      $       position="append")
       endif
@@ -117,8 +116,6 @@ C Write data on files
      .      ((cell(ix,iv),ix=1,3),(vcell(ix,iv),ix=1,3),iv=1,3)
         endif
       else
-        print *, "iupos on writing: ", iupos
-        print *, "istep, xa, va : ", istep, xa, va
         write(iupos) istep, xa, va
         if ( varcel ) write(iupos) cell, vcell
       endif

@@ -56,12 +56,11 @@
 #ifdef MPI
       use mpi_siesta
 #endif
+
 #ifdef TRANSIESTA
-! TSS Begin
-      use m_ts_options, only: read_ts_options
-      use m_ts_in_siesta, only: setup_ts_kpoint_grid
-! TSS End
-#endif /* TRANSIESTA */
+      use m_ts_init, only : ts_init
+#endif
+
       implicit none
 #ifdef MPI
       integer :: MPIerror  ! Return error code in MPI routines
@@ -86,6 +85,9 @@ C     Initialise MPI and set processor number
      &           'doesn''t have parallel support')
       endif
 #endif
+      if (Node==0) then
+         call system("rm -f 0_NORMAL_EXIT")
+      endif
 #ifdef DEBUG
 !     Generates a debug file for every process to track the execution.
 !     The file is called debug.$(PID) Where PID is the process number.
@@ -225,12 +227,6 @@ C     Initialise MPI and set processor number
 !     Read simulation data
       call read_options( na_u, ns, nspin )
 
-#ifdef TRANSIESTA
-!     Read TS Input options
-      call read_ts_options( )
-!     TSS End
-#endif
-
       qtot = qtot - charnet     ! qtot set in initatomlists
                                 ! charnet set in redata
       if (IOnode) then
@@ -321,9 +317,7 @@ C     Initialise MPI and set processor number
       endif
 
 #ifdef TRANSIESTA
-!     TSS Begin
-      call setup_ts_kpoint_grid( ucell )
-!     TSS End
+      call ts_init(nspin,ucell,na_u,xa)
 #endif
 
       nullify(eo,qo)

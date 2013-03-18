@@ -93,12 +93,13 @@
          last   = .false.     ! we're only done with the initial diagon run
          TSinit = .false.     ! now we start the TRANSIESTA run
          TSrun = .true.
-           !
-           ! From now on, a new mixing cycle starts,
-           ! so we have to reset the Pulay record keeping
-           !
-           call init_pulay_arrays()  
-           !
+         if (TSiscf .eq. 1) call timer( 'IterSCF', 3 ) !TSS
+         !
+         ! From now on, a new mixing cycle starts,
+         ! so we have to reset the Pulay record keeping
+         !
+         call init_pulay_arrays()
+
          if(IONode) then
            write(6,'(/a)')
      &'                          ************************       '
@@ -108,9 +109,22 @@
      &'                          ************************       '
         end if
       end if
-      if (TSiscf .eq. 1) call timer( 'IterSCF', 3 ) !TSS
-      if (TSiscf .eq. 1) call timer( 'TS', 3 ) !TSS
-      if (last) TSiscf = 0
+
+      if (TSiscf .eq. 1) then
+         call timer( 'TS', 3 )       !TSS (with Green's function generation)
+         call timer( 'TS_calc', 3 )  !TSS (only calculating routines)
+      end if
+      if (TSrun .and. TSiscf < min_nscf ) last = .false.
+! Needed for an MD run of TranSiesta
+!      if (TSrun .and. last) then
+!         ! reset pulays again
+!         call init_pulay_arrays()
+!         ! Set TSinit to .true. for a continuation run in an MD simulation.
+!         TSinit = .true.
+!         !
+!         TSrun  = .false.
+!         TSiscf = 0
+!      end if
 
 !     TSS End
 #endif /* TRANSIESTA */

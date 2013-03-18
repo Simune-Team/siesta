@@ -128,14 +128,20 @@ C  Internal variables .............................................
       integer           :: BNode, ie, ierror, ik, io, iio, ind, is,
      &                     ispin, iuo, j, jo, juo, maxnhg, nuog,
      &                     maxnumh, neigneeded
-      integer,  pointer :: numhg(:), listhptrg(:), listhg(:)
+      integer,  pointer :: numhg(:) => null(),
+     $                     listhptrg(:) => null(),
+     $                     listhg(:) => null()
       real(dp)          :: ckxij, ee, kxij, pipj1, pipj2, qe, skxij, t
-      real(dp), pointer :: Snew(:), Dloc(:), Hnew(:,:), Dnewloc(:,:),
-     &                     Enewloc(:,:), xijloc(:,:)
-C  ..&.................
+      real(dp), pointer :: Snew(:) => null(),
+     $                     Dloc(:) => null(),
+     $                     Hnew(:,:) => null(),
+     $                     Dnewloc(:,:) => null(),
+     $                     Enewloc(:,:) => null(),
+     $                     xijloc(:,:) => null()
 
 C Globalise list arrays - assumes listh and listd are the same
 
+      nullify(numhg, listhptrg)
 C Allocate local memory for global list arrays
       call re_alloc( numhg, 1, nuotot, name='numhg',
      &               routine= 'diagkp' )
@@ -147,6 +153,7 @@ C Find maximum value in numh and create local storage
       do io = 1,nuo
         maxnumh = max(maxnumh,numh(io))
       enddo
+      nullify(Dloc)
       call re_alloc( Dloc, 1, maxnumh, name='Dloc',
      &               routine= 'diagkp' )
 
@@ -169,7 +176,7 @@ C Build global listhptr
 
 C Globalse listh
       maxnhg = listhptrg(nuotot) + numhg(nuotot)
-
+      nullify(listhg)
       call re_alloc( listhg, 1, maxnhg, name='listhg',
      &               routine= 'diagkp' )
       do io = 1,nuotot
@@ -187,7 +194,7 @@ C Globalse listh
 
 C     Create new distribution of H and S
       nuog = nuotot
-
+      nullify(Snew,Hnew,xijloc)
       call re_alloc( Snew, 1, maxnhg, name='listhg',
      &               routine= 'diagkp' )
       call re_alloc( Hnew, 1, maxnhg, 1, nspin, name='Hnew',
@@ -270,6 +277,7 @@ C Globalise eigenvalues
 C Check if we are done ................................................
       if (.not.getD) goto 999
 
+      nullify(Dnewloc,Enewloc)
 C Allocate local copies of Dk and Ek for building matrices
       call re_alloc( Dnewloc, 1, maxnhg, 1, 2, name='Dnewloc',
      &               routine= 'diagkp' )

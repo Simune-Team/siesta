@@ -231,6 +231,7 @@ C Find maximum eigenvector that is required for this k point and spin
 C Compute all eigenvectors if getPSI = .true.
 
           if (getPSI) then
+            ! We do not have info about occupation
             neigneeded = nuotot
           else
             neigneeded = 0
@@ -304,6 +305,11 @@ C Repeat diagonalisation with increased memory to handle clustering
           call timer( 'c-eigvec', 2 )
 
           if (getPSI) then
+             if (.not. getD) then
+                ! Fill in the missing eigenvalue information
+                ! This is useful if we are requesting WFS in a "bands" setting
+                call kludge_copy(nuotot,eo(1,ispin,ik),aux)
+             endif
              call writew(nuotot,nuo,ik,kpoint(1,ik),ispin,
      .                 aux,psi,.false.)
           endif
@@ -400,4 +406,17 @@ C Global operation to form new density matrix
       if (Node .eq. 0) then
          call io_close(iu)
       endif
+
+      CONTAINS
+
+      ! Work around shape of aux array
+      subroutine kludge_copy(n,a,b)
+      integer, intent(in) :: n
+      real(dp)            :: a(*)
+      real(dp)            :: b(*)
+      
+      a(1:n) = b(1:n)
+      end subroutine kludge_copy
+
+
       end

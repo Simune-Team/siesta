@@ -1,9 +1,15 @@
 To prepare a hard-copy version of the manual, use the (pdf)LaTeX program:
 
+Formerly, one had to do manually:
+
 (pdf)latex siesta
 (pdf)latex siesta
 makeindex siesta
 (pdf)latex siesta
 (pdf)latex siesta
  [+ dvips siesta  if you use plain latex]
+
+Now it is enough to type 'make' in the Docs directory to create the manual (for
+this you need a reasonably up-to-date TeX distribution).
+
 

@@ -38,7 +38,7 @@
 
       real(grid_p),   pointer :: rhopcc(:), rhoatm(:), Vna(:)
       real(dp)                :: Uharrs     ! Harris energy
-      logical                 :: IsDiag, IsEfld, IsVolt, spiral
+      logical                 :: IsDiag, IsEfld, spiral
       character(len=10)       :: shape
       integer                 :: nml(3), ntml(3), npcc,
      &                           nmpl, ntpl
@@ -99,8 +99,8 @@
 #endif
 #ifdef TRANSIESTA
 !     TSS Begin
-      use m_ts_options,   only : TSmode
-      use m_ts_in_siesta, only : TSVoltage2
+      use m_ts_options,   only : TSmode, isVolt
+      use m_ts_voltage,   only : print_ts_voltage
 !     TSS End
 #endif /* TRANSIESTA */
       implicit none
@@ -384,20 +384,21 @@ C ----------------------------------------------------------------------
       if (frstme) then
 !        Check if we need to add the potential 
 !        corresponding to the voltage-drop.
-!         ** FDN: Check that this routine expects things in the
-!                 UNIFORM distribution
         if (TSmode) then
-          call TSvoltage2( cell, ntm, nsm, dummy_Vscf, IsVolt )
-          if(IsVolt .and. acting_efield) then
-            isvolt = .false.
-            if(Node.eq.0) then
-              write(6,*) 'WARNING: both ext. voltage and field !!'
-              write(6,*) 'WARNING: will neglect voltage !!       '
-            end if
-          end if
+           if ( isVolt ) then
+              call print_ts_voltage(cell)
+           end if
+           if(isVolt .and. acting_efield) then
+              isvolt = .false.
+              if(Node.eq.0) then
+                 write(6,*) 'WARNING: both ext. voltage and field !!'
+                 write(6,*) 'WARNING: will neglect voltage !!       '
+              end if
+           end if
         endif
       endif
 #endif /* TRANSIESTA */
+
       frstme = .false.
 
       call timer( 'DHSCF_Init', 2 )
@@ -540,6 +541,8 @@ C     Modules
       use moreMeshSubs,   only : setMeshDistr, distMeshData
       use moreMeshSubs,   only : UNIFORM, QUADRATIC, LINEAR
       use moreMeshSubs,   only : TO_SEQUENTIAL, TO_CLUSTER, KEEP
+      use m_partial_charges, only: compute_partial_charges
+      use m_partial_charges, only: want_partial_charges
 #ifndef BSC_CELLXC
 
       use siestaXC, only : cellXC       ! Finds xc energy and potential
@@ -555,7 +558,7 @@ C     Modules
       use iogrid_netcdf, only: write_grid_netcdf
       use iogrid_netcdf, only: read_grid_netcdf
       use siesta_options, only: read_charge_cdf
-      use siesta_options, only: savevna
+      use siesta_options, only: savevna, savebader
       use siesta_options, only: read_deformation_charge_cdf
 
       use m_efield,       only: get_field_from_dipole, dipole_correction
@@ -564,8 +567,9 @@ C     Modules
       use m_doping_uniform,       only: doping_active, doping_uniform
 
 #ifdef TRANSIESTA
-      use m_ts_options, only: UseVFix, TSmode
-      use m_ts_in_siesta, only: TSVHFix, TSVoltage2
+      use m_ts_options, only: UseVFix, TSmode, isVolt
+      use m_ts_voltage, only : ts_voltage
+      use m_ts_in_siesta, only: TSVHFix
       use m_ts_global_vars, only: TSrun
 #endif /* TRANSIESTA */
       implicit none
@@ -682,7 +686,9 @@ C     Work arrays
       real(grid_p), pointer :: Vscf(:,:), Vscf_par(:,:),
      &                         DRho(:,:), DRho_par(:,:),
      &                         Vaux(:), Vaux_par(:), Chlocal(:),
-     &                         Totchar(:), fsrc(:), fdst(:)
+     &                         Totchar(:), fsrc(:), fdst(:),
+     &                         rhoatm_quad(:) => null(),
+     &                         DRho_quad(:,:) => null()
 #ifdef BSC_CELLXC
       real(grid_p), pointer :: Vscf_gga(:,:), DRho_gga(:,:)
 #endif /* BSC_CELLXC */
@@ -694,7 +700,7 @@ C     Work arrays
 #ifdef DEBUG
       call write_debug( '    PRE DHSCF' )
 #endif
-!------------------------------------------------------------------------- BEGIN
+!-------------------------------------------------------------------- BEGIN
 C ----------------------------------------------------------------------
 C Start of SCF iteration part
 C ----------------------------------------------------------------------
@@ -800,6 +806,42 @@ C       Set the UNIFORM distribution again and copy DRho to it
         endif
 
       endif
+!
+!     Proper place to integrate Hirshfeld and Voronoi code,
+!     since we have just computed rhoatm and Rho.
+
+      if (want_partial_charges) then
+        ! The endpht array is in the quadratic distribution, so
+        ! we need to use it for this...
+        if (nodes.gt.1) then
+           call setMeshDistr( QUADRATIC, nsm, nsp,
+     &                        nml, nmpl, ntml, ntpl )
+        endif
+        call re_alloc( DRho_quad, 1, ntpl, 1, nspin,
+     &                 'DRho_quad','dhscf' )       
+        call re_alloc( rhoatm_quad, 1, ntpl,
+     &                 'rhoatm_quad','dhscf' )       
+        do ispin = 1, nspin
+          fsrc => DRho(:,ispin)
+          fdst => DRho_quad(:,ispin)
+         ! if nodes==1, this call will just reorder
+          call distMeshData( UNIFORM, fsrc,
+     &                       QUADRATIC, fdst, TO_CLUSTER )
+        enddo
+        call distMeshData( UNIFORM, rhoatm,
+     &                     QUADRATIC, rhoatm_quad, TO_CLUSTER )
+
+        call compute_partial_charges(DRho_quad,rhoatm_quad,
+     .                  nspin, iaorb, iphorb, 
+     .                  isa, nmpl,dvol)
+
+        call de_alloc(rhoatm_quad,'rhoatm_quad','dhscf')
+        call de_alloc(Drho_quad,'DRho_quad','dhscf')
+        if (nodes.gt.1) then
+           call setMeshDistr( UNIFORM, nsm, nsp,
+     &                        nml, nmpl, ntml, ntpl )
+        endif
+      endif
 
 C ----------------------------------------------------------------------
 C Save electron density
@@ -851,6 +893,14 @@ C       Save total (ionic+electronic) charge
         call de_alloc( Chlocal, 'Chlocal', 'dhscf' )
       endif
 
+C ----------------------------------------------------------------------
+C Save the total charge (model core + valence) for Bader analysis
+C ----------------------------------------------------------------------
+
+      if (filetoch .ne. ' ' .and. savebader) then
+        call save_bader_charge()
+      endif
+
 C Find difference between selfconsistent and atomic densities
 
       !Both DRho and rhoatm are using a UNIFORM, sequential form
@@ -877,6 +927,15 @@ C Transform spin density into sum and difference
           DRho(ip,1) = rhotot
         enddo
       endif
+
+C Add a background charge to neutralize the net charge, to
+C model doped systems. It only adds the charge at points
+C where there are atoms (i.e., not in vacuum).          
+C First, call with 'task=0' to add background charge    
+
+        if (doping_active) call doping_uniform(cell,ntpl,0,
+     $                                         DRho(:,1),rhoatm)
+
 C ----------------------------------------------------------------------
 C Calculate the dipole moment
 C ----------------------------------------------------------------------
@@ -888,14 +947,6 @@ C Find center of system
         do ia = 1,nua
           x0(1:3) = x0(1:3) + xa(1:3,ia) / nua
         enddo
-
-C Add a background charge to neutralize the net charge, to
-C model doped systems. It only adds the charge at points
-C where there are atoms (i.e., not in vacuum).          
-C First, call with 'task=0' to add background charge    
-
-        if (doping_active) call doping_uniform(cell,ntpl,0,
-     $                                         DRho(:,1),rhoatm)
 
 C Find dipole
         ! This routine is distribution-blind
@@ -930,11 +981,6 @@ C ----------------------------------------------------------------------
       if (TSmode .and. UseVFix) call TSVHFix( ntm, nsm, Vscf )
 #endif /* TRANSIESTA */
 
-C Call doping with 'task=1' to remove background charge added previously
-
-        if (doping_active) call doping_uniform(cell,ntpl,1,
-     $                                         DRho(:,1),rhoatm)
-
 C Add contribution to stress from electrostatic energy of rhoscf-rhoatm
       if (istr .eq. 1) then
         stressl(1:3,1:3) = stressl(1:3,1:3) + DStres(1:3,1:3)
@@ -949,6 +995,13 @@ C ----------------------------------------------------------------------
       do ip = 1, ntpl
         Uscf = Uscf + dvol * Vscf(ip,1) * rhoatm(ip)
       enddo
+
+C Call doping with 'task=1' to remove background charge added previously
+C The extra charge thus only affects the Hartree energy and potential,
+C but not the contribution to Enascf ( = \Int_{Vna*\rho})
+
+        if (doping_active) call doping_uniform(cell,ntpl,1,
+     $                                         DRho(:,1),rhoatm)
 
 C ----------------------------------------------------------------------
 C Add neutral-atom potential to Vscf
@@ -998,7 +1051,7 @@ C ----------------------------------------------------------------------
         ! This routine expects a sequential array,
         ! in whatever distribution
         !FDN** The comment above should be clarified
-        call tsvoltage2(cell, ntm, nsm, Vscf, IsVolt )
+        call ts_voltage(cell, ntm, nsm, Vscf )
       endif
 !    TSS End
 #endif /* TRANSIESTA */
@@ -1344,6 +1397,32 @@ C ----------------------------------------------------------------------
       call write_debug( '    POS DHSCF' )
 #endif
 !------------------------------------------------------------------------ END
+      CONTAINS
+
+      subroutine save_bader_charge()
+      use meshsubs, only: ModelCoreChargeOnMesh
+      ! Auxiliary routine to output the Bader Charge
+      !
+      real(grid_p), pointer :: BaderCharge(:) => null()
+
+      call re_alloc( BaderCharge, 1, ntpl, name='BaderCharge',
+     &                 routine='dhscf' )
+
+      ! Find a model core charge by re-scaling the local charge
+      call ModelCoreChargeOnMesh( na, isa, ntpl, BaderCharge, indxua )
+      ! It comes out in clustered form, so we convert it
+      call reord( BaderCharge, BaderCharge, nml, nsm, TO_SEQUENTIAL)
+      do ispin = 1,nsd
+         BaderCharge(1:ntpl) = BaderCharge(1:ntpl) + DRho(1:ntpl,ispin)
+      enddo
+      call write_rho( trim(slabel)// ".BADER", cell,
+     $     ntm, nsm, ntpl, 1, BaderCharge )
+      call write_grid_netcdf( cell, ntm, 1, ntpl,
+     $     BaderCharge, "BaderCharge")
+
+      call de_alloc( BaderCharge, name='BaderCharge' )
+      end subroutine save_bader_charge
+
       end subroutine dhscf
 
       end module m_dhscf

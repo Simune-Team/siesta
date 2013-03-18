@@ -71,7 +71,7 @@ C Energies in Rydbergs.
 C *********************************************************************
 
       use precision,    only : dp
-      use atmfuncs,     only : zvalfis
+      use atomlist,     only : qtot
       use densematrix,  only : Haux, Saux, psi
       use parallel,     only : Node, Nodes
       use parallelsubs, only : GlobalToLocalOrb
@@ -223,21 +223,20 @@ C If nk.eq.0
 
 C     Check whether nkopt is greater than 0
       if (nkopt.eq.0) then
+         if (Node .eq. 0) then
           write(6,'(/a)') 
      &     'optical: no grid specified for optical calculation' 
           write(6,'(/a)')
      &     'optical: no calculation performed'
-          goto 999
+         endif
+         goto 999
       endif 
 
 
       if (nspin.eq.1) then 
 C       Total number of valence electrons in the unit cell
-        ntote_real = 0.0_dp
-        do ia = 1,nua
-          is = isa(ia) 
-          ntote_real = ntote_real + zvalfis(is)
-        enddo 
+! (Taking into account net charge...)
+        ntote_real = qtot
         if ((nint(ntote_real) - ntote_real) .gt. 1.0e-6_dp) then
            call die('Optical: Non-integer number of electrons')
         endif
@@ -312,6 +311,8 @@ C     efield changes
      &    escissor,' Ry '
         write(6,'(a,i8)')     'Optical: Number of bands         = ',
      &    nbands
+        write(6,'(a,i8)')     'Optical: Number of electrons     = ',
+     .    ntote
         write(6,'(a,3i4)')    'Optical: BZ mesh dimensions      = ',
      &    (nmeshk(j),j=1,3)
       endif
