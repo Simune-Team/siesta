@@ -106,8 +106,9 @@ subroutine dminim(CalcE,PreviousCallDiagon,iscf,istp,nbasis,nspin,h_dim,nhmax,nu
 
   !**** LOCAL ***********************************!
 
-  logical :: UpdatePrecon ! update the preconditioner?
-  logical :: UsePrecon    ! use the preconditioner?
+  logical :: UpdatePrecon     ! update the preconditioner?
+  logical :: UsePrecon        ! use the preconditioner?
+  logical :: UpdateSparseComm ! update nhmax_max?
 
   integer :: ispin
   integer :: io
@@ -180,6 +181,7 @@ subroutine dminim(CalcE,PreviousCallDiagon,iscf,istp,nbasis,nspin,h_dim,nhmax,nu
 
     UsePrecon=.false.
     UpdatePrecon=.false.
+    UpdateSparseComm=.false.
 
   else
 
@@ -208,6 +210,11 @@ subroutine dminim(CalcE,PreviousCallDiagon,iscf,istp,nbasis,nspin,h_dim,nhmax,nu
     ! if this is the first time the module is called for this MD step, convert the new overlap
     ! matrix from sparse to dense
     if (UseSparse) then
+      if (istp/=last_call(2)) then
+        UpdateSparseComm=.true.
+      else
+        UpdateSparseComm=.false.
+      end if
       if (UsePrecon .and. (istp/=last_precon_update)) then
         allocate(s_dense1D(1:h_dim_loc_1D,1:h_dim))
         s_dense1D=0.0_dp
@@ -290,27 +297,27 @@ subroutine dminim(CalcE,PreviousCallDiagon,iscf,istp,nbasis,nspin,h_dim,nhmax,nu
     if (UseSparse) then
       if (CalcE) then
         call minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,iscf,h_dim,N_occ(ispin),eta(ispin),&
-                             psi,nspin,ispin,UpdatePrecon,UsePrecon,d_sparse(1:nhmax,ispin))
+                             psi,nspin,ispin,UpdatePrecon,UsePrecon,UpdateSparseComm,d_sparse(1:nhmax,ispin))
       else
         if (allocated(s_dense1D)) then
           if (allocated(t_dense1D)) then
             call minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,iscf,h_dim,N_occ(ispin),eta(ispin),&
-                                 psi,nspin,ispin,UpdatePrecon,UsePrecon,d_sparse(1:nhmax,ispin),h_sparse(1:nhmax,ispin)-&
-                                 eta(ispin)*s_sparse(1:nhmax),s_sparse,s_dense1D,t_dense1D)
+                                 psi,nspin,ispin,UpdatePrecon,UsePrecon,UpdateSparseComm,d_sparse(1:nhmax,ispin),&
+                                 h_sparse(1:nhmax,ispin)-eta(ispin)*s_sparse(1:nhmax),s_sparse,s_dense1D,t_dense1D)
           else
             call minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,iscf,h_dim,N_occ(ispin),eta(ispin),&
-                                 psi,nspin,ispin,UpdatePrecon,UsePrecon,d_sparse(1:nhmax,ispin),h_sparse(1:nhmax,ispin)-&
-                                 eta(ispin)*s_sparse(1:nhmax),s_sparse,s_dense1D)
+                                 psi,nspin,ispin,UpdatePrecon,UsePrecon,UpdateSparseComm,d_sparse(1:nhmax,ispin),&
+                                 h_sparse(1:nhmax,ispin)-eta(ispin)*s_sparse(1:nhmax),s_sparse,s_dense1D)
           end if
         else
           if (allocated(t_dense1D)) then
             call minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,iscf,h_dim,N_occ(ispin),eta(ispin),&
-                                 psi,nspin,ispin,UpdatePrecon,UsePrecon,d_sparse(1:nhmax,ispin),h_sparse(1:nhmax,ispin)-&
-                                 eta(ispin)*s_sparse(1:nhmax),s_sparse,t_dense1D=t_dense1D)
+                                 psi,nspin,ispin,UpdatePrecon,UsePrecon,UpdateSparseComm,d_sparse(1:nhmax,ispin),&
+                                 h_sparse(1:nhmax,ispin)-eta(ispin)*s_sparse(1:nhmax),s_sparse,t_dense1D=t_dense1D)
           else
             call minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,iscf,h_dim,N_occ(ispin),eta(ispin),&
-                                 psi,nspin,ispin,UpdatePrecon,UsePrecon,d_sparse(1:nhmax,ispin),h_sparse(1:nhmax,ispin)-&
-                                 eta(ispin)*s_sparse(1:nhmax),s_sparse)
+                                 psi,nspin,ispin,UpdatePrecon,UsePrecon,UpdateSparseComm,d_sparse(1:nhmax,ispin),&
+                                 h_sparse(1:nhmax,ispin)-eta(ispin)*s_sparse(1:nhmax),s_sparse)
           end if
         end if
       end if
@@ -1273,7 +1280,7 @@ end subroutine minim_cg
 ! gradients (sparse routine)                     !
 !================================================!
 subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispin,&
-                           UpdatePrecon,UsePrecon,d_sparse,h_sparse,s_sparse,s_dense1D,t_dense1D)
+                           UpdatePrecon,UsePrecon,UpdateSparseComm,d_sparse,h_sparse,s_sparse,s_dense1D,t_dense1D)
   implicit none
 
   !**** INPUT ***********************************!
@@ -1282,6 +1289,7 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
   logical, intent(in) :: PreviousCallDiagon ! Previous SCF iteration solved by diagonalization?
   logical, intent(in) :: UpdatePrecon       ! update the preconditioner?
   logical, intent(in) :: UsePrecon          ! use the preconditioner?
+  logical, intent(in) :: UpdateSparseComm   ! update nhmax_max?
 
   integer, intent(in) :: nhmax       ! first dimension of listh and sparse matrices
   integer, intent(in) :: numh(:)     ! num. of nonzero elements of each row of sparse matrices
@@ -1406,18 +1414,15 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
         end if
       end do
 
-      ! find the largest value of nhmax over all MPI processes needed for the sparse matrix
+      ! find the largest value of h_dim_loc over all MPI processes needed for the sparse matrix
       ! multiplications
-      nhmax_max=0
       h_dim_loc_max=0
       do i=0,Nodes-1
         if (i==Node) then
-          j=nhmax
           k=h_dim_loc_1D
         end if
         call mpi_bcast(j,1,mpi_integer,i,mpi_comm_world,info)
         call mpi_bcast(k,1,mpi_integer,i,mpi_comm_world,info)
-        if (j>nhmax_max) nhmax_max=j
         if (k>h_dim_loc_max) h_dim_loc_max=k
       end do
 
@@ -1554,6 +1559,20 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
   end if
 
 #ifdef MPI
+  ! find the largest value of nhmax over all MPI processes needed for the sparse matrix
+  ! multiplications
+  if (UpdateSparseComm) then
+    nhmax_max=0
+    do i=0,Nodes-1
+      if (i==Node) then
+        j=nhmax
+      end if
+      call mpi_bcast(j,1,mpi_integer,i,mpi_comm_world,info)
+      call mpi_bcast(k,1,mpi_integer,i,mpi_comm_world,info)
+      if (j>nhmax_max) nhmax_max=j
+    end do
+  end if
+
   allocate(numh_recv(1:h_dim_loc_max))
   allocate(listhptr_recv(1:h_dim_loc_max))
   allocate(listh_recv(1:nhmax_max))

@@ -1,4 +1,27 @@
-2012-15-03 17:00 Fabiano Corsetti <fcorsetti@nanogune.eu>  trunk-432--minim-9
+2013-18-03 17:30 Fabiano Corsetti <fcorsetti@nanogune.eu>  trunk-432--minim-10
+Bug fix and two tests added
+
+* Bug fix for change of nhmax between MD steps that affects parallel runs with
+  sparse algebra
+* Two tests have been added to the Tests directory, one for m_dminim and one for
+  m_zminim
+
+added:
+  Tests/OMM_h2o/
+  Tests/OMM_h2o/Makefile
+  Tests/OMM_h2o/OMM_h2o.fdf
+  Tests/OMM_h2o/OMM_h2o.pseudos
+  Tests/OMM_si/
+  Tests/OMM_si/Makefile
+  Tests/OMM_si/OMM_si.fdf
+  Tests/OMM_si/OMM_si.pseudos
+modified:
+  Docs/siesta.tex
+  Src/m_dminim.F90
+  Src/m_zminim.F90
+  Tests/Makefile
+
+2013-15-03 17:00 Fabiano Corsetti <fcorsetti@nanogune.eu>  trunk-432--minim-9
 Merge with trunk-432 and manual updated
 
 removed:
@@ -243,7 +266,7 @@ modified:
   Util/pseudo-xml/xml2psf_helper.f
   version.info
 
-2012-15-03 17:00 Fabiano Corsetti <fcorsetti@nanogune.eu>  trunk-409--minim-8
+2013-15-03 17:00 Fabiano Corsetti <fcorsetti@nanogune.eu>  trunk-409--minim-8
 Major update (addition of many different features and keywords)
 
 * The module has been expanded to include many different versions of the OMM

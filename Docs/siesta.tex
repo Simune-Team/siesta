@@ -4037,7 +4037,7 @@ It is important to note that the OMM requires all occupied Kohn-Sham
 eigenvalues to be negative; this can be achieved by applying a shift
 to the eigenspectrum, controlled by {\bf ON.eta} (in this case,
 {\bf ON.eta} simply needs to be higher than the HOMO level). If the OMM
-exhibits a pathologically slow or unstable minimization, this is almost
+exhibits a pathologically slow or unstable convergence, this is almost
 certainly due to the fact that the default value of {\bf ON.eta}
 ({\tt 0.0 eV}) is too low, and should be raised by a few eV.
 
@@ -4138,7 +4138,7 @@ the dimension relating to the underlying basis orbitals is controlled by {\bf Bl
 
 \item[{\bf OMM.TPreconScale}] ({\it real energy}):
 \index{OMM.TPreconScale@{\bf OMM.TPreconScale}}
-Scale of the kinetic energy preconditioning (see C. K. Gan {\em et al.}, Comput. Phys. Commun.
+Scale of the kinetic energy preconditioning (see C.~K.~Gan {\em et al.}, Comput. Phys. Commun.
 {\bf 134}, 33 (2001)). A smaller value indicates more aggressive kinetic energy preconditioning,
 while an infinite value indicates no kinetic energy preconditioning. In general, the kinetic
 energy preconditioning is much less important than the tensorial correction brought about by
