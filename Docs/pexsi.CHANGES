@@ -1,4 +1,17 @@
 ------------------------------------------------------------
+Mar 21, 2013   Alberto Garcia  trunk-432--timing-6--pexsi-19-dist-2
+Extended interface with mu history
+
+New parameters implemented by Lin to monitor the history
+of mu convergence. 
+The dummy pexsi routine now prints its arguments, and sets a few
+dummy output variables. 
+
+modified:
+  Src/m_pexsi_solver.F90
+  Src/pexsi_interface.F90
+
+------------------------------------------------------------
 Mar 14, 2013   Alberto Garcia  trunk-432--timing-6--pexsi-19-dist-1
 Interface block for PEXSI. Some comments for new distribution
 

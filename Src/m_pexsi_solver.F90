@@ -39,6 +39,10 @@ CONTAINS
     integer :: bs, norbs_slack, nnz_slack
     integer :: ispin, maxnhtot, ih, nnzold, i
 
+    integer  :: ordering
+    integer  :: muIter
+    real(dp) :: muZeroT
+
     real(dp), save :: mu
     logical, save  :: first_call = .true.
     real(dp)       :: eBandStructure, eBandH
@@ -53,6 +57,9 @@ real(dp), pointer, dimension(:) :: &
         DMnzvalLocal => null() , EDMnzvalLocal => null(), &
 	FDMnzvalLocal => null()
 !
+real(dp), allocatable, dimension(:) :: muList, &
+                                       numElectronList, &
+                                       numElectronDrvList
 integer :: numPole
 real(dp) :: temperature, numElectronExact, numElectron,&
 	gap, deltaE
@@ -90,6 +97,12 @@ interface
 	muMin,&
         muMax,&
 	muMaxIter,&
+        ordering, &
+        muIter, &
+        muList, &
+        numElectronList,&
+        numElectronDrvList,&
+        muZeroT,&
 	poleTolerance,&
 	numElectronTolerance,&
 	comm_global,&
@@ -102,13 +115,36 @@ interface
    real(SELECTED_REAL_KIND(10,100)), intent(out) :: DMnzvalLocal(:),&
                                                     EDMnzvalLocal(:), &
                                                     FDMnzvalLocal(:)
-   integer, intent(in)                 :: numPole
+   integer, intent(in)                            :: numPole
    real(SELECTED_REAL_KIND(10,100)), intent(in)   :: temperature
    real(SELECTED_REAL_KIND(10,100)), intent(in)   :: numElectronExact
    real(SELECTED_REAL_KIND(10,100)), intent(out)  :: numElectron
-   real(SELECTED_REAL_KIND(10,100)), intent(in)   :: gap, deltaE, muMin, muMax
+   real(SELECTED_REAL_KIND(10,100)), intent(in)   :: gap, deltaE
+   real(SELECTED_REAL_KIND(10,100)), intent(in)   :: muMin, muMax
    real(SELECTED_REAL_KIND(10,100)), intent(inout):: mu
-   integer, intent(in)                            :: muMaxIter
+
+   ! Variables related to mu history
+   ! Maximum number of allowed iterations
+   integer, intent(in)                           :: muMaxIter
+
+   ! Ordering 
+   !   0   : PARMETIS
+   !   1   : METIS_AT_PLUS_A
+   !   2   : MMD_AT_PLUS_A
+   integer, intent(in)                           :: ordering
+
+   ! Actual number of iterations performed
+   integer, intent(out)                          :: muIter
+
+   ! List of values of mu, N_e, d(N_e)/d_mu
+   real(SELECTED_REAL_KIND(10,100)), intent(out) :: muList(muMaxIter)
+   real(SELECTED_REAL_KIND(10,100)), intent(out) :: numElectronList(muMaxIter)
+   real(SELECTED_REAL_KIND(10,100)),intent(out):: numElectronDrvList(muMaxIter)
+
+   ! mu extrapolated to T=0K
+   real(SELECTED_REAL_KIND(10,100)), intent(out) :: muZeroT
+
+
    real(SELECTED_REAL_KIND(10,100)), intent(in)   :: poleTolerance, &
                                                      numElectronTolerance
    integer, intent(in)                 :: comm_global, npPerPole
@@ -181,8 +217,6 @@ if (worker) then
 
 endif ! worker
 
-! Data is for the DNA matrix.
-
 !temperature      = fdf_get("PEXSI.temperature",3000.0d0)    ! Units??
 ! Now passed directly by Siesta  (Use ElectronicTemperature (with units))
 
@@ -207,6 +241,10 @@ muMax            = fdf_get("PEXSI.mu-max", 0.0d0)
 ! muMaxIter should be 1 or 2 later when combined with SCF.
 muMaxIter        = fdf_get("PEXSI.mu-max-iter",10)
 
+allocate( muList( muMaxIter ) )
+allocate( numElectronList( muMaxIter ) )
+allocate( numElectronDrvList( muMaxIter ) )
+
 ! Do not compute a pole if the corresponding weight is < poleTolerance.
 poleTolerance    = fdf_get("PEXSI.pole-tolerance",1d-8)
 
@@ -217,11 +255,15 @@ numElectronTolerance = fdf_get("PEXSI.num-electron-tolerance",1d-1)
 ! Later can be changed to 
 !npPerPole        = fdf_get("PEXSI.np-per-pole",mpisize)
 
+! Ordering flag
+ordering = fdf_get("PEXSI.ordering",1)
+
 call MPI_Bcast(npPerPole,1,MPI_integer,0,true_MPI_COMM_world,ierr)
 call MPI_Bcast(nrows,1,MPI_integer,0,true_MPI_COMM_world,ierr)
 call MPI_Bcast(nnz,1,MPI_integer,0,true_MPI_COMM_world,ierr)
 call MPI_Bcast(numElectronExact,1,MPI_double_precision,0,true_MPI_COMM_world,ierr)
 call MPI_Bcast(temperature,1,MPI_double_precision,0,true_MPI_COMM_world,ierr)
+call MPI_Bcast(ordering,1,MPI_integer,0,true_MPI_COMM_world,ierr)
 
 call f_ppexsi_interface( &
 	nrows,&
@@ -245,6 +287,12 @@ call f_ppexsi_interface( &
 	muMin,&
         muMax,&
 	muMaxIter,&
+        ordering, &
+        muIter, &
+        muList, &
+        numElectronList,&
+        numElectronDrvList,&
+        muZeroT,&
 	poleTolerance,&
 	numElectronTolerance,&
 	true_MPI_COMM_WORLD,&
@@ -298,11 +346,18 @@ if (worker) then
    if( mpirank == 0 ) then
       write(*, *) "mu          = ", mu
       write(*, *) "mu (eV)     = ", mu/eV
+      write(*, *) "muZeroT (eV)     = ", muZeroT/eV
       write(*, *) "numElectron = ", numElectron
       write(*, *) "eBandStructure (Ry) = ", eBandStructure
       write(*, *) "eBandStructure (eV) = ", eBandStructure/eV
       write(*, *) "eBandH (eV) = ", eBandH/eV
       write(*, *) "freeEnergy (eV) = ", (eBandStructure + freeEnergyCorrection)/eV
+      write(*,*) "Number of mu iterations: ", muIter
+      write(*,"(a3,2a12,a20)") "it", "mu", "N_e", "dN_e/dmu"
+      do i = 1, muIter
+         write(*,"(i3,2f12.4,g20.5)") i, muList(i)/eV, &
+                 numElectronList(i), numElectronDrvList(i)*eV
+      end do
    endif
 
   deallocate(rowindLocal)
