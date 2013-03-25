@@ -1,10 +1,11 @@
-Siesta Version:                                        siesta-3.1
-Architecture  : ifort11-macosx64
-Compiler flags: ifort  -O2
-SERIAL version
+Siesta Version: siesta-3.2
+Architecture  : SIESTA_ARCH
+Compiler flags: FFLAGS
+PARALLEL version
+NetCDF support
 
-* Running in serial mode
->> Start of run:  10-JUN-2011  14:25:51
+* Running on    4 nodes in parallel
+>> Start of run:  24-MAR-2013  18:21:19
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -60,7 +61,7 @@ Use PS.lmax or PS.KBprojectors blocks to override.
 <basis_specs>
 ===============================================================================
 Si                   Z=  14    Mass=  28.090        Charge= 0.17977+309
-Lmxo=1 Lmxkb=2     BasisType=split      Semic=F
+Lmxo=1 Lmxkb= 2    BasisType=split      Semic=F
 L=0  Nsemic=0  Cnfigmx=3
           n=1  nzeta=1  polorb=0
             splnorm:   0.15000    
@@ -177,6 +178,7 @@ Si                    2                    # Species label, number of l-shells
 
 prinput: ----------------------------------------------------------------------
 
+Dumping basis to NetCDF file Si.ion.nc
 coor:   Atomic-coordinates input format  =     Fractional
 
 siesta: Atomic coordinates (Bohr) and species
@@ -230,6 +232,9 @@ redata: Last atom to move                =        2
 redata: ***********************************************************************
 Total number of electrons:     8.000000
 Total ionic charge:     8.000000
+
+* ProcessorY, Blocksize:    2   2
+
  Kpoints in:            1 . Kpoints trimmed:            1
 
 siesta: k-point coordinates (Bohr**-1) and weights:
@@ -274,17 +279,17 @@ Initializing Density Matrix...
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
 
-* Maximum dynamic memory allocated =     7 MB
+* Maximum dynamic memory allocated =     5 MB
 
 stepf: Fermi-Dirac step function
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =       -56.415126
+siesta: Ebs     =       -56.415127
 siesta: Eions   =       380.802124
 siesta: Ena     =       115.502327
 siesta: Ekin    =        78.997046
 siesta: Enl     =        35.834927
-siesta: DEna    =        -0.000009
+siesta: DEna    =         0.000000
 siesta: DUscf   =         0.000000
 siesta: DUext   =         0.000000
 siesta: Exc     =       -64.548605
@@ -293,36 +298,36 @@ siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =      -195.484975
-siesta: Etot    =      -215.016437
-siesta: FreeEng =      -215.016437
+siesta: Eharris =      -195.484966
+siesta: Etot    =      -215.016428
+siesta: FreeEng =      -215.016428
 
-siesta: Eharris(eV) =    -195.484975
+siesta: Eharris(eV) =    -195.484966
 
 
-siesta: Eharris(eV) =    -195.484975
+siesta: Eharris(eV) =    -195.484966
 
-timer: Routine,Calls,Time,% = IterSCF        1       0.453  70.16
-elaps: Routine,Calls,Wall,% = IterSCF        1       0.453  70.10
+timer: Routine,Calls,Time,% = IterSCF        1       0.965  41.45
+elaps: Routine,Calls,Wall,% = IterSCF        1       0.246  37.50
 
 siesta: E_KS - E_eggbox =      -194.6964
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000000    0.000000   -0.000001
-     2    0.000000    0.000000    0.000000
+     1   -0.000000    0.000000   -0.000001
+     2   -0.000000   -0.000000   -0.000000
 ----------------------------------------
-   Tot    0.000000    0.000000   -0.000001
+   Tot   -0.000000   -0.000000   -0.000001
 ----------------------------------------
    Max    0.000001
    Res    0.000000    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.000001    constrained
 
-Stress-tensor-Voigt (kbar):     -353.28     -353.28     -353.28        0.00        0.00        0.00
+Stress-tensor-Voigt (kbar):     -353.28     -353.28     -353.28       -0.00        0.00        0.00
 (Free)E + p*V (eV/cell)     -185.8709
 Target enthalpy (eV/cell)     -194.6964
- 
-mulliken: Atomic and Orbital Populations:
+
+mulliken: Mulliken Atomic and Orbital Populations:
 
 Species: Si                  
 Atom  Qatom  Qorb
@@ -335,17 +340,17 @@ mulliken: Qtot =        8.000
 siesta: Calculating polarization. 
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors      7.255776    7.255776    7.255776
-siesta: Along cartesian directions    10.261217   10.261217   10.261217
+siesta: Along the lattice vectors     21.767328   21.767328    7.255776
+siesta: Along cartesian directions    20.522434   20.522434   30.783651
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     18.442356   18.442356   18.442356
-siesta: Along cartesian directions    26.081430   26.081430   26.081430
+siesta: Along the lattice vectors     55.327068   55.327068   18.442356
+siesta: Along cartesian directions    52.162860   52.162860   78.244290
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:    7.255776    7.255776    7.255776
+obc:   21.767328   21.767328    7.255776
 
-* Maximum dynamic memory allocated =     7 MB
+* Maximum dynamic memory allocated =     5 MB
 
 siesta:                 ==============================
                             Begin FC step =      1
@@ -372,17 +377,17 @@ outcell: Cell volume (Ang**3)        :     40.0258
 New_DM. Step:     2
 Initializing Density Matrix...
 
-siesta: Eharris(eV) =    -195.478400
+siesta: Eharris(eV) =    -195.478391
 
 
-siesta: Eharris(eV) =    -195.478400
+siesta: Eharris(eV) =    -195.478391
 
 
 siesta: Atomic forces (eV/Ang):
      1    0.754383    0.000000    0.000000
-     2   -0.764524    0.000000    0.000000
+     2   -0.764524    0.000000   -0.000000
 ----------------------------------------
-   Tot   -0.010141    0.000000    0.000000
+   Tot   -0.010141    0.000000   -0.000000
 ----------------------------------------
    Max    0.764524
    Res    0.438480    sqrt( Sum f_i^2 / 3N )
@@ -392,8 +397,8 @@ siesta: Atomic forces (eV/Ang):
 Stress-tensor-Voigt (kbar):     -356.37     -356.45     -356.45        0.00       20.61        0.00
 (Free)E + p*V (eV/cell)     -185.7853
 Target enthalpy (eV/cell)     -194.6894
- 
-mulliken: Atomic and Orbital Populations:
+
+mulliken: Mulliken Atomic and Orbital Populations:
 
 Species: Si                  
 Atom  Qatom  Qorb
@@ -403,7 +408,7 @@ Atom  Qatom  Qorb
 
 mulliken: Qtot =        8.000
 
-* Maximum dynamic memory allocated =     7 MB
+* Maximum dynamic memory allocated =     5 MB
 
 siesta:                 ==============================
                             Begin FC step =      2
@@ -430,15 +435,15 @@ outcell: Cell volume (Ang**3)        :     40.0258
 New_DM. Step:     3
 Initializing Density Matrix...
 
-siesta: Eharris(eV) =    -195.478399
+siesta: Eharris(eV) =    -195.478391
 
 
-siesta: Eharris(eV) =    -195.478399
+siesta: Eharris(eV) =    -195.478391
 
 
 siesta: Atomic forces (eV/Ang):
-     1   -0.754383    0.000000    0.000000
-     2    0.764524    0.000000   -0.000001
+     1   -0.754383    0.000000   -0.000000
+     2    0.764524   -0.000000   -0.000001
 ----------------------------------------
    Tot    0.010141    0.000000   -0.000001
 ----------------------------------------
@@ -450,8 +455,8 @@ siesta: Atomic forces (eV/Ang):
 Stress-tensor-Voigt (kbar):     -356.37     -356.45     -356.45        0.00      -20.61        0.00
 (Free)E + p*V (eV/cell)     -185.7853
 Target enthalpy (eV/cell)     -194.6894
- 
-mulliken: Atomic and Orbital Populations:
+
+mulliken: Mulliken Atomic and Orbital Populations:
 
 Species: Si                  
 Atom  Qatom  Qorb
@@ -465,7 +470,7 @@ siesta: Calculating polarization.
 
 siesta: Macroscopic polarization per unit cell (a.u.):
 siesta: Along the lattice vectors      7.255815   21.767283   21.767283
-siesta: Along cartesian directions    30.783586   20.522429   20.522429
+siesta: Along cartesian directions    30.783587   20.522429   20.522429
 
 siesta: Macroscopic polarization per unit cell (Debye):
 siesta: Along the lattice vectors     18.442454   55.326952   55.326952
@@ -474,7 +479,7 @@ siesta: Along cartesian directions    78.244126   52.162847   52.162847
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
 obc:    7.255815   21.767283   21.767283
 
-* Maximum dynamic memory allocated =     7 MB
+* Maximum dynamic memory allocated =     5 MB
 
 siesta:                 ==============================
                             Begin FC step =      3
@@ -501,28 +506,28 @@ outcell: Cell volume (Ang**3)        :     40.0258
 New_DM. Step:     4
 Initializing Density Matrix...
 
-siesta: Eharris(eV) =    -195.478399
+siesta: Eharris(eV) =    -195.478391
 
 
-siesta: Eharris(eV) =    -195.478399
+siesta: Eharris(eV) =    -195.478391
 
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000000    0.754383    0.000000
+     1   -0.000000    0.754383   -0.000000
      2    0.000000   -0.764523    0.000000
 ----------------------------------------
-   Tot    0.000000   -0.010140    0.000000
+   Tot   -0.000000   -0.010140   -0.000000
 ----------------------------------------
    Max    0.764523
    Res    0.438480    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.764523    constrained
 
-Stress-tensor-Voigt (kbar):     -356.45     -356.37     -356.45        0.00        0.00       20.61
+Stress-tensor-Voigt (kbar):     -356.45     -356.37     -356.45       -0.00        0.00       20.61
 (Free)E + p*V (eV/cell)     -185.7853
 Target enthalpy (eV/cell)     -194.6894
- 
-mulliken: Atomic and Orbital Populations:
+
+mulliken: Mulliken Atomic and Orbital Populations:
 
 Species: Si                  
 Atom  Qatom  Qorb
@@ -532,7 +537,7 @@ Atom  Qatom  Qorb
 
 mulliken: Qtot =        8.000
 
-* Maximum dynamic memory allocated =     7 MB
+* Maximum dynamic memory allocated =     5 MB
 
 siesta:                 ==============================
                             Begin FC step =      4
@@ -559,28 +564,28 @@ outcell: Cell volume (Ang**3)        :     40.0258
 New_DM. Step:     5
 Initializing Density Matrix...
 
-siesta: Eharris(eV) =    -195.478399
+siesta: Eharris(eV) =    -195.478391
 
 
-siesta: Eharris(eV) =    -195.478399
+siesta: Eharris(eV) =    -195.478391
 
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000000   -0.754384    0.000000
+     1   -0.000000   -0.754384   -0.000001
      2    0.000000    0.764524   -0.000001
 ----------------------------------------
-   Tot    0.000000    0.010140   -0.000001
+   Tot   -0.000000    0.010140   -0.000001
 ----------------------------------------
    Max    0.764524
    Res    0.438481    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.764524    constrained
 
-Stress-tensor-Voigt (kbar):     -356.45     -356.37     -356.45        0.00        0.00      -20.61
+Stress-tensor-Voigt (kbar):     -356.45     -356.37     -356.45        0.00       -0.00      -20.61
 (Free)E + p*V (eV/cell)     -185.7853
 Target enthalpy (eV/cell)     -194.6894
- 
-mulliken: Atomic and Orbital Populations:
+
+mulliken: Mulliken Atomic and Orbital Populations:
 
 Species: Si                  
 Atom  Qatom  Qorb
@@ -603,7 +608,7 @@ siesta: Along cartesian directions    52.162847   78.244126   52.162847
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
 obc:   21.767283    7.255815   21.767283
 
-* Maximum dynamic memory allocated =     7 MB
+* Maximum dynamic memory allocated =     5 MB
 
 siesta:                 ==============================
                             Begin FC step =      5
@@ -630,15 +635,15 @@ outcell: Cell volume (Ang**3)        :     40.0258
 New_DM. Step:     6
 Initializing Density Matrix...
 
-siesta: Eharris(eV) =    -195.478399
+siesta: Eharris(eV) =    -195.478391
 
 
-siesta: Eharris(eV) =    -195.478399
+siesta: Eharris(eV) =    -195.478391
 
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000000    0.000000    0.754384
-     2    0.000001    0.000001   -0.764523
+     1   -0.000000    0.000000    0.754383
+     2    0.000000    0.000001   -0.764523
 ----------------------------------------
    Tot    0.000000    0.000001   -0.010140
 ----------------------------------------
@@ -650,8 +655,8 @@ siesta: Atomic forces (eV/Ang):
 Stress-tensor-Voigt (kbar):     -356.45     -356.45     -356.37       20.61        0.00        0.00
 (Free)E + p*V (eV/cell)     -185.7853
 Target enthalpy (eV/cell)     -194.6894
- 
-mulliken: Atomic and Orbital Populations:
+
+mulliken: Mulliken Atomic and Orbital Populations:
 
 Species: Si                  
 Atom  Qatom  Qorb
@@ -661,7 +666,7 @@ Atom  Qatom  Qorb
 
 mulliken: Qtot =        8.000
 
-* Maximum dynamic memory allocated =     7 MB
+* Maximum dynamic memory allocated =     5 MB
 
 siesta:                 ==============================
                             Begin FC step =      6
@@ -688,17 +693,17 @@ outcell: Cell volume (Ang**3)        :     40.0258
 New_DM. Step:     7
 Initializing Density Matrix...
 
-siesta: Eharris(eV) =    -195.478399
+siesta: Eharris(eV) =    -195.478391
 
 
-siesta: Eharris(eV) =    -195.478399
+siesta: Eharris(eV) =    -195.478391
 
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000000   -0.000001   -0.754383
-     2    0.000000   -0.000001    0.764524
+     1   -0.000000   -0.000001   -0.754383
+     2   -0.000000   -0.000001    0.764524
 ----------------------------------------
-   Tot    0.000000   -0.000001    0.010141
+   Tot   -0.000000   -0.000001    0.010141
 ----------------------------------------
    Max    0.764524
    Res    0.438481    sqrt( Sum f_i^2 / 3N )
@@ -708,8 +713,8 @@ siesta: Atomic forces (eV/Ang):
 Stress-tensor-Voigt (kbar):     -356.45     -356.45     -356.37      -20.61        0.00        0.00
 (Free)E + p*V (eV/cell)     -185.7853
 Target enthalpy (eV/cell)     -194.6894
- 
-mulliken: Atomic and Orbital Populations:
+
+mulliken: Mulliken Atomic and Orbital Populations:
 
 Species: Si                  
 Atom  Qatom  Qorb
@@ -732,7 +737,7 @@ siesta: Along cartesian directions    52.162847   52.162847   78.244126
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
 obc:   21.767283   21.767283    7.255815
 
-* Maximum dynamic memory allocated =     7 MB
+* Maximum dynamic memory allocated =     5 MB
 
 siesta:                 ==============================
                             Begin FC step =      7
@@ -759,14 +764,14 @@ outcell: Cell volume (Ang**3)        :     40.0258
 New_DM. Step:     8
 Initializing Density Matrix...
 
-siesta: Eharris(eV) =    -195.478399
+siesta: Eharris(eV) =    -195.478391
 
 
-siesta: Eharris(eV) =    -195.478399
+siesta: Eharris(eV) =    -195.478391
 
 
 siesta: Atomic forces (eV/Ang):
-     1   -0.764525    0.000000    0.000000
+     1   -0.764525    0.000000   -0.000000
      2    0.754384    0.000001    0.000000
 ----------------------------------------
    Tot   -0.010141    0.000001    0.000000
@@ -779,8 +784,8 @@ siesta: Atomic forces (eV/Ang):
 Stress-tensor-Voigt (kbar):     -356.37     -356.45     -356.45        0.00      -20.61        0.00
 (Free)E + p*V (eV/cell)     -185.7853
 Target enthalpy (eV/cell)     -194.6894
- 
-mulliken: Atomic and Orbital Populations:
+
+mulliken: Mulliken Atomic and Orbital Populations:
 
 Species: Si                  
 Atom  Qatom  Qorb
@@ -790,7 +795,7 @@ Atom  Qatom  Qorb
 
 mulliken: Qtot =        8.000
 
-* Maximum dynamic memory allocated =     7 MB
+* Maximum dynamic memory allocated =     5 MB
 
 siesta:                 ==============================
                             Begin FC step =      8
@@ -817,28 +822,28 @@ outcell: Cell volume (Ang**3)        :     40.0258
 New_DM. Step:     9
 Initializing Density Matrix...
 
-siesta: Eharris(eV) =    -195.478399
+siesta: Eharris(eV) =    -195.478391
 
 
-siesta: Eharris(eV) =    -195.478399
+siesta: Eharris(eV) =    -195.478391
 
 
 siesta: Atomic forces (eV/Ang):
-     1    0.764524    0.000000    0.000000
-     2   -0.754384    0.000001    0.000000
+     1    0.764524   -0.000000   -0.000000
+     2   -0.754384    0.000000    0.000000
 ----------------------------------------
-   Tot    0.010140    0.000000    0.000000
+   Tot    0.010140    0.000000   -0.000000
 ----------------------------------------
    Max    0.764524
    Res    0.438481    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.764524    constrained
 
-Stress-tensor-Voigt (kbar):     -356.37     -356.45     -356.45        0.00       20.61        0.00
+Stress-tensor-Voigt (kbar):     -356.37     -356.45     -356.45       -0.00       20.61       -0.00
 (Free)E + p*V (eV/cell)     -185.7853
 Target enthalpy (eV/cell)     -194.6894
- 
-mulliken: Atomic and Orbital Populations:
+
+mulliken: Mulliken Atomic and Orbital Populations:
 
 Species: Si                  
 Atom  Qatom  Qorb
@@ -856,12 +861,12 @@ siesta: Along cartesian directions    30.783596   20.522439   20.522439
 
 siesta: Macroscopic polarization per unit cell (Debye):
 siesta: Along the lattice vectors     18.442472   55.326970   55.326970
-siesta: Along cartesian directions    78.244151   52.162873   52.162872
+siesta: Along cartesian directions    78.244151   52.162872   52.162872
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
 obc:    7.255822   21.767290   21.767290
 
-* Maximum dynamic memory allocated =     7 MB
+* Maximum dynamic memory allocated =     5 MB
 
 siesta:                 ==============================
                             Begin FC step =      9
@@ -888,15 +893,15 @@ outcell: Cell volume (Ang**3)        :     40.0258
 New_DM. Step:    10
 Initializing Density Matrix...
 
-siesta: Eharris(eV) =    -195.478399
+siesta: Eharris(eV) =    -195.478391
 
 
-siesta: Eharris(eV) =    -195.478399
+siesta: Eharris(eV) =    -195.478391
 
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000000   -0.764524    0.000000
-     2    0.000001    0.754384    0.000000
+     1    0.000000   -0.764524    0.000001
+     2    0.000001    0.754384   -0.000000
 ----------------------------------------
    Tot    0.000001   -0.010139    0.000000
 ----------------------------------------
@@ -908,8 +913,8 @@ siesta: Atomic forces (eV/Ang):
 Stress-tensor-Voigt (kbar):     -356.45     -356.37     -356.45        0.00        0.00      -20.61
 (Free)E + p*V (eV/cell)     -185.7853
 Target enthalpy (eV/cell)     -194.6894
- 
-mulliken: Atomic and Orbital Populations:
+
+mulliken: Mulliken Atomic and Orbital Populations:
 
 Species: Si                  
 Atom  Qatom  Qorb
@@ -919,7 +924,7 @@ Atom  Qatom  Qorb
 
 mulliken: Qtot =        8.000
 
-* Maximum dynamic memory allocated =     7 MB
+* Maximum dynamic memory allocated =     5 MB
 
 siesta:                 ==============================
                             Begin FC step =     10
@@ -946,28 +951,28 @@ outcell: Cell volume (Ang**3)        :     40.0258
 New_DM. Step:    11
 Initializing Density Matrix...
 
-siesta: Eharris(eV) =    -195.478399
+siesta: Eharris(eV) =    -195.478391
 
 
-siesta: Eharris(eV) =    -195.478399
+siesta: Eharris(eV) =    -195.478391
 
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000000    0.764524    0.000000
+     1    0.000000    0.764524   -0.000000
      2    0.000000   -0.754384    0.000000
 ----------------------------------------
-   Tot    0.000000    0.010140    0.000000
+   Tot    0.000000    0.010140   -0.000000
 ----------------------------------------
    Max    0.764524
    Res    0.438481    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.764524    constrained
 
-Stress-tensor-Voigt (kbar):     -356.45     -356.37     -356.45        0.00        0.00       20.61
+Stress-tensor-Voigt (kbar):     -356.45     -356.37     -356.45       -0.00        0.00       20.61
 (Free)E + p*V (eV/cell)     -185.7853
 Target enthalpy (eV/cell)     -194.6894
- 
-mulliken: Atomic and Orbital Populations:
+
+mulliken: Mulliken Atomic and Orbital Populations:
 
 Species: Si                  
 Atom  Qatom  Qorb
@@ -990,7 +995,7 @@ siesta: Along cartesian directions    52.162872   78.244151   52.162872
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
 obc:   21.767290    7.255822   21.767290
 
-* Maximum dynamic memory allocated =     7 MB
+* Maximum dynamic memory allocated =     5 MB
 
 siesta:                 ==============================
                             Begin FC step =     11
@@ -1017,15 +1022,15 @@ outcell: Cell volume (Ang**3)        :     40.0258
 New_DM. Step:    12
 Initializing Density Matrix...
 
-siesta: Eharris(eV) =    -195.478399
+siesta: Eharris(eV) =    -195.478391
 
 
-siesta: Eharris(eV) =    -195.478399
+siesta: Eharris(eV) =    -195.478391
 
 
 siesta: Atomic forces (eV/Ang):
      1    0.000000    0.000000   -0.764524
-     2    0.000001    0.000000    0.754384
+     2    0.000000    0.000000    0.754384
 ----------------------------------------
    Tot    0.000001    0.000001   -0.010140
 ----------------------------------------
@@ -1037,8 +1042,8 @@ siesta: Atomic forces (eV/Ang):
 Stress-tensor-Voigt (kbar):     -356.45     -356.45     -356.37      -20.61        0.00        0.00
 (Free)E + p*V (eV/cell)     -185.7853
 Target enthalpy (eV/cell)     -194.6894
- 
-mulliken: Atomic and Orbital Populations:
+
+mulliken: Mulliken Atomic and Orbital Populations:
 
 Species: Si                  
 Atom  Qatom  Qorb
@@ -1048,7 +1053,7 @@ Atom  Qatom  Qorb
 
 mulliken: Qtot =        8.000
 
-* Maximum dynamic memory allocated =     7 MB
+* Maximum dynamic memory allocated =     5 MB
 
 siesta:                 ==============================
                             Begin FC step =     12
@@ -1075,28 +1080,28 @@ outcell: Cell volume (Ang**3)        :     40.0258
 New_DM. Step:    13
 Initializing Density Matrix...
 
-siesta: Eharris(eV) =    -195.478399
+siesta: Eharris(eV) =    -195.478391
 
 
-siesta: Eharris(eV) =    -195.478399
+siesta: Eharris(eV) =    -195.478391
 
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000000    0.000000    0.764524
+     1   -0.000000   -0.000000    0.764524
      2    0.000000    0.000001   -0.754384
 ----------------------------------------
-   Tot    0.000000    0.000001    0.010140
+   Tot   -0.000000    0.000001    0.010140
 ----------------------------------------
    Max    0.764524
    Res    0.438481    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.764524    constrained
 
-Stress-tensor-Voigt (kbar):     -356.45     -356.45     -356.37       20.61        0.00        0.00
+Stress-tensor-Voigt (kbar):     -356.45     -356.45     -356.37       20.61        0.00       -0.00
 (Free)E + p*V (eV/cell)     -185.7853
 Target enthalpy (eV/cell)     -194.6894
- 
-mulliken: Atomic and Orbital Populations:
+
+mulliken: Mulliken Atomic and Orbital Populations:
 
 Species: Si                  
 Atom  Qatom  Qorb
@@ -1114,12 +1119,12 @@ siesta: Along cartesian directions    20.522439   20.522439   30.783596
 
 siesta: Macroscopic polarization per unit cell (Debye):
 siesta: Along the lattice vectors     55.326970   55.326970   18.442472
-siesta: Along cartesian directions    52.162872   52.162873   78.244151
+siesta: Along cartesian directions    52.162872   52.162872   78.244151
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
 obc:   21.767290   21.767290    7.255822
 
-* Maximum dynamic memory allocated =     7 MB
+* Maximum dynamic memory allocated =     5 MB
 
 siesta: Eigenvalues (eV):
   ik is    eps
@@ -1127,12 +1132,12 @@ siesta: Eigenvalues (eV):
 siesta: Fermi energy =      -2.698930 eV
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =       -56.412788
+siesta: Ebs     =       -56.412789
 siesta: Eions   =       380.802124
 siesta: Ena     =       115.501483
 siesta: Ekin    =       115.577902
 siesta: Enl     =        29.935837
-siesta: DEna    =        -8.120557
+siesta: DEna    =        -8.120548
 siesta: DUscf   =         1.765897
 siesta: DUext   =         0.000000
 siesta: Exc     =       -68.547879
@@ -1141,123 +1146,126 @@ siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =      -195.478399
-siesta: Etot    =      -194.689441
-siesta: FreeEng =      -194.689441
+siesta: Eharris =      -195.478391
+siesta: Etot    =      -194.689432
+siesta: FreeEng =      -194.689432
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =     -56.412788
+siesta:  Band Struct. =     -56.412789
 siesta:       Kinetic =     115.577902
-siesta:       Hartree =      23.678158
+siesta:       Hartree =      23.678154
 siesta:    Ext. field =       0.000000
 siesta:   Exch.-corr. =     -68.547879
-siesta:  Ion-electron =    -120.258623
+siesta:  Ion-electron =    -120.258612
 siesta:       Ion-ion =    -145.138998
 siesta:       Ekinion =       0.000000
-siesta:         Total =    -194.689441
+siesta:         Total =    -194.689432
 
 siesta: Atomic forces (eV/Ang):
-siesta:      1    0.000000    0.000000    0.764524
+siesta:      1   -0.000000   -0.000000    0.764524
 siesta:      2    0.000000    0.000001   -0.754384
 siesta: ----------------------------------------
-siesta:    Tot    0.000000    0.000001    0.010140
+siesta:    Tot   -0.000000    0.000001    0.010140
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:    -0.222476    0.012861    0.000000
+siesta:    -0.222476    0.012861   -0.000000
 siesta:     0.012861   -0.222476    0.000000
-siesta:     0.000000    0.000000   -0.222429
+siesta:    -0.000000    0.000000   -0.222428
 
 siesta: Cell volume =         40.025752 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
-siesta:           0.00242288          0.00251785  Ry/Bohr**3
-siesta:           0.22246040          0.23118007  eV/Ang**3
-siesta:         356.42471260        370.39531139  kBar
-(Free)E+ p_basis*V_orbitals  =        -194.112741
-(Free)Eharris+ p_basis*V_orbitals  =        -174.575525
+siesta:           0.00242288          0.00251784  Ry/Bohr**3
+siesta:           0.22246016          0.23117983  eV/Ang**3
+siesta:         356.42433071        370.39493116  kBar
+(Free)E+ p_basis*V_orbitals  =        -194.112732
+(Free)Eharris+ p_basis*V_orbitals  =        -174.575517
 
-* Maximum dynamic memory allocated : Node    0 =     7 MB
+* Maximum dynamic memory allocated : Node    0 =     5 MB
+* Maximum dynamic memory allocated : Node    1 =     5 MB
+* Maximum dynamic memory allocated : Node    2 =     5 MB
+* Maximum dynamic memory allocated : Node    3 =     5 MB
 
 * Maximum memory occured during ranger                        
 
 timer: CPU execution times:
 timer:  Routine       Calls   Time/call    Tot.time        %
-timer:  siesta            1       9.472       9.472   100.00
-timer:  Setup             1       0.164       0.164     1.73
+timer:  siesta            1      20.205      20.205   100.00
+timer:  Setup             1       1.298       1.298     6.42
 timer:  bands             1       0.000       0.000     0.00
-timer:  writewave         1       0.001       0.001     0.01
-timer:  KSV_init          1       0.001       0.001     0.01
-timer:  IterMD           13       0.715       9.301    98.20
-timer:  hsparse          13       0.003       0.039     0.41
-timer:  overlap          13       0.002       0.026     0.27
-timer:  IterSCF          13       0.338       4.399    46.44
-timer:  kinefsm          26       0.001       0.034     0.36
-timer:  nlefsm           26       0.079       2.045    21.59
-timer:  DHSCF            26       0.242       6.295    66.46
-timer:  DHSCF1            1       0.047       0.047     0.49
-timer:  DHSCF2           13       0.181       2.347    24.77
-timer:  REORD           234       0.000       0.010     0.10
-timer:  POISON           39       0.002       0.066     0.69
-timer:  DHSCF3           26       0.071       1.835    19.37
-timer:  rhoofd           26       0.032       0.833     8.80
-timer:  cellXC           39       0.007       0.266     2.81
-timer:  vmat             26       0.029       0.764     8.07
-timer:  MolMec           26       0.000       0.000     0.00
-timer:  diagon           13       0.001       0.011     0.11
-timer:  c-eigval         13       0.000       0.003     0.04
-timer:  c-buildHS        13       0.000       0.001     0.01
-timer:  cdiag           908       0.000       0.067     0.71
-timer:  cdiag1          908       0.000       0.004     0.04
-timer:  cdiag2          908       0.000       0.008     0.09
-timer:  cdiag3          908       0.000       0.034     0.36
-timer:  cdiag4          908       0.000       0.005     0.06
-timer:  c-eigvec         13       0.000       0.002     0.02
-timer:  c-buildD         13       0.000       0.001     0.01
-timer:  DHSCF4           13       0.159       2.063    21.78
-timer:  dfscf            13       0.111       1.438    15.18
-timer:  overfsm          13       0.001       0.014     0.14
-timer:  KSV_pol           7       0.094       0.655     6.91
-timer:  optical           1       0.000       0.000     0.00
+timer:  writewave         1       0.004       0.004     0.02
+timer:  KSV_init          1       0.000       0.000     0.00
+timer:  IterMD           13       1.452      18.879    93.44
+timer:  hsparse          13       0.003       0.043     0.21
+timer:  overlap          13       0.002       0.030     0.15
+timer:  IterSCF          13       0.677       8.800    43.55
+timer:  kinefsm          26       0.001       0.033     0.16
+timer:  nlefsm           26       0.157       4.074    20.17
+timer:  DHSCF            26       0.370       9.613    47.58
+timer:  DHSCF1            1       0.150       0.150     0.74
+timer:  DHSCF2           13       0.414       5.377    26.61
+timer:  REORD           234       0.000       0.012     0.06
+timer:  POISON           39       0.003       0.136     0.67
+timer:  DHSCF3           26       0.067       1.742     8.62
+timer:  rhoofd           26       0.033       0.860     4.26
+timer:  cellXC           39       0.005       0.210     1.04
+timer:  vmat             26       0.020       0.524     2.59
+timer:  MolMec           26       0.000       0.003     0.01
+timer:  diagon           13       0.009       0.122     0.60
+timer:  c-eigval         13       0.005       0.063     0.31
+timer:  c-buildHS        13       0.000       0.002     0.01
+timer:  cdiag           908       0.004       3.377    16.72
+timer:  cdiag1          908       0.000       0.278     1.38
+timer:  cdiag2          908       0.001       0.499     2.47
+timer:  cdiag3          908       0.002       2.166    10.72
+timer:  cdiag4          908       0.000       0.151     0.75
+timer:  c-eigvec         13       0.004       0.058     0.29
+timer:  c-buildD         13       0.000       0.000     0.00
+timer:  DHSCF4           13       0.179       2.332    11.54
+timer:  dfscf            13       0.114       1.476     7.30
+timer:  overfsm          13       0.001       0.011     0.05
+timer:  KSV_pol           7       0.582       4.074    20.17
+timer:  optical           1       0.020       0.020     0.10
   
 
 elaps: ELAPSED times:
 elaps:  Routine       Calls   Time/call    Tot.time        %
-elaps:  siesta            1      10.163      10.163   100.00
-elaps:  Setup             1       0.164       0.164     1.62
+elaps:  siesta            1       5.143       5.143   100.00
+elaps:  Setup             1       0.392       0.392     7.62
 elaps:  bands             1       0.000       0.000     0.00
-elaps:  writewave         1       0.001       0.001     0.01
-elaps:  KSV_init          1       0.001       0.001     0.01
-elaps:  IterMD           13       0.769       9.991    98.30
-elaps:  hsparse          13       0.003       0.039     0.39
-elaps:  overlap          13       0.002       0.026     0.25
-elaps:  IterSCF          13       0.339       4.402    43.31
-elaps:  kinefsm          26       0.001       0.034     0.34
-elaps:  nlefsm           26       0.079       2.048    20.15
-elaps:  DHSCF            26       0.242       6.300    61.98
-elaps:  DHSCF1            1       0.047       0.047     0.46
-elaps:  DHSCF2           13       0.181       2.347    23.10
-elaps:  REORD           234       0.000       0.010     0.10
-elaps:  POISON           39       0.002       0.066     0.65
-elaps:  DHSCF3           26       0.071       1.836    18.07
-elaps:  rhoofd           26       0.032       0.834     8.21
-elaps:  cellXC           39       0.007       0.266     2.62
-elaps:  vmat             26       0.029       0.765     7.53
+elaps:  writewave         1       0.001       0.001     0.02
+elaps:  KSV_init          1       0.000       0.000     0.00
+elaps:  IterMD           13       0.365       4.743    92.22
+elaps:  hsparse          13       0.001       0.011     0.21
+elaps:  overlap          13       0.001       0.007     0.14
+elaps:  IterSCF          13       0.169       2.198    42.74
+elaps:  kinefsm          26       0.000       0.007     0.14
+elaps:  nlefsm           26       0.040       1.045    20.32
+elaps:  DHSCF            26       0.092       2.391    46.49
+elaps:  DHSCF1            1       0.038       0.038     0.74
+elaps:  DHSCF2           13       0.103       1.345    26.15
+elaps:  REORD           234       0.000       0.002     0.04
+elaps:  POISON           39       0.001       0.033     0.64
+elaps:  DHSCF3           26       0.017       0.440     8.56
+elaps:  rhoofd           26       0.007       0.189     3.67
+elaps:  cellXC           39       0.001       0.047     0.91
+elaps:  vmat             26       0.005       0.134     2.61
 elaps:  MolMec           26       0.000       0.000     0.00
-elaps:  diagon           13       0.001       0.011     0.11
-elaps:  c-eigval         13       0.000       0.003     0.03
-elaps:  c-buildHS        13       0.000       0.001     0.01
-elaps:  cdiag           908       0.001       0.746     7.34
-elaps:  cdiag1          908       0.000       0.003     0.03
-elaps:  cdiag2          908       0.000       0.007     0.07
-elaps:  cdiag3          908       0.001       0.717     7.05
-elaps:  cdiag4          908       0.000       0.005     0.05
-elaps:  c-eigvec         13       0.000       0.002     0.02
-elaps:  c-buildD         13       0.000       0.001     0.01
-elaps:  DHSCF4           13       0.159       2.066    20.33
-elaps:  dfscf            13       0.111       1.439    14.16
-elaps:  overfsm          13       0.001       0.013     0.13
-elaps:  KSV_pol           7       0.191       1.336    13.15
+elaps:  diagon           13       0.003       0.035     0.68
+elaps:  c-eigval         13       0.001       0.017     0.33
+elaps:  c-buildHS        13       0.000       0.000     0.00
+elaps:  cdiag           908       0.001       0.851    16.55
+elaps:  cdiag1          908       0.000       0.058     1.13
+elaps:  cdiag2          908       0.000       0.126     2.45
+elaps:  cdiag3          908       0.001       0.568    11.04
+elaps:  cdiag4          908       0.000       0.030     0.58
+elaps:  c-eigvec         13       0.001       0.011     0.21
+elaps:  c-buildD         13       0.000       0.002     0.04
+elaps:  DHSCF4           13       0.044       0.566    11.01
+elaps:  dfscf            13       0.027       0.352     6.84
+elaps:  overfsm          13       0.000       0.003     0.06
+elaps:  KSV_pol           7       0.144       1.005    19.54
 elaps:  optical           1       0.000       0.000     0.00
   
->> End of run:  10-JUN-2011  14:26:01
+>> End of run:  24-MAR-2013  18:21:25

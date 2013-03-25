@@ -1,13 +1,10 @@
-Release Notes for SIESTA-3.2, expected Fall 2012
-(These notes apply to the siesta-3.1-plX series, which should
-be very close to the 3.2 release)
+Release Notes for SIESTA-3.2
+March 24, 2013
 
 ** GENERAL NOTES
 
-Users are encouraged to test this version for production runs.
-
-It has very little new core functionality. Most of the changes
-are minor bug fixes and improvements to the analysis tools.
+Most of the changes over Siesta-3.1 are minor bug fixes and
+improvements to the analysis tools.
 
 To report any remaining issues, see Docs/REPORTING_BUGS
 
@@ -45,12 +42,6 @@ BUG FIXES AND IMPROVEMENTS
    (Not really used in Siesta, but present for user-level programs)
   
 *  Close netCDF file descriptors for DM and DMHS files
-
-  The descriptors for the DM.nc and DMHS.nc netCDF files are kept open
-  during the SCF cycle, but should be closed at the end of it to avoid
-  resource exhaustion in, say, MD runs. This was not done due to a
-  programming error.  They are now closed at the beginning of the next
-  SCF cycle.
 
 *  Include missing LDFLAGS symbol in some Util makefiles
 

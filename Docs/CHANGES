@@ -4,6 +4,20 @@
 
 ** CHANGES ALONG siesta-3 branch
 ------------------------------------------------------------------------
+2013-03-25  13:20:00 GMT Alberto Garcia <albertog@icmab.es>  siesta-3.2
+Siesta-3.2 release
+
+Update of reference outputs and release notes.
+
+modified:
+  Docs/release.notes_3.2
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Tests/Reference-xml/
+  Tests/Reference/
+  Tests/Reference/TranSiesta-TBTrans
+
+------------------------------------------------------------------------
 2013-01-24  14:00:00 GMT Alberto Garcia <albertog@icmab.es>   3.1-pl21
 Export some MPI symbols explicitly
 
