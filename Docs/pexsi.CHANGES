@@ -1,4 +1,28 @@
 ------------------------------------------------------------
+Apr 1, 2013   Alberto Garcia             trunk-434--pexsi-20
+Interface block for PEXSI. Mu history additions. Comments for distribution
+
+Added an interface block for the pexsi interface.  The routine is
+added to a library, which is linked if needed (specified in COMP_LIBS
+in the arch.make file).
+
+The dummy pexsi routine prints its arguments, and sets a few dummy
+output variables.  Currently the DM is not set, so the program crashes
+in the normalization test.
+
+New parameters implemented by Lin to monitor the history of mu
+convergence.
+
+removed:
+  Src/pexsi_interface_true.inc
+added:
+  Src/m_pexsi_solver.F90
+  Src/pexsi_interface.F90
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+
+------------------------------------------------------------
 Apr 1, 2013   Alberto Garcia             trunk-434--pexsi-19
 Sync to trunk-434
 

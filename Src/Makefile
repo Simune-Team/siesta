@@ -148,7 +148,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	vacuum_level.o \
 	write_orb_indx.o \
 	m_hs_matrix.o kpoint_convert.o m_glob_sparse.o\
-        die.o pexsi.o \
+        die.o m_pexsi_solver.o\
         m_dminim.o m_zminim.o
 #--------------------------------------------------------------
 # FoX whatnot
@@ -232,6 +232,9 @@ atom.o basis_io.o basis_specs.o: $(FDF)
 ALL_OBJS=$(OBJS) $(SYSOBJ)
 #
 # Interfaces to libraries
+#
+libpexsi.a: pexsi_interface.o
+	$(AR) $(ARFLAGS_EXTRA) cru libpexsi.a pexsi_interface.o
 #
 libmpi_f90.a: 
 	@(cd MPI ; $(MAKE) \
@@ -386,10 +389,10 @@ chkdim.o: sys.o
 chkgmx.o: cellsubs.o minvec.o precision.o sys.o
 coceri.o: files.o periodic_table.o precision.o
 compute_dm.o: atomlist.o iodmhs_netcdf.o kpoint_grid.o m_dminim.o m_energies.o
-compute_dm.o: m_eo.o m_gamma.o m_mpi_utils.o m_rmaxh.o m_spin.o m_steps.o
-compute_dm.o: m_ts_global_vars.o m_ts_in_siesta.o m_ts_options.o m_zminim.o
-compute_dm.o: ordern.o parallel.o pexsi.o precision.o siesta_geom.o
-compute_dm.o: siesta_options.o sparse_matrices.o sys.o units.o
+compute_dm.o: m_eo.o m_gamma.o m_mpi_utils.o m_pexsi_solver.o m_rmaxh.o
+compute_dm.o: m_spin.o m_steps.o m_ts_global_vars.o m_ts_in_siesta.o
+compute_dm.o: m_ts_options.o m_zminim.o ordern.o parallel.o precision.o
+compute_dm.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o units.o
 compute_norm.o: m_mpi_utils.o precision.o sparse_matrices.o
 conjgr.o: precision.o
 conjgr_old.o: precision.o
@@ -537,6 +540,7 @@ m_mpi_utils.o: precision.o sys.o
 m_options.o: precision.o
 m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
 m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o
+m_pexsi_solver.o: m_mpi_utils.o parallel.o precision.o units.o
 m_pulay.o: alloc.o atomlist.o m_spin.o parallel.o precision.o siesta_options.o
 m_pulay.o: sparse_matrices.o sys.o
 m_recipes.o: precision.o sys.o
@@ -624,7 +628,6 @@ pdosg.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
 pdosk.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
 pdoskp.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
 periodic_table.o: precision.o sys.o
-pexsi.o: pexsi_interface.inc
 pexsi.o: m_mpi_utils.o parallel.o precision.o units.o
 pexsi_dump.o: m_hsx.o m_walltime.o precision.o
 pexsi_exchange.o: precision.o
