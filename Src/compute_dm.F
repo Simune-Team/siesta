@@ -2,6 +2,8 @@
       private
       public :: compute_dm
 
+      logical, public, save :: PreviousCallDiagon=.false.
+
       CONTAINS
 
       subroutine compute_dm( iscf )
@@ -28,6 +30,8 @@
 #ifdef CDF
       use iodmhs_netcdf, only: write_dmh_netcdf
 #endif
+      use m_dminim,        only : dminim
+      use m_zminim,        only : zminim
       use m_ordern,        only : ordern
       use m_steps,         only : istp
       use m_spin,          only : nspin, qs, efs
@@ -41,6 +45,7 @@
 !     Input variables
       integer, intent(in) :: iscf
 !     Local variables
+      logical             :: CallDiagon
       integer             :: io, ispin, nnz
       real(dp)            :: const ! Temporary factor used in
                              ! calculation of Harris forces. e1>e2 to
@@ -56,6 +61,7 @@
       if (worker) call timer( 'compute_dm', 1 )
 
       call MPI_Bcast(isolve,1,MPI_integer,0,true_MPI_Comm_World,mpierr)
+
       if (isolve .eq. SOLVE_PEXSI) then
          ! Prototype interface
          call pexsi(no_u, no_l, nspin, maxnh, numh, listhptr, listh,
@@ -65,17 +71,23 @@
      &    'Free energy correction term:', freeEnergyCorrection
          Entrop = -freeEnergyCorrection / temp
 
-!comment this for further work
-!         call timer('all',2)
-!         call timer('all',3)
-!         call bye("PEXSI interface with H and S to file. Bye")
-
       endif
       if (.not. worker) RETURN
-      
-!     Solve eigenvalue problem 
- 
-      if (isolve .eq. SOLVE_DIAGON) then
+
+      ! Here we decide if we want to calculate one or more SCF steps by
+      ! diagonalization before proceeding with the OMM routine
+      CallDiagon=.false.
+      if (isolve .eq. SOLVE_MINIM) then
+        if (istp .eq. 1) then
+          if ((iscf .le. call_diagon_first_step) .or.
+     &        (call_diagon_first_step<0)) CallDiagon=.true.
+        else
+          if ((iscf .le. call_diagon_default) .or.
+     &        (call_diagon_default<0)) CallDiagon=.true.
+        endif
+      endif
+
+      if ((isolve .eq. SOLVE_DIAGON) .or. (CallDiagon)) then
         call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
      &              numh, listhptr, listh, numh, listhptr, listh, 
      &              H, S, qtot, fixspin, qs, temp, e1, e2,
@@ -83,6 +95,7 @@
      &              eo, qo, Dscf, Escf, ef, efs, Entrop, no_u,
      &              occtol, iscf, neigwanted)
         Ecorrec = 0.0_dp
+        PreviousCallDiagon=.true.
       elseif (isolve .eq. SOLVE_ORDERN) then
         if (.not. gamma) call die("Cannot do O(N) with k-points.")
         call ordern(usesavelwf, ioptlwf, na_u, no_u, no_l, lasto,
@@ -90,7 +103,24 @@
      &               istp, ncgmax, etol, eta, qtot, maxnh, numh,
      &               listhptr, listh, H, S, chebef, noeta, rcoorcp,
      &               beta, pmax, Dscf, Escf, Ecorrec, nspin, qs )
+        Ecorrec = 0.0_dp
         Entrop = 0.0_dp
+      elseif (isolve .eq. SOLVE_MINIM) then
+        if (nspin==4) call die('ERROR: Non-collinear spin calculations
+     &                          not yet implemented with the OMM!')
+        if (gamma) then
+          call dminim(.false., PreviousCallDiagon, iscf, istp, no_l,
+     &                 nspin, no_u, maxnh, numh, listhptr, listh, Dscf,
+     &                 eta, qs, h, s, h_kin)
+        else
+          call zminim(.false., PreviousCallDiagon, iscf, istp, no_l,
+     &                 nspin, no_u, maxnh, numh, listhptr, listh, Dscf,
+     &                 eta, qs, no_s, xijo, indxuo, nkpnt, kpoint,
+     &                 kweight, h, s, h_kin)
+        end if
+        Ecorrec = 0.0_dp
+        Entrop = 0.0_dp
+        PreviousCallDiagon=.false.
 #ifdef TRANSIESTA
 ! TSS Begin
       elseif (TSmode .and. TSinit) then
