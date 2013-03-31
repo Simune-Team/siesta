@@ -1,4 +1,26 @@
 ------------------------------------------------------------
+Apr 1, 2013   Alberto Garcia             trunk-434--pexsi-21
+New header file to consolidate interface
+
+Created file pexsi.h to hold the header information for the
+PEXSI interface routine. It is 'included' in m_pexsi_solver
+and in pexsi_interface.
+
+Moved files from previous stages to new directory OldPEXSI.
+
+added:
+  Src/OldPEXSI/
+  Src/pexsi.h
+renamed:
+  Src/pexsi.F90 => Src/OldPEXSI/pexsi.F90
+  Src/pexsi_dump.F90 => Src/OldPEXSI/pexsi_dump.F90
+  Src/pexsi_exchange.F90 => Src/OldPEXSI/pexsi_exchange.F90
+modified:
+  Src/Makefile
+  Src/m_pexsi_solver.F90
+  Src/pexsi_interface.F90
+
+------------------------------------------------------------
 Apr 1, 2013   Alberto Garcia             trunk-434--pexsi-20
 Interface block for PEXSI. Mu history additions. Comments for distribution
 
