@@ -32,6 +32,8 @@ subroutine timer( prog, iOpt )
 ! Module procedures used
   use sys,     only: die           ! Termination routine
   use parallel,only: node
+  ! Use options module to store this variable.
+  use siesta_options, only: use_tree_timer
 
   ! New 'tree-based' module by A. Garcia
   use m_timer_tree, only: timer_on   ! Start counting time
@@ -62,7 +64,7 @@ subroutine timer( prog, iOpt )
     call die('timer: ERROR: invalid iOpt value')
   end if
 
-if (Node == 0) then
+if ((Node == 0)  .and. use_tree_timer) then
 
   ! New method, based on walltime in the master node only,
   ! and with a tree structure for the report

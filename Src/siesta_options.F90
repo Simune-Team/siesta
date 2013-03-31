@@ -178,6 +178,10 @@ MODULE siesta_options
   integer,  parameter :: SOLVE_ORDERN = 1
   integer,  parameter :: SOLVE_TRANSI = 2
 
+  ! Variables not set here, but stored in this module for
+  ! convenience
+  logical :: use_tree_timer
+
       CONTAINS
 
 ! *********************************************************************
@@ -344,6 +348,7 @@ MODULE siesta_options
     if (ionode .and. h_setup_only) then
       write(6,1) 'redata: H Setup Only                     = ', h_setup_only
     endif
+
 
     ! Type of output
     outlng = fdf_get('LongOutput', .false.)

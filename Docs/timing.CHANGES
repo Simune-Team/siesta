@@ -1,4 +1,19 @@
 -------------------------------------------------
+March 31, 2013  Alberto Garcia  trunk-432--timing-9
+Allow users to enable or disable tree timer
+
+The new timer is not used by default. It is only enabled if the fdf
+file contains the line
+
+  UseTreeTimer T
+
+modified:
+  Src/Makefile
+  Src/siesta_init.F
+  Src/siesta_options.F90
+  Src/timer.F90
+
+-------------------------------------------------
 Feb 5, 2013  Alberto Garcia  trunk-432--timing-8
 More documentation. timer_off is now recursive
 
