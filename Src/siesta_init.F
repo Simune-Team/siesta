@@ -12,6 +12,7 @@
      &                              estimate_pol_kpoints
       use m_struct_init,      only: struct_init
       use siesta_options
+      use timer_options,      only: use_tree_timer
       use sparse_matrices
       use siesta_geom
       use atomlist,           only: no_u, rmaxkb, amass, lasto, qtot,
@@ -116,10 +117,6 @@ C     Initialise MPI and set processor number
          call wallclock('Start of run')
       endif
 
-!     Start time counter
-      call timer( 'siesta', 0 )
-      call timer( 'siesta', 1 )
-      call timer( 'Setup', 1 )
 
 !     Nullify arrays
       nullify(Haux,Saux,psi)
@@ -157,6 +154,16 @@ C     Initialise MPI and set processor number
       threshold = fdf_get('timer_report_threshold', 0._dp)
       call timer_report( file=trim(slabel)//'.times', 
      .                   threshold=threshold )
+      ! This variable lives in siesta_options
+      use_tree_timer = fdf_get('UseTreeTimer', .false.)
+
+!     Start time counter
+!     Note new placement of this first use, so that
+!     initialization is done after the setup of relevant variables
+
+      call timer( 'siesta', 0 )
+      call timer( 'siesta', 1 )
+      call timer( 'Setup', 1 )
 
 ! Set allocation report level .........................................
 ! variables level and threshold imported from module siesta_options

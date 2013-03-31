@@ -11,9 +11,10 @@ implicit none
 public :: wall_time
 
 integer, parameter, private :: dp = selected_real_kind(14,200)
+integer, parameter, private :: i8 = selected_int_kind(12)
 
-integer, private, save     :: last_count
-integer, private, save     :: max_count
+integer(i8), private, save     :: last_count
+integer(i8), private, save     :: max_count
 real(dp), private, save    :: last_time
 real(dp), private, save    :: count_rate
 logical, private, save     :: first = .true.
@@ -28,8 +29,8 @@ real(dp), intent(out)  :: t
 
 real(dp)  :: elapsed_time
 
-integer       :: count_rate_int
-integer       :: count
+integer(i8)       :: count_rate_int
+integer(i8)       :: count
 
       if (first) then
          CALL system_clock (count_rate=count_rate_int)

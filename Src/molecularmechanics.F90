@@ -329,8 +329,11 @@
       real(dp)                :: mm_stress(3,3)
       integer                 :: jx
 
+      if (.not. PotentialsPresent) return
+
 !     Start timer
       call timer('MolMec', 1 )
+
 !     Allocate workspace arrays
       nullify(lvalidpot)
       call re_alloc( lvalidpot, 1, nMMpot, 'lvalidpot', 'twobody' )

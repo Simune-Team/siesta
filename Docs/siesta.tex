@@ -68,7 +68,7 @@
 \hrulefill
 \vspace{1cm}
 
-{\Large March 26, 2013 }
+{\Large March 31, 2013 }
 
 \vspace{1.5cm}
 
@@ -5862,7 +5862,7 @@ make it possible to run larger jobs where memory is the limiting factor.
 
 \end{description}
 
-\subsection{Memory and CPU-time accounting options}
+\subsection{Memory, CPU-time, and Wall time accounting options}
 \begin{description}
 
 \item[{\bf AllocReportLevel}] ({\it integer}):
@@ -5907,6 +5907,15 @@ output file. In parallel execution, they are reported in a separated
 file named {\tt SystemLabel}.times.
 
 {\it Default value:} {\tt 0.0}
+
+\item[{\bf UseTreeTimer}] ({\it logical}): 
+\index{UseTreeTimer@{\bf UseTreeTimer}}
+
+Enable an experimental timer which is based on wall time on the master
+node and is aware of the tree-structure of the timed sections.
+
+{\it Default value:} {\tt .false.}
+
 
 \end{description}
 

@@ -6,6 +6,43 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2013-03-31  19:00:00 GMT                                     trunk-434
+Experimental timer with call-tree awareness
+
+A new timer, based on wall time in the master node, and keeping track
+of the tree-structure of the timed sections, can be enabled by setting
+
+UseTreeTimer T
+
+in the fdf file.
+
+It works in tandem with the default timer, and it currently produces a
+report at the end of the output file in which the parent-child
+relationships are represented by simple indentation.
+
+Some new timing calls have been added in the code.
+
+added:
+  Src/die.F
+  Src/timer_tree.f90
+modified:
+  Src/Makefile
+  Src/SiestaXC/makefile
+  Src/fft.F
+  Src/m_hsx.F
+  Src/m_iodm.F
+  Src/m_timer.F90
+  Src/m_walltime.f90
+  Src/matel.f
+  Src/molecularmechanics.F90
+  Src/setup_H0.F
+  Src/setup_hamiltonian.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/timer.F90
+
+
+-----------------------------------------------------------------------
 2013-03-26  12:35:00 GMT                                      trunk-433
 Implemented the non-O(N) version of the Ordejon-Mauri functional
 
