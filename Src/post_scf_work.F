@@ -9,10 +9,18 @@
       USE siesta_options
       use sparse_matrices
       use siesta_geom
-      use atomlist, only: lasto, rmaxo, datm, indxuo, no_s, no_u, iphorb
+      use atomlist, only: lasto, rmaxo, datm, indxuo, no_s, no_u,
+     &                    iphorb, no_l, qtot
       use m_energies
       use neighbour,   only: maxna=>maxnna   ! For plcharge...
-      use m_spin,         only: nspin
+      use m_spin,         only: nspin, qs, efs
+      use m_dminim,       only : dminim
+      use m_zminim,       only : zminim
+      use m_steps,        only : istp
+      use m_compute_dm,   only : PreviousCallDiagon
+      use m_eo
+      use Kpoint_grid
+      use m_gamma
       implicit none
 
       integer  :: iscf
@@ -23,6 +31,31 @@
       call write_debug( '  PRE post_scf_work' )
 #endif
       call timer( 'PostSCF', 1 )
+!     If we use the minimization routine, the energy-density
+!     matrix is not calculated inside the SCF step, and
+!     so this must be done now
+      if ((isolve .eq. SOLVE_MINIM) .and.
+     &    (.not. PreviousCallDiagon)) then
+        if (minim_calc_eigenvalues) then
+          call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
+     &                numh, listhptr, listh, numh, listhptr, listh, 
+     &                H, S, qtot, fixspin, qs, temp, 1.0_dp, -1.0_dp,
+     &                gamma, xijo, indxuo, nkpnt, kpoint, kweight,
+     &                eo, qo, Dscf, Escf, ef, efs, Entrop, no_u,
+     &                occtol, iscf, neigwanted)
+          Ecorrec = 0.0_dp
+        else
+          if (gamma) then
+            call dminim(.true., .false., iscf, istp, no_l, nspin, no_u,
+     &                  maxnh, numh, listhptr, listh, Escf, eta, qs)
+          else
+            call zminim(.true., .false., iscf, istp, no_l, nspin, no_u,
+     &                  maxnh, numh, listhptr, listh, Escf, eta, qs,
+     &                  no_s, xijo, indxuo, nkpnt, kpoint, kweight)
+          end if
+        endif
+      endif
+
 !     If converged, make one last iteration to find forces and
 !     stress
 !     Note that here we are using the Dscf guessed by mixer,

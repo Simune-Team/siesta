@@ -1,6 +1,10 @@
 -------------------------------------------------
+March 31, 2013  Alberto Garcia  trunk-433--timing-9
+Sync to trunk-433
+
+-------------------------------------------------
 March 31, 2013  Alberto Garcia  trunk-432--timing-9
-Allow users to enable or disable tree timer
+wAllow users to enable or disable tree timer
 
 The new timer is not used by default. It is only enabled if the fdf
 file contains the line
