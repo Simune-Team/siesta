@@ -1,4 +1,20 @@
 ------------------------------------------------------------
+Apr 1, 2013   Alberto Garcia             trunk-434--pexsi-22
+New option to estimate chemical potential in PEXSI
+
+PEXSI.inertia-count 1
+
+(set by default) will tell the interface to estimate the initial
+chemical potential by the method of "inertia counts" (determination of
+the number of eigenvalues to the left of a given real number, by LDL^T
+factorization of the shifted Hamiltonian).
+
+modified:
+  Src/m_pexsi_solver.F90
+  Src/pexsi.h
+  Src/pexsi_interface.F90
+
+------------------------------------------------------------
 Apr 1, 2013   Alberto Garcia             trunk-434--pexsi-21
 New header file to consolidate interface
 

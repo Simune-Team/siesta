@@ -24,6 +24,7 @@
         muMax,&
 	muMaxIter,&
         ordering, &
+        isInertiaCount, &
         muIter, &
         muList, &
         numElectronList,&
@@ -46,7 +47,7 @@
    real(SELECTED_REAL_KIND(10,100)), intent(in)   :: numElectronExact
    real(SELECTED_REAL_KIND(10,100)), intent(out)  :: numElectron
    real(SELECTED_REAL_KIND(10,100)), intent(in)   :: gap, deltaE
-   real(SELECTED_REAL_KIND(10,100)), intent(in)   :: muMin, muMax
+   real(SELECTED_REAL_KIND(10,100)), intent(inout):: muMin, muMax
    real(SELECTED_REAL_KIND(10,100)), intent(inout):: mu
 
    ! Variables related to mu history
@@ -58,6 +59,9 @@
    !   1   : METIS_AT_PLUS_A
    !   2   : MMD_AT_PLUS_A
    integer, intent(in)                           :: ordering
+   
+   ! Estimate mu by inertia counts on shifted H
+   integer, intent(in)                           :: isInertiaCount
 
    ! Actual number of iterations performed
    integer, intent(out)                          :: muIter

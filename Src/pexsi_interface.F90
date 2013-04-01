@@ -25,6 +25,7 @@ include "pexsi.h"
       write(*,*) "npPerPole: ", npPerPole
       write(*,*) "PoleTolerance: ", poleTolerance
       write(*,*) "ordering: ", ordering
+      write(*,*) "isInertiaCount: ", isInertiaCount
    endif
 
 !  Sample dummy outputs

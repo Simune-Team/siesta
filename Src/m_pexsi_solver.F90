@@ -39,7 +39,7 @@ CONTAINS
     integer :: bs, norbs_slack, nnz_slack
     integer :: ispin, maxnhtot, ih, nnzold, i
 
-    integer  :: ordering
+    integer  :: ordering, isInertiaCount
     integer  :: muIter
     real(dp) :: muZeroT
 
@@ -185,14 +185,23 @@ numElectronTolerance = fdf_get("PEXSI.num-electron-tolerance",1d-1)
 
 ! Ordering flag
 ordering = fdf_get("PEXSI.ordering",1)
+isInertiaCount = fdf_get("PEXSI.inertia-count",1)
 
+!
+! Broadcast these to the whole processor set
+!
 call MPI_Bcast(npPerPole,1,MPI_integer,0,true_MPI_COMM_world,ierr)
 call MPI_Bcast(nrows,1,MPI_integer,0,true_MPI_COMM_world,ierr)
 call MPI_Bcast(nnz,1,MPI_integer,0,true_MPI_COMM_world,ierr)
 call MPI_Bcast(numElectronExact,1,MPI_double_precision,0,true_MPI_COMM_world,ierr)
 call MPI_Bcast(temperature,1,MPI_double_precision,0,true_MPI_COMM_world,ierr)
-call MPI_Bcast(ordering,1,MPI_integer,0,true_MPI_COMM_world,ierr)
 
+call MPI_Bcast(ordering,1,MPI_integer,0,true_MPI_COMM_world,ierr)
+call MPI_Bcast(isInertiaCount,1,MPI_integer,0,true_MPI_COMM_world,ierr)
+
+!
+!  Call the interface
+!
 call f_ppexsi_interface( &
 	nrows,&
 	nnz,&
@@ -216,6 +225,7 @@ call f_ppexsi_interface( &
         muMax,&
 	muMaxIter,&
         ordering, &
+        isInertiaCount, &
         muIter, &
         muList, &
         numElectronList,&
@@ -263,7 +273,7 @@ if (worker) then
            ( DMnzvalLocal(i) )
    enddo
 
-   ! This operations in siesta group (implicit communicator)
+   ! These operations in siesta group (implicit communicator)
    call globalize_sum( freeEnergyCorrection, buffer1 )
    freeEnergyCorrection = buffer1 + mu*numElectron
    call globalize_sum( eBandStructure, buffer1 )
@@ -273,6 +283,8 @@ if (worker) then
 
    if( mpirank == 0 ) then
       write(*, *) "mu          = ", mu
+      write(*, *) "muMin          = ", muMin
+      write(*, *) "muMax          = ", muMax
       write(*, *) "mu (eV)     = ", mu/eV
       write(*, *) "muZeroT (eV)     = ", muZeroT/eV
       write(*, *) "numElectron = ", numElectron
