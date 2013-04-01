@@ -12,7 +12,7 @@
 !          6) get_scat_region
       implicit none
 
-      public :: getSFE, getGF, GFGammaGF
+      public :: getSFE, getGF, getGFnonV, GFGammaGF
       public :: weightDM, weightDMC
       public :: get_scat_region
 
@@ -36,8 +36,8 @@ C ##                                                              ##
 C ##  Modified by F. D. Novaes                                    ##
 C ##################################################################
 
-      subroutine getGF(USEBULK,updatedmcr,VoltFDF,no,NGL,NGR,Hi,Si,
-     &     HLL,HRR,ZEnergy,GF,ierr,useTri)
+      subroutine getGF(UseBulk,UpdateDMCR,IsVolt,no,NGL,NGR,Hi,Si,
+     &     HLL,HRR,ZEnergy,work,GF,ierr,UseTri)
 
       use sys, only: die
       use m_ts_aux_rout, only : splittri, collectri, invmat, transpose,
@@ -51,42 +51,35 @@ C ======================================================================
 c     Note: Indices are starting at 0 in this routine
 C ======================================================================
 C INPUT:
-      logical USEBULK           ! if true self-energy only is input else
+      logical :: UseBulk           ! if true self-energy only is input else
 c                                 z*S-H-Sigma for bulk is in sfe
-      logical updatedmcr
-      real(dp) VoltFDF
-      integer no                !no : no. states
-      complex(dp) Hi(0:(no*no)-1),Si(0:(no*no)-1)
-      complex(dp) ZEnergy 
-      integer NGL,NGR
-      complex(dp) HLL(NGL,NGL)   ! Left electrode GF
-      complex(dp) HRR(NGR,NGR)   ! Right electrode GF
-C FDN 
+      logical :: UpdateDMCR
+      logical :: IsVolt
+      integer :: no ! no : no. states
+      complex(dp) :: Hi(0:(no*no)-1),Si(0:(no*no)-1)
+      complex(dp) :: ZEnergy 
+      integer     :: NGL,NGR
+      complex(dp) :: HLL(NGL,NGL)   ! Left electrode GF
+      complex(dp) :: HRR(NGR,NGR)   ! Right electrode GF
+      complex(dp), intent(in out) :: work(no*no) ! the inverted GF
+
 C Use the tridiagonality ?
-      logical :: useTri
-C FDN 
-      
-
-C ======================================================================
-C INPUT/OUTPUT:
-
+      logical :: UseTri
 
 C ======================================================================
 C OUTPUT:
 C      complex*16 GF(0:(no*no)-1)  ! 1/(Sc*Energy - H)
       complex(dp), intent(out) :: GF(no*no)
-      integer ierr              !inversion err
+      integer,     intent(out) :: ierr              !inversion err
 C ======================================================================
 c Helpers, tempos ...
-      complex(dp), dimension(:), allocatable :: H
-      integer, dimension (:),    allocatable :: ipvt
+      integer :: ipvt(no)
 
-      integer i,j,ii,jj
-      complex(dp) a,b
+      integer :: i,j,ii,jj
+      complex(dp) :: a,b
 C --------------------------------------------------------------------
 
-      integer n1,n2,n3
-C FDN 
+      integer :: n1,n2,n3
       integer :: allocStat
       complex(dp), dimension(:,:), allocatable ::  
      &                                             a11,a12,
@@ -100,13 +93,8 @@ C FDN
       complex(dp), dimension(:,:), allocatable ::  x21,    x23
       complex(dp), dimension(:,:), allocatable ::      x32
       logical :: contactGFonly   
-
-c----------------------------------------------------------------------
       
-      external timer, memory
 
-      
-    
 c=======================================================================
 C BEGIN
 c=======================================================================
@@ -116,66 +104,68 @@ c=======================================================================
 #endif
 
       call timer('GFT',1) 
+
+#ifdef TRANSIESTA_TIMING
+       call timer('TS_PREPG',1)
+#endif
       
 c ================================================================
       ierr=0
-! FDN
 ! Compute only GF(2,2) ?
 ! A difference could be made when updatedmcr(.false.) and volt=0.0 ...
 ! b11 and b33 are needed only when there is a bias, and because of the
 ! integration scheme, where both L and R electrodes are used as references.
-      contactGFonly = updatedmcr .and. (voltfdf == 0.d0)      
+      contactGFonly = updatedmcr .and. (.not. IsVolt)
 
 c Setup full H (this part will be changed later..)
-
-      call ts_alloc(H,no*no,"getGF")
  
 c
 c     Contact z*S-H without self-energies:
 c
-      if(useTri) then
+      if ( useTri ) then
          do j = 0, no-1
             do i = 0, no-1
-               H(i + 1 + j*no) = 
+               work(i + 1 + j*no) = 
      &              ZEnergy*Si(i+j*no)-Hi(i+j*no) 
             end do              !i
          end do                 !j
       else
          do j = 0, no-1
             do i = 0, no-1
-               H(i + 1 + j*no) = 
+               work(i + 1 + j*no) = 
      &              ZEnergy*Si(i+j*no)-Hi(i+j*no) 
                GF(i + 1 + no*j) = dcmplx(0d0,0d0)
             end do              !i
             GF(j + 1 + no*j) = dcmplx(1d0,0d0)
          end do                 !j
       end if 
+
+#ifdef TRANSIESTA_TIMING
+       call timer('TS_PREPG',2)
+#endif
       
-c
 c     Add Left Self-energy
-c
-      if (UseBulk) then 
+      if ( UseBulk ) then 
          do j = 1, NGL
             do i = 1, NGL
-               H(i + (j-1)*no) = HLL(i,j)
+               work(i + (j-1)*no) = HLL(i,j)
             end do              !i
          end do                 !j
       else
          do j = 1, NGL
             do i = 1, NGL
-               H(i + (j-1)*no) = H(i + (j-1)*no) - HLL(i,j)
+               work(i + (j-1)*no) = work(i + (j-1)*no) - HLL(i,j)
             end do              !i
          end do                 !j
       end if                    !USEBULK
-c     
+
 c     Add Right Self-energy
-c     
-      if (UseBulk) then
+      if ( UseBulk ) then
          do j = no-NGR+1,no
             jj=j-(no-NGR)
             do i = no-NGR+1,no
                ii=i-(no-NGR)
-               H(i + (j-1)*no) = HRR(ii,jj)
+               work(i + (j-1)*no) = HRR(ii,jj)
             end do              !i
          end do                 !j
       else
@@ -183,25 +173,16 @@ c
             jj=j-(no-NGR)
             do i = no-NGR+1,no
                ii=i-(no-NGR)
-               H(i + (j-1)*no) = H(i + (j-1)*no) - HRR(ii,jj)
+               work(i + (j-1)*no) = work(i + (j-1)*no) - HRR(ii,jj)
             end do              !i
          end do                 !j
       end if
       
-      if ( .not. useTri) then
-! Invert directly
-         allocate(ipvt(no),stat=allocStat)
-         if(allocStat /=0) call die("Could not allocate in getGF") 
-         call memory('A','I',size(ipvt),"getGF")      
+      if ( .not. useTri ) then
 
-         call zgesv(no,no,H,no,ipvt,GF,no,ierr)            
-
-         call ts_dealloc(H,"getGF")
+         ! Invert directly
+         call zgesv(no,no,work,no,ipvt,GF,no,ierr)            
  
-         call memory('D','I',size(ipvt),"getGF")
-         deallocate(ipvt,stat=allocStat)
-         if(allocStat /=0) call die("Could not deallocate in getGF")
-
       else
 
 ! Use the fact that H is tridiagonal       
@@ -220,12 +201,7 @@ c allocate:
       call ts_alloc(a32,n3,n2,"getGF")
       call ts_alloc(a33,n3,n3,"getGF")
       
-      call splittri(n1,n2,n3,H,a11,a12,a21,a22,a23,a32,a33)
-      call memory('D','Z',size(H),"getGF")
-      deallocate(H,stat=allocStat)
-      if(allocStat /=0) call die("Could not deallocate in getGF")
-      
-      
+      call splittri(n1,n2,n3,work,a11,a12,a21,a22,a23,a32,a33)
 
      
 c====================================================================
@@ -388,6 +364,7 @@ c
       end if
 
       end if ! .not. useTri
+
       call timer('GFT',2)  
 
 #ifdef TRANSIESTA_DEBUG
@@ -397,6 +374,119 @@ c
 C ====================================================================
       END subroutine getGF
 C ====================================================================
+
+
+C ##################################################################
+C ## Calculating part of the Greens functions of                  ## 
+C ## contact coupled to electrodes. We only calculate GF(2,2)     ##
+C ##                                                              ##          
+C ##                            By                                ##
+C ##          Nick Papior Andersen, nickpapior@gmail.com          ##
+C ##                                                              ##
+C ##                                                              ##
+C ## It utilizes that the right-hand side of the inversion        ##
+C ## only takes a part of the GF solution back.                   ##
+C ##                                                              ##
+C ##################################################################
+      subroutine getGFnonV(no,NGL,NGR,Hi,Si, 
+     &     HLL,HRR,ZEnergy,work,GF,ierr)
+
+      use precision, only: dp
+
+      implicit none 
+
+C ======================================================================
+c     Note: Indices are starting at 0 in this routine
+C ======================================================================
+C INPUT:
+      integer,     intent(in) :: no                !no : no. states
+      complex(dp), intent(in) :: Hi(0:(no*no)-1),Si(0:(no*no)-1)
+      complex(dp), intent(in) :: ZEnergy 
+      integer,     intent(in) :: NGL, NGR
+      complex(dp), intent(in) :: HLL(NGL,NGL)   ! Left electrode GF
+      complex(dp), intent(in) :: HRR(NGR,NGR)   ! Right electrode GF
+
+! Worker arrays... They must have inout
+      complex(dp), intent(inout) :: work(no*no) ! inverted GF
+      
+C ======================================================================
+C OUTPUT:
+      complex(dp), intent(out) :: GF(no*(no-NGL-NGR))
+      integer,     intent(out) :: ierr              !inversion err
+C ======================================================================
+
+c Helpers, tempos ...
+      integer :: ipvt(no)
+
+      integer :: i,j,ii,jj
+      
+#ifdef TRANSIESTA_DEBUG
+      call write_debug( 'PRE getGFnonV' )
+#endif
+
+      call timer('GFT_P',1) 
+
+#ifdef TRANSIESTA_TIMING
+       call timer('TS_PREPG',1)
+#endif
+      
+c ================================================================
+      ! Initialize output of error
+      ierr=0
+c
+c     Contact z*S-H without self-energies:
+c
+      do j = 0, no-1
+         do i = 0, no-1
+            work(i + 1 + j*no) = 
+     &           ZEnergy*Si(i+j*no)-Hi(i+j*no) 
+         end do                 !i
+      end do                    !j
+
+#ifdef TRANSIESTA_TIMING
+       call timer('TS_PREPG',2)
+#endif
+
+      do j = 1 , no - NGL - NGR
+         do i = 1 , no
+            ! Set up the correct inversion points...
+            if ( NGL <= i .and. i <= no-NGR .and.
+     &           i - NGL == j ) then
+               GF(i+no*(j-1)) = dcmplx(1.d0,0.d0)
+            else
+               GF(i+no*(j-1)) = dcmplx(0.d0,0.d0)
+            end if
+         end do
+      end do
+      
+c     Insert Left Self-energy (we must have UseBulk)
+      do j = 1, NGL
+         do i = 1, NGL
+            work(i + (j-1)*no) = HLL(i,j)
+         end do                 !i
+      end do                    !j
+
+c     Insert Right Self-energy (we must have UseBulk)
+      do j = no-NGR+1,no
+         jj=j-(no-NGR)
+         do i = no-NGR+1,no
+            ii=i-(no-NGR)
+            work(i + (j-1)*no) = HRR(ii,jj)
+         end do                 !i
+      end do                    !j
+            
+
+      ! Invert directly
+      call zgesv(no,no-NGL-NGR,work,no,ipvt,GF,no,ierr)
+
+      call timer('GFT_P',2)  
+
+#ifdef TRANSIESTA_DEBUG
+      call write_debug( 'POS getGFnonV' )
+#endif
+     
+C ====================================================================
+      END subroutine getGFnonV
 
 
 
@@ -507,8 +597,6 @@ c Helpers, tempos etc...
 #endif
       integer  ntot
 
-      external memory
-
 c=======================================================================
 c     BEGIN:
 c=======================================================================
@@ -540,6 +628,10 @@ c=======================================================================
          errorgs = .true.
          return
       end if
+
+#ifdef TRANSIESTA_TIMING
+       call timer('TS_READ',1)
+#endif
 
 c
 c     Init:
@@ -670,6 +762,14 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccc
 #ifdef MPI
       call memory('D','Z',size(cbuffer),'getsfe')
       deallocate(cbuffer)
+#endif
+
+#ifdef TRANSIESTA_TIMING
+       call timer('TS_READ',2)
+#endif
+
+#ifdef TRANSIESTA_TIMING
+       call timer('TS_EXPAND',1)
 #endif
 
 !-----------------------------------------------------------------------
@@ -814,6 +914,10 @@ c      end do                    !io
        call memory('D','Z',size(GAA),'getsfe')
        call memory('D','I',size(ipvt),'getsfe')
        deallocate(WRK1,WRK2,GAA,ipvt)
+
+#ifdef TRANSIESTA_TIMING
+       call timer('TS_EXPAND',2)
+#endif
 
        call timer('getSFE',2)
 

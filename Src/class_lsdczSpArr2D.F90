@@ -17,6 +17,20 @@ module class_lSpArr2D
 !========================
 end module class_lSpArr2D
 
+module class_iSpArr2D
+  use class_iArray2D
+!========================
+#define TYPE_NAME  iSpArr2D
+#define STR_TYPE_NAME "iSpArr2D"
+#define TYPE_NAME_ iSpArr2D_
+#define NEW_TYPE newiSpArr2D
+#define VAR_TYPE iArray2D
+#define VAR_NEW_TYPE newiArray2D
+#define VAR_TYPE_TYPE integer
+! Do not define precision
+#include "class_SpArr2D.T90"
+!========================
+end module class_iSpArr2D
 
 module class_sSpArr2D
   use class_sArray2D

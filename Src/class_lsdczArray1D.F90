@@ -13,6 +13,18 @@ module class_lArray1D
 !========================
 end module class_lArray1D
 
+module class_iArray1D
+!========================
+#define TYPE_NAME iArray1D
+#define STR_TYPE_NAME "iArray1D"
+#define TYPE_NAME_ iArray1D_
+#define NEW_TYPE newiArray1D
+#define VAR_TYPE integer
+! DO NOT DEFINE PREC
+#include "class_Array1D.T90"
+!========================
+end module class_iArray1D
+
 
 module class_sArray1D
 !========================

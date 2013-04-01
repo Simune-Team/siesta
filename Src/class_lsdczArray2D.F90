@@ -11,6 +11,17 @@ module class_lArray2D
 !========================
 end module class_lArray2D
 
+module class_iArray2D
+!========================
+#define TYPE_NAME iArray2D
+#define STR_TYPE_NAME "iArray2D"
+#define TYPE_NAME_ iArray2D_
+#define NEW_TYPE newiArray2D
+#define VAR_TYPE integer
+#include "class_Array2D.T90"
+!========================
+end module class_iArray2D
+
 
 module class_sArray2D
 !========================

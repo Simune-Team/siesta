@@ -33,7 +33,7 @@ logical  :: savetshs     ! Saves the Hamiltonian and Overlap matrices if the
 logical  :: onlyS        ! Option to only save overlap matrix
 logical  :: USEBULK      ! Use Bulk Hamiltonian in Electrodes
 logical  :: TriDiag      ! true if tridiagonalization
-logical  :: updatedmcr   ! Update DM values of ONLY Central Region
+logical  :: UpdateDMCR   ! Update DM values of ONLY Central Region
 integer  :: ChargeCorr   ! Integer holding the method of charge correction
                          !  0 => Will not do charge correction
                          !  1 => Excess/missing charge is corrected in the buffer layers
@@ -70,6 +70,9 @@ logical       :: ElecValenceBandBot ! Calculate Electrode valence band bottom wh
 integer :: Cmethod        ! Method for the contour integration
 logical :: ReUseGF        ! Calculate the electrodes GF
 
+! Transiesta solution method
+logical :: ts_method
+
 !==========================================================================*
 !==========================================================================*
 !  Default Values for arguments read from input file                       *
@@ -78,9 +81,9 @@ logical :: ReUseGF        ! Calculate the electrodes GF
 logical, parameter :: savetshs_def = .true.
 logical, parameter :: onlyS_def = .false.
 logical, parameter :: tsdme_def = .true.
-logical, parameter :: USEBULK_def = .true.
+logical, parameter :: UseBulk_def = .true.
 logical, parameter :: TriDiag_def = .false.
-logical, parameter :: updatedmcr_def = .true.
+logical, parameter :: UpdateDMCR_def = .true.
 logical, parameter :: UseVFix_def = .true.
 real(dp), parameter :: voltfdf_def = 0._dp   ! in Ry
 real(dp), parameter :: CCEmin_def = -3.0_dp  ! in Ry
@@ -157,6 +160,13 @@ end if
 !Set ts_istep default
 ts_istep=0
 
+! Reading the Transiesta solution method
+chars = fdf_get('TS.SolutionMethod','original')
+ts_method = 0
+if ( leqi(chars,'sparse') ) then
+   ts_method = 1
+end if
+
 ! Reading TS Options from fdf ...
 savetshs    = fdf_get('TS.SaveHS',savetshs_def)
 onlyS       = fdf_get('TS.onlyS',onlyS_def)
@@ -167,7 +177,7 @@ VoltL =  0.5_dp*VoltFDF
 VoltR = -0.5_dp*VoltFDF
 UseBulk     = fdf_get('TS.UseBulkInElectrodes',UseBulk_def)
 TriDiag     = fdf_get('TS.TriDiag',TriDiag_def)
-updatedmcr  = fdf_get('TS.UpdateDMCROnly',updatedmcr_def)
+UpdateDMCR  = fdf_get('TS.UpdateDMCROnly',UpdateDMCR_def)
 NBufAtL     = fdf_get('TS.BufferAtomsLeft',NBufAtL_def)
 NBufAtR     = fdf_get('TS.BufferAtomsRight',NBufAtR_def)
 if ( NBufAtL < 0 .or. NBufAtR < 0 ) then
@@ -230,15 +240,15 @@ if ( NRepA1R < 1 .or. NRepA2R < 1 ) &
 
 ! Here we check whether the user could perform the same
 ! calculation with the same GF-file
-   ! Read in the number of atoms in the HSfile, to check
-   ! We cannot assume the user has requested all atoms.
-call ts_read_TSHS_na(HSFileL,i)
 ! We check that the user does not request the same GF files
 ! for runs with Bias. Furthermore, if na_u in Elec /= {NUsedAtomsL,NUsedAtomsR}
 ! then this is also not allowed.
 ! For non bias and na_u_elec == NUsedAtomsL == NUsedAtomsR
 ! then this is perfectly acceptable!
-if ( trim(GFFileL) == trim(GFFileR) ) then ! Has to be case-sensitive !
+if ( TSmode .and. trim(GFFileL) == trim(GFFileR) ) then ! Has to be case-sensitive !
+   ! Read in the total number (if NumUsedAtoms is not the full...)
+   call ts_read_TSHS_na(HSFileL,i)
+
    ! They are the same
    if ( IsVolt ) call die("The same Green's function file &
         &can not be used in a bias calculation.")
@@ -274,7 +284,12 @@ call fdf_obsolete('TS.NKVoltScale')
 
 ! Output Used Options in OUT file ....
 if (IOnode) then
- write(*,1) 'ts_read_options: Save H and S matrices        =', savetshs
+if ( ts_method == 0 ) then
+ write(*,10)'ts_read_options: Solution method              =', 'Original'
+else if ( ts_method == 1 ) then
+ write(*,10)'ts_read_options: Solution method              =', 'Sparsity pattern'
+end if
+ write(*,1) 'ts_read_options: Save H and S matrices        =', saveTSHS
  write(*,1) 'ts_read_options: Save S and quit (onlyS)      =', onlyS
 end if
 if (ionode .and. TSmode ) then
@@ -285,7 +300,7 @@ else
 end if
  write(*,1) 'ts_read_options: Bulk Values in Electrodes    =', UseBulk
  write(*,1) 'ts_read_options: TriDiag                      =', TriDiag 
- write(*,1) 'ts_read_options: Update DM Contact Reg. only  =', updatedmcr
+ write(*,1) 'ts_read_options: Update DM Contact Reg. only  =', UpdateDMCR
  write(*,5) 'ts_read_options: N. Buffer At. Left           =', NBufAtL
  write(*,5) 'ts_read_options: N. Buffer At. Right          =', NBufAtR
  write(*,5) 'ts_read_options: N. Pts. Circle               =', ncircle
@@ -407,35 +422,53 @@ end if
     end if
  end if
 
-! UseBulk and TriDiag
-  if((.not. UseBulk) .and. TriDiag) then
-    write(*,*) "WARNING: TriDiag only for UseBulkInElectrodes"
-    write(*,*) "         Reverting to normal inversion scheme"
-    TriDiag = .false. 
-  end if
-
-! Integration Method
-  if( Cmethod == 0 ) then
-    write(*,*) 'WARNING: TS.biasContour.method not recognized.'
-    write(*,*) '         Reverting to gaussfermi instead'
-    Cmethod = CC_METHOD_GAUSSFERMI
-  endif
-
-  if (fixspin ) then
-   write(*,*) 'Fixed Spin not possible in TS Calculations !'
-   call die('Stopping code')
-  end if
-
-  write(*,'(3a)') repeat('*',24),' End: TS CHECKS AND WARNINGS ',repeat('*',26) 
-
-  write(*,*)
-
 end if
 
-! The method could have changed... Broad cast method
-#ifdef MPI
-  call MPI_BCast(cmethod,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
-#endif
+! UseBulk and TriDiag
+if ( (.not. UseBulk) .and. TriDiag ) then
+   if ( IONode ) then
+    write(*,*) "WARNING: TriDiag only for UseBulkInElectrodes"
+    write(*,*) "         Reverting to normal inversion scheme"
+   end if
+   TriDiag = .false. 
+end if
+
+! sparsity pattern
+if ( ts_method == 1 ) then
+   if ( TriDiag ) then
+      if ( IONode ) then
+       write(*,*) "WARNING: TriDiag only for original solution method"
+       write(*,*) "         Reverting to normal inversion scheme"
+      end if
+      TriDiag = .false. 
+   end if
+   if ( ChargeCorr /= 0 ) then
+      if ( IONode ) then
+       write(*,*) "WARNING: Charge correction only for original solution method"
+       write(*,*) "         No correction will be performed"
+    end if
+    ChargeCorr = 0
+   end if
+end if
+
+! Integration Method
+if( Cmethod == 0 ) then
+   if ( IONode ) then
+    write(*,*) 'WARNING: TS.biasContour.method not recognized.'
+    write(*,*) '         Reverting to gaussfermi instead'
+   end if
+   Cmethod = CC_METHOD_GAUSSFERMI
+endif
+
+if (fixspin ) then
+   write(*,*) 'Fixed Spin not possible in TS Calculations !'
+   call die('Stopping code')
+end if
+
+if ( IONode ) then
+   write(*,'(3a,/)') repeat('*',24), &
+        ' End: TS CHECKS AND WARNINGS ',repeat('*',26)
+end if
 
 1   format(a,4x,l1)
 5   format(a,i5,a)

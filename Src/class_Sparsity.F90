@@ -6,8 +6,10 @@ module class_Sparsity
   
   public :: newSparsity
   public :: print_type
-  public :: nrows, nrows_g, nnzs, n_col, list_ptr, list_col
-  public :: n_row
+  public :: nrows, nrows_g
+  public :: ncols, ncols_g
+  public :: n_row, n_col
+  public :: nnzs, list_ptr, list_col
 
   character(len=*), parameter :: mod_name= __FILE__
 
@@ -20,8 +22,8 @@ module class_Sparsity
     character(len=256) :: name = "null_sparsity"
     integer            :: nrows = 0             ! Local number of rows
     integer            :: nrows_g = 0           ! Global number or rows
-    integer            :: ncols = 0             ! Local number of rows
-    integer            :: ncols_g = 0           ! Global number or rows
+    integer            :: ncols = 0             ! Local number of columns
+    integer            :: ncols_g = 0           ! Global number or columns
     integer            :: nnzs  = 0             ! Local number of non-zeros
     integer, pointer   :: n_col(:)     =>null() ! Nonzero cols of each row
     integer, pointer   :: list_col(:)  =>null() ! Index of nonzero columns

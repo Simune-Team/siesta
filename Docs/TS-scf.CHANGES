@@ -1,4 +1,177 @@
 ----------------------------------------------------
+April 1, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-7
+
+Added a new solution method for Transiesta *NEED TESTS*
+
+* Transiesta now has two solution methods:
+  <anything unrecognizable> the full array method
+  'sparse' the sparse array method (heavily memory reduced)
+  The selection can be distinguished by:
+  TS.SolutionMethod orig|mem
+
+* The mem solution method has been completely rewritten
+  It accomodates full sparsity patterns for all arrays which does
+  not need the full order of the matrix.
+  For direct comparison these are the changes:
+  1. Old TS code:
+    - Full matrices:
+        H, S, DM, EDM, DMR, EDMR, DMneqL, DMneqR
+        GF_inv, GF
+    - Global sparse matrices (in super cell pattern)
+        H, S, DM, EDM, update_list, region_list
+    - Local sparse matrices
+        DM, EDM, H, S, update_list, region_list
+    - Electrodes
+        Gamma arrays are complex
+  2. New memory reduced code:
+    - Full matrices:
+        GF_inv, GF
+    - Global sparse matrices (in unit-cell pattern)
+        H, S  
+    - Global sparse matrices (in update-unit-cell pattern)
+        DM, EDM, DMR, EDMR, DMneqL, DMneqR
+    - Local sparse matrices
+        DM, EDM, H, S
+    - Electrodes
+        Gamma arrays are real (they have no imaginary part)
+
+  This will leave a memory foot-print well below 50% of what it was.
+  For regular systems, it will even be on the order of 25% of what it was.
+
+  The speed of the new routines are not extremely fast, they need some more
+  optimizations and they mainly lack speed due to BLAS operations not enabled.
+  The looping and checking in the constructs for the TS update region is 
+  probably causing the slow execution.
+
+  The memory reduced method does not show as much information regarding the
+  charges. However, it shows the charges:
+  1. Before the first Transiesta iteration
+  2. After the last Transiesta iteration (in siesta_forces)
+  TODO add distinguishing between update and non-update region.
+
+  * REMARK * The solution method has been tested on a couple of systems.
+  It seems that the execution is stable and provides reliable results,
+  however, we need more testing!
+
+* In order to fulfil the above memory reduced creations we need some new 
+  routines.
+  1. A sparsity pattern creator which can down-fold a super cell pattern
+     into a unit cell pattern.
+     This is straight forward as that can be performed by down-folding
+     all values in list_col into the unit cell and then remove any duplicates.
+     * NOTE * the new Transiesta routines are heavily relying on the fact
+              that the unit cell pattern of list_col is sorted in each row entry. 
+	      Hence the sparsity creator will automatically sort the entries.
+	      This also makes sense for the unit cell sparsity pattern.
+  2. A sparsity pattern creator which takes a MASK to select which entries
+     should be copied to the new sparsity.
+     This will NOT sort the list_col entries per row, as one does not know
+     about the existence of any super cell entries. However, it retains
+     the order of entries.
+
+* A new module has been added which adds some generic "missing" routines
+  in fortran.
+  We here list some of the functions:
+     VNORM : (norm of vector, when called on matrix it returns the 
+              column wise norm in a vector of same dimension as DIM=2)
+     SORT  : sorts an array (int only)
+     UNIQ  : returns all unique elements of an array (int only)
+     UNIQC : returns the number of unique elements of an array (int only)
+     SFIND : finds an element of an sorted array (int only)
+     MODP  : a ceiling version of the MOD, operator (int only)
+     EYE   : returns the identity matrix of all kinds
+
+  It is completely separable and should always be kept as such.
+  For further information, see the details in the module.
+
+* Added a new module geom_helper.
+  This should aid in the search for various values in the SIESTA
+  sparsity pattern via look-ups.
+  1. the iaorb array (returns the atom which an orbital resides
+     on) is easily reached by searching in the lasto array.
+     Note, it does so by guessing the atom number from the number
+     of orbitals on the first atom, hence it searches fast.
+  2. the indexuo array (which returns the unit cell equivalent
+     orbital from a super cell index) can easily be checked by
+     MODP (from intrinsic_missing)
+     Here we name the function UCORB 
+  3. ucell_nnn, returns the index of the ucell in the super cell
+     construct. I.e. the transfer matrix index in all directions.
+     There are equivalent routines for obtaining in any direction.
+     ucell_nx, ucell_ny, ucell_nz, ucell_n (takes an extra argument)
+
+* Made some cosmetic changes for conforming with 80 line width.
+  And cleaned up the old m_ts_scattering
+
+* Added the completion of only computing GF(2,2) when UpdateDMRC == .TRUE.
+  and UseBulk == .TRUE.
+  This means that the inversion routine will be much faster when not needing 
+  to update cross-terms between left-centre and centre-right electrodes regions.
+  Note that for bias calculations this can not be used (and is not used).
+  However, we differentiate when it can be used, so that equilibrium energy
+  points can utilize the smaller inversion technique. This speeds up
+  Transiesta by quite a bit.
+  This now exists both in the "old" TS and the memory reduced TS which makes
+  both run faster.
+
+* Added an integer array for the Array1D, Array2D and their sparse 
+  equivalents.
+  TODO: rename all files to class_T_{Array[12]D|SpArr[12]D} to be able
+  to easily decipher that it contains all types.
+
+* Removed unnecessary array workcmplx in Transiesta
+  Fixed various spurious constructs ( double negation in ifs are not
+  easy to understand)
+
+* Added TRANSIESTA_TIMING flags for direct comparison between the solution
+  methods of Transiesta. This flag should only be used when debugging, etc.
+  This has shown that there needs to be worked on the expansion routines
+  in the new sparsity method. If they are leveraged in utilization we
+  can gain some more speed in Transiesta.
+
+* TBTrans_rep has been removed the need for fdf_global_get (fdf is parallel)
+  Also the calculation of PDOS has been corrected with the overlap conjugate
+  This needs to be checked, however, it makes much more sense!
+  The memory reduced methods has not been transferred to TBTrans. Currently
+  TBtrans need not be considered "heavy" on the memory usage.
+
+* REMARK, before release all TS tests needs to be redone.
+  The transmission from the TBTrans and TBTrans_rep are not the same.
+  TBTrans has a spin-factor meaning that that will give the double of the
+  transmission. That is not the correct way.
+
+* Updated the manual to reflect the changes
+
+added:
+  Src/create_Sparsity_SC.F90
+  Src/geom_helper.f90
+  Src/intrinsic_missing.f90
+  Src/m_ts_mem.F90
+  Src/m_ts_mem_scat.F90
+  Src/m_ts_mem_sparsity.F90
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/class_Sparsity.F90
+  Src/class_lsdczArray1D.F90
+  Src/class_lsdczArray2D.F90
+  Src/class_lsdczSpArr1D.F90
+  Src/class_lsdczSpArr2D.F90
+  Src/compute_dm.F
+  Src/m_ts_contour.f90
+  Src/m_ts_electrode.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_in_siesta.F
+  Src/m_ts_options.F90
+  Src/m_ts_scattering.F
+  Src/siesta_forces.F
+  Util/TBTrans/Makefile
+  Util/TBTrans_rep/Makefile
+  Util/TBTrans_rep/m_tbt_kpoints.F90
+  Util/TBTrans_rep/m_tbt_options.F90
+  Util/TBTrans_rep/tbtrans.F90
+
+----------------------------------------------------
 Mar 16, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-6
 Changed the class_* classes for more future integrity
 

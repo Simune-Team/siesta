@@ -54,6 +54,13 @@ SIESTA_OBJS= precision.o sys.o m_io.o alloc.o  memoryinfo.o memory.o pxf.o \
 	     m_ts_contour.o m_ts_gf.o m_ts_scattering.o \
 	     m_ts_aux_rout.o m_ts_io.o m_ts_electrode.o m_ts_cctype.o
 
+# Add specific class objects
+SIESTA_OBJS += die.o m_uuid.o object_debug.o class_Sparsity.o \
+        class_OrbitalDistribution.o \
+	class_lsdczSpArr1D.o class_lsdczSpArr2D.o \
+	class_lsdczArray1D.o class_lsdczArray2D.o
+
+
 TBTOBJS= $(SIESTA_OBJS) $(MOD_TOBJS) $(SYSOBJ) $(EXTRA) \
          tbtrans.o transmission.o tbt_init.o tbt_reinit.o \
 	 coop.o tt_eig.o atompdos.o
@@ -161,18 +168,24 @@ chkdim.o: sys.o
 chkgmx.o: cellsubs.o minvec.o precision.o sys.o
 class_Fstack_Pair_Geometry_SpMatrix.o: class_Pair_Geometry_SpMatrix.o
 class_Geometry.o: alloc.o
-class_Pair_Geometry_SpMatrix.o: class_Geometry.o class_SpMatrix.o
-class_SpMatrix.o: class_OrbitalDistribution.o class_Sparsity.o class_dArray2D.o
+class_Pair_Geometry_SpMatrix.o: class_Geometry.o class_lsdczSpArr2D.o
 class_Sparsity.o: alloc.o
+class_lsdczSpArr1D.o: class_lsdczArray1D.o class_lsdczArray1D.o
+class_lsdczSpArr1D.o: class_lsdczArray1D.o class_lsdczArray1D.o
+class_lsdczSpArr1D.o: class_lsdczArray1D.o class_lsdczArray1D.o
+class_lsdczSpArr2D.o: class_lsdczArray2D.o class_lsdczArray2D.o
+class_lsdczSpArr2D.o: class_lsdczArray2D.o class_lsdczArray2D.o
+class_lsdczSpArr2D.o: class_lsdczArray2D.o class_lsdczArray2D.o
 coceri.o: files.o periodic_table.o precision.o
-compute_EKS_Harris.o: atomlist.o class_SpMatrix.o dhscf.o m_dipol.o
+compute_EKS_Harris.o: atomlist.o class_lsdczSpArr2D.o dhscf.o m_dipol.o
 compute_EKS_Harris.o: m_energies.o m_mpi_utils.o m_ntm.o m_spin.o precision.o
 compute_EKS_Harris.o: siesta_geom.o siesta_options.o sparse_matrices.o
 compute_dm.o: atomlist.o iodmhs_netcdf.o kpoint_grid.o m_energies.o m_eo.o
 compute_dm.o: m_gamma.o m_mpi_utils.o m_rmaxh.o m_spin.o m_steps.o
-compute_dm.o: m_ts_global_vars.o m_ts_in_siesta.o m_ts_options.o ordern.o
-compute_dm.o: parallel.o precision.o siesta_geom.o siesta_options.o
-compute_dm.o: sparse_matrices.o sys.o units.o
+compute_dm.o: m_ts_global_vars.o m_ts_in_siesta.o m_ts_mem.o
+compute_dm.o: m_ts_mem_sparsity.o m_ts_options.o ordern.o parallel.o
+compute_dm.o: precision.o siesta_geom.o siesta_options.o sparse_matrices.o
+compute_dm.o: sys.o units.o
 compute_max_diff.o: atomlist.o m_mpi_utils.o m_spin.o precision.o
 compute_max_diff.o: sparse_matrices.o
 compute_norm.o: m_mpi_utils.o precision.o sparse_matrices.o
@@ -180,6 +193,7 @@ conjgr.o: precision.o
 conjgr_old.o: precision.o
 coor.o: alloc.o parallel.o precision.o siesta_geom.o sys.o zmatrix.o
 coxmol.o: files.o periodic_table.o precision.o
+create_Sparsity_SC.o: class_Sparsity.o geom_helper.o intrinsic_missing.o
 debugmpi.o: parallel.o
 denmat.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 denmatlomem.o: alloc.o globalise.o onmod.o precision.o
@@ -221,8 +235,8 @@ electrostatic.o: atm_types.o atmfuncs.o atmparams.o bessph.o m_recipes.o
 electrostatic.o: precision.o radfft.o radial.o sys.o
 ener3.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 ener3lomem.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
-extrapolateSpMatrix.o: class_OrbitalDistribution.o class_SpMatrix.o
-extrapolateSpMatrix.o: class_Sparsity.o class_dArray2D.o
+extrapolateSpMatrix.o: class_OrbitalDistribution.o class_Sparsity.o
+extrapolateSpMatrix.o: class_lsdczArray2D.o class_lsdczSpArr2D.o
 extrapolon.o: parallel.o precision.o sys.o
 fermid.o: m_recipes.o parallel.o precision.o sys.o
 fft.o: alloc.o fft1d.o m_timer.o mesh.o parallel.o parallelsubs.o precision.o
@@ -241,6 +255,7 @@ fire_optim.o: precision.o siesta_options.o units.o
 fixed.o: alloc.o parallel.o precision.o
 flib_spline.o: precision.o
 forhar.o: alloc.o mesh.o moremeshsubs.o parallel.o precision.o
+geom_helper.o: intrinsic_missing.o
 get_target_stress.o: parallel.o precision.o sys.o units.o
 globalise.o: alloc.o onmod.o onmod.o precision.o spatial.o
 gradient.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
@@ -321,11 +336,11 @@ m_memory.o: memoryinfo.o parallel.o sys.o
 m_mpi_utils.o: precision.o sys.o
 m_new_dm.o: alloc.o atomlist.o class_Fstack_Pair_Geometry_SpMatrix.o
 m_new_dm.o: class_Geometry.o class_OrbitalDistribution.o
-m_new_dm.o: class_Pair_Geometry_SpMatrix.o class_SpMatrix.o class_Sparsity.o
-m_new_dm.o: class_dArray2D.o files.o m_energies.o m_mpi_utils.o m_spin.o
-m_new_dm.o: m_steps.o m_svd.o m_ts_iodm.o m_ts_options.o parallel.o
-m_new_dm.o: parallelsubs.o parsing.o precision.o readSpMatrix.o siesta_geom.o
-m_new_dm.o: siesta_options.o sparse_matrices.o sys.o units.o
+m_new_dm.o: class_Pair_Geometry_SpMatrix.o class_Sparsity.o
+m_new_dm.o: class_lsdczArray2D.o class_lsdczSpArr2D.o files.o m_energies.o
+m_new_dm.o: m_mpi_utils.o m_spin.o m_steps.o m_svd.o m_ts_iodm.o m_ts_options.o
+m_new_dm.o: parallel.o parallelsubs.o parsing.o precision.o readSpMatrix.o
+m_new_dm.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o units.o
 m_options.o: precision.o
 m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
 m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o
@@ -333,9 +348,6 @@ m_pulay.o: alloc.o atomlist.o m_spin.o m_svd.o parallel.o precision.o
 m_pulay.o: siesta_options.o sparse_matrices.o sys.o
 m_recipes.o: precision.o sys.o
 m_rmaxh.o: precision.o
-m_sparsity_loop.o: class_Sparsity.o intrinsic_missing.o
-m_sparsity_uc.o: class_Sparsity.o class_dArray1D.o class_zArray1D.o
-m_sparsity_uc.o: m_sparsity_loop.o
 m_spin.o: alloc.o parallel.o precision.o
 m_stress.o: precision.o
 m_svd.o: precision.o
@@ -348,14 +360,25 @@ m_ts_electrode.o: files.o m_hs_matrix.o m_ts_aux_rout.o m_ts_cctype.o m_ts_io.o
 m_ts_electrode.o:  parallel.o precision.o sys.o units.o
 m_ts_gf.o: m_ts_cctype.o m_ts_electrode.o parallel.o precision.o sys.o units.o
 m_ts_global_vars.o: precision.o
-m_ts_in_siesta.o: m_glob_sparse.o m_hs_matrix.o m_ts_cctype.o m_ts_contour.o
-m_ts_in_siesta.o: m_ts_gf.o m_ts_kpoints.o m_ts_options.o m_ts_scattering.o
-m_ts_in_siesta.o: parallel.o parallelsubs.o precision.o sys.o units.o
+m_ts_in_siesta.o: files.o m_glob_sparse.o m_hs_matrix.o m_ts_cctype.o
+m_ts_in_siesta.o: m_ts_contour.o m_ts_gf.o m_ts_kpoints.o m_ts_options.o
+m_ts_in_siesta.o: m_ts_scattering.o parallel.o parallelsubs.o precision.o sys.o
+m_ts_in_siesta.o: units.o
 m_ts_io.o:  parallel.o precision.o sys.o
 m_ts_iodm.o: alloc.o files.o m_mpi_utils.o m_ts_global_vars.o parallel.o
 m_ts_iodm.o: parallelsubs.o precision.o sys.o
 m_ts_kpoints.o: files.o find_kgrid.o minvec.o parallel.o precision.o
 m_ts_kpoints.o: siesta_cml.o siesta_options.o sys.o
+m_ts_mem.o: class_OrbitalDistribution.o class_Sparsity.o class_lsdczSpArr1D.o
+m_ts_mem.o: class_lsdczSpArr1D.o geom_helper.o intrinsic_missing.o
+m_ts_mem.o: m_ts_cctype.o m_ts_contour.o m_ts_gf.o m_ts_kpoints.o
+m_ts_mem.o: m_ts_mem_scat.o m_ts_mem_sparsity.o m_ts_options.o parallel.o
+m_ts_mem.o: precision.o units.o
+m_ts_mem_scat.o: class_Sparsity.o class_lsdczSpArr1D.o class_lsdczSpArr1D.o
+m_ts_mem_scat.o: intrinsic_missing.o parallel.o precision.o units.o
+m_ts_mem_sparsity.o: class_OrbitalDistribution.o class_Sparsity.o
+m_ts_mem_sparsity.o: create_Sparsity_SC.o geom_helper.o m_glob_sparse.o
+m_ts_mem_sparsity.o: m_ts_mem_scat.o m_ts_options.o parallel.o
 m_ts_options.o: files.o m_ts_contour.o m_ts_global_vars.o m_ts_io.o parallel.o
 m_ts_options.o: precision.o siesta_options.o sys.o units.o
 m_ts_scattering.o: m_ts_aux_rout.o parallel.o precision.o sys.o units.o
@@ -431,8 +454,8 @@ pseudopotential.o: alloc.o atom_options.o flib_spline.o precision.o sys.o
 radfft.o: alloc.o bessph.o m_recipes.o precision.o
 radial.o: alloc.o precision.o xml.o
 rdiag.o: alloc.o m_diagon.o memoryinfo.o parallel.o precision.o sys.o
-readSpMatrix.o: class_OrbitalDistribution.o class_SpMatrix.o class_Sparsity.o
-readSpMatrix.o: class_dArray2D.o
+readSpMatrix.o: class_OrbitalDistribution.o class_Sparsity.o
+readSpMatrix.o: class_lsdczArray2D.o class_lsdczSpArr2D.o
 read_xc_info.o: parallel.o precision.o sys.o
 readsp.o: parallel.o precision.o sys.o
 redcel.o: parallel.o precision.o sys.o
@@ -440,8 +463,8 @@ reinit.o: files.o parallel.o
 remove_intramol_pressure.o: precision.o zmatrix.o
 reoptical.o: parallel.o precision.o sys.o
 reord.o: alloc.o precision.o
-restructSpMatrix.o: class_OrbitalDistribution.o class_SpMatrix.o
-restructSpMatrix.o: class_Sparsity.o class_dArray2D.o
+restructSpMatrix.o: class_OrbitalDistribution.o class_Sparsity.o
+restructSpMatrix.o: class_lsdczArray2D.o class_lsdczSpArr2D.o
 rhooda.o: atmfuncs.o atomlist.o mesh.o meshphi.o precision.o
 rhoofd.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mesh.o meshdscf.o
 rhoofd.o: meshphi.o parallel.o parallelsubs.o precision.o sys.o
@@ -454,11 +477,11 @@ savepsi.o: alloc.o parallel.o parallelsubs.o precision.o
 schecomm.o: alloc.o
 setatomnodes.o: alloc.o parallel.o precision.o spatial.o sys.o
 setspatial.o: alloc.o parallel.o precision.o spatial.o
-setup_H0.o: alloc.o atmfuncs.o atomlist.o class_SpMatrix.o dhscf.o dnaefs.o
+setup_H0.o: alloc.o atmfuncs.o atomlist.o class_lsdczSpArr2D.o dhscf.o dnaefs.o
 setup_H0.o: kinefsm.o m_energies.o m_ntm.o m_spin.o metaforce.o
 setup_H0.o: molecularmechanics.o naefs.o nlefsm.o siesta_geom.o
 setup_H0.o: siesta_options.o sparse_matrices.o
-setup_hamiltonian.o: alloc.o atmfuncs.o atomlist.o class_SpMatrix.o dhscf.o
+setup_hamiltonian.o: alloc.o atmfuncs.o atomlist.o class_lsdczSpArr2D.o dhscf.o
 setup_hamiltonian.o: m_dipol.o m_energies.o m_gamma.o m_hsx.o m_mpi_utils.o
 setup_hamiltonian.o: m_ntm.o m_partial_charges.o m_spin.o m_steps.o m_stress.o
 setup_hamiltonian.o: m_ts_global_vars.o metaforce.o molecularmechanics.o
@@ -480,13 +503,14 @@ siesta_cmlsubs.o: files.o parallel.o siesta_cml.o timestamp.o version.o
 siesta_end.o: alloc.o bands.o densematrix.o fixed.o m_dscfcomm.o m_pulay.o
 siesta_end.o: m_wallclock.o meshdscf.o meshphi.o moremeshsubs.o parallel.o
 siesta_end.o: siesta_cml.o siesta_cmlsubs.o sparse_matrices.o timestamp.o
-siesta_forces.o: check_scf_convergence.o compute_EKS_Harris.o compute_dm.o
-siesta_forces.o: compute_max_diff.o final_H_f_stress.o m_convergence.o
-siesta_forces.o: m_forces.o m_pulay.o m_steps.o m_ts_global_vars.o
-siesta_forces.o: m_ts_options.o mixer.o parallel.o post_scf_work.o precision.o
-siesta_forces.o: save_density_matrix.o setup_H0.o setup_hamiltonian.o
-siesta_forces.o: siesta_cml.o siesta_options.o sparse_matrices.o
-siesta_forces.o: state_analysis.o state_init.o sys.o units.o write_subs.o
+siesta_forces.o: atomlist.o check_scf_convergence.o compute_EKS_Harris.o
+siesta_forces.o: compute_dm.o compute_max_diff.o final_H_f_stress.o
+siesta_forces.o: m_convergence.o m_forces.o m_pulay.o m_spin.o m_steps.o
+siesta_forces.o: m_ts_global_vars.o m_ts_mem_sparsity.o m_ts_options.o mixer.o
+siesta_forces.o: parallel.o post_scf_work.o precision.o save_density_matrix.o
+siesta_forces.o: setup_H0.o setup_hamiltonian.o siesta_cml.o siesta_geom.o
+siesta_forces.o: siesta_options.o sparse_matrices.o state_analysis.o
+siesta_forces.o: state_init.o sys.o units.o write_subs.o
 siesta_geom.o: precision.o
 siesta_init.o: alloc.o atomlist.o bands.o bsc_xcmod.o
 siesta_init.o: class_Fstack_Pair_Geometry_SpMatrix.o densematrix.o files.o
@@ -506,8 +530,8 @@ siesta_move.o: sys.o write_subs.o zm_broyden_optim.o zm_fire_optim.o zmatrix.o
 siesta_options.o: files.o memoryinfo.o parallel.o precision.o siesta_cml.o
 siesta_options.o: sys.o units.o
 sparse_matrices.o: alloc.o class_Fstack_Pair_Geometry_SpMatrix.o
-sparse_matrices.o: class_OrbitalDistribution.o class_SpMatrix.o
-sparse_matrices.o: class_Sparsity.o precision.o
+sparse_matrices.o: class_OrbitalDistribution.o class_Sparsity.o
+sparse_matrices.o: class_lsdczSpArr2D.o precision.o
 spatial.o: precision.o
 spher_harm.o: alloc.o precision.o sys.o
 state_analysis.o: atomlist.o born_charge.o
@@ -517,7 +541,7 @@ state_analysis.o: m_forces.o m_iostruct.o m_ntm.o m_spin.o m_stress.o
 state_analysis.o: m_wallclock.o parallel.o remove_intramol_pressure.o
 state_analysis.o: siesta_cml.o siesta_geom.o siesta_options.o sparse_matrices.o
 state_analysis.o: write_subs.o zmatrix.o
-state_init.o: alloc.o atomlist.o class_SpMatrix.o class_Sparsity.o
+state_init.o: alloc.o atomlist.o class_Sparsity.o class_lsdczSpArr2D.o
 state_init.o: domain_decom.o files.o hsparse.o iodm_netcdf.o iodmhs_netcdf.o
 state_init.o: kpoint_grid.o m_check_supercell.o m_energies.o m_eo.o m_gamma.o
 state_init.o: m_mpi_utils.o m_new_dm.o m_pulay.o m_rmaxh.o m_spin.o m_steps.o
@@ -563,8 +587,8 @@ coop.o: m_tbt_out.o parallel.o precision.o sys.o units.o
 m_lowdin.o: precision.o
 m_tbt_iotshs.o: m_tbt_kpoints.o m_ts_io.o parallel.o precision.o sys.o
 m_tbt_kpoints.o: alloc.o minvec.o parallel.o precision.o sys.o units.o
-m_tbt_options.o: files.o m_fdf_global.o m_ts_io.o memoryinfo.o parallel.o
-m_tbt_options.o: precision.o sys.o units.o
+m_tbt_options.o: files.o m_ts_io.o memoryinfo.o parallel.o precision.o sys.o
+m_tbt_options.o: units.o
 m_tbt_out.o: parallel.o precision.o units.o
 tbt_init.o: alloc.o files.o m_spin.o m_tbt_kpoints.o m_tbt_options.o m_timer.o
 tbt_init.o: m_ts_contour.o m_wallclock.o parallel.o precision.o sys.o
@@ -576,3 +600,112 @@ tbtrans.o: m_ts_gf.o m_ts_scattering.o m_wallclock.o parallel.o precision.o
 tbtrans.o: sys.o timestamp.o units.o
 transmission.o: m_ts_aux_rout.o precision.o sys.o
 tt_eig.o: precision.o sys.o
+band.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/bands.o
+class_carray1d.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/class_lsdczArray1D.o
+class_carray2d.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/class_lsdczArray2D.o
+class_csparr1d.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/class_lsdczSpArr1D.o
+class_csparr2d.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/class_lsdczSpArr2D.o
+class_darray1d.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/class_lsdczArray1D.o
+class_darray2d.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/class_lsdczArray2D.o
+class_dsparr1d.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/class_lsdczSpArr1D.o
+class_dsparr2d.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/class_lsdczSpArr2D.o
+class_fstack_pair_geometry_dsparr2d.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/class_Fstack_Pair_Geometry_SpMatrix.o
+class_iarray1d.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/class_lsdczArray1D.o
+class_iarray2d.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/class_lsdczArray2D.o
+class_isparr1d.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/class_lsdczSpArr1D.o
+class_isparr2d.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/class_lsdczSpArr2D.o
+class_larray1d.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/class_lsdczArray1D.o
+class_larray2d.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/class_lsdczArray2D.o
+class_lsparr1d.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/class_lsdczSpArr1D.o
+class_lsparr2d.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/class_lsdczSpArr2D.o
+class_pair_geometry_dsparr2d.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/class_Pair_Geometry_SpMatrix.o
+class_sarray1d.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/class_lsdczArray1D.o
+class_sarray2d.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/class_lsdczArray2D.o
+class_ssparr1d.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/class_lsdczSpArr1D.o
+class_ssparr2d.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/class_lsdczSpArr2D.o
+class_zarray1d.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/class_lsdczArray1D.o
+class_zarray2d.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/class_lsdczArray2D.o
+class_zsparr1d.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/class_lsdczSpArr1D.o
+class_zsparr2d.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/class_lsdczSpArr2D.o
+diagmemory.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/memoryinfo.o
+listsc_module.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/listsc.o
+m_bessph.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/bessph.o
+m_born_charge.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/born_charge.o
+m_broyden_optim.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/broyden_optim.o
+m_cell_broyden_optim.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/cell_broyden_optim.o
+m_cell_fire_optim.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/cell_fire_optim.o
+m_cgwf.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/cgwf.o
+m_check_scf_convergence.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/check_scf_convergence.o
+m_chempot.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/chempot.o
+m_chkgmx.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/chkgmx.o
+m_compute_dm.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/compute_dm.o
+m_compute_max_diff.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/compute_max_diff.o
+m_conjgr.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/conjgr.o
+m_conjgr_old.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/conjgr_old.o
+m_denmat.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/denmat.o
+m_dhscf.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/dhscf.o
+m_dnaefs.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/dnaefs.o
+m_doping_uniform.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/doping_uniform.o
+m_dynamics.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/dynamics.o
+m_eandg.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/egandd.o
+m_eks_harris.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/compute_EKS_Harris.o
+m_ener3.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/ener3.o
+m_fermid.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/fermid.o
+m_fft.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/fft.o
+m_final_h_f_stress.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/final_H_f_stress.o
+m_find_kgrid.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/find_kgrid.o
+m_fire_optim.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/fire_optim.o
+m_fixed.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/fixed.o
+m_forhar.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/forhar.o
+m_gradient.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/gradient.o
+m_grdsam.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/grdsam.o
+m_hsparse.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/hsparse.o
+m_intramol_pressure.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/remove_intramol_pressure.o
+m_ioxv.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/ioxv.o
+m_kinefsm.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/kinefsm.o
+m_ksv.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/ksv.o
+m_ksvinit.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/ksvinit.o
+m_local_dos.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/local_DOS.o
+m_minvec.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/minvec.o
+m_mixer.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/mixer.o
+m_naefs.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/naefs.o
+m_nlefsm.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/nlefsm.o
+m_norm.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/compute_norm.o
+m_normalize_dm.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/normalize_dm.o
+m_object_debug.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/object_debug.o
+m_on_subs.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/on_subs.o
+m_ordern.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/ordern.o
+m_overfsm.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/overfsm.o
+m_overlap.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/overlap.o
+m_post_scf_work.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/post_scf_work.o
+m_projected_dos.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/projected_DOS.o
+m_proximity_check.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/proximity_check.o
+m_radfft.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/radfft.o
+m_readdsparr2d.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/readSpMatrix.o
+m_save_density_matrix.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/save_density_matrix.o
+m_scf_options.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/m_options.o
+m_setup_h0.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/setup_H0.o
+m_setup_hamiltonian.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/setup_hamiltonian.o
+m_siesta_analysis.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/siesta_analysis.o
+m_siesta_end.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/siesta_end.o
+m_siesta_forces.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/siesta_forces.o
+m_siesta_init.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/siesta_init.o
+m_siesta_move.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/siesta_move.o
+m_state_analysis.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/state_analysis.o
+m_state_init.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/state_init.o
+m_struct_init.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/struct_init.o
+m_timestamp.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/timestamp.o
+m_ts_init.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/ts_init.o
+m_vmat.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/vmat.o
+m_xyz_phiatm.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/matel.o
+m_zm_broyden_optim.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/zm_broyden_optim.o
+m_zm_fire_optim.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/zm_fire_optim.o
+mtprng.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/m_uuid.o
+neighbour.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/mneighb.o
+on_core.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/onmod.o
+on_main.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/onmod.o
+printmat.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/printmatrix.o
+version_info.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/version.o
+write_subs_energies.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/write_subs.o
+write_subs_positions.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/write_subs.o
+write_subs_pressure.o: /home/nick/dtu/siesta-ts-scf/Util/TBTrans_rep/../../Src/write_subs.o

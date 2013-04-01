@@ -93,7 +93,7 @@
       use m_ts_options, only : NBufAtL, NBufAtR
       use m_ts_options, only : GFFileL, GFFileR
       use m_ts_options, only : IsVolt, VoltFDF, VoltL, VoltR
-      use m_ts_options, only : UseBulk, TriDiag, updatedmcr
+      use m_ts_options, only : UseBulk, TriDiag, UpdateDMCR
       use m_ts_options, only : ElecValenceBandBot, GFTitle
       use m_ts_options, only : ChargeCorr, ChargeCorr_factor
       use m_ts_options, only : kT
@@ -105,7 +105,7 @@
       use m_ts_cctype, only : CC_PART_TRANSPORT
       use m_ts_contour, only : PNEn, NEn, contour
       use m_ts_GF,      only : read_Green
-      use m_ts_scattering, only : getSFE, getGF
+      use m_ts_scattering, only : getSFE, getGF, getGFnonV
       use m_ts_scattering, only : GFGammaGF, weightDM, weightDMC
       use m_ts_scattering, only : get_scat_region
 
@@ -245,7 +245,6 @@
       complex(dp), dimension(:), allocatable :: DMCplx,DMRCplx
       complex(dp), dimension(:), allocatable :: DMneqLCplx,DMneqRCplx
       complex(dp), dimension(:), allocatable :: EDMCplx,EDMRCplx
-      complex(dp), dimension(:), allocatable :: work1Cplx
 !==================================================================
 
 !==================================================================
@@ -317,6 +316,7 @@
 
 ! Different logicals
       logical :: ioinC,joinC,updatedm
+      logical :: GF_Part
 
 ! Loop counters:
       integer :: iPE,iE,ispin
@@ -536,19 +536,13 @@
                   if(ic.gt.noL .and. ic.lt.nou-noR+1) ioinC=.true.
                   if(jc.gt.noL .and. jc.lt.nou-noR+1) joinC=.true.
 
-! FDN From fdf Now
-                if( .not. updatedmcr ) then                
-!
-!              update the cross DM terms between R,L and  C
-!
-                  updatedm = ioinC .or. joinC
-                else
-!
-!              update DM only in C
-!
-                 updatedm = ioinC .and. joinC
-! FDN
-                end if
+                  if( UpdateDMCR ) then 
+                     ! update DM only in C
+                     updatedm = ioinC .and. joinC
+                  else
+                     ! update the cross DM terms between R,L and  C
+                     updatedm = ioinC .or. joinC
+                  end if
                else
                   if(ic.ge.1 .and. ic.le.nou) ioinC=.true.
                   if(jc.ge.1 .and. jc.le.nou) joinC=.true.
@@ -566,11 +560,11 @@
                if ( count(indxuo(listh(listhptr(io) + 1:
      &              listhptr(io)+j-1))==jc) == 0 .or. j==1) then
                if ( updatedm ) then
-                  write(io_listup,'(tr2,2(i4,tr4),i2)')
-     &                 ic,jc,1
+                  write(io_listup,'(tr2,2(i4,tr4),i2,tr4,i5)')
+     &                 ic,jc,+1,jo
                else
-                  write(io_listup,'(tr2,2(i4,tr4),i2)')
-     &                 ic,jc,-1
+                  write(io_listup,'(tr2,2(i4,tr4),i2,tr4,i5)')
+     &                 ic,jc,-1,jo
                end if
                end if
 #endif
@@ -615,21 +609,17 @@
 
                ioinC=.false.
                joinC=.false.
+
                if(UseBulk) then !update only where Ham is updated:
                   if(ic.gt.noL .and. ic.lt.nou-noR+1) ioinC=.true.
                   if(jc.gt.noL .and. jc.lt.nou-noR+1) joinC=.true.
-! FDN From fdf Now
-                  if( .not. updatedmcr ) then                
-!
-!              update the cross DM terms between R,L and  C
-!
-                     updatedm = ioinC .or. joinC
-                  else
-!
-!              update DM only in C
-!
+
+                  if( UpdateDMCR ) then                
+                     ! update DM only in C
                      updatedm = ioinC .and. joinC
-! FDN
+                  else
+                    ! update the cross DM terms between R,L and  C
+                     updatedm = ioinC .or. joinC
                   end if
                else
                   if(ic.ge.1 .and. ic.le.nou) ioinC=.true.
@@ -803,6 +793,11 @@
          call memory('A','Z',2*nou*nou,'transiesta')
       end if
       
+      ! We use this for the inversion of GF, as well as several updating
+      ! places
+      allocate(work2(nou*nou))  ! is also used in the case of IsVolt
+      call memory('A','Z',nou*nou,'transiesta')
+      
       allocate(SFEL(noL,noL),SFER(noR,noR))
       allocate(GAMMAL(noL,noL),GAMMAR(noR,noR))
       call memory('A','Z',2*noL**2+2*noR**2,'transiesta')
@@ -812,8 +807,6 @@
 
       if(IsVolt)then
 ! FDN Complex for k point sampling
-         allocate(work2(nou*nou))
-         call memory('A','D',nou*nou,'transiesta')
          if ( ts_gamma_scf ) then      
             allocate(DMR(nou*nou))
             allocate(DMneqL(nou*nou),DMneqR(nou*nou))
@@ -914,6 +907,10 @@
             end if
           end if
 
+#ifdef TRANSIESTA_TIMING
+          call timer('TS_HS',1)
+#endif
+
 ! Here we could employ the same scheme as in the TBTrans utility
 ! This should yield a faster communication as each k-point
 ! is calculated on separate nodes...
@@ -933,7 +930,11 @@
           call matrix_rem_left_right(nou,H,S,noL,noR)
           ! The symmetrization has been moved to this routine
           call matrix_symmetrize(nou,H,S,Ef)
-          
+
+#ifdef TRANSIESTA_TIMING
+          call timer('TS_HS',2)
+#endif
+
 !=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
          DO iPE = Node+1, PNEn, Nodes ! loop over parallel contour points
 !=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
@@ -957,7 +958,6 @@
 ! G(q) in (1x1) to G(0) in (NA1xNA2)
 !
 ! SFEL/SFER  <------ GAAL/GAAR
-
 ! LEFT:
          call getSFE(UseBulk,uGFL,HAAL,SAAL,Z,ts_ikpt,
      &        nqL,qLb,wqL,
@@ -978,16 +978,51 @@
 
          if(errorgs) call die('ERROR in getSFE Right') 
 
-       
-! Calculate Full GF at energy point
-         ierr=0
-         call getGF(UseBulk,updatedmcr,VoltFDF,nou,noL,noR,H,S,SFEL
-     &        ,SFER,Z,GF,ierr,TriDiag)
+         ! We determine whether we are using a shortened calculation
+         ! of the GF.
+         ! This can only be performed if we do not update the 
+         ! electrode (cross terms) DM and we must not utilize
+         ! the TriDiag (that routine already has it implemented).
+         GF_Part = UseBulk .and. UpdateDMCR .and. (.not. TriDiag)
+
+         ! Further more we need to be in a non-bias contour point
+         GF_Part = GF_Part .and. (contour(iE)%part /= CC_PART_NON_EQUI)
+
+         if ( GF_Part ) then
+            ! Correct size of GF! Remember that typically the
+            ! points are gathered (nonbias...bias)
+            ! Which means this will only be performed once
+            if ( size(GF) /= nou*(nou-noL-noR) ) then
+               deallocate(GF)
+               call memory('D','Z',size(GF),'transiesta')
+               allocate(GF(nou*(nou-noL-noR)))
+               call memory('A','Z',nou*(nou-noL-noR),'transiesta')
+            end if
+
+            ! Calculate part of the GF at energy point
+            call getGFnonV(nou,noL,noR,H,S,SFEL,SFER,Z,work2,GF,ierr)
+
+         else
+
+            ! Correct size of GF! Remember that typically the
+            ! points are gathered (nonbias...bias)
+            ! Which means this will only be performed once
+            if ( size(GF) /= nou*nou ) then
+               deallocate(GF)
+               call memory('D','Z',size(GF),'transiesta')
+               allocate(GF(nou*nou))
+               call memory('A','Z',nou*nou,'transiesta')
+            end if
+
+            ! Calculate Full GF at energy point
+            call getGF(UseBulk,UpdateDMCR,IsVolt,nou,noL,noR,H,S,
+     &           SFEL,SFER,Z,work2,GF,ierr,TriDiag)
+         end if
       
 #ifdef MPI
          itmp = 0
          call MPI_AllReduce(ierr,itmp,1,MPI_integer,MPI_sum,
-     &        MPI_Comm_World,MPIerror)      
+     &        MPI_Comm_World,MPIerror)
          ierr=itmp 
 #endif
 
@@ -999,39 +1034,79 @@
 
 ! We should not do anything in case of no more points
          if ( iPE > NEn ) cycle
+
 ! -------------------------------------------------------------
 !     No voltage/Left Equilibrium Contour:
          select case ( contour(iE)%part )
          case ( CC_PART_EQUI , CC_PART_LEFT_EQUI )
-            
-            if (ts_gamma_scf) then
-              do i=1,nou*nou
-               DM(i)  =  DM(i) - DIMAG(GF(i)*W)
-               EDM(i) = EDM(i) - DIMAG(GF(i)*ZW)
-              end do ! i
-           else
-              do i=1,nou*nou
-               DMCplx(i)  =  DMCplx(i) - GF(i)*W
-               EDMCplx(i) = EDMCplx(i) - GF(i)*ZW
-              end do ! i
-           end if
+
+            if ( GF_Part ) then
+               ! We have only calculated part of the Green's function
+               ! hence we need to select calculated part
+               j = nou*noL
+               if (ts_gamma_scf) then
+                  do i=1,nou*(nou-noL-noR)
+                     DM(j+i)  =  DM(j+i) - DIMAG(GF(i)*W)
+                     EDM(j+i) = EDM(j+i) - DIMAG(GF(i)*ZW)
+                  end do        ! i
+               else
+                  do i=1,nou*(nou-noL-noR)
+                     DMCplx(j+i)  =  DMCplx(j+i) - GF(i)*W
+                     EDMCplx(j+i) = EDMCplx(j+i) - GF(i)*ZW
+                  end do        ! i
+               end if
+            else
+               if (ts_gamma_scf) then
+                  do i=1,nou*nou
+                     DM(i)  =  DM(i) - DIMAG(GF(i)*W)
+                     EDM(i) = EDM(i) - DIMAG(GF(i)*ZW)
+                  end do        ! i
+               else
+                  do i=1,nou*nou
+                     DMCplx(i)  =  DMCplx(i) - GF(i)*W
+                     EDMCplx(i) = EDMCplx(i) - GF(i)*ZW
+                  end do        ! i
+               end if
+            end if
+
 ! -------------------------------------------------------------
 !     Right Equilibrium Contour:
          case ( CC_PART_RIGHT_EQUI )
-            if (ts_gamma_scf) then
-               do i=1,nou*nou
-                DMR(i)  =  DMR(i) - DIMAG(GF(i)*W)
-                EDMR(i) = EDMR(i) - DIMAG(GF(i)*ZW)
-               end do ! i
-            else 
-               do i=1,nou*nou
-                DMRCplx(i)  =  DMRCplx(i) - GF(i)*W
-                EDMRCplx(i) = EDMRCplx(i) - GF(i)*ZW
-               end do ! i
+
+            if ( GF_Part ) then
+              ! We have only calculated part of the Green's function
+              ! hence we need to select calculated part
+              j = nou*noL
+              if (ts_gamma_scf) then
+                do i=1,nou*(nou-noL-noR)
+                   DMR(j+i)  =  DMR(j+i) - DIMAG(GF(i)*W)
+                   EDMR(j+i) = EDMR(j+i) - DIMAG(GF(i)*ZW)
+                end do          ! i
+              else
+                do i=1,nou*(nou-noL-noR)
+                   DMRCplx(j+i)  =  DMRCplx(j+i) - GF(i)*W
+                   EDMRCplx(j+i) = EDMRCplx(j+i) - GF(i)*ZW
+                end do        ! i
+              end if
+            else
+              if (ts_gamma_scf) then
+                do i=1,nou*nou
+                   DMR(i)  =  DMR(i) - DIMAG(GF(i)*W)
+                   EDMR(i) = EDMR(i) - DIMAG(GF(i)*ZW)
+                end do        ! i
+              else 
+                do i=1,nou*nou
+                   DMRCplx(i)  =  DMRCplx(i) - GF(i)*W
+                   EDMRCplx(i) = EDMRCplx(i) - GF(i)*ZW
+                end do        ! i
+              end if
             end if
 ! -------------------------------------------------------------
 !     Non-equilibrium part:
          case ( CC_PART_NON_EQUI )
+
+            if ( GF_Part ) call die('Part of the GF cannot &
+     &be calculated on a bias contour point')
 
 !   Calculate rho^R(e) -> work2 ! NOTE R!!
             call GFGammaGF(.false.,nou,noR,GF,GAMMAR,work2)
@@ -1132,49 +1207,48 @@
          deallocate(work1)
       else
 
-         allocate(work1Cplx(nou*nou))
-         call memory('A','Z',nou*nou,'transiesta')
-
-!         work1Cplx = 0.0d0
-         call MPI_AllReduce(DMCplx,work1Cplx,nou*nou,
+!         work2 = 0.0d0
+         call MPI_AllReduce(DMCplx,work2,nou*nou,
      &        DAT_dcomplex,MPI_sum,MPI_Comm_World,MPIerror)
-         DMCplx = work1Cplx
+         DMCplx = work2
 
-!         work1Cplx = 0.0d0
-         call MPI_AllReduce(EDMCplx,work1Cplx,nou*nou,
+!         work2 = 0.0d0
+         call MPI_AllReduce(EDMCplx,work2,nou*nou,
      &        DAT_dcomplex,MPI_sum,MPI_Comm_World,MPIerror)
-         EDMCplx = work1Cplx
+         EDMCplx = work2
 
          if (IsVolt) then
 
-!            work1Cplx = 0.0d0
-            call MPI_AllReduce(DMRCplx,work1Cplx,nou*nou,
+!            work2 = 0.0d0
+            call MPI_AllReduce(DMRCplx,work2,nou*nou,
      &           DAT_dcomplex,MPI_sum,MPI_Comm_World,MPIerror)
-            DMRCplx = work1Cplx
+            DMRCplx = work2
 
-!            work1Cplx = 0.0d0
-            call MPI_AllReduce(DMneqLCplx,work1Cplx,nou*nou,
+!            work2 = 0.0d0
+            call MPI_AllReduce(DMneqLCplx,work2,nou*nou,
      &           DAT_dcomplex,MPI_sum,MPI_Comm_World,MPIerror)
-            DMneqLCplx = work1Cplx
+            DMneqLCplx = work2
             
-!            work1Cplx = 0.0d0
-            call MPI_AllReduce(DMneqRCplx,work1Cplx,nou*nou,
+!            work2 = 0.0d0
+            call MPI_AllReduce(DMneqRCplx,work2,nou*nou,
      &           DAT_dcomplex,MPI_sum,MPI_Comm_World,MPIerror)
-            DMneqRCplx = work1Cplx
+            DMneqRCplx = work2
 
-!            work1Cplx = 0.0d0
-            call MPI_AllReduce(EDMRCplx,work1Cplx,nou*nou,
+!            work2 = 0.0d0
+            call MPI_AllReduce(EDMRCplx,work2,nou*nou,
      &           DAT_dcomplex,MPI_sum,MPI_Comm_World,MPIerror)
-            EDMRCplx = work1Cplx
+            EDMRCplx = work2
             
          endif
-
-         call memory('D','Z',size(work1Cplx),'transiesta')
-         deallocate(work1Cplx)
 
       end if
       call timer("TS_comm",2)
 #endif MPI
+
+#ifdef TRANSIESTA_TIMING
+      call timer('TS_UPDM',1)
+#endif
+
 
       IF ( IsVolt ) THEN 
          if (ts_gamma_scf) then
@@ -1191,6 +1265,7 @@
 !     The original Hamiltonian from SIESTA was shifted ef: 
 !  -- thus we have a shift in EDM:
 
+      ! EDM = EDM + Ef * DM
       if (ts_gamma_scf) then 
          call daxpy(nou*nou,Ef,DM,1,EDM,1)
       else 
@@ -1255,7 +1330,7 @@
                   
                   cphase =  cdexp( dcmplx(0d0,-1.0d0)*kxij )
                   ccphase = cdexp( dcmplx(0d0,+1.0d0)*kxij )
-                  
+
 ! We have moved the ts_kweight to the energy point weight
                   Dnewg(ind) = Dnewg(ind) + DIMAG(
      &                 dcmplx(0.5d0,0d0)*
@@ -1343,6 +1418,10 @@
           Q_kpt(:,ts_ikpt,ispin) = Q_kpt(:,ts_ikpt,ispin) -
      &         sum(Q_kpt(:,1:ts_ikpt-1,ispin),2)
        end if
+
+#ifdef TRANSIESTA_TIMING
+       call timer('TS_UPDM',2)
+#endif
        
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       END DO                    ! ts_kpoint
@@ -1362,7 +1441,16 @@
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       END DO                    !ispin
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      
+
+#ifdef TRANSIESTA_TIMING
+      call timer('TS_HS',3)
+      call timer('TS_READ',3)
+      call timer('TS_EXPAND',3)
+      call timer('TS_PREPG',3)
+      call timer('TS_UPDM',3)
+      call timer('GFGGF',3)
+#endif
+
       call memory('D','Z',nou*nou,'transiesta')
       deallocate(GF)
 
@@ -1516,11 +1604,12 @@
       deallocate(HAAL,SAAL)
       deallocate(HAAR,SAAR)
 
-      
+      ! We use this everywhere
+      call memory('D','Z',size(work2),'transiesta')
+      deallocate(work2)
+     
       if(IsVolt) then
-         call memory('D','Z',size(work2),'transiesta')
-         deallocate(work2)
-         if ( ts_gamma_scf ) then
+          if ( ts_gamma_scf ) then
             call memory('D','D',size(DMR)+size(DMneqL),'transiesta')
             call memory('D','D',size(EDMR)+size(DMneqR),'transiesta')
             deallocate(DMR)
@@ -1540,7 +1629,7 @@
 #ifdef MPI
       call glob_sparse_arrays_dealloc(no_u, Gamma, maxnhg, 
      &     numhg,listhptrg,listhg,xijg)
-      call glob_sparse_matrices_dealloc(maxnhg, Hsg,Ssg)
+      call glob_sparse_matrices_dealloc(maxnhg, Hsg,  Ssg)
       call glob_sparse_matrices_dealloc(maxnhg, Dnewg,Enewg)
 #endif
 

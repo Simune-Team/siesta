@@ -552,6 +552,7 @@ contains
        call memory('A','Z',nuo_E*nuo_E,'create_green')
        allocate(eig(nuo_E))
        call memory('A','D',nuo_E,'create_green')
+       ! Check the arguments of this routine, it has H00(2,nuo_E,nuo_E) ??
        call cdiag(H00,S00,nuo_E,nuo_E,nuo_E,eig,H01,nuo_E,10,ierror)
        if ( IONode ) then
           if ( ierror == 0 ) then

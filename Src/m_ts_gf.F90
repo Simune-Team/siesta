@@ -187,7 +187,8 @@ contains
 ! ## Changed to only read header by Nick P. Andersen              ##
 ! ##    will only check against integer information and Ef shift. ##
 ! ##################################################################
-  subroutine read_Green(funit,print_title,c_EfShift,c_nkpar,c_NEn,c_nua,c_NA1,c_NA2, c_RemUCell, &
+  subroutine read_Green(funit,print_title,c_EfShift,c_nkpar,c_NEn, &
+       c_nua,c_NA1,c_NA2, c_RemUCell, &
        c_no,c_nspin, &
        nkpar,kpar,wkpar,nq,wq,qb)
     

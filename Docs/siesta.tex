@@ -4681,7 +4681,7 @@ energy (with units) as extra argument -- see
 section~\ref{sec:coop}). Care should be taken to make sure that the
 actual values of the options make sense.
 
-The output of the wavefunctions in described in Section \ref{subsec:wf}
+The output of the wavefunctions in described in Section \ref{sec:wf-output-user}
 
 {\it Use:} Used only if {\bf SolutionMethod} = {\tt diagon}.
 These k points are unrelated and compatible with any k-grid used
@@ -6992,6 +6992,24 @@ accomplished:
 
 The above implementations were done by Nick P. Andersen.
 
+\textsc{TranSiesta} has been in the Fall of 2013 been restructured to 
+a new solution method. A heavily reduced memory scheme has been introduced 
+which only requires the memory of the updated density matrix regions. This
+generally means a reduced memory footprint on the order of 50\% or less compared
+to the original implementation (per processor). Roughly the same speed should 
+be expected.
+All arrays are now distinguished between $\Gamma$-point calculations or $k$-point
+calculations, meaning that more arrays are now existing in both a real and 
+complex version.
+
+This has lead to a complete restructure of \textsc{TranSiesta} which also makes
+it somewhat obfuscated for newcomers to the code. However, the same sequence
+of operations is retained. To get to know the code please read the original
+and this version side-by-side for faster recognition.
+
+The above memory reduced \textsc{TranSiesta} version has been fully implemented
+by Nick P. Andersen.
+
 
 \subsection{Source code structure}
 
@@ -7249,11 +7267,11 @@ are needed:
   This, however, requires an equal replication of the k-grid in the 
   electrode in the A1 direction. A small example.
 
-  Consider a full {\sc TranSiesta} structure with metallic stacking:
+  Consider a full {\sc TranSiesta} structure with stacking:
   \begin{center}
-    ABABAB-D-BABAB
+    ABABAB-D-BABAB,
   \end{center}
-  , where D is the device region. Each layer is 3x3 atoms. The unit
+  where D is the device region. Each layer is 3x3 atoms. The unit
   cell is $9. \times 9.$ Angstroms in the layers perpendicular to the
   transport direction (for the sake of simplicity). Only the
   $\Gamma$-point is used. 
@@ -7325,6 +7343,17 @@ calculations, only the usual {\sc Siesta} options are relevant.
         transiesta} in order to perform a {\sc TranSiesta} calculation
 
         {\it Default value:} {\tt diagon}
+
+    \item[{\bf TS.SolutionMethod}] ({\it string}):
+      \index{TS.SolutionMethod@{\bf TS.SolutionMethod}} Can be set to \texttt{sparse}
+      in order to utilize the memory reduced \textsc{TranSiesta} calculation.
+      The \texttt{sparse} method is strictly the same, however, many optimizations and
+      changes have been added. The main benefit is that it requires, roughly, half the
+      memory as the original method. Hence, small numerical deviations are to be expected.
+      Furthermore, this has required a full re-write of \textsc{TranSiesta} so it should
+      be considered highly experimental and needs thorough testing.
+
+        {\it Default value:} {\tt original}
 
 \item[{\bf TS.SaveHS}] ({\it logical}): \index{TS.SaveHS@{\bf
     TS.SaveHS}} Save the Hamiltonian in the file with extension .TSHS.
@@ -7583,7 +7612,7 @@ This factor can be used to control the fluctuations.
 \subsection{  Matching   {\sc TranSiesta} coordinates: basic rules}
 Having discussed the possible input options of {\sc TranSiesta} here
 we just list a set of rules to construct the appropriate coordinates
-of the scattering region. The unitcell most only have one component for 
+of the scattering region. The unitcell must only have one component for 
 the transport direction vector ($z$-direction). The order of atoms be 
 such that:
 \begin{itemize}
@@ -7607,7 +7636,7 @@ course, be zero.
 The order shown here must also correspond to increasing values of the
 {\tt z} coordinates of the atoms, in the sense that the left buffer
 atoms must all have smaller {\tt z} components than the left electrode
-atoms, and so on. But, within each {\it ``block''}(buffer atoms, or
+atoms, and so on. But, within each {\it ``block''} (buffer atoms, or
 electrode atoms, etc \ldots), the coordinates do not have to be
 ordered in any special way (except when using for the electrodes a
 number smaller than what was used in the electrode's unit cell).

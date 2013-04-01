@@ -117,9 +117,9 @@ CONTAINS
 ! ************************
 ! * SIESTA modules       *
 ! ************************
+    use fdf,            only : fdf_get
     use fdf,            only : leqi, fdf_defined, fdf_deprecated, fdf_obsolete
     use parallel,       only : IOnode, Nodes, operator(.PARCOUNT.)
-    use m_fdf_global,   only : fdf_global_get
     use units,          only : eV
     use files,          only : slabel
     use sys,            only : die
@@ -150,7 +150,7 @@ CONTAINS
     call fdf_deprecated('TS.CalcGF','TS.TBT.ReUseGF')
 
     ! Determine the transport calculation to be performed
-    call fdf_global_get(chars,'TS.TBT.Transport','TB')
+    chars = fdf_get('TS.TBT.Transport','TB')
     if ( leqi(chars,'phonon') .or. &
          leqi(chars,'ph') ) then
        trans_type = TRANS_PHONON
@@ -159,35 +159,35 @@ CONTAINS
     end if
     
 ! Reading from fdf ... This is needed for using 'cdiag'
-    call fdf_global_get(MemoryFactor,'Diag.Memory', 1.0_dp )
+    MemoryFactor = fdf_get('Diag.Memory', 1.0_dp )
     
-    call fdf_global_get(Emin,'TS.TBT.Emin',Emin_def,'Ry')
-    call fdf_global_get(Emax,'TS.TBT.Emax',Emax_def,'Ry')
-    call fdf_global_get(GFEta,'TS.TBT.Eta',GFeta_def,'Ry')
-    call fdf_global_get(VoltFDF,'TS.Voltage',VoltFDF_def,'Ry') 
+    Emin = fdf_get('TS.TBT.Emin',Emin_def,'Ry')
+    Emax = fdf_get('TS.TBT.Emax',Emax_def,'Ry')
+    GFEta = fdf_get('TS.TBT.Eta',GFeta_def,'Ry')
+    VoltFDF = fdf_get('TS.Voltage',VoltFDF_def,'Ry') 
     IsVolt = dabs(VoltFDF) > 0.001_dp/eV
     ! Assign the fermi shifts in the electrodes
     VoltL =  .5_dp*VoltFDF
     VoltR = -.5_dp*VoltFDF
-    call fdf_global_get(NPoints,'TS.TBT.NPoints',NPoints_def)
-    call fdf_global_get(Neigch,'TS.TBT.NEigen',Neigch_def)
-    call fdf_global_get(SpinPol,'SpinPolarized',SpinPol_def)
-    call fdf_global_get(UseBulk,'TS.UseBulkInElectrodes',UseBulk_def)
-    call fdf_global_get(NBufAtL,'TS.BufferAtomsLeft',NBufAt_def)
-    call fdf_global_get(NBufAtR,'TS.BufferAtomsRight',NBufAt_def)
-    call fdf_global_get(kT,'ElectronicTemperature',kT_def,'Ry')
-    call fdf_global_get(GFTitle,'TS.TBT.GFTitle',GFTitle_def)
+    NPoints = fdf_get('TS.TBT.NPoints',NPoints_def)
+    Neigch = fdf_get('TS.TBT.NEigen',Neigch_def)
+    SpinPol = fdf_get('SpinPolarized',SpinPol_def)
+    UseBulk = fdf_get('TS.UseBulkInElectrodes',UseBulk_def)
+    NBufAtL = fdf_get('TS.BufferAtomsLeft',NBufAt_def)
+    NBufAtR = fdf_get('TS.BufferAtomsRight',NBufAt_def)
+    kT = fdf_get('ElectronicTemperature',kT_def,'Ry')
+    GFTitle = fdf_get('TS.TBT.GFTitle',GFTitle_def)
     chars = trim(slabel)//'.TBTGFL'
-    call fdf_global_get(GFFileL,'TS.TBT.GFFileLeft',trim(chars))
+    GFFileL = fdf_get('TS.TBT.GFFileLeft',trim(chars))
     chars = trim(slabel)//'.TBTGFR'
-    call fdf_global_get(GFFileR,'TS.TBT.GFFileRight',trim(chars))
-    call fdf_global_get(ReUseGF,'TS.TBT.ReUseGF',ReUseGF_def)
+    GFFileR = fdf_get('TS.TBT.GFFileRight',trim(chars))
+    ReUseGF = fdf_get('TS.TBT.ReUseGF',ReUseGF_def)
     ! This needs a two way entrance (in TranSIESTA it really doesn't matter.
     ! In TBTrans it can be used to check for Emin against the valence band bottom
-    call fdf_global_get(ElecValenceBandBot,'TS.TBT.CalcElectrodeValenceBandBottom', &
+    ElecValenceBandBot = fdf_get('TS.TBT.CalcElectrodeValenceBandBottom', &
          ElecValenceBandBot_def)
     chars = paste(slabel,'.TSHS')
-    call fdf_global_get(HSFile,'TS.TBT.HSFile',chars)
+    HSFile = fdf_get('TS.TBT.HSFile',chars)
     ! Check for file existance
     inquire(file=TRIM(HSFile),exist=exist)
     if ( .not. exist ) then
@@ -205,41 +205,43 @@ CONTAINS
     end if fFormat
 
     ! Read electrode options
-    call fdf_global_get(HSFileL,'TS.HSFileLeft',HSFile_def)
-    call fdf_global_get(NUsedAtomsL,'TS.NumUsedAtomsLeft',NUsedAtoms_def)
+    HSFileL = fdf_get('TS.HSFileLeft',HSFile_def)
+    NUsedAtomsL = fdf_get('TS.NumUsedAtomsLeft',NUsedAtoms_def)
     call check_HSfile('Left',HSFileL,NUsedAtomsL,NUsedOrbsL)
-    call fdf_global_get(NRepA1L,'TS.ReplicateA1Left',NRepA_def)
-    call fdf_global_get(NRepA2L,'TS.ReplicateA2Left',NRepA_def)
+    NRepA1L = fdf_get('TS.ReplicateA1Left',NRepA_def)
+    NRepA2L = fdf_get('TS.ReplicateA2Left',NRepA_def)
     if ( NRepA1L < 1 .or. NRepA2L < 1 ) &
          call die("Repetition in left electrode must be >= 1.")
 
-    call fdf_global_get(HSFileR,'TS.HSFileRight',HSFile_def)
-    call fdf_global_get(NUsedAtomsR,'TS.NumUsedAtomsRight',NUsedAtoms_def)
+    HSFileR = fdf_get('TS.HSFileRight',HSFile_def)
+    NUsedAtomsR = fdf_get('TS.NumUsedAtomsRight',NUsedAtoms_def)
     call check_HSfile('Right',HSFileR,NUsedAtomsR,NUsedOrbsR)
-    call fdf_global_get(NRepA1R,'TS.ReplicateA1Right',NRepA_def)
-    call fdf_global_get(NRepA2R,'TS.ReplicateA2Right',NRepA_def)
+    NRepA1R = fdf_get('TS.ReplicateA1Right',NRepA_def)
+    NRepA2R = fdf_get('TS.ReplicateA2Right',NRepA_def)
     if ( NRepA1R < 1 .or. NRepA2R < 1 ) &
          call die("Repetition in right electrode must be >= 1.")
 
-    call fdf_global_get(CalcIeig,'TS.TBT.CalcIeig',CalcIeig_def)
+    CalcIeig = fdf_get('TS.TBT.CalcIeig',CalcIeig_def)
 
     tmp = 1+NBufAtL+NUsedAtomsL*NRepA1L*NRepA2L
-    call fdf_global_get(IsoAt1,'TS.TBT.PDOSFrom',tmp)
+    IsoAt1 = fdf_get('TS.TBT.PDOSFrom',tmp)
     if ( IsoAt1 < tmp ) then
        call die("Requested PDOS 1 atom is outside of contact region. &
             &Please choose an atom within the device.")
     end if
     tmp = na_u-NBufAtR-NUsedAtomsR*NRepA1R*NRepA2R
-    call fdf_global_get(IsoAt2,'TS.TBT.PDOSTo',tmp)
+    IsoAt2 = fdf_get('TS.TBT.PDOSTo',tmp)
     if ( IsoAt2 > tmp ) then
        call die("Requested PDOS 2 atom is outside of contact region. &
             &Please choose an atom within the device.")
     end if
 
-    call fdf_global_get(CalcCOOP,'TS.TBT.COOP',CalcCOOP_def)
-    call fdf_global_get(AlignScat,'TS.TBT.AlignOnSite',AlignScat_def)
-    call fdf_global_get(CalcAtomPDOS,'TS.TBT.AtomPDOS',CalcAtomPDOS_def)
-    call fdf_global_get(RemUCellDistances,'TS.TBT.RemoveUnitCellDistance',RemUCellDistances_def)
+    CalcCOOP = fdf_get('TS.TBT.COOP',CalcCOOP_def)
+    AlignScat = fdf_get('TS.TBT.AlignOnSite',AlignScat_def)
+    CalcAtomPDOS = fdf_get('TS.TBT.AtomPDOS',CalcAtomPDOS_def)
+    ! Not (fully) implemented yet...
+    RemUCellDistances = fdf_get('TS.TBT.RemoveUnitCellDistance', &
+         RemUCellDistances_def)
 
 ! Output Used Options in OUT file ....
     if (ionode) then
@@ -278,6 +280,11 @@ CONTAINS
           write(*,10)'Transport type calculation                    =','Regular'
        end if
        write(*,1) 'Remove inner-cell distances in the Hamiltonian= ', RemUCellDistances
+
+       if ( RemUCellDistances ) then
+          call die("TBtrans is currently not implemented to remove the unit &
+               &cell distances. Please be patient...")
+       end if
        if ( AlignScat ) then
           call die("TBtrans is currently not implented to align the scattering &
                &region and the electrodes.")

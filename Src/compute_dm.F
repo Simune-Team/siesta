@@ -30,8 +30,11 @@
       use m_spin,          only : nspin, qs, efs
 #ifdef TRANSIESTA
       use m_ts_global_vars, only : TSiscf, TSinit, TSrun
-      use m_ts_options,     only : TSmode
+      use m_ts_options,     only : TSmode, ts_method
       use m_ts_in_siesta,   only : transiesta
+      use m_ts_mem,         only : transiesta_mem
+      use m_ts_mem_sparsity,only : ts_mem_init
+      use m_ts_mem_sparsity,only : ts_print_charges
 #endif /* TRANSIESTA */
       implicit none
 !     Input variables
@@ -93,10 +96,24 @@
         call timer('TS',1)
         TSiscf=TSiscf+1
 
-        call transiesta(ucell,gamma,lasto,iaorb,
-     &       no_l, no_s, no_u, nspin, xa, na_u, maxnh, numh, listhptr,
-     &       listh, xijo, indxuo, H, S, Dscf, Escf, Ef,
-     &       TSiscf,qtot)
+        if ( ts_method == 0 ) then
+           call transiesta(ucell,gamma,lasto,iaorb,
+     &          no_l, no_s, no_u, nspin, xa, na_u, maxnh, numh, listhptr
+     &          ,listh, xijo, indxuo, H, S, Dscf, Escf, Ef,TSiscf,qtot)
+        else if ( ts_method == 1 ) then
+           if ( TSiscf == 1 ) then
+              ! This is a first Transiesta run, we need to initialize
+              ! the sparsity patterns...
+              call ts_mem_init(Gamma, sparse_pattern, na_u, lasto)
+              call ts_print_charges(block_dist, sparse_pattern, 
+     &             na_u, lasto, nspin, maxnh, Dscf, S)
+           end if
+              
+           call transiesta_mem(nspin,Gamma, block_dist, sparse_pattern,
+     &          ucell, no_u, na_u, lasto, xa, maxnh, xijo, H, S, Dscf,
+     &          Escf, Ef, TSiscf, Qtot)
+        end if           
+           
         call timer('TS',2)
 
         if (TSiscf .eq. 1) call timer( 'IterSCF', 3 ) 

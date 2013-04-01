@@ -341,7 +341,6 @@ contains
 ! ***********************
     type(ts_ccontour), target, intent(out) :: contour(Ncircle+Nline+Npol)
 
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! Modified Hans Skriver:
     integer, parameter :: NT = 10   ! start line in modified HS at E2-NT*kT
 

@@ -208,8 +208,6 @@ contains
     real(dp), pointer        :: points(:,:)
     real(dp), pointer        :: weight(:)
 
-    external                 ::  idiag, reclat
-
 ! Internal variables
     integer  :: i, ir, ix, j, i1, i2, i3
     integer  :: kdsc(3,3), maux(3,3,2), ml(3,3), mr(3,3)
