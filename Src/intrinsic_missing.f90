@@ -19,6 +19,11 @@
 ! The FORTRAN standard.
 ! Some are also more "exotic" in terms of their use and the FORTRAN standard.
 
+! DEVELOPER REMARK:
+!   Many of these functions are not GNU compliant for nested calls.
+!   I.e. SORT(UNIQ(arr)) is NOT allowed and will result in errorneous
+!   results.
+
 ! The following routines are supplied:
 !  - VNORM: perform euclidean norm calculations on vectors or matrices.
 !           for complex numbers it is equilvalent to VNORM(abs(z))

@@ -97,11 +97,11 @@ contains
     ! Save the rows ( this is the same for all cases)
     ! Even for TM which typically have 0 entries
     ! in some rows. However, it provides the full information.
-    n_rows   = nrows(in)
+    n_rows   = nrows  (in)
     n_rows_g = nrows_g(in)
 
     ! Prepare creation of num and listptr arrays
-    allocate(num(n_rows))
+    allocate(num    (n_rows))
     allocate(listptr(n_rows))
 
     ! The list pointer for the first entry is always the "first"
@@ -123,8 +123,8 @@ contains
 
 #ifdef TRANSIESTA_DEBUG
     write(*,'(a,i0,a)')'Found ',n_nzs,' elements'
-    write(*,*) num
-    write(*,*) listptr
+    write(*,'(10000(tr1,i0))') num
+    write(*,'(10000(tr1,i0))') listptr
 #endif
 
     ! Now we will create the list array...
@@ -132,7 +132,12 @@ contains
 
     ! allocate a temporary array which holds
     ! the maximum number of entries per row...
-    allocate(entries(maxval(num)))
+    iu = num(1)
+    do ir = 2, n_rows
+       if ( num(ir) > iu ) iu = num(ir)
+    end do       
+    allocate(entries(iu))
+
     do ir = 1, n_rows
        if ( num(ir) > 0 ) then
           call sparsity_row_entries(in,ir,n=num(ir),entries=entries, &
@@ -189,7 +194,7 @@ contains
 
     type(Sparsity), intent(in out) :: sp
     integer, intent(in)            :: row
-    integer, intent(out), optional :: n
+    integer, intent(in out), optional :: n
     integer, intent(out), optional :: entries(:)
 
     ! this IS a DUMMY argument, supplying it will cause the program to DIE!
@@ -262,18 +267,25 @@ contains
 
     type(Sparsity), intent(in out) :: sp
     integer, intent(in)            :: row
-    integer, intent(out), optional :: n
+    integer, intent(in out), optional :: n
     integer, intent(out), optional :: entries(:)
 
     ! Local variables...
-    integer, pointer :: l_col(:) => null()
+    integer, pointer :: l_col(:)
+    ! We probably need this for safety reasons
+    integer, allocatable :: vals(:)
     integer :: ncol, ptr, i, j, no_e, nr
 
     ! Retrieve the pointer providing the index of the columns
-    ncol  =  n_col(sp,row)
+    ncol  =  n_col   (sp,row)
     ptr   =  list_ptr(sp,row)
     l_col => list_col(sp)
-    nr    =  nrows_g(sp)
+    nr    =  nrows_g (sp)
+
+    allocate(vals(ncol))
+    do i = 1 , ncol
+       vals(i) = UCORB(l_col(ptr+i),nr)
+    end do
 
     ! If the user requests the entries
     ! Then a previous call to this routine must have been
@@ -288,26 +300,31 @@ contains
     if ( .not. present(entries) ) then
        ! We wish to count the number of entries in each column
        if ( ncol > 0 ) then
-          no_e = UNIQC(ucorb(l_col(ptr+1:ptr+ncol),nr))
+          no_e = UNIQC(vals)
        else
           no_e = 0
        end if
+
+       if ( present(n) ) then
+          n = no_e
+       end if
+
     end if
     
-    if ( present(n) .and. .not. present(entries) ) then
-       n = no_e
-    end if
-
     if ( present(entries) ) then
        ! We wish to count the number of entries in each column
        if ( ncol > 0 ) then
-          entries(1:no_e) = SORT(UNIQ( &
-               ucorb(l_col(ptr+1:ptr+ncol),nr) &
-               ))
+          ! We need to do it in steps (gnu has troubles with non-allocated
+          ! arrays in nesting constructs)...
+          entries(1:no_e) = UNIQ(vals)
+          vals(1:no_e)    = SORT(entries(1:no_e))
+          entries(1:no_e) = vals(1:no_e)
        end if
        ! When it returns the programmer should already know that no_e is
        ! zero
     end if
+
+    deallocate(vals)
 
   end subroutine sparsity_row_entries_UC
 
@@ -342,7 +359,7 @@ contains
     ! *NOTE* This is necessary if one requests a TM matrix
     real(dp), intent(in) :: xij(:,:)
 
-    integer, intent(out), optional :: n
+    integer, intent(in out), optional :: n
     integer, intent(out), optional :: entries(:)
 
 
@@ -352,7 +369,7 @@ contains
     integer :: ncol, ptr, i,j, no_e, nr
 
     ! Retrieve the pointer providing the index of the columns
-    ncol  =  n_col(sp,row)
+    ncol  =  n_col   (sp,row)
     ptr   =  list_ptr(sp,row)
     l_col => list_col(sp)
 
@@ -427,7 +444,6 @@ contains
   subroutine sparsity_row_entries_MASK(sp,row, &
        MASK, &
        n,entries)
-
     use class_Sparsity
     use intrinsic_missing, only : UNIQC, UNIQ, SORT
     use geom_helper
@@ -437,7 +453,7 @@ contains
     ! A MASK array which directly determines which segments
     ! should be included
     logical, intent(in)            :: MASK(:)
-    integer, intent(out), optional :: n
+    integer, intent(in out), optional :: n
     integer, intent(out), optional :: entries(:)
 
     integer, pointer :: l_col(:) => null()

@@ -855,17 +855,18 @@ program tbtrans
            TotDOS = spin_F * TotDOS
 
 ! Find the "excluded" DOS and subtract from TotDOS
+! We dont need dconjg here because we need to calculate
+! the region out of PDOS (hence we could reverse the 
+! loops and then we would need the dconjg)
            PDOS = 0.0_dp
            do j = 1 , Isoo1D - 1
               do i = 1 , noD
-                 ! TODO check whether these are calculated correctly now
-                 PDOS = PDOS - r1dPi*dimag(dconjg(Sk_D(i,j))*GF(i,j))
+                 PDOS = PDOS - r1dPi*dimag(Sk_D(i,j)*GF(i,j))
               end do
            end do
            do j = Isoo2D + 1, noD
               do i = 1 , noD
-                 ! TODO check whether these are calculated correctly now
-                 PDOS = PDOS - r1dPi*dimag(dconjg(Sk_D(i,j))*GF(i,j))
+                 PDOS = PDOS - r1dPi*dimag(Sk_D(i,j)*GF(i,j))
               end do
            end do
            PDOS = TotDOS - spin_F * PDOS

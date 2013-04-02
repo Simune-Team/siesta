@@ -4452,13 +4452,13 @@ to the SystemLabel.bands file (see below for the format).
 
 \item[{\bf BandLinesScale}] ({\it string}):
 \index{BandLinesScale@{\bf BandLinesScale}}
-Specifies the scale of the k vectors given in {\bf BandLines}
+Specifies the scale of the $k$ vectors given in {\bf BandLines}
 and {\bf BandPoints} below.
 The options are:
 \begin{itemize}
 \item {\tt pi/a} (k-vector coordinates are given in Cartesian
 coordinates, in units of $\pi/a$, where $a$ is the lattice constant)
-\item {\tt ReciprocalLatticeVectors} (k vectors are given in
+\item {\tt ReciprocalLatticeVectors} ($k$ vectors are given in
 reciprocal-lattice-vector coordinates)
 \end{itemize}
 
@@ -4485,7 +4485,7 @@ An example for an FCC lattice is:
      %endblock BandLines
 \end{verbatim}
 
-where the last column is an optional LaTeX label for use in the band plot.
+where the last column is an optional \LaTeX\ label for use in the band plot.
 If only given points (not lines) are required, simply specify 1 in the
 first column of each line. The first column of the first line must be
 always 1.
@@ -4645,13 +4645,13 @@ iteration of the SCF loop will be written to a NetCDF file
 
 \item[{\bf WaveFuncKPointsScale}] ({\it string}):
 \index{WaveFuncKPointsScale@{\bf WaveFuncKPointsScale}}
-Specifies the scale of the k vectors given in
+Specifies the scale of the $k$ vectors given in
 {\bf WaveFuncKPoints} below.
 The options are:
 \begin{itemize}
 \item {\tt pi/a} (k-vector coordinates are given in Cartesian
 coordinates, in units of $\pi/a$, where $a$ is the lattice constant)
-\item {\tt ReciprocalLatticeVectors} (k vectors are given in
+\item {\tt ReciprocalLatticeVectors} ($k$ vectors are given in
 reciprocal-lattice-vector coordinates)
 \end{itemize}
 

@@ -160,11 +160,7 @@ OBJS =  automatic_cell.o atom_options.o \
         m_uuid.o object_debug.o die.o m_svd.o
 
 # Generic modules
-OBJS += intrinsic_missing.o geom_helper.o
-
-# Transiesta objects (new memory reduced objects)
-OBJS += create_Sparsity_SC.o \
-	m_ts_mem.o m_ts_mem_sparsity.o m_ts_mem_scat.o
+OBJS += intrinsic_missing.o geom_helper.o create_Sparsity_SC.o
 
 
 #--------------------------------------------------------------
@@ -313,6 +309,9 @@ TS_OBJS= m_ts_global_vars.o m_ts_options.o m_ts_aux_rout.o m_ts_kpoints.o \
          m_ts_iodm.o m_ts_io.o m_ts_scattering.o m_ts_contour.o \
          m_ts_electrode.o m_ts_in_siesta.o m_ts_voltage.o m_ts_gf.o \
 	 m_ts_cctype.o ts_init.o ts_show_regions.o
+
+# Transiesta objects (new memory reduced objects)
+TS_OBJS += m_ts_mem.o m_ts_mem_sparsity.o m_ts_mem_scat.o
 
 transiesta: FPPFLAGS+=$(DEFS_PREFIX) -DTRANSIESTA 
 transiesta: DEFS+=$(DEFS_PREFIX) -DTRANSIESTA

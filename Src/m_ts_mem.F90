@@ -212,8 +212,6 @@ contains
     ! -- ends in the right central region
     no_C_R = no_u - no_R - no_BufL
 
-    ! The size of the central region (without left-right electrodes)
-    no_u_C = no_u_TS - no_R - no_L
 
     ! Number of elements that are transiesta updated
     up_nzs = nnzs(tsup_sp_uc)
@@ -403,7 +401,7 @@ contains
           call create_HS_Gamma(sp_dist,sparse_pattern, &
                Ef, &
                no_BufL, no_BufR, & ! cut-out region
-               no_C_L,no_C_R, &    ! central region (junction)
+               no_C_L, no_C_R, &   ! central region (junction)
                no_u, &             ! SIESTA size
                n_nzs, Hs(:,ispin), Ss, &
                spH, spS, &
@@ -537,12 +535,16 @@ contains
                 call calc_GF_Part(no_u_TS,no_L,no_R, &
                      SigmaL, SigmaR, zwork, GF,ierr)
                 no_GF_offset = no_L
+               ! The size of the central region (without left-right electrodes)
+                no_u_C = no_u_TS - no_R - no_L
              else
                 ! Calculate the full GF
                 call calc_GF(UseBulk, &
                      no_u_TS,no_L,no_R, &
                      SigmaL, SigmaR, zwork, GF,ierr)
                 no_GF_offset = 0
+                ! The size of the central region (with left-right electrodes)
+                no_u_C = no_u_TS
              end if
 
              if ( contour(iE)%part == CC_PART_RIGHT_EQUI ) then
@@ -618,8 +620,6 @@ contains
              call calc_GF(UseBulk, &
                      no_u_TS,no_L,no_R, &
                      SigmaL, SigmaR, zwork, GF,ierr)
-
-             ! NOTE, I think we have to do it in this order, check!
 
              ! We calculate the right thing.
              call GF_Gamma_GF(.FALSE., no_u_TS, no_R, GF, &
@@ -721,7 +721,7 @@ contains
          call daxpy(ia,Ef,dDM,1,dEDM,1)
 
          ! Directly save to the correct DM
-         call update_DM(sp_dist,sparse_pattern,n_nzs, &
+         call update_DM(sp_dist,sparse_pattern, n_nzs, &
               DM(:,ispin), EDM(:,ispin), spDM, spEDM)
 
       else
@@ -891,7 +891,7 @@ contains
      complex(dp), pointer :: zH(:), zS(:)
      real(dp) :: ph
      type(Sparsity), pointer :: sp_k
-     integer :: no_l, lio, io, ind, jo, jg, ind_k
+     integer :: no_l, lio, io, ind, jo, jg, ind_k, kn
      integer :: no_max
      
      ! obtain the local number of rows and the global...
@@ -925,10 +925,12 @@ contains
 
         ! obtain the global index of the orbital.
         io = index_local_to_global(dit,lio,Node)
+        kn = k_ncol(io)
         ! if there is no contribution in this row
-        if ( k_ncol(io) == 0 ) cycle
+        if ( kn == 0 ) cycle
 
-        ! The io orbitals are in the range [1;no_u]
+        ! The io orbitals are in the range [1;no_u_TS]
+        ! This should be redundant as it is catched by kn==0
         if ( io <= no_BufL .or. no_max < io ) cycle
 
         ! Loop number of entries in the row... (index frame)
@@ -945,11 +947,8 @@ contains
            ! Do a check whether we have connections
            ! across the junction...
            ! This is the same as removing LEFT-RIGHT states..
-           if ( io <= no_C_L .and. no_C_R < jo ) then
-              cycle
-           else if ( jo <= no_C_L .and. no_C_R < io ) then
-              cycle
-           end if
+           if ( io < no_C_L .and. no_C_R < jo ) cycle
+           if ( jo < no_C_L .and. no_C_R < io ) cycle
            
            ! find the equivalent position in the sparsity pattern
            ! of the full unit cell
@@ -958,10 +957,12 @@ contains
            ! Notice that SFIND REQUIRES that the sparsity pattern
            ! is SORTED!
            ! Thus it will only work for UC sparsity patterns.
-           jg = SFIND(k_col(ind_k+1:ind_k+k_ncol(io)),jo)
+           ind_k = ind_k + SFIND(k_col(ind_k+1:ind_k+kn),jo)
 
-!           if ( jg == 0 ) then
-!              write(*,*) 'Something should be checked...'
+!           if ( k_ptr(io) == ind_k ) then
+!              write(*,'(a,10000(tr1,i0))') &
+!                   'Something should be checked...',jo,k_col(ind_k+1:ind_k+kn)
+!           end if
 !              do jg = 1 , k_ncol(io)
 !                 ind_k = k_ptr(io)+jg
 !                 if ( k_col(ind_k) == jo ) then
@@ -977,9 +978,9 @@ contains
                    k(2) * xij(2,ind) + &
                    k(3) * xij(3,ind)
 
-              zH(ind_k+jg) = zH(ind_k+jg) + H(ind) * cdexp(z_one * ph)
+              zH(ind_k) = zH(ind_k) + H(ind) * cdexp(z_one * ph)
 
-              zS(ind_k+jg) = zS(ind_k+jg) + S(ind) * cdexp(z_one * ph)
+              zS(ind_k) = zS(ind_k) + S(ind) * cdexp(z_one * ph)
 
 !           end if
 
@@ -1104,23 +1105,21 @@ contains
            ! Do a check whether we have connections
            ! across the junction...
            ! This is the same as removing LEFT-RIGHT states..
-           if ( io <= no_C_L .and. no_C_R < jo ) then
-              cycle
-           else if ( jo <= no_C_L .and. no_C_R < io ) then
-              cycle
-           end if
+           if ( io < no_C_L .and. no_C_R < jo ) cycle
+           if ( jo < no_C_L .and. no_C_R < io ) cycle
            
            ! find the equivalent position in the sparsity pattern
            ! of the full unit cell
            ind_k = k_ptr(io)
-           jg = SFIND(k_col(ind_k+1:ind_k+k_ncol(io)),jo)
+           ind_k = ind_k + SFIND(k_col(ind_k+1:ind_k+k_ncol(io)),jo)
 
            ! Todo, as this is a Gamma-calculation
            ! we probably should NOT do 'dH = dH + H'
            ! rather 'dH = H'
 
-!           if ( jg == 0 ) then
+!           if ( ind_k == k_ptr(io) ) then
 !              write(*,*) 'Something should be checked:'
+!           end if
 !              write(*,*) ' 1. Is there a central region orbital having a &
 !                   &z-component to the following cell?'
 !              write(*,*) ' 2. Try and increase the z-direction of your &
@@ -1134,8 +1133,8 @@ contains
 !                 end if
 !              end do
 !           else
-              dH(ind_k+jg) = dH(ind_k+jg) + H(ind)
-              dS(ind_k+jg) = dS(ind_k+jg) + S(ind)
+              dH(ind_k) = dH(ind_k) + H(ind)
+              dS(ind_k) = dS(ind_k) + S(ind)
 !           end if
 
         end do
@@ -1299,6 +1298,7 @@ contains
            end if
 
            ! Symmetrize (notice that this is *transposed*)
+           ! See prep_GF
            zS(rind)  = 0.5_dp * ( zS(ind) + dconjg(zS(rind)) )
            zH(rind)  = 0.5_dp * ( zH(ind) + dconjg(zH(rind)) ) &
                 - Ef * zS(rind)
@@ -1854,6 +1854,7 @@ contains
            !ju = l_col(ind) ! The '- no_BufL' is moved outside the loop
 
            ! Notice that we transpose S and H back here
+           ! See symmetrize_HS_k
            GFinv(l_col(ind)+iu) = ZE * zS(ind) - zH(ind)
         end do
      end do

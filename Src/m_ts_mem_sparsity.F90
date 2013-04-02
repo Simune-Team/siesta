@@ -185,7 +185,7 @@ contains
        no_u_LCR, &
        ts_sp,tsup_sp)
 
-    use parallel, only : IONode
+    use parallel, only : IONode, Node
 #ifdef MPI
     use m_glob_sparse
     use mpi_siesta
@@ -244,8 +244,8 @@ contains
     ! Logical for determining the region
     logical :: i_in_C, j_in_C
 
-    no_local = nrows(s_sp)
-    no_u = nrows_g(s_sp)
+    no_local = nrows  (s_sp)
+    no_u     = nrows_g(s_sp)
 
     ! Create the Fake distribution
     ! The Block-size is the number of orbitals, i.e. all on the first processor
@@ -260,7 +260,7 @@ contains
 #endif
 
     ! point to the local sparsity pattern arrays
-    l_ncol   => n_col(s_sp)
+    l_ncol   => n_col   (s_sp)
     l_ptr    => list_ptr(s_sp)
     l_col    => list_col(s_sp)
 
@@ -271,18 +271,20 @@ contains
          l_ncol , l_ptr , l_col , &
          l_ncolg, l_ptrg, maxnhg, l_colg)
 
-    call newSparsity(sp_global,no_u,no_u, &
+    call newSparsity(sp_global,no_u, no_u, &
          maxnhg, l_ncolg, l_ptrg, l_colg, &
          name='SIESTA-full sparsity')
-
-#ifdef TRANSIESTA_DEBUG
-    write(*,*)'Created FULL SIESTA sparsity'
-    call print_type(sp_global)
-#endif
 
     ! Deallocate the arrays which we do not need
     deallocate(l_ncolg,l_ptrg,l_colg)
     call memory('D','I',no_u*2+maxnhg,'globArrays')
+
+#ifdef TRANSIESTA_DEBUG
+    write(*,*)'Created FULL SIESTA sparsity'
+    call print_type(sp_global)
+
+    call sp_to_file(400+Node, sp_global)
+#endif
 
     ! Create the SIESTA-UC sparsity...
     call crtSparsity_SC(sp_global,sp_uc, &
@@ -291,6 +293,8 @@ contains
 #ifdef TRANSIESTA_DEBUG
     write(*,*)'Created UC SIESTA sparsity'
     call print_type(sp_uc)
+
+    call sp_to_file(500+Node, sp_uc)
 #endif
 
     ! Delete the full sparsity pattern
@@ -500,9 +504,41 @@ contains
     call memory('D','L',maxnhg,'transiesta')
     deallocate(lup_DM)
 
-!    < do a check that we can actually perform a 
-!    simple transform sparse pointer >
+#ifdef TRANSIESTA_DEBUG
+    call sp_to_file(1000+Node,ts_sp)
+    call sp_to_file(2000+Node,tsup_sp)
 
+    call die('')
+  contains
+    
+    subroutine sp_to_file(u,sp)
+      use geom_helper, only : UCORB
+      integer, intent(in) :: u
+      type(Sparsity), intent(inout) :: sp
+      integer :: io,jo,j,ind
+      integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
+      l_ncol => n_col   (sp)
+      l_ptr  => list_ptr(sp)
+      l_col  => list_col(sp)
+      
+      write(u,'(i5)') nrows(sp)
+
+      do io = 1 , nrows(sp)
+         if ( l_ncol(io) == 0 ) cycle
+         do j = 1 , l_ncol(io)
+            ind = l_ptr(io) + j
+            jo = UCORB(l_col(ind),nrows(sp))
+            write(u,'(3(tr1,i5))') io,jo,1
+         end do
+      end do
+      if ( ind /= nnzs(sp) ) then
+         call die('Have not looped through all things')
+      end if
+#ifdef MPI
+      call MPI_Barrier(MPI_Comm_World,io)
+#endif
+    end subroutine sp_to_file
+#endif
   end subroutine ts_Sparsity_Global
 
 
@@ -650,7 +686,5 @@ contains
     end if
     
   end subroutine ts_print_charges
-    
-
-
+  
 end module m_ts_mem_sparsity

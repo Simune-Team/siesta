@@ -71,7 +71,7 @@ integer :: Cmethod        ! Method for the contour integration
 logical :: ReUseGF        ! Calculate the electrodes GF
 
 ! Transiesta solution method
-logical :: ts_method
+integer :: ts_method
 
 !==========================================================================*
 !==========================================================================*

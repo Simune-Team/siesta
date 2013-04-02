@@ -1,4 +1,31 @@
 ----------------------------------------------------
+April 2, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-8
+TS sparse bugfixes for gnu compiler
+
+* Some bugs which are only occuring for the GNU compiler has been
+  fixed.
+  They are mainly related to the intrinsic_missing module
+  were nested calls of functions are not allowed in GNU, but with Intel
+  it is.
+  I.e. SORT(UNIQ(arr)) is NOT allowed with GNU
+  This has been noted in the module for easy reference.
+
+* The sparsity creator module has recieved some general fixes (intent
+  of variables are now more correct)
+
+* Code cleanup in terms of clarity has been performed
+
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/create_Sparsity_SC.F90
+  Src/intrinsic_missing.f90
+  Src/m_ts_mem.F90
+  Src/m_ts_mem_sparsity.F90
+  Src/m_ts_options.F90
+  Util/TBTrans_rep/tbtrans.F90
+
+----------------------------------------------------
 April 1, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-7
 
 Added a new solution method for Transiesta *NEED TESTS*
