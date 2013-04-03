@@ -1,4 +1,13 @@
 ----------------------------------------------------
+April 3, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-9
+TBTrans_rep eased calculation of PDOS
+
+* Made the DOS calculation easier to read
+
+modified:
+  Util/TBTrans_rep/tbtrans.F90
+
+----------------------------------------------------
 April 2, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-8
 TS sparse bugfixes for gnu compiler
 

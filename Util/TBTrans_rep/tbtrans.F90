@@ -849,27 +849,21 @@ program tbtrans
            TotDOS = 0.0_dp
            do j = 1 , noD
               do i = 1 , noD
-                 TotDOS = TotDOS - r1dPi*dimag(dconjg(Sk_D(i,j))*GF(i,j))
+                 TotDOS = TotDOS - dimag(dconjg(Sk_D(i,j))*GF(i,j))
               end do
            end do
-           TotDOS = spin_F * TotDOS
+           ! Calculate DOS/orbital
+           TotDOS = spin_F * r1dPi * TotDOS / noD
 
-! Find the "excluded" DOS and subtract from TotDOS
-! We dont need dconjg here because we need to calculate
-! the region out of PDOS (hence we could reverse the 
-! loops and then we would need the dconjg)
+! Find the projected density of states
            PDOS = 0.0_dp
-           do j = 1 , Isoo1D - 1
-              do i = 1 , noD
-                 PDOS = PDOS - r1dPi*dimag(Sk_D(i,j)*GF(i,j))
+           do j = 1 , noD
+              do i = Isoo1D , Isoo2D
+                 PDOS = PDOS - dimag(dconjg(Sk_D(i,j))*GF(i,j))
               end do
            end do
-           do j = Isoo2D + 1, noD
-              do i = 1 , noD
-                 PDOS = PDOS - r1dPi*dimag(Sk_D(i,j)*GF(i,j))
-              end do
-           end do
-           PDOS = TotDOS - spin_F * PDOS
+           ! Calculate DOS/orbital
+           PDOS = spin_F * r1dPi * PDOS / Isoo
 
            if ( ZwGF == dcmplx(0.0_dp,0.0_dp) ) then
               PDOS     = 0.0_dp
@@ -1148,21 +1142,21 @@ program tbtrans
 
 contains
 
-  pure function fermi(e,ef,T)
-    real(dp), intent(in) :: e,ef,T
-    real(dp) :: tmp,fermi
+  pure function Fermi(E,Ef,T)
+    real(dp), intent(in) :: E,Ef,T
+    real(dp) :: tmp,Fermi
 
     if ( T == 0.0_dp ) then
-       if ( e>ef ) fermi = 0.0_dp
-       if ( e<ef ) fermi = 1.0_dp
-       if ( e.eq.ef ) fermi = 0.5_dp
+       if ( E>Ef ) Fermi = 0.0_dp
+       if ( E<Ef ) Fermi = 1.0_dp
+       if ( E.eq.Ef ) Fermi = 0.5_dp
     else
-       tmp = (e - ef) / T
-       if (abs(tmp).lt.40.0_dp) then
-          fermi = 1.0_dp/(1.+exp(tmp))
+       tmp = (E - Ef) / T
+       if (abs(tmp).le.40.0_dp) then
+          Fermi = 1.0_dp/(1.+exp(tmp))
        else
-          if (tmp.lt.-40.0_dp) fermi = 1.0_dp
-          if (tmp.gt. 40.0_dp) fermi = 0.0_dp
+          if (tmp.le.-40.0_dp) Fermi = 1.0_dp
+          if (tmp.ge. 40.0_dp) Fermi = 0.0_dp
        endif
     endif
 
