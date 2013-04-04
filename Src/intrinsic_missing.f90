@@ -329,19 +329,19 @@ contains
 !      end do                       
 
 
-      lA = sA
+      lA = sA + 1
       ! We know we are in the middle of the sort array
       ! hence, we can exploit the next element in the sorted
       ! array
-      do
-         lA = lA + 1
-         if ( lA == DA )                     exit
+      do while ( lA <= DA )
          ! If the previous SO value is larger than the insertion
          if ( SO(sF-1)    >  array(lA - 1) ) exit
          ! If the array is not consecutive
          if ( array(lA-1) >  array(lA) )     exit
          ! If the insertion point array is not consecutive
          if ( array(lA)   >  SO(sF) )        exit
+         ! We need to ensure an overcount of 1
+         lA = lA + 1
       end do
       !if ( lA <= DA ) then
       !   do while ( SO(sF) == array(lA) .and. lA <= DA  )

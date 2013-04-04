@@ -1,4 +1,14 @@
 ----------------------------------------------------
+April 4, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-10
+Bugfix in intrinsic_missing
+
+* The sort array could occasionally overread a variable
+  leading to dimension out-of-bounds.
+
+modified:
+  Src/intrinsic_missing.f90
+
+----------------------------------------------------
 April 3, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-9
 TBTrans_rep eased calculation of PDOS
 
