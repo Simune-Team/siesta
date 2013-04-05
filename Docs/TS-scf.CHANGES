@@ -1,4 +1,13 @@
 ----------------------------------------------------
+April 5, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-11
+Wrong routine call in non-MPI cases
+
+* Call to the creation of the sparse HS was wrong in non-MPI
+
+modified:
+  Src/m_ts_mem_sparsity.F90
+
+----------------------------------------------------
 April 4, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-10
 Bugfix in intrinsic_missing
 

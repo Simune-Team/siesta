@@ -305,8 +305,7 @@ contains
     if ( IONode ) call print_type(sp_uc)
 
 #else 
-    call create_Sparsity_SC(s_sp,sp_uc, &
-         UC=.TRUE.)
+    call crtSparsity_SC(s_sp,sp_uc, UC=.TRUE.)
 #endif
 
     ! Immediately point the global arrays to their respective parts
