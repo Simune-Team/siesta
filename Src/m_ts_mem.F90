@@ -276,19 +276,23 @@ contains
     ! mean swap-space... We need speed for the inversion....
     if ( ts_Gamma_SCF ) then
        ndwork = max(nnzs(ts_sp_uc),nnzs(tsup_sp_uc))
-       allocate(dwork(ndwork))
+       allocate(dwork(ndwork),stat=ierr)
+       if (ierr/=0) call die('Could not allocate space for dwork')
        call memory('A','D',ndwork,'transiesta')
     end if
     ! The zwork is needed to construct the LHS for solving: G^{-1} G = I
     ! Hence, we will minimum require this...
     nzwork = no_u_TS**2
-    allocate(zwork(nzwork))
+    allocate(zwork(nzwork),stat=ierr)
+    if (ierr/=0) call die('Could not allocate space for zwork')
     call memory('A','Z',nzwork,'transiesta')
     if ( GF_INV_EQUI_PART .and. .not. IsVolt ) then
-       allocate(GF(no_u_TS*(no_u_TS-no_R-no_L)))
+       allocate(GF(no_u_TS*(no_u_TS-no_R-no_L)),stat=ierr)
+       if (ierr/=0) call die('Could not allocate space for GFpart')
        call memory('A','Z',no_u_TS*(no_u_TS-no_R-no_L),'transiesta')
     else
-       allocate(GF(no_u_TS**2))
+       allocate(GF(no_u_TS**2),stat=ierr)
+       if (ierr/=0) call die('Could not allocate space for GF')
        call memory('A','Z',no_u_TS**2,'transiesta')
     end if
 
@@ -297,16 +301,22 @@ contains
     allocate(SAAL(no_L_HS,no_L_HS,NRepA1L*NRepA2L))
     allocate(GAAL(no_L_HS,no_L_HS,NRepA1L*NRepA2L))
     ispin = no_L_HS**2*NRepA1L*NRepA2L*3
-    allocate(SigmaL(no_L,no_L),GammaL(no_L,no_L))
+    allocate(SigmaL(no_L,no_L))
     ispin = ispin + no_L**2
     allocate(HAAR(no_R_HS,no_R_HS,NRepA1R*NRepA2R))
     allocate(SAAR(no_R_HS,no_R_HS,NRepA1R*NRepA2R))
     allocate(GAAR(no_R_HS,no_R_HS,NRepA1R*NRepA2R))
     ispin = ispin + no_R_HS**2*NRepA1R*NRepA2R*3
-    allocate(SigmaR(no_R,no_R),GammaR(no_R,no_R))
+    allocate(SigmaR(no_R,no_R))
     ispin = ispin + no_R**2
     call memory('A','Z',ispin,'transiesta')
-    call memory('A','D',no_L**2+no_R**2,'transiesta')
+
+    if ( IsVolt ) then
+       ! We only need Gamma's with voltages
+       allocate(GammaL(no_L,no_L),GammaR(no_R,no_R))
+       call memory('A','D',no_L**2+no_R**2,'transiesta')
+    end if
+
     ispin = 0
 
     ! Create the Fake distribution
@@ -821,11 +831,16 @@ contains
     call memory('D','I',na_R_HS+na_L_HS+2,'transiesta')
 
     call memory('D','Z',size(HAAL)*3+size(HAAR)*3,'transiesta')
-    deallocate(HAAL,SAAL,GAAL,HAAR,SAAR,GAAR)
+    deallocate(HAAL,SAAL,GAAL)
+    deallocate(HAAR,SAAR,GAAR)
     call memory('D','Z',size(SigmaL)+size(SigmaR),'transiesta')
     deallocate(SigmaL,SigmaR)
-    call memory('D','D',size(GammaL)+size(GammaR),'transiesta')
-    deallocate(GammaL,GammaR)
+    
+    if ( IsVolt ) then
+       ! These where only allocated on voltage calculations
+       call memory('D','D',size(GammaL)+size(GammaR),'transiesta')
+       deallocate(GammaL,GammaR)
+    end if
 
     ! I would like to add something here which enables 
     ! 'Transiesta' post-process

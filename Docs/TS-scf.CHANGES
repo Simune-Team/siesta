@@ -1,4 +1,18 @@
 ----------------------------------------------------
+April 5, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-12
+Made error recognition in allocations in TS, moved Gamma to IsVolt
+
+* the Gamma arrays in Transiesta are only needed when performing 
+  voltage calculations. Hence they have been moved to such a state
+
+* The allocation routines for the large arrays (GF,work) is 
+  now checked for errors.
+  This will kill the job on errors of allocation.
+
+modified:
+  Src/m_ts_mem.F90
+
+----------------------------------------------------
 April 5, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-11
 Wrong routine call in non-MPI cases
 
