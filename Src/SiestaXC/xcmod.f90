@@ -36,7 +36,7 @@
 !           'AM05' => GGA Mattsson & Armiento, PRB, 79, 155101 (2009)
 !          'DRSLL' => VDW Dion et al, PRL 92, 246401 (2004)
 !          'LMKLL' => VDW K.Lee et al, PRB 82, 081101 (2010)
-!            'KBM' => VDW optB88-vdW of J.Klimes et al, JPCM 22, 022201 (2009)
+!            'KBM' => VDW optB88-vdW of J.Klimes et al, JPCM 22, 022201 (2010)
 !             'VV' => VDW Vydrov-VanVoorhis, JCP 133, 244103 (2010)
 !
 ! ------------------------ USAGE ----------------------------------------------
