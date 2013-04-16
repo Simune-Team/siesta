@@ -383,7 +383,7 @@ contains
   subroutine create_Green(tElec, HSFile, GFFile, GFTitle, &
        ElecValenceBandBot, &
        nkpnt,kpoint,kweight, &
-       NBufAt,NUsedAtoms,NA1,NA2, &
+       NBufAt,NUsedAtoms,NA1,NA2, RemUCellDistance, &
        ucell,xa,nua,NEn,contour,chem_shift,ZBulkDOS,nspin)
 
     use precision,  only : dp
@@ -396,7 +396,8 @@ contains
     use mpi_siesta, only : MPI_Bcast,MPI_ISend,MPI_IRecv
     use mpi_siesta, only : MPI_Sum
     use mpi_siesta, only : MPI_Wait,MPI_Status_Size
-    use mpi_siesta, only : DAT_dcomplex, DAT_double
+    use mpi_siesta, only : DAT_dcomplex => MPI_double_complex, &
+                           DAT_double => MPI_double_precision
 #endif
     use m_hs_matrix,only : set_HS_matrix, matrix_symmetrize
     use m_ts_cctype
@@ -412,6 +413,7 @@ contains
     real(dp),dimension(3,nkpnt),intent(in) :: kpoint ! k-points
     real(dp),dimension(nkpnt),intent(in) :: kweight ! weights of kpoints
     integer, intent(in)            :: NBufAt,NA1,NA2 ! Buffer/Rep a1/Rep a2
+    logical, intent(in)            :: RemUCellDistance ! Whether to remove the unit cell distance in the Hamiltonian.
     integer, intent(in)            :: NUsedAtoms ! Needs update here
     integer, intent(in)            :: nua ! Full system count of atoms in unit cell
     real(dp), dimension(3,3)       :: ucell ! The unit cell of the CONTACT
@@ -644,6 +646,7 @@ contains
        ! Initial header for file
        write(uGF) GFTitle
        write(uGF) chem_shift,NEn
+       write(uGF) RemUCellDistance
        write(uGF) NUsedAtoms,NA1,NA2,nkpnt,nq
        ! Write spin, ELECTRODE unit-cell
        write(uGF) nspin, ucell_E
@@ -735,14 +738,21 @@ contains
                 ! init qpoint in reciprocal lattice vectors
                 call kpoint_convert(ucell_E,qb(:,iqpt),qpt,-1)
 
-
                 ! Setup the transfer matrix and the intra cell at the k-point and q-point
-                call set_electrode_HS_Transfer(Gamma,nuo_E,maxnh_E, &
-                     notot_E,nspin,H_E,S_E,xij_E,xijo_E,zconnect_E,numh_E, &
-                     listhptr_E,listh_E,indxuo_E,Ef_E, &
-                     ispin, kpt, qpt, &
-                     H00,S00,H01,S01)
-
+                if ( RemUCellDistance ) then
+                   call set_electrode_HS_Transfer(Gamma,nuo_E,maxnh_E, &
+                        notot_E,nspin,H_E,S_E,xijo_E,xijo_E,zconnect_E,numh_E, &
+                        listhptr_E,listh_E,indxuo_E,Ef_E, &
+                        ispin, kpt, qpt, &
+                        H00,S00,H01,S01)
+                else
+                   call set_electrode_HS_Transfer(Gamma,nuo_E,maxnh_E, &
+                        notot_E,nspin,H_E,S_E,xij_E,xijo_E,zconnect_E,numh_E, &
+                        listhptr_E,listh_E,indxuo_E,Ef_E, &
+                        ispin, kpt, qpt, &
+                        H00,S00,H01,S01)
+                end if
+                   
                 
                 ! This requires IONode = Node == 0 !
                 if ( iEn .eq. 1 ) then
@@ -945,7 +955,8 @@ contains
 #ifdef MPI
     use mpi_siesta, only: MPI_Comm_World, MPI_LOR
     use mpi_siesta, only: MPI_Bcast,MPI_Barrier
-    use mpi_siesta, only: DAT_double,MPI_Logical,MPI_Integer
+    use mpi_siesta, only: DAT_double => MPI_double_precision
+    use mpi_siesta, only: MPI_Logical,MPI_Integer
     use mpi_siesta, only: MPI_Reduce
 #endif
 #ifdef TBTRANS

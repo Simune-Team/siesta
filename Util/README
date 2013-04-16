@@ -80,6 +80,9 @@ Macroave: Macroscopic averaging for interfaces and surfaces (by
 SiestaSubroutine: Code and examples of the driving of Siesta by an
                   external agent (by J. Soler and A. Garcia)
 
+JobList:   A suite of programs to generate and dispatch multiple
+           SIESTA jobs with varying options (by J. Soler)
+
 Scripting: Experimental scripting modules in Python (by A. Garcia)
 
 VCA: Utilities to help in Virtual-Crystal calculations (by A. Garcia)

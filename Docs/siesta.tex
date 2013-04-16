@@ -68,7 +68,7 @@
 \hrulefill
 \vspace{0.5cm}
 
-{\Large November 26, 2012 }
+{\Large March 31, 2013 }
 
 \vspace{1.5cm}
 
@@ -3840,12 +3840,18 @@ to make sure that the unit cell is large enough.
 of the system. One is standard diagonalization, which works for all
 systems and has a cubic scaling with the size. The other is based on
 the direct minimization of a special functional over a set of
-localized functions. The latter scales in principle linearly with the
-size of the system (only if the size is larger than the radial cutoff
-for the local solution wave-functions), but is quite fragile and
-substantially more difficult to use, and only works for systems with
-clearly separated occupied and empty states.  The default is to use
-diagonalization.
+trial orbitals. These orbitals can either extend over the entire system,
+resulting in a cubic scaling algorithm, or be constrained within a
+localization radius, resulting in a linear scaling algorithm. The former
+is a very recent implementation (described in \ref{SolverOMM}), that can
+be viewed as an equivalent approach to diagonlization in terms of the
+accuracy of the solution; the latter is the historic O(N) method used by
+{\sc Siesta} (described in \ref{SolverON}); it scales in principle
+linearly with the size of the system (only if the size is larger than
+the radial cutoff for the local solution wave-functions), but is quite
+fragile and substantially more difficult to use, and only works for
+systems with clearly separated occupied and empty states. The default is
+to use diagonalization.
 
 The calculation of the H and S matrix elements is always done with an
 O(N) method. The actual scaling is not linear for small systems, but
@@ -3880,8 +3886,8 @@ more user-friendly and robust.
 \item[{\bf SolutionMethod}] ({\it string}):
 \index{SolutionMethod@{\bf SolutionMethod}}
 Character string to chose between
-diagonalization ({\tt diagon}) or Order-N ({\tt OrderN}) solution
-of the LDA Hamiltonian.
+diagonalization ({\tt diagon}), cubic-scaling minimization ({\tt OMM})
+or Order-N ({\tt OrderN}) solution of the Kohn-Sham Hamiltonian.
 
 {\it Default value:} {\tt diagon}
 
@@ -4106,7 +4112,190 @@ pp
 
 \end{description}
 
-\subsubsection{Order(N) calculations}
+\subsubsection{Orbital minimization method (OMM)} \label{SolverOMM}
+
+The OMM is an alternative cubic-scaling solver that uses a minimization
+algorithm instead of direct diagonalization to find the occupied subspace.
+The main advantage over diagonalization is the possibility of iteratively
+reusing the solution from each SCF/MD step as the starting guess of the
+following one, thus greatly reducing the time to solution. Typically,
+therefore, the first few SCF cycles of the first MD step of a simulation
+will be slower than diagonalization, but the rest will be faster. The main
+disadvantages are that individual Kohn-Sham eigenvalues are not computed,
+and that only a fixed, integer number of electrons at each k point/spin is
+allowed. Therefore, only spin-polarized calculations with {\bf FixSpin}
+are allowed, and {\bf TotalSpin} must be chosen appropriately. For
+non-$\Gamma$ point calculations, the number of electrons is set to be equal
+at all k points. {\bf NonCollinearSpin} calculations are not supported at
+present.
+
+It is important to note that the OMM requires all occupied Kohn-Sham
+eigenvalues to be negative; this can be achieved by applying a shift
+to the eigenspectrum, controlled by {\bf ON.eta} (in this case,
+{\bf ON.eta} simply needs to be higher than the HOMO level). If the OMM
+exhibits a pathologically slow or unstable convergence, this is almost
+certainly due to the fact that the default value of {\bf ON.eta}
+({\tt 0.0 eV}) is too low, and should be raised by a few eV.
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+\item[{\bf OMM.UseCholesky}] ({\it logical}):
+\index{OMM.UseCholesky@{\bf OMM.UseCholesky}}
+Select whether to perform a Cholesky factorization of the generalized eigenvalue
+problem; this removes the overlap matrix from the problem but also destroys the
+sparsity of the Hamiltonian matrix.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} {\tt .true.}
+
+\item[{\bf OMM.Use2D}] ({\it logical}):
+\index{OMM.Use2D@{\bf OMM.Use2D}}
+Select whether to use a 2D data decomposition of the matrices for parallel
+calculations. This generally leads to superior scaling for large numbers of MPI
+processes.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} {\tt .true.}
+
+\item[{\bf OMM.UseSparse}] ({\it logical}):
+\index{OMM.UseSparse@{\bf OMM.UseSparse}}
+Select whether to make use of the sparsity of the Hamiltonian and overlap
+matrices where possible when performing matrix-matrix multiplications (these
+operations are thus reduced from $O(N^3)$ to $O(N^2)$ without loss of
+accuracy).
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}; not compatible with
+{\bf OMM.UseCholesky}, {\bf OMM.Use2D}, or non-$\Gamma$ point calculations
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf OMM.Precon}] ({\it integer}):
+\index{OMM.Precon@{\bf OMM.Precon}}
+Number of SCF steps for {\em all} MD steps for which to apply a preconditioning
+scheme based on the overlap and kinetic energy matrices; for negative values the
+preconditioning is always applied. Preconditioning is usually essential for fast
+and accurate convergence (note, however, that it is not needed if a Cholesky
+factorization is performed; in such cases this variable will have no effect on
+the calculation).
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}; not used with
+{\bf OMM.UseCholesky}
+
+{\it Default value:} {\tt -1}
+
+\item[{\bf OMM.PreconFirstStep}] ({\it integer}):
+\index{OMM.PreconFirstStep@{\bf OMM.PreconFirstStep}}
+Number of SCF steps in the {\em first} MD step for which to apply the preconditioning
+scheme; if present, this will overwrite the value given in {\bf OMM.Precon} for the
+first MD step only.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}; not used with
+{\bf OMM.UseCholesky}
+
+{\it Default value:} {\tt OMM.Precon}
+
+\item[{\bf OMM.Diagon}] ({\it integer}):
+\index{OMM.Diagon@{\bf OMM.Diagon}}
+Number of SCF steps for {\em all} MD steps for which to use a standard diagonalization
+before switching to the OMM; for negative values diagonalization is always used, and
+so the calculation is effectively equivalent to {\bf SolutionMethod} = {\tt diagon}.
+In general, selecting the first few SCF steps can speed up the calculation by removing
+the costly initial minimization (at present this works best for $\Gamma$ point
+calculations).
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} {\tt 0}
+
+\item[{\bf OMM.DiagonFirstStep}] ({\it integer}):
+\index{OMM.DiagonFirstStep@{\bf OMM.DiagonFirstStep}}
+Number of SCF steps in the {\em first} MD step for which to use a standard diagonalization
+before switching to the OMM; if present, this will overwrite the value given in
+{\bf OMM.Diagon} for the first MD step only.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} {\tt OMM.Diagon}
+
+\item[{\bf OMM.BlockSize}] ({\it integer}):
+\index{OMM.BlockSize@{\bf OMM.BlockSize}}
+Blocksize used for distributing the elements of the matrix over MPI processes. Specifically,
+this variable controls the dimension relating to the trial orbitals used in the minimization
+(equal to the number of occupied states at each k point/spin); the equivalent variable for
+the dimension relating to the underlying basis orbitals is controlled by {\bf BlockSize}.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} chosen by {\sc Siesta}
+
+\item[{\bf OMM.TPreconScale}] ({\it real energy}):
+\index{OMM.TPreconScale@{\bf OMM.TPreconScale}}
+Scale of the kinetic energy preconditioning (see C.~K.~Gan {\em et al.}, Comput. Phys. Commun.
+{\bf 134}, 33 (2001)). A smaller value indicates more aggressive kinetic energy preconditioning,
+while an infinite value indicates no kinetic energy preconditioning. In general, the kinetic
+energy preconditioning is much less important than the tensorial correction brought about by
+the overlap matrix, and so this value will have fairly little impact on the overall performace
+of the preconditioner; however, too aggressive kinetic energy preconditioning can have a
+detrimental effect on performance and accuracy.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} {\tt 100.0 eV}
+
+\item[{\bf OMM.RelTol}] ({\it real}):
+\index{OMM.RelTol@{\bf OMM.RelTol}}
+Relative tolerance in the conjugate gradients minimization of the Kohn-Sham band energy (see
+{\bf ON.etol}).
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} ${\tt 10^{-9}}$
+
+\item[{\bf OMM.Eigenvalues}] ({\it logical}):
+\index{OMM.Eigenvalues@{\bf OMM.Eigenvalues}}
+Select whether to perform a diagonalization at the end of each MD step to obtain the Kohn-Sham
+eigenvalues.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf OMM.WriteCoeffs}] ({\it logical}):
+\index{OMM.WriteCoeffs@{\bf OMM.WriteCoeffs}}
+Select whether to write the coefficients of the solution orbitals to file at the end of each MD
+step.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf OMM.ReadCoeffs}] ({\it logical}):
+\index{OMM.ReadCoeffs@{\bf OMM.ReadCoeffs}}
+Select whether to read the coefficients of the solution orbitals from file at the beginning of
+a new calculation. Useful for restarting an interrupted calculation, especially when used in
+conjuction with {\bf DM.UseSaveDM}. Note that the same number of MPI processes and values of
+{\bf OMM.Use2D}, {\bf OMM.BlockSize}, and {\bf BlockSize} must be used when restarting.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf OMM.LongOutput}] ({\it logical}):
+\index{OMM.LongOutput@{\bf OMM.LongOutput}}
+Select whether to output detailed information of the conjugate gradients minimization for each
+SCF step.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} {\tt .false.}
+
+\end{description}
+
+\subsubsection{Order(N) calculations} \label{SolverON}
 
 The Ordern(N) subsystem is quite fragile and only works for systems
 with clearly separated occupied and empty states. Note also that the
@@ -5769,7 +5958,7 @@ make it possible to run larger jobs where memory is the limiting factor.
 
 \end{description}
 
-\subsection{Memory and CPU-time accounting options}
+\subsection{Memory, CPU-time, and Wall time accounting options}
 \begin{description}
 
 \item[{\bf AllocReportLevel}] ({\it integer}):
@@ -5814,6 +6003,15 @@ output file. In parallel execution, they are reported in a separated
 file named {\tt SystemLabel}.times.
 
 {\it Default value:} {\tt 0.0}
+
+\item[{\bf UseTreeTimer}] ({\it logical}): 
+\index{UseTreeTimer@{\bf UseTreeTimer}}
+
+Enable an experimental timer which is based on wall time on the master
+node and is aware of the tree-structure of the timed sections.
+
+{\it Default value:} {\tt .false.}
+
 
 \end{description}
 

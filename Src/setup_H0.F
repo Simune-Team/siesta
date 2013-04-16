@@ -35,9 +35,7 @@ C     and initializes data structures on the grid.
       real(dp) :: g2max
 
 !---------------------------------------------------------------------- BEGIN
-#ifdef DEBUG
-      call write_debug( '  PRE setup_H0' )
-#endif
+      call timer('Setup_H0',1)
 
 C     Self-energy of isolated ions
       Eions = 0.0_dp
@@ -108,9 +106,8 @@ C     mesh structures for geometry changes
      &                 maxnh, numh, listhptr, listh, datm,
      &                 dummy_fa, dummy_stress)
 
-#ifdef DEBUG
-      call write_debug( '  POS setup_H0' )
-#endif
+      call timer('Setup_H0',2)
+
 !---------------------------------------------------------------------- END
       END subroutine setup_H0
       END module m_setup_H0
