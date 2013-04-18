@@ -160,7 +160,8 @@ OBJS =  automatic_cell.o atom_options.o \
         m_uuid.o object_debug.o die.o m_svd.o
 
 # Generic modules
-OBJS += intrinsic_missing.o geom_helper.o create_Sparsity_SC.o
+OBJS += intrinsic_missing.o geom_helper.o 
+OBJS += create_Sparsity_SC.o create_Sparsity_Union.o
 
 
 #--------------------------------------------------------------
@@ -440,6 +441,8 @@ conjgr_old.o: precision.o
 coor.o: alloc.o parallel.o precision.o siesta_geom.o sys.o zmatrix.o
 coxmol.o: files.o periodic_table.o precision.o
 create_Sparsity_SC.o: class_Sparsity.o geom_helper.o intrinsic_missing.o
+create_Sparsity_Union.o: class_OrbitalDistribution.o class_Sparsity.o
+create_Sparsity_Union.o: parallel.o
 debugmpi.o: parallel.o
 denmat.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 denmatlomem.o: alloc.o globalise.o onmod.o precision.o

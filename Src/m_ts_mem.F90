@@ -1,3 +1,19 @@
+!
+! This file is part of the SIESTA package.
+!
+! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
+! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
+! and J.M.Soler, 1996- .
+!
+! Use of this software constitutes agreement with the full conditions
+! given in the SIESTA license, as signed by all legitimate users.
+!
+! This code segment has been fully created by:
+! Nick Papior Andersen, 2013, nickpapior@gmail.com
+! Please conctact the author, prior to re-using this code.
+! * It has been heavily inspired by the original authors of the 
+!   Transiesta code (hence the references here are still remaining) *
+
 module m_ts_mem
 
   use precision, only : dp

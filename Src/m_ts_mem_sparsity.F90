@@ -29,12 +29,8 @@
 !     transferred. This should be do-able (and quite easily)
 !     However, it would be MUCH better if this information
 !     is only shown per-request.
-!  3. Adding a charge calculation when TranSIESTA ends might be
-!     the best, and most effective way out of this (while still
-!     retaining some information for the user).
-!     Mainly because it is then performed in parallel.
-!  4. Consider splitting Transiesta up in Gamma and non-Gamma
-!     calculation. This will probably dublicate some code, however,
+!  3. Consider splitting Transiesta up in Gamma and non-Gamma
+!     codes. This will probably dublicate some code, however,
 !     I think it will help the unexperienced in delving into the 
 !     wonderful art of Transiestaing... :)
 !  
@@ -98,7 +94,9 @@ contains
 ! memory reduced TranSIESTA code.
 ! This means collecting information about which region needs
 ! update, etc.
-  subroutine ts_mem_init(Gamma,sparse_pattern,na_u,lasto)
+  subroutine ts_mem_init(Gamma,block_dist,sparse_pattern,na_u,lasto)
+
+    use class_OrbitalDistribution
 
     ! Used when creating the update region...
     use m_ts_options, only : UseBulk, UpdateDMCR
@@ -119,6 +117,8 @@ contains
 ! **********************
     ! A Gamma-calculation?
     logical, intent(in)  :: Gamma
+    ! The distribution for the sparsity-pattern
+    type(OrbitalDistribution), intent(inout) :: block_dist
     ! SIESTA local sparse pattern (not changed)
     type(Sparsity), intent(inout) :: sparse_pattern
     ! Number of atoms in the unit-cell
@@ -165,7 +165,8 @@ contains
     call delete(tsup_sp_uc)
 
     ! Create the sparsity patterns we need...
-    call ts_Sparsity_Global(Gamma,sparse_pattern, nnzs(sparse_pattern), &
+    call ts_Sparsity_Global(Gamma,block_dist,sparse_pattern, &
+         nnzs(sparse_pattern), &
          UseBulk, UpdateDMCR, &
          no_BufL,no_BufR,no_L,no_R, &
          no_u_LCR, &
@@ -179,7 +180,7 @@ contains
 ! cross connections from left-right, AND remove any
 ! z-connections (less orbitals to move about, and they should
 ! not exist).
-  subroutine ts_Sparsity_Global(Gamma,s_sp,maxnh, &
+  subroutine ts_Sparsity_Global(Gamma,block_dist,s_sp,maxnh, &
        UseBulk, UpdateDMCR, &
        no_BufL,no_BufR,no_L,no_R, &
        no_u_LCR, &
@@ -202,6 +203,8 @@ contains
     integer, intent(in) :: no_BufL, no_BufR, no_L, no_R
     ! Number of rows in the transiesta SP
     integer, intent(in) :: no_u_LCR
+    ! The SIESTA distribution of the sparsity pattern
+    type(OrbitalDistribution), intent(inout) :: block_dist
     ! Sparsity patterns of SIESTA and the returned update region.    
     ! SIESTA sparsity pattern is the local one...
     type(Sparsity), intent(inout) :: s_sp, ts_sp, tsup_sp
@@ -508,6 +511,7 @@ contains
     call sp_to_file(2000+Node,tsup_sp)
 
     call die('')
+
   contains
     
     subroutine sp_to_file(u,sp)

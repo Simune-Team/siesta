@@ -104,7 +104,8 @@
            if ( TSiscf == 1 ) then
               ! This is a first Transiesta run, we need to initialize
               ! the sparsity patterns...
-              call ts_mem_init(Gamma, sparse_pattern, na_u, lasto)
+              call ts_mem_init(Gamma, block_dist, sparse_pattern,
+     &             na_u, lasto)
               call ts_print_charges(block_dist, sparse_pattern, 
      &             na_u, lasto, nspin, maxnh, Dscf, S)
            end if

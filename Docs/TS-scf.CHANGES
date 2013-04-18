@@ -1,4 +1,29 @@
 ----------------------------------------------------
+April 18, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-13
+Added a new module for creating unions of dense and sparse matrices
+
+* Preparing the Transiesta sparse to deal with full sparse matrices
+  This requires that the electrodes are gathered in the LHS for 
+  containing the self-energies (which are not sparse).
+  Thus we needed a way to make a new sparse format with a dense part
+  This has been accomblished by creating the module:
+  create_Sparsity_Union.F90
+  This will eventually require the ts_mem_init to also get
+  the block-distribution of the Hamiltonian and overlap matrices.
+  Thus we have added this in the call.
+
+* Added some declarations of creation for the last couple of routines
+
+added:
+  Src/create_Sparsity_Union.F90
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+  Src/m_ts_mem.F90
+  Src/m_ts_mem_scat.F90
+  Src/m_ts_mem_sparsity.F90
+
+----------------------------------------------------
 April 5, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-12
 Made error recognition in allocations in TS, moved Gamma to IsVolt
 
