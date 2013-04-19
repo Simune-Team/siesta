@@ -276,6 +276,9 @@ contains
     real(dp), parameter :: Pi2 = 2._dp * Pi
     complex(dp) :: ph
 
+    call timer('ts_expand',1)
+    call timer('ts_expandB',1)
+
     ! THis should never happen (work is TS-region!)
     if ( nwork < no_s**2*2 ) call die('Size of work-array is &
          &too small')
@@ -323,6 +326,9 @@ contains
        write(*,*) 'Inversion of surface Greens function failed'
     end if
 
+    call timer('ts_expandB',2)
+    call timer('ts_expand',2)
+
   end subroutine UC_expansion_Sigma_Bulk
 
 
@@ -355,6 +361,8 @@ contains
     integer :: ipvt(no_s)
     real(dp), parameter :: Pi2 = 2.0_dp * Pi
     complex(dp) :: ph
+
+    call timer('ts_expand',1)
 
     ! THis should never happen (work is TS-region!)
     if ( nwork < no_s**2*2 ) call die('Size of work-array is &
@@ -415,6 +423,8 @@ contains
        end do
     end do
 
+    call timer('ts_expand',2)
+
   end subroutine UC_expansion_Sigma
 
   subroutine UC_expansion_Sigma_Gamma(UseBulk,ZEnergy,no_u,no_s,NRepA1,NRepA2, &
@@ -449,6 +459,9 @@ contains
     integer :: ipvt(no_s)
     real(dp), parameter :: Pi2 = 2._dp * Pi
     complex(dp) :: ph
+
+    call timer('ts_expand',1)
+    call timer('ts_expandG',1)
     
     ! THis should never happen (work is TS-region!)
     if ( nwork < no_s**2*2 ) call die('Size of work-array is &
@@ -557,6 +570,9 @@ contains
        end do
 
     end if
+
+    call timer('ts_expandG',2)
+    call timer('ts_expand',2)
        
   end subroutine UC_expansion_Sigma_Gamma
 

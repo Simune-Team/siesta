@@ -765,12 +765,10 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccc
 #endif
 
 #ifdef TRANSIESTA_TIMING
-       call timer('TS_READ',2)
+      call timer('TS_READ',2)
 #endif
 
-#ifdef TRANSIESTA_TIMING
-       call timer('TS_EXPAND',1)
-#endif
+      call timer('ts_expand',1)
 
 !-----------------------------------------------------------------------
 !     Expansion of unit-cell: (1x1) -> (NA1 x NA2) Layer-wise ordering!
@@ -915,9 +913,7 @@ c      end do                    !io
        call memory('D','I',size(ipvt),'getsfe')
        deallocate(WRK1,WRK2,GAA,ipvt)
 
-#ifdef TRANSIESTA_TIMING
-       call timer('TS_EXPAND',2)
-#endif
+       call timer('ts_expand',2)
 
        call timer('getSFE',2)
 

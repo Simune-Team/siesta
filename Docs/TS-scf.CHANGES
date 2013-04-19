@@ -1,4 +1,17 @@
 ----------------------------------------------------
+April 19, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-14
+Added timings of the expansion routines
+
+* Have added timings for some crucial expansion routines
+  which deals with the repetition.
+  ** Consider to remove them once we have a good feeling of their
+     performance. These routines are called excessively.
+
+modified:
+  Src/m_ts_mem_scat.F90
+  Src/m_ts_scattering.F
+
+----------------------------------------------------
 April 18, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-13
 Added a new module for creating unions of dense and sparse matrices
 
