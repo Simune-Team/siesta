@@ -534,7 +534,6 @@ contains
 
        ! Do
        ! \Gamma = -\Im \Sigma
-       ! TODO, could be halfed in execution
        do jo = 1 , no_s
           iow1 = (jo-1) * no_s
           do io = 1 , jo
@@ -764,7 +763,7 @@ contains
   end subroutine read_next_GS
 
 
-  subroutine GF_Gamma_GF(Left,no_u_TS,no_E,GF,Gamma,GGG,nwork,work)
+  subroutine GF_Gamma_GF(Offset,no_u_TS,no_E,GF,Gamma,GGG,nwork,work)
 
 ! ======================================================================
 !  This routine returns GGG=(-i)*GF.Gamma.GF, where GF is a (no_u)x(no_u)
@@ -779,16 +778,15 @@ contains
 ! *********************
 ! * INPUT variables   *
 ! *********************
-    logical, intent(in) :: Left !True if LEFT
+    integer, intent(in) :: Offset ! this will help leverage the loop construct and
+!                                 ! for the right electrode this is the no_u_TS - no_E + 1
     integer, intent(in) :: no_u_TS !no. states in contact region
-    integer, intent(in) :: no_E !if LeftFLAG the no_E first states of no_u
-!                               !are left electrode states
-!                               !else it is the no_E last right electrode
-!                               !states.
+    integer, intent(in) :: no_E ! the size of the Gamma
     complex(dp), intent(in) :: GF(no_u_TS,no_u_TS)
-    real(dp),    intent(in) :: Gamma(no_E,no_E)   !i(Sigma-Sigma^dagger)/2
-    ! A work array for doing the calculation...
-    integer,     intent(in) :: nwork
+    ! i (Sigma - Sigma^dagger)/2
+    real(dp),    intent(in) :: Gamma(Offset:Offset+no_E-1,Offset:Offset+no_E-1)
+    ! A work array for doing the calculation... (nwork has to be larger than no_u_TS)
+    integer,     intent(in)    :: nwork
     complex(dp), intent(inout) :: work(nwork)
 
 ! *********************
@@ -796,7 +794,7 @@ contains
 ! *********************
     complex(dp), intent(out) :: GGG(no_u_TS,no_u_TS)    !GF.GAMMA.GF
 
-    integer :: i,j,ie,je, o, ii, jj, lS
+    integer :: i, j, ie, je, lE
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE GFGammaGF' )
@@ -804,57 +802,36 @@ contains
 
     call timer("GFGGF",1)
 
-    if ( Left ) then
+    ! calculate the end of the bound for the Gamma
+    lE = Offset + no_E - 1
+    if ( lE /= no_u_TS .and. lE /= no_E ) call die('Wrong indices')
 
-       do i = 1 , no_u_TS
-          do ie = 1 , no_E
-             work(ie) = dcmplx(0._dp,0._dp)
-             do je = 1 , no_E
-                work(ie) = work(ie) + Gamma(je,ie) * GF(i,je)
-             end do
-          end do
+    do i = 1 , no_u_TS
 
-          do j = 1 , i
-             GGG(j,i) = dcmplx(0._dp,0._dp)
-             do ie = 1 , no_E
-                GGG(j,i) = GGG(j,i) + &
-                     dreal( work(ie)*dconjg(GF(j,ie)) )
-             end do
-             GGG(j,i) = GGG(j,i) * dcmplx(0._dp,-1._dp)
-             GGG(i,j) = GGG(j,i)
+       do ie = Offset , lE
+
+          work(ie) = dcmplx(0._dp,0._dp)
+          do je = Offset , lE
+             work(ie) = work(ie) + Gamma(je,ie) * GF(i,je)
           end do
 
        end do
+       
+       do j = 1 , i
 
-    else ! Do right
+          GGG(j,i) = dcmplx(0._dp,0._dp)
 
-       ! The offset for the electrode orbitals
-       lS = no_u_TS - no_E
-
-       do i = 1 , no_u_TS
-          ie = lS
-          do ii = 1 , no_E
-             ie = ie + 1
-             work(ie) = dcmplx(0._dp,0._dp)
-             do jj = 1 , no_E
-                work(ie) = work(ie) + Gamma(jj,ii) * GF(i,lS+jj)
-             end do
+          do ie = Offset , lE
+             GGG(j,i) = GGG(j,i) + work(ie) * dconjg(GF(j,ie))
           end do
 
-          do j = 1 , i
-             GGG(j,i) = dcmplx(0._dp,0._dp)
-             do ie = lS + 1 , no_u_TS
-                GGG(j,i) = GGG(j,i) + &
-                     dreal( work(ie)*dconjg(GF(j,ie)) )
-
-             end do
-             GGG(j,i) = GGG(j,i) * dcmplx(0._dp,-1._dp)
-             GGG(i,j) = GGG(j,i)
-          end do
+          ! We only take the real part once (faster)
+          GGG(j,i) = dreal(GGG(j,i)) * dcmplx(0._dp,-1._dp)
+          GGG(i,j) = GGG(j,i)
 
        end do
-
-    end if
+       
+    end do
 
     call timer('GFGGF',2)
 
@@ -864,7 +841,6 @@ contains
 
 ! ====================================================================
   END subroutine GF_Gamma_GF
-! ====================================================================
 
 ! ##################################################################
 ! ##   Mixing the Density matrixes according to the smallest      ##

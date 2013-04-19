@@ -247,6 +247,15 @@ contains
             &What have you done? Please correct this insanity...")
     end if
 
+    ! We must ensure that the Sigma[LR] have enough space to hold
+    ! one line of the full matrix (we use them as work arrays
+    ! when calculating the Gamma[LR]
+    if ( no_L ** 2 < no_u_TS .or. no_R ** 2 < no_u_TS ) then
+       call die('The current implementation requires that the &
+            &square of the orbitals in the electrodes are larger &
+            &than the dimension of the problem.')
+    end if
+
 
     ! Open GF files...
     if ( IONode ) then
@@ -605,7 +614,7 @@ contains
              ! This would remove no_L**2 + no_R**2
              ! and should be quite easy. Do this after full
              ! implementation... (note that it will require more computation
-             ! in the case of repetition.
+             ! in the case of repetition)
 
              ! Do the left electrode
              call UC_expansion_Sigma_Gamma(UseBulk,Z,no_L_HS,no_L, &
@@ -613,7 +622,7 @@ contains
                   na_L_HS,lasto_L,nqL,qLb,wqL, &
                   HAAL, SAAL, GAAL, &
                   SigmaL, GammaL, & 
-                  nzwork,zwork)
+                  nzwork, zwork)
 
              ! Do the right electrode
              call UC_expansion_Sigma_Gamma(UseBulk,Z,no_R_HS,no_R, &
@@ -621,7 +630,7 @@ contains
                   na_R_HS,lasto_R,nqR,qRb,wqR, &
                   HAAR, SAAR, GAAR, &
                   SigmaR, GammaR, & 
-                  nzwork,zwork)
+                  nzwork, zwork)
 
 #ifdef TRANSIESTA_TIMING
              call timer('TS_EXPAND',2)
@@ -648,7 +657,7 @@ contains
                      SigmaL, SigmaR, zwork, GF,ierr)
 
              ! We calculate the right thing.
-             call GF_Gamma_GF(.FALSE., no_u_TS, no_R, GF, &
+             call GF_Gamma_GF(no_u_TS-no_R+1, no_u_TS, no_R, GF, &
                   GammaR, zwork, no_u_TS, SigmaR) ! SigmaR is a "work" array
 
              ! Note that we use '-' here
@@ -661,7 +670,7 @@ contains
              end if
 
              ! We calculate the left thing.
-             call GF_Gamma_GF(.TRUE., no_u_TS, no_L, GF, &
+             call GF_Gamma_GF(1, no_u_TS, no_L, GF, &
                   GammaL, zwork, no_u_TS, SigmaL) ! SigmaL is a "work" array
 
              ! Note that we use '-' here

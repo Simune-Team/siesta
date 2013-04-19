@@ -1,4 +1,16 @@
 ----------------------------------------------------
+April 19, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-15
+Optimized the Gf_Gamma_Gf routine
+
+* Removed the need for double code in Gf_Gamma_Gf routine
+  It had no purpose (now we do the same thing by having an offset
+  in the matrices)
+
+modified:
+  Src/m_ts_mem.F90
+  Src/m_ts_mem_scat.F90
+
+----------------------------------------------------
 April 19, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-14
 Added timings of the expansion routines
 
