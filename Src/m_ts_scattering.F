@@ -577,7 +577,7 @@ c======================================================================
 c OUTPUT: 
       complex(dp) SFE(no,no) !Electrode atoms self-energy for USEBULK true
 c                           !else z*S - H - Sigma for ideal surface
-      complex(dp)  GAMMA(no,no)  ! 0.5*(Sigma - Sigma^dagger) 
+      real(dp)  GAMMA(no,no)  ! 0.5*(Sigma - Sigma^dagger) 
       logical errorgs
 
 c=====================================================================
@@ -881,9 +881,8 @@ c Gamma
 c
       do io=1,no
          do jo=1,no
-            GAMMA(jo,io) = 
-     &           dcmplx(0d0,0.5d0)*(WRK1(jo,io) - 
-     &           dconjg(WRK1(io,jo)))
+            GAMMA(jo,io) = -.5_dp * dimag(
+     &           WRK1(jo,io) - dconjg(WRK1(io,jo)))
          end do                 !jo
       end do                    !io
       
