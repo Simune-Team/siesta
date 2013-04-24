@@ -1,4 +1,8 @@
 ----------------------------------------------------
+April 24, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-17
+Merge of two commits
+
+----------------------------------------------------
 April 24, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-16
 Optimized electrode surface green's function
 
@@ -22,6 +26,62 @@ modified:
   Src/m_ts_gf.F90
   Src/ts_init.F90
   Util/TBTrans_rep/tbtrans.F90
+
+----------------------------------------------------
+April 24, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-16
+Execution speed in GFGGF routine down to ~25%
+
+* The GFGGF routine has been troubling because the original
+  implementation was extremely fast (but requiring twice
+  the no_u_TS region of memory).
+  Primarily the speed was due to transposing of the GF
+  which makes matrix-multiplication much easier.
+  I have leveraged that and fully transposed GF before entry
+  to the GFGGF routines.
+  This actually makes it ~2 as fast as the old implementation
+  i.e. ~3-4 times as fast as the previous implementation 
+  (memory reduced).
+  For bias calculations the speed-up should be quite noticeable
+  as many systems require a huge amount of energy points for 
+  better convergence.
+
+* The GFGGF routine has been merged to the non-sparse
+  method which in turn required the reduction of the Gamma
+  arrays into real quantities. (this simply means lower 
+  memory consumption)
+
+* DEV notice. When reading/writing arrays:
+    write(<unit>) array(1:n,1:n,1:2)
+  one should prefer to read in the values via the same
+  bounds:
+    read(<unit>) array(1:n,1:n,1:2)
+  and NOT:
+    read(<unit>) array(1:n**2*2)
+  I can't really see why as I had suspected the file to only containg 
+  values in the record (and not array bounds). However, testing this
+  in m_ts_mem_scat revealed a much slower execution speed in the latter.
+  Is there a reason I have overlooked?
+
+* Made GF creation easier by changing the interface for the LHS to a 
+  square matrix, rather than 1D matrix.
+
+* Optimized the expansion routines for a simpler solution
+  when only dealing with non-repeated electrodes.
+  Also moved the one dublicated code into a subroutine
+
+* When the repetition is off we have removed any overhead associated with 
+  the expansion loop.
+
+* The EYE functions have been slightly changed, there are no if statements
+  now.
+
+modified:
+  Src/Makefile
+  Src/intrinsic_missing.f90
+  Src/m_ts_in_siesta.F
+  Src/m_ts_mem.F90
+  Src/m_ts_mem_scat.F90
+  Src/m_ts_scattering.F
 
 ----------------------------------------------------
 April 19, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-15

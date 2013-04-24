@@ -66,7 +66,7 @@ contains
     ! This may seem strange, however, it will clean up this routine extensively
     ! as we dont need to make two different routines for real and complex
     ! Hamiltonian values.
-    complex(dp), intent(in out) :: GFinv(no_u_TS**2) ! the inverted GF
+    complex(dp), intent(in out) :: GFinv(no_u_TS,no_u_TS) ! the inverted GF
     complex(dp), intent(out) :: GF(no_u_TS**2)
     integer,     intent(out) :: ierr              !inversion err
 
@@ -94,10 +94,8 @@ contains
        ! Self-energy of the electrode (thereby assuming 
        ! that the electrode states are the perfect bulk system)
        do j = 1, no_L
-          ii = (j-1) * no_u_TS
           do i = 1, no_L
-             ii = ii + 1
-             GFinv(ii) = SigmaL(i,j)
+             GFinv(i,j) = SigmaL(i,j)
           end do              !i
        end do                 !j
     else
@@ -105,10 +103,8 @@ contains
        ! hence, we will adjust the unit-cell Hamiltonian by the 
        ! self-energy terms.
        do j = 1, no_L
-          ii = (j-1) * no_u_TS
           do i = 1, no_L
-             ii = ii + 1
-             GFinv(ii) = GFinv(ii) - SigmaL(i,j)
+             GFinv(i,j) = GFinv(i,j) - SigmaL(i,j)
           end do              !i
        end do                 !j
     end if                    !USEBULK
@@ -117,18 +113,16 @@ contains
     o = no_u_TS - no_R
     if ( UseBulk ) then
        do j = 1 , no_R
-          ii = (o + j - 1) * no_u_TS + o
+          ii = o + j
           do i = 1 , no_R
-             ii = ii + 1
-             GFinv(ii) = SigmaR(i,j)
+             GFinv(o+i,ii) = SigmaR(i,j)
           end do              !i
        end do                 !j
     else
        do j = 1 , no_R
-          ii = (o + j - 1) * no_u_TS + o
+          ii = o + j
           do i = 1 , no_R
-             ii = ii + 1
-             GFinv(ii) = GFinv(ii) - SigmaR(i,j)
+             GFinv(o+i,ii) = GFinv(o+i,ii) - SigmaR(i,j)
           end do              !i
        end do                 !j
     end if
@@ -179,13 +173,13 @@ contains
     ! This may seem strange, however, it will clean up this routine extensively
     ! as we dont need to make two different routines for real and complex
     ! Hamiltonian values.
-    complex(dp), intent(in out) :: GFinv(no_u_TS**2) ! the inverted GF
+    complex(dp), intent(in out) :: GFinv(no_u_TS,no_u_TS) ! the inverted GF
     complex(dp), intent(out) :: GF(no_u_TS*(no_u_TS-no_R-no_L))
     integer,     intent(out) :: ierr              ! inversion err
 
 ! Local variables
     integer :: ipvt(no_u_TS)
-    integer :: i,j,ii,jj,o
+    integer :: i,j,ii,o
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE getGF' )
@@ -216,20 +210,17 @@ contains
     ! Self-energy of the electrode (thereby assuming 
     ! that the electrode states are the perfect bulk system)
     do j = 1, no_L
-       ii = (j-1) * no_u_TS
        do i = 1, no_L
-          ii = ii + 1
-          GFinv(ii) = SigmaL(i,j)
+          GFinv(i,j) = SigmaL(i,j)
        end do              !i
     end do                 !j
 
 ! Adjust the right electrode part
     o = no_u_TS - no_R
     do j = 1 , no_R
-       ii = (o + j - 1) * no_u_TS + o
+       ii = o + j
        do i = 1 , no_R
-          ii = ii + 1
-          GFinv(ii) = SigmaR(i,j)
+          GFinv(o+i,ii) = SigmaR(i,j)
        end do              !i
     end do                 !j
 
@@ -258,70 +249,108 @@ contains
     integer,  intent(in) :: na_u,lasto(0:na_u)
     integer,  intent(in) :: nq
     real(dp), intent(in) :: qb(3,nq), wq(nq)
-    complex(dp), dimension(no_u,no_u,nq), intent(in) :: H, S, GS
+    complex(dp), dimension(no_u,no_u,nq), intent(in) :: H, S
+    complex(dp), dimension(no_u,no_u,nq), intent(inout) :: GS
 ! ********************
 ! * OUTPUT variables *
 ! ********************
     complex(dp), intent(out) :: Sigma(no_s,no_s)
 
     integer,  intent(in) :: nwork
-    complex(dp), intent(inout) :: work(nwork)
+    complex(dp), intent(inout) :: work(no_s,no_s)
 ! ********************
 ! * LOCAL variables  *
 ! ********************
     integer :: iq, ierr
     integer :: iow,iau,ia2,ia1,iuo
-    integer ::     jau,ja2,ja1,juo
+    integer :: jow,jau,ja2,ja1,juo
     integer :: ipvt(no_s)
-    real(dp), parameter :: Pi2 = 2._dp * Pi
+    complex(dp), parameter :: zmPi2 = dcmplx(0._dp,-2._dp * Pi)
     complex(dp) :: ph
 
     call timer('ts_expand',1)
     call timer('ts_expandB',1)
 
     ! THis should never happen (work is TS-region!)
-    if ( nwork < no_s**2*2 ) call die('Size of work-array is &
+    if ( nwork < no_s**2 ) call die('Size of work-array is &
          &too small')
-
-    do iow = 1 , no_s*no_s
-       work(iow) = dcmplx(0._dp,0._dp)
-    end do
-
-    ! This is the crucial calcuation.
-    ! If we use bulk values in the electrodes
-    ! we need not add the expanded H and S values to get the 
-    ! electrode \Sigma. Hence, we need only expand
-    ! surface Green's function
-    do iq = 1 , nq
-     iow = 0
-     do iau = 1 , na_u
-      do ia2 = 0 , NRepA2-1
-       do ia1 = 0 , NRepA1-1
-        do iuo = 1 + lasto(iau-1) , lasto(iau)
-         do jau = 1 , na_u
-          do ja2 = 0 , NRepA2-1
-           do ja1 = 0 , NRepA1-1
-            do juo = 1 + lasto(jau-1) , lasto(jau) 
-               iow = iow + 1
-               ph = wq(iq) * cdexp(dcmplx(0.0_dp,-Pi2) * &
-                    ( (ia1-ja1)*qb(1,iq) + (ia2-ja2)*qb(2,iq) ))
-               
-               work(iow) = work(iow) + ph * GS(juo,iuo,iq)
-            end do !juo
-           end do !ja1
-          end do !ja2
-         end do !jau
-        end do !iuo
-       end do !ia1
-      end do !ia2
-     end do !iau
-    end do !q-points
 
     call EYE(no_s,Sigma)
 
-    ! We have the matrix to invert in the first no_s**2 values.
-    call zgesv(no_s,no_s,work(1),no_s,ipvt,Sigma,no_s,ierr)
+    if ( NRepA1 * NRepA2 == 1 ) then
+       if ( nq /= 1 ) call die('nq/=1')
+       if ( no_u /= no_s ) call die('no_E/=no_s')
 
+       ! We will read in a new GS for the following energy
+       ! point, hence we do not need GS
+       ! GS will be garbage from here on...
+       ! We have the matrix to invert in the first no_s**2 values.
+       call zgesv(no_s,no_s,GS(1,1,1),no_s,ipvt,Sigma,no_s,ierr)
+
+    else
+
+       ! This is the crucial calcuation.
+       ! If we use bulk values in the electrodes
+       ! we need not add the expanded H and S values to get the 
+       ! electrode \Sigma. Hence, we need only expand
+       ! surface Green's function
+       iq = 1
+       iow = 0
+       do iau = 1 , na_u
+        do ia2 = 0 , NRepA2-1
+         do ia1 = 0 , NRepA1-1
+          do iuo = 1 + lasto(iau-1) , lasto(iau)
+           iow = iow + 1
+           jow = 0
+           do jau = 1 , na_u
+            do ja2 = 0 , NRepA2-1
+             do ja1 = 0 , NRepA1-1
+              ph = wq(iq) * cdexp(zmPi2 * &
+                   ( (ia1-ja1)*qb(1,iq) + (ia2-ja2)*qb(2,iq) ))
+               do juo = 1 + lasto(jau-1) , lasto(jau) 
+                 jow = jow + 1
+                 
+                 work(jow,iow) = ph * GS(juo,iuo,iq)
+              end do !juo
+             end do !ja1
+            end do !ja2
+           end do !jau
+          end do !iuo
+         end do !ia1
+        end do !ia2
+       end do !iau
+       do iq = 2 , nq
+        iow = 0
+        do iau = 1 , na_u
+         do ia2 = 0 , NRepA2-1
+          do ia1 = 0 , NRepA1-1
+           do iuo = 1 + lasto(iau-1) , lasto(iau)
+            iow = iow + 1
+            jow = 0
+            do jau = 1 , na_u
+             do ja2 = 0 , NRepA2-1
+              do ja1 = 0 , NRepA1-1
+               ph = wq(iq) * cdexp(zmPi2 * &
+                    ( (ia1-ja1)*qb(1,iq) + (ia2-ja2)*qb(2,iq) ))
+
+               do juo = 1 + lasto(jau-1) , lasto(jau) 
+                  jow = jow + 1
+                  
+                  work(jow,iow) = work(jow,iow) + ph * GS(juo,iuo,iq)
+               end do !juo
+              end do !ja1
+             end do !ja2
+            end do !jau
+           end do !iuo
+          end do !ia1
+         end do !ia2
+        end do !iau
+       end do !q-points
+       
+       ! We have the matrix to invert in the first no_s**2 values.
+       call zgesv(no_s,no_s,work(1,1),no_s,ipvt,Sigma,no_s,ierr)
+
+    end if
     if ( ierr /= 0 ) THEN
        write(*,*) 'Inversion of surface Greens function failed'
     end if
@@ -334,7 +363,6 @@ contains
 
   subroutine UC_expansion_Sigma(ZEnergy,no_u,no_s,NRepA1,NRepA2, &
        na_u,lasto,nq,qb,wq,H,S,GS,Sigma,nwork,work)
-    use units, only : Pi
     use intrinsic_missing, only : EYE
 ! ********************
 ! * INPUT variables  *
@@ -344,82 +372,50 @@ contains
     integer,  intent(in) :: na_u,lasto(0:na_u)
     integer,  intent(in) :: nq
     real(dp), intent(in) :: qb(3,nq), wq(nq)
-    complex(dp), dimension(no_u,no_u,nq), intent(in) :: H, S, GS
+    complex(dp), dimension(no_u,no_u,nq), intent(in) :: H, S
+    complex(dp), dimension(no_u,no_u,nq), intent(inout) :: GS
 ! ********************
 ! * OUTPUT variables *
 ! ********************
     complex(dp), intent(out) :: Sigma(no_s,no_s)
 
     integer,     intent(in)    :: nwork
-    complex(dp), intent(inout) :: work(nwork)
+    complex(dp), intent(inout) :: work(no_s,no_s,2)
 ! ********************
 ! * LOCAL variables  *
 ! ********************
-    integer :: iq, ierr
-    integer :: iow1,iow2,iau,ia2,ia1,iuo
-    integer ::           jau,ja2,ja1,juo
+    integer :: ierr
+    integer :: io, jo
     integer :: ipvt(no_s)
-    real(dp), parameter :: Pi2 = 2.0_dp * Pi
-    complex(dp) :: ph
 
     call timer('ts_expand',1)
 
     ! THis should never happen (work is TS-region!)
     if ( nwork < no_s**2*2 ) call die('Size of work-array is &
          &too small')
-
-    do iow1 = 1 , no_s*no_s*2
-       work(iow1) = dcmplx(0._dp,0._dp)
-    end do
-
-    ! This is the crucial calcuation.
-    ! If we use bulk values in the electrodes
-    ! we need not add the expanded H and S values to get the 
-    ! electrode \Sigma. Hence, we need only expand
-    ! surface Green's function
-    do iq = 1 , nq
-     iow1 = 0
-     iow2 = no_s**2
-     do iau = 1 , na_u
-      do ia2 = 0 , NRepA2-1
-       do ia1 = 0 , NRepA1-1
-        do iuo = 1 + lasto(iau-1) , lasto(iau) 
-         do jau = 1 , na_u
-          do ja2 = 0 , NRepA2-1
-           do ja1 = 0 , NRepA1-1
-            do juo = 1 + lasto(jau-1) , lasto(jau) 
-               iow1 = iow1 + 1
-               iow2 = iow2 + 1
-               ph = wq(iq)*cdexp(dcmplx(0.0_dp,-Pi2) * &
-                    ( (ia1-ja1)*qb(1,iq) + (ia2-ja2)*qb(2,iq) ))
-               
-               work(iow1) = work(iow1) + ph * GS(juo,iuo,iq)
-               work(iow2) = work(iow2) + ph * &
-                    (ZEnergy*S(juo,iuo,iq)-H(juo,iuo,iq))
-            end do !juo
-           end do !ja1
-          end do !ja2
-         end do !jau
-        end do !iuo
-       end do !ia1
-      end do !ia2
-     end do !iau
-    end do !q-points
+       
+    call update_UC_expansion(ZEnergy,no_u,no_s,NRepA1,NRepA2, &
+       na_u,lasto,nq,qb,wq,H,S,GS,nwork,work(1,1,1))
 
     call EYE(no_s,Sigma)
-    ! We have the matrix to invert in the first no_s**2 values.
-    call zgesv(no_s,no_s,work(1),no_s,ipvt,Sigma,no_s,ierr)
+
+    if ( NRepA1 * NRepA2 == 1 ) then
+       ! GS will be garbage from here on...
+       ! We have the matrix to invert in the first no_s**2 values.
+       call zgesv(no_s,no_s,GS(1,1,1),no_s,ipvt,Sigma,no_s,ierr)
+    else
+       ! We have the matrix to invert in the first no_s**2 values.
+       call zgesv(no_s,no_s,work(1,1,1),no_s,ipvt,Sigma,no_s,ierr)
+    end if
     if ( ierr /= 0 ) then
        write(*,*) 'Inversion of surface Greens function failed'
     end if
 
     ! Do:
     ! \Sigma = Z*S - H - \Sigma_bulk
-    iow2 = no_s**2
-    do juo = 1 , no_s
-       do iuo = 1 , no_s
-          iow2 = iow2+1
-          Sigma(iuo,juo) = work(iow2) - Sigma(iuo,juo)
+    do jo = 1 , no_s
+       do io = 1 , no_s
+          Sigma(io,jo) = work(io,jo,2) - Sigma(io,jo)
        end do
     end do
 
@@ -430,7 +426,6 @@ contains
   subroutine UC_expansion_Sigma_Gamma(UseBulk,ZEnergy,no_u,no_s,NRepA1,NRepA2, &
        na_u,lasto,nq,qb,wq,H,S,GS,Sigma,Gamma,nwork,work)
     use intrinsic_missing, only: EYE
-    use units, only : Pi
 ! ********************
 ! * INPUT variables  *
 ! ********************
@@ -440,7 +435,8 @@ contains
     integer,  intent(in) :: na_u,lasto(0:na_u)
     integer,  intent(in) :: nq
     real(dp), intent(in) :: qb(3,nq), wq(nq)
-    complex(dp), dimension(no_u,no_u,nq), intent(in) :: H, S, GS
+    complex(dp), dimension(no_u,no_u,nq), intent(in) :: H, S
+    complex(dp), dimension(no_u,no_u,nq), intent(inout) :: GS
 ! ********************
 ! * OUTPUT variables *
 ! ********************
@@ -448,17 +444,13 @@ contains
     real(dp), intent(out)    :: Gamma(no_s,no_s)
 
     integer,  intent(in) :: nwork
-    complex(dp), intent(inout) :: work(nwork)
+    complex(dp), intent(inout) :: work(no_s,no_s,2)
 ! ********************
 ! * LOCAL variables  *
 ! ********************
-    integer :: iq, ierr
-    integer :: iow1, iow2
-    integer :: io,iau,ia2,ia1,iuo
-    integer :: jo,jau,ja2,ja1,juo
+    integer :: ierr
+    integer :: io,jo
     integer :: ipvt(no_s)
-    real(dp), parameter :: Pi2 = 2._dp * Pi
-    complex(dp) :: ph
 
     call timer('ts_expand',1)
     call timer('ts_expandG',1)
@@ -467,54 +459,19 @@ contains
     if ( nwork < no_s**2*2 ) call die('Size of work-array is &
          &too small')
 
-    do iow1 = 1 , no_s*no_s*2
-       work(iow1)      = dcmplx(0._dp,0._dp)
-    end do
-    do jo = 1 , no_s
-       do io = 1 , no_s
-          Gamma(io,jo) = 0._dp
-       end do
-    end do
-
-    ! This is the crucial calcuation.
-    ! If we use bulk values in the electrodes
-    ! we need not add the expanded H and S values to get the 
-    ! electrode \Sigma. Hence, we need only expand
-    ! surface Green's function
-    do iq = 1 , nq
-     iow1 = 0
-     iow2 = no_s**2
-     do iau = 1 , na_u
-      do ia2 = 0 , NRepA2-1
-       do ia1 = 0 , NRepA1-1
-        do iuo = 1 + lasto(iau-1) , lasto(iau)   
-         do jau = 1 , na_u
-          do ja2 = 0 , NRepA2-1
-           do ja1 = 0 , NRepA1-1
-            do juo = 1 + lasto(jau-1) , lasto(jau)  
-               iow1 = iow1 + 1
-               iow2 = iow2 + 1
-               ph = wq(iq) * cdexp(dcmplx(0.0_dp,-Pi2) * &
-                    ( (ia1-ja1)*qb(1,iq) + (ia2-ja2)*qb(2,iq) ))
-               
-               work(iow1) = work(iow1) + ph * GS(juo,iuo,iq)
-
-               work(iow2) = work(iow2) + ph * &
-                    (ZEnergy*S(juo,iuo,iq)-H(juo,iuo,iq))
-
-            end do !juo
-           end do !ja1
-          end do !ja2
-         end do !jau
-        end do !iuo
-       end do !ia1
-      end do !ia2
-     end do !iau
-    end do !q-points
+    call update_UC_expansion(ZEnergy,no_u,no_s,NRepA1,NRepA2, &
+       na_u,lasto,nq,qb,wq,H,S,GS,nwork,work(1,1,1))
 
     call EYE(no_s,Sigma)
-    ! We have the matrix to invert in the first no_s**2 values.
-    call zgesv(no_s,no_s,work(1),no_s,ipvt,Sigma,no_s,ierr)
+
+    if ( NRepA1 * NRepA2 == 1 ) then
+       ! We have the matrix to invert in the first no_s**2 values.
+       ! NOTICE THAT GS will be rubbish from here on!
+       call zgesv(no_s,no_s,GS(1,1,1),no_s,ipvt,Sigma,no_s,ierr)
+    else
+       ! We have the matrix to invert in the first no_s**2 values.
+       call zgesv(no_s,no_s,work(1,1,1),no_s,ipvt,Sigma,no_s,ierr)
+    end if
     if ( ierr /= 0 ) then
        write(*,*) 'Inversion of surface Greens function failed'
     end if
@@ -523,25 +480,20 @@ contains
 
        ! Do:
        ! \Sigma = Z*S - H - \Sigma_bulk
-       iow1 = 0 
-       iow2 = no_s**2
        do jo = 1 , no_s
           do io = 1 , no_s
-             iow1 = iow1 + 1
-             work(iow1) = work(iow2+iow1) - Sigma(io,jo)
+             work(io,jo,1) = work(io,jo,2) - Sigma(io,jo)
           end do
        end do
 
        ! Do
        ! \Gamma = -\Im \Sigma
        do jo = 1 , no_s
-          iow1 = (jo-1) * no_s
           do io = 1 , jo
-             iow2 = (io-1) * no_s
              Gamma(io,jo) = -0.5_dp * dimag( &
-                  work(io+iow1)-dconjg(work(jo+iow2)) )
+                  work(io,jo,1)-dconjg(work(jo,io,1)) )
              Gamma(jo,io) = -0.5_dp * dimag( &
-                  work(jo+iow2)-dconjg(work(io+iow1)) )
+                  work(jo,io,1)-dconjg(work(io,jo,1)) )
           end do
        end do
 
@@ -549,11 +501,9 @@ contains
        
        ! Do:
        ! \Sigma = Z*S - H - \Sigma_bulk
-       iow2 = no_s**2
        do jo = 1 , no_s
           do io = 1 , no_s
-             iow2 = iow2 + 1
-             Sigma(io,jo) = work(iow2) - Sigma(io,jo)
+             Sigma(io,jo) = work(io,jo,2) - Sigma(io,jo)
           end do
        end do
 
@@ -574,6 +524,115 @@ contains
     call timer('ts_expand',2)
        
   end subroutine UC_expansion_Sigma_Gamma
+
+  subroutine update_UC_expansion(ZEnergy,no_u,no_s,NRepA1,NRepA2, &
+       na_u,lasto,nq,qb,wq,H,S,GS,nwork,work)
+    use units, only : Pi
+! ********************
+! * INPUT variables  *
+! ********************
+    complex(dp), intent(in) :: ZEnergy
+    integer,  intent(in) :: no_u, no_s, NRepA1, NRepA2
+    integer,  intent(in) :: na_u,lasto(0:na_u)
+    integer,  intent(in) :: nq
+    real(dp), intent(in) :: qb(3,nq), wq(nq)
+    complex(dp), dimension(no_u,no_u,nq), intent(in) :: H, S, GS
+! ********************
+! * OUTPUT variables *
+! ********************
+    integer,     intent(in)    :: nwork
+    complex(dp), intent(inout) :: work(no_s,no_s,2)
+! ********************
+! * LOCAL variables  *
+! ********************
+    integer :: iq
+    integer :: iow,iau,ia2,ia1,iuo
+    integer :: jow,jau,ja2,ja1,juo
+    complex(dp), parameter :: zmPi2 = dcmplx(0._dp,-2.0_dp * Pi)
+    complex(dp) :: ph
+
+    if ( NRepA1 * NRepA2 == 1 ) then
+       if ( nq /= 1 ) call die('nq/=1')
+       if ( no_u /= no_s ) call die('no_E/=no_s')
+
+       ! We do not need this...
+       !work(:,:,1) = GS(:,:,1)
+       work(:,:,2) = ZEnergy * S(:,:,1) - H(:,:,1)
+
+    else
+
+       ! This is the crucial calcuation.
+       ! If we use bulk values in the electrodes
+       ! we need not add the expanded H and S values to get the 
+       ! electrode \Sigma. Hence, we need only expand
+       ! surface Green's function
+       iq = 1
+       iow = 0
+       do iau = 1 , na_u
+        do ia2 = 0 , NRepA2-1
+         do ia1 = 0 , NRepA1-1
+          do iuo = 1 + lasto(iau-1) , lasto(iau)
+           iow = iow + 1
+           jow = 0
+           do jau = 1 , na_u
+            do ja2 = 0 , NRepA2-1
+             do ja1 = 0 , NRepA1-1
+              ! TODO qb(:,1) == 0.0_dp in any case currently used
+              ! So we could do without.
+              ph = wq(iq) * cdexp(zmPi2 * &
+                   ( (ia1-ja1)*qb(1,iq) + (ia2-ja2)*qb(2,iq) ))
+
+              do juo = 1 + lasto(jau-1) , lasto(jau)
+                jow = jow + 1
+                
+                work(jow,iow,1) = ph * GS(juo,iuo,iq)
+                
+                work(jow,iow,2) = ph * (ZEnergy*S(juo,iuo,iq)-H(juo,iuo,iq))
+                
+              end do !juo
+             end do !ja1
+            end do !ja2
+           end do !jau
+          end do !iuo
+         end do !ia1
+        end do !ia2
+       end do !iau
+       do iq = 2 , nq
+        iow = 0
+        do iau = 1 , na_u
+         do ia2 = 0 , NRepA2-1
+          do ia1 = 0 , NRepA1-1
+           do iuo = 1 + lasto(iau-1) , lasto(iau)
+            iow = iow + 1
+            jow = 0
+            do jau = 1 , na_u
+             do ja2 = 0 , NRepA2-1
+              do ja1 = 0 , NRepA1-1
+               ph = wq(iq) * cdexp(zmPi2 * &
+                    ( (ia1-ja1)*qb(1,iq) + (ia2-ja2)*qb(2,iq) ))
+
+               do juo = 1 + lasto(jau-1) , lasto(jau)
+                  jow = jow + 1
+                  
+                  work(jow,iow,1) = work(jow,iow,1) + ph * GS(juo,iuo,iq)
+   
+                  work(jow,iow,2) = work(jow,iow,2) + ph * &
+                       (ZEnergy*S(juo,iuo,iq)-H(juo,iuo,iq))
+   
+               end do !juo
+              end do !ja1
+             end do !ja2
+            end do !jau
+           end do !iuo
+          end do !ia1
+         end do !ia2
+        end do !iau
+       end do !q-points
+
+    end if
+
+  end subroutine update_UC_expansion
+
 
 
 ! ##################################################################
@@ -605,19 +664,19 @@ contains
     ! Size of the arrays we will read etc.
     integer, intent(in) :: no_GS, nq
     ! Hamiltonian, overlap, and GS
-    complex(dp), dimension(no_GS,no_GS,nq), intent(inout) :: HAA, SAA, GAA
+    complex(dp), intent(inout) :: HAA(no_GS,no_GS,nq)
+    complex(dp), intent(inout) :: SAA(no_GS,no_GS,nq)
+    complex(dp), intent(inout) :: GAA(no_GS,no_GS,nq)
     complex(dp), intent(in) :: ZEnergy
     ! The work array passed, this means we do not have
     ! to allocate anything down here.
     integer, intent(in) :: nwork
-    complex(dp), intent(inout) :: work(nwork) ! or is this a 2D-array?
+    complex(dp), intent(inout) :: work(no_GS,no_GS,nq)
 
 ! *********************
 ! * LOCAL variables   *
 ! *********************
     real(dp), parameter :: EPS = 1.d-7
-    logical, save :: first_call = .true.
-    integer, save :: icall = 1
     integer :: read_Size
 
 #ifdef MPI
@@ -631,14 +690,12 @@ contains
     call write_debug( 'PRE read_next_GS' )
 #endif
 
-    call timer('rn_GS',1)
+#ifdef MPI
+    ! This will make the timings be more realistic
+    call MPI_Barrier(MPI_Comm_World,MPIerror)
+#endif
 
-    if ( first_call ) then
-       icall = 1
-       first_call = .false.
-    else
-       icall = icall + 1
-    end if
+    call timer('rn_GS',1)
 
     read_Size = no_GS * no_GS * nq
 
@@ -677,8 +734,8 @@ contains
 #ifdef MPI
        ! distribute the energy index (in case of iEni == 1)
        call MPI_Bcast(iEni,1,MPI_integer,0, &
-            MPI_Comm_World,MPIerror)  
-       
+            MPI_Comm_World,MPIerror)
+       ! distribute the current energy point
        if ( IONode .and. Node == iNode ) then
           ! do nothing
        else if ( Node == iNode ) then
@@ -735,14 +792,13 @@ contains
           read(uGF) GAA
 #ifdef MPI
        else if ( IONode ) then
-
-          ! We will ensure that we have passed on the information here
-          ! This is for ZE_cur
+          ! We need to ensure that the energy point has been sent
+          ! I.e. this is for the ZE_cur message
           call MPI_Wait(Request,Status,MPIerror)
+
+          read(uGF) work(1:no_GS,1:no_GS,1:nq)
           
-          read(uGF) work(1:read_Size)
-          
-          call MPI_ISend(work(1),read_Size,MPI_Double_Complex, &
+          call MPI_ISend(work(1,1,1),read_Size,MPI_Double_Complex, &
                iNode,1,MPI_Comm_World,Request,MPIerror) 
           call MPI_Wait(Request,Status,MPIerror)
        else if ( Node ==  iNode ) then
@@ -763,11 +819,12 @@ contains
   end subroutine read_next_GS
 
 
-  subroutine GF_Gamma_GF(Offset,no_u_TS,no_E,GF,Gamma,GGG,nwork,work)
+
+  subroutine GF_Gamma_GF(Offset,no_u_TS,no_E,GFt,Gamma,GGG,nwork,work)
 
 ! ======================================================================
 !  This routine returns GGG=(-i)*GF.Gamma.GF, where GF is a (no_u)x(no_u)
-!  matrix and the first[LEFTFLAG true]/last[LEFTFLAG false] states
+!  matrix and the states
 !  corresponds to the (no_E) Left/Right electrode states.
 !  Gamma is a (no_E)x(no_E) matrix.
 ! ======================================================================
@@ -782,7 +839,8 @@ contains
 !                                 ! for the right electrode this is the no_u_TS - no_E + 1
     integer, intent(in) :: no_u_TS !no. states in contact region
     integer, intent(in) :: no_E ! the size of the Gamma
-    complex(dp), intent(in) :: GF(no_u_TS,no_u_TS)
+    ! The Green's function (note that it SHOULD be transposed on entry)
+    complex(dp), intent(in) :: GFt(no_u_TS,no_u_TS)
     ! i (Sigma - Sigma^dagger)/2
     real(dp),    intent(in) :: Gamma(Offset:Offset+no_E-1,Offset:Offset+no_E-1)
     ! A work array for doing the calculation... (nwork has to be larger than no_u_TS)
@@ -809,21 +867,14 @@ contains
     do i = 1 , no_u_TS
 
        do ie = Offset , lE
-
-          work(ie) = dcmplx(0._dp,0._dp)
-          do je = Offset , lE
-             work(ie) = work(ie) + Gamma(je,ie) * GF(i,je)
-          end do
-
+          work(ie) = sum(Gamma(Offset:lE,ie)*GFt(Offset:lE,i))
        end do
-       
-       do j = 1 , i
 
-          GGG(j,i) = dcmplx(0._dp,0._dp)
+       GGG(i,i) = sum(work(Offset:lE) * dconjg(GFt(Offset:lE,i)))
 
-          do ie = Offset , lE
-             GGG(j,i) = GGG(j,i) + work(ie) * dconjg(GF(j,ie))
-          end do
+       do j = 1 , i-1
+
+          GGG(j,i) = sum(work(Offset:lE) * dconjg(GFt(Offset:lE,j)))
 
           ! We only take the real part once (faster)
           GGG(j,i) = dreal(GGG(j,i)) * dcmplx(0._dp,-1._dp)
@@ -899,8 +950,6 @@ contains
     call write_debug( 'PRE weightDM' )
 #endif
 
-    call timer('weightDM',1)
-
     ! TODO Enforce that sparsity is the same
     ! (however, we know that they are the same.
     sp => spar(SpArrDML)
@@ -945,13 +994,11 @@ contains
                 wR = 0.5_dp
              end if
           end if
-          DML(ind) = wL * (DML(ind) + DMneqR(ind)) &
+          DML(ind)  = wL * (DML(ind) + DMneqR(ind)) &
                + wR * (DMR(ind) + DMneqL(ind))
           EDML(ind) = wL * EDML(ind) + wR * EDMR(ind)
        end do
     end do
-
-    call timer('weightDM',2)
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS weightDM' )
@@ -1019,8 +1066,6 @@ contains
     call write_debug( 'PRE weightDMC' )
 #endif
 
-    call timer('weightDMC',1)
-
     ! TODO Enforce that sparsity is the same
     ! (however, we know that they are the same.
     sp => spar(SpArrDML)
@@ -1064,13 +1109,11 @@ contains
                 wR = 0.5_dp
              end if
           end if
-          DML(ind) = wL * (DML(ind) + DMneqR(ind)) &
+          DML(ind)  = wL * (DML(ind) + DMneqR(ind)) &
                + wR * (DMR(ind) + DMneqL(ind))
           EDML(ind) = wL * EDML(ind) + wR * EDMR(ind)
        end do
     end do
-
-    call timer('weightDMC',2)
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS weightDMC' )

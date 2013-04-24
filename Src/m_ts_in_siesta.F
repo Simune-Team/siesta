@@ -106,7 +106,8 @@
       use m_ts_contour, only : PNEn, NEn, contour
       use m_ts_GF,      only : read_Green
       use m_ts_scattering, only : getSFE, getGF, getGFnonV
-      use m_ts_scattering, only : GFGammaGF, weightDM, weightDMC
+      use m_ts_scattering, only : weightDM, weightDMC
+      use m_ts_mem_scat, only : GF_Gamma_GF
       use m_ts_scattering, only : get_scat_region
 
       use m_ts_kpoints, only : ts_nkpnt,ts_kpoint,ts_kweight
@@ -207,8 +208,8 @@
       complex(dp), dimension(:,:,:), allocatable :: HAAR, SAAR
 !     Self energies and scattering matrices
 !     Gamma=i*0.5*(Sigma - Sigma^dagger) 
-      complex(dp), dimension(:,:),   allocatable :: SFEL, GAMMAL
-      complex(dp), dimension(:,:),   allocatable :: SFER, GAMMAR
+      complex(dp), dimension(:,:),   allocatable :: SFEL  , SFER
+      real(dp), dimension(:,:),   allocatable    :: GAMMAL, GAMMAR
 
 !     Electrode k-points kpar-points and their weights:
 !     Notice that these are at the moment completely identical
@@ -800,7 +801,8 @@
       
       allocate(SFEL(noL,noL),SFER(noR,noR))
       allocate(GAMMAL(noL,noL),GAMMAR(noR,noR))
-      call memory('A','Z',2*noL**2+2*noR**2,'transiesta')
+      call memory('A','Z',noL**2+noR**2,'transiesta')
+      call memory('A','D',noL**2+noR**2,'transiesta')
       allocate(HAAL(noL_GF,noL_GF,nqL),SAAL(noL_GF,noL_GF,nqL))
       allocate(HAAR(noR_GF,noR_GF,nqR),SAAR(noR_GF,noR_GF,nqR))
       call memory('A','Z',2*noL_GF**2*nqL+2*noR_GF**2*nqR,'transiesta')
@@ -1108,36 +1110,48 @@
             if ( GF_Part ) call die('Part of the GF cannot &
      &be calculated on a bias contour point')
 
-!   Calculate rho^R(e) -> work2 ! NOTE R!!
-            call GFGammaGF(.false.,nou,noR,GF,GAMMAR,work2)
+            ! We transpose GF (will make the computation in the GFGGF
+            ! routine faster... MUCH faster)
+            do j = 1 , nou
+               ind = nou*(j-1)
+               do i = 1 , nou
+                  work2(ind+i) = GF(nou*(i-1)+j)
+               end do
+            end do
+
+!   Calculate rho^R(e) -> GF ! NOTE R!!
+            call GF_Gamma_GF(nou-noR+1, nou, noR, work2,
+     &           GammaR, GF, noR*noR, SFER) ! SFER is a "work" array
+            ! GF is now GFGGF
 ! note DM = DML+DMneqR or DM=DMR+DMneqL
 
 ! note we use "+" here!
             if (ts_gamma_scf) then
                do i=1,nou*nou
-                DMneqR(i) = DMneqR(i) + DIMAG(work2(i)*W)
-                EDM(i)    = EDM(i)    + DIMAG(work2(i)*ZW)
+                DMneqR(i) = DMneqR(i) + DIMAG(GF(i)*W)
+                EDM(i)    = EDM(i)    + DIMAG(GF(i)*ZW)
                end do ! i
             else
                do i=1,nou*nou
-                DMneqRCplx(i) = DMneqRCplx(i) + work2(i)*W
-                EDMCplx(i)    = EDMCplx(i)    + work2(i)*ZW
+                DMneqRCplx(i) = DMneqRCplx(i) + GF(i)*W
+                EDMCplx(i)    = EDMCplx(i)    + GF(i)*ZW
                end do ! i
             end if
 
 !  Calculate rho^L(e) -> work2 ! NOTE L!!
-            call GFGammaGF(.true.,nou,noL,GF,GAMMAL,work2)
+             call GF_Gamma_GF(1, nou, noL, work2, 
+     &           GammaL, GF, noL*noL, SFEL) ! SigmaL is a "work" array
         
 !     note we use "-" here!
             if (ts_gamma_scf) then
                do i=1,nou*nou
-                DMneqL(i) = DMneqL(i) - DIMAG(work2(i)*W)
-                EDMR(i)   = EDMR(i)   + DIMAG(work2(i)*ZW)
+                DMneqL(i) = DMneqL(i) - DIMAG(GF(i)*W)
+                EDMR(i)   = EDMR(i)   + DIMAG(GF(i)*ZW)
                end do ! i
             else
                do i=1,nou*nou
-                DMneqLCplx(i) = DMneqLCplx(i) - work2(i)*W
-                EDMRCplx(i)   = EDMRCplx(i)   + work2(i)*ZW
+                DMneqLCplx(i) = DMneqLCplx(i) - GF(i)*W
+                EDMRCplx(i)   = EDMRCplx(i)   + GF(i)*ZW
                end do
             end if
 ! -------------------------------------------------------------
@@ -1596,7 +1610,7 @@
 
       call memory('D','Z',size(SFEL)+size(SFER),'transiesta')
       deallocate(SFEL,SFER)
-      call memory('D','Z',size(GAMMAL)+size(GAMMAR),'transiesta')
+      call memory('D','D',size(GAMMAL)+size(GAMMAR),'transiesta')
       deallocate(GAMMAL,GAMMAR)
 
       call memory('D','Z',size(HAAL)+size(SAAL),'transiesta')

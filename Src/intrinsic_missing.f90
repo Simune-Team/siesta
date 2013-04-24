@@ -739,12 +739,9 @@ contains
     integer :: i, j
     do j = 1 , size
        do i = 1 , size
-          if ( i == j ) then
-             array(i,j) = 1
-          else
-             array(i,j) = 0
-          end if
+          array(i,j) = 0
        end do
+       array(j,j) = 1       
     end do
   end subroutine EYE_i_2D
   pure subroutine EYE_sp_2D(size,array)
@@ -753,12 +750,9 @@ contains
     integer :: i, j
     do j = 1 , size
        do i = 1 , size
-          if ( i == j ) then
-             array(i,j) = 1._sp
-          else
-             array(i,j) = 0._sp
-          end if
+          array(i,j) = 0._sp
        end do
+       array(j,j) = 1._sp
     end do
   end subroutine EYE_sp_2D
   pure subroutine EYE_dp_2D(size,array)
@@ -767,12 +761,9 @@ contains
     integer :: i, j
     do j = 1 , size
        do i = 1 , size
-          if ( i == j ) then
-             array(i,j) = 1._dp
-          else
-             array(i,j) = 0._dp
-          end if
+          array(i,j) = 0._dp
        end do
+       array(j,j) = 1._dp
     end do
   end subroutine EYE_dp_2D
   pure subroutine EYE_cp_2D(size,array)
@@ -781,12 +772,9 @@ contains
     integer :: i, j
     do j = 1 , size
        do i = 1 , size
-          if ( i == j ) then
-             array(i,j) = cmplx(1._sp,0._sp)
-          else
-             array(i,j) = 0._sp
-          end if
+          array(i,j) = 0._sp
        end do
+       array(j,j) = cmplx(1._sp,0._sp)
     end do
   end subroutine EYE_cp_2D
   pure subroutine EYE_zp_2D(size,array)
@@ -795,12 +783,9 @@ contains
     integer :: i, j
     do j = 1 , size
        do i = 1 , size
-          if ( i == j ) then
-             array(i,j) = dcmplx(1._dp,0._dp)
-          else
-             array(i,j) = dcmplx(0._dp,0._dp)
-          end if
+          array(i,j) = dcmplx(0._dp,0._dp)
        end do
+       array(j,j) = dcmplx(1._dp,0._dp)
     end do
   end subroutine EYE_zp_2D
 

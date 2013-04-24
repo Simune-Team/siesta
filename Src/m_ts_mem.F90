@@ -170,11 +170,12 @@ contains
 
 ! ******************* Computational variables ****************
     complex(dp) :: Z, W, ZW
-    real(dp) :: k(3)
+    real(dp)    :: k(3)
 ! ************************************************************
 
 ! ******************** Loop variables ************************
     integer :: ispin, ikpt, iPE, iE, NEReqs, up_nzs, ia, ia_E
+    integer :: i, j, ind
 ! ************************************************************
 
 ! ******************* Miscalleneous variables ****************
@@ -516,10 +517,6 @@ contains
           select case ( contour(iE)%part )
           case ( CC_PART_EQUI , CC_PART_LEFT_EQUI, CC_PART_RIGHT_EQUI ) 
 
-#ifdef TRANSIESTA_TIMING
-             call timer('TS_EXPAND',1)
-#endif
-
              ! for these contour parts we do not require to calculate
              ! Gamma's.
              ! Hence we can perform the calculation without 
@@ -547,7 +544,6 @@ contains
              end if
 
 #ifdef TRANSIESTA_TIMING
-             call timer('TS_EXPAND',2)
              call timer('TS_PREPG',1)
 #endif
 
@@ -604,10 +600,6 @@ contains
 
           case ( CC_PART_NON_EQUI )
              
-#ifdef TRANSIESTA_TIMING
-             call timer('TS_EXPAND',1)
-#endif
-
              ! TODO, we can actually do without the Gamma-calculations
              ! in this step. After having calculated GF, we could
              ! calculate the Gamma's and save them in Sigma
@@ -633,7 +625,6 @@ contains
                   nzwork, zwork)
 
 #ifdef TRANSIESTA_TIMING
-             call timer('TS_EXPAND',2)
              call timer('TS_PREPG',1)
 #endif
 
@@ -656,30 +647,41 @@ contains
                      no_u_TS,no_L,no_R, &
                      SigmaL, SigmaR, zwork, GF,ierr)
 
+             ! We transpose GF (will make the computation in the GFGGF
+             ! routine faster... MUCH faster)
+             do j = 1 , no_u_TS
+                ind = no_u_TS*(j-1)
+                do i = 1 , no_u_TS
+                   zwork(ind+i) = GF(no_u_TS*(i-1)+j)
+                end do
+             end do
+
              ! We calculate the right thing.
-             call GF_Gamma_GF(no_u_TS-no_R+1, no_u_TS, no_R, GF, &
-                  GammaR, zwork, no_u_TS, SigmaR) ! SigmaR is a "work" array
+             call GF_Gamma_GF(no_u_TS-no_R+1, no_u_TS, no_R, zwork, &
+                  GammaR, GF, no_R*no_R, SigmaR) ! SigmaR is a "work" array
+             ! GF is now GFGGF
 
              ! Note that we use '-' here
              if ( ts_Gamma_SCF ) then
                 call add_DM_dE_D(spDMneqR,spEDM, no_u_TS, no_u_TS, &
-                     zwork, no_BufL, 0, -W, -ZW)
+                     GF, no_BufL, 0, -W, -ZW)
              else
                 call add_DM_dE_Z(spzDMneqR,spzEDM, no_u_TS, no_u_TS, &
-                     zwork, no_BufL, 0, -W, -ZW)
+                     GF, no_BufL, 0, -W, -ZW)
              end if
 
              ! We calculate the left thing.
-             call GF_Gamma_GF(1, no_u_TS, no_L, GF, &
-                  GammaL, zwork, no_u_TS, SigmaL) ! SigmaL is a "work" array
+             call GF_Gamma_GF(1, no_u_TS, no_L, zwork, &
+                  GammaL, GF, no_L*no_L, SigmaL) ! SigmaL is a "work" array
+             ! GF is now GFGGF
 
              ! Note that we use '-' here
              if ( ts_Gamma_SCF ) then
                 call add_DM_dE_D(spDMneqL,spEDMR, no_u_TS, no_u_TS, &
-                     zwork, no_BufL, 0, W, -ZW)
+                     GF, no_BufL, 0, W, -ZW)
              else
                 call add_DM_dE_Z(spzDMneqL,spzEDMR, no_u_TS, no_u_TS, &
-                     zwork, no_BufL, 0, W, -ZW)
+                     GF, no_BufL, 0, W, -ZW)
              end if
 
           !case ( CC_PART_TRANSPORT )
@@ -697,27 +699,34 @@ contains
        end do EPOINTS
 
 #ifdef MPI
+       ! We insert a barrier to better see the actual
+       ! communication times
+       call MPI_Barrier(MPI_Comm_World,ind)
+
 ! Global reduction of density matrices
 ! this completes the energy integration of each DM
+
       call timer("TS_comm",1)
-      
+
       if ( ts_Gamma_SCF ) then
-         call AllReduce_dSpArr1D(spDM ,ndwork,dwork)
-         call AllReduce_dSpArr1D(spEDM,ndwork,dwork)
+         ind = nnzs(spDM)
+         call AllReduce_dSpArr1D(spDM ,ind, ndwork,dwork)
+         call AllReduce_dSpArr1D(spEDM,ind, ndwork,dwork)
          if ( IsVolt ) then
-            call AllReduce_dSpArr1D(spDMR   ,ndwork,dwork)
-            call AllReduce_dSpArr1D(spDMneqL,ndwork,dwork)
-            call AllReduce_dSpArr1D(spDMneqR,ndwork,dwork)
-            call AllReduce_dSpArr1D(spEDMR  ,ndwork,dwork)
+            call AllReduce_dSpArr1D(spDMR   ,ind, ndwork,dwork)
+            call AllReduce_dSpArr1D(spDMneqL,ind, ndwork,dwork)
+            call AllReduce_dSpArr1D(spDMneqR,ind, ndwork,dwork)
+            call AllReduce_dSpArr1D(spEDMR  ,ind, ndwork,dwork)
          end if
       else
-         call AllReduce_zSpArr1D(spzDM ,nzwork,zwork)
-         call AllReduce_zSpArr1D(spzEDM,nzwork,zwork)
+         ind = nnzs(spzDM)
+         call AllReduce_zSpArr1D(spzDM ,ind, nzwork,zwork)
+         call AllReduce_zSpArr1D(spzEDM,ind, nzwork,zwork)
          if ( IsVolt ) then
-            call AllReduce_zSpArr1D(spzDMR   ,nzwork,zwork)
-            call AllReduce_zSpArr1D(spzDMneqL,nzwork,zwork)
-            call AllReduce_zSpArr1D(spzDMneqR,nzwork,zwork)
-            call AllReduce_zSpArr1D(spzEDMR  ,nzwork,zwork)
+            call AllReduce_zSpArr1D(spzDMR   ,ind, nzwork,zwork)
+            call AllReduce_zSpArr1D(spzDMneqL,ind, nzwork,zwork)
+            call AllReduce_zSpArr1D(spzDMneqR,ind, nzwork,zwork)
+            call AllReduce_zSpArr1D(spzEDMR  ,ind, nzwork,zwork)
          end if
       end if
 
@@ -732,7 +741,9 @@ contains
       call timer('TS_UPDM',1)
 #endif
 
+
       if ( IsVolt ) then
+         call timer('ts_weight',1)
          if ( ts_Gamma_SCF ) then
             call weightDM(no_C_L, no_C_R, &
                  spDM,   spDMR,  spDMneqL,  spDMneqR, &
@@ -742,7 +753,9 @@ contains
                  spzDM, spzDMR, spzDMneqL, spzDMneqR, &
                  spzEDM, spzEDMR)
          end if
+         call timer('ts_weight',2)
       end if
+
 
       ! The original Hamiltonian from SIESTA was shifted Ef: 
       ! Hence we need to shift EDM 
@@ -787,7 +800,6 @@ contains
 #ifdef TRANSIESTA_TIMING
    call timer('TS_HS',3)
    call timer('TS_READ',3)
-   call timer('TS_EXPAND',3)
    call timer('TS_PREPG',3)
    call timer('TS_UPDM',3)
    call timer('GFGGF',3)
@@ -1029,10 +1041,11 @@ contains
      end do
 
 #ifdef MPI
+     ind = nnzs(SpArrH)
      ! Note that zH => val(SpArrH)
      ! Note that zS => val(SpArrS)
-     call AllReduce_zSpArr1D(SpArrH,nwork,work)
-     call AllReduce_zSpArr1D(SpArrS,nwork,work)
+     call AllReduce_zSpArr1D(SpArrH,ind,nwork,work)
+     call AllReduce_zSpArr1D(SpArrS,ind,nwork,work)
 #endif
 
      ! We symmetrize AND shift
@@ -1183,10 +1196,11 @@ contains
      
 
 #ifdef MPI
+     ind = nnzs(SpArrH)
      ! Note that dH => val(SpArrH)
      ! Note that dS => val(SpArrS)
-     call AllReduce_dSpArr1D(SpArrH,nwork,work)
-     call AllReduce_dSpArr1D(SpArrS,nwork,work)
+     call AllReduce_dSpArr1D(SpArrH,ind,nwork,work)
+     call AllReduce_dSpArr1D(SpArrS,ind,nwork,work)
 #endif
 
      ! We need to do symmetrization AFTER reduction as we need the full
@@ -1381,40 +1395,38 @@ contains
    end subroutine init_zSpArr1D
 
 #ifdef MPI
-   subroutine AllReduce_zSpArr1D(sp_arr,nwork,work)
+   subroutine AllReduce_zSpArr1D(sp_arr,sp_nnzs,nwork,work)
      use mpi_siesta
      use class_zSpArr1D
      type(zSpArr1D), intent(inout) :: sp_arr
-     integer, intent(in) :: nwork
-     complex(dp), intent(inout) :: work(nwork)
+     integer, intent(in) :: sp_nnzs, nwork
+     complex(dp), intent(inout) :: work(sp_nnzs)
      complex(dp), pointer :: arr(:)
-     integer :: s, MPIerror
-     s = nnzs(sp_arr)
+     integer :: MPIerror
      ! This should never happen, exactly due to the sparsity
-     if ( s > nwork ) call die('Sparsity seems larger than &
+     if ( sp_nnzs > nwork ) call die('Sparsity seems larger than &
           &work arrays, Transiesta????')
      arr => val(sp_arr)
-     call MPI_AllReduce(arr,work,s, &
+     work(1:sp_nnzs) = arr(1:sp_nnzs)
+     call MPI_AllReduce(work(1),arr(1),sp_nnzs, &
           MPI_Double_Complex, MPI_Sum, MPI_Comm_World, MPIerror)
-     arr(:) = work(1:s)
    end subroutine AllReduce_zSpArr1D
 
-   subroutine AllReduce_dSpArr1D(sp_arr,nwork,work)
+   subroutine AllReduce_dSpArr1D(sp_arr,sp_nnzs,nwork,work)
      use mpi_siesta
      use class_dSpArr1D
      type(dSpArr1D), intent(inout) :: sp_arr
-     integer, intent(in) :: nwork
-     real(dp), intent(inout) :: work(nwork)
+     integer, intent(in)     :: sp_nnzs,nwork
+     real(dp), intent(inout) :: work(sp_nnzs)
      real(dp), pointer :: arr(:)
-     integer :: s, MPIerror
-     s = nnzs(sp_arr)
+     integer :: MPIerror
      ! This should never happen, exactly due to the sparsity
-     if ( s > nwork ) call die('Sparsity seems larger than &
+     if ( sp_nnzs > nwork ) call die('Sparsity seems larger than &
           &work arrays, Transiesta????')
      arr => val(sp_arr)
-     call MPI_AllReduce(arr,work,s, &
+     work(1:sp_nnzs) = arr(1:sp_nnzs)
+     call MPI_AllReduce(work(1),arr(1),sp_nnzs, &
           MPI_Double_Precision, MPI_Sum, MPI_Comm_World, MPIerror)
-     arr(:) = work(1:s)
    end subroutine AllReduce_dSpArr1D
 #endif
 

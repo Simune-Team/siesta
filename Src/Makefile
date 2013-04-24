@@ -610,9 +610,9 @@ m_ts_electrode.o: m_ts_kpoints.o parallel.o precision.o sys.o units.o
 m_ts_gf.o: m_ts_cctype.o m_ts_electrode.o parallel.o precision.o sys.o units.o
 m_ts_global_vars.o: precision.o
 m_ts_in_siesta.o: files.o m_glob_sparse.o m_hs_matrix.o m_ts_cctype.o
-m_ts_in_siesta.o: m_ts_contour.o m_ts_gf.o m_ts_kpoints.o m_ts_options.o
-m_ts_in_siesta.o: m_ts_scattering.o parallel.o parallelsubs.o precision.o sys.o
-m_ts_in_siesta.o: units.o
+m_ts_in_siesta.o: m_ts_contour.o m_ts_gf.o m_ts_kpoints.o m_ts_mem_scat.o
+m_ts_in_siesta.o: m_ts_options.o m_ts_scattering.o parallel.o parallelsubs.o
+m_ts_in_siesta.o: precision.o sys.o units.o
 m_ts_io.o: m_glob_sparse.o parallel.o precision.o sys.o
 m_ts_iodm.o: alloc.o files.o m_mpi_utils.o m_ts_global_vars.o parallel.o
 m_ts_iodm.o: parallelsubs.o precision.o sys.o
