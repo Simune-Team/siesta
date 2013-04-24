@@ -1,4 +1,29 @@
 ----------------------------------------------------
+April 24, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-16
+Optimized electrode surface green's function
+
+* The calculation of the surface Green's function has received 
+  an optimization.
+
+* The DOS calculation in the surface GF is now not performed in
+  Transiesta (it was not used).
+  This will save us a large amount of computations. (however,
+  it only has meaning once as it is the electrode GF generation)
+
+* The interface change is now also present in TBTrans_rep
+
+* TODO: I suspect that a large amount of memory could be 
+  saved in this routine (however, it is not that 
+  memory consumptioning so it might not be worth-while seeking 
+  this kind of optimization)
+
+modified:
+  Src/m_ts_electrode.F90
+  Src/m_ts_gf.F90
+  Src/ts_init.F90
+  Util/TBTrans_rep/tbtrans.F90
+
+----------------------------------------------------
 April 19, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-15
 Optimized the Gf_Gamma_Gf routine
 

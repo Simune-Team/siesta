@@ -317,7 +317,7 @@ program tbtrans
        ElecValenceBandBot, ReUseGF, &
        nkpnt,kpoint,kweight, &
        NBufAtL,NUsedAtomsL,NRepA1L,NRepA2L, RemUCellDistances, &
-       ucell,xa,na_u,NEn,contour,EFermiL,ZBulkDOS,nspin)
+       ucell,xa,na_u,NEn,contour,EFermiL,.true.,ZBulkDOS,nspin)
   
   ! If we have created the new GF file we can write out the ZBulkDOS
   ! This is the ZBulkDOS for both spins....
@@ -341,7 +341,7 @@ program tbtrans
        ElecValenceBandBot, ReUseGF, &
        nkpnt,kpoint,kweight, &
        NBufAtR,NUsedAtomsR,NRepA1R,NRepA2R, RemUCellDistances, &
-       ucell,xa,na_u,NEn,contour,EFermiR,ZBulkDOS,nspin)
+       ucell,xa,na_u,NEn,contour,EFermiR,.true.,ZBulkDOS,nspin)
 
   ! If we have created the new GF file we can write out the ZBulkDOS
   ! This is the ZBulkDOS for both spins....

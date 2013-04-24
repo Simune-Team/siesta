@@ -51,7 +51,7 @@ contains
        ElecValenceBandBot, optReUseGF, &
        nkpnt,kpoint,kweight, &
        NBufAt,NUsedAtoms,NA1,NA2, RemUCellDistance, &
-       ucell,xa,nua,NEn,contour,chem_shift,ZBulkDOS,nspin)
+       ucell,xa,nua,NEn,contour,chem_shift,CalcDOS,ZBulkDOS,nspin)
     
     use precision,  only : dp
     use parallel  , only : IONode
@@ -87,7 +87,7 @@ contains
     integer, intent(in)            :: NEn ! Number of energy points
     type(ts_ccontour), intent(in)  :: contour(NEn) ! contour for GF
     real(dp), intent(in)           :: chem_shift ! the Fermi-energy we REQUIRE the electrode
-
+    logical, intent(in)            :: CalcDOS
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
@@ -131,7 +131,7 @@ contains
             ElecValenceBandBot, &
             nkpnt,kpoint,kweight, &
             NBufAt,NUsedAtoms,NA1,NA2, RemUCellDistance, &
-            ucell,xa,nua,NEn,contour,chem_shift,ZBulkDOS,nspin)
+            ucell,xa,nua,NEn,contour,chem_shift,CalcDOS,ZBulkDOS,nspin)
     end if
 
 !

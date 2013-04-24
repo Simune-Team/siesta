@@ -37,7 +37,7 @@ contains
   ! Calculates the surface Green's function for the electrodes
   ! Handles both the left and right one
   subroutine surface_Green(tjob,nv,Zenergy,h00,s00,h01,s01, &
-       gs,zdos)
+       gs,CalcDOS,zDOS)
 ! ***************** INPUT **********************************************
 ! character   tjob    : Specifies the left or the right electrode
 ! integer     nv      : Number of orbitals in the electrode
@@ -50,6 +50,7 @@ contains
 ! complex(dp) gs      : Surface Green's function of the electrode
 ! complex(dp) zdos    : Density of energy point
 ! **********************************************************************
+    use parallel, only : IONode
     use precision, only : dp
     use units, only : Pi
     use fdf, only : leqi
@@ -67,17 +68,21 @@ contains
 ! * OUTPUT variables    *
 ! ***********************
     complex(dp) :: gs(0:nv*nv-1)
-    complex(dp) :: zdos
+    logical, intent(in) :: CalcDOS
+    complex(dp), intent(out) :: zdos
 
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
-    integer :: nv2,iter
+    integer :: iter
+    integer :: nv2, nvsq
     integer :: ierr             !error in inversion
     integer :: i,j,ic,ic2
 
-    complex(dp) :: a,b
-    real(dp)    :: ro
+    complex(dp), parameter :: z_1 = dcmplx(1._dp,0._dp)
+    complex(dp), parameter :: z_0 = dcmplx(0._dp,0._dp)
+
+    real(dp) :: ro
     real(dp), parameter :: accur=1.d-15
 
     integer, dimension(:), allocatable :: ipvt
@@ -85,84 +90,71 @@ contains
          rh,rh1,rh3,alpha,beta,ab,ba,gb,gs2
 
 #ifdef TRANSIESTA_DEBUG
-      call write_debug( 'PRE surface_Green' )
+    call write_debug( 'PRE surface_Green' )
 #endif
 
+    ! Initialize counter
+    iter = 0
+
+    call timer('ts_GS',1)
+
+    nv2  = 2 * nv
+    nvsq = nv * nv
 
     allocate(ipvt(nv))
-    allocate(rh(0:2*nv*nv))
-    allocate(rh1(0:2*nv*nv))
-    allocate(rh3(0:4*nv*nv))
-    allocate(alpha(0:nv*nv-1))
-    allocate(beta(0:nv*nv-1))
-    allocate(ba(0:nv*nv-1))
-    allocate(ab(0:nv*nv-1))
-    allocate(gb(0:nv*nv-1))
-    allocate(gs2(0:nv*nv-1))
+    allocate(rh(0:2*nvsq),rh1(0:2*nvsq))
+    allocate(rh3(0:4*nvsq))
+    allocate(alpha(0:nvsq-1),beta(0:nvsq-1))
+    allocate(ba(0:nvsq-1),ab(0:nvsq-1))
+    allocate(gb(0:nvsq-1),gs2(0:nvsq-1))
     call memory('A','I',nv,'calc_green')
-    call memory('A','Z',14*nv*nv+3,'calc_green')
+    call memory('A','Z',14*nvsq+3,'calc_green')
 
-    a=(1.d0,0.d0)
-    b=(0.d0,0.d0)
-    nv2 =2*nv
 
-! FDN
-! gb = Z*S00-H00
-! alpha = -(Z*S01-H01)        
-    do i=0,nv*nv-1
+! gb    =   Z*S00-H00
+! alpha = -(Z*S01-H01)
+    do i=0,nvsq-1
        gb(i) = zenergy*s00(i)-h00(i)
        alpha(i) = h01(i)-zenergy*s01(i)
     end do
 
-! FDN
-! gs = Z*S00-H00
+! gs  = Z*S00-H00
 ! gs2 = Z*S00-H00
-    do i=0,nv*nv-1
-       gs(i) = gb(i)
+    do i=0,nvsq-1
+       gs(i)  = gb(i)
        gs2(i) = gb(i)
     end do
 
-! FDN
 ! beta = -(Z*S10-H10)
     do j=0,nv-1
+       ic = nv * j
        do i=0,nv-1
-          ic = i + nv*j
           ic2 = j + nv*i
-          beta(ic) = dconjg(h01(ic2))-zenergy*dconjg(s01(ic2))
+          beta(ic+i) = dconjg(h01(ic2))-zenergy*dconjg(s01(ic2))
        end do
     end do
 
 
-    iter=0
 1000 continue
     iter=iter+1
 
-
-! FDN
-! nv2=2*nv
 ! rh = -(Z*S01-H01) ,j<nv
 ! rh = -(Z*S10-H10) ,j>nv
     do j=0,nv2-1
-       do i=0,nv-1
-          ic =i + j*nv
-          ic2=i + (j - nv)*nv
-          if(j.lt.nv)then
-             rh(ic) = alpha(ic)
-          else
-             rh(ic) = beta(ic2)
-          endif
-       end do
+       ic = nv * j
+       if ( j < nv ) then
+          rh(ic:ic+nv-1) = alpha(ic:ic+nv-1)
+       else
+          ic2 = nv * (j - nv)
+          rh(ic:ic+nv-1) = beta(ic2:ic2+nv-1)
+       end if
     end do
 
-! FDN
 ! rh3 = Z*S00-H00
-    do i=0,nv*nv-1
-       rh3(i) = gb(i)
-    end do
+    rh3(0:nvsq-1) = gb(0:nvsq-1)
 
-! FDN
 ! rh =  rh3^(-1)*rh
-! rh = t0
+! rh =  t0
     call csolveg(nv,nv2,rh3,rh,ipvt,ierr) 
 
     if(IERR.ne.0) then
@@ -171,101 +163,79 @@ contains
     end if
 
 
-! FDN
-! nv2=2*nv
 ! rh1 = -(Z*S01-H01) ,j<nv
 ! rh1 = -(Z*S10-H10) ,j>nv
-! a = 1
-! b = 0
     do j=0,nv-1
-       do i=0,nv2-1
-          ic =i + j*nv
-          ic2 =i-nv + j*nv
-          if(i.lt.nv)then
-             rh1(i + nv2*j) = alpha(ic)
-          else
-             rh1(i + nv2*j) = beta(ic2)
-          end if
-       end do
+       ic  = nv  * j
+       ic2 = nv2 * j
+       rh1(ic2:ic2+nv-1) = alpha(ic:ic+nv-1)
+       rh1(ic2+nv:ic2+2*nv-1) = beta(ic:ic+nv-1)
     end do
-! FDN
-! rh3 = 1*rh1*rh + 0*rh3                   
-! rh3 = -(Z*S01-H01)*t0
-    call zgemm('N','N',nv2,nv2,nv,a,rh1,nv2,rh,nv,b,rh3,nv2)
 
-! FDN
-! aplha = -(Z*S01-H01)*t0
-! ba = -(Z*S10-H10)*t0b
+! rh3 = -(Z*S01-H01)*t0
+    call zgemm('N','N',nv2,nv2,nv,z_1,rh1,nv2,rh,nv,z_0,rh3,nv2)
+
+! alpha = -(Z*S01-H01)*t0
+! ba    = -(Z*S10-H10)*t0b
     do j=0,nv-1
-       do i=0,nv2-1
-          ic =i + j*nv
-          ic2 =i-nv + j*nv
-          if(i.lt.nv)then
-             alpha(ic) = rh3(i + nv2*j) 
-          else
-             ba(ic2) = -rh3(i + nv2*j) 
-          end if
-       end do
+       ic  = nv * j
+       ic2 = 2 * ic
+       alpha(ic:ic+nv-1) = rh3(ic2:ic2+nv-1)
+       ba(ic:ic+nv-1)    = - rh3(ic2+nv:ic2+2*nv-1)
     end do
     do j=nv,nv2-1
-       do i=0,nv2-1
-          ic=i + (j - nv)*nv
-          ic2=i - nv + (j - nv)*nv
-          if(i.lt.nv)then
-             ab(ic)= -rh3(i + nv2*j) 
-          else
-             beta(ic2)= rh3(i + nv2*j) 
-          end if
-       end do
+       ic  = nv  * (j - nv)
+       ic2 = nv2 * j
+       ab(ic:ic+nv-1)    = -rh3(ic2:ic2+nv-1)
+       beta(ic:ic+nv-1)  = rh3(ic2+nv:ic2+2*nv-1)
     end do
 
-    do i=0,nv*nv-1
-       gb(i) =  gb(i) + ba(i) + ab(i)
-       gs(i) =  gs(i) + ab(i) 
+    do i=0,nvsq-1
+       gb(i)  =  gb(i)  + ba(i) + ab(i)
+       gs(i)  =  gs(i)  + ab(i) 
+    end do
+
+    ! It seems like the cache is better utilized by
+    ! having maximum of 2 arrays in each do-loop
+    ro = - 1._dp
+    do i =0,nvsq-1
        gs2(i) =  gs2(i) + ba(i) 
+       ro = max(ro,dreal(ab(i))**2+dimag(ab(i))**2)
     end do
 
-    ro =-1.0d0
-    do j =0,nv*nv-1
-       ro =max(ro,dreal(ab(j))**2+dimag(ab(j))**2)
-    end do
-    ro =dsqrt(ro)
+    if(dsqrt(ro).gt.accur) go to 1000
 
-    if(ro.gt.accur) go to 1000
+!    if ( IONode ) then
+!       print '(a,i0,a)','Completed in ',iter,' iterations.'
+!    end if
 
-
-    do i=0,nv*nv-1
+    do i=0,nvsq-1
        rh3(i) = gs(i)
-       rh(i) = 0.0d0
+       gs(i) = 0.0d0
     end do
 
-    do j=0,nv-1
-       rh(j*(nv+1)) = 1.d0
+    do i=0,nv-1
+       gs(i*(nv+1)) = 1.d0
     end do
 
-    call csolveg(nv,nv,rh3,rh,ipvt,ierr)
+    call csolveg(nv,nv,rh3,gs,ipvt,ierr)
 
     if(IERR.ne.0) then
        write(*,*) 'ERROR: calc_green 2 MATRIX INVERSION FAILED'
        write(*,*) 'ERROR: LAPACK INFO = ',IERR
     end if
 
-    do i=0,nv*nv-1
-       gs(i) = rh(i)
-    end do
-
-
-
-    do i=0,nv*nv-1
+    ! Prepare for the inversion
+    do i=0,nvsq-1
        rh3(i) = gs2(i)
-       rh(i) = 0.0d0
+       gs2(i) = 0.0d0
     end do
 
     do j=0,nv-1
-       rh(j*(nv+1)) = 1.d0
+       gs2(j*(nv+1)) = 1.d0
     end do
 
-    call csolveg(nv,nv,rh3,rh,ipvt,ierr)
+    call csolveg(nv,nv,rh3,gs2,ipvt,ierr)
 
 
     if(IERR.ne.0) then
@@ -273,82 +243,56 @@ contains
        write(*,*) 'ERROR: LAPACK INFO = ',IERR
     end if
 
-    do i=0,nv*nv-1
-       gs2(i) = rh(i)
-    end do
+!      ----      DOS     -----
+    if ( CalcDOS ) then
 
+       do i=0,nvsq-1
+          rh3(i) = gb(i)
+          gb(i) = 0.0d0
+       end do
 
-    do i=0,nv*nv-1
-       rh3(i) = gb(i)
-       rh(i) = 0.0d0
-    end do
+       do i=0,nv-1
+          gb(i*(nv+1)) = 1.d0
+       end do
 
-    do j=0,nv-1
-       rh(j*(nv+1)) = 1.d0
-    end do
+       call csolveg(nv,nv,rh3,gb,ipvt,ierr)
 
-    call csolveg(nv,nv,rh3,rh,ipvt,ierr)
+       if(IERR.ne.0) then
+          write(*,*) 'ERROR: calc_green 4 MATRIX INVERSION FAILED'
+          write(*,*) 'ERROR: LAPACK INFO = ',IERR
+       end if
+       
+       do j=0,nv-1
+          ic = nv * j
+          do i=0,nv-1
+             ic2 = j + nv*i
+             ab(ic+i) = h01(ic+i)-zenergy*s01(ic+i)
+             ba(ic+i) = dconjg(h01(ic2))-zenergy*dconjg(s01(ic2))
+          end do
+       end do
 
-    if(IERR.ne.0) then
-       write(*,*) 'ERROR: calc_green 4 MATRIX INVERSION FAILED'
-       write(*,*) 'ERROR: LAPACK INFO = ',IERR
+       call zgemm('N','N',nv,nv,nv,z_1,gs2  ,nv,ab ,nv,z_0,alpha,nv)
+       call zgemm('N','N',nv,nv,nv,z_1,alpha,nv,gb ,nv,z_0,ab   ,nv)
+       call zgemm('N','N',nv,nv,nv,z_1,gs   ,nv,ba ,nv,z_0,beta ,nv)
+       call zgemm('N','N',nv,nv,nv,z_1,beta ,nv,gb ,nv,z_0,ba   ,nv)
+       call zgemm('N','N',nv,nv,nv,z_1,gb   ,nv,s00,nv,z_0,rh3  ,nv)
+       call zgemm('N','C',nv,nv,nv,z_1,ab   ,nv,s01,nv,z_1,rh3  ,nv)
+       call zgemm('N','N',nv,nv,nv,z_1,ba   ,nv,s01,nv,z_1,rh3  ,nv)
+
+       zdos = 0.0d0
+       do j=0,nv-1
+          zdos = zdos + (rh3(j*(nv+1)))
+       end do
+       
     end if
 
-    do i=0,nv*nv-1
-       gb(i) = rh(i)
-    end do
-
-
-!      ----      DOS     -----
-
-    do i=0,nv*nv-1
-       alpha(i) = h01(i)-zenergy*s01(i)
-    end do
-    call zgemm('N','N',nv,nv,nv,a,gs2,nv,alpha,nv,b,ab,nv)
-    do i=0,nv*nv-1
-       alpha(i) = ab(i)
-    end do
-    call zgemm('N','N',nv,nv,nv,a,alpha,nv,gb,nv,b,ab,nv)
-
-
-    do j=0,nv-1
-       do i=0,nv-1
-          ic = i + nv*j
-          ic2 = j + nv*i
-          beta(ic) = dconjg(h01(ic2))-zenergy*dconjg(s01(ic2))
-       end do
-    end do
-    call zgemm('N','N',nv,nv,nv,a,gs,nv,beta,nv,b,ba,nv)
-    do i=0,nv*nv-1
-       beta(i) = ba(i)
-    end do
-    call zgemm('N','N',nv,nv,nv,a,beta,nv,gb,nv,b,ba,nv)
-
-
-    do i=0,nv*nv-1
-       rh3(i) = 0.0d0
-    end do
-
-    call zgemm('N','N',nv,nv,nv,a,gb,nv,s00,nv,b,rh3,nv)
-    call zgemm('N','C',nv,nv,nv,a,ab,nv,s01,nv,a,rh3,nv)
-    call zgemm('N','N',nv,nv,nv,a,ba,nv,s01,nv,a,rh3,nv)
-
-
-    zdos = 0.0d0
-
-    do j=0,nv-1
-       zdos = zdos + (rh3(j*(nv+1)))
-    end do
-
-
-
     if( leqi(tjob,'L') ) then
-       do i=0,nv*nv-1
+       do i=0,nvsq-1
           gs(i) =  gs2(i) 
        end do
     endif
 
-    call memory('D','Z',14*nv*nv+3,'calc_green')
+    call memory('D','Z',14*nvsq+3,'calc_green')
     call memory('D','I',nv,'calc_green')
     deallocate(ipvt)
     deallocate(rh,rh1,rh3)
@@ -356,8 +300,10 @@ contains
     deallocate(ba,ab)
     deallocate(gb,gs2)
 
+    call timer('ts_GS',2)
+
 #ifdef TRANSIESTA_DEBUG
-      call write_debug( 'POS surface_Green' )
+    call write_debug( 'POS surface_Green' )
 #endif
 
   end subroutine surface_Green
@@ -384,7 +330,7 @@ contains
        ElecValenceBandBot, &
        nkpnt,kpoint,kweight, &
        NBufAt,NUsedAtoms,NA1,NA2, RemUCellDistance, &
-       ucell,xa,nua,NEn,contour,chem_shift,ZBulkDOS,nspin)
+       ucell,xa,nua,NEn,contour,chem_shift,CalcDOS,ZBulkDOS,nspin)
 
     use precision,  only : dp
     use fdf,        only : leqi
@@ -422,6 +368,8 @@ contains
     integer, intent(in)            :: NEn ! Number of energy points
     type(ts_ccontour), intent(in)  :: contour(NEn) ! contours path for GF
     real(dp), intent(in)           :: chem_shift ! the Fermi-energy we REQUIRE the electrode
+    logical, intent(in)            :: CalcDOS
+
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
@@ -630,11 +578,13 @@ contains
     call memory('A','Z',4*nuo_E*nuo_E,'create_Green')
 
     ! Reset bulk DOS
-    do ispin = 1 , nspin
-       do iEn = 1 , NEn
-          ZBulkDOS(iEn,ispin) = dcmplx(0.d0,0.d0)
+    if ( CalcDOS ) then
+       do ispin = 1 , nspin
+          do iEn = 1 , NEn
+             ZBulkDOS(iEn,ispin) = dcmplx(0.d0,0.d0)
+          end do
        end do
-    end do
+    end if
 
 !******************************************************************
 !           Start Green's function calculation
@@ -789,11 +739,13 @@ contains
                 ! Calculate the surface Green's function
                 ! ZSenergy is Zenergy together with the chemical shift
                 call surface_Green(tElec,nuo_E,ZSEnergy,H00,S00,H01,S01, &
-                     GS,zdos)
+                     GS,CalcDOS,zdos)
 
                 ! We also average the k-points.
-                ZBulkDOS(iEn,ispin) = ZBulkDOS(iEn,ispin) + &
-                     wq(iqpt)*zdos * kweight(ikpt)
+                if ( CalcDOS ) then
+                   ZBulkDOS(iEn,ispin) = ZBulkDOS(iEn,ispin) + &
+                        wq(iqpt)*zdos * kweight(ikpt)
+                end if
                   
                 ! Copy over surface Green's function
                 if( leqi(tElec,'L') ) then
@@ -916,16 +868,18 @@ contains
     deallocate(S_E)
 
 #ifdef MPI
-    ! Sum the bulkdensity of states
-    ! Here we can safely use the array as temporary (Gq)
-    allocate(Gq(NEn,nspin))
-    call memory('A','Z',NEn*nspin,'create_green')
-    Gq = 0.0_dp
-    call MPI_AllReduce(ZBulkDOS(1,1),Gq(1,1),NEn*nspin, DAT_dComplex, MPI_Sum, &
-         MPI_Comm_World,MPIerror)
-    ZBulkDOS = Gq
-    call memory('D','Z',NEn*nspin,'create_green')
-    deallocate(Gq)
+    if ( CalcDOS ) then
+       ! Sum the bulkdensity of states
+       ! Here we can safely use the array as temporary (Gq)
+       allocate(Gq(NEn,nspin))
+       call memory('A','Z',NEn*nspin,'create_green')
+       Gq = 0.0_dp
+       call MPI_AllReduce(ZBulkDOS(1,1),Gq(1,1),NEn*nspin, DAT_dComplex, &
+            MPI_Sum,MPI_Comm_World,MPIerror)
+       ZBulkDOS = Gq
+       call memory('D','Z',NEn*nspin,'create_green')
+       deallocate(Gq)
+    end if
 #endif
 
     call timer('genGreen',2)
