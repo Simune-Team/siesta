@@ -39,11 +39,13 @@ CONTAINS
     integer :: bs, norbs_slack, nnz_slack
     integer :: ispin, maxnhtot, ih, nnzold, i
 
-    integer  :: ordering, isInertiaCount
+    integer  :: ordering, isInertiaCount, numInertiaCounts
     integer  :: muIter
     real(dp) :: muZeroT
 
     real(dp), save :: mu
+    real(dp), save :: muMin0, muMax0
+    integer, save  :: scfIteration
     logical, save  :: first_call = .true.
     real(dp)       :: eBandStructure, eBandH
 
@@ -53,21 +55,25 @@ integer, pointer, dimension(:) ::  tmpi => null()
 integer, pointer, dimension(:) ::  colptrLocal=> null(), rowindLocal=>null()
 !
 real(dp), pointer, dimension(:) :: &
-	HnzvalLocal=>null(), SnzvalLocal=>null(),  &
+        HnzvalLocal=>null(), SnzvalLocal=>null(),  &
         DMnzvalLocal => null() , EDMnzvalLocal => null(), &
-	FDMnzvalLocal => null()
+        FDMnzvalLocal => null()
 !
 real(dp), allocatable, dimension(:) :: muList, &
                                        numElectronList, &
-                                       numElectronDrvList
-integer :: numPole
-real(dp) :: temperature, numElectronExact, numElectron,&
-	gap, deltaE
-real(dp) :: muMin, muMax
-integer:: muMaxIter
-real(dp) :: poleTolerance, numElectronTolerance
-integer:: npPerPole, nprow, npcol
-integer :: mpirank, mpisize, ierr
+                                       numElectronDrvList, &
+                                       shiftList, inertiaList
+integer  :: numPole
+real(dp) :: temperature, numElectronExact, numElectron, gap, deltaE
+real(dp) :: muInertia, muMinInertia, muMaxInertia, muLowerEdge, muUpperEdge
+real(dp) :: muMinPEXSI, muMaxPEXSI
+integer  :: muMaxIter
+real(dp) :: poleTolerance
+integer  :: npPerPole, nprow, npcol
+integer  :: mpirank, mpisize, ierr
+integer  :: isSIdentity
+integer  :: inertiaMaxIter, inertiaIter
+real(dp) :: inertiaNumElectronTolerance, PEXSINumElectronTolerance
 !------------
 
 real(dp) :: buffer1
@@ -75,9 +81,15 @@ real(dp) :: buffer1
 external      :: timer
 
 interface
- ! subroutine f_ppexi_interface
-   include "pexsi.h"
- end subroutine f_ppexsi_interface
+ ! subroutine f_ppexsi_inertiacount_interface
+   include "pexsi_inertia.h"
+ end subroutine f_ppexsi_inertiacount_interface
+end interface
+
+interface
+ ! subroutine f_ppexsi_solve_interface
+   include "pexsi_solve.h"
+ end subroutine f_ppexsi_solve_interface
 end interface
 
 if (worker) then
@@ -94,8 +106,9 @@ if (worker) then
 
    npPerPole = mpisize
    numElectronExact = qtot   ! 2442.0d0 for DNA
-   temperature      = temp/Kelvin
-   if (IOnode) write(6,*) "Electronic temperature: ", temperature
+   temperature      = temp
+!   temperature      = temp/Kelvin
+   if (IOnode) write(6,*) "Electronic temperature: ", temperature, 'in Kelvin:', temperature/Kelvin
 
    call MPI_Barrier(Siesta_comm,ierr)
 
@@ -148,6 +161,8 @@ endif ! worker
 !temperature      = fdf_get("PEXSI.temperature",3000.0d0)    ! Units??
 ! Now passed directly by Siesta  (Use ElectronicTemperature (with units))
 
+isSIdentity = 0
+
 numPole          = fdf_get("PEXSI.num-poles",20)
 gap              = fdf_get("PEXSI.gap",0.0d0)
 
@@ -159,12 +174,18 @@ deltaE           = fdf_get("PEXSI.delta-E",3.0d0)
 ! Initial guess of chemical potential, also updated after pexsi.
 if (first_call) then
    mu = fdf_get("PEXSI.mu",-0.60_dp)
+   ! Lower/Upper bound for the chemical potential.
+   muMin0           = fdf_get("PEXSI.mu-min",-1.0d0)
+   muMax0           = fdf_get("PEXSI.mu-max", 0.0d0)
+   scfIteration = 1
    first_call = .false.
+else
+   scfIteration = scfIteration + 1
 endif
 
-! Lower/Upper bound for the chemical potential.
-muMin            = fdf_get("PEXSI.mu-min",-1.0d0)
-muMax            = fdf_get("PEXSI.mu-max", 0.0d0)
+
+! Maximum number of iterations for computing the inertia
+inertiaMaxIter   = fdf_get("PEXSI.inertia-max-iter",3)
 
 ! muMaxIter should be 1 or 2 later when combined with SCF.
 muMaxIter        = fdf_get("PEXSI.mu-max-iter",10)
@@ -173,11 +194,17 @@ allocate( muList( muMaxIter ) )
 allocate( numElectronList( muMaxIter ) )
 allocate( numElectronDrvList( muMaxIter ) )
 
+allocate( shiftList( numPole ) )
+allocate( inertiaList( numPole ) )
+
 ! Do not compute a pole if the corresponding weight is < poleTolerance.
 poleTolerance    = fdf_get("PEXSI.pole-tolerance",1d-8)
 
+! Stop inertia count if Ne(muMax) - Ne(muMin) < inertiaNumElectronTolerance
+inertiaNumElectronTolerance = fdf_get("PEXSI.inertia-num-electron-tolerance",100)
+
 ! Stop mu-iteration if numElectronTolerance is < numElectronTolerance.
-numElectronTolerance = fdf_get("PEXSI.num-electron-tolerance",1d-1)
+PEXSINumElectronTolerance = fdf_get("PEXSI.num-electron-tolerance",1d-1)
 
 ! Number of processors used for each pole. At the moment use mpisize.
 ! Later can be changed to 
@@ -186,7 +213,7 @@ numElectronTolerance = fdf_get("PEXSI.num-electron-tolerance",1d-1)
 ! Ordering flag
 ordering = fdf_get("PEXSI.ordering",1)
 isInertiaCount = fdf_get("PEXSI.inertia-count",1)
-
+numInertiaCounts = fdf_get("PEXSI.inertia-counts",1)
 !
 ! Broadcast these to the whole processor set
 !
@@ -200,41 +227,99 @@ call MPI_Bcast(ordering,1,MPI_integer,0,true_MPI_COMM_world,ierr)
 call MPI_Bcast(isInertiaCount,1,MPI_integer,0,true_MPI_COMM_world,ierr)
 
 !
-!  Call the interface
+!  do inertia count
 !
-call f_ppexsi_interface( &
-	nrows,&
-	nnz,&
-	nnzLocal,&
-	numColLocal,&
-	colptrLocal,&
+
+if (isInertiaCount .ne. 0 .and. scfIteration .le. numInertiaCounts) then
+
+call f_ppexsi_inertiacount_interface(&
+! input parameters
+        nrows,&
+        nnz,&
+        nnzLocal,&
+        numColLocal,&
+        colptrLocal,&
         rowindLocal,&
-	HnzvalLocal,&
-	SnzvalLocal,&
-	DMnzvalLocal,&
-	EDMnzvalLocal,&
-	FDMnzvalLocal,&
-	numPole,&
-	temperature,&
-	numElectronExact,&
-	numElectron,&
-	gap,&
-	deltaE,&
-	mu,&
-	muMin,&
-        muMax,&
-	muMaxIter,&
-        ordering, &
-        isInertiaCount, &
-        muIter, &
-        muList, &
+        HnzvalLocal,&
+        isSIdentity,&
+        SnzvalLocal,&
+        temperature,&
+        numElectronExact,&
+        muMin0,&
+        muMax0,&
+        numPole,&
+        inertiaMaxIter,&
+        inertiaNumElectronTolerance,&
+        ordering,&
+        npPerPole,&
+        true_MPI_COMM_WORLD,&
+! output parameters
+        muMinInertia,&
+        muMaxInertia,&
+        muLowerEdge,&
+        muUpperEdge,&
+        inertiaIter,&
+        shiftList,&
+        inertiaList)
+
+   muInertia    = (muLowerEdge + muUpperEdge) / 2d0
+
+   if( mpirank == 0 ) then
+     write (*,*) 'PEXSI inertia count executed, mu=', muInertia, &
+            'lowerEdge:', muLowerEdge, 'upperEdge:', muUpperEdge
+  end if
+
+else !no inertia count
+  muInertia = mu
+  muMinInertia = muMin0
+  muMaxInertia = muMax0
+end if
+
+!
+!  do acutal solve
+!
+
+call f_ppexsi_solve_interface(&
+! input parameters
+        nrows,&
+        nnz,&
+        nnzLocal,&
+        numColLocal,&
+        colptrLocal,&
+        rowindLocal,&
+        HnzvalLocal,&
+        isSIdentity,&
+        SnzvalLocal,&
+        temperature,&
+        numElectronExact,&
+        muInertia,&
+        muMinInertia,&
+        muMaxInertia,&
+        gap,&
+        deltaE,&
+        numPole,&
+        muMaxIter,&
+        PEXSINumElectronTolerance,&
+        poleTolerance,&
+        ordering,&
+        npPerPole,&
+        true_MPI_COMM_WORLD,&
+! output parameters
+        DMnzvalLocal,&
+        EDMnzvalLocal,&
+        FDMnzvalLocal,&
+        mu,&
+        numElectron,&
+        muMinPEXSI,&
+        muMaxPEXSI,&
+        muIter,&
+        muList,&
         numElectronList,&
-        numElectronDrvList,&
-        muZeroT,&
-	poleTolerance,&
-	numElectronTolerance,&
-	true_MPI_COMM_WORLD,&
-	npPerPole )
+        numElectronDrvList)
+
+   ! save the mu-range for the next run
+!    muMin0 = muMinPEXSI
+!    muMax0 = muMaxPEXSI
 
 !  call reverse_comms(commsnnz,commsnnz_reverse)
 !  call do_transfers(commsnnz_reverse,DMnzvalLocal,DM, &
@@ -282,12 +367,14 @@ if (worker) then
    eBandH = buffer1
 
    if( mpirank == 0 ) then
-      write(*, *) "mu          = ", mu
-      write(*, *) "muMin          = ", muMin
-      write(*, *) "muMax          = ", muMax
-      write(*, *) "mu (eV)     = ", mu/eV
-      write(*, *) "muZeroT (eV)     = ", muZeroT/eV
-      write(*, *) "numElectron = ", numElectron
+      write(*, *) "mu            = ", mu
+      write(*, *) "muMinInertia  = ", muMinInertia
+      write(*, *) "muMaxInertia  = ", muMaxInertia
+      write(*, *) "muMinPEXSI    = ", muMinPEXSI
+      write(*, *) "muMaxPEXSI    = ", muMaxPEXSI
+      write(*, *) "mu (eV)       = ", mu/eV
+      write(*, *) "muZeroT (eV)  = ", muZeroT/eV
+      write(*, *) "numElectron   = ", numElectron
       write(*, *) "eBandStructure (Ry) = ", eBandStructure
       write(*, *) "eBandStructure (eV) = ", eBandStructure/eV
       write(*, *) "eBandH (eV) = ", eBandH/eV
@@ -311,6 +398,10 @@ if (worker) then
 
     call timer("pexsi", 2)
  endif ! worker
+
+ deallocate( shiftList )
+ deallocate( inertiaList )
+
 #endif 
 
 end subroutine pexsi_solver

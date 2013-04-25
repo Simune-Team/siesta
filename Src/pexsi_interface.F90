@@ -1,5 +1,10 @@
-!
-include "pexsi.h"
+!------------------------
+include "pexsi_inertia.h"
+
+end subroutine f_ppexsi_inertiacount_interface
+
+!----------------------
+include "pexsi_solve.h"
 
    integer, parameter :: dp = SELECTED_REAL_KIND(10,100)
 
@@ -14,18 +19,17 @@ include "pexsi.h"
       write(*,*) "nnzLocal (0): ", nnzLocal
       write(*,*) "numcolLocal (0): ", numColLocal
       write(*,*) "numPole: ", numPole
-      write(*,*) "temperature: ", temperature
+      write(*,*) "temperature (Ry): ", temperature
       write(*,*) "numElectronExact: ", numElectronExact
-      write(*,*) "numElectronTolerance: ", numElectronTolerance
+      write(*,*) "numElectronTolerance: ", PEXSInumElectronTolerance
       write(*,*) "gap: ", gap
       write(*,*) "DeltaE: ", deltaE
-      write(*,*) "muMin: ", muMin
-      write(*,*) "muMax: ", muMax
+      write(*,*) "muMin: ", muMinInertia
+      write(*,*) "muMax: ", muMaxInertia
       write(*,*) "muMaxIter: ", muMaxIter
       write(*,*) "npPerPole: ", npPerPole
       write(*,*) "PoleTolerance: ", poleTolerance
       write(*,*) "ordering: ", ordering
-      write(*,*) "isInertiaCount: ", isInertiaCount
    endif
 
 !  Sample dummy outputs
@@ -45,4 +49,5 @@ include "pexsi.h"
 
    muZeroT = -0.28_dp
 
- end subroutine f_ppexsi_interface
+end subroutine f_ppexsi_solve_interface
+
