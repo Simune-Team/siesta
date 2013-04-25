@@ -64,7 +64,7 @@
 
       if (isolve .eq. SOLVE_PEXSI) then
          ! Prototype interface
-         call pexsi_solver(no_u, no_l, nspin,
+         call pexsi_solver(iscf, no_u, no_l, nspin,
      $              maxnh, numh, listhptr, listh,
      $              H, S, qtot, Dscf, Escf,
      $              ef, freeEnergyCorrection, temp)

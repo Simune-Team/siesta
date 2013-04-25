@@ -540,7 +540,7 @@ m_mpi_utils.o: precision.o sys.o
 m_options.o: precision.o
 m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
 m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o
-m_pexsi_solver.o: pexsi.h
+m_pexsi_solver.o: pexsi_inertia.h pexsi_solve.h
 m_pexsi_solver.o: m_mpi_utils.o parallel.o precision.o units.o
 m_pulay.o: alloc.o atomlist.o m_spin.o parallel.o precision.o siesta_options.o
 m_pulay.o: sparse_matrices.o sys.o
@@ -629,7 +629,7 @@ pdosg.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
 pdosk.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
 pdoskp.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
 periodic_table.o: precision.o sys.o
-pexsi_interface.o: pexsi.h
+pexsi_interface.o: pexsi_inertia.h pexsi_solve.h
 phirphi.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
 phirphi_opt.o: alloc.o atm_types.o atmfuncs.o atmparams.o mneighb.o parallel.o
 phirphi_opt.o: parallelsubs.o precision.o spher_harm.o sys.o

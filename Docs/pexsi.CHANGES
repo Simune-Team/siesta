@@ -1,4 +1,33 @@
 ------------------------------------------------------------
+Apr 25, 2013   Alberto Garcia            trunk-434--pexsi-23
+First implementation of interface with smarter mu intervals
+
+This is basically the implementation by Georg Huhs of the new interface,
+with some modifications by A. Garcia (notably, the scf step number (iscf)
+is passed to the PEXSI solver directly).
+
+There are now two entry points to PEXSI:
+
+f_ppexsi_inertiacount_interface
+f_ppexsi_solve_interface
+
+together with new parameters to determine the behavior of the code.
+Full documentation will be produced at the time of final merging.
+
+removed:
+  Src/pexsi.h
+added:
+  Docs/pexsi-gh-richer.CHANGES
+  Src/pexsi_inertia.h
+  Src/pexsi_solve.h
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+  Src/m_pexsi_solver.F90
+  Src/pexsi_interface.F90
+  Src/siesta_init.F
+
+------------------------------------------------------------
 Apr 1, 2013   Alberto Garcia             trunk-434--pexsi-22
 New option to estimate chemical potential in PEXSI
 
