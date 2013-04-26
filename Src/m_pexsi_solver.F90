@@ -68,7 +68,6 @@ real(dp) :: temperature, numElectronExact, numElectron, gap, deltaE
 real(dp) :: muInertia, muMinInertia, muMaxInertia, muLowerEdge, muUpperEdge
 real(dp) :: muMinPEXSI, muMaxPEXSI
 integer  :: muMaxIter
-real(dp) :: poleTolerance
 integer  :: npPerPole, nprow, npcol
 integer  :: mpirank, mpisize, ierr
 integer  :: isSIdentity
@@ -214,9 +213,6 @@ allocate( numElectronDrvList( muMaxIter ) )
 allocate( shiftList( numPole ) )
 allocate( inertiaList( numPole ) )
 
-! Do not compute a pole if the corresponding weight is < poleTolerance.
-poleTolerance    = fdf_get("PEXSI.pole-tolerance",1d-8)
-
 ! Stop inertia count if Ne(muMax) - Ne(muMin) < inertiaNumElectronTolerance
 inertiaNumElectronTolerance = fdf_get("PEXSI.inertia-num-electron-tolerance",1d-1)
 
@@ -247,7 +243,7 @@ call MPI_Bcast(isInertiaCount,1,MPI_integer,0,true_MPI_COMM_world,ierr)
 !  do inertia count
 !
 
-if (isInertiaCount .ne. 0 .and. iscf .le. numInertiaCounts) then
+if ((isInertiaCount .ne. 0) .and. (iscf .le. numInertiaCounts)) then
 
 call f_ppexsi_inertiacount_interface(&
 ! input parameters
@@ -324,7 +320,6 @@ call f_ppexsi_solve_interface(&
         numPole,&
         muMaxIter,&
         PEXSINumElectronTolerance,&
-        poleTolerance,&
         ordering,&
         npPerPole,&
         true_MPI_COMM_WORLD,&
