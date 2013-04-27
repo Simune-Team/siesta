@@ -28,7 +28,7 @@
 ! This will also release the requirement to change the local names.
 ! Only those through public statements should potentially be altered.
 
-  public :: NEW_TYPE, print_type, val
+  public :: NEW_TYPE, print_type, val, init_val
 
   interface NEW_TYPE
      module procedure newArray1DfromDimensions
@@ -37,6 +37,10 @@
   
   interface val
      module procedure valArray1D
+  end interface
+
+  interface init_val
+     module procedure initializeArray1D
   end interface
 
   interface print_type
@@ -153,6 +157,20 @@
                                 ", refcount: ", refcount(this),">"
   end subroutine printArray1D
 
+ subroutine initializeArray1D(this)
+   type(TYPE_NAME), intent(inout)  :: this
+#ifdef PREC
+   VAR_TYPE(PREC), pointer :: p(:) !=> null()
+#else
+   VAR_TYPE, pointer       :: p(:) !=> null()
+#endif
+    
+   p    => val(this)
+   p(:) =  VAR_INIT
+
+ end subroutine initializeArray1D
+
+
 #undef TYPE_NAME
 #undef STR_TYPE_NAME
 #undef TYPE_NAME_
@@ -161,3 +179,4 @@
 #ifdef PREC
 #undef PREC
 #endif
+#undef VAR_INIT

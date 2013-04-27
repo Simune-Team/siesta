@@ -12,7 +12,7 @@
 !          6) get_scat_region
       implicit none
 
-      public :: getSFE, getGF, getGFnonV, GFGammaGF
+      public :: getSFE, getGF, getGFnonV
       public :: weightDM, weightDMC
       public :: get_scat_region
 
@@ -923,133 +923,6 @@ c      end do                    !io
 c======================================================================
       end subroutine getSFE
 c======================================================================
-
-
-!-------------------------------------------------------------------------
-!*************************************************************************
-!-------------------------------------------------------------------------
-
-
-      subroutine GFGammaGF(LEFTFLAG,nc,ng,GF,Gamma,GGG)
-
-C ======================================================================
-c  This routine returns GGG=(-i)*GF.Gamma.GF, where GF is a (nc)x(nc)
-c  matrix and the first[LEFTFLAG true]/last[LEFTFLAG false] states
-c  corresponds to the (ng) Left/Right electrode states.
-c  Gamma is a (ng)x(ng) matrix.
-C ======================================================================
-      use precision, only : dp
-
-      implicit none
-C ======================================================================
-C Edited by Nick Papior Andersen to limit memory use and do a lot fewer
-C operations.
-C However, this is at the expentiure of more cachemisses.
-C It has however proved to be more than twice as fast.
-c
-C ======================================================================
-C INPUT:
-
-      
-      logical, intent(in) :: LEFTFLAG !True if LEFT
-      integer, intent(in) :: nc !no. states in contact region
-      integer, intent(in) :: ng !if LeftFLAG the ng first states of nc
-c                               !are left electrode states
-c                               !else it is the ng last right electrode
-c                               !states.
-      complex(dp), intent(in) :: Gamma(ng,ng)   !i(Sigma-Sigma^dagger)/2
-      complex(dp), intent(in) :: GF(nc,nc)
-
-C ======================================================================
-C OUTPUT:
-C      
-      complex(dp), intent(out) :: GGG(nc,nc)    !GF.GAMMA.GF
-
-C ======================================================================
-c Helpers, tempos ...
-      complex(dp), allocatable :: wrk(:)
-      integer :: i,j,ie,je
-
-c=======================================================================
-C BEGIN
-c=======================================================================
-
-#ifdef TRANSIESTA_DEBUG
-      call write_debug( 'PRE GFGammaGF' )
-#endif
-
-      call timer("GFGGF",1)
-
-      if(LEFTFLAG) then
-         
-         allocate(wrk(ng))
-         call memory('A','Z',ng,'GFGammaGF')
-
-         do i=1 , nc
-            do ie=1 , ng
-               wrk(ie) = dcmplx(0.0d0,0.0d0)
-               do je=1 , ng
-                  wrk(ie) = wrk(ie) +
-     &                 dreal(Gamma(je,ie)) * GF(i,je)
-               enddo
-            enddo
-
-            do j=1 , i
-               GGG(j,i) = dcmplx(0.d0,0.d0)
-               do ie=1 , ng
-                  GGG(j,i) = GGG(j,i) +
-     &                 dreal( wrk(ie)*dconjg(GF(j,ie)) )
-               enddo
-               GGG(j,i) = GGG(j,i) * dcmplx(0d0,-1.d0)
-               GGG(i,j) = GGG(j,i)
-            enddo
-
-         enddo
-         
-      else ! Do right
- 
-         allocate(wrk(nc-ng+1:nc))
-         call memory('A','Z',ng,'GFGammaGF')
-         
-         do i=1 , nc
-            do ie= nc-ng+1 , nc
-               wrk(ie) = dcmplx(0.0d0,0.0d0)
-               do je= nc-ng+1 , nc
-                  wrk(ie) = wrk(ie) +
-     &                 dreal(Gamma(je-nc+ng,ie-nc+ng)) * GF(i,je)
-               enddo
-            enddo
-            
-            do j=1,i
-               GGG(j,i) = dcmplx(0.d0,0.d0)
-               do ie= nc-ng+1,nc
-                  GGG(j,i) = GGG(j,i) +
-     &                 dreal( wrk(ie)*dconjg(GF(j,ie)) )
-                  
-               enddo
-               GGG(j,i) = GGG(j,i) * dcmplx(0d0,-1.d0)
-               GGG(i,j) = GGG(j,i)
-            enddo
-            
-         enddo
-         
-      endif
- 
-      call memory('D','Z',ng,'GFGammaGF')
-      deallocate(wrk)
-
-      call timer('GFGGF',2)
-
-#ifdef TRANSIESTA_DEBUG
-      call write_debug( 'POS GFGammaGF' )
-#endif
-
-C ====================================================================
-      END subroutine GFGammaGF
-C ====================================================================
-
-
-
 
 
 C ##################################################################

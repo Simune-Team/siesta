@@ -14,7 +14,11 @@
 ! * It has been heavily inspired by the original authors of the 
 !   Transiesta code (hence the references here are still remaining) *
 
-module m_ts_mem
+! This particular solution method relies on solving the GF
+! with the tri-diagonalization routine.
+! This will leverage memory usage and also the execution time.
+
+module m_ts_tri
 
   use precision, only : dp
 
@@ -22,6 +26,7 @@ module m_ts_mem
   use m_ts_sparse_helper, only : create_HS_Gamma
   use m_ts_sparse_helper, only : symmetrize_HS_kpt
   use m_ts_sparse_helper, only : symmetrize_HS_Gamma
+
 #ifdef MPI
   use m_ts_sparse_helper, only : AllReduce_dSpArr1D
   use m_ts_sparse_helper, only : AllReduce_zSpArr1D
@@ -31,8 +36,9 @@ module m_ts_mem
   use m_ts_sparse_helper, only : update_zDM
   
   implicit none
+
   
-  public :: transiesta_mem
+  public :: transiesta_tri
   
   private
   
@@ -71,7 +77,7 @@ contains
 ! permitted without prior and explicit authorization by the authors.
 !
 
-  subroutine transiesta_mem(nspin, &
+  subroutine transiesta_tri(nspin, &
        Gamma, sp_dist, sparse_pattern, &
        ucell, no_u, na_u, lasto, xa, n_nzs, &
        xij, Hs, Ss, DM, EDM, Ef, &
@@ -83,10 +89,12 @@ contains
     use mpi_siesta
 #endif
 
+
     use class_OrbitalDistribution
     use class_Sparsity
     use class_dSpArr1D
     use class_zSpArr1D
+    use class_zTriMat3
 
     use m_ts_kpoints
 
@@ -106,7 +114,6 @@ contains
     use m_ts_mem_sparsity, only : ts_sp_uc
     use m_ts_mem_sparsity, only : tsup_sp_uc
     use m_ts_mem_sparsity, only : GF_INV_EQUI_PART
-    use m_ts_mem_scat
 
     use m_ts_contour,only : PNEn, NEn, contour
     use m_ts_cctype, only : CC_PART_EQUI
@@ -116,6 +123,8 @@ contains
     use m_ts_cctype, only : CC_PART_TRANSPORT
 
     use m_ts_gf, only : read_Green
+
+    use m_ts_tri_scat
 
 ! ********************
 ! * INPUT variables  *
@@ -160,14 +169,15 @@ contains
     complex(dp), allocatable :: HAAL(:,:,:), SAAL(:,:,:), GAAL(:,:,:)
     complex(dp), allocatable :: HAAR(:,:,:), SAAR(:,:,:), GAAR(:,:,:)
     complex(dp), allocatable :: SigmaL(:,:), SigmaR(:,:)
-!    complex(dp), allocatable :: GammaL(:,:), GammaR(:,:)
     real(dp), allocatable :: GammaL(:,:), GammaR(:,:)
 ! ************************************************************
 
 ! ******************* Computational arrays *******************
     integer :: ndwork, nzwork
     real(dp),    allocatable :: dwork(:)
-    complex(dp), allocatable :: zwork(:), GF(:)
+    complex(dp), pointer :: GF22(:)
+    complex(dp), pointer :: zwork(:)
+    type(zTriMat3) :: zwork_tri, GF_tri
     ! A local orbital distribution class (this is "fake")
     type(OrbitalDistribution) :: fdist
     ! The Hamiltonian and overlap sparse matrices
@@ -177,7 +187,7 @@ contains
     type(dSpArr1D) :: spDM, spEDM, spDMR, spEDMR, spDMneqL, spDMneqR
     type(zSpArr1D) :: spzDM, spzEDM, spzDMR, spzEDMR, spzDMneqL, spzDMneqR
     ! Pointers for updating the density matrices
-    real(dp), pointer :: dDM(:), dEDM(:)
+    real(dp),    pointer :: dDM(:), dEDM(:)
     complex(dp), pointer :: zDM(:), zEDM(:)
 ! ************************************************************
 
@@ -321,18 +331,30 @@ contains
     end if
     ! The zwork is needed to construct the LHS for solving: G^{-1} G = I
     ! Hence, we will minimum require this...
-    nzwork = no_u_TS**2
-    allocate(zwork(nzwork),stat=ierr)
-    if (ierr/=0) call die('Could not allocate space for zwork')
-    call memory('A','Z',nzwork,'transiesta')
-    if ( GF_INV_EQUI_PART .and. .not. IsVolt ) then
-       allocate(GF(no_u_TS*(no_u_TS-no_R-no_L)),stat=ierr)
-       if (ierr/=0) call die('Could not allocate space for GFpart')
-       call memory('A','Z',no_u_TS*(no_u_TS-no_R-no_L),'transiesta')
-    else
-       allocate(GF(no_u_TS**2),stat=ierr)
-       if (ierr/=0) call die('Could not allocate space for GF')
-       call memory('A','Z',no_u_TS**2,'transiesta')
+    no_u_C = no_u_TS - no_L - no_R
+    nzwork =          (no_L + no_u_C)        * no_L
+    nzwork = nzwork + (no_L + no_u_C + no_R) * no_u_C
+    nzwork = nzwork + (       no_u_C + no_R) * no_R
+    call newzTriMat3(zwork_tri,no_L,no_u_C,no_R,'GFinv')
+
+    ! Save the work-space
+    ! Now the programmer should "keep a straight tongue"
+    ! The zwork points to the array in the zwork_tri
+    ! tri-diagonal array. This means that there are two
+    ! arrays that point to the same.
+    ! Generally the zwork need only to retain the value in
+    ! one call!
+    zwork => val(zwork_tri)
+
+!    if ( GF_INV_EQUI_PART .and. .not. IsVolt ) then
+!       allocate(GF22(no_u_C*no_u_C),stat=ierr)
+!       if (ierr/=0) call die('Could not allocate space for GFpart')
+!       call memory('A','Z',no_u_C*no_u_C,'transiesta')
+!    else
+       call newzTriMat3(GF_tri,no_L,no_u_C,no_R,'GF')
+!    end if
+    if ( GF_INV_EQUI_PART ) then
+       Gf22 => val22(Gf_tri)
     end if
 
     ! Allocate the left-right electrode quantities that we need
@@ -353,7 +375,6 @@ contains
     if ( IsVolt ) then
        ! We only need Gamma's with voltages
        allocate(GammaL(no_L,no_L),GammaR(no_R,no_R))
-!       call memory('A','Z',no_L**2+no_R**2,'transiesta')
        call memory('A','D',no_L**2+no_R**2,'transiesta')
     end if
 
@@ -564,11 +585,11 @@ contains
              if ( ts_Gamma_SCF ) then
                 ! Notice that we now actually need to retain the values
                 ! in zwork...!!!
-                call prepare_GF_inv_D(spH , spS,Z,no_BufL,no_u_TS,zwork)
+                call prepare_GF_inv_D(spH , spS,Z,no_BufL,no_u_TS,zwork_tri)
              else
                 ! Notice that we now actually need to retain the values
                 ! in zwork...!!!
-                call prepare_GF_inv_Z(spzH,spzS,Z,no_BufL,no_u_TS,zwork)
+                call prepare_GF_inv_Z(spzH,spzS,Z,no_BufL,no_u_TS,zwork_tri)
              end if
 
 #ifdef TRANSIESTA_TIMING
@@ -576,39 +597,34 @@ contains
 #endif
 
              if ( GF_INV_EQUI_PART ) then
-                ! Calculate the GF
+                ! Calculate the GF22 (note that GF22 points to the 
+                ! tri-diag array...
                 call calc_GF_Part(no_u_TS,no_L,no_R, &
-                     SigmaL, SigmaR, zwork, GF,ierr)
-                no_GF_offset = no_L
-               ! The size of the central region (without left-right electrodes)
-                no_u_C = no_u_TS - no_R - no_L
+                     SigmaL, SigmaR, zwork_tri, GF22, ierr)
              else
                 ! Calculate the full GF
-                call calc_GF(UseBulk, &
+                call calc_GF(UseBulk,.false., &
                      no_u_TS,no_L,no_R, &
-                     SigmaL, SigmaR, zwork, GF,ierr)
-                no_GF_offset = 0
-                ! The size of the central region (with left-right electrodes)
-                no_u_C = no_u_TS
+                     SigmaL, SigmaR, zwork_tri, GF_tri,ierr)
              end if
 
              if ( contour(iE)%part == CC_PART_RIGHT_EQUI ) then
                 ! We have the right equilibrium contour
                 if ( ts_Gamma_SCF ) then
-                   call add_DM_dE_D(spDMR , spEDMR , no_u_TS,no_u_C, &
-                        GF, no_BufL, no_GF_offset, W, ZW)
+                   call add_DM_dE_D(spDMR , spEDMR, &
+                        GF_tri, no_BufL, W, ZW)
                 else
-                   call add_DM_dE_Z(spzDMR, spzEDMR, no_u_TS,no_u_C, &
-                        GF, no_BufL, no_GF_offset, W, ZW)
+                   call add_DM_dE_Z(spzDMR, spzEDMR, &
+                        GF_tri, no_BufL, W, ZW)
                 end if
              else
                 ! We have the left- or the equilibrium contour...
                 if ( ts_Gamma_SCF ) then
-                   call add_DM_dE_D(spDM ,  spEDM, no_u_TS, no_u_C, &
-                        GF, no_BufL, no_GF_offset, W, ZW)
+                   call add_DM_dE_D(spDM ,  spEDM, &
+                        GF_tri, no_BufL, W, ZW)
                 else
-                   call add_DM_dE_Z(spzDM, spzEDM, no_u_TS, no_u_C, &
-                        GF, no_BufL, no_GF_offset, W, ZW)
+                   call add_DM_dE_Z(spzDM, spzEDM, &
+                        GF_tri, no_BufL, W, ZW)
                 end if
              end if
 
@@ -645,11 +661,11 @@ contains
              if ( ts_Gamma_SCF ) then
                 ! Notice that we now actually need to retain the values
                 ! in zwork...!!!
-                call prepare_GF_inv_D(spH ,spS ,Z,no_BufL,no_u_TS,zwork)
+                call prepare_GF_inv_D(spH ,spS ,Z,no_BufL,no_u_TS,zwork_tri)
              else
                 ! Notice that we now actually need to retain the values
                 ! in zwork...!!!
-                call prepare_GF_inv_Z(spzH,spzS,Z,no_BufL,no_u_TS,zwork)
+                call prepare_GF_inv_Z(spzH,spzS,Z,no_BufL,no_u_TS,zwork_tri)
              end if
 
 #ifdef TRANSIESTA_TIMING
@@ -657,45 +673,38 @@ contains
 #endif
 
              ! Calculate the Greens function
-             call calc_GF(UseBulk, &
+             call calc_GF(UseBulk,.true., &
                      no_u_TS,no_L,no_R, &
-                     SigmaL, SigmaR, zwork, GF,ierr)
+                     SigmaL, SigmaR, zwork_tri, GF_tri,ierr)
 
-             ! We transpose GF (will make the computation in the GFGGF
-             ! routine faster... MUCH faster)
-             do j = 1 , no_u_TS
-                ind = no_u_TS*(j-1)
-                do i = 1 , no_u_TS
-                   zwork(ind+i) = GF(no_u_TS*(i-1)+j)
-                end do
-             end do
-
+             ! copy GammaR to a complex array
+             SigmaR(:,:) = GammaR(:,:)
              ! We calculate the right thing.
-             call GF_Gamma_GF(no_u_TS-no_R+1, no_u_TS, no_R, zwork, &
-                  GammaR, GF, no_R*no_R, SigmaR) ! SigmaR is a "work" array
-             ! GF is now GFGGF
+             call GF_Gamma_GF_Right(no_R,Gf_tri, SigmaR, zwork_tri)
+             ! work is now GFGGF
 
              ! Note that we use '--' here
              if ( ts_Gamma_SCF ) then
-                call add_DM_dE_D(spDMneqR,spEDM, no_u_TS, no_u_TS, &
-                     GF, no_BufL, 0, -W, -ZW)
+                call add_DM_dE_D(spDMneqR,spEDM, &
+                     zwork_tri, no_BufL, -W, -ZW)
              else
-                call add_DM_dE_Z(spzDMneqR,spzEDM, no_u_TS, no_u_TS, &
-                     GF, no_BufL, 0, -W, -ZW)
+                call add_DM_dE_Z(spzDMneqR,spzEDM, &
+                     zwork_tri, no_BufL, -W, -ZW)
              end if
 
+             ! copy GammaL to a complex array
+             SigmaL(:,:) = GammaL(:,:)
              ! We calculate the left thing.
-             call GF_Gamma_GF(1, no_u_TS, no_L, zwork, &
-                  GammaL, GF, no_L*no_L, SigmaL) ! SigmaL is a "work" array
-             ! GF is now GFGGF
+             call GF_Gamma_GF_Left(no_L, Gf_tri,SigmaL, zwork_tri)
+             ! work is now GFGGF
 
              ! Note that we use '+-' here
              if ( ts_Gamma_SCF ) then
-                call add_DM_dE_D(spDMneqL,spEDMR, no_u_TS, no_u_TS, &
-                     GF, no_BufL, 0, W, -ZW)
+                call add_DM_dE_D(spDMneqL,spEDMR, &
+                     zwork_tri, no_BufL, W, -ZW)
              else
-                call add_DM_dE_Z(spzDMneqL,spzEDMR, no_u_TS, no_u_TS, &
-                     GF, no_BufL, 0, W, -ZW)
+                call add_DM_dE_Z(spzDMneqL,spzEDMR, &
+                     zwork_tri, no_BufL, W, -ZW)
              end if
 
           !case ( CC_PART_TRANSPORT )
@@ -873,10 +882,14 @@ contains
        call memory('D','D',ndwork,'transiesta')
        deallocate(dwork)
     end if
-    call memory('D','Z',nzwork,'transiesta')
-    deallocate(zwork)
-    call memory('D','Z',size(GF),'transiesta')
-    deallocate(GF)
+
+    call delete(zwork_tri)
+    call delete(GF_tri)
+    !if ( GF_INV_EQUI_PART .and. .not. IsVolt ) then
+    !   call memory('D','Z',size(GF22),'transiesta')
+    !   deallocate(GF22)
+    !end if
+
 
     deallocate(lasto_L,lasto_R)
     call memory('D','I',na_R_HS+na_L_HS+2,'transiesta')
@@ -890,7 +903,6 @@ contains
     if ( IsVolt ) then
        ! These where only allocated on voltage calculations
        call memory('D','D',size(GammaL)+size(GammaR),'transiesta')
-!       call memory('D','Z',size(GammaL)+size(GammaR),'transiesta')
        deallocate(GammaL,GammaR)
     end if
 
@@ -900,236 +912,371 @@ contains
     call timer('TS_calc',2)
 
 #ifdef TRANSIESTA_DEBUG
-   call write_debug( 'POS transiesta mem' )
+    call write_debug( 'POS transiesta mem' )
 #endif
 
- end subroutine transiesta_mem
+  end subroutine transiesta_tri
 
 ! Update DM
 ! These routines are supplied for easy update of the update region
 ! sparsity patterns
 ! Note that these routines implement the usual rho(Z) \propto - GF
-   subroutine add_DM_dE_Z(DM,EDM,no1,no2,GF,no_BufL,GF_offset,DMfact,EDMfact)
-     use class_zSpArr1D
-     use class_Sparsity
-     ! The DM and EDM equivalent matrices
-     type(zSpArr1D), intent(inout) :: DM,EDM
-     ! The size of GF
-     integer, intent(in) :: no1,no2
-     ! The Green's function
-     complex(dp), intent(in) :: GF(no1,no2)
-     ! The number of buffer atoms (needed for the offset in the sparsity
-     ! patterns), and the offset in the GF
-     integer, intent(in) :: no_BufL, GF_offset
-     ! Complex numbers that are used in the factor of GF
-     complex(dp), intent(in) :: DMfact, EDMfact
+  subroutine add_DM_dE_Z(DM,EDM,GF_tri,no_BufL,DMfact,EDMfact)
+    use class_zSpArr1D
+    use class_Sparsity
+    use class_zTriMat3
+    ! The DM and EDM equivalent matrices
+    type(zSpArr1D), intent(inout) :: DM,EDM
+    ! The Green's function
+    type(zTriMat3), intent(inout) :: GF_tri
+    ! The number of buffer atoms (needed for the offset in the sparsity
+    ! patterns)
+    integer, intent(in) :: no_BufL
+    ! Complex numbers that are used in the factor of GF
+    complex(dp), intent(in) :: DMfact, EDMfact
 
-     ! Arrays needed for looping the sparsity
-     type(Sparsity), pointer :: s
-     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-     complex(dp), pointer :: zD(:), zE(:)
-     integer :: io, ind, nr, iu, ju
+    ! Arrays needed for looping the sparsity
+    type(Sparsity), pointer :: s
+    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
+    complex(dp), pointer :: zD(:), zE(:), Gf(:)
+    integer :: io, ind, nr, iu, ju, idx
 
-     s      => spar(DM)
-     l_ncol => n_col   (s)
-     l_ptr  => list_ptr(s)
-     l_col  => list_col(s)
-     zD     => val(DM)
-     zE     => val(EDM)
+    s      => spar(DM)
+    l_ncol => n_col   (s)
+    l_ptr  => list_ptr(s)
+    l_col  => list_col(s)
+    zD     => val(DM)
+    zE     => val(EDM)
+    Gf     => val(Gf_tri)
 
-     ! Number of orbitals in the SIESTA unit-cell
-     ! Remember that this is a sparsity pattern which contains
-     ! a subset of the SIESTA pattern.
-     nr = nrows(s)
-     
-     if ( no1 < no2 ) call die('The GF format is not as &
-          &expected.')
-     
-     do io = 1 , nr
-        ! Quickly go past the buffer atoms...
-        if ( l_ncol(io) == 0 ) cycle
+    ! Number of orbitals in the SIESTA unit-cell
+    ! Remember that this is a sparsity pattern which contains
+    ! a subset of the SIESTA pattern.
+    nr = nrows(s)
+    
+    do io = 1 , nr
+       ! Quickly go past the buffer atoms... (the right side)
+       if ( l_ncol(io) == 0 ) cycle
 
-        ! The update region equivalent GF part
-        iu = io - no_BufL
-        
-        do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
+       ! The update region equivalent GF part
+       iu = io - no_BufL
+       
+       do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
 
-           ! We need to subtract the offset of
-           ! the Green's function
-           ! Any offset will ONLY be in the column
-           ! index. See explanation in the 
-           ! mem_sparsity module...
-           ju = l_col(ind) - no_BufL - GF_offset
+          idx = index(Gf_tri,iu,l_col(ind) - no_BufL)
 
-           zD(ind) = zD(ind) - GF(iu,ju) * DMfact
-           zE(ind) = zE(ind) - GF(iu,ju) * EDMfact
-        end do
-     end do
+          zD(ind) = zD(ind) - GF(idx) * DMfact
+          zE(ind) = zE(ind) - GF(idx) * EDMfact
+       end do
+    end do
 
-   end subroutine add_DM_dE_Z
+  end subroutine add_DM_dE_Z
 
-   subroutine add_DM_dE_D(DM,EDM,no1,no2,GF,no_BufL,GF_offset,DMfact,EDMfact)
-     use class_dSpArr1D
-     use class_Sparsity
-     ! The DM and EDM equivalent matrices
-     type(dSpArr1D), intent(inout) :: DM,EDM
-     ! The size of GF
-     integer, intent(in) :: no1,no2
-     ! The Green's function
-     complex(dp), intent(in) :: GF(no1,no2)
-     ! The number of buffer atoms (needed for the offset in the sparsity
-     ! patterns), and the offset in the GF
-     integer, intent(in) :: no_BufL, GF_offset
-     ! Complex numbers that are used in the factor of GF
-     complex(dp), intent(in) :: DMfact, EDMfact
+  subroutine add_DM_dE_D(DM,EDM,GF_tri,no_BufL,DMfact,EDMfact)
+    use class_dSpArr1D
+    use class_Sparsity
+    use class_zTriMat3
+    ! The DM and EDM equivalent matrices
+    type(dSpArr1D), intent(inout) :: DM,EDM
+    ! The Green's function
+    type(zTriMat3), intent(inout) :: GF_tri
+    ! The number of buffer atoms (needed for the offset in the sparsity
+    ! patterns)
+    integer, intent(in) :: no_BufL
+    ! Complex numbers that are used in the factor of GF
+    complex(dp), intent(in) :: DMfact, EDMfact
 
-     ! Arrays needed for looping the sparsity
-     type(Sparsity), pointer :: s
-     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-     real(dp), pointer :: dD(:), dE(:)
-     integer :: io, ind, nr, iu, ju
+    ! Arrays needed for looping the sparsity
+    type(Sparsity), pointer :: s
+    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
+    real(dp), pointer :: dD(:), dE(:)
+    complex(dp), pointer :: Gf(:)
+    integer :: io, ind, nr, iu, idx
 
-     s      => spar(DM)
-     l_ncol => n_col   (s)
-     l_ptr  => list_ptr(s)
-     l_col  => list_col(s)
-     dD     => val(DM)
-     dE     => val(EDM)
+    s      => spar(DM)
+    l_ncol => n_col   (s)
+    l_ptr  => list_ptr(s)
+    l_col  => list_col(s)
+    dD     => val(DM)
+    dE     => val(EDM)
+    Gf     => val(Gf_tri)
 
-     ! Number of orbitals in the SIESTA unit-cell
-     ! Remember that this is a sparsity pattern which contains
-     ! a subset of the SIESTA pattern.
-     nr = nrows(s)
-     
-     if ( no1 < no2 ) call die('The GF format is not as &
-          &expected.')
-     
-     do io = 1 , nr ! TODO introduce reduced loop
-        ! Quickly go past the buffer atoms...
-        if ( l_ncol(io) == 0 ) cycle
+    ! Number of orbitals in the SIESTA unit-cell
+    ! Remember that this is a sparsity pattern which contains
+    ! a subset of the SIESTA pattern.
+    nr = nrows(s)
+    
+    do io = 1 , nr !TODO introduce reduced loop
+       ! Quickly go past the buffer atoms... (in the right side)
+       if ( l_ncol(io) == 0 ) cycle
 
-        ! The update region equivalent GF part
-        iu = io - no_BufL
-        
-        do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
+       ! The update region equivalent GF part
+       iu = io - no_BufL
+       
+       do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
 
-           ! We need to subtract the offset of
-           ! the Green's function
-           ! Any offset will ONLY be in the column
-           ! index. See explanation in the 
-           ! mem_sparsity module...
-           ju = l_col(ind) - no_BufL - GF_offset
-     
-           dD(ind) = dD(ind) - dimag( GF(iu,ju) * DMfact  )
-           dE(ind) = dE(ind) - dimag( GF(iu,ju) * EDMfact )
+          idx = index(Gf_tri,iu,l_col(ind) - no_BufL)
+    
+          dD(ind) = dD(ind) - dimag( GF(idx) * DMfact  )
+          dE(ind) = dE(ind) - dimag( GF(idx) * EDMfact )
 
-        end do
-     end do
+       end do
+    end do
 
-   end subroutine add_DM_dE_D
+  end subroutine add_DM_dE_D
 
-   ! creation of the GF^{-1}.
-   ! this routine will ONLY insert the zS-H terms in the GF 
-   subroutine prepare_GF_inv_D(spH,spS, ZE, no_BufL,no_u,GFinv)
-     use class_dSpArr1D
-     use class_Sparsity
+  subroutine test_tri(tri)
+    use class_zTriMat3
+    type(zTriMat3), intent(inout) :: tri
+    integer :: i,j,ind,nL,nC,nR
+    nL =nrows_g_left(tri)
+    nC =nrows_g_center(tri)
+    nR =nrows_g_right(tri)
+    ind = 0
+    do j = 1 , nL
+       do i = 1 , nL
+          ind = ind + 1
+          if ( ind /= index(tri,i,j) ) then
+             print *,'got',index(tri,i,j)
+             print *,'expected',ind
+             call die('wrong 11')
+          end if
+       end do
+    end do
+    do j = 1 , nL
+       do i = nL+1 , nL+nC
+          ind = ind + 1
+          if ( ind /= index(tri,i,j) ) then
+             print *,'got',index(tri,i,j)
+             print *,'expected',ind
+             call die('wrong 21')
+          end if
+       end do
+    end do
+    do j = nL+1 , nL+nC
+       do i = 1 , nL
+          ind = ind + 1
+          if ( ind /= index(tri,i,j) ) then
+             print *,'got',index(tri,i,j)
+             print *,'expected',ind
+             call die('wrong 12')
+          end if
+       end do
+    end do
+    do j = nL+1 , nL+nC
+       do i = nL+1 , nL+nC
+          ind = ind + 1
+          if ( ind /= index(tri,i,j) ) then
+             print *,'got',index(tri,i,j)
+             print *,'expected',ind
+             call die('wrong 22')
+          end if
+       end do
+    end do
+    do j = nL+1 , nL+nC
+       do i = nL+nC+1 , nL+nC+nR
+          ind = ind + 1
+          if ( ind /= index(tri,i,j) ) then
+             print *,'got',index(tri,i,j)
+             print *,'expected',ind
+             call die('wrong 32')
+          end if
+       end do
+    end do
+    do j = nL+nC+1 , nL+nC+nR
+       do i = nL+1 , nL+nC
+          ind = ind + 1
+          if ( ind /= index(tri,i,j) ) then
+             print *,'got',index(tri,i,j)
+             print *,'expected',ind
+             call die('wrong 23')
+          end if
+       end do
+    end do
+    do j = nL+nC+1 , nL+nC+nR
+       do i = nL+nC+1 , nL+nC+nR
+          ind = ind + 1
+          if ( ind /= index(tri,i,j) ) then
+             print *,'got',index(tri,i,j)
+             print *,'expected',ind
+             call die('wrong 33')
+          end if
+       end do
+    end do
+    print *,'successfull'
+  end subroutine test_tri
 
-     ! The Hamiltonian and overlap sparse matrices
-     type(dSpArr1D), intent(inout) :: spH, spS
-     ! the current energy point
-     complex(dp), intent(in) :: ZE
-     ! Remark that we need the left buffer orbitals
-     ! to calculate the actual orbital of the sparse matrices...
-     integer, intent(in) :: no_BufL,no_u
-     complex(dp), intent(out) :: GFinv(no_u**2)
 
-     ! Local variables
-     type(Sparsity), pointer :: s
-     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-     real(dp), pointer :: dH(:), dS(:)
-     integer :: io, iu, ind, ioff
+  ! creation of the GF^{-1}.
+  ! this routine will ONLY insert the zS-H terms in the GF 
+  subroutine prepare_GF_inv_D(spH,spS, ZE, no_BufL,no_u,GFinv_tri)
+    use class_dSpArr1D
+    use class_Sparsity
+    use class_zTriMat3
 
-     s      => spar    (spH)
-     l_ncol => n_col   (s)
-     l_ptr  => list_ptr(s)
-     l_col  => list_col(s)
+    ! The Hamiltonian and overlap sparse matrices
+    type(dSpArr1D), intent(inout) :: spH, spS
+    ! the current energy point
+    complex(dp), intent(in) :: ZE
+    ! Remark that we need the left buffer orbitals
+    ! to calculate the actual orbital of the sparse matrices...
+    integer, intent(in) :: no_BufL,no_u
+    type(zTriMat3), intent(inout) :: GFinv_tri
 
-     ioff = no_BufL + 1
+    ! Local variables
+    type(Sparsity), pointer :: s
+    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
+    real(dp), pointer :: dH(:), dS(:)
+    complex(dp), pointer :: Gfinv(:)
+    integer :: io, iu, ind, idx
 
-     dH     => val(spH)
-     dS     => val(spS)
+    s      => spar    (spH)
+    l_ncol => n_col   (s)
+    l_ptr  => list_ptr(s)
+    l_col  => list_col(s)
 
-     ! initialize 
-     GFinv(1:no_u**2) = dcmplx(0._dp,0._dp)
+    dH     => val(spH)
+    dS     => val(spS)
+    Gfinv  => val(Gfinv_tri)
 
-     ! We will only loop in the central region
-     ! We have constructed the sparse array to only contain
-     ! values in this part...
-     do io = no_BufL + 1, no_BufL + no_u
+    ! initialize 
+    GFinv(:) = dcmplx(0._dp,0._dp)
 
-        iu = (io - ioff) * no_u - no_BufL
+    ! We will only loop in the central region
+    ! We have constructed the sparse array to only contain
+    ! values in this part...
+    do io = no_BufL + 1, no_BufL + no_u
 
-        do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io) 
+       iu = io - no_BufL
 
-           !ju = l_col(ind) ! the '- no_BufL' is moved outside the loop
+       do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
 
-           GFinv(l_col(ind)+iu) = ZE * dS(ind) - dH(ind)
-        end do
-     end do
+          ! we could transpose... but...
+          idx = index(Gfinv_tri, iu, l_col(ind)-no_BufL)
 
-   end subroutine prepare_GF_inv_D
+          GFinv(idx) = ZE * dS(ind) - dH(ind)
+       end do
+    end do
 
-   ! creation of the GF^{-1}.
-   ! this routine will ONLY insert the zS-H terms in the GF 
-   subroutine prepare_GF_inv_Z(spH,spS,ZE, no_BufL,no_u,GFinv)
-     use class_zSpArr1D
-     use class_Sparsity
-     ! The Hamiltonian and overlap sparse matrices
-     type(zSpArr1D), intent(inout) :: spH, spS
-     ! the current energy point
-     complex(dp), intent(in) :: ZE
-     ! Remark that we need the left buffer orbitals
-     ! to calculate the actual orbital of the sparse matrices...
-     integer, intent(in) :: no_BufL,no_u
-     complex(dp), intent(out) :: GFinv(no_u**2)
+  end subroutine prepare_GF_inv_D
 
-     ! Local variables
-     type(Sparsity), pointer :: s
-     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-     complex(dp), pointer :: zH(:), zS(:)
-     integer :: io, iu,ind, ioff
-     
-     s      => spar    (spH)
-     l_ncol => n_col   (s)
-     l_ptr  => list_ptr(s)
-     l_col  => list_col(s)
-     
-     ! Offset
-     ioff = no_BufL + 1
+  ! creation of the GF^{-1}.
+  ! this routine will ONLY insert the zS-H terms in the GF 
+  subroutine prepare_GF_inv_Z(spH,spS,ZE, no_BufL,no_u,GFinv_tri)
+    use class_zSpArr1D
+    use class_Sparsity
+    use class_zTriMat3
+    ! The Hamiltonian and overlap sparse matrices
+    type(zSpArr1D), intent(inout) :: spH, spS
+    ! the current energy point
+    complex(dp), intent(in) :: ZE
+    ! Remark that we need the left buffer orbitals
+    ! to calculate the actual orbital of the sparse matrices...
+    integer, intent(in) :: no_BufL,no_u
+    type(zTriMat3), intent(inout) :: GFinv_tri
 
-     zH     => val(spH)
-     zS     => val(spS)
+    ! Local variables
+    type(Sparsity), pointer :: s
+    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
+    complex(dp), pointer :: zH(:), zS(:), Gfinv(:)
+    integer :: io, iu,ind, idx
+    
+    s      => spar    (spH)
+    l_ncol => n_col   (s)
+    l_ptr  => list_ptr(s)
+    l_col  => list_col(s)
+    
+    zH     => val(spH)
+    zS     => val(spS)
+    Gfinv  => val(Gfinv_tri)
 
-     ! Initialize
-     GFinv(1:no_u**2) = dcmplx(0._dp,0._dp)
+    ! Initialize
+    GFinv(:) = dcmplx(0._dp,0._dp)
 
-     ! We will only loop in the central region
-     ! We have constructed the sparse array to only contain
-     ! values in this part...
-     do io = no_BufL + 1, no_BufL + no_u
+    ! We will only loop in the central region
+    ! We have constructed the sparse array to only contain
+    ! values in this part...
+    do io = no_BufL + 1, no_BufL + no_u
 
-        iu = (io-ioff) * no_u - no_BufL
+       iu = io - no_BufL
 
-        do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io) 
+       do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io) 
 
-           !ju = l_col(ind) ! The '- no_BufL' is moved outside the loop
+          !ju = l_col(ind) ! The '- no_BufL' is moved outside the loop
+          idx = index(Gfinv_tri,l_col(ind)-no_BufL,iu)
 
-           ! Notice that we transpose S and H back here
-           ! See symmetrize_HS_kpt
-           GFinv(l_col(ind)+iu) = ZE * zS(ind) - zH(ind)
-        end do
-     end do
-     
-   end subroutine prepare_GF_inv_Z
- 
-end module m_ts_mem
+          ! Notice that we transpose back here...
+          ! See symmetrize_HS_kpt
+          GFinv(idx) = ZE * zS(ind) - zH(ind)
+       end do
+    end do
+    
+  end subroutine prepare_GF_inv_Z
+
+
+  subroutine zTriMat3_transpose(m_tri,mT_tri)
+    use class_zTriMat3
+    
+    ! The input matrix
+    type(zTriMat3), intent(inout) :: m_tri
+    ! The returned transposed matrix...
+    type(zTriMat3), intent(inout) :: mT_tri
+
+    ! Local variables
+    complex(dp), pointer :: m(:)
+    complex(dp), pointer :: mT(:)
+    integer :: nL, nC, nR
+    integer :: i, j, ii
+
+    nL = nrows_g_left  (m_tri)
+    nC = nrows_g_center(m_tri)
+    nR = nrows_g_right (m_tri)
+
+    ! Transpose m11
+    m  => val11(m_tri)
+    mT => val11(mT_tri)
+    call t(nL,nL,m,mT)
+    ! Transpose m12
+    m  => val12(m_tri)
+    mT => val21(mT_tri)
+    call t(nL,nC,m,mT)
+    ! Transpose m21
+    m  => val21(m_tri)
+    mT => val12(mT_tri)
+    call t(nC,nL,m,mT)
+    ! Transpose m22
+    m  => val22(m_tri)
+    mT => val22(mT_tri)
+    call t(nC,nC,m,mT)
+    ! Transpose m23
+    m  => val23(m_tri)
+    mT => val32(mT_tri)
+    call t(nC,nR,m,mT)
+    ! Transpose m32
+    m  => val32(m_tri)
+    mT => val23(mT_tri)
+    call t(nR,nC,m,mT)
+    ! Transpose m33
+    m  => val33(m_tri)
+    mT => val33(mT_tri)
+    call t(nR,nR,m,mT)
+    ! Done with transposing...
+
+  contains
+    subroutine t(N1,N2,m,mt)
+      integer, intent(in) :: N1,N2
+      complex(dp), intent(in) :: m(n1,n2)
+      complex(dp), intent(out) :: mT(n2,n1)
+      integer :: i,j
+      
+      do j = 1 , N2
+         do i = 1 , N1
+            mT(j,i) = m(i,j)
+         end do
+      end do
+
+    end subroutine t
+
+  end subroutine zTriMat3_transpose
+
+end module m_ts_tri

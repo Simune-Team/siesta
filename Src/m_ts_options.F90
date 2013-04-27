@@ -436,11 +436,8 @@ end if
 ! sparsity pattern
 if ( ts_method == 1 ) then
    if ( TriDiag ) then
-      if ( IONode ) then
-       write(*,*) "WARNING: TriDiag only for original solution method"
-       write(*,*) "         Reverting to normal inversion scheme"
-      end if
-      TriDiag = .false. 
+      ! Change to the correct method
+      ts_method = 2
    end if
    if ( ChargeCorr /= 0 ) then
       if ( IONode ) then

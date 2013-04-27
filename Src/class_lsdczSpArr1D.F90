@@ -27,6 +27,7 @@ module class_iSpArr1D
 #define VAR_TYPE iArray1D
 #define VAR_NEW_TYPE newiArray1D
 #define VAR_TYPE_TYPE integer
+#define VAR_INIT 0
 ! Do not define precision
 #include "class_SpArr1D.T90"
 !========================

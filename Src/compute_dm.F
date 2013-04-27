@@ -33,6 +33,7 @@
       use m_ts_options,     only : TSmode, ts_method
       use m_ts_in_siesta,   only : transiesta
       use m_ts_mem,         only : transiesta_mem
+      use m_ts_tri,         only : transiesta_tri
       use m_ts_mem_sparsity,only : ts_mem_init
       use m_ts_mem_sparsity,only : ts_print_charges
 #endif /* TRANSIESTA */
@@ -100,7 +101,7 @@
            call transiesta(ucell,gamma,lasto,iaorb,
      &          no_l, no_s, no_u, nspin, xa, na_u, maxnh, numh, listhptr
      &          ,listh, xijo, indxuo, H, S, Dscf, Escf, Ef,TSiscf,qtot)
-        else if ( ts_method == 1 ) then
+        else
            if ( TSiscf == 1 ) then
               ! This is a first Transiesta run, we need to initialize
               ! the sparsity patterns...
@@ -109,10 +110,15 @@
               call ts_print_charges(block_dist, sparse_pattern, 
      &             na_u, lasto, nspin, maxnh, Dscf, S)
            end if
-              
-           call transiesta_mem(nspin,Gamma, block_dist, sparse_pattern,
-     &          ucell, no_u, na_u, lasto, xa, maxnh, xijo, H, S, Dscf,
-     &          Escf, Ef, TSiscf, Qtot)
+           if ( ts_method == 1 ) then
+              call transiesta_mem(nspin,Gamma, block_dist,
+     &             sparse_pattern,ucell, no_u, na_u, lasto, xa, maxnh,
+     &             xijo, H, S, Dscf,Escf, Ef, TSiscf, Qtot)
+           else if ( ts_method == 2 ) then
+              call transiesta_tri(nspin,Gamma, block_dist,
+     &             sparse_pattern,ucell, no_u, na_u, lasto, xa, maxnh,
+     &             xijo, H, S, Dscf,Escf, Ef, TSiscf, Qtot)
+           end if
         end if           
            
         call timer('TS',2)

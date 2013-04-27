@@ -146,7 +146,7 @@
 
         if (SCFconverged) then
 #ifdef TRANSIESTA
-           if ( TSmode .and. ts_method == 1 ) then
+           if ( TSmode .and. ts_method > 0 ) then
               call ts_print_charges(block_dist,sparse_pattern, 
      &             na_u, lasto, nspin, maxnh, Dscf, S)  
            end if

@@ -8,6 +8,7 @@ module class_lArray1D
 #define TYPE_NAME_ lArray1D_
 #define NEW_TYPE newlArray1D
 #define VAR_TYPE logical
+#define VAR_INIT .false.
 ! DO NOT DEFINE PREC
 #include "class_Array1D.T90"
 !========================
@@ -20,6 +21,7 @@ module class_iArray1D
 #define TYPE_NAME_ iArray1D_
 #define NEW_TYPE newiArray1D
 #define VAR_TYPE integer
+#define VAR_INIT 0
 ! DO NOT DEFINE PREC
 #include "class_Array1D.T90"
 !========================
@@ -34,6 +36,7 @@ module class_sArray1D
 #define NEW_TYPE newsArray1D
 #define VAR_TYPE real
 #define PREC sp
+#define VAR_INIT 0._sp
 #include "class_Array1D.T90"
 !========================
 end module class_sArray1D
@@ -46,6 +49,7 @@ module class_dArray1D
 #define NEW_TYPE newdArray1D
 #define VAR_TYPE real
 #define PREC dp
+#define VAR_INIT 0._dp
 #include "class_Array1D.T90"
 !========================
 end module class_dArray1D
@@ -58,6 +62,7 @@ module class_cArray1D
 #define NEW_TYPE newcArray1D
 #define VAR_TYPE complex
 #define PREC sp
+#define VAR_INIT cmplx(0._sp,0._sp)
 #include "class_Array1D.T90"
 !========================
 end module class_cArray1D
@@ -70,6 +75,7 @@ module class_zArray1D
 #define NEW_TYPE newzArray1D
 #define VAR_TYPE complex
 #define PREC dp
+#define VAR_INIT dcmplx(0._dp,0._dp)
 #include "class_Array1D.T90"
 !========================
 end module class_zArray1D

@@ -1,4 +1,146 @@
 ----------------------------------------------------
+April 27, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-18
+Fully revised/optimized the tri-diagonal inversion of the GF
+
+* Added a new class_TriMat3 (M) which has the following properties:
+
+  1. The 3 refers to it being only a 3-part tridiagonal matrix
+     which fits the transiesta scheme elegantly.
+     I.e. M31 and M13 are non-existing
+  2. To obtain a pointer to a subpart of the matrix do:
+       M<i,j> => val<i><j>(TriMat3)
+     or the full matrix by:
+       M      => val      (TriMat3)
+     Thus each segment of the tri-diagonal matrix is a self
+     contained matrix. This makes sense as the typical usage
+     of tri-diagonal matrices is to utilize operations in
+     segments rather than entire matrices simultaneously.
+     The memory is layout in a single dimension as:
+       M11
+       M21
+       M12
+       M22
+       M32
+       M23
+       M33
+     i.e. the conventional Fortran memory layout.
+  3. A function "index" allows to get the corresponding 1D-index
+     in the "M=>val(TriMat3)" index.
+     I.e.:
+        idx = index(TriMat3,<i>,<j>)
+     will give the correct index of the i'th row and j'th column of the
+     full matrix.
+     It returns 0 for all elements in M13 and M31.
+  4. To create a tri-diagonal matrix do:
+       call newzTriMat3(this,<left>,<center>,<right>, name=<name>)
+     Maybe the names should be changed, but they make visual sense.
+     It is associated with 3 size specifications:
+        left, center, right
+     which summed yields the matrix order.
+     The dimensions can be obtained via:
+       nrows_g_[left|center|right](TriMat3)
+     to conform with the sparsity pattern.
+     Then:
+       nrows_g(TriMat3)
+     returns the matrix order.
+
+     Currently there is no equivalent nrows.
+
+     This could be extended with an OrbitalDistribution
+     element so that it can be used in a distributed manner.
+     However, I don't know if this is usuable?
+
+* Added the tri-diagonalization routine for the transiesta
+  sparse solution method. 
+
+  This is accompanied by two files:
+    m_ts_tri.F90
+    m_ts_tri_scat.F90
+
+  Simply do:
+    TS.SolutionMethod sparse
+    TS.TriDiag T
+
+  This method has required a restructure of some of the most crucial
+  routines in the sparse method.
+  Hence for now the transiesta-methods have been fully separated.
+  Otherwise we would have the following in MANY places...
+    if ( ts_gamma_scf ) then
+       if ( TriDiag ) then
+         ...
+       else
+         ...
+       end if
+    else
+       if ( TriDiag ) then
+         ...
+       else
+         ...
+       end if
+    end if
+  which could be ok, but for clarity they are currently separate.
+
+  The routine is an adaptation of the old implementation. However, 
+  simple analysis of the method suggested that it was not necessary
+  to do any memory allocations. Hence no additional memory is 
+  allocated and thus we further reduce the memory requirements by using
+  this solution method compared to the sparse solver.
+
+  This has also led to a dramatic speed-increase.
+
+  For the tri-diagonal solution we rely on the class_TriMat3 which
+  enables us easy access to a tri-diagonal data structure.
+
+  TODO, move this to the *old* implementation.
+
+* The GF_Gamma_GF routines needed a tri-diagonal counter part
+  Luckily they are easier to optimize as the tri-diagonal construct
+  allows direct BLAS calls for each segment.
+  I.e. there are calls to:
+    Gf_Gamma_Gf_Left
+    Gf_Gamma_Gf_Right
+  which both does not use any extra memory when doing the matrix
+  multiplications and is faster.
+
+* The old GfGammGF routine has been obsoleted and thus deleted
+
+* Created a new module which keeps the dublicated routines for
+  the sparse transiesta in a separate module.
+  
+    m_ts_sparse_helper
+
+  this module deals with the following operations:
+    1) creating the k-point Hamiltonian in sparse format
+    2) symmetrizing a k-point Hamiltonian
+    3) creating the Gamma-point Hamiltonian in sparse format
+    4) symmetrizing a Gamma-point Hamiltonian
+    5) AllReduce a zSpArr1D (only in MPI)
+    6) initialize the local density matrix
+    7) update the local density matrix from a global sparse
+       format density matrix
+
+* All class_* which contains data have been added a new routine:
+    init_val
+  which initializes the value arrays to:
+    logical = .false.
+    integer = 0
+    real = 0.
+    complex = (0.,0.)
+  with the correct precisions.
+  This is currently in the following routines:
+    SpArr[12]D
+    Array[12]D
+    TriMat3
+
+  I was not sure about the need for such a routine in the 
+  Geometry class, and if so, how it should be handled, i.e.
+    1) should it initialize the positions,
+    2) should it initialize the cell,
+    3) should it initialize the species list,
+    4) should it initialize number of atoms.
+  Hence, I have not done anything for this class.
+
+----------------------------------------------------
 April 24, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-17
 Merge of two commits
 

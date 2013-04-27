@@ -442,6 +442,7 @@ contains
 ! ********************
     complex(dp), intent(out) :: Sigma(no_s,no_s)
     real(dp), intent(out)    :: Gamma(no_s,no_s)
+!    complex(dp), intent(out)    :: Gamma(no_s,no_s)
 
     integer,  intent(in) :: nwork
     complex(dp), intent(inout) :: work(no_s,no_s,2)
@@ -490,9 +491,9 @@ contains
        ! \Gamma = -\Im \Sigma
        do jo = 1 , no_s
           do io = 1 , jo
-             Gamma(io,jo) = -0.5_dp * dimag( &
+             Gamma(io,jo) = - .5_dp * dimag( &
                   work(io,jo,1)-dconjg(work(jo,io,1)) )
-             Gamma(jo,io) = -0.5_dp * dimag( &
+             Gamma(jo,io) = - .5_dp * dimag( &
                   work(jo,io,1)-dconjg(work(io,jo,1)) )
           end do
        end do
@@ -511,9 +512,9 @@ contains
        ! \Gamma = \Im \Sigma
        do jo = 1 , no_s
           do io = 1 , jo
-             Gamma(io,jo) = -0.5_dp * dimag( &
+             Gamma(io,jo) = - .5_dp * dimag( &
                   Sigma(io,jo)-dconjg(Sigma(jo,io)) )
-             Gamma(jo,io) = -0.5_dp * dimag( &
+             Gamma(jo,io) = - .5_dp * dimag( &
                   Sigma(jo,io)-dconjg(Sigma(io,jo)) )
           end do
        end do
@@ -843,6 +844,7 @@ contains
     complex(dp), intent(in) :: GFt(no_u_TS,no_u_TS)
     ! i (Sigma - Sigma^dagger)/2
     real(dp),    intent(in) :: Gamma(Offset:Offset+no_E-1,Offset:Offset+no_E-1)
+!    complex(dp),   intent(in) :: Gamma(Offset:Offset+no_E-1,Offset:Offset+no_E-1)
     ! A work array for doing the calculation... (nwork has to be larger than no_u_TS)
     integer,     intent(in)    :: nwork
     complex(dp), intent(inout) :: work(nwork)
@@ -866,18 +868,23 @@ contains
 
     do i = 1 , no_u_TS
 
+       ! Do Gf.Gamma in row i
        do ie = Offset , lE
           work(ie) = sum(Gamma(Offset:lE,ie)*GFt(Offset:lE,i))
        end do
-
-       GGG(i,i) = sum(work(Offset:lE) * dconjg(GFt(Offset:lE,i)))
+       
+       ! Do Gf.Gamma.Gf^\dagger in row i
+       GGG(i,i) = dreal(sum(work(Offset:lE) * dconjg(GFt(Offset:lE,i)))) &
+            * dcmplx(0._dp,-1._dp)
 
        do j = 1 , i-1
 
-          GGG(j,i) = sum(work(Offset:lE) * dconjg(GFt(Offset:lE,j)))
+          GGG(j,i) = dreal(sum(work(Offset:lE) * dconjg(GFt(Offset:lE,j)))) &
+               * dcmplx(0._dp,-1._dp)
 
-          ! We only take the real part once (faster)
-          GGG(j,i) = dreal(GGG(j,i)) * dcmplx(0._dp,-1._dp)
+          ! This invokes time-reversal symmetry...
+          ! Perhaps we should enforce symmetry the symmetri by taking 
+          ! the mean.
           GGG(i,j) = GGG(j,i)
 
        end do

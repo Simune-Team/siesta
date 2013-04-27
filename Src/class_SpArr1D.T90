@@ -6,7 +6,7 @@
 
   character(len=*), parameter :: mod_name="class_"//STR_TYPE_NAME//".F90"
 
-  public :: val, spar, dist
+  public :: val, spar, dist, init_val
   public :: nrows, nrows_g, nnzs, n_col, list_ptr, list_col
   public :: print_type
   public :: NEW_TYPE
@@ -31,6 +31,10 @@
   interface NEW_TYPE
     module procedure newSpDataFromData
     module procedure newSpDataFromDims
+  end interface
+
+  interface init_val
+    module procedure initializeSpData
   end interface
 
   interface val
@@ -221,6 +225,13 @@
    print "(a,i0,a)", "refcount: ",refcount(this),">"
    
  end subroutine printSpData
+
+ subroutine initializeSpData(this)
+   type(TYPE_NAME), intent(inout) :: this
+   
+   call init_val(this%data%a)
+
+ end subroutine initializeSpData
 
 #undef TYPE_NAME
 #undef STR_TYPE_NAME
