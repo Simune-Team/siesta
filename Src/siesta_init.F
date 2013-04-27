@@ -125,6 +125,8 @@ C     Initialise MPI and set processor number
       worker = (Node < npPerPole)
 
       ! Swap communicator
+      ! This is needed since MPI_COMM_WORLD is used implicitly by
+      ! Siesta for all operations. 
       MPI_COMM_WORLD = comm_sub
       if (worker) then
          call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )

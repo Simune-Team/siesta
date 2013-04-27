@@ -7,7 +7,7 @@ CONTAINS
 ! This version uses the standard PEXSI distribution (by tricking Siesta into
 ! using it)
 !
-  subroutine pexsi_solver(no_u, no_l, nspin,  &
+  subroutine pexsi_solver(iscf, no_u, no_l, nspin,  &
        maxnh, numh, listhptr, listh, H, S, qtot, DM, EDM, &
        ef, freeEnergyCorrection, temp)
 
@@ -21,6 +21,7 @@ CONTAINS
 #endif
     implicit          none
 
+    integer, intent(in)  :: iscf  ! scf step number
     integer, intent(in)  :: maxnh, no_u, no_l, nspin
     integer, intent(in), target  :: listh(maxnh), numh(*), listhptr(*)
     real(dp), intent(in), target :: H(maxnh,nspin), S(maxnh)
@@ -45,7 +46,6 @@ CONTAINS
 
     real(dp), save :: mu
     real(dp), save :: muMin0, muMax0
-    integer, save  :: scfIteration
     logical, save  :: first_call = .true.
     real(dp)       :: eBandStructure, eBandH
 
@@ -68,7 +68,6 @@ real(dp) :: temperature, numElectronExact, numElectron, gap, deltaE
 real(dp) :: muInertia, muMinInertia, muMaxInertia, muLowerEdge, muUpperEdge
 real(dp) :: muMinPEXSI, muMaxPEXSI
 integer  :: muMaxIter
-real(dp) :: poleTolerance
 integer  :: npPerPole, nprow, npcol
 integer  :: mpirank, mpisize, ierr
 integer  :: isSIdentity
@@ -92,6 +91,15 @@ interface
  end subroutine f_ppexsi_solve_interface
 end interface
 
+! "Worker" means a processor which is in the Siesta subset (which
+! comprises the first npPerPole processors in this implementation)
+! NOTE:  fdf calls will assign values to the whole processor set,
+! but some other variables will have to be re-broadcast (see examples
+! below)
+
+! NOTE: Some comments in the code below are placeholders for a new
+! version with independent Siesta/PEXSI distributions (work in progress)
+
 if (worker) then
    siesta_comm = mpi_comm_world
    call timer("pexsi", 1)
@@ -105,10 +113,17 @@ if (worker) then
    call mpi_comm_size( SIESTA_COMM, mpisize, ierr )
 
    npPerPole = mpisize
-   numElectronExact = qtot   ! 2442.0d0 for DNA
+   numElectronExact = qtot 
+
+   ! Note that the energy units for the PEXSI interface are arbitrary, but
+   ! H, the interval limits, and the temperature have to be in the
+   ! same units. Siesta uses Ry units.
+
    temperature      = temp
-!   temperature      = temp/Kelvin
-   if (IOnode) write(6,*) "Electronic temperature: ", temperature, 'in Kelvin:', temperature/Kelvin
+
+   if (IOnode) write(6,"(a,g12.5,a,f10.2)") &
+                          "Electronic temperature: ", temperature, &
+                          ". In Kelvin:", temperature/Kelvin
 
    call MPI_Barrier(Siesta_comm,ierr)
 
@@ -158,9 +173,6 @@ if (worker) then
 
 endif ! worker
 
-!temperature      = fdf_get("PEXSI.temperature",3000.0d0)    ! Units??
-! Now passed directly by Siesta  (Use ElectronicTemperature (with units))
-
 isSIdentity = 0
 
 numPole          = fdf_get("PEXSI.num-poles",20)
@@ -171,18 +183,16 @@ gap              = fdf_get("PEXSI.gap",0.0d0)
 ! than  | E_min - mu | is usually good enough.
 deltaE           = fdf_get("PEXSI.delta-E",3.0d0)
 
-! Initial guess of chemical potential, also updated after pexsi.
+! Initial guess of chemical potential and containing interval
+! When using inertia counts, this interval can be wide.
+! Note that muMin0 and muMax0 are saved variables
 if (first_call) then
    mu = fdf_get("PEXSI.mu",-0.60_dp)
    ! Lower/Upper bound for the chemical potential.
    muMin0           = fdf_get("PEXSI.mu-min",-1.0d0)
    muMax0           = fdf_get("PEXSI.mu-max", 0.0d0)
-   scfIteration = 1
    first_call = .false.
-else
-   scfIteration = scfIteration + 1
 endif
-
 
 ! Maximum number of iterations for computing the inertia
 inertiaMaxIter   = fdf_get("PEXSI.inertia-max-iter",3)
@@ -190,18 +200,21 @@ inertiaMaxIter   = fdf_get("PEXSI.inertia-max-iter",3)
 ! muMaxIter should be 1 or 2 later when combined with SCF.
 muMaxIter        = fdf_get("PEXSI.mu-max-iter",10)
 
+! Arrays for reporting back information about the PEXSI iterations
 allocate( muList( muMaxIter ) )
 allocate( numElectronList( muMaxIter ) )
 allocate( numElectronDrvList( muMaxIter ) )
 
+! Arrays for reporting back information about the integrated DOS
+! computed by the inertia count method. Since we use the processor
+! teams corresponding to the different poles, the number of points
+! in the energy interval is "numPole"
+
 allocate( shiftList( numPole ) )
 allocate( inertiaList( numPole ) )
 
-! Do not compute a pole if the corresponding weight is < poleTolerance.
-poleTolerance    = fdf_get("PEXSI.pole-tolerance",1d-8)
-
 ! Stop inertia count if Ne(muMax) - Ne(muMin) < inertiaNumElectronTolerance
-inertiaNumElectronTolerance = fdf_get("PEXSI.inertia-num-electron-tolerance",100)
+inertiaNumElectronTolerance = fdf_get("PEXSI.inertia-num-electron-tolerance",1d-1)
 
 ! Stop mu-iteration if numElectronTolerance is < numElectronTolerance.
 PEXSINumElectronTolerance = fdf_get("PEXSI.num-electron-tolerance",1d-1)
@@ -215,7 +228,7 @@ ordering = fdf_get("PEXSI.ordering",1)
 isInertiaCount = fdf_get("PEXSI.inertia-count",1)
 numInertiaCounts = fdf_get("PEXSI.inertia-counts",1)
 !
-! Broadcast these to the whole processor set
+! Broadcast these to the whole processor set, just in case
 !
 call MPI_Bcast(npPerPole,1,MPI_integer,0,true_MPI_COMM_world,ierr)
 call MPI_Bcast(nrows,1,MPI_integer,0,true_MPI_COMM_world,ierr)
@@ -230,7 +243,7 @@ call MPI_Bcast(isInertiaCount,1,MPI_integer,0,true_MPI_COMM_world,ierr)
 !  do inertia count
 !
 
-if (isInertiaCount .ne. 0 .and. scfIteration .le. numInertiaCounts) then
+if (isInertiaCount .ne. 0 .and. iscf .le. numInertiaCounts) then
 
 call f_ppexsi_inertiacount_interface(&
 ! input parameters
@@ -266,17 +279,24 @@ call f_ppexsi_inertiacount_interface(&
 
    if( mpirank == 0 ) then
      write (*,*) 'PEXSI inertia count executed, mu=', muInertia, &
-            'lowerEdge:', muLowerEdge, 'upperEdge:', muUpperEdge
+            'lowerEdge:', muLowerEdge, 'upperEdge:', muUpperEdge, &
+            'muMin:', muMinInertia, 'muMax:', muMaxInertia
+     write(6,"(a)") "Cumulative DOS by inertia count:"
+     do i=1, numPole
+        write(6,"(f10.4,f10.4)") shiftList(i)/eV, inertiaList(i)
+     enddo
   end if
 
 else !no inertia count
+
   muInertia = mu
   muMinInertia = muMin0
   muMaxInertia = muMax0
+
 end if
 
 !
-!  do acutal solve
+!  do actual solve
 !
 
 call f_ppexsi_solve_interface(&
@@ -300,7 +320,6 @@ call f_ppexsi_solve_interface(&
         numPole,&
         muMaxIter,&
         PEXSINumElectronTolerance,&
-        poleTolerance,&
         ordering,&
         npPerPole,&
         true_MPI_COMM_WORLD,&
@@ -317,7 +336,10 @@ call f_ppexsi_solve_interface(&
         numElectronList,&
         numElectronDrvList)
 
-   ! save the mu-range for the next run
+! save the mu-range for the next run
+! If we do not do this, we will use always the latest inertia-count
+! guess, or the initial (muMin0, muMax0) bracket.
+
 !    muMin0 = muMinPEXSI
 !    muMax0 = muMaxPEXSI
 

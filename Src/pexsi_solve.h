@@ -22,7 +22,6 @@ subroutine f_ppexsi_solve_interface(&
         numPole,&
         muMaxIter,&
         PEXSINumElectronTolerance,&
-        poleTolerance,&
         ordering,&
         npPerPole,&
         comm_global,&
@@ -56,8 +55,7 @@ subroutine f_ppexsi_solve_interface(&
    ! Maximum number of allowed iterations
    integer, intent(in)                            :: muMaxIter
    
-   real(SELECTED_REAL_KIND(10,100)), intent(in)   :: PEXSInumElectronTolerance, &
-                                                     poleTolerance
+   real(SELECTED_REAL_KIND(10,100)), intent(in)   :: PEXSInumElectronTolerance
    ! Ordering 
    !   0   : PARMETIS
    !   1   : METIS_AT_PLUS_A
