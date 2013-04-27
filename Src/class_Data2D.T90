@@ -31,20 +31,20 @@
   public :: NEW_TYPE, print_type, val, init_val
 
   interface NEW_TYPE
-     module procedure newArray2DfromDimensions
-     module procedure newArray2DfromNakedArray
+     module procedure newData2DfromDimensions
+     module procedure newData2DfromNakedArray
   end interface
   
   interface val
-     module procedure valArray2D
+     module procedure valData2D
   end interface val
 
   interface init_val
-     module procedure initializeArray2D
+     module procedure initializeData2D
   end interface init_val
 
   interface print_type
-     module procedure printArray2D
+     module procedure printData2D
   end interface print_type
 
 !========================
@@ -60,7 +60,7 @@
   end subroutine delete_Data
   
   
-  subroutine newArray2DFromDimensions(this,n,m,name)
+  subroutine newData2DFromDimensions(this,n,m,name)
     ! This could be implemented also as an assignment 
     ! (see below)
 
@@ -95,9 +95,9 @@
 
     call tag_new_object(this)
 
-  end subroutine newArray2DFromDimensions
+  end subroutine newData2DFromDimensions
 
-  subroutine newArray2DfromNakedArray(this, val, name)
+  subroutine newData2DfromNakedArray(this, val, name)
     !..................................................................
     !...................................................................
     type(TYPE_NAME), intent(inout) :: this
@@ -127,10 +127,10 @@
 
     call tag_new_object(this)
     
-  end subroutine newArray2DfromNakedArray
+  end subroutine newData2DfromNakedArray
 
 
-  function valArray2D(this) result(p)
+  function valData2D(this) result(p)
     type(TYPE_NAME), intent(in) :: this
 #ifdef PREC
     VAR_TYPE(PREC), pointer     :: p(:,:) !=> null()
@@ -139,9 +139,9 @@
 #endif
     
     p => this%data%val
-  end function valArray2D
+  end function valData2D
 
-  subroutine printArray2D(this)
+  subroutine printData2D(this)
     type(TYPE_NAME), intent(in)  :: this
     
     integer :: n, m
@@ -157,9 +157,9 @@
     print "(a,i0,a,i0,a,i0,a)", "  <"//STR_TYPE_NAME//":"//trim(this%data%name)// &
                                 " n=",  n," m=",m,   &
                                 ", refcount: ", refcount(this),">"
-  end subroutine printArray2D
+  end subroutine printData2D
 
- subroutine initializeArray2D(this)
+ subroutine initializeData2D(this)
    type(TYPE_NAME), intent(inout)  :: this
 #ifdef PREC
    VAR_TYPE(PREC), pointer :: p(:,:) !=> null()
@@ -170,7 +170,7 @@
    p      => val(this)
    p(:,:) =  VAR_INIT
 
- end subroutine initializeArray2D
+ end subroutine initializeData2D
 
 #undef TYPE_NAME
 #undef STR_TYPE_NAME

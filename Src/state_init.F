@@ -54,7 +54,7 @@
       use iodmhs_netcdf, only: setup_dmhs_netcdf_file
 #endif
       use class_Sparsity
-      use class_dSpArr2D
+      use class_dSpData2D
 
       implicit none
 
@@ -82,7 +82,7 @@
 
       character(len=256)            :: name
 
-      type(dSpArr2D)        :: DMnew
+      type(dSpData2D)        :: DMnew
 
 !------------------------------------------------------------------- BEGIN
       call timer( 'IterMD', 1 )
@@ -260,11 +260,11 @@
      $                 maxnh,numh,listhptr,listh,name)
 
       write(name,"(a,i0)") "H_vkb in state_init at geom step ", istep
-      call newdSpArr2D(sparse_pattern,1,block_dist,H_vkb,name=name)
+      call newdSpData2D(sparse_pattern,1,block_dist,H_vkb,name=name)
       if (ionode) call print_type(H_vkb)
 
       write(name,"(a,i0)") "EDM in state_init at geom step ", istep
-      call newdSpArr2D(sparse_pattern,nspin,block_dist,EDM,name=name)
+      call newdSpData2D(sparse_pattern,nspin,block_dist,EDM,name=name)
       if (ionode) call print_type(EDM)
       Escf => val(EDM)
 

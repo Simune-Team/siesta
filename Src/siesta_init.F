@@ -13,7 +13,7 @@
       use m_struct_init,      only: struct_init
       use siesta_options
       use sparse_matrices
-      use class_Fstack_Pair_Geometry_dSpArr2D, only: new
+      use class_Fstack_Pair_Geometry_dSpData2D, only: new
       use siesta_geom
       use atomlist,           only: no_u, rmaxkb, amass, lasto, qtot,
      &                              iza, rmaxo, zvaltot, superc,

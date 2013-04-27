@@ -919,7 +919,7 @@ contains
     use precision, only: dp
     use parallel,  only: IONode
     use class_Sparsity
-    use class_dSpArr1D
+    use class_dSpData1D
 
     implicit none
 
@@ -931,11 +931,11 @@ contains
 ! * OUTPUT variables  *
 ! *********************
     ! Contour part of DM integration
-    type(dSpArr1D), intent(inout) :: SpArrDML, SpArrDMR
+    type(dSpData1D), intent(inout) :: SpArrDML, SpArrDMR
     ! Real-axis part of DM integration
-    type(dSpArr1D), intent(inout) :: SpArrDMneqL, SpArrDMneqR
+    type(dSpData1D), intent(inout) :: SpArrDMneqL, SpArrDMneqR
     ! L-R estimates of EDM
-    type(dSpArr1D), intent(inout) :: SpArrEDML, SpArrEDMR
+    type(dSpData1D), intent(inout) :: SpArrEDML, SpArrEDMR
 
 ! *********************
 ! * LOCAL variables   *
@@ -1035,7 +1035,7 @@ contains
     use precision, only: dp
     use parallel,  only: IONode
     use class_Sparsity
-    use class_zSpArr1D
+    use class_zSpData1D
 
     implicit none
 
@@ -1047,11 +1047,11 @@ contains
 ! * OUTPUT variables  *
 ! *********************
     ! Contour part of DM integration
-    type(zSpArr1D), intent(inout) :: SpArrDML, SpArrDMR
+    type(zSpData1D), intent(inout) :: SpArrDML, SpArrDMR
     ! Real-axis part of DM integration
-    type(zSpArr1D), intent(inout) :: SpArrDMneqL, SpArrDMneqR
+    type(zSpData1D), intent(inout) :: SpArrDMneqL, SpArrDMneqR
     ! L-R estimates of EDM
-    type(zSpArr1D), intent(inout) :: SpArrEDML, SpArrEDMR
+    type(zSpData1D), intent(inout) :: SpArrEDML, SpArrEDMR
 
 ! *********************
 ! * LOCAL variables   *

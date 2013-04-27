@@ -70,16 +70,16 @@
       use m_steps,          only: istp
       use m_spin,   only: nspin
 
-      use class_dSpArr2D
+      use class_dSpData2D
       use class_Sparsity
-      use class_Pair_Geometry_dSpArr2D
-      use class_Fstack_Pair_Geometry_dSpArr2D
+      use class_Pair_Geometry_dSpData2D
+      use class_Fstack_Pair_Geometry_dSpData2D
 
       implicit none
 
       logical, intent(in) :: auxchanged ! Has auxiliary supercell changed?
-      type(Fstack_Pair_Geometry_dSpArr2D), intent(inout)      :: DM_history
-      type(dSpArr2D), intent(inout)   :: DMnew
+      type(Fstack_Pair_Geometry_dSpData2D), intent(inout)      :: DM_history
+      type(dSpData2D), intent(inout)   :: DMnew
 
 !     Local variables
 
@@ -209,10 +209,10 @@
       use precision, only : dp
       use files,     only : slabel
       use class_Sparsity
-      use class_dSpArr2D
+      use class_dSpData2D
       use class_OrbitalDistribution
-      use class_dArray2D
-      use m_readdSpArr2D, only: readdSpArr2D
+      use class_dData2D
+      use m_readSpData2D, only: readdSpData2D
 #ifdef TRANSIESTA
       use sparse_matrices, only : EDM, Escf
       use m_ts_iodm, only       : ts_init_dm
@@ -230,7 +230,7 @@
       integer           lasto(0:na_u), iaorb(no_u)
       real(dp)          Datm(no_u)
 
-      type(dSpArr2D), intent(inout)      :: DMnew
+      type(dSpData2D), intent(inout)      :: DMnew
       type(Sparsity), intent(in) :: sparse_pattern
       type(OrbitalDistribution), intent(in) :: block_dist
 
@@ -241,11 +241,11 @@
       integer :: nspin_read
       real(dp), pointer              :: Dscf(:,:)
       integer, pointer, dimension(:) :: numh, listhptr, listh
-      type(dSpArr2D)                 :: DMread
-      type(dArray2D)                 :: dm_a2d
+      type(dSpData2D)                 :: DMread
+      type(dData2D)                 :: dm_a2d
 #ifdef TRANSIESTA
       logical                        :: tsde_found
-      type(dSpArr2D)                 :: EDMread
+      type(dSpData2D)                 :: EDMread
 #endif
 
 ! Try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
@@ -256,14 +256,14 @@
       if (try_dm_from_file) then
          if (TSmode) then
             if (ionode) print *, "Attempting to read DM,EDM from TSDE file..."
-            call readdSpArr2D(trim(slabel)//".TSDE",   &
+            call readdSpData2D(trim(slabel)//".TSDE",   &
                  DMread,tsde_found,block_dist,EDMread,ef)
             !
             call ts_init_dm(tsde_found)
             !
             if (.not. tsde_found) then
                if (ionode) print *, "Attempting to read DM from file (TSmode)"
-               call readdSpArr2D(trim(slabel)//".DM",   &
+               call readdSpData2D(trim(slabel)//".DM",   &
                     DMread,dm_found,block_dist)
             endif
             dm_found = (tsde_found .or. dm_found)
@@ -271,7 +271,7 @@
          else  ! Not TSmode
 
             if (ionode) print *, "Attempting to read DM from file..."
-            call readdSpArr2D(trim(slabel)//".DM",   &
+            call readdSpData2D(trim(slabel)//".DM",   &
                  DMread,dm_found,block_dist)
 
          endif
@@ -280,7 +280,7 @@
       dm_found = .false.
       if (try_dm_from_file) then
          if (ionode) print *, "Attempting to read DM from file..."
-         call readdSpArr2D(trim(slabel)//".DM",   &
+         call readdSpData2D(trim(slabel)//".DM",   &
                            DMread,dm_found,block_dist)
       endif
 #endif
@@ -314,13 +314,13 @@
       ! Density matrix
       if (dm_found) then
 
-	call restructdSpArr2D(DMread,sparse_pattern,DMnew)
+	call restructdSpData2D(DMread,sparse_pattern,DMnew)
         if (ionode) print *, "DMread after reading file:"
         if (ionode) call print_type(Dmread)
 
       else
 
-	call newdArray2D(dm_a2d,nnzs(sparse_pattern),nspin,"(DMatomic)")
+	call newdData2D(dm_a2d,nnzs(sparse_pattern),nspin,"(DMatomic)")
 	Dscf => val(dm_a2d)
         numh     => n_col(sparse_pattern)
         listhptr => list_ptr(sparse_pattern)
@@ -331,7 +331,7 @@
                         no_u, na_u, no_l, nspin,     &
                         iaorb, inspn)
 
-        call newdSpArr2D(sparse_pattern,dm_a2d,block_dist,DMnew,  &
+        call newdSpData2D(sparse_pattern,dm_a2d,block_dist,DMnew,  &
                          "(DM initialized from atoms)")
         call delete(dm_a2d)
         if (ionode) print *, "DMnew after filling with atomic data:"
@@ -343,7 +343,7 @@
 #ifdef TRANSIESTA
        if (dm_found) then
           if (tsde_found) then
-             call restructdSpArr2D(EDMread,sparse_pattern,EDM)
+             call restructdSpData2D(EDMread,sparse_pattern,EDM)
              if (ionode) print *, "EDMread after reading file:"
              if (ionode) call print_type(EDMread)
              Escf => val(EDM)
@@ -757,31 +757,31 @@
 
       subroutine extrapolate_dm_with_coords(DM_history,na_u,xa,sparse_pattern,DMnew)
         use class_Sparsity
-        use class_dArray2D
+        use class_dData2D
         use class_OrbitalDistribution
-        use class_dSpArr2D
+        use class_dSpData2D
         use class_Geometry
-        use class_Pair_Geometry_dSpArr2D
-        use class_Fstack_Pair_Geometry_dSpArr2D
+        use class_Pair_Geometry_dSpData2D
+        use class_Fstack_Pair_Geometry_dSpData2D
 
         use fdf, only: fdf_get
 
-        type(Fstack_Pair_Geometry_dSpArr2D), intent(in) :: DM_history
+        type(Fstack_Pair_Geometry_dSpData2D), intent(in) :: DM_history
 	integer, intent(in)                             :: na_u 
         real(dp), intent(in)                            :: xa(:,:)
         type(Sparsity), intent(in)                      :: sparse_pattern
-        type(dSpArr2D), intent(inout)                   :: DMnew
+        type(dSpData2D), intent(inout)                   :: DMnew
 
         integer :: n, i, nspin, nnzs_out
         real(dp), allocatable   :: c(:)
         real(dp), allocatable   :: xan(:,:,:), dummy_cell(:,:,:)
         type(Geometry), pointer :: geom 
-        type(dSpArr2D), pointer :: dm
+        type(dSpData2D), pointer :: dm
         type(OrbitalDistribution), pointer    :: orb_dist
-        type(Pair_Geometry_dSpArr2D), pointer :: pair
+        type(Pair_Geometry_dSpData2D), pointer :: pair
 
-        type(dSpArr2D)       :: DMtmp
-        type(dArray2D)       :: a_out
+        type(dSpData2D)       :: DMtmp
+        type(dData2D)       :: a_out
 
         real(dp), dimension(:,:) , pointer  :: a, ai, xp
 
@@ -834,7 +834,7 @@
         nnzs_out = nnzs(sparse_pattern)
 
         ! Scratch array to accumulate the elements
-        call newdArray2D(a_out,nnzs_out, nspin,name="(temp array for extrapolation)")
+        call newdData2D(a_out,nnzs_out, nspin,name="(temp array for extrapolation)")
         a => val(a_out)
         a(:,:) = 0.0_dp
 
@@ -844,12 +844,12 @@
 !           if (.not. associated(orb_dist,dist(dm))) then
 !              call die("Different orbital distributions in DM history stack")
 !           endif
-           call restructdSpArr2D(dm,sparse_pattern,DMtmp)
+           call restructdSpData2D(dm,sparse_pattern,DMtmp)
            ai => val(DMtmp)
            a = a + c(i) * ai
         enddo
 
-        call newdSpArr2D(sparse_pattern,a_out,orb_dist, &
+        call newdSpData2D(sparse_pattern,a_out,orb_dist, &
                          DMnew,name="SpM extrapolated using coords")
         call delete(a_out)
         call delete(DMtmp)

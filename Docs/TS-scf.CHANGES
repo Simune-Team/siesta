@@ -1,4 +1,70 @@
 ----------------------------------------------------
+April 27, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-19
+Cleaned up the class names and references in the code
+
+* Changed all names class_Array[12]D to class_Data[12]D
+
+* Changed all names class_SpArr[12]D to class_SpData[12]D
+
+* The usage of these classes in the code has also been corrected
+  and especially the readSpData2D (previously readSpMatrix) has	
+  been edited to conform with the new names.
+
+* DEV advice:
+   to change the name of the classes do:
+     sed -s -i -e "s/Data\([12]\)D/<new name>\1D/g" *.*
+   which successfully will change "Data" to "<new name>" in all
+   codes.
+
+* All the files that referenced SpMatrix has been 
+  renamed to SpData2D.
+
+* ** forgot the file changes in commit 458, added that to TS-scf.CHANGES **
+
+renamed:
+  Src/class_Array1D.T90 => Src/class_Data1D.T90
+  Src/class_Array2D.T90 => Src/class_Data2D.T90
+  Src/class_Fstack_Pair_Geometry_SpMatrix.F90 => Src/class_Fstack_Pair_Geometry_SpData2D.F90
+  Src/class_Pair_Geometry_SpMatrix.F90 => Src/class_Pair_Geometry_SpData2D.F90
+  Src/class_SpArr1D.T90 => Src/class_SpData1D.T90
+  Src/class_SpArr2D.T90 => Src/class_SpData2D.T90
+  Src/class_lsdczArray1D.F90 => Src/class_Data1D.F90
+  Src/class_lsdczArray2D.F90 => Src/class_Data2D.F90
+  Src/class_lsdczSpArr1D.F90 => Src/class_SpData1D.F90
+  Src/class_lsdczSpArr2D.F90 => Src/class_SpData2D.F90
+  Src/extrapolateSpMatrix.F90 => Src/extrapolateSpData2D.F90
+  Src/readSpMatrix.F90 => Src/readSpData2D.F90
+  Src/restructSpMatrix.F90 => Src/restructSpData2D.F90
+modified:
+  Docs/TS-scf.CHANGES
+  Src/Makefile
+  Src/compute_EKS_Harris.F90
+  Src/m_new_dm.F90
+  Src/m_ts_mem.F90
+  Src/m_ts_mem_scat.F90
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_tri.F90
+  Src/setup_H0.F
+  Src/setup_hamiltonian.F
+  Src/siesta_init.F
+  Src/sparse_matrices.F
+  Src/state_analysis.F
+  Src/state_init.F
+  version.info
+  Src/class_Data1D.T90
+  Src/class_Data2D.T90
+  Src/class_Fstack_Pair_Geometry_SpData2D.F90
+  Src/class_Pair_Geometry_SpData2D.F90
+  Src/class_SpData2D.T90
+  Src/class_Data1D.F90
+  Src/class_Data2D.F90
+  Src/class_SpData1D.F90
+  Src/class_SpData2D.F90
+  Src/extrapolateSpData2D.F90
+  Src/readSpData2D.F90
+  Src/restructSpData2D.F90
+
+----------------------------------------------------
 April 27, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-18
 Fully revised/optimized the tri-diagonal inversion of the GF
 
@@ -139,6 +205,27 @@ Fully revised/optimized the tri-diagonal inversion of the GF
     3) should it initialize the species list,
     4) should it initialize number of atoms.
   Hence, I have not done anything for this class.
+
+added:
+  Src/class_TriMat3.F90
+  Src/class_TriMat3.T90
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_tri.F90
+  Src/m_ts_tri_scat.F90
+modified:
+  Src/class_Array1D.T90
+  Src/class_Array2D.T90
+  Src/class_SpArr1D.T90
+  Src/class_SpArr2D.T90
+  Src/class_lsdczArray1D.F90
+  Src/class_lsdczArray2D.F90
+  Src/class_lsdczSpArr1D.F90
+  Src/compute_dm.F
+  Src/m_ts_mem.F90
+  Src/m_ts_mem_scat.F90
+  Src/m_ts_options.F90
+  Src/m_ts_scattering.F
+  Src/siesta_forces.F
 
 ----------------------------------------------------
 April 24, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-17

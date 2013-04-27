@@ -1,9 +1,9 @@
       MODULE sparse_matrices
       use precision
-      use class_dSpArr2D
+      use class_dSpData2D
       use class_Sparsity
       use class_OrbitalDistribution
-      use class_Fstack_Pair_Geometry_dSpArr2D
+      use class_Fstack_Pair_Geometry_dSpData2D
 
       implicit none
 
@@ -28,8 +28,8 @@
       !
       !  New interface data
       type(Sparsity), save                :: sparse_pattern
-      type(dSpArr2D), save                :: H_vkb, DM, EDM
-      type(Fstack_Pair_Geometry_dSpArr2D), save :: DM_history
+      type(dSpData2D), save                :: H_vkb, DM, EDM
+      type(Fstack_Pair_Geometry_dSpData2D), save :: DM_history
 
       ! Orbital distribution descriptor
       type(OrbitalDistribution), save     :: block_dist

@@ -26,7 +26,7 @@ CONTAINS
       use sparse_matrices, only: listh, listhptr, numh, maxnh
       use sparse_matrices, only: H
       use sparse_matrices, only: Dscf, Dold
-      use class_dSpArr2D,  only: val
+      use class_dSpData2D,  only: val
       use m_dhscf,         only: dhscf
       use m_energies
       use atomlist,        only: no_u, iaorb, iphkb, qtot, indxuo, datm,   &

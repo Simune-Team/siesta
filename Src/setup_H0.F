@@ -27,7 +27,7 @@ C     and initializes data structures on the grid.
       use m_ntm
       use m_spin,         only: nspin
       use alloc, only: re_alloc, de_alloc
-      use class_dSpArr2D, only: val
+      use class_dSpData2D, only: val
 
       implicit none
       real(dp) :: dummy_stress(3,3), dummy_fa(1,1), dummy_dm(1,1)

@@ -23,8 +23,8 @@ module m_ts_mem
   use m_ts_sparse_helper, only : symmetrize_HS_kpt
   use m_ts_sparse_helper, only : symmetrize_HS_Gamma
 #ifdef MPI
-  use m_ts_sparse_helper, only : AllReduce_dSpArr1D
-  use m_ts_sparse_helper, only : AllReduce_zSpArr1D
+  use m_ts_sparse_helper, only : AllReduce_dSpData1D
+  use m_ts_sparse_helper, only : AllReduce_zSpData1D
 #endif
   use m_ts_sparse_helper, only : init_DM
   use m_ts_sparse_helper, only : update_DM
@@ -85,8 +85,8 @@ contains
 
     use class_OrbitalDistribution
     use class_Sparsity
-    use class_dSpArr1D
-    use class_zSpArr1D
+    use class_dSpData1D
+    use class_zSpData1D
 
     use m_ts_kpoints
 
@@ -171,11 +171,11 @@ contains
     ! A local orbital distribution class (this is "fake")
     type(OrbitalDistribution) :: fdist
     ! The Hamiltonian and overlap sparse matrices
-    type(dSpArr1D) :: spH, spS
-    type(zSpArr1D) :: spzH, spzS
+    type(dSpData1D) :: spH, spS
+    type(zSpData1D) :: spzH, spzS
     ! The different sparse matrices...
-    type(dSpArr1D) :: spDM, spEDM, spDMR, spEDMR, spDMneqL, spDMneqR
-    type(zSpArr1D) :: spzDM, spzEDM, spzDMR, spzEDMR, spzDMneqL, spzDMneqR
+    type(dSpData1D) :: spDM, spEDM, spDMR, spEDMR, spDMneqL, spDMneqR
+    type(zSpData1D) :: spzDM, spzEDM, spzDMR, spzEDMR, spzDMneqL, spzDMneqR
     ! Pointers for updating the density matrices
     real(dp), pointer :: dDM(:), dEDM(:)
     complex(dp), pointer :: zDM(:), zEDM(:)
@@ -369,34 +369,34 @@ contains
 #endif
 
     if ( ts_Gamma_SCF ) then
-       call newdSpArr1D(tsup_sp_uc,fdist,spDM,name='Transiesta spDM')
-       call newdSpArr1D(tsup_sp_uc,fdist,spEDM,name='Transiesta spEDM')
+       call newdSpData1D(tsup_sp_uc,fdist,spDM,name='Transiesta spDM')
+       call newdSpData1D(tsup_sp_uc,fdist,spEDM,name='Transiesta spEDM')
        if ( IsVolt ) then
-          call newdSpArr1D(tsup_sp_uc,fdist,spDMR,name='Transiesta spDM-R')
-          call newdSpArr1D(tsup_sp_uc,fdist,spDMneqL,name='Transiesta spDMneq-L')
-          call newdSpArr1D(tsup_sp_uc,fdist,spDMneqR,name='Transiesta spDMneq-R')
-          call newdSpArr1D(tsup_sp_uc,fdist,spEDMR,name='Transiesta spEDM-R')
+          call newdSpData1D(tsup_sp_uc,fdist,spDMR,name='Transiesta spDM-R')
+          call newdSpData1D(tsup_sp_uc,fdist,spDMneqL,name='Transiesta spDMneq-L')
+          call newdSpData1D(tsup_sp_uc,fdist,spDMneqR,name='Transiesta spDMneq-R')
+          call newdSpData1D(tsup_sp_uc,fdist,spEDMR,name='Transiesta spEDM-R')
        end if
 
        ! The Hamiltonian and overlap matrices (in Gamma calculations
        ! we will not have any phases, hence, it makes no sense to
        ! have the arrays in complex)
-       call newdSpArr1D(ts_sp_uc,fdist,spH,name='Transiesta spH')
-       call newdSpArr1D(ts_sp_uc,fdist,spS,name='Transiesta spS')
+       call newdSpData1D(ts_sp_uc,fdist,spH,name='Transiesta spH')
+       call newdSpData1D(ts_sp_uc,fdist,spS,name='Transiesta spS')
 
     else
-       call newzSpArr1D(tsup_sp_uc,fdist,spzDM,name='Transiesta spzDM')
-       call newzSpArr1D(tsup_sp_uc,fdist,spzEDM,name='Transiesta spzEDM')
+       call newzSpData1D(tsup_sp_uc,fdist,spzDM,name='Transiesta spzDM')
+       call newzSpData1D(tsup_sp_uc,fdist,spzEDM,name='Transiesta spzEDM')
        if ( IsVolt ) then
-          call newzSpArr1D(tsup_sp_uc,fdist,spzDMR,name='Transiesta spzDM-R')
-          call newzSpArr1D(tsup_sp_uc,fdist,spzDMneqL,name='Transiesta spzDMneq-L')
-          call newzSpArr1D(tsup_sp_uc,fdist,spzDMneqR,name='Transiesta spzDMneq-R')
-          call newzSpArr1D(tsup_sp_uc,fdist,spzEDMR,name='Transiesta spzEDM-R')
+          call newzSpData1D(tsup_sp_uc,fdist,spzDMR,name='Transiesta spzDM-R')
+          call newzSpData1D(tsup_sp_uc,fdist,spzDMneqL,name='Transiesta spzDMneq-L')
+          call newzSpData1D(tsup_sp_uc,fdist,spzDMneqR,name='Transiesta spzDMneq-R')
+          call newzSpData1D(tsup_sp_uc,fdist,spzEDMR,name='Transiesta spzEDM-R')
        end if
 
        ! The Hamiltonian and overlap matrices
-       call newzSpArr1D(ts_sp_uc,fdist,spzH,name='Transiesta spzH')
-       call newzSpArr1D(ts_sp_uc,fdist,spzS,name='Transiesta spzS')
+       call newzSpData1D(ts_sp_uc,fdist,spzH,name='Transiesta spzH')
+       call newzSpData1D(ts_sp_uc,fdist,spzS,name='Transiesta spzS')
 
     end if
     ! We will not write out all created sparsity patterns, it provides
@@ -724,23 +724,23 @@ contains
 
       if ( ts_Gamma_SCF ) then
          ind = nnzs(spDM)
-         call AllReduce_dSpArr1D(spDM ,ind, ndwork,dwork)
-         call AllReduce_dSpArr1D(spEDM,ind, ndwork,dwork)
+         call AllReduce_dSpData1D(spDM ,ind, ndwork,dwork)
+         call AllReduce_dSpData1D(spEDM,ind, ndwork,dwork)
          if ( IsVolt ) then
-            call AllReduce_dSpArr1D(spDMR   ,ind, ndwork,dwork)
-            call AllReduce_dSpArr1D(spDMneqL,ind, ndwork,dwork)
-            call AllReduce_dSpArr1D(spDMneqR,ind, ndwork,dwork)
-            call AllReduce_dSpArr1D(spEDMR  ,ind, ndwork,dwork)
+            call AllReduce_dSpData1D(spDMR   ,ind, ndwork,dwork)
+            call AllReduce_dSpData1D(spDMneqL,ind, ndwork,dwork)
+            call AllReduce_dSpData1D(spDMneqR,ind, ndwork,dwork)
+            call AllReduce_dSpData1D(spEDMR  ,ind, ndwork,dwork)
          end if
       else
          ind = nnzs(spzDM)
-         call AllReduce_zSpArr1D(spzDM ,ind, nzwork,zwork)
-         call AllReduce_zSpArr1D(spzEDM,ind, nzwork,zwork)
+         call AllReduce_zSpData1D(spzDM ,ind, nzwork,zwork)
+         call AllReduce_zSpData1D(spzEDM,ind, nzwork,zwork)
          if ( IsVolt ) then
-            call AllReduce_zSpArr1D(spzDMR   ,ind, nzwork,zwork)
-            call AllReduce_zSpArr1D(spzDMneqL,ind, nzwork,zwork)
-            call AllReduce_zSpArr1D(spzDMneqR,ind, nzwork,zwork)
-            call AllReduce_zSpArr1D(spzEDMR  ,ind, nzwork,zwork)
+            call AllReduce_zSpData1D(spzDMR   ,ind, nzwork,zwork)
+            call AllReduce_zSpData1D(spzDMneqL,ind, nzwork,zwork)
+            call AllReduce_zSpData1D(spzDMneqR,ind, nzwork,zwork)
+            call AllReduce_zSpData1D(spzEDMR  ,ind, nzwork,zwork)
          end if
       end if
 
@@ -910,10 +910,10 @@ contains
 ! sparsity patterns
 ! Note that these routines implement the usual rho(Z) \propto - GF
    subroutine add_DM_dE_Z(DM,EDM,no1,no2,GF,no_BufL,GF_offset,DMfact,EDMfact)
-     use class_zSpArr1D
+     use class_zSpData1D
      use class_Sparsity
      ! The DM and EDM equivalent matrices
-     type(zSpArr1D), intent(inout) :: DM,EDM
+     type(zSpData1D), intent(inout) :: DM,EDM
      ! The size of GF
      integer, intent(in) :: no1,no2
      ! The Green's function
@@ -969,10 +969,10 @@ contains
    end subroutine add_DM_dE_Z
 
    subroutine add_DM_dE_D(DM,EDM,no1,no2,GF,no_BufL,GF_offset,DMfact,EDMfact)
-     use class_dSpArr1D
+     use class_dSpData1D
      use class_Sparsity
      ! The DM and EDM equivalent matrices
-     type(dSpArr1D), intent(inout) :: DM,EDM
+     type(dSpData1D), intent(inout) :: DM,EDM
      ! The size of GF
      integer, intent(in) :: no1,no2
      ! The Green's function
@@ -1031,11 +1031,11 @@ contains
    ! creation of the GF^{-1}.
    ! this routine will ONLY insert the zS-H terms in the GF 
    subroutine prepare_GF_inv_D(spH,spS, ZE, no_BufL,no_u,GFinv)
-     use class_dSpArr1D
+     use class_dSpData1D
      use class_Sparsity
 
      ! The Hamiltonian and overlap sparse matrices
-     type(dSpArr1D), intent(inout) :: spH, spS
+     type(dSpData1D), intent(inout) :: spH, spS
      ! the current energy point
      complex(dp), intent(in) :: ZE
      ! Remark that we need the left buffer orbitals
@@ -1082,10 +1082,10 @@ contains
    ! creation of the GF^{-1}.
    ! this routine will ONLY insert the zS-H terms in the GF 
    subroutine prepare_GF_inv_Z(spH,spS,ZE, no_BufL,no_u,GFinv)
-     use class_zSpArr1D
+     use class_zSpData1D
      use class_Sparsity
      ! The Hamiltonian and overlap sparse matrices
-     type(zSpArr1D), intent(inout) :: spH, spS
+     type(zSpData1D), intent(inout) :: spH, spS
      ! the current energy point
      complex(dp), intent(in) :: ZE
      ! Remark that we need the left buffer orbitals

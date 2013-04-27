@@ -41,7 +41,7 @@ contains
     use geom_helper, only : UCORB
     use class_OrbitalDistribution
     use class_Sparsity
-    use class_zSpArr1D
+    use class_zSpData1D
     use parallel, only : Node
 
 ! *********************
@@ -63,7 +63,7 @@ contains
     ! The orbital distance array
     real(dp), intent(in) :: xij(3,maxnh)
     ! The arrays we will save in...
-    type(zSpArr1D), intent(inout) :: SpArrH, SpArrS
+    type(zSpData1D), intent(inout) :: SpArrH, SpArrS
     ! The k-point we will create
     real(dp), intent(in) :: k(3)
     ! we pass a work array
@@ -182,8 +182,8 @@ contains
     ind = nnzs(SpArrH)
     ! Note that zH => val(SpArrH)
     ! Note that zS => val(SpArrS)
-    call AllReduce_zSpArr1D(SpArrH,ind,nwork,work)
-    call AllReduce_zSpArr1D(SpArrS,ind,nwork,work)
+    call AllReduce_zSpData1D(SpArrH,ind,nwork,work)
+    call AllReduce_zSpData1D(SpArrS,ind,nwork,work)
 #endif
 
     ! We symmetrize AND shift
@@ -202,14 +202,14 @@ contains
   subroutine symmetrize_HS_kpt(Ef,SpArrH, SpArrS)
     use intrinsic_missing, only: SFIND, UCORB => MODP
     use class_Sparsity
-    use class_zSpArr1D
+    use class_zSpData1D
     use parallel, only : Node
 ! *********************
 ! * INPUT variables   *
 ! *********************
     real(dp), intent(in) :: Ef
     ! The arrays we will save in... these are the entire TS-region sparsity
-    type(zSpArr1D), intent(inout) :: SpArrH, SpArrS
+    type(zSpData1D), intent(inout) :: SpArrH, SpArrS
 
 ! *********************
 ! * LOCAL variables   *
@@ -291,7 +291,7 @@ contains
     use intrinsic_missing, only: SFIND, UCORB => MODP
     use class_OrbitalDistribution
     use class_Sparsity
-    use class_dSpArr1D
+    use class_dSpData1D
     use parallel, only : Node
 ! *********************
 ! * INPUT variables   *
@@ -310,7 +310,7 @@ contains
     ! The hamiltonian and overlap sparse matrices 
     real(dp), intent(in) :: H(maxnh),S(maxnh)
     ! The arrays we will save in... these are the entire TS-region sparsity
-    type(dSpArr1D), intent(inout) :: SpArrH, SpArrS
+    type(dSpData1D), intent(inout) :: SpArrH, SpArrS
     ! we pass a work array
     integer, intent(in) :: nwork
     ! work-array
@@ -417,8 +417,8 @@ contains
     ind = nnzs(SpArrH)
     ! Note that dH => val(SpArrH)
     ! Note that dS => val(SpArrS)
-    call AllReduce_dSpArr1D(SpArrH,ind,nwork,work)
-    call AllReduce_dSpArr1D(SpArrS,ind,nwork,work)
+    call AllReduce_dSpData1D(SpArrH,ind,nwork,work)
+    call AllReduce_dSpData1D(SpArrS,ind,nwork,work)
 #endif
 
     ! We need to do symmetrization AFTER reduction as we need the full
@@ -438,14 +438,14 @@ contains
   subroutine symmetrize_HS_Gamma(Ef,SpArrH, SpArrS)
     use intrinsic_missing, only: SFIND, UCORB => MODP
     use class_Sparsity
-    use class_dSpArr1D
+    use class_dSpData1D
     use parallel, only : Node
 ! *********************
 ! * INPUT variables   *
 ! *********************
     real(dp), intent(in) :: Ef
     ! The arrays we will save in... these are the entire TS-region sparsity
-    type(dSpArr1D), intent(inout) :: SpArrH, SpArrS
+    type(dSpData1D), intent(inout) :: SpArrH, SpArrS
 
 ! *********************
 ! * LOCAL variables   *
@@ -518,10 +518,10 @@ contains
 ! ************************************************
 
 #ifdef MPI
-  subroutine AllReduce_zSpArr1D(sp_arr,sp_nnzs,nwork,work)
+  subroutine AllReduce_zSpData1D(sp_arr,sp_nnzs,nwork,work)
     use mpi_siesta
-    use class_zSpArr1D
-    type(zSpArr1D), intent(inout) :: sp_arr
+    use class_zSpData1D
+    type(zSpData1D), intent(inout) :: sp_arr
     integer, intent(in) :: sp_nnzs, nwork
     complex(dp), intent(inout) :: work(sp_nnzs)
     complex(dp), pointer :: arr(:)
@@ -533,12 +533,12 @@ contains
     work(1:sp_nnzs) = arr(1:sp_nnzs)
     call MPI_AllReduce(work(1),arr(1),sp_nnzs, &
          MPI_Double_Complex, MPI_Sum, MPI_Comm_World, MPIerror)
-  end subroutine AllReduce_zSpArr1D
+  end subroutine AllReduce_zSpData1D
 
-  subroutine AllReduce_dSpArr1D(sp_arr,sp_nnzs,nwork,work)
+  subroutine AllReduce_dSpData1D(sp_arr,sp_nnzs,nwork,work)
     use mpi_siesta
-    use class_dSpArr1D
-    type(dSpArr1D), intent(inout) :: sp_arr
+    use class_dSpData1D
+    type(dSpData1D), intent(inout) :: sp_arr
     integer, intent(in)     :: sp_nnzs,nwork
     real(dp), intent(inout) :: work(sp_nnzs)
     real(dp), pointer :: arr(:)
@@ -550,7 +550,7 @@ contains
     work(1:sp_nnzs) = arr(1:sp_nnzs)
     call MPI_AllReduce(work(1),arr(1),sp_nnzs, &
          MPI_Double_Precision, MPI_Sum, MPI_Comm_World, MPIerror)
-  end subroutine AllReduce_dSpArr1D
+  end subroutine AllReduce_dSpData1D
 #endif
 
    
@@ -628,7 +628,7 @@ contains
       ! The DM and EDM equivalent matrices
     use class_OrbitalDistribution
     use class_Sparsity
-    use class_dSpArr1D
+    use class_dSpData1D
     use intrinsic_missing, only : UCORB => MODP
     use parallel, only : Node
     type(OrbitalDistribution), intent(inout) :: dit
@@ -638,7 +638,7 @@ contains
     ! Sparse DM-arrays (local)
     real(dp), intent(inout) :: DM(maxn), EDM(maxn)
     ! Updated sparsity arrays (they contain the current integration)
-    type(dSpArr1D), intent(inout) :: spDM, spEDM
+    type(dSpData1D), intent(inout) :: spDM, spEDM
 
     ! Arrays needed for looping the sparsity
     type(Sparsity), pointer :: s
@@ -705,7 +705,7 @@ contains
   subroutine update_zDM(dit,sp,n_nzs,DM,EDM,xij,spDM, spEDM,k)
     use class_OrbitalDistribution
     use class_Sparsity
-    use class_zSpArr1D
+    use class_zSpData1D
 
     use intrinsic_missing, only : SFIND, UCORB => MODP
     use parallel, only : Node
@@ -718,7 +718,7 @@ contains
     ! The orbital distances
     real(dp), intent(in) :: xij(3,n_nzs)
     ! Updated sparsity arrays (they contain the current integration)
-    type(zSpArr1D), intent(inout) :: spDM, spEDM
+    type(zSpData1D), intent(inout) :: spDM, spEDM
     ! The k-point...
     real(dp), intent(in) :: k(3)
 
