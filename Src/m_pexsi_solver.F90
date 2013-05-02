@@ -49,6 +49,8 @@ CONTAINS
     logical, save  :: first_call = .true.
     real(dp)       :: eBandStructure, eBandH
 
+    integer        :: info
+
 !Lin variables
 integer :: nrows, nnz, nnzLocal, numColLocal
 integer, pointer, dimension(:) ::  tmpi => null()
@@ -273,7 +275,12 @@ call f_ppexsi_inertiacount_interface(&
         muUpperEdge,&
         inertiaIter,&
         shiftList,&
-        inertiaList)
+        inertiaList,&
+        info)
+
+   if (info /= 0) then
+      call die("Error in inertia count routine")
+   endif
 
    muInertia    = (muLowerEdge + muUpperEdge) / 2d0
 
@@ -334,7 +341,12 @@ call f_ppexsi_solve_interface(&
         muIter,&
         muList,&
         numElectronList,&
-        numElectronDrvList)
+        numElectronDrvList,&
+        info)
+
+   if (info /= 0) then
+      call die("Error in pexsi solver routine")
+   endif
 
 ! save the mu-range for the next run
 ! If we do not do this, we will use always the latest inertia-count

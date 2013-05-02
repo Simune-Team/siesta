@@ -35,7 +35,8 @@ subroutine f_ppexsi_solve_interface(&
         muIter,&
         muList,&
         numElectronList,&
-        numElectronDrvList)
+        numElectronDrvList,&
+        info)
 
 
    integer, intent(in) :: nrows, nnz, nnzLocal, numColLocal
@@ -84,3 +85,4 @@ subroutine f_ppexsi_solve_interface(&
    real(SELECTED_REAL_KIND(10,100)), intent(out) :: numElectronList(muMaxIter)
    real(SELECTED_REAL_KIND(10,100)),intent(out)  :: numElectronDrvList(muMaxIter)
 
+   integer, intent(out)                          :: info

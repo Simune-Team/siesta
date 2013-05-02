@@ -27,7 +27,8 @@ subroutine f_ppexsi_inertiacount_interface( &
       muUpperEdge,&
       inertiaIter,&
       shiftList,&
-      inertiaList)
+      inertiaList,&
+      info)
 
 
    integer, intent(in) :: nrows, nnz, nnzLocal, numColLocal
@@ -54,4 +55,5 @@ subroutine f_ppexsi_inertiacount_interface( &
    real(SELECTED_REAL_KIND(10,100)), intent(out) :: muLowerEdge, muUpperEdge
    integer, intent(out)                          :: inertiaIter
    real(SELECTED_REAL_KIND(10,100)), intent(out) :: shiftList(numPole), inertiaList(numPole)
+   integer, intent(out)                          :: info
    

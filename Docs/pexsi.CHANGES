@@ -1,4 +1,14 @@
 ------------------------------------------------------------
+May  2, 2013   Alberto Garcia            trunk-434--pexsi-25
+Add 'info' parameter to PEXSI interface
+
+modified:
+  Src/m_pexsi_solver.F90
+  Src/pexsi_inertia.h
+  Src/pexsi_interface.F90
+  Src/pexsi_solve.h
+
+------------------------------------------------------------
 Apr 26, 2013   Alberto Garcia            trunk-434--pexsi-24
 Remove poleTolerance from the interface. Finite T inertia count
 

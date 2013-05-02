@@ -1,6 +1,8 @@
 !------------------------
 include "pexsi_inertia.h"
 
+   info = 0
+
 end subroutine f_ppexsi_inertiacount_interface
 
 !----------------------
@@ -33,6 +35,8 @@ include "pexsi_solve.h"
    endif
 
 !  Sample dummy outputs
+
+   info = 0
 
    muIter = min(muMaxIter,2)
 
