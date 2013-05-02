@@ -4,6 +4,22 @@
 
 ** CHANGES ALONG siesta-3 branch
 ------------------------------------------------------------------------
+2013-05-02  14:00:00 GMT                                 siesta-3.2-pl1
+Update to gnubands program
+
+(Nick P. Andersen)
+
+Added a fermi shift flag (-F), and energy range flags (-e -E) to
+specify in which range one needs the window. This energy range
+specification can be used at the same time as the band-index
+specification.
+
+Fixed a bug when printing for spin-polarized calculations.
+
+modified.
+  Util/Bands/new.gnubands.f90
+
+------------------------------------------------------------------------
 2013-03-25  13:20:00 GMT Alberto Garcia <albertog@icmab.es>  siesta-3.2
 Siesta-3.2 release
 
