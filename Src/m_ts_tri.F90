@@ -37,6 +37,9 @@ module m_ts_tri
   
   use m_ts_sparse_helper, only : ts_print_charges
   use m_ts_sparse_helper, only : TS_INFO_SCF
+
+  use m_ts_sparse_helper, only : weightDM
+  use m_ts_sparse_helper, only : weightDMC
   
   implicit none
 
@@ -116,6 +119,11 @@ contains
     use m_ts_mem_sparsity, only : ts_sp_uc
     use m_ts_mem_sparsity, only : tsup_sp_uc
 
+    ! Self-energy retrival and expansion
+    use m_ts_elec_se
+    ! Gf calculation
+    use m_ts_tri_scat
+
     use m_ts_method, only : GF_INV_EQUI_PART
 
     use m_ts_contour,only : PNEn, NEn, contour
@@ -126,8 +134,6 @@ contains
     use m_ts_cctype, only : CC_PART_TRANSPORT
 
     use m_ts_gf, only : read_Green
-
-    use m_ts_tri_scat
 
 ! ********************
 ! * INPUT variables  *
@@ -370,7 +376,7 @@ contains
     call memory('A','Z',ispin,'transiesta')
 
     if ( IsVolt ) then
-       ! We only need Gamma's with voltages
+       ! We need Gamma's with voltages (now they are both GAA and GammaT)
        allocate(GammaLT(no_L,no_L),GammaRT(no_R,no_R))
        call memory('A','Z',no_L**2+no_R**2,'transiesta')
     else
@@ -381,7 +387,7 @@ contains
     ! GammaL at the same time. Hence it will be safe
     ! to have them point to the same array.
     ! When the UC_expansion_Sigma_GammaT is called
-    ! first the GAA is "emptied" of information" and then
+    ! first the GAA is "emptied" of information and then
     ! Gamma is filled.
     GAAL => GammaLT
     GAAR => GammaRT
@@ -691,7 +697,7 @@ contains
                      no_R, SigmaR)
 
              ! We calculate the right thing.
-             call GF_Gamma_GF_Right_All(no_R, Gf_tri, GammaRT, zwork_tri)
+             call GF_Gamma_GF_Right(no_R, Gf_tri, GammaRT, zwork_tri)
              ! work is now GFGGF
 
              ! Note that we use '--' here
@@ -704,7 +710,7 @@ contains
              end if
 
              ! We calculate the left thing.
-             call GF_Gamma_GF_Left_All(no_L, Gf_tri,GammaLT, zwork_tri)
+             call GF_Gamma_GF_Left(no_L, Gf_tri,GammaLT, zwork_tri)
              ! work is now GFGGF
 
              ! Note that we use '++' here
@@ -773,7 +779,6 @@ contains
       call timer('TS_UPDM',1)
 #endif
 
-
       if ( IsVolt ) then
          call timer('ts_weight',1)
          if ( ts_Gamma_SCF ) then
@@ -787,7 +792,6 @@ contains
          end if
          call timer('ts_weight',2)
       end if
-
 
       ! The original Hamiltonian from SIESTA was shifted Ef: 
       ! Hence we need to shift EDM 

@@ -813,6 +813,300 @@ contains
   end subroutine update_zDM
 
 
+  
+! ##################################################################
+! ##   Mixing the Density matrixes according to the smallest      ##
+! ##    realspace integral                                        ##
+! ##                                                              ##
+! ##  Version 011200  Kurt Stokbro, ks@mic.dtu.dk                 ##
+! ##  Heavily edited by Nick Papior Andersen to be used with the  ##
+! ##  full sparsity pattern in transiesta                         ##
+! ##################################################################
+  subroutine weightDM(no_C_L, no_C_R, &
+       SpArrDML , SpArrDMR , SpArrDMneqL, SpArrDMneqR, &
+       SpArrEDML, SpArrEDMR)
+!  This routine find weight for the DM integral. On output
+!  DML := w (DML+DMneqR) + (1-w) (DMR+DMneqL)
+!  EDML:= w EDML +(1-w) EDMR
+!  In left electrode w=1 and in right electrode w=0
+
+    use parallel,  only: IONode
+    use class_Sparsity
+    use class_dSpData1D
+
+    implicit none
+
+! *********************
+! * INPUT variables   *
+! *********************
+    integer, intent(in) :: no_C_L, no_C_R
+! *********************
+! * OUTPUT variables  *
+! *********************
+    ! Contour part of DM integration
+    type(dSpData1D), intent(inout) :: SpArrDML, SpArrDMR
+    ! Real-axis part of DM integration
+    type(dSpData1D), intent(inout) :: SpArrDMneqL, SpArrDMneqR
+    ! L-R estimates of EDM
+    type(dSpData1D), intent(inout) :: SpArrEDML, SpArrEDMR
+
+! *********************
+! * LOCAL variables   *
+! *********************
+    real(dp) :: wL,wR,wSUM
+
+    ! arrays for looping in the sparsity pattern
+    type(Sparsity), pointer :: sp
+    real(dp), pointer :: DML(:), DMR(:)
+    real(dp), pointer :: DMneqL(:), DMneqR(:)
+    real(dp), pointer :: EDML(:), EDMR(:)
+    integer, pointer :: l_ncol(:)
+    integer, pointer :: l_ptr(:)
+    integer, pointer :: l_col(:)
+    integer :: nr
+    integer :: io, jo, ind, j
+    ! For error estimation
+    integer :: eM_i,eM_j,neM_i,neM_j
+    real(dp) :: eM, neM, tmp
+
+#ifdef TRANSIESTA_DEBUG
+    call write_debug( 'PRE weightDM' )
+#endif
+
+    ! TODO Enforce that sparsity is the same
+    ! (however, we know that they are the same.
+    sp => spar(SpArrDML)
+    l_ncol => n_col   (sp)
+    l_ptr  => list_ptr(sp)
+    l_col  => list_col(sp)
+    nr = nrows(sp)
+    ! Obtain the values in the arrays...
+    DML => val(SpArrDML)
+    DMR => val(SpArrDMR)
+    DMneqL => val(SpArrDMneqL)
+    DMneqR => val(SpArrDMneqR)
+    EDML => val(SpArrEDML)
+    EDMR => val(SpArrEDMR)
+
+    ! initialize the errors
+    eM  = 0._dp
+    neM = 0._dp
+
+    do io = 1 , nr
+       ! We are in a buffer region...
+       if ( l_ncol(io) == 0 ) cycle
+       do j = 1 , l_ncol(io)
+
+          ind = l_ptr(io)+j
+          ! Retrive the connecting orbital
+          jo = l_col(ind)
+
+          wL = DMneqL(ind)*DMneqL(ind)
+          wR = DMneqR(ind)*DMneqR(ind)
+          wSUM = wL + wR
+
+          ! The weights
+          if ( wSUM > 0._dp ) then
+             wL = wL / wSUM
+             wR = wR / wSUM
+          else
+             wL = 0.5_dp
+             wR = 0.5_dp
+             wSUM = 1._dp
+          end if
+          
+          ! Do error estimation (capture before update)
+          tmp = (DML(ind) + DMneqR(ind) - DMR(ind) - DMneqL(ind))**2
+
+          DML(ind)  = wL * (DML(ind) + DMneqR(ind)) &
+                    + wR * (DMR(ind) + DMneqL(ind))
+          EDML(ind) = wL * EDML(ind) + wR * EDMR(ind)
+
+          ! this is absolute error
+          if ( tmp > eM ) then
+             eM   = tmp
+             eM_i = io
+             eM_j = jo
+          end if
+          ! this is normalized absolute error
+          tmp = tmp * wL * wR
+          if ( tmp > neM ) then
+             neM   = tmp
+             neM_i = io
+             neM_j = jo
+          end if
+
+       end do
+    end do
+
+    call print_error_estimate(IONode,eM,eM_i,eM_j,neM,neM_i,neM_j)    
+
+#ifdef TRANSIESTA_DEBUG
+    call write_debug( 'POS weightDM' )
+#endif
+
+  end subroutine weightDM
+
+
+! ##################################################################
+! ##   Mixing the Density matrixes according to the smallest      ##
+! ##    realspace integral *** COMPLEX VERSION ***                ##
+! ##                                                              ##
+! ##  Version 011200  Kurt Stokbro, ks@mic.dtu.dk                 ##
+! ##  Heavily edited by Nick Papior Andersen to be used with the  ##
+! ##  full sparsity pattern in transiesta                         ##
+! ##################################################################
+  subroutine weightDMC(no_C_L, no_C_R, &
+       SpArrDML , SpArrDMR , SpArrDMneqL, SpArrDMneqR, &
+       SpArrEDML, SpArrEDMR)
+!  This routine find weight for the DM integral. On output
+!  DML := w (DML+DMneqR) + (1-w) (DMR+DMneqL)
+!  EDML:= w EDML +(1-w) EDMR
+!  In left electrode w=1 and in right electrode w=0
+
+    use parallel,  only: IONode
+    use class_Sparsity
+    use class_zSpData1D
+
+    implicit none
+
+! *********************
+! * INPUT variables   *
+! *********************
+    integer, intent(in) :: no_C_L, no_C_R
+! *********************
+! * OUTPUT variables  *
+! *********************
+    ! Contour part of DM integration
+    type(zSpData1D), intent(inout) :: SpArrDML, SpArrDMR
+    ! Real-axis part of DM integration
+    type(zSpData1D), intent(inout) :: SpArrDMneqL, SpArrDMneqR
+    ! L-R estimates of EDM
+    type(zSpData1D), intent(inout) :: SpArrEDML, SpArrEDMR
+
+! *********************
+! * LOCAL variables   *
+! *********************
+    real(dp) :: wL,wR,wSUM
+
+    ! arrays for looping in the sparsity pattern
+    type(Sparsity), pointer :: sp
+    complex(dp), pointer :: DML(:), DMR(:)
+    complex(dp), pointer :: DMneqL(:), DMneqR(:)
+    complex(dp), pointer :: EDML(:), EDMR(:)
+    integer, pointer :: l_ncol(:)
+    integer, pointer :: l_ptr(:)
+    integer, pointer :: l_col(:)
+    integer :: nr
+    integer :: io, jo, ind, j
+    ! For error estimation
+    integer :: eM_i,eM_j,neM_i,neM_j
+    complex(dp) :: ztmp
+    real(dp) :: eM, neM, rtmp
+
+#ifdef TRANSIESTA_DEBUG
+    call write_debug( 'PRE weightDMC' )
+#endif
+
+    ! TODO Enforce that sparsity is the same
+    ! (however, we know that they are the same.
+    sp => spar(SpArrDML)
+    l_ncol => n_col   (sp)
+    l_ptr  => list_ptr(sp)
+    l_col  => list_col(sp)
+    nr = nrows(sp)
+    ! Obtain the values in the arrays...
+    DML => val(SpArrDML)
+    DMR => val(SpArrDMR)
+    DMneqL => val(SpArrDMneqL)
+    DMneqR => val(SpArrDMneqR)
+    EDML => val(SpArrEDML)
+    EDMR => val(SpArrEDMR)
+
+    ! initialize the errors
+    eM  = 0._dp
+    neM = 0._dp
+
+    do io = 1 , nr
+       ! We are in a buffer region...
+       if ( l_ncol(io) == 0 ) cycle
+       do j = 1 , l_ncol(io)
+
+          ind = l_ptr(io)+j
+          ! Retrive the connecting orbital
+          jo = l_col(ind)
+
+          ! It is weighted in the density (not the imaginary part of 
+          ! \rho_L). Note that here \rho_L\equiv -i\rho_L!
+          wL = aimag(DMneqL(ind)) ** 2
+          wR = aimag(DMneqR(ind)) ** 2
+          wSUM = wL + wR
+ 
+          ! The weights (in any case we always have the full Gf.G.Gf, hence
+          ! it is safe to use this method always.
+          ! No need to force either correction term in the left/right regions
+          if ( wSUM > 0._dp ) then
+             wL = wL / wSUM
+             wR = wR / wSUM
+          else
+             wL = 0.5_dp
+             wR = 0.5_dp
+             wSUM = 1._dp
+          end if
+
+          ! We need to capture the error before the update...
+          ztmp = DML(ind) + DMneqR(ind) - DMR(ind) - DMneqL(ind)
+
+          DML(ind)  = wL * (DML(ind) + DMneqR(ind)) &
+                    + wR * (DMR(ind) + DMneqL(ind))
+          EDML(ind) = wL * EDML(ind) + wR * EDMR(ind)
+
+          ! Do error estimation (we are only interested in 
+          ! error in the density...)
+          
+          rtmp = aimag(ztmp) * aimag(ztmp)
+          ! this is absolute error
+          if ( rtmp > eM ) then
+             eM = rtmp
+             eM_i = io
+             eM_j = jo
+          end if
+          ! this is normalized absolute error
+          rtmp = rtmp * wL * wR
+          if ( rtmp > neM ) then
+             neM = rtmp
+             neM_i = io
+             neM_j = jo
+          end if
+
+       end do
+    end do
+
+    call print_error_estimate(IONode,eM,eM_i,eM_j,neM,neM_i,neM_j)
+
+#ifdef TRANSIESTA_DEBUG
+    call write_debug( 'POS weightDMC' )
+#endif
+
+  end subroutine weightDMC
+
+  subroutine print_error_estimate(IONode,eM,eM_i,eM_j,neM,neM_i,neM_j)
+    logical, intent(in) :: IONode
+    real(dp), intent(in) :: eM, neM
+    integer, intent(in) :: eM_i,eM_j, neM_i,neM_j
+
+    if ( IONode ) then
+       write(*,'(a,'' |('',i5,'','',i5,'')| = '',g9.4,&
+            &'' , |('',i5,'','',i5,'')|~ = '',g9.4)') &
+            'ts: integration EE.:',&
+            eM_i,eM_j,sqrt(eM), &
+            neM_i,neM_j,sqrt(neM)
+    end if
+
+  end subroutine print_error_estimate
+
+
+
   ! A subroutine for printing out the charge distribution in the cell
   ! it will currently only handle the full charge distribution, and
   ! not per k-point.
@@ -828,7 +1122,7 @@ contains
     use m_ts_options, only : na_BufR => NBufAtR
     use m_ts_options, only : no_R_HS => NUsedOrbsR
     use m_ts_options, only : NRepA1R, NRepA2R
-    use m_ts_mem_scat, only : get_scat_region
+    use m_ts_method, only : get_scat_region
     use parallel, only : IONode, Node
 #ifdef MPI
     use mpi_siesta

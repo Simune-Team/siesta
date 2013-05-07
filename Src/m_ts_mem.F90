@@ -29,6 +29,12 @@ module m_ts_mem
   use m_ts_sparse_helper, only : init_DM
   use m_ts_sparse_helper, only : update_DM
   use m_ts_sparse_helper, only : update_zDM
+
+  use m_ts_sparse_helper, only : ts_print_charges
+  use m_ts_sparse_helper, only : TS_INFO_SCF
+  
+  use m_ts_sparse_helper, only : weightDM
+  use m_ts_sparse_helper, only : weightDMC
   
   implicit none
   
@@ -104,6 +110,10 @@ contains
 
     use m_ts_mem_sparsity, only : ts_sp_uc
     use m_ts_mem_sparsity, only : tsup_sp_uc
+    
+    ! Self-energy retrival and expansion
+    use m_ts_elec_se
+    ! Gf calculation
     use m_ts_mem_scat
 
     use m_ts_method, only : GF_INV_EQUI_PART
@@ -116,9 +126,6 @@ contains
     use m_ts_cctype, only : CC_PART_TRANSPORT
 
     use m_ts_gf, only : read_Green
-
-    use m_ts_sparse_helper, only : ts_print_charges
-    use m_ts_sparse_helper, only : TS_INFO_SCF
 
 ! ********************
 ! * INPUT variables  *
@@ -354,7 +361,7 @@ contains
     ! GammaL at the same time. Hence it will be safe
     ! to have them point to the same array.
     ! When the UC_expansion_Sigma_GammaT is called:
-    ! first the GAA is "emptied" of information" and then
+    ! first the GAA is "emptied" of information and then
     ! Gamma is filled.
     GAAL => GammaLT
     GAAR => GammaRT
@@ -668,7 +675,7 @@ contains
              call calc_GF_Bias(no_u_TS,no_L,no_R, zwork, GF,ierr)
 
              ! We calculate the right contribution
-             call GF_Gamma_GF_Block_Short(no_L+1,no_u_TS,no_L+no_R, &
+             call GF_Gamma_GF(no_L+1,no_u_TS,no_L+no_R, &
                   no_R, Gf, &
                   GammaRT, zwork, no_R*no_R, SigmaR) ! SigmaR is a "work" array
              ! zwork is now GFGGF
@@ -688,7 +695,7 @@ contains
              end if
 
              ! We calculate the left contribution
-             call GF_Gamma_GF_Block_Short(1,no_u_TS, no_L+no_R, &
+             call GF_Gamma_GF(1,no_u_TS, no_L+no_R, &
                   no_L, Gf, &
                   GammaLT, zwork, no_L*no_L, SigmaL) ! SigmaL is a "work" array
              ! zwork is now GF.G.GF

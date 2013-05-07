@@ -16,29 +16,17 @@ module m_ts_tri_scat
 
   use precision, only : dp
 
-  use m_ts_mem_scat, only : UC_expansion_Sigma
-  use m_ts_mem_scat, only : UC_expansion_Sigma_GammaT
-  use m_ts_mem_scat, only : UC_expansion_Sigma_Bulk
-
-  use m_ts_mem_scat, only : weightDM, weightDMC
-  use m_ts_mem_scat, only : read_next_GS, get_scat_region
-
   implicit none
 
-  public :: calc_GF, calc_GF_Part
+  private
+
+  public :: calc_GF
+  public :: calc_GF_Bias
+  public :: calc_GF_Part
   public :: GF_Gamma_GF_Left
   public :: GF_Gamma_GF_Right
 
-  ! Module used, which should be accessible from this module
-  public :: weightDM, weightDMC
-  public :: read_next_GS, get_scat_region
-  public :: UC_expansion_Sigma_Bulk
-  public :: UC_expansion_Sigma
-  public :: UC_expansion_Sigma_GammaT
-
-!  private
-
-  ! Used for BLAS calls
+  ! Used for BLAS calls (local variables)
   complex(dp), parameter :: z0  = dcmplx( 0._dp, 0._dp)
   complex(dp), parameter :: z1  = dcmplx( 1._dp, 0._dp)
   complex(dp), parameter :: zm1 = dcmplx(-1._dp, 0._dp)
@@ -61,7 +49,6 @@ contains
        no_u_TS, GFinv_tri,GF_tri,ierr)
     
     use intrinsic_missing, only: EYE
-    use precision, only: dp
     use class_zTriMat3
 
     implicit none 
@@ -192,8 +179,7 @@ contains
     call write_debug( 'POS getGF' )
 #endif
 
-! ====================================================================
-  END subroutine calc_GF
+  end subroutine calc_GF
 
 
 ! ##################################################################
@@ -209,7 +195,6 @@ contains
        no_R, SigmaR) ! work arrays (they are actually the SigmaL and SigmaR)
     
     use intrinsic_missing, only: EYE
-    use precision, only: dp
     use class_zTriMat3
 
     implicit none 
@@ -367,7 +352,6 @@ contains
     call write_debug( 'POS getGF' )
 #endif
 
-! ====================================================================
   end subroutine calc_GF_Bias
 
 
@@ -380,7 +364,6 @@ contains
   subroutine calc_GF_Part(no_u_TS, no_L, no_R, GFinv_tri,GF22,ierr)
     
     use intrinsic_missing, only: EYE
-    use precision, only: dp
     use class_zTriMat3
     use alloc
 
@@ -455,9 +438,7 @@ contains
     call write_debug( 'POS getGF' )
 #endif
 
-! ====================================================================
-  END subroutine calc_GF_Part
-
+  end subroutine calc_GF_Part
 
   subroutine GF_Gamma_GF_Left(no_L,Gf_tri,GammaT,GGG_tri)
 
@@ -467,107 +448,6 @@ contains
 !  corresponds to the (no_L) Left
 !  Gamma is a (no_L)x(no_L) matrix.
 ! ======================================================================
-    use precision, only : dp
-    use class_zTriMat3
-
-    implicit none
-
-! *********************
-! * INPUT variables   *
-! *********************
-    integer, intent(in) :: no_L ! the size of the Gamma
-    ! The Green's function (note that it SHOULD be transposed on entry)
-    type(zTriMat3), intent(inout) :: Gf_tri
-    ! i (Sigma - Sigma^dagger)/2
-    complex(dp),    intent(in) :: GammaT(no_L,no_L)
-
-! *********************
-! * OUTPUT variables  *
-! *********************
-    type(zTriMat3), intent(inout) :: GGG_tri    !GF.GAMMA.GF
-
-    ! local variables
-    complex(dp), pointer :: Gf(:), GGG(:), oW(:)
-    integer :: nL,nC,nR
-    integer :: l_idx, u_idx
-
-#ifdef TRANSIESTA_DEBUG
-    call write_debug( 'PRE GFGammaGF' )
-#endif
-
-    call timer("GFGGF",1)
-
-    ! should be the same as no_L
-    nL = nrows_g_left  (Gf_tri)
-    nC = nrows_g_center(Gf_tri)
-    nR = nrows_g_right (Gf_tri)
-
-    ! First we need to point to an empty memory segment of
-    ! the tri-diagonal result array...
-    GGG => val(GGG_tri)
-    l_idx = index(GGG_tri,nL+nC+1,nL+1)
-    u_idx = index(GGG_tri,nL+nC+nR,nL+nC+nR)
-
-    ! This is the full GGG 32,23,33 array (note we check the size
-    ! requirements so as not to overwrite anything)
-    oW => GGG(l_idx:u_idx)
-
-    Gf  => val11(Gf_tri)
-    ! \Gamma Gf^\dagger 11
-    call zgemm('T','C',nL,nL,nL,z1, GammaT,nL, Gf,nL,z0, oW,nL)
-
-    GGG => val11(GGG_tri)
-    ! Gf11 \Gamma Gf^\dagger 11 == GGG 11
-    call zgemm('N','N',nL,nL,nL,z1, Gf,nL, oW,nL,z0, GGG,nL)
-
-    Gf  => val21(Gf_tri) ! size nC x nL
-    GGG => val21(GGG_tri) ! size nC x nL
-    ! Gf21 \Gamma Gf^\dagger 11 == GGG 21
-    call zgemm('N','N',nC,nL,nL,z1, Gf,nC, oW,nL,z0, GGG,nC)
-
-    ! > We now have GGG :1 <
-
-    Gf => val21(Gf_tri) ! size nC x nL (note we take the conjugate transpose)
-    ! \Gamma Gf^\dagger 12
-    call zgemm('T','C',nL,nC,nL,z1, GammaT,nL, Gf,nC,z0, oW,nL)
-
-    Gf  => val11(Gf_tri) ! size nL x nL
-    GGG => val12(GGG_tri) ! size nL x nC
-    ! Gf 11 \Gamma Gf^\dagger 12 == GGG 12
-    call zgemm('N','N',nL,nC,nL,z1, Gf,nL, oW,nL,z0, GGG,nL)
-
-    Gf  => val21(Gf_tri) ! size nC x nL
-    GGG => val22(GGG_tri) ! size nC x nC
-    ! Gf 21 \Gamma Gf^\dagger 12 == GGG 22
-    call zgemm('N','N',nC,nC,nL,z1, Gf,nC, oW,nL,z0, GGG,nC)
-
-    ! Now we have Gf Gamma Gf^\dagger
-    
-    ! Only the GGG 1:2,1:2 part!
-
-    ! TODO Check that this is actually not needed...
-    ! it resets the value in the right-electrode region which can not
-    ! be calculated
-    !oW(:) = z0
-    
-    call timer('GFGGF',2)
-
-#ifdef TRANSIESTA_DEBUG
-    call write_debug( 'POS GFGammaGF' )
-#endif
-
-! ====================================================================
-  END subroutine GF_Gamma_GF_Left
-
-  subroutine GF_Gamma_GF_Left_All(no_L,Gf_tri,GammaT,GGG_tri)
-
-! ======================================================================
-!  This routine returns GGG=GF.Gamma.GF^\dagger, where GF is a tri-diagonal
-!  matrix and the states
-!  corresponds to the (no_L) Left
-!  Gamma is a (no_L)x(no_L) matrix.
-! ======================================================================
-    use precision, only : dp
     use class_zTriMat3
 
     implicit none
@@ -672,107 +552,10 @@ contains
     call write_debug( 'POS GFGammaGF' )
 #endif
 
-! ====================================================================
-  END subroutine GF_Gamma_GF_Left_All
+  END subroutine GF_Gamma_GF_Left
+
 
   subroutine GF_Gamma_GF_Right(no_R,Gf_tri,GammaT,GGG_tri)
-
-! ======================================================================
-!  This routine returns GGG=GF.Gamma.GF^\dagger, where GF is a tri-diagonal
-!  matrix and the states
-!  corresponds to the (no_R) right
-!  Gamma is a (no_R)x(no_R) matrix.
-! ======================================================================
-    use precision, only : dp
-    use class_zTriMat3
-
-    implicit none
-
-! *********************
-! * INPUT variables   *
-! *********************
-    integer, intent(in) :: no_R ! the size of the Gamma
-    ! The Green's function (note that it SHOULD be transposed on entry)
-    type(zTriMat3), intent(inout) :: Gf_tri
-    ! i (Sigma - Sigma^dagger)/2
-    complex(dp),    intent(in) :: GammaT(no_R,no_R)
-
-! *********************
-! * OUTPUT variables  *
-! *********************
-    type(zTriMat3), intent(inout) :: GGG_tri    !GF.GAMMA.GF
-
-    ! local variables
-    complex(dp), pointer :: Gf(:), GGG(:), oW(:)
-    integer :: nL,nC,nR
-    integer :: l_idx, u_idx
-
-#ifdef TRANSIESTA_DEBUG
-    call write_debug( 'PRE GFGammaGF' )
-#endif
-
-    call timer("GFGGF",1)
-
-    nL = nrows_g_left  (Gf_tri)
-    nC = nrows_g_center(Gf_tri)
-    nR = nrows_g_right (Gf_tri)
-
-    ! First we need to point to an empty memory segment of
-    ! the tri-diagonal result array...
-    GGG   =>  val(GGG_tri)
-    l_idx = index(GGG_tri,1,1)
-    u_idx = index(GGG_tri,nL,nL+nC)
-
-    ! This is the full GGG 11,21,12 array (note we check the size
-    ! requirements in ts_init so as not to overwrite anything)
-    oW => GGG(l_idx:u_idx)
-
-    Gf => val33(Gf_tri)
-    ! \Gamma Gf^\dagger 33
-    call zgemm('T','C',nR,nR,nR,z1, GammaT,nR, Gf,nR,z0, oW,nR)
-
-    GGG => val33(GGG_tri)
-    ! Gf33 \Gamma Gf^\dagger 33 == GGG 33
-    call zgemm('N','N',nR,nR,nR,z1, Gf,nR, oW,nR,z0, GGG,nR)
-
-    Gf  => val23(Gf_tri) ! size nC x nR
-    GGG => val23(GGG_tri) ! size nC x nR
-    ! Gf23 \Gamma Gf^\dagger 33 == GGG 23
-    call zgemm('N','N',nC,nR,nR,z1, Gf,nC, oW,nR,z0, GGG,nC)
-
-    ! > We now have GGG :3 <
-
-    Gf => val23(Gf_tri) ! size nC x nR
-    ! \Gamma Gf^\dagger 32
-    call zgemm('T','C',nR,nC,nR,z1, GammaT,nR, Gf,nC,z0, oW,nR)
-
-    !Gf  => val23(Gf_tri) ! size nC x nR
-    GGG => val22(GGG_tri) ! size nC x nC
-    ! Gf 23 \Gamma Gf^\dagger 32 == GGG 22
-    call zgemm('N','N',nC,nC,nR,z1, Gf,nC, oW,nR,z0, GGG,nC)
-
-    Gf  => val33(Gf_tri) ! size nR x nR
-    GGG => val32(GGG_tri) ! size nR x nC
-    ! Gf 33 \Gamma Gf^\dagger 32 == GGG 32
-    call zgemm('N','N',nR,nC,nR,z1, Gf,nR, oW,nR,z0, GGG,nR)
-
-    ! Now we have Gf Gamma Gf^\dagger
-
-    ! TODO Check that this is actually not needed...
-    ! it resets the value in the right-electrode region which can not
-    ! be calculated
-    !oW(:) = z0
-
-    call timer('GFGGF',2)
-
-#ifdef TRANSIESTA_DEBUG
-    call write_debug( 'POS GFGammaGF' )
-#endif
-
-! ====================================================================
-  END subroutine GF_Gamma_GF_Right
-
-  subroutine GF_Gamma_GF_Right_All(no_R,Gf_tri,GammaT,GGG_tri)
 
 ! ======================================================================
 !  This routine returns GGG=GF.Gamma.GF, where GF is a tri-diagonal
@@ -780,7 +563,6 @@ contains
 !  corresponds to the (no_R) right
 !  Gamma is a (no_R)x(no_R) matrix.
 ! ======================================================================
-    use precision, only : dp
     use class_zTriMat3
 
     implicit none
@@ -885,7 +667,6 @@ contains
     call write_debug( 'POS GFGammaGF' )
 #endif
 
-! ====================================================================
-  END subroutine GF_Gamma_GF_Right_All
+  END subroutine GF_Gamma_GF_Right
 
 end module m_ts_tri_scat

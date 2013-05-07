@@ -1,4 +1,38 @@
 ----------------------------------------------------
+May 7, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-21
+Restructured common transiesta routines to generic purpose module
+
+* Routines concerning transiesta to be more stringent.
+  All routines related to the reading/expansion of the self-energy
+  has been moved to m_ts_elec_se.F90
+
+* Renamed all Gf.Gamma.Gf routines to Gf_Gamma_Gf so that naming scheme
+  is the same. They are located in their own module for each different 
+  method. Hence if loading the wrong module a compilation error will arise.
+
+* The weightDM routines concerning the sparsity method has been moved
+   to the m_ts_sparse_helper.
+
+* Removed not used routines (they are in the history so can be found)
+  These are the Gf_Gamma_Gf_Left/Right routines for the tri-diagonal 
+  solution method.
+
+* Checked compilation of TS with gfortran 4.4.5
+
+added:
+  Src/m_ts_elec_se.F90
+modified:
+  Src/Makefile
+  Src/m_ts_in_siesta.F
+  Src/m_ts_mem.F90
+  Src/m_ts_mem_scat.F90
+  Src/m_ts_method.f90
+  Src/m_ts_scattering.F
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_tri.F90
+  Src/m_ts_tri_scat.F90
+
+----------------------------------------------------
 May 7, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-20
 Optimized transiesta for speed, now the sparse-tri is precise +bugfixes
 

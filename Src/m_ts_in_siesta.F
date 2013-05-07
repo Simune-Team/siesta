@@ -107,7 +107,7 @@
       use m_ts_GF,      only : read_Green
       use m_ts_scattering, only : getSFE, getGF, getGFnonV
       use m_ts_scattering, only : weightDM, weightDMC
-      use m_ts_mem_scat, only : GF_Gamma_GF_Block
+      use m_ts_scattering, only : GF_Gamma_GF
       use m_ts_scattering, only : get_scat_region
 
       use m_ts_kpoints, only : ts_nkpnt,ts_kpoint,ts_kweight
@@ -1114,7 +1114,7 @@
 
 !   Calculate rho^R(e) -> work2 ! NOTE R!!
             ! We note here that we get Gf.Gamma.Gf^\dagger
-            call GF_Gamma_GF_Block(nou-noR+1, nou, noR, GF,
+            call GF_Gamma_GF(nou-noR+1, nou, noR, GF,
      &           GammaRT, work2, noR*noR, SFER) ! SFER is a "work" array
             
 ! note DM = DML+DMneqR or DM=DMR+DMneqL
@@ -1134,7 +1134,7 @@
 
 !  Calculate rho^L(e) -> work2 ! NOTE L!!
             ! We note here that we get Gf.Gamma.Gf^\dagger
-             call GF_Gamma_GF_Block(1, nou, noL, GF, 
+             call GF_Gamma_GF(1, nou, noL, GF, 
      &           GammaLT, work2, noL*noL, SFEL) ! SigmaL is a "work" array
         
 !     note we use "-" here!
