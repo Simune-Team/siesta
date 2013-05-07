@@ -137,7 +137,7 @@ C     Initialise MPI and set processor number
       Node = 0
       Nodes = 1
 #endif
-      IOnode = (Node .eq. 0)
+      IOnode = worker .and. (Node .eq. 0)
       if (.not. worker) RETURN
 
 #ifdef DEBUG

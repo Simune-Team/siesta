@@ -1,4 +1,22 @@
 ------------------------------------------------------------
+May  7, 2013   Alberto Garcia            trunk-434--pexsi-26
+Fix a bug, clarify the flow, and add placeholders
+
+The meaning of the "tolerance" parameter for inertia counts
+was misunderstood, and set to a very low value.
+
+The flow of control in siesta_forces has been clarified, with
+broadcast of iscf and better sectioning.
+
+A placeholder for the handling of the mu interval has been
+created.
+
+modified:
+  Src/m_pexsi_solver.F90
+  Src/siesta_forces.F
+  Src/siesta_init.F
+
+------------------------------------------------------------
 May  2, 2013   Alberto Garcia            trunk-434--pexsi-25
 Add 'info' parameter to PEXSI interface
 
