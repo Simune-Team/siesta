@@ -315,7 +315,7 @@ TS_OBJS= m_ts_global_vars.o m_ts_options.o m_ts_aux_rout.o m_ts_kpoints.o \
 
 # Transiesta objects (new memory reduced objects)
 TS_OBJS += m_ts_mem.o m_ts_mem_sparsity.o m_ts_mem_scat.o
-TS_OBJS += m_ts_sparse_helper.o
+TS_OBJS += m_ts_sparse_helper.o m_ts_method.o
 
 # Transiesta tri-diagonal sparsity...
 TS_OBJS += m_ts_tri.o m_ts_tri_scat.o
@@ -436,9 +436,9 @@ compute_EKS_Harris.o: siesta_geom.o siesta_options.o sparse_matrices.o
 compute_dm.o: atomlist.o iodmhs_netcdf.o kpoint_grid.o m_energies.o m_eo.o
 compute_dm.o: m_gamma.o m_mpi_utils.o m_rmaxh.o m_spin.o m_steps.o
 compute_dm.o: m_ts_global_vars.o m_ts_in_siesta.o m_ts_mem.o
-compute_dm.o: m_ts_mem_sparsity.o m_ts_options.o m_ts_tri.o ordern.o parallel.o
-compute_dm.o: precision.o siesta_geom.o siesta_options.o sparse_matrices.o
-compute_dm.o: sys.o units.o
+compute_dm.o: m_ts_mem_sparsity.o m_ts_method.o m_ts_options.o
+compute_dm.o: m_ts_sparse_helper.o m_ts_tri.o ordern.o parallel.o precision.o
+compute_dm.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o units.o
 compute_max_diff.o: atomlist.o m_mpi_utils.o m_spin.o precision.o
 compute_max_diff.o: sparse_matrices.o
 compute_norm.o: m_mpi_utils.o precision.o sparse_matrices.o
@@ -626,23 +626,26 @@ m_ts_kpoints.o: files.o find_kgrid.o minvec.o parallel.o precision.o
 m_ts_kpoints.o: siesta_cml.o siesta_options.o sys.o
 m_ts_mem.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData1D.o
 m_ts_mem.o: class_Sparsity.o m_ts_cctype.o m_ts_contour.o m_ts_gf.o
-m_ts_mem.o: m_ts_kpoints.o m_ts_mem_scat.o m_ts_mem_sparsity.o m_ts_options.o
-m_ts_mem.o: m_ts_sparse_helper.o parallel.o precision.o units.o
+m_ts_mem.o: m_ts_kpoints.o m_ts_mem_scat.o m_ts_mem_sparsity.o m_ts_method.o
+m_ts_mem.o: m_ts_options.o m_ts_sparse_helper.o parallel.o precision.o units.o
 m_ts_mem_scat.o: class_SpData1D.o class_SpData1D.o class_Sparsity.o
 m_ts_mem_scat.o: intrinsic_missing.o parallel.o precision.o units.o
 m_ts_mem_sparsity.o: class_OrbitalDistribution.o class_Sparsity.o
 m_ts_mem_sparsity.o: create_Sparsity_SC.o geom_helper.o m_glob_sparse.o
-m_ts_mem_sparsity.o: m_ts_mem_scat.o m_ts_options.o parallel.o
-m_ts_options.o: files.o m_ts_contour.o m_ts_global_vars.o m_ts_io.o parallel.o
-m_ts_options.o: precision.o siesta_options.o sys.o units.o
+m_ts_mem_sparsity.o: m_ts_options.o parallel.o precision.o
+m_ts_options.o: files.o m_ts_contour.o m_ts_global_vars.o m_ts_io.o
+m_ts_options.o: m_ts_method.o parallel.o precision.o siesta_options.o sys.o
+m_ts_options.o: units.o
 m_ts_scattering.o: m_ts_aux_rout.o parallel.o precision.o sys.o units.o
 m_ts_sparse_helper.o: class_OrbitalDistribution.o class_SpData1D.o
 m_ts_sparse_helper.o: class_SpData1D.o class_Sparsity.o geom_helper.o
-m_ts_sparse_helper.o: intrinsic_missing.o parallel.o precision.o
+m_ts_sparse_helper.o: intrinsic_missing.o m_ts_mem_scat.o m_ts_options.o
+m_ts_sparse_helper.o: parallel.o precision.o
 m_ts_tri.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData1D.o
 m_ts_tri.o: class_Sparsity.o class_TriMat3.o m_ts_cctype.o m_ts_contour.o
-m_ts_tri.o: m_ts_gf.o m_ts_kpoints.o m_ts_mem_sparsity.o m_ts_options.o
-m_ts_tri.o: m_ts_sparse_helper.o m_ts_tri_scat.o parallel.o precision.o units.o
+m_ts_tri.o: m_ts_gf.o m_ts_kpoints.o m_ts_mem_sparsity.o m_ts_method.o
+m_ts_tri.o: m_ts_options.o m_ts_sparse_helper.o m_ts_tri_scat.o parallel.o
+m_ts_tri.o: precision.o units.o
 m_ts_tri_scat.o: alloc.o class_TriMat3.o intrinsic_missing.o m_ts_mem_scat.o
 m_ts_tri_scat.o: precision.o
 m_ts_voltage.o: m_ts_options.o mesh.o parallel.o precision.o units.o
@@ -769,9 +772,10 @@ siesta_end.o: siesta_cml.o siesta_cmlsubs.o sparse_matrices.o timestamp.o
 siesta_forces.o: atomlist.o check_scf_convergence.o compute_EKS_Harris.o
 siesta_forces.o: compute_dm.o compute_max_diff.o final_H_f_stress.o
 siesta_forces.o: m_convergence.o m_forces.o m_pulay.o m_spin.o m_steps.o
-siesta_forces.o: m_ts_global_vars.o m_ts_mem_sparsity.o m_ts_options.o mixer.o
-siesta_forces.o: parallel.o post_scf_work.o precision.o save_density_matrix.o
-siesta_forces.o: setup_H0.o setup_hamiltonian.o siesta_cml.o siesta_geom.o
+siesta_forces.o: m_ts_global_vars.o m_ts_method.o m_ts_options.o
+siesta_forces.o: m_ts_sparse_helper.o mixer.o parallel.o post_scf_work.o
+siesta_forces.o: precision.o save_density_matrix.o setup_H0.o
+siesta_forces.o: setup_hamiltonian.o siesta_cml.o siesta_geom.o
 siesta_forces.o: siesta_options.o sparse_matrices.o state_analysis.o
 siesta_forces.o: state_init.o sys.o units.o write_subs.o
 siesta_geom.o: precision.o
@@ -817,8 +821,8 @@ struct_init.o: siesta_cml.o siesta_geom.o siesta_options.o zmatrix.o
 sys.o: parallel.o
 timer.o: m_timer.o sys.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
-ts_init.o: files.o m_ts_contour.o m_ts_gf.o m_ts_kpoints.o m_ts_options.o
-ts_init.o: parallel.o
+ts_init.o: files.o m_ts_contour.o m_ts_gf.o m_ts_kpoints.o m_ts_method.o
+ts_init.o: m_ts_options.o parallel.o
 ts_show_regions.o: parallel.o precision.o units.o
 typecell.o: precision.o
 uncell.o: precision.o

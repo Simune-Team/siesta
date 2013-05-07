@@ -25,6 +25,9 @@ module m_ts_sparse_helper
   implicit none
   
   private :: dp
+
+  integer, parameter :: TS_INFO_FULL = 0
+  integer, parameter :: TS_INFO_SCF = 1
   
 contains
 
@@ -794,13 +797,13 @@ contains
                 call die('ERROR: symmetrization points does not exist')
              end if
               
-             ph_p = cdexp(dcmplx(0._dp,+1._dp)*kx)
-             ph_m = cdexp(dcmplx(0._dp,-1._dp)*kx)
+             ph_p = 0.5_dp*cdexp(dcmplx(0._dp,+1._dp)*kx)
+             ph_m = 0.5_dp*cdexp(dcmplx(0._dp,-1._dp)*kx)
 
-             DM(lind)  = DM(lind)  + 0.5_dp * dimag( &
+             DM(lind)  = DM(lind)  + dimag( &
                   ph_p*zD(rind) + ph_m*zD(ind) )
 
-             EDM(lind) = EDM(lind) + 0.5_dp * dimag( &
+             EDM(lind) = EDM(lind) + dimag( &
                   ph_p*zE(rind) + ph_m*zE(ind) )
 
           end do
@@ -808,5 +811,178 @@ contains
     end do
 
   end subroutine update_zDM
+
+
+  ! A subroutine for printing out the charge distribution in the cell
+  ! it will currently only handle the full charge distribution, and
+  ! not per k-point.
+  subroutine ts_print_charges(dit, sparse_pattern, &
+       na_u, lasto, &
+       nspin, n_nzs, DM, S, &
+       method)
+    ! left stuff
+    use m_ts_options, only : na_BufL => NBufAtL
+    use m_ts_options, only : no_L_HS => NUsedOrbsL
+    use m_ts_options, only : NRepA1L, NRepA2L
+    ! right stuff
+    use m_ts_options, only : na_BufR => NBufAtR
+    use m_ts_options, only : no_R_HS => NUsedOrbsR
+    use m_ts_options, only : NRepA1R, NRepA2R
+    use m_ts_mem_scat, only : get_scat_region
+    use parallel, only : IONode, Node
+#ifdef MPI
+    use mpi_siesta
+#endif
+    use class_OrbitalDistribution
+    use class_Sparsity
+    use geom_helper, only : UCORB
+
+! **********************
+! * INPUT variables    *
+! **********************
+    type(OrbitalDistribution), intent(inout) :: dit
+    ! SIESTA local sparse pattern (not changed)
+    type(Sparsity), intent(inout) :: sparse_pattern
+    ! Number of atoms in the unit-cell
+    integer, intent(in) :: na_u
+    ! Last orbital of the equivalent unit-cell atom
+    integer, intent(in) :: lasto(0:na_u)
+    ! Number of non-zero elements
+    integer, intent(in) :: nspin, n_nzs
+    ! The density matrix and overlap
+    real(dp), intent(in) :: DM(n_nzs,nspin), S(n_nzs)
+    ! The method by which it should be printed out...
+    integer, intent(in), optional :: method
+
+! **********************
+! * LOCAL variables    *
+! **********************
+    real(dp) :: Q(0:9,nspin,2)
+    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
+    integer :: no_lo, no_u, lio, io, ind, jo, ispin, r
+    integer :: no_u_TS
+    integer :: no_BufL, no_BufR
+    integer :: no_L, no_R
+    integer :: lmethod
+#ifdef MPI
+    integer :: MPIerror
+#endif
+
+    lmethod = TS_INFO_FULL
+    if ( present(method) ) lmethod = method
+
+    ! Calculate the buffer region and electrode orbitals
+    no_L = no_L_HS * NRepA1L * NRepA2L
+    no_R = no_R_HS * NRepA1R * NRepA2R
+
+    ! Calculate the number of orbitals not used (i.e. those 
+    ! in the buffer regions)
+    ! Left has the first atoms
+    no_BufL = lasto(na_BufL)
+    ! Right has the last atoms
+    no_BufR = lasto(na_u) - lasto(na_u - na_BufR)
+
+
+    no_lo = nrows  (sparse_pattern)
+    no_u  = nrows_g(sparse_pattern)
+    no_u_TS = no_u - no_BufL - no_BufR
+
+    ! The sparse lists.
+    l_ncol => n_col   (sparse_pattern)
+    l_ptr  => list_ptr(sparse_pattern)
+    l_col  => list_col(sparse_pattern)
+
+    ! Initialize charges
+    Q = 0._dp
+
+    do ispin = 1 , nspin
+       do lio = 1 , no_lo
+
+          ! obtain the global index of the orbital.
+          io = index_local_to_global(dit,lio,Node) - no_BufL
+
+          ! Loop number of entries in the row... (index frame)
+          do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
+             
+             ! as the local sparsity pattern is a super-cell pattern,
+             ! we need to check the unit-cell orbital
+             ! The unit-cell column index
+             jo = UCORB(l_col(ind),no_u) - no_BufL
+             
+             r = get_scat_region(io,no_L,jo,no_R,no_u_TS)
+             
+             Q(r,ispin,2) = Q(r,ispin,2) + &
+                  DM(ind,ispin) * S(ind)
+          end do
+       end do
+    end do
+
+#ifdef MPI
+    call MPI_Reduce(Q(0,1,2),Q(0,1,1),10*nspin,MPI_Double_Precision,MPI_SUM, &
+         0,MPI_Comm_World,MPIerror)
+#endif
+
+    ! it will only be the IONode which will write out...
+    if ( .not. IONode ) return
+
+    if ( lmethod == TS_INFO_FULL ) then
+
+       write(*,'(/,a)') 'transiesta: Charge distribution:'
+       if ( nspin > 1 ) then
+          write(*,'(a,2(f12.5,tr1))') &
+               'Total charge                  [Q]    :', &
+               sum(Q(:,1,1)),sum(Q(:,2,1))
+          if ( no_BufL > 0 ) write(*,'(a,2(f12.5,tr1),/,a,2(f12.5,tr1))') &
+               'Left buffer                   [LB]   :',Q(1,1,1), Q(1,2,1), &
+               'Left buffer/left electrode    [LB-L] :',Q(2,1,1), Q(2,2,1)
+          write(*,'(a,2(f12.5,tr1),4(/,a,2(f12.5,tr1)))') &
+               'Left electrode                [L]    :',Q(3,1,1), Q(3,2,1), &
+               'Left electrode/device         [L-C]  :',Q(4,1,1), Q(4,2,1), &
+               'Device                        [C]    :',Q(5,1,1), Q(5,2,1), &
+               'Device/right electrode        [C-R]  :',Q(6,1,1), Q(6,2,1), &
+               'Right electrode               [R]    :',Q(7,1,1), Q(7,2,1)
+          if ( no_BufR > 0 ) write(*,'(a,2(f12.5,tr1),/,a,2(f12.5,tr1))') &
+               'Right electrode/right buffer  [R-RB] :',Q(8,1,1), Q(8,2,1), &
+               'Right buffer                  [RB]   :',Q(9,1,1), Q(9,2,1)
+          write(*,'(a,2(f12.5,tr1),/)') &
+               'Other                         [O]    :',Q(0,1,1), Q(0,2,1)
+
+       else
+          write(*,'(a,f12.5)') &
+               'Total charge                  [Q]    :',sum(Q(:,1,1))
+          if ( no_BufL > 0 ) write(*,'(a,f12.5,/,a,f12.5)') &
+               'Left buffer                   [LB]   :',Q(1,1,1), &
+               'Left buffer/left electrode    [LB-L] :',Q(2,1,1)
+          write(*,'(a,f12.5,4(/,a,f12.5))') &
+               'Left electrode                [L]    :',Q(3,1,1), &
+               'Left electrode/device         [L-C]  :',Q(4,1,1), &
+               'Device                        [C]    :',Q(5,1,1), &
+               'Device/right electrode        [C-R]  :',Q(6,1,1), &
+               'Right electrode               [R]    :',Q(7,1,1)
+          if ( no_BufR > 0 ) write(*,'(a,f12.5,/,a,f12.5)') &
+               'Right electrode/right buffer  [R-RB] :',Q(8,1,1), &
+               'Right buffer                  [RB]   :',Q(9,1,1)
+          write(*,'(a,f12.5,/)') &
+               'Other                         [O]    :',Q(0,1,1)
+       end if
+
+    else if ( lmethod == TS_INFO_SCF ) then
+
+       ! We write out the information from the SCF cycle...
+
+       write(*,'(a,7(1x,a9))') 'ts-charge:','O','L','L-C','C', &
+            'C-R','R','Qt'
+       do ispin = 1 , nspin
+          write(*,'(a,7(1x,f9.3))') 'ts-charge:', &
+               Q(0,ispin,1), &
+               Q(3,ispin,1),Q(4,ispin,1), &
+               Q(5,ispin,1),Q(6,ispin,1), &
+               Q(7,ispin,1),sum(Q(:,ispin,1))
+       end do
+
+    end if
+
+    
+  end subroutine ts_print_charges
  
 end module m_ts_sparse_helper

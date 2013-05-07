@@ -510,7 +510,7 @@ C ##    Nick Papior Andersen, nickpapior@gmail.com                ##
 C ##################################################################
 
       subroutine getSFE(UseBulk,uGF,HAA,SAA,ZEnergy,ikpt,nq,qb,wq,
-     &     no_GF,nua,lasto,NA1,NA2,no,SFE,GAMMA,points2read,
+     &     no_GF,nua,lasto,NA1,NA2,no,SFE,GammaT,points2read,
      &     errorgs)
 
       use m_ts_aux_rout, only : csolve 
@@ -577,7 +577,7 @@ c======================================================================
 c OUTPUT: 
       complex(dp) SFE(no,no) !Electrode atoms self-energy for USEBULK true
 c                           !else z*S - H - Sigma for ideal surface
-      real(dp)  GAMMA(no,no)  ! 0.5*(Sigma - Sigma^dagger) 
+      complex(dp)  GammaT(no,no)    ! 0.5*(Sigma - Sigma^dagger) 
       logical errorgs
 
 c=====================================================================
@@ -880,9 +880,11 @@ c
 c Gamma 
 c
       do io=1,no
-         do jo=1,no
-            GAMMA(jo,io) = -.5_dp * dimag(
-     &           WRK1(jo,io) - dconjg(WRK1(io,jo)))
+         do jo=1,io
+            GammaT(jo,io) = dcmplx(0._dp,0.5_dp) * (
+     &           WRK1(io,jo) - dconjg(WRK1(jo,io)) )
+            GammaT(io,jo) = dcmplx(0._dp,0.5_dp) * (
+     &           WRK1(jo,io) - dconjg(WRK1(io,jo)) )
          end do                 !jo
       end do                    !io
       
@@ -933,7 +935,7 @@ C ##  Version 011200  Kurt Stokbro, ks@mic.dtu.dk                 ##
 C ##################################################################
 
 
-      subroutine weightDM(nc,NGL,NGR,DML,DMR,DMneqL,DMneqR,
+      subroutine weightDM(TriDiag,nc,NGL,NGR,DML,DMR,DMneqL,DMneqR,
      &     EDML,EDMR)
 C ======================================================================
 c  This routine find weight for the DM integral. On output
@@ -956,7 +958,7 @@ c
 C ======================================================================
 C INPUT:
 
-      
+      logical, intent(in) :: TriDiag ! Whether the routine is tri-diagonalized
       integer nc                !no. states in density matrix
       integer NGL               !no. states in left electrode
       integer NGR               !no. states in right electrode
@@ -1001,7 +1003,7 @@ C Get Node number
 
 c            write(*,*) i,j,DMneqR(i,j),DMneqL(i,j),DML(i,j),DMR(i,j)
 c  In the leads we always use either left or right integration scheme.
-
+            if ( TriDiag ) then
             if (i .le. NGL .or. j .le. NGL) then
 ! FDN With TriDiag, it must be the opposite !! 
 ! GF(1,3) and GF(3,1) are not zero !, only in TriDiag ...
@@ -1012,6 +1014,7 @@ c  In the leads we always use either left or right integration scheme.
 ! FDN With TriDiag, it must be the opposite !!
 !               w = 0.0d0
                w = 1.d0
+            endif
             endif
 c weight DM and DML
             DML(i,j) = w *(DML(i,j)+DMneqR(i,j))
@@ -1060,7 +1063,7 @@ C ====================================================================
 
 
 C FDN Routine for complex matrices
-      subroutine weightDMC(nc,NGL,NGR,DML,DMR,DMneqL,DMneqR,
+      subroutine weightDMC(TriDiag,nc,NGL,NGR,DML,DMR,DMneqL,DMneqR,
      &     EDML,EDMR)
 C ======================================================================
 c  This routine find weight for the DM integral. On output
@@ -1082,7 +1085,7 @@ c
 C ======================================================================
 C INPUT:
 
-      
+      logical, intent(in) :: TriDiag ! whether the tri-diagonalization routine is used
       integer nc                !no. states in density matrix
       integer NGL               !no. states in left electrode
       integer NGR               !no. states in right electrode
@@ -1112,8 +1115,8 @@ c=======================================================================
       maxndif2=0.0d0
       do j=1,nc
          do i=1,nc
-            wr=cdabs(DMneqR(i,j))**2
-            wl=cdabs(DMneqL(i,j))**2
+            wr=aimag(DMneqR(i,j))**2
+            wl=aimag(DMneqL(i,j))**2
             wsum=wr+wl
             if(wsum .gt. 0d0) then
                 w = wl/wsum
@@ -1121,9 +1124,9 @@ c=======================================================================
                 w=0.5d0
              end if
 
-c            write(*,*) i,j,DMneqR(i,j),DMneqL(i,j),DML(i,j),DMR(i,j)
 c  In the leads we always use either left or right integration scheme.
 
+            if ( TriDiag ) then
             if (i .le. NGL .or. j .le. NGL) then
 ! FDN With TriDiag, it must be the opposite !!
 !               w = 1.0d0
@@ -1133,6 +1136,7 @@ c  In the leads we always use either left or right integration scheme.
 ! FDN With TriDiag, it must be the opposite !!
 !               w = 0.0d0
                w = 1.d0
+            endif
             endif
 c weight DM and DML
             DML(i,j) = w   *(DML(i,j)+DMneqR(i,j))

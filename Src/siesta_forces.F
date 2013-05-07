@@ -44,9 +44,10 @@
       use write_subs,            only: siesta_write_forces
       use write_subs,            only: siesta_write_stress_pressure
 #ifdef TRANSIESTA
+      use m_ts_method
       use m_ts_global_vars,      only: ts_istep
-      use m_ts_options,          only: ts_method, TSmode
-      use m_ts_mem_sparsity,     only: ts_print_charges
+      use m_ts_options,          only: TSmode
+      use m_ts_sparse_helper,    only: ts_print_charges
       use siesta_geom,           only: na_u
       use atomlist,              only: lasto
       use sparse_matrices,       only: sparse_pattern, block_dist
@@ -146,7 +147,7 @@
 
         if (SCFconverged) then
 #ifdef TRANSIESTA
-           if ( TSmode .and. ts_method > 0 ) then
+           if ( TSmode .and. ts_method /= TS_ORIGINAL ) then
               call ts_print_charges(block_dist,sparse_pattern, 
      &             na_u, lasto, nspin, maxnh, Dscf, S)  
            end if

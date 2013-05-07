@@ -19,17 +19,275 @@ module m_ts_mem_scat
   implicit none
 
   public :: calc_GF, calc_GF_Part
-  public :: GF_Gamma_GF
+  public :: GF_Gamma_GF_Block
+  public :: GF_Gamma_GF_Block_Short
   public :: UC_expansion_Sigma_Bulk
   public :: UC_expansion_Sigma
-  public :: UC_expansion_Sigma_Gamma
+  public :: UC_expansion_Sigma_GammaT
   public :: weightDM, weightDMC
   public :: read_next_GS
   public :: get_scat_region
 
-  private
+!  private
 
 contains
+
+  
+! Full converted GF.G.GF^\dagger routine for speed.
+! This routine is extremely fast compared to any previous implementation.
+! The reason is re-use of critical segments.
+! Furthermore we retain all information by not imposing any symmetry in
+! the product (TODO, check that we dont necessarily have this)
+  subroutine GF_Gamma_GF_Block(Offset,no_u_TS,no_E,GF,GammaT,GGG,nwork,work)
+
+!  This routine returns GGG=GF.Gamma.GF^\dagger, where GF is a (no_u)x(no_u)
+!  matrix and the states
+!  corresponds to the (no_E) Left/Right electrode states (decided with Offset)
+!  Gamma is a (no_E)x(no_E) matrix.
+
+    use precision, only : dp
+
+    implicit none
+
+! *********************
+! * INPUT variables   *
+! *********************
+    integer, intent(in) :: Offset ! The offset for where Gamma lives
+    integer, intent(in) :: no_u_TS !no. states in contact region
+    integer, intent(in) :: no_E ! the size of the Gamma
+    ! The Green's function
+    complex(dp), intent(inout) :: GF(no_u_TS,no_u_TS)
+    ! i (Sigma - Sigma^dagger)/2
+    complex(dp), intent(inout) :: GammaT(no_E*no_E)
+    ! A work array for doing the calculation... (nwork has to be larger than no_u_TS)
+    integer,     intent(in)    :: nwork
+    complex(dp), intent(inout) :: work(nwork)
+
+! *********************
+! * OUTPUT variables  *
+! *********************
+    complex(dp), intent(out) :: GGG(no_u_TS*no_u_TS)    !GF.GAMMA.GF
+
+! *********************
+! * LOCAL variables   *
+! *********************
+    complex(dp), parameter :: z0  = dcmplx(0._dp,0._dp)
+    complex(dp), parameter :: z1  = dcmplx(1._dp,0._dp)
+
+    integer :: i, lE, NB, ind, iB
+
+#ifdef TRANSIESTA_DEBUG
+    call write_debug( 'PRE GFGammaGF' )
+#endif
+
+    call timer("GFGGF",1)
+
+    lE = Offset + no_E - 1
+    ! Number of times we can divide the large matrix
+    NB = no_u_TS / no_E
+
+    ! Loop over bottom row matrix 
+    do iB = 0 , NB - 1
+       
+       ! Collect the top row of Gf^\dagger
+       ind = no_u_TS*no_E*iB+1
+       do i = Offset , lE
+          GGG(ind:ind-1+no_E) = dconjg(Gf(iB*no_E+1:(iB+1)*no_E,i))
+          ind = ind + no_E
+       end do
+       
+       ! Do Gamma.Gf^\dagger
+       call zgemm('T','T',no_E,no_E,no_E,z1, &
+            GammaT, no_E, &
+            GGG(no_u_TS*no_E*iB+1),no_E, &
+            z0, work,no_E)
+       
+       ! Calculate the Gf.Gamma.Gf^\dagger product for the entire column
+       call zgemm('N','N',no_u_TS,no_E,no_E,z1, &
+            Gf(1,Offset),no_u_TS, &
+            work        ,   no_E, &
+            z0, GGG(no_u_TS*no_E*iB+1),no_u_TS)
+    
+    end do
+
+    ! in case the block size does not match the matrix order
+    if ( NB * no_E /= no_u_TS ) then
+
+       ! The size of the remaining block
+       iB = no_u_TS - NB * no_E
+
+       ! Copy over the block
+       ind = no_u_TS*no_E*NB+1
+       do i = Offset , lE
+          ! So this is the transposed of iB'th block
+          GGG(ind:ind-1+iB) = dconjg(Gf(NB*no_E+1:NB*no_E+iB,i))
+          ind = ind + iB
+       end do
+
+       ! Do Gamma.Gf^\dagger
+       call zgemm('T','T',no_E,iB,no_E,z1, &
+            GammaT, no_E, &
+            GGG(no_u_TS*no_E*NB+1),iB, &
+            z0, work,no_E)
+       
+       ! Calculate the Gf.Gamma.Gf^\dagger product for the entire column
+       call zgemm('N','N',no_u_TS,iB,no_E,z1, &
+            Gf(1,Offset),no_u_TS, &
+            work        ,   no_E, &
+            z0, GGG(no_u_TS*no_E*NB+1),no_u_TS)
+
+    end if
+
+#ifdef TRANSIESTA_31
+    ! Lets try and impose symmetry...
+    call my_symmetrize(no_u_TS,GGG)
+#endif
+
+    call timer("GFGGF",2)
+
+#ifdef TRANSIESTA_DEBUG
+    call write_debug( 'POS GFGammaGF' )
+#endif
+
+  end subroutine GF_Gamma_GF_Block
+
+! Full converted GF.G.GF^\dagger routine for speed.
+! This routine is extremely fast compared to any previous implementation.
+! It relies on the fact that Gf only contains the left and the right electrode
+! columns.
+! Furthermore we retain all information by not imposing any symmetry in
+! the product (TODO, check that we dont necessarily have this)
+  subroutine GF_Gamma_GF_Block_Short(Offset,no_u_TS,no_LR,no_E, &
+       GF,GammaT,GGG,nwork,work)
+
+!  This routine returns GGG=GF.Gamma.GF^\dagger, where GF is a (no_u)x(no_L+no_R)
+!  matrix and the states
+!  corresponds to the (no_E) Left/Right electrode states (decided with Offset)
+!  Gamma is a (no_E)x(no_E) matrix.
+
+    use precision, only : dp
+
+    implicit none
+
+! *********************
+! * INPUT variables   *
+! *********************
+    integer, intent(in) :: Offset  ! The offset for where Gamma lives
+    integer, intent(in) :: no_u_TS ! no. states in contact region
+    integer, intent(in) :: no_LR   ! no. states for both electrodes
+    integer, intent(in) :: no_E    ! the size of the Gamma
+    ! The Green's function
+    complex(dp), intent(inout) :: GF(no_u_TS,no_LR)
+    ! i (Sigma - Sigma^dagger)/2
+    complex(dp), intent(inout) :: GammaT(no_E*no_E)
+    ! A work array for doing the calculation... (nwork has to be larger than no_u_TS)
+    integer,     intent(in)    :: nwork
+    complex(dp), intent(inout) :: work(nwork)
+
+! *********************
+! * OUTPUT variables  *
+! *********************
+    complex(dp), intent(out) :: GGG(no_u_TS*no_u_TS)    !GF.GAMMA.GF^\dagger
+
+! *********************
+! * LOCAL variables   *
+! *********************
+    complex(dp), parameter :: z0  = dcmplx(0._dp, 0._dp)
+    complex(dp), parameter :: z1  = dcmplx(1._dp, 0._dp)
+
+    integer :: i, lE, NB, ind, iB
+
+#ifdef TRANSIESTA_DEBUG
+    call write_debug( 'PRE GFGammaGF' )
+#endif
+
+    call timer("GFGGF",1)
+
+    lE = Offset + no_E - 1
+    ! Number of times we can divide the large matrix
+    NB = no_u_TS / no_E
+
+    ! Loop over bottom row matrix 
+    do iB = 0 , NB - 1
+       
+       ! Collect the top row of complex conjugated Gf
+       ind = no_u_TS*no_E*iB+1
+       do i = Offset , lE
+          GGG(ind:ind-1+no_E) = dconjg(Gf(iB*no_E+1:(iB+1)*no_E,i))
+          ind = ind + no_E
+       end do
+       
+       ! Do Gamma.Gf^\dagger
+       call zgemm('T','T',no_E,no_E,no_E,z1, &
+            GammaT, no_E, &
+            GGG(no_u_TS*no_E*iB+1),no_E, &
+            z0, work,no_E)
+       
+       ! Calculate the Gf.Gamma.Gf^\dagger product for the entire column
+       call zgemm('N','N',no_u_TS,no_E,no_E,z1, &
+            Gf(1,Offset),no_u_TS, &
+            work        ,   no_E, &
+            z0, GGG(no_u_TS*no_E*iB+1),no_u_TS)
+    
+    end do
+
+    ! in case the block size does not match the matrix order
+    if ( NB * no_E /= no_u_TS ) then
+
+       ! The size of the remaining block
+       iB = no_u_TS - NB * no_E
+
+       ! Copy over the block
+       ind = no_u_TS*no_E*NB+1
+       do i = Offset , lE
+          ! So this is the complex conjugated of the iB'th block
+          GGG(ind:ind-1+iB) = dconjg(Gf(NB*no_E+1:NB*no_E+iB,i))
+          ind = ind + iB
+       end do
+
+       ! Do Gamma.Gf^\dagger
+       call zgemm('T','T',no_E,iB,no_E,z1, &
+            GammaT, no_E, &
+            GGG(no_u_TS*no_E*NB+1),iB, &
+            z0, work,no_E)
+       
+       ! Calculate the Gf.Gamma.Gf^\dagger product for the entire column
+       call zgemm('N','N',no_u_TS,iB,no_E,z1, &
+            Gf(1,Offset),no_u_TS, &
+            work        ,   no_E, &
+            z0, GGG(no_u_TS*no_E*NB+1),no_u_TS)
+
+    end if
+
+#ifdef TRANSIESTA_31
+    ! Lets try and impose symmetry...
+    call my_symmetrize(no_u_TS,GGG)
+#endif
+
+    call timer("GFGGF",2)
+
+#ifdef TRANSIESTA_DEBUG
+    call write_debug( 'POS GFGammaGF' )
+#endif
+
+  end subroutine GF_Gamma_GF_Block_Short
+
+#ifdef TRANSIESTA_31
+subroutine my_symmetrize(N,M)
+  use parallel, only : IONode
+    integer    , intent(in) :: N
+    complex(dp), intent(inout) :: M(N,N)
+    integer :: i,j
+    do j = 1 , N
+       do i = 1 , j
+!          if(ionode)print *,M(j,i),M(i,j)
+          M(j,i) = dimag(M(i,j))
+          M(i,j) = M(j,i)
+
+       end do
+    end do
+  end subroutine my_symmetrize
+#endif
 
 ! ##################################################################
 ! ## Calculating Full Greens functions of                         ## 
@@ -43,10 +301,7 @@ contains
 ! ##                                                              ##
 ! ##  Modified by Nick Papior Andersen                            ##
 ! ##################################################################
-  subroutine calc_GF(UseBulk, &
-       no_u_TS,no_L,no_R, & ! Size of the problem
-       SigmaL,SigmaR, & ! Electrode self-energies
-       GFinv,GF,ierr)
+  subroutine calc_GF(no_u_TS,GFinv,GF,ierr)
     
     use intrinsic_missing, only: EYE
     use precision, only: dp
@@ -56,12 +311,8 @@ contains
 ! *********************
 ! * INPUT variables   *
 ! *********************
-    logical, intent(in) :: UseBulk           ! if true self-energy only is input else
-!                                 z*S-H-Sigma for bulk is in sfe
     ! Sizes of the different regions...
-    integer, intent(in) :: no_u_TS, no_L, no_R
-    complex(dp) :: SigmaL(no_L,no_L)   ! Left electrode GF
-    complex(dp) :: SigmaR(no_R,no_R)   ! Right electrode GF
+    integer, intent(in) :: no_u_TS
     ! Work should already contain Z*S - H
     ! This may seem strange, however, it will clean up this routine extensively
     ! as we dont need to make two different routines for real and complex
@@ -72,7 +323,6 @@ contains
 
 ! Local variables
     integer :: ipvt(no_u_TS)
-    integer :: i,j,ii,o
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE getGF' )
@@ -82,51 +332,8 @@ contains
 
     ierr = 0
 
-! We need to check the input to the routine.
-! We can calculate either the full GF, if .not. (UseBulk .and
-
     call EYE(no_u_TS,GF)
     
-! Adjust the left electrode part
-    if ( UseBulk ) then 
-       ! If we use the bulk electrodes, we will overwrite
-       ! the "regular" Hamiltonian elements by the 
-       ! Self-energy of the electrode (thereby assuming 
-       ! that the electrode states are the perfect bulk system)
-       do j = 1, no_L
-          do i = 1, no_L
-             GFinv(i,j) = SigmaL(i,j)
-          end do              !i
-       end do                 !j
-    else
-       ! We don't consider the electrode to be the bulk states,
-       ! hence, we will adjust the unit-cell Hamiltonian by the 
-       ! self-energy terms.
-       do j = 1, no_L
-          do i = 1, no_L
-             GFinv(i,j) = GFinv(i,j) - SigmaL(i,j)
-          end do              !i
-       end do                 !j
-    end if                    !USEBULK
-
-! Adjust the right electrode part
-    o = no_u_TS - no_R
-    if ( UseBulk ) then
-       do j = 1 , no_R
-          ii = o + j
-          do i = 1 , no_R
-             GFinv(o+i,ii) = SigmaR(i,j)
-          end do              !i
-       end do                 !j
-    else
-       do j = 1 , no_R
-          ii = o + j
-          do i = 1 , no_R
-             GFinv(o+i,ii) = GFinv(o+i,ii) - SigmaR(i,j)
-          end do              !i
-       end do                 !j
-    end if
-
 ! Invert directly
     call zgesv(no_u_TS,no_u_TS,GFinv,no_u_TS,ipvt,GF,no_u_TS,ierr)            
        
@@ -137,7 +344,70 @@ contains
 #endif
 
 ! ====================================================================
-  END subroutine calc_GF
+  end subroutine calc_GF
+
+
+! ##################################################################
+! ## Calculating Greens functions in the reigon of the electrodes ## 
+! ##                                                              ##          
+! ##  Fully created by Nick Papior Andersen, nickpapior@gmail.com ##
+! ##################################################################
+  subroutine calc_GF_Bias(no_u_TS,no_L,no_R,GFinv,GF,ierr)
+    
+    use precision, only: dp
+
+    implicit none 
+
+! *********************
+! * INPUT variables   *
+! *********************
+    ! Sizes of the different regions...
+    integer, intent(in) :: no_u_TS, no_L, no_R
+    ! Work should already contain Z*S - H
+    ! This may seem strange, however, it will clean up this routine extensively
+    ! as we dont need to make two different routines for real and complex
+    ! Hamiltonian values.
+    complex(dp), intent(in out) :: GFinv(no_u_TS,no_u_TS) ! the inverted GF
+    ! We only need Gf in the left and right blocks...
+    complex(dp), intent(out) :: GF(no_u_TS*(no_L+no_R))
+    integer,     intent(out) :: ierr              !inversion err
+
+! Local variables
+    integer :: ipvt(no_u_TS)
+    integer :: i, o
+
+#ifdef TRANSIESTA_DEBUG
+    call write_debug( 'PRE getGF' )
+#endif
+
+    call timer('GFTB',1) 
+
+    ierr = 0
+
+    ! Create the RHS for inversion...
+    GF(:) = dcmplx(0._dp,0._dp)
+
+    ! Left identity
+    do i = 0 , no_L - 1
+       GF(i*no_u_TS+i+1) = dcmplx(1._dp,0._dp)
+    end do
+    ! Right identity
+    o =  no_L * no_u_TS + 1
+    do i = 0 , no_R - 1
+       GF(o+i*no_u_TS+no_u_TS-no_R+i) = dcmplx(1._dp,0._dp)
+    end do
+    
+! Invert directly
+    call zgesv(no_u_TS,no_L+no_R,GFinv,no_u_TS,ipvt,GF,no_u_TS,ierr)            
+       
+    call timer('GFTB',2)  
+
+#ifdef TRANSIESTA_DEBUG
+    call write_debug( 'POS getGF' )
+#endif
+
+! ====================================================================
+  end subroutine calc_GF_Bias
 
 
 ! ##################################################################
@@ -152,9 +422,7 @@ contains
 ! ##                                                              ##
 ! ##  Modified by Nick Papior Andersen                            ##
 ! ##################################################################
-  subroutine calc_GF_Part( &
-       no_u_TS,no_L,no_R, & ! Size of the problem
-       SigmaL,SigmaR, &             ! Electrode self-energies
+  subroutine calc_GF_Part(no_u_TS,no_L,no_R, & ! Size of the problem
        GFinv,GF,ierr)
     
     use intrinsic_missing, only: EYE
@@ -167,8 +435,6 @@ contains
 ! *********************
     ! Sizes of the different regions...
     integer, intent(in) :: no_u_TS, no_L, no_R
-    complex(dp) :: SigmaL(no_L,no_L)   ! Left electrode GF
-    complex(dp) :: SigmaR(no_R,no_R)   ! Right electrode GF
     ! Work should already contain Z*S - H
     ! This may seem strange, however, it will clean up this routine extensively
     ! as we dont need to make two different routines for real and complex
@@ -205,26 +471,6 @@ contains
        end do
     end do
 
-    ! If we use the bulk electrodes, we will overwrite
-    ! the "regular" Hamiltonian elements by the 
-    ! Self-energy of the electrode (thereby assuming 
-    ! that the electrode states are the perfect bulk system)
-    do j = 1, no_L
-       do i = 1, no_L
-          GFinv(i,j) = SigmaL(i,j)
-       end do              !i
-    end do                 !j
-
-! Adjust the right electrode part
-    o = no_u_TS - no_R
-    do j = 1 , no_R
-       ii = o + j
-       do i = 1 , no_R
-          GFinv(o+i,ii) = SigmaR(i,j)
-       end do              !i
-    end do                 !j
-
-
 ! Invert directly
     call zgesv(no_u_TS,no_u_TS-no_L-no_R,GFinv,no_u_TS,ipvt,GF,no_u_TS,ierr)
 
@@ -235,7 +481,7 @@ contains
 #endif
 
 ! ====================================================================
-  END subroutine calc_GF_Part
+  end subroutine calc_GF_Part
 
 
   subroutine UC_expansion_Sigma_Bulk(no_u,no_s,NRepA1,NRepA2, &
@@ -278,7 +524,6 @@ contains
     call EYE(no_s,Sigma)
 
     if ( NRepA1 * NRepA2 == 1 ) then
-       if ( nq /= 1 ) call die('nq/=1')
        if ( no_u /= no_s ) call die('no_E/=no_s')
 
        ! We will read in a new GS for the following energy
@@ -307,7 +552,7 @@ contains
              do ja1 = 0 , NRepA1-1
               ph = wq(iq) * cdexp(zmPi2 * &
                    ( (ia1-ja1)*qb(1,iq) + (ia2-ja2)*qb(2,iq) ))
-               do juo = 1 + lasto(jau-1) , lasto(jau) 
+              do juo = 1 + lasto(jau-1) , lasto(jau) 
                  jow = jow + 1
                  
                  work(jow,iow) = ph * GS(juo,iuo,iq)
@@ -423,8 +668,8 @@ contains
 
   end subroutine UC_expansion_Sigma
 
-  subroutine UC_expansion_Sigma_Gamma(UseBulk,ZEnergy,no_u,no_s,NRepA1,NRepA2, &
-       na_u,lasto,nq,qb,wq,H,S,GS,Sigma,Gamma,nwork,work)
+  subroutine UC_expansion_Sigma_GammaT(UseBulk,ZEnergy,no_u,no_s,NRepA1,NRepA2, &
+       na_u,lasto,nq,qb,wq,H,S,GS,Sigma,GammaT,nwork,work)
     use intrinsic_missing, only: EYE
 ! ********************
 ! * INPUT variables  *
@@ -441,14 +686,15 @@ contains
 ! * OUTPUT variables *
 ! ********************
     complex(dp), intent(out) :: Sigma(no_s,no_s)
-    real(dp), intent(out)    :: Gamma(no_s,no_s)
-!    complex(dp), intent(out)    :: Gamma(no_s,no_s)
+!    real(dp), intent(out)    :: Gamma(no_s,no_s)
+    complex(dp), intent(out)    :: GammaT(no_s,no_s)
 
     integer,  intent(in) :: nwork
     complex(dp), intent(inout) :: work(no_s,no_s,2)
 ! ********************
 ! * LOCAL variables  *
 ! ********************
+    complex(dp), parameter :: zihalf = dcmplx(0._dp,0.5_dp)
     integer :: ierr
     integer :: io,jo
     integer :: ipvt(no_s)
@@ -488,14 +734,16 @@ contains
        end do
 
        ! Do
-       ! \Gamma = -\Im \Sigma
+       ! \Gamma = i ( \Sigma - \Sigma^\dagger)/2
        do jo = 1 , no_s
-          do io = 1 , jo
-             Gamma(io,jo) = - .5_dp * dimag( &
+          do io = 1 , jo - 1
+             GammaT(jo,io) = zihalf * ( &
                   work(io,jo,1)-dconjg(work(jo,io,1)) )
-             Gamma(jo,io) = - .5_dp * dimag( &
+             GammaT(io,jo) = zihalf * ( &
                   work(jo,io,1)-dconjg(work(io,jo,1)) )
           end do
+          GammaT(jo,jo) = zihalf * ( &
+               work(jo,jo,1)-dconjg(work(jo,jo,1)) )
        end do
 
     else
@@ -509,14 +757,16 @@ contains
        end do
 
        ! Do
-       ! \Gamma = \Im \Sigma
+       ! \Gamma = i ( \Sigma - \Sigma^\dagger)/2
        do jo = 1 , no_s
-          do io = 1 , jo
-             Gamma(io,jo) = - .5_dp * dimag( &
+          do io = 1 , jo - 1
+             GammaT(jo,io) = zihalf * ( &
                   Sigma(io,jo)-dconjg(Sigma(jo,io)) )
-             Gamma(jo,io) = - .5_dp * dimag( &
+             GammaT(io,jo) = zihalf * ( &
                   Sigma(jo,io)-dconjg(Sigma(io,jo)) )
           end do
+          GammaT(jo,jo) = zihalf * ( &
+               Sigma(jo,jo)-dconjg(Sigma(jo,jo)) )
        end do
 
     end if
@@ -524,7 +774,7 @@ contains
     call timer('ts_expandG',2)
     call timer('ts_expand',2)
        
-  end subroutine UC_expansion_Sigma_Gamma
+  end subroutine UC_expansion_Sigma_GammaT
 
   subroutine update_UC_expansion(ZEnergy,no_u,no_s,NRepA1,NRepA2, &
        na_u,lasto,nq,qb,wq,H,S,GS,nwork,work)
@@ -553,7 +803,6 @@ contains
     complex(dp) :: ph
 
     if ( NRepA1 * NRepA2 == 1 ) then
-       if ( nq /= 1 ) call die('nq/=1')
        if ( no_u /= no_s ) call die('no_E/=no_s')
 
        ! We do not need this...
@@ -819,87 +1068,6 @@ contains
 
   end subroutine read_next_GS
 
-
-
-  subroutine GF_Gamma_GF(Offset,no_u_TS,no_E,GFt,Gamma,GGG,nwork,work)
-
-! ======================================================================
-!  This routine returns GGG=(-i)*GF.Gamma.GF, where GF is a (no_u)x(no_u)
-!  matrix and the states
-!  corresponds to the (no_E) Left/Right electrode states.
-!  Gamma is a (no_E)x(no_E) matrix.
-! ======================================================================
-    use precision, only : dp
-
-    implicit none
-
-! *********************
-! * INPUT variables   *
-! *********************
-    integer, intent(in) :: Offset ! this will help leverage the loop construct and
-!                                 ! for the right electrode this is the no_u_TS - no_E + 1
-    integer, intent(in) :: no_u_TS !no. states in contact region
-    integer, intent(in) :: no_E ! the size of the Gamma
-    ! The Green's function (note that it SHOULD be transposed on entry)
-    complex(dp), intent(in) :: GFt(no_u_TS,no_u_TS)
-    ! i (Sigma - Sigma^dagger)/2
-    real(dp),    intent(in) :: Gamma(Offset:Offset+no_E-1,Offset:Offset+no_E-1)
-!    complex(dp),   intent(in) :: Gamma(Offset:Offset+no_E-1,Offset:Offset+no_E-1)
-    ! A work array for doing the calculation... (nwork has to be larger than no_u_TS)
-    integer,     intent(in)    :: nwork
-    complex(dp), intent(inout) :: work(nwork)
-
-! *********************
-! * OUTPUT variables  *
-! *********************
-    complex(dp), intent(out) :: GGG(no_u_TS,no_u_TS)    !GF.GAMMA.GF
-
-    integer :: i, j, ie, je, lE
-
-#ifdef TRANSIESTA_DEBUG
-    call write_debug( 'PRE GFGammaGF' )
-#endif
-
-    call timer("GFGGF",1)
-
-    ! calculate the end of the bound for the Gamma
-    lE = Offset + no_E - 1
-    if ( lE /= no_u_TS .and. lE /= no_E ) call die('Wrong indices')
-
-    do i = 1 , no_u_TS
-
-       ! Do Gf.Gamma in row i
-       do ie = Offset , lE
-          work(ie) = sum(Gamma(Offset:lE,ie)*GFt(Offset:lE,i))
-       end do
-       
-       ! Do Gf.Gamma.Gf^\dagger in row i
-       GGG(i,i) = dreal(sum(work(Offset:lE) * dconjg(GFt(Offset:lE,i)))) &
-            * dcmplx(0._dp,-1._dp)
-
-       do j = 1 , i-1
-
-          GGG(j,i) = dreal(sum(work(Offset:lE) * dconjg(GFt(Offset:lE,j)))) &
-               * dcmplx(0._dp,-1._dp)
-
-          ! This invokes time-reversal symmetry...
-          ! Perhaps we should enforce symmetry the symmetri by taking 
-          ! the mean.
-          GGG(i,j) = GGG(j,i)
-
-       end do
-       
-    end do
-
-    call timer('GFGGF',2)
-
-#ifdef TRANSIESTA_DEBUG
-    call write_debug( 'POS GFGammaGF' )
-#endif
-
-! ====================================================================
-  END subroutine GF_Gamma_GF
-
 ! ##################################################################
 ! ##   Mixing the Density matrixes according to the smallest      ##
 ! ##    realspace integral                                        ##
@@ -952,6 +1120,9 @@ contains
     integer, pointer :: l_col(:)
     integer :: nr
     integer :: io, jo, ind, j
+    ! For error estimation
+    integer :: eM_i,eM_j,neM_i,neM_j
+    real(dp) :: eM, neM, tmp
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE weightDM' )
@@ -972,6 +1143,10 @@ contains
     EDML => val(SpArrEDML)
     EDMR => val(SpArrEDMR)
 
+    ! initialize the errors
+    eM  = 0._dp
+    neM = 0._dp
+
     do io = 1 , nr
        ! We are in a buffer region...
        if ( l_ncol(io) == 0 ) cycle
@@ -981,39 +1156,51 @@ contains
           ! Retrive the connecting orbital
           jo = l_col(ind)
 
-! For now we do not allow tri-diagonalization in the memory reduced method
-! Otherwise this has to be changed.
-          if ( io < no_C_L .or. jo < no_C_L ) then
-             wL = 0._dp
-             wR = 1._dp
-          else if ( no_C_R < io .or. no_C_R < jo ) then
-             wL = 1._dp
-             wR = 0._dp
+          wL = DMneqL(ind)*DMneqL(ind)
+          wR = DMneqR(ind)*DMneqR(ind)
+          wSUM = wL + wR
+
+          ! The weights
+          if ( wSUM > 0._dp ) then
+             wL = wL / wSUM
+             wR = wR / wSUM
           else
-             ! The weights
-             wL = DMneqL(ind)*DMneqL(ind)
-             wSUM = wL + DMneqR(ind)*DMneqR(ind)
-             if ( wSUM > 0._dp ) then
-                wL = wL / wSUM
-                wR = 1._dp - wL
-             else
-                wL = 0.5_dp
-                wR = 0.5_dp
-             end if
+             wL = 0.5_dp
+             wR = 0.5_dp
+             wSUM = 1._dp
           end if
+          
+          ! Do error estimation (capture before update)
+          tmp = (DML(ind) + DMneqR(ind) - DMR(ind) - DMneqL(ind))**2
+
           DML(ind)  = wL * (DML(ind) + DMneqR(ind)) &
-               + wR * (DMR(ind) + DMneqL(ind))
+                    + wR * (DMR(ind) + DMneqL(ind))
           EDML(ind) = wL * EDML(ind) + wR * EDMR(ind)
+
+          ! this is absolute error
+          if ( tmp > eM ) then
+             eM   = tmp
+             eM_i = io
+             eM_j = jo
+          end if
+          ! this is normalized absolute error
+          tmp = tmp * wL * wR
+          if ( tmp > neM ) then
+             neM   = tmp
+             neM_i = io
+             neM_j = jo
+          end if
+
        end do
     end do
+
+    call print_error_estimate(IONode,eM,eM_i,eM_j,neM,neM_i,neM_j)    
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS weightDM' )
 #endif
 
   end subroutine weightDM
-
-
 
 
 ! ##################################################################
@@ -1068,6 +1255,10 @@ contains
     integer, pointer :: l_col(:)
     integer :: nr
     integer :: io, jo, ind, j
+    ! For error estimation
+    integer :: eM_i,eM_j,neM_i,neM_j
+    complex(dp) :: ztmp
+    real(dp) :: eM, neM, rtmp
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE weightDMC' )
@@ -1088,6 +1279,10 @@ contains
     EDML => val(SpArrEDML)
     EDMR => val(SpArrEDMR)
 
+    ! initialize the errors
+    eM  = 0._dp
+    neM = 0._dp
+
     do io = 1 , nr
        ! We are in a buffer region...
        if ( l_ncol(io) == 0 ) cycle
@@ -1096,37 +1291,76 @@ contains
           ind = l_ptr(io)+j
           ! Retrive the connecting orbital
           jo = l_col(ind)
-! For now we do not allow tri-diagonalization in the memory reduced method
-! Otherwise this has to be changed.
-          if ( io < no_C_L .or. jo < no_C_L ) then
-             wL = 0._dp
-             wR = 1._dp
-          else if ( no_C_R < io .or. no_C_R < jo ) then
-             wL = 1._dp
-             wR = 0._dp
+
+          ! It is weighted in the density (not the imaginary part of 
+          ! \rho_L). Note that here \rho_L\equiv -i\rho_L!
+          wL = aimag(DMneqL(ind)) ** 2
+          wR = aimag(DMneqR(ind)) ** 2
+          wSUM = wL + wR
+ 
+          ! The weights (in any case we always have the full Gf.G.Gf, hence
+          ! it is safe to use this method always.
+          ! No need to force either correction term in the left/right regions
+          if ( wSUM > 0._dp ) then
+             wL = wL / wSUM
+             wR = wR / wSUM
           else
-             ! The weights
-             wL = dconjg(DMneqL(ind))*DMneqL(ind)
-             wSUM = wL + dconjg(DMneqR(ind))*DMneqR(ind)
-             if ( wSUM > 0._dp ) then
-                wL = wL/wSUM
-                wR = 1._dp - wL
-             else
-                wL = 0.5_dp
-                wR = 0.5_dp
-             end if
+             wL = 0.5_dp
+             wR = 0.5_dp
+             wSUM = 1._dp
           end if
+
+          ! We need to capture the error before the update...
+          ztmp = DML(ind) + DMneqR(ind) - DMR(ind) - DMneqL(ind)
+
           DML(ind)  = wL * (DML(ind) + DMneqR(ind)) &
-               + wR * (DMR(ind) + DMneqL(ind))
+                    + wR * (DMR(ind) + DMneqL(ind))
           EDML(ind) = wL * EDML(ind) + wR * EDMR(ind)
+
+          ! Do error estimation (we are only interested in 
+          ! error in the density...)
+          
+          rtmp = aimag(ztmp) * aimag(ztmp)
+          ! this is absolute error
+          if ( rtmp > eM ) then
+             eM = rtmp
+             eM_i = io
+             eM_j = jo
+          end if
+          ! this is normalized absolute error
+          rtmp = rtmp * wL * wR
+          if ( rtmp > neM ) then
+             neM = rtmp
+             neM_i = io
+             neM_j = jo
+          end if
+
        end do
     end do
+
+    call print_error_estimate(IONode,eM,eM_i,eM_j,neM,neM_i,neM_j)
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS weightDMC' )
 #endif
 
   end subroutine weightDMC
+
+  subroutine print_error_estimate(IONode,eM,eM_i,eM_j,neM,neM_i,neM_j)
+    logical, intent(in) :: IONode
+    real(dp), intent(in) :: eM, neM
+    integer, intent(in) :: eM_i,eM_j, neM_i,neM_j
+
+    if ( IONode ) then
+       write(*,'(a,'' |('',i5,'','',i5,'')| = '',g9.4,&
+            &'' , |('',i5,'','',i5,'')|~ = '',g9.4)') &
+            'ts: integration EE.:',&
+            eM_i,eM_j,sqrt(eM), &
+            neM_i,neM_j,sqrt(neM)
+    end if
+
+  end subroutine print_error_estimate
+    
 
 !     Function for calculating which region in the scattering matrix the
 !     hamiltonian elements adhere.

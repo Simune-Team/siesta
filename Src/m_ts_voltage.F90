@@ -34,9 +34,23 @@ module m_ts_voltage
   ! The idea is to have sub routines in this module to do
   ! various voltage layouts
   public :: ts_voltage
-  public :: print_ts_voltage
+  public :: ts_init_voltage
 
 contains
+
+  subroutine ts_init_voltage(cell,na_u,xa,meshG,nsm)
+    use precision,    only : dp
+! ***********************
+! * INPUT variables     *
+! ***********************
+    real(dp),      intent(in) :: cell(3,3)
+    integer,       intent(in) :: na_u
+    real(dp),      intent(in) :: xa(3,na_u)
+    integer,       intent(in) :: meshG(3), nsm
+
+    call print_ts_voltage(cell)
+
+  end subroutine ts_init_voltage
 
   subroutine ts_voltage(cell,meshG,nsm,v)
     use precision,    only : dp, grid_p

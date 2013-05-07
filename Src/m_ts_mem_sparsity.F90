@@ -38,9 +38,9 @@ module m_ts_mem_sparsity
 
   use class_Sparsity
 
-  implicit none
+  use precision, only : dp
 
-  integer, parameter :: dp = selected_real_kind(10,100)
+  implicit none
 
   ! The full Transiesta sparsity region in the unit-cell equivalent
   ! region, this is used to accomodate the Hamiltonian and overlap
@@ -58,35 +58,6 @@ module m_ts_mem_sparsity
   ! between MPI and non-MPI codes as it will be the same array in both 
   ! circumstances.
   type(Sparsity), save :: tsup_sp_uc ! TS-update-GLOBAL only UC
-
-  ! Logical variable that describes the solution method on
-  ! LEFT-RIGHT-EQUILIBRIUM contour points.
-  ! This is realized by the fact that for:
-  !    UseBulk .and. UpdateDMCR
-  ! the needed part of the GF is only the C...C regions:
-  !
-  !  -------------------------------------
-  !  | L...L | L...C   0     0   |   0   |
-  !  | C...L | C...C C...C C...C |   0   |
-  !  |   0   | C...C C...C C...C |   0   |
-  !  |   0   | C...C C...C C...C | C...R |
-  !  |   0   |   0     0   R...C | R...R |
-  !  -------------------------------------
-  ! 
-  ! This means we can solve the following instead:
-  ! G_F^{-1} G_F I_P = I \times I_P,
-  ! where I_P:
-  !  ---------------------
-  !  |   0     0     0   |
-  !  |   1     0     0   |
-  !  |   0     1     0   |
-  !  |   0     0     1   |
-  !  |   0     0     0   |
-  !  ---------------------
-  ! Note, that this can ONLY be used in EQUI contour points.
-  ! In principle we can obtain the EXACT size of the problem
-  ! For very large electrodes. This could come in handy.
-  logical, save :: GF_INV_EQUI_PART = .false.
 
 contains
 
@@ -156,10 +127,6 @@ contains
             &smaller than the electrode size. Please correct.")
     end if
     
-    ! Setup the correct handling of EQUILIBRIUM solution method:
-    ! See above the global variable for its use.
-    GF_INV_EQUI_PART = UseBulk .and. UpdateDMCR
-
     ! We make sure that the arrays are deleted, before entrance
     call delete(ts_sp_uc)
     call delete(tsup_sp_uc)
@@ -544,150 +511,4 @@ contains
 #endif
   end subroutine ts_Sparsity_Global
 
-
-  ! A subroutine for printing out the charge distribution in the cell
-  ! it will currently only handle the full charge distribution, and
-  ! not per k-point.
-  subroutine ts_print_charges(dit, sparse_pattern, &
-       na_u, lasto, &
-       nspin, n_nzs, DM, S)
-    ! left stuff
-    use m_ts_options, only : na_BufL => NBufAtL
-    use m_ts_options, only : no_L_HS => NUsedOrbsL
-    use m_ts_options, only : NRepA1L, NRepA2L
-    ! right stuff
-    use m_ts_options, only : na_BufR => NBufAtR
-    use m_ts_options, only : no_R_HS => NUsedOrbsR
-    use m_ts_options, only : NRepA1R, NRepA2R
-    use m_ts_mem_scat, only : get_scat_region
-    use parallel, only : IONode, Node
-#ifdef MPI
-    use mpi_siesta
-#endif
-    use class_OrbitalDistribution
-    use class_Sparsity
-    use geom_helper, only : UCORB
-
-! **********************
-! * INPUT variables    *
-! **********************
-    type(OrbitalDistribution), intent(inout) :: dit
-    ! SIESTA local sparse pattern (not changed)
-    type(Sparsity), intent(inout) :: sparse_pattern
-    ! Number of atoms in the unit-cell
-    integer, intent(in) :: na_u
-    ! Last orbital of the equivalent unit-cell atom
-    integer, intent(in) :: lasto(0:na_u)
-    ! Number of non-zero elements
-    integer, intent(in) :: nspin, n_nzs
-    ! The density matrix and overlap
-    real(dp), intent(in) :: DM(n_nzs,nspin), S(n_nzs)
-
-! **********************
-! * LOCAL variables    *
-! **********************
-    real(dp) :: Q(0:9,nspin,2)
-    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-    integer :: no_lo, no_u, lio, io, ind, jo, ispin, r
-    integer :: no_u_TS
-    integer :: no_BufL, no_BufR
-    integer :: no_L, no_R
-#ifdef MPI
-    integer :: MPIerror
-#endif
-
-    ! Calculate the buffer region and electrode orbitals
-    no_L = no_L_HS * NRepA1L * NRepA2L
-    no_R = no_R_HS * NRepA1R * NRepA2R
-
-    ! Calculate the number of orbitals not used (i.e. those 
-    ! in the buffer regions)
-    ! Left has the first atoms
-    no_BufL = lasto(na_BufL)
-    ! Right has the last atoms
-    no_BufR = lasto(na_u) - lasto(na_u - na_BufR)
-
-
-    no_lo = nrows  (sparse_pattern)
-    no_u  = nrows_g(sparse_pattern)
-    no_u_TS = no_u - no_BufL - no_BufR
-
-    ! The sparse lists.
-    l_ncol => n_col   (sparse_pattern)
-    l_ptr  => list_ptr(sparse_pattern)
-    l_col  => list_col(sparse_pattern)
-
-    ! Initialize charges
-    Q = 0._dp
-
-    do ispin = 1 , nspin
-       do lio = 1 , no_lo
-
-          ! obtain the global index of the orbital.
-          io = index_local_to_global(dit,lio,Node) - no_BufL
-
-          ! Loop number of entries in the row... (index frame)
-          do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
-             
-             ! as the local sparsity pattern is a super-cell pattern,
-             ! we need to check the unit-cell orbital
-             ! The unit-cell column index
-             jo = UCORB(l_col(ind),no_u) - no_BufL
-             
-             r = get_scat_region(io,no_L,jo,no_R,no_u_TS)
-             
-             Q(r,ispin,2) = Q(r,ispin,2) + &
-                  DM(ind,ispin) * S(ind)
-          end do
-       end do
-    end do
-
-#ifdef MPI
-    call MPI_Reduce(Q(0,1,2),Q(0,1,1),10*nspin,MPI_Double_Precision,MPI_SUM, &
-         0,MPI_Comm_World,MPIerror)
-#endif
-
-    if ( IONode ) then 
-       write(*,'(/,a)') 'transiesta: Charge distribution:'
-       if ( nspin > 1 ) then
-          write(*,'(a,2(f12.5,tr1))') &
-               'Total charge                  [Q]    :', &
-               sum(Q(:,1,1)),sum(Q(:,2,1))
-          if ( no_BufL > 0 ) write(*,'(a,2(f12.5,tr1),/,a,2(f12.5,tr1))') &
-               'Left buffer                   [LB]   :',Q(1,1,1), Q(1,2,1), &
-               'Left buffer/left electrode    [LB-L] :',Q(2,1,1), Q(2,2,1)
-          write(*,'(a,2(f12.5,tr1),4(/,a,2(f12.5,tr1)))') &
-               'Left electrode                [L]    :',Q(3,1,1), Q(3,2,1), &
-               'Left electrode/device         [L-C]  :',Q(4,1,1), Q(4,2,1), &
-               'Device                        [C]    :',Q(5,1,1), Q(5,2,1), &
-               'Device/right electrode        [C-R]  :',Q(6,1,1), Q(6,2,1), &
-               'Right electrode               [R]    :',Q(7,1,1), Q(7,2,1)
-          if ( no_BufR > 0 ) write(*,'(a,2(f12.5,tr1),/,a,2(f12.5,tr1))') &
-               'Right electrode/right buffer  [R-RB] :',Q(8,1,1), Q(8,2,1), &
-               'Right buffer                  [RB]   :',Q(9,1,1), Q(9,2,1)
-          write(*,'(a,2(f12.5,tr1),/)') &
-               'Other                         [O]    :',Q(0,1,1), Q(0,2,1)
-
-       else
-          write(*,'(a,f12.5)') &
-               'Total charge                  [Q]    :',sum(Q(:,1,1))
-          if ( no_BufL > 0 ) write(*,'(a,f12.5,/,a,f12.5)') &
-               'Left buffer                   [LB]   :',Q(1,1,1), &
-               'Left buffer/left electrode    [LB-L] :',Q(2,1,1)
-          write(*,'(a,f12.5,4(/,a,f12.5))') &
-               'Left electrode                [L]    :',Q(3,1,1), &
-               'Left electrode/device         [L-C]  :',Q(4,1,1), &
-               'Device                        [C]    :',Q(5,1,1), &
-               'Device/right electrode        [C-R]  :',Q(6,1,1), &
-               'Right electrode               [R]    :',Q(7,1,1)
-          if ( no_BufR > 0 ) write(*,'(a,f12.5,/,a,f12.5)') &
-               'Right electrode/right buffer  [R-RB] :',Q(8,1,1), &
-               'Right buffer                  [RB]   :',Q(9,1,1)
-          write(*,'(a,f12.5,/)') &
-               'Other                         [O]    :',Q(0,1,1)
-       end if
-    end if
-    
-  end subroutine ts_print_charges
-  
 end module m_ts_mem_sparsity

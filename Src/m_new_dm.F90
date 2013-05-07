@@ -220,7 +220,7 @@
                                 ! to place the electrodes and scattering region energy
                                 ! levels at the appropriate relative position, so it is
                                 ! stored in the TSDE file.
-      use m_ts_options,   only : TSmode
+      use m_ts_options,   only : TSmode, ImmediateTSmode
 #endif /* TRANSIESTA */
 
       implicit          none
@@ -267,6 +267,20 @@
                     DMread,dm_found,block_dist)
             endif
             dm_found = (tsde_found .or. dm_found)
+
+            ! if the user requests to start the transiesta SCF immediately.
+            ! We will allow this if a DM file is found.
+            !
+            if ( dm_found .and. ImmediateTSmode .and. &
+                 .not. tsde_found .and. .FALSE. ) then
+               ! We need a way to ensure a correct Escf for the transiesta
+               ! i.e. we should read in the E scf in some way as well
+               ! Otherwise the energies are incorrect.
+               ! So for now this will not be used
+               ! We will not reset tsde_found as that will
+               ! mess up the Escf array (see further down)
+               call ts_init_dm(.true.)
+            end if
 
          else  ! Not TSmode
 

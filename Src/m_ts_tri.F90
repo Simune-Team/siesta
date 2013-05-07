@@ -35,11 +35,14 @@ module m_ts_tri
   use m_ts_sparse_helper, only : update_DM
   use m_ts_sparse_helper, only : update_zDM
   
+  use m_ts_sparse_helper, only : ts_print_charges
+  use m_ts_sparse_helper, only : TS_INFO_SCF
+  
   implicit none
 
   
   public :: transiesta_tri
-  
+
   private
   
 contains
@@ -110,10 +113,10 @@ contains
     use m_ts_options, only : na_R_HS => NUsedAtomsR
     use m_ts_options, only : no_R_HS => NUsedOrbsR
 
-
     use m_ts_mem_sparsity, only : ts_sp_uc
     use m_ts_mem_sparsity, only : tsup_sp_uc
-    use m_ts_mem_sparsity, only : GF_INV_EQUI_PART
+
+    use m_ts_method, only : GF_INV_EQUI_PART
 
     use m_ts_contour,only : PNEn, NEn, contour
     use m_ts_cctype, only : CC_PART_EQUI
@@ -166,10 +169,11 @@ contains
     real(dp), allocatable :: wqL(:), wqR(:)
     real(dp), allocatable :: kparL(:,:), kparR(:,:)
     real(dp), allocatable :: wkparL(:), wkparR(:)
-    complex(dp), allocatable :: HAAL(:,:,:), SAAL(:,:,:), GAAL(:,:,:)
-    complex(dp), allocatable :: HAAR(:,:,:), SAAR(:,:,:), GAAR(:,:,:)
+    complex(dp), allocatable :: HAAL(:,:,:), SAAL(:,:,:)
+    complex(dp), allocatable :: HAAR(:,:,:), SAAR(:,:,:)
+    complex(dp), pointer :: GAAL(:,:), GAAR(:,:)
     complex(dp), allocatable :: SigmaL(:,:), SigmaR(:,:)
-    real(dp), allocatable :: GammaL(:,:), GammaR(:,:)
+    complex(dp), target, allocatable :: GammaLT(:,:), GammaRT(:,:)
 ! ************************************************************
 
 ! ******************* Computational arrays *******************
@@ -194,6 +198,7 @@ contains
 ! ******************* Computational variables ****************
     complex(dp) :: Z, W, ZW
     real(dp)    :: k(3)
+    complex(dp), parameter :: zmi = dcmplx(0._dp,-1._dp)
 ! ************************************************************
 
 ! ******************** Loop variables ************************
@@ -346,13 +351,7 @@ contains
     ! one call!
     zwork => val(zwork_tri)
 
-!    if ( GF_INV_EQUI_PART .and. .not. IsVolt ) then
-!       allocate(GF22(no_u_C*no_u_C),stat=ierr)
-!       if (ierr/=0) call die('Could not allocate space for GFpart')
-!       call memory('A','Z',no_u_C*no_u_C,'transiesta')
-!    else
-       call newzTriMat3(GF_tri,no_L,no_u_C,no_R,'GF')
-!    end if
+    call newzTriMat3(GF_tri,no_L,no_u_C,no_R,'GF')
     if ( GF_INV_EQUI_PART ) then
        Gf22 => val22(Gf_tri)
     end if
@@ -360,23 +359,32 @@ contains
     ! Allocate the left-right electrode quantities that we need
     allocate(HAAL(no_L_HS,no_L_HS,NRepA1L*NRepA2L))
     allocate(SAAL(no_L_HS,no_L_HS,NRepA1L*NRepA2L))
-    allocate(GAAL(no_L_HS,no_L_HS,NRepA1L*NRepA2L))
-    ispin = no_L_HS**2*NRepA1L*NRepA2L*3
+    ispin = no_L_HS**2*NRepA1L*NRepA2L*2
     allocate(SigmaL(no_L,no_L))
     ispin = ispin + no_L**2
     allocate(HAAR(no_R_HS,no_R_HS,NRepA1R*NRepA2R))
     allocate(SAAR(no_R_HS,no_R_HS,NRepA1R*NRepA2R))
-    allocate(GAAR(no_R_HS,no_R_HS,NRepA1R*NRepA2R))
-    ispin = ispin + no_R_HS**2*NRepA1R*NRepA2R*3
+    ispin = ispin + no_R_HS**2*NRepA1R*NRepA2R*2
     allocate(SigmaR(no_R,no_R))
     ispin = ispin + no_R**2
     call memory('A','Z',ispin,'transiesta')
 
     if ( IsVolt ) then
        ! We only need Gamma's with voltages
-       allocate(GammaL(no_L,no_L),GammaR(no_R,no_R))
-       call memory('A','D',no_L**2+no_R**2,'transiesta')
+       allocate(GammaLT(no_L,no_L),GammaRT(no_R,no_R))
+       call memory('A','Z',no_L**2+no_R**2,'transiesta')
+    else
+       allocate(GammaLT(no_L_HS,no_L),GammaRT(no_R_HS,no_R))
+       call memory('A','Z',no_L_HS*no_L+no_R_HS*no_R,'transiesta')
     end if
+    ! This seems stupid, however, we never use the GAAL and
+    ! GammaL at the same time. Hence it will be safe
+    ! to have them point to the same array.
+    ! When the UC_expansion_Sigma_GammaT is called
+    ! first the GAA is "emptied" of information" and then
+    ! Gamma is filled.
+    GAAL => GammaLT
+    GAAR => GammaRT
 
     ispin = 0
 
@@ -390,34 +398,34 @@ contains
 #endif
 
     if ( ts_Gamma_SCF ) then
-       call newdSpData1D(tsup_sp_uc,fdist,spDM,name='Transiesta spDM')
-       call newdSpData1D(tsup_sp_uc,fdist,spEDM,name='Transiesta spEDM')
+       call newdSpData1D(tsup_sp_uc,fdist,spDM,name='TS spDM')
+       call newdSpData1D(tsup_sp_uc,fdist,spEDM,name='TS spEDM')
        if ( IsVolt ) then
-          call newdSpData1D(tsup_sp_uc,fdist,spDMR,name='Transiesta spDM-R')
-          call newdSpData1D(tsup_sp_uc,fdist,spDMneqL,name='Transiesta spDMneq-L')
-          call newdSpData1D(tsup_sp_uc,fdist,spDMneqR,name='Transiesta spDMneq-R')
-          call newdSpData1D(tsup_sp_uc,fdist,spEDMR,name='Transiesta spEDM-R')
+          call newdSpData1D(tsup_sp_uc,fdist,spDMR,name='TS spDM-R')
+          call newdSpData1D(tsup_sp_uc,fdist,spDMneqL,name='TS spDMneq-L')
+          call newdSpData1D(tsup_sp_uc,fdist,spDMneqR,name='TS spDMneq-R')
+          call newdSpData1D(tsup_sp_uc,fdist,spEDMR,name='TS spEDM-R')
        end if
 
        ! The Hamiltonian and overlap matrices (in Gamma calculations
        ! we will not have any phases, hence, it makes no sense to
        ! have the arrays in complex)
-       call newdSpData1D(ts_sp_uc,fdist,spH,name='Transiesta spH')
-       call newdSpData1D(ts_sp_uc,fdist,spS,name='Transiesta spS')
+       call newdSpData1D(ts_sp_uc,fdist,spH,name='TS spH')
+       call newdSpData1D(ts_sp_uc,fdist,spS,name='TS spS')
 
     else
-       call newzSpData1D(tsup_sp_uc,fdist,spzDM,name='Transiesta spzDM')
-       call newzSpData1D(tsup_sp_uc,fdist,spzEDM,name='Transiesta spzEDM')
+       call newzSpData1D(tsup_sp_uc,fdist,spzDM,name='TS spzDM')
+       call newzSpData1D(tsup_sp_uc,fdist,spzEDM,name='TS spzEDM')
        if ( IsVolt ) then
-          call newzSpData1D(tsup_sp_uc,fdist,spzDMR,name='Transiesta spzDM-R')
-          call newzSpData1D(tsup_sp_uc,fdist,spzDMneqL,name='Transiesta spzDMneq-L')
-          call newzSpData1D(tsup_sp_uc,fdist,spzDMneqR,name='Transiesta spzDMneq-R')
-          call newzSpData1D(tsup_sp_uc,fdist,spzEDMR,name='Transiesta spzEDM-R')
+          call newzSpData1D(tsup_sp_uc,fdist,spzDMR,name='TS spzDM-R')
+          call newzSpData1D(tsup_sp_uc,fdist,spzDMneqL,name='TS spzDMneq-L')
+          call newzSpData1D(tsup_sp_uc,fdist,spzDMneqR,name='TS spzDMneq-R')
+          call newzSpData1D(tsup_sp_uc,fdist,spzEDMR,name='TS spzEDM-R')
        end if
 
        ! The Hamiltonian and overlap matrices
-       call newzSpData1D(ts_sp_uc,fdist,spzH,name='Transiesta spzH')
-       call newzSpData1D(ts_sp_uc,fdist,spzS,name='Transiesta spzS')
+       call newzSpData1D(ts_sp_uc,fdist,spzH,name='TS spzH')
+       call newzSpData1D(ts_sp_uc,fdist,spzS,name='TS spzS')
 
     end if
     ! We will not write out all created sparsity patterns, it provides
@@ -585,11 +593,15 @@ contains
              if ( ts_Gamma_SCF ) then
                 ! Notice that we now actually need to retain the values
                 ! in zwork...!!!
-                call prepare_GF_inv_D(spH , spS,Z,no_BufL,no_u_TS,zwork_tri)
+                call prepare_GF_inv_D(UseBulk, spH , spS,Z,no_BufL, &
+                     no_u_TS,zwork_tri, &
+                     no_L, SigmaL, no_R, SigmaR)
              else
                 ! Notice that we now actually need to retain the values
                 ! in zwork...!!!
-                call prepare_GF_inv_Z(spzH,spzS,Z,no_BufL,no_u_TS,zwork_tri)
+                call prepare_GF_inv_Z(UseBulk, spzH,spzS,Z,no_BufL, &
+                     no_u_TS,zwork_tri, &
+                     no_L, SigmaL, no_R, SigmaR)
              end if
 
 #ifdef TRANSIESTA_TIMING
@@ -599,13 +611,10 @@ contains
              if ( GF_INV_EQUI_PART ) then
                 ! Calculate the GF22 (note that GF22 points to the 
                 ! tri-diag array...
-                call calc_GF_Part(no_u_TS,no_L,no_R, &
-                     SigmaL, SigmaR, zwork_tri, GF22, ierr)
+                call calc_GF_Part(no_u_TS, no_L,no_R,zwork_tri, GF22, ierr)
              else
                 ! Calculate the full GF
-                call calc_GF(UseBulk,.false., &
-                     no_u_TS,no_L,no_R, &
-                     SigmaL, SigmaR, zwork_tri, GF_tri,ierr)
+                call calc_GF(.false., no_u_TS, zwork_tri, GF_tri, ierr)
              end if
 
              if ( contour(iE)%part == CC_PART_RIGHT_EQUI ) then
@@ -630,28 +639,27 @@ contains
 
           case ( CC_PART_NON_EQUI )
              
-             ! TODO, we can actually do without the Gamma-calculations
-             ! in this step. After having calculated GF, we could
-             ! calculate the Gamma's and save them in Sigma
-             ! This would remove no_L**2 + no_R**2
-             ! and should be quite easy. Do this after full
-             ! implementation... (note that it will require more computation
-             ! in the case of repetition)
+             ! The non-equilibrium integration points have the density
+             ! in the real part of the Gf.Gamma.Gf^\dagger
+             ! Hence we simply multiply W by -i to move the density
+             ! to the same scheme i.e. \rho = - Im(Gf.Gamma.Gf^\dagger)
+             W  = zmi * W
+             ZW = Z * W
 
              ! Do the left electrode
-             call UC_expansion_Sigma_Gamma(UseBulk,Z,no_L_HS,no_L, &
+             call UC_expansion_Sigma_GammaT(UseBulk,Z,no_L_HS,no_L, &
                   NRepA1L, NRepA2L, &
                   na_L_HS,lasto_L,nqL,qLb,wqL, &
                   HAAL, SAAL, GAAL, &
-                  SigmaL, GammaL, & 
+                  SigmaL, GammaLT, & 
                   nzwork, zwork)
 
              ! Do the right electrode
-             call UC_expansion_Sigma_Gamma(UseBulk,Z,no_R_HS,no_R, &
+             call UC_expansion_Sigma_GammaT(UseBulk,Z,no_R_HS,no_R, &
                   NRepA1R, NRepA2R, &
                   na_R_HS,lasto_R,nqR,qRb,wqR, &
                   HAAR, SAAR, GAAR, &
-                  SigmaR, GammaR, & 
+                  SigmaR, GammaRT, & 
                   nzwork, zwork)
 
 #ifdef TRANSIESTA_TIMING
@@ -661,11 +669,15 @@ contains
              if ( ts_Gamma_SCF ) then
                 ! Notice that we now actually need to retain the values
                 ! in zwork...!!!
-                call prepare_GF_inv_D(spH ,spS ,Z,no_BufL,no_u_TS,zwork_tri)
+                call prepare_GF_inv_D(UseBulk, spH , spS,Z,no_BufL, &
+                     no_u_TS,zwork_tri, &
+                     no_L, SigmaL, no_R, SigmaR)
              else
                 ! Notice that we now actually need to retain the values
                 ! in zwork...!!!
-                call prepare_GF_inv_Z(spzH,spzS,Z,no_BufL,no_u_TS,zwork_tri)
+                call prepare_GF_inv_Z(UseBulk, spzH,spzS,Z,no_BufL, &
+                     no_u_TS,zwork_tri, &
+                     no_L, SigmaL, no_R, SigmaR)
              end if
 
 #ifdef TRANSIESTA_TIMING
@@ -673,14 +685,13 @@ contains
 #endif
 
              ! Calculate the Greens function
-             call calc_GF(UseBulk,.true., &
-                     no_u_TS,no_L,no_R, &
-                     SigmaL, SigmaR, zwork_tri, GF_tri,ierr)
+             call calc_GF_Bias(UseBulk, &
+                     no_u_TS,zwork_tri,GF_tri, &
+                     no_L, SigmaL, & ! These are work-arrays here...
+                     no_R, SigmaR)
 
-             ! copy GammaR to a complex array
-             SigmaR(:,:) = GammaR(:,:)
              ! We calculate the right thing.
-             call GF_Gamma_GF_Right(no_R,Gf_tri, SigmaR, zwork_tri)
+             call GF_Gamma_GF_Right_All(no_R, Gf_tri, GammaRT, zwork_tri)
              ! work is now GFGGF
 
              ! Note that we use '--' here
@@ -692,19 +703,17 @@ contains
                      zwork_tri, no_BufL, -W, -ZW)
              end if
 
-             ! copy GammaL to a complex array
-             SigmaL(:,:) = GammaL(:,:)
              ! We calculate the left thing.
-             call GF_Gamma_GF_Left(no_L, Gf_tri,SigmaL, zwork_tri)
+             call GF_Gamma_GF_Left_All(no_L, Gf_tri,GammaLT, zwork_tri)
              ! work is now GFGGF
 
-             ! Note that we use '+-' here
+             ! Note that we use '++' here
              if ( ts_Gamma_SCF ) then
                 call add_DM_dE_D(spDMneqL,spEDMR, &
-                     zwork_tri, no_BufL, W, -ZW)
+                     zwork_tri, no_BufL, +W, +ZW)
              else
                 call add_DM_dE_Z(spzDMneqL,spzEDMR, &
-                     zwork_tri, no_BufL, W, -ZW)
+                     zwork_tri, no_BufL, +W, +ZW)
              end if
 
           !case ( CC_PART_TRANSPORT )
@@ -885,32 +894,29 @@ contains
 
     call delete(zwork_tri)
     call delete(GF_tri)
-    !if ( GF_INV_EQUI_PART .and. .not. IsVolt ) then
-    !   call memory('D','Z',size(GF22),'transiesta')
-    !   deallocate(GF22)
-    !end if
-
 
     deallocate(lasto_L,lasto_R)
     call memory('D','I',na_R_HS+na_L_HS+2,'transiesta')
 
-    call memory('D','Z',size(HAAL)*3+size(HAAR)*3,'transiesta')
-    deallocate(HAAL,SAAL,GAAL)
-    deallocate(HAAR,SAAR,GAAR)
+    call memory('D','Z',size(HAAL)*2+size(HAAR)*2,'transiesta')
+    deallocate(HAAL,SAAL)
+    deallocate(HAAR,SAAR)
     call memory('D','Z',size(SigmaL)+size(SigmaR),'transiesta')
     deallocate(SigmaL,SigmaR)
     
-    if ( IsVolt ) then
-       ! These where only allocated on voltage calculations
-       call memory('D','D',size(GammaL)+size(GammaR),'transiesta')
-       deallocate(GammaL,GammaR)
-    end if
+    ! These are allocated instead of the GAA[LR] arrays.
+    ! Hence they are used in both non-bias and bias calculations.
+    call memory('D','Z',size(GammaLT)+size(GammaRT),'transiesta')
+    deallocate(GammaLT,GammaRT)
 
     ! I would like to add something here which enables 
     ! 'Transiesta' post-process
 
     call timer('TS_calc',2)
 
+    call ts_print_charges(sp_dist, sparse_pattern, na_u, lasto, &
+         nspin, n_nzs, DM, Ss, TS_INFO_SCF)
+    
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS transiesta mem' )
 #endif
@@ -1001,6 +1007,9 @@ contains
     dE     => val(EDM)
     Gf     => val(Gf_tri)
 
+    ! Notice that we do not need to do any transposing here...
+    ! The tri-diagonal calculation of GF_Gamma_GF will always be correct
+
     ! Number of orbitals in the SIESTA unit-cell
     ! Remember that this is a sparsity pattern which contains
     ! a subset of the SIESTA pattern.
@@ -1024,6 +1033,164 @@ contains
     end do
 
   end subroutine add_DM_dE_D
+
+
+  ! creation of the GF^{-1}.
+  ! this routine will insert the zS-H and \Sigma_{LR} terms in the GF 
+  subroutine prepare_GF_inv_D(UseBulk, spH,spS, ZE, no_BufL,no_u,GFinv_tri, &
+       no_L, SigmaL, no_R, SigmaR)
+    use class_dSpData1D
+    use class_Sparsity
+    use class_zTriMat3
+
+    logical, intent(in) :: UseBulk
+    ! The Hamiltonian and overlap sparse matrices
+    type(dSpData1D), intent(inout) :: spH, spS
+    ! the current energy point
+    complex(dp), intent(in) :: ZE
+    ! Remark that we need the left buffer orbitals
+    ! to calculate the actual orbital of the sparse matrices...
+    integer, intent(in) :: no_BufL,no_u
+    type(zTriMat3), intent(inout) :: GFinv_tri
+    integer, intent(in) :: no_L, no_R
+    complex(dp), intent(in) :: SigmaL(no_L**2), SigmaR(no_R**2)
+
+    ! Local variables
+    type(Sparsity), pointer :: s
+    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
+    real(dp), pointer :: dH(:), dS(:)
+    complex(dp), pointer :: Gfinv(:)
+    integer :: io, iu, ind, idx
+
+    s      => spar    (spH)
+    l_ncol => n_col   (s)
+    l_ptr  => list_ptr(s)
+    l_col  => list_col(s)
+
+    dH     => val(spH)
+    dS     => val(spS)
+    Gfinv  => val(Gfinv_tri)
+
+    ! initialize 
+    GFinv(:) = dcmplx(0._dp,0._dp)
+
+    ! We will only loop in the central region
+    ! We have constructed the sparse array to only contain
+    ! values in this part...
+    do io = no_BufL + 1, no_BufL + no_u
+
+       iu = io - no_BufL
+
+       do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
+
+          ! we could transpose... but...
+          idx = index(Gfinv_tri, iu, l_col(ind)-no_BufL)
+
+          GFinv(idx) = ZE * dS(ind) - dH(ind)
+       end do
+    end do
+
+    call insert_Self_Energies(UseBulk, Gfinv_tri, &
+         no_L, SigmaL, no_R, SigmaR)
+
+  end subroutine prepare_GF_inv_D
+
+  ! creation of the GF^{-1}.
+  ! this routine will insert the zS-H and \Sigma_{LR} terms in the GF 
+  subroutine prepare_GF_inv_Z(UseBulk,spH,spS,ZE, no_BufL,no_u,GFinv_tri, &
+       no_L, SigmaL, no_R, SigmaR)
+    use class_zSpData1D
+    use class_Sparsity
+    use class_zTriMat3
+
+    logical, intent(in) :: UseBulk
+    ! The Hamiltonian and overlap sparse matrices
+    type(zSpData1D), intent(inout) :: spH, spS
+    ! the current energy point
+    complex(dp), intent(in) :: ZE
+    ! Remark that we need the left buffer orbitals
+    ! to calculate the actual orbital of the sparse matrices...
+    integer, intent(in) :: no_BufL,no_u
+    type(zTriMat3), intent(inout) :: GFinv_tri
+    integer, intent(in) :: no_L, no_R
+    complex(dp), intent(in) :: SigmaL(no_L**2), SigmaR(no_R**2)
+
+    ! Local variables
+    type(Sparsity), pointer :: s
+    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
+    complex(dp), pointer :: zH(:), zS(:), Gfinv(:)
+    integer :: io, iu,ind, idx
+    
+    s      => spar    (spH)
+    l_ncol => n_col   (s)
+    l_ptr  => list_ptr(s)
+    l_col  => list_col(s)
+    
+    zH     => val(spH)
+    zS     => val(spS)
+    Gfinv  => val(Gfinv_tri)
+
+    ! Initialize
+    GFinv(:) = dcmplx(0._dp,0._dp)
+
+    ! We will only loop in the central region
+    ! We have constructed the sparse array to only contain
+    ! values in this part...
+    do io = no_BufL + 1, no_BufL + no_u
+
+       iu = io - no_BufL
+
+       do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io) 
+
+          !ju = l_col(ind) ! The '- no_BufL' is moved outside the loop
+          idx = index(Gfinv_tri,l_col(ind)-no_BufL,iu)
+
+          ! Notice that we transpose back here...
+          ! See symmetrize_HS_kpt
+          GFinv(idx) = ZE * zS(ind) - zH(ind)
+       end do
+    end do
+
+    call insert_Self_Energies(UseBulk, Gfinv_tri, &
+         no_L, SigmaL, no_R, SigmaR)
+    
+  end subroutine prepare_GF_inv_Z
+
+  subroutine insert_Self_Energies(UseBulk,Gfinv_tri, &
+       no_L, SigmaL, no_R, SigmaR)
+    use class_zTriMat3
+
+    logical, intent(in) :: UseBulk
+    type(zTriMat3), intent(inout) :: GFinv_tri
+    integer, intent(in) :: no_L, no_R
+    complex(dp), intent(in) :: SigmaL(no_L**2)
+    complex(dp), intent(in) :: SigmaR(no_R**2)
+
+    complex(dp), pointer :: Gfpart(:)
+    integer :: i
+
+    Gfpart => val11(GFinv_tri)
+    
+    if ( UseBulk ) then
+       Gfpart(:) = SigmaL(:)
+    else
+       do i = 1 , no_L**2
+          Gfpart(i) = Gfpart(i) - SigmaL(i)
+       end do
+    end if
+
+    Gfpart => val33(GFinv_tri)
+    
+    if ( UseBulk ) then
+       Gfpart(:) = SigmaR(:)
+    else
+       do i = 1 , no_R**2
+          Gfpart(i) = Gfpart(i) - SigmaR(i)
+       end do
+    end if
+
+  end subroutine insert_Self_Energies
+
 
   subroutine test_tri(tri)
     use class_zTriMat3
@@ -1105,114 +1272,6 @@ contains
     end do
     print *,'successfull'
   end subroutine test_tri
-
-
-  ! creation of the GF^{-1}.
-  ! this routine will ONLY insert the zS-H terms in the GF 
-  subroutine prepare_GF_inv_D(spH,spS, ZE, no_BufL,no_u,GFinv_tri)
-    use class_dSpData1D
-    use class_Sparsity
-    use class_zTriMat3
-
-    ! The Hamiltonian and overlap sparse matrices
-    type(dSpData1D), intent(inout) :: spH, spS
-    ! the current energy point
-    complex(dp), intent(in) :: ZE
-    ! Remark that we need the left buffer orbitals
-    ! to calculate the actual orbital of the sparse matrices...
-    integer, intent(in) :: no_BufL,no_u
-    type(zTriMat3), intent(inout) :: GFinv_tri
-
-    ! Local variables
-    type(Sparsity), pointer :: s
-    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-    real(dp), pointer :: dH(:), dS(:)
-    complex(dp), pointer :: Gfinv(:)
-    integer :: io, iu, ind, idx
-
-    s      => spar    (spH)
-    l_ncol => n_col   (s)
-    l_ptr  => list_ptr(s)
-    l_col  => list_col(s)
-
-    dH     => val(spH)
-    dS     => val(spS)
-    Gfinv  => val(Gfinv_tri)
-
-    ! initialize 
-    GFinv(:) = dcmplx(0._dp,0._dp)
-
-    ! We will only loop in the central region
-    ! We have constructed the sparse array to only contain
-    ! values in this part...
-    do io = no_BufL + 1, no_BufL + no_u
-
-       iu = io - no_BufL
-
-       do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
-
-          ! we could transpose... but...
-          idx = index(Gfinv_tri, iu, l_col(ind)-no_BufL)
-
-          GFinv(idx) = ZE * dS(ind) - dH(ind)
-       end do
-    end do
-
-  end subroutine prepare_GF_inv_D
-
-  ! creation of the GF^{-1}.
-  ! this routine will ONLY insert the zS-H terms in the GF 
-  subroutine prepare_GF_inv_Z(spH,spS,ZE, no_BufL,no_u,GFinv_tri)
-    use class_zSpData1D
-    use class_Sparsity
-    use class_zTriMat3
-    ! The Hamiltonian and overlap sparse matrices
-    type(zSpData1D), intent(inout) :: spH, spS
-    ! the current energy point
-    complex(dp), intent(in) :: ZE
-    ! Remark that we need the left buffer orbitals
-    ! to calculate the actual orbital of the sparse matrices...
-    integer, intent(in) :: no_BufL,no_u
-    type(zTriMat3), intent(inout) :: GFinv_tri
-
-    ! Local variables
-    type(Sparsity), pointer :: s
-    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-    complex(dp), pointer :: zH(:), zS(:), Gfinv(:)
-    integer :: io, iu,ind, idx
-    
-    s      => spar    (spH)
-    l_ncol => n_col   (s)
-    l_ptr  => list_ptr(s)
-    l_col  => list_col(s)
-    
-    zH     => val(spH)
-    zS     => val(spS)
-    Gfinv  => val(Gfinv_tri)
-
-    ! Initialize
-    GFinv(:) = dcmplx(0._dp,0._dp)
-
-    ! We will only loop in the central region
-    ! We have constructed the sparse array to only contain
-    ! values in this part...
-    do io = no_BufL + 1, no_BufL + no_u
-
-       iu = io - no_BufL
-
-       do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io) 
-
-          !ju = l_col(ind) ! The '- no_BufL' is moved outside the loop
-          idx = index(Gfinv_tri,l_col(ind)-no_BufL,iu)
-
-          ! Notice that we transpose back here...
-          ! See symmetrize_HS_kpt
-          GFinv(idx) = ZE * zS(ind) - zH(ind)
-       end do
-    end do
-    
-  end subroutine prepare_GF_inv_Z
-
 
   subroutine zTriMat3_transpose(m_tri,mT_tri)
     use class_zTriMat3

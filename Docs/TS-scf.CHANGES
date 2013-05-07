@@ -1,4 +1,182 @@
 ----------------------------------------------------
+May 7, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-20
+Optimized transiesta for speed, now the sparse-tri is precise +bugfixes
+
+* Moved Vscf voltage ramp call into the module. 
+  This will make extensions easier.
+
+* Reinstantiated the complex Gamma arrays. 
+  We can actually save the GAA[LR] arrays as the Gamma arrays
+  are first created later. (consider this)
+  Also they are transposed (which speeds up access in BLAS), hence
+  the naming scheme: Gamma[LR]T
+
+* Created the charge print-out in the sparse SCF cycle.
+  It now print the charges as in the development branch of
+  transiesta.
+
+* Moved size checks of transiesta arrays into the 
+  ts_init routine. This is very detached however, it will capture
+  an erroneous run in the beginning instead of after the diagon run.
+  TODO recheck everything here.
+
+* Added option to transpose the Gf arrays in the add_DM routines.
+  For now this is not needed, however it could be used for optimizing matrix
+  accessing.
+
+* Have completely rewritten the code for doing:
+    GF.Gamma.Gf^\dagger (GfGGf)
+  Upon inspection it is clear that the matrix products
+  can be split up into left electrode GfGGf where only the first
+  no_L states are needed in the Green's function.
+  For the right electrode we only need the last no_R states in the
+  Green's function.
+  This leverages a lot of computation as no_u_TS-no_L-no_R states
+  can be removed from the Gf computation.
+  Hence the bias integration points are now "cheap".
+  
+* GfGGf has been rewritten in terms of block computations which speeds
+  it up by a factor of 5 (for my test system, the larger the better speed up). 
+  After this update Transiesta bias contour points are the cheap points
+  as opposed to previously where they where the expensive integration points.
+
+* Generated a transiesta method module which contains information
+  about the different methods available.
+  Currently it only contains:
+   1) the original method
+   2) the sparse method
+   3) the tridiagonalization sparse method
+   4) whether the GF calculation only needs Gf22
+
+* Fixed a logical error about an acting efield and transiesta
+  run. This is not allowed and will create erroneous contours.
+  Hence the program should die if both of these are supplied.
+
+* Added preliminary entry for "immediate transiesta" runs.
+  This seems to require the EDM matrix, and right now we
+  need this being created after having read in the <SysLabel>.DM
+  The point of this is to do regular SIESTA run. Then 
+  immediately start Transiesta from that DM. (i.e. you force SIESTA
+  to believe it has already converged, which it has).
+  This should leverage the initial diagon run on very large systems.
+ 
+* Added a sorting algorithm for the contour points in transiesta.
+  This should (with large number of energy points) meen a higher 
+  numeric accuracy.
+  I.e. we sum up the energy-points with small weights and end 
+  with the large weight energy-points.
+
+* The tridiagonalization routine coupled with the sparse pattern of
+  transiesta should now be the preferred way of dealing with transiesta
+  runs. It is extremely fast and has exactly the same precision.
+  This means that we have added the computation of all necessary arrays
+  in the tri-diagonal case. Hence the new tri-diagonalization routine
+  can also handle TS.UseBulk F.
+  TODO, eventually the old implementation should be phased out.
+
+* Changed the logic behind the integration of the non-equilibrium
+  correction terms for the density matrix.
+  Instead of adding the factor -i on the Gf.Gamma.Gf we add it
+  to the weight when dealing with these energy points.
+  It should be more clearer now.
+
+* Added explanations about the sign convention in m_ts_mem.F90
+  so that new developers can see what is going on.
+
+* Added error estimates about the integration of the density matrix
+  For now it defaults to printing it out. The calculation of the
+  estimate is fast and does not take any time as it is per-orbital.
+  The print-out is per k-point, hence for many k-points the out-file
+  will be flooded.
+  The error estimate is only estimated in the density part, i.e.
+  when dealing with k-points it is only the real(imag) part of the 
+  density that takes part in the weight.
+  TODO: add flag for requesting this information. For instance:
+        TS.NonEquilibrium.ErrorEstimate T/F
+
+* Made the sparse tridiagonalization the default behaviour.
+  The user can obtain the old implementation by setting:
+   TS.SolutionMethod original
+   TS.TriDiag F
+
+* Removed unneccessary arrays GAA[LR] from the sparse methods
+  The Gamma arrays can handily be used for this.
+  This is because the GAA[LR] are used to obtain the self-energies
+  and THEN the Gamma arrays are constructed (in the same routine:
+  UC_expansion_Sigma_GammaT). Hence we re-use the memory elements.
+
+* Moved the addition of the self-energies to the prepare_Gf routines.
+  This makes much more logical sense than the previous implementation.
+
+* BUGfix: symmetric Gf.Gamma.Gf^\dagger only symmetric in Gamma-point
+  Previously the Gamma arrays where real quantities and the Gf.Gamma.Gf
+  was made/forced symmetric. However, this is only the case for the 
+  Gamma-point calculation and hence any non-symmetric part of k-point 
+  sampling was actually not caught.
+  Practically this should not meen much, but it does influence the 
+  convergence, hence for large bias and many energy points this does
+  have influence.
+
+* BUGfix: sign on EDMR was wrong
+  It seemed like the sign on the EDMR was wrong. It seems like this needs 
+  some testing.
+
+* BUGfix: weight of DM was performed on the absolute square of the 
+  non-equilibrium density matrix. However as the imaginary part of
+  Gf.Gamma.Gf has to do with local currents and nothing with the 
+  density it should only be the real part of Gf.Gamma.Gf which determines
+  the weight.
+
+* BUGfix: weights in left/right electrode regions was not weighted as 
+  performed as in the article.
+  This was primarily due to the tri-diagonalization which could not
+  handle the Gf.Gamma.Gf product properly. Hence the weights was fixed
+  to 1, 0 in the left/right regions, respectively.
+
+* NOTICE
+  The original implementation does not perform the correct integration
+  with bias and using the tri-diagonalization. Hence it should not be used.
+  I have forced a warning about this and forced the regular method.
+  Hence:
+    TS.SolutionMethod original
+    TS.Voltage /= 0
+    TS.TriDiag T
+  will become:
+    TS.SolutionMethod original
+    TS.Voltage /= 0
+    TS.TriDiag F
+
+* TODO
+   Clean up the routines for next commit
+   Ensure compilation with gfortran
+   Talk to Alberto about the SCF.RequireHConvergence and
+         SCF.H.Tolerance
+   Add all this information to the manual
+
+added:
+  Src/m_ts_method.f90
+modified:
+  Src/Makefile
+  Src/class_TriMat3.T90
+  Src/compute_dm.F
+  Src/dhscf.F
+  Src/m_new_dm.F90
+  Src/m_ts_contour.f90
+  Src/m_ts_in_siesta.F
+  Src/m_ts_mem.F90
+  Src/m_ts_mem_scat.F90
+  Src/m_ts_mem_sparsity.F90
+  Src/m_ts_options.F90
+  Src/m_ts_scattering.F
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_tri.F90
+  Src/m_ts_tri_scat.F90
+  Src/m_ts_voltage.F90
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/ts_init.F90
+
+----------------------------------------------------
 April 27, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-19
 Cleaned up the class names and references in the code
 

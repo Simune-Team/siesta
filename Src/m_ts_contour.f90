@@ -24,6 +24,7 @@ module m_ts_contour
 !   1) setup_contour
 !   2) io_contour
 !   3) print_contour
+!   9) sort_contour
 
 ! Furthermore we have a couple of local routines 
 ! used for generating the contour points
@@ -57,7 +58,7 @@ module m_ts_contour
 
   public :: NEn, PNEn, contour
   public :: setup_contour, io_contour, print_contour
-
+  public :: sort_contour
   private
 
 contains
@@ -69,7 +70,6 @@ contains
        CCEmin,GFEta,kT)
     
     use precision, only : dp
-    use sys,       only : die
     use parallel,  only : IONode, Nodes, operator(.PARCOUNT.)
 
 ! **********************
@@ -322,7 +322,6 @@ contains
 
     use precision, only : dp
     use parallel, only : IONode
-    use sys, only : die
     use units, only : Pi
     use m_ts_aux_rout, only : nf
     use m_ts_aux_rout, only : gaufermi10, gaufermi20, gauss
@@ -444,7 +443,6 @@ contains
 
     use precision, only : dp
     use parallel, only : IONode
-    use sys, only : die
     use units, only : Pi
 
 ! ***********************
@@ -531,7 +529,6 @@ contains
        NEn,contour)
 
     use parallel, only : IONode
-    use sys, only : die
     use units, only : Pi
     use precision, only : dp
     use m_ts_aux_rout, only : nf1, gaufermi0, gaufermi2
@@ -594,7 +591,7 @@ contains
        call die('ERROR: Contour: too few points for real axis int') 
     end if
 
-    if ( E1 .gt. E2 ) then
+    if ( E1 > E2 ) then
        EE2 = E1
        EE1 = E2
     else
@@ -609,8 +606,7 @@ contains
     else
        if ( IONode ) then
           write(*,*) 'ERROR: ' 
-          write(*,*) &
-               'No Gauss quadrature for Fermi function '
+          write(*,*) 'No Gauss quadrature for Fermi function '
        endif
        call die ('No Gauss quadrature for Fermi function')
     end if
@@ -618,11 +614,11 @@ contains
     do i = 1 , NGau
        j = NGau - i + 1 ! reverse
        contour(i)%c       = dcmplx(-xlt(j)*kT + EE1,GFeta)
-       contour(i)%w       = wlt(j)*kT*dcmplx(1d0,0d0)
+       contour(i)%w       = wlt(j)*kT
        contour(i)%part    = part
        contour(i)%type    = CC_TYPE_GAUSS_FERMI
        contour(NEn+1-i)%c = dcmplx(xlt(j)*kT + EE2,GFeta)
-       contour(NEn+1-i)%w = wlt(j)*kT*dcmplx(1d0,0d0)
+       contour(NEn+1-i)%w = wlt(j)*kT
        contour(NEn+1-i)%part = part
        contour(NEn+1-i)%type = CC_TYPE_GAUSS_FERMI
     end do
@@ -651,7 +647,7 @@ contains
     contour(Ni+1-3)%w = contour(Ni+1-3)%w*43.d0/48.d0
     contour(Ni+1-4)%w = contour(Ni+1-4)%w*49.d0/48.d0
  
-    if ( E1 .gt. E2 ) then
+    if ( E1 > E2 ) then
        do i = 1 , NEn
           contour(i)%w = -contour(i)%w
        end do
@@ -753,5 +749,42 @@ contains
     end do
 
   end subroutine phonon
+
+
+  ! In order to retain the best numerical accuracy we introduce
+  ! an ordering of the energy contour by weights.
+  ! It is the only reasonable thing to access as the functional is
+  ! non-deterministic.
+  ! An example of the importance of this sorting:
+  ! Take +200 voltage energy points. 
+  ! The weights will be something like this:
+  ! 1e-5,...,1e-4,...,1e-3,...,1e-4,...,1e-5
+  ! Which means that the summation up till the half works great.
+  ! But when we reach the last weight we could be in the situation where:
+  !  1._dp + 1e-12_dp which will limit the accuracy obtained for that energy point.
+
+  ! In order to circumvent this we simply sort by weights.
+  subroutine sort_contour(NC,c)
+    integer, intent(in) :: NC
+    type(ts_ccontour), intent(inout) :: c(NC)
+    
+    ! Local variables
+    type(ts_ccontour) :: ctmp
+    integer :: i,j
+    ! As we will only do this once we dont need a fancy sorting
+    ! algorithm...
+    do i = 1 , NC - 1
+       ctmp = c(i)
+       do j = i+1, NC
+          if ( real(ctmp%w*conjg(ctmp%w)) > &
+               real(c(j)%w*conjg(c(j)%w)) ) then
+             c(i) = c(j)
+             c(j) = ctmp
+             ctmp = c(i)
+          end if
+       end do
+    end do
+
+  end subroutine sort_contour
 
 end module m_ts_contour

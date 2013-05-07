@@ -69,9 +69,9 @@ character(200) :: HSFileR ! Electrode Right TSHS File
 logical       :: ElecValenceBandBot ! Calculate Electrode valence band bottom when creating electrode GF
 integer :: Cmethod        ! Method for the contour integration
 logical :: ReUseGF        ! Calculate the electrodes GF
-
-! Transiesta solution method
-integer :: ts_method
+logical :: ImmediateTSmode=.false. ! will determine to immediately start the transiesta
+                           ! SCF. This is useful when you already have a converged
+                           ! siesta DM
 
 !==========================================================================*
 !==========================================================================*
@@ -82,7 +82,7 @@ logical, parameter :: savetshs_def = .true.
 logical, parameter :: onlyS_def = .false.
 logical, parameter :: tsdme_def = .true.
 logical, parameter :: UseBulk_def = .true.
-logical, parameter :: TriDiag_def = .false.
+logical, parameter :: TriDiag_def = .true.
 logical, parameter :: UpdateDMCR_def = .true.
 logical, parameter :: UseVFix_def = .true.
 real(dp), parameter :: voltfdf_def = 0._dp   ! in Ry
@@ -133,6 +133,7 @@ use m_ts_contour, only : CC_METHOD_GAUSSFERMI
 use m_ts_global_vars, only : ts_istep, TSinit
 use m_ts_io, only : ts_read_TSHS_na
 use m_ts_io, only : ts_read_TSHS_lasto
+use m_ts_method
 #ifdef MPI
 use mpi_siesta, only : MPI_Integer, MPI_Comm_World
 #endif
@@ -158,13 +159,16 @@ if (IOnode) then
 end if
 
 !Set ts_istep default
-ts_istep=0
+ts_istep = 0
 
 ! Reading the Transiesta solution method
-chars = fdf_get('TS.SolutionMethod','original')
-ts_method = 0
-if ( leqi(chars,'sparse') ) then
-   ts_method = 1
+chars = fdf_get('TS.SolutionMethod','sparse')
+if ( leqi(chars,'original') ) then
+   ts_method = TS_ORIGINAL
+else if ( leqi(chars,'sparse') ) then
+   ts_method = TS_SPARSITY
+else
+   call die('Unrecognized Transiesta solution method: '//trim(chars))
 end if
 
 ! Reading TS Options from fdf ...
@@ -175,6 +179,8 @@ IsVolt = dabs(VoltFDF) > 0.001_dp/eV
 ! Set up the fermi shifts for the left and right electrodes
 VoltL =  0.5_dp*VoltFDF
 VoltR = -0.5_dp*VoltFDF
+! currently this does not work
+!ImmediateTSmode = fdf_get('TS.SCFImmediate',.false.)
 UseBulk     = fdf_get('TS.UseBulkInElectrodes',UseBulk_def)
 TriDiag     = fdf_get('TS.TriDiag',TriDiag_def)
 UpdateDMCR  = fdf_get('TS.UpdateDMCROnly',UpdateDMCR_def)
@@ -238,6 +244,10 @@ NRepA2R     = fdf_get('TS.ReplicateA2Right',NRepA_def)
 if ( NRepA1R < 1 .or. NRepA2R < 1 ) &
      call die("Repetition in right electrode must be >= 1.")
 
+! Setup the correct handling of EQUILIBRIUM solution method:
+! See above the global variable for its use.
+GF_INV_EQUI_PART = UseBulk .and. UpdateDMCR
+
 ! Here we check whether the user could perform the same
 ! calculation with the same GF-file
 ! We check that the user does not request the same GF files
@@ -265,14 +275,16 @@ else if ( (.not. IsVolt) .and. & ! for non-bias
      trim(HSFileL) == trim(HSFileR) .and. & ! for same TSHS files
      NUsedAtomsL == NUsedAtomsR .and. & ! for same number of atoms used
      i == NUsedAtomsL ) then ! for using ALL atoms in the electrode
-   if ( IONode ) then
-      write(*,*) 'NOTICE: In non-bias calculations, you can with'
-      write(*,*) '        benefit use the same GF-files for both'
-      write(*,*) '        the left and right electrode.'
-      write(*,*) '        This *only* requires that you use ALL'
-      write(*,*) '        atoms in the electrode and the left/right'
-      write(*,*) '        TSHS files are the same.'
-   end if
+   ! For now this notification has been disabled, but in reality 
+   ! could be enforced...
+   !if ( IONode ) then
+   !   write(*,*) 'NOTICE: In non-bias calculations, you can with'
+   !   write(*,*) '        benefit use the same GF-files for both'
+   !   write(*,*) '        the left and right electrode.'
+   !   write(*,*) '        This *only* requires that you use ALL'
+   !   write(*,*) '        atoms in the electrode and the left/right'
+   !   write(*,*) '        TSHS files are the same.'
+   !end if
 end if
 
 ! Show the deprecated and obsolete labels
@@ -284,11 +296,12 @@ call fdf_obsolete('TS.NKVoltScale')
 
 ! Output Used Options in OUT file ....
 if (IOnode) then
-if ( ts_method == 0 ) then
+if ( ts_method == TS_ORIGINAL ) then
  write(*,10)'ts_read_options: Solution method              =', 'Original'
-else if ( ts_method == 1 ) then
+else if ( ts_method == TS_SPARSITY ) then
  write(*,10)'ts_read_options: Solution method              =', 'Sparsity pattern'
 end if
+ write(*,1) 'ts_read_options: Start SCF cycle immediately  =', ImmediateTSmode
  write(*,1) 'ts_read_options: Save H and S matrices        =', saveTSHS
  write(*,1) 'ts_read_options: Save S and quit (onlyS)      =', onlyS
 end if
@@ -378,7 +391,7 @@ end if
        i = Nodes .PARCOUNT. i
        write(*,'(t10,a,i4,tr1,a4,i3,/)') &
             "Optimal equilibrium # of energy points: ",i, &
-            achar(177)//" i*",Nodes
+            "+- i*",Nodes
     end if
     if ( mod(NVolt,Nodes) /= 0 ) then
        write(*,*) "NOTICE: Non-equilibrium energy contour points are not"
@@ -392,7 +405,7 @@ end if
        i = Nodes .PARCOUNT. i
        write(*,'(t10,a,i4,tr1,a4,i3,/)') &
             "Optimal non-equilibrium # of energy points: ",i, &
-            achar(177)//" i*",Nodes
+            "+- i*",Nodes
     end if
     if ( mod(2*(Npol+Nline+Ncircle)+NVolt,Nodes) /= 0 ) then
        write(*,*) "NOTICE: Total energy contour points are not"
@@ -403,7 +416,7 @@ end if
        write(*,'(t10,a,i4)') "Used # of energy points   : ",i
        i = Nodes .PARCOUNT. i
        write(*,'(t10,a,i4,tr1,a4,i3,/)') &
-            "Optimal # of energy points: ",i,achar(177)//" i*",Nodes
+            "Optimal # of energy points: ",i,"+- i*",Nodes
       end if
  else
 ! .not. IsVolt:
@@ -425,19 +438,29 @@ end if
 end if
 
 ! UseBulk and TriDiag
-if ( (.not. UseBulk) .and. TriDiag ) then
-   if ( IONode ) then
-    write(*,*) "WARNING: TriDiag only for UseBulkInElectrodes"
-    write(*,*) "         Reverting to normal inversion scheme"
+if ( ts_method == TS_ORIGINAL ) then
+   if ( (.not. UseBulk) .and. TriDiag ) then
+      if ( IONode ) then
+         write(*,*) "WARNING: TriDiag only for UseBulkInElectrodes"
+         write(*,*) "         Reverting to normal inversion scheme"
+      end if
+      TriDiag = .false. 
    end if
-   TriDiag = .false. 
+   if ( TriDiag .and. IsVolt ) then
+      if ( IONode ) then
+         write(*,*) "WARNING: TriDiag does not perform correctly in the"
+         write(*,*) "         original solution method and with a bias."
+         write(*,*) "         Reverting to normal inversion scheme"
+      end if
+      TriDiag = .false.
+   end if
 end if
 
 ! sparsity pattern
-if ( ts_method == 1 ) then
+if ( ts_method == TS_SPARSITY ) then
    if ( TriDiag ) then
       ! Change to the correct method
-      ts_method = 2
+      ts_method = TS_SPARSITY_TRI
    end if
    if ( ChargeCorr /= 0 ) then
       if ( IONode ) then

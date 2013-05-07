@@ -107,7 +107,7 @@
       use m_ts_GF,      only : read_Green
       use m_ts_scattering, only : getSFE, getGF, getGFnonV
       use m_ts_scattering, only : weightDM, weightDMC
-      use m_ts_mem_scat, only : GF_Gamma_GF
+      use m_ts_mem_scat, only : GF_Gamma_GF_Block
       use m_ts_scattering, only : get_scat_region
 
       use m_ts_kpoints, only : ts_nkpnt,ts_kpoint,ts_kweight
@@ -209,7 +209,7 @@
 !     Self energies and scattering matrices
 !     Gamma=i*0.5*(Sigma - Sigma^dagger) 
       complex(dp), dimension(:,:),   allocatable :: SFEL  , SFER
-      real(dp), dimension(:,:),   allocatable    :: GAMMAL, GAMMAR
+      complex(dp), dimension(:,:),   allocatable :: GammaLT, GammaRT
 
 !     Electrode k-points kpar-points and their weights:
 !     Notice that these are at the moment completely identical
@@ -354,6 +354,7 @@
       integer :: MPIerror
 #endif
 
+      complex(dp), parameter :: zmi = dcmplx(0._dp,-1._dp)
       logical, save :: firsttime = .true.
 
 !==================================================================
@@ -412,12 +413,6 @@
          nou = no_l - (noBufL+noBufR)
 #endif
 
-
-         ! Do a crude check of the sizes
-         if ( nou <= noL + noR ) then
-            call die("The contact region size is &
-     &smaller than the electrode size. Please correct.")
-         end if
 
 ! -------------------------------------------------------
          
@@ -800,9 +795,8 @@
       call memory('A','Z',nou*nou,'transiesta')
       
       allocate(SFEL(noL,noL),SFER(noR,noR))
-      allocate(GAMMAL(noL,noL),GAMMAR(noR,noR))
-      call memory('A','Z',noL**2+noR**2,'transiesta')
-      call memory('A','D',noL**2+noR**2,'transiesta')
+      allocate(GammaLT(noL,noL),GammaRT(noR,noR))
+      call memory('A','Z',2*noL**2+2*noR**2,'transiesta')
       allocate(HAAL(noL_GF,noL_GF,nqL),SAAL(noL_GF,noL_GF,nqL))
       allocate(HAAR(noR_GF,noR_GF,nqR),SAAR(noR_GF,noR_GF,nqR))
       call memory('A','Z',2*noL_GF**2*nqL+2*noR_GF**2*nqR,'transiesta')
@@ -965,7 +959,7 @@
      &        nqL,qLb,wqL,
      &        noL_GF,
      &        nuaL_GF,lastoL,NRepA1L,NRepA2L,
-     &        noL,SFEL,GAMMAL,
+     &        noL,SFEL,GammaLT,
      &        min(Nodes,NEn-(iPE-1-Node)),errorgs)
 
          if(errorgs) call die('ERROR in getSFE Left') 
@@ -975,7 +969,7 @@
      &        nqR,qRb,wqR,
      &        noR_GF,
      &        nuaR_GF,lastoR,NRepA1R,NRepA2R,
-     &        noR,SFER,GAMMAR,
+     &        noR,SFER,GammaRT,
      &        min(Nodes,NEn-(iPE-1-Node)),errorgs)
 
          if(errorgs) call die('ERROR in getSFE Right') 
@@ -1103,55 +1097,56 @@
                 end do        ! i
               end if
             end if
+
 ! -------------------------------------------------------------
 !     Non-equilibrium part:
          case ( CC_PART_NON_EQUI )
 
+            ! The non-equilibrium integration points have the density
+            ! in the real part of the Gf.Gamma.Gf^\dagger
+            ! Hence we simply multiply W by -i to move the density
+            ! to the same scheme i.e. \rho = - Im(Gf.Gamma.Gf^\dagger)
+            W  = zmi * W
+            ZW = Z * W
+
             if ( GF_Part ) call die('Part of the GF cannot &
      &be calculated on a bias contour point')
 
-            ! We transpose GF (will make the computation in the GFGGF
-            ! routine faster... MUCH faster)
-            do j = 1 , nou
-               ind = nou*(j-1)
-               do i = 1 , nou
-                  work2(ind+i) = GF(nou*(i-1)+j)
-               end do
-            end do
-
-!   Calculate rho^R(e) -> GF ! NOTE R!!
-            call GF_Gamma_GF(nou-noR+1, nou, noR, work2,
-     &           GammaR, GF, noR*noR, SFER) ! SFER is a "work" array
-            ! GF is now GFGGF
+!   Calculate rho^R(e) -> work2 ! NOTE R!!
+            ! We note here that we get Gf.Gamma.Gf^\dagger
+            call GF_Gamma_GF_Block(nou-noR+1, nou, noR, GF,
+     &           GammaRT, work2, noR*noR, SFER) ! SFER is a "work" array
+            
 ! note DM = DML+DMneqR or DM=DMR+DMneqL
 
 ! note we use "+" here!
             if (ts_gamma_scf) then
-               do i=1,nou*nou
-                DMneqR(i) = DMneqR(i) + DIMAG(GF(i)*W)
-                EDM(i)    = EDM(i)    + DIMAG(GF(i)*ZW)
-               end do ! i
+              do i = 1 , nou*nou
+               DMneqR(i) = DMneqR(i) + DIMAG(work2(i)*W)
+               EDM   (i) = EDM   (i) + DIMAG(work2(i)*ZW)
+              end do
             else
-               do i=1,nou*nou
-                DMneqRCplx(i) = DMneqRCplx(i) + GF(i)*W
-                EDMCplx(i)    = EDMCplx(i)    + GF(i)*ZW
-               end do ! i
+              do i = 1 , nou*nou
+               DMneqRCplx(i) = DMneqRCplx(i) + work2(i)*W
+               EDMCplx   (i) = EDMCplx   (i) + work2(i)*ZW
+              end do
             end if
 
 !  Calculate rho^L(e) -> work2 ! NOTE L!!
-             call GF_Gamma_GF(1, nou, noL, work2, 
-     &           GammaL, GF, noL*noL, SFEL) ! SigmaL is a "work" array
+            ! We note here that we get Gf.Gamma.Gf^\dagger
+             call GF_Gamma_GF_Block(1, nou, noL, GF, 
+     &           GammaLT, work2, noL*noL, SFEL) ! SigmaL is a "work" array
         
 !     note we use "-" here!
             if (ts_gamma_scf) then
                do i=1,nou*nou
-                DMneqL(i) = DMneqL(i) - DIMAG(GF(i)*W)
-                EDMR(i)   = EDMR(i)   + DIMAG(GF(i)*ZW)
+                DMneqL(i) = DMneqL(i) - DIMAG(work2(i)*W)
+                EDMR  (i) = EDMR  (i) - DIMAG(work2(i)*ZW)
                end do ! i
             else
                do i=1,nou*nou
-                DMneqLCplx(i) = DMneqLCplx(i) - GF(i)*W
-                EDMRCplx(i)   = EDMRCplx(i)   + GF(i)*ZW
+                DMneqLCplx(i) = DMneqLCplx(i) - work2(i)*W
+                EDMRCplx  (i) = EDMRCplx  (i) - work2(i)*ZW
                end do
             end if
 ! -------------------------------------------------------------
@@ -1266,10 +1261,10 @@
 
       IF ( IsVolt ) THEN 
          if (ts_gamma_scf) then
-            call weightDM(nou,noL,noR,DM,DMR,DMneqL,
+            call weightDM(TriDiag,nou,noL,noR,DM,DMR,DMneqL,
      &           DMneqR,EDM,EDMR)
          else
-            call weightDMC(nou,noL,noR,DMCplx,DMRCplx,
+            call weightDMC(TriDiag,nou,noL,noR,DMCplx,DMRCplx,
      &           DMneqLCplx,DMneqRCplx,EDMCplx,EDMRCplx)
          end if
       endif
@@ -1610,8 +1605,8 @@
 
       call memory('D','Z',size(SFEL)+size(SFER),'transiesta')
       deallocate(SFEL,SFER)
-      call memory('D','D',size(GAMMAL)+size(GAMMAR),'transiesta')
-      deallocate(GAMMAL,GAMMAR)
+      call memory('D','Z',size(GammaLT)+size(GammaRT),'transiesta')
+      deallocate(GammaLT,GammaRT)
 
       call memory('D','Z',size(HAAL)+size(SAAL),'transiesta')
       call memory('D','Z',size(HAAR)+size(SAAR),'transiesta')

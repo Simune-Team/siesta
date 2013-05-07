@@ -186,6 +186,7 @@
 
   end subroutine newTriMat3FromDimensions
 
+
   function val_TriMat3(this) result(p)
     type(TYPE_NAME), intent(in) :: this
 #ifdef PREC

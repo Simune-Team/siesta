@@ -12,11 +12,14 @@
 ! Nick Papior Andersen, 2012, nickpapior@gmail.com
 !
 module m_ts_init
+
   implicit none
   private
   public :: ts_init
+
 contains
-  subroutine ts_init(nspin, ucell, na_u, xa)
+
+  subroutine ts_init(nspin, ucell, na_u, xa, lasto, no_u)
   ! Routine for initializing everything related to the Transiesta package.
   ! This is to comply with the SIESTA way of initializing at the beginning
   ! and make the code more managable.
@@ -33,10 +36,12 @@ contains
 
     use m_ts_gf,      only : do_Green
     use m_ts_contour, only : setup_contour, print_contour, io_contour
+    use m_ts_contour, only : sort_contour
     use m_ts_contour, only : NEn, contour
     use m_ts_kpoints, only : setup_ts_kpoint_grid
     use m_ts_kpoints, only : ts_nkpnt, ts_kpoint, ts_kweight
     use m_ts_options ! Just everything (easier)
+    use m_ts_method
 
     implicit none
 ! *********************
@@ -46,20 +51,87 @@ contains
     real(dp), intent(in) :: ucell(3,3)
     integer, intent(in)  :: na_u
     real(dp), intent(in) :: xa(3,na_u)
+    integer, intent(in)  :: lasto(0:na_u)
+    integer, intent(in)  :: no_u
 
 ! *********************
 ! * LOCAL variables   *
 ! *********************
     complex(dp), dimension(:,:), allocatable :: dos
+    integer :: i, sNE, eNE
+    integer :: nBL, nBR
+    integer :: nL, nC, nR, nTS
 
     ! Read in options for transiesta
     call read_ts_options( ucell )
 
-    ! Setup the k-points
-    call setup_ts_kpoint_grid( ucell )
-
     ! If we actually have a transiesta run we need to process accordingly!
     if ( TSmode ) then
+
+       ! Figure out the number of orbitals on the buffer atoms
+       nBL = 0
+       do i = 1 , NBufAtL
+          nBL = nBL + lasto(i) - lasto(i-1)
+       end do
+       nBR = 0
+       do i = na_u - NBufAtR+1 , na_u
+          nBR = nBR + lasto(i) - lasto(i-1)
+       end do
+
+       ! here we will check for all the size requirements of Transiesta
+       ! I.e. whether some of the optimizations can be erroneous or not
+
+       ! First calculate L/C/R sizes (we remember to subtract the buffer
+       ! orbitals)
+       nTS = no_u - nBL - nBR
+       nL  = NUsedOrbsL*NRepA1L*NRepA2L
+       nR  = NUsedOrbsR*NRepA1R*NRepA2R
+       nC  = nTS  - nL  - nR
+       if ( nC < 1 ) &
+            call die('Transiesta central region does not &
+            &exist. What have you done?')
+
+       if ( ts_method /= TS_ORIGINAL ) then
+
+          if ( nL < 2 .or. nR < 2 ) &
+               call die('We cannot perform sparse pattern on the electrode &
+               &system.')
+
+          i = 0
+
+          ! We must ensure that the Sigma[LR] have enough space to hold
+          ! one line of the full matrix (we use them as work arrays
+          ! when calculating the Gamma[LR]
+          if ( nL ** 2 < nTS .or. nR ** 2 < nTS ) then
+             call die('The current implementation requires that the &
+                  &square of the orbitals in the electrodes are larger &
+                  &than the dimension of the problem.')
+          end if
+
+          if ( ts_method == TS_SPARSITY_TRI .and. IsVolt ) then
+
+             ! This check is due to the Gf.Gamma.Gf^\dagger calculation
+             ! I think this will very rarely happen...
+             ! So for now we don't consider this a memory restriction.
+             if ( nR * nC * 2 + nR ** 2 < nL * nC .or. &
+                  nL * nC * 2 + nL ** 2 < nR * nC ) then
+                call die('Your system &
+                     &has inappropriate sizes for memory limited &
+                     &tri-diagonalization')
+             end if
+
+             if ( nL > nC .or. nR > nC ) then
+                call die('Your system &
+                     &has inappropriate sizes for memory limited &
+                     &tri-diagonalization')
+             end if
+
+          end if
+
+       end if
+
+       ! Setup the k-points
+       call setup_ts_kpoint_grid( ucell )
 
        ! Show every region of the Transiesta run
        call ts_show_regions(ucell,na_u,xa, &
@@ -78,6 +150,28 @@ contains
        ! Save the contour path to <slabel>.CONTOUR
        call io_contour(slabel)
 
+       ! We sort the contour to obtain the highest 
+       ! numerical accuracy (simply sort by weight in ascending order)
+       if ( IsVolt ) then
+          sNE =       1
+          eNE = sNE+NCircle+Npol+Nline-1
+          ! 1) sort the left equilibrium points
+          call sort_contour(eNE-sNE+1,contour(sNE:eNE))
+          sNE = eNE + 1
+          eNE = sNE+NCircle+Npol+Nline-1
+          ! 2) sort the right equilibrium points
+          call sort_contour(eNE-sNE+1,contour(sNE:eNE))
+          sNE = eNE + 1
+          eNE = sNE + NVolt - 1
+          ! 3) sort the non-equilibrium points
+          call sort_contour(eNE-sNE+1,contour(sNE:eNE))
+       else
+          sNE =       1
+          eNE = sNE+NCircle+Npol+Nline-1
+          ! 1) sort the equilibrium points
+          call sort_contour(eNE-sNE+1,contour(sNE:eNE))
+       end if
+       if ( eNE /= NEn ) call die('Wrong sorting in the contour points.')
 
        ! GF generation:
        allocate(dos(NEn,nspin))

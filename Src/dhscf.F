@@ -99,8 +99,8 @@
 #endif
 #ifdef TRANSIESTA
 !     TSS Begin
-      use m_ts_options,   only : TSmode, isVolt
-      use m_ts_voltage,   only : print_ts_voltage
+      use m_ts_options,   only : TSmode, IsVolt
+      use m_ts_voltage,   only : ts_init_voltage
 !     TSS End
 #endif /* TRANSIESTA */
       implicit none
@@ -385,14 +385,15 @@ C ----------------------------------------------------------------------
 !        Check if we need to add the potential 
 !        corresponding to the voltage-drop.
         if (TSmode) then
-           if ( isVolt ) then
-              call print_ts_voltage(cell)
+           if ( IsVolt ) then
+              call ts_init_voltage(cell,nua,xa,ntm,nsm)
            end if
-           if(isVolt .and. acting_efield) then
-              isvolt = .false.
+           if(IsVolt .and. acting_efield) then
               if(Node.eq.0) then
-                 write(6,*) 'WARNING: both ext. voltage and field !!'
-                 write(6,*) 'WARNING: will neglect voltage !!       '
+                 call die('Error, both external voltage and field!')
+                 ! We have to die, the contour has been created with
+                 ! a voltage and the \mu_{LR} has been set.
+                 ! We have to die...
               end if
            end if
         endif
@@ -567,7 +568,7 @@ C     Modules
       use m_doping_uniform,       only: doping_active, doping_uniform
 
 #ifdef TRANSIESTA
-      use m_ts_options, only: UseVFix, TSmode, isVolt
+      use m_ts_options, only: UseVFix, TSmode, IsVolt
       use m_ts_voltage, only : ts_voltage
       use m_ts_in_siesta, only: TSVHFix
       use m_ts_global_vars, only: TSrun
