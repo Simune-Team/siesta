@@ -1,4 +1,23 @@
 ----------------------------------------------------
+May 8, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-24
+Restructured the integration algorithm, same result, improved error estimate
+
+* The k-point integration is a bit tricky. 
+  I have made it to comply with the V.V. Maslyuk version.
+  This includes that the error-estimates on the integration parameters
+  now are correct.
+
+* The equilibrium density is a symmetric matrix, hence we force
+  the symmetry by taking Gf(i,j)-conjg(Gf(j,i)) for symmetry.
+  However, the non-equilibrium points are not symmetric, but should
+  be handled transposed. Again by guidance of V.V. Maslyuk's code.
+
+modified:
+  Src/m_ts_mem.F90
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_tri.F90
+
+----------------------------------------------------
 May 8, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-23
 Custometic updates and removal of unused variables
 

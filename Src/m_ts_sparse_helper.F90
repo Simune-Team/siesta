@@ -685,6 +685,8 @@ contains
 
           ljo = UCORB(l_col(lind),nr)
 
+          ! TODO implement SFIND in this segment...
+
           ! Now we loop across the update region
           ! This one must *per definition* have less elements.
           ! Hence, we can exploit this, and find equivalent
@@ -698,6 +700,9 @@ contains
              ! We only have one k-point...
              DM(lind)  = DM(lind)  + dD(ind)
              EDM(lind) = EDM(lind) + dE(ind)
+
+             exit ! there is no need to continue the loop (it is the update sparsity we loop on
+             ! hence a UC sparsity pattern.
 
           end do
        end do
@@ -730,7 +735,7 @@ contains
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     integer, pointer :: lup_ncol(:), lup_ptr(:), lup_col(:)
     complex(dp), pointer :: zD(:), zE(:)
-    complex(dp) :: ph_m, ph_p, kx
+    complex(dp) :: ph, kx
     integer :: lio, io, jo, ind, nr, ljo
     integer :: lnr, lind, rin, rind
 
@@ -769,7 +774,9 @@ contains
        do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
 
           ljo = UCORB(l_col(lind),nr)
-           
+
+          ! TODO implement the SFIND routine here!
+
           ! Now we loop across the update region
           ! This one must *per definition* have less elements.
           ! Hence, we can exploit this, and find equivalent
@@ -787,31 +794,20 @@ contains
                   k(2) * xij(2,lind) + &
                   k(3) * xij(3,lind)
              
-             ! The fact that we have a SYMMETRIC
-             ! update region makes this *tricky* part easy...
-             rin  = lup_ptr(jo)
-             ! TODO, this REQUIRES that lup_col(:) is sorted
-             rind = rin+SFIND(lup_col(rin+1:rin+lup_ncol(jo)),io)
-             ! We do a check, just to be sure...
-             if ( rind == rin ) then
-                call die('ERROR: symmetrization points does not exist')
-             end if
-              
-             ph_p = 0.5_dp*cdexp(dcmplx(0._dp,+1._dp)*kx)
-             ph_m = 0.5_dp*cdexp(dcmplx(0._dp,-1._dp)*kx)
+             ! There is no need to take the conjugate and half it (it is the same number..)
+             ph = cdexp(dcmplx(0._dp,1._dp)*kx)
 
-             DM(lind)  = DM(lind)  + dimag( &
-                  ph_p*zD(rind) + ph_m*zD(ind) )
+             DM(lind)  = DM(lind)  + aimag( ph*zD(ind) )
 
-             EDM(lind) = EDM(lind) + dimag( &
-                  ph_p*zE(rind) + ph_m*zE(ind) )
+             EDM(lind) = EDM(lind) + aimag( ph*zE(ind) )
+
+             exit ! there is no need to continue the loop... we have found the element...
 
           end do
        end do
     end do
 
   end subroutine update_zDM
-
 
   
 ! ##################################################################
