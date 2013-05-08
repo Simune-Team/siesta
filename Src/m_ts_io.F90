@@ -591,6 +591,7 @@ contains
             MPI_Comm_World,MPIerror)
        call MPI_Bcast(kscell(1,1),9,MPI_Integer,0,MPI_Comm_World,MPIerror)
        call MPI_Bcast(kdispl(1),3,MPI_Double_Precision,0,MPI_Comm_World,MPIerror)
+       call MPI_Bcast(onlyS,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
 
        if ( .not. IONode ) then
           if ( .not. Gamma ) then 
@@ -612,12 +613,13 @@ contains
           call memory('A','I',no_u,'iohs')
           allocate(listh(maxnh))
           call memory('A','I',maxnh,'iohs')
-          allocate(H(maxnh,nspin))
-          call memory('A','D',maxnh*nspin,'iohs')
+          if ( .not. onlyS ) then
+             allocate(H(maxnh,nspin))
+             call memory('A','D',maxnh*nspin,'iohs')
+          end if
           allocate(S(maxnh))
           call memory('A','D',maxnh,'iohs')
        end if
-       call MPI_Bcast(onlyS,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
        call MPI_Bcast(xa(1,1),3*na_u,MPI_Double_Precision,0,MPI_Comm_World,MPIerror)
        call MPI_Bcast(iza,na_u,MPI_Integer,0,MPI_Comm_World,MPIerror)
        if ( .not. Gamma ) then
@@ -628,8 +630,10 @@ contains
        call MPI_Bcast(lasto(0),1+na_u,MPI_Integer,0, MPI_Comm_World,MPIerror)
        call MPI_Bcast(numh,no_u,MPI_Integer,0, MPI_Comm_World,MPIerror)
        call MPI_Bcast(listh,maxnh,MPI_Integer,0, MPI_Comm_World,MPIerror)
-       call MPI_Bcast(H(1,1),maxnh*nspin,MPI_Double_Precision,0, &
-            MPI_Comm_World,MPIerror)
+       if ( .not. onlyS ) then
+          call MPI_Bcast(H(1,1),maxnh*nspin,MPI_Double_Precision,0, &
+               MPI_Comm_World,MPIerror)
+       end if
        call MPI_Bcast(S,maxnh,MPI_Double_Precision,0, MPI_Comm_World,MPIerror)
 #endif
     end if

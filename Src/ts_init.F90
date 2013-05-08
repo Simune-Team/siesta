@@ -65,6 +65,9 @@ contains
     ! Read in options for transiesta
     call read_ts_options( ucell )
 
+    ! Setup the k-points
+    call setup_ts_kpoint_grid( ucell )
+
     ! If we actually have a transiesta run we need to process accordingly!
     if ( TSmode ) then
 
@@ -129,9 +132,6 @@ contains
           end if
 
        end if
-
-       ! Setup the k-points
-       call setup_ts_kpoint_grid( ucell )
 
        ! Show every region of the Transiesta run
        call ts_show_regions(ucell,na_u,xa, &

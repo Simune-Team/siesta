@@ -995,8 +995,8 @@ contains
             xa, iza, lasto, &
             numh, listhptr, listh, xij, indxuo, &
             H, S, Ef, &
-            zc, zc, & ! Qtot, Temp
-            i,i, & ! istep, ia1, &
+            qtot, Temp, & ! Qtot, Temp
+            i,j, & ! istep, ia1, &
             Bcast=.true.)
     else
        call die('Could not infer the file type of the &
@@ -1027,18 +1027,21 @@ contains
     ! not be either (the repetition will only increase the number of
     ! k-points, hence the above)
     eXa = (.not. ts_gamma_scf ) .and. TSGamma
-    do j = 1 , 3
-       do i = 1 , 3
-          if ( j == 1 ) then
+    do j = 1 , 2
+       do i = 1 , 2
+          if ( j == 1 .and. j == i ) then
              eXa = eXa .or. ( kscell(i,j) /= ts_kscell(i,j)*NA1 )
-          else if ( j == 2 ) then
+          else if ( j == 2 .and. j == i ) then
              eXa = eXa .or. ( kscell(i,j) /= ts_kscell(i,j)*NA2 )
-          else
+          else 
              eXa = eXa .or. ( kscell(i,j) /= ts_kscell(i,j) )
           end if
        end do
        eXa = eXa .or. ( kdispl(j) /= ts_kdispl(j) )
     end do
+    ! We still require that the offset in the z-direction is the same
+    ! is this even necessary?
+    eXa = eXa .or. ( kdispl(3) /= ts_kdispl(3) )
     if ( eXa ) then
        write(*,'(a)') 'Incompatible k-grids...'
        write(*,'(a)') 'Electrode file k-grid:'

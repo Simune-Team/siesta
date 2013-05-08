@@ -1,4 +1,26 @@
 ----------------------------------------------------
+May 8, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-22
+Logic in the ts-kgrid means that it has to be initialized
+
+* I had erroneously moved the ts-k-grid creation into a TSmode
+  logic.
+  However, the electrode TSHS relies on the transiesta k-points.
+  I would actually prefer if this was the SIESTA as that makes 
+  more sense.
+
+* Prepared the logic in the electrode read.
+  We now only check the transiesta part of the k-grid.
+  In principle the z-direction k-points need not be checked for
+  the electrodes.
+
+* transiesta io routine now correctly reads in onlyS files.
+
+modified:
+  Src/m_ts_electrode.F90
+  Src/m_ts_io.F90
+  Src/ts_init.F90
+
+----------------------------------------------------
 May 7, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-21
 Restructured common transiesta routines to generic purpose module
 
