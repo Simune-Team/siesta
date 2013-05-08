@@ -1,4 +1,26 @@
 ----------------------------------------------------
+May 8, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-25
+Added the voltage drop to only occur in the central region
+
+* Using the fdf option:
+    TS.VoltagePlacement
+  with values:
+    1) cell
+    2) central or scat
+  will determine where the transiesta voltage drop will be placed
+  in the mesh of the cell.
+  Specifying 'cell' will put the voltage drop across the entire cell
+  Specifying 'scat' or 'central' will put the voltage drop in
+  between the electrodes, i.e. in the central region of the 
+  transiesta regions.
+  Previously it was 'cell', but we default it to 'central' as that
+  makes more physical sense.
+
+modified:
+  Src/m_ts_options.F90
+  Src/m_ts_voltage.F90
+
+----------------------------------------------------
 May 8, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-24
 Restructured the integration algorithm, same result, improved error estimate
 

@@ -73,6 +73,10 @@ logical :: ImmediateTSmode=.false. ! will determine to immediately start the tra
                            ! SCF. This is useful when you already have a converged
                            ! siesta DM
 
+logical :: VoltageInC ! Determines whether the voltage-drop should be located in the constriction
+                      ! I.e. if the electrode starts at 10 Ang and the central region ends at 20 Ang
+                      ! then the voltage drop will only take place between 10.125 Ang and 19.875 Ang
+
 !==========================================================================*
 !==========================================================================*
 !  Default Values for arguments read from input file                       *
@@ -244,6 +248,16 @@ NRepA2R     = fdf_get('TS.ReplicateA2Right',NRepA_def)
 if ( NRepA1R < 1 .or. NRepA2R < 1 ) &
      call die("Repetition in right electrode must be >= 1.")
 
+chars = fdf_get('TS.VoltagePlacement','central')
+VoltageInC = .false.
+if ( leqi(trim(chars),'cell') ) then
+   VoltageInC = .false.
+else if ( leqi(trim(chars),'central') .or. &
+     leqi(trim(chars),'scat') ) then
+   VoltageInC = .true.
+end if
+
+
 ! Setup the correct handling of EQUILIBRIUM solution method:
 ! See above the global variable for its use.
 GF_INV_EQUI_PART = UseBulk .and. UpdateDMCR
@@ -308,6 +322,11 @@ end if
 if (ionode .and. TSmode ) then
 if ( IsVolt ) then
  write(*,6) 'ts_read_options: TranSIESTA Voltage           =', VoltFDF/eV,' Volts'
+ if ( VoltageInC ) then
+    write(*,'(a)')'ts_read_options: Voltage drop across central region'
+ else
+    write(*,'(a)')'ts_read_options: Voltage drop across entire cell'    
+ end if
 else
  write(*,'(a)')'ts_read_options: TranSIESTA no voltage applied'
 end if
