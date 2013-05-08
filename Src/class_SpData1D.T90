@@ -99,8 +99,6 @@
     type(OrbitalDistribution),  intent(in) :: dist
     character(len=*), intent(in), optional :: name
 
-    integer :: error
-    
     call init(this)
     
     this%data%sp = sp
@@ -125,8 +123,6 @@
     type(OrbitalDistribution), intent(in) :: dist
     character(len=*), intent(in), optional :: name
     
-    integer :: error
-
     call init(this)
     this%data%sp = sp
     this%data%dist = dist

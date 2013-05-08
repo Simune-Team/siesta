@@ -162,7 +162,7 @@ contains
 ! * Computational region..
     integer :: no_u_TS, no_C_L, no_C_R
 ! * In case of using part of the GF inversion
-    integer :: no_u_C, no_GF_offset
+    integer :: no_u_C
 ! ************************************************************
 
 ! ******************** IO descriptors ************************
@@ -209,7 +209,7 @@ contains
 
 ! ******************** Loop variables ************************
     integer :: ispin, ikpt, iPE, iE, NEReqs, up_nzs, ia, ia_E
-    integer :: i, j, ind
+    integer :: ind
 ! ************************************************************
 
 ! ******************* Miscalleneous variables ****************
@@ -436,6 +436,10 @@ contains
     end if
     ! We will not write out all created sparsity patterns, it provides
     ! no purpose... other than displaying how much memory this reduces :)
+
+    ! We just check that the work for reducing the matrices can be made
+    if ( nzwork < nnzs(ts_sp_uc) ) call die('The memory for transiesta cannot &
+         &sustain the implementation, contact the developers.')
 
     SPIN: do ispin = 1 , nspin
        
@@ -949,7 +953,7 @@ contains
     type(Sparsity), pointer :: s
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     complex(dp), pointer :: zD(:), zE(:), Gf(:)
-    integer :: io, ind, nr, iu, ju, idx
+    integer :: io, ind, nr, iu, idx
 
     s      => spar(DM)
     l_ncol => n_col   (s)
@@ -1289,7 +1293,6 @@ contains
     complex(dp), pointer :: m(:)
     complex(dp), pointer :: mT(:)
     integer :: nL, nC, nR
-    integer :: i, j, ii
 
     nL = nrows_g_left  (m_tri)
     nC = nrows_g_center(m_tri)

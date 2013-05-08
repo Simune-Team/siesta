@@ -446,7 +446,7 @@ if ( ts_method == TS_ORIGINAL ) then
       end if
       TriDiag = .false. 
    end if
-   if ( TriDiag .and. IsVolt ) then
+   if ( TriDiag .and. IsVolt .and. (.not. UpdateDMCR) ) then
       if ( IONode ) then
          write(*,*) "WARNING: TriDiag does not perform correctly in the"
          write(*,*) "         original solution method and with a bias."

@@ -201,7 +201,7 @@ contains
 
 ! ******************** Loop variables ************************
     integer :: ispin, ikpt, iPE, iE, NEReqs, up_nzs, ia, ia_E
-    integer :: i, j, ind
+    integer :: ind
 ! ************************************************************
 
 ! ******************* Miscalleneous variables ****************
@@ -410,6 +410,10 @@ contains
     end if
     ! We will not write out all created sparsity patterns, it provides
     ! no purpose... other than displaying how much memory this reduces :)
+
+    ! We just check that the work for reducing the matrices can be made
+    if ( nzwork < nnzs(ts_sp_uc) ) call die('The memory for transiesta cannot &
+         &sustain the implementation, contact the developers.')
 
     SPIN: do ispin = 1 , nspin
        

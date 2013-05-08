@@ -49,7 +49,6 @@
       integer,   intent(in) :: iscf
       real(dp)              :: stressl(3,3)
       real(dp), pointer     :: fal(:,:)   ! Local-node part of atomic F
-      integer               :: io, is
       integer               :: ifa     ! Calculate forces? 0=>no, 1=>yes
       integer               :: istr    ! Calculate stress? 0=>no, 1=>yes
       real(dp)              :: g2max
@@ -61,10 +60,6 @@
 #ifdef TRANSIESTA
 !     TSS Begin
       character(len=label_length+13) :: fname
-      character(8)                   :: numstring
-      character(8)                   :: iotask
-!     SIESTA External
-      character(len=label_length+5)  :: PASTE
 !     TSS End
 #endif /* TRANSIESTA */
 !------------------------------------------------------------------------- BEGIN

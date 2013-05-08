@@ -113,17 +113,9 @@ contains
 
           if ( ts_method == TS_SPARSITY_TRI .and. IsVolt ) then
 
-             ! This check is due to the Gf.Gamma.Gf^\dagger calculation
-             ! I think this will very rarely happen...
-             ! So for now we don't consider this a memory restriction.
-             if ( nR * nC * 2 + nR ** 2 < nL * nC .or. &
-                  nL * nC * 2 + nL ** 2 < nR * nC ) then
-                call die('Your system &
-                     &has inappropriate sizes for memory limited &
-                     &tri-diagonalization')
-             end if
-
              if ( nL > nC .or. nR > nC ) then
+                write(*,'(a,2(i0,tr1,''/'',tr1),i0)') &
+                     'Sizes are L/C/R: ',nL,nC,nR
                 call die('Your system &
                      &has inappropriate sizes for memory limited &
                      &tri-diagonalization')
@@ -216,5 +208,6 @@ contains
     end if
     
   end subroutine ts_init
+
 end module m_ts_init
 

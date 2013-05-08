@@ -68,8 +68,6 @@
     integer, intent(in)           :: n
     character(len=*), intent(in), optional  :: name
 
-    integer :: stat
-
     ! We release the previous incarnation
     ! This means that we relinquish access to the previous
     ! memory location. It will be deallocated when nobody
@@ -143,7 +141,7 @@
   subroutine printData1D(this)
     type(TYPE_NAME), intent(in)  :: this
     
-    integer :: n, m
+    integer :: n
     
     if (.not. associated(this%data)) then
        print "(a)", STR_TYPE_NAME//" Not Associated"

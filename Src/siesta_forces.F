@@ -60,7 +60,7 @@
       integer, intent(in)  :: istep
 
       integer            :: iscf
-      logical            :: last, SCFconverged, ts_will_continue
+      logical            :: SCFconverged, ts_will_continue
       type(converger_t)  :: conv_harris, conv_etot, conv_free_energy
       real(dp)           :: E_Harris, E_KS_Good
       real(dp)           :: dDmax, dHmax

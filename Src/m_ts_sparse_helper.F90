@@ -912,7 +912,6 @@ contains
           else
              wL = 0.5_dp
              wR = 0.5_dp
-             wSUM = 1._dp
           end if
           
           ! Do error estimation (capture before update)
@@ -1051,7 +1050,6 @@ contains
           else
              wL = 0.5_dp
              wR = 0.5_dp
-             wSUM = 1._dp
           end if
 
           ! We need to capture the error before the update...

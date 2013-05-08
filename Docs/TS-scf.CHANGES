@@ -1,4 +1,25 @@
 ----------------------------------------------------
+May 8, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-23
+Custometic updates and removal of unused variables
+
+* Removed ununsed variables in various modules
+
+* Updated the tri-diagonalization routine requirements
+
+modified:
+  Src/class_Data1D.T90
+  Src/class_SpData1D.T90
+  Src/final_H_f_stress.F
+  Src/m_ts_mem.F90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_tri.F90
+  Src/m_ts_tri_scat.F90
+  Src/siesta_forces.F
+  Src/ts_init.F90
+  Src/ts_show_regions.f90
+
+----------------------------------------------------
 May 8, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-22
 Logic in the ts-kgrid means that it has to be initialized
 

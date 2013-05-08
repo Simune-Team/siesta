@@ -78,8 +78,6 @@ contains
     integer :: ipvt(no_u_TS)
 
     integer :: nL,nC,nR
-    integer :: i,j,ii
-
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE getGF' )
@@ -191,8 +189,8 @@ contains
 ! ##################################################################
   subroutine calc_GF_Bias(UseBulk,&
        no_u_TS,Gfinv_tri,GF_tri, &
-       no_L, SigmaL, & 
-       no_R, SigmaR) ! work arrays (they are actually the SigmaL and SigmaR)
+       no_L, SigmaL, & ! work arrays
+       no_R, SigmaR)
     
     use intrinsic_missing, only: EYE
     use class_zTriMat3
@@ -227,7 +225,6 @@ contains
 
     integer :: ierr ! inversion err
     integer :: nL,nC,nR
-    integer :: i
 
 
 #ifdef TRANSIESTA_DEBUG
@@ -552,7 +549,7 @@ contains
     call write_debug( 'POS GFGammaGF' )
 #endif
 
-  END subroutine GF_Gamma_GF_Left
+  end subroutine GF_Gamma_GF_Left
 
 
   subroutine GF_Gamma_GF_Right(no_R,Gf_tri,GammaT,GGG_tri)
@@ -667,6 +664,6 @@ contains
     call write_debug( 'POS GFGammaGF' )
 #endif
 
-  END subroutine GF_Gamma_GF_Right
+  end subroutine GF_Gamma_GF_Right
 
 end module m_ts_tri_scat
