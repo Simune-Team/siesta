@@ -1,4 +1,19 @@
 ------------------------------------------------------------
+May 10, 2013   Alberto Garcia            trunk-434--pexsi-27
+Implement fallback loops for inertia count and solver bracketting
+
+On error conditions, try to expand the bracketting interval and
+re-compute the inertia-counts. This is also done if the solver
+call returns with a non-correct number of electrons.
+
+By default, an scf step inherits the latest (muMin,muMax) interval
+from an inertia-count calculation.
+
+modified:
+  Src/m_mpi_utils.F
+  Src/m_pexsi_solver.F90
+
+------------------------------------------------------------
 May  7, 2013   Alberto Garcia            trunk-434--pexsi-26
 Fix a bug, clarify the flow, and add placeholders
 

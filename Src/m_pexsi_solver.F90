@@ -13,8 +13,8 @@ CONTAINS
 
     use precision, only  : dp
     use fdf
-    use parallel, only   : worker, ionode
-    use m_mpi_utils, only: globalize_sum
+    use parallel, only   : worker
+    use m_mpi_utils, only: globalize_sum, globalize_or, globalize_max
     use units,       only: Kelvin, eV
 #ifdef MPI
     use mpi_siesta
@@ -36,8 +36,6 @@ CONTAINS
 #else
 
     integer :: siesta_comm 
-    integer :: MPIerror, stat(MPI_STATUS_SIZE), count
-    integer :: bs, norbs_slack, nnz_slack
     integer :: ispin, maxnhtot, ih, nnzold, i
 
     integer  :: ordering, isInertiaCount, numInertiaCounts
@@ -46,14 +44,14 @@ CONTAINS
 
     real(dp), save :: mu
     real(dp), save :: muMin0, muMax0
+    real(dp)       :: muSolverInput, muMinSolverInput, muMaxSolverInput
     logical, save  :: first_call = .true.
     real(dp)       :: eBandStructure, eBandH
 
-    integer        :: info
+    integer        :: info, infomax
 
 !Lin variables
 integer :: nrows, nnz, nnzLocal, numColLocal
-integer, pointer, dimension(:) ::  tmpi => null()
 integer, pointer, dimension(:) ::  colptrLocal=> null(), rowindLocal=>null()
 !
 real(dp), pointer, dimension(:) :: &
@@ -70,8 +68,8 @@ real(dp) :: temperature, numElectronExact, numElectron, gap, deltaE
 real(dp) :: muInertia, muMinInertia, muMaxInertia, muLowerEdge, muUpperEdge
 real(dp) :: muMinPEXSI, muMaxPEXSI
 integer  :: muMaxIter
-integer  :: npPerPole, nprow, npcol
-integer  :: mpirank, mpisize, ierr
+integer  :: npPerPole
+integer  :: mpirank, numSiestaWorkers, ierr
 integer  :: isSIdentity
 integer  :: inertiaMaxIter, inertiaIter
 real(dp) :: inertiaNumElectronTolerance, PEXSINumElectronTolerance
@@ -81,12 +79,6 @@ real(dp) :: buffer1
 
 external         :: timer
 character(len=6) :: msg
-
-interface
- ! subroutine f_ppexsi_inertiacount_interface
-   include "pexsi_inertia.h"
- end subroutine f_ppexsi_inertiacount_interface
-end interface
 
 interface
  ! subroutine f_ppexsi_solve_interface
@@ -103,6 +95,9 @@ end interface
 ! NOTE: Some comments in the code below are placeholders for a new
 ! version with independent Siesta/PEXSI distributions (work in progress)
 
+!  Find rank in global communicator
+   call mpi_comm_rank( true_MPI_Comm_World, mpirank, ierr )
+
 if (worker) then
    siesta_comm = mpi_comm_world
    call timer("pexsi", 1)
@@ -112,10 +107,10 @@ if (worker) then
       call die("Spin polarization not yet supported in PEXSI")
    endif
 
-   call mpi_comm_rank( SIESTA_COMM, mpirank, ierr )
-   call mpi_comm_size( SIESTA_COMM, mpisize, ierr )
+   call mpi_comm_size( SIESTA_COMM, numSiestaWorkers, ierr )
 
-   npPerPole = mpisize
+   ! In this version 
+   npPerPole = numSiestaWorkers
    numElectronExact = qtot 
 
    ! Note that the energy units for the PEXSI interface are arbitrary, but
@@ -124,7 +119,7 @@ if (worker) then
 
    temperature      = temp
 
-   if (IOnode) write(6,"(a,g12.5,a,f10.2)") &
+   if (mpirank==0) write(6,"(a,g12.5,a,f10.2)") &
                           "Electronic temperature: ", temperature, &
                           ". In Kelvin:", temperature/Kelvin
 
@@ -142,11 +137,7 @@ if (worker) then
  !   nnzLocal = sum(numh_pexsi(1:numColLocal))
  ! call MPI_AllReduce(nnzLocal,nnz,1,MPI_integer,MPI_sum,PEXSI_comm,MPIerror)
    nnzLocal = sum(numh(1:numColLocal))
-   call MPI_AllReduce(nnzLocal,nnz,1,MPI_integer,MPI_sum,Siesta_comm,MPIerror)
-
-
-!  print *, "Node ", mpirank, ": no_l, numColLocal, maxnh, nnzLocal: ", &
-!           no_l, numColLocal, maxnh, nnzLocal
+   call MPI_AllReduce(nnzLocal,nnz,1,MPI_integer,MPI_sum,Siesta_comm,ierr)
 
   allocate(colptrLocal(1:numColLocal+1))
   colptrLocal(1) = 1
@@ -219,6 +210,8 @@ inertiaMaxIter   = fdf_get("PEXSI.inertia-max-iter",3)
 ! Stop inertia count if Ne(muMax) - Ne(muMin) < inertiaNumElectronTolerance
 inertiaNumElectronTolerance = fdf_get("PEXSI.inertia-num-electron-tolerance",10)
 
+! Stop mu-iteration if numElectronTolerance is < numElectronTolerance.
+PEXSINumElectronTolerance = fdf_get("PEXSI.num-electron-tolerance",1d-1)
 ! muMaxIter should be 1 or 2 later when combined with SCF.
 muMaxIter        = fdf_get("PEXSI.mu-max-iter",10)
 
@@ -235,14 +228,6 @@ allocate( numElectronDrvList( muMaxIter ) )
 allocate( shiftList( numPole ) )
 allocate( inertiaList( numPole ) )
 
-
-! Stop mu-iteration if numElectronTolerance is < numElectronTolerance.
-PEXSINumElectronTolerance = fdf_get("PEXSI.num-electron-tolerance",1d-1)
-
-! Number of processors used for each pole. At the moment use mpisize.
-! Later can be changed to 
-!npPerPole        = fdf_get("PEXSI.np-per-pole",mpisize)
-
 ! Ordering flag
 ordering = fdf_get("PEXSI.ordering",1)
 !
@@ -256,84 +241,32 @@ call MPI_Bcast(numElectronExact,1,MPI_double_precision,0,true_MPI_COMM_world,ier
 call MPI_Bcast(temperature,1,MPI_double_precision,0,true_MPI_COMM_world,ierr)
 call MPI_Bcast(iscf,1,MPI_integer,0,true_MPI_COMM_world,ierr)
 
-! These were set by a global fdf operation
-!call MPI_Bcast(ordering,1,MPI_integer,0,true_MPI_COMM_world,ierr)
-!call MPI_Bcast(isInertiaCount,1,MPI_integer,0,true_MPI_COMM_world,ierr)
-!call MPI_Bcast(numInertiaCounts,1,MPI_integer,0,true_MPI_COMM_world,ierr)
-
 !
-!  do inertia count
+!  Possible inertia-count stage
 !
-
 if ((isInertiaCount .ne. 0) .and. (iscf .le. numInertiaCounts)) then
 
-   if( worker .and. (mpirank == 0) ) then
-     write (*,*) 'Calling inertia count...'
-     write(*, *) "muMin(eV)     = ", muMin0/eV
-     write(*, *) "muMax(eV)     = ", muMax0/eV
-     write(*,*) "true_MPI_COMM_WORLD: ", true_MPI_COMM_WORLD
-   endif 
+  call do_inertia()
 
-call f_ppexsi_inertiacount_interface(&
-! input parameters
-        nrows,&
-        nnz,&
-        nnzLocal,&
-        numColLocal,&
-        colptrLocal,&
-        rowindLocal,&
-        HnzvalLocal,&
-        isSIdentity,&
-        SnzvalLocal,&
-        temperature,&
-        numElectronExact,&
-        muMin0,&
-        muMax0,&
-        numPole,&
-        inertiaMaxIter,&
-        inertiaNumElectronTolerance,&
-        ordering,&
-        npPerPole,&
-        true_MPI_COMM_WORLD,&
-! output parameters
-        muMinInertia,&
-        muMaxInertia,&
-        muLowerEdge,&
-        muUpperEdge,&
-        inertiaIter,&
-        shiftList,&
-        inertiaList,&
-        info)
+  muSolverInput = muInertia
+  muMinSolverInput = muMinInertia
+  muMaxSolverInput = muMaxInertia
 
-   if (info /= 0) then
-      write(msg,"(i6)") info 
-      call die("Error in inertia count routine. Info: " // msg)
-   endif
+  ! re-define the starting interval for successive steps
+  ! this is the most reasonable starting point, pending
+  ! further refining (see above)
 
-   muInertia    = (muLowerEdge + muUpperEdge) / 2d0
-
-   if( worker .and. (mpirank == 0) ) then
-     write (6,"(/,a)") 'PEXSI inertia count executed'
-     write (6,"(a,f10.4)") ' mu (eV)=', muInertia/eV
-     write (6,"(a,f10.4)") ' mu lowerEdge (eV):', muLowerEdge/eV
-     write (6,"(a,f10.4)") ' mu upperEdge (eV):', muUpperEdge/eV
-     write (6,"(a,f10.4)") ' muMin (eV):', muMinInertia/eV
-     write (6,"(a,f10.4)") ' muMax (eV):', muMaxInertia/eV
-
-     write(6,"(/,a)") "Cumulative DOS by inertia count:"
-     do i=1, numPole
-        write(6,"(f10.4,f10.4)") shiftList(i)/eV, inertiaList(i)
-     enddo
-  end if
+  muMin0 = muMinInertia
+  muMax0 = muMaxInertia
 
 else !no inertia count
 
-  ! Use the starting values, or the output of previous PEXSI iterations
-  ! (see below)
+  ! Use the starting values, or the output of previous inertia-count iterations
+  ! (see above)
 
-  muInertia = mu
-  muMinInertia = muMin0
-  muMaxInertia = muMax0
+  muSolverInput = mu
+  muMinSolverInput = muMin0
+  muMaxSolverInput = muMax0
 
 end if
 
@@ -341,16 +274,17 @@ end if
 !  do actual solve
 !
 
-   if( worker .and. (mpirank == 0) ) then
+solver_loop: do
+
+   if(mpirank == 0) then
      write (*,*) 'Calling PEXSI solver...'
-     write(*, *) "mu (eV)       = ", muInertia/eV
-     write(*, *) "muMin         = ", muMinInertia/eV
-     write(*, *) "muMax         = ", muMaxInertia/eV
-     write(*,*) "true_MPI_COMM_WORLD: ", true_MPI_COMM_WORLD
+     write(*, *) "mu (eV)       = ", muSolverInput/eV
+     write(*, *) "muMin         = ", muMinSolverInput/eV
+     write(*, *) "muMax         = ", muMaxSolverInput/eV
    endif 
 
-call f_ppexsi_solve_interface(&
-! input parameters
+   call f_ppexsi_solve_interface(&
+        ! input parameters
         nrows,&
         nnz,&
         nnzLocal,&
@@ -362,9 +296,9 @@ call f_ppexsi_solve_interface(&
         SnzvalLocal,&
         temperature,&
         numElectronExact,&
-        muInertia,&
-        muMinInertia,&
-        muMaxInertia,&
+        muSolverInput,&
+        muMinSolverInput,&
+        muMaxSolverInput,&
         gap,&
         deltaE,&
         numPole,&
@@ -387,17 +321,54 @@ call f_ppexsi_solve_interface(&
         numElectronDrvList,&
         info)
 
+  ! Make sure that all processors report info=1 when any of them
+  ! raises it...
+  ! This should be done inside the routine
+   call globalize_max(info,infomax,comm=true_mpi_comm_world)
+   info = infomax
+
    if (info /= 0) then
       write(msg,"(i6)") info 
       call die("Error in pexsi solver routine. Info: " // msg)
    endif
 
-! save the mu-range for the next scf step
-! If we do not do this, we will use always the latest inertia-count
-! guess, or the initial (muMin0, muMax0) bracket.
+   if (abs(numElectron-numElectronExact) > PEXSInumElectronTolerance) then
+      if (mpirank == 0) then
+         write(6,"(a,2f12.4,a,f12.4)") &
+            "The PEXSI solver did not converge well. Nel, Nel_exact: ", &
+            numElectron, numElectronExact, &
+            " Requested tol: ", PEXSInumElectronTolerance
+         write(6,"(a)") "You need a better interval. Computing inertia-counts..."
+      endif
+      ! we need to do an inertia-count step...
+      ! check which side of the interval we need to expand
+      ! Expand by 0.2 Ry ~ 3 eV
+      !
+      if ((numElectron-numElectronExact) > 0) then
+         muMin0 = muMin0 - 0.2_dp 
+      else
+         muMax0 = muMax0 + 0.2_dp
+      endif
 
-    muMin0 = muMinPEXSI
-    muMax0 = muMaxPEXSI
+      call do_inertia()
+
+      muSolverInput = muInertia
+      muMinSolverInput = muMinInertia
+      muMaxSolverInput = muMaxInertia
+      !  will take another iteration of the solver
+   else
+      exit solver_loop
+   endif
+
+enddo solver_loop
+
+if (fdf_get("PEXSI.InheritSolverInterval",.false.)) then
+   ! re-define the starting interval		       
+   muMin0 = muMinPEXSI
+   muMax0 = muMaxPEXSI
+endif
+
+!------------ End of solver step
 
 !  call reverse_comms(commsnnz,commsnnz_reverse)
 !  call do_transfers(commsnnz_reverse,DMnzvalLocal,DM, &
@@ -436,18 +407,18 @@ if (worker) then
            ( DMnzvalLocal(i) )
    enddo
 
-   ! These operations in siesta group (implicit communicator)
-   call globalize_sum( freeEnergyCorrection, buffer1 )
+   ! These operations in siesta group 
+   call globalize_sum( freeEnergyCorrection, buffer1, comm=siesta_comm )
    freeEnergyCorrection = buffer1 + mu*numElectron
-   call globalize_sum( eBandStructure, buffer1 )
+   call globalize_sum( eBandStructure, buffer1, comm=siesta_comm )
    eBandStructure = buffer1
-   call globalize_sum( eBandH, buffer1 )
+   call globalize_sum( eBandH, buffer1, comm=siesta_comm )
    eBandH = buffer1
 
    if( mpirank == 0 ) then
       write(*, *) "mu (eV)       = ", mu/eV
-      write(*, *) "muMinInertia  = ", muMinInertia/eV
-      write(*, *) "muMaxInertia  = ", muMaxInertia/eV
+      write(*, *) "muMinSolverInput  = ", muMinSolverInput/eV
+      write(*, *) "muMaxSolverInput  = ", muMaxSolverInput/eV
       write(*, *) "muMinPEXSI    = ", muMinPEXSI/eV
       write(*, *) "muMaxPEXSI    = ", muMaxPEXSI/eV
       write(*, *) "muZeroT (eV)  = ", muZeroT/eV
@@ -479,6 +450,127 @@ if (worker) then
  deallocate( inertiaList )
 
 #endif 
+
+CONTAINS 
+
+!----------
+! Improve bracketting for mu with inertia counts,
+! starting with the interval (muMin0, muMax0)
+! Results:  muMinInertia, muMaxInertia
+!           muLowerEdge, muUpperEdge
+!           muInertia
+!
+subroutine do_inertia()
+
+    logical        :: interval_problem, pg
+    logical        :: bad_lower_bound
+    logical        :: bad_upper_bound
+
+interface
+ ! subroutine f_ppexsi_inertiacount_interface
+   include "pexsi_inertia.h"
+ end subroutine f_ppexsi_inertiacount_interface
+end interface
+
+
+search_interval: do
+
+   if(mpirank == 0) then
+     write (*,*) 'Calling inertia count...'
+     write(*, *) "muMin(eV)     = ", muMin0/eV
+     write(*, *) "muMax(eV)     = ", muMax0/eV
+   endif 
+
+   call f_ppexsi_inertiacount_interface(&
+   ! input parameters
+        nrows,&
+        nnz,&
+        nnzLocal,&
+        numColLocal,&
+        colptrLocal,&
+        rowindLocal,&
+        HnzvalLocal,&
+        isSIdentity,&
+        SnzvalLocal,&
+        temperature,&
+        numElectronExact,&
+        muMin0,&
+        muMax0,&
+        numPole,&
+        inertiaMaxIter,&
+        inertiaNumElectronTolerance,&
+        ordering,&
+        npPerPole,&
+        true_MPI_COMM_WORLD,&
+! output parameters
+        muMinInertia,&
+        muMaxInertia,&
+        muLowerEdge,&
+        muUpperEdge,&
+        inertiaIter,&
+        shiftList,&
+        inertiaList,&
+        info)
+
+   call globalize_max(info,infomax,comm=true_mpi_comm_world)
+   info = infomax
+
+   interval_problem = .false.
+   if (info /= 0) then
+      if(mpirank == 0) then
+         write(msg,"(i6)") info 
+         write (6,"(/,a)") 'PEXSI inertia count ended in error. Info: ' // msg
+      endif
+
+      ! Do we need to globalize these conditions?
+
+      bad_lower_bound =  (inertiaList(1) > (numElectronExact - 0.1)) 
+      call globalize_or(bad_lower_bound, pg, comm=true_MPI_comm_world)
+      bad_lower_bound = pg
+      bad_upper_bound =  (inertiaList(npPerPole) < (numElectronExact + 0.1)) 
+      call globalize_or(bad_upper_bound, pg, comm=true_MPI_comm_world)
+      bad_upper_bound = pg
+
+      if (bad_lower_bound) then
+         interval_problem =  .true.
+         muMin0 = muMin0 - 0.5
+      endif
+      if (bad_upper_bound) then
+         interval_problem =  .true.
+         muMax0 = muMax0 + 0.5
+      endif
+
+      if (interval_problem) then
+         if(mpirank == 0) then
+            write (6,"(a,2f10.4)") 'Updating the interval: ', muMin0/eV, muMax0/eV
+         endif
+      else
+         write(msg,"(i6)") info 
+         call die("Non-interval error in inertia count routine. Info: " // msg)
+      endif
+
+   else
+      exit search_interval
+   endif
+
+enddo search_interval
+
+   muInertia    = (muLowerEdge + muUpperEdge) / 2d0
+
+   if(mpirank == 0) then
+     write (6,"(/,a)") 'PEXSI inertia count executed'
+     write (6,"(a,f10.4)") ' mu (eV)=', muInertia/eV
+     write (6,"(a,f10.4)") ' mu lowerEdge (eV):', muLowerEdge/eV
+     write (6,"(a,f10.4)") ' mu upperEdge (eV):', muUpperEdge/eV
+     write (6,"(a,f10.4)") ' muMin (eV):', muMinInertia/eV
+     write (6,"(a,f10.4)") ' muMax (eV):', muMaxInertia/eV
+
+     write(6,"(/,a)") "Cumulative DOS by inertia count:"
+     do i=1, numPole
+        write(6,"(f10.4,f10.4)") shiftList(i)/eV, inertiaList(i)
+     enddo
+  end if
+end subroutine do_inertia
 
 end subroutine pexsi_solver
 end module m_pexsi_solver
