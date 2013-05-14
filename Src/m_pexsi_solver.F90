@@ -14,7 +14,8 @@ CONTAINS
     use precision, only  : dp
     use fdf
     use parallel, only   : worker
-    use m_mpi_utils, only: globalize_sum, globalize_or, globalize_max
+    use m_mpi_utils, only: globalize_sum, globalize_max
+    use m_mpi_utils, only: broadcast
     use units,       only: Kelvin, eV
 #ifdef MPI
     use mpi_siesta
@@ -63,7 +64,7 @@ real(dp), allocatable, dimension(:) :: muList, &
                                        numElectronList, &
                                        numElectronDrvList, &
                                        shiftList, inertiaList
-integer  :: numPole
+integer  :: numPole, nptsInertia
 real(dp) :: temperature, numElectronExact, numElectron, gap, deltaE
 real(dp) :: muInertia, muMinInertia, muMaxInertia, muLowerEdge, muUpperEdge
 real(dp) :: muMinPEXSI, muMaxPEXSI
@@ -223,10 +224,11 @@ allocate( numElectronDrvList( muMaxIter ) )
 ! Arrays for reporting back information about the integrated DOS
 ! computed by the inertia count method. Since we use the processor
 ! teams corresponding to the different poles, the number of points
-! in the energy interval is "numPole"
+! in the energy interval is "nptsInertia=numPole"
 
-allocate( shiftList( numPole ) )
-allocate( inertiaList( numPole ) )
+nptsInertia = numPole
+allocate( shiftList( nptsInertia ) )
+allocate( inertiaList( nptsInertia ) )
 
 ! Ordering flag
 ordering = fdf_get("PEXSI.ordering",1)
@@ -462,7 +464,7 @@ CONTAINS
 !
 subroutine do_inertia()
 
-    logical        :: interval_problem, pg
+    logical        :: interval_problem
     logical        :: bad_lower_bound
     logical        :: bad_upper_bound
 
@@ -496,7 +498,7 @@ search_interval: do
         numElectronExact,&
         muMin0,&
         muMax0,&
-        numPole,&
+        nptsInertia,&
         inertiaMaxIter,&
         inertiaNumElectronTolerance,&
         ordering,&
@@ -517,33 +519,49 @@ search_interval: do
 
    interval_problem = .false.
    if (info /= 0) then
+!       call mpi_gather(inertiaList(1),1,MPI_Double_Precision, lower_inertia(:),1, &&
+!                       MPI_Double_Precision,0,true_MPI_Comm_World, ierr)
+!       call mpi_gather(inertiaList(nptsInertia),1,MPI_Double_Precision, upper_inertia(:),1, &&
+!                       MPI_Double_Precision,0,true_MPI_Comm_World, ierr)
+!      write(6,"(a,i4,2f12.4,4x,2f12.4)") "Node, lb, ub, lin, uin:", &
+!               mpirank, shiftlist(1), shiftlist(nptsInertia), inertialist(1), inertialist(nptsInertia)
       if(mpirank == 0) then
          write(msg,"(i6)") info 
          write (6,"(/,a)") 'PEXSI inertia count ended in error. Info: ' // msg
+         write (6,"(a,2f12.4)") 'Lower, Upper counts: ', inertiaList(1), &
+                                                    inertiaList(nptsInertia)
+         bad_lower_bound = (inertiaList(1) > (numElectronExact - 0.1)) 
+         bad_upper_bound = (inertiaList(nptsInertia) < (numElectronExact + 0.1)) 
       endif
 
-      ! Do we need to globalize these conditions?
-
-      bad_lower_bound =  (inertiaList(1) > (numElectronExact - 0.1)) 
-      call globalize_or(bad_lower_bound, pg, comm=true_MPI_comm_world)
-      bad_lower_bound = pg
-      bad_upper_bound =  (inertiaList(npPerPole) < (numElectronExact + 0.1)) 
-      call globalize_or(bad_upper_bound, pg, comm=true_MPI_comm_world)
-      bad_upper_bound = pg
+      call broadcast(bad_lower_bound,comm=true_mpi_comm_world)
+      call broadcast(bad_upper_bound,comm=true_mpi_comm_world)
+      call broadcast(inertiaList(1),comm=true_mpi_comm_world)
+      call broadcast(inertiaList(nptsInertia),comm=true_mpi_comm_world)
 
       if (bad_lower_bound) then
          interval_problem =  .true.
          muMin0 = muMin0 - 0.5
+         if (mpirank==0) then
+            write(6,"(a,f10.4)") "At the lower end, inertiaList: ", &
+                                  inertiaList(1)
+            write (6,"(a,2f10.4)") 'Updating the interval: ', &
+                                  muMin0/eV, muMax0/eV
+         endif
       endif
       if (bad_upper_bound) then
          interval_problem =  .true.
          muMax0 = muMax0 + 0.5
+         if (mpirank==0) then
+            write(6,"(a,f10.4)") "At the upper end, inertiaList: ", &
+                                  inertiaList(nptsInertia)
+            write (6,"(a,2f10.4)") 'Updating the interval: ', &
+                                  muMin0/eV, muMax0/eV
+         endif
       endif
 
       if (interval_problem) then
-         if(mpirank == 0) then
-            write (6,"(a,2f10.4)") 'Updating the interval: ', muMin0/eV, muMax0/eV
-         endif
+          ! do nothing more
       else
          write(msg,"(i6)") info 
          call die("Non-interval error in inertia count routine. Info: " // msg)
@@ -566,7 +584,7 @@ enddo search_interval
      write (6,"(a,f10.4)") ' muMax (eV):', muMaxInertia/eV
 
      write(6,"(/,a)") "Cumulative DOS by inertia count:"
-     do i=1, numPole
+     do i=1, nptsInertia
         write(6,"(f10.4,f10.4)") shiftList(i)/eV, inertiaList(i)
      enddo
   end if
