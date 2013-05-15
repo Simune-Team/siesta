@@ -1,4 +1,37 @@
 ------------------------------------------------------------
+May 15, 2013   Alberto Garcia            trunk-434--pexsi-29
+First implementation of LDOS-Selected-Inversion interface
+
+Relevant fdf variables:
+
+PEXSI.LocalDOS
+PEXSI.LocalDOS.Energy
+PEXSI.LocalDOS.Broadening
+
+added:
+  Src/m_pexsi_local_DOS.F90
+  Src/pexsi_localdos.h
+modified:
+  Src/Makefile
+  Src/pexsi_interface.F90
+  Src/siesta.F
+  Src/siesta_analysis.F
+
+------------------------------------------------------------
+May 15, 2013   Alberto Garcia            trunk-434--pexsi-28
+Fix a bug in fallback loop for inertia count bracketting. scf prefix
+
+I was using "npPerPole" instead of "numPole" as the size of the
+inertiaList and shiftList arrays. 
+
+Replaced "siesta:" by "scf:" as the output prefix of the scf step
+information.
+
+modified:
+  Src/m_pexsi_solver.F90
+  Src/write_subs.F
+
+------------------------------------------------------------
 May 10, 2013   Alberto Garcia            trunk-434--pexsi-27
 Implement fallback loops for inertia count and solver bracketting
 

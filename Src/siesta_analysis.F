@@ -14,6 +14,7 @@
       use m_ksv
       USE m_projected_DOS, only: projected_DOS
       USE m_local_DOS, only: local_DOS
+      USE m_pexsi_local_DOS, only: pexsi_local_DOS
       USE siesta_options
       use sparse_matrices, only: maxnh, listh, listhptr, numh
       use sparse_matrices, only: H, S, Dscf, Dold, Eold, xijo
@@ -29,6 +30,7 @@
       use zmatrix,      only: lUseZmatrix, write_zmatrix
       use Kpoint_grid
       use parallel, only: IOnode
+      use parallel, only: worker
       use files,       only : label_length
       use m_energies
       use m_steps
@@ -77,9 +79,10 @@
 #endif
 
 !----------------------------------------------------------------------- BEGIN
-#ifdef DEBUG
-      call write_debug( 'PRE siesta_analysis' )
-#endif
+
+      ! section done by Siesta subset of nodes
+      if (worker) then
+
       final = .true.
       if (cml_p) then
         call cmlStartModule(xf=mainXML, title='Finalization')
@@ -374,9 +377,12 @@
 C     Find local density of states
       call local_DOS()
 
-#ifdef DEBUG
-      call write_debug( 'POS siesta_analysis' )
-#endif
-!--------------------------------------------------------------------------- END
+      endif ! worker
+
+      if (fdf_get("PEXSI.LocalDOS",.false.)) then
+         call pexsi_local_DOS()
+      endif
+
+!------------------------------------------------------------------------- END
       END subroutine siesta_analysis
       END module m_siesta_analysis

@@ -1,3 +1,4 @@
+include "pexsi_localdos.h"
 !------------------------
 include "pexsi_inertia.h"
 
