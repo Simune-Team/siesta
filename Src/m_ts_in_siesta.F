@@ -81,15 +81,9 @@
       use parallelsubs, only : LocalToGlobalOrb
 #endif
       use m_ts_options, only : ReUseGF
-      use m_ts_options, only : HSFileL,HSFileR
-      ! We could insert the name here, however, in the context here
-      ! the variable naming here gives more meaning
-      use m_ts_options, only : nuaL_GF => NUsedAtomsL
-      use m_ts_options, only : noL_GF  => NUsedOrbsL
-      use m_ts_options, only : nuaR_GF => NUsedAtomsR
-      use m_ts_options, only : noR_GF  => NUsedOrbsR
+      use m_ts_electype
+      use m_ts_options, only : ElLeft, ElRight
 
-      use m_ts_options, only : NRepA1L,NRepA2L,NRepA1R,NRepA2R
       use m_ts_options, only : NBufAtL, NBufAtR
       use m_ts_options, only : GFFileL, GFFileR
       use m_ts_options, only : IsVolt, VoltFDF, VoltL, VoltR
@@ -194,6 +188,11 @@
 !     Hamiltonian, overlap, Green's function, scattering matrix,
 !     k-points, q-points, k/q-weights, fermi level shift due to V,
 !     etc.
+
+!     Number of atoms in the electrode (before expansion)
+      integer :: nuaL_GF, nuaR_GF
+!     Number of orbitals in the electrodes (before expansion)
+      integer :: noL_GF,noR_GF
 
 !     Number of atoms in the electrode (after expansion)
       integer :: nuaL, nuaR
@@ -382,10 +381,14 @@
 
 ! Make the expansion of the electrodes in atoms and orbitals
 ! In this way we save the "SAVE" attribute
-      nuaL = nuaL_GF*NRepA1L*NRepA2L
-      nuaR = nuaR_GF*NRepA1R*NRepA2R
-      noL  = noL_GF *NRepA1L*NRepA2L
-      noR  = noR_GF *NRepA1R*NRepA2R
+      nuaL_GF = UsedAtoms(ElLeft)
+      nuaR_GF = UsedAtoms(ElRight)
+      noL_GF  = UsedOrbs(ElLeft)
+      noR_GF  = UsedOrbs(ElRight)
+      nuaL = TotUsedAtoms(ElLeft)
+      nuaR = TotUsedAtoms(ElRight)
+      noL  = TotUsedOrbs(ElLeft)
+      noR  = TotUsedOrbs(ElRight)
 
 
 ! ============================================================
@@ -423,7 +426,7 @@
 
          lastoL(0)=0
          ia2=0
-         do ia=NBufAtL+1,NBufAtL + nuaL, NRepA1L*NRepA2L
+         do ia=NBufAtL+1,NBufAtL + nuaL, Rep(ElLeft)
             ia2=ia2+1
             lastoL(ia2)=lastoL(ia2-1) + (lasto(ia) - lasto(ia-1))
          end do                 !ia
@@ -440,7 +443,7 @@
 
          lastoR(0)=0
          ia2=0
-         do ia=na_u-(nuaR + NBufAtR)+1,na_u-NBufAtR, NRepA1R*NRepA2R
+         do ia=na_u-(nuaR + NBufAtR)+1,na_u-NBufAtR, Rep(ElRight)
             ia2=ia2+1
             lastoR(ia2)=lastoR(ia2-1) + (lasto(ia) - lasto(ia-1))
          end do                 !ia
@@ -448,7 +451,6 @@
          if(lastoR(nuaR_GF) .ne. noR_GF) then
             if(IONode)
      &           write(*,*) 'ERROR: lastoR,noR_GF',lastoR,noR_GF
-
             call die('ERROR: Unexpected no. orbs. in R elec.')
          end if
          
@@ -752,14 +754,14 @@
       endif
 
 ! Left
-      call read_Green(uGFL,TSiscf==1,VoltL,ts_nkpnt,NEn,nuaL_GF, 
-     &     NRepA1L,NRepA2L,.false.,noL_GF,nspin,
+      call read_Green(uGFL,TSiscf==1,VoltL,ts_nkpnt,NEn,
+     &     ElLeft,.false.,nspin,
      &     nkparL,kparL,wkparL,
      &     nqL,wqL,qLb)
 
 ! Right
-      call read_Green(uGFR,TSiscf==1,VoltR,ts_nkpnt,NEn,nuaR_GF,
-     &     NRepA1R,NRepA2R,.false.,noR_GF,nspin, 
+      call read_Green(uGFR,TSiscf==1,VoltR,ts_nkpnt,NEn,
+     &     ElRight,.false.,nspin, 
      &     nkparR,kparR,wkparR,
      &     nqR,wqR,qRb)
 
@@ -958,7 +960,7 @@
          call getSFE(UseBulk,uGFL,HAAL,SAAL,Z,ts_ikpt,
      &        nqL,qLb,wqL,
      &        noL_GF,
-     &        nuaL_GF,lastoL,NRepA1L,NRepA2L,
+     &        nuaL_GF,lastoL,RepA1(ElLeft),RepA2(ElLeft),
      &        noL,SFEL,GammaLT,
      &        min(Nodes,NEn-(iPE-1-Node)),errorgs)
 
@@ -968,7 +970,7 @@
          call getSFE(UseBulk,uGFR,HAAR,SAAR,Z,ts_ikpt,
      &        nqR,qRb,wqR,
      &        noR_GF,
-     &        nuaR_GF,lastoR,NRepA1R,NRepA2R,
+     &        nuaR_GF,lastoR,RepA1(ElRight),RepA2(ElRight),
      &        noR,SFER,GammaRT,
      &        min(Nodes,NEn-(iPE-1-Node)),errorgs)
 

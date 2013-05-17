@@ -40,6 +40,7 @@ contains
     use m_ts_contour, only : NEn, contour
     use m_ts_kpoints, only : setup_ts_kpoint_grid
     use m_ts_kpoints, only : ts_nkpnt, ts_kpoint, ts_kweight
+    use m_ts_electype
     use m_ts_options ! Just everything (easier)
     use m_ts_method
 
@@ -87,8 +88,8 @@ contains
        ! First calculate L/C/R sizes (we remember to subtract the buffer
        ! orbitals)
        nTS = no_u - nBL - nBR
-       nL  = NUsedOrbsL*NRepA1L*NRepA2L
-       nR  = NUsedOrbsR*NRepA1R*NRepA2R
+       nL  = TotUsedOrbs(ElLeft)
+       nR  = TotUsedOrbs(ElRight)
        nC  = nTS  - nL  - nR
        if ( nC < 1 ) &
             call die('Transiesta central region does not &
@@ -127,8 +128,7 @@ contains
 
        ! Show every region of the Transiesta run
        call ts_show_regions(ucell,na_u,xa, &
-            NBufAtL,NUsedAtomsL,NUsedAtomsR,NBufAtR, &
-            NRepA1L,NRepA2L,NRepA1R,NRepA2R)
+            NBufAtL,ElLeft, ElRight,NBufAtR)
        
        ! Create the contour lines
        call setup_contour(IsVolt,Cmethod,VoltL,0.0d0,VoltR, &
@@ -170,17 +170,17 @@ contains
        call memory('A','Z',NEn*nspin,'transiesta')
      
        ! Create the Left GF file
-       call do_Green('L',HSFileL, GFFileL, GFTitle, &
+       call do_Green('L',ElLeft, GFFileL, GFTitle, &
             ElecValenceBandBot, ReUseGF, &
             ts_nkpnt,ts_kpoint,ts_kweight, &
-            NBufAtL,NUsedAtomsL,NRepA1L,NRepA2L, .false., & !For now TranSIESTA will only perform with inner-cell distances
+            NBufAtL, .false., & !For now TranSIESTA will only perform with inner-cell distances
             ucell,xa,na_u,NEn,contour,VoltL,.false.,dos,nspin)
        
        ! Create the Right GF file
-       call do_Green('R',HSFileR,GFFileR, GFTitle, &
+       call do_Green('R',ElRight,GFFileR, GFTitle, &
             ElecValenceBandBot, ReUseGF, &
             ts_nkpnt,ts_kpoint,ts_kweight, &
-            NBufAtR,NUsedAtomsR,NRepA1R,NRepA2R, .false., &
+            NBufAtR, .false., &
             ucell,xa,na_u,NEn,contour,VoltR,.false.,dos,nspin)
        
        call memory('D','Z',NEn*nspin,'transiesta')
@@ -190,17 +190,17 @@ contains
        ! Show the number of used atoms and orbitals
        if ( IONode ) then
           write(*,'(/,a,i6,'' / '',i6)') &
-               'Left : GF atoms    / Expanded atoms    : ',NUsedAtomsL, &
-               NUsedAtomsL*NRepA1L*NRepA2L
+               'Left : GF atoms    / Expanded atoms    : ',UsedAtoms(ElLeft), &
+               TotUsedAtoms(ElLeft)
           write(*,'(a,i6,'' / '',i6)') &
-               'Left : GF orbitals / Expanded orbitals : ',NUsedOrbsL, &
-               NUsedOrbsL*NRepA1L*NRepA2L
+               'Left : GF orbitals / Expanded orbitals : ',UsedOrbs(ElLeft), &
+               TotUsedOrbs(ElLeft)
           write(*,'(a,i6,'' / '',i6)') &
-               'Right: GF atoms    / Expanded atoms    : ',NUsedAtomsR, &
-               NUsedAtomsR*NRepA1R*NRepA2R
+               'Right: GF atoms    / Expanded atoms    : ',UsedAtoms(ElRight), &
+               TotUsedAtoms(ElRight)
           write(*,'(a,i6,'' / '',i6)') &
-               'Right: GF orbitals / Expanded orbitals : ',NUsedOrbsR, &
-               NUsedOrbsR*NRepA1R*NRepA2R
+               'Right: GF orbitals / Expanded orbitals : ',UsedOrbs(ElRight), &
+               TotUsedOrbs(ElRight)
 
           write(*,*) ! New line
        end if

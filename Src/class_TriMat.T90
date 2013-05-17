@@ -1,0 +1,318 @@
+! this class aims to implement a tri-diagonal matrix in any tri-diagonal order
+! The memory layout is almost equivalent to that of regular fortran
+! arrays, i.e.:
+!  1. the first diagonal block
+!  2. the 1st lower triangular block
+!  3. the 1st upper triangular block
+!  4. the second diagonal block
+!  5. the 2st lower triangular block
+!  6. the 2st upper triangular block
+!  7. etc.
+!
+
+  use alloc, only: re_alloc, de_alloc
+
+  implicit none
+
+  character(len=*), parameter :: mod_name="class_"//STR_TYPE_NAME//".F90"
+
+  integer, parameter :: sp = selected_real_kind(5,10)
+  integer, parameter :: dp = selected_real_kind(10,100)
+
+  type TYPE_NAME_
+     integer :: refCount = 0
+     character(len=36)   :: id = "null_id"
+     !----------------------
+     character(len=256)  :: name = "null "//STR_TYPE_NAME
+     ! The number of rows of the full matrix
+     integer             :: nrows_g
+     ! Number of tri-diagonal splits
+     integer             :: parts
+     ! The number of rows of the tri-diagonal parts
+     integer, pointer    :: tri_nrows(:) => null()
+#ifdef PREC
+     VAR_TYPE(PREC), pointer :: mat(:) => null() ! matrix values
+#else
+     VAR_TYPE,       pointer :: mat(:) => null() ! matrix values
+#endif
+  end type
+
+  type TYPE_NAME
+     type(TYPE_NAME_), pointer :: data => null()
+  end type
+
+! Note that "basic_type.inc" adds the PRIVATE directive
+! This will also release the requirement to change the local names.
+! Only those through public statements should potentially be altered.
+
+  public :: NEW_TYPE, print_type, init_val
+
+  public :: val
+  public :: index
+  public :: nrows_g
+  public :: parts
+  public :: elements
+
+  interface NEW_TYPE
+     module procedure newTriMatfromDimensions
+  end interface
+
+  interface nrows_g
+     module procedure nrows_gTriMat
+     module procedure nrows_gTriMatPart
+  end interface
+
+  interface elements
+     module procedure elements_TriMat
+  end interface
+
+  interface parts
+     module procedure parts_TriMat
+  end interface
+
+  interface index
+     module procedure index_TriMat
+  end interface
+
+  interface init_val
+     module procedure initializeTriMat
+  end interface
+
+  interface val
+     module procedure val_TriMat
+     module procedure val_TriMat_part
+  end interface
+
+  interface print_type
+     module procedure printTriMat
+  end interface
+
+!========================
+#include "basic_type.inc"
+!========================
+
+  subroutine delete_Data(trimat_data)
+    type(TYPE_NAME_) :: trimat_data
+    if (associated(trimat_data%mat)) then
+       call de_alloc( trimat_data%mat, &
+            name="val "//trim(trimat_data%name),routine=STR_TYPE_NAME)	
+    endif
+  end subroutine delete_Data
+
+  elemental function nrows_gTriMat(this) result (n)
+    type(TYPE_NAME), intent(in) :: this
+    integer                     :: n
+    n = this%data%nrows_g
+  end function nrows_gTriMat
+  elemental function nrows_gTriMatPart(this,part) result (n)
+    type(TYPE_NAME), intent(in) :: this
+    integer, intent(in)         :: part
+    integer                     :: n
+    n = this%data%tri_nrows(part)
+  end function nrows_gTriMatPart
+
+  pure function parts_TriMat(this) result (n)
+    type(TYPE_NAME), intent(in) :: this
+    integer                     :: n
+    n = this%data%parts
+  end function parts_TriMat
+
+  elemental function elements_TriMat(this) result(el)
+    type(TYPE_NAME), intent(in) :: this
+    integer :: el
+    el = size(this%data%mat)
+  end function elements_TriMat
+  
+  subroutine newTriMatFromDimensions(this,parts,tri_nrows,name)
+    ! This could be implemented also as an assignment 
+    ! (see below)
+
+    type(TYPE_NAME), intent(inout)  :: this
+    integer,         intent(in)     :: parts, tri_nrows(parts)
+    character(len=*), intent(in), optional  :: name
+
+    integer :: i,n
+    integer :: stat
+
+    ! We release the previous incarnation
+    ! This means that we relinquish access to the previous
+    ! memory location. It will be deallocated when nobody
+    ! else is using it.
+   
+    call init(this)
+
+    if (present(name)) then
+       this%data%name = trim(name)
+    else
+       this%data%name = "("//STR_TYPE_NAME//")"
+    endif
+
+    ! Number of parts of the tri-diagonality
+    this%data%parts = parts
+
+    ! Calculate number of rows
+    this%data%nrows_g = sum(tri_nrows)
+
+    ! Allocate space for the internal tri_nrows
+    call re_alloc(this%data%tri_nrows,1, parts, &
+         name="mat "//trim(this%data%name),routine=STR_TYPE_NAME)
+
+    ! Save the dimensions of the tri-diagonal parts
+    this%data%tri_nrows(:) = tri_nrows(:)    
+
+    ! Calculate size of the tri-diagonal matrix
+    n = tri_nrows(parts)**2
+    do i = 1 , parts - 1
+       n = n + tri_nrows(i)*( tri_nrows(i) + 2*tri_nrows(i+1) )
+    end do
+       
+    ! Allocate the full tri-diagonal matrix
+    call re_alloc(this%data%mat,1,n, &
+         name="mat "//trim(this%data%name),routine=STR_TYPE_NAME) 
+
+    call tag_new_object(this)
+
+  end subroutine newTriMatFromDimensions
+
+
+  function val_TriMat(this) result(p)
+    type(TYPE_NAME), intent(in) :: this
+#ifdef PREC
+    VAR_TYPE(PREC), pointer     :: p(:) !=> null()
+#else
+    VAR_TYPE,       pointer     :: p(:) !=> null()
+#endif
+    
+    p => this%data%mat
+  end function val_TriMat
+
+  function val_TriMat_part(this,pr,pc) result(p)
+    type(TYPE_NAME), intent(in) :: this
+    integer, intent(in) :: pr,pc
+#ifdef PREC
+    VAR_TYPE(PREC), pointer     :: p(:) !=> null()
+#else
+    VAR_TYPE,       pointer     :: p(:) !=> null()
+#endif
+    integer :: s,e
+    ! We do a crude check of invalid input
+    if ( this%data%parts < pr .or. &
+         this%data%parts < pc .or. &
+         pc < pr - 1 .or. pr < pc - 1 ) then
+       call die('Requesting invalid tri-diagonal part')
+    end if
+    ! Retrieve the starting index for the column
+    s = index_start_part_col(this,pc)
+    ! If the row is greater than or equal to the column
+    ! Then we can add the C_pc matrix
+    if ( pr >= pc ) then
+       s = s + this%data%tri_nrows(pc-1)*this%data%tri_nrows(pc)
+    end if
+    if ( pr > pc ) then
+       s = s + this%data%tri_nrows(pc)**2
+    end if
+    e = s + this%data%tri_nrows(pr)*this%data%tri_nrows(pc) - 1
+    p => this%data%mat(s:e)
+  end function val_TriMat_part
+
+  pure function index_start_part_col(this,part_col) result(i)
+    type(TYPE_NAME), intent(in) :: this
+    integer, intent(in) :: part_col
+    integer :: i, j
+
+    i = 1
+    if ( part_col > 1 ) then
+       i = i + &
+            this%data%tri_nrows(1) * ( &
+            this%data%tri_nrows(1) + &
+            this%data%tri_nrows(2) )
+    end if
+    do j = 2 , part_col - 1
+       i = i + &
+            this%data%tri_nrows(j) * ( &
+            this%data%tri_nrows(j-1) + &
+            this%data%tri_nrows(j)   + &
+            this%data%tri_nrows(j+1) )
+    end do
+  end function index_start_part_col
+
+! we return -1 if the index does not exist
+  pure function index_TriMat(this,r,c) result(n)
+    type(TYPE_NAME), intent(in) :: this
+    ! The row and column requested
+    integer, intent(in) :: r, c
+    integer :: cum, ip, part_c, part_r
+    integer :: i_c, i_r
+    integer :: n
+    
+    cum = 0
+    do ip = 1 , this%data%parts
+       cum = cum + this%data%tri_nrows(ip)
+       if ( c <= cum ) then
+          ! We have now found the part column
+          ! which we should be in
+          i_c = c - (cum - this%data%tri_nrows(ip))
+          part_c = ip
+          exit
+       end if
+    end do
+    cum = 0
+    do ip = 1 , this%data%parts
+       cum = cum + this%data%tri_nrows(ip)
+       if ( r <= cum ) then
+          ! We have now found the part column
+          ! which we should be in
+          i_r = r - (cum - this%data%tri_nrows(ip))
+          part_r = ip
+          exit
+       end if
+    end do
+    n = index_start_part_col(this,part_c)
+    ! If the row is greater than or equal to the column
+    ! Then we can add the C_pc matrix
+    if ( part_r >= part_c ) then
+       n = n + this%data%tri_nrows(part_c-1)*this%data%tri_nrows(part_c)
+    end if
+    if ( part_r > part_c ) then
+       n = n + this%data%tri_nrows(part_c)**2
+    end if
+    n = n + (i_c-1) * this%data%tri_nrows(part_r) + i_r - 1
+  end function index_TriMat
+       
+  subroutine printTriMat(this)
+    type(TYPE_NAME), intent(in)  :: this
+    
+    if (.not. associated(this%data)) then
+       print "(a)", STR_TYPE_NAME//" Not Associated"
+       RETURN
+    endif
+    
+    print "(3(a,i0),a)", "  <"//STR_TYPE_NAME//":" // trim(this%data%name) // &
+                                " n_parts",  this%data%parts, &
+                                " elements=",  elements(this), &
+                                ", refcount: ", refcount(this),">"
+  end subroutine printTriMat
+
+  subroutine initializeTriMat(this)
+    type(TYPE_NAME), intent(in out) :: this
+#ifdef PREC
+    VAR_TYPE(PREC), pointer     :: p(:) !=> null()
+#else
+    VAR_TYPE,       pointer     :: p(:) !=> null()
+#endif
+    
+    p => val(this)
+    p(:) = VAR_INIT
+
+  end subroutine initializeTriMat
+
+
+#undef TYPE_NAME
+#undef STR_TYPE_NAME
+#undef TYPE_NAME_
+#undef NEW_TYPE
+#undef VAR_TYPE
+#ifdef PREC
+#undef PREC
+#endif
+#undef VAR_INIT

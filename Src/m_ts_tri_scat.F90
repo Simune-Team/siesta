@@ -49,7 +49,7 @@ contains
        no_u_TS, GFinv_tri,GF_tri,ierr)
     
     use intrinsic_missing, only: EYE
-    use class_zTriMat3
+    use class_zTriMat
 
     implicit none 
 
@@ -63,8 +63,8 @@ contains
     ! This may seem strange, however, it will clean up this routine extensively
     ! as we dont need to make two different routines for real and complex
     ! Hamiltonian values.
-    type(zTriMat3), intent(in out) :: GFinv_tri ! the inverted GF
-    type(zTriMat3), intent(in out) :: GF_tri
+    type(zTriMat), intent(in out) :: GFinv_tri ! the inverted GF
+    type(zTriMat), intent(in out) :: GF_tri
     integer,     intent(out) :: ierr              !inversion err
 
 ! Local variables
@@ -93,27 +93,27 @@ contains
          &consistent.')
 
     ! Point to the correct tri-diagonal parts
-    iGf11 => val11(GFinv_tri)
-    iGf12 => val12(GFinv_tri)
-    iGf21 => val21(GFinv_tri)
-    iGf22 => val22(GFinv_tri)
-    iGf23 => val23(GFinv_tri)
-    iGf32 => val32(GFinv_tri)
-    iGf33 => val33(GFinv_tri)
-    Gf11  => val11(GF_tri)
-    Gf12  => val12(GF_tri)
-    Gf21  => val21(GF_tri)
-    Gf22  => val22(GF_tri)
-    Gf23  => val23(GF_tri)
-    Gf32  => val32(GF_tri)
-    Gf33  => val33(GF_tri)
+    iGf11 => val(GFinv_tri,1,1)
+    iGf12 => val(GFinv_tri,1,2)
+    iGf21 => val(GFinv_tri,2,1)
+    iGf22 => val(GFinv_tri,2,2)
+    iGf23 => val(GFinv_tri,2,3)
+    iGf32 => val(GFinv_tri,3,2)
+    iGf33 => val(GFinv_tri,3,3)
+    Gf11  => val(GF_tri,1,1)
+    Gf12  => val(GF_tri,1,2)
+    Gf21  => val(GF_tri,2,1)
+    Gf22  => val(GF_tri,2,2)
+    Gf23  => val(GF_tri,2,3)
+    Gf32  => val(GF_tri,3,2)
+    Gf33  => val(GF_tri,3,3)
 
     ierr = 0
 
 ! Now we can do MAGIC!!!
-    nL = nrows_g_left  (GF_tri)
-    nC = nrows_g_center(GF_tri)
-    nR = nrows_g_right (GF_tri)
+    nL = nrows_g(GF_tri,1)
+    nC = nrows_g(GF_tri,2)
+    nR = nrows_g(GF_tri,3)
 
 ! b'11 = a11^-1
     call EYE(nL,Gf11)
@@ -193,7 +193,7 @@ contains
        no_R, SigmaR)
     
     use intrinsic_missing, only: EYE
-    use class_zTriMat3
+    use class_zTriMat
 
     implicit none 
 
@@ -208,8 +208,8 @@ contains
     ! This may seem strange, however, it will clean up this routine extensively
     ! as we dont need to make two different routines for real and complex
     ! Hamiltonian values.
-    type(zTriMat3), intent(in out) :: GFinv_tri ! the inverted GF
-    type(zTriMat3), intent(in out) :: GF_tri
+    type(zTriMat), intent(in out) :: GFinv_tri ! the inverted GF
+    type(zTriMat), intent(in out) :: GF_tri
     complex(dp) :: SigmaL(no_L*no_L)   ! work (the SigmaL array)
     complex(dp) :: SigmaR(no_R*no_R)   ! work (the SigmaR array)
 
@@ -241,27 +241,27 @@ contains
          &consistent.')
 
     ! Point to the correct tri-diagonal parts
-    iGf11 => val11(GFinv_tri)
-    iGf12 => val12(GFinv_tri)
-    iGf21 => val21(GFinv_tri)
-    iGf22 => val22(GFinv_tri)
-    iGf23 => val23(GFinv_tri)
-    iGf32 => val32(GFinv_tri)
-    iGf33 => val33(GFinv_tri)
-    Gf11  => val11(GF_tri)
-    Gf12  => val12(GF_tri)
-    Gf21  => val21(GF_tri)
-    Gf22  => val22(GF_tri)
-    Gf23  => val23(GF_tri)
-    Gf32  => val32(GF_tri)
-    Gf33  => val33(GF_tri)
+    iGf11 => val(GFinv_tri,1,1)
+    iGf12 => val(GFinv_tri,1,2)
+    iGf21 => val(GFinv_tri,2,1)
+    iGf22 => val(GFinv_tri,2,2)
+    iGf23 => val(GFinv_tri,2,3)
+    iGf32 => val(GFinv_tri,3,2)
+    iGf33 => val(GFinv_tri,3,3)
+    Gf11  => val(GF_tri,1,1)
+    Gf12  => val(GF_tri,1,2)
+    Gf21  => val(GF_tri,2,1)
+    Gf22  => val(GF_tri,2,2)
+    Gf23  => val(GF_tri,2,3)
+    Gf32  => val(GF_tri,3,2)
+    Gf33  => val(GF_tri,3,3)
 
     ierr = 0
 
 ! Now we can do MAGIC!!!
-    nL = nrows_g_left  (GF_tri)
-    nC = nrows_g_center(GF_tri)
-    nR = nrows_g_right (GF_tri)
+    nL = nrows_g(GF_tri,1)
+    nC = nrows_g(GF_tri,2)
+    nR = nrows_g(GF_tri,3)
 
 ! copy over A3
     if ( .not. UseBulk ) then
@@ -361,7 +361,7 @@ contains
   subroutine calc_GF_Part(no_u_TS, no_L, no_R, GFinv_tri,GF22,ierr)
     
     use intrinsic_missing, only: EYE
-    use class_zTriMat3
+    use class_zTriMat
     use alloc
 
     implicit none 
@@ -375,7 +375,7 @@ contains
     ! This may seem strange, however, it will clean up this routine extensively
     ! as we dont need to make two different routines for real and complex
     ! Hamiltonian values.
-    type(zTriMat3), intent(in out) :: GFinv_tri ! the inverted GF (in tri-diagonal form)
+    type(zTriMat), intent(in out) :: GFinv_tri ! the inverted GF (in tri-diagonal form)
     complex(dp), target, intent(inout) :: GF22((no_u_TS-no_R-no_L)**2)
     integer,     intent(out) :: ierr              ! inversion err
 
@@ -398,20 +398,20 @@ contains
     GFinv => val(GFinv_tri)
 
     ! Point to the parts
-    iGf11 => val11(GFinv_tri)
-    iGf12 => val12(GFinv_tri)
-    iGf21 => val21(GFinv_tri)
-    iGf22 => val22(GFinv_tri)
-    iGf23 => val23(GFinv_tri)
-    iGf32 => val32(GFinv_tri)
-    iGf33 => val33(GFinv_tri)
+    iGf11 => val(GFinv_tri,1,1)
+    iGf12 => val(GFinv_tri,1,2)
+    iGf21 => val(GFinv_tri,2,1)
+    iGf22 => val(GFinv_tri,2,2)
+    iGf23 => val(GFinv_tri,2,3)
+    iGf32 => val(GFinv_tri,3,2)
+    iGf33 => val(GFinv_tri,3,3)
 
     ierr = 0
 
 ! Now we can do MAGIC!!!
-    nL = nrows_g_left  (GFinv_tri)
-    nC = nrows_g_center(GFinv_tri)
-    nR = nrows_g_right (GFinv_tri)
+    nL = nrows_g(GFinv_tri,1)
+    nC = nrows_g(GFinv_tri,2)
+    nR = nrows_g(GFinv_tri,3)
 
 ! x12 = a11^-1 * a12
     call zgesv(nL,nC,iGf11,nL,ipvt,iGf12,nL,ierr)
@@ -445,7 +445,7 @@ contains
 !  corresponds to the (no_L) Left
 !  Gamma is a (no_L)x(no_L) matrix.
 ! ======================================================================
-    use class_zTriMat3
+    use class_zTriMat
 
     implicit none
 
@@ -454,14 +454,14 @@ contains
 ! *********************
     integer, intent(in) :: no_L ! the size of the Gamma
     ! The Green's function (note that it SHOULD be transposed on entry)
-    type(zTriMat3), intent(inout) :: Gf_tri
+    type(zTriMat), intent(inout) :: Gf_tri
     ! i (Sigma - Sigma^dagger)/2
     complex(dp),    intent(in) :: GammaT(no_L,no_L)
 
 ! *********************
 ! * OUTPUT variables  *
 ! *********************
-    type(zTriMat3), intent(inout) :: GGG_tri    !GF.GAMMA.GF
+    type(zTriMat), intent(inout) :: GGG_tri    !GF.GAMMA.GF
 
     ! local variables
     complex(dp), pointer :: Gf(:), GGG(:), oW(:)
@@ -474,48 +474,48 @@ contains
     call timer("GFGGF",1)
 
     ! should be the same as no_L
-    nL = nrows_g_left  (Gf_tri)
-    nC = nrows_g_center(Gf_tri)
-    nR = nrows_g_right (Gf_tri)
+    nL = nrows_g(Gf_tri,1)
+    nC = nrows_g(Gf_tri,2)
+    nR = nrows_g(Gf_tri,3)
 
     ! This is the full Gf22 array
-    oW => val22(Gf_tri)
+    oW => val(Gf_tri,2,2)
 
-    Gf  => val11(Gf_tri)
+    Gf  => val(Gf_tri,1,1)
     ! \Gamma Gf^\dagger 11
     call zgemm('T','C',nL,nL,nL,z1, GammaT,nL, Gf,nL,z0, oW,nL)
 
     ! This is actually not necessary... (we dont have anything to 
     ! update here)
-!    GGG => val11(GGG_tri)
+!    GGG => val(GGG_tri,1,1)
 !    ! Gf11 \Gamma Gf^\dagger 11 == GGG 11
 !    call zgemm('N','N',nL,nL,nL,z1, Gf,nL, oW,nL,z0, GGG,nL)
 
-    Gf  => val21(Gf_tri) ! size nC x nL
-    GGG => val21(GGG_tri) ! size nC x nL
+    Gf  => val(Gf_tri,2,1) ! size nC x nL
+    GGG => val(GGG_tri,2,1) ! size nC x nL
     ! Gf21 \Gamma Gf^\dagger 11 == GGG 21
     call zgemm('N','N',nC,nL,nL,z1, Gf,nC, oW,nL,z0, GGG,nC)
 
     ! > We now have GGG 21 <
 
-    Gf => val21(Gf_tri) ! size nC x nL (note we take the conjugate transpose)
+    Gf => val(Gf_tri,2,1) ! size nC x nL (note we take the conjugate transpose)
     ! \Gamma Gf^\dagger 12
     call zgemm('T','C',nL,nC,nL,z1, GammaT,nL, Gf,nC,z0, oW,nL)
 
-    Gf  => val11(Gf_tri) ! size nL x nL
-    GGG => val12(GGG_tri) ! size nL x nC
+    Gf  => val(Gf_tri,1,1) ! size nL x nL
+    GGG => val(GGG_tri,1,2) ! size nL x nC
     ! Gf 11 \Gamma Gf^\dagger 12 == GGG 12
     call zgemm('N','N',nL,nC,nL,z1, Gf,nL, oW,nL,z0, GGG,nL)
 
-    Gf  => val21(Gf_tri) ! size nC x nL
-    GGG => val22(GGG_tri) ! size nC x nC
+    Gf  => val(Gf_tri,2,1) ! size nC x nL
+    GGG => val(GGG_tri,2,2) ! size nC x nC
     ! Gf 21 \Gamma Gf^\dagger 12 == GGG 22
     call zgemm('N','N',nC,nC,nL,z1, Gf,nC, oW,nL,z0, GGG,nC)
 
     ! NOTICE that Gf contains Gf31 in Gf12 as Gf:2 is not used
     ! for anything
-    Gf  => val12(Gf_tri) ! size nR x nL
-    GGG => val32(GGG_tri) ! size nR x nC
+    Gf  => val(Gf_tri,1,2) ! size nR x nL
+    GGG => val(GGG_tri,3,2) ! size nR x nC
     ! Gf 31 \Gamma Gf^\dagger 12 == GGG 32
     call zgemm('N','N',nR,nC,nL,z1, Gf,nR, oW,nL,z0, GGG,nR)
 
@@ -523,12 +523,12 @@ contains
     
     ! NOTICE that Gf contains Gf31 in Gf12 as Gf:2 is not used
     ! for anything
-    Gf => val12(Gf_tri) ! size nR x nL (note we take the conjugate transpose)
+    Gf => val(Gf_tri,1,2) ! size nR x nL (note we take the conjugate transpose)
     ! \Gamma Gf^\dagger 13
     call zgemm('T','C',nL,nR,nL,z1, GammaT,nL, Gf,nR,z0, oW,nL)
 
-    Gf  => val21(Gf_tri) ! size nC x nL
-    GGG => val23(GGG_tri) ! size nC x nR
+    Gf  => val(Gf_tri,2,1) ! size nC x nL
+    GGG => val(GGG_tri,2,3) ! size nC x nR
     ! Gf 21 \Gamma Gf^\dagger 13 == GGG 23
     call zgemm('N','N',nC,nR,nL,z1, Gf,nC, oW,nL,z0, GGG,nC)
 
@@ -536,8 +536,8 @@ contains
     ! update here)
     ! NOTICE that Gf contains Gf31 in Gf12 as Gf:2 is not used
     ! for anything
-!    Gf  => val12(Gf_tri) ! size nR x nL
-!    GGG => val33(GGG_tri) ! size nR x nR
+!    Gf  => val(Gf_tri,1,2) ! size nR x nL
+!    GGG => val(GGG_tri,3,3) ! size nR x nR
     ! Gf 31 \Gamma Gf^\dagger 13 == GGG 33
 !    call zgemm('N','N',nR,nR,nL,z1, Gf,nR, oW,nL,z0, GGG,nR)
 
@@ -560,7 +560,7 @@ contains
 !  corresponds to the (no_R) right
 !  Gamma is a (no_R)x(no_R) matrix.
 ! ======================================================================
-    use class_zTriMat3
+    use class_zTriMat
 
     implicit none
 
@@ -569,14 +569,14 @@ contains
 ! *********************
     integer, intent(in) :: no_R ! the size of the Gamma
     ! The Green's function (note that it SHOULD be transposed on entry)
-    type(zTriMat3), intent(inout) :: Gf_tri
+    type(zTriMat), intent(inout) :: Gf_tri
     ! i (Sigma - Sigma^dagger)/2
     complex(dp),    intent(in) :: GammaT(no_R,no_R)
 
 ! *********************
 ! * OUTPUT variables  *
 ! *********************
-    type(zTriMat3), intent(inout) :: GGG_tri    !GF.GAMMA.GF
+    type(zTriMat), intent(inout) :: GGG_tri    !GF.GAMMA.GF
 
     ! local variables
     complex(dp), pointer :: Gf(:), GGG(:), oW(:)
@@ -588,49 +588,49 @@ contains
 
     call timer("GFGGF",1)
 
-    nL = nrows_g_left  (Gf_tri)
-    nC = nrows_g_center(Gf_tri)
-    nR = nrows_g_right (Gf_tri)
+    nL = nrows_g(Gf_tri,1)
+    nC = nrows_g(Gf_tri,2)
+    nR = nrows_g(Gf_tri,3)
 
     ! We use Gf22 for the calculation array (notice that Gf :2 is not used
     ! for anything, hence this is safe)
-    oW => val22(Gf_tri)
+    oW => val(Gf_tri,2,2)
 
-    Gf => val33(Gf_tri)
+    Gf => val(Gf_tri,3,3)
     ! \Gamma Gf^\dagger 33
     call zgemm('T','C',nR,nR,nR,z1, GammaT,nR, Gf,nR,z0, oW,nR)
 
     ! This is actually not necessary... (we dont have anything to 
     ! update here)
-!    GGG => val33(GGG_tri)
+!    GGG => val(GGG_tri,3,3)
 !    ! Gf33 \Gamma Gf^\dagger 33 == GGG 33
 !    call zgemm('N','N',nR,nR,nR,z1, Gf,nR, oW,nR,z0, GGG,nR)
 
-    Gf  => val23(Gf_tri) ! size nC x nR
-    GGG => val23(GGG_tri) ! size nC x nR
+    Gf  => val(Gf_tri,2,3) ! size nC x nR
+    GGG => val(GGG_tri,2,3) ! size nC x nR
     ! Gf23 \Gamma Gf^\dagger 33 == GGG 23
     call zgemm('N','N',nC,nR,nR,z1, Gf,nC, oW,nR,z0, GGG,nC)
 
     ! > We now have GGG 23 <
 
-    Gf => val23(Gf_tri) ! size nC x nR
+    Gf => val(Gf_tri,2,3) ! size nC x nR
     ! \Gamma Gf^\dagger 32
     call zgemm('T','C',nR,nC,nR,z1, GammaT,nR, Gf,nC,z0, oW,nR)
 
     ! NOTICE that Gf contains Gf13 in Gf32 as Gf:2 is not used
     ! for anything
-    Gf  => val32(Gf_tri) ! size nL x nR
-    GGG => val12(GGG_tri) ! size nL x nC
+    Gf  => val(Gf_tri,3,2) ! size nL x nR
+    GGG => val(GGG_tri,1,2) ! size nL x nC
     ! Gf 13 \Gamma Gf^\dagger 32 == GGG 12
     call zgemm('N','N',nL,nC,nR,z1, Gf,nL, oW,nR,z0, GGG,nL)
 
-    Gf  => val23(Gf_tri) ! size nC x nR
-    GGG => val22(GGG_tri) ! size nC x nC
+    Gf  => val(Gf_tri,2,3) ! size nC x nR
+    GGG => val(GGG_tri,2,2) ! size nC x nC
     ! Gf 23 \Gamma Gf^\dagger 32 == GGG 22
     call zgemm('N','N',nC,nC,nR,z1, Gf,nC, oW,nR,z0, GGG,nC)
 
-    Gf  => val33(Gf_tri) ! size nR x nR
-    GGG => val32(GGG_tri) ! size nR x nC
+    Gf  => val(Gf_tri,3,3) ! size nR x nR
+    GGG => val(GGG_tri,3,2) ! size nR x nC
     ! Gf 33 \Gamma Gf^\dagger 32 == GGG 32
     call zgemm('N','N',nR,nC,nR,z1, Gf,nR, oW,nR,z0, GGG,nR)
 
@@ -638,7 +638,7 @@ contains
 
     ! NOTICE that Gf contains Gf13 in Gf32 as Gf:2 is not used
     ! for anything
-    Gf => val32(Gf_tri) ! size nL x nR (note we take the conjugate transpose)
+    Gf => val(Gf_tri,3,2) ! size nL x nR (note we take the conjugate transpose)
     ! \Gamma Gf^\dagger 31
     call zgemm('T','C',nR,nL,nR,z1, GammaT,nR, Gf,nL,z0, oW,nR)
 
@@ -646,13 +646,13 @@ contains
     ! update here)
     ! NOTICE that Gf contains Gf13 in Gf32 as Gf:2 is not used
     ! for anything
-!    Gf  => val32(Gf_tri) ! size nL x nR
-!    GGG => val11(GGG_tri) ! size nL x nL
+!    Gf  => val(Gf_tri,3,2) ! size nL x nR
+!    GGG => val(GGG_tri,1,1) ! size nL x nL
     ! Gf 13 \Gamma Gf^\dagger 31 == GGG 11
 !    call zgemm('N','N',nL,nL,nR,z1, Gf,nL, oW,nR,z0, GGG,nL)
 
-    Gf  => val23(Gf_tri) ! size nC x nR
-    GGG => val21(GGG_tri) ! size nC x nL
+    Gf  => val(Gf_tri,2,3) ! size nC x nR
+    GGG => val(GGG_tri,2,1) ! size nC x nL
     ! Gf 23 \Gamma Gf^\dagger 31 == GGG 21
     call zgemm('N','N',nC,nL,nR,z1, Gf,nC, oW,nR,z0, GGG,nC)
 

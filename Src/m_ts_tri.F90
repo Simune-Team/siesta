@@ -100,24 +100,20 @@ contains
     use class_Sparsity
     use class_dSpData1D
     use class_zSpData1D
-    use class_zTriMat3
+    use class_zTriMat
 
     use m_ts_kpoints
 
     use m_ts_options, only : IsVolt, UseBulk, UpdateDMCR
     use m_ts_options, only : VoltL, VoltR
-    use m_ts_options, only : NRepA1L, NRepA2L
-    use m_ts_options, only : NRepA1R, NRepA2R
+    use m_ts_electype
+    use m_ts_options, only : ElLeft, ElRight
     use m_ts_options, only : GFFileL, GFFileR
     use m_ts_options, only : na_BufL => NBufAtL
     use m_ts_options, only : na_BufR => NBufAtR
-    use m_ts_options, only : na_L_HS => NUsedAtomsL
-    use m_ts_options, only : no_L_HS => NUsedOrbsL
-    use m_ts_options, only : na_R_HS => NUsedAtomsR
-    use m_ts_options, only : no_R_HS => NUsedOrbsR
 
-    use m_ts_mem_sparsity, only : ts_sp_uc
-    use m_ts_mem_sparsity, only : tsup_sp_uc
+    use m_ts_sparse, only : ts_sp_uc
+    use m_ts_sparse, only : tsup_sp_uc
 
     ! Self-energy retrival and expansion
     use m_ts_elec_se
@@ -157,6 +153,8 @@ contains
 ! * Buffer regions
     integer :: no_BufL, no_BufR
 ! * Electrode regions
+    integer :: na_L_HS, na_R_HS
+    integer :: no_L_HS, no_R_HS
     integer :: na_L, no_L, na_R, no_R
     integer, allocatable :: lasto_L(:), lasto_R(:)
 ! * Computational region..
@@ -187,7 +185,7 @@ contains
     real(dp),    allocatable :: dwork(:)
     complex(dp), pointer :: GF22(:)
     complex(dp), pointer :: zwork(:)
-    type(zTriMat3) :: zwork_tri, GF_tri
+    type(zTriMat) :: zwork_tri, GF_tri
     ! A local orbital distribution class (this is "fake")
     type(OrbitalDistribution) :: fdist
     ! The Hamiltonian and overlap sparse matrices
@@ -224,10 +222,14 @@ contains
     call timer('TS_calc',1)
     
     ! Calculate the number of used atoms in left/right
-    na_L = na_L_HS * NRepA1L * NRepA2L
-    no_L = no_L_HS * NRepA1L * NRepA2L
-    na_R = na_R_HS * NRepA1R * NRepA2R
-    no_R = no_R_HS * NRepA1R * NRepA2R
+    na_L_HS = UsedAtoms(ElLeft)
+    na_R_HS = UsedAtoms(ElRight)
+    no_L_HS = UsedOrbs(ElLeft)
+    no_R_HS = UsedOrbs(ElRight)
+    na_L = TotUsedAtoms(ElLeft)
+    no_L = TotUsedOrbs(ElLeft)
+    na_R = TotUsedAtoms(ElRight)
+    no_R = TotUsedOrbs(ElRight)
 
     ! Calculate the number of orbitals not used (i.e. those 
     ! in the buffer regions)
@@ -240,14 +242,14 @@ contains
     allocate(lasto_L(0:na_L_HS))
     lasto_L(0) = 0
     ia_E = 0
-    do ia = na_BufL + 1 , na_BufL + na_L, NRepA1L * NRepA2L
+    do ia = na_BufL + 1 , na_BufL + na_L, Rep(ElLeft)
        ia_E = ia_E + 1
        lasto_L(ia_E) = lasto_L(ia_E-1) + lasto(ia) - lasto(ia-1)
     end do
     allocate(lasto_R(0:na_R_HS))
     lasto_R(0) = 0
     ia_E = 0
-    do ia = na_u - na_R - na_BufR + 1 , na_u - na_BufR , NRepA1R * NRepA2R
+    do ia = na_u - na_R - na_BufR + 1 , na_u - na_BufR , Rep(ElRight)
        ia_E = ia_E + 1
        lasto_R(ia_E) = lasto_R(ia_E-1) + lasto(ia) - lasto(ia-1)
     end do
@@ -308,14 +310,14 @@ contains
 
 ! Read in the headers of the surface-Green's function files...
 ! Left
-    call read_Green(uGFL,TSiscf==1,VoltL,ts_nkpnt,NEn,na_L_HS,  &
-         NRepA1L,NRepA2L,.false.,no_L_HS,nspin, &
+    call read_Green(uGFL,TSiscf==1,VoltL,ts_nkpnt,NEn, &
+         ElLeft,.false.,nspin, &
          nkparL,kparL,wkparL, &
          nqL,wqL,qLb)
 
 ! Right
-    call read_Green(uGFR,TSiscf==1,VoltR,ts_nkpnt,NEn,na_R_HS, &
-         NRepA1R,NRepA2R,.false.,no_R_HS,nspin,  &
+    call read_Green(uGFR,TSiscf==1,VoltR,ts_nkpnt,NEn, &
+         ElRight,.false.,nspin,  &
          nkparR,kparR,wkparR, &
          nqR,wqR,qRb)
 
@@ -346,7 +348,7 @@ contains
     nzwork =          (no_L + no_u_C)        * no_L
     nzwork = nzwork + (no_L + no_u_C + no_R) * no_u_C
     nzwork = nzwork + (       no_u_C + no_R) * no_R
-    call newzTriMat3(zwork_tri,no_L,no_u_C,no_R,'GFinv')
+    call newzTriMat(zwork_tri,3,(/no_L,no_u_C,no_R/),'GFinv')
 
     ! Save the work-space
     ! Now the programmer should "keep a straight tongue"
@@ -357,20 +359,20 @@ contains
     ! one call!
     zwork => val(zwork_tri)
 
-    call newzTriMat3(GF_tri,no_L,no_u_C,no_R,'GF')
+    call newzTriMat(GF_tri,3,(/no_L,no_u_C,no_R/),'GF')
     if ( GF_INV_EQUI_PART ) then
-       Gf22 => val22(Gf_tri)
+       Gf22 => val(Gf_tri,2,2)
     end if
 
     ! Allocate the left-right electrode quantities that we need
-    allocate(HAAL(no_L_HS,no_L_HS,NRepA1L*NRepA2L))
-    allocate(SAAL(no_L_HS,no_L_HS,NRepA1L*NRepA2L))
-    ispin = no_L_HS**2*NRepA1L*NRepA2L*2
+    allocate(HAAL(no_L_HS,no_L_HS,Rep(ElLeft)))
+    allocate(SAAL(no_L_HS,no_L_HS,Rep(ElLeft)))
+    ispin = no_L_HS**2*Rep(ElLeft)*2
     allocate(SigmaL(no_L,no_L))
     ispin = ispin + no_L**2
-    allocate(HAAR(no_R_HS,no_R_HS,NRepA1R*NRepA2R))
-    allocate(SAAR(no_R_HS,no_R_HS,NRepA1R*NRepA2R))
-    ispin = ispin + no_R_HS**2*NRepA1R*NRepA2R*2
+    allocate(HAAR(no_R_HS,no_R_HS,Rep(ElRight)))
+    allocate(SAAR(no_R_HS,no_R_HS,Rep(ElRight)))
+    ispin = ispin + no_R_HS**2*Rep(ElRight)*2
     allocate(SigmaR(no_R,no_R))
     ispin = ispin + no_R**2
     call memory('A','Z',ispin,'transiesta')
@@ -578,20 +580,24 @@ contains
              ! Calculate the left-right Sigma
              if ( UseBulk ) then
 
-                call UC_expansion_Sigma_Bulk(no_L_HS, no_L, NRepA1L, NRepA2L, &
+                call UC_expansion_Sigma_Bulk(no_L_HS, no_L, &
+                     RepA1(ElLeft), RepA2(ElLeft), &
                      na_L_HS, lasto_L, nqL, qLb, wqL, HAAL, SAAL, GAAL, SigmaL, &
                      nzwork,zwork)
                 
-                call UC_expansion_Sigma_Bulk(no_R_HS, no_R, NRepA1R, NRepA2R, &
+                call UC_expansion_Sigma_Bulk(no_R_HS, no_R, &
+                     RepA1(ElRight), RepA2(ElRight), &
                      na_R_HS, lasto_R, nqR, qRb, wqR, HAAR, SAAR, GAAR, SigmaR, &
                      nzwork,zwork)
 
              else
-                call UC_expansion_Sigma(Z,no_L_HS, no_L,NRepA1L, NRepA2L, &
+                call UC_expansion_Sigma(Z,no_L_HS, no_L, &
+                     RepA1(ElLeft), RepA2(ElLeft), &
                      na_L_HS, lasto_L, nqL, qLb, wqL, HAAL, SAAL, GAAL, SigmaL, &
                      nzwork,zwork)
 
-                call UC_expansion_Sigma(Z,no_R_HS, no_R, NRepA1R, NRepA2R, &
+                call UC_expansion_Sigma(Z,no_R_HS, no_R, &
+                     RepA1(ElRight), RepA2(ElRight), &
                      na_R_HS, lasto_R, nqR, qRb, wqR, HAAR, SAAR, GAAR, SigmaR, &
                      nzwork,zwork)
              end if
@@ -658,7 +664,7 @@ contains
 
              ! Do the left electrode
              call UC_expansion_Sigma_GammaT(UseBulk,Z,no_L_HS,no_L, &
-                  NRepA1L, NRepA2L, &
+                  RepA1(ElLeft), RepA2(ElLeft), &
                   na_L_HS,lasto_L,nqL,qLb,wqL, &
                   HAAL, SAAL, GAAL, &
                   SigmaL, GammaLT, & 
@@ -666,7 +672,7 @@ contains
 
              ! Do the right electrode
              call UC_expansion_Sigma_GammaT(UseBulk,Z,no_R_HS,no_R, &
-                  NRepA1R, NRepA2R, &
+                  RepA1(ElRight), RepA2(ElRight), &
                   na_R_HS,lasto_R,nqR,qRb,wqR, &
                   HAAR, SAAR, GAAR, &
                   SigmaR, GammaRT, & 
@@ -938,11 +944,11 @@ contains
   subroutine add_DM_dE_Z(DM,EDM,GF_tri,no_BufL,DMfact,EDMfact)
     use class_zSpData1D
     use class_Sparsity
-    use class_zTriMat3
+    use class_zTriMat
     ! The DM and EDM equivalent matrices
     type(zSpData1D), intent(inout) :: DM,EDM
     ! The Green's function
-    type(zTriMat3), intent(inout) :: GF_tri
+    type(zTriMat), intent(inout) :: GF_tri
     ! The number of buffer atoms (needed for the offset in the sparsity
     ! patterns)
     integer, intent(in) :: no_BufL
@@ -957,9 +963,9 @@ contains
     integer :: io, ind, nr, iu, idx, ridx
 
     s      => spar(DM)
-    l_ncol => n_col   (s)
-    l_ptr  => list_ptr(s)
-    l_col  => list_col(s)
+    call retrieve(s, &
+         n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+         nrows=nr)
     zD     => val(DM)
     zE     => val(EDM)
     Gf     => val(Gf_tri)
@@ -967,10 +973,8 @@ contains
     fD = DMfact  * .5_dp
     fE = EDMfact * .5_dp
 
-    ! Number of orbitals in the SIESTA unit-cell
     ! Remember that this is a sparsity pattern which contains
     ! a subset of the SIESTA pattern.
-    nr = nrows(s)
     
     do io = 1 , nr
        ! Quickly go past the buffer atoms... (the right side)
@@ -998,11 +1002,11 @@ contains
   subroutine add_DMnonEq_dE_Z(DM,EDM,GF_tri,no_BufL,DMfact,EDMfact)
     use class_zSpData1D
     use class_Sparsity
-    use class_zTriMat3
+    use class_zTriMat
     ! The DM and EDM equivalent matrices
     type(zSpData1D), intent(inout) :: DM,EDM
     ! The Green's function
-    type(zTriMat3), intent(inout) :: GF_tri
+    type(zTriMat), intent(inout) :: GF_tri
     ! The number of buffer atoms (needed for the offset in the sparsity
     ! patterns)
     integer, intent(in) :: no_BufL
@@ -1013,20 +1017,17 @@ contains
     type(Sparsity), pointer :: s
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     complex(dp), pointer :: zD(:), zE(:), Gf(:)
-    integer :: io, ind, nr, iu, ridx
+    integer :: io, ind, nr, iu, idx
 
     s      => spar(DM)
-    l_ncol => n_col   (s)
-    l_ptr  => list_ptr(s)
-    l_col  => list_col(s)
+    call retrieve(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+         nrows=nr)
     zD     => val(DM)
     zE     => val(EDM)
     Gf     => val(Gf_tri)
 
-    ! Number of orbitals in the SIESTA unit-cell
     ! Remember that this is a sparsity pattern which contains
     ! a subset of the SIESTA pattern.
-    nr = nrows(s)
     
     do io = 1 , nr
        ! Quickly go past the buffer atoms... (the right side)
@@ -1037,10 +1038,12 @@ contains
        
        do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
 
-          ridx = index(Gf_tri,l_col(ind) - no_BufL,iu)
+          ! TODO ask Mads about the non-equilibrium integration...
+          !ridx = index(Gf_tri,l_col(ind) - no_BufL,iu)
+          idx = index(Gf_tri,iu,l_col(ind) - no_BufL)
 
-          zD(ind) = zD(ind) - GF(ridx) * DMfact
-          zE(ind) = zE(ind) - GF(ridx) * EDMfact
+          zD(ind) = zD(ind) - GF(idx) * DMfact
+          zE(ind) = zE(ind) - GF(idx) * EDMfact
        end do
     end do
 
@@ -1049,11 +1052,11 @@ contains
   subroutine add_DM_dE_D(DM,EDM,GF_tri,no_BufL,DMfact,EDMfact)
     use class_dSpData1D
     use class_Sparsity
-    use class_zTriMat3
+    use class_zTriMat
     ! The DM and EDM equivalent matrices
     type(dSpData1D), intent(inout) :: DM,EDM
     ! The Green's function
-    type(zTriMat3), intent(inout) :: GF_tri
+    type(zTriMat), intent(inout) :: GF_tri
     ! The number of buffer atoms (needed for the offset in the sparsity
     ! patterns)
     integer, intent(in) :: no_BufL
@@ -1068,9 +1071,8 @@ contains
     integer :: io, ind, nr, iu, idx
 
     s      => spar(DM)
-    l_ncol => n_col   (s)
-    l_ptr  => list_ptr(s)
-    l_col  => list_col(s)
+    call retrieve(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+         nrows=nr)
     dD     => val(DM)
     dE     => val(EDM)
     Gf     => val(Gf_tri)
@@ -1078,10 +1080,8 @@ contains
     ! Notice that we do not need to do any transposing here...
     ! The tri-diagonal calculation of GF_Gamma_GF will always be correct
 
-    ! Number of orbitals in the SIESTA unit-cell
     ! Remember that this is a sparsity pattern which contains
     ! a subset of the SIESTA pattern.
-    nr = nrows(s)
     
     do io = 1 , nr !TODO introduce reduced loop
        ! Quickly go past the buffer atoms... (in the right side)
@@ -1105,11 +1105,11 @@ contains
   subroutine add_DMnonEq_dE_D(DM,EDM,GF_tri,no_BufL,DMfact,EDMfact)
     use class_dSpData1D
     use class_Sparsity
-    use class_zTriMat3
+    use class_zTriMat
     ! The DM and EDM equivalent matrices
     type(dSpData1D), intent(inout) :: DM,EDM
     ! The Green's function
-    type(zTriMat3), intent(inout) :: GF_tri
+    type(zTriMat), intent(inout) :: GF_tri
     ! The number of buffer atoms (needed for the offset in the sparsity
     ! patterns)
     integer, intent(in) :: no_BufL
@@ -1121,12 +1121,11 @@ contains
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     real(dp), pointer :: dD(:), dE(:)
     complex(dp), pointer :: Gf(:)
-    integer :: io, ind, nr, iu, ridx
+    integer :: io, ind, nr, iu, idx
 
     s      => spar(DM)
-    l_ncol => n_col   (s)
-    l_ptr  => list_ptr(s)
-    l_col  => list_col(s)
+    call retrieve(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+         nrows=nr)
     dD     => val(DM)
     dE     => val(EDM)
     Gf     => val(Gf_tri)
@@ -1134,10 +1133,8 @@ contains
     ! Notice that we do not need to do any transposing here...
     ! The tri-diagonal calculation of GF_Gamma_GF will always be correct
 
-    ! Number of orbitals in the SIESTA unit-cell
     ! Remember that this is a sparsity pattern which contains
     ! a subset of the SIESTA pattern.
-    nr = nrows(s)
     
     do io = 1 , nr !TODO introduce reduced loop
        ! Quickly go past the buffer atoms... (in the right side)
@@ -1148,10 +1145,11 @@ contains
        
        do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
 
-          ridx = index(Gf_tri,l_col(ind) - no_BufL,iu)
+          !ridx = index(Gf_tri,l_col(ind) - no_BufL,iu)
+          idx = index(Gf_tri,iu,l_col(ind) - no_BufL)
           
-          dD(ind) = dD(ind) - dimag( GF(ridx) * DMfact  )
-          dE(ind) = dE(ind) - dimag( GF(ridx) * EDMfact )
+          dD(ind) = dD(ind) - dimag( GF(idx) * DMfact  )
+          dE(ind) = dE(ind) - dimag( GF(idx) * EDMfact )
 
        end do
     end do
@@ -1165,7 +1163,7 @@ contains
        no_L, SigmaL, no_R, SigmaR)
     use class_dSpData1D
     use class_Sparsity
-    use class_zTriMat3
+    use class_zTriMat
 
     logical, intent(in) :: UseBulk
     ! The Hamiltonian and overlap sparse matrices
@@ -1175,9 +1173,9 @@ contains
     ! Remark that we need the left buffer orbitals
     ! to calculate the actual orbital of the sparse matrices...
     integer, intent(in) :: no_BufL,no_u
-    type(zTriMat3), intent(inout) :: GFinv_tri
+    type(zTriMat), intent(inout) :: GFinv_tri
     integer, intent(in) :: no_L, no_R
-    complex(dp), intent(in) :: SigmaL(no_L**2), SigmaR(no_R**2)
+    complex(dp), intent(in) :: SigmaL(no_L,no_L), SigmaR(no_R,no_R)
 
     ! Local variables
     type(Sparsity), pointer :: s
@@ -1187,10 +1185,7 @@ contains
     integer :: io, iu, ind, idx
 
     s      => spar    (spH)
-    l_ncol => n_col   (s)
-    l_ptr  => list_ptr(s)
-    l_col  => list_col(s)
-
+    call retrieve(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
     dH     => val(spH)
     dS     => val(spS)
     Gfinv  => val(Gfinv_tri)
@@ -1225,7 +1220,7 @@ contains
        no_L, SigmaL, no_R, SigmaR)
     use class_zSpData1D
     use class_Sparsity
-    use class_zTriMat3
+    use class_zTriMat
 
     logical, intent(in) :: UseBulk
     ! The Hamiltonian and overlap sparse matrices
@@ -1235,9 +1230,9 @@ contains
     ! Remark that we need the left buffer orbitals
     ! to calculate the actual orbital of the sparse matrices...
     integer, intent(in) :: no_BufL,no_u
-    type(zTriMat3), intent(inout) :: GFinv_tri
+    type(zTriMat), intent(inout) :: GFinv_tri
     integer, intent(in) :: no_L, no_R
-    complex(dp), intent(in) :: SigmaL(no_L**2), SigmaR(no_R**2)
+    complex(dp), intent(in) :: SigmaL(no_L,no_L), SigmaR(no_R,no_R)
 
     ! Local variables
     type(Sparsity), pointer :: s
@@ -1246,10 +1241,7 @@ contains
     integer :: io, iu,ind, idx
     
     s      => spar    (spH)
-    l_ncol => n_col   (s)
-    l_ptr  => list_ptr(s)
-    l_col  => list_col(s)
-    
+    call retrieve(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
     zH     => val(spH)
     zS     => val(spS)
     Gfinv  => val(Gfinv_tri)
@@ -1282,183 +1274,54 @@ contains
 
   subroutine insert_Self_Energies(UseBulk,Gfinv_tri, &
        no_L, SigmaL, no_R, SigmaR)
-    use class_zTriMat3
+    use class_zTriMat
 
     logical, intent(in) :: UseBulk
-    type(zTriMat3), intent(inout) :: GFinv_tri
+    type(zTriMat), intent(inout) :: GFinv_tri
     integer, intent(in) :: no_L, no_R
-    complex(dp), intent(in) :: SigmaL(no_L**2)
-    complex(dp), intent(in) :: SigmaR(no_R**2)
+    complex(dp), intent(in) :: SigmaL(no_L,no_L)
+    complex(dp), intent(in) :: SigmaR(no_R,no_R)
 
-    complex(dp), pointer :: Gfpart(:)
-    integer :: i
+    complex(dp), pointer :: Gfinv(:)
+    integer :: i,j, idx, no_ER
 
-    Gfpart => val11(GFinv_tri)
-    
+    Gfinv => val(GFinv_tri)
+
+    ! We cannot be sure of the parts sizes...
     if ( UseBulk ) then
-       Gfpart(:) = SigmaL(:)
+       do j = 1 , no_L
+          do i = 1 , no_L
+             idx = index(GFinv_tri,i,j)
+             Gfinv(idx) = SigmaL(i,j)
+          end do
+       end do
     else
-       do i = 1 , no_L**2
-          Gfpart(i) = Gfpart(i) - SigmaL(i)
+       do j = 1 , no_L
+          do i = 1 , no_L
+             idx = index(GFinv_tri,i,j)
+             Gfinv(idx) = Gfinv(idx) - SigmaL(i,j)
+          end do
        end do
     end if
 
-    Gfpart => val33(GFinv_tri)
+    no_ER = nrows_g(GFinv_tri) - no_R
     
     if ( UseBulk ) then
-       Gfpart(:) = SigmaR(:)
+       do j = 1 , no_R
+          do i = 1 , no_R
+             idx = index(GFinv_tri,i+no_ER,j+no_ER)
+             Gfinv(idx) = SigmaR(i,j)
+          end do
+       end do
     else
-       do i = 1 , no_R**2
-          Gfpart(i) = Gfpart(i) - SigmaR(i)
+       do j = 1 , no_R
+          do i = 1 , no_R
+             idx = index(GFinv_tri,i+no_ER,j+no_ER)
+             Gfinv(idx) = Gfinv(idx) - SigmaR(i,j)
+          end do
        end do
     end if
-
+    
   end subroutine insert_Self_Energies
-
-
-  subroutine test_tri(tri)
-    use class_zTriMat3
-    type(zTriMat3), intent(inout) :: tri
-    integer :: i,j,ind,nL,nC,nR
-    nL =nrows_g_left(tri)
-    nC =nrows_g_center(tri)
-    nR =nrows_g_right(tri)
-    ind = 0
-    do j = 1 , nL
-       do i = 1 , nL
-          ind = ind + 1
-          if ( ind /= index(tri,i,j) ) then
-             print *,'got',index(tri,i,j)
-             print *,'expected',ind
-             call die('wrong 11')
-          end if
-       end do
-    end do
-    do j = 1 , nL
-       do i = nL+1 , nL+nC
-          ind = ind + 1
-          if ( ind /= index(tri,i,j) ) then
-             print *,'got',index(tri,i,j)
-             print *,'expected',ind
-             call die('wrong 21')
-          end if
-       end do
-    end do
-    do j = nL+1 , nL+nC
-       do i = 1 , nL
-          ind = ind + 1
-          if ( ind /= index(tri,i,j) ) then
-             print *,'got',index(tri,i,j)
-             print *,'expected',ind
-             call die('wrong 12')
-          end if
-       end do
-    end do
-    do j = nL+1 , nL+nC
-       do i = nL+1 , nL+nC
-          ind = ind + 1
-          if ( ind /= index(tri,i,j) ) then
-             print *,'got',index(tri,i,j)
-             print *,'expected',ind
-             call die('wrong 22')
-          end if
-       end do
-    end do
-    do j = nL+1 , nL+nC
-       do i = nL+nC+1 , nL+nC+nR
-          ind = ind + 1
-          if ( ind /= index(tri,i,j) ) then
-             print *,'got',index(tri,i,j)
-             print *,'expected',ind
-             call die('wrong 32')
-          end if
-       end do
-    end do
-    do j = nL+nC+1 , nL+nC+nR
-       do i = nL+1 , nL+nC
-          ind = ind + 1
-          if ( ind /= index(tri,i,j) ) then
-             print *,'got',index(tri,i,j)
-             print *,'expected',ind
-             call die('wrong 23')
-          end if
-       end do
-    end do
-    do j = nL+nC+1 , nL+nC+nR
-       do i = nL+nC+1 , nL+nC+nR
-          ind = ind + 1
-          if ( ind /= index(tri,i,j) ) then
-             print *,'got',index(tri,i,j)
-             print *,'expected',ind
-             call die('wrong 33')
-          end if
-       end do
-    end do
-    print *,'successfull'
-  end subroutine test_tri
-
-  subroutine zTriMat3_transpose(m_tri,mT_tri)
-    use class_zTriMat3
-    
-    ! The input matrix
-    type(zTriMat3), intent(inout) :: m_tri
-    ! The returned transposed matrix...
-    type(zTriMat3), intent(inout) :: mT_tri
-
-    ! Local variables
-    complex(dp), pointer :: m(:)
-    complex(dp), pointer :: mT(:)
-    integer :: nL, nC, nR
-
-    nL = nrows_g_left  (m_tri)
-    nC = nrows_g_center(m_tri)
-    nR = nrows_g_right (m_tri)
-
-    ! Transpose m11
-    m  => val11(m_tri)
-    mT => val11(mT_tri)
-    call t(nL,nL,m,mT)
-    ! Transpose m12
-    m  => val12(m_tri)
-    mT => val21(mT_tri)
-    call t(nL,nC,m,mT)
-    ! Transpose m21
-    m  => val21(m_tri)
-    mT => val12(mT_tri)
-    call t(nC,nL,m,mT)
-    ! Transpose m22
-    m  => val22(m_tri)
-    mT => val22(mT_tri)
-    call t(nC,nC,m,mT)
-    ! Transpose m23
-    m  => val23(m_tri)
-    mT => val32(mT_tri)
-    call t(nC,nR,m,mT)
-    ! Transpose m32
-    m  => val32(m_tri)
-    mT => val23(mT_tri)
-    call t(nR,nC,m,mT)
-    ! Transpose m33
-    m  => val33(m_tri)
-    mT => val33(mT_tri)
-    call t(nR,nR,m,mT)
-    ! Done with transposing...
-
-  contains
-    subroutine t(N1,N2,m,mt)
-      integer, intent(in) :: N1,N2
-      complex(dp), intent(in) :: m(n1,n2)
-      complex(dp), intent(out) :: mT(n2,n1)
-      integer :: i,j
-      
-      do j = 1 , N2
-         do i = 1 , N1
-            mT(j,i) = m(i,j)
-         end do
-      end do
-
-    end subroutine t
-
-  end subroutine zTriMat3_transpose
 
 end module m_ts_tri

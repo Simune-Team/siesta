@@ -326,10 +326,10 @@ contains
 ! ## repetition as well.                                          ##
 ! ##################################################################
 
-  subroutine create_Green(tElec, HSFile, GFFile, GFTitle, &
+  subroutine create_Green(tElec, El, GFFile, GFTitle, &
        ElecValenceBandBot, &
        nkpnt,kpoint,kweight, &
-       NBufAt,NUsedAtoms,NA1,NA2, RemUCellDistance, &
+       NBufAt,RemUCellDistance, &
        ucell,xa,nua,NEn,contour,chem_shift,CalcDOS,ZBulkDOS,nspin)
 
     use precision,  only : dp
@@ -346,21 +346,22 @@ contains
                            MPI_Double_Precision => MPI_double_precision
 #endif
     use m_hs_matrix,only : set_HS_matrix, matrix_symmetrize
+    use m_ts_electype
     use m_ts_cctype
+
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
     character(len=1), intent(in) :: tElec   ! 'L' for Left electrode, 'R' for right
-    character(len=*), intent(in) :: HSFile  ! The electrode TSHS file
+    type(Elec), intent(in)       :: El  ! The electrode 
     character(len=*), intent(in) :: GFFile  ! The electrode GF file to be saved to
     character(len=*), intent(in) :: GFTitle ! The title to be written in the GF file
     logical, intent(in)          :: ElecValenceBandBot ! Whether or not to calculate electrodes valence bandbottom
     integer, intent(in)            :: nkpnt ! Number of k-points
     real(dp),dimension(3,nkpnt),intent(in) :: kpoint ! k-points
     real(dp),dimension(nkpnt),intent(in) :: kweight ! weights of kpoints
-    integer, intent(in)            :: NBufAt,NA1,NA2 ! Buffer/Rep a1/Rep a2
+    integer, intent(in)            :: NBufAt ! buffer atoms
     logical, intent(in)            :: RemUCellDistance ! Whether to remove the unit cell distance in the Hamiltonian.
-    integer, intent(in)            :: NUsedAtoms ! Needs update here
     integer, intent(in)            :: nua ! Full system count of atoms in unit cell
     real(dp), dimension(3,3)       :: ucell ! The unit cell of the CONTACT
     real(dp), intent(in)           :: xa(3,nua) ! Coordinates in the system for the TranSIESTA routine
@@ -458,8 +459,8 @@ contains
     
     ! Read in all variables from the TSHS electrode file.
     ! Broadcasting within the routine is performed in MPI run
-    call init_electrode_HS(tElec,NUsedAtoms,Gamma,xa,nua,nspin, &
-         NBufAt, NA1, NA2, HSFile, &
+    call init_electrode_HS(tElec,UsedAtoms(El),Gamma,xa,nua,nspin, &
+         NBufAt, RepA1(El), RepA2(El), HSFile(El), &
          nua_E,nuo_E,maxnh_E,notot_E,xa_E,H_E,S_E,xij_E, &
          xijo_E,zconnect_E,numh_E,listhptr_E,listh_E,indxuo_E,  &
          lasto_E, &
@@ -474,8 +475,8 @@ contains
        ! First convert to units of reciprocal vectors
        ! Then convert to 1/Bohr in the electrode unit cell coordinates
        call kpoint_convert(ucell,kpoint(:,i),ktmp,1)
-       if ( NA1 > 1 ) ktmp(1) = ktmp(1)/real(NA1,dp)
-       if ( NA2 > 1 ) ktmp(2) = ktmp(2)/real(NA2,dp)
+       if ( RepA1(El) > 1 ) ktmp(1) = ktmp(1)/real(RepA1(El),dp)
+       if ( RepA2(El) > 1 ) ktmp(2) = ktmp(2)/real(RepA2(El),dp)
        call kpoint_convert(ucell_E,ktmp,kpt,-1)
        if (IONode) write(*,'(i4,2x,3(E14.5))') i,&
             kpt(1),kpt(2),kweight(i)
@@ -524,12 +525,12 @@ contains
     nuou_E = 0
     if( leqi(tElec,'L') ) then
        ! Left, we use the last atoms in the list
-       do ia = nua_E - NUsedAtoms + 1, nua_E
+       do ia = nua_E - UsedAtoms(El) + 1, nua_E
           nuou_E = nuou_E + lasto_E(ia) - lasto_E(ia-1)
        end do
     else
        ! Right, the first atoms in the list
-       do ia = 1 , NUsedAtoms
+       do ia = 1 , UsedAtoms(El)
           nuou_E = nuou_E + lasto_E(ia) - lasto_E(ia-1)
        end do
     end if
@@ -537,7 +538,7 @@ contains
     ! Show the number of used atoms and orbitals
     if ( IONode ) then
        write(*,'(a,i6,'' / '',i6)') ' Atoms available    / used atoms   : ', &
-            nua_E,NUsedAtoms
+            nua_E,UsedAtoms(El)
        write(*,'(a,i6,'' / '',i6)') ' Orbitals available / used orbitals: ', &
             lasto_E(nua_E),nuou_E
     end if
@@ -550,7 +551,7 @@ contains
 !  this is WHERE the initial q and wq points are generated.
 !  they are read in by 'read_green' later on.
 ! They are in units of the reciprocal lattice vectors (hence suffix b)
-    call mkqgrid(NA1,NA2,nq,qb,wq)
+    call mkqgrid(RepA1(El),RepA2(El),nq,qb,wq)
 
     if ( IONode ) then
 ! We show them in units of Bohr**-1
@@ -598,16 +599,16 @@ contains
        write(uGF) GFTitle
        write(uGF) chem_shift,NEn
        write(uGF) RemUCellDistance
-       write(uGF) NUsedAtoms,NA1,NA2,nkpnt,nq
+       write(uGF) UsedAtoms(El),RepA1(El),RepA2(El),nkpnt,nq
        ! Write spin, ELECTRODE unit-cell
        write(uGF) nspin, ucell_E
        ! Write out the atomic coordinates of the used electrode
        if( leqi(tElec,'L') ) then
           ! Left, we use the last atoms in the list
-          write(uGF) xa_E(:,nua_E-NUsedAtoms+1:nua_E)
+          write(uGF) xa_E(:,nua_E-UsedAtoms(El)+1:nua_E)
        else
           ! Right, the first atoms in the list
-          write(uGF) xa_E(:,1:NUsedAtoms)
+          write(uGF) xa_E(:,1:UsedAtoms(El))
        end if
        ! Notice that we write the k-points for the ELECTRODE
        ! Do a conversion here
@@ -617,8 +618,8 @@ contains
        do ikpt = 1 , nkpnt
           ! Init kpoint, in reciprocal vector units ( from CONTACT ucell)
           call kpoint_convert(ucell,kpoint(:,ikpt),ktmp,1)
-          ktmp(1) = ktmp(1)/real(NA1,dp)
-          ktmp(2) = ktmp(2)/real(NA2,dp)
+          ktmp(1) = ktmp(1)/real(RepA1(El),dp)
+          ktmp(2) = ktmp(2)/real(RepA2(El),dp)
           ! Convert back to reciprocal units (to electrode ucell_E)
           call kpoint_convert(ucell_E,ktmp,kpt,-1)
           do j = 1 , 3
@@ -662,8 +663,8 @@ contains
             
           ! Init kpoint, in reciprocal vector units ( from CONTACT ucell)
           call kpoint_convert(ucell,kpoint(:,ikpt),ktmp,1)
-          ktmp(1) = ktmp(1)/real(NA1,dp)
-          ktmp(2) = ktmp(2)/real(NA2,dp)
+          ktmp(1) = ktmp(1)/real(RepA1(El),dp)
+          ktmp(2) = ktmp(2)/real(RepA2(El),dp)
           ! Convert back to reciprocal units (to electrode ucell_E)
           call kpoint_convert(ucell_E,ktmp,kpt,-1)
           

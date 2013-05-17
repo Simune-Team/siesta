@@ -19,7 +19,7 @@ module m_ts_options
 USE precision, only : dp
 USE siesta_options, only : fixspin, isolve, SOLVE_TRANSI
 USE sys, only : die
-
+USE m_ts_electype
 implicit none
 PUBLIC
 SAVE
@@ -53,19 +53,10 @@ integer  :: nvolt        ! Number of points for the Bias integartion part
 integer  :: ntransport   ! Number of points for transport calculation
 integer  :: NBufAtL      ! Number of Left Buffer Atoms
 integer  :: NBufAtR      ! Number of Right Buffer Atoms
-integer  :: NRepA1L      ! Number of Left Repetitions in A1 direction
-integer  :: NRepA2L      ! Number of Left Repetitions in A2 direction
-integer  :: NRepA1R      ! Number of Right Repetitions in A1 direction
-integer  :: NRepA2R      ! Number of Right Repetitions in A2 direction
-integer  :: NUsedAtomsL  ! Number of atoms used from the Left electrode
-integer  :: NUsedAtomsR  ! Number of atoms used from the Right electrode
-integer  :: NUsedOrbsL   ! Number of orbitals used from the Left electrode
-integer  :: NUsedOrbsR   ! Number of orbitals used from the Right electrode
 character(200) :: GFTitle ! Title to paste in electrode Green's function files
 character(200) :: GFFileL ! Electrode Left GF File
 character(200) :: GFFileR ! Electrode Right GF File
-character(200) :: HSFileL ! Electrode Left TSHS File
-character(200) :: HSFileR ! Electrode Right TSHS File
+type(Elec) :: ElLeft, ElRight
 logical       :: ElecValenceBandBot ! Calculate Electrode valence band bottom when creating electrode GF
 integer :: Cmethod        ! Method for the contour integration
 logical :: ReUseGF        ! Calculate the electrodes GF
@@ -232,20 +223,20 @@ UseVFix    = fdf_get('TS.UseVFix',UseVFix_def)
 ElecValenceBandBot = fdf_get('TS.CalcElectrodeValenceBandBottom', &
      ElecValenceBandBot_def)
 
-HSFileL     = fdf_get('TS.HSFileLeft',HSFile_def)
-NUsedAtomsL = fdf_get('TS.NumUsedAtomsLeft',NUsedAtoms_def)
-call check_HSfile('Left',HSFileL,NUsedAtomsL,NUsedOrbsL)
-NRepA1L     = fdf_get('TS.ReplicateA1Left',NRepA_def)
-NRepA2L     = fdf_get('TS.ReplicateA2Left',NRepA_def)
-if ( NRepA1L < 1 .or. NRepA2L < 1 ) &
+ElLeft%HSFile    = fdf_get('TS.HSFileLeft',HSFile_def)
+ElLeft%UsedAtoms = fdf_get('TS.NumUsedAtomsLeft',NUsedAtoms_def)
+call check_HSfile('Left',ElLeft)
+ElLeft%RepA1     = fdf_get('TS.ReplicateA1Left',NRepA_def)
+ElLeft%RepA2     = fdf_get('TS.ReplicateA2Left',NRepA_def)
+if ( RepA1(ElLeft) < 1 .or. RepA2(ElLeft) < 1 ) &
      call die("Repetition in left electrode must be >= 1.")
 
-HSFileR     = fdf_get('TS.HSFileRight',HSFile_def)
-NUsedAtomsR = fdf_get('TS.NumUsedAtomsRight',NUsedAtoms_def)
-call check_HSfile('Right',HSFileR,NUsedAtomsR,NUsedOrbsR)
-NRepA1R     = fdf_get('TS.ReplicateA1Right',NRepA_def)
-NRepA2R     = fdf_get('TS.ReplicateA2Right',NRepA_def)
-if ( NRepA1R < 1 .or. NRepA2R < 1 ) &
+ElRight%HSFile    = fdf_get('TS.HSFileRight',HSFile_def)
+ElRight%UsedAtoms = fdf_get('TS.NumUsedAtomsRight',NUsedAtoms_def)
+call check_HSfile('Right',ElRight)
+ElRight%RepA1     = fdf_get('TS.ReplicateA1Right',NRepA_def)
+ElRight%RepA2     = fdf_get('TS.ReplicateA2Right',NRepA_def)
+if ( RepA1(ElRight) < 1 .or. RepA2(ElRight) < 1 ) &
      call die("Repetition in right electrode must be >= 1.")
 
 chars = fdf_get('TS.VoltagePlacement','central')
@@ -271,24 +262,24 @@ GF_INV_EQUI_PART = UseBulk .and. UpdateDMCR
 ! then this is perfectly acceptable!
 if ( TSmode .and. trim(GFFileL) == trim(GFFileR) ) then ! Has to be case-sensitive !
    ! Read in the total number (if NumUsedAtoms is not the full...)
-   call ts_read_TSHS_na(HSFileL,i)
+   call ts_read_TSHS_na(HSFile(ElLeft),i)
 
    ! They are the same
    if ( IsVolt ) call die("The same Green's function file &
         &can not be used in a bias calculation.")
-   if ( trim(HSFileL) /= trim(HSFileR) ) &
+   if ( trim(HSFile(ElLeft)) /= trim(HSFile(ElRight)) ) &
         call die("The same Green's function file &
         &can not be used if you request different &
         &electrode files.")
-   if ( NUsedAtomsL /= NUsedAtomsR .or. &
-        NUsedAtomsL /= i ) &
+   if ( UsedAtoms(ElLeft) /= UsedAtoms(ElRight) .or. &
+        UsedAtoms(ElLeft) /= i ) &
         call die("The same Green's function file &
         &can not be used if you do not request all &
         &atoms in the electrode!")
 else if ( (.not. IsVolt) .and. & ! for non-bias
-     trim(HSFileL) == trim(HSFileR) .and. & ! for same TSHS files
-     NUsedAtomsL == NUsedAtomsR .and. & ! for same number of atoms used
-     i == NUsedAtomsL ) then ! for using ALL atoms in the electrode
+     trim(HSFile(ElLeft)) == trim(HSFile(ElRight)) .and. & ! for same TSHS files
+     UsedAtoms(ElLeft) == UsedAtoms(ElRight) .and. & ! for same number of atoms used
+     i == UsedAtoms(ElLeft) ) then ! for using ALL atoms in the electrode
    ! For now this notification has been disabled, but in reality 
    ! could be enforced...
    !if ( IONode ) then
@@ -360,14 +351,14 @@ end if
   write(*,10)'ts_read_options: Left GF File                 =', trim(GFFileL)
   write(*,10)'ts_read_options: Right GF File                =', trim(GFFileR)
   write(*,1) 'ts_read_options: Re-use GF file if exists     =', ReUseGF
-  write(*,10)'ts_read_options: Left electrode TSHS file     =', trim(HSFileL)
-  write(*,5) 'ts_read_options: # atoms used in left elec.   = ', NUsedAtomsL
+  write(*,10)'ts_read_options: Left electrode TSHS file     =', trim(HSFile(ElLeft))
+  write(*,5) 'ts_read_options: # atoms used in left elec.   = ', UsedAtoms(ElLeft)
   write(*,'(a,i3,'' X '',i3)') &
-             'ts_read_options: Left elec. repetition A1/A2  = ', NRepA1L,NRepA2L
-  write(*,10)'ts_read_options: Right electrode TSHS file    =', trim(HSFileR)
-  write(*,5) 'ts_read_options: # atoms used in right elec.  = ', NUsedAtomsR
+             'ts_read_options: Left elec. repetition A1/A2  = ', RepA1(ElLeft),RepA2(ElLeft)
+  write(*,10)'ts_read_options: Right electrode TSHS file    =', trim(HSFile(ElRight))
+  write(*,5) 'ts_read_options: # atoms used in right elec.  = ', UsedAtoms(ElRight)
   write(*,'(a,i3,'' X '',i3)') &
-             'ts_read_options: Right elec. repetition A1/A2 = ', NRepA1R,NRepA2R
+             'ts_read_options: Right elec. repetition A1/A2 = ', RepA1(ElRight),RepA2(ElRight)
 
 
  write(*,'(2a,/)') 'ts_read_options: ', repeat('*', 62)
@@ -518,33 +509,32 @@ end if
 
 contains 
   
-  subroutine check_HSfile(LR,HSFile,NUsedAtoms,NUsedOrbs)
+  subroutine check_HSfile(LR,el)
     character(len=*), intent(in) :: LR
-    character(len=*), intent(in) :: HSFile
-    integer, intent(inout) :: NUsedAtoms, NUsedOrbs
+    type(Elec), intent(inout) :: el
     integer :: tmp_NUsedAtoms
     integer, allocatable, dimension(:) :: lasto
     logical :: exist
     if ( TSmode ) then
 ! Check existance for left Electrode.TSHS
-       inquire(file=TRIM(HSFile),exist=exist)
+       inquire(file=TRIM(HSfile(el)),exist=exist)
        if ( .not. exist ) then
           call die(trim(LR)//" electrode file does not exist. &
-               &Please create electrode '"//trim(HSFile)//"' first.")
+               &Please create electrode '"//trim(HSFile(el))//"' first.")
        end if
        ! Read in the number of atoms in the HSfile
-       call ts_read_TSHS_na(HSFile,tmp_NUsedAtoms)
+       call ts_read_TSHS_na(HSFile(el),tmp_NUsedAtoms)
 
-       if ( NUsedAtoms < 0 ) then
-          NUsedAtoms = tmp_NUsedAtoms
-       else if ( NUsedAtoms == 0 ) then
+       if ( UsedAtoms(el) < 0 ) then
+          el%UsedAtoms = tmp_NUsedAtoms
+       else if ( UsedAtoms(el) == 0 ) then
           if(IONode) &
                write(*,*) "You need at least one atom in the electrode."
           call die("None atoms requested for electrode calculation.")
-       else if ( tmp_NUsedAtoms < NUsedAtoms ) then
+       else if ( tmp_NUsedAtoms < UsedAtoms(el) ) then
           if (IONode) then
              write(*,*) "# of requested atoms is larger than available."
-             write(*,*) "Requested: ",NUsedAtoms
+             write(*,*) "Requested: ",UsedAtoms(el)
              write(*,*) "Available: ",tmp_NUsedAtoms
           end if
           call die("Error on requested atoms.")
@@ -555,17 +545,17 @@ contains
        ! Read in lasto to determine the number of orbitals 
        ! used in the electrode
        allocate(lasto(0:tmp_NUsedAtoms))
-       call ts_read_TSHS_lasto(HSFile,tmp_NUsedAtoms,lasto)
-       NUsedOrbs = 0
+       call ts_read_TSHS_lasto(HSFile(el),tmp_NUsedAtoms,lasto)
+       el%UsedOrbs = 0
        if ( LR == 'Left' ) then
           ! We use the first atoms
-          do i = 1 , NUsedAtoms
-             NUsedOrbs = NUsedOrbs + lasto(i)-lasto(i-1)
+          do i = 1 , UsedAtoms(el)
+             el%UsedOrbs = el%UsedOrbs + lasto(i)-lasto(i-1)
           end do
        else
           ! We use the last atoms
-          do i = tmp_NUsedAtoms - NUsedAtoms + 1 , tmp_NUsedAtoms
-             NUsedOrbs = NUsedOrbs + lasto(i)-lasto(i-1)
+          do i = tmp_NUsedAtoms - UsedAtoms(el) + 1 , tmp_NUsedAtoms
+             el%UsedOrbs = el%UsedOrbs + lasto(i)-lasto(i-1)
           end do
        end if
     end if

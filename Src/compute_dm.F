@@ -35,7 +35,7 @@
       use m_ts_in_siesta,   only : transiesta
       use m_ts_mem,         only : transiesta_mem
       use m_ts_tri,         only : transiesta_tri
-      use m_ts_mem_sparsity,only : ts_mem_init
+      use m_ts_sparse,      only : ts_sparse_init
       use m_ts_sparse_helper,only : ts_print_charges
 #endif /* TRANSIESTA */
       implicit none
@@ -106,7 +106,7 @@
            if ( TSiscf == 1 ) then
               ! This is a first Transiesta run, we need to initialize
               ! the sparsity patterns...
-              call ts_mem_init(Gamma, block_dist, sparse_pattern,
+              call ts_sparse_init(Gamma, block_dist, sparse_pattern,
      &             na_u, lasto)
               call ts_print_charges(block_dist, sparse_pattern, 
      &             na_u, lasto, nspin, maxnh, Dscf, S)

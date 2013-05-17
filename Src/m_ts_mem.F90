@@ -98,18 +98,14 @@ contains
 
     use m_ts_options, only : IsVolt, UseBulk, UpdateDMCR
     use m_ts_options, only : VoltL, VoltR
-    use m_ts_options, only : NRepA1L, NRepA2L
-    use m_ts_options, only : NRepA1R, NRepA2R
+    use m_ts_electype
+    use m_ts_options, only : ElLeft, ElRight
     use m_ts_options, only : GFFileL, GFFileR
     use m_ts_options, only : na_BufL => NBufAtL
     use m_ts_options, only : na_BufR => NBufAtR
-    use m_ts_options, only : na_L_HS => NUsedAtomsL
-    use m_ts_options, only : no_L_HS => NUsedOrbsL
-    use m_ts_options, only : na_R_HS => NUsedAtomsR
-    use m_ts_options, only : no_R_HS => NUsedOrbsR
 
-    use m_ts_mem_sparsity, only : ts_sp_uc
-    use m_ts_mem_sparsity, only : tsup_sp_uc
+    use m_ts_sparse, only : ts_sp_uc
+    use m_ts_sparse, only : tsup_sp_uc
     
     ! Self-energy retrival and expansion
     use m_ts_elec_se
@@ -149,6 +145,8 @@ contains
 ! * Buffer regions
     integer :: no_BufL, no_BufR
 ! * Electrode regions
+    integer :: na_L_HS, na_R_HS
+    integer :: no_L_HS, no_R_HS
     integer :: na_L, no_L, na_R, no_R
     integer, allocatable :: lasto_L(:), lasto_R(:)
 ! * Computational region..
@@ -216,10 +214,14 @@ contains
     call timer('TS_calc',1)
     
     ! Calculate the number of used atoms in left/right
-    na_L = na_L_HS * NRepA1L * NRepA2L
-    no_L = no_L_HS * NRepA1L * NRepA2L
-    na_R = na_R_HS * NRepA1R * NRepA2R
-    no_R = no_R_HS * NRepA1R * NRepA2R
+    na_L_HS = UsedAtoms(ElLeft)
+    na_R_HS = UsedAtoms(ElRight)
+    no_L_HS = UsedOrbs(ElLeft)
+    no_R_HS = UsedOrbs(ElRight)
+    na_L = TotUsedAtoms(ElLeft)
+    no_L = TotUsedOrbs(ElLeft)
+    na_R = TotUsedAtoms(ElRight)
+    no_R = TotUsedOrbs(ElRight)
 
     ! Calculate the number of orbitals not used (i.e. those 
     ! in the buffer regions)
@@ -232,19 +234,19 @@ contains
     allocate(lasto_L(0:na_L_HS))
     lasto_L(0) = 0
     ia_E = 0
-    do ia = na_BufL + 1 , na_BufL + na_L, NRepA1L * NRepA2L
+    do ia = na_BufL + 1 , na_BufL + na_L, Rep(ElLeft)
        ia_E = ia_E + 1
        lasto_L(ia_E) = lasto_L(ia_E-1) + lasto(ia) - lasto(ia-1)
     end do
     allocate(lasto_R(0:na_R_HS))
     lasto_R(0) = 0
     ia_E = 0
-    do ia = na_u - na_R - na_BufR + 1 , na_u - na_BufR , NRepA1R * NRepA2R
+    do ia = na_u - na_R - na_BufR + 1 , na_u - na_BufR , Rep(ElRight)
        ia_E = ia_E + 1
        lasto_R(ia_E) = lasto_R(ia_E-1) + lasto(ia) - lasto(ia-1)
     end do
     ! Add to memory-management...
-    call memory('A','I',na_R_HS+na_L_HS+2,'transiesta')
+    call memory('A','I',na_L_HS+na_R_HS+2,'transiesta')
 
     ! Number of orbitals in TranSIESTA
     no_u_TS = no_u - no_BufL - no_BufR
@@ -280,14 +282,14 @@ contains
 
 ! Read in the headers of the surface-Green's function files...
 ! Left
-    call read_Green(uGFL,TSiscf==1,VoltL,ts_nkpnt,NEn,na_L_HS,  &
-         NRepA1L,NRepA2L,.false.,no_L_HS,nspin, &
+    call read_Green(uGFL,TSiscf==1,VoltL,ts_nkpnt,NEn,  &
+         ElLeft,.false.,nspin, &
          nkparL,kparL,wkparL, &
          nqL,wqL,qLb)
 
 ! Right
-    call read_Green(uGFR,TSiscf==1,VoltR,ts_nkpnt,NEn,na_R_HS, &
-         NRepA1R,NRepA2R,.false.,no_R_HS,nspin,  &
+    call read_Green(uGFR,TSiscf==1,VoltR,ts_nkpnt,NEn, &
+         ElRight,.false.,nspin,  &
          nkparR,kparR,wkparR, &
          nqR,wqR,qRb)
 
@@ -336,14 +338,14 @@ contains
     end if
 
     ! Allocate the left-right electrode quantities that we need
-    allocate(HAAL(no_L_HS,no_L_HS,NRepA1L*NRepA2L))
-    allocate(SAAL(no_L_HS,no_L_HS,NRepA1L*NRepA2L))
-    ispin = no_L_HS**2*NRepA1L*NRepA2L*2
+    allocate(HAAL(no_L_HS,no_L_HS,Rep(ElLeft)))
+    allocate(SAAL(no_L_HS,no_L_HS,Rep(ElLeft)))
+    ispin = no_L_HS**2*Rep(ElLeft)*2
     allocate(SigmaL(no_L,no_L))
     ispin = ispin + no_L**2
-    allocate(HAAR(no_R_HS,no_R_HS,NRepA1R*NRepA2R))
-    allocate(SAAR(no_R_HS,no_R_HS,NRepA1R*NRepA2R))
-    ispin = ispin + no_R_HS**2*NRepA1R*NRepA2R*2
+    allocate(HAAR(no_R_HS,no_R_HS,Rep(ElRight)))
+    allocate(SAAR(no_R_HS,no_R_HS,Rep(ElRight)))
+    ispin = ispin + no_R_HS**2*Rep(ElRight)*2
     allocate(SigmaR(no_R,no_R))
     ispin = ispin + no_R**2
     call memory('A','Z',ispin,'transiesta')
@@ -552,20 +554,24 @@ contains
              ! Calculate the left-right Sigma
              if ( UseBulk ) then
 
-                call UC_expansion_Sigma_Bulk(no_L_HS, no_L, NRepA1L, NRepA2L, &
+                call UC_expansion_Sigma_Bulk(no_L_HS, no_L, &
+                     RepA1(ElLeft), RepA2(ElLeft), &
                      na_L_HS, lasto_L, nqL, qLb, wqL, HAAL, SAAL, GAAL, SigmaL, &
                      nzwork,zwork)
                 
-                call UC_expansion_Sigma_Bulk(no_R_HS, no_R, NRepA1R, NRepA2R, &
+                call UC_expansion_Sigma_Bulk(no_R_HS, no_R, &
+                     RepA1(ElRight), RepA2(ElRight), &
                      na_R_HS, lasto_R, nqR, qRb, wqR, HAAR, SAAR, GAAR, SigmaR, &
                      nzwork,zwork)
 
              else
-                call UC_expansion_Sigma(Z,no_L_HS, no_L,NRepA1L, NRepA2L, &
+                call UC_expansion_Sigma(Z,no_L_HS, no_L, &
+                     RepA1(ElLeft), RepA2(ElLeft), &
                      na_L_HS, lasto_L, nqL, qLb, wqL, HAAL, SAAL, GAAL, SigmaL, &
                      nzwork,zwork)
 
-                call UC_expansion_Sigma(Z,no_R_HS, no_R, NRepA1R, NRepA2R, &
+                call UC_expansion_Sigma(Z,no_R_HS, no_R, &
+                     RepA1(ElRight), RepA2(ElRight), &
                      na_R_HS, lasto_R, nqR, qRb, wqR, HAAR, SAAR, GAAR, SigmaR, &
                      nzwork,zwork)
              end if
@@ -639,7 +645,7 @@ contains
              
              ! Do the left electrode
              call UC_expansion_Sigma_GammaT(UseBulk,Z,no_L_HS,no_L, &
-                  NRepA1L, NRepA2L, &
+                  RepA1(ElLeft), RepA2(ElLeft), &
                   na_L_HS,lasto_L,nqL,qLb,wqL, &
                   HAAL, SAAL, GAAL, &
                   SigmaL, GammaLT, & 
@@ -647,7 +653,7 @@ contains
 
              ! Do the right electrode
              call UC_expansion_Sigma_GammaT(UseBulk,Z,no_R_HS,no_R, &
-                  NRepA1R, NRepA2R, &
+                  RepA1(ElRight), RepA2(ElRight), &
                   na_R_HS,lasto_R,nqR,qRb,wqR, &
                   HAAR, SAAR, GAAR, &
                   SigmaR, GammaRT, & 
@@ -1040,8 +1046,8 @@ contains
            ! mem_sparsity module...
            ju = l_col(ind) - no_BufL
 
-           zD(ind) = zD(ind) - GF(ju,iu) * DMfact
-           zE(ind) = zE(ind) - GF(ju,iu) * EDMfact
+           zD(ind) = zD(ind) - GF(iu,ju) * DMfact
+           zE(ind) = zE(ind) - GF(iu,ju) * EDMfact
         end do
      end do
 
@@ -1155,8 +1161,8 @@ contains
            ! mem_sparsity module...
            ju = l_col(ind) - no_BufL
      
-           dD(ind) = dD(ind) - dimag( GF(ju,iu) * DMfact  )
-           dE(ind) = dE(ind) - dimag( GF(ju,iu) * EDMfact )
+           dD(ind) = dD(ind) - dimag( GF(iu,ju) * DMfact  )
+           dE(ind) = dE(ind) - dimag( GF(iu,ju) * EDMfact )
 
         end do
      end do

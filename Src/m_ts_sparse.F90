@@ -34,7 +34,7 @@
 !     I think it will help the unexperienced in delving into the 
 !     wonderful art of Transiestaing... :)
 !  
-module m_ts_mem_sparsity
+module m_ts_sparse
 
   use class_Sparsity
 
@@ -65,23 +65,17 @@ contains
 ! memory reduced TranSIESTA code.
 ! This means collecting information about which region needs
 ! update, etc.
-  subroutine ts_mem_init(Gamma,block_dist,sparse_pattern,na_u,lasto)
+  subroutine ts_sparse_init(Gamma,block_dist,sparse_pattern,na_u,lasto)
 
     use class_OrbitalDistribution
 
     ! Used when creating the update region...
     use m_ts_options, only : UseBulk, UpdateDMCR
 
-    ! left stuff
+    use m_ts_electype
+    use m_ts_options, only : ElLeft, ElRight
     use m_ts_options, only : na_BufL => NBufAtL
-    !use m_ts_options, only : na_L_HS => NUsedAtomsL
-    use m_ts_options, only : no_L_HS => NUsedOrbsL
-    use m_ts_options, only : NRepA1L, NRepA2L
-    ! right stuff
     use m_ts_options, only : na_BufR => NBufAtR
-    !use m_ts_options, only : na_R_HS => NUsedAtomsR
-    use m_ts_options, only : no_R_HS => NUsedOrbsR
-    use m_ts_options, only : NRepA1R, NRepA2R
 
 ! **********************
 ! * INPUT variables    *
@@ -107,9 +101,9 @@ contains
 
     ! Calculate the number of used atoms/orbitals in left/right
     !na_L = na_L_HS * NRepA1L * NRepA2L
-    no_L = no_L_HS * NRepA1L * NRepA2L
+    no_L = TotUsedOrbs(ElLeft)
     !na_R = na_R_HS * NRepA1R * NRepA2R
-    no_R = no_R_HS * NRepA1R * NRepA2R
+    no_R = TotUsedOrbs(ElRight)
 
     ! Calculate the number of orbitals not used (i.e. those 
     ! in the buffer regions)
@@ -139,7 +133,7 @@ contains
          no_u_LCR, &
          ts_sp_uc,tsup_sp_uc)
         
-  end subroutine ts_mem_init
+  end subroutine ts_sparse_init
 
 
 ! Returns the global sparsity pattern for the transiesta region
@@ -214,8 +208,7 @@ contains
     ! Logical for determining the region
     logical :: i_in_C, j_in_C
 
-    no_local = nrows  (s_sp)
-    no_u     = nrows_g(s_sp)
+    call retrieve(s_sp,nrows=no_local,nrows_g=no_u)
 
     ! Create the Fake distribution
     ! The Block-size is the number of orbitals, i.e. all on the first processor
@@ -230,9 +223,7 @@ contains
 #endif
 
     ! point to the local sparsity pattern arrays
-    l_ncol   => n_col   (s_sp)
-    l_ptr    => list_ptr(s_sp)
-    l_col    => list_col(s_sp)
+    call retrieve(s_sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
 
 #ifdef MPI
     call glob_sparse_numh(no_local,no_u,l_ncol,l_ncolg)
@@ -279,12 +270,10 @@ contains
 #endif
 
     ! Immediately point the global arrays to their respective parts
-    l_ncol => n_col   (sp_uc)
-    l_ptr  => list_ptr(sp_uc)
-    l_col  => list_col(sp_uc)
+    call retrieve(sp_uc,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+         nnzs=maxnhg)
 
     ! allocate space for the MASK to create the TranSIESTA GLOBAL region
-    maxnhg = nnzs(sp_uc)
     allocate(lup_DM(maxnhg))
     call memory('A','L',maxnhg,'transiesta')
 
@@ -378,12 +367,10 @@ contains
     call delete(sp_uc)
 
     ! obtain the TranSIESTA GLOBAL sparsity
-    l_ncol => n_col   (ts_sp)
-    l_ptr  => list_ptr(ts_sp)
-    l_col  => list_col(ts_sp)
+    call retrieve(ts_sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+         nnzs=maxnhg)
 
     ! Reallocate the MASK to figure out the update sparsity pattern
-    maxnhg = nnzs(ts_sp)
     allocate(lup_DM(maxnhg))
     call memory('A','L',maxnhg,'transiesta')
 
@@ -511,4 +498,4 @@ contains
 #endif
   end subroutine ts_Sparsity_Global
 
-end module m_ts_mem_sparsity
+end module m_ts_sparse

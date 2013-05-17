@@ -232,9 +232,8 @@ contains
     use parallel,     only : IONode
     use units,        only : Ang
     use m_ts_options, only : na_BufL => NBufAtL, na_BufR => NBufAtR
-    use m_ts_options, only : na_L_HS => NUsedAtomsL,na_R_HS => NUsedAtomsR
-    use m_ts_options, only : NRepA1L, NRepA2L
-    use m_ts_options, only : NRepA1R, NRepA2R
+    use m_ts_electype
+    use m_ts_options, only : ElLeft, ElRight
     
 ! ***********************
 ! * INPUT variables     *
@@ -256,12 +255,12 @@ contains
 
     left_z_max  = -huge(1._dp)
     right_z_min = huge(1._dp)
-    do i = na_BufL + 1 , na_BufL + na_L_HS * NRepA1L * NRepA2L
+    do i = na_BufL + 1 , na_BufL + TotUsedAtoms(ElLeft)
        if ( left_z_max < xa(V_DIR,i) ) then
           left_z_max = xa(V_DIR,i) + 0.25_dp ! We add 0.25 Bohr for a small distance to the electrode
        end if
     end do
-    do i = na_u - na_BufR - na_R_HS * NRepA1R * NRepA2R + 1 , na_u - na_BufR
+    do i = na_u - na_BufR - TotUsedAtoms(ElRight) + 1 , na_u - na_BufR
        if ( right_z_min > xa(V_DIR,i) ) then
           right_z_min = xa(V_DIR,i) - 0.25_dp ! We add 0.25 Bohr for a small distance to the electrode
        end if

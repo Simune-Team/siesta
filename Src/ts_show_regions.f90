@@ -1,4 +1,6 @@
-subroutine ts_show_regions(ucell,na_u,xa,naBufL,naElecL,naElecR,naBufR,NA1L,NA2L,NA1R,NA2R)
+subroutine ts_show_regions(ucell,na_u,xa,naBufL, &
+     ElLeft, ElRight,naBufR)
+  use m_ts_electype
   use precision, only : dp
   use units, only : Ang
   use parallel, only : IONode
@@ -9,8 +11,8 @@ subroutine ts_show_regions(ucell,na_u,xa,naBufL,naElecL,naElecR,naBufR,NA1L,NA2L
   real(dp), intent(in) :: ucell(3,3)
   integer, intent(in)  :: na_u
   real(dp), intent(in) :: xa(3,na_u)
-  integer, intent(in)  :: naBufL, naElecL, naElecR, naBufR
-  integer, intent(in)  :: NA1L, NA2L, NA1R, NA2R
+  type(Elec), intent(in) :: ElLeft, ElRight
+  integer, intent(in)  :: naBufL, naBufR
 
 ! ********************
 ! * LOCAL variables  *
@@ -24,10 +26,10 @@ subroutine ts_show_regions(ucell,na_u,xa,naBufL,naElecL,naElecR,naBufR,NA1L,NA2L
 
   write(*,'(/,a)') 'transiesta: Atomic coordinates and regions (Ang):'
   call out_REGION(ia,naBufL,'Left buffer','/')
-  call out_REGION(ia,naElecL*NA1L*NA2L,'Left electrode','#')
+  call out_REGION(ia,TotUsedAtoms(ElLeft),'Left electrode','#')
 
-  mid = (na_u - naBufL-naElecL*NA1L*NA2L-naElecR*NA1R*NA2R-naBufR+1) / 2
-  do i = 1 , na_u - naBufL-naElecL*NA1L*NA2L-naElecR*NA1R*NA2R-naBufR
+  mid = (na_u - naBufL-TotUsedAtoms(ElLeft)-TotUsedAtoms(ElRight)-naBufR+1) / 2
+  do i = 1 , na_u - naBufL-TotUsedAtoms(ElLeft)-TotUsedAtoms(ElRight)-naBufR
      ia = ia + 1
      if ( i == mid ) then
         write(*,'(tr1,3(tr2,f12.7),tr8,a)') &
@@ -38,7 +40,7 @@ subroutine ts_show_regions(ucell,na_u,xa,naBufL,naElecL,naElecR,naBufR,NA1L,NA2L
      end if
   end do
 
-  call out_REGION(ia,naElecR*NA1R*NA2R,'Right electrode','#')
+  call out_REGION(ia,TotUsedAtoms(ElRight),'Right electrode','#')
   call out_REGION(ia,naBufR,'Right buffer','/')
 
   write(*,*)

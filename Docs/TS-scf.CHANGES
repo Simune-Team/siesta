@@ -1,4 +1,81 @@
 ----------------------------------------------------
+May 17, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-26
+Added electrode TYPE and generalized TriMat3, bugfixes in TS
+
+* Added a type to contain the transiesta electrodes
+  It contains the following information:
+    - HSfile
+    - Atoms
+    - Used atoms
+    - Orbitals
+    - Used orbitals
+    - Replication in A1/A2/A3 directions
+  
+  The type resides in m_ts_electype and also has
+  function calls to retrieve all the information without using the
+  type % denotation.
+
+  TODO instantiate this type in TBTrans_rep
+
+* Made the tri-diagonal matrix class to a generic one.
+  This will accomodate a further optimization in the transiesta
+  core eventually.
+  Prepared the insertion of the self-energies to comply with
+  an arbitrary tri-diagonal matrix format
+
+* The non-equilibrium integration seems to be mysterious.
+  In the Maslyuk version he uses the transposed, which could
+  be due to his assumptions on the Gf and Gamma properties:
+    Gf = Gf ^ T
+  and hence we should not transpose here.
+  In the add_DMnonEq routines we have made it the same element
+  that is updated (however it makes the error-estimate worse
+  which could mean that it is wrong?)
+  TODO check with Mads
+
+* Added a routine for the sparsity class to retrieve information
+  in one line.
+  It can easily be extended as everything has to be named arguments
+  (for now I have not added the DUMMY == die argument which forces
+   the use of named arguments)
+  The same idea could be extended to the other classes if necessary.
+  I, at least, think it makes sense to not pollute every small routine
+  with trivial calls.
+  It has been implemented in the routines of transiesta.
+  For the classes it has the interface:
+    call retrieve(this,<list of NAMED arguments with respective
+                        equivalent function names>)
+
+* Renamed module m_ts_mem_sparsity to a more meaningful name:
+    m_ts_sparse
+
+removed:
+  Src/class_TriMat3.F90
+  Src/class_TriMat3.T90
+added:
+  Src/class_TriMat.F90
+  Src/class_TriMat.T90
+  Src/m_ts_electype.F90
+renamed:
+  Src/m_ts_mem_sparsity.F90 => Src/m_ts_sparse.F90
+modified:
+  Src/Makefile
+  Src/class_Sparsity.F90
+  Src/compute_dm.F
+  Src/m_ts_electrode.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_in_siesta.F
+  Src/m_ts_mem.F90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_tri.F90
+  Src/m_ts_tri_scat.F90
+  Src/m_ts_voltage.F90
+  Src/ts_init.F90
+  Src/ts_show_regions.f90
+  Src/m_ts_sparse.F90
+
+----------------------------------------------------
 May 8, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-25
 Added the voltage drop to only occur in the central region
 

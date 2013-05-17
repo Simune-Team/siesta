@@ -95,15 +95,11 @@ contains
     end if
 
     ! Create all the local sparsity super-cell
-    l_ncol => n_col   (sp)
-    l_ptr  => list_ptr(sp)
-    l_col  => list_col(sp)
+    call retrieve(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
 
     ! obtain the full sparsity unit-cell
     sp_k   => spar    (SpArrH)
-    k_ncol => n_col   (sp_k)
-    k_ptr  => list_ptr(sp_k)
-    k_col  => list_col(sp_k)
+    call retrieve(sp_k, n_col=k_ncol,list_ptr=k_ptr,list_col=k_col)
 
     ! The boundary at the right buffer
     no_max = no_u - no_BufR
@@ -224,10 +220,8 @@ contains
     integer :: nr, io, ind, jo, rin, rind
 
     s    => spar(SpArrH)
-    nr   = nrows_g(s)
-    l_ncol => n_col   (s)
-    l_ptr  => list_ptr(s)
-    l_col  => list_col(s)
+    call retrieve(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+         nrows_g=nr)
 
     zH     => val(SpArrH)
     zS     => val(SpArrS)
@@ -337,15 +331,11 @@ contains
     end if
 
     ! Create all the local sparsity super-cell
-    l_ncol => n_col   (sp)
-    l_ptr  => list_ptr(sp)
-    l_col  => list_col(sp)
+    call retrieve(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
 
     ! obtain the full sparsity unit-cell
     sp_G   => spar(SpArrH)
-    k_ncol => n_col   (sp_G)
-    k_ptr  => list_ptr(sp_G)
-    k_col  => list_col(sp_G)
+    call retrieve(sp_G, n_col=k_ncol,list_ptr=k_ptr,list_col=k_col)
     
     ! initialize to 0
     call init_val(SpArrH)
@@ -460,11 +450,8 @@ contains
     integer :: nr, io, ind, jo, rin, rind
     
     s    => spar(SpArrH)
-    nr   = nrows_g(s)
-    l_ncol => n_col   (s)
-    l_ptr  => list_ptr(s)
-    l_col  => list_col(s)
-
+    call retrieve(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+         nrows_g=nr)
     dH     => val(SpArrH)
     dS     => val(SpArrS)
 
@@ -576,18 +563,12 @@ contains
     integer, pointer :: lup_ncol(:), lup_ptr(:), lup_col(:)
     integer :: lnr, lio, lind, io, jo, ind, nr
 
-    l_ncol => n_col   (sp)
-    l_ptr  => list_ptr(sp)
-    l_col  => list_col(sp)
-    lup_ncol => n_col   (up_sp)
-    lup_ptr  => list_ptr(up_sp)
-    lup_col  => list_col(up_sp)
+    call retrieve(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+         nrows=lnr,nrows_g=nr)
+    call retrieve(up_sp, n_col=lup_ncol,list_ptr=lup_ptr,list_col=lup_col)
      
-    ! Number of orbitals in the SIESTA unit-cell
     ! Remember that this is a sparsity pattern which contains
     ! a subset of the SIESTA pattern.
-    lnr = nrows(sp)
-    nr  = nrows_g(sp)
      
     if ( nr /= nrows(up_sp) ) call die('The sparsity format is not as &
          &expected.')
@@ -650,21 +631,15 @@ contains
     real(dp), pointer :: dD(:), dE(:)
     integer :: lnr, lio, lind, io, ind, nr, ljo
 
-    l_ncol => n_col   (sp)
-    l_ptr  => list_ptr(sp)
-    l_col  => list_col(sp)
-    s        => spar(spDM)
-    lup_ncol => n_col   (s)
-    lup_ptr  => list_ptr(s)
-    lup_col  => list_col(s)
+    call retrieve(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+         nrows=lnr,nrows_g=nr)
+    s => spar(spDM)
+    call retrieve(s, n_col=lup_ncol,list_ptr=lup_ptr,list_col=lup_col)
     dD     => val(spDM)
     dE     => val(spEDM)
      
-    ! Number of orbitals in the SIESTA unit-cell
     ! Remember that this is a sparsity pattern which contains
     ! a subset of the SIESTA pattern.
-    lnr = nrows(sp)
-    nr  = nrows_g(sp)
      
     if ( nr /= nrows(s) ) call die('The sparsity format is not as &
          &expected.')
@@ -739,22 +714,15 @@ contains
     integer :: lio, io, jo, ind, nr, ljo
     integer :: lnr, lind, rin, rind
 
-    l_ncol => n_col   (sp)
-    l_ptr  => list_ptr(sp)
-    l_col  => list_col(sp)
-
-    s        => spar(spDM)
-    lup_ncol => n_col   (s)
-    lup_ptr  => list_ptr(s)
-    lup_col  => list_col(s)
+    call retrieve(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+         nrows=lnr,nrows_g=nr)
+    s => spar(spDM)
+    call retrieve(s, n_col=lup_ncol,list_ptr=lup_ptr,list_col=lup_col)
     zD     => val(spDM)
     zE     => val(spEDM)
      
-    ! Number of orbitals in the SIESTA unit-cell
     ! Remember that this is a sparsity pattern which contains
     ! a subset of the SIESTA pattern.
-    lnr = nrows(sp)
-    nr  = nrows_g(sp)
      
     if ( nr /= nrows(s) ) call die('The sparsity format is not as &
          &expected.')
@@ -793,8 +761,9 @@ contains
              kx = k(1) * xij(1,lind) + &
                   k(2) * xij(2,lind) + &
                   k(3) * xij(3,lind)
-             
-             ! There is no need to take the conjugate and half it (it is the same number..)
+
+             ! There is no need to take the conjugate and half it 
+             ! (it is the same number..)
              ph = cdexp(dcmplx(0._dp,1._dp)*kx)
 
              DM(lind)  = DM(lind)  + aimag( ph*zD(ind) )
@@ -814,9 +783,8 @@ contains
 ! ##   Mixing the Density matrixes according to the smallest      ##
 ! ##    realspace integral                                        ##
 ! ##                                                              ##
-! ##  Version 011200  Kurt Stokbro, ks@mic.dtu.dk                 ##
-! ##  Heavily edited by Nick Papior Andersen to be used with the  ##
-! ##  full sparsity pattern in transiesta                         ##
+! ##  Sparse version and corrected the error-estimation           ##
+! ##                                                              ##
 ! ##################################################################
   subroutine weightDM(no_C_L, no_C_R, &
        SpArrDML , SpArrDMR , SpArrDMneqL, SpArrDMneqR, &
@@ -835,7 +803,7 @@ contains
 ! *********************
 ! * INPUT variables   *
 ! *********************
-    integer, intent(in) :: no_C_L, no_C_R
+    integer, intent(in)  :: no_C_L, no_C_R
 ! *********************
 ! * OUTPUT variables  *
 ! *********************
@@ -862,7 +830,7 @@ contains
     integer :: nr
     integer :: io, jo, ind, j
     ! For error estimation
-    integer :: eM_i,eM_j,neM_i,neM_j
+    integer  :: eM_i,eM_j,neM_i,neM_j
     real(dp) :: eM, neM, tmp
 
 #ifdef TRANSIESTA_DEBUG
@@ -872,10 +840,8 @@ contains
     ! TODO Enforce that sparsity is the same
     ! (however, we know that they are the same.
     sp => spar(SpArrDML)
-    l_ncol => n_col   (sp)
-    l_ptr  => list_ptr(sp)
-    l_col  => list_col(sp)
-    nr = nrows(sp)
+    call retrieve(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+         nrows=nr)
     ! Obtain the values in the arrays...
     DML => val(SpArrDML)
     DMR => val(SpArrDMR)
@@ -894,7 +860,7 @@ contains
        do j = 1 , l_ncol(io)
 
           ind = l_ptr(io)+j
-          ! Retrive the connecting orbital
+          ! Retrieve the connecting orbital
           jo = l_col(ind)
 
           wL = DMneqL(ind)*DMneqL(ind)
@@ -934,7 +900,7 @@ contains
        end do
     end do
 
-    call print_error_estimate(IONode,eM,eM_i,eM_j,neM,neM_i,neM_j)    
+    call print_error_estimate(IONode,eM,eM_i,eM_j,neM,neM_i,neM_j)
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS weightDM' )
@@ -968,7 +934,7 @@ contains
 ! *********************
 ! * INPUT variables   *
 ! *********************
-    integer, intent(in) :: no_C_L, no_C_R
+    integer, intent(in)  :: no_C_L, no_C_R
 ! *********************
 ! * OUTPUT variables  *
 ! *********************
@@ -1006,10 +972,8 @@ contains
     ! TODO Enforce that sparsity is the same
     ! (however, we know that they are the same.
     sp => spar(SpArrDML)
-    l_ncol => n_col   (sp)
-    l_ptr  => list_ptr(sp)
-    l_col  => list_col(sp)
-    nr = nrows(sp)
+    call retrieve(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+         nrows=nr)
     ! Obtain the values in the arrays...
     DML => val(SpArrDML)
     DMR => val(SpArrDMR)
@@ -1028,7 +992,7 @@ contains
        do j = 1 , l_ncol(io)
 
           ind = l_ptr(io)+j
-          ! Retrive the connecting orbital
+          ! Retrieve the connecting orbital
           jo = l_col(ind)
 
           ! It is weighted in the density (not the imaginary part of 
@@ -1051,8 +1015,13 @@ contains
           ! We need to capture the error before the update...
           ztmp = DML(ind) + DMneqR(ind) - DMR(ind) - DMneqL(ind)
 
-          DML(ind)  = wL * (DML(ind) + DMneqR(ind)) &
-                    + wR * (DMR(ind) + DMneqL(ind))
+          ! We will only take the density (the real *\imaginary/* part
+          ! of the non-equilibrium contour has nothing to do 
+          ! with the density, only the local current)
+          ! Is this so with k-points?
+          ! TODO ASK MADS about weight and density
+          DML(ind)  = wL * (DML(ind) + dcmplx(0._dp,aimag(DMneqR(ind))) ) &
+                    + wR * (DMR(ind) + dcmplx(0._dp,aimag(DMneqL(ind))) )
           EDML(ind) = wL * EDML(ind) + wR * EDMR(ind)
 
           ! Do error estimation (we are only interested in 
@@ -1108,14 +1077,11 @@ contains
        na_u, lasto, &
        nspin, n_nzs, DM, S, &
        method)
+    use m_ts_electype
+    use m_ts_options, only : ElLeft, ElRight
     ! left stuff
     use m_ts_options, only : na_BufL => NBufAtL
-    use m_ts_options, only : no_L_HS => NUsedOrbsL
-    use m_ts_options, only : NRepA1L, NRepA2L
-    ! right stuff
     use m_ts_options, only : na_BufR => NBufAtR
-    use m_ts_options, only : no_R_HS => NUsedOrbsR
-    use m_ts_options, only : NRepA1R, NRepA2R
     use m_ts_method, only : get_scat_region
     use parallel, only : IONode, Node
 #ifdef MPI
@@ -1160,8 +1126,8 @@ contains
     if ( present(method) ) lmethod = method
 
     ! Calculate the buffer region and electrode orbitals
-    no_L = no_L_HS * NRepA1L * NRepA2L
-    no_R = no_R_HS * NRepA1R * NRepA2R
+    no_L = TotUsedOrbs(ElLeft)
+    no_R = TotUsedOrbs(ElRight)
 
     ! Calculate the number of orbitals not used (i.e. those 
     ! in the buffer regions)
@@ -1170,15 +1136,12 @@ contains
     ! Right has the last atoms
     no_BufR = lasto(na_u) - lasto(na_u - na_BufR)
 
+    ! Retrieve information about the sparsity pattern
+    call retrieve(sparse_pattern, &
+         n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+         nrows=no_lo,nrows_g=no_u)
 
-    no_lo = nrows  (sparse_pattern)
-    no_u  = nrows_g(sparse_pattern)
     no_u_TS = no_u - no_BufL - no_BufR
-
-    ! The sparse lists.
-    l_ncol => n_col   (sparse_pattern)
-    l_ptr  => list_ptr(sparse_pattern)
-    l_col  => list_col(sparse_pattern)
 
     ! Initialize charges
     Q = 0._dp

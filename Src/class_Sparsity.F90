@@ -6,6 +6,7 @@ module class_Sparsity
   
   public :: newSparsity
   public :: print_type
+  public :: retrieve
   public :: nrows, nrows_g
   public :: ncols, ncols_g
   public :: n_row, n_col
@@ -55,6 +56,10 @@ module class_Sparsity
 ! ******************
 ! Specific routines to retrieve direct information
 ! about the sparsity entries.
+
+  interface retrieve
+     module procedure retrieveSparsity
+  end interface
 
   interface n_col
      module procedure n_colSparsity
@@ -239,6 +244,30 @@ module class_Sparsity
     integer                    :: p
     p = this%data%list_col(i)
   end function list_colSparsityI
+
+  ! Generic routine for retrieval of information in one line...
+  subroutine retrieveSparsity(this,n_col,list_col,list_ptr, &
+       nrows,nrows_g,ncols,ncols_g, &
+       nnzs)
+    type(Sparsity), intent(inout) :: this
+    ! Optional arguments to retrieve all information with named arguments
+    integer, pointer    , optional :: n_col(:), list_col(:), list_ptr(:)
+    integer, intent(out), optional :: nrows, nrows_g
+    integer, intent(out), optional :: ncols, ncols_g
+    integer, intent(out), optional :: nnzs
+    
+    ! the arrays
+    if ( present(n_col) ) n_col => n_colSparsity(this)
+    if ( present(list_col) ) list_col => list_colSparsity(this)
+    if ( present(list_ptr) ) list_ptr => list_ptrSparsity(this)
+    ! the integers
+    if ( present(nrows) ) nrows = nrowsSparsity(this)
+    if ( present(nrows_g) ) nrows_g = nrows_gSparsity(this)
+    if ( present(ncols) ) ncols = ncolsSparsity(this)
+    if ( present(ncols_g) ) ncols_g = ncols_gSparsity(this)
+    if ( present(nnzs) ) nnzs = nnzsSparsity(this)
+
+  end subroutine retrieveSparsity
 
   subroutine printSparsity(sp)
     type(Sparsity), intent(in) :: sp

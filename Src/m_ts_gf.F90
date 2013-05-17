@@ -47,10 +47,10 @@ module m_ts_GF
 
 contains
 
-  subroutine do_Green(tElec, HSFile, GFFile, GFTitle, &
+  subroutine do_Green(tElec, El, GFFile, GFTitle, &
        ElecValenceBandBot, optReUseGF, &
        nkpnt,kpoint,kweight, &
-       NBufAt,NUsedAtoms,NA1,NA2, RemUCellDistance, &
+       NBufAt, RemUCellDistance, &
        ucell,xa,nua,NEn,contour,chem_shift,CalcDOS,ZBulkDOS,nspin)
     
     use precision,  only : dp
@@ -61,6 +61,7 @@ contains
     use mpi_siesta, only : MPI_Bcast, MPI_Integer, MPI_Logical
 #endif
     use m_ts_cctype
+    use m_ts_electype
     use m_ts_electrode, only : create_Green
 
     implicit none
@@ -69,7 +70,7 @@ contains
 ! * INPUT variables     *
 ! ***********************
     character(len=1), intent(in) :: tElec   ! 'L' for Left electrode, 'R' for right
-    character(len=*), intent(in) :: HSFile  ! The electrode TSHS file
+    type(Elec),       intent(in) :: El
     character(len=*), intent(in) :: GFFile  ! The electrode GF file to be saved to
     character(len=*), intent(in) :: GFTitle ! The title to be written in the GF file
     logical, intent(in)          :: ElecValenceBandBot ! Whether or not to calculate electrodes valence bandbottom
@@ -77,9 +78,8 @@ contains
     integer, intent(in)          :: nkpnt ! Number of k-points
     real(dp),dimension(3,nkpnt),intent(in) :: kpoint ! k-points
     real(dp),dimension(nkpnt),intent(in) :: kweight ! weights of kpoints
-    integer, intent(in)            :: NBufAt,NA1,NA2 ! Buffer/Rep a1/Rep a2
+    integer, intent(in)            :: NBufAt ! Buffer atoms
     logical, intent(in)            :: RemUCellDistance ! Whether to remove the unit cell distance in the Hamiltonian.
-    integer, intent(in)            :: NUsedAtoms ! Needs update here
     integer, intent(in)            :: nua ! Full system count of atoms in unit cell
     real(dp), dimension(3,3)       :: ucell ! The unit cell of the CONTACT
     real(dp), intent(in)           :: xa(3,nua) ! Coordinates in the system for the TranSIESTA routine
@@ -127,10 +127,10 @@ contains
     ! We return if we should not calculate it
     if ( .not. ReUseGF ) then
        ! Create the GF file
-       call create_Green(tElec,HSFile, GFFile, GFTitle, &
+       call create_Green(tElec,El, GFFile, GFTitle, &
             ElecValenceBandBot, &
             nkpnt,kpoint,kweight, &
-            NBufAt,NUsedAtoms,NA1,NA2, RemUCellDistance, &
+            NBufAt, RemUCellDistance, &
             ucell,xa,nua,NEn,contour,chem_shift,CalcDOS,ZBulkDOS,nspin)
     end if
 
@@ -149,14 +149,14 @@ contains
 
        if ( tElec == 'L' ) then
           call check_Green(uGF,chem_shift,ucell, &
-               NUsedAtoms*NA1*NA2,xa(1,NBufAt+1), &
+               TotUsedAtoms(El),xa(1,NBufAt+1), &
                nspin,nkpnt,kpoint, &
-               kweight,NEn,contour,NA1,NA2,RemUCellDistance,errorGF)
+               kweight,NEn,contour,RepA1(El),RepA2(El),RemUCellDistance,errorGF)
        else if ( tElec == 'R' ) then
           call check_Green(uGF,chem_shift,ucell, &
-               NUsedAtoms*NA1*NA2,xa(1,nua-NBufAt-NUsedAtoms*NA1*NA2+1), &
+               TotUsedAtoms(El),xa(1,nua-NBufAt-TotUsedAtoms(El)+1), &
                nspin,nkpnt,kpoint, &
-               kweight,NEn,contour,NA1,NA2,RemUCellDistance,errorGF)
+               kweight,NEn,contour,RepA1(El),RepA2(El),RemUCellDistance,errorGF)
        end if
        call io_close(uGF)
     endif
@@ -188,8 +188,8 @@ contains
 ! ##    will only check against integer information and Ef shift. ##
 ! ##################################################################
   subroutine read_Green(funit,print_title,c_EfShift,c_nkpar,c_NEn, &
-       c_nua,c_NA1,c_NA2, c_RemUCell, &
-       c_no,c_nspin, &
+       c_El, c_RemUCell, &
+       c_nspin, &
        nkpar,kpar,wkpar,nq,wq,qb)
     
     use precision, only : dp
@@ -200,6 +200,7 @@ contains
     use mpi_siesta, only: MPI_logical, MPI_comm_world, MPI_Bcast
     use mpi_siesta, only: MPI_integer
 #endif
+    use m_ts_electype
     real(dp) , parameter :: EPS = 1d-7
     
 ! ***********************
@@ -208,7 +209,8 @@ contains
     integer, intent(in)  :: funit ! unit of gf-file
     logical, intent(in)  :: print_title
     real(dp), intent(in) :: c_EfShift ! The fermi shift in the electrode
-    integer, intent(in)  :: c_nkpar,c_NEn,c_nua,c_NA1,c_NA2,c_no,c_nspin
+    type(Elec), intent(in) :: c_El
+    integer, intent(in)  :: c_nkpar,c_NEn,c_nspin
     logical, intent(in)  :: c_RemUCell
 
 ! ***********************
@@ -290,14 +292,14 @@ contains
        end if
 
 ! Check # of atoms
-       if (nua .ne. c_nua) then
+       if (nua .ne. UsedAtoms(c_El)) then
           write(*,*)"ERROR: Green's function file: "//TRIM(GFfile)
-          write(*,*) 'read_Green: ERROR: nua=',nua,' expected:', c_nua
+          write(*,*) 'read_Green: ERROR: nua=',nua,' expected:', UsedAtoms(c_El)
           errorGF = .true.
        end if
 
 ! Check # of q-points
-       if (c_NA1*c_NA2 .ne. NA1*NA2) then
+       if (Rep(c_El) .ne. NA1*NA2) then
           write(*,*)"ERROR: Green's function file: "//TRIM(GFfile)
           write(*,*) 'read_Green: ERROR: unexpected no. q-points'
           errorGF = .true.
@@ -336,9 +338,9 @@ contains
        read(funit) no
 
 ! Check # of orbitals
-       if (no .ne. c_no) then
+       if (no .ne. UsedOrbs(c_El)) then
           write(*,*)"ERROR: Green's function file: "//TRIM(GFfile)
-          write(*,*) 'read_Green: ERROR: no=',no,' expected:', c_no
+          write(*,*) 'read_Green: ERROR: no=',no,' expected:', UsedOrbs(c_El)
           errorGF = .true.
        end if
 
