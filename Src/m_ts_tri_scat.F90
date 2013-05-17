@@ -188,9 +188,7 @@ contains
 ! ##                                                              ##
 ! ##################################################################
   subroutine calc_GF_Bias(UseBulk,&
-       no_u_TS,Gfinv_tri,GF_tri, &
-       no_L, SigmaL, & ! work arrays
-       no_R, SigmaR)
+       no_u_TS,Gfinv_tri,GF_tri)
     
     use intrinsic_missing, only: EYE
     use class_zTriMat
@@ -203,15 +201,13 @@ contains
     ! sigma array handling
     logical, intent(in) :: UseBulk
     ! Sizes of the different regions...
-    integer, intent(in) :: no_u_TS, no_L, no_R
+    integer, intent(in) :: no_u_TS
     ! Work should already contain Z*S - H (and the self-energies)
     ! This may seem strange, however, it will clean up this routine extensively
     ! as we dont need to make two different routines for real and complex
     ! Hamiltonian values.
     type(zTriMat), intent(in out) :: GFinv_tri ! the inverted GF
     type(zTriMat), intent(in out) :: GF_tri
-    complex(dp) :: SigmaL(no_L*no_L)   ! work (the SigmaL array)
-    complex(dp) :: SigmaR(no_R*no_R)   ! work (the SigmaR array)
 
 ! Local variables
     complex(dp), pointer :: GF(:), GFinv(:)
@@ -263,18 +259,14 @@ contains
     nC = nrows_g(GF_tri,2)
     nR = nrows_g(GF_tri,3)
 
-! copy over A3
-    if ( .not. UseBulk ) then
-       SigmaR(:) = iGf33(:)
-    else
-! SigmaR and iGf33 are the same...
-    end if
+! copy over A3 (we have required that nR <= nC)
+    Gf22(1:nR**2) = iGf33(:)
 
 ! copy over B2
     Gf32(:) = iGf32(:)
 
 ! solve A3x=B2  (X2/C3)
-    call zgesv(nR,nC,SigmaR,nR,ipvt,Gf32,nR,ierr)
+    call zgesv(nR,nC,Gf22,nR,ipvt,Gf32,nR,ierr)
     if ( ierr /= 0 ) call die('error: A3x=B2')
 
 ! copy over A2
@@ -290,19 +282,15 @@ contains
     call zgesv(nC,nL,Gf22,nC,ipvt,Gf12,nC,ierr)
     if ( ierr /= 0 ) call die('error: (A2-X2)x=B1')
 
-! copy over A1
-    if ( .not. UseBulk ) then
-       SigmaL(:) = iGf11(:)
-    else
-       ! SigmaL and iGf11 are the same
-    end if
+! copy over A1 (we have required that nL <= nC)
+    Gf22(1:nL**2) = iGf11(:)
 
 ! calculate A1 - X1 = A1-C2*(A2-X2)^-1B1 
-    call zgemm('N','N',nL,nL,nC,zm1, iGf12,nL, Gf12,nC,z1, SigmaL,nL)
+    call zgemm('N','N',nL,nL,nC,zm1, iGf12,nL, Gf12,nC,z1, Gf22,nL)
 
 ! calculate inv(Gf)11
     call EYE(nL,Gf11)
-    call zgesv(nL,nL,SigmaL,nL,ipvt,Gf11,nL,ierr)
+    call zgesv(nL,nL,Gf22,nL,ipvt,Gf11,nL,ierr)
     if ( ierr /= 0 ) call die('error: (A1-X1)x=Gf11^-1')
 
 ! calculate inv(Gf)21

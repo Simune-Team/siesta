@@ -176,7 +176,7 @@ contains
     complex(dp), allocatable :: HAAL(:,:,:), SAAL(:,:,:)
     complex(dp), allocatable :: HAAR(:,:,:), SAAR(:,:,:)
     complex(dp), pointer :: GAAL(:,:), GAAR(:,:)
-    complex(dp), allocatable :: SigmaL(:,:), SigmaR(:,:)
+    complex(dp), pointer :: SigmaL(:), SigmaR(:)
     complex(dp), target, allocatable :: GammaLT(:,:), GammaRT(:,:)
 ! ************************************************************
 
@@ -367,15 +367,23 @@ contains
     ! Allocate the left-right electrode quantities that we need
     allocate(HAAL(no_L_HS,no_L_HS,Rep(ElLeft)))
     allocate(SAAL(no_L_HS,no_L_HS,Rep(ElLeft)))
-    ispin = no_L_HS**2*Rep(ElLeft)*2
-    allocate(SigmaL(no_L,no_L))
-    ispin = ispin + no_L**2
     allocate(HAAR(no_R_HS,no_R_HS,Rep(ElRight)))
     allocate(SAAR(no_R_HS,no_R_HS,Rep(ElRight)))
-    ispin = ispin + no_R_HS**2*Rep(ElRight)*2
-    allocate(SigmaR(no_R,no_R))
-    ispin = ispin + no_R**2
+    ispin =         no_L_HS**2*Rep(ElLeft)  * 2
+    ispin = ispin + no_R_HS**2*Rep(ElRight) * 2
     call memory('A','Z',ispin,'transiesta')
+    
+    ! This seems stupid, however, we never use the Sigma[LR] and
+    ! GF at the same time. Hence it will be safe
+    ! to have them point to the same array.
+    ! When the UC_expansion_Sigma_GammaT is called
+    ! first the Sigma[LR] is assigned and then 
+    ! it is required that prepare_GF_inv is called
+    ! immediately (which it is)
+    ! Hence the GF_tri must NOT be used in between these two calls!
+    zDM => val(GF_tri)
+    SigmaL => zDM(1:no_L**2)
+    SigmaR => zDM(size(zDM)-no_R**2+1:size(zDM))
 
     if ( IsVolt ) then
        ! We need Gamma's with voltages (now they are both GAA and GammaT)
@@ -385,6 +393,7 @@ contains
        allocate(GammaLT(no_L_HS,no_L),GammaRT(no_R_HS,no_R))
        call memory('A','Z',no_L_HS*no_L+no_R_HS*no_R,'transiesta')
     end if
+
     ! This seems stupid, however, we never use the GAAL and
     ! GammaL at the same time. Hence it will be safe
     ! to have them point to the same array.
@@ -702,9 +711,7 @@ contains
 
              ! Calculate the Greens function
              call calc_GF_Bias(UseBulk, &
-                     no_u_TS,zwork_tri,GF_tri, &
-                     no_L, SigmaL, & ! These are work-arrays here...
-                     no_R, SigmaR)
+                     no_u_TS,zwork_tri,GF_tri)
 
              ! We calculate the right thing.
              call GF_Gamma_GF_Right(no_R, Gf_tri, GammaRT, zwork_tri)
@@ -720,7 +727,7 @@ contains
              end if
 
              ! We calculate the left thing.
-             call GF_Gamma_GF_Left(no_L, Gf_tri,GammaLT, zwork_tri)
+             call GF_Gamma_GF_Left(no_L, Gf_tri, GammaLT, zwork_tri)
              ! work is now GFGGF
 
              ! Note that we use '++' here
@@ -915,8 +922,6 @@ contains
     call memory('D','Z',size(HAAL)*2+size(HAAR)*2,'transiesta')
     deallocate(HAAL,SAAL)
     deallocate(HAAR,SAAR)
-    call memory('D','Z',size(SigmaL)+size(SigmaR),'transiesta')
-    deallocate(SigmaL,SigmaR)
     
     ! These are allocated instead of the GAA[LR] arrays.
     ! Hence they are used in both non-bias and bias calculations.

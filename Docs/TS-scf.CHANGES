@@ -1,4 +1,23 @@
 ----------------------------------------------------
+May 17, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-27
+TStri: Removed the memory requirement of the electrodes self-energies
+
+* In the transiesta tri-diagonal case (memory-reduced) a further
+  memory reduction could be made
+  The Sigma[LR] is now pointing to a segment of the GF array.
+  This only requires that the GF array is not used in between the 
+  calls to UC_expansion and prepare_GF_inv routines.
+  However, this was already the case so no need to restructure
+  the program.
+  It required that the calc_GF_Bias routine was altered slightly, 
+  but only a single copy of the electrode arrays are needed
+  to compensate the change.
+
+modified:
+  Src/m_ts_tri.F90
+  Src/m_ts_tri_scat.F90
+
+----------------------------------------------------
 May 17, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-26
 Added electrode TYPE and generalized TriMat3, bugfixes in TS
 
