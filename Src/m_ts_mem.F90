@@ -697,10 +697,10 @@ contains
              !   n_F(\epsilon - \mu_L) - n_F(\epsilon - \mu_R)
              ! hence the weight function on the right has to be the negative.
              if ( ts_Gamma_SCF ) then
-                call add_DMnonEq_dE_D(spDMneqR,spEDM, no_u_TS, no_u_TS, &
+                call add_DM_dE_D(spDMneqR,spEDM, no_u_TS, no_u_TS, &
                      zwork, no_BufL, 0, -W, -ZW)
              else
-                call add_DMnonEq_dE_Z(spzDMneqR,spzEDM, no_u_TS, no_u_TS, &
+                call add_DM_dE_Z(spzDMneqR,spzEDM, no_u_TS, no_u_TS, &
                      zwork, no_BufL, 0, -W, -ZW)
              end if
 
@@ -713,10 +713,10 @@ contains
              ! Note that we use '++' here
              ! See sign convention above...
              if ( ts_Gamma_SCF ) then
-                call add_DMnonEq_dE_D(spDMneqL,spEDMR, no_u_TS, no_u_TS, &
+                call add_DM_dE_D(spDMneqL,spEDMR, no_u_TS, no_u_TS, &
                      zwork, no_BufL, 0, W, ZW)
              else
-                call add_DMnonEq_dE_Z(spzDMneqL,spzEDMR, no_u_TS, no_u_TS, &
+                call add_DM_dE_Z(spzDMneqL,spzEDMR, no_u_TS, no_u_TS, &
                      zwork, no_BufL, 0, W, ZW)
              end if
 
@@ -925,6 +925,7 @@ contains
 
  end subroutine transiesta_mem
 
+
 ! Update DM
 ! These routines are supplied for easy update of the update region
 ! sparsity patterns
@@ -948,7 +949,6 @@ contains
      type(Sparsity), pointer :: s
      integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
      complex(dp), pointer :: zD(:), zE(:)
-     complex(dp) :: fD, fE
      integer :: io, ind, nr
      integer :: iu, ju
      
@@ -958,9 +958,6 @@ contains
      l_col  => list_col(s)
      zD     => val(DM)
      zE     => val(EDM)
-
-     fD = DMfact  * .5_dp
-     fE = EDMfact * .5_dp
 
      ! Number of orbitals in the SIESTA unit-cell
      ! Remember that this is a sparsity pattern which contains
@@ -981,77 +978,14 @@ contains
            ! Any offset will ONLY be in the column
            ! index. See explanation in the 
            ! mem_sparsity module...
-           ju = l_col(ind) - no_BufL
-
-           zD(ind) = zD(ind) - ( GF(ju,iu-GF_offset)*fD - &
-                conjg(GF(iu,ju-GF_offset)*fD) )
-           zE(ind) = zE(ind) - ( GF(ju,iu-GF_offset)*fE - &
-                conjg(GF(iu,ju-GF_offset)*fE) )
-        end do
-     end do
-
-   end subroutine add_DM_dE_Z
-
-! Update DM
-! These routines are supplied for easy update of the update region
-! sparsity patterns
-! Note that these routines implement the usual rho(Z) \propto - GF
-   subroutine add_DMnonEq_dE_Z(DM,EDM,no1,no2,GF,no_BufL,GF_offset,DMfact,EDMfact)
-     use class_zSpData1D
-     use class_Sparsity
-     ! The DM and EDM equivalent matrices
-     type(zSpData1D), intent(inout) :: DM,EDM
-     ! The size of GF
-     integer, intent(in) :: no1,no2
-     ! The Green's function
-     complex(dp), intent(in) :: GF(no1,no2)
-     ! The number of buffer atoms (needed for the offset in the sparsity
-     ! patterns), and the offset in the GF
-     integer, intent(in) :: no_BufL, GF_offset
-     ! Complex numbers that are used in the factor of GF
-     complex(dp), intent(in) :: DMfact, EDMfact
-
-     ! Arrays needed for looping the sparsity
-     type(Sparsity), pointer :: s
-     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-     complex(dp), pointer :: zD(:), zE(:)
-     integer :: io, ind, nr
-     integer :: iu, ju
-     
-     s      => spar(DM)
-     l_ncol => n_col   (s)
-     l_ptr  => list_ptr(s)
-     l_col  => list_col(s)
-     zD     => val(DM)
-     zE     => val(EDM)
-
-     ! Number of orbitals in the SIESTA unit-cell
-     ! Remember that this is a sparsity pattern which contains
-     ! a subset of the SIESTA pattern.
-     nr = nrows(s)
-     
-     do io = 1 , nr
-        ! Quickly go past the buffer atoms...
-        if ( l_ncol(io) == 0 ) cycle
-
-        ! The update region equivalent GF part
-        iu = io - no_BufL - GF_offset
-        
-        do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
-
-           ! We need to subtract the offset of
-           ! the Green's function
-           ! Any offset will ONLY be in the column
-           ! index. See explanation in the 
-           ! mem_sparsity module...
-           ju = l_col(ind) - no_BufL
+           ju = l_col(ind) - no_BufL - GF_offset
 
            zD(ind) = zD(ind) - GF(iu,ju) * DMfact
            zE(ind) = zE(ind) - GF(iu,ju) * EDMfact
         end do
      end do
 
-   end subroutine add_DMnonEq_dE_Z
+   end subroutine add_DM_dE_Z
 
    subroutine add_DM_dE_D(DM,EDM,no1,no2,GF,no_BufL,GF_offset,DMfact,EDMfact)
      use class_dSpData1D
@@ -1111,63 +1045,6 @@ contains
 
    end subroutine add_DM_dE_D
 
-   subroutine add_DMnonEq_dE_D(DM,EDM,no1,no2,GF,no_BufL,GF_offset,DMfact,EDMfact)
-     use class_dSpData1D
-     use class_Sparsity
-     ! The DM and EDM equivalent matrices
-     type(dSpData1D), intent(inout) :: DM,EDM
-     ! The size of GF
-     integer, intent(in) :: no1,no2
-     ! The Green's function
-     complex(dp), intent(in) :: GF(no1,no2)
-     ! The number of buffer atoms (needed for the offset in the sparsity
-     ! patterns), and the offset in the GF
-     integer, intent(in) :: no_BufL, GF_offset
-     ! Complex numbers that are used in the factor of GF
-     complex(dp), intent(in) :: DMfact, EDMfact
-
-     ! Arrays needed for looping the sparsity
-     type(Sparsity), pointer :: s
-     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-     real(dp), pointer :: dD(:), dE(:)
-     integer :: io, ind, nr
-     integer :: iu, ju
-
-     s      => spar(DM)
-     l_ncol => n_col   (s)
-     l_ptr  => list_ptr(s)
-     l_col  => list_col(s)
-     dD     => val(DM)
-     dE     => val(EDM)
-
-     ! Number of orbitals in the SIESTA unit-cell
-     ! Remember that this is a sparsity pattern which contains
-     ! a subset of the SIESTA pattern.
-     nr = nrows(s)
-     
-     do io = 1 , nr ! TODO introduce reduced loop
-        ! Quickly go past the buffer atoms...
-        if ( l_ncol(io) == 0 ) cycle
-
-        ! The update region equivalent GF part
-        iu = io - no_BufL - GF_offset
-        
-        do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
-
-           ! We need to subtract the offset of
-           ! the Green's function
-           ! Any offset will ONLY be in the column
-           ! index. See explanation in the 
-           ! mem_sparsity module...
-           ju = l_col(ind) - no_BufL
-     
-           dD(ind) = dD(ind) - dimag( GF(iu,ju) * DMfact  )
-           dE(ind) = dE(ind) - dimag( GF(iu,ju) * EDMfact )
-
-        end do
-     end do
-
-   end subroutine add_DMnonEq_dE_D
 
    ! creation of the GF^{-1}.
    ! this routine will insert the zS-H and \Sigma_{LR} terms in the GF 

@@ -683,7 +683,7 @@ contains
        end do
     end do
     
-  end subroutine update_DM  
+  end subroutine update_DM 
 
   subroutine update_zDM(dit,sp,n_nzs,DM,EDM,xij,spDM, spEDM,k)
     use class_OrbitalDistribution
@@ -762,13 +762,21 @@ contains
                   k(2) * xij(2,lind) + &
                   k(3) * xij(3,lind)
 
-             ! There is no need to take the conjugate and half it 
-             ! (it is the same number..)
-             ph = cdexp(dcmplx(0._dp,1._dp)*kx)
+             ! The fact that we have a SYMMETRIC
+             ! update region makes this *tricky* part easy...
+             rin  = lup_ptr(jo)
+             ! TODO, this REQUIRES that lup_col(:) is sorted
+             rind = rin+SFIND(lup_col(rin+1:rin+lup_ncol(jo)),io)
+             ! We do a check, just to be sure...
+             if ( rind == rin ) &
+                  call die('ERROR: symmetrization points does not exist')
 
-             DM(lind)  = DM(lind)  + aimag( ph*zD(ind) )
 
-             EDM(lind) = EDM(lind) + aimag( ph*zE(ind) )
+             ph = 0.5_dp * cdexp(dcmplx(0._dp,1._dp)*kx)
+
+             DM(lind)  = DM(lind)  + aimag( ph*zD(rind) + conjg(ph)*zD(ind) )
+
+             EDM(lind) = EDM(lind) + aimag( ph*zE(rind) + conjg(ph)*zE(ind) )
 
              exit ! there is no need to continue the loop... we have found the element...
 
@@ -843,12 +851,12 @@ contains
     call retrieve(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=nr)
     ! Obtain the values in the arrays...
-    DML => val(SpArrDML)
-    DMR => val(SpArrDMR)
+    DML    => val(SpArrDML)
+    DMR    => val(SpArrDMR)
     DMneqL => val(SpArrDMneqL)
     DMneqR => val(SpArrDMneqR)
-    EDML => val(SpArrEDML)
-    EDMR => val(SpArrEDMR)
+    EDML   => val(SpArrEDML)
+    EDMR   => val(SpArrEDMR)
 
     ! initialize the errors
     eM  = 0._dp
@@ -975,12 +983,12 @@ contains
     call retrieve(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=nr)
     ! Obtain the values in the arrays...
-    DML => val(SpArrDML)
-    DMR => val(SpArrDMR)
+    DML    => val(SpArrDML)
+    DMR    => val(SpArrDMR)
     DMneqL => val(SpArrDMneqL)
     DMneqR => val(SpArrDMneqR)
-    EDML => val(SpArrEDML)
-    EDMR => val(SpArrEDMR)
+    EDML   => val(SpArrEDML)
+    EDMR   => val(SpArrEDMR)
 
     ! initialize the errors
     eM  = 0._dp
@@ -1026,18 +1034,26 @@ contains
 
           ! Do error estimation (we are only interested in 
           ! error in the density...)
+
+          ! Here we introduce the error in the estimate by
+          ! not imposing any phases due to the k-space integration
+          ! (in principle one has to loop over all i-j connections
+          ! in the supercell and add the e^{i k xij} factor to 
+          ! determine the actual error)
+          ! But neglecting the phase will show an upper bound
+          ! on the error by imposing xij == 0.
           
           rtmp = aimag(ztmp) * aimag(ztmp)
           ! this is absolute error
           if ( rtmp > eM ) then
-             eM = rtmp
+             eM   = rtmp
              eM_i = io
              eM_j = jo
           end if
           ! this is normalized absolute error
           rtmp = rtmp * wL * wR
           if ( rtmp > neM ) then
-             neM = rtmp
+             neM   = rtmp
              neM_i = io
              neM_j = jo
           end if

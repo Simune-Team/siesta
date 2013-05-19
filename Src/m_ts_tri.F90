@@ -710,8 +710,7 @@ contains
 #endif
 
              ! Calculate the Greens function
-             call calc_GF_Bias(UseBulk, &
-                     no_u_TS,zwork_tri,GF_tri)
+             call calc_GF_Bias(no_u_TS,zwork_tri,GF_tri)
 
              ! We calculate the right thing.
              call GF_Gamma_GF_Right(no_R, Gf_tri, GammaRT, zwork_tri)
@@ -719,10 +718,10 @@ contains
 
              ! Note that we use '--' here
              if ( ts_Gamma_SCF ) then
-                call add_DMnonEq_dE_D(spDMneqR,spEDM, &
+                call add_DM_dE_D(spDMneqR,spEDM, &
                      zwork_tri, no_BufL, -W, -ZW)
              else
-                call add_DMnonEq_dE_Z(spzDMneqR,spzEDM, &
+                call add_DM_dE_Z(spzDMneqR,spzEDM, &
                      zwork_tri, no_BufL, -W, -ZW)
              end if
 
@@ -732,10 +731,10 @@ contains
 
              ! Note that we use '++' here
              if ( ts_Gamma_SCF ) then
-                call add_DMnonEq_dE_D(spDMneqL,spEDMR, &
+                call add_DM_dE_D(spDMneqL,spEDMR, &
                      zwork_tri, no_BufL, +W, +ZW)
              else
-                call add_DMnonEq_dE_Z(spzDMneqL,spzEDMR, &
+                call add_DM_dE_Z(spzDMneqL,spzEDMR, &
                      zwork_tri, no_BufL, +W, +ZW)
              end if
 
@@ -942,6 +941,7 @@ contains
 
   end subroutine transiesta_tri
 
+
 ! Update DM
 ! These routines are supplied for easy update of the update region
 ! sparsity patterns
@@ -964,7 +964,6 @@ contains
     type(Sparsity), pointer :: s
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     complex(dp), pointer :: zD(:), zE(:), Gf(:)
-    complex(dp) :: fD, fE
     integer :: io, ind, nr, iu, idx, ridx
 
     s      => spar(DM)
@@ -974,9 +973,6 @@ contains
     zD     => val(DM)
     zE     => val(EDM)
     Gf     => val(Gf_tri)
-
-    fD = DMfact  * .5_dp
-    fE = EDMfact * .5_dp
 
     ! Remember that this is a sparsity pattern which contains
     ! a subset of the SIESTA pattern.
@@ -991,68 +987,13 @@ contains
        do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
 
           idx  = index(Gf_tri,iu,l_col(ind) - no_BufL)
-          ridx = index(Gf_tri,l_col(ind) - no_BufL,iu)
-
-          zD(ind) = zD(ind) - ( GF(ridx)*fD - conjg(GF(idx)*fD) )
-          zE(ind) = zE(ind) - ( GF(ridx)*fE - conjg(GF(idx)*fE) )
-       end do
-    end do
-
-  end subroutine add_DM_dE_Z
-
-! Update non equilibrium DM
-! These routines are supplied for easy update of the update region
-! sparsity patterns
-! Note that these routines implement the usual rho(Z) \propto - Im(GF)
-  subroutine add_DMnonEq_dE_Z(DM,EDM,GF_tri,no_BufL,DMfact,EDMfact)
-    use class_zSpData1D
-    use class_Sparsity
-    use class_zTriMat
-    ! The DM and EDM equivalent matrices
-    type(zSpData1D), intent(inout) :: DM,EDM
-    ! The Green's function
-    type(zTriMat), intent(inout) :: GF_tri
-    ! The number of buffer atoms (needed for the offset in the sparsity
-    ! patterns)
-    integer, intent(in) :: no_BufL
-    ! Complex numbers that are used in the factor of GF
-    complex(dp), intent(in) :: DMfact, EDMfact
-
-    ! Arrays needed for looping the sparsity
-    type(Sparsity), pointer :: s
-    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-    complex(dp), pointer :: zD(:), zE(:), Gf(:)
-    integer :: io, ind, nr, iu, idx
-
-    s      => spar(DM)
-    call retrieve(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
-         nrows=nr)
-    zD     => val(DM)
-    zE     => val(EDM)
-    Gf     => val(Gf_tri)
-
-    ! Remember that this is a sparsity pattern which contains
-    ! a subset of the SIESTA pattern.
-    
-    do io = 1 , nr
-       ! Quickly go past the buffer atoms... (the right side)
-       if ( l_ncol(io) == 0 ) cycle
-
-       ! The update region equivalent GF part
-       iu = io - no_BufL
-       
-       do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
-
-          ! TODO ask Mads about the non-equilibrium integration...
-          !ridx = index(Gf_tri,l_col(ind) - no_BufL,iu)
-          idx = index(Gf_tri,iu,l_col(ind) - no_BufL)
 
           zD(ind) = zD(ind) - GF(idx) * DMfact
           zE(ind) = zE(ind) - GF(idx) * EDMfact
        end do
     end do
 
-  end subroutine add_DMnonEq_dE_Z
+  end subroutine add_DM_dE_Z
 
   subroutine add_DM_dE_D(DM,EDM,GF_tri,no_BufL,DMfact,EDMfact)
     use class_dSpData1D
@@ -1106,60 +1047,6 @@ contains
     end do
 
   end subroutine add_DM_dE_D
-
-  subroutine add_DMnonEq_dE_D(DM,EDM,GF_tri,no_BufL,DMfact,EDMfact)
-    use class_dSpData1D
-    use class_Sparsity
-    use class_zTriMat
-    ! The DM and EDM equivalent matrices
-    type(dSpData1D), intent(inout) :: DM,EDM
-    ! The Green's function
-    type(zTriMat), intent(inout) :: GF_tri
-    ! The number of buffer atoms (needed for the offset in the sparsity
-    ! patterns)
-    integer, intent(in) :: no_BufL
-    ! Complex numbers that are used in the factor of GF
-    complex(dp), intent(in) :: DMfact, EDMfact
-
-    ! Arrays needed for looping the sparsity
-    type(Sparsity), pointer :: s
-    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-    real(dp), pointer :: dD(:), dE(:)
-    complex(dp), pointer :: Gf(:)
-    integer :: io, ind, nr, iu, idx
-
-    s      => spar(DM)
-    call retrieve(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
-         nrows=nr)
-    dD     => val(DM)
-    dE     => val(EDM)
-    Gf     => val(Gf_tri)
-
-    ! Notice that we do not need to do any transposing here...
-    ! The tri-diagonal calculation of GF_Gamma_GF will always be correct
-
-    ! Remember that this is a sparsity pattern which contains
-    ! a subset of the SIESTA pattern.
-    
-    do io = 1 , nr !TODO introduce reduced loop
-       ! Quickly go past the buffer atoms... (in the right side)
-       if ( l_ncol(io) == 0 ) cycle
-
-       ! The update region equivalent GF part
-       iu = io - no_BufL
-       
-       do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
-
-          !ridx = index(Gf_tri,l_col(ind) - no_BufL,iu)
-          idx = index(Gf_tri,iu,l_col(ind) - no_BufL)
-          
-          dD(ind) = dD(ind) - dimag( GF(idx) * DMfact  )
-          dE(ind) = dE(ind) - dimag( GF(idx) * EDMfact )
-
-       end do
-    end do
-
-  end subroutine add_DMnonEq_dE_D
 
 
   ! creation of the GF^{-1}.

@@ -187,8 +187,7 @@ contains
 ! ##           Nick Papior Andersen, nickpapior@gmail.com         ##
 ! ##                                                              ##
 ! ##################################################################
-  subroutine calc_GF_Bias(UseBulk,&
-       no_u_TS,Gfinv_tri,GF_tri)
+  subroutine calc_GF_Bias(no_u_TS,Gfinv_tri,GF_tri)
     
     use intrinsic_missing, only: EYE
     use class_zTriMat
@@ -198,8 +197,6 @@ contains
 ! *********************
 ! * INPUT variables   *
 ! *********************
-    ! sigma array handling
-    logical, intent(in) :: UseBulk
     ! Sizes of the different regions...
     integer, intent(in) :: no_u_TS
     ! Work should already contain Z*S - H (and the self-energies)

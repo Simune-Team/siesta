@@ -99,6 +99,7 @@ contains
     integer :: no_BufL, no_BufR
     integer :: no_u_LCR
 
+
     ! Calculate the number of used atoms/orbitals in left/right
     !na_L = na_L_HS * NRepA1L * NRepA2L
     no_L = TotUsedOrbs(ElLeft)
@@ -132,7 +133,7 @@ contains
          no_BufL,no_BufR,no_L,no_R, &
          no_u_LCR, &
          ts_sp_uc,tsup_sp_uc)
-        
+
   end subroutine ts_sparse_init
 
 

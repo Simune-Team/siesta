@@ -1,4 +1,25 @@
 ----------------------------------------------------
+May 19, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-28
+Transiesta code cleanup and simplification
+
+* Moved the k-point conjugation into the update routines
+  This leveraged the need for a couple of routines which
+  had been deleted in m_ts_mem and m_ts_tri
+
+* Added a which_part function to the TriMat class to
+  retrieve the part in which a given row or column
+  lies in (maybe it should just be deleted)
+
+modified:
+  Src/Makefile
+  Src/class_TriMat.T90
+  Src/m_ts_mem.F90
+  Src/m_ts_sparse.F90
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_tri.F90
+  Src/m_ts_tri_scat.F90
+
+----------------------------------------------------
 May 17, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-27
 TStri: Removed the memory requirement of the electrodes self-energies
 

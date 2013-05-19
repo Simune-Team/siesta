@@ -50,7 +50,7 @@
   public :: val
   public :: index
   public :: nrows_g
-  public :: parts
+  public :: parts, which_part
   public :: elements
 
   interface NEW_TYPE
@@ -68,6 +68,10 @@
 
   interface parts
      module procedure parts_TriMat
+  end interface
+
+  interface which_part
+     module procedure which_part_TriMat
   end interface
 
   interface index
@@ -117,6 +121,23 @@
     n = this%data%parts
   end function parts_TriMat
 
+  elemental function which_part_TriMat(this,row,col) result (n)
+    type(TYPE_NAME), intent(in)   :: this
+    integer, intent(in), optional :: row, col
+    integer                       :: n, i, no
+    if ( present(row) ) no = row
+    if ( present(col) ) no = col
+    n = 1
+    do i = 1 , this%data%parts
+       if ( no < n + this%data%tri_nrows(i) ) then
+          n = i - 1
+	  return
+       end if
+       n = n + this%data%tri_nrows(i)
+    end do
+    n = 0
+  end function which_part_TriMat
+
   elemental function elements_TriMat(this) result(el)
     type(TYPE_NAME), intent(in) :: this
     integer :: el
@@ -158,7 +179,7 @@
          name="mat "//trim(this%data%name),routine=STR_TYPE_NAME)
 
     ! Save the dimensions of the tri-diagonal parts
-    this%data%tri_nrows(:) = tri_nrows(:)    
+    this%data%tri_nrows(:) = tri_nrows(:) 
 
     ! Calculate size of the tri-diagonal matrix
     n = tri_nrows(parts)**2
@@ -288,7 +309,7 @@
     endif
     
     print "(3(a,i0),a)", "  <"//STR_TYPE_NAME//":" // trim(this%data%name) // &
-                                " n_parts",  this%data%parts, &
+                                " n_parts=",  this%data%parts, &
                                 " elements=",  elements(this), &
                                 ", refcount: ", refcount(this),">"
   end subroutine printTriMat
