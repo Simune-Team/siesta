@@ -157,7 +157,7 @@ OBJS =  automatic_cell.o atom_options.o \
         save_density_matrix.o  \
         readSpData2D.o restructSpData2D.o extrapolateSpData2D.o \
         class_Geometry.o class_Pair_Geometry_SpData2D.o \
-	class_TriMat.o \
+	class_TriMat.o m_trimat_invert.o \
 	class_Fstack_Pair_Geometry_SpData2D.o \
         m_uuid.o object_debug.o die.o m_svd.o
 
@@ -317,7 +317,7 @@ TS_OBJS += m_ts_mem.o m_ts_sparse.o m_ts_mem_scat.o
 TS_OBJS += m_ts_sparse_helper.o m_ts_method.o m_ts_elec_se.o
 
 # Transiesta tri-diagonal sparsity...
-TS_OBJS += m_ts_tri.o m_ts_tri_scat.o
+TS_OBJS += m_ts_tri.o m_ts_tri_scat.o m_ts_Sparsity2TriMat.o
 
 transiesta: FPPFLAGS+=$(DEFS_PREFIX) -DTRANSIESTA 
 transiesta: DEFS+=$(DEFS_PREFIX) -DTRANSIESTA
@@ -606,6 +606,9 @@ m_spin.o: alloc.o parallel.o precision.o
 m_stress.o: precision.o
 m_svd.o: precision.o
 m_timer.o: m_io.o m_walltime.o moreParallelSubs.o parallel.o precision.o sys.o
+m_trimat_invert.o: alloc.o class_TriMat.o intrinsic_missing.o precision.o
+m_ts_Sparsity2TriMat.o: alloc.o class_Sparsity.o geom_helper.o m_ts_electype.o
+m_ts_Sparsity2TriMat.o: m_ts_options.o parallel.o
 m_ts_aux_rout.o: precision.o sys.o
 m_ts_cctype.o: precision.o
 m_ts_contour.o: m_ts_aux_rout.o m_ts_cctype.o parallel.o precision.o units.o
@@ -642,12 +645,14 @@ m_ts_sparse_helper.o: class_OrbitalDistribution.o class_SpData1D.o
 m_ts_sparse_helper.o: class_SpData1D.o class_Sparsity.o geom_helper.o
 m_ts_sparse_helper.o: intrinsic_missing.o m_ts_electype.o m_ts_method.o
 m_ts_sparse_helper.o: m_ts_options.o parallel.o precision.o
-m_ts_tri.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData1D.o
-m_ts_tri.o: class_Sparsity.o class_TriMat.o m_ts_cctype.o m_ts_contour.o
-m_ts_tri.o: m_ts_elec_se.o m_ts_electype.o m_ts_gf.o m_ts_kpoints.o
-m_ts_tri.o: m_ts_method.o m_ts_options.o m_ts_sparse.o m_ts_sparse_helper.o
-m_ts_tri.o: m_ts_tri_scat.o parallel.o precision.o units.o
-m_ts_tri_scat.o: alloc.o class_TriMat.o intrinsic_missing.o precision.o
+m_ts_tri.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
+m_ts_tri.o: class_SpData1D.o class_Sparsity.o class_TriMat.o m_trimat_invert.o
+m_ts_tri.o: m_ts_Sparsity2TriMat.o m_ts_cctype.o m_ts_contour.o m_ts_elec_se.o
+m_ts_tri.o: m_ts_electype.o m_ts_gf.o m_ts_kpoints.o m_ts_method.o
+m_ts_tri.o: m_ts_options.o m_ts_sparse.o m_ts_sparse_helper.o m_ts_tri_scat.o
+m_ts_tri.o: parallel.o precision.o units.o
+m_ts_tri_scat.o: class_TriMat.o intrinsic_missing.o m_trimat_invert.o
+m_ts_tri_scat.o: precision.o
 m_ts_voltage.o: m_ts_electype.o m_ts_options.o mesh.o parallel.o precision.o
 m_ts_voltage.o: units.o
 m_wallclock.o: m_walltime.o

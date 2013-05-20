@@ -85,6 +85,10 @@ contains
        ! here we will check for all the size requirements of Transiesta
        ! I.e. whether some of the optimizations can be erroneous or not
 
+       ! Do a crude check of the sizes
+       ! if the transiesta region is equal of size to or smaller 
+       ! than the size of the combined electrodes, then the system
+       ! is VERY WRONG...
        ! First calculate L/C/R sizes (we remember to subtract the buffer
        ! orbitals)
        nTS = no_u - nBL - nBR
@@ -92,8 +96,9 @@ contains
        nR  = TotUsedOrbs(ElRight)
        nC  = nTS  - nL  - nR
        if ( nC < 1 ) &
-            call die('Transiesta central region does not &
-            &exist. What have you done?')
+            call die("The contact region size is &
+               &smaller than the electrode size. &
+               &What have you done? Please correct this insanity...")
 
        if ( ts_method /= TS_ORIGINAL ) then
 
@@ -112,9 +117,14 @@ contains
                   &than the dimension of the problem.')
           end if
 
-          if ( ts_method == TS_SPARSITY_TRI .and. IsVolt ) then
+          if ( ts_method == TS_SPARSITY_TRI ) then
 
-             if ( nL > nC .or. nR > nC ) then
+             if ( NBufAtL + NBufAtR > 0 ) then
+                call die('Currently the code does not handle buffer atoms &
+                     &for the tri-diagonal part')
+             end if
+             
+             if ( IsVolt .and. (nL > nC .or. nR > nC) ) then
                 write(*,'(a,2(i0,tr1,''/'',tr1),i0)') &
                      'Sizes are L/C/R: ',nL,nC,nR
                 call die('Your system &

@@ -1,4 +1,52 @@
 ----------------------------------------------------
+May 20, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-29
+Added generalization of tri-diagonal inversion and Transiesta implementation
+
+* Added file m_trimat_invert which contains routines for inverting a tri-diagonal
+  matrix of arbitrary sizes (it relies heavily on the TriMat class.
+  The algoritm can be found in:
+    DOI: 10.1088/1749-4699/5/1/014009
+  despite the articles title, it also contains a general routine for
+  calculating the inversion.
+
+* Fixed a bug in the which_part routine in the TriMat class.
+
+* Added module to convert a SIESTA sparsity pattern to a tri-diagonal matrix pattern
+  It does so by a hand-made algorithm (I cannot find any papers on this topic).
+  The algorithm is simple but has proven to really perform optimal choices.
+
+  It tries to make all the parts as evenly distributed in size as possible.
+  TODO add algorithm to optimize on memory (the left-most and right-most part
+  can be made larger and thus reduce the total memory requirement).
+
+* In the sparse tri-solver for transiesta it has been fully implemented.
+  We can, currently, only utilize the hand-made parts in the equilibrium contour
+  as we don't need the full column of the inverted matrix.
+  So we use the optimized tri-diagonal matrix in the equilibrium contour
+  and the 3-tri-diagonl matrix in the bias contour.
+  TODO reduce the de/allocations by making a hack in the TriMat class
+  to pass the array.
+  This will leverage some time in these large arrays.
+  It also required some changes to the m_ts_tri_scat routines which calculated
+  the GF
+
+* This optimized tri-diagonalization routines required an initialitation step for
+  the sparse tri solver.
+  This has been added and called in compute_DM 
+  TODO add a ts_init_DM routine
+
+added:
+  Src/m_trimat_invert.F90
+  Src/m_ts_Sparsity2TriMat.F90
+modified:
+  Src/Makefile
+  Src/class_TriMat.T90
+  Src/compute_dm.F
+  Src/m_ts_tri.F90
+  Src/m_ts_tri_scat.F90
+  Src/ts_init.F90
+
+----------------------------------------------------
 May 19, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-28
 Transiesta code cleanup and simplification
 

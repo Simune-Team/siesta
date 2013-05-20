@@ -43,12 +43,99 @@ module m_ts_tri
   
   implicit none
 
+  ! arrays for containing the tri-diagonal matrix part sizes
+  integer, pointer, save :: tri_part(:) => null()
+  integer, save :: tri_parts
+
+  ! arrays for containing the bias contour tri-diagonal matrix part sizes
+  integer, pointer, save :: tri_Vpart(:) => null()
+  integer, parameter :: tri_Vparts = 3
+
   
+  public :: ts_tri_init
   public :: transiesta_tri
 
   private
   
 contains
+
+  subroutine ts_tri_init()
+    use alloc, only : re_alloc, de_alloc
+    use parallel, only : IONode
+    use class_Sparsity
+    use m_ts_options, only : IsVolt
+    use m_ts_electype
+    use m_ts_options, only : ElLeft, ElRight
+    use m_ts_sparse, only : ts_sp_uc
+
+    use m_ts_Sparsity2TriMat
+
+    integer :: i, els, no_L, no_C, no_R
+
+    no_L = TotUsedOrbs(ElLeft)
+    no_R = TotUsedOrbs(ElRight)
+    no_C = nrows_g(ts_sp_uc) - no_L - no_R
+
+    ! We will initialize the tri-diagonal matrices here
+    if ( IsVolt ) then
+       ! If we have voltages then we must use the tri-diagonal case
+       call re_alloc(tri_Vpart, 1, tri_Vparts)
+       tri_Vpart(1) = no_L
+       tri_Vpart(2) = no_C
+       tri_Vpart(3) = no_R
+    end if
+
+    ! This will check, even out, and print out
+    if ( associated(tri_part) ) call de_alloc(tri_part)
+    call ts_Sparsity2TriMat(ts_sp_uc,tri_parts,tri_part)
+
+    if ( tri_parts < 3 ) then
+       call die('Errorneous transiesta update sparsity pattern. &
+            &Check with the developers')
+    end if
+
+    if ( tri_parts == 3 ) then
+       ! Currently the routines can only handle this
+       tri_part(1) = no_L
+       tri_part(2) = no_C
+       tri_part(3) = no_R
+    end if
+
+    if ( IONode ) then
+       if ( tri_part(1) /= no_L .or. tri_part(2) /= no_C .or. &
+            tri_part(3) /= no_R ) then
+          write(*,'(a,2(i0,'','',tr1),i0)') &
+               'transiesta: Changing old 3-tri-diagonal matrix with shape: ', &
+               no_L, no_C, no_R
+          write(*,'(a)') 'transiesta: Established a near-optimal partition &
+               &for the tri-diagonal matrix.'
+          if ( IsVolt ) then
+             write(*,'(a)') 'transiesta: Using old 3-tri-diagonal for bias contour'
+          end if
+       end if
+       write(*,'(a)') 'transiesta: Size of the partitions:'
+       do i = 1 , tri_parts
+          write(*,'(t15,i3,'':'',tr2,i6)') i,tri_part(i)
+       end do
+       ! Calculate size of the tri-diagonal matrix
+       if ( IsVolt ) then
+          els = tri_Vpart(tri_Vparts)**2
+          do i = 1 , tri_Vparts - 1
+             els = els + tri_Vpart(i)*( tri_Vpart(i) + 2 * tri_Vpart(i+1) )
+          end do
+          write(*,'(a,i0,a,i0)') 'transiesta: Matrix elements in bias tri / full: ', &
+               els,' / ',nrows_g(ts_sp_uc)**2
+       end if
+       els = tri_part(tri_parts)**2
+       do i = 1 , tri_parts - 1
+          els = els + tri_part(i)*( tri_part(i) + 2 * tri_part(i+1) )
+       end do
+       write(*,'(a,i0,a,i0)') 'transiesta: Matrix elements in tri / full: ', &
+            els,' / ',nrows_g(ts_sp_uc)**2
+    end if
+
+  end subroutine ts_tri_init
+    
   
 ! ##################################################################
 ! ##                                                              ##       
@@ -95,7 +182,6 @@ contains
     use mpi_siesta
 #endif
 
-
     use class_OrbitalDistribution
     use class_Sparsity
     use class_dSpData1D
@@ -130,6 +216,9 @@ contains
     use m_ts_cctype, only : CC_PART_TRANSPORT
 
     use m_ts_gf, only : read_Green
+
+    use m_trimat_invert, only: init_TriMat_inversion
+    use m_trimat_invert, only: clear_TriMat_inversion
 
 ! ********************
 ! * INPUT variables  *
@@ -183,9 +272,9 @@ contains
 ! ******************* Computational arrays *******************
     integer :: ndwork, nzwork
     real(dp),    allocatable :: dwork(:)
-    complex(dp), pointer :: GF22(:)
     complex(dp), pointer :: zwork(:)
     type(zTriMat) :: zwork_tri, GF_tri
+    logical :: Is_Volt_TriMat
     ! A local orbital distribution class (this is "fake")
     type(OrbitalDistribution) :: fdist
     ! The Hamiltonian and overlap sparse matrices
@@ -274,25 +363,6 @@ contains
     ! no_BufL +      no_C_TS       + no_BufR == no_u
     ! no_BufL + no_L + (no_C_R - no_C_L + 1) + no_R + no_BufR == no_u
 
-    ! Do a crude check of the sizes
-    ! if the transiesta region is equal of size to or smaller 
-    ! than the size of the combined electrodes, then the system
-    ! is VERY WRONG...
-    if ( no_u_TS <= no_L + no_R ) then
-       call die("The contact region size is &
-            &smaller than the electrode size. &
-            &What have you done? Please correct this insanity...")
-    end if
-
-    ! We must ensure that the Sigma[LR] have enough space to hold
-    ! one line of the full matrix (we use them as work arrays
-    ! when calculating the Gamma[LR]
-    if ( no_L ** 2 < no_u_TS .or. no_R ** 2 < no_u_TS ) then
-       call die('The current implementation requires that the &
-            &square of the orbitals in the electrodes are larger &
-            &than the dimension of the problem.')
-    end if
-
 
     ! Open GF files...
     if ( IONode ) then
@@ -345,10 +415,11 @@ contains
     ! The zwork is needed to construct the LHS for solving: G^{-1} G = I
     ! Hence, we will minimum require this...
     no_u_C = no_u_TS - no_L - no_R
-    nzwork =          (no_L + no_u_C)        * no_L
-    nzwork = nzwork + (no_L + no_u_C + no_R) * no_u_C
-    nzwork = nzwork + (       no_u_C + no_R) * no_R
-    call newzTriMat(zwork_tri,3,(/no_L,no_u_C,no_R/),'GFinv')
+    call newzTriMat(zwork_tri,tri_parts,tri_part,'GFinv')
+    nzwork = elements(zwork_tri)
+
+    ! Initialize the tri-diagonal inversion routine
+    call init_TriMat_inversion(zwork_tri)
 
     ! Save the work-space
     ! Now the programmer should "keep a straight tongue"
@@ -359,10 +430,8 @@ contains
     ! one call!
     zwork => val(zwork_tri)
 
-    call newzTriMat(GF_tri,3,(/no_L,no_u_C,no_R/),'GF')
-    if ( GF_INV_EQUI_PART ) then
-       Gf22 => val(Gf_tri,2,2)
-    end if
+    call newzTriMat(GF_tri,tri_parts,tri_part,'GF')
+    Is_Volt_TriMat = .false.
 
     ! Allocate the left-right electrode quantities that we need
     allocate(HAAL(no_L_HS,no_L_HS,Rep(ElLeft)))
@@ -581,6 +650,16 @@ contains
           select case ( contour(iE)%part )
           case ( CC_PART_EQUI , CC_PART_LEFT_EQUI, CC_PART_RIGHT_EQUI ) 
 
+             ! Recreate the correct format of the tri-matrix
+             if ( Is_Volt_TriMat ) then
+                Is_Volt_TriMat = .false.
+                call delete(zwork_tri)
+                call delete(GF_tri)
+                call newzTriMat(zwork_tri,tri_parts,tri_part,'GFinv')
+                call newzTriMat(GF_tri,tri_parts,tri_part,'GFinv')
+                call setup_arrays()
+             end if
+
              ! for these contour parts we do not require to calculate
              ! Gamma's.
              ! Hence we can perform the calculation without 
@@ -636,7 +715,7 @@ contains
              if ( GF_INV_EQUI_PART ) then
                 ! Calculate the GF22 (note that GF22 points to the 
                 ! tri-diag array...
-                call calc_GF_Part(no_u_TS, no_L,no_R,zwork_tri, GF22, ierr)
+                call calc_GF_Part(no_u_TS, no_L,no_R,zwork_tri, GF_tri, ierr)
              else
                 ! Calculate the full GF
                 call calc_GF(.false., no_u_TS, zwork_tri, GF_tri, ierr)
@@ -663,6 +742,16 @@ contains
              end if
 
           case ( CC_PART_NON_EQUI )
+
+             ! Recreate the correct format of the tri-matrix
+             if ( .not. Is_Volt_TriMat ) then
+                Is_Volt_TriMat = .true.
+                call delete(zwork_tri)
+                call delete(GF_tri)
+                call newzTriMat(zwork_tri,tri_Vparts,tri_Vpart,'GFinv')
+                call newzTriMat(GF_tri,tri_Vparts,tri_Vpart,'GFinv')
+                call setup_arrays()
+             end if
              
              ! The non-equilibrium integration points have the density
              ! in the real part of the Gf.Gamma.Gf^\dagger
@@ -927,6 +1016,8 @@ contains
     call memory('D','Z',size(GammaLT)+size(GammaRT),'transiesta')
     deallocate(GammaLT,GammaRT)
 
+    call clear_TriMat_inversion()
+
     ! I would like to add something here which enables 
     ! 'Transiesta' post-process
 
@@ -938,6 +1029,18 @@ contains
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS transiesta mem' )
 #endif
+
+  contains
+
+    subroutine setup_arrays()
+      zwork => val(GF_tri)
+      SigmaL => zwork(1:no_L**2)
+      SigmaR => zwork(size(zwork)-no_R**2+1:size(zwork))
+      zwork => val(zwork_tri)
+      nzwork = elements(zwork_tri)
+      if ( nzwork < nnzs(ts_sp_uc) ) call die('The memory for transiesta cannot &
+           &sustain the implementation, contact the developers.')
+    end subroutine setup_arrays
 
   end subroutine transiesta_tri
 
@@ -1150,11 +1253,10 @@ contains
 
        do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io) 
 
-          !ju = l_col(ind) ! The '- no_BufL' is moved outside the loop
-          idx = index(Gfinv_tri,l_col(ind)-no_BufL,iu)
-
           ! Notice that we transpose back here...
           ! See symmetrize_HS_kpt
+          idx = index(Gfinv_tri,l_col(ind)-no_BufL,iu)
+
           GFinv(idx) = ZE * zS(ind) - zH(ind)
        end do
     end do

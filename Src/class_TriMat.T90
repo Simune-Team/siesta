@@ -121,16 +121,14 @@
     n = this%data%parts
   end function parts_TriMat
 
-  elemental function which_part_TriMat(this,row,col) result (n)
+  elemental function which_part_TriMat(this,no) result (n)
     type(TYPE_NAME), intent(in)   :: this
-    integer, intent(in), optional :: row, col
-    integer                       :: n, i, no
-    if ( present(row) ) no = row
-    if ( present(col) ) no = col
+    integer, intent(in) :: no
+    integer                       :: n, i
     n = 1
     do i = 1 , this%data%parts
        if ( no < n + this%data%tri_nrows(i) ) then
-          n = i - 1
+          n = i
 	  return
        end if
        n = n + this%data%tri_nrows(i)

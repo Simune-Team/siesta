@@ -51,6 +51,8 @@ contains
     use intrinsic_missing, only: EYE
     use class_zTriMat
 
+    use m_trimat_invert, only: invert_TriMat
+
     implicit none 
 
 ! *********************
@@ -84,6 +86,12 @@ contains
 #endif
 
     call timer('GFT',1) 
+
+    if ( parts(GFinv_tri) > 3 ) then
+       call invert_TriMat(GFinv_tri,GF_tri)
+       call timer('GFT',2) 
+       return
+    end if
     
     ! point the pointers
     GFinv => val(GFinv_tri)
@@ -343,11 +351,12 @@ contains
 ! ##                Nick Papior Andersen, nickpapior@gmail.com    ##
 ! ##                                                              ##
 ! ##################################################################
-  subroutine calc_GF_Part(no_u_TS, no_L, no_R, GFinv_tri,GF22,ierr)
+  subroutine calc_GF_Part(no_u_TS, no_L, no_R, GFinv_tri,GF_tri,ierr)
     
     use intrinsic_missing, only: EYE
     use class_zTriMat
-    use alloc
+    
+    use m_trimat_invert, only: invert_TriMat
 
     implicit none 
 
@@ -361,7 +370,7 @@ contains
     ! as we dont need to make two different routines for real and complex
     ! Hamiltonian values.
     type(zTriMat), intent(in out) :: GFinv_tri ! the inverted GF (in tri-diagonal form)
-    complex(dp), target, intent(inout) :: GF22((no_u_TS-no_R-no_L)**2)
+    type(zTriMat), intent(in out) :: GF_tri    ! the GF (in tri-diagonal form)
     integer,     intent(out) :: ierr              ! inversion err
 
 
@@ -370,6 +379,7 @@ contains
     complex(dp), pointer :: iGf11(:), iGf12(:)
     complex(dp), pointer :: iGf21(:), iGf22(:), iGf23(:)
     complex(dp), pointer ::           iGf32(:), iGf33(:)
+    complex(dp), pointer :: GF22(:)
     integer :: ipvt(no_u_TS)
     integer :: nL,nC,nR
 
@@ -378,6 +388,14 @@ contains
 #endif
 
     call timer('GFT_P',1) 
+
+    if ( parts(GFinv_tri) > 3 ) then
+       call invert_TriMat(GFinv_tri,GF_tri, &
+            which_part(GF_tri,no_L+1), &
+            which_part(GF_tri,nrows_g(GFinv_tri)-no_R))            
+       call timer('GFT_P',2) 
+       return
+    end if
 
     ! point the pointers
     GFinv => val(GFinv_tri)
@@ -390,6 +408,7 @@ contains
     iGf23 => val(GFinv_tri,2,3)
     iGf32 => val(GFinv_tri,3,2)
     iGf33 => val(GFinv_tri,3,3)
+    Gf22  => val(GF_tri,2,2)
 
     ierr = 0
 
