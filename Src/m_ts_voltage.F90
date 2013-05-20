@@ -231,7 +231,7 @@ contains
   subroutine init_elec_indices(cell, meshG, nsm, na_u, xa)
     use parallel,     only : IONode
     use units,        only : Ang
-    use m_ts_options, only : na_BufL => NBufAtL, na_BufR => NBufAtR
+    use m_ts_options, only : na_BufL, na_BufR
     use m_ts_electype
     use m_ts_options, only : ElLeft, ElRight
     

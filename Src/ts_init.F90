@@ -60,27 +60,16 @@ contains
 ! *********************
     complex(dp), dimension(:,:), allocatable :: dos
     integer :: i, sNE, eNE
-    integer :: nBL, nBR
     integer :: nL, nC, nR, nTS
 
     ! Read in options for transiesta
-    call read_ts_options( ucell )
+    call read_ts_options( ucell , na_u , lasto )
 
     ! Setup the k-points
     call setup_ts_kpoint_grid( ucell )
 
     ! If we actually have a transiesta run we need to process accordingly!
     if ( TSmode ) then
-
-       ! Figure out the number of orbitals on the buffer atoms
-       nBL = 0
-       do i = 1 , NBufAtL
-          nBL = nBL + lasto(i) - lasto(i-1)
-       end do
-       nBR = 0
-       do i = na_u - NBufAtR+1 , na_u
-          nBR = nBR + lasto(i) - lasto(i-1)
-       end do
 
        ! here we will check for all the size requirements of Transiesta
        ! I.e. whether some of the optimizations can be erroneous or not
@@ -91,7 +80,7 @@ contains
        ! is VERY WRONG...
        ! First calculate L/C/R sizes (we remember to subtract the buffer
        ! orbitals)
-       nTS = no_u - nBL - nBR
+       nTS = no_u - no_BufL - no_BufR
        nL  = TotUsedOrbs(ElLeft)
        nR  = TotUsedOrbs(ElRight)
        nC  = nTS  - nL  - nR
@@ -119,11 +108,11 @@ contains
 
           if ( ts_method == TS_SPARSITY_TRI ) then
 
-             if ( NBufAtL + NBufAtR > 0 ) then
+             if ( na_BufL + na_BufR > 0 ) then
                 call die('Currently the code does not handle buffer atoms &
                      &for the tri-diagonal part')
              end if
-             
+
              if ( IsVolt .and. (nL > nC .or. nR > nC) ) then
                 write(*,'(a,2(i0,tr1,''/'',tr1),i0)') &
                      'Sizes are L/C/R: ',nL,nC,nR
@@ -138,7 +127,7 @@ contains
 
        ! Show every region of the Transiesta run
        call ts_show_regions(ucell,na_u,xa, &
-            NBufAtL,ElLeft, ElRight,NBufAtR)
+            na_BufL,ElLeft, ElRight,na_BufR)
        
        ! Create the contour lines
        call setup_contour(IsVolt,Cmethod,VoltL,0.0d0,VoltR, &
@@ -183,14 +172,14 @@ contains
        call do_Green('L',ElLeft, GFFileL, GFTitle, &
             ElecValenceBandBot, ReUseGF, &
             ts_nkpnt,ts_kpoint,ts_kweight, &
-            NBufAtL, .false., & !For now TranSIESTA will only perform with inner-cell distances
+            na_BufL, .false., & !For now TranSIESTA will only perform with inner-cell distances
             ucell,xa,na_u,NEn,contour,VoltL,.false.,dos,nspin)
        
        ! Create the Right GF file
        call do_Green('R',ElRight,GFFileR, GFTitle, &
             ElecValenceBandBot, ReUseGF, &
             ts_nkpnt,ts_kpoint,ts_kweight, &
-            NBufAtR, .false., &
+            na_BufR, .false., &
             ucell,xa,na_u,NEn,contour,VoltR,.false.,dos,nspin)
        
        call memory('D','Z',NEn*nspin,'transiesta')

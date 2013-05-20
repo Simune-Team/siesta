@@ -101,8 +101,8 @@ contains
     use m_ts_electype
     use m_ts_options, only : ElLeft, ElRight
     use m_ts_options, only : GFFileL, GFFileR
-    use m_ts_options, only : na_BufL => NBufAtL
-    use m_ts_options, only : na_BufR => NBufAtR
+    use m_ts_options, only : na_BufL, no_BufL
+    use m_ts_options, only : na_BufR, no_BufR
 
     use m_ts_sparse, only : ts_sp_uc
     use m_ts_sparse, only : tsup_sp_uc
@@ -142,8 +142,6 @@ contains
     integer, intent(in)  :: TSiscf
 
 ! ******************* Regional sizes *************************
-! * Buffer regions
-    integer :: no_BufL, no_BufR
 ! * Electrode regions
     integer :: na_L_HS, na_R_HS
     integer :: no_L_HS, no_R_HS
@@ -222,13 +220,6 @@ contains
     no_L = TotUsedOrbs(ElLeft)
     na_R = TotUsedAtoms(ElRight)
     no_R = TotUsedOrbs(ElRight)
-
-    ! Calculate the number of orbitals not used (i.e. those 
-    ! in the buffer regions)
-    ! Left has the first atoms
-    no_BufL = lasto(na_BufL)
-    ! Right has the last atoms
-    no_BufR = lasto(na_u) - lasto(na_u - na_BufR)
 
     ! Create the lasto pointers for the electrode expansions...
     allocate(lasto_L(0:na_L_HS))

@@ -74,8 +74,8 @@ contains
 
     use m_ts_electype
     use m_ts_options, only : ElLeft, ElRight
-    use m_ts_options, only : na_BufL => NBufAtL
-    use m_ts_options, only : na_BufR => NBufAtR
+    use m_ts_options, only : na_BufL, no_BufL
+    use m_ts_options, only : na_BufR, no_BufR
 
 ! **********************
 ! * INPUT variables    *
@@ -96,22 +96,13 @@ contains
 ! **********************
     ! Temporary arrays for knowing the electrode size
     integer :: no_L, no_R
-    integer :: no_BufL, no_BufR
     integer :: no_u_LCR
-
 
     ! Calculate the number of used atoms/orbitals in left/right
     !na_L = na_L_HS * NRepA1L * NRepA2L
     no_L = TotUsedOrbs(ElLeft)
     !na_R = na_R_HS * NRepA1R * NRepA2R
     no_R = TotUsedOrbs(ElRight)
-
-    ! Calculate the number of orbitals not used (i.e. those 
-    ! in the buffer regions)
-    ! Left has the first atoms
-    no_BufL = lasto(na_BufL)
-    ! Right has the last atoms
-    no_BufR = lasto(na_u) - lasto(na_u - na_BufR)
 
     ! Number of orbitals in TranSIESTA
     no_u_LCR = nrows_g(sparse_pattern) - no_BufL - no_BufR
@@ -176,8 +167,6 @@ contains
 ! **********************
 ! * LOCAL variables    *
 ! **********************
-    ! Helpers to generate the sparsity patterns
-    type(OrbitalDistribution) :: dit
     ! We need temporary sparsity patterns which will be deleted
     ! We need this to generate the Transiesta sparsity
     type(Sparsity) :: sp_global, sp_uc
@@ -211,64 +200,46 @@ contains
 
     call retrieve(s_sp,nrows=no_local,nrows_g=no_u)
 
-    ! Create the Fake distribution
-    ! The Block-size is the number of orbitals, i.e. all on the first processor
+    ! Create the (local) SIESTA-UC sparsity...
 #ifdef MPI
-    call newDistribution(no_u,MPI_COMM_WORLD,dit,name='SIESTA global distribution')
+    call crtSparsity_SC(s_sp,sp_global, &
+         UC=.TRUE.)
 #else
-    call newDistribution(no_u,-1,dit,name='SIESTA global distribution')
+    call crtSparsity_SC(s_sp,sp_uc    , &
+         UC=.TRUE.)
 #endif
-
-#ifdef TRANSIESTA_DEBUG
-    write(*,*)'Starting new Distribution'
-#endif
-
-    ! point to the local sparsity pattern arrays
-    call retrieve(s_sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
 
 #ifdef MPI
+    ! point to the local (SIESTA-UC) sparsity pattern arrays
+    call retrieve(sp_global,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
+
     call glob_sparse_numh(no_local,no_u,l_ncol,l_ncolg)
     call glob_sparse_listhptr(no_u,l_ncolg,l_ptrg)
     call glob_sparse_listh(no_local,no_u, maxnh, &
          l_ncol , l_ptr , l_col , &
          l_ncolg, l_ptrg, maxnhg, l_colg)
 
-    call newSparsity(sp_global,no_u, no_u, &
+    ! Delete the full sparsity pattern
+    call delete(sp_global)
+    
+    call newSparsity(sp_uc,no_u, no_u, &
          maxnhg, l_ncolg, l_ptrg, l_colg, &
-         name='SIESTA-full sparsity')
-
+         name='SIESTA UC sparsity')
+    
     ! Deallocate the arrays which we do not need
     deallocate(l_ncolg,l_ptrg,l_colg)
     call memory('D','I',no_u*2+maxnhg,'globArrays')
 
-#ifdef TRANSIESTA_DEBUG
-    write(*,*)'Created FULL SIESTA sparsity'
-    call print_type(sp_global)
-
-    call sp_to_file(400+Node, sp_global)
 #endif
-
-    ! Create the SIESTA-UC sparsity...
-    call crtSparsity_SC(sp_global,sp_uc, &
-         UC=.TRUE.)
 
 #ifdef TRANSIESTA_DEBUG
     write(*,*)'Created UC SIESTA sparsity'
     call print_type(sp_uc)
-
-    call sp_to_file(500+Node, sp_uc)
+    call sp_to_file(400+Node, sp_uc)
 #endif
-
-    ! Delete the full sparsity pattern
-    ! TODO check that it IS deleted
-    call delete(sp_global)
 
     ! Write that we have created it
     if ( IONode ) call print_type(sp_uc)
-
-#else 
-    call crtSparsity_SC(s_sp,sp_uc, UC=.TRUE.)
-#endif
 
     ! Immediately point the global arrays to their respective parts
     call retrieve(sp_uc,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &

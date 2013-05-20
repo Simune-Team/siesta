@@ -46,6 +46,7 @@ contains
     use parallel, only : IONode
     use alloc, only : re_alloc, de_alloc
     use m_ts_electype
+    use m_ts_options, only : no_BufL, no_BufR
     use m_ts_options, only : ElLeft, ElRight
 
     ! The sparsity pattern
@@ -54,6 +55,7 @@ contains
     integer, intent(out) :: parts
     integer, pointer :: n_part(:)
     ! Local variables
+    integer, pointer :: tmp_part(:)
     integer :: i, N, val
     integer :: no_L, no_C, no_R
 
@@ -62,7 +64,7 @@ contains
     if ( .not. associated(n_part) ) then
        parts = 0
        N = 0
-       do while ( N < nrows_g(sp) )
+       do while ( N < nrows_g(sp) - no_BufL - no_BufR)
           ! Albeit this is "slow" we should never exceed 1000 re-allocations
           ! (that would mean a huge system)
           parts = parts + 1
@@ -77,9 +79,17 @@ contains
     end if
 
     ! Even out the matrix part sizes...
-    do i = 1 , parts
-       call even_out_parts(sp, parts, n_part, i)
+
+    call re_alloc(tmp_part,1,parts)
+    N = 1
+    do while ( N /= 0 )
+       tmp_part(:) = n_part(:)
+       do i = 1 , parts
+          call even_out_parts(sp, parts, n_part, i)
+       end do
+       N = maxval(abs(tmp_part-n_part))
     end do
+    call de_alloc(tmp_part)
 
     ! The parts now have almost the same size and we will check that it
     ! is a valid thing, if not, we will revert to the other method of
@@ -89,7 +99,7 @@ contains
     ! The most probable thing is that the electrodes are not
     ! contained in the first two parts.
     if ( ts_valid_tri(sp, parts, n_part) /= VALID ) then
-       call die('Contact the developers. (missing implementation)&
+       call die('Contact the developers. (missing implementation). &
             &You appear to have a special form of electrode.')
     end if
 

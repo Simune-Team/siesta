@@ -84,7 +84,8 @@
       use m_ts_electype
       use m_ts_options, only : ElLeft, ElRight
 
-      use m_ts_options, only : NBufAtL, NBufAtR
+      use m_ts_options, only : na_BufL, na_BufR
+      use m_ts_options, only : no_BufL, no_BufR
       use m_ts_options, only : GFFileL, GFFileR
       use m_ts_options, only : IsVolt, VoltFDF, VoltL, VoltR
       use m_ts_options, only : UseBulk, TriDiag, UpdateDMCR
@@ -251,9 +252,6 @@
 !     Size of problem:
 !==================================================================
       
-!     Number of orbitals in the buffer regions
-      integer, save :: noBufL,noBufR
-
       integer, save :: nou ! no. of orbs. from SIESTA minus buffer-orbitals
 !                          ! i.e. no. used orbitals
 
@@ -396,24 +394,13 @@
       if (firsttime) then
 ! ============================================================
 
-!     the first NBufAtL atoms will be removed
-         noBufL = 0
-         do ia = 1 , NBufAtL
-            noBufL = noBufL+(lasto(ia)-lasto(ia-1))
-         end do                 !ia
-!     the last NBufAtR atoms will be removed
-         noBufR = 0
-         do ia = na_u - NBufAtR+1 , na_u
-            noBufR = noBufR+(lasto(ia)-lasto(ia-1))
-         end do                 !ia
-
 !
 ! No. states minus buffers
 !     
 #ifdef MPI
-         nou = no_u - (noBufL+noBufR)
+         nou = no_u - (no_BufL+no_BufR)
 #else
-         nou = no_l - (noBufL+noBufR)
+         nou = no_l - (no_BufL+no_BufR)
 #endif
 
 
@@ -426,7 +413,7 @@
 
          lastoL(0)=0
          ia2=0
-         do ia=NBufAtL+1,NBufAtL + nuaL, Rep(ElLeft)
+         do ia=na_BufL+1,na_BufL + nuaL, Rep(ElLeft)
             ia2=ia2+1
             lastoL(ia2)=lastoL(ia2-1) + (lasto(ia) - lasto(ia-1))
          end do                 !ia
@@ -443,7 +430,7 @@
 
          lastoR(0)=0
          ia2=0
-         do ia=na_u-(nuaR + NBufAtR)+1,na_u-NBufAtR, Rep(ElRight)
+         do ia=na_u-(nuaR + na_BufR)+1,na_u-na_BufR, Rep(ElRight)
             ia2=ia2+1
             lastoR(ia2)=lastoR(ia2-1) + (lasto(ia) - lasto(ia-1))
          end do                 !ia
@@ -517,13 +504,13 @@
 #else
             iuo = indxuo(io)
 #endif
-            ic = iuo - noBufL
+            ic = iuo - no_BufL
             do j = 1,numh(io)
                ind = listhptr(io) + j
                jo = listh(ind)
                juo = indxuo(jo)
 
-               jc = juo - noBufL
+               jc = juo - no_BufL
 
                ! Retrieve the scattering position
                region(ind) = get_scat_region(ic,noL,jc,noR,nou)
@@ -594,13 +581,13 @@
 
          do io = 1,no_u
             iuo = indxuo(io)
-            ic = iuo - noBufL
+            ic = iuo - no_BufL
 
             do j = 1,numhg(io)
                ind = listhptrg(io) + j
                jo = listhg(ind)
                juo = indxuo(jo)
-               jc = juo - noBufL
+               jc = juo - no_BufL
                
                ! Retrieve the scattering position
                regiong(ind) = get_scat_region(ic,noL,jc,noR,nou)
@@ -715,7 +702,7 @@
      &           'Total charge                  [Qt0]  :',Qtot,
      &           'Charge in update region       [Qc]   :',Qc,
      &           'Charge outside update region  [Qcn]  :',Qcn
-            if ( NBufAtL > 0 ) write(*,'(a,f12.5,/,a,f12.5)')
+            if ( na_BufL > 0 ) write(*,'(a,f12.5,/,a,f12.5)')
      &           'Left buffer                   [LB]   :',Q_kpt(1,1,1),
      &           'Left buffer/left electrode    [LB-L] :',Q_kpt(2,1,1)
             write(*,'(a,f12.5,4(/,a,f12.5))')
@@ -724,7 +711,7 @@
      &           'Device                        [C]    :',Q_kpt(5,1,1),
      &           'Device/right electrode        [C-R]  :',Q_kpt(6,1,1),
      &           'Right electrode               [R]    :',Q_kpt(7,1,1)
-            if ( NBufAtR > 0 ) write(*,'(a,f12.5,/,a,f12.5)')
+            if ( na_BufR > 0 ) write(*,'(a,f12.5,/,a,f12.5)')
      &           'Right electrode/right buffer  [R-RB] :',Q_kpt(8,1,1),
      &           'Right buffer                  [RB]   :',Q_kpt(9,1,1)
             write(*,'(a,f12.5,/)')
@@ -918,12 +905,12 @@
           call set_HS_matrix(Gamma,ucell,na_u,no_u,no_s,
      &         maxnhg,xijg,numhg,listhptrg,listhg,indxuo,Hsg,Ssg, 
      &         k,H,S,
-     &         RemNFirstOrbitals=noBufL,RemNLastOrbitals=noBufR)
+     &         RemNFirstOrbitals=no_BufL,RemNLastOrbitals=no_BufR)
 #else
           call set_HS_matrix(Gamma,ucell,na_u,no_u,no_s,
      &         maxnh,xij,numh,listhptr,listh,indxuo,Hs(:,ispin),Ss,
      &         k,H,S,
-     &         RemNFirstOrbitals=noBufL,RemNLastOrbitals=noBufR)
+     &         RemNFirstOrbitals=no_BufL,RemNLastOrbitals=no_BufR)
 #endif
           call matrix_rem_left_right(nou,H,S,noL,noR)
           ! The symmetrization has been moved to this routine
@@ -1296,14 +1283,14 @@
       if(ts_gamma_scf) then
          do io = 1,no_u
             iuo = indxuo(io)
-            ic = iuo - noBufL
+            ic = iuo - no_BufL
             do j = 1,numhg(io)
                ind = listhptrg(io) + j
 
                if(listudg(ind)) then ! update
                   jo = listhg(ind)
                   juo = indxuo(jo)
-                  jc = juo - noBufL
+                  jc = juo - no_BufL
                   
                   Dnewg(ind) = Dnewg(ind) +
      &                 DM(ic+nou*(jc-1))
@@ -1326,14 +1313,14 @@
       else
          do io = 1,no_u
             iuo = indxuo(io)
-            ic = iuo - noBufL
+            ic = iuo - no_BufL
             do j = 1,numhg(io)
                ind = listhptrg(io) + j
 
                if(listudg(ind)) then ! update
                   jo = listhg(ind)
                   juo = indxuo(jo)
-                  jc = juo - noBufL
+                  jc = juo - no_BufL
                   
                   kxij = k(1)*xijg(1,ind) +
      &                 k(2)*xijg(2,ind) +
@@ -1372,12 +1359,12 @@
 
         do io = 1,no_l
            iuo = indxuo(io)
-           ic = iuo - noBufL 
+           ic = iuo - no_BufL 
            do j = 1,numh(io)
               ind = listhptr(io) + j
               jo = listh(ind)
               juo = indxuo(jo)
-              jc = juo - noBufL 
+              jc = juo - no_BufL 
               if(listud(ind)) then ! update
 
                  if ( ts_gamma_scf ) then
@@ -1481,17 +1468,17 @@
          call memory('A','D',2+2*2*nspin,'transiesta')
          ! Calculate the density factor for obtaining the correct charge
          ! For the left buffer region
-         reD(1) = REAL(noBufL+noBufR,dp)/REAL(noBufL,dp)
+         reD(1) = REAL(no_BufL+no_BufR,dp)/REAL(no_BufL,dp)
          reD(1) = (Qtot-sum(Q_kpt(:,:,:)))
      &        / (reD(1)*sum(Q_kpt(1,:,:)))
          ! Calculate the density factor for obtaining the correct charge
          ! For the right buffer region
-         reD(2) = REAL(noBufL+noBufR,dp)/REAL(noBufR,dp)
+         reD(2) = REAL(no_BufL+no_BufR,dp)/REAL(no_BufR,dp)
          reD(2) = (Qtot-sum(Q_kpt(:,:,:)))/(reD(2)
      &        *sum(Q_kpt(9,:,:)))
          ! Reset to zero if not existing
-         if ( noBufL == 0 ) reD(1) = 0.0_dp
-         if ( noBufR == 0 ) reD(2) = 0.0_dp
+         if ( no_BufL == 0 ) reD(1) = 0.0_dp
+         if ( no_BufR == 0 ) reD(2) = 0.0_dp
 
          ! Apply charge-correction factor 
          ! This will reduce "heavy" charge fluctuations and
@@ -1502,14 +1489,14 @@
             do io = 1,no_l
                do j = 1,numh(io)
                   ind = listhptr(io) + j
-                  if ( region(ind) == 1 .and. noBufL > 0 ) then
+                  if ( region(ind) == 1 .and. no_BufL > 0 ) then
                      Dnew(ind,ispin) = Dnew(ind,ispin)*reD(1)+
      &                    Dnew(ind,ispin)
                      Enew(ind,ispin) = Enew(ind,ispin)*reD(1)+
      &                    Enew(ind,ispin)
                      addQ(1,ispin,1) = addQ(1,ispin,1)+
      &                    Dnew(ind,ispin)*reD(1)
-                  else if ( region(ind) == 9 .and. noBufR > 0 ) then
+                  else if ( region(ind) == 9 .and. no_BufR > 0 ) then
                      Dnew(ind,ispin) = Dnew(ind,ispin)*reD(2)+
      &                    Dnew(ind,ispin)
                      Enew(ind,ispin) = Enew(ind,ispin)*reD(2)+
@@ -1545,10 +1532,10 @@
       if(IONode) then
          write(*,'(a,7(1x,a8))') 'ts-charge:','O','L','L-C','C'
      &        ,'C-R','R','Qt'
-         if ( noBufL + noBufR > 0 ) then
-            if ( noBufL == 0 ) then ! It must be the Right buffer who has states
+         if ( no_BufL + no_BufR > 0 ) then
+            if ( no_BufL == 0 ) then ! It must be the Right buffer who has states
                write(*,'(a,2(1x,a8))') 'ts-charge:','R-RB','RB'
-            else if ( noBufR == 0 ) then ! The left has states
+            else if ( no_BufR == 0 ) then ! The left has states
                write(*,'(a,2(1x,a8))') 'ts-charge:','LB','LB-L'
             else ! Both have states
                write(*,'(a,4(1x,a8))') 'ts-charge:','LB','LB-L'
@@ -1560,11 +1547,11 @@
      &        ,sum(Q_kpt(3,:,:)),sum(Q_kpt(4,:,:))
      &        ,sum(Q_kpt(5,:,:)),sum(Q_kpt(6,:,:))
      &        ,sum(Q_kpt(7,:,:)),Qc+Qcn
-         if ( noBufL + noBufR > 0 ) then
-            if ( noBufL == 0 ) then
+         if ( no_BufL + no_BufR > 0 ) then
+            if ( no_BufL == 0 ) then
                write(*,'(a,2(1x,f8.3))') 'ts-charge:'
      &              ,sum(Q_kpt(8,:,:)),sum(Q_kpt(9,:,:))
-            else if ( noBufR == 0 ) then
+            else if ( no_BufR == 0 ) then
                write(*,'(a,2(1x,f8.3))') 'ts-charge:'
      &              ,sum(Q_kpt(1,:,:)),sum(Q_kpt(2,:,:))
             else

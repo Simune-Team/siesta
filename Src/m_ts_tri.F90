@@ -62,19 +62,29 @@ contains
   subroutine ts_tri_init()
     use alloc, only : re_alloc, de_alloc
     use parallel, only : IONode
+#ifdef MPI
+    use mpi_siesta, only : MPI_COMM_WORLD
+#endif
+
+    use class_OrbitalDistribution
     use class_Sparsity
-    use m_ts_options, only : IsVolt
+    use create_Sparsity_Union
+
+    use m_ts_options, only : IsVolt, no_BufL, no_BufR
     use m_ts_electype
     use m_ts_options, only : ElLeft, ElRight
     use m_ts_sparse, only : ts_sp_uc
 
     use m_ts_Sparsity2TriMat
 
+    type(OrbitalDistribution) :: dit
+    type(Sparsity) :: ts_uc_inc_L, ts_uc_inc_LR
+
     integer :: i, els, no_L, no_C, no_R
 
     no_L = TotUsedOrbs(ElLeft)
     no_R = TotUsedOrbs(ElRight)
-    no_C = nrows_g(ts_sp_uc) - no_L - no_R
+    no_C = nrows_g(ts_sp_uc) - no_L - no_R - no_BufL - no_BufR
 
     ! We will initialize the tri-diagonal matrices here
     if ( IsVolt ) then
@@ -85,9 +95,49 @@ contains
        tri_Vpart(3) = no_R
     end if
 
-    ! This will check, even out, and print out
+    ! In order to ensure that the electrodes are in the
+    ! tri-diagonal sparsity pattern, we can easily create
+    ! the full sparsity pattern with the electrodes included
+    ! and then recreate the tri-diagonal sparsity pattern
+    ! This is probably the crudest way of doing it.
+#ifdef MPI
+    call newDistribution(nrows_g(ts_sp_uc),MPI_COMM_WORLD,dit, &
+         name='TranSIESTA UC distribution')
+#else    
+    call newDistribution(nrows_g(ts_sp_uc),-1,dit, &
+         name='TranSIESTA UC distribution')
+#endif
+
+    ! This may seem stupid, but it will leverage a lot of memory
+    ! use and for large systems it could prove faster.
+    ! For small systems, it will probably be slower...
+
+    call crtSparsity_Union(dit,ts_sp_uc,&
+         no_BufL+1, no_BufL+1, &
+         no_L, 1, & ! insertion of the vector 
+         ts_uc_inc_L)
+    call crtSparsity_Union(dit,ts_uc_inc_L,&
+         no_BufL+1, no_BufL+1, &
+         1, no_L, & ! insertion of the vector 
+         ts_uc_inc_LR)
+    call delete(ts_uc_inc_L)
+
+    call crtSparsity_Union(dit,ts_uc_inc_LR,&
+         no_BufL+no_L+no_C+1, no_BufL+no_L+no_C+1, &
+         no_R, 1, & ! insertion of the vector
+         ts_uc_inc_L)
+    call delete(ts_uc_inc_LR)
+    call crtSparsity_Union(dit,ts_uc_inc_L,&
+         no_BufL+no_L+no_C+1, no_BufL+no_L+no_C+1, &
+         1, no_R, & ! insertion of the vector
+         ts_uc_inc_LR)
+    call delete(dit)
+    call delete(ts_uc_inc_L)
+
+    ! This will create and even out the parts
     if ( associated(tri_part) ) call de_alloc(tri_part)
-    call ts_Sparsity2TriMat(ts_sp_uc,tri_parts,tri_part)
+    call ts_Sparsity2TriMat(ts_uc_inc_LR,tri_parts,tri_part)
+    call delete(ts_uc_inc_LR)
 
     if ( tri_parts < 3 ) then
        call die('Errorneous transiesta update sparsity pattern. &
@@ -195,8 +245,8 @@ contains
     use m_ts_electype
     use m_ts_options, only : ElLeft, ElRight
     use m_ts_options, only : GFFileL, GFFileR
-    use m_ts_options, only : na_BufL => NBufAtL
-    use m_ts_options, only : na_BufR => NBufAtR
+    use m_ts_options, only : na_BufL, no_BufL
+    use m_ts_options, only : na_BufR, no_BufR
 
     use m_ts_sparse, only : ts_sp_uc
     use m_ts_sparse, only : tsup_sp_uc
@@ -239,8 +289,6 @@ contains
     integer, intent(in) :: TSiscf
 
 ! ******************* Regional sizes *************************
-! * Buffer regions
-    integer :: no_BufL, no_BufR
 ! * Electrode regions
     integer :: na_L_HS, na_R_HS
     integer :: no_L_HS, no_R_HS
@@ -271,7 +319,7 @@ contains
 
 ! ******************* Computational arrays *******************
     integer :: ndwork, nzwork
-    real(dp),    allocatable :: dwork(:)
+    real(dp), allocatable :: dwork(:)
     complex(dp), pointer :: zwork(:)
     type(zTriMat) :: zwork_tri, GF_tri
     logical :: Is_Volt_TriMat
@@ -319,13 +367,6 @@ contains
     no_L = TotUsedOrbs(ElLeft)
     na_R = TotUsedAtoms(ElRight)
     no_R = TotUsedOrbs(ElRight)
-
-    ! Calculate the number of orbitals not used (i.e. those 
-    ! in the buffer regions)
-    ! Left has the first atoms
-    no_BufL = lasto(na_BufL)
-    ! Right has the last atoms
-    no_BufR = lasto(na_u) - lasto(na_u - na_BufR)
 
     ! Create the lasto pointers for the electrode expansions...
     allocate(lasto_L(0:na_L_HS))

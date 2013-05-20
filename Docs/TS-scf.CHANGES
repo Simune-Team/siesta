@@ -1,4 +1,34 @@
 ----------------------------------------------------
+May 20, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-30
+Ensured the correct tri-part creation and moved no_BufL/R to options
+
+* By utilizing create_Sparsity_Union we can ensure that the electrode
+  parts are fully considered when figuring out the tri parts for
+  transiesta.
+  It however, requires some more initialization on the sparsity pattern
+  is performed as we ensure that the elements are considered.
+
+* Numerous routines had calculated the number of orbitals in the 
+  buffer regions of transiesta.
+  This calculation has now moved to the option reading of TS and
+  is thus made an "option"
+
+  Removed code that used no_BufL/R the most frequent places
+
+modified:
+  Src/Makefile
+  Src/create_Sparsity_Union.F90
+  Src/m_ts_Sparsity2TriMat.F90
+  Src/m_ts_in_siesta.F
+  Src/m_ts_mem.F90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse.F90
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_tri.F90
+  Src/m_ts_voltage.F90
+  Src/ts_init.F90
+
+----------------------------------------------------
 May 20, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-29
 Added generalization of tri-diagonal inversion and Transiesta implementation
 

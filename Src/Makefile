@@ -447,7 +447,7 @@ coor.o: alloc.o parallel.o precision.o siesta_geom.o sys.o zmatrix.o
 coxmol.o: files.o periodic_table.o precision.o
 create_Sparsity_SC.o: class_Sparsity.o geom_helper.o intrinsic_missing.o
 create_Sparsity_Union.o: class_OrbitalDistribution.o class_Sparsity.o
-create_Sparsity_Union.o: parallel.o
+create_Sparsity_Union.o: parallel.o precision.o
 debugmpi.o: parallel.o
 denmat.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 denmatlomem.o: alloc.o globalise.o onmod.o precision.o
@@ -646,11 +646,11 @@ m_ts_sparse_helper.o: class_SpData1D.o class_Sparsity.o geom_helper.o
 m_ts_sparse_helper.o: intrinsic_missing.o m_ts_electype.o m_ts_method.o
 m_ts_sparse_helper.o: m_ts_options.o parallel.o precision.o
 m_ts_tri.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
-m_ts_tri.o: class_SpData1D.o class_Sparsity.o class_TriMat.o m_trimat_invert.o
-m_ts_tri.o: m_ts_Sparsity2TriMat.o m_ts_cctype.o m_ts_contour.o m_ts_elec_se.o
-m_ts_tri.o: m_ts_electype.o m_ts_gf.o m_ts_kpoints.o m_ts_method.o
-m_ts_tri.o: m_ts_options.o m_ts_sparse.o m_ts_sparse_helper.o m_ts_tri_scat.o
-m_ts_tri.o: parallel.o precision.o units.o
+m_ts_tri.o: class_SpData1D.o class_Sparsity.o class_TriMat.o
+m_ts_tri.o: create_Sparsity_Union.o m_trimat_invert.o m_ts_Sparsity2TriMat.o
+m_ts_tri.o: m_ts_cctype.o m_ts_contour.o m_ts_elec_se.o m_ts_electype.o
+m_ts_tri.o: m_ts_gf.o m_ts_kpoints.o m_ts_method.o m_ts_options.o m_ts_sparse.o
+m_ts_tri.o: m_ts_sparse_helper.o m_ts_tri_scat.o parallel.o precision.o units.o
 m_ts_tri_scat.o: class_TriMat.o intrinsic_missing.o m_trimat_invert.o
 m_ts_tri_scat.o: precision.o
 m_ts_voltage.o: m_ts_electype.o m_ts_options.o mesh.o parallel.o precision.o

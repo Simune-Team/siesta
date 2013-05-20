@@ -33,10 +33,10 @@
 !    if(IONode)call print_type(tsup_sp)
 
 module create_Sparsity_Union
+  
+  use precision, only : dp
 
   implicit none
-
-  integer, parameter :: dp = selected_real_kind(10,100)
 
   private
 

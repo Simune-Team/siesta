@@ -51,8 +51,10 @@ integer  :: ncircle      ! Number of points on the circle part of the contour
 integer  :: npol         ! Number of poles included in the contour
 integer  :: nvolt        ! Number of points for the Bias integartion part
 integer  :: ntransport   ! Number of points for transport calculation
-integer  :: NBufAtL      ! Number of Left Buffer Atoms
-integer  :: NBufAtR      ! Number of Right Buffer Atoms
+integer  :: na_BufL      ! Number of Left Buffer Atoms
+integer  :: na_BufR      ! Number of Right Buffer Atoms
+integer  :: no_BufL      ! Number of Left Buffer orbitals
+integer  :: no_BufR      ! Number of Right Buffer orbitals
 character(200) :: GFTitle ! Title to paste in electrode Green's function files
 character(200) :: GFFileL ! Electrode Left GF File
 character(200) :: GFFileR ! Electrode Right GF File
@@ -89,8 +91,8 @@ integer, parameter :: ncircle_def = 24
 integer, parameter :: npol_def = 6
 integer, parameter :: nvolt_def = 5
 integer, parameter :: ntransport_def = 0
-integer, parameter :: NBufAtL_def = 0
-integer, parameter :: NBufAtR_def = 0
+integer, parameter :: na_BufL_def = 0
+integer, parameter :: na_BufR_def = 0
 integer, parameter :: NRepA_def = 1
 integer, parameter :: NUsedAtoms_def = -1
 character(20), parameter :: smethod_def = 'gaussfermi'
@@ -115,7 +117,7 @@ logical, save :: TSmode = .false.
 !
 ! **************************** OUTPUT *********************************
 
-subroutine read_ts_options(ucell)
+subroutine read_ts_options(ucell, na_u, lasto)
 
 ! SIESTA Modules Used
 use files, only  : slabel
@@ -135,6 +137,7 @@ use mpi_siesta, only : MPI_Integer, MPI_Comm_World
 implicit none
 
 real(dp),intent(in) :: ucell(3,3)
+integer, intent(in) :: na_u, lasto(0:na_u)
 ! Internal Variables
 character(len=40) :: chars, s_cmethod
 integer :: i
@@ -179,11 +182,23 @@ VoltR = -0.5_dp*VoltFDF
 UseBulk     = fdf_get('TS.UseBulkInElectrodes',UseBulk_def)
 TriDiag     = fdf_get('TS.TriDiag',TriDiag_def)
 UpdateDMCR  = fdf_get('TS.UpdateDMCROnly',UpdateDMCR_def)
-NBufAtL     = fdf_get('TS.BufferAtomsLeft',NBufAtL_def)
-NBufAtR     = fdf_get('TS.BufferAtomsRight',NBufAtR_def)
-if ( NBufAtL < 0 .or. NBufAtR < 0 ) then
+na_BufL     = fdf_get('TS.BufferAtomsLeft',na_BufL_def)
+
+! Figure out the number of orbitals on the buffer atoms
+no_BufL = 0
+do i = 1 , na_BufL
+   no_BufL = no_BufL + lasto(i) - lasto(i-1)
+end do
+
+na_BufR     = fdf_get('TS.BufferAtomsRight',na_BufR_def)
+no_BufR = 0
+do i = na_u - na_BufR + 1 , na_u
+   no_BufR = no_BufR + lasto(i) - lasto(i-1)
+end do
+if ( na_BufL < 0 .or. na_BufR < 0 ) then
    call die("Buffer atoms must be 0 or a positive integer.")
 end if
+
 chars       = fdf_get('TS.ChargeCorrection',ChargeCorr_def)
 ChargeCorr = 0
 if ( leqi(chars,'none') ) then
@@ -324,8 +339,8 @@ end if
  write(*,1) 'ts_read_options: Bulk Values in Electrodes    =', UseBulk
  write(*,1) 'ts_read_options: TriDiag                      =', TriDiag 
  write(*,1) 'ts_read_options: Update DM Contact Reg. only  =', UpdateDMCR
- write(*,5) 'ts_read_options: N. Buffer At. Left           =', NBufAtL
- write(*,5) 'ts_read_options: N. Buffer At. Right          =', NBufAtR
+ write(*,5) 'ts_read_options: Left buffer atoms            =', na_BufL
+ write(*,5) 'ts_read_options: Right buffer atoms           =', na_BufR
  write(*,5) 'ts_read_options: N. Pts. Circle               =', ncircle
  write(*,5) 'ts_read_options: N. Pts. Line                 =', nline
  write(*,5) 'ts_read_options: N. Poles in Contour          =', npol
@@ -338,7 +353,7 @@ end if
 if ( ChargeCorr == 0 ) then
  write(*,'(a)')'ts_read_options: Will not correct charge fluctuations'
 else if ( ChargeCorr == 1 ) then ! Correct in buffer
-  if ( 0 < NBufAtL .or. 0 < NBufAtR ) then
+  if ( 0 < na_BufL .or. 0 < na_BufR ) then
    write(*,10)'ts_read_options: Charge fluctuation correction=','buffer'
   else
      call die('Charge correction can not happen in buffer as no buffer &
