@@ -147,6 +147,8 @@ contains
           ! is SORTED!
           ! Thus it will only work for UC sparsity patterns.
           ind_k = ind_k + SFIND(k_col(ind_k+1:ind_k+kn),jo)
+          if ( ind_k <= k_ptr(io) ) &
+               call die('Could not find k-point index')
 
 !           if ( k_ptr(io) == ind_k ) then ! SFIND returns 0 on no find
 !              write(*,'(a,10000(tr1,i0))') &
@@ -251,10 +253,9 @@ contains
           ! TODO, this REQUIRES that l_col(:) is sorted
           rind = rin + SFIND(l_col(rin+1:rin+l_ncol(jo)),io)
           ! We do a check, just to be sure...
-          if ( rind == rin ) then
-             call die('ERROR symmetrization orbital does not &
-                  &exist.')
-          end if
+          if ( rind <= rin ) &
+               call die('ERROR symmetrization orbital does not &
+               &exist.')
 
           ! Symmetrize (notice that this is *transposed*)
           ! See prep_GF
@@ -376,6 +377,8 @@ contains
           ! of the full unit cell
           ind_k = k_ptr(io)
           ind_k = ind_k + SFIND(k_col(ind_k+1:ind_k+k_ncol(io)),jo)
+          if ( ind_k <= k_ptr(io) ) &
+               call die('Could not find k-point index')
 
           ! Todo, as this is a Gamma-calculation
           ! we probably should NOT do 'dH = dH + H'
@@ -480,10 +483,9 @@ contains
           ! TODO, this REQUIRES that l_col(:) is sorted
           rind = rin + SFIND(l_col(rin+1:rin+l_ncol(jo)),io)
           ! We do a check, just to be sure...
-          if ( rind == rin ) then
-             call die('ERROR symmetrization orbital does not &
-                  &exist.')
-          end if
+          if ( rind <= rin ) &
+               call die('ERROR symmetrization orbital does not &
+               &exist.')
 
           ! Symmetrize
           dS(ind)  = 0.5_dp * ( dS(ind) + dS(rind) )
@@ -661,6 +663,9 @@ contains
           ljo = UCORB(l_col(lind),nr)
 
           ! TODO implement SFIND in this segment...
+          ! ind = lup_ptr(io)
+          ! ind = ind + SFIND(lup_col(ind+1:ind+lup_ncol(io)),ljo)
+          ! if ( ind <= lup_ptr(io) ) cycle
 
           ! Now we loop across the update region
           ! This one must *per definition* have less elements.
@@ -744,6 +749,9 @@ contains
           ljo = UCORB(l_col(lind),nr)
 
           ! TODO implement the SFIND routine here!
+          ! rind = lup_ptr(io)
+          ! ind = rind + SFIND(lup_col(rind+1:rind+lup_ncol(io)),ljo)
+          ! if ( ind <= rind ) cycle
 
           ! Now we loop across the update region
           ! This one must *per definition* have less elements.
@@ -768,7 +776,7 @@ contains
              ! TODO, this REQUIRES that lup_col(:) is sorted
              rind = rin+SFIND(lup_col(rin+1:rin+lup_ncol(jo)),io)
              ! We do a check, just to be sure...
-             if ( rind == rin ) &
+             if ( rind <= rin ) &
                   call die('ERROR: symmetrization points does not exist')
 
 

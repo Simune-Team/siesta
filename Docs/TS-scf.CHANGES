@@ -1,4 +1,14 @@
 ----------------------------------------------------
+May 21, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-32
+Added more checks against the SFIND algorithm 
+
+* We still have the possibility to add the SFIND algorithm a couple
+  of places, this will be done eventually.
+
+modified:
+  Src/m_ts_sparse_helper.F90
+
+----------------------------------------------------
 May 21, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-31
 Fixed the sparsity pattern for the tri-diag part calculation
 
