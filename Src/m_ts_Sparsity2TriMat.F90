@@ -353,7 +353,7 @@ contains
     use class_Sparsity
     type(Sparsity), intent(inout) :: sp
     integer, intent(in) :: parts, n_part(parts)
-    logical :: val
+    integer :: val
     ! Local variables
     integer :: i, ir, N, Nm1, Np1
 

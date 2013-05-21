@@ -966,7 +966,7 @@ contains
           ! We need to capture the error before the update...
           ztmp = DML(ind) + DMneqR(ind) - DMR(ind) - DMneqL(ind)
 
-          ! We will only take the density (the real *\imaginary/* part
+          ! We will only take the density (the real !!imaginary!! part
           ! of the non-equilibrium contour has nothing to do 
           ! with the density, only the local current)
           ! Is this so with k-points?

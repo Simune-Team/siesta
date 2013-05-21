@@ -1,4 +1,17 @@
 ----------------------------------------------------
+May 21, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-35
+Corrected codes (comments) to deal with GFORTRAN compilation
+
+* Incorrectly had a function return value as logical where it should be
+  integer
+
+* Apparently comments containing \* */ is not allowed by gfortran
+
+modified:
+  Src/m_ts_Sparsity2TriMat.F90
+  Src/m_ts_sparse_helper.F90
+
+----------------------------------------------------
 May 21, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-34
 Fully implemented the SFIND algorithm in the update regions appropriate
 
