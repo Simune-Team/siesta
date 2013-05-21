@@ -479,6 +479,11 @@ if ( ts_method == TS_ORIGINAL ) then
       end if
       TriDiag = .false.
    end if
+   if ( IsVolt ) then
+      write(*,*) 'WARNING: Integration of non-equilibrium part &
+           &is not correctly performed. Rely on the sparse/tri-diagonal &
+           &sparse method.'
+   end if
 end if
 
 ! sparsity pattern

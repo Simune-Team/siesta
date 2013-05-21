@@ -1,4 +1,37 @@
 ----------------------------------------------------
+May 21, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-33
+Finalized the correct way of dealing with the k-point integration
+
+* The method of Maslyuk was correct with small modifications.
+  Currently the integration is performed like so:
+   Eq. contour:
+     \rho_{Eq} = \int (Gf^R-Gf^A) dE 
+     \rho_{non-Eq} = \int Gf^R\Gamma Gf^A dE
+     \rho = e^{-i.k.x} (\rho_{Eq}+\rho_{non-Eq})
+  This means that we do not need to add the transposed of the non-equilibrium
+  correction term.
+  The implementation is so that when performing the weights we subtract the
+  daggered Gf^R\Gamma Gf^A so that the update_zDM routine performs correctly.
+  This may seem stupid, however, it allows to not change the add_DM routines.
+  It is also faster.
+  
+  This method also does the weighting slightly differently than the Maslyuk version,
+  see revno: 460 for explanation.
+
+* Added warning message that the TS_ORIGINAL solution method does not perform 
+  as expected.
+
+* Corrected the integration error estimates for cases where wL or wR where 0 in
+  all \nu\mu.
+
+* TODO we need to correct the integration for the energy matrix in case of bias
+  in the same way as described above.
+
+modified:
+  Src/m_ts_options.F90
+  Src/m_ts_sparse_helper.F90
+
+----------------------------------------------------
 May 21, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-32
 Added more checks against the SFIND algorithm 
 

@@ -774,17 +774,20 @@ contains
              ! update region makes this *tricky* part easy...
              rin  = lup_ptr(jo)
              ! TODO, this REQUIRES that lup_col(:) is sorted
-             rind = rin+SFIND(lup_col(rin+1:rin+lup_ncol(jo)),io)
+             rind = rin + SFIND(lup_col(rin+1:rin+lup_ncol(jo)),io)
              ! We do a check, just to be sure...
              if ( rind <= rin ) &
                   call die('ERROR: symmetrization points does not exist')
 
 
-             ph = 0.5_dp * cdexp(dcmplx(0._dp,1._dp)*kx)
+             ! The integration is this:
+             ! \rho = e^{-i.k.R} [ \int (Gf^R-Gf^A) dE + \int Gf^R\Gamma Gf^A dE ]
+             ! NOTE that weightDMC removes the daggered Gf^R\Gamma Gf^A
+             ph = 0.5_dp * cdexp(dcmplx(0._dp,-1._dp)*kx)
 
-             DM(lind)  = DM(lind)  + aimag( ph*zD(rind) + conjg(ph)*zD(ind) )
+             DM(lind)  = DM(lind)  + aimag( ph*(zD(ind) - conjg(zD(rind))) )
 
-             EDM(lind) = EDM(lind) + aimag( ph*zE(rind) + conjg(ph)*zE(ind) )
+             EDM(lind) = EDM(lind) + aimag( ph*(zE(ind) - conjg(zE(rind))) )
 
              exit ! there is no need to continue the loop... we have found the element...
 
@@ -867,8 +870,8 @@ contains
     EDMR   => val(SpArrEDMR)
 
     ! initialize the errors
-    eM  = 0._dp
-    neM = 0._dp
+    eM  = -1._dp
+    neM = -1._dp
 
     do io = 1 , nr
        ! We are in a buffer region...
@@ -944,6 +947,7 @@ contains
     use parallel,  only: IONode
     use class_Sparsity
     use class_zSpData1D
+    use intrinsic_missing, only: SFIND
 
     implicit none
 
@@ -975,7 +979,7 @@ contains
     integer, pointer :: l_ptr(:)
     integer, pointer :: l_col(:)
     integer :: nr
-    integer :: io, jo, ind, j
+    integer :: io, jo, ind, rind, rin, j
     ! For error estimation
     integer :: eM_i,eM_j,neM_i,neM_j
     complex(dp) :: ztmp
@@ -999,8 +1003,9 @@ contains
     EDMR   => val(SpArrEDMR)
 
     ! initialize the errors
-    eM  = 0._dp
-    neM = 0._dp
+    eM  = -1._dp
+    neM = -1._dp
+    
 
     do io = 1 , nr
        ! We are in a buffer region...
@@ -1011,22 +1016,7 @@ contains
           ! Retrieve the connecting orbital
           jo = l_col(ind)
 
-          ! It is weighted in the density (not the imaginary part of 
-          ! \rho_L). Note that here \rho_L\equiv -i\rho_L!
-          wL = aimag(DMneqL(ind)) ** 2
-          wR = aimag(DMneqR(ind)) ** 2
-          wSUM = wL + wR
- 
-          ! The weights (in any case we always have the full Gf.G.Gf, hence
-          ! it is safe to use this method always.
-          ! No need to force either correction term in the left/right regions
-          if ( wSUM > 0._dp ) then
-             wL = wL / wSUM
-             wR = wR / wSUM
-          else
-             wL = 0.5_dp
-             wR = 0.5_dp
-          end if
+          call get_weights(ind)
 
           ! We need to capture the error before the update...
           ztmp = DML(ind) + DMneqR(ind) - DMR(ind) - DMneqL(ind)
@@ -1035,9 +1025,8 @@ contains
           ! of the non-equilibrium contour has nothing to do 
           ! with the density, only the local current)
           ! Is this so with k-points?
-          ! TODO ASK MADS about weight and density
-          DML(ind)  = wL * (DML(ind) + dcmplx(0._dp,aimag(DMneqR(ind))) ) &
-                    + wR * (DMR(ind) + dcmplx(0._dp,aimag(DMneqL(ind))) )
+          DML(ind)  = wL * (DML(ind) + DMneqR(ind) ) &
+                    + wR * (DMR(ind) + DMneqL(ind) )
           EDML(ind) = wL * EDML(ind) + wR * EDMR(ind)
 
           ! Do error estimation (we are only interested in 
@@ -1066,6 +1055,23 @@ contains
              neM_j = jo
           end if
 
+          ! Correct the DML integration (in principle we should also
+          ! correct the energy non-equilibrium contour... however, that
+          ! requires two more arrays... :( )
+          ! We should not add the "advanced" DMneqL/R, hence we can 
+          ! remove it here... (then we don't need to change 
+          ! a lot of routines, and it is also much faster to do it once, rather
+          ! rather than in each add_DM routine)
+          rin  = l_ptr(jo)
+          ! TODO, this REQUIRES that lup_col(:) is sorted
+          rind = rin + SFIND(l_col(rin+1:rin+l_ncol(jo)),io)
+          ! We do a check, just to be sure...
+          if ( rind <= rin ) &
+               call die('ERROR: symmetrization points does not exist')
+          call get_weights(rind)
+          DML(ind) = DML(ind) + wL * conjg(DMneqR(rind)) &
+                              + wR * conjg(DMneqL(rind))
+
        end do
     end do
 
@@ -1074,6 +1080,30 @@ contains
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS weightDMC' )
 #endif
+
+  contains
+    
+    subroutine get_weights(ind)
+      integer, intent(in) :: ind
+
+      ! It is weighted in the density (not the imaginary part of 
+      ! \rho_L). Note that here \rho_L\equiv -i\rho_L!
+      wL = aimag(DMneqL(ind)) ** 2
+      wR = aimag(DMneqR(ind)) ** 2
+      wSUM = wL + wR
+ 
+      ! The weights (in any case we always have the full Gf.G.Gf, hence
+      ! it is safe to use this method always.
+      ! No need to force either correction term in the left/right regions
+      if ( wSUM > 0._dp ) then
+         wL = wL / wSUM
+         wR = wR / wSUM
+      else
+         wL = 0.5_dp
+         wR = 0.5_dp
+      end if
+
+    end subroutine get_weights
 
   end subroutine weightDMC
 
