@@ -1,4 +1,14 @@
 ----------------------------------------------------
+May 21, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-31
+Fixed the sparsity pattern for the tri-diag part calculation
+
+* The electrodes where added in the wrong indices. 
+  This has now been fixed
+
+modified:
+  Src/m_ts_tri.F90
+
+----------------------------------------------------
 May 20, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-30
 Ensured the correct tri-part creation and moved no_BufL/R to options
 

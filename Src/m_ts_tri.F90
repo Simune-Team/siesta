@@ -113,23 +113,23 @@ contains
     ! For small systems, it will probably be slower...
 
     call crtSparsity_Union(dit,ts_sp_uc,&
-         no_BufL+1, no_BufL+1, &
-         no_L, 1, & ! insertion of the vector 
+         no_BufL+1, no_BufL+no_L, & ! place of matrix
+         no_L, 1, & ! size of the matrix
          ts_uc_inc_L)
     call crtSparsity_Union(dit,ts_uc_inc_L,&
-         no_BufL+1, no_BufL+1, &
-         1, no_L, & ! insertion of the vector 
+         no_BufL+no_L, no_BufL+1, &
+         1, no_L, &
          ts_uc_inc_LR)
     call delete(ts_uc_inc_L)
 
     call crtSparsity_Union(dit,ts_uc_inc_LR,&
-         no_BufL+no_L+no_C+1, no_BufL+no_L+no_C+1, &
-         no_R, 1, & ! insertion of the vector
+         no_BufL+no_L+no_C+1, no_BufL+no_L+no_C+no_R, &
+         no_R, 1, &
          ts_uc_inc_L)
     call delete(ts_uc_inc_LR)
     call crtSparsity_Union(dit,ts_uc_inc_L,&
-         no_BufL+no_L+no_C+1, no_BufL+no_L+no_C+1, &
-         1, no_R, & ! insertion of the vector
+         no_BufL+no_L+no_C+no_R, no_BufL+no_L+no_C+1, &
+         1, no_R, &
          ts_uc_inc_LR)
     call delete(dit)
     call delete(ts_uc_inc_L)
