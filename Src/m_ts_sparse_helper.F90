@@ -77,12 +77,11 @@ contains
 ! *********************
 ! * LOCAL variables   *
 ! *********************
-    complex(dp), parameter :: z_one = dcmplx(0._dp,1._dp)
     ! Create loop-variables for doing stuff
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     integer, pointer :: k_ncol(:), k_ptr(:), k_col(:)
     complex(dp), pointer :: zH(:), zS(:)
-    real(dp) :: ph
+    complex(dp) :: ph
     type(Sparsity), pointer :: sp_k
     integer :: no_l, lio, io, ind, jo, jg, ind_k, kn
     integer :: no_max
@@ -150,30 +149,14 @@ contains
           if ( ind_k <= k_ptr(io) ) &
                call die('Could not find k-point index')
 
-!           if ( k_ptr(io) == ind_k ) then ! SFIND returns 0 on no find
-!              write(*,'(a,10000(tr1,i0))') &
-!                   'Something should be checked...',jo,k_col(ind_k+1:ind_k+kn)
-!           end if
-!              do jg = 1 , k_ncol(io)
-!                 ind_k = k_ptr(io)+jg
-!                 if ( k_col(ind_k) == jo ) then
-!                    ph = k(1) * xij(1,ind) + &
-!                         k(2) * xij(2,ind) + &
-!                         k(3) * xij(3,ind)
-!                    zH(ind_k) = zH(ind_k) + H(ind) * cdexp(z_one * ph)
-!                    zS(ind_k) = zS(ind_k) + S(ind) * cdexp(z_one * ph)
-!                 end if
-!              end do
-!           else
-              ph = k(1) * xij(1,ind) + &
-                   k(2) * xij(2,ind) + &
-                   k(3) * xij(3,ind)
-
-              zH(ind_k) = zH(ind_k) + H(ind) * cdexp(z_one * ph)
-
-              zS(ind_k) = zS(ind_k) + S(ind) * cdexp(z_one * ph)
-
-!          end if
+          ph = cdexp(dcmplx(0._dp,1._dp) * ( &
+               k(1) * xij(1,ind) + &
+               k(2) * xij(2,ind) + &
+               k(3) * xij(3,ind)) )
+          
+          zH(ind_k) = zH(ind_k) + H(ind) * ph
+          
+          zS(ind_k) = zS(ind_k) + S(ind) * ph
 
        end do
 
@@ -384,25 +367,8 @@ contains
           ! we probably should NOT do 'dH = dH + H'
           ! rather 'dH = H'
 
-!          if ( ind_k == k_ptr(io) ) then
-!             write(*,*) 'Something should be checked:'
-!          end if
-!             write(*,*) ' 1. Is there a central region orbital having a &
-!                  &z-component to the following cell?'
-!             write(*,*) ' 2. Try and increase the z-direction of your &
-!                  &unit-cell.'
-!             
-!             do jg = 1 , k_ncol(io)
-!                ind_k = k_ptr(io)+jg
-!                if ( k_col(ind_k) == jo ) then
-!                   dH(ind_k) = dH(ind_k) + H(ind)
-!                   dS(ind_k) = dS(ind_k) + S(ind)
-!                end if
-!             end do
-!          else
-             dH(ind_k) = dH(ind_k) + H(ind)
-             dS(ind_k) = dS(ind_k) + S(ind)
-!          end if
+          dH(ind_k) = dH(ind_k) + H(ind)
+          dS(ind_k) = dS(ind_k) + S(ind)
 
        end do
 
@@ -615,7 +581,7 @@ contains
     use class_OrbitalDistribution
     use class_Sparsity
     use class_dSpData1D
-    use intrinsic_missing, only : UCORB => MODP
+    use intrinsic_missing, only : SFIND, UCORB => MODP
     use parallel, only : Node
     type(OrbitalDistribution), intent(inout) :: dit
     type(Sparsity), intent(inout) :: sp
@@ -662,29 +628,20 @@ contains
 
           ljo = UCORB(l_col(lind),nr)
 
-          ! TODO implement SFIND in this segment...
-          ! ind = lup_ptr(io)
-          ! ind = ind + SFIND(lup_col(ind+1:ind+lup_ncol(io)),ljo)
-          ! if ( ind <= lup_ptr(io) ) cycle
-
           ! Now we loop across the update region
           ! This one must *per definition* have less elements.
           ! Hence, we can exploit this, and find equivalent
           ! super-cell orbitals.
           ! Ok, this is Gamma (but to be consistent)
-          do ind = lup_ptr(io) + 1 , lup_ptr(io) + lup_ncol(io)
+          ind = lup_ptr(io)
+          ind = ind + SFIND(lup_col(ind+1:ind+lup_ncol(io)),ljo)
+          if ( ind <= lup_ptr(io) ) cycle
 
-             if ( ljo /= lup_col(ind) ) cycle
+          ! Probably we dont need to "add"
+          ! We only have one k-point...
+          DM(lind)  = DM(lind)  + dD(ind)
+          EDM(lind) = EDM(lind) + dE(ind)
 
-             ! Probably we dont need to "add"
-             ! We only have one k-point...
-             DM(lind)  = DM(lind)  + dD(ind)
-             EDM(lind) = EDM(lind) + dE(ind)
-
-             exit ! there is no need to continue the loop (it is the update sparsity we loop on
-             ! hence a UC sparsity pattern.
-
-          end do
        end do
     end do
     
@@ -748,50 +705,38 @@ contains
 
           ljo = UCORB(l_col(lind),nr)
 
-          ! TODO implement the SFIND routine here!
-          ! rind = lup_ptr(io)
-          ! ind = rind + SFIND(lup_col(rind+1:rind+lup_ncol(io)),ljo)
-          ! if ( ind <= rind ) cycle
-
-          ! Now we loop across the update region
+          ! Now search the update region
           ! This one must *per definition* have less elements.
           ! Hence, we can exploit this, and find equivalent
           ! super-cell orbitals.
-          do ind = lup_ptr(io) + 1 , lup_ptr(io) + lup_ncol(io)
-              
-             jo = lup_col(ind)
+          rind = lup_ptr(io)
+          ind = rind + SFIND(lup_col(rind+1:rind+lup_ncol(io)),ljo)
+          if ( ind <= rind ) cycle ! The element does not exist
+          
+          jo = lup_col(ind)
 
-             ! We know that the update region is in 
-             ! UC-format. Hence we can compare directly, via
-             ! the orbital index in the unit-cell.
-             if ( ljo /= jo ) cycle
+          kx = k(1) * xij(1,lind) + &
+               k(2) * xij(2,lind) + &
+               k(3) * xij(3,lind)
+          
+          ! The fact that we have a SYMMETRIC
+          ! update region makes this *tricky* part easy...
+          rin  = lup_ptr(jo)
+          ! TODO, this REQUIRES that lup_col(:) is sorted
+          rind = rin + SFIND(lup_col(rin+1:rin+lup_ncol(jo)),io)
+          ! We do a check, just to be sure...
+          if ( rind <= rin ) &
+               call die('ERROR: Conjugated symmetrization point does not exist')
+          
+          ! The integration is this:
+          ! \rho = e^{-i.k.R} [ \int (Gf^R-Gf^A) dE + \int Gf^R\Gamma Gf^A dE ]
+          ! NOTE that weightDMC removes the daggered Gf^R\Gamma Gf^A
+          ph = 0.5_dp * cdexp(dcmplx(0._dp,-1._dp)*kx)
+          
+          DM(lind)  = DM(lind)  + aimag( ph*(zD(ind) - conjg(zD(rind))) )
+          
+          EDM(lind) = EDM(lind) + aimag( ph*(zE(ind) - conjg(zE(rind))) )
 
-             kx = k(1) * xij(1,lind) + &
-                  k(2) * xij(2,lind) + &
-                  k(3) * xij(3,lind)
-
-             ! The fact that we have a SYMMETRIC
-             ! update region makes this *tricky* part easy...
-             rin  = lup_ptr(jo)
-             ! TODO, this REQUIRES that lup_col(:) is sorted
-             rind = rin + SFIND(lup_col(rin+1:rin+lup_ncol(jo)),io)
-             ! We do a check, just to be sure...
-             if ( rind <= rin ) &
-                  call die('ERROR: symmetrization points does not exist')
-
-
-             ! The integration is this:
-             ! \rho = e^{-i.k.R} [ \int (Gf^R-Gf^A) dE + \int Gf^R\Gamma Gf^A dE ]
-             ! NOTE that weightDMC removes the daggered Gf^R\Gamma Gf^A
-             ph = 0.5_dp * cdexp(dcmplx(0._dp,-1._dp)*kx)
-
-             DM(lind)  = DM(lind)  + aimag( ph*(zD(ind) - conjg(zD(rind))) )
-
-             EDM(lind) = EDM(lind) + aimag( ph*(zE(ind) - conjg(zE(rind))) )
-
-             exit ! there is no need to continue the loop... we have found the element...
-
-          end do
        end do
     end do
 
@@ -1067,7 +1012,7 @@ contains
           rind = rin + SFIND(l_col(rin+1:rin+l_ncol(jo)),io)
           ! We do a check, just to be sure...
           if ( rind <= rin ) &
-               call die('ERROR: symmetrization points does not exist')
+               call die('ERROR: Conjugation weight points does not exist')
           call get_weights(rind)
           DML(ind) = DML(ind) + wL * conjg(DMneqR(rind)) &
                               + wR * conjg(DMneqL(rind))

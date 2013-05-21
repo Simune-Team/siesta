@@ -1,4 +1,14 @@
 ----------------------------------------------------
+May 21, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-34
+Fully implemented the SFIND algorithm in the update regions appropriate
+
+* The SFIND algorithm for finding an element in an integer array has been
+  implemented. It should prove quite useful for large size problems
+
+modified:
+  Src/m_ts_sparse_helper.F90
+
+----------------------------------------------------
 May 21, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-33
 Finalized the correct way of dealing with the k-point integration
 
