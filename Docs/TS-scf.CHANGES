@@ -1,4 +1,16 @@
 ----------------------------------------------------
+May 22, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-39
+Added new creation routine for the tri-parts, should better capture big systems
+
+* Instead of making the first part occupy a lot of the sparsity we only 
+  take half the first row as an initial part. Then the remaining parts
+  should adapt to this. For very bulk systems this guess is better
+
+modified:
+  Src/m_ts_Sparsity2TriMat.F90
+  Src/m_ts_tri.F90
+
+----------------------------------------------------
 May 22, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-38
 Bugfix tri-parts allocation, added memory limitation on H(k), S(k) with UseBulk
 

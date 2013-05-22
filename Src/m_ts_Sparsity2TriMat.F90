@@ -56,27 +56,60 @@ contains
     integer, intent(out) :: parts
     integer, pointer :: n_part(:)
     ! Local variables
+    integer, pointer :: bulk_part(:) => null()
     integer, pointer :: tmp_part(:) => null()
     integer :: i, N, val
 
     ! Establish a guess on the partition of the tri-diagonal 
     ! matrix...
+
+    ! This first try, is to try and establish a "bulk" guess
+    ! It will create a very short first part, and then let the regular
+    ! routine find the rest.
+    ! This will typically create more parts, but with more uneven sizes
     parts = 0
     N = 0
-    nullify(n_part)
     do while ( N < nrows_g(sp) - no_BufL - no_BufR)
        ! Albeit this is "slow" we should never exceed 1000 re-allocations
        ! (that would mean a huge system)
        parts = parts + 1
-       call re_alloc(n_part, 1, parts, copy=.true., routine='tsSp2TM',name='n_part')
+       call re_alloc(bulk_part, 1, parts, copy=.true., routine='tsSp2TM',name='n_part')
        if ( parts == 1 ) then
-          call guess_end_part(sp, parts, n_part,first=.true.)
+          call bulk_guess_start_part(sp, parts, bulk_part)
        else
-          call guess_next_part_size(sp, parts, parts, n_part)
+          call guess_next_part_size(sp, parts, parts, bulk_part)
        end if
-       N = N + n_part(parts)
+       N = N + bulk_part(parts)
     end do
 
+    if ( ts_valid_tri(sp, parts, bulk_part) == VALID ) then
+       ! If the bulk-estimate is a valid division, then
+       ! keep it...
+       n_part => bulk_part
+       nullify(bulk_part)
+
+    else
+       ! Deallocate the bulk try
+       call de_alloc(bulk_part,routine='tsSp2TM',name='n_part')
+
+       parts = 0
+       N = 0
+       nullify(n_part)
+       do while ( N < nrows_g(sp) - no_BufL - no_BufR)
+          ! Albeit this is "slow" we should never exceed 1000 re-allocations
+          ! (that would mean a huge system)
+          parts = parts + 1
+          call re_alloc(n_part, 1, parts, copy=.true., routine='tsSp2TM',name='n_part')
+          if ( parts == 1 ) then
+             call guess_end_part(sp, parts, n_part,first=.true.)
+          else
+             call guess_next_part_size(sp, parts, parts, n_part)
+          end if
+          N = N + n_part(parts)
+       end do
+
+    end if
+       
     if ( parts < 3 ) then
        if ( IONode ) then 
           write(*,'(a)') 'Could not determine an optimal tri-diagonalization &
@@ -257,6 +290,30 @@ contains
 
     ! We now have guessed the first/last part
   end subroutine guess_end_part
+
+  ! We will guess the size of this (part) tri-diagonal part by
+  ! searching for the size of the matrix that matches that of the previous 
+  ! part.
+  ! We save it in n_part(part)
+  subroutine bulk_guess_start_part(sp,parts,n_part)
+    use class_Sparsity
+    use geom_helper, only : UCORB
+    ! The sparsity pattern
+    type(Sparsity), intent(inout) :: sp
+    ! the part we are going to create
+    integer, intent(in) :: parts
+    integer, intent(inout) :: n_part(parts)
+    ! Local variables
+    integer :: mcol, ncol
+    
+    ! Then we will check each of those columns and
+    ! adjust the size accordingly...
+    mcol = max_col(sp,1)
+
+    n_part(1) = mcol / 2 + mod(mcol,2)
+
+  end subroutine bulk_guess_start_part
+
 
   subroutine even_out_parts(sp,parts,n_part, n)
     use class_Sparsity

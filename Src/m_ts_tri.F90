@@ -131,6 +131,7 @@ contains
          name='n_part')
     tri_parts = 0
     nullify(tri_part)
+    if ( IONode ) write(*,'(a)') 'transiesta: Determining an optimal tri-matrix...'
     call ts_Sparsity2TriMat(ts_uc_inc_LR,tri_parts,tri_part)
     call delete(ts_uc_inc_LR)
 
