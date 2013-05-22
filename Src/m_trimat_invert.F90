@@ -64,6 +64,9 @@ contains
        call die('Could not calculate the inverse on non equal sized &
             &matrices')
     end if
+    if ( parts(M) == 1 ) then
+       call die('This matrix is not tri-diagonal')
+    end if
 
     call timer('TM_inv',1)
 

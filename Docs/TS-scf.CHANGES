@@ -1,4 +1,16 @@
 ----------------------------------------------------
+May 22, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-37
+Tri-diagonal matrix inversion routine should not handle parts == 1 cases
+
+* If there is only one part in the tri-diagonal matrix then we don't have
+  a tri-diagonal method.
+  It will now die if this is the case (consider changing it to regular 
+  inversion)
+
+modified:
+  Src/m_trimat_invert.F90
+
+----------------------------------------------------
 May 22, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-36
 Made sure that the 3-tri-matrix was used in unforseen cases
 
