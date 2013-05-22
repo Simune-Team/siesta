@@ -40,183 +40,280 @@
 
       CONTAINS
 
-      subroutine broadcast_dp(scalar)
+      subroutine broadcast_dp(scalar,comm)
       real(dp), intent(inout) :: scalar
+      integer, intent(in), optional :: comm
 
+      integer :: mpi_comm
 #ifdef MPI
+      mpi_comm = mpi_comm_world
+      if (present(comm)) then
+         mpi_comm = comm
+      endif
            call MPI_Bcast(scalar,1,MPI_double_precision,0,
-     $            MPI_Comm_World,MPIerror)
+     $            MPI_Comm,MPIerror)
 #endif
        end subroutine broadcast_dp
 
-      subroutine broadcast_v_dp(a)
+      subroutine broadcast_v_dp(a,comm)
       real(dp), dimension(:), intent(inout) :: a
+      integer, intent(in), optional :: comm
 
+      integer :: mpi_comm
 #ifdef MPI
-           call MPI_Bcast(a,size(a),MPI_double_precision,0,
-     $            MPI_Comm_World,MPIerror)
+      mpi_comm = mpi_comm_world
+      if (present(comm)) then
+         mpi_comm = comm
+      endif
+      call MPI_Bcast(a,size(a),MPI_double_precision,0,
+     $            MPI_Comm,MPIerror)
 #endif
-       end subroutine broadcast_v_dp
+      end subroutine broadcast_v_dp
 
-      subroutine broadcast_vv_dp(a)
+      subroutine broadcast_vv_dp(a,comm)
       real(dp), dimension(:,:), intent(inout) :: a
   !! Only for contiguous array sections !!
+      integer, intent(in), optional :: comm
 
+      integer :: mpi_comm
 #ifdef MPI
-           call MPI_Bcast(a(1,1),size(a),MPI_double_precision,0,
-     $            MPI_Comm_World,MPIerror)
+      mpi_comm = mpi_comm_world
+      if (present(comm)) then
+         mpi_comm = comm
+      endif
+      call MPI_Bcast(a(1,1),size(a),MPI_double_precision,0,
+     $            MPI_Comm,MPIerror)
 #endif
-       end subroutine broadcast_vv_dp
+      end subroutine broadcast_vv_dp
 
-      subroutine broadcast_sp(scalar)
+      subroutine broadcast_sp(scalar,comm)
       real(sp), intent(inout) :: scalar
+      integer, intent(in), optional :: comm
 
+      integer :: mpi_comm
 #ifdef MPI
-           call MPI_Bcast(scalar,1,MPI_real,0,
-     $            MPI_Comm_World,MPIerror)
+      mpi_comm = mpi_comm_world
+      if (present(comm)) then
+         mpi_comm = comm
+      endif
+      call MPI_Bcast(scalar,1,MPI_real,0,
+     $            MPI_Comm,MPIerror)
 #endif
-       end subroutine broadcast_sp
+      end subroutine broadcast_sp
 
-      subroutine broadcast_int(scalar)
+      subroutine broadcast_int(scalar,comm)
       integer, intent(inout) :: scalar
+      integer, intent(in), optional :: comm
 
+      integer :: mpi_comm
 #ifdef MPI
-           call MPI_Bcast(scalar,1,MPI_Integer,0,
-     $            MPI_Comm_World,MPIerror)
+      mpi_comm = mpi_comm_world
+      if (present(comm)) then
+         mpi_comm = comm
+      endif
+      call MPI_Bcast(scalar,1,MPI_Integer,0,
+     $            MPI_Comm,MPIerror)
 #endif
-       end subroutine broadcast_int
+      end subroutine broadcast_int
 
-      subroutine broadcast_v_int(a)
+      subroutine broadcast_v_int(a,comm)
       integer, dimension(:), intent(inout) :: a
+      integer, intent(in), optional :: comm
 
+      integer :: mpi_comm
 #ifdef MPI
-           call MPI_Bcast(a,size(a),MPI_integer,0,
-     $            MPI_Comm_World,MPIerror)
+      mpi_comm = mpi_comm_world
+      if (present(comm)) then
+         mpi_comm = comm
+      endif
+      call MPI_Bcast(a,size(a),MPI_integer,0,
+     $            MPI_Comm,MPIerror)
 #endif
-       end subroutine broadcast_v_int
+      end subroutine broadcast_v_int
 
-      subroutine broadcast_vv_int(a)
+      subroutine broadcast_vv_int(a,comm)
       integer, dimension(:,:), intent(inout) :: a
+      integer, intent(in), optional :: comm
 
-
+      integer :: mpi_comm
 #ifdef MPI
-           call MPI_Bcast(a(1,1),size(a),MPI_integer,0,
-     $            MPI_Comm_World,MPIerror)
+      mpi_comm = mpi_comm_world
+      if (present(comm)) then
+         mpi_comm = comm
+      endif
+      call MPI_Bcast(a(1,1),size(a),MPI_integer,0,
+     $            MPI_Comm,MPIerror)
 #endif
-       end subroutine broadcast_vv_int
+      end subroutine broadcast_vv_int
 
-      subroutine broadcast_char(str)
+      subroutine broadcast_char(str,comm)
       character(len=*), intent(inout) :: str
+      integer, intent(in), optional :: comm
 
+      integer :: mpi_comm
 #ifdef MPI
-           call MPI_Bcast(str,len(str),MPI_Character,0,
-     $            MPI_Comm_World,MPIerror)
+      mpi_comm = mpi_comm_world
+      if (present(comm)) then
+         mpi_comm = comm
+      endif
+      call MPI_Bcast(str,len(str),MPI_Character,0,
+     $            MPI_Comm,MPIerror)
 #endif
-       end subroutine broadcast_char
+      end subroutine broadcast_char
 
-      subroutine broadcast_logical(scalar)
+      subroutine broadcast_logical(scalar,comm)
       logical, intent(inout) :: scalar
+      integer, intent(in), optional :: comm
 
+      integer :: mpi_comm
 #ifdef MPI
-           call MPI_Bcast(scalar,1,MPI_Logical,0,
-     $            MPI_Comm_World,MPIerror)
+      mpi_comm = mpi_comm_world
+      if (present(comm)) then
+         mpi_comm = comm
+      endif
+      call MPI_Bcast(scalar,1,MPI_Logical,0,
+     $            MPI_Comm,MPIerror)
 #endif
-       end subroutine broadcast_logical
+      end subroutine broadcast_logical
 
 
-      subroutine Globalize_or(local,global)
+      subroutine Globalize_or(local,global,comm)
       logical, intent(in) :: local
       logical, intent(out) :: global
+      integer, intent(in), optional :: comm
 
-#ifndef MPI
-           global = local
+      integer :: mpi_comm
+#ifdef MPI
+      mpi_comm = mpi_comm_world
+      if (present(comm)) then
+         mpi_comm = comm
+      endif
+      call MPI_AllReduce(local,global,1,MPI_Logical,
+     $            MPI_LOR,MPI_Comm,MPIerror)
 #else
-           call MPI_AllReduce(local,global,1,MPI_Logical,
-     $            MPI_LOR,MPI_Comm_World,MPIerror)
+      global = local
 #endif
       end subroutine Globalize_or
 
-      subroutine Globalize_sum_dp(local,global)
+      subroutine Globalize_sum_dp(local,global,comm)
       real(dp), intent(in) :: local
       real(dp), intent(out) :: global
+      integer, intent(in), optional :: comm
 
-#ifndef MPI
-           global = local
+      integer :: mpi_comm
+#ifdef MPI
+      mpi_comm = mpi_comm_world
+      if (present(comm)) then
+         mpi_comm = comm
+      endif
+      call MPI_AllReduce(local,global,1,MPI_double_precision,
+     $            MPI_sum,MPI_Comm,MPIerror)
 #else
-           call MPI_AllReduce(local,global,1,MPI_double_precision,
-     $            MPI_sum,MPI_Comm_World,MPIerror)
+      global = local
 #endif
-       end subroutine Globalize_sum_dp
+      end subroutine Globalize_sum_dp
 
-      subroutine Globalize_sum_v_dp(local,global)
+      subroutine Globalize_sum_v_dp(local,global,comm)
       real(dp), intent(in), dimension(:)  :: local
       real(dp), intent(out), dimension(:) :: global
+      integer, intent(in), optional :: comm
 
       integer :: n
+      integer :: mpi_comm
 
       n = size(local)
       if ( n /= size(global))
      $     call die("Globalize_sum_v_dp error")
-#ifndef MPI
-           global = local
-#else
-           call MPI_AllReduce(local,global,n,MPI_double_precision,
-     $            MPI_sum,MPI_Comm_World,MPIerror)
-#endif
-       end subroutine Globalize_sum_v_dp
 
-      subroutine Globalize_sum_vv_dp(local,global)
+#ifdef MPI
+      mpi_comm = mpi_comm_world
+      if (present(comm)) then
+         mpi_comm = comm
+      endif
+      call MPI_AllReduce(local,global,n,MPI_double_precision,
+     $            MPI_sum,MPI_Comm,MPIerror)
+#else
+      global = local
+#endif
+      end subroutine Globalize_sum_v_dp
+
+      subroutine Globalize_sum_vv_dp(local,global,comm)
       real(dp), intent(in), dimension(:,:)  :: local
       real(dp), intent(out), dimension(:,:) :: global
+      integer, intent(in), optional :: comm
 
       integer :: n
+      integer :: mpi_comm
 
       n = size(local)
       if ( n /= size(global))
-     $     call die("Globalize_sum_vv_dp error")
-#ifndef MPI
-           global = local
-#else
-           call MPI_AllReduce(local(1,1),global(1,1),n,
-     $            MPI_double_precision,
-     $            MPI_sum,MPI_Comm_World,MPIerror)
-#endif
-       end subroutine Globalize_sum_vv_dp
+     $     call die("Globalize_sum_v_dp error")
 
-      subroutine Globalize_sum_int(local,global)
+#ifdef MPI
+      mpi_comm = mpi_comm_world
+      if (present(comm)) then
+         mpi_comm = comm
+      endif
+      call MPI_AllReduce(local(1,1),global(1,1),n,
+     $            MPI_double_precision,
+     $            MPI_sum,MPI_Comm,MPIerror)
+
+#else
+      global = local
+#endif
+      end subroutine Globalize_sum_vv_dp
+
+      subroutine Globalize_sum_int(local,global,comm)
       integer, intent(in) :: local
       integer, intent(out) :: global
+      integer, intent(in), optional :: comm
 
-#ifndef MPI
-           global = local
+      integer :: mpi_comm
+#ifdef MPI
+      mpi_comm = mpi_comm_world
+      if (present(comm)) then
+         mpi_comm = comm
+      endif
+      call MPI_AllReduce(local,global,1,MPI_integer,
+     $            MPI_sum,MPI_Comm,MPIerror)
 #else
-           call MPI_AllReduce(local,global,1,MPI_integer,
-     $            MPI_sum,MPI_Comm_World,MPIerror)
+      global = local
 #endif
-       end subroutine Globalize_sum_int
+      end subroutine Globalize_sum_int
 
-
-      subroutine Globalize_max_dp(local,global)
+      subroutine Globalize_max_dp(local,global,comm)
       real(dp), intent(in) :: local
       real(dp), intent(out) :: global
+      integer, intent(in), optional :: comm
 
-#ifndef MPI
-           global = local
+      integer :: mpi_comm
+#ifdef MPI
+      mpi_comm = mpi_comm_world
+      if (present(comm)) then
+         mpi_comm = comm
+      endif
+      call MPI_AllReduce(local,global,1,MPI_double_precision,
+     $            MPI_max,MPI_Comm,MPIerror)
 #else
-           call MPI_AllReduce(local,global,1,MPI_double_precision,
-     $            MPI_max,MPI_Comm_World,MPIerror)
+      global = local
 #endif
-       end subroutine Globalize_max_dp
+      end subroutine Globalize_max_dp
 
-      subroutine Globalize_max_int(local,global)
+      subroutine Globalize_max_int(local,global,comm)
       integer, intent(in) :: local
       integer, intent(out) :: global
+      integer, intent(in), optional :: comm
 
-#ifndef MPI
-           global = local
+      integer :: mpi_comm
+#ifdef MPI
+      mpi_comm = mpi_comm_world
+      if (present(comm)) then
+         mpi_comm = comm
+      endif
+      call MPI_AllReduce(local,global,1,MPI_integer,
+     $            MPI_max,MPI_Comm,MPIerror)
 #else
-           call MPI_AllReduce(local,global,1,MPI_integer,
-     $            MPI_max,MPI_Comm_World,MPIerror)
+      global = local
 #endif
        end subroutine Globalize_max_int
 

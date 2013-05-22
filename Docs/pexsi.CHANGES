@@ -1,4 +1,138 @@
 ------------------------------------------------------------
+May 22, 2013   Alberto Garcia            trunk-434--pexsi-30
+Fix units in fdf input for LDOS-Selected-Inversion interface
+
+Relevant fdf variables:
+
+PEXSI.LocalDOS         (true or false, to enable LDOS-SI)
+PEXSI.LocalDOS.Energy  ENERGY unit          
+PEXSI.LocalDOS.Broadening  BROADENING unit    (i.e., must specify unit)
+
+modified:
+  Src/m_pexsi_local_DOS.F90
+
+------------------------------------------------------------
+May 15, 2013   Alberto Garcia            trunk-434--pexsi-29
+First implementation of LDOS-Selected-Inversion interface
+
+Relevant fdf variables:
+
+PEXSI.LocalDOS
+PEXSI.LocalDOS.Energy
+PEXSI.LocalDOS.Broadening
+
+added:
+  Src/m_pexsi_local_DOS.F90
+  Src/pexsi_localdos.h
+modified:
+  Src/Makefile
+  Src/pexsi_interface.F90
+  Src/siesta.F
+  Src/siesta_analysis.F
+
+------------------------------------------------------------
+May 15, 2013   Alberto Garcia            trunk-434--pexsi-28
+Fix a bug in fallback loop for inertia count bracketting. scf prefix
+
+I was using "npPerPole" instead of "numPole" as the size of the
+inertiaList and shiftList arrays. 
+
+Replaced "siesta:" by "scf:" as the output prefix of the scf step
+information.
+
+modified:
+  Src/m_pexsi_solver.F90
+  Src/write_subs.F
+
+------------------------------------------------------------
+May 10, 2013   Alberto Garcia            trunk-434--pexsi-27
+Implement fallback loops for inertia count and solver bracketting
+
+On error conditions, try to expand the bracketting interval and
+re-compute the inertia-counts. This is also done if the solver
+call returns with a non-correct number of electrons.
+
+By default, an scf step inherits the latest (muMin,muMax) interval
+from an inertia-count calculation.
+
+modified:
+  Src/m_mpi_utils.F
+  Src/m_pexsi_solver.F90
+
+------------------------------------------------------------
+May  7, 2013   Alberto Garcia            trunk-434--pexsi-26
+Fix a bug, clarify the flow, and add placeholders
+
+The meaning of the "tolerance" parameter for inertia counts
+was misunderstood, and set to a very low value.
+
+The flow of control in siesta_forces has been clarified, with
+broadcast of iscf and better sectioning.
+
+A placeholder for the handling of the mu interval has been
+created.
+
+modified:
+  Src/m_pexsi_solver.F90
+  Src/siesta_forces.F
+  Src/siesta_init.F
+
+------------------------------------------------------------
+May  2, 2013   Alberto Garcia            trunk-434--pexsi-25
+Add 'info' parameter to PEXSI interface
+
+modified:
+  Src/m_pexsi_solver.F90
+  Src/pexsi_inertia.h
+  Src/pexsi_interface.F90
+  Src/pexsi_solve.h
+
+------------------------------------------------------------
+Apr 26, 2013   Alberto Garcia            trunk-434--pexsi-24
+Remove poleTolerance from the interface. Finite T inertia count
+
+Lin made some changes to the PEXSI interface. The new update includes, 
+in his words:
+
+1) Inertia count.  The "finite temperature inertia count" strategy is
+  now implemented (as given by a note I sent on 04/01).  With finite
+  temperature taken into account, I expect that the code is going to
+  be more accurate and more stable, especially for metallic systems or
+  odd-number electron systems (such as SiH).  The number of
+  mu-iterations should also be more reasonable.
+
+2) Pole expansion.  The parameter poleTolerance is now removed.  The
+  reason is that I think there is really no way to realistically
+  adjust this parameter from users' point of view.  On the other hand,
+  we know about 1/3 of the poles in the pole expansion has very tiny
+  weight, due to the nature of the Fermi-Dirac distribution.  I have
+  implemented a strategy to dynamically adjust the number of poles
+  given the numElectronTolerance as well as numPole.  As a result, all
+  numPoles will have significant contributions to the computation.
+  That means no poles will be skipped in the calculation.  This should
+  also improve the load balancing.  This change also means that the
+  number of poles used (numPole) parameter can be chosen to be less
+  than before.
+
+3) Error estimate of the pole expansion.  I implemented a way to
+  roughly estimate the error of the pole expansion in terms of the
+  relative accuracy for computing the number of electrons.  You can
+  search in logPEXSIxxx and find sentences like
+
+
+"Pole expansion indicates that the relative error of numElectron is
+bounded by 6.769894e-09 Required relative accuracy:
+numElectronTolerance / numElectronExact is 4.0950041e-06"
+
+It provides some rough idea how accurate the pole expansion is.
+
+modified:
+  Src/m_pexsi_solver.F90
+  Src/pexsi_solve.h
+
+
+
+------------------------------------------------------------
 Apr 25, 2013   Alberto Garcia            trunk-434--pexsi-23
 First implementation of interface with smarter mu intervals
 

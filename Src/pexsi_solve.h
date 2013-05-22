@@ -14,9 +14,9 @@ subroutine f_ppexsi_solve_interface(&
         SnzvalLocal,&
         temperature,&
         numElectronExact,&
-        muInertia,&
-        muMinInertia,&
-        muMaxInertia,&
+        mu0,&
+        muMin0,&
+        muMax0,&
         gap,&
         deltaE,&
         numPole,&
@@ -35,7 +35,8 @@ subroutine f_ppexsi_solve_interface(&
         muIter,&
         muList,&
         numElectronList,&
-        numElectronDrvList)
+        numElectronDrvList,&
+        info)
 
 
    integer, intent(in) :: nrows, nnz, nnzLocal, numColLocal
@@ -45,9 +46,9 @@ subroutine f_ppexsi_solve_interface(&
    real(SELECTED_REAL_KIND(10,100)), intent(in)   :: SnzvalLocal(:)
    real(SELECTED_REAL_KIND(10,100)), intent(in)   :: temperature
    real(SELECTED_REAL_KIND(10,100)), intent(in)   :: numElectronExact
-   real(SELECTED_REAL_KIND(10,100)), intent(in)   :: muInertia, &
-                                                     muMinInertia, &
-                                                     muMaxInertia
+   real(SELECTED_REAL_KIND(10,100)), intent(in)   :: mu0, &
+                                                     muMin0, &
+                                                     muMax0
    real(SELECTED_REAL_KIND(10,100)), intent(in)   :: gap, & 
                                                      deltaE
    integer, intent(in)                            :: numPole
@@ -56,6 +57,7 @@ subroutine f_ppexsi_solve_interface(&
    integer, intent(in)                            :: muMaxIter
    
    real(SELECTED_REAL_KIND(10,100)), intent(in)   :: PEXSInumElectronTolerance
+
    ! Ordering 
    !   0   : PARMETIS
    !   1   : METIS_AT_PLUS_A
@@ -83,3 +85,4 @@ subroutine f_ppexsi_solve_interface(&
    real(SELECTED_REAL_KIND(10,100)), intent(out) :: numElectronList(muMaxIter)
    real(SELECTED_REAL_KIND(10,100)),intent(out)  :: numElectronDrvList(muMaxIter)
 
+   integer, intent(out)                          :: info

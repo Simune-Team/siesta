@@ -77,13 +77,14 @@
       endif ! worker
 
       call MPI_Bcast(last,1,MPI_logical,0,true_MPI_Comm_World,mpierr)
+      call MPI_Bcast(iscf,1,MPI_integer,0,true_MPI_Comm_World,mpierr)
 
       DO WHILE (.not. last)
 
-       if (worker) then
-        call timer( 'IterSCF', 1 )
+       if (worker)  call timer( 'IterSCF', 1 )
 
 #ifndef TRANSIESTA
+       if (worker) then
         if (cml_p) 
      &    call cmlStartStep(xf=mainXML, type='SCF', index=iscf)
 
@@ -101,13 +102,10 @@
 
        call compute_dm( iscf )
 
-       if (worker) then
-        call mixer( iscf, dDmax )
-
-
+       if (worker) call mixer( iscf, dDmax )
 
 #else /* TRANSIESTA */
-
+       if (worker) then
         if (cml_p)
      &      call cmlStartStep( xf=mainXML, type='SCF', index=iscf )
 
@@ -122,10 +120,17 @@
           call compute_dm( iscf )
         end if ! mixH
       	call mixer( iscf, dDmax )
+       endif ! worker
 #endif /* TRANSIESTA */
 
-        call scfconvergence_test( first, iscf, last, dDmax,
+       if (worker) then
+          call scfconvergence_test( first, iscf, last, dDmax,
      &                            conv_harris, conv_etot )
+       endif ! worker
+
+       call MPI_Bcast(last,1,MPI_logical,0,true_MPI_Comm_World,mpierr)
+
+       if (worker) then
 !       At this point last is true if SCF has converged. But this
 !       changed below
         SCFconverged = last
@@ -145,10 +150,13 @@
 
         call timer( 'IterSCF', 2 )
         if (istep.eq.inicoor .and. first) call timer( 'IterSCF', 3 )
+        if (cml_p) call cmlEndStep(mainXML)
+       endif ! worker
 
         iscf = iscf + 1
         first = .false.
 
+        if (worker) then
 !       The last scheduled iteration is used to compute forces
 !       and stresses, hence the exit if iscf==nscf.
 !       The ">" clause catches the nscf==1 case. For this,
@@ -157,8 +165,7 @@
         else if (iscf >= nscf) then
            last = .true.
         endif
-        if (cml_p) call cmlEndStep(mainXML)
-       endif ! worker
+        endif ! worker
         call MPI_Bcast(last,1,MPI_logical,0,true_MPI_Comm_World,mpierr)
       ENDDO
 
