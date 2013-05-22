@@ -185,7 +185,7 @@ contains
 #endif
 
     ! Also used in non-MPI (to reduce dublicate code)
-    integer :: no_local, no_u, maxnhg
+    integer :: no_local, no_u, uc_maxnh, maxnhg
 
     ! search logical to determine the update region...
     logical, allocatable :: lup_DM(:)
@@ -193,7 +193,7 @@ contains
 
     ! Loop-counters
     integer :: i,j ,io,jo, ic,jc, ind
-    integer :: lio, ljc, lind
+    integer :: lio, ljc, lind, no_u_LC
 
     ! Logical for determining the region
     logical :: i_in_C, j_in_C
@@ -204,18 +204,19 @@ contains
 #ifdef MPI
     call crtSparsity_SC(s_sp,sp_global, &
          UC=.TRUE.)
+    uc_maxnh = nnzs(sp_global)
 #else
     call crtSparsity_SC(s_sp,sp_uc    , &
          UC=.TRUE.)
+    uc_maxnh = nnzs(sp_uc)
 #endif
 
 #ifdef MPI
     ! point to the local (SIESTA-UC) sparsity pattern arrays
     call retrieve(sp_global,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
-
     call glob_sparse_numh(no_local,no_u,l_ncol,l_ncolg)
     call glob_sparse_listhptr(no_u,l_ncolg,l_ptrg)
-    call glob_sparse_listh(no_local,no_u, maxnh, &
+    call glob_sparse_listh(no_local,no_u, uc_maxnh, &
          l_ncol , l_ptr , l_col , &
          l_ncolg, l_ptrg, maxnhg, l_colg)
 
@@ -253,6 +254,9 @@ contains
     lup_DM(:) = .false.
     direct_LR = .false.
 
+    ! Retrieve the ending point of LC region
+    no_u_LC = no_u_LCR - no_R
+
     ! We do not need to check the buffer regions...
     ! We know they will do NOTHING! :)
     do io = no_BufL + 1 , no_u - no_BufR
@@ -274,18 +278,28 @@ contains
 
           ! We check whether it is electrode-connections. 
           ! If, so, they are not used in transiesta:
-          if      ( ic <= no_L .and. no_u_LCR - no_R < jc ) then
+          if      ( ic <= no_L .and. no_u_LC < jc ) then
              lup_DM(ind) = .false.
 
              ! This means that we have an INNER-cell connection
              ! TODO, do a check on the local nodes SP for this
              !direct_LR = direct_LR .or. ( jc == jo - no_BufL )
-          else if ( jc <= no_L .and. no_u_LCR - no_R < ic ) then
+          else if ( jc <= no_L .and. no_u_LC < ic ) then
              lup_DM(ind) = .false.
 
              ! This means that we have an INNER-cell connection
              ! TODO, do a check on the local nodes SP for this
              !direct_LR = direct_LR .or. ( jc == jo - no_BufL )
+          else if ( UseBulk .and. ic <= no_L .and. jc <= no_L ) then
+             lup_DM(ind) = .false.
+
+             ! in case of UseBulk we remove the left electrode from
+             ! the Hamiltonian
+          else if ( UseBulk .and. no_u_LC < ic .and. no_u_LC < jc ) then
+             lup_DM(ind) = .false.
+
+             ! in case of UseBulk we remove the right electrode from
+             ! the Hamiltonian
           else
              lup_DM(ind) = .true.
           end if

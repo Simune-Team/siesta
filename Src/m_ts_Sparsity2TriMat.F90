@@ -53,30 +53,29 @@ contains
     ! The sparsity pattern
     type(Sparsity), intent(inout) :: sp
     ! The sizes of the parts in the tri-diagonal matrix
-    integer, intent(in out) :: parts
+    integer, intent(out) :: parts
     integer, pointer :: n_part(:)
     ! Local variables
-    integer, pointer :: tmp_part(:)
+    integer, pointer :: tmp_part(:) => null()
     integer :: i, N, val
 
     ! Establish a guess on the partition of the tri-diagonal 
     ! matrix...
-    if ( parts == 0 ) then
-       parts = 0
-       N = 0
-       do while ( N < nrows_g(sp) - no_BufL - no_BufR)
-          ! Albeit this is "slow" we should never exceed 1000 re-allocations
-          ! (that would mean a huge system)
-          parts = parts + 1
-          call re_alloc(n_part, 1, parts, copy=.true.)
-          if ( parts == 1 ) then
-             call guess_end_part(sp, parts, n_part,first=.true.)
-          else
-             call guess_next_part_size(sp, parts, parts, n_part)
-          end if
-          N = N + n_part(parts)
-       end do
-    end if
+    parts = 0
+    N = 0
+    nullify(n_part)
+    do while ( N < nrows_g(sp) - no_BufL - no_BufR)
+       ! Albeit this is "slow" we should never exceed 1000 re-allocations
+       ! (that would mean a huge system)
+       parts = parts + 1
+       call re_alloc(n_part, 1, parts, copy=.true., routine='tsSp2TM',name='n_part')
+       if ( parts == 1 ) then
+          call guess_end_part(sp, parts, n_part,first=.true.)
+       else
+          call guess_next_part_size(sp, parts, parts, n_part)
+       end if
+       N = N + n_part(parts)
+    end do
 
     if ( parts < 3 ) then
        if ( IONode ) then 
@@ -86,7 +85,7 @@ contains
           write(*,'(1000000(tr1,i0))') n_part
        end if
        parts = 3 
-       call re_alloc(n_part, 1, parts)
+       call re_alloc(n_part, 1, parts, routine='tsSp2TM',name='n_part')
        n_part(1) = TotUsedOrbs(ElLeft)
        n_part(3) = TotUsedOrbs(ElRight)
        n_part(2) = nrows_g(sp) - no_BufL - no_BufR - n_part(1) - n_part(3)
@@ -94,8 +93,7 @@ contains
     else
 
        ! Even out the matrix part sizes...
-
-       call re_alloc(tmp_part,1,parts)
+       call re_alloc(tmp_part,1,parts, name='tmp_npart')
        N = 1
        do while ( N /= 0 )
           tmp_part(:) = n_part(:)

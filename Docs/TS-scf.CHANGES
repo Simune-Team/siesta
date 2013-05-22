@@ -1,4 +1,25 @@
 ----------------------------------------------------
+May 22, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-38
+Bugfix tri-parts allocation, added memory limitation on H(k), S(k) with UseBulk
+
+* Forgot to nullify a pointer
+
+* In case of UseBulk we replace the H_LL and H_RR with the hamiltonian
+  from the electrode, i.e. bulk electrode Hamiltonian.
+  Thus there is no need to create the H(k), S(k) for those parts.
+  I have removed that information from those two arrays (saves more memory)
+
+* As the tri-part algortihm relies on the orbitals existing in the sparse
+  pattern, we add them before analyzing the sparsity pattern.
+  This means that we correctly find the tri-part.
+
+modified:
+  Src/m_ts_Sparsity2TriMat.F90
+  Src/m_ts_sparse.F90
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_tri.F90
+
+----------------------------------------------------
 May 22, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-37
 Tri-diagonal matrix inversion routine should not handle parts == 1 cases
 

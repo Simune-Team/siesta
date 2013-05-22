@@ -146,8 +146,10 @@ contains
           ! is SORTED!
           ! Thus it will only work for UC sparsity patterns.
           ind_k = ind_k + SFIND(k_col(ind_k+1:ind_k+kn),jo)
-          if ( ind_k <= k_ptr(io) ) &
-               call die('Could not find k-point index')
+! TODO, do we really need to check here?
+!          if ( ind_k <= k_ptr(io) ) &
+!               call die('Could not find k-point index')
+          if ( ind_k <= k_ptr(io) ) cycle
 
           ph = cdexp(dcmplx(0._dp,1._dp) * ( &
                k(1) * xij(1,ind) + &
@@ -360,9 +362,11 @@ contains
           ! of the full unit cell
           ind_k = k_ptr(io)
           ind_k = ind_k + SFIND(k_col(ind_k+1:ind_k+k_ncol(io)),jo)
-          if ( ind_k <= k_ptr(io) ) &
-               call die('Could not find k-point index')
-
+! TODO, do we really need to check here
+!          if ( ind_k <= k_ptr(io) ) &
+!               call die('Could not find k-point index')
+          if ( ind_k <= k_ptr(io) ) cycle
+     
           ! Todo, as this is a Gamma-calculation
           ! we probably should NOT do 'dH = dH + H'
           ! rather 'dH = H'
