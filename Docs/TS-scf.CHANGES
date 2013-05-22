@@ -1,4 +1,17 @@
 ----------------------------------------------------
+May 22, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-36
+Made sure that the 3-tri-matrix was used in unforseen cases
+
+* For very long range problems the tri-part routine does not
+  perform that good (need a revision).
+  Hence, it could often find only 2 parts.
+  If this is the case we revert to the regular 3-tri-diagonal method
+
+modified:
+  Src/m_ts_Spartsity2TriMat.F90
+  Src/m_ts_tri.F90
+
+----------------------------------------------------
 May 21, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-35
 Corrected codes (comments) to deal with GFORTRAN compilation
 

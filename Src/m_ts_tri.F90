@@ -136,6 +136,8 @@ contains
 
     ! This will create and even out the parts
     if ( associated(tri_part) ) call de_alloc(tri_part)
+    nullify(tri_part)
+    tri_parts = 0
     call ts_Sparsity2TriMat(ts_uc_inc_LR,tri_parts,tri_part)
     call delete(ts_uc_inc_LR)
 

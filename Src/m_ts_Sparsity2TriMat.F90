@@ -41,6 +41,7 @@ module m_ts_Sparsity2TriMat
   
 contains
 
+  ! IF parts == 0 will create new partition
   subroutine ts_Sparsity2TriMat(sp,parts,n_part)
     use class_Sparsity
     use parallel, only : IONode
@@ -52,16 +53,15 @@ contains
     ! The sparsity pattern
     type(Sparsity), intent(inout) :: sp
     ! The sizes of the parts in the tri-diagonal matrix
-    integer, intent(out) :: parts
+    integer, intent(in out) :: parts
     integer, pointer :: n_part(:)
     ! Local variables
     integer, pointer :: tmp_part(:)
     integer :: i, N, val
-    integer :: no_L, no_C, no_R
 
     ! Establish a guess on the partition of the tri-diagonal 
     ! matrix...
-    if ( .not. associated(n_part) ) then
+    if ( parts == 0 ) then
        parts = 0
        N = 0
        do while ( N < nrows_g(sp) - no_BufL - no_BufR)
@@ -78,18 +78,35 @@ contains
        end do
     end if
 
-    ! Even out the matrix part sizes...
+    if ( parts < 3 ) then
+       if ( IONode ) then 
+          write(*,'(a)') 'Could not determine an optimal tri-diagonalization &
+               &partition'
+          write(*,'(a,i0)') 'Found: ',parts
+          write(*,'(1000000(tr1,i0))') n_part
+       end if
+       parts = 3 
+       call re_alloc(n_part, 1, parts)
+       n_part(1) = TotUsedOrbs(ElLeft)
+       n_part(3) = TotUsedOrbs(ElRight)
+       n_part(2) = nrows_g(sp) - no_BufL - no_BufR - n_part(1) - n_part(3)
 
-    call re_alloc(tmp_part,1,parts)
-    N = 1
-    do while ( N /= 0 )
-       tmp_part(:) = n_part(:)
-       do i = 1 , parts
-          call even_out_parts(sp, parts, n_part, i)
+    else
+
+       ! Even out the matrix part sizes...
+
+       call re_alloc(tmp_part,1,parts)
+       N = 1
+       do while ( N /= 0 )
+          tmp_part(:) = n_part(:)
+          do i = 1 , parts
+             call even_out_parts(sp, parts, n_part, i)
+          end do
+          N = maxval(abs(tmp_part-n_part))
        end do
-       N = maxval(abs(tmp_part-n_part))
-    end do
-    call de_alloc(tmp_part)
+       call de_alloc(tmp_part)
+
+    end if
 
     ! The parts now have almost the same size and we will check that it
     ! is a valid thing, if not, we will revert to the other method of
@@ -99,6 +116,8 @@ contains
     ! The most probable thing is that the electrodes are not
     ! contained in the first two parts.
     if ( ts_valid_tri(sp, parts, n_part) /= VALID ) then
+       write(*,'(a,i0)') 'Current parts: ',parts
+       write(*,'(10000000(tr1,i0))') n_part
        call die('Contact the developers. (missing implementation). &
             &You appear to have a special form of electrode.')
     end if
@@ -254,8 +273,8 @@ contains
     integer :: sRow, eRow
     integer :: i
 
-    if ( parts < 3 ) call die('You cannot use tri-diagonalization &
-         &without having at least 3 parts')
+    if ( parts < 2 ) call die('You cannot use tri-diagonalization &
+         &without having at least 2 parts')
     
     copy_n_part = n_part(n) + 1
 
