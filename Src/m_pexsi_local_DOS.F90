@@ -45,8 +45,8 @@
       ! In this version, this set coincides with the set of siesta workers.
       if (worker) then
 
-         energy = fdf_get('PEXSI.LocalDOS.Energy',0.0_dp,"eV")
-         broadening = fdf_get('PEXSI.LocalDOS.Broadening',0.5_dp,"eV")
+         energy = fdf_get('PEXSI.LocalDOS.Energy',0.0_dp,"Ry")
+         broadening = fdf_get('PEXSI.LocalDOS.Broadening',0.01_dp,"Ry")
 
          ! Note that we re-use Dscf, so it will be obliterated
          call get_LDOS_SI( no_u, no_l, nspin,  &

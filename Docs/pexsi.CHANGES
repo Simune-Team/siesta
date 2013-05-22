@@ -1,4 +1,17 @@
 ------------------------------------------------------------
+May 22, 2013   Alberto Garcia            trunk-434--pexsi-30
+Fix units in fdf input for LDOS-Selected-Inversion interface
+
+Relevant fdf variables:
+
+PEXSI.LocalDOS         (true or false, to enable LDOS-SI)
+PEXSI.LocalDOS.Energy  ENERGY unit          
+PEXSI.LocalDOS.Broadening  BROADENING unit    (i.e., must specify unit)
+
+modified:
+  Src/m_pexsi_local_DOS.F90
+
+------------------------------------------------------------
 May 15, 2013   Alberto Garcia            trunk-434--pexsi-29
 First implementation of LDOS-Selected-Inversion interface
 
