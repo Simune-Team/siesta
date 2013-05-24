@@ -554,7 +554,9 @@ contains
 ! Modified REAL AXIS CONTOUR:
     integer, parameter :: NGauF = 8 ! number of points [-inf,E2+NT*kT]
     integer, parameter :: NTGau = 2
-    real(dp) :: wlt(NGauF),xlt(NGauF) ! Used to obtain the weights etc.
+    ! The routines in gaufermi<x> is able to obtain up to 12 weights, dependent
+    ! on the function
+    real(dp) :: wlt(12), xlt(12) ! Used to obtain the weights etc.
     integer :: NGau ! This holds how many points on the Fermi line
     integer :: NTGauUse ! Intermediate for determining the Fermi line points
 ! For holding the energies:
@@ -600,6 +602,7 @@ contains
     end if
     
     if ( NTGauUse .eq. 2 ) then
+       ! xlt can be up to 10
        call gaufermi2(NGau,xlt,wlt)
     else if ( NTGauUse .eq. 0 ) then
        call gaufermi0(NGau,xlt,wlt)

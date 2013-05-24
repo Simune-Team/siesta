@@ -27,6 +27,7 @@
       
 
       use precision, only : dp
+
       implicit none
 
 !      public :: splittri, collectri, invmat, transpose
@@ -113,7 +114,6 @@ c
       end do
 
 C ====================================================================
-      RETURN
       END subroutine splittri
 C ====================================================================
 
@@ -202,7 +202,6 @@ c
       end if
 
 C ====================================================================
-      RETURN
       END subroutine collectri
 C ====================================================================
 
@@ -258,7 +257,6 @@ c=======================================================================
       deallocate(ipvt) 
 
 C ====================================================================
-      RETURN
       END subroutine invmat
 C ====================================================================
 
@@ -276,7 +274,6 @@ C ====================================================================
       end do
 
 C ====================================================================
-      RETURN
       END subroutine transpose
 C ====================================================================
 
@@ -298,7 +295,7 @@ c OUTPUT
 c helpers, tempos ...
       ierr=0
       call  csolveg(N,N,A,B,ipvt,ierr)
-      return 
+
       end subroutine csolve
 
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -345,10 +342,7 @@ c LAPACK:
 
 c -----------       
 
-      return 
       end subroutine csolveg
-
-
 
 
 
@@ -360,7 +354,6 @@ c
       implicit none
       complex(dp) z
       nf=dcmplx(1d0,0d0)/(1d0 + exp(z))
-      return
       end function nf
 
       real(dp) function nf1(z)
@@ -373,7 +366,6 @@ c
       else
          nf1=1.d0/(1d0 + exp(z))
       endif
-      return
       end function nf1
 
 c ==================================================================
@@ -384,7 +376,7 @@ c  for the integral starting at - 2 kT and continuing to infinity
 c  The integration variable must be (x-EF)/kT.
 c
 c  Roots and weights were calculated with Mathematica 
-c  and only np < 10 are possible.
+c  and only np <= 8 are possible.
 c
 c ==================================================================
 
@@ -479,13 +471,12 @@ c     BEGIN
          w(6)=0.03772561389875811d0
          w(7)=0.01575324256952425d0
          w(8)=0.005059459614588813d0
-           else
-         stop 
-     &    'ERROR in Contour: No. points in gaufermi not valid'
+      else
+         call die('ERROR in contour: No. points in Gauss-Fermi'//
+     &        ' not valid')
       end if
 
 c==================================================================
-      return
       end subroutine gaufermi0
 c==================================================================
 
@@ -500,7 +491,7 @@ c  for the integral starting at - 2 kT and continuing to infinity
 c  The integration variable must be (x-EF)/kT.
 c
 c  Roots and weights were calculated with Mathematica 
-c  and only np < 10 are possible.
+c  and only np <= 10 are possible.
 c
 c ==================================================================
 
@@ -635,13 +626,12 @@ c     BEGIN
          w(8)=0.04754537984898786d0
          w(9)=0.01805810935560718d0
          w(10)=0.005530002975619004d0
-           else
-         stop 
-     &    'ERROR in Contour: No. points in gaufermi not valid'
+      else
+         call die('ERROR in contour: No. points in Gauss-Fermi'//
+     &        ' not valid')
       end if
 
 c==================================================================
-      return
       end subroutine gaufermi2
 c==================================================================
 
@@ -801,12 +791,11 @@ c     BEGIN
          w(10)=1.90943134104802d-7
          w(11)=7.458786235767771d-11
       else
-         stop 
-     &    'ERROR in Contour: No. points in gaufermi not valid'
+         call die('ERROR in contour: No. points in Gauss-Fermi'//
+     &        ' not valid')
       end if
 
 c==================================================================
-      return
       end subroutine gaufermi10
 c==================================================================
 
@@ -819,7 +808,7 @@ c  for the integral starting at -20 kT and continuing to infinity
 c  The integration variable must be (x-EF)/kT.
 c
 c  Roots and weights were calculated with Mathematica 
-c  and only np < 13 are possible.
+c  and only np <= 12 are possible.
 c
 c==================================================================
 
@@ -1002,14 +991,12 @@ c     BEGIN
          w(10)=0.00110561158564446d0
          w(11)=3.261271441086333d-6
          w(12)=1.037491566971821d-9
-
       else
-         stop 
-     &    'ERROR in Contour: No. points in gaufermi not valid'
+         call die('ERROR in contour: No. points in Gauss-Fermi'//
+     &        ' not valid')
       end if
 
 c==================================================================
-      return
       end subroutine gaufermi20
 c==================================================================
 
@@ -1102,7 +1089,6 @@ c scale to (a,inf) with 50% points inside (a,b+2a)
 
 c
 C =========================================================
-      return
       end subroutine gauss
 C =========================================================
 

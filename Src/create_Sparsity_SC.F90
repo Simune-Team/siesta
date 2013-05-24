@@ -166,12 +166,12 @@ contains
        write(cTM,'(i2,'','',i2,'','',i2)') TM(1),TM(2),TM(3)
        call newSparsity(out,n_rows,n_rows_g,n_nzs,num,listptr,list, &
             name='(TM region ['//trim(cTM)//'] of: '//in//')', &
-            ncols_g=nrows_g(in))
+            ncols=ncols(in),ncols_g=nrows_g(in))
     else if ( present(UC) ) then
        if ( UC ) then
           call newSparsity(out,n_rows,n_rows_g,n_nzs,num,listptr,list, &
                name='(UC sparsity of: '//in//')', &
-               ncols_g=nrows_g(in))
+               ncols=ncols(in),ncols_g=nrows_g(in))
        else
           ! THIS SHOULD NEVER HAPPEN (the dependency check
           ! should be performed in the initialization of this routine)

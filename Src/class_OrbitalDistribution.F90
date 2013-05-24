@@ -144,6 +144,17 @@
         endif
         nl = this%data%nroc_proc(Node)
 
+      else if ( this%data%nodes == 1 ) then ! globalized local distribution
+
+         ! No matter the node, it is the same orbital
+         ! The interface for creating such an orbital distribution
+         ! is 
+         ! call newDistribution(nrows_g(sp),MPI_Comm_Self,dit)
+         ! TODO Talk with Alberto about adding: "lproc = this%data%nodes - MOD(proc,this%data%nodes)"
+         if ( nels /= this%data%blocksize ) &
+              call die('Contact Nick Papior Andersen, nickpapior@gmail.com')
+         nl = this%data%blocksize
+
       else  ! block-cyclic distribution
 
           ! Use Julian's code for now, although this is 
@@ -180,6 +191,17 @@
            ig = -1
         endif
         ig = this%data%nl2g(il)
+
+      else if ( this%data%nodes == 1 ) then ! globalized local distribution
+
+         ! No matter the node, it is the same orbital
+         ! The interface for creating such an orbital distribution
+         ! is 
+         ! call newDistribution(nrows_g(sp),MPI_Comm_Self,dit)
+         if ( il > this%data%blocksize ) &
+              call die('Contact Nick Papior Andersen, nickpapior@gmail.com')
+
+         ig = il
 
       else  ! block-cyclic distribution
 
@@ -219,6 +241,17 @@
         ! Alternatively: Use an extended ng2p, in which "local" elements are negative.
         ! if (ng2p(ig)) < 0 then il = -that, else 0
         ! Example:  0 0 1 1 2 2 -1 -2 4 4 5 5 0 0 1 1 2 2 -3 -4 5 5 ..... (nb=2, np=6)
+
+      else if ( this%data%nodes == 1 ) then ! globalized local distribution
+
+         ! No matter the node, it is the same orbital
+         ! The interface for creating such an orbital distribution
+         ! is 
+         ! call newDistribution(nrows_g(sp),MPI_Comm_Self,dit)
+         if ( ig > this%data%blocksize ) &
+              call die('Contact Nick Papior Andersen, nickpapior@gmail.com')
+
+         il = ig
 
       else  ! block-cyclic distribution
 
@@ -265,6 +298,17 @@
         ! Alternatively: Use an extended ng2p, in which "local" elements are negative.
         ! if (ng2p(ig)) < 0 then il = -that, else 0
         ! Example:  0 0 1 1 2 2 -1 -2 4 4 5 5 0 0 1 1 2 2 -3 -4 5 5 ..... (nb=2, np=6)
+
+      else if ( this%data%nodes == 1 ) then ! globalized local distribution
+
+         ! No matter the node, it is the same orbital
+         ! The interface for creating such an orbital distribution
+         ! is 
+         ! call newDistribution(nrows_g(sp),MPI_Comm_Self,dit)
+         if ( ig > this%data%blocksize ) &
+              call die('Contact Nick Papior Andersen, nickpapior@gmail.com')
+
+         proc = this%data%node
 
       else  ! block-cyclic distribution
 

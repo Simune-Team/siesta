@@ -1,4 +1,49 @@
 ----------------------------------------------------
+May 22, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-40
+Added MPI_Comm_Self and fixed index out-of-bounds occuring in new routines
+
+* In the Transiesta sparsity patterns, we request them to be local, hence
+  the blocksize is that of the problem order, and without any distribution
+  on processors.
+  However, the current class_OrbitalDistribution (OD) could not take this into
+  account when calculating which node had what.
+  We needed to create an OD with a local sparsity pattern. The simplest
+  thing was to enable the use of MPI_COMM_SELF, which is an intrinsic
+  communicator in MPI (since very early version of MPI, hence it should
+  not mean any compatibility issues).
+  It is simply a communicator which only contains 1 processor, it-self.
+  This also required a small alteration for the OD class to be able 
+  to correctly figure out if it is local.
+  This is now implemented with die calls for erroneous calls to the 
+  affected routines.
+
+  TODO, ensure that it really does make sense in other situations,
+  perhaps it should return Node from MPI_Comm_World so that it is also
+  able to do MPI_Recv/MPI_Send without problems. I.e.:
+  If an MPI_Recv is performed with its own node ID, it will return instantly.
+
+* Implemented the local sparsity pattern distribution in the search for
+  the tri-mat partition.
+
+* Added ncols to the newSparsity when creating a new sparsity
+
+* Fixed comments for the Gauss-Fermi integral constants.
+
+* In case of many bias contour points the Gauss-Fermi line contour
+  could cause an overflow, this has been corrected.
+
+modified:
+  Src/MPI/mpi__include.f90
+  Src/MPI/mpi_siesta.f90
+  Src/MPI/mpif2sane.f90
+  Src/class_OrbitalDistribution.F90
+  Src/class_TriMat.T90
+  Src/create_Sparsity_SC.F90
+  Src/m_ts_aux_rout.F
+  Src/m_ts_contour.f90
+  Src/m_ts_tri.F90
+
+----------------------------------------------------
 May 22, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-39
 Added new creation routine for the tri-parts, should better capture big systems
 

@@ -31,6 +31,7 @@
         public :: mpi_maxloc, mpi_sum, mpi_max, mpi_lor
         public :: mpi_status_size
         public :: mpi_comm_world
+        public :: mpi_comm_self
 
         ! Added by Toby White, <tow21@cam.ac.uk>; 24/03/2005
         ! All of these are in mpich-1.1 and should be visible.

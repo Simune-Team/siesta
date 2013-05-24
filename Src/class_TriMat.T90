@@ -224,8 +224,9 @@
     s = index_start_part_col(this,pc)
     ! If the row is greater than or equal to the column
     ! Then we can add the C_pc matrix
-    if ( pr >= pc ) then
-       s = s + this%data%tri_nrows(pc-1)*this%data%tri_nrows(pc)
+    if ( pr >= pc ) then 
+       if ( pc > 1 ) &
+          s = s + this%data%tri_nrows(pc-1)*this%data%tri_nrows(pc)
     end if
     if ( pr > pc ) then
        s = s + this%data%tri_nrows(pc)**2
@@ -290,7 +291,8 @@
     ! If the row is greater than or equal to the column
     ! Then we can add the C_pc matrix
     if ( part_r >= part_c ) then
-       n = n + this%data%tri_nrows(part_c-1)*this%data%tri_nrows(part_c)
+       if ( part_c > 1 ) &
+          n = n + this%data%tri_nrows(part_c-1)*this%data%tri_nrows(part_c)
     end if
     if ( part_r > part_c ) then
        n = n + this%data%tri_nrows(part_c)**2

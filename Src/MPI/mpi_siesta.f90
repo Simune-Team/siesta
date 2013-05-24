@@ -29,6 +29,7 @@ MODULE MPI_SIESTA
         public :: mpi_maxloc, mpi_sum, mpi_max, mpi_lor
         public :: mpi_status_size
         public :: mpi_comm_world
+        public :: mpi_comm_self
         public :: mpi_grid_real
         public :: mpi_finalize
 

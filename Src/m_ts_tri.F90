@@ -63,7 +63,7 @@ contains
     use alloc, only : re_alloc, de_alloc
     use parallel, only : IONode
 #ifdef MPI
-    use mpi_siesta, only : MPI_COMM_WORLD
+    use mpi_siesta, only : MPI_Comm_World, MPI_Comm_Self
 #endif
 
     use class_OrbitalDistribution
@@ -101,7 +101,7 @@ contains
     ! and then recreate the tri-diagonal sparsity pattern
     ! This is probably the crudest way of doing it.
 #ifdef MPI
-    call newDistribution(nrows_g(ts_sp_uc),MPI_COMM_WORLD,dit, &
+    call newDistribution(nrows_g(ts_sp_uc),MPI_Comm_Self,dit, &
          name='TranSIESTA UC distribution')
 #else    
     call newDistribution(nrows_g(ts_sp_uc),-1,dit, &

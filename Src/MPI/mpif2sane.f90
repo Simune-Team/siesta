@@ -7,6 +7,7 @@ character(len=32) :: str = "  integer, parameter, public :: "
 write(unit=*,fmt="(a,/)") "module mpi__include"
 
 write(unit=*,fmt="(2a,i5)") str, "mpi_comm_world =", mpi_comm_world
+write(unit=*,fmt="(2a,i5)") str, "mpi_comm_self =", mpi_comm_self
 write(unit=*,fmt="(2a,i5)") str, "mpi_sum =", mpi_sum
 write(unit=*,fmt="(2a,i5)") str, "mpi_maxloc =", mpi_maxloc
 write(unit=*,fmt="(2a,i5)") str, "mpi_max =", mpi_max
