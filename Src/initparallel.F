@@ -180,15 +180,16 @@ C Check that cut-off is less than cell parameter
       if (.not. lspatial) then
 C Set BlockSize
 #ifdef MPI
-         if (isolve.eq.SOLVE_PEXSI) then
-             pexsi_dist = .true.
-             pexsi_bs = no_u/Nodes
-             BlockSize = pexsi_bs
-             
-          else
-             call set_blocksizedefault(Nodes,no_u,blocksizedefault)
-             BlockSize = fdf_integer('blocksize',blocksizedefault)
-          endif
+         pexsi_dist = .false.
+c$$$         if (isolve.eq.SOLVE_PEXSI) then
+c$$$             pexsi_dist = .true.
+c$$$             pexsi_bs = no_u/Nodes
+c$$$             BlockSize = pexsi_bs
+c$$$             
+c$$$          else
+         call set_blocksizedefault(Nodes,no_u,blocksizedefault)
+         BlockSize = fdf_integer('blocksize',blocksizedefault)
+c$$$          endif
 #else
         BlockSize = 8
 #endif

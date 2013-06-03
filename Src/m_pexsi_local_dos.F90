@@ -1,10 +1,10 @@
-      MODULE m_pexsi_local_DOS
+      MODULE m_pexsi_local_dos
       private
-      public :: pexsi_local_DOS
+      public :: pexsi_local_dos
 
       CONTAINS
 
-      subroutine pexsi_local_DOS( )
+      subroutine pexsi_local_dos( )
       use m_energies
 
       use sparse_matrices
@@ -15,9 +15,8 @@
       use atomlist,       only: iphorb                   
       use atomlist,       only: datm, no_s, iaorb        
       use fdf
-      use sys,            only: die                      
       use files,          only : slabel     
-      use parallel,       only:  worker
+      use parallel,       only:  SIESTA_worker
       use files,          only : label_length            
       use m_ntm
       use m_forces,       only: fa
@@ -42,8 +41,7 @@
       ! Only the first pole group participates 
       ! in the computation of the selected
       ! inversion for a single shift.
-      ! In this version, this set coincides with the set of siesta workers.
-      if (worker) then
+      ! In this version, this set coincides with the set of siesta SIESTA_workers.
 
          energy = fdf_get('PEXSI.LocalDOS.Energy',0.0_dp,"Ry")
          broadening = fdf_get('PEXSI.LocalDOS.Broadening',0.01_dp,"Ry")
@@ -52,9 +50,8 @@
          call get_LDOS_SI( no_u, no_l, nspin,  &
               maxnh, numh, listh, H, S,  &
               Dscf, energy, broadening)
-      endif
 
-      if (worker) then
+      if (SIESTA_worker) then
          !Find the LDOS in the real space mesh
          fildos = paste( slabel, '.LDSI' )
          g2max = g2cut
@@ -70,7 +67,7 @@
 
       endif
 
-    END subroutine pexsi_local_DOS
+    END subroutine pexsi_local_dos
 
     subroutine get_LDOS_SI( no_u, no_l, nspin,  &
          maxnh, numh, listh, H, S,  &
@@ -79,6 +76,7 @@
       use precision, only  : dp
       use fdf
       use units,       only: eV
+      use sys,         only: bye, die
       use m_mpi_utils, only: globalize_max
 #ifdef MPI
     use mpi_siesta
@@ -122,9 +120,10 @@ character(len=6) :: msg
 #ifndef MPI
     call die("PEXSI-LDOS needs MPI")
 #else
+    call bye("PEXSI-LDOS not implemented correctly yet")
 
 
-!!if (worker) then
+!!if (SIESTA_worker) then
    siesta_comm = mpi_comm_world
    Single_Pole_Comm = Siesta_Comm
 
@@ -182,7 +181,7 @@ character(len=6) :: msg
    HnzvalLocal(1:nnzLocal) = H(1:nnzLocal,ispin)
    SnzvalLocal(1:nnzLocal) = S(1:nnzLocal)
 
-!!!!!endif ! worker
+!!!!!endif ! SIESTA_worker
 
 isSIdentity = 0
 
@@ -190,7 +189,7 @@ isSIdentity = 0
 ordering = fdf_get("PEXSI.ordering",1)
 !
 ! Broadcast these to the whole processor set, just in case
-! (They were set only by the Siesta workers)
+! (They were set only by the Siesta SIESTA_workers)
 !
 !call MPI_Bcast(nrows,1,MPI_integer,0,Single_Pole_Comm,ierr)
 !call MPI_Bcast(nnz,1,MPI_integer,0,Single_Pole_Comm,ierr)
@@ -229,7 +228,7 @@ ordering = fdf_get("PEXSI.ordering",1)
       call die("Error in pexsi LDOS routine. Info: " // msg)
    endif
 
-!!if (worker) then
+!!if (SIESTA_worker) then
 
    ! this will disappear
    LocalDOSDM(1:nnzLocal,ispin) = DMnzvalLocal(1:nnzLocal)
@@ -241,10 +240,10 @@ ordering = fdf_get("PEXSI.ordering",1)
   deallocate(colPtrLocal)
 
   call timer("pexsi-ldos", 2)
-!! endif ! worker
+!! endif ! SIESTA_worker
 
 #endif ! mpi
 
 end subroutine get_LDOS_SI
 
-END module m_pexsi_local_DOS
+END module m_pexsi_local_dos

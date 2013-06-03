@@ -148,7 +148,10 @@ OBJS =  automatic_cell.o atom_options.o \
 	vacuum_level.o \
 	write_orb_indx.o \
 	m_hs_matrix.o kpoint_convert.o m_glob_sparse.o\
-        die.o m_pexsi_solver.o m_pexsi_local_DOS.o\
+        die.o m_pexsi_solver.o m_pexsi_local_dos.o\
+        m_comm.o m_transfers.o m_redist_spmatrix.o \
+        class_Dist.o class_BlockCyclicDist.o class_PEXSIDist.o\
+        m_object_debug.o m_uuid.o\
         m_dminim.o m_zminim.o
 #--------------------------------------------------------------
 # FoX whatnot
@@ -387,6 +390,10 @@ chemical.o: parallel.o precision.o sys.o
 chempot.o: alloc.o mneighb.o parallel.o parallelsubs.o precision.o sys.o
 chkdim.o: sys.o
 chkgmx.o: cellsubs.o minvec.o precision.o sys.o
+class_BlockCyclicDist.o: basic_type.inc
+class_Dist.o: basic_type.inc
+class_Dist.o: class_BlockCyclicDist.o class_PEXSIDist.o
+class_PEXSIDist.o: basic_type.inc
 coceri.o: files.o periodic_table.o precision.o
 compute_dm.o: atomlist.o iodmhs_netcdf.o kpoint_grid.o m_dminim.o m_energies.o
 compute_dm.o: m_eo.o m_gamma.o m_mpi_utils.o m_pexsi_solver.o m_rmaxh.o
@@ -540,21 +547,24 @@ m_mpi_utils.o: precision.o sys.o
 m_options.o: precision.o
 m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
 m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o
-m_pexsi_local_DOS.o: pexsi_localdos.h
-m_pexsi_local_DOS.o: atomlist.o dhscf.o files.o m_energies.o m_eo.o m_forces.o
-m_pexsi_local_DOS.o: m_gamma.o m_mpi_utils.o m_ntm.o m_spin.o parallel.o
-m_pexsi_local_DOS.o: precision.o siesta_geom.o siesta_options.o
-m_pexsi_local_DOS.o: sparse_matrices.o sys.o units.o
+m_pexsi_local_dos.o: pexsi_localdos.h
+m_pexsi_local_dos.o: atomlist.o dhscf.o files.o m_energies.o m_eo.o m_forces.o
+m_pexsi_local_dos.o: m_gamma.o m_mpi_utils.o m_ntm.o m_spin.o parallel.o
+m_pexsi_local_dos.o: precision.o siesta_geom.o siesta_options.o
+m_pexsi_local_dos.o: sparse_matrices.o sys.o units.o
 m_pexsi_solver.o: pexsi_inertia.h pexsi_solve.h
-m_pexsi_solver.o: m_mpi_utils.o parallel.o precision.o units.o
+m_pexsi_solver.o: alloc.o class_Dist.o m_mpi_utils.o m_redist_spmatrix.o
+m_pexsi_solver.o: parallel.o precision.o units.o
 m_pulay.o: alloc.o atomlist.o m_spin.o parallel.o precision.o siesta_options.o
 m_pulay.o: sparse_matrices.o sys.o
 m_recipes.o: precision.o sys.o
+m_redist_spmatrix.o: class_Dist.o m_comm.o m_transfers.o
 m_rmaxh.o: precision.o
 m_sparse.o: alloc.o precision.o
 m_spin.o: alloc.o parallel.o precision.o
 m_stress.o: precision.o
 m_timer.o: m_io.o m_walltime.o moreParallelSubs.o parallel.o precision.o sys.o
+m_transfers.o: m_comm.o
 m_ts_aux_rout.o: precision.o sys.o
 m_ts_cctype.o: precision.o
 m_ts_contour.o: m_ts_aux_rout.o m_ts_cctype.o parallel.o precision.o sys.o
@@ -694,7 +704,7 @@ siesta.o: siesta_end.o siesta_forces.o siesta_init.o siesta_move.o
 siesta_analysis.o: alloc.o atomlist.o bands.o basis_enthalpy.o dhscf.o files.o
 siesta_analysis.o: kpoint_grid.o ksv.o ksvinit.o local_DOS.o m_dipol.o
 siesta_analysis.o: m_energies.o m_eo.o m_forces.o m_gamma.o m_mpi_utils.o
-siesta_analysis.o: m_ntm.o m_partial_charges.o m_pexsi_local_DOS.o m_spin.o
+siesta_analysis.o: m_ntm.o m_partial_charges.o m_pexsi_local_dos.o m_spin.o
 siesta_analysis.o: m_steps.o parallel.o projected_DOS.o siesta_cml.o
 siesta_analysis.o: siesta_geom.o siesta_options.o sparse_matrices.o
 siesta_analysis.o: write_subs.o writewave.o zmatrix.o
@@ -843,6 +853,7 @@ m_vmat.o: vmat.o
 m_xyz_phiatm.o: matel.o
 m_zm_broyden_optim.o: zm_broyden_optim.o
 m_zm_fire_optim.o: zm_fire_optim.o
+mtprng.o: m_uuid.o
 neighbour.o: mneighb.o
 on_core.o: onmod.o
 on_main.o: onmod.o

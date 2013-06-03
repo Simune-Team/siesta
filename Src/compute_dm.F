@@ -21,7 +21,7 @@
       use m_eo
       use m_gamma
       use parallel, only: IONode
-      use parallel, only: worker
+      use parallel, only: SIESTA_worker
       use m_pexsi_solver,  only: pexsi_solver
 #ifdef MPI
       use mpi_siesta
@@ -58,7 +58,7 @@
 
 !-------------------------------------------------------------------- BEGIN
 
-      if (worker) call timer( 'compute_dm', 1 )
+      if (SIESTA_worker) call timer( 'compute_dm', 1 )
 
       call MPI_Bcast(isolve,1,MPI_integer,0,true_MPI_Comm_World,mpierr)
 
@@ -73,7 +73,7 @@
          Entrop = -freeEnergyCorrection / temp
 
       endif
-      if (.not. worker) RETURN
+      if (.not. SIESTA_worker) RETURN
 
       ! Here we decide if we want to calculate one or more SCF steps by
       ! diagonalization before proceeding with the OMM routine

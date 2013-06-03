@@ -18,7 +18,7 @@
       use m_post_scf_work
       use m_mixer
       USE siesta_options
-      use parallel,     only : IOnode, worker
+      use parallel,     only : IOnode, SIESTA_worker
       use m_state_analysis
       use m_steps
       use sys, only : die, bye
@@ -46,7 +46,7 @@
       integer mpierr
 !---------------------------------------------------------------------- BEGIN
 
-      if (worker)  then
+      if (SIESTA_worker)  then
 !     Initialization tasks for a given geometry
       call state_init( istep )
 
@@ -74,17 +74,17 @@
       endif
 
       call setup_H0()
-      endif ! worker
+      endif ! SIESTA_worker
 
       call MPI_Bcast(last,1,MPI_logical,0,true_MPI_Comm_World,mpierr)
       call MPI_Bcast(iscf,1,MPI_integer,0,true_MPI_Comm_World,mpierr)
 
       DO WHILE (.not. last)
 
-       if (worker)  call timer( 'IterSCF', 1 )
+       if (SIESTA_worker)  call timer( 'IterSCF', 1 )
 
 #ifndef TRANSIESTA
-       if (worker) then
+       if (SIESTA_worker) then
         if (cml_p) 
      &    call cmlStartStep(xf=mainXML, type='SCF', index=iscf)
 
@@ -98,14 +98,14 @@
            call bye("H-Setup-Only requested")
            STOP
         endif
-       endif  ! worker
+       endif  ! SIESTA_worker
 
        call compute_dm( iscf )
 
-       if (worker) call mixer( iscf, dDmax )
+       if (SIESTA_worker) call mixer( iscf, dDmax )
 
 #else /* TRANSIESTA */
-       if (worker) then
+       if (SIESTA_worker) then
         if (cml_p)
      &      call cmlStartStep( xf=mainXML, type='SCF', index=iscf )
 
@@ -120,17 +120,17 @@
           call compute_dm( iscf )
         end if ! mixH
       	call mixer( iscf, dDmax )
-       endif ! worker
+       endif ! SIESTA_worker
 #endif /* TRANSIESTA */
 
-       if (worker) then
+       if (SIESTA_worker) then
           call scfconvergence_test( first, iscf, last, dDmax,
      &                            conv_harris, conv_etot )
-       endif ! worker
+       endif ! SIESTA_worker
 
        call MPI_Bcast(last,1,MPI_logical,0,true_MPI_Comm_World,mpierr)
 
-       if (worker) then
+       if (SIESTA_worker) then
 !       At this point last is true if SCF has converged. But this
 !       changed below
         SCFconverged = last
@@ -151,12 +151,12 @@
         call timer( 'IterSCF', 2 )
         if (istep.eq.inicoor .and. first) call timer( 'IterSCF', 3 )
         if (cml_p) call cmlEndStep(mainXML)
-       endif ! worker
+       endif ! SIESTA_worker
 
         iscf = iscf + 1
         first = .false.
 
-        if (worker) then
+        if (SIESTA_worker) then
 !       The last scheduled iteration is used to compute forces
 !       and stresses, hence the exit if iscf==nscf.
 !       The ">" clause catches the nscf==1 case. For this,
@@ -165,11 +165,11 @@
         else if (iscf >= nscf) then
            last = .true.
         endif
-        endif ! worker
+        endif ! SIESTA_worker
         call MPI_Bcast(last,1,MPI_logical,0,true_MPI_Comm_World,mpierr)
       ENDDO
 
-      if (.not. worker) RETURN
+      if (.not. SIESTA_worker) RETURN
 
 !     If we have not converged, but get to here, we are out
 !     of steps. We may want to error out.

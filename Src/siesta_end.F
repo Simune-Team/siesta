@@ -13,7 +13,7 @@
 #endif /* DEBUG_XC */
       use m_timestamp,     only : timestamp
       use m_wallclock,     only : wallclock
-      use parallel,        only : IOnode, worker
+      use parallel,        only : IOnode, SIESTA_worker
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -35,7 +35,7 @@
 #endif
 !------------------------------------------------------------------------- BEGIN
 
-      if (worker) then
+      if (SIESTA_worker) then
 !     Free allocated memory
       call resetSparseMatrices( )
       call resetPulayArrays( )
@@ -72,7 +72,7 @@
         call cmlEndModule(mainXML)
         call siesta_cml_exit()
       endif      
-      endif  ! worker
+      endif  ! SIESTA_worker
 
 !     Finalize MPI
 #ifdef MPI

@@ -1,4 +1,41 @@
 ------------------------------------------------------------
+June 3, 2013   Alberto Garcia            trunk-434--pexsi-31
+Implemented redistribution routines
+
+Siesta can now work with its own arbitrary number of processors
+(specified through the fdf variable MPI.Nprocs.SIESTA), which can
+be different from the number of processors per pole in PEXSI  (specified
+through PEXSI.np-per-pole).
+
+A few rough edges and debug statements might remain.
+Yet to be implemented: redistribution before and after the LDOS routine.
+
+added:
+  Src/basic_type.inc
+  Src/class_BlockCyclicDist.F90
+  Src/class_Dist.F90
+  Src/class_PEXSIDist.F90
+  Src/m_comm.F90
+  Src/m_object_debug.F90
+  Src/m_redist_spmatrix.F90
+  Src/m_transfers.F90
+  Src/m_uuid.f90
+renamed:
+  Src/m_pexsi_local_DOS.F90 => Src/m_pexsi_local_dos.F90
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+  Src/initparallel.F
+  Src/m_pexsi_solver.F90
+  Src/parallel.F
+  Src/siesta.F
+  Src/siesta_analysis.F
+  Src/siesta_end.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/m_pexsi_local_dos.F90
+
+------------------------------------------------------------
 May 22, 2013   Alberto Garcia            trunk-434--pexsi-30
 Fix units in fdf input for LDOS-Selected-Inversion interface
 

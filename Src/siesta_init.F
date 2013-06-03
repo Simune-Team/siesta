@@ -38,7 +38,7 @@
       use m_timestamp,        only: timestamp
       use m_wallclock,        only: wallclock
       use parallel,           only: Node, Nodes, IOnode
-      use parallel,           only: worker
+      use parallel,           only: SIESTA_worker
       use densematrix,        only: Haux, Saux, Psi
       use m_energies
       use m_steps
@@ -73,9 +73,8 @@
       integer :: ns           ! Number of species
       logical :: user_wants_supercell
 
-      integer :: comm_sub, group_world, group_sub, ierr
-      integer :: npPerPole
-      integer, allocatable :: ranks(:)
+      integer :: SIESTA_comm, SIESTA_Group, World_Group
+      integer :: npSIESTA
 
 !---------------------------------------------------------------------- BEGIN
 #ifdef MPI
@@ -109,36 +108,33 @@ C     Initialise MPI and set processor number
       call reinit( sname )
 
 #ifdef MPI
-      ! Avoid restricting the communicator if not needed (default)
-      npPerPole        = fdf_get("PEXSI.np-per-pole",Nodes)
-      allocate(ranks(npPerPole))
-      do i = 1, npPerPole
-         ranks(i) = i-1
-      enddo
+      ! Optionally, restrict the number of processors that SIESTA uses, out
+      ! of the total pool
+      npSIESTA  = fdf_get("MPI.Nprocs.SIESTA",Nodes)
+      call MPI_Comm_Group(MPI_Comm_World, World_Group, MPIerror)
+      call MPI_Group_incl(World_Group, npSIESTA,
+     $                    (/ (i,i=0,npSIESTA-1) /),
+     $                    SIESTA_Group, MPIerror)
+      call MPI_Comm_create(MPI_Comm_World, SIESTA_Group,
+     $                     SIESTA_Comm, MPIerror)
 
-      ! Create a subset communicator for actual Siesta work
-      call MPI_COMM_GROUP(MPI_COMM_WORLD, group_world, ierr) 
-      call MPI_Group_incl(group_world, npPerPole, ranks,
-     $                    group_sub, ierr)
-      call MPI_Comm_create(MPI_COMM_WORLD, group_sub, comm_sub, ierr)
-
-      worker = (Node < npPerPole)
+      SIESTA_worker = (Node < npSIESTA)
 
       ! Swap communicator
       ! This is needed since MPI_COMM_WORLD is used implicitly by
       ! Siesta for all operations. 
-      MPI_COMM_WORLD = comm_sub
-      if (worker) then
+      MPI_COMM_WORLD = SIESTA_Comm
+      if (SIESTA_worker) then
          call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
          call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
       endif
 #else
-      worker = .true.
+      SIESTA_worker = .true.
       Node = 0
       Nodes = 1
 #endif
-      IOnode = worker .and. (Node .eq. 0)
-      if (.not. worker) RETURN
+      IOnode = SIESTA_worker .and. (Node .eq. 0)
+      if (.not. SIESTA_worker) RETURN
 
 #ifdef DEBUG
 !     Generates a debug file for every process to track the execution.
