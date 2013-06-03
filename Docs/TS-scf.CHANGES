@@ -1,4 +1,27 @@
 ----------------------------------------------------
+June 3, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-41
+Added functions for Sparsity and fixed bug in MPI variable declaration
+
+* Added "same" and "initialized" to the class_Sparsity
+   - "same" returns true if two sparsities have the same ID (hence
+     it is the same object)
+   - initialized returns the field initialized
+  it could be implemented to all "classes" via the include
+
+* Added the normalization of the density of states for the surface-Green
+  function
+
+* Fixed an MPI variables double appearence (MPI_Comm_Self)
+
+* Added bounds check for the phonon transport energy-points
+
+modified:
+  Src/MPI/mpi__include.f90
+  Src/class_Sparsity.F90
+  Src/m_ts_contour.f90
+  Src/m_ts_electrode.F90
+
+----------------------------------------------------
 May 22, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-40
 Added MPI_Comm_Self and fixed index out-of-bounds occuring in new routines
 

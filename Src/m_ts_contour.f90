@@ -737,6 +737,11 @@ contains
     ! Calculate the weight of each contour point
     delta = (E2-E1)/(1.d0*max(NEn-1,1))
 
+    if ( E1 <= 0._dp .or. E2 <= 0._dp ) then
+       call die('Energy range for phonon transport must not &
+            &coincide with: E <= 0')
+    end if
+
     do ic = 1 , NEn
        ! The energy contour in Phonon space is:
        ! (\omega + i \eta)**2

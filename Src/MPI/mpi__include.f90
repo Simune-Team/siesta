@@ -85,7 +85,7 @@
 
         ! Reserved communicators
         !public :: MPI_COMM_WORLD
-        public :: MPI_COMM_SELF
+        !public :: MPI_COMM_SELF
 
         ! datatypes for reduction functions
         public :: MPI_2REAL

@@ -283,6 +283,8 @@ contains
        do j=0,nv-1
           zdos = zdos + (rh3(j*(nv+1)))
        end do
+       ! Normalize DOS
+       zdos = zdos / real(nv,dp)
        
     end if
 
