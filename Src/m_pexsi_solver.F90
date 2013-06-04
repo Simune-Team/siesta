@@ -1,6 +1,11 @@
 module m_pexsi_solver
+    use precision, only  : dp
 
   public :: pexsi_solver
+
+  real(dp), save :: prevDmax  ! For communication of max diff in DM in scf loop
+                              ! which is used in the heuristics for N_el tolerance
+  public :: prevDmax
 
 CONTAINS
 
@@ -10,7 +15,6 @@ CONTAINS
        maxnh, numh, listhptr, listh, H, S, qtot, DM, EDM, &
        ef, freeEnergyCorrection, temp)
 
-    use precision, only  : dp
     use fdf
     use parallel, only   : SIESTA_worker, BlockSize
     use parallel, only   : SIESTA_Group, SIESTA_Comm
@@ -44,7 +48,7 @@ CONTAINS
 
     integer :: ispin, maxnhtot, ih, nnzold, i, pexsiFlag
 
-    integer  :: ordering, isInertiaCount, numInertiaCounts
+    integer  :: ordering, isInertiaCount, numInertiaCounts, numMinICountShifts, numNodesTotal
     integer  :: muIter
     real(dp) :: muZeroT
 
@@ -79,7 +83,11 @@ integer  :: npPerPole
 integer  :: mpirank, ierr
 integer  :: isSIdentity
 integer  :: inertiaMaxIter, inertiaIter
-real(dp) :: inertiaNumElectronTolerance, PEXSINumElectronTolerance
+real(dp) :: inertiaNumElectronTolerance, &
+            PEXSINumElectronToleranceMin, &
+            PEXSINumElectronToleranceMax, &
+            PEXSINumElectronTolerance
+
 !------------
 
 real(dp) :: buffer1
@@ -89,7 +97,7 @@ character(len=6) :: msg
 
 type(aux_matrix) :: m1, m2
 type(Dist)       :: dist1, dist2
-integer          :: pbs, norbs
+integer          :: pbs, norbs, scf_step
 
 interface
  ! subroutine f_ppexsi_solve_interface
@@ -105,9 +113,13 @@ end interface
 World_Comm = true_MPI_Comm_World
 
 if (SIESTA_worker) then
+   ! deal with intent(in) variables
    norbs = no_u
+   scf_step = iscf
 endif
 call broadcast(norbs,comm=World_Comm)
+call broadcast(scf_step,comm=World_Comm)
+call broadcast(prevDmax,comm=World_Comm)
 
 !  Find rank in global communicator
 call mpi_comm_rank( World_Comm, mpirank, ierr )
@@ -196,6 +208,14 @@ gap              = fdf_get("PEXSI.gap",0.0d0)
 ! than  | E_min - mu | is usually good enough.
 deltaE           = fdf_get("PEXSI.delta-E",3.0d0)
 
+
+! Stop mu-iteration if numElectronTolerance is < numElectronTolerance.
+PEXSINumElectronToleranceMin = fdf_get("PEXSI.num-electron-tolerance-lower-bound",0.01_dp)
+PEXSINumElectronToleranceMax = fdf_get("PEXSI.num-electron-tolerance-upper-bound",0.5_dp)
+! muMaxIter should be 1 or 2 later when combined with SCF.
+muMaxIter        = fdf_get("PEXSI.mu-max-iter",10)
+
+
 ! Initial guess of chemical potential and containing interval
 ! When using inertia counts, this interval can be wide.
 ! Note that mu, muMin0 and muMax0 are saved variables
@@ -204,8 +224,15 @@ if (first_call) then
    ! Lower/Upper bound for the chemical potential.
    muMin0           = fdf_get("PEXSI.mu-min",-1.0d0)
    muMax0           = fdf_get("PEXSI.mu-max", 0.0d0)
+
+   ! start with largest tolerance
+   PEXSINumElectronTolerance = PEXSINumElectronToleranceMax
    first_call = .false.
 else
+!
+!  Here we could also check whether we are in the first scf iteration
+!  of a multi-geometry run...
+!
    !
    ! Here we have to decide what to do with the previous 
    ! step's muMin0 and muMax0:
@@ -216,35 +243,50 @@ else
    ! 
    ! For now, do nothing, but as a safeguard 
    ! use numInertiaCounts > 1 or 2... below
+   PEXSINumElectronTolerance = Max(PEXSINumElectronToleranceMin, &
+                                Min(prevDmax*1.0, PEXSINumElectronToleranceMax))
 endif
-
-! Use inertia counts?
-isInertiaCount = fdf_get("PEXSI.inertia-count",1)
-! For how many scf steps?
-numInertiaCounts = fdf_get("PEXSI.inertia-counts",3)
-
-! Maximum number of iterations for computing the inertia
-! in a given scf step (until a proper bracket is obtained)
-inertiaMaxIter   = fdf_get("PEXSI.inertia-max-iter",3)
-! Stop inertia count if Ne(muMax) - Ne(muMin) < inertiaNumElectronTolerance
-inertiaNumElectronTolerance = fdf_get("PEXSI.inertia-num-electron-tolerance",10)
-
-! Stop mu-iteration if numElectronTolerance is < numElectronTolerance.
-PEXSINumElectronTolerance = fdf_get("PEXSI.num-electron-tolerance",1d-1)
-! muMaxIter should be 1 or 2 later when combined with SCF.
-muMaxIter        = fdf_get("PEXSI.mu-max-iter",10)
 
 ! Arrays for reporting back information about the PEXSI iterations
 allocate( muList( muMaxIter ) )
 allocate( numElectronList( muMaxIter ) )
 allocate( numElectronDrvList( muMaxIter ) )
 
-! Arrays for reporting back information about the integrated DOS
-! computed by the inertia count method. Since we use the processor
-! teams corresponding to the different poles, the number of points
-! in the energy interval is "nptsInertia=numPole"
+!-----------------------------------------------------------------------------
+! Use inertia counts?
+isInertiaCount = fdf_get("PEXSI.inertia-count",1)
+! For how many scf steps?
+numInertiaCounts = fdf_get("PEXSI.inertia-counts",3)
 
-nptsInertia = numPole
+
+! Maximum number of iterations for computing the inertia
+! in a given scf step (until a proper bracket is obtained)
+inertiaMaxIter   = fdf_get("PEXSI.inertia-max-iter",5)
+
+! Stop inertia count if Ne(muMax) - Ne(muMin) < inertiaNumElectronTolerance
+inertiaNumElectronTolerance = fdf_get("PEXSI.inertia-num-electron-tolerance",10)
+
+! Since we use the processor teams corresponding to the different poles, 
+! the number of points in the energy interval should be a multiple
+! of numNodesTotal/npPerPole.
+! We can avoid serializing the calculations if we use only the
+! available teams in a single step), subject to a minimum number:
+
+! Minimum number of sampling points for inertia counts
+numMinICountShifts = fdf_get("PEXSI.inertia-min-num-shifts", 10)
+
+call mpi_comm_size( World_Comm, numNodesTotal, ierr )
+nptsInertia = numNodesTotal/npPerPole
+do
+   if (nptsInertia < numMinICountShifts) then
+      nptsInertia = nptsInertia + numNodesTotal/npPerPole
+   else
+      exit
+   endif
+enddo
+
+! Arrays for reporting back information about the integrated DOS
+! computed by the inertia count method.
 allocate( shiftList( nptsInertia ) )
 allocate( inertiaList( nptsInertia ) )
 
@@ -258,12 +300,11 @@ call MPI_Bcast(nrows,1,MPI_integer,0,World_Comm,ierr)
 call MPI_Bcast(nnz,1,MPI_integer,0,World_Comm,ierr)
 call MPI_Bcast(numElectronExact,1,MPI_double_precision,0,World_Comm,ierr)
 call MPI_Bcast(temperature,1,MPI_double_precision,0,World_Comm,ierr)
-call MPI_Bcast(iscf,1,MPI_integer,0,World_Comm,ierr)
 
 !
 !  Possible inertia-count stage
 !
-if ((isInertiaCount .ne. 0) .and. (iscf .le. numInertiaCounts)) then
+if ((isInertiaCount .ne. 0) .and. (scf_step .le. numInertiaCounts)) then
 
   call do_inertia()
 
@@ -300,6 +341,7 @@ solver_loop: do
      write(*, *) "mu (eV)       = ", muSolverInput/eV
      write(*, *) "muMin         = ", muMinSolverInput/eV
      write(*, *) "muMax         = ", muMaxSolverInput/eV
+     write(*, *) "numElectronTol= ", PEXSINumElectronTolerance
    endif 
 
    call f_ppexsi_solve_interface(&

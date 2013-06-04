@@ -1,4 +1,22 @@
 ------------------------------------------------------------
+June 4, 2013   Alberto Garcia            trunk-434--pexsi-33
+New strategies for number of shifts and electron tolerance (G. Huhs)
+
+   * the number of shifts for inertia count
+   * adapting numElectronTolerance in PEXSI depending on dmax
+  
+  New fdf parameters: 
+  PEXSI.inertia-min-num-shifts
+  PEXSI.num-electron-tolerance-upper-bound 
+  PEXSI.num-electron-tolerance-lower-bound  
+
+(With minor changes over Georg's version by Alberto Garcia)
+
+modified:
+  Src/m_pexsi_solver.F90
+  Src/siesta_forces.F
+
+------------------------------------------------------------
 June 4, 2013   Alberto Garcia            trunk-434--pexsi-32
 Assorted fixes to redistribution routines. LDOS redistribution
 

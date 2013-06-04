@@ -27,6 +27,7 @@
       use write_subs
       use m_forces,              only: fa
       use units,                 only: eV, Ang
+      use m_pexsi_solver,        only: prevDmax
 #ifdef TRANSIESTA
       use m_ts_options, only : mixH
       use m_ts_global_vars, only : ts_istep
@@ -124,6 +125,7 @@
 #endif /* TRANSIESTA */
 
        if (SIESTA_worker) then
+          prevDmax = dDMax
           call scfconvergence_test( first, iscf, last, dDmax,
      &                            conv_harris, conv_etot )
        endif ! SIESTA_worker
