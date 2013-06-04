@@ -76,16 +76,21 @@
       use precision, only  : dp
       use fdf
       use units,       only: eV
-      use sys,         only: bye, die
-      use m_mpi_utils, only: globalize_max
+      use sys,         only: die
+      use m_mpi_utils, only: globalize_max, broadcast
+      use parallel, only   : SIESTA_worker, BlockSize
+      use parallel, only   : SIESTA_Group, SIESTA_Comm
+      use m_redist_spmatrix, only: aux_matrix, redistribute_spmatrix
+      use class_Dist
+      use alloc,             only: re_alloc, de_alloc
 #ifdef MPI
     use mpi_siesta
 #endif
     implicit          none
 
     integer, intent(in)          :: maxnh, no_u, no_l, nspin
-    integer, intent(in)          :: listh(maxnh), numh(*)
-    real(dp), intent(in)         :: H(maxnh,nspin), S(maxnh)
+    integer, intent(in), target  :: listh(maxnh), numh(no_l)
+    real(dp), intent(in), target :: H(maxnh,nspin), S(maxnh)
     real(dp), intent(in)         :: energy, broadening
     real(dp), intent(out)        :: LocalDOSDM(maxnh,nspin)
 
@@ -94,11 +99,17 @@
          include "pexsi_localdos.h"
       end interface
 
-    integer :: siesta_comm, single_pole_comm
-    integer :: ispin, maxnhtot, ih, nnzold, i
+    integer :: PEXSI_Comm, World_Comm
+    integer :: PEXSI_Group, World_Group
+
+    integer :: ispin, maxnhtot, ih, nnzold, i, pbs, norbs, npPerPole
+    logical :: PEXSI_worker
 
     integer  :: ordering
     integer  :: info, infomax
+
+    type(aux_matrix) :: m1, m2
+    type(Dist)       :: dist1, dist2
 
 !Lin variables
 integer :: nrows, nnz, nnzLocal, numColLocal
@@ -120,16 +131,40 @@ character(len=6) :: msg
 #ifndef MPI
     call die("PEXSI-LDOS needs MPI")
 #else
-    call bye("PEXSI-LDOS not implemented correctly yet")
 
+! "SIESTA_Worker" means a processor which is in the Siesta subset.
+! NOTE:  fdf calls will assign values to the whole processor set,
+! but some other variables will have to be re-broadcast (see examples
+! below)
 
-!!if (SIESTA_worker) then
-   siesta_comm = mpi_comm_world
-   Single_Pole_Comm = Siesta_Comm
+World_Comm = true_MPI_Comm_World
 
-!  Find rank
-   call mpi_comm_rank( Single_Pole_Comm, mpirank, ierr )
+if (SIESTA_worker) then
+   norbs = no_u
+endif
+call broadcast(norbs,comm=World_Comm)
 
+!  Find rank in global communicator
+call mpi_comm_rank( World_Comm, mpirank, ierr )
+
+call newDistribution(BlockSize,SIESTA_Group,dist1,TYPE_BLOCK_CYCLIC,"bc dist")
+
+! Group and Communicator for first-pole team of PEXSI workers
+!
+npPerPole  = fdf_get("PEXSI.np-per-pole",4)
+call MPI_Comm_Group(World_Comm, World_Group, Ierr)
+call MPI_Group_incl(World_Group, npPerPole,   &
+                    (/ (i,i=0,npPerPole-1) /),&
+                    PEXSI_Group, Ierr)
+call MPI_Comm_create(World_Comm, PEXSI_Group,&
+                     PEXSI_Comm, Ierr)
+
+PEXSI_worker = (mpirank < npPerPole)
+
+pbs = norbs/npPerPole
+call newDistribution(pbs,PEXSI_Group,dist2,TYPE_PEXSI,"px dist")
+
+if (SIESTA_worker) then
    call timer("pexsi-ldos", 1)
 
    ispin = 1
@@ -143,62 +178,57 @@ character(len=6) :: msg
 
    call MPI_Barrier(Siesta_comm,ierr)
 
-   nrows = no_u
-!  numColLocal = num_local_elements(dist2,no_u,myrank2)
-   numColLocal = no_l
+   m1%norbs = norbs
+   m1%no_l  = no_l
+   m1%nnzl  = sum(numH(1:no_l))
+   m1%numcols => numH
+   m1%cols    => listH
+   allocate(m1%vals(2))
+   m1%vals(1)%data => S(:)
+   m1%vals(2)%data => H(:,ispin)
 
-   ! Figure out the communication needs
-   ! call analyze_comms(comms)
-   ! call do_transfers(comms,numh,numh_pexsi, &
-   !                   g1,g2,mpi_comm)
+endif  ! SIESTA_worker
 
- !   nnzLocal = sum(numh_pexsi(1:numColLocal))
- ! call MPI_AllReduce(nnzLocal,nnz,1,MPI_integer,MPI_sum,PEXSI_comm,MPIerror)
-   nnzLocal = sum(numh(1:numColLocal))
-   call MPI_AllReduce(nnzLocal,nnz,1,MPI_integer,MPI_sum,Siesta_comm,ierr)
+call redistribute_spmatrix(norbs,m1,dist1,m2,dist2,World_Comm)
 
-  allocate(colptrLocal(1:numColLocal+1))
+if (PEXSI_worker) then
+
+   nrows = m2%norbs          ! or simply 'norbs'
+   numColLocal = m2%no_l
+   nnzLocal    = m2%nnzl
+   call MPI_AllReduce(nnzLocal,nnz,1,MPI_integer,MPI_sum,PEXSI_Comm,ierr)
+
+  call re_alloc(colptrLocal,1,numColLocal+1,"colptrLocal","pexsi_ldos")
   colptrLocal(1) = 1
   do ih = 1,numColLocal
-!    colptrLocal(ih+1) = colptrLocal(ih) + numh_pexsi(ih)
-     colptrLocal(ih+1) = colptrLocal(ih) + numh(ih)
+     colptrLocal(ih+1) = colptrLocal(ih) + m2%numcols(ih)
   enddo
 
-   allocate(rowindLocal(1:nnzLocal))
-   allocate(HnzvalLocal(1:nnzLocal))
-   allocate(SnzvalLocal(1:nnzLocal))
-   allocate(DMnzvalLocal(1:nnzLocal))
+  rowindLocal => m2%cols
+  SnzvalLocal => m2%vals(1)%data
+  HnzvalLocal => m2%vals(2)%data
 
-!  call generate_commsnnz(comms,commsnnz)
-!  call do_transfers(commsnnz,listh,rowindLocal, &
-!                        g1, g2, mpi_comm)
-!  call do_transfers(commsnnz,H,HnzvalLocal, &
-!                        g1, g2, mpi_comm)
-!  call do_transfers(commsnnz,S,SnzvalLocal, &
-!                        g1, g2, mpi_comm)
+  call re_alloc(DMnzvalLocal,1,nnzLocal,"DMnzvalLocal","pexsi_ldos")
 
-   rowindLocal(1:nnzLocal) = listh(1:nnzLocal)
-   HnzvalLocal(1:nnzLocal) = H(1:nnzLocal,ispin)
-   SnzvalLocal(1:nnzLocal) = S(1:nnzLocal)
+  isSIdentity = 0
 
-!!!!!endif ! SIESTA_worker
-
-isSIdentity = 0
-
-! Ordering flag
-ordering = fdf_get("PEXSI.ordering",1)
+  ! Ordering flag
+  ordering = fdf_get("PEXSI.ordering",1)
 !
-! Broadcast these to the whole processor set, just in case
-! (They were set only by the Siesta SIESTA_workers)
+! No need to broadcast these to the whole processor set.
+! (They were set by the PEXSI workers, which are the only
+!  ones making the interface call)
 !
-!call MPI_Bcast(nrows,1,MPI_integer,0,Single_Pole_Comm,ierr)
-!call MPI_Bcast(nnz,1,MPI_integer,0,Single_Pole_Comm,ierr)
+!call MPI_Bcast(nrows,1,MPI_integer,0,World_Comm,ierr)
+!call MPI_Bcast(nnz,1,MPI_integer,0,World_Comm,ierr)
 
    if(mpirank == 0) then
      write (*,*) 'Calling PEXSI LDOS routine...'
      write(*, *) "energy (eV)       = ", energy/eV
      write(*, *) "broadening (eV)   = ", broadening/eV
    endif 
+
+! (Note that only the first-pole team does this)
 
 	call f_ppexsi_localdos_interface(&
 		nrows,&
@@ -213,14 +243,14 @@ ordering = fdf_get("PEXSI.ordering",1)
 		Energy,&
 		Broadening,&
 		ordering,&
-		Single_Pole_Comm,&
+		PEXSI_Comm,&
 		DMnzvalLocal,&   ! LDOS/ partial DM
 		info)
 
   ! Make sure that all processors report info=1 when any of them
   ! raises it...
   ! This should be done inside the routine
-   call globalize_max(info,infomax,comm=single_pole_comm)
+   call globalize_max(info,infomax,comm=PEXSI_comm)
    info = infomax
 
    if (info /= 0) then
@@ -228,19 +258,65 @@ ordering = fdf_get("PEXSI.ordering",1)
       call die("Error in pexsi LDOS routine. Info: " // msg)
    endif
 
-!!if (SIESTA_worker) then
+   call de_alloc(colPtrLocal,"colPtrLocal","pexsi_ldos")
 
-   ! this will disappear
-   LocalDOSDM(1:nnzLocal,ispin) = DMnzvalLocal(1:nnzLocal)
+   deallocate(m2%vals(1)%data)
+   deallocate(m2%vals(2)%data)
+   deallocate(m2%vals)
+   allocate(m2%vals(1))
+   m2%vals(1)%data => DMnzvalLocal(1:nnzLocal)
 
-  deallocate(rowindLocal)
-  deallocate(HnzvalLocal)
-  deallocate(SnzvalLocal)
-  deallocate(DMnzvalLocal)
-  deallocate(colPtrLocal)
+endif ! PEXSI_worker
 
-  call timer("pexsi-ldos", 2)
-!! endif ! SIESTA_worker
+! Now we should not re-allocate m1...
+! or better:
+if (SIESTA_worker) then
+   nullify(m1%vals(1)%data)    ! formerly pointing to S
+   nullify(m1%vals(2)%data)    ! formerly pointing to H
+   deallocate(m1%vals)
+   nullify(m1%numcols)         ! formerly pointing to numH
+   nullify(m1%cols)            ! formerly pointing to listH
+endif
+
+call redistribute_spmatrix(norbs,m2,dist2,m1,dist1,World_Comm)
+
+if (PEXSI_worker) then
+   call de_alloc(DMnzvalLocal,"DMnzvalLocal","pexsi_ldos")
+
+   nullify(m2%vals(1)%data)    ! formerly pointing to DM
+   deallocate(m2%vals)
+   deallocate(m2%numcols)      ! allocated in the direct transfer
+   deallocate(m2%cols)         !  "
+endif
+
+
+if (SIESTA_worker) then
+
+   LocalDOSDM(:,ispin)  = m1%vals(1)%data(:)  
+   ! Check no_l
+   if (no_l /= m1%no_l) then
+      call die("Mismatch in no_l")
+   endif
+   ! Check listH
+   if (any(listH(:) /= m1%cols(:))) then
+      call die("Mismatch in listH")
+   endif
+
+   deallocate(m1%vals(1)%data)
+   deallocate(m1%vals)
+   deallocate(m1%cols)
+   deallocate(m1%numcols)
+
+   call timer("pexsi-ldos", 2)
+
+endif
+
+call delete(dist1)
+call delete(dist2)
+if (PEXSI_worker) then
+   call MPI_Comm_Free(PEXSI_Comm, ierr)
+   call MPI_Group_Free(PEXSI_Group, ierr)
+endif
 
 #endif ! mpi
 

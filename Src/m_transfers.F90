@@ -20,8 +20,8 @@ CONTAINS
    subroutine do_transfers_int(comms,data1,data2,g1,g2,mpi_comm)
 
      type(comm_t), intent(in), target     :: comms(:)
-     integer, dimension(:), intent(in)  :: data1
-     integer, dimension(:), intent(out) :: data2
+     integer, dimension(:), pointer  :: data1
+     integer, dimension(:), pointer  :: data2
      integer, intent(in)                :: g1
      integer, intent(in)                :: g2
      integer, intent(in)                :: mpi_comm
@@ -149,9 +149,13 @@ CONTAINS
      integer :: nrecvs_local, nsends_local
      integer, allocatable :: statuses(:,:), local_reqR(:), local_reqS(:)
      integer :: src_in_comm, dst_in_comm
-     integer :: myrank1, myrank2
+     integer :: myrank1, myrank2, myid
      type(comm_t), pointer :: c
 
+     call  MPI_Comm_Rank( mpi_comm, myid, ierr )
+!     print *, "Entering transfer_dp"
+!     print *, "rank, Associated data1: ", myid, associated(data1)
+!     print *, "rank, Associated data2: ", myid, associated(data2)
 
       ! Find the rank correspondences, in case
       ! there is implicit renumbering at the time of group creation

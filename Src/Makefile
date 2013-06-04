@@ -548,8 +548,9 @@ m_options.o: precision.o
 m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
 m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o
 m_pexsi_local_dos.o: pexsi_localdos.h
-m_pexsi_local_dos.o: atomlist.o dhscf.o files.o m_energies.o m_eo.o m_forces.o
-m_pexsi_local_dos.o: m_gamma.o m_mpi_utils.o m_ntm.o m_spin.o parallel.o
+m_pexsi_local_dos.o: alloc.o atomlist.o class_Dist.o dhscf.o files.o
+m_pexsi_local_dos.o: m_energies.o m_eo.o m_forces.o m_gamma.o m_mpi_utils.o
+m_pexsi_local_dos.o: m_ntm.o m_redist_spmatrix.o m_spin.o parallel.o
 m_pexsi_local_dos.o: precision.o siesta_geom.o siesta_options.o
 m_pexsi_local_dos.o: sparse_matrices.o sys.o units.o
 m_pexsi_solver.o: pexsi_inertia.h pexsi_solve.h

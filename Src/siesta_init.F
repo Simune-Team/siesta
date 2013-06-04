@@ -39,6 +39,7 @@
       use m_wallclock,        only: wallclock
       use parallel,           only: Node, Nodes, IOnode
       use parallel,           only: SIESTA_worker
+      use parallel,           only: SIESTA_Group, SIESTA_Comm
       use densematrix,        only: Haux, Saux, Psi
       use m_energies
       use m_steps
@@ -73,7 +74,7 @@
       integer :: ns           ! Number of species
       logical :: user_wants_supercell
 
-      integer :: SIESTA_comm, SIESTA_Group, World_Group
+      integer :: World_Group
       integer :: npSIESTA
 
 !---------------------------------------------------------------------- BEGIN

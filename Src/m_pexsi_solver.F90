@@ -13,6 +13,7 @@ CONTAINS
     use precision, only  : dp
     use fdf
     use parallel, only   : SIESTA_worker, BlockSize
+    use parallel, only   : SIESTA_Group, SIESTA_Comm
     use m_mpi_utils, only: globalize_sum, globalize_max
     use m_mpi_utils, only: broadcast
     use units,       only: Kelvin, eV
@@ -38,8 +39,8 @@ CONTAINS
     call die("PEXSI needs MPI")
 #else
 
-    integer :: SIESTA_Comm, PEXSI_Comm, World_Comm
-    integer :: SIESTA_Group, PEXSI_Group, World_Group
+    integer :: PEXSI_Comm, World_Comm
+    integer :: PEXSI_Group, World_Group
 
     integer :: ispin, maxnhtot, ih, nnzold, i, pexsiFlag
 
@@ -111,8 +112,6 @@ call broadcast(norbs,comm=World_Comm)
 !  Find rank in global communicator
 call mpi_comm_rank( World_Comm, mpirank, ierr )
 
-SIESTA_Comm = mpi_comm_world   ! Special meaning of mpi_comm_world
-call MPI_COMM_GROUP(SIESTA_Comm, SIESTA_Group, ierr)
 call newDistribution(BlockSize,SIESTA_Group,dist1,TYPE_BLOCK_CYCLIC,"bc dist")
 
 ! Group and Communicator for first-pole team of PEXSI workers
@@ -474,8 +473,8 @@ if (SIESTA_worker) then
    ! In future, m1%vals(1,2) could be pointing to DM and EDM,
    ! and the 'redistribute' routine check whether the vals arrays are
    ! associated, to use them instead of allocating them.
-   DM(1:nnzLocal,ispin)  = m1%vals(1)%data(1:nnzLocal)    ! DMnzvalLocal(1:nnzLocal)
-   EDM(1:nnzLocal,ispin) = m1%vals(2)%data(1:nnzLocal)    ! EDMnzvalLocal(1:nnzLocal)
+   DM(:,ispin)  = m1%vals(1)%data(:)    
+   EDM(:,ispin) = m1%vals(2)%data(:)    
    ! Check no_l
    if (no_l /= m1%no_l) then
       call die("Mismatch in no_l")
@@ -501,8 +500,10 @@ deallocate( inertiaList )
 
 call delete(dist1)
 call delete(dist2)
-call MPI_Comm_Free(PEXSI_Comm, ierr)
-call MPI_Group_Free(PEXSI_Group, ierr)
+if (PEXSI_worker) then
+   call MPI_Comm_Free(PEXSI_Comm, ierr)
+   call MPI_Group_Free(PEXSI_Group, ierr)
+endif
 
 #endif 
 

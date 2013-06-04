@@ -50,6 +50,8 @@ CONTAINS
     integer ::  ierr
 
     integer ::  i, io, g1, g2, j, nvals
+    integer, parameter :: dp = selected_real_kind(10,100)
+    real(dp), dimension(:), pointer  :: data1 => null(), data2 => null()
 
       g1 = group(dist1)
       g2 = group(dist2)
@@ -77,7 +79,7 @@ CONTAINS
          allocate(m2%numcols(m2%no_l))
       endif
 
-      print *, "About to transfer numcols..."
+!      print *, "About to transfer numcols..."
       call do_transfers(comms,m1%numcols,m2%numcols, &
                         g1,g2,mpi_comm)
 
@@ -147,13 +149,16 @@ CONTAINS
       call do_transfers(commsnnz,m1%cols,m2%cols, &
                         g1, g2, mpi_comm)
 
-      print *, "About to transfer values..."
+!      print *, "About to transfer values..."
       ! Transfer the values arrays
       do j=1, nvals
-         call do_transfers(commsnnz,m1%vals(j)%data,m2%vals(j)%data, &
+	 if (proc_in_set1) data1 => m1%vals(j)%data
+	 if (proc_in_set2) data2 => m2%vals(j)%data
+         call do_transfers(commsnnz,data1,data2, &
               g1,g2,mpi_comm)
       enddo
-      print *, "Done transfers."
+      nullify(data1,data2)
+!      print *, "Done transfers."
 
       deallocate(commsnnz)
       deallocate(comms)

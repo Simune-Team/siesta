@@ -1,4 +1,20 @@
 ------------------------------------------------------------
+June 4, 2013   Alberto Garcia            trunk-434--pexsi-32
+Assorted fixes to redistribution routines. LDOS redistribution
+
+Fixed some subtle bugs in the routines.
+Enabled re-distribution for the PEXSI-LDOS calculation.
+
+modified:
+  Src/Makefile
+  Src/m_pexsi_local_dos.F90
+  Src/m_pexsi_solver.F90
+  Src/m_redist_spmatrix.F90
+  Src/m_transfers.F90
+  Src/parallel.F
+  Src/siesta_init.F
+
+------------------------------------------------------------
 June 3, 2013   Alberto Garcia            trunk-434--pexsi-31
 Implemented redistribution routines
 
