@@ -1,4 +1,48 @@
 ------------------------------------------------------------
+June 5, 2013   Alberto Garcia            trunk-434--pexsi-34
+Units in energy options. Better output. Rationalize debug output
+
+Full set of options and defaults for PEXSI (note energy units now):
+
+npPerPole  = fdf_get("PEXSI.np-per-pole",4)
+numPole    = fdf_get("PEXSI.num-poles",20)
+
+! Hardly used?
+gap        = fdf_get("PEXSI.gap",0.0_dp,"Ry")
+deltaE     = fdf_get("PEXSI.delta-E",3.0_dp,"Ry")
+
+Tolerance heuristics:
+
+PEXSINumElectronToleranceMin = fdf_get("PEXSI.num-electron-tolerance-lower-bound",0.01_dp)
+PEXSINumElectronToleranceMax = fdf_get("PEXSI.num-electron-tolerance-upper-bound",0.5_dp)
+
+(Heuristics overriden by 
+    PEXSINumElectronTolerance = fdf_get("PEXSI.num-electron-tolerance",...) )
+
+
+muMaxIter  = fdf_get("PEXSI.mu-max-iter",10)
+
+! For feedback in case of wrong interval
+lateral_expansion_solver = fdf_get("PEXSI.lateral-expansion-solver",0.2_dp,"Ry")
+lateral_expansion_inertia = fdf_get("PEXSI.lateral-expansion-inertia",0.2_dp,"Ry")
+
+mu = fdf_get("PEXSI.mu",-0.60_dp,"Ry")
+muMin0           = fdf_get("PEXSI.mu-min",-1.0_dp,"Ry")
+muMax0           = fdf_get("PEXSI.mu-max", 0.0_dp,"Ry")
+
+isInertiaCount = fdf_get("PEXSI.inertia-count",1)
+numInertiaCounts = fdf_get("PEXSI.inertia-counts",3)
+inertiaMaxIter   = fdf_get("PEXSI.inertia-max-iter",5)
+inertiaNumElectronTolerance = fdf_get("PEXSI.inertia-num-electron-tolerance",10)
+numMinICountShifts = fdf_get("PEXSI.inertia-min-num-shifts", 10)
+
+ordering = fdf_get("PEXSI.ordering",1)
+
+modified:
+  Src/m_pexsi_solver.F90
+  Src/m_redist_spmatrix.F90
+
+------------------------------------------------------------
 June 4, 2013   Alberto Garcia            trunk-434--pexsi-33
 New strategies for number of shifts and electron tolerance (G. Huhs)
 

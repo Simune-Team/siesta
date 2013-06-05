@@ -171,6 +171,8 @@ CONTAINS
       integer, allocatable, dimension(:) :: p1, p2, isrc, idst
       integer :: ncomms
 
+      logical, save :: comms_not_printed = .true.
+
       ! Find the communication needs for each orbital
       ! This information is replicated in every processor
       ! (Note that the indexing functions are able to find
@@ -183,19 +185,19 @@ CONTAINS
       ! can be done on the fly
       allocate(p1(norbs),p2(norbs),isrc(norbs),idst(norbs))
 
-      if (myid == 0) then
-         write(6,"(5a10)") "Orb", "p1", "i1", "p2", "i2"
-      endif
+!      if (myid == 0) then
+!         write(6,"(5a10)") "Orb", "p1", "i1", "p2", "i2"
+!      endif
       do io = 1, norbs
          p1(io) = node_handling_element(dist1,io)
          p2(io) = node_handling_element(dist2,io)
          isrc(io) = index_global_to_local(dist1,io,p1(io))
          idst(io) = index_global_to_local(dist2,io,p2(io))
-         if (myid == 0) then
-            if ((norbs < 1000) .or. (mod(io,12) == 0)) then
-               write(6,"(5i10)") io, p1(io), isrc(io), p2(io), idst(io)
-            endif
-         endif
+!         if (myid == 0) then
+!            if ((norbs < 1000) .or. (mod(io,12) == 0)) then
+!               write(6,"(5i10)") io, p1(io), isrc(io), p2(io), idst(io)
+!            endif
+!        endif
       enddo
 
       ! Aggregate communications
@@ -242,13 +244,14 @@ CONTAINS
          endif
       enddo
 
-      if (myid == 0) then
+      if (myid == 0 .and. comms_not_printed) then
          do i = 1, ncomms
             c => comms(i)
-            print "(a,i5,a,2i5,2i7,i5)", &
+            write(6,"(a,i5,a,2i5,2i7,i5)"), &
                  "comm: ", i, " src, dst, i1, i2, n:", &
                  c%src, c%dst, c%i1, c%i2, c%nitems
          enddo
+         comms_not_printed = .false.
       endif
 
       deallocate(p1,p2,isrc,idst)

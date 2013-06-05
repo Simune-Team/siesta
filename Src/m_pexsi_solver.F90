@@ -56,7 +56,7 @@ CONTAINS
     real(dp), save :: muMin0, muMax0
     real(dp)       :: muSolverInput, muMinSolverInput, muMaxSolverInput
     logical, save  :: first_call = .true.
-    real(dp)       :: eBandStructure, eBandH
+    real(dp)       :: eBandStructure, eBandH, on_the_fly_tolerance
 
     integer        :: info, infomax
 
@@ -87,6 +87,7 @@ real(dp) :: inertiaNumElectronTolerance, &
             PEXSINumElectronToleranceMin, &
             PEXSINumElectronToleranceMax, &
             PEXSINumElectronTolerance
+real(dp) :: lateral_expansion_solver, lateral_expansion_inertia
 
 !------------
 
@@ -201,12 +202,12 @@ endif ! PEXSI worker
 isSIdentity = 0
 
 numPole          = fdf_get("PEXSI.num-poles",20)
-gap              = fdf_get("PEXSI.gap",0.0d0)
+gap              = fdf_get("PEXSI.gap",0.0_dp,"Ry")
 
 ! deltaE is in theory the spectrum width, but in practice can be much smaller
 ! than | E_max - mu |.  It is found that deltaE that is slightly bigger
 ! than  | E_min - mu | is usually good enough.
-deltaE           = fdf_get("PEXSI.delta-E",3.0d0)
+deltaE           = fdf_get("PEXSI.delta-E",3.0_dp,"Ry")
 
 
 ! Stop mu-iteration if numElectronTolerance is < numElectronTolerance.
@@ -215,18 +216,24 @@ PEXSINumElectronToleranceMax = fdf_get("PEXSI.num-electron-tolerance-upper-bound
 ! muMaxIter should be 1 or 2 later when combined with SCF.
 muMaxIter        = fdf_get("PEXSI.mu-max-iter",10)
 
+! How to expand the intervals in case of need. Default: ~ 3 eV
+lateral_expansion_solver = fdf_get("PEXSI.lateral-expansion-solver",0.2_dp,"Ry")
+lateral_expansion_inertia = fdf_get("PEXSI.lateral-expansion-inertia",0.2_dp,"Ry")
+
 
 ! Initial guess of chemical potential and containing interval
 ! When using inertia counts, this interval can be wide.
 ! Note that mu, muMin0 and muMax0 are saved variables
 if (first_call) then
-   mu = fdf_get("PEXSI.mu",-0.60_dp)
+   mu = fdf_get("PEXSI.mu",-0.60_dp,"Ry")
    ! Lower/Upper bound for the chemical potential.
-   muMin0           = fdf_get("PEXSI.mu-min",-1.0d0)
-   muMax0           = fdf_get("PEXSI.mu-max", 0.0d0)
+   muMin0           = fdf_get("PEXSI.mu-min",-1.0_dp,"Ry")
+   muMax0           = fdf_get("PEXSI.mu-max", 0.0_dp,"Ry")
 
    ! start with largest tolerance
-   PEXSINumElectronTolerance = PEXSINumElectronToleranceMax
+   ! (except if overriden by user)
+   PEXSINumElectronTolerance = fdf_get("PEXSI.num-electron-tolerance",&
+                                       PEXSINumElectronToleranceMax)
    first_call = .false.
 else
 !
@@ -243,8 +250,14 @@ else
    ! 
    ! For now, do nothing, but as a safeguard 
    ! use numInertiaCounts > 1 or 2... below
-   PEXSINumElectronTolerance = Max(PEXSINumElectronToleranceMin, &
-                                Min(prevDmax*1.0, PEXSINumElectronToleranceMax))
+   !
+   ! Use a moving tolerance, based on how far DM_out was to DM_in
+   ! in the previous iteration (except if overriden by user)
+
+   on_the_fly_tolerance = Max(PEXSINumElectronToleranceMin, &
+                              Min(prevDmax*1.0, PEXSINumElectronToleranceMax))
+   PEXSINumElectronTolerance =  fdf_get("PEXSI.num-electron-tolerance",&
+                                        on_the_fly_tolerance)
 endif
 
 ! Arrays for reporting back information about the PEXSI iterations
@@ -270,7 +283,7 @@ inertiaNumElectronTolerance = fdf_get("PEXSI.inertia-num-electron-tolerance",10)
 ! the number of points in the energy interval should be a multiple
 ! of numNodesTotal/npPerPole.
 ! We can avoid serializing the calculations if we use only the
-! available teams in a single step), subject to a minimum number:
+! available teams in a single step, subject to a minimum number:
 
 ! Minimum number of sampling points for inertia counts
 numMinICountShifts = fdf_get("PEXSI.inertia-min-num-shifts", 10)
@@ -290,7 +303,9 @@ enddo
 allocate( shiftList( nptsInertia ) )
 allocate( inertiaList( nptsInertia ) )
 
-! Ordering flag
+! Ordering flag:
+!   1: Use METIS
+!   0: Use PARMETIS
 ordering = fdf_get("PEXSI.ordering",1)
 !
 ! Broadcast these to the whole processor set, just in case
@@ -337,11 +352,11 @@ end if
 solver_loop: do
 
    if(mpirank == 0) then
-     write (*,*) 'Calling PEXSI solver...'
-     write(*, *) "mu (eV)       = ", muSolverInput/eV
-     write(*, *) "muMin         = ", muMinSolverInput/eV
-     write(*, *) "muMax         = ", muMaxSolverInput/eV
-     write(*, *) "numElectronTol= ", PEXSINumElectronTolerance
+     write (6,"(a,f12.5,a,f12.5,a,f12.5,a,a,f8.5)") 'Calling PEXSI solver. mu: ', &
+                                              muSolverInput/eV, &
+                                              ' in [',muMinSolverInput/eV, &
+                                              ',', muMaxSolverInput/eV, "] (eV)", &
+                                              ' Tol: ', PEXSINumElectronTolerance
    endif 
 
    call f_ppexsi_solve_interface(&
@@ -406,9 +421,9 @@ solver_loop: do
       ! Expand by 0.2 Ry ~ 3 eV
       !
       if ((numElectron-numElectronExact) > 0) then
-         muMin0 = muMin0 - 0.2_dp 
+         muMin0 = muMin0 - lateral_expansion_solver !0.2_dp 
       else
-         muMax0 = muMax0 + 0.2_dp
+         muMax0 = muMax0 + lateral_expansion_solver ! 0.2_dp
       endif
 
       call do_inertia()
@@ -485,8 +500,7 @@ m2%vals(2)%data => EDMnzvalLocal(1:nnzLocal)
 
 endif ! PEXSI_worker
 
-! Now we should not re-allocate m1...
-! or better:
+! Prepare m1 to receive the results
 if (SIESTA_worker) then
    nullify(m1%vals(1)%data)    ! formerly pointing to S
    nullify(m1%vals(2)%data)    ! formerly pointing to H
@@ -574,9 +588,9 @@ end interface
 search_interval: do
 
    if(mpirank == 0) then
-     write (*,*) 'Calling inertia count...'
-     write(*, *) "muMin(eV)     = ", muMin0/eV
-     write(*, *) "muMax(eV)     = ", muMax0/eV
+     write (6,"(a,f12.5,a,f12.5,a,a,i4)") 'Calling inertia_count with interval: [', &
+                                      muMin0/eV, ",", muMax0/eV, "] (eV)", &
+                                      " Nshifts: ", nptsInertia
    endif 
 
    call f_ppexsi_inertiacount_interface(&
@@ -637,7 +651,7 @@ search_interval: do
 
       if (bad_lower_bound) then
          interval_problem =  .true.
-         muMin0 = muMin0 - 0.5
+         muMin0 = muMin0 - lateral_expansion_inertia ! 0.5
          if (mpirank==0) then
             write(6,"(a,f10.4)") "At the lower end, inertiaList: ", &
                                   inertiaList(1)
@@ -647,7 +661,7 @@ search_interval: do
       endif
       if (bad_upper_bound) then
          interval_problem =  .true.
-         muMax0 = muMax0 + 0.5
+         muMax0 = muMax0 + lateral_expansion_inertia ! 0.5
          if (mpirank==0) then
             write(6,"(a,f10.4)") "At the upper end, inertiaList: ", &
                                   inertiaList(nptsInertia)
