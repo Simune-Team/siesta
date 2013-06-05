@@ -202,13 +202,16 @@ C     Initialise MPI and set processor number
       struct_only = fdf_get( 'Output-Structure-Only', .false. )
       if (IONode) then
          call write_struct( ucell, na_u, isa, iza, xa )
+         if (fdf_boolean('WriteCoorXmol',.false.)) then
+            call coxmol(iza, xa, na_u)
+         endif
          if (lUseZmatrix) then
             call write_canonical_ucell_and_Zmatrix(
      &                        filename="OUT.UCELL.ZMATRIX.INITIAL")
          endif
       endif
       if (struct_only) then
-         call bye( 'End of structure processing' )
+         call bye('End of structure processing')
       endif
       
 !     End of Initial Structure Processing

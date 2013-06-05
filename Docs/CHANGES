@@ -6,6 +6,29 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2013-06-05  12:40:00 GMT                                     trunk-435
+Compilation fixes for tbtrans. Cosmetic changes
+
+The old symbol "DAT_double" was still being used in one of the
+routines of the new tbtrans program (in Util/TBTrans_rep).  References
+related to new timer_tree module were missing in both versions of
+tbtrans.
+
+In parallel operation, the "bye" routine now produces output only
+in the master node.
+
+In runs which are requested to end after the initial processing of
+the structure, XMOL output is produced if requested.
+
+modified:
+  Src/siesta_init.F
+  Src/sys.F
+  Util/TBTrans/Makefile
+  Util/TBTrans_rep/Makefile
+  Util/TBTrans_rep/m_tbt_iotshs.F90
+  Util/TBTrans_rep/m_tbt_read_tshs.F90
+
+-----------------------------------------------------------------------
 2013-03-31  19:00:00 GMT                                     trunk-434
 Experimental timer with call-tree awareness
 
