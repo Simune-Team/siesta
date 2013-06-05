@@ -6,6 +6,60 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2013-06-05  13:00:00 GMT                                     trunk-436
+Charge confinement and filteret basis generation options
+
+Two experimental features related to basis-set generation:
+
+* Charge confinement feature for basis set generation
+(Emilio Artacho)
+
+Present soft confinement produces bad polarisation orbitals if the
+original atomic orbitals are unbound or very wide (automatic
+polarisation still gives too wide orbitals).
+
+A Q/r potential with Yukawa decay can now be added to the atomic and
+soft-confinement potentials. Soft-confinement sshould now be used only
+for the soft tail cutting with r_in ~ 0.9 r_c.
+
+See the manual for more details.
+
+* New 'filteret' basis-set scheme.  
+(Julian Gale)
+
+New options to use the filterets (functions appearing in the filtering
+mechanism proposed by Anglada and Soler) as a systematic basis
+set. The size of the basis set is controlled by the filter cut-off for
+the orbitals.  
+
+See the manual for more details.
+
+(Thanks to Tristana Sondon for help in merging)
+
+added:
+  Tests/Reference/chargeconf-h2o.out
+  Tests/Reference/h2o_filteret_basis.out
+  Tests/chargeconf-h2o/
+  Tests/chargeconf-h2o/chargeconf-h2o.fdf
+  Tests/chargeconf-h2o/chargeconf-h2o.pseudos
+  Tests/chargeconf-h2o/makefile
+  Tests/h2o_filteret_basis/
+  Tests/h2o_filteret_basis/h2o_filteret_basis.fdf
+  Tests/h2o_filteret_basis/h2o_filteret_basis.pseudos
+  Tests/h2o_filteret_basis/makefile
+modified:
+  Docs/siesta.tex
+  Src/atm_transfer.f
+  Src/atm_types.f
+  Src/atmparams.f
+  Src/atom.F
+  Src/basis_specs.f
+  Src/basis_types.f
+  Src/initatom.f
+  Src/m_filter.f90
+  Src/old_atmfuncs.f
+
+-----------------------------------------------------------------------
 2013-06-05  12:40:00 GMT                                     trunk-435
 Compilation fixes for tbtrans. Cosmetic changes
 
