@@ -30,7 +30,7 @@
       use zmatrix,      only: lUseZmatrix, write_zmatrix
       use Kpoint_grid
       use parallel, only: IOnode
-      use parallel, only: worker
+      use parallel, only: SIESTA_worker
       use files,       only : label_length
       use m_energies
       use m_steps
@@ -81,7 +81,7 @@
 !----------------------------------------------------------------------- BEGIN
 
       ! section done by Siesta subset of nodes
-      if (worker) then
+      if (SIESTA_worker) then
 
       final = .true.
       if (cml_p) then
@@ -377,7 +377,7 @@
 C     Find local density of states
       call local_DOS()
 
-      endif ! worker
+      endif ! SIESTA_worker
 
       if (fdf_get("PEXSI.LocalDOS",.false.)) then
          call pexsi_local_DOS()

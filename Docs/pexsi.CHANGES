@@ -1,4 +1,119 @@
 ------------------------------------------------------------
+June 5, 2013   Alberto Garcia            trunk-434--pexsi-34
+Units in energy options. Better output. Rationalize debug output
+
+Full set of options and defaults for PEXSI (note energy units now):
+
+npPerPole  = fdf_get("PEXSI.np-per-pole",4)
+numPole    = fdf_get("PEXSI.num-poles",20)
+
+! Hardly used?
+gap        = fdf_get("PEXSI.gap",0.0_dp,"Ry")
+deltaE     = fdf_get("PEXSI.delta-E",3.0_dp,"Ry")
+
+Tolerance heuristics:
+
+PEXSINumElectronToleranceMin = fdf_get("PEXSI.num-electron-tolerance-lower-bound",0.01_dp)
+PEXSINumElectronToleranceMax = fdf_get("PEXSI.num-electron-tolerance-upper-bound",0.5_dp)
+
+(Heuristics overriden by 
+    PEXSINumElectronTolerance = fdf_get("PEXSI.num-electron-tolerance",...) )
+
+
+muMaxIter  = fdf_get("PEXSI.mu-max-iter",10)
+
+! For feedback in case of wrong interval
+lateral_expansion_solver = fdf_get("PEXSI.lateral-expansion-solver",0.2_dp,"Ry")
+lateral_expansion_inertia = fdf_get("PEXSI.lateral-expansion-inertia",0.2_dp,"Ry")
+
+mu = fdf_get("PEXSI.mu",-0.60_dp,"Ry")
+muMin0           = fdf_get("PEXSI.mu-min",-1.0_dp,"Ry")
+muMax0           = fdf_get("PEXSI.mu-max", 0.0_dp,"Ry")
+
+isInertiaCount = fdf_get("PEXSI.inertia-count",1)
+numInertiaCounts = fdf_get("PEXSI.inertia-counts",3)
+inertiaMaxIter   = fdf_get("PEXSI.inertia-max-iter",5)
+inertiaNumElectronTolerance = fdf_get("PEXSI.inertia-num-electron-tolerance",10)
+numMinICountShifts = fdf_get("PEXSI.inertia-min-num-shifts", 10)
+
+ordering = fdf_get("PEXSI.ordering",1)
+
+modified:
+  Src/m_pexsi_solver.F90
+  Src/m_redist_spmatrix.F90
+
+------------------------------------------------------------
+June 4, 2013   Alberto Garcia            trunk-434--pexsi-33
+New strategies for number of shifts and electron tolerance (G. Huhs)
+
+   * the number of shifts for inertia count
+   * adapting numElectronTolerance in PEXSI depending on dmax
+  
+  New fdf parameters: 
+  PEXSI.inertia-min-num-shifts
+  PEXSI.num-electron-tolerance-upper-bound 
+  PEXSI.num-electron-tolerance-lower-bound  
+
+(With minor changes over Georg's version by Alberto Garcia)
+
+modified:
+  Src/m_pexsi_solver.F90
+  Src/siesta_forces.F
+
+------------------------------------------------------------
+June 4, 2013   Alberto Garcia            trunk-434--pexsi-32
+Assorted fixes to redistribution routines. LDOS redistribution
+
+Fixed some subtle bugs in the routines.
+Enabled re-distribution for the PEXSI-LDOS calculation.
+
+modified:
+  Src/Makefile
+  Src/m_pexsi_local_dos.F90
+  Src/m_pexsi_solver.F90
+  Src/m_redist_spmatrix.F90
+  Src/m_transfers.F90
+  Src/parallel.F
+  Src/siesta_init.F
+
+------------------------------------------------------------
+June 3, 2013   Alberto Garcia            trunk-434--pexsi-31
+Implemented redistribution routines
+
+Siesta can now work with its own arbitrary number of processors
+(specified through the fdf variable MPI.Nprocs.SIESTA), which can
+be different from the number of processors per pole in PEXSI  (specified
+through PEXSI.np-per-pole).
+
+A few rough edges and debug statements might remain.
+Yet to be implemented: redistribution before and after the LDOS routine.
+
+added:
+  Src/basic_type.inc
+  Src/class_BlockCyclicDist.F90
+  Src/class_Dist.F90
+  Src/class_PEXSIDist.F90
+  Src/m_comm.F90
+  Src/m_object_debug.F90
+  Src/m_redist_spmatrix.F90
+  Src/m_transfers.F90
+  Src/m_uuid.f90
+renamed:
+  Src/m_pexsi_local_DOS.F90 => Src/m_pexsi_local_dos.F90
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+  Src/initparallel.F
+  Src/m_pexsi_solver.F90
+  Src/parallel.F
+  Src/siesta.F
+  Src/siesta_analysis.F
+  Src/siesta_end.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/m_pexsi_local_dos.F90
+
+------------------------------------------------------------
 May 22, 2013   Alberto Garcia            trunk-434--pexsi-30
 Fix units in fdf input for LDOS-Selected-Inversion interface
 

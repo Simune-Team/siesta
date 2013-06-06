@@ -3,23 +3,27 @@ module m_pexsi_solver
 
   public :: pexsi_solver
 
-  real(dp), save :: prevDmax
+  real(dp), save :: prevDmax  ! For communication of max diff in DM in scf loop
+                              ! which is used in the heuristics for N_el tolerance
   public :: prevDmax
 
 CONTAINS
 
-! This version uses the standard PEXSI distribution (by tricking Siesta into
-! using it)
+! This version uses separate distributions for Siesta (setup_H et al) and PEXSI.
 !
   subroutine pexsi_solver(iscf, no_u, no_l, nspin,  &
        maxnh, numh, listhptr, listh, H, S, qtot, DM, EDM, &
        ef, freeEnergyCorrection, temp)
 
     use fdf
-    use parallel, only   : worker, Nodes
+    use parallel, only   : SIESTA_worker, BlockSize
+    use parallel, only   : SIESTA_Group, SIESTA_Comm
     use m_mpi_utils, only: globalize_sum, globalize_max
     use m_mpi_utils, only: broadcast
     use units,       only: Kelvin, eV
+    use m_redist_spmatrix, only: aux_matrix, redistribute_spmatrix
+    use class_Dist
+    use alloc,             only: re_alloc, de_alloc
 #ifdef MPI
     use mpi_siesta
 #endif
@@ -27,7 +31,7 @@ CONTAINS
 
     integer, intent(in)  :: iscf  ! scf step number
     integer, intent(in)  :: maxnh, no_u, no_l, nspin
-    integer, intent(in), target  :: listh(maxnh), numh(*), listhptr(*)
+    integer, intent(in), target  :: listh(maxnh), numh(no_l), listhptr(no_l)
     real(dp), intent(in), target :: H(maxnh,nspin), S(maxnh)
     real(dp), intent(in) :: qtot
     real(dp), intent(out), target:: DM(maxnh,nspin), EDM(maxnh,nspin)
@@ -39,8 +43,10 @@ CONTAINS
     call die("PEXSI needs MPI")
 #else
 
-    integer :: siesta_comm 
-    integer :: ispin, maxnhtot, ih, nnzold, i
+    integer :: PEXSI_Comm, World_Comm
+    integer :: PEXSI_Group, World_Group
+
+    integer :: ispin, maxnhtot, ih, nnzold, i, pexsiFlag
 
     integer  :: ordering, isInertiaCount, numInertiaCounts, numMinICountShifts, numNodesTotal
     integer  :: muIter
@@ -50,7 +56,7 @@ CONTAINS
     real(dp), save :: muMin0, muMax0
     real(dp)       :: muSolverInput, muMinSolverInput, muMaxSolverInput
     logical, save  :: first_call = .true.
-    real(dp)       :: eBandStructure, eBandH
+    real(dp)       :: eBandStructure, eBandH, on_the_fly_tolerance
 
     integer        :: info, infomax
 
@@ -67,19 +73,21 @@ real(dp), allocatable, dimension(:) :: muList, &
                                        numElectronList, &
                                        numElectronDrvList, &
                                        shiftList, inertiaList
+logical  :: PEXSI_worker
 integer  :: numPole, nptsInertia
 real(dp) :: temperature, numElectronExact, numElectron, gap, deltaE
 real(dp) :: muInertia, muMinInertia, muMaxInertia, muLowerEdge, muUpperEdge
 real(dp) :: muMinPEXSI, muMaxPEXSI
 integer  :: muMaxIter
 integer  :: npPerPole
-integer  :: mpirank, numSiestaWorkers, ierr
+integer  :: mpirank, ierr
 integer  :: isSIdentity
 integer  :: inertiaMaxIter, inertiaIter
 real(dp) :: inertiaNumElectronTolerance, &
             PEXSINumElectronToleranceMin, &
             PEXSINumElectronToleranceMax, &
             PEXSINumElectronTolerance
+real(dp) :: lateral_expansion_solver, lateral_expansion_inertia
 
 !------------
 
@@ -88,26 +96,54 @@ real(dp) :: buffer1
 external         :: timer
 character(len=6) :: msg
 
+type(aux_matrix) :: m1, m2
+type(Dist)       :: dist1, dist2
+integer          :: pbs, norbs, scf_step
+
 interface
  ! subroutine f_ppexsi_solve_interface
    include "pexsi_solve.h"
  end subroutine f_ppexsi_solve_interface
 end interface
 
-! "Worker" means a processor which is in the Siesta subset (which
-! comprises the first npPerPole processors in this implementation)
+! "SIESTA_Worker" means a processor which is in the Siesta subset.
 ! NOTE:  fdf calls will assign values to the whole processor set,
 ! but some other variables will have to be re-broadcast (see examples
 ! below)
 
-! NOTE: Some comments in the code below are placeholders for a new
-! version with independent Siesta/PEXSI distributions (work in progress)
+World_Comm = true_MPI_Comm_World
+
+if (SIESTA_worker) then
+   ! deal with intent(in) variables
+   norbs = no_u
+   scf_step = iscf
+endif
+call broadcast(norbs,comm=World_Comm)
+call broadcast(scf_step,comm=World_Comm)
+call broadcast(prevDmax,comm=World_Comm)
 
 !  Find rank in global communicator
-   call mpi_comm_rank( true_MPI_Comm_World, mpirank, ierr )
+call mpi_comm_rank( World_Comm, mpirank, ierr )
 
-if (worker) then
-   siesta_comm = mpi_comm_world
+call newDistribution(BlockSize,SIESTA_Group,dist1,TYPE_BLOCK_CYCLIC,"bc dist")
+
+! Group and Communicator for first-pole team of PEXSI workers
+!
+npPerPole  = fdf_get("PEXSI.np-per-pole",4)
+call MPI_Comm_Group(World_Comm, World_Group, Ierr)
+call MPI_Group_incl(World_Group, npPerPole,   &
+                    (/ (i,i=0,npPerPole-1) /),&
+                    PEXSI_Group, Ierr)
+call MPI_Comm_create(World_Comm, PEXSI_Group,&
+                     PEXSI_Comm, Ierr)
+
+PEXSI_worker = (mpirank < npPerPole)
+
+pbs = norbs/npPerPole
+call newDistribution(pbs,PEXSI_Group,dist2,TYPE_PEXSI,"px dist")
+
+
+if (SIESTA_worker) then
    call timer("pexsi", 1)
 
    ispin = 1
@@ -115,10 +151,6 @@ if (worker) then
       call die("Spin polarization not yet supported in PEXSI")
    endif
 
-   call mpi_comm_size( SIESTA_COMM, numSiestaWorkers, ierr )
-
-   ! In this version 
-   npPerPole = numSiestaWorkers
    numElectronExact = qtot 
 
    ! Note that the energy units for the PEXSI interface are arbitrary, but
@@ -131,93 +163,83 @@ if (worker) then
                           "Electronic temperature: ", temperature, &
                           ". In Kelvin:", temperature/Kelvin
 
-   call MPI_Barrier(Siesta_comm,ierr)
+   m1%norbs = norbs
+   m1%no_l  = no_l
+   m1%nnzl  = sum(numH(1:no_l))
+   m1%numcols => numH
+   m1%cols    => listH
+   allocate(m1%vals(2))
+   m1%vals(1)%data => S(:)
+   m1%vals(2)%data => H(:,ispin)
 
-   nrows = no_u
-!  numColLocal = num_local_elements(dist2,no_u,myrank2)
-   numColLocal = no_l
+endif  ! SIESTA_worker
 
-   ! Figure out the communication needs
-   ! call analyze_comms(comms)
-   ! call do_transfers(comms,numh,numh_pexsi, &
-   !                   g1,g2,mpi_comm)
+call redistribute_spmatrix(norbs,m1,dist1,m2,dist2,World_Comm)
 
- !   nnzLocal = sum(numh_pexsi(1:numColLocal))
- ! call MPI_AllReduce(nnzLocal,nnz,1,MPI_integer,MPI_sum,PEXSI_comm,MPIerror)
-   nnzLocal = sum(numh(1:numColLocal))
-   call MPI_AllReduce(nnzLocal,nnz,1,MPI_integer,MPI_sum,Siesta_comm,ierr)
+if (PEXSI_worker) then
 
-  allocate(colptrLocal(1:numColLocal+1))
+   nrows = m2%norbs          ! or simply 'norbs'
+   numColLocal = m2%no_l
+   nnzLocal    = m2%nnzl
+   call MPI_AllReduce(nnzLocal,nnz,1,MPI_integer,MPI_sum,PEXSI_Comm,ierr)
+
+  call re_alloc(colptrLocal,1,numColLocal+1,"colptrLocal","pexsi_solver")
   colptrLocal(1) = 1
   do ih = 1,numColLocal
-!    colptrLocal(ih+1) = colptrLocal(ih) + numh_pexsi(ih)
-     colptrLocal(ih+1) = colptrLocal(ih) + numh(ih)
+     colptrLocal(ih+1) = colptrLocal(ih) + m2%numcols(ih)
   enddo
 
-   allocate(rowindLocal(1:nnzLocal))
-   allocate(HnzvalLocal(1:nnzLocal))
-   allocate(SnzvalLocal(1:nnzLocal))
-   allocate(DMnzvalLocal(1:nnzLocal))
-   allocate(EDMnzvalLocal(1:nnzLocal))
-   allocate(FDMnzvalLocal(1:nnzLocal))
+  rowindLocal => m2%cols
+  SnzvalLocal => m2%vals(1)%data
+  HnzvalLocal => m2%vals(2)%data
 
-!  call generate_commsnnz(comms,commsnnz)
-!  call do_transfers(commsnnz,listh,rowindLocal, &
-!                        g1, g2, mpi_comm)
-!  call do_transfers(commsnnz,H,HnzvalLocal, &
-!                        g1, g2, mpi_comm)
-!  call do_transfers(commsnnz,S,SnzvalLocal, &
-!                        g1, g2, mpi_comm)
+  call re_alloc(DMnzvalLocal,1,nnzLocal,"DMnzvalLocal","pexsi_solver")
+  call re_alloc(EDMnzvalLocal,1,nnzLocal,"EDMnzvalLocal","pexsi_solver")
+  call re_alloc(FDMnzvalLocal,1,nnzLocal,"FDMnzvalLocal","pexsi_solver")
 
-   rowindLocal(1:nnzLocal) = listh(1:nnzLocal)
-   HnzvalLocal(1:nnzLocal) = H(1:nnzLocal,ispin)
-   SnzvalLocal(1:nnzLocal) = S(1:nnzLocal)
-
-endif ! worker
+endif ! PEXSI worker
 
 isSIdentity = 0
 
 numPole          = fdf_get("PEXSI.num-poles",20)
-gap              = fdf_get("PEXSI.gap",0.0d0)
+gap              = fdf_get("PEXSI.gap",0.0_dp,"Ry")
 
 ! deltaE is in theory the spectrum width, but in practice can be much smaller
 ! than | E_max - mu |.  It is found that deltaE that is slightly bigger
 ! than  | E_min - mu | is usually good enough.
-deltaE           = fdf_get("PEXSI.delta-E",3.0d0)
+deltaE           = fdf_get("PEXSI.delta-E",3.0_dp,"Ry")
 
-! Use inertia counts?
-isInertiaCount = fdf_get("PEXSI.inertia-count",1)
-! For how many scf steps?
-numInertiaCounts = fdf_get("PEXSI.inertia-counts",3)
-
-numMinICountShifts = fdf_get("PEXSI.inertia-min-num-shifts", 10)
-
-! Maximum number of iterations for computing the inertia
-! in a given scf step (until a proper bracket is obtained)
-inertiaMaxIter   = fdf_get("PEXSI.inertia-max-iter",5)
-! Stop inertia count if Ne(muMax) - Ne(muMin) < inertiaNumElectronTolerance
-inertiaNumElectronTolerance = fdf_get("PEXSI.inertia-num-electron-tolerance",10)
 
 ! Stop mu-iteration if numElectronTolerance is < numElectronTolerance.
-PEXSINumElectronToleranceMin = fdf_get("PEXSI.num-electron-tolerance-lower-bound",1d-2)
-PEXSINumElectronToleranceMax = fdf_get("PEXSI.num-electron-tolerance-upper-bound",1d0)
+PEXSINumElectronToleranceMin = fdf_get("PEXSI.num-electron-tolerance-lower-bound",0.01_dp)
+PEXSINumElectronToleranceMax = fdf_get("PEXSI.num-electron-tolerance-upper-bound",0.5_dp)
 ! muMaxIter should be 1 or 2 later when combined with SCF.
 muMaxIter        = fdf_get("PEXSI.mu-max-iter",10)
+
+! How to expand the intervals in case of need. Default: ~ 3 eV
+lateral_expansion_solver = fdf_get("PEXSI.lateral-expansion-solver",0.2_dp,"Ry")
+lateral_expansion_inertia = fdf_get("PEXSI.lateral-expansion-inertia",0.2_dp,"Ry")
 
 
 ! Initial guess of chemical potential and containing interval
 ! When using inertia counts, this interval can be wide.
 ! Note that mu, muMin0 and muMax0 are saved variables
 if (first_call) then
-   mu = fdf_get("PEXSI.mu",-0.60_dp)
+   mu = fdf_get("PEXSI.mu",-0.60_dp,"Ry")
    ! Lower/Upper bound for the chemical potential.
-   muMin0           = fdf_get("PEXSI.mu-min",-1.0d0)
-   muMax0           = fdf_get("PEXSI.mu-max", 0.0d0)
+   muMin0           = fdf_get("PEXSI.mu-min",-1.0_dp,"Ry")
+   muMax0           = fdf_get("PEXSI.mu-max", 0.0_dp,"Ry")
 
    ! start with largest tolerance
-   prevDmax = PEXSINumElectronToleranceMax
+   ! (except if overriden by user)
+   PEXSINumElectronTolerance = fdf_get("PEXSI.num-electron-tolerance",&
+                                       PEXSINumElectronToleranceMax)
    first_call = .false.
 else
+!
+!  Here we could also check whether we are in the first scf iteration
+!  of a multi-geometry run...
+!
    !
    ! Here we have to decide what to do with the previous 
    ! step's muMin0 and muMax0:
@@ -228,6 +250,14 @@ else
    ! 
    ! For now, do nothing, but as a safeguard 
    ! use numInertiaCounts > 1 or 2... below
+   !
+   ! Use a moving tolerance, based on how far DM_out was to DM_in
+   ! in the previous iteration (except if overriden by user)
+
+   on_the_fly_tolerance = Max(PEXSINumElectronToleranceMin, &
+                              Min(prevDmax*1.0, PEXSINumElectronToleranceMax))
+   PEXSINumElectronTolerance =  fdf_get("PEXSI.num-electron-tolerance",&
+                                        on_the_fly_tolerance)
 endif
 
 ! Arrays for reporting back information about the PEXSI iterations
@@ -235,40 +265,61 @@ allocate( muList( muMaxIter ) )
 allocate( numElectronList( muMaxIter ) )
 allocate( numElectronDrvList( muMaxIter ) )
 
+!-----------------------------------------------------------------------------
+! Use inertia counts?
+isInertiaCount = fdf_get("PEXSI.inertia-count",1)
+! For how many scf steps?
+numInertiaCounts = fdf_get("PEXSI.inertia-counts",3)
+
+
+! Maximum number of iterations for computing the inertia
+! in a given scf step (until a proper bracket is obtained)
+inertiaMaxIter   = fdf_get("PEXSI.inertia-max-iter",5)
+
+! Stop inertia count if Ne(muMax) - Ne(muMin) < inertiaNumElectronTolerance
+inertiaNumElectronTolerance = fdf_get("PEXSI.inertia-num-electron-tolerance",10)
+
+! Since we use the processor teams corresponding to the different poles, 
+! the number of points in the energy interval should be a multiple
+! of numNodesTotal/npPerPole.
+! We can avoid serializing the calculations if we use only the
+! available teams in a single step, subject to a minimum number:
+
+! Minimum number of sampling points for inertia counts
+numMinICountShifts = fdf_get("PEXSI.inertia-min-num-shifts", 10)
+
+call mpi_comm_size( World_Comm, numNodesTotal, ierr )
+nptsInertia = numNodesTotal/npPerPole
+do
+   if (nptsInertia < numMinICountShifts) then
+      nptsInertia = nptsInertia + numNodesTotal/npPerPole
+   else
+      exit
+   endif
+enddo
+
 ! Arrays for reporting back information about the integrated DOS
-! computed by the inertia count method. Since we use the processor
-! teams corresponding to the different poles, the number of points
-! in the energy interval is "nptsInertia=numPole"
+! computed by the inertia count method.
+allocate( shiftList( nptsInertia ) )
+allocate( inertiaList( nptsInertia ) )
 
-!nptsInertia = procs
-   call mpi_comm_size( true_MPI_Comm_World, numNodesTotal, ierr )
-
-! Ordering flag
+! Ordering flag:
+!   1: Use METIS
+!   0: Use PARMETIS
 ordering = fdf_get("PEXSI.ordering",1)
 !
 ! Broadcast these to the whole processor set, just in case
 ! (They were set only by the Siesta workers)
 !
-call MPI_Bcast(npPerPole,1,MPI_integer,0,true_MPI_COMM_world,ierr)
-call MPI_Bcast(nrows,1,MPI_integer,0,true_MPI_COMM_world,ierr)
-call MPI_Bcast(nnz,1,MPI_integer,0,true_MPI_COMM_world,ierr)
-call MPI_Bcast(numElectronExact,1,MPI_double_precision,0,true_MPI_COMM_world,ierr)
-call MPI_Bcast(temperature,1,MPI_double_precision,0,true_MPI_COMM_world,ierr)
-call MPI_Bcast(iscf,1,MPI_integer,0,true_MPI_COMM_world,ierr)
-call MPI_Bcast(prevDmax,1,MPI_double_precision,0,true_MPI_COMM_world,ierr)
-
-PEXSINumElectronTolerance = Max(PEXSINumElectronToleranceMin, Min(prevDmax*1.0, PEXSINumElectronToleranceMax))
-nptsInertia = Max(numNodesTotal/npPerPole, numMinICountShifts)
-!nptsInertia = numMinICountShifts
-allocate( shiftList( nptsInertia ) )
-allocate( inertiaList( nptsInertia ) )
-
-
+call MPI_Bcast(nrows,1,MPI_integer,0,World_Comm,ierr)
+call MPI_Bcast(nnz,1,MPI_integer,0,World_Comm,ierr)
+call MPI_Bcast(numElectronExact,1,MPI_double_precision,0,World_Comm,ierr)
+call MPI_Bcast(temperature,1,MPI_double_precision,0,World_Comm,ierr)
 
 !
 !  Possible inertia-count stage
 !
-if ((isInertiaCount .ne. 0) .and. (iscf .le. numInertiaCounts)) then
+if ((isInertiaCount .ne. 0) .and. (scf_step .le. numInertiaCounts)) then
 
   call do_inertia()
 
@@ -301,13 +352,12 @@ end if
 solver_loop: do
 
    if(mpirank == 0) then
-     write (*,*) 'Calling PEXSI solver...'
-     write(*, *) "mu (eV)       = ", muSolverInput/eV
-     write(*, *) "muMin         = ", muMinSolverInput/eV
-     write(*, *) "muMax         = ", muMaxSolverInput/eV
-     write(*, *) "numElectronTol= ", PEXSINumElectronTolerance
+     write (6,"(a,f12.5,a,f12.5,a,f12.5,a,a,f8.5)") 'Calling PEXSI solver. mu: ', &
+                                              muSolverInput/eV, &
+                                              ' in [',muMinSolverInput/eV, &
+                                              ',', muMaxSolverInput/eV, "] (eV)", &
+                                              ' Tol: ', PEXSINumElectronTolerance
    endif 
-!   write(*, *) 'rank', mpirank, "numElectronTol= ", PEXSINumElectronTolerance
 
    call f_ppexsi_solve_interface(&
         ! input parameters
@@ -332,7 +382,7 @@ solver_loop: do
         PEXSINumElectronTolerance,&
         ordering,&
         npPerPole,&
-        true_MPI_COMM_WORLD,&
+        World_Comm,&
 ! output parameters
         DMnzvalLocal,&
         EDMnzvalLocal,&
@@ -350,7 +400,7 @@ solver_loop: do
   ! Make sure that all processors report info=1 when any of them
   ! raises it...
   ! This should be done inside the routine
-   call globalize_max(info,infomax,comm=true_mpi_comm_world)
+   call globalize_max(info,infomax,comm=World_Comm)
    info = infomax
 
    if (info /= 0) then
@@ -360,7 +410,7 @@ solver_loop: do
 
    if (abs(numElectron-numElectronExact) > PEXSInumElectronTolerance) then
       if (mpirank == 0) then
-         write(6,"(a,2f12.4,a,f12.4)") &
+         write(6,"(a,2f14.6,a,f14.6)") &
             "The PEXSI solver did not converge well. Nel, Nel_exact: ", &
             numElectron, numElectronExact, &
             " Requested tol: ", PEXSInumElectronTolerance
@@ -371,9 +421,9 @@ solver_loop: do
       ! Expand by 0.2 Ry ~ 3 eV
       !
       if ((numElectron-numElectronExact) > 0) then
-         muMin0 = muMin0 - 0.2_dp 
+         muMin0 = muMin0 - lateral_expansion_solver !0.2_dp 
       else
-         muMax0 = muMax0 + 0.2_dp
+         muMax0 = muMax0 + lateral_expansion_solver ! 0.2_dp
       endif
 
       call do_inertia()
@@ -396,35 +446,12 @@ endif
 
 !------------ End of solver step
 
-!  call reverse_comms(commsnnz,commsnnz_reverse)
-!  call do_transfers(commsnnz_reverse,DMnzvalLocal,DM, &
-!                        g2, g1, mpi_comm)
-!  call do_transfers(commsnnz_reverse,EDMnzvalLocal,EDM, &
-!                        g2, g1, mpi_comm)
-!  allocate(FDM(1:maxnh))
-!  call do_transfers(commsnnz_reverse,FDMnzvalLocal,FDM, &
-!                        g2, g1, mpi_comm)
-
-if (worker) then
-
-   ! Watch out here. We have to assume that rank 0 is common to both
-   ! subgroups
-   ! if (mpirank == 0) then
-   !  ef = mu
-   !  call MPI_Bcast(ef, .... siesta subgroup)
-   ! endif
-
-   ef = mu
-
-   ! this will disappear
-   DM(1:nnzLocal,ispin) = DMnzvalLocal(1:nnzLocal)
-   EDM(1:nnzLocal,ispin) = EDMnzvalLocal(1:nnzLocal)
+if (PEXSI_worker) then
 
    freeEnergyCorrection = 0.0_dp
    eBandStructure = 0.0_dp
    eBandH = 0.0_dp
    do i = 1,nnzLocal
-      ! Watch out for FDM nzvalLocal (see above)
       freeEnergyCorrection = freeEnergyCorrection + SnzvalLocal(i) * &
            ( FDMnzvalLocal(i) - EDMnzvalLocal(i) )
       eBandStructure = eBandStructure + SnzvalLocal(i) * &
@@ -433,12 +460,15 @@ if (worker) then
            ( DMnzvalLocal(i) )
    enddo
 
-   ! These operations in siesta group 
-   call globalize_sum( freeEnergyCorrection, buffer1, comm=siesta_comm )
+   call de_alloc(FDMnzvalLocal,"FDMnzvalLocal","pexsi_solver")
+   call de_alloc(colPtrLocal,"colPtrLocal","pexsi_solver")
+
+   ! These operations in PEXSI group now
+   call globalize_sum( freeEnergyCorrection, buffer1, comm=PEXSI_comm )
    freeEnergyCorrection = buffer1 + mu*numElectron
-   call globalize_sum( eBandStructure, buffer1, comm=siesta_comm )
+   call globalize_sum( eBandStructure, buffer1, comm=PEXSI_comm )
    eBandStructure = buffer1
-   call globalize_sum( eBandH, buffer1, comm=siesta_comm )
+   call globalize_sum( eBandH, buffer1, comm=PEXSI_comm )
    eBandH = buffer1
 
    if( mpirank == 0 ) then
@@ -460,20 +490,76 @@ if (worker) then
       end do
    endif
 
-  deallocate(rowindLocal)
-  deallocate(HnzvalLocal)
-  deallocate(SnzvalLocal)
-  deallocate(DMnzvalLocal)
-  deallocate(EDMnzvalLocal)
-  deallocate(FDMnzvalLocal)
-  deallocate(colPtrLocal)
-! deallocate(FDM)
+   ef = mu
 
-    call timer("pexsi", 2)
- endif ! worker
+deallocate(m2%vals(1)%data)
+deallocate(m2%vals(2)%data)
 
- deallocate( shiftList )
- deallocate( inertiaList )
+m2%vals(1)%data => DMnzvalLocal(1:nnzLocal)
+m2%vals(2)%data => EDMnzvalLocal(1:nnzLocal)
+
+endif ! PEXSI_worker
+
+! Prepare m1 to receive the results
+if (SIESTA_worker) then
+   nullify(m1%vals(1)%data)    ! formerly pointing to S
+   nullify(m1%vals(2)%data)    ! formerly pointing to H
+   deallocate(m1%vals)
+   nullify(m1%numcols)         ! formerly pointing to numH
+   nullify(m1%cols)            ! formerly pointing to listH
+endif
+
+call redistribute_spmatrix(norbs,m2,dist2,m1,dist1,World_Comm)
+
+if (PEXSI_worker) then
+   call de_alloc(DMnzvalLocal,"DMnzvalLocal","pexsi_solver")
+   call de_alloc(EDMnzvalLocal,"EDMnzvalLocal","pexsi_solver")
+
+   nullify(m2%vals(1)%data)    ! formerly pointing to DM
+   nullify(m2%vals(2)%data)    ! formerly pointing to EDM
+   deallocate(m2%vals)
+   deallocate(m2%numcols)      ! allocated in the direct transfer
+   deallocate(m2%cols)         !  "
+endif
+
+! We assume that the root node is common to both communicators
+if (SIESTA_worker) then
+   call broadcast(ef,comm=SIESTA_Comm)
+   call broadcast(freeEnergyCorrection,comm=SIESTA_Comm)
+   ! In future, m1%vals(1,2) could be pointing to DM and EDM,
+   ! and the 'redistribute' routine check whether the vals arrays are
+   ! associated, to use them instead of allocating them.
+   DM(:,ispin)  = m1%vals(1)%data(:)    
+   EDM(:,ispin) = m1%vals(2)%data(:)    
+   ! Check no_l
+   if (no_l /= m1%no_l) then
+      call die("Mismatch in no_l")
+   endif
+   ! Check listH
+   if (any(listH(:) /= m1%cols(:))) then
+      call die("Mismatch in listH")
+   endif
+
+   deallocate(m1%vals(1)%data)
+   deallocate(m1%vals(2)%data)
+   deallocate(m1%vals)
+   deallocate(m1%cols)
+   deallocate(m1%numcols)
+
+   call timer("pexsi", 2)
+
+endif
+
+
+deallocate( shiftList )
+deallocate( inertiaList )
+
+call delete(dist1)
+call delete(dist2)
+if (PEXSI_worker) then
+   call MPI_Comm_Free(PEXSI_Comm, ierr)
+   call MPI_Group_Free(PEXSI_Group, ierr)
+endif
 
 #endif 
 
@@ -502,9 +588,9 @@ end interface
 search_interval: do
 
    if(mpirank == 0) then
-     write (*,*) 'Calling inertia count...'
-     write(*, *) "muMin(eV)     = ", muMin0/eV
-     write(*, *) "muMax(eV)     = ", muMax0/eV
+     write (6,"(a,f12.5,a,f12.5,a,a,i4)") 'Calling inertia_count with interval: [', &
+                                      muMin0/eV, ",", muMax0/eV, "] (eV)", &
+                                      " Nshifts: ", nptsInertia
    endif 
 
    call f_ppexsi_inertiacount_interface(&
@@ -527,7 +613,7 @@ search_interval: do
         inertiaNumElectronTolerance,&
         ordering,&
         npPerPole,&
-        true_MPI_COMM_WORLD,&
+        World_Comm,&
 ! output parameters
         muMinInertia,&
         muMaxInertia,&
@@ -538,15 +624,15 @@ search_interval: do
         inertiaList,&
         info)
 
-   call globalize_max(info,infomax,comm=true_mpi_comm_world)
+   call globalize_max(info,infomax,comm=World_Comm)
    info = infomax
 
    interval_problem = .false.
    if (info /= 0) then
 !       call mpi_gather(inertiaList(1),1,MPI_Double_Precision, lower_inertia(:),1, &&
-!                       MPI_Double_Precision,0,true_MPI_Comm_World, ierr)
+!                       MPI_Double_Precision,0,World_Comm, ierr)
 !       call mpi_gather(inertiaList(nptsInertia),1,MPI_Double_Precision, upper_inertia(:),1, &&
-!                       MPI_Double_Precision,0,true_MPI_Comm_World, ierr)
+!                       MPI_Double_Precision,0,World_Comm, ierr)
 !      write(6,"(a,i4,2f12.4,4x,2f12.4)") "Node, lb, ub, lin, uin:", &
 !               mpirank, shiftlist(1), shiftlist(nptsInertia), inertialist(1), inertialist(nptsInertia)
       if(mpirank == 0) then
@@ -558,14 +644,14 @@ search_interval: do
          bad_upper_bound = (inertiaList(nptsInertia) < (numElectronExact + 0.1)) 
       endif
 
-      call broadcast(bad_lower_bound,comm=true_mpi_comm_world)
-      call broadcast(bad_upper_bound,comm=true_mpi_comm_world)
-      call broadcast(inertiaList(1),comm=true_mpi_comm_world)
-      call broadcast(inertiaList(nptsInertia),comm=true_mpi_comm_world)
+      call broadcast(bad_lower_bound,comm=World_Comm)
+      call broadcast(bad_upper_bound,comm=World_Comm)
+      call broadcast(inertiaList(1),comm=World_Comm)
+      call broadcast(inertiaList(nptsInertia),comm=World_Comm)
 
       if (bad_lower_bound) then
          interval_problem =  .true.
-         muMin0 = muMin0 - 0.5
+         muMin0 = muMin0 - lateral_expansion_inertia ! 0.5
          if (mpirank==0) then
             write(6,"(a,f10.4)") "At the lower end, inertiaList: ", &
                                   inertiaList(1)
@@ -575,7 +661,7 @@ search_interval: do
       endif
       if (bad_upper_bound) then
          interval_problem =  .true.
-         muMax0 = muMax0 + 0.5
+         muMax0 = muMax0 + lateral_expansion_inertia ! 0.5
          if (mpirank==0) then
             write(6,"(a,f10.4)") "At the upper end, inertiaList: ", &
                                   inertiaList(nptsInertia)
