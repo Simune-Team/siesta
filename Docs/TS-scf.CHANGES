@@ -1,4 +1,11 @@
 ----------------------------------------------------
+June 7, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-44
+Forgot to add m_ts_aux.F90
+
+added:
+  Src/m_ts_aux.F90
+
+----------------------------------------------------
 June 7, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-43
 Removed old transiesta code and restructured some general ts-routines
 
