@@ -156,7 +156,7 @@ module class_Geometry
   subroutine printGeometry(this)
     type(Geometry), intent(in)  :: this
 
-    if (.not. associated(this%data)) then
+    if (.not. initialized(this) ) then
        print "(a)", "Geometry Not Associated"
        RETURN
     endif

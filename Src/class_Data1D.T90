@@ -143,7 +143,7 @@
     
     integer :: n
     
-    if (.not. associated(this%data)) then
+    if (.not. initialized(this) ) then
        print "(a)", STR_TYPE_NAME//" Not Associated"
        RETURN
     endif

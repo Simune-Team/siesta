@@ -1,4 +1,35 @@
 ----------------------------------------------------
+June 7, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-45
+Fully implemented "initialized" and "same" for the class_ objects
+
+* Added initialized and same in the basic_type.inc.
+  initialized) This will allow one to do:
+               initialized(<object>) to see if the <object>%data
+               is associated.
+               This will be the criteria of the initialized state.
+
+  same) Comparison of same <object>%data address,
+        thus it is an object comparison, and not value comparison.
+	For same values I would advice that we do this by other
+	names. For instance "equivalent".
+
+* Used the new initialized in the m_ts_new_tri.F90 routine for
+  making a single routine instead of several.
+  I don't particularly like this, but transiesta requires a lot
+  of similar routines, so this seems ok.
+
+modified:
+  Src/basic_type.inc
+  Src/class_Data1D.T90
+  Src/class_Data2D.T90
+  Src/class_Geometry.F90
+  Src/class_SpData1D.T90
+  Src/class_SpData2D.T90
+  Src/class_Sparsity.F90
+  Src/class_TriMat.T90
+  Src/m_ts_new_tri.F90
+
+----------------------------------------------------
 June 7, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-44
 Forgot to add m_ts_aux.F90
 

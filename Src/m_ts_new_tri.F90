@@ -1165,20 +1165,12 @@ contains
          end if
 
       end if
-         
-      if ( ts_Gamma_SCF ) then
-         ! Notice that we now actually need to retain the values
-         ! in zwork...!!!
-         call prepare_GF_inv_D(UseBulk, spH , spS,Z,no_BufL, &
-              no_u_TS,zwork_tri, &
-              no_L, SigmaL, no_R, SigmaR)
-      else
-         ! Notice that we now actually need to retain the values
-         ! in zwork...!!!
-         call prepare_GF_inv_Z(UseBulk, spzH,spzS,Z,no_BufL, &
-              no_u_TS,zwork_tri, &
-              no_L, SigmaL, no_R, SigmaR)
-      end if
+      
+      call prepare_GF_inv(UseBulk, Z, no_BufL, &
+           no_u_TS,zwork_tri, &
+           no_L, SigmaL, no_R, SigmaR, &
+           spH =spH , spS =spS, &
+           spzH=spzH, spzS=spzS )
 
     end subroutine prep_GF
     
@@ -1288,78 +1280,21 @@ contains
 
        end do
     end do
-
   end subroutine add_DM_dE_D
 
-
   ! creation of the GF^{-1}.
   ! this routine will insert the zS-H and \Sigma_{LR} terms in the GF 
-  subroutine prepare_GF_inv_D(UseBulk, spH,spS, ZE, no_BufL,no_u,GFinv_tri, &
-       no_L, SigmaL, no_R, SigmaR)
+  subroutine prepare_GF_inv(UseBulk,ZE, no_BufL,no_u,GFinv_tri, &
+       no_L, SigmaL, no_R, SigmaR, spH, spS, spzH, spzS)
     use class_dSpData1D
-    use class_Sparsity
-    use class_zTriMat
-
-    logical, intent(in) :: UseBulk
-    ! The Hamiltonian and overlap sparse matrices
-    type(dSpData1D), intent(inout) :: spH, spS
-    ! the current energy point
-    complex(dp), intent(in) :: ZE
-    ! Remark that we need the left buffer orbitals
-    ! to calculate the actual orbital of the sparse matrices...
-    integer, intent(in) :: no_BufL,no_u
-    type(zTriMat), intent(inout) :: GFinv_tri
-    integer, intent(in) :: no_L, no_R
-    complex(dp), intent(in) :: SigmaL(no_L,no_L), SigmaR(no_R,no_R)
-
-    ! Local variables
-    type(Sparsity), pointer :: s
-    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-    real(dp), pointer :: dH(:), dS(:)
-    complex(dp), pointer :: Gfinv(:)
-    integer :: io, iu, ind, idx
-
-    s      => spar    (spH)
-    call retrieve(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
-    dH     => val(spH)
-    dS     => val(spS)
-    Gfinv  => val(Gfinv_tri)
-
-    ! initialize 
-    GFinv(:) = dcmplx(0._dp,0._dp)
-
-    ! We will only loop in the central region
-    ! We have constructed the sparse array to only contain
-    ! values in this part...
-    do io = no_BufL + 1, no_BufL + no_u
-
-       iu = io - no_BufL
-
-       do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
-
-          ! we could transpose... but...
-          idx = index(Gfinv_tri, iu, l_col(ind)-no_BufL)
-
-          GFinv(idx) = ZE * dS(ind) - dH(ind)
-       end do
-    end do
-
-    call insert_Self_Energies(UseBulk, Gfinv_tri, &
-         no_L, SigmaL, no_R, SigmaR)
-
-  end subroutine prepare_GF_inv_D
-
-  ! creation of the GF^{-1}.
-  ! this routine will insert the zS-H and \Sigma_{LR} terms in the GF 
-  subroutine prepare_GF_inv_Z(UseBulk,spH,spS,ZE, no_BufL,no_u,GFinv_tri, &
-       no_L, SigmaL, no_R, SigmaR)
     use class_zSpData1D
     use class_Sparsity
     use class_zTriMat
 
     logical, intent(in) :: UseBulk
     ! The Hamiltonian and overlap sparse matrices
-    type(zSpData1D), intent(inout) :: spH, spS
+    type(dSpData1D), intent(inout), optional :: spH, spS
+    type(zSpData1D), intent(inout), optional :: spzH, spzS
     ! the current energy point
     complex(dp), intent(in) :: ZE
     ! Remark that we need the left buffer orbitals
@@ -1370,41 +1305,82 @@ contains
     complex(dp), intent(in) :: SigmaL(no_L,no_L), SigmaR(no_R,no_R)
 
     ! Local variables
-    type(Sparsity), pointer :: s
+    type(Sparsity), pointer :: s, s2
+    logical :: Is_Gamma
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
+    real(dp), pointer :: dH(:), dS(:)
     complex(dp), pointer :: zH(:), zS(:), Gfinv(:)
     integer :: io, iu,ind, idx
-    
-    s      => spar    (spH)
+
+    ! Determine whether we have a Gamma or k-point Hamiltonian
+    if ( initialized(spH) .eqv. initialized(spzH) ) then
+       call die('Transiesta error, not &
+            &two initialized arrays are allowed, check with the &
+            &developers.')
+    end if
+
+    if ( initialized(spH) ) then
+       if ( .not. same(spar(spH),spar(spS)) ) &
+            call die('Not same sparsity object')
+       Is_Gamma = .true.
+       s  => spar(spH)
+       dH => val (spH)
+       dS => val (spS)
+    else
+       if ( .not. same(spar(spzH),spar(spzS)) ) &
+            call die('Not same sparsity object')
+       Is_Gamma = .false.
+       s  => spar(spzH)
+       zH => val (spzH)
+       zS => val (spzS)
+    end if
+
     call retrieve(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
-    zH     => val(spH)
-    zS     => val(spS)
     Gfinv  => val(Gfinv_tri)
 
     ! Initialize
     GFinv(:) = dcmplx(0._dp,0._dp)
 
-    ! We will only loop in the central region
-    ! We have constructed the sparse array to only contain
-    ! values in this part...
-    do io = no_BufL + 1, no_BufL + no_u
+    if ( Is_Gamma ) then
+       ! We will only loop in the central region
+       ! We have constructed the sparse array to only contain
+       ! values in this part...
+       do io = no_BufL + 1, no_BufL + no_u
 
-       iu = io - no_BufL
+          iu = io - no_BufL
 
-       do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io) 
+          do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io) 
 
-          ! Notice that we transpose back here...
-          ! See symmetrize_HS_kpt
-          idx = index(Gfinv_tri,l_col(ind)-no_BufL,iu)
+             ! Notice that we transpose back here...
+             ! See symmetrize_HS_kpt
+             idx = index(Gfinv_tri,l_col(ind)-no_BufL,iu)
 
-          GFinv(idx) = ZE * zS(ind) - zH(ind)
+             GFinv(idx) = ZE * dS(ind) - dH(ind)
+          end do
        end do
-    end do
+    else
+       ! We will only loop in the central region
+       ! We have constructed the sparse array to only contain
+       ! values in this part...
+       do io = no_BufL + 1, no_BufL + no_u
+
+          iu = io - no_BufL
+
+          do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io) 
+
+             ! Notice that we transpose back here...
+             ! See symmetrize_HS_kpt
+             idx = index(Gfinv_tri,l_col(ind)-no_BufL,iu)
+
+             GFinv(idx) = ZE * zS(ind) - zH(ind)
+          end do
+       end do
+    end if
 
     call insert_Self_Energies(UseBulk, Gfinv_tri, &
          no_L, SigmaL, no_R, SigmaR)
     
-  end subroutine prepare_GF_inv_Z
+  end subroutine prepare_GF_inv
 
   subroutine insert_Self_Energies(UseBulk,Gfinv_tri, &
        no_L, SigmaL, no_R, SigmaR)

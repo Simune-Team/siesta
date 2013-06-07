@@ -11,7 +11,6 @@ module class_Sparsity
   public :: ncols, ncols_g
   public :: n_row, n_col
   public :: nnzs, list_ptr, list_col
-  public :: same, initialized
 
   character(len=*), parameter :: mod_name= __FILE__
 
@@ -88,14 +87,6 @@ module class_Sparsity
 
   interface print_type
      module procedure printSparsity
-  end interface
-
-  interface same
-     module procedure sameSparsity
-  end interface
-
-  interface initialized
-     module procedure initializedSparsity
   end interface
 
 !===========================
@@ -254,21 +245,6 @@ module class_Sparsity
     p = this%data%list_col(i)
   end function list_colSparsityI
 
-  pure function sameSparsity(this1,this2) result(same)
-    type(Sparsity), intent(in) :: this1, this2
-    logical :: same
-    ! If they are not both initialized they can not be the same
-    same = initialized(this1) .and. initialized(this2)
-    if ( .not. same ) return
-    same = (this1%data%id == this2%data%id)
-  end function sameSparsity
-
-  pure function initializedSparsity(this) result(init)
-    type(Sparsity), intent(in) :: this
-    logical :: init
-    init = this%data%initialized
-  end function initializedSparsity
-
   ! Generic routine for retrieval of information in one line...
   subroutine retrieveSparsity(this,n_col,list_col,list_ptr, &
        nrows,nrows_g,ncols,ncols_g, &
@@ -296,7 +272,7 @@ module class_Sparsity
   subroutine printSparsity(sp)
     type(Sparsity), intent(in) :: sp
 
-    if (.not. associated(sp%data)) then
+    if (.not. initialized(sp) ) then
        print "(a)", "Sparsity Not Associated"
        RETURN
     endif

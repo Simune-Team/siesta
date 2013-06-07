@@ -13,6 +13,8 @@
 
   public  :: TYPE_NAME
   public  :: init, delete, assignment(=), refcount, id
+  public  :: same ! same %data address (i.e. if: this1 = this2)
+  public  :: initialized ! is allocated
   public  :: operator(//)
 
   interface assignment(=)
@@ -39,6 +41,15 @@
   interface id
     module procedure id_
   end interface
+
+  interface initialized
+    module procedure initialized_
+  end interface
+
+  interface same
+    module procedure same_
+  end interface
+
 
   ! Stand-alone routine which must be provided
   interface 
@@ -73,7 +84,7 @@ CONTAINS
     integer :: error
     logical, external  :: print_debug_object_info
 
-    if (.not. associated(this%data)) return
+    if (.not. initialized(this) ) return
 
     this%data%refCount = this%data%refCount - 1
     if (this%data%refCount == 0) then
@@ -88,6 +99,7 @@ CONTAINS
       endif
     endif
 
+    ! This is important to use the correct initialized functions
     this%data => null()
 
   end subroutine delete_
@@ -101,7 +113,7 @@ CONTAINS
     type (TYPE_NAME), intent(inout) :: this
     type (TYPE_NAME), intent(in) :: other
 
-    if (.not. associated(other%data)) then
+    if (.not. initialized(other) ) then
      call die("Assignment of non-initialized object in " // trim(mod_name))
     endif
 
@@ -112,6 +124,23 @@ CONTAINS
     this%data%refcount = this%data%refcount+1
 
   end subroutine assign_
+
+  pure function initialized_(this) result(init)
+    type(TYPE_NAME), intent(in) :: this
+    logical :: init
+    ! If it is not associated, it can not contain any data
+    init = associated(this%data)
+  end function initialized_
+
+  pure function same_(this1,this2) result(same)
+    type(TYPE_NAME), intent(in) :: this1, this2
+    logical :: same
+    ! If they are not both initialized they can not be the same
+    same = initialized(this1) .and. initialized(this2)
+    if ( .not. same ) return
+    ! TODO check that this actually works
+    same = associated(this1%data, target=this2%data)
+  end function same_
 
   function refcount_(this) result(count)
    type(TYPE_NAME), intent(in)  :: this
