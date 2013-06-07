@@ -30,7 +30,7 @@
 ! There are however a few routines which are encouraged
 ! to use through-out, and also in heavy duty calculations.
 ! These are:
-!   - ucell_nnn which does not do any calculations that would not
+!   - cell_xyz which does not do any calculations that would not
 !     be performed otherwise.
 !   - ucorb, even though there are calculations in this routine
 !     the lack of passing, and look-up in the indxuo array
@@ -50,8 +50,8 @@ module geom_helper
   ! It does the same thing
   public :: ucorb
   public :: iaorb
-  public :: ucell_nnn
-  public :: ucell_n, ucell_nx, ucell_ny, ucell_nz
+  public :: cell_xyz
+  public :: cell_d, cell_x, cell_y, cell_z
 
 contains
 
@@ -74,7 +74,7 @@ contains
 
     ! Start searching in the "best" guess of the placement
     ! Our best guess is the number of orbitals on the first atom
-    ! 1+int(iorb / orb(1)) == atom (if all atoms have the same orb. count, this is exact
+    ! 1+int(iorb / orb(1)) == atom (if all atoms have the same orb. count, this is exact)
     ! This is the most qualified quess we can make
     ! It makes no sense to take the mean of the orbital count...!
     ! If iiorb and lasto are both > 0 then this will always
@@ -102,7 +102,7 @@ contains
   end function iaorb
 
 
-  pure function ucell_nnn(recell,xai,xaj,xij) result(nnn)
+  pure function cell_xyz(recell,xai,xaj,xij) result(nnn)
 ! *********************
 ! * INPUT variables   *
 ! *********************
@@ -119,10 +119,10 @@ contains
     nnn(2) = nint(sum(xd*recell(:,2)))
     nnn(3) = nint(sum(xd*recell(:,3)))
 
-  end function ucell_nnn
+  end function cell_xyz
 
 
-  pure function ucell_nx(recell,xai,xaj,xij) result(n)
+  pure function cell_x(recell,xai,xaj,xij) result(n)
 ! *********************
 ! * INPUT variables   *
 ! *********************
@@ -132,10 +132,10 @@ contains
 ! * OUTPUT variables  *
 ! *********************
     integer  :: n
-    n = ucell_n(recell,xai,xaj,xij,1)
-  end function ucell_nx
+    n = cell_d(recell,xai,xaj,xij,1)
+  end function cell_x
 
-  pure function ucell_ny(recell,xai,xaj,xij) result(n)
+  pure function cell_y(recell,xai,xaj,xij) result(n)
 ! *********************
 ! * INPUT variables   *
 ! *********************
@@ -145,10 +145,10 @@ contains
 ! * OUTPUT variables  *
 ! *********************
     integer  :: n
-    n = ucell_n(recell,xai,xaj,xij,2)
-  end function ucell_ny
+    n = cell_d(recell,xai,xaj,xij,2)
+  end function cell_y
 
-  pure function ucell_nz(recell,xai,xaj,xij) result(n)
+  pure function cell_z(recell,xai,xaj,xij) result(n)
 ! *********************
 ! * INPUT variables   *
 ! *********************
@@ -158,10 +158,10 @@ contains
 ! * OUTPUT variables  *
 ! *********************
     integer  :: n
-    n = ucell_n(recell,xai,xaj,xij,3)
-  end function ucell_nz
+    n = cell_d(recell,xai,xaj,xij,3)
+  end function cell_z
 
-  pure function ucell_n(recell,xai,xaj,xij,xyz) result(n)
+  pure function cell_d(recell,xai,xaj,xij,xyz) result(n)
 ! *********************
 ! * INPUT variables   *
 ! *********************
@@ -176,6 +176,6 @@ contains
     ! The actual length between two atomic centered orbitals:
     xd (:) = xij(:) - (xaj(:)-xai(:))
     n = nint(sum(xd*recell(:,xyz)))
-  end function ucell_n
+  end function cell_d
 
 end module geom_helper

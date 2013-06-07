@@ -50,13 +50,17 @@ module m_ts_contour
   integer, parameter, public :: CC_METHOD_PHONON          = 100
 
 ! This module will also contain all the contour variables
+  integer, save :: NEn_eq
   integer, save :: NEn  ! Number of energy points in the contour path
   integer, save :: PNEn ! Number of energy points in the contour path (divisible by Nodes)
 
 ! Contour path
   type(ts_ccontour), dimension(:), pointer, save :: contour
+  type(ts_ccontour), dimension(:), pointer, save :: contourL => null()
+  type(ts_ccontour), dimension(:), pointer, save :: contourR => null()
+  type(ts_ccontour), dimension(:), pointer, save :: contour_neq => null()
 
-  public :: NEn, PNEn, contour
+  public :: NEn, PNEn, contour, contourL, contourR, contour_neq
   public :: setup_contour, io_contour, print_contour
   public :: sort_contour
   private
@@ -108,6 +112,7 @@ contains
     
     ! Equilibrium contour points
     NE_equilibrium = Npol+Nline+Ncircle
+    NEn_eq = NE_equilibrium
 
     ! Allocate the contour points
     nullify(contour)
@@ -118,11 +123,12 @@ contains
     if ( .not. IsVolt .and. NE_equilibrium > 0 ) then
 
        c => contour(1:NE_equilibrium) 
+       contourL => c
        call mod_HansSkriver(CC_PART_EQUI, &
             CCEmin, Ef0, &
             kT,GFeta, &
             Ncircle,Nline,Npol, c)
-              
+       
 ! Note we put a minus here because the integral we want is the
 ! negative of the pole-sum and C+L integral!!
        do i = 1 , NE_equilibrium
@@ -133,6 +139,7 @@ contains
 
 ! Do the left contour line
        c => contour(1:NE_equilibrium) 
+       contourL => c
        call mod_HansSkriver(CC_PART_LEFT_EQUI, &
             CCEmin + EfL - Ef0, EfL, &
             kT,GFeta, &
@@ -146,6 +153,7 @@ contains
        
 ! Do the right contour line
        c => contour(NE_equilibrium+1:2*NE_equilibrium) 
+       contourR => c
        call mod_HansSkriver(CC_PART_RIGHT_EQUI, &
             CCEmin + EfR - Ef0, EfR, &
             kT,GFeta, &
@@ -159,6 +167,7 @@ contains
        
 ! The voltage contour
        c => contour(2*NE_equilibrium+1:2*NE_equilibrium+NVolt) 
+       contour_neq => c
        if (Cmethod.eq.CC_METHOD_SOMMERFELD) then ! 1. order
           
           call sommerfeld(CC_PART_NON_EQUI,EfR,EfL, &

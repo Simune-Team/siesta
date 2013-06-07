@@ -310,7 +310,7 @@ contains
     
     if (.not. onlyS) then
 ! Write Hamiltonian	 
-       do ispin = 1 , nspin	 
+       do ispin = 1 , nspin 
 #ifdef MPI
           call glob_sparse_matrix(no_l,no_u,no_s, &
                maxnh,  numh , listhptr , H(:,ispin), &

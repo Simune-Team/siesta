@@ -736,24 +736,22 @@ contains
       call timer("TS_comm",1)
 
       if ( ts_Gamma_SCF ) then
-         ind = nnzs(spDM)
-         call AllReduce_dSpData1D(spDM ,ind, ndwork,dwork)
-         call AllReduce_dSpData1D(spEDM,ind, ndwork,dwork)
+         call AllReduce_dSpData1D(spDM , ndwork,dwork)
+         call AllReduce_dSpData1D(spEDM, ndwork,dwork)
          if ( IsVolt ) then
-            call AllReduce_dSpData1D(spDMR   ,ind, ndwork,dwork)
-            call AllReduce_dSpData1D(spDMneqL,ind, ndwork,dwork)
-            call AllReduce_dSpData1D(spDMneqR,ind, ndwork,dwork)
-            call AllReduce_dSpData1D(spEDMR  ,ind, ndwork,dwork)
+            call AllReduce_dSpData1D(spDMR   , ndwork,dwork)
+            call AllReduce_dSpData1D(spDMneqL, ndwork,dwork)
+            call AllReduce_dSpData1D(spDMneqR, ndwork,dwork)
+            call AllReduce_dSpData1D(spEDMR  , ndwork,dwork)
          end if
       else
-         ind = nnzs(spzDM)
-         call AllReduce_zSpData1D(spzDM ,ind, nzwork,zwork)
-         call AllReduce_zSpData1D(spzEDM,ind, nzwork,zwork)
+         call AllReduce_zSpData1D(spzDM , nzwork,zwork)
+         call AllReduce_zSpData1D(spzEDM, nzwork,zwork)
          if ( IsVolt ) then
-            call AllReduce_zSpData1D(spzDMR   ,ind, nzwork,zwork)
-            call AllReduce_zSpData1D(spzDMneqL,ind, nzwork,zwork)
-            call AllReduce_zSpData1D(spzDMneqR,ind, nzwork,zwork)
-            call AllReduce_zSpData1D(spzEDMR  ,ind, nzwork,zwork)
+            call AllReduce_zSpData1D(spzDMR   , nzwork,zwork)
+            call AllReduce_zSpData1D(spzDMneqL, nzwork,zwork)
+            call AllReduce_zSpData1D(spzDMneqR, nzwork,zwork)
+            call AllReduce_zSpData1D(spzEDMR  , nzwork,zwork)
          end if
       end if
 

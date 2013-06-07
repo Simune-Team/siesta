@@ -75,10 +75,10 @@
      module procedure newBlockCyclicDistribution
   end interface
 
-!====================================    
+!==================================== 
 #define TYPE_NAME OrbitalDistribution
 #include "basic_type.inc"
-!====================================    
+!==================================== 
 
      subroutine delete_Data(spdata)
       type(OrbitalDistribution_) :: spdata
@@ -125,6 +125,9 @@
 
 !-----------------------------------------------------------
    function num_local_elements(this,nels,Node) result(nl)
+#ifdef MPI
+     use mpi_siesta, only: MPI_COMM_Self
+#endif
      type(OrbitalDistribution), intent(in)  :: this
      integer, intent(in)                    :: nels
      integer, intent(in)                    :: Node
@@ -143,8 +146,8 @@
            nl = -1
         endif
         nl = this%data%nroc_proc(Node)
-
-      else if ( this%data%nodes == 1 ) then ! globalized local distribution
+#ifdef MPI
+      else if ( this%data%Comm == MPI_Comm_Self ) then ! globalized local distribution
 
          ! No matter the node, it is the same orbital
          ! The interface for creating such an orbital distribution
@@ -154,7 +157,7 @@
          if ( nels /= this%data%blocksize ) &
               call die('Contact Nick Papior Andersen, nickpapior@gmail.com')
          nl = this%data%blocksize
-
+#endif
       else  ! block-cyclic distribution
 
           ! Use Julian's code for now, although this is 
@@ -173,6 +176,9 @@
       end function num_local_elements
 
    function index_local_to_global(this,il,Node) result(ig)
+#ifdef MPI
+     use mpi_siesta, only: MPI_COMM_Self
+#endif
      type(OrbitalDistribution), intent(in)  :: this
      integer, intent(in)                    :: il
      integer, intent(in)                    :: Node
@@ -191,8 +197,8 @@
            ig = -1
         endif
         ig = this%data%nl2g(il)
-
-      else if ( this%data%nodes == 1 ) then ! globalized local distribution
+#ifdef MPI
+      else if ( this%data%Comm == MPI_Comm_Self ) then ! globalized local distribution
 
          ! No matter the node, it is the same orbital
          ! The interface for creating such an orbital distribution
@@ -202,7 +208,7 @@
               call die('Contact Nick Papior Andersen, nickpapior@gmail.com')
 
          ig = il
-
+#endif
       else  ! block-cyclic distribution
 
           ! Use Julian's code for now, although this is 
@@ -220,6 +226,9 @@
       end function index_local_to_global
 
    function index_global_to_local(this,ig,Node) result(il)
+#ifdef MPI
+     use mpi_siesta, only: MPI_COMM_Self
+#endif
      type(OrbitalDistribution), intent(in)  :: this
      integer, intent(in)                    :: ig
      integer, intent(in)                    :: Node
@@ -241,8 +250,8 @@
         ! Alternatively: Use an extended ng2p, in which "local" elements are negative.
         ! if (ng2p(ig)) < 0 then il = -that, else 0
         ! Example:  0 0 1 1 2 2 -1 -2 4 4 5 5 0 0 1 1 2 2 -3 -4 5 5 ..... (nb=2, np=6)
-
-      else if ( this%data%nodes == 1 ) then ! globalized local distribution
+#ifdef MPI
+      else if ( this%data%Comm == MPI_Comm_Self ) then ! globalized local distribution
 
          ! No matter the node, it is the same orbital
          ! The interface for creating such an orbital distribution
@@ -252,7 +261,7 @@
               call die('Contact Nick Papior Andersen, nickpapior@gmail.com')
 
          il = ig
-
+#endif
       else  ! block-cyclic distribution
 
           ! Use Julian's code for now, although this is 
@@ -282,6 +291,9 @@
       end function index_global_to_local
 
    function node_handling_element(this,ig) result(proc)
+#ifdef MPI
+     use mpi_siesta, only: MPI_COMM_Self
+#endif
      type(OrbitalDistribution), intent(in)  :: this
      integer, intent(in)                    :: ig
      integer                                :: proc
@@ -298,8 +310,8 @@
         ! Alternatively: Use an extended ng2p, in which "local" elements are negative.
         ! if (ng2p(ig)) < 0 then il = -that, else 0
         ! Example:  0 0 1 1 2 2 -1 -2 4 4 5 5 0 0 1 1 2 2 -3 -4 5 5 ..... (nb=2, np=6)
-
-      else if ( this%data%nodes == 1 ) then ! globalized local distribution
+#ifdef MPI
+      else if ( this%data%Comm == MPI_Comm_Self ) then ! globalized local distribution
 
          ! No matter the node, it is the same orbital
          ! The interface for creating such an orbital distribution
@@ -309,7 +321,7 @@
               call die('Contact Nick Papior Andersen, nickpapior@gmail.com')
 
          proc = this%data%node
-
+#endif
       else  ! block-cyclic distribution
 
           ! Use Julian's code for now, although this is 

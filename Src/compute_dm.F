@@ -34,8 +34,8 @@
       use m_ts_options,     only : TSmode
       use m_ts_in_siesta,   only : transiesta
       use m_ts_mem,         only : transiesta_mem
-      use m_ts_tri,         only : ts_tri_init
-      use m_ts_tri,         only : transiesta_tri
+      use m_ts_new_tri,         only : ts_tri_init
+      use m_ts_new_tri,         only : transiesta_tri
       use m_ts_sparse,      only : ts_sparse_init
       use m_ts_sparse_helper,only : ts_print_charges
 #endif /* TRANSIESTA */

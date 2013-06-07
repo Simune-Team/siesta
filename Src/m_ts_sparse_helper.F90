@@ -165,11 +165,10 @@ contains
     end do
      
 #ifdef MPI
-    ind = nnzs(SpArrH)
     ! Note that zH => val(SpArrH)
     ! Note that zS => val(SpArrS)
-    call AllReduce_zSpData1D(SpArrH,ind,nwork,work)
-    call AllReduce_zSpData1D(SpArrS,ind,nwork,work)
+    call AllReduce_zSpData1D(SpArrH,nwork,work)
+    call AllReduce_zSpData1D(SpArrS,nwork,work)
 #endif
 
     ! We symmetrize AND shift
@@ -380,11 +379,10 @@ contains
      
 
 #ifdef MPI
-    ind = nnzs(SpArrH)
     ! Note that dH => val(SpArrH)
     ! Note that dS => val(SpArrS)
-    call AllReduce_dSpData1D(SpArrH,ind,nwork,work)
-    call AllReduce_dSpData1D(SpArrS,ind,nwork,work)
+    call AllReduce_dSpData1D(SpArrH,nwork,work)
+    call AllReduce_dSpData1D(SpArrS,nwork,work)
 #endif
 
     ! We need to do symmetrization AFTER reduction as we need the full
@@ -480,37 +478,39 @@ contains
 ! ************************************************
 
 #ifdef MPI
-  subroutine AllReduce_zSpData1D(sp_arr,sp_nnzs,nwork,work)
+  subroutine AllReduce_zSpData1D(sp_arr,nwork,work)
     use mpi_siesta
     use class_zSpData1D
     type(zSpData1D), intent(inout) :: sp_arr
-    integer, intent(in) :: sp_nnzs, nwork
-    complex(dp), intent(inout) :: work(sp_nnzs)
+    integer, intent(in) :: nwork
+    complex(dp), intent(inout) :: work(nwork)
     complex(dp), pointer :: arr(:)
-    integer :: MPIerror
+    integer :: MPIerror, n_nzs
+    n_nzs = nnzs(sp_arr)
     ! This should never happen, exactly due to the sparsity
-    if ( sp_nnzs > nwork ) call die('Sparsity seems larger than &
+    if ( n_nzs > nwork ) call die('Sparsity seems larger than &
          &work arrays, Transiesta????')
     arr => val(sp_arr)
-    work(1:sp_nnzs) = arr(1:sp_nnzs)
-    call MPI_AllReduce(work(1),arr(1),sp_nnzs, &
+    work(1:n_nzs) = arr(1:n_nzs)
+    call MPI_AllReduce(work(1),arr(1),n_nzs, &
          MPI_Double_Complex, MPI_Sum, MPI_Comm_World, MPIerror)
   end subroutine AllReduce_zSpData1D
 
-  subroutine AllReduce_dSpData1D(sp_arr,sp_nnzs,nwork,work)
+  subroutine AllReduce_dSpData1D(sp_arr,nwork,work)
     use mpi_siesta
     use class_dSpData1D
     type(dSpData1D), intent(inout) :: sp_arr
-    integer, intent(in)     :: sp_nnzs,nwork
-    real(dp), intent(inout) :: work(sp_nnzs)
+    integer, intent(in)     :: nwork
+    real(dp), intent(inout) :: work(nwork)
     real(dp), pointer :: arr(:)
-    integer :: MPIerror
+    integer :: MPIerror, n_nzs
+    n_nzs = nnzs(sp_arr)
     ! This should never happen, exactly due to the sparsity
-    if ( sp_nnzs > nwork ) call die('Sparsity seems larger than &
+    if ( n_nzs > nwork ) call die('Sparsity seems larger than &
          &work arrays, Transiesta????')
     arr => val(sp_arr)
-    work(1:sp_nnzs) = arr(1:sp_nnzs)
-    call MPI_AllReduce(work(1),arr(1),sp_nnzs, &
+    work(1:n_nzs) = arr(1:n_nzs)
+    call MPI_AllReduce(work(1),arr(1),n_nzs, &
          MPI_Double_Precision, MPI_Sum, MPI_Comm_World, MPIerror)
   end subroutine AllReduce_dSpData1D
 #endif
@@ -580,7 +580,7 @@ contains
     
   end subroutine init_DM
 
-  subroutine update_DM(dit,sp,maxn,DM,EDM, spDM, spEDM)
+  subroutine update_DM(dit,sp,n_nzs,DM,EDM, spDM, spEDM)
       ! The DM and EDM equivalent matrices
     use class_OrbitalDistribution
     use class_Sparsity
@@ -590,9 +590,9 @@ contains
     type(OrbitalDistribution), intent(inout) :: dit
     type(Sparsity), intent(inout) :: sp
     ! Size of the sparsity arrays
-    integer, intent(in) :: maxn
+    integer, intent(in) :: n_nzs
     ! Sparse DM-arrays (local)
-    real(dp), intent(inout) :: DM(maxn), EDM(maxn)
+    real(dp), intent(inout) :: DM(n_nzs), EDM(n_nzs)
     ! Updated sparsity arrays (they contain the current integration)
     type(dSpData1D), intent(inout) :: spDM, spEDM
 
@@ -707,18 +707,16 @@ contains
        ! we do fewer operations by having this as an outer loop
        do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
 
-          ljo = UCORB(l_col(lind),nr)
+          jo = UCORB(l_col(lind),nr)
 
           ! Now search the update region
           ! This one must *per definition* have less elements.
           ! Hence, we can exploit this, and find equivalent
           ! super-cell orbitals.
           rind = lup_ptr(io)
-          ind = rind + SFIND(lup_col(rind+1:rind+lup_ncol(io)),ljo)
+          ind = rind + SFIND(lup_col(rind+1:rind+lup_ncol(io)),jo)
           if ( ind <= rind ) cycle ! The element does not exist
           
-          jo = lup_col(ind)
-
           kx = k(1) * xij(1,lind) + &
                k(2) * xij(2,lind) + &
                k(3) * xij(3,lind)
@@ -1064,7 +1062,7 @@ contains
     if ( IONode ) then
        write(*,'(a,'' |('',i5,'','',i5,'')| = '',g9.4,&
             &'' , |('',i5,'','',i5,'')|~ = '',g9.4)') &
-            'ts: integration EE.:',&
+            'ts: int. EE.:',&
             eM_i,eM_j,sqrt(eM), &
             neM_i,neM_j,sqrt(neM)
     end if

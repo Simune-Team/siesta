@@ -1,4 +1,100 @@
 ----------------------------------------------------
+June 7, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-42
+New transiesta weighting and a lot of bugfixes (TODO clean code)
+
+* Bugfix on class_OrbitalDistribution (OD) if the number of nodes was 1 
+  and we where in an MPI-run environment.
+  Instead of checking for the number of nodes in the orbital distribution
+  we can check for the communicator being MPI_Comm_Self which is more robust.
+
+* Name change of geom_helper routines.
+    - ucell_nnn    => cell_xyz
+    - ucell_n[xyz] => cell_[xyz]
+    - ucell_n      => cell_d
+  these names makes more sense in that they describe a coordinates
+  unit cell in 3 coordinates.
+
+* Added 2 new (better) methods for obtaining optimal tri-diagonal partition (TDP)
+  of the transiesta GF^{-1} array. We now try to create a TDP by looping through all
+  orbitals in the electrodes.
+  The two methods will select based on:
+    1) speed, the highest number of partitions, and the highest variance of
+       the TDP.
+       This is emperically found and tends to be alright
+    2) memory, the lowest number of elements in the TDP
+  For regular system they tend to give the same distribution, however, for long/large
+  systems they could diverge.
+  The segmentation has been parallelized to speed it up even though it is only
+  performed once.
+
+* Added explicit contour arrays for the left/right/non-equilibrium arrays
+  This will make integration loops more explicit in transiesta routines
+  Currently the ts_init routine creates the correct pointers
+
+* Restructured the m_ts_options module, made the formats print out more 
+  nicely
+
+* In case of a bias and k-points we include a pointer array which points from
+  transiesta local update sparsity to siesta local sparsity.
+  This leverages the need to create a subset of the xij array to local form
+
+* The global sparsity creator has been generalized and moved to 2 routines
+  to make the code clearer in intent.
+  Hence, we now have these routines:
+    ts_Sparsity_Update (create an update sparsity, works for both global and local)
+    ts_Sparsity_Global (create a global update sparsity)
+  
+* Changed the AllReduce routine for the transiesta arrays to a better interface
+
+* Moved the print-out of the transiesta charges to right before the iteration step
+  write-out. (thus they should be closer if Mulliken is printed)
+
+* Added 3 different weight-schemes for the non-equilibrium contour
+   1) A real-space weight:
+      w_L = (\sum_k \Delta_L(k))^2
+      w_R = (\sum_k \Delta_R(k))^2
+   2) A real-space uncorrelated weight:
+      w_L = \sum_k \Delta_L(k)^2
+      w_R = \sum_k \Delta_R(k)^2
+   3) A k-space uncorrelated weight:
+      w_L^k = \Delta_L(k)^2
+      w_R^k = \Delta_R(k)^2
+  it seems that option 3 is the best choice as it weighs each k-point integration
+  as would have been done in the Gamma-point calculations. Hence we have made this
+  the default.
+  It can be changed via the option:
+    TS.Weight.NonEquilibrium correlated|uncorrelated|k-uncorrelated
+  for 1, 2, 3 respectively.
+  Notice that for Gamma-calculation they are all the same!
+  This required some abstraction of some of the routines for the integration of
+  the Green's function. As of now this is located in m_ts_sparse_helper_new.F90
+
+  NOTICE, this only works for the tri-diagonal routine
+
+* TODO change the sparse method to do the same and clean up the code!
+  
+added:
+  Src/m_ts_new_tri.F90
+  Src/m_ts_sparse_helper_new.F90
+  Src/m_ts_weight.F90
+modified:
+  Src/Makefile
+  Src/class_OrbitalDistribution.F90
+  Src/compute_dm.F
+  Src/create_Sparsity_SC.F90
+  Src/geom_helper.f90
+  Src/m_ts_Sparsity2TriMat.F90
+  Src/m_ts_contour.f90
+  Src/m_ts_io.F90
+  Src/m_ts_mem.F90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse.F90
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_tri.F90
+  Src/siesta_forces.F
+  Src/ts_init.F90
+
+----------------------------------------------------
 June 3, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-41
 Added functions for Sparsity and fixed bug in MPI variable declaration
 

@@ -35,11 +35,13 @@ contains
     use files, only : slabel
 
     use m_ts_gf,      only : do_Green
+    use m_ts_contour, only : contourL, contourR, contour_neq
     use m_ts_contour, only : setup_contour, print_contour, io_contour
     use m_ts_contour, only : sort_contour
     use m_ts_contour, only : NEn, contour
     use m_ts_kpoints, only : setup_ts_kpoint_grid
     use m_ts_kpoints, only : ts_nkpnt, ts_kpoint, ts_kweight
+    use m_ts_cctype
     use m_ts_electype
     use m_ts_options ! Just everything (easier)
     use m_ts_method
@@ -59,6 +61,7 @@ contains
 ! * LOCAL variables   *
 ! *********************
     complex(dp), dimension(:,:), allocatable :: dos
+    type(ts_ccontour), pointer :: c(:) => null()
     integer :: i, sNE, eNE
     integer :: nL, nC, nR, nTS
 
@@ -146,21 +149,25 @@ contains
        if ( IsVolt ) then
           sNE =       1
           eNE = sNE+NCircle+Npol+Nline-1
+          c => contour(sNE:eNE)
           ! 1) sort the left equilibrium points
-          call sort_contour(eNE-sNE+1,contour(sNE:eNE))
+          call sort_contour(size(c),c)
           sNE = eNE + 1
           eNE = sNE+NCircle+Npol+Nline-1
+          c => contour(sNE:eNE)
           ! 2) sort the right equilibrium points
-          call sort_contour(eNE-sNE+1,contour(sNE:eNE))
+          call sort_contour(size(c),c)
           sNE = eNE + 1
           eNE = sNE + NVolt - 1
+          c => contour(sNE:eNE)
           ! 3) sort the non-equilibrium points
-          call sort_contour(eNE-sNE+1,contour(sNE:eNE))
+          call sort_contour(size(c),c)
        else
           sNE =       1
           eNE = sNE+NCircle+Npol+Nline-1
+          c => contour(sNE:eNE)
           ! 1) sort the equilibrium points
-          call sort_contour(eNE-sNE+1,contour(sNE:eNE))
+          call sort_contour(size(c),c)
        end if
        if ( eNE /= NEn ) call die('Wrong sorting in the contour points.')
 

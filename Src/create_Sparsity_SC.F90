@@ -392,7 +392,7 @@ contains
        ! sparsity pattern of xij and *in* are the same! 
        ! TODO, check this in the beginning of the routine!
        do i = 1 , ncol
-          if ( count(TM(:) == ucell_nnn(recell, &
+          if ( count(TM(:) == cell_xyz(recell, &
                xa(:,iaorb(row         ,lasto)), & ! xa_i
                xa(:,iaorb(l_col(ptr+i),lasto)), & ! xa_j
                xij(:,ptr+i) &! xij 
@@ -411,7 +411,7 @@ contains
        nr = nrows_g(sp)
        j = 0
        do i = 1 , ncol
-          if ( count(TM(:) == ucell_nnn(recell, &
+          if ( count(TM(:) == cell_xyz(recell, &
                xa(:,iaorb(row         ,lasto)), & ! xa_i
                xa(:,iaorb(l_col(ptr+i),lasto)), & ! xa_j
                xij(:,ptr+i) &                     ! xij 
