@@ -332,8 +332,8 @@ contains
     use precision, only : dp
     use parallel, only : IONode
     use units, only : Pi
-    use m_ts_aux_rout, only : nf
-    use m_ts_aux_rout, only : gaufermi10, gaufermi20, gauss
+    use m_ts_aux, only : nf
+    use m_ts_aux, only : gaufermi10, gaufermi20, gauss
 
 ! ***********************
 ! * INPUT variables     *
@@ -540,7 +540,7 @@ contains
     use parallel, only : IONode
     use units, only : Pi
     use precision, only : dp
-    use m_ts_aux_rout, only : nf1, gaufermi0, gaufermi2
+    use m_ts_aux, only : nf1, gaufermi0, gaufermi2
 
 ! ***********************
 ! * INPUT variables     *

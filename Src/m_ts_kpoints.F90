@@ -101,7 +101,7 @@ contains
       logical, intent(out)   :: firm_displ
 
 ! Internal variables
-      integer           i, iu, j,  factor(3,3), expansion_factor
+      integer           i, j,  factor(3,3), expansion_factor
 #ifdef MPI
       integer           MPIerror
 #endif

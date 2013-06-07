@@ -60,7 +60,6 @@ contains
     ! Local variables
     integer, pointer :: guess_part(:) => null()
     integer :: i, N, guess_parts
-    logical :: copy
 #ifdef MPI
     integer :: MPIerror
 #endif

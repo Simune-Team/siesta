@@ -270,11 +270,8 @@ contains
     logical :: direct_LR
 
     ! Loop-counters
-    integer :: i,j ,io,jo, ic,jc, ind
-    integer :: lio, ljc, lind, no_u_LC
-
-    ! Logical for determining the region
-    logical :: i_in_C, j_in_C
+    integer :: j ,io, ic,jc, ind
+    integer :: no_u_LC
 
     ! Initialize
     call delete(ts_sp)
@@ -487,8 +484,8 @@ contains
     logical :: direct_LR
 
     ! Loop-counters
-    integer :: j ,io,jo, ic,jc, ind
-    integer :: lio, ljc, lind, no_u_LC
+    integer :: j ,io, ic,jc, ind
+    integer :: no_u_LC
 
     ! Logical for determining the region
     logical :: i_in_C, j_in_C
@@ -638,7 +635,7 @@ contains
     integer, pointer :: sub_col(:)  => null()
     integer, pointer :: pnt(:)      => null()
 
-    integer :: no_l, io, j, jo, sub_ind, ind
+    integer :: no_l, io, j, sub_ind, ind
 
     call retrieve(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=no_l)

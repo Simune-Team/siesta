@@ -5,9 +5,6 @@ module m_ts_method
   public
   save
   
-  ! This is the original transiesta
-  integer, parameter :: TS_ORIGINAL = 0
-
   ! This is the transiesta version utilizing the 
   ! full sparsity pattern of SIESTA.
   integer, parameter :: TS_SPARSITY = 1
@@ -20,7 +17,7 @@ module m_ts_method
 
   ! The default solution method (it will be reset
   ! after option reading)
-  integer :: ts_method = TS_ORIGINAL
+  integer :: ts_method = TS_SPARSITY_TRI
 
   ! Logical variable that describes the solution method on
   ! LEFT-RIGHT-EQUILIBRIUM contour points.

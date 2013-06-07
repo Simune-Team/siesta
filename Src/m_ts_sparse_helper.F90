@@ -83,7 +83,7 @@ contains
     complex(dp), pointer :: zH(:), zS(:)
     complex(dp) :: ph
     type(Sparsity), pointer :: sp_k
-    integer :: no_l, lio, io, ind, jo, jg, ind_k, kn
+    integer :: no_l, lio, io, ind, jo, ind_k, kn
     integer :: no_max
      
     ! obtain the local number of rows and the global...
@@ -306,7 +306,7 @@ contains
     integer, pointer  :: k_ncol(:), k_ptr(:), k_col(:)
     real(dp), pointer :: dH(:), dS(:)
     type(Sparsity), pointer :: sp_G
-    integer :: no_l, lio, io, ind, jo, jg, ind_k
+    integer :: no_l, lio, io, ind, jo, ind_k
     
     ! obtain the local number of rows and the global...
     no_l = nrows(sp)
@@ -677,7 +677,7 @@ contains
     integer, pointer :: lup_ncol(:), lup_ptr(:), lup_col(:)
     complex(dp), pointer :: zD(:), zE(:)
     complex(dp) :: ph, kx
-    integer :: lio, io, jo, ind, nr, ljo
+    integer :: lio, io, jo, ind, nr
     integer :: lnr, lind, rin, rind
 
     call retrieve(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &

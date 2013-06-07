@@ -32,7 +32,6 @@ logical  :: savetshs     ! Saves the Hamiltonian and Overlap matrices if the
                          ! the option TS.SaveHS is specified in the input file
 logical  :: onlyS        ! Option to only save overlap matrix
 logical  :: USEBULK      ! Use Bulk Hamiltonian in Electrodes
-logical  :: TriDiag      ! true if tridiagonalization
 logical  :: UpdateDMCR   ! Update DM values of ONLY Central Region
 integer  :: ChargeCorr   ! Integer holding the method of charge correction
                          !  0 => Will not do charge correction
@@ -85,7 +84,6 @@ logical, parameter :: savetshs_def = .true.
 logical, parameter :: onlyS_def = .false.
 logical, parameter :: tsdme_def = .true.
 logical, parameter :: UseBulk_def = .true.
-logical, parameter :: TriDiag_def = .true.
 logical, parameter :: UpdateDMCR_def = .true.
 logical, parameter :: UseVFix_def = .true.
 real(dp), parameter :: voltfdf_def = 0._dp   ! in Ry
@@ -138,9 +136,7 @@ CONTAINS
     use m_ts_io, only : ts_read_TSHS_lasto
     use m_ts_method
     use m_ts_weight
-#ifdef MPI
-    use mpi_siesta, only : MPI_Integer, MPI_Comm_World
-#endif
+
     implicit none
     
     real(dp),intent(in) :: ucell(3,3)
@@ -148,9 +144,6 @@ CONTAINS
 ! Internal Variables
     character(len=40) :: chars, s_cmethod
     integer :: i
-#ifdef MPI
-    integer :: MPIerror
-#endif
 
     if (isolve.eq.SOLVE_TRANSI) then
        TSmode = .true.
@@ -168,11 +161,11 @@ CONTAINS
     ts_istep = 0
 
     ! Reading the Transiesta solution method
-    chars = fdf_get('TS.SolutionMethod','sparse')
-    if ( leqi(chars,'original') ) then
-       ts_method = TS_ORIGINAL
-    else if ( leqi(chars,'sparse') ) then
+    chars = fdf_get('TS.SolutionMethod','tri')
+    if ( leqi(chars,'sparse') ) then
        ts_method = TS_SPARSITY
+    else if ( leqi(chars,'tri') ) then
+       ts_method = TS_SPARSITY_TRI
     else
        call die('Unrecognized Transiesta solution method: '//trim(chars))
     end if
@@ -192,9 +185,7 @@ CONTAINS
 !ImmediateTSmode = fdf_get('TS.SCFImmediate',.false.)
 
     UseBulk     = fdf_get('TS.UseBulkInElectrodes',UseBulk_def)
-    TriDiag     = fdf_get('TS.TriDiag',TriDiag_def)
     UpdateDMCR  = fdf_get('TS.UpdateDMCROnly',UpdateDMCR_def)
-
 
     chars = fdf_get('TS.TriMat.Optimize','speed')
     if ( leqi(chars,'speed') ) then
@@ -383,10 +374,16 @@ CONTAINS
  end if
 
  if (IONode .and. TSmode ) then
-    if ( ts_method == TS_ORIGINAL ) then
-       write(*,10)'Solution method', 'Original'
-    else if ( ts_method == TS_SPARSITY ) then
+    if ( ts_method == TS_SPARSITY ) then
        write(*,10)'Solution method', 'Sparsity pattern'
+    else if ( ts_method == TS_SPARSITY_TRI ) then
+       write(*,10)'Solution method', 'Sparsity pattern with tri-solver'
+       if ( opt_TriMat_method == 0 ) then
+          chars = 'speed'
+       else if  ( opt_TriMat_method == 1 ) then
+          chars = 'memory'
+       end if
+       write(*,10)'Tri-Mat create algorithm', trim(chars)
     end if
     write(*,1) 'Start TS-SCF cycle immediately', ImmediateTSmode
     if ( IsVolt ) then
@@ -408,15 +405,6 @@ CONTAINS
        write(*,11) 'TranSIESTA no voltage applied'
     end if
     write(*,1) 'Bulk Values in Electrodes', UseBulk
-    write(*,1) 'Utilize tri-diagonal GF^-1', TriDiag
-    if ( TriDiag ) then
-       if ( opt_TriMat_method == 0 ) then
-          chars = 'speed'
-       else if  ( opt_TriMat_method == 1 ) then
-          chars = 'memory'
-       end if
-       write(*,10)'Tri-Mat create algorithm', trim(chars)
-    end if
     write(*,1) 'Update DM Contact Reg. only', UpdateDMCR
 
     write(*,5) 'Left buffer atoms', na_BufL
@@ -543,44 +531,17 @@ CONTAINS
 
  end if
 
-! UseBulk and TriDiag
- if ( ts_method == TS_ORIGINAL ) then
-    if ( (.not. UseBulk) .and. TriDiag ) then
-       if ( IONode ) then
-          write(*,*) "WARNING: TriDiag only for UseBulkInElectrodes"
-          write(*,*) "         Reverting to normal inversion scheme"
-       end if
-       TriDiag = .false. 
-    end if
-    if ( TriDiag .and. IsVolt .and. (.not. UpdateDMCR) ) then
-       if ( IONode ) then
-          write(*,*) "WARNING: TriDiag does not perform correctly in the"
-          write(*,*) "         original solution method and with a bias."
-          write(*,*) "         Reverting to normal inversion scheme"
-       end if
-       TriDiag = .false.
-    end if
-    if ( IsVolt ) then
-       write(*,*) 'WARNING: Integration of non-equilibrium part &
-            &is not correctly performed. Rely on the sparse/tri-diagonal &
-            &sparse method.'
-    end if
- end if
 
 ! sparsity pattern
- if ( ts_method == TS_SPARSITY ) then
-    if ( TriDiag ) then
-       ! Change to the correct method
-       ts_method = TS_SPARSITY_TRI
-    end if
+! if ( ts_method == TS_SPARSITY .or. ts) then
     if ( ChargeCorr /= 0 ) then
        if ( IONode ) then
-          write(*,*) "WARNING: Charge correction only for original solution method"
+          write(*,*) "WARNING: Charge correction not implemented, yet."
           write(*,*) "         No correction will be performed"
        end if
        ChargeCorr = 0
     end if
- end if
+! end if
 
 ! Integration Method
  if( Cmethod == 0 ) then

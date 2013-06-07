@@ -88,7 +88,7 @@ contains
 ! *********************
 ! * LOCAL variables   *
 ! *********************
-    real(dp) :: wL,wR,wSUM
+    real(dp) :: wL,wR
 
     ! arrays for looping in the sparsity pattern
     type(Sparsity), pointer :: sp

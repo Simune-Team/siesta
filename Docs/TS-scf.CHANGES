@@ -1,4 +1,45 @@
 ----------------------------------------------------
+June 7, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-43
+Removed old transiesta code and restructured some general ts-routines
+
+* Removed all references to the old transiesta version
+  A lot of routines needed deletion of lines, etc.
+
+* Moved the TSVHFIX to m_ts_voltage and renamed to ts_VH_fix
+
+* Deleted a lot of unnecessary routines for the old tri-mat routines
+  this ment that many routines in m_ts_aux_rout was not needed anymore.
+
+* Moved m_ts_aux_rout.F to m_ts_aux.F90 and cleaned code.
+
+removed:
+  Src/m_ts_aux_rout.F
+  Src/m_ts_in_siesta.F
+  Src/m_ts_scattering.F
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+  Src/dhscf.F
+  Src/m_ts_Sparsity2TriMat.F90
+  Src/m_ts_contour.f90
+  Src/m_ts_electrode.F90
+  Src/m_ts_io.F90
+  Src/m_ts_iodm.F
+  Src/m_ts_kpoints.F90
+  Src/m_ts_mem_scat.F90
+  Src/m_ts_method.f90
+  Src/m_ts_new_tri.F90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse.F90
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_sparse_helper_new.F90
+  Src/m_ts_tri.F90
+  Src/m_ts_voltage.F90
+  Src/m_ts_weight.F90
+  Src/siesta_forces.F
+  Src/ts_init.F90
+
+----------------------------------------------------
 June 7, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-42
 New transiesta weighting and a lot of bugfixes (TODO clean code)
 

@@ -458,7 +458,6 @@ contains
 ! ************************
     integer :: iu
     integer :: ispin,i,j,all_I(8)
-    integer :: maxnhg
     logical :: lBcast, exist
 #ifdef MPI
     integer :: MPIerror

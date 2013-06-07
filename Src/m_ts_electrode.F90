@@ -54,7 +54,6 @@ contains
     use precision, only : dp
     use units, only : Pi
     use fdf, only : leqi
-    use m_ts_aux_rout, only : csolveg
 
 ! ***********************
 ! * INPUT variables     *
@@ -155,7 +154,7 @@ contains
 
 ! rh =  rh3^(-1)*rh
 ! rh =  t0
-    call csolveg(nv,nv2,rh3,rh,ipvt,ierr) 
+    call zgesv(nv, nv2, rh3, nv, ipvt, rh, nv, ierr)
 
     if(IERR.ne.0) then
        write(*,*) 'ERROR: calc_green 1 MATRIX INVERSION FAILED'
@@ -218,9 +217,9 @@ contains
        gs(i*(nv+1)) = 1.d0
     end do
 
-    call csolveg(nv,nv,rh3,gs,ipvt,ierr)
+    call zgesv(nv, nv, rh3, nv, ipvt, gs, nv, ierr)
 
-    if(IERR.ne.0) then
+    if ( IERR /= 0 ) then
        write(*,*) 'ERROR: calc_green 2 MATRIX INVERSION FAILED'
        write(*,*) 'ERROR: LAPACK INFO = ',IERR
     end if
@@ -235,10 +234,9 @@ contains
        gs2(j*(nv+1)) = 1.d0
     end do
 
-    call csolveg(nv,nv,rh3,gs2,ipvt,ierr)
+    call zgesv(nv, nv, rh3, nv, ipvt, gs2, nv, ierr)
 
-
-    if(IERR.ne.0) then
+    if( IERR /= 0 ) then
        write(*,*) 'ERROR: calc_green 3 MATRIX INVERSION FAILED'
        write(*,*) 'ERROR: LAPACK INFO = ',IERR
     end if
@@ -255,7 +253,7 @@ contains
           gb(i*(nv+1)) = 1.d0
        end do
 
-       call csolveg(nv,nv,rh3,gb,ipvt,ierr)
+       call zgesv(nv, nv, rh3, nv, ipvt, gb, nv, ierr)
 
        if(IERR.ne.0) then
           write(*,*) 'ERROR: calc_green 4 MATRIX INVERSION FAILED'
@@ -383,7 +381,6 @@ contains
 ! ***********************
     logical :: Gamma
     character(len=5)   :: GFjob ! Contains either 'Left' or 'Right'
-    logical :: exist ! Checking for file existance
     
 ! >>>>>>>>>> Electrode TSHS variables
 ! We suffix with _E to distinguish from CONTACT
@@ -425,7 +422,7 @@ contains
     ! Big loop counters
     integer :: iEn,ispin, iqpt,ikpt
     ! Counters
-    integer :: i,j,ia,ja,io,jo
+    integer :: i,j,ia,io,jo
 
 #ifdef MPI
     integer :: MPIerror,curNode
@@ -958,8 +955,6 @@ contains
     real(dp) :: kdispl(3)
     integer  :: kscell(3,3)
     real(dp) :: qtot,Temp ! total charges, electronic temperature
-    integer :: dummy1,dummy2 ! dummy variables
-
 
     logical :: eXa ! Errors when testing for position of electrodes
     real(dp),dimension(3) :: xa_o,xa_sys_o ! Origo coordinates of the electrodes
@@ -969,7 +964,6 @@ contains
     integer :: sysElec ! the first atom of the electrode in the SYSTEM setup
     integer :: elecElec ! The first atom in the electrode in the ELECTRODE setup
     integer :: i,j,ia,iuo,juo,ind,iaa !Loop counters
-    character(8) :: iotask
     integer :: fL ! Filename length
 #ifdef MPI
     logical :: eXa_buff

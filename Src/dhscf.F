@@ -569,8 +569,7 @@ C     Modules
 
 #ifdef TRANSIESTA
       use m_ts_options, only: UseVFix, TSmode, IsVolt
-      use m_ts_voltage, only : ts_voltage
-      use m_ts_in_siesta, only: TSVHFix
+      use m_ts_voltage, only : ts_voltage, ts_VH_fix
       use m_ts_global_vars, only: TSrun
 #endif /* TRANSIESTA */
       implicit none
@@ -979,7 +978,7 @@ C ----------------------------------------------------------------------
       ! the first spin index
 
 #ifdef TRANSIESTA
-      if (TSmode .and. UseVFix) call TSVHFix( ntm, nsm, Vscf )
+      if (TSmode .and. UseVFix) call ts_VH_fix( ntm, nsm, Vscf )
 #endif /* TRANSIESTA */
 
 C Add contribution to stress from electrostatic energy of rhoscf-rhoatm

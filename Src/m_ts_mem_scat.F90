@@ -320,7 +320,7 @@ subroutine my_symmetrize(N,M)
 
 ! Local variables
     integer :: ipvt(no_u_TS)
-    integer :: i,j,ii,o
+    integer :: i,j,ii
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE getGF' )

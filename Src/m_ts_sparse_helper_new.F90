@@ -152,8 +152,8 @@ contains
     complex(dp), pointer :: zDu(:), zEu(:)
     integer :: lnr, lio, lind, io, ind, nr, jo
     integer :: rin, rind
-    real(dp) :: fact, kx
     logical :: save_weight
+    real(dp) :: kx
     complex(dp) :: ph
 
     l_s  => spar(spDM)
@@ -313,11 +313,10 @@ contains
     type(Sparsity), pointer :: l_s, up_s
     integer, pointer :: l_ncol(:) , l_ptr(:) , l_col(:)
     integer, pointer :: up_ncol(:), up_ptr(:), up_col(:)
-    integer, pointer :: pnt(:)
     real(dp), pointer :: dD(:) , dE(:)
-    real(dp), pointer :: dDu(:), dEu(:), dDuR(:), dEuR(:)
+    real(dp), pointer :: dDu(:), dEu(:)
     integer :: lnr, lio, lind, io, ind, nr, jo
-    integer :: rin, rind
+    integer :: rind
 
     l_s  => spar(spDM)
     call retrieve(l_s ,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &

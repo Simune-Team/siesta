@@ -32,7 +32,6 @@
       use m_ts_global_vars, only : TSiscf, TSinit, TSrun
       use m_ts_method
       use m_ts_options,     only : TSmode
-      use m_ts_in_siesta,   only : transiesta
       use m_ts_mem,         only : transiesta_mem
       use m_ts_new_tri,         only : ts_tri_init
       use m_ts_new_tri,         only : transiesta_tri
@@ -99,32 +98,26 @@
         call timer('TS',1)
         TSiscf=TSiscf+1
 
-        if ( ts_method == TS_ORIGINAL ) then
-           call transiesta(ucell,gamma,lasto,iaorb,
-     &          no_l, no_s, no_u, nspin, xa, na_u, maxnh, numh, listhptr
-     &          ,listh, xijo, indxuo, H, S, Dscf, Escf, Ef,TSiscf,qtot)
-        else
-           if ( TSiscf == 1 ) then
-              ! This is a first Transiesta run, we need to initialize
-              ! the sparsity patterns...
-              call ts_sparse_init(Gamma, block_dist, sparse_pattern,
+        if ( TSiscf == 1 ) then
+           ! This is a first Transiesta run, we need to initialize
+           ! the sparsity patterns...
+           call ts_sparse_init(Gamma, block_dist, sparse_pattern,
      &             na_u, lasto)
-              if ( ts_method == TS_SPARSITY_TRI ) then
-                 call ts_tri_init()
-              end if
-              call ts_print_charges(block_dist, sparse_pattern, 
+           if ( ts_method == TS_SPARSITY_TRI ) then
+              call ts_tri_init()
+           end if
+           call ts_print_charges(block_dist, sparse_pattern, 
      &             na_u, lasto, nspin, maxnh, Dscf, S)
-           end if
-           if ( ts_method == TS_SPARSITY ) then
-              call transiesta_mem(nspin,Gamma, block_dist,
+        end if
+        if ( ts_method == TS_SPARSITY ) then
+           call transiesta_mem(nspin,Gamma, block_dist,
      &             sparse_pattern,ucell, no_u, na_u, lasto, xa, maxnh,
-     &             xijo, H, S, Dscf,Escf, Ef, TSiscf, Qtot)
-           else if ( ts_method == TS_SPARSITY_TRI ) then
-              call transiesta_tri(nspin,Gamma, block_dist,
-     &             sparse_pattern,ucell, no_u, na_u, lasto, xa, maxnh,
-     &             xijo, H, S, Dscf,Escf, Ef, TSiscf, Qtot)
-           end if
-        end if           
+     &          xijo, H, S, Dscf,Escf, Ef, TSiscf, Qtot)
+        else if ( ts_method == TS_SPARSITY_TRI ) then
+           call transiesta_tri(nspin,Gamma, block_dist,
+     &          sparse_pattern,ucell, no_u, na_u, lasto, xa, maxnh,
+     &          xijo, H, S, Dscf,Escf, Ef, TSiscf, Qtot)
+        end if
            
         call timer('TS',2)
 

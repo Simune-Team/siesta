@@ -37,6 +37,7 @@ module m_ts_voltage
   ! various voltage layouts
   public :: ts_voltage
   public :: ts_init_voltage
+  public :: ts_VH_fix
 
   ! The voltage direction (currently this module relies on the voltage direction
   ! to be only in the z-direction)
@@ -116,7 +117,7 @@ contains
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
-    integer                   :: ix, i1, i2, i3, i10, i20, i30, imesh
+    integer                   :: i1, i2, i3, i10, i20, i30, imesh
     integer                   :: meshl(3), Xoffset, Yoffset, Zoffset
     real(dp)                  :: Lvc, dLvc, dF
     real(dp)                  :: dot
@@ -351,5 +352,133 @@ contains
             vcdir(1),',',vcdir(2),',',vcdir(3),'}'
     end if
   end subroutine print_ts_voltage
+
+
+
+! Fix the voltage in the mesh
+  subroutine ts_VH_fix(  mesh, nsm, v )
+!
+!  Modules
+!
+    use precision, only : dp, grid_p
+    use sys, only : die
+    use parallel, only : ProcessorY, Node, Nodes
+#ifdef MPI
+    use mpi_siesta, only : MPI_AllReduce, MPI_Sum
+    use mpi_siesta, only : MPI_Integer, MPI_Comm_World
+    use mpi_siesta, only : DAT_double => MPI_double_precision
+    use parallelsubs, only : HowManyMeshPerNode
+#endif
+    
+    implicit          none
+    real(grid_p)      v(*)
+    integer           mesh(3), nsm
+
+! Internal variables
+    integer           i1, i2, i3, imesh, ntemp
+    integer           nlp, meshl(3)
+    integer           ProcessorZ, BlockSizeY, BlockSizeZ, Yoffset
+    integer           Zoffset, Py, Pz, i30, i20, meshnsm(3)
+    integer           NRemY, NRemZ
+#ifdef MPI
+    integer           MPIerror, npl
+#endif
+    real(dp)          vav, vtot, temp
+
+#ifdef TRANSIESTA_DEBUG
+    call write_debug( 'PRE TSVHfix' )
+#endif
+
+    call timer('TSVHFix',1)
+
+! Find local number of mesh points
+    meshnsm(1) = mesh(1)/nsm
+    meshnsm(2) = mesh(2)/nsm
+    meshnsm(3) = mesh(3)/nsm
+#ifdef MPI
+!! print *, "N:",Node, "TSVHFix-- mesh:", mesh
+    call HowManyMeshPerNode(meshnsm,Node,Nodes,npl,meshl)
+    meshl(1) = meshl(1)*nsm
+    meshl(2) = meshl(2)*nsm
+    meshl(3) = meshl(3)*nsm
+#else
+    meshl(1) = mesh(1)
+    meshl(2) = mesh(2)
+    meshl(3) = mesh(3)
+#endif
+
+! Check that ProcessorY is a factor of the number of processors
+    if (mod(Nodes,ProcessorY).gt.0) then
+       call die('ERROR: ProcessorY must be a factor of the &
+            &number of processors!')
+    endif
+    ProcessorZ = Nodes/ProcessorY
+
+! Calculate blocking sizes
+    BlockSizeY = (meshnsm(2)/ProcessorY)*nsm
+    NRemY = (mesh(2) - ProcessorY*BlockSizeY)/nsm
+    BlockSizeZ = (meshnsm(3)/ProcessorZ)*nsm
+    NRemZ = (mesh(3) - ProcessorZ*BlockSizeZ)/nsm
+
+! Calculate coordinates of current node in processor grid
+    Py = (Node/ProcessorZ)+1
+    Pz = Node - (Py - 1)*ProcessorZ + 1
+
+! Calculate starting point for grid
+    Yoffset = (Py-1)*BlockSizeY + nsm*min(Py-1,NRemY)
+    Zoffset = (Pz-1)*BlockSizeZ + nsm*min(Pz-1,NRemZ)
+
+    vtot =0.d0
+    nlp =0
+
+    imesh = 0
+    i30 = Zoffset - 1
+    do i3 = 0,meshl(3)-1
+       i30 = i30 + 1
+       i20 = Yoffset - 1
+       do i2 = 0,meshl(2)-1
+          i20 = i20 + 1
+          do i1 = 0,meshl(1)-1
+             imesh = imesh + 1
+             if (i30.eq.0) then
+                nlp = nlp +1 
+                vtot = vtot + v(imesh)
+             endif
+          enddo
+       enddo
+    enddo
+
+#ifdef MPI
+    temp=0.d0
+    call MPI_AllReduce(vtot,temp,1,DAT_double,MPI_Sum, &
+         MPI_Comm_World,MPIerror)
+    vtot = temp
+    ntemp=0
+    call MPI_AllReduce(nlp,ntemp,1,MPI_integer,MPI_Sum, &
+         MPI_Comm_World,MPIerror)
+    nlp = ntemp
+
+#endif
+    vav=vtot/float(nlp)
+
+    imesh = 0
+
+    do i3 = 0,meshl(3)-1
+       do i2 = 0,meshl(2)-1
+          do i1 = 0,meshl(1)-1
+             imesh = imesh + 1
+             v(imesh) = v(imesh) - vav
+          enddo
+       enddo
+    enddo
+
+    call timer('TSVHFix',2)
+
+#ifdef TRANSIESTA_DEBUG
+    call write_debug( 'POS TSVHfix' )
+#endif
+
+  end subroutine ts_VH_fix
+
 
 end module m_ts_voltage

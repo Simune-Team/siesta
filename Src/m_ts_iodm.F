@@ -368,7 +368,7 @@ C     *******************************************
 
 C     Internal variables
       logical   exist3
-      integer   im, is, unit1, unit2, m, nb, ndmax, ns
+      integer   im, is, unit1, m, nb, ndmax, ns
       integer   no_u, ml, ndmaxg
       integer, dimension(:), pointer  :: numdg
 #ifdef MPI

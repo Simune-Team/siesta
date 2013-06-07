@@ -1207,7 +1207,7 @@ contains
     type(Sparsity), pointer :: s
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     complex(dp), pointer :: zD(:), zE(:), Gf(:)
-    integer :: io, ind, nr, iu, idx, ridx
+    integer :: io, ind, nr, iu, idx
 
     s      => spar(DM)
     call retrieve(s, &

@@ -92,41 +92,38 @@ contains
                &smaller than the electrode size. &
                &What have you done? Please correct this insanity...")
 
-       if ( ts_method /= TS_ORIGINAL ) then
+       if ( nL < 2 .or. nR < 2 ) &
+            call die('We cannot perform sparse pattern on the electrode &
+            &system.')
 
-          if ( nL < 2 .or. nR < 2 ) &
-               call die('We cannot perform sparse pattern on the electrode &
-               &system.')
+       i = 0
 
-          i = 0
-
-          ! We must ensure that the Sigma[LR] have enough space to hold
-          ! one line of the full matrix (we use them as work arrays
-          ! when calculating the Gamma[LR]
-          if ( nL ** 2 < nTS .or. nR ** 2 < nTS ) then
-             call die('The current implementation requires that the &
-                  &square of the orbitals in the electrodes are larger &
-                  &than the dimension of the problem.')
-          end if
-
-          if ( ts_method == TS_SPARSITY_TRI ) then
-
-             if ( na_BufL + na_BufR > 0 ) then
-                call die('Currently the code does not handle buffer atoms &
-                     &for the tri-diagonal part')
-             end if
-
-             if ( IsVolt .and. (nL > nC .or. nR > nC) ) then
-                write(*,'(a,2(i0,tr1,''/'',tr1),i0)') &
-                     'Sizes are L/C/R: ',nL,nC,nR
-                call die('Your system &
-                     &has inappropriate sizes for memory limited &
-                     &tri-diagonalization')
-             end if
-
-          end if
-
+       ! We must ensure that the Sigma[LR] have enough space to hold
+       ! one line of the full matrix (we use them as work arrays
+       ! when calculating the Gamma[LR]
+       if ( nL ** 2 < nTS .or. nR ** 2 < nTS ) then
+          call die('The current implementation requires that the &
+               &square of the orbitals in the electrodes are larger &
+               &than the dimension of the problem.')
        end if
+       
+       if ( ts_method == TS_SPARSITY_TRI ) then
+          
+          if ( na_BufL + na_BufR > 0 ) then
+             call die('Currently the code does not handle buffer atoms &
+                  &for the tri-diagonal part')
+          end if
+          
+          if ( IsVolt .and. (nL > nC .or. nR > nC) ) then
+             write(*,'(a,2(i0,tr1,''/'',tr1),i0)') &
+                  'Sizes are L/C/R: ',nL,nC,nR
+             call die('Your system &
+                  &has inappropriate sizes for memory limited &
+                  &tri-diagonalization')
+          end if
+          
+       end if
+
 
        ! Show every region of the Transiesta run
        call ts_show_regions(ucell,na_u,xa, &

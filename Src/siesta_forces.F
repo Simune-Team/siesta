@@ -132,7 +132,7 @@
               !        dHmax=maxdiff(H_in - H(DM_out)) ** in prev step **
 
 #ifdef TRANSIESTA
-        if ( TSrun .and. ts_method /= TS_ORIGINAL ) then
+        if ( TSrun ) then
            call ts_print_charges(block_dist,sparse_pattern, 
      &          na_u, lasto, nspin, maxnh, Dscf, S, TS_INFO_SCF)
         end if
@@ -153,7 +153,7 @@
 
         if (SCFconverged) then
 #ifdef TRANSIESTA
-           if ( TSmode .and. ts_method /= TS_ORIGINAL ) then
+           if ( TSmode ) then
               call ts_print_charges(block_dist,sparse_pattern, 
      &             na_u, lasto, nspin, maxnh, Dscf, S)  
            end if
