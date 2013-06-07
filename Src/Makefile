@@ -152,7 +152,8 @@ OBJS =  automatic_cell.o atom_options.o \
         m_comm.o m_transfers.o m_redist_spmatrix.o \
         class_Dist.o class_BlockCyclicDist.o class_PEXSIDist.o\
         m_object_debug.o m_uuid.o\
-        m_dminim.o m_zminim.o
+        m_dminim.o m_zminim.o \
+        m_getopts.o f2kcli.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -719,14 +720,15 @@ siesta_forces.o: mixer.o parallel.o post_scf_work.o scfconvergence_test.o
 siesta_forces.o: setup_H0.o setup_hamiltonian.o siesta_cml.o siesta_options.o
 siesta_forces.o: state_analysis.o state_init.o sys.o units.o write_subs.o
 siesta_geom.o: precision.o
-siesta_init.o: alloc.o atomlist.o bands.o bsc_xcmod.o densematrix.o files.o
-siesta_init.o: ioxv.o kpoint_grid.o kpoint_pdos.o ksvinit.o m_check_supercell.o
-siesta_init.o: m_energies.o m_eo.o m_forces.o m_gamma.o m_iostruct.o
-siesta_init.o: m_mpi_utils.o m_rmaxh.o m_spin.o m_steps.o m_timer.o
-siesta_init.o: m_wallclock.o metaforce.o molecularmechanics.o parallel.o
-siesta_init.o: parallelsubs.o phonon.o projected_DOS.o siesta_cmlsubs.o
-siesta_init.o: siesta_geom.o siesta_options.o sparse_matrices.o struct_init.o
-siesta_init.o: sys.o timer.o timestamp.o ts_init.o writewave.o zmatrix.o
+siesta_init.o: alloc.o atomlist.o bands.o bsc_xcmod.o densematrix.o f2kcli.o
+siesta_init.o: files.o ioxv.o kpoint_grid.o kpoint_pdos.o ksvinit.o
+siesta_init.o: m_check_supercell.o m_energies.o m_eo.o m_forces.o m_gamma.o
+siesta_init.o: m_getopts.o m_iostruct.o m_mpi_utils.o m_rmaxh.o m_spin.o
+siesta_init.o: m_steps.o m_timer.o m_wallclock.o metaforce.o
+siesta_init.o: molecularmechanics.o parallel.o parallelsubs.o phonon.o
+siesta_init.o: projected_DOS.o siesta_cmlsubs.o siesta_geom.o siesta_options.o
+siesta_init.o: sparse_matrices.o struct_init.o sys.o timer.o timestamp.o
+siesta_init.o: ts_init.o writewave.o zmatrix.o
 siesta_move.o: atomlist.o broyden_optim.o cell_broyden_optim.o
 siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o iopipes.o ioxv.o
 siesta_move.o: m_energies.o m_forces.o m_kinetic.o m_steps.o m_stress.o

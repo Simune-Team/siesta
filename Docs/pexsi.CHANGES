@@ -1,4 +1,26 @@
 ------------------------------------------------------------
+June 7, 2013   Alberto Garcia            trunk-434--pexsi-35
+Command-line option to specify output file. More timings
+
+* Experimental support for command-line arguments has been added.
+Currently only one option is in effect:
+
+    siesta -o OUTFILE
+
+will write output to "OUTFILE" instead of to standard output.
+This is done by closing and re-opening unit 6. 
+It is useful to avoid unwanted output to stdout by some libraries.
+
+* Add timer calls for the new re-distribution routines.
+
+* Use the tree timer by default.
+
+modified:
+  Src/Makefile
+  Src/m_pexsi_solver.F90
+  Src/siesta_init.F
+
+------------------------------------------------------------
 June 5, 2013   Alberto Garcia            trunk-434--pexsi-34
 Units in energy options. Better output. Rationalize debug output
 

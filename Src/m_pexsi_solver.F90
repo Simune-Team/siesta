@@ -174,7 +174,9 @@ if (SIESTA_worker) then
 
 endif  ! SIESTA_worker
 
+call timer("redist_orbs_fwd", 1)
 call redistribute_spmatrix(norbs,m1,dist1,m2,dist2,World_Comm)
+call timer("redist_orbs_fwd", 2)
 
 if (PEXSI_worker) then
 
@@ -509,7 +511,9 @@ if (SIESTA_worker) then
    nullify(m1%cols)            ! formerly pointing to listH
 endif
 
+call timer("redist_orbs_bck", 1)
 call redistribute_spmatrix(norbs,m2,dist2,m1,dist1,World_Comm)
+call timer("redist_orbs_bck", 2)
 
 if (PEXSI_worker) then
    call de_alloc(DMnzvalLocal,"DMnzvalLocal","pexsi_solver")
