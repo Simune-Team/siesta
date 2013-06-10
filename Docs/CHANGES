@@ -6,6 +6,20 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2013-06-10  14:20:00 GMT                                     trunk-438
+Bug fixes in constraints routine
+
+* Make sure that the atomic indices are in the correct range.
+
+* Add code to guarantee the enlargement of an array in the
+general case.
+
+(Thanks to Nick P. Andersen)
+
+modified:
+  Src/fixed.F
+
+-----------------------------------------------------------------------
 2013-06-10  14:10:00 GMT                                     trunk-437
 New option for KB projector generation (J. Junquera)
 
