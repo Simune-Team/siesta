@@ -2864,6 +2864,8 @@ C
      .         nkbl, erefkb, nkb)
 
         use basis_specs, only: restricted_grid
+        use atom_options, only: new_kb_reference_orbitals
+
 
 C
 C Call routines for 1) the generation of the Kleinman-Bylander projectors,
@@ -2888,7 +2890,7 @@ C Internal variables
 C
         integer 
      .    l,nprin, nnodes, ighost, nrwf, ikb, ir,
-     .    nrc
+     .    nrc, nrlimit
         real(dp)
      .    rc(nkbmx,0:lmaxd), dkbcos(nkbmx,0:lmaxd),
      .    ekb(nkbmx,0:lmaxd)
@@ -2902,17 +2904,30 @@ C  calculated only inside a sphere of radius Rmax. To define the
 C  KB projectors they will not be needed very far from the nucleus,
 C  and this limitation simplifies the handling of not bound states
 C 
-        real(dp), parameter :: Rmax_kb_default = 6.0d0
+        real(dp) :: Rmax_kb_default 
 C
         save ighost
         data ighost / 0 /
 
+        ! As suggested by Javier Junquera
+        if (new_kb_reference_orbitals) then
+           Rmax_kb_default = 60.0d0
+        else
+           Rmax_kb_default = 6.0d0
+        endif
         rmax = fdf_physical("KB.Rmax", Rmax_kb_default, "Bohr")
 
         nrwf=nint(log(Rmax/b+1.0d0)/a)+1
         nrwf=min(nrwf,nrval)
         if (restricted_grid)  nrwf=nrwf+1-mod(nrwf,2)
-         
+        
+        ! As suggested by Javier Junquera
+        if (new_kb_reference_orbitals) then
+           nrlimit = nrwf
+        else
+           nrlimit = nrval
+        endif
+
         do l=0,lmxkb
           do ir=1,nrmax
             do ikb=1,nkbmx
@@ -2931,8 +2946,9 @@ C
            if (erefkb(ikb,l).ge.1.0d3) then             
              nnodes=ikb
              nprin=l+1
+
              call schro_eq(Zval,rofi,vps(1,l),ve,s,drdi,
-     .                     nrval,l,a,b,nnodes,nprin,
+     .                     nrlimit,l,a,b,nnodes,nprin,
      .                     erefkb(ikb,l),rphi(1,ikb)) 
 C Normalization of the eigenstates inside a sphere of radius Rmax
              dnrm=0.0d0
@@ -2967,7 +2983,7 @@ C Ghost analysis
 C 
            if (nkbl(l).eq.1) then
              call ghost(Zval,rofi,vps(:,l),vlocal,
-     .                  ve,s,drdi,nrval,l,a,b,nrwf,
+     .                  ve,s,drdi,nrlimit,l,a,b,nrwf,
      .                  erefkb(ikb,l),rphi(:,ikb),ighost)
            else 
              if (ikb.eq.1)

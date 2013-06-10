@@ -6,6 +6,23 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2013-06-10  14:10:00 GMT                                     trunk-437
+New option for KB projector generation (J. Junquera)
+
+With the option
+
+KB.New.Reference.Orbitals  T
+
+the routine to generate KB projectors will use slightly different
+parameters for the construction of the reference orbitals involved
+(Rmax=60 bohr both for integration and normalization).
+
+modified:
+  Docs/siesta.tex
+  Src/atom.F
+  Src/atom_options.F90
+
+-----------------------------------------------------------------------
 2013-06-05  13:00:00 GMT                                     trunk-436
 Charge confinement and filteret basis generation options
 
