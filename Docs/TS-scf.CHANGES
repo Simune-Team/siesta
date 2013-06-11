@@ -1,4 +1,30 @@
 ----------------------------------------------------
+June 11, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-46
+Removed the concatenation feature of the objects, added name function
+
+* The concatenation feature of retrieving the name of the object was
+  not that useful. Hence, it has been obsoleted.
+  Instead the function "name" has been created which returns the trimmed
+  string of the name.
+  
+* Renamed "retrieve" to "attach" for the Sparsity object.
+  This is semantically better and describes better the meaning.
+
+modified:
+  Src/basic_type.inc
+  Src/class_Sparsity.F90
+  Src/create_Sparsity_SC.F90
+  Src/create_Sparsity_Union.F90
+  Src/m_ts_Sparsity2TriMat.F90
+  Src/m_ts_new_tri.F90
+  Src/m_ts_sparse.F90
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_sparse_helper_new.F90
+  Src/m_ts_tri.F90
+  Src/m_ts_weight.F90
+  Src/state_init.F
+
+----------------------------------------------------
 June 7, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-45
 Fully implemented "initialized" and "same" for the class_ objects
 

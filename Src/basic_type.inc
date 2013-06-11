@@ -13,17 +13,12 @@
 
   public  :: TYPE_NAME
   public  :: init, delete, assignment(=), refcount, id
+  public  :: name
   public  :: same ! same %data address (i.e. if: this1 = this2)
   public  :: initialized ! is allocated
-  public  :: operator(//)
 
   interface assignment(=)
     module procedure assign_
-  end interface
-
-  interface operator(//)
-    module procedure cat_char_name_
-    module procedure cat_name_char_
   end interface
 
   interface init
@@ -40,6 +35,10 @@
 
   interface id
     module procedure id_
+  end interface
+
+  interface name
+    module procedure name_
   end interface
 
   interface initialized
@@ -138,7 +137,6 @@ CONTAINS
     ! If they are not both initialized they can not be the same
     same = initialized(this1) .and. initialized(this2)
     if ( .not. same ) return
-    ! TODO check that this actually works
     same = associated(this1%data, target=this2%data)
   end function same_
 
@@ -154,19 +152,11 @@ CONTAINS
    str = this%data%id
   end function id_
 
-  function cat_char_name_(char,this) result(str)
-   character(len=*), intent(in) :: char
-   type(TYPE_NAME), intent(in)  :: this
-   character(len=len_trim(char)+len_trim(this%data%name)) :: str
-   str = trim(char)//trim(this%data%name)
-  end function cat_char_name_
-
-  function cat_name_char_(this,char) result(str)
-   type(TYPE_NAME), intent(in)       :: this
-   character(len=*), intent(in)      :: char
-   character(len=len_trim(char)+len_trim(this%data%name)) :: str
-   str = trim(this%data%name)//trim(char)
-  end function cat_name_char_
+  function name_(this) result(str)
+   type(TYPE_NAME), intent(in) :: this
+   character(len=len_trim(this%data%name)) :: str
+   str = trim(this%data%name)
+  end function name_
 
   subroutine tag_new_object(this)
    type(TYPE_NAME), intent(inout)  :: this

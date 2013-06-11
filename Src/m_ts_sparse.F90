@@ -276,7 +276,7 @@ contains
     ! Initialize
     call delete(ts_sp)
 
-    call retrieve(s_sp,nrows=no_local,nrows_g=no_u)
+    call attach(s_sp,nrows=no_local,nrows_g=no_u)
 
     ! Create the (local) SIESTA-UC sparsity...
 #ifdef MPI
@@ -289,7 +289,7 @@ contains
 
 #ifdef MPI
     ! point to the local (SIESTA-UC) sparsity pattern arrays
-    call retrieve(sp_global,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
+    call attach(sp_global,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
     call glob_sparse_numh(no_local,no_u,l_ncol,l_ncolg)
     call glob_sparse_listhptr(no_u,l_ncolg,l_ptrg)
     call glob_sparse_listh(no_local,no_u, uc_n_nzs, &
@@ -323,7 +323,7 @@ contains
     ! only to the Transiesta sparsity pattern
 
     ! Immediately point the global arrays to their respective parts
-    call retrieve(sp_uc,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+    call attach(sp_uc,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nnzs=n_nzsg)
 
     ! allocate space for the MASK to create the TranSIESTA GLOBAL region
@@ -413,7 +413,7 @@ contains
     type(Sparsity), intent(inout) :: sp
     integer :: io,jo,j,ind
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-    call retrieve(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
+    call attach(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
 
     write(u,'(i5)') nrows(sp)
 
@@ -493,7 +493,7 @@ contains
     ! Initialize the tsup
     call delete(tsup_sp)
 
-    call retrieve(s_sp,nrows=no_local,nrows_g=no_u,nnzs=n_nzs)
+    call attach(s_sp,nrows=no_local,nrows_g=no_u,nnzs=n_nzs)
 
     ! allocate space for the MASK to create the TranSIESTA UPDATE region
     allocate(lup_DM(n_nzs))
@@ -506,7 +506,7 @@ contains
     ! Retrieve the ending orbital of the LC region
     no_u_LC = no_u_LCR - no_R
 
-    call retrieve(s_sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
+    call attach(s_sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
 
     ! We do not need to check the buffer regions...
     ! We know they will do NOTHING! :)
@@ -637,9 +637,9 @@ contains
 
     integer :: no_l, io, j, sub_ind, ind
 
-    call retrieve(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+    call attach(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=no_l)
-    call retrieve(sub_sp,n_col=sub_ncol,list_ptr=sub_ptr,list_col=sub_col, &
+    call attach(sub_sp,n_col=sub_ncol,list_ptr=sub_ptr,list_col=sub_col, &
          nrows=io)
     if ( io /= no_l ) call die('Could not do index matching due to &
          &inconsistent sparsity patterns')

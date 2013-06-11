@@ -94,11 +94,11 @@ contains
     end if
 
     ! Create all the local sparsity super-cell
-    call retrieve(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
+    call attach(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
 
     ! obtain the full sparsity unit-cell
     sp_k   => spar    (SpArrH)
-    call retrieve(sp_k, n_col=k_ncol,list_ptr=k_ptr,list_col=k_col)
+    call attach(sp_k, n_col=k_ncol,list_ptr=k_ptr,list_col=k_col)
 
     ! The boundary at the right buffer
     no_max = no_u - no_BufR
@@ -206,7 +206,7 @@ contains
     integer :: nr, io, ind, jo, rin, rind
 
     s    => spar(SpArrH)
-    call retrieve(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+    call attach(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows_g=nr)
 
     zH     => val(SpArrH)
@@ -316,11 +316,11 @@ contains
     end if
 
     ! Create all the local sparsity super-cell
-    call retrieve(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
+    call attach(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
 
     ! obtain the full sparsity unit-cell
     sp_G   => spar(SpArrH)
-    call retrieve(sp_G, n_col=k_ncol,list_ptr=k_ptr,list_col=k_col)
+    call attach(sp_G, n_col=k_ncol,list_ptr=k_ptr,list_col=k_col)
     
     ! initialize to 0
     call init_val(SpArrH)
@@ -421,7 +421,7 @@ contains
     integer :: nr, io, ind, jo, rin, rind
     
     s    => spar(SpArrH)
-    call retrieve(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+    call attach(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows_g=nr)
     dH     => val(SpArrH)
     dS     => val(SpArrS)
@@ -535,9 +535,9 @@ contains
     integer, pointer :: lup_ncol(:), lup_ptr(:), lup_col(:)
     integer :: lnr, lio, lind, io, jo, ind, nr
 
-    call retrieve(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+    call attach(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=lnr,nrows_g=nr)
-    call retrieve(up_sp, n_col=lup_ncol,list_ptr=lup_ptr,list_col=lup_col)
+    call attach(up_sp, n_col=lup_ncol,list_ptr=lup_ptr,list_col=lup_col)
      
     ! Remember that this is a sparsity pattern which contains
     ! a subset of the SIESTA pattern.
@@ -603,10 +603,10 @@ contains
     real(dp), pointer :: dD(:), dE(:)
     integer :: lnr, lio, lind, io, ind, nr, ljo
 
-    call retrieve(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+    call attach(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=lnr,nrows_g=nr)
     s => spar(spDM)
-    call retrieve(s, n_col=lup_ncol,list_ptr=lup_ptr,list_col=lup_col)
+    call attach(s, n_col=lup_ncol,list_ptr=lup_ptr,list_col=lup_col)
     dD     => val(spDM)
     dE     => val(spEDM)
      
@@ -680,10 +680,10 @@ contains
     integer :: lio, io, jo, ind, nr
     integer :: lnr, lind, rin, rind
 
-    call retrieve(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+    call attach(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=lnr,nrows_g=nr)
     s => spar(spDM)
-    call retrieve(s, n_col=lup_ncol,list_ptr=lup_ptr,list_col=lup_col)
+    call attach(s, n_col=lup_ncol,list_ptr=lup_ptr,list_col=lup_col)
     zD     => val(spDM)
     zE     => val(spEDM)
      
@@ -806,7 +806,7 @@ contains
     ! TODO Enforce that sparsity is the same
     ! (however, we know that they are the same.
     sp => spar(SpArrDML)
-    call retrieve(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+    call attach(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=nr)
     ! Obtain the values in the arrays...
     DML    => val(SpArrDML)
@@ -939,7 +939,7 @@ contains
     ! TODO Enforce that sparsity is the same
     ! (however, we know that they are the same.
     sp => spar(SpArrDML)
-    call retrieve(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+    call attach(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=nr)
     ! Obtain the values in the arrays...
     DML    => val(SpArrDML)
@@ -1130,7 +1130,7 @@ contains
     no_R = TotUsedOrbs(ElRight)
 
     ! Retrieve information about the sparsity pattern
-    call retrieve(sparse_pattern, &
+    call attach(sparse_pattern, &
          n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=no_lo,nrows_g=no_u)
 

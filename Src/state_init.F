@@ -80,7 +80,7 @@
 
 #endif
 
-      character(len=256)            :: name
+      character(len=256)            :: oname
 
       type(dSpData2D)        :: DMnew
 
@@ -255,16 +255,16 @@
          call setup_ordern_indexes(no_l, no_u, Nodes)
       endif
 
-      write(name,"(a,i0)") "sparsity for geom step ", istep
+      write(oname,"(a,i0)") "sparsity for geom step ", istep
       call newSparsity(sparse_pattern,no_l,no_u,
-     $                 maxnh,numh,listhptr,listh,name)
+     $                 maxnh,numh,listhptr,listh,oname)
 
-      write(name,"(a,i0)") "H_vkb in state_init at geom step ", istep
-      call newdSpData2D(sparse_pattern,1,block_dist,H_vkb,name=name)
+      write(oname,"(a,i0)") "H_vkb in state_init at geom step ", istep
+      call newdSpData2D(sparse_pattern,1,block_dist,H_vkb,name=oname)
       if (ionode) call print_type(H_vkb)
 
-      write(name,"(a,i0)") "EDM in state_init at geom step ", istep
-      call newdSpData2D(sparse_pattern,nspin,block_dist,EDM,name=name)
+      write(oname,"(a,i0)") "EDM in state_init at geom step ", istep
+      call newdSpData2D(sparse_pattern,nspin,block_dist,EDM,name=oname)
       if (ionode) call print_type(EDM)
       Escf => val(EDM)
 

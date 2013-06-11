@@ -224,7 +224,7 @@ contains
     end do
 
     call newSparsity(out,n_rows,n_rows_g,n_nzs,num,listptr,list, &
-         name='(Dense-Union region of: '//in//')', &
+         name='(Dense-Union region of: '//name(in)//')', &
          ncols=ncols(in),ncols_g=ncols_g(in))
 
     ! We need to deallocate the arrays used, remember, that they

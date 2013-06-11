@@ -115,7 +115,7 @@ contains
     ! TODO Enforce that sparsity is the same
     ! (however, we know that they are the same)
     sp => spar(spDML)
-    call retrieve(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+    call attach(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=nr)
 
     ! Obtain the values in the arrays...

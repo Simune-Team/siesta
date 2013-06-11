@@ -160,17 +160,17 @@ contains
     ! Thus we simply check for existence of options
     if ( present(MASK) ) then
        call newSparsity(out,n_rows,n_rows_g,n_nzs,num,listptr,list, &
-            name='(MASK-ed region of: '//in//')', &
+            name='(MASK-ed region of: '//name(in)//')', &
             ncols=ncols(in),ncols_g=ncols_g(in))
     else if ( present(TM) ) then
        write(cTM,'(i2,'','',i2,'','',i2)') TM(1),TM(2),TM(3)
        call newSparsity(out,n_rows,n_rows_g,n_nzs,num,listptr,list, &
-            name='(TM region ['//trim(cTM)//'] of: '//in//')', &
+            name='(TM region ['//trim(cTM)//'] of: '//name(in)//')', &
             ncols=ncols(in),ncols_g=nrows_g(in))
     else if ( present(UC) ) then
        if ( UC ) then
           call newSparsity(out,n_rows,n_rows_g,n_nzs,num,listptr,list, &
-               name='(UC sparsity of: '//in//')', &
+               name='(UC sparsity of: '//name(in)//')', &
                ncols=ncols(in),ncols_g=nrows_g(in))
        else
           ! THIS SHOULD NEVER HAPPEN (the dependency check

@@ -1105,7 +1105,7 @@ contains
     integer :: io, ind, nr, iu, idx
 
     s      => spar(DM)
-    call retrieve(s, &
+    call attach(s, &
          n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=nr)
     zD     => val(DM)
@@ -1155,7 +1155,7 @@ contains
     integer :: io, ind, nr, iu, idx
 
     s      => spar(DM)
-    call retrieve(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+    call attach(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=nr)
     dD     => val(DM)
     dE     => val(EDM)
@@ -1215,7 +1215,7 @@ contains
     integer :: io, iu, ind, idx
 
     s      => spar    (spH)
-    call retrieve(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
+    call attach(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
     dH     => val(spH)
     dS     => val(spS)
     Gfinv  => val(Gfinv_tri)
@@ -1271,7 +1271,7 @@ contains
     integer :: io, iu,ind, idx
     
     s      => spar    (spH)
-    call retrieve(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
+    call attach(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
     zH     => val(spH)
     zS     => val(spS)
     Gfinv  => val(Gfinv_tri)

@@ -426,7 +426,7 @@ contains
     ! The result
     integer :: max_col, ptr, nr, ts_max_col
     integer, pointer :: l_col(:)
-    call retrieve(sp,list_col=l_col,nrows_g=nr)
+    call attach(sp,list_col=l_col,nrows_g=nr)
     ts_max_col = nr - no_BufL - no_BufR
     ! We have to move past the buffer orbitals
     ptr     =  list_ptr(sp,row+no_BufL)
@@ -448,7 +448,7 @@ contains
     ! The result
     integer :: min_col, ptr, nr, ts_max_col
     integer, pointer :: l_col(:)
-    call retrieve(sp,list_col=l_col,nrows_g=nr)
+    call attach(sp,list_col=l_col,nrows_g=nr)
     ts_max_col = nr - no_BufL - no_BufR
     ! We have to move past the buffer orbitals
     ptr     =  list_ptr(sp,row+no_BufL)

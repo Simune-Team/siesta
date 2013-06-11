@@ -157,13 +157,13 @@ contains
     complex(dp) :: ph
 
     l_s  => spar(spDM)
-    call retrieve(l_s ,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+    call attach(l_s ,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=lnr,nrows_g=nr)
     dD   => val(spDM)
     dE   => val(spEDM)
 
     up_s => spar(spDMu)
-    call retrieve(up_s,n_col=up_ncol,list_ptr=up_ptr,list_col=up_col)
+    call attach(up_s,n_col=up_ncol,list_ptr=up_ptr,list_col=up_col)
     zDu  => val(spDMu)
     zEu  => val(spEDMu)
 
@@ -319,13 +319,13 @@ contains
     integer :: rind
 
     l_s  => spar(spDM)
-    call retrieve(l_s ,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+    call attach(l_s ,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=lnr,nrows_g=nr)
     dD   => val(spDM)
     dE   => val(spEDM)
 
     up_s => spar(spDMu)
-    call retrieve(up_s,n_col=up_ncol,list_ptr=up_ptr,list_col=up_col)
+    call attach(up_s,n_col=up_ncol,list_ptr=up_ptr,list_col=up_col)
     dDu  => val(spDMu)
     dEu  => val(spEDMu)
 
@@ -391,10 +391,10 @@ contains
     real(dp), pointer :: dD(:), dE(:)
     integer :: lnr, uind, io, ind, nr, jo
 
-    call retrieve(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+    call attach(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=lnr,nrows_g=nr)
     s => spar(spDM)
-    call retrieve(s, n_col=lup_ncol,list_ptr=lup_ptr,list_col=lup_col)
+    call attach(s, n_col=lup_ncol,list_ptr=lup_ptr,list_col=lup_col)
     dD => val(spDM)
     dE => val(spEDM)
 
@@ -492,10 +492,10 @@ contains
     real(dp), pointer :: dD(:), dE(:)
     integer :: lnr, uind, io, ind, nr, jo
 
-    call retrieve(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+    call attach(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=lnr,nrows_g=nr)
     s => spar(spDM)
-    call retrieve(s, n_col=lup_ncol,list_ptr=lup_ptr,list_col=lup_col)
+    call attach(s, n_col=lup_ncol,list_ptr=lup_ptr,list_col=lup_col)
     dD     => val(spDM)
     dE     => val(spEDM)
 
@@ -563,13 +563,13 @@ contains
     integer :: lnr, lio, lind, io, ind, nr, ljo
 
     l_s => spar(spDM)
-    call retrieve(l_s ,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+    call attach(l_s ,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=lnr,nrows_g=nr)
     dD     => val(spDM)
     dE     => val(spEDM)
 
     up_s => spar(spDMu)
-    call retrieve(up_s,n_col=up_ncol,list_ptr=up_ptr,list_col=up_col)
+    call attach(up_s,n_col=up_ncol,list_ptr=up_ptr,list_col=up_col)
     dDu    => val(spDMu)
     dEu    => val(spEDMu)
      
@@ -659,13 +659,13 @@ contains
     complex(dp) :: ph
 
     l_s => spar(spDM)
-    call retrieve(l_s ,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+    call attach(l_s ,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=lnr,nrows_g=nr)
     dD     => val(spDM)
     dE     => val(spEDM)
 
     up_s => spar(spDMu)
-    call retrieve(up_s,n_col=up_ncol,list_ptr=up_ptr,list_col=up_col)
+    call attach(up_s,n_col=up_ncol,list_ptr=up_ptr,list_col=up_col)
     zDu    => val(spDMu)
     zEu    => val(spEDMu)
 
@@ -818,7 +818,7 @@ contains
     ! TODO Enforce that sparsity is the same
     ! (however, we know that they are the same)
     sp => spar(spDML)
-    call retrieve(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+    call attach(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=nr)
 
     ! Obtain the values in the arrays...
