@@ -83,7 +83,7 @@ MODULE siesta_options
   logical :: partial_charges_at_every_scf_step
 
   logical :: monitor_forces_in_scf ! Compute forces and stresses at every step
-
+  logical :: minim_calc_eigenvalues ! Use diagonalization at the end of each MD step to find eigenvalues for OMM
 
   integer :: ia1           ! Atom index
   integer :: ia2           ! Atom index
@@ -105,6 +105,8 @@ MODULE siesta_options
   integer :: pmax          
   integer :: neigwanted    ! Wanted number of eigenstates (per k point)
   integer :: level          ! Option for allocation report level of detail
+  integer :: call_diagon_default    ! Default number of SCF steps for which to use diagonalization before OMM
+  integer :: call_diagon_first_step ! Number of SCF steps for which to use diagonalization before OMM (first MD step)
 
   real(dp) :: beta          ! Inverse temperature for Chebishev expansion.
   real(dp) :: bulkm         ! Bulk modulus
@@ -177,6 +179,7 @@ MODULE siesta_options
   integer,  parameter :: SOLVE_DIAGON = 0
   integer,  parameter :: SOLVE_ORDERN = 1
   integer,  parameter :: SOLVE_TRANSI = 2
+  integer,  parameter :: SOLVE_MINIM  = 3
 
       CONTAINS
 
@@ -210,6 +213,7 @@ MODULE siesta_options
 ! integer isolve           : Method of solution.  0   = Diagonalization
 !                                                 1   = Order-N
 !                                                 2   = Transiesta
+!                                                 3   = OMM
 ! real*8 temp              : Temperature for Fermi smearing (Ry)
 ! logical fixspin          : Fix the spin of the system?
 ! real*8  ts               : Total spin of the system
@@ -735,6 +739,16 @@ MODULE siesta_options
         call die( 'redata: You chose the Order-N solution option '// &
                   'together with nspin>2.  This is not allowed in '//&
                   'this version of siesta' )
+      endif
+    else if (leqi(method,'omm')) then
+      isolve = SOLVE_MINIM
+      DaC    = .false.
+      call_diagon_default=fdf_integer('OMM.Diagon',0)
+      call_diagon_first_step=fdf_integer('OMM.DiagonFirstStep',call_diagon_default)
+      minim_calc_eigenvalues=fdf_boolean('OMM.Eigenvalues',.false.)
+      if (ionode) then
+        write(6,'(a,4x,a)') 'redata: Method of Calculation            = ', &
+                            'Orbital Minimization Method'
       endif
 #ifdef TRANSIESTA
 ! TSS Begin

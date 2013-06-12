@@ -6,6 +6,201 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2013-06-10  14:20:00 GMT                                     trunk-438
+Bug fixes in constraints routine
+
+* Make sure that the atomic indices are in the correct range.
+
+* Add code to guarantee the enlargement of an array in the
+general case.
+
+(Thanks to Nick P. Andersen)
+
+modified:
+  Src/fixed.F
+
+-----------------------------------------------------------------------
+2013-06-10  14:10:00 GMT                                     trunk-437
+New option for KB projector generation (J. Junquera)
+
+With the option
+
+KB.New.Reference.Orbitals  T
+
+the routine to generate KB projectors will use slightly different
+parameters for the construction of the reference orbitals involved
+(Rmax=60 bohr both for integration and normalization).
+
+modified:
+  Docs/siesta.tex
+  Src/atom.F
+  Src/atom_options.F90
+
+-----------------------------------------------------------------------
+2013-06-05  13:00:00 GMT                                     trunk-436
+Charge confinement and filteret basis generation options
+
+Two experimental features related to basis-set generation:
+
+* Charge confinement feature for basis set generation
+(Emilio Artacho)
+
+Present soft confinement produces bad polarisation orbitals if the
+original atomic orbitals are unbound or very wide (automatic
+polarisation still gives too wide orbitals).
+
+A Q/r potential with Yukawa decay can now be added to the atomic and
+soft-confinement potentials. Soft-confinement sshould now be used only
+for the soft tail cutting with r_in ~ 0.9 r_c.
+
+See the manual for more details.
+
+* New 'filteret' basis-set scheme.  
+(Julian Gale)
+
+New options to use the filterets (functions appearing in the filtering
+mechanism proposed by Anglada and Soler) as a systematic basis
+set. The size of the basis set is controlled by the filter cut-off for
+the orbitals.  
+
+See the manual for more details.
+
+(Thanks to Tristana Sondon for help in merging)
+
+added:
+  Tests/Reference/chargeconf-h2o.out
+  Tests/Reference/h2o_filteret_basis.out
+  Tests/chargeconf-h2o/
+  Tests/chargeconf-h2o/chargeconf-h2o.fdf
+  Tests/chargeconf-h2o/chargeconf-h2o.pseudos
+  Tests/chargeconf-h2o/makefile
+  Tests/h2o_filteret_basis/
+  Tests/h2o_filteret_basis/h2o_filteret_basis.fdf
+  Tests/h2o_filteret_basis/h2o_filteret_basis.pseudos
+  Tests/h2o_filteret_basis/makefile
+modified:
+  Docs/siesta.tex
+  Src/atm_transfer.f
+  Src/atm_types.f
+  Src/atmparams.f
+  Src/atom.F
+  Src/basis_specs.f
+  Src/basis_types.f
+  Src/initatom.f
+  Src/m_filter.f90
+  Src/old_atmfuncs.f
+
+-----------------------------------------------------------------------
+2013-06-05  12:40:00 GMT                                     trunk-435
+Compilation fixes for tbtrans. Cosmetic changes
+
+The old symbol "DAT_double" was still being used in one of the
+routines of the new tbtrans program (in Util/TBTrans_rep).  References
+related to new timer_tree module were missing in both versions of
+tbtrans.
+
+In parallel operation, the "bye" routine now produces output only
+in the master node.
+
+In runs which are requested to end after the initial processing of
+the structure, XMOL output is produced if requested.
+
+modified:
+  Src/siesta_init.F
+  Src/sys.F
+  Util/TBTrans/Makefile
+  Util/TBTrans_rep/Makefile
+  Util/TBTrans_rep/m_tbt_iotshs.F90
+  Util/TBTrans_rep/m_tbt_read_tshs.F90
+
+-----------------------------------------------------------------------
+2013-03-31  19:00:00 GMT                                     trunk-434
+Experimental timer with call-tree awareness
+
+A new timer, based on wall time in the master node, and keeping track
+of the tree-structure of the timed sections, can be enabled by setting
+
+UseTreeTimer T
+
+in the fdf file.
+
+It works in tandem with the default timer, and it currently produces a
+report at the end of the output file in which the parent-child
+relationships are represented by simple indentation.
+
+Some new timing calls have been added in the code.
+
+added:
+  Src/die.F
+  Src/timer_tree.f90
+modified:
+  Src/Makefile
+  Src/SiestaXC/makefile
+  Src/fft.F
+  Src/m_hsx.F
+  Src/m_iodm.F
+  Src/m_timer.F90
+  Src/m_walltime.f90
+  Src/matel.f
+  Src/molecularmechanics.F90
+  Src/setup_H0.F
+  Src/setup_hamiltonian.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/timer.F90
+
+
+-----------------------------------------------------------------------
+2013-03-26  12:35:00 GMT                                      trunk-433
+Implemented the non-O(N) version of the Ordejon-Mauri functional
+
+(Work by Fabiano Corsetti)
+
+* This re-implementation of Ordejon-Mauri will be referred to as the Orbital
+  Minimization Method (OMM); it is now a third available option for the keyword
+  SolutionMethod, alongside diagon and OrderN.
+* The OMM is not an O(N) functional at present, since no localization is imposed
+  on the trial orbitals; in future, it can be extended to include this option
+* The functional is contained in two new modules: m_dminim (double
+  precision routines) and m_zminim (double complex routines)
+* The modules works in serial with LAPACK, or in parallel with MPI and
+  ScaLAPACK
+* The double precision module (for Gamma point calculations) has the option of
+  using sparse matrix-dense matrix multiplications, with custom-coded algorithms
+  that interface between SIESTA's native sparse matrix scheme and (Sca)LAPACK's
+  dense matrix scheme
+* The SIESTA manual has been updated to include a list of all OMM-related
+  keywords, with detailed explanations and notes to the user
+
+added:
+  Docs/CHANGES.minim
+  Src/m_dminim.F90
+  Src/m_zminim.F90
+  Tests/OMM_h2o/
+  Tests/OMM_h2o/Makefile
+  Tests/OMM_h2o/OMM_h2o.fdf
+  Tests/OMM_h2o/OMM_h2o.pseudos
+  Tests/OMM_si/
+  Tests/OMM_si/Makefile
+  Tests/OMM_si/OMM_si.fdf
+  Tests/OMM_si/OMM_si.pseudos
+  Tests/Reference-xml/OMM_h2o.xml
+  Tests/Reference-xml/OMM_si.xml
+  Tests/Reference/OMM_h2o.out
+  Tests/Reference/OMM_si.out
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/compute_dm.F
+  Src/local_DOS.F
+  Src/post_scf_work.F
+  Src/projected_DOS.F
+  Src/siesta_analysis.F
+  Src/siesta_options.F90
+  Src/write_subs.F
+  Tests/Makefile
+
+-----------------------------------------------------------------------
 2013-01-24  14:30:00 GMT                                      trunk-432
 Export some MPI symbols explicitly. Remove obsolete symbols
 

@@ -12,6 +12,7 @@
      &                              estimate_pol_kpoints
       use m_struct_init,      only: struct_init
       use siesta_options
+      use timer_options,      only: use_tree_timer
       use sparse_matrices
       use siesta_geom
       use atomlist,           only: no_u, rmaxkb, amass, lasto, qtot,
@@ -120,10 +121,6 @@
          call wallclock('Start of run')
       endif
 
-!     Start time counter
-      call timer( 'siesta', 0 )
-      call timer( 'siesta', 1 )
-      call timer( 'Setup', 1 )
 
 !     Nullify arrays
       nullify(Haux,Saux,psi)
@@ -161,6 +158,16 @@
       threshold = fdf_get('timer_report_threshold', 0._dp)
       call timer_report( file=trim(slabel)//'.times', 
      .                   threshold=threshold )
+      ! This variable lives in siesta_options
+      use_tree_timer = fdf_get('UseTreeTimer', .false.)
+
+!     Start time counter
+!     Note new placement of this first use, so that
+!     initialization is done after the setup of relevant variables
+
+      call timer( 'siesta', 0 )
+      call timer( 'siesta', 1 )
+      call timer( 'Setup', 1 )
 
 ! Set allocation report level .........................................
 ! variables level and threshold imported from module siesta_options
@@ -199,13 +206,16 @@
       struct_only = fdf_get( 'Output-Structure-Only', .false. )
       if (IONode) then
          call write_struct( ucell, na_u, isa, iza, xa )
+         if (fdf_boolean('WriteCoorXmol',.false.)) then
+            call coxmol(iza, xa, na_u)
+         endif
          if (lUseZmatrix) then
             call write_canonical_ucell_and_Zmatrix(
      &                        filename="OUT.UCELL.ZMATRIX.INITIAL")
          endif
       endif
       if (struct_only) then
-         call bye( 'End of structure processing' )
+         call bye('End of structure processing')
       endif
       
 !     End of Initial Structure Processing

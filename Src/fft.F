@@ -122,11 +122,7 @@ C
       save OldMesh
       data OldMesh/0,0,0/
 
-C
-C  Start time counter
-C
-      call timer_start( 'fft' )
-
+      call timer( 'fft', 1 )
 C
 C  Set mesh size variables
 C
@@ -291,10 +287,7 @@ C
         enddo
       endif
 
-C
-C  Stop time counter
-C
-      call timer_stop( 'fft' )
+      call timer( 'fft', 2 )
 
       return
       end subroutine fft
