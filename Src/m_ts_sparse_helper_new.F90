@@ -53,7 +53,7 @@
 !               k(2) * xij(2,pnt(lind)) + &
 !               k(3) * xij(3,pnt(lind))
 !
-!          ph = fact * cdexp(dcmplx(0._dp,-1._dp)*kx)
+!          ph = fact * cdexp(dcmplx(0._dp,-kx))
 !
 !          ! The integration is this:
 !          ! \rho = e^{-i.k.R} [ \int (Gf^R-Gf^A)/2 dE + \int Gf^R\Gamma Gf^A dE ]
@@ -156,6 +156,8 @@ contains
     real(dp) :: kx
     complex(dp) :: ph
 
+    if ( (.not. initialized(spDM)) .or. (.not. initialized(spDMu)) ) return
+
     l_s  => spar(spDM)
     call attach(l_s ,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=lnr,nrows_g=nr)
@@ -208,7 +210,7 @@ contains
                   k(2) * xij(2,pnt(lind)) + &
                   k(3) * xij(3,pnt(lind))
 
-             ph = cdexp(dcmplx(0._dp,-1._dp)*kx)
+             ph = cdexp(dcmplx(0._dp,-kx))
 
              ! The integration is this:
              ! \rho = e^{-i.k.R} \int Gf^R\Gamma Gf^A dE
@@ -242,7 +244,7 @@ contains
                   k(2) * xij(2,pnt(lind)) + &
                   k(3) * xij(3,pnt(lind))
 
-             ph = cdexp(dcmplx(0._dp,-1._dp)*kx)
+             ph = cdexp(dcmplx(0._dp,-kx))
 
              ! The integration is this:
              ! \rho = e^{-i.k.R} \int Gf^R\Gamma Gf^A dE
@@ -272,7 +274,7 @@ contains
                   k(2) * xij(2,pnt(lind)) + &
                   k(3) * xij(3,pnt(lind))
 
-             ph = 0.5_dp * cdexp(dcmplx(0._dp,-1._dp)*kx)
+             ph = 0.5_dp * cdexp(dcmplx(0._dp,-kx))
 
              rin  = up_ptr(jo)
              rind = rin + SFIND(up_col(rin+1:rin+up_ncol(jo)),io)
@@ -317,6 +319,8 @@ contains
     real(dp), pointer :: dDu(:), dEu(:)
     integer :: lnr, lio, lind, io, ind, nr, jo
     integer :: rind
+
+    if ( (.not. initialized(spDM)) .or. (.not. initialized(spDMu)) ) return
 
     l_s  => spar(spDM)
     call attach(l_s ,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
@@ -466,6 +470,36 @@ contains
 
   end subroutine update_DM
 
+  subroutine select_dE(cNEn,c, iPE, nspin, kw, Z, W, ZW)
+    use precision, only: dp
+    use units, only: Pi
+    use parallel, only: Node, Nodes
+    use m_ts_cctype
+    integer, intent(in) :: cNEn
+    type(ts_ccontour), intent(in) :: c(cNEn)
+    integer, intent(in) :: iPE, nspin
+    real(dp),intent(in) :: kw
+    complex(dp), intent(out) :: Z, W, ZW
+
+    integer :: iE
+
+    ! obtain a valid energy point (truncate at NEn)
+    iE = min(iPE,cNEn)
+
+    ! save the current weight of the point
+    ! This is where we include the factor-of-two for spin and
+    ! and the (1/Pi) from DM = Im[G]/Pi
+    ! Furthermore we include the weight of the k-point
+    W = 1._dp/Pi*c(iE)%w * kw
+    if ( nspin == 1 ) W = W * 2._dp
+
+    ! save the contour energy point
+    Z = c(iE)%c
+    ! Save Z*W, used for E-arrays
+    ZW = Z*W
+
+  end subroutine select_dE
+    
 
 #ifdef OLD
 
@@ -721,7 +755,7 @@ contains
                k(2) * xij(2,pnt(lind)) + &
                k(3) * xij(3,pnt(lind))
 
-          ph = fact * cdexp(dcmplx(0._dp,-1._dp)*kx)
+          ph = fact * cdexp(dcmplx(0._dp,-kx))
 
           ! The integration is this:
           ! \rho = e^{-i.k.R} [ \int (Gf^R-Gf^A)/2 dE + \int Gf^R\Gamma Gf^A dE ]

@@ -513,12 +513,12 @@ contains
 #endif
 
           ! Read in the left electrode
-          call read_next_GS(uGFL, NEReqs, &
+          call read_next_GS_LR(uGFL, NEReqs, &
                ikpt,no_L_HS,nqL, HAAL, SAAL, &
                GAAL, Z, nzwork, zwork)
 
           ! Read in the right electrode
-          call read_next_GS(uGFR, NEReqs, &
+          call read_next_GS_LR(uGFR, NEReqs, &
                ikpt,no_R_HS,nqR, HAAR, SAAR, &
                GAAR, Z, nzwork, zwork)
 

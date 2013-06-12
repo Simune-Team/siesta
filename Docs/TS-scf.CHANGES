@@ -1,4 +1,53 @@
 ----------------------------------------------------
+June 12, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-47
+Optimizations and little clean-up, finished weight
+
+* Instead of doing dcmplx(0,1)*<x> we can do dcmplx(0,<x>)
+  This has been implemented in m_hs_matrix and elsewhere.
+
+* Added a SAVE statement to a pulay variable (not necessary, but
+  for clarity)
+
+* Generalized the UC_expansion function for the self-energies in 
+  transiesta. This will leverage a triple if-statement in the
+  loop construct.
+
+* When reading in the next Surface G we now read in both from
+  one subroutine. I.e. cleaner interface.
+
+* Prepared surface Green's function calculation to use pointers
+  to a work array. Should speed it up a little bit (leverages
+  a lot of de/allocates.
+  Also cleaned the loop construct for checking convergence.
+
+* Fully implemented a triple weight function.
+  Fixed the communication so that it displays the correct integration
+  estimate orbitals.
+
+* Fixed iscf counter when performing transiesta cycles
+
+* Added fdf_deprecated for TS.MixH (instead use MixHamiltonian)
+
+modified:
+  Src/Makefile
+  Src/class_SpData1D.T90
+  Src/class_SpData2D.T90
+  Src/m_hs_matrix.f90
+  Src/m_pulay.F90
+  Src/m_trimat_invert.F90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_mem.F90
+  Src/m_ts_new_tri.F90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_sparse_helper_new.F90
+  Src/m_ts_tri.F90
+  Src/m_ts_weight.F90
+  Src/siesta_forces.F
+  Src/siesta_options.F90
+
+----------------------------------------------------
 June 11, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-46
 Removed the concatenation feature of the objects, added name function
 

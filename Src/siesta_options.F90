@@ -484,6 +484,7 @@ MODULE siesta_options
 
     mixH = fdf_get('MixHamiltonian',mixH_def)
     mixH = fdf_get('TS.MixH',mixH)   ! Catch old-style keyword
+    call fdf_deprecated('TS.MixH','MixHamiltonian') ! Prepare for obsoletion
 
     if (ionode) then
       write(6,1) 'redata: Mix Hamiltonian instead of DM    = ', mixH

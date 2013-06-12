@@ -151,7 +151,7 @@ contains
 !               call die('Could not find k-point index')
           if ( ind_k <= k_ptr(io) ) cycle
 
-          ph = cdexp(dcmplx(0._dp,1._dp) * ( &
+          ph = cdexp(dcmplx(0._dp, &
                k(1) * xij(1,ind) + &
                k(2) * xij(2,ind) + &
                k(3) * xij(3,ind)) )
@@ -205,12 +205,11 @@ contains
     complex(dp), pointer :: zH(:), zS(:)
     integer :: nr, io, ind, jo, rin, rind
 
-    s    => spar(SpArrH)
+    s  => spar(SpArrH)
     call attach(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows_g=nr)
-
-    zH     => val(SpArrH)
-    zS     => val(SpArrS)
+    zH => val(SpArrH)
+    zS => val(SpArrS)
 
     ! This loop is across the local rows...
     do io = 1 , nr
@@ -515,7 +514,48 @@ contains
   end subroutine AllReduce_dSpData1D
 #endif
 
-   
+  subroutine d_DM_EDM_Reduce_Shift(Ef,spDM, spEDM, nwork, work)
+    use class_dSpData1D
+    real(dp), intent(in) :: Ef
+    type(dSpData1D), intent(inout) :: spDM, spEDM
+    integer, intent(in) :: nwork
+    real(dp), intent(inout) :: work(nwork)
+    integer :: n
+    real(dp), pointer :: DM(:), EDM(:)
+
+#ifdef MPI
+    call AllReduce_dSpData1D(spDM,nwork,work)
+    call AllReduce_dSpData1D(spEDM,nwork,work)
+#endif
+    n   = nnzs(spDM)
+    DM  => val(spDM)
+    EDM => val(spEDM)
+    call daxpy(n,Ef,DM,1,EDM,1)
+
+  end subroutine d_DM_EDM_Reduce_Shift
+
+  subroutine z_DM_EDM_Reduce_Shift(Ef,spDM, spEDM, nwork, work)
+    use class_zSpData1D
+    real(dp), intent(in) :: Ef
+    type(zSpData1D), intent(inout) :: spDM, spEDM
+    integer, intent(in) :: nwork
+    complex(dp), intent(inout) :: work(nwork)
+    integer :: n
+    complex(dp) :: zEf
+    complex(dp), pointer :: DM(:), EDM(:)
+
+#ifdef MPI
+    call AllReduce_zSpData1D(spDM,nwork,work)
+    call AllReduce_zSpData1D(spEDM,nwork,work)
+#endif
+    zEf = cmplx(Ef,0._dp)
+    n   = nnzs(spDM)
+    DM  => val(spDM)
+    EDM => val(spEDM)
+    call zaxpy(n,zEf,DM,1,EDM,1)
+
+  end subroutine z_DM_EDM_Reduce_Shift
+    
   subroutine init_DM(dit,sp,maxn,DM,EDM, up_sp)
           ! The DM and EDM equivalent matrices
     use class_OrbitalDistribution
@@ -676,7 +716,8 @@ contains
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     integer, pointer :: lup_ncol(:), lup_ptr(:), lup_col(:)
     complex(dp), pointer :: zD(:), zE(:)
-    complex(dp) :: ph, kx
+    complex(dp) :: ph
+    real(dp) :: kx
     integer :: lio, io, jo, ind, nr
     integer :: lnr, lind, rin, rind
 
@@ -733,7 +774,7 @@ contains
           ! The integration is this:
           ! \rho = e^{-i.k.R} [ \int (Gf^R-Gf^A) dE + \int Gf^R\Gamma Gf^A dE ]
           ! NOTE that weightDMC removes the daggered Gf^R\Gamma Gf^A
-          ph = 0.5_dp * cdexp(dcmplx(0._dp,-1._dp)*kx)
+          ph = 0.5_dp * cdexp(dcmplx(0._dp,-kx))
           
           DM(lind)  = DM(lind)  + aimag( ph*(zD(ind) - conjg(zD(rind))) )
           

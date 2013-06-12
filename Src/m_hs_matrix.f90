@@ -386,7 +386,7 @@ contains
                   k(1) * (xij(1,ind) - xo(1)) + &
                   k(2) * (xij(2,ind) - xo(2)) + &
                   k(3) * (xij(3,ind) - xo(3))
-             cphase = exp(dcmplx(0d0,1d0)*kxij)
+             cphase = exp(dcmplx(0d0,kxij))
              i = iuo+(juo-1)*no_tot
              Hk(i) = Hk(i)+H(ind)*cphase
              Sk(i) = Sk(i)+S(ind)*cphase
@@ -654,7 +654,7 @@ contains
                   k(1) * (xij(1,ind) - xo(1)) + &
                   k(2) * (xij(2,ind) - xo(2)) + &
                   k(3) * (xij(3,ind) - xo(3))
-             cphase = exp(dcmplx(0d0,1d0)*kxij)
+             cphase = exp(dcmplx(0d0,kxij))
              Hk(iuo,juo) = Hk(iuo,juo)+H(ind)*cphase
              Sk(iuo,juo) = Sk(iuo,juo)+S(ind)*cphase
           end do
@@ -847,7 +847,7 @@ contains
                   k(1) * (xij(1,ind) - xo(1)) + &
                   k(2) * (xij(2,ind) - xo(2)) + &
                   k(3) * (xij(3,ind) - xo(3))
-             cphase = exp(dcmplx(0d0,1d0)*kxij)
+             cphase = exp(dcmplx(0d0,kxij))
              i = iuo+(juo-1)*no_tot
              HkT(i) = HkT(i)+H(ind)*cphase
              SkT(i) = SkT(i)+S(ind)*cphase
@@ -1034,7 +1034,7 @@ contains
                   k(1) * (xij(1,ind) - xo(1)) + &
                   k(2) * (xij(2,ind) - xo(2)) + &
                   k(3) * (xij(3,ind) - xo(3))
-             cphase = exp(dcmplx(0d0,1d0)*kxij)
+             cphase = exp(dcmplx(0d0,kxij))
              HkT(iuo,juo) = HkT(iuo,juo)+H(ind)*cphase
              SkT(iuo,juo) = SkT(iuo,juo)+S(ind)*cphase
           end do
@@ -1231,9 +1231,9 @@ contains
           
        end do
        iuo = i + no_tot*(i-1)
-       Sk(iuo)=Sk(iuo) - dcmplx(0d0,1d0)*dimag(Sk(iuo))
+       Sk(iuo)=Sk(iuo) - dcmplx(0d0,dimag(Sk(iuo)) )
        
-       Hk(iuo)=Hk(iuo) - dcmplx(0d0,1d0)*dimag(Hk(iuo)) &
+       Hk(iuo)=Hk(iuo) - dcmplx(0d0,dimag(Hk(iuo)) ) &
             - Ef*Sk(iuo) 
     end do
 
@@ -1273,9 +1273,9 @@ contains
           
        end do
        
-       Sk(iuo,iuo)=Sk(iuo,iuo) - dcmplx(0d0,1d0)*dimag(Sk(iuo,iuo))
+       Sk(iuo,iuo)=Sk(iuo,iuo) - dcmplx(0d0,dimag(Sk(iuo,iuo)) )
        
-       Hk(iuo,iuo)=Hk(iuo,iuo) - dcmplx(0d0,1d0)*dimag(Hk(iuo,iuo)) &
+       Hk(iuo,iuo)=Hk(iuo,iuo) - dcmplx(0d0,dimag(Hk(iuo,iuo)) ) &
             - Ef*Sk(iuo,iuo) 
     end do
 

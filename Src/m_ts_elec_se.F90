@@ -11,12 +11,54 @@ module m_ts_elec_se
 
   private
 
+  public :: UC_expansion
   public :: UC_expansion_Sigma_Bulk
   public :: UC_expansion_Sigma
   public :: UC_expansion_Sigma_GammaT
   public :: read_next_GS
+  public :: read_next_GS_LR
 
 contains
+
+  subroutine UC_expansion(non_Eq,UseBulk,ZEnergy, &
+       no_u,no_s,NRepA1,NRepA2, &
+       na_u,lasto,nq,qb,wq, &
+       H,S,GS,Sigma,Gamma,nwork,work)
+! ********************
+! * INPUT variables  *
+! ********************
+    logical,  intent(in) :: non_Eq, UseBulk
+    complex(dp), intent(in) :: ZEnergy
+    integer,  intent(in) :: no_u, no_s, NRepA1, NRepA2
+    integer,  intent(in) :: na_u,lasto(0:na_u)
+    integer,  intent(in) :: nq
+    real(dp), intent(in) :: qb(3,nq), wq(nq)
+    complex(dp), dimension(no_u,no_u,nq), intent(in) :: H, S
+    complex(dp), dimension(no_u,no_u,nq), intent(inout) :: GS
+! ********************
+! * OUTPUT variables *
+! ********************
+    complex(dp), intent(out) :: Sigma(no_s,no_s)
+    complex(dp), intent(out) :: Gamma(no_s,no_s)
+
+    integer,  intent(in) :: nwork
+    complex(dp), intent(inout) :: work(no_s,no_s)
+
+    if ( non_Eq ) then
+       call UC_expansion_Sigma_GammaT(UseBulk,ZEnergy, &
+            no_u,no_s,NRepA1,NRepA2, &
+            na_u,lasto,nq,qb,wq,H,S,GS,Sigma,Gamma,nwork,work)
+    else
+       if ( UseBulk ) then
+          call UC_expansion_Sigma_Bulk(no_u,no_s,NRepA1,NRepA2, &
+               na_u,lasto,nq,qb,wq,H,S,GS,Sigma,nwork,work)
+       else
+          call UC_expansion_Sigma(ZEnergy,no_u,no_s,NRepA1,NRepA2, &
+               na_u,lasto,nq,qb,wq,H,S,GS,Sigma,nwork,work)
+       end if
+    end if
+
+  end subroutine UC_expansion
 
   subroutine UC_expansion_Sigma_Bulk(no_u,no_s,NRepA1,NRepA2, &
        na_u,lasto,nq,qb,wq,H,S,GS,Sigma,nwork,work)
@@ -427,7 +469,7 @@ contains
 ! ## Fully recoded to conform with the memory reduced TranSIESTA  ##
 ! ##################################################################
 
-  subroutine read_next_GS(uGF,NEReqs,ikpt,no_GS,nq,HAA,SAA,GAA,ZEnergy, &
+  subroutine read_next_GS_LR(uGF,NEReqs,ikpt,no_GS,nq,HAA,SAA,GAA,ZEnergy, &
        nwork,work)
 
     use parallel,  only : IONode, Node, Nodes
@@ -598,6 +640,58 @@ contains
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS read_next_GS' )
 #endif
+
+  end subroutine read_next_GS_LR
+
+
+  ! Subroutine for reading in both the left and right next energy point
+  
+  subroutine read_next_GS(iPE,cNEn,Z,ikpt, &
+       uGFL, no_L_HS, nqL, HAAL, SAAL, GAAL, &
+       uGFR, no_R_HS, nqR, HAAR, SAAR, GAAR, &
+       nzwork, zwork)
+
+    use parallel, only : Node, Nodes
+    use m_ts_cctype
+      
+    integer, intent(in) :: iPE, cNEn, ikpt
+    complex(dp), intent(in) :: Z
+    integer, intent(in) :: uGFL, no_L_HS, nqL
+    complex(dp), intent(inout), dimension(no_L_HS,no_L_HS,nqL) :: HAAL, SAAL, GAAL
+    integer, intent(in) :: uGFR, no_R_HS, nqR
+    complex(dp), intent(inout), dimension(no_R_HS,no_R_HS,nqR) :: HAAR, SAAR, GAAR
+    integer, intent(in) :: nzwork
+    complex(dp), intent(inout) :: zwork(nzwork)
+
+    integer :: iE, NEReqs
+
+    ! obtain a valid energy point (truncate at NEn)
+    iE = min(iPE,cNEn)
+    
+    ! save the current weight of the point
+    ! This is where we include the factor-of-two for spin and
+    ! and the (1/Pi) from DM = Im[G]/Pi
+    ! Furthermore we include the weight of the k-point
+
+    ! the number of points we wish to read in this segment
+    NEReqs = min(Nodes, cNEn-(iPe-1-Node))
+
+    ! TODO Move reading of the energy points
+    ! directly into the subroutines which need them
+    ! In this way we can save both GAA, Sigma AND Gamma arrays!!!!
+    ! However, this will probably come at the expense 
+    ! of doing the same "repetition" expansion twice, we can live with
+    ! that!
+
+    ! Read in the left electrode
+    call read_next_GS_LR(uGFL, NEReqs, &
+         ikpt,no_L_HS,nqL, HAAL, SAAL, &
+         GAAL, Z, nzwork, zwork)
+    
+    ! Read in the right electrode
+    call read_next_GS_LR(uGFR, NEReqs, &
+         ikpt,no_R_HS,nqR, HAAR, SAAR, &
+         GAAR, Z, nzwork, zwork)
 
   end subroutine read_next_GS
 

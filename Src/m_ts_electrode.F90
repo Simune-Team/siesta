@@ -37,7 +37,7 @@ contains
   ! Calculates the surface Green's function for the electrodes
   ! Handles both the left and right one
   subroutine surface_Green(tjob,nv,Zenergy,h00,s00,h01,s01, &
-       gs,CalcDOS,zDOS)
+       gs,CalcDOS,zDOS)!,nwork,zwork)
 ! ***************** INPUT **********************************************
 ! character   tjob    : Specifies the left or the right electrode
 ! integer     nv      : Number of orbitals in the electrode
@@ -54,6 +54,7 @@ contains
     use precision, only : dp
     use units, only : Pi
     use fdf, only : leqi
+    use intrinsic_missing, only: EYE
 
 ! ***********************
 ! * INPUT variables     *
@@ -69,6 +70,8 @@ contains
     complex(dp) :: gs(0:nv*nv-1)
     logical, intent(in) :: CalcDOS
     complex(dp), intent(out) :: zdos
+!    integer, intent(in) :: nwork
+!    complex(dp), pointer  :: zwork(nwork)
 
 ! ***********************
 ! * LOCAL variables     *
@@ -82,7 +85,7 @@ contains
     complex(dp), parameter :: z_0 = dcmplx(0._dp,0._dp)
 
     real(dp) :: ro
-    real(dp), parameter :: accur=1.d-15
+    real(dp), parameter :: accur = 1.d-15
 
     integer, dimension(:), allocatable :: ipvt
     complex(dp), dimension(:), allocatable :: &
@@ -100,7 +103,26 @@ contains
     nv2  = 2 * nv
     nvsq = nv * nv
 
+!    if ( nwork < 14*nvsq ) call die('Not enough space')
     allocate(ipvt(nv))
+!    i = 1
+!    rh  => zwork(i:i+2*nvsq-1) 
+!    i = i + 2*nvsq
+!    rh1 => zwork(i:i+2*nvsq-1) 
+!    i = i + 2*nvsq
+!    rh3 => zwork(i:i+4*nvsq-1) 
+!    i = i + 4*nvsq
+!    alpha => zwork(i:i+nvsq-1) 
+!    i = i + nvsq
+!    beta => zwork(i:i+nvsq-1) 
+!    i = i + nvsq
+!    ba => zwork(i:i+nvsq-1) 
+!    i = i + nvsq
+!    ab => zwork(i:i+nvsq-1) 
+!    i = i + nvsq
+!    gb => zwork(i:i+nvsq-1) 
+!    i = i + nvsq
+!    gs2 => zwork(i:i+nvsq-1) 
     allocate(rh(0:2*nvsq),rh1(0:2*nvsq))
     allocate(rh3(0:4*nvsq))
     allocate(alpha(0:nvsq-1),beta(0:nvsq-1))
@@ -133,89 +155,88 @@ contains
        end do
     end do
 
-
-1000 continue
-    iter=iter+1
+    ! Initialize loop
+    ro = (accur + 1._dp)**2
+    iter = 0
+    do while ( sqrt(ro) > accur ) 
+       iter = iter + 1
 
 ! rh = -(Z*S01-H01) ,j<nv
 ! rh = -(Z*S10-H10) ,j>nv
-    do j=0,nv2-1
-       ic = nv * j
-       if ( j < nv ) then
-          rh(ic:ic+nv-1) = alpha(ic:ic+nv-1)
-       else
-          ic2 = nv * (j - nv)
-          rh(ic:ic+nv-1) = beta(ic2:ic2+nv-1)
-       end if
-    end do
+       do j = 0 , nv2 - 1
+          ic = nv * j
+          if ( j < nv ) then
+             rh(ic:ic+nv-1) = alpha(ic:ic+nv-1)
+          else
+             ic2 = nv * (j - nv)
+             rh(ic:ic+nv-1) = beta(ic2:ic2+nv-1)
+          end if
+       end do
 
 ! rh3 = Z*S00-H00
-    rh3(0:nvsq-1) = gb(0:nvsq-1)
+       rh3(0:nvsq-1) = gb(0:nvsq-1)
 
 ! rh =  rh3^(-1)*rh
 ! rh =  t0
-    call zgesv(nv, nv2, rh3, nv, ipvt, rh, nv, ierr)
+       call zgesv(nv, nv2, rh3, nv, ipvt, rh, nv, ierr)
 
-    if(IERR.ne.0) then
-       write(*,*) 'ERROR: calc_green 1 MATRIX INVERSION FAILED'
-       write(*,*) 'ERROR: LAPACK INFO = ',IERR
-    end if
+       if(IERR.ne.0) then
+          write(*,*) 'ERROR: calc_green 1 MATRIX INVERSION FAILED'
+          write(*,*) 'ERROR: LAPACK INFO = ',IERR
+       end if
 
 
 ! rh1 = -(Z*S01-H01) ,j<nv
 ! rh1 = -(Z*S10-H10) ,j>nv
-    do j=0,nv-1
-       ic  = nv  * j
-       ic2 = nv2 * j
-       rh1(ic2:ic2+nv-1) = alpha(ic:ic+nv-1)
-       rh1(ic2+nv:ic2+2*nv-1) = beta(ic:ic+nv-1)
-    end do
+       do j=0,nv-1
+          ic  = nv  * j
+          ic2 = nv2 * j
+          rh1(ic2:ic2+nv-1)      = alpha(ic:ic+nv-1)
+          rh1(ic2+nv:ic2+2*nv-1) = beta(ic:ic+nv-1)
+       end do
 
 ! rh3 = -(Z*S01-H01)*t0
-    call zgemm('N','N',nv2,nv2,nv,z_1,rh1,nv2,rh,nv,z_0,rh3,nv2)
+       call zgemm('N','N',nv2,nv2,nv,z_1,rh1,nv2,rh,nv,z_0,rh3,nv2)
 
 ! alpha = -(Z*S01-H01)*t0
 ! ba    = -(Z*S10-H10)*t0b
-    do j=0,nv-1
-       ic  = nv * j
-       ic2 = 2 * ic
-       alpha(ic:ic+nv-1) = rh3(ic2:ic2+nv-1)
-       ba(ic:ic+nv-1)    = - rh3(ic2+nv:ic2+2*nv-1)
-    end do
-    do j=nv,nv2-1
-       ic  = nv  * (j - nv)
-       ic2 = nv2 * j
-       ab(ic:ic+nv-1)    = -rh3(ic2:ic2+nv-1)
-       beta(ic:ic+nv-1)  = rh3(ic2+nv:ic2+2*nv-1)
-    end do
+       do j = 0 , nv - 1
+          ic  = nv * j
+          ic2 = 2 * ic
+          alpha(ic:ic+nv-1) =   rh3(ic2:ic2+nv-1)
+          ba(ic:ic+nv-1)    = - rh3(ic2+nv:ic2+2*nv-1)
+       end do
+       do j = nv , nv2 - 1
+          ic  = nv  * (j - nv)
+          ic2 = nv2 * j
+          ab(ic:ic+nv-1)    = - rh3(ic2:ic2+nv-1)
+          beta(ic:ic+nv-1)  =   rh3(ic2+nv:ic2+2*nv-1)
+       end do
+       
+       do i = 0 , nvsq - 1
+          gb(i) =  gb(i)  + ba(i) + ab(i)
+          gs(i) =  gs(i)  + ab(i) 
+       end do
+       
+       ! It seems like the cache is better utilized by
+       ! having maximum of 2 arrays in each do-loop
+       ro = - 1._dp
+       do i = 0 , nvsq - 1
+          gs2(i) = gs2(i) + ba(i) 
+          ro = max(ro,dreal(ab(i))**2+dimag(ab(i))**2)
+       end do
 
-    do i=0,nvsq-1
-       gb(i)  =  gb(i)  + ba(i) + ab(i)
-       gs(i)  =  gs(i)  + ab(i) 
     end do
-
-    ! It seems like the cache is better utilized by
-    ! having maximum of 2 arrays in each do-loop
-    ro = - 1._dp
-    do i =0,nvsq-1
-       gs2(i) =  gs2(i) + ba(i) 
-       ro = max(ro,dreal(ab(i))**2+dimag(ab(i))**2)
-    end do
-
-    if(dsqrt(ro).gt.accur) go to 1000
 
 !    if ( IONode ) then
 !       print '(a,i0,a)','Completed in ',iter,' iterations.'
 !    end if
 
-    do i=0,nvsq-1
+    do i = 0 , nvsq - 1
        rh3(i) = gs(i)
-       gs(i) = 0.0d0
     end do
 
-    do i=0,nv-1
-       gs(i*(nv+1)) = 1.d0
-    end do
+    call EYE(nv,gs)
 
     call zgesv(nv, nv, rh3, nv, ipvt, gs, nv, ierr)
 
@@ -225,14 +246,11 @@ contains
     end if
 
     ! Prepare for the inversion
-    do i=0,nvsq-1
+    do i = 0 , nvsq - 1
        rh3(i) = gs2(i)
-       gs2(i) = 0.0d0
     end do
 
-    do j=0,nv-1
-       gs2(j*(nv+1)) = 1.d0
-    end do
+    call EYE(nv,gs2)
 
     call zgesv(nv, nv, rh3, nv, ipvt, gs2, nv, ierr)
 
@@ -244,14 +262,11 @@ contains
 !      ----      DOS     -----
     if ( CalcDOS ) then
 
-       do i=0,nvsq-1
+       do i = 0 , nvsq - 1
           rh3(i) = gb(i)
-          gb(i) = 0.0d0
        end do
-
-       do i=0,nv-1
-          gb(i*(nv+1)) = 1.d0
-       end do
+       
+       call EYE(nv,gb)
 
        call zgesv(nv, nv, rh3, nv, ipvt, gb, nv, ierr)
 
@@ -260,9 +275,9 @@ contains
           write(*,*) 'ERROR: LAPACK INFO = ',IERR
        end if
        
-       do j=0,nv-1
+       do j = 0 , nv - 1
           ic = nv * j
-          do i=0,nv-1
+          do i = 0 , nv - 1
              ic2 = j + nv*i
              ab(ic+i) = h01(ic+i)-zenergy*s01(ic+i)
              ba(ic+i) = dconjg(h01(ic2))-zenergy*dconjg(s01(ic2))
@@ -278,7 +293,7 @@ contains
        call zgemm('N','N',nv,nv,nv,z_1,ba   ,nv,s01,nv,z_1,rh3  ,nv)
 
        zdos = 0.0d0
-       do j=0,nv-1
+       do j = 0 , nv - 1
           zdos = zdos + (rh3(j*(nv+1)))
        end do
        ! Normalize DOS
@@ -287,9 +302,7 @@ contains
     end if
 
     if( leqi(tjob,'L') ) then
-       do i=0,nvsq-1
-          gs(i) =  gs2(i) 
-       end do
+       gs(0:nvsq-1) = gs2(0:nvsq-1)
     endif
 
     call memory('D','Z',14*nvsq+3,'calc_green')
@@ -1319,7 +1332,7 @@ contains
                q(3)       * xijo(3,ind) - &
                q(PropDir) * xijo(PropDir,ind)
 
-          cphase = cdexp(dcmplx(0d0,1d0)*kqxij )
+          cphase = cdexp(dcmplx(0d0,kqxij) )
           
           i = iuo+(juo-1)*nuo
           if (zconnect(ind).eq.0) then
@@ -1355,9 +1368,9 @@ contains
        enddo
        
        i = iuo+(iuo-1)*nuo
-       Sk(i) = Sk(i) - dcmplx(0d0,1d0)*dimag(Sk(i))
+       Sk(i) = Sk(i) - dcmplx(0d0,dimag(Sk(i)))
        
-       Hk(i) = Hk(i) - dcmplx(0d0,1d0)*dimag(Hk(i)) &
+       Hk(i) = Hk(i) - dcmplx(0d0,dimag(Hk(i))) &
             - Ef*Sk(i)
        
        ! Transfer matrix

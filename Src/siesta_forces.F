@@ -181,9 +181,15 @@
         endif
 
         call timer( 'IterSCF', 2 )
+#ifdef TRANSIESTA
+        if (istep.eq.inicoor .and. (iscf==1.and..not.TSrun)) then
+           call timer( 'IterSCF', 3 )
+        endif
+#else
         if (istep.eq.inicoor .and. (iscf==1)) then
            call timer( 'IterSCF', 3 )
         endif
+#endif        
         if (cml_p) call cmlEndStep(mainXML)
 
         ! Now check whether we should exit the loop early
@@ -195,6 +201,8 @@
         if (SCFconverged) then
            call check_transiesta_switch(ts_will_continue)
            if (ts_will_continue) then
+              ! Reset counter... (will be incremented below)
+              iscf = 0
               ! keep in cycle
            else
               if (mix_after_convergence) call mixer (iscf) 
@@ -281,12 +289,12 @@
 
          ts_continues_GF = .true.
 
-           !
-           ! From now on, a new mixing cycle starts,
-           ! so we have to reset the Pulay record keeping
-           !
+         !
+         ! From now on, a new mixing cycle starts,
+         ! so we have to reset the Pulay record keeping
+         !
          call init_pulay_arrays()  
-           !
+         !
          if(IONode) then
            write(6,'(/a)')
      &'                          ************************       '

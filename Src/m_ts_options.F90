@@ -418,7 +418,7 @@ CONTAINS
     write(*,6) 'Contour E Min.', CCEmin / eV,' eV'
 
     write(*,7) 'GFEta', GFEta / eV,' eV'
-    write(*,6) 'Electronic Temperature', kT / eV * 1000._dp, ' meV'
+    write(*,6) 'Electronic Temperature', kT / eV , ' eV'
     write(*,10)'Bias Contour Method', trim(s_cmethod)
     if ( ChargeCorr == 0 ) then
        write(*,11)'Will not correct charge fluctuations'

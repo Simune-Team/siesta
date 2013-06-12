@@ -42,7 +42,7 @@ module m_trimat_invert
   ! Current size of the pivoting arrays
   integer, save          :: Npiv = 0
   ! The pivoting array
-  integer, save, pointer :: ipiv(:)
+  integer, save, pointer :: ipiv(:) => null()
 
   ! Used for BLAS calls (local variables)
   complex(dp), private, parameter :: z0  = dcmplx( 0._dp, 0._dp)

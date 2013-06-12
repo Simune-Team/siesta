@@ -66,8 +66,12 @@ contains
        spDMneqL, spDMneqR, &
        spEDML  , spEDMR, nonEq_IsWeight)
 
-    use parallel,  only: IONode
+#ifdef MPI
+    use mpi_siesta
+#endif
+    use parallel,  only: IONode, Node, Nodes
     use class_Sparsity
+    use class_OrbitalDistribution
     use class_dSpData1D
 
     implicit none
@@ -88,10 +92,11 @@ contains
 ! *********************
 ! * LOCAL variables   *
 ! *********************
-    real(dp) :: wL,wR
-
+    real(dp) :: wL, wR
+    
     ! arrays for looping in the sparsity pattern
     type(Sparsity), pointer :: sp
+    type(OrbitalDistribution), pointer :: dit
     real(dp), pointer :: DML(:), DMR(:)
     real(dp), pointer :: DMneqL(:), DMneqR(:)
     real(dp), pointer :: EDML(:), EDMR(:)
@@ -99,11 +104,14 @@ contains
     integer,  pointer :: l_ptr(:)
     integer,  pointer :: l_col(:)
     integer :: nr
-    integer :: io, jo, ind, j
+    integer :: io, gio, jo, ind, j
     ! For error estimation
     integer  :: eM_i,eM_j,neM_i,neM_j
     real(dp) :: eM, neM, ee
     logical :: l_nonEq_IsWeight
+#ifdef MPI
+    integer :: MPIerror
+#endif
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE weightDM' )
@@ -141,17 +149,16 @@ contains
              ! Retrieve the connecting orbital
              jo = l_col(ind)
 
-             ! Do error estimation (capture before update)
-             ee = (DML(ind) - DMR(ind))**2
-
              call get_weight(DMneqL(ind),DMneqR(ind),wL,wR)
              
-             ! this is absolute error
+             ! Do error estimation (capture before update)
+             ee = (DML(ind) - DMR(ind))**2
              call select_error(ee      ,io,jo,eM ,eM_i ,eM_j )
-             ! this is normalized absolute error
-             call select_error(ee*wL*wR,io,jo,neM,neM_i,neM_j)
+             ! this is weighted absolute error
+             ee = ee * wL * wR
+             call select_error(ee,io,jo,neM,neM_i,neM_j)
           
-             DML(ind) = wL * DML(ind)   + wR * DMR(ind)
+             DML(ind) = wL * DML(ind) + wR * DMR(ind)
              ! EDML \equiv EDML + EDMneqR
              ! EDMR \equiv EDMR + EDMneqL
              EDML(ind) = wL * EDML(ind) + wR * EDMR(ind)
@@ -170,15 +177,14 @@ contains
              ! Retrieve the connecting orbital
              jo = l_col(ind)
 
-             ! Do error estimation (capture before update)
-             ee = (DML(ind) + DMneqR(ind) - DMR(ind) - DMneqL(ind))**2
-
              call get_weight(DMneqL(ind)**2,DMneqR(ind)**2,wL,wR)
 
-             ! this is absolute error
+             ! Do error estimation (capture before update)
+             ee = (DML(ind) + DMneqR(ind) - DMR(ind) - DMneqL(ind))**2
              call select_error(ee      ,io,jo,eM ,eM_i ,eM_j )
-             ! this is normalized absolute error
-             call select_error(ee*wL*wR,io,jo,neM,neM_i,neM_j)
+             ! this is absolute error
+             ee = ee * wL * wR
+             call select_error(ee,io,jo,neM,neM_i,neM_j)
           
              DML(ind) = wL * (DML(ind) + DMneqR(ind)) &
                       + wR * (DMR(ind) + DMneqL(ind))
@@ -190,7 +196,38 @@ contains
        end do
 
     end if
-    call print_error_estimate(IONode,eM,eM_i,eM_j,neM,neM_i,neM_j)
+
+#ifdef MPI
+    nullify(DMR,EDMR)
+    allocate(DMR(6*Nodes),EDMR(6*Nodes))
+
+    dit => dist(spDML)
+    io = Node + 1
+    ! Initialize
+    DMR(:) = 0._dp
+    DMR(io)         = eM
+    DMR(io+Nodes)   = real(index_local_to_global(dit,eM_i,Node),dp)
+    DMR(io+2*Nodes) = real(eM_j,dp)
+    DMR(io+3*Nodes) = neM
+    DMR(io+4*Nodes) = real(index_local_to_global(dit,neM_i,Node),dp)
+    DMR(io+5*Nodes) = real(neM_j,dp)
+    call MPI_Reduce(DMR(1),EDMR(1),6*Nodes, &
+         MPI_Double_Precision, MPI_Sum, 0, MPI_Comm_World, MPIerror)
+    if ( IONode ) then
+       io = maxloc(EDMR(1:Nodes),1)
+       eM   = EDMR(io)
+       eM_i = nint(EDMR(io+Nodes))
+       eM_j = nint(EDMR(io+2*Nodes))
+       io = 3*Nodes + maxloc(EDMR(3*Nodes+1:4*Nodes),1)
+       neM   = EDMR(io)
+       neM_i = nint(EDMR(io+Nodes))
+       neM_j = nint(EDMR(io+2*Nodes))
+    endif
+    deallocate(DMR,EDMR)
+#endif
+
+    call print_error_estimate(IONode,'ts: int. EE.:', &
+         eM,eM_i,eM_j,neM,neM_i,neM_j,.false.)
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS weightDM' )
@@ -201,24 +238,35 @@ contains
   ! ************* Commonly used modules ****************
 
   ! Write out the error-estimate for the current iteration (or, k-point)
-  subroutine print_error_estimate(IONode,eM,eM_i,eM_j,neM,neM_i,neM_j)
-    logical, intent(in) :: IONode
+  subroutine print_error_estimate(IONode,a,eM,eM_i,eM_j,neM,neM_i,neM_j, &
+       LR)
+    logical, intent(in)  :: IONode
+    character(len=*), intent(in) :: a
     real(dp), intent(in) :: eM, neM
-    integer, intent(in) :: eM_i,eM_j, neM_i,neM_j
+    integer, intent(in)  :: eM_i,eM_j, neM_i,neM_j
+    logical, intent(in) :: LR
 
-    if ( IONode ) then
-       write(*,'(a,'' |('',i5,'','',i5,'')| = '',g10.5e1,&
-            &'' , |('',i5,'','',i5,'')|~ = '',g10.5e1)') &
-            'ts: int. EE.:',&
-            eM_i,eM_j,sqrt(eM), &
-            neM_i,neM_j,sqrt(neM)
+    if ( IONode .and. eM >= 0._dp ) then
+       if ( LR ) then
+          write(*,'(a,'' |('',i5,'','',i5,'')|L = '',g10.5e1,&
+               &'' , |('',i5,'','',i5,'')|R = '',g10.5e1)') &
+               trim(a), &
+               eM_i,eM_j,sqrt(eM), &
+               neM_i,neM_j,sqrt(neM)
+       else
+          write(*,'(a,'' |('',i5,'','',i5,'')|  = '',g10.5e1,&
+               &'' , |('',i5,'','',i5,'')|~ = '',g10.5e1)') &
+               trim(a), &
+               eM_i,eM_j,sqrt(eM), &
+               neM_i,neM_j,sqrt(neM)
+       end if
     end if
 
   end subroutine print_error_estimate
 
 
   ! do simple weight calculation and return correct numbers
-  subroutine get_weight(L,R,wL,wR)
+  pure subroutine get_weight(L,R,wL,wR)
     real(dp), intent(in) :: L,R
     real(dp), intent(out) :: wL,wR
 
@@ -235,7 +283,7 @@ contains
   end subroutine get_weight
 
   ! do simple maximum choice
-  subroutine select_error(n_err,n_io,n_jo,err,io,jo)
+  pure subroutine select_error(n_err,n_io,n_jo,err,io,jo)
     real(dp), intent(in) :: n_err
     integer, intent(in) :: n_io, n_jo
     real(dp), intent(inout) :: err

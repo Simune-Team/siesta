@@ -243,6 +243,7 @@
  subroutine initializeSpData(this)
    type(TYPE_NAME), intent(inout)  :: this
 
+   if ( .not. initialized(this) ) return
    call init_val(this%data%a)
 
  end subroutine initializeSpData

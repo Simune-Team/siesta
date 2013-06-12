@@ -6,7 +6,7 @@ module m_pulay
   private
   !
   real(dp), pointer  :: auxpul(:,:)  => null()
-  integer            :: n_records_saved = 0
+  integer, save      :: n_records_saved = 0
   !
   public :: pulayx, init_pulay_arrays, resetPulayArrays
   !
