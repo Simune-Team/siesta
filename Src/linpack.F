@@ -81,12 +81,12 @@ c
 c        ...exit
             if (cabs1(det(1)) .eq. 0.0d0) go to 60
    10       if (cabs1(det(1)) .ge. 1.0d0) go to 20
-               det(1) = cmplx(ten,0.0d0,dp)*det(1)
+               det(1) = dcmplx(ten,0.0d0)*det(1)
                det(2) = det(2) - (1.0d0,0.0d0)
             go to 10
    20       continue
    30       if (cabs1(det(1)) .lt. ten) go to 40
-               det(1) = det(1)/cmplx(ten,0.0d0,dp)
+               det(1) = det(1)/dcmplx(ten,0.0d0)
                det(2) = det(2) + (1.0d0,0.0d0)
             go to 30
    40       continue

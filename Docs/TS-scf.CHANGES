@@ -1,4 +1,11 @@
 ----------------------------------------------------
+June 13, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-50
+F77 requires intrinsic function call dcmplx and not cmplx
+
+modified:
+  Src/linpack.F
+
+----------------------------------------------------
 June 13, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-49
 Fixed cmplx-creation variables 
 
