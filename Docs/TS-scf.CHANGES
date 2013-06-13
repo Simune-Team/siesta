@@ -1,4 +1,14 @@
 ----------------------------------------------------
+June 13, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-49
+Fixed cmplx-creation variables 
+
+* cmplx(1._dp,1._dp) /= dcmplx(1._dp,1._dp) == cmplx(1._dp,1._dp,dp)
+
+modified:
+  Src/detover.F
+  Src/linpack.F
+
+----------------------------------------------------
 June 13, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-48
 Clean-up and module separations, full structure of transiesta completed
 
