@@ -622,8 +622,9 @@ m_ts_charge.o: class_OrbitalDistribution.o class_Sparsity.o geom_helper.o
 m_ts_charge.o: m_ts_electype.o m_ts_method.o parallel.o precision.o
 m_ts_contour.o: m_ts_aux.o m_ts_cctype.o parallel.o precision.o units.o
 m_ts_dm_update.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData1D.o
-m_ts_dm_update.o: class_SpData1D.o class_Sparsity.o intrinsic_missing.o
-m_ts_dm_update.o: m_ts_cctype.o m_ts_weight.o parallel.o precision.o units.o
+m_ts_dm_update.o: class_SpData1D.o class_Sparsity.o geom_helper.o
+m_ts_dm_update.o: intrinsic_missing.o m_ts_cctype.o m_ts_weight.o parallel.o
+m_ts_dm_update.o: precision.o units.o
 m_ts_elec_se.o: intrinsic_missing.o m_ts_cctype.o parallel.o precision.o
 m_ts_elec_se.o: units.o
 m_ts_electrode.o: files.o intrinsic_missing.o m_hs_matrix.o m_ts_cctype.o

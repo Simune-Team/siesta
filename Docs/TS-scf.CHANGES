@@ -1,4 +1,17 @@
 ----------------------------------------------------
+June 13, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-51
+Fixed gamma-calculation to be able to handle non-bias
+
+* The sparsity pattern check was implicit in the update_DM routine
+  Now it is correctly handled for Gamma calculations.
+
+modified:
+  Src/Makefile
+  Src/m_ts_dm_update.F90
+  Src/m_ts_full.F90
+  Src/m_ts_tri.F90
+
+----------------------------------------------------
 June 13, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-50
 F77 requires intrinsic function call dcmplx and not cmplx
 

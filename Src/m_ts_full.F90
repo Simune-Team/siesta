@@ -541,7 +541,7 @@ contains
           if ( ts_Gamma_SCF ) then
              ! Directly save to the correct DM
              call update_DM(sp_dist,sparse_pattern, n_nzs, &
-                  DM(:,ispin), EDM(:,ispin), spDMu, spEDMu)
+                  DM(:,ispin), EDM(:,ispin), spDMu, spEDMu, UpGlobal=.true.)
           else
              ! Directly save to the correct DM
              call update_zDM(sp_dist,sparse_pattern, n_nzs, &

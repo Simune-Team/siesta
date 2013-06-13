@@ -680,7 +680,7 @@ contains
           if ( ts_Gamma_SCF ) then
              ! Directly save to the correct DM
              call update_DM(sp_dist,sparse_pattern, n_nzs, &
-                  DM(:,ispin), EDM(:,ispin), spDMu, spEDMu)
+                  DM(:,ispin), EDM(:,ispin), spDMu, spEDMu, UpGlobal=.true.)
           else
              ! Directly save to the correct DM
              call update_zDM(sp_dist,sparse_pattern, n_nzs, &
@@ -1161,12 +1161,12 @@ contains
 
     if ( .not. initialized(DM) ) return
 
-    s      => spar(DM)
+    s  => spar(DM)
     call attach(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=nr)
-    dD     => val(DM)
-    dE     => val(EDM)
-    Gf     => val(Gf_tri)
+    dD => val(DM)
+    dE => val(EDM)
+    Gf => val(Gf_tri)
 
     ! Notice that we do not need to do any transposing here...
     ! The tri-diagonal calculation of GF_Gamma_GF will always be correct
