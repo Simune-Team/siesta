@@ -1,4 +1,32 @@
 ----------------------------------------------------
+June 13, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-52
+Made a new fdf flag to control the precision of the electrodes position
+
+* When dealing with repetition one can encounter small discrepancies
+  with the electrode coordinates.
+  
+  We have added a flag:
+    TS.Electrode.Coord.Eps
+  with a length which specifies the accuracy of the electrode 
+  positioning that is required.
+  The default precision is 1e-4 Bohr, which seems reasonable.
+
+  This should ONLY be used if one is sure that the electrodes are
+  positioned correctly.
+
+* Added write-out of the exact number of unit-cells connections for
+  the electrodes.
+
+* Added write-out of the maximum Hamiltoninan element when the
+  electrode has too long connections.
+
+modified:
+  Src/m_ts_electrode.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_options.F90
+  Src/ts_init.F90
+
+----------------------------------------------------
 June 13, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-51
 Fixed gamma-calculation to be able to handle non-bias
 

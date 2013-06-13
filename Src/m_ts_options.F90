@@ -71,6 +71,8 @@ logical :: VoltageInC ! Determines whether the voltage-drop should be located in
                       ! I.e. if the electrode starts at 10 Ang and the central region ends at 20 Ang
                       ! then the voltage drop will only take place between 10.125 Ang and 19.875 Ang
 
+real(dp) :: Elec_xa_EPS
+
 !==========================================================================*
 !==========================================================================*
 !  Default Values for arguments read from input file                       *
@@ -288,6 +290,9 @@ CONTAINS
     UseVFix    = fdf_get('TS.UseVFix',UseVFix_def)
     ElecValenceBandBot = fdf_get('TS.CalcElectrodeValenceBandBottom', &
          ElecValenceBandBot_def)
+
+    ! To determine the same coordinate nature of the electrodes
+    Elec_xa_EPS= fdf_get('TS.Electrode.Coord.Eps',1e-4_dp,'Bohr')
 
     ElLeft%HSFile    = fdf_get('TS.HSFileLeft',HSFile_def)
     ElLeft%UsedAtoms = fdf_get('TS.NumUsedAtomsLeft',NUsedAtoms_def)

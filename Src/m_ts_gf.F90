@@ -50,7 +50,7 @@ contains
   subroutine do_Green(tElec, El, GFFile, GFTitle, &
        ElecValenceBandBot, optReUseGF, &
        nkpnt,kpoint,kweight, &
-       NBufAt, RemUCellDistance, &
+       NBufAt, RemUCellDistance, xa_Eps, &
        ucell,xa,nua,NEn,contour,chem_shift,CalcDOS,ZBulkDOS,nspin)
     
     use precision,  only : dp
@@ -80,6 +80,7 @@ contains
     real(dp),dimension(nkpnt),intent(in) :: kweight ! weights of kpoints
     integer, intent(in)            :: NBufAt ! Buffer atoms
     logical, intent(in)            :: RemUCellDistance ! Whether to remove the unit cell distance in the Hamiltonian.
+    real(dp), intent(in)           :: xa_Eps ! coordinate precision check
     integer, intent(in)            :: nua ! Full system count of atoms in unit cell
     real(dp), dimension(3,3)       :: ucell ! The unit cell of the CONTACT
     real(dp), intent(in)           :: xa(3,nua) ! Coordinates in the system for the TranSIESTA routine
@@ -130,7 +131,7 @@ contains
        call create_Green(tElec,El, GFFile, GFTitle, &
             ElecValenceBandBot, &
             nkpnt,kpoint,kweight, &
-            NBufAt, RemUCellDistance, &
+            NBufAt, RemUCellDistance, xa_Eps, &
             ucell,xa,nua,NEn,contour,chem_shift,CalcDOS,ZBulkDOS,nspin)
     end if
 
@@ -151,12 +152,14 @@ contains
           call check_Green(uGF,chem_shift,ucell, &
                TotUsedAtoms(El),xa(1,NBufAt+1), &
                nspin,nkpnt,kpoint, &
-               kweight,NEn,contour,RepA1(El),RepA2(El),RemUCellDistance,errorGF)
+               kweight,NEn,contour,RepA1(El),RepA2(El),RemUCellDistance, &
+               xa_Eps, errorGF)
        else if ( tElec == 'R' ) then
           call check_Green(uGF,chem_shift,ucell, &
                TotUsedAtoms(El),xa(1,nua-NBufAt-TotUsedAtoms(El)+1), &
                nspin,nkpnt,kpoint, &
-               kweight,NEn,contour,RepA1(El),RepA2(El),RemUCellDistance,errorGF)
+               kweight,NEn,contour,RepA1(El),RepA2(El),RemUCellDistance, &
+               xa_Eps, errorGF)
        end if
        call io_close(uGF)
     endif
@@ -392,14 +395,13 @@ contains
 ! ##################################################################
   subroutine check_Green(funit,c_EfShift,c_ucell,c_nua,c_xa,c_nspin,c_nkpar,c_kpar,c_wkpar, &
        c_NEn,c_contour, &
-       c_NA1,c_NA2,c_RemUCell,errorGF)
+       c_NA1,c_NA2,c_RemUCell,xa_Eps, errorGF)
 
     use precision, only: dp
     use units,     only: Ang
     use m_ts_cctype
 
     real(dp) , parameter :: EPS = 1d-7
-    real(dp) , parameter :: EPS_xa = 1d-4
 
 ! ***********************
 ! * INPUT variables     *
@@ -423,6 +425,7 @@ contains
 ! Repetition information
     integer, intent(in)        :: c_NA1,c_NA2
     logical, intent(in)        :: c_RemUCell ! Should the Green's function file have the inner cell distances or not?
+    real(dp), intent(in)       :: xa_Eps
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
@@ -546,12 +549,12 @@ contains
           do i=0,NA1-1
              eXa=eXa.or.abs(xa(1,ia)-xa_o(1) + &
                   ucell(1,1)*i+ucell(1,2)*j - &
-                  c_xa(1,iaa)+c_xa_o(1)) > EPS_xa
+                  c_xa(1,iaa)+c_xa_o(1)) > xa_EPS
              eXa=eXa.or.abs(xa(2,ia)-xa_o(2) + &
                   ucell(2,1)*i+ucell(2,2)*j - &
-                  c_xa(2,iaa)+c_xa_o(2)) > EPS_xa
+                  c_xa(2,iaa)+c_xa_o(2)) > xa_EPS
              eXa=eXa.or.abs(xa(3,ia)-xa_o(3) - &
-                  c_xa(3,iaa)+c_xa_o(3)) > EPS_xa
+                  c_xa(3,iaa)+c_xa_o(3)) > xa_EPS
              iaa = iaa + 1
           end do
        end do

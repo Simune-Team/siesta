@@ -342,7 +342,7 @@ contains
   subroutine create_Green(tElec, El, GFFile, GFTitle, &
        ElecValenceBandBot, &
        nkpnt,kpoint,kweight, &
-       NBufAt,RemUCellDistance, &
+       NBufAt,RemUCellDistance, xa_Eps, &
        ucell,xa,nua,NEn,contour,chem_shift,CalcDOS,ZBulkDOS,nspin)
 
     use precision,  only : dp
@@ -375,6 +375,7 @@ contains
     real(dp),dimension(nkpnt),intent(in) :: kweight ! weights of kpoints
     integer, intent(in)            :: NBufAt ! buffer atoms
     logical, intent(in)            :: RemUCellDistance ! Whether to remove the unit cell distance in the Hamiltonian.
+    real(dp), intent(in)           :: xa_Eps ! the coordinate precision for the electrodes
     integer, intent(in)            :: nua ! Full system count of atoms in unit cell
     real(dp), dimension(3,3)       :: ucell ! The unit cell of the CONTACT
     real(dp), intent(in)           :: xa(3,nua) ! Coordinates in the system for the TranSIESTA routine
@@ -480,7 +481,7 @@ contains
          nua_E,nuo_E,maxnh_E,notot_E,xa_E,H_E,S_E,xij_E, &
          xijo_E,zconnect_E,numh_E,listhptr_E,listh_E,indxuo_E,  &
          lasto_E, &
-         Ef_E,ucell_E)
+         Ef_E,ucell_E, xa_Eps)
 
     ! Calculate the k-points used in the electrode
     if (IONode) &
@@ -943,7 +944,7 @@ contains
        NBufAt,NA1,NA2, &
        HSfile,nua,nuo,maxnh,notot,xa,H,S,xij,xijo,zconnect, &
        numh,listhptr,listh,indxuo,lasto, &
-       Ef,ucell)
+       Ef,ucell, xa_Eps)
 
     use precision, only: dp
     use fdf, only : leqi
@@ -986,6 +987,7 @@ contains
     integer,  dimension(:),   pointer :: numh,listhptr,listh,indxuo,lasto
     real(dp) :: Ef ! Efermi
     real(dp), intent(inout)           :: ucell(3,3) ! The unit cell
+    real(dp), intent(in)              :: xa_Eps
 
 ! ***********************
 ! * LOCAL variables     *
@@ -1010,13 +1012,13 @@ contains
     integer :: elecElec ! The first atom in the electrode in the ELECTRODE setup
     integer :: i,j,ia,iuo,juo,ind,iaa !Loop counters
     integer :: fL ! Filename length
+    ! For acquiring the maximum Hamiltonian value
+    integer :: mH_i, mH_j, mH_Z
+    real(dp) :: mH, mS
 #ifdef MPI
     logical :: eXa_buff
     integer :: MPIerror
 #endif
-!=======================================================================
-    real(dp), parameter :: EPS = 1.0d-4
-!=======================================================================
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE init_elec_HS' )
@@ -1174,12 +1176,12 @@ contains
                 ! Assert the coordinates
                 eXa=eXa.or.abs(xa(1,ia)-xa_o(1) + &
                      ucell(1,1)*i+ucell(1,2)*j - &
-                     xa_sys(1,iaa)+xa_sys_o(1)) > EPS
+                     xa_sys(1,iaa)+xa_sys_o(1)) > xa_EPS
                 eXa=eXa.or.abs(xa(2,ia)-xa_o(2) + &
                      ucell(2,1)*i+ucell(2,2)*j - &
-                     xa_sys(2,iaa)+xa_sys_o(2)) > EPS
+                     xa_sys(2,iaa)+xa_sys_o(2)) > xa_EPS
                 eXa=eXa.or.abs(xa(3,ia)-xa_o(3) - &
-                     xa_sys(3,iaa)+xa_sys_o(3)) > EPS
+                     xa_sys(3,iaa)+xa_sys_o(3)) > xa_EPS
                 iaa = iaa + 1
              end do
           end do
@@ -1245,6 +1247,8 @@ contains
           end do           !i
        end do              !ia in uc
 
+       mH = -1._dp
+
        do iuo = 1 , nuo
           do j = 1 , numh(iuo)
              ind = listhptr(iuo) + j
@@ -1259,6 +1263,14 @@ contains
 
              if ( abs(zconnect(ind)) > 1 ) then
                 eXa = .true.
+                if ( abs(H(ind,1)) > mH ) then
+                   ! Capture the maximum error introduced
+                   mH = abs(H(ind,1))
+                   mS = abs(S(ind))
+                   mH_Z = abs(zconnect(ind))
+                   mH_i = iuo
+                   mH_j = juo
+                end if
              end if
           end do
        end do
@@ -1273,23 +1285,33 @@ contains
 #endif
 
     if ( IONode .and. eXa ) then
-       write(0,*) "WARNING: Connections across 2 unit cells or more &
-            &in the transport direction."
-       write(0,*) "WARNING: This is inadvisable."
-       write(0,*) "WARNING: Please increase the electrode size &
-            &in the transport direction."
-       write(0,*) "WARNING: Will proceed without further notice."
-       write(*,*) "WARNING: Connections across 2 unit cells or more &
-            &in the transport direction."
-       write(*,*) "WARNING: This is inadvisable."
-       write(*,*) "WARNING: Please increase the electrode size &
-            &in the transport direction."
-       write(*,*) "WARNING: Will proceed without further notice."
+       j = maxval(abs(zconnect),1)
+       call warn_err(0,mH,mS, mH_i,mH_j, j)
+       call warn_err(6,mH,mS, mH_i,mH_j, j)
     end if
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS init_elec_HS' )
 #endif
+
+  contains
+    
+    subroutine warn_err(o,mH,mS, i,j, uc_z)
+      integer, intent(in) :: o
+      real(dp), intent(in) :: mH,mS
+      integer, intent(in) :: i,j, uc_z
+      write(o,'(1x,a,i0,a)') 'WARNING: Connections across ',j, &
+           ' unit cells in the transport direction.'
+      write(o,*) 'WARNING: This is inadvisable.'
+      write(o,*) 'WARNING: Please increase the electrode size &
+           &in the transport direction.'
+      write(o,*) 'WARNING: Will proceed without further notice.'
+      write(o,'(1x,a,g10.4)') 'WARNING: &
+           &Maximum Hamiltonian value: ',mH, 'Ry'
+      write(o,'(1x,a,2(tr1,i0),a)') 'WARNING: &
+           &Maximum Hamiltonian in element (',mH_i,mH_j,' )'
+      write(o,'(1x,a,g10.4)') 'WARNING: Overlap value at max(H): ',mS
+    end subroutine warn_err
 
   end subroutine init_electrode_HS
 
@@ -1307,24 +1329,24 @@ contains
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    logical                           :: Gamma ! Is it a Gamma Calculation?
-    integer                           :: nuo ! Unit cell orbitals
-    integer                           :: maxnh,notot,nspin ! Hamiltonian size / total orbitals / spins
-    real(dp)                          :: H(maxnh,nspin) ! Hamiltonian
-    real(dp)                          :: S(maxnh) ! Overlap
-    real(dp)                          :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
-    real(dp)                          :: xijo(3,maxnh) ! differences with unitcell, differences without unitcell
-    integer                           :: zconnect(maxnh) ! 0 for no connection in z-direction
-    integer                           :: numh(nuo),listhptr(nuo)
-    integer                           :: listh(maxnh),indxuo(notot)
-    real(dp)                          :: Ef ! Efermi
-    integer                           :: ispin
-    real(dp), dimension(3)            :: k   ! k-point in [1/Bohr]
-    real(dp), dimension(3)            :: q   ! expansion k-point in [1/Bohr]
+    logical                         :: Gamma ! Is it a Gamma Calculation?
+    integer                         :: nuo ! Unit cell orbitals
+    integer                         :: maxnh,notot,nspin ! Hamiltonian size / total orbitals / spins
+    real(dp)                        :: H(maxnh,nspin) ! Hamiltonian
+    real(dp)                        :: S(maxnh) ! Overlap
+    real(dp)                        :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
+    real(dp)                        :: xijo(3,maxnh) ! differences with unitcell, differences without unitcell
+    integer                         :: zconnect(maxnh) ! 0 for no connection in z-direction
+    integer                         :: numh(nuo),listhptr(nuo)
+    integer                         :: listh(maxnh),indxuo(notot)
+    real(dp)                        :: Ef ! Efermi
+    integer                         :: ispin
+    real(dp), dimension(3)          :: k   ! k-point in [1/Bohr]
+    real(dp), dimension(3)          :: q   ! expansion k-point in [1/Bohr]
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp), dimension(nuo*nuo)   :: Hk,Sk,Hk_T,Sk_T
+    complex(dp), dimension(nuo*nuo) :: Hk,Sk,Hk_T,Sk_T
 
 ! ***********************
 ! * LOCAL variables     *

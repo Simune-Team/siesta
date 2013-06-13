@@ -173,14 +173,14 @@ contains
        call do_Green('L',ElLeft, GFFileL, GFTitle, &
             ElecValenceBandBot, ReUseGF, &
             ts_nkpnt,ts_kpoint,ts_kweight, &
-            na_BufL, .false., & !For now TranSIESTA will only perform with inner-cell distances
+            na_BufL, .false., Elec_xa_Eps, & !For now TranSIESTA will only perform with inner-cell distances
             ucell,xa,na_u,NEn,contour,VoltL,.false.,dos,nspin)
        
        ! Create the Right GF file
        call do_Green('R',ElRight,GFFileR, GFTitle, &
             ElecValenceBandBot, ReUseGF, &
             ts_nkpnt,ts_kpoint,ts_kweight, &
-            na_BufR, .false., &
+            na_BufR, .false., Elec_xa_Eps, &
             ucell,xa,na_u,NEn,contour,VoltR,.false.,dos,nspin)
        
        call memory('D','Z',NEn*nspin,'transiesta')
