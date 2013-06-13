@@ -31,12 +31,15 @@
 #ifdef TRANSIESTA
       use m_ts_global_vars, only : TSiscf, TSinit, TSrun
       use m_ts_method
-      use m_ts_options,     only : TSmode
-      use m_ts_mem,         only : transiesta_mem
-      use m_ts_new_tri,         only : ts_tri_init
-      use m_ts_new_tri,         only : transiesta_tri
+      use m_ts_options,     only : TSmode, ElLeft, ElRight
+      use m_ts_options,     only : no_BufL, no_BufR
+      use m_ts_full,        only : transiesta_full
+      use m_ts_tri,         only : ts_tri_init
+      use m_ts_tri,         only : transiesta_tri
       use m_ts_sparse,      only : ts_sparse_init
-      use m_ts_sparse_helper,only : ts_print_charges
+      use m_ts_charge,      only : ts_print_charges
+      use m_ts_charge,      only : TS_RHOCORR_METHOD
+      use m_ts_charge,      only : ts_charge_correct
 #endif /* TRANSIESTA */
       implicit none
 !     Input variables
@@ -106,11 +109,11 @@
            if ( ts_method == TS_SPARSITY_TRI ) then
               call ts_tri_init()
            end if
-           call ts_print_charges(block_dist, sparse_pattern, 
-     &             na_u, lasto, nspin, maxnh, Dscf, S)
+           call ts_print_charges(ElLeft, ElRight, no_BufL, no_BufR,
+     &          block_dist, sparse_pattern,nspin, maxnh, Dscf, S)
         end if
         if ( ts_method == TS_SPARSITY ) then
-           call transiesta_mem(nspin,Gamma, block_dist,
+           call transiesta_full(nspin,Gamma, block_dist,
      &             sparse_pattern,ucell, no_u, na_u, lasto, xa, maxnh,
      &          xijo, H, S, Dscf,Escf, Ef, TSiscf, Qtot)
         else if ( ts_method == TS_SPARSITY_TRI ) then
@@ -118,6 +121,14 @@
      &          sparse_pattern,ucell, no_u, na_u, lasto, xa, maxnh,
      &          xijo, H, S, Dscf,Escf, Ef, TSiscf, Qtot)
         end if
+
+        ! We do the charge correction of the transiesta
+        ! computation here (notice that the routine will automatically
+        ! return if no charge-correction is requested)
+        call ts_charge_correct(ElLeft, ElRight,
+     &       no_BufL, no_BufR, block_dist, sparse_pattern, 
+     &       nspin, maxnh, Dscf, Escf, S, Qtot, TS_RHOCORR_METHOD)
+
            
         call timer('TS',2)
 

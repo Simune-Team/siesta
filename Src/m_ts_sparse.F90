@@ -688,5 +688,5 @@ contains
 
 
   end subroutine ts_Sparsity_Subset_pointer
-    
+
 end module m_ts_sparse

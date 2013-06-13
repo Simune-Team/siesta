@@ -47,7 +47,8 @@
       use m_ts_method
       use m_ts_global_vars,      only: ts_istep, TSrun
       use m_ts_options,          only: TSmode
-      use m_ts_sparse_helper,    only: ts_print_charges, TS_INFO_SCF
+      use m_ts_options,          only: ElLeft, ElRight, no_BufL, no_BufR
+      use m_ts_charge,           only: ts_print_charges, TS_INFO_SCF
       use siesta_geom,           only: na_u
       use atomlist,              only: lasto
       use sparse_matrices,       only: sparse_pattern, block_dist
@@ -133,8 +134,9 @@
 
 #ifdef TRANSIESTA
         if ( TSrun ) then
-           call ts_print_charges(block_dist,sparse_pattern, 
-     &          na_u, lasto, nspin, maxnh, Dscf, S, TS_INFO_SCF)
+           call ts_print_charges(ElLeft, ElRight, no_BufL, no_BufR,
+     &          block_dist, sparse_pattern,nspin, maxnh, Dscf, S,
+     &          method=TS_INFO_SCF)
         end if
 #endif
         call check_scf_convergence( iscf, SCFconverged,
@@ -154,8 +156,8 @@
         if (SCFconverged) then
 #ifdef TRANSIESTA
            if ( TSmode ) then
-              call ts_print_charges(block_dist,sparse_pattern, 
-     &             na_u, lasto, nspin, maxnh, Dscf, S)  
+              call ts_print_charges(ElLeft, ElRight, no_BufL, no_BufR,
+     &             block_dist, sparse_pattern,nspin, maxnh, Dscf, S)
            end if
 #endif
            if (ionode) then

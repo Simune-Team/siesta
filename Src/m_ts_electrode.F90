@@ -37,7 +37,7 @@ contains
   ! Calculates the surface Green's function for the electrodes
   ! Handles both the left and right one
   subroutine surface_Green(tjob,nv,Zenergy,h00,s00,h01,s01, &
-       gs,CalcDOS,zDOS)!,nwork,zwork)
+       gs,CalcDOS,zDOS,iter)!,nwork,zwork)
 ! ***************** INPUT **********************************************
 ! character   tjob    : Specifies the left or the right electrode
 ! integer     nv      : Number of orbitals in the electrode
@@ -70,13 +70,13 @@ contains
     complex(dp) :: gs(0:nv*nv-1)
     logical, intent(in) :: CalcDOS
     complex(dp), intent(out) :: zdos
+    integer, intent(out) :: iter
 !    integer, intent(in) :: nwork
 !    complex(dp), pointer  :: zwork(nwork)
 
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
-    integer :: iter
     integer :: nv2, nvsq
     integer :: ierr             !error in inversion
     integer :: i,j,ic,ic2
@@ -353,7 +353,7 @@ contains
 #ifdef MPI
     use mpi_siesta, only : MPI_Comm_World
     use mpi_siesta, only : MPI_Bcast,MPI_ISend,MPI_IRecv
-    use mpi_siesta, only : MPI_Sum
+    use mpi_siesta, only : MPI_Sum, MPI_Max, MPI_integer
     use mpi_siesta, only : MPI_Wait,MPI_Status_Size
     use mpi_siesta, only : DAT_dcomplex => MPI_double_complex, &
                            MPI_Double_Precision => MPI_double_precision
@@ -382,7 +382,7 @@ contains
     integer, intent(in)            :: NEn ! Number of energy points
     type(ts_ccontour), intent(in)  :: contour(NEn) ! contours path for GF
     real(dp), intent(in)           :: chem_shift ! the Fermi-energy we REQUIRE the electrode
-    logical, intent(in)            :: CalcDOS
+    logical, intent(in)            :: CalcDOS ! whether or not to calculate the bulk-density of states.
 
 ! ***********************
 ! * OUTPUT variables    *
@@ -430,6 +430,10 @@ contains
     complex(dp), dimension(:), allocatable :: GS
     complex(dp), dimension(:,:), allocatable :: Hq,Sq,Gq
     complex(dp) :: ZEnergy, ZSEnergy, zdos
+
+    ! In order to print information about the recursize algorithm
+    integer, allocatable :: iters(:,:)
+    real(dp) :: i_mean, i_std
 
     integer :: ierror,uGF
     ! Big loop counters
@@ -666,9 +670,17 @@ contains
     end if
 #endif
 
+    ! prepare the iteration counter
+    allocate(iters(NEn,2))
+    if ( IONode ) then
+       write(*,'(1x,a)') 'Lopez-Sancho x2 & Rubio recursive &
+            &surface self-energy calculation...'
+    end if
 
 ! Spin loop .............................................. Spin loop
     spin_loop: do ispin = 1 , nspin
+
+       iters(:,:) = 0
        
 ! TS k-point loop ........................................ k-point loop
        kpoint_loop: do ikpt = 1 , nkpnt
@@ -752,7 +764,7 @@ contains
                 ! Calculate the surface Green's function
                 ! ZSenergy is Zenergy together with the chemical shift
                 call surface_Green(tElec,nuo_E,ZSEnergy,H00,S00,H01,S01, &
-                     GS,CalcDOS,zdos)
+                     GS,CalcDOS,zdos,iters(iEn,1))
 
                 ! We also average the k-points.
                 if ( CalcDOS ) then
@@ -824,12 +836,32 @@ contains
           end do Econtour_loop
           
        end do kpoint_loop
+
+#ifdef MPI
+       call MPI_Reduce(iters(1,1), iters(1,2), NEn, MPI_Integer, MPI_Max, &
+            0, MPI_Comm_World, MPIerror)
+#else
+       iters(:,2) = iters(:,1)
+#endif
+       if ( IONode ) then
+          i_mean = sum(iters(:,2)) / real(NEn,dp)
+          i_std = 0._dp
+          do i = 1 , NEn
+             i_std = i_std + ( iters(i,2) - i_mean ) ** 2
+          end do
+          i_std = sqrt(i_std/real(NEn,dp))
+          write(*,'(1x,a,f10.4,'' / '',f10.4)') 'Lopez-Sancho x2 & Rubio: &
+               &Mean/std iterations: ', i_mean             , i_std
+          write(*,'(1x,a,i10,'' / '',i10)')     'Lopez-Sancho x2 & Rubio: &
+               &Min/Max iterations : ', minval(iters(:,2)) , maxval(iters(:,2))
+       end if
        
     end do spin_loop
 !*******************************************************************
 !         Green's function calculation is done
 !*******************************************************************
 
+    deallocate(iters)
 
 #ifdef MPI
     ! Free requests made for the communications

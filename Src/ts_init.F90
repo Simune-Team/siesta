@@ -101,18 +101,15 @@ contains
        ! We must ensure that the Sigma[LR] have enough space to hold
        ! one line of the full matrix (we use them as work arrays
        ! when calculating the Gamma[LR]
-       if ( nL ** 2 < nTS .or. nR ** 2 < nTS ) then
-          call die('The current implementation requires that the &
-               &square of the orbitals in the electrodes are larger &
-               &than the dimension of the problem.')
+       if ( ts_method == TS_SPARSITY ) then
+          if ( nL ** 2 < nTS .or. nR ** 2 < nTS ) then
+             call die('The current implementation requires that the &
+                  &square of the orbitals in the electrodes are larger &
+                  &than the dimension of the problem.')
+          end if
        end if
        
        if ( ts_method == TS_SPARSITY_TRI ) then
-          
-          if ( na_BufL + na_BufR > 0 ) then
-             call die('Currently the code does not handle buffer atoms &
-                  &for the tri-diagonal part')
-          end if
           
           if ( IsVolt .and. (nL > nC .or. nR > nC) ) then
              write(*,'(a,2(i0,tr1,''/'',tr1),i0)') &

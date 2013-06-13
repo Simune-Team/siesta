@@ -12,7 +12,7 @@
 ! Nick Papior Andersen, 2013, nickpapior@gmail.com
 ! Please conctact the author, prior to re-using this code.
 
-module m_ts_mem_scat
+module m_ts_full_scat
 
   use precision, only : dp
 
@@ -357,4 +357,4 @@ subroutine my_symmetrize(N,M)
 
   end subroutine calc_GF_Part
 
-end module m_ts_mem_scat
+end module m_ts_full_scat

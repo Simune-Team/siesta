@@ -33,10 +33,6 @@ logical  :: savetshs     ! Saves the Hamiltonian and Overlap matrices if the
 logical  :: onlyS        ! Option to only save overlap matrix
 logical  :: USEBULK      ! Use Bulk Hamiltonian in Electrodes
 logical  :: UpdateDMCR   ! Update DM values of ONLY Central Region
-integer  :: ChargeCorr   ! Integer holding the method of charge correction
-                         !  0 => Will not do charge correction
-                         !  1 => Excess/missing charge is corrected in the buffer layers
-real(dp) :: ChargeCorr_factor ! A factor for the correction (should be in the range 0 <= 1)
 logical  :: UseVFix      ! Call the routine TSVHFix 
 logical  :: IsVolt       ! Logical for dabs(VoltFDF) > 0.001d/eV
 real(dp) :: VoltFDF      ! Bias applied, Internally Volt=voltfdf/eV. 
@@ -102,8 +98,6 @@ integer, parameter :: NUsedAtoms_def = -1
 character(20), parameter :: smethod_def = 'gaussfermi'
 character(33), parameter :: GFTitle_def = 'Generated GF file'
 character(33), parameter :: HSFile_def = 'NOT REQUESTED'
-character(4),  parameter :: ChargeCorr_def = 'none'
-real(dp),  parameter :: ChargeCorr_factor_def = 0.75_dp
 logical, parameter :: ElecValenceBandBot_def = .false.
 logical, parameter :: ReUseGF_def = .false.
 
@@ -136,6 +130,7 @@ CONTAINS
     use m_ts_io, only : ts_read_TSHS_lasto
     use m_ts_method
     use m_ts_weight
+    use m_ts_charge
 
     implicit none
     
@@ -226,23 +221,25 @@ CONTAINS
        call die("Buffer atoms must be 0 or a positive integer.")
     end if
 
-    chars = fdf_get('TS.ChargeCorrection',ChargeCorr_def)
-    ChargeCorr = 0
+    chars = fdf_get('TS.ChargeCorrection','none')
+    TS_RHOCORR_METHOD = 0
     if ( leqi(chars,'none') ) then
-       ChargeCorr = 0
+       TS_RHOCORR_METHOD = 0
     else if ( leqi(chars,'b') .or. leqi(chars,'buffer') ) then
-       ChargeCorr = 1
+       TS_RHOCORR_METHOD = TS_RHOCORR_BUFFER
+    !else if ( leqi(chars,'up') .or. leqi(chars,'update') ) then
+    !   TS_RHOCORR_METHOD = TS_RHOCORR_UPDATE
     end if
-    ChargeCorr_factor = fdf_get('TS.ChargeCorrectionFactor',ChargeCorr_factor_def)
-    if ( ChargeCorr_factor < 0.0_dp .or. &
-         1.0_dp < ChargeCorr_factor) then
+    TS_RHOCORR_FACTOR = fdf_get('TS.ChargeCorrectionFactor',.75_dp)
+    if ( TS_RHOCORR_FACTOR < 0.0_dp .or. &
+         1.0_dp < TS_RHOCORR_FACTOR) then
        call die("Charge correction factor must be in the range [0;1]")
     endif
 
     CCEMin = fdf_get('TS.ComplexContourEmin',CCEMin_def,'Ry')
     GFEta = fdf_get('TS.biasContour.Eta',GFEta_def,'Ry')
     if ( GFEta <= 0.d0) call die('ERROR: GFeta <= 0.0, we do not allow for &
-         &using the advanced Greens function')
+         &using the advanced Greens function, please correct.')
     kT = fdf_get('ElectronicTemperature',kT_def,'Ry')
 
     s_cmethod = fdf_get('TS.biasContour.method',smethod_def)
@@ -257,7 +254,7 @@ CONTAINS
     ncircle    = fdf_get('TS.ComplexContour.NCircle',ncircle_def)
     nline      = fdf_get('TS.ComplexContour.NLine',nline_def)
     nvolt      = fdf_get('TS.biasContour.NumPoints',nvolt_def)
-    NEn_Node_Correct = fdf_get('TS.Contour.NoEmptyCycles',NEn_Node_Correct)
+    NEn_Node_Correct = fdf_get('TS.Contour.NoEmptyCycles',.true.)
     if ( NEn_Node_Correct ) then
        i = npol+ncircle+nline
        ! We immediately correct the number of energy-points for the contour
@@ -308,6 +305,8 @@ CONTAINS
     if ( RepA1(ElRight) < 1 .or. RepA2(ElRight) < 1 ) &
          call die("Repetition in right electrode must be >= 1.")
 
+
+    ! Read in information about the voltage placement.
     chars = fdf_get('TS.VoltagePlacement','central')
     VoltageInC = .false.
     if ( leqi(trim(chars),'cell') ) then
@@ -368,99 +367,99 @@ CONTAINS
     call fdf_obsolete('TS.NKVoltScale')
 
 ! Output Used Options in OUT file ....
- if (IOnode) then
-    write(*,1) 'Save H and S matrices', saveTSHS
-    write(*,1) 'Save S and quit (onlyS)', onlyS
- end if
-
- if (IONode .and. TSmode ) then
-    if ( ts_method == TS_SPARSITY ) then
-       write(*,10)'Solution method', 'Sparsity pattern'
-    else if ( ts_method == TS_SPARSITY_TRI ) then
-       write(*,10)'Solution method', 'Sparsity pattern with tri-solver'
-       if ( opt_TriMat_method == 0 ) then
-          chars = 'speed'
-       else if  ( opt_TriMat_method == 1 ) then
-          chars = 'memory'
-       end if
-       write(*,10)'Tri-Mat create algorithm', trim(chars)
+    if (IOnode) then
+       write(*,1) 'Save H and S matrices', saveTSHS
+       write(*,1) 'Save S and quit (onlyS)', onlyS
     end if
-    write(*,1) 'Start TS-SCF cycle immediately', ImmediateTSmode
-    if ( IsVolt ) then
-       write(*,6) 'Voltage', VoltFDF/eV,' Volts'
-       if ( VoltageInC ) then
-          write(*,11) 'Voltage drop across central region'
+
+    if (IONode .and. TSmode ) then
+       if ( ts_method == TS_SPARSITY ) then
+          write(*,10)'Solution method', 'Sparsity pattern'
+       else if ( ts_method == TS_SPARSITY_TRI ) then
+          write(*,10)'Solution method', 'Sparsity pattern with tri-solver'
+          if ( opt_TriMat_method == 0 ) then
+             chars = 'speed'
+          else if  ( opt_TriMat_method == 1 ) then
+             chars = 'memory'
+          end if
+          write(*,10)'Tri-Mat create algorithm', trim(chars)
+       end if
+       write(*,1) 'Start TS-SCF cycle immediately', ImmediateTSmode
+       if ( IsVolt ) then
+          write(*,6) 'Voltage', VoltFDF/eV,' Volts'
+          if ( VoltageInC ) then
+             write(*,11) 'Voltage drop across central region'
+          else
+             write(*,11) 'Voltage drop across entire cell'    
+          end if
+          chars = 'Non-equilibrium contour weights'
+          if  ( TS_W_METHOD == TS_W_CORRELATED ) then
+             write(*,10) trim(chars),'Real-space'
+          else if ( TS_W_METHOD == TS_W_UNCORRELATED ) then
+             write(*,10) trim(chars),'Uncorrelated k-points in real-space'
+          else if ( TS_W_METHOD == TS_W_K_UNCORRELATED ) then
+             write(*,10) trim(chars),'Uncorrelated k-points in k-space'
+          end if
        else
-          write(*,11) 'Voltage drop across entire cell'    
+          write(*,11) 'TranSIESTA no voltage applied'
        end if
-       chars = 'Non-equilibrium contour weights'
-       if  ( TS_W_METHOD == TS_W_CORRELATED ) then
-          write(*,10) trim(chars),'Real-space'
-       else if ( TS_W_METHOD == TS_W_UNCORRELATED ) then
-          write(*,10) trim(chars),'Uncorrelated k-points in real-space'
-       else if ( TS_W_METHOD == TS_W_K_UNCORRELATED ) then
-          write(*,10) trim(chars),'Uncorrelated k-points in k-space'
-       end if
-    else
-       write(*,11) 'TranSIESTA no voltage applied'
-    end if
-    write(*,1) 'Bulk Values in Electrodes', UseBulk
-    write(*,1) 'Update DM Contact Reg. only', UpdateDMCR
+       write(*,1) 'Bulk Values in Electrodes', UseBulk
+       write(*,1) 'Update DM Contact Reg. only', UpdateDMCR
 
-    write(*,5) 'Left buffer atoms', na_BufL
-    write(*,5) 'Right buffer atoms', na_BufR
+       write(*,5) 'Left buffer atoms', na_BufL
+       write(*,5) 'Right buffer atoms', na_BufR
 
-    write(*,5) 'N. Pts. Circle', ncircle
-    write(*,5) 'N. Pts. Line', nline
-    write(*,5) 'N. Poles in Contour', npol
-    write(*,5) 'N. Pts. Bias Contour', nvolt
+       write(*,5) 'N. Pts. Circle', ncircle
+       write(*,5) 'N. Pts. Line', nline
+       write(*,5) 'N. Poles in Contour', npol
+       write(*,5) 'N. Pts. Bias Contour', nvolt
     ! write(*,5) 'N. Pts. Transport', Ntransport
-    write(*,6) 'Contour E Min.', CCEmin / eV,' eV'
+       write(*,6) 'Contour E Min.', CCEmin / eV,' eV'
 
-    write(*,7) 'GFEta', GFEta / eV,' eV'
-    write(*,6) 'Electronic Temperature', kT / eV , ' eV'
-    write(*,10)'Bias Contour Method', trim(s_cmethod)
-    if ( ChargeCorr == 0 ) then
-       write(*,11)'Will not correct charge fluctuations'
-    else if ( ChargeCorr == 1 ) then ! Correct in buffer
-       if ( 0 < na_BufL .or. 0 < na_BufR ) then
-          write(*,10)'Charge fluctuation correction','buffer'
-       else
-          call die('Charge correction can not happen in buffer as no buffer &
-               &atoms exist.')
+       write(*,7) 'GFEta', GFEta / eV,' eV'
+       write(*,6) 'Electronic Temperature', kT / eV , ' eV'
+       write(*,10)'Bias Contour Method', trim(s_cmethod)
+       if ( TS_RHOCORR_METHOD == 0 ) then
+          write(*,11)'Will not correct charge fluctuations'
+       else if ( TS_RHOCORR_METHOD == TS_RHOCORR_BUFFER ) then ! Correct in buffer
+          if ( 0 < na_BufL .or. 0 < na_BufR ) then
+             write(*,10)'Charge fluctuation correction','buffer'
+          else
+             call die('Charge correction can not happen in buffer as no buffer &
+                  &atoms exist.')
+          end if
+          write(*,8)'Charge correction factor',TS_RHOCORR_FACTOR
        end if
-       write(*,8)'Charge correction factor',ChargeCorr_factor
-    end if
-    write(*,1) 'Calc. band bottom in elec.', ElecValenceBandBot
-    write(*,10)'GF title', trim(GFTitle)
-    write(*,10)'Left GF File', trim(GFFileL)
-    write(*,10)'Right GF File', trim(GFFileR)
-    write(*,1) 'Re-use GF file if exists', ReUseGF
-    write(*,10)'Left electrode TSHS file', trim(HSFile(ElLeft))
-    write(*,5) '# atoms used in left elec. ', UsedAtoms(ElLeft)
-    write(*,15) 'Left elec. repetition A1/A2', RepA1(ElLeft),RepA2(ElLeft)
-    write(*,10)'Right electrode TSHS file', trim(HSFile(ElRight))
-    write(*,5) '# atoms used in right elec. ', UsedAtoms(ElRight)
-    write(*,15) 'Right elec. repetition A1/A2', RepA1(ElRight),RepA2(ElRight)
+       write(*,1) 'Calc. band bottom in elec.', ElecValenceBandBot
+       write(*,10)'GF title', trim(GFTitle)
+       write(*,10)'Left GF File', trim(GFFileL)
+       write(*,10)'Right GF File', trim(GFFileR)
+       write(*,1) 'Re-use GF file if exists', ReUseGF
+       write(*,10)'Left electrode TSHS file', trim(HSFile(ElLeft))
+       write(*,5) '# atoms used in left elec. ', UsedAtoms(ElLeft)
+       write(*,15) 'Left elec. repetition A1/A2', RepA1(ElLeft),RepA2(ElLeft)
+       write(*,10)'Right electrode TSHS file', trim(HSFile(ElRight))
+       write(*,5) '# atoms used in right elec. ', UsedAtoms(ElRight)
+       write(*,15) 'Right elec. repetition A1/A2', RepA1(ElRight),RepA2(ElRight)
 
 
-    write(*,11) repeat('*', 62)
-    write(*,*)
+       write(*,11) repeat('*', 62)
+       write(*,*)
 
-    write(*,'(3a)') repeat('*',24),' Begin: TS CHECKS AND WARNINGS ',repeat('*',24)
+       write(*,'(3a)') repeat('*',24),' Begin: TS CHECKS AND WARNINGS ',repeat('*',24)
 
-    ! Check that the unitcell does not extend into the transport direction
-    do i = 1 , 2
-       if ( abs(ucell(3,i)) > 1e-7 .or. abs(ucell(i,3)) > 1e-7 ) then
-          write(*,*) &
-               "ERROR: Unitcell has the electrode extend into the &
-               &transport direction."
-          write(*,*) &
-               "Please change the geometry."
-          call die("Electrodes extend into the transport direction. &
-               &Please change the geometry.")
-       end if
-    end do
+       ! Check that the unitcell does not extend into the transport direction
+       do i = 1 , 2
+          if ( abs(ucell(3,i)) > 1e-7 .or. abs(ucell(i,3)) > 1e-7 ) then
+             write(*,*) &
+                  "ERROR: Unitcell has the electrode extend into the &
+                  &transport direction."
+             write(*,*) &
+                  "Please change the geometry."
+             call die("Electrodes extend into the transport direction. &
+                  &Please change the geometry.")
+          end if
+       end do
 
 ! Print out message if the number of contour points are not 
 ! divisable by the number of Nodes
@@ -470,97 +469,85 @@ CONTAINS
 !   - The voltage contour point is more "heavy" in computation
 !   * Solution make both Left and Right equi contours divisible by Nodes
 !   * Make Nvolt divisible by Nodes
-    if ( IsVolt ) then
-       if ( mod(2*(Npol+NLine+Ncircle),Nodes) /= 0 ) then
-          write(*,*) "NOTICE: Equilibrium energy contour points are not"
-          write(*,*) "        divisable by the number of nodes."
-          write(*,*) "        Better scalability is achived by changing:"
-          write(*,*) "          - TS.ComplexContour.NPoles"
-          write(*,*) "          - TS.ComplexContour.NLine"
-          write(*,*) "          - TS.ComplexContour.NCircle"
+       if ( IsVolt ) then
+          if ( mod(2*(Npol+NLine+Ncircle),Nodes) /= 0 ) then
+             write(*,*) "NOTICE: Equilibrium energy contour points are not"
+             write(*,*) "        divisable by the number of nodes."
+             write(*,*) "        Better scalability is achived by changing:"
+             write(*,*) "          - TS.ComplexContour.NPoles"
+             write(*,*) "          - TS.ComplexContour.NLine"
+             write(*,*) "          - TS.ComplexContour.NCircle"
 
-       ! Calculate optimal number of energy points
-          i = 2*(Npol+Nline+Ncircle)
-          write(*,'(t10,a,i4)') "Used equilibrium # of energy points   : ",i
-          i = Nodes .PARCOUNT. i
-          write(*,'(t10,a,i4,tr1,a4,i3,/)') &
-               "Optimal equilibrium # of energy points: ",i, &
-               "+- i*",Nodes
-       end if
-       if ( mod(NVolt,Nodes) /= 0 ) then
-          write(*,*) "NOTICE: Non-equilibrium energy contour points are not"
-          write(*,*) "        divisable by the number of nodes."
-          write(*,*) "        Better scalability is achieved by changing:"
-          write(*,*) "          - TS.ComplexContour.NVolt"
+             ! Calculate optimal number of energy points
+             i = 2*(Npol+Nline+Ncircle)
+             write(*,'(t10,a,i4)') "Used equilibrium # of energy points   : ",i
+             i = Nodes .PARCOUNT. i
+             write(*,'(t10,a,i4,tr1,a4,i3,/)') &
+                  "Optimal equilibrium # of energy points: ",i, &
+                  "+- i*",Nodes
+          end if
+          if ( mod(NVolt,Nodes) /= 0 ) then
+             write(*,*) "NOTICE: Non-equilibrium energy contour points are not"
+             write(*,*) "        divisable by the number of nodes."
+             write(*,*) "        Better scalability is achieved by changing:"
+             write(*,*) "          - TS.ComplexContour.NVolt"
           
-       ! Calculate optimal number of energy points
-          i = NVolt
-          write(*,'(t10,a,i4)') "Used non-equilibrium # of energy points   : ",i
-          i = Nodes .PARCOUNT. i
-          write(*,'(t10,a,i4,tr1,a4,i3,/)') &
-               "Optimal non-equilibrium # of energy points: ",i, &
-               "+- i*",Nodes
-       end if
-       if ( mod(2*(Npol+Nline+Ncircle)+NVolt,Nodes) /= 0 ) then
-          write(*,*) "NOTICE: Total energy contour points are not"
-          write(*,*) "        divisable by the number of nodes."
-          
-          ! Calculate optimal number of energy points
-          i = 2*(Npol+Nline+Ncircle)+NVolt
-          write(*,'(t10,a,i4)') "Used # of energy points   : ",i
-          i = Nodes .PARCOUNT. i
-          write(*,'(t10,a,i4,tr1,a4,i3,/)') &
-               "Optimal # of energy points: ",i,"+- i*",Nodes
-       end if
-    else
+             ! Calculate optimal number of energy points
+             i = NVolt
+             write(*,'(t10,a,i4)') "Used non-equilibrium # of energy points   : ",i
+             i = Nodes .PARCOUNT. i
+             write(*,'(t10,a,i4,tr1,a4,i3,/)') &
+                  "Optimal non-equilibrium # of energy points: ",i, &
+                  "+- i*",Nodes
+          end if
+          if ( mod(2*(Npol+Nline+Ncircle)+NVolt,Nodes) /= 0 ) then
+             write(*,*) "NOTICE: Total energy contour points are not"
+             write(*,*) "        divisable by the number of nodes."
+
+             ! Calculate optimal number of energy points
+             i = 2*(Npol+Nline+Ncircle)+NVolt
+             write(*,'(t10,a,i4)') "Used # of energy points   : ",i
+             i = Nodes .PARCOUNT. i
+             write(*,'(t10,a,i4,tr1,a4,i3,/)') &
+                  "Optimal # of energy points: ",i,"+- i*",Nodes
+          end if
+       else
 ! .not. IsVolt:
 !   - The equilibrium parts are the same computational cost
 !   * Solution make the equi contours divisible by Nodes
-       if ( mod(Npol+NLine+Ncircle,Nodes) /= 0 ) then
-          write(*,*) "NOTICE: Total number of energy points is &
-               &not divisable by the number of nodes."
-          write(*,*) "        There are no computational costs &
-               &associated with increasing this."
+          if ( mod(Npol+NLine+Ncircle,Nodes) /= 0 ) then
+             write(*,*) "NOTICE: Total number of energy points is &
+                  &not divisable by the number of nodes."
+             write(*,*) "        There are no computational costs &
+                  &associated with increasing this."
 ! Calculate optimal number of energy points
-          i = Npol+Nline+Ncircle
-          write(*,'(t10,a,i4)') "Used # of energy points   : ",i
-          i = Nodes .PARCOUNT. i
-          write(*,'(t10,a,i4)') "Optimal # of energy points: ",i
+             i = Npol+Nline+Ncircle
+             write(*,'(t10,a,i4)') "Used # of energy points   : ",i
+             i = Nodes .PARCOUNT. i
+             write(*,'(t10,a,i4)') "Optimal # of energy points: ",i
+          end if
        end if
+
     end if
 
- end if
-
-
-! sparsity pattern
-! if ( ts_method == TS_SPARSITY .or. ts) then
-    if ( ChargeCorr /= 0 ) then
+    ! Integration Method
+    if( Cmethod == 0 ) then
        if ( IONode ) then
-          write(*,*) "WARNING: Charge correction not implemented, yet."
-          write(*,*) "         No correction will be performed"
+          write(*,*) 'WARNING: TS.biasContour.method not recognized.'
+          write(*,*) '         Reverting to gaussfermi instead'
        end if
-       ChargeCorr = 0
+       Cmethod = CC_METHOD_GAUSSFERMI
     end if
-! end if
 
-! Integration Method
- if( Cmethod == 0 ) then
+    if (fixspin ) then
+       write(*,*) 'Fixed Spin not possible in TS Calculations !'
+       call die('Stopping code')
+    end if
+
     if ( IONode ) then
-       write(*,*) 'WARNING: TS.biasContour.method not recognized.'
-       write(*,*) '         Reverting to gaussfermi instead'
+       write(*,'(3a,/)') repeat('*',24), &
+            ' End: TS CHECKS AND WARNINGS ',repeat('*',26)
     end if
-    Cmethod = CC_METHOD_GAUSSFERMI
- endif
-
- if (fixspin ) then
-    write(*,*) 'Fixed Spin not possible in TS Calculations !'
-    call die('Stopping code')
- end if
-
- if ( IONode ) then
-    write(*,'(3a,/)') repeat('*',24), &
-         ' End: TS CHECKS AND WARNINGS ',repeat('*',26)
- end if
 
 1   format('ts_read_options: ',a,t51,'=',4x,l1)
 5   format('ts_read_options: ',a,t51,'=',i5,a)
