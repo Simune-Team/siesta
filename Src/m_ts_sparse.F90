@@ -95,6 +95,9 @@ contains
     use m_ts_options, only : ElLeft, ElRight
     use m_ts_options, only : na_BufL, no_BufL
     use m_ts_options, only : na_BufR, no_BufR
+#ifdef TRANSIESTA_DEBUG
+    use m_ts_debug
+#endif
 
 ! **********************
 ! * INPUT variables    *
@@ -143,7 +146,8 @@ contains
        end if
 
 #ifdef TRANSIESTA_DEBUG
-       call sp_to_file(3000+Node,ltsup_sp_sc)
+       if(IONode)write(*,*)'Created TS-local UP (300)'
+       call sp_to_file(300+Node,ltsup_sp_sc)
 #endif
 
        ! Create the pointer from the local transiesta update sparsity 
@@ -166,7 +170,8 @@ contains
     end if
 
 #ifdef TRANSIESTA_DEBUG
-    call sp_to_file(1000+Node,ts_sp_uc)
+    if(IONode)write(*,*)'Created TS-Global HS (100)'
+    call sp_to_file(100+Node,ts_sp_uc)
 #endif
 
     ! In order to ensure that the electrodes are in the
@@ -192,17 +197,12 @@ contains
        call print_type(tsup_sp_uc)
     end if
 
-
 #ifdef TRANSIESTA_DEBUG
+    if(IONode)write(*,*)'Created TS-Global update (200)'
     call print_type(tsup_sp_uc)
-    call sp_to_file(2000+Node,tsup_sp_uc)
+    call sp_to_file(200+Node,tsup_sp_uc)
 #endif
 
-
-#ifdef TRANSIESTA_DEBUG
-    call die('')
-#endif
-        
   end subroutine ts_sparse_init
 
 
@@ -224,6 +224,9 @@ contains
 #endif
     use class_OrbitalDistribution
     use create_Sparsity_SC
+#ifdef TRANSIESTA_DEBUG
+    use m_ts_debug
+#endif
 
 ! **********************
 ! * INPUT variables    *
@@ -311,7 +314,7 @@ contains
 #endif
 
 #ifdef TRANSIESTA_DEBUG
-    write(*,*)'Created UC SIESTA sparsity'
+    if(IONode)write(*,*)'Created UC SIESTA sparsity (400)'
     call print_type(sp_uc)
     call sp_to_file(400+Node, sp_uc)
 #endif
@@ -401,40 +404,6 @@ contains
     call delete(sp_uc)
 
   end subroutine ts_Sparsity_Global
-
-#ifdef TRANSIESTA_DEBUG
-  
-  subroutine sp_to_file(u,sp)
-    use geom_helper, only : UCORB
-#ifdef MPI
-    use mpi_siesta, only : MPI_Comm_World
-#endif
-    integer, intent(in) :: u
-    type(Sparsity), intent(inout) :: sp
-    integer :: io,jo,j,ind
-    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-    call attach(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
-
-    write(u,'(i5)') nrows(sp)
-
-    do io = 1 , nrows(sp)
-       if ( l_ncol(io) == 0 ) cycle
-       do j = 1 , l_ncol(io)
-          ind = l_ptr(io) + j
-          jo = UCORB(l_col(ind),nrows(sp))
-          write(u,'(3(tr1,i5))') io,jo,1
-       end do
-    end do
-    if ( ind /= nnzs(sp) ) then
-       call die('Have not looped through all things')
-    end if
-#ifdef MPI
-    call MPI_Barrier(MPI_Comm_World,io)
-#endif
-
-  end subroutine sp_to_file
-
-#endif
 
 
 ! Returns the global sparsity pattern for the transiesta region

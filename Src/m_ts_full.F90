@@ -97,7 +97,6 @@ contains
     use class_dSpData1D
     use class_zSpData1D
 
-
     use m_ts_kpoints
 
     use m_ts_electype
@@ -129,6 +128,10 @@ contains
     use m_ts_gf, only : read_Green
 
     use m_ts_cctype
+
+#ifdef TRANSIESTA_DEBUG
+    use m_ts_debug
+#endif
 
 ! ********************
 ! * INPUT variables  *
@@ -209,6 +212,9 @@ contains
 ! ******************** Loop variables ************************
     integer :: ispin, ikpt, iPE, iE, NEReqs, up_nzs, ia, ia_E
     integer :: ind
+#ifdef TRANSIESTA_DEBUG
+    integer :: iu_GF
+#endif
 ! ************************************************************
 
 ! ******************* Miscalleneous variables ****************
@@ -439,6 +445,11 @@ contains
     ! We just check that the work for reducing the matrices can be made
     if ( nzwork < nnzs(ts_sp_uc) ) call die('The memory for transiesta cannot &
          &sustain the implementation, contact the developers.')
+
+#ifdef TRANSIESTA_DEBUG
+    if(IONode)write(*,*)'Writing GFs (1000)'
+    iu_GF = 1000
+#endif
 
     SPIN: do ispin = 1 , nspin
        
@@ -782,6 +793,7 @@ contains
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS transiesta mem' )
+    call die('')
 #endif
 
   contains
@@ -825,6 +837,10 @@ contains
          no_GF_offset = 0
          ! The size of the central region (with left-right electrodes)
          no_u_C = no_u_TS
+#ifdef TRANSIESTA_DEBUG
+         ! currently we will only write out the equilibrium GF
+         call write_Full(iu_GF,no_u_TS,GF)
+#endif
       end if
 
       if ( ts_Gamma_SCF ) then

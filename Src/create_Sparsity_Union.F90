@@ -149,12 +149,6 @@ contains
     ! The number of non-zero elements in the requested array
     n_nzs = listptr(n_rows) + num(n_rows)
 
-#ifdef TRANSIESTA_DEBUG
-    write(*,'(a,i0,a)')'Found ',n_nzs,' elements'
-    write(*,'(10000(tr1,i0))') num
-    write(*,'(10000(tr1,i0))') listptr
-#endif
-
     ! Now we will create the list array...
     allocate(list(n_nzs))
 

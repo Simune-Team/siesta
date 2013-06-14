@@ -1,4 +1,29 @@
 ----------------------------------------------------
+June 14, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-54
+Added debug module for transiesta, when debugging GF is written out
+
+* When debugging (-DTRANSIESTA_DEBUG) the full GF will be written out
+  for all energy-points for the first SCF iteration.
+  This will enable one to debug several things.
+
+* Moved an sp_to_file routine to the module as well
+
+* Debug files are created with an explanation of their content
+  in the out file
+  Typically they are added the node index so that every node 
+  writes out something.
+
+added:
+  Src/m_ts_debug.F90
+modified:
+  Src/Makefile
+  Src/create_Sparsity_SC.F90
+  Src/create_Sparsity_Union.F90
+  Src/m_ts_full.F90
+  Src/m_ts_sparse.F90
+  Src/m_ts_tri.F90
+
+----------------------------------------------------
 June 14, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-53
 Bugfix for non-UC sparsity pattern
 
