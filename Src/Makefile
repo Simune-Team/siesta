@@ -653,10 +653,6 @@ m_ts_sparse.o: m_ts_electype.o m_ts_options.o parallel.o precision.o
 m_ts_sparse_helper.o: class_OrbitalDistribution.o class_SpData1D.o
 m_ts_sparse_helper.o: class_SpData1D.o class_Sparsity.o geom_helper.o
 m_ts_sparse_helper.o: intrinsic_missing.o parallel.o precision.o
-m_ts_sparse_helper_new.o: class_OrbitalDistribution.o class_SpData1D.o
-m_ts_sparse_helper_new.o: class_SpData1D.o class_SpData1D.o class_Sparsity.o
-m_ts_sparse_helper_new.o: intrinsic_missing.o m_ts_cctype.o m_ts_weight.o
-m_ts_sparse_helper_new.o: parallel.o precision.o units.o
 m_ts_tri.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_tri.o: class_SpData1D.o class_Sparsity.o class_TriMat.o
 m_ts_tri.o: create_Sparsity_Union.o m_trimat_invert.o m_ts_Sparsity2TriMat.o

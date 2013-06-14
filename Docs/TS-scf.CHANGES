@@ -1,4 +1,20 @@
 ----------------------------------------------------
+June 14, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-53
+Bugfix for non-UC sparsity pattern
+
+* For gamma-calculations the density was incorrectly updated.
+
+* Deleted unused file m_ts_sparse_helper_new.F90
+
+removed:
+  Src/m_ts_sparse_helper_new.F90
+modified:
+  Src/Makefile
+  Src/m_ts_dm_update.F90
+  Src/m_ts_full.F90
+  Src/m_ts_tri.F90
+
+----------------------------------------------------
 June 13, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-52
 Made a new fdf flag to control the precision of the electrodes position
 

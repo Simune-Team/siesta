@@ -147,7 +147,8 @@ contains
     use class_iSpData1D
     use class_dSpData1D
     use class_zSpData1D
-    use intrinsic_missing, only : SFIND, UCORB => MODP
+    use geom_helper, only : UCORB
+    use intrinsic_missing, only : SFIND
     use parallel, only : Node
 
 ! *********************
@@ -331,7 +332,8 @@ contains
     use class_Sparsity
     use class_dSpData1D
     use m_ts_weight
-    use intrinsic_missing, only : SFIND, UCORB => MODP
+    use geom_helper, only : UCORB
+    use intrinsic_missing, only : SFIND
     use parallel, only : Node
 
 ! *********************
@@ -429,6 +431,7 @@ contains
     integer, pointer :: pnt(:)
     real(dp), pointer :: dD(:), dE(:)
     integer :: lnr, uind, lio, io, lind, ind, nr, ljo, jo
+    logical :: lUpGlobal
 
     call attach(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=lnr,nrows_g=nr)
@@ -437,7 +440,10 @@ contains
     dD => val(spDM)
     dE => val(spEDM)
 
-    if ( .not. UpGlobal ) then
+    lUpGlobal = .false.
+    if ( present(UpGlobal) ) lUpGlobal = UpGlobal
+
+    if ( .not. lUpGlobal ) then
 
        ! We have that the update sparsity pattern is in local
        ! form.
@@ -483,8 +489,8 @@ contains
              ! we do fewer operations by having this as an outer loop
              do uind = lup_ptr(io) + 1 , lup_ptr(io) + lup_ncol(io)
                 
-                ! in case of siesta non-Gamma
-                jo = UCORB(lup_col(uind),nr)
+                ! We are dealing with a non-UC sparsity pattern
+                jo = lup_col(uind)
 
                 ! Now we loop across the local region
                 ind = l_ptr(io)
@@ -508,6 +514,7 @@ contains
 
        ! This is the global sparsity pattern
        ! i.e. we require to call index_local_to_global
+       ! The global sparsity pattern is not in supercell format
 
        ! This loop is across the local rows...
        do lio = 1 , lnr
@@ -553,7 +560,8 @@ contains
     use class_Sparsity
     use class_zSpData1D
 
-    use intrinsic_missing, only : SFIND, UCORB => MODP
+    use geom_helper, only : UCORB
+    use intrinsic_missing, only : SFIND
     use parallel, only : Node
     type(OrbitalDistribution), intent(inout) :: dit
     type(Sparsity), intent(inout) :: sp
@@ -647,7 +655,7 @@ contains
           ! The DM and EDM equivalent matrices
     use class_OrbitalDistribution
     use class_Sparsity
-    use intrinsic_missing, only : UCORB => MODP
+    use geom_helper, only : UCORB
     use parallel, only : Node
     type(OrbitalDistribution), intent(inout) :: dit
     type(Sparsity), intent(inout) :: sp

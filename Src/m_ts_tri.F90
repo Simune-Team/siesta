@@ -808,7 +808,7 @@ contains
                spEDML, spEDMR, nonEq_IsWeight = .false.)
           ! Directly save to the correct DM
           call update_DM(sp_dist,sparse_pattern, n_nzs, &
-               DM(:,ispin), EDM(:,ispin), spDML, spEDML)
+               DM(:,ispin), EDM(:,ispin), spDML, spEDML, ipnt=ltsup_sc_pnt)
        end if
 
    end do KPOINT
