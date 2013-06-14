@@ -16,7 +16,6 @@ contains
     complex(dp), pointer :: z(:)
     integer :: i,j, p, np, n,idx, ntmp
 
-    iu = iu + 1
     ! Number of parts
     np = parts(tri)
     n = 0
@@ -27,38 +26,41 @@ contains
        do j = 1 , nrows_g(tri,p)
           idx = (j-1)*nrows_g(tri,p)
           do i = 1 , nrows_g(tri,p)
-             write(iu,'(2(tr1,i5),2(tr1,g10.6))') n+i, n+j,z(idx+i)
-          end do
-       end do
-
-       z => val(tri,p,p+1)
-       ntmp = n+nrows_g(tri,p)
-       do j = 1 , nrows_g(tri,p)
-          idx = (j-1)*nrows_g(tri,p+1)
-          do i = 1 , nrows_g(tri,p+1)
-             write(iu,'(2(tr1,i5),2(tr1,g10.6))') n+ntmp+i, n+j,z(idx+i)
+             call out_write(iu,n+i,n+j,z(idx+i))
           end do
        end do
 
        z => val(tri,p+1,p)
-       ntmp = n+nrows_g(tri,p)
+       ntmp = n + nrows_g(tri,p)
+       do j = 1 , nrows_g(tri,p)
+          idx = (j-1)*nrows_g(tri,p+1)
+          do i = 1 , nrows_g(tri,p+1)
+             call out_write(iu,ntmp+i,n+j,z(idx+i))
+          end do
+       end do
+
+       z => val(tri,p,p+1)
+       ntmp = n + nrows_g(tri,p)
        do j = 1 , nrows_g(tri,p+1)
           idx = (j-1)*nrows_g(tri,p)
           do i = 1 , nrows_g(tri,p)
-             write(iu,'(2(tr1,i5),2(tr1,g10.6))') n+i, n+ntmp+j,z(idx+i)
+             call out_write(iu,n+i,ntmp+j,z(idx+i))
           end do
        end do
        
        n = n + nrows_g(tri,p)
     end do
-
+    
     z => val(tri,np,np)
     do j = 1 , nrows_g(tri,np)
        idx = (j-1)*nrows_g(tri,np)
        do i = 1 , nrows_g(tri,np)
-          write(iu,'(2(tr1,i5),2(tr1,g10.6))') n+i, n+j,z(idx+i)
+          call out_write(iu,n+i,n+j,z(idx+i))
        end do
     end do
+
+    iu = iu + 1
+
   end subroutine write_TriMat
 
   subroutine write_Full(iu,no,GF)
@@ -70,12 +72,17 @@ contains
     
     do j = 1 , no
        do i = 1 , no
-          write(iu,'(2(tr1,i5),2(tr1,g10.6))') i, j,GF(i,j)
+          call out_write(iu,i,j,GF(i,j))
        end do
     end do
 
   end subroutine write_Full
 
+  subroutine out_write(iu,i,j,z)
+    integer, intent(in) :: iu,i,j
+    complex(dp), intent(in) :: z
+    write(iu,'(2(tr1,i5),2(tr1,g13.6))') i,j,real(z),aimag(z)
+  end subroutine out_write
   
   subroutine sp_to_file(u,sp)
     use class_Sparsity

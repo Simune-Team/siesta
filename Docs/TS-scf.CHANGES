@@ -1,4 +1,13 @@
 ----------------------------------------------------
+June 14, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-55
+Bugfixes in debug module
+
+* Trimat write out was wrong
+
+modified:
+  Src/m_ts_debug.F90
+
+----------------------------------------------------
 June 14, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-54
 Added debug module for transiesta, when debugging GF is written out
 
