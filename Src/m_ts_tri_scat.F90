@@ -30,7 +30,6 @@ module m_ts_tri_scat
   complex(dp), parameter :: z0  = dcmplx( 0._dp, 0._dp)
   complex(dp), parameter :: z1  = dcmplx( 1._dp, 0._dp)
   complex(dp), parameter :: zm1 = dcmplx(-1._dp, 0._dp)
-  complex(dp), parameter :: zi  = dcmplx( 0._dp, 1._dp)
 
 contains
 
@@ -45,7 +44,7 @@ contains
 ! ## tri-diagonal structure of the Green's function.              ##
 ! ##                                                              ##
 ! ##################################################################
-  subroutine calc_GF(BiasContour, &
+  subroutine calc_GF(UseBulk, &
        no_u_TS, GFinv_tri,GF_tri,ierr)
     
     use intrinsic_missing, only: EYE
@@ -58,7 +57,7 @@ contains
 ! *********************
 ! * INPUT variables   *
 ! *********************
-    logical, intent(in) :: BiasContour ! if true we also need b11 and b33
+    logical, intent(in) :: UseBulk ! if true we also need b11 and b33
     ! Sizes of the different regions...
     integer, intent(in) :: no_u_TS
     ! Work should already contain Z*S - H
@@ -156,7 +155,7 @@ contains
 !*b21 = - b22 * x21 | a''22^-1 * a21 * a11^-1
     call zgemm('N','N',nC,nL,nC,zm1, Gf22,nC, iGf12,nC,z0, Gf21,nC)
 
-    if ( BiasContour ) then
+    if ( .not. UseBulk ) then
        ! We only need the *full* Green's function for the Bias points...
 !*b11 = b'11 - b12 * x21 | a11^-1 - a11^-1 * a12 * a''22^-1 * a21 * a11^-1
        call zgemm('N','N',nL,nL,nC,zm1, Gf12,nL, iGf12,nC,z1, Gf11,nL)
@@ -171,7 +170,7 @@ contains
 !*b23 = - b22 * x23 | a''22^-1 * a23 * a33^-1
     call zgemm('N','N',nC,nR,nC,zm1, Gf22,nC, iGf32,nC,z0, Gf23,nC)
 
-    if ( BiasContour ) then
+    if ( .not. UseBulk ) then
        ! We only need the *full* Green's function for the Bias points...
 !*b33 = b'33 - b32 * x23 | a33^-1 - a''22^-1 * a23 * a33^-1 * a''22^-1 * a23 * a33^-1
        call zgemm('N','N',nR,nR,nC,zm1, Gf32,nR, iGf32,nC,z1, Gf33,nR)
@@ -179,7 +178,7 @@ contains
 
     ! We are done with the inversion of the tri-diagonal case
        
-    call timer('GFT',2)  
+    call timer('GFT',2) 
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS getGF' )
@@ -441,7 +440,7 @@ contains
 
   end subroutine calc_GF_Part
 
-  subroutine GF_Gamma_GF_Left(no_L,Gf_tri,GammaT,GGG_tri)
+  subroutine GF_Gamma_GF_Left(UseBulk,no_L,Gf_tri,GammaT,GGG_tri)
 
 ! ======================================================================
 !  This routine returns GGG=GF.Gamma.GF^\dagger, where GF is a tri-diagonal
@@ -456,6 +455,7 @@ contains
 ! *********************
 ! * INPUT variables   *
 ! *********************
+    logical, intent(in) :: UseBulk ! If .not. UseBulk we will also update the Gf11 and Gf33
     integer, intent(in) :: no_L ! the size of the Gamma
     ! The Green's function (note that it SHOULD be transposed on entry)
     type(zTriMat), intent(inout) :: Gf_tri
@@ -491,9 +491,11 @@ contains
 
     ! This is actually not necessary... (we dont have anything to 
     ! update here)
-!    GGG => val(GGG_tri,1,1)
-!    ! Gf11 \Gamma Gf^\dagger 11 == GGG 11
-!    call zgemm('N','N',nL,nL,nL,z1, Gf,nL, oW,nL,z0, GGG,nL)
+    if ( .not. UseBulk ) then
+       GGG => val(GGG_tri,1,1)
+       ! Gf11 \Gamma Gf^\dagger 11 == GGG 11
+       call zgemm('N','N',nL,nL,nL,z1, Gf,nL, oW,nL,z0, GGG,nL)
+    end if
 
     Gf  => val(Gf_tri,2,1) ! size nC x nL
     GGG => val(GGG_tri,2,1) ! size nC x nL
@@ -536,15 +538,14 @@ contains
     ! Gf 21 \Gamma Gf^\dagger 13 == GGG 23
     call zgemm('N','N',nC,nR,nL,z1, Gf,nC, oW,nL,z0, GGG,nC)
 
-    ! This is actually not necessary... (we dont have anything to 
-    ! update here)
-    ! NOTICE that Gf contains Gf31 in Gf12 as Gf:2 is not used
-    ! for anything
-!    Gf  => val(Gf_tri,1,2) ! size nR x nL
-!    GGG => val(GGG_tri,3,3) ! size nR x nR
-    ! Gf 31 \Gamma Gf^\dagger 13 == GGG 33
-!    call zgemm('N','N',nR,nR,nL,z1, Gf,nR, oW,nL,z0, GGG,nR)
-
+    if ( .not. UseBulk ) then
+       ! NOTICE that Gf contains Gf31 in Gf12 as Gf:2 is not used
+       ! for anything
+       Gf  => val(Gf_tri,1,2) ! size nR x nL
+       GGG => val(GGG_tri,3,3) ! size nR x nR
+       ! Gf 31 \Gamma Gf^\dagger 13 == GGG 33
+       call zgemm('N','N',nR,nR,nL,z1, Gf,nR, oW,nL,z0, GGG,nR)
+    end if
     ! > We now have GGG 23 <
     
     call timer('GFGGF',2)
@@ -556,7 +557,7 @@ contains
   end subroutine GF_Gamma_GF_Left
 
 
-  subroutine GF_Gamma_GF_Right(no_R,Gf_tri,GammaT,GGG_tri)
+  subroutine GF_Gamma_GF_Right(UseBulk,no_R,Gf_tri,GammaT,GGG_tri)
 
 ! ======================================================================
 !  This routine returns GGG=GF.Gamma.GF, where GF is a tri-diagonal
@@ -571,6 +572,7 @@ contains
 ! *********************
 ! * INPUT variables   *
 ! *********************
+    logical, intent(in) :: UseBulk ! if .not. UseBulk everything is needed
     integer, intent(in) :: no_R ! the size of the Gamma
     ! The Green's function (note that it SHOULD be transposed on entry)
     type(zTriMat), intent(inout) :: Gf_tri
@@ -606,9 +608,11 @@ contains
 
     ! This is actually not necessary... (we dont have anything to 
     ! update here)
-!    GGG => val(GGG_tri,3,3)
-!    ! Gf33 \Gamma Gf^\dagger 33 == GGG 33
-!    call zgemm('N','N',nR,nR,nR,z1, Gf,nR, oW,nR,z0, GGG,nR)
+    if ( .not. UseBulk ) then
+       GGG => val(GGG_tri,3,3)
+       ! Gf33 \Gamma Gf^\dagger 33 == GGG 33
+       call zgemm('N','N',nR,nR,nR,z1, Gf,nR, oW,nR,z0, GGG,nR)
+    end if
 
     Gf  => val(Gf_tri,2,3) ! size nC x nR
     GGG => val(GGG_tri,2,3) ! size nC x nR
@@ -646,14 +650,14 @@ contains
     ! \Gamma Gf^\dagger 31
     call zgemm('T','C',nR,nL,nR,z1, GammaT,nR, Gf,nL,z0, oW,nR)
 
-    ! This is actually not necessary... (we dont have anything to 
-    ! update here)
-    ! NOTICE that Gf contains Gf13 in Gf32 as Gf:2 is not used
-    ! for anything
-!    Gf  => val(Gf_tri,3,2) ! size nL x nR
-!    GGG => val(GGG_tri,1,1) ! size nL x nL
-    ! Gf 13 \Gamma Gf^\dagger 31 == GGG 11
-!    call zgemm('N','N',nL,nL,nR,z1, Gf,nL, oW,nR,z0, GGG,nL)
+    if ( .not. UseBulk ) then
+       ! NOTICE that Gf contains Gf13 in Gf32 as Gf:2 is not used
+       ! for anything
+       Gf  => val(Gf_tri,3,2) ! size nL x nR
+       GGG => val(GGG_tri,1,1) ! size nL x nL
+       ! Gf 13 \Gamma Gf^\dagger 31 == GGG 11
+       call zgemm('N','N',nL,nL,nR,z1, Gf,nL, oW,nR,z0, GGG,nL)
+    end if
 
     Gf  => val(Gf_tri,2,3) ! size nC x nR
     GGG => val(GGG_tri,2,1) ! size nC x nL

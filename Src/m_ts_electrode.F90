@@ -343,7 +343,7 @@ contains
        ElecValenceBandBot, &
        nkpnt,kpoint,kweight, &
        NBufAt,RemUCellDistance, xa_Eps, &
-       ucell,xa,nua,NEn,contour,chem_shift,CalcDOS,ZBulkDOS,nspin)
+       ucell,xa,na_u,NEn,contour,chem_shift,CalcDOS,ZBulkDOS,nspin)
 
     use precision,  only : dp
     use fdf,        only : leqi
@@ -376,9 +376,9 @@ contains
     integer, intent(in)            :: NBufAt ! buffer atoms
     logical, intent(in)            :: RemUCellDistance ! Whether to remove the unit cell distance in the Hamiltonian.
     real(dp), intent(in)           :: xa_Eps ! the coordinate precision for the electrodes
-    integer, intent(in)            :: nua ! Full system count of atoms in unit cell
+    integer, intent(in)            :: na_u ! Full system count of atoms in unit cell
     real(dp), dimension(3,3)       :: ucell ! The unit cell of the CONTACT
-    real(dp), intent(in)           :: xa(3,nua) ! Coordinates in the system for the TranSIESTA routine
+    real(dp), intent(in)           :: xa(3,na_u) ! Coordinates in the system for the TranSIESTA routine
     integer, intent(in)            :: nspin ! spin in system
     integer, intent(in)            :: NEn ! Number of energy points
     type(ts_ccontour), intent(in)  :: contour(NEn) ! contours path for GF
@@ -393,13 +393,12 @@ contains
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
-    logical :: Gamma
     character(len=5)   :: GFjob ! Contains either 'Left' or 'Right'
     
 ! >>>>>>>>>> Electrode TSHS variables
 ! We suffix with _E to distinguish from CONTACT
-    integer                           :: nua_E,nuo_E,maxnh_E ! Unit cell atoms / orbitals / Hamiltonian size
-    integer                           :: nuou_E ! # used orbitals from electrode (if NUsedAtoms < nua_E)
+    integer                           :: na_u_E,nuo_E,maxnh_E ! Unit cell atoms / orbitals / Hamiltonian size
+    integer                           :: nuou_E ! # used orbitals from electrode (if NUsedAtoms < na_u_E)
     integer                           :: notot_E ! Total number of orbitals
     real(dp), dimension(:,:), pointer :: H_E,xij_E,xijo_E ! Hamiltonian, differences with unitcell, differences without unitcell
     real(dp), dimension(:,:), pointer :: xa_E ! atomic coordinats
@@ -452,12 +451,6 @@ contains
     call write_debug( 'PRE create_Green' )
 #endif
 
-    ! Should we read Gamma in TSHS file?
-    ! Must be .false., otherwise we cannot access Transfer matrix
-    ! This Gamma is to be used for the remaining part of the tests
-    ! We cannot use the ts_gamma in case of Gamma point in kxy direction
-    Gamma = .false.
-
     ! Check input for what to do
     if( leqi(tElec,'L') ) then
        GFjob = 'left '
@@ -476,9 +469,9 @@ contains
     
     ! Read in all variables from the TSHS electrode file.
     ! Broadcasting within the routine is performed in MPI run
-    call init_electrode_HS(tElec,UsedAtoms(El),Gamma,xa,nua,nspin, &
+    call init_electrode_HS(tElec,UsedAtoms(El),xa,na_u,nspin, &
          NBufAt, RepA1(El), RepA2(El), HSFile(El), &
-         nua_E,nuo_E,maxnh_E,notot_E,xa_E,H_E,S_E,xij_E, &
+         na_u_E,nuo_E,maxnh_E,notot_E,xa_E,H_E,S_E,xij_E, &
          xijo_E,zconnect_E,numh_E,listhptr_E,listh_E,indxuo_E,  &
          lasto_E, &
          Ef_E,ucell_E, xa_Eps)
@@ -505,7 +498,7 @@ contains
        allocate(H00(nuo_E*nuo_E),S00(nuo_E*nuo_E))
        call memory('A','Z',nuo_E*nuo_E*2,'create_green')
        kpt = 0.0_dp
-       call set_HS_matrix(Gamma,ucell_E,nua_E,nuo_E,notot_E,maxnh_E, &
+       call set_HS_matrix(.false.,ucell_E,na_u_E,nuo_E,notot_E,maxnh_E, &
             xij_E,numh_E,listhptr_E,listh_E,indxuo_E,H_E(:,1),S_E, &
             kpt,H00,S00)
        call matrix_symmetrize(nuo_E,H00,S00,Ef_E)
@@ -542,7 +535,7 @@ contains
     nuou_E = 0
     if( leqi(tElec,'L') ) then
        ! Left, we use the last atoms in the list
-       do ia = nua_E - UsedAtoms(El) + 1, nua_E
+       do ia = na_u_E - UsedAtoms(El) + 1, na_u_E
           nuou_E = nuou_E + lasto_E(ia) - lasto_E(ia-1)
        end do
     else
@@ -555,12 +548,12 @@ contains
     ! Show the number of used atoms and orbitals
     if ( IONode ) then
        write(*,'(a,i6,'' / '',i6)') ' Atoms available    / used atoms   : ', &
-            nua_E,UsedAtoms(El)
+            na_u_E,UsedAtoms(El)
        write(*,'(a,i6,'' / '',i6)') ' Orbitals available / used orbitals: ', &
-            lasto_E(nua_E),nuou_E
+            lasto_E(na_u_E),nuou_E
     end if
     ! Clean up what can be cleaned up
-    call memory('D','I',nua_E+1,'create_green')
+    call memory('D','I',na_u_E+1,'create_green')
     deallocate(lasto_E)
 
 ! FDN cell,kscell,kdispl added as dummys
@@ -622,7 +615,7 @@ contains
        ! Write out the atomic coordinates of the used electrode
        if( leqi(tElec,'L') ) then
           ! Left, we use the last atoms in the list
-          write(uGF) xa_E(:,nua_E-UsedAtoms(El)+1:nua_E)
+          write(uGF) xa_E(:,na_u_E-UsedAtoms(El)+1:na_u_E)
        else
           ! Right, the first atoms in the list
           write(uGF) xa_E(:,1:UsedAtoms(El))
@@ -717,13 +710,14 @@ contains
 
                 ! Setup the transfer matrix and the intra cell at the k-point and q-point
                 if ( RemUCellDistance ) then
-                   call set_electrode_HS_Transfer(Gamma,nuo_E,maxnh_E, &
+                   call die('Not working yet')
+                   call set_electrode_HS_Transfer(nuo_E,maxnh_E, &
                         notot_E,nspin,H_E,S_E,xijo_E,xijo_E,zconnect_E,numh_E, &
                         listhptr_E,listh_E,indxuo_E,Ef_E, &
                         ispin, kpt, qpt, &
                         H00,S00,H01,S01)
                 else
-                   call set_electrode_HS_Transfer(Gamma,nuo_E,maxnh_E, &
+                   call set_electrode_HS_Transfer(nuo_E,maxnh_E, &
                         notot_E,nspin,H_E,S_E,xij_E,xijo_E,zconnect_E,numh_E, &
                         listhptr_E,listh_E,indxuo_E,Ef_E, &
                         ispin, kpt, qpt, &
@@ -891,16 +885,14 @@ contains
     call memory('D','Z',4*nuo_E*nuo_E,'create_green')
     deallocate(H00,S00,H01,S01)
 
-    if ( .not. Gamma ) then
-       call memory('D','I',notot_E,'create_green')
-       deallocate(indxuo_E)
-       call memory('D','D',3*maxnh_E,'create_green')
-       deallocate(xij_E)
-       call memory('D','D',3*maxnh_E,'create_green')
-       deallocate(xijo_E)
-       call memory('D','I',maxnh_E,'create_green')
-       deallocate(zconnect_E)
-    end if
+    call memory('D','I',notot_E,'create_green')
+    deallocate(indxuo_E)
+    call memory('D','D',3*maxnh_E,'create_green')
+    deallocate(xij_E)
+    call memory('D','D',3*maxnh_E,'create_green')
+    deallocate(xijo_E)
+    call memory('D','I',maxnh_E,'create_green')
+    deallocate(zconnect_E)
 
     call memory('D','I',nuo_E,'create_green')
     deallocate(numh_E)
@@ -940,9 +932,9 @@ contains
 !------------------------------------------------------------------------
 !************************************************************************
 !------------------------------------------------------------------------
-  subroutine init_electrode_HS(tElec,NUsedAtoms,Gamma,xa_sys,nua_sys,nspin_sys, &
+  subroutine init_electrode_HS(tElec,NUsedAtoms,xa_sys,na_u_sys,nspin_sys, &
        NBufAt,NA1,NA2, &
-       HSfile,nua,nuo,maxnh,notot,xa,H,S,xij,xijo,zconnect, &
+       HSfile,na_u,nuo,maxnh,notot,xa,H,S,xij,xijo,zconnect, &
        numh,listhptr,listh,indxuo,lasto, &
        Ef,ucell, xa_Eps)
 
@@ -970,16 +962,15 @@ contains
 ! ***********************
     character(len=1)     :: tElec   ! 'L' for Left electrode, 'R' for right
     integer, intent(in)  :: NUsedAtoms ! The number of atoms used...
-    integer, intent(in)  :: nua_sys ! Full system count of atoms in unit cell
-    real(dp), intent(in) :: xa_sys(3,nua_sys) ! Coordinates in the system for the TranSIESTA routine
+    integer, intent(in)  :: na_u_sys ! Full system count of atoms in unit cell
+    real(dp), intent(in) :: xa_sys(3,na_u_sys) ! Coordinates in the system for the TranSIESTA routine
     integer, intent(in)  :: nspin_sys ! spin in system
     character(len=*),intent(in) :: HSfile !H,S parameter file 
     integer, intent(in)  :: NBufAt,NA1,NA2 ! Buffer atoms, and repetitions 
-    logical, intent(in)  :: Gamma
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    integer                           :: nua,nuo,maxnh ! Unit cell atoms / orbitals / Hamiltonian size
+    integer                           :: na_u,nuo,maxnh ! Unit cell atoms / orbitals / Hamiltonian size
     real(dp), dimension(:,:), pointer :: xa ! The atomic coordinates
     real(dp), dimension(:,:), pointer :: H,xij,xijo ! Hamiltonian, differences with unitcell, differences without unitcell
     real(dp), dimension(:),   pointer :: S ! Overlap
@@ -1013,7 +1004,7 @@ contains
     integer :: i,j,ia,iuo,juo,ind,iaa !Loop counters
     integer :: fL ! Filename length
     ! For acquiring the maximum Hamiltonian value
-    integer :: mH_i, mH_j, mH_Z
+    integer :: mH_i, mH_j, mH_Z, uc_z
     real(dp) :: mH, mS
 #ifdef MPI
     logical :: eXa_buff
@@ -1034,7 +1025,7 @@ contains
     if ( leqi(HSfile(fL-4:fL),'.TSHS') ) then
        call ts_read_tshs(HSfile, &
             onlyS, Gamma_file, TSGamma, &
-            ucell, nua, nuo, nuo, notot, maxnh, nspin,  &
+            ucell, na_u, nuo, nuo, notot, maxnh, nspin,  &
             kscell, kdispl, &
             xa, iza, lasto, &
             numh, listhptr, listh, xij, indxuo, &
@@ -1052,9 +1043,9 @@ contains
        call die('An electrode file must contain the Hamiltonian')
     end if
 
-    ! 'Gamma' is also .false. (however, this will be more "secure")
     if ( Gamma_file ) then
-       call die('An electrode file needs to be a non-Gamma calculation')
+       call die('An electrode file needs to be a non-Gamma calculation. &
+            &Ensure at least two k-points in the z-direction.')
     end if
 
           
@@ -1107,8 +1098,8 @@ contains
     end if
 #endif
 
-! Deallocate isa, not needed anymore
-    call memory('D','I',nua,'elec_HS')
+    ! Deallocate isa, not needed anymore
+    call memory('D','I',na_u,'elec_HS')
     deallocate(iza)
     
     if( nspin_sys /= nspin ) then
@@ -1119,30 +1110,30 @@ contains
     end if
 
     ! Do a recheck if the electrode file has been overwritted or??
-    if ( NUsedAtoms > nua ) then
+    if ( NUsedAtoms > na_u ) then
        write(*,*) "# of requested atoms is larger than available."
        write(*,*) "Requested: ",NUsedAtoms
-       write(*,*) "Available: ",nua
+       write(*,*) "Available: ",na_u
        call die("Error on requested atoms.")
     end if
 
 
-! Create reciprocal cell, without 2Pi
+    ! Create reciprocal cell, without 2Pi
     call reclat(ucell,recell,0)
 
     if( leqi(tElec,'L') ) then
        GFjob = 'Left'
        sysElec = NbufAt + 1
-       elecElec = nua - NUsedAtoms + 1
+       elecElec = na_u - NUsedAtoms + 1
     else if ( leqi(tElec,'R') ) then
        GFjob = 'Right'
-       sysElec = nua_sys - NbufAt - NUsedAtoms * NA1 * NA2 + 1
+       sysElec = na_u_sys - NbufAt - NUsedAtoms * NA1 * NA2 + 1
        elecElec = 1
     else
        call die("init electrode has received wrong job ID [L,R]: "//tElec)
     endif
 
-! Print out structural information of the system versus the electrode
+    ! Print out structural information of the system versus the electrode
     struct_info: if ( IONode ) then
        write(*,*) trim(GFjob)//' unit cell (Ang):'
        do j=1,3
@@ -1217,8 +1208,7 @@ contains
 
     end if struct_info
 
-! Create them for passing to other routines 
-! in such case, they are dummy arrays (this occurs only if Gamma .eq. .true.
+    ! Create them for passing to other routines 
     allocate(xijo(3,maxnh))
     call memory('A','D',3*maxnh,'elec_HS')
     allocate(zconnect(maxnh))
@@ -1227,67 +1217,56 @@ contains
     ! Initialize the error parameter
     eXa = .false.
 
-    ! Create the z-connect array
-    zconnect_gamma: if ( .not. Gamma ) then
+    ! temporary array in this part
+    allocate(xo(3,nuo))
+    call memory('A','D',3*nuo,'elec_HS')
 
-       ! temporary array in this part
-       allocate(xo(3,nuo))
-       call memory('A','D',3*nuo,'elec_HS')
+    ! We now create zconnect to contain 0 for interconnects without
+    ! z-direction
+    ! This needs to be the full electrode, no matter NUsedAtoms!
 
-! We now create zconnect to contain 0 for interconnects without
-! z-direction
-! This needs to be the full electrode, no matter NUsedAtoms!
-
-! Create xo array (orbital coordinates)
-       do ia = 1 , nua
-          do i = lasto(ia-1)+1 , lasto(ia)
-             xo(1,i) = xa(1,ia)
-             xo(2,i) = xa(2,ia)
-             xo(3,i) = xa(3,ia)
-          end do           !i
-       end do              !ia in uc
-
-       mH = -1._dp
-
-       do iuo = 1 , nuo
-          do j = 1 , numh(iuo)
-             ind = listhptr(iuo) + j
-             juo = indxuo(listh(ind))
-             xijo(:,ind) = xij(:,ind)-(xo(:,juo)-xo(:,iuo))
-             zc = 0.0_dp
-             do i = 1 , 3
-! recell is already without 2*Pi
-                zc = zc + xijo(i,ind) * recell(i,PropDir)
-             end do
-             zconnect(ind) = nint(zc)
-
-             if ( abs(zconnect(ind)) > 1 ) then
-                eXa = .true.
-                if ( abs(H(ind,1)) > mH ) then
-                   ! Capture the maximum error introduced
-                   mH = abs(H(ind,1))
-                   mS = abs(S(ind))
-                   mH_Z = abs(zconnect(ind))
-                   mH_i = iuo
-                   mH_j = juo
-                end if
-             end if
-          end do
-       end do
-       call memory('D','D',3*nuo,'elec_HS')
-       deallocate(xo)
-    end if zconnect_gamma
+    ! Create xo array (orbital coordinates)
+    do ia = 1 , na_u
+       do i = lasto(ia-1)+1 , lasto(ia)
+          xo(1,i) = xa(1,ia)
+          xo(2,i) = xa(2,ia)
+          xo(3,i) = xa(3,ia)
+       end do           !i
+    end do              !ia in uc
     
-#ifdef MPI
-    eXa_buff = eXa
-    call MPI_Reduce(eXa_buff,eXa,1, MPI_LOGICAL,MPI_LOR, &
-         0,MPI_Comm_World,MPIerror)
-#endif
+    mH          = -1._dp
+    uc_z        = 0
 
-    if ( IONode .and. eXa ) then
-       j = maxval(abs(zconnect),1)
-       call warn_err(0,mH,mS, mH_i,mH_j, j)
-       call warn_err(6,mH,mS, mH_i,mH_j, j)
+    do iuo = 1 , nuo
+       do j = 1 , numh(iuo)
+          ind = listhptr(iuo) + j
+          juo = indxuo(listh(ind))
+          ! remove inner-cell distances
+          xijo(:,ind) = xij(:,ind)-(xo(:,juo)-xo(:,iuo))
+
+          ! recell is already without 2*Pi
+          zc = sum(xijo(:,ind) * recell(:,PropDir))
+          zconnect(ind) = nint(zc)
+          
+          if ( abs(zconnect(ind)) > 1 ) then
+             uc_z = max(abs(zconnect(ind)),uc_z)
+             if ( abs(H(ind,1)) > mH ) then
+                ! Capture the maximum error introduced
+                mH = abs(H(ind,1))
+                mS = abs(S(ind))
+                mH_Z = abs(zconnect(ind))
+                mH_i = iuo
+                mH_j = juo
+             end if
+          end if
+       end do
+    end do
+    call memory('D','D',3*nuo,'elec_HS')
+    deallocate(xo)
+    
+    if ( IONode .and. uc_z > 1 ) then
+       call warn_err(0,mH,mS, mH_i,mH_j, uc_z)
+       call warn_err(6,mH,mS, mH_i,mH_j, uc_z)
     end if
 
 #ifdef TRANSIESTA_DEBUG
@@ -1300,17 +1279,17 @@ contains
       integer, intent(in) :: o
       real(dp), intent(in) :: mH,mS
       integer, intent(in) :: i,j, uc_z
-      write(o,'(1x,a,i0,a)') 'WARNING: Connections across ',j, &
+      write(o,'(1x,a,i0,a)') 'WARNING: Connections across ',uc_z, &
            ' unit cells in the transport direction.'
       write(o,*) 'WARNING: This is inadvisable.'
       write(o,*) 'WARNING: Please increase the electrode size &
            &in the transport direction.'
       write(o,*) 'WARNING: Will proceed without further notice.'
-      write(o,'(1x,a,g10.4)') 'WARNING: &
-           &Maximum Hamiltonian value: ',mH, 'Ry'
-      write(o,'(1x,a,2(tr1,i0),a)') 'WARNING: &
-           &Maximum Hamiltonian in element (',mH_i,mH_j,' )'
-      write(o,'(1x,a,g10.4)') 'WARNING: Overlap value at max(H): ',mS
+      write(o,'(1x,a,g11.4,a)') 'WARNING: &
+           &Maximum |Hamiltonian| value: ',mH, ' Ry'
+      write(o,'(1x,a,i0,'', '',i0,a)') 'WARNING: &
+           &Maximum |Hamiltonian| in element ( ',i,j,')'
+      write(o,'(1x,a,g11.4)') 'WARNING: Overlap value at max(|H|): ',mS
     end subroutine warn_err
 
   end subroutine init_electrode_HS
@@ -1320,7 +1299,7 @@ contains
 ! Create the Hamiltonian for the electrode as well
 ! as creating the transfer matrix.
 !**********
-  subroutine set_electrode_HS_Transfer(Gamma,nuo,maxnh,notot,nspin, &
+  subroutine set_electrode_HS_Transfer(nuo,maxnh,notot,nspin, &
        H,S,xij,xijo,zconnect,numh, &
        listhptr,listh,indxuo,Ef, &
        ispin,k,q,Hk,Sk,Hk_T,Sk_T)
@@ -1329,7 +1308,6 @@ contains
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    logical                         :: Gamma ! Is it a Gamma Calculation?
     integer                         :: nuo ! Unit cell orbitals
     integer                         :: maxnh,notot,nspin ! Hamiltonian size / total orbitals / spins
     real(dp)                        :: H(maxnh,nspin) ! Hamiltonian
@@ -1359,11 +1337,6 @@ contains
     call write_debug( 'PRE elec_HS_Transfer' )
 #endif
 
-    if ( Gamma ) then
-       write(*,*) 'Transfer matrix not possible with Gamma-calculation.'
-       call die("Transfer matrix not possible with Gamma-calculation")
-    end if
-    
 ! Initialize arrays
     do i = 1,nuo*nuo
        Hk(i) = dcmplx(0.d0,0.d0)

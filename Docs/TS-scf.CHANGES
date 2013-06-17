@@ -1,4 +1,46 @@
 ----------------------------------------------------
+June 17, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-56
+Added a full transiesta debug code segment for displaying GF matrices
+
+* In order to debug the application it was necessary to write out the 
+  GF, GF^-1, SigmaL and SigmaR arrays.
+  Instead of doing it locally it will be added to the code and only 
+  compiled through the flag: -DTRANSIESTA_DEBUG
+  It will run BOTH the full inversion algorithm and the tri-diagonal
+  algorithm and a multitude of files will be created.
+  This will allow to debug the inversion algorithm and scour through
+  the matrices
+  It has been found that the accuracy of the block-tridiagonal inversion
+  is on the order of 1e-13 which is more than expected (tested for
+  system of 1000 orbitals).
+  (Possibly this will be a little lower for very large systems.)
+
+* Cleaned up some code
+
+* Removed the need for a Gamma variable in the electrode
+  We ensure that the electrode calculation is not
+  a Gamma calculation anyway.
+  
+* Ensured intent(inout) a couple of places where the same
+  array is actually used.
+  It should not matter, but to lessen the confusion.
+
+* Bugfix in display of supercell connections when erroring
+  on the electrode z-direction.
+
+modified:
+  Src/Makefile
+  Src/class_TriMat.T90
+  Src/compute_dm.F
+  Src/m_trimat_invert.F90
+  Src/m_ts_debug.F90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_full.F90
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_tri.F90
+
+----------------------------------------------------
 June 14, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-55
 Bugfixes in debug module
 

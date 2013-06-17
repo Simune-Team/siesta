@@ -357,7 +357,8 @@ contains
     integer :: ispin, ikpt, iPE, iE, NEReqs, up_nzs, ia, ia_E
     integer :: ind
 #ifdef TRANSIESTA_DEBUG
-    integer :: iu_GF
+    integer :: iu_GF, iu_GFinv
+    integer :: iu_SL, iu_SR
 #endif
 ! ************************************************************
 
@@ -587,8 +588,14 @@ contains
          &sustain the implementation, contact the developers.')
 
 #ifdef TRANSIESTA_DEBUG
-    if(IONode)write(*,*)'Writing GFs (1000)'
-    iu_GF = 1000
+    if(IONode)write(*,*)'Writing GF^-1s (5000)'
+    if(IONode)write(*,*)'Writing GFs (6000)'
+    iu_GFinv = 5000 + Node
+    iu_GF = 6000 + Node
+    if(IONode)write(*,*)'Writing SigmaLs (7000)'
+    if(IONode)write(*,*)'Writing SigmaRs (8000)'
+    iu_SL = 7000 + Node
+    iu_SR = 8000 + Node
 #endif
 
     SPIN: do ispin = 1 , nspin
@@ -774,6 +781,15 @@ contains
 
        end do neqEPOINTS
 
+#ifdef TRANSIESTA_DEBUG
+       call timer('TS_calc',2)
+       if ( IONode ) then
+          call io_close(uGFL)
+          call io_close(uGFR)
+       end if
+       call die('X')
+#endif
+
        call timer("TS_comm",1)
        if ( ts_Gamma_SCF ) then
           call d_DM_EDM_Reduce_Shift(Ef,spDMu, spEDMu, ndwork, dwork)
@@ -927,24 +943,26 @@ contains
 
     call clear_TriMat_inversion()
 
+
     ! I would like to add something here which enables 
     ! 'Transiesta' post-process
+
 
     call timer('TS_calc',2)
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS transiesta mem' )
-    call die('')
+    call die('X')
 #endif
 
   contains
     
     subroutine setup_arrays()
-      zwork => val(GF_tri)
+      zwork  => val(GF_tri)
       SigmaL => zwork(1:no_L**2)
       SigmaR => zwork(size(zwork)-no_R**2+1:size(zwork))
-      zwork => val(zwork_tri)
-      nzwork = elements(zwork_tri)
+      zwork  => val(zwork_tri)
+      nzwork =  elements(zwork_tri)
       if ( nzwork < nnzs(ts_sp_uc) ) call die('The memory for transiesta cannot &
            &sustain the implementation, contact the developers.')
     end subroutine setup_arrays
@@ -980,6 +998,11 @@ contains
            SigmaR, GammaRT, & 
            nzwork, zwork)
 
+#ifdef TRANSIESTA_DEBUG
+      call write_Full(iu_SL,no_L,SigmaL)
+      call write_Full(iu_SR,no_R,SigmaR)
+#endif
+
       call prepare_GF_inv(UseBulk, Z, no_BufL, &
            no_u_TS,zwork_tri, &
            no_L, SigmaL, no_R, SigmaR, &
@@ -990,12 +1013,19 @@ contains
          ! Only calculate the middle part of the Gf
          call calc_GF_Part(no_u_TS, no_L,no_R,zwork_tri, GF_tri, ierr)
       else
+
+#ifdef TRANSIESTA_DEBUG
+         call write_TriMat(iu_GFinv,zwork_tri)
+#endif
+
          ! Calculate the full GF
-         call calc_GF(.false., no_u_TS, zwork_tri, GF_tri, ierr)
+         call calc_GF(UseBulk, no_u_TS, zwork_tri, GF_tri, ierr)
+
 #ifdef TRANSIESTA_DEBUG
          ! currently we will only write out the equilibrium GF
          call write_TriMat(iu_GF,GF_tri)
 #endif
+
       end if
 
       if ( ts_Gamma_SCF ) then
@@ -1022,7 +1052,7 @@ contains
          call init_val(spzEDMuR)
       end if
 
-     end subroutine init_update_regions
+    end subroutine init_update_regions
 
 
     subroutine non_Equilibrium_Density(Z,i_W,i_ZW)
@@ -1071,8 +1101,12 @@ contains
       call calc_GF_Bias(no_u_TS,zwork_tri,GF_tri)
 
       ! We calculate the right thing.
-      call GF_Gamma_GF_Right(no_R, Gf_tri, GammaRT, zwork_tri)
+      call GF_Gamma_GF_Right(UseBulk,no_R, Gf_tri, GammaRT, zwork_tri)
       ! work is now GFGGF
+
+#ifdef TRANSIESTA_DEBUG
+      call write_TriMat(iu_GF,zwork_tri)
+#endif
 
       ! Note that we use '--' here
       if ( ts_Gamma_SCF ) then
@@ -1084,8 +1118,12 @@ contains
       end if
          
       ! We calculate the left thing.
-      call GF_Gamma_GF_Left(no_L, Gf_tri, GammaLT, zwork_tri)
+      call GF_Gamma_GF_Left(UseBulk,no_L, Gf_tri, GammaLT, zwork_tri)
       ! work is now GFGGF
+
+#ifdef TRANSIESTA_DEBUG
+      call write_TriMat(iu_GF,zwork_tri)
+#endif
 
       ! Note that we use '++' here
       if ( ts_Gamma_SCF ) then
@@ -1219,17 +1257,18 @@ contains
     use class_zTriMat
 
     logical, intent(in) :: UseBulk
-    ! The Hamiltonian and overlap sparse matrices
-    type(dSpData1D), intent(inout), optional :: spH, spS
-    type(zSpData1D), intent(inout), optional :: spzH, spzS
     ! the current energy point
     complex(dp), intent(in) :: Z
     ! Remark that we need the left buffer orbitals
     ! to calculate the actual orbital of the sparse matrices...
-    integer, intent(in) :: no_BufL,no_u
+    integer, intent(in) :: no_BufL, no_u
     type(zTriMat), intent(inout) :: GFinv_tri
     integer, intent(in) :: no_L, no_R
-    complex(dp), intent(in) :: SigmaL(no_L,no_L), SigmaR(no_R,no_R)
+    complex(dp), intent(in) :: SigmaL(no_L,no_L)
+    complex(dp), intent(in) :: SigmaR(no_R,no_R)
+    ! The Hamiltonian and overlap sparse matrices
+    type(dSpData1D), intent(inout), optional :: spH,  spS
+    type(zSpData1D), intent(inout), optional :: spzH, spzS
 
     ! Local variables
     type(Sparsity), pointer :: s
@@ -1346,14 +1385,14 @@ contains
     if ( UseBulk ) then
        do j = 1 , no_R
           do i = 1 , no_R
-             idx = index(GFinv_tri,i+no_ER,j+no_ER)
+             idx = index(GFinv_tri,no_ER+i,no_ER+j)
              Gfinv(idx) = SigmaR(i,j)
           end do
        end do
     else
        do j = 1 , no_R
           do i = 1 , no_R
-             idx = index(GFinv_tri,i+no_ER,j+no_ER)
+             idx = index(GFinv_tri,no_ER+i,no_ER+j)
              Gfinv(idx) = Gfinv(idx) - SigmaR(i,j)
           end do
        end do

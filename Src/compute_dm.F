@@ -101,6 +101,27 @@
         call timer('TS',1)
         TSiscf=TSiscf+1
 
+#ifdef TRANSIESTA_DEBUG
+        ! When we do a transiesta DEBUG run, we will write out
+        ! all matrices: SigmaL, SigmaR, Gf^-1, Gf
+        ! To compare we "force" both the tri-diagonal and the
+        ! regular method
+        if ( TSiscf == 1 ) then
+           ! This is a first Transiesta run, we need to initialize
+           ! the sparsity patterns...
+           call ts_sparse_init(Gamma, block_dist, sparse_pattern,
+     &             na_u, lasto)
+           call ts_tri_init()
+           call ts_print_charges(ElLeft, ElRight, no_BufL, no_BufR,
+     &          block_dist, sparse_pattern,nspin, maxnh, Dscf, S)
+        end if
+        call transiesta_full(nspin,Gamma, block_dist,
+     &       sparse_pattern,ucell, no_u, na_u, lasto, xa, maxnh,
+     &       xijo, H, S, Dscf,Escf, Ef, TSiscf, Qtot)
+        call transiesta_tri(nspin,Gamma, block_dist,
+     &       sparse_pattern,ucell, no_u, na_u, lasto, xa, maxnh,
+     &       xijo, H, S, Dscf,Escf, Ef, TSiscf, Qtot)
+#else
         if ( TSiscf == 1 ) then
            ! This is a first Transiesta run, we need to initialize
            ! the sparsity patterns...
@@ -121,6 +142,7 @@
      &          sparse_pattern,ucell, no_u, na_u, lasto, xa, maxnh,
      &          xijo, H, S, Dscf,Escf, Ef, TSiscf, Qtot)
         end if
+#endif
 
         ! We do the charge correction of the transiesta
         ! computation here (notice that the routine will automatically

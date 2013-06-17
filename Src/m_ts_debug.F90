@@ -11,40 +11,50 @@ contains
 
   subroutine write_TriMat(iu,tri)
     use class_zTriMat
+    use parallel, only : Nodes
     integer, intent(inout) :: iu
     type(zTriMat), intent(inout) :: tri
-    complex(dp), pointer :: z(:)
+    complex(dp), pointer :: z(:), zf(:)
     integer :: i,j, p, np, n,idx, ntmp
 
     ! Number of parts
     np = parts(tri)
     n = 0
+    zf => val(tri)
     
     do p = 1 , np - 1
 
        z => val(tri,p,p)
+       if ( size(z) /= nrows_g(tri,p)**2 ) call die('SIZE1')
        do j = 1 , nrows_g(tri,p)
           idx = (j-1)*nrows_g(tri,p)
           do i = 1 , nrows_g(tri,p)
              call out_write(iu,n+i,n+j,z(idx+i))
+             call test(z(idx+i),n+i,n+j)
           end do
        end do
 
        z => val(tri,p+1,p)
+       if ( size(z) /= nrows_g(tri,p)*nrows_g(tri,p+1) ) &
+            call die('SIZE2')
        ntmp = n + nrows_g(tri,p)
        do j = 1 , nrows_g(tri,p)
           idx = (j-1)*nrows_g(tri,p+1)
           do i = 1 , nrows_g(tri,p+1)
              call out_write(iu,ntmp+i,n+j,z(idx+i))
+             call test(z(idx+i),ntmp+i,n+j)
           end do
        end do
 
        z => val(tri,p,p+1)
+       if ( size(z) /= nrows_g(tri,p)*nrows_g(tri,p+1) ) &
+            call die('SIZE3')
        ntmp = n + nrows_g(tri,p)
        do j = 1 , nrows_g(tri,p+1)
           idx = (j-1)*nrows_g(tri,p)
           do i = 1 , nrows_g(tri,p)
              call out_write(iu,n+i,ntmp+j,z(idx+i))
+             call test(z(idx+i),n+i,ntmp+j)
           end do
        end do
        
@@ -52,23 +62,36 @@ contains
     end do
     
     z => val(tri,np,np)
+    if ( size(z) /= nrows_g(tri,np)**2 ) call die('SIZE1')
     do j = 1 , nrows_g(tri,np)
        idx = (j-1)*nrows_g(tri,np)
        do i = 1 , nrows_g(tri,np)
+          call test(z(idx+i),n+i,n+j)
           call out_write(iu,n+i,n+j,z(idx+i))
        end do
     end do
 
-    iu = iu + 1
+    iu = iu + Nodes
+
+  contains
+    
+    subroutine test(z1,i,j)
+      complex(dp), intent(in) :: z1
+      integer, intent(in) :: i,j
+      if ( cdabs(z1-zf(index(tri,i,j))) > 1e-10_dp ) then
+         write(*,*) i,j,z1,zf(index(tri,i,j))
+         call die('Not same element')
+      end if
+    end subroutine test
 
   end subroutine write_TriMat
 
   subroutine write_Full(iu,no,GF)
+    use parallel, only : Nodes
     integer, intent(inout) :: iu
     integer, intent(in) :: no
-    complex(dp), intent(inout) :: GF(no,no)
+    complex(dp), intent(in) :: GF(no,no)
     integer :: i,j, p, np, n,idx
-    iu = iu + 1
     
     do j = 1 , no
        do i = 1 , no
@@ -76,12 +99,14 @@ contains
        end do
     end do
 
+    iu = iu + Nodes
+
   end subroutine write_Full
 
   subroutine out_write(iu,i,j,z)
     integer, intent(in) :: iu,i,j
     complex(dp), intent(in) :: z
-    write(iu,'(2(tr1,i5),2(tr1,g13.6))') i,j,real(z),aimag(z)
+    write(iu,'(2(tr1,i5),2(tr1,e20.13))') i,j,real(z),aimag(z)
   end subroutine out_write
   
   subroutine sp_to_file(u,sp)

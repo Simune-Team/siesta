@@ -180,7 +180,7 @@
     this%data%tri_nrows(:) = tri_nrows(:) 
 
     ! Calculate size of the tri-diagonal matrix
-    n = tri_nrows(parts)**2
+    n = tri_nrows(parts) ** 2
     do i = 1 , parts - 1
        n = n + tri_nrows(i)*( tri_nrows(i) + 2*tri_nrows(i+1) )
     end do
@@ -220,18 +220,22 @@
          pc < pr - 1 .or. pr < pc - 1 ) then
        call die('Requesting invalid tri-diagonal part')
     end if
+
     ! Retrieve the starting index for the column
     s = index_start_part_col(this,pc)
+
     ! If the row is greater than or equal to the column
     ! Then we can add the C_pc matrix
-    if ( pr >= pc ) then 
+    if ( pr >= pc ) then
        if ( pc > 1 ) &
           s = s + this%data%tri_nrows(pc-1)*this%data%tri_nrows(pc)
+       if ( pr > pc ) then
+          s = s + this%data%tri_nrows(pc)**2
+       end if
     end if
-    if ( pr > pc ) then
-       s = s + this%data%tri_nrows(pc)**2
-    end if
+
     e = s + this%data%tri_nrows(pr)*this%data%tri_nrows(pc) - 1
+
     p => this%data%mat(s:e)
   end function val_TriMat_part
 
@@ -256,48 +260,56 @@
     end do
   end function index_start_part_col
 
+  pure subroutine part_index(this, i_g, part, i_p)
+    type(TYPE_NAME), intent(in) :: this
+    integer, intent(in)  :: i_g
+    integer, intent(out) :: part, i_p
+    integer :: cum
+
+    cum = 0
+    do part = 1 , this%data%parts
+       cum = cum + this%data%tri_nrows(part)
+       if ( i_g <= cum ) then
+          ! We have now found the part 
+          ! which we should be in
+          i_p = i_g - (cum - this%data%tri_nrows(part))
+          exit
+       end if
+    end do
+
+  end subroutine part_index
+
 ! we return -1 if the index does not exist
-  pure function index_TriMat(this,r,c) result(n)
+  function index_TriMat(this,r,c) result(n)
     type(TYPE_NAME), intent(in) :: this
     ! The row and column requested
     integer, intent(in) :: r, c
-    integer :: cum, ip, part_c, part_r
+    integer :: p_c, p_r
     integer :: i_c, i_r
     integer :: n
     
-    cum = 0
-    do ip = 1 , this%data%parts
-       cum = cum + this%data%tri_nrows(ip)
-       if ( c <= cum ) then
-          ! We have now found the part column
-          ! which we should be in
-          i_c = c - (cum - this%data%tri_nrows(ip))
-          part_c = ip
-          exit
-       end if
-    end do
-    cum = 0
-    do ip = 1 , this%data%parts
-       cum = cum + this%data%tri_nrows(ip)
-       if ( r <= cum ) then
-          ! We have now found the part column
-          ! which we should be in
-          i_r = r - (cum - this%data%tri_nrows(ip))
-          part_r = ip
-          exit
-       end if
-    end do
-    n = index_start_part_col(this,part_c)
+    call part_index(this,c,p_c,i_c)
+    call part_index(this,r,p_r,i_r)
+
+    n = index_start_part_col(this,p_c) - 1
+
     ! If the row is greater than or equal to the column
     ! Then we can add the C_pc matrix
-    if ( part_r >= part_c ) then
-       if ( part_c > 1 ) &
-          n = n + this%data%tri_nrows(part_c-1)*this%data%tri_nrows(part_c)
+    if ( p_r >= p_c ) then
+       if ( p_c > 1 ) &
+          n = n + this%data%tri_nrows(p_c-1)*this%data%tri_nrows(p_c)
+       if ( p_r > p_c ) then
+          n = n + this%data%tri_nrows(p_c)**2
+       end if
     end if
-    if ( part_r > part_c ) then
-       n = n + this%data%tri_nrows(part_c)**2
+
+    n = n + (i_c-1) * this%data%tri_nrows(p_r) + i_r
+
+    ! Error collecting, out-of-range will return -1
+    if ( n < 1 .or. size(this%data%mat) < n ) then
+       n = -1 
     end if
-    n = n + (i_c-1) * this%data%tri_nrows(part_r) + i_r - 1
+
   end function index_TriMat
        
   subroutine printTriMat(this)

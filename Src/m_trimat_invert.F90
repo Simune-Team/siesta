@@ -53,12 +53,12 @@ contains
 
   subroutine invert_TriMat(M,Minv,sPart,ePart)
     use class_zTriMat
-    use intrinsic_missing, only : EYE
     type(zTriMat), intent(inout) :: M, Minv
     integer, intent(in), optional :: sPart, ePart
     complex(dp), pointer :: Mpinv(:), Mp(:), XYn(:), CB(:)
     integer :: lsPart, lePart
-    integer :: sN, sNm1, sNp1, n
+    integer :: sNm1, sNp1, n
+    logical :: piv_initialized
 
     if ( parts(M) /= parts(Minv) ) then
        call die('Could not calculate the inverse on non equal sized &
@@ -67,6 +67,12 @@ contains
     if ( parts(M) == 1 ) then
        call die('This matrix is not tri-diagonal')
     end if
+    piv_initialized = .true.
+    do n = 1 , parts(M) 
+       if ( Npiv < nrows_g(M,n) ) piv_initialized = .false.
+    end do
+    if ( .not. piv_initialized ) &
+         call die('Pivoting array for inverting matrix not set.')
 
     call timer('TM_inv',1)
 
@@ -75,13 +81,13 @@ contains
     lePart = parts(M)
     if ( present(ePart) ) lePart = ePart
 
-    ! Calculate all Xn
+    ! Calculate all Xn/Cn+1
     do n = parts(M) - 1 , lsPart , -1 
        Mpinv => val(Minv,n+1,n+1)
        sNp1 = nrows_g(M,n+1)
        call calc_Xn_div_Cn_p1(M,Minv, n, Mpinv,sNp1**2 )
     end do
-    ! Calculate all Yn
+    ! Calculate all Yn/Bn-1
     do n = 2 , lePart
        Mpinv => val(Minv,n-1,n-1)
        sNm1 = nrows_g(M,n-1)
@@ -119,8 +125,8 @@ contains
     complex(dp), pointer :: Xn(:), Yn(:), Cn(:), Bn(:)
     integer :: sNm1, sN, sNp1, ierr
 
-    if ( 1 < n ) sNm1 = nrows_g(M,n-1)
-    sN   = nrows_g(M,n)
+    if ( 1 < n )        sNm1 = nrows_g(M,n-1)
+                        sN   = nrows_g(M,n)
     if ( n < parts(M) ) sNp1 = nrows_g(M,n+1)
     
     Mp    => val(M,n,n)
@@ -186,15 +192,15 @@ contains
        ! We can/shall not calculate this
        return
     end if
-    sN   = nrows_g(M,n)
+    sN    = nrows_g(M,n)
 
     ! *** we will now calculate Mn+1,n
     ! Copy over Xn/Cn+1
-    Xn     => Xn_div_Cn_p1(M   ,n)
-    Mpinv  => Xn_div_Cn_p1(Minv,n)
-    Xn(:)  =  Mpinv(:)
+    Xn    => Xn_div_Cn_p1(M   ,n)
+    Mpinv => Xn_div_Cn_p1(Minv,n)
+    Xn(:) =  Mpinv(:)
     ! Do matrix-multiplication
-    Mp     => val(Minv,n,n)
+    Mp    => val(Minv,n,n)
     ! Calculate: Xn/Cn+1 * Mnn
     call zgemm('N','N',sNp1,sN,sN, &
          zm1, Xn,sNp1, Mp,sN,z0, Mpinv,sNp1)

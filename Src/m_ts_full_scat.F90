@@ -268,9 +268,9 @@ subroutine my_symmetrize(N,M)
        GF(i*no_u_TS+i+1) = dcmplx(1._dp,0._dp)
     end do
     ! Right identity
-    o =  no_L * no_u_TS + 1
+    o = no_L * no_u_TS + 1 + no_u_TS - no_R
     do i = 0 , no_R - 1
-       GF(o+i*no_u_TS+no_u_TS-no_R+i) = dcmplx(1._dp,0._dp)
+       GF(o+i*no_u_TS+i) = dcmplx(1._dp,0._dp)
     end do
     
 ! Invert directly

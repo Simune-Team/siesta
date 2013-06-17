@@ -38,11 +38,11 @@ contains
 ! ********************
 ! * OUTPUT variables *
 ! ********************
-    complex(dp), intent(out) :: Sigma(no_s,no_s)
-    complex(dp), intent(out) :: Gamma(no_s,no_s)
+    complex(dp), intent(inout) :: Sigma(no_s,no_s)
+    complex(dp), intent(inout) :: Gamma(no_s,no_s)
 
     integer,  intent(in) :: nwork
-    complex(dp), intent(inout) :: work(no_s,no_s)
+    complex(dp), intent(inout) :: work(no_s,no_s,2)
 
     if ( non_Eq ) then
        call UC_expansion_Sigma_GammaT(UseBulk,ZEnergy, &
@@ -76,7 +76,7 @@ contains
 ! ********************
 ! * OUTPUT variables *
 ! ********************
-    complex(dp), intent(out) :: Sigma(no_s,no_s)
+    complex(dp), intent(inout) :: Sigma(no_s,no_s)
 
     integer,  intent(in) :: nwork
     complex(dp), intent(inout) :: work(no_s,no_s)
@@ -198,7 +198,7 @@ contains
 ! ********************
 ! * OUTPUT variables *
 ! ********************
-    complex(dp), intent(out) :: Sigma(no_s,no_s)
+    complex(dp), intent(inout) :: Sigma(no_s,no_s)
 
     integer,     intent(in)    :: nwork
     complex(dp), intent(inout) :: work(no_s,no_s,2)
@@ -261,9 +261,8 @@ contains
 ! ********************
 ! * OUTPUT variables *
 ! ********************
-    complex(dp), intent(out) :: Sigma(no_s,no_s)
-!    real(dp), intent(out)    :: Gamma(no_s,no_s)
-    complex(dp), intent(out)    :: GammaT(no_s,no_s)
+    complex(dp), intent(inout) :: Sigma(no_s,no_s)
+    complex(dp), intent(inout) :: GammaT(no_s,no_s)
 
     integer,  intent(in) :: nwork
     complex(dp), intent(inout) :: work(no_s,no_s,2)

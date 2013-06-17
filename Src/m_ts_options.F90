@@ -167,19 +167,19 @@ CONTAINS
        call die('Unrecognized Transiesta solution method: '//trim(chars))
     end if
 
-! Reading TS Options from fdf ...
+    ! Reading TS Options from fdf ...
     savetshs    = fdf_get('TS.SaveHS',savetshs_def)
     onlyS       = fdf_get('TS.onlyS',onlyS_def)
 
     VoltFDF     = fdf_get('TS.Voltage',voltfdf_def,'Ry') 
     IsVolt = dabs(VoltFDF) > 0.001_dp/eV
 
-! Set up the fermi shifts for the left and right electrodes
+    ! Set up the fermi shifts for the left and right electrodes
     VoltL =  0.5_dp*VoltFDF
     VoltR = -0.5_dp*VoltFDF
 
-! currently this does not work
-!ImmediateTSmode = fdf_get('TS.SCFImmediate',.false.)
+    ! currently this does not work
+    !ImmediateTSmode = fdf_get('TS.SCFImmediate',.false.)
 
     UseBulk     = fdf_get('TS.UseBulkInElectrodes',UseBulk_def)
     UpdateDMCR  = fdf_get('TS.UpdateDMCROnly',UpdateDMCR_def)
@@ -280,7 +280,7 @@ CONTAINS
        end if
     end if
 
-!Ntransport = fdf_get('TS.Contour.NTransport',Ntransport_def)
+    !Ntransport = fdf_get('TS.Contour.NTransport',Ntransport_def)
     GFTitle    = fdf_get('TS.GFTitle',GFTitle_def)
     chars = trim(slabel)//'.TSGFL'
     GFFileL    = fdf_get('TS.GFFileLeft',trim(chars))

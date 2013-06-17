@@ -241,12 +241,12 @@ contains
 
           ! Symmetrize (notice that this is *transposed*)
           ! See prep_GF
-          zS(rind)  = 0.5_dp * ( zS(ind) + dconjg(zS(rind)) )
-          zH(rind)  = 0.5_dp * ( zH(ind) + dconjg(zH(rind)) ) &
+          zS(rind) = 0.5_dp * ( zS(ind) + dconjg(zS(rind)) )
+          zS(ind)  = dconjg(zS(rind))
+
+          zH(rind) = 0.5_dp * ( zH(ind) + dconjg(zH(rind)) ) &
                - Ef * zS(rind)
-          
-          zS(ind) = dconjg(zS(rind))
-          zH(ind) = dconjg(zH(rind))
+          zH(ind)  = dconjg(zH(rind))
 
           if ( ind == rind ) then
              ! This is the diagonal matrix elements

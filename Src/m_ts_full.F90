@@ -92,6 +92,8 @@ contains
     use mpi_siesta
 #endif
 
+    use alloc, only : re_alloc, de_alloc
+
     use class_OrbitalDistribution
     use class_Sparsity
     use class_dSpData1D
@@ -177,6 +179,7 @@ contains
     complex(dp), allocatable :: HAAR(:,:,:), SAAR(:,:,:)
     complex(dp), pointer :: GAAL(:,:), GAAR(:,:)
     complex(dp), pointer :: SigmaL(:), SigmaR(:)
+    complex(dp), pointer :: GFGGF_work(:) => null()
     complex(dp), target, allocatable :: GammaLT(:,:), GammaRT(:,:)
 ! ************************************************************
 
@@ -213,7 +216,8 @@ contains
     integer :: ispin, ikpt, iPE, iE, NEReqs, up_nzs, ia, ia_E
     integer :: ind
 #ifdef TRANSIESTA_DEBUG
-    integer :: iu_GF
+    integer :: iu_GF, iu_GFinv
+    integer :: iu_SL, iu_SR
 #endif
 ! ************************************************************
 
@@ -367,6 +371,12 @@ contains
     SigmaR => GF(size(GF)-no_R**2+1:size(GF))
 
     if ( IsVolt ) then
+       ! we need only allocate one work-array for
+       ! Gf.G.Gf^\dagger
+       call re_alloc(GFGGF_work,1,max(no_L,no_R)**2,routine='transiesta')
+    end if
+
+    if ( IsVolt ) then
        ! We need Gamma's with voltages (now they are both GAA and GammaT)
        allocate(GammaLT(no_L,no_L),GammaRT(no_R,no_R))
        call memory('A','Z',no_L**2+no_R**2,'transiesta')
@@ -447,8 +457,14 @@ contains
          &sustain the implementation, contact the developers.')
 
 #ifdef TRANSIESTA_DEBUG
-    if(IONode)write(*,*)'Writing GFs (1000)'
-    iu_GF = 1000
+    if(IONode)write(*,*)'Writing GF^-1s (1000)'
+    if(IONode)write(*,*)'Writing GFs (2000)'
+    iu_GFinv = 1000 + Node
+    iu_GF = 2000 + Node
+    if(IONode)write(*,*)'Writing SigmaLs (3000)'
+    if(IONode)write(*,*)'Writing SigmaRs (4000)'
+    iu_SL = 3000 + Node
+    iu_SR = 4000 + Node
 #endif
 
     SPIN: do ispin = 1 , nspin
@@ -538,7 +554,7 @@ contains
           call Equilibrium_Density(Z,W,ZW)
 
        end do eqEPOINTS
-       
+
        ! reduce and shift to fermi-level
        call timer("TS_comm",1)
        if ( ts_Gamma_SCF ) then
@@ -633,6 +649,15 @@ contains
           call non_Equilibrium_Density(Z,W,ZW)
 
        end do neqEPOINTS
+
+#ifdef TRANSIESTA_DEBUG
+       call timer('TS_calc',2)
+       if ( IONode ) then
+          call io_close(uGFL)
+          call io_close(uGFR)
+       end if
+       return
+#endif
 
        call timer("TS_comm",1)
        if ( ts_Gamma_SCF ) then
@@ -785,15 +810,21 @@ contains
     call memory('D','Z',size(GammaLT)+size(GammaRT),'transiesta')
     deallocate(GammaLT,GammaRT)
 
+    ! In case of voltage calculations we need a work-array for
+    ! handling the GF.Gamma.Gf^\dagger multiplication
+    if ( IsVolt ) then
+       call de_alloc(GFGGF_work, routine='transiesta')
+    end if
+
    
     ! I would like to add something here which enables 
     ! 'Transiesta' post-process
+
 
     call timer('TS_calc',2)
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS transiesta mem' )
-    call die('')
 #endif
 
   contains
@@ -819,11 +850,17 @@ contains
            SigmaR, GammaRT, & 
            nzwork, zwork)
 
+#ifdef TRANSIESTA_DEBUG
+      call write_Full(iu_SL,no_L,SigmaL)
+      call write_Full(iu_SR,no_R,SigmaR)
+#endif
+
       call prepare_GF_inv(UseBulk, Z, no_BufL, &
            no_u_TS, zwork, &
            no_L, SigmaL, no_R, SigmaR, &
            spH =spH , spS =spS, &
            spzH=spzH, spzS=spzS )
+
          
       if ( GF_INV_EQUI_PART ) then
          ! Only calculate the middle part of the Gf
@@ -832,15 +869,22 @@ contains
          ! The size of the central region (without left-right electrodes)
          no_u_C = no_u_TS - no_R - no_L
       else
+
+#ifdef TRANSIESTA_DEBUG
+         call write_Full(iu_GFinv,no_u_TS,zwork)
+#endif
+
          ! Calculate the full GF
          call calc_GF(no_u_TS, zwork, GF,ierr)
          no_GF_offset = 0
          ! The size of the central region (with left-right electrodes)
          no_u_C = no_u_TS
+
 #ifdef TRANSIESTA_DEBUG
          ! currently we will only write out the equilibrium GF
          call write_Full(iu_GF,no_u_TS,GF)
 #endif
+
       end if
 
       if ( ts_Gamma_SCF ) then
@@ -907,8 +951,12 @@ contains
       ! We calculate the right contribution
       call GF_Gamma_GF(no_L+1,no_u_TS,no_L+no_R, &
            no_R, Gf, &
-           GammaRT, zwork, no_R*no_R, SigmaR) ! SigmaR is a "work" array
+           GammaRT, zwork, no_R*no_R, GFGGF_work)
       ! zwork is now GF.G.GF
+
+#ifdef TRANSIESTA_DEBUG
+      call write_full(iu_GF,no_u_TS,zwork)
+#endif
 
       ! Note that we use '--' here
       if ( ts_Gamma_SCF ) then
@@ -922,8 +970,12 @@ contains
       ! We calculate the left contribution
       call GF_Gamma_GF(1,no_u_TS, no_L+no_R, &
            no_L, Gf, &
-           GammaLT, zwork, no_L*no_L, SigmaL) ! SigmaL is a "work" array
+           GammaLT, zwork, no_L*no_L, GFGGF_work)
       ! zwork is now GF.G.GF
+
+#ifdef TRANSIESTA_DEBUG
+      call write_full(iu_GF,no_u_TS,zwork)
+#endif
 
       ! Note that we use '++' here
       if ( ts_Gamma_SCF ) then
@@ -1071,13 +1123,13 @@ contains
     complex(dp), intent(in) :: Z
     ! Remark that we need the left buffer orbitals
     ! to calculate the actual orbital of the sparse matrices...
-    integer, intent(in) :: no_BufL,no_u
+    integer, intent(in) :: no_BufL, no_u
     complex(dp), intent(out) :: GFinv(no_u**2)
     integer, intent(in) :: no_L, no_R
     complex(dp), intent(in) :: SigmaL(no_L**2)
     complex(dp), intent(in) :: SigmaR(no_R**2)
     ! The Hamiltonian and overlap sparse matrices
-    type(dSpData1D), intent(inout), optional :: spH, spS
+    type(dSpData1D), intent(inout), optional :: spH,  spS
     type(zSpData1D), intent(inout), optional :: spzH, spzS
 
     ! Local variables
@@ -1145,7 +1197,7 @@ contains
        ! values in this part...
        do io = no_BufL + 1, no_BufL + no_u
           
-          iu = (io-ioff) * no_u - no_BufL
+          iu = (io - ioff) * no_u - no_BufL
           
           do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io) 
              
@@ -1173,9 +1225,10 @@ contains
     complex(dp), intent(in) :: SigmaL(no_L,no_L)
     complex(dp), intent(in) :: SigmaR(no_R,no_R)
 
-    integer :: i, j, jj, off
+    integer :: i, j, ii, jj, off
 
     off = no_u - no_R
+
     if ( UseBulk ) then
        do j = 1 , no_L
           do i = 1 , no_L
@@ -1196,7 +1249,8 @@ contains
        do j = 1 , no_R
           jj = off + j
           do i = 1 , no_R
-             Gfinv(off+i,jj) = Gfinv(off+i,jj) - SigmaR(i,j) 
+             ii = off + i
+             Gfinv(ii,jj) = Gfinv(ii,jj) - SigmaR(i,j) 
           end do
        end do
     end if
