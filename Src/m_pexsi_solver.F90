@@ -500,6 +500,10 @@ m2%vals(2)%data => EDMnzvalLocal(1:nnzLocal)
 
 endif ! PEXSI_worker
 
+deallocate( muList )
+deallocate( numElectronList )
+deallocate( numElectronDrvList )
+
 ! Prepare m1 to receive the results
 if (SIESTA_worker) then
    nullify(m1%vals(1)%data)    ! formerly pointing to S
