@@ -946,10 +946,10 @@ contains
     use m_ts_io, only  : ts_read_TSHS
     use files, only: slabel
 #ifdef MPI
-    use mpi_siesta, only: MPI_Comm_World, MPI_LOR
-    use mpi_siesta, only: MPI_Bcast,MPI_Barrier
-    use mpi_siesta, only: MPI_Double_Precision => MPI_double_precision
-    use mpi_siesta, only: MPI_Logical,MPI_Integer
+    use mpi_siesta, only: MPI_Comm_World
+    use mpi_siesta, only: MPI_Bcast, MPI_Barrier
+    use mpi_siesta, only: MPI_Double_Precision
+    use mpi_siesta, only: MPI_Logical, MPI_Integer
     use mpi_siesta, only: MPI_Reduce
 #endif
 #ifndef TBTRANS
@@ -1190,6 +1190,11 @@ contains
 
           write(*,'(a)') "Coordinates from the electrode repeated &
                &out to an FDF file"
+          write(*,'(a,i0,a)') "NOTICE: that these coordinates are &
+               &arranged with respect to atom ", sysElec," in your FDF file"
+          write(*,'(a)') "NOTICE: that you need to add the species label again"
+          write(*,'(a)') "For the same species in the electrode you can do:"
+          write(*,'(a,/)') "awk '{print $1,$2,$3,1}' <OUT-file>"
           write(*,'(t3,3a20)') "X (Ang)","Y (Ang)","Z (Ang)"
           iaa = sysElec
           do ia = elecElec , elecElec + NUsedAtoms - 1
@@ -1202,6 +1207,9 @@ contains
                 end do
              end do
           end do
+#ifdef MPI
+          call MPI_Barrier(MPI_Comm_World, MPIerror)
+#endif
           call die("The electrodes are not situated in the same coordinates. &
                &Please correct.")
        end if
@@ -1363,11 +1371,11 @@ contains
           
           i = iuo+(juo-1)*nuo
           if (zconnect(ind).eq.0) then
-             Hk(i) = Hk(i)+H(ind,ispin)*cphase
-             Sk(i) = Sk(i)+S(ind)*cphase
+             Hk(i)   = Hk(i)   + H(ind,ispin) * cphase
+             Sk(i)   = Sk(i)   + S(ind)       * cphase
           else if (zconnect(ind).eq.1) then
-             Hk_T(i) = Hk_T(i)+H(ind,ispin)*cphase
-             Sk_T(i) = Sk_T(i)+S(ind)*cphase
+             Hk_T(i) = Hk_T(i) + H(ind,ispin) * cphase
+             Sk_T(i) = Sk_T(i) + S(ind)       * cphase
           endif
           
        enddo
@@ -1381,10 +1389,10 @@ contains
           i = iuo+(juo-1)*nuo
           j = juo+(iuo-1)*nuo
 
-          Sk(j) = 0.5d0*( Sk(j) + dconjg(Sk(i)) )
+          Sk(j) = 0.5_dp*( Sk(j) + dconjg(Sk(i)) )
           Sk(i) = dconjg(Sk(j))
 
-          Hk(j) = 0.5d0*( Hk(j) + dconjg(Hk(i)) ) &
+          Hk(j) = 0.5_dp*( Hk(j) + dconjg(Hk(i)) ) &
                - Ef*Sk(j)
           Hk(i) = dconjg(Hk(j))
 
@@ -1395,9 +1403,9 @@ contains
        enddo
        
        i = iuo+(iuo-1)*nuo
-       Sk(i) = Sk(i) - dcmplx(0d0,dimag(Sk(i)))
+       Sk(i) = Sk(i) - dcmplx(0._dp,dimag(Sk(i)))
        
-       Hk(i) = Hk(i) - dcmplx(0d0,dimag(Hk(i))) &
+       Hk(i) = Hk(i) - dcmplx(0._dp,dimag(Hk(i))) &
             - Ef*Sk(i)
        
        ! Transfer matrix
@@ -1430,21 +1438,21 @@ contains
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    integer , intent(in)     :: NA1,NA2  ! no. repetitions of simple unitcell in A1,A2 directions   
+    integer , intent(in)  :: NA1, NA2  ! no. repetitions of simple unitcell in A1,A2 directions   
 
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    integer , intent(out)          :: nq      ! no. q-points (<= NA1*NA2 for gamma)
-    real(dp), pointer              :: q(:,:)  ! q-points
-    real(dp), pointer              :: wq(:)   ! weight of q-points (k_||)
+    integer , intent(out) :: nq      ! no. q-points (<= NA1*NA2 for gamma)
+    real(dp), pointer     :: q(:,:)  ! q-points
+    real(dp), pointer     :: wq(:)   ! weight of q-points (k_||)
 
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
-    integer                  :: i,j,iq
+    integer               :: i,j,iq
 
-    nq = NA1*NA2                !initial value
+    nq = NA1*NA2
 
 ! To comply with new standard 3-dimension regime
     allocate(q(3,nq))
@@ -1452,16 +1460,16 @@ contains
     allocate(wq(nq))
     call memory('A','D',nq,'mkqgrid')
     ! Initialize to 0.0
-    q(:,:)  = 0.0_dp
-    wq(:)   = 0.0_dp
+    q(:,:) = 0.0_dp
+    wq(:)  = 0.0_dp
     iq = 0
-    do i=1,NA1
-       do j=1,NA2
+    do i = 1 , NA1
+       do j = 1  , NA2
           iq = iq+1
-          q(1,iq)= 1.0_dp*(i-1)/real(NA1,dp)
-          q(2,iq)= 1.0_dp*(j-1)/real(NA2,dp)
-          q(3,iq)= 0.0_dp
-          wq(iq) = 1.0_dp/real(NA1*NA2,dp)
+          q(1,iq) = 1.0_dp*(i-1) / real(NA1,dp)
+          q(2,iq) = 1.0_dp*(j-1) / real(NA2,dp)
+          q(3,iq) = 0.0_dp
+          wq(iq)  = 1.0_dp       / real(nq,dp)
        end do
     end do
     

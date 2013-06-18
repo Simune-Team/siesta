@@ -1,4 +1,16 @@
 ----------------------------------------------------
+June 18, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-57
+Added small awk script when the electrode does not conform
+
+* Lets the user do copy paste and then paste the repeated out
+  electrode positions directly into the FDF
+
+* Code clean-up
+
+modified:
+  Src/m_ts_electrode.F90
+
+----------------------------------------------------
 June 17, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-56
 Added a full transiesta debug code segment for displaying GF matrices
 
