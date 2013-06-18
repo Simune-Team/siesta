@@ -949,7 +949,7 @@ contains
       call calc_GF_Bias(no_u_TS,no_L,no_R, zwork, GF,ierr)
 
       ! We calculate the right contribution
-      call GF_Gamma_GF(no_L+1,no_u_TS,no_L+no_R, &
+      call GF_Gamma_GF(UpdateDMCR,no_L+1,no_u_TS,no_L+no_R, &
            no_R, Gf, &
            GammaRT, zwork, no_R*no_R, GFGGF_work)
       ! zwork is now GF.G.GF
@@ -968,7 +968,7 @@ contains
       end if
          
       ! We calculate the left contribution
-      call GF_Gamma_GF(1,no_u_TS, no_L+no_R, &
+      call GF_Gamma_GF(UpdateDMCR,1,no_u_TS, no_L+no_R, &
            no_L, Gf, &
            GammaLT, zwork, no_L*no_L, GFGGF_work)
       ! zwork is now GF.G.GF

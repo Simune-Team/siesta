@@ -30,8 +30,20 @@
 ! the module which parts you wish to calculate the inverse of.
 ! I.e. 
 !   call invert_TriMat(M,Minv,sPart=2,ePart=3) 
-! where parts >= 3. This will leverage a lot of comptutations,
+! where parts >= 3. This will leverage a lot of computations,
 ! especially if parts >> 1 and only part of the matrix is wanted.
+
+
+! After the inverted matrix has been calculated the input matrix
+! looses the values in the diagonal
+! The rest of the information is still retained
+! If one only requests a part of the matrix, we retain some of the values
+!   1. the lower tri-parts of the inverted tri-matrix contains
+!       Xn/Cn+1 from [ePart+1:Parts]
+!   2. the upper tri-parts of the inverted tri-matrix contains
+!       Yn/Bn-1 from [1:sPart-1]
+!   3. the A(1,1)         is retained IFF sPart > 1 
+!   4. the A(Parts,Parts) is retained IFF ePart < Parts
 
 module m_trimat_invert
   
@@ -39,10 +51,12 @@ module m_trimat_invert
 
   implicit none
 
+  private :: dp
+
   ! Current size of the pivoting arrays
-  integer, save          :: Npiv = 0
+  integer, private, save          :: Npiv = 0
   ! The pivoting array
-  integer, save, pointer :: ipiv(:) => null()
+  integer, private, save, pointer :: ipiv(:) => null()
 
   ! Used for BLAS calls (local variables)
   complex(dp), private, parameter :: z0  = dcmplx( 0._dp, 0._dp)
@@ -71,8 +85,9 @@ contains
     do n = 1 , parts(M) 
        if ( Npiv < nrows_g(M,n) ) piv_initialized = .false.
     end do
-    if ( .not. piv_initialized ) &
-         call die('Pivoting array for inverting matrix not set.')
+    if ( .not. piv_initialized ) then
+       call die('Pivoting array for inverting matrix not set.')
+    end if
 
     call timer('TM_inv',1)
 

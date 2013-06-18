@@ -114,6 +114,7 @@ CONTAINS
 !     of J.M.Soler and A.Garcia
 !
 ! Writen by F.D.Novaes May'07
+! Rewritten by Nick Papior Andersen, 2013
 !
 ! **************************** OUTPUT *********************************
   
@@ -183,6 +184,14 @@ CONTAINS
 
     UseBulk     = fdf_get('TS.UseBulkInElectrodes',UseBulk_def)
     UpdateDMCR  = fdf_get('TS.UpdateDMCROnly',UpdateDMCR_def)
+    if ( .not. UseBulk ) then
+       ! If we use bulk, the algorithms look up in the UpdateDMCR
+       ! to check whether the off-diagonal elements of
+       ! the Green's function is needed
+       ! Hence if we update everything, everything needs to
+       ! be calculated: UpdateDMCR == .false.
+       UpdateDMCR = .false.
+    end if
 
     chars = fdf_get('TS.TriMat.Optimize','speed')
     if ( leqi(chars,'speed') ) then
@@ -554,14 +563,14 @@ CONTAINS
             ' End: TS CHECKS AND WARNINGS ',repeat('*',26)
     end if
 
-1   format('ts_read_options: ',a,t51,'=',4x,l1)
-5   format('ts_read_options: ',a,t51,'=',i5,a)
-6   format('ts_read_options: ',a,t51,'=',f10.4,a)
-7   format('ts_read_options: ',a,t51,'=',f12.6,a)
-8   format('ts_read_options: ',a,t51,'=',f10.4)
-10  format('ts_read_options: ',a,t51,'=',4x,a)
-11  format('ts_read_options: ',a)
-15  format('ts_read_options: ',a,t51,'= ',i0,' X ',i0)
+1   format('ts_options: ',a,t53,'=',4x,l1)
+5   format('ts_options: ',a,t53,'=',i5,a)
+6   format('ts_options: ',a,t53,'=',f10.4,a)
+7   format('ts_options: ',a,t53,'=',f12.6,a)
+8   format('ts_options: ',a,t53,'=',f10.4)
+10  format('ts_options: ',a,t53,'=',4x,a)
+11  format('ts_options: ',a)
+15  format('ts_options: ',a,t53,'= ',i0,' X ',i0)
 
 contains 
   

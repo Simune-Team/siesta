@@ -1,4 +1,24 @@
 ----------------------------------------------------
+June 18, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-58
+Bugfix for logic behind Green's function calculations
+
+* When the options UpdateDMCROnly and UseBulk was used the logic
+  was not what was happening. 
+  This has now been fixed.
+  Consequently the computations when not requiring the full
+  Gf is reduced.
+
+* Added remarks for the tri-mat code
+
+modified:
+  Src/m_trimat_invert.F90
+  Src/m_ts_full.F90
+  Src/m_ts_full_scat.F90
+  Src/m_ts_options.F90
+  Src/m_ts_tri.F90
+  Src/m_ts_tri_scat.F90
+
+----------------------------------------------------
 June 18, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-57
 Added small awk script when the electrode does not conform
 

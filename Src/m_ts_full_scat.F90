@@ -34,7 +34,7 @@ contains
 ! columns.
 ! Furthermore we retain all information by not imposing any symmetry in
 ! the product (TODO, check that we dont necessarily have this)
-  subroutine GF_Gamma_GF(Offset,no_u_TS,no_LR,no_E, &
+  subroutine GF_Gamma_GF(UpdateDMCR,Offset,no_u_TS,no_LR,no_E, &
        GF,GammaT,GGG,nwork,work)
 
 !  This routine returns GGG=GF.Gamma.GF^\dagger, where GF is a (no_u)x(no_L+no_R)
@@ -49,6 +49,7 @@ contains
 ! *********************
 ! * INPUT variables   *
 ! *********************
+    logical, intent(in) :: UpdateDMCR ! If we only need the central region of the triple matrix product
     integer, intent(in) :: Offset  ! The offset for where Gamma lives
     integer, intent(in) :: no_u_TS ! no. states in contact region
     integer, intent(in) :: no_LR   ! no. states for both electrodes
@@ -72,7 +73,7 @@ contains
     complex(dp), parameter :: z0  = dcmplx(0._dp, 0._dp)
     complex(dp), parameter :: z1  = dcmplx(1._dp, 0._dp)
 
-    integer :: i, lE, NB, ind, iB
+    integer :: i, lE, NB, ind, iB, sB, eB
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE GFGammaGF' )
@@ -83,9 +84,17 @@ contains
     lE = Offset + no_E - 1
     ! Number of times we can divide the large matrix
     NB = no_u_TS / no_E
-
+    sB = 0
+    eB = NB - 1
+    if ( UpdateDMCR ) then
+       sB = 1
+       if ( no_u_TS ==  NB * no_E ) then
+          eB = NB - 2          
+       end if
+    end if
+       
     ! Loop over bottom row matrix 
-    do iB = 0 , NB - 1
+    do iB = sB , eB
        
        ! Collect the top row of complex conjugated Gf
        ind = no_u_TS*no_E*iB+1
@@ -109,7 +118,7 @@ contains
     end do
 
     ! in case the block size does not match the matrix order
-    if ( NB * no_E /= no_u_TS ) then
+    if ( (.not.UpdateDMCR) .and. NB * no_E /= no_u_TS ) then
 
        ! The size of the remaining block
        iB = no_u_TS - NB * no_E

@@ -1098,10 +1098,10 @@ contains
            spzH=spzH, spzS=spzS )
 
       ! Calculate the Greens function
-      call calc_GF_Bias(no_u_TS,zwork_tri,GF_tri)
+      call calc_GF_Bias(UpdateDMCR,no_u_TS,zwork_tri,GF_tri)
 
       ! We calculate the right thing.
-      call GF_Gamma_GF_Right(UseBulk,no_R, Gf_tri, GammaRT, zwork_tri)
+      call GF_Gamma_GF_Right(UseBulk,UpdateDMCR,no_R, Gf_tri, GammaRT, zwork_tri)
       ! work is now GFGGF
 
 #ifdef TRANSIESTA_DEBUG
@@ -1118,7 +1118,7 @@ contains
       end if
          
       ! We calculate the left thing.
-      call GF_Gamma_GF_Left(UseBulk,no_L, Gf_tri, GammaLT, zwork_tri)
+      call GF_Gamma_GF_Left(UseBulk,UpdateDMCR,no_L, Gf_tri, GammaLT, zwork_tri)
       ! work is now GFGGF
 
 #ifdef TRANSIESTA_DEBUG

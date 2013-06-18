@@ -194,7 +194,7 @@ contains
 ! ##           Nick Papior Andersen, nickpapior@gmail.com         ##
 ! ##                                                              ##
 ! ##################################################################
-  subroutine calc_GF_Bias(no_u_TS,Gfinv_tri,GF_tri)
+  subroutine calc_GF_Bias(UpdateDMCR,no_u_TS,Gfinv_tri,GF_tri)
     
     use intrinsic_missing, only: EYE
     use class_zTriMat
@@ -204,6 +204,8 @@ contains
 ! *********************
 ! * INPUT variables   *
 ! *********************
+    ! whether we need the full column
+    logical, intent(in) :: UpdateDMCR
     ! Sizes of the different regions...
     integer, intent(in) :: no_u_TS
     ! Work should already contain Z*S - H (and the self-energies)
@@ -300,9 +302,11 @@ contains
 ! calculate inv(Gf)21
     call zgemm('N','N',nC,nL,nL,zm1, Gf12,nC, Gf11,nL,z0, Gf21,nC)
 
+    if ( .not. UpdateDMCR ) then
 ! calculate inv(Gf)31 
 ! (untraditionally this we save in Gf12 as the tri-diagonal is not made for full Gf)
-    call zgemm('N','N',nR,nL,nC,zm1, Gf32,nR, Gf21,nC,z0, Gf12,nR)
+       call zgemm('N','N',nR,nL,nC,zm1, Gf32,nR, Gf21,nC,z0, Gf12,nR)
+    end if
 
 ! * Now we have calculated the Gf in the left column *
 
@@ -331,9 +335,11 @@ contains
 ! calculate inv(Gf)23
     call zgemm('N','N',nC,nR,nR,zm1, iGf23,nC, Gf33,nR,z0, Gf23,nC)
 
+    if ( .not. UpdateDMCR ) then
 ! calculate inv(Gf)13
 ! (untraditionally this we save in Gf32 as the tri-diagonal is not made for full Gf)
-    call zgemm('N','N',nL,nR,nC,zm1, iGf12,nL, Gf23,nC,z0, Gf32,nL)
+       call zgemm('N','N',nL,nR,nC,zm1, iGf12,nL, Gf23,nC,z0, Gf32,nL)
+    end if
 
     call timer('GFT',2)
 
@@ -440,7 +446,7 @@ contains
 
   end subroutine calc_GF_Part
 
-  subroutine GF_Gamma_GF_Left(UseBulk,no_L,Gf_tri,GammaT,GGG_tri)
+  subroutine GF_Gamma_GF_Left(UseBulk,UpdateDMCR,no_L,Gf_tri,GammaT,GGG_tri)
 
 ! ======================================================================
 !  This routine returns GGG=GF.Gamma.GF^\dagger, where GF is a tri-diagonal
@@ -456,6 +462,7 @@ contains
 ! * INPUT variables   *
 ! *********************
     logical, intent(in) :: UseBulk ! If .not. UseBulk we will also update the Gf11 and Gf33
+    logical, intent(in) :: UpdateDMCR ! If .not. UpdateDMCR we will also update the Gf12, Gf21, Gf32 and Gf23
     integer, intent(in) :: no_L ! the size of the Gamma
     ! The Green's function (note that it SHOULD be transposed on entry)
     type(zTriMat), intent(inout) :: Gf_tri
@@ -485,68 +492,76 @@ contains
     ! This is the full Gf22 array
     oW => val(Gf_tri,2,2)
 
-    Gf  => val(Gf_tri,1,1)
-    ! \Gamma Gf^\dagger 11
-    call zgemm('T','C',nL,nL,nL,z1, GammaT,nL, Gf,nL,z0, oW,nL)
+    if ( .not. UpdateDMCR ) then
 
-    ! This is actually not necessary... (we dont have anything to 
-    ! update here)
-    if ( .not. UseBulk ) then
-       GGG => val(GGG_tri,1,1)
-       ! Gf11 \Gamma Gf^\dagger 11 == GGG 11
-       call zgemm('N','N',nL,nL,nL,z1, Gf,nL, oW,nL,z0, GGG,nL)
+       Gf  => val(Gf_tri,1,1)
+       ! \Gamma Gf^\dagger 11
+       call zgemm('T','C',nL,nL,nL,z1, GammaT,nL, Gf,nL,z0, oW,nL)
+
+       if ( .not. UseBulk ) then
+          GGG => val(GGG_tri,1,1)
+          ! Gf11 \Gamma Gf^\dagger 11 == GGG 11
+          call zgemm('N','N',nL,nL,nL,z1, Gf,nL, oW,nL,z0, GGG,nL)
+       end if
+
+       Gf  => val(Gf_tri,2,1) ! size nC x nL
+       GGG => val(GGG_tri,2,1) ! size nC x nL
+       ! Gf21 \Gamma Gf^\dagger 11 == GGG 21
+       call zgemm('N','N',nC,nL,nL,z1, Gf,nC, oW,nL,z0, GGG,nC)
+
+       ! > We now have GGG 21 <
     end if
-
-    Gf  => val(Gf_tri,2,1) ! size nC x nL
-    GGG => val(GGG_tri,2,1) ! size nC x nL
-    ! Gf21 \Gamma Gf^\dagger 11 == GGG 21
-    call zgemm('N','N',nC,nL,nL,z1, Gf,nC, oW,nL,z0, GGG,nC)
-
-    ! > We now have GGG 21 <
 
     Gf => val(Gf_tri,2,1) ! size nC x nL (note we take the conjugate transpose)
     ! \Gamma Gf^\dagger 12
     call zgemm('T','C',nL,nC,nL,z1, GammaT,nL, Gf,nC,z0, oW,nL)
 
-    Gf  => val(Gf_tri,1,1) ! size nL x nL
-    GGG => val(GGG_tri,1,2) ! size nL x nC
-    ! Gf 11 \Gamma Gf^\dagger 12 == GGG 12
-    call zgemm('N','N',nL,nC,nL,z1, Gf,nL, oW,nL,z0, GGG,nL)
+    if ( .not. UpdateDMCR ) then
+       Gf  => val(Gf_tri,1,1) ! size nL x nL
+       GGG => val(GGG_tri,1,2) ! size nL x nC
+       ! Gf 11 \Gamma Gf^\dagger 12 == GGG 12
+       call zgemm('N','N',nL,nC,nL,z1, Gf,nL, oW,nL,z0, GGG,nL)
+    end if
 
     Gf  => val(Gf_tri,2,1) ! size nC x nL
     GGG => val(GGG_tri,2,2) ! size nC x nC
     ! Gf 21 \Gamma Gf^\dagger 12 == GGG 22
     call zgemm('N','N',nC,nC,nL,z1, Gf,nC, oW,nL,z0, GGG,nC)
 
-    ! NOTICE that Gf contains Gf31 in Gf12 as Gf:2 is not used
-    ! for anything
-    Gf  => val(Gf_tri,1,2) ! size nR x nL
-    GGG => val(GGG_tri,3,2) ! size nR x nC
-    ! Gf 31 \Gamma Gf^\dagger 12 == GGG 32
-    call zgemm('N','N',nR,nC,nL,z1, Gf,nR, oW,nL,z0, GGG,nR)
-
-    ! > We now have GGG :2 <
-    
-    ! NOTICE that Gf contains Gf31 in Gf12 as Gf:2 is not used
-    ! for anything
-    Gf => val(Gf_tri,1,2) ! size nR x nL (note we take the conjugate transpose)
-    ! \Gamma Gf^\dagger 13
-    call zgemm('T','C',nL,nR,nL,z1, GammaT,nL, Gf,nR,z0, oW,nL)
-
-    Gf  => val(Gf_tri,2,1) ! size nC x nL
-    GGG => val(GGG_tri,2,3) ! size nC x nR
-    ! Gf 21 \Gamma Gf^\dagger 13 == GGG 23
-    call zgemm('N','N',nC,nR,nL,z1, Gf,nC, oW,nL,z0, GGG,nC)
-
-    if ( .not. UseBulk ) then
+    if ( .not. UpdateDMCR ) then
        ! NOTICE that Gf contains Gf31 in Gf12 as Gf:2 is not used
        ! for anything
        Gf  => val(Gf_tri,1,2) ! size nR x nL
-       GGG => val(GGG_tri,3,3) ! size nR x nR
-       ! Gf 31 \Gamma Gf^\dagger 13 == GGG 33
-       call zgemm('N','N',nR,nR,nL,z1, Gf,nR, oW,nL,z0, GGG,nR)
+       GGG => val(GGG_tri,3,2) ! size nR x nC
+       ! Gf 31 \Gamma Gf^\dagger 12 == GGG 32
+       call zgemm('N','N',nR,nC,nL,z1, Gf,nR, oW,nL,z0, GGG,nR)
     end if
-    ! > We now have GGG 23 <
+
+    ! > We now have GGG :2 <
+
+    if ( .not. UpdateDMCR ) then
+       ! NOTICE that Gf contains Gf31 in Gf12 as Gf:2 is not used
+       ! for anything
+       Gf => val(Gf_tri,1,2) ! size nR x nL (note we take the conjugate transpose)
+       ! \Gamma Gf^\dagger 13
+       call zgemm('T','C',nL,nR,nL,z1, GammaT,nL, Gf,nR,z0, oW,nL)
+
+       Gf  => val(Gf_tri,2,1) ! size nC x nL
+       GGG => val(GGG_tri,2,3) ! size nC x nR
+       ! Gf 21 \Gamma Gf^\dagger 13 == GGG 23
+       call zgemm('N','N',nC,nR,nL,z1, Gf,nC, oW,nL,z0, GGG,nC)
+
+       if ( .not. UseBulk ) then
+          ! NOTICE that Gf contains Gf31 in Gf12 as Gf:2 is not used
+          ! for anything
+          Gf  => val(Gf_tri,1,2) ! size nR x nL
+          GGG => val(GGG_tri,3,3) ! size nR x nR
+          ! Gf 31 \Gamma Gf^\dagger 13 == GGG 33
+          call zgemm('N','N',nR,nR,nL,z1, Gf,nR, oW,nL,z0, GGG,nR)
+       end if
+
+       ! > We now have GGG 23 <
+    end if
     
     call timer('GFGGF',2)
 
@@ -557,7 +572,7 @@ contains
   end subroutine GF_Gamma_GF_Left
 
 
-  subroutine GF_Gamma_GF_Right(UseBulk,no_R,Gf_tri,GammaT,GGG_tri)
+  subroutine GF_Gamma_GF_Right(UseBulk,UpdateDMCR,no_R,Gf_tri,GammaT,GGG_tri)
 
 ! ======================================================================
 !  This routine returns GGG=GF.Gamma.GF, where GF is a tri-diagonal
@@ -573,6 +588,7 @@ contains
 ! * INPUT variables   *
 ! *********************
     logical, intent(in) :: UseBulk ! if .not. UseBulk everything is needed
+    logical, intent(in) :: UpdateDMCR ! If .not. UpdateDMCR we will also update the Gf12, Gf21, Gf32 and Gf23
     integer, intent(in) :: no_R ! the size of the Gamma
     ! The Green's function (note that it SHOULD be transposed on entry)
     type(zTriMat), intent(inout) :: Gf_tri
@@ -602,22 +618,22 @@ contains
     ! for anything, hence this is safe)
     oW => val(Gf_tri,2,2)
 
-    Gf => val(Gf_tri,3,3)
-    ! \Gamma Gf^\dagger 33
-    call zgemm('T','C',nR,nR,nR,z1, GammaT,nR, Gf,nR,z0, oW,nR)
+    if ( .not. UpdateDMCR ) then
+       Gf => val(Gf_tri,3,3)
+       ! \Gamma Gf^\dagger 33
+       call zgemm('T','C',nR,nR,nR,z1, GammaT,nR, Gf,nR,z0, oW,nR)
 
-    ! This is actually not necessary... (we dont have anything to 
-    ! update here)
-    if ( .not. UseBulk ) then
-       GGG => val(GGG_tri,3,3)
-       ! Gf33 \Gamma Gf^\dagger 33 == GGG 33
-       call zgemm('N','N',nR,nR,nR,z1, Gf,nR, oW,nR,z0, GGG,nR)
+       if ( .not. UseBulk ) then
+          GGG => val(GGG_tri,3,3)
+          ! Gf33 \Gamma Gf^\dagger 33 == GGG 33
+          call zgemm('N','N',nR,nR,nR,z1, Gf,nR, oW,nR,z0, GGG,nR)
+       end if
+
+       Gf  => val(Gf_tri,2,3) ! size nC x nR
+       GGG => val(GGG_tri,2,3) ! size nC x nR
+       ! Gf23 \Gamma Gf^\dagger 33 == GGG 23
+       call zgemm('N','N',nC,nR,nR,z1, Gf,nC, oW,nR,z0, GGG,nC)
     end if
-
-    Gf  => val(Gf_tri,2,3) ! size nC x nR
-    GGG => val(GGG_tri,2,3) ! size nC x nR
-    ! Gf23 \Gamma Gf^\dagger 33 == GGG 23
-    call zgemm('N','N',nC,nR,nR,z1, Gf,nC, oW,nR,z0, GGG,nC)
 
     ! > We now have GGG 23 <
 
@@ -625,45 +641,50 @@ contains
     ! \Gamma Gf^\dagger 32
     call zgemm('T','C',nR,nC,nR,z1, GammaT,nR, Gf,nC,z0, oW,nR)
 
-    ! NOTICE that Gf contains Gf13 in Gf32 as Gf:2 is not used
-    ! for anything
-    Gf  => val(Gf_tri,3,2) ! size nL x nR
-    GGG => val(GGG_tri,1,2) ! size nL x nC
-    ! Gf 13 \Gamma Gf^\dagger 32 == GGG 12
-    call zgemm('N','N',nL,nC,nR,z1, Gf,nL, oW,nR,z0, GGG,nL)
+    if ( .not. UpdateDMCR ) then
+       ! NOTICE that Gf contains Gf13 in Gf32 as Gf:2 is not used
+       ! for anything
+       Gf  => val(Gf_tri,3,2) ! size nL x nR
+       GGG => val(GGG_tri,1,2) ! size nL x nC
+       ! Gf 13 \Gamma Gf^\dagger 32 == GGG 12
+       call zgemm('N','N',nL,nC,nR,z1, Gf,nL, oW,nR,z0, GGG,nL)
+    end if
 
     Gf  => val(Gf_tri,2,3) ! size nC x nR
     GGG => val(GGG_tri,2,2) ! size nC x nC
     ! Gf 23 \Gamma Gf^\dagger 32 == GGG 22
     call zgemm('N','N',nC,nC,nR,z1, Gf,nC, oW,nR,z0, GGG,nC)
 
-    Gf  => val(Gf_tri,3,3) ! size nR x nR
-    GGG => val(GGG_tri,3,2) ! size nR x nC
-    ! Gf 33 \Gamma Gf^\dagger 32 == GGG 32
-    call zgemm('N','N',nR,nC,nR,z1, Gf,nR, oW,nR,z0, GGG,nR)
+    if ( .not. UpdateDMCR ) then
+       Gf  => val(Gf_tri,3,3) ! size nR x nR
+       GGG => val(GGG_tri,3,2) ! size nR x nC
+       ! Gf 33 \Gamma Gf^\dagger 32 == GGG 32
+       call zgemm('N','N',nR,nC,nR,z1, Gf,nR, oW,nR,z0, GGG,nR)
+    end if
 
     ! > We now have GGG :2 <
 
-    ! NOTICE that Gf contains Gf13 in Gf32 as Gf:2 is not used
-    ! for anything
-    Gf => val(Gf_tri,3,2) ! size nL x nR (note we take the conjugate transpose)
-    ! \Gamma Gf^\dagger 31
-    call zgemm('T','C',nR,nL,nR,z1, GammaT,nR, Gf,nL,z0, oW,nR)
-
-    if ( .not. UseBulk ) then
+    if ( .not. UpdateDMCR ) then
        ! NOTICE that Gf contains Gf13 in Gf32 as Gf:2 is not used
        ! for anything
-       Gf  => val(Gf_tri,3,2) ! size nL x nR
-       GGG => val(GGG_tri,1,1) ! size nL x nL
-       ! Gf 13 \Gamma Gf^\dagger 31 == GGG 11
-       call zgemm('N','N',nL,nL,nR,z1, Gf,nL, oW,nR,z0, GGG,nL)
+       Gf => val(Gf_tri,3,2) ! size nL x nR (note we take the conjugate transpose)
+       ! \Gamma Gf^\dagger 31
+       call zgemm('T','C',nR,nL,nR,z1, GammaT,nR, Gf,nL,z0, oW,nR)
+
+       if ( .not. UseBulk ) then
+          ! NOTICE that Gf contains Gf13 in Gf32 as Gf:2 is not used
+          ! for anything
+          Gf  => val(Gf_tri,3,2) ! size nL x nR
+          GGG => val(GGG_tri,1,1) ! size nL x nL
+          ! Gf 13 \Gamma Gf^\dagger 31 == GGG 11
+          call zgemm('N','N',nL,nL,nR,z1, Gf,nL, oW,nR,z0, GGG,nL)
+       end if
+
+       Gf  => val(Gf_tri,2,3) ! size nC x nR
+       GGG => val(GGG_tri,2,1) ! size nC x nL
+       ! Gf 23 \Gamma Gf^\dagger 31 == GGG 21
+       call zgemm('N','N',nC,nL,nR,z1, Gf,nC, oW,nR,z0, GGG,nC)
     end if
-
-    Gf  => val(Gf_tri,2,3) ! size nC x nR
-    GGG => val(GGG_tri,2,1) ! size nC x nL
-    ! Gf 23 \Gamma Gf^\dagger 31 == GGG 21
-    call zgemm('N','N',nC,nL,nR,z1, Gf,nC, oW,nR,z0, GGG,nC)
-
     ! > We now have GGG 21 <
 
     call timer('GFGGF',2)
