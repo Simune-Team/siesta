@@ -77,6 +77,9 @@
       integer :: World_Group
       integer :: npSIESTA
 
+      character(len=256) :: output_file
+      logical            :: use_explicit_output_file
+
 !---------------------------------------------------------------------- BEGIN
 #ifdef MPI
 C     Initialise MPI and set processor number
@@ -87,6 +90,16 @@ C     Initialise MPI and set processor number
 
       call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
       call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
+
+      if (Node == 0) then
+         call get_command_line_options()
+         if (use_explicit_output_file) then
+            close(unit=6)
+            open(unit=6,file=trim(output_file),form="formatted",
+     $           position="rewind",
+     $           action="write",status="unknown")
+         endif
+      endif
 
       if (Node == 0) write(6,"(a,i6)")
      $      "** Total Number of Nodes: ", Nodes
@@ -194,7 +207,7 @@ C     Initialise MPI and set processor number
       call timer_report( file=trim(slabel)//'.times', 
      .                   threshold=threshold )
       ! This variable lives in siesta_options
-      use_tree_timer = fdf_get('UseTreeTimer', .false.)
+      use_tree_timer = fdf_get('UseTreeTimer', .true.)
 
 !     Start time counter
 !     Note new placement of this first use, so that
@@ -448,6 +461,42 @@ C     Initialise MPI and set processor number
       call timer( 'Setup', 2 )
 
 !--------------------------------------------------------------------------- END
+      CONTAINS
+
+      subroutine get_command_line_options()
+      use m_getopts
+      use f2kcli
+
+      character(len=200) :: opt_arg
+      character(len=10)  :: opt_name 
+      integer :: nargs, iostat, n_opts, nlabels
+
+!     Process options
+!     
+      use_explicit_output_file = .false.
+      n_opts = 0
+      do
+         call getopts('dho:',
+     $                 opt_name,opt_arg,n_opts,iostat)
+         if (iostat /= 0) exit
+         select case(opt_name)
+         case ('d')
+          !           debug = .true.
+         case ('o')
+           use_explicit_output_file = .true.
+           output_file = trim(opt_arg)
+        case ('h')
+           !call manual()
+        case ('?',':')
+           write(0,*) "Invalid option: ", opt_name(1:1)
+           write(0,*) "Usage: siesta [ -o output_file ]"
+           !write(0,*) "Use -h option for manual"
+           call die()
+        end select
+      enddo
+
+      end subroutine get_command_line_options
+
       END subroutine siesta_init
 
       END MODULE m_siesta_init
