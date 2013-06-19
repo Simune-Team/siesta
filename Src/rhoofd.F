@@ -132,13 +132,13 @@ C     Find size of buffers to store partial copies of Dscf and C
       lenxy = lenx*leny
 
 !$OMP PARALLEL DEFAULT(NONE) SHARED(indxuo,nsp,dxa,xdop,xdsp,lenxy,lenx,
-!$   &  listdl,listdlptr,NeedDscfL,numdl,DscfL,directphi,endpht,lstpht,
-!$   &  listp2,phi,no,np,nspin,iaorb,iphorb,isa,numd,listdptr,listd,
-!$   &  dscf,maxloc,maxloc2,triang,ParallelLocal,r2cut,rhoscf,
-!$   &  nodes,node)
-!$   &  PRIVATE(ip,i,ia,ic,ii,ijl,il,imp,ind,ispin,io,iop,iphi,is,isp,
-!$   &  iu,iul,j,jc,jl,last,lasta,lastop,nc,nphiloc,Dij,r2sp,ilc,ilocal,
-!$   &  iorb,Cij,Clocal,Dlocal,phia,dxsp)
+!$OMP&  listdl,listdlptr,NeedDscfL,numdl,DscfL,directphi,endpht,lstpht,
+!$OMP&  listp2,phi,no,np,nspin,iaorb,iphorb,isa,numd,listdptr,listd,
+!$OMP&  dscf,maxloc,maxloc2,triang,ParallelLocal,r2cut,rhoscf,
+!$OMP&  nodes,node)
+!$OMP&  PRIVATE(ip,i,ia,ic,ii,ijl,il,imp,ind,ispin,io,iop,iphi,is,isp,
+!$OMP&  iu,iul,j,jc,jl,last,lasta,lastop,nc,nphiloc,Dij,r2sp,ilc,ilocal,
+!$OMP&  iorb,Cij,Clocal,Dlocal,phia,dxsp)
 
 !$OMP CRITICAL(MEMORY_LOCK)
 C     Allocate local memory
