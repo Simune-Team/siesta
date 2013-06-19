@@ -72,7 +72,8 @@ C --- invert the box vectors; will need it in a minute...
 C --- write selected atoms first into a scratch file (is1), for the case
 C     there are zero. Then the label 'ATOMS' with no  atoms following
 C     will crash XCrySDen.
-      open (is1, form='formatted',status='scratch')
+C     open (is1, file='tmpfil',form='formatted',status='scratch')
+      open (is1,               form='formatted',status='scratch')
       call fillbox(is1,obox,rbox,rinv,cc_ang,nat,coor_ang,nbox)
 
 C --- open output file:
@@ -264,6 +265,10 @@ C 205 format (1p,8e10.3)
   705 format (" Enter number of grid points along three vectors: ")
   706 format (' Add grid property (LDOS, RHO, ...;',
      .        ' or BYE if none): ')
+  707 format ("A pity, indeed. In 99% of cases this happens because of",
+     .   " incompatibility",/"of binary file format. Make sure",
+     .   " that you run rho2xsf on THE SAME platform",/"where you have",
+     .   " run Siesta and use the same compiler settings.")
 
   801 write (6,*) ' Error opening file ',
      .              trim(inpfil),' as old formatted'
@@ -272,11 +277,14 @@ C 205 format (1p,8e10.3)
      .              trim(inpfil),'; close XSF and quit.'
       close (io1)
       stop
-  807 write (6,*) ' Error reading cell vectors'
+  807 write (6,*) ' Error reading cell vectors from binary file !'
+      write (6,707)
       stop
-  808 write (6,*) ' Error reading n1,n2,n3,nspin '
+  808 write (6,*) ' Error reading n1,n2,n3,nspin from binary file !'
+      write (6,707)
       stop
   809 write (6,*) ' Error reading function values on the grid'
+      write (6,707)
       stop
   810 write (6,*) ' Unexpected end of data for iiy=',iiy,
      .            ' iiz=',iiz,'  is=',is

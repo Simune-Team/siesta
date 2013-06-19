@@ -57,6 +57,9 @@ PROGRAM SAMPLE
   doit = fdf_boolean('DoIt', .FALSE.)
   write(6,*) 'Doit:', doit
 
+  doit = fdf_defined('AtomicCoordinatesAndAtomicSpecies')
+  write(6,*) 'AtomCoordsBlockDefined:', doit
+
   if (fdf_block('AtomicCoordinatesAndAtomicSpecies', bfdf)) then
     ia = 1
     do while((fdf_bline(bfdf, pline)) .and. (ia .le. na))

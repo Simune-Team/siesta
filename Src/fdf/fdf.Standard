@@ -62,3 +62,34 @@ Label   < Filename   # Comments
 
 	There is a maximum number of files that can be opened at the
 	same time for fdf processing.
+
+
+* Debugging and logging.
+
+By default, all the fdf requests are logged, printing the final value
+extracted (if it is the default value, it is identified as such).
+In MPI operation, only the master node does the logging, unless the
+"output-level" is set to a value >= 2. This can be done directly in
+the fdf file:
+
+fdf-output 2  # Turn on logging for all nodes
+fdf-output 0  # Turn off logging completely
+
+No debugging is done, unless the "debug-level" is set to a value greater
+than zero. The most meaningful way to use this feature is to set the
+debugging level before the fdf data structures are built. This can be
+achieved by calling the routine fdf_setdebug with the appropriate level
+and file name *before* the call to fdf_init.  This gives full control
+over the behavior.  
+
+Alternatively, if the library is compiled with the pre-processor symbol
+FDF_DEBUG defined, it will set the debug level to 2 (exhaustive) for all
+nodes in the system. (It will also set the output level to 2 (all nodes)).
+
+If the debugging level (>=2) is only specified in the fdf file itself,
+the library will provide a print-out of the final data structure generated
+(in all nodes).
+
+fdf-debug 2
+
+

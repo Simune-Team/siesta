@@ -8,14 +8,14 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-!===============================================================================
-! This is now a wrapper for the functionality in module m_timer
+! This is now a wrapper for the functionality in modules m_timer_tree
+! and m_timer
 !
 ! subroutine timer( prog, iOpt )
 !
 !  FINDS AND PRINTS THE CPU TIME SPENT IN DIFFERENT ROUTINES AND/OR
-!   PROGRAM SECTIONS. IT MUST BE CALLED WITH IOPT=0 AT THE BEGINNING
-!   OF EACH ROUTINE AND WITH IOPT=1 AT THE END OF IT.
+!   PROGRAM SECTIONS. IT MUST BE CALLED WITH IOPT=1 AT THE BEGINNING
+!   OF EACH ROUTINE AND WITH IOPT=2 AT THE END OF IT.
 !  ARGUMENTS:
 !    PROG: INPUT ARBITRARY NAME FOR THE ROUTINE AND/OR PROGRAM SECTION
 !    IOPT: INPUT OPTION PARAMETER:
@@ -25,16 +25,28 @@
 !      IOPT = 3  => PRINT TIME FOR A ROUTINE OR FOR ALL (IF PROG='ALL')
 !  ROUTINE TIMES INCLUDE THAT SPENT IN THE ROUTINES THEY CALL
 !  WRITTEN BY J.SOLER. JUL.2009
-!===============================================================================
+!=============================================================================
+module timer_options
+ logical, public :: use_tree_timer
+end module timer_options
 
 subroutine timer( prog, iOpt )
 
 ! Module procedures used
   use sys,     only: die           ! Termination routine
+  use parallel,only: node
+  use timer_options, only: use_tree_timer
+
+  ! New 'tree-based' module by A. Garcia
+  use m_timer_tree, only: timer_on   ! Start counting time
+  use m_timer_tree, only: timer_off    ! Stop counting time
+  use m_timer_tree, only: timer_report  ! Write all times
+
+  ! Standard module by J. Soler
   use m_timer, only: timer_init    ! Initialize all times
   use m_timer, only: timer_start   ! Start counting time
   use m_timer, only: timer_stop    ! Stop counting time
-  use m_timer, only: timer_report  ! Write all times
+  use m_timer, only: jms_timer_report=>timer_report  ! Write all times
 
 ! Arguments
   implicit none
@@ -43,16 +55,36 @@ subroutine timer( prog, iOpt )
 
 ! Select action
   if (iOpt==0) then
-    call timer_init()
+     call timer_init()
   else if (iOpt==1) then
     call timer_start( prog )
   else if (iOpt==2) then
     call timer_stop( prog )
   else if (iOpt==3) then
-    call timer_report( prog, printNow=.true. )
+    call jms_timer_report( prog, printNow=.true. )
   else
     call die('timer: ERROR: invalid iOpt value')
   end if
+
+if ((Node == 0)  .and. use_tree_timer) then
+
+  ! New method, based on walltime in the master node only,
+  ! and with a tree structure for the report
+
+  if (iOpt==0) then
+    ! The timer is initialized in the first call to timer_on...
+    !     call timer_init()
+  else if (iOpt==1) then
+    call timer_on( prog )
+  else if (iOpt==2) then
+    call timer_off( prog )
+  else if (iOpt==3) then
+    call timer_report(prog) 
+  else
+    call die('timer: ERROR: invalid iOpt value')
+  end if
+
+end if
 
 end subroutine timer
 

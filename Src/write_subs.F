@@ -395,11 +395,11 @@
      .             dictRef="siesta:dDmax",  fmt="r7")
             endif
             if ((iscf .eq. 1).or.muldeb)
-     .           write(6,'(/,a12,3a14,a8,a7,a11)')
+     .           write(6,'(/,a12,3a14,a8,a8,a11)')
      .           'siesta: iscf', '   Eharris(eV)', 
      .           '      E_KS(eV)', '   FreeEng(eV)', 
-     .           '   dDmax', '  Ef_up', '  Ef_dn(eV)'
-            write(6,'(a8,i4,3f14.4,f8.4,2f9.4)')
+     .           '    dDmax', '  Ef_up', '  Ef_dn(eV)'
+            write(6,'(a8,i4,3f14.4,f9.5,2f9.4)')
      .           'siesta: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV, dDmax, 
      .           (Efs(i)/eV,i=1,2)
             if (cml_p) then
@@ -412,11 +412,11 @@
             endif
           else !fixspin
             if ((iscf .eq. 1).or.muldeb)
-     .           write(6,'(/,a12,3a14,2a8)')
+     .           write(6,'(/,a12,3a14,a9,a8)')
      .           'siesta: iscf', '   Eharris(eV)', 
      .           '      E_KS(eV)', '   FreeEng(eV)', 
-     .           '   dDmax', '  Ef(eV)'
-            write(6,'(a8,i4,3f14.4,2f8.4)')
+     .           '    dDmax', '  Ef(eV)'
+            write(6,'(a8,i4,3f14.4,f9.5,f8.4)')
      .           'siesta: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV, 
      .           dDmax, Ef/eV
             if (cml_p) then
@@ -425,7 +425,7 @@
      .             dictRef="siesta:Ef", fmt="r7")
             endif !cml_p
           endif !fixspin
-        elseif (isolve==SOLVE_ORDERN) then
+        elseif ((isolve==SOLVE_ORDERN) .or. (isolve==SOLVE_MINIM)) then
           write(6,'(/,a15,i4)') 'siesta: iscf = ',iscf
           write(6,'(a14,f15.4,a13,f15.4,a10,f7.4/)') 
      .         'Eharris(eV) = ',Eharrs/eV,
@@ -460,11 +460,11 @@
      .             dictRef="siesta:dDmax",  fmt="r7")
             endif
             if ((iscf .eq. 1).or.muldeb)
-     .           write(6,'(/,a12,3a14,a8,a7,a11)')
+     .           write(6,'(/,a12,3a14,a9,a7,a11)')
      .           'siesta: iscf', '   Eharris(eV)',
      .           '      E_KS(eV)', '   FreeEng(eV)',
-     .           '   dDmax', '  Ef_up', '  Ef_dn(eV)'
-            write(6,'(a8,i4,3f14.4,f8.4,2f9.4)')
+     .           '    dDmax', '  Ef_up', '  Ef_dn(eV)'
+            write(6,'(a8,i4,3f14.4,f9.5,2f9.4)')
      .           'siesta: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV, dDmax,
      .           (Efs(i)/eV,i=1,2)
             if (cml_p) then
@@ -476,11 +476,11 @@
      .             dictRef="siesta:Efs",    fmt="r7")
             endif
          else
-          if (iscf .eq. 1) write(6,'(/,a12,3a14,2a8)')
+          if (iscf .eq. 1) write(6,'(/,a12,3a14,a9,a8)')
      .             'siesta: iscf', '   Eharris(eV)',
      .             '      E_KS(eV)', '   FreeEng(eV)',
-     .             '   dDmax', '  Ef(eV)'
-          write(6,'(a8,i4,3f14.4,2f8.4)')
+     .             '    dDmax', '  Ef(eV)'
+          write(6,'(a8,i4,3f14.4,f9.5,f8.4)')
      .             'siesta: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV,
      .             dDmax, Ef/eV
          end if !fixspin
@@ -489,19 +489,19 @@
               tmpname = 'transiesta:'
               if (fixspin) then
                  if (TSiscf .eq. 1)
-     .                write(6,'(/,a11,a7,3a14,a8,a7,a11)')
-     .                tmpname,' TSiscf', '   Eharris(eV)',
+     .                write(6,'(/,a11,a5,3a14,a9,a7,a11)')
+     .                tmpname,' iscf', '   Eharris(eV)',
      .                '      E_KS(eV)', '   FreeEng(eV)',
-     .                '   dDmax', '  Ef_up', '  Ef_dn(eV)'
-                 write(6,'(a11,i4,3f14.4,f8.4,2f9.4)')
+     .                '    dDmax', '  Ef_up', '  Ef_dn(eV)'
+                 write(6,'(a11,1x,i4,3f14.4,f9.5,2f8.4)')
      .                tmpname,TSiscf, Eharrs/eV, Etot/eV, FreeE/eV,
      .                dDmax, (Efs(i)/eV,i=1,2)
               else
-                 if (TSiscf .eq. 1) write(6,'(/,a11,a7,3a14,2a8)')
-     .                tmpname,' TSiscf', '   Eharris(eV)',
+                 if (TSiscf .eq. 1) write(6,'(/,a11,a5,3a14,a9,a8)')
+     .                tmpname,' iscf', '   Eharris(eV)',
      .                '      E_KS(eV)', '   FreeEng(eV)',
-     .                '   dDmax', '  Ef(eV)'
-                 write(6,'(a11,i4,3f14.4,2f8.4)')
+     .                '    dDmax', '  Ef(eV)'
+                 write(6,'(a11,1x,i4,3f14.4,f9.5,f8.4)')
      .                tmpname,TSiscf, Eharrs/eV, Etot/eV,
      .                FreeE/eV, dDmax, Ef/eV
               endif             !fixspin

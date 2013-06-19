@@ -49,7 +49,7 @@ C **********************************************************************
      .  ATINPLA
 
       TYPE(PARSED_LINE), pointer :: line
-      TYPE(BLOCK_fdf), POINTER       :: BP
+      TYPE(BLOCK_fdf)            :: BP
 
       EXTERNAL 
      .  MATVECT
@@ -69,7 +69,6 @@ C Read fdf data block 'Denchar.AtomsInPlane' ---------------------------
         NATINPL_DEFECT = 0
         NATINPLA = 0
   
-        NULLIFY(BP)
         IF ( .NOT. FDF_BLOCK('Denchar.AtomsInPlane',BP) )  GOTO 2000
 
         LOOP: DO

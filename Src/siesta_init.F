@@ -12,6 +12,7 @@
      &                              estimate_pol_kpoints
       use m_struct_init,      only: struct_init
       use siesta_options
+      use timer_options,      only: use_tree_timer
       use sparse_matrices
       use siesta_geom
       use atomlist,           only: no_u, rmaxkb, amass, lasto, qtot,
@@ -56,12 +57,11 @@
 #ifdef MPI
       use mpi_siesta
 #endif
+
 #ifdef TRANSIESTA
-! TSS Begin
-      use m_ts_options, only: read_ts_options
-      use m_ts_in_siesta, only: setup_ts_kpoint_grid
-! TSS End
-#endif /* TRANSIESTA */
+      use m_ts_init, only : ts_init
+#endif
+
       implicit none
 #ifdef MPI
       integer :: MPIerror  ! Return error code in MPI routines
@@ -86,6 +86,9 @@ C     Initialise MPI and set processor number
      &           'doesn''t have parallel support')
       endif
 #endif
+      if (Node==0) then
+         call system("rm -f 0_NORMAL_EXIT")
+      endif
 #ifdef DEBUG
 !     Generates a debug file for every process to track the execution.
 !     The file is called debug.$(PID) Where PID is the process number.
@@ -114,16 +117,12 @@ C     Initialise MPI and set processor number
          call wallclock('Start of run')
       endif
 
-!     Start time counter
-      call timer( 'siesta', 0 )
-      call timer( 'siesta', 1 )
-      call timer( 'Setup', 1 )
 
 !     Nullify arrays
       nullify(Haux,Saux,psi)
       nullify(Dscf,Dold,Eold,Escf)
       nullify(listh)
-      nullify(H,H0,S)
+      nullify(H,S)
       nullify(xijo)
 
 !     Initialize some variables
@@ -155,6 +154,16 @@ C     Initialise MPI and set processor number
       threshold = fdf_get('timer_report_threshold', 0._dp)
       call timer_report( file=trim(slabel)//'.times', 
      .                   threshold=threshold )
+      ! This variable lives in siesta_options
+      use_tree_timer = fdf_get('UseTreeTimer', .false.)
+
+!     Start time counter
+!     Note new placement of this first use, so that
+!     initialization is done after the setup of relevant variables
+
+      call timer( 'siesta', 0 )
+      call timer( 'siesta', 1 )
+      call timer( 'Setup', 1 )
 
 ! Set allocation report level .........................................
 ! variables level and threshold imported from module siesta_options
@@ -196,13 +205,16 @@ C     Initialise MPI and set processor number
       struct_only = fdf_get( 'Output-Structure-Only', .false. )
       if (IONode) then
          call write_struct( ucell, na_u, isa, iza, xa )
+         if (fdf_boolean('WriteCoorXmol',.false.)) then
+            call coxmol(iza, xa, na_u)
+         endif
          if (lUseZmatrix) then
             call write_canonical_ucell_and_Zmatrix(
      &                        filename="OUT.UCELL.ZMATRIX.INITIAL")
          endif
       endif
       if (struct_only) then
-         call bye( 'End of structure processing' )
+         call bye('End of structure processing')
       endif
       
 !     End of Initial Structure Processing
@@ -227,12 +239,6 @@ C     Initialise MPI and set processor number
 
 !     Read simulation data
       call read_options( na_u, ns, nspin )
-
-#ifdef TRANSIESTA
-!     Read TS Input options
-      call read_ts_options( )
-!     TSS End
-#endif
 
       qtot = qtot - charnet     ! qtot set in initatomlists
                                 ! charnet set in redata
@@ -324,9 +330,7 @@ C     Initialise MPI and set processor number
       endif
 
 #ifdef TRANSIESTA
-!     TSS Begin
-      call setup_ts_kpoint_grid( ucell )
-!     TSS End
+      call ts_init(nspin,ucell,na_u,xa)
 #endif
 
       nullify(eo,qo)

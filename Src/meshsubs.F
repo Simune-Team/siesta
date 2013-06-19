@@ -20,6 +20,7 @@
       public :: PartialCoreOnMesh ! partial core density on the mesh
       public :: NeutralAtomOnMesh ! neutral atom potential on mesh
       public :: LocalChargeOnMesh ! local (positive ion) charge
+      public :: ModelCoreChargeOnMesh ! model core charge for Bader
       public :: PhiOnMesh     ! Orbital values on the mesh
       public :: setupExtMesh  ! Sets up extended mesh
       public :: distriPhiOnMesh  ! Sets up data distribution
@@ -44,8 +45,6 @@
       use siesta_cml
       use cellsubs,      only : reclat  ! Finds reciprocal unit cell
       use cellsubs,      only : volcel  ! Finds unit cell volume
-      use m_chkgmx,      only : chkgmx  ! Checks planewave cutoff of a mesh
-      use fft1d,         only : nfft    ! Finds allowed value for 1-D FFT
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -97,7 +96,6 @@ C integer is            : Species index
 C integer isp           : Sub-Point index
 C integer j             : General-porpose index
 C integer j1,j2,j3      : Mesh indexes in each mesh direction
-C real*8  k0(3)         : Zero-vector argument for routine chkgmx
 C integer nep           : Number of extended-mesh points
 C integer nmp           : Number of mesh points in unit cell
 C real*8  pldist        : Distance between mesh planes
@@ -118,12 +116,10 @@ C     Local variables
      &                           ity, j, nep, j1, j2, j3, indi
       integer*8               :: ntp
       real(dp)                :: dx(3), dxp(3), pldist, r,
-     &                           rcell(3,3), vecmod, volume
-      real(dp), parameter     :: k0(3) = (/ 0.0, 0.0, 0.0 /)
+     &                           volume
       logical                 :: within
 C     Functions
-      real(dp)                :: dismin
-      external                :: dismin
+      real(dp), external      :: dismin
 !--------------------------------------------------------------------- BEGIN
 #ifdef DEBUG
       call write_debug( '      PRE InitMesh' )
@@ -132,50 +128,13 @@ C     Functions
 ! ----------------------------------------------------------------------
 ! Mesh initialization
 ! ----------------------------------------------------------------------
-
-! Find reciprocal cell vectors (multiplied by 2*pi)
-      call reclat( cell, rcell, 1 )
-
-! Find number of mesh intervals for each cell vector.
-! The reciprocal vectors of the mesh unit cell (cell/ntm)
-! are rcell*ntm, and must be larger than 2*G2max
-      do i = 1,3
-        vecmod = sqrt(dot_product(rcell(:,i),rcell(:,i)))
-        ntm(i) = 2 * sqrt(G2max) / vecmod + 1
-      enddo
-
-! Impose that mesh cut-off is large enough
-      impose_cutoff: do
-
-        ! Require that ntm is suitable for FFTs and a multiple of nsm
-        do i = 1,3
-          impose_fft: do
-            ! nfft increases ntm to the next integer suitable for FFTs
-            call nfft( ntm(i) )
-            if ( mod( ntm(i), nsm )==0 ) exit impose_fft
-            ntm(i) = ntm(i) + 1
-          end do impose_fft
-          nm(i) = ntm(i) / nsm
-          nmsc(i) = nm(i) * nsc(i)
-        enddo ! i
-
-        ! Check that effective cut-off is large enough as for non-right
-        ! angled unit cells this is not guaranteed to be the case.
-        ! If cut-off needs to be larger, increase ntm and try again.
-        ! chkgmx decreases G2mesh to the right cutoff value of the mesh
-        G2mesh = 1.0d6
-        call chkgmx( k0, rcell, ntm, G2mesh )
-        if (G2mesh >= G2max) then
-          exit impose_cutoff
-        else
-          ntm(1:3) = ntm(1:3) + 1
-        end if
-
-      end do impose_cutoff
-
+      ! determines ntm
+      call get_mesh_sizes(cell,G2max,nsm,ntm,G2mesh)
 
 ! Save some numbers 
 !     nmeshg in module array
+      nm(:) = ntm(:) / nsm
+      nmsc(:) = nm(:) * nsc(:)
       nmeshg(:) = ntm(:) ! Total number of mesh points, incl. subpoints
       nmuc(:) = nm(:)    ! Mesh points in each unit cell vector
       nusc(:) = nsc(:)   ! Unit cells in each supercell direction
@@ -295,6 +254,93 @@ C     Create extended mesh arrays for the first data distribution
 #endif
 !----------------------------------------------------------------------- END
       end subroutine InitMesh
+!------------------------------------
+
+      subroutine get_mesh_sizes(cell,G2max,nsm,ntm,RealCutoff)
+      ! Computes the mesh dimensions ntm for a given cell 
+      ! and mesh cutoff, making them multiples of the big-point
+      ! sampling size nsm.
+
+      use precision,     only : dp
+      use cellsubs,      only : reclat  ! Finds reciprocal unit cell
+      use m_chkgmx,      only : chkgmx  ! Checks planewave cutoff of a mesh
+      use fft1d,         only : nfft    ! Finds allowed value for 1-D FFT
+      use fdf
+      use sys,           only : die, message
+
+      real(dp), intent(in)  :: cell(3,3)
+      real(dp), intent(in)  :: G2max
+      real(dp), intent(out) :: RealCutoff
+      integer, intent(in)   :: nsm
+      integer, intent(out)  :: ntm(3)
+      
+      real(dp)  :: rcell(3,3), vecmod
+      integer   :: i
+      real(dp), parameter     :: k0(3) = (/ 0.0, 0.0, 0.0 /)
+
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
+
+      ! Find reciprocal cell vectors (multiplied by 2*pi)
+      call reclat( cell, rcell, 1 )
+
+! Find number of mesh intervals for each cell vector.
+! The reciprocal vectors of the mesh unit cell (cell/ntm)
+! are rcell*ntm, and must be larger than 2*G2max
+      do i = 1,3
+        vecmod = sqrt(dot_product(rcell(:,i),rcell(:,i)))
+        ntm(i) = 2 * sqrt(G2max) / vecmod + 1
+      enddo
+
+! Impose that mesh cut-off is large enough
+      impose_cutoff: do
+
+        ! Require that ntm is suitable for FFTs and a multiple of nsm
+        do i = 1,3
+          impose_fft: do
+            ! nfft increases ntm to the next integer suitable for FFTs
+            call nfft( ntm(i) )
+            if ( mod( ntm(i), nsm )==0 ) exit impose_fft
+            ntm(i) = ntm(i) + 1
+          end do impose_fft
+        enddo ! i
+
+        ! Check that effective cut-off is large enough as for non-right
+        ! angled unit cells this is not guaranteed to be the case.
+        ! If cut-off needs to be larger, increase ntm and try again.
+        ! chkgmx decreases G2mesh to the right cutoff value of the mesh
+        RealCutoff = huge(1.0_dp)
+        call chkgmx( k0, rcell, ntm, RealCutoff )
+        if (RealCutoff >= G2max) then
+          exit impose_cutoff
+        else
+          ntm(1:3) = ntm(1:3) + 1
+        end if
+
+      end do impose_cutoff
+
+      if (fdf_block('MeshSizes',bfdf)) then
+        if (fdf_bline(bfdf, pline)) then
+           ntm(1) = fdf_bintegers(pline,1)
+           ntm(2) = fdf_bintegers(pline,2)
+           ntm(3) = fdf_bintegers(pline,3)
+        else
+           call die('initmesh: ERROR in MeshSizes block')
+        endif
+        RealCutoff = huge(1.0_dp)
+        call chkgmx( k0, rcell, ntm, RealCutoff )
+        if (RealCutoff < G2max) then
+           call message("Read mesh sizes give a smaller"
+     $                   // " cutoff than requested")
+        endif
+        if (any(mod(ntm,nsm) /= 0)) then
+           call die("Read mesh sizes are not multiples of nsm")
+        endif
+      endif
+
+      end subroutine get_mesh_sizes
+
+!--------------------------
 
       subroutine SameMeshAndAtoms(na, xa, ucell, rmax, G2max, G2mesh,
      &                            samesh, samexa)
@@ -784,6 +830,117 @@ C           Loop over sub-points
 #endif
 !--------------------------------------------------------------------------- END
       end subroutine LocalChargeOnMesh
+
+      subroutine ModelCoreChargeOnMesh( na, isa, ntpl,
+     $                                  ModelCore, indxua )
+C
+C     Uses the "local charge" information to construct a model total
+C     core charge, useful for Bader analysis
+C
+C ----------------------------------------------------------------------
+C Input :
+C ----------------------------------------------------------------------
+C integer na            : Number of atoms in supercell
+C integer isa(na)       : Species index of all atoms in supercell
+C integer ntpl          : Number of mesh Total Points in unit cell
+C                       : (including subpoints) locally
+C integer indxua        : Index of equivalent atom in unit cell
+C ----------------------------------------------------------------------
+C Output :
+C ----------------------------------------------------------------------
+C real    ModelCore(ntpl)     : Sum of model core charge densities
+C ----------------------------------------------------------------------
+
+      use precision,     only : dp, grid_p
+      use atmfuncs, only: rcut, psch, izofis, zvalfis
+      use atm_types, only : species
+      use radial, only : rad_func
+      use mesh,     only: dxa, idop, indexp, ipa, mop, nsp, xdop, xdsp
+
+      implicit none
+
+C
+C Passed arguments
+C
+      integer, intent(in)  :: na, isa(na), ntpl
+      integer, intent(in)  :: indxua(*)
+      real(grid_p),    intent(out) :: ModelCore(ntpl)
+
+C
+C Internal variables
+C
+      integer
+     .  ia, iop, ip, ip0, is, isp, iua
+
+      real(dp) dx(3), grpsch(3), r, ra, charge_ratio
+      real(dp) core_charge, beta, pschloc
+
+      type(rad_func), pointer            :: func
+
+C Initialise array to zero
+      ModelCore(1:ntpl) = 0.0_grid_p
+
+      do ia = 1,na
+        if (ipa(ia)==0) cycle ! Atomic sphere does not intersect my Box
+        iua = indxua(ia)
+        is = isa(ia)
+        func => species(is)%chlocal
+        ra = func%cutoff
+
+        ! We will take advantage of the existing "local charge"
+        ! by rescaling.
+
+        ! The total local charge is Z_val
+        ! We want a total extra core charge of (Z-Zval),
+        ! and with the opposite sign, localized in a
+        ! region of around 1.0 bohr for "normal" atoms and
+        ! 0.4 bohr (= 0.21 Ang) for Hydrogen.
+        ! Note that this is quite a small confinement region, so
+        ! you might need a high cutoff (of the order of 300-500 Ry)
+        ! to represent it on the grid. It might be better to use
+        ! Denchar for this, rather than performing a Siesta calculation
+        ! (even if it reads the converged DM)
+
+        ! --- For Hydrogen, add an artificial core with 1 electron
+        ! Else choose the normal core charge
+        !
+        ! The cutoff for chlocal is divided by beta to obtain the
+        ! tighter localization radius. Note the factor of beta^3
+        ! for normalization of the new function.
+
+        if (izofis(is) == 1) then
+           beta = ra / 0.4_dp
+           charge_ratio = -1.0_dp * beta**3
+        else
+           beta = ra / 1.0_dp
+           charge_ratio = - beta**3 *
+     $              (izofis(is)-zvalfis(is))/zvalfis(is)
+        endif
+
+C Loop over mesh points inside rmax
+        do iop = 1,mop
+          ip0 = indexp( ipa(ia) + idop(iop) )
+          if (ip0 .gt. 0) then
+
+C Loop over sub-points
+            do isp = 1,nsp
+              dx(1:3) = xdop(1:3,iop) + xdsp(1:3,isp) - dxa(1:3,ia)
+              r = sqrt(dot_product(dx,dx))
+              if (r .lt. ra) then
+                ip = isp + nsp * (ip0 - 1)
+                dx = beta*dx
+                call psch( is, dx, pschloc, grpsch )
+                core_charge = charge_ratio*pschloc
+                ModelCore(ip) = ModelCore(ip) + core_charge
+              endif
+            enddo
+
+          endif
+        enddo
+
+      enddo
+
+      end subroutine ModelCoreChargeOnMesh
 !
       subroutine PhiOnMesh( nmpl, norb, iaorb, iphorb, isa, numphi )
 C

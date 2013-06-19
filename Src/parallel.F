@@ -35,6 +35,12 @@ C
 
       public
 
+      interface operator(.PARCOUNT.)
+        module procedure parcount
+      end interface
+
+      private :: parcount
+
       contains
 
       subroutine parallel_init()  ! Initializes Node, Nodes, and IOnode
@@ -50,6 +56,23 @@ C
       end if
 #endif
       end subroutine parallel_init
+
+      ! Convert a (positive) counter into a counter divisable by
+      ! the number of Nodes.
+      ! It works by this:
+      ! PN = Nodes .PARCOUNT. N
+      ! We make it elemental for obvious reasons
+      elemental function parcount(Nodes,N)
+      integer, intent(in) :: Nodes, N
+      integer :: parcount
+      
+      if ( mod(N,Nodes) == 0 ) then
+         parcount = N
+      else
+         parcount = N + Nodes - mod(N,Nodes)
+      end if
+
+      end function parcount
 
       end module parallel
 !

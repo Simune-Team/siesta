@@ -22,7 +22,7 @@
      .                   maxnh, maxnd, lasto, lastkb, iphorb, 
      .                   iphKB, numd, listdptr, listd, numh, 
      .                   listhptr, listh, nspin, Dscf, Enl, 
-     .                   fa, stress, H , forces_and_stress)
+     .                   fa, stress, H , matrix_elements_only)
 C *********************************************************************
 C Calculates non-local (NL) pseudopotential contribution to total 
 C energy, atomic forces, stress and hamiltonian matrix elements.
@@ -56,9 +56,12 @@ C integer listhptr(nuo)    : Pointer to the start of each row (-1) of the
 C                            hamiltonian matrix
 C integer listh(maxnh)     : Nonzero hamiltonian-matrix element column 
 C                            indexes for each matrix row
-C integer nspin            : Number of spin components
-C real*8  Dscf(maxnd,nspin): Density matrix
-C logical forces_and_stress   Determines whether fa and stress are touched
+C integer nspin            : Number of spin components of Dscf and H
+C                            If computing only matrix elements, it
+C                            can be set to 1.
+C logical matrix_elements_only:
+C integer Dscf(maxnd,nspin): Density matrix. Not touched if computing
+C                            only matrix elements.
 C ******************* INPUT and OUTPUT *********************************
 C real*8 fa(3,na)          : NL forces (added to input fa)
 C real*8 stress(3,3)       : NL stress (added to input stress)
@@ -91,7 +94,7 @@ C
       real(dp), intent(inout) :: fa(3,nua), stress(3,3)
       real(dp), intent(inout) :: H(maxnh,nspin)
       real(dp), intent(out)   :: Enl
-      logical, intent(in)     :: forces_and_stress
+      logical, intent(in)     :: matrix_elements_only
 
       real(dp) ::   volcel
       external ::   timer, volcel
@@ -149,22 +152,24 @@ C Initialize arrays Di and Vi only once
       call GetNodeOrbs(nuotot,Node,Nodes,nuo)
 
 C Allocate local memory
-      nullify( Di )
-      call re_alloc( Di, 1, no, 'Di', 'nlefsm' )
+
       nullify( Vi )
       call re_alloc( Vi, 1, no, 'Vi', 'nlefsm' )
+      Vi(1:no) = 0.0_dp
       nullify( listed )
       call re_alloc( listed, 1, no, 'listed', 'nlefsm' )
+      listed(1:no) = .false.
       nullify( listedall )
       call re_alloc( listedall, 1, no, 'listedall', 'nlefsm' )
+      listedall(1:no) = .false.
+
+      if (.not. matrix_elements_only) then
+         nullify( Di )
+         call re_alloc( Di, 1, no, 'Di', 'nlefsm' )
+         Di(1:no) = 0.0_dp
+      endif
 
       Enl = 0.0d0
-      do jo = 1,no
-        Di(jo) = 0.0d0         !AG: superfluous after initial re_alloc
-        Vi(jo) = 0.0d0
-        listed(jo) = .false.
-        listedall(jo) = .false.
-      enddo
 
 C Make list of all orbitals needed for this node
       do io = 1,nuo
@@ -276,14 +281,16 @@ C       Loop on neighbour orbitals
           if (iio.gt.0) then
 C           Valid orbital
             if (ia .le. nua) then
-C             Scatter density matrix row of orbital io
-              do j = 1,numd(iio)
-                ind = listdptr(iio)+j
-                jo = listd(ind)
-                do ispin = 1,nspin
-                  Di(jo) = Di(jo) + Dscf(ind,ispin)
-                enddo
-              enddo
+               if (.not. matrix_elements_only) then
+                  !Scatter density matrix row of orbital io
+                  do j = 1,numd(iio)
+                     ind = listdptr(iio)+j
+                     jo = listd(ind)
+                     do ispin = 1,nspin
+                        Di(jo) = Di(jo) + Dscf(ind,ispin)
+                     enddo
+                  enddo
+               endif
         
 C             Scatter filter of desired matrix elements
               do j = 1,numh(iio)
@@ -305,9 +312,9 @@ C                 Loop on KB projectors
                     Sik = Ski(ikb,ino)
                     Sjk = Ski(ikb,jno)
                     Vi(jo) = Vi(jo) + epsk * Sik * Sjk
-                    Cijk = Di(jo) * epsk
-                    Enl = Enl + Cijk * Sik * Sjk
-                    if (forces_and_stress) then
+                    if (.not. matrix_elements_only) then
+                      Cijk = Di(jo) * epsk
+                      Enl = Enl + Cijk * Sik * Sjk
                       do ix = 1,3
                         fik = 2.d0 * Cijk * Sjk * grSki(ix,ikb,ino)
                         fa(ix,ia)  = fa(ix,ia)  - fik
@@ -318,6 +325,7 @@ C                 Loop on KB projectors
                         enddo
                       enddo
                     endif
+
                   enddo
 
                 endif
@@ -333,10 +341,12 @@ C             Pick up contributions to H and restore Di and Vi
                 Vi(jo) = 0.0d0
                 listed(jo) = .false.
               enddo
-              do j = 1,numd(iio)
-                jo = listd(listdptr(iio)+j)
-                Di(jo) = 0.0d0
-              enddo
+              if (.not. matrix_elements_only) then
+                 do j = 1,numd(iio)
+                    jo = listd(listdptr(iio)+j)
+                    Di(jo) = 0.0d0
+                 enddo
+              endif
 
             endif
 
@@ -357,7 +367,9 @@ C     Deallocate local memory
       call de_alloc( listedall, 'listedall', 'nlefsm' )
       call de_alloc( listed, 'listed', 'nlefsm' )
       call de_alloc( Vi, 'Vi', 'nlefsm' )
-      call de_alloc( Di, 'Di', 'nlefsm' )
+      if (.not. matrix_elements_only) then
+         call de_alloc( Di, 'Di', 'nlefsm' )
+      endif
 
       call timer( 'nlefsm', 2 )
       end subroutine nlefsm

@@ -35,6 +35,7 @@ MODULE siesta_options
   logical :: savrho        ! Write file with electron density?
   logical :: savepsch      ! Write file with ionic (local pseudopotential) charge?
   logical :: savetoch      ! Write file with total charge?
+  logical :: savebader     ! Write file with charge for Bader analysis?
   logical :: usesavecg     ! Use continuation file for CG geometry relaxation?
   logical :: usesavelwf    ! Use continuation file for Wannier functions?
   logical :: usesavedm     ! Use cont. file for density matrix?
@@ -74,6 +75,15 @@ MODULE siesta_options
   logical :: use_struct_file ! Read structural information from a special file?
   logical :: bornz          ! Calculate Born polarization charges?
   logical :: SCFMustConverge ! Do we have to converge for each SCF calculation?
+  logical :: want_domain_decomposition ! Use domain decomposition for orbitals 
+  logical :: want_spatial_decomposition ! Use spatial decomposition for orbitals
+  logical :: hirshpop        ! Perform Hirshfeld population analysis?
+  logical :: voropop         ! Perform Voronoi population analysis?
+  logical :: partial_charges_at_every_geometry
+  logical :: partial_charges_at_every_scf_step
+
+  logical :: monitor_forces_in_scf ! Compute forces and stresses at every step
+  logical :: minim_calc_eigenvalues ! Use diagonalization at the end of each MD step to find eigenvalues for OMM
 
   integer :: ia1           ! Atom index
   integer :: ia2           ! Atom index
@@ -91,9 +101,12 @@ MODULE siesta_options
   integer :: nkick         ! Period between 'kick' steps in SCF iteration
   integer :: nmove         ! Number of geometry iterations
   integer :: nscf          ! Number of SCF iteration steps
+  integer :: min_nscf      ! Minimum number of SCF iteration steps
   integer :: pmax          
   integer :: neigwanted    ! Wanted number of eigenstates (per k point)
   integer :: level          ! Option for allocation report level of detail
+  integer :: call_diagon_default    ! Default number of SCF steps for which to use diagonalization before OMM
+  integer :: call_diagon_first_step ! Number of SCF steps for which to use diagonalization before OMM (first MD step)
 
   real(dp) :: beta          ! Inverse temperature for Chebishev expansion.
   real(dp) :: bulkm         ! Bulk modulus
@@ -101,6 +114,7 @@ MODULE siesta_options
   real(dp) :: Energy_tolerance
   real(dp) :: Harris_tolerance
   real(dp) :: rijmin        ! Min. permited interatomic distance without warning
+  real(dp) :: dm_normalization_tol   ! Threshold for DM normalization mismatch
   real(dp) :: dDtol         ! Tolerance in change of DM elements to finish SCF iteration
   real(dp) :: dt            ! Time step in dynamics
   real(dp) :: dx            ! Atomic displacement used to calculate Hessian matrix
@@ -165,6 +179,7 @@ MODULE siesta_options
   integer,  parameter :: SOLVE_DIAGON = 0
   integer,  parameter :: SOLVE_ORDERN = 1
   integer,  parameter :: SOLVE_TRANSI = 2
+  integer,  parameter :: SOLVE_MINIM  = 3
 
       CONTAINS
 
@@ -198,6 +213,7 @@ MODULE siesta_options
 ! integer isolve           : Method of solution.  0   = Diagonalization
 !                                                 1   = Order-N
 !                                                 2   = Transiesta
+!                                                 3   = OMM
 ! real*8 temp              : Temperature for Fermi smearing (Ry)
 ! logical fixspin          : Fix the spin of the system?
 ! real*8  ts               : Total spin of the system
@@ -278,6 +294,8 @@ MODULE siesta_options
 ! integer broyden_maxit    : Number of histories saved in Broyden SCF mixing
 ! logical require_energy_convergence  : Impose E. conv. criterion?
 ! logical broyden_optim    : Broyden for forces instead of CG
+! logical want_domain_decomposition:  Use domain decomposition for orbitals in O(N)
+! logical want_spatial_decomposition:  Use spatial decomposition for orbitals in O(N)
 ! **********************************************************************
 
   subroutine read_options( na, ns, nspin )
@@ -399,6 +417,15 @@ MODULE siesta_options
                             units="cmlUnits:dimensionless" )
     endif
 
+    ! Perform Hirshfeld and/or Voronoi Population Analysis
+    hirshpop= fdf_get('WriteHirshfeldPop',.false.)
+    voropop=  fdf_get('WriteVoronoiPop',.false.)
+    partial_charges_at_every_geometry =  &
+          fdf_get('PartialChargesAtEveryGeometry',.false.)
+    partial_charges_at_every_scf_step =  &
+          fdf_get('PartialChargesAtEveryScfStep',.false.)
+
+
     ! Planewave cutoff of the real space mesh ...
     g2cut = fdf_get('MeshCutoff',g2cut_default,'Ry')
     if (ionode) then
@@ -422,10 +449,12 @@ MODULE siesta_options
     endif
 
     ! SCF Loop parameters ...
-    !     Maximum number of SCF iterations
-    nscf = fdf_get('MaxSCFIterations',nscf_default)
+    !     Minimum/Maximum number of SCF iterations
+    min_nscf = fdf_get('MinSCFIterations',0)
+    nscf     = fdf_get('MaxSCFIterations',nscf_default)
     SCFMustConverge = fdf_get('SCFMustConverge', .false.)
     if (ionode) then
+      write(6,4) 'redata: Min. number of SCF Iter          = ',min_nscf
       write(6,4) 'redata: Max. number of SCF Iter          = ',nscf
       if (SCFMustConverge) then
         write(6,4) 'redata: SCF convergence failure will abort job'
@@ -435,6 +464,9 @@ MODULE siesta_options
     if (cml_p) then
       call cmlAddParameter( xf=mainXML, name='MaxSCFIterations',  &
                             value=nscf, dictRef='siesta:maxscf',  &
+                            units="cmlUnits:countable")
+      call cmlAddParameter( xf=mainXML, name='MinSCFIterations',  &
+                            value=min_nscf, dictRef='siesta:minscf',  &
                             units="cmlUnits:countable")
     endif
 
@@ -634,8 +666,11 @@ MODULE siesta_options
       call cmlAddParameter( xf=mainXML, name='DM.HarrisTolerance', units='siestaUnits:eV', &
                             value=Harris_tolerance, dictRef='siesta:Harris_tolerance')
     endif
-!--------------------------------------
 
+    ! Monitor forces and stresses during SCF loop
+    monitor_forces_in_scf = fdf_get('MonitorForcesInSCF',.false.)
+                         
+!--------------------------------------
     ! Initial spin density: Maximum polarization, Ferro (false), AF (true)
     if (nspin.eq.2) then
       inspn = fdf_get('DM.InitSpinAF',.false.)
@@ -704,6 +739,16 @@ MODULE siesta_options
         call die( 'redata: You chose the Order-N solution option '// &
                   'together with nspin>2.  This is not allowed in '//&
                   'this version of siesta' )
+      endif
+    else if (leqi(method,'omm')) then
+      isolve = SOLVE_MINIM
+      DaC    = .false.
+      call_diagon_default=fdf_integer('OMM.Diagon',0)
+      call_diagon_first_step=fdf_integer('OMM.DiagonFirstStep',call_diagon_default)
+      minim_calc_eigenvalues=fdf_boolean('OMM.Eigenvalues',.false.)
+      if (ionode) then
+        write(6,'(a,4x,a)') 'redata: Method of Calculation            = ', &
+                            'Orbital Minimization Method'
       endif
 #ifdef TRANSIESTA
 ! TSS Begin
@@ -824,6 +869,8 @@ MODULE siesta_options
     ! Option to use the Chemical Potential calculated instead
     ! of the eta variable of the input
     noeta = fdf_get('ON.ChemicalPotentialUse',.false.)
+    ! NOTE: This does not yet work in parallel
+
     if (noeta) then
       ! if so, we must (obviously) calculate the chemical potential
       chebef=.true.
@@ -832,6 +879,11 @@ MODULE siesta_options
       chebef = fdf_get('ON.ChemicalPotential',.false.)
     endif
 
+#ifdef MPI
+    if (chebef) then
+	call die("ON.ChemicalPotential(Use) options do not work with MPI")
+    endif		
+#endif
 
     ! Cutoff radius to calculate the Chemical Potential by projection
     rcoorcp = fdf_get( 'ON.ChemicalPotentialRc', &
@@ -1402,6 +1454,15 @@ MODULE siesta_options
                     .and. (idyn/=6) .and. (idyn/=7)           &
                     .and. (.not. (idyn==5 .and. ianneal/=1) )
 
+    want_spatial_decomposition = fdf_get('UseSpatialDecomposition', .false.)
+    want_domain_decomposition = fdf_get('UseDomainDecomposition', .false.)
+#ifndef ON_DOMAIN_DECOMP
+#ifdef MPI
+    if (want_domain_decomposition) then
+        call die("Need to compile with ON_DOMAIN_DECOMP support")
+    endif
+#endif
+#endif
 
     ! Harris Forces?. Then DM.UseSaveDM should be false (use always
     ! Harris density in the first SCF step of each MD step), and
@@ -1467,6 +1528,7 @@ MODULE siesta_options
     initdmaux              = fdf_get( 'ReInitialiseDM', .TRUE. )
     allow_dm_reuse         = fdf_get( 'DM.AllowReuse', .TRUE. )
     allow_dm_extrapolation = fdf_get( 'DM.AllowExtrapolation', .TRUE. )
+    dm_normalization_tol   = fdf_get( 'DM.NormalizationTolerance',1.0d-5)
     muldeb                 = fdf_get( 'MullikenInSCF'   , .false.)
     rijmin                 = fdf_get( 'WarningMinimumAtomicDistance', &
                                       1.0_dp, 'Bohr' )
@@ -1490,9 +1552,11 @@ MODULE siesta_options
     savevna  = fdf_get( 'SaveNeutralAtomPotential', .false. )
     savevt   = fdf_get( 'SaveTotalPotential', .false. )
     savepsch = fdf_get( 'SaveIonicCharge', .false. )
-    savetoch = fdf_get( 'SaveTotalCharge', .false. )
+    savebader= fdf_get( 'SaveBaderCharge',  .false.)
+    savetoch = fdf_get( 'SaveTotalCharge', savebader )
+
     RETURN
-    !----------------------------------------------------------------------- END
+    !-------------------------------------------------------------------- END
 1   format(a,4x,l1)
 2   format(a)
 4   format(a,i8)

@@ -11,6 +11,13 @@
 \documentclass[11pt]{article}
 \usepackage{makeidx}
 \usepackage{url}
+\usepackage{hyperref}
+% Hyperref setup
+\hypersetup{
+    hyperindex=true,
+    bookmarksopen=true,
+    bookmarksopenlevel=2,
+}
 
 \tolerance 10000
 \textheight 22cm
@@ -23,6 +30,22 @@
 \parindent=0cm
 \baselineskip=14pt
 \parskip 5pt
+
+% A command for specifying FDF commands...
+\newcommand\fdf[1]{%
+    \textbf{#1}%
+}
+
+% A command for specifying files...
+\newcommand\file[1]{%
+    \texttt{#1}\index{#1@\textbf{#1}}%
+}
+
+% A command for specifying files...
+\newcommand\systemfile[1]{%
+    \texttt{<SystemLabel>#1}\index{#1@\textbf{#1}}%
+}
+    
 
 \begin{document}
 
@@ -39,13 +62,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, trunk-375}}
+{\Huge {\bf S I E S T A \, \, \input{../version.info}}}
 
 \vspace{1cm}
 \hrulefill
-\vspace{1cm}
+\vspace{0.5cm}
 
-{\Large Marc 22, 2011 }
+{\Large June 10, 2013 }
 
 \vspace{1.5cm}
 
@@ -87,12 +110,12 @@
 }
 
 \vspace{0.5cm}
-{\Large {\tt http://www.uam.es/siesta} }
+{\Large \url{http://www.uam.es/siesta}}
 
 \vspace{0.5cm}
 Copyright \copyright\  Fundaci\'on General Universidad Aut\'onoma de Madrid:
 E.Artacho, J.D.Gale, A.Garc\'{\i}a, J.Junquera, P.Ordej\'on,
-D.S\'anchez-Portal and J.M.Soler, 1996-2010
+D.S\'anchez-Portal and J.M.Soler, 1996-2013
 
 \end{center}
 
@@ -114,7 +137,7 @@ D.S\'anchez-Portal and J.M.Soler, 1996-2010
   planning a documentation overhaul that will address this
   shortcoming. In the meantime, interested users can find tutorial
   material prepared for {\sc Siesta} schools and workshops at the
-  project's web page {\tt http://www.uam.es/siesta}}
+  project's web page} \url{http://www.uam.es/siesta}.
 
 
 {\bf NOTE: Almost none of the BSC features are documented yet...}
@@ -275,7 +298,7 @@ Extensive review of applications as of summer 2003.
 \end{itemize}
 
 For more information you can visit the web page
-{\tt http://www.uam.es/siesta}.
+\url{http://www.uam.es/siesta}.
 
 \section{COMPILATION}
 
@@ -479,7 +502,7 @@ files in your directory including the following:
 
 \item fdf.log\index{fdf.log}
  (contains all the data used, explicit or chosen by default)
-\item O.ion and H.ion\index{species.ionl@{\it species.}ion}
+\item O.ion and H.ion\index{species.ion@{\it species.}ion}
  (complete information about the basis and KB projectors)
 \item h2o.XV\index{Systemlabel.XV@{\it Systemlabel.}XV}
  (contains positions and velocities)
@@ -1087,6 +1110,28 @@ diverges at $r_c$ ensuring the strict localization there.  It is
 \end{equation}
 and both $r_i$ and $V_{\rm o}$ can be given to {\sc Siesta} together
 with $r_c$ in the input (see {\bf PAO.Basis} below).
+The kink is normally well smoothened with the default values 
+for soft confinement by default ({\bf PAO.SoftDefault} true), which 
+are $r_i = 0.9 \, r_c$ and $V_{\rm o} = 40$ Ry.
+
+When explicitly introducing orbitals in the basis that would be empty in 
+the atom (e.g. polarisation orbitals) these tend to be extremely 
+extended if not completely unbound. The above procedure produces
+orbitals that bulge as far away from the nucleus as possible, to 
+plunge abruptly at $r_c$. Soft confinement can be used to try
+to force a more reasonable shape, but it is not ideal (for orbitals
+peaking in the right region the tails tend to be far too short).
+{\it Charge confinement} \index{Charge confinement} produces
+very good shapes for empty orbitals. Essentially a $Z/r$ potential
+is added to the soft confined potential above. For flexibility
+the charge confinement option in {\sc Siesta} is defined as
+\begin{equation}
+  V_{\rm Q}(r) = {Z e^{-\lambda r} \over \sqrt{r^2 + \delta^2}} 
+\end{equation}
+where $\delta$ is there to avoid the singularity (default $\delta=0.01$ Bohr),
+and $\lambda$ allows to screen the potential if longer tails are needed.
+The description on how to introduce this option can be found in
+the {\bf PAO.Basis} entry below.
 
 Finally, the shape of an orbital is also changed by the ionic
 character of the atom.  Orbitals in cations tend to shrink, and they
@@ -1171,6 +1216,10 @@ sufficiently.
 \item {\tt nonodes:}\index{nonodes@{\tt nonodes}}
 The original PAO's are used, multiple-zeta is generated
 by changing the scale-factors, instead of using the excited orbitals.
+
+\item {\tt filteret:} Use the filterets as a systematic basis set.
+The size of the basis set is controlled by the filter cut-off for
+the orbitals.
 
 \end{itemize}
 
@@ -1335,6 +1384,52 @@ automatically).
 \end{itemize}
 
 \end{description}
+
+\begin{description}
+\item[{\bf PAO.EnergyCutoff}] ({\it real energy}): If the multiple
+zetas are generated using filterets then only the filterets with
+an energy lower than this cutoff are included. Increasing this
+value leads to a richer basis set (provided the cutoff is raised
+above the energy of any filteret that was previously not included)
+but a more expensive calculation.
+It only has an effect when the option
+{\bf PAO.BasisType} is set to filteret.
+
+{\it Use:} It has to be positive.
+
+{\it Default value:} {\tt 20.0 Ry}
+\end{description}
+
+\begin{description}
+\item[{\bf PAO.EnergyPolCutoff}] ({\it real energy}): If the multiple
+zetas are generated using filterets then only the filterets with
+an energy lower than this cutoff are included for the polarisation
+functions. Increasing this value leads to a richer basis set 
+(provided the cutoff is raised above the energy of any filteret 
+that was previously not included) but a more expensive calculation.
+It only has an effect when the option
+{\bf PAO.BasisType} is set to filteret.
+
+{\it Use:} It has to be positive.
+
+{\it Default value:} {\tt 20.0 Ry}
+\end{description}
+
+\begin{description}
+\item[{\bf PAO.ContractionCutoff}] ({\it real}): If the multiple
+zetas are generated using filterets then any filterets that have
+a coefficient less than this threshold within the original PAO
+will be contracted together to form a single filteret.
+Increasing this value leads to a smaller basis set but allows
+the underlying basis to have a higher kinetic energy cut-off for
+filtering. It only has an effect when the option
+{\bf PAO.BasisType} is set to filteret.
+
+{\it Use:} It has to be in the range 0 to 1.
+
+{\it Default value:} {\tt 0.0}
+\end{description}
+
 \subsubsection{Soft-confinement options}
 \begin{description}
 
@@ -1444,11 +1539,11 @@ therefore they are only read if
 present):
 
 \begin{verbatim}
-    From is = 1 to  nspecies
-         read: label(is), l_shells(is)
-         From lsh=1 to l_shells(is)
-              read: l, nkbl(l,is)
-              read: {erefKB(izeta,il,is)}, from ikb = 1 to nkbl(l,is), {units}
+ From is = 1 to  nspecies
+     read: label(is), l_shells(is)
+     From lsh=1 to l_shells(is)
+         read: l, nkbl(l,is)
+         read: {erefKB(izeta,il,is)}, from ikb = 1 to nkbl(l,is), {units}
 \end{verbatim}
 
 When a very high energy, higher that 1000 Ry, is specified, the
@@ -1476,6 +1571,16 @@ with the presence of ghost states.
 constructed from the nodeless eigenfunction, used for each angular
 momentum.
 \noindent
+
+\item[{\bf KB.New.Reference.Orbitals}] ({\it boolean}):
+\index{KB.New.Reference.Orbitals@{\bf KB.New.Reference.Orbitals}}
+
+If {\tt .true.}, the routine to generate KB projectors will use
+slightly different parameters for the construction of the reference
+orbitals involved (Rmax=60 bohr both for integration and
+normalization).
+
+{\it Default value:} {\tt .false.}
 
 \end{description}
 
@@ -1506,14 +1611,16 @@ the following ({\tt opt} means optional):
 \begin{verbatim}
 %block PAO.Basis     # Define Basis set
 O    2  nodes  1.0   # Label, l_shells, type (opt), ionic_charge (opt)
- n=2 0 2  E 50.0 2.5 # n (opt if not using semicore levels),l,Nzeta,Softconf(opt
+ n=2 0 2  E 50.0 2.5 # n (opt if not using semicore levels),l,Nzeta,Softconf(opt)
      3.50  3.50      #     rc(izeta=1,Nzeta)(Bohr)
      0.95  1.00      #     scaleFactor(izeta=1,Nzeta) (opt)
      1 1  P 2        # l, Nzeta, PolOrb (opt), NzetaPol (opt)
      3.50            #     rc(izeta=1,Nzeta)(Bohr)
-H    1               # Label, l_shells, type (opt), ionic_charge (opt)
+H    2               # Label, l_shells, type (opt), ionic_charge (opt)
      0 2 S 0.2       # l, Nzeta, Per-shell split norm parameter
      5.00  0.00      #     rc(izeta=1,Nzeta)(Bohr)
+     1 1 Q 3. 0.2    # l, Nzeta, Charge conf (opt): Z and screening
+     5.00            #    rc(izeta=1,Nzeta)(Bohr)
 %endblock PAO.Basis
 \end{verbatim}
 
@@ -1529,7 +1636,9 @@ the routines in {\tt Src/basis\_specs.f} for detailed information):
         read:
          { n }, l(lsh), nzls(lsh,is), { PolOrb(l+1) }, { NzetaPol(l+1) },
          {SplitNormfFlag(lsh,is)}, {SplitNormValue(lsh,is)}
-         {SoftConfFlag(lsh,is)}, {PrefactorSoft(lsh,is)}, {InnerRadSoft(lsh,is)}
+         {SoftConfFlag(lsh,is)}, {PrefactorSoft(lsh,is)}, {InnerRadSoft(lsh,is)},
+         {FilteretFlag(lsh,is)}, {FilteretCutoff(lsh,is)}
+         {ChargeConfFlag(lsh,is)}, {Z(lsh,is)}, {Screen(lsh,is)}, {delta(lsh,is}
            read: rcls(izeta,lsh,is), from izeta = 1 to nzls(l,is)
            read: { contrf(izeta,il,is) }, from izeta = 1 to nzls(l,is)
 \end{verbatim}
@@ -1557,7 +1666,8 @@ considered to belong to the
 valence shell have been included in the calculation)
 \item[-] {\tt l}: Angular momentum of
 basis orbitals of this shell
-\item[-] {\tt nzls(lsh,is)}: Number of 'zetas' for this shell.
+\item[-] {\tt nzls(lsh,is)}: Number of 'zetas' for this shell. For a filteret 
+basis this number is ignored since the number is controlled by the cutoff.
 \item[-] {\tt PolOrb(l+1)}: {\it Optional input}. If set equal to {\tt P}, a
 shell of
 polarization functions (with angular momentum $l+1$)  will be constructed
@@ -1566,23 +1676,42 @@ from the first-zeta orbital of angular momentum $l$. {\it Default value}: ' '
 \item[-] {\tt NzetaPol(l+1)}: {\it Optional input}. Number of
 'zetas' for the
 polarization shell (generated automatically in a split-valence fashion).
+For a filteret basis this number is ignored since the number is controlled
+by the cutoff.
 Only active if {\tt PolOrb = P}. {\it Default value}: {\tt 1}
 \item[-] {\tt SplitNormFlag(lsh,is)}:\index{basis!per-shell split norm}
 {\it Optional input}. If set equal to
 {\tt S}, the following number sets the split-norm parameter for that shell.
 \item[-] {\tt SoftConfFlag(l,is)}:\index{basis!soft confinement potential}
 {\it Optional input}. If set equal to
-{\tt E}, the new soft confinement potential proposed in formula (1) of
+{\tt E}, the soft confinement potential proposed in equation (1) of
 the paper by J. Junquera {\it et al.}, Phys. Rev. B {\bf 64}, 235111 (2001),
 is used instead of the Sankey hard-well potential.
 \item[-] {\tt PrefactorSoft(l,is)}: {\it Optional input}. Prefactor
 of the soft confinement potential ($V_{0}$ in the formula). Units in Ry.
 {\it Default value}: 0 Ry.
 \item[-] {\tt InnerRadSoft(l,is)}: {\it Optional input}. Inner radius where
-the soft confinemet potential starts off ($r_{i}$ in the formula).
+the soft confinement potential starts off ($r_{i}$ in the formula).
 If negative, the inner radius will be computed as the given fraction
 of the PAO cutoff radius.
 Units in bohrs. {\it Default value}: 0 bohrs.
+\item[-] {\tt FilteretFlag(l,is)}:\index{basis!filteret basis set}
+{\it Optional input}. If set equal to
+{\tt F}, then an individual filter cut-off can be specified for the shell.
+\item[-] {\tt FilteretCutoff(l,is)}: {\it Optional input}. Shell-specific
+value for the filteret basis cutoff. Units in Ry.
+{\it Default value}: The same as the value given by {\it FilterCutoff}.
+\item[-] {\tt ChargeConfFlag(lsh,is)}: {\it Optional input}. If set equal to 
+{\tt Q}, the charge confinement potential in equation (2) above is
+added to the confining potential. If present it requires at least
+one number after it ({\tt Z}), but it can be followed by two or three numbers.
+\index{Charge confinement}
+\item[-] {\tt Z(lhs,is)}: {\it Optional input, needed if {\tt Q} is set}. $Z$
+charge in equation (2) above for charge confinement (units of $e$). 
+\item[-] {\tt Screen(lhs,is)}: {\it Optional input}. Yukawa screening parameter
+$\lambda$ in equation (2) above for charge confinement (in Bohr$^{-1}$).
+\item[-] {\tt delta(lhs,is)}: {\it Optional input}. Singularity regularisation parameter
+$\delta$ in equation (2) above for charge confinement (in Bohr).
 \item[-] {\tt rcls(izeta,l,is)}: Cutoff radius (Bohr) of
 each 'zeta' for this shell. For the second zeta onwards, if this value
 is negative, the actual rc used will be the given fraction of the
@@ -1706,7 +1835,7 @@ always generate the files
 specified in block {\it ChemicalSpeciesLabel}.  Optionally, if
 NetCDF support is compiled in, the programs generate
 NetCDF files \index{NetCDF format}
-{\it Atomlabel}{\tt .ion.nc}.
+{\it Atomlabel}{\tt .ion.nc} (except for ghost atoms).
 See an Appendix for information on the optional NetCDF package.
 
 These files can be used to read back information into {\sc Siesta}.
@@ -1736,7 +1865,8 @@ the atomic label specified in block {\it ChemicalSpeciesLabel}. These
 files can be generated by a previous {\sc Siesta} run or by the
 standalone program {\sc Gen-basis}.\index{Gen-basis program@{\sc
 Gen-basis}}\index{basis!Gen-basis standalone program} No pseudopotential
-files are necessary. NetCDF support is needed.
+files are necessary. NetCDF support is needed. Note that ghost atoms
+cannot yet be adequately treated with this option.
 
 \end{description}
 
@@ -2146,9 +2276,12 @@ the values are set differently. For atom 1, \texttt{r}, \texttt{a},
 and \texttt{t}, are the Cartesian coordinates of the atom.  For the
 second atom, \texttt{r}, \texttt{a}, and \texttt{t} are the
 coordinates in spherical form of the second atom relative to the
-first. Finally, for the third atom, the numbers take their normal
-form, but the torsional angle is defined relative to a notional atom 1
-unit in the z-direction above the atom \texttt{j}.
+first: first the radius, then the polar angle (angle between the
+$z$-axis and the displacement vector) and then the azimuthal angle
+(angle between the $x$-axis and the projection of the displacement
+vector on the $x$-$y$ plane). Finally, for the third atom, the numbers
+take their normal form, but the torsional angle is defined relative to
+a notional atom 1 unit in the z-direction above the atom \texttt{j}.
 
 Secondly. blocks of atoms all of which are subject to the simplest of
 constraints may be specified in one of the following three ways,
@@ -2641,6 +2774,17 @@ rationale was to avoid sudden jumps in some properties when the
 sampling changes, but if the calculation is well-converged there
 should be no problems if the update is enabled.
 
+\item[{\bf TimeReversalSymmetryForKpoints}] ({\it boolean}):
+\index{TimeReversalSymmetryForKpoints@{\bf TimeReversalSymmetryForKpoints}}
+
+If {\tt .true.}, the k-points in the BZ generated by the methods above
+are paired as (k,-k) and only one member of the pair is retained. This
+symmetry is valid in the absence of external magnetic fields or
+spin-orbit interaction.
+
+{\it Default value:} {\tt .true.} unless the option {\bf SpinSpiral} 
+is used. In this case time-reversal-symmetry is broken explicitly.
+
 \end{description}
 
 \subsubsection{Output of k-point information}
@@ -2740,15 +2884,19 @@ JPCM {\bf 22}, 022201 (2009) (optB88-vdW version)
 
 \item[{\bf XC.hybrid}] ({\it data block}):
 \index{XC.hybrid@{\bf XC.hybrid}}
-This data block allows the user to create a hybrid functional by
+This data block allows the user to create a ``cocktail'' functional by
 mixing the desired amounts of exchange and correlation from each of
-the functionals described under XC.authors.
-The format of the block is that the first line must contain the
-number of functionals to be mixed. On the subsequent lines the
-values of XC.functl and XC.authors must be given and then the
-weights for the exchange and correlation, in that order. If only
-one number is given then the same weight is applied to both
-exchange and correlation.
+the functionals described under XC.authors. Note that these ``mixed''
+functionals do {\em not} have the exact Hartree-Fock exchange which
+is a key ingredient of the true ``hybrid'' functionals. The use of
+the word ``hybrid'' in the label is unfortunate in this regard, and
+might be deprecated in a future version.
+
+The first line of the block must contain the number of functionals to
+be mixed. On the subsequent lines the values of XC.functl and
+XC.authors must be given and then the weights for the exchange and
+correlation, in that order. If only one number is given then the same
+weight is applied to both exchange and correlation.
 
 The following is an example in which a 75:25 mixture of Ceperley-Alder
 and PBE correlation is made, with an equal split of the exchange
@@ -2783,17 +2931,18 @@ or spin polarized ({\tt .true.}) calculation.
 
 
 \item[{\bf NonCollinearSpin}] ({\it logical}):
-\index{NonCollinearSpin@{\bf NonCollinearSpin}}\index{spin}
-\index{spin!non-collinear}\index{LSD}
-If {\tt .true.}, non-collinear spin (i.e. with variable orientation)
-is described using spinor wavefunctions
-and $(2 \times 2)$ spin density matrices at every grid point.
-Ref: T. Oda et al, PRL, {\bf 80}, 3622 (1998).
-Notice that no GGA functionals have been derived specifically for non
-collinear spin. Therefore, only the gradient of the spin polarization
+  \index{NonCollinearSpin@{\bf NonCollinearSpin}}\index{spin}
+  \index{spin!non-collinear}\index{LSD} If {\tt .true.}, non-collinear
+  spin (i.e. with variable orientation) is described using spinor 
+  wavefunctions and $(2 \times 2)$ spin
+  density matrices at every grid point.  Refs: T. Oda et al, PRL, {\bf
+    80}, 3622 (1998); 
+V. M. Garc\'{\i}a-Su\'arez et al, Eur. Phys. Jour. B {\bf 40}, 371 (2004);
+V. M. Garc\'{\i}a-Su\'arez et al, Journal of
+  Phys: Cond. Matt {\bf 16}, 5453 (2004). 
 magnitude, and not the gradient of its orientation, are considered
 to calculate the local xc energy density.
-Not compatible with the {\tt Diag.ParallelOverK} option
+Not compatible with the {\tt  Diag.ParallelOverK} option 
 {\it Default value:} {\tt .false.}
 
 
@@ -2854,6 +3003,12 @@ specification are in the INPUT file.
 
 {\it Default value:} {\tt .false.}
 
+\item[{\bf MinSCFIterations}] ({\it integer}):
+\index{MinSCFIterations@{\bf MinSCFIterations}}
+Minimum number of SCF\index{SCF} iterations per time step. In MD simulations
+this can with benefit be set to 3.
+
+{\it Default value:} {\tt 0}
 
 \item[{\bf MaxSCFIterations}] ({\it integer}):
 \index{MaxSCFIterations@{\bf MaxSCFIterations}}
@@ -3622,7 +3777,7 @@ egg-box energy are given in the {\bf EggboxRemove} block.
 Logical variable to neglect or compute interactions between orbitals
 which do not overlap. These come from the KB projectors.
 Neglecting them makes the Hamiltonian more sparse, and
-the Order-N calculation faster.  USE WITH CARE!!!
+the calculation faster.  {\bf Use with care}
 
 {\it Default value:} {\tt .false.}
 
@@ -3693,11 +3848,46 @@ to make sure that the unit cell is large enough.
 
 {\sc Siesta} can use two methods to determine the electronic structure
 of the system. One is standard diagonalization, which works for all
-systems. The other is based on the direct minimization of a special
-functional over a set of localized functions. The latter scales in
-principle linearly with the size of the system, but is quite fragile
-and only works for systems with clearly separated occupied and empty
-states.  The default is to use diagonalization.
+systems and has a cubic scaling with the size. The other is based on
+the direct minimization of a special functional over a set of
+trial orbitals. These orbitals can either extend over the entire system,
+resulting in a cubic scaling algorithm, or be constrained within a
+localization radius, resulting in a linear scaling algorithm. The former
+is a very recent implementation (described in \ref{SolverOMM}), that can
+be viewed as an equivalent approach to diagonlization in terms of the
+accuracy of the solution; the latter is the historic O(N) method used by
+{\sc Siesta} (described in \ref{SolverON}); it scales in principle
+linearly with the size of the system (only if the size is larger than
+the radial cutoff for the local solution wave-functions), but is quite
+fragile and substantially more difficult to use, and only works for
+systems with clearly separated occupied and empty states. The default is
+to use diagonalization.
+
+The calculation of the H and S matrix elements is always done with an
+O(N) method. The actual scaling is not linear for small systems, but
+it becomes O(N) when the system dimensions are larger than the scale
+of orbital r$_c$'s.
+
+The relative importance of both parts of the computation (matrix
+elements and solution) depends on the size and quality of the
+calculation. The mesh cutoff affects only the matrix-element
+calculation; orbital cutoff radii affect the matrix elements and the
+linear-scaling solver, but not the diagonalization; the need for {\bf
+  k}-point sampling affects the solvers only, and the number of basis
+orbitals affects them all.
+
+In practice, the vast majority of users employ diagonalization for the
+calculation of the electronic structure. This is so because the vast
+majority of calculations would not benefit from the O(N) solver (most
+of the calculations done are for intermediate system sizes, for varied
+reasons e.g.  the long time scales needed in MD simulations for
+growing system sizes).
+
+Since it is used less often, bugs creeping into the O(N) solver have
+been more resilient than in more popular bits of the code.  Work is
+ongoing to clean and automate the O(N) process, to make the solver
+more user-friendly and robust.
+
 
 \begin{description}
 \itemsep 10pt
@@ -3706,8 +3896,8 @@ states.  The default is to use diagonalization.
 \item[{\bf SolutionMethod}] ({\it string}):
 \index{SolutionMethod@{\bf SolutionMethod}}
 Character string to chose between
-diagonalization ({\tt diagon}) or Order-N ({\tt OrderN}) solution
-of the LDA Hamiltonian.
+diagonalization ({\tt diagon}), cubic-scaling minimization ({\tt OMM})
+or Order-N ({\tt OrderN}) solution of the Kohn-Sham Hamiltonian.
 
 {\it Default value:} {\tt diagon}
 
@@ -3824,9 +4014,9 @@ iteration of the SCF loop will be written to a NetCDF file
 {\tt WFS.nc} if the {\bf Diag.UseNewDiagk} option is in effect.
 
 The complete set of wavefunctions obtained during the last
-iteration of the SCF loop will be written to SystemLabel.WFSX
-if the {\bf COOP.write} option is in effect (but they might be
-overwritten by the options in Sec~\ref{sec:wf-output-user}).
+iteration of the SCF loop will be written to SystemLabel.fullBZ.WFSX
+\index{WFSX file!fullBZ.WFSX@\texttt{fullBZ.WFSX}} 
+if the {\bf COOP.write} option is in effect.
 
 \begin{description}
 \item[{\bf WriteEigenvalues}] ({\it logical}):
@@ -3834,8 +4024,8 @@ overwritten by the options in Sec~\ref{sec:wf-output-user}).
 If {\tt .true.} it writes the Hamiltonian eigenvalues for the sampling
 $\vec k$ points, in the main output file.
 If {\tt .false.}, it writes them in the file {\it Systemlabel}.EIG,
-which can be used by the {\sc Eig2dos}\index{Eig2dos@{\sc Eig2dos}} postprocessing
-utility (in the Util/ directory) for obtaining the density of
+which can be used by the {\sc Eig2DOS}\index{Eig2DOS@{\sc Eig2DOS}} postprocessing
+utility (in the Util/Eig2DOS directory) for obtaining the density of
 states.\index{density of states}
 
 {\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
@@ -3932,7 +4122,190 @@ pp
 
 \end{description}
 
-\subsubsection{Order(N) calculations}
+\subsubsection{Orbital minimization method (OMM)} \label{SolverOMM}
+
+The OMM is an alternative cubic-scaling solver that uses a minimization
+algorithm instead of direct diagonalization to find the occupied subspace.
+The main advantage over diagonalization is the possibility of iteratively
+reusing the solution from each SCF/MD step as the starting guess of the
+following one, thus greatly reducing the time to solution. Typically,
+therefore, the first few SCF cycles of the first MD step of a simulation
+will be slower than diagonalization, but the rest will be faster. The main
+disadvantages are that individual Kohn-Sham eigenvalues are not computed,
+and that only a fixed, integer number of electrons at each k point/spin is
+allowed. Therefore, only spin-polarized calculations with {\bf FixSpin}
+are allowed, and {\bf TotalSpin} must be chosen appropriately. For
+non-$\Gamma$ point calculations, the number of electrons is set to be equal
+at all k points. {\bf NonCollinearSpin} calculations are not supported at
+present.
+
+It is important to note that the OMM requires all occupied Kohn-Sham
+eigenvalues to be negative; this can be achieved by applying a shift
+to the eigenspectrum, controlled by {\bf ON.eta} (in this case,
+{\bf ON.eta} simply needs to be higher than the HOMO level). If the OMM
+exhibits a pathologically slow or unstable convergence, this is almost
+certainly due to the fact that the default value of {\bf ON.eta}
+({\tt 0.0 eV}) is too low, and should be raised by a few eV.
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+\item[{\bf OMM.UseCholesky}] ({\it logical}):
+\index{OMM.UseCholesky@{\bf OMM.UseCholesky}}
+Select whether to perform a Cholesky factorization of the generalized eigenvalue
+problem; this removes the overlap matrix from the problem but also destroys the
+sparsity of the Hamiltonian matrix.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} {\tt .true.}
+
+\item[{\bf OMM.Use2D}] ({\it logical}):
+\index{OMM.Use2D@{\bf OMM.Use2D}}
+Select whether to use a 2D data decomposition of the matrices for parallel
+calculations. This generally leads to superior scaling for large numbers of MPI
+processes.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} {\tt .true.}
+
+\item[{\bf OMM.UseSparse}] ({\it logical}):
+\index{OMM.UseSparse@{\bf OMM.UseSparse}}
+Select whether to make use of the sparsity of the Hamiltonian and overlap
+matrices where possible when performing matrix-matrix multiplications (these
+operations are thus reduced from $O(N^3)$ to $O(N^2)$ without loss of
+accuracy).
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}; not compatible with
+{\bf OMM.UseCholesky}, {\bf OMM.Use2D}, or non-$\Gamma$ point calculations
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf OMM.Precon}] ({\it integer}):
+\index{OMM.Precon@{\bf OMM.Precon}}
+Number of SCF steps for {\em all} MD steps for which to apply a preconditioning
+scheme based on the overlap and kinetic energy matrices; for negative values the
+preconditioning is always applied. Preconditioning is usually essential for fast
+and accurate convergence (note, however, that it is not needed if a Cholesky
+factorization is performed; in such cases this variable will have no effect on
+the calculation).
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}; not used with
+{\bf OMM.UseCholesky}
+
+{\it Default value:} {\tt -1}
+
+\item[{\bf OMM.PreconFirstStep}] ({\it integer}):
+\index{OMM.PreconFirstStep@{\bf OMM.PreconFirstStep}}
+Number of SCF steps in the {\em first} MD step for which to apply the preconditioning
+scheme; if present, this will overwrite the value given in {\bf OMM.Precon} for the
+first MD step only.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}; not used with
+{\bf OMM.UseCholesky}
+
+{\it Default value:} {\tt OMM.Precon}
+
+\item[{\bf OMM.Diagon}] ({\it integer}):
+\index{OMM.Diagon@{\bf OMM.Diagon}}
+Number of SCF steps for {\em all} MD steps for which to use a standard diagonalization
+before switching to the OMM; for negative values diagonalization is always used, and
+so the calculation is effectively equivalent to {\bf SolutionMethod} = {\tt diagon}.
+In general, selecting the first few SCF steps can speed up the calculation by removing
+the costly initial minimization (at present this works best for $\Gamma$ point
+calculations).
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} {\tt 0}
+
+\item[{\bf OMM.DiagonFirstStep}] ({\it integer}):
+\index{OMM.DiagonFirstStep@{\bf OMM.DiagonFirstStep}}
+Number of SCF steps in the {\em first} MD step for which to use a standard diagonalization
+before switching to the OMM; if present, this will overwrite the value given in
+{\bf OMM.Diagon} for the first MD step only.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} {\tt OMM.Diagon}
+
+\item[{\bf OMM.BlockSize}] ({\it integer}):
+\index{OMM.BlockSize@{\bf OMM.BlockSize}}
+Blocksize used for distributing the elements of the matrix over MPI processes. Specifically,
+this variable controls the dimension relating to the trial orbitals used in the minimization
+(equal to the number of occupied states at each k point/spin); the equivalent variable for
+the dimension relating to the underlying basis orbitals is controlled by {\bf BlockSize}.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} chosen by {\sc Siesta}
+
+\item[{\bf OMM.TPreconScale}] ({\it real energy}):
+\index{OMM.TPreconScale@{\bf OMM.TPreconScale}}
+Scale of the kinetic energy preconditioning (see C.~K.~Gan {\em et al.}, Comput. Phys. Commun.
+{\bf 134}, 33 (2001)). A smaller value indicates more aggressive kinetic energy preconditioning,
+while an infinite value indicates no kinetic energy preconditioning. In general, the kinetic
+energy preconditioning is much less important than the tensorial correction brought about by
+the overlap matrix, and so this value will have fairly little impact on the overall performace
+of the preconditioner; however, too aggressive kinetic energy preconditioning can have a
+detrimental effect on performance and accuracy.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} {\tt 100.0 eV}
+
+\item[{\bf OMM.RelTol}] ({\it real}):
+\index{OMM.RelTol@{\bf OMM.RelTol}}
+Relative tolerance in the conjugate gradients minimization of the Kohn-Sham band energy (see
+{\bf ON.etol}).
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} ${\tt 10^{-9}}$
+
+\item[{\bf OMM.Eigenvalues}] ({\it logical}):
+\index{OMM.Eigenvalues@{\bf OMM.Eigenvalues}}
+Select whether to perform a diagonalization at the end of each MD step to obtain the Kohn-Sham
+eigenvalues.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf OMM.WriteCoeffs}] ({\it logical}):
+\index{OMM.WriteCoeffs@{\bf OMM.WriteCoeffs}}
+Select whether to write the coefficients of the solution orbitals to file at the end of each MD
+step.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf OMM.ReadCoeffs}] ({\it logical}):
+\index{OMM.ReadCoeffs@{\bf OMM.ReadCoeffs}}
+Select whether to read the coefficients of the solution orbitals from file at the beginning of
+a new calculation. Useful for restarting an interrupted calculation, especially when used in
+conjuction with {\bf DM.UseSaveDM}. Note that the same number of MPI processes and values of
+{\bf OMM.Use2D}, {\bf OMM.BlockSize}, and {\bf BlockSize} must be used when restarting.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf OMM.LongOutput}] ({\it logical}):
+\index{OMM.LongOutput@{\bf OMM.LongOutput}}
+Select whether to output detailed information of the conjugate gradients minimization for each
+SCF step.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} {\tt .false.}
+
+\end{description}
+
+\subsubsection{Order(N) calculations} \label{SolverON}
 
 The Ordern(N) subsystem is quite fragile and only works for systems
 with clearly separated occupied and empty states. Note also that the
@@ -4076,6 +4449,10 @@ it to {\tt .true.}.
 
 {\it Default value:} {\tt .false.}
 
+{\bf Note:} This option does not work in parallel. An alternative
+is to obtain the approximate value of the chemical potential using
+an initial diagonalization.
+
 \item[{\bf ON.ChemicalPotentialRc}]  ({\it real length}):
 \index{ON.ChemicalPotentialRc@{\bf ON.ChemicalPotentialRc}}
 \index{Chemical Potential}
@@ -4186,7 +4563,10 @@ reciprocal-lattice-vector coordinates)
 {\it Default value:} {\tt pi/a}
 
 {\bf Note:} You might need to define explicitly a LatticeConstant tag
-in your fdf file.
+in your fdf file if you do not already have one, and make it
+consistent
+with the scale of the k-points and any unit-cell vectors you might
+have already defined.
 
 \item[{\bf BandLines}] ({\it data block}):
 \index{BandLines@{\bf BandLines}}
@@ -4261,6 +4641,7 @@ defined for band plotting, to the main output file.
 
 \end{description}
 
+
 \subsubsection{Format of the .bands file}
 
 \begin{verbatim}
@@ -4285,25 +4666,74 @@ kAtEndOfLastLine, kPointLabel \\
 \end{verbatim}
 
 \noindent
-The {\sc Gnubands}\index{Gnubands@{\sc Gnubands}} postprocessing
-utility program (found in the Util/ directory) reads the {\it
+The {\sc gnubands}\index{gnubands@{\tt gnubands}} postprocessing
+utility program (found in the Util/Bands directory) reads the {\it
   Systemlabel}.bands for plotting.  See the {\bf BandLines} data
 descriptor above for more information.
 
-\subsection{Output of wavefunctions}
+\subsubsection{Output of wavefunctions associated to bands}
+\label{sec:wf-bands}
+
+The user can optionally request that the wavefunctions corresponding
+to the computed bands be written to file. 
+They are written to the {\it SystemLabel}.bands.WFSX file
+\index{WFSX file!bands.WFSX@\texttt{bands.WFSX}} 
+(see section below for the
+format). The relevant options are:
+
+\begin{description}
+
+\item[{\bf WFS.Write.For.Bands}] ({\it logical}):
+\index{WFS.Write.For.Bands@{\bf WFS.Write.For.Bands}}
+\index{output of wave functions for bands}
+Instructs the program to compute and write the wave functions
+associated to the bands specified (by a {\bf BandLines} or a {\bf
+  BandPoints} block) to the file {\tt SystemLabel.bands}.WFSX.
+
+The information in this file might be useful, among other things, to
+generate ``fatbands'' plots, in which both  band eigenvalues and
+information about orbital projections is presented.
+\index{fatbands}
+ See the
+\texttt{fat} program in the \texttt{Util/COOP} directory for details.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf WFS.Band.Min}] ({\it integer}):
+\index{WFS.Band.Min@{\bf WFS.Band.Min}}
+\index{output of wave functions for bands}
+Specifies the lowest band index of the wave-functions to be written to 
+the file {\tt SystemLabel.bands}.WFSX for each k-point (all k-points
+in the band set are affected). 
+
+{\it Default value:} {\tt 1}
+
+\item[{\bf WFS.Band.Max}] ({\it integer}):
+\index{WFS.Band.Max@{\bf WFS.Band.Max}}
+\index{output of wave functions for bands}
+Specifies the highest band index of the wave-functions to be written to 
+the file {\tt SystemLabel.bands}.WFSX for each k-point (all k-points
+in the band set are affected).
+
+{\it Default value:} {\tt (the number of orbitals)}
+
+\end{description}
+
+
+\subsection{Output of selected wavefunctions}
 \label{sec:wf-output-user}
 
 The user can optionally request that specific wavefunctions are
 written to file. These wavefunctions are re-computed after the
 geometry loop (if any) finishes, using the last (presumably converged)
 density matrix produced during the last self-consistent field loop
-(after a final mixing). They are written to the SystemLabel.WFSX file
-(see below for the format).
+(after a final mixing). They are written to the
+SystemLabel.selected.WFSX file (see below for the format).
+\index{WFSX file!selected.WFSX@\texttt{selected.WFSX}} 
 
 Note that the complete set of wavefunctions obtained during the last
-iteration of the SCF loop will be written to SystemLabel.WFSX
-if the {\bf COOP.write} option is in effect (but they might be
-overwritten by the options below).
+iteration of the SCF loop will be written to SystemLabel.fullBZ.WFSX
+if the {\bf COOP.write} option is in effect.
 
 Note that the complete set of wavefunctions obtained during the last
 iteration of the SCF loop will be written to a NetCDF file
@@ -4340,8 +4770,15 @@ An example for an FCC lattice is:
      %endblock WaveFuncKPoints
 \end{verbatim}
 
-The number of wavefunction is defined by its energy, so that the
+The index of a wavefunction is defined by its energy, so that the
 first one has lowest energy.
+
+The user can also narrow the energy-range used with the {\bf
+  WFS.Energy.Min} and {\bf WFS.Energy.Max} options (both take an
+energy (with units) as extra argument -- see
+section~\ref{sec:coop}). Care should be taken to make sure that the
+actual values of the options make sense.
+
 The output of the wavefunctions in described in Section \ref{subsec:wf}
 
 {\it Use:} Used only if {\bf SolutionMethod} = {\tt diagon}.
@@ -4354,7 +4791,7 @@ to calculate the total energy,  charge density and band structure.
   \index{WriteWaveFunctions@{\bf WriteWaveFunctions}}
   \index{output!wave functions} If {\tt .true.} it writes to the
   output file a list of the wavefunctions actually written to the
-{\it Systemlabel}.WFSX file, which is always produced.
+{\it Systemlabel}.selected.WFSX file, which is always produced.
 
 {\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
 
@@ -4363,7 +4800,7 @@ to calculate the total energy,  charge density and band structure.
 
 \end{description}
 
-The unformatted file SystemLabel.WFSX contains the information of the
+The unformatted WFSX file contains the information of the
 k-points for which wavefunctions coefficients are written, and the
 energies and coefficients of each wavefunction which was specified in
 the input file (see {\bf WaveFuncKPoints}\index{WaveFuncKPoints@{\bf
@@ -4392,7 +4829,7 @@ total density of states:
 \item The Hamiltonian eigenvalues for the SCF sampling $\vec k$ points can be
 dumped into SystemLabel.EIG in a format analogous to SystemLabel.bands,
 but without the kmin, kmax, emin, emax information, and without
-the abscissa. The {\sc Eig2dos}\index{Eig2dos@{\sc Eig2dos}}
+the abscissa. The {\sc Eig2DOS}\index{Eig2DOS@{\sc Eig2DOS}}
 postprocessing utility can be then used to obtain the density of
 states.\index{density of states}
 See the {\bf WriteEigenvalues} descriptor.
@@ -4570,6 +5007,88 @@ when dealing with SCF problems, otherwise too verbose.
 
 \end{description}
 
+\subsubsection{Voronoi and Hirshfeld atomic population analysis}
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+\item[{\bf WriteHirshfeldPop}] ({\it logical}): 
+\index{WriteHirshfeldPop@{\bf WriteHirshfeldPop}}\index{Hirshfeld population
+analysis}\index{output!Hirshfeld analysis} 
+%
+If {\tt .true.}, the program calculates and prints the Hirshfeld {\bf
+  net} atomic populations on each atom in the system. For a definition
+of the Hirshfeld charges, see Hirshfeld, Theo Chem Acta {\bf 44}, 129
+(1977) and Fonseca et al, J. Comp. Chem. {\bf 25}, 189 (2003).
+Hirshfeld charges are more reliable than Mulliken charges, specially
+for large basis sets.  The number printed is the total net charge of
+the atom: the variation from the neutral charge, in units of $|e|$:
+positive (negative) values indicate deficiency (excess) of electrons
+in the atom.
+
+{\it Default value:} {\tt .false.} 
+
+
+\item[{\bf WriteVoronoiPop}] ({\it logical}): 
+\index{WriteVoronoiPop@{\bf WriteVoronoiPop}} %
+\index{Voronoi population analysis}\index{output!Voronoi analysis} 
+%
+If {\tt .true.}, the program calculates and prints the Voronoi {\bf
+  net} atomic populations on each atom in the system. For a definition
+of the Voronoi charges, see Bickelhaupt et al, Organometallics {\bf
+  15}, 2923 (1996) and Fonseca et al, J. Comp. Chem. {\bf 25}, 189
+(2003).  Voronoi charges are more reliable than Mulliken charges,
+specially for large basis sets.  The number printed is the total net
+charge of the atom: the variation from the neutral charge, in units of
+$|e|$: positive (negative) values indicate deficiency (excess) of
+electrons in the atom.
+
+{\it Default value:} {\tt .false.}
+
+\end{description}
+
+The Hirshfeld and Voronoi populations (partial charges) are computed
+by default only at the end of the program (i.e., for the final
+geometry, after self-consistency). The following options allow more control:
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+\item[{\bf PartialChargesAtEveryGeometry}] ({\it logical}):
+  \index{PartialChargesAtEveryGeometry@{\bf
+      PartialChargesAtEveryGeometry}}%
+  \index{Voronoi population analysis}%
+  \index{output!Voronoi analysis} %
+  \index{Hirshfeld population analysis} %
+  \index{output!Hirshfeld analysis}
+
+The Hirshfeld and Voronoi populations are computed after
+self-consistency is achieved, for all the geometry steps.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf PartialChargesAtEveryScfStep}] ({\it logical}):
+  \index{PartialChargesAtEveryScfStep@{\bf
+      PartialChargesAtEveryScfStep}}%
+  \index{Voronoi population analysis}%
+  \index{output!Voronoi analysis}%
+  \index{Hirshfeld population analysis}%
+  \index{output!Hirshfeld analysis}
+
+The Hirshfeld and Voronoi populations are computed for every
+step of the self-consistency process.
+
+{\it Default value:} {\tt .false.}
+
+\end{description}
+
+{\bf Performance note:}
+The default behavior (computing at the end of the program) involves
+an extra calculation of the charge density.
+%
+
+
 \subsubsection{Crystal-Orbital overlap and hamilton populations (COOP/COHP)}
 \label{sec:coop}
 \index{COOP/COHP curves}
@@ -4587,7 +5106,7 @@ Hughbanks, T.; Hoffmann, R., J. Am. Chem. Soc., 1983, 105, 3528.
 \item Original COHP reference: Dronskowski, R.; Blöchl, P. E., J. Phys. Chem., 1993, 97, 8617.
 \item A tutorial introduction: Dronskowski, R. Computational Chemistry of Solid State
 Materials; Wiley-VCH: Weinheim, 2005.
-\item Online material maintained by R. Dronskowski's group: {\tt http://www.cohp.de/}
+\item Online material maintained by R. Dronskowski's group: \url{http://www.cohp.de/}
 \end{itemize}
 
 \begin{description}
@@ -4597,7 +5116,7 @@ Materials; Wiley-VCH: Weinheim, 2005.
 \item[{\bf COOP.Write}] ({\it logical}):
 \index{COOP.Write@{\bf COOP.Write}}
 \index{output!Information for COOP/COHP curves}
-Instructs the program to generate  {\tt SystemLabel}.WFSX (packed
+Instructs the program to generate  {\tt SystemLabel.fullBZ}.WFSX (packed
 wavefunction file) and  {\tt SystemLabel}.HSX (H, S and X\_~{ij} file),
 to be processed by {\tt Util/COOP/mprop} to generate COOP/COHP curves,
 (projected) densities of states, etc.
@@ -4613,8 +5132,48 @@ single precision.
 {\it Default value:} {\tt .false.}
 
 The user can narrow the energy-range used (and save some file space)
-by using the {\bf WFS.EnergyMin} and {\bf WFS.EnergyMax} options (both take an
-energy (with units) as extra argument).
+by using the {\bf WFS.Energy.Min} and {\bf WFS.Energy.Max} options (both take an
+energy (with units) as extra argument), and/or the {\bf WFS.Band.Min} and
+{\bf WFS.Band.Max} options. Care should be taken to make sure that the 
+actual values of the options make sense.
+
+Note that the band range options could also affect the output of
+wave-functions associated to bands (see section~\ref{sec:wf-bands}),
+and that the energy range options could also affect the output of
+user-selected wave-functions with the {\bf WaveFuncKpoints} block (see
+section~\ref{sec:wf-output-user}).
+
+\item[{\bf WFS.Energy.Min}] ({\it physical energy}):
+\index{WFS.Energy.Min@{\bf WFS.Energy.Min}}
+Specifies the lowest value of the energy (eigenvalue) of the wave-functions to be written to 
+the file {\tt SystemLabel.fullBZ}.WFSX for each k-point (all k-points
+in the BZ sampling are affected). 
+
+{\it Default value:} $-\infty$
+
+\item[{\bf WFS.Energy.Max}] ({\it physical energy}):
+\index{WFS.Energy.Max@{\bf WFS.Energy.Max}}
+Specifies the highest value of the energy (eigenvalue) of the wave-functions to be written to 
+the file {\tt SystemLabel.fullBZ}.WFSX for each k-point (all k-points
+in the BZ sampling are affected).
+
+{\it Default value:} $+\infty$
+
+\item[{\bf WFS.Band.Min}] ({\it integer}):
+\index{WFS.Band.Min@{\bf WFS.Band.Min}}
+Specifies the lowest band index of the wave-functions to be written to 
+the file (in this context) {\tt SystemLabel.fullBZ}.WFSX for each k-point (all k-points
+in the BZ sampling are affected). 
+
+{\it Default value:} {\tt 1}
+
+\item[{\bf WFS.Band.Max}] ({\it integer}):
+\index{WFS.Band.Max@{\bf WFS.Band.Max}}
+Specifies the highest band index of the wave-functions to be written to 
+the file (in this context) {\tt SystemLabel.fullBZ}.WFSX for each k-point (all k-points
+in the BZ sampling are affected).
+
+{\it Default value:} {\tt (the number of orbitals)}
 
 \end{description}
 
@@ -5105,6 +5664,47 @@ density is positive and the ionic charge density is negative.
 
 {\it Default value:} {\tt .false.}
 
+\item[{\bf SaveBaderCharge}] ({\it logical}):
+  \index{SaveBaderCharge@{\bf SaveBaderCharge}} \index{output!Bader
+    charge} Instructs the program to save the charge density for
+  further post-processing by a Bader-analysis program.  This ``Bader
+  charge'' is the sum of the electronic valence charge density and a
+  set of ``model core charges'' placed at the atomic sites. For a
+  given atom, the model core charge has the same shape as the ``local
+  pseudopotential charge'' used elsewhere by {\sc Siesta} (a
+  generalized Gaussian), but confined to a radius of 1.0 Bohr, and
+  integrating to the total core charge ($Z$-$Z_{\rm val}$). These core
+  charges are needed to provide local maxima for the charge density at
+  the atomic sites, which are not guaranteed in a pseudopotential
+  calculation. For hydrogen, an artificial core of 1 electron is
+  added, with a confinement radius of 0.4 Bohr.  The Bader charge is
+  projected on the grid points of the mesh used by DHSCF, and saved in
+  file {\tt SystemLabel}.BADER. This file can be post-processed by the
+  program {\tt Util/grid2cube} to convert it to the ``cube'' format,
+  accepted by several Bader-analysis programs (for example, see {\tt
+    http://theory.cm.utexas.edu/bader/}).  Due to the need to
+  represent a localized core charge, it is advisable to use a
+  moderately high MeshCutoff when invoking this option (300-500
+  Ry). The size of the ``basin of attraction'' around each atom in the
+  Bader analysis should be monitored to check that the model core
+  charge is contained in it.  
+
+  The suggested way to run the Bader analysis with the Univ. of Texas
+  code is to use both the RHO and BADER files (both in ``cube''
+  format), with the BADER file providing the ``reference'' and the RHO
+  file the actual significant valence charge data which is important
+  in bonding. (See the notes for pseudopotential codes in the above
+  web page.) For example, for the h2o-pop example:
+
+  {\tt bader  h2o-pop.RHO.cube -ref h2o-pop.BADER.cube}
+
+
+If netCDF support is compiled in, the file {\tt BaderCharge.grid.nc}
+is produced.
+
+{\it Default value:} {\tt .false.}
+
+
 
 \item[{\bf SaveInitialChargeDensity}] ({\it logical}):
   \index{SaveInitialChargeDensity@{\bf
@@ -5288,22 +5888,59 @@ case.
 
 {\it Default value:}  false
 
+\end{description}
+
+\subsubsection{Parallel decompositions for O(N)}
+\label{parallel-on}
+
+Apart from the default block-cyclic decomposition of the orbital data,
+O(N) calculations can use other schemes which should be more
+efficient: spatial decomposition (based on atom proximity), and domain
+decomposition (based on the most efficient abstract partition of the
+interaction graph of the Hamiltonian). 
+
+\begin{description}
+
+\item[{\bf UseDomainDecomposition}] ({\it logical}):
+  \index{UseDomainDecomposition@{\bf UseDomainDecomposition}} This
+  option instructs the program to employ a graph-partitioning
+  algorithm (using the {\tt METIS} library (See \url{www.cs.umn.edu/~metis}) 
+  to find an efficient distribution of the
+  orbital data over processors.  To use this option (meaningful only
+  in parallel) the program has to be compiled with the preprocessor
+  option {\tt ON\_DOMAIN\_DECOMP} and the {\tt METIS} library has to
+  be linked in.
+
+{\it Default value:}  false
+
+\item[{\bf UseSpatialDecomposition}] ({\it logical}):
+  \index{UseSpatialDecomposition@{\bf UseSpatialDecomposition}} When
+  performing a parallel order N calculation, this option instructs the
+  program to execute a spatial decomposition algorithm in which the
+  system is divided into cells, which are then assigned, together with
+  the orbitals centered in them, to the different processors. The size
+  of the cells is, by default, equal to the maximum distance at which
+  there is a non-zero matrix element in the Hamiltonian between two
+  orbitals, or the radius of the Localized Wannier function - which
+  ever is the larger. If this is the case, then an orbital will only
+  interact with other orbitals in the same or neighbouring
+  cells. However, by decreasing the cell size and searching over more
+  cells it is possible to achieve better load balance in some
+  cases. This is controlled by the variable {\bf RcSpatial}.
+
+NOTE: The distribution algorithm is quite fragile and a careful tuning
+of {\bf RcSpatial} might be needed. This option is therefore not
+enabled by default.
+
+{\it Default value:}  false
+
 \item[{\bf RcSpatial}] ({\it real distance}):
 \index{RcSpatial@{\bf RcSpatial}}
-When performing a parallel order N calculation, a domain/spatial
-decomposition algorithm is used in which the system is divided into
-cells, which are then assigned to the nodes. The size of the cells
-is, by default, equal to the maximum distance at which there is a non-zero
-matrix element in the Hamiltonian between two orbitals, or the
-radius of the Wannier function - which ever is the larger. If this is
-the case, then an orbital will only interact with other orbitals in the same
-or neighbouring cells. However, by decreasing the cell size and searching
-over more cells it is possible to achieve better load balance in some
-cases.
 
-{\it Use:} Controls the domain size during the spatial decomposition
+Controls the cell size during the spatial decomposition.
 
-{\it Default value:}  maximum of the matrix element range or the Wannier radius
+{\it Default value:}  maximum of the matrix element range or the
+Localized Wannier Function radius
 
 \end{description}
 
@@ -5331,7 +5968,7 @@ make it possible to run larger jobs where memory is the limiting factor.
 
 \end{description}
 
-\subsection{Memory and CPU-time accounting options}
+\subsection{Memory, CPU-time, and Wall time accounting options}
 \begin{description}
 
 \item[{\bf AllocReportLevel}] ({\it integer}):
@@ -5376,6 +6013,15 @@ output file. In parallel execution, they are reported in a separated
 file named {\tt SystemLabel}.times.
 
 {\it Default value:} {\tt 0.0}
+
+\item[{\bf UseTreeTimer}] ({\it logical}): 
+\index{UseTreeTimer@{\bf UseTreeTimer}}
+
+Enable an experimental timer which is based on wall time on the master
+node and is aware of the tree-structure of the timed sections.
+
+{\it Default value:} {\tt .false.}
+
 
 \end{description}
 
@@ -5425,10 +6071,7 @@ charge-density and wavefunction contours.
 {\it Use:} File {\tt SystemLabel}.PLD is only written, not read, by siesta.
 
 Apart from the PLD file, you will need the Density-Matrix (DM) file
-and/or a wavefunction (WFS) file. For the latter, remember that Siesta
-now produces only a packed WFSX file. You will need to run the
-wfsx2wfs program to convert it to the WFS format. This will be fixed
-shortly.
+and/or a wavefunction (WFSX) file. 
 
 {\it Default value:} {\tt .false.}
 
@@ -6122,8 +6765,8 @@ respectively. Edit the file to change the settings if desired.
 \subsection{Restarting geometry optimizations and MD runs}
 
 Every time the atoms move, either during coordinate relaxation or
-molecular dynamics, their positions {\bf predicted for next step} and
-{\bf current} velocities are stored in file SystemLabel.XV, where
+molecular dynamics, their {\bf positions predicted for next step} and
+{\bf current velocities} are stored in file SystemLabel.XV, where
 SystemLabel is the value of that FDF descriptor (or 'siesta' by
 default).  The shape of the unit cell and its associated 'velocity'
 (in Parrinello-Rahman dynamics) are also stored in this file. For MD
@@ -6132,15 +6775,20 @@ Nose-Parrinello-Rahman, a file named SystemLabel.VERLET\_RESTART,
 SystemLabel.PR\_RESTART, SystemLabel.NOSE\_RESTART, or
 SystemLabel.NPR\_RESTART, respectively, is created to hold the values
 of auxiliary variables needed for a completely seamless
-continuation. Due to the introduction of this enhanced continuation
-feature in Siesta 2.0, an MD run made with Siesta 1.3 cannot be
-directly restarted with later versions of Siesta: the user would need
-to create the right kind of restart file in addition to setting the
-MD.UseSaveXV flag in the FDF file.
+continuation. 
 
-This restart fix is not complete in all cases nor satisfactory from a
-fundamental point of view, so the MD subsystem in Siesta will have to
-be redesigned. In the meantime, users are reminded that the scripting
+If the restart file is not available, a simulation can still make use
+of the XV information, and ``restart'' by basically repeating the
+last-computed step (the positions are shifted backwards by using a
+single Euler-like step with the current velocities as derivatives).
+While this feature does not result in seamless continuations, it
+allows cross-restarts (those in which a simulation of one kind (e.g.,
+Anneal) is followed by another (e.g., Nose)), and permits 
+to re-use dynamical information from old runs.
+
+This restart fix is not satisfactory from a fundamental point of view,
+so the MD subsystem in Siesta will have to be redesigned
+eventually. In the meantime, users are reminded that the scripting
 hooks being steadily introduced (see Util/Scripting) might be used to
 create custom-made MD scripts.
 
@@ -6428,9 +7076,29 @@ Jos\'e-Luis Mozos, who also worked on the parallelization of {\sc
   TranSiesta}.  The present distribution has been adapted to the new
 {\sc Siesta} code structure. With respect to the previous
 implementations, it has the additional feature of allowing for the use
-of a {\bf k}-point sampling other than the gamma point (for the 2D
+of a $k$-point sampling other than the gamma point (for the 2D
 Brillouin zone perpendicular to the transport direction).  These
 modifications, among others, were done by Frederico D. Novaes.
+
+{\sc TranSiesta} has been recently (Fall 2012) restructured to be
+more readable from a programmer's point of view. This will result in 
+less maintenance of the code. Several improvements have also been 
+accomplished:
+\begin{itemize}
+  \item full parallelization of the Green's function files (GF-files) 
+  generation,
+  \item full Green's function calculation at initialization,
+  \item re-implementation of repetition of the electrodes,
+  \item more SCF information about charge redistribution,
+  \item separate k-point file (TSKP instead of overwriting KP),
+  \item changed the \texttt{CONTOUR} file to \texttt{TSCC},
+  \item changed the GF files to be named according to the 
+  {\it SystemLabel},
+  \item general optimizations in many routines.
+\end{itemize}
+
+The above implementations were done by Nick P. Andersen.
+
 
 \subsection{Source code structure}
 
@@ -6463,7 +7131,7 @@ using the appropriate arch.make file for your system (note that you do
 not need to make any modification on your arch.make file: you can use
 the same one that you have used to make a standard {\sc Siesta}
 compilation in your system).  The Makefile takes care of defining the
-appropriate preprocessor flag -DTRANSIESTA so that the {\sc
+appropriate preprocessor flag \texttt{-DTRANSIESTA} so that the {\sc
   TranSiesta} modules and modifications are compiled and incorporated
 into the binary. Upon successful compilation, the binary file {\tt
   transiesta} will be generated, containing an executable version of
@@ -6476,7 +7144,7 @@ us start with an example to show the basic operations of a transport
 calculation.  Starting from the top {\sc Siesta} directory:
 
 \begin{verbatim}
-$ cd Tests/transiesta/Fast
+$ cd Examples/TranSiesta
 \end{verbatim}
 
 First it is necessary to do the electrode calculation (see below for
@@ -6514,7 +7182,10 @@ and {\tt scat.fast.TSDE}. The first one contains, as previously mentioned,
 essentially the Hamiltonian and Overlap matrices, and the {\tt .TSDE} file 
 has the {\sc TranSiesta} density matrix, the equivalent to the {\tt .DM} 
 file of {\sc Siesta}. The transmission function and the current are calculated 
-using the {\tt tbtrans} postprocessing (bellow).
+using the {\tt tbtrans} postprocessing tool (below).
+
+Other automated TranSiesta-TBTrans examples can be found in
+{\tt Tests/TranSiesta-TBTrans}.
 
 \subsection{Brief explanation}
 
@@ -6589,6 +7260,9 @@ Electrodes.  In this case, {\sc TranSiesta} will not consider these
 atoms, and the buffer atoms are considered only for the initial {\sc
   Siesta} calculation, to get a better ``bulk-like'' environment at
 the electrodes.
+Lastly the electrodes must not extend into the transport direction.
+This is checked for by {\sc TranSiesta} and the execution will stop
+if the geometry is badly formatted.
 
 \item
 An important parameter is: {\tt TS.ComplexContour.Emin} It specifies
@@ -6608,11 +7282,13 @@ electrodes, if they are different the code will stop. In practice this
 means that the first and the second lines of the {\bf
   kgrid\_Monkhorst\_Pack} block must be the same.  In the case of {\bf
   tbtrans}, the k-point sampling has to be specified also using a {\bf
-  kgrid\_Monkhorst\_Pack} block, and can differ from the sampling that
-was used in the {\sc TranSiesta} calculation. The convergence of the
-transmission function with respect to the k sampling can be slower
-than the one for the density matrix. This means that one may have to
-increase the number of k-points used in {\bf tbtrans}.
+  kgrid\_Monkhorst\_Pack} block (or preferentially:
+{\bf TBT\_kgrid\_Monkhorst\_Pack}), 
+and can differ from the sampling that was used in the {\sc TranSiesta} 
+calculation. The convergence of the transmission function with respect
+to the k sampling can be slower than the one for the density matrix. 
+This means that one may have to increase the number of k-points used 
+in {\bf tbtrans}.
 \end{itemize}
 
 \subsection{Electrodes}
@@ -6622,11 +7298,12 @@ external bias, {\sc TranSiesta} attaches the system to semi-infinite
 electrodes which extend to the left and right of the contact
 region. Examples of electrodes would include surfaces, nanowires,
 nanotubes or even atomic chains. The electrode must be oriented along
-the z-axis and the unit cell along the z-direction must be large
+the $z$-axis and the unit cell along the $z$-direction must be large
 enough so that orbitals within the unit cell only interact with a
 single nearest neighbor cell (the size of the unit cell can thus be
 derived from the range of support for the orbital basis
-functions). The electrode description is also used in {\bf tbtrans}.
+functions). {\sc TranSiesta} will warn if this is not enforced.
+ The electrode description is also used in {\bf tbtrans}.
 The electrodes are generated by a separate transiesta run on a bulk
 system.  The results are saved in a file with extension {\tt .TSHS}
 which contains a description of the electrode unit cell, the position
@@ -6634,12 +7311,109 @@ of the atoms within the unit cell, as well as the Hamiltonian and
 overlap matrices that describe the electronic structure of the
 lead. One can generate a variety of electrodes and the typical use of
 transiesta would involve reusing the same electrode for several
-setups.  In this version of {\sc TranSiesta}, one must manually
-provide a valid description of the electrode and the atomic
-coordinates input to must conform with this description.
-%At runtime, the transiesta coordinates 
-%are checked against the electrode coordinates and the program stops if 
-%there is a mismatch.
+setups. At runtime, the transiesta coordinates 
+are checked against the electrode coordinates and the program stops if 
+there is a mismatch to a certain precision (1e-4 Bohr).
+
+When creating the Green's function one needs the transfer matrix of the 
+electrode. This means that one needs to have a supercell in the 
+electrode calculation in the transport direction. The current 
+implementation checks for this as also checks that there are no more
+than 2 neighbouring supercells in the transport direction. This is
+so because the surface Green's function relies on a transfer matrix
+between principal layers and not across several principal layers.
+For now {\sc TranSiesta} will continue but print a warning.
+The warning will look like this:
+\begin{verbatim}
+WARNING: Connections across 2 unit cells or more in the transport direction.
+WARNING: This is inadvisable.
+WARNING: Please increase the electrode size in the transport direction.
+WARNING: Will proceed without further notice.
+\end{verbatim}
+This can possibly lead to an erroneous surface Green's function. If this
+warning is shown try and increase the electrode layers and use the option
+{\bf TS.NumUsedAtomsLeft/Right} to limit the used number of atoms in the
+surface Green's function calculation. An often encountered problem is the ABC stacking of
+gold. Here, it will almost always give this warning. However, one can overcome this by
+making the electrode to an ABCABC stacking of 6 atoms, and use {\bf
+    TS.NumUsedAtomsLeft/Right} equal to 4, or 3 (this will still have a little error,
+however, the surface Green's function has been calculated using the full ABCABC stacking which
+holds more information).
+
+\subsubsection{Repetition}
+
+{\sc TranSiesta} is now capable of utilizing the electrode periodicity. In the test
+directory a small example of how it is used can be found. For this the following options
+are needed:
+
+\begin{description}
+  \itemsep 10pt
+  \parsep 0pt
+  
+  \item[{\bf TS.ReplicateA1Left}] ({\it integer}):
+  \index{TS.ReplicateA1Left@{\bf TS.ReplicateA1Left}} Describing the
+  number of replications of the electrode structure in the A1 direction.
+  This, however, requires an equal replication of the k-grid in the 
+  electrode in the A1 direction. A small example.
+
+  Consider a full {\sc TranSiesta} structure with metallic stacking:
+  \begin{center}
+    ABABAB-D-BABAB
+  \end{center}
+  , where D is the device region. Each layer is 3x3 atoms. The unit
+  cell is $9. \times 9.$ Angstroms in the layers perpendicular to the
+  transport direction (for the sake of simplicity). Only the
+  $\Gamma$-point is used. 
+
+  The left/right electrodes (ABAB) can then be setup in the following 
+  ways:
+  \begin{enumerate}
+    \item A full ABAB-stacking of 3x3 atoms per layer, and unit 
+    cell size of $9. \times 9.$ Angstroms. Only the $\Gamma$-point
+    is used, or
+    \item an ABAB-stacking of 1x3 atoms per layer, and unit 
+    cell size of $3. \times 9.$ Angstroms. Here the k-grid needs to 
+    be 3 times as large in the repeated direction, thus:
+    $k_{\mathrm{grid}}=\{3,1,1\}$, or
+    \item an ABAB-stacking of 1x1 atoms per layer, and unit 
+    cell size of $3. \times 3.$ Angstroms. Here the k-grid needs to 
+    be 3 times as large in each of the repeated direction, thus:
+    $k_{\mathrm{grid}}=\{3,3,1\}$.
+  \end{enumerate}
+  Notice that the second option is not allowed with interchanging the
+  A1 repetition with the A2 direction, this is an implementation 
+  decision.
+
+  Each of these setups will yield different size GF files. 
+  If limited on space and you require many energy-points for the
+  contour integral, consider creating the electrode in the smallest
+  repeated cell and utilize these settings. 
+  If you have a very large system, it could be desirable
+  to limit the repetition as the expansion of the Green's function 
+  is done in the SCF {\sc TranSiesta} cycle. However, it is nearly 
+  always preferable to utilize the repetition.
+
+  {\it Default value:} {\tt 1}
+
+  \item[{\bf TS.ReplicateA2Left}] ({\it integer}):
+  \index{TS.ReplicateA2Left@{\bf TS.ReplicateA2Left}} See 
+  {\bf TS.ReplicateA1Left}, however, this is in the A2 direction.
+
+  {\it Default value:} {\tt 1}
+
+  \item[{\bf TS.ReplicateA1Right}] ({\it integer}):
+  \index{TS.ReplicateA1Right@{\bf TS.ReplicateA1Right}} See 
+  {\bf TS.ReplicateA1Left}, however, this is for the right electrode.
+
+  {\it Default value:} {\tt 1}
+
+  \item[{\bf TS.ReplicateA2Right}] ({\it integer}):
+  \index{TS.ReplicateA2Right@{\bf TS.ReplicateA2Right@}}  See 
+  {\bf TS.ReplicateA2Left}, however, this is for the right electrode.
+
+  {\it Default value:} {\tt 1}
+
+\end{description}
 
 \subsection{{\sc TranSiesta} Options}
 
@@ -6667,11 +7441,11 @@ calculations, only the usual {\sc Siesta} options are relevant.
 
 {\it Default value:} {\tt true}
 
-    \item[{\bf TS.Voltage}] ({\it physical }): The voltage applied
-      along the z-direction of the unit cell between the two
-      electrodes.
+\item[{\bf TS.Voltage}] ({\it physical }): The voltage applied
+  along the z-direction of the unit cell between the two
+  electrodes.
 
-        {\it Default value:} {\tt 0.0 eV}
+{\it Default value:} {\tt 0.0 eV}
 
 \item[{\bf TS.MixH}] ({\it logical}): \index{TS.MixH@{\bf TS.MixH}}
   During the self consisten cycle, usually the density matrix of
@@ -6695,13 +7469,16 @@ calculations, only the usual {\sc Siesta} options are relevant.
 
 {\it Default value:} {\tt true}
 
-\item[{\bf TS.CalcGF}] ({\it logical}): 
-\index{TS.CalcGF@{\bf TS.CalcGF}}
+\item[\fdf{TS.ReUseGF}] \index{TS.ReUseGF@\textbf{TS.ReUseGF}} ({\it logical}): 
+\index{TS.CalcGF@\textbf{TS.CalcGF}|see{\textbf{TS.ReUseGF}}}
 The generated surface Green's functions of the electrodes depend on the atomic structure,
-but also on the energy points of the contour (that will dependend on the voltage). 
+but also on the energy points of the contour (that will depend on the voltage). 
 It is possible to use previously generated .GF files, but care must be taken.
-If it is just a rerun of the same system, this flag can safely be set as {\tt false}. 
-This will save computing time.
+Per default it will try to re-use the GF files present. A check against the parameters
+ensures that they are equivalent (however, the atomic coordinates of the electrodes will
+not be checked). By setting to {\tt false} the Green's function files
+will be re-created no matter the existence of GF files.
+This will save computing time. 
 
 {\it Default value:} {\tt true}
 
@@ -6738,7 +7515,7 @@ N.B.: The program will stop if this file is not found.
 Name of the .GF file of the left electrode. 
 N.B.: The program will generate a new one if not found.
 
-{\it Default value:} {\tt Left.GF} 
+{\it Default value:} {\tt <SystemLabel>.TSGFL} 
 
 \item[{\bf TS.HSFileRight }] ({\it string}): 
 \index{TS.HSFileRight@{\bf TS.HSFileRight}}
@@ -6751,7 +7528,7 @@ Name of .TSHS file describing right electrode. See TS.HSFileLeft.
 Name of the .GF file of the left electrode. 
 N.B.: The program will generate a new one if not found.
 
-{\it Default value:} {\tt Right.GF}
+{\it Default value:} {\tt <SystemLabel>.TSGFR} 
 
 \item[{\bf TS.NumUsedAtomsLeft}] ({\it integer}):
   \index{TS.NumUsedAtomsLeft@{\bf TS.NumUsedAtomsLeft}} The number of
@@ -6796,6 +7573,46 @@ Number of atoms starting from the last atom to neglect in the
 
 {\it Default value:} {\tt 0} 
 
+\item [{\bf TS.CalcElectrodeValenceBandBottom}]({\it logical}): 
+\index{TS.CalcElectrodeValenceBandBottom@{\bf TS.CalcElectrodeValenceBandBottom}}
+If true will calculate the valence band bottom of the electrode.
+This can be used to check for the contour points.
+
+{\it Default value:} {\tt false}
+
+\item [{\bf TS.ChargeCorrection}] ({\it string}):
+\index{TS.ChargeCorrection@{\bf TS.ChargeCorrection}}
+Allows for doing a charge correction in the SCF {\sc TranSiesta} cycle.
+The charges will fluctuate during the SCF cycle and this is available for
+trying to ``fix'' the charge. 
+
+Available methods:
+\begin{description}
+  \item[{\bf 'none'}] Will not correct charges
+  \item[{\bf 'b'} or {\bf 'buffer'}] Will correct missing/excess charges
+  in the buffer regions. All excess charge is removed from the buffer
+  atoms with a scaling factor ({\bf TS.ChargeCorrectionFactor}). 
+  If there are no buffer atoms {\sc TranSiesta} will quit during
+  initialization. 
+\end{description}
+
+
+{\it Use with care.}
+
+{\it Default value:} {\tt 'none'}
+
+\item [{\bf TS.ChargeCorrectionFactor}] ({\it value}):
+\index{TS.ChargeCorrectionFactor@{\bf TS.ChargeCorrectionFactor}}
+The factor for correcting the missing charges. Must be in the range
+$[0.0;1.0]$. This option only has meaning if {\bf TS.ChargeCorrection}
+is not 'none'.
+
+\paragraph{Example:} After an SCF cycle, {\sc TranSiesta} is missing
+$0.4$ electrons. The correction performed will add $0.4 \times \bf
+TS.ChargeCorrectionFactor$ to the system for compensation. 
+This factor can be used to control the fluctuations.
+
+{\it Default value:} $0.75$
 \end{description}
 
 
@@ -6873,18 +7690,21 @@ Number of atoms starting from the last atom to neglect in the
 \subsection{  Matching   {\sc TranSiesta} coordinates: basic rules}
 Having discussed the possible input options of {\sc TranSiesta} here
 we just list a set of rules to construct the appropriate coordinates
-of the scattering region.  The order of atoms be such that:
+of the scattering region. The unitcell most only have one component for 
+the transport direction vector ($z$-direction). The order of atoms be 
+such that:
 \begin{itemize}
 \item
 The first {\bf TS.BufferAtomsLeft} atoms will be considered buffer
 atoms that will not be used in the {\sc TranSiesta} calculation, but
 which are used in the {\sc Siesta} calculation. This number can, of
 course, be zero.
-\item The next {\bf TS.NumUsedAtomsLeft} correspond to the left
-  electrode atoms.
+\item The next {\bf TS.NumUsedAtomsLeft $\times$ TS.ReplicateA1Left
+    $\times$ TS.ReplicateA2Left} correspond to the left electrode atoms.
 
-\item  The next atoms correspond to the contact region.
-\item  The next {\bf TS.NumUsedAtomsRight} are the right electrode atoms.
+\item  The next atoms correspond to the scattering region.
+\item  The next {\bf TS.NumUsedAtomsRight $\times$ TS.ReplicateA1Right
+    $\times$ TS.ReplicateA2Right} are the right electrode atoms.
 \item The next {\bf TS.BufferAtomsRight} correspond to atoms that are
   neglected in the transiesta part of the calculation, only take part
   in the first {\sc Siesta} run (only occurs if it is not a
@@ -6903,8 +7723,8 @@ number smaller than what was used in the electrode's unit cell).
 
 {\sc TranSiesta} generates several output files.  The output files are
 named {\tt <SystemLabel>.ext}, defined using the SystemLabel FDF
-command , and .ext depends on the type of the output.  Below we list
-the .ext files which are specific to transiesta.  For a description of
+command, and .ext depends on the type of the output.  Below we list
+the .ext files which are specific to {\sc TranSiesta}.  For a description of
 the other output files, we refer the user to the {\sc Siesta} manual.
 
 
@@ -6912,22 +7732,24 @@ the other output files, we refer the user to the {\sc Siesta} manual.
     \itemsep 10pt
     \parsep 0pt
     
-    \item[{\bf .DM }]: \index{.DM@{\bf .DM}} The {\sc Siesta} density
-      matrix. {\sc Siesta} initially performs a calculation at zero
-      bias assuming periodic boundary conditions in all directions,
-      and no voltage, which is used as a starting point for the
-      transiesta calculation.
+    \item[\systemfile{.DM}]: The {\sc Siesta} density matrix. {\sc Siesta} initially
+    performs a calculation at zero bias assuming periodic boundary conditions in all
+    directions, and no voltage, which is used as a starting point for the transiesta
+    calculation.
+    
+    \item[\systemfile{.TSDE}]: The {\sc TranSiesta} density matrix and energy density
+    matrix. During a transiesta run, the .DM values are used for the density matrix in
+    the buffer (if used) and electrode regions. The coupling terms may o may no be
+    updated in a {\sc TranSiesta} run (see {\bf TS.UpdateDMCROnly}).
+    
+    \item[\systemfile{.TSHS}]: The Hamiltonian corresponding to .TSDE, and other
+    information needed by {\sc TranSiesta} and {\tt tbtrans}.
 
-    \item[{\bf .TSDE }]: \index{.TSDE@{\bf .TSDE}} The {\sc
-      TranSiesta} density matrix and energy density matrix. During a
-      transiesta run, the .DM values are used for the density matrix
-      in the buffer (if used) and electrode regions. The coupling
-      terms may o may no be updated in a {\sc TranSiesta} run (see
-      {\bf TS.UpdateDMCROnly}).
+    \item[\systemfile{.TSKP}]: The $k$-points used in the {\sc TranSiesta} calculation. See
+    {\sc Siesta} \file{.KP} file for formatting information.
 
-    \item[{\bf .TSHS }]: \index{.TSHS@{\bf .TSHS}} The Hamiltonian
-      corresponding to .TSDE, and other information needed by {\sc
-        TranSiesta} and {\tt tbtrans}.
+    \item[\systemfile{.TSCC}]: The complex contour integration path used for calculating
+    the non-equilibrium density matrix.
 
 \end{description} 
 
@@ -6935,14 +7757,23 @@ the other output files, we refer the user to the {\sc Siesta} manual.
 \index{tbtrans@{\bf tbtrans}}
 
 The {\tt tbtrans} code can be found in the directory {\tt
-  Util/TBTrans}.  It is used in order to obtain, in a post-processing
-way, the transport properties after a {\sc TranSiesta} run. It was
-developed by M. Brandbyge, and the present version contains
-modifications made by Frederico D. Novaes.
+  Util/TBTrans}. 
 
-In order to run it, it requires the electrode's .TSHS files (may be
-just one file if the left and right electrodes are equal), and the
-scattering region's .TSHS file.  These are generated as explained
+A much optimized version of \texttt{tbtrans} is found in the directory
+\texttt{Util/TBTtrans\_rep} which is recommended to be used. Only in this version can the
+repetition be used. It has been completely rewritten to be as fast as possible as well as
+keeping the maintenance to a minimum. This version has been completely rewritten by Nick
+Papior Andersen (referred to by NPA in the following).
+
+It is used in order to obtain, in a post-processing
+way, the transport properties after a {\sc TranSiesta} run. It was
+developed by M. Brandbyge. It has been made to conform
+with the modifications introduced in {\sc TranSiesta} in late October 2012. 
+
+In order to run it, it requires the electrode's \texttt{.TSHS} files
+(may be just one file if the left and right electrodes are equal), 
+and the
+scattering region's \texttt{.TSHS} file.  These are generated as explained
 above.  The location of these files are specified by the (already
 discussed) {\bf TS.HSFileLeft}, {\bf TS.HSFileRight} input options,
 and by:
@@ -6950,20 +7781,20 @@ and by:
     \itemsep 10pt
     \parsep 0pt
 
-\item [{\bf TS.TBT.HSFile}]({\it string}): Scattering region .TSHS file.
+\item [{\bf TS.TBT.HSFile}]({\it string}): Scattering region \texttt{.TSHS} file.
 \index{TS.HSFileLeft@{\bf TS.HSFileLeft}}
 
 {\it Default value:} {\tt {\it SystemLabel}.TSHS}
 \end{description}
 respectively for the left and right electrodes and the scattering
-region .TSHS file.
+region \texttt{.TSHS} file.
 
 The energy scale in {\tt tbtrans} is shifted so that the Fermi level
 of the system, if no voltage were applied, is zero. When computing the
 transmission function of a zero bias calculation, the transmission at
-the Fermi level is then given by T(E=0). When there is a finite bias,
-the Fermi energy of the left electrode is placed at V/2, and that of
-the right electrode at -V/2.
+the Fermi level is then given by $T(E=0)$. When there is a finite bias,
+the Fermi energy of the left electrode is placed at $V/2$, and that of
+the right electrode at $-V/2$.
 
 The voltage is specified by {\bf TS.Voltage}. The energy window and
 number of points for the computation of the transmission function is
@@ -6971,6 +7802,19 @@ specified by
 \begin{description}
     \itemsep 10pt
     \parsep 0pt
+
+\item [{\bf TBT\_kgrid\_Monkhorst\_Pack}] \index{TBT\_kgrid\_Monkhorst\_Pack@{\bf
+        TBT\_kgrid\_Monkhorst\_Pack}}
+\index{kgrid\_Monkhorst\_Pack@{\bf kgrid\_Monkhorst\_Pack}}
+({\it block}): Block equivalent
+to {\bf kgrid\_Monkhorst\_Pack}, however, this is used to have a separate
+k-sampling in the tbtrans utility. If it does not exist it will use 
+{\bf kgrid\_Monkhorst\_Pack}.
+
+\textbf{Notice}: \textbf{TBT\_kgrid\_Monkhorst\_Pack} can only be used with the version 
+created by NPA.
+
+{\it Default value:} {\bf kgrid\_Monkhorst\_Pack}
 
 \item [{\bf TS.TBT.Emin}]({\it physical}): Lowest energy value of the
   computed transmission function.  \index{TS.TBT.Emin@{\bf
@@ -6989,36 +7833,73 @@ specified by
     TS.TBT.Emax}.  \index{TS.TBT.NPoints@{\bf TS.TBT.NPoints}}
 
 {\it Default value:} {\tt 100}
+
+\item [{\bf TS.TBT.CalcElectrodeValenceBandBottom}]({\it logical}): 
+If true will calculate the valence band bottom of the electrode.
+
+\textbf{Notice}: Can only be used with the NPA version.
+
+{\it Default value:} {\tt true}
+
+\item [{\bf TS.TBT.COOP}]({\it logical}): Calculate the COOP on the PDOS region. 
+Creates the files:
+\begin{itemize}
+  \item \systemfile{.COOP}
+  \item \systemfile{.COOPL}
+  \item \systemfile{.COOPR}
+\end{itemize}
+
+\textbf{Notice}: Can only be used with the NPA version.
+
+{\it Default value:} {\tt false}
+
+\item [{\bf TS.TBT.AtomPDOS}]({\it logical}): Calculate the \emph{onsite} projected
+density of states in the PDOS region. Creates the files:
+\begin{itemize}
+  \item \systemfile{.TOTDOS}
+  \item \systemfile{.ORBDOS}
+\end{itemize}
+
+Notice, that this will not sum up to PDOS in \file{.TRANS}, as this is onsite density of
+states.
+
+\textbf{Notice}: Can only be used with the NPA version.
+
+{\it Default value:} {\tt false}
 \end{description}
 Note that it is important to specify the voltage, since this
-information is not stored in the .TSHS files. The current will be
+information is not stored in the \file{.TSHS} files. The current will be
 computed using the resulting transmission function, so be sure to make
 it suited for the integration in the bias window (the energy window
 defined by {\bf TS.TBT.Emin} and {\bf TS.TBT.Emax} being bigger than
 or equal to the applied bias).
 
-The k-point sampling is defined by the {\bf kgrid\_Monkhorst\_Pack}
-block. The averaged (over k-points) transmission function is printed
-in the file {\tt <SystemLabel>.AVTRANS}.
-
-The present version of the code is only parallelized over 
-k-points, so the number of nodes should not be bigger than 
-the number of k-points.
+The k-point sampling is defined by the {\bf TBT\_kgrid\_Monkhorst\_Pack}
+block, and if that is non-existing it will use the
+{\bf kgrid\_Monkhorst\_Pack} block. The averaged (over $k$-points)
+transmission function is printed in the file \systemfile{.AVTRANS}.
 
 An additional options is:
 \begin{description}
- \item [{\bf TS.TBT.NEigen}]({\it integer}): Number of eigenvalues of
-   the transmission matrix to be computed.  \index{TS.TBT.NEigen@{\bf
-       TS.TBT.NEigen}}
+  \item [{\bf TS.TBT.NEigen}]({\it integer}): Number of eigenvalues of the transmission
+  matrix to be computed. If larger than 0 \file{.TEIG} and \file{.AVTEIG} will be created
+  which holds the $k$-point eigenchannels and the averaged eigenchannels,
+  respectively. \index{TS.TBT.NEigen@{\bf TS.TBT.NEigen}}
 
 {\it Default value:} {\tt 0}
 \end{description}
 
 
 To summarize, here we give a list of the parameters read by {\tt
-  tbtrans} from the input file (the fdf flags):
+  tbtrans} from the input file (the fdf flags, NPA indicates the version
+created by Nick Papior Andersen):
 \begin{itemize}
+ \item {\bf ElectronicTemperature}
  \item {\bf TS.Voltage}
+ \item {\bf TS.TBT.ReUseGF} (NPA)
+ \item {\bf TS.UseBulkInElectrodes} (NPA)
+ \item {\bf TBT\_kgrid\_Monkhorst\_Pack} (block) has precedence of 
+ {\bf kgrid\_Monkhorst\_Pack} (NPA)
  \item {\bf kgrid\_Monkhorst\_Pack} (block)
  \item {\bf TS.HSFileLeft}
  \item {\bf TS.HSFileRight}
@@ -7027,19 +7908,52 @@ To summarize, here we give a list of the parameters read by {\tt
  \item {\bf TS.TBT.Emax} 
  \item {\bf TS.TBT.NPoints}
  \item {\bf TS.TBT.NEigen}
- \item {\bf TS.BufferAtomsLeft}
- \item {\bf TS.BufferAtomsRight}
- \item {\bf TS.NumUsedAtomsLeft}
- \item {\bf TS.NumUsedAtomsRight}
+ \item {\bf TS.TBT.CalcIEig}
+ \item {\bf TS.TBT.PDOSFrom}
+ \item {\bf TS.TBT.PDOSTo}
+ \item {\bf TS.TBT.COOP} (NPA)
+ \item {\bf TS.TBT.AtomPDOS} (NPA)
+ \item {\bf TS.TBT.CalcElectrodeValenceBandBottom} (NPA)
+ \item {\bf TS.BufferAtomsLeft}, {\bf TS.BufferAtomsRight}
+ \item {\bf TS.NumUsedAtomsLeft}, {\bf TS.NumUsedAtomsRight}
+ \item {\bf TS.ReplicateA1Left}, {\bf TS.ReplicateA2Left} (NPA)
+ \item {\bf TS.ReplicateA1Right}, {\bf TS.ReplicateA2Right} (NPA)
  \item {\bf SpinPolarized}
 \end{itemize}
 
+\subsubsection{Output}
+
+\texttt{tbtrans} generates several output files.  The output files are named {\tt
+    <SystemLabel>.\emph{ext}}, defined using the SystemLabel FDF command, and .\emph{ext}
+depends on the type of the output.
+
+\begin{description}
+    \itemsep 10pt
+    \parsep 0pt
+    
+    \item[\systemfile{.TRANS}]: The transmission for each $k$ point,
+    as well as the total density of states in the scattering region and the projected
+    density of states for all orbitals in the region specified by \fdf{TS.TBT.PDOSFrom}
+    and \fdf{TS.TBT.PDOSTo}.
+
+    \item[\systemfile{.AVTRANS}]: The $k$ point averaged
+    transmission and density of states according to \file{.TRANS}.
+
+    \item[\systemfile{.LDOS}]: The $k$ point averaged and energy weighted density of states of
+    the left electrode.
+
+    \item[\systemfile{.RDOS}]: The $k$ point averaged and energy weighted density of states of
+    the right electrode.
+
+\end{description} 
+
 \subsubsection{Compiling TBTtrans}
 
-In the {\tt Util/TBTrans} directory, simply type {\tt make} if your
-main {\sc Siesta} compilation directory is the top {\tt Obj}
-directory. If you have used another object directory {\tt MyObjDir},
-type {\tt make OBJDIR=MyObjDir}.
+In the {\tt Util/TBTrans} or \texttt{Util/TBTrans\_rep} (for the NPA version)
+ directory, 
+simply type {\tt make} if your main {\sc Siesta} compilation 
+directory is the top {\tt Obj} directory. If you have used another
+ object directory {\tt MyObjDir}, type {\tt make OBJDIR=MyObjDir}.
 
 \section{ANALYSIS TOOLS}
 
@@ -7055,14 +7969,14 @@ python scripting framework built on top of the 'Atomic Simulation
 Environment' (see {\tt https://wiki.fysik.dtu.dk/ase2}) by the Campos
 group at DTU, Denmark.
 
-(NOTE: "ASE version 2", not the new version 3, is needed)
+(NOTE: ``ASE version 2'', not the new version 3, is needed)
 
 There are objects implementing the "Siesta as server/subroutine" feature, and
 also hooks for file-oriented-communication usage. This interface is
 different from the {\sc Siesta}-specific functionality already
 contained in the ASE framework.
 
-Users can create their own scripts to customize the "outer geometry loop"
+Users can create their own scripts to customize the ``outer geometry loop''
 in Siesta, or to perform various repetitive calculations in compact form.
 
 Note that the interfaces in this framework are still evolving and are
@@ -7135,51 +8049,10 @@ diagonalisation.
 
 \section{REPORTING BUGS}
 \index{bug reports} Your assistance is essential to help improve the
-program. If you find any problem, please report it back to us by email
-to {\tt siesta@uam.es}. Please keep in mind the following guidelines:
+program. If you find any problem, or would like to offer a suggestion
+for improvement, please follow the instructions in the file {\tt
+  Docs/REPORTING\_BUGS}
 
-\begin{itemize}
-
-\item To be useful, bug reports should be as detailed as possible, yet
-concise and to the point.
-
-\item Describe the exact steps you followed to see the problem. You
-  might want to include a copy of the fdf file you used in the
-  calculation, details about the pseudopotentials, etc, or provide a
-  means for us to download the information. If in doubt, do not send large
-  files. State the problem in the most concise form possible and we
-  will request more info from you.
-
-\item Be specific. Describe what happened and how it differs from what
-  should have happened.
-
-\item If you have any idea about how to fix the problem, by all means
-tell us!
-
-\item Please make sure that your bug report includes:
-
-\begin{itemize}
-
-\item Your name and email address.  This is essential for a proper
-followup of the problem.
-
-\item A brief one-line synopsis of the problem.
-
-\item The {\sc Siesta} version in which the problem was found. We
-  can't assume that you have the very latest version, and a problem
-  that exists in one version may not exist in another. Use the version
-  number printed at the top of any output file (also found in file
-  {\tt version.info} in the top directory).
-
-\item The platform on which the problem was found, and the operating
-  system and compiler version. State whether the problem appears in a
-  serial and/or parallel run. Including your arch.make is also a good idea.
-
-\end{itemize}
-
-\item Please limit your communication to one bug report per form or message.
-
-\end{itemize}
 
 \section{ACKNOWLEDGMENTS}
 
@@ -7388,7 +8261,7 @@ To be able to generate NetCDF files in {\sc Siesta}, the public domain
 NetCDF library (V. 3.6.12 or higher recommended) must be installed. It can be
 downloaded from
 
-{\tt http://www.unidata.ucar.edu/software/netcdf/}.
+\url{http://www.unidata.ucar.edu/software/netcdf/}.
 
 In the {\tt arch.make} file, the following information must exist:
 \begin{verbatim}
@@ -7401,6 +8274,12 @@ DEFS_CDF=-DCDF
 {\tt INCFLAGS} may be set directly). See examples in the Src/Sys
 directory, and {\tt Src/Sys/DOCUMENTED-TEMPLATE.make}.
 
+In NetCDF versions above 4 the FORTRAN library has been separated 
+from the C. Thus you need
+\begin{verbatim}
+NETCDF_LIBS=-L/path/to/netcdf/library/directory -lnetcdf -lnetcdff
+\end{verbatim}
+instead.
 
 ({\sc Siesta} used to include an old f90 interface to NetCDF in the
 Src/NetCDF directory. Current versions of NetCDF now come with their
@@ -7485,6 +8364,10 @@ if the size of the domains is greater than the Wannier function radius and
 the range of matrix elements in the Hamiltonian. In order to achieve load
 balance, it may be advantageous to use smaller domain sizes. The domain
 size can be controlled through the {\bf RcSpatial} option.
+
+(A new option for domain decomposition, based on an abstract
+partitioning of the interaction graph associated to the Hamiltonian,
+has been added as of version 3.1.)
 
 In the current implementation of the domain decomposition parallelisation,
 both the local elements of the orbital coefficients in the Wannier functions
@@ -7705,8 +8588,7 @@ and resources can be found at \url{http://cmlcomp.org/} and tools for working
 with the XML file can be found in the \texttt{Util/CMLComp} directory.
 
 As of June 2009, the engine for CML output production is a subset of
-the FoX library\index{FoX XML library} (see {\tt
-  http://www.uszla.me.uk/FoX}).
+the FoX library\index{FoX XML library} (see \url{http://www.uszla.me.uk/FoX}).
 
 The main motivation for standarised XML (CML) output is as a step
 towards standarising formats for uses like the following.

@@ -17,7 +17,7 @@
 VPATH:=$(shell pwd)/../../Src
 OBJDIR=Obj
 #
-all: mprop dm_creator
+all: mprop dm_creator fat
 #
 include ../../$(OBJDIR)/arch.make
 #
@@ -32,6 +32,8 @@ INCFLAGS:=$(INCFLAGS) $(NETCDF_INCFLAGS)
 #
 MPROP_OBJS=m_getopts.o f2kcli.o subs.o precision.o units.o \
            io.o sys_local.o read_curves.o io_hs.o orbital_set.o main_vars.o
+FAT_OBJS=m_getopts.o f2kcli.o subs.o precision.o units.o \
+           io.o sys_local.o read_curves.o io_hs.o orbital_set.o main_vars.o
 DM_OBJS=m_getopts.o f2kcli.o subs.o precision.o units.o \
            io.o sys_local.o iodm_netcdf.o io_hs.o  main_vars.o write_dm.o
 #
@@ -41,9 +43,11 @@ dep:
 	sfmakedepend --depend=obj --modext=o *.f *.f90 *.F *.F90
 #
 mprop: $(MPROP_OBJS) mprop.o
-	$(FC) -o $@ $(MPROP_OBJS) mprop.o
+	$(FC) -o $@ $(LDFLAGS) $(MPROP_OBJS) mprop.o
+fat: $(FAT_OBJS) fat.o
+	$(FC) -o $@ $(LDFLAGS) $(FAT_OBJS) fat.o
 dm_creator: $(DM_OBJS) dm_creator.o
-	$(FC) -o $@ $(DM_OBJS) dm_creator.o $(NETCDF_LIBS)
+	$(FC) -o $@ $(LDFLAGS) $(DM_OBJS) dm_creator.o $(NETCDF_LIBS)
 #
 clean:
 	rm -f *.o *.mod mprop  dm_creator
@@ -63,3 +67,4 @@ read_curves.o: orbital_set.o precision.o
 subs.o: precision.o
 units.o: precision.o
 write_dm.o: precision.o sys_local.o
+fat.o: mprop.o

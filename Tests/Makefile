@@ -29,7 +29,7 @@ REFERENCE=../../ref-version/Tests
 #
 label=work
 #
-ALL= h2o h2o_reparam h2o_basis h2o_dos h2o_orderN			\
+ALL=  h2o h2o_reparam h2o_basis h2o_dos h2o-pop		\
        floating benzene bessel mgc-force mgco3 si2x1h force_2 born born_spin	\
        var_cell constant_volume batio3 fe fe_broyden sih si64		\
        h2oZ sih_op_broyden h2o_op_broyden zmatrix md_pr md_npr		\
@@ -37,11 +37,9 @@ ALL= h2o h2o_reparam h2o_basis h2o_dos h2o_orderN			\
        graphite_c6 oxyn partial h2o_findp_bug h2o_radialgrid ag ch4	\
        si_coop born pb_filter_cutoff pb_filter_tol fire_benzene		\
        fe_clust_noncollinear h_chain n_chain si64_coop si_pdos_kgrid    \
-       si2x1h-dipole ar2_vdw graphite_vdw_df 
+       si2x1h-dipole ar2_vdw graphite_vdw_df sic-slab si-optical OMM_si \
+       OMM_h2o
 #
-# TranSIESTA
-#
-TS= ts_fast
 #
 #  Need to add the new tests and generate the reference outputs and xml files.
 #
@@ -51,18 +49,8 @@ all:
 	 $(MAKE) -C $$dir completed; \
 	done
 
-ts:
-	@for dir in $(TS); do\
-	 $(MAKE) -C $$dir completed; \
-	done 
-
 clean:
 	@for i in $(ALL) ; do \
-		(cd $$i ; make clean) ; \
-	done
-
-clean_ts:
-	@for i in $(TS) ; do \
 		(cd $$i ; make clean) ; \
 	done
 #

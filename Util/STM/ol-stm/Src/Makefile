@@ -16,8 +16,8 @@
 #  
 #------------- NOTE
 # Special needs for the use of FFTW
-# You must set these symbols properly, either here or in your
-# top arch.make
+# You must set these symbols properly, either here or 
+# (better) in your top arch.make
 #
 #FFTW_ROOT=$(HOME)/lib/fftw-ifort
 #FFTW_INCFLAGS= -I$(FFTW_ROOT)/include
@@ -60,7 +60,7 @@ what:
 	@echo
 	@echo "Hit ^C to abort..."
 	@if [ -z "$(FFTW_LIBS)" ] ; then \
-           echo "You must set the FFTW symbols in Makefile" ; \
+           echo "You must set the FFTW symbols in your arch.make" ; \
            false ; \
         fi
 	@sleep 2
@@ -98,6 +98,8 @@ $(FDF):
 MOD_OBJS=precision.o parallel.o sys.o m_io.o alloc.o memoryinfo.o listsc.o  \
          atmparams.o atom_options.o atmfuncs.o   atm_types.o \
          radial.o spher_harm.o  basis_io.o basis_types.o \
+         domain_decom.o schecomm.o printmatrix.o qsort.o mmio.o pspltm1.o lenstr.o \
+         sparse_matrices.o \
          files.o flib_spline.o pseudopotential.o chemical.o xml.o
 #
 COM_OBJS_STM=$(OBJS_STM) $(SYSOBJ)
@@ -195,6 +197,8 @@ diagsprl.o: atomlist.o fermid.o parallel.o parallelsubs.o precision.o
 diagsprl.o: siesta_geom.o sys.o
 dipole.o: parallel.o precision.o sys.o
 dnaefs.o: atmfuncs.o mneighb.o precision.o
+domain_decom.o: alloc.o parallel.o precision.o printmatrix.o schecomm.o
+domain_decom.o: sparse_matrices.o sys.o
 dynamics.o: atomlist.o files.o ioxv.o m_mpi_utils.o parallel.o precision.o
 dynamics.o: sys.o units.o
 efield.o: atmfuncs.o parallel.o parallelsubs.o parsing.o precision.o

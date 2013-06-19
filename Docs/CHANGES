@@ -6,6 +6,1857 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2013-06-10  14:20:00 GMT                                     trunk-438
+Bug fixes in constraints routine
+
+* Make sure that the atomic indices are in the correct range.
+
+* Add code to guarantee the enlargement of an array in the
+general case.
+
+(Thanks to Nick P. Andersen)
+
+modified:
+  Src/fixed.F
+
+-----------------------------------------------------------------------
+2013-06-10  14:10:00 GMT                                     trunk-437
+New option for KB projector generation (J. Junquera)
+
+With the option
+
+KB.New.Reference.Orbitals  T
+
+the routine to generate KB projectors will use slightly different
+parameters for the construction of the reference orbitals involved
+(Rmax=60 bohr both for integration and normalization).
+
+modified:
+  Docs/siesta.tex
+  Src/atom.F
+  Src/atom_options.F90
+
+-----------------------------------------------------------------------
+2013-06-05  13:00:00 GMT                                     trunk-436
+Charge confinement and filteret basis generation options
+
+Two experimental features related to basis-set generation:
+
+* Charge confinement feature for basis set generation
+(Emilio Artacho)
+
+Present soft confinement produces bad polarisation orbitals if the
+original atomic orbitals are unbound or very wide (automatic
+polarisation still gives too wide orbitals).
+
+A Q/r potential with Yukawa decay can now be added to the atomic and
+soft-confinement potentials. Soft-confinement sshould now be used only
+for the soft tail cutting with r_in ~ 0.9 r_c.
+
+See the manual for more details.
+
+* New 'filteret' basis-set scheme.  
+(Julian Gale)
+
+New options to use the filterets (functions appearing in the filtering
+mechanism proposed by Anglada and Soler) as a systematic basis
+set. The size of the basis set is controlled by the filter cut-off for
+the orbitals.  
+
+See the manual for more details.
+
+(Thanks to Tristana Sondon for help in merging)
+
+added:
+  Tests/Reference/chargeconf-h2o.out
+  Tests/Reference/h2o_filteret_basis.out
+  Tests/chargeconf-h2o/
+  Tests/chargeconf-h2o/chargeconf-h2o.fdf
+  Tests/chargeconf-h2o/chargeconf-h2o.pseudos
+  Tests/chargeconf-h2o/makefile
+  Tests/h2o_filteret_basis/
+  Tests/h2o_filteret_basis/h2o_filteret_basis.fdf
+  Tests/h2o_filteret_basis/h2o_filteret_basis.pseudos
+  Tests/h2o_filteret_basis/makefile
+modified:
+  Docs/siesta.tex
+  Src/atm_transfer.f
+  Src/atm_types.f
+  Src/atmparams.f
+  Src/atom.F
+  Src/basis_specs.f
+  Src/basis_types.f
+  Src/initatom.f
+  Src/m_filter.f90
+  Src/old_atmfuncs.f
+
+-----------------------------------------------------------------------
+2013-06-05  12:40:00 GMT                                     trunk-435
+Compilation fixes for tbtrans. Cosmetic changes
+
+The old symbol "DAT_double" was still being used in one of the
+routines of the new tbtrans program (in Util/TBTrans_rep).  References
+related to new timer_tree module were missing in both versions of
+tbtrans.
+
+In parallel operation, the "bye" routine now produces output only
+in the master node.
+
+In runs which are requested to end after the initial processing of
+the structure, XMOL output is produced if requested.
+
+modified:
+  Src/siesta_init.F
+  Src/sys.F
+  Util/TBTrans/Makefile
+  Util/TBTrans_rep/Makefile
+  Util/TBTrans_rep/m_tbt_iotshs.F90
+  Util/TBTrans_rep/m_tbt_read_tshs.F90
+
+-----------------------------------------------------------------------
+2013-03-31  19:00:00 GMT                                     trunk-434
+Experimental timer with call-tree awareness
+
+A new timer, based on wall time in the master node, and keeping track
+of the tree-structure of the timed sections, can be enabled by setting
+
+UseTreeTimer T
+
+in the fdf file.
+
+It works in tandem with the default timer, and it currently produces a
+report at the end of the output file in which the parent-child
+relationships are represented by simple indentation.
+
+Some new timing calls have been added in the code.
+
+added:
+  Src/die.F
+  Src/timer_tree.f90
+modified:
+  Src/Makefile
+  Src/SiestaXC/makefile
+  Src/fft.F
+  Src/m_hsx.F
+  Src/m_iodm.F
+  Src/m_timer.F90
+  Src/m_walltime.f90
+  Src/matel.f
+  Src/molecularmechanics.F90
+  Src/setup_H0.F
+  Src/setup_hamiltonian.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/timer.F90
+
+
+-----------------------------------------------------------------------
+2013-03-26  12:35:00 GMT                                      trunk-433
+Implemented the non-O(N) version of the Ordejon-Mauri functional
+
+(Work by Fabiano Corsetti)
+
+* This re-implementation of Ordejon-Mauri will be referred to as the Orbital
+  Minimization Method (OMM); it is now a third available option for the keyword
+  SolutionMethod, alongside diagon and OrderN.
+* The OMM is not an O(N) functional at present, since no localization is imposed
+  on the trial orbitals; in future, it can be extended to include this option
+* The functional is contained in two new modules: m_dminim (double
+  precision routines) and m_zminim (double complex routines)
+* The modules works in serial with LAPACK, or in parallel with MPI and
+  ScaLAPACK
+* The double precision module (for Gamma point calculations) has the option of
+  using sparse matrix-dense matrix multiplications, with custom-coded algorithms
+  that interface between SIESTA's native sparse matrix scheme and (Sca)LAPACK's
+  dense matrix scheme
+* The SIESTA manual has been updated to include a list of all OMM-related
+  keywords, with detailed explanations and notes to the user
+
+added:
+  Docs/CHANGES.minim
+  Src/m_dminim.F90
+  Src/m_zminim.F90
+  Tests/OMM_h2o/
+  Tests/OMM_h2o/Makefile
+  Tests/OMM_h2o/OMM_h2o.fdf
+  Tests/OMM_h2o/OMM_h2o.pseudos
+  Tests/OMM_si/
+  Tests/OMM_si/Makefile
+  Tests/OMM_si/OMM_si.fdf
+  Tests/OMM_si/OMM_si.pseudos
+  Tests/Reference-xml/OMM_h2o.xml
+  Tests/Reference-xml/OMM_si.xml
+  Tests/Reference/OMM_h2o.out
+  Tests/Reference/OMM_si.out
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/compute_dm.F
+  Src/local_DOS.F
+  Src/post_scf_work.F
+  Src/projected_DOS.F
+  Src/siesta_analysis.F
+  Src/siesta_options.F90
+  Src/write_subs.F
+  Tests/Makefile
+
+-----------------------------------------------------------------------
+2013-01-24  14:30:00 GMT                                      trunk-432
+Export some MPI symbols explicitly. Remove obsolete symbols
+
+Author: A. Garcia
+
+Some PGI compilers do not consider symbols public by default
+when they are inherited through a chain of module 'uses'. This
+affected in particular some MPI symbols in the mpi_siesta module.
+The symbols are now made 'public' explicitly.
+
+The symbols DAT_single, DAT_double, etc, which were necessary to
+deal with machines (old Crays) with different meanings for single
+and double precision, have now been removed from the MPI interface
+modules. They still appear in some routines as aliases for imports.
+
+modified:
+  Src/MPI/mpi.F
+  Src/MPI/mpi_siesta.f90
+  Src/m_glob_sparse.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_in_siesta.F
+  Src/m_ts_scattering.F
+
+-----------------------------------------------------------------------
+2013-01-21  11:15:00 GMT                                      trunk-431
+Fix possible problems in temporary file name
+
+Author: A. Garcia
+
+The name of the temporary file used to dump the contents of the fdf file
+could be malformed in certain situations. The algorithm has now been
+changed.
+
+(Thanks to Romuald Carpentier)
+
+(+ Remove fossil DEBUG sections)
+
+modified:
+  Src/reinit.F
+
+-----------------------------------------------------------------------
+2013-01-21  10:45:00 GMT                                      trunk-430
+Rationalize fdf logging and debugging
+
+Author: A. Garcia
+
+In runs with many processors, the default logging behavior was affecting
+performance. The policy is now as follows.
+
+* Debugging and logging.
+
+By default, all the fdf requests are logged, printing the final value
+extracted (if it is the default value, it is identified as such).
+In MPI operation, only the master node does the logging, unless the
+"output-level" is set to a value >= 2. This can be done directly in
+the fdf file:
+
+fdf-output 2  # Turn on logging for all nodes
+fdf-output 0  # Turn off logging completely
+
+No debugging is done, unless the "debug-level" is set to a value greater
+than zero. The most meaningful way to use this feature is to set the
+debugging level before the fdf data structures are built. This can be
+achieved by calling the routine fdf_setdebug with the appropriate level
+and file name *before* the call to fdf_init.  This gives full control
+over the behavior. This is not currently used in Siesta.
+
+Alternatively, if the library is compiled with the pre-processor symbol
+FDF_DEBUG defined, it will set the debug level to 2 (exhaustive) for all
+nodes in the system. (It will also set the output level to 2 (all nodes)).
+
+If the debugging level (>=2) is only specified in the fdf file itself,
+the library will provide a print-out of the final data structure generated
+(in all nodes).
+
+fdf-debug 2
+
+(+ Support for FDF_DEBUG in the Makefile)
+(+ Cosmetic improvement to the numerical field in the log files)
+
+modified:
+  Src/Makefile
+  Src/fdf/fdf.F90
+  Src/fdf/fdf.Standard
+  Src/reinit.F
+
+-----------------------------------------------------------------------
+2013-01-18  10:30:00 GMT                                      trunk-429
+JobList utility to organize and run multiple jobs 
+
+Author: J. Soler
+
+The JobList directory contains utilities to organize, to run or queue,
+and to collect results of multiple siesta jobs. It is particularly
+suited for preliminary convergence tests, and it uses only fortran
+codes and minimal shell scripts.
+  
+added:
+  Util/JobList/
+modified:
+  Src/siesta_end.F
+  Src/siesta_init.F
+  Util/README
+-----------------------------------------------------------------------
+2012-12-13  17:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-428
+Bugfix in spin calculations for TBTrans_rep
+
+(This fixes a problem in the new TBtrans by N.P. Andersen)
+
+* The current and the averaged arrays were not initialized correctly
+  for the case of spin:
+
+  - TAv, TEigAv, TDOSAv, PDOSAv, Current
+  
+modified:
+  Util/TBTrans_rep/tbtrans.F90
+
+-----------------------------------------------------------------------
+2012-12-10  09:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-427
+More fixes and tests for new transiesta/tbtrans_rep code
+
+Several new bug fixes and clarifications have been added to the new
+TranSiesta/TBTrans code, as well as more tests. Be sure to see the file
+Docs/TranSiestaUpdate.pdf for information about the new features and
+behavior changes.
+
+* Added deallocation routine to glob_sparse module
+* Added preliminary code for doing calculations in TBtrans without
+  inner cell distances (for now this has no importance but provides
+  a stepping stone for future development)
+* Bugfix for 'forces' run (bcast of coordinates was not performed)
+* Wrap mulliken-charges message in MPI runs
+
+* Added new test cases:
+
+  - The voltage test case au_111_capacitor sometimes exhibits problems of 
+    accuracy, dependent on compiler and execution options, due to the small
+    conductance. More rigorous tests have been added:
+
+    + ts_au_100
+    + ts_au_100_repetition
+    + ts_au_100_0.25V
+    + ts_au_100_repetition_0.25V
+
+    which optionally exercise both the new "repetition" option and the
+    applied bias. They are based on an Au-chain in between gold 100 surfaces.
+    
+  - These tests are quite large and thus take a significant amount of CPU 
+    time. They might not be needed if the old tests still perform well and
+    the outputs agree with those in the Tests/Reference.
+
+added:
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100/
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_0.25V/
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition/
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/
+  Tests/TranSiesta-TBTrans/ts_au_100/
+  Tests/TranSiesta-TBTrans/ts_au_100_0.25V/
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition/
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/
+modified:
+  Docs/TranSiestaUpdate.pdf
+  Src/iopipes.F90
+  Src/m_glob_sparse.F90
+  Src/m_hs_matrix.f90
+  Src/m_ts_electrode.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_in_siesta.F
+  Src/mixer.F
+  Src/ts_init.F90
+  Util/TBTrans_rep/m_tbt_options.F90
+  Util/TBTrans_rep/tbtrans.F90
+
+
+-----------------------------------------------------------------------
+2012-11-20  09:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-426
+Bug fixes for new transiesta/tbtrans_rep code
+
+Several bug fixes and clarifications have been added to the new
+TranSiesta/TBTrans code. Be sure to see the file
+Docs/TranSiestaUpdate.pdf for information about the new features and
+behavior changes.
+
+* Corrected the DOS calculations with spin factors
+* Bugfix for units in AtomPDOS and COOP calculations (TBtrans_rep)
+* Renamed FDF-option TS.ReUseGF to TS.TBT.ReUseGF (TBtrans_rep)
+* Fixed options not being seen (TS.TBT.CalcIEig)
+* Added all output files to the documentation
+* Added Header information for all TBtrans_rep data files
+* Added dummy routine in m_glob_sparse for non-MPI compilations
+* Avoid f2003 features for pointer handling
+* Use alloc module in m_hs_matrix
+* Handling of FDF-log files corrected in TBtrans_rep (late merge)
+
+modified:
+  Docs/TS-npa.CHANGES
+  Docs/TranSiestaUpdate.pdf
+  Docs/siesta.tex
+  Src/Makefile
+  Src/m_glob_sparse.F90
+  Src/m_hs_matrix.f90
+  Src/m_ts_contour.f90
+  Src/m_ts_electrode.F90
+  Src/m_ts_gf.F90
+  Src/ts_init.F90
+  Util/TBTrans_rep/atompdos.F90
+  Util/TBTrans_rep/coop.F90
+  Util/TBTrans_rep/m_tbt_options.F90
+  Util/TBTrans_rep/m_tbt_out.f90
+  Util/TBTrans_rep/tbt_reinit.F90
+  Util/TBTrans_rep/tbtrans.F90
+
+-----------------------------------------------------------------------
+2012-11-14  18:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-425
+Use scratch fdf log files for non-master nodes
+
+Unless the FDF_DEBUG preprocessor compilation option is in effect,
+non-master nodes in MPI operation do not use named log files. Instead,
+they use "scratch" files which the operating system opens in
+appropriate places.  This will reduce clutter.
+
+(Note that this feature is in general dangerous if the files are
+large, as they can inadvertently fill up filesystems or otherwise
+create havoc. However, the fdf log files are quite small.)
+
+(Contributed by Nick P. Andersen)
+
+(+ rearranged the statements that update INCFLAGS in the fdf
+makefile. This could trap some incorrect settings of this variable in
+the top arch.make)
+
+modified:
+  Src/fdf/fdf.F90
+  Src/fdf/makefile
+
+-----------------------------------------------------------------------
+2012-10-31   9:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-424
+Bug fixes for array bounds 
+
+There were array bounds problems in:
+
+- The new code to print the initial spin polarization, for the case
+  of non-collinear spin.
+
+- The 'transition_rate' routine: ek and ek_local were wrongly
+  dimensioned to no_l, instead of no_u.
+
+- The mesh1d file in SiestaXC
+
+(+ removed old debugging code in 'domain_decomposition')
+
+modified:
+  Src/domain_decom.F
+  Src/new_dm.F
+  Src/transition_rate.F
+  Src/SiestaXC/mesh1d.f90
+
+-----------------------------------------------------------------------
+2012-10-30   9:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-423
+Transiesta and TBTrans enhancements by Nick P. Andersen
+
+A number of enhancements to the TranSiesta and TBTrans subsystems have
+been added by Nick Papior Andersen, of the Technical Univ. of Denkmark.
+
+A full list of the changes follows. Users are advised to read the file
+Docs/TranSiestaUpdate.pdf, as well as the manual, to get a primer on
+the new features and things to watch out for and explore in the new
+version.
+
+* Added the repetition of the electrode unit cells to limit the Transiesta
+  calculation time.
+  - Through the options:
+    + TS.ReplicateA1Left
+    + TS.ReplicateA2Left
+    + TS.ReplicateA1Right
+    + TS.ReplicateA2Right
+  - We take advantage of Bloch's theorem to accomplish this.
+
+* All contour related variables have been assigned a contour type which 
+  gathers the information about the energy points. This will provide a cleaner
+  interface for those wishing to extend the contour method.
+
+* Changed the contour energy points to be shown in eV, rather than Ry
+  - I.e. they can not be compared in the out-file directly
+
+* Simplified the contour distribution so as to not have any parallel arrays
+
+* The surface Green's function files are now created during option reading
+  This accomodates two important things:
+  1. The GF files are now entirely moved out of the transiesta routine for
+     clarity,
+  2. Any wrong setup of the system will be caught immediately instead of after
+     the diagon run.
+
+* The GF files have been renamed using <systemlabel>.TSGF[L|R]
+
+* Added proper checks of the atomic coordinates when using the electrodes,
+  will now exit if not correctly setup. (checks down to 1e-4)
+
+* Added checks of the unit cell setup, so that in transiesta runs the
+  unitcell must have a distinct z-direction 
+
+* Added checks of the electrodes to show a warning if the electrodes extend
+  into a third neighbouring cell in the transport direction.
+
+* Clarified the fermi level in the electrodes, it was in fact the electrode
+  fermi level shift
+
+* Added a lot of systematic output for clarification about the Transiesta
+  parsing of the system. It will provide how the systems are setup in buffer
+  regions, electrode region and scattering region.
+
+* Informational output regarding the charge re-distribution during the SCF 
+  cycles.
+
+* Fully parallelized the Greens function creation.
+
+* Bugfix in the Transiesta package regarding the DM.UseSaveDM T
+
+* Added a general operator which yields the parallelised number of iterations
+  of an arbitrary loop (.PARCOUNT.), see parallel.F90
+
+* Memory-optimized several routines in the transiesta package
+
+* GFGammaGF has recieved an overhaul which speeds it up by a factor of two 
+  and limits memory substantially!
+
+* Renamed <systemlabel>.CONTOUR to <systemlabel>.TSCC
+
+* Added a ts_init routine for gathering of the required initializations
+
+* Added notices to users about the use of non-optimal energy points in 
+  transiesta runs.
+
+* In case of electrodes not matching with the Transiesta setup it will print
+  out a high-precision block which can be used for the FDF block.
+
+* Added 'chargecorrection' feature, maybe not exact enough to be used,
+  however, it can be used to force the charges to be "correct"
+
+* Changed the Transiesta k-points to be written to file <systemlabel>.TSKP
+  instead of overwriting the <systemlabel>.KP
+
+* Cleaned up a lot of code in all transiesta modules. 
+  One can still clean up some more code, however, we have made good ground.
+
+* Added a precision for transiesta in precision.F90
+  - Currently not used, however, could be the future of limiting Transiesta memory  
+
+* Added -DTRANSIESTA_DEBUG statements to also debug Transiesta
+
+* Added a new TBTrans utility which can be found in Util/TBTtrans_rep
+  - Fully parallel across energy points and forward parallel across k-points
+  - This is tightly integrated with transiesta
+  - Has all the features in Transiesta (parallel GF creation, repetition, etc.)
+  - Has reenabled the calculation of Atomic PDOS
+    + Needs to be checked
+  - Has reenabled the calculation of COOP
+    + Needs to be checked
+  - Prepared to automatically add flags for user defined formats.
+  - The GF files have been renamed using <systemlabel>.TBTGF[L|R]
+  - The regions output also shows which atoms are in the PDOS region
+  - Added a tbt_kgrid_Monkhorst_Pack block which is only read by TBtrans,
+    if it does not exist, it will read kgrid_Monkhorst_Pack instead.
+
+* Bugfix in Tests/script_ts to be able to use bash
+
+* Added a new test:
+  - Tests/TranSiesta-TBTrans/ts_au_repetition/
+    This will default to use the new TBTrans_rep code.
+
+*** General SIESTA changes:
+
+* Added a new fdf option MinSCFIterations to prevent the second iteration
+  jump in MD simulations.
+
+* Increased the width of the output field for dDmax, to improve
+  the monitoring of the convergence of the density matrix.
+
+* Added IPO flags for the Makefile to be able to abstract from that.
+  Libraries should not be compiled with IPO for obvious reasons.
+* Bugfix in the configure command upon checking the NetCDF linking (netcdf
+  is now generally a two library linking, which requires "-marks)
+* Added 'obsolete' and 'deprecated' keys for the FDF library
+
+* For creating the Hamiltonian at various k-points new modules have been added:
+  - m_hs_matrix.f90 
+    + Used to generate a square (dense) matrix from the sparse matrix.
+      Supplying a k-point will create the equivalent k-point Hamiltonian
+    + One can also use this to acquire the transfer matrices
+    + Symmetrizing the hamiltonian and trimming it is also enabled.
+  - m_glob_sparse.f90
+    + Will globalize any arrays which are distributed in SIESTA mpi runs
+    + Used in MPIruns in combination with m_hs_matrix.
+
+* Added a makefile for the manual (make siesta, make final, make extra)
+* Added hyperref to the manual
+
+* Added note about GCC 4.7.1 not being compatible with the forces type run,
+  they have disregarded the piped files in the compiler. Revert to GCC 4.6
+  or older.
+
+removed:
+  Docs/siesta.ind
+  Src/m_ts_contour.F
+added:
+  Docs/Makefile
+  Docs/TS-npa.CHANGES
+  Docs/TranSiestaUpdate.pdf
+  Src/kpoint_convert.f90
+  Src/m_glob_sparse.F90
+  Src/m_hs_matrix.f90
+  Src/m_ts_cctype.f90
+  Src/m_ts_contour.f90
+  Src/m_ts_gf.F90
+  Src/m_ts_voltage.F90
+  Src/ts_init.F90
+  Src/ts_show_regions.f90
+  Tests/Reference/TranSiesta-TBTrans/ts_au_repetition/
+  Tests/Reference/TranSiesta-TBTrans/ts_au_repetition/au_111_capacitor.AVTRANS
+  Tests/Reference/TranSiesta-TBTrans/ts_au_repetition/au_111_capacitor.TEIG
+  Tests/Reference/TranSiesta-TBTrans/ts_au_repetition/au_111_capacitor.TRANS
+  Tests/Reference/TranSiesta-TBTrans/ts_au_repetition/au_111_capacitor.out
+  Tests/Reference/TranSiesta-TBTrans/ts_au_repetition/elec_au_111_abc.out
+  Tests/Reference/TranSiesta-TBTrans/ts_au_repetition/tbt_au_111_capacitor.out
+  Tests/TranSiesta-TBTrans/ts_au_repetition/
+  Tests/TranSiesta-TBTrans/ts_au_repetition/Au.psf
+  Tests/TranSiesta-TBTrans/ts_au_repetition/au_111_capacitor.fdf
+  Tests/TranSiesta-TBTrans/ts_au_repetition/elec_au_111_abc.fdf
+  Tests/TranSiesta-TBTrans/ts_au_repetition/makefile
+  Tests/TranSiesta-TBTrans/ts_au_repetition/script.sh
+  Util/TBTrans_rep/
+  Util/TBTrans_rep/Makefile
+  Util/TBTrans_rep/atompdos.F90
+  Util/TBTrans_rep/coop.F90
+  Util/TBTrans_rep/m_lowdin.f90
+  Util/TBTrans_rep/m_tbt_iotshs.F90
+  Util/TBTrans_rep/m_tbt_kpoints.F90
+  Util/TBTrans_rep/m_tbt_options.F90
+  Util/TBTrans_rep/m_tbt_out.f90
+  Util/TBTrans_rep/m_tbt_read_tshs.F90
+  Util/TBTrans_rep/tbt_init.F90
+  Util/TBTrans_rep/tbt_reinit.F90
+  Util/TBTrans_rep/tbtrans.F90
+  Util/TBTrans_rep/transmission.f90
+  Util/TBTrans_rep/tt_eig.f90
+modified:
+  Docs/README
+  Docs/siesta.tex
+  Src/MPI/Makefile
+  Src/Makefile
+  Src/compute_dm.F
+  Src/configure
+  Src/dhscf.F
+  Src/diagkp.F
+  Src/fdf/fdf.F90
+  Src/m_ts_aux_rout.F
+  Src/m_ts_electrode.F90
+  Src/m_ts_in_siesta.F
+  Src/m_ts_io.F90
+  Src/m_ts_kpoints.F90
+  Src/m_ts_options.F90
+  Src/m_ts_scattering.F
+  Src/parallel.F
+  Src/precision.F
+  Src/scfconvergence_test.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/siesta_options.F90
+  Src/version.F90
+  Src/write_subs.F
+  Tests/TranSiesta-TBTrans/README
+  Tests/script_ts.mk
+  Util/SiestaSubroutine/README
+  Util/TBTrans/Makefile
+
+-----------------------------------------------------------------------
+2012-10-25  10:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-422
+Fix handling of debugging preprocessor symbol in fdf
+
+The generic DEBUG symbol has been replaced by FDF_DEBUG.  
+
+The declaration of the recently added 'filedebug' local variable has
+been moved out of a preprocessor block.
+
+modified:
+  Src/fdf/fdf.F90
+
+-----------------------------------------------------------------------
+2012-10-24  14:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-421
+Add rp and rv options to XML pseudopotential handling
+
+The RPBE and revPBE XC flavors were not correctly handled by
+the XML routines.
+
+modified:
+  Pseudo/atom/pseudoXML.f
+  Util/pseudo-xml/xml2psf_helper.f
+
+-----------------------------------------------------------------------
+2012-10-24  13:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-420
+Enable MD continuation runs even if the restart file is not available
+
+(Fabiano Corsetti)
+
+If the user has selected MD.UseSaveXV to continue an MD run from a
+previously computed set of positions and velocities (in the XV file),
+but the appropriate restart file is not found, the positions x(t) and
+velocities v(t-dt) are read from the XV file, and the positions are
+then backward-propagated by one time step using the Euler method to
+start the MD run from time (t-dt) with a consistent set of positions
+and velocities.
+
+In previous versions the program complained if the appropriate restart
+file was not available. This patch enables cross-restarts (i.e., an
+Annealing calculation followed by a Nose simulation) within the simple
+"reuse-the-XV-file" framework. The last point computed in the previous
+simulation will be basically repeated in the continuation run. For
+"seamless" continuations, the flavor-specific restart file is needed.
+
+N.B.: The value of the time step of the previous run (from which the
+XV file has been generated) should be equal to that of the current
+run. This information is not saved in the XV file, and so it is not
+possible for the code to tell whether the two runs are consistent.
+
+N.B. 2: The backward-propagation is only used for runs with more than
+one time step, and is done in routine 'struct_init'.
+
+This fix applies to Verlet, Nose, PR, and NPR runs.
+
+* New tests:  
+
+   md-single-run, md-cont, md-cont-no-restart-file
+
+   md-anneal-cont
+
+(+ used correct fdf option for annealing flavor in md_anneal test)
+
+added:
+  Tests/md-anneal-cont/
+  Tests/md-anneal-cont/README
+  Tests/md-anneal-cont/makefile
+  Tests/md-anneal-cont/script.sh
+  Tests/md-cont/
+  Tests/md-cont-no-restart-file/
+  Tests/md-cont-no-restart-file/README
+  Tests/md-cont-no-restart-file/makefile
+  Tests/md-cont-no-restart-file/script.sh
+  Tests/md-cont/README
+  Tests/md-cont/makefile
+  Tests/md-cont/script.sh
+  Tests/md-single-run/
+  Tests/md-single-run/README
+  Tests/md-single-run/makefile
+  Tests/md-single-run/script.sh
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/Makefile
+  Src/dynamics.f
+  Src/iomd.f
+  Src/struct_init.F
+  Tests/md_anneal/md_anneal.fdf
+
+-----------------------------------------------------------------------
+2012-10-24  13:30:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-419
+Add option to turn off time-reversal symmetry for k-points
+
+If the fdf option TimeReversalSymmetryForKpoints is set to "false",
+the program will keep all the k-points in the BZ, without using the (k,-k)
+implicit symmetry which is valid in the absence of external magnetic
+fields or spin-orbit coupling. This feature is added for completeness and
+test purposes.
+
+In spin-polarized calculations, the code now prints a summary of the
+initial spin polarization when the density-matrix is initialized.
+
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/find_kgrid.F
+  Src/kpoint_grid.F90
+  Src/kpoint_pdos.F90
+  Src/new_dm.F
+
+-----------------------------------------------------------------------
+2012-10-24  13:20:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-418
+Use actual number of electrons in optical calculations
+
+The 'optical' routine now uses the actual number of electrons (rather
+than the nominal number of valence electrons) for non-spin-polarized
+calculations. This affects only systems with a net charge. Note that
+spin-polarized calculations were already using the actual number
+of electrons.
+
+(Thanks to Alexander Vozny)
+
+modified:
+  Src/Makefile
+  Src/optical.F
+
+-----------------------------------------------------------------------
+2012-10-23  14:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-417
+Allow doping feature for all systems
+
+The "SimulateDoping" option is now enabled for "bulk" systems, in the
+interest of generality and to fix an inconsistency in the logic for
+charge removal. (Thanks to N. P. Andersen)
+
+modified:
+  Src/dhscf.F
+
+-----------------------------------------------------------------------
+2012-10-23  14:05:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-416
+Fix spin loop in initialization in Eig2DOS program
+
+The initialization code was missing a loop over spin.
+
+(+ changes to fix compiler-dependent complaints)
+
+(Thanks to N.P. Andersen)
+
+( + Update reference outputs for si_fatbands test )
+
+
+modified:
+  Tests/Reference-xml/si_fatbands.xml
+  Tests/Reference/si_fatbands.out
+  Util/Eig2DOS/Eig2DOS.f90
+
+-----------------------------------------------------------------------
+2012-10-23  14:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-415
+New options for wavefunction output. 'Fatbands' analysis. Mprop enhancements
+
+(A. Garcia)
+
+* Enhanced 'bands' routine to write out the wavefunctions
+
+If the fdf symbol
+
+WFS.Write.For.Bands
+
+is set to .true., the program will write out the wavefunctions
+corresponding to the bands specified in the BandLines block.
+
+There are now different file names for wavefunction output:
+
+SystemLabel.bands.WFSX      : produced by BandLines + WFS.Write.For.Bands
+SystemLabel.fullBZ.WFSX     : for COOP/COHP-related use
+SystemLabel.selected.WFSX   : produced by WaveFuncKPoints
+
+Note that for down-stream processing, some of these files might have
+to be renamed to simply 'SystemLabel.WFSX'.
+
+A subset of the bands (for both the BandLines and COOP/COHP cases) can
+be specified by the fdf keywords:
+
+WFS.Band.Min  (int, default: 1)
+WFS.Band.Max  (int, default: number of orbitals)
+
+The energy window options 
+
+WFS.Energy.Min
+WFS.Energy.Max
+
+are not in effect for BandLines.
+
+
+* New 'Fatbands' functionality
+
+A new utility program ('fat') has been added to generate 'fatband'
+information. It processes .WFSX files (typically produced during a
+"bands" calculation) and .HSX files to produce 'EIGFAT' files
+containing both the eigenvalues ("eig") and the value of the
+projection of the wavefunction on a given orbital set ("fat"). Most of
+the code is shared with the PDOS/COOP/COHP program mprop, hence its
+location in the Util/COOP directory.
+
+A new plotting converter, eigfat2plot, has been placed in the
+Util/Bands directory. It is suitable for simple 'gnuplot' use.
+
+Added Tests/si_fatbands
+
+
+* Modified Denchar to read WFSX files
+
+Denchar now reads directly the newer-format WFSX files,
+which are more compact.
+
+Also, added a new full example in Util/Denchar/Examples, and
+two python scripts for contour plots, courtesy of Pablo Aguado.
+
+* Moved gnubands.f program to new directory Util/Bands
+* Added new 'gnubands' program, with more options (Util/Bands/new.gnubands)
+
+* Mprop enhancements
+
+- New energy-range and band-index options in mprop.
+
+* Upgrade of the Util/COOP/mprop program, with new options and
+  clarification of existing ones:
+
+- Allow specification of subsets of bands in Util/COOP/mprop
+
+New options "-b min_band -B max_band" to allow the use of restricted
+band sets in the generation of PDOS, COOP, and COHP curves.
+
+- Clearer energy-range options in mprop program
+
+The -m/-M options now refer to eigenvalues.  Together with the band
+options (-b/-B), they determine the eigenvectors actually taken into
+account.
+
+- Add plotting window options to mprop. Cosmetics
+
+The plotting window can now be specified with the -w/-W options. By
+default it is determined on the basis of the eigenvalue range.
+
+(+ add missing declaration to dm_creator.f90)
+
+added:
+  Tests/Reference-xml/si_fatbands.xml
+  Tests/Reference/si_fatbands.out
+  Tests/si_fatbands/
+  Tests/si_fatbands/makefile
+  Tests/si_fatbands/si_fatbands.fdf
+  Tests/si_fatbands/si_fatbands.pseudos
+  Util/Bands/
+  Util/Bands/Makefile
+  Util/Bands/README
+  Util/Bands/eigfat2plot.f90
+  Util/Bands/f2kcli.F90
+  Util/Bands/fat.gplot
+  Util/Bands/m_getopts.f90
+  Util/Bands/new.gnubands.f90
+  Util/COOP/Tests/si_fatbands/
+  Util/COOP/Tests/si_fatbands/README
+  Util/COOP/Tests/si_fatbands/fatbands.mpr
+  Util/COOP/fat.f90
+  Util/Denchar/Examples/2dplot.py
+  Util/Denchar/Examples/FullExample.fdf
+  Util/Denchar/Examples/Si.psf
+  Util/Denchar/Examples/surf.py
+  Util/Denchar/Src/readwavesx.f
+renamed:
+  Util/gnubands.f => Util/Bands/gnubands.f
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/Makefile
+  Src/bands.F
+  Src/diagk.F
+  Src/siesta_analysis.F
+  Src/writewave.F
+  Util/COOP/Makefile
+  Util/COOP/README
+  Util/COOP/Tests/README
+  Util/COOP/dm_creator.F90
+  Util/COOP/main_vars.f90
+  Util/COOP/mprop.f90
+  Util/COOP/subs.f90
+  Util/Denchar/Docs/CHANGES
+  Util/Denchar/Docs/denchar.tex
+  Util/Denchar/Src/Makefile
+  Util/Denchar/Src/denchar.f
+  Util/Eig2DOS/Eig2DOS.f90
+  Util/README
+
+-----------------------------------------------------------------------
+2012-10-23  13:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-414
+Hirshfeld and Voronoi charges. Bader analysis output
+
+The Hirshfeld and Voronoi methods are partial-charge estimations based
+directly on the charge density. They thus complement the Mulliken analysis
+which depends on the density-matrix.
+
+Relevant fdf keywords:
+
+WriteHirshfeldPop T
+WriteVoronoiPop T
+
+See the manual for details.
+
+(Code for Hirshfeld and Voronoi analysis contributed by P. Ordejon.
+Integrated into the dhscf workflow by A. Garcia.)
+
+* Implementation of Bader charge output
+
+If the option
+
+  SaveBaderCharge T
+
+is used, the program will write the electronic charge density with an
+extra set of model core charges, useful for post-processing by a Bader
+"atoms in molecules" analysis. See the manual for important details.
+
+The grid2cube program in Util has been extended to deal with the .BADER
+file.
+
+* New test: h2o-pop
+
+-----------------------------------------------------------------------
+2012-09-25  10:12:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-413
+Use a 'unique' string in fdf log files
+
+In MPI operation, the fdf subsystem writes log files (and optionally
+debug files) to the /tmp filesystem. Up to now the file names were not
+unique across jobs, which led to failures. Now a string based on the
+5 least significant digits of the current time is added to the file
+prefix. 
+
+Also, removed the printing of a log message regarding the number of
+lines processed while setting up the fdf data structures, which could
+potentially confuse some systems.
+
+modified:
+  Src/reinit.F
+  Src/fdf/fdf.F90
+
+-----------------------------------------------------------------------
+2012-08-27  10:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-412
+Nullify pointers in diagkp
+
+Pointers were not properly nullified in diagkp.
+
+(Thanks to Nick P. Andersen)
+
+(+ clean up extra path dependencies in Denchar Makefile)
+
+modified:
+  Src/diagkp.F
+
+-----------------------------------------------------------------------
+2012-06-21  10:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-411
+Fix bug in fdf_bbackspace. No .ion.nc files for ghosts
+
+A bug in fdf_bbackspace made it take two steps back when at the end of
+an fdf block. This has now been fixed, removing also the superfluous
+'pline' argument.
+
+When dealing with ghost atoms, the .ion.nc files containing ionic
+information in netCDF format cannot yet be read back properly. Their
+generation has been deactivated for now. Users can still use the
+standard .ion files in ASCII format with the option 'UserBasis T'.
+
+modified:
+  Docs/siesta.tex
+  Src/basis_io.F
+  Src/basis_specs.f
+  Src/fdf/fdf.F90
+
+-----------------------------------------------------------------------
+2012-06-15  15:09:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-410
+Improved the estimation of the size of the automatic cell
+
+If not specified, Siesta generates automatically a unit cell for
+"molecular" or "atomic" systems. The criterion is that the cell is big
+enough to avoid interactions between orbitals in two different cells.
+
+Up to now, the estimation of the size of the orbitals was given by
+the cutoff of Vna. But if the basis set contains large orbitals which
+are not occupied in the ground state, this estimate is too short.
+
+The "size of the atom" is now estimated as the largest of rc(Vna) and
+the cutoffs of all the orbitals. 
+
+modified:
+  Src/Makefile
+  Src/automatic_cell.f
+
+-----------------------------------------------------------------------
+2012-04-13  15:05:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-409
+Extended the functionality of the 'eig2dos' program
+
+A new directory Util/Eig2DOS holds an updated version of the
+venerable 'eig2dos' program, with a new command-line interface
+that allows to specify all the parameters and new capabilities:
+
+-- Optional use of the k-point weight information in a .KP file.
+-- Selection of a range of bands for the calculation of the DOS.
+
+Invoke the program as  'Eig2DOS -h' for a synopsis.
+
+(A. Garcia)
+
+added:
+  Util/Eig2DOS/
+  Util/Eig2DOS/Eig2DOS.f90
+  Util/Eig2DOS/Makefile
+  Util/Eig2DOS/m_getopts.f90
+renamed:
+  Util/eig2dos.f => Util/Eig2DOS/original.eig2dos.f
+modified:
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Util/README
+
+-----------------------------------------------------------------------
+2012-04-04  10:40:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-408
+Close netCDF file descriptors for DM and DMHS files
+
+The descriptors for the DM.nc and DMHS.nc netCDF files are kept open
+during the SCF cycle, but should be closed at the end of it to avoid
+resource exhaustion in, say, MD runs. This was not done due to a
+programming error.  They are now closed at the beginning of the next
+SCF cycle.
+
+(Thanks to Nick Papior Andersen)
+
+modified:
+  Src/iodm_netcdf.F90
+  Src/iodmhs_netcdf.F90
+
+-----------------------------------------------------------------------
+2012-03-09  15:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-407
+Extend DM normalization diagnostics
+
+In order to conserve the number of electrons N, the density matrix
+(DM) has to be normalized: Tr[S*DM]=N, where S is the overlap matrix.
+
+The DM might not be normalized because it has been re-used (and
+re-arranged) from a previous geometry step, or because of some error
+in its computation during the scf cycle.  The two cases are now
+reported differently:
+
+In the first scf step, the fractional tolerance is 0.001 (tighter than
+the previous default of 0.01), and a "Note" is printed.
+
+In subsequent steps, the fractional tolerance can be specified
+by means of the fdf symbol
+
+DM.Normalization.Tolerance  Tol
+
+and is 1.0e-5 by default.  The program now aborts if this threshold is
+breached.
+
+NOTE: The DM might not be normalized upon entry to the (first
+geometry) scf loop because of a possible "folding" of the overlap
+matrix in gamma-point calculations with small unit cells: the overlaps
+of a given unit-cell orbital with multiple images are accumulated
+instead of being kept separate. Then, the trace Tr[S*DM_atomic] will
+not give the number of electrons.
+The folding (which is reported if detected by the program) is done for
+efficiency reasons, but might cause problems for further analysis
+(i.e., Mulliken charges, or COOP/COHP calculations).
+
+modified:
+  Src/Makefile
+  Src/normalize_dm.F
+  Src/setup_hamiltonian.F
+  Src/siesta_options.F90
+
+-----------------------------------------------------------------------
+2012-03-08  16:55:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-406
+Fix reading of position constraints in block
+
+In %block GeometryConstraints, the simple option
+
+  position  i  j  k  l ...
+
+to list atoms to be kept fixed, was not implemented correctly.
+
+(Thanks to J. Junquera for the bug report and fix)
+
+modified:
+  Src/fixed.F
+
+-----------------------------------------------------------------------
+2012-03-08  10:40:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-405
+Change position of force-monitoring block
+
+The optional calculation of forces inside the scf loop is now done
+after printing the current energies. Otherwise the output for etot
+would correspond to that for the following iteration, and EHarris
+would be wrong.
+
+modified:
+  Src/siesta_forces.F
+
+-----------------------------------------------------------------------
+2012-03-07  14:25:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-404
+Add force convergence diagnostic
+
+When the option to monitor the forces during the SCF cycle is in effect, the
+program will print the maximum absolute value of the change in forces from one
+step to the next. Other statistics could be implemented.
+
+modified:
+  Src/siesta_forces.F
+
+-----------------------------------------------------------------------
+2012-03-06  15:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-403
+Allow monitoring of forces during SCF cycle
+
+Using the fdf symbol
+
+MonitorForcesInSCF T
+
+the program will compute the forces and stresses at every scf step. 
+Use in combination with WriteForces.
+
+modified:
+  Src/Makefile
+  Src/siesta_forces.F
+  Src/siesta_options.F90
+
+-----------------------------------------------------------------------
+2012-02-23  9:40:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-402
+Update of Andrei Postnikov's utilities to V0.4
+
+Added also the fmpdos program, an alternative to pdosxml.
+
+added:
+  Util/Contrib/APostnikov/00README
+  Util/Contrib/APostnikov/fmpdos.f
+  Util/Contrib/APostnikov/test_mdc.f
+modified:
+  Util/Contrib/APostnikov/Makefile
+  Util/Contrib/APostnikov/README
+  Util/Contrib/APostnikov/eig2bxsf.f
+  Util/Contrib/APostnikov/md2axsf.f
+  Util/Contrib/APostnikov/rho2xsf.f
+  Util/Contrib/APostnikov/vib2xsf.f
+  Util/Contrib/APostnikov/wraxsf1.f
+  Util/Contrib/APostnikov/wraxsf2.f
+
+-----------------------------------------------------------------------
+2012-02-22  13:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-401
+Assorted cosmetic and compilation fixes
+
+* Include missing LDFLAGS symbol in some Util makefiles
+
+modified:
+  Util/COOP/Makefile
+  Util/Contrib/APostnikov/Makefile
+  Util/test-xml/makefile
+
+* Obsolete debug information was still being written to unit 23 in
+  domain_decom, including a call to "flush".
+  
+modified:
+  Src/domain_decom.F
+
+* Fix makefile symbols in Util/STM/ol-stm
+  The new domain_decomposition symbols and dependencies were missing.
+
+modified:
+  Util/STM/ol-stm/Src/Makefile
+
+* Updated bug reporting guidelines
+
+added:
+  Docs/REPORTING_BUGS
+modified:
+  Docs/siesta.tex
+  README
+
+* Do not count ghost atoms when printing ionic charge
+
+This was purely cosmetic, but misleading: the variable
+zvaltot now records only the sum of (pseudo)protons in
+non-ghost species.
+
+(+ cosmetic fix in the printing of lmxkb for ghosts
+species in .ion files)
+
+modified:
+  Src/atomlist.f
+  Src/basis_types.f
+
+* Fix the script in Tests/partial
+  Now it can automatically compile the 'fractional' program
+
+modified:
+  Tests/partial/script.sh
+
+* Add Util/clean_all.sh script
+* Remove scratch fdf directories in Util/GenBasis and Util/Vibra
+
+removed:
+  Util/Gen-basis/fdf/
+  Util/Vibra/Src/fdf/
+added:
+  Util/clean_all.sh
+
+
+
+-----------------------------------------------------------------------
+2012-02-21  17:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-400
+Assorted bugfixes and cosmetics
+
+Bugfixes for recent features:
+
+* Include support for domain_decom in Denchar makefile
+
+Cosmetic changes:
+
+ - State that the units for mprop distances are Ang
+ - Clarify error message in ts_iohs regarding nspin
+ - Write eigenvalues in eV in CML file (ioeig)
+ - Use $(AR) instead of 'ar' in all makefiles
+ - Specify Ry units for H in DMHS netcdf files
+ - Fix call to 'memory' in Denchar/stsofr.f
+
+modified:
+  Src/Libs/makefile
+  Src/MPI/Makefile
+  Src/Sys/DOCUMENTED-TEMPLATE.make
+  Src/iodmhs_netcdf.F90
+  Src/ioeig.f
+  Src/m_ts_io.F90
+  Src/wxml/makefile
+  Src/xmlparser/makefile
+  Util/COOP/subs.f90
+  Util/Denchar/Src/Makefile
+  Util/Denchar/Src/stsofr.f
+
+-----------------------------------------------------------------------
+2012-02-21  17:05:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-399
+Some cleanup and new options for O(N) solver code
+
+The O(N) solver code is being cleaned up, and more options are being
+added, but should still be used with care and for systems for which
+it is appropriate.
+
+* More documentation and better variable names and structure in some
+  files.
+
+* Stop if O(N) chemical potential calculation is requested in parallel
+  
+  The code in chempot is not correctly parallelized yet.  Now the
+  program stops at the beginning of the run if any of the relevant fdf
+  options is enabled.
+  
+* Implement graph-based domain decomposition for O(N) routines
+  
+  Based on code by Rogeli Grima (BSC).
+  
+  It is enabled by defining
+  
+  UseDomainDecomposition T
+  
+  in the fdf file. NOTE that if you use NetCDF you also need:
+  
+  WriteDMNetcdf F
+  WriteDMHS-netcdf F
+  
+  until a non-local call to LocalToGlobalOrb is fixed.
+  
+  The METIS library (www.cs.umn.edu/~metis) is also needed. Calls to
+  this library are wrapped in preprocessor blocks controlled by the
+  symbol
+  
+  ON_DOMAIN_DECOMP
+  
+  which needs to be specified at (parallel) compile time if domain
+  decomposition is desired.
+
+  Now, by default, Julian's Gale spatial decomposition code is
+  bypassed, unless the fdf variable
+
+        UseSpatialDecomposition 
+
+  is set.  The default is now to use block-cyclic decomposition, but
+  any serious calculation should use one of the two more sophisticated
+  approaches. A further refinement is in the pipeline.
+
+* Add the Util/ON directory with lwf2cdf program
+
+  This utility program converts the information in the LWF file 
+  to netCDF format.
+
+(A. Garcia, May-July 2011, Feb 2012)
+(Backported from 3.1)
+
+-----------------------------------------------------------------------
+2012-02-21  14:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-398
+Avoid broadcast after fdf operation in m_ts_options
+
+With the new fdf interface all nodes get the appropriate values
+without a broadcast. There was a fossil mpi_bcast in m_ts_options.
+
+modified:
+  Src/m_ts_options.F90
+
+-----------------------------------------------------------------------
+2012-02-20  16:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-397
+More documentation for tests. New .make file.
+
+* Added a new README file for the Tests directory and for the
+  new-style Transiesta-TBTrans tests
+
+* Add arch.make file for Marenostrum IBM supercomputer using ESSL
+    
+  Added the necessary LAPACK libraries in order to compile using ESSL on IBM.
+  ESSL are a set of system-optimized BLAS functions and subroutines.
+    
+  Use the following lines in your arch.make:
+    COMP_LIBS = essl_lapack.a
+    LIBS      = -lessl
+  
+  The new file Src/Sys/marenostrum-mpi-essl-netcdf-64.make is appropriate
+  for 64 bit operation.
+    
+  (Thanks to Oscar Paz)
+  
+  added:
+    Src/Sys/marenostrum-mpi-essl-netcdf-64.make
+    Src/Libs/essl_lapack.f
+  modified:
+    Src/Libs/makefile
+    Src/Makefile
+
+* Make sure 'partial' is compiled in test
+  
+  The 'partial' test is not completely set up for transparent operation,
+  and the needed executable in Util/VCA needs to be pre-compiled.
+  
+  The script stops with a message if this is not done (note that this
+  test is not executed by default from the top Makefile).
+  
+  modified:
+    Tests/partial/script.sh
+
+-----------------------------------------------------------------------
+2012-02-20  16:30:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-396
+Fixes: pointer initialization, logical assignment
+
+In cgvc_zmatrix, two scratch pointers were not properly initialized
+before use.
+
+In nlefsm, two logical arrays were initialized with '0', instead of
+'.false.' (Thanks to Carlos Sanz for pointing this out).
+
+modified:
+  Src/cgvc_zmatrix.F
+  Src/nlefsm.f
+
+-----------------------------------------------------------------------
+2012-02-20  15:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-395
+Avoid broadcast after fdf operation in tbtrans
+
+With the new fdf interface all nodes get the appropriate values
+without a broadcast. Tbtrans (in routine reinit_tb) still called
+mpi_bcast. This led to errors in some systems.
+
+modified:
+  Util/TBTrans/reinit_tb.F
+
+-----------------------------------------------------------------------
+2012-02-20  13:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-394
+Update TranSiesta tests. Cosmetics
+
+*  Update the TranSiesta-TBTrans test directories
+  
+  TranSiesta-TBTrans specific tests now reside in
+  Tests/TranSiesta-TBTrans. These tests (currently ts_fast and ts_au)
+  only make sense if the "transiesta" flavor of Siesta has been compiled
+  in (by executing "make transiesta" in a fresh build directory), so
+  they are not executed by default.
+  
+  Reference outputs can now be found in
+  Tests/Reference/TranSiesta-TBTrans.  Note that these reference
+  outputs have not yet been updated: they correspond to siesta-3.1.
+  
+  The manual has been updated to refer to the Examples/TranSiesta
+  directory (which has been created) for the guided calculation.
+  
+  removed:
+    Tests/transiesta/Fast/
+    Tests/transiesta/au_111_capacitor/
+    Tests/transiesta/bulk_au_111/
+    Tests/transiesta/elec_au_111_abc/
+  added:
+    Tests/Reference/TranSiesta-TBTrans/
+    Tests/Reference/TranSiesta-TBTrans/ts_au/
+    Tests/Reference/TranSiesta-TBTrans/ts_fast/
+    Tests/TranSiesta-TBTrans/ts_au/
+    Examples/TranSiesta
+  renamed:
+    Tests/transiesta/ => Tests/TranSiesta-TBTrans/
+    Tests/ts_fast/ => Tests/TranSiesta-TBTrans/ts_fast/
+  modified:
+    Tests/TranSiesta-TBTrans/ts_fast/makefile
+    Tests/TranSiesta-TBTrans/ts_fast/script.sh
+    Tests/Makefile
+    Tests/script_ts.mk
+    Docs/siesta.tex
+
+*  Removed call to BLAS routine zdotc in tbtrans. Replaced it
+   by an explicit loop.
+
+*  Clarify the mention of "hybrid" functionals in the manual
+  
+  modified:
+    Docs/siesta.tex
+
+*  Remove order-N test from standard list. Add note.
+
+  As it does not run well in parallel, the order-N
+  test has been removed from the standard list
+  in the Makefile for the Tests directory.
+  
+  added:
+    Tests/h2o_orderN/000README
+  modified:
+    Tests/Makefile
+
+-----------------------------------------------------------------------
+2012-02-16  15:25:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-393
+Fix pointer initialization in moremeshsubs
+
+Two workspace pointers were not properly nullified before allocation.
+
+Thanks to Olivier Coulaud for the report and the fix.
+
+modified:
+  Src/moremeshsubs.F
+
+-----------------------------------------------------------------------
+2012-02-16  10:35:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-392
+Proper closing of files in m_iorho
+
+Due to a programming error, the calls to io_close in read_rho and
+check_rho were incorrectly placed.
+
+Thanks to Carlos Sanz for the report and the fix.
+
+modified:
+  Src/m_iorho.F
+
+-----------------------------------------------------------------------
+2012-02-15  18:05:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-391
+Clarify flow of data in setup_H0
+
+The routine setup_H0 pre-computes the matrix elements of the kinetic
+and non-local pseudopotential pieces of the Hamiltonian, which do not
+depend on the density matrix.
+
+Routines kinefsm and nlfesm also compute Ekin and Enl, respectively,
+but since they are not called anymore in the SCF cycles, Ekin and Enl
+are not updated, and are only printed at the first and last
+iterations.
+
+In order to make this more explicit, H0 has been substituted by two
+arrays, H_kin and H_vkb, to hold the pieces of H. Ekin and Enl are now
+computed in setup_hamiltonian, with the appropriate density matrix.  A
+minor cosmetic issue now is that, in setup_H0, the routines 'kinefsm'
+and 'nlefsm' must be called with a value of 1 for nspin, as befits the
+structure of H_kin and H_vkb. The density matrix array is not
+referenced.
+
+Other changes:
+
+* The variable 'nh' has been substituted by its equivalent maxnh
+throughout the code.
+
+* The use of H0 as a work array in calls to the ksv_pol routine has
+been made clearer by importing H_kin and renaming it 'Work'.
+
+modified:
+  Docs/KNOWN.ISSUES.BSC-patch
+  Src/Makefile
+  Src/born_charge.F
+  Src/compute_dm.F
+  Src/final_H_f_stress.F
+  Src/hsparse.F
+  Src/kinefsm.f
+  Src/nlefsm.f
+  Src/normalize_dm.F
+  Src/post_scf_work.F
+  Src/setup_H0.F
+  Src/setup_hamiltonian.F
+  Src/siesta_analysis.F
+  Src/siesta_init.F
+  Src/sparse_matrices.F
+  Src/state_init.F
+
+-----------------------------------------------------------------------
+2011-10-28  10:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-390
+Avoid temporary arrays in SiestaXC/mesh3d
+
+Calls with a re-shaped array as argument, and with
+array-section arguments, were inducing some compilers
+to create temporary arrays.
+
+modified:
+  Src/SiestaXC/mesh3d.F90
+
+-----------------------------------------------------------------------
+2011-10-28  10:35:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-389
+Re-instate reading of charge netcdf files
+
+This feature had been turned off after the BSC merge pending
+clarification.
+
+modified:
+  Src/dhscf.F
+
+-----------------------------------------------------------------------
+2011-10-28  10:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-388
+Grid file utilities. User-specified mesh sizes
+
+Two new programs are available to generate grid files
+(density, potential):
+
+-- grid_rotate: cyclically rotates the coordinates of
+                a grid file.
+-- grid_supercell: generates the grid file appropriate
+                   for a supercell.
+
+The user can now specify the mesh sizes to be used
+by the program, by inserting a block definition in 
+the fdf file:
+
+%block Mesh-sizes
+  40 56 120
+%endblock Mesh-sizes
+
+This feature is useful when coupled to the above utilities,
+since the "magic" fft numbers might not be appropriate.
+
+added:
+  Docs/Grid.CHANGES
+  Util/Grid/grid_rotate.F90
+  Util/Grid/grid_supercell.F90
+modified:
+  Src/Makefile
+  Src/meshsubs.F
+  Util/Grid/makefile
+
+-----------------------------------------------------------------------
+2011-09-16  09:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-387
+Fix bug in BandLines processing
+
+The processing of the BandLines block was faulty, resulting
+in most cases in the skipping of the 'bands' calculation.
+
+modified:
+  Src/bands.F
+
+-----------------------------------------------------------------------
+2011-09-12  09:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-386
+Fix fdf_defined to take blocks into account
+
+The new version of fdf_defined was only checking
+for the existence of single labels. It has been
+fixed to check for blocks too.
+
+modified:
+  Src/fdf/fdf.F90
+  Src/fdf/sample.F90
+
+-----------------------------------------------------------------------
+2011-08-30  09:50:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-385
+Fix two minor bugs in Denchar
+
+Some compilers had trouble with a block pointer. It has
+been made into a normal variable.
+
+An attempt was made to close an I/O unit that had not
+ben opened in the spin-unpolarized case.
+
+(Thanks to T. Sondon)
+
+modified:
+  Util/Denchar/Src/atompla.f
+  Util/Denchar/Src/rhoofr.f
+
+-----------------------------------------------------------------------
+2011-08-26  12:40:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-384
+Print information about grid distributions
+
+New code has been added to show information about
+the different grid data distributions.
+
+modified:
+  Src/moremeshsubs.F
+
+-----------------------------------------------------------------------
+2011-05-19  15:20:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-383
+Fix and clarify code for KB projector orthogonalization
+
+In routine kbproj, a saved variable was used to keep track
+of the number of previous KB projectors with the same l. This
+variable was only reset upon a change in l. This can lead
+to errors if a species with a single l=0 KB complex is used.
+
+The code has been streamlined, passing explicitly an index
+that determines the sequence number of the projector.
+
+modified:
+  Src/atom.f
+
+-----------------------------------------------------------------------
+2011-05-03  16:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-382
+Fix declaration in cgwf.F
+
+A previous commit introduced a spurious dummy argument
+"node", which should really be imported from a module.
+
+modified:
+  Src/cgwf.F
+
+-----------------------------------------------------------------------
+2011-05-03  14:15:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-381
+Clarify mixing code in TranSiesta mode
+
+If the TranSiesta code is compiled in, the user can choose between two
+mixing options in the self-consistent cycle: density-matrix, or
+Hamiltonian. The option chosen takes effect both for the initial
+normal Siesta-style calculation, if needed, and for the "transiesta
+mode" section.
+
+The code in mixer.F and elsewhere has been streamlined, to make it
+clear what the mixed objects are and avoid extraneous global
+dependencies.
+
+modified:
+  Src/Makefile
+  Src/m_ts_global_vars.f90
+  Src/mixer.F
+  Src/new_dm.F
+  Src/state_init.F
+
+-----------------------------------------------------------------------
+2011-05-03  14:05:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-380
+Make auxiliary variable double precision in line minimization
+
+In routine linmin4, the complex variable "c" was declared
+as single-precision. It is now a double.
+
+modified:
+  Src/cgwf.F
+
+-----------------------------------------------------------------------
+2011-05-03  13:00:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-379
+Fix mixing bug in Transiesta + tbtrans wrap + pulayx warnings
+
+* Fix mixing bug in TranSiesta
+
+In TranSiesta mode, the program first might carry out a calculation at
+zero bias and with periodic boundary conditions, just as a normal
+Siesta calculation. Then the program goes into "transiesta mode"
+proper, during which a new mixing cycle takes place.
+
+In late June 2010, a change in the structure of the mixing code
+introduced a bug: the counter holding the number of history records
+was not properly initialized upon the ending of the preliminary
+siesta-style calculation.
+
+The mixing counter is now properly reset.
+
+modified:
+  Src/scfconvergence_test.F
+
+* In tbtrans some auxiliary files were written to by all the nodes.
+
+(+ Also, make sure that the transiesta capability appears at
+the top of the transiesta output file)
+
+modified:
+  Src/Makefile
+  Util/TBTrans/tbtrans.F
+
+* Avoid reporting unstable inversion in pulayx
+
+Typically, inversion problems in the DIIS procedure occur when the
+error estimate for a step is very small compared to the previous
+ones. This is harmless, and the reporting of a failure in the output
+file is confusing.
+
+In case it is needed, a hook to allow a full diagnosis 
+can be compiled in with the preprocessor flag
+
+DEBUG_PULAY_INVERSE
+
+(+ Also, initialize "found" variable in new_dm.F in transiesta mode)
+
+modified:
+  Src/m_pulay.F90
+  Src/new_dm.F
+
+* Increase field sizes in OCCS file
+
+Some fields overflowed when a large number of k-points was used.
+
+modified:
+  Src/diagk.F
+  Src/diagk_file.F
+
+-----------------------------------------------------------------------
+2011-05-03  12:45:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-378
+Fix manual re: non-collinear GGA and zmatrix input. FoX cosmetics
+
+* The manual incorrectly stated that GGA was not compatible with
+non-collinear-spin calculations.
+
+The order of the spherical coordinates for the second atom in the
+zmatrix format input is now explicitly stated.
+
+modified:
+  Docs/siesta.tex
+
+* Cosmetic changes to avoid xlf compiler diagnostics in dummy FoX
+
+If the "trap undefined variables" option is enabled in the xlf
+compiler, some stray symbols in the dummy version of the FoX library
+produce diagnostics. They have been re-wrapped.
+
+(Thanks to Oscar Paz)
+
+modified:
+  Src/FoX/common/m_common_attrs.F90
+  Src/FoX/utils/fox_m_utils_uri.F90
+
+-----------------------------------------------------------------------
+2011-04-14  09:10:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-377
+Avoid the creation of temporary and log files for fdf in parallel
+
+The standard mode of operation of the new fdf library is "cluster", in
+which the root node reads and processes the fdf file(s) and sends
+relevant information to the rest of the nodes. At the end of the setup
+process every node has a private copy of a pre-parsed fdf structure
+that can be consulted quickly.
+
+In the first version by Raul de la Cruz the root node sent raw text
+information to the other nodes, and these used a temporary scratch
+file to dump it to. Later these nodes invoked the digesting routine on
+the scratch file to create the memory structure.
+
+Now the root node serializes its own memory structure and sends it
+over to the other nodes. These just need to de-serialize the
+information and re-create the memory structure.
+
+Log files were also produced by all nodes by default. Now non-root
+nodes create the log files under "/tmp", with names of the form
+"tmp/fdf.log.N", where N is a representation of the MPI rank. Only
+the root node creates a "fdf.log" file in the working directory.
+This is useful for cluster settings in which non-root nodes might not
+be able to write efficiently to common areas.
+
+Any debug files are created in the same way, with names of the form
+"tmp/fdf.debug.N". At the end of the run they will contain a dump
+of the fdf memory structure.
+
+Alberto Garcia, April 2011
+
+modified:
+  Docs/KNOWN.ISSUES.BSC-patch
+  Src/fdf/fdf.F90
+  Src/fdf/parse.F90
+
+
+-----------------------------------------------------------------------
 2011-03-29  13:30:00 GMT Alberto Garcia <albertog@icmab.es>   trunk-376
 Remove earlier patch for calculation of chemical potential
 

@@ -205,8 +205,7 @@ c Helpers, workspace, tempos etc...
       
 c Externals:
 C      External io_assign,io_close
-      complex*16 zdotc
-      External zdotc            ! BLAS function
+      complex*16  ztemp
 
 c Debug:
       
@@ -705,16 +704,18 @@ c ============================================================================
 #endif MPI
 
 C Headers for output file; for each k-point
-       write(unit1,*) '# Kxy-point: ',ikxy
-       write(unit1,'(a6,f5.3,1X,f5.3,a7,f6.4)') 
+       if ( IOnode ) then
+          write(unit1,*) '# Kxy-point: ',ikxy
+          write(unit1,'(a6,f5.3,1X,f5.3,a7,f6.4)') 
      .       '# kxy=',kxy(1,ikxy),kxy(2,ikxy),', w= ',wkxy(ikxy)
 
-       if(neigch.gt.0 .and. neigch.le.nc) then
-          write(unit2,*) '# Kxy-point: ',ikxy
-          write(unit2,'(a6,f5.3,1X,f5.3,a7,f6.4)') 
+          if(neigch.gt.0 .and. neigch.le.nc) then
+             write(unit2,*) '# Kxy-point: ',ikxy
+             write(unit2,'(a6,f5.3,1X,f5.3,a7,f6.4)') 
      .       '# kxy=',kxy(1,ikxy),kxy(2,ikxy),', w= ',wkxy(ikxy)
-       end if
-         
+          end if
+       endif  ! IOnode
+
 C=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
       do 7913 iEn = 1, NCONTOUR      ! loop over energy points
 C=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=
@@ -787,7 +788,16 @@ c on return GFRGF contains GF^dagger.GammaR.GF
          
 
 ! DOS
-         totdos = (-1.0d0/Pi)*DIMAG(zdotc(nc*nc,Sc,1,GF,1))
+
+!!!         totdos = (-1.0d0/Pi)*DIMAG(zdotc(nc*nc,Sc,1,GF,1))
+!        Explicit loop instead of BLAS call  (AG, Feb 2012)
+
+         ztemp = (0.0d0,0.0d0)
+         DO I = 1,nc*nc
+            ZTEMP = ZTEMP + DCONJG(Sc(I))*GF(I)
+         END DO
+         totdos = (-1.0d0/Pi)*DIMAG(ZTEMP)
+
 
 ! Calculate the "excluded" DOS and then subtract from totdos
          pdos=0d0

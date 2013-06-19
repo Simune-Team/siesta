@@ -10,9 +10,9 @@
       use m_new_dm,          only: new_dm
       use m_proximity_check, only: proximity_check
       use siesta_options
-      use sparse_matrices, only: nh, maxnh, numh, listh, listhptr
+      use sparse_matrices, only: maxnh, numh, listh, listhptr
       use sparse_matrices, only: Dscf, Dold, Escf, Eold
-      use sparse_matrices, only: xijo, H, H0, S
+      use sparse_matrices, only: xijo, H, S, H_kin, H_vkb
       use siesta_geom
       use atomlist,          only: iphorb, iphkb, rco, rckb, indxua,
      &                             no_s, rmaxkb, rmaxo, no_u, lastkb,
@@ -34,12 +34,13 @@
       use m_eo
       use m_gamma
       use files,             only: slabel
-#ifdef MPI
+      use m_mpi_utils,       only: globalize_or
       use m_mpi_utils,       only: globalize_max
-#endif
+      use domain_decom,      only: domainDecom, use_dd, use_dd_perm
+
 #ifdef TRANSIESTA
       use m_ts_options, only : onlyS, mixH
-      use m_ts_global_vars, only : VIn, VOut, Hold
+      use m_ts_global_vars, only : Hold
       use sys, only : bye
       use m_ts_io, only : ts_iohs
       use files, only: slabel, label_length
@@ -57,6 +58,7 @@
       logical            :: cell_can_change
       integer            :: i, ix, iadispl, ixdispl
       logical            :: auxchanged   ! Auxiliary supercell changed?
+      logical            :: folding, folding1
       external           ::  madelung, timer
       real(dp), external :: volcel
 #ifdef TRANSIESTA
@@ -206,14 +208,40 @@
 !     and, if applicable,  vectors between orbital centers
 
 !     Listh and xijo are allocated inside hsparse
-!     nh is set by the routine also
 !     Note: We always generate xijo now, for COOP and other
 !           analyses.
-      nh = maxnh
       call hsparse( negl, scell, nsc, na_s, isa, xa, lasto,
-     &              lastkb, iphorb, iphKB, nh, gamma,
-     $                 set_xijo=.true.)
-      maxnh = nh
+     &              lastkb, iphorb, iphKB, maxnh, gamma,
+     $                 set_xijo=.true., folding=folding1)
+!
+      call globalize_or(folding1,folding)
+      if (folding) then
+         if (IOnode) then
+            print *, "Folding of H and S is implicitly performed"
+         endif
+      endif
+      !
+      ! If using domain decomposition, redistribute orbitals
+      ! for this geometry, based on the hsparse info. 
+      ! The first time round, the initial distribution is a
+      ! simple block one (given by preSetOrbitLimits).
+      !
+      ! Any DM, etc, read from file will be redistributed according
+      ! to the new pattern. 
+      ! Inherited DMs from a previous geometry cannot be used if the
+      ! orbital distribution changes. For now, we avoid changing the
+      ! distribution (the variable use_dd_perm is .true. if domain
+      ! decomposition is in effect). Names should be changed...
+
+      if (use_dd .and. (.not. use_dd_perm)) then
+         call domainDecom( no_u, no_l, maxnh )  ! maxnh intent(in) here
+         maxnh = sum(numh(1:no_l))
+         ! We still need to re-create Julian Gale's
+         ! indexing for O(N) in parallel.
+         print "(a5,i3,a20,3i8)",
+     $         "Node: ", Node, "no_u, no_l, maxnh: ", no_u, no_l, maxnh
+         call setup_ordern_indexes(no_l, no_u, Nodes)
+      endif
 
       ! Note that the resizing of Dscf is done inside new_dm below
       call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',
@@ -223,30 +251,21 @@
       call re_alloc( Escf, 1, maxnh, 1, nspin, 'Escf',
      .     routine='state_init',copy=.false.,shrink=.true.)
 #ifdef TRANSIESTA
-      nullify(VIn)
-      if(.not. mixH) then
-         VIn => Dold
-      else
+      if(mixH) then
          call re_alloc(Hold,1,maxnh,1,nspin,name='Hold',
      .     routine='state_init',copy=.false.,shrink=.true.)
-         VIn => Hold
       end if
 #endif /* TRANSIESTA */
       
 !     Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
       call re_alloc( H, 1, maxnh, 1, nspin, 'H',
      .              routine='state_init',shrink=.true.,copy=.false.)
-      call re_alloc(H0,1,maxnh,name='H0',routine='state_init',
+      call re_alloc(H_kin,1,maxnh,name='H_kin',routine='state_init',
+     &              shrink=.true., copy=.false. )
+      call re_alloc(H_vkb,1,maxnh,name='H_vkb',routine='state_init',
      &              shrink=.true., copy=.false. )
       call re_alloc(S,1,maxnh,name='S',routine='state_init',
      .              copy=.false.,shrink=.true.)
-
-#ifdef TRANSIESTA
-      nullify(VOut)
-      if( mixH) then
-         Vout => H
-      end if
-#endif /* TRANSIESTA */
 
 !     Find overlap matrix 
       call overlap( na_u, na_s, no_s, scell, xa, indxua, rmaxo, maxnh,

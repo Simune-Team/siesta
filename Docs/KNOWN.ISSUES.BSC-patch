@@ -30,12 +30,6 @@ Each MPI processor now gets its own copy of the fdf dictionary in
 memory, thus avoiding interprocess communication and disk access at
 every fdf query.
 
-* New scratch files (with names of the form fdf_input.0000N and
-fdf.log.0000N) appear in the working directory. They will be made
-optional (conditional on requests for debugging, for example) in a
-later version.
-
-
 * While reading Monkhorst-Pack blocks, the new code requires
 explicitly real values in the "shift" parameters. For example, it will
 complain if the third shift parameter is entered as a simple '0',
@@ -58,21 +52,10 @@ syntax is used, ALL the labels MUST be present in File.fdf.  The old
 version did not enforce this, but it looks like a common-sense
 feature.
 
-* There are no explicit debug records (debug files appear, but they
-are empty, if the debug-fdf N option is used)
-
 -- Other changes
 
 * There might be still some extra debugging output having to do with
 the new mesh distributions. It will be progressively removed.
-
-* H0 (the non self-consistent part of H) is now set up in its own
-routine, setup_H0, outside the SCF loop. This applies to the matrix
-elements that do not depend on the self-consistent charge. This means
-that the 'kinetic' and 'non-local' energies are not correctly updated
-during the cycle, but the *total* energy is unaffected, as those
-contributions are part of the band-structure energy computed as
-Tr(H*DM).
 
 -- Compiler issues
 

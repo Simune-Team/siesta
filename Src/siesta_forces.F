@@ -10,6 +10,7 @@
       use siesta_cml
       use m_state_init
       use m_setup_hamiltonian
+      use m_final_H_f_stress,    only: final_H_f_stress
       use m_setup_H0
       use m_compute_dm
       use m_scfconvergence_test
@@ -22,6 +23,9 @@
       use sys, only : die, bye
       use m_convergence, only: converger_t
       use m_convergence, only: reset, set_tolerance
+      use write_subs
+      use m_forces,              only: fa
+      use units,                 only: eV, Ang
 #ifdef TRANSIESTA
       use m_ts_options, only : mixH
       use m_ts_global_vars, only : ts_istep
@@ -32,6 +36,7 @@
       logical  :: first, last, SCFconverged
       real(dp) :: dDmax     ! Max. change in density matrix elements
       type(converger_t)  ::  conv_harris, conv_etot
+      real(dp), allocatable  :: fa_old(:,:)
 #ifdef TRANSIESTA
 ! Used in force constant runs
       ts_istep = istep
@@ -81,7 +86,7 @@
 !!        call printmemory( 6, 0 )
 
         if (h_setup_only) then
-           call timer( 'siesta', 2 )
+           call timer( 'all', 2 )  ! New call to close the tree
            call timer( 'all', 3 )
            call bye("H-Setup-Only requested")
            STOP
@@ -90,6 +95,9 @@
         call compute_dm( iscf )
 
         call mixer( iscf, dDmax )
+
+
+
 #else /* TRANSIESTA */
 
         if (cml_p)
@@ -114,6 +122,19 @@
 !       changed below
         SCFconverged = last
 
+        if (monitor_forces_in_scf) then
+           allocate(fa_old(size(fa,dim=1),size(fa,dim=2)))
+           fa_old = fa
+           call final_H_f_stress(iscf)
+           if (ionode) then
+              print *, "Max diff in force (eV/Ang): ",
+     $                 maxval(abs(fa-fa_old))*Ang/eV
+           endif
+           deallocate(fa_old)
+           call siesta_write_forces()
+           call siesta_write_stress_pressure()
+        endif
+
         call timer( 'IterSCF', 2 )
         if (istep.eq.inicoor .and. first) call timer( 'IterSCF', 3 )
 
@@ -123,8 +144,10 @@
 !       The last scheduled iteration is used to compute forces
 !       and stresses, hence the exit if iscf==nscf.
 !       The ">" clause catches the nscf==1 case. For this,
-        if (iscf >= nscf) then
-          last = .true.
+        if (iscf < min_nscf ) then
+           last = .false.
+        else if (iscf >= nscf) then
+           last = .true.
         endif
         if (cml_p) call cmlEndStep(mainXML)
       ENDDO
