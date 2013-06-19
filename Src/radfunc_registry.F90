@@ -16,7 +16,7 @@ module m_radfunc_registry
 !
 ! Once registered, a function can be evaluated, its cutoff and 
 ! angular momentum obtained, etc.  So far only the functions
-! needed by matel are implemented: rcut, lofio, phiatm (renamed
+! needed by matel are implemented: rcut, lcut, phiatm (renamed
 ! as "evaluate").
 !
 ! The registry contains some meta-data for each function (its
@@ -62,7 +62,7 @@ module m_radfunc_registry
 
 !  public :: get_number_of_funcs
   public :: register_in_rf_pool
-  public :: evaluate, rcut, lofio
+  public :: evaluate, rcut, lcut
   public :: evaluate_x, evaluate_y, evaluate_z
 
   CONTAINS
@@ -133,7 +133,7 @@ module m_radfunc_registry
      endif
    end function rcut
 
-   function lofio(gindex) result(l)
+   function lcut(gindex) result(l)
      integer, intent(in)    :: gindex
      integer                :: l
 
@@ -142,7 +142,7 @@ module m_radfunc_registry
      else
         call die("Invalid gindex")
      endif
-   end function lofio
+   end function lcut
 
    subroutine evaluate(gindex,r,f,grad)
      integer, intent(in)    :: gindex

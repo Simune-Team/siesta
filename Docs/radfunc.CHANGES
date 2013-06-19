@@ -1,4 +1,22 @@
 -------------------------------------------------------------
+June 19, 2013  Jose Soler   siesta-trunk-376-radfunc-3
+Re-use information in new_matel tables. Clarification of Lcut
+
+J. Soler has re-activated the code to search in matel's tables to
+avoid recomputation in case the matrix element combination has
+appeared before.
+
+Also, lofio should really be considered as an "angular momentum cutoff",
+as matel is ready to handle functions which include several values of l.
+
+evaluate, rcut, and lcut are now first-class symbols in new_matel.
+
+modified:
+  Src/new_matel.f
+  Src/radfunc_registry.F90
+
+
+-------------------------------------------------------------
 March 30, 2011  Alberto Garcia   siesta-trunk-376-radfunc-2
 Fix division by zero in evaluate routine
 

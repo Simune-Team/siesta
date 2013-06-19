@@ -14,23 +14,24 @@
       CONTAINS
       SUBROUTINE new_MATEL( OPERAT, IG1, IG2, R12, S12, DSDR )
 C *******************************************************************
-C Finds two-center matrix elements between atom-centerd 'orbitals' 
-C with finite range and angular momentum.
+C Finds two-center matrix elements between 'atomic orbitals' 
+C with finite radial and angular momentum cutoffs.
 C Written by J.M.Soler. April 1995.
 C Matrix elements of the position operator by DSP. June, 1999
 C Electrostatic interaction added by JMS. July 2002.
+C Introduction of unified 'global' indexes by AG. July 2011.
 C ************************* INPUT ***********************************
 C CHARACTER OPERAT : Operator to be used. The valid options are:
 C   'S' => Unity (overlap). Uppercase required for all values.
 C   'T' => -Laplacian
-C   'U' => 1/|r'-r| (with phiatm returning charge distributions)
+C   'U' => 1/|r'-r| (with evaluate returning charge distributions)
 C   'X' => x, returning <phi1(r-R12)|x|phi2(r)> (origin on second atom)
 C   'Y' => y, returning <phi1(r-R12)|y|phi2(r)>
 C   'Z' => z, returning <phi1(r-R12)|z|phi2(r)>
-C INTEGER IG1    : Global index of 1st function
-C INTEGER IG2    : Gloabal index of 2nd function (positive)
+C INTEGER IG1    : Global index of 1st function (must be positive)
+C INTEGER IG2    : Gloabal index of 2nd function
 C                    Indexes IG1, IG2 are used only to call 
-C                    routines LOFIO, RCUT and PHIATM (see below), and 
+C                    routines LCUT, RCUT and EVALUATE (see below), and 
 C                    may have other meanings within those routines
 C REAL*8  R12(3) : Vector from first to second atom
 C ************************* OUTPUT **********************************
@@ -39,27 +40,27 @@ C REAL*8 DSDR(3)  : Derivative (gradient) of S12 with respect to R12.
 C ************************* ROUTINES CALLED *************************
 C The following functions must exist:
 C
-C INTEGER FUNCTION LOFIO(IG)
-C   Returns the angular momentum of the function
+C INTEGER FUNCTION LCUT(IG)
+C   Returns the maximum angular momentum of the functions
 C Input:
-C     INTEGER IG : Global index
+C   INTEGER IG : Global function index
 C
 C REAL*8 FUNCTION RCUT(IG)
 C   Returns cutoff radius of the function
 C Input:
-C     INTEGER IG : Global index
+C   INTEGER IG : Global function index
 C
-C SUBROUTINE PHIATM(IG,R,PHI,GRPHI)
+C SUBROUTINE EVALUATE(IG,R,PHI,GRPHI)
 C   Returns the value of the functions to be integrated
 C Input:
-C     INTEGER IG : Global index
+C   INTEGER IG : Global function index
 C   REAL*8  R(3) : Position with respect to atom
 C Output:
 C   REAL*8  PHI      : Value of orbital at point R
 C   REAL*8  GRPHI(3) : Gradient of PHI at point R  
 C ************************* UNITS ***********************************
 C Length units are arbitrary, but must be consistent in MATEL, RCUT
-C   and PHIATM. The laplacian unit is (length unit)**(-2).
+C   and EVALUATE. The laplacian unit is (length unit)**(-2).
 C ************************* BEHAVIOUR *******************************
 C 1) If |R12| > RCUT(IS1,IO1) + RCUT(IS2,IO2), returns U(Rmax)*Rmax/R
 C    for OPERAT='U', and exactly zero in all other cases.
@@ -72,10 +73,8 @@ C Modules -----------------------------------------------------------
       use precision, only : dp
       use parallel, only: node
       USE ALLOC
-      USE m_radfunc_registry, ONLY: LOFIO, PHIATM=>evaluate, RCUT
-      USE m_radfunc_registry, ONLY: xphiatm=>evaluate_x
-      USE m_radfunc_registry, ONLY: yphiatm=>evaluate_y
-      USE m_radfunc_registry, ONLY: zphiatm=>evaluate_z
+      USE m_radfunc_registry, ONLY: EVALUATE, LCUT, RCUT
+      USE m_radfunc_registry, ONLY: EVALUATE_X, EVALUATE_Y, EVALUATE_Z
       use m_recipes, only: spline, splint, derf
       use spher_harm, only: rlylm, ylmexp, ylmylm, lofilm
       use spher_harm, only: reset_spher_harm
@@ -116,7 +115,7 @@ C Internal variable types and dimensions ----------------------------
      &  I, IF1, IF2, IFF, IFFY, IFLM1, IFLM2, 
      &  IG, IOPER, IQ, IR, IX,
      &  JF1, JF2, JFF, JFFR, JFFY, JFLM1, JFLM2, JLM, 
-     &  JO1, JO2, JR,
+     &  JG1, JG2, JR,
      &  L, L1, L2, L3, LMAX,
      &  NILM, NILM1, NILM2, NJLM1, NJLM2
       INTEGER, SAVE ::
@@ -248,7 +247,7 @@ C         two orbitals
           ENDIF
 
 C         Reallocate arrays
-          L = LOFIO( IG )
+          L = LCUT( IG )
           NILM = (L+2)**2
           IF (NF+NILM .GT. MF) MF = EXPAND * (NF+NILM)
           CALL RE_ALLOC( F, 0,NQ, 1,MF, 'F', MYNAME )
@@ -258,7 +257,7 @@ C         Reallocate arrays
 
 C         Expand orbital in spherical harmonics
           IF ((I.EQ.1) .OR. (IOPER.LE.3)) THEN
-            CALL YLMEXP( L, RLYLM, PHIATM, IG, 0, NQ, RMAX,
+            CALL YLMEXP( L, RLYLM, EVALUATE, IG, 0, NQ, RMAX,
      &                   NILM, ILM(NF+1:), F(:,NF+1:) )
             INDF(IG,1) = NF+1
             INDF(IG,2) = NF+1
@@ -268,13 +267,13 @@ C         Expand orbital in spherical harmonics
             NLM(IG,3) = NILM
           ELSE
             IF(IOPER.EQ.4) THEN
-              CALL YLMEXP( L+1, RLYLM, XPHIATM, IG, 0, NQ, RMAX,
+              CALL YLMEXP( L+1, RLYLM, EVALUATE_X, IG, 0, NQ, RMAX,
      &                     NILM, ILM(NF+1:), F(:,NF+1:) )
             ELSEIF(IOPER.EQ.5) THEN
-              CALL YLMEXP( L+1, RLYLM, YPHIATM, IG, 0, NQ, RMAX,
+              CALL YLMEXP( L+1, RLYLM, EVALUATE_Y, IG, 0, NQ, RMAX,
      &                     NILM, ILM(NF+1:), F(:,NF+1:) )
             ELSE
-              CALL YLMEXP( L+1, RLYLM, ZPHIATM, IG, 0, NQ, RMAX,
+              CALL YLMEXP( L+1, RLYLM, EVALUATE_Z, IG, 0, NQ, RMAX,
      &                     NILM, ILM(NF+1:), F(:,NF+1:) )
             ENDIF
             INDF(IG,IOPER) = NF+1
@@ -426,33 +425,33 @@ C           Select NRTAB out of NR points
 
 C           Find if radial function is already in table
             FOUND = .FALSE.
-c$$$            SEARCH: DO JO1 = LBOUND(INDF,2),UBOUND(INDF,2)
-c$$$                    DO JO2 = LBOUND(INDF,2),UBOUND(INDF,2)
-c$$$              JF1 = INDF(IS1,JO1,1)
-c$$$              JF2 = INDF(IS2,JO2,IOPER)
-c$$$              IF (JF1.NE.0 .AND. JF2.NE.0) THEN
-c$$$                NJLM1 = NLM(IS1,JO1,1)
-c$$$                NJLM2 = NLM(IS2,JO2,IOPER)
-c$$$                DO JFLM1 = JF1,JF1+NJLM1-1
-c$$$                DO JFLM2 = JF2,JF2+NJLM2-1
-c$$$                  JFF = INDFF(JFLM1,JFLM2,IOPER)
-c$$$                  IF (JFF .NE. 0) THEN
-c$$$                    DO JFFY = INDFFY(JFF-1)+1, INDFFY(JFF)
-c$$$                      JFFR = INDFFR(JFFY)
-c$$$                      IF ( PROPOR(NRTAB,FFL(1),FFR(1,1,JFFR),
-c$$$     &                            FFTOL,CPROP)           ) THEN
-c$$$                        FOUND = .TRUE.
-c$$$                        IFFR(L3) = JFFR
-c$$$                        CFFR(L3) = CPROP
-c$$$                        EXIT SEARCH
-c$$$                      ENDIF
-c$$$                    ENDDO
-c$$$                  ENDIF
-c$$$                ENDDO
-c$$$                ENDDO
-c$$$              ENDIF
-c$$$            ENDDO
-c$$$            ENDDO SEARCH
+            SEARCH: DO JG1 = 1,SIZE(INDF,1)
+                    DO JG2 = 1,SIZE(INDF,1)
+              JF1 = INDF(JG1,1)
+              JF2 = INDF(JG2,IOPER)
+              IF (JF1.NE.0 .AND. JF2.NE.0) THEN
+                NJLM1 = NLM(JG1,1)
+                NJLM2 = NLM(JG2,IOPER)
+                DO JFLM1 = JF1,JF1+NJLM1-1
+                DO JFLM2 = JF2,JF2+NJLM2-1
+                  JFF = INDFF(JFLM1,JFLM2,IOPER)
+                  IF (JFF .NE. 0) THEN
+                    DO JFFY = INDFFY(JFF-1)+1, INDFFY(JFF)
+                      JFFR = INDFFR(JFFY)
+                      IF ( PROPOR(NRTAB,FFL(1),FFR(1,1,JFFR),
+     &                            FFTOL,CPROP)           ) THEN
+                        FOUND = .TRUE.
+                        IFFR(L3) = JFFR
+                        CFFR(L3) = CPROP
+                        EXIT SEARCH
+                      ENDIF
+                    ENDDO
+                  ENDIF
+                ENDDO
+                ENDDO
+              ENDIF
+            ENDDO
+            ENDDO SEARCH
 
 C           Store new radial function
             IF (.NOT.FOUND) THEN
