@@ -578,6 +578,8 @@ contains
        ! the calculating node...
        if ( Node == iNode ) then
           if ( cdabs(ZEnergy-ZE_cur) > EPS ) then
+             write(*,'(a,2(tr1,g12.5),a,2(tr1,g12.5))')'Energies, TS / Gf:', &
+                  ZEnergy, ' /', ZE_cur
              call die('Energy point in GF file does &
                   not match the internal energy-point in transiesta. &
                   &Please correct your GF files.')
@@ -586,6 +588,8 @@ contains
        
        ! If the k-point does not match what we expected...
        if ( IONode .and. ikpt /= ikGS ) then
+          write(*,'(a,i0,a,i0)')'Kpoint, TS / Gf: ', &
+               ikpt, ' / ', ikGS
           call die('Read k-point in GF file does not match &
                &the requested k-point. Please correct your &
                &GF files.')
@@ -648,9 +652,9 @@ contains
   subroutine read_next_GS(iPE,cNEn,Z,ikpt, &
        uGFL, no_L_HS, nqL, HAAL, SAAL, GAAL, &
        uGFR, no_R_HS, nqR, HAAR, SAAR, GAAR, &
-       nzwork, zwork)
+       nzwork, zwork, reread)
 
-    use parallel, only : Node, Nodes
+    use parallel, only : Node, Nodes, IONode
     use m_ts_cctype
       
     integer, intent(in) :: iPE, cNEn, ikpt
@@ -661,8 +665,9 @@ contains
     complex(dp), intent(inout), dimension(no_R_HS,no_R_HS,nqR) :: HAAR, SAAR, GAAR
     integer, intent(in) :: nzwork
     complex(dp), intent(inout) :: zwork(nzwork)
+    logical, intent(in), optional :: reread
 
-    integer :: iE, NEReqs
+    integer :: iE, NEReqs, i
 
     ! obtain a valid energy point (truncate at NEn)
     iE = min(iPE,cNEn)
@@ -674,6 +679,26 @@ contains
 
     ! the number of points we wish to read in this segment
     NEReqs = min(Nodes, cNEn-(iPe-1-Node))
+    
+    if ( present(reread) ) then
+       if ( IONode .and. reread ) then
+          do i = 1 , NEReqs * 2
+             backspace(unit=uGFL)
+             backspace(unit=uGFR)
+          end do
+! Currently the equilibrium energy points are just after
+! the k-point, hence we will never need to backspace behind the
+! HAA and SAA reads
+! however, when we add kpoints for the bias contour, then it might be
+! necessary!
+!           if ( new_kpt ) then
+!             do i = 1 , 2
+!                backspace(unit=uGFL)
+!                backspace(unit=uGFR)
+!             end do
+!          end if
+       end if
+    end if
 
     ! TODO Move reading of the energy points
     ! directly into the subroutines which need them

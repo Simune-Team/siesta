@@ -96,8 +96,6 @@ contains
             call die('We cannot perform sparse pattern on the electrode &
             &system.')
 
-       i = 0
-
        ! We must ensure that the Sigma[LR] have enough space to hold
        ! one line of the full matrix (we use them as work arrays
        ! when calculating the Gamma[LR]
@@ -111,6 +109,9 @@ contains
        
        if ( ts_method == TS_SPARSITY_TRI ) then
           
+          ! We need a better restriction here
+          ! In practice the tri-diagonal initialization should probably
+          ! perform this...
           if ( IsVolt .and. (nL > nC .or. nR > nC) ) then
              write(*,'(a,2(i0,tr1,''/'',tr1),i0)') &
                   'Sizes are L/C/R: ',nL,nC,nR

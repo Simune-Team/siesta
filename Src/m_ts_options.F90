@@ -32,6 +32,33 @@ logical  :: savetshs     ! Saves the Hamiltonian and Overlap matrices if the
                          ! the option TS.SaveHS is specified in the input file
 logical  :: onlyS        ! Option to only save overlap matrix
 logical  :: USEBULK      ! Use Bulk Hamiltonian in Electrodes
+  ! Logical variable that describes the solution method on
+  ! LEFT-RIGHT-EQUILIBRIUM contour points.
+  ! This is realized by the fact that for:
+  !    UseBulk .and. UpdateDMCR
+  ! the needed part of the GF is only the C...C regions:
+  !
+  !  -------------------------------------
+  !  | L...L | L...C   0     0   |   0   |
+  !  | C...L | C...C C...C C...C |   0   |
+  !  |   0   | C...C C...C C...C |   0   |
+  !  |   0   | C...C C...C C...C | C...R |
+  !  |   0   |   0     0   R...C | R...R |
+  !  -------------------------------------
+  ! 
+  ! This means we can solve the following instead:
+  ! G_F^{-1} G_F I_P = I \times I_P,
+  ! where I_P:
+  !  ---------------------
+  !  |   0     0     0   |
+  !  |   1     0     0   |
+  !  |   0     1     0   |
+  !  |   0     0     1   |
+  !  |   0     0     0   |
+  !  ---------------------
+  ! Note, that this can ONLY be used in EQUI contour points.
+  ! In principle we can obtain the EXACT size of the problem
+  ! For very large electrodes. This could come in handy.
 logical  :: UpdateDMCR   ! Update DM values of ONLY Central Region
 logical  :: UseVFix      ! Call the routine TSVHFix 
 logical  :: IsVolt       ! Logical for dabs(VoltFDF) > 0.001d/eV
@@ -330,10 +357,6 @@ CONTAINS
        VoltageInC = .true.
     end if
     
-
-    ! Setup the correct handling of EQUILIBRIUM solution method:
-    ! See above the global variable for its use.
-    GF_INV_EQUI_PART = UseBulk .and. UpdateDMCR
 
     ! Here we check whether the user could perform the same
     ! calculation with the same GF-file

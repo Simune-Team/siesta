@@ -121,8 +121,6 @@ contains
     ! Gf calculation
     use m_ts_full_scat
 
-    use m_ts_method, only : GF_INV_EQUI_PART
-
     use m_ts_contour,only : PNEn, NEn, contour
     use m_ts_contour,only : contourL, contourR, contour_neq
     use m_ts_cctype
@@ -333,7 +331,7 @@ contains
     if (ierr/=0) call die('Could not allocate space for zwork')
     call memory('A','Z',nzwork,'transiesta')
 
-    if ( GF_INV_EQUI_PART ) then
+    if ( UpdateDMCR ) then
        ispin = no_u_TS*(no_u_TS-no_R-no_L)
        if ( IsVolt ) then
           ! We will need the full electrode columns 
@@ -862,7 +860,7 @@ contains
            spzH=spzH, spzS=spzS )
 
          
-      if ( GF_INV_EQUI_PART ) then
+      if ( UpdateDMCR ) then
          ! Only calculate the middle part of the Gf
          call calc_GF_Part(no_u_TS,no_L,no_R, zwork, GF,ierr)
          no_GF_offset = no_L
@@ -947,6 +945,22 @@ contains
 
       ! Calculate the Greens function
       call calc_GF_Bias(no_u_TS,no_L,no_R, zwork, GF,ierr)
+
+#ifdef TRANSIESTA_DEBUG
+      ind = 0 
+      do ia_E = 1 , no_L
+         do ia = 1 , no_u_TS
+            ind = ind + 1
+            call out_write(10000+iu_GF,ia,ia_E,GF(ind))
+         end do
+      end do
+      do ia_E = no_u_TS - no_R + 1 , no_u_TS
+         do ia = 1 , no_u_TS
+            ind = ind + 1
+            call out_write(10000+iu_GF,ia,ia_E,GF(ind))
+         end do
+      end do
+#endif
 
       ! We calculate the right contribution
       call GF_Gamma_GF(UpdateDMCR,no_L+1,no_u_TS,no_L+no_R, &

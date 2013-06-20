@@ -49,11 +49,6 @@ module m_ts_tri
   integer, pointer, save :: tri_part(:) => null()
   integer, save :: tri_parts = 0
 
-  ! arrays for containing the bias contour tri-diagonal matrix part sizes
-  integer, pointer, save :: tri_Vpart(:) => null()
-  integer, parameter :: tri_Vparts = 3
-
-  
   public :: ts_tri_init
   public :: transiesta_tri
 
@@ -72,7 +67,7 @@ contains
     use class_Sparsity
     use create_Sparsity_Union
 
-    use m_ts_options, only : IsVolt, no_BufL, no_BufR
+    use m_ts_options, only : no_BufL, no_BufR
     use m_ts_electype
     use m_ts_options, only : ElLeft, ElRight
     use m_ts_sparse, only : ts_sp_uc
@@ -87,15 +82,6 @@ contains
     no_L = TotUsedOrbs(ElLeft)
     no_R = TotUsedOrbs(ElRight)
     no_C = nrows_g(ts_sp_uc) - no_L - no_R - no_BufL - no_BufR
-
-    ! We will initialize the tri-diagonal matrices here
-    if ( IsVolt ) then
-       ! If we have voltages then we must use the tri-diagonal case
-       call re_alloc(tri_Vpart, 1, tri_Vparts,routine='tri_init',name='v_part')
-       tri_Vpart(1) = no_L
-       tri_Vpart(2) = no_C
-       tri_Vpart(3) = no_R
-    end if
 
     ! In order to ensure that the electrodes are in the
     ! tri-diagonal sparsity pattern, we can easily create
@@ -158,9 +144,6 @@ contains
                no_L, no_C, no_R
           write(*,'(a)') 'transiesta: Established a near-optimal partition &
                &for the tri-diagonal matrix.'
-          if ( IsVolt ) then
-             write(*,'(a)') 'transiesta: Using old 3-tri-diagonal for bias contour'
-          end if
        end if
        write(*,'(a)') 'transiesta: Size of the partitions:'
        do i = 1 , tri_parts
@@ -173,14 +156,6 @@ contains
        end do
        write(*,'(a,i0,a,i0)') 'transiesta: Matrix elements in tri / full: ', &
             els,' / ',nrows_g(ts_sp_uc)**2
-       if ( IsVolt ) then
-          els = tri_Vpart(tri_Vparts)**2
-          do i = 1 , tri_Vparts - 1
-             els = els + tri_Vpart(i)*( tri_Vpart(i) + 2 * tri_Vpart(i+1) )
-          end do
-          write(*,'(a,i0,a,i0)') 'transiesta: Matrix elements in bias tri / full: ', &
-               els,' / ',nrows_g(ts_sp_uc)**2
-       end if
     end if
 
   end subroutine ts_tri_init
@@ -259,8 +234,6 @@ contains
     ! Gf calculation
     use m_ts_tri_scat
 
-    use m_ts_method, only : GF_INV_EQUI_PART
-
     use m_ts_contour,only : PNEn, NEn, contour
     use m_ts_contour,only : contourL, contourR, contour_neq
     use m_ts_cctype
@@ -269,6 +242,8 @@ contains
 
     use m_trimat_invert, only : init_TriMat_inversion
     use m_trimat_invert, only : clear_TriMat_inversion
+
+    use m_ts_trimat_invert
 
     use m_ts_cctype
 
@@ -765,19 +740,47 @@ contains
        
        call init_update_regions(.true.)
        neqEPOINTS: do iPE = Node + 1 , cPNEn, Nodes
-          
+
           call select_dE(cNEn,c, iPE, nspin, ts_kweight(ikpt), Z, W, ZW)
+
+          if ( tri_parts > 3 ) then
+             
+             call read_next_GS(iPE, cNEn,Z,ikpt, &
+                  uGFL, no_L_HS, nqL, HAAL, SAAL, GAAL, &
+                  uGFR, no_R_HS, nqR, HAAR, SAAR, GAAR, &
+                  nzwork, zwork, reread = .false.)
+
+             ! We only need to do a last communication within 
+             ! the above reads. Hence we can quit the energy point loop now!
+             if ( iPE <= cNEn ) then
+                call non_Equilibrium_Density_Right(Z,W,ZW)
+             end if
+
+             call read_next_GS(iPE, cNEn,Z,ikpt, &
+                  uGFL, no_L_HS, nqL, HAAL, SAAL, GAAL, &
+                  uGFR, no_R_HS, nqR, HAAR, SAAR, GAAR, &
+                  nzwork, zwork, reread = .true.)
+
+             ! We only need to do a last communication within 
+             ! the above reads. Hence we can quit the energy point loop now!
+             if ( iPE <= cNEn ) then
+                call non_Equilibrium_Density_Left(Z,W,ZW)
+             end if
+
+          else
           
-          call read_next_GS(iPE, cNEn,Z,ikpt, &
-               uGFL, no_L_HS, nqL, HAAL, SAAL, GAAL, &
-               uGFR, no_R_HS, nqR, HAAR, SAAR, GAAR, &
-               nzwork, zwork)
+             call read_next_GS(iPE, cNEn,Z,ikpt, &
+                  uGFL, no_L_HS, nqL, HAAL, SAAL, GAAL, &
+                  uGFR, no_R_HS, nqR, HAAR, SAAR, GAAR, &
+                  nzwork, zwork)
 
-          ! We only need to do a last communication within 
-          ! the above reads. Hence we can quit the energy point loop now!
-          if ( iPE > cNEn ) cycle
+             ! We only need to do a last communication within 
+             ! the above reads. Hence we can quit the energy point loop now!
+             if ( iPE > cNEn ) cycle
 
-          call non_Equilibrium_Density(Z,W,ZW)
+             call non_Equilibrium_Density(Z,W,ZW)
+
+          end if
 
        end do neqEPOINTS
 
@@ -957,29 +960,9 @@ contains
 
   contains
     
-    subroutine setup_arrays()
-      zwork  => val(GF_tri)
-      SigmaL => zwork(1:no_L**2)
-      SigmaR => zwork(size(zwork)-no_R**2+1:size(zwork))
-      zwork  => val(zwork_tri)
-      nzwork =  elements(zwork_tri)
-      if ( nzwork < nnzs(ts_sp_uc) ) call die('The memory for transiesta cannot &
-           &sustain the implementation, contact the developers.')
-    end subroutine setup_arrays
-
     subroutine Equilibrium_Density(Z,W,ZW)
       complex(dp), intent(in) :: Z,W,ZW
 
-      ! Recreate the correct format of the tri-matrix
-      if ( Is_Volt_TriMat ) then
-         Is_Volt_TriMat = .false.
-         call delete(zwork_tri)
-         call delete(GF_tri)
-         call newzTriMat(zwork_tri,tri_parts,tri_part,'GFinv')
-         call newzTriMat(GF_tri,tri_parts,tri_part,'GFinv')
-         call setup_arrays()
-      end if
-      
       ! for these contour parts we do not require to calculate
       ! Gamma's.
       ! Hence we can perform the calculation without 
@@ -1009,7 +992,7 @@ contains
            spH =spH , spS =spS, &
            spzH=spzH, spzS=spzS )
          
-      if ( GF_INV_EQUI_PART ) then
+      if ( UpdateDMCR ) then
          ! Only calculate the middle part of the Gf
          call calc_GF_Part(no_u_TS, no_L,no_R,zwork_tri, GF_tri, ierr)
       else
@@ -1059,16 +1042,6 @@ contains
       complex(dp), intent(in) :: Z,i_W,i_ZW
       complex(dp) :: W,ZW
 
-      ! Recreate the correct format of the tri-matrix
-      if ( .not. Is_Volt_TriMat ) then
-         Is_Volt_TriMat = .true.
-         call delete(zwork_tri)
-         call delete(GF_tri)
-         call newzTriMat(zwork_tri,tri_Vparts,tri_Vpart,'GFinv')
-         call newzTriMat(GF_tri,tri_Vparts,tri_Vpart,'GFinv')
-         call setup_arrays()
-      end if
-             
       ! The non-equilibrium integration points have the density
       ! in the real part of the Gf.Gamma.Gf^\dagger
       ! Hence we simply multiply W by -i to move the density
@@ -1076,8 +1049,7 @@ contains
       W  = zmi * i_W
       ZW = Z * W
 
-
-      call UC_expansion(.true.,UseBulk,Z,no_L_HS,no_L, &
+      call UC_expansion(.false.,UseBulk,Z,no_L_HS,no_L, &
            RepA1(ElLeft), RepA2(ElLeft), &
            na_L_HS,lasto_L,nqL,qLb,wqL, &
            HAAL, SAAL, GAAL, &
@@ -1102,6 +1074,7 @@ contains
 
       ! We calculate the right thing.
       call GF_Gamma_GF_Right(UseBulk,UpdateDMCR,no_R, Gf_tri, GammaRT, zwork_tri)
+
       ! work is now GFGGF
 
 #ifdef TRANSIESTA_DEBUG
@@ -1116,7 +1089,7 @@ contains
          call add_DM_dE_Z(spzDMuR,spzEDMuR, &
               zwork_tri, no_BufL, -W, -ZW)
       end if
-         
+
       ! We calculate the left thing.
       call GF_Gamma_GF_Left(UseBulk,UpdateDMCR,no_L, Gf_tri, GammaLT, zwork_tri)
       ! work is now GFGGF
@@ -1135,6 +1108,159 @@ contains
       end if
          
     end subroutine non_Equilibrium_Density
+
+    subroutine non_Equilibrium_Density_Left(Z,i_W,i_ZW)
+      complex(dp), intent(in) :: Z,i_W,i_ZW
+      complex(dp) :: W,ZW
+#ifdef TRANSIESTA_DEBUG
+      integer :: ip, n, sIdx, eIdx
+      complex(dp), pointer :: t(:) , fG(:)
+#endif
+      ! The non-equilibrium integration points have the density
+      ! in the real part of the Gf.Gamma.Gf^\dagger
+      ! Hence we simply multiply W by -i to move the density
+      ! to the same scheme i.e. \rho = - Im(Gf.Gamma.Gf^\dagger)
+      W  = zmi * i_W
+      ZW = Z * W
+
+      call UC_expansion(.true.,UseBulk,Z,no_L_HS,no_L, &
+           RepA1(ElLeft), RepA2(ElLeft), &
+           na_L_HS,lasto_L,nqL,qLb,wqL, &
+           HAAL, SAAL, GAAL, &
+           SigmaL, GammaLT, & 
+           nzwork, zwork)
+
+      call UC_expansion(.false.,UseBulk,Z,no_R_HS,no_R, &
+           RepA1(ElRight), RepA2(ElRight), &
+           na_R_HS,lasto_R,nqR,qRb,wqR, &
+           HAAR, SAAR, GAAR, &
+           SigmaR, GammaRT, & 
+           nzwork, zwork)
+
+      call prepare_GF_inv(UseBulk, Z, no_BufL, &
+           no_u_TS,zwork_tri, &
+           no_L, SigmaL, no_R, SigmaR, &
+           spH =spH , spS =spS, &
+           spzH=spzH, spzS=spzS )
+      
+      call invert_TriMat_Bias(UpdateDMCR,zwork_tri,GF_tri,no_L)
+
+#ifdef TRANSIESTA_DEBUG
+      fG => val(GF_tri)
+      n = 0
+      do ip = 1 , parts(GF_tri)
+         call TriMat_Bias_idxs(GF_tri,no_L,ip,sIdx, eIdx)
+         if ( IONode ) &
+              print '(a,4(tr1,i0))','Left Indices:',ip,sIdx, eIdx,elements(GF_tri)
+         t => fG(sIdx:eIdx)
+         ind = 0
+         do ia_E = 1 , no_L
+            do ia = 1 , nrows_g(GF_tri,ip)
+               ind = ind + 1
+               call out_write(10000+iu_GF-Nodes,ia+n,ia_E,t(ind))
+            end do
+         end do
+         n = n + nrows_g(GF_tri,ip)
+      end do
+#endif
+
+      call GF_Gamma_GF_Left_Full(UseBulk,UpdateDMCR,no_L,no_R, &
+           Gf_tri,GammaLT,zwork_tri, &
+           no_R**2,GammaRT) ! work-array
+      
+      ! work is now GFGGF
+
+#ifdef TRANSIESTA_DEBUG
+      call write_TriMat(iu_GF,zwork_tri)
+#endif
+
+      ! Note that we use '++' here
+      if ( ts_Gamma_SCF ) then
+         call add_DM_dE_D(spDMu,spEDMu, &
+              zwork_tri, no_BufL, +W, +ZW)
+      else
+         call add_DM_dE_Z(spzDMu,spzEDMu, &
+              zwork_tri, no_BufL, +W, +ZW)
+      end if
+         
+    end subroutine non_Equilibrium_Density_Left
+
+    subroutine non_Equilibrium_Density_Right(Z,i_W,i_ZW)
+      complex(dp), intent(in) :: Z,i_W,i_ZW
+      complex(dp) :: W,ZW
+#ifdef TRANSIESTA_DEBUG
+      complex(dp), pointer :: t(:), fG(:)
+      integer :: ip, n, sIdx, eIdx
+#endif
+
+      ! The non-equilibrium integration points have the density
+      ! in the real part of the Gf.Gamma.Gf^\dagger
+      ! Hence we simply multiply W by -i to move the density
+      ! to the same scheme i.e. \rho = - Im(Gf.Gamma.Gf^\dagger)
+      W  = zmi * i_W
+      ZW = Z * W
+
+      call UC_expansion(.false.,UseBulk,Z,no_L_HS,no_L, &
+           RepA1(ElLeft), RepA2(ElLeft), &
+           na_L_HS,lasto_L,nqL,qLb,wqL, &
+           HAAL, SAAL, GAAL, &
+           SigmaL, GammaLT, & 
+           nzwork, zwork)
+
+      call UC_expansion(.true.,UseBulk,Z,no_R_HS,no_R, &
+           RepA1(ElRight), RepA2(ElRight), &
+           na_R_HS,lasto_R,nqR,qRb,wqR, &
+           HAAR, SAAR, GAAR, &
+           SigmaR, GammaRT, & 
+           nzwork, zwork)
+
+      call prepare_GF_inv(UseBulk, Z, no_BufL, &
+           no_u_TS,zwork_tri, &
+           no_L, SigmaL, no_R, SigmaR, &
+           spH =spH , spS =spS, &
+           spzH=spzH, spzS=spzS )
+      
+      call invert_TriMat_Bias(UpdateDMCR,zwork_tri,GF_tri,-no_R)
+
+#ifdef TRANSIESTA_DEBUG
+      fG => val(GF_tri)
+      n = 0
+      do ip = 1 , parts(GF_tri)
+         call TriMat_Bias_idxs(GF_tri,-no_R,ip,sIdx, eIdx)
+         if ( IONode ) &
+              print '(a,4(tr1,i0))','Right Indices:',ip,sIdx, eIdx,elements(GF_tri)
+         t => fG(sIdx:eIdx)
+         ind = 0
+         do ia_E = no_u_TS - no_R + 1 , no_u_TS
+            do ia = 1 , nrows_g(GF_tri,ip)
+               ind = ind + 1
+               call out_write(10000+iu_GF,ia+n,ia_E,t(ind))
+            end do
+         end do
+         n = n + nrows_g(GF_tri,ip)
+      end do
+#endif
+
+      call GF_Gamma_GF_Right_Full(UseBulk,UpdateDMCR,no_L,no_R, &
+           Gf_tri,GammaRT,zwork_tri, &
+           no_L**2,GammaLT) ! work-array
+      
+      ! work is now GFGGF
+
+#ifdef TRANSIESTA_DEBUG
+      call write_TriMat(iu_GF,zwork_tri)
+#endif
+
+      ! Note that we use '--' here
+      if ( ts_Gamma_SCF ) then
+         call add_DM_dE_D(spDMuR,spEDMuR, &
+              zwork_tri, no_BufL, -W, -ZW)
+      else
+         call add_DM_dE_Z(spzDMuR,spzEDMuR, &
+              zwork_tri, no_BufL, -W, -ZW)
+      end if
+         
+    end subroutine non_Equilibrium_Density_Right
 
   end subroutine transiesta_tri
   

@@ -340,7 +340,7 @@ subroutine my_symmetrize(N,M)
     ierr = 0
 
 ! We already know that:
-!   UseBulk == UpdateDMCR == .true.
+!   UpdateDMCR == .true.
     do j = 1, no_u_TS - no_L - no_R
        ii = (j-1) * no_u_TS
        do i = 1 , no_u_TS

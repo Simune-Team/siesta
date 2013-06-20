@@ -1,4 +1,55 @@
 ----------------------------------------------------
+June 20, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-59
+Added last transiesta feature, triple matrix product GfGGf uses TriMat
+
+* Added optional argument to the EYE function
+  to specify the value in the diagonal
+
+* When debugging it would not write out the correct sparsity pattern
+  if it was empty.
+
+* Added a write-out of the energies when the TSGF files does not match
+  the internal energy of transiesta
+
+* Added the matrix product for arbitrary tri-matrices.
+  This means that we do extra computations as it is very unlikely that the full
+  column of both the left and right side will be enough.
+  Hence we need to re-read the non-equilibrium energies.
+  This is accomblished by a flag to the TSGF read routine.
+  This will be a slower computation when dealing with few parts (i.e. ~4-5)
+  but for more parts it will be faster as the amount of double-computation
+  will be quite limited.
+  
+* Fully removed the GF_INV_EQUI_PART variable, the same information about
+  the computation is in UpdateDMCR.
+  The UpdateDMCR is automatically corrected when the user asks for
+  UseBulk = .false.
+
+* When debugging will the code also write out the GfGGf product 
+  as well as the Gf for the left/right-column.
+
+* Fixed comments in the m_ts_tri_scat module.
+
+* Fully removed all tri_Vparts references. 
+  Now the tri-mat routine uses the "old" trimat implementation when
+  parts(GF) == 3 and the new one when parts(GF) > 3
+
+added:
+  Src/m_ts_trimat_invert.F90
+modified:
+  Src/Makefile
+  Src/intrinsic_missing.f90
+  Src/m_ts_debug.F90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_full.F90
+  Src/m_ts_full_scat.F90
+  Src/m_ts_method.f90
+  Src/m_ts_options.F90
+  Src/m_ts_tri.F90
+  Src/m_ts_tri_scat.F90
+  Src/ts_init.F90
+
+----------------------------------------------------
 June 18, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-58
 Bugfix for logic behind Green's function calculations
 

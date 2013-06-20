@@ -24,7 +24,9 @@ module m_ts_tri_scat
   public :: calc_GF_Bias
   public :: calc_GF_Part
   public :: GF_Gamma_GF_Left
+  public :: GF_Gamma_GF_Left_Full
   public :: GF_Gamma_GF_Right
+  public :: GF_Gamma_GF_Right_Full
 
   ! Used for BLAS calls (local variables)
   complex(dp), parameter :: z0  = dcmplx( 0._dp, 0._dp)
@@ -464,9 +466,9 @@ contains
     logical, intent(in) :: UseBulk ! If .not. UseBulk we will also update the Gf11 and Gf33
     logical, intent(in) :: UpdateDMCR ! If .not. UpdateDMCR we will also update the Gf12, Gf21, Gf32 and Gf23
     integer, intent(in) :: no_L ! the size of the Gamma
-    ! The Green's function (note that it SHOULD be transposed on entry)
+    ! The Green's function
     type(zTriMat), intent(inout) :: Gf_tri
-    ! i (Sigma - Sigma^dagger)/2
+    ! i (Sigma - Sigma^dagger)/2 ^T
     complex(dp),    intent(in) :: GammaT(no_L,no_L)
 
 ! *********************
@@ -571,6 +573,176 @@ contains
 
   end subroutine GF_Gamma_GF_Left
 
+  subroutine GF_Gamma_GF_Left_Full(UseBulk,UpdateDMCR,no_L,no_R,Gf_tri,GammaT,GGG_tri, &
+       nzwork, zwork)
+
+! ======================================================================
+!  This routine returns GGG=GF.Gamma.GF^\dagger, where GF is a tri-diagonal
+!  matrix and the states
+!  corresponds to the (no_L) Left
+!  Gamma is a (no_L)x(no_L) matrix.
+! ======================================================================
+    use class_zTriMat
+    use m_ts_trimat_invert
+    use alloc, only : re_alloc, de_alloc
+
+    implicit none
+
+! *********************
+! * INPUT variables   *
+! *********************
+    logical, intent(in) :: UseBulk ! If .not. UseBulk we will also update the Gf11 and Gf33
+    logical, intent(in) :: UpdateDMCR ! If .not. UpdateDMCR we will also update the Gf12, Gf21, Gf32 and Gf23
+    integer, intent(in) :: no_L ! the size of the Gamma
+    integer, intent(in) :: no_R ! the right electrode size
+    ! The Green's function 
+    type(zTriMat), intent(inout) :: Gf_tri
+    ! i (Sigma - Sigma^dagger)/2 ^T
+    complex(dp),    intent(in) :: GammaT(no_L,no_L)
+
+! *********************
+! * OUTPUT variables  *
+! *********************
+    type(zTriMat), intent(inout) :: GGG_tri    !GF.GAMMA.GF
+    integer, intent(in) :: nzwork
+    complex(dp), intent(inout), target :: zwork(nzwork)
+
+    ! local variables
+    complex(dp), pointer :: fGf(:), Gf(:), GGG(:), oW(:) => null()
+    integer :: nr, np
+    integer :: sIdx, eIdx, rem_size
+    logical :: need_alloc
+    integer :: ip, cp
+    integer :: sN, sNc
+
+    integer :: sPart, ePart
+    integer :: BsPart, BePart
+
+#ifdef TRANSIESTA_DEBUG
+    call write_debug( 'PRE GFGammaGF' )
+#endif
+
+    call timer("GFGGF",1)
+
+    ! tri-diagonal parts information
+    nr = nrows_g(Gf_tri)
+    np = parts(Gf_tri)
+
+    ! Which parts are needed
+    sPart  = which_part(Gf_tri,no_L+1)
+    ePart  = which_part(Gf_tri,nr-no_R)
+
+    if ( .not. UpdateDMCR ) then
+       sPart = 1
+       ePart = np
+    end if
+
+    ! Capture the full elements
+    fGf => val(Gf_tri)
+
+    ! figure out if we need to allocate any space
+    call TriMat_Bias_idxs(Gf_tri,no_L,np,sIdx,eIdx)
+    sIdx = eIdx + 1
+    eIdx = elements(Gf_tri)
+
+    ! this is the empty array (we use it for work)
+    oW => fGf(sIdx:eIdx)
+    rem_size = size(fGf)
+
+    need_alloc = .false.
+    eIdx = 0
+    do ip = sPart , ePart
+       if ( rem_size < no_L * nrows_g(Gf_tri,ip) ) then
+          need_alloc = .true.
+          eIdx = max(eIdx, no_L * nrows_g(Gf_tri,ip))
+       end if
+    end do
+
+    if ( need_alloc ) then
+       if ( eIdx <= nzwork ) then
+          oW => zwork
+          ! prohibits the deallocation
+          need_alloc = .false.
+       else
+          nullify(oW)
+          call re_alloc(oW,1,eIdx,routine='GFGGF')
+       end if
+    end if
+    
+
+    do ip = sPart , ePart
+
+       ! Calculate the \Gamma Gf^\dagger sPart,1
+
+       sN = nrows_g(Gf_tri,ip)
+       
+       call TriMat_Bias_idxs(Gf_tri,no_L,ip,sIdx,eIdx)
+       ! obtain the Gf in the respective column
+       Gf => fGf(sIdx:eIdx)
+       call zgemm('T','C',no_L,sN,no_L,z1, GammaT, no_L, &
+            Gf, sN, z0, oW, no_L)
+       
+       ! Now we are ready to perform the multiplication
+       ! for the requested region
+
+       if ( UseBulk ) then
+          BsPart = which_part(Gf_tri,no_L+1)
+          BePart = which_part(Gf_tri,nr-no_R)
+          if ( .not. UpdateDMCR ) then
+             if ( ip == 1 ) then
+                BePart = BsPart
+             else if ( ip == np ) then
+                BsPart = BePart
+             else
+                BsPart = sPart
+                BePart = ePart
+             end if
+          end if
+       else
+          BsPart = sPart
+          BePart = ePart
+       end if
+
+       ! correct to the quantities that is available
+       BsPart = max(ip-1,BsPart)
+       BePart = min(ip+1,BePart)
+
+#ifdef TRANSIESTA_DEBUG
+       write(*,'(a,2(tr1,i0),a,2(tr1,i0))')'Left GfGGf at:',BsPart,ip,' --',BePart,ip
+#endif
+
+       do cp = BsPart , BePart
+
+          sNc = nrows_g(Gf_tri,cp)
+          
+          ! Retrieve Gf block
+          call TriMat_Bias_idxs(Gf_tri,no_L,cp,sIdx,eIdx)
+          Gf => fGf(sIdx:eIdx)
+
+          ! retrieve the GGG block
+          GGG => val(GGG_tri,cp,ip)
+
+          ! We need only do the product in the closest
+          ! regions (we don't have information anywhere else)
+          call zgemm('N','N',sNc,sN,no_L,z1, &
+               Gf, sNc, oW, no_L, z0, GGG, sNc)
+
+       end do
+
+    end do
+
+    if ( need_alloc ) then
+       call de_alloc(oW,routine='GFGGF')
+    end if
+
+    call timer('GFGGF',2)
+
+#ifdef TRANSIESTA_DEBUG
+    call write_debug( 'POS GFGammaGF' )
+#endif
+
+  end subroutine GF_Gamma_GF_Left_Full
+
 
   subroutine GF_Gamma_GF_Right(UseBulk,UpdateDMCR,no_R,Gf_tri,GammaT,GGG_tri)
 
@@ -590,9 +762,9 @@ contains
     logical, intent(in) :: UseBulk ! if .not. UseBulk everything is needed
     logical, intent(in) :: UpdateDMCR ! If .not. UpdateDMCR we will also update the Gf12, Gf21, Gf32 and Gf23
     integer, intent(in) :: no_R ! the size of the Gamma
-    ! The Green's function (note that it SHOULD be transposed on entry)
+    ! The Green's function
     type(zTriMat), intent(inout) :: Gf_tri
-    ! i (Sigma - Sigma^dagger)/2
+    ! i (Sigma - Sigma^dagger)/2 ^T
     complex(dp),    intent(in) :: GammaT(no_R,no_R)
 
 ! *********************
@@ -694,5 +866,175 @@ contains
 #endif
 
   end subroutine GF_Gamma_GF_Right
+
+  subroutine GF_Gamma_GF_Right_Full(UseBulk,UpdateDMCR,no_L,no_R,Gf_tri,GammaT,GGG_tri, &
+       nzwork, zwork)
+
+! ======================================================================
+!  This routine returns GGG=GF.Gamma.GF^\dagger, where GF is a tri-diagonal
+!  matrix and the states
+!  corresponds to the (no_L) Left
+!  Gamma is a (no_L)x(no_L) matrix.
+! ======================================================================
+    use class_zTriMat
+    use m_ts_trimat_invert
+    use alloc, only : re_alloc, de_alloc
+
+    implicit none
+
+! *********************
+! * INPUT variables   *
+! *********************
+    logical, intent(in) :: UseBulk ! If .not. UseBulk we will also update the Gf11 and Gf33
+    logical, intent(in) :: UpdateDMCR ! If .not. UpdateDMCR we will also update the Gf12, Gf21, Gf32 and Gf23
+    integer, intent(in) :: no_L ! the size of the Gamma
+    integer, intent(in) :: no_R ! the right electrode size
+    ! The Green's function 
+    type(zTriMat), intent(inout) :: Gf_tri
+    ! i (Sigma - Sigma^dagger)/2 ^T
+    complex(dp),    intent(in) :: GammaT(no_R,no_R)
+
+! *********************
+! * OUTPUT variables  *
+! *********************
+    type(zTriMat), intent(inout) :: GGG_tri    !GF.GAMMA.GF
+    integer, intent(in) :: nzwork
+    complex(dp), intent(inout), target :: zwork(nzwork)
+
+    ! local variables
+    complex(dp), pointer :: fGf(:), Gf(:), GGG(:), oW(:) => null()
+    integer :: nr, np
+    integer :: sIdx, eIdx, rem_size
+    logical :: need_alloc
+    integer :: ip, cp
+    integer :: sN, sNc
+
+    integer :: sPart, ePart
+    integer :: BsPart, BePart
+
+#ifdef TRANSIESTA_DEBUG
+    call write_debug( 'PRE GFGammaGF' )
+#endif
+
+    call timer("GFGGF",1)
+
+    ! tri-diagonal parts information
+    nr = nrows_g(Gf_tri)
+    np = parts(Gf_tri)
+
+    ! Which parts are needed
+    sPart  = which_part(Gf_tri,no_L+1)
+    ePart  = which_part(Gf_tri,nr-no_R)
+
+    if ( .not. UpdateDMCR ) then
+       sPart = 1
+       ePart = np
+    end if
+
+    ! Capture the full elements
+    fGf => val(Gf_tri)
+
+    ! figure out if we need to allocate any space
+    call TriMat_Bias_idxs(Gf_tri,-no_R,1,sIdx,eIdx)
+    eIdx = sIdx - 1
+    sIdx = 1
+
+    ! this is the empty array (we use it for work)
+    oW => fGf(sIdx:eIdx)
+    rem_size = size(fGf)
+    
+    need_alloc = .false.
+    eIdx = 0
+    do ip = sPart , ePart
+       if ( rem_size < no_R * nrows_g(Gf_tri,ip) ) then
+          need_alloc = .true.
+          eIdx = max(eIdx, no_R * nrows_g(Gf_tri,ip))
+       end if
+    end do
+
+    if ( need_alloc ) then
+       if ( eIdx <= nzwork ) then
+          oW => zwork
+          ! prohibits the deallocation
+          need_alloc = .false.
+       else
+          nullify(oW)
+          call re_alloc(oW,1,eIdx,routine='GFGGF')
+       end if
+    end if
+    
+
+    do ip = sPart , ePart
+
+       ! Calculate the \Gamma Gf^\dagger sPart,1
+
+       sN = nrows_g(Gf_tri,ip)
+       
+       call TriMat_Bias_idxs(Gf_tri,-no_R,ip,sIdx,eIdx)
+       ! obtain the Gf in the respective column
+       Gf => fGf(sIdx:eIdx)
+       call zgemm('T','C',no_R,sN,no_R,z1, GammaT, no_R, &
+            Gf, sN, z0, oW, no_R)
+       
+       ! Now we are ready to perform the multiplication
+       ! for the requested region
+
+       if ( UseBulk ) then
+          BsPart = which_part(Gf_tri,no_L+1)
+          BePart = which_part(Gf_tri,nr-no_R)
+          if ( .not. UpdateDMCR ) then
+             if ( ip == 1 ) then
+                BePart = BsPart
+             else if ( ip == np ) then
+                BsPart = BePart
+             else
+                BsPart = sPart
+                BePart = ePart
+             end if
+          end if
+       else
+          BsPart = sPart
+          BePart = ePart
+       end if
+
+       ! correct to the quantities that is available
+       BsPart = max(ip-1,BsPart)
+       BePart = min(ip+1,BePart)
+
+#ifdef TRANSIESTA_DEBUG
+       write(*,'(a,2(tr1,i0),a,2(tr1,i0))')'Right GfGGf at:',BsPart,ip,' --',BePart,ip
+#endif
+
+       do cp = BsPart , BePart
+
+          sNc = nrows_g(Gf_tri,cp)
+          
+          ! Retrieve Gf block
+          call TriMat_Bias_idxs(Gf_tri,-no_R,cp,sIdx,eIdx)
+          Gf => fGf(sIdx:eIdx)
+
+          ! retrieve the GGG block
+          GGG => val(GGG_tri,cp,ip)
+
+          ! We need only do the product in the closest
+          ! regions (we don't have information anywhere else)
+          call zgemm('N','N',sNc,sN,no_R,z1, &
+               Gf, sNc, oW, no_R, z0, GGG, sNc)
+
+       end do
+
+    end do
+
+    if ( need_alloc ) then
+       call de_alloc(oW,routine='GFGGF')
+    end if
+
+    call timer('GFGGF',2)
+
+#ifdef TRANSIESTA_DEBUG
+    call write_debug( 'POS GFGammaGF' )
+#endif
+
+  end subroutine GF_Gamma_GF_Right_Full
 
 end module m_ts_tri_scat

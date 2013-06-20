@@ -123,6 +123,7 @@ contains
     call attach(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
 
     write(u,'(i5)') nrows(sp)
+    ind = 0
 
     do io = 1 , nrows(sp)
        if ( l_ncol(io) == 0 ) cycle

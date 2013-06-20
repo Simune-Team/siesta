@@ -733,59 +733,78 @@ contains
   ! The reason for choosing a subroutine for these
   ! are the direct impact on memory for very large matrices.
   ! This ensures direct writes, instead of temporary eye-arrays...
-  pure subroutine EYE_i_2D(size,array)
+  pure subroutine EYE_i_2D(size,array,I)
     integer, intent(in) :: size
     integer, intent(out) :: array(size,size)
-    integer :: i, j
-    do j = 1 , size
-       do i = 1 , size
-          array(i,j) = 0
+    integer, intent(in), optional :: I
+    integer :: j, k, lI
+    lI = 1
+    if ( present(I) ) lI = I
+    do k = 1 , size
+       do j = 1 , size
+          array(j,k) = 0
        end do
-       array(j,j) = 1       
+       array(k,k) = lI
     end do
   end subroutine EYE_i_2D
-  pure subroutine EYE_sp_2D(size,array)
+  pure subroutine EYE_sp_2D(size,array,I)
     integer, intent(in) :: size
     real(sp), intent(out) :: array(size,size)
-    integer :: i, j
-    do j = 1 , size
-       do i = 1 , size
-          array(i,j) = 0._sp
+    real(sp), intent(in), optional :: I
+    real(sp) :: lI
+    integer :: j, k
+    lI = 1._sp
+    if ( present(I) ) lI = I
+    do k = 1 , size
+       do j = 1 , size
+          array(j,k) = 0._sp
        end do
-       array(j,j) = 1._sp
+       array(k,k) = lI
     end do
   end subroutine EYE_sp_2D
-  pure subroutine EYE_dp_2D(size,array)
+  pure subroutine EYE_dp_2D(size,array,I)
     integer, intent(in) :: size
     real(dp), intent(out) :: array(size,size)
-    integer :: i, j
-    do j = 1 , size
-       do i = 1 , size
-          array(i,j) = 0._dp
+    real(dp), intent(in), optional :: I
+    real(dp) :: lI
+    integer :: j, k
+    lI = 1._dp
+    if ( present(I) ) lI = I
+    do k = 1 , size
+       do j = 1 , size
+          array(j,k) = 0._dp
        end do
-       array(j,j) = 1._dp
+       array(k,k) = lI
     end do
   end subroutine EYE_dp_2D
-  pure subroutine EYE_cp_2D(size,array)
+  pure subroutine EYE_cp_2D(size,array,I)
     integer, intent(in) :: size
     complex(sp), intent(out) :: array(size,size)
-    integer :: i, j
-    do j = 1 , size
-       do i = 1 , size
-          array(i,j) = 0._sp
+    complex(sp), intent(in), optional :: I
+    complex(sp) :: lI
+    integer :: j, k
+    lI = cmplx(1._sp,0._sp)
+    if ( present(I) ) lI = I
+    do k = 1 , size
+       do j = 1 , size
+          array(j,k) = 0._sp
        end do
-       array(j,j) = cmplx(1._sp,0._sp)
+       array(k,k) = lI
     end do
   end subroutine EYE_cp_2D
-  pure subroutine EYE_zp_2D(size,array)
+  pure subroutine EYE_zp_2D(size,array,I)
     integer, intent(in) :: size
     complex(dp), intent(out) :: array(size,size)
-    integer :: i, j
-    do j = 1 , size
-       do i = 1 , size
-          array(i,j) = dcmplx(0._dp,0._dp)
+    complex(dp), intent(in), optional :: I
+    complex(dp) :: lI
+    integer :: j, k
+    lI = dcmplx(1._dp,0._dp)
+    if ( present(I) ) lI = I
+    do k = 1 , size
+       do j = 1 , size
+          array(j,k) = dcmplx(0._dp,0._dp)
        end do
-       array(j,j) = dcmplx(1._dp,0._dp)
+       array(k,k) = lI
     end do
   end subroutine EYE_zp_2D
 
