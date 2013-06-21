@@ -16,7 +16,8 @@
 WORK_DIR=$(shell pwd)
 SIESTA_DIR=$(WORK_DIR)/../../../..
 SRC_DIR=$(SIESTA_DIR)/Src
-OBJ_DIR=$(SIESTA_DIR)/Obj-gfortran-parallel
+OBJDIR=Obj
+OBJ_DIR=$(SIESTA_DIR)/$(OBJDIR)
 #
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a .f90 .F90
@@ -68,6 +69,9 @@ simple_pipes_parallel: $(FSIESTA) simple_pipes_parallel.o
 	      $(FSIESTA) simple_pipes_parallel.o
 #
 # MPI version
+#
+phonons: libs_collected phonons.o 
+	$(FC) $(LDFLAGS) -o phonons phonons.o $(ALL_LIBS)
 #
 simple_mpi_serial: libs_collected simple_serial.o 
 	$(FC) $(LDFLAGS) -o simple_mpi_serial simple_serial.o $(ALL_LIBS)
