@@ -72,7 +72,7 @@ C Argument types and dimensions
       real(dp)                 :: dvol
       real(dp),         target :: Vs(nvmax,nspin)
 C Internal variables and arrays
-      integer,       parameter :: minloc = 100,  ! Min buffer size
+      integer,       parameter :: minloc = 1000,  ! Min buffer size
      &                            maxoa  = 100   ! Max # of orb/atom
       integer                  :: i, ia, ic, ii, ijl, il, imp, ind, iop,
      &                            ip, iphi, io, is, isp, ispin, iu, iul,

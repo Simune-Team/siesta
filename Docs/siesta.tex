@@ -68,7 +68,7 @@
 \hrulefill
 \vspace{0.5cm}
 
-{\Large June 10, 2013 }
+{\Large June 21, 2013 }
 
 \vspace{1.5cm}
 
@@ -2872,10 +2872,13 @@ Phys. Rev. Lett. {\bf 92}, 246401 (2004), with the efficient implementation of
 G. Rom\'an-P\'erez and J. M. Soler, Phys. Rev. Lett. {\bf 103},  096102 (2009).
 \item {\tt LMKLL} vdW-DF functional of Dion {\it et al} (same as DRSLL)
 reparametrized by K. Lee, E. Murray, L. Kong, B. I. Lundqvist and 
-D. C. Langreth, arXiv:1003.5255v1 (2010) 
+D. C. Langreth, PRB 82, 081101 (2010)
 \item {\tt KBM} vdW-DF  functional of Dion {\it et al} (same as DRSLL)
 reparametrized by J.Klimes, D.R.Bowler, and A.Michaelides, 
-JPCM {\bf 22}, 022201 (2009) (optB88-vdW version)
+JPCM {\bf 22}, 022201 (2010) (optB88-vdW version)
+\item {\tt VV} vdW-DF  functional of O. A. Vydrov and T. Van Voorhis, 
+JCP 133, 244103 (2010)
+
 \end{itemize}
 
 {\it Use:} {\bf XC.functional} and {\bf XC.authors} must be compatible.
@@ -6133,8 +6136,8 @@ temperature and/or pressure (see variable MD.AnnealOption below)
     Matrix!using phonon@using {\sc Phonon}}.
 
 \item {\tt Forces} (Receive coordinates from, and return forces to, an
-  external driver program, using Unix pipes for communication.  The
-  routines in module fsiesta.f90 allow the user's program to perform
+  external driver program, using MPI or Unix pipes for communication.
+  The routines in module fsiesta allow the user's program to perform
   this communication transparently, as if siesta were a conventional
   force-field subroutine. See {\tt Util/SiestaSubroutine/README} for
   details. WARNING: if this option is specified without a driver

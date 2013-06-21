@@ -58,7 +58,8 @@ PROGRAM siestaXCtest4
     auth(nfTot) = (/'PZ    ','PW92  ','PW91  ','PBE   ','RPBE  ', &
                     'revPBE','LYP   ','WC    ','PBESOL','AM05  ', &
 !                    'DRSLL ' /) 
-                    'LMKLL ' /) 
+!                    'LMKLL ' /) 
+                    'VV    ' /) 
 
   ! Tester variables and arrays
   integer :: cellMesh(3) = (/nx,nx,nx/)

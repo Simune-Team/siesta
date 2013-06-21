@@ -6,6 +6,117 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2013-06-21  11:10:00 GMT                                     trunk-439
+Siesta as subroutine using MPI. Vydrov-VanVoorhis vdW functional
+
+(Implemented by Jose Soler)
+
+* Siesta as a subroutine using MPI.
+
+A new version of fsiesta (siesta forces as a subroutine) that uses MPI
+to keep different siesta jobs, with their corresponding memory
+allocations, separated as different MPI processes. Each siesta job can
+itself run in parallel using its own MPI communicator.
+
+See Util/SiestaSubroutine for more information.
+
+* Implementation of Vydrov-VanVoorhis (VV) vdW functional.
+
+Ref: O.A.Vydrov & T.vanVoorhis, JCP 133, 244103 (2010)
+Conditions have been added in vdwxc to trap the VV case, calling the 
+corresponding routines in vv_vdwxc, where most of the new code is.
+
+
+* Minor changes:
+
+Array copy in mesh3d expanded in do loops to circunvent an apparent
+compiler bug
+
+Incresed length of some character strings that hold file names
+
+Increased parameter minloc in rhoofd and vmat for better efficiency
+
+Two minor bugs corrected in vdwxc.f90
+
+vdw_exchng changed to vdw_localxc in m_vdwxc
+
+The coefficients for interpolation of phi(d1,d2) in the upper boundary
+of d1 and d2 have been corrected in vdwxc:bcucof. But since these
+boundary values may be never encountered, this correction is probably
+irrelevant.  Additionally, a couple of comments have been corrected,
+and the reference output of the graphite_vdw_df test has been updated.
+
+A trap has been added in rdiag and cdiag to handle the trivial
+eigenvalue problem for matrices of dimension one, which was not
+treated correctly by the LAPACK routines.
+
+Consistency of array names in calls to re_alloc and de_alloc
+
+added:
+  Src/SiestaXC/Testers/test2.m
+  Src/SiestaXC/Testers/test5.f90
+  Src/SiestaXC/Testers/test5.m
+  Src/SiestaXC/vv_vdwxc.F90
+  Src/fsiesta_mpi.F90
+  Src/siesta_master.f90
+  Util/SiestaSubroutine/SimpleTest/
+  Util/SiestaSubroutine/SimpleTest/Src/
+  Util/SiestaSubroutine/SimpleTest/Src/Makefile
+  Util/SiestaSubroutine/SimpleTest/Src/phonons.f90
+  Util/SiestaSubroutine/SimpleTest/Src/simple_mpi_parallel.f90
+  Util/SiestaSubroutine/SimpleTest/Src/simple_pipes_parallel.f90
+  Util/SiestaSubroutine/SimpleTest/Src/simple_serial.f90
+  Util/SiestaSubroutine/SimpleTest/h2o.fdf
+  Util/SiestaSubroutine/SimpleTest/h2o.out
+  Util/SiestaSubroutine/SimpleTest/test.sh
+renamed:
+  Src/fsiesta.F90 => Src/fsiesta_pipes.F90
+modified:
+  Docs/siesta.tex
+  Pseudo/atom/pseudoXML.f
+  Pseudo/atom/velect.f
+  Src/MPI/mpi_siesta.f90
+  Src/Makefile
+  Src/SiestaXC/Testers/makefile
+  Src/SiestaXC/Testers/test2.f90
+  Src/SiestaXC/Testers/test3.F90
+  Src/SiestaXC/Testers/test4.F90
+  Src/SiestaXC/atomxc.F90
+  Src/SiestaXC/cellxc.F90
+  Src/SiestaXC/lib-00-README
+  Src/SiestaXC/lib-makefile
+  Src/SiestaXC/makefile
+  Src/SiestaXC/mesh3d.F90
+  Src/SiestaXC/siestaxc.F90
+  Src/SiestaXC/vdwxc.F90
+  Src/SiestaXC/xcmod.f90
+  Src/atmfuncs.f
+  Src/cdiag.F
+  Src/fft.F
+  Src/m_timer.F90
+  Src/moreParallelSubs.F90
+  Src/new_dm.F
+  Src/pxf.F90
+  Src/rdiag.F
+  Src/reinit.F
+  Src/rhoofd.F
+  Src/setspatial.f
+  Src/siesta_end.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/siesta_move.F
+  Src/struct_init.F
+  Src/vmat.F
+  Tests/Reference/graphite_vdw_df.out
+  Tests/graphite_vdw_df/graphite_vdw_df.fdf
+  Util/SiestaSubroutine/README
+  Util/Vibra/Src/outbands.f
+  Util/Vibra/Src/vibrator.f
+  version.info
+  Src/fsiesta_pipes.F90
+
+
+-----------------------------------------------------------------------
 2013-06-10  14:20:00 GMT                                     trunk-438
 Bug fixes in constraints routine
 

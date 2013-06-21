@@ -64,6 +64,7 @@
 
       implicit none
 #ifdef MPI
+      logical :: initialized
       integer :: MPIerror  ! Return error code in MPI routines
 #endif
       real(dp):: veclen       ! Length of a unit-cell vector
@@ -72,15 +73,18 @@
       integer :: ns           ! Number of species
       logical :: user_wants_supercell
 !------------------------------------------------------------------------- BEGIN
+! Initialise MPI unless siesta is running as a subroutine 
+! of a driver program that may have initialized MPI already
 #ifdef MPI
-C     Initialise MPI and set processor number
-      call MPI_Init( MPIerror )
+      call MPI_Initialized( initialized, MPIerror )
+      if (.not.initialized) then
+        call MPI_Init( MPIerror )
 #ifdef _TRACE_
-      call MPItrace_shutdown( )
+        call MPItrace_shutdown( )
 #endif
+      endif ! (.not.initialized)
       call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
       call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
-
       if (.not. fdf_parallel()) then
         call die('siesta_init: ERROR: FDF module ' //
      &           'doesn''t have parallel support')
