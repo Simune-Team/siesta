@@ -297,19 +297,7 @@ CONTAINS
        i = npol+ncircle+nline
        ! We immediately correct the number of energy-points for the contour
        if ( mod(i,Nodes) /= 0 ) then
-          do while (mod(i,Nodes) /= 0 )
-             ncircle = ncircle + 1
-             i = i + 1
-             if ( mod(i,Nodes) == 0 ) exit
-             nline = nline + 1
-             i = i + 1
-             if ( mod(i,Nodes) == 0 ) exit
-             ! We will only add 1 pole, rest will be circle and line
-             if ( mod(i,Nodes) <= 3 ) then
-                npol = npol + 1
-                i = i + 1
-             end if
-          end do
+          ncircle = ncircle + Nodes - mod(i,Nodes)
        end if
        if ( mod(nvolt,Nodes) /= 0 ) then
           nvolt = nvolt + Nodes - mod(nvolt,Nodes)

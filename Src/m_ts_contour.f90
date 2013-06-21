@@ -42,19 +42,19 @@ module m_ts_contour
 
   implicit none
 
-! The different available contours
+  ! The different available contours
   integer, parameter, public :: CC_METHOD_MOD_HANSSKRIVER = 1
   integer, parameter, public :: CC_METHOD_SOMMERFELD      = 2
   integer, parameter, public :: CC_METHOD_GAUSSFERMI      = 3
-! Leave space for other methods
+  ! Leave space for other methods
   integer, parameter, public :: CC_METHOD_PHONON          = 100
 
-! This module will also contain all the contour variables
+  ! This module will also contain all the contour variables
   integer, save :: NEn_eq
   integer, save :: NEn  ! Number of energy points in the contour path
   integer, save :: PNEn ! Number of energy points in the contour path (divisible by Nodes)
 
-! Contour path
+  ! Contour path
   type(ts_ccontour), dimension(:), pointer, save :: contour
   type(ts_ccontour), dimension(:), pointer, save :: contourL => null()
   type(ts_ccontour), dimension(:), pointer, save :: contourR => null()
@@ -84,7 +84,7 @@ contains
     real(dp), intent(in) :: EfL ! Left Fermi shift
     real(dp), intent(in) :: Ef0 ! equilibrium Fermi shift
     real(dp), intent(in) :: EfR ! Right Fermi shift
-! The different contour path parts
+    ! The different contour path parts
     integer, intent(in)  :: Ncircle, Nline, Npol,Nvolt
     real(dp), intent(in) :: Emin ! Minimum transport energy
     real(dp), intent(in) :: Emax ! Maximum energy
@@ -118,8 +118,8 @@ contains
     nullify(contour)
     allocate(contour(NEn))
   
-! Create the equilibrium contour in case we do not have 
-! a voltage
+    ! Create the equilibrium contour in case we do not have 
+    ! a voltage
     if ( (.not. IsVolt) .and. NE_equilibrium > 0 ) then
 
        c => contour(1:NE_equilibrium) 
@@ -129,15 +129,15 @@ contains
             kT,GFeta, &
             Ncircle,Nline,Npol, c)
        
-! Note we put a minus here because the integral we want is the
-! negative of the pole-sum and C+L integral!!
+       ! Note we put a minus here because the integral we want is the
+       ! negative of the pole-sum and C+L integral!!
        do i = 1 , NE_equilibrium
           c(i)%w = -c(i)%w
        end do
 
     else if ( NE_equilibrium > 0 ) then ! Do a voltage contour
 
-! Do the left contour line
+       ! Do the left contour line
        c => contour(1:NE_equilibrium) 
        contourL => c
        call mod_HansSkriver(CC_PART_LEFT_EQUI, &
@@ -145,13 +145,13 @@ contains
             kT,GFeta, &
             Ncircle,Nline,Npol, c)
        
-! Note we put a minus here because the integral we want is the
-! negative of the pole-sum and C+L integral!!
+       ! Note we put a minus here because the integral we want is the
+       ! negative of the pole-sum and C+L integral!!
        do i = 1 , NE_equilibrium
           c(i)%w = -c(i)%w
        end do
        
-! Do the right contour line
+       ! Do the right contour line
        c => contour(NE_equilibrium+1:2*NE_equilibrium) 
        contourR => c
        call mod_HansSkriver(CC_PART_RIGHT_EQUI, &
@@ -159,13 +159,13 @@ contains
             kT,GFeta, &
             Ncircle,Nline,Npol, c)
 
-! Note we put a minus here because the integral we want is the
-! negative of the pole-sum and C+L integral!!
+       ! Note we put a minus here because the integral we want is the
+       ! negative of the pole-sum and C+L integral!!
        do i = 1 , NE_equilibrium
           c(i)%w = -c(i)%w
        end do
        
-! The voltage contour
+       ! The voltage contour
        c => contour(2*NE_equilibrium+1:2*NE_equilibrium+NVolt) 
        contour_neq => c
        if (Cmethod.eq.CC_METHOD_SOMMERFELD) then ! 1. order
@@ -188,7 +188,7 @@ contains
 
     end if
     
-! Finally we add the transport energy points
+    ! Finally we add the transport energy points
     if ( Ntransport > 0 ) then
        c => contour(NEn-Ntransport+1:NEn) 
        if (Cmethod.eq.CC_METHOD_PHONON) then ! Phonon energy-points
@@ -349,27 +349,25 @@ contains
 ! ***********************
     type(ts_ccontour), target, intent(out) :: contour(Ncircle+Nline+Npol)
 
-! Modified Hans Skriver:
+    ! Modified Hans Skriver:
     integer, parameter :: NT = 10   ! start line in modified HS at E2-NT*kT
 
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
-! For temporary shift in the array (then we do not need an ic counter)
+    ! For temporary shift in the array (then we do not need an ic counter)
     type(ts_ccontour), pointer           :: c(:) => null()
     real(dp), dimension(:), allocatable :: theta,x,wt
 
-! Various constants for calculating the contour
+    ! Various constants for calculating the contour
     real(dp) :: D, Delta, gamma
     real(dp) :: alpha, R, beta
     complex(dp) :: ztmp, z0
 
-! loop variables
+    ! loop variables
     integer :: i,j
-
-!               
-!     Parameters
-!     
+    
+    ! Parameters
     D     = E2-E1
     Delta = Npol*2.0d0*Pi*kT
     gamma = NT*kT
@@ -379,9 +377,7 @@ contains
     z0    = dcmplx(E1 + R, 0d0)
     beta  = dasin(Delta/R)
 
-!
-!     Residuals:
-!        
+    ! Residuals
     c => contour(1:Npol)
     do i = 1 , Npol 
        c(i)%c = dcmplx(E2,Pi*kT*(2.0d0*(i-1)+1d0))
@@ -390,9 +386,7 @@ contains
        c(i)%type = CC_TYPE_RES
     end do                 !i
 
-!
-!     Line contour:
-!        
+    ! Line contour
     c => contour(Npol+1:Npol+Nline)
     allocate(wt(Nline),x(Nline))
     call memory('A','D',2*Nline,'mkCplxContour')         
@@ -418,9 +412,7 @@ contains
     call memory('D','D',2*Nline,'mkCplxContour')         
     deallocate(wt,x)
 
-!
-!     Circle contour:
-!
+    ! Circle contour
     c => contour(Npol+Nline+1:Npol+Nline+Ncircle)
     allocate(wt(Ncircle),theta(Ncircle))
     call memory('A','D',2*Ncircle,'mkCplxContour') 
@@ -568,12 +560,12 @@ contains
     real(dp) :: wlt(12), xlt(12) ! Used to obtain the weights etc.
     integer :: NGau ! This holds how many points on the Fermi line
     integer :: NTGauUse ! Intermediate for determining the Fermi line points
-! For holding the energies:
+    ! For holding the energies:
     real(dp) :: EE1,EE2
-! Different uses
+    ! Different uses
     real(dp) :: rtmp, gamma, delta
     
-! Loop variables
+    ! Loop variables
     integer :: i,j, Ni
 
     ! first determine how many points to use for the fermiline
@@ -637,7 +629,7 @@ contains
 
     gamma = NTGauUse*kT
 
-! set boundaries for gaussian quadrature
+    ! set boundaries for gaussian quadrature
     delta = (EE2 - EE1-2.*gamma)/(NEn-2*NGau-1)
     do i = NGau+1,NEn-NGau
        rtmp = delta*(i-NGau-1) + EE1+gamma
@@ -648,7 +640,7 @@ contains
        contour(i)%type = CC_TYPE_GAUSS_QUAD
     end do              !i
 
-! extended simpsons rule
+    ! extended simpsons rule
     contour(NGau+1)%w = contour(NGau+1)%w*17.d0/48.d0
     contour(NGau+2)%w = contour(NGau+2)%w*59.d0/48.d0
     contour(NGau+3)%w = contour(NGau+3)%w*43.d0/48.d0

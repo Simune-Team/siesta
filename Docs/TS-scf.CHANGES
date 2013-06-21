@@ -1,4 +1,21 @@
 ----------------------------------------------------
+June 21, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-63
+Comment indentation and bugfix in imperfect processor scaling
+
+* Comments in m_ts_contour has been indented
+
+* When number of processors was not divisable by the number of processors
+  we had also incremented the number of line points. 
+  However, the current implementation uses Gauss for the line-points
+  which for many processors could lead to incorrect number of energy-points.
+  Now excess integration points are attributed the circle contour as that
+  is independent on the Gauss-Fermi quadrature
+
+modified:
+  Src/m_ts_contour.F90
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 June 21, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-62
 Bugfix for deprecated flag and IsVolt flag
 
