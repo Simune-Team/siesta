@@ -1,4 +1,15 @@
 ----------------------------------------------------
+June 21, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-60
+Bugfix in size checks of the transiesta initialization
+
+* The tri-diagonal had special requirements when only using the 3-tri
+  This is now correctly checked.
+
+modified:
+  Src/m_ts_tri.F90
+  Src/ts_init.F90
+
+----------------------------------------------------
 June 20, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-59
 Added last transiesta feature, triple matrix product GfGGf uses TriMat
 

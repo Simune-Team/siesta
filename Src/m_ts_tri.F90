@@ -134,6 +134,17 @@ contains
        tri_part(1) = no_L
        tri_part(2) = no_C
        tri_part(3) = no_R
+
+       ! In practice the tri-diagonal initialization should probably
+       ! perform this...
+       if ( IsVolt .and. (no_L > no_C .or. no_R > no_C) ) then
+          write(*,'(a,2(i0,tr1,''/'',tr1),i0)') &
+               'Sizes are L/C/R: ',no_L,no_C,no_R
+          call die('Your system &
+               &has inappropriate sizes for memory limited &
+               &tri-diagonalization')
+       end if
+
     end if
 
     if ( IONode ) then
