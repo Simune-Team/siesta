@@ -67,7 +67,7 @@ contains
     use class_Sparsity
     use create_Sparsity_Union
 
-    use m_ts_options, only : no_BufL, no_BufR
+    use m_ts_options, only : IsVolt, no_BufL, no_BufR
     use m_ts_electype
     use m_ts_options, only : ElLeft, ElRight
     use m_ts_sparse, only : ts_sp_uc
