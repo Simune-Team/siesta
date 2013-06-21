@@ -1,4 +1,12 @@
 ----------------------------------------------------
+June 21, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-62
+Bugfix for deprecated flag and IsVolt flag
+
+modified:
+  Src/m_ts_contour.F90
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 June 21, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-61
 Forgot to include the IsVolt in the use statement
 

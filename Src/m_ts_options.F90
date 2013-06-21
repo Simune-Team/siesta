@@ -399,6 +399,7 @@ CONTAINS
 
     ! Show the deprecated and obsolete labels
     call fdf_deprecated('TS.CalcGF','TS.ReUseGF')
+    call fdf_deprecated('TS.TriDiag','TS.SolutionMethod')
     call fdf_obsolete('TS.FixContactCharge')
     call fdf_obsolete('TS.KxyPoints')
     call fdf_obsolete('TS.NKVoltScale')

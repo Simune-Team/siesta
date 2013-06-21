@@ -120,7 +120,7 @@ contains
   
 ! Create the equilibrium contour in case we do not have 
 ! a voltage
-    if ( .not. IsVolt .and. NE_equilibrium > 0 ) then
+    if ( (.not. IsVolt) .and. NE_equilibrium > 0 ) then
 
        c => contour(1:NE_equilibrium) 
        contourL => c
