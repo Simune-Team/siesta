@@ -65,7 +65,7 @@ contains
 #endif
 
     if ( nrows_g(sp) <= 3 ) then
-       call die('Errorneous sparsity pattern, only 3 orbitals')
+       call die('Erroneous sparsity pattern, only 3 orbitals')
     end if
 
     ! Establish a guess on the partition of the tri-diagonal 
@@ -216,8 +216,11 @@ contains
     ! Local variables
     integer :: N
 
+    if ( first_part >= nrows_g(sp) - no_BufL - no_BufR ) &
+         call die('Not allowed to do 1 tri-diagonal part')
+
     parts = 1
-    n_part(1) = min(first_part,nrows_g(sp) - no_BufL - no_BufR)
+    n_part(1) = first_part
     N = n_part(1)
     do while ( N < nrows_g(sp) - no_BufL - no_BufR)
        parts = parts + 1
@@ -305,6 +308,7 @@ contains
 
   subroutine guess_previous_part_size(sp,part,parts,n_part)
     use class_Sparsity
+    use m_ts_options, only : no_BufL, no_BufR
     use geom_helper, only : UCORB
     ! The sparsity pattern
     type(Sparsity), intent(inout) :: sp
@@ -318,7 +322,7 @@ contains
     ! Hence we must ensure that the size is what
     ! is up to the next parts size, and thats it...
     ncol = ncols(sp) + 1
-    eRow = nrows_g(sp)
+    eRow = nrows_g(sp) - no_BufL - no_BufR
     do i = parts , part + 2 , -1
        eRow = eRow - n_part(i)
     end do
@@ -415,6 +419,9 @@ contains
 
   end subroutine even_out_parts
 
+! Min and max column requires that the sparsity pattern
+! supplied has already stripped off the buffer orbitals.
+! Otherwise this will fail
   function max_col(sp,row)
     use class_Sparsity
     use geom_helper, only : UCORB
@@ -461,6 +468,7 @@ contains
 
   function valid_tri(sp,parts,n_part) result(val) 
     use class_Sparsity
+    use m_ts_options, only : no_BufL, no_BufR
     type(Sparsity), intent(inout) :: sp
     integer, intent(in) :: parts, n_part(parts)
     integer :: val
@@ -474,7 +482,7 @@ contains
     ! Easy check, if the number of rows
     ! does not sum up to the total number of rows.
     ! Then it must be invalid...
-    if ( N /= nrows(sp) ) then
+    if ( N /= nrows_g(sp) - no_BufL - no_BufR ) then
        val = NONVALID_SIZE
        return
     end if

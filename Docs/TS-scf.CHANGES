@@ -1,4 +1,15 @@
 ----------------------------------------------------
+June 21, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-64
+Small bugfix in sparse 2 tri-matrix occured when buffer atoms apparent
+
+* When having buffer atoms the tri-matrix creation was incorrect. 
+  This seems to have been corrected.
+  Still need full proof.
+
+modified:
+  Src/m_ts_Sparsity2TriMat.F90
+
+----------------------------------------------------
 June 21, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-63
 Comment indentation and bugfix in imperfect processor scaling
 
