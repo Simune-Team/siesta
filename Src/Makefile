@@ -149,7 +149,8 @@ OBJS =  automatic_cell.o atom_options.o \
 	write_orb_indx.o \
 	m_hs_matrix.o kpoint_convert.o m_glob_sparse.o\
         die.o m_dminim.o m_zminim.o\
-	radfunc_registry.o register_rfs.o new_matel.o
+	matel_registry.o register_rfs.o new_matel.o\
+        trialOrbitalClass.o swan_com.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -572,6 +573,7 @@ m_zminim.o: siesta_options.o sys.o
 madelung.o: parallel.o precision.o sys.o
 matel.o: alloc.o atmfuncs.o m_recipes.o parallel.o precision.o radfft.o
 matel.o: spher_harm.o sys.o
+matel_registry.o: precision.o radial.o spher_harm.o sys.o trialOrbitalClass.o
 md_out.o: files.o m_energies.o precision.o sys.o units.o
 md_utils.o: precision.o
 memory.o: alloc.o memoryinfo.o parallel.o precision.o
@@ -601,8 +603,8 @@ new_dm.o: alloc.o atomlist.o m_energies.o m_fdf_global.o m_iodm.o m_mpi_utils.o
 new_dm.o: m_sparse.o m_spin.o m_steps.o m_ts_global_vars.o m_ts_iodm.o
 new_dm.o: m_ts_options.o parallel.o parallelsubs.o parsing.o precision.o
 new_dm.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o units.o
-new_matel.o: alloc.o m_recipes.o parallel.o precision.o radfft.o
-new_matel.o: radfunc_registry.o spher_harm.o sys.o
+new_matel.o: alloc.o m_recipes.o matel_registry.o parallel.o precision.o
+new_matel.o: radfft.o spher_harm.o sys.o
 nlefsm.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
 normalize_dm.o: atomlist.o m_mpi_utils.o m_spin.o parallel.o precision.o
 normalize_dm.o: siesta_options.o sparse_matrices.o sys.o
@@ -618,8 +620,8 @@ ordern.o: precision.o siesta_cml.o sys.o units.o
 outcell.o: precision.o siesta_cml.o units.o
 outcoor.o: alloc.o atmfuncs.o precision.o siesta_geom.o sys.o units.o
 overfsm.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
-overlap.o: alloc.o atmfuncs.o mneighb.o new_matel.o parallel.o parallelsubs.o
-overlap.o: precision.o radfunc_registry.o
+overlap.o: alloc.o atmfuncs.o matel_registry.o mneighb.o new_matel.o parallel.o
+overlap.o: parallelsubs.o precision.o
 parallelsubs.o: domain_decom.o parallel.o spatial.o sys.o
 pdos.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o parallel.o
 pdos.o: parallelsubs.o precision.o siesta_geom.o units.o xml.o
@@ -653,7 +655,7 @@ rdiag.o: alloc.o m_diagon.o memoryinfo.o parallel.o precision.o sys.o
 read_xc_info.o: parallel.o precision.o sys.o
 readsp.o: parallel.o precision.o sys.o
 redcel.o: parallel.o precision.o sys.o
-register_rfs.o: atm_types.o atmfuncs.o precision.o radfunc_registry.o radial.o
+register_rfs.o: atm_types.o atmfuncs.o matel_registry.o precision.o radial.o
 reinit.o: files.o parallel.o
 remove_intramol_pressure.o: precision.o zmatrix.o
 reoptical.o: parallel.o precision.o sys.o
@@ -733,10 +735,12 @@ state_init.o: siesta_options.o sparse_matrices.o sys.o write_subs.o zmatrix.o
 struct_init.o: alloc.o atmfuncs.o atomlist.o files.o iopipes.o ioxv.o
 struct_init.o: m_iostruct.o m_mpi_utils.o parallel.o periodic_table.o
 struct_init.o: siesta_cml.o siesta_geom.o siesta_options.o zmatrix.o
+swan_com.o: precision.o
 sys.o: parallel.o
 timer.o: m_timer.o parallel.o sys.o timer_tree.o
 timer_tree.o: m_walltime.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
+trialOrbitalClass.o: precision.o swan_com.o sys.o units.o
 ts_init.o: files.o m_ts_contour.o m_ts_gf.o m_ts_kpoints.o m_ts_options.o
 ts_init.o: parallel.o
 ts_show_regions.o: parallel.o precision.o units.o
@@ -802,6 +806,7 @@ m_kinefsm.o: kinefsm.o
 m_ksv.o: ksv.o
 m_ksvinit.o: ksvinit.o
 m_local_dos.o: local_DOS.o
+m_matel_registry.o: matel_registry.o
 m_minvec.o: minvec.o
 m_mixer.o: mixer.o
 m_naefs.o: naefs.o

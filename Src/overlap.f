@@ -14,7 +14,7 @@
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GlobalToLocalOrb
       use atmfuncs,      only : orb_gindex
-      use m_radfunc_registry,  only : rcut
+      use m_matel_registry,  only : rcut
       use neighbour,     only : jna=>jan, r2ij, xij, mneighb,
      &                          reset_neighbour_arrays
       use alloc,         only : re_alloc, de_alloc

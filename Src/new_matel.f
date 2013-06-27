@@ -73,8 +73,8 @@ C Modules -----------------------------------------------------------
       use precision, only : dp
       use parallel, only: node
       USE ALLOC
-      USE m_radfunc_registry, ONLY: EVALUATE, LCUT, RCUT
-      USE m_radfunc_registry, ONLY: EVALUATE_X, EVALUATE_Y, EVALUATE_Z
+      USE m_matel_registry, ONLY: EVALUATE, LCUT, RCUT
+      USE m_matel_registry, ONLY: EVALUATE_X, EVALUATE_Y, EVALUATE_Z
       use m_recipes, only: spline, splint, derf
       use spher_harm, only: rlylm, ylmexp, ylmylm, lofilm
       use spher_harm, only: reset_spher_harm

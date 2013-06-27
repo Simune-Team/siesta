@@ -1,6 +1,6 @@
   subroutine register_rfs()
 
-    use m_radfunc_registry, only: register_in_rf_pool
+    use m_matel_registry, only: register_in_rf_pool, show_pool
     use atm_types, only: species_info, species, nspecies
     use radial, only: rad_func
 
@@ -43,6 +43,8 @@
        call register_in_rf_pool(func,l,m,"vna",(/is/),gindex)
        spp%vna_gindex = gindex
     enddo
+
+    call show_pool()
     
   end subroutine register_rfs
 !
@@ -51,7 +53,7 @@
   subroutine test_register()
 
     use precision, only: dp
-    use m_radfunc_registry, only: cutoff=>rcut, evaluate
+    use m_matel_registry, only: cutoff=>rcut, evaluate
     use atm_types, only: species_info, species, nspecies
     use atmfuncs, only: rcut, phiatm
     use atmfuncs, only: orb_gindex, kbproj_gindex, vna_gindex

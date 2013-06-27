@@ -1,4 +1,23 @@
 -------------------------------------------------------------
+June 27, 2013  Alberto Garcia   siesta-trunk-438-radfunc-4
+Added support for two kinds of functions in registry
+
+Added support for "wannier trial orbitals", as defined in 
+Richard Korytar's code to interface with Wannier90. This is
+proof-of-concept only for now. It will become useful upon
+the merge of the updated interface code being developed by
+Javier Junquera.
+
+added:
+  Src/matel_registry.F90
+  Src/trialOrbitalClass.f90
+modified:
+  Src/Makefile
+  Src/new_matel.f
+  Src/overlap.f
+  Src/register_rfs.F90
+
+-------------------------------------------------------------
 June 19, 2013  Alberto Garcia   siesta-trunk-438-radfunc-3
 Sync to trunk-438
 
