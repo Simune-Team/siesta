@@ -199,15 +199,22 @@ C Returns the global index of a basis orbital
       FUNCTION kbproj_gindex (IS,IO)
       integer kbproj_gindex
       integer, intent(in) :: is    ! Species index
-      integer, intent(in) :: io    ! KBproj index (within atom, >0)
+      integer, intent(in) :: io    ! KBproj index 
+                                   ! (within atom, <0, for compatibility)
 
 C Returns the global index of a KB projector
 
-      call chk('kbproj_gindex',is)
-      if ( (io .gt. species(is)%nprojs) .or.
-     $     (io .lt. 1))   call die("kbproj_gindex: Wrong io")
+      integer :: ko
 
-      kbproj_gindex = species(is)%pj_gindex(io)
+      call chk('kbproj_gindex',is)
+      ko = -io
+
+      if ( (ko .gt. species(is)%nprojs) .or.
+     $     (ko .lt. 1)) then
+         call die("kbproj_gindex: Wrong io")
+      endif
+
+      kbproj_gindex = species(is)%pj_gindex(ko)
       end function kbproj_gindex
 
       FUNCTION vna_gindex (IS)

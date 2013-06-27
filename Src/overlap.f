@@ -13,8 +13,7 @@
       use precision,     only : dp
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GlobalToLocalOrb
-      use atmfuncs,      only : orb_gindex
-      use m_matel_registry,  only : rcut
+      use atmfuncs,      only : rcut, orb_gindex
       use neighbour,     only : jna=>jan, r2ij, xij, mneighb,
      &                          reset_neighbour_arrays
       use alloc,         only : re_alloc, de_alloc
@@ -82,6 +81,7 @@ C     Allocate local memory
       call re_alloc( Si, 1, no, 'Si', 'overlap' )
 
       do ia = 1,nua
+        is = isa(ia)
         call mneighb( scell, 2.d0*rmaxo, na, xa, ia, 0, nnia )
         do io = lasto(ia-1)+1,lasto(ia)
 
@@ -90,22 +90,20 @@ C         Is this orbital on this Node?
           if (iio.gt.0) then
 
 C           Valid orbital
+            ioa = iphorb(io)
+            ig = orb_gindex(is,ioa)
             do jn = 1,nnia
               ja = jna(jn)
               jua = indxua(ja)
               rij = sqrt( r2ij(jn) )
               do jo = lasto(ja-1)+1,lasto(ja)
-                ioa = iphorb(io)
                 joa = iphorb(jo)
-                is = isa(ia)
                 js = isa(ja)
                 !
-                ! Compute global indexes and dispatch
-                ! to new version of matel
+                ! Use global indexes for new version of matel
                 !
-                ig = orb_gindex(is,ioa)
                 jg = orb_gindex(js,joa)
-                if (rcut(ig)+rcut(jg) .gt. rij) then
+                if (rcut(is,ioa)+rcut(js,joa) .gt. rij) then
                   call new_MATEL( 'S', ig, jg, xij(1:3,jn),
      &                        Sij, grSij )
                   Si(jo) = Si(jo) + Sij

@@ -150,7 +150,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	m_hs_matrix.o kpoint_convert.o m_glob_sparse.o\
         die.o m_dminim.o m_zminim.o\
 	matel_registry.o register_rfs.o new_matel.o\
-        trialOrbitalClass.o swan_com.o
+        trialOrbitalClass.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -487,7 +487,8 @@ iozm.o: files.o parallel.o precision.o siesta_geom.o zmatrix.o
 ipack.o: sys.o
 kgrid.o: parallel.o precision.o units.o
 kgridinit.o: minvec.o parallel.o precision.o sys.o units.o
-kinefsm.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
+kinefsm.o: alloc.o atmfuncs.o mneighb.o new_matel.o parallel.o parallelsubs.o
+kinefsm.o: precision.o
 kpoint_convert.o: precision.o sys.o units.o
 kpoint_grid.o: find_kgrid.o minvec.o parallel.o precision.o siesta_cml.o
 kpoint_grid.o: siesta_options.o sys.o units.o
@@ -598,14 +599,15 @@ moreParallelSubs.o: alloc.o m_io.o parallel.o precision.o sys.o
 moremeshsubs.o: alloc.o mesh.o parallel.o precision.o schecomm.o sys.o
 mulliken.o: alloc.o atmfuncs.o parallel.o parallelsubs.o precision.o
 mulliken.o: siesta_cml.o
-naefs.o: atmfuncs.o mneighb.o precision.o
+naefs.o: atmfuncs.o mneighb.o new_matel.o precision.o
 new_dm.o: alloc.o atomlist.o m_energies.o m_fdf_global.o m_iodm.o m_mpi_utils.o
 new_dm.o: m_sparse.o m_spin.o m_steps.o m_ts_global_vars.o m_ts_iodm.o
 new_dm.o: m_ts_options.o parallel.o parallelsubs.o parsing.o precision.o
 new_dm.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o units.o
 new_matel.o: alloc.o m_recipes.o matel_registry.o parallel.o precision.o
 new_matel.o: radfft.o spher_harm.o sys.o
-nlefsm.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
+nlefsm.o: alloc.o atmfuncs.o mneighb.o new_matel.o parallel.o parallelsubs.o
+nlefsm.o: precision.o
 normalize_dm.o: atomlist.o m_mpi_utils.o m_spin.o parallel.o precision.o
 normalize_dm.o: siesta_options.o sparse_matrices.o sys.o
 obc.o: alloc.o precision.o
@@ -619,9 +621,10 @@ ordern.o: alloc.o cgwf.o chempot.o globalise.o m_mpi_utils.o onmod.o parallel.o
 ordern.o: precision.o siesta_cml.o sys.o units.o
 outcell.o: precision.o siesta_cml.o units.o
 outcoor.o: alloc.o atmfuncs.o precision.o siesta_geom.o sys.o units.o
-overfsm.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
-overlap.o: alloc.o atmfuncs.o matel_registry.o mneighb.o new_matel.o parallel.o
-overlap.o: parallelsubs.o precision.o
+overfsm.o: alloc.o atmfuncs.o mneighb.o new_matel.o parallel.o parallelsubs.o
+overfsm.o: precision.o
+overlap.o: alloc.o atmfuncs.o mneighb.o new_matel.o parallel.o parallelsubs.o
+overlap.o: precision.o
 parallelsubs.o: domain_decom.o parallel.o spatial.o sys.o
 pdos.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o parallel.o
 pdos.o: parallelsubs.o precision.o siesta_geom.o units.o xml.o
@@ -629,9 +632,10 @@ pdosg.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
 pdosk.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
 pdoskp.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
 periodic_table.o: precision.o sys.o
-phirphi.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
-phirphi_opt.o: alloc.o atm_types.o atmfuncs.o atmparams.o mneighb.o parallel.o
-phirphi_opt.o: parallelsubs.o precision.o spher_harm.o sys.o
+phirphi.o: alloc.o atmfuncs.o mneighb.o new_matel.o parallel.o parallelsubs.o
+phirphi.o: precision.o
+phirphi_opt.o: alloc.o atm_types.o atmfuncs.o atmparams.o mneighb.o new_matel.o
+phirphi_opt.o: parallel.o parallelsubs.o precision.o spher_harm.o sys.o
 phonon.o: alloc.o files.o parallel.o precision.o sys.o
 pixmol.o: files.o periodic_table.o precision.o
 plcharge.o: files.o old_atmfuncs.o parallel.o precision.o
@@ -740,7 +744,7 @@ sys.o: parallel.o
 timer.o: m_timer.o parallel.o sys.o timer_tree.o
 timer_tree.o: m_walltime.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
-trialOrbitalClass.o: precision.o swan_com.o sys.o units.o
+trialOrbitalClass.o: precision.o sys.o units.o
 ts_init.o: files.o m_ts_contour.o m_ts_gf.o m_ts_kpoints.o m_ts_options.o
 ts_init.o: parallel.o
 ts_show_regions.o: parallel.o precision.o units.o
@@ -847,6 +851,7 @@ neighbour.o: mneighb.o
 on_core.o: onmod.o
 on_main.o: onmod.o
 printmat.o: printmatrix.o
+swan_com.o: trialOrbitalClass.o
 timer_options.o: timer.o
 version_info.o: version.o
 write_subs_energies.o: write_subs.o

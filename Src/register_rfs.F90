@@ -9,7 +9,7 @@
     type(species_info), pointer        :: spp
     type(rad_func), pointer            :: func   
 !
-    integer :: is, io, l, m, gindex
+    integer :: is, io, ko, l, m, gindex
 
     do is = 1, nspecies
        spp => species(is)
@@ -25,12 +25,13 @@
     ! KB projectors
     do is = 1, nspecies
        spp => species(is)
-       do io=1,spp%nprojs
-          func => spp%pjnl(spp%pj_index(io))
-          l = spp%pj_l(io)
-          m = spp%pj_m(io)
+       do ko=1,spp%nprojs
+          func => spp%pjnl(spp%pj_index(ko))
+          l = spp%pj_l(ko)
+          m = spp%pj_m(ko)
+          io = -ko
           call register_in_rf_pool(func,l,m,"kbproj",(/is,io/),gindex)
-          spp%pj_gindex(io) = gindex
+          spp%pj_gindex(ko) = gindex
        enddo
     enddo
     
@@ -62,7 +63,7 @@
 !
     type(species_info), pointer        :: spp
 !
-    integer :: pass, is, io, gindex
+    integer :: pass, is, io, ko, gindex
     real(dp) :: r(3) = (/0.5_dp, 0.5_dp, 0.5_dp/)
     real(dp) :: grad(3), phi
     logical, external :: io_node
@@ -75,11 +76,11 @@
        spp => species(is)
        do io=1,spp%norbs
           call phiatm(is,io,r,phi,grad)
-          if (io_node()) print *, "io, rcut, phiatm_h:",   &
+          if (io_node()) print "(a,i3,f12.6,g20.10)", "io, rcut, phiatm_h:",   &
                     io, rcut(is,io), phi
           gindex = orb_gindex(is,io)
           call evaluate(gindex,r,phi,grad)
-          if (io_node()) print *, "ig, rcut, phiatm_h:",   &
+          if (io_node()) print "(a,i3,f12.6,g20.10)", "ig, rcut, phiatm_h:",   &
                     gindex, cutoff(gindex), phi
        enddo
     enddo
@@ -89,11 +90,11 @@
        spp => species(is)
        do io=1,spp%nprojs
           call phiatm(is,-io,r,phi,grad)
-          if (io_node()) print *, "io, rcut, phiatm_h:",   &
+          if (io_node()) print "(a,i3,f12.6,g20.10)", "io, rcut, phiatm_h:",   &
                     io, rcut(is,-io), phi
-          gindex = kbproj_gindex(is,io)
+          gindex = kbproj_gindex(is,-io)
           call evaluate(gindex,r,phi,grad)
-          if (io_node()) print *, "ig, rcut, phiatm_h:",   &
+          if (io_node()) print "(a,i3,f12.6,g20.10)", "ig, rcut, phiatm_h:",   &
                     gindex, cutoff(gindex), phi
        enddo
     enddo
@@ -103,11 +104,11 @@
        if (io_node()) print *, "---IS vna: ", is
        spp => species(is)
        call phiatm(is,0,r,phi,grad)
-       if (io_node()) print *, "rcut, phiatm_h:",   &
+       if (io_node()) print "(a,f12.6,g20.10)", "rcut, phiatm_h:",   &
                  rcut(is,0), phi
        gindex = vna_gindex(is)
        call evaluate(gindex,r,phi,grad)
-       if (io_node()) print *, "ig, rcut, phiatm_h:",   &
+       if (io_node()) print "(a,i3,f12.6,g20.10)", "ig, rcut, phiatm_h:",   &
                     gindex, cutoff(gindex), phi
     enddo
  enddo
