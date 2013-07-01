@@ -16,10 +16,6 @@ module m_ts_contour
 !
 ! Routines that are used to setup the contour for integration of the GFs
 ! 
-! Note: I am unsure whether to move the METHOD variables to the m_ts_cctype
-!       as they "belong" there. However, the relavant routines are located
-!       here.
-!
 ! A couple of routines are included in this module
 !   1) setup_contour
 !   2) io_contour
@@ -30,10 +26,10 @@ module m_ts_contour
 ! used for generating the contour points
 !   4) mod_HansSkriver
 !   5) sommerfeld
-!   6) gaussian_quadrature
-!   7) transport
-!   8) phonon
-
+!   6) Gauss_Fermi_2kT_plus_line
+!   7) Gauss_Fermi_0kT_plus_line
+!   8) transport
+!   9) phonon
 
 ! Use the type associated with the contour
 ! Maybe they should be collected to this module.
@@ -41,13 +37,6 @@ module m_ts_contour
   use m_ts_cctype
 
   implicit none
-
-  ! The different available contours
-  integer, parameter, public :: CC_METHOD_MOD_HANSSKRIVER = 1
-  integer, parameter, public :: CC_METHOD_SOMMERFELD      = 2
-  integer, parameter, public :: CC_METHOD_GAUSSFERMI      = 3
-  ! Leave space for other methods
-  integer, parameter, public :: CC_METHOD_PHONON          = 100
 
   ! This module will also contain all the contour variables
   integer, save :: NEn_eq
@@ -63,29 +52,34 @@ module m_ts_contour
   public :: NEn, PNEn, contour, contourL, contourR, contour_neq
   public :: setup_contour, io_contour, print_contour
   public :: sort_contour
+  public :: init_Gauss_Fermi_plus_Line
   private
 
 contains
 
 
 ! Routine for creating the contour
-  subroutine setup_contour(IsVolt,Cmethod,EfL,Ef0,EfR, &
-       NCircle,NLine,Npol,Nvolt,Emin,Emax,Ntransport, &
+  subroutine setup_contour(IsVolt,C_eq_line,C_eq_circle,C_neq_tail, C_neq_mid, &
+       EfL,Ef0,EfR, &
+       NCircle,NLine,Npol,Nvolt, Nvolt_tail,NVolt_mid, &
+       Emin,Emax,Ntransport, &
        CCEmin,GFEta,kT)
     
     use precision, only : dp
     use parallel,  only : IONode, Nodes, operator(.PARCOUNT.)
+    use m_ts_aux, only : gaufermi0, gaufermi2
 
 ! **********************
 ! * INPUT variables    *
 ! **********************
     logical,  intent(in) :: IsVolt ! Do we have a volt
-    integer, intent(in)  :: cmethod ! The method of the voltage contour
+    ! The four governing methods
+    integer, intent(in) :: C_eq_line, C_eq_circle, C_neq_tail, C_neq_mid
     real(dp), intent(in) :: EfL ! Left Fermi shift
     real(dp), intent(in) :: Ef0 ! equilibrium Fermi shift
     real(dp), intent(in) :: EfR ! Right Fermi shift
     ! The different contour path parts
-    integer, intent(in)  :: Ncircle, Nline, Npol,Nvolt
+    integer, intent(in)  :: Ncircle, Nline, Npol,Nvolt, Nvolt_tail, Nvolt_mid
     real(dp), intent(in) :: Emin ! Minimum transport energy
     real(dp), intent(in) :: Emax ! Maximum energy
     integer, intent(in)  :: Ntransport
@@ -125,8 +119,8 @@ contains
        c => contour(1:NE_equilibrium) 
        contourL => c
        call mod_HansSkriver(CC_PART_EQUI, &
-            CCEmin, Ef0, &
-            kT,GFeta, &
+            C_eq_line, C_eq_circle, &
+            CCEmin, Ef0, kT, &
             Ncircle,Nline,Npol, c)
        
        ! Note we put a minus here because the integral we want is the
@@ -141,8 +135,8 @@ contains
        c => contour(1:NE_equilibrium) 
        contourL => c
        call mod_HansSkriver(CC_PART_LEFT_EQUI, &
-            CCEmin + EfL - Ef0, EfL, &
-            kT,GFeta, &
+            C_eq_line, C_eq_circle, &
+            CCEmin + EfL - Ef0, EfL, kT, &
             Ncircle,Nline,Npol, c)
        
        ! Note we put a minus here because the integral we want is the
@@ -155,8 +149,8 @@ contains
        c => contour(NE_equilibrium+1:2*NE_equilibrium) 
        contourR => c
        call mod_HansSkriver(CC_PART_RIGHT_EQUI, &
-            CCEmin + EfR - Ef0, EfR, &
-            kT,GFeta, &
+            C_eq_line, C_eq_circle, &
+            CCEmin + EfR - Ef0, EfR, kT, &
             Ncircle,Nline,Npol, c)
 
        ! Note we put a minus here because the integral we want is the
@@ -168,149 +162,65 @@ contains
        ! The voltage contour
        c => contour(2*NE_equilibrium+1:2*NE_equilibrium+NVolt) 
        contour_neq => c
-       if (Cmethod.eq.CC_METHOD_SOMMERFELD) then ! 1. order
+       select case ( C_neq_tail ) ! check the bias contour
+       case ( CC_TYPE_NEQ_SOMMERFELD ) ! 1. order
           
           call sommerfeld(CC_PART_NON_EQUI,EfR,EfL, &
                kT,GFeta, &
                NVolt, c)
           
-       else if(Cmethod.eq.CC_METHOD_GAUSSFERMI) then
+       case ( CC_TYPE_NEQ_TAIL_G_NF_0kT )
           
-          call gaussian_quadrature(CC_PART_NON_EQUI,EfR,EfL, &
-               kT,GFeta, &
-               NVolt, c)
+          call Gauss_Fermi_plus_line(CC_PART_NON_EQUI,C_neq_tail,C_neq_mid, &
+               gaufermi0, &
+               EfR, EfL, 0._dp, &
+               kT, GFeta, &
+               NVolt, c, NVolt_tail, Nvolt_mid)
 
-       else
+       case ( CC_TYPE_NEQ_TAIL_G_NF_2kT )
+          
+          call Gauss_Fermi_plus_line(CC_PART_NON_EQUI,C_neq_tail,C_neq_mid, &
+               gaufermi2, &
+               EfR, EfL, 2._dp*kT, &
+               kT, GFeta, &
+               NVolt, c, NVolt_tail, Nvolt_mid)
+
+       case ( CC_TYPE_NEQ_TAIL_G_LAGUERRE )
+          
+          call die('not fully implemented')
+
+       case ( CC_TYPE_NEQ_G_HERMITE )
+          
+          call die('not fully implemented')
+          
+       case default
           if ( IONode ) &
                write(*,*) 'ERROR: Contour not defined'
           call die('ERROR:  setup_contour: Contour not defined') 
-       end if
+       end select
 
     end if
     
     ! Finally we add the transport energy points
     if ( Ntransport > 0 ) then
        c => contour(NEn-Ntransport+1:NEn) 
-       if (Cmethod.eq.CC_METHOD_PHONON) then ! Phonon energy-points
+       select case ( C_eq_line ) 
+       case ( CC_TYPE_TRANSPORT ) 
+          call transmission(Emin,Emax,GFeta,Ntransport, c)
+       case ( CC_TYPE_TRANS_PHONON ) ! Phonon energy-points
           if (NEn /= Ntransport) then
              call die('ERROR: when doing phonon transport, only &
                   &use transport energy-points on the contour')
           end if
           call phonon(Emin,Emax,GFeta,Ntransport,c)
-       else
-          call transmission(Emin,Emax,GFeta,Ntransport, c)
-       end if
+       case default
+          call die('Unrecognized transport contour')
+       end select
     end if
 
   end subroutine setup_contour
 
 
-  
-  ! Routine for "pretty" printing the contour points out in the out file
-  subroutine print_contour()
-    use parallel, only : IONode
-    use units,    only : eV
-
-! **********************
-! * LOCAL variables    *
-! **********************
-    type(ts_ccontour), pointer :: c
-    character(len=6) :: ctype
-    integer :: i, part, type
-    
-    ! Initialize variables
-    part = -1
-    type = -1
-    nullify(c)
-
-    if ( IONode ) then
-       write(*,'(a)') "transiesta: contour integration path:"
-       write(*,'(1x,a6,''   '',2(tr1,a12),2(tr1,a14))') &
-            "Type  ","Re(c)[eV]","Im(c)[eV]","Re(weight)","Im(weight)"
-       do i = 1 , NEn
-          ! loop !
-          c => contour(i)
-          if ( part /= c%part ) then
-             if ( c%part == CC_PART_EQUI ) then
-                write(*,'(1x,a)') "Equilibrium:"
-             else if ( c%part == CC_PART_LEFT_EQUI ) then
-                write(*,'(1x,a)') "Left equilibrium:"
-             else if ( c%part == CC_PART_RIGHT_EQUI ) then
-                write(*,'(1x,a)') "Right equilibrium:"
-             else if ( c%part == CC_PART_NON_EQUI ) then
-                write(*,'(1x,a)') "Non-equilibrium:"
-             else if ( c%part == CC_PART_TRANSPORT ) then
-                write(*,'(1x,a)') "Transport:"
-             end if
-             part = c%part
-          end if
-          if ( type /= c%type ) then
-             if ( c%type == CC_TYPE_RES ) then
-                ctype = 'resi'
-             else if ( c%type == CC_TYPE_FERMI ) then
-                ctype = 'fermi'
-             else if ( c%type == CC_TYPE_CIRCLE ) then
-                ctype = 'circle'
-             else if ( c%type == CC_TYPE_NON_EQUI ) then
-                ctype = 'noneq'
-             else if ( c%type == CC_TYPE_GAUSS_FERMI ) then
-                ctype = 'gaussF'
-             else if ( c%type == CC_TYPE_GAUSS_QUAD ) then
-                ctype = 'gaussQ'
-             else if ( c%type == CC_TYPE_TRANSPORT ) then
-                ctype = 'trans'
-             else if ( c%type == CC_TYPE_TRANS_PHONON ) then
-                ctype = 'phonon'
-             end if
-             type = c%type
-          end if
-          
-          ! Write out the contour information:
-          write(*,'(1x,a6,'' : '',tr1,2(f12.5,tr1),2(f14.9,tr1))') &
-               ctype,c%c/eV,c%w
-       end do
-       write(*,*) ! New line
-    end if
-  end subroutine print_contour
-
-
-! Write out the contour to a contour file
-  subroutine io_contour(slabel)
-    use parallel, only : IONode
-    use units, only : eV
-    character(len=*), intent(in) :: slabel
-
-! *********************
-! * LOCAL variables   *
-! *********************
-    character(len=len_trim(slabel)+9) :: fname
-    integer :: i, unit, part
-
-    interface
-       function paste(s1,s2)
-         character(LEN=*), intent(in) :: s1,s2
-         character(LEN=200) :: paste
-       end function paste
-    end interface
-
-    if ( IONode ) then
-       fname = trim(paste(slabel,'.TSCC'))
-       call io_assign( unit )
-       open( unit, file=fname, status='unknown' )
-       write(unit,'(a)') "# Complex contour path"
-       write(unit,'(4(a12,tr1))') "# Re(c)[eV] ","Im(c)[eV]","Re(w)","Im(w)"
-       part = contour(1)%part
-       do i = 1 , NEn
-          if ( part /= contour(i)%part ) then
-             write(unit,*)
-             part = contour(i)%part
-          end if
-          write(unit,'(4(f12.6,tr1))') contour(i)%c/eV,contour(i)%w
-       end do
-       call io_close( unit )
-    end if
-
-  end subroutine io_contour
 
 
 ! ###################################################
@@ -325,23 +235,26 @@ contains
 !
 !     Modified Hans Skriver Contour
 !
-  subroutine mod_HansSkriver(part,E1,E2, &
-       kT,GFeta, &
+  subroutine mod_HansSkriver(PART, C_eq_line, C_eq_circle, &
+       E1,E2, kT, &
        Ncircle,Nline,Npol,contour)
 
     use precision, only : dp
     use parallel, only : IONode
     use units, only : Pi
     use m_ts_aux, only : nf
-    use m_ts_aux, only : gaufermi10, gaufermi20, gauss
+    use m_ts_aux, only : gaufermi10, gaufermi20
+    use m_ts_cctype
+    use m_gauss_quad, only : Gauss_Legendre_Rec, Gauss_Chebyshev_Exact
 
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    integer,  intent(in) :: part          ! part of the contour
+    integer,  intent(in) :: PART          ! part of the contour
+    ! The methods used for the equilibrium contour
+    integer,  intent(in) :: C_eq_line, C_eq_circle
     real(dp), intent(in) :: E1, E2        ! energy parameters 
     real(dp), intent(in) :: kT            ! temperature in Ry
-    real(dp), intent(in) :: GFeta         ! state broadening in Ry
     integer,  intent(in) :: Ncircle,Nline,Npol
 
 ! ***********************
@@ -361,7 +274,7 @@ contains
 
     ! Various constants for calculating the contour
     real(dp) :: D, Delta, gamma
-    real(dp) :: alpha, R, beta
+    real(dp) :: alpha, R, beta, y
     complex(dp) :: ztmp, z0
 
     ! loop variables
@@ -379,17 +292,12 @@ contains
 
     ! Residuals
     c => contour(1:Npol)
-    do i = 1 , Npol 
-       c(i)%c = dcmplx(E2,Pi*kT*(2.0d0*(i-1)+1d0))
-       c(i)%w = dcmplx(0d0,2d0*Pi*kT) 
-       c(i)%part = part
-       c(i)%type = CC_TYPE_RES
-    end do                 !i
+    call nf_poles(PART, E2,kT,Npol,c)
 
     ! Line contour
     c => contour(Npol+1:Npol+Nline)
     allocate(wt(Nline),x(Nline))
-    call memory('A','D',2*Nline,'mkCplxContour')         
+    call memory('A','D',2*Nline,'mkCplxContour') 
     if(NT.eq.10) then
        call gaufermi10(Nline,x,wt)
     elseif(NT.eq.20) then
@@ -397,17 +305,16 @@ contains
     else
        if(IONode) then
           write(*,*) 'ERROR: ' 
-          write(*,*) &
-               'No Gauss quadrature for Fermi function '
+          write(*,*) 'No Gauss quadrature for Fermi function '
        endif
        call die('No Gauss quadrature for Fermi function ')
     end if
     do i = 1 , Nline
        j = Nline-i+1         !reverse
        c(i)%c = dcmplx(x(j)*kT + E2,Delta)
-       c(i)%w = -wt(j)*kT*dcmplx(1d0,0d0)
-       c(i)%part = part
-       c(i)%type = CC_TYPE_FERMI
+       c(i)%w = -wt(j)*kT*dcmplx(1._dp,0._dp)
+       c(i)%part = PART
+       c(i)%type = C_eq_line
     end do
     call memory('D','D',2*Nline,'mkCplxContour')         
     deallocate(wt,x)
@@ -415,20 +322,73 @@ contains
     ! Circle contour
     c => contour(Npol+Nline+1:Npol+Nline+Ncircle)
     allocate(wt(Ncircle),theta(Ncircle))
-    call memory('A','D',2*Ncircle,'mkCplxContour') 
-    call gauss(Ncircle, 0, beta, Pi, theta, wt)       
+    call memory('A','D',2*Ncircle,'mkCplxContour')
+
+    if ( C_eq_circle == CC_TYPE_EQ_CIRC_G_LEG ) then
+       call Gauss_Legendre_Rec(Ncircle, 0, beta, Pi, theta, wt)
+    else if ( C_eq_circle == CC_TYPE_EQ_CIRC_G_CH_O ) then
+       ! We switch the integration bounds and change the sign of the weight
+       ! this will give the correct path when out-put
+       call Gauss_Chebyshev_Exact(Ncircle, theta, wt, a=Pi, b=beta, &
+            method=1, pure=.false.)
+       wt(:) = -wt(:)
+    else if ( C_eq_circle == CC_TYPE_EQ_CIRC_G_CH_C ) then
+       ! We switch the integration bounds and change the sign of the weight
+       ! this will give the correct path when out-put
+       call Gauss_Chebyshev_Exact(Ncircle, theta, wt, a=Pi, b=beta, &
+            method=0, pure=.false.)
+       wt(:) = -wt(:)
+    end if
 
     do i = 1 , Ncircle 
-       ztmp = R*exp(theta(i)*dcmplx(0d0,1d0))
+       ztmp = R*exp(dcmplx(0._dp,theta(i)))
        c(i)%c = z0 + ztmp
-       c(i)%w = wt(i)*nf((c(i)%c-E2)/(kT))*dcmplx(0d0,1d0)*ztmp
-       c(i)%part = part
-       c(i)%type = CC_TYPE_CIRCLE
-    end do                 !i
+       ! Factor i, comes from Ed\theta=dE=iR e^{i\theta}
+       c(i)%w = wt(i)*nf((c(i)%c-E2)/kT)*dcmplx(0._dp,1._dp)*ztmp
+       c(i)%part = PART
+       c(i)%type = C_eq_circle
+    end do
+
     call memory('D','D',2*Ncircle,'mkCplxContour') 
     deallocate(wt,theta)
 
   end subroutine mod_HansSkriver
+
+
+! The residuals of the fermi-function at a real-energy
+  subroutine nf_poles(PART,E, kT, &
+       Npol,c)
+
+    use precision, only : dp
+    use units, only : Pi
+
+! ***********************
+! * INPUT variables     *
+! ***********************
+    integer,  intent(in) :: PART ! part of the contour
+    real(dp), intent(in) :: E    ! at energy
+    real(dp), intent(in) :: kT   ! temperature in Ry
+    integer,  intent(in) :: Npol
+
+! ***********************
+! * OUTPUT variables    *
+! ***********************
+    type(ts_ccontour), target, intent(out) :: c(Npol)
+
+! ***********************
+! * LOCAL variables     *
+! ***********************
+    integer :: i
+
+    ! Residuals
+    do i = 1 , Npol 
+       c(i)%c    = dcmplx(E    , Pi*kT*(2._dp*(i-1)+1._dp))
+       c(i)%w    = dcmplx(0._dp, Pi*kT* 2._dp) 
+       c(i)%part = PART
+       c(i)%type = CC_TYPE_EQ_RES
+    end do
+    
+  end subroutine nf_poles
 
 
 
@@ -491,20 +451,20 @@ contains
     ! Denote the part
     contour(:)%part = part
     ! The sommerfeld must be the non-equilibrium contour part
-    contour(:)%type = CC_TYPE_NON_EQUI
+    contour(:)%type = CC_TYPE_NEQ_SOMMERFELD
 
     ! Assign the contour points and weights
-    contour(1)%c    = dcmplx(EE1 - etaSF,GFeta)
-    contour(1)%w    = dcmplx(0.25d0*delta + rtmp,0d0)
+    contour(1)%c     = dcmplx(EE1 - etaSF,GFeta)
+    contour(1)%w     = dcmplx(0.25d0*delta + rtmp,0d0)
     
-    contour(2)%c    = dcmplx(EE1 + etaSF,GFeta)
-    contour(2)%w    = dcmplx(0.25d0*delta - rtmp,0d0)
+    contour(2)%c     = dcmplx(EE1 + etaSF,GFeta)
+    contour(2)%w     = dcmplx(0.25d0*delta - rtmp,0d0)
     
     contour(NEn-1)%c = dcmplx(EE2 - etaSF,GFeta)
     contour(NEn-1)%w = dcmplx(0.25d0*delta - rtmp,0d0)
     
-    contour(NEn)%c = dcmplx(EE2 + etaSF,GFeta)
-    contour(NEn)%w = dcmplx(0.25d0*delta + rtmp,0d0)
+    contour(NEn)%c   = dcmplx(EE2 + etaSF,GFeta)
+    contour(NEn)%w   = dcmplx(0.25d0*delta + rtmp,0d0)
     
     do i = 3 , NEn - 2
        contour(i)%c = dcmplx(delta*(i-2) + EE1,GFeta) 
@@ -521,27 +481,38 @@ contains
 
 !------------------------------------------------------------
 !
-!     Gaussian quadrature, using gaufermi in the ends
+!     Gaussian quadrature, using Gauss-Fermi for the tails of the non-equilibrium
 !      
 ! We assume that the function to be integrated varies slowly on the
 ! kT-scale         
-  subroutine gaussian_quadrature(part,E1,E2, &
+  subroutine Gauss_Fermi_plus_Line(part,G_F_method,line_method, GaussFermi, &
+       E1,E2, gamma, &
        kT,GFeta, &
-       NEn,contour)
+       NEn,contour,Ntail,Nmid)
 
-    use parallel, only : IONode
     use units, only : Pi
     use precision, only : dp
-    use m_ts_aux, only : nf1, gaufermi0, gaufermi2
+
+    interface
+       subroutine GaussFermi(n,x,w)
+         use precision, only : dp
+         integer, intent(in) :: n 
+         real(dp), intent(out) :: x(n),w(n)
+       end subroutine GaussFermi
+    end interface
 
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
     integer,  intent(in) :: part          ! part of the contour
+    integer,  intent(in) :: G_F_method    ! The type of tail method
+    integer,  intent(in) :: line_method   ! The type of middle line method
     real(dp), intent(in) :: E1, E2        ! energy parameters 
+    real(dp), intent(in) :: gamma         ! energy parameters for the temperature overlap
     real(dp), intent(in) :: kT            ! temperature in Ry
     real(dp), intent(in) :: GFeta         ! state broadening in Ry
-    integer,  intent(in) :: NEn
+    integer,  intent(in) :: NEn, Ntail, Nmid
+
 
 ! ***********************
 ! * OUTPUT variables    *
@@ -551,32 +522,92 @@ contains
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
+    real(dp) :: wlt(20), xlt(20) ! Used to obtain the weights etc.
+    ! For holding the energies:
+    real(dp) :: EE1,EE2
+    
+    ! Loop variables
+    integer :: i,j
+
+    if ( NEn /= 2*Ntail + Nmid ) call die('Wrong number of points &
+         for the tail and middle')
+
+    if ( E1 > E2 ) then
+       EE2 = E1
+       EE1 = E2
+    else
+       EE2 = E2
+       EE1 = E1
+    end if
+    
+    call GaussFermi(Ntail,xlt,wlt)
+
+    do i = 1 , Ntail
+       j = Ntail - i + 1 ! reverse
+       contour(i)%c          = dcmplx(-xlt(j)*kT + EE1,GFeta)
+       contour(i)%w          = wlt(j)*kT
+       contour(i)%part       = part
+       contour(i)%type       = G_F_method
+       contour(NEn+1-i)%c    = dcmplx(xlt(j)*kT + EE2,GFeta)
+       contour(NEn+1-i)%w    = wlt(j)*kT
+       contour(NEn+1-i)%part = part
+       contour(NEn+1-i)%type = G_F_method
+    end do
+
+    ! Populate the middle line with the method asked for
+    call nEq_line_quad(PART,line_method,EE1,EE2,gamma, &
+         GFEta,kT,Nmid,contour(Ntail+1))
+    
+    if ( E1 > E2 ) then
+       do i = 1 , NEn
+          contour(i)%w = -contour(i)%w
+       end do
+    end if                 !E1>E2
+    
+  end subroutine Gauss_Fermi_plus_Line
+
+  ! Determine the number of tail-points and 
+  subroutine init_Gauss_Fermi_plus_Line(E1, E2, &
+       kT, GFeta, NEn, Ntail, Nmid, GF_N_kT)
+    
+    use units, only : Pi
+    use precision, only : dp
+    use parallel, only : IONode
+
+! ***********************
+! * INPUT variables     *
+! ***********************
+    real(dp), intent(in) :: E1, E2  ! energy parameters 
+    real(dp), intent(in) :: kT      ! temperature in Ry
+    real(dp), intent(in) :: GFeta   ! state broadening in Ry
+    integer,  intent(in) :: NEn
+
+! ***********************
+! * OUTPUT variables    *
+! ***********************
+    integer,  intent(out) :: Ntail, Nmid, GF_N_kT
+
+! ***********************
+! * LOCAL variables     *
+! ***********************
 
 ! Modified REAL AXIS CONTOUR:
     integer, parameter :: NGauF = 8 ! number of points [-inf,E2+NT*kT]
     integer, parameter :: NTGau = 2
-    ! The routines in gaufermi<x> is able to obtain up to 12 weights, dependent
-    ! on the function
-    real(dp) :: wlt(12), xlt(12) ! Used to obtain the weights etc.
-    integer :: NGau ! This holds how many points on the Fermi line
-    integer :: NTGauUse ! Intermediate for determining the Fermi line points
-    ! For holding the energies:
-    real(dp) :: EE1,EE2
-    ! Different uses
-    real(dp) :: rtmp, gamma, delta
+    integer :: NGau     ! This holds how many points on the Fermi line
     
     ! Loop variables
-    integer :: i,j, Ni
+    integer :: i,j
 
     ! first determine how many points to use for the fermiline
-    NTGauUse = NTGau
-    if ( dabs(E2 - E1) .le. 3.d0*NTGau*kT ) then
-       NTGauUse = 0
+    GF_N_kT = NTGau
+    if ( abs(E2) + abs(E1) .le. 3._dp*NTGau*kT ) then
+       GF_N_kT = 0
     endif
     
-    NGau = NEn*(2.d0+NTGauUse)*kT/dabs(E1-E2) +1.0d0
-    if ( NGau .gt. NGauF+NTGauUse) then
-       NGau = NGauF + NTGauUse
+    NGau = NEn*(2._dp+GF_N_kT)*kT/dabs(E1-E2) + 1._dp
+    if ( NGau .gt. NGauF + GF_N_kT) then
+       NGau = NGauF + GF_N_kT
     end if
     if(NEn .lt. 2*NGau+8) then
        NGau = (NEn-8)/2
@@ -589,76 +620,159 @@ contains
        if (IONode) then
           write(*,*) &
                'ERROR: No. points=',NEn, &
-               ' not valid for real axis gaussian quadrature, min', 10
+               ' not valid for real axis gaussian quadrature, min=', 10
        end if
        call die('ERROR: Contour: too few points for real axis int') 
     end if
 
-    if ( E1 > E2 ) then
-       EE2 = E1
-       EE1 = E2
-    else
-       EE2 = E2
-       EE1 = E1
-    end if
-    
-    if ( NTGauUse .eq. 2 ) then
-       ! xlt can be up to 10
-       call gaufermi2(NGau,xlt,wlt)
-    else if ( NTGauUse .eq. 0 ) then
-       call gaufermi0(NGau,xlt,wlt)
-    else
-       if ( IONode ) then
-          write(*,*) 'ERROR: ' 
-          write(*,*) 'No Gauss quadrature for Fermi function '
-       endif
-       call die ('No Gauss quadrature for Fermi function')
-    end if
+    Ntail = NGau
+    Nmid  = NEn - 2*NGau
 
-    do i = 1 , NGau
-       j = NGau - i + 1 ! reverse
-       contour(i)%c       = dcmplx(-xlt(j)*kT + EE1,GFeta)
-       contour(i)%w       = wlt(j)*kT
-       contour(i)%part    = part
-       contour(i)%type    = CC_TYPE_GAUSS_FERMI
-       contour(NEn+1-i)%c = dcmplx(xlt(j)*kT + EE2,GFeta)
-       contour(NEn+1-i)%w = wlt(j)*kT
-       contour(NEn+1-i)%part = part
-       contour(NEn+1-i)%type = CC_TYPE_GAUSS_FERMI
+  end subroutine init_Gauss_Fermi_plus_Line
+  
+
+  subroutine nEq_line_quad(PART,TYPE,E1,E2,E_broad,GFEta,kT,NEn,contour)
+
+    use precision, only : dp
+    use units, only : Pi
+    use m_ts_aux, only : nf1
+    use m_gauss_quad ! Just all, many routines can be used
+
+! ***********************
+! * INPUT variables     *
+! ***********************
+    integer,  intent(in) :: PART, TYPE
+    real(dp), intent(in) :: E1,E2    ! energy parameters
+    real(dp), intent(in) :: E_broad  ! This is the broadening from the fermi-tail.
+!                                    ! Hence it is the integration part which is cut off from the line
+    real(dp), intent(in) :: GFeta    ! state broadening in Ry
+    real(dp), intent(in) :: kT       ! temperature in Ry
+    integer,  intent(in) :: NEn      ! No. contour points
+
+! ***********************
+! * OUTPUT variables    *
+! ***********************
+    type(ts_ccontour), intent(out) :: contour(NEn)   ! points for contour
+
+! ***********************
+! * LOCAL variables     *
+! ***********************
+    integer :: i, Ni
+    real(dp) :: rtmp, delta
+    real(dp), allocatable :: x(:), w(:)
+    
+    ! sort the energies
+    if ( E1 > E2 ) call die('nEq-line: Input MUST be sorted for the energies')
+    
+    do i = 1 , NEn
+       contour(i)%part = PART
+       contour(i)%type = TYPE
     end do
 
-    gamma = NTGauUse*kT
+    allocate(x(NEn),w(NEn))
 
-    ! set boundaries for gaussian quadrature
-    delta = (EE2 - EE1-2.*gamma)/(NEn-2*NGau-1)
-    do i = NGau+1,NEn-NGau
-       rtmp = delta*(i-NGau-1) + EE1+gamma
-       contour(i)%c = dcmplx(rtmp,GFeta) 
-       contour(i)%w = dcmplx(delta,0d0)* &
-            (nf1((rtmp-EE2)/kT) -nf1((rtmp-EE1)/kT))
-       contour(i)%part = part
-       contour(i)%type = CC_TYPE_GAUSS_QUAD
-    end do              !i
-
-    ! extended simpsons rule
-    contour(NGau+1)%w = contour(NGau+1)%w*17.d0/48.d0
-    contour(NGau+2)%w = contour(NGau+2)%w*59.d0/48.d0
-    contour(NGau+3)%w = contour(NGau+3)%w*43.d0/48.d0
-    contour(NGau+4)%w = contour(NGau+4)%w*49.d0/48.d0
-    Ni = NEn-NGau
-    contour(Ni+1-1)%w = contour(Ni+1-1)%w*17.d0/48.d0
-    contour(Ni+1-2)%w = contour(Ni+1-2)%w*59.d0/48.d0
-    contour(Ni+1-3)%w = contour(Ni+1-3)%w*43.d0/48.d0
-    contour(Ni+1-4)%w = contour(Ni+1-4)%w*49.d0/48.d0
- 
-    if ( E1 > E2 ) then
+    select case ( TYPE )
+    case ( CC_TYPE_NEQ_MID_SIMP_EXT )
+       ! in simpson we count: i = 0, ..., N
+       Ni = NEn - 1
+       
+       delta = (E2 - E1 - 2._dp*E_broad)/real(Ni,dp)
        do i = 1 , NEn
-          contour(i)%w = -contour(i)%w
+          rtmp = E1 + E_broad + delta * (i-1)
+          contour(i)%c = dcmplx(rtmp,GFeta) 
+          contour(i)%w = dcmplx(delta,0._dp)* &
+               (nf1((rtmp-E2)/kT) - nf1((rtmp-E1)/kT))
        end do
-    end if                 !E1>E2
 
-  end subroutine gaussian_quadrature
+       ! extended simpsons rule
+       contour(1    )%w = contour(1    )%w*17.d0/48.d0
+       contour(2    )%w = contour(2    )%w*59.d0/48.d0
+       contour(3    )%w = contour(3    )%w*43.d0/48.d0
+       contour(4    )%w = contour(4    )%w*49.d0/48.d0
+       contour(NEn-3)%w = contour(NEn-3)%w*49.d0/48.d0
+       contour(NEn-2)%w = contour(NEn-2)%w*43.d0/48.d0
+       contour(NEn-1)%w = contour(NEn-1)%w*59.d0/48.d0
+       contour(NEn  )%w = contour(NEn  )%w*17.d0/48.d0
 
+    case ( CC_TYPE_NEQ_MID_SIMP_COMP )
+       ! in simpson we count: i = 0, ..., N
+       Ni = NEn - 1
+       if ( mod(Ni,2) /= 0 ) call die('Composite Simpson rule &
+            &is only allowed for even N, please increase nEq points.')
+       
+       delta = (E2 - E1 - 2._dp*E_broad)/real(Ni,dp)
+       do i = 1 , NEn
+          rtmp = E1 + E_broad + delta * (i-1)
+          contour(i)%c = dcmplx(rtmp,GFeta) 
+          contour(i)%w = dcmplx(delta,0._dp)* &
+               (nf1((rtmp-E2)/kT) - nf1((rtmp-E1)/kT)) / 3._dp
+       end do
+       
+       ! Correct the weights for the composite simpson rule
+       do i = 2 , NEn - 1, 2
+          contour(i)%w = contour(i)%w * 4._dp
+       end do
+       do i = 3 , NEn - 2, 2
+          contour(i)%w = contour(i)%w * 2._dp
+       end do
+
+    case ( CC_TYPE_NEQ_MID_SIMP_38 )
+       ! in simpson we count: i = 0, ..., N
+       Ni = NEn - 1
+       
+       delta = (E2 - E1 - 2._dp*E_broad)/real(Ni,dp)
+       do i = 1 , NEn
+          rtmp = E1 + E_broad + delta * (i-1)
+          contour(i)%c = dcmplx(rtmp,GFeta) 
+          contour(i)%w = dcmplx(delta,0._dp)* &
+               (nf1((rtmp-E2)/kT) - nf1((rtmp-E1)/kT)) * 3._dp / 8._dp
+       end do
+       
+       ! Correct the weights for the 3/8 Simpson
+       call die('currently not fully implemented')
+    case ( CC_TYPE_NEQ_MID_MID )
+       ! set boundaries for gaussian quadrature
+       delta = (E2 - E1 - 2._dp*E_broad)/real(NEn,dp)
+       do i = 1 , NEn
+          ! move into the middle of the current segment
+          rtmp = E1 + E_broad + delta * ( real(i,dp)-.5_dp )
+          contour(i)%c = dcmplx(rtmp,GFeta) 
+          contour(i)%w = dcmplx(delta,0._dp)* &
+               (nf1((rtmp-E2)/kT) - nf1((rtmp-E1)/kT))
+       end do
+
+    case ( CC_TYPE_NEQ_MID_G_LEG ) 
+       call Gauss_Legendre_Rec(NEn, 0, E1+E_broad, E2-E_broad, x, w)
+       do i = 1 , NEn
+          contour(i)%c = dcmplx(x(i),GFeta)
+          contour(i)%w = dcmplx(w(i),0._dp)
+       end do
+
+    case ( CC_TYPE_NEQ_MID_G_CH_O ) 
+       ! interchange bounds to correct out-put
+       call Gauss_Chebyshev_Exact(NEn, x, w, &
+            b=E1+E_broad, a=E2-E_broad, method=1, pure=.false.)
+       do i = 1 , NEn
+          contour(i)%c = dcmplx(x(i),GFeta)
+          contour(i)%w = dcmplx(-w(i),0._dp)
+       end do
+
+    case ( CC_TYPE_NEQ_MID_G_CH_C ) 
+       ! interchange bounds to correct out-put
+       call Gauss_Chebyshev_Exact(NEn, x, w, &
+            b=E1+E_broad, a=E2-E_broad, method=0, pure=.false.)
+       do i = 1 , NEn
+          contour(i)%c = dcmplx(x(i),GFeta)
+          contour(i)%w = dcmplx(-w(i),0._dp)
+       end do
+
+    case default
+       call die('Could not determine the non-equilibrium line contour')
+    end select
+
+    deallocate(x,w)
+
+  end subroutine nEq_line_quad
 
 ! ##################################################################
 ! ##      Generate (close to) real axis energy contour            ##
@@ -795,5 +909,87 @@ contains
     end do
 
   end subroutine sort_contour
+
+  ! Routine for "pretty" printing the contour points out in the out file
+  subroutine print_contour()
+    use parallel, only : IONode
+    use units,    only : eV
+
+! **********************
+! * LOCAL variables    *
+! **********************
+    type(ts_ccontour), pointer :: c
+    character(len=CC_TYPE_LEN) :: ctype
+    character(len=3) :: f_type
+    integer :: i, part, type
+    
+    ! Initialize variables
+    part = -1
+    type = -1
+    nullify(c)
+
+    if ( IONode ) then
+       write(*,'(a)') "transiesta: contour integration path:"
+       write(f_type,'(a,i2)') 'a',CC_TYPE_LEN
+       write(*,'(1x,'//trim(f_type)//',''   '',2(tr1,a12),2(tr1,a14))') &
+            "Type  ","Re(c)[eV]","Im(c)[eV]","Re(weight)","Im(weight)"
+       do i = 1 , NEn
+          ! loop !
+          c => contour(i)
+          if ( part /= c%part ) then
+             write(*,'(1x,a)') part2str(c)
+             part = c%part
+          end if
+          if ( type /= c%type ) then
+             ctype = type2str(c)
+             type = c%type
+          end if
+          
+         ! Write out the contour information:
+          write(*,'(1x,'//trim(f_type)//','' : '',tr1,2(f12.5,tr1),2(f14.9,tr1))') &
+               ctype,c%c/eV,c%w
+       end do
+       write(*,*) ! New line
+    end if
+  end subroutine print_contour
+
+
+! Write out the contour to a contour file
+  subroutine io_contour(slabel)
+    use parallel, only : IONode
+    use units, only : eV
+    character(len=*), intent(in) :: slabel
+
+! *********************
+! * LOCAL variables   *
+! *********************
+    character(len=len_trim(slabel)+9) :: fname
+    integer :: i, unit, part
+
+    interface
+       function paste(s1,s2)
+         character(LEN=*), intent(in) :: s1,s2
+         character(LEN=200) :: paste
+       end function paste
+    end interface
+
+    if ( IONode ) then
+       fname = trim(paste(slabel,'.TSCC'))
+       call io_assign( unit )
+       open( unit, file=fname, status='unknown' )
+       write(unit,'(a)') "# Complex contour path"
+       write(unit,'(4(a12,tr1))') "# Re(c)[eV] ","Im(c)[eV]","Re(w)","Im(w)"
+       part = contour(1)%part
+       do i = 1 , NEn
+          if ( part /= contour(i)%part ) then
+             write(unit,*)
+             part = contour(i)%part
+          end if
+          write(unit,'(4(f12.6,tr1))') contour(i)%c/eV,contour(i)%w
+       end do
+       call io_close( unit )
+    end if
+
+  end subroutine io_contour
 
 end module m_ts_contour

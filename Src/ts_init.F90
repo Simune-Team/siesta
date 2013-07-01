@@ -101,9 +101,10 @@ contains
             na_BufL,ElLeft, ElRight,na_BufR)
        
        ! Create the contour lines
-       call setup_contour(IsVolt,Cmethod,VoltL,0.0d0,VoltR, &
-            NCircle,Nline,Npol,NVolt, &
-            0.d0, 0.d0, Ntransport, & ! Transport emin and emax
+       call setup_contour(IsVolt,C_eq_line, C_eq_circle, C_neq_tail, C_neq_mid, &
+            VoltL,0.0d0,VoltR, &
+            NCircle,Nline,Npol,NVolt, NVolt_tail, NVolt_mid, &
+            0._dp, 0._dp, Ntransport, & ! Transport emin and emax
             CCEmin, GFEta, kt)
 
        ! Print out the contour path
@@ -139,26 +140,30 @@ contains
        end if
        if ( eNE /= NEn ) call die('Wrong sorting in the contour points.')
 
-       ! GF generation:
-       allocate(dos(NEn,nspin))
-       call memory('A','Z',NEn*nspin,'transiesta')
+       if ( .not. TS_Analyze ) then
+
+          ! GF generation:
+          allocate(dos(NEn,nspin))
+          call memory('A','Z',NEn*nspin,'transiesta')
      
-       ! Create the Left GF file
-       call do_Green('L',ElLeft, GFFileL, GFTitle, &
-            ElecValenceBandBot, ReUseGF, &
-            ts_nkpnt,ts_kpoint,ts_kweight, &
-            na_BufL, .false., Elec_xa_Eps, & !For now TranSIESTA will only perform with inner-cell distances
-            ucell,xa,na_u,NEn,contour,VoltL,.false.,dos,nspin)
-       
-       ! Create the Right GF file
-       call do_Green('R',ElRight,GFFileR, GFTitle, &
-            ElecValenceBandBot, ReUseGF, &
-            ts_nkpnt,ts_kpoint,ts_kweight, &
-            na_BufR, .false., Elec_xa_Eps, &
-            ucell,xa,na_u,NEn,contour,VoltR,.false.,dos,nspin)
-       
-       call memory('D','Z',NEn*nspin,'transiesta')
-       deallocate(dos)
+          ! Create the Left GF file
+          call do_Green('L',ElLeft, GFFileL, GFTitle, &
+               ElecValenceBandBot, ReUseGF, &
+               ts_nkpnt,ts_kpoint,ts_kweight, &
+               na_BufL, .false., Elec_xa_Eps, & !For now TranSIESTA will only perform with inner-cell distances
+               ucell,xa,na_u,NEn,contour,VoltL,.false.,dos,nspin)
+          
+          ! Create the Right GF file
+          call do_Green('R',ElRight,GFFileR, GFTitle, &
+               ElecValenceBandBot, ReUseGF, &
+               ts_nkpnt,ts_kpoint,ts_kweight, &
+               na_BufR, .false., Elec_xa_Eps, &
+               ucell,xa,na_u,NEn,contour,VoltR,.false.,dos,nspin)
+          
+          call memory('D','Z',NEn*nspin,'transiesta')
+          deallocate(dos)
+
+       end if
 
        ! Print out information in Green's function files
        ! Show the number of used atoms and orbitals

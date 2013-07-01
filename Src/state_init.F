@@ -43,10 +43,12 @@
       use domain_decom,      only: domainDecom, use_dd, use_dd_perm
 
 #ifdef TRANSIESTA
-      use m_ts_options, only : onlyS
+      use m_ts_options, only : onlyS, TS_Analyze
       use m_ts_global_vars, only: TSrun
       use sys, only : bye
       use m_ts_io, only : filenameTSHS, ts_write_tshs
+      use m_ts_sparse, only : ts_sparse_init
+      use m_ts_tri, only : ts_tri_init
       use files, only: slabel, label_length
 #endif
 #ifdef CDF
@@ -320,7 +322,19 @@
      &        numh, listhptr, listh, xijo, indxuo, 
      &        S, S, dummyEf,dummyQtot, Temp,0,0)
         call bye( 'Save overlap matrix and exit' ) ! Exit siesta   ! MPN 
-      endif                                                        ! MPN    
+      endif                                                        ! MPN
+
+      ! When the user requests to only do an analyzation, we can call
+      ! appropriate routines and quit
+      ! TODO, probably, there should be other analyzations that a user can
+      ! request, and then a more general way to do this should be encouraged.
+      if ( TS_Analyze ) then
+         call ts_sparse_init(Gamma, block_dist, sparse_pattern,
+     &        na_u, lasto)
+         call ts_tri_init()
+         call bye('transiesta analyzation performed')
+      end if
+      
 #endif /* TRANSIESTA */
 
 #ifdef CDF

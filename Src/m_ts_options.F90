@@ -71,7 +71,9 @@ real(dp) :: kT           ! Electronic Temperature
 integer  :: nline        ! Number of points on the "line" segment of the Contour
 integer  :: ncircle      ! Number of points on the circle part of the contour 
 integer  :: npol         ! Number of poles included in the contour
-integer  :: nvolt        ! Number of points for the Bias integartion part
+integer  :: nvolt        ! Number of points for the Bias integration part
+integer  :: nvolt_tail   ! Number of points for the Bias integration part (only in the tail(s))
+integer  :: nvolt_mid    ! Number of points for the Bias integration part (only in the middle)
 integer  :: ntransport   ! Number of points for transport calculation
 integer  :: na_BufL      ! Number of Left Buffer Atoms
 integer  :: na_BufR      ! Number of Right Buffer Atoms
@@ -82,6 +84,10 @@ character(200) :: GFFileL ! Electrode Left GF File
 character(200) :: GFFileR ! Electrode Right GF File
 type(Elec) :: ElLeft, ElRight
 logical :: ElecValenceBandBot ! Calculate Electrode valence band bottom when creating electrode GF
+integer :: C_eq_line ! method for the equilibrium line contour
+integer :: C_eq_circle ! method for the equilibrium circle contour
+integer :: C_neq_tail ! method for the non-equilibrium tail contour
+integer :: C_neq_mid ! method for the non-equilibrium middle line contour
 integer :: Cmethod        ! Method for the contour integration
 logical :: ReUseGF        ! Calculate the electrodes GF
 logical :: ImmediateTSmode=.false. ! will determine to immediately start the transiesta
@@ -99,6 +105,16 @@ logical :: VoltageInC ! Determines whether the voltage-drop should be located in
                       ! then the voltage drop will only take place between 10.125 Ang and 19.875 Ang
 
 real(dp) :: Elec_xa_EPS
+
+! The user can request to analyze the system, returning information about the 
+! tri-diagonalization partition and the contour
+logical, save :: TS_Analyze = .false.
+
+! Supplying a monitor orbital allows to print out integral parts of the 
+! density contribution.
+! The dimensions allows to monitor 
+integer, save, allocatable :: orb_monitor(:,:)
+real(dp), save, allocatable :: orb_int(:,:)
 
 !==========================================================================*
 !==========================================================================*
@@ -153,11 +169,11 @@ CONTAINS
     use fdf, only : leqi
     use parallel, only: IOnode, Nodes, operator(.parcount.)
     use units, only: eV
-    use m_ts_contour, only : CC_METHOD_SOMMERFELD
-    use m_ts_contour, only : CC_METHOD_GAUSSFERMI
+    use m_ts_cctype
     use m_ts_global_vars, only : ts_istep, TSinit
     use m_ts_io, only : ts_read_TSHS_na
     use m_ts_io, only : ts_read_TSHS_lasto
+    use m_ts_contour, only : init_Gauss_Fermi_plus_Line
     use m_ts_method
     use m_ts_weight
     use m_ts_charge
@@ -167,7 +183,8 @@ CONTAINS
     real(dp),intent(in) :: ucell(3,3)
     integer, intent(in) :: na_u, lasto(0:na_u)
 ! Internal Variables
-    character(len=40) :: chars, s_cmethod
+    character(len=70) :: chars
+    integer :: tmp_G_NF
     integer :: i
 
     if (isolve.eq.SOLVE_TRANSI) then
@@ -201,16 +218,20 @@ CONTAINS
 
     VoltFDF     = fdf_get('TS.Voltage',voltfdf_def,'Ry') 
     IsVolt = dabs(VoltFDF) > 0.001_dp/eV
+    if ( .not. IsVolt ) VoltFDF = 0._dp
 
     ! Set up the fermi shifts for the left and right electrodes
     VoltL =  0.5_dp*VoltFDF
     VoltR = -0.5_dp*VoltFDF
 
+    ! Determine whether the user wishes to only do an analyzation
+    TS_Analyze = fdf_get('TS.Analyze',.false.)
+
     ! currently this does not work
     !ImmediateTSmode = fdf_get('TS.SCFImmediate',.false.)
 
-    UseBulk     = fdf_get('TS.UseBulkInElectrodes',UseBulk_def)
-    UpdateDMCR  = fdf_get('TS.UpdateDMCROnly',UpdateDMCR_def)
+    UseBulk    = fdf_get('TS.UseBulkInElectrodes',UseBulk_def)
+    UpdateDMCR = fdf_get('TS.UpdateDMCROnly',UpdateDMCR_def)
     if ( .not. UseBulk ) then
        ! If we use bulk, the algorithms look up in the UpdateDMCR
        ! to check whether the off-diagonal elements of
@@ -274,33 +295,155 @@ CONTAINS
        call die("Charge correction factor must be in the range [0;1]")
     endif
 
-    CCEMin = fdf_get('TS.ComplexContourEmin',CCEMin_def,'Ry')
-    GFEta = fdf_get('TS.biasContour.Eta',GFEta_def,'Ry')
-    if ( GFEta <= 0.d0) call die('ERROR: GFeta <= 0.0, we do not allow for &
-         &using the advanced Greens function, please correct.')
+    ! The electronic temperature (we should fetch this from SIESTA_OPTIONS)
     kT = fdf_get('ElectronicTemperature',kT_def,'Ry')
 
-    s_cmethod = fdf_get('TS.biasContour.method',smethod_def)
-    if ( leqi(s_cmethod,'sommerfeld') ) then
-       Cmethod = CC_METHOD_SOMMERFELD
-    else if ( leqi(s_cmethod,'gaussfermi') ) then
-       Cmethod = CC_METHOD_GAUSSFERMI
+! ***** deprecated read-ins *****
+    ! Old-style option reading (all of these will be obsoleted
+    ! eventually)
+    call fdf_deprecated('TS.ComplexContourEmin','TS.Contour.Eq.Emin')
+    CCEMin = fdf_get('TS.ComplexContourEmin',CCEMin_def,'Ry')
+    CCEMin = fdf_get('TS.Contour.Eq.Emin',CCEMin,'Ry')
+    call fdf_deprecated('TS.biasContour.Eta','TS.Contour.nEq.Eta')
+    GFEta = fdf_get('TS.biasContour.Eta',GFEta_def,'Ry')
+    GFEta = fdf_get('TS.Contour.nEq.Eta',GFEta,'Ry')
+    if ( GFEta <= 0.d0) call die('ERROR: GFeta <= 0.0, we do not allow for &
+         &using the advanced Greens function, please correct.')
+
+    call fdf_deprecated('TS.ComplexContour.NPoles','TS.Contour.Eq.Pole.N')
+    Npol    = fdf_get('TS.ComplexContour.NPoles',Npol_def)
+    Npol    = fdf_get('TS.Contour.Eq.Pole.N',Npol)
+    call fdf_deprecated('TS.ComplexContour.NCircle','TS.Contour.Eq.Circle.N')
+    Ncircle = fdf_get('TS.ComplexContour.NCircle',Ncircle_def)
+    Ncircle = fdf_get('TS.Contour.Eq.Circle.N',Ncircle)
+    call fdf_deprecated('TS.ComplexContour.NLine','TS.Contour.Eq.Line.N')
+    Nline   = fdf_get('TS.ComplexContour.NLine',Nline_def)
+    Nline   = fdf_get('TS.Contour.Eq.Line.N',Nline)
+    call fdf_deprecated('TS.biasContour.NumPoints','TS.Contour.nEq.N')
+    Nvolt   = fdf_get('TS.biasContour.NumPoints',Nvolt_def)
+    Nvolt   = fdf_get('TS.Contour.nEq.N',Nvolt)
+
+    ! The default is the Gauss_Fermi quadrature
+    ! Fully determine the type of contour that we are using
+    ! This will also determine the default number of contour
+    ! points in the tails and in the middle line.
+    call init_Gauss_Fermi_plus_Line(VoltL,VoltR,kT,GFEta,Nvolt, &
+         Nvolt_tail, Nvolt_mid, tmp_G_NF)
+    if ( tmp_G_NF == 0 ) then
+       tmp_G_NF = CC_TYPE_NEQ_TAIL_G_NF_0kT
+    else if ( tmp_G_NF == 2 ) then
+       tmp_G_NF = CC_TYPE_NEQ_TAIL_G_NF_2kT
     else
-       Cmethod = 0 ! For producing error message later on
+       call die('Unrecognized Gauss-Fermi contour, &
+            &contact devs')
     end if
-    npol       = fdf_get('TS.ComplexContour.NPoles',npol_def)
-    ncircle    = fdf_get('TS.ComplexContour.NCircle',ncircle_def)
-    nline      = fdf_get('TS.ComplexContour.NLine',nline_def)
-    nvolt      = fdf_get('TS.biasContour.NumPoints',nvolt_def)
-    NEn_Node_Correct = fdf_get('TS.Contour.NoEmptyCycles',.true.)
+
+    ! Read in the number of points in the tail and mid contour
+    Nvolt_tail = fdf_get('TS.Contour.nEq.Tail.N',Nvolt_tail)
+    Nvolt_mid  = fdf_get('TS.Contour.nEq.Middle.N',Nvolt_mid)
+    ! Reset the number of bias points
+    if ( NVolt /= 2*Nvolt_tail + NVolt_mid ) then
+       NVolt = 2*Nvolt_tail + NVolt_mid
+    end if
+
+    ! set default methods (to be back-wards compatible)
+    
+    ! Default eq. line
+    C_eq_line   = CC_TYPE_EQ_FERMI_G_NF
+    ! Default eq. circle
+    C_eq_circle = CC_TYPE_EQ_CIRC_G_LEG
+    ! Default neq. line
+    C_neq_tail  = tmp_G_NF
+    C_neq_mid   = CC_TYPE_NEQ_MID_SIMP_EXT
+
+    ! Read in the "general" method
+    call fdf_deprecated('TS.biasContour.method', 'TS.Contour.nEq.Method')
+    chars = fdf_get('TS.biasContour.method',smethod_def)
+    if ( leqi(chars,'sommerfeld') ) then
+       C_neq_tail = CC_TYPE_NEQ_SOMMERFELD
+    else if ( leqi(chars,'gaussfermi') ) then
+       C_neq_tail = tmp_G_NF
+       C_neq_mid = CC_TYPE_NEQ_MID_SIMP_EXT
+    end if
+
+! ***** deprecated read-ins ending *****
+
+    ! Read in the "correct" settings for the integration
+    chars = fdf_get('TS.Contour.Eq.Circle.Method','G-Legendre')
+    if ( leqi(chars,'g-legendre') ) then
+       C_eq_circle = CC_TYPE_EQ_CIRC_G_LEG
+    else if ( leqi(chars,'g-chebyshev-open') ) then
+       C_eq_circle = CC_TYPE_EQ_CIRC_G_CH_O
+    !else if ( leqi(chars,'g-chebyshev-closed') ) then
+    ! The closed chebyshev should only be used when dealing 
+    ! with the pure chebyshev weight function
+    !   C_eq_circle = CC_TYPE_EQ_CIRC_G_CH_C
+    else
+       call die('Unrecognized eq. circle integration &
+            &scheme: '//trim(chars))
+    end if
+
+    chars = fdf_get('TS.Contour.nEq.Method','g-fermi+extended-simpson')
+    ! Figure out if there is a + in the string
+    i = index(chars,'+')
+    if ( i == 1 ) call die('Non-equilibrium contour method cannot be prefixed &
+         &with + (then we can not determine the integration method).')
+    ! Determine the middle segment method
+    if ( i > 0 ) then
+       i = i + 1
+       if ( leqi(chars(i:),'extended-simpson') ) then
+          C_neq_mid = CC_TYPE_NEQ_MID_SIMP_EXT
+       else if ( leqi(chars(i:),'composite-simpson') ) then
+          C_neq_mid = CC_TYPE_NEQ_MID_SIMP_COMP
+!       else if ( leqi(chars(i:),'simpson-3/8') ) then
+!          C_neq_mid = CC_TYPE_NEQ_MID_SIMP_38
+       else if ( leqi(chars(i:),'mid-rule') ) then
+          C_neq_mid = CC_TYPE_NEQ_MID_MID
+       else if ( leqi(chars(i:),'g-legendre') ) then
+          C_neq_mid = CC_TYPE_NEQ_MID_G_LEG
+       else if ( leqi(chars(i:),'g-chebyshev-open') ) then
+          C_neq_mid = CC_TYPE_NEQ_MID_G_CH_O
+       else
+          call die('Unrecognized non-equilibrium integration &
+               &scheme for the middle line: '//trim(chars(i:)))
+       end if
+       i = i - 1
+    end if
+
+    ! If no + is found we simulate its position
+    i = i - 1
+    if ( i <= 0 ) i = len_trim(chars)
+
+    ! Determine the tail integration method
+    if ( leqi(chars(1:i),'g-fermi') .or. &
+         leqi(chars(1:i),'gaussfermi') ) then
+       C_neq_tail = tmp_G_NF ! this is the default fermi-quadrature
+!    else if ( leqi(chars(1:i),'g-hermite') ) then
+!       C_neq_tail = CC_TYPE_NEQ_G_HERMITE
+!    else if ( leqi(chars(1:i),'g-laguerre') ) then
+!       C_neq_tail = CC_TYPE_NEQ_TAIL_G_LAGUERRE
+    else if ( leqi(chars(1:i),'sommerfeld') ) then
+       C_neq_tail = CC_TYPE_NEQ_SOMMERFELD
+       ! We do not need to check the rest,
+       ! the sommerfeld will not use any "mid" integration schemes.
+    else
+       call die('Unrecognized non-equilibrium integration &
+            &scheme for the tails: '//trim(chars(1:i)))
+    end if
+
+    NEn_Node_Correct = fdf_get('TS.Contour.Eq.NoEmptyCycles',.true.)
     if ( NEn_Node_Correct ) then
        i = npol+ncircle+nline
        ! We immediately correct the number of energy-points for the contour
        if ( mod(i,Nodes) /= 0 ) then
           ncircle = ncircle + Nodes - mod(i,Nodes)
        end if
+    end if
+    NEn_Node_Correct = fdf_get('TS.Contour.nEq.NoEmptyCycles',.true.)
+    if ( NEn_Node_Correct ) then
        if ( mod(nvolt,Nodes) /= 0 ) then
-          nvolt = nvolt + Nodes - mod(nvolt,Nodes)
+          Nvolt_mid = Nvolt_mid + Nodes - mod(Nvolt,Nodes)
+          Nvolt = Nvolt + Nodes - mod(Nvolt,Nodes)
        end if
     end if
 
@@ -316,27 +459,44 @@ CONTAINS
          ElecValenceBandBot_def)
 
     ! To determine the same coordinate nature of the electrodes
-    Elec_xa_EPS= fdf_get('TS.Electrode.Coord.Eps',1e-4_dp,'Bohr')
+    Elec_xa_EPS= fdf_get('TS.Elec.Coord.Eps',1e-4_dp,'Bohr')
 
+    call fdf_deprecated('TS.HSFileLeft','TS.Elec.Left.TSHS')
     ElLeft%HSFile    = fdf_get('TS.HSFileLeft',HSFile_def)
+    ElLeft%HSFile    = fdf_get('TS.Elec.Left.TSHS',ElLeft%HSFile)
+    call fdf_deprecated('TS.NumUsedAtomsLeft','TS.Elec.Left.UsedAtoms')
     ElLeft%UsedAtoms = fdf_get('TS.NumUsedAtomsLeft',NUsedAtoms_def)
+    ElLeft%UsedAtoms = fdf_get('TS.Elec.Left.UsedAtoms',ElLeft%UsedAtoms)
     call check_HSfile('Left',ElLeft)
+    call fdf_deprecated('TS.ReplicateA1Left','TS.Elec.Left.Replicate.A1')
     ElLeft%RepA1     = fdf_get('TS.ReplicateA1Left',NRepA_def)
+    ElLeft%RepA1     = fdf_get('TS.Elec.Left.Replicate.A1',ElLeft%RepA1)
+    call fdf_deprecated('TS.ReplicateA2Left','TS.Elec.Left.Replicate.A2')
     ElLeft%RepA2     = fdf_get('TS.ReplicateA2Left',NRepA_def)
+    ElLeft%RepA2     = fdf_get('TS.Elec.Left.Replicate.A2',ElLeft%RepA2)
     if ( RepA1(ElLeft) < 1 .or. RepA2(ElLeft) < 1 ) &
          call die("Repetition in left electrode must be >= 1.")
-    
+
+
+    call fdf_deprecated('TS.HSFileRight','TS.Elec.Right.TSHS')
     ElRight%HSFile    = fdf_get('TS.HSFileRight',HSFile_def)
+    ElRight%HSFile    = fdf_get('TS.Elec.Right.TSHS',ElRight%HSFile)
+    call fdf_deprecated('TS.NumUsedAtomsRight','TS.Elec.Right.UsedAtoms')
     ElRight%UsedAtoms = fdf_get('TS.NumUsedAtomsRight',NUsedAtoms_def)
+    ElRight%UsedAtoms = fdf_get('TS.Elec.Right.UsedAtoms',ElRight%UsedAtoms)
     call check_HSfile('Right',ElRight)
+    call fdf_deprecated('TS.ReplicateA1Right','TS.Elec.Right.Replicate.A1')
     ElRight%RepA1     = fdf_get('TS.ReplicateA1Right',NRepA_def)
+    ElRight%RepA1     = fdf_get('TS.Elec.Right.Replicate.A1',ElRight%RepA1)
+    call fdf_deprecated('TS.ReplicateA2Right','TS.Elec.Right.Replicate.A2')
     ElRight%RepA2     = fdf_get('TS.ReplicateA2Right',NRepA_def)
+    ElRight%RepA2     = fdf_get('TS.Elec.Right.Replicate.A2',ElRight%RepA2)
     if ( RepA1(ElRight) < 1 .or. RepA2(ElRight) < 1 ) &
-         call die("Repetition in right electrode must be >= 1.")
+         call die("Repetition in left electrode must be >= 1.")
 
-
+    
     ! Read in information about the voltage placement.
-    chars = fdf_get('TS.VoltagePlacement','central')
+    chars = fdf_get('TS.Voltage.Position','central')
     VoltageInC = .false.
     if ( leqi(trim(chars),'cell') ) then
        VoltageInC = .false.
@@ -435,16 +595,60 @@ CONTAINS
        write(*,5) 'Left buffer atoms', na_BufL
        write(*,5) 'Right buffer atoms', na_BufR
 
+
+       if      ( C_eq_circle == CC_TYPE_EQ_CIRC_G_LEG ) then
+          write(*,10)'Circle Contour Method', 'Gauss-Legendre'
+       else if ( C_eq_circle == CC_TYPE_EQ_CIRC_G_CH_O ) then
+          write(*,10)'Circle Contour Method', 'Gauss-Chebyshev (open)'
+       else if ( C_eq_circle == CC_TYPE_EQ_CIRC_G_CH_C ) then
+          write(*,10)'Circle Contour Method', 'Gauss-Chebyshev (closed)'
+       end if
        write(*,5) 'N. Pts. Circle', ncircle
        write(*,5) 'N. Pts. Line', nline
        write(*,5) 'N. Poles in Contour', npol
-       write(*,5) 'N. Pts. Bias Contour', nvolt
     ! write(*,5) 'N. Pts. Transport', Ntransport
        write(*,6) 'Contour E Min.', CCEmin / eV,' eV'
 
        write(*,7) 'GFEta', GFEta / eV,' eV'
        write(*,6) 'Electronic Temperature', kT / eV , ' eV'
-       write(*,10)'Bias Contour Method', trim(s_cmethod)
+       if ( C_neq_tail == CC_TYPE_NEQ_SOMMERFELD ) then
+          write(*,10)'Bias Contour Method', 'Sommerfeld'
+          write(*,5) 'N. Pts. Bias Contour', nvolt
+       else if ( C_neq_tail == CC_TYPE_NEQ_G_HERMITE ) then
+          write(*,10)'Bias Contour Method', 'Gauss-Hermite'
+          write(*,5) 'N. Pts. Bias Contour', nvolt
+       else 
+          if      ( C_neq_tail == CC_TYPE_NEQ_TAIL_G_NF_0kT ) then
+             write(*,10)'Bias tail Contour Method', 'Gauss-Fermi (0kT)'
+          else if ( C_neq_tail == CC_TYPE_NEQ_TAIL_G_NF_2kT ) then
+             write(*,10)'Bias tail Contour Method', 'Gauss-Fermi (-2kT)'
+          else if ( C_neq_tail == CC_TYPE_NEQ_TAIL_G_LAGUERRE ) then
+             write(*,10)'Bias tail Contour Method', 'Gauss-Laguerre'
+          else if ( C_neq_tail == CC_TYPE_NEQ_TAIL_G_LEGENDRE ) then
+             write(*,10)'Bias tail Contour Method', 'Gauss-Legendre'
+          end if
+          
+          if ( C_neq_mid == CC_TYPE_NEQ_MID_SIMP_EXT ) then
+             write(*,10)'Bias middle Contour Method', 'Extended Simpson'
+          else if ( C_neq_mid == CC_TYPE_NEQ_MID_SIMP_COMP ) then
+             write(*,10)'Bias middle Contour Method', 'Composite Simpson'
+          else if ( C_neq_mid == CC_TYPE_NEQ_MID_SIMP_38 ) then
+             write(*,10)'Bias middle Contour Method', 'Simpson 3/8'
+          else if ( C_neq_mid == CC_TYPE_NEQ_MID_G_LEG ) then
+             write(*,10)'Bias middle Contour Method', 'Gauss-Legendre'
+          else if ( C_neq_mid == CC_TYPE_NEQ_MID_G_CH_O ) then
+             write(*,10)'Bias middle Contour Method', 'Gauss-Chebyshev (open)'
+          else if ( C_neq_mid == CC_TYPE_NEQ_MID_G_CH_C ) then
+             write(*,10)'Bias middle Contour Method', 'Gauss-Chebyshev (closed)'
+          else if ( C_neq_mid == CC_TYPE_NEQ_MID_MID ) then
+             write(*,10)'Bias middle Contour Method', 'Mid-point rule'
+          end if
+
+          ! Other methods should also tell how many points in tail and middle
+          write(*,5) 'N. Pts. Bias tail contour', nvolt_tail
+          write(*,5) 'N. Pts. Bias middle contour', nvolt_mid
+       end if
+
        if ( TS_RHOCORR_METHOD == 0 ) then
           write(*,11)'Will not correct charge fluctuations'
        else if ( TS_RHOCORR_METHOD == TS_RHOCORR_BUFFER ) then ! Correct in buffer
@@ -556,14 +760,8 @@ CONTAINS
 
     end if
 
-    ! Integration Method
-    if( Cmethod == 0 ) then
-       if ( IONode ) then
-          write(*,*) 'WARNING: TS.biasContour.method not recognized.'
-          write(*,*) '         Reverting to gaussfermi instead'
-       end if
-       Cmethod = CC_METHOD_GAUSSFERMI
-    end if
+    if ( NVolt /= 2*Nvolt_tail + Nvolt_mid ) call die('Something went &
+         &wrong in the setup of the bias points. Please contact the devs.')
 
     if (fixspin ) then
        write(*,*) 'Fixed Spin not possible in TS Calculations !'

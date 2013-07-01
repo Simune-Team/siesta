@@ -1,4 +1,128 @@
 ----------------------------------------------------
+July 1, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-65
+Clean-up in m_ts_contour, added Gauss-Chebyshev and general gauss-integration module
+
+* Added m_gauss_quad which enables to generate gauss-quadrature points and weights for
+  the following methods:
+    1) Gauss-Legendre (Jacobi)
+       Used for \int_a^b f(x)w(x)dx , w(x) = 1
+    2) Gauss-Gegenbauer (Jacobi)
+       Used for \int_a^b f(x)w(x)dx , w(x) = (1-x^2)^{\lambda-1/2}
+    3) Gauss-Jacobi (Jacobi)
+       Used for \int_a^b f(x)w(x)dx , w(x) = (1-x)^\alpha (1+x)^\beta
+    4) Gauss-Chebyshev (Jacobi)
+       Usef for \int_a^b f(x)w(x)dx , w(x) = \frac1{\sqrt{1-x^2}}
+    5) Gauss-Laguerre (Laguerre)
+       Usef for \int_a^\infty f(x)w(x)dx , w(x) = e^{-x}
+    6) Gauss-Generalized-Laguerre (Laguerre)
+       Usef for \int_a^\infty f(x)w(x)dx , w(x) = x^\alpha e^{-x}
+    7) Gauss-Hermite
+       Usef for \int_{-\infty}^\infty f(x)w(x)dx , w(x) = e^{-x^2}
+  I have checked the majority of the routines for the simplest cases and for
+  N upto 10.
+  It is very general and can be used for any integration scheme.
+  For all but the Legendre method an optional argument "pure" is available.
+  If pure == .true. we have the weight function in the function description,
+  otherwise we multiply by 1 = w(x)/w(x) to enable the use of the method.
+  Hence, it is not a "pure" weight.
+
+  For those methods applicable one can shift the boundaries by supplying 
+  "a" and "b", or only "a".
+
+* Generalization of the keys for transiesta to be more meaningful.
+  
+  Anything that has to do with the contour integral, we have done
+
+  TS.Contour.<nEq|Eq>
+  
+  For Eq we have:
+    Circle.<N|Method>
+    Line.<N>
+    Pole.<N>
+  method for the Line will follow in a later commit.
+  For nEq we have:
+    Line.<N|Tail|Middle>
+  where for Tail and Middle we have:
+    N
+  Hence the read-in of the options are more readable and concise.
+  The idea is that we can easily extend the option in this way.
+
+  In general I have substituted by these options:
+
+    TS.ComplexContourEmin  ->  TS.Contour.Eq.Emin
+    TS.biasContour.Eta  ->  TS.Contour.nEq.Eta
+    TS.ComplexContour.NPoles  ->  TS.Contour.Eq.Pole.N
+    TS.ComplexContour.NCircle  ->  TS.Contour.Eq.Circle.N
+    TS.ComplexContour.NLine  ->  TS.Contour.Eq.Line.N
+    TS.biasContour.NumPoints  ->  TS.Contour.nEq.N
+    TS.biasContour.method  ->   TS.Contour.nEq.Method
+    TS.HSFileLeft  ->  TS.Elec.Left.TSHS
+    TS.NumUsedAtomsLeft  ->  TS.Elec.Left.UsedAtoms
+    TS.ReplicateA1Left  ->  TS.Elec.Left.Replicate.A1
+    TS.ReplicateA2Left  ->  TS.Elec.Left.Replicate.A2
+
+  however, backwards compatibility is fully maintained.
+  One can also fine-tune the number of points in the tails of the non-equilibrium contour:
+    TS.Contour.nEq.Tail.N
+    TS.Contour.nEq.Middle.N
+
+* Added flag TS.Analyze which will immediately create the TSCC file and also do
+  a tri-matrix partition. Hence, one can try both the speed and mem optimization
+  routine for partitioning the system.
+  The analyzation will stop after having partitioned the system and is thus, only
+  an analyzation tool.
+
+* Non-equilibrium contour integration for transiesta has been improved to be 
+  able to handle different schemes.
+
+  Currently there is still only the same tail integration, but several new
+  schemes for the line in between.
+  The general idea is to do:
+    TS.Contour.nEq.Method <tail method>[+<middle method]
+
+  hence:
+    TS.Contour.nEq.Method g-fermi+extended-simpson
+  will use the Gauss-Fermi quadrature on the tails and the extended
+  Simpson method in between the tails.
+  
+  We have added the use of any of these middle methods:
+
+  1) extended-simpson
+  2) composite-simpson
+  3) mid-rule
+  4) g-legendre
+  5) g-chebyshev-open
+
+  For the tails we have the following methods:
+  1) g-fermi
+  2) sommerfeld
+
+  Later we will fully implement the Legendre and the Laguerre methods.
+
+* A new default option is chosen so that there are no "empty" parallel cycles.
+  Hence it will automatically optimize the number of energy-points so no processors
+  are doing nothing in the transiesta loops.
+
+  To disable this one can do:
+
+  TS.Contour.<nEq|Eq>.NoEmpyCycles F
+  
+* Should have fixed a case of electrode density spill of electrons. Now the charges should
+  strictly be fixed in the electrodes TODO, needs to be checked.
+
+added:
+  Src/m_gauss_quad.f90
+modified:
+  Src/Makefile
+  Src/m_ts_aux.F90
+  Src/m_ts_cctype.f90
+  Src/m_ts_contour.f90
+  Src/m_ts_options.F90
+  Src/siesta_forces.F
+  Src/state_init.F
+  Src/ts_init.F90
+
+----------------------------------------------------
 June 21, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-64
 Small bugfix in sparse 2 tri-matrix occured when buffer atoms apparent
 

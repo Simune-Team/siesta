@@ -264,6 +264,8 @@
 
       subroutine check_transiesta_switch(ts_continues_GF)
 
+      use sparse_matrices,       only: H, Hold, Dscf, Dold, maxnh
+      use m_spin,                only: nspin
 #ifdef TRANSIESTA
       use m_ts_global_vars,      only: TSinit, TSrun, TSiscf
       use m_ts_options,          only: TSmode
@@ -272,6 +274,7 @@
 #endif /* TRANSIESTA */
 
       logical, intent(out) :: ts_continues_GF
+      integer :: io, ispin
 
 #ifndef TRANSIESTA
       ! We are not compiled as TranSiesta
@@ -297,6 +300,19 @@
          !
          call init_pulay_arrays()  
          !
+
+         ! We need to reset the density/Hamiltonian matrices
+         ! to the current one so that we ensure no change in the
+         ! electrode regions:
+         ! Furthermore we force the mixing for subsequent runs
+         ! to only deal with transiesta density/Hamiltonian matrices
+         do ispin = 1,nspin
+            do io = 1,maxnh
+               Dold(io,ispin) = Dscf(io,ispin)
+               Hold(io,ispin) = H   (io,ispin)
+            end do
+         end do
+
          if(IONode) then
            write(6,'(/a)')
      &'                          ************************       '
