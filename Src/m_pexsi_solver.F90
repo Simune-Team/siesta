@@ -69,10 +69,10 @@ real(dp), pointer, dimension(:) :: &
         DMnzvalLocal => null() , EDMnzvalLocal => null(), &
         FDMnzvalLocal => null()
 !
-real(dp), allocatable, dimension(:) :: muList, &
-                                       numElectronList, &
-                                       numElectronDrvList, &
-                                       shiftList, inertiaList
+real(dp), pointer, dimension(:) :: muList=>null(), &
+                                   numElectronList=>null(), &
+                                   numElectronDrvList=>null(), &
+                                   shiftList=>null(), inertiaList=>null()
 logical  :: PEXSI_worker
 integer  :: numPole, nptsInertia
 real(dp) :: temperature, numElectronExact, numElectron, gap, deltaE
@@ -263,9 +263,9 @@ else
 endif
 
 ! Arrays for reporting back information about the PEXSI iterations
-allocate( muList( muMaxIter ) )
-allocate( numElectronList( muMaxIter ) )
-allocate( numElectronDrvList( muMaxIter ) )
+call re_alloc(muList,1,muMaxIter,"muList","pexsi_solver")
+call re_alloc(numElectronList,1,muMaxIter,"numElectronList","pexsi_solver")
+call re_alloc(numElectronDrvList,1,muMaxIter,"numElectronDrvList","pexsi_solver")
 
 !-----------------------------------------------------------------------------
 ! Use inertia counts?
@@ -302,12 +302,12 @@ enddo
 
 ! Arrays for reporting back information about the integrated DOS
 ! computed by the inertia count method.
-allocate( shiftList( nptsInertia ) )
-allocate( inertiaList( nptsInertia ) )
+call re_alloc(shiftList,1,nptsInertia,"shiftList","pexsi_solver")
+call re_alloc(inertiaList,1,nptsInertia,"inertiaList","pexsi_solver")
 
 ! Ordering flag:
 !   1: Use METIS
-!   0: Use PARMETIS
+!   0: Use PARMETIS/PTSCOTCH
 ordering = fdf_get("PEXSI.ordering",1)
 !
 ! Broadcast these to the whole processor set, just in case
@@ -494,17 +494,17 @@ if (PEXSI_worker) then
 
    ef = mu
 
-deallocate(m2%vals(1)%data)
-deallocate(m2%vals(2)%data)
+   call de_alloc(m2%vals(1)%data,"m2%vals(1)%data","pexsi_solver")
+   call de_alloc(m2%vals(2)%data,"m2%vals(2)%data","pexsi_solver")
 
-m2%vals(1)%data => DMnzvalLocal(1:nnzLocal)
-m2%vals(2)%data => EDMnzvalLocal(1:nnzLocal)
+   m2%vals(1)%data => DMnzvalLocal(1:nnzLocal)
+   m2%vals(2)%data => EDMnzvalLocal(1:nnzLocal)
 
 endif ! PEXSI_worker
 
-deallocate( muList )
-deallocate( numElectronList )
-deallocate( numElectronDrvList )
+call de_alloc(muList,            "muList",            "pexsi_solver")
+call de_alloc(numElectronList,   "numElectronList",   "pexsi_solver")
+call de_alloc(numElectronDrvList,"numElectronDrvList","pexsi_solver")
 
 ! Prepare m1 to receive the results
 if (SIESTA_worker) then
@@ -520,14 +520,14 @@ call redistribute_spmatrix(norbs,m2,dist2,m1,dist1,World_Comm)
 call timer("redist_orbs_bck", 2)
 
 if (PEXSI_worker) then
-   call de_alloc(DMnzvalLocal,"DMnzvalLocal","pexsi_solver")
+   call de_alloc(DMnzvalLocal, "DMnzvalLocal", "pexsi_solver")
    call de_alloc(EDMnzvalLocal,"EDMnzvalLocal","pexsi_solver")
 
    nullify(m2%vals(1)%data)    ! formerly pointing to DM
    nullify(m2%vals(2)%data)    ! formerly pointing to EDM
    deallocate(m2%vals)
-   deallocate(m2%numcols)      ! allocated in the direct transfer
-   deallocate(m2%cols)         !  "
+   call de_alloc(m2%numcols,"m2%numcols","pexsi_solver") ! allocated in the direct transfer
+   call de_alloc(m2%cols,   "m2%cols",   "pexsi_solver")
 endif
 
 ! We assume that the root node is common to both communicators
@@ -548,19 +548,19 @@ if (SIESTA_worker) then
       call die("Mismatch in listH")
    endif
 
-   deallocate(m1%vals(1)%data)
-   deallocate(m1%vals(2)%data)
+   call de_alloc(m1%vals(1)%data,"m1%vals(1)%data","pexsi_solver")
+   call de_alloc(m1%vals(2)%data,"m1%vals(2)%data","pexsi_solver")
    deallocate(m1%vals)
-   deallocate(m1%cols)
-   deallocate(m1%numcols)
+   call de_alloc(m1%numcols,"m1%numcols","pexsi_solver") ! allocated in the direct transfer
+   call de_alloc(m1%cols,   "m1%cols",   "pexsi_solver")
 
    call timer("pexsi", 2)
 
 endif
 
 
-deallocate( shiftList )
-deallocate( inertiaList )
+call de_alloc(shiftList,"shiftList","pexsi_solver")
+call de_alloc(inertiaList,"shiftList","pexsi_solver")
 
 call delete(dist1)
 call delete(dist2)
