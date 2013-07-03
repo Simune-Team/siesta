@@ -1,4 +1,37 @@
 ------------------------------------------------------------
+July 3, 2013  Alberto Garcia          trunk-427--ncps-2
+Import Util/Pseudo-operator by Javier Junquera
+
+Some more pruning is still needed.
+Added KBPROJ.l.index file output.
+
+added:
+  Util/Pseudo-operator/
+  Util/Pseudo-operator/000_README
+  Util/Pseudo-operator/Makefile
+  Util/Pseudo-operator/Run/
+  Util/Pseudo-operator/Run/Al.psf
+  Util/Pseudo-operator/Run/Au.psf
+  Util/Pseudo-operator/Run/Ba.psf
+  Util/Pseudo-operator/Run/Fe.psf
+  Util/Pseudo-operator/Run/Si.psf
+  Util/Pseudo-operator/arw.f
+  Util/Pseudo-operator/atmparams.f
+  Util/Pseudo-operator/atom_options.F90
+  Util/Pseudo-operator/flib_spline.f90
+  Util/Pseudo-operator/io.f
+  Util/Pseudo-operator/m_io.f
+  Util/Pseudo-operator/module_pseudo.F
+  Util/Pseudo-operator/precision.F
+  Util/Pseudo-operator/pseudooperator.F
+  Util/Pseudo-operator/pseudopotential.f
+  Util/Pseudo-operator/pxf.F90
+  Util/Pseudo-operator/schrodinger.F
+  Util/Pseudo-operator/sys.F
+  Util/Pseudo-operator/xc.F
+
+
+------------------------------------------------------------
 January 9, 2013  Alberto Garcia          trunk-427--ncps-1
 Prototype implementation of ncps library
 
