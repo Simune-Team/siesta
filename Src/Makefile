@@ -148,7 +148,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	vacuum_level.o \
 	write_orb_indx.o \
 	m_hs_matrix.o kpoint_convert.o m_glob_sparse.o\
-        die.o m_pexsi_solver.o m_pexsi_local_dos.o\
+        die.o m_pexsi_solver.o m_pexsi_local_dos.o m_matrixwrite.o\
         m_comm.o m_transfers.o m_redist_spmatrix.o \
         class_Dist.o class_BlockCyclicDist.o class_PEXSIDist.o\
         m_object_debug.o m_uuid.o\
@@ -400,7 +400,7 @@ compute_dm.o: atomlist.o iodmhs_netcdf.o kpoint_grid.o m_dminim.o m_energies.o
 compute_dm.o: m_eo.o m_gamma.o m_mpi_utils.o m_pexsi_solver.o m_rmaxh.o
 compute_dm.o: m_spin.o m_steps.o m_ts_global_vars.o m_ts_in_siesta.o
 compute_dm.o: m_ts_options.o m_zminim.o ordern.o parallel.o precision.o
-compute_dm.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o units.o
+compute_dm.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o units.o m_matrixwrite.o
 compute_norm.o: m_mpi_utils.o precision.o sparse_matrices.o
 conjgr.o: precision.o
 conjgr_old.o: precision.o

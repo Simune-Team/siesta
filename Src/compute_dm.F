@@ -23,6 +23,7 @@
       use parallel, only: IONode
       use parallel, only: SIESTA_worker
       use m_pexsi_solver,  only: pexsi_solver
+      use m_matrixwrite
 #ifdef MPI
       use mpi_siesta
       use m_mpi_utils,     only:  globalize_sum
@@ -56,6 +57,10 @@
       integer             :: mpierr
 #endif
 
+!       character(15)            :: filename, indexstr
+!       character(15), parameter :: fnameform = '(A,A,A)'
+
+
 !-------------------------------------------------------------------- BEGIN
 
       if (SIESTA_worker) call timer( 'compute_dm', 1 )
@@ -88,7 +93,25 @@
         endif
       endif
 
-      if ((isolve .eq. SOLVE_DIAGON) .or. (CallDiagon)) then
+      if (isolve .eq. MATRIX_WRITE) then
+!             write(indexstr,'(I15)') iscf
+!             write(filename,fnameform) 'H_', trim(adjustl(indexstr)), 
+!      &                                '.matrix'
+!             call write_global_matrix( no_s, no_l, maxnh, numh, listh,
+!      &           H(1:maxnh,1), filename )
+!  
+!             write(filename,fnameform) 'S_', trim(adjustl(indexstr)), 
+!      &                                '.matrix'
+
+        call write_global_matrix_singlenodewrite( 
+     &           no_u, no_s, maxnh, numh, listhptr, listh, 
+     &           H(:,1), 'H.matrix')
+
+        call write_global_matrix_singlenodewrite( 
+     &           no_u, no_s, maxnh, numh, listhptr, listh, 
+     &           S, 'S.matrix')
+
+      elseif ((isolve .eq. SOLVE_DIAGON) .or. (CallDiagon)) then
         call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
      &              numh, listhptr, listh, numh, listhptr, listh, 
      &              H, S, qtot, fixspin, qs, temp, e1, e2,
