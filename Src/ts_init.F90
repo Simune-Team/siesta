@@ -19,7 +19,7 @@ module m_ts_init
 
 contains
 
-  subroutine ts_init(nspin, ucell, na_u, xa, lasto, no_u)
+  subroutine ts_init(kT, nspin, ucell, na_u, xa, lasto, no_u)
   ! Routine for initializing everything related to the Transiesta package.
   ! This is to comply with the SIESTA way of initializing at the beginning
   ! and make the code more managable.
@@ -35,7 +35,8 @@ contains
     use files, only : slabel
 
     use m_ts_gf,      only : do_Green
-    use m_ts_contour, only : contourL, contourR, contour_neq
+    
+    use m_ts_contour, only : contour_Eq, contour_EqL, contour_EqR, contour_nEq
     use m_ts_contour, only : setup_contour, print_contour, io_contour
     use m_ts_contour, only : sort_contour
     use m_ts_contour, only : NEn, contour
@@ -50,6 +51,7 @@ contains
 ! *********************
 ! * INPUT variables   *
 ! *********************
+    real(dp), intent(in) :: kT
     integer, intent(in)  :: nspin
     real(dp), intent(in) :: ucell(3,3)
     integer, intent(in)  :: na_u
@@ -65,8 +67,9 @@ contains
     integer :: i, sNE, eNE
     integer :: nL, nC, nR, nTS
 
+
     ! Read in options for transiesta
-    call read_ts_options( ucell , na_u , lasto )
+    call read_ts_options( kT, ucell , na_u , lasto )
 
     ! Setup the k-points
     call setup_ts_kpoint_grid( ucell )
@@ -101,11 +104,7 @@ contains
             na_BufL,ElLeft, ElRight,na_BufR)
        
        ! Create the contour lines
-       call setup_contour(IsVolt,C_eq_line, C_eq_circle, C_neq_tail, C_neq_mid, &
-            VoltL,0.0d0,VoltR, &
-            NCircle,Nline,Npol,NVolt, NVolt_tail, NVolt_mid, &
-            0._dp, 0._dp, Ntransport, & ! Transport emin and emax
-            CCEmin, GFEta, kt)
+       call setup_contour(IsVolt)
 
        ! Print out the contour path
        call print_contour()
@@ -115,30 +114,27 @@ contains
 
        ! We sort the contour to obtain the highest 
        ! numerical accuracy (simply sort by weight in ascending order)
+       eNE = 0
        if ( IsVolt ) then
-          sNE =       1
-          eNE = sNE+NCircle+Npol+Nline-1
-          c => contour(sNE:eNE)
+          c => contour_EqL()
+          eNE = eNE + size(c)
           ! 1) sort the left equilibrium points
           call sort_contour(size(c),c)
-          sNE = eNE + 1
-          eNE = sNE+NCircle+Npol+Nline-1
-          c => contour(sNE:eNE)
+          c => contour_EqR()
+          eNE = eNE + size(c)
           ! 2) sort the right equilibrium points
           call sort_contour(size(c),c)
-          sNE = eNE + 1
-          eNE = sNE + NVolt - 1
-          c => contour(sNE:eNE)
+          c => contour_nEq()
+          eNE = eNE + size(c)
           ! 3) sort the non-equilibrium points
           call sort_contour(size(c),c)
        else
-          sNE =       1
-          eNE = sNE+NCircle+Npol+Nline-1
-          c => contour(sNE:eNE)
+          c => contour_Eq()
+          eNE = eNE + size(c)
           ! 1) sort the equilibrium points
           call sort_contour(size(c),c)
        end if
-       if ( eNE /= NEn ) call die('Wrong sorting in the contour points.')
+       if ( eNE /= NEn ) call die('Wrong sorting of the contour')
 
        if ( .not. TS_Analyze ) then
 
@@ -183,7 +179,7 @@ contains
 
           write(*,*) ! New line
        end if
-       
+
     end if
     
   end subroutine ts_init

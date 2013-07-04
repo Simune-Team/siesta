@@ -13,7 +13,7 @@ module m_ts_global_vars
 
 USE precision, only : dp
 
-integer :: TSiscf=0
+integer :: TSiscf=1
 
 logical :: TSinit=.false.,TSrun=.false.
 

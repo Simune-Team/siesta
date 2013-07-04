@@ -99,7 +99,6 @@
 
       else if (TSrun) then
         call timer('TS',1)
-        TSiscf=TSiscf+1
 
 #ifdef TRANSIESTA_DEBUG
         ! When we do a transiesta DEBUG run, we will write out

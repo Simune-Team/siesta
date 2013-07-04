@@ -1,4 +1,78 @@
 ----------------------------------------------------
+July 4, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-66
+Bugfixes for nearly all the Gauss quadratures. Added full Gauss-Fermi up to 20 points
+
+* m_gauss_quad have recieved some updates, I still suspect this module to contain some
+  minor errors. However, for now the quadratures seem to generate the expected.
+  Quite a few bug-fixes for the quadrature generation has been added.
+  Particularly with different bounds
+
+* Using Stieltjes and Golub-Welsch method we have retrieved the Gauss-Fermi quadrature point
+  from -20kT up to 5kT, each with [2;20] points.
+  This will allow a greater flexibility in the determination of the optimal Gauss-Fermi quadrature.
+  Added an algorithm to automatically calculate the number of points used for the integrals.
+  Specifically it determines the optimal number of tail integral points by estimating the
+  weight in the middle segment compared to that of the tail integral.
+  For high biases this will lead to few tail points and many middle segment points, and vice versa.
+
+
+* TODO I suspect quite some "features" when mixing different contour methods.
+  There are some things that should be more clear in the code.
+  For intsance mixing Gauss-Fermi and line-integrals are a pain in the neck but proves
+  quite useful.
+
+* Changed the way one deals with the Gauss-Fermi contour elements.
+  It is not too obvious for the user what which options meen, however, the 
+  options print-out is what it uses. So anything that is corrected in the
+  code is reflected in the out-put.
+
+* Generalized the contour creation routines, the equilibrium contour and the
+  non-equilibrium contour are now created separately and both can utilize a new
+  line_integral method which allows for creating different integration methods 
+  irrespective of the nature of the integral.
+
+* The reading of the contour options have moved to the m_ts_contour module for
+  better clarity and also the constants belong to this module.
+
+  It should make the partition clearer and the programmer knows exactly where each
+  variable belongs.
+
+* TODO run a test-suite of the contour methods out-put to ensure their compatibility with
+  the old method.
+
+* Fixed the TSiscf count and made it like this:
+
+  1) TSiscf is set to 1 when the transiesta cycle kicks in
+     This is necessary as that is later used in the mixing and should thus have value 1+
+     and not 0.
+  2) iscf is now a mirror of TSiscf when transiesta is running
+  3) At the loop when transiesta kicks in, iscf and TSiscf are not updated, otherwise
+     it would be incremented to 2, which is not the correct thing.
+     I had to do it like this because of the non-triviality of the mixing scheme and the
+     counters that is used to track how mixing should be performed.
+
+* Instead of reading in the temperature in the transiesta options it is now passed down
+  through the subroutines.
+  Thus any default change in the temperature is also reflected in the transiesta routine.
+
+added:
+  Src/m_gauss_fermi.f90
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+  Src/m_gauss_quad.f90
+  Src/m_ts_aux.F90
+  Src/m_ts_cctype.f90
+  Src/m_ts_contour.f90
+  Src/m_ts_full.F90
+  Src/m_ts_global_vars.f90
+  Src/m_ts_options.F90
+  Src/m_ts_tri.F90
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/ts_init.F90
+
+----------------------------------------------------
 July 1, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-65
 Clean-up in m_ts_contour, added Gauss-Chebyshev and general gauss-integration module
 

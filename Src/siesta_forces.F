@@ -45,7 +45,7 @@
       use write_subs,            only: siesta_write_stress_pressure
 #ifdef TRANSIESTA
       use m_ts_method
-      use m_ts_global_vars,      only: ts_istep, TSrun
+      use m_ts_global_vars,      only: ts_istep, TSrun, TSiscf
       use m_ts_options,          only: TSmode
       use m_ts_options,          only: ElLeft, ElRight, no_BufL, no_BufR
       use m_ts_charge,           only: ts_print_charges, TS_INFO_SCF
@@ -200,11 +200,12 @@
         ! need to check this.
 
         if (iscf == nscf) EXIT
+        ts_will_continue = .false.
         if (SCFconverged) then
            call check_transiesta_switch(ts_will_continue)
            if (ts_will_continue) then
-              ! Reset counter... (will be incremented below)
-              iscf = 0
+              ! Reset counter...
+              iscf = 1
               ! keep in cycle
            else
               if (mix_after_convergence) call mixer (iscf) 
@@ -236,8 +237,17 @@
 
         ! Save mixed DM (and maybe H later) here for restarts
         call save_density_matrix("mixed")
-
-        iscf = iscf + 1
+        
+        ! in case that we have just switched to the transiesta cycle then
+        ! we should not increment, will 
+        if ( .not. ts_will_continue ) then
+           iscf = iscf + 1
+#ifdef TRANSIESTA
+           if ( TSrun ) then
+              TSiscf = TSiscf + 1
+           end if
+#endif
+        end if
 
       ENDDO
 
@@ -290,7 +300,7 @@
 
          TSinit = .false.       
          TSrun = .true.
-         TSiscf = 0
+         TSiscf = 1
 
          ts_continues_GF = .true.
 
@@ -298,7 +308,7 @@
          ! From now on, a new mixing cycle starts,
          ! so we have to reset the Pulay record keeping
          !
-         call init_pulay_arrays()  
+         call init_pulay_arrays() 
          !
 
          ! We need to reset the density/Hamiltonian matrices

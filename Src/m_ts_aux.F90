@@ -6,6 +6,13 @@ module m_ts_aux
 
   implicit none
 
+  interface nf
+     module procedure nf_z
+     module procedure nf_d
+  end interface nf
+
+  private :: nf_z, nf_d
+
 contains
   
   subroutine csolve(N,A,B,ipvt,ierr)
@@ -57,23 +64,25 @@ contains
 !
 !     Fermi Function
 !
-  function nf(z)
+  elemental function nf_z(z) result(nf)
     complex(dp), intent(in) :: z
     complex(dp) :: nf
     nf = dcmplx(1._dp,0._dp)/(dcmplx(1._dp,0._dp) + exp(z))
-  end function nf
+  end function nf_z
 
-  function nf1(z)
-    real(dp), intent(in) :: z
-    real(dp) :: nf1
-    if ( z < -20._dp ) then
-       nf1 = 1.0_dp
-    else if ( z > 20._dp ) then
-       nf1 = 0.0_dp
-    else
-       nf1 = 1._dp/(1._dp + exp(z))
-    end if
-  end function nf1
+  elemental function nf_d(d) result(nf)
+    real(dp), intent(in) :: d
+    real(dp) :: nf
+    nf = 1._dp/(1._dp + exp(d))
+  end function nf_d
+
+  ! Double fermi function
+  elemental function nf2(E,E1,E2,kT)
+    real(dp), intent(in) :: E, E1,E2,kT
+    real(dp) :: nf2
+    nf2 = nf((E-E2)/kT) - nf((E-E1)/kT)
+  end function nf2
+
 
 ! ==================================================================
 !

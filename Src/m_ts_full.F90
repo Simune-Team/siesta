@@ -122,7 +122,8 @@ contains
     use m_ts_full_scat
 
     use m_ts_contour,only : PNEn, NEn, contour
-    use m_ts_contour,only : contourL, contourR, contour_neq
+    use m_ts_contour,only : contour_Eq, contour_EqL, contour_EqR, contour_nEq
+    use m_ts_contour,only : contour_Transport
     use m_ts_cctype
 
     use m_ts_gf, only : read_Green
@@ -531,7 +532,7 @@ contains
 #endif
 
        ! The left contour is the full contour if: .not. IsVolt
-       c => contourL(:)
+       c => contour_EqL()
        cNEn = size(c)
        cPNEn = Nodes .PARCOUNT. cNEn
 
@@ -586,7 +587,7 @@ contains
        end if
 
        ! The left contour is the full contour if .not. IsVolt
-       c => contourR(:)
+       c => contour_EqR()
        cNEn = size(c)
        cPNEn = Nodes .PARCOUNT. cNEn
        
@@ -626,7 +627,7 @@ contains
        
 
        ! The left contour is the full contour if .not. IsVolt
-       c => contour_neq(:)
+       c => contour_nEq()
        cNEn = size(c)
        cPNEn = Nodes .PARCOUNT. cNEn
        

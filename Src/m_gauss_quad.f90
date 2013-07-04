@@ -19,17 +19,19 @@
 !  1) Gauss-Legendre (Jacobi)
 !     Used for \int_a^b f(x)w(x)dx , w(x) = 1
 !  2) Gauss-Gegenbauer (Jacobi)
-!     Used for \int_a^b f(x)w(x)dx , w(x) = (1-x^2)^{\lambda-1/2}
+!     Used for \int_a^b f(x)w(x)dx , w(x) = \left((b-x)(x-a)\right)^{\lambda-1/2}
 !  3) Gauss-Jacobi (Jacobi)
-!     Used for \int_a^b f(x)w(x)dx , w(x) = (1-x)^\alpha (1+x)^\beta
+!     Used for \int_a^b f(x)w(x)dx , w(x) = (b-x)^\alpha (x-a)^\beta
 !  4) Gauss-Chebyshev (Jacobi)
-!     Usef for \int_a^b f(x)w(x)dx , w(x) = \frac1{\sqrt{1-x^2}}
+!     Usef for \int_a^b f(x)w(x)dx , w(x) = \frac1{\sqrt{(b-x)(x-a)}}
 !  5) Gauss-Laguerre (Laguerre)
 !     Usef for \int_a^\infty f(x)w(x)dx , w(x) = e^{-x}
 !  6) Gauss-Generalized-Laguerre (Laguerre)
 !     Usef for \int_a^\infty f(x)w(x)dx , w(x) = x^\alpha e^{-x}
 !  7) Gauss-Hermite
 !     Usef for \int_{-\infty}^\infty f(x)w(x)dx , w(x) = e^{-x^2}
+!  8) Gauss-Tschebysheff
+!     Usef for \int_a^b f(x)w(x)dx , w(x) = \frac1{\sqrt{x(1-x)}}
 
 ! All can be solved using the Golub-Welsch algorithm.
 ! The routines for those are suffixed with GW
@@ -98,6 +100,7 @@ module m_gauss_quad
   public :: Gauss_Hermite_GW
   public :: Gauss_Chebyshev_Exact
   public :: Gauss_Chebyshev_GW
+  public :: Gauss_Tschebyscheff_Exact
 
   ! Weights
   public :: w_Gauss_Chebyshev
@@ -186,7 +189,7 @@ contains
        w(:) = Pi / real(N,dp)
        do i = 1 , N
           a_arg = .5_dp * real(2*i-1,dp) * Pi / real(N, dp)
-          x(i)  = cos(a_arg)
+          x(N+1-i)  = cos(a_arg)
        end do
     else if ( lmethod == 0 ) then
        i = 0
@@ -204,7 +207,7 @@ contains
           w(:) = Pi / real(lnn,dp)
           do i = 1 , lnn - 1
              a_arg = real(i,dp) * Pi / real(lnn, dp)
-             x(i)  = cos(a_arg)
+             x(N+1-i)  = cos(a_arg)
           end do
        else
           lN = N - 2
@@ -214,25 +217,57 @@ contains
           w(N) = Pi / real(2*lnn,dp)
           do i = 0 , lnn
              a_arg  = real(i,dp) * Pi / real(lnn, dp)
-             x(i+1) = cos(a_arg)
+             x(N-i) = cos(a_arg)
           end do
        end if
     end if
 
     ! if we have a non-pure integration function, i.e.
-    !  f(x) = g(x) * \sqrt{1-x^2}
-    !  w(x) = 1/\sqrt{1-x^2}
-    ! then we need to add the \sqrt{1-x^2} to the weight before we shift,
-    ! otherwise we enter the complex realm! ;)
+    !  f(x) = g(x) * \sqrt{(b-x)*(x-a)}
+    !  w(x) = 1/\sqrt{(b-x)*(x-a)}
     if ( present(pure) ) then
        if ( .not. pure ) then
           w(:) = w(:) / w_Gauss_Chebyshev(x)
        end if
     end if
 
-    call general_scale(N,x,w,a=a,b=b)
+    call general_scale(N,x,w,a=a,b=b,adjust_w=.false.)
        
   end subroutine Gauss_Chebyshev_Exact
+
+! We employ the Gauss-Tschebyscheff quadrature rules
+! This will enable to do the integral:
+! \int_0^b
+! It requires a weight function
+! w(x) = \frac1{\sqrt{x(b-x)}}
+  subroutine Gauss_Tschebyscheff_Exact(N,x,w,b, pure) 
+    integer, intent(in)   :: N
+    real(dp), intent(out) :: x(N), w(N)
+    real(dp), intent(in), optional :: b
+    logical, intent(in), optional :: pure
+    real(dp) :: a_arg
+    integer :: i
+
+    do i = 1 , N
+       a_arg = .5_dp * real(2*i-1,dp) * Pi / real(N, dp)
+       x(N+1-i)  = .5_dp * (1._dp+cos(a_arg))
+       w(N+1-i)  = Pi * .5_dp * sin(a_arg) / real(N,dp)
+    end do
+
+    ! if we have a non-pure integration function, i.e.
+    !  f(x) = g(x) * \sqrt{x(b-x)}
+    !  w(x) = 1/\sqrt{x(b-x)}
+    ! then we need to add the \sqrt{x(1-x)} to the weight before we shift,
+    ! otherwise we enter the complex realm! ;)
+    if ( present(pure) ) then
+       if ( .not. pure ) then
+          w(:) = w(:) / w_Gauss_Tschebyscheff(x)
+       end if
+    end if
+    
+    call general_scale(N,x,w,a=-b,b=b,adjust_w=.false.)
+    
+  end subroutine Gauss_Tschebyscheff_Exact
 
 
 ! The recursive Gauss-Legendre
@@ -302,7 +337,7 @@ contains
 ! This will enable to do the integral:
 ! \int_a^b
 ! It requires a weight function
-! w(x) = (1-x)^\alpha * (1+x)^\beta
+! w(x) = (b-x)^\alpha * (x-a)^\beta
   subroutine Gauss_Jacobi_GW(N,x,w,alpha,beta,a,b,pure,EPS)
     integer,  intent(in)  :: N
     real(dp), intent(out) :: x(N), w(N)
@@ -312,7 +347,7 @@ contains
     real(dp), intent(in), optional :: EPS
 
     integer :: N_int_mu
-    real(dp) :: mu0, mu_diff, lEPS
+    real(dp) :: mu0, mu_diff, lEPS, la, lb
     real(dp), allocatable :: J(:,:)
 
     if ( alpha <= -1._dp ) call die('Can not perform Jacobi integration with &
@@ -320,19 +355,24 @@ contains
     if ( beta  <= -1._dp ) call die('Can not perform Jacobi integration with &
          wrong beta, must be larger than -1.')
 
+    la = -1._dp
+    lb =  1._dp
+    if ( present(a) ) la = a
+    if ( present(b) ) lb = b
+
     lEPS = def_EPS
     if ( present(EPS) ) lEPS = EPS
     ! We first need to calculate the Jacobi weight integral
     N_int_mu = 100
     allocate(J(N_int_mu,2))
-    call Gauss_Legendre_Rec(N_int_mu,0,-1._dp,1._dp,J(:,1),J(:,2))
-    mu0 = sum(w_Gauss_Jacobi(J(:,1),alpha,beta)*J(:,2))
+    call Gauss_Legendre_Rec(N_int_mu,0,la,lb,J(:,1),J(:,2))
+    mu0 = sum(w_Gauss_Jacobi(J(:,1),alpha,beta,a=la,b=lb)*J(:,2))
     deallocate(J) ; N_int_mu = N_int_mu + 100
     do
        allocate(J(N_int_mu,2))
-       call Gauss_Legendre_Rec(N_int_mu,0,-1._dp,1._dp,J(:,1),J(:,2))
+       call Gauss_Legendre_Rec(N_int_mu,0,la,lb,J(:,1),J(:,2))
        mu_diff = mu0
-       mu0 = sum(w_Gauss_Jacobi(J(:,1),alpha,beta)*J(:,2))
+       mu0 = sum(w_Gauss_Jacobi(J(:,1),alpha,beta,a=la,b=lb)*J(:,2))
        deallocate(J)
        call adjust_Int(mu_diff,mu0,lEPS,N_int_mu)
        print *,mu_diff,mu0
@@ -354,13 +394,14 @@ contains
     if ( present(pure) ) then
        if ( .not. pure ) then
           ! if we have a non-pure integration function, i.e.
-          !  f(x) = g(x) / ((1-x)^\alpha * (1+x)^\beta)
-          !  w(x) = (1-x)^\alpha * (1+x)^\beta
-          w(:) = w(:) / w_Gauss_Jacobi(x,alpha,beta)
+          !  f(x) = g(x) / ((b-x)^\alpha * (x-a)^\beta)
+          !  w(x) = (b-x)^\alpha * (x-a)^\beta
+          w(:) = w(:) / w_Gauss_Jacobi(x,alpha,beta,a=a,b=b)
        end if
     end if
        
-    call general_scale(N,x,w,a=a,b=b)
+    ! The weight scaling should be corrected by the mu0
+    call general_scale(N,x,w,a=a,b=b,adjust_w=.false.)!,power_slope=alpha+beta+1._dp)
 
   end subroutine Gauss_Jacobi_GW
 
@@ -384,20 +425,20 @@ contains
 
     if ( lambda <= -.5_dp ) call die('Can not perform Gegenbauer integration with &
          wrong lambda, must be larger than -1/2. If lamda==-1/2 use Chebyshev.')
-
+    
     lEPS = def_EPS
     if ( present(EPS) ) lEPS = EPS
     ! We first need to calculate the Jacobi weight integral
     N_int_mu = 100
     allocate(J(N_int_mu,2))
-    call Gauss_Chebyshev_Exact(N_int_mu,J(:,1),J(:,2))
-    mu0 = sum(w_Gauss_Gegenbauer(J(:,1),lambda+.5_dp)*J(:,2))
+    call Gauss_Chebyshev_Exact(N_int_mu,J(:,1),J(:,2),a=a,b=b)
+    mu0 = sum(w_Gauss_Gegenbauer(J(:,1),lambda+.5_dp,a=a,b=b)*J(:,2))
     deallocate(J) ; N_int_mu = N_int_mu + 100
     do
        allocate(J(N_int_mu,2))
-       call Gauss_Chebyshev_Exact(N_int_mu,J(:,1),J(:,2))
+       call Gauss_Chebyshev_Exact(N_int_mu,J(:,1),J(:,2),a=a,b=b)
        mu_diff = mu0
-       mu0 = sum(w_Gauss_Gegenbauer(J(:,1),lambda+.5_dp)*J(:,2))
+       mu0 = sum(w_Gauss_Gegenbauer(J(:,1),lambda+.5_dp,a=a,b=b)*J(:,2))
        deallocate(J)
        call adjust_Int(mu_diff,mu0,lEPS,N_int_mu)
        print *,mu_diff,mu0
@@ -425,7 +466,8 @@ contains
        end if
     end if
 
-    call general_scale(N,x,w,a=a,b=b)
+    ! The mu0 should have corrected the weights
+    call general_scale(N,x,w,a=a,b=b,adjust_w=.false.)
 
   end subroutine Gauss_Gegenbauer_GW
 
@@ -444,6 +486,8 @@ contains
 
     ! integration \int_a^b 1\dx (the general-scale does the same)
     mu0 = 2._dp
+    if ( present(a) ) mu0 = mu0 - 1._dp - a
+    if ( present(b) ) mu0 = mu0 - 1._dp + b
 
     ! Allocate for work-space (no need for memory control, we should not use that many points)
     allocate(J(N,N))
@@ -457,7 +501,7 @@ contains
     ! clean-up
     deallocate(J)
     
-    call general_scale(N,x,w,a=a,b=b)
+    call general_scale(N,x,w,a=a,b=b,adjust_w=.false.)
 
   end subroutine Gauss_Legendre_GW
 
@@ -467,23 +511,43 @@ contains
 ! \int_a^b
 ! It requires a weight function
 ! w(x) = \frac1{\sqrt{1-x^2}}
-  subroutine Gauss_Chebyshev_GW(N,x,w,a,b, pure) 
+  subroutine Gauss_Chebyshev_GW(N,x,w,a,b, pure,EPS) 
     integer, intent(in)   :: N
     real(dp), intent(out) :: x(N), w(N)
     real(dp), intent(in), optional :: a, b
     logical, intent(in), optional :: pure
+    real(dp), intent(in), optional :: EPS
 
+    integer :: N_int_mu
     real(dp), allocatable :: J(:,:)
-    real(dp) :: mu0
+    real(dp) :: mu0, mu_diff, lEPS
 
-    ! \int_{-1}^1 w(x) dx
-    mu0 = Pi
+    ! We first need to calculate the Chebyshev weight integral
+    lEPS = def_EPS
+    if ( present(EPS) ) lEPS = EPS
+    N_int_mu = 100
+    allocate(J(N_int_mu,2))
+    call Gauss_Legendre_GW(N_int_mu,J(:,1),J(:,2),a=a,b=b)
+    mu0 = sum(w_Gauss_Chebyshev(J(:,1),a=a,b=b)*J(:,2))
+    deallocate(J) ; N_int_mu = N_int_mu + 100
+    do
+       allocate(J(N_int_mu,2))
+       call Gauss_Legendre_GW(N_int_mu,J(:,1),J(:,2),a=a,b=b)
+       mu_diff = mu0
+       mu0 = sum(w_Gauss_Chebyshev(J(:,1),a=a,b=b)*J(:,2))
+       deallocate(J)
+       call adjust_Int(mu_diff,mu0,lEPS,N_int_mu)
+       print *,mu_diff,mu0
+       if ( mu_diff <= lEPS ) exit
+    end do
 
     allocate(J(N,N))
     call Gauss_Jacobi_general(-.5_dp,-.5_dp,N,J)
 
     ! Find the weights and abscissas by Golub-Welsch
     call solve_Golub_Welsch(N,J,x,w,mu0)
+
+    deallocate(J)
 
     ! if we have a non-pure integration function, i.e.
     !  f(x) = g(x) * \sqrt{1-x^2}
@@ -492,11 +556,11 @@ contains
     ! otherwise we enter the complex realm! ;)
     if ( present(pure) ) then
        if ( .not. pure ) then
-          w(:) = w(:) / w_Gauss_Chebyshev(x)
+          w(:) = w(:) / w_Gauss_Chebyshev(x,a=a,b=b)
        end if
     end if
 
-    call general_scale(N,x,w,a=a,b=b)
+    call general_scale(N,x,w,a=a,b=b,adjust_w=.false.)
        
   end subroutine Gauss_Chebyshev_GW
 
@@ -506,35 +570,38 @@ contains
 ! \int_0^\infty (it cannot easily be generalized to \int_a^\infty
 ! It requires a weight function
 ! w(x) = x^\alpha e^{-x}
-  subroutine Gauss_Generalized_Laguerre_GW(N,x,w,alpha, pure, EPS) 
+  subroutine Gauss_Generalized_Laguerre_GW(N,x,w,alpha, a,pure, EPS) 
     integer,  intent(in)  :: N
     real(dp), intent(out) :: x(N), w(N)
     real(dp), intent(in)  :: alpha
-    logical, intent(in), optional :: pure
+    real(dp), intent(in), optional :: a
+    logical,  intent(in), optional :: pure
     real(dp), intent(in), optional :: EPS
 
     integer :: N_int_mu
     real(dp), allocatable :: J(:,:)
-    real(dp) :: mu0, mu_diff, lEPS
+    real(dp) :: mu0, mu_diff, lEPS, la
     
     ! We first need to calculate the Generalized Laguerre weight integral
     ! Luckily the Laguerre weight function is implicit in the
     ! function
     lEPS = def_EPS
     if ( present(EPS) ) lEPS = EPS
+    la = 0._dp
+    if ( present(a) ) la = a
     ! We first need to calculate the Laguerre weight integral
     N_int_mu = 100
     allocate(J(N_int_mu,2))
-    call Gauss_Laguerre_GW(N_int_mu,J(:,1),J(:,2))
-    mu0 = sum(J(:,1)**alpha*J(:,2))
+    call Gauss_Laguerre_GW(N_int_mu,J(:,1),J(:,2),a=a)
+    mu0 = sum((J(:,1)-la)**alpha*J(:,2))
     deallocate(J) ; N_int_mu = N_int_mu + 100
     do
        allocate(J(N_int_mu,2))
-       call Gauss_Laguerre_GW(N_int_mu,J(:,1),J(:,2))
+       call Gauss_Laguerre_GW(N_int_mu,J(:,1),J(:,2),a=a)
        mu_diff = mu0
        ! As the Laguerre weight is implicit in the function
        ! we need only integrating x^alpha
-       mu0 = sum(J(:,1)**alpha*J(:,2))
+       mu0 = sum((J(:,1)-la)**alpha*J(:,2))
        deallocate(J)
        call adjust_Int(mu_diff,mu0,lEPS,N_int_mu)
        print *,mu_diff,mu0
@@ -554,14 +621,20 @@ contains
     deallocate(J)
 
     ! if we have a non-pure integration function, i.e.
-    !  f(x) = g(x) * \exp{x}
-    !  w(x) = \exp{-x}
-    ! then we need to factor \exp{x} to the weight before we shift
+    !  f(x) = g(x) * \exp{x-a}
+    !  w(x) = \exp{-x+a}
+    ! then we need to factor \exp{x-a} to the weight before we shift
     if ( present(pure) ) then
        if ( .not. pure ) then
-          w(:) = w(:) / w_Gauss_Generalized_Laguerre(x,alpha)
+          w(:) = w(:) / w_Gauss_Generalized_Laguerre(x,alpha,a=a)
        end if
     end if
+
+    if ( present(a) ) then
+       x(:) = x(:) + a
+    end if
+    ! potentially we could introduce a bounded integration
+    ! b, this will yield a slope on the x_i
 
   end subroutine Gauss_Generalized_Laguerre_GW
 
@@ -572,23 +645,18 @@ contains
 ! It requires a weight function
 ! w(x) = e^{-x}
   subroutine Gauss_Laguerre_GW(N,x,w,a, pure) 
-    integer, intent(in)   :: N
+    integer,  intent(in)  :: N
     real(dp), intent(out) :: x(N), w(N)
     real(dp), intent(in), optional :: a
-    logical, intent(in), optional :: pure
+    logical,  intent(in), optional :: pure
 
     real(dp), allocatable :: J(:,:)
     real(dp) :: mu0
     
     ! For normalizing the weight-function
     mu0 = 1._dp
-
-    if ( present(pure) ) then
-       if ( mu0 > 1._dp .and. .not. pure ) then
-          call die('For non-pure Gauss-Laguerre and negative initial &
-               &bound you should expect non-optimal behaviour.')
-       end if
-    end if
+    ! Luckily this integral is easy! ;)
+    if ( present(a) ) mu0 = exp(-a)
 
     ! Allocate for work-space
     ! (no need for memory control, we should not use that many points)
@@ -604,16 +672,17 @@ contains
     deallocate(J)
 
     ! if we have a non-pure integration function, i.e.
-    !  f(x) = g(x) * \exp{x}
-    !  w(x) = \exp{-x}
+    !  f(x) = g(x) * \exp{x-a}
+    !  w(x) = \exp{-x+a}
     ! then we need to factor \exp{x} to the weight before we shift
     if ( present(pure) ) then
        if ( .not. pure ) then
-          w(:) = w(:) / w_Gauss_Laguerre(x)
+          w(:) = w(:) / w_Gauss_Laguerre(x,a=a)
        end if
     end if
 
     ! Change integration coordinates
+    ! Weights are corrected by mu0
     if ( present(a) ) then
        x(:) = x(:) + a
     end if
@@ -756,22 +825,34 @@ contains
 
 
   ! General scaling algorithm
-  subroutine general_scale(N,x,w,a,b)
+  subroutine general_scale(N,x,w,a,b,adjust_x,adjust_w,power_slope)
     integer, intent(in) :: N
     real(dp), intent(inout) :: x(N), w(N)
     real(dp), intent(in), optional :: a, b
-    real(dp) :: la, lb
+    logical, intent(in), optional :: adjust_x, adjust_w
+    real(dp), intent(in), optional :: power_slope
+    logical :: ladjust_x, ladjust_w
+    real(dp) :: la, lb, slp, slpp
+    
     integer :: i
     
     la = -1._dp
     if ( present(a) ) la = a
     lb = 1._dp
     if ( present(b) ) lb = b
+    ladjust_x = .true.
+    ladjust_w = .true.
+    if ( present(adjust_x) ) ladjust_x = adjust_x
+    if ( present(adjust_w) ) ladjust_w = adjust_w
+
+    slp = .5_dp * ( lb - la )
+    slpp = slp 
+    if ( present(power_slope) ) slpp = slp ** power_slope
 
     ! scale to (a,b) uniformly
     do i = 1 , N
-       x(i) = x(i)*(lb-la)*.5_dp+(lb+la)*.5_dp
-       w(i) = w(i)*(lb-la)*.5_dp
+       if ( ladjust_x ) x(i) = x(i)*slp+(lb+la)*.5_dp
+       if ( ladjust_w ) w(i) = w(i)*slpp
     end do
   end subroutine general_scale
 
@@ -793,34 +874,74 @@ contains
   end subroutine adjust_Int
 
 ! Here we contain the weight functions if ever needed
-  elemental function w_Gauss_Chebyshev(x) result(w)
+  elemental function w_Gauss_Chebyshev(x,a,b) result(w)
     real(dp), intent(in) :: x
+    real(dp), intent(in), optional :: a, b
     real(dp) :: w
-    w = 1._dp/sqrt(1._dp-x**2)
+    if ( present(a) ) then
+       if ( present(b) ) then
+          w = ((b-x)*(x-a))**(-.5_dp)
+       else
+          w = ((1._dp-x)*(x-a))**(-.5_dp)
+       end if
+    else
+       if ( present(b) ) then
+          w = ((b-x)*(x+1._dp))**(-.5_dp)
+       else
+          w = (1._dp-x**2)**(-.5_dp) ! 1._dp/sqrt(1._dp-x**2)
+       end if
+    end if
   end function w_Gauss_Chebyshev
-
-  elemental function w_Gauss_Jacobi(x,alpha,beta) result(w)
-    real(dp), intent(in) :: x, alpha, beta
+  
+  elemental function w_Gauss_Tschebyscheff(x,b) result(w)
+    real(dp), intent(in) :: x
+    real(dp), intent(in), optional :: b
     real(dp) :: w
-    w = (1._dp - x) ** alpha * (1._dp + x) ** beta
+    if ( present(b) ) then
+       w = (x*(b-x))**(-.5_dp) ! 1._dp/sqrt(x*(1._dp-x))
+    else
+       w = (x*(1._dp-x))**(-.5_dp) ! 1._dp/sqrt(x*(1._dp-x))
+    end if
+  end function w_Gauss_Tschebyscheff
+
+  elemental function w_Gauss_Jacobi(x,alpha,beta,a,b) result(w)
+    real(dp), intent(in) :: x, alpha, beta
+    real(dp), intent(in), optional :: a, b
+    real(dp) :: w
+    if ( present(a) ) then
+       if ( present(b) ) then
+          w = (b - x) ** alpha * (x-a) ** beta
+       else
+          w = (1._dp - x) ** alpha * (x-a) ** beta
+       end if
+    else
+       if ( present(b) ) then
+          w = (b - x) ** alpha * (x+1._dp) ** beta
+       else
+          w = (1._dp - x) ** alpha * (x+1._dp) ** beta
+       end if
+    end if
   end function w_Gauss_Jacobi
 
-  elemental function w_Gauss_Gegenbauer(x,lambda) result(w)
+  elemental function w_Gauss_Gegenbauer(x,lambda,a,b) result(w)
     real(dp), intent(in) :: x, lambda
+    real(dp), intent(in), optional :: a, b
     real(dp) :: w
-    w = (1._dp - x**2) ** (lambda - .5_dp)
+    w = w_Gauss_Jacobi(x,lambda-.5_dp,lambda-.5_dp,a=a,b=b)
   end function w_Gauss_Gegenbauer
 
-  elemental function w_Gauss_Generalized_Laguerre(x,alpha) result(w)
+  elemental function w_Gauss_Generalized_Laguerre(x,alpha,a) result(w)
     real(dp), intent(in) :: x, alpha
+    real(dp), intent(in), optional :: a
     real(dp) :: w
-    w = x**alpha * exp(-x)
+    w = (x-a)**alpha * exp(-x+a)
   end function w_Gauss_Generalized_Laguerre
 
-  elemental function w_Gauss_Laguerre(x) result(w)
+  elemental function w_Gauss_Laguerre(x,a) result(w)
     real(dp), intent(in) :: x
+    real(dp), intent(in), optional :: a
     real(dp) :: w
-    w = exp(-x)
+    w = exp(-x+a)
   end function w_Gauss_Laguerre
 
   elemental function w_Gauss_Hermite(x) result(w)
