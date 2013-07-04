@@ -421,7 +421,8 @@ C Find total numbers over all Nodes
         if (Node.eq.0) then
 C Open file
           call io_assign( iu )
-          open( iu, file="S.matrix", form='formatted', status='unknown')      
+          open( iu, file="S.matrix", form='formatted', status='unknown',
+     $          position="rewind")      
 
 C Write overall data
           write(iu,*) no_u, no_u, maxnhtot

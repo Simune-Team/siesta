@@ -397,7 +397,7 @@ class_Dist.o: class_BlockCyclicDist.o class_PEXSIDist.o
 class_PEXSIDist.o: basic_type.inc
 coceri.o: files.o periodic_table.o precision.o
 compute_dm.o: atomlist.o iodmhs_netcdf.o kpoint_grid.o m_dminim.o m_energies.o
-compute_dm.o: m_eo.o m_gamma.o m_mpi_utils.o m_pexsi_solver.o m_rmaxh.o
+compute_dm.o: m_eo.o m_gamma.o m_hsx.o m_mpi_utils.o m_pexsi_solver.o m_rmaxh.o
 compute_dm.o: m_spin.o m_steps.o m_ts_global_vars.o m_ts_in_siesta.o
 compute_dm.o: m_ts_options.o m_zminim.o ordern.o parallel.o precision.o
 compute_dm.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o units.o
@@ -560,7 +560,7 @@ m_pexsi_solver.o: parallel.o precision.o units.o
 m_pulay.o: alloc.o atomlist.o m_spin.o parallel.o precision.o siesta_options.o
 m_pulay.o: sparse_matrices.o sys.o
 m_recipes.o: precision.o sys.o
-m_redist_spmatrix.o: class_Dist.o m_comm.o m_transfers.o
+m_redist_spmatrix.o: alloc.o class_Dist.o m_comm.o m_transfers.o
 m_rmaxh.o: precision.o
 m_sparse.o: alloc.o precision.o
 m_spin.o: alloc.o parallel.o precision.o

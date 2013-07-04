@@ -32,6 +32,7 @@ CONTAINS
       use class_Dist
       use m_comm,      only: comm_t
       use m_transfers, only: do_transfers
+      use alloc,       only: re_alloc, de_alloc
 
       implicit none
 
@@ -76,7 +77,7 @@ CONTAINS
       if (proc_in_set2) then
          m2%norbs = norbs
          m2%no_l = num_local_elements(dist2,norbs,myrank2)
-         allocate(m2%numcols(m2%no_l))
+         call re_alloc(m2%numcols,1,m2%no_l,"m2%numcols","redistribute_spmatrix")
       endif
 
 !      print *, "About to transfer numcols..."
@@ -96,12 +97,12 @@ CONTAINS
       ! Now we can figure out how many non-zeros there are
       if (proc_in_set2) then
          m2%nnzl = sum(m2%numcols(1:m2%no_l))
-         allocate(m2%cols(m2%nnzl))
+         call re_alloc(m2%cols,1,m2%nnzl,"m2%cols","redistribute_spmatrix")
 
          if (nvals > 0) then
             allocate(m2%vals(nvals))
             do j=1,nvals
-               allocate(m2%vals(j)%data(m2%nnzl))
+               call re_alloc(m2%vals(j)%data,1,m2%nnzl,"m2%vals(j)%data","redistribute_spmatrix")
             enddo
          endif
 

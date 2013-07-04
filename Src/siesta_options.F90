@@ -181,6 +181,7 @@ MODULE siesta_options
   integer,  parameter :: SOLVE_TRANSI = 2
   integer,  parameter :: SOLVE_MINIM  = 3
   integer,  parameter :: SOLVE_PEXSI  = 4
+  integer,  parameter :: MATRIX_WRITE  = 5
 
       CONTAINS
 
@@ -720,7 +721,14 @@ MODULE siesta_options
                             value=method, dictRef='siesta:SCFmethod' )
     endif
 
-    if (leqi(method,'diagon')) then
+    if (leqi(method,'matrix')) then
+      isolve = MATRIX_WRITE
+      if (ionode)  then
+        write(6,'(a,4x,a)') 'redata: Method of Calculation            = ',&
+                            'Matrix write only'
+      endif
+
+    else if (leqi(method,'diagon')) then
       isolve = SOLVE_DIAGON
       ! DivideAndConquer is now the default
       DaC = fdf_get('Diag.DivideAndConquer',.true.)

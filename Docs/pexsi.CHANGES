@@ -1,4 +1,33 @@
 ------------------------------------------------------------
+July 4, 2013   G. Huhs, A. Garcia        trunk-434--pexsi-36
+Use alloc module in pexsi. New 'matrix' mode. Fix index arrays
+
+(Georg Huhs, A. Garcia)
+
+* To facilitate the memory accounting, simple "allocate" statements
+  have been replaced by calls to the alloc module in the PEXSI section.
+
+* A new "SolutionMethod", "matrix", has been implemented. This option
+  makes the program stop after creating two ASCII files, H.matrix and
+  S.matrix, containing H and S and the appropriate index arrays. For the
+  format, see the routine write_hs_formatted in m_hsx.F
+
+* Some auxiliary index arrays intended only for O(N) calculations were
+  allocated unconditionally. This has been fixed.
+  
+modified:
+  Docs/pexsi.CHANGES
+  Src/Makefile
+  Src/compute_dm.F
+  Src/initparallel.F
+  Src/m_hsx.F
+  Src/m_pexsi_solver.F90
+  Src/m_redist_spmatrix.F90
+  Src/siesta_options.F90
+
+
+
+------------------------------------------------------------
 June 7, 2013   Alberto Garcia            trunk-434--pexsi-35
 Command-line option to specify output file. More timings
 
