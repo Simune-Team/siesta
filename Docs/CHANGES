@@ -6,6 +6,16 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2013-07-04  16:00:00 GMT                                     trunk-440
+Avoid allocation of auxiliary index arrays in the general case
+
+* Some auxiliary index arrays intended only for O(N) calculations were
+  allocated unconditionally. This has been fixed.
+
+modified:
+  Src/initparallel.F
+
+-----------------------------------------------------------------------
 2013-06-21  11:10:00 GMT                                     trunk-439
 Siesta as subroutine using MPI. Vydrov-VanVoorhis vdW functional
 
