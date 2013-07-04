@@ -62,7 +62,6 @@ module m_ts_cctype
   integer, parameter :: CC_TYPE_G_JACOBI       = 102
   integer, parameter :: CC_TYPE_G_CHEBYSHEV_O  = 103
   integer, parameter :: CC_TYPE_G_CHEBYSHEV_C  = 104
-  integer, parameter :: CC_TYPE_G_TSCHEBYSHEFF = 105
   integer, parameter :: CC_TYPE_G_LAGUERRE     = 106
   integer, parameter :: CC_TYPE_G_GEN_LAGUERRE = 107
   integer, parameter :: CC_TYPE_G_HERMITE      = 108
@@ -159,8 +158,6 @@ contains
        str = 'G-Chebyshev-O'
     case ( CC_TYPE_G_CHEBYSHEV_C )
        str = 'G-Chebyshev-C'
-    case ( CC_TYPE_G_TSCHEBYSHEFF )
-       str = 'G-Tschebysheff'
     case ( CC_TYPE_G_LAGUERRE )
        str = 'G-Laguerre'
     case ( CC_TYPE_G_GEN_LAGUERRE )
@@ -214,8 +211,6 @@ contains
        str = 'Gauss-Chebyshev (open)'
     case ( CC_TYPE_G_CHEBYSHEV_C )
        str = 'Gauss-Chebyshev (closed)'
-    case ( CC_TYPE_G_TSCHEBYSHEFF )
-       str = 'Gauss-Tschebysheff'
     case ( CC_TYPE_G_LAGUERRE )
        str = 'Gauss-Laguerre'
     case ( CC_TYPE_G_GEN_LAGUERRE )

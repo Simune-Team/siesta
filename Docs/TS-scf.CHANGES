@@ -1,4 +1,37 @@
 ----------------------------------------------------
+July 4, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-67
+Removed Tschebyscheff quadrature, added Gauss-Fermi with non-inf
+
+* As the Fermi function rapidly decays for energies above 10kT
+  it makes sense to generate the quadrature for the range [x;20kT]
+  or some other figure of that magnitude.
+  This will concentrate more abscissae at the bottom range and
+  should increase the precision of the computation.
+  Specifically Fermi function (20kT) ~= 1e-9 which roughly means
+  no contribution in the density.
+  Thus the user now has the possibility of switching Gauss-Fermi
+  with the following upper bounds for the integral:
+    1)  infinity (default behaviour)
+    2)  20 kT
+    3)  18 kT
+    4)  16 kT
+  
+* Deleted the Tschebyscheff quadrature, it generated the same 
+  abscissae as the Chebyshev, I suspect it is a naming thing.
+
+* Corrected the weight scaling for the Chebyshev methods.
+
+added:
+  Src/m_gauss_fermi_16.f90
+  Src/m_gauss_fermi_18.f90
+  Src/m_gauss_fermi_20.f90
+modified:
+  Src/Makefile
+  Src/m_gauss_quad.f90
+  Src/m_ts_cctype.f90
+  Src/m_ts_contour.f90
+
+----------------------------------------------------
 July 4, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-66
 Bugfixes for nearly all the Gauss quadratures. Added full Gauss-Fermi up to 20 points
 

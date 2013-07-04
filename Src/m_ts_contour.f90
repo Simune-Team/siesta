@@ -26,10 +26,8 @@ module m_ts_contour
 ! used for generating the contour points
 !   4) mod_HansSkriver
 !   5) sommerfeld
-!   6) Gauss_Fermi_2kT_plus_line
-!   7) Gauss_Fermi_0kT_plus_line
-!   8) transport
-!   9) phonon
+!   6) transport
+!   7) phonon
 
 ! Use the type associated with the contour
 ! Maybe they should be collected to this module.
@@ -69,6 +67,11 @@ module m_ts_contour
   integer, save, public  :: C_nEq_mid_N
   real(dp), save, public :: C_transport_Emin, C_transport_Emax
   integer, save, public  :: C_Transport_N
+
+  ! Integer determining the end point of the fermi integration
+  ! Currently it can only be:
+  !  16, 18, 20, Infinity=>huge(1)
+  integer, save, public :: C_G_NF_END = huge(1)
 
   ! The contours for the equilibrium density are attributed a fruitful discussion with
   ! Hans Skriver. Previously the routine names reflected his contribution.
@@ -145,6 +148,17 @@ contains
     C_nEq_tail_N = 6
     C_nEq_mid = CC_TYPE_SIMP_EXT
     C_nEq_mid_N = 6
+    
+
+    ! Read in the new setup for determining the end Gauss-integration
+    C_G_NF_END = fdf_get('TS.Contour.GaussFermi.End',huge(1))
+    if ( C_G_NF_END /= huge(1) .and. &
+         C_G_NF_END /= 20 .and. &
+         C_G_NF_END /= 18 .and. &
+         C_G_NF_END /= 16 ) then
+       call die('You are only allowed 20, 18 or 16 as input, &
+            &for infinity integral remove the FDF line.')
+    end if
 
     ! ******* default setup finished ********
     ! We have now setup the default parameters for the contour method
@@ -172,8 +186,6 @@ contains
        C_Eq_Circle = CC_TYPE_G_LEGENDRE
     else if ( leqi(chars,'g-chebyshev-open') ) then
        C_Eq_Circle = CC_TYPE_G_CHEBYSHEV_O
-    else if ( leqi(chars,'g-tschebyscheff') ) then
-       C_Eq_Circle = CC_TYPE_G_TSCHEBYSHEFF
     else
        call die('Unrecognized eq. circle integration &
             &scheme: '//trim(chars))
@@ -236,8 +248,6 @@ contains
        C_Eq_Line_bottom = CC_TYPE_G_LEGENDRE
     else if ( leqi(chars(:i),'g-chebyshev-open') ) then
        C_Eq_Line_bottom = CC_TYPE_G_CHEBYSHEV_O
-    else if ( leqi(chars(:i),'g-tschebyscheff') ) then
-       C_Eq_Line_bottom = CC_TYPE_G_TSCHEBYSHEFF
     else if ( leqi(chars(:i),'extended-simpson') ) then
        C_Eq_Line_bottom = CC_TYPE_SIMP_EXT
     else if ( leqi(chars(:i),'composite-simpson') ) then
@@ -415,8 +425,6 @@ contains
           C_nEq_mid = CC_TYPE_G_LEGENDRE
        else if ( leqi(chars(i:),'g-chebyshev-open') ) then
           C_nEq_mid = CC_TYPE_G_CHEBYSHEV_O
-       else if ( leqi(chars(i:),'g-tschebyscheff') ) then
-          C_nEq_mid = CC_TYPE_G_TSCHEBYSHEFF
        else
           call die('Unrecognized non-equilibrium integration &
                &scheme for the middle line: '//trim(chars(i:)))
@@ -561,6 +569,9 @@ contains
     use m_ts_aux, only : nf2
     use m_gauss_quad
     use m_gauss_fermi
+    use m_gauss_fermi_20
+    use m_gauss_fermi_18
+    use m_gauss_fermi_16
 
 ! **********************
 ! * INPUT variables    *
@@ -641,7 +652,15 @@ contains
                call die('Splitting energy in the non-equilibrium &
                &contour is erroneous. Must be integer part of kT')
 
-          call GaussFermi(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
+          if ( C_G_NF_END == huge(1) ) then
+             call GaussFermi(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
+          else if ( C_G_NF_END == 20 ) then
+             call GaussFermi_20kT(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
+          else if ( C_G_NF_END == 18 ) then
+             call GaussFermi_18kT(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
+          else if ( C_G_NF_END == 16 ) then
+             call GaussFermi_16kT(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
+          end if
 
        case ( CC_TYPE_G_LAGUERRE )
           
@@ -747,6 +766,9 @@ contains
     use parallel,  only : IONode, Nodes, operator(.PARCOUNT.)
     use m_ts_aux, only : nf
     use m_gauss_fermi
+    use m_gauss_fermi_20
+    use m_gauss_fermi_18
+    use m_gauss_fermi_16
     use m_gauss_quad
 
 ! **********************
@@ -798,7 +820,15 @@ contains
        ! Determine the method
        select case ( C_Eq_Line_tail ) 
        case ( CC_TYPE_G_NF_MIN:CC_TYPE_G_NF_MAX )
-          call GaussFermi(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
+          if ( C_G_NF_END == huge(1) ) then
+             call GaussFermi(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
+          else if ( C_G_NF_END == 20 ) then
+             call GaussFermi_20kT(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
+          else if ( C_G_NF_END == 18 ) then
+             call GaussFermi_18kT(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
+          else if ( C_G_NF_END == 16 ) then
+             call GaussFermi_16kT(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
+          end if
 
        case ( CC_TYPE_G_LAGUERRE )
           ! We retain it to be pure...
@@ -836,7 +866,16 @@ contains
        ! We will not allow for -2 and 0 kT contours (maybe up to -5?)
     case ( CC_TYPE_G_NF_MIN:CC_TYPE_G_NF_MAX )
        if ( C_Eq_Line_tail_N > 0 ) call die('Wrong options')
-       call GaussFermi(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
+
+       if ( C_G_NF_END == huge(1) ) then
+          call GaussFermi(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
+       else if ( C_G_NF_END == 20 ) then
+          call GaussFermi_20kT(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
+       else if ( C_G_NF_END == 18 ) then
+          call GaussFermi_18kT(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
+       else if ( C_G_NF_END == 16 ) then
+          call GaussFermi_16kT(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
+       end if
 
     case default
       if ( C_Eq_Line_tail_N == 0 ) &
@@ -896,12 +935,6 @@ contains
        ! this will give the correct path when out-put
        call Gauss_Chebyshev_Exact(C_Eq_Circle_N, x, w, a=beta, b=Pi, &
             method=0, pure=.false.)
-
-    case ( CC_TYPE_G_TSCHEBYSHEFF )
-       D = Pi - beta
-       call Gauss_Tschebyscheff_Exact(C_Eq_Circle_N,x,w, &
-            b=D,pure=.false.)
-       x(:) = x(:) + beta
 
     case default
        call die('Unrecognized contour for the equilibrium circle')
@@ -1123,15 +1156,6 @@ contains
 
        call Gauss_Chebyshev_Exact(NEn, x, w, &
             a=E1, b=E2, method=0, pure=.false.)
-
-    case ( CC_TYPE_G_TSCHEBYSHEFF ) 
-
-       delta = E2 - E1
-       call Gauss_Tschebyscheff_Exact(NEn, x, w, &
-            b=delta, pure=.false.)
-       x(:) = x(:) + E1
-
-       call die('Not fully implemented')
 
     case default
        call die('Could not determine the non-equilibrium line contour')

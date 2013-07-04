@@ -165,6 +165,7 @@ OBJS =  automatic_cell.o atom_options.o \
 OBJS += intrinsic_missing.o geom_helper.o 
 OBJS += create_Sparsity_SC.o create_Sparsity_Union.o
 OBJS += m_gauss_quad.o m_gauss_fermi.o
+OBJS += m_gauss_fermi_20.o m_gauss_fermi_18.o m_gauss_fermi_16.o
 
 #--------------------------------------------------------------
 # FoX whatnot
@@ -610,6 +611,7 @@ m_pulay.o: alloc.o atomlist.o m_spin.o m_svd.o parallel.o precision.o
 m_pulay.o: siesta_options.o sparse_matrices.o sys.o
 m_recipes.o: precision.o sys.o
 m_rmaxh.o: precision.o
+m_sig_handler.o: parallel.o
 m_spin.o: alloc.o parallel.o precision.o
 m_stress.o: precision.o
 m_svd.o: precision.o
@@ -619,10 +621,11 @@ m_ts_Sparsity2TriMat.o: alloc.o class_Sparsity.o geom_helper.o
 m_ts_Sparsity2TriMat.o: intrinsic_missing.o m_ts_electype.o m_ts_options.o
 m_ts_Sparsity2TriMat.o: parallel.o precision.o
 m_ts_aux.o: precision.o
-m_ts_cctype.o: precision.o
+m_ts_cctype.o: m_gauss_fermi.o precision.o
 m_ts_charge.o: class_OrbitalDistribution.o class_Sparsity.o geom_helper.o
 m_ts_charge.o: m_ts_electype.o m_ts_method.o parallel.o precision.o
-m_ts_contour.o: m_gauss_fermi.o m_gauss_quad.o m_ts_aux.o m_ts_cctype.o
+m_ts_contour.o: m_gauss_fermi.o m_gauss_fermi_16.o m_gauss_fermi_18.o
+m_ts_contour.o: m_gauss_fermi_20.o m_gauss_quad.o m_ts_aux.o m_ts_cctype.o
 m_ts_contour.o: parallel.o precision.o units.o
 m_ts_debug.o: class_Sparsity.o class_TriMat.o geom_helper.o parallel.o
 m_ts_debug.o: precision.o

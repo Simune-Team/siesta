@@ -100,7 +100,6 @@ module m_gauss_quad
   public :: Gauss_Hermite_GW
   public :: Gauss_Chebyshev_Exact
   public :: Gauss_Chebyshev_GW
-  public :: Gauss_Tschebyscheff_Exact
 
   ! Weights
   public :: w_Gauss_Chebyshev
@@ -231,43 +230,9 @@ contains
        end if
     end if
 
-    call general_scale(N,x,w,a=a,b=b,adjust_w=.false.)
+    call general_scale(N,x,w,a=a,b=b)
        
   end subroutine Gauss_Chebyshev_Exact
-
-! We employ the Gauss-Tschebyscheff quadrature rules
-! This will enable to do the integral:
-! \int_0^b
-! It requires a weight function
-! w(x) = \frac1{\sqrt{x(b-x)}}
-  subroutine Gauss_Tschebyscheff_Exact(N,x,w,b, pure) 
-    integer, intent(in)   :: N
-    real(dp), intent(out) :: x(N), w(N)
-    real(dp), intent(in), optional :: b
-    logical, intent(in), optional :: pure
-    real(dp) :: a_arg
-    integer :: i
-
-    do i = 1 , N
-       a_arg = .5_dp * real(2*i-1,dp) * Pi / real(N, dp)
-       x(N+1-i)  = .5_dp * (1._dp+cos(a_arg))
-       w(N+1-i)  = Pi * .5_dp * sin(a_arg) / real(N,dp)
-    end do
-
-    ! if we have a non-pure integration function, i.e.
-    !  f(x) = g(x) * \sqrt{x(b-x)}
-    !  w(x) = 1/\sqrt{x(b-x)}
-    ! then we need to add the \sqrt{x(1-x)} to the weight before we shift,
-    ! otherwise we enter the complex realm! ;)
-    if ( present(pure) ) then
-       if ( .not. pure ) then
-          w(:) = w(:) / w_Gauss_Tschebyscheff(x)
-       end if
-    end if
-    
-    call general_scale(N,x,w,a=-b,b=b,adjust_w=.false.)
-    
-  end subroutine Gauss_Tschebyscheff_Exact
 
 
 ! The recursive Gauss-Legendre
