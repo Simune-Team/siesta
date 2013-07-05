@@ -145,15 +145,15 @@ C     Find value of maxloc
 
 C     Allocate local memory
 !$OMP   PARALLEL DEFAULT(NONE) SHARED(no,np,nvmax,iaorb,nspin,iphorb,
-!$   &    isa,numVs,listVsptr,listVs,V,dVol,Vs,maxloc,maxloc2,
-!$   &    nvmaxl,triang,lenx,leny,lenxy,parallellocal,omp_ilc,
-!$   &    omp_ilocal,omp_iorb,omp_DscfL,omp_Vss,omp_Clocal,omp_Vlocal,
-!$   &    omp_phia,r2cut,indxuo,dxa,nsp,xdop,xdsp,NeedDscfL,listdl,
-!$   &    numdl,listdlptr,directphi,endpht,lstpht,listp2,phi,nodes,node)
-!$   &    PRIVATE(i,ia,ic,ii,ijl,il,imp,ind,iop,ip,iphi,is,isp,ispin,
-!$   &    iu,iul,ix,j,jc,jl,last,lasta,lastop,nc,nlocal,nphiloc,Vij,
-!$   &    r2sp,dxsp,VClocal,ilc,ilocal,iorb,DscfL,Vss,Clocal,Vlocal,
-!$   &    phia,nth,tid)
+!$OMP&    isa,numVs,listVsptr,listVs,V,dVol,Vs,maxloc,maxloc2,
+!$OMP&    nvmaxl,triang,lenx,leny,lenxy,parallellocal,omp_ilc,
+!$OMP&    omp_ilocal,omp_iorb,omp_DscfL,omp_Vss,omp_Clocal,omp_Vlocal,
+!$OMP&    omp_phia,r2cut,indxuo,dxa,nsp,xdop,xdsp,NeedDscfL,listdl,
+!$OMP&    numdl,listdlptr,directphi,endpht,lstpht,listp2,phi,nodes,node)
+!$OMP&    PRIVATE(i,ia,ic,ii,ijl,il,imp,ind,iop,ip,iphi,is,isp,ispin,
+!$OMP&    iu,iul,ix,j,jc,jl,last,lasta,lastop,nc,nlocal,nphiloc,Vij,
+!$OMP&    r2sp,dxsp,VClocal,ilc,ilocal,iorb,DscfL,Vss,Clocal,Vlocal,
+!$OMP&    phia,nth,tid)
 #ifdef _OMP_
       NTH = omp_get_num_threads( )
       TID = omp_get_thread_num( ) + 1

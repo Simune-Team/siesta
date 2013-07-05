@@ -107,8 +107,8 @@ C ----------------------------------------------------------------------
            do ia = 1,na_u
               is = isa(ia)
               atm_label = labelfis(is)
-              write(6,'(i6,2x,f7.3,2x,a20)'), ia,
-     $             zvalfis(is)-q(ia)*dvol, atm_label
+              write(6,'(i6,2x,f7.3,2x,a20)') ia,
+     .             zvalfis(is)-q(ia)*dvol, atm_label
            enddo
         endif
       endif
@@ -133,8 +133,8 @@ C ----------------------------------------------------------------------
            do ia = 1,na_u
               is = isa(ia)
               atm_label = labelfis(is)
-              write(6,'(i6,2x,f7.3,2x,a20)'), ia,
-     $             -q(ia)*dvol, atm_label
+              write(6,'(i6,2x,f7.3,2x,a20)') ia,
+     .             -q(ia)*dvol, atm_label
            enddo
         endif
       endif

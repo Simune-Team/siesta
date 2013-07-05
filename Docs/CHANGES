@@ -6,6 +6,28 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2013-07-05  15:40:00 GMT                                     trunk-441
+Cosmetic fixes to please Cray compiler. Arch.make files for PRACE computers
+
+(Fabiano Corsetti)
+
+* Some cosmetic changes for Cray compiler.
+
+* Added some arch.make files for PRACE computers to Src/Sys
+
+added:
+  Src/Sys/arch.make.curie
+  Src/Sys/arch.make.fermi
+  Src/Sys/arch.make.hermit
+  Src/Sys/arch.make.juqueen
+  Src/Sys/arch.make.marenostrum
+  Src/Sys/arch.make.supermuc
+modified:
+  Src/m_partial_charges.F
+  Src/rhoofd.F
+  Src/vmat.F
+
+-----------------------------------------------------------------------
 2013-07-04  16:00:00 GMT                                     trunk-440
 Avoid allocation of auxiliary index arrays in the general case
 
