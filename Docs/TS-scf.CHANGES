@@ -1,4 +1,14 @@
 ----------------------------------------------------
+July 8, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-70
+Bugfix for equilibrium transiesta weights
+
+* Forgot to add a minus sign for the weights of the equilibrium contour in cases of
+  V == 0.
+
+modified:
+  Src/m_ts_contour.f90
+
+----------------------------------------------------
 July 8, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-69
 Added a general flag instead of TS.biasContour.NumPoints and removed unneeded logics
 

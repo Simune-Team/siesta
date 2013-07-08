@@ -595,6 +595,9 @@ contains
             C_Eq_Line_bottom, C_Eq_Line_bottom_N ,C_Eq_Line_split, &
             C_Eq_Line_tail, C_Eq_Line_tail_N, C_Eq_Pole_N, &
             CCEmin, 0._dp, kT, c)
+       ! Note we put a minus here because the integral we want is the
+       ! negative of the pole-sum and C+L integral
+       c(:)%w = - c(:)%w
 
     else
 
