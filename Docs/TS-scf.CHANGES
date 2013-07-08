@@ -1,4 +1,18 @@
 ----------------------------------------------------
+July 8, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-69
+Added a general flag instead of TS.biasContour.NumPoints and removed unneeded logics
+
+* Instead of both specifying TS.Contour.nEq.<Middle|Tail>.N one can use
+  TS.Contour.nEq.N which determines both the tail and middle number of points
+  automatically using the Gauss-Fermi tool.
+
+* Removed the composite trapez rule (it weren't implemented)
+
+modified:
+  Src/m_ts_cctype.f90
+  Src/m_ts_contour.f90
+
+----------------------------------------------------
 July 8, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-68
 Generalized the composite Simpson and Boole's Newton-Cotes integration schemes
 

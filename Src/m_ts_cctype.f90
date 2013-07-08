@@ -71,7 +71,6 @@ module m_ts_cctype
   integer, parameter :: CC_TYPE_MID            = 204
   integer, parameter :: CC_TYPE_LEFT           = 205
   integer, parameter :: CC_TYPE_RIGHT          = 206
-  integer, parameter :: CC_TYPE_TRAPEZ_COMP    = 207
 
 
   integer, parameter :: CC_TYPE_TRANSPORT       = 500

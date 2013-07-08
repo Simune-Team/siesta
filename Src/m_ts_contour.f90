@@ -254,8 +254,6 @@ contains
        C_Eq_Line_bottom = CC_TYPE_BOOLE_MIX
     else if ( leqi(chars(:i),'mid-rule') ) then
        C_Eq_Line_bottom = CC_TYPE_MID
-    else if ( leqi(chars(:i),'composite-trapez') ) then
-       C_Eq_Line_bottom = CC_TYPE_TRAPEZ_COMP
     else
        call die('Could not figure out the bottom contour type for the &
             &equilibrium line contour: '//trim(chars(:i)))
@@ -348,7 +346,7 @@ contains
     ! *****************************************************************
 
     call fdf_deprecated('TS.biasContour.NumPoints', &
-         'TS.Contour.nEq.Tail.N/TS.Contour.nEq.Middle.N')
+         'TS.Contour.nEq.N/TS.Contour.nEq.Tail.N/TS.Contour.nEq.Middle.N')
 
     ! Set default
     C_nEq_tail    = CC_TYPE_G_NF_0kT - 5
@@ -362,6 +360,7 @@ contains
     if ( IsVolt ) then
 
        i = fdf_get('TS.biasContour.NumPoints',10)
+       i = fdf_get('TS.Contour.nEq.N',i)
        correct = fdf_get('TS.Contour.nEq.NoEmptyCycles',.true.)
        if ( correct .and. mod(i,Nodes) /= 0 ) i = i + Nodes - mod(i,Nodes)
 
@@ -423,8 +422,6 @@ contains
           C_nEq_mid = CC_TYPE_BOOLE_MIX
        else if ( leqi(chars(i:),'mid-rule') ) then
           C_nEq_mid = CC_TYPE_MID
-       else if ( leqi(chars(i:),'composize-trapez') ) then
-          C_nEq_mid = CC_TYPE_TRAPEZ_COMP
        else
           call die('Unrecognized non-equilibrium integration &
                &scheme for the middle line: '//trim(chars(i:)))
