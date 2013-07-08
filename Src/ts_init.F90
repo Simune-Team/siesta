@@ -19,7 +19,7 @@ module m_ts_init
 
 contains
 
-  subroutine ts_init(kT, nspin, ucell, na_u, xa, lasto, no_u)
+  subroutine ts_init(wmix, kT, nspin, ucell, na_u, xa, lasto, no_u)
   ! Routine for initializing everything related to the Transiesta package.
   ! This is to comply with the SIESTA way of initializing at the beginning
   ! and make the code more managable.
@@ -51,6 +51,7 @@ contains
 ! *********************
 ! * INPUT variables   *
 ! *********************
+    real(dp), intent(in) :: wmix
     real(dp), intent(in) :: kT
     integer, intent(in)  :: nspin
     real(dp), intent(in) :: ucell(3,3)
@@ -69,7 +70,7 @@ contains
 
 
     ! Read in options for transiesta
-    call read_ts_options( kT, ucell , na_u , lasto )
+    call read_ts_options( wmix, kT, ucell , na_u , lasto )
 
     ! Setup the k-points
     call setup_ts_kpoint_grid( ucell )

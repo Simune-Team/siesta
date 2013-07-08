@@ -274,17 +274,20 @@
 
       subroutine check_transiesta_switch(ts_continues_GF)
 
+      use precision,             only: dp
       use sparse_matrices,       only: H, Hold, Dscf, Dold, maxnh
       use m_spin,                only: nspin
+      use siesta_options,        only: wmix
 #ifdef TRANSIESTA
       use m_ts_global_vars,      only: TSinit, TSrun, TSiscf
-      use m_ts_options,          only: TSmode
+      use m_ts_options,          only: TSmode, ts_wmix
       use m_pulay,               only: init_pulay_arrays
       use parallel,              only: IONode
 #endif /* TRANSIESTA */
 
       logical, intent(out) :: ts_continues_GF
       integer :: io, ispin
+      real(dp) :: tmp
 
 #ifndef TRANSIESTA
       ! We are not compiled as TranSiesta
@@ -303,6 +306,12 @@
          TSiscf = 1
 
          ts_continues_GF = .true.
+
+         ! DANGER (when going back to the DIAGON run, we should re-instantiate
+         ! the original mixing value
+         tmp = wmix
+         wmix = ts_wmix
+         ts_wmix = tmp
 
          !
          ! From now on, a new mixing cycle starts,

@@ -160,6 +160,14 @@ contains
             &for infinity integral remove the FDF line.')
     end if
 
+    if ( IONode ) then
+       if ( C_G_NF_END == huge(1) ) then
+          write(*,opt_char) 'Gauss-Fermi infinite integral truncation at','inifinity'
+       else
+          write(*,opt_int) 'Gauss-Fermi infinite integral truncation at',C_G_NF_END
+       end if
+    end if
+
     ! ******* default setup finished ********
     ! We have now setup the default parameters for the contour method
     ! Lets read in what the user requests.
@@ -595,9 +603,6 @@ contains
             C_Eq_Line_bottom, C_Eq_Line_bottom_N ,C_Eq_Line_split, &
             C_Eq_Line_tail, C_Eq_Line_tail_N, C_Eq_Pole_N, &
             CCEmin, 0._dp, kT, c)
-       ! Note we put a minus here because the integral we want is the
-       ! negative of the pole-sum and C+L integral
-       c(:)%w = - c(:)%w
 
     else
 
@@ -617,9 +622,6 @@ contains
             C_Eq_Line_bottom, C_Eq_Line_bottom_N ,C_Eq_Line_split, &
             C_Eq_Line_tail, C_Eq_Line_tail_N, C_Eq_Pole_N, &
             CCEmin+EfL, EfL, kT, c)
-       ! Note we put a minus here because the integral we want is the
-       ! negative of the pole-sum and C+L integral
-       c(:)%w = - c(:)%w
 
        c => contour_EqR()
        ! We will only create the equilibrium contour
@@ -628,9 +630,6 @@ contains
             C_Eq_Line_bottom, C_Eq_Line_bottom_N ,C_Eq_Line_split, &
             C_Eq_Line_tail, C_Eq_Line_tail_N, C_Eq_Pole_N, &
             CCEmin+EfR, EfR, kT, c)
-       ! Note we put a minus here because the integral we want is the
-       ! negative of the pole-sum and C+L integral
-       c(:)%w = - c(:)%w
 
        ! The last contour is the non-equilibrium
        
@@ -950,6 +949,10 @@ contains
     end do
 
     deallocate(x,w)
+
+    ! Note we put a minus here because the integral we want is the
+    ! negative of the pole-sum and C+L integral
+    contour(:)%w = - contour(:)%w
     
   end subroutine setup_contour_Eq
 

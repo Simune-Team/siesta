@@ -335,7 +335,7 @@ C     Initialise MPI and set processor number
       endif
 
 #ifdef TRANSIESTA
-      call ts_init(temp,nspin,ucell,na_u,xa,lasto,no_u)
+      call ts_init(wmix,temp,nspin,ucell,na_u,xa,lasto,no_u)
 #endif
 
       nullify(eo,qo)

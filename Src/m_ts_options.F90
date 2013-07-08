@@ -91,6 +91,9 @@ logical :: VoltageInC ! Determines whether the voltage-drop should be located in
 
 real(dp) :: Elec_xa_EPS
 
+! The mixing weight in the transiesta cycles...
+real(dp) :: ts_wmix
+
 ! The user can request to analyze the system, returning information about the 
 ! tri-diagonalization partition and the contour
 logical, save :: TS_Analyze = .false.
@@ -138,7 +141,7 @@ CONTAINS
 !
 ! **************************** OUTPUT *********************************
   
-  subroutine read_ts_options( kT_in, ucell, na_u, lasto)
+  subroutine read_ts_options( wmix, kT_in, ucell, na_u, lasto)
 
 ! SIESTA Modules Used
     use files, only  : slabel
@@ -157,8 +160,8 @@ CONTAINS
     use m_ts_charge
 
     implicit none
-
-    real(dp), intent(in) :: kT_in
+    
+    real(dp), intent(in) :: wmix, kT_in
     real(dp),intent(in) :: ucell(3,3)
     integer, intent(in) :: na_u, lasto(0:na_u)
 ! Internal Variables
@@ -177,9 +180,13 @@ CONTAINS
        write(*,*)
        write(*,11) repeat('*', 62)
     end if
+
     
     !Set ts_istep default
     ts_istep = 0
+
+    ! Read in the mixing for the transiesta cycles
+    ts_wmix = fdf_get('TS.MixingWeight',wmix)
 
     ! Reading the Transiesta solution method
     chars = fdf_get('TS.SolutionMethod','tri')
@@ -398,6 +405,7 @@ CONTAINS
           end if
           write(*,10)'Tri-Mat create algorithm', trim(chars)
        end if
+       write(*,8) 'TranSIESTA SCF cycle mixing weight',ts_wmix
        write(*,1) 'Start TS-SCF cycle immediately', ImmediateTSmode
        if ( IsVolt ) then
           write(*,6) 'Voltage', VoltFDF/eV,' Volts'
