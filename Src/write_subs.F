@@ -497,26 +497,26 @@
         endif                !TSinit
 
         if (TSrun) then      !TSS
-              tmpname = 'transiesta:'
-              if (fixspin) then
-                 if (TSiscf .eq. 1)
-     .                write(6,'(/,a11,a5,3a14,a9,a7,a11)')
-     .                tmpname,' iscf', '   Eharris(eV)',
-     .                '      E_KS(eV)', '   FreeEng(eV)',
-     .                '    dDmax', '  Ef_up', '  Ef_dn(eV)'
-                 write(6,'(a11,1x,i4,3f14.4,f9.5,2f8.4)')
-     .                tmpname,TSiscf, Eharrs/eV, Etot/eV, FreeE/eV,
-     .                dDmax, (Efs(i)/eV,i=1,2)
-              else
-                 if (TSiscf .eq. 1) write(6,'(/,a11,a7,3a14,3a8)')
-     .                tmpname,' iscf', '   Eharris(eV)',
-     .                '      E_KS(eV)', '   FreeEng(eV)',
-     .                '   dDmax', '  Ef(eV)', 'dHmx(Ry)'
-                 write(6,'(a11,i4,3f14.4,2f8.4,f8.4)')
-     .                tmpname,TSiscf, Eharrs/eV, Etot/eV,
-     .                FreeE/eV, dDmax, Ef/eV, dHmax
-              endif             !fixspin
-        endif                !TSrun
+           tmpname = 'transiesta:'
+           if (fixspin) then
+              if (TSiscf .eq. 1)
+     .             write(6,'(/,a11,a5,3a14,a9,a7,a11)')
+     .             tmpname,' iscf', '   Eharris(eV)',
+     .             '      E_KS(eV)', '   FreeEng(eV)',
+     .             '    dDmax', '  Ef_up', '  Ef_dn(eV)'
+              write(6,'(a11,1x,i4,3f14.4,f9.5,2f8.4)')
+     .             tmpname,TSiscf, Eharrs/eV, Etot/eV, FreeE/eV,
+     .             dDmax, (Efs(i)/eV,i=1,2)
+           else
+              if (TSiscf .eq. 1) write(6,'(/,a11,a7,3a14,3a8)')
+     .             tmpname,' iscf', '   Eharris(eV)',
+     .             '      E_KS(eV)', '   FreeEng(eV)',
+     .             '   dDmax', '  Ef(eV)', 'dHmx(Ry)'
+              write(6,'(a11,i4,3f14.4,2f8.4,f8.4)')
+     .             tmpname,TSiscf, Eharrs/eV, Etot/eV,
+     .             FreeE/eV, dDmax, Ef/eV, dHmax
+           endif                !fixspin
+        endif                   !TSrun
 
 #endif /* TRANSIESTA */
 

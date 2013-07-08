@@ -204,8 +204,8 @@
         if (SCFconverged) then
            call check_transiesta_switch(ts_will_continue)
            if (ts_will_continue) then
-              ! Reset counter...
-              iscf = 1
+              ! Reset counter, ensures MinSCFIterations
+              iscf = 0
               ! keep in cycle
            else
               if (mix_after_convergence) call mixer (iscf) 
@@ -225,29 +225,50 @@
         call timer( 'IterSCF', 1 )
         if (cml_p) call cmlStartStep(mainXML)
 
-        if (mixH) then
-           call setup_hamiltonian( iscf ) ! Gets H_out (H) and keeps H_in (Hold)
-           call compute_max_diff(Hold,H,dHmax)
-           call mixer (iscf)    ! Mixes H_in and H_out to give H_in_next
-        else
-           call mixer (iscf)    ! Mixes DM_in and DM_out to give DM_in_next
+        if ( ts_will_continue ) then
+#ifdef TRANSIESTA
+           ! As transiesta is a "new" solution method we should in principle
+           ! have two SCF loops. So we will never mix before entering 
+           ! transiesta.
+
+           ! We still need to normalize the just computed DM
+           ! This is controlled by TSrun
+           ts_will_continue = TSrun
+           TSrun = .false.
+
+           ! The iscf constant is only used to control a message in
+           ! normalize_dm
            call setup_hamiltonian (iscf) ! Gets H_in_next from DM_in_next, and E_KS(DM_in)
            call compute_max_diff(Hold,H,dHmax)
-        endif
+
+           TSrun = ts_will_continue
+
+           ! We need to retain the same arrays for the following iteration.
+           ! This will mean that we ensure a "fresh" start with transiesta
+           Dold(:,:) = Dscf(:,:)
+           Hold(:,:) = H   (:,:)
+#else
+           call die('This should never occur. Transiesta error.')
+#endif
+        else 
+           if (mixH) then
+              call setup_hamiltonian( iscf ) ! Gets H_out (H) and keeps H_in (Hold)
+              call compute_max_diff(Hold,H,dHmax)
+              call mixer (iscf) ! Mixes H_in and H_out to give H_in_next
+           else
+              call mixer (iscf) ! Mixes DM_in and DM_out to give DM_in_next
+              call setup_hamiltonian (iscf) ! Gets H_in_next from DM_in_next, and E_KS(DM_in)
+              call compute_max_diff(Hold,H,dHmax)
+           endif
+        end if
 
         ! Save mixed DM (and maybe H later) here for restarts
         call save_density_matrix("mixed")
         
-        ! in case that we have just switched to the transiesta cycle then
-        ! we should not increment, will 
-        if ( .not. ts_will_continue ) then
-           iscf = iscf + 1
+        iscf = iscf + 1
 #ifdef TRANSIESTA
-           if ( TSrun ) then
-              TSiscf = TSiscf + 1
-           end if
+        if ( TSrun ) TSiscf = TSiscf + 1
 #endif
-        end if
 
       ENDDO
 
@@ -286,7 +307,6 @@
 #endif /* TRANSIESTA */
 
       logical, intent(out) :: ts_continues_GF
-      integer :: io, ispin
       real(dp) :: tmp
 
 #ifndef TRANSIESTA
@@ -301,9 +321,9 @@
          ! We're  done with the initial diagon run
          ! Now we start the TRANSIESTA (Green's Functions) run
 
-         TSinit = .false.       
+         TSinit = .false. 
          TSrun = .true.
-         TSiscf = 1
+         TSiscf = 0
 
          ts_continues_GF = .true.
 
@@ -318,19 +338,6 @@
          ! so we have to reset the Pulay record keeping
          !
          call init_pulay_arrays() 
-         !
-
-         ! We need to reset the density/Hamiltonian matrices
-         ! to the current one so that we ensure no change in the
-         ! electrode regions:
-         ! Furthermore we force the mixing for subsequent runs
-         ! to only deal with transiesta density/Hamiltonian matrices
-         do ispin = 1,nspin
-            do io = 1,maxnh
-               Dold(io,ispin) = Dscf(io,ispin)
-               Hold(io,ispin) = H   (io,ispin)
-            end do
-         end do
 
          if(IONode) then
            write(6,'(/a)')

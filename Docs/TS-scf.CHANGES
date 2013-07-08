@@ -1,4 +1,44 @@
 ----------------------------------------------------
+July 8, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-72
+Improved logic in contour creation and added transiesta weight
+
+* Via TS.MixingWeight the user can specify a specific weight for the DM when
+  switching to the transiesta SCF.
+  When the transiesta cycles starts it switches the weights in the two variables
+  to be able to switch back (if needed). Currently it does not switch back
+  to the siesta mixing weight as that should not be required.
+  
+* Added more print-outs for the transiesta options.
+
+* Fixed the transiesta turn-over point.
+  The logic is now:
+  1) Diagon
+  2) when SCFConverged, we do:
+  2a) Reset pulay, 
+  2b) change mixing weight,
+  2c) reset SCF counters
+  3) Reset Dold/Hold to the current Dscf/H to have no impact on the 
+     old SIESTA cycles.
+  4) start transiesta cycle.
+
+  The previous implementation also did mixing which didn't seem right
+  So this logic is more straight forward and should correspond to the correct
+  methodology.
+
+* Removed unnecessary orb-write out when switching to transiesta cycle.
+
+* Corrected some minor indention lines
+
+* LAST COMMIT WAS FAULTY (I have no idea how to revert and backtrack :) )
+
+modified:modified:
+  Src/compute_dm.F
+  Src/m_ts_contour.f90
+  Src/mixer.F
+  Src/siesta_forces.F
+  Src/write_subs.F
+
+----------------------------------------------------
 July 8, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-70
 Bugfix for equilibrium transiesta weights
 

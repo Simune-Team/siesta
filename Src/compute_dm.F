@@ -153,7 +153,6 @@
            
         call timer('TS',2)
 
-        if (TSiscf .eq. 1) call timer( 'IterSCF', 3 ) 
         if (TSiscf .eq. 1) call timer( 'TS', 3 ) 
         if (TSiscf .eq. 1) call timer( 'TS_calc', 3 ) 
 
@@ -186,10 +185,17 @@
 
 ! Write orbital indexes. JMS Dec.2009
 
-          if (IOnode .and. iscf==1) then
-            call write_orb_indx( na_u, na_s, no_u, no_s, isa, xa,
-     .                           iaorb, iphorb, indxuo, nsc, ucell )
-          endif
+#ifdef TRANSIESTA
+      if (IOnode .and. iscf==1.and..not. TSrun) then
+         call write_orb_indx( na_u, na_s, no_u, no_s, isa, xa,
+     .        iaorb, iphorb, indxuo, nsc, ucell )
+      endif
+#else
+      if (IOnode .and. iscf==1) then
+         call write_orb_indx( na_u, na_s, no_u, no_s, isa, xa,
+     .        iaorb, iphorb, indxuo, nsc, ucell )
+      endif
+#endif
 
       call timer( 'compute_dm', 2 )
 #ifdef DEBUG

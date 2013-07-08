@@ -168,6 +168,14 @@ contains
        end if
     end if
 
+    if ( IONode ) then
+       if ( C_G_NF_END == huge(1) ) then
+          write(*,opt_char) 'Gauss-Fermi infinite integral truncation','inifinity'
+       else
+          write(*,opt_int) 'Gauss-Fermi infinite integral truncation',C_G_NF_END
+       end if
+    end if
+
     ! ******* default setup finished ********
     ! We have now setup the default parameters for the contour method
     ! Lets read in what the user requests.
@@ -387,7 +395,7 @@ contains
        C_nEq_split  = i * kT
        C_nEq_tail   = CC_TYPE_G_NF_0kT + i
 
-       ! The middle method is still SIMP_MIX
+       ! The middle method is still BOOLE_MIX
        
     end if
 
@@ -794,6 +802,9 @@ contains
 
     if ( size(contour) <= 0 ) then  ! if there are not any points we definetely have an error
        call die("ERROR: setup_contour_Eq: no energy points specified")
+    else if ( size(contour) /= C_Eq_Circle_N + C_Eq_Line_bottom_N &
+         + C_Eq_Line_tail_N + C_Eq_Pole_N ) then
+       call die("ERROR: setup_contour_Eq: no energy points erroneous.")
     end if
     
     i = 1

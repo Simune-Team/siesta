@@ -64,13 +64,13 @@
         if (maxsav .le. 0) then
           iiscf = 1
           if (iscf .ne. 1) mmix = .true.
-        endif
+        end if
 #ifdef TRANSIESTA
         if ( TSrun ) then
-           iiscf=TSiscf
+           iiscf = TSiscf
            if (maxsav .le. 0) then
              iiscf = 1
-             if (TSiscf .ne. 1) mmix = .true.
+             if (TSiscf .gt. 1) mmix = .true.
            endif
         end if
 #endif /* TRANSIESTA */
@@ -80,9 +80,9 @@
      &                      numh(1:no_l), listhptr(1:no_l), nspin,
      $                      wmix, nkick, wmixkick, Xout, Xin, dDmax)
         else if (broyden_maxit == 0) then
-               call pulayx( iiscf, mmix, no_l, maxnh,
-     &                 numh, listhptr, nspin, maxsav, wmix, nkick, 
-     .                 wmixkick, XOut, XIn, dDmax)
+           call pulayx( iiscf, mmix, no_l, maxnh,
+     &          numh, listhptr, nspin, maxsav, wmix, nkick, 
+     $          wmixkick, XOut, XIn, dDmax)
         else
           call broyden_mixing( iscf, mix_first_scf_step, no_l, maxnh,
      &                         numh(1:no_l), listhptr(1:no_l),
