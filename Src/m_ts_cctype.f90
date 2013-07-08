@@ -66,12 +66,12 @@ module m_ts_cctype
   integer, parameter :: CC_TYPE_G_GEN_LAGUERRE = 107
   integer, parameter :: CC_TYPE_G_HERMITE      = 108
   integer, parameter :: CC_TYPE_SOMMERFELD     = 200
-  integer, parameter :: CC_TYPE_SIMP_EXT       = 201
-  integer, parameter :: CC_TYPE_SIMP_COMP      = 202
-  integer, parameter :: CC_TYPE_SIMP_38        = 203
+  integer, parameter :: CC_TYPE_SIMP_MIX       = 201
+  integer, parameter :: CC_TYPE_BOOLE_MIX      = 202
   integer, parameter :: CC_TYPE_MID            = 204
   integer, parameter :: CC_TYPE_LEFT           = 205
   integer, parameter :: CC_TYPE_RIGHT          = 206
+  integer, parameter :: CC_TYPE_TRAPEZ_COMP    = 207
 
 
   integer, parameter :: CC_TYPE_TRANSPORT       = 500
@@ -166,12 +166,10 @@ contains
        str = 'G-Hermite'
     case ( CC_TYPE_SOMMERFELD )
        str = 'Sommerfeld'
-    case ( CC_TYPE_SIMP_EXT )
-       str = 'Ext. Simpson'
-    case ( CC_TYPE_SIMP_COMP )
-       str = 'Comp. Simpson'
-    case ( CC_TYPE_SIMP_38 )
-       str = 'Simpson 3/8'
+    case ( CC_TYPE_SIMP_MIX )
+       str = 'Simpson 3/8-3'
+    case ( CC_TYPE_BOOLE_MIX )
+       str = 'Boole-Simp-3/8'
     case ( CC_TYPE_MID )
        str = 'Mid-rule'
     case ( CC_TYPE_LEFT )
@@ -219,12 +217,10 @@ contains
        str = 'Gauss-Hermite'
     case ( CC_TYPE_SOMMERFELD )
        str = 'Sommerfeld'
-    case ( CC_TYPE_SIMP_EXT )
-       str = 'Ext. Simpson'
-    case ( CC_TYPE_SIMP_COMP )
-       str = 'Comp. Simpson'
-    case ( CC_TYPE_SIMP_38 )
-       str = 'Simpson 3/8'
+    case ( CC_TYPE_SIMP_MIX )
+       str = 'Simpson-mix'
+    case ( CC_TYPE_BOOLE_MIX )
+       str = 'Boole-mix'
     case ( CC_TYPE_MID )
        str = 'Mid-rule'
     case ( CC_TYPE_LEFT )

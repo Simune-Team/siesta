@@ -1,4 +1,43 @@
 ----------------------------------------------------
+July 8, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-68
+Generalized the composite Simpson and Boole's Newton-Cotes integration schemes
+
+* The Simpson rule has been completely changed to a composite rule.
+  This should increase the precision more than the quadrature rules as it retains
+  the equi-distant points.
+  At least it seems better suited for use than the Gaussian quadrature which does 
+  expect a polynomial.
+
+  We have changed the default to the Boole's method which is a 5-point Newton-Cotes
+  integration scheme. For the end-points it chooses the Simpson 3/8 or 3 rules for ensuring 
+  that it can be used for every N.
+
+  The Simpson rule can still be selected for usage and is a composite rule with the 3/8 and 
+  the 3-point rule. They behave more or less the same. (conceptually the 3/8-3 rule is easier
+  to understand as the end-points are more easily defined.)
+  
+  We have taken advantage of the 3/8 and 3 point rule's error terms to select the best splitting
+  between these two by automatic error-term optimization. Hence the 3/8-3 rule is 
+  optimal for having the same error-term across the entire integration interval.
+  
+  The Boole's methods error-term is not directly related to the Simpson methods, hence
+  we choose an empirical value for splitting the intervals, here hard-coded to be 3/5.
+  This seems like a reasonable value.
+
+* Removed the old different Simpson rules as the 3/8 should perform better, and is more
+  stable.
+  In case one wants a more rigid estimate, one can always revert to the mid-rule which
+  does not impose any polynomial expansion.
+  
+
+added:
+  Src/m_integrate.f90
+modified:
+  Src/Makefile
+  Src/m_ts_cctype.f90
+  Src/m_ts_contour.f90
+
+----------------------------------------------------
 July 4, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-67
 Removed Tschebyscheff quadrature, added Gauss-Fermi with non-inf
 

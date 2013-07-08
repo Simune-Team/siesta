@@ -166,6 +166,7 @@ OBJS += intrinsic_missing.o geom_helper.o
 OBJS += create_Sparsity_SC.o create_Sparsity_Union.o
 OBJS += m_gauss_quad.o m_gauss_fermi.o
 OBJS += m_gauss_fermi_20.o m_gauss_fermi_18.o m_gauss_fermi_16.o
+OBJS += m_integrate.o
 
 #--------------------------------------------------------------
 # FoX whatnot
@@ -588,6 +589,7 @@ m_glob_sparse.o: parallel.o parallelsubs.o precision.o
 m_hs_matrix.o: alloc.o precision.o sys.o
 m_hsx.o: atm_types.o atmfuncs.o atomlist.o files.o parallel.o parallelsubs.o
 m_hsx.o: precision.o siesta_geom.o sys.o
+m_integrate.o: precision.o
 m_io.o: sys.o
 m_iodm.o: alloc.o files.o m_mpi_utils.o parallel.o parallelsubs.o precision.o
 m_iodm.o: sys.o
@@ -611,7 +613,6 @@ m_pulay.o: alloc.o atomlist.o m_spin.o m_svd.o parallel.o precision.o
 m_pulay.o: siesta_options.o sparse_matrices.o sys.o
 m_recipes.o: precision.o sys.o
 m_rmaxh.o: precision.o
-m_sig_handler.o: parallel.o
 m_spin.o: alloc.o parallel.o precision.o
 m_stress.o: precision.o
 m_svd.o: precision.o
@@ -625,8 +626,8 @@ m_ts_cctype.o: m_gauss_fermi.o precision.o
 m_ts_charge.o: class_OrbitalDistribution.o class_Sparsity.o geom_helper.o
 m_ts_charge.o: m_ts_electype.o m_ts_method.o parallel.o precision.o
 m_ts_contour.o: m_gauss_fermi.o m_gauss_fermi_16.o m_gauss_fermi_18.o
-m_ts_contour.o: m_gauss_fermi_20.o m_gauss_quad.o m_ts_aux.o m_ts_cctype.o
-m_ts_contour.o: parallel.o precision.o units.o
+m_ts_contour.o: m_gauss_fermi_20.o m_gauss_quad.o m_integrate.o m_ts_aux.o
+m_ts_contour.o: m_ts_cctype.o parallel.o precision.o units.o
 m_ts_debug.o: class_Sparsity.o class_TriMat.o geom_helper.o parallel.o
 m_ts_debug.o: precision.o
 m_ts_dm_update.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData1D.o

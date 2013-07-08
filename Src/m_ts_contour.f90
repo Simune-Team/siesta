@@ -146,7 +146,7 @@ contains
     ! The non-equilibrium contour
     C_nEq_tail = CC_TYPE_G_NF_0kT - 5
     C_nEq_tail_N = 6
-    C_nEq_mid = CC_TYPE_SIMP_EXT
+    C_nEq_mid = CC_TYPE_SIMP_MIX
     C_nEq_mid_N = 6
     
 
@@ -248,14 +248,14 @@ contains
        C_Eq_Line_bottom = CC_TYPE_G_LEGENDRE
     else if ( leqi(chars(:i),'g-chebyshev-open') ) then
        C_Eq_Line_bottom = CC_TYPE_G_CHEBYSHEV_O
-    else if ( leqi(chars(:i),'extended-simpson') ) then
-       C_Eq_Line_bottom = CC_TYPE_SIMP_EXT
-    else if ( leqi(chars(:i),'composite-simpson') ) then
-       C_Eq_Line_bottom = CC_TYPE_SIMP_COMP
-    else if ( leqi(chars(:i),'simpson-3/8') ) then
-       C_Eq_Line_bottom = CC_TYPE_SIMP_38
+    else if ( leqi(chars(:i),'simpson-mix') ) then
+       C_Eq_Line_bottom = CC_TYPE_SIMP_MIX
+    else if ( leqi(chars(:i),'boole-mix') ) then
+       C_Eq_Line_bottom = CC_TYPE_BOOLE_MIX
     else if ( leqi(chars(:i),'mid-rule') ) then
        C_Eq_Line_bottom = CC_TYPE_MID
+    else if ( leqi(chars(:i),'composite-trapez') ) then
+       C_Eq_Line_bottom = CC_TYPE_TRAPEZ_COMP
     else
        call die('Could not figure out the bottom contour type for the &
             &equilibrium line contour: '//trim(chars(:i)))
@@ -380,7 +380,7 @@ contains
        C_nEq_split  = i * kT
        C_nEq_tail   = CC_TYPE_G_NF_0kT + i
 
-       ! The middle method is still SIMP_EXT
+       ! The middle method is still SIMP_MIX
        
     end if
 
@@ -404,7 +404,7 @@ contains
        end if
     end if
     
-    chars = fdf_get('TS.Contour.nEq.Method','g-fermi+extended-simpson')
+    chars = fdf_get('TS.Contour.nEq.Method','g-fermi+boole-mix')
     ! Figure out if there is a + in the string
     i = index(chars,'+')
     if ( i == 1 ) call die('Non-equilibrium contour method cannot be prefixed &
@@ -412,19 +412,19 @@ contains
     ! Determine the middle segment method
     if ( i > 0 ) then
        i = i + 1
-       if ( leqi(chars(i:),'extended-simpson') ) then
-          ! This is already the default
-          C_nEq_mid = CC_TYPE_SIMP_EXT
-       else if ( leqi(chars(i:),'composite-simpson') ) then
-          C_nEq_mid = CC_TYPE_SIMP_COMP
-       else if ( leqi(chars(:i),'simpson-3/8') ) then
-          C_nEq_mid = CC_TYPE_SIMP_38
-       else if ( leqi(chars(i:),'mid-rule') ) then
-          C_nEq_mid = CC_TYPE_MID
-       else if ( leqi(chars(i:),'g-legendre') ) then
+       if ( leqi(chars(i:),'g-legendre') ) then
           C_nEq_mid = CC_TYPE_G_LEGENDRE
        else if ( leqi(chars(i:),'g-chebyshev-open') ) then
           C_nEq_mid = CC_TYPE_G_CHEBYSHEV_O
+       else if ( leqi(chars(i:),'simpson-mix') ) then
+          C_nEq_mid = CC_TYPE_SIMP_MIX
+       else if ( leqi(chars(i:),'boole-mix') ) then
+          ! This is already the default
+          C_nEq_mid = CC_TYPE_BOOLE_MIX
+       else if ( leqi(chars(i:),'mid-rule') ) then
+          C_nEq_mid = CC_TYPE_MID
+       else if ( leqi(chars(i:),'composize-trapez') ) then
+          C_nEq_mid = CC_TYPE_TRAPEZ_COMP
        else
           call die('Unrecognized non-equilibrium integration &
                &scheme for the middle line: '//trim(chars(i:)))
@@ -1025,6 +1025,7 @@ contains
     use units, only : Pi
     use m_ts_cctype
     use m_gauss_quad ! Just all, many routines can be used
+    use m_integrate
 
 ! ***********************
 ! * INPUT variables     *
@@ -1051,77 +1052,17 @@ contains
     E2 = max(EE1,EE2)
     
     select case ( TYPE )
-    case ( CC_TYPE_SIMP_EXT )
-       if ( NEn < 8 ) call die('Cannot do extended Simpson on these &
-            &points. Please use more points or another method.')
-       ! in simpson we count: i = 0, ..., N
-       Ni = NEn - 1
+    case ( CC_TYPE_SIMP_MIX )
+      
+       call Simpson_38_3_rule(NEn,x,w,E1,E2)
        
-       delta = (E2 - E1)/real(Ni,dp)
-       do i = 1 , NEn
-          x(i) = E1 + delta * (i-1)
-          w(i) = delta
-       end do
-
-       ! extended simpsons rule
-       w(1    ) = w(1    )*17.d0/48.d0
-       w(2    ) = w(2    )*59.d0/48.d0
-       w(3    ) = w(3    )*43.d0/48.d0
-       w(4    ) = w(4    )*49.d0/48.d0
-       w(NEn-3) = w(NEn-3)*49.d0/48.d0
-       w(NEn-2) = w(NEn-2)*43.d0/48.d0
-       w(NEn-1) = w(NEn-1)*59.d0/48.d0
-       w(NEn  ) = w(NEn  )*17.d0/48.d0
-
-    case ( CC_TYPE_SIMP_COMP )
-
-       ! in simpson we count: i = 0, ..., N
-       Ni = NEn - 1
-       if ( mod(Ni,2) /= 0 ) call die('Composite Simpson rule &
-            &is only allowed for uneven N, please increase points.')
-       
-       delta = (E2 - E1)/real(Ni,dp)
-       do i = 1 , NEn
-          x(i) = E1 + delta * (i-1)
-          w(i) = delta / 3._dp
-       end do
-       
-       ! Correct the weights for the composite simpson rule
-       do i = 2 , NEn - 1, 2
-          w(i) = w(i) * 4._dp
-       end do
-       do i = 3 , NEn - 2, 2
-          w(i) = w(i) * 2._dp
-       end do
-
-    case ( CC_TYPE_SIMP_38 )
-
-       ! in simpson we count: i = 0, ..., N
-       Ni = NEn - 1
-       if ( mod(Ni,2) /= 0 ) call die('Simpson 3/8 rule &
-            &is only allowed for uneven N, please increase points.')
-
-       delta = (E2 - E1)/real(Ni,dp)
-       do i = 1 , NEn
-          x(i) = E1 + delta * (i-1)
-          w(i) = delta * 3._dp / 8._dp
-       end do
-
-       do i = 2 , NEn - 1, 3
-          w(i)   = w(i)   * 3._dp
-          w(i+1) = w(i+1) * 3._dp
-          w(i+2) = w(i+2) * 2._dp
-       end do
+    case ( CC_TYPE_BOOLE_MIX )
+      
+       call Booles_Simpson_38_3_rule(NEn,x,w,E1,E2)
        
     case ( CC_TYPE_MID )
 
-       ! set boundaries for gaussian quadrature
-       delta = (E2 - E1)/real(NEn,dp)
-       do i = 1 , NEn
-          ! move into the middle of the current segment
-          x(i) = E1 + delta * ( real(i,dp)-.5_dp )
-          w(i) = delta
-       end do
+       call Mid_Rule(NEn,x,w,E1,e2)
 
     case ( CC_TYPE_LEFT )
 
