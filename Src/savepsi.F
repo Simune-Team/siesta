@@ -54,7 +54,6 @@ C**** Internal variables ***********************************************
 ! AG
 ! Allocate as in detover, using the number of orbitals on the first node,
 ! as some of the nodes might have zero orbitals!
-
       call GetNodeOrbs(nocc,0,Nodes,noccloc)
       nullify( psitmp )
       call re_alloc( psitmp, 1, 2, 1, nuotot, 1, noccloc,

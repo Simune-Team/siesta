@@ -47,6 +47,11 @@
       integer             :: ifa     ! Calc. forces?      0=>no, 1=>yes
       integer             :: istr    ! Calc. stress?      0=>no, 1=>yes
       integer             :: ihmat   ! Calc. hamiltonian? 0=>no, 1=>yes
+      integer             :: isigneikr ! Calculate matrix element of a 
+                                       ! plane wave exp(ikr)
+                                       !  0 => no,
+                                       !  1 => calculate exp(ikr)
+                                       ! -1 => calculate exp(-ikr)
       real(dp)            :: g2max
 
 !------------------------------------------------------------------------- BEGIN
@@ -110,13 +115,15 @@
       ifa  = 0
       istr = 0
       ihmat = 1
+      isigneikr = 0
       if ((hirshpop .or. voropop)
      $     .and. partial_charges_at_every_scf_step) then
          want_partial_charges = .true.
       endif
       call dhscf( nspin, no_s, iaorb, iphorb, no_l,
      .            no_u, na_u, na_s, isa, xa, indxua, 
-     .            ntm, ifa, istr, ihmat, ' ', ' ', ' ', ' ', ' ', ' ',
+     .            ntm, ifa, istr, ihmat, isigneikr, 
+     .            ' ', ' ', ' ', ' ', ' ', ' ',
      .            maxnh, numh, listhptr, listh, Dscf, Datm,
      .            maxnh, H, Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
      .            Exc, Dxc, dipol, stress, fal, stressl)

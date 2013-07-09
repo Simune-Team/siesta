@@ -8,6 +8,8 @@
       USE m_steps, only: inicoor, fincoor
       use alloc
 
+      use m_siesta2wannier90, only: siesta2wannier90
+
       implicit none
 
       integer :: istep
@@ -33,6 +35,7 @@ C     Begin of coordinate relaxation iteration
 C     End of coordinate-relaxation loop 
       call siesta_analysis( relaxd )
 
-      call siesta_end()
+C     Call the interface with the Wannier90 code
+      call siesta2wannier90
 !--------------------------------------------------------------------------- END
       END program siesta

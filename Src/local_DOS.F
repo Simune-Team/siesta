@@ -80,7 +80,7 @@
           g2max = g2cut
           call dhscf( nspin, no_s, iaorb, iphorb, no_l,
      .              no_u, na_u, na_s, isa, xa_last, indxua, 
-     .              ntm, 0, 0, 0, fildos, ' ', ' ', ' ', ' ', ' ',
+     .              ntm, 0, 0, 0, 0, fildos, ' ', ' ', ' ', ' ', ' ',
      .              maxnh, numh, listhptr, listh, Dscf, Datm, maxnh, H,
      .              Enaatm, Enascf, Uatm, Uscf, DUscf, DUext, Exc, Dxc,
      .              dummy_dipol, dummy_str, fa, dummy_strl )

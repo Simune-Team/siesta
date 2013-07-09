@@ -49,6 +49,10 @@ MODULE siesta_options
   logical :: writb         ! Write band eigenvalues?
   logical :: writec        ! Write atomic coordinates at every geometry step?
   logical :: write_coop    ! Write information for COOP/COHP analysis ?
+  logical :: towritemmn    ! Write the Mmn matrix for the interface with Wannier
+  logical :: towriteamn    ! Write the Amn matrix for the interface with Wannier
+  logical :: towriteeig    ! Write the eigenvalues or the interface with Wannier
+  logical :: towriteunk    ! Write the unks for the interface with Wannier
   logical :: writef        ! Write atomic forces at every geometry step?
   logical :: writek        ! Write the k vectors of the BZ integration mesh?
   logical :: writic        ! Write the initial atomic ccordinates?
@@ -107,6 +111,19 @@ MODULE siesta_options
   integer :: level          ! Option for allocation report level of detail
   integer :: call_diagon_default    ! Default number of SCF steps for which to use diagonalization before OMM
   integer :: call_diagon_first_step ! Number of SCF steps for which to use diagonalization before OMM (first MD step)
+  integer :: unk_nx         ! 
+  integer :: unk_ny         ! 
+  integer :: unk_nz         ! 
+  logical :: hasnobup       ! Is the number of bands with spin up for 
+                            !   wannierization defined?
+  logical :: hasnobdown     ! Is the number of bands with spin down for 
+                            !   wannierization defined?
+  logical :: hasnob         ! Is the number of bands for wannierization defined?
+                            !   (for non spin-polarized calculations).
+  integer :: nobup          ! Number of bands with spin up for wannierization
+  integer :: nobdown        ! Number of bands with spin down for wannierization
+  integer :: nob            ! Number of bands for wannierization
+                            !   (for non spin-polarized calculations).
 
   real(dp) :: beta          ! Inverse temperature for Chebishev expansion.
   real(dp) :: bulkm         ! Bulk modulus
@@ -1554,6 +1571,26 @@ MODULE siesta_options
     savepsch = fdf_get( 'SaveIonicCharge', .false. )
     savebader= fdf_get( 'SaveBaderCharge',  .false.)
     savetoch = fdf_get( 'SaveTotalCharge', savebader )
+
+!
+!   Siesta2Wannier90 -related flags
+!
+    towritemmn = fdf_get( 'Siesta2Wannier90.WriteMmn',   .false. )
+    towriteunk = fdf_get( 'Siesta2Wannier90.WriteUnk',   .false. )
+    towriteamn = fdf_get( 'Siesta2Wannier90.WriteAmn',   .false. )
+    towriteeig = fdf_get( 'Siesta2Wannier90.WriteEig',   .false. )
+
+    unk_nx     = fdf_get( 'Siesta2Wannier90.UnkGrid1',        10 )
+    unk_ny     = fdf_get( 'Siesta2Wannier90.UnkGrid2',        10 )
+    unk_nz     = fdf_get( 'Siesta2Wannier90.UnkGrid3',        10 )
+
+    hasnobup   = fdf_defined( 'Siesta2Wannier90.NumberOfBandsUp'   )
+    hasnobdown = fdf_defined( 'Siesta2Wannier90.NumberOfBandsDown' )
+    hasnob     = fdf_defined( 'Siesta2Wannier90.NumberOfBands'     )
+
+    nobup      = fdf_get( 'Siesta2Wannier90.NumberOfBandsUp',   0)
+    nobdown    = fdf_get( 'Siesta2Wannier90.NumberOfBandsDown', 0)
+    nob        = fdf_get( 'Siesta2Wannier90.NumberOfBands',     0)
 
     RETURN
     !-------------------------------------------------------------------- END

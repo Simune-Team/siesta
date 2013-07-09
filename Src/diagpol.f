@@ -115,29 +115,29 @@ C Repeat diagonalisation with increased memory to handle clustering
             ind = listhptr(iuo) + j
             jo = listh(ind)
             juo = indxuo(jo)
-          if(ng.eq.2) then
-           kxij = kpoint(1) * xij(1,ind) +
-     .            kpoint(2) * xij(2,ind) +
-     .            kpoint(3) * xij(3,ind)
-           ckxij = cos(kxij)
-           skxij = sin(kxij)
-           Saux(1,juo,iuo) = Saux(1,juo,iuo) + S(ind)*ckxij
-           Saux(2,juo,iuo) = Saux(2,juo,iuo) - S(ind)*skxij
-           Haux(1,juo,iuo) = Haux(1,juo,iuo) + H(ind,ispin)*ckxij
-           Haux(2,juo,iuo) = Haux(2,juo,iuo) - H(ind,ispin)*skxij
-          else
-           Saux(1,juo,iuo) = Saux(1,juo,iuo) + S(ind)
-           Haux(1,juo,iuo) = Haux(1,juo,iuo) + H(ind,ispin)
-          endif
+            if(ng.eq.2) then
+              kxij = kpoint(1) * xij(1,ind) +
+     .               kpoint(2) * xij(2,ind) +
+     .               kpoint(3) * xij(3,ind)
+              ckxij = cos(kxij)
+              skxij = sin(kxij)
+              Saux(1,juo,iuo) = Saux(1,juo,iuo) + S(ind)*ckxij
+              Saux(2,juo,iuo) = Saux(2,juo,iuo) - S(ind)*skxij
+              Haux(1,juo,iuo) = Haux(1,juo,iuo) + H(ind,ispin)*ckxij
+              Haux(2,juo,iuo) = Haux(2,juo,iuo) - H(ind,ispin)*skxij
+            else
+              Saux(1,juo,iuo) = Saux(1,juo,iuo) + S(ind)
+              Haux(1,juo,iuo) = Haux(1,juo,iuo) + H(ind,ispin)
+            endif
+          enddo
         enddo
-      enddo
-      if(ng.eq.2) then
-       call cdiag( Haux, Saux, nuotot, nuo, nuotot, eo, psi,
-     .            nuotot, 1, ierror)
-      else
-       call rdiag( Haux, Saux, nuotot, nuo, nuotot, eo, psi,
-     .            nuotot, 1, ierror)
-      endif
+        if(ng.eq.2) then
+         call cdiag( Haux, Saux, nuotot, nuo, nuotot, eo, psi,
+     .               nuotot, 1, ierror)
+        else
+         call rdiag( Haux, Saux, nuotot, nuo, nuotot, eo, psi,
+     .              nuotot, 1, ierror)
+        endif
 
       endif
 

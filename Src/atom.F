@@ -2951,7 +2951,10 @@ C  calculated only inside a sphere of radius Rmax. To define the
 C  KB projectors they will not be needed very far from the nucleus,
 C  and this limitation simplifies the handling of not bound states
 C 
-         real(dp), parameter :: Rmax_kb_default = 6.0d0
+! jjunquer
+!         real(dp), parameter :: Rmax_kb_default = 6.0d0
+         real(dp), parameter :: Rmax_kb_default = 60.0d0
+! endjjunquer
 C
          save ighost
          data ighost / 0 /
@@ -2979,9 +2982,14 @@ C
            if(erefkb(ikb,l).ge.1.0d3) then             
               nnodes=ikb
               nprin=l+1
+! jjunquer
+!              call schro_eq(Zval,rofi,vps(1,l),ve,s,drdi,
+!     .                      nrval,l,a,b,nnodes,nprin,
+!     .                      erefkb(ikb,l),rphi(1,ikb)) 
               call schro_eq(Zval,rofi,vps(1,l),ve,s,drdi,
-     .                      nrval,l,a,b,nnodes,nprin,
+     .                      nrwf,l,a,b,nnodes,nprin,
      .                      erefkb(ikb,l),rphi(1,ikb)) 
+! end jjunquer
 C Normalization of the eigenstates inside a sphere of radius Rmax
               dnrm=0.0d0
               do ir=1,nrwf
@@ -3016,9 +3024,14 @@ C*
 C***GHOST ANALYSIS****
 C 
             if(nkbl(l).eq.1) then
+! jjunquer
+!             call ghost(Zval,rofi,vps(:,l),vlocal,
+!     .        ve,s,drdi,nrval,l,a,b,nrwf,
+!     .        erefkb(ikb,l),rphi(:,ikb),ighost)
              call ghost(Zval,rofi,vps(:,l),vlocal,
-     .        ve,s,drdi,nrval,l,a,b,nrwf,
+     .        ve,s,drdi,nrwf,l,a,b,nrwf,
      .        erefkb(ikb,l),rphi(:,ikb),ighost)
+! end jjunquer
             else 
              if (ikb.eq.1)
      .        write(6,'(a,i3,/a)') 

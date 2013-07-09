@@ -410,7 +410,8 @@ C ----------------------------------------------------------------------
 
       subroutine dhscf( nspin, norb, iaorb, iphorb, nuo,
      &                  nuotot, nua, na, isa, xa, indxua,
-     &                  ntm, ifa, istr, iHmat, filrho, fildrh, 
+     &                  ntm, ifa, istr, iHmat, isigneikr, 
+     &                  filrho, fildrh,
      &                  filevh, filevt, filepsch, filetoch, maxnd, numd,
      &                  listdptr, listd, Dscf, datm, maxnh, Hmat,
      &                  Enaatm, Enascf, Uatm, Uscf, DUscf, DUext, 
@@ -444,6 +445,11 @@ C integer istr          : Switch which fixes whether the SCF contrib.
 C                         to stress is calculated and added to stress
 C integer iHmat         : Switch which fixes whether the Hmat matrix
 C                         elements are calculated or not.
+C integer isigneikr     : Switch which fixes whether the matrix elements
+C                         of exp(i k r) are calculated or not.
+C                          0 = not computed.
+C                          1 = compute the matrix elements of exp(i k r).
+C                         -1 = compute the matrix elements of exp(-i k r).
 C character*(*) filrho  : Name of file to saving the electron density
 C                         (If blank => not saved)
 C character*(*) fildrh  : Name of file to saving Delta Rho (Rho - Rho_atoms)
@@ -552,6 +558,7 @@ C     Modules
                                         ! points over parallel processors
 #endif /* BSC_CELLXC */
       use m_vmat,  only  : vmat
+      use m_delk,  only  : delk
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -575,7 +582,8 @@ C     Modules
       implicit none
       integer
      &  maxnd, maxnh, nua, na, norb, nspin, nuo, nuotot,
-     &  iaorb(norb), ifa, iHmat, indxua(na), iphorb(norb), isa(na), 
+     &  iaorb(norb), ifa, iHmat, isigneikr, 
+     &  indxua(na), iphorb(norb), isa(na), 
      &  istr, listd(*), listdptr(nuo), ntm(3), numd(nuo)
 
       real(dp)
@@ -607,6 +615,7 @@ C        timer(...)     : Finds CPU times
 C        vmat(...)      : Finds matrix elements of SCF potential
 C        vmatsp(...)    : Finds matrix elements of SCF potential for
 C                         spiral arrangement of spins
+C        delk(...)      : Finds matrix elements of exp(i \vec{k} \cdot \vec{r})
 C real*8 volcel( cell ) : Returns volume of unit cell
 C ----------------------------------------------------------------------
 C Internal variables and arrays:
@@ -1233,6 +1242,28 @@ C ----------------------------------------------------------------------
      &                         nml, nmpl, ntml, ntpl )
          endif
       endif
+
+C ----------------------------------------------------------------------
+C Calculate matrix elements of exp(i \vec{k} \cdot \vec{r})
+C ----------------------------------------------------------------------
+        if (isigneikr .eq. 1 .or. isigneikr .eq. -1) then
+
+          if (nodes.gt.1) then
+            call setMeshDistr( QUADRATIC, nsm, nsp,
+     &                         nml, nmpl, ntml, ntpl )
+          endif
+
+          call delk( isigneikr, norb, nmpl, dvol, maxnd,
+     &               numd, listdptr, listd,
+     &               nuo,  nuotot, iaorb, iphorb, isa )
+
+          if (nodes.gt.1) then
+!           Everything back to UNIFORM, sequential
+            call setMeshDistr( UNIFORM, nsm, nsp,
+     &                         nml, nmpl, ntml, ntpl )
+          endif
+
+        endif
 
 
 #ifdef MPI

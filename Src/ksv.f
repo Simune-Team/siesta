@@ -76,7 +76,10 @@ C
 C  Modules
 C
       use precision,     only : dp
-      use parallel,      only : IOnode
+! jjunquer
+!      use parallel,      only : IOnode
+      use parallel,      only : IOnode, Node, Nodes
+! end jjunquer
       use sys,           only : die
       use atmfuncs,      only : zvalfis
       use densematrix
@@ -130,6 +133,10 @@ C Internal variables
 
 C Start time counter 
       call timer( 'KSV_pol', 1 )
+
+! jjunquer
+      write(6,*)' Node, Nodes = ', Node, Nodes
+! end jjunquer
 
 C Reading unit cell and calculate the reciprocal cell
       call reclat( ucell, rcell, 1 )
