@@ -47,6 +47,8 @@ C     different chemical species in the calculation:
       public  :: labelfis, lomaxfis, nztfl, rphiatm, lmxkbfis
       public  :: phiatm, all_phi
       public  :: pol   ! Added JMS Dec.2009
+
+      public  :: orb_gindex, kbproj_gindex, vna_gindex
       private
                           !
       contains
@@ -178,6 +180,54 @@ C  Distances in Bohr
 
 !         AMENOFIS
 !
+!---- Global index helpers------------------------------
+
+      FUNCTION orb_gindex (IS,IO)
+      integer orb_gindex
+      integer, intent(in) :: is    ! Species index
+      integer, intent(in) :: io    ! Orbital index (within atom)
+
+C Returns the global index of a basis orbital
+
+      call chk('orb_gindex',is)
+      if ( (io .gt. species(is)%norbs) .or.
+     $     (io .lt. 1))   call die("orb_gindex: Wrong io")
+
+      orb_gindex = species(is)%orb_gindex(io)
+      end function orb_gindex
+
+      FUNCTION kbproj_gindex (IS,IO)
+      integer kbproj_gindex
+      integer, intent(in) :: is    ! Species index
+      integer, intent(in) :: io    ! KBproj index 
+                                   ! (within atom, <0, for compatibility)
+
+C Returns the global index of a KB projector
+
+      integer :: ko
+
+      call chk('kbproj_gindex',is)
+      ko = -io
+
+      if ( (ko .gt. species(is)%nprojs) .or.
+     $     (ko .lt. 1)) then
+         call die("kbproj_gindex: Wrong io")
+      endif
+
+      kbproj_gindex = species(is)%pj_gindex(ko)
+      end function kbproj_gindex
+
+      FUNCTION vna_gindex (IS)
+      integer vna_gindex
+      integer, intent(in) :: is    ! Species index
+
+C Returns the global index for a Vna function
+
+      call chk('vna_gindex',is)
+      vna_gindex = species(is)%vna_gindex
+      end function vna_gindex
+!------------------------------------------------
+
       FUNCTION ATMPOPFIO (IS,IO)
       real(dp) atmpopfio
       integer, intent(in) :: is    ! Species index

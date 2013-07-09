@@ -3,6 +3,20 @@ ____________________________________________________________
 ------------------------------------------------------------
 
 ------------------------------------------------------------
+2013-07-09 14:30 GMT Alberto Garcia trunk-438--radfunc-5--wannier-1
+Merge with trunk-register-5 to pull in registry for new matel
+
+(A. Garcia)
+
+This merge pulled in also the trunk changes up to 438 (see CHANGES).
+
+See Docs/radfunc.CHANGES for details about the registry.
+
+NOTE: the functionality of the module "trialorbitalClass" is duplicated, but
+the two versions are not really compatible. One of them should be chosen once
+and for all.
+
+------------------------------------------------------------
 2013-07-09 14:10 GMT Javier Junquera    trunk-434--wannier-1
 Implementation of the interface between Siesta and Wannier90
 (Javier Junquera)

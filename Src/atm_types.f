@@ -28,8 +28,9 @@
 !
       integer, parameter, public  :: maxn_pjnl = 10
 !       Maximum number of projectors (not counting different "m" copies)
-      integer, parameter, public  :: maxn_orbnl = 20
+      integer, parameter, public  :: maxn_orbnl = 200
 !       Maximum number of nl orbitals (not counting different "m" copies)
+!       Now very large to accommodate filteret basis sets
       integer, parameter, public  :: maxnprojs = 50
 !       Maximum number of nlm projectors
 !
@@ -86,6 +87,7 @@
          integer, dimension(maxnorbs)    ::  orb_n
          integer, dimension(maxnorbs)    ::  orb_l
          integer, dimension(maxnorbs)    ::  orb_m
+         integer, dimension(maxnorbs)    ::  orb_gindex
          real(dp),
      $            dimension(maxnorbs)    ::  orb_pop   ! pop. of nl orb
 
@@ -94,10 +96,12 @@
          integer, dimension(maxnprojs)   ::  pj_n
          integer, dimension(maxnprojs)   ::  pj_l
          integer, dimension(maxnprojs)   ::  pj_m
+         integer, dimension(maxnprojs)   ::  pj_gindex
 !
          type(rad_func), dimension(:), pointer       ::  orbnl
          type(rad_func), dimension(:), pointer       ::  pjnl
          type(rad_func)                              ::  vna
+         integer                                     ::  vna_gindex
          type(rad_func)                              ::  chlocal
          type(rad_func)                              ::  reduced_vlocal
          logical                                     ::  there_is_core

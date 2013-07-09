@@ -39,8 +39,8 @@ MOD_TOBJS=  m_tbt_options.o m_tbt_gf.o m_tbt_kpts.o hamil2.o tsread2.o
 
 SIESTA_OBJS= precision.o sys.o m_io.o alloc.o  memoryinfo.o memory.o pxf.o \
              moreParallelSubs.o m_walltime.o m_timer.o timer.o m_mpi_utils.o \
-             m_fdf_global.o paste.o \
-             parallel.o  io.o files.o  zheevds.o debugmpi.o
+             m_fdf_global.o paste.o timer_tree.o \
+             parallel.o  io.o files.o  zheevds.o debugmpi.o die.o
 
 TBTOBJS= $(SIESTA_OBJS) $(MOD_TOBJS) $(SYSOBJ) $(EXTRA) \
          tbtrans.o transmission.o   \
@@ -446,7 +446,8 @@ struct_init.o: alloc.o atmfuncs.o atomlist.o files.o iopipes.o ioxv.o
 struct_init.o: m_fdf_global.o m_iostruct.o parallel.o periodic_table.o
 struct_init.o: siesta_cml.o siesta_geom.o siesta_options.o zmatrix.o
 sys.o: parallel.o
-timer.o: m_walltime.o parallel.o precision.o sys.o
+timer.o: m_walltime.o parallel.o precision.o sys.o timer_tree.o
+timer_tree.o: m_walltime.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
 typecell.o: precision.o
 uncell.o: precision.o
