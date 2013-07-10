@@ -327,9 +327,6 @@ contains
     ! The different sparse matrices... (these two lines are in global update sparsity pattern)
     type(dSpData1D) ::  spDMu,  spEDMu,  spDMuR,  spEDMuR
     type(zSpData1D) :: spzDMu, spzEDMu, spzDMuR, spzEDMuR
-    ! Pointers for updating the density matrices
-    real(dp),    pointer :: dDM(:), dEDM(:)
-    complex(dp), pointer :: zDM(:), zEDM(:)
 ! ************************************************************
 
 ! ******************* Computational variables ****************
@@ -342,7 +339,6 @@ contains
 
 ! ******************** Loop variables ************************
     integer :: ispin, ikpt, iPE, iE, NEReqs, up_nzs, ia, ia_E
-    integer :: ind
 #ifdef TRANSIESTA_DEBUG
     integer :: iu_GF, iu_GFinv
     integer :: iu_SL, iu_SR
@@ -461,15 +457,9 @@ contains
 
     ! Initialize the tri-diagonal inversion routine
     call init_TriMat_inversion(zwork_tri)
-
-    ! Save the work-space
-    ! Now the programmer should "keep a straight tongue"
-    ! The zwork points to the array in the zwork_tri
-    ! tri-diagonal array. This means that there are two
-    ! arrays that point to the same.
-    ! Generally the zwork need only to retain the value in
-    ! one call!
-    zwork => val(zwork_tri)
+    if ( IsVolt ) then
+       call init_BiasTriMat_inversion(zwork_tri)
+    end if
 
     call newzTriMat(GF_tri,tri_parts,tri_part,'GF')
     Is_Volt_TriMat = .false.
@@ -491,9 +481,18 @@ contains
     ! it is required that prepare_GF_inv is called
     ! immediately (which it is)
     ! Hence the GF_tri must NOT be used in between these two calls!
-    zDM    => val(GF_tri)
-    SigmaL => zDM(1:no_L**2)
-    SigmaR => zDM(size(zDM)-no_R**2+1:size(zDM))
+    zwork  => val(GF_tri)
+    SigmaL => zwork(1:no_L**2)
+    SigmaR => zwork(size(zwork)-no_R**2+1:size(zwork))
+
+    ! Save the work-space
+    ! Now the programmer should "keep a straight tongue"
+    ! The zwork points to the array in the zwork_tri
+    ! tri-diagonal array. This means that there are two
+    ! arrays that point to the same.
+    ! Generally the zwork need only to retain the value in
+    ! one call!
+    zwork => val(zwork_tri)
 
     if ( IsVolt ) then
        ! We need Gamma's with voltages (now they are both GAA and GammaT)
@@ -957,7 +956,9 @@ contains
     deallocate(GammaLT,GammaRT)
 
     call clear_TriMat_inversion()
-
+    if ( IsVolt ) then
+       call clear_BiasTriMat_inversion()
+    end if
 
     ! I would like to add something here which enables 
     ! 'Transiesta' post-process
@@ -1125,7 +1126,7 @@ contains
       complex(dp), intent(in) :: Z,i_W,i_ZW
       complex(dp) :: W,ZW
 #ifdef TRANSIESTA_DEBUG
-      integer :: ip, n, sIdx, eIdx
+      integer :: ind, ip, n, sIdx, eIdx
       complex(dp), pointer :: t(:) , fG(:)
 #endif
       ! The non-equilibrium integration points have the density
@@ -1150,49 +1151,49 @@ contains
            nzwork, zwork)
 
       call prepare_GF_inv(UseBulk, Z, no_BufL, &
-           no_u_TS,zwork_tri, &
+           no_u_TS, zwork_tri, &
            no_L, SigmaL, no_R, SigmaR, &
            spH =spH , spS =spS, &
            spzH=spzH, spzS=spzS )
       
-      call invert_TriMat_Bias(UpdateDMCR,zwork_tri,GF_tri,no_L)
+      call invert_BiasTriMat(UpdateDMCR,zwork_tri,GF_tri,no_L)
 
 #ifdef TRANSIESTA_DEBUG
-      fG => val(GF_tri)
+      fG => val(zwork_tri)
       n = 0
-      do ip = 1 , parts(GF_tri)
-         call TriMat_Bias_idxs(GF_tri,no_L,ip,sIdx, eIdx)
+      do ip = 1 , parts(zwork_tri)
+         call TriMat_Bias_idxs(zwork_tri,no_L,ip,sIdx, eIdx)
          if ( IONode ) &
-              print '(a,4(tr1,i0))','Left Indices:',ip,sIdx, eIdx,elements(GF_tri)
+              print '(a,4(tr1,i0))','Left Indices:',ip,sIdx, eIdx,elements(zwork_tri)
          t => fG(sIdx:eIdx)
          ind = 0
          do ia_E = 1 , no_L
-            do ia = 1 , nrows_g(GF_tri,ip)
+            do ia = 1 , nrows_g(zwork_tri,ip)
                ind = ind + 1
                call out_write(10000+iu_GF-Nodes,ia+n,ia_E,t(ind))
             end do
          end do
-         n = n + nrows_g(GF_tri,ip)
+         n = n + nrows_g(zwork_tri,ip)
       end do
 #endif
 
       call GF_Gamma_GF_Left_Full(UseBulk,UpdateDMCR,no_L,no_R, &
-           Gf_tri,GammaLT,zwork_tri, &
+           zwork_tri,GammaLT,GF_tri, &
            no_R**2,GammaRT) ! work-array
       
       ! work is now GFGGF
 
 #ifdef TRANSIESTA_DEBUG
-      call write_TriMat(iu_GF,zwork_tri)
+      call write_TriMat(iu_GF,GF_tri)
 #endif
 
       ! Note that we use '++' here
       if ( ts_Gamma_SCF ) then
          call add_DM_dE_D(spDMu,spEDMu, &
-              zwork_tri, no_BufL, +W, +ZW)
+              GF_tri, no_BufL, +W, +ZW)
       else
          call add_DM_dE_Z(spzDMu,spzEDMu, &
-              zwork_tri, no_BufL, +W, +ZW)
+              GF_tri, no_BufL, +W, +ZW)
       end if
          
     end subroutine non_Equilibrium_Density_Left
@@ -1201,8 +1202,8 @@ contains
       complex(dp), intent(in) :: Z,i_W,i_ZW
       complex(dp) :: W,ZW
 #ifdef TRANSIESTA_DEBUG
+      integer :: ind, ip, n, sIdx, eIdx
       complex(dp), pointer :: t(:), fG(:)
-      integer :: ip, n, sIdx, eIdx
 #endif
 
       ! The non-equilibrium integration points have the density
@@ -1227,49 +1228,49 @@ contains
            nzwork, zwork)
 
       call prepare_GF_inv(UseBulk, Z, no_BufL, &
-           no_u_TS,zwork_tri, &
+           no_u_TS, zwork_tri, &
            no_L, SigmaL, no_R, SigmaR, &
            spH =spH , spS =spS, &
            spzH=spzH, spzS=spzS )
       
-      call invert_TriMat_Bias(UpdateDMCR,zwork_tri,GF_tri,-no_R)
+      call invert_BiasTriMat(UpdateDMCR,zwork_tri,GF_tri,-no_R)
 
 #ifdef TRANSIESTA_DEBUG
-      fG => val(GF_tri)
+      fG => val(zwork_tri)
       n = 0
-      do ip = 1 , parts(GF_tri)
-         call TriMat_Bias_idxs(GF_tri,-no_R,ip,sIdx, eIdx)
+      do ip = 1 , parts(zwork_tri)
+         call TriMat_Bias_idxs(zwork_tri,-no_R,ip,sIdx, eIdx)
          if ( IONode ) &
-              print '(a,4(tr1,i0))','Right Indices:',ip,sIdx, eIdx,elements(GF_tri)
+              print '(a,4(tr1,i0))','Right Indices:',ip,sIdx, eIdx,elements(zwork_tri)
          t => fG(sIdx:eIdx)
          ind = 0
          do ia_E = no_u_TS - no_R + 1 , no_u_TS
-            do ia = 1 , nrows_g(GF_tri,ip)
+            do ia = 1 , nrows_g(zwork_tri,ip)
                ind = ind + 1
                call out_write(10000+iu_GF,ia+n,ia_E,t(ind))
             end do
          end do
-         n = n + nrows_g(GF_tri,ip)
+         n = n + nrows_g(zwork_tri,ip)
       end do
 #endif
 
       call GF_Gamma_GF_Right_Full(UseBulk,UpdateDMCR,no_L,no_R, &
-           Gf_tri,GammaRT,zwork_tri, &
+           zwork_tri,GammaRT,GF_tri, &
            no_L**2,GammaLT) ! work-array
       
       ! work is now GFGGF
 
 #ifdef TRANSIESTA_DEBUG
-      call write_TriMat(iu_GF,zwork_tri)
+      call write_TriMat(iu_GF,GF_tri)
 #endif
 
       ! Note that we use '--' here
       if ( ts_Gamma_SCF ) then
          call add_DM_dE_D(spDMuR,spEDMuR, &
-              zwork_tri, no_BufL, -W, -ZW)
+              GF_tri, no_BufL, -W, -ZW)
       else
          call add_DM_dE_Z(spzDMuR,spzEDMuR, &
-              zwork_tri, no_BufL, -W, -ZW)
+              GF_tri, no_BufL, -W, -ZW)
       end if
          
     end subroutine non_Equilibrium_Density_Right

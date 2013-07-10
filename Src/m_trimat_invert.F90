@@ -47,10 +47,12 @@
 
 module m_trimat_invert
   
+  use class_zTriMat
   use precision, only: dp
 
   implicit none
 
+  private
   private :: dp
 
   ! Current size of the pivoting arrays
@@ -63,10 +65,13 @@ module m_trimat_invert
   complex(dp), private, parameter :: z1  = dcmplx( 1._dp, 0._dp)
   complex(dp), private, parameter :: zm1 = dcmplx(-1._dp, 0._dp)
 
+  public :: invert_TriMat
+  public :: init_TriMat_inversion
+  public :: clear_TriMat_inversion
+
 contains
 
   subroutine invert_TriMat(M,Minv,sPart,ePart)
-    use class_zTriMat
     type(zTriMat), intent(inout) :: M, Minv
     integer, intent(in), optional :: sPart, ePart
     complex(dp), pointer :: Mpinv(:), Mp(:), XYn(:), CB(:)
@@ -131,7 +136,6 @@ contains
   end subroutine invert_TriMat
 
   subroutine calc_Mnn_inv(M,Minv,n)
-    use class_zTriMat
     use intrinsic_missing, only : EYE
     type(zTriMat), intent(inout) :: M, Minv
     integer, intent(in) :: n
@@ -151,7 +155,7 @@ contains
     if ( n == 1 ) then
        ! First we calculate M11^-1
        ! Retrieve the X1/C2 array
-       Xn => val(Minv,n+1,n)
+       Xn => Xn_div_Cn_p1(Minv,n)
        ! The C2 array
        Cn => val(M,n,n+1)
        ! Calculate: A1 - X1
@@ -161,7 +165,7 @@ contains
     else if ( n == parts(M) ) then
 
        ! Retrieve the Yn/Bn-1 array
-       Yn => val(Minv,n-1,n)
+       Yn => Yn_div_Bn_m1(Minv,n)
        ! The Bn-1 array
        Bn => val(M,n,n-1)
        ! Calculate: An - Yn
@@ -170,14 +174,14 @@ contains
 
     else
        ! Retrieve the Xn/Cn+1 array
-       Xn => val(Minv,n+1,n)
+       Xn => Xn_div_Cn_p1(Minv,n)
        ! The Cn+1 array
        Cn => val(M,n,n+1)
        ! Calculate: An - Xn
        call zgemm('N','N',sN,sN,sNp1, &
             zm1, Cn,sN, Xn,sNp1,z1, Mp,sN)
        ! Retrieve the Yn/Bn-1 array
-       Yn => val(Minv,n-1,n)
+       Yn => Yn_div_Bn_m1(Minv,n)
        ! The Bn-1 array
        Bn => val(M,n,n-1)
        ! Calculate: An - Xn - Yn
@@ -193,7 +197,6 @@ contains
   end subroutine calc_Mnn_inv
 
   subroutine calc_Mnp1n_inv(M,Minv,n)
-    use class_zTriMat
     type(zTriMat), intent(inout) :: M, Minv
     integer, intent(in) :: n
     ! Local variables
@@ -223,7 +226,6 @@ contains
   end subroutine calc_Mnp1n_inv
 
   subroutine calc_Mnm1n_inv(M,Minv,n)
-    use class_zTriMat
     type(zTriMat), intent(inout) :: M, Minv
     integer, intent(in) :: n
     ! Local variables
@@ -258,7 +260,6 @@ contains
   ! The Xn/Cn+1 will be saved in the Minv n,n-1 (as that has
   ! the same size).
   subroutine calc_Xn_div_Cn_p1(M,Minv,n,zwork,nz)
-    use class_zTriMat
     type(zTriMat), intent(inout) :: M, Minv
     integer, intent(in) :: n, nz
     complex(dp), intent(inout) :: zwork(nz)
@@ -308,7 +309,6 @@ contains
   end subroutine calc_Xn_div_Cn_p1
 
   function Xn_div_Cn_p1(M,n) result(Xn)
-    use class_zTriMat
     type(zTriMat), intent(in) :: M
     integer, intent(in) :: n
     complex(dp), pointer :: Xn(:)
@@ -320,7 +320,6 @@ contains
   ! The Yn/Bn-1 will be saved in the Minv n-1,n (as that has
   ! the same size).
   subroutine calc_Yn_div_Bn_m1(M,Minv,n,zwork,nz)
-    use class_zTriMat
     type(zTriMat), intent(inout) :: M, Minv
     integer, intent(in) :: n, nz
     complex(dp), intent(inout) :: zwork(nz)
@@ -370,7 +369,6 @@ contains
   end subroutine calc_Yn_div_Bn_m1
 
   function Yn_div_Bn_m1(M,n) result(Yn)
-    use class_zTriMat
     type(zTriMat), intent(in) :: M
     integer, intent(in) :: n
     complex(dp), pointer :: Yn(:)
@@ -379,7 +377,6 @@ contains
 
   ! We initialize the pivoting array for rotating the inversion
   subroutine init_TriMat_inversion(M)
-    use class_zTriMat
     use alloc, only : re_alloc
     type(zTriMat), intent(in) :: M
     integer :: i

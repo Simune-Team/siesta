@@ -673,7 +673,7 @@ m_ts_tri.o: m_ts_options.o m_ts_sparse.o m_ts_sparse_helper.o m_ts_tri_scat.o
 m_ts_tri.o: m_ts_trimat_invert.o m_ts_weight.o parallel.o precision.o units.o
 m_ts_tri_scat.o: alloc.o class_TriMat.o intrinsic_missing.o m_trimat_invert.o
 m_ts_tri_scat.o: m_ts_trimat_invert.o precision.o
-m_ts_trimat_invert.o: class_TriMat.o m_trimat_invert.o precision.o
+m_ts_trimat_invert.o: alloc.o class_TriMat.o intrinsic_missing.o precision.o
 m_ts_voltage.o: m_ts_electype.o m_ts_options.o mesh.o parallel.o parallelsubs.o
 m_ts_voltage.o: precision.o sys.o units.o
 m_ts_weight.o: class_OrbitalDistribution.o class_SpData1D.o class_Sparsity.o

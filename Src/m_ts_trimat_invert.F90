@@ -22,39 +22,68 @@ module m_ts_trimat_invert
 
   ! We use the general inversion module to obtain the
   ! same routines etc.
-  use m_trimat_invert
 
   use precision, only : dp
+  use class_zTrimat
 
   implicit none
 
-  private :: dp
+  private
+
+  ! Current size of the pivoting arrays
+  integer, save          :: Npiv = 0
+  ! The pivoting array
+  integer, save, pointer :: ipiv(:) => null()
 
   ! Used for BLAS calls (local variables)
-  complex(dp), private, parameter :: z0  = dcmplx( 0._dp, 0._dp)
-  complex(dp), private, parameter :: z1  = dcmplx( 1._dp, 0._dp)
-  complex(dp), private, parameter :: zm1 = dcmplx(-1._dp, 0._dp)
+  complex(dp), parameter :: z0  = dcmplx( 0._dp, 0._dp)
+  complex(dp), parameter :: z1  = dcmplx( 1._dp, 0._dp)
+  complex(dp), parameter :: zm1 = dcmplx(-1._dp, 0._dp)
+
+  public :: invert_BiasTriMat
+  public :: init_BiasTriMat_inversion
+  public :: clear_BiasTriMat_inversion
+  public :: TriMat_Bias_idxs
 
 contains
 
-  subroutine invert_TriMat_Bias(UpdateDMCR,M,Minv,no)
-    use class_zTriMat
-    
+  subroutine invert_BiasTriMat(UpdateDMCR,M,Minv,no)
+    use intrinsic_missing, only : EYE
+
     ! If we only need the middle part of the Gf^-1
     logical, intent(in) :: UpdateDMCR
     type(zTriMat), intent(inout) :: M, Minv
     integer, intent(in) :: no
     complex(dp), pointer :: fullMinv(:)
     complex(dp), pointer :: Mpinv(:), Mp(:), XYn(:)
+    complex(dp), pointer :: Xn(:), Yn(:), Cn(:), Bn(:)
     complex(dp), pointer :: z(:), fz(:)
 
-    integer :: nr, np , ip
+    integer :: nr, np, ip
     integer :: sNB, sN, sNC
     integer :: sPart, ePart
     integer :: GfsPart, GfePart
-    integer :: sIdx, eIdx, prevIdx
-    integer :: sNm1, sNp1, nf, n
-    integer :: i
+    integer :: sIdx, eIdx
+    integer :: sNm1, sNp1, n
+    integer :: i, ierr
+    logical :: piv_initialized
+
+    if ( parts(M) /= parts(Minv) ) then
+       call die('Could not calculate the inverse on non equal sized &
+            &matrices')
+    end if
+    if ( parts(M) == 1 ) then
+       call die('This matrix is not tri-diagonal')
+    end if
+    piv_initialized = .true.
+    do n = 1 , parts(M) 
+       if ( Npiv < nrows_g(M,n) ) piv_initialized = .false.
+    end do
+    if ( .not. piv_initialized ) then
+       call die('Pivoting array for inverting matrix not set.')
+    end if
+
+    call timer('V_TM_inv',1)
 
     nr = nrows_g(M)
     np = parts(M)
@@ -64,10 +93,14 @@ contains
        ! Left
        sPart = which_part(M,1)
        ePart = which_part(M,no)
+       if ( sPart /= 1 ) call die('Error in the Bias inversion')
+       if ( ePart >  2 ) call die('Error in the Bias inversion')
     else
        ! Right
        sPart = which_part(M,nr+no+1)
        ePart = which_part(M,nr)
+       if ( sPart <  np-1 ) call die('Error in the Bias inversion')
+       if ( ePart /= np   ) call die('Error in the Bias inversion')
     end if
 
     if ( UpdateDMCR ) then
@@ -112,181 +145,230 @@ contains
        end if
     end if
 
-    ! ***** Dev notice *****
-    ! this routine can be improved to not do too many calculations
-    ! simply by calculating all Xn/Cn+1 and Yn/Bn-1 and
-    ! explicitly only calculating the matrix-elements required
-    !  ******
+    ! Notice that we know that the work array we use will never be
+    ! overwritten as we have "removed" the diagonal entries 
+    ! in Minv
 
-    ! We calculate the inverted matrix in the parts requested
-    call invert_TriMat(M,Minv, &
-         sPart = sPart, ePart = ePart)
+    ! Calculate all Xn/Cn+1
+    do n = np - 1 , sPart , -1 
+       sNp1 = nrows_g(Minv,n+1) ** 2
+       z => work_array(Minv,no,sNp1)
+       call calc_Xn_div_Cn_p1(M,Minv, n, no, z,sNp1)
+    end do
+    ! Calculate all Yn/Bn-1
+    do n = 2 , ePart
+       sNm1 = nrows_g(Minv,n-1) ** 2
+       z => work_array(Minv,no,sNm1)
+       call calc_Yn_div_Bn_m1(M,Minv, n, no, z, sNm1)
+    end do
 
-    ! all needed quantities should still be available
-    ! We have Xn/Cn+1 and Yn/Bn-1 in the needed parts
+    ! Calculate the diagonal entries (this will let us get rid of
+    ! the Y/X arrays which we do not need)
 
     ! Lets note that the first two parts MUST (they are forced to be)
     ! equal or exceed no.
     ! Otherwise the full \Sigma_L/R can not be contained in the tri-matrix
-    ! This means that it is safe to correct the first calculated positions
+    ! This means that it is safe to calculate the first calculated positions
 
-    ! obtain the full inverted array values
-    fullMinv => val(Minv)
-
-    if ( no > 0 .and. abs(no) > nrows_g(M,1) ) then
-
-       ! If we are in the left region we move about the 2,1 and 2,2
-       ! note that 1,1 and 1,2 are placed correctly in the array
-       ! however, 1,2 can be too large 
-       
-#ifdef TRANSIESTA_DEBUG
-       write(*,*) 'Moving left region 2'
-#endif
-
-       ! Copy over M_{2,1}^{-1}, otherwise we will overwrite it
-       Mpinv => val(Minv,2,1)
-       z     => val(M,2,1)
-       z(:)  =  Mpinv(:)
-
-       ! obtain the actual indices for the second values
-       call TriMat_Bias_idxs(M,no,1,sIdx,eIdx)
-       ! This is the placement for the M_{1,2}^-1 array
-       Mpinv => fullMinv(sIdx+nrows_g(M,1)**2:eIdx)
-
-       ! The M_{1,2}^-1 array
-       z => val(Minv,1,2)
-
-       ! obtain the actual indices for the second values
-       call TriMat_Bias_idxs(M,no,2,sIdx,eIdx)
-       Mp => fullMinv(sIdx:eIdx)
-
-       ! retain the values in M_{2,1}^{-1}
-       XYn => val(M,2,1)
-       
-       ! we know that nrows_g(1) + nrows_g(2) >= no so the 
-       ! remaining filling must be smaller than or equal to no
-       ! hence, size(Mpinv) <= size(XYn)
-       do i = 1 , size(Mpinv)
-          ! copy over M_{1,2}^-1
-          Mpinv(i) = z(i)
-          ! copy over M_{2,1}^-1
-          Mp(i)    = XYn(i)
-       end do
-       ! now M_{1,2}^{-1} lies in the correct place
-       ! retain the values in M_{2,2}^{-1}
-       z => val(Minv,2,2)
-       sN  = size(Mpinv)
-       sNC = size(XYn)
-       do i = 1 , size(XYn) - size(Mpinv)
-          ! copy over M_{2,1}^-1
-          Mp(sN+i)  = XYn(sN+i)
-          ! copy over M_{2,2}^-1
-          Mp(sNC+i) = z(i)
-       end do
-       ! now M_{2,1}^{-1} lies in the correct place
-       do i = size(XYn) - size(Mpinv) + 1, size(Mp)
-          ! copy over M_{2,2}^-1
-          Mp(sNC+i) = z(i)
-       end do
-       ! now M_{2,2}^{-1} lies in the correct place
-
-    else if ( no < 0 .and. abs(no) > nrows_g(M,np) ) then
-
-       ! If we are in the right region we move about the np-1,np and np-1,np-1
-       ! note that np,np and np,np-1 are placed correctly in the array
-       ! however, np,np-1 can be too large 
-
-#ifdef TRANSIESTA_DEBUG
-       write(*,*) 'Moving right region np-1'
-#endif
-
-       ! Copy over M_{np-1,np}^{-1}, otherwise we will overwrite it
-       Mpinv => val(Minv,np-1,np)
-       z     => val(M,np-1,np)
-       z(:)  =  Mpinv(:)
-
-       ! obtain the actual indices for the second values
-       call TriMat_Bias_idxs(M,no,np,sIdx,eIdx)
-       ! This is the placement for the M_{np,np-1}^-1 array
-       Mpinv => fullMinv(eIdx-nrows_g(M,np)**2:sIdx:-1)
-
-       ! The M_{np,np-1}^-1 array
-       fz => val(Minv,np,np-1)
-       z  => fz(size(fz):1:-1)
-
-       ! obtain the actual indices for the second values
-       call TriMat_Bias_idxs(M,no,np-1,sIdx,eIdx)
-       Mp => fullMinv(eIdx:sIdx:-1)
-
-       ! retain the values in M_{np-1,np}^{-1}
-       fz => val(M,np-1,np)
-       XYn => fz(size(fz):1:-1)
-       
-       ! we know that nrows_g(np-1) + nrows_g(np) >= no so the 
-       ! remaining filling must be smaller than or equal to no
-       ! hence, size(Mpinv) <= size(XYn)
-       do i = 1 , size(Mpinv)
-          ! copy over M_{np,np-1}^-1 
-          Mpinv(i) = z(i)
-          ! copy over M_{np-1,np}^-1
-          Mp(i)    = XYn(i)
-       end do
-       ! now M_{np-1,np}^{-1} lies in the correct place
-       ! retain the values in M_{np-1,np-1}^{-1}
-       fz => val(Minv,np-1,np-1)
-       z  => fz(size(fz):1:-1)
-       sN  = size(Mpinv)
-       sNC = size(XYn)
-       do i = 1, size(XYn) - size(Mpinv)
-          ! copy over M_{np-1,np}^-1
-          Mp(sN+i)  = XYn(sN+i)
-          ! copy over M_{np-1,np-1}^-1
-          Mp(sNC+i) = z(i)
-       end do
-       ! now M_{np-1,np}^{-1} lies in the correct place
-       do i = size(XYn) - size(Mpinv) + 1, size(Mp)
-          ! copy over M_{np-1,np-1}^-1
-          Mp(sNC+i) = z(i)
-       end do
-       ! now M_{np-1,np-1}^{-1} lies in the correct place
-      
+    if ( no > 0 ) then
+       n = sPart
+    else
+       n = ePart
     end if
 
-    ! we have now corrected the inverted matrix to only contain the first 
-    !   no * nrows_g(tri,1+2)
-    ! states. The rest is not needed
+    ! We calculate the first diagonal matrix
+      
+    if ( 1 < n ) sNm1 = nrows_g(M,n-1)
+                 sN   = nrows_g(M,n)
+    if ( n < np) sNp1 = nrows_g(M,n+1)
+    if ( sN > abs(no) ) call die('This system we cannot handle')
 
-    ! We now only need to calculate the remaning part
-    ! first we copy over the Xn/Cn+1 or the Yn/Bn-1 arrays
-    if ( no > 0 ) then
+    Mp    => work_array(Minv,no,sN**2)
+    Mpinv => val(M,n,n)
+    ! Copy over Ann (we output the inverted matrix in M (not in Minv)
+    Mp(:) = Mpinv(:)
+    call EYE(sN,Mpinv)
+    
+    if ( n == 1 ) then
+       ! First we calculate M11^-1
+       ! Retrieve the X1/C2 array
+       Xn => Xn_div_Cn_p1(Minv,n,no)
+       ! The C2 array
+       Cn => val(M,n,n+1)
+       ! Calculate: A1 - X1
+       call zgemm('N','N',sN,sN,sNp1, &
+            zm1, Cn,sN, Xn,sNp1,z1, Mp,sN)
+       
+    else if ( n == np ) then
 
-       do ip = ePart , min(np - 1,GfePart)
-          z  => Xn_div_Cn_p1(Minv,ip)
-          fz => Xn_div_Cn_p1(M,ip)
-          fz(:) = z(:)
-       end do
+       ! Retrieve the Yn/Bn-1 array
+       Yn => Yn_div_Bn_m1(Minv,n,no)
+       ! The Bn-1 array
+       Bn => val(M,n,n-1)
+       ! Calculate: An - Yn
+       call zgemm('N','N',sN,sN,sNm1, &
+            zm1, Bn,sN, Yn,sNm1,z1, Mp,sN)
 
     else
 
-       do ip = sPart , max(GfsPart,2) , -1
-          z  => Yn_div_Bn_m1(Minv,ip)
-          fz => Yn_div_Bn_m1(M,ip)
-          fz(:) = z(:)
-       end do
+       call die('Something is totally wrong')
 
     end if
+
+    ! Calculate Mnn^-1
+    call zgesv(sN,sN,Mp,sN,ipiv,Mpinv,sN,ierr)
+    if ( ierr /= 0 ) call die('Error on inverting Mnn^-1')
+
+    fullMinv => val(M)
+
+    ! How many columns do we still need to calculate...?
+    sNC = abs(no) - sN
+
+    if ( sNC > 0 ) then
+       ! We need to calculate the second column in the
+       ! diagonal inverse part
+
+       ! For this we need the Y2 and X2 array ( or Yn-1, Xn-1 )
+
+       ! First calculate the respective Y2 and X2 arrays
+
+       if ( no > 0 ) then
+          n = 2
+       else
+          n = np - 1
+       end if
        
-    ! Now we are ready to do the calculation of the column
+       sNm1 = nrows_g(M,n-1)
+       sN   = nrows_g(M,n)
+       sNp1 = nrows_g(M,n+1)
+
+       ! Retrieve the Ann array
+       z => val(M,n,n)
+       ! retrieve a work array for retaining the values
+       Mp => work_array(Minv,no,sN**2)
+       ! copy over Ann
+       Mp(:) = z(:)
+       
+       ! Retrieve the Xn/Cn+1 array
+       Xn => Xn_div_Cn_p1(Minv,n,no)
+       ! The Cn+1 array
+       Cn => val(M,n,n+1)
+       ! Calculate: An - Xn
+       call zgemm('N','N',sN,sN,sNp1, &
+            zm1, Cn,sN, Xn,sNp1,z1, Mp,sN)
+       ! Retrieve the Yn/Bn-1 array
+       Yn => Yn_div_Bn_m1(Minv,n,no)
+       ! The Bn-1 array
+       Bn => val(M,n,n-1)
+       ! Calculate: An - Xn - Yn
+       call zgemm('N','N',sN,sN,sNm1, &
+            zm1, Bn,sN, Yn,sNm1,z1, Mp,sN)
+       
+       ! Put the Mnn in the correct place
+       call TriMat_Bias_idxs(M,no,n,sIdx,eIdx)
+       if ( no > 0 ) then
+          ! Move the start index into the Mnn region
+          sIdx = sIdx + nrows_g(M,n) * nrows_g(M,n-1)
+       else
+          ! Move the end index into the Mnn region
+          eIdx = eIdx - nrows_g(M,n) * nrows_g(M,n+1)
+       end if
+
+       ! Now we don't need the Bn and Cn's
+       ! Hence we can do the remainder of the inversions
+       ! without taken notice of them
+
+       ! placement of the inverted matrix
+       z => val(M)
+       Mpinv => z(sIdx:eIdx)
+       Mpinv(:) = dcmplx(0._dp,0._dp)
+       if ( no > 0 ) then
+          do i = 1 , sNC
+             Mpinv((i-1)*sN+i) = dcmplx(1._dp,0._dp)
+          end do
+       else
+          do i = sNC , 1 , -1
+             Mpinv(i*sN-(sNC - i)) = dcmplx(1._dp,0._dp)
+          end do
+       end if
+
+       ! Calculate Mnn^-1
+       call zgesv(sN,sNC,Mp,sN,ipiv,Mpinv,sN,ierr)
+       if ( ierr /= 0 ) call die('Error on inverting Mnn^-1')
+
+       ! Calculate the remaining parts in the first two sections
+       if ( no > 0 ) then
+
+          ! obtain the indices for the inverted matrix above
+          call TriMat_Bias_idxs(M,no,n-1,sIdx,eIdx)
+          fz => fullMinv(sIdx:eIdx) ! fz is the part x no array
+
+          ! obtain the indices for the current inverted matrix
+          call TriMat_Bias_idxs(M,no,n,sIdx,eIdx)
+          z  => fullMinv(sIdx:eIdx) ! z is the part x no array
+
+          ! Obtain the X2/C3 matrix
+          XYn => Xn_div_Cn_p1(Minv,n-1,no)
+
+          ! First calculate the M21 region
+          call zgemm('N','N',sN,sNm1,sNm1, &
+               zm1, XYn,sN, fz(1),sNm1,z0, z(1),sN)
+
+          ! Obtain the Y2/B1 matrix
+          XYn => Yn_div_Bn_m1(Minv,n,no)
+          ! Index move of the 1 row
+          sIdx = 1 + sNm1 ** 2
+          ! Index move of the 2 row
+          eIdx = 1 + sN * sNm1
+
+          ! ... calculate the M12 region
+          call zgemm('N','N',sNm1,sNC,sN, &
+               zm1, XYn,sNm1, z(eIdx),sN,z0, fz(sIdx),sNm1)
+
+       else
+
+          ! obtain the indices for the inverted matrix below
+          call TriMat_Bias_idxs(M,no,n,sIdx,eIdx)
+          fz  => fullMinv(sIdx:eIdx) ! fz is the part x no array
+
+          ! obtain the indices for the current inverted matrix
+          call TriMat_Bias_idxs(M,no,n+1,sIdx,eIdx)
+          z => fullMinv(sIdx:eIdx) ! z is the part x no array
+
+          ! Obtain the Xn/Cn+1 matrix
+          XYn => Xn_div_Cn_p1(Minv,n,no)
+
+          ! First calculate the Mn+1n region
+          call zgemm('N','N',sNp1,sNC,sN, &
+               zm1, XYn,sNp1, fz(1),sN,z0, z(1),sNp1)
+
+          ! Obtain the Y2/B1 matrix
+          XYn => Yn_div_Bn_m1(Minv,n+1,no)
+          ! Index move of the n row
+          sIdx = 1 + sN * sNC
+          ! Index move of the n+1 row
+          eIdx = 1 + sNp1 * sNC
+
+          ! ... calculate the Mnn+1 region
+          call zgemm('N','N',sN,sNp1,sNp1, &
+               zm1, XYn,sN, z(eIdx),sNp1,z0, fz(sIdx),sN)
+
+       end if
+
+    end if
+
+
+    ! Now we are ready to do the calculation of the full column
+
+    sNB = abs(no)
 
     if ( no > 0 ) then
-
-       sNB = nrows_g(M,1)
        
        do ip = ePart + 1 , GfePart
       
           sN   = nrows_g(M,ip-1)
           sNp1 = nrows_g(M,ip)
-          XYn => Xn_div_Cn_p1(M,ip-1)
+          XYn => Xn_div_Cn_p1(Minv,ip-1,no)
 
           ! obtain the indices for the inverted matrix above
           call TriMat_Bias_idxs(M,no,ip-1,sIdx,eIdx)
@@ -296,39 +378,18 @@ contains
           call TriMat_Bias_idxs(M,no,ip,sIdx,eIdx)
           z  => fullMinv(sIdx:eIdx) ! z is the part x no array
 
-          sNC = sNB
-          
-          ! First we calculate the easy thing (the boundary inverted matrix)
-          call zgemm('N','N',sNp1,sNC,sN, &
+          call zgemm('N','N',sNp1,sNB,sN, &
                zm1, XYn,sNp1, fz(1),sN,z0, z(1),sNp1)
-
-          ! the second dimension changes to only the part we miss 
-          sNC = abs(no) - sNB
-
-          if ( sNC > 0 ) then
-
-             ! Calculate the remaining size of the array,
-             ! i.e. Gf[...,nrows_g(M,1)+1:no]
-             ! calculate the offset in the full matrices for the placement
-             n  = sNp1 * sNC + 1
-             nf = sN   * sNC + 1
-
-             ! this calculates the column next to part 1
-             call zgemm('N','N',sNp1,sNC,sN, &
-                  zm1, XYn,sNp1, fz(nf),sN,z0, z(n),sNp1)
-          end if
 
        end do
 
     else
 
-       sNB = nrows_g(M,np)
-
        do ip = sPart - 1 , GfsPart , -1
 
           sNm1 = nrows_g(M,ip)
           sN   = nrows_g(M,ip+1)
-          XYn => Yn_div_Bn_m1(M,ip+1)
+          XYn => Yn_div_Bn_m1(Minv,ip+1,no)
 
           ! obtain the indices for the inverted matrix below
           call TriMat_Bias_idxs(M,no,ip+1,sIdx,eIdx)
@@ -338,33 +399,18 @@ contains
           call TriMat_Bias_idxs(M,no,ip,sIdx,eIdx)
           z  => fullMinv(sIdx:eIdx) ! z is the part x no array
 
-          ! Here we calculate the Gf[...,-no+1:-sNB]
-          sNC = abs(no) - sNB
-         
-          if ( sNC > 0 ) then
-             call zgemm('N','N',sNm1,sNC,sN, &
-                  zm1, XYn,sNm1, fz(1),sN,z0, z(1),sNm1)
-          end if
-
-          ! Calculate offset for the matrix
-          n  = sNm1 * sNC + 1
-          nf = sN   * sNC + 1
-
-          ! the number of rows in the boundary 
-          sNC = sNB
-
-          ! First we calculate the easy thing (the boundary inverted matrix)
-          call zgemm('N','N',sNm1,sNC,sN, &
-               zm1, XYn,sNm1, fz(nf),sN,z0, z(n),sNm1)
+          call zgemm('N','N',sNm1,sNB,sN, &
+               zm1, XYn,sNm1, fz(1),sN,z0, z(1),sNm1)
 
        end do
 
     end if
     
-  end subroutine invert_TriMat_Bias
+    call timer('V_TM_inv',2)
+
+  end subroutine invert_BiasTriMat
 
   subroutine TriMat_Bias_idxs(M,no,p,sIdx,eIdx)
-    use class_zTriMat
     type(zTriMat), intent(in) :: M
     ! no is the number of orbitals we wish to take out
     ! p is the part that we wish to point to
@@ -380,7 +426,6 @@ contains
   ! 2. nrows_g(tri,2) x no
   ! ...
   function TriMat_Bias_idx(M,no,p) result(IDX)
-    use class_zTriMat
     type(zTriMat), intent(in) :: M
     ! no is the number of orbitals we wish to take out
     ! p is the part that we wish to point to
@@ -419,6 +464,286 @@ contains
     idx = idx + 1
 
   end function TriMat_Bias_idx
+
+
+  ! In this case we do not need the diagonal part, so we have
+  ! this going from 
+  function Xn_div_Cn_p1(M,n,no) result(Xn)
+    type(zTriMat), intent(in) :: M
+    integer, intent(in) :: n, no
+    complex(dp), pointer :: Xn(:), z(:)
+    integer :: idx
+
+    ! The last Xn is 0
+    if ( n == parts(M) ) return
+
+    z => val(M)
+    idx = idx_Xn_div_Cn_p1(M,n,no)
+    Xn => z(idx:idx-1+nrows_g(M,n)*nrows_g(M,n+1))
+    if ( idx -1+nrows_g(M,n)*nrows_g(M,n+1) > size(z) ) &
+         call die('aeostuhsaehu')
+
+  end function Xn_div_Cn_p1
+
+  function Yn_div_Bn_m1(M,n,no) result(Yn)
+    type(zTriMat), intent(in) :: M
+    integer, intent(in) :: n, no
+    complex(dp), pointer :: Yn(:), z(:)
+    integer :: idx
+
+    ! The first Yn is 0
+    if ( n == 1 ) return
+
+    z => val(M)
+    idx = idx_Yn_div_Bn_m1(M,n,no)
+    Yn => z(idx:idx-1+nrows_g(M,n)*nrows_g(M,n-1))
+
+    if ( idx -1+nrows_g(M,n)*nrows_g(M,n-1) > size(z) ) &
+         call die('aeostuhsaehu')
+
+  end function Yn_div_Bn_m1
+
+  ! In this case we do not need the diagonal part, so we have
+  ! this going from 
+  function idx_XYn(M,n,no) result(idx)
+    type(zTriMat), intent(in) :: M
+    integer, intent(in) :: n, no
+    integer :: idx, i, lp
+
+    if ( no > 0 ) then
+
+       ! The last part needed for calculating the entire column
+       lp = which_part(M,no)
+       
+       ! In this case we have the Xn taken up the full back
+       ! so direct sequence
+       idx = elements(M) + 1
+       do i = parts(M) - 1 , max(lp,n) + 1 , -1
+          idx = idx - nrows_g(M,i) * nrows_g(M,i+1)
+       end do
+       if ( lp > n ) then ! then lp must also be larger than 1
+          ! We need to mingle the Yn and Xn arrays
+          do i = lp , n + 1 , -1 
+             ! this is Yn
+             idx = idx - nrows_g(M,i) * nrows_g(M,i-1)
+             ! this is Xn
+             idx = idx - nrows_g(M,i) * nrows_g(M,i+1)
+          end do
+       end if
+       ! We are now at the edge of the position, if the Yn exist
+       ! add that first
+       if ( lp > 1 .and. lp == n ) then
+          idx = idx - nrows_g(M,lp) * nrows_g(M,lp-1)
+       end if
+
+       ! return the idx of the first element of Xn
+       idx = idx - nrows_g(M,n) * nrows_g(M,n+1)
+
+    else
+       
+       lp = which_part(M,nrows_g(M) - abs(no) + 1)
+
+       ! In this case we have the Yn taking up the full start
+       idx = 1
+       do i = 2 , min(lp,n) - 1
+          idx = idx + nrows_g(M,i) * nrows_g(M,i-1)
+       end do
+       if ( lp < n ) then ! then lp must also be smaller than parts(M)
+          ! We need to mingle the Yn and Xn arrays
+          do i = lp , n - 1
+             ! this is Xn
+             idx = idx + nrows_g(M,i) * nrows_g(M,i+1)
+             ! this is Yn
+             idx = idx + nrows_g(M,i) * nrows_g(M,i-1)
+          end do
+       end if
+
+    end if
+
+  end function idx_XYn
+
+  ! In this case we do not need the diagonal part, so we have
+  ! this going from 
+  function idx_Xn_div_Cn_p1(M,n,no) result(idx)
+    type(zTriMat), intent(in) :: M
+    integer, intent(in) :: n, no
+    integer :: idx
+
+    ! retrieve the index for the equivalent
+    idx = idx_XYn(M,n,no)
+
+    if ( no < 0 ) then
+       idx = idx + nrows_g(M,n) * nrows_g(M,n-1)
+    end if
+
+  end function idx_Xn_div_Cn_p1
+
+  ! In this case we do not need the diagonal part, so we have
+  ! this going from 
+  function idx_Yn_div_Bn_m1(M,n,no) result(idx)
+    type(zTriMat), intent(in) :: M
+    integer, intent(in) :: n, no
+    integer :: idx
+
+    ! retrieve the index for the equivalent
+    idx = idx_XYn(M,n,no)
+
+    if ( no > 0 ) then
+       idx = idx + nrows_g(M,n) * nrows_g(M,n+1)
+    end if
+
+  end function idx_Yn_div_Bn_m1
+
+  function work_array(M,no,s) result(z)
+    type(zTriMat), intent(in) :: M
+    integer, intent(in) :: no, s
+    complex(dp), pointer :: z(:), fz(:)
+    integer :: els
+    fz => val(M)
+    if ( no > 0 ) then
+       z => fz(1:s)
+    else
+       els = elements(M)
+       z => fz(els-s+1:els)
+    end if
+  end function work_array
+
+
+! ***************** Direct copies of the routines in m_trimat_invert *************************!
+! We have only changed the Yn_div_Bn_m1 and Xn_div_Cn_p1 routines, i.e. we could do with
+! passing the functions as an interface, but...
+
+  ! We will calculate the Xn/Cn+1 component of the 
+  ! tri-diagonal inversion algorithm.
+  ! The Xn/Cn+1 will be saved in the Minv n,n-1 (as that has
+  ! the same size).
+  subroutine calc_Xn_div_Cn_p1(M,Minv,n,no,zwork,nz)
+    type(zTriMat), intent(inout) :: M, Minv
+    integer, intent(in) :: n, no, nz
+    complex(dp), intent(inout) :: zwork(nz)
+    ! Local variables
+    complex(dp), pointer :: ztmp(:), Xn(:), Cnp2(:)
+    integer :: sN, sNp1, sNp1SQ, sNp2, ierr
+
+    if ( n < 1 .or. parts(M) <= n .or. parts(M) /= parts(Minv) ) then
+       call die('Could not calculate Xn on these matrices')
+    end if
+    ! Collect all matrix sizes for this step...
+    sN     = nrows_g(M,n)
+    sNp1   = nrows_g(M,n+1)
+    sNp1SQ = sNp1 ** 2
+    if ( nz < sNp1SQ ) then
+       call die('Work array in Xn calculation not sufficiently &
+            &big.')
+    end if
+
+    ! Copy over the Bn array
+    ztmp  => val(M   ,n+1,n)
+    ! This is where the inverted matrix will be located 
+    Xn    => Xn_div_Cn_p1(Minv,n,no)
+    Xn(:) =  ztmp(:)
+
+    ! Copy over the An+1 array
+    ztmp            => val(M,n+1,n+1)
+    zwork(1:sNp1SQ) =  ztmp(:)
+
+    ! If we should calculate X_N-1 then X_N == 0
+    if ( n < parts(M) - 1 ) then
+       ! Size...
+       sNp2 =  nrows_g(M,n+2)
+       ! Retrieve the Xn+1/Cn+2 array
+       ztmp => Xn_div_Cn_p1(Minv,n+1,no)
+       ! Retrieve the Cn+2 array
+       Cnp2 => val(M,n+1,n+2)
+       ! Calculate: An+1 - Xn+1
+       call zgemm('N','N',sNp1,sNp1,sNp2, &
+            zm1, Cnp2,sNp1, ztmp,sNp2,z1, zwork,sNp1)
+    end if
+
+    ! Calculate Xn/Cn+1
+    call zgesv(sNp1,sN,zwork,sNp1,ipiv,Xn,sNp1,ierr)
+    if ( ierr /= 0 ) call die('Error on inverting Xn/Cn+1')
+
+  end subroutine calc_Xn_div_Cn_p1
+
+  ! We will calculate the Yn/Bn-1 component of the 
+  ! tri-diagonal inversion algorithm.
+  ! The Yn/Bn-1 will be saved in the Minv n-1,n (as that has
+  ! the same size).
+  subroutine calc_Yn_div_Bn_m1(M,Minv,n,no, zwork,nz)
+    type(zTriMat), intent(inout) :: M, Minv
+    integer, intent(in) :: n, no, nz
+    complex(dp), intent(inout) :: zwork(nz)
+    ! Local variables
+    complex(dp), pointer :: ztmp(:), Yn(:), Bnm2(:)
+    integer :: sN, sNm1, sNm1SQ, sNm2, ierr
+
+    if ( n < 2 .or. parts(M) < n .or. parts(M) /= parts(Minv) ) then
+       call die('Could not calculate Xn on these matrices')
+    end if
+    ! Collect all matrix sizes for this step...
+    sN     = nrows_g(M,n)
+    sNm1   = nrows_g(M,n-1)
+    sNm1SQ = sNm1 ** 2
+    if ( nz < sNm1SQ ) then
+       call die('Work array in Xn calculation not sufficiently &
+            &big.')
+    end if
+
+    ! Copy over the Cn array
+    ztmp  => val(M   ,n-1,n)
+    ! This is where the inverted matrix will be located 
+    Yn    => Yn_div_Bn_m1(Minv,n,no)
+    Yn(:) =  ztmp(:)
+
+    ! Copy over the An-1 array
+    ztmp            => val(M,n-1,n-1)
+    zwork(1:sNm1SQ) =  ztmp(:)
+
+    ! If we should calculate Y_2 then Y_1 == 0
+    if ( 2 < n ) then
+       ! Size...
+       sNm2 =  nrows_g(M,n-2)
+       ! Retrieve the Yn-1/Bn-2 array
+       ztmp => Yn_div_Bn_m1(Minv,n-1,no)
+       ! Retrieve the Bn-2 array
+       Bnm2 => val(M,n-1,n-2)
+       ! Calculate: An-1 - Yn-1
+       call zgemm('N','N',sNm1,sNm1,sNm2, &
+            zm1, Bnm2,sNm1, ztmp,sNm2,z1, zwork,sNm1)
+    end if
+
+    ! Calculate Yn/Bn-1
+    call zgesv(sNm1,sN,zwork,sNm1,ipiv,Yn,sNm1,ierr)
+    if ( ierr /= 0 ) call die('Error on inverting Yn/Bn-1')
+
+  end subroutine calc_Yn_div_Bn_m1
+
+  ! We initialize the pivoting array for rotating the inversion
+  subroutine init_BiasTriMat_inversion(M)
+    use alloc, only : re_alloc
+    type(zTriMat), intent(in) :: M
+    integer :: i
+    Npiv = 0
+    do i = 1 , parts(M)
+       if ( nrows_g(M,i) > Npiv ) then
+          Npiv = nrows_g(M,i)
+       end if
+    end do
+
+    ! Allocate space for the pivoting array
+    call re_alloc(ipiv,1, Npiv, &
+         name="TriMat_piv",routine='TriMatInversion')
+
+  end subroutine init_BiasTriMat_inversion
+
+  subroutine clear_BiasTriMat_inversion()
+    use alloc, only: de_alloc
+    Npiv = 0
+    ! Deallocate the pivoting array
+    call de_alloc(ipiv, &
+         name="TriMat_piv",routine='TriMatInversion')
+  end subroutine clear_BiasTriMat_inversion
 
 end module m_ts_trimat_invert
     

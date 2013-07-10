@@ -88,7 +88,9 @@ contains
     integer :: jow,jau,ja2,ja1,juo
     integer :: ipvt(no_s)
     complex(dp), parameter :: zmPi2 = dcmplx(0._dp,-2._dp * Pi)
+    complex(dp), parameter :: zPi2  = dcmplx(0._dp, 2._dp * Pi)
     complex(dp) :: ph
+    real(dp) :: qmPi(2,nq)
 
     call timer('ts_expand',1)
     call timer('ts_expandB',1)
@@ -110,24 +112,34 @@ contains
 
     else
 
+       do iq = 1 , nq 
+          qmPi(1:2,iq) = - 2._dp * Pi * qb(1:2,iq)
+       end do
+
+       ! TODO qb(:,1) == 0.0_dp in any case currently used
+       ! So we could do without.
+
        ! This is the crucial calcuation.
        ! If we use bulk values in the electrodes
        ! we need not add the expanded H and S values to get the 
        ! electrode \Sigma. Hence, we need only expand
        ! surface Green's function
+       ! We do the equivalent of :
+       ! ph = wq(iq) * cdexp(zmPi2 * &
+       !      ( (ia1-ja1)*qb(1,iq) + (ia2-ja2)*qb(2,iq) ))
        iq = 1
        iow = 0
        do iau = 1 , na_u
-        do ia2 = 0 , NRepA2-1
-         do ia1 = 0 , NRepA1-1
+        do ia2 = 1 , NRepA2
+         do ia1 = 1 , NRepA1
           do iuo = 1 + lasto(iau-1) , lasto(iau)
            iow = iow + 1
            jow = 0
            do jau = 1 , na_u
-            do ja2 = 0 , NRepA2-1
-             do ja1 = 0 , NRepA1-1
-              ph = wq(iq) * cdexp(zmPi2 * &
-                   ( (ia1-ja1)*qb(1,iq) + (ia2-ja2)*qb(2,iq) ))
+            do ja2 = 1 , NRepA2
+             do ja1 = 1 , NRepA1
+              ph = wq(iq) * cdexp(dcmplx(0._dp, &
+                   (ia1-ja1)*qmPi(1,iq) + (ia2-ja2)*qmPi(2,iq) ) )
               do juo = 1 + lasto(jau-1) , lasto(jau) 
                  jow = jow + 1
                  
@@ -143,17 +155,16 @@ contains
        do iq = 2 , nq
         iow = 0
         do iau = 1 , na_u
-         do ia2 = 0 , NRepA2-1
-          do ia1 = 0 , NRepA1-1
+         do ia2 = 1 , NRepA2
+          do ia1 = 1 , NRepA1
            do iuo = 1 + lasto(iau-1) , lasto(iau)
             iow = iow + 1
             jow = 0
             do jau = 1 , na_u
-             do ja2 = 0 , NRepA2-1
-              do ja1 = 0 , NRepA1-1
-               ph = wq(iq) * cdexp(zmPi2 * &
-                    ( (ia1-ja1)*qb(1,iq) + (ia2-ja2)*qb(2,iq) ))
-
+             do ja2 = 1 , NRepA2
+              do ja1 = 1 , NRepA1
+               ph = wq(iq) * cdexp(dcmplx(0._dp, &
+                    (ia1-ja1)*qmPi(1,iq) + (ia2-ja2)*qmPi(2,iq) ) )
                do juo = 1 + lasto(jau-1) , lasto(jau) 
                   jow = jow + 1
                   
@@ -375,7 +386,9 @@ contains
     integer :: iow,iau,ia2,ia1,iuo
     integer :: jow,jau,ja2,ja1,juo
     complex(dp), parameter :: zmPi2 = dcmplx(0._dp,-2.0_dp * Pi)
+    complex(dp), parameter :: zPi2  = dcmplx(0._dp, 2.0_dp * Pi)
     complex(dp) :: ph
+    real(dp) :: qmPi(2,nq)
 
     if ( NRepA1 * NRepA2 == 1 ) then
        if ( no_u /= no_s ) call die('no_E/=no_s')
@@ -386,6 +399,13 @@ contains
 
     else
 
+       do iq = 1 , nq 
+          qmPi(1:2,iq) = - 2._dp * Pi * qb(1:2,iq)
+       end do
+
+       ! TODO qb(:,1) == 0.0_dp in any case currently used
+       ! So we could do without.
+
        ! This is the crucial calcuation.
        ! If we use bulk values in the electrodes
        ! we need not add the expanded H and S values to get the 
@@ -394,19 +414,16 @@ contains
        iq = 1
        iow = 0
        do iau = 1 , na_u
-        do ia2 = 0 , NRepA2-1
-         do ia1 = 0 , NRepA1-1
+        do ia2 = 1 , NRepA2
+         do ia1 = 1 , NRepA1
           do iuo = 1 + lasto(iau-1) , lasto(iau)
            iow = iow + 1
            jow = 0
            do jau = 1 , na_u
-            do ja2 = 0 , NRepA2-1
-             do ja1 = 0 , NRepA1-1
-              ! TODO qb(:,1) == 0.0_dp in any case currently used
-              ! So we could do without.
-              ph = wq(iq) * cdexp(zmPi2 * &
-                   ( (ia1-ja1)*qb(1,iq) + (ia2-ja2)*qb(2,iq) ))
-
+            do ja2 = 1 , NRepA2
+             do ja1 = 1 , NRepA1
+              ph = wq(iq) * cdexp(dcmplx(0._dp, &
+                   (ia1-ja1)*qmPi(1,iq) + (ia2-ja2)*qmPi(2,iq) ) )
               do juo = 1 + lasto(jau-1) , lasto(jau)
                 jow = jow + 1
                 
@@ -425,17 +442,16 @@ contains
        do iq = 2 , nq
         iow = 0
         do iau = 1 , na_u
-         do ia2 = 0 , NRepA2-1
-          do ia1 = 0 , NRepA1-1
+         do ia2 = 1 , NRepA2
+          do ia1 = 1 , NRepA1
            do iuo = 1 + lasto(iau-1) , lasto(iau)
             iow = iow + 1
             jow = 0
             do jau = 1 , na_u
-             do ja2 = 0 , NRepA2-1
-              do ja1 = 0 , NRepA1-1
-               ph = wq(iq) * cdexp(zmPi2 * &
-                    ( (ia1-ja1)*qb(1,iq) + (ia2-ja2)*qb(2,iq) ))
-
+             do ja2 = 1 , NRepA2
+              do ja1 = 1 , NRepA1
+               ph = wq(iq) * cdexp(dcmplx(0._dp, &
+                    (ia1-ja1)*qmPi(1,iq) + (ia2-ja2)*qmPi(2,iq) ) )
                do juo = 1 + lasto(jau-1) , lasto(jau)
                   jow = jow + 1
                   

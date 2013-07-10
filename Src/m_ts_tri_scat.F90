@@ -923,8 +923,8 @@ contains
     np = parts(Gf_tri)
 
     ! Which parts are needed
-    sPart  = which_part(Gf_tri,no_L+1)
-    ePart  = which_part(Gf_tri,nr-no_R)
+    sPart = which_part(Gf_tri,no_L+1)
+    ePart = which_part(Gf_tri,nr-no_R)
 
     if ( .not. UpdateDMCR ) then
        sPart = 1

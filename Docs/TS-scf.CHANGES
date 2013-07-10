@@ -1,4 +1,26 @@
 ----------------------------------------------------
+July 10, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-73
+Optimized GF.G.GF product and the expansion of the electrodes
+
+* Made the electrode repetition a bit faster by pre-calculating 
+  the qb * Pi 
+
+* Fully implemented a stand-alone version of the full column inversion
+  has been made. 
+  It does not do too many calculations and speeds up the calculation
+  by quite a bit when the second partition is much larger than necessary.
+
+* Cleaned code in m_ts_tri and removed a little dead code
+
+modified:
+  Src/Makefile
+  Src/m_trimat_invert.F90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_tri.F90
+  Src/m_ts_tri_scat.F90
+  Src/m_ts_trimat_invert.F90
+
+----------------------------------------------------
 July 8, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-72
 Improved logic in contour creation and added transiesta weight
 
