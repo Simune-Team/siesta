@@ -166,7 +166,7 @@ OBJS += intrinsic_missing.o geom_helper.o
 OBJS += create_Sparsity_SC.o create_Sparsity_Union.o
 OBJS += m_gauss_quad.o m_gauss_fermi.o
 OBJS += m_gauss_fermi_20.o m_gauss_fermi_18.o m_gauss_fermi_16.o
-OBJS += m_integrate.o
+OBJS += m_integrate.o m_mat_invert.o
 
 #--------------------------------------------------------------
 # FoX whatnot
@@ -597,6 +597,7 @@ m_iorho.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
 m_iostruct.o: alloc.o files.o m_mpi_utils.o parallel.o precision.o
 m_iostruct.o: siesta_geom.o sys.o units.o
 m_kinetic.o: precision.o
+m_mat_invert.o: alloc.o intrinsic_missing.o precision.o
 m_memory.o: memoryinfo.o parallel.o sys.o
 m_mpi_utils.o: precision.o sys.o
 m_new_dm.o: alloc.o atomlist.o class_Data2D.o
@@ -617,7 +618,8 @@ m_spin.o: alloc.o parallel.o precision.o
 m_stress.o: precision.o
 m_svd.o: precision.o
 m_timer.o: m_io.o m_walltime.o moreParallelSubs.o parallel.o precision.o sys.o
-m_trimat_invert.o: alloc.o class_TriMat.o intrinsic_missing.o precision.o
+m_trimat_invert.o: alloc.o class_TriMat.o intrinsic_missing.o m_mat_invert.o
+m_trimat_invert.o: precision.o
 m_ts_Sparsity2TriMat.o: alloc.o class_Sparsity.o geom_helper.o
 m_ts_Sparsity2TriMat.o: intrinsic_missing.o m_ts_electype.o m_ts_options.o
 m_ts_Sparsity2TriMat.o: parallel.o precision.o
@@ -666,14 +668,17 @@ m_ts_sparse_helper.o: class_SpData1D.o class_Sparsity.o geom_helper.o
 m_ts_sparse_helper.o: intrinsic_missing.o parallel.o precision.o
 m_ts_tri.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_tri.o: class_SpData1D.o class_Sparsity.o class_TriMat.o
-m_ts_tri.o: create_Sparsity_Union.o m_trimat_invert.o m_ts_Sparsity2TriMat.o
-m_ts_tri.o: m_ts_cctype.o m_ts_contour.o m_ts_debug.o m_ts_dm_update.o
-m_ts_tri.o: m_ts_elec_se.o m_ts_electype.o m_ts_gf.o m_ts_kpoints.o
-m_ts_tri.o: m_ts_options.o m_ts_sparse.o m_ts_sparse_helper.o m_ts_tri_scat.o
-m_ts_tri.o: m_ts_trimat_invert.o m_ts_weight.o parallel.o precision.o units.o
+m_ts_tri.o: create_Sparsity_Union.o m_mat_invert.o m_trimat_invert.o
+m_ts_tri.o: m_ts_Sparsity2TriMat.o m_ts_cctype.o m_ts_contour.o m_ts_debug.o
+m_ts_tri.o: m_ts_dm_update.o m_ts_elec_se.o m_ts_electype.o m_ts_gf.o
+m_ts_tri.o: m_ts_kpoints.o m_ts_options.o m_ts_sparse.o m_ts_sparse_helper.o
+m_ts_tri.o: m_ts_tri_scat.o m_ts_trimat_invert_old.o m_ts_weight.o parallel.o
+m_ts_tri.o: precision.o units.o
 m_ts_tri_scat.o: alloc.o class_TriMat.o intrinsic_missing.o m_trimat_invert.o
-m_ts_tri_scat.o: m_ts_trimat_invert.o precision.o
-m_ts_trimat_invert.o: alloc.o class_TriMat.o intrinsic_missing.o precision.o
+m_ts_tri_scat.o: m_ts_trimat_invert_old.o precision.o
+m_ts_trimat_invert.o: alloc.o class_TriMat.o intrinsic_missing.o m_mat_invert.o
+m_ts_trimat_invert.o: precision.o
+m_ts_trimat_invert_old.o: class_TriMat.o m_trimat_invert.o precision.o
 m_ts_voltage.o: m_ts_electype.o m_ts_options.o mesh.o parallel.o parallelsubs.o
 m_ts_voltage.o: precision.o sys.o units.o
 m_ts_weight.o: class_OrbitalDistribution.o class_SpData1D.o class_Sparsity.o
@@ -980,6 +985,7 @@ m_state_init.o: state_init.o
 m_struct_init.o: struct_init.o
 m_timestamp.o: timestamp.o
 m_ts_init.o: ts_init.o
+m_ts_trimat_invert.o: m_ts_trimat_invert_old.o
 m_vmat.o: vmat.o
 m_xyz_phiatm.o: matel.o
 m_zm_broyden_optim.o: zm_broyden_optim.o

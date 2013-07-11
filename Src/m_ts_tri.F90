@@ -256,6 +256,7 @@ contains
     use m_trimat_invert, only : clear_TriMat_inversion
 
     use m_ts_trimat_invert
+    use m_mat_invert
 
     use m_ts_cctype
 
@@ -463,6 +464,9 @@ contains
 
     call newzTriMat(GF_tri,tri_parts,tri_part,'GF')
     Is_Volt_TriMat = .false.
+
+    ! initialize the matrix inversion tool
+    call init_mat_inversion(maxval(tri_part))
 
     ! Allocate the left-right electrode quantities that we need
     allocate(HAAL(no_L_HS,no_L_HS,Rep(ElLeft)))
@@ -959,6 +963,7 @@ contains
     if ( IsVolt ) then
        call clear_BiasTriMat_inversion()
     end if
+    call clear_mat_inversion()
 
     ! I would like to add something here which enables 
     ! 'Transiesta' post-process

@@ -48,6 +48,7 @@ module m_ts_trimat_invert
 contains
 
   subroutine invert_BiasTriMat(UpdateDMCR,M,Minv,no)
+    use m_mat_invert
     use intrinsic_missing, only : EYE
 
     ! If we only need the middle part of the Gf^-1
@@ -183,11 +184,8 @@ contains
     if ( n < np) sNp1 = nrows_g(M,n+1)
     if ( sN > abs(no) ) call die('This system we cannot handle')
 
-    Mp    => work_array(Minv,no,sN**2)
-    Mpinv => val(M,n,n)
-    ! Copy over Ann (we output the inverted matrix in M (not in Minv)
-    Mp(:) = Mpinv(:)
-    call EYE(sN,Mpinv)
+    Mpinv => work_array(Minv,no,sN**2)
+    Mp    => val(M,n,n)
     
     if ( n == 1 ) then
        ! First we calculate M11^-1
@@ -215,9 +213,7 @@ contains
 
     end if
 
-    ! Calculate Mnn^-1
-    call zgesv(sN,sN,Mp,sN,ipiv,Mpinv,sN,ierr)
-    if ( ierr /= 0 ) call die('Error on inverting Mnn^-1')
+    call mat_invert(Mp,Mpinv,sN)
 
     fullMinv => val(M)
 
@@ -405,7 +401,7 @@ contains
        end do
 
     end if
-    
+
     call timer('V_TM_inv',2)
 
   end subroutine invert_BiasTriMat

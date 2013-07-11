@@ -1,4 +1,25 @@
 ----------------------------------------------------
+July 11, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-74
+Added an inverter which speeds up the direct inversion a little
+
+* A recursive algorithm for inverting a matrix has been built in, it
+  takes a matrix, partitions it into 3-diagonal and calculates the
+  inverse, then reconstructing the full inverted matrix afterwards.
+  It has a hard-coded size limit of 40 so that for matrices smaller
+  than this number it will use zgesv.
+  It is used in the inversion of the tri-diagonal parts.
+  As it is only used to invert the diagonal matrices
+  it should not come near any singular valued matrices.
+
+added:
+  Src/m_mat_invert.F90
+modified:
+  Src/Makefile
+  Src/m_trimat_invert.F90
+  Src/m_ts_tri.F90
+  Src/m_ts_trimat_invert.F90
+
+----------------------------------------------------
 July 10, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-73
 Optimized GF.G.GF product and the expansion of the electrodes
 
