@@ -49,7 +49,6 @@ contains
 
   subroutine invert_BiasTriMat(UpdateDMCR,M,Minv,no)
     use m_mat_invert
-    use intrinsic_missing, only : EYE
 
     ! If we only need the middle part of the Gf^-1
     logical, intent(in) :: UpdateDMCR
@@ -184,8 +183,8 @@ contains
     if ( n < np) sNp1 = nrows_g(M,n+1)
     if ( sN > abs(no) ) call die('This system we cannot handle')
 
-    Mpinv => work_array(Minv,no,sN**2)
-    Mp    => val(M,n,n)
+    ! Retrieve Ann
+    Mp => val(M,n,n)
     
     if ( n == 1 ) then
        ! First we calculate M11^-1
@@ -213,7 +212,9 @@ contains
 
     end if
 
-    call mat_invert(Mp,Mpinv,sN)
+    ! Calculate Mnn^-1
+    Mpinv => work_array(Minv,no,sN**2)
+    call mat_invert(Mp,Mpinv,sN, method = MI_IN_PLACE_LAPACK )
 
     fullMinv => val(M)
 

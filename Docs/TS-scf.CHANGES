@@ -1,4 +1,55 @@
 ----------------------------------------------------
+July 12, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-75
+Made the matrix inversion generic and removed unneeded integration schemes
+
+* A generic matrix inverter is used for inverting matrices. Currently it has
+  3 options:
+   1) Invert in-place using lapack (getrf -> getri)
+   2) Invert to work using lapack (gesv)
+   3) Invert using the recursive algorithm
+
+* As I did not risk any singular sub-matrices of the Hamiltonian the recursive
+  algorithm is not used anywhere.
+
+* Cleaned up in the available contour integration methods.
+  We will not allow a Chebyshev algorithm as that is not nearly as precise due to
+  weight contributions not reflecting the structure of the weight function properly.
+
+* Added the transiesta mixing change when reading in from TSDE
+
+* Removed obsolete csolve routines from m_ts_aux
+
+* Changed the default composite line integral to Simpsons rules. Basically because
+  these impose a lower degree polynomial and if the derivative of the product explodes
+  the Simpson rules are more precise.
+  If one expects a rapidly osciallating function in the interval the mid-rule could
+  be preferred with high density of points.
+
+* Changed the logic from switching from diagon to transiesta.
+  We now do this:
+
+    1. Do a final mix according to a regular continuation
+    2. Change mixing parameters
+    3. Initialize the pulay mixers
+    4. Continue transiesta cycle
+
+  Thus the density matrix and Hamiltonian will be the next mixed set of matrices.
+  This meant a slight change in the transiesta switch check.
+
+* Corrected a small write-out for the scf info in write_subs
+
+modified:
+  Src/Makefile
+  Src/m_mat_invert.F90
+  Src/m_new_dm.F90
+  Src/m_trimat_invert.F90
+  Src/m_ts_aux.F90
+  Src/m_ts_contour.f90
+  Src/m_ts_trimat_invert.F90
+  Src/siesta_forces.F
+  Src/write_subs.F
+
+----------------------------------------------------
 July 11, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-74
 Added an inverter which speeds up the direct inversion a little
 

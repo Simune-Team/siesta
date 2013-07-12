@@ -220,7 +220,8 @@
                                 ! to place the electrodes and scattering region energy
                                 ! levels at the appropriate relative position, so it is
                                 ! stored in the TSDE file.
-      use m_ts_options,   only : TSmode, ImmediateTSmode
+      use m_ts_options,   only : TSmode, ImmediateTSmode, ts_wmix
+      use siesta_options, only : wmix
 #endif /* TRANSIESTA */
 
       implicit          none
@@ -241,11 +242,12 @@
       integer :: nspin_read
       real(dp), pointer              :: Dscf(:,:)
       integer, pointer, dimension(:) :: numh, listhptr, listh
-      type(dSpData2D)                 :: DMread
-      type(dData2D)                 :: dm_a2d
+      type(dSpData2D)                :: DMread
+      type(dData2D)                  :: dm_a2d
 #ifdef TRANSIESTA
       logical                        :: tsde_found
-      type(dSpData2D)                 :: EDMread
+      type(dSpData2D)                :: EDMread
+      real(dp)                       :: tmp 
 #endif
 
 ! Try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
@@ -361,6 +363,12 @@
              if (ionode) print *, "EDMread after reading file:"
              if (ionode) call print_type(EDMread)
              Escf => val(EDM)
+
+             ! Correct the mixing weight for transiesta
+             ! we have read in a TSDE file
+             tmp     = wmix
+             wmix    = ts_wmix
+             ts_wmix = tmp
           else
              ! Escf remains associated to old EDM
           endif

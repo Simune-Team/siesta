@@ -4,19 +4,66 @@ module m_mat_invert
   
   implicit none
 
+  private
+
+  public :: mat_invert
+  public :: init_mat_inversion
+  public :: clear_mat_inversion
+
+  ! This generic inversion module can perform 3 different kinds of inversions on square matrices
+  ! 1) Invert in-place
+  !  a) use LAPACK
+  !  b) partition the matrix into 4 parts and do recursive inversion
+  ! 2) Invert to work array
+
+  integer, public, parameter :: MI_IN_PLACE_LAPACK = 1
+  integer, public, parameter :: MI_IN_PLACE_RECURSIVE = 2
+  integer, public, parameter :: MI_WORK = 3
+
   ! The maximum dimensionality of the problem before we turn to a direct inversion algorithm
-  integer, private :: N_MAX = 40
-  integer, private, save :: Npiv
-  integer, private, save, pointer :: ipiv(:) => null()
+  integer :: N_MAX = 40
+  integer, save :: Npiv = 0
+  integer, save, pointer :: ipiv(:) => null()
 
   ! Used for BLAS calls (local variables)
-  complex(dp), private, parameter :: z0  = dcmplx( 0._dp, 0._dp)
-  complex(dp), private, parameter :: z1  = dcmplx( 1._dp, 0._dp)
-  complex(dp), private, parameter :: zm1 = dcmplx(-1._dp, 0._dp)
+  complex(dp), parameter :: z0  = dcmplx( 0._dp, 0._dp)
+  complex(dp), parameter :: z1  = dcmplx( 1._dp, 0._dp)
+  complex(dp), parameter :: zm1 = dcmplx(-1._dp, 0._dp)
 
 contains
 
-  recursive subroutine mat_invert(M, zwork, no)
+  subroutine mat_invert(M,zwork,no,method)
+    use intrinsic_missing, only : EYE
+    complex(dp), pointer :: M(:), zwork(:)
+    integer, intent(in) :: no ! Size of problem
+    integer, intent(in), optional :: method
+
+    integer :: lmethod, ierr
+    
+    lmethod = MI_IN_PLACE_LAPACK
+    if ( present(method) ) lmethod = method
+
+    if ( Npiv < no ) call die('Pivoting arrays not initialized')
+
+    select case ( lmethod )
+    case (  MI_IN_PLACE_LAPACK ) 
+       call zgetrf(no, no, M, no, ipiv, ierr )
+       if ( ierr/=0 ) call die('Error in LU-decomposition')
+       call zgetri(no, M, no, ipiv, zwork, no**2, ierr)
+       if ( ierr/=0 ) call die('Error in inversion')
+    case ( MI_IN_PLACE_RECURSIVE ) 
+       call mat_invert_recursive(M,zwork,no)
+    case ( MI_WORK )
+       call EYE(no,zwork)
+       call zgesv(no,no,M,no,ipiv,zwork,no,ierr)
+       if ( ierr/=0 ) call die('Error in inversion')
+    case default
+       call die('Unknown type of inversion')
+    end select
+
+  end subroutine mat_invert
+
+  recursive subroutine mat_invert_recursive(M, zwork, no)
     use intrinsic_missing, only : EYE
     complex(dp), pointer :: M(:), zwork(:)
     integer, intent(in) :: no ! Size of problem
@@ -33,20 +80,7 @@ contains
     ! invert the matrix
 
     if ( no <= N_MAX ) then
-       idx = 0
-       do j = 1 , no 
-          do i = 1 , no 
-             idx = idx + 1
-             zwork(idx) = M(idx)
-             if ( i == j ) then
-                M(idx) = z1
-             else
-                M(idx) = z0
-             end if
-          end do
-       end do
-       call zgesv(no,no,zwork,no,ipiv,M,no,i)
-       if ( i /= 0 ) call die('Error on inverting M')
+       call mat_invert(M,zwork,no, method = MI_IN_PLACE_LAPACK )
        return
     end if
 
@@ -220,16 +254,14 @@ contains
        end do
     end do
 
-  end subroutine mat_invert
+  end subroutine mat_invert_recursive
 
 
   ! We initialize the pivoting array for rotating the inversion
   subroutine init_mat_inversion(no)
     use alloc, only : re_alloc
     integer, intent(in) :: no
-    Npiv = no / 2
-    Npiv = max(no-Npiv,Npiv)
-    Npiv = max(N_MAX,Npiv)
+    Npiv = no
 
     ! Allocate space for the pivoting array
     call re_alloc(ipiv,1, Npiv, &

@@ -15,55 +15,7 @@ module m_ts_aux
 
 contains
   
-  subroutine csolve(N,A,B,ipvt,ierr)
-
-! INPUT
-    integer, intent(in) :: N ! problem size
-    complex(dp), intent(inout) :: A(N,N)
-
-! INPUT/OUTPUT
-    complex(dp), intent(inout) :: B(N,N)
-
-! OUTPUT
-    integer :: ipvt(N)           !pivoting vector
-    integer :: ierr              ! error in inversion
-! helpers, tempos ...
-    call  csolveg(N,N,A,B,ipvt,ierr)
-
-  end subroutine csolve
-
-
-  subroutine csolveg(N,NRHS,A,B,ipvt,ierr)
-      
-! Finds the solution to a general complex N x N matrix equation by calling
-! lapack or ESSL.
-!
-!     A.X = B;   returns X = Inv(A).B
-!
-
-! INPUT
-    integer, intent(in) :: N, NRHS ! problem size
-    complex(dp), intent(inout) :: A(N,N)
-
-! INPUT/OUTPUT
-    complex(dp), intent(inout) ::  B(N,NRHS)
-
-! OUTPUT
-    integer, intent(out) :: ipvt(N)           !pivoting vector
-    integer, intent(out) :: ierr
-
-! ESSL: 
-!      CALL zgef(A,N,N,ipvt) ! factorize A for inv.
-!      CALL zgesm('N',A,N,N,ipvt,B,N,N) ! inversion
-! -----------
-! LAPACK:
-    CALL zgesv(N,NRHS,A,N,ipvt,B,N,ierr)
-    
-  end subroutine csolveg
-
-!
-!     Fermi Function
-!
+  ! Fermi Function
   elemental function nf_z(z) result(nf)
     complex(dp), intent(in) :: z
     complex(dp) :: nf

@@ -203,12 +203,11 @@
         ts_will_continue = .false.
         if (SCFconverged) then
            call check_transiesta_switch(ts_will_continue)
-           if (ts_will_continue) then
-              ! Reset counter, ensures MinSCFIterations
-              iscf = 0
-              ! keep in cycle
-           else
-              if (mix_after_convergence) call mixer (iscf) 
+           if ( .not. ts_will_continue) then
+              if ( mix_after_convergence ) then
+                 ! Should we do setup_hamiltonian if mixH?
+                 call mixer (iscf)
+              end if
               EXIT
               ! Note: we exit with:
               ! If mixing the DM:
@@ -221,46 +220,33 @@
         ! This is formally part of the next SCF step
         ! only done if we are not converged
 
-
         call timer( 'IterSCF', 1 )
         if (cml_p) call cmlStartStep(mainXML)
 
-        if ( ts_will_continue ) then
+        if (mixH) then
+           call setup_hamiltonian( iscf ) ! Gets H_out (H) and keeps H_in (Hold)
+           call compute_max_diff(Hold,H,dHmax)
+           call mixer (iscf)    ! Mixes H_in and H_out to give H_in_next
+        else
+           call mixer (iscf)    ! Mixes DM_in and DM_out to give DM_in_next
+           call setup_hamiltonian (iscf) ! Gets H_in_next from DM_in_next, and E_KS(DM_in)
+           call compute_max_diff(Hold,H,dHmax)
+        endif
+
 #ifdef TRANSIESTA
+        if ( ts_will_continue ) then
            ! As transiesta is a "new" solution method we should in principle
            ! have two SCF loops. So we will never mix before entering 
            ! transiesta.
+           
+           call init_transiesta_switch()
+           
+           ! Initialize the SCF counters
+           TSiscf = 0
+           iscf = 0
 
-           ! We still need to normalize the just computed DM
-           ! This is controlled by TSrun
-           ts_will_continue = TSrun
-           TSrun = .false.
-
-           ! The iscf constant is only used to control a message in
-           ! normalize_dm
-           call setup_hamiltonian (iscf) ! Gets H_in_next from DM_in_next, and E_KS(DM_in)
-           call compute_max_diff(Hold,H,dHmax)
-
-           TSrun = ts_will_continue
-
-           ! We need to retain the same arrays for the following iteration.
-           ! This will mean that we ensure a "fresh" start with transiesta
-           Dold(:,:) = Dscf(:,:)
-           Hold(:,:) = H   (:,:)
-#else
-           call die('This should never occur. Transiesta error.')
-#endif
-        else 
-           if (mixH) then
-              call setup_hamiltonian( iscf ) ! Gets H_out (H) and keeps H_in (Hold)
-              call compute_max_diff(Hold,H,dHmax)
-              call mixer (iscf) ! Mixes H_in and H_out to give H_in_next
-           else
-              call mixer (iscf) ! Mixes DM_in and DM_out to give DM_in_next
-              call setup_hamiltonian (iscf) ! Gets H_in_next from DM_in_next, and E_KS(DM_in)
-              call compute_max_diff(Hold,H,dHmax)
-           endif
         end if
+#endif
 
         ! Save mixed DM (and maybe H later) here for restarts
         call save_density_matrix("mixed")
@@ -295,61 +281,61 @@
 
       subroutine check_transiesta_switch(ts_continues_GF)
 
-      use precision,             only: dp
-      use sparse_matrices,       only: H, Hold, Dscf, Dold, maxnh
-      use m_spin,                only: nspin
-      use siesta_options,        only: wmix
 #ifdef TRANSIESTA
-      use m_ts_global_vars,      only: TSinit, TSrun, TSiscf
-      use m_ts_options,          only: TSmode, ts_wmix
-      use m_pulay,               only: init_pulay_arrays
-      use parallel,              only: IONode
-#endif /* TRANSIESTA */
+      use m_ts_global_vars, only: TSinit
+      use m_ts_options,     only: TSmode   
+#endif
 
       logical, intent(out) :: ts_continues_GF
-      real(dp) :: tmp
 
 #ifndef TRANSIESTA
       ! We are not compiled as TranSiesta
       ! Nothing else to do in the loop.
       ts_continues_GF = .false.
 #else
-      ts_continues_GF = .false.
+      ts_continues_GF = (TSmode .and. TSinit)
+#endif /* TRANSIESTA */
 
-      if (TSmode .and. TSinit) then
+      end subroutine check_transiesta_switch
 
-         ! We're  done with the initial diagon run
-         ! Now we start the TRANSIESTA (Green's Functions) run
+#ifdef TRANSIESTA
+      subroutine init_transiesta_switch()
 
-         TSinit = .false. 
-         TSrun = .true.
-         TSiscf = 0
+      use precision,             only: dp
+      use siesta_options,        only: wmix
+      use m_ts_global_vars,      only: TSinit, TSrun
+      use m_ts_options,          only: ts_wmix
+      use m_pulay,               only: init_pulay_arrays
+      use parallel,              only: IONode
 
-         ts_continues_GF = .true.
+      real(dp) :: tmp
 
-         ! DANGER (when going back to the DIAGON run, we should re-instantiate
-         ! the original mixing value
-         tmp = wmix
-         wmix = ts_wmix
-         ts_wmix = tmp
+      ! We're  done with the initial diagon run
+      ! Now we start the TRANSIESTA (Green's Functions) run
 
-         !
-         ! From now on, a new mixing cycle starts,
-         ! so we have to reset the Pulay record keeping
-         !
-         call init_pulay_arrays() 
+      TSinit = .false. 
+      TSrun  = .true.
+      
+      ! DANGER (when going back to the DIAGON run, we should re-instantiate
+      ! the original mixing value
+      tmp     = wmix
+      wmix    = ts_wmix
+      ts_wmix = tmp
+      
+      ! From now on, a new mixing cycle starts,
+      ! so we have to reset the Pulay record keeping
+      call init_pulay_arrays() 
 
-         if(IONode) then
-           write(6,'(/a)')
+      if(IONode) then
+         write(6,'(/a)')
      &'                          ************************       '
-           write(6,'(a)')
+         write(6,'(a)')
      &'                          *   TRANSIESTA BEGIN   *       '
-           write(6,'(a)')
+         write(6,'(a)')
      &'                          ************************       '
-         end if
       end if
 
-#endif /* TRANSIESTA */
-      end subroutine check_transiesta_switch
+      end subroutine init_transiesta_switch
+#endif
 
       END module m_siesta_forces

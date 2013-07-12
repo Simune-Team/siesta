@@ -168,14 +168,6 @@ contains
        end if
     end if
 
-    if ( IONode ) then
-       if ( C_G_NF_END == huge(1) ) then
-          write(*,opt_char) 'Gauss-Fermi infinite integral truncation','inifinity'
-       else
-          write(*,opt_int) 'Gauss-Fermi infinite integral truncation',C_G_NF_END
-       end if
-    end if
-
     ! ******* default setup finished ********
     ! We have now setup the default parameters for the contour method
     ! Lets read in what the user requests.
@@ -200,8 +192,6 @@ contains
     chars = fdf_get('TS.Contour.Eq.Circle.Method','G-Legendre')
     if ( leqi(chars,'g-legendre') ) then
        C_Eq_Circle = CC_TYPE_G_LEGENDRE
-    else if ( leqi(chars,'g-chebyshev-open') ) then
-       C_Eq_Circle = CC_TYPE_G_CHEBYSHEV_O
     else
        call die('Unrecognized eq. circle integration &
             &scheme: '//trim(chars))
@@ -243,8 +233,6 @@ contains
           end if
 
           ! The default is already the Gauss-Fermi quadrature (DEFAULT)
-       else if ( leqi(chars(i:),'g-laguerre') ) then
-          C_Eq_Line_tail = CC_TYPE_G_LAGUERRE
        else
           call die('Unrecognized equilibrium tail integration &
                &scheme: '//trim(chars(i:)))
@@ -262,8 +250,6 @@ contains
        C_Eq_Line_bottom = CC_TYPE_G_NF_0kT
     else if ( leqi(chars(:i),'g-legendre') ) then
        C_Eq_Line_bottom = CC_TYPE_G_LEGENDRE
-    else if ( leqi(chars(:i),'g-chebyshev-open') ) then
-       C_Eq_Line_bottom = CC_TYPE_G_CHEBYSHEV_O
     else if ( leqi(chars(:i),'simpson-mix') ) then
        C_Eq_Line_bottom = CC_TYPE_SIMP_MIX
     else if ( leqi(chars(:i),'boole-mix') ) then
@@ -395,7 +381,7 @@ contains
        C_nEq_split  = i * kT
        C_nEq_tail   = CC_TYPE_G_NF_0kT + i
 
-       ! The middle method is still BOOLE_MIX
+       ! The middle method is still SIMP_MIX
        
     end if
 
@@ -419,7 +405,7 @@ contains
        end if
     end if
     
-    chars = fdf_get('TS.Contour.nEq.Method','g-fermi+boole-mix')
+    chars = fdf_get('TS.Contour.nEq.Method','g-fermi+simpson-mix')
     ! Figure out if there is a + in the string
     i = index(chars,'+')
     if ( i == 1 ) call die('Non-equilibrium contour method cannot be prefixed &
@@ -429,8 +415,6 @@ contains
        i = i + 1
        if ( leqi(chars(i:),'g-legendre') ) then
           C_nEq_mid = CC_TYPE_G_LEGENDRE
-       else if ( leqi(chars(i:),'g-chebyshev-open') ) then
-          C_nEq_mid = CC_TYPE_G_CHEBYSHEV_O
        else if ( leqi(chars(i:),'simpson-mix') ) then
           C_nEq_mid = CC_TYPE_SIMP_MIX
        else if ( leqi(chars(i:),'boole-mix') ) then
@@ -453,8 +437,6 @@ contains
     if ( leqi(chars(1:i),'g-fermi') .or. &
          leqi(chars(1:i),'gaussfermi') ) then
        ! This is already the default and has been initialized (DEFAULT)
-    else if ( leqi(chars(1:i),'g-laguerre') ) then
-       C_nEq_tail = CC_TYPE_G_LAGUERRE
     else if ( leqi(chars(1:i),'sommerfeld') ) then
        C_nEq_tail = CC_TYPE_SOMMERFELD
        C_nEq_mid = CC_TYPE_SOMMERFELD
@@ -506,7 +488,7 @@ contains
           write(*,*) "          - TS.Contour.Eq.Line.<Bottom|Tail>.N"
           write(*,*) "          - TS.Contour.Eq.Pole.N"
 
-             ! Calculate optimal number of energy points
+          ! Calculate optimal number of energy points
           i = 2*i
           write(*,'(t10,a,i4)') "Used equilibrium # of energy points   : ",i
           i = Nodes .PARCOUNT. i
@@ -669,16 +651,6 @@ contains
              call GaussFermi_16kT(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
           end if
 
-       case ( CC_TYPE_G_LAGUERRE )
-          
-          call Gauss_Laguerre_GW(C_nEq_tail_N, x(Net),w(Net), &
-               a=C_nEq_split)
-
-          ! The Gauss-Laguerre is pure in the limit of 
-          ! large energy, hence it makes sense to deal with it like that
-
-          call die('not fully implemented')
-
        case default
           if ( IONode ) &
                write(*,*) 'ERROR: Contour not defined'
@@ -840,12 +812,6 @@ contains
              call GaussFermi_16kT(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
           end if
 
-       case ( CC_TYPE_G_LAGUERRE )
-          ! We retain it to be pure...
-          call Gauss_Laguerre_GW(C_Eq_Line_tail_N,x,w,a=C_Eq_Line_split/kT)
-          ! ...hence we need to multiply the weights by 
-          w(:) = w(:)/(1._dp + exp(-x(:)-C_Eq_Line_split/kT))
-
        case default 
           call die('Nothing could be deciphered from the Eq. tail contour method')
        end select
@@ -933,19 +899,6 @@ contains
     select case ( C_Eq_Circle )
     case ( CC_TYPE_G_LEGENDRE )
        call Gauss_Legendre_Rec(C_Eq_Circle_N, 0, beta, Pi, x, w)
-
-    case ( CC_TYPE_G_CHEBYSHEV_O )
-       ! We switch the integration bounds and change the sign of the weight
-       ! this will give the correct path when out-put
-       call Gauss_Chebyshev_Exact(C_Eq_Circle_N, x, w, a=beta, b=Pi, &
-            method=1, pure=.false.)
-
-    case ( CC_TYPE_G_CHEBYSHEV_C )
-       ! We switch the integration bounds and change the sign of the weight
-       ! this will give the correct path when out-put
-       call Gauss_Chebyshev_Exact(C_Eq_Circle_N, x, w, a=beta, b=Pi, &
-            method=0, pure=.false.)
-
     case default
        call die('Unrecognized contour for the equilibrium circle')
     end select
@@ -1078,39 +1031,9 @@ contains
 
        call Mid_Rule(NEn,x,w,E1,e2)
 
-    case ( CC_TYPE_LEFT )
-
-       ! set boundaries for gaussian quadrature
-       delta = (E2 - E1)/real(NEn,dp)
-       do i = 1 , NEn
-          ! move into the middle of the current segment
-          x(i) = E1 + delta * real(i-1,dp)
-          w(i) = delta
-       end do
-
-    case ( CC_TYPE_RIGHT )
-
-       ! set boundaries for gaussian quadrature
-       delta = (E2 - E1)/real(NEn,dp)
-       do i = 1 , NEn
-          ! move into the middle of the current segment
-          x(i) = E1 + delta * real(i,dp)
-          w(i) = delta
-       end do
-
     case ( CC_TYPE_G_LEGENDRE ) 
 
        call Gauss_Legendre_Rec(NEn, 0, E1, E2, x, w)
-
-    case ( CC_TYPE_G_CHEBYSHEV_O ) 
-
-       call Gauss_Chebyshev_Exact(NEn, x, w, &
-            a=E1, b=E2, method=1, pure=.false.)
-
-    case ( CC_TYPE_G_CHEBYSHEV_C ) 
-
-       call Gauss_Chebyshev_Exact(NEn, x, w, &
-            a=E1, b=E2, method=0, pure=.false.)
 
     case default
        call die('Could not determine the non-equilibrium line contour')
@@ -1185,7 +1108,7 @@ contains
 
     ! Determine the optimal Gauss-Fermi curve
     ! If the bias is larger than 10 * kT then we can select from [-5kT;inf]
-    ! almost without-overlap
+    ! almost without overlap
     if ( VkT > 5._dp ) then
        ! we default to select -5kT (the fermi function is almost zero there)
        GF_N_kT = -5
@@ -1210,7 +1133,7 @@ contains
     if ( GF_N_kT > 0 ) then
        ! When extending the integral into the positive region
        ! it will be better to allow the full range to be divided
-       deltaN = (VkT + GF_N_kT) / real(NEn,dp)
+       deltaN = (VkT + GF_N_kT/2) / real(NEn,dp)
        Ntail = nint(GF_N_kT/deltaN)
     else
        Ntail = nint(real(abs(GF_N_kT),dp)/deltaN)
@@ -1437,7 +1360,7 @@ contains
              write(unit,*)
              part = contour(i)%part
           end if
-          write(unit,'(4(f12.6,tr1))') contour(i)%c/eV,contour(i)%w
+          write(unit,'(4(e13.6,tr1))') contour(i)%c/eV,contour(i)%w
        end do
        call io_close( unit )
     end if

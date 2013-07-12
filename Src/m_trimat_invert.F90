@@ -136,8 +136,7 @@ contains
   end subroutine invert_TriMat
 
   subroutine calc_Mnn_inv(M,Minv,n)
-    use intrinsic_missing, only : EYE
-use m_mat_invert
+    use m_mat_invert
     type(zTriMat), intent(inout) :: M, Minv
     integer, intent(in) :: n
     ! Local variables
@@ -149,12 +148,8 @@ use m_mat_invert
                         sN   = nrows_g(M,n)
     if ( n < parts(M) ) sNp1 = nrows_g(M,n+1)
     
-Mp    => val(Minv,n,n)
-Mpinv => val(M,n,n)
-Mp(:) = Mpinv(:)
-!    Mp    => val(M,n,n)
-!    Mpinv => val(Minv,n,n)
-!    call EYE(sN,Mpinv)
+    ! Retrieve Ann
+    Mp => val(M,n,n)
     
     if ( n == 1 ) then
        ! First we calculate M11^-1
@@ -194,10 +189,9 @@ Mp(:) = Mpinv(:)
   
     end if
 
-call mat_invert(Mp,Mpinv,sN)
-!    ! Calculate Mnn^-1
-!    call zgesv(sN,sN,Mp,sN,ipiv,Mpinv,sN,ierr)
-!    if ( ierr /= 0 ) call die('Error on inverting Mnn^-1')
+    ! Retrive the position in the inverted matrix
+    Mpinv => val(Minv,n,n)
+    call mat_invert(Mp,Mpinv,sN,method = MI_WORK )
 
   end subroutine calc_Mnn_inv
 
