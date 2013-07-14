@@ -192,6 +192,8 @@ contains
     chars = fdf_get('TS.Contour.Eq.Circle.Method','G-Legendre')
     if ( leqi(chars,'g-legendre') ) then
        C_Eq_Circle = CC_TYPE_G_LEGENDRE
+    else if ( leqi(chars,'tanh-sinh') ) then
+       C_Eq_Circle = CC_TYPE_TANH_SINH
     else
        call die('Unrecognized eq. circle integration &
             &scheme: '//trim(chars))
@@ -250,6 +252,8 @@ contains
        C_Eq_Line_bottom = CC_TYPE_G_NF_0kT
     else if ( leqi(chars(:i),'g-legendre') ) then
        C_Eq_Line_bottom = CC_TYPE_G_LEGENDRE
+    else if ( leqi(chars(:i),'tanh-sinh') ) then
+       C_Eq_Line_bottom = CC_TYPE_TANH_SINH
     else if ( leqi(chars(:i),'simpson-mix') ) then
        C_Eq_Line_bottom = CC_TYPE_SIMP_MIX
     else if ( leqi(chars(:i),'boole-mix') ) then
@@ -422,6 +426,8 @@ contains
           C_nEq_mid = CC_TYPE_BOOLE_MIX
        else if ( leqi(chars(i:),'mid-rule') ) then
           C_nEq_mid = CC_TYPE_MID
+       else if ( leqi(chars(i:),'tanh-sinh') ) then
+          C_nEq_mid = CC_TYPE_TANH_SINH
        else
           call die('Unrecognized non-equilibrium integration &
                &scheme for the middle line: '//trim(chars(i:)))
@@ -899,6 +905,9 @@ contains
     select case ( C_Eq_Circle )
     case ( CC_TYPE_G_LEGENDRE )
        call Gauss_Legendre_Rec(C_Eq_Circle_N, 0, beta, Pi, x, w)
+    case ( CC_TYPE_TANH_SINH )
+       D = 1.2e-2_dp * R / real(C_Eq_Circle_N,dp)
+       call TanhSinh_Exact(C_Eq_Circle_N, x, w, beta, Pi, p=D)
     case default
        call die('Unrecognized contour for the equilibrium circle')
     end select
@@ -1034,6 +1043,10 @@ contains
     case ( CC_TYPE_G_LEGENDRE ) 
 
        call Gauss_Legendre_Rec(NEn, 0, E1, E2, x, w)
+
+    case ( CC_TYPE_TANH_SINH ) 
+
+       call TanhSinh_Exact(NEn, x, w, E1, E2, p=1.e-1_dp)
 
     case default
        call die('Could not determine the non-equilibrium line contour')

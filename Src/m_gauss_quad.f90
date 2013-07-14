@@ -23,15 +23,17 @@
 !  3) Gauss-Jacobi (Jacobi)
 !     Used for \int_a^b f(x)w(x)dx , w(x) = (b-x)^\alpha (x-a)^\beta
 !  4) Gauss-Chebyshev (Jacobi)
-!     Usef for \int_a^b f(x)w(x)dx , w(x) = \frac1{\sqrt{(b-x)(x-a)}}
+!     Used for \int_a^b f(x)w(x)dx , w(x) = \frac1{\sqrt{(b-x)(x-a)}}
 !  5) Gauss-Laguerre (Laguerre)
-!     Usef for \int_a^\infty f(x)w(x)dx , w(x) = e^{-x}
+!     Used for \int_a^\infty f(x)w(x)dx , w(x) = e^{-x}
 !  6) Gauss-Generalized-Laguerre (Laguerre)
-!     Usef for \int_a^\infty f(x)w(x)dx , w(x) = x^\alpha e^{-x}
+!     Used for \int_a^\infty f(x)w(x)dx , w(x) = x^\alpha e^{-x}
 !  7) Gauss-Hermite
-!     Usef for \int_{-\infty}^\infty f(x)w(x)dx , w(x) = e^{-x^2}
+!     Used for \int_{-\infty}^\infty f(x)w(x)dx , w(x) = e^{-x^2}
 !  8) Gauss-Tschebysheff
-!     Usef for \int_a^b f(x)w(x)dx , w(x) = \frac1{\sqrt{x(1-x)}}
+!     Used for \int_a^b f(x)w(x)dx , w(x) = \frac1{\sqrt{x(1-x)}}
+!  9) Tanh-Sinh
+!     Used for \int_a^b f(x)w(x)dx , w(x) = 1
 
 ! All can be solved using the Golub-Welsch algorithm.
 ! The routines for those are suffixed with GW
@@ -100,6 +102,7 @@ module m_gauss_quad
   public :: Gauss_Hermite_GW
   public :: Gauss_Chebyshev_Exact
   public :: Gauss_Chebyshev_GW
+  public :: TanhSinh_Exact
 
   ! Weights
   public :: w_Gauss_Chebyshev
@@ -157,6 +160,94 @@ contains
     call general_scale(N,x,w,a=a,b=b)
     
   end subroutine Gauss_Legendre_NR
+
+  subroutine TanhSinh_Exact(N,x,w,a,b,p) 
+    integer, intent(in) :: N
+    real(dp), intent(out) :: x(N),w(N)
+    real(dp), intent(in), optional :: a, b, p
+
+    real(dp) :: lp, h, cp
+    real(dp) :: u1, u2, ch
+    real(dp) :: arg, cums, k
+    integer :: i, j
+    logical :: is_even
+
+    ! finite spacing so that the weight becomes
+    ! This is some arbitrary weight size 
+    ! I have tried for various values between 2 and 5 but 4 seems
+    ! to have the best properties, I am not sure whether this should
+    ! be a multiple of two
+    ! I have adapted this method instead as it provides some way
+    ! of controlling the precision of the integral.
+
+    lp = 1.e-4_dp
+    if ( present(p) ) lp = p
+
+    is_even = mod(N,2) == 0
+    if ( is_even ) then
+       j = N / 2 + 1
+    else
+       j = N / 2 + 2
+    end if
+
+    k = 32._dp
+    cp = lp - 1._dp
+    do while ( lp > cp )
+       h = 16._dp / k
+
+       ! Weight-sum
+       cums = 0._dp
+       do i = j , N
+          ! The argument for the TANH-SINH rule
+          arg = h * real(2*i-N-1,dp)
+          
+          u1 = .5_dp * Pi * cosh( arg )
+          u2 = .5_dp * Pi * sinh( arg )
+          ch = cosh( u2 ) ** 2
+
+          ! for correct normalization
+          cums = cums + u1 / ch
+
+       end do
+
+       ! we have a symmetric distribution
+       cums = 2._dp * cums
+
+       if ( .not. is_even ) then
+          ! Add the middle abscissa-weight
+          u1 = .5_dp * Pi * cosh( 0._dp )
+          u2 = .5_dp * Pi * sinh( 0._dp )
+          ch = cosh( u2 ) ** 2
+          ! for correct normalization
+          cums = cums + u1 / ch
+       end if
+
+       cums = 2._dp / cums
+
+       cp = u1 / ch * cums
+
+       k = k + 1._dp
+    end do
+
+    do i = 1 , N
+       ! The argument for the TANH-SINH rule
+       arg = h * real(2*i-N-1,dp)
+          
+       u1 = .5_dp * Pi * cosh( arg )
+       u2 = .5_dp * Pi * sinh( arg )
+       ch = cosh( u2 )
+          
+       ! Calculate the abscissa-weight pair
+       x(i) = 1._dp - 1._dp / ( exp( u2 ) * ch )
+       ! We immediately normalize the weight (remember that
+       ! cums was the sum 
+       w(i) = cums * u1 / ch ** 2
+
+    end do
+
+    call general_scale(N,x,w,a=a,b=b)
+    
+  end subroutine TanhSinh_Exact
 
 
 

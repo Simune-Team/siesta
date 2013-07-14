@@ -1,4 +1,18 @@
 ----------------------------------------------------
+July 14, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-76
+Added a Tanh-Sinh quadrature method which excells in the circle contour
+
+* A Tanh-Sinh quadrature method has been implemented which also deals
+  with w(x)=1 and thus is good for the circle contour.
+  It can be used for the line integrals (Eq. and nEq.) and the 
+  circle method.
+
+modified:
+  Src/m_gauss_quad.f90
+  Src/m_ts_cctype.f90
+  Src/m_ts_contour.f90
+
+----------------------------------------------------
 July 12, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-75
 Made the matrix inversion generic and removed unneeded integration schemes
 

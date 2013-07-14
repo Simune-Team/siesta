@@ -65,6 +65,7 @@ module m_ts_cctype
   integer, parameter :: CC_TYPE_G_LAGUERRE     = 106
   integer, parameter :: CC_TYPE_G_GEN_LAGUERRE = 107
   integer, parameter :: CC_TYPE_G_HERMITE      = 108
+  integer, parameter :: CC_TYPE_TANH_SINH      = 109
   integer, parameter :: CC_TYPE_SOMMERFELD     = 200
   integer, parameter :: CC_TYPE_SIMP_MIX       = 201
   integer, parameter :: CC_TYPE_BOOLE_MIX      = 202
@@ -163,6 +164,8 @@ contains
        str = 'G-Gen.Laguerre'
     case ( CC_TYPE_G_HERMITE )
        str = 'G-Hermite'
+    case ( CC_TYPE_TANH_SINH )
+       str = 'Tanh-Sinh'
     case ( CC_TYPE_SOMMERFELD )
        str = 'Sommerfeld'
     case ( CC_TYPE_SIMP_MIX )
@@ -214,6 +217,8 @@ contains
        str = 'Gauss-Generalized Laguerre'
     case ( CC_TYPE_G_HERMITE )
        str = 'Gauss-Hermite'
+    case ( CC_TYPE_TANH_SINH )
+       str = 'Tanh-Sinh'
     case ( CC_TYPE_SOMMERFELD )
        str = 'Sommerfeld'
     case ( CC_TYPE_SIMP_MIX )
