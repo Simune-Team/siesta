@@ -1207,9 +1207,7 @@ contains
                 end do
              end do
           end do
-#ifdef MPI
-          call MPI_Barrier(MPI_Comm_World, MPIerror)
-#endif
+
           call die("The electrodes are not situated in the same coordinates. &
                &Please correct.")
        end if
@@ -1242,8 +1240,8 @@ contains
        end do           !i
     end do              !ia in uc
     
-    mH          = -1._dp
-    uc_z        = 0
+    mH   = -1._dp
+    uc_z = 0
 
     do iuo = 1 , nuo
        do j = 1 , numh(iuo)

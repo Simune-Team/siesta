@@ -1,4 +1,13 @@
 ----------------------------------------------------
+July 14, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-77
+Bugfix for the error on the electrode positions
+
+* An MPI_Barrier was obstructing the die call
+
+modified:
+  Src/m_ts_electrode.f90
+
+----------------------------------------------------
 July 14, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-76
 Added a Tanh-Sinh quadrature method which excells in the circle contour
 
