@@ -1,4 +1,33 @@
 ----------------------------------------------------
+July 16, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-78
+Added the Cuthill-Mckee algorithm to optimize the BTD pattern
+
+* The Cuthill-Mckee algorithm has been implemented to 
+  optimize the tri-diagonal format for minimizing the 
+  bandwidth of the matrix to be inverted.
+  In case of TS.Analyze T it will be runned and it
+  prints out the pivoting of the arrays:
+  Like this:
+    From  ->    To
+      41  ->    37
+      42  ->    38
+      44  ->    39
+    ...
+
+  Notice that every number has to appear once on both sides.
+  If not it will be erroneous.
+  Furthermore notice that both indices are in the original
+  index and thus not a consecutive pivoting array.
+
+  For completeness sake it prints out the index change
+  for the left, central and the right part.
+
+modified:
+  Src/Makefile
+  Src/m_ts_sparse.F90
+  Src/state_init.F
+
+----------------------------------------------------
 July 14, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-77
 Bugfix for the error on the electrode positions
 

@@ -658,4 +658,270 @@ contains
 
   end subroutine ts_Sparsity_Subset_pointer
 
+  subroutine ts_Optimize(sp,na_u,lasto,na_L,na_R)
+    ! We return the pivoting indexes for the atoms
+    use class_Sparsity
+    use alloc, only : re_alloc, de_alloc
+    use parallel, only : IONode
+    ! This sparsity pattern must be a full one
+    type(Sparsity), intent(in out) :: sp
+    ! number of atoms in the cell, also the last orbitals of each
+    ! atom.
+    integer, intent(in) :: na_u, lasto(0:na_u)
+    ! The atoms which need not be accounted for (na_BufL/R + na_L/R)
+    integer, intent(in) :: na_L, na_R
+    ! The pivoting array
+    integer, pointer :: R(:)
+
+    integer, pointer :: a_mm(:,:)
+    integer, pointer :: l_col(:), ncol(:), tmp(:)
+
+    integer :: ptr
+    integer :: io, ia, iac, co1, co2
+
+    ! Retrieve the lists
+    call attach(sp,list_col=l_col,n_col=ncol)
+
+    nullify(a_mm,R,tmp)
+    call re_alloc(a_mm,1,na_u,1,na_u,routine='ts_Optimize', &
+         name='a_mm')
+    call re_alloc(R,1,na_u,routine='ts_Optimize', &
+         name='R')
+    call re_alloc(tmp,1,maxval(ncol),routine='ts_Optimize', &
+         name='tmp')
+
+    ! Initialize the connections
+    a_mm(:,:) = 0
+    a_mm(na_u,na_u) = 1
+    do ia = 1 , na_u - 1
+       ! Simultaneously set the pivoting array
+       R(ia) = ia
+
+       ! Of course the atom connects to itself
+       a_mm(ia,ia) = 1
+
+       ! The current atoms orbitals
+       co1 = lasto(ia-1) + 1
+       co2 = lasto(ia) - co1
+
+       do iac = ia + 1 , na_u
+          
+          ! search for connections
+          connection: do io = lasto(iac-1) + 1 , lasto(iac)
+             if ( ncol(io) == 0 ) cycle
+             ! Retrieve the pointer
+             ptr = list_ptr(sp,io)
+             tmp(ncol(io)+1:) = -1
+             tmp(1:ncol(io)) = l_col(ptr+1:ptr+ncol(io)) - co1
+             where ( tmp < 0 ) tmp = co2 + 1
+             if ( any(tmp(1:ncol(io)) <= co2) ) then
+                ! Create the connection to the other atoms
+                a_mm(ia,iac) = 1
+                a_mm(iac,ia) = 1
+                exit connection
+             end if
+          end do connection
+
+       end do
+
+    end do
+    R(na_u) = na_u
+
+    ! deallocate unused array
+    call de_alloc(tmp)
+
+    !if ( IONode ) then
+    !   do ia = 1 , na_u
+    !      write(*,'(i3,tr1)',advance='no') ia
+    !      write(*,'(1000(i0))') a_mm(ia,:)
+    !   end do
+    !end if
+    
+    ! Call the cuthill_Mckee algorithm
+    call Cuthill_Mckee(na_u, na_L, na_R, a_mm, R)
+
+    if ( IONode ) then
+       write(*,'(tr1,a)') 'transiesta: Tri-diagonal blocks can be &
+            &optimized by the following pivoting'
+
+       write(*,'(t5,a4,tr2,a2,tr2,a4)') 'From','->','To'
+       do ia = 1 , na_u
+          if ( ia /= R(ia) ) then
+             write(*,'(t5,i4,tr2,a2,tr2,i4)') R(ia),'->',ia
+          end if
+       end do
+       
+       ! this prints out the connection matrix, it is not
+       ! needed, but can be useful for debugging purposes
+       !do ia = 1 , na_u
+       !   write(*,'(i3,tr1)',advance='no') ia
+       !   write(*,'(1000(i0))') a_mm(ia,:)
+       !end do
+
+    end if
+           
+    call de_alloc(a_mm)
+    call de_alloc(R)
+
+  end subroutine ts_Optimize
+  
+  subroutine Cuthill_Mckee(na_u,na_L,na_R,a_mm,R)
+    ! We return the pivoting indexes for the atoms
+    use parallel, only : IONode
+    use alloc
+    ! number of atoms in the cell, also the last orbitals of each
+    ! atom.
+    integer, intent(in) :: na_u
+    ! The atoms which need not be accounted for (na_BufL/R + na_L/R)
+    integer, intent(in) :: na_L, na_R
+    integer, intent(in) :: a_mm(na_u,na_u)
+    integer, intent(inout) :: R(na_u)
+
+    integer, pointer :: Q(:)
+    integer :: na_S, na_E, na
+    integer :: ia, nQ, iQ, i_ca, ca
+    integer :: degree
+
+    na = na_u - na_L - na_R
+    na_S = na_L + 1
+    na_E = na_u - na_R
+
+    nullify(Q)
+    call re_alloc(Q,1,na,routine='Cuthill_Mckee', name='Q')
+
+    ! we can now perform the Cuthill-Mckee algorithm
+    ! Notice that we force the last atom in the electrode
+    ! to be in the result array (thus we force
+    ! the construction of the Cuthill-Mckee to start
+    ! with the electrode)
+
+    ! Prepare counters for the algorithm
+    i_ca = max(na_L,1)
+
+    ! the counter for the number of saved atoms
+    ca = 0
+
+    ! start the algorithm 
+    do while ( ca < na )
+
+       ! initialize the current node
+       ! remark that the first iteration fixes
+       ! the node building from the last atom
+       ! specified
+       nQ = 0
+       call add_Queue(na_u,a_mm,na_S,na_E,i_ca,Q,nQ)
+
+       ! loop the queed items
+       iQ = 0
+       ! if the number of connected nodes is zero
+       ! we skip (the node is already added)
+       if ( nQ == 0 ) iQ = 1
+       do while ( iQ < nQ ) 
+          iQ = iQ + 1 
+          if ( ca == 0 ) then
+             ! Force the addition to the result list
+             ca = ca + 1
+             R(na_L+ca) = Q(iQ)
+             call add_Queue(na_u,a_mm,na_S,na_E,Q(iQ),Q,nQ)
+          else if ( any( R(na_L+1:na_L+ca) == Q(iQ) ) ) then
+             Q(iQ:nQ-1) = Q(iQ+1:nQ)
+             iQ = iQ - 1
+             nQ = nQ - 1
+             ! it already exists
+             ! this should probably not happen
+             print *,'Something went wrong...',R(na_L+1:na_L+ca),Q(iQ)
+          else
+             ! We are allowed to add the queued item to the result list
+             ca = ca + 1
+             R(na_L+ca) = Q(iQ)
+             ! update the queue-list
+             call add_Queue(na_u,a_mm,na_S,na_E,Q(iQ),Q,nQ)
+          end if
+       end do
+
+       ! Do a quick exit if possible
+       if ( ca == na ) cycle
+
+       ! From here on it is the actual Cuthill-Mckee algorithm
+       ! Now we need to select the one with the lowest degree
+
+       i_ca = 0
+       degree = huge(1)
+       do ia = na_S , na_E
+          ! Check it hasn't been processed
+          if ( .not. any( R(na_L+1:na_L+ca) == ia ) ) then
+             ! figure out the degree of the node
+             iQ = sum(a_mm(na_S:na_E,ia))
+             if ( degree > iQ ) then
+                ! We save this as the new node
+                degree = iQ
+                i_ca = ia
+             end if
+          end if
+       end do
+       
+       if ( i_ca > 0 ) then
+          ca = ca + 1
+          R(ca) = i_ca
+       end if
+       
+    end do
+
+    call de_alloc(Q)
+    
+  contains 
+    
+    subroutine add_Queue(na_u,a_mm,na_S,na_E,ia,Q,nQ)
+      integer, intent(in) :: na_u, a_mm(na_u,na_u)
+      integer, intent(in) :: na_S, na_E, ia
+      integer, intent(inout) :: Q(na_E - na_S + 1)
+      integer, intent(inout) :: nQ
+
+      integer :: i, iQ, ii, lnQ
+      integer :: degree(nQ+1:na_u)
+      logical :: append
+
+      ! We prepend to the queue
+      iQ = nQ
+      do i = na_S , na_E
+         if ( a_mm(i,ia) == 1 ) then
+            append = .false.
+            if ( nQ == 0 ) then
+               append = .true.
+            else if ( .not. any( Q(1:nQ) == i ) ) then
+               append = .true.
+            end if
+            if ( append ) then
+               ! We have a connected node
+               ! save its degree
+               iQ = iQ + 1 
+               Q(iQ) = i
+               degree(iQ) = sum(a_mm(na_S:na_E,i))
+            end if
+         end if
+      end do
+      ! capture the connected nodes
+      lnQ = iQ
+
+      ! Sort the queued items
+      do i = nQ + 1 , lnQ
+         do ii = i + 1 , lnQ
+            if ( degree(ii) < degree(i) ) then
+               iQ = degree(ii)
+               degree(ii) = degree(i)
+               degree(i) = iQ
+               iQ = Q(ii)
+               Q(ii) = Q(i)
+               Q(i) = iQ
+            end if
+         end do
+      end do
+      
+      ! Save the new queued count
+      nQ = lnQ
+
+    end subroutine add_Queue
+    
+  end subroutine Cuthill_Mckee
+
 end module m_ts_sparse

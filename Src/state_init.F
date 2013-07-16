@@ -43,11 +43,13 @@
       use domain_decom,      only: domainDecom, use_dd, use_dd_perm
 
 #ifdef TRANSIESTA
-      use m_ts_options, only : onlyS, TS_Analyze
+      use m_ts_options, only : na_BufL, na_BufR, ElLeft, ElRight
+      use m_ts_options, only : onlyS, TS_Analyze, UseBulk
+      use m_ts_electype
       use m_ts_global_vars, only: TSrun
       use sys, only : bye
       use m_ts_io, only : filenameTSHS, ts_write_tshs
-      use m_ts_sparse, only : ts_sparse_init
+      use m_ts_sparse, only : ts_sparse_init, ts_sp_uc, ts_Optimize
       use m_ts_tri, only : ts_tri_init
       use files, only: slabel, label_length
 #endif
@@ -329,9 +331,31 @@
       ! TODO, probably, there should be other analyzations that a user can
       ! request, and then a more general way to do this should be encouraged.
       if ( TS_Analyze ) then
+         ! Force the creation of the full sparsity pattern
+         UseBulk = .false.
          call ts_sparse_init(Gamma, block_dist, sparse_pattern,
      &        na_u, lasto)
          call ts_tri_init()
+         
+         ! print out the pivoting elements
+         ! for optimizing the tri-diagonal matrix form
+         if (IONode) write(*,*)'transiesta: Left electrode...'
+
+         fnlength = na_u - na_BufL - TotUsedAtoms(ElLeft)
+         fnlength = fnlength - TotUsedAtoms(ElRight) - na_BufR
+         call ts_Optimize(ts_sp_uc,na_u, lasto, 
+     &        na_BufL,fnlength+TotUsedAtoms(ElRight)+na_BufR)
+
+         if (IONode) write(*,*)'transiesta: Central region...'
+         call ts_Optimize(ts_sp_uc,na_u, lasto, 
+     &        na_BufL+TotUsedAtoms(ElLeft), 
+     &        TotUsedAtoms(ElRight)+na_BufR)
+
+         if (IONode) write(*,*)'transiesta: Right electrode...'
+         call ts_Optimize(ts_sp_uc,na_u, lasto, 
+     &        na_BufL+TotUsedAtoms(ElLeft)+fnlength, na_BufR)
+         
+         ! Bye also waits for all processors
          call bye('transiesta analyzation performed')
       end if
       
