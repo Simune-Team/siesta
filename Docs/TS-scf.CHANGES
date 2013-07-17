@@ -1,4 +1,38 @@
 ----------------------------------------------------
+July 17, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-79
+The Cuthill-Mckee algorithm should not print out for the electrodes, added script for pivoting
+
+* Added a python script which requires two inputs:
+   1) FDF which contains the block AtomicCoordinatesAndAtomicSpecies
+   2) Out file of a transiesta run with TS.Analyze set to true.
+  It will then print out (to stdout) the optimized structure for the
+  smallest BTD block sizes.
+
+  It is implementing a slightly modified Cuthill-Mckee algorithm with
+  the starting parent as the last electrode atom. Hence one could optimize
+  the electrodes first, and then the central region. But often the electrodes
+  are fixed due to the electrode run.
+
+  I have not tested this algorithm with an unconnected tree.
+
+  The script can be found in TSAnalyzeSort and should be runned like this:
+  tsanalyzesort.py -s STRUCT.fdf -A RUNTS.out
+  or more verbose:
+  tsanalyzesort.py --struct STRUCT.fdf --analyze RUNTS.out
+
+  It will quit if it sees an obscure pivoting. In this case it returns with
+  return value 1 instead of 0
+  Notice that it does not alter the lines in anyway. Hence, comments etc. should
+  be retained.
+
+added:
+  Util/TSAnalyzeSort/
+  Util/TSAnalyzeSort/tsanalyzesort.py
+modified:
+  Src/m_ts_sparse.F90
+  Src/state_init.F
+
+----------------------------------------------------
 July 16, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-78
 Added the Cuthill-Mckee algorithm to optimize the BTD pattern
 

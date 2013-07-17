@@ -336,24 +336,31 @@
          call ts_sparse_init(Gamma, block_dist, sparse_pattern,
      &        na_u, lasto)
          call ts_tri_init()
+
+! Currently the below electrode optimizations does not work
+! due to the sparsity pattern not being complete.
          
          ! print out the pivoting elements
          ! for optimizing the tri-diagonal matrix form
-         if (IONode) write(*,*)'transiesta: Left electrode...'
+!         if (IONode) write(*,'(a)')'transiesta: Left electrode...'
 
-         fnlength = na_u - na_BufL - TotUsedAtoms(ElLeft)
-         fnlength = fnlength - TotUsedAtoms(ElRight) - na_BufR
-         call ts_Optimize(ts_sp_uc,na_u, lasto, 
-     &        na_BufL,fnlength+TotUsedAtoms(ElRight)+na_BufR)
-
-         if (IONode) write(*,*)'transiesta: Central region...'
+!         fnlength = na_u - na_BufL - TotUsedAtoms(ElLeft)
+!         fnlength = fnlength - TotUsedAtoms(ElRight) - na_BufR
+!         call ts_Optimize(ts_sp_uc,na_u, lasto, 
+!     &        max(1,na_BufL), 
+!     &        fnlength+TotUsedAtoms(ElRight)+na_BufR)
+         
+         ! If you change this output statement then please
+         ! revisit the TSAnalyzeSort utility for updating the correct
+         ! search region.
+         if (IONode) write(*,'(a)')'transiesta: Central region...'
          call ts_Optimize(ts_sp_uc,na_u, lasto, 
      &        na_BufL+TotUsedAtoms(ElLeft), 
      &        TotUsedAtoms(ElRight)+na_BufR)
 
-         if (IONode) write(*,*)'transiesta: Right electrode...'
-         call ts_Optimize(ts_sp_uc,na_u, lasto, 
-     &        na_BufL+TotUsedAtoms(ElLeft)+fnlength, na_BufR)
+!         if (IONode) write(*,'(a)')'transiesta: Right electrode...'
+!         call ts_Optimize(ts_sp_uc,na_u, lasto, 
+!     &        na_BufL+TotUsedAtoms(ElLeft)+fnlength, na_BufR)
          
          ! Bye also waits for all processors
          call bye('transiesta analyzation performed')

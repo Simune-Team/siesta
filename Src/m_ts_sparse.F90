@@ -741,7 +741,7 @@ contains
     call Cuthill_Mckee(na_u, na_L, na_R, a_mm, R)
 
     if ( IONode ) then
-       write(*,'(tr1,a)') 'transiesta: Tri-diagonal blocks can be &
+       write(*,'(a)') 'transiesta: Tri-diagonal blocks can be &
             &optimized by the following pivoting'
 
        write(*,'(t5,a4,tr2,a2,tr2,a4)') 'From','->','To'
@@ -796,7 +796,7 @@ contains
     ! with the electrode)
 
     ! Prepare counters for the algorithm
-    i_ca = max(na_L,1)
+    i_ca = na_L
 
     ! the counter for the number of saved atoms
     ca = 0
@@ -809,13 +809,17 @@ contains
        ! the node building from the last atom
        ! specified
        nQ = 0
-       call add_Queue(na_u,a_mm,na_S,na_E,i_ca,Q,nQ)
+       if ( i_ca > 0 ) then
+          ! In case we want a pure Cuthill-Mckee
+          ! we shall not construct the queue the first
+          ! time
+          call add_Queue(na_u,a_mm,na_S,na_E,i_ca,Q,nQ)
+       end if
 
        ! loop the queed items
        iQ = 0
        ! if the number of connected nodes is zero
        ! we skip (the node is already added)
-       if ( nQ == 0 ) iQ = 1
        do while ( iQ < nQ ) 
           iQ = iQ + 1 
           if ( ca == 0 ) then
@@ -824,12 +828,10 @@ contains
              R(na_L+ca) = Q(iQ)
              call add_Queue(na_u,a_mm,na_S,na_E,Q(iQ),Q,nQ)
           else if ( any( R(na_L+1:na_L+ca) == Q(iQ) ) ) then
-             Q(iQ:nQ-1) = Q(iQ+1:nQ)
-             iQ = iQ - 1
-             nQ = nQ - 1
-             ! it already exists
-             ! this should probably not happen
-             print *,'Something went wrong...',R(na_L+1:na_L+ca),Q(iQ)
+             ! Do nothing...
+             !Q(iQ:nQ-1) = Q(iQ+1:nQ)
+             !iQ = iQ - 1
+             !nQ = nQ - 1
           else
              ! We are allowed to add the queued item to the result list
              ca = ca + 1
@@ -848,9 +850,17 @@ contains
        i_ca = 0
        degree = huge(1)
        do ia = na_S , na_E
-          ! Check it hasn't been processed
-          if ( .not. any( R(na_L+1:na_L+ca) == ia ) ) then
-             ! figure out the degree of the node
+          iQ = 0
+
+          if ( ca == 0 ) then
+             ! If no items has been added
+             iQ = 1
+          else if ( .not. any( R(na_L+1:na_L+ca) == ia ) ) then
+             ! Check it hasn't been processed 
+             iQ = 1
+          end if
+
+          if ( iQ == 1 ) then
              iQ = sum(a_mm(na_S:na_E,ia))
              if ( degree > iQ ) then
                 ! We save this as the new node
@@ -860,6 +870,7 @@ contains
           end if
        end do
        
+       ! Append to the result list
        if ( i_ca > 0 ) then
           ca = ca + 1
           R(ca) = i_ca
@@ -884,7 +895,8 @@ contains
       ! We prepend to the queue
       iQ = nQ
       do i = na_S , na_E
-         if ( a_mm(i,ia) == 1 ) then
+         ! if they are connected and not the same atom
+         if ( a_mm(i,ia) == 1 .and. i /= ia ) then
             append = .false.
             if ( nQ == 0 ) then
                append = .true.
