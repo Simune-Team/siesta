@@ -13,7 +13,7 @@ module m_ts_cctype
 
   use precision, only : dp
 
-  use m_gauss_fermi, only : G_NF_MIN_kT, G_NF_MAX_kT
+  use m_gauss_fermi_inf, only : G_NF_MIN_kT, G_NF_MAX_kT
 
   implicit none
 

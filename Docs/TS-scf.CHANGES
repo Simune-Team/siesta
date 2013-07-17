@@ -1,4 +1,36 @@
 ----------------------------------------------------
+July 17, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-81
+Changed the Gauss-Fermi contours only up to 17 points
+
+* Removed points 18-20 in the Gauss-Fermi quadratures.
+  We could not acknowlegde their precision.
+
+* Added more tail ending integrations:
+   from 20 to 30 in steps of 2kT
+   and 17, 18 and 19 kT
+  This should provide more than enough selection for the user
+  to control the integral.
+
+removed:
+  Src/m_gauss_fermi.f90
+  Src/m_gauss_fermi_16.f90
+added:
+  Src/m_gauss_fermi_17.f90
+  Src/m_gauss_fermi_19.f90
+  Src/m_gauss_fermi_22.f90
+  Src/m_gauss_fermi_24.f90
+  Src/m_gauss_fermi_26.f90
+  Src/m_gauss_fermi_28.f90
+  Src/m_gauss_fermi_30.f90
+  Src/m_gauss_fermi_inf.f90
+modified:
+  Src/Makefile
+  Src/m_gauss_fermi_18.f90
+  Src/m_gauss_fermi_20.f90
+  Src/m_ts_cctype.f90
+  Src/m_ts_contour.f90
+
+----------------------------------------------------
 July 17, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-80
 Changed to the reverse Cuthill-Mckee algorithm and added block printout
 

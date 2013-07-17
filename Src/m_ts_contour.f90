@@ -153,11 +153,13 @@ contains
     ! Read in the new setup for determining the end Gauss-integration
     C_G_NF_END = fdf_get('TS.Contour.GaussFermi.End',huge(1))
     if ( C_G_NF_END /= huge(1) .and. &
-         C_G_NF_END /= 20 .and. &
-         C_G_NF_END /= 18 .and. &
-         C_G_NF_END /= 16 ) then
-       call die('You are only allowed 20, 18 or 16 as input, &
-            &for infinity integral remove the FDF line.')
+         C_G_NF_END /= 30 .and. C_G_NF_END /= 28 .and. &
+         C_G_NF_END /= 26 .and. C_G_NF_END /= 24 .and. &
+         C_G_NF_END /= 22 .and. C_G_NF_END /= 20 .and. &
+         C_G_NF_END /= 19 .and. C_G_NF_END /= 18 .and. &
+         C_G_NF_END /= 17 ) then
+       call die('You are only allowed 30, 28, 26, 24, 22, 20, 19, 18 or 17 &
+            &as input, for infinity integral remove the FDF line.')
     end if
 
     if ( IONode ) then
@@ -568,11 +570,18 @@ contains
     use precision, only : dp
     use parallel,  only : IONode, Nodes, operator(.PARCOUNT.)
     use m_ts_aux, only : nf2
+
     use m_gauss_quad
-    use m_gauss_fermi
+    use m_gauss_fermi_inf
+    use m_gauss_fermi_30
+    use m_gauss_fermi_28
+    use m_gauss_fermi_26
+    use m_gauss_fermi_24
+    use m_gauss_fermi_22
     use m_gauss_fermi_20
+    use m_gauss_fermi_19
     use m_gauss_fermi_18
-    use m_gauss_fermi_16
+    use m_gauss_fermi_17
 
 ! **********************
 ! * INPUT variables    *
@@ -648,13 +657,25 @@ contains
                &contour is erroneous. Must be integer part of kT')
 
           if ( C_G_NF_END == huge(1) ) then
-             call GaussFermi(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
+             call GaussFermi_inf(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
+          else if ( C_G_NF_END == 30 ) then
+             call GaussFermi_30(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
+          else if ( C_G_NF_END == 28 ) then
+             call GaussFermi_28(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
+          else if ( C_G_NF_END == 26 ) then
+             call GaussFermi_26(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
+          else if ( C_G_NF_END == 24 ) then
+             call GaussFermi_24(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
+          else if ( C_G_NF_END == 22 ) then
+             call GaussFermi_22(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
           else if ( C_G_NF_END == 20 ) then
-             call GaussFermi_20kT(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
+             call GaussFermi_20(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
+          else if ( C_G_NF_END == 19 ) then
+             call GaussFermi_19(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
           else if ( C_G_NF_END == 18 ) then
-             call GaussFermi_18kT(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
-          else if ( C_G_NF_END == 16 ) then
-             call GaussFermi_16kT(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
+             call GaussFermi_18(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
+          else if ( C_G_NF_END == 17 ) then 
+             call GaussFermi_17(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
           end if
 
        case default
@@ -750,11 +771,18 @@ contains
     use precision, only : dp
     use parallel,  only : IONode, Nodes, operator(.PARCOUNT.)
     use m_ts_aux, only : nf
-    use m_gauss_fermi
-    use m_gauss_fermi_20
-    use m_gauss_fermi_18
-    use m_gauss_fermi_16
+
     use m_gauss_quad
+    use m_gauss_fermi_inf
+    use m_gauss_fermi_30
+    use m_gauss_fermi_28
+    use m_gauss_fermi_26
+    use m_gauss_fermi_24
+    use m_gauss_fermi_22
+    use m_gauss_fermi_20
+    use m_gauss_fermi_19
+    use m_gauss_fermi_18
+    use m_gauss_fermi_17
 
 ! **********************
 ! * INPUT variables    *
@@ -808,14 +836,27 @@ contains
        ! Determine the method
        select case ( C_Eq_Line_tail ) 
        case ( CC_TYPE_G_NF_MIN:CC_TYPE_G_NF_MAX )
+
           if ( C_G_NF_END == huge(1) ) then
-             call GaussFermi(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
+             call GaussFermi_inf(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
+          else if ( C_G_NF_END == 30 ) then
+             call GaussFermi_30(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
+          else if ( C_G_NF_END == 28 ) then
+             call GaussFermi_28(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
+          else if ( C_G_NF_END == 26 ) then
+             call GaussFermi_26(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
+          else if ( C_G_NF_END == 24 ) then
+             call GaussFermi_24(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
+          else if ( C_G_NF_END == 22 ) then
+             call GaussFermi_22(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
           else if ( C_G_NF_END == 20 ) then
-             call GaussFermi_20kT(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
+             call GaussFermi_20(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
+          else if ( C_G_NF_END == 19 ) then
+             call GaussFermi_19(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
           else if ( C_G_NF_END == 18 ) then
-             call GaussFermi_18kT(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
-          else if ( C_G_NF_END == 16 ) then
-             call GaussFermi_16kT(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
+             call GaussFermi_18(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
+          else if ( C_G_NF_END == 17 ) then 
+             call GaussFermi_17(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
           end if
 
        case default 
@@ -850,13 +891,25 @@ contains
        if ( C_Eq_Line_tail_N > 0 ) call die('Wrong options')
 
        if ( C_G_NF_END == huge(1) ) then
-          call GaussFermi(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
+          call GaussFermi_inf(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
+       else if ( C_G_NF_END == 30 ) then
+          call GaussFermi_30(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
+       else if ( C_G_NF_END == 28 ) then
+          call GaussFermi_28(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
+       else if ( C_G_NF_END == 26 ) then
+          call GaussFermi_26(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
+       else if ( C_G_NF_END == 24 ) then
+          call GaussFermi_24(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
+       else if ( C_G_NF_END == 22 ) then
+          call GaussFermi_22(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
        else if ( C_G_NF_END == 20 ) then
-          call GaussFermi_20kT(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
+          call GaussFermi_20(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
+       else if ( C_G_NF_END == 19 ) then
+          call GaussFermi_19(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
        else if ( C_G_NF_END == 18 ) then
-          call GaussFermi_18kT(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
-       else if ( C_G_NF_END == 16 ) then
-          call GaussFermi_16kT(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
+          call GaussFermi_18(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
+       else if ( C_G_NF_END == 17 ) then 
+          call GaussFermi_17(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
        end if
 
     case default
@@ -1098,7 +1151,7 @@ contains
     use units, only : Pi
     use precision, only : dp
     use parallel, only : IONode
-    use m_gauss_fermi
+    use m_gauss_fermi_inf
 
 ! ***********************
 ! * INPUT variables     *

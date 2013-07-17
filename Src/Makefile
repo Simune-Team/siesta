@@ -164,8 +164,11 @@ OBJS =  automatic_cell.o atom_options.o \
 # Generic modules
 OBJS += intrinsic_missing.o geom_helper.o 
 OBJS += create_Sparsity_SC.o create_Sparsity_Union.o
-OBJS += m_gauss_quad.o m_gauss_fermi.o
-OBJS += m_gauss_fermi_20.o m_gauss_fermi_18.o m_gauss_fermi_16.o
+OBJS += m_gauss_quad.o
+OBJS += m_gauss_fermi_inf.o m_gauss_fermi_30.o m_gauss_fermi_28.o
+OBJS += m_gauss_fermi_26.o m_gauss_fermi_24.o m_gauss_fermi_22.o
+OBJS += m_gauss_fermi_20.o m_gauss_fermi_19.o m_gauss_fermi_18.o
+OBJS += m_gauss_fermi_17.o
 OBJS += m_integrate.o m_mat_invert.o
 
 #--------------------------------------------------------------
@@ -623,11 +626,13 @@ m_ts_Sparsity2TriMat.o: alloc.o class_Sparsity.o geom_helper.o
 m_ts_Sparsity2TriMat.o: intrinsic_missing.o m_ts_electype.o m_ts_options.o
 m_ts_Sparsity2TriMat.o: parallel.o precision.o
 m_ts_aux.o: precision.o
-m_ts_cctype.o: m_gauss_fermi.o precision.o
+m_ts_cctype.o: m_gauss_fermi_inf.o precision.o
 m_ts_charge.o: class_OrbitalDistribution.o class_Sparsity.o geom_helper.o
 m_ts_charge.o: m_ts_electype.o m_ts_method.o parallel.o precision.o
-m_ts_contour.o: m_gauss_fermi.o m_gauss_fermi_16.o m_gauss_fermi_18.o
-m_ts_contour.o: m_gauss_fermi_20.o m_gauss_quad.o m_integrate.o m_ts_aux.o
+m_ts_contour.o: m_gauss_fermi_17.o m_gauss_fermi_18.o m_gauss_fermi_19.o
+m_ts_contour.o: m_gauss_fermi_20.o m_gauss_fermi_22.o m_gauss_fermi_24.o
+m_ts_contour.o: m_gauss_fermi_26.o m_gauss_fermi_28.o m_gauss_fermi_30.o
+m_ts_contour.o: m_gauss_fermi_inf.o m_gauss_quad.o m_integrate.o m_ts_aux.o
 m_ts_contour.o: m_ts_cctype.o parallel.o precision.o units.o
 m_ts_debug.o: class_Sparsity.o class_TriMat.o geom_helper.o parallel.o
 m_ts_debug.o: precision.o
