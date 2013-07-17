@@ -26,6 +26,8 @@ def run():
                         help="The FDF file which contains the AtomicCoordinatesAndAtomicSpecies block, does not follow %%include")
     parser.add_argument("-A","--analyze",dest='out',type=str,required=True,
                         help="The output of the transiesta run with TS.Analyze T")
+    parser.add_argument("-b","--block",action="store_true",dest="add_block",
+                        help="Add the block designation as well")
 
     # Parse the arguments of the options
     args = parser.parse_args()
@@ -37,7 +39,11 @@ def run():
     # Check that the pivoting has the correct form
     check_Pivot(pvt)
     # Print to std out the pivoted structure
+    if args.add_block:
+        print("%block AtomicCoordinatesAndAtomicSpecies")
     print_new_AtomCoordinats(struct_lines,pvt)
+    if args.add_block:
+        print("%endblock AtomicCoordinatesAndAtomicSpecies")
 
 
 _COORD_BLOCK = "AtomicCoordinatesAndAtomicSpecies".lower()
@@ -53,7 +59,8 @@ def read_AtomCoordinates(f):
     """
     found = False
     atms = []
-    for line in open(f,'r').readlines():
+    fh = open(f,'r')
+    for line in fh.readlines():
         if found: 
             # if we are done reading the blocks then quit
             if _COORD_BLOCK in line.lower(): break
@@ -61,6 +68,7 @@ def read_AtomCoordinates(f):
             atms.append(line.replace('\n','').replace('\r',''))
         if _COORD_BLOCK in line.lower():
             found = True
+    fh.close()
     return atms
 
 _OUT_PLACE = "transiesta: Central region..."
@@ -71,8 +79,8 @@ def read_Pivot(f,na):
     found = False
     # Create the default pivoting array
     pvt = range(na)
-
-    for line in open(f,'r').readlines():
+    fh = open(f,'r')
+    for line in fh.readlines():
         if found: 
             # If -> is in the line we know we have something
             if '->' in line:
@@ -84,6 +92,7 @@ def read_Pivot(f,na):
                 except: pass
         if _OUT_PLACE in line:
             found = True
+    fh.close()
     return pvt
 
 def check_Pivot(pvt):

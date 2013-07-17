@@ -1,4 +1,21 @@
 ----------------------------------------------------
+July 17, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-80
+Changed to the reverse Cuthill-Mckee algorithm and added block printout
+
+* The Cuthill-Mckee algorithm has been changed to the reverse method.
+  It provides a better bandwidth minimization as also noted by several
+  papers.
+  
+* Added a flag for the analyzation script to also print out the
+  FDF block designators. By this the user can easily create a
+  proper FDF file from just piping:
+  tsanalyzesort.py -s STRUCT.fdf -A RUNTS.out -b > new_struct.fdf
+
+modified:
+  Src/m_ts_sparse.F90
+  Util/TSAnalyzeSort/tsanalyzesort.py
+
+----------------------------------------------------
 July 17, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-79
 The Cuthill-Mckee algorithm should not print out for the electrodes, added script for pivoting
 

@@ -691,6 +691,8 @@ contains
          name='tmp')
 
     ! Initialize the connections
+    ! Notice that we build the matrix from backwards
+    ! as we need to do the reversed Cuthill-Mckee algorithm
     a_mm(:,:) = 0
     a_mm(na_u,na_u) = 1
     do ia = 1 , na_u - 1
@@ -698,7 +700,7 @@ contains
        R(ia) = ia
 
        ! Of course the atom connects to itself
-       a_mm(ia,ia) = 1
+       a_mm(na_u+1-ia,na_u+1-ia) = 1
 
        ! The current atoms orbitals
        co1 = lasto(ia-1) + 1
@@ -716,8 +718,9 @@ contains
              where ( tmp < 0 ) tmp = co2 + 1
              if ( any(tmp(1:ncol(io)) <= co2) ) then
                 ! Create the connection to the other atoms
-                a_mm(ia,iac) = 1
-                a_mm(iac,ia) = 1
+                ! here we do the reverse notation
+                a_mm(na_u+1-ia,na_u+1-iac) = 1
+                a_mm(na_u+1-iac,na_u+1-ia) = 1
                 exit connection
              end if
           end do connection
@@ -737,9 +740,26 @@ contains
     !   end do
     !end if
     
-    ! Call the cuthill_Mckee algorithm
-    call Cuthill_Mckee(na_u, na_L, na_R, a_mm, R)
+    ! Call the Cuthill-Mckee algorithm (notice that a_mm
+    ! is the reversed matrix), hence when we reverse back
+    ! we obtain a correct matrix ordering
+    call Cuthill_Mckee(na_u, na_R, na_L, a_mm, R)
 
+    ! transfer to the correct atom indices
+    do ia = na_R + 1 , na_u - na_L 
+       R(ia) = na_u + 1 - R(ia)
+    end do
+
+    ! transfer to the reversed Cuthill-Mckee algorithm
+    ! We could do this and the above in one go, but that would require a 
+    ! correction if mod(io,2) == 1
+    io = na_u - na_R - na_L
+    do ia = na_R + 1 , na_R + io / 2
+       iac = R(ia)
+       R(ia) = R(na_u+1-ia)
+       R(na_u+1-ia) = iac
+    end do
+       
     if ( IONode ) then
        write(*,'(a)') 'transiesta: Tri-diagonal blocks can be &
             &optimized by the following pivoting'
@@ -828,10 +848,11 @@ contains
              R(na_L+ca) = Q(iQ)
              call add_Queue(na_u,a_mm,na_S,na_E,Q(iQ),Q,nQ)
           else if ( any( R(na_L+1:na_L+ca) == Q(iQ) ) ) then
-             ! Do nothing...
-             !Q(iQ:nQ-1) = Q(iQ+1:nQ)
-             !iQ = iQ - 1
-             !nQ = nQ - 1
+             ! Just delete the entry (we do not need to worry about
+             ! it anymore)
+             Q(iQ:nQ-1) = Q(iQ+1:nQ)
+             iQ = iQ - 1
+             nQ = nQ - 1
           else
              ! We are allowed to add the queued item to the result list
              ca = ca + 1
