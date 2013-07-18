@@ -238,7 +238,7 @@ CONTAINS
     end if
     
     ! Update the weight function
-    chars = fdf_get('TS.Weight.NonEquilibrium','k-uncorrelated')
+    chars = fdf_get('TS.Weight.NonEquilibrium','correlated')
     if ( leqi(chars,'correlated') ) then
        TS_W_METHOD = TS_W_CORRELATED
     else if ( leqi(chars,'uncorrelated') ) then

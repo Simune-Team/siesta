@@ -1,4 +1,20 @@
 ----------------------------------------------------
+July 18, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-82
+Ensured correct bias Hamiltonian for first transiesta iteration
+
+* The Hamiltonian was not setup with the potential added for the first
+  iteration.
+  This has now been correctd by calling setup_hamiltonian after
+  mixing.
+
+* Changed the default weight for the non-equilibrium transiesta
+  to the correlated.
+
+modified:
+  Src/m_ts_options.F90
+  Src/siesta_forces.F
+
+----------------------------------------------------
 July 17, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-81
 Changed the Gauss-Fermi contours only up to 17 points
 

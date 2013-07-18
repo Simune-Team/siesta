@@ -245,6 +245,14 @@
            TSiscf = 0
            iscf = 0
 
+           ! We can now setup the correct hamiltonian for the 
+           ! start of the transiesta cycle
+           ! I.e. here we also add the bias in the Vscf array
+           call setup_hamiltonian( iscf )
+           ! Calculate the dHmax for transfering to
+           ! the Hamiltonian created with bias
+           call compute_max_diff(Hold,H,dHmax)
+
         end if
 #endif
 
