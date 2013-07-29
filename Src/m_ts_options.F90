@@ -207,8 +207,8 @@ CONTAINS
     if ( .not. IsVolt ) VoltFDF = 0._dp
 
     ! Set up the fermi shifts for the left and right electrodes
-    VoltL =  0.5_dp*VoltFDF
-    VoltR = -0.5_dp*VoltFDF
+    VoltL =  0.5_dp * VoltFDF
+    VoltR = -0.5_dp * VoltFDF
 
     ! Determine whether the user wishes to only do an analyzation
     TS_Analyze = fdf_get('TS.Analyze',.false.)
@@ -275,7 +275,7 @@ CONTAINS
     !else if ( leqi(chars,'up') .or. leqi(chars,'update') ) then
     !   TS_RHOCORR_METHOD = TS_RHOCORR_UPDATE
     end if
-    TS_RHOCORR_FACTOR = fdf_get('TS.ChargeCorrectionFactor',.75_dp)
+    TS_RHOCORR_FACTOR = fdf_get('TS.ChargeCorrection.Factor',.75_dp)
     if ( TS_RHOCORR_FACTOR < 0.0_dp .or. &
          1.0_dp < TS_RHOCORR_FACTOR) then
        call die("Charge correction factor must be in the range [0;1]")
@@ -290,7 +290,7 @@ CONTAINS
     GFFileR    = fdf_get('TS.GFFileRight',trim(chars))
     ReUseGF    = fdf_get('TS.ReUseGF',ReUseGF_def)
     UseVFix    = fdf_get('TS.UseVFix',UseVFix_def)
-    ElecValenceBandBot = fdf_get('TS.CalcElectrodeValenceBandBottom', &
+    ElecValenceBandBot = fdf_get('TS.Elec.Calc.BandBottom', &
          ElecValenceBandBot_def)
 
     ! To determine the same coordinate nature of the electrodes

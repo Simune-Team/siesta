@@ -1,4 +1,29 @@
 ----------------------------------------------------
+July 29, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-84
+Error estimate now shows DM_out and delta left/right non-equi
+
+* The print-out of the error estimates is now directly related to the
+  density matrix element. 
+  Thus the difference between the left/right integral is printed
+  together with the out-put density matrix element.
+  I.e. something like this:
+  ts: int. EE.: DM_out(  766,  595) = 0.21450    , d_LR|(  766,  595)| = 0.44764E-4
+  which tells that the difference between left/right (DM_L - DM_R) is
+  4 orders of magnitude smaller than the DM output.
+
+* Changed some FDF-flags which still needs to be documented.
+
+* TODO consider adding a flag to disable the calculation of the EDM matrix
+  in transiesta.
+  This will also enable the calculation of the DM by immediately going to
+  transiesta.
+
+modified:
+  Docs/siesta.tex
+  Src/m_ts_options.F90
+  Src/m_ts_weight.F90
+
+----------------------------------------------------
 July 29, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-83
 Added a proper iEta for the equilibrium contour, FixSpin check bugfix
 

@@ -106,8 +106,8 @@ contains
     integer :: nr
     integer :: io, gio, jo, ind, j
     ! For error estimation
-    integer  :: eM_i,eM_j,neM_i,neM_j
-    real(dp) :: eM, neM, ee
+    integer  :: eM_i,eM_j
+    real(dp) :: eM, DM, ee
     logical :: l_nonEq_IsWeight
 #ifdef MPI
     integer :: MPIerror
@@ -135,8 +135,8 @@ contains
     EDMR   => val(spEDMR)
 
     ! initialize the errors
-    eM  = -1._dp
-    neM = -1._dp
+    eM = 0._dp
+    DM = 0._dp
 
     if ( l_nonEq_IsWeight ) then
     
@@ -150,15 +150,17 @@ contains
              jo = l_col(ind)
 
              call get_weight(DMneqL(ind),DMneqR(ind),wL,wR)
-             
+
              ! Do error estimation (capture before update)
-             ee = (DML(ind) - DMR(ind))**2
-             call select_error(ee      ,io,jo,eM ,eM_i ,eM_j )
-             ! this is weighted absolute error
-             ee = ee * wL * wR
-             call select_error(ee,io,jo,neM,neM_i,neM_j)
-          
+             ee = DML(ind) - DMR(ind)
+
+             ! Calculate density...
              DML(ind) = wL * DML(ind) + wR * DMR(ind)
+
+             if ( select_error(ee,io,jo,eM ,eM_i ,eM_j ) ) then
+                DM = DML(ind)
+             end if
+
              ! EDML \equiv EDML + EDMneqR
              ! EDMR \equiv EDMR + EDMneqL
              EDML(ind) = wL * EDML(ind) + wR * EDMR(ind)
@@ -180,14 +182,15 @@ contains
              call get_weight(DMneqL(ind)**2,DMneqR(ind)**2,wL,wR)
 
              ! Do error estimation (capture before update)
-             ee = (DML(ind) + DMneqR(ind) - DMR(ind) - DMneqL(ind))**2
-             call select_error(ee      ,io,jo,eM ,eM_i ,eM_j )
-             ! this is absolute error
-             ee = ee * wL * wR
-             call select_error(ee,io,jo,neM,neM_i,neM_j)
-          
+             ee = DML(ind) + DMneqR(ind) - DMR(ind) - DMneqL(ind)
+
              DML(ind) = wL * (DML(ind) + DMneqR(ind)) &
                       + wR * (DMR(ind) + DMneqL(ind))
+
+             if ( select_error(ee,io,jo,eM ,eM_i ,eM_j ) ) then
+                DM = DML(ind)
+             end if
+
              ! EDML \equiv EDML + EDMneqR
              ! EDMR \equiv EDMR + EDMneqL
              EDML(ind) = wL * EDML(ind) + wR * EDMR(ind)
@@ -198,8 +201,9 @@ contains
     end if
 
 #ifdef MPI
+    ! remove pointer
     nullify(DMR,EDMR)
-    allocate(DMR(6*Nodes),EDMR(6*Nodes))
+    allocate(DMR(4*Nodes),EDMR(4*Nodes))
 
     dit => dist(spDML)
     io = Node + 1
@@ -208,10 +212,8 @@ contains
     DMR(io)         = eM
     DMR(io+Nodes)   = real(index_local_to_global(dit,eM_i,Node),dp)
     DMR(io+2*Nodes) = real(eM_j,dp)
-    DMR(io+3*Nodes) = neM
-    DMR(io+4*Nodes) = real(index_local_to_global(dit,neM_i,Node),dp)
-    DMR(io+5*Nodes) = real(neM_j,dp)
-    call MPI_Reduce(DMR(1),EDMR(1),6*Nodes, &
+    DMR(io+3*Nodes) = DM
+    call MPI_Reduce(DMR(1),EDMR(1),4*Nodes, &
          MPI_Double_Precision, MPI_Sum, 0, MPI_Comm_World, MPIerror)
     if ( IONode ) then
        io = maxloc(EDMR(1:Nodes),1)
@@ -219,15 +221,13 @@ contains
        eM_i = nint(EDMR(io+Nodes))
        eM_j = nint(EDMR(io+2*Nodes))
        io = 3*Nodes + maxloc(EDMR(3*Nodes+1:4*Nodes),1)
-       neM   = EDMR(io)
-       neM_i = nint(EDMR(io+Nodes))
-       neM_j = nint(EDMR(io+2*Nodes))
+       DM  = EDMR(io)
     endif
     deallocate(DMR,EDMR)
 #endif
 
     call print_error_estimate(IONode,'ts: int. EE.:', &
-         eM,eM_i,eM_j,neM,neM_i,neM_j,.false.)
+         eM,eM_i,eM_j,DM)
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS weightDM' )
@@ -238,28 +238,18 @@ contains
   ! ************* Commonly used modules ****************
 
   ! Write out the error-estimate for the current iteration (or, k-point)
-  subroutine print_error_estimate(IONode,a,eM,eM_i,eM_j,neM,neM_i,neM_j, &
-       LR)
+  subroutine print_error_estimate(IONode,a,eM,eM_i,eM_j,DM)
     logical, intent(in)  :: IONode
     character(len=*), intent(in) :: a
-    real(dp), intent(in) :: eM, neM
-    integer, intent(in)  :: eM_i,eM_j, neM_i,neM_j
-    logical, intent(in) :: LR
+    real(dp), intent(in) :: eM, DM
+    integer, intent(in)  :: eM_i,eM_j
 
-    if ( IONode .and. eM >= 0._dp ) then
-       if ( LR ) then
-          write(*,'(a,'' |('',i5,'','',i5,'')|L = '',g10.5e1,&
-               &'' , |('',i5,'','',i5,'')|R = '',g10.5e1)') &
-               trim(a), &
-               eM_i,eM_j,sqrt(eM), &
-               neM_i,neM_j,sqrt(neM)
-       else
-          write(*,'(a,'' |('',i5,'','',i5,'')|  = '',g10.5e1,&
-               &'' , |('',i5,'','',i5,'')|~ = '',g10.5e1)') &
-               trim(a), &
-               eM_i,eM_j,sqrt(eM), &
-               neM_i,neM_j,sqrt(neM)
-       end if
+    if ( IONode ) then
+       write(*,'(a,'' DM_out('',i5,'','',i5,'')'',a,g10.5e1, &
+            &'' , d_LR|('',i5,'','',i5,'')|'',a,g10.5e1)') &
+            trim(a), &
+            eM_i,eM_j,' = ',DM, &
+            eM_i,eM_j,' = ',eM
     end if
 
   end subroutine print_error_estimate
@@ -283,16 +273,18 @@ contains
   end subroutine get_weight
 
   ! do simple maximum choice
-  pure subroutine select_error(n_err,n_io,n_jo,err,io,jo)
+  function select_error(n_err,n_io,n_jo,err,io,jo) result(val)
     real(dp), intent(in) :: n_err
     integer, intent(in) :: n_io, n_jo
     real(dp), intent(inout) :: err
     integer, intent(inout) :: io, jo
-    if ( n_err > err ) then
+    logical :: val
+    val = abs(n_err) > abs(err)
+    if ( val ) then
        err = n_err
        io  = n_io
        jo  = n_jo
     end if
-  end subroutine select_error
+  end function select_error
 
 end module m_ts_weight

@@ -7353,7 +7353,7 @@ calculations, only the usual {\sc Siesta} options are relevant.
       Furthermore, this has required a full re-write of \textsc{TranSiesta} so it should
       be considered highly experimental and needs thorough testing.
 
-        {\it Default value:} {\tt original}
+      {\it Default value:} {\tt tri}
 
 \item[{\bf TS.SaveHS}] ({\it logical}): \index{TS.SaveHS@{\bf
     TS.SaveHS}} Save the Hamiltonian in the file with extension .TSHS.
@@ -7495,8 +7495,8 @@ Number of atoms starting from the last atom to neglect in the
 
 {\it Default value:} {\tt 0} 
 
-\item [{\bf TS.CalcElectrodeValenceBandBottom}]({\it logical}): 
-\index{TS.CalcElectrodeValenceBandBottom@{\bf TS.CalcElectrodeValenceBandBottom}}
+\item [{\bf TS.Elec.Calc.BandBottom}]({\it logical}): 
+\index{TS.Elec.Calc.BandBottom@{\bf TS.Elec.Calc.BandBottom}}
 If true will calculate the valence band bottom of the electrode.
 This can be used to check for the contour points.
 
@@ -7523,15 +7523,15 @@ Available methods:
 
 {\it Default value:} {\tt 'none'}
 
-\item [{\bf TS.ChargeCorrectionFactor}] ({\it value}):
-\index{TS.ChargeCorrectionFactor@{\bf TS.ChargeCorrectionFactor}}
+\item [{\bf TS.ChargeCorrection.Factor}] ({\it value}):
+\index{TS.ChargeCorrection.Factor@{\bf TS.ChargeCorrection.Factor}}
 The factor for correcting the missing charges. Must be in the range
 $[0.0;1.0]$. This option only has meaning if {\bf TS.ChargeCorrection}
 is not 'none'.
 
 \paragraph{Example:} After an SCF cycle, {\sc TranSiesta} is missing
 $0.4$ electrons. The correction performed will add $0.4 \times \bf
-TS.ChargeCorrectionFactor$ to the system for compensation. 
+TS.ChargeCorrection.Factor$ to the system for compensation. 
 This factor can be used to control the fluctuations.
 
 {\it Default value:} $0.75$
