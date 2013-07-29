@@ -473,11 +473,11 @@ CONTAINS
           end if
        end do
 
-    end if
+       if (fixspin) then
+          write(*,*) 'Fixed Spin not possible in TS Calculations !'
+          call die('Stopping code')
+       end if
 
-    if (fixspin ) then
-       write(*,*) 'Fixed Spin not possible in TS Calculations !'
-       call die('Stopping code')
     end if
 
     if ( IONode ) then

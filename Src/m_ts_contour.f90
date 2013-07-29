@@ -46,7 +46,8 @@ module m_ts_contour
   type(ts_ccontour), dimension(:), pointer, save :: contour
 
   ! The contour specific variables
-  real(dp), save, public :: CCEmin, GFEta, kT, EfL, EfR
+  real(dp), save, public :: CCEmin, kT, EfL, EfR
+  real(dp), save, public :: nEq_Eta, Eq_Eta
 
   ! We need to retain the information about the contour here.
   ! It provides an easier overview as there are quite a few constants governing the
@@ -125,10 +126,13 @@ contains
     CCEMin = fdf_get('TS.ComplexContourEmin',-3._dp,'Ry')
     CCEMin = fdf_get('TS.Contour.Eq.Emin',CCEMin,'Ry')
     call fdf_deprecated('TS.biasContour.Eta','TS.Contour.nEq.Eta')
-    GFEta = fdf_get('TS.biasContour.Eta',0.000001_dp,'Ry')
-    GFEta = fdf_get('TS.Contour.nEq.Eta',GFEta,'Ry')
-    if ( GFEta <= 0.d0) call die('ERROR: GFeta <= 0.0, we do not allow for &
-         &using the advanced Greens function, please correct.')
+    nEq_Eta = fdf_get('TS.biasContour.Eta',0.000001_dp,'Ry')
+    nEq_Eta = fdf_get('TS.Contour.nEq.Eta',nEq_Eta,'Ry')
+    if ( nEq_Eta <= 0._dp ) call die('ERROR: nEq_Eta <= 0, we do not allow &
+         &for using the advanced Greens function, please correct.')
+    Eq_Eta = fdf_get('TS.Contour.Eq.Eta',0._dp,'Ry')
+    if ( Eq_Eta < 0._dp) call die('ERROR: Eq_Eta < 0, we do not allow &
+         &for using the advanced Greens function, please correct.')
 
     ! First we will do the defaults
     C_Eq_Circle = CC_TYPE_G_LEGENDRE
@@ -607,7 +611,7 @@ contains
             C_Eq_Circle, C_Eq_Circle_N, C_Eq_split, &
             C_Eq_Line_bottom, C_Eq_Line_bottom_N ,C_Eq_Line_split, &
             C_Eq_Line_tail, C_Eq_Line_tail_N, C_Eq_Pole_N, &
-            CCEmin, 0._dp, kT, c)
+            CCEmin, 0._dp, kT, Eq_Eta, c)
 
     else
 
@@ -626,7 +630,7 @@ contains
             C_Eq_Circle, C_Eq_Circle_N, C_Eq_split, &
             C_Eq_Line_bottom, C_Eq_Line_bottom_N ,C_Eq_Line_split, &
             C_Eq_Line_tail, C_Eq_Line_tail_N, C_Eq_Pole_N, &
-            CCEmin+EfL, EfL, kT, c)
+            CCEmin+EfL, EfL, kT, Eq_Eta, c)
 
        c => contour_EqR()
        ! We will only create the equilibrium contour
@@ -634,7 +638,7 @@ contains
             C_Eq_Circle, C_Eq_Circle_N, C_Eq_split, &
             C_Eq_Line_bottom, C_Eq_Line_bottom_N ,C_Eq_Line_split, &
             C_Eq_Line_tail, C_Eq_Line_tail_N, C_Eq_Pole_N, &
-            CCEmin+EfR, EfR, kT, c)
+            CCEmin+EfR, EfR, kT, Eq_Eta, c)
 
        ! The last contour is the non-equilibrium
        
@@ -719,8 +723,8 @@ contains
           j = N + 1 - i
           tmpE1 = x(i) * kT + sE1
           tmpE2 = x(j) * kT + sE2
-          c(i)%c = dcmplx(tmpE1,GFeta)
-          c(j)%c = dcmplx(tmpE2,GFeta)
+          c(i)%c = dcmplx(tmpE1,nEq_Eta)
+          c(j)%c = dcmplx(tmpE2,nEq_Eta)
           select case ( C_nEq_tail ) 
           case ( CC_TYPE_G_NF_MIN:CC_TYPE_G_NF_MAX )
              c(i)%w = w(i) * kT
@@ -738,7 +742,7 @@ contains
 
        ! Create the middle contours
        do i = C_nEq_tail_N + 1 , N - C_nEq_tail_N
-          c(i)%c = dcmplx(x(i),GFeta)
+          c(i)%c = dcmplx(x(i),nEq_Eta)
           c(i)%w = w(i) * nf2(x(i),sE1,sE2,kT)
           c(i)%part = CC_PART_NON_EQUI
           c(i)%type = C_nEq_mid
@@ -755,7 +759,7 @@ contains
        
        c => contour_Transport()
        call transmission(C_transport_Emin, C_transport_Emax, &
-            GFeta, C_transport_N, c)
+            nEq_Eta, C_transport_N, c)
 
     end if
 
@@ -765,7 +769,8 @@ contains
 ! Routine for creating the contour
   subroutine setup_contour_Eq(PART, C_Eq_Circle, C_Eq_Circle_N, C_Eq_split, &
        C_Eq_Line_bottom, C_Eq_Line_bottom_N ,C_Eq_Line_split, &
-       C_Eq_Line_tail, C_Eq_Line_tail_N, C_Eq_Pole_N, CCEmin, Ef, kT, contour)
+       C_Eq_Line_tail, C_Eq_Line_tail_N, C_Eq_Pole_N, &
+       CCEmin, Ef, kT, Eta, contour)
 
     use units, only : Pi, eV
     use precision, only : dp
@@ -792,7 +797,7 @@ contains
     integer, intent(in) :: C_Eq_Line_bottom, C_Eq_Line_bottom_N
     integer, intent(in) :: C_Eq_Line_tail, C_Eq_Line_tail_N, C_Eq_Pole_N
     real(dp), intent(in) :: C_Eq_split, C_Eq_Line_split
-    real(dp), intent(in) :: CCEmin, Ef, kT
+    real(dp), intent(in) :: CCEmin, Ef, kT, Eta
 
     type(ts_ccontour), pointer, intent(out) :: contour(:)
 ! **********************
@@ -818,10 +823,10 @@ contains
     if ( curN > size(contour) ) call die('Error in contour setup')
     ! Initialize the poles
     c => contour(1:curN)
-    call nf_poles(PART+2,Ef,kT,C_Eq_Pole_N,c)
+    call nf_poles(PART+2,Ef,kT,Eta,C_Eq_Pole_N,c)
 
     ! Add the line integral (i.e. from above the last pole)
-    Delta = C_Eq_Pole_N * 2._dp*Pi*kT
+    Delta = aimag(c(curN)%c) + Pi*kT
     
     ! Add the tail integral
     i = curN + 1
@@ -934,15 +939,18 @@ contains
     deallocate(x,w)
 
     ! We create the circle contour
-    D     = Ef - CCEmin
+    ! First we lift the equilibrium contour from the 
+    ! real axis by Eta
+    Delta = Delta - Eta
     ! The ending point for the contour (on the imaginary axis)
     gamma = - C_Eq_split
-    ! The angle between CCEmin and the point)
-    alpha = dATAN(Delta/(D-gamma))
+    D     = Ef - CCEmin - gamma ! we have included minus gamma here...
+    ! The angle between CCEmin and the point
+    alpha = dATAN(Delta/D)
     ! The radius of the circle in the complex plane
-    R     = dsqrt(Delta**2 + (D - gamma)**2) / (2._dp*cos(alpha))
-    ! The center of the circle on the real-axis
-    z0    = dcmplx(CCEmin + R, 0._dp)
+    R     = dsqrt(Delta*Delta + D*D) / (2._dp*cos(alpha))
+    ! The center of the circle on the real-axis shifted by Eta
+    z0    = dcmplx(CCEmin + R, Eta)
     ! The angle from where we start
     beta  = dasin(Delta / R)
 
@@ -1109,7 +1117,7 @@ contains
   
 
   ! The residuals of the fermi-function at a real-energy
-  subroutine nf_poles(PART,E, kT, Npol,c)
+  subroutine nf_poles(PART,E, kT, Eta, Npol,c)
 
     use precision, only : dp
     use units, only : Pi
@@ -1120,6 +1128,7 @@ contains
     integer,  intent(in) :: PART ! part of the contour
     real(dp), intent(in) :: E    ! at energy
     real(dp), intent(in) :: kT   ! temperature in Ry
+    real(dp), intent(in) :: Eta  ! The lift of the equilibrium contour
     integer,  intent(in) :: Npol
 
 ! ***********************
@@ -1139,7 +1148,11 @@ contains
        c(i)%part = PART
        c(i)%type = CC_TYPE_RES
     end do
-    
+
+    do while ( aimag(c(1)%c) < Eta ) 
+       c(:)%c = c(:)%c + dcmplx(0._dp,2._dp*Pi*kT)
+    end do
+
   end subroutine nf_poles
 
 
@@ -1221,7 +1234,7 @@ contains
 ! ##                            By                                ##
 ! ##              Mads Brandbyge, mbr@mic.dtu.dk                  ##
 ! ##################################################################
-  subroutine transmission(E1,E2,GFeta,NEn,contour)
+  subroutine transmission(E1,E2,nEq_Eta,NEn,contour)
 
     use precision, only : dp
 
@@ -1229,7 +1242,7 @@ contains
 ! * INPUT variables     *
 ! ***********************
     real(dp), intent(in) :: E1,E2    ! energy parameters 
-    real(dp), intent(in) :: GFeta    ! state broadening in Ry
+    real(dp), intent(in) :: nEq_Eta    ! state broadening in Ry
     integer,  intent(in) :: NEn      ! No. contour points
 
 ! ***********************
@@ -1247,7 +1260,7 @@ contains
     delta = (E2-E1)/(1.d0*max(NEn-1,1))
 
     do ic = 1 , NEn
-       contour(ic)%c = dcmplx(E1+(ic-1)*delta, GFeta)
+       contour(ic)%c = dcmplx(E1+(ic-1)*delta, nEq_Eta)
        contour(ic)%w = dcmplx(delta          , 0d0)
        contour(ic)%part = CC_PART_TRANSPORT
        ! ???
@@ -1268,7 +1281,7 @@ contains
 ! ##                            By                                ##
 ! ##        Nick Papior Andersen, nickpapior@gmail.com            ##
 ! ##################################################################
-  subroutine phonon(E1,E2,GFeta,NEn,contour)
+  subroutine phonon(E1,E2,nEq_Eta,NEn,contour)
 
     use precision, only : dp
 
@@ -1276,7 +1289,7 @@ contains
 ! * INPUT variables     *
 ! ***********************
     real(dp), intent(in) :: E1,E2    ! energy parameters 
-    real(dp), intent(in) :: GFeta    ! state broadening in Ry
+    real(dp), intent(in) :: nEq_Eta    ! state broadening in Ry
     integer,  intent(in) :: NEn      ! No. contour points
 
 ! ***********************
@@ -1301,7 +1314,7 @@ contains
     do ic = 1 , NEn
        ! The energy contour in Phonon space is:
        ! (\omega + i \eta)**2
-       contour(ic)%c = dcmplx(E1+(ic-1)*delta, GFeta)**2
+       contour(ic)%c = dcmplx(E1+(ic-1)*delta, nEq_Eta)**2
        contour(ic)%w = dcmplx(delta          , 0d0)
        contour(ic)%part = CC_PART_TRANSPORT
        ! ???

@@ -1,4 +1,26 @@
 ----------------------------------------------------
+July 29, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-83
+Added a proper iEta for the equilibrium contour, FixSpin check bugfix
+
+* The equilibrium contour was not performed at an eta value. 
+  Now the user can specify the shift into the complex plane by:
+  TS.Contour.Eq.Eta
+  which will shift the circle contour into the complex plane.
+  Note that the line-contour is well defined by the highest pole position.
+  In case the Eta is larger than the smallest pole position the
+  integral will not take into account the poles below the Eta shift.
+  And thus the poles will be shifted to the higher poles for consistency.
+
+  It is defaulted to 0.0 which is the same as the original implementation.
+
+* A FixSpin check was performed outside the TSmode if-statement which
+  was wrong. (an electrode can have fixed spin)
+
+modified:
+  Src/m_ts_contour.f90
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 July 18, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-82
 Ensured correct bias Hamiltonian for first transiesta iteration
 
