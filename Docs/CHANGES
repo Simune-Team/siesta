@@ -6,6 +6,22 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2013-07-31  16:05:00 GMT                                     trunk-443
+Update to gnubands program
+                                                              
+(Nick P. Andersen)
+
+Added a fermi shift flag (-F), and energy range flags (-e -E) to
+specify in which range one needs the window. This energy range
+specification can be used at the same time as the band-index
+specification.
+
+Fixed a bug when printing for spin-polarized calculations.
+
+modified.
+  Util/Bands/new.gnubands.f90
+
+-----------------------------------------------------------------------
 2013-07-31  16:00:00 GMT                                     trunk-442
 Synch patch-logs from siesta-3.0 branch up to siesta-3.2 release
 
