@@ -1,8 +1,18 @@
 MODULE MPI_SIESTA
 
+! For this PEXSI version, temporarily removed timing versions of some
+! MPI routines.
+
 #undef MPI
 
+! The following construction allows to supplant MPI_Comm_World within SIESTA,
+! and to use it as a subroutine with its own internal MPI communicator.
+! JMS. Oct.2010, AG, March 2013
+
   USE MPI, true_MPI_Comm_World => MPI_Comm_World
+  integer, public :: MPI_Comm_World = true_MPI_Comm_World
+  public :: true_MPI_Comm_World
+
 
 #ifdef GRID_SP
         integer, parameter :: MPI_grid_real   = MPI_real
@@ -12,11 +22,10 @@ MODULE MPI_SIESTA
         integer, parameter :: MPI_grid_real   = MPI_double_precision
 #endif
 
-  integer, public :: MPI_Comm_World = true_MPI_Comm_World
-  public :: true_MPI_Comm_World
+
 !
 !   Export explicitly some symbols to help some versions of
-!   the PGI compiler, which do not consider them public by default
+!   the PGI compiler. It does not consider them public by default
 !
         public :: mpi_real
         public :: mpi_complex

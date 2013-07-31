@@ -9,6 +9,8 @@
 !   PUBLIC procedures available from this module:
 ! function   kcPhi  : Returns planewave cutoff of a radial function
 ! subroutine filter : Filters out high-k components of a radial function
+! subroutine gen_filteret     : Generates filterets while filtering a fn
+! subroutine gen_pol_filteret : Generates filterets without filtering a fn
 !
 !   PUBLIC parameters, types, and variables available from this module:
 ! none
@@ -75,8 +77,10 @@ USE sorting,   only: ordix   ! Index of a vector by increasing values
 
 ! All public procedures (there are no public types, parameters, or variables):
 PUBLIC:: &
-  kcPhi, &! Returns planewave cutoff of a radial function
-  filter  ! Filters out high-k components of a radial function
+  kcPhi, &      ! Returns planewave cutoff of a radial function
+  filter, &     ! Filters out high-k components of a radial function
+  gen_filteret, &  ! Generates filterets and filters a radial function
+  gen_pol_filteret ! Generates filterets
 
 PRIVATE ! Nothing is declared public beyond this point
 
@@ -267,7 +271,6 @@ subroutine filter( l, nr, r, f, kc, norm_opt, n_eigen)
   do ij = 1,n
     cij = (-1._dp)**ij * 2*sqrt(rc/pi) * kj(ij)
     do ik = 0,nmesh
-!    do ik = 0,2*nmesh
       k = kmesh(ik)
       if (abs(k-kj(ij)) > 100*krtol) then
         jlk(ik,ij) = cij * bessph(l,k*rc) / (k**2 - kj(ij)**2)
@@ -299,7 +302,6 @@ subroutine filter( l, nr, r, f, kc, norm_opt, n_eigen)
 !        integral( nmesh+1, k4j1(:)*jlk(:,ij2), x=kmesh(:) )
       ! Symmetrize
       h(ij2,ij1) = h(ij1,ij2)
-!      write(33,*) ij1,ij2,h(ij1,ij2)
     end do ! ij2
   end do ! ij1
 
@@ -404,6 +406,390 @@ end subroutine filter
 
 !------------------------------------------------------------------------------
 
+subroutine gen_filteret( l, nr, maxfilteret, r, f, kc, norm_opt, nfilteret, filteret, cfilteret)
+
+! Creates a set of filterets within a specified cutoff
+! Ref: J.M.Soler notes of 17/10/2006.
+! Written as filter by J.M.Soler. Apr.2007
+! Adapted by J.D. Gale. Aug.2009
+
+  implicit none
+
+! Arguments
+  integer,  intent(in)    :: l                        ! Angular momentum of function to filter
+  integer,  intent(in)    :: nr                       ! Number of radial points
+  integer,  intent(in)    :: maxfilteret              ! Maximum number of filterets for which array is dimensioned
+  real(dp), intent(in)    :: kc                       ! Cutoff in reciprocal space
+  real(dp), intent(in)    :: r(nr)                    ! Radial mesh, in ascending order
+  real(dp), intent(inout) :: f(nr)                    ! Radial basis function - filtered on return
+  integer,  intent(in)    :: norm_opt                 ! Option to renormalize after filtering
+  real(dp), intent(out)   :: filteret(nr,maxfilteret) ! Radial part of filteret (if nfilteret =< maxfilteret)
+  real(dp), intent(out)   :: cfilteret(maxfilteret)   ! Coefficients for filterets (if nfilteret =< maxfilteret)
+  integer,  intent(out)   :: nfilteret                ! Number of filterets created
+
+! Internal variables and arrays
+  integer :: i, ierror, ij, ij1, ij2, ik, ir, n, nj, m, j
+  real(dp):: cij, dk, dkr, dr, f0norm, fnorm, fg, jl0, jl1, jl2, &
+             k, k4j1(0:nmesh), kmesh(0:nmesh), kr, kr0, kr1, kr2, &
+             pi, rc, rmesh(0:nmesh), co1
+  integer, allocatable:: indx(:)
+  real(dp),allocatable:: aux(:), c(:,:), e(:), fm(:), g(:,:), gr(:,:), &
+                         h(:,:), jl(:,:), jlk(:,:), jlnorm(:), jlr(:), &
+                         kj(:), s(:,:), filtertmp(:,:)
+
+! Fix number of basis Bessel functions by empirical rule
+  pi = acos(-1._dp)
+  rc = r(nr)
+  n = minj + nint(njkr*kc*rc)
+
+! Find integration meshes
+  dr = rc / nmesh
+  dk = kc / nmesh
+  do i = 0,nmesh
+    rmesh(i) = i*dr
+    kmesh(i) = i*dk
+  end do
+
+! Allocate arrays
+  allocate( aux(n), c(n,n), e(n), fm(0:nmesh), g(0:nmesh,n), gr(nr,n), h(n,n), indx(n), &
+            jl(0:nmesh,n), jlk(0:nmesh,n), jlnorm(n), jlr(n), kj(n), s(n,n) )
+  allocate( filtertmp(nr,maxfilteret) ) 
+
+! Find roots of spherical Bessel functions 
+  dkr = pi/2         ! Safe enough not to miss any root
+  kr1 = dkr/2
+  jl1 = bessph(l,kr1)
+  nj = 0
+  sampling: do
+    kr2 = kr1 + dkr
+    jl2 = bessph(l,kr2)
+    if (jl1*jl2 < 0._dp) then  ! Root bracketted
+      bisection: do
+        kr0 = (kr1+kr2)/2
+        if (kr2-kr1 < krtol) exit bisection
+        jl0 = bessph(l,kr0)
+        if (jl0*jl1 > 0._dp) then
+          kr1 = kr0
+          jl1 = jl0
+        else
+          kr2 = kr0
+          jl2 = jl0
+        end if
+      end do bisection
+      nj = nj + 1
+      kj(nj) = kr0 / rc
+      if (nj==n) exit sampling
+    end if
+    kr1 = kr2
+    jl1 = jl2
+  end do sampling
+
+! Find normalized spher. Bessel funcs. at integration mesh points
+  jl(:,:) = 0
+  do ij = 1,n
+    jlnorm(ij) = 0
+    do ir = 0,nmesh
+      kr = kj(ij)*rmesh(ir)
+      jl(ir,ij) = bessph( l, kr )
+      jlnorm(ij) = jlnorm(ij) + rmesh(ir)**2 * jl(ir,ij)**2 * dr
+    end do ! ir
+    jlnorm(ij) = sqrt(jlnorm(ij))
+    jl(0:nmesh,ij) = jl(0:nmesh,ij) / jlnorm(ij)
+  end do ! ij
+
+! Find Fourier transform of cutted Bessel functions
+! Ref: J.M.Soler notes of 16/04/2008
+  do ij = 1,n
+    cij = (-1._dp)**ij * 2*sqrt(rc/pi) * kj(ij)
+    do ik = 0,nmesh
+      k = kmesh(ik)
+      if (abs(k-kj(ij)) > 100*krtol) then
+        jlk(ik,ij) = cij * bessph(l,k*rc) / (k**2 - kj(ij)**2)
+      else ! denominator too small
+        ! Use j'(l,x)=-j(l+1,x)+l*jl(l,x)/x  and  j(l,kj(ij)*rc)=0
+        k = (k + kj(ij)) / 2
+        jlk(ik,ij) = cij * rc/(2*k) * &
+                   ( -bessph(l+1,k*rc) + l*bessph(l,k*rc)/(k*rc) )
+      end if
+    end do
+  end do ! ij
+
+! Find 'Hamiltonian' (integral between kc and infinity of k**2*jl1*jl2)
+  h(:,:) = 0
+  do ij1 = 1,n
+    h(ij1,ij1) = kj(ij1)**2 ! Integral from zero to infinity of diagonal terms
+    k4j1(0:nmesh) = kmesh(0:nmesh)**4 * jlk(0:nmesh,ij1)
+    do ij2 = 1,ij1
+      ! Subtract integral up to kc using Simpson's rule
+      h(ij1,ij2) = h(ij1,ij2) - &
+        ( 4*sum(k4j1(1:nmesh-1:2)*jlk(1:nmesh-1:2,ij2)) + &
+          2*sum(k4j1(2:nmesh-2:2)*jlk(2:nmesh-2:2,ij2)) + &
+                k4j1(nmesh)      *jlk(nmesh,ij2)          ) * dk/3
+      ! Symmetrize
+      h(ij2,ij1) = h(ij1,ij2)
+    end do ! ij2
+  end do ! ij1
+
+! Add some mixing weight of total kinetic energy to 'Hamiltonian'
+  do ij = 1,n
+    h(ij,ij) = (1-k2mix) * h(ij,ij) + k2mix * kj(ij)**2
+  end do
+
+! Initialize unity overlap matrix to call rdiag
+  s = 0
+  forall(i=1:n) s(i,i) = 1
+
+! Diagonalize 'Hamiltonian'
+  call filter_rdiag( h, s, n, n, n, e, c, n, 0, ierror )
+
+! Find how many eigenvalues are within filter tolerance
+  m = 0
+  do i = 1,n
+    if (e(i)/kj(i)**2-k2mix > emax) exit
+    m = i
+  end do
+  write(6,'(a)')       'Filter:    Number of eigenfunctions  of the'
+  write(6,'(a,i3,i3)') '           filtering kernel (total, used)=', n, m
+
+! Set number of filterets in return argument
+  nfilteret = m
+
+! Find eigenvectors at integration mesh points
+  g(0:nmesh,1:n) = matmul( jl(0:nmesh,1:n), c(1:n,1:n) )
+
+! Find function to be filtered at integration mesh points
+  fm(0:nmesh) = interpolation( f, r, rmesh(0:nmesh) )
+
+! Find eigenvectors at input mesh points
+  do ir = 1,nr
+    do ij = 1,n
+      kr = kj(ij) * r(ir)
+      jlr(ij) = bessph( l, kr ) / jlnorm(ij)
+    end do
+    gr(ir,:) = matmul( jlr(:), c(:,:) )
+  end do
+
+! Provided there is sufficient space, transfer filterets to return array
+  if (m.le.maxfilteret) then
+    filtertmp(1:nr,1:m) = gr(1:nr,1:m)
+  endif
+
+! Filter radial function (times r)
+  f = 0
+  do i = 1,m
+    fg = sum( rmesh(0:nmesh)**2 * fm(:) * g(:,i) ) * dr
+    f(1:nr) = f(1:nr) + fg * gr(1:nr,i)
+    if (m.le.maxfilteret) then
+      cfilteret(i) = fg
+    endif
+  enddo
+
+! Normalise coefficients
+  co1 = 0.0_dp
+  do i = 1,m
+    co1 = co1 + cfilteret(i)**2
+  enddo
+  co1 = 1.0_dp/sqrt(co1)
+  do i = 1,m
+    cfilteret(i) = co1*cfilteret(i)
+  enddo
+
+! Generate new filterets
+  filteret(1:nr,1) = f(1:nr)
+  do i = 2,m
+    filteret(1:nr,i) = filtertmp(1:nr,i) 
+  enddo
+
+! Renormalize filtered function
+  if (norm_opt==1) then
+    f0norm = sum( matmul(rmesh(0:nmesh)**2*fm,g(:,1:n))*dr )
+    fnorm  = sum( matmul(rmesh(0:nmesh)**2*fm,g(:,1:m))*dr )
+    f = f * f0norm/fnorm
+    filteret(1:nr,1:m) = filteret(1:nr,1:m)*f0norm/fnorm
+  else if (norm_opt==2) then
+    f0norm = sum( (matmul(rmesh(0:nmesh)**2*fm,g(:,1:n))*dr)**2 )
+    fnorm  = sum( (matmul(rmesh(0:nmesh)**2*fm,g(:,1:m))*dr)**2 )
+    f = f * sqrt(f0norm/fnorm)
+    filteret(1:nr,1:m) = filteret(1:nr,1:m)*sqrt(f0norm/fnorm)
+  else if (norm_opt/=0) then
+    STOP 'filter: ERROR: invalid value of norm_opt'
+  end if
+
+! Deallocate arrays
+  deallocate( filtertmp )
+  deallocate( aux, c, e, fm, g, gr, h, indx, jl, jlk, jlnorm, jlr, kj, s )
+
+end subroutine gen_filteret
+
+!------------------------------------------------------------------------------
+
+subroutine gen_pol_filteret( l, nr, maxfilteret, r, kc, nfilteret, filteret )
+
+! Creates a set of filterets within a specified cutoff
+! Ref: J.M.Soler notes of 17/10/2006.
+! Written as filter by J.M.Soler. Apr.2007
+! Adapted by J.D. Gale. Aug.2009
+
+  implicit none
+
+! Arguments
+  integer,  intent(in)    :: l                        ! Angular momentum of function to filter
+  integer,  intent(in)    :: nr                       ! Number of radial points
+  integer,  intent(in)    :: maxfilteret              ! Maximum number of filterets for which array is dimensioned
+  real(dp), intent(in)    :: kc                       ! Cutoff in reciprocal space
+  real(dp), intent(in)    :: r(nr)                    ! Radial mesh, in ascending order
+  real(dp), intent(out)   :: filteret(nr,maxfilteret) ! Radial part of filteret (if nfilteret =< maxfilteret)
+  integer,  intent(out)   :: nfilteret                ! Number of filterets created
+
+! Internal variables and arrays
+  integer :: i, ierror, ij, ij1, ij2, ik, ir, n, nj, m, j
+  real(dp):: cij, dk, dkr, dr, f0norm, fnorm, fg, jl0, jl1, jl2, &
+             k, k4j1(0:nmesh), kmesh(0:nmesh), kr, kr0, kr1, kr2, &
+             pi, rc, rmesh(0:nmesh)
+  integer, allocatable:: indx(:)
+  real(dp),allocatable:: c(:,:), e(:), g(:,:), gr(:,:), &
+                         h(:,:), jl(:,:), jlk(:,:), jlnorm(:), jlr(:), &
+                         kj(:), s(:,:)
+
+! Fix number of basis Bessel functions by empirical rule
+  pi = acos(-1._dp)
+  rc = r(nr)
+  n = minj + nint(njkr*kc*rc)
+
+! Find integration meshes
+  dr = rc / nmesh
+  dk = kc / nmesh
+  do i = 0,nmesh
+    rmesh(i) = i*dr
+    kmesh(i) = i*dk
+  end do
+
+! Allocate arrays
+  allocate( c(n,n), e(n), g(0:nmesh,n), gr(nr,n), h(n,n), indx(n), &
+            jl(0:nmesh,n), jlk(0:nmesh,n), jlnorm(n), jlr(n), kj(n), s(n,n) )
+
+! Find roots of spherical Bessel functions 
+  dkr = pi/2         ! Safe enough not to miss any root
+  kr1 = dkr/2
+  jl1 = bessph(l,kr1)
+  nj = 0
+  sampling: do
+    kr2 = kr1 + dkr
+    jl2 = bessph(l,kr2)
+    if (jl1*jl2 < 0._dp) then  ! Root bracketted
+      bisection: do
+        kr0 = (kr1+kr2)/2
+        if (kr2-kr1 < krtol) exit bisection
+        jl0 = bessph(l,kr0)
+        if (jl0*jl1 > 0._dp) then
+          kr1 = kr0
+          jl1 = jl0
+        else
+          kr2 = kr0
+          jl2 = jl0
+        end if
+      end do bisection
+      nj = nj + 1
+      kj(nj) = kr0 / rc
+      if (nj==n) exit sampling
+    end if
+    kr1 = kr2
+    jl1 = jl2
+  end do sampling
+
+! Find normalized spher. Bessel funcs. at integration mesh points
+  jl(:,:) = 0
+  do ij = 1,n
+    jlnorm(ij) = 0
+    do ir = 0,nmesh
+      kr = kj(ij)*rmesh(ir)
+      jl(ir,ij) = bessph( l, kr )
+      jlnorm(ij) = jlnorm(ij) + rmesh(ir)**2 * jl(ir,ij)**2 * dr
+    end do ! ir
+    jlnorm(ij) = sqrt(jlnorm(ij))
+    jl(0:nmesh,ij) = jl(0:nmesh,ij) / jlnorm(ij)
+  end do ! ij
+
+! Find Fourier transform of cutted Bessel functions
+! Ref: J.M.Soler notes of 16/04/2008
+  do ij = 1,n
+    cij = (-1._dp)**ij * 2*sqrt(rc/pi) * kj(ij)
+    do ik = 0,nmesh
+      k = kmesh(ik)
+      if (abs(k-kj(ij)) > 100*krtol) then
+        jlk(ik,ij) = cij * bessph(l,k*rc) / (k**2 - kj(ij)**2)
+      else ! denominator too small
+        ! Use j'(l,x)=-j(l+1,x)+l*jl(l,x)/x  and  j(l,kj(ij)*rc)=0
+        k = (k + kj(ij)) / 2
+        jlk(ik,ij) = cij * rc/(2*k) * &
+                   ( -bessph(l+1,k*rc) + l*bessph(l,k*rc)/(k*rc) )
+      end if
+    end do
+  end do ! ij
+
+! Find 'Hamiltonian' (integral between kc and infinity of k**2*jl1*jl2)
+  h(:,:) = 0
+  do ij1 = 1,n
+    h(ij1,ij1) = kj(ij1)**2 ! Integral from zero to infinity of diagonal terms
+    k4j1(0:nmesh) = kmesh(0:nmesh)**4 * jlk(0:nmesh,ij1)
+    do ij2 = 1,ij1
+      ! Subtract integral up to kc using Simpson's rule
+      h(ij1,ij2) = h(ij1,ij2) - &
+        ( 4*sum(k4j1(1:nmesh-1:2)*jlk(1:nmesh-1:2,ij2)) + &
+          2*sum(k4j1(2:nmesh-2:2)*jlk(2:nmesh-2:2,ij2)) + &
+                k4j1(nmesh)      *jlk(nmesh,ij2)          ) * dk/3
+      ! Symmetrize
+      h(ij2,ij1) = h(ij1,ij2)
+    end do ! ij2
+  end do ! ij1
+
+! Add some mixing weight of total kinetic energy to 'Hamiltonian'
+  do ij = 1,n
+    h(ij,ij) = (1-k2mix) * h(ij,ij) + k2mix * kj(ij)**2
+  end do
+
+! Initialize unity overlap matrix to call rdiag
+  s = 0
+  forall(i=1:n) s(i,i) = 1
+
+! Diagonalize 'Hamiltonian'
+  call filter_rdiag( h, s, n, n, n, e, c, n, 0, ierror )
+
+! Find how many eigenvalues are within filter tolerance
+  m = 0
+  do i = 1,n
+    if (e(i)/kj(i)**2-k2mix > emax) exit
+    m = i
+  end do
+  write(6,'(a)')       'Filter:    Number of eigenfunctions  of the'
+  write(6,'(a,i3,i3)') '           filtering kernel (total, used)=', n, m
+
+! Set number of filterets in return argument
+  nfilteret = m
+
+! Find eigenvectors at integration mesh points
+  g(0:nmesh,1:n) = matmul( jl(0:nmesh,1:n), c(1:n,1:n) )
+
+! Find eigenvectors at input mesh points
+  do ir = 1,nr
+    do ij = 1,n
+      kr = kj(ij) * r(ir)
+      jlr(ij) = bessph( l, kr ) / jlnorm(ij)
+    end do
+    gr(ir,:) = matmul( jlr(:), c(:,:) )
+  end do
+
+! Provided there is sufficient space, transfer filterets to return array
+  if (m.le.maxfilteret) then
+    filteret(1:nr,1:m) = gr(1:nr,1:m)
+  endif
+
+! Deallocate arrays
+  deallocate( c, e, g, gr, h, indx, jl, jlk, jlnorm, jlr, kj, s )
+
+end subroutine gen_pol_filteret
+
+!------------------------------------------------------------------------------
   function interpolation( yold, xold, xnew ) result(ynew)
 
     ! Interpolates function yold(xold) at new points xnew
@@ -475,7 +861,7 @@ end subroutine filter
   end function lagrange
 
 
-  ! ***************************************************************************
+! ***************************************************************************
 ! subroutine rdiag(H,S,n,nm,nml,w,Z,neigvec,iscf,ierror)
 !
 ! Simple replacement to subroutine rdiag of siesta

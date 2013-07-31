@@ -34,12 +34,9 @@ c Internal variables ...
 
       logical overflow, eigen, intensity
 
-      character
-     .  filein*20, fileout*20, fname*33
-
-      character
-     .  slabel*20, sname*150, slabel_defect*150, sname_defect*20, 
-     .  paste*33
+      character(len=150)::
+     .  filein, fileout, fname, paste,
+     .  slabel, sname, slabel_defect, sname_defect
 
       integer 
      .  i, i1, i2, iatom, imass(maxa), imasssc(maxasc), iunit, 

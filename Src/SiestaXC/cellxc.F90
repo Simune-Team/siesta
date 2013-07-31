@@ -210,8 +210,9 @@
 !         'PBESOL' => GGA Perdew et al, PRL, 100, 136406 (2008)
 !           'AM05' => GGA Mattsson & Armiento, PRB, 79, 155101 (2009)
 !          'DRSLL' => VDW Dion et al, PRL 92, 246401 (2004)
-!          'LMKLL' => VDW K.Lee et al, arXiv:1003.5255v1 (2010)
-!            'KBM' => VDW optB88-vdW of J.Klimes et al, JPCM 22, 022201 (2009)
+!          'LMKLL' => VDW K.Lee et al, PRB 82, 081101 (2010)
+!            'KBM' => VDW optB88-vdW of J.Klimes et al, JPCM 22, 022201 (2010)
+!             'VV' => VDW Vydrov-VanVoorhis, JCP 133, 244103 (2010)
 ! *******************************************************************
 
 MODULE m_cellXC
@@ -259,7 +260,7 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   use m_timer, only: timer_get     ! Returns counted times
   use m_timer, only: timer_start   ! Starts counting time
   use m_timer, only: timer_stop    ! Stops counting time
-  use m_vdwxc, only: vdw_exchng    ! GGA exchange apropriate for vdW flavour
+  use m_vdwxc, only: vdw_localxc   ! Local LDA/GGA xc apropriate for vdW flavour
   use m_vdwxc, only: vdw_decusp    ! Cusp correction to VDW energy
   use m_vdwxc, only: vdw_get_qmesh ! Returns q-mesh for VDW integrals
   use m_vdwxc, only: vdw_phi       ! Returns VDW functional kernel
@@ -312,6 +313,9 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 
   ! Fix density threshold below which it will be taken as zero
   real(dp),parameter :: Dmin = 1.0e-15_dp
+
+  ! Fix density threshold below which we make Vxc=0
+  real(dp),parameter :: Dcut = 1.0e-9_dp
 
   ! Fix a minimum value of k vectors to avoid division by zero
   real(dp),parameter :: kmin = 1.0e-15_dp
@@ -371,12 +375,12 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
      r11, r12, r13, r21, r22, r23
   real(dp):: &
      comTime, D(nSpin), dedk, dEcdD(nSpin), dEcdGD(3,nSpin), &
-     dEcidDj, dEcuspdD(nSpin), dEcuspdGD(3,nSpin), dEdDaux(nSpin),  &
+     dEcidDj, dEcuspdD(nSpin), dEcuspdGD(3,nSpin),  &
      dExdD(nSpin), dExdGD(3,nSpin), dExidDj, &
      dGdM(-nn:nn), dGidFj(3,3,-nn:nn), Dj(nSpin), &
      dMdX(3,3), DV, dVol, Dtot, dXdM(3,3), &
      dVcdD(nSpin*nSpin), dVxdD(nSpin*nSpin), &
-     Eaux, EcuspVDW, Enl, epsC, epsCusp, epsNL, epsX, f1, f2, &  
+     EcuspVDW, Enl, epsC, epsCusp, epsNL, epsX, f1, f2, &  
      GD(3,nSpin), k, kcell(3,3), kcut, kvec(3),  &
      stressVDW(3,3), sumTime, sumTime2, totTime, VDWweightC, volume, &
      XCweightC(maxFunc), XCweightVDW, XCweightX(maxFunc)
@@ -952,14 +956,9 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
       ! derivatives with respect to density and density gradient
       if (VDWfunctl) then
 
-        ! Exchange from the apropriate GGA functional
-        call vdw_exchng( irel, nSpin, D, GD, epsX, dExdD, dExdGD )
-
-        ! Local correlation from PW92 LDA
-        ! Use Eaux and dEdDaux to avoid overwritting epsX and dExdD
-        call ldaxc( 'PW92', irel, nSpin, D, Eaux, epsC,  &
-                    dEdDaux, dEcdD, dVxdD, dVcdD )
-        dEcdGD = 0.0_dp
+        ! Local exchange-corr. part from the apropriate LDA/GGA functional
+        call vdw_localxc( irel, nSpin, D, GD, epsX, epsC, &
+                          dExdD, dEcdD, dExdGD, dEcdGD )
 
 #ifdef DEBUG_XC
 !        ! Select only non local correlation energy and potential
@@ -1179,6 +1178,38 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 !      call addMeshData( nMesh, boxRght, Vrght, myDistr, myVxc )
     end do ! ic
   end if ! (GGA .and. myDistr/=0)
+
+  ! Make Vxc=0 if VDWfunctl and Dens<Dcut, to avoid singularities
+  if (VDWfunctl) then
+    do i3 = 0,myMesh(3)-1   ! Mesh indexes relative to my box origin
+    do i2 = 0,myMesh(2)-1
+    do i1 = 0,myMesh(1)-1
+      ii1 = i1 + myBox(1,1) ! Mesh indexes relative to cell origin
+      ii2 = i2 + myBox(1,2)
+      ii3 = i3 + myBox(1,3)
+      if (associated(myDens)) then
+        Dtot = sum( myDens(ii1,ii2,ii3,1:ndSpin) )
+      else
+        Dtot = sum( dens(i1,i2,i3,1:ndSpin) )
+      end if
+      if (Dtot<Dcut) then
+        if (associated(myVxc)) then
+          myVxc(ii1,ii2,ii3,:) = 0
+        else
+          Vxc(i1,i2,i3,:) = 0
+        end if
+        if (present(dVxcdD)) then
+          if (associated(mydVxcdD)) then
+            mydVxcdD(ii1,ii2,ii3,:) = 0
+          else
+            dVxcdD(i1,i2,i3,:) = 0
+          end if
+        end if ! (present(dVxcdD))
+      end if ! (Dtot<Dcut)
+    end do
+    end do
+    end do
+  end if ! (VDWfunctl)
 
   ! Copy Vxc data to output arrays
   if (associated(myVxc)) then  ! Distributed Vxc array

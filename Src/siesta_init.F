@@ -66,6 +66,7 @@
 
       implicit none
 #ifdef MPI
+      logical :: initialized
       integer :: MPIerror  ! Return error code in MPI routines
 #endif
       real(dp):: veclen       ! Length of a unit-cell vector
@@ -83,14 +84,17 @@
 !---------------------------------------------------------------------- BEGIN
 #ifdef MPI
 C     Initialise MPI and set processor number
-      call MPI_Init( MPIerror )
-#ifdef _TRACE_
-      call MPItrace_shutdown( )
-#endif
 
+      call MPI_Initialized( initialized, MPIerror )
+      if (.not.initialized) then
+        call MPI_Init( MPIerror )
+#ifdef _TRACE_
+        call MPItrace_shutdown( )
+#endif
+      endif ! (.not.initialized)
+      
       call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
       call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
-
       if (Node == 0) then
          call get_command_line_options()
          if (use_explicit_output_file) then
@@ -254,13 +258,16 @@ C     Initialise MPI and set processor number
       struct_only = fdf_get( 'Output-Structure-Only', .false. )
       if (IONode) then
          call write_struct( ucell, na_u, isa, iza, xa )
+         if (fdf_boolean('WriteCoorXmol',.false.)) then
+            call coxmol(iza, xa, na_u)
+         endif
          if (lUseZmatrix) then
             call write_canonical_ucell_and_Zmatrix(
      &                        filename="OUT.UCELL.ZMATRIX.INITIAL")
          endif
       endif
       if (struct_only) then
-         call bye( 'End of structure processing' )
+         call bye('End of structure processing')
       endif
       
 !     End of Initial Structure Processing

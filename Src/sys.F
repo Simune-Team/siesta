@@ -85,19 +85,14 @@
       integer rc
 #endif
 
-
-! Even though formally (in MPI 1.X), only the master node
-! can do I/O, in those systems that allow it having each
-! node state its complaint can be useful.
-
-       if (Node.eq.0) then
+      if (Node.eq.0) then
          if (present(str)) then
             write(6,'(a)') trim(str)
          endif
          write(6,'(a)') 'Requested End of Run. Bye!!'
-       endif
+      endif
 
-         if (Node .eq. 0) call pxfflush(6)
+      if (Node .eq. 0) call pxfflush(6)
 
 #ifdef MPI
       call MPI_Finalize(rc)

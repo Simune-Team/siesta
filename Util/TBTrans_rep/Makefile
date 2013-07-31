@@ -52,7 +52,8 @@ SIESTA_OBJS= precision.o sys.o m_io.o alloc.o  memoryinfo.o memory.o pxf.o \
 	     kpoint_convert.o timestamp.o m_wallclock.o cdiag.o m_spin.o \
 	     zheevds.o debugmpi.o \
 	     m_ts_contour.o m_ts_gf.o m_ts_scattering.o \
-	     m_ts_aux_rout.o m_ts_io.o m_ts_electrode.o m_ts_cctype.o
+	     m_ts_aux_rout.o m_ts_io.o m_ts_electrode.o m_ts_cctype.o \
+             timer_tree.o die.o
 
 TBTOBJS= $(SIESTA_OBJS) $(MOD_TOBJS) $(SYSOBJ) $(EXTRA) \
          tbtrans.o transmission.o tbt_init.o tbt_reinit.o \
@@ -491,7 +492,8 @@ struct_init.o: alloc.o atmfuncs.o atomlist.o files.o iopipes.o ioxv.o
 struct_init.o: m_iostruct.o parallel.o periodic_table.o siesta_cml.o
 struct_init.o: siesta_geom.o siesta_options.o zmatrix.o
 sys.o: parallel.o
-timer.o: m_timer.o sys.o
+timer.o: m_timer.o sys.o timer_tree.o
+timer_tree.o: m_walltime.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
 ts_init.o: files.o m_ts_contour.o m_ts_gf.o m_ts_kpoints.o m_ts_options.o
 ts_init.o: parallel.o

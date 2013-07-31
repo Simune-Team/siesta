@@ -154,6 +154,15 @@ C*******************************************************************************
 C Initialise error flag
       ierror = 0
 
+! Trap n=1 case, which is not handled correctly otherwise (JMS 2011/07/19)
+      if (n==1) then
+        w(:) = 0._dp
+        w(1) = H(1,1) / S(1,1)
+        Z(:,:) = 0._dp
+        Z(1,1) = 1._dp / sqrt(S(1,1))
+        goto 1000   ! exit point
+      end if
+
 ! vl and vu are not currently used, but they must be initialized
       vl = 0
       vu = n
@@ -637,9 +646,6 @@ C*******************************************************************************
 C Common exit point 
   999 continue
 
-C Set first call flag to false
-      FirstCall = .false.
-
 C Deallocate workspace arrays
 #ifdef MPI
       if (associated(Zsave)) call de_alloc( Zsave, 'Zsave', 'rdiag' )
@@ -655,8 +661,14 @@ C Deallocate workspace arrays
       call de_alloc( iwork, 'iwork', 'rdiag' )
       call de_alloc( work, 'work', 'rdiag' )
 
+C  Exit point, excluding deallocations
+1000  continue
+
 C  Restore old allocation defaults
       call alloc_default( restore=oldDefaults )
+
+C Set first call flag to false
+      FirstCall = .false.
 
 C Stop time count
       call timer('rdiag',2)

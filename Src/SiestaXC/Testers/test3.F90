@@ -43,6 +43,10 @@ PROGRAM siestaXCtest3
   integer, parameter:: nf = 9            ! Number of tested functionals
   integer:: indexf(nf) = (/1,2,  4,5,6,  8,9,10,11/)  ! Indexes from list below
 
+  ! Same to test a single functional
+!  integer, parameter:: nf = 1        ! Number of tested functionals
+!  integer:: indexf(nf) = (/11/)      ! Indexes from list below
+
   ! All functionals available
   !                  1,       2,       3,       4,       5,   
   !                  6,       7,       8,       9,      10,
@@ -55,7 +59,8 @@ PROGRAM siestaXCtest3
     auth(nfTot) = (/'PZ    ','PW92  ','PW91  ','PBE   ','RPBE  ', &
                     'revPBE','LYP   ','WC    ','PBESOL','AM05  ', &
 !                    'DRSLL ' /) 
-                    'LMKLL ' /) 
+!                    'LMKLL ' /) 
+                    'VV    ' /) 
                                      
 
   ! A few random numbers

@@ -232,6 +232,9 @@ c **********************************************************************
                 ia2 = fdf_bintegers(pline,2)
                 if (ia1 .lt. 0) ia1 = na + ia1 + 1
                 if (ia2 .lt. 0) ia2 = na + ia2 + 1
+                if ( min(ia1,ia2) < 1 .or. na < max(ia1,ia2) ) then
+                 call die('Atom constraints must be in range: [-na;na]')
+                end if
                 if ((nn .eq. 4) .and. (name4 .eq. 'step')) then
                   ia3 = abs(fdf_bintegers(pline,3))
                 else
@@ -265,7 +268,7 @@ c **********************************************************************
                 do ix= 1, 3
                   nc = nc + 1
                   if (nc .eq. maxc) then
-                    maxcnew = nc + nint(0.1*nc)
+                    maxcnew = nc + max(nint(0.1*nc),1)
                     call re_alloc( ctype, 1, maxcnew, name='ctype',            
      &                             routine='fixed', copy=.true. )
                     call re_alloc( iac, 1, maxcnew, name='iac',            
@@ -285,7 +288,7 @@ c **********************************************************************
                 ! Make only one constraint in the specified direction
                 nc = nc + 1
                 if (nc .eq. maxc) then
-                  maxcnew = nc + nint(0.1*nc)
+                  maxcnew = nc + max(nint(0.1*nc),1)
                   call re_alloc( ctype, 1, maxcnew, name='ctype',            
      &                           routine='fixed', copy=.true. )
                   call re_alloc( iac, 1, maxcnew, name='iac',            

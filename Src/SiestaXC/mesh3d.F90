@@ -2293,6 +2293,7 @@ subroutine redistributeMeshData( srcDistr, srcData, dstDistr, dstData, task )
   character(len=*),parameter:: myName = 'redistributeMeshData '
   character(len=*),parameter:: errHead = myName//'ERROR: '
   integer:: dstBox(2,3), dstMesh(3), iDistr, nData, nMesh(3)
+  integer:: i1, i2, i3, idat   ! provisional addition. JMS, June 2013
 
 ! For serial execution, avoid allocating a new array
   if (srcDistr==0 .and. dstDistr==0) then
@@ -2316,7 +2317,17 @@ subroutine redistributeMeshData( srcDistr, srcData, dstDistr, dstData, task )
 
 ! Copy srcData to dstData
   if ( sameMeshDistr(srcDistr,dstDistr) ) then
-    dstData = srcData
+    ! Provisional loops to circunvent an apparent compiler bug. JMS, June 2013.
+    do idat = 1,nData
+      do i3 = 0,dstMesh(3)-1
+      do i2 = 0,dstMesh(2)-1
+      do i1 = 0,dstMesh(1)-1
+        dstData(i1,i2,i3,idat) = srcData(i1,i2,i3,idat)
+      end do
+      end do
+      end do
+    end do
+!    dstData = srcData   ! original code
   else
     call copyMeshData( nMesh, srcDistr, srcData, dstBox, dstData, task )
   end if

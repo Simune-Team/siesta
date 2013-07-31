@@ -1,4 +1,20 @@
 ------------------------------------------------------------
+July 31, 2013  A. Garcia        trunk-443--pexsi-36
+Sync to trunk-443
+
+New patches:
+
+* Update to gnubands program.
+* Cosmetic fixes to please Cray compiler. PRACE arch.make files.
+* Siesta as subroutine using MPI. Vydrov-VanVoorhis vdW functional.
+  (Note: The MPI version of the "server/subroutine" option does not
+   yet work with PEXSI)
+* Bug fixes in constraints routine.
+* New option for KB projector generation
+* Charge confinement and filteret basis sets.
+* Compilation fixes for tbtrans. Cosmetic changes.
+
+------------------------------------------------------------
 July 4, 2013   G. Huhs, A. Garcia        trunk-434--pexsi-36
 Use alloc module in pexsi. New 'matrix' mode. Fix index arrays
 

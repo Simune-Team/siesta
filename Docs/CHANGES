@@ -6,6 +6,283 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2013-07-31  16:05:00 GMT                                     trunk-443
+Update to gnubands program
+                                                              
+(Nick P. Andersen)
+
+Added a fermi shift flag (-F), and energy range flags (-e -E) to
+specify in which range one needs the window. This energy range
+specification can be used at the same time as the band-index
+specification.
+
+Fixed a bug when printing for spin-polarized calculations.
+
+modified.
+  Util/Bands/new.gnubands.f90
+
+-----------------------------------------------------------------------
+2013-07-31  16:00:00 GMT                                     trunk-442
+Synch patch-logs from siesta-3.0 branch up to siesta-3.2 release
+
+Did a "merge" followed by a "revert ." to keep only the patch logs, to
+maintain the ability to merge fixes applied initially to the
+siesta-3.0 branch.
+
+(no changes)
+
+-----------------------------------------------------------------------
+2013-07-05  15:40:00 GMT                                     trunk-441
+Cosmetic fixes to please Cray compiler. Arch.make files for PRACE computers
+
+(Fabiano Corsetti)
+
+* Some cosmetic changes for Cray compiler.
+
+* Added some arch.make files for PRACE computers to Src/Sys
+
+added:
+  Src/Sys/arch.make.curie
+  Src/Sys/arch.make.fermi
+  Src/Sys/arch.make.hermit
+  Src/Sys/arch.make.juqueen
+  Src/Sys/arch.make.marenostrum
+  Src/Sys/arch.make.supermuc
+modified:
+  Src/m_partial_charges.F
+  Src/rhoofd.F
+  Src/vmat.F
+
+-----------------------------------------------------------------------
+2013-07-04  16:00:00 GMT                                     trunk-440
+Avoid allocation of auxiliary index arrays in the general case
+
+* Some auxiliary index arrays intended only for O(N) calculations were
+  allocated unconditionally. This has been fixed.
+
+modified:
+  Src/initparallel.F
+
+-----------------------------------------------------------------------
+2013-06-21  11:10:00 GMT                                     trunk-439
+Siesta as subroutine using MPI. Vydrov-VanVoorhis vdW functional
+
+(Implemented by Jose Soler)
+
+* Siesta as a subroutine using MPI.
+
+A new version of fsiesta (siesta forces as a subroutine) that uses MPI
+to keep different siesta jobs, with their corresponding memory
+allocations, separated as different MPI processes. Each siesta job can
+itself run in parallel using its own MPI communicator.
+
+See Util/SiestaSubroutine for more information.
+
+* Implementation of Vydrov-VanVoorhis (VV) vdW functional.
+
+Ref: O.A.Vydrov & T.vanVoorhis, JCP 133, 244103 (2010)
+Conditions have been added in vdwxc to trap the VV case, calling the 
+corresponding routines in vv_vdwxc, where most of the new code is.
+
+
+* Minor changes:
+
+Array copy in mesh3d expanded in do loops to circunvent an apparent
+compiler bug
+
+Incresed length of some character strings that hold file names
+
+Increased parameter minloc in rhoofd and vmat for better efficiency
+
+Two minor bugs corrected in vdwxc.f90
+
+vdw_exchng changed to vdw_localxc in m_vdwxc
+
+The coefficients for interpolation of phi(d1,d2) in the upper boundary
+of d1 and d2 have been corrected in vdwxc:bcucof. But since these
+boundary values may be never encountered, this correction is probably
+irrelevant.  Additionally, a couple of comments have been corrected,
+and the reference output of the graphite_vdw_df test has been updated.
+
+A trap has been added in rdiag and cdiag to handle the trivial
+eigenvalue problem for matrices of dimension one, which was not
+treated correctly by the LAPACK routines.
+
+Consistency of array names in calls to re_alloc and de_alloc
+
+added:
+  Src/SiestaXC/Testers/test2.m
+  Src/SiestaXC/Testers/test5.f90
+  Src/SiestaXC/Testers/test5.m
+  Src/SiestaXC/vv_vdwxc.F90
+  Src/fsiesta_mpi.F90
+  Src/siesta_master.f90
+  Util/SiestaSubroutine/SimpleTest/
+  Util/SiestaSubroutine/SimpleTest/Src/
+  Util/SiestaSubroutine/SimpleTest/Src/Makefile
+  Util/SiestaSubroutine/SimpleTest/Src/phonons.f90
+  Util/SiestaSubroutine/SimpleTest/Src/simple_mpi_parallel.f90
+  Util/SiestaSubroutine/SimpleTest/Src/simple_pipes_parallel.f90
+  Util/SiestaSubroutine/SimpleTest/Src/simple_serial.f90
+  Util/SiestaSubroutine/SimpleTest/h2o.fdf
+  Util/SiestaSubroutine/SimpleTest/h2o.out
+  Util/SiestaSubroutine/SimpleTest/test.sh
+renamed:
+  Src/fsiesta.F90 => Src/fsiesta_pipes.F90
+modified:
+  Docs/siesta.tex
+  Pseudo/atom/pseudoXML.f
+  Pseudo/atom/velect.f
+  Src/MPI/mpi_siesta.f90
+  Src/Makefile
+  Src/SiestaXC/Testers/makefile
+  Src/SiestaXC/Testers/test2.f90
+  Src/SiestaXC/Testers/test3.F90
+  Src/SiestaXC/Testers/test4.F90
+  Src/SiestaXC/atomxc.F90
+  Src/SiestaXC/cellxc.F90
+  Src/SiestaXC/lib-00-README
+  Src/SiestaXC/lib-makefile
+  Src/SiestaXC/makefile
+  Src/SiestaXC/mesh3d.F90
+  Src/SiestaXC/siestaxc.F90
+  Src/SiestaXC/vdwxc.F90
+  Src/SiestaXC/xcmod.f90
+  Src/atmfuncs.f
+  Src/cdiag.F
+  Src/fft.F
+  Src/m_timer.F90
+  Src/moreParallelSubs.F90
+  Src/new_dm.F
+  Src/pxf.F90
+  Src/rdiag.F
+  Src/reinit.F
+  Src/rhoofd.F
+  Src/setspatial.f
+  Src/siesta_end.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/siesta_move.F
+  Src/struct_init.F
+  Src/vmat.F
+  Tests/Reference/graphite_vdw_df.out
+  Tests/graphite_vdw_df/graphite_vdw_df.fdf
+  Util/SiestaSubroutine/README
+  Util/Vibra/Src/outbands.f
+  Util/Vibra/Src/vibrator.f
+  version.info
+  Src/fsiesta_pipes.F90
+
+
+-----------------------------------------------------------------------
+2013-06-10  14:20:00 GMT                                     trunk-438
+Bug fixes in constraints routine
+
+* Make sure that the atomic indices are in the correct range.
+
+* Add code to guarantee the enlargement of an array in the
+general case.
+
+(Thanks to Nick P. Andersen)
+
+modified:
+  Src/fixed.F
+
+-----------------------------------------------------------------------
+2013-06-10  14:10:00 GMT                                     trunk-437
+New option for KB projector generation (J. Junquera)
+
+With the option
+
+KB.New.Reference.Orbitals  T
+
+the routine to generate KB projectors will use slightly different
+parameters for the construction of the reference orbitals involved
+(Rmax=60 bohr both for integration and normalization).
+
+modified:
+  Docs/siesta.tex
+  Src/atom.F
+  Src/atom_options.F90
+
+-----------------------------------------------------------------------
+2013-06-05  13:00:00 GMT                                     trunk-436
+Charge confinement and filteret basis generation options
+
+Two experimental features related to basis-set generation:
+
+* Charge confinement feature for basis set generation
+(Emilio Artacho)
+
+Present soft confinement produces bad polarisation orbitals if the
+original atomic orbitals are unbound or very wide (automatic
+polarisation still gives too wide orbitals).
+
+A Q/r potential with Yukawa decay can now be added to the atomic and
+soft-confinement potentials. Soft-confinement sshould now be used only
+for the soft tail cutting with r_in ~ 0.9 r_c.
+
+See the manual for more details.
+
+* New 'filteret' basis-set scheme.  
+(Julian Gale)
+
+New options to use the filterets (functions appearing in the filtering
+mechanism proposed by Anglada and Soler) as a systematic basis
+set. The size of the basis set is controlled by the filter cut-off for
+the orbitals.  
+
+See the manual for more details.
+
+(Thanks to Tristana Sondon for help in merging)
+
+added:
+  Tests/Reference/chargeconf-h2o.out
+  Tests/Reference/h2o_filteret_basis.out
+  Tests/chargeconf-h2o/
+  Tests/chargeconf-h2o/chargeconf-h2o.fdf
+  Tests/chargeconf-h2o/chargeconf-h2o.pseudos
+  Tests/chargeconf-h2o/makefile
+  Tests/h2o_filteret_basis/
+  Tests/h2o_filteret_basis/h2o_filteret_basis.fdf
+  Tests/h2o_filteret_basis/h2o_filteret_basis.pseudos
+  Tests/h2o_filteret_basis/makefile
+modified:
+  Docs/siesta.tex
+  Src/atm_transfer.f
+  Src/atm_types.f
+  Src/atmparams.f
+  Src/atom.F
+  Src/basis_specs.f
+  Src/basis_types.f
+  Src/initatom.f
+  Src/m_filter.f90
+  Src/old_atmfuncs.f
+
+-----------------------------------------------------------------------
+2013-06-05  12:40:00 GMT                                     trunk-435
+Compilation fixes for tbtrans. Cosmetic changes
+
+The old symbol "DAT_double" was still being used in one of the
+routines of the new tbtrans program (in Util/TBTrans_rep).  References
+related to new timer_tree module were missing in both versions of
+tbtrans.
+
+In parallel operation, the "bye" routine now produces output only
+in the master node.
+
+In runs which are requested to end after the initial processing of
+the structure, XMOL output is produced if requested.
+
+modified:
+  Src/siesta_init.F
+  Src/sys.F
+  Util/TBTrans/Makefile
+  Util/TBTrans_rep/Makefile
+  Util/TBTrans_rep/m_tbt_iotshs.F90
+  Util/TBTrans_rep/m_tbt_read_tshs.F90
+
+-----------------------------------------------------------------------
 2013-03-31  19:00:00 GMT                                     trunk-434
 Experimental timer with call-tree awareness
 

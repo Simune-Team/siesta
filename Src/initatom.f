@@ -32,10 +32,10 @@
       use basis_types, only: deallocate_spec_arrays
       use basis_types, only: iz, lmxkb, nkbl, 
      &           erefkb, lmxo, nzeta, rco, 
-     &           lambda,
+     &           lambda, filtercut,
      &           atm_label, polorb, semic, nsemic,
      &           cnfigmx, charge, smass, basistype,
-     &           rinn, vcte, split_norm
+     &           rinn, vcte, qcoe, qyuk, qwid, split_norm
       use basis_types, only: write_basis_specs
       use basis_types, only: basis_def_t, basis_parameters
       use basis_specs, only: read_basis_specs
@@ -97,18 +97,25 @@
      &                    lambda(1:nzetmx,0:lmaxd,1:nsemx,is),
      &                    atm_label(is), polorb(0:lmaxd,1:nsemx,is),
      &                    semic(is), nsemic(0:lmaxd,is),
-     &                    cnfigmx(0:lmaxd,is),charge(is), smass(is),
+     &                    cnfigmx(0:lmaxd,is), charge(is), smass(is),
      &                    basistype(is), is, rinn(0:lmaxd,1:nsemx,is),
      &                    vcte(0:lmaxd,1:nsemx,is),
-     &                    split_norm(0:lmaxd,1:nsemx,is), basp)
+     &                    qcoe(0:lmaxd,1:nsemx,is),
+     &                    qyuk(0:lmaxd,1:nsemx,is),
+     &                    qwid(0:lmaxd,1:nsemx,is),
+     &                    split_norm(0:lmaxd,1:nsemx,is), 
+     &                    filtercut(0:lmaxd,1:nsemx,is), basp)
+
         enddo 
+
         call prinput(nsp)
 
 !       Create the new data structures for atmfuncs.
-        call atm_transfer( )
-        call deallocate_old_arrays( )
-        call elec_corr_setup( )
+        call atm_transfer()
+        call deallocate_old_arrays()
+        call elec_corr_setup()
         ns = nsp               ! Set number of species for main program
+
       endif
 
       call dump_basis_ascii()
