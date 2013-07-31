@@ -221,7 +221,7 @@ C If spatial perform allocation of atoms to processors
           ProcessorY = 1
         endif
 
-      elseif (.not. use_dd) then
+      elseif ((isolve.eq.1) .AND. (.not. use_dd)) then
 C
 C  Build dummy lists linking orbitals with parallel structure
 C

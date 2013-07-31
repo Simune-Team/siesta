@@ -4,6 +4,16 @@
 
 ** CHANGES ALONG siesta-3 branch
 ------------------------------------------------------------------------
+2013-07-31  12:50:00 GMT                                 siesta-3.2-pl2
+Avoid allocation of auxiliary index arrays in the general case
+
+* Some auxiliary index arrays intended only for O(N) calculations were
+  allocated unconditionally. This has been fixed.
+
+modified:
+  Src/initparallel.F
+
+------------------------------------------------------------------------
 2013-05-02  14:00:00 GMT                                 siesta-3.2-pl1
 Update to gnubands program
 
