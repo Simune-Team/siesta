@@ -6,6 +6,16 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2013-07-31  16:00:00 GMT                                     trunk-442
+Synch patch-logs from siesta-3.0 branch up to siesta-3.2 release
+
+Did a "merge" followed by a "revert ." to keep only the patch logs, to
+maintain the ability to merge fixes applied initially to the
+siesta-3.0 branch.
+
+(no changes)
+
+-----------------------------------------------------------------------
 2013-07-05  15:40:00 GMT                                     trunk-441
 Cosmetic fixes to please Cray compiler. Arch.make files for PRACE computers
 
