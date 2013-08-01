@@ -19,6 +19,10 @@
           m = spp%orb_m(io)
           call register_in_rf_pool(func,l,m,"orb",(/is,io/),gindex)
           spp%orb_gindex(io) = gindex
+!!         For debugging
+!          write(6,*)'Atomic orbitals'
+!          write(6,*)'is, io, gindex = ', is, io, gindex 
+!!         End debugging
        enddo
     enddo
 
@@ -32,6 +36,10 @@
           io = -ko
           call register_in_rf_pool(func,l,m,"kbproj",(/is,io/),gindex)
           spp%pj_gindex(ko) = gindex
+!!         For debugging
+!          write(6,*)'KB projectors'
+!          write(6,*)'is, ko, gindex = ', is, ko, gindex 
+!!         End debugging
        enddo
     enddo
     
@@ -43,6 +51,10 @@
        m = 0
        call register_in_rf_pool(func,l,m,"vna",(/is/),gindex)
        spp%vna_gindex = gindex
+!!         For debugging
+!          write(6,*)'VNA'
+!          write(6,*)'is, gindex = ', is, gindex 
+!!         End debugging
     enddo
 
     call show_pool()

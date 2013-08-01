@@ -1,8 +1,41 @@
 
 subroutine Mmn( ispin ) 
+!
+!     In this subroutine we compute the overlaps between Bloch orbitals
+!     at neighboring k points:
+!
+!     $M_{m n}^{(\vec{k}, \vec{k} + \vec{b})} = 
+!        \langle u_{m \vec{k}} \vbar u_{n \vec{k} + \vec{b} \rangle
+!
+!     Eq. (27) of the paper by N. Marzari et al. 
+!     Review of Modern Physics 84, 1419 (2012)
+!
+!     In the previous formula, only the periodic part of the wave functions
+!     at neighbour k-points enter in the Equation.
+!     We have to adapt this equation to the input provided by Siesta
+!     (the coefficients of the whole wave function, not only of the periodic
+!     part). 
+!     This is done following Eq. (5) of the paper by 
+!     D. Sanchez-Portal et al., Fundamental Physics for Ferroelectrics 
+!     (AIP Conf. Proc. Vol 535) ed R. Cohen (Melville, AIP) pp 111-120 (2000).
+!
+!     OUTPUT: 
+!     File called seedname.mmn, where the overlap matrices are written in 
+!     the format required by Wannier90
+!
+!     File called seedname.eig, where the eigenvalues of the Hamiltonian
+!     at the required k-points are written according to the format required
+!     by Wannier90.
+!
+!     Implemented by J. Junquera and R. Korytar, July 2013
+!
 
   use precision,          only: dp           ! Real double precision type
   use m_siesta2wannier90, only: numkpoints   ! Total number of k-points
+                                             !   for which the overlap of the
+                                             !   periodic part of the wavefunct
+                                             !   with a neighbour k-point will
+                                             !   be computed
   use m_siesta2wannier90, only: kpointsfrac  ! List of k points relative to the 
                                              !   reciprocal lattice vectors.
                                              !   First  index: component
@@ -26,6 +59,14 @@ subroutine Mmn( ispin )
   use m_siesta2wannier90, only: bvectorsfrac ! Vectors that connect each 
                                              !   mesh k-point to its 
                                              !   nearest neighbours.
+  use m_siesta2wannier90, only: Mmnkb        ! Matrix of the overlaps of 
+                                             !   periodic parts of Bloch waves.
+                                             !   <u_{n,k}|u_{m,k+b}>
+  use m_siesta2wannier90, only: eo           ! Eigenvalues of the Hamiltonian 
+                                             !   at the numkpoints introduced in
+                                             !   kpointsfrac 
+                                             !   First  index: band index
+                                             !   Second index: k-point index
   use m_spin,             only: nspin        ! Number of spin components
   use atomlist,           only: no_s         ! Number of orbitals in supercell
                                              ! NOTE: When running in parallel,
@@ -60,17 +101,57 @@ subroutine Mmn( ispin )
                                              ! NOTE: while running in parallel,
                                              ! each core knows about the 
                                              ! wave functions of no_l bands
+! Notes about the use of psi:
+! the array psi is allocated with a size equal to 2 * no_u * no_l
+! 2 is for the complex nature of the coefficients (we have to store the
+! real and the imaginary parts).
+! no_u comes from the fact that for every band we have as many coefficients
+! as basis orbitals in the unit cell.
+! no_l is due to the fact that each node knows the coefficients of no_l bands.
+! When running in serial, no_l = no_u.
+! When running in parallel, no_l < no_u, and sum_{nodes} no_l = no_u.
+! In mmn.F90, psi is a one dimensional array.
+! 
+! In diagpol, as in cdiag, this array has three dimensions,
+! (2, nuotot=no_u, nuo=no_l).
+! The first index refers to the real or imaginary part.
+! The second index refers to the atomic orbital.
+! The third index is the band index.
+! 
+! However, the array is reallocated in savepsi, when we want to store it
+! to save the coefficients for a given k-point.
+! There, a new variable is defined, psiatk (psiprev in ksv.f), 
+! with a dimension of 
+! (2, nuo=no_l, nuotot=no_u).
+! Again, the first index refers to the real or imaginary part.
+! The second index refers to the atomic orbital.
+! The third index is the band index.
+!
+! But now, while running in parallel, regarding psiatk each node knows the 
+! coefficients of no_l orbitals of all the OCCUPIED BANDS.
+! For the unoccupied bands the coefficients are set to zero.
+
   use alloc,              only: re_alloc     ! Reallocation routines
+  use parallel,           only: IOnode       ! Input/output node
   use m_digest_nnkp,      only: getdelkmatgenhandle
+  use m_noccbands,        only: noccupied    ! Number of occupied bands for a 
+                                             !   given spin direction
+  use units,              only: eV           ! Conversion factor from Ry to eV
+  use m_planewavematrixvar, only: delkmat    ! Matrix elements of a plane wave
+                                             !   Only for one \vec{b} vector
+  use m_planewavematrixvar, only: delkmatgen ! Matrix elements of a plane wave
+                                             !   (array that contains the 
+                                             !   matrices for all the \vec{b}
+                                             !   vectors
 
 ! For debugging
-  use parallel,           only: Node, Nodes, IOnode
+  use parallel,           only: Node, Nodes
   use sys,                only: die
 ! End debugging
 
   implicit none
 
-  integer,  intent(in) :: ispin                   ! Spin component
+  integer,  intent(in) :: ispin              ! Spin component
 ! Internal variables
 
   integer  :: ik             ! Counter for the k-point loop
@@ -93,9 +174,10 @@ subroutine Mmn( ispin )
                              !   it gives the position of the delkmatgen 
                              !   array where exp^(i \vec{b} \cdot \vec{r})
                              !   will be stored
-  real(dp) :: kvector(3)     ! Wave vector where the Overlap matrix between
-                             ! the periodic part of the wave functions will be
-                             ! computed
+  integer  :: nbands         ! Number of occupied bands
+  real(dp) :: kvector(3)     ! k-point vector for which the Overlap matrix 
+                             !   between the periodic part of the 
+                             !   wave functions will be computed
   real(dp) :: kvectorneig(3) ! Wave vector of the neighbor k-point
   real(dp) :: gfold(3)       ! Reciprocal lattice vector that brings
                              !   the inn-neighbour specified in nnlist
@@ -117,7 +199,8 @@ subroutine Mmn( ispin )
 ! Start time counter
   call timer( 'Mmn', 1 )
 
-! Allocate memory related with the dense matrices
+! Allocate memory related with the dense matrices that will be used in
+! the diagonalization routines.
 ! (Hamiltonian, Overlap and Coefficient vectors)
 ! These matrices are defined in the module dense matrix
   nhs  = 2 * no_u * no_l
@@ -128,11 +211,40 @@ subroutine Mmn( ispin )
   call re_alloc( psi,  1, npsi, 'psi',  'Mmn' )
 
 ! Allocate memory related with the eigenvalues of the Hamiltonian (epsilon)
-! and with a local variable where the coefficients of the eigenvector for the
+! and with a local variable where the coefficients of the eigenvector at the
 ! k-point will be stored
   nullify( epsilon, psiatk )
   call re_alloc( epsilon,      1, no_u, 'epsilon',      'Mmn' )
   call re_alloc( psiatk,       1, npsi, 'psiatk',       'Mmn' )
+
+! Allocate memory related with the overlap matrix between periodic parts
+! of Bloch functions at neighbour k-points.
+! These matrix will depend on four indices (see Eq. (27) of the review by
+! N. Marzari et al., Review of Modern Physics 84, 1419 (2012):
+! $M_{m n}^{(\vec{k}, \vec{b})} = 
+!    \langle u_{m \vec{k} \vbar u_{n \vec{k} + \vec{b}} \rangle
+! where $m$ and $n$ run between 1 and the number of occupied bands
+! $\vec{k}$ runs over all the k-points in the first BZ where these matrices 
+! will be computed and 
+! $\vec{b}$ runs over all the neighbours of the k-point.
+! These last two variables are read from the .nnkp file.
+  nbands = noccupied( ispin )
+  nullify( Mmnkb )
+  call re_alloc( Mmnkb,          &
+ &               1, nbands,      &
+ &               1, nbands,      &
+ &               1, numkpoints,  &
+ &               1, nncount,     &
+ &               'Mmnkb',        &
+ &               'Mmn' )
+
+! Allocate memory related with the eigenvalues of the Hamiltonian
+  nullify( eo )
+  call re_alloc( eo,             &
+ &               1, nbands,      &
+ &               1, numkpoints,  &
+ &               'eo',           &
+ &               'Mmn' )
 
 ! Initialise psi
   do io = 1, npsi
@@ -143,20 +255,22 @@ subroutine Mmn( ispin )
   do ik = 1, numkpoints
 !   Compute the wave vector in bohr^-1 for every vector in the list
 !   (done in the subroutine getkvector).
-!   Remember that kpointsfrac are read in reduced units, so we have
-!   to multiply then by the reciprocal lattice vector.
+!   Remember that kpointsfrac are read from the .nnkp file in reduced units, 
+!   so we have to multiply then by the reciprocal lattice vector.
     call getkvector( kpointsfrac(:,ik), kvector )
 
-!   For debugging
-    if( IOnode ) then
-      write(6,'(/,a,3f12.5)')         &
- &      'mmn: kvector = ', kvector
-!      do io = 1, maxnh
-!        write(6,'(i5,2f12.5)')io, H(io,ispin), S(io)
-!      enddo 
-    endif
-!   End debugging
+!!   For debugging
+!    if( IOnode ) then
+!      write(6,'(/,a,3f12.5)')         &
+! &      'mmn: kvector = ', kvector
+!!      do io = 1, maxnh
+!!        write(6,'(i5,2f12.5)')io, H(io,ispin), S(io)
+!!      enddo 
+!    endif
+!!   End debugging
 
+!   Diagonalize the Hamiltonian for the k-point.
+!   Here, we obtain $\psi_{n} (\vec{k})$, where n runs between 1 and no_l
     call diagpol( ispin, nspin, no_l, no_s, no_u,                             &
  &                maxnh, numh, listhptr, listh, H, S, xijo, indxuo, kVector,  &
  &                epsilon, psi, 2, Haux, Saux )
@@ -169,8 +283,8 @@ subroutine Mmn( ispin )
 !!   to the other. Also, any linear combination of eigenvectors with 
 !!   the same eigenvalue is also a solution of the Hamiltonian,
 !!   and the coefficients of the linear combination might be different.
-!!    if( Node .eq. 1 ) then
-!    if( IOnode ) then
+!    if( Node .eq. 1 ) then
+!!    if( IOnode ) then
 !      iuo = 0
 !      do iband = 1, no_l
 !        write(6,'(a,i5,f12.5)')         &
@@ -185,11 +299,32 @@ subroutine Mmn( ispin )
 !!   End debugging
 
 !   Store the wavefunction at the k-point. 
-    call savepsi( psiatk, psi, no_l, no_u, numbands(ispin) )
+!   Take into account the note on how psi is stored before.
+!   Only the coefficients for the occupied bands are kept.
+!   The coefficients for the unoccupied bands are set to 0.
+    call savepsi( psiatk, psi, no_l, no_u, nbands )
 
+!   Store the eigenvalues, while skipping the excluded bands
+!    eo(1:numIncBands(spin),ik) = pack(epsilon/eV,.not.isExcluded)
+    eo(1:numbands(ispin),ik) = epsilon(1:numbands(ispin))/eV
+
+!!   For debugging
+!    if( Node .eq. 1 ) then
+!!    if( IOnode ) then
+!      iuo = 0
+!      do iband = 1, no_u
+!        do io = 1, no_l
+!          write(6,'(a,2i5,2f12.5)')         &
+! &          'savepsi: io, coeff = ', io, iband, psiatk(iuo+1), psiatk(iuo+2)
+!          iuo = iuo + 2
+!        enddo 
+!      enddo 
+!    endif
+!!   End debugging
+
+!   Loop on the neighbour k-points for a given k.
     do inn = 1, nncount
-
-! Initialise psi
+!     Initialise psi
       do io = 1, npsi
         psi(io)     = 0.0_dp
       enddo 
@@ -197,19 +332,20 @@ subroutine Mmn( ispin )
 !     Get the coordinates of the neighbor k-point.
       indexneig = nnlist(ik,inn)
       call getkvector( kpointsfrac(:,indexneig), kvectorneig )
-!   For debugging
-      if( IOnode ) then
-        write(6,'(a,3f12.5)')         &
- &        'mmn: kvectorneig = ', kvectorneig
-      endif
-!   End debugging
+!!     For debugging
+!      if( IOnode ) then
+!        write(6,'(a,3f12.5)')         &
+! &        'mmn: kvectorneig = ', kvectorneig
+!      endif
+!!     End debugging
 
 !     Find the coefficients of the wave function for the neighbour k-point
+!     Here, we obtain $\psi_{m} (\vec{k} + \vec{b})$, 
+!     where m runs between 1 and no_l
       call diagpol( ispin, nspin, no_l, no_s, no_u,                   &
  &                  maxnh, numh, listhptr, listh, H, S, xijo, indxuo, &
  &                  kvectorneig, epsilon, psi, 2, Haux, Saux )
 
-      
 !     The neighbour k-point, as specified in the nnlist, 
 !     is always in the first Brillouin zone.
 !     To find the actual k-point, we might have to add a vector of the
@@ -222,7 +358,7 @@ subroutine Mmn( ispin )
 !     are for a wave vector in the first Brillouin zone. 
 !     If the actual neighbour is out,
 !     we apply a simple transformation that holds in the periodic gauge
-!     c_{i\mu}(k+b) = c_{i\mu}(k+b-G)exp(-iG\cdot r_\mu)
+!     c_{i \mu} (k+b) = c_{i\mu}(k+b-G) exp(-iG\cdot r_\mu)
 !     where -G brings the k+b to the first BZ
       if ( fold .gt. 0 ) then
         foldfrac(:) = nnfolding(:,ik,inn) * 1.0_dp
@@ -276,18 +412,43 @@ subroutine Mmn( ispin )
  &                     nnFolding(:,ik,inn) - kPointsFrac(:,ik)
       handle = getdelkmatgenhandle( bvectoraux, nncount, bvectorsfrac )
       call getkvector( bvectoraux, bvector )
+
+      delkmat(1:maxnh) = delkmatgen(handle,1:maxnh)
+
 !! For debugging
 !      if ( IOnode ) then
 !        write(6,'(a,2i5)')         &
 ! &        'mmn: inn, handle  = ', inn, handle
 !        write(6,'(a,i5,3f12.5)')   &
 ! &        'mmn: inn, bvector = ', inn, bvector
+!!        do io = 1, maxnh
+!!          write(6,'(a,i5,2f12.5)')         &
+!! &          'mmn: io, delkmat  = ', io, delkmat(io)
+!!        enddo
 !      endif 
 !! End debugging
 
-    enddo ! End loop on neighbour k-points
+!     Initialize Mmnkb
+      Mmnkb(:,:,ik,inn) = cmplx(0.0_dp, 0.0_dp, kind=dp)
 
-  enddo  ! End loop on the number of k-points
+!     Compute Mmnkb, following Eq. (5) of the paper by 
+!     D. Sanchez-Portal et al., Fundamental Physics for Ferroelectrics 
+!     (AIP Conf. Proc. Vol 535) ed R. Cohen (Melville, AIP) pp 111-120 (2000).
+      call overkkneig( kvector, bvector, no_l, no_u, psiatk, psi,   &
+ &                     maxnh, delkmat, nbands, Mmnkb(:,:,ik,inn) )
+
+    enddo ! End loop on neighbour k-points (inn)
+
+  enddo  ! End loop on the number of k-points (ik)
+
+
+! Write the Mmn overlap matrices in a file, in the format required
+! by Wannier90
+  if(IOnode) call writemmn( ispin )
+
+! Write the eigenvalues in a file, in the format required
+! by Wannier90
+  if(IOnode) call writeeig( ispin )
 
 ! End time counter
   call timer( 'Mmn', 2 )

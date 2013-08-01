@@ -2,9 +2,13 @@ module m_siesta2wannier90
 
   use precision, only : dp
   use parallel,  only : IOnode, Node, Nodes
-  use parallelsubswan,  only : GetNodeProjs
   use sys,       only : die
+  use files,     only: label_length  ! Number of characters in slabel
   use TrialOrbitalClass
+
+!
+! Variables related with the atomic structure of the system
+!
 
   real(dp) :: latvec(3,3)    ! Real lattice vectors.
                              !   Cartesian coordinates. 
@@ -23,6 +27,10 @@ module m_siesta2wannier90
 ! matrices Mmn between a k-point and its neighbor will be computed
 !
   integer  :: numkpoints     ! Total number of k-points
+                             !   for which the overlap of the
+                             !   periodic part of the wavefunct
+                             !   with a neighbour k-point will
+                             !   be computed
   real(dp), pointer :: kpointsfrac(:,:) 
                              ! List of k points relative
                              !   to the reciprocal lattice vectors.
@@ -50,7 +58,7 @@ module m_siesta2wannier90
                              !   in the Monkhorst-Pack grid folded to the 
                              !   first Brillouin zone
   integer, pointer  :: nnfolding(:,:,:)
-! integer nnfolding(:,:,:)   ! nnfolding(i,ikp,inn) is the i-component 
+                             ! nnfolding(i,ikp,inn) is the i-component 
                              !   of the reciprocal lattice vector 
                              !   (in reduced units) that brings
                              !   the inn-neighbour specified in nnlist
@@ -70,6 +78,38 @@ module m_siesta2wannier90
 !
   integer          :: numbands(2) ! Number of bands for wannierization
 
+!
+! Output matrices
+!
+
+ complex(dp), pointer :: Mmnkb(:,:,:,:)  ! Matrix of the overlaps of 
+                                         !   periodic parts of Bloch waves.
+                                         !   <u_{ik}|u_{jk+b}>
+                                         !   The first two indices refer to 
+                                         !   the number of occupied bands
+                                         !   (indices m and n in standard
+                                         !   notation, see for instance, 
+                                         !   Eq. (27) of the paper by 
+                                         !   Marzari et al., RMP 84, 1419 (2012)
+                                         !   The third index refer to the kpoint
+                                         !   The fourth index refer to the neig
+ complex(dp), pointer :: Amnmat(:,:,:)   ! Projections of a trial function
+                                         !   with a Bloch orbital
+                                         !   <\psi_{m k}|g_n>
+ real(dp),    pointer :: eo(:,:)         ! Eigenvalues of the Hamiltonian 
+                                         !   at the numkpoints introduced in
+                                         !   kpointsfrac 
+                                         !   First  index: band index
+                                         !   Second index: k-point index
+
+!
+! Variables related with the input/output files
+!
+ character(label_length+3)  :: seedname  ! Name of the file where the Wannier90
+                                         !   code, when used as a postprocessing
+                                         !   tool, reads or dumps the 
+                                         !   information.
+
 CONTAINS
 
 subroutine siesta2wannier90
@@ -77,7 +117,6 @@ subroutine siesta2wannier90
   use m_spin,        only: nspin         ! Number of spin components
   use files,         only: slabel        ! Short system label, 
                                          !   used to generate file names
-  use files,         only: label_length  ! Number of characters in slabel
   use m_digest_nnkp, only: read_nnkp     ! Subroutine that reads the .nnkp file
   use m_digest_nnkp, only: chosing_b_vectors ! Subroutine that computes the b
                                          ! vectors that connect each mesh 
@@ -90,9 +129,6 @@ subroutine siesta2wannier90
   integer                    :: ispin    ! Spin counter
   integer                    :: numbandswan(2)
                                          ! Number of bands for wannierization
-  character(label_length+3)  :: seedname ! Name of the file where the Wannier90
-                                         !   code, when used as a postprocessing
-                                         !   tool, dumps the information.
 
 ! For debugging
   integer  i, j, numproj_l
@@ -197,6 +233,13 @@ subroutine siesta2wannier90
 !      endif
 !! End debugging
   enddo
+
+  if (IOnode) then
+    write(6,'(/,a)')  &
+ &    'siesta2wannier90: All the information dumped in the corresponding files'
+    write(6,'(a)')  &
+ &    'siesta2wannier90: End of the interface between Siesta and Wannier90'
+  endif
 
   call timer("siesta2wannier90",2)
 

@@ -123,7 +123,7 @@ subroutine compute_pw_matrix( nncount, bvectorsfrac )
 !   in a permanent array,
 !   (array delkmatgen)
 !   So delkmat can be rewritten for the next wave vector.
-!    delkmatgen(inn,:) = delkmat(:)
+    delkmatgen(inn,:) = delkmat(:)
 
 !! For debugging
 !      onlygamma = .false.
