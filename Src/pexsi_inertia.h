@@ -20,6 +20,7 @@ subroutine f_ppexsi_inertiacount_interface( &
       inertiaNumElectronTolerance,&
       ordering,&
       npPerPole,&
+      npSymbFact,&
       comm_global,&
       muMinInertia,&
       muMaxInertia,&
@@ -51,6 +52,12 @@ subroutine f_ppexsi_inertiacount_interface( &
    
    integer, intent(in)                           :: npPerPole, comm_global
    
+   ! Number of processors used for symbolic factorization
+   ! (Maximum: npPerPole)
+   ! Only relevant if PARMETIS/PT-SCOTCH is used.
+
+   integer, intent(in)                           :: npSymbFact
+
    real(SELECTED_REAL_KIND(10,100)), intent(out) :: muMinInertia, muMaxInertia
    real(SELECTED_REAL_KIND(10,100)), intent(out) :: muLowerEdge, muUpperEdge
    integer, intent(out)                          :: inertiaIter

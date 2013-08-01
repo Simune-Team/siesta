@@ -103,6 +103,7 @@
     integer :: PEXSI_Group, World_Group
 
     integer :: ispin, maxnhtot, ih, nnzold, i, pbs, norbs, npPerPole
+    integer :: npSymbFact
     logical :: PEXSI_worker
 
     integer  :: ordering
@@ -160,6 +161,10 @@ call MPI_Comm_create(World_Comm, PEXSI_Group,&
                      PEXSI_Comm, Ierr)
 
 PEXSI_worker = (mpirank < npPerPole)
+
+! Number of processors for symbolic factorization
+! Only relevant for PARMETIS/PT_SCOTCH
+npSymbFact = fdf_get("PEXSI.np-symbfact",npPerPole)
 
 pbs = norbs/npPerPole
 call newDistribution(pbs,PEXSI_Group,dist2,TYPE_PEXSI,"px dist")
@@ -243,6 +248,7 @@ if (PEXSI_worker) then
 		Energy,&
 		Broadening,&
 		ordering,&
+                npSymbFact,&
 		PEXSI_Comm,&
 		DMnzvalLocal,&   ! LDOS/ partial DM
 		info)

@@ -24,6 +24,7 @@ subroutine f_ppexsi_solve_interface(&
         PEXSINumElectronTolerance,&
         ordering,&
         npPerPole,&
+	npSymbFact,&
         comm_global,&
         DMnzvalLocal,&
         EDMnzvalLocal,&
@@ -67,6 +68,11 @@ subroutine f_ppexsi_solve_interface(&
    integer, intent(in)                           :: npPerPole, &
                                                     comm_global 
    
+   ! Number of processors used for symbolic factorization
+   ! (Maximum: npPerPole)
+   ! Only relevant if PARMETIS/PT-SCOTCH is used.
+   integer, intent(in)                           :: npSymbFact
+
    real(SELECTED_REAL_KIND(10,100)), intent(out) :: DMnzvalLocal(:),&
                                                     EDMnzvalLocal(:), &
                                                     FDMnzvalLocal(:)

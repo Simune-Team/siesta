@@ -1,4 +1,23 @@
 ------------------------------------------------------------
+August 1, 2013  A. Garcia        trunk-443--pexsi-37
+Update interface to v0.4.6 (npSymbFact)
+
+* Updated PEXSI calls to take into account the new parameter to
+optionally set the number of processors used for the symbolic
+factorization. The relevant fdf symbol is
+
+PEXSI.np-SymbFact
+
+* Added timing calls to the PEXSI solver and inertia-count sections.
+
+modified:
+  Src/m_pexsi_local_dos.F90
+  Src/m_pexsi_solver.F90
+  Src/pexsi_inertia.h
+  Src/pexsi_localdos.h
+  Src/pexsi_solve.h
+
+------------------------------------------------------------
 July 31, 2013  A. Garcia        trunk-443--pexsi-36
 Sync to trunk-443
 

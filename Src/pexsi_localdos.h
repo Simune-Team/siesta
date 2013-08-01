@@ -14,6 +14,7 @@ subroutine f_ppexsi_localdos_interface(&
 		Energy,&
 		broadening,&
 		ordering,&
+		npSymbFact,&
 		mpi_Comm,&
 		localDOSnzvalLocal,&
 		info)
@@ -34,6 +35,10 @@ subroutine f_ppexsi_localdos_interface(&
    !   1   : METIS_AT_PLUS_A
    !   2   : MMD_AT_PLUS_A
    integer, intent(in)                           :: ordering
+
+   ! Number of processors used for symbolic factorization
+   ! (Maximum: number of procs in mpi_comm)
+   integer, intent(in)                           :: npSymbFact
    
    integer, intent(in)                           :: mpi_comm
    

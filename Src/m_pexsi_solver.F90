@@ -80,6 +80,7 @@ real(dp) :: muInertia, muMinInertia, muMaxInertia, muLowerEdge, muUpperEdge
 real(dp) :: muMinPEXSI, muMaxPEXSI
 integer  :: muMaxIter
 integer  :: npPerPole
+integer  :: npSymbFact
 integer  :: mpirank, ierr
 integer  :: isSIdentity
 integer  :: inertiaMaxIter, inertiaIter
@@ -138,6 +139,11 @@ call MPI_Comm_create(World_Comm, PEXSI_Group,&
                      PEXSI_Comm, Ierr)
 
 PEXSI_worker = (mpirank < npPerPole)
+
+! Number of processors for symbolic factorization
+! Only relevant for PARMETIS/PT_SCOTCH
+npSymbFact = fdf_get("PEXSI.np-symbfact",npPerPole)
+
 
 pbs = norbs/npPerPole
 call newDistribution(pbs,PEXSI_Group,dist2,TYPE_PEXSI,"px dist")
@@ -361,6 +367,8 @@ solver_loop: do
                                               ' Tol: ', PEXSINumElectronTolerance
    endif 
 
+   call timer("pexsi-solver", 1)
+
    call f_ppexsi_solve_interface(&
         ! input parameters
         nrows,&
@@ -384,6 +392,7 @@ solver_loop: do
         PEXSINumElectronTolerance,&
         ordering,&
         npPerPole,&
+        npSymbFact,&
         World_Comm,&
 ! output parameters
         DMnzvalLocal,&
@@ -398,6 +407,8 @@ solver_loop: do
         numElectronList,&
         numElectronDrvList,&
         info)
+
+   call timer("pexsi-solver", 2)
 
   ! Make sure that all processors report info=1 when any of them
   ! raises it...
@@ -601,6 +612,8 @@ search_interval: do
                                       " Nshifts: ", nptsInertia
    endif 
 
+   call timer("pexsi-inertia-ct", 1)
+
    call f_ppexsi_inertiacount_interface(&
    ! input parameters
         nrows,&
@@ -621,6 +634,7 @@ search_interval: do
         inertiaNumElectronTolerance,&
         ordering,&
         npPerPole,&
+        npSymbFact,&
         World_Comm,&
 ! output parameters
         muMinInertia,&
@@ -631,6 +645,8 @@ search_interval: do
         shiftList,&
         inertiaList,&
         info)
+
+   call timer("pexsi-inertia-ct", 2)
 
    call globalize_max(info,infomax,comm=World_Comm)
    info = infomax
