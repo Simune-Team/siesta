@@ -86,7 +86,8 @@ module m_gauss_quad
   implicit none
 
   integer,  parameter :: dp = selected_real_kind(p=10)
-  real(dp), parameter :: Pi = 3.14159265358979323846264338328_dp
+  real(dp), parameter :: Pi     = 3.14159265358979323846264338328_dp
+  real(dp), parameter :: Pihalf = 1.57079632679489655799898173427_dp 
   real(dp), parameter :: def_EPS = 1.e-12_dp
 
   private 
@@ -182,6 +183,8 @@ contains
 
     lp = 1.e-4_dp
     if ( present(p) ) lp = p
+    if ( lp < 0._dp ) call die('Error in precision request &
+         &negative numbers can not be precioned.')
 
     is_even = mod(N,2) == 0
     if ( is_even ) then
@@ -196,13 +199,29 @@ contains
        h = 16._dp / k
 
        ! Weight-sum
-       cums = 0._dp
+       if ( .not. is_even ) then
+          ! Add the middle abscissa-weight
+          ! u1 = cosh( 0._dp ) 
+          ! cosh( 0 ) == 1
+          ! u2 = Pihalf * sinh( 0._dp )
+          ! sinh( 0 ) == 0
+          !ch = cosh( u2 ) ** 2
+          ! cosh( 0 ) == 1
+          ! hence w = 1
+
+          ! for correct normalization (added a half due to 2 times later)
+          cums = .5_dp
+       else
+          cums = 0._dp
+       end if
+
+       cp = .5_dp * h
        do i = j , N
           ! The argument for the TANH-SINH rule
-          arg = h * real(2*i-N-1,dp)
+          arg = cp * real(2*i-N-1,dp)
           
-          u1 = .5_dp * Pi * cosh( arg )
-          u2 = .5_dp * Pi * sinh( arg )
+          u1 = cosh( arg )
+          u2 = Pihalf * sinh( arg )
           ch = cosh( u2 ) ** 2
 
           ! for correct normalization
@@ -210,37 +229,28 @@ contains
 
        end do
 
-       ! we have a symmetric distribution
-       cums = 2._dp * cums
-
-       if ( .not. is_even ) then
-          ! Add the middle abscissa-weight
-          u1 = .5_dp * Pi * cosh( 0._dp )
-          u2 = .5_dp * Pi * sinh( 0._dp )
-          ch = cosh( u2 ) ** 2
-          ! for correct normalization
-          cums = cums + u1 / ch
-       end if
-
-       cums = 2._dp / cums
+       ! we have a symmetric distribution (hence the sum of
+       ! the cumultative sum divides out)
+       cums = 1._dp / cums
 
        cp = u1 / ch * cums
 
        k = k + 1._dp
     end do
 
+    cp = .5_dp * h
     do i = 1 , N
        ! The argument for the TANH-SINH rule
-       arg = h * real(2*i-N-1,dp)
+       arg = cp * real(2*i-N-1,dp)
           
-       u1 = .5_dp * Pi * cosh( arg )
-       u2 = .5_dp * Pi * sinh( arg )
+       u1 = cosh( arg )
+       u2 = Pihalf * sinh( arg )
        ch = cosh( u2 )
           
        ! Calculate the abscissa-weight pair
        x(i) = 1._dp - 1._dp / ( exp( u2 ) * ch )
        ! We immediately normalize the weight (remember that
-       ! cums was the sum 
+       ! cums was the inverse sum)
        w(i) = cums * u1 / ch ** 2
 
     end do

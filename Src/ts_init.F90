@@ -37,9 +37,10 @@ contains
     use m_ts_gf,      only : do_Green
     
     use m_ts_contour, only : contour_Eq, contour_EqL, contour_EqR, contour_nEq
-    use m_ts_contour, only : setup_contour, print_contour, io_contour
+    use m_ts_contour, only : setup_contour
     use m_ts_contour, only : sort_contour
     use m_ts_contour, only : NEn, contour
+    use m_ts_io_contour, only : ts_print_contour, ts_io_contour
     use m_ts_kpoints, only : setup_ts_kpoint_grid
     use m_ts_kpoints, only : ts_nkpnt, ts_kpoint, ts_kweight
     use m_ts_cctype
@@ -108,10 +109,10 @@ contains
        call setup_contour(IsVolt)
 
        ! Print out the contour path
-       call print_contour()
+       call ts_print_contour(contour)
      
        ! Save the contour path to <slabel>.CONTOUR
-       call io_contour(slabel)
+       call ts_io_contour(contour,slabel)
 
        ! We sort the contour to obtain the highest 
        ! numerical accuracy (simply sort by weight in ascending order)

@@ -318,7 +318,7 @@ TS_OBJS= m_ts_global_vars.o m_ts_options.o m_ts_aux.o m_ts_kpoints.o \
          m_ts_electrode.o m_ts_voltage.o m_ts_gf.o \
 	 m_ts_cctype.o ts_init.o ts_show_regions.o m_ts_electype.o \
 	 m_ts_method.o m_ts_elec_se.o \
-	 m_ts_debug.o
+	 m_ts_debug.o m_ts_io_contour.o
 
 # Transiesta objects (new memory reduced objects)
 TS_OBJS += m_ts_Sparsity2TriMat.o \
@@ -633,7 +633,7 @@ m_ts_contour.o: m_gauss_fermi_17.o m_gauss_fermi_18.o m_gauss_fermi_19.o
 m_ts_contour.o: m_gauss_fermi_20.o m_gauss_fermi_22.o m_gauss_fermi_24.o
 m_ts_contour.o: m_gauss_fermi_26.o m_gauss_fermi_28.o m_gauss_fermi_30.o
 m_ts_contour.o: m_gauss_fermi_inf.o m_gauss_quad.o m_integrate.o m_ts_aux.o
-m_ts_contour.o: m_ts_cctype.o parallel.o precision.o units.o
+m_ts_contour.o: m_ts_cctype.o m_ts_io_contour.o parallel.o precision.o units.o
 m_ts_debug.o: class_Sparsity.o class_TriMat.o geom_helper.o parallel.o
 m_ts_debug.o: precision.o
 m_ts_dm_update.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData1D.o
@@ -656,14 +656,16 @@ m_ts_gf.o: m_ts_cctype.o m_ts_electrode.o m_ts_electype.o parallel.o
 m_ts_gf.o: precision.o sys.o units.o
 m_ts_global_vars.o: precision.o
 m_ts_io.o: m_glob_sparse.o parallel.o precision.o sys.o
+m_ts_io_contour.o: m_gauss_fermi_inf.o m_ts_cctype.o parallel.o precision.o
+m_ts_io_contour.o: units.o
 m_ts_iodm.o: alloc.o files.o m_mpi_utils.o m_ts_global_vars.o parallel.o
 m_ts_iodm.o: parallelsubs.o precision.o sys.o
 m_ts_kpoints.o: files.o find_kgrid.o minvec.o parallel.o precision.o
 m_ts_kpoints.o: siesta_cml.o siesta_options.o sys.o
 m_ts_options.o: files.o m_ts_cctype.o m_ts_charge.o m_ts_contour.o
-m_ts_options.o: m_ts_electype.o m_ts_global_vars.o m_ts_io.o m_ts_method.o
-m_ts_options.o: m_ts_weight.o parallel.o precision.o siesta_options.o sys.o
-m_ts_options.o: units.o
+m_ts_options.o: m_ts_electype.o m_ts_global_vars.o m_ts_io.o m_ts_io_contour.o
+m_ts_options.o: m_ts_method.o m_ts_weight.o parallel.o precision.o
+m_ts_options.o: siesta_options.o sys.o units.o
 m_ts_sparse.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_sparse.o: class_Sparsity.o create_Sparsity_SC.o geom_helper.o
 m_ts_sparse.o: m_glob_sparse.o m_ts_debug.o m_ts_electype.o m_ts_options.o
@@ -859,7 +861,8 @@ sys.o: parallel.o
 timer.o: m_timer.o sys.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
 ts_init.o: files.o m_ts_cctype.o m_ts_contour.o m_ts_electype.o m_ts_gf.o
-ts_init.o: m_ts_kpoints.o m_ts_method.o m_ts_options.o parallel.o
+ts_init.o: m_ts_io_contour.o m_ts_kpoints.o m_ts_method.o m_ts_options.o
+ts_init.o: parallel.o
 ts_show_regions.o: m_ts_electype.o parallel.o precision.o units.o
 typecell.o: precision.o
 uncell.o: precision.o

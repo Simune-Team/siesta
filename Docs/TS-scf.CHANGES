@@ -1,4 +1,78 @@
 ----------------------------------------------------
+August 2, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-85
+Full customisable contour segment FDF keys, streamlining for the tanh-sinh algorithm
+
+* The Tanh-Sinh quadrature has been optimized, the calculation of the weights could
+  lead to problems in certain cases.
+
+* The contour types has been revised so that one can from an input-string get
+  the type and vice versa.
+  - type2input
+  - input2type
+
+* Added a new module which sole purpose is to read in the contour information
+  for the complex and non-equilibrium contours for transiesta.
+  It enables one to use a block which can consist of as many contour segments
+  as one wish.
+  This block has precedence over all other options for the contour.
+
+  A typical example is this:
+     %block TS.Contour.Eq
+      # First item is ALWAYS the circle part of the contour
+       - 3. Ry to - 8. kT with
+          points 24 using
+             method Tanh-Sinh
+
+      # Last item is ALWAYS the tail part of the line contour
+       prev to inf with
+          points 6 using
+             method g-fermi
+     %endblock TS.Contour.Eq
+
+  (in principle can the lines be interchanged at will)
+
+  The bias contour should "always" be given from -inf -- inf
+  hence, the sign of V means nothing in this regard.
+
+  It will always print out how it interprets the block so that any
+  discrepancies found will be eliminated.
+  Hence the procedure should be:
+   1) Build contour
+   2) run transiesta, stop immediately
+   3) copy contour blocks into the FDF files
+   4) continue run
+
+  The main advantage is that it can be used to increase points in specific energy
+  ranges so that a better convergence will be acheived.
+
+  Another advantage is that one can easily alter the position of the contours from
+  an already existing block.
+
+  It is to be considered an expert-feature and its usage lies mainly in the high-bias
+  regions.
+
+* Currently the Gauss-Fermi quadrature is only allowed
+
+* Added check of the poles placement to the complex plane energy shift.
+  If a pole is very close to a pole (within 10 Kelvin) it will print a notice.
+  However, it will not stop. So any users should notice the output from transiesta.
+
+* transiesta options are now printed a bit more stringent.
+
+* FixSpin is now not allowed to be run using the transiesta executable.
+  The electrodes can not be created with FixSpin either.
+
+added:
+  Src/m_ts_io_contour.f90
+modified:
+  Src/Makefile
+  Src/m_gauss_quad.f90
+  Src/m_ts_cctype.f90
+  Src/m_ts_contour.f90
+  Src/m_ts_options.F90
+  Src/ts_init.F90
+
+----------------------------------------------------
 July 29, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-84
 Error estimate now shows DM_out and delta left/right non-equi
 

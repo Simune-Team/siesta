@@ -33,6 +33,7 @@ module m_ts_contour
 ! Maybe they should be collected to this module.
 ! However, I like this partition.
   use m_ts_cctype
+  use m_ts_io_contour
   use precision, only : dp
 
   implicit none
@@ -44,35 +45,16 @@ module m_ts_contour
 
   ! Contour path
   type(ts_ccontour), dimension(:), pointer, save :: contour
+  type(ts_io_c), allocatable, public :: cEq(:), cnEq(:)
 
   ! The contour specific variables
-  real(dp), save, public :: CCEmin, kT, EfL, EfR
+  real(dp), save, public :: kT, EfL, EfR
   real(dp), save, public :: nEq_Eta, Eq_Eta
 
   ! We need to retain the information about the contour here.
   ! It provides an easier overview as there are quite a few constants governing the
   ! methods.
-  integer, save, public  :: C_Eq_Circle
-  integer, save, public  :: C_Eq_Circle_N
-  real(dp), save, public :: C_Eq_split
-  integer, save, public  :: C_Eq_Line_bottom
-  integer, save, public  :: C_Eq_Line_bottom_N
-  real(dp), save, public :: C_Eq_Line_split
-  integer, save, public  :: C_Eq_Line_tail
-  integer, save, public  :: C_Eq_Line_tail_N
-  integer, save, public  :: C_Eq_Pole_N
-  integer, save, public  :: C_nEq_tail
-  integer, save, public  :: C_nEq_tail_N
-  real(dp), save, public :: C_nEq_split
-  integer, save, public  :: C_nEq_mid
-  integer, save, public  :: C_nEq_mid_N
-  real(dp), save, public :: C_transport_Emin, C_transport_Emax
-  integer, save, public  :: C_Transport_N
-
-  ! Integer determining the end point of the fermi integration
-  ! Currently it can only be:
-  !  16, 18, 20, Infinity=>huge(1)
-  integer, save, public :: C_G_NF_END = huge(1)
+  integer, save, public  :: N_poles, N_transport
 
   ! The contours for the equilibrium density are attributed a fruitful discussion with
   ! Hans Skriver. Previously the routine names reflected his contribution.
@@ -86,7 +68,7 @@ module m_ts_contour
   ! For further attributions see the original paper by Brandbyge, et. al, 2002: DOI: 10.1103/PhysRevB.65.165401
 
   public :: NEn, PNEn, contour
-  public :: setup_contour, io_contour, print_contour
+  public :: setup_contour
   public :: sort_contour
   public :: contour_Eq
   public :: contour_EqL, contour_EqR, contour_nEq
@@ -97,22 +79,16 @@ module m_ts_contour
 
 contains
 
-  subroutine read_contour_options(kT_in, IsVolt, VoltL,VoltR)
+  subroutine read_contour_options(kT_in, IsVolt, VoltL, VoltR)
 
-    use units,    only : Pi, eV
+    use units, only : eV
     use parallel, only : IONode, Nodes, operator(.parcount.)
     use fdf
 
     logical, intent(in) :: IsVolt
     real(dp), intent(in) :: kT_in, VoltL, VoltR ! in Ry
-    character(len=200) :: chars
-    character(len=200), parameter :: OPT_CHAR = '(''ts_options: '',a,t53,''=    '',a)'
-    character(len=200), parameter :: OPT_FLOAT = '(''ts_options: '',a,t53,''='',f10.4)'
-    character(len=200), parameter :: OPT_INT = '(''ts_options: '',a,t53,''='',i5)'
-    character(len=200), parameter :: OPT_FLOAT_UNIT = '(''ts_options: '',a,t53,''='',f10.4,tr1,a)'
-    integer :: i, j, k
-    real(dp) :: r
     logical :: correct
+    integer :: i
 
     ! Transfer options for the fermi-levels
     EfL = VoltL
@@ -120,453 +96,64 @@ contains
 
     ! Copy over temperature
     kT = kT_in
+
+    ! Read in the generic things about the contours...
+    call fdf_deprecated('TS.ComplexContour.NPoles','TS.Contour.Eq.Pole.N')
+    N_poles = fdf_get('TS.ComplexContour.NPoles',6)
+    N_poles = fdf_get('TS.Contour.Eq.Pole.N',N_poles)
     
-    ! Read in the predefined before we can do anything else
-    call fdf_deprecated('TS.ComplexContourEmin','TS.Contour.Eq.Emin')
-    CCEMin = fdf_get('TS.ComplexContourEmin',-3._dp,'Ry')
-    CCEMin = fdf_get('TS.Contour.Eq.Emin',CCEMin,'Ry')
+    ! broadening
+    Eq_Eta = fdf_get('TS.Contour.Eq.Eta',0._dp,'Ry')
+    if ( Eq_Eta < 0._dp) call die('ERROR: Eq_Eta < 0, we do not allow &
+         &for using the advanced Greens function, please correct.')
+
     call fdf_deprecated('TS.biasContour.Eta','TS.Contour.nEq.Eta')
     nEq_Eta = fdf_get('TS.biasContour.Eta',0.000001_dp,'Ry')
     nEq_Eta = fdf_get('TS.Contour.nEq.Eta',nEq_Eta,'Ry')
     if ( nEq_Eta <= 0._dp ) call die('ERROR: nEq_Eta <= 0, we do not allow &
          &for using the advanced Greens function, please correct.')
-    Eq_Eta = fdf_get('TS.Contour.Eq.Eta',0._dp,'Ry')
-    if ( Eq_Eta < 0._dp) call die('ERROR: Eq_Eta < 0, we do not allow &
-         &for using the advanced Greens function, please correct.')
 
-    ! First we will do the defaults
-    C_Eq_Circle = CC_TYPE_G_LEGENDRE
-    C_Eq_Circle_N = 24
-    C_Eq_split = -10._dp * kT
-    ! Later down we will correct the method for the Gauss-Fermi quadrature placement
-    C_Eq_Line_bottom = CC_TYPE_G_NF_0kT
-    C_Eq_Line_bottom_N = 6
-    C_Eq_Pole_N = 6
-    ! The default bottom contour takes into account the infinite integral
-    C_Eq_Line_split = 0._dp
-    ! in this case the G_NF_10kT shows the same specification
-    C_Eq_Line_tail = 0 ! we check against this method to determine whether the input is legit
-    C_Eq_Line_tail_N = 0
-    ! The non-equilibrium contour
-    C_nEq_tail = CC_TYPE_G_NF_0kT - 5
-    C_nEq_tail_N = 6
-    C_nEq_mid = CC_TYPE_SIMP_MIX
-    C_nEq_mid_N = 6
-    
+    ! Read in everything about the contour.
+    call ts_read_contour_options(cEq,cnEq,kT,IsVolt, V_half=VoltL)
 
-    ! Read in the new setup for determining the end Gauss-integration
-    C_G_NF_END = fdf_get('TS.Contour.GaussFermi.End',huge(1))
-    if ( C_G_NF_END /= huge(1) .and. &
-         C_G_NF_END /= 30 .and. C_G_NF_END /= 28 .and. &
-         C_G_NF_END /= 26 .and. C_G_NF_END /= 24 .and. &
-         C_G_NF_END /= 22 .and. C_G_NF_END /= 20 .and. &
-         C_G_NF_END /= 19 .and. C_G_NF_END /= 18 .and. &
-         C_G_NF_END /= 17 ) then
-       call die('You are only allowed 30, 28, 26, 24, 22, 20, 19, 18 or 17 &
-            &as input, for infinity integral remove the FDF line.')
-    end if
-
-    if ( IONode ) then
-       if ( C_G_NF_END == huge(1) ) then
-          write(*,opt_char) 'Gauss-Fermi infinite integral truncation at','inifinity'
-       else
-          write(*,opt_int) 'Gauss-Fermi infinite integral truncation at',C_G_NF_END
-       end if
-    end if
-
-    ! ******* default setup finished ********
-    ! We have now setup the default parameters for the contour method
-    ! Lets read in what the user requests.
-
-    ! First the equilibrium contour
-    call fdf_deprecated('TS.ComplexContour.NPoles','TS.Contour.Eq.Pole.N')
-    C_Eq_Pole_N = fdf_get('TS.ComplexContour.NPoles',C_Eq_Pole_N)
-    C_Eq_Pole_N = fdf_get('TS.Contour.Eq.Pole.N',C_Eq_Pole_N)
-    call fdf_deprecated('TS.ComplexContour.NCircle','TS.Contour.Eq.Circle.N')
-    C_Eq_Circle_N = fdf_get('TS.ComplexContour.NCircle',C_Eq_Circle_N)
-    C_Eq_Circle_N = fdf_get('TS.Contour.Eq.Circle.N',C_Eq_Circle_N)
-    call fdf_deprecated('TS.ComplexContour.NLine','TS.Contour.Eq.Line.N')
-    C_Eq_Line_bottom_N = fdf_get('TS.ComplexContour.NLine',C_Eq_Line_bottom_N)
-    C_Eq_Line_bottom_N = fdf_get('TS.Contour.Eq.Line.N',C_Eq_Line_bottom_N)
-    C_Eq_Line_bottom_N = fdf_get('TS.Contour.Eq.Line.Bottom.N',C_Eq_Line_bottom_N)
-    C_Eq_Line_tail_N = fdf_get('TS.Contour.Eq.Line.Tail.N',0)
-
-    ! The above was the standard read-in
-    ! Now we read in the extra information that could be available
-
-    ! Read in the "correct" settings for the integration
-    chars = fdf_get('TS.Contour.Eq.Circle.Method','G-Legendre')
-    if ( leqi(chars,'g-legendre') ) then
-       C_Eq_Circle = CC_TYPE_G_LEGENDRE
-    else if ( leqi(chars,'tanh-sinh') ) then
-       C_Eq_Circle = CC_TYPE_TANH_SINH
-    else
-       call die('Unrecognized eq. circle integration &
-            &scheme: '//trim(chars))
-    end if
-
-    i = fdf_get('TS.Contour.Eq.Split.Circle-Line',-10)
-    ! The splitting point between the circle and line
-    C_Eq_split = i * kT
-
-    ! Now we need to read in the method used for the bottom and tail part
-    ! of the equilibrium contour
-    chars = fdf_get('TS.Contour.Eq.Line.Method','g-fermi')
-    i = index(chars,'+')
-    if ( i == 1 ) call die('You must not start the specifier for the &
-         &integration scheme with +: '//trim(chars))
-
-    ! This will read in the tail-specification
-    if ( i > 0 ) then
-       i = i + 1
-       ! We first figure out the tail-specification
-       if ( leqi(chars(i:),'g-fermi') ) then
-          ! We need to figure out how to cut it...
-          ! We know that the user have specified a bottom contour method
-          ! We will overwrite the user specified number seperation
-          ! and determine an "optimal" splitting of the integration points
-          call init_GaussFermi_Bottom_Tail(C_Eq_split, 0._dp, kT, &
-               C_Eq_Line_bottom_N+C_Eq_Line_tail_N , &
-               C_Eq_Line_tail_N, C_Eq_Line_bottom_N, C_Eq_Line_tail ) 
-          ! Update the specified partition of the lines
-          C_Eq_Line_split = C_Eq_Line_tail * kT
-          C_Eq_Line_tail = CC_TYPE_G_NF_0kT + C_Eq_Line_tail
-
-          ! when using the Gauss-Fermi method we do not allow the user
-          ! to specify a split position, hence if the fdf is defined die...
-          if ( fdf_defined('TS.Contour.Eq.Split.Line') ) then
-             call die('Currently the Gauss-Fermi method while splitting is &
-                  &fully algorithm implemented. Hence you cannot both specify: &
-                  TS.Contour.Eq.Split.Line and TS.Contour.Eq.Line.Method <bot-method>+g-fermi')
-          end if
-
-          ! The default is already the Gauss-Fermi quadrature (DEFAULT)
-       else
-          call die('Unrecognized equilibrium tail integration &
-               &scheme: '//trim(chars(i:)))
-       end if
-       i = i - 1
-    end if
-    
-    ! Now we will read in the bottom line-segment
-    i = i - 1
-    if ( i <= 0 ) i = len_trim(chars)
-
-    if ( leqi(chars(:i),'g-fermi') ) then
-       ! Inifinite integrals assume that there are no specific tail integral
-       ! The default is already the Gauss-Fermi quadrature (DEFAULT)
-       C_Eq_Line_bottom = CC_TYPE_G_NF_0kT
-    else if ( leqi(chars(:i),'g-legendre') ) then
-       C_Eq_Line_bottom = CC_TYPE_G_LEGENDRE
-    else if ( leqi(chars(:i),'tanh-sinh') ) then
-       C_Eq_Line_bottom = CC_TYPE_TANH_SINH
-    else if ( leqi(chars(:i),'simpson-mix') ) then
-       C_Eq_Line_bottom = CC_TYPE_SIMP_MIX
-    else if ( leqi(chars(:i),'boole-mix') ) then
-       C_Eq_Line_bottom = CC_TYPE_BOOLE_MIX
-    else if ( leqi(chars(:i),'mid-rule') ) then
-       C_Eq_Line_bottom = CC_TYPE_MID
-    else
-       call die('Could not figure out the bottom contour type for the &
-            &equilibrium line contour: '//trim(chars(:i)))
-    end if
-
-    select case ( C_Eq_Line_bottom ) 
-    case ( CC_TYPE_G_NF_0kT )
-       ! This will be catched first
-       C_Eq_Line_bottom = CC_TYPE_G_NF_0kT + nint(C_Eq_split/kT)
-    case ( CC_TYPE_G_NF_MIN : CC_TYPE_G_NF_0kT-1, &
-         CC_TYPE_G_NF_0kT+1:CC_TYPE_G_NF_MAX )
-       C_Eq_Line_bottom = CC_TYPE_G_NF_0kT + nint(C_Eq_split/kT)
-    end select
-
-
-    ! Determine the split on the line
-    i = fdf_get('TS.Contour.Eq.Split.Line',nint(C_Eq_Line_split/kT))
-    C_Eq_Line_split = i * kT
-
-    ! Now we need to take care of how it is performed
-    if ( nint(C_Eq_split / kT) > nint(C_Eq_Line_split / kT) ) then
-       call die('You cannot split the circle contour before the Fermi-line &
-            &integral.')
-    end if
-    ! General contour checks
-    if ( nint(C_Eq_split / kT) >= -1 ) then
-       call die('The Circle-Line split lies too close to the imaginary &
-            &axis. We do not allow this due to possible overlap of the &
-            &Fermi-poles and the contour. Please move the split (further) &
-            &into the 2nd quadrant of the complex plane.')
-    end if
-    if ( CCEmin >= C_Eq_split ) then
-       call die('You cannot split the circle contour before the contour &
-            &beginning of the integral.')
-    end if
+    N_transport = 0
 
     ! Correct for imperfect computational balance
     correct = fdf_get('TS.Contour.Eq.NoEmptyCycles',.true.)
+    correct = correct .and. ( mod(sum(cEq(:)%N),Nodes) == 0 )
     if ( correct ) then
-       i = C_Eq_Circle_N + C_Eq_Line_bottom_N + C_Eq_Line_tail_N + C_Eq_Pole_N
-       ! We immediately correct the number of energy-points for the contour
+       i = sum(cEq(:)%N) + N_poles
+       if ( IsVolt ) then
+          i = i * 2
+          if ( mod(Nodes - mod(i,Nodes),2) == 0 ) then
+             cEq(1)%N = cEq(1)%N + (Nodes - mod(i,Nodes)) / 2
+          end if
+       end if
+       i = sum(cEq(:)%N) + N_poles
        if ( mod(i,Nodes) /= 0 ) then
-          C_Eq_Circle_N = C_Eq_Circle_N + Nodes - mod(i,Nodes)
+          cEq(1)%N = cEq(1)%N + Nodes - mod(i,Nodes)
        end if
-    end if
-
-    if ( C_Eq_Line_tail /= 0 .and. C_Eq_Line_tail_N == 0 ) then
-       call die('You have requested a specific tail integral for the &
-            &equilibrium line. However, no points are specified for this &
-            &contour. &
-            &Please specify number of points with TS.Contour.Eq.Line.Tail.N')
-    end if
-
-    ! Write out how we do the integrals
-    if ( IONode ) then
-       write(*,opt_float_unit) 'Circle contour E_min',CCEmin / eV,'eV'
-              if ( C_Eq_Circle_N > 0 ) then
-          write(*,opt_char) 'Circle contour method',longtype2str(C_Eq_Circle)
-       else
-          call die('No points for the circle contour is defined. &
-               &You need at least one point on the circle contour.')
-       end if
-       write(*,opt_int) 'Circle contour points',C_Eq_Circle_N
-       write(*,opt_float_unit) 'Circle -> Line energy',C_Eq_split/kT,'kT'
-       chars = 'Line'
-       if ( C_Eq_Line_tail_N > 0 ) chars = 'Bottom line'
-       if ( C_Eq_Line_bottom_N > 0 ) then
-          write(*,opt_char) trim(chars)//' contour method',longtype2str(C_Eq_Line_bottom)
-       else
-          call die('No points for the line contour is defined. &
-               &You need at least one point on the line contour.')
-       end if
-       
-       write(*,opt_int) trim(chars)//' contour points',C_Eq_Line_bottom_N
-       if ( C_Eq_Line_tail_N > 0 ) then
-          write(*,opt_float_unit) 'Bottom line -> tail line energy',C_Eq_Line_split/kT,'kT'
-          write(*,opt_char) 'Tail line contour method',longtype2str(C_Eq_Line_tail)
-          write(*,opt_int) 'Tail line contour points',C_Eq_Line_tail_N
-       end if
-       if ( C_Eq_Pole_N > 0 ) then
-          write(*,opt_int) 'Number of Fermi poles',C_Eq_Pole_N
-       else
-          call die('You need at least one pole for the Fermi function')
-       end if
-
-    end if
-       
-    ! *****************************************************************
-    ! ****** Now we need to handle the non-equilibrium contour ********
-    ! *****************************************************************
-
-    call fdf_deprecated('TS.biasContour.NumPoints', &
-         'TS.Contour.nEq.N/TS.Contour.nEq.Tail.N/TS.Contour.nEq.Middle.N')
-
-    ! Set default
-    C_nEq_tail    = CC_TYPE_G_NF_0kT - 5
-    C_nEq_mid     = CC_TYPE_G_NF_0kT - 5
-    C_nEq_mid_N   = 6
-    C_nEq_tail_N  = 6
-    C_nEq_split = - 5._dp * kT
-
-    ! Old deprecated read-ins
-
-    if ( IsVolt ) then
-
-       i = fdf_get('TS.biasContour.NumPoints',10)
-       i = fdf_get('TS.Contour.nEq.N',i)
-       correct = fdf_get('TS.Contour.nEq.NoEmptyCycles',.true.)
-       if ( correct .and. mod(i,Nodes) /= 0 ) i = i + Nodes - mod(i,Nodes)
-
-       ! Determine the sizes of the individual lines
-       ! Also determine the optimal Gauss-Fermi-line
-       call init_GaussFermi_Bottom_Tail(0._dp, EfR, kT, i/2, &
-            C_nEq_tail_N, C_nEq_mid_N, j ) 
-       C_nEq_mid_N = i - 2 * C_nEq_tail_N
-       C_nEq_split  = j * kT
-       C_nEq_tail   = CC_TYPE_G_NF_0kT + j 
-
-       ! Override what the user requested
-       C_nEq_mid_N  = fdf_get('TS.Contour.nEq.Middle.N',C_nEq_mid_N)
-       C_nEq_tail_N = fdf_get('TS.Contour.nEq.Tail.N'  ,C_nEq_tail_N)
-       i = fdf_get('TS.Contour.nEq.Split',nint(C_nEq_split/kT))
-       C_nEq_split  = i * kT
-       C_nEq_tail   = CC_TYPE_G_NF_0kT + i
-
-       ! The middle method is still SIMP_MIX
-       
-    end if
-
-    ! The default line contour for the non-equilibrium method has already been set
-    ! So we just read in the user specified methods
-
-    ! First the default method
-    call fdf_deprecated('TS.biasContour.method', 'TS.Contour.nEq.Method')
-    chars = fdf_get('TS.biasContour.method','gaussfermi')
-    if ( .not. fdf_defined('TS.Contour.nEq.Method') ) then
-       if ( leqi(chars,'gaussfermi') ) then
-          ! The gauss-fermi is already defaulted
-       else if ( leqi(chars,'sommerfeld') ) then
-          C_nEq_tail   = CC_TYPE_SOMMERFELD
-          C_nEq_tail_N = 2 * C_nEq_tail_N + C_nEq_mid_N
-          C_nEq_mid    = CC_TYPE_SOMMERFELD
-          C_nEq_mid_N  = 0
-       else
-          call die('Could not determine contour method &
-               &please use the TS.Contour keys')
-       end if
-    end if
-    
-    chars = fdf_get('TS.Contour.nEq.Method','g-fermi+simpson-mix')
-    ! Figure out if there is a + in the string
-    i = index(chars,'+')
-    if ( i == 1 ) call die('Non-equilibrium contour method cannot be prefixed &
-         &with + (then we can not determine the integration method).')
-    ! Determine the middle segment method
-    if ( i > 0 ) then
-       i = i + 1
-       if ( leqi(chars(i:),'g-legendre') ) then
-          C_nEq_mid = CC_TYPE_G_LEGENDRE
-       else if ( leqi(chars(i:),'simpson-mix') ) then
-          C_nEq_mid = CC_TYPE_SIMP_MIX
-       else if ( leqi(chars(i:),'boole-mix') ) then
-          ! This is already the default
-          C_nEq_mid = CC_TYPE_BOOLE_MIX
-       else if ( leqi(chars(i:),'mid-rule') ) then
-          C_nEq_mid = CC_TYPE_MID
-       else if ( leqi(chars(i:),'tanh-sinh') ) then
-          C_nEq_mid = CC_TYPE_TANH_SINH
-       else
-          call die('Unrecognized non-equilibrium integration &
-               &scheme for the middle line: '//trim(chars(i:)))
-       end if
-       i = i - 1
-    end if
-
-    ! If no + is found we simulate its position
-    i = i - 1
-    if ( i <= 0 ) i = len_trim(chars)
-
-    ! Determine the tail integration method
-    if ( leqi(chars(1:i),'g-fermi') .or. &
-         leqi(chars(1:i),'gaussfermi') ) then
-       ! This is already the default and has been initialized (DEFAULT)
-    else if ( leqi(chars(1:i),'sommerfeld') ) then
-       C_nEq_tail = CC_TYPE_SOMMERFELD
-       C_nEq_mid = CC_TYPE_SOMMERFELD
-       C_nEq_tail_N = 2 * C_nEq_tail_N + C_nEq_mid_N
-       C_nEq_mid_N = 0
-    else
-       call die('Unrecognized non-equilibrium integration &
-            &scheme for the tails: '//trim(chars(1:i)))
     end if
 
     correct = fdf_get('TS.Contour.nEq.NoEmptyCycles',.true.)
     if ( correct ) then
-       i = C_nEq_mid_N + 2 * C_nEq_tail_N
+       i = sum(cnEq(:)%N)
        if ( mod(i,Nodes) /= 0 ) then
-          C_nEq_mid_N = C_nEq_mid_N + Nodes - mod(i,Nodes)
-       end if
-    end if
-
-    ! Write out how we do the integrals
-    if ( IONode .and. IsVolt ) then
-       chars = 'Tail non-equilibrium contour'
-       if ( C_nEq_mid_N == 0 ) chars = 'Non-equilibrium contour'
-       if ( C_nEq_tail_N > 0 ) then
-          write(*,opt_char) trim(chars)//' method',longtype2str(C_nEq_tail)
-       else
-          call die('No points for the tail non-equilibrium contour are defined. &
-               &You need at least one point on the non-equilibrium contour.')
-       end if
-       write(*,opt_int) trim(chars)//' points',C_nEq_tail_N
-       chars = 'Middle non-equilibrium contour '
-       if ( C_nEq_mid_N > 0 ) then
-          write(*,opt_float_unit) 'Tail -> middle contour energy',C_nEq_split/kT,'kT'
-          write(*,opt_char) trim(chars)//' method',longtype2str(C_nEq_mid)
-          write(*,opt_int) trim(chars)//' points',C_nEq_mid_N
-       else
-          call die('No points for the line contour is defined. &
-               &You need at least one point on the line contour.')
-       end if
-
-    end if
-
-    if ( IONode .and. IsVolt ) then
-       i = C_Eq_Circle_N + C_Eq_Line_bottom_N + C_Eq_Line_tail_N + C_Eq_Pole_N
-       if ( mod(2*i,Nodes) /= 0 ) then
-          write(*,*) "NOTICE: Equilibrium energy contour points are not"
-          write(*,*) "        divisable by the number of nodes."
-          write(*,*) "        Better scalability is achived by changing:"
-          write(*,*) "          - TS.Contour.Eq.Circle.N"
-          write(*,*) "          - TS.Contour.Eq.Line.<Bottom|Tail>.N"
-          write(*,*) "          - TS.Contour.Eq.Pole.N"
-
-          ! Calculate optimal number of energy points
-          i = 2*i
-          write(*,'(t10,a,i4)') "Used equilibrium # of energy points   : ",i
-          i = Nodes .PARCOUNT. i
-          write(*,'(t10,a,i4,tr1,a4,i3,/)') &
-               "Optimal equilibrium # of energy points: ",i, &
-               "+- i*",Nodes
-       end if
-       i = C_nEq_mid_N + 2 * C_nEq_tail_N
-       if ( mod(i,Nodes) /= 0 ) then
-          write(*,*) "NOTICE: Non-equilibrium energy contour points are not"
-          write(*,*) "        divisable by the number of nodes."
-          write(*,*) "        Better scalability is achieved by changing:"
-          write(*,*) "          - TS.Contour.nEq.Tail.N"
-          write(*,*) "          - TS.Contour.nEq.Middle.N"
-          
-          ! Calculate optimal number of energy points
-          write(*,'(t10,a,i4)') "Used non-equilibrium # of energy points   : ",i
-          i = Nodes .PARCOUNT. i
-          write(*,'(t10,a,i4,tr1,a4,i3,/)') &
-               "Optimal non-equilibrium # of energy points: ",i, &
-               "+- i*",Nodes
-       end if
-       i = C_Eq_Circle_N + C_Eq_Line_bottom_N + C_Eq_Line_tail_N + C_Eq_Pole_N
-       i = 2*i + C_nEq_mid_N + 2 * C_nEq_tail_N
-       if ( mod(i,Nodes) /= 0 ) then
-          write(*,*) "NOTICE: Total energy contour points are not"
-          write(*,*) "        divisable by the number of nodes."
-          
-          ! Calculate optimal number of energy points
-          write(*,'(t10,a,i4)') "Used # of energy points   : ",i
-          i = Nodes .PARCOUNT. i
-          write(*,'(t10,a,i4,tr1,a4,i3,/)') &
-               "Optimal # of energy points: ",i,"+- i*",Nodes
-       end if
-    else if ( IONode ) then
-       i = C_Eq_Circle_N + C_Eq_Line_bottom_N + C_Eq_Line_tail_N + C_Eq_Pole_N
-       
-       !   - The equilibrium parts are the same computational cost
-       !   * Solution make the equi contours divisible by Nodes
-       if ( mod(i,Nodes) /= 0 ) then
-          write(*,*) "NOTICE: Total number of energy points is &
-               &not divisable by the number of nodes."
-          write(*,*) "        There are no computational costs &
-               &associated with increasing this."
-          ! Calculate optimal number of energy points
-          write(*,'(t10,a,i4)') "Used # of energy points   : ",i
-          i = Nodes .PARCOUNT. i
-          write(*,'(t10,a,i4)') "Optimal # of energy points: ",i
+          cnEq(2)%N = cnEq(2)%N + Nodes - mod(i,Nodes)
        end if
     end if
 
     ! Update the number of contour points
-    NEn_eq = C_Eq_Circle_N + C_Eq_Line_bottom_N + C_Eq_Line_tail_N + C_Eq_Pole_N
+    NEn_eq = sum(cEq(:)%N) + N_poles
     NEn = NEn_eq 
     if ( IsVolt ) then
        NEn = NEn_eq * 2
-       NEn = NEn + C_nEq_mid_N + 2 * C_nEq_tail_N
+       NEn = NEn + sum(cnEq(:)%N)
     end if
-
+    
     PNEn = Nodes .parcount. NEn
 
-    nullify(contour)
-    allocate(contour(NEn))
-
   end subroutine read_contour_options
-
 
   ! Routine for creating the contour
   subroutine setup_contour(IsVolt)
@@ -597,21 +184,23 @@ contains
 ! **********************
     type(ts_ccontour), pointer :: c(:) => null()
     real(dp), allocatable :: x(:), w(:)
-    real(dp) :: sE1, sE2, tmpE1, tmpE2
+    real(dp) :: sE1, sE2, tmp
     logical :: switched
     integer :: Net, N
-    integer :: i, j, k
+    integer :: i, j, k, l
+
+    ! ensure that the ar
+    nullify(contour)
+    allocate(contour(NEn))
 
     ! Setup all the different methods
     if ( .not. IsVolt ) then
 
        c => contour_Eq()
        ! We will only create the equilibrium contour
-       call setup_contour_Eq(CC_PART_EQUI_CIRCLE, &
-            C_Eq_Circle, C_Eq_Circle_N, C_Eq_split, &
-            C_Eq_Line_bottom, C_Eq_Line_bottom_N ,C_Eq_Line_split, &
-            C_Eq_Line_tail, C_Eq_Line_tail_N, C_Eq_Pole_N, &
-            CCEmin, 0._dp, kT, Eq_Eta, c)
+       call setup_contour_Eq(CC_PART_EQUI_CIRCLE, cEq(:), &
+            N_poles, &
+            0._dp, kT, Eq_Eta, c)
 
     else
 
@@ -626,151 +215,135 @@ contains
 
        c => contour_EqL()
        ! We will only create the equilibrium contour
-       call setup_contour_Eq(CC_PART_L_EQUI_CIRCLE, &
-            C_Eq_Circle, C_Eq_Circle_N, C_Eq_split, &
-            C_Eq_Line_bottom, C_Eq_Line_bottom_N ,C_Eq_Line_split, &
-            C_Eq_Line_tail, C_Eq_Line_tail_N, C_Eq_Pole_N, &
-            CCEmin+EfL, EfL, kT, Eq_Eta, c)
+       call setup_contour_Eq(CC_PART_L_EQUI_CIRCLE, cEq(:), &
+            N_poles, &
+            EfL, kT, Eq_Eta, c)
 
        c => contour_EqR()
        ! We will only create the equilibrium contour
-       call setup_contour_Eq(CC_PART_R_EQUI_CIRCLE, &
-            C_Eq_Circle, C_Eq_Circle_N, C_Eq_split, &
-            C_Eq_Line_bottom, C_Eq_Line_bottom_N ,C_Eq_Line_split, &
-            C_Eq_Line_tail, C_Eq_Line_tail_N, C_Eq_Pole_N, &
-            CCEmin+EfR, EfR, kT, Eq_Eta, c)
+       call setup_contour_Eq(CC_PART_R_EQUI_CIRCLE, cEq(:), &
+            N_poles, &
+            EfR, kT, Eq_Eta, c)
 
        ! The last contour is the non-equilibrium
        
        ! The voltage contour
        c => contour_nEq()
-       N = size(c)
+       j = 0
+
+       N = 0
+       ! find the maximum number of points in a single contour segment.
+       do i = 1 , size(cnEq)
+          N = max(N,cnEq(i)%N)
+       end do
        allocate(x(N),w(N))
-       Net = N+1-C_nEq_tail_N
 
-       select case ( C_nEq_tail ) ! check the bias contour
-       case ( CC_TYPE_SOMMERFELD ) ! 1. order
-          if ( C_nEq_mid_N /= 0 ) call die('Sommerfeld &
-               &requires no middle integration points')
+       ! loop over all contour segments
+       do k = 1 , size(cnEq(:))
 
-          call Sommerfeld(EfL, EfR, kT, N, x, w)
+          N = cnEq(k)%N
+
+          if ( cnEq(k)%type == CC_TYPE_SOMMERFELD ) then
+             ! The only special type of contour
+             ! this one will not allow other contour segments
+             
+             call Sommerfeld(EfL, EfR, kT, N, x, w)
+             
+             if ( size(cnEq) > 1 ) then
+                call die('You cannot have several contour &
+                     &segments and use the Sommerfeld contour.')
+             end if
+
+          else
           
-       case ( CC_TYPE_G_NF_MIN:CC_TYPE_G_NF_MAX )
-          if ( abs(C_nEq_split/kT-nint(C_nEq_split/kT)) > 1e-5 ) &
-               call die('Splitting energy in the non-equilibrium &
-               &contour is erroneous. Must be integer part of kT')
+             select case ( cnEq(k)%type ) 
+             case ( CC_TYPE_G_NF_MIN:CC_TYPE_G_NF_MAX )
 
-          if ( C_G_NF_END == huge(1) ) then
-             call GaussFermi_inf(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
-          else if ( C_G_NF_END == 30 ) then
-             call GaussFermi_30(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
-          else if ( C_G_NF_END == 28 ) then
-             call GaussFermi_28(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
-          else if ( C_G_NF_END == 26 ) then
-             call GaussFermi_26(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
-          else if ( C_G_NF_END == 24 ) then
-             call GaussFermi_24(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
-          else if ( C_G_NF_END == 22 ) then
-             call GaussFermi_22(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
-          else if ( C_G_NF_END == 20 ) then
-             call GaussFermi_20(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
-          else if ( C_G_NF_END == 19 ) then
-             call GaussFermi_19(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
-          else if ( C_G_NF_END == 18 ) then
-             call GaussFermi_18(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
-          else if ( C_G_NF_END == 17 ) then 
-             call GaussFermi_17(nint(C_nEq_split/kT),C_nEq_tail_N,x(Net),w(Net))
+                ! Determine the method
+                select case ( cnEq(k)%G_F_upper )
+                case ( huge(1) )
+                   call GaussFermi_inf(cnEq(k)%G_F_lower,N,x,w)
+                case ( 30 )
+                   call GaussFermi_30(cnEq(k)%G_F_lower,N,x,w)
+                case ( 28 )
+                   call GaussFermi_28(cnEq(k)%G_F_lower,N,x,w)
+                case ( 26 ) 
+                   call GaussFermi_26(cnEq(k)%G_F_lower,N,x,w)
+                case ( 24 ) 
+                   call GaussFermi_24(cnEq(k)%G_F_lower,N,x,w)
+                case ( 22 )
+                   call GaussFermi_22(cnEq(k)%G_F_lower,N,x,w)
+                case ( 20 )
+                   call GaussFermi_20(cnEq(k)%G_F_lower,N,x,w)
+                case ( 19 )
+                   call GaussFermi_19(cnEq(k)%G_F_lower,N,x,w)
+                case ( 18 )
+                   call GaussFermi_18(cnEq(k)%G_F_lower,N,x,w)
+                case ( 17 )
+                   call GaussFermi_17(cnEq(k)%G_F_lower,N,x,w)
+                case default
+                   call die('Unknown tail integral ending')
+                end select
+
+                ! shift to the correct placement of the contour.
+                if ( abs(cnEq(k)%a) > abs(cnEq(k)%b) ) then
+                   do i = 1 , N / 2
+                      l = N + 1 - i
+                      tmp = x(i)
+                      x(i) = x(l)
+                      x(l) = tmp
+                      tmp = w(i)
+                      w(i) = w(l)
+                      w(l) = tmp
+                   end do
+                end if
+
+                do i = 1 , N
+                   ! reverse sign in case of negative Gauss-Fermi
+                   if ( abs(cnEq(k)%a) > abs(cnEq(k)%b) ) x(i) = -x(i)
+                   x(i) = x(i) * kT + cnEq(k)%G_F_off
+                   w(i) = w(i) * kT
+                end do
+
+             case default
+                
+                call line_integral(cnEq(k)%type,cnEq(k)%a, cnEq(k)%b, kT, N, x, w)
+                
+                do i = 1 , N
+                   w(i) = w(i) * nf2(x(i),sE1,sE2,kT)
+                end do
+                
+             end select
+             
           end if
 
-       case default
-          if ( IONode ) &
-               write(*,*) 'ERROR: Contour not defined'
-          call die('ERROR:  setup_contour: Contour not defined') 
-       end select
+          ! We need to reverse the arguments here (positive bias is "standard")
+          call correct_weight_sign(N,w,EfR,EfL)
 
-       select case ( C_nEq_tail )
-       case ( CC_TYPE_SOMMERFELD )
-          ! Do nothing
-          ! Type in this segment takes care of the full integral
-       case default
-
-          ! We need to symmetrize the tails
-          j = C_nEq_tail_N 
-          do i = Net , N
-             x(j) = -x(i)
-             w(j) =  w(i)
-             j = j - 1
+          do i = 1 , N
+          
+             j = j + 1
+             c(j)%c = dcmplx(x(i),nEq_Eta)
+             c(j)%w = dcmplx(w(i),0._dp)
+             
+             c(j)%part = CC_PART_NON_EQUI
+             c(j)%type = cnEq(k)%type
           end do
 
-          ! This is already sorted, hence
-          ! we know that we do it correct here
-          sE1 = sE1 - C_nEq_split
-          sE2 = sE2 + C_nEq_split
-
-          call line_integral(C_nEq_mid,sE1, sE2, kT, C_nEq_mid_N, &
-               x(C_nEq_tail_N+1), w(C_nEq_tail_N+1))
-          
-          sE1 = sE1 + C_nEq_split
-          sE2 = sE2 - C_nEq_split
-
-       end select
-
-       ! We need to reverse the arguments here (positive bias is "standard")
-       call correct_weight_sign(N,w,EfR,EfL)
-
-       ! Create the tail contours
-       do i = 1 , C_nEq_tail_N
-          j = N + 1 - i
-          tmpE1 = x(i) * kT + sE1
-          tmpE2 = x(j) * kT + sE2
-          c(i)%c = dcmplx(tmpE1,nEq_Eta)
-          c(j)%c = dcmplx(tmpE2,nEq_Eta)
-          select case ( C_nEq_tail ) 
-          case ( CC_TYPE_G_NF_MIN:CC_TYPE_G_NF_MAX )
-             c(i)%w = w(i) * kT
-             c(j)%w = w(j) * kT
-          case default
-             c(i)%w = w(i) * kT * nf2(tmpE1,sE1,sE2,kT)
-             c(j)%w = w(j) * kT * nf2(tmpE2,sE1,sE2,kT)
-          end select
-          c(i)%part = CC_PART_NON_EQUI
-          c(i)%type = C_nEq_tail
-          c(j)%part = CC_PART_NON_EQUI
-          c(j)%type = C_nEq_tail
-
-       end do
-
-       ! Create the middle contours
-       do i = C_nEq_tail_N + 1 , N - C_nEq_tail_N
-          c(i)%c = dcmplx(x(i),nEq_Eta)
-          c(i)%w = w(i) * nf2(x(i),sE1,sE2,kT)
-          c(i)%part = CC_PART_NON_EQUI
-          c(i)%type = C_nEq_mid
        end do
 
        deallocate(x,w)
-       
-    end if
-
-    
-    ! Whether we should add any transport energy points for the
-    ! transiesta
-    if ( C_transport_N > 0 ) then
-       
-       c => contour_Transport()
-       call transmission(C_transport_Emin, C_transport_Emax, &
-            nEq_Eta, C_transport_N, c)
 
     end if
+
+    ! Currently the contour segment does not exist in transiesta
+    ! we could add a transmission function to track the transmission.
 
   end subroutine setup_contour
 
 
-! Routine for creating the contour
-  subroutine setup_contour_Eq(PART, C_Eq_Circle, C_Eq_Circle_N, C_Eq_split, &
-       C_Eq_Line_bottom, C_Eq_Line_bottom_N ,C_Eq_Line_split, &
-       C_Eq_Line_tail, C_Eq_Line_tail_N, C_Eq_Pole_N, &
-       CCEmin, Ef, kT, Eta, contour)
+  ! Routine for creating the contour
+  subroutine setup_contour_Eq(PART, cEq, N_poles, Ef, kT, Eta, contour)
 
     use units, only : Pi, eV
     use precision, only : dp
@@ -793,13 +366,12 @@ contains
 ! * INPUT variables    *
 ! **********************
     integer, intent(in) :: PART
-    integer, intent(in) :: C_Eq_Circle, C_Eq_Circle_N
-    integer, intent(in) :: C_Eq_Line_bottom, C_Eq_Line_bottom_N
-    integer, intent(in) :: C_Eq_Line_tail, C_Eq_Line_tail_N, C_Eq_Pole_N
-    real(dp), intent(in) :: C_Eq_split, C_Eq_Line_split
-    real(dp), intent(in) :: CCEmin, Ef, kT, Eta
+    type(ts_io_c), intent(in) :: cEq(:)
+    integer, intent(in) :: N_poles
+    real(dp), intent(in) :: Ef, kT, Eta
 
     type(ts_ccontour), pointer, intent(out) :: contour(:)
+
 ! **********************
 ! * LOCAL variables    *
 ! **********************
@@ -807,179 +379,126 @@ contains
     real(dp), allocatable :: x(:), w(:)
     real(dp) :: Delta, D, gamma, alpha, R, beta
     complex(dp) :: z0, ztmp
-    integer :: N_kT
-    integer :: i, j, curN
-
+    integer :: N_kT, G_nf_END
+    integer :: i, j, k, N, curN
 
     if ( size(contour) <= 0 ) then  ! if there are not any points we definetely have an error
        call die("ERROR: setup_contour_Eq: no energy points specified")
-    else if ( size(contour) /= C_Eq_Circle_N + C_Eq_Line_bottom_N &
-         + C_Eq_Line_tail_N + C_Eq_Pole_N ) then
+    else if ( size(contour) /= sum(cEq(:)%N) + N_poles ) then
        call die("ERROR: setup_contour_Eq: no energy points erroneous.")
     end if
     
     i = 1
-    curN = C_Eq_Pole_N
+    curN = N_poles
     if ( curN > size(contour) ) call die('Error in contour setup')
     ! Initialize the poles
     c => contour(1:curN)
-    call nf_poles(PART+2,Ef,kT,Eta,C_Eq_Pole_N,c)
+    call nf_poles(PART+2,Ef,kT,Eta,N_poles,c)
 
     ! Add the line integral (i.e. from above the last pole)
     Delta = aimag(c(curN)%c) + Pi*kT
     
-    ! Add the tail integral
-    i = curN + 1
-    curN = curN + C_Eq_Line_tail_N
-    if ( curN > size(contour) ) call die('Error in contour setup')
-    if ( C_Eq_Line_tail_N > 0 ) then
-       c => contour(i:curN)
-       
+    ! Add all line integrals...
+    do k = size(cEq) , 2 , -1
+       N = cEq(k)%N
+       j = curN + 1
+       curN = curN + N
+       if ( curN > size(contour) ) call die('Error in contour setup')
+       if ( N <= 0 ) cycle
+       c => contour(j:curN)
+
        ! Allocate space
-       allocate(x(C_Eq_Line_tail_N),w(C_Eq_Line_tail_N))
+       allocate(x(N),w(N))
 
        ! Determine the method
-       select case ( C_Eq_Line_tail ) 
+       select case ( cEq(k)%type ) 
        case ( CC_TYPE_G_NF_MIN:CC_TYPE_G_NF_MAX )
 
-          if ( C_G_NF_END == huge(1) ) then
-             call GaussFermi_inf(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
-          else if ( C_G_NF_END == 30 ) then
-             call GaussFermi_30(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
-          else if ( C_G_NF_END == 28 ) then
-             call GaussFermi_28(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
-          else if ( C_G_NF_END == 26 ) then
-             call GaussFermi_26(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
-          else if ( C_G_NF_END == 24 ) then
-             call GaussFermi_24(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
-          else if ( C_G_NF_END == 22 ) then
-             call GaussFermi_22(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
-          else if ( C_G_NF_END == 20 ) then
-             call GaussFermi_20(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
-          else if ( C_G_NF_END == 19 ) then
-             call GaussFermi_19(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
-          else if ( C_G_NF_END == 18 ) then
-             call GaussFermi_18(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
-          else if ( C_G_NF_END == 17 ) then 
-             call GaussFermi_17(nint(C_Eq_Line_split/kT),C_Eq_Line_tail_N,x,w)
-          end if
+          select case ( cEq(k)%G_F_upper )
+          case ( huge(1) )
+             call GaussFermi_inf(cEq(k)%G_F_lower,N,x,w)
+          case ( 30 )
+             call GaussFermi_30(cEq(k)%G_F_lower,N,x,w)
+          case ( 28 )
+             call GaussFermi_28(cEq(k)%G_F_lower,N,x,w)
+          case ( 26 ) 
+             call GaussFermi_26(cEq(k)%G_F_lower,N,x,w)
+          case ( 24 ) 
+             call GaussFermi_24(cEq(k)%G_F_lower,N,x,w)
+          case ( 22 )
+             call GaussFermi_22(cEq(k)%G_F_lower,N,x,w)
+          case ( 20 )
+             call GaussFermi_20(cEq(k)%G_F_lower,N,x,w)
+          case ( 19 )
+             call GaussFermi_19(cEq(k)%G_F_lower,N,x,w)
+          case ( 18 )
+             call GaussFermi_18(cEq(k)%G_F_lower,N,x,w)
+          case ( 17 )
+             call GaussFermi_17(cEq(k)%G_F_lower,N,x,w)
+          case default
+             call die('Unknown tail integral ending')
+          end select
 
        case default 
           call die('Nothing could be deciphered from the Eq. tail contour method')
        end select
     
        ! We move them over to this
-       do i = 1 , C_Eq_Line_tail_N
-          j = C_Eq_Line_tail_N + 1 - i
+       do i = 1 , N
+          j = N + 1 - i
           c(i)%c    = dcmplx(x(j)*kT + Ef,Delta)
           c(i)%w    = - w(j) * kT
           c(i)%part = PART + 1
-          c(i)%type = C_Eq_Line_tail
+          c(i)%type = cEq(k)%type
        end do
        
        deallocate(x,w)
-    end if
-
-    ! First we point to the bottom line
-    i = curN + 1
-    curN = curN + C_Eq_Line_bottom_N
-    if ( curN > size(contour) ) call die('Error in contour setup')
-    c => contour(i:curN)
-
-    ! Allocate space
-    allocate(x(C_Eq_Line_bottom_N),w(C_Eq_Line_bottom_N))
-
-    ! Determine the method
-    select case ( C_Eq_Line_bottom ) 
-       ! We will not allow for -2 and 0 kT contours (maybe up to -5?)
-    case ( CC_TYPE_G_NF_MIN:CC_TYPE_G_NF_MAX )
-       if ( C_Eq_Line_tail_N > 0 ) call die('Wrong options')
-
-       if ( C_G_NF_END == huge(1) ) then
-          call GaussFermi_inf(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
-       else if ( C_G_NF_END == 30 ) then
-          call GaussFermi_30(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
-       else if ( C_G_NF_END == 28 ) then
-          call GaussFermi_28(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
-       else if ( C_G_NF_END == 26 ) then
-          call GaussFermi_26(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
-       else if ( C_G_NF_END == 24 ) then
-          call GaussFermi_24(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
-       else if ( C_G_NF_END == 22 ) then
-          call GaussFermi_22(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
-       else if ( C_G_NF_END == 20 ) then
-          call GaussFermi_20(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
-       else if ( C_G_NF_END == 19 ) then
-          call GaussFermi_19(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
-       else if ( C_G_NF_END == 18 ) then
-          call GaussFermi_18(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
-       else if ( C_G_NF_END == 17 ) then 
-          call GaussFermi_17(nint(C_Eq_split/kT),C_Eq_Line_bottom_N,x,w)
-       end if
-
-    case default
-      if ( C_Eq_Line_tail_N == 0 ) &
-           call die('Using a bounded integral requires a tail integral')
-
-      call line_integral(C_Eq_Line_bottom, C_Eq_split/kT, &
-           C_Eq_Line_split/kT, kT, C_Eq_Line_bottom_N,x,w)
-      w(:) = w(:) * nf(x(:) * kT + Ef)
-       
-   end select
-
-    ! We move them over to this
-    do i = 1 , C_Eq_Line_bottom_N
-       j = C_Eq_Line_bottom_N + 1 - i
-       c(i)%c    = dcmplx(x(j)*kT + Ef,Delta)
-       c(i)%w    = - w(j) * kT
-       c(i)%part = PART + 1
-       c(i)%type = C_Eq_Line_bottom
     end do
-
-    deallocate(x,w)
 
     ! We create the circle contour
     ! First we lift the equilibrium contour from the 
     ! real axis by Eta
     Delta = Delta - Eta
     ! The ending point for the contour (on the imaginary axis)
-    gamma = - C_Eq_split
-    D     = Ef - CCEmin - gamma ! we have included minus gamma here...
+    gamma = cEq(1)%b
+    D     = -cEq(1)%a + gamma 
     ! The angle between CCEmin and the point
     alpha = dATAN(Delta/D)
     ! The radius of the circle in the complex plane
     R     = dsqrt(Delta*Delta + D*D) / (2._dp*cos(alpha))
     ! The center of the circle on the real-axis shifted by Eta
-    z0    = dcmplx(CCEmin + R, Eta)
+    z0    = dcmplx(cEq(1)%a + Ef + R, Eta)
     ! The angle from where we start
     beta  = dasin(Delta / R)
 
-    ! First we point to the bottom line
+    ! We now create the circle contour
     i = curN + 1
-    curN = curN + C_Eq_Circle_N
+    curN = curN + cEq(1)%N
     if ( curN > size(contour) ) call die('Error in contour setup')
     c => contour(i:curN)
     
     ! Allocate space
-    allocate(x(C_Eq_Circle_N),w(C_Eq_Circle_N))
+    allocate(x(cEq(1)%N),w(cEq(1)%N))
 
-    select case ( C_Eq_Circle )
+    select case ( cEq(1)%type )
     case ( CC_TYPE_G_LEGENDRE )
-       call Gauss_Legendre_Rec(C_Eq_Circle_N, 0, beta, Pi, x, w)
+       call Gauss_Legendre_Rec(cEq(1)%N, 0, beta, Pi, x, w)
     case ( CC_TYPE_TANH_SINH )
-       D = 1.2e-2_dp * R / real(C_Eq_Circle_N,dp)
-       call TanhSinh_Exact(C_Eq_Circle_N, x, w, beta, Pi, p=D)
+       ! TODO add the optional argument
+       !D = 1.2e-2_dp * R / real(cEq(1)%N,dp)
+       D = 1.8e-2_dp * (Pi-beta) / real(cEq(1)%N,dp)
+       call TanhSinh_Exact(cEq(1)%N, x, w, beta, Pi, p=D)
     case default
        call die('Unrecognized contour for the equilibrium circle')
     end select
 
-    do i = 1 , C_Eq_Circle_N 
+    do i = 1 , cEq(1)%N
        ztmp   = R * cdexp(dcmplx(0._dp,x(i)))
        c(i)%c = z0 + ztmp
        ! Factor i, comes from Ed\theta=dE=iR e^{i\theta}
        c(i)%w = w(i) * nf((c(i)%c-Ef)/kT) * dcmplx(0._dp,1._dp)*ztmp
        c(i)%part = PART
-       c(i)%type = C_Eq_Circle
+       c(i)%type = cEq(1)%type
     end do
 
     deallocate(x,w)
@@ -1107,7 +626,8 @@ contains
 
     case ( CC_TYPE_TANH_SINH ) 
 
-       call TanhSinh_Exact(NEn, x, w, E1, E2, p=1.e-1_dp)
+       delta = 2.e-2_dp * abs(E2-E1) / real(NEn,dp)
+       call TanhSinh_Exact(NEn, x, w, E1, E2, p=delta)
 
     case default
        call die('Could not determine the non-equilibrium line contour')
@@ -1154,78 +674,8 @@ contains
     end do
 
   end subroutine nf_poles
-
-
   
-  ! Determine the number of tail-points in the Gauss-Fermi curve
-  subroutine init_GaussFermi_Bottom_Tail(E1, E2, &
-       kT, NEn, Ntail, Nmid, GF_N_kT)
-    
-    use units, only : Pi
-    use precision, only : dp
-    use parallel, only : IONode
-    use m_gauss_fermi_inf
 
-! ***********************
-! * INPUT variables     *
-! ***********************
-    real(dp), intent(in) :: E1, E2  ! energy parameters 
-    real(dp), intent(in) :: kT      ! temperature in Ry
-    integer,  intent(in) :: NEn
-
-! ***********************
-! * OUTPUT variables    *
-! ***********************
-    integer,  intent(out) :: Ntail, Nmid, GF_N_kT
-
-! ***********************
-! * LOCAL variables     *
-! ***********************
-    real(dp) :: deltaN, VkT
-
-    VkT = dabs(E2-E1) / kT
-
-    ! Determine the optimal Gauss-Fermi curve
-    ! If the bias is larger than 10 * kT then we can select from [-5kT;inf]
-    ! almost without overlap
-    if ( VkT > 5._dp ) then
-       ! we default to select -5kT (the fermi function is almost zero there)
-       GF_N_kT = -5
-    else
-       ! We need to figure out were it makes sense to cut them
-       ! Calculate the overlap of the fermi functions
-       GF_N_kT = nint((5._dp-VkT)*.5_dp + .5_dp)
-    end if
-
-    ! Select an allowed range (this should not be a problem)
-    GF_N_kT = min(GF_N_kT,G_NF_MAX_kT)
-    GF_N_kT = max(GF_N_kT,G_NF_MIN_kT)
-       
-    ! Now we need to determine the number of points in each segment
-    ! We do this by assuming that the weight in the tails equals that of the overlap
-    ! region of the Fermi function.
-    ! This seems like a reasonable assumption.
-
-    ! Calculate the parts in the tail
-    deltaN = VkT / real(NEn,dp)
-
-    if ( GF_N_kT > 0 ) then
-       ! When extending the integral into the positive region
-       ! it will be better to allow the full range to be divided
-       deltaN = (VkT + GF_N_kT/2) / real(NEn,dp)
-       Ntail = nint(GF_N_kT/deltaN)
-    else
-       Ntail = nint(real(abs(GF_N_kT),dp)/deltaN)
-    end if
-    
-    ! correct for spill-out
-    Ntail = min(Ntail,G_NF_MAX_N)
-    Ntail = max(Ntail,G_NF_MIN_N)
-
-    ! Calculate the number of points in the middle segment
-    Nmid  = NEn - Ntail
-
-  end subroutine init_GaussFermi_Bottom_Tail
   
 
 ! ##################################################################
@@ -1364,88 +814,6 @@ contains
 
   end subroutine sort_contour
 
-  ! Routine for "pretty" printing the contour points out in the out file
-  subroutine print_contour()
-    use parallel, only : IONode
-    use units,    only : eV
-
-! **********************
-! * LOCAL variables    *
-! **********************
-    type(ts_ccontour), pointer :: c
-    character(len=CC_TYPE_LEN) :: ctype
-    character(len=3) :: f_type
-    integer :: i, part, type
-    
-    ! Initialize variables
-    part = -1
-    type = -1
-    nullify(c)
-
-    if ( IONode ) then
-       write(*,'(a)') "transiesta: contour integration path:"
-       write(f_type,'(a,i2)') 'a',CC_TYPE_LEN
-       write(*,'(1x,'//trim(f_type)//',''   '',2(tr1,a12),2(tr1,a14))') &
-            "Type  ","Re(c)[eV]","Im(c)[eV]","Re(weight)","Im(weight)"
-       do i = 1 , NEn
-          ! loop !
-          c => contour(i)
-          if ( part /= c%part ) then
-             write(*,'(1x,a)') part2str(c)
-             part = c%part
-          end if
-          if ( type /= c%type ) then
-             ctype = type2str(c)
-             type = c%type
-          end if
-          
-         ! Write out the contour information:
-          write(*,'(1x,'//trim(f_type)//','' : '',tr1,2(f12.5,tr1),2(f14.9,tr1))') &
-               ctype,c%c/eV,c%w
-       end do
-       write(*,*) ! New line
-    end if
-  end subroutine print_contour
-
-
-! Write out the contour to a contour file
-  subroutine io_contour(slabel)
-    use parallel, only : IONode
-    use units, only : eV
-    character(len=*), intent(in) :: slabel
-
-! *********************
-! * LOCAL variables   *
-! *********************
-    character(len=len_trim(slabel)+9) :: fname
-    integer :: i, unit, part
-
-    interface
-       function paste(s1,s2)
-         character(LEN=*), intent(in) :: s1,s2
-         character(LEN=200) :: paste
-       end function paste
-    end interface
-
-    if ( IONode ) then
-       fname = trim(paste(slabel,'.TSCC'))
-       call io_assign( unit )
-       open( unit, file=fname, status='unknown' )
-       write(unit,'(a)') "# Complex contour path"
-       write(unit,'(4(a12,tr1))') "# Re(c)[eV] ","Im(c)[eV]","Re(w)","Im(w)"
-       part = contour(1)%part
-       do i = 1 , NEn
-          if ( part /= contour(i)%part ) then
-             write(unit,*)
-             part = contour(i)%part
-          end if
-          write(unit,'(4(e13.6,tr1))') contour(i)%c/eV,contour(i)%w
-       end do
-       call io_close( unit )
-    end if
-
-  end subroutine io_contour
-
   subroutine correct_weight_sign(N,w,E1,E2)
     integer, intent(in) :: N
     real(dp), intent(inout) :: w(N)
@@ -1472,12 +840,12 @@ contains
 
   function contour_nEq() result(c)
     type(ts_ccontour), pointer :: c(:)
-    c => contour(NEn_eq*2+1:NEn-C_Transport_N)
+    c => contour(NEn_eq*2+1:NEn-N_transport)
   end function contour_nEq
 
   function contour_Transport() result(c)
     type(ts_ccontour), pointer :: c(:)
-    c => contour(NEn-C_Transport_N:NEn)
+    c => contour(NEn-N_transport+1:NEn)
   end function contour_Transport
 
 end module m_ts_contour

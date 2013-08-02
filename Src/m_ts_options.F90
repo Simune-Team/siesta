@@ -155,6 +155,7 @@ CONTAINS
     use m_ts_io, only : ts_read_TSHS_lasto
 
     use m_ts_contour
+    use m_ts_io_contour
     use m_ts_method
     use m_ts_weight
     use m_ts_charge
@@ -408,7 +409,7 @@ CONTAINS
        write(*,8) 'TranSIESTA SCF cycle mixing weight',ts_wmix
        write(*,1) 'Start TS-SCF cycle immediately', ImmediateTSmode
        if ( IsVolt ) then
-          write(*,6) 'Voltage', VoltFDF/eV,' Volts'
+          write(*,6) 'Voltage', VoltFDF/eV,'Volts'
           if ( VoltageInC ) then
              write(*,11) 'Voltage drop across central region'
           else
@@ -455,6 +456,11 @@ CONTAINS
        write(*,5) '# atoms used in right elec. ', UsedAtoms(ElRight)
        write(*,15) 'Right elec. repetition A1/A2', RepA1(ElRight),RepA2(ElRight)
 
+       write(*,7) 'Electronic temperature',kT/eV,'eV'
+
+       ! Print the contour information
+       call ts_print_contour_options(cEq,cnEq, Eq_Eta, nEq_Eta,N_poles,IsVolt)
+       
        write(*,11) repeat('*', 62)
        write(*,*)
 
@@ -473,11 +479,16 @@ CONTAINS
           end if
        end do
 
-       if (fixspin) then
-          write(*,*) 'Fixed Spin not possible in TS Calculations !'
-          call die('Stopping code')
-       end if
 
+       ! print the warnings...
+       call ts_print_contour_warnings(cEq,cnEq,kT, Eq_Eta, nEq_Eta, IsVolt)
+
+    end if
+
+    if ( FixSpin ) then
+       write(*,*) 'Fixed Spin not possible with Transiesta!'
+       write(*,*) 'Electrodes with fixed spin is not possible with Transiesta !'
+       call die('Stopping code')
     end if
 
     if ( IONode ) then
@@ -485,10 +496,27 @@ CONTAINS
             ' End: TS CHECKS AND WARNINGS ',repeat('*',26)
     end if
 
+
+    ! Print out the contour blocks
+    if ( IONode ) then
+       write(*,'(/,a)') 'transiesta: contour input as perceived:'
+    end if
+
+    call ts_print_contour_block('TS.Contour.Eq',cEq, &
+         msg_first='# First item is ALWAYS the circle part of the contour', &
+         msg_last='# Last item is ALWAYS the tail part of the line contour')
+    if ( IsVolt ) then
+       if ( IONode ) write(*,*)
+       call ts_print_contour_block('TS.Contour.nEq',cnEq, &
+            msg_first='# First item is ALWAYS the lower tail part of the contour', &
+            msg_last='# Last item is ALWAYS the upper tail part of the contour')
+    end if
+    if ( IONode ) write(*,'(/)')
+
 1   format('ts_options: ',a,t53,'=',4x,l1)
 5   format('ts_options: ',a,t53,'=',i5,a)
-6   format('ts_options: ',a,t53,'=',f10.4,a)
-7   format('ts_options: ',a,t53,'=',f12.6,a)
+6   format('ts_options: ',a,t53,'=',f10.4,tr1,a)
+7   format('ts_options: ',a,t53,'=',f12.6,tr1,a)
 8   format('ts_options: ',a,t53,'=',f10.4)
 10  format('ts_options: ',a,t53,'=',4x,a)
 11  format('ts_options: ',a)
