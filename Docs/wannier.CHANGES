@@ -3,6 +3,50 @@ ____________________________________________________________
 ------------------------------------------------------------
 
 ------------------------------------------------------------
+2013-08-02   Alberto Garcia  trunk-438--radfunc-5--wannier-3
+Move wannier analysis to 'siesta_analysis'. Reinstate call to siesta_end
+
+A previous patch had removed the call to siesta_end in the main program.
+It has been re-instated. 
+
+The call to siesta2wannier90 has been moved to 'siesta_analysis'. In
+case the user requests a local_DOS calculation (which destroys the scf
+DM), the new call is placed just before that section.
+
+modified:
+  Src/Makefile
+  Src/siesta.F
+  Src/siesta_analysis.F
+
+------------------------------------------------------------
+2013-08-01   Javier Junquera  trunk-438--radfunc-5--wannier-2
+Complete the SIESTA-WANNIER90 interface
+
+* Use the new function registry.
+* Added a new test
+  
+  removed:
+    Src/initswan.F90
+    Src/parallelsubswan.F90
+    Src/trialOrbitalClass.f90
+  added:
+    Src/m_overkkneig.F90
+    Src/write_inp_wannier.F90
+    Tests/wannier/
+    Tests/wannier/kremik.fdf
+    Tests/wannier/kremik.nnkp
+  modified:
+    Src/Makefile
+    Src/alloc.F90
+    Src/amn.F90
+    Src/compute_pw_matrix.F90
+    Src/m_trialorbitalclass.f90
+    Src/matel_registry.F90
+    Src/mmn.F90
+    Src/register_rfs.F90
+    Src/siesta2wannier90.F90
+
+------------------------------------------------------------
 2013-07-09 14:30 GMT Alberto Garcia trunk-438--radfunc-5--wannier-1
 Merge with trunk-register-5 to pull in registry for new matel
 
