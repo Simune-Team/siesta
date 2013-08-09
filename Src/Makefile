@@ -169,7 +169,7 @@ OBJS += m_gauss_fermi_inf.o m_gauss_fermi_30.o m_gauss_fermi_28.o
 OBJS += m_gauss_fermi_26.o m_gauss_fermi_24.o m_gauss_fermi_22.o
 OBJS += m_gauss_fermi_20.o m_gauss_fermi_19.o m_gauss_fermi_18.o
 OBJS += m_gauss_fermi_17.o
-OBJS += m_integrate.o m_mat_invert.o
+OBJS += m_integrate.o m_mat_invert.o m_monitor.o
 
 #--------------------------------------------------------------
 # FoX whatnot
@@ -445,8 +445,8 @@ coceri.o: files.o periodic_table.o precision.o
 compute_EKS_Harris.o: atomlist.o class_SpData2D.o dhscf.o m_dipol.o
 compute_EKS_Harris.o: m_energies.o m_mpi_utils.o m_ntm.o m_spin.o precision.o
 compute_EKS_Harris.o: siesta_geom.o siesta_options.o sparse_matrices.o
-compute_dm.o: atomlist.o iodmhs_netcdf.o kpoint_grid.o m_energies.o m_eo.o
-compute_dm.o: m_gamma.o m_mpi_utils.o m_rmaxh.o m_spin.o m_steps.o
+compute_dm.o: atomlist.o files.o iodmhs_netcdf.o kpoint_grid.o m_energies.o
+compute_dm.o: m_eo.o m_gamma.o m_mpi_utils.o m_rmaxh.o m_spin.o m_steps.o
 compute_dm.o: m_ts_charge.o m_ts_full.o m_ts_global_vars.o m_ts_method.o
 compute_dm.o: m_ts_options.o m_ts_sparse.o m_ts_tri.o ordern.o parallel.o
 compute_dm.o: precision.o siesta_geom.o siesta_options.o sparse_matrices.o
@@ -602,6 +602,8 @@ m_iostruct.o: siesta_geom.o sys.o units.o
 m_kinetic.o: precision.o
 m_mat_invert.o: alloc.o intrinsic_missing.o precision.o
 m_memory.o: memoryinfo.o parallel.o sys.o
+m_monitor.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o geom_helper.o
+m_monitor.o: parallel.o precision.o
 m_mpi_utils.o: precision.o sys.o
 m_new_dm.o: alloc.o atomlist.o class_Data2D.o
 m_new_dm.o: class_Fstack_Pair_Geometry_SpData2D.o class_Geometry.o
@@ -662,14 +664,14 @@ m_ts_iodm.o: alloc.o files.o m_mpi_utils.o m_ts_global_vars.o parallel.o
 m_ts_iodm.o: parallelsubs.o precision.o sys.o
 m_ts_kpoints.o: files.o find_kgrid.o minvec.o parallel.o precision.o
 m_ts_kpoints.o: siesta_cml.o siesta_options.o sys.o
-m_ts_options.o: files.o m_ts_cctype.o m_ts_charge.o m_ts_contour.o
+m_ts_options.o: files.o m_monitor.o m_ts_cctype.o m_ts_charge.o m_ts_contour.o
 m_ts_options.o: m_ts_electype.o m_ts_global_vars.o m_ts_io.o m_ts_io_contour.o
 m_ts_options.o: m_ts_method.o m_ts_weight.o parallel.o precision.o
 m_ts_options.o: siesta_options.o sys.o units.o
 m_ts_sparse.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_sparse.o: class_Sparsity.o create_Sparsity_SC.o geom_helper.o
-m_ts_sparse.o: m_glob_sparse.o m_ts_debug.o m_ts_electype.o m_ts_options.o
-m_ts_sparse.o: parallel.o precision.o
+m_ts_sparse.o: m_glob_sparse.o m_monitor.o m_ts_debug.o m_ts_electype.o
+m_ts_sparse.o: m_ts_options.o parallel.o precision.o
 m_ts_sparse_helper.o: class_OrbitalDistribution.o class_SpData1D.o
 m_ts_sparse_helper.o: class_SpData1D.o class_Sparsity.o geom_helper.o
 m_ts_sparse_helper.o: intrinsic_missing.o parallel.o precision.o

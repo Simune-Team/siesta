@@ -333,7 +333,7 @@
       if ( TS_Analyze ) then
          ! Force the creation of the full sparsity pattern
          UseBulk = .false.
-         call ts_sparse_init(Gamma, block_dist, sparse_pattern,
+         call ts_sparse_init(slabel,Gamma, block_dist, sparse_pattern,
      &        na_u, lasto)
          call ts_tri_init()
 

@@ -79,10 +79,11 @@ contains
 ! memory reduced TranSIESTA code.
 ! This means collecting information about which region needs
 ! update, etc.
-  subroutine ts_sparse_init(Gamma,block_dist,sparse_pattern,na_u,lasto)
+  subroutine ts_sparse_init(slabel,Gamma,block_dist,sparse_pattern,na_u,lasto)
 
     use class_OrbitalDistribution
 
+    use alloc
 #ifdef MPI
     use mpi_siesta, only : MPI_Comm_Self
 #endif 
@@ -95,13 +96,16 @@ contains
     use m_ts_options, only : ElLeft, ElRight
     use m_ts_options, only : na_BufL, no_BufL
     use m_ts_options, only : na_BufR, no_BufR
+    use m_ts_options, only : monitor_list, iu_MON, N_mon
 #ifdef TRANSIESTA_DEBUG
     use m_ts_debug
 #endif
+    use m_monitor
 
 ! **********************
 ! * INPUT variables    *
 ! **********************
+    character(len=*), intent(in) :: slabel
     ! A Gamma-calculation?
     logical, intent(in)  :: Gamma
     ! The distribution for the sparsity-pattern
@@ -118,7 +122,7 @@ contains
 ! **********************
     type(OrbitalDistribution) :: dit
     ! Temporary arrays for knowing the electrode size
-    integer :: no_L, no_R
+    integer :: no_L, no_R, i
     integer :: no_u_LCR
     ! Calculate the number of used atoms/orbitals in left/right
     no_L = TotUsedOrbs(ElLeft)
@@ -195,6 +199,52 @@ contains
     if ( IONode ) then
        write(*,'(/,a)') 'Created the TranSIESTA global update sparsity pattern:'
        call print_type(tsup_sp_uc)
+    end if
+
+    ! Read in the monitor lists...
+    ! initialize the monitor list
+    if ( N_mon == 0 ) then
+       nullify(monitor_list)
+       call read_monitor('TS.DM.Monitor', &
+            dit, tsup_sp_uc, N_mon, monitor_list)
+       if ( N_mon > 0 .and. IONode ) then
+          if ( .not. IsVolt ) then
+             call re_alloc(iu_MON,1,1,1,N_mon)
+          else
+             call re_alloc(iu_MON,1,4,1,N_mon)
+          end if
+          do i = 1 , N_mon
+             ! open the files
+             if ( .not. IsVolt ) then
+                call io_assign(iu_MON(1,i))
+                open(iu_MON(1,i),file=fname_monitor( &
+                     monitor_list(i,1),monitor_list(i,2), &
+                     basename=trim(slabel)//'.TSMON'), &
+                     form='formatted',status='unknown')
+             else
+                call io_assign(iu_MON(1,i))
+                open(iu_MON(1,i),file=fname_monitor( &
+                     monitor_list(i,1),monitor_list(i,2), &
+                     basename=trim(slabel)//'.TSMONL'), &
+                     form='formatted',status='unknown')
+                call io_assign(iu_MON(2,i))
+                open(iu_MON(2,i),file=fname_monitor( &
+                     monitor_list(i,1),monitor_list(i,2), &
+                     basename=trim(slabel)//'.TSMONR'), &
+                     form='formatted',status='unknown')
+                call io_assign(iu_MON(3,i))
+                open(iu_MON(3,i),file=fname_monitor( &
+                     monitor_list(i,1),monitor_list(i,2), &
+                     basename=trim(slabel)//'.TSMONLN'), &
+                     form='formatted',status='unknown')
+                call io_assign(iu_MON(4,i))
+                open(iu_MON(4,i),file=fname_monitor( &
+                     monitor_list(i,1),monitor_list(i,2), &
+                     basename=trim(slabel)//'.TSMONRN'), &
+                     form='formatted',status='unknown')
+             end if
+          end do
+       end if
     end if
 
 #ifdef TRANSIESTA_DEBUG

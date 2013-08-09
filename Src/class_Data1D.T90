@@ -37,6 +37,7 @@
   
   interface val
      module procedure valData1D
+     module procedure valData1D_Idx
   end interface
 
   interface init_val
@@ -137,6 +138,21 @@
     
     p => this%data%val
   end function valData1D
+
+  function valData1D_Idx(this,idx) result(v)
+    type(TYPE_NAME), intent(in) :: this
+    integer,         intent(in) :: idx
+#ifdef PREC
+    VAR_TYPE(PREC), pointer     :: p(:) !=> null()
+    VAR_TYPE(PREC)              :: v
+#else
+    VAR_TYPE, pointer     :: p(:) !=> null()
+    VAR_TYPE              :: v
+#endif	
+    
+    p => this%data%val
+    v = p(idx)
+  end function valData1D_Idx
 
   subroutine printData1D(this)
     type(TYPE_NAME), intent(in)  :: this

@@ -98,11 +98,10 @@ real(dp) :: ts_wmix
 ! tri-diagonalization partition and the contour
 logical, save :: TS_Analyze = .false.
 
-! Supplying a monitor orbital allows to print out integral parts of the 
-! density contribution.
-! The dimensions allows to monitor 
-integer, save, allocatable :: orb_monitor(:,:)
-real(dp), save, allocatable :: orb_int(:,:)
+! If the user request to monitor the Density matrix update elements
+integer,          save :: N_mon = 0
+integer, pointer, save :: monitor_list(:,:) => null()
+integer, pointer, save :: iu_MON(:,:) => null()
 
 !==========================================================================*
 !==========================================================================*
@@ -160,6 +159,8 @@ CONTAINS
     use m_ts_weight
     use m_ts_charge
 
+    use m_monitor
+
     implicit none
     
     real(dp), intent(in) :: wmix, kT_in
@@ -182,7 +183,6 @@ CONTAINS
        write(*,11) repeat('*', 62)
     end if
 
-    
     !Set ts_istep default
     ts_istep = 0
 
@@ -531,7 +531,7 @@ contains
     integer, allocatable, dimension(:) :: lasto
     logical :: exist
     if ( TSmode ) then
-! Check existance for left Electrode.TSHS
+       ! Check existance for left Electrode.TSHS
        inquire(file=TRIM(HSfile(el)),exist=exist)
        if ( .not. exist ) then
           call die(trim(LR)//" electrode file does not exist. &

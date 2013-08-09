@@ -211,8 +211,9 @@ contains
        xij, Hs, Ss, DM, EDM, Ef, &
        TSiscf, Qtot)
 
-    use units, only : Pi
+    use units, only : eV, Pi
     use parallel, only : Node, Nodes, IONode, operator(.PARCOUNT.)
+
 #ifdef MPI
     use mpi_siesta
 #endif
@@ -223,6 +224,8 @@ contains
     use class_zSpData1D
     use class_zTriMat
 
+    use alloc
+
     use m_ts_kpoints
 
     use m_ts_electype
@@ -231,6 +234,7 @@ contains
     use m_ts_options, only : GFFileL, GFFileR
     use m_ts_options, only : na_BufL, no_BufL
     use m_ts_options, only : na_BufR, no_BufR
+    use m_ts_options, only : N_mon, iu_MON, monitor_list
 
     use m_ts_options, only : IsVolt, UseBulk, UpdateDMCR
     use m_ts_options, only : VoltL, VoltR
@@ -346,8 +350,19 @@ contains
 #endif
 ! ************************************************************
 
+! ******************* Monitor variables **********************
+    real(dp), pointer :: mon(:,:) => null()
+#ifdef MPI
+    real(dp), pointer :: mpi_mon(:,:) => null()
+#endif
+    integer :: iM, i, ii
+! ************************************************************
+
 ! ******************* Miscalleneous variables ****************
     integer :: ierr
+#ifdef MPI
+    integer :: MPIerror
+#endif
 ! ************************************************************
 
 #ifdef TRANSIESTA_DEBUG
@@ -588,6 +603,15 @@ contains
     iu_SR = 8000 + Node
 #endif
 
+    if ( N_mon > 0 ) then
+       if ( .not. IsVolt ) then
+          call re_alloc(mon,1,N_mon,1,NEn)
+       else
+          c => contour_nEq()
+          call re_alloc(mon,1,N_mon,1,size(contour)+size(c))
+       end if
+    end if
+
     SPIN: do ispin = 1 , nspin
        
        ! This is going to get messy...
@@ -607,6 +631,10 @@ contains
           call init_val(spDMneqL)
           call init_val(spDMneqR)
        end if
+
+       ! initialize the monitor lists
+       if ( N_mon > 0 ) mon = 0._dp
+
 
     ! we wish to loop over the large k-points... 
     !     other sub calls that kpoint is the correct array...
@@ -653,13 +681,17 @@ contains
        call timer('TS_HS',2)
 #endif
 
+       ii = 0
+
        ! The left contour is the full contour if: .not. IsVolt
        c => contour_EqL()
        cNEn = size(c)
        cPNEn = Nodes .PARCOUNT. cNEn
-
+       
        call init_update_regions(.false.)
        eqEPOINTS: do iPE = Node + 1 , cPNEn, Nodes
+          
+          if ( N_mon > 0 ) iM = ii + iPE
           
           call select_dE(cNEn,c, iPE, nspin, ts_kweight(ikpt), Z, W, ZW)
           
@@ -675,7 +707,8 @@ contains
           call Equilibrium_Density(Z,W,ZW)
 
        end do eqEPOINTS
-       
+       ii = ii + cNEn
+
        ! reduce and shift to fermi-level
        call timer("TS_comm",1)
        if ( ts_Gamma_SCF ) then
@@ -708,13 +741,14 @@ contains
                k, ltsup_sc_pnt, n_nzs, xij , non_Eq = .false. )
        end if
 
-       ! The left contour is the full contour if .not. IsVolt
        c => contour_EqR()
        cNEn = size(c)
        cPNEn = Nodes .PARCOUNT. cNEn
-       
+
        call init_update_regions(.false.)
        eqREPOINTS: do iPE = Node + 1 , cPNEn, Nodes
+
+          if ( N_mon > 0 ) iM = ii + iPE
           
           call select_dE(cNEn,c, iPE, nspin, ts_kweight(ikpt), Z, W, ZW)
           
@@ -730,6 +764,7 @@ contains
           call Equilibrium_Density(Z,W,ZW)
 
        end do eqREPOINTS
+       ii = ii + cNEn
        
        ! reduce and shift to fermi-level
        call timer("TS_comm",1)
@@ -748,13 +783,14 @@ contains
        end if
        
 
-       ! The left contour is the full contour if .not. IsVolt
        c => contour_nEq()
        cNEn = size(c)
        cPNEn = Nodes .PARCOUNT. cNEn
-       
+              
        call init_update_regions(.true.)
        neqEPOINTS: do iPE = Node + 1 , cPNEn, Nodes
+
+          if ( N_mon > 0 ) iM = ii + iPE
 
           call select_dE(cNEn,c, iPE, nspin, ts_kweight(ikpt), Z, W, ZW)
 
@@ -848,7 +884,89 @@ contains
 
           end if
        end if
-       
+
+
+       if ( N_mon > 0 ) then
+          ! We need to correct the monitor list
+          ii = 0
+          c => contour_EqL()
+          i = size(c)
+          do iM = (Nodes .PARCOUNT. i) - Nodes + Node + 1 , &
+               Nodes + 1 , -Nodes
+             if ( iM > i ) cycle
+             mon(:,ii+iM) = mon(:,ii+iM) - mon(:,ii+iM-Nodes)
+          end do
+          if ( IsVolt ) then
+             ii = ii + size(c)
+             c => contour_EqR()
+             i = size(c)
+             do iM = (Nodes .PARCOUNT. i) - Nodes + Node + 1 , &
+                  Nodes + 1 , -Nodes
+                if ( iM > i ) cycle
+                mon(:,ii+iM) = mon(:,ii+iM) - mon(:,ii+iM-Nodes)
+             end do
+             ii = ii + size(c)
+             c => contour_nEq()
+             i = size(c)
+             do iM = (Nodes .PARCOUNT. i) - Nodes + Node + 1 , &
+                  Nodes + 1 , -Nodes
+                if ( iM > i ) cycle
+                mon(:,ii+iM) = mon(:,ii+iM) - mon(:,ii+iM-Nodes)
+             end do
+             ii = ii + size(c)
+             do iM = (Nodes .PARCOUNT. i) - Nodes + Node + 1 , &
+                  Nodes + 1 , -Nodes
+                if ( iM > i ) cycle
+                mon(:,ii+iM) = mon(:,ii+iM) - mon(:,ii+iM-Nodes)
+             end do
+
+          end if
+          
+          ! We can now write out the monitor lists
+#ifdef MPI
+          call re_alloc(mpi_mon,1,N_mon,1,ubound(mon,2))
+          mpi_mon = mon
+          ii = size(mon)
+          call MPI_Reduce(mpi_mon(1,1),mon(1,1),ii, &
+               MPI_Double_Precision,MPI_Sum,0,MPI_Comm_World,MPIerror)
+          call de_alloc(mpi_mon)
+#endif
+          if ( IONode ) then
+          do iM = 1 , N_mon
+             ii = 0
+             c => contour_EqL()
+             do iE = 1 , size(c)
+                write(iu_MON(1,iM),'(3(tr1,g15.8))') &
+                     c(iE)%c/eV,mon(iM,iE+ii)
+             end do
+             write(iu_MON(1,iM),*)
+             if ( IsVolt ) then
+                ii = ii + size(c)
+                c => contour_EqR()
+                do iE = 1 , size(c)
+                   write(iu_MON(2,iM),'(3(tr1,g15.8))') &
+                        c(iE)%c/eV,mon(iM,iE+ii)
+                end do
+                write(iu_MON(2,iM),*)
+                ii = ii + size(c)
+                c => contour_nEq()
+                do iE = 1 , size(c)
+                   write(iu_MON(3,iM),'(3(tr1,g15.8))') &
+                        c(iE)%c/eV,mon(iM,iE+ii)
+                end do
+                write(iu_MON(3,iM),*)
+                ii = ii + size(c)
+                c => contour_nEq()
+                do iE = 1 , size(c)
+                   write(iu_MON(4,iM),'(3(tr1,g15.8))') &
+                        c(iE)%c/eV,mon(iM,iE+ii)
+                end do
+                write(iu_MON(4,iM),*)
+             end if
+          end do
+          end if ! IONode
+       end if ! N_mon > 0
+
        if ( IsVolt .and. TS_W_METHOD == TS_W_K_UNCORRELATED ) then
           call weight_DM( spDML, spDMR, spDMneqL, spDMneqR, &
                spEDML, spEDMR, nonEq_IsWeight = .false.)
@@ -968,6 +1086,9 @@ contains
     ! I would like to add something here which enables 
     ! 'Transiesta' post-process
 
+    if ( N_mon > 0 ) then
+       call de_alloc(mon)
+    end if
 
     call timer('TS_calc',2)
 
@@ -980,6 +1101,7 @@ contains
     
     subroutine Equilibrium_Density(Z,W,ZW)
       complex(dp), intent(in) :: Z,W,ZW
+      integer :: i
 
       ! for these contour parts we do not require to calculate
       ! Gamma's.
@@ -1032,9 +1154,19 @@ contains
       if ( ts_Gamma_SCF ) then
          call add_DM_dE_D(spDMu ,  spEDMu, &
               GF_tri, no_BufL, W, ZW)
+         if ( N_mon > 0 ) then
+            do i = 1 , N_mon
+               mon(i,iM) = val(spDMu,monitor_list(i,4))
+            end do
+         end if
       else
          call add_DM_dE_Z(spzDMu, spzEDMu, &
               GF_tri, no_BufL, W, ZW)
+         if ( N_mon > 0 ) then
+            do i = 1 , N_mon
+               mon(i,iM) = val(spzDMu,monitor_list(i,4))
+            end do
+         end if
       end if
 
     end subroutine Equilibrium_Density
@@ -1059,6 +1191,7 @@ contains
     subroutine non_Equilibrium_Density(Z,i_W,i_ZW)
       complex(dp), intent(in) :: Z,i_W,i_ZW
       complex(dp) :: W,ZW
+      integer :: i
 
       ! The non-equilibrium integration points have the density
       ! in the real part of the Gf.Gamma.Gf^\dagger
@@ -1103,9 +1236,19 @@ contains
       if ( ts_Gamma_SCF ) then
          call add_DM_dE_D(spDMuR,spEDMuR, &
               zwork_tri, no_BufL, -W, -ZW)
+         if ( N_mon > 0 ) then
+            do i = 1 , N_mon
+               mon(i,iM) = val(spDMuR,monitor_list(i,4))
+            end do
+         end if
       else
          call add_DM_dE_Z(spzDMuR,spzEDMuR, &
               zwork_tri, no_BufL, -W, -ZW)
+         if ( N_mon > 0 ) then
+            do i = 1 , N_mon
+               mon(i,iM) = val(spzDMuR,monitor_list(i,4))
+            end do
+         end if
       end if
 
       ! We calculate the left thing.
@@ -1116,20 +1259,35 @@ contains
       call write_TriMat(iu_GF,zwork_tri)
 #endif
 
+      if ( N_mon > 0 ) iM = iM + cNEn
+
       ! Note that we use '++' here
       if ( ts_Gamma_SCF ) then
          call add_DM_dE_D(spDMu,spEDMu, &
               zwork_tri, no_BufL, +W, +ZW)
+         if ( N_mon > 0 ) then
+            do i = 1 , N_mon
+               mon(i,iM) = val(spDMu,monitor_list(i,4))
+            end do
+         end if
       else
          call add_DM_dE_Z(spzDMu,spzEDMu, &
               zwork_tri, no_BufL, +W, +ZW)
+         if ( N_mon > 0 ) then
+            do i = 1 , N_mon
+               mon(i,iM) = val(spzDMu,monitor_list(i,4))
+            end do
+         end if
       end if
+
+      if ( N_mon > 0 ) iM = iM - cNEn
          
     end subroutine non_Equilibrium_Density
 
     subroutine non_Equilibrium_Density_Left(Z,i_W,i_ZW)
       complex(dp), intent(in) :: Z,i_W,i_ZW
       complex(dp) :: W,ZW
+      integer :: i
 #ifdef TRANSIESTA_DEBUG
       integer :: ind, ip, n, sIdx, eIdx
       complex(dp), pointer :: t(:) , fG(:)
@@ -1192,20 +1350,35 @@ contains
       call write_TriMat(iu_GF,GF_tri)
 #endif
 
+      if ( N_mon > 0 ) iM = iM + cNEn
+
       ! Note that we use '++' here
       if ( ts_Gamma_SCF ) then
          call add_DM_dE_D(spDMu,spEDMu, &
               GF_tri, no_BufL, +W, +ZW)
+         if ( N_mon > 0 ) then
+            do i = 1 , N_mon
+               mon(i,iM) = val(spDMu,monitor_list(i,4))
+            end do
+         end if
       else
          call add_DM_dE_Z(spzDMu,spzEDMu, &
               GF_tri, no_BufL, +W, +ZW)
+         if ( N_mon > 0 ) then
+            do i = 1 , N_mon
+               mon(i,iM) = val(spzDMu,monitor_list(i,4))
+            end do
+         end if
       end if
+
+      if ( N_mon > 0 ) iM = iM - cNEn
          
     end subroutine non_Equilibrium_Density_Left
 
     subroutine non_Equilibrium_Density_Right(Z,i_W,i_ZW)
       complex(dp), intent(in) :: Z,i_W,i_ZW
       complex(dp) :: W,ZW
+      integer :: i
 #ifdef TRANSIESTA_DEBUG
       integer :: ind, ip, n, sIdx, eIdx
       complex(dp), pointer :: t(:), fG(:)
@@ -1273,9 +1446,19 @@ contains
       if ( ts_Gamma_SCF ) then
          call add_DM_dE_D(spDMuR,spEDMuR, &
               GF_tri, no_BufL, -W, -ZW)
+         if ( N_mon > 0 ) then
+            do i = 1 , N_mon
+               mon(i,iM) = val(spDMuR,monitor_list(i,4))
+            end do
+         end if
       else
          call add_DM_dE_Z(spzDMuR,spzEDMuR, &
               GF_tri, no_BufL, -W, -ZW)
+         if ( N_mon > 0 ) then
+            do i = 1 , N_mon
+               mon(i,iM) = val(spzDMuR,monitor_list(i,4))
+            end do
+         end if
       end if
          
     end subroutine non_Equilibrium_Density_Right

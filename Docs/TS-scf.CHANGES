@@ -1,4 +1,72 @@
 ----------------------------------------------------
+August 10, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-86
+Added monitoring of DM-updating for transiesta
+
+* Added a general monitor module which enables one
+  to read in a block
+    %block <block-name
+      <orbital 1> <optional orbital 1>
+      <orbital 2> <optional orbital 2>
+      ...
+      <orbital n> <optional orbital n>
+    %endblock
+  will monitor the orbitals and if the second orbital is present
+  it will monitor the cross term of the orbitals.
+  If not present it will be an onsite monitor.
+
+* In order to figure out how the integral is behaving I have added 
+  a method to show the contribution from each contour point.
+  A general block can be read by transiesta which prints out in
+  files how the density matrix elements are updated.
+
+  We use the monitor module to read block TS.DM.Monitor
+  
+  It will be printed in files named:
+     <system label>.TSMON{L,R,LN,RN}_<orbital>_<optional orbital>
+  and it will print out the energies (both real and imaginary part)
+  and the DM contribution for that energy. In effect one can plot
+  the density contribution for each contour point and enables one
+  to figure out where the "most important" part of the contour is.
+  Especially this should be useful for the non-equilibrium contour 
+  at high bias.
+
+  Currently the monitor feature is only possible in the tri-solver.
+  It is expected to be negliegeble in computation time and memory
+  consumption.  
+
+* A faster short look-up for the sparsity patterns has been enabled:
+
+    val(<data>,<idx>)
+
+  returns the value in the sparsity matrix in the corresponding index.
+  Enabled for Data[12]D and SpData[12]D.
+
+* Fast creation of filenames is made possible in the spin module 
+   fname_spin
+  is a general routine for generating filenames with suffix 
+  and will attach appropriate spin labels.
+
+* Print-out improvements for the transiesta contour.
+
+added:
+  Src/m_monitor.F90
+modified:
+  Src/Makefile
+  Src/class_Data1D.T90
+  Src/class_Data2D.T90
+  Src/class_SpData1D.T90
+  Src/class_SpData2D.T90
+  Src/compute_dm.F
+  Src/m_spin.F90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_io_contour.f90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse.F90
+  Src/m_ts_tri.F90
+  Src/m_ts_weight.F90
+  Src/state_init.F
+
+----------------------------------------------------
 August 2, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-85
 Full customisable contour segment FDF keys, streamlining for the tanh-sinh algorithm
 

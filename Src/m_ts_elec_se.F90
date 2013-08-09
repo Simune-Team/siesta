@@ -694,7 +694,7 @@ contains
     ! Furthermore we include the weight of the k-point
 
     ! the number of points we wish to read in this segment
-    NEReqs = min(Nodes, cNEn-(iPe-1-Node))
+    NEReqs = min(Nodes, cNEn-(iPE-1-Node))
     
     if ( present(reread) ) then
        if ( IONode .and. reread ) then

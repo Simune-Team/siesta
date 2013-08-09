@@ -39,6 +39,7 @@
 
   interface val
     module procedure valSpData
+    module procedure valSpData_Idx
   end interface
 
   interface spar
@@ -149,6 +150,18 @@
     
     p => val(this%data%a)
   end function valSpData
+
+  function valSpData_Idx(this,idx) result(v)
+    type(TYPE_NAME), intent(in)  :: this
+    integer,         intent(in)  :: idx
+#ifdef PREC
+    VAR_TYPE_TYPE(PREC)          :: v
+#else
+    VAR_TYPE_TYPE                :: v
+#endif
+    
+    v = val(this%data%a,idx)
+  end function valSpData_Idx
 
   function sparSpData(this) result(p)
     type(TYPE_NAME), intent(in) :: this

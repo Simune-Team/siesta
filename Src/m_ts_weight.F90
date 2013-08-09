@@ -157,7 +157,10 @@ contains
              ! Calculate density...
              DML(ind) = wL * DML(ind) + wR * DMR(ind)
 
-             if ( select_error(ee,io,jo,eM ,eM_i ,eM_j ) ) then
+             if ( abs(ee) > abs(eM) ) then
+                eM   = ee
+                eM_i = io
+                eM_j = jo
                 DM = DML(ind)
              end if
 
@@ -187,7 +190,10 @@ contains
              DML(ind) = wL * (DML(ind) + DMneqR(ind)) &
                       + wR * (DMR(ind) + DMneqL(ind))
 
-             if ( select_error(ee,io,jo,eM ,eM_i ,eM_j ) ) then
+             if ( abs(ee) > abs(eM) ) then
+                eM   = ee
+                eM_i = io
+                eM_j = jo
                 DM = DML(ind)
              end if
 
@@ -245,11 +251,10 @@ contains
     integer, intent(in)  :: eM_i,eM_j
 
     if ( IONode ) then
-       write(*,'(a,'' DM_out('',i5,'','',i5,'')'',a,g10.5e1, &
-            &'' , d_LR|('',i5,'','',i5,'')|'',a,g10.5e1)') &
+       write(*,'(a,2(tr1,a,''('',i5,'','',i5,'')'',a,g10.5e1))') &
             trim(a), &
-            eM_i,eM_j,' = ',DM, &
-            eM_i,eM_j,' = ',eM
+            'DM_out', eM_i,eM_j,' = ',DM, &
+            ', d_LR', eM_i,eM_j,' = ',eM
     end if
 
   end subroutine print_error_estimate
@@ -270,21 +275,7 @@ contains
        wL = 0.5_dp
        wR = 0.5_dp
     end if
-  end subroutine get_weight
 
-  ! do simple maximum choice
-  function select_error(n_err,n_io,n_jo,err,io,jo) result(val)
-    real(dp), intent(in) :: n_err
-    integer, intent(in) :: n_io, n_jo
-    real(dp), intent(inout) :: err
-    integer, intent(inout) :: io, jo
-    logical :: val
-    val = abs(n_err) > abs(err)
-    if ( val ) then
-       err = n_err
-       io  = n_io
-       jo  = n_jo
-    end if
-  end function select_error
+  end subroutine get_weight
 
 end module m_ts_weight

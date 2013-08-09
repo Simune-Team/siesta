@@ -29,6 +29,7 @@
       use m_steps,         only : istp
       use m_spin,          only : nspin, qs, efs
 #ifdef TRANSIESTA
+      use files,            only : slabel
       use m_ts_global_vars, only : TSiscf, TSinit, TSrun
       use m_ts_method
       use m_ts_options,     only : TSmode, ElLeft, ElRight
@@ -108,7 +109,7 @@
         if ( TSiscf == 1 ) then
            ! This is a first Transiesta run, we need to initialize
            ! the sparsity patterns...
-           call ts_sparse_init(Gamma, block_dist, sparse_pattern,
+           call ts_sparse_init(slabel,Gamma, block_dist, sparse_pattern,
      &             na_u, lasto)
            call ts_tri_init()
            call ts_print_charges(ElLeft, ElRight, no_BufL, no_BufR,
@@ -124,7 +125,7 @@
         if ( TSiscf == 1 ) then
            ! This is a first Transiesta run, we need to initialize
            ! the sparsity patterns...
-           call ts_sparse_init(Gamma, block_dist, sparse_pattern,
+           call ts_sparse_init(slabel,Gamma, block_dist, sparse_pattern,
      &             na_u, lasto)
            if ( ts_method == TS_SPARSITY_TRI ) then
               call ts_tri_init()

@@ -14,6 +14,7 @@ module m_spin
   real(dp), pointer, save, public  :: qs(:)
 
   public :: init_spin
+  public :: fname_spin
 
 CONTAINS
 
@@ -57,5 +58,29 @@ CONTAINS
     call re_alloc(qs,1,nspin,name="qs",routine="init_spin")
 
   end subroutine init_spin
+
+  function fname_spin(nspin,ispin,slabel,suffix,basename) result(fname)
+    integer, intent(in) :: nspin, ispin
+    character(len=*), intent(in), optional :: slabel, suffix, basename
+    character(len=200) :: fname
+    if ( present(basename) ) then
+       if ( nspin == 1 ) then
+          fname = trim(basename)
+       else
+          if ( ispin == 1 ) fname = trim(basename)//'_UP'
+          if ( ispin == 2 ) fname = trim(basename)//'_DN'
+       end if
+    else
+       if ( .not. &
+            ( present(slabel) .and. present(suffix) ) ) &
+            call die('Error in filename input')
+       if ( nspin == 1 ) then
+          fname = trim(slabel)//'.'//trim(suffix)
+       else
+          if ( ispin == 1 ) fname = trim(slabel)//'.'//trim(suffix)//'_UP'
+          if ( ispin == 2 ) fname = trim(slabel)//'.'//trim(suffix)//'_DN'
+       end if
+    end if
+  end function fname_spin
 
 end module m_spin

@@ -1251,10 +1251,15 @@ contains
   end subroutine correct_E_string
 
   subroutine ts_print_contour_block(bName,c,msg_first,msg_last)
+
+    use parallel, only : IONode
+
     character(len=*), intent(in) :: bName
     type(ts_io_c), intent(in) :: c(:)
     character(len=*), intent(in), optional :: msg_first, msg_last
     integer :: i, cN
+
+    if ( .not. IONode ) return
 
     ! Start by writing out the block beginning
     write(*,'(a,a)') '%block ',trim(bName)
@@ -1311,35 +1316,36 @@ contains
     character(len=CC_TYPE_LEN) :: ctype
     character(len=3) :: f_type
     integer :: i, part, type
+
+    if ( .not. IONode ) return
     
     ! Initialize variables
     part = -1
     type = -1
     nullify(c)
 
-    if ( IONode ) then
-       write(*,'(a)') "transiesta: contour integration path:"
-       write(f_type,'(a,i2)') 'a',CC_TYPE_LEN
-       write(*,'(1x,'//trim(f_type)//',''   '',2(tr1,a12),2(tr1,a14))') &
-            "Type  ","Re(c)[eV]","Im(c)[eV]","Re(weight)","Im(weight)"
-       do i = 1 , size(contour)
-          ! loop !
-          c => contour(i)
-          if ( part /= c%part ) then
-             write(*,'(1x,a)') part2str(c)
-             part = c%part
-          end if
-          if ( type /= c%type ) then
-             ctype = type2str(c)
-             type = c%type
-          end if
-          
-         ! Write out the contour information:
-          write(*,'(1x,'//trim(f_type)//','' : '',tr1,2(f12.5,tr1),2(f14.9,tr1))') &
-               ctype,c%c/eV,c%w
-       end do
-       write(*,*) ! New line
-    end if
+    write(*,'(a)') "transiesta: contour integration path:"
+    write(f_type,'(a,i2)') 'a',CC_TYPE_LEN
+    write(*,'(1x,'//trim(f_type)//',''   '',2(tr1,a12),2(tr1,a14))') &
+         "Type  ","Re(c)[eV]","Im(c)[eV]","Re(weight)","Im(weight)"
+    do i = 1 , size(contour)
+       ! loop !
+       c => contour(i)
+       if ( part /= c%part ) then
+          write(*,'(1x,a)') part2str(c)
+          part = c%part
+       end if
+       if ( type /= c%type ) then
+          ctype = type2str(c)
+          type = c%type
+       end if
+       
+       ! Write out the contour information:
+       write(*,'(1x,'//trim(f_type)//','' : '',tr1,2(f12.5,tr1),2(f14.9,tr1))') &
+            ctype,c%c/eV,c%w
+    end do
+    write(*,*) ! New line
+
   end subroutine ts_print_contour
 
 
@@ -1357,26 +1363,26 @@ contains
     character(len=len_trim(slabel)+9) :: fname
     integer :: i, unit, part
 
-    if ( IONode ) then
-       if ( present(suffix) ) then
-          fname = trim(trim(slabel)//trim(suffix))
-       else
-          fname = trim(trim(slabel)//'.TSCC')
-       end if
-       call io_assign( unit )
-       open( unit, file=fname, status='unknown' )
-       write(unit,'(a)') '# Complex contour path'
-       write(unit,'(a,a12,3(tr1,a13))') '#','Re(c)[eV]','Im(c)[eV]','Re(w)','Im(w)'
-       part = contour(1)%part
-       do i = 1 , size(contour)
-          if ( part /= contour(i)%part ) then
-             write(unit,*)
-             part = contour(i)%part
-          end if
-          write(unit,'(4(e13.6,tr1))') contour(i)%c/eV,contour(i)%w
-       end do
-       call io_close( unit )
+    if ( .not. IONode ) return
+
+    if ( present(suffix) ) then
+       fname = trim(trim(slabel)//trim(suffix))
+    else
+       fname = trim(trim(slabel)//'.TSCC')
     end if
+    call io_assign( unit )
+    open( unit, file=fname, status='unknown' )
+    write(unit,'(a)') '# Complex contour path'
+    write(unit,'(a,a12,3(tr1,a13))') '#','Re(c)[eV]','Im(c)[eV]','Re(w)','Im(w)'
+    part = contour(1)%part
+    do i = 1 , size(contour)
+       if ( part /= contour(i)%part ) then
+          write(unit,*)
+          part = contour(i)%part
+       end if
+       write(unit,'(4(e13.6,tr1))') contour(i)%c/eV,contour(i)%w
+    end do
+    call io_close( unit )
 
   end subroutine ts_io_contour
 
