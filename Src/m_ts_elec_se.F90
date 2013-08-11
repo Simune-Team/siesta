@@ -485,7 +485,8 @@ contains
 ! ##################################################################
 
   subroutine read_next_GS_LR(uGF,NEReqs,ikpt,no_GS,nq,HAA,SAA,GAA,ZEnergy, &
-       nwork,work)
+       nwork,work, &
+       forward)
 
     use parallel,  only : IONode, Node, Nodes
 
@@ -512,6 +513,13 @@ contains
     ! to allocate anything down here.
     integer, intent(in) :: nwork
     complex(dp), intent(inout) :: work(no_GS,no_GS,nq)
+    ! If 'forward' is .true. we will read consecutively 
+    ! and distribute from Node = 0, to Node = Nodes - 1
+    ! (default)
+    ! 
+    ! if 'forward' is .false. we will read consecutively 
+    ! and distribute from Node = Nodes - 1 to Node = 0
+    logical, intent(in), optional :: forward
 
 ! *********************
 ! * LOCAL variables   *
@@ -525,6 +533,8 @@ contains
 
     complex(dp) :: ZE_cur, wGFi
     integer :: iEni, iNode, ikGS
+    integer :: iNodeS, iNodeE, iNodeStep
+    logical :: lforward
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE read_next_GS' )
@@ -536,6 +546,18 @@ contains
 #endif
 
     call timer('rn_GS',1)
+
+    lforward = .true.
+    if ( present(forward) ) lforward = forward
+    if ( lforward ) then
+       iNodeS = 0
+       iNodeE = NEReqs - 1
+       iNodeStep = 1
+    else
+       iNodeS = NEReqs - 1
+       iNodeE = 0
+       iNodeStep = -1
+    end if
 
     read_Size = no_GS * no_GS * nq
 
@@ -564,12 +586,12 @@ contains
 ! not root receive information from root.
 
     ! We only loop over the requested energy points...
-    do iNode = 0, NEReqs - 1
+    do iNode = iNodeS, iNodeE, iNodeStep
 
        if ( IONode ) then
           ! read in header of GF-point
           read(uGF) iEni,ZE_cur,wGFI,ikGS
-       endif
+       end if
 
 #ifdef MPI
        ! distribute the energy index (in case of iEni == 1)
@@ -586,15 +608,14 @@ contains
        else if ( IONode ) then
           call MPI_iSend(ZE_cur,1,MPI_Double_Complex,iNode,iNode, &
                MPI_Comm_World,Request,MPIerror)
-       endif
+       end if
 #endif
-
 
        ! The test of the energy-point is performed on
        ! the calculating node...
        if ( Node == iNode ) then
           if ( cdabs(ZEnergy-ZE_cur) > EPS ) then
-             write(*,'(a,2(tr1,g12.5),a,2(tr1,g12.5))')'Energies, TS / Gf:', &
+             write(*,'(2(a,2(tr1,g12.5)))') 'Energies, TS / Gf:', &
                   ZEnergy, ' /', ZE_cur
              call die('Energy point in GF file does &
                   not match the internal energy-point in transiesta. &
@@ -604,7 +625,7 @@ contains
        
        ! If the k-point does not match what we expected...
        if ( IONode .and. ikpt /= ikGS ) then
-          write(*,'(a,i0,a,i0)')'Kpoint, TS / Gf: ', &
+          write(*,'(2(a,i0))') 'Kpoint, TS / Gf: ', &
                ikpt, ' / ', ikGS
           call die('Read k-point in GF file does not match &
                &the requested k-point. Please correct your &
@@ -617,7 +638,7 @@ contains
           if ( IONode ) then
              read(uGF) HAA
              read(uGF) SAA
-          endif
+          end if
 
 #ifdef MPI
           call MPI_Bcast(HAA(1,1,1),read_Size,MPI_Double_Complex, &
@@ -628,7 +649,6 @@ contains
        end if 
 
 
-       
 #ifdef MPI
        if ( IONode .and. iNode == Node ) then
 #endif
@@ -668,7 +688,8 @@ contains
   subroutine read_next_GS(iPE,cNEn,Z,ikpt, &
        uGFL, no_L_HS, nqL, HAAL, SAAL, GAAL, &
        uGFR, no_R_HS, nqR, HAAR, SAAR, GAAR, &
-       nzwork, zwork, reread)
+       nzwork, zwork, reread, &
+       forward )
 
     use parallel, only : Node, Nodes, IONode
     use m_ts_cctype
@@ -681,8 +702,9 @@ contains
     complex(dp), intent(inout), dimension(no_R_HS,no_R_HS,nqR) :: HAAR, SAAR, GAAR
     integer, intent(in) :: nzwork
     complex(dp), intent(inout) :: zwork(nzwork)
-    logical, intent(in), optional :: reread
+    logical, intent(in), optional :: reread, forward
 
+    logical :: lforward
     integer :: iE, NEReqs, i
 
     ! obtain a valid energy point (truncate at NEn)
@@ -694,7 +716,13 @@ contains
     ! Furthermore we include the weight of the k-point
 
     ! the number of points we wish to read in this segment
-    NEReqs = min(Nodes, cNEn-(iPE-1-Node))
+    lforward = .true.
+    if ( present(forward) ) lforward = forward
+    if ( lforward ) then
+       NEReqs = min(Nodes, cNEn-(iPE-1-Node))
+    else
+       NEReqs = min(Nodes, cNEn-(iPE-Nodes+Node))
+    end if
     
     if ( present(reread) ) then
        if ( IONode .and. reread ) then
@@ -726,12 +754,12 @@ contains
     ! Read in the left electrode
     call read_next_GS_LR(uGFL, NEReqs, &
          ikpt,no_L_HS,nqL, HAAL, SAAL, &
-         GAAL, Z, nzwork, zwork)
+         GAAL, Z, nzwork, zwork,forward = forward)
     
     ! Read in the right electrode
     call read_next_GS_LR(uGFR, NEReqs, &
          ikpt,no_R_HS,nqR, HAAR, SAAR, &
-         GAAR, Z, nzwork, zwork)
+         GAAR, Z, nzwork, zwork,forward = forward)
 
   end subroutine read_next_GS
 

@@ -1,4 +1,35 @@
 ----------------------------------------------------
+August 11, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-87
+Fixed NoEmptyCycles and reversed GF-reading
+
+* The GF reading is now performed backwards, i.e. the ROOT
+  node is the last to receive the energy-point.
+  This should in cases of uneven energy-points be a little bit
+  faster.
+
+  Implemented this in full and tri.
+
+* Added another test to check that the integrals are connected, 
+  i.e. that \int_a^b+\int_c^d ... and b == c.
+
+* FixSpin is now allowed is saveTSHS is false.
+  This will allow for easier full implementation of transiesta
+  and siesta.
+
+* When transiesta automatically corrects the number of used
+  energy-points, it now distributes them among all the allowed
+  contours according to each of the segments. (not Gauss-Fermi
+  contours).
+
+modified:
+  Src/m_ts_contour.f90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_full.F90
+  Src/m_ts_io_contour.f90
+  Src/m_ts_options.F90
+  Src/m_ts_tri.F90
+
+----------------------------------------------------
 August 10, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-86
 Added monitoring of DM-updating for transiesta
 

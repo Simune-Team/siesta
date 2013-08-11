@@ -537,14 +537,14 @@ contains
        cPNEn = Nodes .PARCOUNT. cNEn
 
        call init_update_regions(.false.)
-       eqEPOINTS: do iPE = Node + 1 , cPNEn, Nodes
+       eqEPOINTS: do iPE = Nodes - Node , cPNEn, Nodes
           
           call select_dE(cNEn,c, iPE, nspin, ts_kweight(ikpt), Z, W, ZW)
           
           call read_next_GS(iPE, cNEn,Z,ikpt, &
                uGFL, no_L_HS, nqL, HAAL, SAAL, GAAL, &
                uGFR, no_R_HS, nqR, HAAR, SAAR, GAAR, &
-               nzwork, zwork)
+               nzwork, zwork, forward = .false.)
 
           ! We only need to do a last communication within 
           ! the above reads. Hence we can quit the energy point loop now!
@@ -592,14 +592,14 @@ contains
        cPNEn = Nodes .PARCOUNT. cNEn
        
        call init_update_regions(.false.)
-       eqREPOINTS: do iPE = Node + 1 , cPNEn, Nodes
+       eqREPOINTS: do iPE = Nodes - Node , cPNEn, Nodes
           
           call select_dE(cNEn,c, iPE, nspin, ts_kweight(ikpt), Z, W, ZW)
           
           call read_next_GS(iPE, cNEn,Z,ikpt, &
                uGFL, no_L_HS, nqL, HAAL, SAAL, GAAL, &
                uGFR, no_R_HS, nqR, HAAR, SAAR, GAAR, &
-               nzwork, zwork)
+               nzwork, zwork, forward = .false.)
           
           ! We only need to do a last communication within 
           ! the above reads. Hence we can quit the energy point loop now!
@@ -632,14 +632,14 @@ contains
        cPNEn = Nodes .PARCOUNT. cNEn
        
        call init_update_regions(.true.)
-       neqEPOINTS: do iPE = Node + 1 , cPNEn, Nodes
+       neqEPOINTS: do iPE = Nodes - Node , cPNEn, Nodes
           
           call select_dE(cNEn,c, iPE, nspin, ts_kweight(ikpt), Z, W, ZW)
           
           call read_next_GS(iPE, cNEn,Z,ikpt, &
                uGFL, no_L_HS, nqL, HAAL, SAAL, GAAL, &
                uGFR, no_R_HS, nqR, HAAR, SAAR, GAAR, &
-               nzwork, zwork)
+               nzwork, zwork, forward = .false.)
 
           ! We only need to do a last communication within 
           ! the above reads. Hence we can quit the energy point loop now!

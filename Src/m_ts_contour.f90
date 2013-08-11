@@ -88,7 +88,7 @@ contains
     logical, intent(in) :: IsVolt
     real(dp), intent(in) :: kT_in, VoltL, VoltR ! in Ry
     logical :: correct
-    integer :: i
+    integer :: i,j
 
     ! Transfer options for the fermi-levels
     EfL = VoltL
@@ -123,23 +123,30 @@ contains
     correct = correct .and. ( mod(sum(cEq(:)%N),Nodes) == 0 )
     if ( correct ) then
        i = sum(cEq(:)%N) + N_poles
-       if ( IsVolt ) then
-          i = i * 2
-          if ( mod(Nodes - mod(i,Nodes),2) == 0 ) then
-             cEq(1)%N = cEq(1)%N + (Nodes - mod(i,Nodes)) / 2
-          end if
-       end if
-       i = sum(cEq(:)%N) + N_poles
-       if ( mod(i,Nodes) /= 0 ) then
-          cEq(1)%N = cEq(1)%N + Nodes - mod(i,Nodes)
-       end if
+       if ( IsVolt ) i = i * 2
+       j = 1
+       do while ( mod(i,Nodes) /= 0 )
+          cEq(j)%N = cEq(j)%N + 1
+          i = i + 1
+          j = j + 1
+          if ( j >= size(cEq) - 1 ) j = 1
+       end do
     end if
 
     correct = fdf_get('TS.Contour.nEq.NoEmptyCycles',.true.)
     if ( correct ) then
        i = sum(cnEq(:)%N)
-       if ( mod(i,Nodes) /= 0 ) then
-          cnEq(2)%N = cnEq(2)%N + Nodes - mod(i,Nodes)
+       if ( size(cnEq) == 1 ) then
+          ! it must be a Sommerfeld contour...
+          cnEq(1)%N = cnEq(1)%N + Nodes - mod(i,Nodes)
+       else
+          j = 2
+          do while ( mod(i,Nodes) /= 0 )
+             cnEq(j)%N = cnEq(j)%N + 1
+             i = i + 1
+             j = j + 1
+             if ( j >= size(cnEq) ) j = 2
+          end do
        end if
     end if
 

@@ -80,7 +80,6 @@ logical :: ImmediateTSmode=.false. ! will determine to immediately start the tra
                            ! siesta DM
 
 ! If the energy-contour is not perfectly divisable by the number of nodes then adjust
-logical :: NEn_Node_Correct = .true.
 integer :: opt_TriMat_method = 0 ! Optimization method for determining the best tri-diagonal matrix split
 ! 0  == We optimize for speed
 ! 1  == We optimize for memory
@@ -200,7 +199,7 @@ CONTAINS
     end if
 
     ! Reading TS Options from fdf ...
-    savetshs    = fdf_get('TS.SaveHS',savetshs_def)
+    saveTSHS    = fdf_get('TS.SaveHS',savetshs_def)
     onlyS       = fdf_get('TS.onlyS',onlyS_def)
 
     VoltFDF     = fdf_get('TS.Voltage',voltfdf_def,'Ry') 
@@ -479,13 +478,12 @@ CONTAINS
           end if
        end do
 
-
        ! print the warnings...
        call ts_print_contour_warnings(cEq,cnEq,kT, Eq_Eta, nEq_Eta, IsVolt)
 
     end if
 
-    if ( FixSpin ) then
+    if ( saveTSHS .and. FixSpin ) then
        write(*,*) 'Fixed Spin not possible with Transiesta!'
        write(*,*) 'Electrodes with fixed spin is not possible with Transiesta !'
        call die('Stopping code')

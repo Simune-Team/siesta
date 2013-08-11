@@ -211,8 +211,15 @@ contains
 
     ! We need to check whether the segments are correct
     ! The restrictions checked for can be seen in the die commands...
+    j = 1
     correct = .true.
     do i = 1 , size(cEq) - 1
+       ! We check that the segments are connected
+       if ( dabs(cEq(i)%b-cEq(i+1)%a) > 1.e-6_dp ) then
+          chars = 'The equilibrium contour segments are not connected. &
+               &Please ensure that it is a continuous integral.'
+          correct = .false.
+       end if
        select case ( cEq(i)%type )
        case ( CC_TYPE_G_LEGENDRE, CC_TYPE_TANH_SINH, CC_TYPE_SIMP_MIX )
           ! fine
@@ -224,7 +231,6 @@ contains
                &with weight function w(x) = 1. Please restrict the input &
                &to comply with this.'
           correct = .false.
-          j = 1
        end select
     end do
         
@@ -238,7 +244,6 @@ contains
             &must specify the Gauss-Fermi integral. Currently it is &
             &the only supported quadrature.'
        correct = .false.
-       j = 1
     end select
 
     ! in case we have a bias
@@ -256,6 +261,14 @@ contains
              j = 2
           end if
        else
+          ! We check that the segments are connected
+          if ( dabs(cnEq(1)%b-cnEq(2)%a) > 1.e-6_dp ) then
+             chars = 'The non-equilibrium contour segments are not connected. &
+                  &Please ensure that it is a continuous integral.'
+             correct = .false.
+             j = 2
+          end if
+
           select case ( cnEq(1)%type )
           case ( CC_TYPE_G_NF_MIN : CC_TYPE_G_NF_MAX )
              ! perfect
@@ -273,11 +286,19 @@ contains
              chars = 'The tail integral of the non-equilibrium contour one &
                   &must specify the Gauss-Fermi integral. Currently it is &
                   &the only supported quadrature.'
-             j = 2
              correct = .false.
+             j = 2
           end select
 
           do i = 2 , size(cnEq) - 1
+             ! We check that the segments are connected
+             if ( dabs(cnEq(i)%b-cnEq(i+1)%a) > 1.e-6_dp ) then
+                chars = 'The non-equilibrium contour segments are not connected. &
+                     &Please ensure that it is a continuous integral.'
+                correct = .false.
+                j = 2
+             end if
+
              select case ( cnEq(i)%type )
              case ( CC_TYPE_G_LEGENDRE, CC_TYPE_TANH_SINH, CC_TYPE_SIMP_MIX )
                 ! fine
@@ -288,8 +309,8 @@ contains
                      &are only allowed to use quadrature/Newton-Cotes methods &
                      &with weight function w(x) = 1. Please restrict the input &
                      &to comply with this.'
-                j = 2
                 correct = .false.
+                j = 2
              end select
           end do
        end if

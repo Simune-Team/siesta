@@ -689,16 +689,15 @@ contains
        cPNEn = Nodes .PARCOUNT. cNEn
        
        call init_update_regions(.false.)
-       eqEPOINTS: do iPE = Node + 1 , cPNEn, Nodes
-          
+       eqEPOINTS: do iPE = Nodes - Node , cPNEn, Nodes
+
           if ( N_mon > 0 ) iM = ii + iPE
           
           call select_dE(cNEn,c, iPE, nspin, ts_kweight(ikpt), Z, W, ZW)
-          
           call read_next_GS(iPE, cNEn,Z,ikpt, &
                uGFL, no_L_HS, nqL, HAAL, SAAL, GAAL, &
                uGFR, no_R_HS, nqR, HAAR, SAAR, GAAR, &
-               nzwork, zwork)
+               nzwork, zwork, forward = .false.)
 
           ! We only need to do a last communication within 
           ! the above reads. Hence we can quit the energy point loop now!
@@ -708,6 +707,7 @@ contains
 
        end do eqEPOINTS
        ii = ii + cNEn
+
 
        ! reduce and shift to fermi-level
        call timer("TS_comm",1)
@@ -746,7 +746,7 @@ contains
        cPNEn = Nodes .PARCOUNT. cNEn
 
        call init_update_regions(.false.)
-       eqREPOINTS: do iPE = Node + 1 , cPNEn, Nodes
+       eqREPOINTS: do iPE = Nodes - Node , cPNEn, Nodes
 
           if ( N_mon > 0 ) iM = ii + iPE
           
@@ -755,7 +755,7 @@ contains
           call read_next_GS(iPE, cNEn,Z,ikpt, &
                uGFL, no_L_HS, nqL, HAAL, SAAL, GAAL, &
                uGFR, no_R_HS, nqR, HAAR, SAAR, GAAR, &
-               nzwork, zwork)
+               nzwork, zwork, forward = .false.)
           
           ! We only need to do a last communication within 
           ! the above reads. Hence we can quit the energy point loop now!
@@ -788,7 +788,7 @@ contains
        cPNEn = Nodes .PARCOUNT. cNEn
               
        call init_update_regions(.true.)
-       neqEPOINTS: do iPE = Node + 1 , cPNEn, Nodes
+       neqEPOINTS: do iPE = Nodes - Node , cPNEn, Nodes
 
           if ( N_mon > 0 ) iM = ii + iPE
 
@@ -799,7 +799,8 @@ contains
              call read_next_GS(iPE, cNEn,Z,ikpt, &
                   uGFL, no_L_HS, nqL, HAAL, SAAL, GAAL, &
                   uGFR, no_R_HS, nqR, HAAR, SAAR, GAAR, &
-                  nzwork, zwork, reread = .false.)
+                  nzwork, zwork, reread = .false., &
+                  forward = .false.)
 
              ! We only need to do a last communication within 
              ! the above reads. Hence we can quit the energy point loop now!
@@ -810,7 +811,8 @@ contains
              call read_next_GS(iPE, cNEn,Z,ikpt, &
                   uGFL, no_L_HS, nqL, HAAL, SAAL, GAAL, &
                   uGFR, no_R_HS, nqR, HAAR, SAAR, GAAR, &
-                  nzwork, zwork, reread = .true.)
+                  nzwork, zwork, reread = .true., &
+                  forward = .false.)
 
              ! We only need to do a last communication within 
              ! the above reads. Hence we can quit the energy point loop now!
@@ -823,7 +825,7 @@ contains
              call read_next_GS(iPE, cNEn,Z,ikpt, &
                   uGFL, no_L_HS, nqL, HAAL, SAAL, GAAL, &
                   uGFR, no_R_HS, nqR, HAAR, SAAR, GAAR, &
-                  nzwork, zwork)
+                  nzwork, zwork, forward = .false.)
 
              ! We only need to do a last communication within 
              ! the above reads. Hence we can quit the energy point loop now!
@@ -891,8 +893,7 @@ contains
           ii = 0
           c => contour_EqL()
           i = size(c)
-          do iM = (Nodes .PARCOUNT. i) - Nodes + Node + 1 , &
-               Nodes + 1 , -Nodes
+          do iM = (Nodes .PARCOUNT. i) - Node , Nodes + 1 , -Nodes
              if ( iM > i ) cycle
              mon(:,ii+iM) = mon(:,ii+iM) - mon(:,ii+iM-Nodes)
           end do
@@ -900,22 +901,19 @@ contains
              ii = ii + size(c)
              c => contour_EqR()
              i = size(c)
-             do iM = (Nodes .PARCOUNT. i) - Nodes + Node + 1 , &
-                  Nodes + 1 , -Nodes
+             do iM = (Nodes .PARCOUNT. i) - Node , Nodes + 1 , -Nodes
                 if ( iM > i ) cycle
                 mon(:,ii+iM) = mon(:,ii+iM) - mon(:,ii+iM-Nodes)
              end do
              ii = ii + size(c)
              c => contour_nEq()
              i = size(c)
-             do iM = (Nodes .PARCOUNT. i) - Nodes + Node + 1 , &
-                  Nodes + 1 , -Nodes
+             do iM = (Nodes .PARCOUNT. i) - Node , Nodes + 1 , -Nodes
                 if ( iM > i ) cycle
                 mon(:,ii+iM) = mon(:,ii+iM) - mon(:,ii+iM-Nodes)
              end do
              ii = ii + size(c)
-             do iM = (Nodes .PARCOUNT. i) - Nodes + Node + 1 , &
-                  Nodes + 1 , -Nodes
+             do iM = (Nodes .PARCOUNT. i) - Node , Nodes + 1 , -Nodes
                 if ( iM > i ) cycle
                 mon(:,ii+iM) = mon(:,ii+iM) - mon(:,ii+iM-Nodes)
              end do
