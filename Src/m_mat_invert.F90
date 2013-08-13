@@ -32,41 +32,71 @@ module m_mat_invert
 
 contains
 
-  subroutine mat_invert(M,zwork,no,method)
+  subroutine mat_invert(M,zwork,no,method,ierr)
     use intrinsic_missing, only : EYE
-    complex(dp), pointer :: M(:), zwork(:)
     integer, intent(in) :: no ! Size of problem
+    complex(dp), target :: M(no*no), zwork(no*no)
     integer, intent(in), optional :: method
+    integer, intent(out), optional :: ierr
 
-    integer :: lmethod, ierr
+    integer :: lmethod, lierr
     
-    lmethod = MI_IN_PLACE_LAPACK
-    if ( present(method) ) lmethod = method
+
+    if ( present(method) ) then
+       lmethod = method
+    else
+       lmethod = MI_IN_PLACE_LAPACK
+    end if
 
     if ( Npiv < no ) call die('Pivoting arrays not initialized')
 
+    ! Initialize the error
+    if ( present(ierr) ) ierr = 0
+
     select case ( lmethod )
     case (  MI_IN_PLACE_LAPACK ) 
-       call zgetrf(no, no, M, no, ipiv, ierr )
-       if ( ierr/=0 ) call die('Error in LU-decomposition')
-       call zgetri(no, M, no, ipiv, zwork, no**2, ierr)
-       if ( ierr/=0 ) call die('Error in inversion')
+       call zgetrf(no, no, M, no, ipiv, lierr )
+       if ( lierr /= 0 ) then
+          if ( present(ierr) ) then
+             ierr = lierr
+             return
+          else
+             call die('Error in LU-decomposition')
+          end if
+       end if
+       call zgetri(no, M, no, ipiv, zwork, no**2, lierr)
+       if ( lierr /= 0 ) then
+          if ( present(ierr) ) then
+             ierr = lierr
+             return
+          else
+             call die('Error in inversion')
+          end if
+       end if
     case ( MI_IN_PLACE_RECURSIVE ) 
-       call mat_invert_recursive(M,zwork,no)
+       call mat_invert_recursive(M,zwork,no,ierr=ierr)
     case ( MI_WORK )
        call EYE(no,zwork)
-       call zgesv(no,no,M,no,ipiv,zwork,no,ierr)
-       if ( ierr/=0 ) call die('Error in inversion')
+       call zgesv(no,no,M,no,ipiv,zwork,no,lierr)
+       if ( lierr /= 0 ) then
+          if ( present(ierr) ) then
+             ierr = lierr
+             return
+          else
+             call die('Error in inversion')
+          end if
+       end if
     case default
        call die('Unknown type of inversion')
     end select
 
   end subroutine mat_invert
 
-  recursive subroutine mat_invert_recursive(M, zwork, no)
+  recursive subroutine mat_invert_recursive(M, zwork, no, ierr)
     use intrinsic_missing, only : EYE
-    complex(dp), pointer :: M(:), zwork(:)
     integer, intent(in) :: no ! Size of problem
+    complex(dp), target :: M(no*no), zwork(no*no)
+    integer, intent(out), optional :: ierr
 
     complex(dp), pointer :: A1(:), C2(:), B1(:), A2(:)
     complex(dp), pointer :: X1(:), Y2(:), t1(:), t2(:)
@@ -80,9 +110,11 @@ contains
     ! invert the matrix
 
     if ( no <= N_MAX ) then
-       call mat_invert(M,zwork,no, method = MI_IN_PLACE_LAPACK )
+       call mat_invert(M,zwork,no, method = MI_IN_PLACE_LAPACK , ierr=ierr)
        return
     end if
+
+    if ( present(ierr) ) ierr = 0
 
     ! Calculate the partition sizes of the matrix problem
     n1 = no / 2
@@ -148,7 +180,14 @@ contains
     t2(:) = B1(:)
     ! Calculate X1/C2 (store in B1 in original matrix)
     call zgesv(n2,n1,t1,n2,ipiv,t2,n2,i)
-    if ( i /= 0 ) call die('Error on inverting X1/C2')
+    if ( i /= 0 ) then
+       if ( present(ierr) ) then
+          ierr = i
+          return
+       else
+          call die('Error on inverting X1/C2')
+       end if
+    end if
 
     ! Copy over A1 array
     t1 => M(sA1:eA1)
@@ -157,8 +196,14 @@ contains
     t2(:) = C2(:)
     ! Calculate Y2/B1
     call zgesv(n1,n2,t1,n1,ipiv,t2,n1,i)
-    if ( i /= 0 ) call die('Error on inverting Y2/B1')
-
+    if ( i /= 0 ) then
+       if ( present(ierr) ) then
+          ierr = i
+          return
+       else
+          call die('Error on inverting Y2/B1')
+       end if
+    end if
 
 ! <<<<<<<<<<<<< direct method
     ! Calculate the diagonal inverted matrix
@@ -183,7 +228,10 @@ contains
          zm1, C2,n1, t2,n2,z1, A1,n1)
 
     t1 => M(sA1:eA1)
-    call mat_invert(A1,t1,n1)
+    call mat_invert(A1,t1,n1,ierr=ierr)
+    if ( present(ierr) ) then
+       if ( ierr /= 0 ) return
+    end if
 
 ! <<<<<<<<<<<<< direct method
     ! Calculate: A2 - Y2
@@ -206,7 +254,10 @@ contains
          zm1, B1,n2, t2,n1,z1, A2,n2)
 
     t1 => M(sA2:eA2)
-    call mat_invert(A2,t1,n2)
+    call mat_invert(A2,t1,n2,ierr=ierr)
+    if ( present(ierr) ) then
+       if ( ierr /= 0 ) return
+    end if
 
     ! Calculate the off-diagonal arrays
     ! Do matrix-multiplication

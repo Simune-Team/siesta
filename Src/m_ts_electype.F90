@@ -1,11 +1,15 @@
 module m_ts_electype
 
+  use precision, only : dp
+
   implicit none
 
   public :: Elec
   public :: HSfile
   public :: Atoms, UsedAtoms, TotUsedAtoms
   public :: Orbs, UsedOrbs, TotUsedOrbs
+  public :: unitcell
+  public :: spin, EFermi
   public :: Rep
   public :: RepA1, RepA2, RepA3
 
@@ -16,7 +20,9 @@ module m_ts_electype
      character(len=HSfile_len) :: HSfile
      integer :: Atoms, UsedAtoms
      integer :: Orbs, UsedOrbs
+     integer :: spin
      integer :: RepA1 = 1, RepA2 = 1, RepA3 = 1
+     real(dp) :: ucell(3,3), Ef
   end type Elec
 
 contains
@@ -26,6 +32,18 @@ contains
     character(len=HSfile_len) :: HSfile
     HSfile = this%HSfile
   end function HSfile
+
+  elemental function Spin(this) result(val)
+    type(Elec), intent(in) :: this
+    integer :: val
+    val = this%spin
+  end function Spin
+
+  elemental function EFermi(this) result(val)
+    type(Elec), intent(in) :: this
+    real(dp) :: val
+    val = this%Ef
+  end function EFermi
 
   elemental function Atoms(this) result(val)
     type(Elec), intent(in) :: this
@@ -80,5 +98,11 @@ contains
     integer :: val
     val = this%UsedOrbs * Rep(this)
   end function TotUsedOrbs
+
+  function unitcell(this) result(val)
+    type(Elec), intent(in) :: this
+    real(dp) :: val(3,3)
+    val = this%ucell
+  end function unitcell
 
 end module m_ts_electype

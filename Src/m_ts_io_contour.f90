@@ -107,6 +107,8 @@ contains
     ! ****** Now we need to handle the non-equilibrium contour ********
     ! *****************************************************************
 
+    if ( IsVolt ) then
+
     ! read in number of points for the non-equilibrium contour.
     call fdf_deprecated('TS.biasContour.NumPoints', 'TS.Contour.nEq.N')
     i = fdf_get('TS.biasContour.NumPoints',10)
@@ -197,6 +199,8 @@ contains
        call die('Could not determine contour method: '// &
             trim(chars)//'. Please use the TS.Contour.nEq block.')
     end if
+
+    end if
     
     ! *****************************************************************
     ! ****** Now we need to handle the block contours          ********
@@ -206,8 +210,10 @@ contains
     ! (return value 'i' is merely the size of cEq/cnEq)
     call ts_read_contour_block('TS.Contour.Eq' ,i,cEq ,kT)
     call check_Gauss_Fermi('TS.Contour.Eq',cEq ,kT)
-    call ts_read_contour_block('TS.Contour.nEq',i,cnEq,kT,V_half)
-    call check_Gauss_Fermi('TS.Contour.nEq',cnEq,kT)
+    if ( IsVolt ) then
+       call ts_read_contour_block('TS.Contour.nEq',i,cnEq,kT,V_half)
+       call check_Gauss_Fermi('TS.Contour.nEq',cnEq,kT)
+    end if
 
     ! We need to check whether the segments are correct
     ! The restrictions checked for can be seen in the die commands...

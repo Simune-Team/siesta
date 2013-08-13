@@ -17,11 +17,20 @@ module m_ts_electrode
 ! Thus we ENFORCE Gamma == .false. and the program should die if
 ! the electrode calculation was a Gamma calculation!
 
+  use precision, only : dp
+
   implicit none
 
   public :: create_Green
 
   private !
+
+  ! Accuracy of the surface-Green's function
+  real(dp), parameter :: accur = 1.e-15_dp
+  ! BLAS parameters
+  complex(dp), parameter :: z_1  = dcmplx(1._dp,0._dp)
+  complex(dp), parameter :: z_m1 = dcmplx(-1._dp,0._dp)
+  complex(dp), parameter :: z_0  = dcmplx(0._dp,0._dp)
 
 
   ! This is the integer telling which direction is the propagation direction
@@ -36,282 +45,243 @@ contains
 
   ! Calculates the surface Green's function for the electrodes
   ! Handles both the left and right one
-  subroutine surface_Green(tjob,nv,Zenergy,h00,s00,h01,s01, &
-       gs,CalcDOS,zDOS,iter)!,nwork,zwork)
+  subroutine surface_Green_DOS(no,ZE,H00,S00,H01,S01,GS, &
+       zDOS, &
+       nwork, zwork, &
+       iterations, job, final_invert)
+       
 ! ***************** INPUT **********************************************
-! character   tjob    : Specifies the left or the right electrode
-! integer     nv      : Number of orbitals in the electrode
-! complex(dp) Zenergy : The energy of the Green's function evaluation
-! complex(dp) H00     : Hamiltonian within the first unit cell
-! complex(dp) S00     : Overlap matrix within the first unit cell
-! complex(dp) H01     : Transfer matrix from H00 to the neighbouring cell
-! complex(dp) S01     : Transfer matrix from S00 to the neighbouring cell
+! integer     no      : Number of orbitals in the electrode
+! complex(dp) ZE      : The energy of the Green's function evaluation
+! complex(dp) H00     : Hamiltonian within the first unit cell (discarding z-direction)
+! complex(dp) S00     : Overlap matrix within the first unit cell (discarding z-direction)
+! complex(dp) H01     : Transfer matrix from H00 to the neighbouring cell (in z-direction)
+! complex(dp) S01     : Transfer matrix from S00 to the neighbouring cell (in z-direction)
 ! ***************** OUTPUT *********************************************
-! complex(dp) gs      : Surface Green's function of the electrode
-! complex(dp) zdos    : Density of energy point
+! complex(dp) GS      : Surface Green's function of the electrode
 ! **********************************************************************
-    use parallel, only : IONode
-    use precision, only : dp
-    use units, only : Pi
+    use m_mat_invert
+    use parallel,  only: IONode
+    use precision, only: dp
     use fdf, only : leqi
-    use intrinsic_missing, only: EYE
 
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    character(len=1) :: tjob
-    integer :: nv
-    complex(dp) :: ZEnergy 
-    complex(dp) :: h00(0:nv*nv-1),s00(0:nv*nv-1)
-    complex(dp) :: h01(0:nv*nv-1),s01(0:nv*nv-1)
+    integer,     intent(in) :: no
+    complex(dp), intent(in) :: ZE 
+    complex(dp), intent(in) :: H00(no*no),S00(no*no)
+    complex(dp), intent(in) :: H01(no*no),S01(no*no)
+
+    integer,     intent(in) :: nwork
+
+    character(len=1), intent(in), optional :: job
+    logical, intent(in), optional :: final_invert
+
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp) :: gs(0:nv*nv-1)
-    logical, intent(in) :: CalcDOS
-    complex(dp), intent(out) :: zdos
-    integer, intent(out) :: iter
-!    integer, intent(in) :: nwork
-!    complex(dp), pointer  :: zwork(nwork)
+    complex(dp), intent(out), target :: GS(no*no)
+    complex(dp), pointer :: zwork(:)
+    complex(dp), intent(out) :: zDOS
+
+    integer, intent(out), optional :: iterations
 
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
-    integer :: nv2, nvsq
+    integer :: nom1, no2, nosq
     integer :: ierr             !error in inversion
     integer :: i,j,ic,ic2
-
-    complex(dp), parameter :: z_1 = dcmplx(1._dp,0._dp)
-    complex(dp), parameter :: z_0 = dcmplx(0._dp,0._dp)
+    logical :: LEFT, as_first
 
     real(dp) :: ro
-    real(dp), parameter :: accur = 1.d-15
 
-    integer, dimension(:), allocatable :: ipvt
-    complex(dp), dimension(:), allocatable :: &
-         rh,rh1,rh3,alpha,beta,ab,ba,gb,gs2
+    ! on the stack...
+    integer :: ipvt(no)
+    complex(dp), dimension(:), pointer :: rh,rh1,w,alpha,beta,gb
+    complex(dp), dimension(:), pointer :: gsL,gsR
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE surface_Green' )
 #endif
 
     ! Initialize counter
-    iter = 0
+    if ( present(iterations) ) iterations = 0
 
     call timer('ts_GS',1)
 
-    nv2  = 2 * nv
-    nvsq = nv * nv
+    ! We default to requesting the left surface Green's function
+    LEFT = .true.
+    if ( present(job) ) LEFT = leqi(job,'L')
 
-!    if ( nwork < 14*nvsq ) call die('Not enough space')
-    allocate(ipvt(nv))
-!    i = 1
-!    rh  => zwork(i:i+2*nvsq-1) 
-!    i = i + 2*nvsq
-!    rh1 => zwork(i:i+2*nvsq-1) 
-!    i = i + 2*nvsq
-!    rh3 => zwork(i:i+4*nvsq-1) 
-!    i = i + 4*nvsq
-!    alpha => zwork(i:i+nvsq-1) 
-!    i = i + nvsq
-!    beta => zwork(i:i+nvsq-1) 
-!    i = i + nvsq
-!    ba => zwork(i:i+nvsq-1) 
-!    i = i + nvsq
-!    ab => zwork(i:i+nvsq-1) 
-!    i = i + nvsq
-!    gb => zwork(i:i+nvsq-1) 
-!    i = i + nvsq
-!    gs2 => zwork(i:i+nvsq-1) 
-    allocate(rh(0:2*nvsq),rh1(0:2*nvsq))
-    allocate(rh3(0:4*nvsq))
-    allocate(alpha(0:nvsq-1),beta(0:nvsq-1))
-    allocate(ba(0:nvsq-1),ab(0:nvsq-1))
-    allocate(gb(0:nvsq-1),gs2(0:nvsq-1))
-    call memory('A','I',nv,'calc_green')
-    call memory('A','Z',14*nvsq+3,'calc_green')
+    nom1 = no - 1
+    no2  = 2 * no
+    nosq = no * no
+
+    if ( nwork < 9 * nosq ) call die('surface_Green: &
+         &Not enough work space')
+    i = 0
+    rh  => zwork(i+1:i+2*nosq) 
+    i = i + 2*nosq
+    rh1 => zwork(i+1:i+2*nosq) 
+    i = i + 2*nosq
+    alpha => zwork(i+1:i+nosq) 
+    i = i + nosq
+    beta => zwork(i+1:i+nosq) 
+    i = i + nosq
+    w => zwork(i+1:i+nosq)
+    i = i + nosq
+    gb => zwork(i+1:i+nosq) 
+    i = i + nosq
+    if ( LEFT ) then
+       gsR => zwork(i+1:i+nosq) 
+       gsL => GS
+    else
+       gsL => zwork(i+1:i+nosq) 
+       gsR => GS
+    end if
 
 
 ! gb    =   Z*S00-H00
 ! alpha = -(Z*S01-H01)
-    do i=0,nvsq-1
-       gb(i) = zenergy*s00(i)-h00(i)
-       alpha(i) = h01(i)-zenergy*s01(i)
+    do i = 1 , nosq
+       gb(i)    = ZE * S00(i) - H00(i)
+       alpha(i) = H01(i) - ZE * S01(i)
     end do
 
 ! gs  = Z*S00-H00
-! gs2 = Z*S00-H00
-    do i=0,nvsq-1
-       gs(i)  = gb(i)
-       gs2(i) = gb(i)
+    do i = 1 , nosq
+       gsL(i) = gb(i)
+       gsR(i) = gb(i)
     end do
 
 ! beta = -(Z*S10-H10)
-    do j=0,nv-1
-       ic = nv * j
-       do i=0,nv-1
-          ic2 = j + nv*i
-          beta(ic+i) = dconjg(h01(ic2))-zenergy*dconjg(s01(ic2))
+    do j = 1 , no
+       ic = no * (j-1)
+       do i = 1 , no
+          ic2 = j + no*(i-1)
+          beta(ic+i) = dconjg(H01(ic2)) - ZE * dconjg(S01(ic2))
        end do
     end do
 
     ! Initialize loop
-    ro = (accur + 1._dp)**2
-    iter = 0
-    do while ( sqrt(ro) > accur ) 
-       iter = iter + 1
+    ro = accur + 1._dp
+    as_first = .false.
+    do while ( ro > accur ) 
 
-! rh = -(Z*S01-H01) ,j<nv
-! rh = -(Z*S10-H10) ,j>nv
-       do j = 0 , nv2 - 1
-          ic = nv * j
-          if ( j < nv ) then
-             rh(ic:ic+nv-1) = alpha(ic:ic+nv-1)
-          else
-             ic2 = nv * (j - nv)
-             rh(ic:ic+nv-1) = beta(ic2:ic2+nv-1)
-          end if
+       ! Increment iterations
+       if ( present(iterations) ) &
+            iterations = iterations + 1
+
+! rh = -(Z*S01-H01) ,j<no
+! rh = -(Z*S10-H10) ,j>no
+       do i = 1, nosq
+          rh(i)       = alpha(i)
+          rh(nosq+i)  = beta(i)
        end do
 
-! rh3 = Z*S00-H00
-       rh3(0:nvsq-1) = gb(0:nvsq-1)
+! w = Z*S00-H00
+       w(:) = gb(:)
 
-! rh =  rh3^(-1)*rh
+! rh =  rh1^(-1)*rh
 ! rh =  t0
-       call zgesv(nv, nv2, rh3, nv, ipvt, rh, nv, ierr)
+       call zgesv(no, no2, w, no, ipvt, rh, no, ierr)
 
-       if(IERR.ne.0) then
+       if ( ierr /= 0 ) then
           write(*,*) 'ERROR: calc_green 1 MATRIX INVERSION FAILED'
-          write(*,*) 'ERROR: LAPACK INFO = ',IERR
+          write(*,*) 'ERROR: LAPACK INFO = ',ierr
        end if
 
-
-! rh1 = -(Z*S01-H01) ,j<nv
-! rh1 = -(Z*S10-H10) ,j>nv
-       do j=0,nv-1
-          ic  = nv  * j
-          ic2 = nv2 * j
-          rh1(ic2:ic2+nv-1)      = alpha(ic:ic+nv-1)
-          rh1(ic2+nv:ic2+2*nv-1) = beta(ic:ic+nv-1)
-       end do
-
-! rh3 = -(Z*S01-H01)*t0
-       call zgemm('N','N',nv2,nv2,nv,z_1,rh1,nv2,rh,nv,z_0,rh3,nv2)
+       ! switch pointers instead of copying elements
+       call switch_alpha_beta_rh1(as_first)
 
 ! alpha = -(Z*S01-H01)*t0
-! ba    = -(Z*S10-H10)*t0b
-       do j = 0 , nv - 1
-          ic  = nv * j
-          ic2 = 2 * ic
-          alpha(ic:ic+nv-1) =   rh3(ic2:ic2+nv-1)
-          ba(ic:ic+nv-1)    = - rh3(ic2+nv:ic2+2*nv-1)
-       end do
-       do j = nv , nv2 - 1
-          ic  = nv  * (j - nv)
-          ic2 = nv2 * j
-          ab(ic:ic+nv-1)    = - rh3(ic2:ic2+nv-1)
-          beta(ic:ic+nv-1)  =   rh3(ic2+nv:ic2+2*nv-1)
-       end do
+       call zgemm('N','N',no,no,no,z_1,rh1(1),no,rh(1),no,z_0,alpha,no)
+! beta  = -(Z*S10-H10)*t0 ??
+       call zgemm('N','N',no,no,no,z_1,rh1(nosq+1),no,rh(nosq+1),no,z_0,beta,no)
+
+! ba    = (Z*S10-H10)*t0b
+       call zgemm('N','N',no,no,no,z_m1,rh1(nosq+1),no,rh(1),no,z_0,w,no)
+       gb(:)  = gb(:) + w(:)
+       gsL(:) = gsL(:) + w(:)
+
+! ab    = (Z*S01-H01)*t0
+       call zgemm('N','N',no,no,no,z_m1,rh1(1),no,rh(nosq+1),no,z_0,w,no)
+       gb(:)  = gb(:) + w(:)
+       gsR(:) = gsR(:) + w(:)
        
-       do i = 0 , nvsq - 1
-          gb(i) =  gb(i)  + ba(i) + ab(i)
-          gs(i) =  gs(i)  + ab(i) 
-       end do
-       
-       ! It seems like the cache is better utilized by
-       ! having maximum of 2 arrays in each do-loop
-       ro = - 1._dp
-       do i = 0 , nvsq - 1
-          gs2(i) = gs2(i) + ba(i) 
-          ro = max(ro,dreal(ab(i))**2+dimag(ab(i))**2)
+       ro = -1._dp
+       do i = 1 , nosq
+          ro = max(ro,abs(w(i)))
        end do
 
     end do
 
-!    if ( IONode ) then
-!       print '(a,i0,a)','Completed in ',iter,' iterations.'
-!    end if
-
-    do i = 0 , nvsq - 1
-       rh3(i) = gs(i)
-    end do
-
-    call EYE(nv,gs)
-
-    call zgesv(nv, nv, rh3, nv, ipvt, gs, nv, ierr)
-
-    if ( IERR /= 0 ) then
-       write(*,*) 'ERROR: calc_green 2 MATRIX INVERSION FAILED'
-       write(*,*) 'ERROR: LAPACK INFO = ',IERR
-    end if
-
-    ! Prepare for the inversion
-    do i = 0 , nvsq - 1
-       rh3(i) = gs2(i)
-    end do
-
-    call EYE(nv,gs2)
-
-    call zgesv(nv, nv, rh3, nv, ipvt, gs2, nv, ierr)
-
-    if( IERR /= 0 ) then
-       write(*,*) 'ERROR: calc_green 3 MATRIX INVERSION FAILED'
-       write(*,*) 'ERROR: LAPACK INFO = ',IERR
-    end if
-
-!      ----      DOS     -----
-    if ( CalcDOS ) then
-
-       do i = 0 , nvsq - 1
-          rh3(i) = gb(i)
-       end do
-       
-       call EYE(nv,gb)
-
-       call zgesv(nv, nv, rh3, nv, ipvt, gb, nv, ierr)
-
-       if(IERR.ne.0) then
-          write(*,*) 'ERROR: calc_green 4 MATRIX INVERSION FAILED'
-          write(*,*) 'ERROR: LAPACK INFO = ',IERR
+    if ( present(final_invert) ) then
+       ! If we do not need to invert it, save it for later.
+       if ( .not. final_invert ) then
+          rh1(1:nosq) = GS(:)
        end if
-       
-       do j = 0 , nv - 1
-          ic = nv * j
-          do i = 0 , nv - 1
-             ic2 = j + nv*i
-             ab(ic+i) = h01(ic+i)-zenergy*s01(ic+i)
-             ba(ic+i) = dconjg(h01(ic2))-zenergy*dconjg(s01(ic2))
-          end do
-       end do
-
-       call zgemm('N','N',nv,nv,nv,z_1,gs2  ,nv,ab ,nv,z_0,alpha,nv)
-       call zgemm('N','N',nv,nv,nv,z_1,alpha,nv,gb ,nv,z_0,ab   ,nv)
-       call zgemm('N','N',nv,nv,nv,z_1,gs   ,nv,ba ,nv,z_0,beta ,nv)
-       call zgemm('N','N',nv,nv,nv,z_1,beta ,nv,gb ,nv,z_0,ba   ,nv)
-       call zgemm('N','N',nv,nv,nv,z_1,gb   ,nv,s00,nv,z_0,rh3  ,nv)
-       call zgemm('N','C',nv,nv,nv,z_1,ab   ,nv,s01,nv,z_1,rh3  ,nv)
-       call zgemm('N','N',nv,nv,nv,z_1,ba   ,nv,s01,nv,z_1,rh3  ,nv)
-
-       zdos = 0.0d0
-       do j = 0 , nv - 1
-          zdos = zdos + (rh3(j*(nv+1)))
-       end do
-       ! Normalize DOS
-       zdos = zdos / real(nv,dp)
-       
     end if
 
-    if( leqi(tjob,'L') ) then
-       gs(0:nvsq-1) = gs2(0:nvsq-1)
-    endif
+    ! Invert to get the Surface Green's function
+    call mat_invert(gsL,w,no,MI_IN_PLACE_LAPACK, ierr=ierr)
 
-    call memory('D','Z',14*nvsq+3,'calc_green')
-    call memory('D','I',nv,'calc_green')
-    deallocate(ipvt)
-    deallocate(rh,rh1,rh3)
-    deallocate(alpha,beta)
-    deallocate(ba,ab)
-    deallocate(gb,gs2)
+    if ( ierr /= 0 ) then
+       write(*,*) 'ERROR: calc_green GSL MATRIX INVERSION FAILED'
+       write(*,*) 'ERROR: LAPACK INFO = ',ierr
+    end if
+
+    ! Invert to get the Surface Green's function
+    call mat_invert(gsR,w,no,MI_IN_PLACE_LAPACK, ierr=ierr)
+
+    if ( ierr /= 0 ) then
+       write(*,*) 'ERROR: calc_green GSR MATRIX INVERSION FAILED'
+       write(*,*) 'ERROR: LAPACK INFO = ',ierr
+    end if
+
+    ! Invert to obtain the bulk Green's function
+    call mat_invert(GB,w,no,MI_IN_PLACE_LAPACK, ierr=ierr)
+
+    if ( ierr /= 0 ) then
+       write(*,*) 'ERROR: calc_green GB MATRIX INVERSION FAILED'
+       write(*,*) 'ERROR: LAPACK INFO = ',ierr
+    end if
+
+    ! We now calculate the density of states...
+    do i = 1 , nosq
+       alpha(i) = H01(i) -        ZE  * S01(i)
+       ! notice, we utilize the relation (H10-z*S10) = (H01-conjg(z)*S01)^H
+       beta(i)  = H01(i) - dconjg(ZE) * S01(i)
+    end do
+
+    i = 1
+    j = nosq + 1 
+    ! zDOS = Tr{ G_b * S00 + 
+    !            G_l * (H01 - E * S01 ) * G_b * S10 +
+    !            G_r * (H10 - E * S10 ) * G_b * S01   }
+    call zgemm('N','N',no,no,no,z_1,gsL  ,no,alpha,no,z_0,w    ,no)
+    call zgemm('N','N',no,no,no,z_1,w    ,no,gb   ,no,z_0,rh(i),no)
+    call zgemm('C','N',no,no,no,z_1,beta ,no,gb   ,no,z_0,w    ,no)
+    call zgemm('N','N',no,no,no,z_1,gsR  ,no,w    ,no,z_0,rh(j),no)
+    call zgemm('N','N',no,no,no,z_1,gb   ,no,s00  ,no,z_0,w    ,no)
+    call zgemm('N','C',no,no,no,z_1,rh(i),no,s01  ,no,z_1,w    ,no)
+    call zgemm('N','N',no,no,no,z_1,rh(j),no,s01  ,no,z_1,w    ,no)
+
+    zDOS = 0.0_dp
+    do j = 0 , nom1
+       zDOS = zDOS + w(1+j*(no+1))
+    end do
+    ! Normalize DOS
+    zDOS = zDOS / real(no,dp)
+
+    if ( present(final_invert) ) then
+       ! If we do not need to invert it, return the value
+       if ( .not. final_invert ) then
+          GS(:) = rh1(1:nosq)
+       end if
+    end if
 
     call timer('ts_GS',2)
 
@@ -319,7 +289,249 @@ contains
     call write_debug( 'POS surface_Green' )
 #endif
 
-  end subroutine surface_Green
+  contains
+
+    ! We supply a routine to switch the pointer position of alpha,beta / rh1
+    subroutine switch_alpha_beta_rh1(as_first)
+      logical, intent(inout) :: as_first
+      integer :: i 
+      ! start
+      i = 2 * nosq
+
+      if ( as_first ) then
+         rh1 => zwork(i+1:i+2*nosq) 
+         i = i + 2*nosq
+         alpha => zwork(i+1:i+nosq) 
+         i = i + nosq
+         beta => zwork(i+1:i+nosq) 
+      else
+         alpha => zwork(i+1:i+nosq) 
+         i = i + nosq
+         beta => zwork(i+1:i+nosq) 
+         i = i + nosq
+         rh1 => zwork(i+1:i+2*nosq) 
+      end if
+      as_first = .not. as_first
+
+    end subroutine switch_alpha_beta_rh1
+
+  end subroutine surface_Green_DOS
+
+  ! Calculates the surface Green's function for the electrodes
+  ! Handles both the left and right one
+  subroutine surface_Green_NoDOS(no,ZE,H00,S00,H01,S01,GS, &
+       nwork, zwork, &
+       iterations, job, final_invert)
+       
+! ***************** INPUT **********************************************
+! integer     no      : Number of orbitals in the electrode
+! complex(dp) ZE      : The energy of the Green's function evaluation
+! complex(dp) H00     : Hamiltonian within the first unit cell (discarding z-direction)
+! complex(dp) S00     : Overlap matrix within the first unit cell (discarding z-direction)
+! complex(dp) H01     : Transfer matrix from H00 to the neighbouring cell (in z-direction)
+! complex(dp) S01     : Transfer matrix from S00 to the neighbouring cell (in z-direction)
+! ***************** OUTPUT *********************************************
+! complex(dp) GS      : Surface Green's function of the electrode
+! **********************************************************************
+    use m_mat_invert
+    use parallel,  only: IONode
+    use precision, only: dp
+    use fdf, only : leqi
+
+! ***********************
+! * INPUT variables     *
+! ***********************
+    integer,     intent(in) :: no
+    complex(dp), intent(in) :: ZE 
+    complex(dp), intent(in) :: H00(no*no),S00(no*no)
+    complex(dp), intent(in) :: H01(no*no),S01(no*no)
+
+    integer,     intent(in) :: nwork
+
+    character(len=1), intent(in), optional :: job
+    logical, intent(in), optional :: final_invert
+
+! ***********************
+! * OUTPUT variables    *
+! ***********************
+    complex(dp), target :: GS(no*no)
+    complex(dp), pointer :: zwork(:)
+
+    integer, intent(out), optional :: iterations
+
+! ***********************
+! * LOCAL variables     *
+! ***********************
+    integer :: nom1, no2, nosq
+    integer :: ierr             !error in inversion
+    integer :: i,j,ic,ic2
+    logical :: LEFT, as_first
+
+    real(dp) :: ro
+
+    ! on the stack...
+    integer :: ipvt(no)
+    complex(dp), dimension(:), pointer :: rh,rh1,w,alpha,beta,gb
+
+#ifdef TRANSIESTA_DEBUG
+    call write_debug( 'PRE surface_Green' )
+#endif
+
+    ! Initialize counter
+    if ( present(iterations) ) iterations = 0
+
+    call timer('ts_GS',1)
+
+    ! We default to requesting the left surface Green's function
+    LEFT = .true.
+    if ( present(job) ) LEFT = leqi(job,'L')
+
+    nom1 = no - 1
+    no2  = 2 * no
+    nosq = no * no
+
+    if ( nwork < 8 * nosq ) call die('surface_Green: &
+         &Not enough work space')
+    i = 0
+    rh  => zwork(i+1:i+2*nosq) 
+    i = i + 2*nosq
+    rh1 => zwork(i+1:i+2*nosq) 
+    i = i + 2*nosq
+    alpha => zwork(i+1:i+nosq) 
+    i = i + nosq
+    beta => zwork(i+1:i+nosq) 
+    i = i + nosq
+    w => zwork(i+1:i+nosq)
+    i = i + nosq
+    gb => zwork(i+1:i+nosq) 
+
+! gb    =   Z*S00-H00
+! alpha = -(Z*S01-H01)
+! gs  = Z*S00-H00
+    do i = 1 , nosq
+       gb(i)    = ZE * S00(i) - H00(i)
+       GS(i)    = gb(i)
+       alpha(i) = H01(i) - ZE * S01(i)
+    end do
+
+! beta = -(Z*S10-H10)
+    do j = 1 , no
+       ic = no * (j-1)
+       do i = 1 , no
+          ic2 = j + no*(i-1)
+          beta(ic+i) = dconjg(H01(ic2)) - ZE * dconjg(S01(ic2))
+       end do
+    end do
+
+    ! Initialize loop
+    ro = accur + 1._dp
+    as_first = .false.
+    do while ( ro > accur ) 
+
+       ! Increment iterations
+       if ( present(iterations) ) &
+            iterations = iterations + 1
+
+! rh = -(Z*S01-H01) ,j<no
+! rh = -(Z*S10-H10) ,j>no
+       do i = 1, nosq
+          rh(i)       = alpha(i)
+          rh(nosq+i)  = beta(i)
+       end do
+
+! w = Z*S00-H00
+       w(:) = gb(:)
+
+! rh =  rh1^(-1)*rh
+! rh =  t0
+       call zgesv(no, no2, w, no, ipvt, rh, no, ierr)
+
+       if ( ierr /= 0 ) then
+          write(*,*) 'ERROR: calc_green 1 MATRIX INVERSION FAILED'
+          write(*,*) 'ERROR: LAPACK INFO = ',ierr
+       end if
+
+       ! switch pointers instead of copying elements
+       call switch_alpha_beta_rh1(as_first)
+
+! alpha = -(Z*S01-H01)*t0
+       call zgemm('N','N',no,no,no,z_1,rh1(1),no,rh(1),no,z_0,alpha,no)
+! beta  = -(Z*S10-H10)*t0 ??
+       call zgemm('N','N',no,no,no,z_1,rh1(nosq+1),no,rh(nosq+1),no,z_0,beta,no)
+
+       if ( LEFT ) then
+! ba    = (Z*S10-H10)*t0b
+          call zgemm('N','N',no,no,no,z_m1,rh1(nosq+1),no,rh(1),no,z_0,w,no)
+          gb(:) = gb(:) + w(:)
+          gs(:) = gs(:) + w(:)
+       else
+! gb = gb + [ba    = (Z*S10-H10)*t0b]
+          call zgemm('N','N',no,no,no,z_m1,rh1(nosq+1),no,rh(1),no,z_1,gb,no)
+       end if
+
+! ab    = (Z*S01-H01)*t0
+       call zgemm('N','N',no,no,no,z_m1,rh1(1),no,rh(nosq+1),no,z_0,w,no)
+       
+       gb(:) = gb(:) + w(:)
+       if ( .not. LEFT ) then
+          gs(:) = gs(:) + w(:)
+       end if
+       
+       ro = -1._dp
+       do i = 1 , nosq
+          ro = max(ro,abs(w(i)))
+       end do
+
+    end do
+
+    ierr = 0 
+    if ( present(final_invert) ) then
+       if ( final_invert ) then
+          ! Invert to get the Surface Green's function
+          call mat_invert(GS,w,no,MI_IN_PLACE_LAPACK, ierr=ierr)
+       end if
+    else
+       call mat_invert(GS,w,no,MI_IN_PLACE_LAPACK, ierr=ierr)
+    end if
+
+    if ( ierr /= 0 ) then
+       write(*,*) 'ERROR: calc_green GS MATRIX INVERSION FAILED'
+       write(*,*) 'ERROR: LAPACK INFO = ',ierr
+    end if
+
+    call timer('ts_GS',2)
+
+#ifdef TRANSIESTA_DEBUG
+    call write_debug( 'POS surface_Green' )
+#endif
+
+  contains
+
+    ! We supply a routine to switch the pointer position of alpha,beta / rh1
+    subroutine switch_alpha_beta_rh1(as_first)
+      logical, intent(inout) :: as_first
+      integer :: i 
+      ! start
+      i = 2 * nosq
+
+      if ( as_first ) then
+         rh1 => zwork(i+1:i+2*nosq) 
+         i = i + 2*nosq
+         alpha => zwork(i+1:i+nosq) 
+         i = i + nosq
+         beta => zwork(i+1:i+nosq) 
+      else
+         alpha => zwork(i+1:i+nosq) 
+         i = i + nosq
+         beta => zwork(i+1:i+nosq) 
+         i = i + nosq
+         rh1 => zwork(i+1:i+2*nosq) 
+      end if
+      as_first = .not. as_first
+
+    end subroutine switch_alpha_beta_rh1
+
+  end subroutine surface_Green_NoDOS
 
 !------------------------------------------------------------------------
 !************************************************************************
@@ -345,6 +557,7 @@ contains
        NBufAt,RemUCellDistance, xa_Eps, &
        ucell,xa,na_u,NEn,contour,chem_shift,CalcDOS,ZBulkDOS,nspin)
 
+    use m_mat_invert
     use precision,  only : dp
     use fdf,        only : leqi
     use parallel  , only : Node, Nodes, IONode
@@ -355,8 +568,8 @@ contains
     use mpi_siesta, only : MPI_Bcast,MPI_ISend,MPI_IRecv
     use mpi_siesta, only : MPI_Sum, MPI_Max, MPI_integer
     use mpi_siesta, only : MPI_Wait,MPI_Status_Size
-    use mpi_siesta, only : DAT_dcomplex => MPI_double_complex, &
-                           MPI_Double_Precision => MPI_double_precision
+    use mpi_siesta, only : DAT_dcomplex => MPI_double_complex
+    use mpi_siesta, only : MPI_double_precision
 #endif
     use m_hs_matrix,only : set_HS_matrix, matrix_symmetrize
     use m_ts_electype
@@ -425,9 +638,10 @@ contains
     complex(dp), dimension(:), pointer :: S00 => null()
     complex(dp), dimension(:), pointer :: H01 => null()
     complex(dp), dimension(:), pointer :: S01 => null()
+    complex(dp), dimension(:), pointer :: zwork => null()
 
     ! Green's function variables
-    complex(dp), dimension(:), allocatable :: GS
+    complex(dp), dimension(:), allocatable, target :: GS
     complex(dp), dimension(:,:), allocatable :: Hq,Sq,Gq
     complex(dp) :: ZEnergy, ZSEnergy, zdos
 
@@ -587,6 +801,13 @@ contains
     allocate(H00(nuo_E*nuo_E),S00(nuo_E*nuo_E))
     allocate(H01(nuo_E*nuo_E),S01(nuo_E*nuo_E))
     call memory('A','Z',4*nuo_E*nuo_E,'create_Green')
+    
+    ! Allocate work array
+    allocate(zwork(nuo_E*nuo_E*9))
+    call memory('A','Z',9*nuo_E*nuo_E,'create_Green')
+
+    ! Prepare for the inversion
+    call init_mat_inversion(nuo_E)
 
     ! Reset bulk DOS
     if ( CalcDOS ) then
@@ -758,8 +979,15 @@ contains
                   
                 ! Calculate the surface Green's function
                 ! ZSenergy is Zenergy together with the chemical shift
-                call surface_Green(tElec,nuo_E,ZSEnergy,H00,S00,H01,S01, &
-                     GS,CalcDOS,zdos,iters(iEn,1))
+                if ( CalcDOS ) then
+                   call surface_Green_DOS(nuo_E,ZSEnergy,H00,S00,H01,S01,GS, &
+                        zDOS,9*nuo_E*nuo_E,zwork, &
+                        iterations=iters(iEn,1),job=tElec,final_invert=Rep(El)/=1)
+                else
+                   call surface_Green_NoDos(nuo_E,ZSEnergy,H00,S00,H01,S01,GS, &
+                        8*nuo_E*nuo_E,zwork, &
+                        iterations=iters(iEn,1),job=tElec,final_invert=Rep(El)/=1)
+                end if
 
                 ! We also average the k-points.
                 if ( CalcDOS ) then
@@ -826,6 +1054,7 @@ contains
              call MPI_Wait(reqs(curNode),status,MPIerror)
              write(uGF) Gq
           end if
+
 #endif             
 
           end do Econtour_loop
@@ -884,6 +1113,12 @@ contains
     ! Hamiltonians
     call memory('D','Z',4*nuo_E*nuo_E,'create_green')
     deallocate(H00,S00,H01,S01)
+
+    ! Work-array
+    call memory('D','Z',9*nuo_E*nuo_E,'create_green')
+    deallocate(zwork)
+
+    call clear_mat_inversion()
 
     call memory('D','I',notot_E,'create_green')
     deallocate(indxuo_E)

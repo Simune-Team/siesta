@@ -8378,6 +8378,14 @@ the bottleneck and the place where efficiency is most readily
 lost. This is basically just the nature of diagonalisation, but it is
 always worth tuning the BlockSize parameter.
 
+If using a legacy MPI version and compilation crashes a possible work 
+around is to add:
+\begin{verbatim}
+DEFS_MPI += -DMPI_OLD
+\end{verbatim}
+which uses some more common MPI routines. However, updating your MPI
+version would be a good investment.
+
 \newpage
 \section{APPENDIX: File Formats}
 

@@ -149,8 +149,7 @@ CONTAINS
     use units, only: eV
     use m_ts_cctype
     use m_ts_global_vars, only : ts_istep, TSinit
-    use m_ts_io, only : ts_read_TSHS_na
-    use m_ts_io, only : ts_read_TSHS_lasto
+    use m_ts_io, only : ts_read_TSHS_opt
 
     use m_ts_contour
     use m_ts_io_contour
@@ -281,7 +280,9 @@ CONTAINS
        call die("Charge correction factor must be in the range [0;1]")
     endif
 
-    call read_contour_options( kT_in, IsVolt, VoltL, VoltR )
+    if ( TSmode ) then
+       call read_contour_options( kT_in, IsVolt, VoltL, VoltR )
+    end if
 
     GFTitle    = fdf_get('TS.GFTitle',GFTitle_def)
     chars = trim(slabel)//'.TSGFL'
@@ -350,7 +351,7 @@ CONTAINS
     ! then this is perfectly acceptable!
     if ( TSmode .and. trim(GFFileL) == trim(GFFileR) ) then ! Has to be case-sensitive !
        ! Read in the total number (if NumUsedAtoms is not the full...)
-       call ts_read_TSHS_na(HSFile(ElLeft),i)
+       call ts_read_TSHS_opt(HSFile(ElLeft),na_u=i)
 
        ! They are the same
        if ( IsVolt ) call die("The same Green's function file &
@@ -494,22 +495,25 @@ CONTAINS
             ' End: TS CHECKS AND WARNINGS ',repeat('*',26)
     end if
 
+    if ( TSmode ) then
 
-    ! Print out the contour blocks
-    if ( IONode ) then
-       write(*,'(/,a)') 'transiesta: contour input as perceived:'
-    end if
+       ! Print out the contour blocks
+       if ( IONode ) then
+          write(*,'(/,a)') 'transiesta: contour input as perceived:'
+       end if
 
-    call ts_print_contour_block('TS.Contour.Eq',cEq, &
-         msg_first='# First item is ALWAYS the circle part of the contour', &
-         msg_last='# Last item is ALWAYS the tail part of the line contour')
-    if ( IsVolt ) then
-       if ( IONode ) write(*,*)
-       call ts_print_contour_block('TS.Contour.nEq',cnEq, &
-            msg_first='# First item is ALWAYS the lower tail part of the contour', &
-            msg_last='# Last item is ALWAYS the upper tail part of the contour')
+       call ts_print_contour_block('TS.Contour.Eq',cEq, &
+            msg_first='# First item is ALWAYS the circle part of the contour', &
+            msg_last='# Last item is ALWAYS the tail part of the line contour')
+       if ( IsVolt ) then
+          if ( IONode ) write(*,*)
+          call ts_print_contour_block('TS.Contour.nEq',cnEq, &
+               msg_first='# First item is ALWAYS the lower tail part of the contour', &
+               msg_last='# Last item is ALWAYS the upper tail part of the contour')
+       end if
+       if ( IONode ) write(*,'(/)')
+
     end if
-    if ( IONode ) write(*,'(/)')
 
 1   format('ts_options: ',a,t53,'=',4x,l1)
 5   format('ts_options: ',a,t53,'=',i5,a)
@@ -536,7 +540,7 @@ contains
                &Please create electrode '"//trim(HSFile(el))//"' first.")
        end if
        ! Read in the number of atoms in the HSfile
-       call ts_read_TSHS_na(HSFile(el),tmp_NUsedAtoms)
+       call ts_read_TSHS_opt(HSFile(el),na_u=tmp_NUsedAtoms)
 
        if ( UsedAtoms(el) < 0 ) then
           el%UsedAtoms = tmp_NUsedAtoms
@@ -558,7 +562,8 @@ contains
        ! Read in lasto to determine the number of orbitals 
        ! used in the electrode
        allocate(lasto(0:tmp_NUsedAtoms))
-       call ts_read_TSHS_lasto(HSFile(el),tmp_NUsedAtoms,lasto)
+       call ts_read_TSHS_opt(HSFile(el), &
+            ucell=el%ucell,lasto=lasto,Ef=el%Ef)
        el%UsedOrbs = 0
        if ( LR == 'Left' ) then
           ! We use the first atoms
@@ -571,6 +576,7 @@ contains
              el%UsedOrbs = el%UsedOrbs + lasto(i)-lasto(i-1)
           end do
        end if
+
     end if
 
   end subroutine check_HSfile

@@ -644,9 +644,10 @@ m_ts_dm_update.o: intrinsic_missing.o m_ts_cctype.o m_ts_weight.o parallel.o
 m_ts_dm_update.o: precision.o units.o
 m_ts_elec_se.o: intrinsic_missing.o m_ts_cctype.o parallel.o precision.o
 m_ts_elec_se.o: units.o
-m_ts_electrode.o: files.o intrinsic_missing.o m_hs_matrix.o m_ts_cctype.o
+m_ts_electrode.o: files.o m_hs_matrix.o m_mat_invert.o m_ts_cctype.o
 m_ts_electrode.o: m_ts_electype.o m_ts_io.o m_ts_kpoints.o parallel.o
 m_ts_electrode.o: precision.o sys.o units.o
+m_ts_electype.o: precision.o
 m_ts_full.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_full.o: class_SpData1D.o class_Sparsity.o m_ts_cctype.o m_ts_contour.o
 m_ts_full.o: m_ts_debug.o m_ts_dm_update.o m_ts_elec_se.o m_ts_electype.o

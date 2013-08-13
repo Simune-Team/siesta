@@ -48,7 +48,7 @@
       use m_ts_electype
       use m_ts_global_vars, only: TSrun
       use sys, only : bye
-      use m_ts_io, only : filenameTSHS, ts_write_tshs
+      use m_ts_io, only : fname_TSHS, ts_write_tshs
       use m_ts_sparse, only : ts_sparse_init, ts_sp_uc, ts_Optimize
       use m_ts_tri, only : ts_tri_init
       use files, only: slabel, label_length
@@ -313,7 +313,7 @@
 #ifdef TRANSIESTA
 !     If onlyS, Save overlap matrix and exit                       ! MPN
       if (onlyS) then           ! MPN 
-         fname = filenameTSHS(slabel,0,0,.true.)
+         fname = fname_TSHS(slabel,0,0,.true.)
 ! We include H as S, well-knowing that we only write one of
 !     them, there is no need to allocate space for no reason!
          call ts_write_tshs(fname, 

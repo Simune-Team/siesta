@@ -4,20 +4,21 @@ module m_ts_io
 !
 !=============================================================================
 ! CONTAINS:
-!          1) ts_read_TSHS_na
-!          2) ts_iohs
+!          1) ts_read_TSHS_opt
+!          2) ts_read_TSHS
+!          3) ts_write_TSHS
+!          4) fname_TSHS
 
 
   implicit none
 
-  public :: ts_read_TSHS_na
-  public :: ts_read_TSHS_lasto
+  public :: ts_read_TSHS_opt
 
   public :: ts_read_TSHS
 #ifndef TBTRANS
   public :: ts_write_TSHS
 #endif
-  public :: filenameTSHS
+  public :: fname_TSHS
 
   private
 
@@ -26,7 +27,11 @@ contains
   ! Reads in the number of atoms in the electrode. This is for easy operation
   ! In the options reading phase. We need the size of the electrodes to determine 
   ! the number of atoms in the electrode.
-  subroutine ts_read_TSHS_na(TSHS,na_u)
+  subroutine ts_read_TSHS_opt(TSHS,DUMMY,na_u,no_u,no_s,nspin,maxnh, &
+       xa,isa,ucell, Qtot, Temp, Ef, &
+       Gamma,Gamma_SCF,OnlyS,lasto, &
+       Bcast)
+    use precision, only : dp
     use parallel, only : IONode
 #ifdef MPI
     use mpi_siesta
@@ -38,79 +43,264 @@ contains
 
 ! ***********************
 ! * OUTPUT variables    *
-! ***********************    
-    integer, intent(out)           :: na_u
+! *********************** 
+    integer, optional :: DUMMY ! MUST NEVER BE PASSED
+    integer, intent(out), optional :: na_u, no_u, no_s, nspin, maxnh, isa(:), lasto(:)
+    real(dp), intent(out), optional :: xa(:,:), ucell(3,3), Qtot, Temp, Ef
+    logical, intent(out), optional :: Gamma, Gamma_SCF, OnlyS
+    logical, intent(in), optional :: Bcast
 
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
-    integer :: uTSHS,tmp(4)
+    integer :: uTSHS,tmp(5)
+    real(dp) :: rtmp(2)
+    logical :: fGamma
 #ifdef MPI
+    integer :: buffer_size, ipos
+    character(len=1), allocatable :: buffer(:)
     integer :: MPIerror
 #endif
+
+    if ( present(DUMMY) ) call die('ts_read_TSHS_opt: Arguments has to be &
+         &named. Please correct sources.')
     
     if ( IONode ) then
        call io_assign(uTSHS)
        open(file=TSHS,unit=uTSHS,form='unformatted')
-       read(uTSHS) na_u, tmp(1:4) !na_u, no_u, no_s, Enspin, maxnh
-       call io_close(uTSHS)
-    end if
+       read(uTSHS) tmp(1:5) !na_u, no_u, no_s, Enspin, maxnh
+       if ( present(na_u) ) na_u = tmp(1)
+       if ( present(no_u) ) no_u = tmp(2)
+       if ( present(no_s) ) no_s = tmp(3)
+       if ( present(nspin) ) nspin = tmp(4)
+       if ( present(maxnh) ) maxnh = tmp(5)
+       if ( present(xa) ) then
+          if ( size(xa) /= 3 * tmp(1) ) call die('ts_read_TSHS: Wrong size of xa')
+          read(uTSHS) xa
+       else
+          read(uTSHS) ! xa
+       end if
+       if ( present(isa) ) then
+          if ( size(isa) /= tmp(1) ) call die('ts_read_TSHS: Wrong size of isa')
+          read(uTSHS) isa
+       else
+          read(uTSHS) ! isa
+       end if
+       if ( present(ucell) ) then
+          read(uTSHS) ucell
+       else
+          read(uTSHS) ! ucell
+       end if
+       read(uTSHS) fGamma
+       if ( present(Gamma) ) Gamma = fGamma
+       if ( present(OnlyS) ) then
+          read(uTSHS) OnlyS
+       else
+          read(uTSHS) ! OnlyS
+       end if
 
-#ifdef MPI
-    call MPI_Bcast(na_u,1,MPI_INTEGER,0,MPI_Comm_World,MPIerror)
-#endif
-
-  end subroutine ts_read_TSHS_na
-
-
-  ! Reads in the orbitals in the electrode. This is for easy operation
-  subroutine ts_read_TSHS_lasto(TSHS,na_u,lasto)
-    use parallel, only : IONode
-#ifdef MPI
-    use mpi_siesta
-#endif
-! ***********************
-! * INPUT variables     *
-! ***********************
-    character(len=200), intent(in) :: TSHS
-    integer,            intent(in) :: na_u
-
-! ***********************
-! * OUTPUT variables    *
-! ***********************    
-    integer,           intent(out) :: lasto(0:na_u)
-
-! ***********************
-! * LOCAL variables     *
-! ***********************
-    integer :: uTSHS
-#ifdef MPI
-    integer :: MPIerror
-#endif
-    
-    if ( IONode ) then
-       call io_assign(uTSHS)
-       open(file=TSHS,unit=uTSHS,form='unformatted')
-       read(uTSHS) ! na_u, no_u, no_s, Enspin, maxnh
-       read(uTSHS) ! xa
-       read(uTSHS) ! isa   
-       read(uTSHS) ! ucell  
-       read(uTSHS) ! gammaonfile   
-       read(uTSHS) ! onlySfile
-       read(uTSHS) ! ts_gamma_scf_file       
+       if ( present(Gamma_SCF) ) then
+          read(uTSHS) Gamma_SCF
+       else
+          read(uTSHS) ! Gamma_SCF
+       end if
        read(uTSHS) ! ts_kscell_file
        read(uTSHS) ! ts_kdispl_file  
        read(uTSHS) ! istep, ia1
-       read(uTSHS) lasto
 
+       if ( present(lasto) ) then
+          if ( size(lasto) /= tmp(1)+1 ) call die('ts_read_TSHS: Wrong size of lasto')
+          read(uTSHS) lasto
+       else
+          read(uTSHS) ! lasto
+       end if
+
+       if ( .not. fGamma ) then
+          read(uTSHS) ! indxuo
+       end if
+
+       read(uTSHS) ! numh
+
+       read(uTSHS) rtmp(1:2)
+       if ( present(Qtot) ) Qtot = rtmp(1)
+       if ( present(Temp) ) Temp = rtmp(2)
+
+       if ( present(Ef) ) then
+          read(uTSHS) Ef
+       else
+          read(uTSHS) ! Ef
+       end if
+       
        call io_close(uTSHS)
     end if
 
 #ifdef MPI
-    call MPI_Bcast(lasto,na_u+1,MPI_INTEGER,0,MPI_Comm_World,MPIerror)
+    if ( present(Bcast) ) then
+       ! if we do not request broadcasting, then return...
+       if ( .not. Bcast ) return
+    end if
+
+    ! Broadcast na_u (for easy reference)
+    call MPI_Bcast(tmp(1),1,MPI_Integer,0,MPI_Comm_World,MPIerror)
+
+#ifdef MPI_OLD
+    if ( present(na_u) ) &
+         call MPI_Bcast(na_u,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
+    if ( present(no_u) ) &
+         call MPI_Bcast(no_u,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
+    if ( present(no_s) ) &
+         call MPI_Bcast(no_s,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
+    if ( present(nspin) ) &
+         call MPI_Bcast(nspin,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
+    if ( present(maxnh) ) &
+         call MPI_Bcast(maxnh,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
+    if ( present(xa) ) &
+         call MPI_Bcast(xa(1,1),3*tmp(1),MPI_Double_Precision,0,MPI_Comm_World,MPIerror)
+    if ( present(isa) ) &
+         call MPI_Bcast(isa(1),tmp(1),MPI_Integer,0,MPI_Comm_World,MPIerror)
+    if ( present(ucell) ) &
+         call MPI_Bcast(ucell(1,1),9,MPI_Double_Precision,0,MPI_Comm_World,MPIerror)
+    if ( present(Gamma) ) &
+         call MPI_Bcast(Gamma,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
+    if ( present(OnlyS) ) &
+         call MPI_Bcast(OnlyS,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
+    if ( present(lasto) ) &
+         call MPI_Bcast(lasto(1),tmp(1)+1,MPI_Integer,0,MPI_Comm_World,MPIerror)
+    if ( present(Qtot) ) &
+         call MPI_Bcast(Qtot,1,MPI_Double_Precision,0,MPI_Comm_World,MPIerror)
+    if ( present(Temp) ) &
+         call MPI_Bcast(Temp,1,MPI_Double_Precision,0,MPI_Comm_World,MPIerror)
+    if ( present(Ef) ) &
+         call MPI_Bcast(Ef,1,MPI_Double_Precision,0,MPI_Comm_World,MPIerror)
+#else
+
+    ! this should be more than enough...
+    buffer_size = 8 * (tmp(1) * 6 + 100)
+    allocate(buffer(buffer_size))
+    ! position of data in buffer...
+    ipos = 0
+
+
+    if ( IONode ) then
+       if ( present(na_u) ) &
+            call MPI_Pack(na_u,1,MPI_Integer, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(no_u) ) &
+            call MPI_Pack(no_u,1,MPI_Integer, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(no_s) ) &
+            call MPI_Pack(no_s,1,MPI_Integer, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(nspin) ) &
+            call MPI_Pack(nspin,1,MPI_Integer, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(maxnh) ) &
+            call MPI_Pack(maxnh,1,MPI_Integer, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(xa) ) &
+            call MPI_Pack(xa(1,1),3*tmp(1),MPI_Double_Precision, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(isa) ) &
+            call MPI_Pack(isa(1),tmp(1),MPI_Integer, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(ucell) ) &
+            call MPI_Pack(ucell(1,1),9,MPI_Double_Precision, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(Gamma) ) &
+            call MPI_Pack(Gamma,1,MPI_Logical, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(OnlyS) ) &
+            call MPI_Pack(OnlyS,1,MPI_Logical, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(lasto) ) &
+            call MPI_Pack(lasto(1),tmp(1)+1,MPI_Logical, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(Qtot) ) &
+            call MPI_Pack(Qtot,1,MPI_Double_Precision, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(Temp) ) &
+            call MPI_Pack(Temp,1,MPI_Double_Precision, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(Ef) ) &
+            call MPI_Pack(Ef,1,MPI_Double_Precision, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+
+       if ( ipos >= buffer_size .or. ipos < 0 ) then
+          call die('Error in estimating the buffer-size for the &
+               &TSHS reading. Please contact the developers')
+       end if
+
+    end if
+
+    call MPI_Bcast(buffer,buffer_size,MPI_Packed, &
+         0, MPI_Comm_World, MPIerror)
+
+    if ( .not. IONode ) then
+       if ( present(na_u) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            na_u,1,MPI_Integer, &
+            MPI_Comm_World, MPIerror)
+       if ( present(no_u) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            no_u,1,MPI_Integer, &
+            MPI_Comm_World, MPIerror)
+       if ( present(no_s) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            no_s,1,MPI_Integer, &
+            MPI_Comm_World, MPIerror)
+       if ( present(nspin) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            nspin,1,MPI_Integer, &
+            MPI_Comm_World, MPIerror)
+       if ( present(maxnh) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            maxnh,1,MPI_Integer, &
+            MPI_Comm_World, MPIerror)
+       if ( present(xa) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            xa(1,1),3*tmp(1),MPI_Double_Precision, &
+            MPI_Comm_World, MPIerror)
+       if ( present(isa) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            isa(1),tmp(1),MPI_Integer, &
+            MPI_Comm_World, MPIerror)
+       if ( present(ucell) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            ucell(1,1),9,MPI_Double_Precision, &
+            MPI_Comm_World, MPIerror)
+       if ( present(Gamma) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            Gamma,1,MPI_Logical, &
+            MPI_Comm_World, MPIerror)
+       if ( present(OnlyS) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            OnlyS,1,MPI_Logical, &
+            MPI_Comm_World, MPIerror)
+       if ( present(lasto) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            lasto(1),tmp(1)+1,MPI_Logical, &
+            MPI_Comm_World, MPIerror)
+       if ( present(Qtot) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            Qtot,1,MPI_Double_Precision, &
+            MPI_Comm_World, MPIerror)
+       if ( present(Temp) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            Temp,1,MPI_Double_Precision, &
+            MPI_Comm_World, MPIerror)
+       if ( present(Ef) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            Ef,1,MPI_Double_Precision, &
+            MPI_Comm_World, MPIerror)
+    end if       
+
+    deallocate(buffer)
+
 #endif
 
-  end subroutine ts_read_TSHS_lasto
+#endif
+
+  end subroutine ts_read_TSHS_opt
 
 ! TBTrans will not need to write anything... (maybe in the future...)
 #ifndef TBTRANS
@@ -127,7 +317,7 @@ contains
 ! First we give the parameters that MUST be the same in the files.
 ! Also we supply the system label which leverages the need for the 
 ! files module
-  subroutine ts_write_tshs(filename, &
+  subroutine ts_write_TSHS(filename, &
        onlyS, Gamma, TSGamma, &
        ucell, na_u, no_l, no_u, no_s, maxnh, nspin,  &
        kscell, kdispl, &
@@ -354,11 +544,11 @@ contains
     call write_debug( 'POS ts_io_write' )
 #endif
 
-  end subroutine ts_write_tshs
+  end subroutine ts_write_TSHS
 
 #endif
 
-  subroutine ts_read_tshs(filename, &
+  subroutine ts_read_TSHS(filename, &
        onlyS, Gamma, TSGamma, ucell, na_u, no_l, no_u, no_s, maxnh, nspin,  &
        kscell, kdispl, &
        xa, iza, lasto, &
@@ -648,46 +838,39 @@ contains
     call write_debug( 'POS ts_io_read' )
 #endif
 
-  end subroutine ts_read_tshs
+  end subroutine ts_read_TSHS
 
 
-  function filenameTSHS(slabel,istep,ia1,onlyS)
+  function fname_TSHS(slabel,istep,ia1,onlyS) result(fname)
     character(len=*), intent(in) :: slabel
     integer, intent(in) :: istep, ia1
     logical, intent(in) :: onlyS
-    character(len=255) :: filenameTSHS
+    character(len=255) :: fname
     integer :: fL
-    
-    interface
-       function paste(s1,s2)
-         character(len=*), intent(in) :: s1,s2
-         character(len=255) :: paste
-       end function paste
-    end interface
 
     ! Initialize...
-    filenameTSHS = ' '
+    fname = ' '
 
     ! This is the criteria for not doing an FCrun
     ! There will never be an atom denoted by index 0
     if ( ia1 /= 0 ) then
-       write(filenameTSHS,'(2i4)') ia1, istep
-       filenameTSHS = paste( slabel, filenameTSHS(1:8) )
+       write(fname,'(2i4)') ia1, istep
+       fname = trim(slabel)//fname(1:8)
     else
-       filenameTSHS = slabel
+       fname = slabel
     end if
     
-    fL = len_trim(filenameTSHS)
+    fL = len_trim(fname)
     if ( onlyS ) then
-       if ( filenameTSHS(fL-5:fL) .ne. '.onlyS' ) then
-          filenameTSHS = paste( filenameTSHS , '.onlyS' )
+       if ( fname(fL-5:fL) .ne. '.onlyS' ) then
+          fname = trim(fname)//'.onlyS'
        end if
     else
-       if ( filenameTSHS(fL-4:fL) .ne. '.TSHS' ) then
-          filenameTSHS = paste( filenameTSHS , '.TSHS' )
+       if ( fname(fL-4:fL) .ne. '.TSHS' ) then
+          fname = trim(fname)//'.TSHS'
        end if
     end if
 
-  end function filenameTSHS
+  end function fname_TSHS
 
 end module m_ts_io

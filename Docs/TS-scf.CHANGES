@@ -1,4 +1,74 @@
 ----------------------------------------------------
+August 13, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-88
+Added MPI_PACKED in MPI, speeded up GS creation, TSHS-read improvement, bugfixes
+
+* In order to go to more advanced MPI routines I have added the MPI_PACKED variable
+  which is added since OpenMPI 1.4.5 (as far as I can tell).
+  If the user uses a legacy MPI version, one should add the flag: -DMPI_OLD.
+  I have added a small remark about this in the manual.
+
+* Surface Green's function creation has recieved an overhaul. It is now faster and uses
+  roughly half the memory. This is mostly so that we will be able to do in-line
+  GF calculations to skip the huge GF files.
+  
+  The routines are split in two versions, one which calculates the DOS and one
+  only calculates the required surface Green's function.
+
+* When having no repetitions there was no need to invert the surface Green's function.
+  (this was needed to do a Bloch expansion)
+  The surface Green's function is saved "as is" when having NRepA1 == NRepA2 == 1.
+  This should speed up the execution of large electrodes by quite a bit.
+  This also makes it far more convincing to do full electrodes as they are faster.
+
+* Bugfixes in the mat_invert module.
+  Now the user can request the return value of the lapack calls without it
+  crashing.
+
+* The electrode type now has both the Fermi-level and the unit-cell attached.
+  This should come in handy when transfering to inline GF computations.
+
+* ts_read_TSHS has gotten a new routine ts_read_TSHS_opt
+  which reads in the requested values (if supplied through the optional
+  arguments).
+  Currently the interface is this:
+    ts_read_TSHS_opt(TSHS,DUMMY,na_u,no_u,no_s,nspin,maxnh, &
+         xa,isa,ucell, Qtot, Temp, Ef, &
+         Gamma,Gamma_SCF,OnlyS,lasto, &
+         Bcast)
+  where everything beyond DUMMY should be referenced by explicit names.
+  Also Bcast is attached so that the routine will automatically broad
+  cast the values to all nodes (using the MPI_PACKED format)
+
+  Thus the older versions which explicitly dealt with one read-in has been 
+  made obsolete and deleted.
+
+* Name changes of a few routines
+  filename_TSHS is too long, fname_TSHS is the new name.
+  In general I think that using fname is a good choice with the needed 
+  verbosity for the coder.
+
+* Bugfixes for doing electrode calculations.
+  The contours was checked even though they were never used.
+  This has been corrected, TODO this still needs a clean-up.
+
+modified:
+  Docs/siesta.tex
+  Src/MPI/mpi__include.f90
+  Src/MPI/mpi_siesta.f90
+  Src/final_H_f_stress.F
+  Src/Makefile
+  Src/m_mat_invert.F90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_full.F90
+  Src/m_ts_io.F90
+  Src/m_ts_io_contour.f90
+  Src/m_ts_options.F90
+  Src/m_ts_tri.F90
+  Src/state_init.F
+
+----------------------------------------------------
 August 11, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-87
 Fixed NoEmptyCycles and reversed GF-reading
 

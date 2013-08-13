@@ -612,7 +612,7 @@ contains
        end if
     end if
 
-    SPIN: do ispin = 1 , nspin
+    SPIN_L: do ispin = 1 , nspin
        
        ! This is going to get messy...
        ! we do not want to create, yet another sparsity pattern
@@ -986,7 +986,7 @@ contains
    end if
 
    ! We don't need to do anything here..
-   end do SPIN
+   end do SPIN_L
 
 #ifdef TRANSIESTA_DEBUG
    write(*,*) 'Completed TRANSIESTA SCF'

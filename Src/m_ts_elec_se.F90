@@ -44,6 +44,8 @@ contains
     integer,  intent(in) :: nwork
     complex(dp), intent(inout) :: work(no_s,no_s,2)
 
+    call timer('ts_expand',1)
+
     if ( non_Eq ) then
        call UC_expansion_Sigma_GammaT(UseBulk,ZEnergy, &
             no_u,no_s,NRepA1,NRepA2, &
@@ -57,6 +59,8 @@ contains
                na_u,lasto,nq,qb,wq,H,S,GS,Sigma,nwork,work)
        end if
     end if
+
+    call timer('ts_expand',2)
 
   end subroutine UC_expansion
 
@@ -92,23 +96,15 @@ contains
     complex(dp) :: ph
     real(dp) :: qmPi(2,nq)
 
-    call timer('ts_expand',1)
-    call timer('ts_expandB',1)
-
     ! THis should never happen (work is TS-region!)
     if ( nwork < no_s**2 ) call die('Size of work-array is &
          &too small')
 
-    call EYE(no_s,Sigma)
-
     if ( NRepA1 * NRepA2 == 1 ) then
        if ( no_u /= no_s ) call die('no_E/=no_s')
 
-       ! We will read in a new GS for the following energy
-       ! point, hence we do not need GS
-       ! GS will be garbage from here on...
-       ! We have the matrix to invert in the first no_s**2 values.
-       call zgesv(no_s,no_s,GS(1,1,1),no_s,ipvt,Sigma,no_s,ierr)
+       ! When no repetition we save it "as is"
+       Sigma(:,:) = GS(:,:,1)
 
     else
 
@@ -179,16 +175,16 @@ contains
         end do !iau
        end do !q-points
        
+       call EYE(no_s,Sigma)
+
        ! We have the matrix to invert in the first no_s**2 values.
        call zgesv(no_s,no_s,work(1,1),no_s,ipvt,Sigma,no_s,ierr)
 
+       if ( ierr /= 0 ) THEN
+          write(*,*) 'Inversion of surface Greens function failed'
+       end if
+       
     end if
-    if ( ierr /= 0 ) THEN
-       write(*,*) 'Inversion of surface Greens function failed'
-    end if
-
-    call timer('ts_expandB',2)
-    call timer('ts_expand',2)
 
   end subroutine UC_expansion_Sigma_Bulk
 
@@ -220,8 +216,6 @@ contains
     integer :: io, jo
     integer :: ipvt(no_s)
 
-    call timer('ts_expand',1)
-
     ! THis should never happen (work is TS-region!)
     if ( nwork < no_s**2*2 ) call die('Size of work-array is &
          &too small')
@@ -229,18 +223,21 @@ contains
     call update_UC_expansion(ZEnergy,no_u,no_s,NRepA1,NRepA2, &
        na_u,lasto,nq,qb,wq,H,S,GS,nwork,work(1,1,1))
 
-    call EYE(no_s,Sigma)
-
     if ( NRepA1 * NRepA2 == 1 ) then
-       ! GS will be garbage from here on...
-       ! We have the matrix to invert in the first no_s**2 values.
-       call zgesv(no_s,no_s,GS(1,1,1),no_s,ipvt,Sigma,no_s,ierr)
+
+       ! When no repetition we save it "as is"
+       Sigma(:,:) = GS(:,:,1)
+
     else
+       call EYE(no_s,Sigma)
+
        ! We have the matrix to invert in the first no_s**2 values.
        call zgesv(no_s,no_s,work(1,1,1),no_s,ipvt,Sigma,no_s,ierr)
-    end if
-    if ( ierr /= 0 ) then
-       write(*,*) 'Inversion of surface Greens function failed'
+
+       if ( ierr /= 0 ) then
+          write(*,*) 'Inversion of surface Greens function failed'
+       end if
+
     end if
 
     ! Do:
@@ -250,8 +247,6 @@ contains
           Sigma(io,jo) = work(io,jo,2) - Sigma(io,jo)
        end do
     end do
-
-    call timer('ts_expand',2)
 
   end subroutine UC_expansion_Sigma
 
@@ -285,9 +280,6 @@ contains
     integer :: io,jo
     integer :: ipvt(no_s)
 
-    call timer('ts_expand',1)
-    call timer('ts_expandG',1)
-    
     ! THis should never happen (work is TS-region!)
     if ( nwork < no_s**2*2 ) call die('Size of work-array is &
          &too small')
@@ -295,18 +287,21 @@ contains
     call update_UC_expansion(ZEnergy,no_u,no_s,NRepA1,NRepA2, &
        na_u,lasto,nq,qb,wq,H,S,GS,nwork,work(1,1,1))
 
-    call EYE(no_s,Sigma)
-
     if ( NRepA1 * NRepA2 == 1 ) then
-       ! We have the matrix to invert in the first no_s**2 values.
-       ! NOTICE THAT GS will be rubbish from here on!
-       call zgesv(no_s,no_s,GS(1,1,1),no_s,ipvt,Sigma,no_s,ierr)
+
+       ! When no repetition we save it "as is"
+       Sigma(:,:) = GS(:,:,1)
+
     else
+       call EYE(no_s,Sigma)
+
        ! We have the matrix to invert in the first no_s**2 values.
        call zgesv(no_s,no_s,work(1,1,1),no_s,ipvt,Sigma,no_s,ierr)
-    end if
-    if ( ierr /= 0 ) then
-       write(*,*) 'Inversion of surface Greens function failed'
+
+       if ( ierr /= 0 ) then
+          write(*,*) 'Inversion of surface Greens function failed'
+       end if
+
     end if
 
     if ( UseBulk ) then
@@ -357,9 +352,6 @@ contains
 
     end if
 
-    call timer('ts_expandG',2)
-    call timer('ts_expand',2)
-       
   end subroutine UC_expansion_Sigma_GammaT
 
   subroutine update_UC_expansion(ZEnergy,no_u,no_s,NRepA1,NRepA2, &
@@ -402,9 +394,6 @@ contains
        do iq = 1 , nq 
           qmPi(1:2,iq) = - 2._dp * Pi * qb(1:2,iq)
        end do
-
-       ! TODO qb(:,1) == 0.0_dp in any case currently used
-       ! So we could do without.
 
        ! This is the crucial calcuation.
        ! If we use bulk values in the electrodes
