@@ -169,7 +169,7 @@ OBJS += m_gauss_fermi_inf.o m_gauss_fermi_30.o m_gauss_fermi_28.o
 OBJS += m_gauss_fermi_26.o m_gauss_fermi_24.o m_gauss_fermi_22.o
 OBJS += m_gauss_fermi_20.o m_gauss_fermi_19.o m_gauss_fermi_18.o
 OBJS += m_gauss_fermi_17.o
-OBJS += m_integrate.o m_mat_invert.o m_monitor.o
+OBJS += m_integrate.o m_mat_invert.o m_monitor.o m_bandwidth.o
 
 #--------------------------------------------------------------
 # FoX whatnot
@@ -568,6 +568,7 @@ listsc.o: alloc.o
 local_DOS.o: atomlist.o dhscf.o files.o kpoint_grid.o m_energies.o m_eo.o
 local_DOS.o: m_forces.o m_gamma.o m_ntm.o m_spin.o parallel.o siesta_geom.o
 local_DOS.o: siesta_options.o sparse_matrices.o sys.o
+m_bandwidth.o: alloc.o parallel.o
 m_broyddj.o: alloc.o m_mpi_utils.o parallel.o precision.o sys.o
 m_broyddj_nocomm.o: alloc.o m_fdf_global.o parallel.o precision.o sys.o
 m_broyden_mixing.o: alloc.o m_broyddj.o m_mpi_utils.o parallel.o precision.o
@@ -665,14 +666,14 @@ m_ts_iodm.o: alloc.o files.o m_mpi_utils.o m_ts_global_vars.o parallel.o
 m_ts_iodm.o: parallelsubs.o precision.o sys.o
 m_ts_kpoints.o: files.o find_kgrid.o minvec.o parallel.o precision.o
 m_ts_kpoints.o: siesta_cml.o siesta_options.o sys.o
-m_ts_options.o: files.o m_monitor.o m_ts_cctype.o m_ts_charge.o m_ts_contour.o
-m_ts_options.o: m_ts_electype.o m_ts_global_vars.o m_ts_io.o m_ts_io_contour.o
-m_ts_options.o: m_ts_method.o m_ts_weight.o parallel.o precision.o
-m_ts_options.o: siesta_options.o sys.o units.o
+m_ts_options.o: files.o m_bandwidth.o m_monitor.o m_ts_cctype.o m_ts_charge.o
+m_ts_options.o: m_ts_contour.o m_ts_electype.o m_ts_global_vars.o m_ts_io.o
+m_ts_options.o: m_ts_io_contour.o m_ts_method.o m_ts_weight.o parallel.o
+m_ts_options.o: precision.o siesta_options.o sys.o units.o
 m_ts_sparse.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_sparse.o: class_Sparsity.o create_Sparsity_SC.o geom_helper.o
-m_ts_sparse.o: m_glob_sparse.o m_monitor.o m_ts_debug.o m_ts_electype.o
-m_ts_sparse.o: m_ts_options.o parallel.o precision.o
+m_ts_sparse.o: m_bandwidth.o m_glob_sparse.o m_monitor.o m_ts_debug.o
+m_ts_sparse.o: m_ts_electype.o m_ts_options.o parallel.o precision.o
 m_ts_sparse_helper.o: class_OrbitalDistribution.o class_SpData1D.o
 m_ts_sparse_helper.o: class_SpData1D.o class_Sparsity.o geom_helper.o
 m_ts_sparse_helper.o: intrinsic_missing.o parallel.o precision.o

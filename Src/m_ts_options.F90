@@ -96,6 +96,7 @@ real(dp) :: ts_wmix
 ! The user can request to analyze the system, returning information about the 
 ! tri-diagonalization partition and the contour
 logical, save :: TS_Analyze = .false.
+integer, save :: TS_bandwidth_algo = 0
 
 ! If the user request to monitor the Density matrix update elements
 integer,          save :: N_mon = 0
@@ -158,6 +159,7 @@ CONTAINS
     use m_ts_charge
 
     use m_monitor
+    use m_bandwidth
 
     implicit none
     
@@ -211,6 +213,29 @@ CONTAINS
 
     ! Determine whether the user wishes to only do an analyzation
     TS_Analyze = fdf_get('TS.Analyze',.false.)
+    if ( TS_Analyze ) then
+       ! Default
+       TS_bandwidth_algo = 0
+       chars = fdf_get('TS.BandwidthReduction','reverse-CutHill-Mckee')
+       i = index(chars,'-')
+       if ( i > 0 ) then
+          if ( leqi(chars(1:i-1),'reverse') .or. &
+               leqi(chars(1:i-1),'rev') ) then
+             TS_bandwidth_algo = BW_REVERSE
+             chars = chars(i+1:)
+          end if
+       end if
+       if ( leqi(chars,'cuthill-mckee') ) then
+          TS_bandwidth_algo = TS_bandwidth_algo + BW_CUTHILL_MCKEE
+       else if ( leqi(chars,'cuthill-mckee-z-priority') .or. &
+            leqi(chars,'cuthill-mckee-z') ) then
+          TS_bandwidth_algo = TS_bandwidth_algo + BW_CUTHILL_MCKEE_Z_PRIORITY
+       else if ( leqi(chars,'papior') ) then
+          TS_bandwidth_algo = TS_bandwidth_algo + BW_PAPIOR
+       else
+          call die('Unrecognized option for Bandwidth algorithm: '//trim(chars))
+       end if
+    end if
 
     ! currently this does not work
     !ImmediateTSmode = fdf_get('TS.SCFImmediate',.false.)
@@ -395,6 +420,26 @@ CONTAINS
     end if
 
     if (IONode .and. TSmode ) then
+       if ( TS_Analyze ) then
+          write(*,11)'Will analyze bandwidth of LCAO sparse matrix and quit'
+          chars = ''
+          i = TS_bandwidth_algo
+          if ( TS_bandwidth_algo >= BW_REVERSE ) then
+             chars = 'reverse-'
+             i = TS_bandwidth_algo - BW_REVERSE
+          end if
+          select case ( i ) 
+          case ( BW_CUTHILL_MCKEE ) 
+             chars = trim(chars)//'Cuthill-Mckee'
+          case ( BW_CUTHILL_MCKEE_Z_PRIORITY ) 
+             chars = trim(chars)//'Cuthill-Mckee with z-priority'
+          case ( BW_PAPIOR ) 
+             chars = trim(chars)//'Papior'
+          case default 
+             call die('Unrecognized bandwidth algorithm')
+          end select
+          write(*,10)'Bandwidth algorithm',trim(chars)
+       end if
        if ( ts_method == TS_SPARSITY ) then
           write(*,10)'Solution method', 'Sparsity pattern'
        else if ( ts_method == TS_SPARSITY_TRI ) then

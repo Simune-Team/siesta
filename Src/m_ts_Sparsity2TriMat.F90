@@ -92,7 +92,10 @@ contains
        ! If not valid tri-pattern, simply jump...
        if ( ts_valid_tri(sp,guess_parts, guess_part) /= VALID ) cycle
 
+       call full_even_out_parts(sp,guess_parts,guess_part)
+       
        call select_better(parts,n_part, guess_parts, guess_part)
+       
     end do
 
 #ifdef MPI
@@ -133,20 +136,6 @@ contains
        end if
        call re_alloc(n_part, 1, 3, routine='tsSp2TM',name='n_part')
        call set_3TriMat(nrows_g(sp),parts,n_part)
-
-    else if ( opt_TriMat_method == 0 ) then ! only when optimizing for speed
-
-       ! Even out the matrix part sizes...
-       call re_alloc(guess_part,1,parts, name='guess_part')
-       N = 1
-       do while ( N /= 0 )
-          guess_part(:) = n_part(:)
-          do i = 1 , parts
-             call even_out_parts(sp, parts, n_part, i)
-          end do
-          N = maxval(abs(guess_part-n_part))
-       end do
-       call de_alloc(guess_part, name='guess_part')
 
     end if
 
@@ -189,7 +178,6 @@ contains
          copy = copy .or. guess_parts > parts
       else if ( opt_TriMat_method == 1 ) then
          ! We optimize for memory, i.e. we check for number of elements
-         ! We always expect that more parts will lead to a decrease in memory usage
          copy = &
               calc_nnzs(parts,n_part) > calc_nnzs(guess_parts,guess_part)
       else
@@ -342,6 +330,26 @@ contains
     end do
     
   end subroutine guess_previous_part_size
+
+  subroutine full_even_out_parts(sp,parts,n_part)
+    use class_Sparsity
+    ! The sparsity pattern
+    type(Sparsity), intent(inout) :: sp
+    ! the part we are going to create
+    integer, intent(in) :: parts
+    integer, intent(in out) :: n_part(parts)
+    ! Local variables
+    integer :: o_part(parts), i
+
+    do
+       o_part(:) = n_part(:)
+       do i = 1 , parts
+          call even_out_parts(sp, parts, n_part, i)
+       end do
+       if ( maxval(abs(o_part-n_part)) == 0 ) exit
+    end do
+
+  end subroutine full_even_out_parts
 
   subroutine even_out_parts(sp,parts,n_part, n)
     use class_Sparsity

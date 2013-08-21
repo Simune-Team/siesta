@@ -44,7 +44,8 @@
 
 #ifdef TRANSIESTA
       use m_ts_options, only : na_BufL, na_BufR, ElLeft, ElRight
-      use m_ts_options, only : onlyS, TS_Analyze, UseBulk
+      use m_ts_options, only : onlyS, UseBulk
+      use m_ts_options, only : TS_Analyze, TS_bandwidth_algo
       use m_ts_electype
       use m_ts_global_vars, only: TSrun
       use sys, only : bye
@@ -356,7 +357,7 @@
          if (IONode) write(*,'(a)')'transiesta: Central region...'
          call ts_Optimize(ts_sp_uc,na_u, lasto, 
      &        na_BufL+TotUsedAtoms(ElLeft), 
-     &        TotUsedAtoms(ElRight)+na_BufR)
+     &        TotUsedAtoms(ElRight)+na_BufR,xa, TS_bandwidth_algo)
 
 !         if (IONode) write(*,'(a)')'transiesta: Right electrode...'
 !         call ts_Optimize(ts_sp_uc,na_u, lasto, 

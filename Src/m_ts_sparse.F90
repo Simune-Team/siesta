@@ -73,6 +73,10 @@ module m_ts_sparse
   ! TODO: check how much speed we gain from not searching in the sparsity pattern
   type(iSpData1D), save :: ltsup_sc_pnt
 
+  integer, parameter :: CUTHILL_MCKEE = 0
+  integer, parameter :: CUTHILL_MCKEE_Z_PRIORITY = 1
+  integer, parameter :: PAPIOR = 2
+
 contains
 
 ! This routine setups what-ever is needed to do the
@@ -708,11 +712,12 @@ contains
 
   end subroutine ts_Sparsity_Subset_pointer
 
-  subroutine ts_Optimize(sp,na_u,lasto,na_L,na_R)
+  subroutine ts_Optimize(sp,na_u,lasto,na_L,na_R, xa, algorithm)
     ! We return the pivoting indexes for the atoms
     use class_Sparsity
     use alloc, only : re_alloc, de_alloc
     use parallel, only : IONode
+    use m_bandwidth
     ! This sparsity pattern must be a full one
     type(Sparsity), intent(in out) :: sp
     ! number of atoms in the cell, also the last orbitals of each
@@ -720,8 +725,15 @@ contains
     integer, intent(in) :: na_u, lasto(0:na_u)
     ! The atoms which need not be accounted for (na_BufL/R + na_L/R)
     integer, intent(in) :: na_L, na_R
+    ! The atomic coordinates
+    ! This means that we can sort against the z-level by assigning 
+    ! priority of atoms.
+    real(dp), intent(in) :: xa(3,na_u)
+    integer, intent(in) :: algorithm
     ! The pivoting array
     integer, pointer :: R(:)
+    ! The priority array
+    integer, pointer :: a_priority(:)
 
     integer, pointer :: a_mm(:,:)
     integer, pointer :: l_col(:), ncol(:), tmp(:)
@@ -732,13 +744,20 @@ contains
     ! Retrieve the lists
     call attach(sp,list_col=l_col,n_col=ncol)
 
-    nullify(a_mm,R,tmp)
-    call re_alloc(a_mm,1,na_u,1,na_u,routine='ts_Optimize', &
-         name='a_mm')
-    call re_alloc(R,1,na_u,routine='ts_Optimize', &
-         name='R')
-    call re_alloc(tmp,1,maxval(ncol),routine='ts_Optimize', &
-         name='tmp')
+    nullify(a_mm,R,tmp,a_priority)
+    call re_alloc(a_mm,1,na_u,1,na_u)
+    call re_alloc(R,1,na_u)
+    call re_alloc(tmp,1,maxval(ncol))
+    call re_alloc(a_priority,1,na_u)
+
+    ! First we create the priority array
+    ! We assign an integer that has an arbitrary range 
+    ! dependent on the size of the system
+    ! A high-z gets a high priority
+    do ia = 1 , na_u
+       ! notice that it is reversed
+       a_priority(ia) = nint(xa(3,ia) * 10000._dp)
+    end do
 
     ! Initialize the connections
     ! Notice that we build the matrix from backwards
@@ -746,11 +765,8 @@ contains
     a_mm(:,:) = 0
     a_mm(na_u,na_u) = 1
     do ia = 1 , na_u - 1
-       ! Simultaneously set the pivoting array
-       R(ia) = ia
-
        ! Of course the atom connects to itself
-       a_mm(na_u+1-ia,na_u+1-ia) = 1
+       a_mm(ia,ia) = 1
 
        ! The current atoms orbitals
        co1 = lasto(ia-1) + 1
@@ -769,8 +785,8 @@ contains
              if ( any(tmp(1:ncol(io)) <= co2) ) then
                 ! Create the connection to the other atoms
                 ! here we do the reverse notation
-                a_mm(na_u+1-ia,na_u+1-iac) = 1
-                a_mm(na_u+1-iac,na_u+1-ia) = 1
+                a_mm(ia,iac) = 1
+                a_mm(iac,ia) = 1
                 exit connection
              end if
           end do connection
@@ -778,7 +794,6 @@ contains
        end do
 
     end do
-    R(na_u) = na_u
 
     ! deallocate unused array
     call de_alloc(tmp)
@@ -789,27 +804,10 @@ contains
     !      write(*,'(1000(i0))') a_mm(ia,:)
     !   end do
     !end if
-    
-    ! Call the Cuthill-Mckee algorithm (notice that a_mm
-    ! is the reversed matrix), hence when we reverse back
-    ! we obtain a correct matrix ordering
-    call Cuthill_Mckee(na_u, na_R, na_L, a_mm, R)
 
-    ! transfer to the correct atom indices
-    do ia = na_R + 1 , na_u - na_L 
-       R(ia) = na_u + 1 - R(ia)
-    end do
-
-    ! transfer to the reversed Cuthill-Mckee algorithm
-    ! We could do this and the above in one go, but that would require a 
-    ! correction if mod(io,2) == 1
-    io = na_u - na_R - na_L
-    do ia = na_R + 1 , na_R + io / 2
-       iac = R(ia)
-       R(ia) = R(na_u+1-ia)
-       R(na_u+1-ia) = iac
-    end do
-       
+    call BandWidth_pivoting(algorithm, na_u, a_mm, R, &
+         na_L = na_L, na_R = na_R, priority = a_priority )
+         
     if ( IONode ) then
        write(*,'(a)') 'transiesta: Tri-diagonal blocks can be &
             &optimized by the following pivoting'
@@ -832,179 +830,8 @@ contains
            
     call de_alloc(a_mm)
     call de_alloc(R)
+    call de_alloc(a_priority)
 
   end subroutine ts_Optimize
   
-  subroutine Cuthill_Mckee(na_u,na_L,na_R,a_mm,R)
-    ! We return the pivoting indexes for the atoms
-    use parallel, only : IONode
-    use alloc
-    ! number of atoms in the cell, also the last orbitals of each
-    ! atom.
-    integer, intent(in) :: na_u
-    ! The atoms which need not be accounted for (na_BufL/R + na_L/R)
-    integer, intent(in) :: na_L, na_R
-    integer, intent(in) :: a_mm(na_u,na_u)
-    integer, intent(inout) :: R(na_u)
-
-    integer, pointer :: Q(:)
-    integer :: na_S, na_E, na
-    integer :: ia, nQ, iQ, i_ca, ca
-    integer :: degree
-
-    na = na_u - na_L - na_R
-    na_S = na_L + 1
-    na_E = na_u - na_R
-
-    nullify(Q)
-    call re_alloc(Q,1,na,routine='Cuthill_Mckee', name='Q')
-
-    ! we can now perform the Cuthill-Mckee algorithm
-    ! Notice that we force the last atom in the electrode
-    ! to be in the result array (thus we force
-    ! the construction of the Cuthill-Mckee to start
-    ! with the electrode)
-
-    ! Prepare counters for the algorithm
-    i_ca = na_L
-
-    ! the counter for the number of saved atoms
-    ca = 0
-
-    ! start the algorithm 
-    do while ( ca < na )
-
-       ! initialize the current node
-       ! remark that the first iteration fixes
-       ! the node building from the last atom
-       ! specified
-       nQ = 0
-       if ( i_ca > 0 ) then
-          ! In case we want a pure Cuthill-Mckee
-          ! we shall not construct the queue the first
-          ! time
-          call add_Queue(na_u,a_mm,na_S,na_E,i_ca,Q,nQ)
-       end if
-
-       ! loop the queed items
-       iQ = 0
-       ! if the number of connected nodes is zero
-       ! we skip (the node is already added)
-       do while ( iQ < nQ ) 
-          iQ = iQ + 1 
-          if ( ca == 0 ) then
-             ! Force the addition to the result list
-             ca = ca + 1
-             R(na_L+ca) = Q(iQ)
-             call add_Queue(na_u,a_mm,na_S,na_E,Q(iQ),Q,nQ)
-          else if ( any( R(na_L+1:na_L+ca) == Q(iQ) ) ) then
-             ! Just delete the entry (we do not need to worry about
-             ! it anymore)
-             Q(iQ:nQ-1) = Q(iQ+1:nQ)
-             iQ = iQ - 1
-             nQ = nQ - 1
-          else
-             ! We are allowed to add the queued item to the result list
-             ca = ca + 1
-             R(na_L+ca) = Q(iQ)
-             ! update the queue-list
-             call add_Queue(na_u,a_mm,na_S,na_E,Q(iQ),Q,nQ)
-          end if
-       end do
-
-       ! Do a quick exit if possible
-       if ( ca == na ) cycle
-
-       ! From here on it is the actual Cuthill-Mckee algorithm
-       ! Now we need to select the one with the lowest degree
-
-       i_ca = 0
-       degree = huge(1)
-       do ia = na_S , na_E
-          iQ = 0
-
-          if ( ca == 0 ) then
-             ! If no items has been added
-             iQ = 1
-          else if ( .not. any( R(na_L+1:na_L+ca) == ia ) ) then
-             ! Check it hasn't been processed 
-             iQ = 1
-          end if
-
-          if ( iQ == 1 ) then
-             iQ = sum(a_mm(na_S:na_E,ia))
-             if ( degree > iQ ) then
-                ! We save this as the new node
-                degree = iQ
-                i_ca = ia
-             end if
-          end if
-       end do
-       
-       ! Append to the result list
-       if ( i_ca > 0 ) then
-          ca = ca + 1
-          R(ca) = i_ca
-       end if
-       
-    end do
-
-    call de_alloc(Q)
-    
-  contains 
-    
-    subroutine add_Queue(na_u,a_mm,na_S,na_E,ia,Q,nQ)
-      integer, intent(in) :: na_u, a_mm(na_u,na_u)
-      integer, intent(in) :: na_S, na_E, ia
-      integer, intent(inout) :: Q(na_E - na_S + 1)
-      integer, intent(inout) :: nQ
-
-      integer :: i, iQ, ii, lnQ
-      integer :: degree(nQ+1:na_u)
-      logical :: append
-
-      ! We prepend to the queue
-      iQ = nQ
-      do i = na_S , na_E
-         ! if they are connected and not the same atom
-         if ( a_mm(i,ia) == 1 .and. i /= ia ) then
-            append = .false.
-            if ( nQ == 0 ) then
-               append = .true.
-            else if ( .not. any( Q(1:nQ) == i ) ) then
-               append = .true.
-            end if
-            if ( append ) then
-               ! We have a connected node
-               ! save its degree
-               iQ = iQ + 1 
-               Q(iQ) = i
-               degree(iQ) = sum(a_mm(na_S:na_E,i))
-            end if
-         end if
-      end do
-      ! capture the connected nodes
-      lnQ = iQ
-
-      ! Sort the queued items
-      do i = nQ + 1 , lnQ
-         do ii = i + 1 , lnQ
-            if ( degree(ii) < degree(i) ) then
-               iQ = degree(ii)
-               degree(ii) = degree(i)
-               degree(i) = iQ
-               iQ = Q(ii)
-               Q(ii) = Q(i)
-               Q(i) = iQ
-            end if
-         end do
-      end do
-      
-      ! Save the new queued count
-      nQ = lnQ
-
-    end subroutine add_Queue
-    
-  end subroutine Cuthill_Mckee
-
 end module m_ts_sparse

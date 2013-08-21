@@ -1,4 +1,42 @@
 ----------------------------------------------------
+August 21, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-89
+Bugfix for reverse GF reading. Added methods of bandwidth reduction
+
+* The Green's function reading was buggy in case on non divisable by 
+  number of processors. This has been corrected.
+
+* Instead of the reverse Cuthill-Mckee algorithm we have added 2 more
+  algorithms for reducing the bandwidth of the matrix.
+
+  We now have:
+   - Cuthill-Mckee
+   - reverse Cuthill-Mckee
+   - Cuthill-Mckee with z-priority
+   - reverse Cuthill-Mckee with z-priority
+   - Papior
+   - reverse Papior
+
+  The Cuthill-Mckee with z-priority and the Papior
+  algorithms are not stable. 
+  Consecutive usage of these bandwidth reductions gives new sortings.
+  However, I have seen occasions were they where outperforming the 
+  Cuthill-Mckee algorithm.
+  As such they are merely there for testing purposes.
+
+  The Papior algorithm was intuitively customized by Nick Papior Andersen,
+  and proves to be best after an initial Cuthill-Mckee pass.
+
+added:
+  Src/m_bandwidth.f90
+modified:
+  Src/Makefile
+  Src/m_ts_Sparsity2TriMat.F90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse.F90
+  Src/state_init.F
+
+----------------------------------------------------
 August 13, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-88
 Added MPI_PACKED in MPI, speeded up GS creation, TSHS-read improvement, bugfixes
 

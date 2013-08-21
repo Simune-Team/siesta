@@ -478,6 +478,7 @@ contains
        forward)
 
     use parallel,  only : IONode, Node, Nodes
+    use units, only : eV
 
 #ifdef MPI
     use mpi_siesta, only : MPI_Bcast, MPI_Isend, MPI_Irecv,  &
@@ -543,8 +544,8 @@ contains
        iNodeE = NEReqs - 1
        iNodeStep = 1
     else
-       iNodeS = NEReqs - 1
-       iNodeE = 0
+       iNodeS = Nodes - 1
+       iNodeE = Nodes - NEReqs
        iNodeStep = -1
     end if
 
@@ -605,7 +606,7 @@ contains
        if ( Node == iNode ) then
           if ( cdabs(ZEnergy-ZE_cur) > EPS ) then
              write(*,'(2(a,2(tr1,g12.5)))') 'Energies, TS / Gf:', &
-                  ZEnergy, ' /', ZE_cur
+                  ZEnergy / eV, ' /', ZE_cur / eV
              call die('Energy point in GF file does &
                   not match the internal energy-point in transiesta. &
                   &Please correct your GF files.')
@@ -712,7 +713,7 @@ contains
     else
        NEReqs = min(Nodes, cNEn-(iPE-Nodes+Node))
     end if
-    
+
     if ( present(reread) ) then
        if ( IONode .and. reread ) then
           do i = 1 , NEReqs * 2
