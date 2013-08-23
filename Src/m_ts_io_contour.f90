@@ -643,7 +643,7 @@ contains
                "+- i*",Nodes
        end if
        
-       i = 2 * sum(cEq(:)%N) + sum(cnEq(:)%N)
+       i = 2 * ( sum(cEq(:)%N) + N_poles ) + sum(cnEq(:)%N)
        if ( mod(i,Nodes) /= 0 ) then
           write(*,*) "NOTICE: Total energy contour points are not"
           write(*,*) "        divisable by the number of nodes."
