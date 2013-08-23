@@ -1,4 +1,15 @@
 ----------------------------------------------------
+August 23, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-90
+Bugfix for warning about parallel optimal energy points
+
+* The number of poles was not included when warning against optimal
+  energy points
+
+modified:
+  Src/m_ts_io_contour.f90
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 August 21, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-89
 Bugfix for reverse GF reading. Added methods of bandwidth reduction
 

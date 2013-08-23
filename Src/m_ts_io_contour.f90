@@ -561,13 +561,14 @@ contains
     
   end subroutine ts_print_contour_options
 
-  subroutine ts_print_contour_warnings(cEq,cnEq,kT,Eq_Eta, nEq_Eta, IsVolt)
+  subroutine ts_print_contour_warnings(cEq,cnEq,kT,Eq_Eta, nEq_Eta, N_poles, IsVolt)
 
     use parallel, only : IONode, Nodes, operator(.parcount.)
     use units, only : Pi, Kelvin
 
     type(ts_io_c), intent(in) :: cEq(:), cnEq(:)
     real(dp), intent(in) :: kT, Eq_Eta, nEq_Eta
+    integer, intent(in) :: N_poles
     logical, intent(in) :: IsVolt
     integer :: i
     real(dp) :: diff
@@ -608,7 +609,7 @@ contains
                &less than  5 Kelvin away from a pole.'
        end if
 
-       i = 2 * sum(cEq(:)%N)
+       i = 2 * ( sum(cEq(:)%N) + N_poles )
        if ( mod(i,Nodes) /= 0 ) then
           write(*,*) "NOTICE: Equilibrium energy contour points are not"
           write(*,*) "        divisable by the number of nodes."
@@ -654,7 +655,7 @@ contains
                "Optimal # of energy points: ",i,"+- i*",Nodes
        end if
     else
-       i = sum(cEq(:)%N)
+       i = sum(cEq(:)%N) + N_poles
        
        !   - The equilibrium parts are the same computational cost
        !   * Solution make the equi contours divisible by Nodes

@@ -525,7 +525,7 @@ CONTAINS
        end do
 
        ! print the warnings...
-       call ts_print_contour_warnings(cEq,cnEq,kT, Eq_Eta, nEq_Eta, IsVolt)
+       call ts_print_contour_warnings(cEq,cnEq,kT, Eq_Eta, nEq_Eta, N_poles, IsVolt)
 
     end if
 
