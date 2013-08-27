@@ -424,14 +424,20 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
   integer :: info
   integer :: icg                           ! CG step num.
   integer :: n_step_max=100                ! max. num. steps for CG minimization
+  integer :: lwork
+  integer, allocatable :: ipiv(:)
 #ifdef MPI
+  integer :: liwork
   integer :: mpi_status(1:mpi_status_size) ! MPI status
   integer, save :: ictxt                   ! handle for main BLACS context (1D or 2D)
   integer, save :: ictxt_1D                ! handle for additional BLACS context (1D)
   integer, save :: ictxt_1D_T              ! handle for additional BLACS context (1D transposed)
   integer, save :: desc1_1D(1:9)           ! descriptor for operator matrix in AO basis (1D)
   integer, save :: desc3_1D_T(1:9,1:2)     ! descriptor for WF coeffs. matrix (1D transposed)
+  integer, allocatable :: iwork(:)
   integer, external :: numroc
+#else
+  integer, external :: ilaenv
 #endif
 
   real(dp) :: rn
@@ -608,7 +614,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
     end if
 
     if (all(FirstCall(1:2))) then
-      t_precon_scale=fdf_physical('OMM.TPreconScale',100.0_dp,'eV')
+      t_precon_scale=fdf_physical('OMM.TPreconScale',10.0_dp,'Ry')
       cg_tol=fdf_get('OMM.RelTol',1.0d-9)
     end if
 
@@ -860,27 +866,36 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
 #endif
     p_dense=s_dense+p_dense/t_precon_scale
 #ifdef MPI
-    call pdpotrf('U',h_dim,p_dense,1,1,desc1,info)
-    if (info/=0) call die('ERROR: pdpotrf has failed in minim!')
-    call pdpotri('U',h_dim,p_dense,1,1,desc1,info)
-    if (info/=0) call die('ERROR: pdpotri has failed in minim!')
-    allocate(work1(1:h_dim_loc(1),1:h_dim_loc(2)))
-    allocate(work2(1:h_dim_loc(1),1:h_dim_loc(2)))
-    allocate(work3(1:h_dim_loc(1),1:h_dim_loc(2)))
-    call pdtran(h_dim,h_dim,1.0_dp,p_dense,1,1,desc1,0.0_dp,work1,1,1,desc1)
-    work2=0.0_dp
-    call pdlaset('U',h_dim,h_dim,1.0_dp,0.5_dp,work2,1,1,desc1)
-    work3=0.0_dp
-    call pdlaset('L',h_dim,h_dim,1.0_dp,0.5_dp,work3,1,1,desc1)
-    p_dense=work2*p_dense+work3*work1
-    deallocate(work3)
-    deallocate(work2)
+    allocate(ipiv(1:h_dim_loc(1)+BlockSize))
+    call pdgetrf(h_dim,h_dim,p_dense,1,1,desc1,ipiv,info)
+    if (info/=0) call die('ERROR: pdgetrf has failed in minim!')
+    allocate(work1(1:1,1:1))
+    allocate(iwork(1:1))
+    call pdgetri(h_dim,p_dense,1,1,desc1,ipiv,work1,-1,iwork,-1,info)
+    if (info/=0) call die('ERROR: pdgetri has failed in minim!')
+    liwork=iwork(1)
+    deallocate(iwork)
+    lwork=work1(1,1)
     deallocate(work1)
+    allocate(work1(1:lwork,1:1))
+    allocate(iwork(1:liwork))
+    call pdgetri(h_dim,p_dense,1,1,desc1,ipiv,work1,lwork,iwork,liwork,info)
+    if (info/=0) call die('ERROR: pdgetri has failed in minim!')
+    deallocate(iwork)
+    deallocate(work1)
+    deallocate(ipiv)
 #else
-    call dpotrf('U',h_dim,p_dense,h_dim,info)
-    if (info/=0) call die('ERROR: dpotrf has failed in minim!')
-    call dpotri('U',h_dim,p_dense,h_dim,info)
-    if (info/=0) call die('ERROR: dpotri has failed in minim!')
+    allocate(ipiv(1:h_dim))
+    lwork=h_dim*ilaenv(1,'dsytrf','U',h_dim,-1,-1,-1)
+    allocate(work1(1:lwork,1:1))
+    call dsytrf('U',h_dim,p_dense,h_dim,ipiv,work1,lwork,info)
+    if (info/=0) call die('ERROR: dsytrf has failed in minim!')
+    deallocate(work1)
+    allocate(work1(1:h_dim,1:1))
+    call dsytri('U',h_dim,p_dense,h_dim,ipiv,work1,info)
+    if (info/=0) call die('ERROR: dsytri has failed in minim!')
+    deallocate(work1)
+    deallocate(ipiv)
     do i=1,h_dim-1
       do j=i+1,h_dim
         p_dense(j,i)=p_dense(i,j)
@@ -1334,12 +1349,18 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
   integer :: info
   integer :: icg                           ! CG step num.
   integer :: n_step_max=100                ! max. num. steps for CG minimization
+  integer :: lwork
+  integer, allocatable :: ipiv(:)
 #ifdef MPI
+  integer :: liwork
   integer :: mpi_status(1:mpi_status_size) ! MPI status
   integer, save :: ictxt                   ! handle for main BLACS context (1D)
   integer, save :: nhmax_max
   integer, save :: h_dim_loc_max
+  integer, allocatable :: iwork(:)
   integer, external :: numroc
+#else
+  integer, external :: ilaenv
 #endif
 
   real(dp) :: rn
@@ -1513,7 +1534,7 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
     end if
 
     if (all(FirstCall(1:2))) then
-      t_precon_scale=fdf_physical('OMM.TPreconScale',100.0_dp,'eV')
+      t_precon_scale=fdf_physical('OMM.TPreconScale',10.0_dp,'Ry')
       cg_tol=fdf_get('OMM.RelTol',1.0d-9)
     end if
 
@@ -1669,27 +1690,39 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
     if (.not. allocated(p_dense1D)) allocate(p_dense1D(1:h_dim_loc(1),1:h_dim_loc(2)))
     p_dense1D=s_dense1D+t_dense1D/t_precon_scale
 #ifdef MPI
-    call pdpotrf('U',h_dim,p_dense1D,1,1,desc1,info)
-    if (info/=0) call die('ERROR: pdpotrf has failed in minim!')
-    call pdpotri('U',h_dim,p_dense1D,1,1,desc1,info)
-    if (info/=0) call die('ERROR: pdpotri has failed in minim!')
-    allocate(work1(1:h_dim_loc(1),1:h_dim_loc(2)))
-    allocate(work2(1:h_dim_loc(1),1:h_dim_loc(2)))
-    allocate(work3(1:h_dim_loc(1),1:h_dim_loc(2)))
-    call pdtran(h_dim,h_dim,1.0_dp,p_dense1D,1,1,desc1,0.0_dp,work1,1,1,desc1)
-    work2=0.0_dp
-    call pdlaset('U',h_dim,h_dim,1.0_dp,0.5_dp,work2,1,1,desc1)
-    work3=0.0_dp
-    call pdlaset('L',h_dim,h_dim,1.0_dp,0.5_dp,work3,1,1,desc1)
-    p_dense1D=work2*p_dense1D+work3*work1
-    deallocate(work3)
-    deallocate(work2)
+    allocate(ipiv(1:h_dim_loc(1)+BlockSize))
+    call pdgetrf(h_dim,h_dim,p_dense1D,1,1,desc1,ipiv,info)
+    if (info/=0) then
+print*, info
+call die('ERROR: pdgetrf has failed in minim!')
+end if
+    allocate(work1(1:1,1:1))
+    allocate(iwork(1:1))
+    call pdgetri(h_dim,p_dense1D,1,1,desc1,ipiv,work1,-1,iwork,-1,info)
+    if (info/=0) call die('ERROR: pdgetri has failed in minim!')
+    liwork=iwork(1)
+    deallocate(iwork)
+    lwork=work1(1,1)
     deallocate(work1)
+    allocate(work1(1:lwork,1:1))
+    allocate(iwork(1:liwork))
+    call pdgetri(h_dim,p_dense1D,1,1,desc1,ipiv,work1,lwork,iwork,liwork,info)
+    if (info/=0) call die('ERROR: pdgetri has failed in minim!')
+    deallocate(iwork)
+    deallocate(work1)
+    deallocate(ipiv)
 #else
-    call dpotrf('U',h_dim,p_dense1D,h_dim,info)
-    if (info/=0) call die('ERROR: dpotrf has failed in minim!')
-    call dpotri('U',h_dim,p_dense1D,h_dim,info)
-    if (info/=0) call die('ERROR: dpotri has failed in minim!')
+    allocate(ipiv(1:h_dim))
+    lwork=h_dim*ilaenv(1,'dsytrf','U',h_dim,-1,-1,-1)
+    allocate(work1(1:lwork,1:1))
+    call dsytrf('U',h_dim,p_dense1D,h_dim,ipiv,work1,lwork,info)
+    if (info/=0) call die('ERROR: dsytrf has failed in minim!')
+    deallocate(work1)
+    allocate(work1(1:h_dim,1:1))
+    call dsytri('U',h_dim,p_dense1D,h_dim,ipiv,work1,info)
+    if (info/=0) call die('ERROR: dsytri has failed in minim!')
+    deallocate(work1)
+    deallocate(ipiv)
     do i=1,h_dim-1
       do j=i+1,h_dim
         p_dense1D(j,i)=p_dense1D(i,j)
@@ -2613,7 +2646,8 @@ subroutine rand_init
   allocate(rand_seed(1:rand_size))
   call date_and_time(time=system_time)
   read (system_time,*) rtime
-  rand_seed=(Node+1)*int(rtime*1000.0_dp)
+  !rand_seed=(Node+1)*int(rtime*1000.0_dp)
+  rand_seed=(Node+1)*123456
   call random_seed(put=rand_seed)
   deallocate(rand_seed)
 

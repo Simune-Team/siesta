@@ -521,14 +521,20 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
   integer :: info
   integer :: icg                           ! CG step num.
   integer :: n_step_max=100                ! max. num. steps for CG minimization
+  integer :: lwork
+  integer, allocatable :: ipiv(:)
 #ifdef MPI
+  integer :: liwork
   integer :: mpi_status(1:mpi_status_size) ! MPI status
   integer, save :: ictxt                   ! handle for main BLACS context (1D or 2D)
   integer, save :: ictxt_1D                ! handle for additional BLACS context (1D)
   integer, save :: ictxt_1D_T              ! handle for additional BLACS context (1D transposed)
   integer, save :: desc1_1D(1:9)           ! descriptor for operator matrix in AO basis (1D)
   integer, save :: desc3_1D_T(1:9,1:2)     ! descriptor for WF coeffs. matrix (1D transposed)
+  integer, allocatable :: iwork(:)
   integer, external :: numroc
+#else
+  integer, external :: ilaenv
 #endif
 
   real(dp) :: rn
@@ -959,27 +965,36 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
 #endif
     p_dense(ik)%mtrx=s_dense(ik)%mtrx+p_dense(ik)%mtrx/t_precon_scale
 #ifdef MPI
-    call pzpotrf('U',h_dim,p_dense(ik)%mtrx,1,1,desc1,info)
-    if (info/=0) call die('ERROR: pzpotrf has failed in minim!')
-    call pzpotri('U',h_dim,p_dense(ik)%mtrx,1,1,desc1,info)
-    if (info/=0) call die('ERROR: pzpotri has failed in minim!')
-    allocate(work1(1:h_dim_loc(1),1:h_dim_loc(2)))
-    allocate(work2(1:h_dim_loc(1),1:h_dim_loc(2)))
-    allocate(work3(1:h_dim_loc(1),1:h_dim_loc(2)))
-    call pztranc(h_dim,h_dim,cmplx_1,p_dense(ik)%mtrx,1,1,desc1,cmplx_0,work1,1,1,desc1)
-    work2=cmplx_0
-    call pzlaset('U',h_dim,h_dim,cmplx_1,cmplx_half,work2,1,1,desc1)
-    work3=cmplx_0
-    call pzlaset('L',h_dim,h_dim,cmplx_1,cmplx_half,work3,1,1,desc1)
-    p_dense(ik)%mtrx=work2*p_dense(ik)%mtrx+work3*work1
-    deallocate(work3)
-    deallocate(work2)
+    allocate(ipiv(1:h_dim_loc(1)+BlockSize))
+    call pzgetrf(h_dim,h_dim,p_dense(ik)%mtrx,1,1,desc1,ipiv,info)
+    if (info/=0) call die('ERROR: pzgetrf has failed in minim!')
+    allocate(work1(1:1,1:1))
+    allocate(iwork(1:1))
+    call pzgetri(h_dim,p_dense(ik)%mtrx,1,1,desc1,ipiv,work1,-1,iwork,-1,info)
+    if (info/=0) call die('ERROR: pzgetri has failed in minim!')
+    liwork=iwork(1)
+    deallocate(iwork)
+    lwork=work1(1,1)
     deallocate(work1)
+    allocate(work1(1:lwork,1:1))
+    allocate(iwork(1:liwork))
+    call pzgetri(h_dim,p_dense(ik)%mtrx,1,1,desc1,ipiv,work1,lwork,iwork,liwork,info)
+    if (info/=0) call die('ERROR: pzgetri has failed in minim!')
+    deallocate(iwork)
+    deallocate(work1)
+    deallocate(ipiv)
 #else
-    call zpotrf('U',h_dim,p_dense(ik)%mtrx,h_dim,info)
-    if (info/=0) call die('ERROR: zpotrf has failed in minim!')
-    call zpotri('U',h_dim,p_dense(ik)%mtrx,h_dim,info)
-    if (info/=0) call die('ERROR: zpotri has failed in minim!')
+    allocate(ipiv(1:h_dim))
+    lwork=h_dim*ilaenv(1,'zhetrf','U',h_dim,-1,-1,-1)
+    allocate(work1(1:lwork,1:1))
+    call zhetrf('U',h_dim,p_dense(ik)%mtrx,h_dim,ipiv,work1,lwork,info)
+    if (info/=0) call die('ERROR: zhetrf has failed in minim!')
+    deallocate(work1)
+    allocate(work1(1:h_dim,1:1))
+    call zhetri('U',h_dim,p_dense(ik)%mtrx,h_dim,ipiv,work1,info)
+    if (info/=0) call die('ERROR: zhetri has failed in minim!')
+    deallocate(work1)
+    deallocate(ipiv)
     do i=1,h_dim-1
       do j=i+1,h_dim
         p_dense(ik)%mtrx(j,i)=conjg(p_dense(ik)%mtrx(i,j))
@@ -1480,12 +1495,18 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
   integer :: info
   integer :: icg                           ! CG step num.
   integer :: n_step_max=100                ! max. num. steps for CG minimization
+  integer :: lwork
+  integer, allocatable :: ipiv(:)
 #ifdef MPI
+  integer :: liwork
   integer :: mpi_status(1:mpi_status_size) ! MPI status
   integer, save :: ictxt                   ! handle for main BLACS context (1D)
   integer, save :: nhmax_max
   integer, save :: h_dim_loc_max
+  integer, allocatable :: iwork(:)
   integer, external :: numroc
+#else
+  integer, external :: ilaenv
 #endif
 
   real(dp) :: rn
@@ -1812,27 +1833,36 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
     if (.not. allocated(p_dense1D(ik)%mtrx)) allocate(p_dense1D(ik)%mtrx(1:h_dim_loc(1),1:h_dim_loc(2)))
     p_dense1D(ik)%mtrx=s_dense1D+t_dense1D/t_precon_scale
 #ifdef MPI
-    call pzpotrf('U',h_dim,p_dense1D(ik)%mtrx,1,1,desc1,info)
-    if (info/=0) call die('ERROR: pzpotrf has failed in minim!')
-    call pzpotri('U',h_dim,p_dense1D(ik)%mtrx,1,1,desc1,info)
-    if (info/=0) call die('ERROR: pzpotri has failed in minim!')
-    allocate(work1(1:h_dim_loc(1),1:h_dim_loc(2)))
-    allocate(work2(1:h_dim_loc(1),1:h_dim_loc(2)))
-    allocate(work3(1:h_dim_loc(1),1:h_dim_loc(2)))
-    call pztranc(h_dim,h_dim,cmplx_1,p_dense1D(ik)%mtrx,1,1,desc1,cmplx_0,work1,1,1,desc1)
-    work2=cmplx_0
-    call pzlaset('U',h_dim,h_dim,cmplx_1,cmplx(0.5_dp,0.0_dp,dp),work2,1,1,desc1)
-    work3=cmplx_0
-    call pzlaset('L',h_dim,h_dim,cmplx_1,cmplx(0.5_dp,0.0_dp,dp),work3,1,1,desc1)
-    p_dense1D(ik)%mtrx=work2*p_dense1D(ik)%mtrx+work3*work1
-    deallocate(work3)
-    deallocate(work2)
+    allocate(ipiv(1:h_dim_loc(1)+BlockSize))
+    call pzgetrf(h_dim,h_dim,p_dense1D(ik)%mtrx,1,1,desc1,ipiv,info)
+    if (info/=0) call die('ERROR: pzgetrf has failed in minim!')
+    allocate(work1(1:1,1:1))
+    allocate(iwork(1:1))
+    call pzgetri(h_dim,p_dense1D(ik)%mtrx,1,1,desc1,ipiv,work1,-1,iwork,-1,info)
+    if (info/=0) call die('ERROR: pzgetri has failed in minim!')
+    liwork=iwork(1)
+    deallocate(iwork)
+    lwork=work1(1,1)
     deallocate(work1)
+    allocate(work1(1:lwork,1:1))
+    allocate(iwork(1:liwork))
+    call pzgetri(h_dim,p_dense1D(ik)%mtrx,1,1,desc1,ipiv,work1,lwork,iwork,liwork,info)
+    if (info/=0) call die('ERROR: pzgetri has failed in minim!')
+    deallocate(iwork)
+    deallocate(work1)
+    deallocate(ipiv)
 #else
-    call zpotrf('U',h_dim,p_dense1D(ik)%mtrx,h_dim,info)
-    if (info/=0) call die('ERROR: zpotrf has failed in minim!')
-    call zpotri('U',h_dim,p_dense1D(ik)%mtrx,h_dim,info)
-    if (info/=0) call die('ERROR: zpotri has failed in minim!')
+    allocate(ipiv(1:h_dim))
+    lwork=h_dim*ilaenv(1,'zhetrf','U',h_dim,-1,-1,-1)
+    allocate(work1(1:lwork,1:1))
+    call zhetrf('U',h_dim,p_dense1D(ik)%mtrx,h_dim,ipiv,work1,lwork,info)
+    if (info/=0) call die('ERROR: zhetrf has failed in minim!')
+    deallocate(work1)
+    allocate(work1(1:h_dim,1:1))
+    call zhetri('U',h_dim,p_dense1D(ik)%mtrx,h_dim,ipiv,work1,info)
+    if (info/=0) call die('ERROR: zhetri has failed in minim!')
+    deallocate(work1)
+    deallocate(ipiv)
     do i=1,h_dim-1
       do j=i+1,h_dim
         p_dense1D(ik)%mtrx(j,i)=p_dense1D(ik)%mtrx(i,j)
