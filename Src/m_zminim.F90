@@ -2,7 +2,6 @@ module m_zminim
 
 use fdf,            only : fdf_boolean, fdf_integer, fdf_get, fdf_physical
 use files,          only : slabel
-use m_timer,        only : timer_start, timer_stop
 use parallel,       only : ProcessorY, BlockSize, Node, Nodes
 use parallelsubs,   only : set_BlockSizeDefault
 use precision,      only : dp
@@ -151,7 +150,7 @@ subroutine zminim(CalcE,PreviousCallDiagon,iscf,istp,nbasis,nspin,h_dim,nhmax,nu
 
   !**********************************************!
 
-  call timer_start('zmin')
+  call timer('zmin',1)
 
   if (.not. allocated(FirstCall)) then
     allocate(FirstCall(1:nk,1:2))
@@ -460,7 +459,7 @@ subroutine zminim(CalcE,PreviousCallDiagon,iscf,istp,nbasis,nspin,h_dim,nhmax,nu
 
   last_call(1:2)=(/iscf,istp/)
 
-  call timer_stop('zmin')
+  call timer('zmin',2)
 
   end subroutine zminim
 
@@ -591,7 +590,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
 
   !**********************************************!
 
-  call timer_start('m_cg')
+  call timer('m_cg',1)
 
   if (.not. allocated(x_min)) allocate(x_min(1:nk,1:2))
   if (.not. allocated(s_dense)) allocate(s_dense(1:nk))
@@ -747,7 +746,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
     end if
 
     if (all(FirstCall(1:nk,1:2))) then
-      t_precon_scale=fdf_physical('OMM.TPreconScale',100.0_dp,'eV')
+      t_precon_scale=fdf_physical('OMM.TPreconScale',10.0_dp,'Ry')
       cg_tol=fdf_get('OMM.RelTol',1.0d-9)
     end if
 
@@ -855,7 +854,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
     if (Use2D) deallocate(d_dense2D)
 #endif
 
-    call timer_stop('m_cg')
+    call timer('m_cg',2)
 
     return
 
@@ -1428,7 +1427,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
 
   if (FirstCall(ik,ispin)) FirstCall(ik,ispin)=.false.
 
-  call timer_stop('m_cg')
+  call timer('m_cg',2)
 
 end subroutine minim_cg
 
@@ -1568,7 +1567,7 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
   if (.not. allocated(sg)) allocate(sg(1:nk,1:2))
   if (.not. allocated(cd)) allocate(cd(1:nk,1:2))
 
-  call timer_start('m_cg')
+  call timer('m_cg',1)
 
   ! if this is the first time the minimization module is called, several things need to be done
   ! (detailed below)  
@@ -1714,7 +1713,7 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
     end if
 
     if (all(FirstCall(1:nk,1:2))) then
-      t_precon_scale=fdf_physical('OMM.TPreconScale',100.0_dp,'eV')
+      t_precon_scale=fdf_physical('OMM.TPreconScale',10.0_dp,'Ry')
       cg_tol=fdf_get('OMM.RelTol',1.0d-9)
     end if
 
@@ -1810,7 +1809,7 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
     deallocate(numh_recv)
 #endif
 
-    call timer_stop('m_cg')
+    call timer('m_cg',2)
 
     return
 
@@ -2201,7 +2200,7 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
 
   if (FirstCall(ik,ispin)) FirstCall(ik,ispin)=.false.
 
-  call timer_stop('m_cg')
+  call timer('m_cg',2)
 
 end subroutine minim_cg_sparse
 
@@ -2225,7 +2224,7 @@ subroutine fit_quartic(x,y,g,c)
 
   !**********************************************!
 
-  !call timer_start('m_solve_quartic')
+  !call timer('m_solve_quartic',1)
 
   ! the following expressions for the coeffs. were produced automatically using Maple 12
   c(4)=(x(3)**3*x(2)*g(1)-3*x(1)*x(2)**2*y(1)+3*y(3)*x(1)*x(2)**2+x(1)**2*x(2)**2*g(1)+x(3)*x(2)**3*&
@@ -2254,7 +2253,7 @@ subroutine fit_quartic(x,y,g,c)
 
   !if (Node==0) print*, 'f(x)=',c(4),'*x**4+',c(3),'*x**3+',c(2),'*x**2+',c(1),'*x+',c(0)
 
-  !call timer_stop('m_fit_quartic')
+  !call timer('m_fit_quartic',2)
 
 end subroutine fit_quartic
 
@@ -2293,7 +2292,7 @@ subroutine solve_quartic(c,x_min,fail)
 
   !**********************************************!
 
-  !call timer_start('m_solve_quartic')
+  !call timer('m_solve_quartic',1)
 
   fail=.false.
 
@@ -2354,7 +2353,7 @@ subroutine solve_quartic(c,x_min,fail)
     if (c(4)<0.0_dp) fail=.true.
   end if
 
-  !call timer_stop('m_solve_quartic')
+  !call timer('m_solve_quartic',2)
 
 end subroutine solve_quartic
 
@@ -2382,7 +2381,7 @@ subroutine calc_grad(h_dim,N_occ,ispin,H,S,grad,hc,sc)
 
   !**********************************************!
 
-  call timer_start('m_calc_grad')
+  call timer('m_calc_grad',1)
 
   grad=cmplx(4.0_dp,0.0_dp,dp)*hc
 
@@ -2396,7 +2395,7 @@ subroutine calc_grad(h_dim,N_occ,ispin,H,S,grad,hc,sc)
   call zgemm('N','N',N_occ,h_dim,N_occ,-cmplx_2,H,N_occ,sc,N_occ,cmplx_1,grad,N_occ)
 #endif
 
-  call timer_stop('m_calc_grad')
+  call timer('m_calc_grad',2)
 
 end subroutine calc_grad
 
@@ -2423,7 +2422,7 @@ subroutine calc_A(h_dim,N_occ,ispin,Ap,c,A,Apc)
 
   !**********************************************!
 
-  call timer_start('m_calc_A')
+  call timer('m_calc_A',1)
 
 #ifdef MPI
   call pzgemm('N','N',N_occ,h_dim,h_dim,cmplx_1,c,  1,1,desc3(1:9,ispin),Ap,1,1,desc1,           cmplx_0,Apc,1,1,desc3(1:9,ispin))
@@ -2433,7 +2432,7 @@ subroutine calc_A(h_dim,N_occ,ispin,Ap,c,A,Apc)
   call zgemm('N','C',N_occ,N_occ,h_dim,cmplx_1,Apc,N_occ,c, N_occ,cmplx_0,A,  N_occ)
 #endif
 
-  call timer_stop('m_calc_A')
+  call timer('m_calc_A',2)
 
 end subroutine calc_A
 
@@ -2476,7 +2475,7 @@ subroutine calc_A_sparse(h_dim,N_occ,ispin,nhmax,numh,listhptr,listh,As,c,A,Asc)
 
   !**********************************************!
 
-  call timer_start('m_calc_A')
+  call timer('m_calc_A',1)
 
 #ifdef MPI
   Asc=0.0_dp
@@ -2525,7 +2524,7 @@ subroutine calc_A_sparse(h_dim,N_occ,ispin,nhmax,numh,listhptr,listh,As,c,A,Asc)
   call zgemm('N','C',N_occ,N_occ,h_dim,cmplx_1,Asc,N_occ,c,N_occ,cmplx_0,A,N_occ)
 #endif
 
-  call timer_stop('m_calc_A')
+  call timer('m_calc_A',2)
 
 end subroutine calc_A_sparse
 
@@ -2553,7 +2552,7 @@ subroutine calc_densmat(h_dim,N_occ,ispin,A,c1,Ap,cA,c2)
 
   !**********************************************!
 
-  call timer_start('m_calc_densmat')
+  call timer('m_calc_densmat',1)
 
 #ifdef MPI
   if (present(c2)) then
@@ -2571,7 +2570,7 @@ subroutine calc_densmat(h_dim,N_occ,ispin,A,c1,Ap,cA,c2)
   call zgemm('C','N',h_dim,h_dim,N_occ,cmplx_1,c1,N_occ,cA,N_occ,cmplx_0,Ap,h_dim)
 #endif
 
-  call timer_stop('m_calc_densmat')
+  call timer('m_calc_densmat',2)
 
 end subroutine calc_densmat
 
@@ -2619,7 +2618,7 @@ subroutine calc_densmat_sparse(h_dim,N_occ,ispin,nhmax,numh,listhptr,listh,A,c1,
 
   !**********************************************!
 
-  call timer_start('m_calc_densmat')
+  call timer('m_calc_densmat',1)
 
 #ifdef MPI
   if (present(c2)) then
@@ -2670,7 +2669,7 @@ subroutine calc_densmat_sparse(h_dim,N_occ,ispin,nhmax,numh,listhptr,listh,A,c1,
   end do
 #endif
 
-  call timer_stop('m_calc_densmat')
+  call timer('m_calc_densmat',2)
 
 end subroutine calc_densmat_sparse
 
@@ -2728,7 +2727,7 @@ subroutine calc_coeff(h_dim,N_occ,ispin,H,S,Hd,Sd,Hdd,Sdd,coeff,SdH)
 
   !**********************************************!
 
-  call timer_start('m_calc_coeff')
+  call timer('m_calc_coeff',1)
 
 #ifdef MPI
   TrH=pzlatra(N_occ,H,1,1,desc2(1:9,ispin))
@@ -2894,7 +2893,7 @@ subroutine calc_coeff(h_dim,N_occ,ispin,H,S,Hd,Sd,Hdd,Sdd,coeff,SdH)
   coeff(3)=-2.0_dp*(TrHddSd+TrHdSdd)
   coeff(4)=-TrHddSdd
 
-  call timer_stop('m_calc_coeff')
+  call timer('m_calc_coeff',2)
 
 end subroutine calc_coeff
 
