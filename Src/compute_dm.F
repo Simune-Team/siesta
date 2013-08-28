@@ -73,11 +73,8 @@ c$$$      use m_matrixwrite
          call pexsi_solver(iscf, no_u, no_l, nspin,
      $              maxnh, numh, listhptr, listh,
      $              H, S, qtot, Dscf, Escf,
-     $              ef, freeEnergyCorrection, temp)
-         if (ionode) write (6,"(/a,f14.6)")
-     &    'Free energy correction term:', freeEnergyCorrection
-         Entrop = -freeEnergyCorrection / temp
-
+     $              ef, Entrop, temp)
+         if (ionode) write (6,"(/a,f14.6)") 'Entropy/k:', Entrop 
       endif
       if (.not. SIESTA_worker) RETURN
 
@@ -126,6 +123,7 @@ c$$$     &           S, 'S.matrix')
      &              occtol, iscf, neigwanted)
         Ecorrec = 0.0_dp
         PreviousCallDiagon=.true.
+        if (ionode) write (6,"(/a,f14.6)") 'Entropy/k:', Entrop 
       elseif (isolve .eq. SOLVE_ORDERN) then
         if (.not. gamma) call die("Cannot do O(N) with k-points.")
         call ordern(usesavelwf, ioptlwf, na_u, no_u, no_l, lasto,

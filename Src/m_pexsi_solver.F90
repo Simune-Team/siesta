@@ -13,7 +13,7 @@ CONTAINS
 !
   subroutine pexsi_solver(iscf, no_u, no_l, nspin,  &
        maxnh, numh, listhptr, listh, H, S, qtot, DM, EDM, &
-       ef, freeEnergyCorrection, temp)
+       ef, Entrop, temp)
 
     use fdf
     use parallel, only   : SIESTA_worker, BlockSize
@@ -36,7 +36,7 @@ CONTAINS
     real(dp), intent(in) :: qtot
     real(dp), intent(out), target:: DM(maxnh,nspin), EDM(maxnh,nspin)
     real(dp), intent(out)        :: ef  ! Fermi energy
-    real(dp), intent(out)        :: freeEnergyCorrection
+    real(dp), intent(out)        :: Entrop ! Entropy/k, dimensionless
     real(dp), intent(in)         :: temp   ! Electronic temperature
 
 #ifndef MPI
@@ -89,6 +89,7 @@ real(dp) :: inertiaNumElectronTolerance, &
             PEXSINumElectronToleranceMax, &
             PEXSINumElectronTolerance
 real(dp) :: lateral_expansion_solver, lateral_expansion_inertia
+real(dp) :: free_bs_energy
 
 !------------
 
@@ -461,12 +462,12 @@ endif
 
 if (PEXSI_worker) then
 
-   freeEnergyCorrection = 0.0_dp
+   free_bs_energy = 0.0_dp
    eBandStructure = 0.0_dp
    eBandH = 0.0_dp
    do i = 1,nnzLocal
-      freeEnergyCorrection = freeEnergyCorrection + SnzvalLocal(i) * &
-           ( FDMnzvalLocal(i) - EDMnzvalLocal(i) )
+      free_bs_energy = free_bs_energy + SnzvalLocal(i) * &
+           ( FDMnzvalLocal(i) )
       eBandStructure = eBandStructure + SnzvalLocal(i) * &
            ( EDMnzvalLocal(i) )
       eBandH = eBandH + HnzvalLocal(i) * &
@@ -477,8 +478,9 @@ if (PEXSI_worker) then
    call de_alloc(colPtrLocal,"colPtrLocal","pexsi_solver")
 
    ! These operations in PEXSI group now
-   call globalize_sum( freeEnergyCorrection, buffer1, comm=PEXSI_comm )
-   freeEnergyCorrection = buffer1 + mu*numElectron
+   call globalize_sum( free_bs_energy, buffer1, comm=PEXSI_comm )
+   ! Note that FDM has an extra term: -mu*N
+   free_bs_energy = buffer1 + mu*numElectron
    call globalize_sum( eBandStructure, buffer1, comm=PEXSI_comm )
    eBandStructure = buffer1
    call globalize_sum( eBandH, buffer1, comm=PEXSI_comm )
@@ -492,9 +494,12 @@ if (PEXSI_worker) then
       write(*, *) "muMaxPEXSI    = ", muMaxPEXSI/eV
       write(*, *) "muZeroT (eV)  = ", muZeroT/eV
       write(*, *) "numElectron   = ", numElectron
-      write(*, *) "eBandStructure (eV) = ", eBandStructure/eV
+      write(*, *) "eBandS (eV) = ", eBandStructure/eV
       write(*, *) "eBandH (eV) = ", eBandH/eV
-      write(*, *) "freeEnergy (eV) = ", (eBandStructure + freeEnergyCorrection)/eV
+      write(*, *) "freeBandEnergy (eV) = ", (free_bs_energy)/eV
+      write(*, *) "eBandS (Ry) = ", eBandStructure
+      write(*, *) "eBandH (Ry) = ", eBandH
+      write(*, *) "freeBandEnergy (Ry) = ", (free_bs_energy)
       write(*,*) "Number of mu iterations: ", muIter
       write(*,"(a3,2a12,a20)") "it", "mu", "N_e", "dN_e/dmu"
       do i = 1, muIter
@@ -504,6 +509,7 @@ if (PEXSI_worker) then
    endif
 
    ef = mu
+   Entrop = - (free_bs_energy - ebandStructure) / temp
 
    call de_alloc(m2%vals(1)%data,"m2%vals(1)%data","pexsi_solver")
    call de_alloc(m2%vals(2)%data,"m2%vals(2)%data","pexsi_solver")
@@ -544,7 +550,7 @@ endif
 ! We assume that the root node is common to both communicators
 if (SIESTA_worker) then
    call broadcast(ef,comm=SIESTA_Comm)
-   call broadcast(freeEnergyCorrection,comm=SIESTA_Comm)
+   call broadcast(Entrop,comm=SIESTA_Comm)
    ! In future, m1%vals(1,2) could be pointing to DM and EDM,
    ! and the 'redistribute' routine check whether the vals arrays are
    ! associated, to use them instead of allocating them.

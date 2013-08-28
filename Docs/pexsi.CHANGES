@@ -1,4 +1,18 @@
 ------------------------------------------------------------
+August 28, 2013  A. Garcia        trunk-443--pexsi-38
+Compute explicitly the electronic entropy in PEXSI
+
+* Modified the computation of the electronic free energy
+to pass back the entropy to the caller routine.
+
+* For completeness, added a print statement for the entropy
+in diagonalization runs.
+
+modified:
+  Src/compute_dm.F
+  Src/m_pexsi_solver.F90
+
+------------------------------------------------------------
 August 1, 2013  A. Garcia        trunk-443--pexsi-37
 Update interface to v0.4.6 (npSymbFact)
 
