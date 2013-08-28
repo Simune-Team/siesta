@@ -3,7 +3,6 @@ module m_dminim
 use densematrix,    only : psi
 use fdf,            only : fdf_boolean, fdf_integer, fdf_get, fdf_physical
 use files,          only : slabel
-use m_timer,        only : timer_start, timer_stop
 use parallel,       only : ProcessorY, BlockSize, Node, Nodes
 use parallelsubs,   only : set_BlockSizeDefault
 use precision,      only : dp
@@ -132,7 +131,7 @@ subroutine dminim(CalcE,PreviousCallDiagon,iscf,istp,nbasis,nspin,h_dim,nhmax,nu
 
   !**********************************************!
 
-  call timer_start('dmin')
+  call timer('dmin',1)
 
   if (all(FirstCall(1:2))) then
 
@@ -367,7 +366,7 @@ subroutine dminim(CalcE,PreviousCallDiagon,iscf,istp,nbasis,nspin,h_dim,nhmax,nu
 
   last_call(1:2)=(/iscf,istp/)
 
-  call timer_stop('dmin')
+  call timer('dmin',2)
 
   end subroutine dminim
 
@@ -424,14 +423,20 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
   integer :: info
   integer :: icg                           ! CG step num.
   integer :: n_step_max=100                ! max. num. steps for CG minimization
+  integer :: lwork
+  integer, allocatable :: ipiv(:)
 #ifdef MPI
+  integer :: liwork
   integer :: mpi_status(1:mpi_status_size) ! MPI status
   integer, save :: ictxt                   ! handle for main BLACS context (1D or 2D)
   integer, save :: ictxt_1D                ! handle for additional BLACS context (1D)
   integer, save :: ictxt_1D_T              ! handle for additional BLACS context (1D transposed)
   integer, save :: desc1_1D(1:9)           ! descriptor for operator matrix in AO basis (1D)
   integer, save :: desc3_1D_T(1:9,1:2)     ! descriptor for WF coeffs. matrix (1D transposed)
+  integer, allocatable :: iwork(:)
   integer, external :: numroc
+#else
+  integer, external :: ilaenv
 #endif
 
   real(dp) :: rn
@@ -482,7 +487,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
 
   !**********************************************!
 
-  call timer_start('m_cg')
+  call timer('m_cg',1)
 
   ! if this is the first time the minimization module is called, several things need to be done
   ! (detailed below)  
@@ -608,7 +613,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
     end if
 
     if (all(FirstCall(1:2))) then
-      t_precon_scale=fdf_physical('OMM.TPreconScale',100.0_dp,'eV')
+      t_precon_scale=fdf_physical('OMM.TPreconScale',10.0_dp,'Ry')
       cg_tol=fdf_get('OMM.RelTol',1.0d-9)
     end if
 
@@ -750,7 +755,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
     if (Use2D) deallocate(d_dense2D)
 #endif
 
-    call timer_stop('m_cg')
+    call timer('m_cg',2)
 
     return
 
@@ -860,27 +865,36 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
 #endif
     p_dense=s_dense+p_dense/t_precon_scale
 #ifdef MPI
-    call pdpotrf('U',h_dim,p_dense,1,1,desc1,info)
-    if (info/=0) call die('ERROR: pdpotrf has failed in minim!')
-    call pdpotri('U',h_dim,p_dense,1,1,desc1,info)
-    if (info/=0) call die('ERROR: pdpotri has failed in minim!')
-    allocate(work1(1:h_dim_loc(1),1:h_dim_loc(2)))
-    allocate(work2(1:h_dim_loc(1),1:h_dim_loc(2)))
-    allocate(work3(1:h_dim_loc(1),1:h_dim_loc(2)))
-    call pdtran(h_dim,h_dim,1.0_dp,p_dense,1,1,desc1,0.0_dp,work1,1,1,desc1)
-    work2=0.0_dp
-    call pdlaset('U',h_dim,h_dim,1.0_dp,0.5_dp,work2,1,1,desc1)
-    work3=0.0_dp
-    call pdlaset('L',h_dim,h_dim,1.0_dp,0.5_dp,work3,1,1,desc1)
-    p_dense=work2*p_dense+work3*work1
-    deallocate(work3)
-    deallocate(work2)
+    allocate(ipiv(1:h_dim_loc(1)+BlockSize))
+    call pdgetrf(h_dim,h_dim,p_dense,1,1,desc1,ipiv,info)
+    if (info/=0) call die('ERROR: pdgetrf has failed in minim!')
+    allocate(work1(1:1,1:1))
+    allocate(iwork(1:1))
+    call pdgetri(h_dim,p_dense,1,1,desc1,ipiv,work1,-1,iwork,-1,info)
+    if (info/=0) call die('ERROR: pdgetri has failed in minim!')
+    liwork=iwork(1)
+    deallocate(iwork)
+    lwork=work1(1,1)
     deallocate(work1)
+    allocate(work1(1:lwork,1:1))
+    allocate(iwork(1:liwork))
+    call pdgetri(h_dim,p_dense,1,1,desc1,ipiv,work1,lwork,iwork,liwork,info)
+    if (info/=0) call die('ERROR: pdgetri has failed in minim!')
+    deallocate(iwork)
+    deallocate(work1)
+    deallocate(ipiv)
 #else
-    call dpotrf('U',h_dim,p_dense,h_dim,info)
-    if (info/=0) call die('ERROR: dpotrf has failed in minim!')
-    call dpotri('U',h_dim,p_dense,h_dim,info)
-    if (info/=0) call die('ERROR: dpotri has failed in minim!')
+    allocate(ipiv(1:h_dim))
+    lwork=h_dim*ilaenv(1,'dsytrf','U',h_dim,-1,-1,-1)
+    allocate(work1(1:lwork,1:1))
+    call dsytrf('U',h_dim,p_dense,h_dim,ipiv,work1,lwork,info)
+    if (info/=0) call die('ERROR: dsytrf has failed in minim!')
+    deallocate(work1)
+    allocate(work1(1:h_dim,1:1))
+    call dsytri('U',h_dim,p_dense,h_dim,ipiv,work1,info)
+    if (info/=0) call die('ERROR: dsytri has failed in minim!')
+    deallocate(work1)
+    deallocate(ipiv)
     do i=1,h_dim-1
       do j=i+1,h_dim
         p_dense(j,i)=p_dense(i,j)
@@ -1271,7 +1285,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
 
   if (FirstCall(ispin)) FirstCall(ispin)=.false.
 
-  call timer_stop('m_cg')
+  call timer('m_cg',2)
 
 end subroutine minim_cg
 
@@ -1334,12 +1348,18 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
   integer :: info
   integer :: icg                           ! CG step num.
   integer :: n_step_max=100                ! max. num. steps for CG minimization
+  integer :: lwork
+  integer, allocatable :: ipiv(:)
 #ifdef MPI
+  integer :: liwork
   integer :: mpi_status(1:mpi_status_size) ! MPI status
   integer, save :: ictxt                   ! handle for main BLACS context (1D)
   integer, save :: nhmax_max
   integer, save :: h_dim_loc_max
+  integer, allocatable :: iwork(:)
   integer, external :: numroc
+#else
+  integer, external :: ilaenv
 #endif
 
   real(dp) :: rn
@@ -1386,7 +1406,7 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
 
   !**********************************************!
 
-  call timer_start('m_cg')
+  call timer('m_cg',1)
 
   ! if this is the first time the minimization module is called, several things need to be done
   ! (detailed below)  
@@ -1513,7 +1533,7 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
     end if
 
     if (all(FirstCall(1:2))) then
-      t_precon_scale=fdf_physical('OMM.TPreconScale',100.0_dp,'eV')
+      t_precon_scale=fdf_physical('OMM.TPreconScale',10.0_dp,'Ry')
       cg_tol=fdf_get('OMM.RelTol',1.0d-9)
     end if
 
@@ -1646,7 +1666,7 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
     deallocate(numh_recv)
 #endif
 
-    call timer_stop('m_cg')
+    call timer('m_cg',2)
 
     return
 
@@ -1669,27 +1689,39 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
     if (.not. allocated(p_dense1D)) allocate(p_dense1D(1:h_dim_loc(1),1:h_dim_loc(2)))
     p_dense1D=s_dense1D+t_dense1D/t_precon_scale
 #ifdef MPI
-    call pdpotrf('U',h_dim,p_dense1D,1,1,desc1,info)
-    if (info/=0) call die('ERROR: pdpotrf has failed in minim!')
-    call pdpotri('U',h_dim,p_dense1D,1,1,desc1,info)
-    if (info/=0) call die('ERROR: pdpotri has failed in minim!')
-    allocate(work1(1:h_dim_loc(1),1:h_dim_loc(2)))
-    allocate(work2(1:h_dim_loc(1),1:h_dim_loc(2)))
-    allocate(work3(1:h_dim_loc(1),1:h_dim_loc(2)))
-    call pdtran(h_dim,h_dim,1.0_dp,p_dense1D,1,1,desc1,0.0_dp,work1,1,1,desc1)
-    work2=0.0_dp
-    call pdlaset('U',h_dim,h_dim,1.0_dp,0.5_dp,work2,1,1,desc1)
-    work3=0.0_dp
-    call pdlaset('L',h_dim,h_dim,1.0_dp,0.5_dp,work3,1,1,desc1)
-    p_dense1D=work2*p_dense1D+work3*work1
-    deallocate(work3)
-    deallocate(work2)
+    allocate(ipiv(1:h_dim_loc(1)+BlockSize))
+    call pdgetrf(h_dim,h_dim,p_dense1D,1,1,desc1,ipiv,info)
+    if (info/=0) then
+print*, info
+call die('ERROR: pdgetrf has failed in minim!')
+end if
+    allocate(work1(1:1,1:1))
+    allocate(iwork(1:1))
+    call pdgetri(h_dim,p_dense1D,1,1,desc1,ipiv,work1,-1,iwork,-1,info)
+    if (info/=0) call die('ERROR: pdgetri has failed in minim!')
+    liwork=iwork(1)
+    deallocate(iwork)
+    lwork=work1(1,1)
     deallocate(work1)
+    allocate(work1(1:lwork,1:1))
+    allocate(iwork(1:liwork))
+    call pdgetri(h_dim,p_dense1D,1,1,desc1,ipiv,work1,lwork,iwork,liwork,info)
+    if (info/=0) call die('ERROR: pdgetri has failed in minim!')
+    deallocate(iwork)
+    deallocate(work1)
+    deallocate(ipiv)
 #else
-    call dpotrf('U',h_dim,p_dense1D,h_dim,info)
-    if (info/=0) call die('ERROR: dpotrf has failed in minim!')
-    call dpotri('U',h_dim,p_dense1D,h_dim,info)
-    if (info/=0) call die('ERROR: dpotri has failed in minim!')
+    allocate(ipiv(1:h_dim))
+    lwork=h_dim*ilaenv(1,'dsytrf','U',h_dim,-1,-1,-1)
+    allocate(work1(1:lwork,1:1))
+    call dsytrf('U',h_dim,p_dense1D,h_dim,ipiv,work1,lwork,info)
+    if (info/=0) call die('ERROR: dsytrf has failed in minim!')
+    deallocate(work1)
+    allocate(work1(1:h_dim,1:1))
+    call dsytri('U',h_dim,p_dense1D,h_dim,ipiv,work1,info)
+    if (info/=0) call die('ERROR: dsytri has failed in minim!')
+    deallocate(work1)
+    deallocate(ipiv)
     do i=1,h_dim-1
       do j=i+1,h_dim
         p_dense1D(j,i)=p_dense1D(i,j)
@@ -1985,7 +2017,7 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
 
   if (FirstCall(ispin)) FirstCall(ispin)=.false.
 
-  call timer_stop('m_cg')
+  call timer('m_cg',2)
 
 end subroutine minim_cg_sparse
 
@@ -2009,7 +2041,7 @@ subroutine fit_quartic(x,y,g,c)
 
   !**********************************************!
 
-  !call timer_start('m_solve_quartic')
+  !call timer('m_solve_quartic',1)
 
   ! the following expressions for the coeffs. were produced automatically using Maple 12
   c(4)=(x(3)**3*x(2)*g(1)-3*x(1)*x(2)**2*y(1)+3*y(3)*x(1)*x(2)**2+x(1)**2*x(2)**2*g(1)+x(3)*x(2)**3*&
@@ -2038,7 +2070,7 @@ subroutine fit_quartic(x,y,g,c)
 
   !if (Node==0) print*, 'f(x)=',c(4),'*x**4+',c(3),'*x**3+',c(2),'*x**2+',c(1),'*x+',c(0)
 
-  !call timer_stop('m_fit_quartic')
+  !call timer('m_fit_quartic',2)
 
 end subroutine fit_quartic
 
@@ -2077,7 +2109,7 @@ subroutine solve_quartic(c,x_min,fail)
 
   !**********************************************!
 
-  !call timer_start('m_solve_quartic')
+  !call timer('m_solve_quartic',1)
 
   fail=.false.
 
@@ -2138,7 +2170,7 @@ subroutine solve_quartic(c,x_min,fail)
     if (c(4)<0.0_dp) fail=.true.
   end if
 
-  !call timer_stop('m_solve_quartic')
+  !call timer('m_solve_quartic',2)
 
 end subroutine solve_quartic
 
@@ -2166,7 +2198,7 @@ subroutine calc_grad(h_dim,N_occ,ispin,H,S,grad,hc,sc)
 
   !**********************************************!
 
-  call timer_start('m_calc_grad')
+  call timer('m_calc_grad',1)
 
   grad=4.0_dp*hc
 
@@ -2178,7 +2210,7 @@ subroutine calc_grad(h_dim,N_occ,ispin,H,S,grad,hc,sc)
   call dgemm('N','N',N_occ,h_dim,N_occ,-2.0_dp,H,N_occ,sc,N_occ,1.0_dp,grad,N_occ)
 #endif
 
-  call timer_stop('m_calc_grad')
+  call timer('m_calc_grad',2)
 
 end subroutine calc_grad
 
@@ -2205,7 +2237,7 @@ subroutine calc_A(h_dim,N_occ,ispin,Ap,c,A,Apc)
 
   !**********************************************!
 
-  call timer_start('m_calc_A')
+  call timer('m_calc_A',1)
 
 #ifdef MPI
   call pdgemm('N','N',N_occ,h_dim,h_dim,1.0_dp,c,  1,1,desc3(1:9,ispin),Ap,1,1,desc1,           0.0_dp,Apc,1,1,desc3(1:9,ispin))
@@ -2215,7 +2247,7 @@ subroutine calc_A(h_dim,N_occ,ispin,Ap,c,A,Apc)
   call dgemm('N','T',N_occ,N_occ,h_dim,1.0_dp,Apc,N_occ,c, N_occ,0.0_dp,A,  N_occ)
 #endif
 
-  call timer_stop('m_calc_A')
+  call timer('m_calc_A',2)
 
 end subroutine calc_A
 
@@ -2258,7 +2290,7 @@ subroutine calc_A_sparse(h_dim,N_occ,ispin,nhmax,numh,listhptr,listh,As,c,A,Asc)
 
   !**********************************************!
 
-  call timer_start('m_calc_A')
+  call timer('m_calc_A',1)
 
 #ifdef MPI
   Asc=0.0_dp
@@ -2307,7 +2339,7 @@ subroutine calc_A_sparse(h_dim,N_occ,ispin,nhmax,numh,listhptr,listh,As,c,A,Asc)
   call dgemm('N','T',N_occ,N_occ,h_dim,1.0_dp,Asc,N_occ,c,N_occ,0.0_dp,A,N_occ)
 #endif
 
-  call timer_stop('m_calc_A')
+  call timer('m_calc_A',2)
 
 end subroutine calc_A_sparse
 
@@ -2335,7 +2367,7 @@ subroutine calc_densmat(h_dim,N_occ,ispin,A,c1,Ap,cA,c2)
 
   !**********************************************!
 
-  call timer_start('m_calc_densmat')
+  call timer('m_calc_densmat',1)
 
 #ifdef MPI
   if (present(c2)) then
@@ -2353,7 +2385,7 @@ subroutine calc_densmat(h_dim,N_occ,ispin,A,c1,Ap,cA,c2)
   call dgemm('T','N',h_dim,h_dim,N_occ,1.0_dp,c1,N_occ,cA,N_occ,0.0_dp,Ap,h_dim)
 #endif
 
-  call timer_stop('m_calc_densmat')
+  call timer('m_calc_densmat',2)
 
 end subroutine calc_densmat
 
@@ -2401,7 +2433,7 @@ subroutine calc_densmat_sparse(h_dim,N_occ,ispin,nhmax,numh,listhptr,listh,A,c1,
 
   !**********************************************!
 
-  call timer_start('m_calc_densmat')
+  call timer('m_calc_densmat',1)
 
 #ifdef MPI
   if (present(c2)) then
@@ -2452,7 +2484,7 @@ subroutine calc_densmat_sparse(h_dim,N_occ,ispin,nhmax,numh,listhptr,listh,A,c1,
   end do
 #endif
 
-  call timer_stop('m_calc_densmat')
+  call timer('m_calc_densmat',2)
 
 end subroutine calc_densmat_sparse
 
@@ -2510,7 +2542,7 @@ subroutine calc_coeff(h_dim,N_occ,ispin,H,S,Hd,Sd,Hdd,Sdd,coeff,SdT)
 
   !**********************************************!
 
-  call timer_start('m_calc_coeff')
+  call timer('m_calc_coeff',1)
 
 #ifdef MPI
   TrH=pdlatra(N_occ,H,1,1,desc2(1:9,ispin))
@@ -2581,7 +2613,7 @@ subroutine calc_coeff(h_dim,N_occ,ispin,H,S,Hd,Sd,Hdd,Sdd,coeff,SdT)
   coeff(3)=-2.0_dp*(TrHddSd+TrHdSdd)
   coeff(4)=-TrHddSdd
 
-  call timer_stop('m_calc_coeff')
+  call timer('m_calc_coeff',2)
 
 end subroutine calc_coeff
 
@@ -2613,7 +2645,8 @@ subroutine rand_init
   allocate(rand_seed(1:rand_size))
   call date_and_time(time=system_time)
   read (system_time,*) rtime
-  rand_seed=(Node+1)*int(rtime*1000.0_dp)
+  !rand_seed=(Node+1)*int(rtime*1000.0_dp)
+  rand_seed=(Node+1)*123456
   call random_seed(put=rand_seed)
   deallocate(rand_seed)
 
