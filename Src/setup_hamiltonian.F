@@ -28,7 +28,7 @@
       use alloc, only: re_alloc, de_alloc
       use m_gamma
       use m_hsx, only: write_hsx
-      use sys, only: die
+      use sys, only: die, bye
       use m_partial_charges, only: want_partial_charges
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
@@ -158,6 +158,12 @@
 
       call timer('setup_H',2)
 
-!--------------------------------------------------------------------------- END
+      if (h_setup_only) then
+         call timer( 'all', 2 )  ! New call to close the tree
+         call timer( 'all', 3 )
+         call bye("H-Setup-Only requested")
+      endif
+
+!------------------------------------------------------------------------- END
       END subroutine setup_hamiltonian
       END module m_setup_hamiltonian

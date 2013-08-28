@@ -25,8 +25,7 @@
 #ifdef TRANSIESTA
       use m_energies,   only : ef
       use m_ts_iodm, only : write_ts_dm
-      use m_ts_options, only: mixH
-      use m_ts_global_vars, only: TSrun, TSiscf, Hold
+      use m_ts_global_vars, only: TSrun, TSiscf
 #endif /* TRANSIESTA */
       implicit none
 
@@ -49,7 +48,6 @@
 
       call timer( 'MIXER', 1 )
 
-#ifdef TRANSIESTA      
       if (mixH) then
          ! Mix Hamiltonian
          Xin => Hold
@@ -59,10 +57,6 @@
          Xin => Dold
          Xout => Dscf
       endif
-#else
-      Xin => Dold
-      Xout => Dscf
-#endif
 
 ! Mix input and output energy-density and density matrices ............
 ! Following line for using and saving the density matrix without mix ..

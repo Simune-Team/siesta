@@ -1,4 +1,33 @@
 ------------------------------------------------------------
+August 28, 2013  A. Garcia        trunk-443--pexsi-39
+Implement Hamiltonian mixing
+
+Ported first basic patch from trunk-scf branch. Use the option
+
+  MixHamiltonian T
+
+to enable mixing of H instead of the DM.
+
+Note that the convergence criterion is still based on the DM, i.e.,
+on || DM_out - DM_in || < tolerance.
+
+There is as yet no provision for input of H or re-use of H across
+geometries.
+
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/compute_dm.F
+  Src/m_ts_global_vars.f90
+  Src/m_ts_options.F90
+  Src/mixer.F
+  Src/setup_hamiltonian.F
+  Src/siesta_forces.F
+  Src/siesta_options.F90
+  Src/sparse_matrices.F
+  Src/state_init.F
+
+------------------------------------------------------------
 August 28, 2013  A. Garcia        trunk-443--pexsi-38
 Compute explicitly the electronic entropy in PEXSI
 

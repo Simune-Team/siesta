@@ -3032,6 +3032,25 @@ the calculation will stop on the first SCF convergence failure.
 
 \subsubsection{Mixing options}
 
+\index{SCF!mixing}
+\index{MixHamiltonian@{\bf
+    MixHamiltonian}}\index{SCF!mixing!Hamiltonian}
+{\bf NOTE}: Mixing of the Hamiltonian instead of the density-matrix, a
+feature previously available only for TranSiesta runs has been
+implemented for general use. It is enabled by setting either the
+{\bf MixHamiltonian} option (preferred) or the old-style {\bf TS.MixH}
+option (deprecated but retained due to its use in TranSiesta).
+
+The evidence obtained so far from test runs indicates that Hamiltonian
+mixing might be better than density-matrix mixing in most cases, and
+is seldom worse. Users are encouraged to test this feature for their
+favorite tough-converging systems, and report their experiences.
+
+The H mixing algorithms available are exactly the same as for
+density-matrix mixing (Pulay, Broyden, Fire), and the keywords
+controlling it are also the same, e.g.{\tt DM.MixingWeight} applies
+both to H and DM mixing.
+
 \begin{description}
 
 \item[{\bf DM.MixingWeight}] ({\it real}):\index{SCF!mixing}

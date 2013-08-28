@@ -38,8 +38,7 @@ c$$$      use m_matrixwrite
       use m_steps,         only : istp
       use m_spin,          only : nspin, qs, efs
 #ifdef TRANSIESTA
-      use m_ts_options, only : mixH
-      use m_ts_global_vars, only : TSiscf, TSinit, TSrun, Hold
+      use m_ts_global_vars, only : TSiscf, TSinit, TSrun
       use m_ts_options,     only : TSmode
       use m_ts_in_siesta,   only : transiesta
 #endif /* TRANSIESTA */

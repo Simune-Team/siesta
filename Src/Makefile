@@ -623,7 +623,7 @@ metaforce.o: alloc.o parallel.o precision.o sys.o
 minvec.o: cellsubs.o precision.o sorting.o sys.o
 mixer.o: atomlist.o iodm_netcdf.o m_broyden_mixing.o m_energies.o
 mixer.o: m_fire_mixing.o m_iodm.o m_mpi_utils.o m_pulay.o m_spin.o m_steps.o
-mixer.o: m_ts_global_vars.o m_ts_iodm.o m_ts_options.o parallel.o siesta_geom.o
+mixer.o: m_ts_global_vars.o m_ts_iodm.o parallel.o siesta_geom.o
 mixer.o: siesta_options.o sparse_matrices.o
 mneighb.o: alloc.o precision.o sys.o
 molecularmechanics.o: alloc.o parallel.o precision.o sys.o units.o
@@ -764,9 +764,9 @@ state_analysis.o: zmatrix.o
 state_init.o: alloc.o atomlist.o domain_decom.o files.o hsparse.o iodm_netcdf.o
 state_init.o: iodmhs_netcdf.o kpoint_grid.o m_check_supercell.o m_energies.o
 state_init.o: m_eo.o m_gamma.o m_mpi_utils.o m_pulay.o m_rmaxh.o m_spin.o
-state_init.o: m_steps.o m_ts_global_vars.o m_ts_io.o m_ts_options.o new_dm.o
-state_init.o: overlap.o parallel.o proximity_check.o siesta_cml.o siesta_geom.o
-state_init.o: siesta_options.o sparse_matrices.o sys.o write_subs.o zmatrix.o
+state_init.o: m_steps.o m_ts_io.o m_ts_options.o new_dm.o overlap.o parallel.o
+state_init.o: proximity_check.o siesta_cml.o siesta_geom.o siesta_options.o
+state_init.o: sparse_matrices.o sys.o write_subs.o zmatrix.o
 struct_init.o: alloc.o atmfuncs.o atomlist.o files.o ioxv.o m_iostruct.o
 struct_init.o: m_mpi_utils.o parallel.o periodic_table.o siesta_cml.o
 struct_init.o: siesta_geom.o siesta_master.o siesta_options.o zmatrix.o

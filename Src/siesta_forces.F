@@ -87,47 +87,21 @@
 
       DO WHILE (.not. last)
 
-       if (SIESTA_worker)  call timer( 'IterSCF', 1 )
-
-#ifndef TRANSIESTA
        if (SIESTA_worker) then
-        if (cml_p) 
-     &    call cmlStartStep(xf=mainXML, type='SCF', index=iscf)
+          call timer( 'IterSCF', 1 )
+          if (cml_p)
+     &         call cmlStartStep( xf=mainXML, type='SCF', index=iscf )
+       endif
 
-!       Will use H0 computed above
-        call setup_hamiltonian( iscf )
-!!        call printmemory( 6, 0 )
-
-        if (h_setup_only) then
-           call timer( 'all', 2 )  ! New call to close the tree
-           call timer( 'all', 3 )
-           call bye("H-Setup-Only requested")
-           STOP
-        endif
-       endif  ! SIESTA_worker
-
-       call compute_dm( iscf )
-
+       if (mixH) then
+          if ( first .and. SIESTA_worker) call setup_hamiltonian( iscf )
+          call compute_dm( iscf )
+          if (SIESTA_worker) call setup_hamiltonian( iscf )
+       else 
+          if (SIESTA_worker) call setup_hamiltonian( iscf )
+          call compute_dm( iscf )
+       end if                   ! mixH
        if (SIESTA_worker) call mixer( iscf, dDmax )
-
-#else /* TRANSIESTA */
-       if (SIESTA_worker) then
-        if (cml_p)
-     &      call cmlStartStep( xf=mainXML, type='SCF', index=iscf )
-
-! Adding the possibility of Mixing H.
-
-        if (mixH) then
-          if ( first ) call setup_hamiltonian( iscf )
-          call compute_dm( iscf )
-          call setup_hamiltonian( iscf )
-        else 
-          call setup_hamiltonian( iscf )
-          call compute_dm( iscf )
-        end if ! mixH
-      	call mixer( iscf, dDmax )
-       endif ! SIESTA_worker
-#endif /* TRANSIESTA */
 
        if (SIESTA_worker) then
           prevDmax = dDMax
@@ -198,9 +172,7 @@
       if (siesta_server) 
      &  call forcesToMaster( na_u, Etot, cfa, cstress )
 
-#ifdef DEBUG
-      call write_debug( 'POS siesta_forces' )
-#endif
-!--------------------------------------------------------------------------- END
+
+!------------------------------------------------------------------------ END
       END subroutine siesta_forces
       END module m_siesta_forces
