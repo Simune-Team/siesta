@@ -3051,6 +3051,11 @@ density-matrix mixing (Pulay, Broyden, Fire), and the keywords
 controlling it are also the same, e.g.{\tt DM.MixingWeight} applies
 both to H and DM mixing.
 
+Note that when mixing H the column {\tt dDmax} no longer refers to the
+change from DM$_in$ to DM$_out$, but to the change of H with respect
+to the previous step.
+
+
 \begin{description}
 
 \item[{\bf DM.MixingWeight}] ({\it real}):\index{SCF!mixing}

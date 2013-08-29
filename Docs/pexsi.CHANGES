@@ -1,4 +1,26 @@
 ------------------------------------------------------------
+August 29, 2013  A. Garcia        trunk-443--pexsi-40
+Fix code for the case of H mixing.
+
+* Note that when mixing H the column dDmax no longer refers to DM_out -
+DM_in, but to "dHmax" (change of H with respect to the previous step).
+
+* Update Hold in compute_dm.
+
+* With the option
+
+  MonitorForcesInSCF T
+
+the program prints the maximum absolute value of F_i - F_i(previous step)
+for the forces. When mixing the hamiltonian, extra code has to be inserted
+to preserve H.
+
+modified:
+  Src/compute_dm.F
+  Src/siesta_forces.F
+  Docs/siesta.tex
+
+------------------------------------------------------------
 August 28, 2013  A. Garcia        trunk-443--pexsi-39
 Implement Hamiltonian mixing
 

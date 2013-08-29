@@ -177,16 +177,14 @@ c$$$     &           S, 'S.matrix')
         !call die('siesta: ERROR: wrong solution method')
       endif
 
-#ifdef TRANSIESTA
 ! Save present H matrix
-          if(mixH) then
-             do ispin = 1,nspin
-                do io = 1,maxnh
-                   Hold(io,ispin) = H(io,ispin)
-                enddo
-             enddo
-          end if
-#endif /* TRANSIESTA */
+      if(mixH) then
+         do ispin = 1,nspin
+            do io = 1,maxnh
+               Hold(io,ispin) = H(io,ispin)
+            enddo
+         enddo
+      end if
 
 !     Harris-functional energy 
       DEharr = 0.0_dp
