@@ -4,6 +4,18 @@
 
 ** CHANGES ALONG siesta-3 branch
 ------------------------------------------------------------------------
+2013-08-30  10:00:00 GMT                                 siesta-3.2-pl3
+Cosmetic fix in output statement
+
+* In routine m_partial_charges.F, an extra comma was confusing
+the IBM compiler.
+
+(Thanks to Jeff Hammond and Fabiano Corsetti)
+
+modified:
+  Src/m_partial_charges.F
+
+------------------------------------------------------------------------
 2013-07-31  12:50:00 GMT                                 siesta-3.2-pl2
 Avoid allocation of auxiliary index arrays in the general case
 
