@@ -28,7 +28,8 @@ public :: redistribute_spmatrix
 CONTAINS
   subroutine redistribute_spmatrix(norbs,m1,dist1,m2,dist2,mpi_comm)
 
-      use mpi
+      use mpi, only: mpi_group_rank, mpi_comm_rank
+      use mpi, only: MPI_UNDEFINED, mpi_integer
       use class_Dist
       use m_comm,      only: comm_t
       use m_transfers, only: do_transfers

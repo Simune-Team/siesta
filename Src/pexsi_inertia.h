@@ -33,10 +33,10 @@ subroutine f_ppexsi_inertiacount_interface( &
 
 
    integer, intent(in) :: nrows, nnz, nnzLocal, numColLocal
-   integer, intent(in) :: colptrLocal(:), rowindLocal(:)
-   real(SELECTED_REAL_KIND(10,100)), intent(in) :: HnzvalLocal(:)
+   integer, intent(in) :: colptrLocal(*), rowindLocal(*)
+   real(SELECTED_REAL_KIND(10,100)), intent(in) :: HnzvalLocal(*)
    integer, intent(in) :: isSIdentity
-   real(SELECTED_REAL_KIND(10,100)), intent(in) :: SnzvalLocal(:)
+   real(SELECTED_REAL_KIND(10,100)), intent(in) :: SnzvalLocal(*)
    real(SELECTED_REAL_KIND(10,100)), intent(in)   :: temperature
    real(SELECTED_REAL_KIND(10,100)), intent(in)   :: numElectronExact
    real(SELECTED_REAL_KIND(10,100)), intent(in)   :: muMin0, muMax0

@@ -41,10 +41,10 @@ subroutine f_ppexsi_solve_interface(&
 
 
    integer, intent(in) :: nrows, nnz, nnzLocal, numColLocal
-   integer, intent(in) :: colptrLocal(:), rowindLocal(:)
-   real(SELECTED_REAL_KIND(10,100)), intent(in)   :: HnzvalLocal(:)
+   integer, intent(in) :: colptrLocal(*), rowindLocal(*)
+   real(SELECTED_REAL_KIND(10,100)), intent(in)   :: HnzvalLocal(*)
    integer, intent(in)                            :: isSIdentity
-   real(SELECTED_REAL_KIND(10,100)), intent(in)   :: SnzvalLocal(:)
+   real(SELECTED_REAL_KIND(10,100)), intent(in)   :: SnzvalLocal(*)
    real(SELECTED_REAL_KIND(10,100)), intent(in)   :: temperature
    real(SELECTED_REAL_KIND(10,100)), intent(in)   :: numElectronExact
    real(SELECTED_REAL_KIND(10,100)), intent(in)   :: mu0, &
@@ -73,9 +73,9 @@ subroutine f_ppexsi_solve_interface(&
    ! Only relevant if PARMETIS/PT-SCOTCH is used.
    integer, intent(in)                           :: npSymbFact
 
-   real(SELECTED_REAL_KIND(10,100)), intent(out) :: DMnzvalLocal(:),&
-                                                    EDMnzvalLocal(:), &
-                                                    FDMnzvalLocal(:)
+   real(SELECTED_REAL_KIND(10,100)), intent(out) :: DMnzvalLocal(*),&
+                                                    EDMnzvalLocal(*), &
+                                                    FDMnzvalLocal(*)
    real(SELECTED_REAL_KIND(10,100)), intent(out) :: muPEXSI
    real(SELECTED_REAL_KIND(10,100)), intent(out) :: numElectron
    real(SELECTED_REAL_KIND(10,100)), intent(out) :: muMinPEXSI, &

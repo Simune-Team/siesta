@@ -1,4 +1,23 @@
 ------------------------------------------------------------
+September 4, 2013  A. Garcia        trunk-443--pexsi-41
+Changes for compilation on Edison
+
+* The interface files were using the "assumed shape" array
+  specification, instead of the "assumed size" one needed for
+  interfacing to C. Apparently the PGI and gfortran compilers did not
+  care about this, but the Intel compiler does. The array
+  specifications have been changed from "(:)" to "(*)".
+
+* In m_redist_spmatrix, use "only" clauses for import of mpi symbols, to
+  work around some name pollution.
+
+modified:
+  Src/m_redist_spmatrix.F90
+  Src/pexsi_inertia.h
+  Src/pexsi_localdos.h
+  Src/pexsi_solve.h
+
+-----------------------------------------------------------
 August 29, 2013  A. Garcia        trunk-443--pexsi-40
 Fix code for the case of H mixing.
 

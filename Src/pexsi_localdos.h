@@ -20,11 +20,11 @@ subroutine f_ppexsi_localdos_interface(&
 		info)
 
    integer, intent(in) :: nrows, nnz, nnzLocal, numColLocal
-   integer, intent(in) :: colptrLocal(:), rowindLocal(:)
+   integer, intent(in) :: colptrLocal(*), rowindLocal(*)
 
-   real(SELECTED_REAL_KIND(10,100)), intent(in)   :: HnzvalLocal(:)
+   real(SELECTED_REAL_KIND(10,100)), intent(in)   :: HnzvalLocal(*)
    integer, intent(in)                            :: isSIdentity
-   real(SELECTED_REAL_KIND(10,100)), intent(in)   :: SnzvalLocal(:)
+   real(SELECTED_REAL_KIND(10,100)), intent(in)   :: SnzvalLocal(*)
 
    ! Reference energy and broadening
    real(SELECTED_REAL_KIND(10,100)), intent(in)   :: energy
@@ -43,7 +43,7 @@ subroutine f_ppexsi_localdos_interface(&
    integer, intent(in)                           :: mpi_comm
    
    ! Partial DM containing the LDOS info
-   real(SELECTED_REAL_KIND(10,100)), intent(out) :: localDOSnzvalLocal(:)
+   real(SELECTED_REAL_KIND(10,100)), intent(out) :: localDOSnzvalLocal(*)
 
    integer, intent(out)                          :: info
 
