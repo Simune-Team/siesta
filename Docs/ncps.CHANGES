@@ -1,4 +1,37 @@
 ------------------------------------------------------------
+September 5, 2013  Alberto Garcia          trunk-427--ncps-3
+Streamline ncps library and simplify Util/Pseudo-operator
+
+New functions added to the norm-conserving pseudo handling
+library. 
+
+Removed "sys" and "io" dependencies in Util/Pseudo-operator
+by using a simplified "die" routine without the need for
+a proper interface, and a simple "get_lun" routine.
+
+removed:
+  Util/Pseudo-operator/000_README
+  Util/Pseudo-operator/flib_spline.f90
+  Util/Pseudo-operator/io.f
+  Util/Pseudo-operator/m_io.f
+  Util/Pseudo-operator/pseudopotential.f
+  Util/Pseudo-operator/pxf.F90
+  Util/Pseudo-operator/sys.F
+added:
+  Src/nc-pseudo/m_ncps_froyen_reader.f
+  Src/nc-pseudo/m_ncps_reader.f
+  Util/Pseudo-operator/local_die.F
+modified:
+  Src/Makefile
+  Src/nc-pseudo/m_ncps.f90
+  Src/nc-pseudo/makefile
+  Util/Pseudo-operator/Makefile
+  Util/Pseudo-operator/arw.f
+  Util/Pseudo-operator/module_pseudo.F
+  Util/Pseudo-operator/pseudooperator.F
+  Util/Pseudo-operator/xc.F
+
+------------------------------------------------------------
 July 3, 2013  Alberto Garcia          trunk-427--ncps-2
 Import Util/Pseudo-operator by Javier Junquera
 

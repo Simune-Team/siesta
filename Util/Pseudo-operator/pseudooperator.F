@@ -19,7 +19,8 @@
 
       use precision,        only: dp
       use atmparams,        only: nrmax, nkbmx
-      use pseudopotential,  only: pseudopotential_t, pseudo_read
+!      use pseudopotential,  only: pseudopotential_t, pseudo_read
+      use m_ncps, only: pseudopotential_t => froyen_ps_t, pseudo_read
       use m_pseudooperator, only: radii_ps, vlocal1, vlocal2, KBgen
 
       implicit none

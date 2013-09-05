@@ -2,7 +2,7 @@
       module m_pseudooperator
 
       use precision,        only: dp
-      use sys,              only: die
+!      use sys,              only: die
       use atmparams,        only: nrmax, lmaxd, nkbmx
       use schrodinger_m,    only: schro_eq, energ_deriv, rphi_vs_e
 
@@ -638,7 +638,7 @@ C**** If third derivative fit
 !           write(6,"(a)") " KBgen: *** Warning Ignored by User"
 !           ighost = 0
 !         else
-           call die
+           call die("Found ghost states")
 !         endif
       endif
 
@@ -1086,14 +1086,29 @@ C     D. Sanchez-Portal, Aug. 1998
       character(len=*), intent(in) :: name
 
       integer lun, i
-      call io_assign(lun)
+      call get_free_lun(lun)
       open(unit=lun,file=trim(name),form="formatted",
      $     action="write",position="rewind",status="unknown")
       do i=1,n
          write(lun,*) r(i), f(i)
       enddo
-      call io_close(lun)
+      close(lun)
 
       end subroutine file_out
+
+        subroutine get_free_lun(lun)
+        integer, intent(out) :: lun
+
+        logical :: used
+        integer :: iostat
+
+        do lun= 10,90
+           inquire(unit=lun, opened=used, iostat=iostat)
+           if (iostat .ne. 0) used = .true.
+           if (.not. used) return ! normal return with 'lun' value                                        
+        enddo
+        call die("No luns available")
+
+        end subroutine get_free_lun
 
       end module m_pseudooperator

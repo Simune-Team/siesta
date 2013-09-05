@@ -147,7 +147,8 @@ OBJS =  automatic_cell.o atom_options.o \
         bsc_xcmod.o bsc_cellxc.o xc.o \
 	vacuum_level.o \
 	write_orb_indx.o \
-	m_hs_matrix.o kpoint_convert.o m_glob_sparse.o
+	m_hs_matrix.o kpoint_convert.o m_glob_sparse.o\
+        die.o
 #--------------------------------------------------------------
 # FoX whatnot
 #

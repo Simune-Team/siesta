@@ -64,7 +64,7 @@ C *******************************************************************
       use precision, only : dp
 !      use bsc_xcmod,     only : nXCfunc, XCfunc, XCauth
 !      use bsc_xcmod,     only : XCweightX, XCweightC
-      use sys,       only: die
+!      use sys,       only: die
 !      use alloc,     only: re_alloc, de_alloc
 
 C Next line is nonstandard but may be suppressed
@@ -419,7 +419,7 @@ C Written by L.C.Balbas and J.M.Soler, Dec'96. Version 0.5.
 C Modified by V.M.Garcia-Suarez to include non-collinear spin. June 2002
 
       use precision, only : dp
-      use sys,       only : die
+!      use sys,       only : die
 
       implicit          none
 
@@ -574,7 +574,7 @@ C Lengths in Bohr, energies in Hartrees
 C ******************************************************************
 
       use precision, only : dp
-      use sys,       only : die
+!      use sys,       only : die
 
       implicit          none
 

@@ -52,7 +52,6 @@
 !***********************************************************************
 !      use parallel,  only: ionode
       
-      use sys,       only: die
       use precision, only: dp
 
       IMPLICIT NONE
@@ -115,7 +114,7 @@
         IF (IOnode) WRITE(6,'(A,/,A,F3.0,2(A,I2),2(A,F12.5))')
      &   ' EGOFV: ERROR: Too many iterations. Stopping.',
      &   ' Z=',Z,'  L=',L,'  NNODE=',NNODE,'  E=',E,'  DE=',DE
-        call die()
+        call die("Too many iterations")
       END IF
 
 !     Find true waveftn G from auxiliary function Y and normalize
