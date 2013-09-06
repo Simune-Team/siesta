@@ -1,4 +1,30 @@
 ------------------------------------------------------------
+September 6, 2013  A. Garcia        trunk-443--pexsi-42
+New PEXSI interface blocks based on ISO_C_BINDING
+
+This new mechanism, implemented by most compilers, guarantees datatype
+consistency and future-proofs the interface against a repeat of problems
+such as the passing of assumed-shape arrays.
+
+A set of dummy C routines have been created to test the interface in
+the absence of the library itself.
+
+removed:
+  Src/pexsi_inertia.h
+  Src/pexsi_interface.F90
+  Src/pexsi_localdos.h
+  Src/pexsi_solve.h
+added:
+  Src/dummy_pexsi/
+  Src/dummy_pexsi/README
+  Src/dummy_pexsi/dummy_pexsi.c
+  Src/m_pexsi_interface.f90
+modified:
+  Src/Makefile
+  Src/m_pexsi_local_dos.F90
+  Src/m_pexsi_solver.F90
+
+------------------------------------------------------------
 September 4, 2013  A. Garcia        trunk-443--pexsi-41
 Changes for compilation on Edison
 

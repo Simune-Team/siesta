@@ -86,6 +86,8 @@
 #ifdef MPI
     use mpi_siesta
 #endif
+    use m_pexsi_interface, only: f_ppexsi_localdos_interface
+
     implicit          none
 
     integer, intent(in)          :: maxnh, no_u, no_l, nspin
@@ -94,10 +96,6 @@
     real(dp), intent(in)         :: energy, broadening
     real(dp), intent(out)        :: LocalDOSDM(maxnh,nspin)
 
-      interface
-         ! subroutine f_ppexsi_localdos_interface
-         include "pexsi_localdos.h"
-      end interface
 
     integer :: PEXSI_Comm, World_Comm
     integer :: PEXSI_Group, World_Group

@@ -27,6 +27,8 @@ CONTAINS
 #ifdef MPI
     use mpi_siesta
 #endif
+    use m_pexsi_interface, only: f_ppexsi_solve_interface
+
     implicit          none
 
     integer, intent(in)  :: iscf  ! scf step number
@@ -102,11 +104,6 @@ type(aux_matrix) :: m1, m2
 type(Dist)       :: dist1, dist2
 integer          :: pbs, norbs, scf_step
 
-interface
- ! subroutine f_ppexsi_solve_interface
-   include "pexsi_solve.h"
- end subroutine f_ppexsi_solve_interface
-end interface
 
 ! "SIESTA_Worker" means a processor which is in the Siesta subset.
 ! NOTE:  fdf calls will assign values to the whole processor set,
@@ -599,15 +596,11 @@ CONTAINS
 !
 subroutine do_inertia()
 
+    use m_pexsi_interface, only: f_ppexsi_inertiacount_interface
+
     logical        :: interval_problem
     logical        :: bad_lower_bound
     logical        :: bad_upper_bound
-
-interface
- ! subroutine f_ppexsi_inertiacount_interface
-   include "pexsi_inertia.h"
- end subroutine f_ppexsi_inertiacount_interface
-end interface
 
 
 search_interval: do

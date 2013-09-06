@@ -243,9 +243,6 @@ ALL_OBJS=$(OBJS) $(SYSOBJ) $(MAIN_OBJ)
 #
 # Interfaces to libraries
 #
-libpexsi.a: pexsi_interface.o
-	$(AR) $(ARFLAGS_EXTRA) cru libpexsi.a pexsi_interface.o
-#
 libmpi_f90.a: 
 	@(cd MPI ; $(MAKE) \
                     "VPATH=$(VPATH)/MPI" \
@@ -561,15 +558,13 @@ m_mpi_utils.o: precision.o sys.o
 m_options.o: precision.o
 m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
 m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o
-m_pexsi_local_dos.o: pexsi_localdos.h
 m_pexsi_local_dos.o: alloc.o atomlist.o class_Dist.o dhscf.o files.o
 m_pexsi_local_dos.o: m_energies.o m_eo.o m_forces.o m_gamma.o m_mpi_utils.o
-m_pexsi_local_dos.o: m_ntm.o m_redist_spmatrix.o m_spin.o parallel.o
-m_pexsi_local_dos.o: precision.o siesta_geom.o siesta_options.o
+m_pexsi_local_dos.o: m_ntm.o m_pexsi_interface.o m_redist_spmatrix.o m_spin.o
+m_pexsi_local_dos.o: parallel.o precision.o siesta_geom.o siesta_options.o
 m_pexsi_local_dos.o: sparse_matrices.o sys.o units.o
-m_pexsi_solver.o: pexsi_inertia.h pexsi_solve.h
-m_pexsi_solver.o: alloc.o class_Dist.o m_mpi_utils.o m_redist_spmatrix.o
-m_pexsi_solver.o: parallel.o precision.o units.o
+m_pexsi_solver.o: alloc.o class_Dist.o m_mpi_utils.o m_pexsi_interface.o
+m_pexsi_solver.o: m_redist_spmatrix.o parallel.o precision.o units.o
 m_pulay.o: alloc.o atomlist.o m_spin.o parallel.o precision.o siesta_options.o
 m_pulay.o: sparse_matrices.o sys.o
 m_recipes.o: precision.o sys.o
@@ -659,7 +654,6 @@ pdosg.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
 pdosk.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
 pdoskp.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
 periodic_table.o: precision.o sys.o
-pexsi_interface.o: pexsi_localdos.h pexsi_inertia.h pexsi_solve.h
 phirphi.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
 phirphi_opt.o: alloc.o atm_types.o atmfuncs.o atmparams.o mneighb.o parallel.o
 phirphi_opt.o: parallelsubs.o precision.o spher_harm.o sys.o
@@ -733,8 +727,8 @@ siesta_forces.o: m_forces.o m_pexsi_solver.o m_steps.o m_stress.o
 siesta_forces.o: m_ts_global_vars.o m_ts_options.o mixer.o parallel.o
 siesta_forces.o: post_scf_work.o scfconvergence_test.o setup_H0.o
 siesta_forces.o: setup_hamiltonian.o siesta_cml.o siesta_geom.o siesta_master.o
-siesta_forces.o: siesta_options.o state_analysis.o state_init.o sys.o units.o
-siesta_forces.o: write_subs.o
+siesta_forces.o: siesta_options.o sparse_matrices.o state_analysis.o
+siesta_forces.o: state_init.o sys.o units.o write_subs.o
 siesta_geom.o: precision.o
 siesta_init.o: alloc.o atomlist.o bands.o bsc_xcmod.o densematrix.o f2kcli.o
 siesta_init.o: files.o ioxv.o kpoint_grid.o kpoint_pdos.o ksvinit.o
