@@ -33,8 +33,7 @@
       use m_steps,         only : istp
       use m_spin,          only : nspin, qs, efs
 #ifdef TRANSIESTA
-      use m_ts_options, only : mixH
-      use m_ts_global_vars, only : TSiscf, TSinit, TSrun, Hold
+      use m_ts_global_vars, only : TSiscf, TSinit, TSrun
       use m_ts_options,     only : TSmode
       use m_ts_in_siesta,   only : transiesta
 #endif /* TRANSIESTA */
@@ -136,7 +135,6 @@
         call die('siesta: ERROR: wrong solution method')
       endif
 
-#ifdef TRANSIESTA
 ! Save present H matrix
           if(mixH) then
              do ispin = 1,nspin
@@ -145,7 +143,6 @@
                 enddo
              enddo
           end if
-#endif /* TRANSIESTA */
 
 !     Harris-functional energy 
       DEharr = 0.0_dp

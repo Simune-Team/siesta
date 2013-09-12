@@ -31,12 +31,15 @@
       use siesta_master, only: siesta_server  ! Is siesta a server?
       use write_subs
       use units,         only: eV, Ang
+      use sparse_matrices, only: H, Hold
 #ifdef TRANSIESTA
       use m_ts_options, only : mixH
       use m_ts_global_vars, only : ts_istep
 #endif /* TRANSIESTA */
       implicit none
+
       integer, intent(in)  :: istep
+
       integer  :: iscf
       logical  :: first, last, SCFconverged
       real(dp) :: dDmax     ! Max. change in density matrix elements
@@ -48,9 +51,7 @@
 #endif /* TRANSIESTA */
       
 !---------------------------------------------------------------------- BEGIN
-#ifdef DEBUG
-      call write_debug( 'PRE siesta_forces' )
-#endif
+
 !     Initialization tasks for a given geometry
       call state_init( istep )
 
@@ -81,45 +82,19 @@
 
       DO WHILE (.not. last)
         call timer( 'IterSCF', 1 )
-
-#ifndef TRANSIESTA
-        if (cml_p) 
-     &    call cmlStartStep(xf=mainXML, type='SCF', index=iscf)
-
-!       Will use H0 computed above
-        call setup_hamiltonian( iscf )
-!!        call printmemory( 6, 0 )
-
-        if (h_setup_only) then
-           call timer( 'all', 2 )  ! New call to close the tree
-           call timer( 'all', 3 )
-           call bye("H-Setup-Only requested")
-           STOP
-        endif
-
-        call compute_dm( iscf )
+        if (cml_p)
+     &         call cmlStartStep( xf=mainXML, type='SCF', index=iscf )
+       
+        if (mixH) then
+           if ( first) call setup_hamiltonian( iscf )
+           call compute_dm( iscf )
+           call setup_hamiltonian( iscf )
+        else 
+           call setup_hamiltonian( iscf )
+           call compute_dm( iscf )
+        end if 
 
         call mixer( iscf, dDmax )
-
-
-
-#else /* TRANSIESTA */
-
-        if (cml_p)
-     &      call cmlStartStep( xf=mainXML, type='SCF', index=iscf )
-
-! Adding the possibility of Mixing H.
-
-        if (mixH) then
-          if ( first ) call setup_hamiltonian( iscf )
-          call compute_dm( iscf )
-          call setup_hamiltonian( iscf )
-        else 
-          call setup_hamiltonian( iscf )
-          call compute_dm( iscf )
-        end if ! mixH
-      	call mixer( iscf, dDmax )
-#endif /* TRANSIESTA */
 
         call scfconvergence_test( first, iscf, last, dDmax,
      &                            conv_harris, conv_etot )
@@ -130,7 +105,9 @@
         if (monitor_forces_in_scf) then
            allocate(fa_old(size(fa,dim=1),size(fa,dim=2)))
            fa_old = fa
+           if (mixH) Hold(:,:) = H(:,:)
            call final_H_f_stress(iscf)
+           if (mixH) H(:,:) = Hold(:,:)
            if (ionode) then
               print *, "Max diff in force (eV/Ang): ",
      $                 maxval(abs(fa-fa_old))*Ang/eV
@@ -177,9 +154,7 @@
       if (siesta_server) 
      &  call forcesToMaster( na_u, Etot, cfa, cstress )
 
-#ifdef DEBUG
-      call write_debug( 'POS siesta_forces' )
-#endif
-!--------------------------------------------------------------------------- END
+
+!------------------------------------------------------------------------ END
       END subroutine siesta_forces
       END module m_siesta_forces
