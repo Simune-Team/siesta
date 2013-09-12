@@ -1,0 +1,45 @@
+-----------------------------------------------------------------------
+2013-09-12  Alberto Garcia                          trunk-444--mixing-1
+More options for Pulay mixing
+
+A number of options have been added to control the behavior of the
+Pulay mixer:
+
+* Pulay mixing might kick in only after a specified number of history
+steps have been built up:
+
+    pulay_minimum_history = fdf_get("SCF.PulayMinimumHistory",2)
+
+* Pulay mixing might not work well if far from the fixed point. This option
+will avoid inserting the current X_in, X_out pair in the history stack if
+the maximum difference is above the specified number.
+
+    max_dmax_for_pulay = fdf_get("SCF.PulayDmaxRegion",1000.0_dp) 
+
+There is no effect by default.
+
+* The "damping" term applied after the DIIS minimization can be
+different from that used for linear mixing:
+
+    alpha_pulay = fdf_get("SCF.Pulay.Damping",-1.0_dp) 
+
+By default, alpha_pulay would be set to the linear-mixing parameter.
+
+* The damping of the DIIS-predicted X_in is done to avoid introducing
+linear dependencies into the Pulay history stack. Alternatively (or
+simultaneously) one can use the most recent X_in, X_out pair in a
+linear mixing step, and use a possibly different mixing
+parameter. This would be akin to a "kick", but without removing all
+the history information.
+
+    linear_mixing_after_pulay = fdf_get("SCF.LinearMixingAfterPulay",.false.)
+    alpha_after_pulay = fdf_get("SCF.MixingAfterPulay",0.5_dp)
+
+* Instead of brute-force inversion, the more robust SVD algorithm can
+be used to perform the DIIS extrapolation:
+
+    use_svd_in_pulay = fdf_get("SCF.Pulay.UseSVD",.false.)
+    debug_svd_in_pulay = fdf_get("SCF.Pulay.DebugSVD",.true.)
+    ! Note that 1.0e-6 seems too conservative
+    rcond_svd_pulay = fdf_get("SCF.Pulay.RcondSVD",1.0e-8_dp)
+

@@ -15,6 +15,7 @@
       use fdf,        only : fdf_boolean, fdf_integer, fdf_string, leqi
       use m_recipes,  only:  derfc
       use sys,        only:  die
+      use units,      only:  eV
 
       implicit none
 
@@ -82,6 +83,8 @@ C Local variables
       logical,  save :: excitd = .false.
       real(dp), save :: tol = 1.0d-10
       real(dp)       :: sumq, emin, emax, t, drange, wkebuf, w, eik
+
+      integer :: lun
 
 C Reading whether to do an excited state
       if ( .not. blread) then
@@ -186,7 +189,26 @@ C Obtain the electronic entropy
             enddo
           enddo
 
-          return
+          ! print occupations
+          if (ionode) then
+             call io_assign(lun)
+             open(unit=lun,file="OCCUPATIONS",form="formatted",
+     $            status="unknown",position="append",action="write")
+             write(lun,"(a)")
+     $            "# New iteration --- k, spin, state, e(eV), occ"
+             do ik = 1,nk
+                do ispin = 1,nspin
+                   do ie = 1,ne
+                     write(lun,"(i4,i2,i6,f20.6,f10.6)")
+     $                     ik,ispin,ie, e(ie,ispin,ik)/eV,
+     $                     stepf((e(ie,ispin,ik)-ef)/T)*2.0d0/nspin
+                   enddo
+                enddo
+             enddo
+             call io_close(lun)
+          endif
+
+          RETURN
 
         endif
 
