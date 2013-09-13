@@ -159,7 +159,8 @@ OBJS =  automatic_cell.o atom_options.o \
         class_Dist.o class_BlockCyclicDist.o class_PEXSIDist.o\
         m_object_debug.o m_uuid.o\
         m_dminim.o m_zminim.o \
-        m_getopts.o f2kcli.o
+        m_getopts.o f2kcli.o \
+        m_svd.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -456,7 +457,7 @@ electrostatic.o: precision.o radfft.o radial.o sys.o
 ener3.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 ener3lomem.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 extrapolon.o: parallel.o precision.o sys.o
-fermid.o: m_recipes.o parallel.o precision.o sys.o
+fermid.o: m_recipes.o parallel.o precision.o sys.o units.o
 fft.o: alloc.o fft1d.o m_timer.o mesh.o parallel.o parallelsubs.o precision.o
 fft.o: sys.o
 fft1d.o: parallel.o precision.o sys.o
@@ -526,8 +527,8 @@ m_cell.o: precision.o siesta_geom.o units.o
 m_check_supercell.o: minvec.o parallel.o precision.o
 m_diagon.o: precision.o
 m_dipol.o: precision.o
-m_dminim.o: densematrix.o files.o m_timer.o parallel.o parallelsubs.o
-m_dminim.o: precision.o siesta_options.o sys.o
+m_dminim.o: densematrix.o files.o parallel.o parallelsubs.o precision.o
+m_dminim.o: siesta_options.o sys.o
 m_dscfcomm.o: alloc.o parallel.o parallelsubs.o precision.o schecomm.o
 m_efield.o: atmfuncs.o mesh.o parallel.o precision.o siesta_cml.o siesta_geom.o
 m_efield.o: sys.o units.o
@@ -565,14 +566,15 @@ m_pexsi_local_dos.o: parallel.o precision.o siesta_geom.o siesta_options.o
 m_pexsi_local_dos.o: sparse_matrices.o sys.o units.o
 m_pexsi_solver.o: alloc.o class_Dist.o m_mpi_utils.o m_pexsi_interface.o
 m_pexsi_solver.o: m_redist_spmatrix.o parallel.o precision.o units.o
-m_pulay.o: alloc.o atomlist.o m_spin.o parallel.o precision.o siesta_options.o
-m_pulay.o: sparse_matrices.o sys.o
+m_pulay.o: alloc.o atomlist.o m_mpi_utils.o m_spin.o m_svd.o parallel.o
+m_pulay.o: precision.o siesta_options.o sparse_matrices.o sys.o
 m_recipes.o: precision.o sys.o
 m_redist_spmatrix.o: alloc.o class_Dist.o m_comm.o m_transfers.o
 m_rmaxh.o: precision.o
 m_sparse.o: alloc.o precision.o
 m_spin.o: alloc.o parallel.o precision.o
 m_stress.o: precision.o
+m_svd.o: precision.o
 m_timer.o: m_io.o m_walltime.o moreParallelSubs.o parallel.o precision.o sys.o
 m_transfers.o: m_comm.o
 m_ts_aux_rout.o: precision.o sys.o
@@ -597,8 +599,8 @@ m_ts_options.o: m_ts_io.o parallel.o precision.o siesta_options.o sys.o units.o
 m_ts_scattering.o: m_ts_aux_rout.o parallel.o precision.o sys.o units.o
 m_ts_voltage.o: m_ts_options.o mesh.o parallel.o precision.o units.o
 m_wallclock.o: m_walltime.o
-m_zminim.o: files.o m_timer.o parallel.o parallelsubs.o precision.o
-m_zminim.o: siesta_options.o sys.o
+m_zminim.o: files.o parallel.o parallelsubs.o precision.o siesta_options.o
+m_zminim.o: sys.o
 madelung.o: parallel.o precision.o sys.o
 matel.o: alloc.o atmfuncs.o m_recipes.o parallel.o precision.o radfft.o
 matel.o: spher_harm.o
