@@ -45,13 +45,14 @@
       real(dp) :: dDmax     ! Max. change in density matrix elements
       type(converger_t)  ::  conv_harris, conv_etot
       real(dp), allocatable  :: fa_old(:,:)
+      integer mpierr
+
+!---------------------------------------------------------------------- BEGIN
 #ifdef TRANSIESTA
 ! Used in force constant runs
       ts_istep = istep
 #endif /* TRANSIESTA */
 
-      integer mpierr
-!---------------------------------------------------------------------- BEGIN
 
       if (SIESTA_worker)  then
 !     Initialization tasks for a given geometry

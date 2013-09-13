@@ -1,4 +1,11 @@
 ------------------------------------------------------------
+September 13, 2013  A. Garcia   trunk-444--pexsi-42--mixing-2
+(Sync patchlogs for H mixing)
+
+Merged trunk-mixing--2. See Mixing.CHANGES.
+No changes to the code needed.
+
+------------------------------------------------------------
 September 13, 2013  A. Garcia   trunk-444--pexsi-42--mixing-1
 More options for Pulay mixing
 
