@@ -6,6 +6,16 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2013-08-28  10:30:00 GMT                                     trunk-444
+Bug fixes to the preconditioner in the OMM modules
+(Fabiano Corsetti)
+
+modified:
+  Docs/siesta.tex
+  Src/m_dminim.F90
+  Src/m_zminim.F90
+
+-----------------------------------------------------------------------
 2013-07-31  16:05:00 GMT                                     trunk-443
 Update to gnubands program
                                                               

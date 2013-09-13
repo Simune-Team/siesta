@@ -1,4 +1,10 @@
 ------------------------------------------------------------
+September 13, 2013  A. Garcia        trunk-444--pexsi-42
+Sync to trunk-444
+
+[merge] Bug fixes to the preconditioner in the OMM modules
+
+------------------------------------------------------------
 September 6, 2013  A. Garcia        trunk-443--pexsi-42
 New PEXSI interface blocks based on ISO_C_BINDING
 
