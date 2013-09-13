@@ -51,11 +51,13 @@
       real(dp)            :: buffer1
 #endif
 
-!------------------------------------------------------------------------- BEGIN
-#ifdef DEBUG
-      call write_debug( '  PRE compute_dm' )
-#endif
+!-------------------------------------------------------------- BEGIN
       call timer( 'compute_dm', 1 )
+
+! Save present density matrix ........................................
+
+      Dold(1:maxnh,1:nspin) = Dscf(1:maxnh,1:nspin)
+      Eold(1:maxnh,1:nspin) = Escf(1:maxnh,1:nspin)
 
 !     Solve eigenvalue problem 
 
@@ -135,15 +137,6 @@
         call die('siesta: ERROR: wrong solution method')
       endif
 
-! Save present H matrix
-          if(mixH) then
-             do ispin = 1,nspin
-                do io = 1,maxnh
-                   Hold(io,ispin) = H(io,ispin)
-                enddo
-             enddo
-          end if
-
 !     Harris-functional energy 
       DEharr = 0.0_dp
           Ebs = 0.0_dp
@@ -194,9 +187,7 @@
           endif
 
       call timer( 'compute_dm', 2 )
-#ifdef DEBUG
-      call write_debug( '  POS compute_dm' )
-#endif
-!--------------------------------------------------------------------------- END
+
+!----------------------------------------------------------------- END
       END subroutine compute_dm
       END MODULE m_compute_dm

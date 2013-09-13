@@ -396,11 +396,11 @@
             endif
             if ((iscf .eq. 1).or.muldeb)
      .           write(6,'(/,a12,3a14,a8,a8,a11)')
-     .           'siesta: iscf', '   Eharris(eV)', 
+     .           'scf: iscf', '   Eharris(eV)', 
      .           '      E_KS(eV)', '   FreeEng(eV)', 
      .           '    dDmax', '  Ef_up', '  Ef_dn(eV)'
             write(6,'(a8,i4,3f14.4,f9.5,2f9.4)')
-     .           'siesta: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV, dDmax, 
+     .           'scf: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV, dDmax, 
      .           (Efs(i)/eV,i=1,2)
             if (cml_p) then
               call cmlAddProperty(xf=mainXML, value=Efs(1)/eV, 
@@ -413,11 +413,11 @@
           else !fixspin
             if ((iscf .eq. 1).or.muldeb)
      .           write(6,'(/,a12,3a14,a9,a8)')
-     .           'siesta: iscf', '   Eharris(eV)', 
+     .           'scf: iscf', '   Eharris(eV)', 
      .           '      E_KS(eV)', '   FreeEng(eV)', 
      .           '    dDmax', '  Ef(eV)'
             write(6,'(a8,i4,3f14.4,f9.5,f8.4)')
-     .           'siesta: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV, 
+     .           'scf: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV, 
      .           dDmax, Ef/eV
             if (cml_p) then
               call cmlAddProperty(xf=mainXML,value=Ef/eV, 
@@ -477,11 +477,11 @@
             endif
          else
           if (iscf .eq. 1) write(6,'(/,a12,3a14,a9,a8)')
-     .             'siesta: iscf', '   Eharris(eV)',
+     .             'scf: iscf', '   Eharris(eV)',
      .             '      E_KS(eV)', '   FreeEng(eV)',
      .             '    dDmax', '  Ef(eV)'
           write(6,'(a8,i4,3f14.4,f9.5,f8.4)')
-     .             'siesta: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV,
+     .             'scf: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV,
      .             dDmax, Ef/eV
          end if !fixspin
         endif                !TSinit

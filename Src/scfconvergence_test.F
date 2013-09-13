@@ -4,7 +4,8 @@
       CONTAINS
 
       subroutine scfconvergence_test( first, iscf, last, dDmax,
-     $                                conv_harris, conv_etot)
+     $                                conv_harris, conv_etot,
+     $                                converged)
       USE siesta_options
       use siesta_cml
       use m_wallclock, only : wallclock
@@ -26,10 +27,9 @@
 
       real(dp), intent(in) :: dDmax     ! Max. change in dens. matrix
       type(converger_t), intent(inout)  :: conv_harris, conv_etot
+      logical, intent(out)              :: converged
 !------------------------------------------------------------------------- BEGIN
-#ifdef DEBUG
-      call write_debug( '  PRE scfconvergence_test' )
-#endif
+
       call timer( 'SCFconv', 1 )
       ! convergence test
 
@@ -47,24 +47,26 @@
       ! gridcellsampling) but preserving the value of Eharrs1
       Eharrs1 = Eharrs
 
+      converged = .false.
+
       Elast = Etot
       if (require_energy_convergence) then
          if (   dDmax.lt.dDtol
      &        .and. is_converged(conv_etot)) then
-            last = .true.
+            converged = .true.
             if (IOnode) then
                write(6,"(a)") "SCF Convergence by Etot+DM criteria"
             endif
          endif
       else if (require_harris_convergence) then
          if (is_converged(conv_harris)) then
-            last = .true.
+            converged = .true.
             if (IOnode) then
                write(6,"(a)") "SCF Convergence by Harris criterion"
             endif
          endif
       else
-        if (dDmax.lt.dDtol) last = .true.
+        if (dDmax.lt.dDtol) converged = .true.
       endif
 
       ! Print energies
@@ -87,7 +89,14 @@
         call wallclock("-------------- end of scf step")
       endif
 
+      ! In principle, this should be the last step if we
+      ! have converged...
+      last = converged
+
 #ifdef TRANSIESTA
+      ! ... except that we might continue for TranSiesta
+      ! This should be made more transparent
+
 !     TSS Begin
       if (TSmode .and. last .and. TSinit) then
          last   = .false.     ! we're only done with the initial diagon run
@@ -130,9 +139,7 @@
 #endif /* TRANSIESTA */
 
       call timer( 'SCFconv', 2 )
-#ifdef DEBUG
-      call write_debug( '  POS scfconvergence_test' )
-#endif
+
 !--------------------------------------------------------------------------- END
       END subroutine scfconvergence_test
       end module m_scfconvergence_test

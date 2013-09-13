@@ -13,6 +13,7 @@
       use m_final_H_f_stress,    only: final_H_f_stress
       use m_setup_H0
       use m_compute_dm
+      use m_compute_max_diff
       use m_scfconvergence_test
       use m_post_scf_work
       use m_mixer
@@ -31,7 +32,8 @@
       use siesta_master, only: siesta_server  ! Is siesta a server?
       use write_subs
       use units,         only: eV, Ang
-      use sparse_matrices, only: H, Hold
+      use sparse_matrices, only: H, Hold, Dold, Dscf
+      use m_save_density_matrix, only: save_density_matrix
 #ifdef TRANSIESTA
       use m_ts_options, only : mixH
       use m_ts_global_vars, only : ts_istep
@@ -42,9 +44,9 @@
 
       integer  :: iscf
       logical  :: first, last, SCFconverged
-      real(dp) :: dDmax     ! Max. change in density matrix elements
+      real(dp) :: dmax      ! Max. change in DM or H elements
       type(converger_t)  ::  conv_harris, conv_etot
-      real(dp), allocatable  :: fa_old(:,:)
+      real(dp), allocatable  :: fa_old(:,:), Hsave(:,:)
 #ifdef TRANSIESTA
 ! Used in force constant runs
       ts_istep = istep
@@ -62,7 +64,7 @@
       iscf  = 1
       first = .true.
       last  = .false.
-      SCFconverged = .false.
+
       if (require_harris_convergence) then
         call reset(conv_harris)
         call set_tolerance(conv_harris,harris_tolerance)
@@ -89,32 +91,39 @@
            if ( first) call setup_hamiltonian( iscf )
            call compute_dm( iscf )
            call setup_hamiltonian( iscf )
+           call compute_max_diff(Hold,H,dmax)
         else 
            call setup_hamiltonian( iscf )
            call compute_dm( iscf )
+           call compute_max_diff(Dold,Dscf,dmax)
         end if 
 
-        call mixer( iscf, dDmax )
-
-        call scfconvergence_test( first, iscf, last, dDmax,
-     &                            conv_harris, conv_etot )
-!       At this point last is true if SCF has converged. But this
-!       changed below
-        SCFconverged = last
+        call scfconvergence_test( first, iscf, last, dmax,
+     &                            conv_harris, conv_etot,
+     &                            SCFconverged )
 
         if (monitor_forces_in_scf) then
            allocate(fa_old(size(fa,dim=1),size(fa,dim=2)))
+           allocate(Hsave(size(H,dim=1),size(H,dim=2)))
            fa_old = fa
-           if (mixH) Hold(:,:) = H(:,:)
+           Hsave(:,:) = H(:,:)
            call final_H_f_stress(iscf)
-           if (mixH) H(:,:) = Hold(:,:)
+           H(:,:) = Hsave(:,:)
            if (ionode) then
               print *, "Max diff in force (eV/Ang): ",
      $                 maxval(abs(fa-fa_old))*Ang/eV
            endif
-           deallocate(fa_old)
+           deallocate(fa_old,Hsave)
            call siesta_write_forces()
            call siesta_write_stress_pressure()
+        endif
+
+        if ((.not. SCFconverged) .OR. mix_after_convergence) then
+           ! Mix for next step
+           call mixer( iscf )
+           ! Save for possible restarts
+           ! Could save H in the future
+           call save_density_matrix("mixed")
         endif
 
         call timer( 'IterSCF', 2 )
@@ -139,6 +148,16 @@
       if ((SCFMustConverge).and.(.not.SCFconverged)) then
         call die('SCF did not converge in maximum number of steps.')
       endif
+
+      ! Save final DM_out for further analysis offline
+      if (.not. mix_after_convergence) then
+          call save_density_matrix("dmout")
+          if (MixH) then
+             ! We could make sure that we keep the H actually used 
+             ! to generate the last DM, if needed.
+             !!!    H = Hold
+          endif
+       endif
 
 !     End of standard SCF loop.
 !     Do one more pass to compute forces and stresses
