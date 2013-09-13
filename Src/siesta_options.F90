@@ -6,6 +6,7 @@ MODULE siesta_options
   PUBLIC
 
   logical :: mixH          ! Mix H instead of DM
+  logical :: mix_after_convergence ! Mix DM or H even after convergence
   logical :: h_setup_only  ! H Setup only
   logical :: chebef        ! Compute the chemical potential in ordern?
   logical :: default       ! Temporary used to pass default values in fdf reads
@@ -481,6 +482,12 @@ MODULE siesta_options
 
     if (ionode) then
        write(6,1) 'redata: Mix Hamiltonian instead of DM    = ', mixH
+    endif
+    
+    mix_after_convergence = fdf_get('SCF.MixAfterConvergence',.true.)
+    if (ionode) then
+       write(6,1) 'redata: Mix DM or H after convergence    = ',  &
+                  mix_after_convergence
     endif
 
     ! Pulay mixing, number of iterations for one Pulay mixing (maxsav)

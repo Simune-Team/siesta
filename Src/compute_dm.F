@@ -67,6 +67,12 @@ c$$$      use m_matrixwrite
 
       call MPI_Bcast(isolve,1,MPI_integer,0,true_MPI_Comm_World,mpierr)
 
+      if (SIESTA_worker) then
+         ! Save present density matrix 
+         Dold(1:maxnh,1:nspin) = Dscf(1:maxnh,1:nspin)
+         Eold(1:maxnh,1:nspin) = Escf(1:maxnh,1:nspin)
+      endif
+
       if (isolve .eq. SOLVE_PEXSI) then
          ! Prototype interface
          call pexsi_solver(iscf, no_u, no_l, nspin,
@@ -176,15 +182,6 @@ c$$$     &           S, 'S.matrix')
       else
         !call die('siesta: ERROR: wrong solution method')
       endif
-
-! Save present H matrix
-      if(mixH) then
-         do ispin = 1,nspin
-            do io = 1,maxnh
-               Hold(io,ispin) = H(io,ispin)
-            enddo
-         enddo
-      end if
 
 !     Harris-functional energy 
       DEharr = 0.0_dp

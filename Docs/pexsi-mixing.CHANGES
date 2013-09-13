@@ -1,4 +1,10 @@
 ------------------------------------------------------------
+September 13, 2013  A. Garcia   trunk-444--pexsi-42--mixing-3
+Optionally avoid mixing DM or H after scf-convergence
+
+Merged trunk-mixing--3. See Mixing.CHANGES.
+
+------------------------------------------------------------
 September 13, 2013  A. Garcia   trunk-444--pexsi-42--mixing-2
 (Sync patchlogs for H mixing)
 

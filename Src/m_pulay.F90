@@ -408,8 +408,7 @@ CONTAINS
                                       rank_out=rank,sigma=sigma)
 
        if (Node == 0 .AND. debug_svd_in_pulay) then
-          print "(a,i3)", "SVD rank: ", rank
-          print "(a,6g12.5)", "Singular values: ", sigma(:)
+          print "(a,i2,7g12.5)", "SVD rank, s(i):", rank, sigma(:)
        endif
        if (info == 0) then
           coeff(1:maxmix) = beta(1:maxmix)

@@ -67,7 +67,7 @@
       character(len=label_length+5)  :: PASTE
 !     TSS End
 #endif /* TRANSIESTA */
-!------------------------------------------------------------------------- BEGIN
+!--------------------------------------------------------------------- BEGIN
 
 !     Normalize density matrix to exact charge
 #ifdef TRANSIESTA      
@@ -138,6 +138,7 @@
      &             Exc, Dxc, dipol, fa, stress, fal, stressl )
 
 !     Orthonormalization forces ...........................................
+!     **Note that this will re-calculate S also
       call overfsm( na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &              maxnh, maxnh, lasto, iphorb, isa, 
      &              numh, listhptr, listh, numh, listhptr, listh, 
@@ -178,15 +179,6 @@
         endif
       endif
         
-!!!! Possible BUG: Dold should not be overwritten in the last iteration
-! Save present density matrix ........................................
-      do is = 1,nspin
-        do io = 1,maxnh
-          Dold(io,is) = Dscf(io,is)
-          Eold(io,is) = Escf(io,is)
-        enddo
-      enddo        
-
 ! Save Hamiltonian and overlap matrices ............................
 ! Only in HSX format now.  Use Util/HSX/hsx2hs to generate an HS file
       if (savehs) then
@@ -219,6 +211,6 @@
       endif
 ! TSS End
 #endif /* TRANSIESTA */
-!--------------------------------------------------------------------------- END
+!----------------------------------------------------------------------- END
       END subroutine final_H_f_stress
       END module m_final_H_f_stress
