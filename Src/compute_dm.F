@@ -37,6 +37,7 @@ c$$$      use m_matrixwrite
       use m_ordern,        only : ordern
       use m_steps,         only : istp
       use m_spin,          only : nspin, qs, efs
+      use m_normalize_dm,  only : normalize_dm
 #ifdef TRANSIESTA
       use m_ts_global_vars, only : TSiscf, TSinit, TSrun
       use m_ts_options,     only : TSmode
@@ -221,7 +222,7 @@ c$$$     &           S, 'S.matrix')
 !     Print populations at each SCF step if requested before mixing ......
       if (muldeb) then
         if (ionode) write (6,"(/a)")
-     &    'siesta: Mulliken populations before mixing'
+     &    'siesta: Mulliken populations (DM_out)'
         call mulliken( mullipop, nspin, na_u, no_u, maxnh,
      &                 numh, listhptr, listh, S, Dscf, isa,
      &                 lasto, iaorb, iphorb )
@@ -233,6 +234,15 @@ c$$$     &           S, 'S.matrix')
             call write_orb_indx( na_u, na_s, no_u, no_s, isa, xa,
      .                           iaorb, iphorb, indxuo, nsc, ucell )
           endif
+
+!     Normalize density matrix to exact charge
+!     Placed here for now to avoid disturbing EHarris
+
+#ifdef TRANSIESTA      
+         if (.not.TSrun ) call normalize_dm( first= .false. )
+#else
+         call normalize_dm(first=.false.)
+#endif  /* TRANSIESTA */
 
       call timer( 'compute_dm', 2 )
 

@@ -4,7 +4,7 @@
       CONTAINS
 
       subroutine setup_hamiltonian( iscf )
-      USE m_normalize_dm, only: normalize_dm
+
       USE siesta_options
       use sparse_matrices, only: H_kin, H_vkb
       use sparse_matrices, only: listh, listhptr, numh, maxnh
@@ -58,18 +58,6 @@
          Hold(1:maxnh,1:nspin) = H(1:maxnh,1:nspin)
       end if
 
-!     Normalize density matrix to exact charge
-!     Setup_hamiltonian is called before the density is printed out...
-#ifdef TRANSIESTA      
-      if (.not.TSrun ) call normalize_dm( first= (iscf==1) )
-#else
-      ! Normalize density matrix to exact charge, except if
-      ! we are just using the DM to generate the initial rho and exit
-      !
-      if (.not. save_initial_charge_density) then
-         call normalize_dm(first= (iscf==1))
-      endif
-#endif  /* TRANSIESTA */
 
       ! Initialize Hamiltonian with the non-SCF part...................
 

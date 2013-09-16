@@ -4,7 +4,7 @@
       CONTAINS
 
       subroutine final_H_f_stress( iscf )
-      USE m_normalize_dm, only: normalize_dm
+
       USE siesta_options
       use sparse_matrices
       use siesta_geom
@@ -38,7 +38,7 @@
 #ifdef TRANSIESTA
 ! TSS Begin
       use files,        only : slabel, label_length
-      use m_ts_global_vars, only : TSrun, ts_istep
+      use m_ts_global_vars, only : ts_istep
       use m_ts_options, only : savetshs
       use m_ts_kpoints, only : ts_gamma_scf, ts_kscell, ts_kdispl
       use m_ts_io,      only : ts_iohs
@@ -68,13 +68,6 @@
 !     TSS End
 #endif /* TRANSIESTA */
 !--------------------------------------------------------------------- BEGIN
-
-!     Normalize density matrix to exact charge
-#ifdef TRANSIESTA      
-      if (.not.TSrun ) call normalize_dm( first=.false. )
-#else
-      call normalize_dm( first=.false. )
-#endif  /* TRANSIESTA */
 
 !     Initialize Hamiltonian ........................................
       H = 0.0_dp

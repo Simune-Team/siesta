@@ -91,8 +91,8 @@
       use atomlist, only: datm, no_s, iaorb, lasto, no_u, no_l
       use m_spin,   only: nspin
       use m_steps, only: istp
+      USE m_normalize_dm, only: normalize_dm
       use sparse_matrices, only: Escf     !! To be moved
-
 #ifdef TRANSIESTA
       use M_ts_global_vars, only : TSrun
 #endif /* TRANSIESTA */
@@ -238,7 +238,15 @@
       Escf(:,:) = 0.0_dp
 #endif /* TRANSIESTA */
 
+!     Normalize density matrix to exact charge
+#ifdef TRANSIESTA      
+      if (.not.TSrun ) call normalize_dm( first= .true. )
+#else
+      call normalize_dm(first=.true.)
+#endif  /* TRANSIESTA */
+
       END subroutine new_dm
+
       subroutine new_extrapol(nrows,num, listptr,list, DM)
 
       USE siesta_options

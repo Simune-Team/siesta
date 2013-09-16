@@ -116,7 +116,8 @@ MODULE siesta_options
   real(dp) :: Energy_tolerance
   real(dp) :: Harris_tolerance
   real(dp) :: rijmin        ! Min. permited interatomic distance without warning
-  real(dp) :: dm_normalization_tol   ! Threshold for DM normalization mismatch
+  real(dp) :: dm_normalization_tol    ! Threshold for DM normalization mismatch error
+  logical  :: normalize_dm_during_scf ! Whether we normalize the DM 
   real(dp) :: dDtol         ! Tolerance in change of DM elements to finish SCF iteration
   real(dp) :: dt            ! Time step in dynamics
   real(dp) :: dx            ! Atomic displacement used to calculate Hessian matrix
@@ -1562,6 +1563,7 @@ MODULE siesta_options
     allow_dm_reuse         = fdf_get( 'DM.AllowReuse', .TRUE. )
     allow_dm_extrapolation = fdf_get( 'DM.AllowExtrapolation', .TRUE. )
     dm_normalization_tol   = fdf_get( 'DM.NormalizationTolerance',1.0d-5)
+    normalize_dm_during_scf= fdf_get( 'DM.NormalizeDuringSCF',.true.)
     muldeb                 = fdf_get( 'MullikenInSCF'   , .false.)
     rijmin                 = fdf_get( 'WarningMinimumAtomicDistance', &
                                       1.0_dp, 'Bohr' )

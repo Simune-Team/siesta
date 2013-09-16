@@ -1,4 +1,10 @@
 ------------------------------------------------------------
+September 16, 2013  A. Garcia   trunk-444--pexsi-42--mixing-4
+Normalize the DM in the routines that handle it
+
+Merged trunk-mixing--4. See Mixing.CHANGES.
+
+------------------------------------------------------------
 September 13, 2013  A. Garcia   trunk-444--pexsi-42--mixing-3
 Optionally avoid mixing DM or H after scf-convergence
 
