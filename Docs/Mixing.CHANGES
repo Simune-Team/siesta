@@ -1,4 +1,25 @@
 -----------------------------------------------------------------------
+2013-09-16  Alberto Garcia                          trunk-444--mixing-4
+Normalize the DM in the routines that handle it
+
+Up to now the DM was normalized in 'setup_hamiltonian' (and in
+'final_H_f_stress'). Now it is normalized (optionally, depending on
+the setting of DM.NormalizeDuringSCF) in 'compute_dm' and 'new_dm'.
+
+The DM is thus "intent(in)" in 'setup_hamiltonian' and
+'final_H_f_stress'.
+
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+  Src/final_H_f_stress.F
+  Src/new_dm.F
+  Src/normalize_dm.F
+  Src/post_scf_work.F
+  Src/setup_hamiltonian.F
+  Src/siesta_options.F90
+
+-----------------------------------------------------------------------
 2013-09-13  Alberto Garcia                          trunk-444--mixing-3
 Optionally avoid mixing DM or H after scf-convergence
 

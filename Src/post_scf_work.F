@@ -5,6 +5,7 @@
       CONTAINS
 
       subroutine post_scf_work( iscf )
+
       USE m_final_H_f_stress, only: final_H_f_stress
       USE siesta_options
       use sparse_matrices
@@ -26,14 +27,12 @@
       integer  :: iscf
       external :: plcharge
 
-!------------------------------------------------------------------------- BEGIN
-#ifdef DEBUG
-      call write_debug( '  PRE post_scf_work' )
-#endif
       call timer( 'PostSCF', 1 )
+
 !     If we use the minimization routine, the energy-density
 !     matrix is not calculated inside the SCF step, and
 !     so this must be done now
+
       if ((isolve .eq. SOLVE_MINIM) .and.
      &    (.not. PreviousCallDiagon)) then
         if (minim_calc_eigenvalues) then
@@ -56,10 +55,13 @@
         endif
       endif
 
-!     If converged, make one last iteration to find forces and
-!     stress
-!     Note that here we are using the Dscf guessed by mixer,
-!     not the last Dscf really computed from Wavefunctions
+!     Find final energy, forces and stress.
+
+!     Note that here we are using the Dscf coming out of the
+!     scf cycle, which could be DM_out or DM_mixed, depending
+!     on whether we are mixing H or DM, and on whether we
+!     mix one final time after convergence
+
       call final_H_f_stress( iscf )
 
 !     Print energies
@@ -68,21 +70,7 @@
      &       Emad + Emm + Emeta
       Eharrs = Etot + DEharr
       FreeE  = Etot - Temp * Entropy
-
 !
-!     WHY IS THIS?? To make Dscf (which might be re-used in the next
-!     geometry iteration) equal to the last DM used to construct the
-!     hamiltonian, instead of the output DM.
-!
-!       We need the last D really computed from Wavefunctions,
-!       not the one guessed by mixer as the D_in for a hypothetical
-!       next iteration. BUT in the old version of the program
-!       Dold was set equal to Dscf at the end of setup_hamiltonian,
-!       also in the "last" iteration.  
-      
-      Dscf(1:maxnh,1:nspin) = Dold(1:maxnh,1:nspin)
-      Escf(1:maxnh,1:nspin) = Eold(1:maxnh,1:nspin)
-
       if (dumpcharge) then
         call plcharge( no_s, na_s, no_u, maxnh, maxna, nspin,
      &       isa, iphorb, indxuo, lasto,
@@ -90,10 +78,7 @@
       endif
 
       call timer( 'PostSCF', 2 )
-#ifdef DEBUG
-      call write_debug( '  POS post_scf_work' )
-#endif
-!--------------------------------------------------------------------------- END
+
       END subroutine post_scf_work
 
       END MODULE m_post_scf_work
