@@ -1,4 +1,32 @@
 ----------------------------------------------------
+September 17, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-91
+Added coordinate check when dealing with bias, small changes to variables
+
+* When applying a bias we do not allow the atomic coordinates to not be centered
+  with respect to origo (in the z-direction).
+  This is a "feature" of the Hartree potential which is placed in the unit-cell
+  rather than according to atomic coordinates.
+  This might have causes quite some frustration with users, and also caused some
+  wrong simulations.
+
+* Re-indented the transiesta k-point module
+
+* Added different titles for left/right GF file
+  And cleaned output of different electrodes
+
+* Renamed new flag: TS.Voltage.Position to the more meaningful
+  TS.HartreePotential.Position
+
+modified:
+  Src/m_integrate.f90
+  Src/m_ts_contour.f90
+  Src/m_ts_electrode.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_kpoints.F90
+  Src/m_ts_options.F90
+  Src/ts_init.F90
+
+----------------------------------------------------
 August 23, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-90
 Bugfix for warning about parallel optimal energy points
 

@@ -99,6 +99,7 @@ contains
 ! ***********************
     integer :: uGF
     logical :: errorGF, exist, ReUseGF
+    character(len=200) :: rGFtitle
 #ifdef MPI
     integer :: MPIerror
 #endif
@@ -135,18 +136,22 @@ contains
             ucell,xa,nua,NEn,contour,chem_shift,CalcDOS,ZBulkDOS,nspin)
     end if
 
-!
-!     Check that the Green's functions are correct!
-!     This is needed as create_Green returns if user requests not to
-!     overwrite an already existing file.
-!     This check will read in the number of orbitals and atoms in the
-!     electrode surface Green's function.
-!
+    !
+    ! Check that the Green's functions are correct!
+    ! This is needed as create_Green returns if user requests not to
+    ! overwrite an already existing file.
+    ! This check will read in the number of orbitals and atoms in the
+    ! electrode surface Green's function.
+    !
     errorGF = .false.
-! Check the GF file
+    ! Check the GF file
     if(IONode) then
        call io_assign(uGF)
        open(file=GFFile,unit=uGF,form='UNFORMATTED')
+
+       ! Read in the title and rewind
+       read(uGF) rGfTitle
+       rewind(uGF)
 
        if ( tElec == 'L' ) then
           call check_Green(uGF,chem_shift,ucell, &
@@ -161,6 +166,9 @@ contains
                kweight,NEn,contour,RepA1(El),RepA2(El),RemUCellDistance, &
                xa_Eps, errorGF)
        end if
+       
+       write(*,'(/,4a,/)') "Using GF-file '",trim(GFfile),"' with title: '",trim(rGfTitle)//"'"
+       
        call io_close(uGF)
     endif
 
@@ -252,8 +260,7 @@ contains
 
        read(funit) GFtitle
        if ( print_title ) then
-          write(*,'(1x,a)')   "Reading GF file, with title:"
-          write(*,'(1x,a)')   "  "//trim(GFfile)
+          write(*,'(1x,a)')   "Reading GF file: "//trim(GFfile)
           write(*,'(1x,a,/)') "Title: '"//trim(GFtitle)//"'"
        end if
        read(funit) EfShift,NEn

@@ -71,7 +71,7 @@ contains
 
 
     ! Read in options for transiesta
-    call read_ts_options( wmix, kT, ucell , na_u , lasto )
+    call read_ts_options( wmix, kT, ucell , na_u , xa, lasto )
 
     ! Setup the k-points
     call setup_ts_kpoint_grid( ucell )
@@ -145,14 +145,14 @@ contains
           call memory('A','Z',NEn*nspin,'transiesta')
      
           ! Create the Left GF file
-          call do_Green('L',ElLeft, GFFileL, GFTitle, &
+          call do_Green('L',ElLeft, GFFileL, GFTitleL, &
                ElecValenceBandBot, ReUseGF, &
                ts_nkpnt,ts_kpoint,ts_kweight, &
                na_BufL, .false., Elec_xa_Eps, & !For now TranSIESTA will only perform with inner-cell distances
                ucell,xa,na_u,NEn,contour,VoltL,.false.,dos,nspin)
           
           ! Create the Right GF file
-          call do_Green('R',ElRight,GFFileR, GFTitle, &
+          call do_Green('R',ElRight,GFFileR, GFTitleR, &
                ElecValenceBandBot, ReUseGF, &
                ts_nkpnt,ts_kpoint,ts_kweight, &
                na_BufR, .false., Elec_xa_Eps, &

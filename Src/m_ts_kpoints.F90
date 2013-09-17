@@ -8,9 +8,9 @@ module m_ts_kpoints
 !          2) setup_ts_kpoint_grid
 !          3) ts_write_k_points
 !          4) ts_iokp
-
+  
   USE precision, only : dp
- 
+
   implicit none
 
   private
@@ -85,249 +85,186 @@ contains
 ! **********************************************************************
 
 !  Modules
-
-      use parallel,   only : Node
-      use m_minvec,   only : minvec
-      use fdf
-      use sys,        only : die
+    
+    use parallel,   only : Node
+    use m_minvec,   only : minvec
+    use fdf
+    use sys,        only : die
 #ifdef MPI
-      use mpi_siesta
+    use mpi_siesta
 #endif
-
-      implicit          none
+    
+    implicit          none
 
 ! Passed variables
-      real(dp), intent(in)   :: cell(3,3)
-      logical, intent(out)   :: firm_displ
+    real(dp), intent(in)   :: cell(3,3)
+    logical, intent(out)   :: firm_displ
 
 ! Internal variables
-      integer           i, j,  factor(3,3), expansion_factor
+    integer           i, j,  factor(3,3), expansion_factor
 #ifdef MPI
-      integer           MPIerror
+    integer           MPIerror
 #endif
-      real(dp)          scmin(3,3),  vmod, cutoff
-      real(dp)          ctransf(3,3)
-      logical           mp_input
+    real(dp)          scmin(3,3),  vmod, cutoff
+    real(dp)          ctransf(3,3)
+    logical           mp_input
 
-      type(block_fdf)            :: bfdf
-      type(parsed_line), pointer :: pline
+    type(block_fdf)            :: bfdf
+    type(parsed_line), pointer :: pline
 
-      real(dp), parameter :: defcut = 0.0_dp
-      integer, dimension(3,3), parameter :: unit_matrix =  &
-                         reshape ((/1,0,0,0,1,0,0,0,1/), (/3,3/))
+    real(dp), parameter :: defcut = 0.0_dp
+    integer, dimension(3,3), parameter :: unit_matrix =  &
+         reshape ((/1,0,0,0,1,0,0,0,1/), (/3,3/))
 
-
-#ifdef CHECK_THIS
-      if (Node.eq.0) then
-
-         mp_input = fdf_block('kgrid_Monkhorst_Pack',iu)     
-         if ( mp_input ) then
-          
-            ts_user_requested_mp = .true.
-            do i = 1,3
-               read(iu,*) (ts_kscell(j,i),j=1,3), ts_kdispl(i)
-            enddo
-            firm_displ = .true.
-
-         else
-
-            write(*,*) 'WARNING !!!'
-            write(*,*) 'TS kgrid determined first with 3D cell !!!'
-            write(*,*) 'Specifying only cutoff in Electrode AND Scattering calculations might lead to problems !!'
-
-            cutoff = fdf_physical('kgrid_cutoff',defcut,'Bohr')
-            if (cutoff /= defcut) then
-               ts_user_requested_cutoff = .true.
-            endif
-
-            ts_kdispl(1:3) = 0.0_dp  ! Might be changed later
-            
-            ! Find equivalent rounded unit-cell
-            call minvec( cell, scmin, ctransf )
-
-            expansion_factor = 1
-            do j = 1,3
-               factor(j,1:3) = 0
-               vmod = sqrt(dot_product(scmin(1:3,j),scmin(1:3,j)))
-               factor(j,j) = int(2.0_dp*cutoff/vmod) + 1
-               expansion_factor = expansion_factor * factor(j,j)
-            enddo
-            ! Generate actual supercell skeleton
-            ts_kscell = matmul(ctransf, factor)
-            ! Avoid confusing permutations
-            ! Defer implementation to avoid diffs with reference version
-            !!if (expansion_factor == 1) then
-            !!   kscell = unit_matrix
-            !!endif
-         endif
-      endif
-
-! Modify the ts_kscell and ts_kdispl to obtain the 2D sampling
-    ts_kscell(1:3,3)=0
-    ts_kscell(3,1:3)=0
-    ts_kscell(3,3)=1
-    ts_kdispl(3)=0.0
-
-#ifdef MPI
-      call MPI_Bcast(ts_kscell(1,1),9,MPI_integer,0,MPI_Comm_World, MPIerror)
-      call MPI_Bcast(ts_kdispl,3,MPI_double_precision,0,MPI_Comm_World, MPIerror)
-      call MPI_Bcast(ts_firm_displ,1,MPI_logical,0,MPI_Comm_World, MPIerror)
-      call MPI_Bcast(ts_user_requested_mp,1,MPI_logical,0,   &
-                     MPI_Comm_World, MPIerror)
-      call MPI_Bcast(ts_user_requested_cutoff,1,MPI_logical,0,   &
-                     MPI_Comm_World, MPIerror)
-#endif
-#else /* CHECK_THIS */
-
-      mp_input = fdf_block('kgrid_Monkhorst_Pack',bfdf)     
-      if ( mp_input ) then
-        ts_user_requested_mp = .true.
-        do i = 1,3
+    mp_input = fdf_block('kgrid_Monkhorst_Pack',bfdf)     
+    if ( mp_input ) then
+       ts_user_requested_mp = .true.
+       do i = 1,3
           if (fdf_bline(bfdf,pline)) then
-            ts_kscell(1,i) = fdf_bintegers(pline,1)
-            ts_kscell(2,i) = fdf_bintegers(pline,2)
-            ts_kscell(3,i) = fdf_bintegers(pline,3)
-            ts_kdispl(i)   = fdf_breals(pline,1)
+             ts_kscell(1,i) = fdf_bintegers(pline,1)
+             ts_kscell(2,i) = fdf_bintegers(pline,2)
+             ts_kscell(3,i) = fdf_bintegers(pline,3)
+             ts_kdispl(i)   = fdf_breals(pline,1)
           else
-            call die( 'setup_ts_scf_kscell: ERROR no data in' // &
-                      'kgrid_Monkhorst_Pack block' )
+             call die( 'setup_ts_scf_kscell: ERROR no data in' // &
+                  'kgrid_Monkhorst_Pack block' )
           endif
-        enddo
-        firm_displ = .true.
-      else
+       enddo
+       firm_displ = .true.
+    else
 
-         write(*,*) 'WARNING !!!'
-         write(*,*) 'TS kgrid determined first with 3D cell !!!'
-         write(*,*) 'Specifying only cutoff in Electrode AND Scattering calculations might lead to problems !!'
+       write(*,*) 'WARNING !!!'
+       write(*,*) 'TS kgrid determined first with 3D cell !!!'
+       write(*,*) 'Specifying only cutoff in Electrode AND Scattering calculations might lead to problems !!'
 
-         cutoff = fdf_physical('kgrid_cutoff',defcut,'Bohr')
-         if (cutoff /= defcut) then
-            ts_user_requested_cutoff = .true.
-         endif
+       cutoff = fdf_physical('kgrid_cutoff',defcut,'Bohr')
+       if (cutoff /= defcut) then
+          ts_user_requested_cutoff = .true.
+       endif
 
-         ts_kdispl(1:3) = 0.0_dp  ! Might be changed later
+       ts_kdispl(1:3) = 0.0_dp  ! Might be changed later
 
-         ! Find equivalent rounded unit-cell
-         call minvec( cell, scmin, ctransf )
-
-         expansion_factor = 1
-         do j = 1,3
-            factor(j,1:3) = 0
-            vmod = sqrt(dot_product(scmin(1:3,j),scmin(1:3,j)))
-            factor(j,j) = int(2.0_dp*cutoff/vmod) + 1
-            expansion_factor = expansion_factor * factor(j,j)
-         enddo
-         ! Generate actual supercell skeleton
-         ts_kscell = matmul(ctransf, factor)
+       ! Find equivalent rounded unit-cell
+       call minvec( cell, scmin, ctransf )
+       
+       expansion_factor = 1
+       do j = 1,3
+          factor(j,1:3) = 0
+          vmod = sqrt(dot_product(scmin(1:3,j),scmin(1:3,j)))
+          factor(j,j) = int(2.0_dp*cutoff/vmod) + 1
+          expansion_factor = expansion_factor * factor(j,j)
+       enddo
+       ! Generate actual supercell skeleton
+       ts_kscell = matmul(ctransf, factor)
          ! Avoid confusing permutations
          ! Defer implementation to avoid diffs with reference version
          !!if (expansion_factor == 1) then
          !!   kscell = unit_matrix
          !!endif
-      endif
+    endif
 
 !     Modify the ts_kscell and ts_kdispl to obtain the 2D sampling
-      ts_kscell(1:3,3) = 0
-      ts_kscell(3,1:3) = 0
-      ts_kscell(3,3)   = 1
-      ts_kdispl(3)     = 0.0_dp
-#endif /* CHECK_THIS */
-    end subroutine setup_ts_scf_kscell
-
-    subroutine setup_ts_kpoint_grid( ucell )
-
+    ts_kscell(1:3,3) = 0
+    ts_kscell(3,1:3) = 0
+    ts_kscell(3,3)   = 1
+    ts_kdispl(3)     = 0.0_dp
+    
+  end subroutine setup_ts_scf_kscell
+  
+  subroutine setup_ts_kpoint_grid( ucell )
+    
 ! SIESTA Modules
-      USE fdf, only       : fdf_defined
-      USE m_find_kgrid, only : find_kgrid
-      USE parallel, only  : IONode
-      USE precision, only : dp       
+    USE fdf, only       : fdf_defined
+    USE m_find_kgrid, only : find_kgrid
+    USE parallel, only  : IONode
+    USE precision, only : dp       
 #ifdef MPI
-      USE mpi_siesta, only : MPI_Bcast, MPI_logical, MPI_Comm_World
+    USE mpi_siesta, only : MPI_Bcast, MPI_logical, MPI_Comm_World
 #endif
 
 ! Local Variables
-      real(dp) :: ucell(3,3)
+    real(dp) :: ucell(3,3)
 
 #ifdef MPI
-      integer :: MPIerror
+    integer :: MPIerror
 #endif
 
-      if (ts_scf_kgrid_first_time) then
-         nullify(ts_kweight,ts_kpoint)
-         if (IONode) then
-            ts_spiral = fdf_defined('SpinSpiral')
-         endif
+    if (ts_scf_kgrid_first_time) then
+       nullify(ts_kweight,ts_kpoint)
+       if (IONode) then
+          ts_spiral = fdf_defined('SpinSpiral')
+       endif
 #ifdef MPI
-         call MPI_Bcast(ts_spiral,1,MPI_logical,0,MPI_Comm_World,MPIerror)
+       call MPI_Bcast(ts_spiral,1,MPI_logical,0,MPI_Comm_World,MPIerror)
 #endif
 
-         call setup_ts_scf_kscell(ucell, ts_firm_displ)
+       call setup_ts_scf_kscell(ucell, ts_firm_displ)
 
-         ts_scf_kgrid_first_time = .false.
+       ts_scf_kgrid_first_time = .false.
 
-      else
-         if ( ts_user_requested_mp    ) then
+    else
+       if ( ts_user_requested_mp    ) then
 ! no need to set up the kscell again
-         else
+       else
 ! This was wrong in the old code
-            call setup_ts_scf_kscell(ucell, ts_firm_displ)
-         endif
-      endif
+          call setup_ts_scf_kscell(ucell, ts_firm_displ)
+       endif
+    endif
 
-      call find_kgrid(ucell,ts_kscell,ts_kdispl,ts_firm_displ, &
-           (.not. ts_spiral), &
-           ts_nkpnt,ts_kpoint,ts_kweight, ts_eff_kgrid_cutoff)
+    call find_kgrid(ucell,ts_kscell,ts_kdispl,ts_firm_displ, &
+         (.not. ts_spiral), &
+         ts_nkpnt,ts_kpoint,ts_kweight, ts_eff_kgrid_cutoff)
 
-      ts_maxk = ts_nkpnt
-      ts_gamma_scf =  (ts_nkpnt == 1 .and. &
-           dot_product(ts_kpoint(:,1),ts_kpoint(:,1)) < 1.0e-20_dp)
+    ts_maxk = ts_nkpnt
+    ts_gamma_scf =  (ts_nkpnt == 1 .and. &
+         dot_product(ts_kpoint(:,1),ts_kpoint(:,1)) < 1.0e-20_dp)
 
-      if (IONode) call ts_write_k_points()
+    if (IONode) call ts_write_k_points()
 
-    end subroutine setup_ts_kpoint_grid
+  end subroutine setup_ts_kpoint_grid
 
-    subroutine ts_write_k_points()
-      USE siesta_options, only: writek
-      USE siesta_cml
+  subroutine ts_write_k_points()
+    USE siesta_options, only: writek
+    USE siesta_cml
 
-      implicit none
+    implicit none
 
-      integer  :: ik, ix, i
+    integer  :: ik, ix, i
 
-      if ( writek ) then
-         write(*,'(/,a)') 'transiesta: ts_k-point coordinates (Bohr**-1) and weights:'
-         write(*,'(a,i4,3f12.6,3x,f12.6)')                          &
-              ('transiesta: ', ik, (ts_kpoint(ix,ik),ix=1,3), ts_kweight(ik), &
-              ik=1,ts_nkpnt)
-      endif
+    if ( writek ) then
+       write(*,'(/,a)') 'transiesta: ts_k-point coordinates (Bohr**-1) and weights:'
+       write(*,'(a,i4,3f12.6,3x,f12.6)')                          &
+            ('transiesta: ', ik, (ts_kpoint(ix,ik),ix=1,3), ts_kweight(ik), &
+            ik=1,ts_nkpnt)
+    endif
       ! Always write the TranSIESTA k-points
-      call ts_iokp( ts_nkpnt, ts_kpoint, ts_kweight )
+    call ts_iokp( ts_nkpnt, ts_kpoint, ts_kweight )
 
-      write(*,'(/,a,i6)')  'transiesta: ts_k-grid: Number of Transport k-points =', ts_nkpnt
-      write(*,'(a)') 'transiesta: ts_k-grid: Supercell and displacements'
-      write(*,'(a,3i4,3x,f8.3)') 'transiesta: ts_k-grid: ',        &
-           (ts_kscell(i,1),i=1,3), ts_kdispl(1)
-      write(*,'(a,3i4,3x,f8.3)') 'transiesta: ts_k-grid: ',        &
-           (ts_kscell(i,2),i=1,3), ts_kdispl(2)
+    write(*,'(/,a,i6)')  'transiesta: ts_k-grid: Number of Transport k-points =', ts_nkpnt
+    write(*,'(a)') 'transiesta: ts_k-grid: Supercell and displacements'
+    write(*,'(a,3i4,3x,f8.3)') 'transiesta: ts_k-grid: ',        &
+         (ts_kscell(i,1),i=1,3), ts_kdispl(1)
+    write(*,'(a,3i4,3x,f8.3)') 'transiesta: ts_k-grid: ',        &
+         (ts_kscell(i,2),i=1,3), ts_kdispl(2)
 !      write(*,'(a,3i4,3x,f8.3)') 'transiesta: ts_k-grid: ',        &
 !           (ts_kscell(i,3),i=1,3), ts_kdispl(3)
-      if (cml_p) then
-          call cmlStartPropertyList(xf=mainXML, title="Transiesta k-points", &
-                 dictRef="siesta:ts_kpoints")
-          call cmlAddProperty(xf=mainXML, value=ts_nkpnt, dictref='siesta:ts_nkpnt', &
-                 units="cmlUnits:countable")
-          do ik=1, ts_nkpnt
-              call cmlAddKPoint(xf=mainXML, coords=ts_kpoint(:,ik), weight=ts_kweight(ik))
-          enddo
-          call cmlEndPropertyList(mainXML)
-          call cmlAddProperty(xf=mainXML, value=ts_kscell, dictref='siesta:ts_kscell', &
-                 units="siestaUnits:Ang")
-          call cmlAddProperty(xf=mainXML, value=ts_kdispl, dictref='siesta:ts_kdispl', &
-                 units="siestaUnits:Ang")
-      endif
-    end subroutine ts_write_k_points
-    
-    subroutine ts_iokp( nk, points, weight )
+    if (cml_p) then
+       call cmlStartPropertyList(xf=mainXML, title="Transiesta k-points", &
+            dictRef="siesta:ts_kpoints")
+       call cmlAddProperty(xf=mainXML, value=ts_nkpnt, dictref='siesta:ts_nkpnt', &
+            units="cmlUnits:countable")
+       do ik=1, ts_nkpnt
+          call cmlAddKPoint(xf=mainXML, coords=ts_kpoint(:,ik), weight=ts_kweight(ik))
+       enddo
+       call cmlEndPropertyList(mainXML)
+       call cmlAddProperty(xf=mainXML, value=ts_kscell, dictref='siesta:ts_kscell', &
+            units="siestaUnits:Ang")
+       call cmlAddProperty(xf=mainXML, value=ts_kdispl, dictref='siesta:ts_kdispl', &
+            units="siestaUnits:Ang")
+    endif
+  end subroutine ts_write_k_points
+
+  subroutine ts_iokp( nk, points, weight )
 ! *******************************************************************
 ! Saves TranSIESTA k-points (only writing) Bohr^-1
 ! Emilio Artacho, Feb. 1999

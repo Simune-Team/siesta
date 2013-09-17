@@ -677,8 +677,9 @@ contains
     call timer('genGreen',1)
 
     if (IONode) then
-       write(*,'(/,2a)') &
-            "Creating Green's function file for: ",GFjob
+       write(*,'(/,2a,/,2a)') &
+            "Creating Green's function file for: ",GFjob, &
+            "Green's function file title: ",trim(GFTitle)
     end if
     
     ! Read in all variables from the TSHS electrode file.
@@ -888,7 +889,7 @@ contains
     ! prepare the iteration counter
     allocate(iters(NEn,2))
     if ( IONode ) then
-       write(*,'(1x,a)') 'Lopez-Sancho x2 & Rubio recursive &
+       write(*,'(1x,a)') 'Lopez Sancho, Lopez Sancho & Rubio recursive &
             &surface self-energy calculation...'
     end if
 
@@ -1074,9 +1075,9 @@ contains
              i_std = i_std + ( iters(i,2) - i_mean ) ** 2
           end do
           i_std = sqrt(i_std/real(NEn,dp))
-          write(*,'(1x,a,f10.4,'' / '',f10.4)') 'Lopez-Sancho x2 & Rubio: &
+          write(*,'(1x,a,f10.4,'' / '',f10.4)') 'Lopez Sancho, Lopez Sancho & Rubio: &
                &Mean/std iterations: ', i_mean             , i_std
-          write(*,'(1x,a,i10,'' / '',i10)')     'Lopez-Sancho x2 & Rubio: &
+          write(*,'(1x,a,i10,'' / '',i10)')     'Lopez Sancho, Lopez Sancho & Rubio: &
                &Min/Max iterations : ', minval(iters(:,2)) , maxval(iters(:,2))
        end if
        

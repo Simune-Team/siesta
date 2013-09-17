@@ -70,6 +70,8 @@ integer  :: na_BufR      ! Number of Right Buffer Atoms
 integer  :: no_BufL      ! Number of Left Buffer orbitals
 integer  :: no_BufR      ! Number of Right Buffer orbitals
 character(200) :: GFTitle ! Title to paste in electrode Green's function files
+character(200) :: GFTitleL ! Title to paste in left electrode Green's function files
+character(200) :: GFTitleR ! Title to paste in right electrode Green's function files
 character(200) :: GFFileL ! Electrode Left GF File
 character(200) :: GFFileR ! Electrode Right GF File
 type(Elec) :: ElLeft, ElRight
@@ -140,14 +142,14 @@ CONTAINS
 !
 ! **************************** OUTPUT *********************************
   
-  subroutine read_ts_options( wmix, kT_in, ucell, na_u, lasto)
+  subroutine read_ts_options( wmix, kT_in, ucell, na_u, xa, lasto)
 
 ! SIESTA Modules Used
     use files, only  : slabel
     use fdf, only : fdf_get, fdf_deprecated, fdf_obsolete
     use fdf, only : leqi
     use parallel, only: IOnode, Nodes, operator(.parcount.)
-    use units, only: eV
+    use units, only: eV, Ang
     use m_ts_cctype
     use m_ts_global_vars, only : ts_istep, TSinit
     use m_ts_io, only : ts_read_TSHS_opt
@@ -166,7 +168,9 @@ CONTAINS
     real(dp), intent(in) :: wmix, kT_in
     real(dp),intent(in) :: ucell(3,3)
     integer, intent(in) :: na_u, lasto(0:na_u)
+    real(dp), intent(in) :: xa(3,na_u)
 ! Internal Variables
+    real(dp) :: tmp
     character(len=70) :: chars
     integer :: tmp_G_NF
     integer :: i
@@ -309,11 +313,24 @@ CONTAINS
        call read_contour_options( kT_in, IsVolt, VoltL, VoltR )
     end if
 
+    call fdf_deprecated('TS.GFTitle','TS.Elec.Left/Right.GF.Title')
     GFTitle    = fdf_get('TS.GFTitle',GFTitle_def)
+
+    ! Left -->
     chars = trim(slabel)//'.TSGFL'
+    call fdf_deprecated('TS.GFFileLeft','TS.Elec.Left.GF')
     GFFileL    = fdf_get('TS.GFFileLeft',trim(chars))
+    GFFileL    = fdf_get('TS.Elec.Left.GF',trim(GFFileL))
+    GFTitleL   = fdf_get('TS.Elec.Left.GF.Title',trim(GFTitle))
+
+    ! Right -->
     chars = trim(slabel)//'.TSGFR'
+    call fdf_deprecated('TS.GFFileRight','TS.Elec.Right.GF')
     GFFileR    = fdf_get('TS.GFFileRight',trim(chars))
+    GFFileR    = fdf_get('TS.Elec.Right.GF',trim(GFFileR))
+    GFTitleR   = fdf_get('TS.Elec.Right.GF.Title',trim(GFTitle))
+
+    call fdf_deprecated('TS.CalcGF','TS.ReUseGF')
     ReUseGF    = fdf_get('TS.ReUseGF',ReUseGF_def)
     UseVFix    = fdf_get('TS.UseVFix',UseVFix_def)
     ElecValenceBandBot = fdf_get('TS.Elec.Calc.BandBottom', &
@@ -357,8 +374,8 @@ CONTAINS
 
     
     ! Read in information about the voltage placement.
-    chars = fdf_get('TS.Voltage.Position','central')
-    VoltageInC = .false.
+    chars = fdf_get('TS.HartreePotential.Position','central')
+    VoltageInC = .true.
     if ( leqi(trim(chars),'cell') ) then
        VoltageInC = .false.
     else if ( leqi(trim(chars),'central') .or. &
@@ -407,7 +424,6 @@ CONTAINS
     end if
 
     ! Show the deprecated and obsolete labels
-    call fdf_deprecated('TS.CalcGF','TS.ReUseGF')
     call fdf_deprecated('TS.TriDiag','TS.SolutionMethod')
     call fdf_obsolete('TS.FixContactCharge')
     call fdf_obsolete('TS.KxyPoints')
@@ -440,6 +456,7 @@ CONTAINS
           end select
           write(*,10)'Bandwidth algorithm',trim(chars)
        end if
+       write(*,7) 'Electronic temperature',kT/eV,'eV'
        if ( ts_method == TS_SPARSITY ) then
           write(*,10)'Solution method', 'Sparsity pattern'
        else if ( ts_method == TS_SPARSITY_TRI ) then
@@ -490,18 +507,21 @@ CONTAINS
           write(*,8)'Charge correction factor',TS_RHOCORR_FACTOR
        end if
        write(*,1) 'Calc. band bottom in elec.', ElecValenceBandBot
-       write(*,10)'GF title', trim(GFTitle)
-       write(*,10)'Left GF File', trim(GFFileL)
-       write(*,10)'Right GF File', trim(GFFileR)
        write(*,1) 'Re-use GF file if exists', ReUseGF
-       write(*,10)'Left electrode TSHS file', trim(HSFile(ElLeft))
-       write(*,5) '# atoms used in left elec. ', UsedAtoms(ElLeft)
-       write(*,15) 'Left elec. repetition A1/A2', RepA1(ElLeft),RepA2(ElLeft)
-       write(*,10)'Right electrode TSHS file', trim(HSFile(ElRight))
-       write(*,5) '# atoms used in right elec. ', UsedAtoms(ElRight)
-       write(*,15) 'Right elec. repetition A1/A2', RepA1(ElRight),RepA2(ElRight)
+       write(*,10)'          >> Electrodes << '
+       write(*,10)'>> Left'
+       write(*,10)'  GF file', trim(GFFileL)
+       write(*,10)'  GF title', trim(GFTitleL)
+       write(*,10)'  Electrode TSHS file', trim(HSFile(ElLeft))
+       write(*,5) '  # atoms used in electrode ', UsedAtoms(ElLeft)
+       write(*,15)'  Electrode repetition A1/A2', RepA1(ElLeft),RepA2(ElLeft)
+       write(*,10)'>> Right'
+       write(*,10)'  GF file', trim(GFFileR)
+       write(*,10)'  GF title', trim(GFTitleR)
+       write(*,10)'  Electrode TSHS file', trim(HSFile(ElRight))
+       write(*,5) '  # atoms used in electrode ', UsedAtoms(ElRight)
+       write(*,15)'  Electrode repetition A1/A2', RepA1(ElRight),RepA2(ElRight)
 
-       write(*,7) 'Electronic temperature',kT/eV,'eV'
 
        ! Print the contour information
        call ts_print_contour_options(cEq,cnEq, Eq_Eta, nEq_Eta,N_poles,IsVolt)
@@ -523,6 +543,23 @@ CONTAINS
                   &Please change the geometry.")
           end if
        end do
+
+       ! Check that the atoms are placed correctly in the unit-cell
+       ! The Hartree potential correction will only be put correctly 
+       ! when the atoms are sorted by z and starting from z == 0
+       if ( IsVolt ) then
+          tmp = minval(xa(3,:)) / Ang
+          ! below -.5 or above .5 Ang from the bottom of the unit-cell
+          if ( tmp < -.5_dp .or. .5_dp < tmp ) then
+             write(*,*) &
+                  "ERROR: Atoms must be located within the primary unit-cell &
+                  &and shifted to 0 when dealing with bias."
+             write(*,'(a,g15.6,a)') &
+                  "Please shift your system in the z-direction by: ", &
+                  -tmp,' Ang'
+             call die('System setup wrong, please see output')
+          end if
+       end if
 
        ! print the warnings...
        call ts_print_contour_warnings(cEq,cnEq,kT, Eq_Eta, nEq_Eta, N_poles, IsVolt)

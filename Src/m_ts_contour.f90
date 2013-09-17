@@ -108,7 +108,7 @@ contains
          &for using the advanced Greens function, please correct.')
 
     call fdf_deprecated('TS.biasContour.Eta','TS.Contour.nEq.Eta')
-    nEq_Eta = fdf_get('TS.biasContour.Eta',0.000001_dp,'Ry')
+    nEq_Eta = fdf_get('TS.biasContour.Eta',0.000001_dp*eV,'Ry')
     nEq_Eta = fdf_get('TS.Contour.nEq.Eta',nEq_Eta,'Ry')
     if ( nEq_Eta <= 0._dp ) call die('ERROR: nEq_Eta <= 0, we do not allow &
          &for using the advanced Greens function, please correct.')

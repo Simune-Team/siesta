@@ -310,8 +310,8 @@ contains
     real(dp), intent(in out) :: x(5), w(5)
     real(dp), intent(in) :: a, b
     real(dp) :: h
+
     h = ( b - a ) * .25_dp
-    
     x(1) = a
     x(2) = x(1) + h
     x(3) = x(2) + h
@@ -331,8 +331,8 @@ contains
     real(dp), intent(in out) :: x(4), w(4)
     real(dp), intent(in) :: a, b
     real(dp) :: h
+
     h = ( b - a ) / 3._dp
-    
     x(1) = a
     x(2) = x(1) + h
     x(3) = x(2) + h
@@ -350,8 +350,8 @@ contains
     real(dp), intent(in out) :: x(3), w(3)
     real(dp), intent(in) :: a, b
     real(dp) :: h
+
     h = ( b - a ) * .5_dp
-    
     x(1) = a
     x(2) = x(1) + h
     x(3) = x(2) + h
