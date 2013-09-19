@@ -603,7 +603,8 @@ meshsubs.o: precision.o radial.o siesta_cml.o sys.o
 metaforce.o: alloc.o parallel.o precision.o sys.o
 minvec.o: cellsubs.o precision.o sorting.o sys.o
 mixer.o: atomlist.o m_broyden_mixing.o m_fire_mixing.o m_pulay.o m_spin.o
-mixer.o: parallel.o siesta_geom.o siesta_options.o sparse_matrices.o
+mixer.o: m_ts_global_vars.o parallel.o siesta_geom.o siesta_options.o
+mixer.o: sparse_matrices.o
 mneighb.o: alloc.o precision.o sys.o
 molecularmechanics.o: alloc.o parallel.o precision.o sys.o units.o
 moreParallelSubs.o: alloc.o m_io.o parallel.o precision.o sys.o
@@ -677,9 +678,8 @@ save_density_matrix.o: atomlist.o iodm_netcdf.o m_energies.o m_iodm.o m_spin.o
 save_density_matrix.o: m_steps.o m_ts_global_vars.o m_ts_iodm.o precision.o
 save_density_matrix.o: siesta_options.o sparse_matrices.o
 savepsi.o: alloc.o parallel.o parallelsubs.o precision.o
-scfconvergence_test.o: m_convergence.o m_energies.o m_pulay.o
-scfconvergence_test.o: m_ts_global_vars.o m_ts_options.o m_wallclock.o
-scfconvergence_test.o: parallel.o siesta_cml.o siesta_options.o write_subs.o
+scfconvergence_test.o: m_convergence.o m_energies.o m_wallclock.o parallel.o
+scfconvergence_test.o: siesta_cml.o siesta_options.o write_subs.o
 schecomm.o: alloc.o
 setatomnodes.o: alloc.o parallel.o precision.o spatial.o sys.o
 setspatial.o: alloc.o parallel.o precision.o spatial.o
@@ -710,12 +710,13 @@ siesta_end.o: m_wallclock.o meshdscf.o meshphi.o moremeshsubs.o parallel.o
 siesta_end.o: siesta_cml.o siesta_cmlsubs.o siesta_master.o sparse_matrices.o
 siesta_end.o: timestamp.o
 siesta_forces.o: compute_dm.o compute_max_diff.o final_H_f_stress.o
-siesta_forces.o: m_convergence.o m_energies.o m_forces.o m_steps.o m_stress.o
-siesta_forces.o: m_ts_global_vars.o m_ts_options.o mixer.o parallel.o
-siesta_forces.o: post_scf_work.o save_density_matrix.o scfconvergence_test.o
-siesta_forces.o: setup_H0.o setup_hamiltonian.o siesta_cml.o siesta_geom.o
-siesta_forces.o: siesta_master.o siesta_options.o sparse_matrices.o
-siesta_forces.o: state_analysis.o state_init.o sys.o units.o write_subs.o
+siesta_forces.o: m_convergence.o m_energies.o m_forces.o m_pulay.o m_steps.o
+siesta_forces.o: m_stress.o m_ts_global_vars.o m_ts_options.o mixer.o
+siesta_forces.o: parallel.o post_scf_work.o save_density_matrix.o
+siesta_forces.o: scfconvergence_test.o setup_H0.o setup_hamiltonian.o
+siesta_forces.o: siesta_cml.o siesta_geom.o siesta_master.o siesta_options.o
+siesta_forces.o: sparse_matrices.o state_analysis.o state_init.o sys.o units.o
+siesta_forces.o: write_subs.o
 siesta_geom.o: precision.o
 siesta_init.o: alloc.o atomlist.o bands.o bsc_xcmod.o densematrix.o files.o
 siesta_init.o: ioxv.o kpoint_grid.o kpoint_pdos.o ksvinit.o m_check_supercell.o

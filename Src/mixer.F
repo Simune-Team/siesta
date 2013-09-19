@@ -14,6 +14,9 @@
       use m_spin,   only: nspin
       use m_pulay
       use parallel, only: IONode
+#ifdef TRANSIESTA
+      use m_ts_global_vars, only : TSiscf, TSrun
+#endif
 
       implicit none
 
