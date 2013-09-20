@@ -1508,7 +1508,9 @@ MODULE siesta_options
 
     if (harrisfun) then
       usesavedm = .false.
-      nscf      = 2
+      nscf      = 1  ! Note change from tradition, since siesta_forces        
+                     ! now explicitly separates the "compute_forces"        
+                     ! phase from the rest of the scf cycle.          
       mix       = .false.
       SCFMustConverge = .false.
     endif

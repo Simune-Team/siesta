@@ -1,4 +1,36 @@
 -----------------------------------------------------------------------
+2013-09-18  Alberto Garcia                          trunk-444--mixing-5
+Fixes for TranSiesta continuation and scf loop logic
+
+The check for a possible continuation of the loop in TranSiesta's GF
+mode (TSrun = .true.) was wrongly placed, and a number of TS symbols
+were missing in mixer.F.
+
+* The loop logic in 'siesta_forces' has been revised to make it more
+clear, maintaining the old behavior with the exception of:
+
+-- The maximum number of scf iterations is that set by the user,
+instead of one less, since the final forces phase is not counted as an
+iteration.
+
+-- Upon the beginning of a GF TranSiesta run, the variable "first"
+will be reset to 'true' in the first iteration. This will lead to a
+recomputation of the initial hamiltonian when mixing H, instead of
+inheriting H from the previous normal Siesta initialization. Also,
+the Harris and Etot energies will be reset.
+
+* The body of the loop has been made lighter by the use of internal
+routines in a few places.
+
+modified:
+  Src/Makefile
+  Src/m_ts_options.F90
+  Src/mixer.F
+  Src/scfconvergence_test.F
+  Src/siesta_forces.F
+  Src/siesta_options.F90
+
+-----------------------------------------------------------------------
 2013-09-16  Alberto Garcia                          trunk-444--mixing-4
 Normalize the DM in the routines that handle it
 

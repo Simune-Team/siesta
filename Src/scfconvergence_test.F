@@ -3,7 +3,7 @@
       public :: scfconvergence_test
       CONTAINS
 
-      subroutine scfconvergence_test( first, iscf, last, dDmax,
+      subroutine scfconvergence_test( first, iscf, dDmax,
      $                                conv_harris, conv_etot,
      $                                converged)
       USE siesta_options
@@ -14,21 +14,17 @@
       use m_energies
       use m_convergence, only: converger_t
       use m_convergence, only: add_value, is_converged
-#ifdef TRANSIESTA
-      use m_ts_global_vars, only: TSinit, TSrun, TSiscf
-      use m_ts_options, only: TSmode
-      use m_pulay, only: init_pulay_arrays
-#endif /* TRANSIESTA */
+
       implicit none
 
       integer :: iscf
       logical :: first
-      logical :: last
 
       real(dp), intent(in) :: dDmax     ! Max. change in dens. matrix
       type(converger_t), intent(inout)  :: conv_harris, conv_etot
       logical, intent(out)              :: converged
-!------------------------------------------------------------------------- BEGIN
+
+!------------------------------------------------------------------- BEGIN
 
       call timer( 'SCFconv', 1 )
       ! convergence test
@@ -89,57 +85,8 @@
         call wallclock("-------------- end of scf step")
       endif
 
-      ! In principle, this should be the last step if we
-      ! have converged...
-      last = converged
-
-#ifdef TRANSIESTA
-      ! ... except that we might continue for TranSiesta
-      ! This should be made more transparent
-
-!     TSS Begin
-      if (TSmode .and. last .and. TSinit) then
-         last   = .false.     ! we're only done with the initial diagon run
-         TSinit = .false.     ! now we start the TRANSIESTA run
-         TSrun = .true.
-         if (TSiscf .eq. 1) call timer( 'IterSCF', 3 ) !TSS
-         !
-         ! From now on, a new mixing cycle starts,
-         ! so we have to reset the Pulay record keeping
-         !
-         call init_pulay_arrays()
-
-         if(IONode) then
-           write(6,'(/a)')
-     &'                          ************************       '
-           write(6,'(a)')
-     &'                          *   TRANSIESTA BEGIN   *       '
-           write(6,'(a)')
-     &'                          ************************       '
-        end if
-      end if
-
-      if (TSiscf .eq. 1) then
-         call timer( 'TS', 3 )       !TSS (with Green's function generation)
-         call timer( 'TS_calc', 3 )  !TSS (only calculating routines)
-      end if
-      if (TSrun .and. TSiscf < min_nscf ) last = .false.
-! Needed for an MD run of TranSiesta
-!      if (TSrun .and. last) then
-!         ! reset pulays again
-!         call init_pulay_arrays()
-!         ! Set TSinit to .true. for a continuation run in an MD simulation.
-!         TSinit = .true.
-!         !
-!         TSrun  = .false.
-!         TSiscf = 0
-!      end if
-
-!     TSS End
-#endif /* TRANSIESTA */
-
       call timer( 'SCFconv', 2 )
 
-!--------------------------------------------------------------------------- END
+!---------------------------------------------------------------- END
       END subroutine scfconvergence_test
       end module m_scfconvergence_test
