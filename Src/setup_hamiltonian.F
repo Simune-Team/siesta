@@ -4,12 +4,12 @@
       CONTAINS
 
       subroutine setup_hamiltonian( iscf )
-      USE m_normalize_dm, only: normalize_dm
+
       USE siesta_options
       use sparse_matrices, only: H_kin, H_vkb
       use sparse_matrices, only: listh, listhptr, numh, maxnh
-      use sparse_matrices, only: H, S
-      use sparse_matrices, only: Dold, Dscf, Eold, Escf, xijo
+      use sparse_matrices, only: H, S, Hold
+      use sparse_matrices, only: Dscf, Escf, xijo
       use siesta_geom
       use atmfuncs, only: uion
       use atomlist, only: no_u, iaorb, iphkb, qtot, indxuo, datm, 
@@ -28,7 +28,7 @@
       use alloc, only: re_alloc, de_alloc
       use m_gamma
       use m_hsx, only: write_hsx
-      use sys, only: die
+      use sys, only: die, bye
       use m_partial_charges, only: want_partial_charges
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
@@ -53,18 +53,11 @@
 
       call timer('setup_H',1)
 
-!     Normalize density matrix to exact charge
-!     Setup_hamiltonian is called before the density is printed out...
-#ifdef TRANSIESTA      
-      if (.not.TSrun ) call normalize_dm( first= (iscf==1) )
-#else
-      ! Normalize density matrix to exact charge, except if
-      ! we are just using the DM to generate the initial rho and exit
-      !
-      if (.not. save_initial_charge_density) then
-         call normalize_dm(first= (iscf==1))
-      endif
-#endif  /* TRANSIESTA */
+! Save present H matrix
+      if(mixH) then
+         Hold(1:maxnh,1:nspin) = H(1:maxnh,1:nspin)
+      end if
+
 
       ! Initialize Hamiltonian with the non-SCF part...................
 
@@ -137,13 +130,6 @@
         endif
       endif
 
-! Save present density matrix ........................................
-      do is = 1,nspin
-        do io = 1,maxnh
-          Dold(io,is) = Dscf(io,is)
-          Eold(io,is) = Escf(io,is)
-        enddo
-      enddo
 
 !  It is wasteful to write over and over H and S, as there are
 !  no different files.
@@ -158,6 +144,12 @@
 
       call timer('setup_H',2)
 
-!--------------------------------------------------------------------------- END
+      if (h_setup_only) then
+         call timer( 'all', 2 )  ! New call to close the tree
+         call timer( 'all', 3 )
+         call bye("H-Setup-Only requested")
+      endif
+
+!------------------------------------------------------------------------- END
       END subroutine setup_hamiltonian
       END module m_setup_hamiltonian

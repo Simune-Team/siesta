@@ -68,7 +68,7 @@
 \hrulefill
 \vspace{0.5cm}
 
-{\Large June 21, 2013 }
+{\Large September 30, 2013 }
 
 \vspace{1.5cm}
 
@@ -76,7 +76,7 @@
 \begin{tabular}{ll}
 
 {\Large Emilio Artacho} &
-   \Large{\it University of Cambridge} \\ \\
+   \Large{\it CIC-Nanogune and University of Cambridge} \\ \\
 
 {\Large Jos\'e Mar\'{\i}a Cela} &
    \Large{\it Barcelona Supercomputing Center} \\ \\
@@ -3031,8 +3031,50 @@ the calculation will stop on the first SCF convergence failure.
 \end{description}
 
 \subsubsection{Mixing options}
+\index{SCF!mixing}
+
 
 \begin{description}
+
+\index{MixHamiltonian@{\bf
+    MixHamiltonian}}\index{SCF!mixing!Hamiltonian}
+\item[{\bf MixHamiltonian}] ({\it logical}):
+Mixing of the Hamiltonian instead of the density-matrix, a
+feature previously available only for TranSiesta runs has been
+implemented for general use. It is enabled by setting either the
+{\bf MixHamiltonian} option (preferred) or the old-style {\bf TS.MixH}
+option (deprecated but retained due to its use in TranSiesta).
+
+The evidence obtained so far from test runs indicates that Hamiltonian
+mixing might be better than density-matrix mixing in most cases, and
+is seldom worse. Users are encouraged to test this feature for their
+favorite tough-converging systems, and report their experiences.
+
+The H mixing algorithms available are exactly the same as for
+density-matrix mixing (Pulay, Broyden, Fire), and the keywords
+controlling it are also the same, e.g. {\tt DM.MixingWeight} applies
+both to H and DM mixing.
+
+\item[{\bf DM.MixSCF1}] ({\it logical}):\index{SCF!mixing}
+\index{DM.MixSCF1@{\bf DM.MixSCF1}}\index{SCF!mixing}
+Logical variable to indicate whether mixing is done in the
+first SCF cycle or not. Usually, mixing should not be done in
+the first cycle, to avoid non-idempotency in density matrix
+from Harris or previous steps. It can be useful, though,
+for restarts of selfconsistency runs.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf SCF.MixAfterConvergence}] ({\it
+  logical}):\index{SCF!mixing} \index{SCF.MixAfterConvergence@{\bf
+    SCF.MixAfterConvergence}}\index{SCF!mixing!end of cycle} Logical
+  variable to indicate whether mixing is done in the last SCF cycle
+  (after convergence has been achieved) or not.  Not mixing after
+  convergence improves the quality of the final Kohn-Sham
+  energy and of the forces when mixing the DM.
+
+{\it Default value:} {\tt .false.}
+
 
 \item[{\bf DM.MixingWeight}] ({\it real}):\index{SCF!mixing}
 \index{DM.MixingWeight@{\bf DM.MixingWeight}}\index{SCF!mixing!linear}
@@ -3043,6 +3085,10 @@ $\rho^{n+1}_{in} = \alpha \rho^{n}_{out}
 +(1 - \alpha) \rho^{n}_{in}$.
 
 {\it Default value:} {\tt 0.25}
+
+
+Pulay mixing (also known as DIIS extrapolation) is the method of
+choice for accelerating the convergence of the scf cycle.
 
 \item[{\bf DM.NumberPulay}] ({\it integer}):\index{Pulay mixing}
 \index{DM.NumberPulay@{\bf DM.NumberPulay}}\index{SCF!mixing!Pulay}
@@ -3055,8 +3101,8 @@ reach convergence in cases where linear mixing cannot.
 The guess for the $n+1$ iteration is constructed using the
 input and output matrices of the {\bf DM.NumberPulay} former
 SCF cycles, in the following way:
-$\rho^{n+1}_{in} = \alpha \bar{\rho}^{n}_{out}
-+(1 - \alpha) \bar{\rho}^{n}_{in}$, where $\bar{\rho}^{n}_{out}$
+$\rho^{n+1}_{in} = \alpha_P \bar{\rho}^{n}_{out}
++(1 - \alpha_P) \bar{\rho}^{n}_{in}$, where $\bar{\rho}^{n}_{out}$
 and $\bar{\rho}^{n}_{in}$ are constructed from the previous
 $N=${\bf DM.NumberPulay} cycles:
 %
@@ -3070,12 +3116,74 @@ $N=${\bf DM.NumberPulay} cycles:
 %
 The values of $\beta_i$ are obtained by minimizing the distance
 between $\bar{\rho}^{n}_{out}$ and $\bar{\rho}^{n}_{in}$.
-The value of $\alpha$ is given by variable {\bf DM.MixingWeight}.
+The value of $\alpha_P$ is given by default by variable {\bf
+  DM.MixingWeight}, although it can be set directly by {\bf
+  SCF.PulayDamping}.
 
 If {\bf DM.NumberPulay} is 0 or 1, simple linear mixing is
 performed.
 
 {\it Default value:} {\tt 0}
+
+
+\item[{\bf SCF.Pulay.Damping}] ({\it real}):\index{SCF!mixing}
+\index{SCF.Pulay.Damping@{\bf SCF.Pulay.Damping}}\index{SCF!mixing!Pulay!damping}
+Proportion $\alpha_P$ of the predicted
+output Density Matrix to be used for the input Density Matrix of
+next SCF cycle in Pulay mixing (see above). Typically, this can be
+significantly higher than the mixing parameter used for linear
+mixing. 
+
+{\it Default value:} {\it (the value of {\bf DM.MixingWeight})}
+
+\item[{\bf SCF.PulayMinimumHistory}] ({\it integer}):\index{Pulay mixing}
+\index{SCF.PulayMinimumHistory@{\bf SCF.PulayMinimumHistory}}\index{SCF!mixing!Pulay}
+
+Pulay mixing might kick in only after a specified number of history
+steps have been built up.
+
+{\it Default value:} {\tt 2}
+
+\item[{\bf SCF.PulayDmaxRegion}] ({\it real}):\index{SCF!mixing!Pulay}
+\index{SCF.PulayDmaxRegion@{\bf
+    SCF.PulayDmaxRegion}}\index{SCF!mixing!Pulay!close region}
+
+Pulay mixing might not work well if far from the fixed point. This option
+will avoid inserting the current $X_{in}$, $X_{out}$ pair ($X$ could be
+the density matrix or the hamiltonian) in the history stack if
+the maximum difference is above the specified number.
+
+{\it Default value:} {\it (a very high number, so no effect by
+  default)}
+
+\item[{\bf DM.NumberKick}] ({\it integer}):\index{Linear mixing kick}
+\index{DM.NumberKick@{\bf DM.NumberKick}}
+%\index{SCF!mixing!linear!Pulay!Broyden}
+\index{SCF!mixing!linear}
+Option to skip the Pulay (or Broyden) mixing each certain number of iterations,
+and use a linear mixing instead. Linear mixing is done
+every {\bf DM.NumberKick} iterations, using a mixing coefficient
+$\alpha$ given by variable {\bf DM.KickMixingWeight}
+(instead of the usual mixing {\bf DM.MixingWeight}).
+This allows in some difficult cases to bring the SCF out of
+loops in which the selfconsistency is stuck.
+If {\bf DM.MixingWeight}=0, no linear mix is used.
+
+{\it Default value:} {\tt 0}
+
+\item[{\bf DM.KickMixingWeight}] ({\it real}):\index{SCF!mixing!Pulay!Broyden}
+\index{DM.KickMixingWeight@{\bf DM.KickMixingWeight}}
+%\index{SCF!mixing!linear!Pulay!Broyden}
+\index{SCF!mixing!linear}
+Proportion $\alpha$ of
+output Density Matrix to be used for the input Density Matrix of
+next SCF cycle (linear mixing):
+$\rho^{n+1}_{in} = \alpha \rho^{n}_{out}
++(1 - \alpha) \rho^{n}_{in}$, for linear mixing kicks within the
+Pulay or Broyden mixing schemes.
+This mixing is done every {\bf DM.NumberKick} cycles.
+
+{\it Default value:} {\tt 0.50}
 
 \item[{\bf DM.Pulay.Avoid.First.After.Kick}] ({\it
   logical}):\index{SCF!mixing}
@@ -3089,6 +3197,61 @@ performed.
   this variable is activated.
 
 {\it Default value:} {\tt .false.}
+
+
+\item[{\bf SCF.LinearMixingAfterPulay}] ({\it logical}):
+  \index{SCF.LinearMixingAfterPulay@{\bf
+      SCF.LinearMixingAfterPulay}}\index{SCF!mixing!Pulay} 
+
+The damping of the DIIS-predicted $X_{in}$ is done to avoid introducing
+linear dependencies into the Pulay history stack. Alternatively (or
+simultaneously) one can use the most recent $X_{in}$, $X_{out}$ pair in a
+linear mixing step, and use a possibly different mixing
+parameter. This would be akin to a ```kick'', but without removing all
+the history information.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf SCF.MixingWeightAfterPulay}] ({\it real}):\index{SCF!mixing!Pulay}
+\index{SCF.MixingWeightAfterPulay@{\bf SCF.MixingWeightAfterPulay}}
+\index{SCF!mixing!Pulay}
+
+Proportion $\alpha$ of output Density Matrix to be used for the input
+Density Matrix of next SCF cycle, for linear mixing
+steps after a Pulay mixing step if the option {\bf
+  SCF.LinearMixingAfterPulay} is activated.
+
+{\it Default value:} {\tt 0.50}
+
+\item[{\bf SCF.Pulay.UseSVD}] ({\it logical}):
+  \index{SCF.Pulay.UseSVD@{\bf
+      SCF.Pulay.UseSVD}}\index{SCF!mixing!Pulay!SVD} 
+
+Instead of a direct matrix inversion, the more robust SVD algorithm can
+be used to perform the DIIS extrapolation.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf SCF.Pulay.DebugSVD}] ({\it logical}):
+  \index{SCF.Pulay.DebugSVD@{\bf
+      SCF.Pulay.DebugSVD}}\index{SCF!mixing!Pulay!SVD} 
+
+Print more information (effective rank, singular values) if the SVD algorithm
+isused to perform the DIIS extrapolation.
+
+{\it Default value:} {{\tt .true.} {\it when using SVD}}
+
+\item[{\bf SCF.Pulay.RcondSVD}] ({\it real}):\index{SCF!mixing!Pulay!SVD}
+\index{SCF.Pulay.RcondSVD@{\bf SCF.Pulay.RcondSVD}}
+\index{SCF!mixing!Pulay!SVD}
+
+Singular values which are smaller than {\tt rcond} times the maximum
+singular value are effectively discarded in the SVD algorithm for
+solving the DIIS equations. This lowers the effective rank of the
+problem, and is a sign of (near) linear dependencies in the
+extrapolation data.
+
+{\it Default value:} {\tt 10$^{-8}$}
 
 
 \item[{\bf DM.PulayOnFile}] ({\it logical}):
@@ -3108,6 +3271,8 @@ where SystemLabel is the name associated
 to parameter {\tt SystemLabel}.
 
 {\it Default value:} {\tt .false.}
+
+
 
 \item[{\bf DM.NumberBroyden}] ({\it integer}):\index{Broyden mixing}
 \index{DM.NumberBroyden@{\bf DM.NumberBroyden}}\index{SCF!mixing!Broyden}
@@ -3155,45 +3320,6 @@ norm of their residual ${\rho}^{n}_{out}-{\rho}^{n}_{in}$.
 
 {\it Default value:} {\tt .true.}
 
-\item[{\bf DM.NumberKick}] ({\it integer}):\index{Linear mixing kick}
-\index{DM.NumberKick@{\bf DM.NumberKick}}
-%\index{SCF!mixing!linear!Pulay!Broyden}
-\index{SCF!mixing!linear}
-Option to skip the Pulay (or Broyden) mixing earch certain number of iterations,
-and use a linear mixing instead. Linear mixing is done
-every {\bf DM.NumberKick} iterations, using a mixing coefficient
-$\alpha$ given by variable {\bf DM.KickMixingWeight}
-(instead of the usual mixing {\bf DM.MixingWeight}).
-This allows in some difficult cases to bring the SCF out of
-loops in which the selfconsistency is stuck.
-If {\bf DM.MixingWeight}=0, no linear mix is used.
-
-{\it Default value:} {\tt 0}
-
-\item[{\bf DM.KickMixingWeight}] ({\it real}):\index{SCF!mixing!Pulay!Broyden}
-\index{DM.KickMixingWeight@{\bf DM.KickMixingWeight}}
-%\index{SCF!mixing!linear!Pulay!Broyden}
-\index{SCF!mixing!linear}
-Proportion $\alpha$ of
-output Density Matrix to be used for the input Density Matrix of
-next SCF cycle (linear mixing):
-$\rho^{n+1}_{in} = \alpha \rho^{n}_{out}
-+(1 - \alpha) \rho^{n}_{in}$, for linear mixing kicks within the
-Pulay or Broyden mixing schemes.
-This mixing is done every {\bf DM.NumberKick} cycles.
-
-{\it Default value:} {\tt 0.50}
-
-
-\item[{\bf DM.MixSCF1}] ({\it logical}):\index{SCF!mixing}
-\index{DM.MixSCF1@{\bf DM.MixSCF1}}\index{SCF!mixing}
-Logical variable to indicate whether mixing is done in the
-first SCF cycle or not. Usually, mixing should not be done in
-the first cycle, to avoid non-idempotency in density matrix
-from Harris or previous steps. It can be useful, though,
-for restarts of selfconsistency runs.
-
-{\it Default value:} {\tt .false.}
 
 \end{description}
 

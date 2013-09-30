@@ -5,6 +5,8 @@ MODULE siesta_options
   implicit none
   PUBLIC
 
+  logical :: mixH          ! Mix H instead of DM
+  logical :: mix_after_convergence ! Mix DM or H even after convergence
   logical :: h_setup_only  ! H Setup only
   logical :: chebef        ! Compute the chemical potential in ordern?
   logical :: default       ! Temporary used to pass default values in fdf reads
@@ -114,7 +116,8 @@ MODULE siesta_options
   real(dp) :: Energy_tolerance
   real(dp) :: Harris_tolerance
   real(dp) :: rijmin        ! Min. permited interatomic distance without warning
-  real(dp) :: dm_normalization_tol   ! Threshold for DM normalization mismatch
+  real(dp) :: dm_normalization_tol    ! Threshold for DM normalization mismatch error
+  logical  :: normalize_dm_during_scf ! Whether we normalize the DM 
   real(dp) :: dDtol         ! Tolerance in change of DM elements to finish SCF iteration
   real(dp) :: dt            ! Time step in dynamics
   real(dp) :: dx            ! Atomic displacement used to calculate Hessian matrix
@@ -148,6 +151,8 @@ MODULE siesta_options
 
   real(dp), parameter :: g2cut_default = 100.e0_dp
   real(dp), parameter :: temp_default  = 1.900e-3_dp 
+
+  logical, parameter  :: mixH_def = .false.
 
   integer,  parameter :: maxsav_default = 0
   integer,  parameter :: nscf_default = 50
@@ -468,6 +473,19 @@ MODULE siesta_options
       call cmlAddParameter( xf=mainXML, name='MinSCFIterations',  &
                             value=min_nscf, dictRef='siesta:minscf',  &
                             units="cmlUnits:countable")
+    endif
+
+    mixH = fdf_get('MixHamiltonian',mixH_def)
+    mixH = fdf_get('TS.MixH',mixH)   ! Catch old-style keyword
+
+    if (ionode) then
+       write(6,1) 'redata: Mix Hamiltonian instead of DM    = ', mixH
+    endif
+    
+    mix_after_convergence = fdf_get('SCF.MixAfterConvergence',.true.)
+    if (ionode) then
+       write(6,1) 'redata: Mix DM or H after convergence    = ',  &
+                  mix_after_convergence
     endif
 
     ! Pulay mixing, number of iterations for one Pulay mixing (maxsav)
@@ -1474,7 +1492,9 @@ MODULE siesta_options
 
     if (harrisfun) then
       usesavedm = .false.
-      nscf      = 2
+      nscf      = 1  ! Note change from tradition, since siesta_forces        
+                     ! now explicitly separates the "compute_forces"        
+                     ! phase from the rest of the scf cycle.          
       mix       = .false.
       SCFMustConverge = .false.
     endif
@@ -1529,6 +1549,7 @@ MODULE siesta_options
     allow_dm_reuse         = fdf_get( 'DM.AllowReuse', .TRUE. )
     allow_dm_extrapolation = fdf_get( 'DM.AllowExtrapolation', .TRUE. )
     dm_normalization_tol   = fdf_get( 'DM.NormalizationTolerance',1.0d-5)
+    normalize_dm_during_scf= fdf_get( 'DM.NormalizeDuringSCF',.true.)
     muldeb                 = fdf_get( 'MullikenInSCF'   , .false.)
     rijmin                 = fdf_get( 'WarningMinimumAtomicDistance', &
                                       1.0_dp, 'Bohr' )
