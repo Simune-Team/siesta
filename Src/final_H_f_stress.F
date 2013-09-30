@@ -4,7 +4,7 @@
       CONTAINS
 
       subroutine final_H_f_stress( iscf )
-      USE m_normalize_dm, only: normalize_dm
+
       USE siesta_options
       use sparse_matrices
       use siesta_geom
@@ -38,7 +38,7 @@
 #ifdef TRANSIESTA
 ! TSS Begin
       use files,        only : slabel, label_length
-      use m_ts_global_vars, only : TSrun, ts_istep
+      use m_ts_global_vars, only : ts_istep
       use m_ts_options, only : savetshs
       use m_ts_kpoints, only : ts_gamma_scf, ts_kscell, ts_kdispl
       use m_ts_io,      only : ts_iohs
@@ -67,14 +67,7 @@
       character(len=label_length+5)  :: PASTE
 !     TSS End
 #endif /* TRANSIESTA */
-!------------------------------------------------------------------------- BEGIN
-
-!     Normalize density matrix to exact charge
-#ifdef TRANSIESTA      
-      if (.not.TSrun ) call normalize_dm( first=.false. )
-#else
-      call normalize_dm( first=.false. )
-#endif  /* TRANSIESTA */
+!--------------------------------------------------------------------- BEGIN
 
 !     Initialize Hamiltonian ........................................
       H = 0.0_dp
@@ -138,6 +131,7 @@
      &             Exc, Dxc, dipol, fa, stress, fal, stressl )
 
 !     Orthonormalization forces ...........................................
+!     **Note that this will re-calculate S also
       call overfsm( na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &              maxnh, maxnh, lasto, iphorb, isa, 
      &              numh, listhptr, listh, numh, listhptr, listh, 
@@ -178,15 +172,6 @@
         endif
       endif
         
-!!!! Possible BUG: Dold should not be overwritten in the last iteration
-! Save present density matrix ........................................
-      do is = 1,nspin
-        do io = 1,maxnh
-          Dold(io,is) = Dscf(io,is)
-          Eold(io,is) = Escf(io,is)
-        enddo
-      enddo        
-
 ! Save Hamiltonian and overlap matrices ............................
 ! Only in HSX format now.  Use Util/HSX/hsx2hs to generate an HS file
       if (savehs) then
@@ -219,6 +204,6 @@
       endif
 ! TSS End
 #endif /* TRANSIESTA */
-!--------------------------------------------------------------------------- END
+!----------------------------------------------------------------------- END
       END subroutine final_H_f_stress
       END module m_final_H_f_stress

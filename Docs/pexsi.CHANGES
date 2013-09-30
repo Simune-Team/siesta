@@ -1,4 +1,12 @@
 ------------------------------------------------------------
+September 30, 2013  A. Garcia        trunk-444--pexsi-43
+Merge new mixing options
+
+The new mixing options were merged from a side branch first.
+An upcoming revision will sync with the trunk and pick up
+the CHANGES file.
+
+------------------------------------------------------------
 September 13, 2013  A. Garcia        trunk-444--pexsi-42
 Sync to trunk-444
 

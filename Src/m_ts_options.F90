@@ -103,7 +103,7 @@ real(dp),  parameter :: ChargeCorr_factor_def = 0.75_dp
 logical, parameter :: ElecValenceBandBot_def = .false.
 logical, parameter :: ReUseGF_def = .true.
 
-logical, save :: TSmode = .false.
+logical    :: TSmode = .false.
 
       CONTAINS
 

@@ -11,9 +11,9 @@
       use siesta_cml
       use m_state_init
       use m_setup_hamiltonian
-      use m_final_H_f_stress,    only: final_H_f_stress
       use m_setup_H0
       use m_compute_dm
+      use m_compute_max_diff
       use m_scfconvergence_test
       use m_post_scf_work
       use m_mixer
@@ -31,143 +31,164 @@
       use m_stress,      only: cstress        ! Constrained stress tensor
       use siesta_master, only: forcesToMaster ! Send forces to master prog
       use siesta_master, only: siesta_server  ! Is siesta a server?
-      use write_subs
+
       use units,         only: eV, Ang
+      use sparse_matrices, only: H, Hold, Dold, Dscf
       use m_pexsi_solver,        only: prevDmax
+      use m_save_density_matrix, only: save_density_matrix
+      use m_mpi_utils, only: broadcast
 #ifdef TRANSIESTA
-      use m_ts_options, only : mixH
       use m_ts_global_vars, only : ts_istep
 #endif /* TRANSIESTA */
       implicit none
       integer, intent(in)  :: istep
       integer  :: iscf
-      logical  :: first, last, SCFconverged
-      real(dp) :: dDmax     ! Max. change in density matrix elements
+      logical  :: first, last_step, SCFconverged
+      real(dp) :: dmax      ! Max. change in DM or H elements
       type(converger_t)  ::  conv_harris, conv_etot
-      real(dp), allocatable  :: fa_old(:,:)
+
+!---------------------------------------------------------------------- BEGIN
 #ifdef TRANSIESTA
 ! Used in force constant runs
       ts_istep = istep
 #endif /* TRANSIESTA */
 
-      integer mpierr
-!---------------------------------------------------------------------- BEGIN
+      ! Broadcast relevant things for program logic
+      ! These were set in read_options, called only by "SIESTA_workers".
+      call broadcast(nscf,comm=true_MPI_Comm_World)
 
       if (SIESTA_worker)  then
-!     Initialization tasks for a given geometry
-      call state_init( istep )
+      !     Initialization tasks for a given geometry
+         call state_init( istep )
+      endif
 
 !     The current structure of the loop tries to reproduce the
 !     historical Siesta usage. It should be made more clear.
+!     Two changes: 
+!
+!       -- The number of scf iterations performed is exactly
+!          equal to the number specified (i.e., the "forces"
+!          phase is not counted as a final scf step)
+!
+!       -- At the change to a TranSiesta GF run the variable "first"
+!          is implicitly reset to "true".
+
 
 !     Start of SCF loop
-      iscf  = 1
-      first = .true.
-      last  = .false.
-      SCFconverged = .false.
-      if (require_harris_convergence) then
-        call reset(conv_harris)
-        call set_tolerance(conv_harris,harris_tolerance)
-      endif
-      if (require_energy_convergence) then
-        call reset(conv_etot)
-        call set_tolerance(conv_etot,energy_tolerance)
-      endif
+      iscf  = 0
+      if (SIESTA_worker) call setup_H0()
 
-!     The SCF loop is executed at least once, 
-!     except if nscf <= 0.
-      if (nscf <= 0) then
-         last = .true.
-      endif
+      DO 
+        ! Conditions of exit:
+        !  -- At the top, to catch a non-positive nscf
+        !  -- At the bottom, based on convergence or # of iterations
 
-      call setup_H0()
-      endif ! SIESTA_worker
+        iscf = iscf + 1
+        if (iscf > nscf) EXIT
 
-      call MPI_Bcast(last,1,MPI_logical,0,true_MPI_Comm_World,mpierr)
-      call MPI_Bcast(iscf,1,MPI_integer,0,true_MPI_Comm_World,mpierr)
+        ! Note implications for TranSiesta when mixing H
+        ! Now H will be recomputed instead of simply being
+        ! inherited
+        first = (iscf == 1)
 
-      DO WHILE (.not. last)
+        if (SIESTA_worker) then
+           if (first) then
+              if (require_harris_convergence) then
+                 call reset(conv_harris)
+                 call set_tolerance(conv_harris,harris_tolerance)
+              endif
+              if (require_energy_convergence) then
+                 call reset(conv_etot)
+                 call set_tolerance(conv_etot,energy_tolerance)
+              endif
+           endif
 
-       if (SIESTA_worker) then
           call timer( 'IterSCF', 1 )
           if (cml_p)
      &         call cmlStartStep( xf=mainXML, type='SCF', index=iscf )
-       endif
+
+       endif ! SIESTA_worker
 
        if (mixH) then
           if ( first .and. SIESTA_worker) call setup_hamiltonian( iscf )
           call compute_dm( iscf )
           if (SIESTA_worker) call setup_hamiltonian( iscf )
+          if (SIESTA_worker) call compute_max_diff(Hold,H,dmax)
        else 
           if (SIESTA_worker) call setup_hamiltonian( iscf )
           call compute_dm( iscf )
-       end if                   ! mixH
-       if (SIESTA_worker) call mixer( iscf, dDmax )
+          if (SIESTA_worker) call compute_max_diff(Dold,Dscf,dmax)
+       end if                   
 
        if (SIESTA_worker) then
-          prevDmax = dDMax
-          call scfconvergence_test( first, iscf, last, dDmax,
-     &                            conv_harris, conv_etot )
-       endif ! SIESTA_worker
+        call scfconvergence_test( first, iscf, dmax,
+     &                            conv_harris, conv_etot,
+     &                            SCFconverged )
+        prevDmax = dmax
 
-       call MPI_Bcast(last,1,MPI_logical,0,true_MPI_Comm_World,mpierr)
-
-       if (SIESTA_worker) then
-!       At this point last is true if SCF has converged. But this
-!       changed below
-        SCFconverged = last
-
-        if (monitor_forces_in_scf) then
-           allocate(fa_old(size(fa,dim=1),size(fa,dim=2)))
-           fa_old = fa
-           if (mixH) Hold(:,:) = H(:,:)
-           call final_H_f_stress(iscf)
-           if (mixH) H(:,:) = Hold(:,:)     
+        if (SCFconverged .and. (iscf < min_nscf)) then
+           SCFconverged = .false.
            if (ionode) then
-              print *, "Max diff in force (eV/Ang): ",
-     $                 maxval(abs(fa-fa_old))*Ang/eV
+              write(6,"(a,i0)")
+     $         "SCF cycle continued for minimum number of iterations: ",
+     $            min_nscf
            endif
-           deallocate(fa_old)
-           call siesta_write_forces()
-           call siesta_write_stress_pressure()
+        endif
+
+        if (monitor_forces_in_scf)  call compute_forces()
+
+        if ((.not. SCFconverged) .OR. mix_after_convergence) then
+           ! Mix for next step
+           call mixer( iscf )
+           ! Save for possible restarts
+           ! Could save H in the future
+           call save_density_matrix("mixed")
         endif
 
         call timer( 'IterSCF', 2 )
-        if (istep.eq.inicoor .and. first) call timer( 'IterSCF', 3 )
+        call maybe_print_timings()
         if (cml_p) call cmlEndStep(mainXML)
+
+        last_step = SCFConverged
+#ifdef TRANSIESTA
+        ! ... except that we might continue for TranSiesta
+        call check_transiesta_continuation()   ! might reset 'last_step'
+                                               ! and iscf
+#endif
+
+        if (iscf == nscf) then
+           last_step = .true.
+        endif
+
        endif ! SIESTA_worker
 
-        iscf = iscf + 1
-        first = .false.
+       call broadcast(last_step,comm=true_MPI_Comm_World)
+       call broadcast(iscf,comm=true_MPI_Comm_World)
 
-        if (SIESTA_worker) then
-!       The last scheduled iteration is used to compute forces
-!       and stresses, hence the exit if iscf==nscf.
-!       The ">" clause catches the nscf==1 case. For this,
-        if (iscf < min_nscf ) then
-           last = .false.
-        else if (iscf >= nscf) then
-           last = .true.
-        endif
-        endif ! SIESTA_worker
-        call MPI_Bcast(last,1,MPI_logical,0,true_MPI_Comm_World,mpierr)
+       if (last_step) EXIT
+
       ENDDO
 
       if (.not. SIESTA_worker) RETURN
 
-!     If we have not converged, but get to here, we are out
-!     of steps. We may want to error out.
       if ((SCFMustConverge).and.(.not.SCFconverged)) then
         call die('SCF did not converge in maximum number of steps.')
       endif
 
+      if (.not. mix_after_convergence) then
+         ! Save final DM_out for further analysis offline
+         call save_density_matrix("dmout")
+         if (MixH) then
+             ! We could make sure that we keep the H actually used 
+             ! to generate the last DM, if needed.
+             !!!    H = Hold
+         endif
+      endif
+
 !     End of standard SCF loop.
 !     Do one more pass to compute forces and stresses
-      if (last) then
-        call post_scf_work( iscf )
-      else
-        STOP 'Bad logic in SCF loop'
-      endif
+
+      call post_scf_work( iscf )
 
       call state_analysis( istep )
 
@@ -177,5 +198,113 @@
 
 
 !------------------------------------------------------------------------ END
+
+      CONTAINS
+
+!-----------------------------------------------------
+      subroutine compute_forces()
+      ! Computes forces and stresses with the current DM_out
+
+      use m_final_H_f_stress,    only: final_H_f_stress
+      use write_subs
+
+      real(dp), allocatable  :: fa_old(:,:), Hsave(:,:)
+
+      allocate(fa_old(size(fa,dim=1),size(fa,dim=2)))
+      allocate(Hsave(size(H,dim=1),size(H,dim=2)))
+      fa_old = fa
+      Hsave(:,:) = H(:,:)
+      call final_H_f_stress(iscf)
+      H(:,:) = Hsave(:,:)
+      if (ionode) then
+         print *, "Max diff in force (eV/Ang): ",
+     $        maxval(abs(fa-fa_old))*Ang/eV
+         call siesta_write_forces()
+         call siesta_write_stress_pressure()
+      endif
+      deallocate(fa_old,Hsave)
+
+      end subroutine compute_forces
+
+!-----------------------------------------------------
+      subroutine maybe_print_timings()
+#ifdef TRANSIESTA
+      use m_ts_global_vars, only: TSrun, TSiscf
+#endif
+
+#ifdef TRANSIESTA
+      if (TSrun) then
+         if (TSiscf .eq. 1) then
+            call timer( 'TS', 3 ) !TSS (with Green's function generation)
+            call timer( 'TS_calc', 3 ) !TSS (only calculating routines)
+         end if
+      else
+         if (istep.eq.inicoor .and. first ) call timer( 'IterSCF', 3 )    
+      endif
+#else
+      if (istep.eq.inicoor .and. first ) call timer( 'IterSCF', 3 )    
+#endif
+      end subroutine maybe_print_timings
+
+!-----------------------------------------------------
+
+#ifdef TRANSIESTA
+      subroutine check_transiesta_continuation()
+
+      ! This routine performs some basic control of the
+      ! scf loop for TranSiesta calculations. 
+
+      ! Recall: 
+      !    TSmode: .true. if we are in TranSiesta mode
+      !    TSinit: .true. if performing an initial Siesta phase
+      !    TSrun : .true. if in an actual TS GF run.
+
+      use m_ts_global_vars, only: TSinit, TSrun, TSiscf
+      use m_ts_options, only: TSmode
+      use m_pulay, only: init_pulay_arrays
+
+      ! Signal the change in character of the scf loop
+
+      if (TSmode .and. last_step .and. TSinit) then
+
+         last_step = .false.  ! we're only done with the initial diagon run
+         TSinit = .false.     ! now we start the TRANSIESTA run
+         TSrun = .true.
+         TSiscf = 0
+         iscf = 0
+         !
+         ! From now on, a new mixing cycle starts,
+         ! so we have to reset the Pulay record keeping
+         !
+         call init_pulay_arrays()
+
+         if(IONode) then
+           write(6,'(/a)')
+     &'                          ************************       '
+           write(6,'(a)')
+     &'                          *   TRANSIESTA BEGIN   *       '
+           write(6,'(a)')
+     &'                          ************************       '
+        end if
+      end if
+
+
+      ! Avoid stopping the loop too early
+      if (TSrun .and. TSiscf < min_nscf ) last_step = .false.
+! Needed for an MD run of TranSiesta
+!      if (TSrun .and. last_step) then
+!         ! reset pulays again
+!         call init_pulay_arrays()
+!         ! Set TSinit to .true. for a continuation run in an MD simulation.
+!         TSinit = .true.
+!         !
+!         TSrun  = .false.
+!         TSiscf = 0
+!      end if
+
+      end subroutine check_transiesta_continuation
+#endif /* TRANSIESTA */
+
+
       END subroutine siesta_forces
       END module m_siesta_forces
