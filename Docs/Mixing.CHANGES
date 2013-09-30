@@ -1,4 +1,21 @@
 -----------------------------------------------------------------------
+2013-09-30  Alberto Garcia                          trunk-444--mixing-6
+Document latest features
+
+* Update manual with the latest features.
+
+* Change the name of one of the new Pulay mixing options to
+
+    SCF.MixingWeightAfterPulay
+
+* Print warning in the case of a failure of the DIIS extrapolation when
+using matrix inversion (preprocessor option no longer needed).
+
+modified:
+  Docs/siesta.tex
+  Src/m_pulay.F90
+
+-----------------------------------------------------------------------
 2013-09-18  Alberto Garcia                          trunk-444--mixing-5
 Fixes for TranSiesta continuation and scf loop logic
 

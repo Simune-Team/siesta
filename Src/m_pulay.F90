@@ -47,7 +47,7 @@ CONTAINS
     ! Read some operational parameters
 
     alpha_pulay = fdf_get("SCF.Pulay.Damping",-1.0_dp) ! Default will set it to alpha
-    alpha_after_pulay = fdf_get("SCF.MixingAfterPulay",0.5_dp)
+    alpha_after_pulay = fdf_get("SCF.MixingWeightAfterPulay",0.5_dp)
     pulay_minimum_history = fdf_get("SCF.PulayMinimumHistory",2)
     max_dmax_for_pulay = fdf_get("SCF.PulayDmaxRegion",1000.0_dp) ! No effect by default
     linear_mixing_after_pulay = fdf_get("SCF.LinearMixingAfterPulay",.false.)
@@ -245,7 +245,7 @@ CONTAINS
     if (last_was_pulay) then
        last_was_pulay = .false.
        if (linear_mixing_after_pulay) then
-          if (Node==0) write(6,*) "Last was Pulay. LinearMixing - Kick"
+          if (Node==0) write(6,*) "Linear mixing after Pulay step"
           call linear_mixing(alpha_after_pulay)
           RETURN
        endif
@@ -429,12 +429,10 @@ CONTAINS
           enddo
        else
           ! Otherwise, use only last step
-#ifdef DEBUG_PULAY_INVERSE
           if (Node == 0) then
-             write(6,"(a,i5)")  &
-                  "Warning: unstable inversion in Pulayx - fallback to linear mixing"
+            write(6,"(a)")  &
+            "Warning: unstable inversion in Pulayx - fallback to linear mixing"
           endif
-#endif
           do i=1,maxmix
              coeff(i)=0.0_dp
           enddo
