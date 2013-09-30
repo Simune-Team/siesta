@@ -163,7 +163,7 @@ OBJS =  automatic_cell.o atom_options.o \
         m_object_debug.o m_uuid.o\
         m_dminim.o m_zminim.o \
         m_getopts.o f2kcli.o \
-        m_svd.o
+        m_svd.o m_pexsi_dos.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -565,6 +565,8 @@ m_mpi_utils.o: precision.o sys.o
 m_options.o: precision.o
 m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
 m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o
+m_pexsi_dos.o: alloc.o class_Dist.o m_mpi_utils.o m_pexsi_interface.o
+m_pexsi_dos.o: m_redist_spmatrix.o parallel.o precision.o units.o
 m_pexsi_local_dos.o: alloc.o atomlist.o class_Dist.o dhscf.o files.o
 m_pexsi_local_dos.o: m_energies.o m_eo.o m_forces.o m_gamma.o m_mpi_utils.o
 m_pexsi_local_dos.o: m_ntm.o m_pexsi_interface.o m_redist_spmatrix.o m_spin.o
@@ -723,10 +725,10 @@ siesta.o: siesta_end.o siesta_forces.o siesta_init.o siesta_move.o
 siesta_analysis.o: alloc.o atomlist.o bands.o basis_enthalpy.o dhscf.o files.o
 siesta_analysis.o: kpoint_grid.o ksv.o ksvinit.o local_DOS.o m_dipol.o
 siesta_analysis.o: m_energies.o m_eo.o m_forces.o m_gamma.o m_mpi_utils.o
-siesta_analysis.o: m_ntm.o m_partial_charges.o m_pexsi_local_dos.o m_spin.o
-siesta_analysis.o: m_steps.o parallel.o projected_DOS.o siesta_cml.o
-siesta_analysis.o: siesta_geom.o siesta_options.o sparse_matrices.o
-siesta_analysis.o: write_subs.o writewave.o zmatrix.o
+siesta_analysis.o: m_ntm.o m_partial_charges.o m_pexsi_dos.o
+siesta_analysis.o: m_pexsi_local_dos.o m_spin.o m_steps.o parallel.o
+siesta_analysis.o: projected_DOS.o siesta_cml.o siesta_geom.o siesta_options.o
+siesta_analysis.o: sparse_matrices.o write_subs.o writewave.o zmatrix.o
 siesta_cmlsubs.o: files.o parallel.o siesta_cml.o timestamp.o 
 siesta_end.o: alloc.o bands.o densematrix.o fixed.o m_dscfcomm.o m_pulay.o
 siesta_end.o: m_wallclock.o meshdscf.o meshphi.o moremeshsubs.o parallel.o

@@ -15,6 +15,7 @@
       USE m_projected_DOS, only: projected_DOS
       USE m_local_DOS, only: local_DOS
       USE m_pexsi_local_DOS, only: pexsi_local_DOS
+      USE m_pexsi_DOS, only: pexsi_DOS
       USE siesta_options
       use sparse_matrices, only: maxnh, listh, listhptr, numh
       use sparse_matrices, only: H, S, Dscf, Dold, Eold, xijo
@@ -23,6 +24,7 @@
       use m_dhscf, only: dhscf
       use atomlist, only: indxuo, iaorb, lastkb, lasto, datm, no_l,
      &                    iphkb, no_u, no_s, iza, iphorb, rmaxo, indxua
+      use atomlist, only: qtot
       use fdf
       use writewave,    only: wwave
       use siesta_cml
@@ -381,6 +383,10 @@ C     Find local density of states
 
       if (fdf_get("PEXSI.LocalDOS",.false.)) then
          call pexsi_local_DOS()
+      endif
+      if (fdf_get("PEXSI.DOS",.false.)) then
+         call pexsi_DOS(no_u, no_l, nspin,
+     $        maxnh, numh, listhptr, listh, H, S, qtot, ef, temp)
       endif
 
 !------------------------------------------------------------------------- END
