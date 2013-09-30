@@ -1,4 +1,22 @@
 ------------------------------------------------------------
+September 30, 2013  A. Garcia        trunk-445--pexsi-43
+Sync to trunk-445
+
+"New mixing options and simplification of scf loop"
+
+See the CHANGES file for a complete description of the latest features
+merged:
+
+Fixes for TranSiesta continuation and scf loop logic.
+Normalize the DM in the routines that handle it.
+Optionally avoid mixing DM or H after scf-convergence.
+Implement Hamiltonian mixing
+More options for Pulay mixing
+
+(Note that the option to mix the Hamiltonian was already present in
+the PEXSI branch)
+
+------------------------------------------------------------
 September 30, 2013  A. Garcia        trunk-444--pexsi-43
 Merge new mixing options
 
