@@ -1,8 +1,15 @@
 ------------------------------------------------------------
+September 30, 2013  A. Garcia   trunk-444--pexsi-42--mixing-6
+Documentation for latest features
+
+Merged trunk-mixing--6. See Mixing.CHANGES.
+
+------------------------------------------------------------
 September 20, 2013  A. Garcia   trunk-444--pexsi-42--mixing-5
 Fixes for TranSiesta continuation and scf loop logic
 
 Merged trunk-mixing--5. See Mixing.CHANGES.
+
 ------------------------------------------------------------
 September 16, 2013  A. Garcia   trunk-444--pexsi-42--mixing-4
 Normalize the DM in the routines that handle it
