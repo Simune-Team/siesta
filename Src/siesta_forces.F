@@ -181,7 +181,7 @@
          if (MixH) then
              ! We could make sure that we keep the H actually used 
              ! to generate the last DM, if needed.
-             !!!    H = Hold
+             H = Hold
          endif
       endif
 

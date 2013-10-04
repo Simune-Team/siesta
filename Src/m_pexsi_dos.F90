@@ -8,7 +8,7 @@ CONTAINS
 ! This version uses separate distributions for Siesta (setup_H et al) and PEXSI.
 !
   subroutine pexsi_DOS(no_u, no_l, nspin,  &
-       maxnh, numh, listhptr, listh, H, S, qtot, ef, temp)
+       maxnh, numh, listhptr, listh, H, S, qtot, ef)
 
     use fdf
     use parallel, only   : SIESTA_worker, BlockSize
@@ -33,7 +33,6 @@ CONTAINS
     real(dp), intent(in), target :: H(maxnh,nspin), S(maxnh)
     real(dp), intent(in) :: qtot
     real(dp), intent(in)        :: ef  ! Fermi energy
-    real(dp), intent(in)         :: temp   ! Electronic temperature
 
 #ifndef MPI
     call die("PEXSI needs MPI")
@@ -42,15 +41,14 @@ CONTAINS
     integer :: PEXSI_Comm, World_Comm
     integer :: PEXSI_Group, World_Group
 
-    integer :: ispin, maxnhtot, ih, nnzold, i, pexsiFlag
+    integer :: ispin, maxnhtot, ih, i
 
-    integer  :: ordering, isInertiaCount, numInertiaCounts, numNodesTotal
+    integer  :: ordering, numNodesTotal
 
 
     real(dp)   :: e1, e2
     integer    :: j, ncalls, npoints, lun
-    integer, allocatable  :: intdos(:)
-    real(dp), allocatable :: edos(:)
+    real(dp), allocatable :: edos(:), intdos(:)
     real(dp)   :: emin, emax, deltaE
 
     integer        :: info, infomax
@@ -60,21 +58,22 @@ integer :: nrows, nnz, nnzLocal, numColLocal
 
 integer, pointer, dimension(:) ::  colptrLocal=> null(), rowindLocal=>null()
 real(dp), pointer, dimension(:) :: HnzvalLocal=>null(), SnzvalLocal=>null()
+real(dp), pointer, dimension(:) :: HnzvalSave=>null(), SnzvalSave=>null()
 
 real(dp), pointer, dimension(:) :: shiftList=>null(), inertiaList=>null()
 
 logical  :: PEXSI_worker
-integer  :: numPole, nptsInertia
-real(dp) :: temperature, numElectronExact, numElectron
-real(dp) :: muInertia, muMinInertia, muMaxInertia, muLowerEdge, muUpperEdge
+integer  :: nptsInertia
+real(dp) :: temperature, numElectronExact
+real(dp) :: muMinInertia, muMaxInertia, muLowerEdge, muUpperEdge
 
-integer  :: muMaxIter
 integer  :: npPerPole
 integer  :: npSymbFact
 integer  :: mpirank, ierr
 integer  :: isSIdentity
 integer  :: inertiaMaxIter, inertiaIter
 real(dp) :: inertiaNumElectronTolerance
+logical  :: ef_reference
 
 
 !------------
@@ -139,11 +138,6 @@ if (SIESTA_worker) then
    ! H, the interval limits, and the temperature have to be in the
    ! same units. Siesta uses Ry units.
 
-   temperature      = temp
-
-   if (mpirank==0) write(6,"(a,g12.5,a,f10.2)") &
-                          "Electronic temperature: ", temperature, &
-                          ". In Kelvin:", temperature/Kelvin
 
    m1%norbs = norbs
    m1%no_l  = no_l
@@ -157,6 +151,7 @@ if (SIESTA_worker) then
 endif  ! SIESTA_worker
 
 call timer("redist_orbs_fwd", 1)
+! Will allocate m2
 call redistribute_spmatrix(norbs,m1,dist1,m2,dist2,World_Comm)
 call timer("redist_orbs_fwd", 2)
 
@@ -174,15 +169,21 @@ if (PEXSI_worker) then
   enddo
 
   rowindLocal => m2%cols
-  SnzvalLocal => m2%vals(1)%data
-  HnzvalLocal => m2%vals(2)%data
+
+  ! In case the call to the inertia-count routine corrupts H and S...
+  ! Keep these safe
+  SnzvalSave => m2%vals(1)%data
+  HnzvalSave => m2%vals(2)%data
+
+  ! and use work arrays for the call
+  allocate(SnzvalLocal(size(SnzvalSave)))
+  allocate(HnzvalLocal(size(HnzvalSave)))
 
 endif ! PEXSI worker
 
 isSIdentity = 0
-numPole          = fdf_get("PEXSI.num-poles",20)
 inertiaMaxIter   = 1
-inertiaNumElectronTolerance = 400
+inertiaNumElectronTolerance = fdf_get("PEXSI.inertia-num-electron-tolerance",10)
 
 ! Since we use the processor teams corresponding to the different poles, 
 ! the number of points in the energy interval should be a multiple
@@ -207,11 +208,21 @@ ordering = fdf_get("PEXSI.ordering",1)
 call MPI_Bcast(nrows,1,MPI_integer,0,World_Comm,ierr)
 call MPI_Bcast(nnz,1,MPI_integer,0,World_Comm,ierr)
 call MPI_Bcast(numElectronExact,1,MPI_double_precision,0,World_Comm,ierr)
-call MPI_Bcast(temperature,1,MPI_double_precision,0,World_Comm,ierr)
+call MPI_Bcast(ef,1,MPI_double_precision,0,World_Comm,ierr)
 
-  ! Range around fermi level
-  emin = fdf_get("PEXSI.DOS.emin",-1.0_dp,"Ry") + ef
-  emax = fdf_get("PEXSI.DOS.emax",+1.0_dp,"Ry") + ef
+  ! Absolute range in principle
+  emin = fdf_get("PEXSI.DOS.emin",-1.0_dp,"Ry")
+  emax = fdf_get("PEXSI.DOS.emax",+1.0_dp,"Ry")
+
+  ! Can request range around fermi level
+  ef_reference = fdf_get("PEXSI.DOS.Ef.Reference",.true.)
+  if (ef_reference) then
+     emin = emin + ef
+     emax = emax + ef
+  endif
+
+  ! Around 1.5 K, to minimize smearing until we get the raw interface
+  temperature = fdf_get("PEXSI.DOS.temperature",1.0e-5_dp,"Ry")
 
   npoints = fdf_get("PEXSI.DOS.npoints",200)
 
@@ -231,12 +242,17 @@ call MPI_Bcast(temperature,1,MPI_double_precision,0,World_Comm,ierr)
 
     if(mpirank == 0) then
        write (6,"(a,f12.5,a,f12.5,a,a,i4)")  &
-                    'Calling inertia_count with interval: [', &
+                    'Calling inertia_count for DOS: [', &
                     e1/eV, ",", e2/eV, "] (eV)", &
                     " Nshifts: ", nptsInertia
     endif
 
     call timer("pexsi-inertia-ct", 1)
+    if (PEXSI_worker) then
+      SnzvalLocal(:) = SnzvalSave(:)
+      HnzvalLocal(:) = HnzvalSave(:)	
+    endif
+
     call f_ppexsi_inertiacount_interface(&
          ! input parameters
         nrows,&
@@ -299,9 +315,10 @@ call MPI_Bcast(temperature,1,MPI_double_precision,0,World_Comm,ierr)
  if (mpirank == 0) then
     call io_assign(lun)
     open(unit=lun,file="PEXSI_INTDOS",form="formatted",status="unknown", &
-         position="append",action="write")
+         position="rewind",action="write")
+    write(lun,"(a,2f15.6)") "# E(eV), IntDos --- Ef, qtot = ", ef/eV, qtot
     do j=1,npoints
-       write(lun,"(f15.6,i12)") edos(j), intdos(j)
+       write(lun,"(f15.6,f15.6)") edos(j)/eV, intdos(j)
     enddo
  endif
 
@@ -309,14 +326,28 @@ call de_alloc(shiftList,"shiftList","pexsi_DOS")
 call de_alloc(inertiaList,"inertiaList","pexsi_DOS")
 deallocate(edos,intdos)
 
+   if (SIESTA_worker) then
+      call timer("pexsi_dos", 2)
+      deallocate(m1%vals)
+   endif
+
 call delete(dist1)
 call delete(dist2)
+
 if (PEXSI_worker) then
+   deallocate(SnzvalLocal, HnzvalLocal)
+   !
+   call de_alloc(m2%numcols,"m2%numcols","m_pexsi_dos")
+   call de_alloc(m2%cols,"m2%cols","m_pexsi_dos")
+   do j=1,size(m2%vals)
+      call de_alloc(m2%vals(j)%data,"m2%vals(j)%data","m_pexsi_dos")
+   enddo
+   deallocate(m2%vals)
+   !
    call MPI_Comm_Free(PEXSI_Comm, ierr)
    call MPI_Group_Free(PEXSI_Group, ierr)
 endif
 
-   call timer("pexsi_dos", 2)
 
 #endif 
 

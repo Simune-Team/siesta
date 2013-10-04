@@ -82,6 +82,11 @@
 
 !----------------------------------------------------------------------- BEGIN
 
+      if (fdf_get("PEXSI.DOS",.false.)) then
+         call pexsi_DOS(no_u, no_l, nspin,
+     $        maxnh, numh, listhptr, listh, H, S, qtot, ef)
+      endif
+
       ! section done by Siesta subset of nodes
       if (SIESTA_worker) then
 
@@ -383,10 +388,6 @@ C     Find local density of states
 
       if (fdf_get("PEXSI.LocalDOS",.false.)) then
          call pexsi_local_DOS()
-      endif
-      if (fdf_get("PEXSI.DOS",.false.)) then
-         call pexsi_DOS(no_u, no_l, nspin,
-     $        maxnh, numh, listhptr, listh, H, S, qtot, ef, temp)
       endif
 
 !------------------------------------------------------------------------- END

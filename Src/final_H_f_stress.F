@@ -6,7 +6,8 @@
       subroutine final_H_f_stress( iscf )
 
       USE siesta_options
-      use sparse_matrices
+      use sparse_matrices, only: H, numh, listh, listhptr
+      use sparse_matrices, only: maxnh, Dscf, Escf, xijo
       use siesta_geom
       use atmfuncs, only: uion
       use atomlist, only: no_u, iaorb, iphkb, qtot, indxuo, datm, 
@@ -67,10 +68,13 @@
       character(len=label_length+5)  :: PASTE
 !     TSS End
 #endif /* TRANSIESTA */
+
+      real(dp), allocatable :: H_dummy(:,:), S_dummy(:)
 !--------------------------------------------------------------------- BEGIN
 
 !     Initialize Hamiltonian ........................................
-      H = 0.0_dp
+      allocate(H_dummy(size(H,dim=1),size(H,dim=2)), S_dummy(size(H)))
+      H_dummy = 0.0_dp
 
 !     Initialize forces and stress ...................
       nullify(fal)
@@ -92,7 +96,7 @@
       call kinefsm( na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &              maxnh, maxnh, lasto, iphorb, isa, 
      &              numh, listhptr, listh, numh, listhptr, listh, 
-     &              min(nspin,2), Dscf, Ekin, fal, stressl, H,
+     &              min(nspin,2), Dscf, Ekin, fal, stressl, H_dummy,
      &              matrix_elements_only=.false. ) 
 #ifdef MPI
 ! Global reduction of energy terms
@@ -105,7 +109,7 @@
       call nlefsm( scell, na_u, na_s, isa, xa, indxua, 
      &             maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
      &             numh, listhptr, listh, numh, listhptr, listh, 
-     &             min(nspin,2), Dscf, Enl, fal, stressl, H,
+     &             min(nspin,2), Dscf, Enl, fal, stressl, H_dummy,
      &             matrix_elements_only=.false. ) 
 
 #ifdef MPI
@@ -126,7 +130,7 @@
       call grdsam( nspin, no_s, iaorb, iphorb, 
      &             no_l, no_u, na_u, na_s, isa, xa, indxua,
      &             ucell, ntm, ifa, istr, maxnh,
-     &             maxnh, numh, listhptr, listh, Dscf, Datm, H,
+     &             maxnh, numh, listhptr, listh, Dscf, Datm, H_dummy,
      &             Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
      &             Exc, Dxc, dipol, fa, stress, fal, stressl )
 
@@ -135,7 +139,7 @@
       call overfsm( na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &              maxnh, maxnh, lasto, iphorb, isa, 
      &              numh, listhptr, listh, numh, listhptr, listh, 
-     &              min(nspin,2), Escf, fal, stressl, S ) 
+     &              min(nspin,2), Escf, fal, stressl, S_dummy ) 
 
 !     Metadynamics forces
       if (lMetaForce) then
@@ -176,7 +180,7 @@
 ! Only in HSX format now.  Use Util/HSX/hsx2hs to generate an HS file
       if (savehs) then
          call write_hsx( gamma, no_u, no_s, nspin, indxuo,
-     &        maxnh, numh, listhptr, listh, H, S, qtot,
+     &        maxnh, numh, listhptr, listh, H_dummy, S_dummy, qtot,
      &        temp, xijo)
       endif
 #ifdef TRANSIESTA
@@ -188,7 +192,8 @@
             fname = paste( fname, '.TSHS' )
             iotask='write'
             call ts_iohs( iotask, gamma, .false., no_u, no_s, nspin,
-     &                    indxuo, maxnh, numh, listhptr, listh, H, S, 
+     &                    indxuo, maxnh, numh, listhptr, listh, H_dummy,
+     $                    S_dummy, 
      &                    qtot, temp, xijo, label_length+5, fname, na_u,
      &                    lasto, isa, ef, ucell, ts_kscell, ts_kdispl,
      &                    ts_gamma_scf, xa, ts_istep, ia1)
@@ -196,7 +201,8 @@
             fname  = paste( slabel, '.TSHS' )
             iotask ='write'
             call ts_iohs( iotask, gamma, .false., no_u, no_s, nspin,
-     &                    indxuo, maxnh, numh, listhptr, listh, H, S,
+     &                    indxuo, maxnh, numh, listhptr, listh, H_dummy,
+     $                    S_dummy,
      &                    qtot, temp, xijo, label_length+5, fname, na_u,
      &                    lasto, isa, ef, ucell,ts_kscell, ts_kdispl,
      &                    ts_gamma_scf, xa, 0, 0 )
@@ -204,6 +210,8 @@
       endif
 ! TSS End
 #endif /* TRANSIESTA */
+
+      deallocate(H_dummy,S_dummy)
 !----------------------------------------------------------------------- END
       END subroutine final_H_f_stress
       END module m_final_H_f_stress
