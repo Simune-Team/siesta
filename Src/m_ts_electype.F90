@@ -15,6 +15,9 @@ module m_ts_electype
 
   integer, parameter :: HSfile_len = 200
 
+  integer, parameter :: INF_LEFT = 0
+  integer, parameter :: INF_RIGHT = 1
+
   type :: Elec
      sequence
      character(len=HSfile_len) :: HSfile
@@ -23,6 +26,11 @@ module m_ts_electype
      integer :: spin
      integer :: RepA1 = 1, RepA2 = 1, RepA3 = 1
      real(dp) :: ucell(3,3), Ef
+     integer :: inf_dir = INF_LEFT
+!     logical :: has_tshs = .false.
+ !    type(Sparsity) :: sp
+  !   type(dSpData2D) :: H
+   !  type(dSpData1D) :: S
   end type Elec
 
 contains

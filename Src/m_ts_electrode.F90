@@ -32,15 +32,6 @@ module m_ts_electrode
   complex(dp), parameter :: z_m1 = dcmplx(-1._dp,0._dp)
   complex(dp), parameter :: z_0  = dcmplx(0._dp,0._dp)
 
-
-  ! This is the integer telling which direction is the propagation direction
-  ! DO NOT CHANGE THIS! 
-  ! At the moment all code is enforced to use PropDir == 3
-  ! TODO move this to an option in the m_ts_options module.
-  ! It should be user specific (however, it requires a lot of
-  ! recoding)
-  integer, parameter :: PropDir = 3
-
 contains
 
   ! Calculates the surface Green's function for the electrodes
@@ -53,10 +44,10 @@ contains
 ! ***************** INPUT **********************************************
 ! integer     no      : Number of orbitals in the electrode
 ! complex(dp) ZE      : The energy of the Green's function evaluation
-! complex(dp) H00     : Hamiltonian within the first unit cell (discarding z-direction)
-! complex(dp) S00     : Overlap matrix within the first unit cell (discarding z-direction)
-! complex(dp) H01     : Transfer matrix from H00 to the neighbouring cell (in z-direction)
-! complex(dp) S01     : Transfer matrix from S00 to the neighbouring cell (in z-direction)
+! complex(dp) H00     : Hamiltonian within the first unit cell (discarding T-direction)
+! complex(dp) S00     : Overlap matrix within the first unit cell (discarding T-direction)
+! complex(dp) H01     : Transfer matrix from H00 to the neighbouring cell (in T-direction)
+! complex(dp) S01     : Transfer matrix from S00 to the neighbouring cell (in T-direction)
 ! ***************** OUTPUT *********************************************
 ! complex(dp) GS      : Surface Green's function of the electrode
 ! **********************************************************************
@@ -326,10 +317,10 @@ contains
 ! ***************** INPUT **********************************************
 ! integer     no      : Number of orbitals in the electrode
 ! complex(dp) ZE      : The energy of the Green's function evaluation
-! complex(dp) H00     : Hamiltonian within the first unit cell (discarding z-direction)
-! complex(dp) S00     : Overlap matrix within the first unit cell (discarding z-direction)
-! complex(dp) H01     : Transfer matrix from H00 to the neighbouring cell (in z-direction)
-! complex(dp) S01     : Transfer matrix from S00 to the neighbouring cell (in z-direction)
+! complex(dp) H00     : Hamiltonian within the first unit cell (discarding T-direction)
+! complex(dp) S00     : Overlap matrix within the first unit cell (discarding T-direction)
+! complex(dp) H01     : Transfer matrix from H00 to the neighbouring cell (in T-direction)
+! complex(dp) S01     : Transfer matrix from S00 to the neighbouring cell (in T-direction)
 ! ***************** OUTPUT *********************************************
 ! complex(dp) GS      : Surface Green's function of the electrode
 ! **********************************************************************
@@ -616,7 +607,7 @@ contains
     real(dp), dimension(:,:), pointer :: H_E,xij_E,xijo_E ! Hamiltonian, differences with unitcell, differences without unitcell
     real(dp), dimension(:,:), pointer :: xa_E ! atomic coordinats
     real(dp), dimension(:),   pointer :: S_E ! Overlap
-    integer,  dimension(:),   pointer :: zconnect_E ! Has 0 values for indices where there are no z-connection.
+    integer,  dimension(:),   pointer :: Tconnect_E ! Has 0 values for indices where there are no connection in the transport direction.
     integer,  dimension(:),   pointer :: numh_E,listhptr_E,listh_E,indxuo_E,lasto_E
     real(dp)                          :: Ef_E ! Efermi
     real(dp), dimension(3,3)          :: ucell_E ! The unit cell of the electrode
@@ -685,9 +676,9 @@ contains
     ! Read in all variables from the TSHS electrode file.
     ! Broadcasting within the routine is performed in MPI run
     call init_electrode_HS(tElec,UsedAtoms(El),xa,na_u,nspin, &
-         NBufAt, RepA1(El), RepA2(El), HSFile(El), &
+         NBufAt, RepA1(El), RepA2(El), RepA3(El), HSFile(El), &
          na_u_E,nuo_E,maxnh_E,notot_E,xa_E,H_E,S_E,xij_E, &
-         xijo_E,zconnect_E,numh_E,listhptr_E,listh_E,indxuo_E,  &
+         xijo_E,Tconnect_E,numh_E,listhptr_E,listh_E,indxuo_E,  &
          lasto_E, &
          Ef_E,ucell_E, xa_Eps)
 
@@ -702,9 +693,10 @@ contains
        call kpoint_convert(ucell,kpoint(:,i),ktmp,1)
        if ( RepA1(El) > 1 ) ktmp(1) = ktmp(1)/real(RepA1(El),dp)
        if ( RepA2(El) > 1 ) ktmp(2) = ktmp(2)/real(RepA2(El),dp)
+       if ( RepA3(El) > 1 ) ktmp(3) = ktmp(3)/real(RepA3(El),dp)
        call kpoint_convert(ucell_E,ktmp,kpt,-1)
-       if (IONode) write(*,'(i4,2x,3(E14.5))') i,&
-            kpt(1),kpt(2),kweight(i)
+       if (IONode) write(*,'(i4,2x,4(E14.5))') i,&
+            kpt(1),kpt(2),kpt(3),kweight(i)
     end do
 
 ! >>>>>>>>>>>>>>>>>>> Valence Band bottom Calculation <<<<<<<<<<<<<<<<< 
@@ -776,7 +768,7 @@ contains
 !  this is WHERE the initial q and wq points are generated.
 !  they are read in by 'read_green' later on.
 ! They are in units of the reciprocal lattice vectors (hence suffix b)
-    call mkqgrid(RepA1(El),RepA2(El),nq,qb,wq)
+    call mkqgrid(RepA1(El),RepA2(El),RepA3(El),nq,qb,wq)
 
     if ( IONode ) then
 ! We show them in units of Bohr**-1
@@ -784,7 +776,7 @@ contains
             ' q-points for expanding electrode (Bohr**-1):'
        do i=1,nq
           call kpoint_convert(ucell_E,qb(:,i),qpt,-1)
-          write(*,'(i4,2x,3(E14.5))') i,qpt(1),qpt(2),wq(i)
+          write(*,'(i4,2x,4(E14.5))') i,qpt(1),qpt(2),qpt(3),wq(i)
        end do
        write(*,'(a,f14.5,1x,a)') &
             " Fermi level shift in electrode : ",chem_shift/eV,' eV'
@@ -831,7 +823,7 @@ contains
        write(uGF) GFTitle
        write(uGF) chem_shift,NEn
        write(uGF) RemUCellDistance
-       write(uGF) UsedAtoms(El),RepA1(El),RepA2(El),nkpnt,nq
+       write(uGF) UsedAtoms(El),RepA1(El),RepA2(El),RepA3(El),nkpnt,nq
        ! Write spin, ELECTRODE unit-cell
        write(uGF) nspin, ucell_E
        ! Write out the atomic coordinates of the used electrode
@@ -852,6 +844,7 @@ contains
           call kpoint_convert(ucell,kpoint(:,ikpt),ktmp,1)
           ktmp(1) = ktmp(1)/real(RepA1(El),dp)
           ktmp(2) = ktmp(2)/real(RepA2(El),dp)
+          ktmp(3) = ktmp(3)/real(RepA3(El),dp)
           ! Convert back to reciprocal units (to electrode ucell_E)
           call kpoint_convert(ucell_E,ktmp,kpt,-1)
           do j = 1 , 3
@@ -905,6 +898,7 @@ contains
           call kpoint_convert(ucell,kpoint(:,ikpt),ktmp,1)
           ktmp(1) = ktmp(1)/real(RepA1(El),dp)
           ktmp(2) = ktmp(2)/real(RepA2(El),dp)
+          ktmp(3) = ktmp(3)/real(RepA3(El),dp)
           ! Convert back to reciprocal units (to electrode ucell_E)
           call kpoint_convert(ucell_E,ktmp,kpt,-1)
           
@@ -934,13 +928,13 @@ contains
                 if ( RemUCellDistance ) then
                    call die('Not working yet')
                    call set_electrode_HS_Transfer(nuo_E,maxnh_E, &
-                        notot_E,nspin,H_E,S_E,xijo_E,xijo_E,zconnect_E,numh_E, &
+                        notot_E,nspin,H_E,S_E,xijo_E,xijo_E,Tconnect_E,numh_E, &
                         listhptr_E,listh_E,indxuo_E,Ef_E, &
                         ispin, kpt, qpt, &
                         H00,S00,H01,S01)
                 else
                    call set_electrode_HS_Transfer(nuo_E,maxnh_E, &
-                        notot_E,nspin,H_E,S_E,xij_E,xijo_E,zconnect_E,numh_E, &
+                        notot_E,nspin,H_E,S_E,xij_E,xijo_E,Tconnect_E,numh_E, &
                         listhptr_E,listh_E,indxuo_E,Ef_E, &
                         ispin, kpt, qpt, &
                         H00,S00,H01,S01)
@@ -1128,7 +1122,7 @@ contains
     call memory('D','D',3*maxnh_E,'create_green')
     deallocate(xijo_E)
     call memory('D','I',maxnh_E,'create_green')
-    deallocate(zconnect_E)
+    deallocate(Tconnect_E)
 
     call memory('D','I',nuo_E,'create_green')
     deallocate(numh_E)
@@ -1169,8 +1163,8 @@ contains
 !************************************************************************
 !------------------------------------------------------------------------
   subroutine init_electrode_HS(tElec,NUsedAtoms,xa_sys,na_u_sys,nspin_sys, &
-       NBufAt,NA1,NA2, &
-       HSfile,na_u,nuo,maxnh,notot,xa,H,S,xij,xijo,zconnect, &
+       NBufAt,NA1,NA2,NA3, &
+       HSfile,na_u,nuo,maxnh,notot,xa,H,S,xij,xijo,Tconnect, &
        numh,listhptr,listh,indxuo,lasto, &
        Ef,ucell, xa_Eps)
 
@@ -1191,6 +1185,7 @@ contains
 #ifndef TBTRANS
     use m_ts_kpoints, only : ts_gamma_scf, ts_kscell, ts_kdispl
 #endif
+    use m_ts_tdir
 
 
 ! ***********************
@@ -1202,7 +1197,7 @@ contains
     real(dp), intent(in) :: xa_sys(3,na_u_sys) ! Coordinates in the system for the TranSIESTA routine
     integer, intent(in)  :: nspin_sys ! spin in system
     character(len=*),intent(in) :: HSfile !H,S parameter file 
-    integer, intent(in)  :: NBufAt,NA1,NA2 ! Buffer atoms, and repetitions 
+    integer, intent(in)  :: NBufAt,NA1,NA2,NA3 ! Buffer atoms, and repetitions 
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
@@ -1210,7 +1205,7 @@ contains
     real(dp), dimension(:,:), pointer :: xa ! The atomic coordinates
     real(dp), dimension(:,:), pointer :: H,xij,xijo ! Hamiltonian, differences with unitcell, differences without unitcell
     real(dp), dimension(:),   pointer :: S ! Overlap
-    integer,  dimension(:),   pointer :: zconnect ! Has 0 values for indices where there are no z-connection.
+    integer,  dimension(:),   pointer :: Tconnect ! Has 0 values for indices where there are no T-connection.
     integer,  dimension(:),   pointer :: numh,listhptr,listh,indxuo,lasto
     real(dp) :: Ef ! Efermi
     real(dp), intent(inout)           :: ucell(3,3) ! The unit cell
@@ -1234,10 +1229,10 @@ contains
     real(dp),dimension(3) :: xa_o,xa_sys_o ! Origo coordinates of the electrodes
     real(dp) :: zc
     real(dp), dimension(:,:), allocatable :: xo
-    real(dp), dimension(3,3) :: recell ! Reciprocal cell without 2Pi, used for zconnect
+    real(dp), dimension(3,3) :: recell ! Reciprocal cell without 2Pi, used for Tconnect
     integer :: sysElec ! the first atom of the electrode in the SYSTEM setup
     integer :: elecElec ! The first atom in the electrode in the ELECTRODE setup
-    integer :: i,j,ia,iuo,juo,ind,iaa !Loop counters
+    integer :: i,j,k,ia,iuo,juo,ind,iaa !Loop counters
     integer :: fL ! Filename length
     ! For acquiring the maximum Hamiltonian value
     integer :: mH_i, mH_j, mH_Z, uc_z
@@ -1255,7 +1250,7 @@ contains
     nullify(xij,xijo,xa,iza)
     nullify(numh,listhptr,listh,indxuo)
     nullify(lasto)
-    nullify(zconnect)
+    nullify(Tconnect)
 
     fL = len_trim(HSfile)
     if ( leqi(HSfile(fL-4:fL),'.TSHS') ) then
@@ -1281,7 +1276,7 @@ contains
 
     if ( Gamma_file ) then
        call die('An electrode file needs to be a non-Gamma calculation. &
-            &Ensure at least two k-points in the z-direction.')
+            &Ensure at least two k-points in the T-direction.')
     end if
 
           
@@ -1298,21 +1293,25 @@ contains
     ! not be either (the repetition will only increase the number of
     ! k-points, hence the above)
     eXa = (.not. ts_gamma_scf ) .and. TSGamma
-    do j = 1 , 2
-       do i = 1 , 2
+    do j = 1 , 3
+       if ( j == ts_tdir ) cycle
+       do i = 1 , 3
+          if ( i == ts_tdir ) cycle
           if ( j == 1 .and. j == i ) then
              eXa = eXa .or. ( kscell(i,j) /= ts_kscell(i,j)*NA1 )
           else if ( j == 2 .and. j == i ) then
              eXa = eXa .or. ( kscell(i,j) /= ts_kscell(i,j)*NA2 )
+          else if ( j == 3 .and. j == i ) then
+             eXa = eXa .or. ( kscell(i,j) /= ts_kscell(i,j)*NA3 )
           else 
              eXa = eXa .or. ( kscell(i,j) /= ts_kscell(i,j) )
           end if
        end do
        eXa = eXa .or. ( kdispl(j) /= ts_kdispl(j) )
     end do
-    ! We still require that the offset in the z-direction is the same
+    ! We still require that the offset in the T-direction is the same
     ! is this even necessary?
-    eXa = eXa .or. ( kdispl(3) /= ts_kdispl(3) )
+    eXa = eXa .or. ( kdispl(ts_tdir) /= ts_kdispl(ts_tdir) )
     if ( eXa ) then
        write(*,'(a)') 'Incompatible k-grids...'
        write(*,'(a)') 'Electrode file k-grid:'
@@ -1326,7 +1325,7 @@ contains
        write(*,'(a)') 'Electrode file k-grid should be:'
        kscell(:,1) = ts_kscell(:,1) * NA1
        kscell(:,2) = ts_kscell(:,2) * NA2
-       kscell(:,3) = ts_kscell(:,3)
+       kscell(:,3) = ts_kscell(:,3) * NA3
        do j = 1 , 3
           write(*,'(3(i4,tr1),f8.4)') (kscell(i,j),i=1,3),ts_kdispl(j)
        end do
@@ -1363,7 +1362,7 @@ contains
        elecElec = na_u - NUsedAtoms + 1
     else if ( leqi(tElec,'R') ) then
        GFjob = 'Right'
-       sysElec = na_u_sys - NbufAt - NUsedAtoms * NA1 * NA2 + 1
+       sysElec = na_u_sys - NbufAt - NUsedAtoms * NA1 * NA2 * NA3 + 1
        elecElec = 1
     else
        call die("init electrode has received wrong job ID [L,R]: "//tElec)
@@ -1391,26 +1390,29 @@ contains
        eXa = .false.
        iaa = sysElec
        do ia = elecElec , elecElec + NUsedAtoms - 1
+          do k=0,NA3-1
           do j=0,NA2-1
-             do i=0,NA1-1
-                write(*,'(t3,3f10.5,''  |'',3f10.5)') &
-                     (xa(1,ia)-xa_o(1)+ucell(1,1)*i+ucell(1,2)*j)/Ang, &
-                     (xa(2,ia)-xa_o(2)+ucell(2,1)*i+ucell(2,2)*j)/Ang, &
-                     (xa(3,ia)-xa_o(3))/Ang, &
-                     (xa_sys(1,iaa)-xa_sys_o(1))/Ang, &
-                     (xa_sys(2,iaa)-xa_sys_o(2))/Ang, &
-                     (xa_sys(3,iaa)-xa_sys_o(3))/Ang
-                ! Assert the coordinates
-                eXa=eXa.or.abs(xa(1,ia)-xa_o(1) + &
-                     ucell(1,1)*i+ucell(1,2)*j - &
-                     xa_sys(1,iaa)+xa_sys_o(1)) > xa_EPS
-                eXa=eXa.or.abs(xa(2,ia)-xa_o(2) + &
-                     ucell(2,1)*i+ucell(2,2)*j - &
-                     xa_sys(2,iaa)+xa_sys_o(2)) > xa_EPS
-                eXa=eXa.or.abs(xa(3,ia)-xa_o(3) - &
-                     xa_sys(3,iaa)+xa_sys_o(3)) > xa_EPS
-                iaa = iaa + 1
-             end do
+          do i=0,NA1-1
+             write(*,'(t3,3f10.5,''  |'',3f10.5)') &
+                  (xa(1,ia)-xa_o(1)+sum(ucell(1,:)*(/i,j,k/)))/Ang, &
+                  (xa(2,ia)-xa_o(2)+sum(ucell(2,:)*(/i,j,k/)))/Ang, &
+                  (xa(3,ia)-xa_o(3)+sum(ucell(3,:)*(/i,j,k/)))/Ang, &
+                  (xa_sys(1,iaa)-xa_sys_o(1))/Ang, &
+                  (xa_sys(2,iaa)-xa_sys_o(2))/Ang, &
+                  (xa_sys(3,iaa)-xa_sys_o(3))/Ang
+             ! Assert the coordinates
+             eXa=eXa.or.abs(xa(1,ia)-xa_o(1) + &
+                  sum(ucell(1,:)*(/i,j,k/)) - &
+                  xa_sys(1,iaa)+xa_sys_o(1)) > xa_EPS
+             eXa=eXa.or.abs(xa(2,ia)-xa_o(2) + &
+                  sum(ucell(2,:)*(/i,j,k/)) - &
+                  xa_sys(2,iaa)+xa_sys_o(2)) > xa_EPS
+             eXa=eXa.or.abs(xa(3,ia)-xa_o(3) + &
+                  sum(ucell(3,:)*(/i,j,k/)) - &
+                  xa_sys(3,iaa)+xa_sys_o(3)) > xa_EPS
+             iaa = iaa + 1
+          end do
+          end do
           end do
        end do
        if ( eXa ) then
@@ -1434,13 +1436,15 @@ contains
           write(*,'(t3,3a20)') "X (Ang)","Y (Ang)","Z (Ang)"
           iaa = sysElec
           do ia = elecElec , elecElec + NUsedAtoms - 1
+             do k=0,NA3-1
              do j=0,NA2-1
-                do i=0,NA1-1
-                   write(*,'(t2,3(tr1,f20.12))') &
-                        (xa(1,ia)+xa_o(1)+ucell(1,1)*i+ucell(1,2)*j)/Ang, &
-                        (xa(2,ia)+xa_o(2)+ucell(2,1)*i+ucell(2,2)*j)/Ang, &
-                        (xa(3,ia)+xa_o(3))/Ang
-                end do
+             do i=0,NA1-1
+                write(*,'(t2,3(tr1,f20.12))') &
+                     (xa(1,ia)+xa_o(1)+sum(ucell(1,:)*(/i,j,k/)))/Ang, &
+                     (xa(2,ia)+xa_o(2)+sum(ucell(2,:)*(/i,j,k/)))/Ang, &
+                     (xa(3,ia)+xa_o(3)+sum(ucell(3,:)*(/i,j,k/)))/Ang
+             end do
+             end do
              end do
           end do
 
@@ -1453,7 +1457,7 @@ contains
     ! Create them for passing to other routines 
     allocate(xijo(3,maxnh))
     call memory('A','D',3*maxnh,'elec_HS')
-    allocate(zconnect(maxnh))
+    allocate(Tconnect(maxnh))
     call memory('A','I',maxnh,'elec_HS')
     
     ! Initialize the error parameter
@@ -1463,8 +1467,8 @@ contains
     allocate(xo(3,nuo))
     call memory('A','D',3*nuo,'elec_HS')
 
-    ! We now create zconnect to contain 0 for interconnects without
-    ! z-direction
+    ! We now create Tconnect to contain 0 for interconnects without
+    ! T-direction
     ! This needs to be the full electrode, no matter NUsedAtoms!
 
     ! Create xo array (orbital coordinates)
@@ -1487,16 +1491,16 @@ contains
           xijo(:,ind) = xij(:,ind)-(xo(:,juo)-xo(:,iuo))
 
           ! recell is already without 2*Pi
-          zc = sum(xijo(:,ind) * recell(:,PropDir))
-          zconnect(ind) = nint(zc)
+          zc = sum(xijo(:,ind) * recell(:,ts_tdir))
+          Tconnect(ind) = nint(zc)
           
-          if ( abs(zconnect(ind)) > 1 ) then
-             uc_z = max(abs(zconnect(ind)),uc_z)
+          if ( abs(Tconnect(ind)) > 1 ) then
+             uc_z = max(abs(Tconnect(ind)),uc_z)
              if ( abs(H(ind,1)) > mH ) then
                 ! Capture the maximum error introduced
                 mH = abs(H(ind,1))
                 mS = abs(S(ind))
-                mH_Z = abs(zconnect(ind))
+                mH_Z = abs(Tconnect(ind))
                 mH_i = iuo
                 mH_j = juo
              end if
@@ -1517,11 +1521,11 @@ contains
 
   contains
     
-    subroutine warn_err(o,mH,mS, i,j, uc_z)
+    subroutine warn_err(o,mH,mS, i,j, uc_T)
       integer, intent(in) :: o
       real(dp), intent(in) :: mH,mS
-      integer, intent(in) :: i,j, uc_z
-      write(o,'(1x,a,i0,a)') 'WARNING: Connections across ',uc_z, &
+      integer, intent(in) :: i,j, uc_T
+      write(o,'(1x,a,i0,a)') 'WARNING: Connections across ',uc_T, &
            ' unit cells in the transport direction.'
       write(o,*) 'WARNING: This is inadvisable.'
       write(o,*) 'WARNING: Please increase the electrode size &
@@ -1542,11 +1546,12 @@ contains
 ! as creating the transfer matrix.
 !**********
   subroutine set_electrode_HS_Transfer(nuo,maxnh,notot,nspin, &
-       H,S,xij,xijo,zconnect,numh, &
+       H,S,xij,xijo,Tconnect,numh, &
        listhptr,listh,indxuo,Ef, &
        ispin,k,q,Hk,Sk,Hk_T,Sk_T)
     use sys, only : die
     use precision, only : dp
+    use m_ts_tdir
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
@@ -1556,7 +1561,7 @@ contains
     real(dp)                        :: S(maxnh) ! Overlap
     real(dp)                        :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
     real(dp)                        :: xijo(3,maxnh) ! differences with unitcell, differences without unitcell
-    integer                         :: zconnect(maxnh) ! 0 for no connection in z-direction
+    integer                         :: Tconnect(maxnh) ! 0 for no connection in T-direction
     integer                         :: numh(nuo),listhptr(nuo)
     integer                         :: listh(maxnh),indxuo(notot)
     real(dp)                        :: Ef ! Efermi
@@ -1595,19 +1600,19 @@ contains
                k(1)       * xij(1,ind) + &
                k(2)       * xij(2,ind) + &
                k(3)       * xij(3,ind) - &
-               k(PropDir) * xij(PropDir,ind) + &
+               k(ts_tdir) * xij(ts_tdir,ind) + &
                q(1)       * xijo(1,ind) + &
                q(2)       * xijo(2,ind) + &
                q(3)       * xijo(3,ind) - &
-               q(PropDir) * xijo(PropDir,ind)
+               q(ts_tdir) * xijo(ts_tdir,ind)
 
           cphase = cdexp(dcmplx(0d0,kqxij) )
           
           i = iuo+(juo-1)*nuo
-          if (zconnect(ind).eq.0) then
+          if (Tconnect(ind).eq.0) then
              Hk(i)   = Hk(i)   + H(ind,ispin) * cphase
              Sk(i)   = Sk(i)   + S(ind)       * cphase
-          else if (zconnect(ind).eq.1) then
+          else if (Tconnect(ind).eq.1) then
              Hk_T(i) = Hk_T(i) + H(ind,ispin) * cphase
              Sk_T(i) = Sk_T(i) + S(ind)       * cphase
           endif
@@ -1666,13 +1671,13 @@ contains
 ! *                                                    *
 ! * (Re-)Introduced by Nick Papior Andersen            *
 ! ******************************************************
-  subroutine mkqgrid(NA1,NA2,nq,q,wq)
+  subroutine mkqgrid(NA1,NA2,NA3,nq,q,wq)
     use precision, only : dp
 
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    integer , intent(in)  :: NA1, NA2  ! no. repetitions of simple unitcell in A1,A2 directions   
+    integer , intent(in)  :: NA1, NA2, NA3 ! no. repetitions of simple unitcell in A1,A2,A3 directions   
 
 ! ***********************
 ! * OUTPUT variables    *
@@ -1684,9 +1689,9 @@ contains
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
-    integer               :: i,j,iq
+    integer               :: i,j,k,iq
 
-    nq = NA1*NA2
+    nq = NA1*NA2*NA3
 
 ! To comply with new standard 3-dimension regime
     allocate(q(3,nq))
@@ -1698,13 +1703,15 @@ contains
     wq(:)  = 0.0_dp
     iq = 0
     do i = 1 , NA1
-       do j = 1  , NA2
-          iq = iq+1
-          q(1,iq) = 1.0_dp*(i-1) / real(NA1,dp)
-          q(2,iq) = 1.0_dp*(j-1) / real(NA2,dp)
-          q(3,iq) = 0.0_dp
-          wq(iq)  = 1.0_dp       / real(nq,dp)
-       end do
+    do j = 1 , NA2
+    do k = 1 , NA3
+       iq = iq+1
+       q(1,iq) = 1.0_dp*(i-1) / real(NA1,dp)
+       q(2,iq) = 1.0_dp*(j-1) / real(NA2,dp)
+       q(3,iq) = 1.0_dp*(k-1) / real(NA3,dp)
+       wq(iq)  = 1.0_dp       / real(nq,dp)
+    end do
+    end do
     end do
     
   end subroutine mkqgrid

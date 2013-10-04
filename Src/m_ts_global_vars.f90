@@ -13,9 +13,11 @@ module m_ts_global_vars
 
 USE precision, only : dp
 
-integer :: TSiscf=1
+save
 
-logical :: TSinit=.false.,TSrun=.false.
+integer :: TSiscf = 1
+
+logical :: TSinit = .false. , TSrun = .false.
 
 integer :: ts_istep      ! FC step in phonon calculation
 

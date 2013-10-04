@@ -6,6 +6,7 @@
 module m_ts_elec_se
 
   use precision, only : dp
+  use m_ts_electype
 
   implicit none
 
@@ -21,7 +22,7 @@ module m_ts_elec_se
 contains
 
   subroutine UC_expansion(non_Eq,UseBulk,ZEnergy, &
-       no_u,no_s,NRepA1,NRepA2, &
+       no_u,no_s,El, &
        na_u,lasto,nq,qb,wq, &
        H,S,GS,Sigma,Gamma,nwork,work)
 ! ********************
@@ -29,7 +30,8 @@ contains
 ! ********************
     logical,  intent(in) :: non_Eq, UseBulk
     complex(dp), intent(in) :: ZEnergy
-    integer,  intent(in) :: no_u, no_s, NRepA1, NRepA2
+    integer,  intent(in) :: no_u, no_s
+    type(Elec), intent(in) :: El
     integer,  intent(in) :: na_u,lasto(0:na_u)
     integer,  intent(in) :: nq
     real(dp), intent(in) :: qb(3,nq), wq(nq)
@@ -48,14 +50,14 @@ contains
 
     if ( non_Eq ) then
        call UC_expansion_Sigma_GammaT(UseBulk,ZEnergy, &
-            no_u,no_s,NRepA1,NRepA2, &
+            no_u,no_s,El, &
             na_u,lasto,nq,qb,wq,H,S,GS,Sigma,Gamma,nwork,work)
     else
        if ( UseBulk ) then
-          call UC_expansion_Sigma_Bulk(no_u,no_s,NRepA1,NRepA2, &
+          call UC_expansion_Sigma_Bulk(no_u,no_s,El, &
                na_u,lasto,nq,qb,wq,H,S,GS,Sigma,nwork,work)
        else
-          call UC_expansion_Sigma(ZEnergy,no_u,no_s,NRepA1,NRepA2, &
+          call UC_expansion_Sigma(ZEnergy,no_u,no_s,El, &
                na_u,lasto,nq,qb,wq,H,S,GS,Sigma,nwork,work)
        end if
     end if
@@ -64,14 +66,15 @@ contains
 
   end subroutine UC_expansion
 
-  subroutine UC_expansion_Sigma_Bulk(no_u,no_s,NRepA1,NRepA2, &
+  subroutine UC_expansion_Sigma_Bulk(no_u,no_s,El, &
        na_u,lasto,nq,qb,wq,H,S,GS,Sigma,nwork,work)
     use intrinsic_missing, only : EYE
     use units, only : Pi
 ! ********************
 ! * INPUT variables  *
 ! ********************
-    integer,  intent(in) :: no_u, no_s, NRepA1, NRepA2
+    integer,  intent(in) :: no_u, no_s
+    type(Elec), intent(in) :: El
     integer,  intent(in) :: na_u,lasto(0:na_u)
     integer,  intent(in) :: nq
     real(dp), intent(in) :: qb(3,nq), wq(nq)
@@ -88,19 +91,19 @@ contains
 ! * LOCAL variables  *
 ! ********************
     integer :: iq, ierr
-    integer :: iow,iau,ia2,ia1,iuo
-    integer :: jow,jau,ja2,ja1,juo
+    integer :: iow,iau,ia3,ia2,ia1,iuo
+    integer :: jow,jau,ja3,ja2,ja1,juo
     integer :: ipvt(no_s)
     complex(dp), parameter :: zmPi2 = dcmplx(0._dp,-2._dp * Pi)
     complex(dp), parameter :: zPi2  = dcmplx(0._dp, 2._dp * Pi)
     complex(dp) :: ph
-    real(dp) :: qmPi(2,nq)
+    real(dp) :: qmPi(3,nq)
 
     ! THis should never happen (work is TS-region!)
     if ( nwork < no_s**2 ) call die('Size of work-array is &
          &too small')
 
-    if ( NRepA1 * NRepA2 == 1 ) then
+    if ( Rep(El) == 1 ) then
        if ( no_u /= no_s ) call die('no_E/=no_s')
 
        ! When no repetition we save it "as is"
@@ -109,7 +112,7 @@ contains
     else
 
        do iq = 1 , nq 
-          qmPi(1:2,iq) = - 2._dp * Pi * qb(1:2,iq)
+          qmPi(1:3,iq) = - 2._dp * Pi * qb(1:3,iq)
        end do
 
        ! TODO qb(:,1) == 0.0_dp in any case currently used
@@ -126,52 +129,60 @@ contains
        iq = 1
        iow = 0
        do iau = 1 , na_u
-        do ia2 = 1 , NRepA2
-         do ia1 = 1 , NRepA1
+        do ia3 = 1 , RepA3(El)
+        do ia2 = 1 , RepA2(El)
+        do ia1 = 1 , RepA1(El)
           do iuo = 1 + lasto(iau-1) , lasto(iau)
            iow = iow + 1
            jow = 0
            do jau = 1 , na_u
-            do ja2 = 1 , NRepA2
-             do ja1 = 1 , NRepA1
+            do ja3 = 1 , RepA3(El)
+            do ja2 = 1 , RepA2(El)
+            do ja1 = 1 , RepA1(El)
               ph = wq(iq) * cdexp(dcmplx(0._dp, &
-                   (ia1-ja1)*qmPi(1,iq) + (ia2-ja2)*qmPi(2,iq) ) )
+                   (ia1-ja1)*qmPi(1,iq) + (ia2-ja2)*qmPi(2,iq) + (ia3-ja3)*qmPi(3,iq) ) )
               do juo = 1 + lasto(jau-1) , lasto(jau) 
                  jow = jow + 1
                  
                  work(jow,iow) = ph * GS(juo,iuo,iq)
               end do !juo
-             end do !ja1
+            end do !ja1
             end do !ja2
+            end do !ja3
            end do !jau
           end do !iuo
-         end do !ia1
+        end do !ia1
         end do !ia2
+        end do !ia3
        end do !iau
        do iq = 2 , nq
         iow = 0
         do iau = 1 , na_u
-         do ia2 = 1 , NRepA2
-          do ia1 = 1 , NRepA1
+         do ia3 = 1 , RepA3(El)
+         do ia2 = 1 , RepA2(El)
+         do ia1 = 1 , RepA1(El)
            do iuo = 1 + lasto(iau-1) , lasto(iau)
             iow = iow + 1
             jow = 0
             do jau = 1 , na_u
-             do ja2 = 1 , NRepA2
-              do ja1 = 1 , NRepA1
+             do ja3 = 1 , RepA3(El)
+             do ja2 = 1 , RepA2(El)
+             do ja1 = 1 , RepA1(El)
                ph = wq(iq) * cdexp(dcmplx(0._dp, &
-                    (ia1-ja1)*qmPi(1,iq) + (ia2-ja2)*qmPi(2,iq) ) )
+                    (ia1-ja1)*qmPi(1,iq) + (ia2-ja2)*qmPi(2,iq) + (ia3-ja3)*qmPi(3,iq) ) )
                do juo = 1 + lasto(jau-1) , lasto(jau) 
                   jow = jow + 1
                   
                   work(jow,iow) = work(jow,iow) + ph * GS(juo,iuo,iq)
                end do !juo
-              end do !ja1
+             end do !ja1
              end do !ja2
+             end do !ja3
             end do !jau
            end do !iuo
-          end do !ia1
+         end do !ia1
          end do !ia2
+         end do !ia3
         end do !iau
        end do !q-points
        
@@ -189,14 +200,15 @@ contains
   end subroutine UC_expansion_Sigma_Bulk
 
 
-  subroutine UC_expansion_Sigma(ZEnergy,no_u,no_s,NRepA1,NRepA2, &
+  subroutine UC_expansion_Sigma(ZEnergy,no_u,no_s,El, &
        na_u,lasto,nq,qb,wq,H,S,GS,Sigma,nwork,work)
     use intrinsic_missing, only : EYE
 ! ********************
 ! * INPUT variables  *
 ! ********************
     complex(dp), intent(in) :: ZEnergy
-    integer,  intent(in) :: no_u, no_s, NRepA1, NRepA2
+    integer,  intent(in) :: no_u, no_s
+    type(Elec), intent(in) :: El
     integer,  intent(in) :: na_u,lasto(0:na_u)
     integer,  intent(in) :: nq
     real(dp), intent(in) :: qb(3,nq), wq(nq)
@@ -220,10 +232,10 @@ contains
     if ( nwork < no_s**2*2 ) call die('Size of work-array is &
          &too small')
        
-    call update_UC_expansion(ZEnergy,no_u,no_s,NRepA1,NRepA2, &
+    call update_UC_expansion(ZEnergy,no_u,no_s,El, &
        na_u,lasto,nq,qb,wq,H,S,GS,nwork,work(1,1,1))
 
-    if ( NRepA1 * NRepA2 == 1 ) then
+    if ( Rep(El) == 1 ) then
 
        ! When no repetition we save it "as is"
        Sigma(:,:) = GS(:,:,1)
@@ -250,7 +262,7 @@ contains
 
   end subroutine UC_expansion_Sigma
 
-  subroutine UC_expansion_Sigma_GammaT(UseBulk,ZEnergy,no_u,no_s,NRepA1,NRepA2, &
+  subroutine UC_expansion_Sigma_GammaT(UseBulk,ZEnergy,no_u,no_s,El, &
        na_u,lasto,nq,qb,wq,H,S,GS,Sigma,GammaT,nwork,work)
     use intrinsic_missing, only: EYE
 ! ********************
@@ -258,7 +270,8 @@ contains
 ! ********************
     complex(dp), intent(in) :: ZEnergy
     logical,  intent(in) :: UseBulk
-    integer,  intent(in) :: no_u, no_s, NRepA1, NRepA2
+    integer,  intent(in) :: no_u, no_s
+    type(Elec), intent(in) :: El
     integer,  intent(in) :: na_u,lasto(0:na_u)
     integer,  intent(in) :: nq
     real(dp), intent(in) :: qb(3,nq), wq(nq)
@@ -284,10 +297,10 @@ contains
     if ( nwork < no_s**2*2 ) call die('Size of work-array is &
          &too small')
 
-    call update_UC_expansion(ZEnergy,no_u,no_s,NRepA1,NRepA2, &
+    call update_UC_expansion(ZEnergy,no_u,no_s,El, &
        na_u,lasto,nq,qb,wq,H,S,GS,nwork,work(1,1,1))
 
-    if ( NRepA1 * NRepA2 == 1 ) then
+    if ( Rep(El) == 1 ) then
 
        ! When no repetition we save it "as is"
        Sigma(:,:) = GS(:,:,1)
@@ -354,14 +367,15 @@ contains
 
   end subroutine UC_expansion_Sigma_GammaT
 
-  subroutine update_UC_expansion(ZEnergy,no_u,no_s,NRepA1,NRepA2, &
+  subroutine update_UC_expansion(ZEnergy,no_u,no_s,El, &
        na_u,lasto,nq,qb,wq,H,S,GS,nwork,work)
     use units, only : Pi
 ! ********************
 ! * INPUT variables  *
 ! ********************
     complex(dp), intent(in) :: ZEnergy
-    integer,  intent(in) :: no_u, no_s, NRepA1, NRepA2
+    integer,  intent(in) :: no_u, no_s
+    type(Elec), intent(in) :: El
     integer,  intent(in) :: na_u,lasto(0:na_u)
     integer,  intent(in) :: nq
     real(dp), intent(in) :: qb(3,nq), wq(nq)
@@ -375,14 +389,14 @@ contains
 ! * LOCAL variables  *
 ! ********************
     integer :: iq
-    integer :: iow,iau,ia2,ia1,iuo
-    integer :: jow,jau,ja2,ja1,juo
+    integer :: iow,iau,ia3,ia2,ia1,iuo
+    integer :: jow,jau,ja3,ja2,ja1,juo
     complex(dp), parameter :: zmPi2 = dcmplx(0._dp,-2.0_dp * Pi)
     complex(dp), parameter :: zPi2  = dcmplx(0._dp, 2.0_dp * Pi)
     complex(dp) :: ph
-    real(dp) :: qmPi(2,nq)
+    real(dp) :: qmPi(3,nq)
 
-    if ( NRepA1 * NRepA2 == 1 ) then
+    if ( Rep(El) == 1 ) then
        if ( no_u /= no_s ) call die('no_E/=no_s')
 
        ! We do not need this...
@@ -392,7 +406,7 @@ contains
     else
 
        do iq = 1 , nq 
-          qmPi(1:2,iq) = - 2._dp * Pi * qb(1:2,iq)
+          qmPi(1:3,iq) = - 2._dp * Pi * qb(1:3,iq)
        end do
 
        ! This is the crucial calcuation.
@@ -403,16 +417,18 @@ contains
        iq = 1
        iow = 0
        do iau = 1 , na_u
-        do ia2 = 1 , NRepA2
-         do ia1 = 1 , NRepA1
+        do ia3 = 1 , RepA3(El)
+        do ia2 = 1 , RepA2(El)
+        do ia1 = 1 , RepA1(El)
           do iuo = 1 + lasto(iau-1) , lasto(iau)
            iow = iow + 1
            jow = 0
            do jau = 1 , na_u
-            do ja2 = 1 , NRepA2
-             do ja1 = 1 , NRepA1
+            do ja3 = 1 , RepA3(El)
+            do ja2 = 1 , RepA2(El)
+            do ja1 = 1 , RepA1(El)
               ph = wq(iq) * cdexp(dcmplx(0._dp, &
-                   (ia1-ja1)*qmPi(1,iq) + (ia2-ja2)*qmPi(2,iq) ) )
+                   (ia1-ja1)*qmPi(1,iq) + (ia2-ja2)*qmPi(2,iq) + (ia3-ja3)*qmPi(3,iq) ) )
               do juo = 1 + lasto(jau-1) , lasto(jau)
                 jow = jow + 1
                 
@@ -421,26 +437,30 @@ contains
                 work(jow,iow,2) = ph * (ZEnergy*S(juo,iuo,iq)-H(juo,iuo,iq))
                 
               end do !juo
-             end do !ja1
+            end do !ja1
             end do !ja2
+            end do !ja3
            end do !jau
           end do !iuo
-         end do !ia1
+        end do !ia1
         end do !ia2
+        end do !ia3
        end do !iau
        do iq = 2 , nq
         iow = 0
         do iau = 1 , na_u
-         do ia2 = 1 , NRepA2
-          do ia1 = 1 , NRepA1
+         do ia3 = 1 , RepA3(El)
+         do ia2 = 1 , RepA2(El)
+         do ia1 = 1 , RepA1(El)
            do iuo = 1 + lasto(iau-1) , lasto(iau)
             iow = iow + 1
             jow = 0
             do jau = 1 , na_u
-             do ja2 = 1 , NRepA2
-              do ja1 = 1 , NRepA1
+             do ja3 = 1 , RepA3(El)
+             do ja2 = 1 , RepA2(El)
+             do ja1 = 1 , RepA1(El)
                ph = wq(iq) * cdexp(dcmplx(0._dp, &
-                    (ia1-ja1)*qmPi(1,iq) + (ia2-ja2)*qmPi(2,iq) ) )
+                    (ia1-ja1)*qmPi(1,iq) + (ia2-ja2)*qmPi(2,iq) + (ia3-ja3)*qmPi(3,iq) ) )
                do juo = 1 + lasto(jau-1) , lasto(jau)
                   jow = jow + 1
                   
@@ -450,12 +470,14 @@ contains
                        (ZEnergy*S(juo,iuo,iq)-H(juo,iuo,iq))
    
                end do !juo
-              end do !ja1
+             end do !ja1
              end do !ja2
+             end do !ja3
             end do !jau
            end do !iuo
-          end do !ia1
+         end do !ia1
          end do !ia2
+         end do !ia3
         end do !iau
        end do !q-points
 

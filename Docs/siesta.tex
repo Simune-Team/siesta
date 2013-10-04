@@ -7335,25 +7335,32 @@ calculations, only the usual {\sc Siesta} options are relevant.
 \subsubsection{General options}
 
 \begin{description}
-    \itemsep 10pt
-    \parsep 0pt
+  \itemsep 10pt
+  \parsep 0pt
+  
+  \item[{\bf SolutionMethod}] ({\it string}):
+  \index{SolutionMethod@{\bf SolutionMethod}} Must be set to {\tt
+      transiesta} in order to perform a {\sc TranSiesta} calculation
+  
+  {\it Default value:} {\tt diagon}
 
-    \item[{\bf SolutionMethod}] ({\it string}):
-      \index{SolutionMethod@{\bf SolutionMethod}} Must be set to {\tt
-        transiesta} in order to perform a {\sc TranSiesta} calculation
+  \item[{\bf TS.SolutionMethod}] ({\it string}):
+  \index{TS.SolutionMethod@{\bf TS.SolutionMethod}} Can be set to \texttt{sparse}
+  in order to utilize the memory reduced \textsc{TranSiesta} calculation.
+  The \texttt{sparse} method is strictly the same, however, many optimizations and
+  changes have been added. The main benefit is that it requires, roughly, half the
+  memory as the original method. Hence, small numerical deviations are to be expected.
+  Furthermore, this has required a full re-write of \textsc{TranSiesta} so it should
+  be considered highly experimental and needs thorough testing.
+  
+  {\it Default value:} {\tt tri}
 
-        {\it Default value:} {\tt diagon}
-
-    \item[{\bf TS.SolutionMethod}] ({\it string}):
-      \index{TS.SolutionMethod@{\bf TS.SolutionMethod}} Can be set to \texttt{sparse}
-      in order to utilize the memory reduced \textsc{TranSiesta} calculation.
-      The \texttt{sparse} method is strictly the same, however, many optimizations and
-      changes have been added. The main benefit is that it requires, roughly, half the
-      memory as the original method. Hence, small numerical deviations are to be expected.
-      Furthermore, this has required a full re-write of \textsc{TranSiesta} so it should
-      be considered highly experimental and needs thorough testing.
-
-      {\it Default value:} {\tt tri}
+  \item[\textbf{TS.TransportDirection}] (\emph{integer}):
+  \index{TS.TransportDirection@{\textbf{TS.TransportDirection}}
+      Can be either $1$, $2$ or $3$ to choose the transport direction.
+      These are regarded as the cell-vectors that make up the unitcell.
+      
+      \emph{Default value:} \texttt{1}
 
 \item[{\bf TS.SaveHS}] ({\it logical}): \index{TS.SaveHS@{\bf
     TS.SaveHS}} Save the Hamiltonian in the file with extension .TSHS.

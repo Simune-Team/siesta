@@ -1106,14 +1106,14 @@ contains
       ! Hence we can perform the calculation without 
       ! calculating them.
       call UC_expansion(.false.,UseBulk,Z,no_L_HS,no_L, &
-           RepA1(ElLeft), RepA2(ElLeft), &
+           ElLeft, &
            na_L_HS,lasto_L,nqL,qLb,wqL, &
            HAAL, SAAL, GAAL, &
            SigmaL, GammaLT, & 
            nzwork, zwork)
 
       call UC_expansion(.false.,UseBulk,Z,no_R_HS,no_R, &
-           RepA1(ElRight), RepA2(ElRight), &
+           ElRight, &
            na_R_HS,lasto_R,nqR,qRb,wqR, &
            HAAR, SAAR, GAAR, &
            SigmaR, GammaRT, & 
@@ -1199,14 +1199,14 @@ contains
       ZW = Z * W
 
       call UC_expansion(.false.,UseBulk,Z,no_L_HS,no_L, &
-           RepA1(ElLeft), RepA2(ElLeft), &
+           ElLeft, &
            na_L_HS,lasto_L,nqL,qLb,wqL, &
            HAAL, SAAL, GAAL, &
            SigmaL, GammaLT, & 
            nzwork, zwork)
 
       call UC_expansion(.true.,UseBulk,Z,no_R_HS,no_R, &
-           RepA1(ElRight), RepA2(ElRight), &
+           ElRight, &
            na_R_HS,lasto_R,nqR,qRb,wqR, &
            HAAR, SAAR, GAAR, &
            SigmaR, GammaRT, & 
@@ -1298,14 +1298,14 @@ contains
       ZW = Z * W
 
       call UC_expansion(.true.,UseBulk,Z,no_L_HS,no_L, &
-           RepA1(ElLeft), RepA2(ElLeft), &
+           ElLeft, &
            na_L_HS,lasto_L,nqL,qLb,wqL, &
            HAAL, SAAL, GAAL, &
            SigmaL, GammaLT, & 
            nzwork, zwork)
 
       call UC_expansion(.false.,UseBulk,Z,no_R_HS,no_R, &
-           RepA1(ElRight), RepA2(ElRight), &
+           ElRight, &
            na_R_HS,lasto_R,nqR,qRb,wqR, &
            HAAR, SAAR, GAAR, &
            SigmaR, GammaRT, & 
@@ -1390,14 +1390,14 @@ contains
       ZW = Z * W
 
       call UC_expansion(.false.,UseBulk,Z,no_L_HS,no_L, &
-           RepA1(ElLeft), RepA2(ElLeft), &
+           ElLeft, &
            na_L_HS,lasto_L,nqL,qLb,wqL, &
            HAAL, SAAL, GAAL, &
            SigmaL, GammaLT, & 
            nzwork, zwork)
 
       call UC_expansion(.true.,UseBulk,Z,no_R_HS,no_R, &
-           RepA1(ElRight), RepA2(ElRight), &
+           ElRight, &
            na_R_HS,lasto_R,nqR,qRb,wqR, &
            HAAR, SAAR, GAAR, &
            SigmaR, GammaRT, & 

@@ -157,13 +157,13 @@ contains
           call check_Green(uGF,chem_shift,ucell, &
                TotUsedAtoms(El),xa(1,NBufAt+1), &
                nspin,nkpnt,kpoint, &
-               kweight,NEn,contour,RepA1(El),RepA2(El),RemUCellDistance, &
+               kweight,NEn,contour,RepA1(El),RepA2(El),RepA3(El),RemUCellDistance, &
                xa_Eps, errorGF)
        else if ( tElec == 'R' ) then
           call check_Green(uGF,chem_shift,ucell, &
                TotUsedAtoms(El),xa(1,nua-NBufAt-TotUsedAtoms(El)+1), &
                nspin,nkpnt,kpoint, &
-               kweight,NEn,contour,RepA1(El),RepA2(El),RemUCellDistance, &
+               kweight,NEn,contour,RepA1(El),RepA2(El),RepA3(El),RemUCellDistance, &
                xa_Eps, errorGF)
        end if
        
@@ -235,7 +235,7 @@ contains
 ! * LOCAL variables     *
 ! ***********************
     character(200) :: GFfile ! Name of the GF file
-    integer :: NEn,nua,NA1,NA2,no,nspin
+    integer :: NEn,nua,NA1,NA2,NA3,no,nspin
     real(dp) :: EfShift            ! The Fermi energy shift due to a voltage
     real(dp), dimension(:,:), allocatable :: xa
     complex(dp), dimension(:), allocatable :: contour,wgf
@@ -265,7 +265,7 @@ contains
        end if
        read(funit) EfShift,NEn
        read(funit) RemUCell
-       read(funit) nua,NA1,NA2,nkpar,nq
+       read(funit) nua,NA1,NA2,NA3,nkpar,nq
        read(funit) nspin,ucell
        allocate(xa(3,nua))
        read(funit) xa
@@ -309,7 +309,7 @@ contains
        end if
 
 ! Check # of q-points
-       if (Rep(c_El) .ne. NA1*NA2) then
+       if (Rep(c_El) .ne. NA1*NA2*NA3) then
           write(*,*)"ERROR: Green's function file: "//TRIM(GFfile)
           write(*,*) 'read_Green: ERROR: unexpected no. q-points'
           errorGF = .true.
@@ -402,7 +402,7 @@ contains
 ! ##################################################################
   subroutine check_Green(funit,c_EfShift,c_ucell,c_nua,c_xa,c_nspin,c_nkpar,c_kpar,c_wkpar, &
        c_NEn,c_contour, &
-       c_NA1,c_NA2,c_RemUCell,xa_Eps, errorGF)
+       c_NA1,c_NA2,c_NA3,c_RemUCell,xa_Eps, errorGF)
 
     use precision, only: dp
     use units,     only: Ang
@@ -430,7 +430,7 @@ contains
 ! We cannot check for number of atoms in the unit cell.
 ! TODO Add this so that it is possible.
 ! Repetition information
-    integer, intent(in)        :: c_NA1,c_NA2
+    integer, intent(in)        :: c_NA1,c_NA2,c_NA3
     logical, intent(in)        :: c_RemUCell ! Should the Green's function file have the inner cell distances or not?
     real(dp), intent(in)       :: xa_Eps
 ! ***********************
@@ -445,7 +445,7 @@ contains
     character(200) :: GFtitle ! Title, currently not used
     real(dp) :: EfShift ! The energy shift in the Fermi energy
 
-    integer :: NA1,NA2 ! # repetitions in x, # repetitions in y
+    integer :: NA1,NA2,NA3 ! # repetitions in x, # repetitions in y
     integer :: nua,no,nkpar,nspin ! # of atoms, # of orbs, # k-points, # spin
     real(dp), dimension (:,:), allocatable :: xa ! electrode atomic coordinates
     real(dp), dimension (:,:), allocatable :: kpar ! k-points
@@ -461,7 +461,7 @@ contains
     character(200) :: GFfile
     real(dp) :: ucell(3,3)
     integer :: iEn
-    integer :: i,j,iq, iaa, ia
+    integer :: i,j,k,iq, iaa, ia
     real(dp) :: c_xa_o(3), xa_o(3)
     real(dp) :: wqbtmp,qbtmp(3), ktmp(3), kpt(3)
     logical :: localErrorGf, eXa, RemUCell
@@ -509,18 +509,19 @@ contains
     end if
 
     ! Read in integers (also the returned number of atoms)
-    read(funit) nua,NA1,NA2,nkpar,nqb
-    if ( c_NA1 /= NA1 .or. c_NA2 /= NA2 .or. c_NA1*c_NA2 /= nqb ) then
+    read(funit) nua,NA1,NA2,NA3,nkpar,nqb
+    if ( c_NA1/=NA1 .or. c_NA2/=NA2 .or. c_NA3/=NA3 .or. c_NA1*c_NA2*c_NA3/=nqb ) then
        write(*,*)"ERROR: Green's function file: "//TRIM(GFfile)
        write(*,*)"Number of repetitions is wrong!"
        write(*,'(2(a,i3))') "Found NA1: ",NA1,", expected NA1: ",c_NA1
        write(*,'(2(a,i3))') "Found NA2: ",NA2,", expected NA2: ",c_NA2
+       write(*,'(2(a,i3))') "Found NA3: ",NA3,", expected NA3: ",c_NA3
        localErrorGf = .true.
     end if
-    if ( c_nua /= nua*NA1*NA2 ) then
+    if ( c_nua /= nua*NA1*NA2*NA3 ) then
        write(*,*)"ERROR: Green's function file: "//TRIM(GFfile)
        write(*,*)"Number of atoms is wrong!"
-       write(*,'(2(a,i2))') "Found: ",nua,", expected: ",c_nua/NA1/NA2
+       write(*,'(2(a,i2))') "Found: ",nua,", expected: ",c_nua/NA1/NA2/NA3
        localErrorGf = .true.
     end if
     if ( c_nkpar /= nkpar ) then
@@ -539,7 +540,7 @@ contains
     end if
 
     ! Read in electrode coordinates
-    ! We know that NA[12] == c_NA[12] 
+    ! We know that NA[123] == c_NA[123] 
     allocate(xa(3,nua))
     read(funit) xa 
     ! Check electrode coordinates
@@ -552,18 +553,21 @@ contains
     eXa = .false.
     iaa = 1
     do ia = 1 , nua
+       do k=0,NA3-1
        do j=0,NA2-1
-          do i=0,NA1-1
-             eXa=eXa.or.abs(xa(1,ia)-xa_o(1) + &
-                  ucell(1,1)*i+ucell(1,2)*j - &
-                  c_xa(1,iaa)+c_xa_o(1)) > xa_EPS
-             eXa=eXa.or.abs(xa(2,ia)-xa_o(2) + &
-                  ucell(2,1)*i+ucell(2,2)*j - &
-                  c_xa(2,iaa)+c_xa_o(2)) > xa_EPS
-             eXa=eXa.or.abs(xa(3,ia)-xa_o(3) - &
-                  c_xa(3,iaa)+c_xa_o(3)) > xa_EPS
-             iaa = iaa + 1
-          end do
+       do i=0,NA1-1
+          eXa=eXa.or.abs(xa(1,ia)-xa_o(1) + &
+               sum(ucell(1,:)*(/i,j,k/)) - &
+               c_xa(1,iaa)+c_xa_o(1)) > xa_EPS
+          eXa=eXa.or.abs(xa(2,ia)-xa_o(2) + &
+               sum(ucell(2,:)*(/i,j,k/)) - &
+               c_xa(2,iaa)+c_xa_o(2)) > xa_EPS
+          eXa=eXa.or.abs(xa(3,ia)-xa_o(3) + &
+               sum(ucell(3,:)*(/i,j,k/)) - &
+               c_xa(3,iaa)+c_xa_o(3)) > xa_EPS
+          iaa = iaa + 1
+       end do
+       end do
        end do
     end do
     if ( eXa ) then
@@ -576,17 +580,19 @@ contains
             "X (Ang)","Y (Ang)","Z (Ang)"
        iaa = 1
        do ia = 1, nua
+          do k=0,NA3-1
           do j=0,NA2-1
-             do i=0,NA1-1
-                write(*,'(t3,3f10.5,''  |'',3f10.5)') &
-                     (xa(1,ia)-xa_o(1)+ucell(1,1)*i+ucell(1,2)*j)/Ang, &
-                     (xa(2,ia)-xa_o(2)+ucell(2,1)*i+ucell(2,2)*j)/Ang, &
-                     (xa(3,ia)-xa_o(3))/Ang, &
-                     (c_xa(1,iaa)-c_xa_o(1))/Ang, &
-                     (c_xa(2,iaa)-c_xa_o(2))/Ang, &
-                     (c_xa(3,iaa)-c_xa_o(3))/Ang
-                iaa = iaa + 1
-             end do
+          do i=0,NA1-1
+             write(*,'(t3,3f10.5,''  |'',3f10.5)') &
+                  (xa(1,ia)-xa_o(1)+sum(ucell(1,:)*(/i,j,k/)))/Ang, &
+                  (xa(2,ia)-xa_o(2)+sum(ucell(2,:)*(/i,j,k/)))/Ang, &
+                  (xa(3,ia)-xa_o(3)+sum(ucell(3,:)*(/i,j,k/)))/Ang, &
+                  (c_xa(1,iaa)-c_xa_o(1))/Ang, &
+                  (c_xa(2,iaa)-c_xa_o(2))/Ang, &
+                  (c_xa(3,iaa)-c_xa_o(3))/Ang
+             iaa = iaa + 1
+          end do
+          end do
           end do
        end do
        localErrorGf = .true.
@@ -640,6 +646,7 @@ contains
        call kpoint_convert(ucell,kpar(:,i),ktmp,1)
        ktmp(1) = ktmp(1) * real(NA1,dp)
        ktmp(2) = ktmp(2) * real(NA2,dp)
+       ktmp(3) = ktmp(3) * real(NA3,dp)
        call kpoint_convert(c_ucell,ktmp,kpt,-1)
        if ( dabs(c_kpar(1,i)-kpt(1)) > EPS .or. &
             dabs(c_kpar(2,i)-kpt(2)) > EPS .or. &
@@ -649,6 +656,7 @@ contains
              call kpoint_convert(ucell,kpar(:,i),ktmp,1)
              ktmp(1) = ktmp(1) * real(NA1,dp)
              ktmp(2) = ktmp(2) * real(NA2,dp)
+             ktmp(3) = ktmp(3) * real(NA3,dp)
              call kpoint_convert(c_ucell,ktmp,kpt,-1)
              write(*,'(3f12.5,a,3f12.5)') c_kpar(:,j),'  :  ',kpt(:)
           end do
@@ -669,24 +677,29 @@ contains
     iq = 0
     qbtmp(3) = 0._dp
     do i=1,NA1
-       do j=1,NA2
-          iq = iq+1
-          qbtmp(1)=(1.0_dp*(i-1))/real(NA1,dp)
-          qbtmp(2)=(1.0_dp*(j-1))/real(NA2,dp)
-          wqbtmp  = 1.0_dp       /real(NA1*NA2,dp)
-          if ( dabs(qbtmp(1)-qb(1,iq)) > EPS .or. &
-               dabs(qbtmp(2)-qb(2,iq)) > EPS ) then
-             write(*,*)"Expansion q-points are not the same:"
-             write(*,'(3f12.5,a,3f12.5)') qbtmp(:),'  :  ',qb(:,iq)
-             localErrorGf = .true.
-          end if
-          if ( dabs(qbtmp(1)-qb(1,iq)) > EPS .or. &
-               dabs(qbtmp(2)-qb(2,iq)) > EPS ) then
-             write(*,*)"Expansion q-point weights are not the same:"
-             write(*,'(f12.5,a,f12.5)') wqbtmp,'  :  ',wqb(iq)
-             localErrorGf = .true.
-          end if
-       end do
+    do j=1,NA2
+    do k=1,NA3
+       iq = iq+1
+       qbtmp(1)=(1.0_dp*(i-1))/real(NA1,dp)
+       qbtmp(2)=(1.0_dp*(j-1))/real(NA2,dp)
+       qbtmp(3)=(1.0_dp*(k-1))/real(NA3,dp)
+       wqbtmp  = 1.0_dp       /real(NA1*NA2*NA3,dp)
+       if ( dabs(qbtmp(1)-qb(1,iq)) > EPS .or. &
+            dabs(qbtmp(2)-qb(2,iq)) > EPS .or. &
+            dabs(qbtmp(3)-qb(3,iq)) > EPS ) then
+          write(*,*)"Expansion q-points are not the same:"
+          write(*,'(3f12.5,a,3f12.5)') qbtmp(:),'  :  ',qb(:,iq)
+          localErrorGf = .true.
+       end if
+       if ( dabs(qbtmp(1)-qb(1,iq)) > EPS .or. &
+            dabs(qbtmp(2)-qb(2,iq)) > EPS .or. &
+            dabs(qbtmp(3)-qb(3,iq)) > EPS ) then
+          write(*,*)"Expansion q-point weights are not the same:"
+          write(*,'(f12.5,a,f12.5)') wqbtmp,'  :  ',wqb(iq)
+          localErrorGf = .true.
+       end if
+    end do
+    end do
     end do
     call memory('D','D',nqb*4,'check_GF')
     deallocate(qb,wqb)

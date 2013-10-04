@@ -20,6 +20,7 @@ module m_ts_options
   USE siesta_options, only : fixspin, isolve, SOLVE_TRANSI
   USE sys, only : die
   USE m_ts_electype
+  use m_ts_tdir
   implicit none
   PUBLIC
   SAVE
@@ -159,6 +160,7 @@ CONTAINS
     use m_ts_method
     use m_ts_weight
     use m_ts_charge
+    use m_ts_tdir
 
     use m_monitor
     use m_bandwidth
@@ -174,6 +176,10 @@ CONTAINS
     character(len=70) :: chars
     integer :: tmp_G_NF
     integer :: i
+
+    ! External routines
+    real(dp) :: dot
+    external :: dot
 
     if (isolve.eq.SOLVE_TRANSI) then
        TSmode = .true.
@@ -192,6 +198,12 @@ CONTAINS
 
     ! Read in the mixing for the transiesta cycles
     ts_wmix = fdf_get('TS.MixingWeight',wmix)
+    
+    ! Read in the transport direction
+    ts_tdir = fdf_get('TS.TransportDirection',3)
+    if ( ts_tdir < 1 .or. 3 < ts_tdir ) then
+       call die('Transport direction not in [1-3]')
+    end if
 
     ! Reading the Transiesta solution method
     chars = fdf_get('TS.SolutionMethod','tri')
@@ -208,7 +220,8 @@ CONTAINS
     onlyS       = fdf_get('TS.onlyS',onlyS_def)
 
     VoltFDF     = fdf_get('TS.Voltage',voltfdf_def,'Ry') 
-    IsVolt = dabs(VoltFDF) > 0.001_dp/eV
+    ! Voltage situation is above 1 meV (probably too low...)
+    IsVolt = dabs(VoltFDF) > 0.001_dp*eV
     if ( .not. IsVolt ) VoltFDF = 0._dp
 
     ! Set up the fermi shifts for the left and right electrodes
@@ -352,7 +365,8 @@ CONTAINS
     call fdf_deprecated('TS.ReplicateA2Left','TS.Elec.Left.Replicate.A2')
     ElLeft%RepA2     = fdf_get('TS.ReplicateA2Left',NRepA_def)
     ElLeft%RepA2     = fdf_get('TS.Elec.Left.Replicate.A2',ElLeft%RepA2)
-    if ( RepA1(ElLeft) < 1 .or. RepA2(ElLeft) < 1 ) &
+    ElLeft%RepA3     = fdf_get('TS.Elec.Left.Replicate.A3',ElLeft%RepA3)
+    if ( RepA1(ElLeft) < 1 .or. RepA2(ElLeft) < 1 .or. RepA3(ElLeft) < 1 ) &
          call die("Repetition in left electrode must be >= 1.")
 
 
@@ -369,7 +383,8 @@ CONTAINS
     call fdf_deprecated('TS.ReplicateA2Right','TS.Elec.Right.Replicate.A2')
     ElRight%RepA2     = fdf_get('TS.ReplicateA2Right',NRepA_def)
     ElRight%RepA2     = fdf_get('TS.Elec.Right.Replicate.A2',ElRight%RepA2)
-    if ( RepA1(ElRight) < 1 .or. RepA2(ElRight) < 1 ) &
+    ElRight%RepA3     = fdf_get('TS.Elec.Right.Replicate.A3',ElRight%RepA3)
+    if ( RepA1(ElRight) < 1 .or. RepA2(ElRight) < 1 .or. RepA3(ElRight) < 1 ) &
          call die("Repetition in left electrode must be >= 1.")
 
     
@@ -457,6 +472,8 @@ CONTAINS
           write(*,10)'Bandwidth algorithm',trim(chars)
        end if
        write(*,7) 'Electronic temperature',kT/eV,'eV'
+       write(chars,'(a,i0)') 'A',ts_tdir
+       write(*,10) 'Transport along unit-cell vector',trim(chars)
        if ( ts_method == TS_SPARSITY ) then
           write(*,10)'Solution method', 'Sparsity pattern'
        else if ( ts_method == TS_SPARSITY_TRI ) then
@@ -514,13 +531,13 @@ CONTAINS
        write(*,10)'  GF title', trim(GFTitleL)
        write(*,10)'  Electrode TSHS file', trim(HSFile(ElLeft))
        write(*,5) '  # atoms used in electrode ', UsedAtoms(ElLeft)
-       write(*,15)'  Electrode repetition A1/A2', RepA1(ElLeft),RepA2(ElLeft)
+       write(*,15)'  Electrode repetition A1/A2/A3', RepA1(ElLeft),RepA2(ElLeft),RepA3(ElLeft)
        write(*,10)'>> Right'
        write(*,10)'  GF file', trim(GFFileR)
        write(*,10)'  GF title', trim(GFTitleR)
        write(*,10)'  Electrode TSHS file', trim(HSFile(ElRight))
        write(*,5) '  # atoms used in electrode ', UsedAtoms(ElRight)
-       write(*,15)'  Electrode repetition A1/A2', RepA1(ElRight),RepA2(ElRight)
+       write(*,15)'  Electrode repetition A1/A2/A3', RepA1(ElRight),RepA2(ElRight),RepA3(ElRight)
 
 
        ! Print the contour information
@@ -532,8 +549,9 @@ CONTAINS
        write(*,'(3a)') repeat('*',24),' Begin: TS CHECKS AND WARNINGS ',repeat('*',24)
 
        ! Check that the unitcell does not extend into the transport direction
-       do i = 1 , 2
-          if ( abs(ucell(3,i)) > 1e-7 .or. abs(ucell(i,3)) > 1e-7 ) then
+       do i = 1 , 3
+          if ( i == ts_tdir ) cycle
+          if ( abs(dot(ucell(:,i),ucell(:,ts_tdir),3)) > 1e-7 ) then
              write(*,*) &
                   "ERROR: Unitcell has the electrode extend into the &
                   &transport direction."
@@ -604,7 +622,7 @@ CONTAINS
 8   format('ts_options: ',a,t53,'=',f10.4)
 10  format('ts_options: ',a,t53,'=',4x,a)
 11  format('ts_options: ',a)
-15  format('ts_options: ',a,t53,'= ',i0,' X ',i0)
+15  format('ts_options: ',a,t53,'= ',i0,' X ',i0,' X ',i0)
 
 contains 
   

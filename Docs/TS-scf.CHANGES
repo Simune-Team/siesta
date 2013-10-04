@@ -1,4 +1,36 @@
 ----------------------------------------------------
+October 4, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-92
+Made transport possible in any direction 
+
+* Instead of forcing the user to use the A3-direction as the transport
+  direction, the wanted direction can be be used.
+  I have fully implemented this for repetition and anywhere needed in the code.
+  I have tested this with the ts_au_100_repetition_0.25V test case and found
+  a similar convergence. 
+
+  A couple of routines has changed interface to account for the change in 
+  behaviour.
+
+  All in all this addition should make it easier to implement a future
+  multi-terminal transiesta.
+
+  The transport direction is defaulted to the regular scheme (a3-direction)
+  and can be controlled via:
+  TS.TransportDirection [1-3]
+
+added:
+  Src/m_ts_tdir.f90
+modified:
+  Docs/siesta.tex
+  Src/m_integrate.f90
+  Src/m_ts_contour.f90
+  Src/m_ts_electrode.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_kpoints.F90
+  Src/m_ts_options.F90
+  Src/ts_init.F90
+
+----------------------------------------------------
 September 17, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-91
 Added coordinate check when dealing with bias, small changes to variables
 

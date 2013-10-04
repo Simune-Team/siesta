@@ -85,7 +85,7 @@ contains
 ! **********************************************************************
 
 !  Modules
-    
+
     use parallel,   only : Node
     use m_minvec,   only : minvec
     use fdf
@@ -93,6 +93,9 @@ contains
 #ifdef MPI
     use mpi_siesta
 #endif
+
+    use m_ts_tdir
+    use m_ts_options, only : TSmode
     
     implicit          none
 
@@ -163,11 +166,17 @@ contains
          !!endif
     endif
 
-!     Modify the ts_kscell and ts_kdispl to obtain the 2D sampling
-    ts_kscell(1:3,3) = 0
-    ts_kscell(3,1:3) = 0
-    ts_kscell(3,3)   = 1
-    ts_kdispl(3)     = 0.0_dp
+    ! In case of TSmode we have a transiesta run.
+    ! This means that we truncate the k-points in the transport direction.
+    ! However, if we are dealing with an electrode calculation we simply allow it
+    ! to have the same cell (the check made will disregard the transport directions k-points)
+    if ( TSmode ) then
+       ! Modify the ts_kscell and ts_kdispl to obtain the 2D sampling
+       ts_kscell(1:3,ts_tdir)     = 0
+       ts_kscell(ts_tdir,1:3)     = 0
+       ts_kscell(ts_tdir,ts_tdir) = 1
+       ts_kdispl(ts_tdir)         = 0.0_dp
+    end if
     
   end subroutine setup_ts_scf_kscell
   
@@ -246,8 +255,8 @@ contains
          (ts_kscell(i,1),i=1,3), ts_kdispl(1)
     write(*,'(a,3i4,3x,f8.3)') 'transiesta: ts_k-grid: ',        &
          (ts_kscell(i,2),i=1,3), ts_kdispl(2)
-!      write(*,'(a,3i4,3x,f8.3)') 'transiesta: ts_k-grid: ',        &
-!           (ts_kscell(i,3),i=1,3), ts_kdispl(3)
+    write(*,'(a,3i4,3x,f8.3)') 'transiesta: ts_k-grid: ',        &
+         (ts_kscell(i,3),i=1,3), ts_kdispl(3)
     if (cml_p) then
        call cmlStartPropertyList(xf=mainXML, title="Transiesta k-points", &
             dictRef="siesta:ts_kpoints")
