@@ -316,7 +316,8 @@ subroutine f_ppexsi_raw_inertiacount_interface( &
 
    integer(C_INT), intent(in)  :: npSymbFact
 
-   real(C_DOUBLE), intent(out) :: shiftList(nShifts), inertiaList(nShifts)
+   real(C_DOUBLE), intent(out) :: shiftList(nShifts)
+   integer(C_INT), intent(out) :: inertiaList(nShifts)
    integer(C_INT), intent(out) :: info
 end subroutine f_ppexsi_raw_inertiacount_interface
 end interface

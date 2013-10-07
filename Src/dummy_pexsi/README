@@ -10,3 +10,10 @@ Note that the use of the FORTRAN() macro in this C source (mimicking
 what Lin does in the original C++ source) implies that the interface
 specification usind ISO_C_BINDING needs to specify an explicit name
 with an extra underscore.
+
+To use it, add "libdummy_pexsi.a" or "libdummy_raw_pexsi.a" to the
+COMP_LIBS macro in your arch.make file.
+
+The "raw" version contains only the new raw inertia-count interface,
+which might not be available on all platforms for some time.
+

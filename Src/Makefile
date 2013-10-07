@@ -255,6 +255,20 @@ libmpi_f90.a:
 #
 # Libraries that might need to be compiled
 #
+# PEXSI dummy routines
+libdummy_pexsi.a: 
+	@(cd dummy_pexsi ; $(MAKE) \
+                    "VPATH=$(VPATH)/dummy_pexsi" \
+                    "CC=$(CC)" \
+                    "CFLAGS=$(CFLAGS)" libdummy_pexsi.a))
+libdummy_raw_pexsi.a: 
+	@(cd dummy_pexsi ; $(MAKE) \
+                    "VPATH=$(VPATH)/dummy_pexsi" \
+                    "CC=$(CC)" \
+                    "CFLAGS=$(CFLAGS)" libdummy_raw_pexsi.a)
+#
+# Linear algebra routines
+#
 libblas.a: Libs/blas.f
 	@echo "==> Compiling libblas.a in Libs..."
 	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" libblas.a)
