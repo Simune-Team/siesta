@@ -3,7 +3,7 @@
 
       CONTAINS
 
-      subroutine save_density_matrix(id)
+      subroutine save_density_matrix(id,when)
 
       ! Stores DM and EDM on files
       ! This version uses module variables.
@@ -32,6 +32,19 @@
 #endif
 
       character(len=*), intent(in)   :: id
+      logical, intent(in), optional  :: when
+
+      logical :: do_it
+
+      ! Control the condition to write the DM externally
+      ! This gives more flexibility
+      ! We retain the "writedm" default condition for compatibility
+
+      if (present(when)) then
+         do_it = when
+      else
+         do_it = writedm
+      endif
 
 #ifdef CDF
 !     Save density matrix on disk, after mixing, to
@@ -46,7 +59,7 @@
 #endif
     
 #ifndef TRANSIESTA
-      if (writedm) then
+      if (do_it) then
         if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
           if (istp.eq.1)
      &    call write_dm (maxnh, no_l, nspin,
@@ -58,7 +71,7 @@
       endif ! writedm
 #else /* TRANSIESTA */
 ! TSS Begin
-      if (writedm) then
+      if (do_it) then
         if (.not.TSrun) then   !TSS save Dscf
           if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
             if (istp.eq.1)

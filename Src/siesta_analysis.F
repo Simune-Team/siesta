@@ -90,6 +90,8 @@
       ! section done by Siesta subset of nodes
       if (SIESTA_worker) then
 
+      call timer("Analysis",1)
+
       final = .true.
       if (cml_p) then
         call cmlStartModule(xf=mainXML, title='Finalization')
@@ -389,6 +391,8 @@ C     Find local density of states
       if (fdf_get("PEXSI.LocalDOS",.false.)) then
          call pexsi_local_DOS()
       endif
+
+      if (SIESTA_worker) call timer("Analysis",2)
 
 !------------------------------------------------------------------------- END
       END subroutine siesta_analysis

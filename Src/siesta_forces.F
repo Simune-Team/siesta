@@ -31,11 +31,11 @@
       use m_stress,      only: cstress        ! Constrained stress tensor
       use siesta_master, only: forcesToMaster ! Send forces to master prog
       use siesta_master, only: siesta_server  ! Is siesta a server?
-
+      use m_save_density_matrix, only: save_density_matrix
       use units,         only: eV, Ang
       use sparse_matrices, only: H, Hold, Dold, Dscf
       use m_pexsi_solver,        only: prevDmax
-      use m_save_density_matrix, only: save_density_matrix
+
       use m_mpi_utils, only: broadcast
 #ifdef TRANSIESTA
       use m_ts_global_vars, only : ts_istep
@@ -142,7 +142,7 @@
            call mixer( iscf )
            ! Save for possible restarts
            ! Could save H in the future
-           call save_density_matrix("mixed")
+           call save_density_matrix("mixed",when=writedm)
         endif
 
         call timer( 'IterSCF', 2 )
@@ -171,18 +171,10 @@
 
       if (.not. SIESTA_worker) RETURN
 
+      call end_of_cycle_save_operations()
+
       if ((SCFMustConverge).and.(.not.SCFconverged)) then
         call die('SCF did not converge in maximum number of steps.')
-      endif
-
-      if (.not. mix_after_convergence) then
-         ! Save final DM_out for further analysis offline
-         call save_density_matrix("dmout")
-         if (MixH) then
-             ! We could make sure that we keep the H actually used 
-             ! to generate the last DM, if needed.
-             H = Hold
-         endif
       endif
 
 !     End of standard SCF loop.
@@ -247,7 +239,39 @@
       end subroutine maybe_print_timings
 
 !-----------------------------------------------------
+      !
+      ! Depending on various conditions, save the DMin
+      ! or the DMout, and possibly keep a copy of H
+      !
+      ! WriteDM is the historical catch-all flag.
+      ! The labels in the calls are for documentation
+      ! purposes. The files will have the .DM extension
+      ! for compatibility, for now.
+      !
+      subroutine end_of_cycle_save_operations()
 
+      if (mix_after_convergence) then
+         if (MixH) then
+            call save_density_matrix("dmout",
+     $                                when=write_dm_at_end_of_cycle)
+         else
+            ! If we have been saving it, there is no point in doing
+            ! it one more time
+            call save_density_matrix("mixed",
+     $          when=((.not. writedm) .and. write_dm_at_end_of_cycle))
+         endif
+      else
+         call save_density_matrix("dmout",when=write_dm_at_end_of_cycle)
+         if (MixH) then
+             ! Make sure that we keep the H actually used 
+             ! to generate the last DM, if needed.
+             H = Hold
+         endif
+      endif
+
+      end subroutine end_of_cycle_save_operations
+
+!-----------------------------------------------------
 #ifdef TRANSIESTA
       subroutine check_transiesta_continuation()
 
