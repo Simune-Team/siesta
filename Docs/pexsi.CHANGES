@@ -1,4 +1,33 @@
 ------------------------------------------------------------
+October 7, 2013  A. Garcia        trunk-445--pexsi-44
+Add option to write the DM at the end of the SCF loop
+
+For cases in which the DM checkpointing during the scf cycle is not
+desirable, the option
+
+WriteDM.End.Of.Cycle  T
+
+allows one final saving at the end of the cycle.
+By default, this option is turned on if the more general option
+
+WriteDM T
+
+is in effect. 
+
+The conditions upon which the DM (whether mixed or 'dm_out') are saved
+are now spelled out through an explicit argument to the saving
+routine. The end-of-cycle saving section in 'siesta_forces' has been
+moved to an internal routine.
+
+( + Add timing call for 'siesta_analysis')
+
+modified:
+  Src/save_density_matrix.F
+  Src/siesta_analysis.F
+  Src/siesta_forces.F
+  Src/siesta_options.F90
+
+------------------------------------------------------------
 September 30, 2013  A. Garcia        trunk-445--pexsi-43
 Sync to trunk-445
 
